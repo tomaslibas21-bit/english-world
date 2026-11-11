@@ -1,6 +1,6 @@
 // Records Puerto Colibrí's voices with Gemini (docs/es/VOICES.md): the Spanish edition's copy of tools/voice-batch.ts,
 // which stays as it is for Maple Harbor. The lines come from tools/es-voices/lines-es.ts (both learner genders, and
-// every line in two accent sets: Mexican, es_…, and neutral Latin American, esn_…, each with its own text where a line
+// every line in three accent sets: Mexican, es_…, neutral Latin American, esn_…, and Spain's, esp_…, each with its own text where a line
 // has a neutral twin), the voices and directions from tools/es-voices/casting-es.ts (a direction per character, a
 // setting per conversation, an accent per set). Every request goes into a cost ledger, and nothing new is asked for
 // past the cap.
@@ -8,7 +8,7 @@
 //   EDITION=es npx tsx --import ./tools/edition-hook.mjs tools/es-voices/voice-batch-es.ts <command>
 // Commands:
 //   plan                          what would be recorded: clips per voice, minutes, price (no key)
-//   sample [--per=3] [--who=a,b] [--round=name] [--accent=mx|neutral] [--age] [--no-accent]
+//   sample [--per=3] [--who=a,b] [--round=name] [--accent=mx|neutral|spain] [--age] [--no-accent]
 //                                 a few lines per voice right away, in both accents unless --accent (key)
 //   check-samples <round>         Whisper (Spanish) and the length screen on a sample round (no key)
 //   judge <round>                 a Gemini listener, not told which accent was asked for, says which it hears
@@ -68,10 +68,10 @@ const PRICE = {
   judge: { input: 0.75, output: 3.75 },
   tokensPerSecond: 25,
 };
-/** The owner's stop line for both accent sets together, samples and redos included (4 Nov 2026: $38, the balance in
- *  the owner's Google account; about $20–25 expected). All bulk voicing goes through the Batch API; single requests
- *  only for a few sample lines. */
-const CAP = Number(process.env.PC_CAP ?? 38);
+/** The owner's stop line for all three accent sets together, samples and redos included (4 Nov 2026: $38; 11 Nov,
+ *  with Spain's set and the owner's top-up: $48). All bulk voicing goes through the Batch API; single requests only for
+ *  a few sample lines. */
+const CAP = Number(process.env.PC_CAP ?? 48);
 const MAX_TRIES = 4;
 
 const args = process.argv.slice(2);
@@ -83,7 +83,7 @@ export interface Line {
   key: string; voice: string; who: string; accent: Accent; speed: number; say: string; shown: string;
   /** What Gemini is given to say (geminiTextEs), the voice, the style, the sound of the setting. */
   text: string; gv: string; style: string; fx?: "phone" | "video";
-  where: string; sits: string[]; neutral?: boolean;
+  where: string; sits: string[]; neutral?: boolean; spain?: boolean;
 }
 interface Recorded { gv: string; style: string; text: string; fx?: string; tries: number; ok: boolean; sec?: number; tokens?: number; textTokens?: number; why?: string }
 interface Job { file: string; count: number; estimate: number; uploaded?: string; batch?: string; state?: string; stats?: unknown; results?: string; fetched?: boolean; failed?: boolean; created?: string }
@@ -244,10 +244,10 @@ async function plan() {
   const per = new Map<string, { n: number; s: number }>();
   for (const l of lines) { const p = per.get(l.who) ?? { n: 0, s: 0 }; p.n++; p.s += estimate(l); per.set(l.who, p); }
   const { sec, price } = estimatePrice(lines);
-  const mx = lines.filter((l) => l.accent === "mx"), nt = lines.filter((l) => l.accent === "neutral");
+  const mx = lines.filter((l) => l.accent === "mx"), nt = lines.filter((l) => l.accent === "neutral"), sp = lines.filter((l) => l.accent === "spain");
   const mxSay = new Set(mx.map((l) => l.who + "|" + l.say));
-  console.log(`${lines.length} clips: ${mx.length} in Mexican Spanish, ${nt.length} in neutral Latin American Spanish (${nt.filter((l) => !mxSay.has(l.who + "|" + l.say)).length} of them a neutral twin's own text); ${lines.filter((l) => l.fx === "phone").length} on the phone, ${lines.filter((l) => l.fx === "video").length} on video; about ${Math.round(sec / 60)} min of speech`);
-  console.log(`price in batch: about $${price.toFixed(2)} for both (Mexican $${estimatePrice(mx).price.toFixed(2)}, neutral $${estimatePrice(nt).price.toFixed(2)}; audio $${PRICE.batch.audio}/1M tokens until 31 Dec 2026)`);
+  console.log(`${lines.length} clips: ${mx.length} in Mexican Spanish, ${nt.length} in neutral Latin American Spanish (${nt.filter((l) => !mxSay.has(l.who + "|" + l.say)).length} of them a neutral twin's own text), ${sp.length} in Spain's Spanish (${sp.filter((l) => !mxSay.has(l.who + "|" + l.say)).length} of them a twin's own text); ${lines.filter((l) => l.fx === "phone").length} on the phone, ${lines.filter((l) => l.fx === "video").length} on video; about ${Math.round(sec / 60)} min of speech`);
+  console.log(`price in batch: about $${price.toFixed(2)} for all three (Mexican $${estimatePrice(mx).price.toFixed(2)}, neutral $${estimatePrice(nt).price.toFixed(2)}, Spain $${estimatePrice(sp).price.toFixed(2)}; audio $${PRICE.batch.audio}/1M tokens until 31 Dec 2026)`);
   const manifest: Record<string, number> = readJson(MANIFEST, {});
   const done = lines.filter((l) => manifest[l.key]).length;
   if (done) console.log(`already recorded: ${done}`);
@@ -263,23 +263,25 @@ async function plan() {
 function sampleOf(lines: Line[], per: number, only?: Set<string>, accents: Accent[] = ["mx", "neutral"]): Line[] {
   const mx = lines.filter((l) => l.accent === "mx");
   const base = pickFrom(mx, per, only);
-  if (!accents.includes("neutral")) return base;
-  const nt = lines.filter((l) => l.accent === "neutral");
-  const ntBy = new Map(nt.map((l) => [l.who + "|" + l.say, l]));
   const mxSay = new Set(mx.map((l) => l.who + "|" + l.say));
   const words = (s: string) => new Set(strip(s).match(/[a-z]+/g) ?? []);
   const out = accents.includes("mx") ? [...base] : [];
-  for (const l of base) {
-    let twin = ntBy.get(l.who + "|" + l.say), best = 0;
-    if (!twin) {
-      const w = words(l.say);
-      for (const n of nt) if (n.who === l.who && !mxSay.has(n.who + "|" + n.say)) {
-        const v = words(n.say), o = [...w].filter((x) => v.has(x)).length / Math.max(w.size, v.size);
-        if (o > best) { best = o; twin = n; }
+  // each other accent: the same line, or its twin (the same person's own line in that set closest in words)
+  for (const acc of accents.filter((a) => a !== "mx")) {
+    const set = lines.filter((l) => l.accent === acc);
+    const by = new Map(set.map((l) => [l.who + "|" + l.say, l]));
+    for (const l of base) {
+      let twin = by.get(l.who + "|" + l.say), best = 0;
+      if (!twin) {
+        const w = words(l.say);
+        for (const n of set) if (n.who === l.who && !mxSay.has(n.who + "|" + n.say)) {
+          const v = words(n.say), o = [...w].filter((x) => v.has(x)).length / Math.max(w.size, v.size);
+          if (o > best) { best = o; twin = n; }
+        }
+        if (best < 0.4) twin = undefined;
       }
-      if (best < 0.4) twin = undefined;
+      if (twin && !out.includes(twin)) out.push(twin);
     }
-    if (twin && !out.includes(twin)) out.push(twin);
   }
   return out;
 }
@@ -300,7 +302,7 @@ function pickFrom(lines: Line[], per: number, only?: Set<string>): Line[] {
     return !!src && !placeholders(src).entities.length && !placeholders(src).values.length;
   };
   const spread = (ls: Line[], n: number) => {
-    const own = ls.filter((l) => !l.where.startsWith("global") && !l.where.includes(":soundcheck:") && !l.neutral && real(l) && l.say.length >= 20 && l.say.length <= 150);
+    const own = ls.filter((l) => !l.where.startsWith("global") && !l.where.includes(":soundcheck:") && !l.neutral && !l.spain && real(l) && l.say.length >= 20 && l.say.length <= 150);
     const pool = (own.length >= n ? own : ls).slice().sort((a, b) => a.say.length - b.say.length || a.say.localeCompare(b.say));
     return qs.slice(0, n).map((q) => pool[Math.min(pool.length - 1, Math.floor(q * pool.length))]).filter((l, i, a) => l && a.indexOf(l) === i);
   };
@@ -849,14 +851,14 @@ Judge only what you hear. Answer in JSON with these keys:
  *  came out another accent than asked (Mexican heard as anything but Mexican; neutral heard as Mexican or Spain). */
 function judgeSummary(index: any[]) {
   const judged = index.filter((x) => x.judge && !x.judge.raw);
-  for (const acc of ["mx", "neutral"]) {
+  for (const acc of ["mx", "neutral", "spain"]) {
     const xs = judged.filter((x) => (x.accent ?? "mx") === acc);
     if (!xs.length) continue;
     const count = (f: (j: any) => string) => Object.entries(xs.reduce((a: Record<string, number>, x) => { const k = f(x.judge); a[k] = (a[k] ?? 0) + 1; return a; }, {})).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(", ");
     const strength = xs.reduce((a, x) => a + (Number(x.judge.accent_strength) || 0), 0) / xs.length;
-    console.log(`\n${acc === "mx" ? "Mexican" : "neutral"} set, ${xs.length} clips: heard ${count((j) => j.accent)}; regional strength ${strength.toFixed(1)}; native ${count((j) => String(j.sounds_native))}; words match ${count((j) => String(j.words_match))}`);
+    console.log(`\n${acc === "mx" ? "Mexican" : acc === "spain" ? "Spain's" : "neutral"} set, ${xs.length} clips: heard ${count((j) => j.accent)}; regional strength ${strength.toFixed(1)}; native ${count((j) => String(j.sounds_native))}; words match ${count((j) => String(j.words_match))}`);
   }
-  const off = judged.filter((x) => ((x.accent ?? "mx") === "mx" ? x.judge.accent !== "mexican" : x.judge.accent === "mexican" || x.judge.accent === "spain") || x.judge.sounds_native === false || !x.judge.words_match || x.judge.naturalness < 4 || x.judge.issues);
+  const off = judged.filter((x) => ((x.accent ?? "mx") === "mx" ? x.judge.accent !== "mexican" : x.accent === "spain" ? x.judge.accent !== "spain" : x.judge.accent === "mexican" || x.judge.accent === "spain") || x.judge.sounds_native === false || !x.judge.words_match || x.judge.naturalness < 4 || x.judge.issues);
   for (const x of off) console.log(`  [${x.accent ?? "mx"}] ${x.who} (${x.gv}) ${x.key}: heard ${x.judge.accent} ${x.judge.accent_strength}, ${x.judge.sounds_native ? "native" : "NOT NATIVE"}, ${x.judge.age}, ${x.judge.pace}, nat ${x.judge.naturalness}${x.judge.words_match ? "" : `, words: ${x.judge.differences}`}${x.judge.issues ? `, ${x.judge.issues}` : ""} | ${x.judge.accent_notes}`);
 }
 

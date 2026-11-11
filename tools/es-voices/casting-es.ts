@@ -91,11 +91,12 @@ const DEFAULT_CASTING: Casting = "mexico";
 export const CASTING: Casting = process.env.PC_CASTING === "mexico" || process.env.PC_CASTING === "prebuilt" ? process.env.PC_CASTING : DEFAULT_CASTING;
 const voiceIn = (c: Casting, who: string, r: Role) => (c === "mexico" ? MEXICO[who] ?? r.voice : r.voice);
 
-/** The two accents: the voice set es_ speaks Mexican Spanish, esn_ neutral Latin American Spanish. */
-export type Accent = "mx" | "neutral";
+/** The three accents: the voice set es_ speaks Mexican Spanish, esn_ neutral Latin American Spanish, esp_ Spain's. */
+export type Accent = "mx" | "neutral" | "spain";
 export const ACCENTS: Record<Accent, string> = {
   mx: "natural Mexican Spanish, as spoken on Mexico's Caribbean coast",
   neutral: "neutral Latin American Spanish (español neutro, as in dubbing), with no regional accent",
+  spain: "natural Castilian Spanish from Spain (Madrid), with distinción (the θ of 'gracias', 'cinco') and Spain's intonation",
 };
 /** The Mexican direction (the default set). */
 export const ACCENT = ACCENTS.mx;
@@ -231,7 +232,7 @@ export const SCENES: Record<string, Scene> = {
 export function whoOf(voiceId: string): string | null {
   return /^esn?_/.test(voiceId) ? voiceId.replace(/^esn?_/, "") : null;
 }
-export const accentOf = (voiceId: string): Accent => (voiceId.startsWith("esn_") ? "neutral" : "mx");
+export const accentOf = (voiceId: string): Accent => (voiceId.startsWith("esn_") ? "neutral" : voiceId.startsWith("esp_") ? "spain" : "mx");
 
 /** The role behind a voice id: a character, a coach or a passer-by, with the voice of the casting in use. */
 export function roleOf(who: string, casting: Casting = CASTING): Role | null {

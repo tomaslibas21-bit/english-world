@@ -31,7 +31,7 @@ import { NPCS, type NpcDef } from "../../src/content/npcs";
 import { AMBIENT_LINES } from "../../src/content/ambient";
 import { ambientVoice, coachVoice, npcVoice } from "../../src/content/voices";
 import { withoutAddressedNames } from "../../src/audio-key";
-import { compose, placeholders, setVariety, type Sentence } from "../../src/convo/compose";
+import { addressInformal, compose, placeholders, setVariety, type Sentence } from "../../src/convo/compose";
 import { soundKey } from "../../src/convo/soundalike";
 import { EDITION } from "../../src/edition";
 import type { EntityDef, SituationDef } from "../../src/content/types";
@@ -43,7 +43,7 @@ import { BINDINGS, LISTS, codeSpeakers, idOf, reachFilter, reachOf } from "./rea
 const NAMES = [EDITION.simPlayer.name, EDITION.simPlayer.surname];
 const NAMES_RE = new RegExp(`\\b(${NAMES.join("|")})\\b`);
 const GENDERS = ["m", "f"] as const;
-const VARIETIES = ["default", "neutral"] as const;
+const VARIETIES = ["default", "neutral", "spain"] as const;
 
 export interface EsUtt {
   voice: string; speed: number;
@@ -55,6 +55,8 @@ export interface EsUtt {
   sits: string[];
   /** In the neutral Latin American set (an esn_ voice). */
   neutral?: boolean;
+  /** In Spain's set (an esp_ voice). */
+  spain?: boolean;
   /** How the list found it: "heard" (a run, a sim or a probe said it), or the kind of line it was made from ("line",
    *  "item", "value", "pair", "hint", "soundcheck", "global", "ambient") and what of it nobody was heard saying:
    *  "who?" (the speaker), "list?" (the item list), "qty?" (one or two of this kind of item); "pl": an item bound in the
@@ -84,7 +86,7 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
     if (alt === null && NAMES_RE.test(say)) return; // the learner's name is part of the line: the browser voice says it
     const k = `${voice}|${speed}|${say}`;
     let u = out.get(k);
-    if (!u) out.set(k, (u = { voice, speed, say, shown: s.en, where, sits: [], ...(voice.startsWith("esn_") ? { neutral: true } : {}), why }));
+    if (!u) out.set(k, (u = { voice, speed, say, shown: s.en, where, sits: [], ...(voice.startsWith("esn_") ? { neutral: true } : voice.startsWith("esp_") ? { spain: true } : {}), why }));
     else u.why = betterWhy(u.why, why);
     if (sit && !u.sits.includes(sit)) u.sits.push(sit);
     return u;
@@ -123,13 +125,13 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
       const where = `${sit.id}:${h.how === "run" ? "fuzz" : h.how}`;
       const own = n.id === h.line.npc;
       // the sentence the conversation made, and (for the other date) the same line, vars and learner in their voice
-      const opts = { look, addressee: h.gender, speaker: n.gender ?? "f", formal: !n.informal };
+      const opts = { look, addressee: h.gender, speaker: n.gender ?? "f", formal: !addressInformal(n) };
       if (own) add(npcVoice(n), n.speed ?? 1, h.line.sentence, where, sit.id, "heard");
       else if (src) { try { add(npcVoice(n), n.speed ?? 1, compose(src, h.line.vars, opts), where, sit.id, "heard"); } catch { /* skip */ } }
-      if (src) {
-        setVariety("neutral");
-        try { add(npcVoice(n), n.speed ?? 1, compose(src, h.line.vars, opts), where, sit.id, "heard"); }
-        catch { /* the neutral twin doesn't take these vars */ }
+      if (src) for (const v of ["neutral", "spain"] as const) {
+        setVariety(v);
+        try { add(npcVoice(n), n.speed ?? 1, compose(src, h.line.vars, { ...opts, formal: !addressInformal(n) }), where, sit.id, "heard"); }
+        catch { /* the twin doesn't take these vars */ }
         finally { setVariety("default"); }
       }
       if (!own) return;
@@ -243,16 +245,16 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
       });
     }
     for (const variety of VARIETIES) {
-      setVariety(variety); // the text (neutral twins) and the voice ids (es_ / esn_) of this Spanish
+      setVariety(variety); // the text (neutral or Spain twins) and the voice ids (es_ / esn_ / esp_) of this Spanish
       for (const { lid, i, binds, speakers, who, tag } of plan) {
         const src = sit.lines[lid][i];
         for (const { b, why } of binds) for (const n of speakers) for (const g of GENDERS) {
-          try { add(npcVoice(n), n.speed ?? 1, compose(src, b, { look, addressee: g, speaker: n.gender, formal: !n.informal }), `${sit.id}:${lid}[${i}]`, sit.id, [why, who, tag.get(n.id)].filter(Boolean).join(" ")); }
+          try { add(npcVoice(n), n.speed ?? 1, compose(src, b, { look, addressee: g, speaker: n.gender, formal: !addressInformal(n) }), `${sit.id}:${lid}[${i}]`, sit.id, [why, who, tag.get(n.id)].filter(Boolean).join(" ")); }
           catch { /* this entity doesn't fit this line */ }
         }
       }
       // 2. the example answers: the coach of the learner's gender, the register and gender of whom they speak to
-      const registers = [...new Set(people.map((n) => !n.informal))];
+      const registers = [...new Set(people.map((n) => !addressInformal(n)))];
       const npcGenders = [...new Set(people.map((n) => n.gender))];
       for (const [gid, g] of Object.entries(sit.hints)) {
         const ents = g.slot ? sit.entities?.[g.slot] ?? [] : [];
@@ -271,7 +273,7 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
         const names = [e.en.split(" | ").join(" "), ...(e.forms ?? [])];
         if (!names.some((nm) => soundKey(nm).length >= 2 && nm.replace(/[^a-záéíóúüñ]/gi, "").length >= 4)) continue;
         for (const n of people) for (const g of GENDERS) checks.forEach((src, ci) => {
-          try { add(npcVoice(n), n.speed ?? 1, compose(src, { X: e.id }, { look, addressee: g, speaker: n.gender, formal: !n.informal }), `${sit.id}:soundcheck:${e.id}[${ci}]`, sit.id, "soundcheck"); } catch { /* skip */ }
+          try { add(npcVoice(n), n.speed ?? 1, compose(src, { X: e.id }, { look, addressee: g, speaker: n.gender, formal: !addressInformal(n) }), `${sit.id}:soundcheck:${e.id}[${ci}]`, sit.id, "soundcheck"); } catch { /* skip */ }
         });
       }
     }
@@ -291,7 +293,7 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
         for (const g of GENDERS) {
           try {
             // said wherever this person speaks
-            const u = add(npcVoice(n), n.speed ?? 1, compose(src, {}, { look: () => undefined, addressee: g, speaker: n.gender, formal: !n.informal }), `global:${lid}[${i}]`, undefined, "global");
+            const u = add(npcVoice(n), n.speed ?? 1, compose(src, {}, { look: () => undefined, addressee: g, speaker: n.gender, formal: !addressInformal(n) }), `global:${lid}[${i}]`, undefined, "global");
             if (u) for (const sid of globalIn.get(id) ?? []) if (!u.sits.includes(sid)) u.sits.push(sid);
           } catch { /* skip */ }
         }
