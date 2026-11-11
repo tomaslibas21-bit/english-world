@@ -219,3 +219,12 @@ hecha, al punto, hecha, muy hecha), 27 Spain multiword units in the file's `merg
 - **For the lead:** the doneness chips ("roja", "término medio"…) and "papas fritas", "agua natural" chips stay Mexican
   (chipLabel). Whether a sit-down restaurant's host says tú to an adult guest in Spain is the owner's call (the
   lead's `informalSpain` on Lucía and Luis says yes; a smart Madrid restaurant would often say usted).
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
+
+- Register: Lucía and Luis say tú to one and vosotros to a group (Pasad, Seguidme, os traigo, vuestra mesa, tomaos vuestro tiempo); clitics and possessives agree. The learner's hints use tú (¿Me traes…?, ¿Me pones…?, ¿Nos traes la cuenta?, Ponle cien pesos). Correct.
+- Fixed ("Listo" as "done" is Latin American): "¡Listo, ya está tu mesa!" → "¡Perfecto, ya está tu mesa!"; "Listo, ya lo he cambiado" → "Hecho, …"; "¡Muy amable! Listo, ya está" → "¡Muy amable! Pues ya está"; tip_none_ok "Ah... muy bien. Listo." gets a twin "Ah... muy bien. Pues ya está.".
+- Justified warnings: "frijoles" in the sides (frijoles refritos, a Mexican dish).
+- Owner question: Lucía (host) keeps tú, see the hand-back.

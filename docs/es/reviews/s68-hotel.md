@@ -315,3 +315,9 @@ questions, refusals with a reason, side questions), and the offer probe in both 
 - Words: reserva, cama de matrimonio, habitación individual, ¿Me deja…? for ¿Me presta/permite…?, documento de identidad, coste, la cuarta/quinta/segunda/tercera planta for el … piso (say too), ascensor(es), aparcamiento, Por supuesto / ¡De nada! for Con gusto, a dos calles, Vuelva a las tres, ¡Qué bien!, the perfect (ya lo he anotado, ya he encontrado, ya lo he corregido, ya he hecho el cambio; the learner's He reservado, Ya he vuelto), Ya está.
 - Grammar: nights_fix takes he reservado; sign_ok_ctx takes ya he firmado; return_ready_ctx takes ya he vuelto. Merges: the perfects, de matrimonio, documento de identidad.
 - Kept: impuesto de hospedaje (the state's tax).
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
+
+- Read every twin: usted kept throughout, Spain's words right (billete, tarjeta de embarque, móvil, gafas, portátil, aseos, maleta, facturar, coger, aparcamiento, coche, jersey), the perfect for what just happened, "Ya está" for "Listo", Mexican-only names kept. Meaning, glosses and spelling: no problems found. No changes.

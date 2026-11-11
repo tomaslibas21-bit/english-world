@@ -107,3 +107,9 @@ grammar, a held-out set of 66 learner sentences was written blind (`tests/es/hel
 - Words: coja un colectivo, andando, ¿Le pongo el aire? / ¿Puede poner el aire?, Ya está, Ya hemos llegado, Sí, tengo cambio, the learner's Ya he venido antes. The car-rental place has a Spain noun (alquiler de coches, attrs.spain + forms).
 - Grammar: ac_on takes póngame; no_cash takes no llevo. Merges: hemos llegado, he venido.
 - Kept: joven as Don Rigo's way to address the learner (also said in Spain); lo/la llevo (no leísmo).
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
+
+- Read every twin: usted kept throughout, Spain's words right (billete, tarjeta de embarque, móvil, gafas, portátil, aseos, maleta, facturar, coger, aparcamiento, coche, jersey), the perfect for what just happened, "Ya está" for "Listo", Mexican-only names kept. Meaning, glosses and spelling: no problems found. No changes.

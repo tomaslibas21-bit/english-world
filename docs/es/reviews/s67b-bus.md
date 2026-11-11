@@ -118,3 +118,9 @@ the mercado (the church stop only before the zócalo; the beach has no next stop
 - Words: coja for tome, conductor for chofer, billete, no le llega for no le alcanza, carné, móvil, dentro, Ya ha pagado, no tengo cambio for no traigo cambio, ¿No tiene algo más pequeño?, Se tarda unos… for Se hace como…, Ya hemos llegado, Para volver, cójalo enfrente, detrás de mí, Ya ha terminado mi turno.
 - Grammar: no_change takes solo llevo; ask_back takes para volver / de vuelta; is_my_stop takes ya hemos llegado. Merges: ha pagado, hemos llegado, muy bien, detrás de, ha terminado.
 - Kept: ¡Bajan! (the riders' call to stop, a Mexican custom of the town).
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
+
+- Read every twin: usted kept throughout, Spain's words right (billete, tarjeta de embarque, móvil, gafas, portátil, aseos, maleta, facturar, coger, aparcamiento, coche, jersey), the perfect for what just happened, "Ya está" for "Listo", Mexican-only names kept. Meaning, glosses and spelling: no problems found. No changes.

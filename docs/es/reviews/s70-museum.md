@@ -110,3 +110,9 @@ entrance and a "Baños" sign at the back (the lines point there).
 - Words: le da tiempo a ver for le alcanza para ver, carné (de estudiante) for credencial, jubilados for adultos mayores in the lines and the learner's de jubilado; the senior entity says persona mayor in Spain (two units, like adulto | mayor), datáfono and móvil, Muy bien for Listo, lleva (mochila), ascensor, hacer fotos for tomar fotos, aseos, ya lo he cambiado, me he equivocado, Vale, pago la entrada general.
 - Grammar: no_id and no_cash take llevo; enough_time takes ¿me/le da tiempo a verlo todo?. Merges: da tiempo, he cambiado, muy bien, me he equivocado.
 - The senior chip still reads adulto mayor (chip text, as in s65b).
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
+
+- Read every twin: usted kept throughout, Spain's words right (billete, tarjeta de embarque, móvil, gafas, portátil, aseos, maleta, facturar, coger, aparcamiento, coche, jersey), the perfect for what just happened, "Ya está" for "Listo", Mexican-only names kept. Meaning, glosses and spelling: no problems found. No changes.

@@ -169,3 +169,9 @@ poco de los dos" accepts the renamed intent (purpose or both_ctx).
 - Words: visado for visa, billete de vuelta for boleto de regreso, móvil, gafas (quíteselas), rellenar for llenar, aseos, fuera, lleva for trae, ¿Me deja su pasaporte?, ¡Qué bien que haya vuelto!, the learner's perfect (He venido a vivir aquí, ya he venido antes, todavía no lo he comprado, He alquilado un piso), ¿Qué dedo?, Ya está. The relatives mamá, papá, papás have Spain nouns (madre, padre, padres: attrs.spain).
 - Grammar: q_form takes rellenar; the rented-flat pattern takes he alquilado and piso; return_yes takes lo llevo en el móvil. Merges: haya vuelto, he venido, he alquilado, no lo he comprado.
 - Kept: tarjeta de residente, oficina de migración (Mexico's own paperwork).
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
+
+- Read every twin: usted kept throughout, Spain's words right (billete, tarjeta de embarque, móvil, gafas, portátil, aseos, maleta, facturar, coger, aparcamiento, coche, jersey), the perfect for what just happened, "Ya está" for "Listo", Mexican-only names kept. Meaning, glosses and spelling: no problems found. No changes.

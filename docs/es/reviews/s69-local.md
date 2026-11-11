@@ -183,3 +183,9 @@ cenote?" after the tip uses the global g_meaning, as the pending global change (
 - Words: por la mañana/tarde/noche, a una/dos calles, andando, coja (colectivo, taxi), conductor, furgonetas, solo for nada más, cada poco for cada rato, ¿Qué le apetece?, ¡Claro! for ¡Con gusto!, menú del día for comida corrida, Solo va gente de aquí for Va pura gente…, Vaya sin más for Llegue y ya, no se meta en el mar, muy dulce, Me gusta andar, the perfect (¿Ya ha cenado / ha ido / ha probado…?, ¡Me ha ayudado mucho!).
 - Grammar: ask_safe and ask_walk take andar/andando; not_hungry takes ya he comido. Merges: the perfects, le apetece, sin más, menú del día, cada poco.
 - Kept: cocina económica, pan dulce, marquesitas, panuchos (the town's own).
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
+
+- Read every twin: usted kept throughout, Spain's words right (billete, tarjeta de embarque, móvil, gafas, portátil, aseos, maleta, facturar, coger, aparcamiento, coche, jersey), the perfect for what just happened, "Ya está" for "Listo", Mexican-only names kept. Meaning, glosses and spelling: no problems found. No changes.

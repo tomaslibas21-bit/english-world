@@ -135,3 +135,11 @@ the `G` helper takes spain / spainPl / spainG), 10 Spain multiword units in the 
 - **For the lead:** "traje de baño" stays the entity's name in Spain's text (Spain says it too); "bañador" would need an
   `attrs.spain` with its own gloss units (one word for "suit | for | bathing": target.ts could take `spainLt`). The size
   chips ("chica (CH)") stay Mexican (chipLabel).
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
+
+- Register: Valeria says tú in every line; hints tú, vosotros for the shop (¿Tenéis…?, ¿Aceptáis…?). Correct.
+- Fixed: "Tranquilamente, mira lo que quieras" (odd fronted adverb) → "Mira tranquilamente, sin prisa."; "¡Me avisas cómo te queda(n)!" → "¡Ya me dices qué tal te queda(n)!"; "Solo guarda tu ticket" (calque) → "Solo tienes que guardar el ticket"; "juntas puntos" (Latin American) → "acumulas puntos"; "¡Listo! Solo escanea este código en tu casa" → "¡Ya está! … en casa"; untwinned "Listo." (size_ok) → "Vale.", "Listo, gracias." (paid) → "Ya está, gracias.".
+- Corpus: +3 items (Me está un poco grande, ¿Me lo puedo probar?, Me lo llevo).

@@ -209,3 +209,13 @@ intent: both give the stop's way). Held-out 43/43, unchanged.
 - Words: Directions in Spain's words: manzana for cuadra, (todo) recto for derecho/derechito, girar for dar vuelta (gire, gira, giro), solo for nada más, conductor for chofer, billetes for boletos, coger for tomar (a taxi, a bus, the colectivo), furgoneta for camioneta, pequeño for chiquito, andando for caminando, por la mañana/tarde/noche for en la…; the perfect for what just happened (¿Me ha entendido?, ¿Le ha quedado claro?, ¿otra vez he hablado muy rápido?); the hints ¡Vale, entendido!, Ya me oriento.
 - Grammar: ask_map takes ¿me deja un mapa?; did_i and understood take (lo) he entendido and me oriento; the word entities cuadra and derechito take manzana and (todo) recto, so ¿Qué significa manzana? is answered. Merges: todo recto, por la noche, me oriento.
 - Left as is: the word chips still show cuadra, derechito and banqueta (as the neutral text left banqueta): a learner who chose España never hears them, but may still ask. "Vale, muchas gracias" at ¿Algo más? reads as yes (vale = yes, global), as "Bueno, muchas gracias" does: a proposal for the shared yes/no reading, not changed here.
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
+
+- Usted kept; manzana, coger, andando, todo recto, girar, furgoneta, billetes, aseos: right.
+- Fixed: "pasa seguido" (Latin American "often") → "pasa a menudo" (both w_colectivo twins); untwinned colectivo_when "Pasan muy seguido…" gets a twin "Pasan cada poco por la avenida…".
+- Left: "como a las ocho" (colloquial in Spain too).
+- Merges: "a menudo", "cada poco" registered.
+- Gates: the three neutral-twin article warnings were there before this review.

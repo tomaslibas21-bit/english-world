@@ -130,3 +130,10 @@ traps 43 → 46, 0 false accepts; held-out 36/37 → 37/37, 0/5.
 - Words: billete(s) for boleto(s), ¿Solo ida o ida y vuelta? for ¿Sencillo o redondo?, la vuelta and vuelvo for el regreso and regreso, por la tarde, plazas / asientos / sitio for lugares, delante, ¿Me deja su documentación?, profesores for maestros, móvil and datáfono, Perfecto for Listo, solo hace parada, tienda, aseos, en el maletero for abajo del autobús, sin coste, Vale, deme ese.
 - Grammar: ret_ctx takes por la mañana/tarde/noche; no_id takes llevo and documentación/carné; show_id takes mi carné; seat_taken takes sitio. Merges: solo ida, (de) ida y vuelta, he anotado, en el maletero, sin coste, por la tarde.
 - Kept: INAPAM and its credencial (Mexico's own).
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
+
+- Read every twin: usted kept throughout, Spain's words right (billete, tarjeta de embarque, móvil, gafas, portátil, aseos, maleta, facturar, coger, aparcamiento, coche, jersey), the perfect for what just happened, "Ya está" for "Listo", Mexican-only names kept. Meaning, glosses and spelling: no problems found. No changes.
+- Left: "¿Me deja su credencial?" (the INAPAM card is a Mexican thing; its name stays).

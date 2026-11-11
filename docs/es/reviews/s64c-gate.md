@@ -119,3 +119,9 @@ No Mexican line's text changed. New lines: `no_bag`, `offer_optional`, `id_passp
 - Words: embarque/embarcar for abordaje/abordar, facturar for documentar, coste for costo, cinta de equipajes for banda de equipaje, móvil, documentación, ¿Me deja…? for ¿Me permite…?, ¿Qué desea? for ¿Qué se le ofrece?, Mire, ha habido un cambio de puerta for Fíjese que hubo…, Pues no for Fíjese que no, Llevamos un retraso for Traemos…, the perfect (el avión todavía no ha llegado, el embarque todavía no ha empezado), un bolso for una bolsa, asientos for lugares, aseos, delante.
 - Grammar: the boarding pass may be tarjeta / billete; ask_free takes coste; give_bp takes documentación / DNI. Merges: ha habido, no ha llegado, no ha empezado.
 - Nothing left for the lead.
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
+
+- Read every twin: usted kept throughout, Spain's words right (billete, tarjeta de embarque, móvil, gafas, portátil, aseos, maleta, facturar, coger, aparcamiento, coche, jersey), the perfect for what just happened, "Ya está" for "Listo", Mexican-only names kept. Meaning, glosses and spelling: no problems found. No changes.
