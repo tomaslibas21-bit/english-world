@@ -284,6 +284,15 @@ export const police: SituationDef = {
       "do i (need | have) to fill out a form", "(is there | do you have) a form",
       "do i (need | have) to fill in a form #tip:us_fill_out",
     ] },
+    // "Who brought it in?" / "Where did they find it?" at "Is this yours?" (12 Nov 2026)
+    found_who: { patterns: [
+      "who (brought | turned | handed) (it | this | that | my {item}) in", "who (brought | turned | handed) in (it | this | my {item})", "who (found | brought) (it | this | that | my {item})",
+      "who was it", "do you know who (found | brought) it [in]", "who (brought | turned) it in (here)?",
+    ] },
+    found_where: { patterns: [
+      "where did (they | he | she | someone | somebody | the person | you) find (it | this | that | my {item})", "where was (it | this | my {item}) found",
+      "do you know where (they | he | she | someone) found it", "where did it come from",
+    ] },
     its_mine: { patterns: ["[yes] (that is | it is) mine #h:its_mine", "[yes] that is my {item}", "[yes] that is it", "[oh] thank (god | goodness) [that is mine | that is it]"] },
     not_mine: { patterns: ["[no] (that is | it is) not mine #h:not_mine", "[no] that is not my {item}", "[no] mine is {dp}", "no my {item} is {dp}", "[no] my {item} is (bigger | smaller | different | older | newer)"] },
     all_there: { patterns: ["[yes] everything is (here | there | still here | inside | in it) #h:all_there", "nothing is missing", "[yes] it is all (here | there)", "[yes] [all] my {content} [and my {content}] (is | are) [all | still] (here | there | inside)"] },
@@ -471,6 +480,9 @@ export const police: SituationDef = {
     found_verify: [
       t("Great! | Can | you | tell | me | your | name? | I'll check | the | ID | inside.", "Puiku! | Ar galite | jūs | pasakyti | man | savo | vardą? | Patikrinsiu | — | dokumentą | viduje.", "Puiku! Ar galite pasakyti savo vardą? Patikrinsiu dokumentą viduje."),
     ],
+    // 12 Nov 2026, new lines: who brought it in, and where it was found
+    found_who: [t("A | young | woman. | She | didn't leave | her | name.", "— | Jauna | moteris. | Ji | nepaliko | savo | vardo.", "Jauna moteris. Savo vardo nepaliko.")],
+    found_where: [t("She | didn't say, | sorry. | She | just | left | it | here.", "Ji | nesakė, | atsiprašau. | Ji | tiesiog | paliko | {jis@X:acc} | čia.", "Ji nesakė, atsiprašau. Tiesiog paliko {jis@X:acc} čia.")],
     found_match: [
       t("Perfect, | that | matches. | Here you go. | Please | check | that | everything's | there.", "Puiku, | tai | sutampa. | Prašom. | Prašom | patikrinti, | ar | viskas yra | vietoje.", "Puiku, sutampa. Prašom. Patikrinkite, ar viskas vietoje."),
     ],
@@ -946,6 +958,8 @@ export const police: SituationDef = {
       c.s.found = "mine";
       if (c.s.name) c.s.nameVerified = true;
     },
+    found_who(c) { if (!live(c)) return; c.say(c.s.foundAsked ? "found_who" : "ack"); },
+    found_where(c) { if (!live(c)) return; c.say(c.s.foundAsked ? "found_where" : "ack", { X: item(c) }); },
     not_mine(c, slots) {
       if (!live(c)) return;
       if (!c.s.foundAsked) { describeFrom(c, slots); c.say("ack"); return; }
@@ -1050,6 +1064,11 @@ export const police: SituationDef = {
     { say: "Where do I sign?", intent: "sign_where" },
     { say: "Do I need to fill in a form?", intent: "fill_form" },
     { say: "Yes, that's mine!", intent: "its_mine" },
+    // 12 Nov 2026: who brought it in, where it was found
+    { say: "Who brought it in?", intent: "found_who", step: "found" },
+    { say: "Who found it?", intent: "found_who" },
+    { say: "Where did they find it?", intent: "found_where", step: "found" },
+    { say: "Where was it found?", intent: "found_where" },
     { say: "No, that's not mine.", intent: "not_mine", not: ["its_mine"] },
     { say: "No, mine is brown.", intent: "not_mine", not: ["its_mine"] },
     { say: "No, it was in my wallet.", intent: "no_id" },

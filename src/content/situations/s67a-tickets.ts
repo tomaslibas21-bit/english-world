@@ -415,6 +415,9 @@ export const tickets: SituationDef = {
     card_ok: [
       t("Sure, | just | tap | or | insert | your | card.", "Žinoma, | tiesiog | pridėkite | arba | įkiškite | savo | kortelę.", "Žinoma, tiesiog pridėkite arba įkiškite kortelę."),
     ],
+    // 12 Nov 2026, a new line: the phone (Apple Pay, Google Pay) at the payment or before it
+    phone_ok: [t("Sure, | you | can | pay | with | your | phone.", "Žinoma, | Jūs | galite | sumokėti | — | savo | telefonu.", "Žinoma, galite sumokėti telefonu.",
+      { flags: { 4: "“with”: the instrumental case of telefonu carries it." } })],
     card_later: [
       t("Sure, | card | is fine.", "Žinoma, | kortele | galima.", "Žinoma, galima ir kortele."),
     ],
@@ -1099,6 +1102,8 @@ export const tickets: SituationDef = {
     { say: "I'm just a normal adult.", intent: "no_discount_ctx", step: "discount" },
     { say: "Here's my university ID.", intent: "show_id" },
     { say: "Contactless, please.", intent: "pay_card", step: "pay" },
+    { say: "Can I pay with my phone?", intent: "pay_card", step: "pay" },
+    { say: "Do you take Apple Pay?", intent: "pay_card", step: "pay" },
     { say: "Track 2, okay.", intent: "echo_info" },
     { say: "Thanks for the information.", intent: "ok_thanks" },
     { say: "From which track does it leave?", intent: "ask_track" },
@@ -1189,9 +1194,13 @@ function applyDiscount(c: Ctx) {
   c.say(kind === "senior" ? "discount_ok_senior" : "discount_ok");
 }
 
+/** "Can I pay with my phone?" gets an answer about the phone, not "insert your card" (12 Nov 2026). */
+const byPhone = (c: Ctx) => /\b(phone|apple pay|google pay)\b/i.test(c.heard || "");
+
 function pay(c: Ctx, method: "card" | "cash") {
   if (c.s.paid) return;
-  if (!c.s.trip) { c.s.payWith = method; c.say(method === "card" ? "card_later" : "cash_later"); return; }
+  if (method === "card") c.s.payPhone = byPhone(c) || (c.s.payWith === "card" && c.s.payPhone);
+  if (!c.s.trip) { c.s.payWith = method; c.say(method === "card" ? (c.s.payPhone ? "phone_ok" : "card_later") : "cash_later"); return; }
   if (!c.s.totalSaid) { c.s.payWith = method; return; } // the pay step says the total first
   finishPay(c, method);
 }
@@ -1200,7 +1209,7 @@ function finishPay(c: Ctx, method: "card" | "cash") {
   c.s.paid = true;
   checkDone(c);
   c.s.payWith = method;
-  c.say(method === "card" ? "card_ok" : "cash_ok");
+  c.say(method === "card" ? (c.s.payPhone ? "phone_ok" : "card_ok") : "cash_ok");
   c.event("pay", { method, amount: total(c) });
 }
 
