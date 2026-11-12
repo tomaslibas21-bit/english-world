@@ -1559,31 +1559,37 @@ const B: Record<string, () => Interior> = {
   }, [{ npc: "dan", x: -1, z: 2.8, rot: Math.PI * 0.85 }, { npc: "nora", x: 4.2, z: -4.3, rot: 0.3 }], { floorKind: "wood", accent: "#6b4a3a", warm: true }),
 
   office: () => room("office", 22, 16, "#b9c2cc", "#eef3f7", (c) => {
-    counter(c, -7.5, 4.2, 3, 0.9, "#34495e", "#e6e9ee");
+    // (theme.ts roomExtras.offices7, graphics round 7: the edition's own furniture instead of what is left out here, office7)
+    const o7 = !!THEME.roomExtras.offices7;
+    if (!o7) counter(c, -7.5, 4.2, 3, 0.9, "#34495e", "#e6e9ee");
     wallPanel(c, textTexture("Brightline", { bg: "#34495e", fg: "#ffd166", w: 512, h: 128 }), -7.5, 3.3, -c.d / 2 + 0.2, 3.2, 0.8);
     // interview/meeting room with glass walls (west)
     c.M.add("glass-wall", mat("#dff3fb", { transparent: 0.28 }), boxGeo(0.08, 2.8, 6, -3.2, 1.4, -4.8), false);
     c.M.add("glass-wall", mat("#dff3fb", { transparent: 0.28 }), boxGeo(3.5, 2.8, 0.08, -9.2, 1.4, -1.8), false);
     c.col.addBox(-3.2, -4.8, 0.2, 6); c.col.addBox(-9.2, -1.8, 3.5, 0.2);
-    table(c, -7, -5.2, { cloth: "#e9e4da", chairs: 0, w: 2.4, d: 1.2 });
-    seat(c, -7, -6.4, 0, "#2d3a4a"); // Ms. Brooks's chair
-    seat(c, -6.1, -3.95, Math.PI, "#2d3a4a"); // Greg's (advanced song P27: Vanessa presents at the table's west end)
+    if (!o7) {
+      table(c, -7, -5.2, { cloth: "#e9e4da", chairs: 0, w: 2.4, d: 1.2 });
+      seat(c, -7, -6.4, 0, "#2d3a4a"); // Ms. Brooks's chair
+      seat(c, -6.1, -3.95, Math.PI, "#2d3a4a"); // Greg's (advanced song P27: Vanessa presents at the table's west end)
+    }
     c.M.add("tv", mat("#1d1d1d"), boxGeo(2.4, 1.3, 0.08, -7, 2.2, -c.d / 2 + 0.1), false);
     // desks (open space)
-    for (const [dx, dz] of [[1, -4.5], [4, -4.5], [1, -1], [4, -1], [7, -1]]) desk(c, dx, dz);
+    if (!o7) for (const [dx, dz] of [[1, -4.5], [4, -4.5], [1, -1], [4, -1], [7, -1]]) desk(c, dx, dz);
     // team room with glass walls (north-east corner): Kate and Paul at the table, Sara on the screen
     c.M.add("glass-wall", mat("#dff3fb", { transparent: 0.28 }), boxGeo(0.08, 2.8, 4.7, 6.2, 1.4, -5.65), false);
     c.M.add("glass-wall", mat("#dff3fb", { transparent: 0.28 }), boxGeo(1.8, 2.8, 0.08, 7.1, 1.4, -3.3), false);
     c.col.addBox(6.2, -5.65, 0.2, 4.7); c.col.addBox(7.1, -3.3, 1.8, 0.2);
-    table(c, 8.6, -5.7, { cloth: "#e9e4da", chairs: 0, w: 2.5, d: 1 });
-    c.col.addBox(8.6, -5.7, 2.5, 1);
-    seat(c, 7.75, -6.75, 0.1, "#2d3a4a"); seat(c, 9.45, -6.75, -0.15, "#2d3a4a");
+    if (!o7) {
+      table(c, 8.6, -5.7, { cloth: "#e9e4da", chairs: 0, w: 2.5, d: 1 });
+      c.col.addBox(8.6, -5.7, 2.5, 1);
+      seat(c, 7.75, -6.75, 0.1, "#2d3a4a"); seat(c, 9.45, -6.75, -0.15, "#2d3a4a");
+    }
     c.M.add("laptop", mat("#9aa5ad"), boxGeo(0.4, 0.03, 0.28, 7.85, 0.8, -6), false);
     c.M.add("tv", mat("#1d1d1d"), boxGeo(2.2, 1.25, 0.08, 8.6, 2.45, -c.d / 2 + 0.1), false);
     wallPanel(c, videoCall(), 8.6, 2.45, -c.d / 2 + 0.15, 2.04, 1.15);
     wallPanel(c, textTexture("Team Room", { bg: "#34495e", fg: "#ffffff", w: 384, h: 96 }), 8.6, 3.5, -c.d / 2 + 0.2, 1.6, 0.4);
     // kitchen corner with the coffee machine
-    counter(c, 8.5, 5.4, 4, 0.8, "#f4f4f4", "#dfe3ea");
+    if (!o7) counter(c, 8.5, 5.4, 4, 0.8, "#f4f4f4", "#dfe3ea");
     c.M.add("coffee-machine", mat("#1d1d1d"), boxGeo(0.7, 0.8, 0.5, 7.4, 1.5, 5.4));
     c.M.add("coffee-machine-2", mat("#2e8b57"), boxGeo(0.72, 0.15, 0.52, 7.4, 1.95, 5.4));
     c.M.add("fridge", mat("#e6e9ee"), boxGeo(0.9, 2, 0.8, 10.4, 1, 5.4)); c.col.addBox(10.4, 5.4, 0.9, 0.8);
@@ -1598,24 +1604,28 @@ const B: Record<string, () => Interior> = {
     c.M.add("glass-wall", glass, boxGeo(1.05, 2.8, 0.08, -6.925, 1.4, -1.8), false); c.col.addBox(-6.925, -1.8, 1.05, 0.2);
     c.M.add("glass-wall", glass, boxGeo(0.08, 2.8, 3.8, -6.4, 1.4, 0.1), false); c.col.addBox(-6.4, 0.1, 0.2, 3.8);
     c.M.add("glass-wall", glass, boxGeo(4.6, 2.8, 0.08, -8.7, 1.4, 3.6), false); c.col.addBox(-8.7, 3.6, 4.6, 0.2);
-    for (const fz of [-1.8, 2.0, 3.6]) c.M.add("glass-frame", mat("#34495e"), boxGeo(0.1, 2.8, 0.1, -6.4, 1.4, fz), false);
-    c.M.add("glass-frame", mat("#34495e"), boxGeo(0.1, 0.1, 5.5, -6.4, 2.8, 0.9), false);
-    c.M.add("glass-frame", mat("#34495e"), boxGeo(4.6, 0.1, 0.1, -8.7, 2.8, 3.6), false);
-    c.M.add("glass-frame", mat("#34495e"), boxGeo(4.6, 0.1, 0.1, -8.7, 2.8, -1.8), false);
+    const frame = mat(o7 ? CEDRO_D : "#34495e");
+    for (const fz of [-1.8, 2.0, 3.6]) c.M.add("glass-frame", frame, boxGeo(0.1, 2.8, 0.1, -6.4, 1.4, fz), false);
+    c.M.add("glass-frame", frame, boxGeo(0.1, 0.1, 5.5, -6.4, 2.8, 0.9), false);
+    c.M.add("glass-frame", frame, boxGeo(4.6, 0.1, 0.1, -8.7, 2.8, 3.6), false);
+    c.M.add("glass-frame", frame, boxGeo(4.6, 0.1, 0.1, -8.7, 2.8, -1.8), false);
     wallPanel(c, textTexture("Emily", { bg: "#34495e", fg: "#ffffff", w: 256, h: 96 }), -6.34, 1.75, 1.2, 0.6, 0.225, Math.PI / 2);
     // the desk: a laptop with a spreadsheet (turned to her), the printed agenda and a pen, a mug
-    c.M.add("desk", mat("#e9e4da"), boxGeo(1.6, 0.06, 0.8, -8.9, 0.75, 1.95));
-    for (const s of [-0.72, 0.72]) c.M.add("desk-leg", mat("#7a7a7a"), boxGeo(0.06, 0.74, 0.7, -8.9 + s, 0.37, 1.95));
-    c.col.addBox(-8.9, 1.95, 1.6, 0.8);
+    if (!o7) {
+      c.M.add("desk", mat("#e9e4da"), boxGeo(1.6, 0.06, 0.8, -8.9, 0.75, 1.95));
+      for (const s of [-0.72, 0.72]) c.M.add("desk-leg", mat("#7a7a7a"), boxGeo(0.06, 0.74, 0.7, -8.9 + s, 0.37, 1.95));
+      c.col.addBox(-8.9, 1.95, 1.6, 0.8);
+    }
     c.M.add("laptop", mat("#9aa5ad"), boxGeo(0.4, 0.025, 0.28, -8.95, 0.79, 1.82), false);
     c.M.add("laptop", mat("#9aa5ad"), boxGeo(0.4, 0.26, 0.02, 0, 0, 0).rotateX(0.25).translate(-8.95, 0.92, 1.97), false);
     c.M.add("screen", mat("#e8f1e8", { emissive: "#3a5a46" }), boxGeo(0.36, 0.22, 0.005, 0, 0, 0).rotateX(0.25).translate(-8.95, 0.92, 1.955), false);
     c.M.add("paper", mat("#ffffff"), boxGeo(0.21, 0.004, 0.29, 0, 0.782, 0, 0.2).translate(-8.4, 0, 1.75), false);
     c.M.add("pen", mat("#1f4f8a"), cylGeo(0.008, 0.008, 0.14, 0, 0, 0, 5).rotateZ(Math.PI / 2).rotateY(0.6).translate(-8.3, 0.79, 1.95), false);
     c.M.add("mug-#2e8b57", mat("#2e8b57"), cylGeo(0.05, 0.045, 0.1, -9.5, 0.83, 1.7, 8), false);
-    seat(c, -8.9, 0.9, 0, "#2d3a4a"); // Emily's chair
+    if (!o7) seat(c, -8.9, 0.9, 0, "#2d3a4a"); // Emily's chair
+    else c.col.addCircle(-8.9, 0.9, 0.28);
     // behind her: a low cabinet against the glass with binders and a little plant
-    c.M.add("cabinet", mat("#c9ced6"), boxGeo(3.4, 0.75, 0.45, -8.9, 0.375, -1.45)); c.col.addBox(-8.9, -1.45, 3.4, 0.45);
+    if (!o7) { c.M.add("cabinet", mat("#c9ced6"), boxGeo(3.4, 0.75, 0.45, -8.9, 0.375, -1.45)); c.col.addBox(-8.9, -1.45, 3.4, 0.45); }
     for (let i = 0; i < 6; i++) c.M.add("binder-" + i % 3, mat(["#2c4f8f", "#e8743b", "#2e8b57"][i % 3]), boxGeo(0.07, 0.3, 0.24, -10.2 + i * 0.09, 0.9, -1.45), false);
     c.M.add("pot", mat("#b86b4b"), cylGeo(0.13, 0.1, 0.22, -7.65, 0.86, -1.45, 10), false);
     c.M.add("leaves", mat("#4c8c3c", { flat: true }), new THREE.IcosahedronGeometry(0.22, 0).translate(-7.65, 1.1, -1.45), false);
@@ -1642,19 +1652,25 @@ const B: Record<string, () => Interior> = {
       if (i % 2 === 0) { S.add(cylGeo(0.07, 0.055, 0.12, dx - 0.62, 0.84, dz - 0.25, 8), "#b86b4b"); S.add(new THREE.IcosahedronGeometry(0.12, 0).translate(dx - 0.62, 1.0, dz - 0.25), "#4c8c3c"); }
       else S.add(boxGeo(0.14, 0.18, 0.02, dx - 0.6, 0.87, dz - 0.25), "#c9a227");
     });
-    rug(c, -2.6, 4.7, 4.0, 3.0, "#5b7088");
-    table(c, -3.3, 0.9, { round: true, cloth: "#e9e4da", chairs: 4, chairColor: "#2d3a4a", from: Math.PI / 4 });
+    if (!o7) {
+      rug(c, -2.6, 4.7, 4.0, 3.0, "#5b7088");
+      table(c, -3.3, 0.9, { round: true, cloth: "#e9e4da", chairs: 4, chairColor: "#2d3a4a", from: Math.PI / 4 });
+    }
     S.add(boxGeo(0.34, 0.02, 0.24, -3.4, 0.8, 0.8, 0.4), "#9aa5ad");
     S.add(boxGeo(0.21, 0.006, 0.29, -3.0, 0.792, 1.1, -0.3), "#ffffff");
-    rug(c, -3.3, 0.9, 3.0, 3.0, "#d6dde5");
-    sofa(c, -2.6, 5.7, "#34495e", Math.PI, 2.4);
-    coffeeTable(c, S, -2.6, 4.4, "#e9e4da");
-    plant(c, -4.9, 5.8, 0.9);
+    if (!o7) {
+      rug(c, -3.3, 0.9, 3.0, 3.0, "#d6dde5");
+      sofa(c, -2.6, 5.7, "#34495e", Math.PI, 2.4);
+      coffeeTable(c, S, -2.6, 4.4, "#e9e4da");
+      plant(c, -4.9, 5.8, 0.9);
+    }
     wallPanel(c, officeBoard(), 2.6, 2.1, -c.d / 2 + 0.06, 2.4, 1.4);
     S.add(boxGeo(2.5, 0.06, 0.12, 2.6, 1.34, -c.d / 2 + 0.1), "#c9ced6");
     framedArt(c, 3, 4.9, 2.2, -c.d / 2 + 0.2, 1.1, 0.85);
-    shelf(c, c.w / 2 - 0.3, 0.4, 3.6, 2.2, "#c9ced6", ["#2c4f8f", "#e8743b", "#2e8b57", "#f4f4f4", "#8e6bb0"], -Math.PI / 2, 0.45);
-    coatRack(c, S, -2.2, 7.1);
+    // (offices7: a cedar shelf, barro and talavera among the binders)
+    shelf(c, c.w / 2 - 0.3, 0.4, 3.6, 2.2, o7 ? CEDRO_D : "#c9ced6", o7 ? ["#2c4f8f", "#e8743b", "#2e8b57", "#b5562f", "#1f4e9c"] : ["#2c4f8f", "#e8743b", "#2e8b57", "#f4f4f4", "#8e6bb0"], -Math.PI / 2, 0.45);
+    if (!o7) coatRack(c, S, -2.2, 7.1);
+    else office7(c);
     // (in this edition, theme.ts roomExtras.roomsMx, the garrafón; plants in clay pots, minisplits in the glass rooms)
     if (THEME.roomExtras.roomsMx) {
       garrafon(c, S, 6.0, 5.45);
@@ -1937,8 +1953,12 @@ const B: Record<string, () => Interior> = {
     c.M.add("tv", mat("#1d1d1d"), boxGeo(3.9, 2.2, 0.08, -6.5, 2.3, -c.d / 2 + 0.1), false);
     wallPanel(c, appScreen(), -6.5, 2.3, -c.d / 2 + 0.16, 3.7, 2.04);
     c.M.add("console", mat("#8a6a4a"), boxGeo(3.2, 0.5, 0.45, -6.5, 0.25, -7.7)); c.col.addBox(-6.5, -7.7, 3.2, 0.45);
-    rug(c, -6.4, -5, 6.2, 3.6, "#d9c7a7");
-    for (const [bx, bz, bc] of [[-8.4, -4.7, "#e8a33d"], [-6.4, -4.2, "#3f8f8f"], [-4.4, -4.8, "#7a5ea8"]] as [number, number, string][]) beanbag(c, bx, bz, bc);
+    // (theme.ts roomExtras.offices7, graphics round 7: the edition's own furniture instead, brotecito7)
+    const o7 = !!THEME.roomExtras.offices7;
+    if (!o7) {
+      rug(c, -6.4, -5, 6.2, 3.6, "#d9c7a7");
+      for (const [bx, bz, bc] of [[-8.4, -4.7, "#e8a33d"], [-6.4, -4.2, "#3f8f8f"], [-4.4, -4.8, "#7a5ea8"]] as [number, number, string][]) beanbag(c, bx, bz, bc);
+    }
     // the wall of sticky notes: a freestanding board in the middle, Tyler in front of it
     c.M.add("partition", mat("#f4f1ea"), boxGeo(5.4, 2.3, 0.12, 2.2, 1.3, -5.4));
     c.M.add("partition-frame", mat("#2f3a40"), boxGeo(5.5, 0.08, 0.16, 2.2, 2.48, -5.4), false);
@@ -1993,19 +2013,21 @@ const B: Record<string, () => Interior> = {
     c.M.add("shelf-low", wood, boxGeo(0.5, 0.9, 2.6, 10.7, 0.45, -6.4)); c.col.addBox(10.7, -6.4, 0.5, 2.6);
     for (let i = 0; i < 6; i++) cactus(c, 10.7, -7.4 + i * 0.4, 0.9);
     // the long work table: laptops, phones and mugs, stools on both sides
-    c.M.add("table-top", mat("#e3cfa8"), boxGeo(3.6, 0.07, 1.1, 4.6, 0.76, 2.2));
-    for (const [lx, lz] of [[-1.65, -0.45], [1.65, -0.45], [-1.65, 0.45], [1.65, 0.45]]) c.M.add("table-leg", steel, boxGeo(0.06, 0.74, 0.06, 4.6 + lx, 0.37, 2.2 + lz), false);
-    c.col.addBox(4.6, 2.2, 3.6, 1.1);
+    if (!o7) {
+      c.M.add("table-top", mat("#e3cfa8"), boxGeo(3.6, 0.07, 1.1, 4.6, 0.76, 2.2));
+      for (const [lx, lz] of [[-1.65, -0.45], [1.65, -0.45], [-1.65, 0.45], [1.65, 0.45]]) c.M.add("table-leg", steel, boxGeo(0.06, 0.74, 0.06, 4.6 + lx, 0.37, 2.2 + lz), false);
+      c.col.addBox(4.6, 2.2, 3.6, 1.1);
+    }
     for (const [lx, lz, open] of [[3.5, 1.95, true], [5.7, 2.45, true], [4.6, 2.5, false]] as [number, number, boolean][]) laptop(c, lx, lz, open ? 0 : Math.PI, open);
     for (const [px, pz] of [[3.0, 2.5], [6.2, 1.9]]) c.M.add("phone", mat("#1d1d1d"), boxGeo(0.08, 0.012, 0.15, px, 0.8, pz), false);
     for (const [mx, mz, mc] of [[4.0, 2.55, "#ffffff"], [5.2, 1.8, "#e8a33d"]] as [number, number, string][]) c.M.add("mug-" + mc, mat(mc), cylGeo(0.05, 0.045, 0.1, mx, 0.85, mz, 8), false);
-    for (const sx2 of [3.4, 4.6, 5.8]) for (const sz of [1.3, 3.1]) {
+    if (!o7) for (const sx2 of [3.4, 4.6, 5.8]) for (const sz of [1.3, 3.1]) {
       c.M.add("stool", mat("#3f8f8f"), cylGeo(0.2, 0.2, 0.06, sx2, 0.62, sz, 10));
       c.M.add("stool-leg", steel, cylGeo(0.03, 0.05, 0.6, sx2, 0.3, sz, 6), false);
       c.col.addCircle(sx2, sz, 0.22);
     }
     // the coffee bar along the east wall
-    counter(c, 10.45, 3.7, 0.9, 3.4, "#2f7a4a", "#e8e2d6");
+    if (!o7) counter(c, 10.45, 3.7, 0.9, 3.4, "#2f7a4a", "#e8e2d6");
     c.M.add("coffee-machine", mat("#c0c4c8"), boxGeo(0.55, 0.65, 0.5, 10.5, 1.4, 2.6));
     c.M.add("coffee-machine-2", mat("#2b2b2b"), boxGeo(0.57, 0.1, 0.52, 10.5, 1.76, 2.6));
     for (let i = 0; i < 4; i++) c.M.add("mug-#ffffff", mat("#ffffff"), cylGeo(0.05, 0.045, 0.1, 10.4, 1.14, 3.4 + i * 0.2, 8), false);
@@ -2026,7 +2048,8 @@ const B: Record<string, () => Interior> = {
     c.col.addCircle(-6.9, 6.3, 0.6);
     // the clock on the west wall, plants in pots and hanging from the ceiling, pendant lamps
     wallPanel(c, wallClock(), -c.w / 2 + 0.06, 3, -3.6, 0.7, 0.7, Math.PI / 2);
-    plant(c, -10.3, 6.9, 1.2); plant(c, 10.3, 6.9, 1.1); plant(c, -0.9, -7.2, 1.3); plant(c, -10.3, -7.2, 1);
+    if (!o7) { plant(c, -10.3, 6.9, 1.2); plant(c, 10.3, 6.9, 1.1); plant(c, -0.9, -7.2, 1.3); plant(c, -10.3, -7.2, 1); }
+    else brotecito7(c);
     for (const [hx, hz] of [[-2.6, -2.4], [-9, -2.2], [6.8, -2.2], [-0.4, -6.6], [7.4, 5.2], [-7.6, 5.4]] as [number, number][]) hangingPlant(c, hx, hz);
     for (const [lx, lz] of [[-6.5, -2], [-1.4, -1], [4.6, 2.2], [-5.2, 2.4]] as [number, number][]) lamp(c, lx, lz, 3.5);
     // (theme.ts roomExtras.roomsMx) a hammock on the west wall, a minisplit on the bricks
@@ -4029,7 +4052,10 @@ function rooms6(c: Ctx, id: string) {
   } else if (id === "sproutly") {
     futbolito(c, S, -2.1, 0.7);
     pinata(S, 0.8, 2.75, 1.8, 2);
-    papelPicadoWall(S, c.w, 3.35, 0.6, 3);
+    // (offices7, graphics round 7: along the back, behind Toño, instead of across the room in front of him in p18's
+    // picture; short of the mezzanine)
+    if (THEME.roomExtras.offices7) papelPicadoWall(S, 14, 3.5, -6.9, 3);
+    else papelPicadoWall(S, c.w, 3.35, 0.6, 3);
   } else if (id === "airport") {
     // a round planter with a palm before the arrivals' and departures' partition, where the ways from the door part;
     // further out either side a long planter faced with talavera, palms and agaves in it, a banca along each side
@@ -4576,4 +4602,251 @@ function cornerHammock(c: Ctx, S: Smalls, a: [number, number], b: [number, numbe
     S.add(boxGeo(0.4, 0.015, len, 0, 0, 0).rotateX(-Math.atan2(e.y - top, e.u - u)).translate(0, (top + e.y) / 2, (u + e.u) / 2).rotateY(yaw).translate(a[0], 0, a[1]), "#f4ecd8");
   }
   for (let t = 0.15; t < 0.9; t += 0.2) c.col.addCircle(a[0] + Math.sin(yaw) * at(t).u, a[1] + Math.cos(yaw) * at(t).u, 0.45);
+}
+
+// ---------------------------------------------------------------------------
+// Graphics round 7 (theme.ts roomExtras.offices7): the offices' own furniture. Línea Clara and Brotecito kept Maple
+// Harbor's white desks on metal legs, its dark office chairs, glass rooms in steel and the blue lounge sofa; here they
+// are a Caribbean Mexican office's: cedar desks with a drawer pedestal, chairs of wood and woven bejuco, tables of
+// parota, a settee of cane (the lounge's sitter keeps her seat's height), equipales round the round table, talavera on
+// the counters' fronts, the glass rooms framed in wood. Each piece takes the collider of the one it replaces (the rooms'
+// nav is unchanged); all of it through the room's merger (no draw call).
+
+const CEDRO = "#a8693a", CEDRO_D = "#6e4224", BEJUCO = "#d6b578", BEJUCO_D = "#a9844a";
+
+/** A chair of wood with a woven bejuco (cane) seat and back, its seat's top at `h`; `rot` is the way someone sitting on
+ *  it faces (0: +z), as seat() and chairS(). Its collider is the caller's (the one of the chair it replaces). */
+function caneChair(S: Smalls, x: number, z: number, rot: number, h = 0.48) {
+  const P = (g: THREE.BufferGeometry) => g.rotateY(rot).translate(x, 0, z);
+  S.add(P(boxGeo(0.5, 0.05, 0.48, 0, h - 0.045, -0.02)), CEDRO_D);
+  S.add(P(boxGeo(0.42, 0.03, 0.4, 0, h - 0.012, -0.02)), BEJUCO);
+  for (let i = 0; i < 4; i++) S.add(P(boxGeo(0.43, 0.006, 0.022, 0, h + 0.004, -0.17 + i * 0.1)), BEJUCO_D);
+  for (const [lx, lz] of [[-0.215, -0.24], [0.215, -0.24], [-0.215, 0.2], [0.215, 0.2]]) S.add(P(boxGeo(0.045, h - 0.07, 0.045, lx, (h - 0.07) / 2, lz)), CEDRO_D);
+  for (const s of [-1, 1]) S.add(P(boxGeo(0.03, 0.03, 0.42, s * 0.215, 0.14, -0.02)), CEDRO_D);
+  // the back: two posts, a cane panel between them, a curved top rail
+  for (const s of [-1, 1]) S.add(P(boxGeo(0.045, 0.56, 0.045, s * 0.215, h + 0.26, -0.255)), CEDRO_D);
+  S.add(P(boxGeo(0.38, 0.32, 0.022, 0, h + 0.25, -0.255)), BEJUCO);
+  for (let i = 0; i < 3; i++) S.add(P(boxGeo(0.386, 0.012, 0.026, 0, h + 0.13 + i * 0.12, -0.255)), BEJUCO_D);
+  S.add(P(boxGeo(0.5, 0.08, 0.05, 0, h + 0.5, -0.255)), CEDRO);
+}
+
+/** A cedar desk (1.6 × 0.8, its top at 0.78 as desk()'s): a pedestal of three drawers with brass pulls on one side, a
+ *  panel leg on the other, a modesty panel; the monitor as desk()'s (its screen in the room's glowing screens), and a
+ *  cane chair on the south side (seat 0.55, where desk()'s chair was). desk()'s colliders. */
+function deskMx(c: Ctx, S: Smalls, x: number, z: number) {
+  S.add(boxGeo(1.6, 0.06, 0.8, x, 0.75, z), CEDRO);
+  S.add(boxGeo(1.56, 0.05, 0.76, x, 0.695, z), CEDRO_D);
+  S.add(boxGeo(0.42, 0.67, 0.72, x + 0.56, 0.335, z), CEDRO_D);
+  for (let i = 0; i < 3; i++) {
+    S.add(boxGeo(0.36, 0.18, 0.012, x + 0.56, 0.13 + i * 0.21, z + 0.362), CEDRO);
+    S.add(boxGeo(0.1, 0.022, 0.022, x + 0.56, 0.17 + i * 0.21, z + 0.375), "#c9a227");
+  }
+  S.add(boxGeo(0.06, 0.67, 0.72, x - 0.74, 0.335, z), CEDRO_D);
+  S.add(boxGeo(1.3, 0.38, 0.025, x - 0.14, 0.48, z - 0.33), CEDRO_D);
+  c.M.add("monitor", mat("#1d1d1d"), boxGeo(0.7, 0.45, 0.05, x, 1.08, z - 0.2));
+  c.M.add("screen", mat("#7fb3d5", { emissive: "#2c4f66" }), boxGeo(0.64, 0.38, 0.02, x, 1.08, z - 0.17), false);
+  S.add(boxGeo(0.06, 0.12, 0.06, x, 0.82, z - 0.22), "#1d1d1d");
+  caneChair(S, x, z + 0.65, Math.PI, 0.55);
+  c.col.addBox(x, z, 1.6, 0.8);
+  c.col.addCircle(x, z + 0.75, 0.3);
+}
+
+/** A table of parota (a dark, warm tropical wood), `w` × `d`, its top at 0.79 as table()'s: an apron and four turned
+ *  legs. No collider (the caller's). */
+function parotaTable(S: Smalls, x: number, z: number, w: number, d: number) {
+  S.add(boxGeo(w, 0.06, d, x, 0.76, z), "#8a4f2a");
+  S.add(boxGeo(w + 0.02, 0.02, d + 0.02, x, 0.735, z), "#5e3419");
+  S.add(boxGeo(w - 0.2, 0.1, d - 0.2, x, 0.67, z), "#5e3419");
+  for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+    const lx = x + sx * (w / 2 - 0.12), lz = z + sz * (d / 2 - 0.12);
+    S.add(cylGeo(0.045, 0.035, 0.73, lx, 0.365, lz, 6), "#5e3419");
+    S.add(new THREE.SphereGeometry(0.06, 6, 4).scale(1, 1.3, 1).translate(lx, 0.42, lz), "#5e3419");
+  }
+}
+
+/** An equipal: a barrel chair of pigskin on crossed cedar slats, its round back behind; `rot` is the way someone sitting
+ *  faces (0: +z); the seat's top at 0.5. No collider (the caller's). */
+function equipalS(S: Smalls, x: number, z: number, rot: number) {
+  const put = (g: THREE.BufferGeometry, col: string) => S.add(g.rotateY(rot).translate(x, 0, z), col);
+  put(cylGeo(0.29, 0.25, 0.42, 0, 0.21, 0, 10), "#8a5a3a");
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    put(boxGeo(0.03, 0.44, 0.035, 0, 0, 0).rotateZ(i % 2 ? 0.5 : -0.5).translate(0, 0.21, 0.275).rotateY(a), "#5e3e24");
+  }
+  put(cylGeo(0.31, 0.31, 0.08, 0, 0.46, 0, 10), "#c99a5e");
+  put(new THREE.CylinderGeometry(0.32, 0.32, 0.46, 10, 1, true, Math.PI * 0.4, Math.PI * 1.2).translate(0, 0.72, 0), "#c99a5e");
+  put(new THREE.TorusGeometry(0.32, 0.025, 4, 10, Math.PI * 1.2).rotateX(Math.PI / 2).rotateY(Math.PI * 1.1).translate(0, 0.95, 0), "#8a5a3a");
+}
+
+/** A settee of cedar and woven bejuco `len` long (the Yucatán's cane furniture), facing `rot` as sofa() (0: +z, the back
+ *  towards -z), its cushion's top at `h` (the lounge's sitter sits at 0.58 on it): the cane seat and back in a cedar
+ *  frame, cane panels in the arms, a cream cushion, embroidered pillows. No collider (the caller's: sofa()'s). */
+function caneSettee(S: Smalls, x: number, z: number, rot: number, len: number, h = 0.58) {
+  const P = (g: THREE.BufferGeometry) => g.rotateY(rot).translate(x, 0, z);
+  const y0 = h - 0.17;
+  S.add(P(boxGeo(len, 0.1, 0.84, 0, y0, 0)), CEDRO_D);
+  S.add(P(boxGeo(len - 0.18, 0.04, 0.7, 0, y0 + 0.07, 0.03)), BEJUCO);
+  S.add(P(boxGeo(len - 0.26, 0.08, 0.66, 0, h - 0.04, 0.05)), "#f3ead7");
+  for (const [lx, lz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) S.add(P(boxGeo(0.07, y0 - 0.05, 0.07, lx * (len / 2 - 0.06), (y0 - 0.05) / 2, lz * 0.36)), CEDRO_D);
+  S.add(P(boxGeo(len - 0.2, 0.05, 0.04, 0, 0.12, 0.36)), CEDRO_D);
+  // the back: a cedar frame, the cane panel in it with its weave, a carved crest in the middle of the top rail
+  S.add(P(boxGeo(len, 0.08, 0.08, 0, y0 + 0.62, -0.38)), CEDRO);
+  S.add(P(boxGeo(0.5, 0.12, 0.08, 0, y0 + 0.7, -0.38)), CEDRO);
+  for (const s of [-1, 0, 1]) S.add(P(boxGeo(0.07, 0.62, 0.08, s * (len / 2 - 0.04), y0 + 0.31, -0.38)), CEDRO_D);
+  S.add(P(boxGeo(len - 0.12, 0.5, 0.03, 0, y0 + 0.33, -0.38)), BEJUCO);
+  for (let i = 0; i < 4; i++) S.add(P(boxGeo(len - 0.1, 0.012, 0.036, 0, y0 + 0.15 + i * 0.12, -0.38)), BEJUCO_D);
+  for (const s of [-1, 1]) {
+    S.add(P(boxGeo(0.08, 0.32, 0.84, s * (len / 2 - 0.04), y0 + 0.2, 0)), CEDRO_D);
+    S.add(P(boxGeo(0.09, 0.22, 0.62, s * (len / 2 - 0.04), y0 + 0.2, 0)), BEJUCO);
+    S.add(P(boxGeo(0.12, 0.04, 0.88, s * (len / 2 - 0.04), y0 + 0.38, 0)), CEDRO);
+  }
+  // two pillows embroidered as huipiles: a white ground, a band of flowers
+  for (const [px, col] of [[-len / 2 + 0.42, "#e4007c"], [len / 2 - 0.42, "#00a6a6"]] as [number, string][]) {
+    S.add(P(boxGeo(0.4, 0.36, 0.12, 0, 0, 0).rotateX(-0.25).translate(px, h + 0.16, -0.24)), "#f7f3ea");
+    S.add(P(boxGeo(0.41, 0.1, 0.122, 0, 0, 0).rotateX(-0.25).translate(px, h + 0.16, -0.24)), col);
+  }
+}
+
+/** A low table of cedar with talavera tiles set in its top (1.0 × 0.55, coffeeTable()'s), a jarrito on it. */
+function talaveraLowTable(S: Smalls, x: number, z: number) {
+  S.add(boxGeo(1.0, 0.06, 0.55, x, 0.41, z), CEDRO_D);
+  talavera(S, 0.88, 0.44, (g) => g.rotateX(-Math.PI / 2).translate(x, 0.442, z), 0.22);
+  for (const [lx, lz] of [[-0.44, -0.22], [0.44, -0.22], [-0.44, 0.22], [0.44, 0.22]]) S.add(boxGeo(0.06, 0.38, 0.06, x + lx, 0.19, z + lz), CEDRO_D);
+  S.add(boxGeo(0.9, 0.03, 0.45, x, 0.1, z), CEDRO);
+  S.add(cylGeo(0.07, 0.09, 0.18, x + 0.28, 0.54, z - 0.05, 8), "#b5562f");
+  S.add(cylGeo(0.05, 0.07, 0.05, x + 0.28, 0.655, z - 0.05, 8), "#b5562f");
+}
+
+/** A counter of cedar `w` × `d` (counter()'s footprint and height, its top at 1.08) with talavera tiles on the face
+ *  turned to each of `faces` (0: +z, π: -z, ±π/2: ±x), a dark cedar top. Its collider as counter()'s. */
+function counterMx(c: Ctx, S: Smalls, x: number, z: number, w: number, d: number, ...faces: number[]) {
+  S.add(boxGeo(w, 1.0, d, x, 0.5, z), CEDRO);
+  S.add(boxGeo(w + 0.12, 0.08, d + 0.12, x, 1.04, z), CEDRO_D);
+  S.add(boxGeo(w + 0.04, 0.12, d + 0.04, x, 0.06, z), CEDRO_D);
+  for (const face of faces) {
+    const along = Math.abs(Math.sin(face)) > 0.5 ? d : w, out = (Math.abs(Math.sin(face)) > 0.5 ? w : d) / 2 + 0.004;
+    talavera(S, along - 0.3, 0.68, (g) => g.translate(0, 0.55, out).rotateY(face).translate(x, 0, z), 0.17);
+    for (const s of [-1, 1]) S.add(boxGeo(0.12, 1.0, 0.03, 0, 0.5, 0).translate(s * (along / 2 - 0.08), 0, out).rotateY(face).translate(x, 0, z), CEDRO_D);
+  }
+  c.col.addBox(x, z, w, d);
+}
+
+/** Wood round a glass wall from (x0, z0) to (x1, z1) (along x or z): posts at its ends and every metre or so, a top rail
+ *  at 2.8 m and a low rail at its foot, in dark cedar. */
+function glassFrame(S: Smalls, x0: number, z0: number, x1: number, z1: number) {
+  const L = Math.hypot(x1 - x0, z1 - z0), alongX = Math.abs(x1 - x0) > Math.abs(z1 - z0), n = Math.max(1, Math.round(L / 1.25));
+  const bar = (len: number, h: number, y: number, cx: number, cz: number) => S.add(alongX ? boxGeo(len, h, 0.1, cx, y, cz) : boxGeo(0.1, h, len, cx, y, cz), CEDRO_D);
+  bar(L + 0.1, 0.1, 2.8, (x0 + x1) / 2, (z0 + z1) / 2);
+  bar(L, 0.14, 0.07, (x0 + x1) / 2, (z0 + z1) / 2);
+  for (let i = 0; i <= n; i++) {
+    const t = i / n;
+    S.add(boxGeo(0.1, 2.8, 0.1, x0 + (x1 - x0) * t, 1.4, z0 + (z1 - z0) * t), CEDRO_D);
+  }
+}
+
+/** (theme.ts roomExtras.offices7) Línea Clara's furniture: in place of what office() leaves out in this edition. */
+function office7(c: Ctx) {
+  const S = msmalls(c);
+  // the reception by the door: a cedar counter with talavera on its face to the room, a vase of flowers and a bell on it
+  counterMx(c, S, -7.5, 4.2, 3, 0.9, 0);
+  S.add(cylGeo(0.08, 0.1, 0.24, -8.5, 1.2, 4.2, 8), "#2f5f9a");
+  for (const [fx, fz, fc] of [[-8.5, 4.2, "#f6a800"], [-8.45, 4.27, "#e4007c"], [-8.56, 4.15, "#ff5a36"]] as [number, number, string][]) S.add(new THREE.IcosahedronGeometry(0.06, 0).translate(fx, 1.38, fz), fc);
+  S.add(cylGeo(0.05, 0.06, 0.05, -6.6, 1.105, 4.2, 8), "#c9a227");
+  // the meeting room (Lic. Salinas, Gerardo): a parota table, cane chairs; a jarra of agua de jamaica and glasses
+  parotaTable(S, -7, -5.2, 2.4, 1.2);
+  c.col.addBox(-7, -5.2, 2.4, 1.2);
+  caneChair(S, -7, -6.4, 0); c.col.addCircle(-7, -6.4, 0.28);
+  caneChair(S, -6.1, -3.95, Math.PI); c.col.addCircle(-6.1, -3.95, 0.28);
+  S.add(cylGeo(0.07, 0.08, 0.22, -7.8, 0.9, -5.0, 8), "#8e1b3a");
+  for (const gx of [-7.55, -7.4]) S.add(cylGeo(0.035, 0.03, 0.1, gx, 0.84, -4.85, 8), "#c2405e");
+  // the open plan: five cedar desks
+  for (const [dx, dz] of [[1, -4.5], [4, -4.5], [1, -1], [4, -1], [7, -1]]) deskMx(c, S, dx, dz);
+  // the sala de juntas (Sofía, Pablo): a parota table, cane chairs
+  parotaTable(S, 8.6, -5.7, 2.5, 1);
+  c.col.addBox(8.6, -5.7, 2.5, 1); c.col.addBox(8.6, -5.7, 2.5, 1);
+  caneChair(S, 7.75, -6.75, 0.1); c.col.addCircle(7.75, -6.75, 0.28);
+  caneChair(S, 9.45, -6.75, -0.15); c.col.addCircle(9.45, -6.75, 0.28);
+  // the glass rooms' long walls framed in cedar (Elena's office has its frames from office(), in cedar here, and they
+  // frame the meeting room's south wall too); the sala de juntas' short front pane stays unframed: a rail across it
+  // crossed Sofía's face in s34's picture
+  glassFrame(S, -3.2, -7.8, -3.2, -1.8);
+  glassFrame(S, 6.2, -7.95, 6.2, -3.3);
+  // the kitchen's counter: cedar, talavera on both its faces (the room's and the door's), a clay pot for café de olla and jarritos
+  counterMx(c, S, 8.5, 5.4, 4, 0.8, Math.PI, 0);
+  S.add(cylGeo(0.16, 0.12, 0.26, 9.3, 1.21, 5.45, 10), "#9c4a2a");
+  S.add(cylGeo(0.12, 0.15, 0.06, 9.3, 1.37, 5.45, 10), "#9c4a2a");
+  for (let i = 0; i < 4; i++) S.add(cylGeo(0.045, 0.035, 0.1, 8.3 + i * 0.16, 1.13, 5.25, 8), ["#2f5f9a", "#c0673f", "#1f8a70", "#e0a526"][i]);
+  // Elena's office: a cedar desk, a cane chair, a cedar cabinet with doors behind her
+  S.add(boxGeo(1.6, 0.06, 0.8, -8.9, 0.75, 1.95), CEDRO);
+  S.add(boxGeo(0.4, 0.67, 0.7, -8.9 + 0.58, 0.335, 1.95), CEDRO_D);
+  S.add(boxGeo(0.06, 0.67, 0.7, -8.9 - 0.74, 0.335, 1.95), CEDRO_D);
+  for (let i = 0; i < 3; i++) S.add(boxGeo(0.34, 0.17, 0.012, -8.9 + 0.58, 0.14 + i * 0.2, 1.95 - 0.356), CEDRO);
+  c.col.addBox(-8.9, 1.95, 1.6, 0.8);
+  caneChair(S, -8.9, 0.9, 0);
+  S.add(boxGeo(3.4, 0.75, 0.45, -8.9, 0.375, -1.45), CEDRO_D);
+  for (let i = 0; i < 4; i++) S.add(boxGeo(0.78, 0.6, 0.012, -10.17 + i * 0.85, 0.38, -1.45 + 0.226), CEDRO);
+  c.col.addBox(-8.9, -1.45, 3.4, 0.45);
+  // the lounge by the door: a Zapotec rug, the cane settee where the sofa was (her seat at 0.58 as before), a low table
+  // of talavera, a palm in a clay pot
+  zapotecRug(S, -2.6, 4.7, 4.0, 3.0);
+  caneSettee(S, -2.6, 5.7, Math.PI, 2.4);
+  c.col.addBox(-2.6, 5.7, 2.4, 0.9);
+  talaveraLowTable(S, -2.6, 4.4);
+  c.col.addBox(-2.6, 4.4, 1.0, 0.55);
+  potPalm(c, S, -4.9, 5.8, 0.85);
+  // the round table: parota, four equipales round it on a petate
+  petate(S, -3.3, 0.9, 3.0, 3.0);
+  S.add(cylGeo(0.62, 0.62, 0.06, -3.3, 0.76, 0.9, 16), "#8a4f2a");
+  S.add(cylGeo(0.07, 0.09, 0.72, -3.3, 0.37, 0.9, 8), "#5e3419");
+  S.add(cylGeo(0.32, 0.38, 0.06, -3.3, 0.03, 0.9, 12), "#5e3419");
+  c.col.addCircle(-3.3, 0.9, 0.75);
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * Math.PI * 2 + Math.PI / 4, cx = -3.3 + Math.cos(a) * 0.95, cz = 0.9 + Math.sin(a) * 0.95;
+    equipalS(S, cx, cz, Math.atan2(-Math.cos(a), -Math.sin(a)));
+    c.col.addCircle(cx, cz, 0.28);
+  }
+  // by the door, where the coat rack was: a perchero of cedar with a sombrero and a rebozo on it
+  S.add(cylGeo(0.2, 0.24, 0.05, -2.2, 0.025, 7.1, 10), CEDRO_D);
+  S.add(cylGeo(0.03, 0.035, 1.75, -2.2, 0.9, 7.1, 6), CEDRO_D);
+  for (let i = 0; i < 4; i++) { const a = (i / 4) * Math.PI * 2; S.add(boxGeo(0.18, 0.025, 0.025, 0, 0, 0).translate(0.09, 0, 0).rotateY(a).translate(-2.2, 1.7, 7.1), CEDRO_D); }
+  S.add(cylGeo(0.3, 0.3, 0.02, -2.2, 1.8, 7.1, 14), "#e8d29a");
+  S.add(cylGeo(0.11, 0.13, 0.15, -2.2, 1.88, 7.1, 10), "#e8d29a");
+  S.add(cylGeo(0.135, 0.135, 0.035, -2.2, 1.83, 7.1, 10), "#7a1f4b");
+  S.add(boxGeo(0.06, 0.8, 0.26, -2.35, 1.25, 7.1), "#e4007c");
+  S.add(boxGeo(0.062, 0.12, 0.262, -2.35, 0.9, 7.1), "#f6a800");
+  c.col.addCircle(-2.2, 7.1, 0.25);
+}
+
+/** (theme.ts roomExtras.offices7) Brotecito's furniture in place of Maple Harbor's: a cane settee and two equipales on a
+ *  petate before the big screen (the beanbags), a long parota table with wooden bancos (the steel table and stools),
+ *  the coffee bar of cedar and talavera, a zarape runner from the door, palms and plants in clay pots. */
+function brotecito7(c: Ctx) {
+  const S = msmalls(c);
+  petate(S, -6.4, -5, 6.2, 3.6);
+  caneSettee(S, -6.4, -4.2, Math.PI, 2.2, 0.5);
+  c.col.addBox(-6.4, -4.2, 2.2, 0.9);
+  equipalS(S, -8.8, -5.1, Math.atan2(2.3, -2.8)); c.col.addCircle(-8.8, -5.1, 0.36);
+  equipalS(S, -4.0, -5.1, Math.atan2(-2.5, -2.8)); c.col.addCircle(-4.0, -5.1, 0.36);
+  // the long table: a slab of parota on two trestles, its live edge darker
+  S.add(boxGeo(3.6, 0.08, 1.1, 4.6, 0.76, 2.2), "#8a4f2a");
+  for (const s of [-1, 1]) for (let k = 0; k < 5; k++) S.add(boxGeo(0.62, 0.082, 0.06, 4.6 - 1.45 + k * 0.72, 0.76, 2.2 + s * (0.53 + ((k * 7 + (s > 0 ? 3 : 0)) % 4) * 0.012)), "#5e3419");
+  for (const s of [-1, 1]) {
+    S.add(boxGeo(0.08, 0.7, 0.9, 4.6 + s * 1.4, 0.37, 2.2), "#5e3419");
+    S.add(boxGeo(0.14, 0.06, 1.0, 4.6 + s * 1.4, 0.03, 2.2), "#5e3419");
+  }
+  S.add(boxGeo(2.8, 0.06, 0.08, 4.6, 0.3, 2.2), "#5e3419");
+  c.col.addBox(4.6, 2.2, 3.6, 1.1);
+  for (const sx2 of [3.4, 4.6, 5.8]) for (const sz of [1.3, 3.1]) {
+    S.add(cylGeo(0.2, 0.19, 0.07, sx2, 0.625, sz, 10), "#b07a45");
+    for (let k = 0; k < 3; k++) { const a = (k / 3) * Math.PI * 2 + 0.3; S.add(cylGeo(0.022, 0.03, 0.62, 0, 0, 0, 5).rotateX(0.12).rotateY(a).translate(sx2 + Math.sin(a) * 0.1, 0.3, sz + Math.cos(a) * 0.1), "#6e4224"); }
+    c.col.addCircle(sx2, sz, 0.22);
+  }
+  // the coffee bar: cedar, talavera on its face to the room, a clay pot of café de olla
+  counterMx(c, S, 10.45, 3.7, 0.9, 3.4, -Math.PI / 2);
+  S.add(cylGeo(0.15, 0.11, 0.24, 10.45, 1.2, 4.0, 10), "#9c4a2a");
+  // a runner woven as a zarape from the door into the room (the phone's door view was bare floor there)
+  zarapeRunner(S, 0, 3.7, 1.3, 5.4);
+  // plants in clay pots and a palm, where Maple Harbor's pots stood
+  potPalm(c, S, -10.3, 6.9, 0.95); clayPlant(c, S, 10.3, 6.9, 1.1); clayPlant(c, S, -0.9, -7.2, 1.2); clayPlant(c, S, -10.3, -7.2, 1.0);
+  for (const [px, pz, s] of [[-10.3, 6.9, 1.2], [10.3, 6.9, 1.1], [-0.9, -7.2, 1.3], [-10.3, -7.2, 1]] as [number, number, number][]) c.col.addCircle(px, pz, 0.35 * s);
 }
