@@ -27,6 +27,8 @@ export interface GameApi {
   /** A small hop (Space, the phone's button). */
   jump(): void;
   setQuality(q: "high" | "low"): void;
+  /** The name tags say the role in the Spanish just chosen (the Spanish edition's switch; compose.ts roleSaid). */
+  refreshNameTags(): void;
   readonly groundCanvas: HTMLCanvasElement | undefined;
   readonly doors: Door[];
 }
