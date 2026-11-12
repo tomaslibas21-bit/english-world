@@ -191,12 +191,22 @@ function depthByKind(scene: THREE.Object3D) {
  *  keeps following the player as Game.ts places it. */
 function blocksGrade(o: { renderer: THREE.WebGLRenderer; scene: THREE.Scene; hemi: THREE.HemisphereLight; sun: THREE.DirectionalLight; sky: THREE.Mesh }, g: NonNullable<typeof THEME.light>): StyleFx {
   const { renderer, scene, hemi, sun, sky } = o;
+  // (graphics round 6, `late`) the painted dome instead of the plain gradient
+  const late = g.late;
+  const dome = late ? skyDome(g, late) : null;
+  if (dome) sky.material = dome;
   const u = (sky.material as THREE.ShaderMaterial).uniforms;
   const keep = { sun: sun.color.clone(), hemi: hemi.color.clone(), ground: hemi.groundColor.clone(), exposure: renderer.toneMappingExposure };
   const fog = new THREE.Fog(g.fog, 110, 420);
+  // (late) the shadow's box shortened across the sun's way in the proportion the lower sun stretches its footprint on
+  // the ground (Game.ts's sun is 54° up), so the shadow pass draws no more casters than at noon
+  const sc = sun.shadow.camera as THREE.OrthographicCamera, box = { top: sc.top, bottom: sc.bottom };
+  const k = late ? 0.9 * Math.sin(Math.atan2(late.at[1], Math.hypot(late.at[0], late.at[2]))) / Math.sin(Math.atan2(70, 50)) : 1;
+  const shadowBox = (f: number) => { sc.top = box.top * f; sc.bottom = box.bottom * f; sc.updateProjectionMatrix(); };
   return {
     zone(indoor) {
       if (THEME.lean) depthByKind(scene);
+      if (late) shadowBox(indoor ? 1 : k);
       if (indoor) {
         renderer.toneMappingExposure = keep.exposure;
         sun.color.copy(keep.sun); hemi.color.copy(keep.hemi); hemi.groundColor.copy(keep.ground);
@@ -204,10 +214,94 @@ function blocksGrade(o: { renderer: THREE.WebGLRenderer; scene: THREE.Scene; hem
       }
       renderer.toneMappingExposure = g.exposure;
       sun.color.set(g.sun); hemi.color.set(g.hemi[0]); hemi.groundColor.set(g.hemi[1]);
+      if (late) { sun.intensity = late.sunI; hemi.intensity = late.hemiI; }
       u.top.value.set(g.sky[0]); u.mid.value.set(g.sky[1]); u.bottom.value.set(g.sky[2]);
       scene.fog = fog;
     },
-    frame() {},
+    frame(p, indoor) {
+      if (!late || indoor) return;
+      sun.position.set(p.x + late.at[0], late.at[1], p.z + late.at[2]);
+      dome!.uniforms.uTime.value = performance.now() / 1000;
+    },
     quality() {},
   };
+}
+
+/** (theme.ts `light.late`, graphics round 6) The edition's sky dome for a late Caribbean afternoon: the zenith's blue
+ *  down to a warm horizon, the low sun's halo and its disc where it shines from, and a band of fair-weather cumulus
+ *  round the horizon painted once into a small texture (white tops, `clouds[1]`'s undersides, warmer towards the sun)
+ *  that drifts very slowly. One texture lookup a sky pixel; the same one mesh and draw call as the plain dome. */
+function skyDome(g: NonNullable<typeof THEME.light>, late: NonNullable<NonNullable<typeof THEME.light>["late"]>) {
+  const sunDir = new THREE.Vector3(...late.at).normalize();
+  return new THREE.ShaderMaterial({
+    side: THREE.BackSide, depthWrite: false,
+    uniforms: {
+      top: { value: new THREE.Color(g.sky[0]) }, mid: { value: new THREE.Color(g.sky[1]) }, bottom: { value: new THREE.Color(g.sky[2]) },
+      glow: { value: new THREE.Color(late.glow) }, lit: { value: new THREE.Color(late.clouds[0]) }, shade: { value: new THREE.Color(late.clouds[1]) },
+      sunDir: { value: sunDir }, clouds: { value: cloudBand() }, uTime: { value: 0 },
+    },
+    vertexShader: "varying vec3 vP; void main(){ vP = (modelMatrix*vec4(position,1.)).xyz; gl_Position = projectionMatrix*viewMatrix*modelMatrix*vec4(position,1.); }",
+    fragmentShader: `uniform vec3 top; uniform vec3 mid; uniform vec3 bottom; uniform vec3 glow; uniform vec3 lit; uniform vec3 shade;
+      uniform vec3 sunDir; uniform sampler2D clouds; uniform float uTime; varying vec3 vP;
+      void main(){
+        vec3 d = normalize(vP - cameraPosition); float h = d.y;
+        vec3 c = h > 0.15 ? mix(mid, top, smoothstep(0.15, 0.7, h)) : mix(bottom, mid, smoothstep(-0.05, 0.15, h));
+        float s = max(dot(d, sunDir), 0.0);
+        c += glow * (pow(s, 5.0) * 0.32 + pow(s, 48.0) * 0.55);
+        float u = atan(d.z, d.x) * 0.31830989 + uTime * 0.0008;
+        vec4 k = texture2D(clouds, vec2(u, clamp(h * 3.0, 0.0, 1.0)));
+        vec3 cc = mix(shade, lit, k.g) + glow * pow(s, 3.0) * 0.45 * k.g;
+        c = mix(c, cc, k.a * smoothstep(-0.01, 0.025, h));
+        c = mix(c, vec3(1.0, 0.96, 0.86), smoothstep(0.9985, 0.9993, s) * (1.0 - k.a));
+        gl_FragColor = vec4(c, 1.0); }`,
+  });
+}
+
+/** The cumulus round the horizon (skyDome): 2048 × 512, the bottom row the horizon and the top row a third of the
+ *  way up the sky, wrapping round. Alpha is the cloud, green how lit it is (1 on the tops, 0 on the flat bases).
+ *  Drawn with the same random numbers every time; it goes twice round the sky (sharper on a phone). */
+function cloudBand() {
+  const W = 2048, H = 512, cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  const main = cv.getContext("2d")!;
+  // (each cloud drawn on a scratch canvas, its base cut flat there, then laid over the others)
+  const tmp = document.createElement("canvas");
+  tmp.width = W; tmp.height = H;
+  let x = tmp.getContext("2d")!;
+  let seed = 9173;
+  const r = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+  const puff = (cx: number, cy: number, rr: number, g: number, a: number, soft = 0.93) => {
+    for (const ox of [-W, 0, W]) {
+      const gr = x.createRadialGradient(cx + ox, cy, rr * 0.1, cx + ox, cy, rr);
+      gr.addColorStop(0, `rgba(0,${g},0,${a})`); gr.addColorStop(soft, `rgba(0,${g},0,${a})`); gr.addColorStop(1, `rgba(0,${g},0,0)`);
+      x.fillStyle = gr; x.beginPath(); x.arc(cx + ox, cy, rr, 0, Math.PI * 2); x.fill();
+    }
+  };
+  // the cumulus in clusters with sky between them: the far ones low and flat on the horizon, nearer ones bigger and
+  // higher; each a shaded flat base, then the lit heaped tops
+  for (let i = 0; i < 17; i++) {
+    const cx = (i + r() * 0.6) * W / 17, near = r() * r() * 0.8, w = 45 + near * 170 + r() * 35, base = H - 4 - near * 150, hh = w * (0.32 + r() * 0.18);
+    const n = 4 + Math.floor(r() * 4);
+    x.clearRect(0, 0, W, H);
+    for (let k = 0; k < n; k++) puff(cx + (k / (n - 1) - 0.5) * w * 1.5, base - r() * hh * 0.15, w * (0.22 + r() * 0.1), 70, 1);
+    for (let k = 0; k < n; k++) {
+      const t = k / (n - 1) - 0.5;
+      puff(cx + t * w * 1.25 + (r() - 0.5) * 10, base - hh * (0.25 + (0.5 - Math.abs(t)) * 1.1) - r() * hh * 0.2, w * (0.22 + r() * 0.14), 255, 1);
+    }
+    // the base cut flat (a cumulus sits on a level line)
+    x.save(); x.globalCompositeOperation = "destination-out"; x.fillStyle = "#000";
+    for (const ox of [-W, 0, W]) x.fillRect(cx + ox - w * 1.2, base + w * 0.08, w * 2.4, 400);
+    x.restore();
+    main.drawImage(tmp, 0, 0);
+  }
+  x = main;
+  // thin streaks higher up
+  for (let i = 0; i < 16; i++) {
+    const cx = r() * W, cy = 60 + r() * 200, len = 120 + r() * 240;
+    for (let k = 0; k < 10; k++) puff(cx + k * len / 10, cy + Math.sin(k * 0.8) * 5, 16 + r() * 12, 235, 0.25, 0.3);
+  }
+  const t = new THREE.CanvasTexture(cv);
+  t.wrapS = THREE.RepeatWrapping; t.wrapT = THREE.ClampToEdgeWrapping;
+  t.colorSpace = THREE.NoColorSpace;
+  return t;
 }

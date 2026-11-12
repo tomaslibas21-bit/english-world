@@ -116,6 +116,8 @@ export const THEME: TownTheme = {
     shopsMx4: true, clinicMx4: true, bankMx: true, hallsMx: true,
     // graphics round 5: the upper walls dressed (high windows, a greca), the shops' last Maple Harbor furniture replaced
     upperMx: true, shopsMx5: true,
+    // (graphics round 6) the last rooms below the upper wall, the halls' middles, the rental's equipales in view
+    rooms6: true,
   },
   // s71b: in Mexico an attendant fills the tank, so Doña Chela stands at the pump by the learner's car (beside pump 2,
   // the car facing the street), not in the shop; the learner talks to her from behind the car
@@ -342,7 +344,9 @@ export const THEME: TownTheme = {
   // their stalls (pottery, fruit, hats, vegetables), facing the square
   chatSpots: [[43.5, -63.75, 44.7, -63.45], [-2.6, -68.2, -1.5, -67.9],
     // (graphics round 5) a pair on the sand between the palapas at the west end
-    [-72.6, -67.5, -71.5, -67.2]],
+    [-72.6, -67.5, -71.5, -67.2],
+    // (graphics round 6) a pair on the sacbé out to the cenote (beyond the town's edge: far versions from Juárez)
+    [-122.4, -6.9, -121.5, -5.9]],
   sitters: [[24.05, -17.4], [37.45, -17.4], [0.45, -65.05], [21.55, -65.05], [-39.55, -65.05],
     // (graphics round 4) two under the palapas by the letters, on their loungers (`beachLife`), and a traveller on
     // andén 2's bench (a person is ~4,000 triangles, in every view that sees them: no more, for the phones' budget)
@@ -360,7 +364,12 @@ export const THEME: TownTheme = {
   // the town's name on the malecón where calle Ceiba meets it, the sea behind it (clear of the bench at x 0, the
   // sidewalk's palms and lamps, and the chatting pair)
   // the light outdoors: a warmer sun, a touch more exposure, a bluer zenith over a warm horizon, bigger cumulus
-  light: { sun: "#ffe9c4", exposure: 1.06, sky: ["#3f9be6", "#a3d6f5", "#fde9cc"], fog: "#d6ecf2", hemi: ["#e6f4ff", "#9cc27a"], clouds: 1.5 },
+  // (graphics round 6, `late`) a late afternoon: the sun lower (37° up, from the same side) and golden, a little less
+  // flat fill (cooler, so shade reads blue against the warm light), the dome painted with the sun's halo and cumulus
+  light: {
+    sun: "#ffd9a3", exposure: 1.1, sky: ["#3a8fe0", "#9ccff2", "#fbdcb6"], fog: "#e6e2d6", hemi: ["#dce8ff", "#b3ad78"], clouds: 1.5,
+    late: { at: [-52, 46, 38], sunI: 3.05, hemiI: 1.3, glow: "#ffad5c", clouds: ["#fffdf6", "#d3cbdc"] },
+  },
   // the houses' fronts: a rodapié, a grille over the door with its number on a talavera tile, plants by it
   houseFronts: { sophie: "12", dan: "24", house3: "31", house4: "47", house5: "53" },
   // the streets as a Mexican town paints them: no white edge lines, the curbs yellow by the corners
@@ -421,7 +430,7 @@ export const THEME: TownTheme = {
   poleFade: [6, 8],
   // the meadow out to the cenote as the Yucatán's scrub (clear of the cenote and its palapa, the mirador and the end of
   // avenida Juárez), two ceibas standing over the selva behind it
-  meadow: { x0: -152, x1: -113, z0: -36, z1: 26, clear: [[-136, -6, 13], [-127.6, -1.6, 4], [-107, -7.5, 5], [-112, -8, 6]], ceibas: [[-150, -16], [-147, 9]] },
+  meadow: { x0: -152, x1: -113, z0: -36, z1: 26, clear: [[-136, -6, 13], [-127.6, -1.6, 4], [-107, -7.5, 5], [-112, -8, 6], [-116.5, -6.4, 2], [-120.5, -6.3, 2], [-123.5, -6.2, 2]], ceibas: [[-150, -16], [-147, 9]] },
   // Graphics, round 5 (docs/es/TOWN.md "Graphics, round 5"): adoquín on avenida Juárez through the centro (calle
   // Flamboyán to calle Itzamná) and on the streets round the zócalo (Ceiba, Itzamná, avenida del Puerto along the
   // square), curb to curb; green bins on the sidewalks, iron bolardos at the square's corners on Juárez, a bolero's

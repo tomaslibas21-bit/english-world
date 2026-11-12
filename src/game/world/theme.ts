@@ -101,6 +101,12 @@ export interface TownTheme {
     /** The big halls (the airport, the museum, the hotel) and the homes: woven rugs and benches where the phone's view
      *  is pale floor, the hotel's hammock hung across a corner instead of flat on the wall, El Muelle's walls. */
     hallsMx?: boolean;
+    /** (graphics round 6) the pharmacy, the clinic, the offices, the gym and the police dressed as a Mexican town has
+     *  them (rooms6: a suero fridge and a vitrina, a planter of talavera, a boxing ring and costales, plastic chairs and
+     *  a standing fan, piñatas and papel picado, a futbolito), ceiling fans; the airport's halls a planter with bancas
+     *  each side of the way in and its high windows clear of the welcome frieze; the car rental's equipales where the
+     *  door shows them. */
+    rooms6?: boolean;
   };
   /** People who stand outdoors in this edition (added to layout.ts OUTDOOR_NPCS; a room that has them leaves them out). */
   outdoorNpcs: OutdoorSpot[];
@@ -305,7 +311,13 @@ export interface TownTheme {
   /** The light outdoors graded for this town (styleScene.ts; the rooms keep the game's): the sun's color, the tone
    *  curve's exposure, the sky's zenith, middle and horizon, the fog's color (the sea fades into it too), the
    *  hemisphere's sky and ground colors, and how much bigger the clouds are (null: Maple Harbor's light). */
-  light: { sun: string; exposure: number; sky: [string, string, string]; fog: string; hemi: [string, string]; clouds: number } | null;
+  light: {
+    sun: string; exposure: number; sky: [string, string, string]; fog: string; hemi: [string, string]; clouds: number;
+    /** (graphics round 6) a later sun: where it shines from (offset from the player, as Game.ts's (-40, 70, 30)), the
+     *  sun's and the hemisphere's intensities outdoors, and the sky dome painted (styleScene.ts `skyDome`): the sun's
+     *  warm halo in `glow` and a band of fair-weather cumulus over the horizon. Unset: round 1's noon. */
+    late?: { at: [number, number, number]; sunI: number; hemiI: number; glow: string; clouds: [string, string] };
+  } | null;
   /** Townspeople sitting or standing (not walking) farther than this from the player keep their pose (ambient.ts
    *  `holdPose`: their matrices and skeleton left as they are): the edition's added vendors, sitters and pairs cost a
    *  frame next to nothing where they are too far to see breathe (null: all of them are animated every frame, as in

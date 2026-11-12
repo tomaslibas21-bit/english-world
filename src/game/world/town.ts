@@ -25,6 +25,9 @@ export interface Town {
   /** `cam`: where the camera is (the edition's small things far from it are left out: theme.ts `farHide`). */
   update(t: number, dt: number, cam?: THREE.Vector3): void;
   walkableAt(x: number, z: number): boolean;
+  /** (theme.ts `casas`, graphics round 6) the houses' portals overhead (their slab and the terrace's railing on it): the
+   *  conversation's camera treats a line through one as hidden (Game.ts fitTalk). Empty in Maple Harbor. */
+  portals: { minX: number; maxX: number; minZ: number; maxZ: number; y0: number; y1: number }[];
 }
 
 const PPM = 6; // ground texture pixels per metre
@@ -66,6 +69,7 @@ export function buildTown(): Town {
   mxFlat.length = 0;
   wires.length = 0;
   mxFar.length = 0;
+  portals.length = 0;
   mxRoofs.length = 0;
   poleParts.length = 0;
   farHidden.length = 0;
@@ -243,7 +247,7 @@ export function buildTown(): Town {
   const gulls = STYLED ? [] : makeGulls(group);
 
   return {
-    group, colliders, doors, seats: [...seats], groundCanvas,
+    group, colliders, doors, seats: [...seats], groundCanvas, portals: [...portals],
     update(t, dt, cam) {
       seaMat.uniforms.uTime.value = t;
       if (cam) for (const f of farHidden) f.mesh.visible = (cam.x - f.x) ** 2 + (cam.z - f.z) ** 2 < f.r * f.r;
@@ -908,9 +912,11 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     }
   }
   if (b.style === "hotel") {
-    M.add("canopy", mat("#8a2f3b"), boxGeo(8, 0.35, 4, 0, 3.4, 0).rotateY(rotY).translate(dx + n[0] * 2, 0, dz + n[1] * 2));
+    // (the edition's merger has the walking camera look through the hotel's canopy and its posts: graphics round 6)
+    const tm = THEME.townMerge ? "hotel-" : "";
+    M.add(tm + "canopy", mat("#8a2f3b"), boxGeo(8, 0.35, 4, 0, 3.4, 0).rotateY(rotY).translate(dx + n[0] * 2, 0, dz + n[1] * 2));
     for (const s of [-1, 1]) {
-      M.add("canopy-post", mat("#c8a86a"), cylGeo(0.08, 0.08, 3.4, dx + t[0] * s * 3.7 + n[0] * 3.8, 1.7, dz + t[1] * s * 3.7 + n[1] * 3.8, 6));
+      M.add(tm + "canopy-post", mat("#c8a86a"), cylGeo(0.08, 0.08, 3.4, dx + t[0] * s * 3.7 + n[0] * 3.8, 1.7, dz + t[1] * s * 3.7 + n[1] * 3.8, 6));
       col.addCircle(dx + t[0] * s * 3.7 + n[0] * 3.8, dz + t[1] * s * 3.7 + n[1] * 3.8, 0.15);
       // flags
       M.add("flagpole", mat("#dddddd"), cylGeo(0.06, 0.06, 9, dx + t[0] * s * 7 + n[0] * 0.8, 9.5, dz + t[1] * s * 7 + n[1] * 0.8, 6));
@@ -931,7 +937,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   if (b.style === "terminal") {
     // (thatched like a palapa in the edition's town, theme.ts `airportOut`: addTownMx)
     if (!THEME.airportOut) M.add("terminal-canopy", mat("#f4f6f8"), boxGeo(8, 0.4, 20, dx - 4, 5.4, dz));
-    for (const oz of [-9, -3, 3, 9]) { M.add("canopy-post", mat("#b8c2cc"), cylGeo(0.15, 0.15, 5.4, dx - 7.5, 2.7, dz + oz, 8)); col.addCircle(dx - 7.5, dz + oz, 0.2); }
+    for (const oz of [-9, -3, 3, 9]) { M.add(THEME.townMerge ? "dropoff-post" : "canopy-post", mat("#b8c2cc"), cylGeo(0.15, 0.15, 5.4, dx - 7.5, 2.7, dz + oz, 8)); col.addCircle(dx - 7.5, dz + oz, 0.2); }
     // control tower
     M.add("tower", mat("#dde6ee"), cylGeo(1.6, 2, 24, b.x + 12, 12, b.z + 16, 12));
     M.add("tower-top", darkGlass, cylGeo(3, 2.4, 3, b.x + 12, 25.5, b.z + 16, 12));
@@ -953,6 +959,8 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     if (THEME.casas) {
       const P = (u: number, v: number): [number, number] => [dx + t[0] * u + n[0] * v, dz + t[1] * u + n[1] * v];
       MX.casa(mx, mxFlat, P, rotY, halfWidth * 2, halfDepth * 2, b.h, b.color, b.trim ?? "#ffffff", 700 + b.id.length * 53 + Math.round(b.x));
+      const cs = [P(-3.25, 0), P(3.25, 0), P(-3.25, 2.65), P(3.25, 2.65)];
+      portals.push({ minX: Math.min(...cs.map((q) => q[0])), maxX: Math.max(...cs.map((q) => q[0])), minZ: Math.min(...cs.map((q) => q[1])), maxZ: Math.max(...cs.map((q) => q[1])), y0: 2.9, y1: 4.3 });
     } else {
       M.add("porch-roof", mat(b.roofColor ?? "#6b4f3a"), boxGeo(6.4, 0.2, 2.8, 0, 3.1, 0).rotateY(rotY).translate(dx + n[0] * 1.3, 0, dz + n[1] * 1.3));
       for (const s of [-1, 1]) M.add("porch-post", mat("#ffffff"), cylGeo(0.1, 0.1, 2.8, dx + t[0] * s * 2.8 + n[0] * 2.5, 1.55, dz + t[1] * s * 2.8 + n[1] * 2.5, 6));
@@ -1849,7 +1857,7 @@ function addTownMx(M: Merger, col: Colliders) {
   // (graphics round 4) the scrub on the meadow round it, ceibas over the selva behind it
   const md = THEME.meadow;
   if (md) MX.meadow(THEME.regions ? mxFar : mxFlat, md.x0, md.x1, md.z0, md.z1, md.clear, md.ceibas);
-  if (THEME.ruins) MX.ruins(THEME.regions ? mxFar : mxFlat, THEME.ruins.x, THEME.ruins.z);
+  if (THEME.ruins) MX.ruins(THEME.regions ? mxFar : mxFlat, THEME.ruins.x, THEME.ruins.z, a);
   // (graphics round 2) the bus terminal's andenes and coaches, the airport's thatched canopy, planters and welcome sign
   const bt = THEME.busTerminal, station = BUILDINGS.find((b) => b.id === "station");
   if (bt && station) {
@@ -2261,7 +2269,9 @@ class TownMerger extends Merger {
     if (e.flat) { g.deleteAttribute("normal"); g.computeVertexNormals(); } // (each triangle its own normal)
     else if (!g.attributes.normal) g.computeVertexNormals();
     // (the gas station's canopy: a roof the walking camera looks through, as Maple Harbor's own mesh is: after M.build)
-    this.put(g, e.color, /^gas-canopy/.test(key) ? "thinCast" : k.cast ? "cast" : "still");
+    // (graphics round 6: and the hotel's canopy and its posts, the drop-off's posts, the taxi stand's sign pole: the camera
+    // no longer shortens to a metre or goes up over her head walking by one, it looks through)
+    this.put(g, e.color, /^gas-canopy|^hotel-canopy|^dropoff-post$|^taxi-sign-pole$/.test(key) ? "thinCast" : k.cast ? "cast" : "still");
   }
   /** The edition's vertex-coloured pieces (mexican.ts: flat-shaded) into the squares too: `kind` "thin" for the overhead
    *  lines (a mesh the walking camera looks through: userData.thin, no shadow). */
@@ -2304,6 +2314,8 @@ const wires: MX.Part[] = [];
 const poleParts: MX.Part[] = [];
 /** (theme.ts `regions`) the cenote, the ruins and the mirador at the town's far ends. */
 const mxFar: MX.Part[] = [];
+/** (theme.ts `casas`) the houses' portals overhead, for the conversation's camera (Town.portals). */
+const portals: Town["portals"] = [];
 /** (graphics round 5) roofs the walking camera looks through rather than stays under (userData.thin, cutout.ts), that
  *  still cast their shade: the palapas' thatch on the beach, the airport drop-off's thatch. */
 const mxRoofs: MX.Part[] = [];
@@ -2445,8 +2457,10 @@ function addTransport(M: Merger, col: Colliders, group: THREE.Group, r: () => nu
     ? new THREE.Mesh(new THREE.PlaneGeometry(2.3, 0.6), new THREE.MeshBasicMaterial({ map: textTexture(THEME.taxi.sign, { bg: THEME.taxi.trim, fg: "#ffffff", border: "#ffffff", w: 512, h: 134 }) }))
     : new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.5), new THREE.MeshBasicMaterial({ map: textTexture("TAXI", { bg: "#f5c518", fg: "#222", w: 256, h: 96 }) }));
   taxiSign.position.set(126.5, 2.4, 1.2); taxiSign.rotation.y = Math.PI;
-  M.add("sign-pole", mat("#9aa5ad"), cylGeo(0.05, 0.05, 2.5, 126.5, 1.25, 1.25, 6));
+  M.add(THEME.townMerge ? "taxi-sign-pole" : "sign-pole", mat("#9aa5ad"), cylGeo(0.05, 0.05, 2.5, 126.5, 1.25, 1.25, 6));
   col.addCircle(126.5, 1.25, 0.1);
+  // (the edition's: looked through by the walking camera, as its pole is: graphics round 6, TownMerger)
+  if (THEME.taxi && THEME.townMerge) taxiSign.userData.thin = true;
   group.add(taxiSign);
   // bus stop shelter
   const b = BUS_STOP;
