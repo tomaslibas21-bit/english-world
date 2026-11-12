@@ -8,7 +8,8 @@ import { useState, type ReactElement } from "react";
 import { chooseVariety, hasVarietyChoice, loadVariety, type Variety } from "../../../state/variety";
 import { L } from "../../../ui/i18n";
 
-const OPTIONS: [Variety, string][] = [["default", "México"], ["neutral", "Latinoamérica neutro"], ["spain", "España"]];
+// [choice, name, the short name shown on a phone, where the three share one row in equal thirds]
+const OPTIONS: [Variety, string, string?][] = [["default", "México"], ["neutral", "Latinoamérica neutro", "Neutro"], ["spain", "España"]];
 
 export function VarietyChoice(): ReactElement | null {
   // decided once per view: after a tap the buttons stay (showing the choice) until the form is left
@@ -19,9 +20,11 @@ export function VarietyChoice(): ReactElement | null {
     <div className="ts-field ts-variety">
       <span className="ts-label" id="ts-variety">{L("Kokią ispanų kalbą nori girdėti?")}</span>
       <div className="ts-pills ts-pills-3" role="radiogroup" aria-labelledby="ts-variety" aria-describedby="ts-variety-note">
-        {OPTIONS.map(([k, name]) => (
-          <button key={k} type="button" role="radio" aria-checked={v === k} className={"ts-pill" + (v === k ? " on" : "")} lang="es"
-            onClick={() => { chooseVariety(k); setV(k); }}>{name}</button>
+        {OPTIONS.map(([k, name, short]) => (
+          <button key={k} type="button" role="radio" aria-checked={v === k} aria-label={short ? name : undefined} className={"ts-pill" + (v === k ? " on" : "")} lang="es"
+            onClick={() => { chooseVariety(k); setV(k); }}>
+            {short ? <><span className="ts-pill-long">{name}</span><span className="ts-pill-short">{short}</span></> : name}
+          </button>
         ))}
       </div>
       <p className="ts-help ts-variety-note" id="ts-variety-note">{L("Vėliau galėsi pakeisti Nustatymuose.")}</p>

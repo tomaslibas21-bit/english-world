@@ -51,6 +51,16 @@
 .ts-pills-3 { grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, 1fr); gap: 8px; }
 .ts-pills-3 .ts-pill { padding: 6px; line-height: 1.2; font-size: 0.94em; }
 .ts-variety .ts-variety-note { margin: 0; }
+.ts-pill-short { display: none; }
+/* phones: a compact segmented row, three equal buttons on one line, "Neutro" for "Latinoamérica neutro" (its
+   accessible name stays the full one) */
+@media (max-width: 560px) {
+  .ts-pills.ts-pills-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .ts-pills-3 .ts-pill { min-height: 44px; padding: 4px; font-size: 0.9em; white-space: nowrap; }
+  .ts-pills-3 .ts-pill-long { display: none; }
+  .ts-pills-3 .ts-pill-short { display: inline; }
+  .ts-variety .ts-variety-note { margin-top: -2px; }
+}
 
 .ts-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .ts-mode {
@@ -207,3 +217,14 @@
 /* the town's name in Lithuanian, under the pin */
 .ts-placewrap { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
 .ts-place-lt { font-size: 0.82em; color: var(--ink-soft); padding-left: 4px; line-height: 1.35; }
+
+/* Puerto Colibrí has no deck of pictures (Title.tsx), so on a wide screen the form takes the right-hand column,
+   level with the welcome, and the three perks sit under the welcome: "Start" on the first screen at 1280 × 800,
+   with the first-start choice of Spanish too */
+@media (min-width: 941px) {
+  .ts-in:not(:has(.ts-deck)) { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "head body" "show body"; row-gap: 26px; }
+  .ts-in:not(:has(.ts-deck)) .ts-head { align-self: end; }
+  .ts-in:not(:has(.ts-deck)) .ts-show { align-self: start; align-items: flex-start; }
+  .ts-in:not(:has(.ts-deck)) .ts-perks { justify-content: flex-start; }
+  .ts-in:not(:has(.ts-deck)) .ts-body { align-self: center; width: 100%; max-width: 540px; justify-self: center; }
+}

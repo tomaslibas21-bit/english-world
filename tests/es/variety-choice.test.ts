@@ -23,7 +23,12 @@ async function render() {
   const { VarietyChoice } = await import("../../src/ui/variety-choice"); // the Spanish edition's file (the overlay)
   return renderToStaticMarkup(createElement(VarietyChoice));
 }
-const selected = (html: string) => /aria-checked="true"[^>]*>([^<]+)</.exec(html)?.[1];
+// the selected button's accessible name: its aria-label (a phone shows a short name too), else its text
+const selected = (html: string) => {
+  const m = /<button[^>]*aria-checked="true"[^>]*>(.*?)<\/button>/.exec(html);
+  if (!m) return undefined;
+  return /aria-label="([^"]+)"/.exec(m[0])?.[1] ?? m[1].replace(/<[^>]+>/g, "");
+};
 
 describe("the first-start choice of Spanish", () => {
   test("unset: a default is not a choice", async () => {
@@ -58,6 +63,7 @@ describe("the first-start choice of Spanish", () => {
     vi.stubEnv("VITE_DEFAULT_VARIETY", "neutral");
     const html = await render();
     expect(selected(html)).toBe("Latinoamérica neutro");
+    expect(html).toContain('<span class="ts-pill-short">Neutro</span>'); // a phone's equal thirds show the short name
     expect(await render()).not.toBe(""); // still there: nothing was chosen
     store.set(KEY, "neutral"); // the course's Settings, or a tap here
     expect(await render()).toBe("");
