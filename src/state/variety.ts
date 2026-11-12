@@ -7,8 +7,14 @@ import { EDITION } from "../edition";
 export type { Variety };
 const KEY = `${EDITION.storage}-variety`;
 
+const known = (v: unknown): v is Variety => v === "default" || v === "neutral" || v === "spain";
+/** Before the learner chooses: Mexican, unless the build says otherwise (VITE_DEFAULT_VARIETY; Spanish Master English's
+ *  build starts in neutral Latin American Spanish: tools/export-sme.ts). */
+const env = import.meta.env?.VITE_DEFAULT_VARIETY as unknown;
+export const DEFAULT_VARIETY: Variety = known(env) ? env : "default";
+
 export function loadVariety(): Variety {
-  try { const v = localStorage.getItem(KEY); return v === "neutral" || v === "spain" ? v : "default"; } catch { return "default"; }
+  try { const v = localStorage.getItem(KEY); return known(v) ? v : DEFAULT_VARIETY; } catch { return DEFAULT_VARIETY; }
 }
 
 /** Choose, remember and apply (the next line said or shown uses it). */
