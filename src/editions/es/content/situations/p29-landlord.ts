@@ -924,7 +924,9 @@ export const landlord: SituationDef = {
     patel_rita: [t("Gracias, | Doña | Lupita. | Muy | amable.", "Thank you, | Doña | Lupita. | Very | kind.", "Thank you, Doña Lupita. Very helpful.")],
     rita_bye: [
       t("¡Para eso estamos, | {m:vecino!|f:vecina!} | Y | tome | mucha | agua, | ¿eh?", "That's what we're here for, | neighbor! | And | drink | lots of | water, | okay?",
-        "That's what neighbors are for! And drink lots of water, okay?"),
+        "That's what neighbors are for! And drink lots of water, okay?",
+        { spain: t("¡Para eso estamos, | {m:vecino!|f:vecina!} | Y | beba | mucha | agua, | ¿eh?", "That's what we're here for, | neighbor! | And | drink | lots of | water, | okay?",
+          "That's what neighbors are for! And drink lots of water, okay?") }),
     ],
     tech_number: [
       t("¡Claro! | Ahorita | se lo | paso | por | mensaje.", "Sure! | Right now | it to you | I'll pass | by | message.", "Of course! I'll text it to you right now.",
@@ -976,7 +978,8 @@ export const landlord: SituationDef = {
     sure_sure: [t("Claro, | claro.", "Sure, | sure.", "Sure, sure.")],
     dodge_help: [
       t("Bueno, | ya | entendí. | Sin | aire, | con | este | calor, | no se puede.", "Okay, | now | I get it. | Without | AC, | with | this | heat, | it's impossible.",
-        "Okay, I hear you. No AC in this heat is no fun."),
+        "Okay, I hear you. No AC in this heat is no fun.", { spain: t("Bueno, | ya | lo | entiendo. | Sin | aire, | con | este | calor, | no se puede.", "Okay, | now | it | I-get. | Without | AC, | with | this | heat, | it's impossible.",
+          "Okay, I hear you. No AC in this heat is no fun.") }),
     ],
     blunt_react: [
       t("¡Epa, | epa! | {m:Tranquilo.|f:Tranquila.} | Somos | adultos.", "Whoa, | whoa! | Easy. | We're | adults.", "Whoa, whoa. Easy. We're both adults here.", { spain: t("¡Eh, | eh! | {m:Tranquilo.|f:Tranquila.} | Somos | adultos.", "Whoa, | whoa! | Easy. | We're | adults.", "Whoa, whoa. Easy. We're both adults here.") }),
@@ -1003,7 +1006,8 @@ export const landlord: SituationDef = {
       t("Depende | de | qué | tenga | el | aparato. | Pero | yo | le | pago | la | mitad, | ¿eh?", "It depends | on | what | has | the | unit. | But | I | (to) you | will pay | the | half, | okay?",
         "Depends on what's wrong with the unit. But I'll pay half, okay?", { flags: { 3: "tenga: the subjunctive after depende de qué." } }),
     ],
-    offer_reask: [t("¿Entonces? | La | mitad | del | costo. | ¿Trato hecho?", "So? | The | half | of the | cost. | Deal?", "So? Half the cost. Deal?")],
+    offer_reask: [t("¿Entonces? | La | mitad | del | costo. | ¿Trato hecho?", "So? | The | half | of the | cost. | Deal?", "So? Half the cost. Deal?",
+      { spain: t("¿Entonces? | La | mitad | del | coste. | ¿Trato hecho?", "So? | The | half | of the | cost. | Deal?", "So? Half the cost. Deal?") })],
     // "¿Quién paga la reparación?" once Chucho is coming (the audit, 5 Nov 2026)
     pay_mine: [
       t("Eso | lo | pago | yo, | no se preocupe.", "That | it | I'll pay | myself, | don't worry.", "I'm paying for that, don't worry.",
@@ -1097,18 +1101,26 @@ export const landlord: SituationDef = {
     ],
     text_sent_wednesday: [
       t("Listo: | “Chucho, | miércoles, | de | 9 | a | 12.” | ¿{m:Contento?|f:Contenta?}", "Done: | “Chucho, | Wednesday, | from | 9 | to | 12.” | Happy?",
-        "There. “Chucho, Wednesday, 9 to noon.” Happy?", { say: "Listo: Chucho, miércoles, de nueve a doce. ¿{m:Contento|f:Contenta}?" }),
+        "There. “Chucho, Wednesday, 9 to noon.” Happy?", { say: "Listo: Chucho, miércoles, de nueve a doce. ¿{m:Contento|f:Contenta}?",
+          spain: t("Ya está: | “Chucho, | miércoles, | de | 9 | a | 12.” | ¿{m:Contento?|f:Contenta?}", "There: | “Chucho, | Wednesday, | from | 9 | to | 12.” | Happy?",
+            "There. “Chucho, Wednesday, 9 to noon.” Happy?", { say: "Ya está: Chucho, miércoles, de nueve a doce. ¿{m:Contento|f:Contenta}?" }) }),
     ],
     text_sent_friday: [
       t("Listo: | “Chucho, | viernes, | de | 9 | a | 12.” | ¿{m:Contento?|f:Contenta?}", "Done: | “Chucho, | Friday, | from | 9 | to | 12.” | Happy?",
-        "There. “Chucho, Friday, 9 to noon.” Happy?", { say: "Listo: Chucho, viernes, de nueve a doce. ¿{m:Contento|f:Contenta}?" }),
+        "There. “Chucho, Friday, 9 to noon.” Happy?", { say: "Listo: Chucho, viernes, de nueve a doce. ¿{m:Contento|f:Contenta}?",
+          spain: t("Ya está: | “Chucho, | viernes, | de | 9 | a | 12.” | ¿{m:Contento?|f:Contenta?}", "There: | “Chucho, | Friday, | from | 9 | to | 12.” | Happy?",
+            "There. “Chucho, Friday, 9 to noon.” Happy?", { say: "Ya está: Chucho, viernes, de nueve a doce. ¿{m:Contento|f:Contenta}?" }) }),
     ],
     text_sent_saturday: [
       t("Listo: | “Chucho, | sábado, | de | 9 | a | 12.” | ¿{m:Contento?|f:Contenta?}", "Done: | “Chucho, | Saturday, | from | 9 | to | 12.” | Happy?",
-        "There. “Chucho, Saturday, 9 to noon.” Happy?", { say: "Listo: Chucho, sábado, de nueve a doce. ¿{m:Contento|f:Contenta}?" }),
+        "There. “Chucho, Saturday, 9 to noon.” Happy?", { say: "Listo: Chucho, sábado, de nueve a doce. ¿{m:Contento|f:Contenta}?",
+          spain: t("Ya está: | “Chucho, | sábado, | de | 9 | a | 12.” | ¿{m:Contento?|f:Contenta?}", "There: | “Chucho, | Saturday, | from | 9 | to | 12.” | Happy?",
+            "There. “Chucho, Saturday, 9 to noon.” Happy?", { say: "Ya está: Chucho, sábado, de nueve a doce. ¿{m:Contento|f:Contenta}?" }) }),
     ],
-    as_promised: [t("Y, | como | le | prometí, | le | mando | un | mensaje.", "And, | as | (to) you | I promised, | (to) you | I'll send | a | message.", "And, as promised, I'll text you.")],
-    already_texted: [t("¡Ya | le | mandé | el | mensaje!", "Already | (to) you | I sent | the | message!", "I already texted you!")],
+    as_promised: [t("Y, | como | le | prometí, | le | mando | un | mensaje.", "And, | as | (to) you | I promised, | (to) you | I'll send | a | message.", "And, as promised, I'll text you.",
+      { spain: t("Y, | como | le | he prometido, | le | mando | un | mensaje.", "And, | as | (to) you | I've promised, | (to) you | I'll send | a | message.", "And, as promised, I'll text you.") })],
+    already_texted: [t("¡Ya | le | mandé | el | mensaje!", "Already | (to) you | I sent | the | message!", "I already texted you!",
+      { spain: t("¡Ya | le | he mandado | el | mensaje!", "Already | (to) you | I've sent | the | message!", "I already texted you!") })],
     discount_react_wednesday: [
       t("De | eso | hablamos | después | del | miércoles. | Mándeme | un | mensaje.", "About | that | we'll talk | after | — | Wednesday. | Send me | a | message.", "Let's talk about that after Wednesday. Send me a message.",
         { flags: { 4: F_DEL } }),
@@ -1176,7 +1188,7 @@ export const landlord: SituationDef = {
     cold_react_outside: [t("¿Más | calor | que | afuera? | Ahora sí | está | exagerando.", "More | heat | than | outside? | Now | you are | exaggerating.", "Hotter than outside? Now you're exaggerating.", { spain: t("¿Más | calor | que | fuera? | Ahora sí | está | exagerando.", "More | heat | than | outside? | Now | you are | exaggerating.", "Hotter than outside? Now you're exaggerating.") })],
     cold_react: [
       t("Uf. | Bueno, | ya | me imagino.", "Phew. | Okay, | now | I can imagine.", "Ugh. Okay, I get the picture."),
-      t("Uy. | Bueno, | ya | entendí.", "Ouch. | Okay, | now | I get it.", "Ouch. Okay, I hear you."),
+      t("Uy. | Bueno, | ya | entendí.", "Ouch. | Okay, | now | I get it.", "Ouch. Okay, I hear you.", { spain: t("Uy. | Bueno, | ya | lo | entiendo.", "Ouch. | Okay, | now | it | I-get.", "Ouch. Okay, I hear you.") }),
     ],
     cat_react: [t("¿Su | gato? | Gato | listo.", "Your | cat? | Cat | smart.", "Your cat? Smart cat.")],
     heater_react: [

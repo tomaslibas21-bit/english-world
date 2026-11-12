@@ -1093,7 +1093,7 @@ export const usedCar: SituationDef = {
     // (pname: the player's name, never "Soy nuevo aquí" or "Soy de Canadá")
     im_name_ctx: { patterns: ["soy {name:pname} #h:im_name", "yo soy {name:pname}", "[hola] soy {name:pname} mucho gusto"] },
     compliment_car: { patterns: [
-      "los asientos se ven (muy bien | increibles | nuevos | perfectos | bien | super bien) #h:seats",
+      "los asientos (se ven | estan) (muy bien | increibles | nuevos | perfectos | bien | super bien | impecables) #h:seats",
       "(los asientos | el color | la pintura | el interior | los rines | el techo | el @carn) se (ve | ven) (muy bien | increible | increibles | nuevo | nuevos | perfecto | impecable | bonito | precioso | bien)",
       "es una (belleza | joya | chulada | maravilla) #h:beauty", "que (belleza | joya | chulada | maravilla)",
       "(es | esta) (precioso | preciosa | hermoso | hermosa | bellisimo | bonito | muy bonito | lindo | muy lindo | impecable | padrisimo | muy padre | espectacular | increible)",
@@ -1498,7 +1498,9 @@ export const usedCar: SituationDef = {
     a_mileage: [t("Unos | 160,000 | kilómetros. | Casi | todo | en | carretera, | se lo | juro.", "About | 160,000 | kilometers. | Almost | all | on | the highway, | it to you | I swear.",
       "About 160,000 kilometers. Mostly highway, I promise.", { say: "Unos ciento sesenta mil kilómetros. Casi todo en carretera, se lo juro.", flags: { 0: F_UNOS } })],
     a_year: [t("Es | modelo | 2008. | Pero | se ve | más | joven, | ¿verdad?", "It's | model (year) | 2008. | But | it looks | more | young, | right?", "She's a 2008. But she looks younger, right?",
-      { say: "Es modelo dos mil ocho. Pero se ve más joven, ¿verdad?" })],
+      { say: "Es modelo dos mil ocho. Pero se ve más joven, ¿verdad?",
+        spain: t("Es | modelo | 2008. | Pero | parece | más | joven, | ¿verdad?", "It's | model (year) | 2008. | But | it looks | more | young, | right?", "She's a 2008. But she looks younger, right?",
+          { say: "Es modelo dos mil ocho. Pero parece más joven, ¿verdad?" }) })],
     a_owners: [t("Soy | la | segunda | dueña. | Se lo | compré | a | un | dentista | muy | cuidadoso | en | 2012.", "I'm | the | second | owner. | It from him | I bought | from | a | dentist | very | careful | in | 2012.",
       "I'm the second owner. I bought her from a very careful dentist in 2012.", { say: "Soy la segunda dueña. Se lo compré a un dentista muy cuidadoso en dos mil doce." })],
     a_since: [t("Desde | 2012. | Se lo | compré | a | un | dentista | muy | cuidadoso.", "Since | 2012. | It from him | I bought | from | a | dentist | very | careful.",
@@ -1514,7 +1516,8 @@ export const usedCar: SituationDef = {
       { flags: { 3: F_NOMAS }, neutral: t("¿La verdad? | Nada | grave. | Solo | necesita | un poco | de | cariño.", "Honestly? | Nothing | serious. | Just | it needs | a little | of | love.", "Honestly? Nothing serious. She just needs a little love.") })],
     a_problems_flaw: [t("¿La verdad? | El | aire | acondicionado | no sirve. | Pero | bueno, | es | convertible.", "Honestly? | The | air | conditioning | doesn't work. | But | hey, | it's | a convertible.",
       "Honestly? The air conditioning doesn't work. But hey, it's a convertible.", { spain: t("¿La verdad? | El | aire | acondicionado | no funciona. | Pero | bueno, | es | descapotable.", "Honestly? | The | air | conditioning | doesn't work. | But | hey, | it's | a convertible.", "Honestly? The air conditioning doesn't work. But hey, it's a convertible.") })],
-    ac_fine: [t("¿El | aire? | Funciona | perfecto.", "The | AC? | It works | perfectly.", "The AC? It works just fine.")],
+    ac_fine: [t("¿El | aire? | Funciona | perfecto.", "The | AC? | It works | perfectly.", "The AC? It works just fine.",
+      { spain: t("¿El | aire? | Funciona | perfectamente.", "The | AC? | It works | perfectly.", "The AC? It works just fine.") })],
     a_engine: [t("¿El | motor? | Ronronea | como | un | gatito.", "The | engine? | It purrs | like | a | kitten.", "The engine? She purrs like a kitten.")],
     // "estándar" is Mexican; the neutral twin says "manual" (the lead's decision, 5 Nov 2026)
     a_gearbox: [t("Es | estándar, | como | casi | todos | los | de | su | época.", "It's | manual, | like | almost | all | the ones | of | its | time.", "It's a stick shift, like most cars from back then.",
@@ -1531,7 +1534,8 @@ export const usedCar: SituationDef = {
         neutral: t("El | maletero | es | chico, | pero | caben | dos | maletas | y | una | hielera.", "The | trunk | is | small, | but | fit | two | suitcases | and | a | cooler.", "The trunk is small, but it fits two suitcases and a cooler."), spain: t("El | maletero | es | pequeño, | pero | caben | dos | maletas | y | una | nevera portátil.", "The | trunk | is | small, | but | fit | two | suitcases | and | a | cooler.", "The trunk is small, but it fits two suitcases and a cooler.") })],
     a_top: [t("Apriete | este | botón | y | cuente | hasta | diez. | Techo | abajo, | peinado | arruinado.", "Press | this | button | and | count | to | ten. | Top | down, | hairdo | ruined.", "Push this button and count to ten. Top down, hair ruined.", { spain: t("Apriete | este | botón | y | cuente | hasta | diez. | Capota | abajo, | peinado | arruinado.", "Press | this | button | and | count | to | ten. | Top | down, | hairdo | ruined.", "Push this button and count to ten. Top down, hair ruined.") })],
     a_radio: [t("Funciona. | Solo | agarra | una | estación, | pero | es | buena.", "It works. | Only | it picks up | one | station, | but | it's | a good one.", "It works. It only gets one station, but it's a good one.", { spain: t("Funciona. | Solo | coge | una | emisora, | pero | es | buena.", "It works. | Only | it picks up | one | station, | but | it's | a good one.", "It works. It only gets one station, but it's a good one.") })],
-    a_tires: [t("No son | nuevas, | pero | están | bien.", "They aren't | new, | but | they're | fine.", "They're not new, but they're fine.")],
+    a_tires: [t("No son | nuevas, | pero | están | bien.", "They aren't | new, | but | they're | fine.", "They're not new, but they're fine.",
+      { spain: t("No son | nuevos, | pero | están | bien.", "They aren't | new, | but | they're | fine.", "They're not new, but they're fine.") })],
     a_seats: [t("Son | los | originales. | Ni | un | rasguño.", "They're | the | original ones. | Not | a | scratch.", "All original. Not a single tear.")],
     a_unknown: [t("Buena | pregunta. | La verdad, | no sé.", "Good | question. | Honestly, | I don't know.", "Good question. Honestly, I'm not sure.")],
     a_papers_all: [t("Todo | en regla: | la | factura | original, | la | tarjeta | de | circulación | y | los | pagos | al corriente.", "Everything | in order: | the | invoice | original, | the | card | of | circulation | and | the | payments | up to date.",
@@ -1631,7 +1635,8 @@ export const usedCar: SituationDef = {
     already_off_limit: [t("Ya | le | bajé | $2,500. | Hasta | ahí | llego.", "Already | (for) you | I lowered it | 2,500 pesos. | Up to | there | I go.", "I already took 2,500 pesos off. That's my limit.",
       { say: "Ya le bajé dos mil quinientos pesos. Hasta ahí llego.", spain: t("Ya | le | he bajado | $2,500. | Hasta | ahí | llego.", "Already | (for) you | I've lowered it | 2,500 pesos. | Up to | there | I go.", "I already took 2,500 pesos off. That's my limit.", { say: "Ya le he bajado dos mil quinientos pesos. Hasta ahí llego." }) })],
     new_price: [t("Entonces: | {$price}.", "So: | {$price}.", "So: {$price}.")],
-    over_pay: [t("Espere, | dije | {$price}. | No le cobro | ni | un | centavo | más.", "Wait, | I said | {$price}. | I won't charge you | not even | one | cent | more.", "Hold on, I said {$price}. I won't take a cent more.")],
+    over_pay: [t("Espere, | dije | {$price}. | No le cobro | ni | un | centavo | más.", "Wait, | I said | {$price}. | I won't charge you | not even | one | cent | more.", "Hold on, I said {$price}. I won't take a cent more.",
+      { spain: t("Espere, | he dicho | {$price}. | No le cobro | ni | un | centavo | más.", "Wait, | I've said | {$price}. | I won't charge you | not even | one | cent | more.", "Hold on, I said {$price}. I won't take a cent more.") })],
     deal_yes: [t("Me parece | bien.", "It seems to me | fine.", "That works for me.")],
     deal_sold: [t("¡Vendido!", "Sold!", "Sold!")],
     deal_deal: [t("¡Trato hecho!", "Deal!", "You have a deal.")],
@@ -1689,10 +1694,11 @@ export const usedCar: SituationDef = {
     be_good: [t("Trátelo | bien. | Le encanta | la | carretera | de | la | costa.", "Treat it | well. | It loves | the | road | of | the | coast.", "Be good to her. She loves the coast road.")],
     all_yours: [t("¡Ya | es | todo | suyo!", "Now | it's | all | yours!", "She's all yours now!")],
     bye_deal: [
-      t("Fue | un | placer | hacer | negocios | con | usted.", "It was | a | pleasure | to do | business | with | you.", "It was a pleasure doing business with you."),
+      t("Fue | un | placer | hacer | negocios | con | usted.", "It was | a | pleasure | to do | business | with | you.", "It was a pleasure doing business with you.",
+        { spain: t("Ha sido | un | placer | hacer | negocios | con | usted.", "It has been | a | pleasure | to do | business | with | you.", "It was a pleasure doing business with you.") }),
       t("¡Que | lo | disfrute!", "(I hope) | it | you enjoy!", "Enjoy her!"),
     ],
-    pleasure_too: [t("¡El | gusto | fue | mío!", "The | pleasure | was | mine!", "The pleasure was mine!")],
+    pleasure_too: [t("¡El | gusto | fue | mío!", "The | pleasure | was | mine!", "The pleasure was mine!", { spain: t("¡El | gusto | ha sido | mío!", "The | pleasure | has been | mine!", "The pleasure was mine!") })],
     know_you_will: [t("Sé | que | sí.", "I know | that | (you will).", "I know you will.")],
     you_too: [t("¡Igualmente!", "Likewise!", "You too!")],
     see_around: [t("¡Cuídese!", "Take care!", "Take care!"), t("¡Que | tenga | buen | día!", "(I hope) | you have | a good | day!", "Have a nice day!")],
@@ -1718,7 +1724,7 @@ export const usedCar: SituationDef = {
     look: {
       lt: "Compliment the car",
       items: [
-        { id: "seats", s: t("Los | asientos | se ven | muy | bien.", "The | seats | look | very | good.", "The seats look great.") },
+        { id: "seats", s: t("Los | asientos | se ven | muy | bien.", "The | seats | look | very | good.", "The seats look great.", { spain: t("Los | asientos | están | muy | bien.", "The | seats | are | very | good.", "The seats look great.") }) },
         { id: "beauty", s: t("¡Es | una | belleza!", "It's | a | beauty!", "She's a beauty!") },
       ],
     },
@@ -1750,8 +1756,8 @@ export const usedCar: SituationDef = {
       lt: "Say how it drove",
       items: [
         { id: "drives_nicely", s: t("Se maneja | muy | bien.", "It drives | very | well.", "It drives really nicely.", { spain: t("Se conduce | muy | bien.", "It drives | very | well.", "It drives really nicely.") }) },
-        { id: "seats", s: t("Los | asientos | se ven | muy | bien.", "The | seats | look | very | good.", "The seats look great.") },
-        { id: "brakes_soft", s: t("Los | frenos | se sienten | un poco | suaves.", "The | brakes | feel | a little | soft.", "The brakes feel a little soft.") },
+        { id: "seats", s: t("Los | asientos | se ven | muy | bien.", "The | seats | look | very | good.", "The seats look great.", { spain: t("Los | asientos | están | muy | bien.", "The | seats | are | very | good.", "The seats look great.") }) },
+        { id: "brakes_soft", s: t("Los | frenos | se sienten | un poco | suaves.", "The | brakes | feel | a little | soft.", "The brakes feel a little soft.", { spain: t("Los | frenos | están | un poco | blandos.", "The | brakes | are | a little | soft.", "The brakes feel a little soft.") }) },
       ],
     },
     talk: {
@@ -1830,7 +1836,8 @@ export const usedCar: SituationDef = {
     bye: {
       lt: "Say thank you and goodbye",
       items: [
-        { id: "pleasure", s: t("Fue | un | placer | hacer | negocios | con | usted.", "It was | a | pleasure | to do | business | with | you.", "It was a pleasure doing business with you.") },
+        { id: "pleasure", s: t("Fue | un | placer | hacer | negocios | con | usted.", "It was | a | pleasure | to do | business | with | you.", "It was a pleasure doing business with you.",
+          { spain: t("Ha sido | un | placer | hacer | negocios | con | usted.", "It has been | a | pleasure | to do | business | with | you.", "It was a pleasure doing business with you.") }) },
         { id: "look_after", s: t("Le | prometo | que | lo | voy | a | cuidar.", "(To) you | I promise | that | it | I'm going | to | look after.", "I promise to look after her.") },
         { id: "thanks_so_much", s: t("¡Muchísimas | gracias!", "Very many | thanks!", "Thank you so much!") },
         { id: "thanks_time", s: t("Gracias | por | su | tiempo | de todos modos.", "Thanks | for | your | time | anyway.", "Thanks for your time anyway.") },

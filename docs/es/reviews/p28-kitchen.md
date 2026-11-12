@@ -136,3 +136,11 @@ punto»?" / "«con tacto»?" aren't understood (NEEDS 4 in the file).
 - Words: coger una cuchara, por la noche / esta noche, por encima (arriba), gambas (camarón: the entity gets attrs.spain "gamba", f, and forms gamba/gambas), Toma (Ten), Eh… (the filler este…), ¿De verdad? (¿De veras?), ¿El qué?, ¿No te enfadas?, Me alegro de que te sirva, Seguro que…, solo for "nada más", vale for "está bien", "¡Faltaría más!" for "¡Con gusto!", the closing hint "¡Oído, chef!". Spain's present perfect: te ha quedado / te ha salido, me ha gustado, ha hecho el ceviche, ha aprendido, el chef ha dicho, he probado tu chowder, no te he entendido, ¿has dicho…?, me he equivocado, le he puesto, me ha pedido que lo pruebe.
 - Grammar: the Spain perfects in praise, i_added, chef_asked and ask_recipe; "lo que dice(s)"; ¿me pone(s) un ejemplo?; "no te agobies"; "me viene muy bien / me ha servido". Merges: 18 (perfects, seguro que, por encima, el qué, lo sé, faltaría más).
 - Kept: limón glossed "lime" with its Mexican flag (the town is Mexican); tortilla, ceviche, habanero, Monterrey. Held-out "Vale, me parece bien" → thanks_helpful was already misread before the twins.
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer, all Spain twins and the untwinned lines as Spain hears them (NPC lines and hints), the Spain corpus.
+
+Checked: the chef's tú, the learner's usted to the chef, Fátima tú both ways, closing_chef's "Probad" with {m:los dos|f:las dos} (agrees), the pictures' food words (chowder, tortilla strips, habanero kept).
+Found and fixed: "Eso lo va a recordar por años" (→ "durante años"); "Olvida lo que dije" just said (→ "lo que he dicho", Perdona); "Ya sabía" (→ "Ya lo sabía", Vale, Perdona).
+Gates: tsc clean; check-content Mexican, neutral and Spain 0 errors, 0 warnings; corpus 436/436 0/69; held-out 39/40 (unchanged); Spain 22/22 0/1; vitest es 178/178.

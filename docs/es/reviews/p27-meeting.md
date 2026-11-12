@@ -106,3 +106,12 @@ miss is the "No sé, <reason>" lead the first review left for the lead).
 - Not "me vale" for "works for me": in Mexico it means "I don't care", so the hint says "me convence".
 - Grammar: me viene bien / no me viene bien / me convence in the deal, Monday and coffee answers; vale before "el lunes". Merges: no ha sido, han subido, has dicho, hemos probado, has visto, has escuchado, has ganado, ha estado, hemos pensado.
 - Kept: "Es un punto válido" and "Buen punto" (heard in Spain too); pesos.
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer, all Spain twins and the untwinned lines as Spain hears them (NPC lines and hints), the Spain corpus.
+
+Checked: the group lines (vosotros: "Calma, vosotros dos", "guardad las palomitas", "seguid", "¿Veis?"), Vanessa and Gerardo tú, "me vale" avoided (right).
+Found and fixed: "Pero aquí está el punto:" (→ "Pero la cuestión es esta:"); "¿Cuál problema?" (→ "¿Qué problema?"); the hint "Perdón que te interrumpa" (→ "Perdona que te interrumpa").
+Spain corpus +1.
+Gates: tsc clean; check-content Mexican, neutral and Spain 0 errors, 0 warnings; corpus 224/224 0/43; held-out 34/35 (unchanged); Spain 21/21 0/1; vitest es 178/178.

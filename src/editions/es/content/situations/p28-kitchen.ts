@@ -896,7 +896,9 @@ export const kitchen: SituationDef = {
     // --- the chef at the end --------------------------------------------------------------------------
     chef_end_good: [
       t("Así | se hace. | Eso | lo | va | a | recordar | por | años.", "Like that | it's done. | That | it | she's-going | to | remember | for | years.",
-        "That's how it's done. She'll remember that for years."),
+        "That's how it's done. She'll remember that for years.",
+        { spain: t("Así | se hace. | Eso | lo | va | a | recordar | durante | años.", "Like that | it's done. | That | it | she's-going | to | remember | for | years.",
+          "That's how it's done. She'll remember that for years.") }),
     ],
     chef_twist_laugh: [t("¡Ja! | Ya | aprendió.", "Ha! | Already | she-learned.", "Ha! Now she's got it.", { spain: t("¡Ja! | Ya | ha aprendido.", "Ha! | Already | she has learned.", "Ha! Now she's got it.") })],
     closing_chef: [
@@ -960,7 +962,8 @@ export const kitchen: SituationDef = {
     mia_which: [t("Perdón, | ¿sí | te | gustó | o | no?", "Sorry, | yes | (to) you | it-pleased | or | not?", "Sorry, did you like it or not?",
       { flags: { 1: "sí before the verb: did you, or didn't you." }, spain: t("Perdona, | ¿te | ha gustado | o | no?", "Sorry, | (to) you | has it pleased | or | not?", "Sorry, did you like it or not?") })],
     mia_what: [t("¿De veras? | ¿Qué?", "Really? | What?", "Really? What?", { spain: t("¿De verdad? | ¿El qué?", "Really? | What?", "Really? What?") })],
-    mia_flinch: [t("Ay. | Bueno. | Perdón. | Ya | sabía.", "Oh. | Okay. | Sorry. | Already | I-knew.", "Oh. Okay. Sorry. I knew it.")],
+    mia_flinch: [t("Ay. | Bueno. | Perdón. | Ya | sabía.", "Oh. | Okay. | Sorry. | Already | I-knew.", "Oh. Okay. Sorry. I knew it.",
+      { spain: t("Ay. | Vale. | Perdona. | Ya | lo | sabía.", "Oh. | Okay. | Sorry. | Already | it | I-knew.", "Oh. Okay. Sorry. I knew it.") })],
     mia_relief: [
       t("¿De veras? | ¿Te | gustó | {X.the}? | ¡Ay, | qué | alivio!", "Really? | (To) you | it-pleased | {X.the}? | Oh, | what | relief!", "Really? You liked {X.the}? Oh, thank goodness.", { spain: t("¿De verdad? | ¿Te | ha gustado | {X.the}? | ¡Ay, | qué | alivio!", "Really? | (To) you | has pleased | {X.the}? | Oh, | what | relief!", "Really? You liked {X.the}? Oh, thank goodness.") }),
       t("Espérate, | ¿de veras? | Casi | lo | tiro | todo.", "Wait, | really? | Almost | it | I-throw-out | all.", "Wait, really? I almost threw it all out.",
@@ -1014,7 +1017,8 @@ export const kitchen: SituationDef = {
     mia_twist_really: [t("Sí, | en serio. | Nada más | unas | gotitas.", "Yes, | seriously. | Just | some | little drops.", "Yes, seriously. Just a few drops.", { spain: t("Sí, | en serio. | Solo | unas | gotitas.", "Yes, | seriously. | Just | some | little drops.", "Yes, seriously. Just a few drops.") })],
     mia_twist_thanks: [t("¿De veras? | ¿No te enojas?", "Really? | You're not mad?", "Really? You're not mad?", { spain: t("¿De verdad? | ¿No te enfadas?", "Really? | You're not mad?", "Really? You're not mad?") })],
     mia_twist_fair: [t("Está bien. | Tu | plato. | Eso | dice | el | chef.", "Okay. | Your | plate. | That | says | the | chef.", "Fair enough. Your plate. That's what Chef says.", { spain: t("Vale. | Tu | plato. | Eso | dice | el | chef.", "Okay. | Your | plate. | That | says | the | chef.", "Fair enough. Your plate. That's what Chef says.") })],
-    mia_twist_defensive: [t("Ay. | Perdón. | Olvida | lo que | dije.", "Oh. | Sorry. | Forget | what | I-said.", "Oh. Sorry. Forget I said anything.")],
+    mia_twist_defensive: [t("Ay. | Perdón. | Olvida | lo que | dije.", "Oh. | Sorry. | Forget | what | I-said.", "Oh. Sorry. Forget I said anything.",
+      { spain: t("Ay. | Perdona. | Olvida | lo que | he dicho.", "Oh. | Sorry. | Forget | what | I've-said.", "Oh. Sorry. Forget I said anything.") })],
     mia_bye: [t("Gracias. | De veras.", "Thanks. | Really.", "Thank you. Really.", { spain: t("Gracias. | De verdad.", "Thanks. | Really.", "Thank you. Really.") })],
 
     // --- the global lines in tú: both cooks say tú to the learner (the shared copies switch by the NPC's flag)

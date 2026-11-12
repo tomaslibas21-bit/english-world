@@ -23,6 +23,9 @@
 { "ctx": "pay", "say": "¿Le vale un cheque bancario?", "intent": "pay_check" },
 { "ctx": "pay", "say": "No llevo efectivo", "intent": "no_cash" },
 { "ctx": "pay", "say": "¿Puedo pagar a plazos?", "intent": "pay_parts" },
+{ "ctx": "opinion", "say": "Los asientos están muy bien", "intent": "compliment_car" },
+{ "ctx": "opinion", "say": "Los frenos están un poco blandos", "intent": "drive_bad" },
+{ "ctx": "closing", "say": "Ha sido un placer hacer negocios con usted", "intent": "pleasure" },
 { "ctx": "drive", "say": "No quiero conducirlo", "intent": "any" }
 ]
 }

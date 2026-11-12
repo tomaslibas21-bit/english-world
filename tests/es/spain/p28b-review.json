@@ -22,6 +22,9 @@
 { "ctx": "ask_me", "say": "¿Podemos hablar de mi sueldo?", "intent": "ask_raise" },
 { "ctx": "checkin", "say": "Me parece bien", "intent": ["checkin_yes_ctx", "agree_idea", "yn:yes"] },
 { "ctx": "checkin", "say": "Vale, a la misma hora", "intent": ["checkin_yes_ctx", "yn:yes"] },
+{ "ctx": "feedback", "say": "Gracias por el feedback", "intent": "fb_thanks" },
+{ "ctx": "ask_me", "say": "¿Hacemos un seguimiento el próximo mes?", "intent": "propose_checkin" },
+{ "ctx": "ask_me", "say": "¿Esta evaluación afecta a mi sueldo?", "intent": "ask_raise" },
 { "ctx": "rev_try", "say": "No mandas correos por la noche", "intent": "any" }
 ]
 }

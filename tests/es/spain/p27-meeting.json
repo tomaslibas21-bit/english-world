@@ -21,6 +21,7 @@
 { "ctx": "closing", "say": "El lunes me viene bien", "intent": "monday_yes" },
 { "ctx": "coffee", "say": "Vale, me encantaría", "intent": ["coffee_yes_ctx", "yn:yes"] },
 { "ctx": "coffee", "say": "Hoy no me viene bien", "intent": ["coffee_no_ctx", "yn:no"] },
+{ "ctx": "charts", "say": "Perdona que te interrumpa, pero todavía no está probada", "intent": "interrupt_polite" },
 { "ctx": "alternative", "say": "No deberíamos añadir nada", "intent": "any" }
 ]
 }

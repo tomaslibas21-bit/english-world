@@ -120,3 +120,13 @@ eres un crack, hasta el cuello, piensa fuera de la caja, la pelota está en tu c
 la misma página (each has its meaning line); chamba and its meaning line stay Mexican (Toño explains it as Mexican).
 Spain corpus tests/es/spain/p18-startup.json: 20 items, 20/20, 0/1 false accepts. Gates: Mexican, neutral and Spain
 0 errors, sims 12/12; corpus 233/233 0/32; held-out 39/40 0/1 (the known goodbye miss).
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer, all Spain twins and the untwinned lines as Spain hears them (NPC lines and hints), the Spain corpus.
+
+Checked: Toño's tú both ways (informal coworker), every twin against its Mexican line, glosses, the idioms' explain lines, the Spain corpus.
+Found and fixed: "¡Listo!" left in close_q (→ "¡Perfecto!"); "clientes enojados" (→ enfadados); "Pagadas, obvio" twice (→ por supuesto); "Juega ping-pong" (→ "Juega al ping-pong", flagged); "hacer la tarea… antes de la clase" (→ "los deberes… antes de clase"); "Solo no hagas…" (→ "Pero no hagas…"); the hint "¿Cuál caja?" (→ "¿Qué caja?").
+Kept on purpose: the song's idioms ("todo está en chino", "la pelota está en tu cancha", "dale con todo") — they are what the conversation teaches; Spain would say "me suena a chino" / "la pelota está en tu tejado". mean_chamba's "Así le decimos en México" (its English says "we", and the twin keeps the English).
+Spain corpus +1 ("¿Qué caja?").
+Gates: tsc clean; check-content Mexican, neutral and Spain 0 errors, 0 warnings; corpus 233/233 0/32; held-out 39/40 (the known goodbye miss); Spain 21/21 0/1; vitest es 178/178.
