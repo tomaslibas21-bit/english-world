@@ -172,3 +172,24 @@ Y "ye") in both texts when the spell hint reads a surname (s76's proposal; neutr
 handback pictures always show a black wallet while the line says the learner's color; TOWN.md could note "the
 Ministerio Público: 'aquí cerca', not placed (s91b)"; the owner's open points above stand (the patrol line; the folio
 read digit by digit). EN-FIXES-LEADS: the same no-number "we'll call you" and the missing "Something's missing".
+
+## Spain twins (11 Nov 2026)
+
+- 57 Spain twins (lines and hints), 22 items in tests/es/spain/s91b-police.json (all understood, 0 false accepts).
+- Register: no change. Oficial Reyes and the learner keep usted (the police, STYLE.md).
+- Spain's present perfect for what happened today: ¿Qué ha pasado?, ¿Qué le han robado?, ¿Qué ha perdido?, ¿Ha
+  llamado ya a su banco?, Dice que lo ha encontrado, Usted ha dicho…, ¡Qué suerte ha tenido!; the learner's Me han
+  robado…, Alguien me ha robado…, He perdido…, Se me ha perdido…, Creo que ha sido un robo, se me ha caído, Cuando he
+  ido a pagar…, Alguien se ha chocado conmigo, Ya he llamado, Ha sido usted muy amable.
+- Words: Usted dirá (¿Qué se le ofrece?), llevar (traer) for what one carries, dentro (adentro), documento de
+  identidad (identificación, in the officer's question), relleno el reporte, Solo unos minutos, poner una denuncia
+  (levantar), por internet (en línea), No hay de qué, sobre las once, unos $500, ¿Me deja un bolígrafo?, Ya está.
+- Entities: Spain nouns cartera (wallet; neutral billetera), móvil, bolso (m), marrón, pequeño, carné de conducir,
+  gafas de sol (f), portátil (m).
+- Kept: Mexico's institutions and their words, which the conversation is built on: el reporte (the police report)
+  against la denuncia and la constancia de extravío at the Ministerio Público; the 911; the colectivo. Spain would say
+  "parte" or "denuncia" for the police's paper, but the reporte/denuncia contrast is the point of the scene (for the
+  lead). The bench keeps banca (banco = the bank in the same list).
+- Grammar: stolen_yes/no, happened (he ido a pagar), whenp (sobre / hacia + time), bank_called, have_id (llevo,
+  carné de conducir, DNI, documento de identidad), no_id_ctx (me lo han robado todo), pen (me deja, boli),
+  found_who_ctx (han encontrado). Merges added.

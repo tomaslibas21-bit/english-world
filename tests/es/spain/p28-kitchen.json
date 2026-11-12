@@ -1,0 +1,28 @@
+{
+"situation": "p28-kitchen",
+"items": [
+{ "ctx": "serve", "say": "Chef, ¿lo puede probar?", "intent": "offer_taste" },
+{ "ctx": "consent", "say": "Vale, dígame", "intent": ["want_feedback", "yn:yes"] },
+{ "ctx": "consent", "say": "Ahora no, chef", "intent": "no_feedback" },
+{ "ctx": "receive", "say": "Entiendo lo que dice", "intent": ["thanks_helpful", "g_ok"] },
+{ "ctx": "receive", "say": "Vale, lo voy a mejorar", "intent": "will_work" },
+{ "ctx": "example", "say": "¿Me pone un ejemplo?", "intent": "ask_example" },
+{ "ctx": "again", "say": "Le he puesto unas gotas de limón", "intent": ["ask_again", "again_ctx"] },
+{ "ctx": "again", "say": "Ya está, chef. ¿Lo prueba otra vez?", "intent": ["ask_again", "again_ctx"] },
+{ "ctx": "second", "say": "Entiendo lo que dice, pero prefiero dejarlo tradicional", "intent": "keep_own" },
+{ "ctx": "second", "say": "Vale, con tortilla", "intent": "second_ctx" },
+{ "ctx": "handoff", "say": "Vale, ¿dónde está?", "intent": "help_yes" },
+{ "ctx": "mia_open", "say": "El chef me ha pedido que lo pruebe", "intent": "offer_feedback" },
+{ "ctx": "mia_open", "say": "No te preocupes, seguro que está rico", "intent": "reassure" },
+{ "ctx": "mia_worked", "say": "Lo que te ha quedado muy bien es el pescado", "intent": "praise_part", "slots": { "good": "pescado" } },
+{ "ctx": "mia_worked", "say": "Me han gustado mucho las gambas", "intent": "praise_part" },
+{ "ctx": "mia_try", "say": "Le falta un poco de sal", "intent": "suggest_fix" },
+{ "ctx": "mia_howmuch", "say": "Solo un poquito", "intent": "howmuch_ans" },
+{ "ctx": "mia_encourage", "say": "No te agobies, es tu primera semana", "intent": ["encourage", "reassure"] },
+{ "ctx": "mia_encourage", "say": "¡Date prisa!", "intent": "rush" },
+{ "ctx": "mia_back", "say": "Gracias, Fátima. Me viene muy bien", "intent": "thanks_helpful" },
+{ "ctx": "closing", "say": "¡Oído, chef!", "intent": ["yes_chef_ctx", "g_ok"] },
+{ "ctx": "mia_worked", "say": "¿Qué le has puesto?", "intent": "ask_recipe" },
+{ "ctx": "mia_try", "say": "No le falta sal", "intent": "any" }
+]
+}

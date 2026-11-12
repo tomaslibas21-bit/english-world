@@ -1055,7 +1055,7 @@ export const meeting: SituationDef = {
       "@soft (lo | la) (podemos | podriamos) (hablar | platicar | discutir | comentar) [un poco | primero | mas | un poco mas] [@rtail]",
       "@soft (podemos | podriamos) (hablarlo | platicarlo | discutirlo | comentarlo) [un poco | primero | mas | un poco mas] [@rtail]",
       "@soft no me (gusta | encanta) [mucho | del todo] [@plan] [@rtail]",
-      "@soft [eso | esto] no me (funciona | sirve | parece bien | suena bien) [@rtail]",
+      "@soft [eso | esto] no me (funciona | sirve | parece bien | suena bien | viene bien | convence) [@rtail]",
       "@soft (el | este) viernes no (me funciona | es buena idea | es realista | es posible) #c_time",
       "@soft [todavia | aun] no me (has convencido | convenciste | convences)",
       "(no hay trato | sin trato)",
@@ -1273,8 +1273,8 @@ export const meeting: SituationDef = {
     ] },
     accept_deal: { patterns: [
       "[bueno | ok | va | sale | perfecto | si | vale] (trato hecho | hecho) #h:agreed",
-      "(ahora si | asi si | eso si) (me funciona | me sirve | me parece bien | me late | me convence) #h:works_for_me",
-      "(eso | esto) (me funciona | me sirve | me parece bien | me parece justo | me convence)",
+      "(ahora si | asi si | eso si) (me funciona | me sirve | me parece bien | me late | me convence | me viene bien) #h:works_for_me",
+      "(eso | esto) (me funciona | me sirve | me parece bien | me parece justo | me convence | me viene bien)",
       "(me parece | suena) (justo | razonable | bien | perfecto)",
       "[eso | esto] es (justo | razonable | lo justo)",
       "puedo vivir con eso",
@@ -1366,14 +1366,14 @@ export const meeting: SituationDef = {
 
     // --- the goodbye -------------------------------------------------------------------------------------------
     monday_yes: { patterns: [
-      "[si | claro] (el lunes | a la misma hora) (me funciona | esta bien | me parece bien | perfecto | me queda bien) #h:works_monday",
+      "[si | claro | vale] (el lunes | a la misma hora) (me funciona | esta bien | me parece bien | perfecto | me queda bien | me viene bien) #h:works_monday",
       "(nos vemos | hasta) el lunes #h:see_monday",
       "[si | claro] el lunes [a la misma hora] [entonces]",
       "[claro | si] nos vemos (entonces | la proxima semana | el proximo lunes) #h:see_then",
       "(si | claro) a la misma hora",
       "el lunes (esta bien | perfecto | me queda) [para mi]",
       "(ahi | alli) (estaré | nos vemos)",
-      "[si | claro] [el lunes] a las (nueve | 9) (me funciona | esta bien | me parece bien | perfecto | me queda bien)",
+      "[si | claro | vale] [el lunes] a las (nueve | 9) (me funciona | esta bien | me parece bien | perfecto | me queda bien | me viene bien)",
     ] },
     // "¿A qué hora?" / "¿A las nueve?" (asked: Gerardo says the time; said: a yes)
     nine_q_ctx: { patterns: [
@@ -1383,7 +1383,7 @@ export const meeting: SituationDef = {
       "(es | seria | sera) a las (nueve | 9)",
     ] },
     monday_no_ctx: { patterns: [
-      "el lunes no (puedo | me funciona | me queda)",
+      "el lunes no (puedo | me funciona | me queda | me viene bien)",
       "no puedo el lunes",
       "el lunes no",
       "[el lunes] (estoy | voy a estar) (ocupado | ocupada | fuera | de vacaciones) [el lunes]",
@@ -1401,7 +1401,7 @@ export const meeting: SituationDef = {
       "(no puedo | tengo que irme | estoy (ocupado | ocupada) | tengo planes | tengo otra junta | tengo otra reunion) [hoy | ahorita | ahora]",
       "(me encantaria | gracias | suena bien | claro) pero (no puedo | tengo que irme | estoy (ocupado | ocupada) | tengo (planes | otra junta | otra reunion | una reunion)) [hoy | ahorita | ahora]",
       "[mejor] (otro dia | la proxima | otra vez sera | a la proxima) #h:next_time",
-      "hoy no [puedo]",
+      "hoy no [puedo | me viene bien]",
       "no tomo cafe",
       "[no puedo] tengo (trabajo | mucho trabajo | cosas que hacer | una llamada) [hoy | ahorita]",
     ] },
@@ -1436,17 +1436,17 @@ export const meeting: SituationDef = {
     ],
     g_friendly: [
       t("A ver, | equipo, | tranquilos.", "Come on, | team, | calm.", "Okay, folks, let's keep it nice.", { flags: { 0: "a ver (let's see) here calls the room to order." } }),
-      t("Calma, | ustedes | dos.", "Calm down, | you | two.", "Easy, you two."),
+      t("Calma, | ustedes | dos.", "Calm down, | you | two.", "Easy, you two.", { spain: t("Calma, | vosotros | dos.", "Calm down, | you (all) | two.", "Easy, you two.") }),
     ],
     g_popcorn: [
-      t("Y | ustedes, | practicantes, | guarden | las | palomitas.", "And | you, | interns, | put-away | the | popcorn.", "And interns, put the popcorn away."),
+      t("Y | ustedes, | practicantes, | guarden | las | palomitas.", "And | you, | interns, | put-away | the | popcorn.", "And interns, put the popcorn away.", { spain: t("Y | vosotros, | becarios, | guardad | las | palomitas.", "And | you (all), | interns, | put-away | the | popcorn.", "And interns, put the popcorn away.") }),
     ],
     g_alt_help: [
       t("¿No habrá | un | punto medio | aquí?", "Isn't there | a | middle ground | here?", "Is there a middle ground here?"),
     ],
     g_boss_q: [
       t("¿Yo? | Yo | creo | que | necesito | más | café. | Pero | sigan.", "Me? | I | think | that | I-need | more | coffee. | But | carry on.", "Me? I think I need more coffee. But go on.",
-        { flags: { 8: "sigan: ustedes, he speaks to both of them." } }),
+        { flags: { 8: "sigan: ustedes, he speaks to both of them." }, spain: t("¿Yo? | Yo | creo | que | necesito | más | café. | Pero | seguid.", "Me? | I | think | that | I-need | more | coffee. | But | carry on.", "Me? I think I need more coffee. But go on.", { flags: { 8: "seguid: vosotros, he speaks to both of them." } }) }),
     ],
     g_decide1: [
       t("Bueno, | yo | decido.", "Okay, | I | decide.", "Okay, I'll make the call."),
@@ -1468,7 +1468,7 @@ export const meeting: SituationDef = {
         { flags: { 1: "que + subjunctive: an order to a third person." } }),
     ],
     g_sum2: [
-      t("¿Ven? | No fue | tan | difícil.", "You-see? | It-wasn't | so | hard.", "See? That wasn't so hard."),
+      t("¿Ven? | No fue | tan | difícil.", "You-see? | It-wasn't | so | hard.", "See? That wasn't so hard.", { spain: t("¿Veis? | No ha sido | tan | difícil.", "You (all) see? | It hasn't been | so | hard.", "See? That wasn't so hard.") }),
     ],
     g_gave_in: [
       t("Perfecto. | Entonces, | el | viernes.", "Perfect. | Then, | on | Friday.", "Great. Friday it is.", { flags: { 2: F_ON } }),
@@ -1514,7 +1514,7 @@ export const meeting: SituationDef = {
       t("¿Ves? | ¡Lo | sabía!", "See? | It | I-knew!", "See? I knew it!"),
     ],
     v_no_elab: [
-      t("¿No? | ¿Nada más | “no”? | ¿Me | explicas | por qué?", "No? | Just | “no”? | (To) me | you-explain | why?", "No? Just “no”? Care to elaborate?"),
+      t("¿No? | ¿Nada más | “no”? | ¿Me | explicas | por qué?", "No? | Just | “no”? | (To) me | you-explain | why?", "No? Just “no”? Care to elaborate?", { spain: t("¿No? | ¿Solo | “no”? | ¿Me | explicas | por qué?", "No? | Just | “no”? | (To) me | you-explain | why?", "No? Just “no”? Care to elaborate?") }),
     ],
     v_q_answer: [
       t("Porque | el | director | la | quiere | para | el | viernes. | Y | porque | lo | digo | yo. | Es broma. | Bueno, | más o menos.",
@@ -1525,21 +1525,21 @@ export const meeting: SituationDef = {
       t("No te veo | muy | {m:convencido|f:convencida}.", "I don't see you | very | convinced.", "You don't look convinced."),
     ],
     v_my_view: [
-      t("¿Yo? | Creo | que | es | perfecto. | Obvio.", "Me? | I-think | that | it's | perfect. | Obviously.", "Me? I think it's perfect. Obviously."),
+      t("¿Yo? | Creo | que | es | perfecto. | Obvio.", "Me? | I-think | that | it's | perfect. | Obviously.", "Me? I think it's perfect. Obviously.", { spain: t("¿Yo? | Creo | que | es | perfecto. | Obviamente.", "Me? | I-think | that | it's | perfect. | Obviously.", "Me? I think it's perfect. Obviously.") }),
     ],
     v_rude: [
       t("¡Guau! | Bueno. | No te guardes | nada, | ¿eh?", "Wow! | Okay. | Don't hold back | anything, | huh?", "Wow. Okay. Tell me how you really feel.",
-        { flags: { 2: "Sarcastic: “don't hold anything back”." } }),
+        { flags: { 2: "Sarcastic: “don't hold anything back”." }, spain: t("¡Vaya! | Vale. | No te guardes | nada, | ¿eh?", "Wow! | Okay. | Don't hold back | anything, | huh?", "Wow. Okay. Tell me how you really feel.", { flags: { 2: "Sarcastic: “don't hold anything back”." } }) }),
     ],
     v_charts1: [
       t("Ay, | sabía | que | alguien | iba | a | decir | eso. | Mira | esta | gráfica.", "Oh, | I-knew | that | someone | was-going | to | say | that. | Look-at | this | chart.",
-        "Oh, I knew someone would say that. Look at this chart."),
+        "Oh, I knew someone would say that. Look at this chart.", { spain: t("Ay, | sabía | que | alguien | iba | a | decir | eso. | Mira | este | gráfico.", "Oh, | I-knew | that | someone | was-going | to | say | that. | Look-at | this | chart.", "Oh, I knew someone would say that. Look at this chart.") }),
     ],
     v_charts2: [
       t("Las | visitas | subieron, | los | clics | subieron, | a | los | usuarios | les encanta | el | diseño | nuevo, | y | la verdad, | si | nada más…",
         "The | visits | went-up, | the | clicks | went-up, | — | the | users | love | the | design | new, | and | honestly, | if | we just…",
         "Traffic is up, clicks are up, users love the new design, and honestly, if we just…",
-        { flags: { 6: "a … les encanta: it delights the users; English needs no word for a." } }),
+        { flags: { 6: "a … les encanta: it delights the users; English needs no word for a." }, spain: t("Las | visitas | han subido, | los | clics | han subido, | a | los | usuarios | les encanta | el | diseño | nuevo, | y | la verdad, | si | solo…", "The | visits | have gone up, | the | clicks | have gone up, | — | the | users | love | the | design | new, | and | honestly, | if | we just…", "Traffic is up, clicks are up, users love the new design, and honestly, if we just…", { flags: { 6: "a … les encanta: it delights the users; English needs no word for a." } }) }),
     ],
     v_charts_more: [
       t("…y | en | la | diapositiva | nueve | está | la | tasa | de | conversión, | que, | francamente, | habla por sí sola…",
@@ -1548,7 +1548,7 @@ export const meeting: SituationDef = {
       t("…y | esta | es | mi | parte | favorita…", "…and | this | is | my | part | favorite…", "…and this is my favorite part…"),
     ],
     v_charts_end: [
-      t("…en fin. | Esa | es | mi | gráfica. | ¿Preguntas?", "…anyway. | That | is | my | chart. | Questions?", "…anyway. That's my chart. Questions?"),
+      t("…en fin. | Esa | es | mi | gráfica. | ¿Preguntas?", "…anyway. | That | is | my | chart. | Questions?", "…anyway. That's my chart. Questions?", { spain: t("…en fin. | Ese | es | mi | gráfico. | ¿Preguntas?", "…anyway. | That | is | my | chart. | Questions?", "…anyway. That's my chart. Questions?") }),
     ],
 
     // --- Vanessa: the floor and the concern --------------------------------------------------------------------
@@ -1560,17 +1560,17 @@ export const meeting: SituationDef = {
       t("Ay, | perdón.", "Oh, | sorry.", "Oh, sorry."),
     ],
     v_rude_stop: [
-      t("¿Disculpa? | …Bueno. | Habla.", "Excuse me? | …Fine. | Talk.", "Excuse me? …Fine. Go ahead.", { flags: { 0: F_DISC } }),
+      t("¿Disculpa? | …Bueno. | Habla.", "Excuse me? | …Fine. | Talk.", "Excuse me? …Fine. Go ahead.", { flags: { 0: F_DISC }, spain: t("¿Perdona? | …Vale. | Habla.", "Excuse me? | …Fine. | Talk.", "Excuse me? …Fine. Go ahead.", { flags: { 0: F_DISC } }) }),
     ],
     v_excuse_me: [
-      t("¿Disculpa? | …Está bien.", "Excuse me? | …Fine.", "Excuse me? …Fine.", { flags: { 0: F_DISC } }),
+      t("¿Disculpa? | …Está bien.", "Excuse me? | …Fine.", "Excuse me? …Fine.", { flags: { 0: F_DISC }, spain: t("¿Perdona? | …Vale.", "Excuse me? | …Fine.", "Excuse me? …Fine.", { flags: { 0: F_DISC } }) }),
     ],
     v_whats_problem: [
       t("Bueno, | ¿cuál | es | el | problema?", "Okay, | what | is | the | problem?", "Okay, so what's the problem?"),
-      t("Está bien. | ¿Qué | te | preocupa?", "Fine. | What | you | worries?", "Fine. What worries you?"),
+      t("Está bien. | ¿Qué | te | preocupa?", "Fine. | What | you | worries?", "Fine. What worries you?", { spain: t("Vale. | ¿Qué | te | preocupa?", "Fine. | What | you | worries?", "Fine. What worries you?") }),
     ],
     v_why_again: [
-      t("Sí, | ya | lo | dijiste. | Pero | ¿por qué?", "Yes, | already | it | you-said. | But | why?", "Yes, you said that. But why?"),
+      t("Sí, | ya | lo | dijiste. | Pero | ¿por qué?", "Yes, | already | it | you-said. | But | why?", "Yes, you said that. But why?", { spain: t("Sí, | ya | lo | has dicho. | Pero | ¿por qué?", "Yes, | already | it | you've said. | But | why?", "Yes, you said that. But why?") }),
     ],
     v_problem_first: [
       t("Espera. | Primero, | ¿cuál | es | el | problema?", "Wait. | First, | what | is | the | problem?", "Hold on. First, what's the problem?"),
@@ -1589,7 +1589,7 @@ export const meeting: SituationDef = {
       t("¿Por qué? | A ver, | ¿qué | te | preocupa | exactamente?", "Why? | Let's see, | what | you | worries | exactly?", "Why? Okay, what exactly worries you?"),
     ],
     v_c_test: [
-      t("Ya | la | probamos. | Bueno… | casi | toda.", "Already | it | we-tested. | Well… | almost | all-of-it.", "We tested it. Well… mostly.", { flags: { 1: F_LA } }),
+      t("Ya | la | probamos. | Bueno… | casi | toda.", "Already | it | we-tested. | Well… | almost | all-of-it.", "We tested it. Well… mostly.", { flags: { 1: F_LA }, spain: t("Ya | la | hemos probado. | Bueno… | casi | toda.", "Already | it | we've tested. | Well… | almost | all-of-it.", "We tested it. Well… mostly.", { flags: { 1: F_LA } }) }),
     ],
     v_c_time: [
       t("Cuatro | días | es | más | que | suficiente. | Somos | un | equipo | rápido.", "Four | days | is | more | than | enough. | We-are | a | team | fast.", "Four days is plenty. We're a fast team."),
@@ -1601,7 +1601,7 @@ export const meeting: SituationDef = {
       t("El | equipo | de | soporte | va | a | saber | qué | hacer.", "The | team | of | support | is-going | to | know | what | to-do.", "The support team will figure it out."),
     ],
     v_c_bugs: [
-      t("Hay | un | bug. | Uno. | Chiquito.", "There-is | one | bug. | One. | Tiny.", "There's one bug. One. Tiny.", { flags: { 4: "chiquito: chico + -ito, an affectionate “tiny”." } }),
+      t("Hay | un | bug. | Uno. | Chiquito.", "There-is | one | bug. | One. | Tiny.", "There's one bug. One. Tiny.", { flags: { 4: "chiquito: chico + -ito, an affectionate “tiny”." }, spain: t("Hay | un | bug. | Uno. | Pequeñito.", "There-is | one | bug. | One. | Tiny.", "There's one bug. One. Tiny.", { flags: { 4: "pequeñito: pequeño + -ito, an affectionate “tiny”." } }) }),
     ],
     v_c_risk: [
       t("Todo | lanzamiento | es | un | riesgo. | Así son | los | negocios.", "Every | launch | is | a | risk. | That's how | — | business-is.", "Every launch is a risk. That's business.",
@@ -1622,16 +1622,16 @@ export const meeting: SituationDef = {
     v_counter2: [
       t("Y | el | sesenta | por ciento | de | nuestros | visitantes | entra | desde | el | celular. | Y | ahí, | la | página | vieja | es | un | desastre.",
         "And | — | sixty | percent | of | our | visitors | comes-in | from | the | phone. | And | there, | the | site | old | is | a | disaster.",
-        "And sixty percent of our visitors are on their phones. And on a phone, the old site is a disaster.", { flags: { 1: F_ART } }),
+        "And sixty percent of our visitors are on their phones. And on a phone, the old site is a disaster.", { flags: { 1: F_ART }, spain: t("Y | el | sesenta | por ciento | de | nuestros | visitantes | entra | desde | el | móvil. | Y | ahí, | la | página | vieja | es | un | desastre.", "And | — | sixty | percent | of | our | visitors | comes-in | from | the | phone. | And | there, | the | site | old | is | a | disaster.", "And sixty percent of our visitors are on their phones. And on a phone, the old site is a disaster.", { flags: { 1: F_ART } }) }),
     ],
     v_counter_reask: [
       t("¿Entonces? | ¿La | página | vieja | es | un | problema | o | no?", "So? | The | site | old | is | a | problem | or | not?", "So? Is the old site a problem or not?"),
     ],
     v_no_listen: [
-      t("Espera. | ¿Siquiera | viste | mi | gráfica?", "Wait. | Even | you-saw | my | chart?", "Hold on. Did you even look at my chart?"),
+      t("Espera. | ¿Siquiera | viste | mi | gráfica?", "Wait. | Even | you-saw | my | chart?", "Hold on. Did you even look at my chart?", { spain: t("Espera. | ¿Has visto | siquiera | mi | gráfico?", "Wait. | Have you seen | even | my | chart?", "Hold on. Did you even look at my chart?") }),
     ],
     v_no_hear: [
-      t("¡Ni siquiera | escuchaste | mi | punto!", "Not even | you-heard | my | point!", "You didn't even hear my point!"),
+      t("¡Ni siquiera | escuchaste | mi | punto!", "Not even | you-heard | my | point!", "You didn't even hear my point!", { spain: t("¡Ni siquiera | has escuchado | mi | argumento!", "Not even | you've heard | my | argument!", "You didn't even hear my point!") }),
     ],
     v_first_agree: [
       t("Espera. | Primero: | ¿estás | de acuerdo | en | que | la | página | vieja | es | un | problema?", "Wait. | First: | are-you | in agreement | on | that | the | site | old | is | a | problem?",
@@ -1661,25 +1661,25 @@ export const meeting: SituationDef = {
     v_a_backup: [
       t("¿Dos | páginas | al mismo tiempo? | Es | el | doble | de | trabajo. | Pero… | está bien, | entiendo | la | lógica.",
         "Two | sites | at the same time? | It's | the | double | of | work. | But… | okay, | I-understand | the | logic.",
-        "Two sites at once? That's double the work. But… okay, I see the logic."),
+        "Two sites at once? That's double the work. But… okay, I see the logic.", { spain: t("¿Dos | páginas | al mismo tiempo? | Es | el | doble | de | trabajo. | Pero… | vale, | entiendo | la | lógica.", "Two | sites | at the same time? | It's | the | double | of | work. | But… | okay, | I-understand | the | logic.", "Two sites at once? That's double the work. But… okay, I see the logic.") }),
     ],
     v_a_delay: [
       t("¿Después? | Perderíamos | una | semana | entera, | mínimo.", "Later? | We'd-lose | a | week | whole, | at least.", "Later? We'd lose a whole week, at least."),
     ],
     v_a_train: [
-      t("La | capacitación | toma | tiempo… | pero | bueno, | te | entiendo.", "The | training | takes | time… | but | okay, | you | I-understand.", "Training takes time… but okay, I hear you."),
+      t("La | capacitación | toma | tiempo… | pero | bueno, | te | entiendo.", "The | training | takes | time… | but | okay, | you | I-understand.", "Training takes time… but okay, I hear you.", { spain: t("La | formación | lleva | tiempo… | pero | bueno, | te | entiendo.", "The | training | takes | time… | but | okay, | you | I-understand.", "Training takes time… but okay, I hear you.") }),
     ],
     v_a_inform: [
       t("¿Un | correo | a | los | clientes? | Bueno. | Eso | es | fácil.", "An | email | to | the | customers? | Okay. | That | is | easy.", "An email to customers? Fine. That's easy."),
     ],
     v_a_fix: [
-      t("¿Arreglar | los | errores | primero? | Está bien, | es | justo.", "Fix | the | bugs | first? | Okay, | it's | fair.", "Fix the bugs first? Fine, that's fair."),
+      t("¿Arreglar | los | errores | primero? | Está bien, | es | justo.", "Fix | the | bugs | first? | Okay, | it's | fair.", "Fix the bugs first? Fine, that's fair.", { spain: t("¿Arreglar | los | errores | primero? | Vale, | es | justo.", "Fix | the | bugs | first? | Okay, | it's | fair.", "Fix the bugs first? Fine, that's fair.") }),
     ],
     v_a_other: [
       t("Mmm. | Interesante. | Sigue.", "Hmm. | Interesting. | Go on.", "Hmm. Interesting. Go on."),
     ],
     v_soften: [
-      t("Bueno, | bueno. | Ganaste | la | mitad.", "Okay, | okay. | You-won | the | half.", "Okay, okay. You win half."),
+      t("Bueno, | bueno. | Ganaste | la | mitad.", "Okay, | okay. | You-won | the | half.", "Okay, okay. You win half.", { spain: t("Vale, | vale. | Has ganado | la | mitad.", "Okay, | okay. | You've won | the | half.", "Okay, okay. You win half.") }),
     ],
 
     // --- Vanessa: settling it ------------------------------------------------------------------------------------------
@@ -1698,7 +1698,7 @@ export const meeting: SituationDef = {
       t("¡Ay, | ya | te | estoy | dando | la | mitad!", "Oh, | already | you | I'm | giving | the | half!", "Come on, that's halfway!"),
     ],
     v_deal: [
-      t("¡Listo! | Quedamos | así.", "Done! | We-agree | like-that.", "Done. It's a deal.", { flags: { 1: "quedar (en algo): to agree on it; quedamos así = that's settled." } }),
+      t("¡Listo! | Quedamos | así.", "Done! | We-agree | like-that.", "Done. It's a deal.", { flags: { 1: "quedar (en algo): to agree on it; quedamos así = that's settled." }, spain: t("¡Hecho! | Quedamos | así.", "Done! | We-agree | like-that.", "Done. It's a deal.", { flags: { 1: "quedar (en algo): to agree on it; quedamos así = that's settled." } }) }),
       t("Sale, | trato hecho. | Míranos, | como | gente | adulta.", "Okay, | deal. | Look-at-us, | like | people | grown-up.", "Deal. Look at us, being adults.",
         { flags: { 0: "Mexican: sale = okay, deal." },
           neutral: t("Bueno, | trato hecho. | Míranos, | como | gente | adulta.", "Okay, | deal. | Look-at-us, | like | people | grown-up.", "Deal. Look at us, being adults.") }),
@@ -1733,7 +1733,7 @@ export const meeting: SituationDef = {
     ],
     v_twist_point: [
       t("Gracias. | Nada más | una | cosa: | los | celulares. | Sesenta | por ciento. | Acuérdate.", "Thanks. | Just | one | thing: | the | phones. | Sixty | percent. | Remember.",
-        "Thanks. Just one thing: phones. Sixty percent. Remember that."),
+        "Thanks. Just one thing: phones. Sixty percent. Remember that.", { spain: t("Gracias. | Solo | una | cosa: | los | móviles. | Sesenta | por ciento. | Acuérdate.", "Thanks. | Just | one | thing: | the | phones. | Sixty | percent. | Remember.", "Thanks. Just one thing: phones. Sixty percent. Remember that.") }),
     ],
     v_twist_sorry: [
       t("Tienes razón. | Perdón.", "You're right. | Sorry.", "Fair enough. Sorry."),
@@ -1748,11 +1748,11 @@ export const meeting: SituationDef = {
       t("¿Verdes? | No. | …¿Turquesa?", "Green? | No. | …Teal?", "Green? No. …Teal?"),
     ],
     v_teal3: [
-      t("Turquesa. | De acuerdo. | Míranos.", "Teal. | Agreed. | Look-at-us.", "Teal. Agreed. Look at us."),
+      t("Turquesa. | De acuerdo. | Míranos.", "Teal. | Agreed. | Look-at-us.", "Teal. Agreed. Look at us.", { spain: t("Turquesa. | Vale. | Míranos.", "Teal. | Okay. | Look-at-us.", "Teal. Agreed. Look at us.") }),
     ],
     v_coffee: [
       t("Estuvo | divertido. | ¿Un | café? | Yo | invito.", "It-was | fun. | A | coffee? | I | treat.", "That was fun. Coffee? I'm buying.",
-        { flags: { 5: "invitar: to pay for someone (yo invito = it's on me)." } }),
+        { flags: { 5: "invitar: to pay for someone (yo invito = it's on me)." }, spain: t("Ha estado | divertido. | ¿Un | café? | Yo | invito.", "It's been | fun. | A | coffee? | I | treat.", "That was fun. Coffee? I'm buying.", { flags: { 5: "invitar: to pay for someone (yo invito = it's on me)." } }) }),
     ],
     v_coffee_yes: [
       t("Perfecto. | Pero | todavía | no estamos | de acuerdo | con | la | tipografía.", "Great. | But | still | we-aren't | in agreement | about | the | font.",
@@ -1781,7 +1781,7 @@ export const meeting: SituationDef = {
         { id: "push_back", s: t("Yo | no estaría | tan | {m:seguro|f:segura}. | No lo tengo | tan | claro.", "I | wouldn't be | so | sure. | I don't have it | so | clear.",
           "I'd push back a little on that. It's not that clear to me."), register: "polite", note: "From the song: a soft, businesslike way to disagree." },
         { id: "see_point", s: t("Entiendo | tu | punto, | pero | no sé | si | estoy | de acuerdo.", "I-understand | your | point, | but | I don't know | if | I-am | in agreement.",
-          "I see your point, but I'm not sure I agree."), note: "Show that you understand first, then “pero…”." },
+          "I see your point, but I'm not sure I agree.", { spain: t("Entiendo | lo que | dices, | pero | no sé | si | estoy | de acuerdo.", "I-understand | what | you-say, | but | I don't know | if | I-am | in agreement.", "I see your point, but I'm not sure I agree.") }), note: "Show that you understand first, then “pero…”." },
         { id: "not_sure_about", s: t("No estoy | muy | {m:seguro|f:segura} | de | eso.", "I'm not | very | sure | of | that.", "I'm not so sure about that.") },
         { id: "have_concerns", s: t("Tengo | algunas | dudas | sobre | el | viernes.", "I-have | some | doubts | about | — | Friday.", "I have some concerns about Friday.",
           { flags: { 4: F_ART } }) },
@@ -1796,7 +1796,7 @@ export const meeting: SituationDef = {
       lt: "Ask about the plan",
       items: [
         { id: "q_why_friday", s: t("¿Por qué | este | viernes?", "Why | this | Friday?", "Why this Friday?") },
-        { id: "q_tested", s: t("¿Ya | la | probamos | bien?", "Already | it | we-tested | well?", "Have we tested it properly?", { flags: { 1: F_LA } }),
+        { id: "q_tested", s: t("¿Ya | la | probamos | bien?", "Already | it | we-tested | well?", "Have we tested it properly?", { flags: { 1: F_LA }, spain: t("¿La | hemos probado | bien?", "It | have we tested | well?", "Have we tested it properly?", { flags: { 0: F_LA } }) }),
           note: "Mexicans ask with ya and the simple past: “¿Ya la probamos?”" },
         { id: "q_rush", s: t("¿Por qué | tanta | prisa?", "Why | so-much | hurry?", "What's the rush?"), register: "casual" },
       ],
@@ -1809,7 +1809,7 @@ export const meeting: SituationDef = {
         { id: "jump_in", s: t("¿Me | permites | un | segundo?", "(To) me | you-allow | a | second?", "Can I jump in for a second?"), note: "Very common in Mexico: “¿Me permites?”" },
         { id: "sorry_interrupt", s: t("Perdón | que | te | interrumpa, | pero…", "Sorry | that | you | I-interrupt, | but…", "Sorry to interrupt, but…",
           { flags: { 3: "interrumpa: the subjunctive after “perdón que”." } }) },
-        { id: "add_something", s: t("¿Puedo | agregar | algo?", "Can-I | add | something?", "Could I add something?") },
+        { id: "add_something", s: t("¿Puedo | agregar | algo?", "Can-I | add | something?", "Could I add something?", { spain: t("¿Puedo | añadir | algo?", "Can-I | add | something?", "Could I add something?") }) },
       ],
     },
     reason: {
@@ -1828,7 +1828,7 @@ export const meeting: SituationDef = {
       items: [
         { id: "fair_point", s: t("Es | un | punto | válido. | Sin embargo…", "It's | a | point | valid. | However…", "That's a fair point. However…"),
           note: "From the song: grant the point, then “sin embargo…”." },
-        { id: "take_point", s: t("Entiendo | tu | punto.", "I-understand | your | point.", "I take your point.") },
+        { id: "take_point", s: t("Entiendo | tu | punto.", "I-understand | your | point.", "I take your point.", { spain: t("Entiendo | lo que | dices.", "I-understand | what | you-say.", "I take your point.") }) },
         { id: "right_about", s: t("En | eso | tienes razón.", "On | that | you're right.", "You're right about that.") },
         { id: "good_point", s: t("Buen | punto. | La | página | vieja | es | lenta.", "Good | point. | The | site | old | is | slow.", "Good point. The old site is slow.") },
       ],
@@ -1837,7 +1837,7 @@ export const meeting: SituationDef = {
       lt: "Suggest another way",
       items: [
         { id: "look_another_way", s: t("¿Lo | podríamos | ver | de otra forma?", "It | we-could | see | another way?", "Could we look at it another way?"), note: "From the song." },
-        { id: "have_we_considered", s: t("¿Ya | consideramos | un | lanzamiento de prueba?", "Already | we-considered | a | soft launch?", "Have we considered a soft launch?"),
+        { id: "have_we_considered", s: t("¿Ya | consideramos | un | lanzamiento de prueba?", "Already | we-considered | a | soft launch?", "Have we considered a soft launch?", { spain: t("¿Hemos pensado | en | un | lanzamiento de prueba?", "Have we thought | about | a | soft launch?", "Have we considered a soft launch?") }),
           note: "From the song. Mexicans use ya with the simple past here." },
         { id: "what_if", s: t("¿Y si | dejamos | la | página | vieja | un | mes | más?", "What if | we-leave | the | site | old | a | month | more?", "What if we keep the old site for another month?"),
           note: "“¿Y si probamos…?” is the friendliest way to suggest something." },
@@ -1857,7 +1857,7 @@ export const meeting: SituationDef = {
       lt: "Accept the compromise, or agree to disagree",
       items: [
         { id: "agreed", s: t("Trato hecho.", "Deal.", "Agreed.") },
-        { id: "works_for_me", s: t("Así | sí | me | funciona.", "Like-that | yes | (for) me | it-works.", "Now that works for me.", { flags: { 1: "sí stresses it: this time it does work." } }),
+        { id: "works_for_me", s: t("Así | sí | me | funciona.", "Like-that | yes | (for) me | it-works.", "Now that works for me.", { flags: { 1: "sí stresses it: this time it does work." }, spain: t("Así | sí | me | convence.", "Like-that | yes | me | it-convinces.", "Now that works for me.", { flags: { 1: "sí stresses it: this time it does work." } }) }),
           note: "From the song." },
         { id: "agree_disagree", s: t("Estamos | de acuerdo | en | no estar | de acuerdo.", "We-are | in agreement | on | not being | in agreement.", "Let's agree to disagree."),
           note: "From the song. Also common: “Cada quien con su opinión.”" },
@@ -1868,7 +1868,7 @@ export const meeting: SituationDef = {
     bye: {
       lt: "Say goodbye",
       items: [
-        { id: "works_monday", s: t("El | lunes | me | funciona.", "— | Monday | (for) me | works.", "Monday works for me.", { flags: { 0: F_ART } }) },
+        { id: "works_monday", s: t("El | lunes | me | funciona.", "— | Monday | (for) me | works.", "Monday works for me.", { flags: { 0: F_ART }, spain: t("El | lunes | me | viene | bien.", "— | Monday | (for) me | comes | well.", "Monday works for me.", { flags: { 0: F_ART } }) }) },
         { id: "see_monday", s: t("Nos vemos | el | lunes.", "See you | on | Monday.", "See you Monday.", { flags: { 1: F_ON } }) },
         { id: "see_then", s: t("Claro. | ¡Nos vemos | entonces!", "Sure. | See you | then!", "Sure. See you then!") },
       ],
@@ -1894,6 +1894,16 @@ export const meeting: SituationDef = {
   tips: TIPS,
 
   merges: {
+    // Spain's twins (12 Nov 2026)
+    "no ha sido": { reason: "grammatical_fusion", split: "no + ha + sido: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "The verb phrase." },
+    "han subido": { reason: "grammatical_fusion", split: "han + subido: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "has dicho": { reason: "grammatical_fusion", split: "has + dicho: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "hemos probado": { reason: "grammatical_fusion", split: "hemos + probado: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "has visto": { reason: "grammatical_fusion", split: "has + visto: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "has escuchado": { reason: "grammatical_fusion", split: "has + escuchado: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "has ganado": { reason: "grammatical_fusion", split: "has + ganado: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "ha estado": { reason: "grammatical_fusion", split: "ha + estado: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "hemos pensado": { reason: "grammatical_fusion", split: "hemos + pensado: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
     "damos de baja": { reason: "lexical_expression", split: "damos → we-give, de → of, baja → low is false; dar de baja (a website, a service) = shut down.", minimal: "Three words, one verb." },
     "de un jalón": { reason: "lexical_expression", split: "de → of, un → a, jalón → tug is false; Mexican = all in one go.", minimal: "Three words." },
     "de una vez": { reason: "lexical_expression", split: "de → of, una → one, vez → time; = all at once.", minimal: "Three words." },

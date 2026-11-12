@@ -1,0 +1,28 @@
+{
+"situation": "p25-used-car",
+"items": [
+{ "ctx": "arrive", "say": "Hola, vengo por el coche", "intent": "about_ad" },
+{ "ctx": "arrive", "say": "He visto su anuncio en internet", "intent": "about_ad" },
+{ "ctx": "arrive", "say": "¡Qué coche tan bonito!", "intent": "compliment_car" },
+{ "ctx": "look", "say": "¿Ha tenido algún accidente?", "intent": "q_accident" },
+{ "ctx": "look", "say": "¿Es automático o manual?", "intent": "q_gearbox" },
+{ "ctx": "look", "say": "¿Cómo están los neumáticos?", "intent": "q_tires" },
+{ "ctx": "look", "say": "¿Es grande el maletero?", "intent": "q_trunk" },
+{ "ctx": "look", "say": "¿Tiene el historial de revisiones?", "intent": "q_service" },
+{ "ctx": "look", "say": "¿Cómo se baja la capota?", "intent": "q_top" },
+{ "ctx": "look", "say": "¿Funciona la radio?", "intent": "q_radio" },
+{ "ctx": "look", "say": "¿Lo puedo llevar a mi mecánico?", "intent": "q_mechanic" },
+{ "ctx": "look", "say": "¿Puedo conducirlo?", "intent": "test_drive" },
+{ "ctx": "drive", "say": "¿Puedo hacer una prueba de conducción?", "intent": "test_drive" },
+{ "ctx": "opinion", "say": "Se conduce muy bien", "intent": "drive_good" },
+{ "ctx": "flaw", "say": "No pasa nada, es descapotable", "intent": "flaw_ok_ctx" },
+{ "ctx": "talk", "say": "Me parece un poco caro", "intent": "too_high" },
+{ "ctx": "price", "say": "Pero el aire acondicionado no funciona, así que…", "intent": "use_flaw" },
+{ "ctx": "price", "say": "Vale, trato hecho", "intent": "accept_deal" },
+{ "ctx": "price", "say": "Vale", "intent": ["accept_ctx", "yn:yes"] },
+{ "ctx": "pay", "say": "¿Le vale un cheque bancario?", "intent": "pay_check" },
+{ "ctx": "pay", "say": "No llevo efectivo", "intent": "no_cash" },
+{ "ctx": "pay", "say": "¿Puedo pagar a plazos?", "intent": "pay_parts" },
+{ "ctx": "drive", "say": "No quiero conducirlo", "intent": "any" }
+]
+}

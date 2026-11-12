@@ -180,7 +180,7 @@ const MTIPS: EntityDef[] = [
   }),
   ent("more_feedback", "más | retroalimentación", "more | feedback", "f", {
     art: "", attrs: { fixed: true, nat: "more feedback" },
-    forms: ["mas feedback", "mas comentarios", "retroalimentacion mas seguido", "retroalimentacion mas seguida", "feedback mas seguido"],
+    forms: ["mas feedback", "mas comentarios", "retroalimentacion mas seguido", "retroalimentacion mas seguida", "feedback mas seguido", "retroalimentacion mas a menudo", "feedback mas a menudo"],
   }),
 ];
 
@@ -349,7 +349,7 @@ export const review: SituationDef = {
       "(probablemente | seguramente | sin duda | yo diria que) (ayudar | rescatar | sacar adelante | salvar) [a | al] {win} #h:probably",
       "de lo que (estoy | me siento) mas (orgulloso | orgullosa) es [de | del] {win}",
       "lo que mas me (enorgullece | gusta | gustó) (es | fue) {win}",
-      "[creo que | yo creo que | pienso que] {win} (salió | fue | funcionó | quedó) [muy | super | bastante | realmente] (bien | increible | excelente | genial) #h:went_well",
+      "[creo que | yo creo que | pienso que] {win} (salió | fue | funcionó | quedó | ha salido | ha ido | ha funcionado) [muy | super | bastante | realmente] (bien | increible | excelente | genial) #h:went_well",
       "[creo que] (hice | hicimos) un (buen | gran | muy buen) trabajo (con | en | con el | en el) {win}",
       "{win} (fue | es) mi (mayor | mejor) (logro | exito | orgullo) [este ano | del ano]",
       "mi (mayor | mejor) (logro | exito) [del ano | de este ano | este ano] (fue | es) {win} [y [tambien] {win2:win}]",
@@ -400,7 +400,7 @@ export const review: SituationDef = {
     ] },
     thanks_praise: { patterns: [
       "[gracias] (eso | esto) significa mucho [para mi] #h:means_lot",
-      "[gracias] (de verdad | en serio) (lo | te lo) aprecio [mucho] #h:appreciate_that",
+      "[gracias] (de verdad | en serio) (lo | te lo) (aprecio | agradezco) [mucho] #h:appreciate_that",
       "[gracias] (lo | te lo) aprecio [mucho] [de verdad]",
       "(me da [mucho] gusto | me alegra | me alegro de | me da gusto) (que (haya | hayan) (servido | ayudado | funcionado) | escuchar eso | oir eso | que te (haya gustado | guste)) #h:glad_helped",
       "[gracias] (me da [mucho] gusto | me alegra [mucho] | me alegro [mucho]) [de verdad]",
@@ -524,11 +524,11 @@ export const review: SituationDef = {
       "con todo respeto no estoy de acuerdo",
       "[pero] (en esas | en las dos | en las ultimas dos | esas) @junta tu presentaste mis @secc [@late_why] #ctx #h:you_presented",
       "tu (presentaste | hiciste | tomaste | cubriste | diste) mis @secc [en (esas | las dos | las) @junta] [@late_why] #ctx",
-      "[es que | porque | fue porque] el cliente (llegó | llego) tarde [te acuerdas | recuerdas] #ctx #h:client_late",
+      "[es que | porque | fue porque] el cliente (llegó | llego | ha llegado) tarde [te acuerdas | recuerdas] #ctx #h:client_late",
       "[es que | porque] (no hubo | no habia | no tuvimos) [suficiente] tiempo #ctx",
       "se nos acabó el tiempo #ctx",
       "(queria | iba a | estaba lista para | estaba listo para | tenia planeado) (hablar | presentar) pero (tu presentaste (mis @secc | todo) | no hubo tiempo | el cliente llegó tarde | se acabó el tiempo) #ctx",
-      "[la verdad] no (tuve | me dieron | hubo) (la | una)? oportunidad [de (hablar | presentar)] #ctx #h:no_chance",
+      "[la verdad] no (tuve | me dieron | hubo | he tenido | me han dado | ha habido) (la | una)? oportunidad [de (hablar | presentar)] #ctx #h:no_chance",
       "no hubo tiempo para (mi | mis @secc) #ctx",
       // "No es verdad, el cliente llegó tarde": blunt, but the reason is there (a tip, and the reason wins)
       "[eso] no es (verdad | cierto | asi) [porque | es que] (el cliente (llegó | llego) tarde | tu presentaste mis @secc) #ctx #tip:soften",
@@ -599,7 +599,7 @@ export const review: SituationDef = {
       "(esa | esta | eso) es (la @rev)? de (otra persona | alguien mas | pablo) [en (la pantalla | la computadora)]",
       "(esa | esta) no es (mi @rev | la mia | mia) #h:not_mine",
       "creo que (esa | esta) no es (mi @rev | la mia | mia)",
-      "creo que (abriste | tienes abierta | estas viendo) (la | el) (pestana | ventana | evaluacion | hoja | archivo) (equivocada | equivocado) #h:wrong_tab",
+      "creo que (abriste | has abierto | tienes abierta | estas viendo) (la | el) (pestana | ventana | evaluacion | hoja | archivo) (equivocada | equivocado) #h:wrong_tab",
       "(abriste | tienes) (la | el) (pestana | ventana | archivo | evaluacion) (equivocada | equivocado)",
       "(pestana | archivo | evaluacion | ventana) equivocada",
       "es (la @rev | la) de pablo", "esa es la de pablo",
@@ -667,7 +667,7 @@ export const review: SituationDef = {
       "(quiero | pienso | quisiera) (tomar | hacer) (un | algun) (curso | taller | diplomado) [el proximo ano]",
       "un (curso | taller) (estaria | seria) (bien | padre | bueno | interesante)",
     ] },
-    goal_course_ctx: { patterns: ["[tal vez | quizas] (un curso | algun curso | un taller | una capacitacion) [tal vez | el proximo ano]"] },
+    goal_course_ctx: { patterns: ["[tal vez | quizas] (un curso | algun curso | un taller | una capacitacion | una formacion) [tal vez | el proximo ano]"] },
     // "Análisis de datos." (only while she asks about goals)
     goal_ctx: { patterns: ["[tal vez | un | una] {goal} [creo | tal vez | el proximo ano]", "un curso de {goal}", "(curso | taller) de {goal}"] },
     // "¿Qué es UX writing?" (only while she asks about goals): the word, never the goal ("¿Qué significa…?" is global)
@@ -679,8 +679,8 @@ export const review: SituationDef = {
       "(quiero | me gustaria) (mas | nuevos) (retos | responsabilidades)",
     ] },
     ask_budget: { patterns: [
-      "hay [un] presupuesto (para | de) (capacitacion | cursos | eso | un curso | capacitaciones) #h:training_budget",
-      "(tenemos | hay) presupuesto [para eso]", "hay (dinero | fondos | apoyo) para (cursos | capacitacion | un curso | eso)",
+      "hay [un] presupuesto (para | de) (capacitacion | cursos | eso | un curso | capacitaciones | formacion) #h:training_budget",
+      "(tenemos | hay) presupuesto [para eso]", "hay (dinero | fondos | apoyo) para (cursos | capacitacion | un curso | eso | formacion)",
       "(la empresa | linea clara | ustedes) (paga | pagan | cubre | cubren) (el curso | los cursos | eso | la capacitacion)",
       "(podrias | podrian | puede | pueden | podriais) pagar (el curso | eso | la capacitacion)",
       "cuanto (puedo | podemos) gastar [en (cursos | capacitacion | eso)]",
@@ -690,7 +690,7 @@ export const review: SituationDef = {
     ] },
     ask_support: { patterns: [
       "(podemos | podriamos) (practicar | ensayar) antes de (las @junta | cada @junta) [con (clientes | el cliente)] #h:practice_before",
-      "me (ayudaria | serviria) (tener | recibir)? (retroalimentacion | comentarios | feedback) (mas seguido | seguido | constante | cada semana) #h:regular_feedback",
+      "me (ayudaria | serviria) (tener | recibir)? (retroalimentacion | comentarios | feedback) (mas seguido | seguido | constante | cada semana | mas a menudo | a menudo) #h:regular_feedback",
       "(puedo | podria) tener (tiempo | horas) para (el curso | estudiar | eso) #h:time_course",
       "(me puedes | podrias | me podrias) (ayudar | apoyar | asesorar) [con eso]",
       "(puedo | podria) tener un (mentor | mentora | coach)",
@@ -884,12 +884,12 @@ export const review: SituationDef = {
     ],
     hello_back: [
       t("¡Hola! | Pasa. | No te preocupes: | la | planta | ahora | vive | en | la | repisa.", "Hi! | Come in. | Don't worry: | the | plant | now | lives | on | the | shelf.",
-        "Hi! Come in. Don't worry, the plant lives on the shelf now."),
+        "Hi! Come in. Don't worry, the plant lives on the shelf now.", { spain: t("¡Hola! | Pasa. | No te preocupes: | la | planta | ahora | vive | en | la | estantería.", "Hi! | Come in. | Don't worry: | the | plant | now | lives | on | the | shelf.", "Hi! Come in. Don't worry, the plant lives on the shelf now.") }),
     ],
     hello_back2: [t("Gracias | otra vez | por | tu | tiempo.", "Thanks | again | for | your | time.", "Thanks for making time again.")],
     plant_help: [
       t("No, | no, | quédate | ahí. | Uy. | Eso | sonó | muy | de | jefa.", "No, | no, | stay | there. | Whoa. | That | sounded | very | like a | boss.",
-        "No, no, stay where you are. Wow. That sounded very managerial.", { flags: { 8: "muy de jefa: de + a role = typical of a boss." } }),
+        "No, no, stay where you are. Wow. That sounded very managerial.", { flags: { 8: "muy de jefa: de + a role = typical of a boss." }, spain: t("No, | no, | quédate | ahí. | Uy. | Eso | ha sonado | muy | de | jefa.", "No, | no, | stay | there. | Whoa. | That | has sounded | very | like a | boss.", "No, no, stay where you are. Wow. That sounded very managerial.", { flags: { 8: "muy de jefa: de + a role = typical of a boss." } }) }),
       t("Está bien, | es | solo | tierra. | Luego | la | limpio.", "It's fine, | it's | just | dirt. | Later | it | I'll-clean.", "It's fine, it's just dirt. I'll deal with it later.",
         { flags: { 5: "la: the dirt (la tierra)." } }),
     ],
@@ -913,10 +913,10 @@ export const review: SituationDef = {
         "That's totally normal. I'm nervous too, and I'm the manager."),
     ],
     feel_asked_back_back: [t("Qué | bueno. | ¿Yo? | Todavía | un | poco | nerviosa, | la verdad.", "How | good. | Me? | Still | a | little | nervous, | honestly.",
-      "Glad to hear it. Me? Still a little nervous, honestly.")],
+      "Glad to hear it. Me? Still a little nervous, honestly.", { spain: t("Qué | bien. | ¿Yo? | Todavía | un | poco | nerviosa, | la verdad.", "How | nice. | Me? | Still | a | little | nervous, | honestly.", "Glad to hear it. Me? Still a little nervous, honestly.") })],
     emily_howareyou_back: [t("¿La verdad? | Todavía | un | poco | nerviosa. | ¿Y | tú?", "Honestly? | Still | a | little | nervous. | And | you?", "Honestly? Still a little nervous. And you?")],
     feel_fine: [
-      t("Qué | bueno. | Yo, | no | tanto.", "How | good. | Me, | not | so much.", "Good. That makes one of us."),
+      t("Qué | bueno. | Yo, | no | tanto.", "How | good. | Me, | not | so much.", "Good. That makes one of us.", { spain: t("Qué | bien. | Yo, | no | tanto.", "How | nice. | Me, | not | so much.", "Good. That makes one of us.") }),
       t("¡Qué | bien! | Debería | aprender | de | ti.", "How | nice! | I should | learn | from | you.", "Good! I should learn from you."),
     ],
     feel_curious: [t("Curiosidad: | eso | me gusta.", "Curiosity: | that | I like.", "Curious is good. I'll take curious.")],
@@ -926,7 +926,7 @@ export const review: SituationDef = {
     feel_asked_back: [
       t("Qué | bueno. | ¿Yo? | La verdad, | un | poco | nerviosa. | Es | mi | primera | vez | de | este | lado | de | la | mesa.",
         "How | good. | Me? | Honestly, | a | little | nervous. | It's | my | first | time | on | this | side | of | the | table.",
-        "Glad to hear it. Me? Honestly, a little nervous. First time on this side of the table."),
+        "Glad to hear it. Me? Honestly, a little nervous. First time on this side of the table.", { spain: t("Qué | bien. | ¿Yo? | La verdad, | un | poco | nerviosa. | Es | mi | primera | vez | de | este | lado | de | la | mesa.", "How | nice. | Me? | Honestly, | a | little | nervous. | It's | my | first | time | on | this | side | of | the | table.", "Glad to hear it. Me? Honestly, a little nervous. First time on this side of the table.") }),
     ],
     emily_howareyou: [
       t("¿La verdad? | Un | poco | nerviosa. | Es | mi | primera | vez | de | este | lado | de | la | mesa. | ¿Y | tú?",
@@ -939,7 +939,7 @@ export const review: SituationDef = {
         "Here's how it works: first your self-assessment, then mine, then goals for next year.", { flags: { 6: F_ART_POSS, 13: F_EL_DAY } }),
       t("Es | sencillo: | tú | empiezas | con | tu | autoevaluación, | yo | te | comparto | la | mía | y | terminamos | con | las | metas.",
         "It's | simple: | you | start | with | your | self-assessment, | I | (with) you | share | — | mine | and | we-finish | with | the | goals.",
-        "The format is simple: you start with your self-assessment, I share mine, and we finish with goals.", { flags: { 10: F_ART_POSS } }),
+        "The format is simple: you start with your self-assessment, I share mine, and we finish with goals.", { flags: { 10: F_ART_POSS }, spain: t("Es | sencillo: | tú | empiezas | con | tu | autoevaluación, | yo | te | enseño | la | mía | y | terminamos | con | las | metas.", "It's | simple: | you | start | with | your | self-assessment, | I | (to) you | show | — | mine | and | we-finish | with | the | goals.", "The format is simple: you start with your self-assessment, I share mine, and we finish with goals.", { flags: { 10: F_ART_POSS } }) }),
     ],
     proud_ask: [
       t("Empecemos. | ¿De | qué | estás | más | {m:orgulloso|f:orgullosa} | este | año?", "Let's start. | Of | what | are you | most | proud | this | year?", "Let's start. What are you most proud of this year?"),
@@ -967,25 +967,25 @@ export const review: SituationDef = {
     praise_guide: [
       t("Lo que | salió | muy | bien | fue | cómo | documentaste | el | sistema | de | citas. | Soporte | dejó | de | interrumpirte | cada | diez | minutos.",
         "What | turned out | really | well | was | how | you documented | the | system | of | appointments. | Support | stopped | — | interrupting you | every | ten | minutes.",
-        "What worked really well was how you documented the booking system. Support stopped interrupting you every ten minutes.", { flags: { 13: "dejar de + infinitive = to stop doing." } }),
+        "What worked really well was how you documented the booking system. Support stopped interrupting you every ten minutes.", { flags: { 13: "dejar de + infinitive = to stop doing." }, spain: t("Lo que | ha salido | muy | bien | ha sido | cómo | has documentado | el | sistema | de | citas. | Soporte | ha dejado | de | interrumpirte | cada | diez | minutos.", "What | has turned out | really | well | has been | how | you've documented | the | system | of | appointments. | Support | has stopped | — | interrupting you | every | ten | minutes.", "What worked really well was how you documented the booking system. Support stopped interrupting you every ten minutes.", { flags: { 13: "dejar de + infinitive = to stop doing." } }) }),
       t("Lo que | salió | muy | bien | fue | tu | guía | del | sistema | de | citas. | Ahora | soporte | resuelve | las | dudas | sin | ti.",
         "What | turned out | really | well | was | your | guide | for the | system | of | appointments. | Now | support | answers | the | questions | without | you.",
-        "What worked really well was your booking system guide. Support answers questions without you now."),
+        "What worked really well was your booking system guide. Support answers questions without you now.", { spain: t("Lo que | ha salido | muy | bien | ha sido | tu | guía | del | sistema | de | citas. | Ahora | soporte | resuelve | las | dudas | sin | ti.", "What | has turned out | really | well | has been | your | guide | for the | system | of | appointments. | Now | support | answers | the | questions | without | you.", "What worked really well was your booking system guide. Support answers questions without you now.") }),
     ],
     praise_rescue: [t("Lo que | salió | muy | bien | fue | cómo | sacaste adelante | el | proyecto | del | cliente. | Todos | estuvieron | tranquilos | y | aun así | entregamos | a tiempo.",
       "What | turned out | really | well | was | how | you pulled off | the | project | of the | client. | Everyone | stayed | calm | and | still | we-delivered | on time.",
-      "What worked really well was how you rescued the client project. Everyone stayed calm, and we still delivered on time.")],
+      "What worked really well was how you rescued the client project. Everyone stayed calm, and we still delivered on time.", { spain: t("Lo que | ha salido | muy | bien | ha sido | cómo | has sacado adelante | el | proyecto | del | cliente. | Todos | han estado | tranquilos | y | aun así | hemos entregado | a tiempo.", "What | has turned out | really | well | has been | how | you've pulled off | the | project | of the | client. | Everyone | has stayed | calm | and | still | we've delivered | on time.", "What worked really well was how you rescued the client project. Everyone stayed calm, and we still delivered on time.") })],
     praise_intern: [t("Lo que | salió | muy | bien | fue | cómo | ayudaste | al | practicante | nuevo. | Dice | que | le | enseñaste | todo | el | sistema | de | diseño | en | una | semana.",
       "What | turned out | really | well | was | how | you helped | the | intern | new. | He says | that | (to) him | you taught | all | the | system | of | design | in | one | week.",
-      "What worked really well was how you helped the new intern. He says you taught him the whole design system in a week.")],
+      "What worked really well was how you helped the new intern. He says you taught him the whole design system in a week.", { spain: t("Lo que | ha salido | muy | bien | ha sido | cómo | has ayudado | al | becario | nuevo. | Dice | que | le | enseñaste | todo | el | sistema | de | diseño | en | una | semana.", "What | has turned out | really | well | has been | how | you've helped | the | intern | new. | He says | that | (to) him | you taught | all | the | system | of | design | in | one | week.", "What worked really well was how you helped the new intern. He says you taught him the whole design system in a week.") })],
     praise_launch: [t("Lo que | salió | muy | bien | fue | el | lanzamiento | de | la | app. | Ni | un | solo | correo | enojado | del | cliente. | Eso | nunca | había | pasado.",
       "What | turned out | really | well | was | the | launch | of | the | app. | Not | one | single | email | angry | from the | client. | That | never | had | happened.",
-      "What worked really well was the app launch. Not one angry email from the client. That's a first.")],
+      "What worked really well was the app launch. Not one angry email from the client. That's a first.", { spain: t("Lo que | ha salido | muy | bien | ha sido | el | lanzamiento | de | la | app. | Ni | un | solo | correo | enfadado | del | cliente. | Eso | nunca | había | pasado.", "What | has turned out | really | well | has been | the | launch | of | the | app. | Not | one | single | email | angry | from the | client. | That | never | had | happened.", "What worked really well was the app launch. Not one angry email from the client. That's a first.") })],
     praise_survey: [t("Lo que | salió | muy | bien | fue | la | encuesta | a | clientes. | Gracias a | ella | cambiamos | el | proceso | de | pago.",
       "What | turned out | really | well | was | the | survey | to | customers. | Thanks to | it | we-changed | the | process | of | payment.",
-      "What worked really well was the customer survey. We actually changed the checkout because of it.")],
+      "What worked really well was the customer survey. We actually changed the checkout because of it.", { spain: t("Lo que | ha salido | muy | bien | ha sido | la | encuesta | a | clientes. | Gracias a | ella | hemos cambiado | el | proceso | de | pago.", "What | has turned out | really | well | has been | the | survey | to | customers. | Thanks to | it | we've changed | the | process | of | payment.", "What worked really well was the customer survey. We actually changed the checkout because of it.") })],
     praise_also: [t("Y | {X.the} | también. | ¡Qué | gran | año!", "And | {X.the} | too. | What a | great | year!", "And {X.the}, too. Honestly, a great year.")],
-    praise_again: [t("En serio. | Fue | un | gran | trabajo.", "Seriously. | It was | a | great | job.", "Seriously. That was great work.")],
+    praise_again: [t("En serio. | Fue | un | gran | trabajo.", "Seriously. | It was | a | great | job.", "Seriously. That was great work.", { spain: t("En serio. | Ha sido | un | gran | trabajo.", "Seriously. | It's been | a | great | job.", "Seriously. That was great work.") })],
     praise_thanks_react: [
       t("Te lo | mereces.", "It (to yourself) | you-deserve.", "You earned it."),
       t("Lo | digo | en serio.", "It | I-say | seriously.", "I mean it."),
@@ -994,7 +994,7 @@ export const review: SituationDef = {
       t("Oye. | Acepta | el | cumplido.", "Hey. | Accept | the | compliment.", "Hey. Just take the compliment."),
       t("Ah, | no. | Acepta | el | cumplido. | Inténtalo | otra vez.", "Uh, | no. | Accept | the | compliment. | Try it | again.", "Uh-uh. Take the compliment. Try again."),
     ],
-    deflect_giveup: [t("Bueno, | bueno. | Igual | lo | voy | a | anotar.", "Okay, | okay. | Anyway | it | I'm going | to | write down.", "Okay, okay. I'm writing it down anyway.")],
+    deflect_giveup: [t("Bueno, | bueno. | Igual | lo | voy | a | anotar.", "Okay, | okay. | Anyway | it | I'm going | to | write down.", "Okay, okay. I'm writing it down anyway.", { spain: t("Vale, | vale. | De todas formas | lo | voy | a | apuntar.", "Okay, | okay. | Anyway | it | I'm going | to | write down.", "Okay, okay. I'm writing it down anyway.") })],
     praise_help: [t("Puedes | decir | solo | “gracias”.", "You can | say | just | “thanks”.", "You could just say thanks.")],
     consent_ask: [
       t("¿Te | puedo | dar | también | un | poco | de | retroalimentación?", "(To) you | I-can | give | also | a | bit | of | feedback?", "Can I give you some feedback too?"),
@@ -1010,7 +1010,7 @@ export const review: SituationDef = {
         neutral: t("Algo | que | podrías | intentar | es | hablar | antes | en | las | reuniones | con | clientes.",
           "Something | that | you could | try | is | speaking up | earlier | in | the | meetings | with | clients.", "One thing you could try is speaking up earlier in client meetings.") })],
     fb_detail: [
-      t("En | las | últimas | dos, | casi | no dijiste | nada.", "In | the | last | two, | almost | you didn't say | anything.", "In the last two, you barely said a word."),
+      t("En | las | últimas | dos, | casi | no dijiste | nada.", "In | the | last | two, | almost | you didn't say | anything.", "In the last two, you barely said a word.", { spain: t("En | las | últimas | dos, | casi | no has dicho | nada.", "In | the | last | two, | almost | you haven't said | anything.", "In the last two, you barely said a word.") }),
       t("Tienes | muy | buenas | ideas, | y | el | cliente | nunca | las | escucha.", "You have | very | good | ideas, | and | the | client | never | them | hears.", "You have great ideas, and the client never hears them.",
         { flags: { 8: "las: them (the ideas), an object pronoun." } }),
     ],
@@ -1067,7 +1067,7 @@ export const review: SituationDef = {
       "Your sections on the agenda, with your name. Does that work for you?")],
     protect_decide: [t("Pongamos | tus | partes | en | la | agenda, | con | tu | nombre.", "Let's put | your | sections | on | the | agenda, | with | your | name.",
       "Let's put your sections on the agenda, with your name.")],
-    protect_yes: [t("Perfecto. | Listo.", "Perfect. | Done.", "Great. Done.")],
+    protect_yes: [t("Perfecto. | Listo.", "Perfect. | Done.", "Great. Done.", { spain: t("Perfecto. | Hecho.", "Perfect. | Done.", "Great. Done.") })],
     protect_no: [t("Bueno. | Piénsalo | y | me | dices | antes | de | la | próxima | reunión.", "Okay. | Think about it | and | (to) me | you-tell | before | — | the | next | meeting.",
       "Okay. Think about it, and tell me before the next meeting.", { flags: { 6: F_DE_ANTES } })],
     protect_agenda: [t("Buena | idea. | Tus | partes | van | en | la | agenda, | con | tu | nombre.", "Good | idea. | Your | sections | go | on | the | agenda, | with | your | name.",
@@ -1092,7 +1092,7 @@ export const review: SituationDef = {
             "Oh! That's Pablo's. Closing it right now. Thank you.", { flags: { 2: "la de Pablo: Pablo's (la = the review).", 5: F_LA_IT } }) }),
     ],
     tab_close_read: [t("¡Ay, | no! | Por favor, | olvida | lo que | viste. | La | cierro.", "Oh, | no! | Please, | forget | what | you-saw. | It | I'm-closing.",
-      "Oh no. Please forget you saw that. Closing it.", { flags: { 6: F_LA_IT } })],
+      "Oh no. Please forget you saw that. Closing it.", { flags: { 6: F_LA_IT }, spain: t("¡Ay, | no! | Por favor, | olvida | lo que | has visto. | La | cierro.", "Oh, | no! | Please, | forget | what | you've seen. | It | I'm-closing.", "Oh no. Please forget you saw that. Closing it.", { flags: { 6: F_LA_IT } }) })],
     tab_notice: [t("Espera. | Esa | no es | la | tuya. | Es | la | de | Pablo. | ¡Ay, | no, | perdón!", "Wait. | That | isn't | — | yours. | It's | the one | of | Pablo. | Oh, | no, | sorry!",
       "Wait. That's not yours. That's Pablo's. Oh no, sorry!", { flags: { 3: F_ART_POSS, 6: "la de Pablo: Pablo's (la = the review)." } })],
     tab_close_self: [t("La | cierro. | Error | mío.", "It | I'm-closing. | Mistake | mine.", "Closing it. My mistake.", { flags: { 0: F_LA_IT } })],
@@ -1100,7 +1100,7 @@ export const review: SituationDef = {
       t("Yo | se lo | digo | a | Pablo.", "I | it to him | will-tell | — | Pablo.", "I'll tell Pablo myself.", { flags: { 3: F_PERS_A } }),
       t("Le | voy | a | avisar | a | Pablo.", "(To) him | I'm going | to | let know | — | Pablo.", "I'll let Pablo know about this.", { flags: { 4: F_PERS_A } }),
     ],
-    tab_mine: [t("Listo. | Esta | sí | es | la | tuya.", "There. | This one | indeed | is | — | yours.", "Okay. This one is yours.", { flags: { 4: F_ART_POSS } })],
+    tab_mine: [t("Listo. | Esta | sí | es | la | tuya.", "There. | This one | indeed | is | — | yours.", "Okay. This one is yours.", { flags: { 4: F_ART_POSS }, spain: t("Ya está. | Esta | sí | es | la | tuya.", "There. | This one | indeed | is | — | yours.", "Okay. This one is yours.", { flags: { 4: F_ART_POSS } }) })],
     tab_mine2: [t("La | buena | noticia: | no hay | sorpresas.", "The | good | news: | there are no | surprises.", "Good news: no surprises.")],
 
     // --- goals --------------------------------------------------------------------------------------------
@@ -1131,7 +1131,7 @@ export const review: SituationDef = {
     goal_lead: [t("Genial. | En | enero | empieza | un | proyecto | pequeño | de | una | página web. | Podría | ser | tuyo.", "Great. | In | January | starts | a | project | small | for | a | website. | It could | be | yours.",
       "Great. There's a small website project starting in January. It could be yours.")],
     goal_learn: [t("Buena | elección. | Hay | un | muy | buen | curso | de | {X} | en | la | primavera.", "Good | choice. | There's | a | very | good | course | in | {X} | in | the | spring.",
-      "Good choice. There's a great {X} course in the spring.")],
+      "Good choice. There's a great {X} course in the spring.", { spain: t("Buena | elección. | Hay | un | muy | buen | curso | de | {X} | en | primavera.", "Good | choice. | There's | a | very | good | course | in | {X} | in | spring.", "Good choice. There's a great {X} course in the spring.") })],
     goal_course: [t("¿Un | curso | de | {X}? | ¡Muy | buena | idea!", "A | course | in | {X}? | Very | good | idea!", "Oh, a {X} course? Great idea.")],
     goal_which_course: [t("¡Claro! | ¿Cuál? | Hay | de | UX | writing, | de | análisis | de | datos | o | de | liderazgo.",
       "Sure! | Which one? | There are | in | UX | writing, | in | analysis | of | data | or | in | leadership.",
@@ -1139,19 +1139,19 @@ export const review: SituationDef = {
     goal_later: [t("Bueno. | Piénsalo | y | lo | vemos | la | próxima | vez.", "Okay. | Think about it | and | it | we'll-see | — | next | time.", "Okay. Think about it, and we'll choose one next time.",
       { flags: { 5: "la próxima vez: Spanish uses the article (= next time)." } })],
     goal_not: [
-      t("Está bien, | es | válido. | Entonces | busquemos | otra | cosa.", "That's fine, | it's | fair. | Then | let's look for | another | thing.", "Okay, that's fair. Then let's find something else."),
+      t("Está bien, | es | válido. | Entonces | busquemos | otra | cosa.", "That's fine, | it's | fair. | Then | let's look for | another | thing.", "Okay, that's fair. Then let's find something else.", { spain: t("Vale, | es | válido. | Entonces | busquemos | otra | cosa.", "That's fine, | it's | fair. | Then | let's look for | another | thing.", "Okay, that's fair. Then let's find something else.") }),
       t("De acuerdo, | eso | no. | ¿Y | qué | sí | te gustaría?", "Okay, | that | not. | And | what | — | would you like?", "Okay, not that. So what would you like?",
-        { flags: { 5: "sí stresses the contrast: what you DO want." } }),
+        { flags: { 5: "sí stresses the contrast: what you DO want." }, spain: t("Vale, | eso | no. | ¿Y | qué | sí | te gustaría?", "Okay, | that | not. | And | what | — | would you like?", "Okay, not that. So what would you like?", { flags: { 5: "sí stresses the contrast: what you DO want." } }) }),
     ],
     goal_mentor: [t("Lo | harías | muy | bien. | En | marzo | llegan | dos | practicantes | nuevos.", "It | you'd-do | very | well. | In | March | arrive | two | interns | new.",
-      "You'd be great at that. We have two new interns starting in March.")],
+      "You'd be great at that. We have two new interns starting in March.", { spain: t("Lo | harías | muy | bien. | En | marzo | llegan | dos | becarios | nuevos.", "It | you'd-do | very | well. | In | March | arrive | two | interns | new.", "You'd be great at that. We have two new interns starting in March.") })],
     goal_set: [
       t("Lo | anoto | como | tu | meta.", "It | I'll-write-down | as | your | goal.", "I'll write that down as your goal."),
       t("Esa | va | a | ser | tu | meta | del | próximo | año.", "That | is going | to | be | your | goal | for the | next | year.", "Let's make that your goal for next year."),
     ],
     budget_amount: [t("Y | una | buena | noticia: | hay | presupuesto | para | capacitación. | $10,000 | por | persona | al año.",
       "And | a | good | piece of news: | there's | budget | for | training. | 10,000 pesos | per | person | a year.",
-      "And good news: there's a training budget. 10,000 pesos per person, per year.", { say: "Y una buena noticia: hay presupuesto para capacitación. Diez mil pesos por persona al año." })],
+      "And good news: there's a training budget. 10,000 pesos per person, per year.", { say: "Y una buena noticia: hay presupuesto para capacitación. Diez mil pesos por persona al año.", spain: t("Y | una | buena | noticia: | hay | presupuesto | para | formación. | $10,000 | por | persona | al año.", "And | a | good | piece of news: | there's | budget | for | training. | 10,000 pesos | per | person | a year.", "And good news: there's a training budget. 10,000 pesos per person, per year.", { say: "Y una buena noticia: hay presupuesto para formación. Diez mil pesos por persona al año." }) })],
     budget_yes: [t("¡Sí! | $10,000 | por | persona | al año.", "Yes! | 10,000 pesos | per | person | a year.", "Yes! 10,000 pesos per person, per year.",
       { say: "¡Sí! Diez mil pesos por persona al año." })],
     budget_again: [t("Sí: | $10,000 | al año. | Úsalo.", "Yes: | 10,000 pesos | a year. | Use it.", "Yep: 10,000 pesos a year. Use it.", { say: "Sí: diez mil pesos al año. Úsalo." })],
@@ -1167,7 +1167,7 @@ export const review: SituationDef = {
     ],
     support_offer: [t("Bueno, | yo | te | puedo | dar | retroalimentación | después | de | cada | reunión | con | clientes.", "Well, | I | (to) you | can | give | feedback | after | — | every | meeting | with | clients.",
       "Well, I can give you feedback after every client meeting.", { flags: { 7: F_DE_ANTES } })],
-    support_none: [t("Está bien. | Si | necesitas | algo, | nada más | dime.", "That's fine. | If | you-need | something, | just | tell me.", "Okay. If you need anything, just ask.")],
+    support_none: [t("Está bien. | Si | necesitas | algo, | nada más | dime.", "That's fine. | If | you-need | something, | just | tell me.", "Okay. If you need anything, just ask.", { spain: t("Vale. | Si | necesitas | algo, | solo | dímelo.", "Okay. | If | you-need | something, | just | tell me.", "Okay. If you need anything, just ask.") })],
 
     // --- the role reversal ----------------------------------------------------------------------------------
     rev_ask: [t("Antes | de | terminar... | ¿te | puedo | pedir | retroalimentación | a | ti? | Sobre | mí, | como | jefa.",
@@ -1193,7 +1193,7 @@ export const review: SituationDef = {
         "Huh. I hadn't thought of it that way. Thanks, that's really helpful."),
     ],
     rev_tip_late_email: [t("Los | correos | en | la | noche. | Sí. | Es | justo.", "The | emails | at | — | night. | Yes. | It's | fair.", "The late-night emails. Yeah. That's fair.",
-      { flags: { 3: "en la noche: Spanish uses la (= at night)." } })],
+      { flags: { 3: "en la noche: Spanish uses la (= at night)." }, spain: t("Los | correos | por | la | noche. | Sí. | Es | justo.", "The | emails | at | — | night. | Yes. | It's | fair.", "The late-night emails. Yeah. That's fair.", { flags: { 3: "por la noche: Spanish uses la (= at night)." } }) })],
     rev_tip_priorities: [t("Prioridades | más | claras. | Tienes | razón, | ahorita | todo | parece | urgente.", "Priorities | more | clear. | You have | reason, | right now | everything | seems | urgent.",
       "Clearer priorities. You're right, everything feels urgent right now.", { flags: { 3: F_RAZON, 5: F_AHORITA },
         neutral: t("Prioridades | más | claras. | Tienes | razón, | ahora | todo | parece | urgente.", "Priorities | more | clear. | You have | reason, | now | everything | seems | urgent.",
@@ -1204,7 +1204,7 @@ export const review: SituationDef = {
     rev_tip_more_feedback: [t("Más | retroalimentación. | ¿De | mí? | Qué | valiente.", "More | feedback. | From | me? | How | brave.", "More feedback. From me? That's brave.")],
     rev_tip_other: [t("Bueno. | Es | justo.", "Okay. | It's | fair.", "Okay. That's fair.")],
     rev_will: [t("Voy | a | trabajar | en | eso.", "I'm going | to | work | on | that.", "I'll work on that.")],
-    rev_ouch: [t("Auch. | Bueno... | ¿qué | podría | hacer | diferente?", "Ouch. | Okay... | what | could I | do | differently?", "Ouch. Okay... what's one thing I could do differently?")],
+    rev_ouch: [t("Auch. | Bueno... | ¿qué | podría | hacer | diferente?", "Ouch. | Okay... | what | could I | do | differently?", "Ouch. Okay... what's one thing I could do differently?", { spain: t("Ay. | Bueno... | ¿qué | podría | hacer | diferente?", "Ouch. | Okay... | what | could I | do | differently?", "Ouch. Okay... what's one thing I could do differently?") })],
     rev_decline_react: [t("No pasa nada. | Tal vez | la | próxima.", "It's okay. | Maybe | the | next (time).", "That's okay. Maybe next time.")],
 
     // --- money and the closing -----------------------------------------------------------------------------
@@ -1219,7 +1219,7 @@ export const review: SituationDef = {
       t("Buena | pregunta.", "Good | question.", "Good question."),
       t("Es | una | pregunta | justa.", "It's | a | question | fair.", "Fair question."),
     ],
-    money_later: [t("Lo | vemos | al final, | ¿sí?", "It | we'll-see | at the end, | okay?", "Let's come back to it at the end.")],
+    money_later: [t("Lo | vemos | al final, | ¿sí?", "It | we'll-see | at the end, | okay?", "Let's come back to it at the end.", { spain: t("Lo | vemos | al final, | ¿vale?", "It | we'll-see | at the end, | okay?", "Let's come back to it at the end.") })],
     money_sure: [t("Claro, | hablemos.", "Sure, | let's talk.", "Sure, let's talk about it.")],
     money_back: [t("Ahora, | tu | pregunta | del | sueldo.", "Now, | your | question | about the | salary.", "Now, your salary question.")],
     money_noted: [t("Bueno. | Anotado.", "Okay. | Noted.", "Okay. Noted.")],
@@ -1231,7 +1231,7 @@ export const review: SituationDef = {
       t("Los | aumentos | se deciden | el | próximo | mes, | cuando | terminen | todas | las | evaluaciones.", "The | raises | are decided | — | next | month, | when | are-finished | all | the | reviews.",
         "Salary decisions happen next month, once all the reviews are done.", { flags: { 3: F_EL_DAY, 7: "terminen: the subjunctive after cuando (a future time)." } }),
     ],
-    criteria_honest: [t("¿Sinceramente? | Todavía | no sé.", "Honestly? | Still | I don't know.", "Honestly? I don't know yet.")],
+    criteria_honest: [t("¿Sinceramente? | Todavía | no sé.", "Honestly? | Still | I don't know.", "Honestly? I don't know yet.", { spain: t("¿Sinceramente? | Todavía | no lo sé.", "Honestly? | Still | I don't know it.", "Honestly? I don't know yet.") })],
     criteria_volunteer: [t("Y | si | te | preguntas | qué | cuenta: | la verdad, | todavía | no estoy | segura.", "And | if | yourself | you-wonder | what | counts: | honestly, | still | I'm not | sure.",
       "And if you're wondering what counts: honestly, I'm not sure yet.")],
     criteria_why: [t("El | formato | tiene | calificaciones, | pero | nadie | me | ha explicado | cómo | se relacionan | con | el | sueldo.",
@@ -1250,14 +1250,14 @@ export const review: SituationDef = {
     sum_goal: [t("Tu | meta: | {X}.", "Your | goal: | {X}.", "Your goal: {X}.")],
     sum_lead: [t("Tu | meta: | dirigir | un | proyecto | pequeño.", "Your | goal: | leading | a | project | small.", "Your goal: leading a small project.")],
     sum_budget: [t("Vas | a | usar | el | presupuesto | de | capacitación | para | el | curso.", "You're going | to | use | the | budget | for | training | for | the | course.",
-      "You'll use the training budget for the course.")],
+      "You'll use the training budget for the course.", { spain: t("Vas | a | usar | el | presupuesto | de | formación | para | el | curso.", "You're going | to | use | the | budget | for | training | for | the | course.", "You'll use the training budget for the course.") })],
     sum_friday: [t("Y | yo | te | debo | una | respuesta | para | el | viernes.", "And | I | (to) you | owe | an | answer | by | — | Friday.", "And I owe you an answer by Friday.",
       { flags: { 7: F_EL_DAY } })],
     sum_anything: [
       t("¿Algo | más?", "Anything | else?", "Anything else?"),
-      t("¿Se me olvidó | algo?", "Did I forget | anything?", "Did I miss anything?"),
+      t("¿Se me olvidó | algo?", "Did I forget | anything?", "Did I miss anything?", { spain: t("¿Se me ha olvidado | algo?", "Have I forgotten | anything?", "Did I miss anything?") }),
     ],
-    anything_thanks: [t("Me da gusto | que | te | haya | servido.", "I'm glad | that | (to) you | it-has | helped.", "I'm glad it helped.", { flags: { 3: "haya: the subjunctive after me da gusto que." } })],
+    anything_thanks: [t("Me da gusto | que | te | haya | servido.", "I'm glad | that | (to) you | it-has | helped.", "I'm glad it helped.", { flags: { 3: "haya: the subjunctive after me da gusto que." }, spain: t("Me alegro de | que | te | haya | servido.", "I'm glad | that | (to) you | it-has | helped.", "I'm glad it helped.", { flags: { 3: "haya: the subjunctive after me alegro de que." } }) })],
     checkin_ask: [
       t("Entonces | nos | vemos | otra vez | en | un | mes. | ¿A | la | misma | hora?", "Then | each other | we'll-see | again | in | a | month. | At | the | same | time?",
         "Then let's check in again in a month. Same time?"),
@@ -1278,7 +1278,7 @@ export const review: SituationDef = {
       "Okay. I'll send you an invite, and you pick the time.")],
     bye_good: [
       t("Perfecto. | Gracias | por | hoy. | De verdad.", "Perfect. | Thanks | for | today. | Really.", "Perfect. Thanks for today. Really."),
-      t("Muy | bien. | Fue | una | muy | buena | conversación. | Gracias.", "Very | good. | It was | a | very | good | conversation. | Thanks.", "Great. This was a good one. Thank you."),
+      t("Muy | bien. | Fue | una | muy | buena | conversación. | Gracias.", "Very | good. | It was | a | very | good | conversation. | Thanks.", "Great. This was a good one. Thank you.", { spain: t("Muy | bien. | Ha sido | una | muy | buena | conversación. | Gracias.", "Very | good. | It's been | a | very | good | conversation. | Thanks.", "Great. This was a good one. Thank you.") }),
     ],
     bye_plant: [t("Y | otra vez, | perdón | por | lo de | la | planta.", "And | again, | sorry | for | the thing with | the | plant.", "And sorry again about the plant.")],
     bye_partial: [t("Bueno. | Gracias | por | hoy.", "Okay. | Thanks | for | today.", "Okay. Thanks for today.")],
@@ -1318,7 +1318,7 @@ export const review: SituationDef = {
         { id: "probably", s: t("Probablemente | {X.the}.", "Probably | {X.the}.", "Probably {X.the}."), only: (e) => !e.attrs?.act },
         { id: "probably", s: t("Probablemente | ayudar | a | {X.the}.", "Probably | helping | — | {X.the}.", "Probably helping {X.the}.", { flags: { 2: F_PERS_A } }),
           only: (e) => e.attrs?.act === "help" },
-        { id: "went_well", s: t("Creo | que | {X.the} | salió | muy | bien.", "I-think | that | {X.the} | turned out | really | well.", "I think {X.the} went really well."),
+        { id: "went_well", s: t("Creo | que | {X.the} | salió | muy | bien.", "I-think | that | {X.the} | turned out | really | well.", "I think {X.the} went really well.", { spain: t("Creo | que | {X.the} | ha salido | muy | bien.", "I-think | that | {X.the} | has turned out | really | well.", "I think {X.the} went really well.") }),
           only: (e) => !e.attrs?.act },
       ],
     },
@@ -1336,9 +1336,9 @@ export const review: SituationDef = {
       items: [
         { id: "means_lot", s: t("Gracias, | eso | significa | mucho | para | mí.", "Thanks, | that | means | a lot | to | me.", "Thank you, that means a lot."),
           note: "Just take the compliment: no “no fue nada”." },
-        { id: "appreciate_that", s: t("Gracias, | de verdad | lo | aprecio.", "Thanks, | really | it | I-appreciate.", "Thanks, I really appreciate that.") },
+        { id: "appreciate_that", s: t("Gracias, | de verdad | lo | aprecio.", "Thanks, | really | it | I-appreciate.", "Thanks, I really appreciate that.", { spain: t("Gracias, | de verdad | te lo | agradezco.", "Thanks, | really | it to you | I'm-grateful-for.", "Thanks, I really appreciate that.") }) },
         { id: "team_effort", s: t("¡Gracias! | Fue | trabajo | en equipo.", "Thanks! | It was | work | as a team.", "Thanks! It was a team effort.") },
-        { id: "glad_helped", s: t("Me da gusto | que | haya | servido.", "I'm glad | that | it-has | helped.", "I'm glad it helped.", { flags: { 2: "haya: the subjunctive after me da gusto que." } }) },
+        { id: "glad_helped", s: t("Me da gusto | que | haya | servido.", "I'm glad | that | it-has | helped.", "I'm glad it helped.", { flags: { 2: "haya: the subjunctive after me da gusto que." }, spain: t("Me alegro de | que | haya | servido.", "I'm glad | that | it-has | helped.", "I'm glad it helped.", { flags: { 2: "haya: the subjunctive after me alegro de que." } }) }) },
       ],
     },
     consent: {
@@ -1378,7 +1378,7 @@ export const review: SituationDef = {
           note: "Disagree politely: a soft phrase first, then the facts, with no blame." },
         { id: "you_presented", s: t("En | esas | reuniones, | tú | presentaste | mis | partes.", "In | those | meetings, | you | presented | my | sections.", "In those meetings, you presented my sections.") },
         { id: "client_late", s: t("Es que | el | cliente | llegó | tarde, | ¿te acuerdas?", "The thing is | the | client | arrived | late, | remember?", "The client was late, remember?") },
-        { id: "no_chance", s: t("La verdad, | no tuve | la | oportunidad.", "Honestly, | I didn't get | the | chance.", "To be fair, I didn't get the chance.") },
+        { id: "no_chance", s: t("La verdad, | no tuve | la | oportunidad.", "Honestly, | I didn't get | the | chance.", "To be fair, I didn't get the chance.", { spain: t("La verdad, | no he tenido | la | oportunidad.", "Honestly, | I haven't had | the | chance.", "To be fair, I didn't get the chance.") }) },
       ],
     },
     protect: {
@@ -1399,7 +1399,7 @@ export const review: SituationDef = {
           "I think that's someone else's review on the screen."), register: "polite", note: "Don't read a colleague's ratings aloud: just say it isn't yours." },
         { id: "not_mine", s: t("Perdón, | creo | que | esa | no es | la | mía.", "Sorry, | I-think | that | that | isn't | — | mine.", "Sorry, I don't think that one's mine.",
           { flags: { 5: F_ART_POSS } }) },
-        { id: "wrong_tab", s: t("Creo | que | abriste | la | pestaña | equivocada.", "I-think | that | you-opened | the | tab | wrong.", "I think you have the wrong tab open.") },
+        { id: "wrong_tab", s: t("Creo | que | abriste | la | pestaña | equivocada.", "I-think | that | you-opened | the | tab | wrong.", "I think you have the wrong tab open.", { spain: t("Creo | que | has abierto | la | pestaña | equivocada.", "I-think | that | you've opened | the | tab | wrong.", "I think you have the wrong tab open.") }) },
       ],
     },
     goals: {
@@ -1407,23 +1407,23 @@ export const review: SituationDef = {
       items: [
         { id: "work_on", s: t("Me gustaría | trabajar | en | {X}.", "I'd like | to work | on | {X}.", "I'd like to work on {X}."),
           only: (e) => e.attrs?.kind === "skill" || e.attrs?.kind === "course" },
-        { id: "take_course", s: t("Me gustaría | tomar | un | curso | de | {X}.", "I'd like | to take | a | course | in | {X}.", "I'd like to take a course in {X}."),
+        { id: "take_course", s: t("Me gustaría | tomar | un | curso | de | {X}.", "I'd like | to take | a | course | in | {X}.", "I'd like to take a course in {X}.", { spain: t("Me gustaría | hacer | un | curso | de | {X}.", "I'd like | to do | a | course | in | {X}.", "I'd like to take a course in {X}.") }),
           only: (e) => e.attrs?.kind === "course" },
         { id: "course_q", s: t("¿Tal vez | un | curso | de | {X}?", "Maybe | a | course | in | {X}?", "Maybe a {X} course?"), only: (e) => e.attrs?.kind === "course" },
         { id: "present_more", s: t("Me gustaría | presentar | más | a | los | clientes.", "I'd like | to present | more | to | the | clients.", "I'd like to present more to clients."),
           only: (e) => e.attrs?.kind === "skill" },
         { id: "lead_project", s: t("Me gustaría | dirigir | {X.np}.", "I'd like | to lead | {X.np}.", "I'd like to lead {X.np}."), only: (e) => e.attrs?.kind === "lead" },
-        { id: "more_mentoring", s: t("Me gustaría | ser | {m:mentor|f:mentora} | de | los | practicantes.", "I'd like | to be | (a) mentor | for | the | interns.", "I'd like to mentor the interns."),
+        { id: "more_mentoring", s: t("Me gustaría | ser | {m:mentor|f:mentora} | de | los | practicantes.", "I'd like | to be | (a) mentor | for | the | interns.", "I'd like to mentor the interns.", { spain: t("Me gustaría | ser | {m:mentor|f:mentora} | de | los | becarios.", "I'd like | to be | (a) mentor | for | the | interns.", "I'd like to mentor the interns.") }),
           only: (e) => e.attrs?.kind === "mentor" },
       ],
     },
     support: {
       lt: "Ask for support with your goal",
       items: [
-        { id: "training_budget", s: t("¿Hay | presupuesto | para | capacitación?", "Is there | budget | for | training?", "Is there a training budget?") },
+        { id: "training_budget", s: t("¿Hay | presupuesto | para | capacitación?", "Is there | budget | for | training?", "Is there a training budget?", { spain: t("¿Hay | presupuesto | para | formación?", "Is there | budget | for | training?", "Is there a training budget?") }) },
         { id: "practice_before", s: t("¿Podríamos | practicar | antes | de | las | reuniones | con | clientes?", "Could we | practice | before | — | the | meetings | with | clients?",
           "Could we practice before client meetings?", { flags: { 3: F_DE_ANTES } }) },
-        { id: "regular_feedback", s: t("Me | ayudaría | tener | retroalimentación | más | seguido.", "(To) me | it-would-help | to have | feedback | more | often.", "Some regular feedback would help.") },
+        { id: "regular_feedback", s: t("Me | ayudaría | tener | retroalimentación | más | seguido.", "(To) me | it-would-help | to have | feedback | more | often.", "Some regular feedback would help.", { spain: t("Me | ayudaría | tener | retroalimentación | más | a menudo.", "(To) me | it-would-help | to have | feedback | more | often.", "Some regular feedback would help.") }) },
         { id: "time_course", s: t("¿Podría | tener | tiempo | para | el | curso?", "Could I | have | time | for | the | course?", "Could I get some time for the course?") },
       ],
     },
@@ -1439,7 +1439,7 @@ export const review: SituationDef = {
       items: [
         { id: "rev_worked", s: t("Lo que | funciona | muy | bien | es | tu | {X}.", "What | works | really | well | is | your | {X}.", "What works really well is your {X}."),
           note: "The song's phrase: first what works." },
-        { id: "rev_appreciate", s: t("Aprecio | mucho | tu | {X}.", "I-appreciate | a lot | your | {X}.", "I really appreciate your {X}.") },
+        { id: "rev_appreciate", s: t("Aprecio | mucho | tu | {X}.", "I-appreciate | a lot | your | {X}.", "I really appreciate your {X}.", { spain: t("Valoro | mucho | tu | {X}.", "I-value | a lot | your | {X}.", "I really appreciate your {X}.") }) },
         { id: "great_listener", s: t("Sabes | escuchar | muy | bien.", "You-know-how | to listen | very | well.", "You're a great listener.") },
         { id: "door_open", s: t("Tu | puerta | siempre | está | abierta.", "Your | door | always | is | open.", "Your door is always open.") },
       ],
@@ -1487,7 +1487,7 @@ export const review: SituationDef = {
     checkin: {
       lt: "Agree on the next check-in",
       items: [
-        { id: "sounds_good", s: t("Suena | bien.", "It sounds | good.", "Sounds good.") },
+        { id: "sounds_good", s: t("Suena | bien.", "It sounds | good.", "Sounds good.", { spain: t("Me parece | bien.", "It seems to me | good.", "Sounds good.") }) },
         { id: "works_for_me", s: t("Sí, | a | la | misma | hora.", "Yes, | at | the | same | time.", "Same time works.") },
         { id: "good_idea", s: t("Buena | idea.", "Good | idea.", "Good idea.") },
       ],
@@ -1504,6 +1504,25 @@ export const review: SituationDef = {
   },
 
   merges: {
+    // Spain's twins (12 Nov 2026)
+    "ha sonado": { reason: "grammatical_fusion", split: "ha + sonado: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "ha salido": { reason: "grammatical_fusion", split: "ha + salido: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "ha sido": { reason: "grammatical_fusion", split: "ha + sido: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "has documentado": { reason: "grammatical_fusion", split: "has + documentado: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "ha dejado": { reason: "grammatical_fusion", split: "ha + dejado: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "han estado": { reason: "grammatical_fusion", split: "han + estado: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "hemos entregado": { reason: "grammatical_fusion", split: "hemos + entregado: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "has ayudado": { reason: "grammatical_fusion", split: "has + ayudado: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "hemos cambiado": { reason: "grammatical_fusion", split: "hemos + cambiado: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "no has dicho": { reason: "grammatical_fusion", split: "no + has + dicho: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "The verb phrase." },
+    "has visto": { reason: "grammatical_fusion", split: "has + visto: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "se me ha olvidado": { reason: "grammatical_fusion", split: "se + me + ha + olvidado: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "The verb phrase." },
+    "no he tenido": { reason: "grammatical_fusion", split: "no + he + tenido: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "The verb phrase." },
+    "has abierto": { reason: "grammatical_fusion", split: "has + abierto: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "has sacado adelante": { reason: "grammatical_fusion", split: "has → have + sacado adelante → pulled off: haber + the participle of sacar adelante (to pull off), Spain's present perfect for this year; one English verb phrase.", minimal: "The verb phrase." },
+    "de todas formas": { reason: "lexical_expression", split: "de → of + todas → all + formas → ways = anyway.", minimal: "Three words." },
+    "me alegro de": { reason: "grammatical_fusion", split: "me → myself + alegro → I cheer + de → of: alegrarse de = to be glad (about).", minimal: "The verb with its preposition." },
+    "a menudo": { reason: "lexical_expression", split: "a → to + menudo → small is false; a menudo = often.", minimal: "Two words." },
     "más o menos": { reason: "lexical_expression", split: "más → more + o → or + menos → less misreads the hedge: so-so, mostly.", minimal: "Three words." },
     "te sientes": { reason: "grammatical_fusion", split: "te → yourself + sientes → you feel: sentirse is one English verb (to feel).", minimal: "The pronoun and the verb." },
     "en fin": { reason: "lexical_expression", split: "en → in + fin → end misreads the discourse marker: anyway.", minimal: "Two words." },
@@ -2371,7 +2390,7 @@ function goalFrom(c: Ctx, id?: string, force = false) {
   else if (kind === "lead") c.say("goal_lead");
   else if (kind === "mentor") c.say("goal_mentor");
   else {
-    c.say(/\b(curso|taller|diplomado|clase|capacitacion)\b/.test(fold(c.heard)) ? "goal_course" : "goal_learn", { X: e.id });
+    c.say(/\b(curso|taller|diplomado|clase|capacitacion|formacion)\b/.test(fold(c.heard)) ? "goal_course" : "goal_learn", { X: e.id });
     if (!c.s.budgetSaid) { c.s.budgetSaid = true; c.say("budget_amount"); }
   }
   c.say("goal_set");

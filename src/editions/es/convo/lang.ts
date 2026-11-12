@@ -36,6 +36,11 @@ const SPAIN: Record<string, string> = {
   // ducha, stay there) the card reader, peas, peanuts, apricots
   datafono: "terminal", guisantes: "chicharos", cacahuete: "cacahuate", cacahuetes: "cacahuates",
   albaricoque: "chabacano", albaricoques: "chabacanos",
+  // (12 Nov 2026, batch 4) rent, the plumber, the mop and bucket, the fridge, a car's trunk, tires and plates, investors
+  // (not mando = the remote: it is also "I send")
+  alquiler: "renta", alquileres: "rentas", fontanero: "plomero", fontaneros: "plomeros", fregona: "trapeador", fregonas: "trapeadores",
+  cubo: "cubeta", cubos: "cubetas", nevera: "refrigerador", neveras: "refrigeradores", maletero: "cajuela",
+  neumatico: "llanta", neumaticos: "llantas", matricula: "placas", inversor: "inversionista", inversores: "inversionistas",
 };
 
 const PLEASE_ONE = new Set(["porfa", "porfavor", "porfis", "xfa", "plis", "please"]);

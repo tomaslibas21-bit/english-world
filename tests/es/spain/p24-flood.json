@@ -1,0 +1,161 @@
+{
+"situation": "p24-flood",
+"items": [
+{
+"ctx": "l_news",
+"say": "Oye, no voy a poder ir al desayuno, lo siento",
+"intent": "cancel_brunch"
+},
+{
+"ctx": "l_news",
+"say": "Se me ha inundado el piso",
+"intent": "flood"
+},
+{
+"ctx": "l_news",
+"say": "El gato está encima de la nevera",
+"intent": "cat_fridge"
+},
+{
+"ctx": "l_need",
+"say": "¿Me puedes traer una fregona?",
+"intent": "ask_help",
+"slots": {
+"stuff": "mop"
+}
+},
+{
+"ctx": "l_need",
+"say": "Una fregona y un cubo",
+"intent": "item_ctx"
+},
+{
+"ctx": "l_come",
+"say": "No, de verdad, no hace falta",
+"intent": [
+"need_nothing",
+"yn:no",
+"come_no"
+]
+},
+{
+"ctx": "l_bye",
+"say": "Vale, chao",
+"intent": "g_bye"
+},
+{
+"ctx": "l_door",
+"say": "¡Me has salvado la vida!",
+"intent": "warm"
+},
+{
+"ctx": "g_who",
+"say": "Buenos días, Don Gilberto. Le habla Ryan Miller, del 1B",
+"intent": "intro"
+},
+{
+"ctx": "g_who",
+"say": "Le llamo del 1B",
+"intent": [
+"intro",
+"intro_ctx"
+]
+},
+{
+"ctx": "g_what",
+"say": "Lamento informarle de que se ha inundado el piso",
+"intent": "flood"
+},
+{
+"ctx": "l_news",
+"say": "Ha reventado una tubería en el 2B",
+"intent": "flood"
+},
+{
+"ctx": "g_what",
+"say": "Le llamo porque se ha roto una tubería en el piso de arriba",
+"intent": "flood"
+},
+{
+"ctx": "g_down",
+"say": "Sí, a Don Ernesto ya le está cayendo agua",
+"intent": "downstairs_yes"
+},
+{
+"ctx": "g_hurt",
+"say": "No, nadie se ha hecho daño",
+"intent": "nobody_hurt"
+},
+{
+"ctx": "g_down",
+"say": "Me temo que ya está pasando al piso de abajo",
+"intent": "downstairs_yes"
+},
+{
+"ctx": "g_down",
+"say": "No lo he mirado",
+"intent": [
+"unsure_ctx",
+"g_dontknow"
+]
+},
+{
+"ctx": "g_water",
+"say": "Sí, ya he bajado el interruptor de la luz",
+"intent": "water_off"
+},
+{
+"ctx": "g_water",
+"say": "Ya he puesto toallas en el suelo",
+"intent": "towels_done"
+},
+{
+"ctx": "g_water",
+"say": "No sé dónde está el cuadro eléctrico",
+"intent": "water_not_off"
+},
+{
+"ctx": "g_request",
+"say": "¿Podría mandar un fontanero hoy?",
+"intent": "ask_plumber"
+},
+{
+"ctx": "g_request",
+"say": "Un fontanero",
+"intent": "plumber_ctx"
+},
+{
+"ctx": "g_offer",
+"say": "Mañana por la mañana está bien",
+"intent": "accept_tomorrow"
+},
+{
+"ctx": "g_time",
+"say": "A la una no me viene bien",
+"intent": "time_not"
+},
+{
+"ctx": "g_time",
+"say": "¿Me puede avisar cuando esté de camino?",
+"intent": "ask_confirmed"
+},
+{
+"ctx": "g_close",
+"say": "Vale, eso es todo, muchas gracias",
+"intent": [
+"thats_all",
+"g_thanks"
+]
+},
+{
+"ctx": "l_need",
+"say": "No necesito una fregona",
+"intent": "not_item"
+},
+{
+"ctx": "g_request",
+"say": "No necesito un fontanero",
+"intent": "any"
+}
+]
+}

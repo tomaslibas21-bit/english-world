@@ -125,3 +125,18 @@ reply). No plural items; the only number a templated line says is the rent, $14,
 **Left.** "¿Qué tal el viernes de la próxima semana?" (later than offered) gets "El viernes está bien" and is texted as
 "viernes" (the week isn't kept; harmless). "Ahorita se la pago" (now or later, in Mexico) stays not understood on
 purpose. "¿Puede venir el técnico de Doña Lupita?" and "¿Y si Chucho no viene?" are not understood (rare).
+
+## Spain twins (11 Nov 2026)
+
+47 Spain twins (lines and hints), no register change: Don Ernesto, Doña Lupita and the learner keep usted (a
+landlord, an older neighbor). Spain's words: el alquiler (la renta; "me lo transfiere", "se lo transfiero", "ya me lo
+ha pagado"), el mando (el control of the AC), por la mañana / por la noche (en la mañana / en la noche), dentro /
+fuera (adentro / afuera), allí (allá), solo (nada más), de verdad (de veras), ¿vale? for the tag ¿sí?, ¡Eh, eh!
+(¡Epa!), una ducha (un baño, for the shower), cuando vuelva (regrese), tengo ganas de estar allí, me viene bien (me
+queda bien), "Perdone que le moleste" (Spain's le for usted), "Llamo a Chucho" (Le llamo a Chucho). Spain's present
+perfect for what has just happened or this week: ya me lo ha dicho, ¿ya ha mirado el mando?, ya lo ha intentado, ya
+se ha leído el contrato, ha probado con una ducha, He recibido el alquiler, ya me lo ha pagado; the learner's "Le he
+llamado todos los días", "Le he dejado tres mensajes", "ya lo he mirado dos veces", "Ya lo he probado todo". Kept:
+San Cristóbal, Chucho, the 9-to-12 window, "viejito". Patterns take el alquiler, por la mañana/tarde, me viene bien,
+dentro/fuera, el mando, the he + participle forms, perdone que le moleste. Spain corpus: 21 items, 20/20, 0/1 false
+accepts. Gates: Mexican, neutral and Spain 0 errors, sims 12/12; corpus 315/315 0/77; held-out 37/37 0/5.

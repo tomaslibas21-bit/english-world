@@ -1,0 +1,27 @@
+{
+"situation": "p28b-review",
+"items": [
+{ "ctx": "feeling", "say": "¿Estás bien? ¿Te echo una mano?", "intent": "plant_help" },
+{ "ctx": "feeling", "say": "Pues un poco nervioso, la verdad", "intent": "feel_nervous" },
+{ "ctx": "proud", "say": "Estoy muy orgullosa de haber ayudado al becario", "intent": "proud_win", "slots": { "win": "intern" } },
+{ "ctx": "proud", "say": "Creo que la encuesta ha salido muy bien", "intent": ["proud_win", "win_ctx"], "slots": { "win": "survey" } },
+{ "ctx": "made", "say": "Lo planificamos todo con tiempo", "intent": "made_why" },
+{ "ctx": "made", "say": "Ha sido trabajo en equipo", "intent": "team_effort" },
+{ "ctx": "praise", "say": "Gracias, de verdad te lo agradezco", "intent": "thanks_praise" },
+{ "ctx": "praise", "say": "Me alegro de que haya servido", "intent": "thanks_praise" },
+{ "ctx": "consent", "say": "Vale, dime", "intent": ["want_feedback", "yn:yes"] },
+{ "ctx": "feedback", "say": "Vale, voy a trabajar en eso", "intent": "fb_work" },
+{ "ctx": "feedback", "say": "La verdad, no he tenido la oportunidad", "intent": "pushback" },
+{ "ctx": "feedback", "say": "Es que el cliente ha llegado tarde", "intent": "pushback" },
+{ "ctx": "tab", "say": "Creo que has abierto la pestaña equivocada", "intent": "tab_point" },
+{ "ctx": "goals", "say": "Me gustaría hacer un curso de liderazgo", "intent": ["goal_name", "goal_course"], "slots": { "goal": "leadership" } },
+{ "ctx": "goals", "say": "¿Hay presupuesto para formación?", "intent": "ask_budget" },
+{ "ctx": "support", "say": "Me ayudaría tener retroalimentación más a menudo", "intent": "ask_support" },
+{ "ctx": "rev_worked", "say": "Valoro mucho tu honestidad", "intent": "rev_worked", "slots": { "mg": "honesty" } },
+{ "ctx": "rev_try", "say": "Algo que podrías probar: reuniones más cortas", "intent": "rev_try", "slots": { "mt": "shorter_meetings" } },
+{ "ctx": "ask_me", "say": "¿Podemos hablar de mi sueldo?", "intent": "ask_raise" },
+{ "ctx": "checkin", "say": "Me parece bien", "intent": ["checkin_yes_ctx", "agree_idea", "yn:yes"] },
+{ "ctx": "checkin", "say": "Vale, a la misma hora", "intent": ["checkin_yes_ctx", "yn:yes"] },
+{ "ctx": "rev_try", "say": "No mandas correos por la noche", "intent": "any" }
+]
+}

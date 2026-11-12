@@ -1,0 +1,26 @@
+{
+"situation": "p26-complaint",
+"items": [
+{ "ctx": "problem", "say": "Hola, quería poner una reclamación", "intent": "complain_open" },
+{ "ctx": "problem", "say": "Mi sofá ha llegado dañado", "intent": "fridge_broke" },
+{ "ctx": "problem", "say": "El técnico no ha venido nunca", "intent": "no_show" },
+{ "ctx": "plugged", "say": "Sí, ya lo he comprobado", "intent": "plugged_yes" },
+{ "ctx": "plugged", "say": "Está bien montado: la pata está rota", "intent": ["plugged_yes", "fridge_broke"] },
+{ "ctx": "history", "say": "Es la tercera vez que llamo", "intent": "third_time" },
+{ "ctx": "history", "say": "¿Me puede pasar con su gerente, por favor?", "intent": "ask_manager" },
+{ "ctx": "history", "say": "¿Me da un número de referencia?", "intent": "ask_reference" },
+{ "ctx": "history", "say": "Sois unos inútiles", "intent": "rude" },
+{ "ctx": "offer_manager", "say": "Sí, páseme con ella", "intent": "ask_manager" },
+{ "ctx": "book_tuesday", "say": "Vale, prográmelo", "intent": "accept_offer" },
+{ "ctx": "transfer", "say": "Vale, aquí espero", "intent": "can_hold" },
+{ "ctx": "offer", "say": "Quisiera un sofá nuevo, por favor", "intent": "ask_replacement" },
+{ "ctx": "offer", "say": "Vale, me parece bien", "intent": ["agree", "yn:yes"] },
+{ "ctx": "deadline", "say": "Lo necesito como muy tarde el viernes", "intent": "set_deadline" },
+{ "ctx": "confirm", "say": "¿Me lo puede confirmar por correo?", "intent": "ask_writing" },
+{ "ctx": "reference", "say": "Un momento, busco un boli", "intent": "pen_wait" },
+{ "ctx": "reference", "say": "No tengo con qué apuntar", "intent": "no_pen" },
+{ "ctx": "readback", "say": "HP 4471, apuntado", "intent": "ref_readback" },
+{ "ctx": "closing", "say": "Que tenga un buen día", "intent": ["have_nice_day", "g_bye"] },
+{ "ctx": "offer", "say": "No quiero un cupón", "intent": "any" }
+]
+}

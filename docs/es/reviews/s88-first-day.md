@@ -98,3 +98,20 @@ the team room and Elena's office of p28b; María points); the urge after a plain
 50%); "¡Claro! Entras, le das clic…" after "No sé si puedo" (reads as encouragement). **English original:** the bare
 lunch questions, the double goodbye, the repeated restrooms and clock, and the four unanswered questions are in
 N/EN-FIXES-LEADS.md.
+
+## Spain twins (11 Nov 2026)
+
+- 44 Spain twins (lines and hints), 21 items in tests/es/spain/s88-first-day.json (all understood, 0 false accepts).
+- Register: no change. María says tú (a coworker) in all three; no plural "you" to the learner here.
+- Words: portátil (laptop), tu sitio, tarjeta de acceso (gafete / credencial), los de informática (sistemas), sala de
+  reuniones con paredes de cristal, nevera (refrigerador), el armario (alacena), encima del fregadero, ordenador,
+  haces clic en, ¿Qué archivo?, vaqueros, sobre las dos / sobre las seis, detrás del edificio, Ya está (Listo),
+  el menú del día (comida corrida) a unos cien pesos, un sitio de comida casera, ¡Anda, vente! Es solo un ratito,
+  ¡Chao!, ¡Hasta mañana!, ¡Vale!, ¡Qué bien! for ¡Qué bueno!
+- Spain's present perfect for today: Se ha estropeado otra vez, Se ha atascado el papel, Ya te lo he mandado,
+  ¿Qué tal te ha ido el primer día?, Es la que te he dado; the learner's Me ha ido muy bien, me he traído la comida.
+- Kept: la cocina económica (a Mexican eatery), chiles rellenos, agua fresca; allá → allí only in María's directions.
+- Grammar: q_desk takes portátil/ordenador; task_later ahora mismo; lunch_no me he traído (la comida); day_good
+  ha ido / ha sido; see_you takes "Venga/Vale, hasta mañana". Merges for the new units.
+- The two warnings (a_badge, a_badge_have neutral twins: the pronoun la glossed "it") were there before; the Spain
+  twins carry a flag for it.

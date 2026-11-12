@@ -128,3 +128,20 @@ nueve pesos"); every value said is in it.
 ofrecimiento)" (p26 has it locally); "folio" for a case number is Mexican (and Chilean) usage, untwinned here and in
 s91b: STYLE.md's list with "número de referencia / de reporte" as the twin, if the owner wants it; lines-es.ts voices
 every global line for harbor_bot (the recorded message), which never says one.
+
+## Spain twins (11 Nov 2026)
+
+26 Spain twins (lines and hints), no register change: Jorge, Brenda and the learner keep usted (customer service).
+Spain's call-center Spanish: "le atiende Jorge" (habla Jorge), "soy Brenda", "le paso con mi gerente" (lo comunico),
+programar (agendar) the visit, número de referencia (folio), apuntar (anotar), atención al cliente, "Es válido
+durante seis meses" (tiene vigencia), montado (armado), comprobar (revisar), "que tenga un buen/excelente día"
+(Spain says the article), solo (nada más), oír (escuchar). Spain's present perfect for what has just happened: ¿Qué
+ha pasado?, ¿ya ha comprobado…?, ¿ha probado a apretar…?, Jorge ya me ha explicado. Kept: Profeco (Mexico's consumer
+office; the sofa and the shop are in Puerto Colibrí), the dates, pesos. The learner's angry plural "Sois unos
+inútiles" is read too (Spain says vosotros to a company's staff when it's rude; ustedes stays in the hints). Patterns
+take ha llegado / no ha venido, lo he comprobado, bien montado, sois, prográmelo, como muy tarde, boli / cojo /
+apuntar / apuntado. Spain corpus: 21 items, 20/20, 0/1 false accepts. Gates: Mexican, neutral and Spain 0 errors,
+sims 12/12; corpus 390/390 0/61; held-out 38/40 0/3 (unchanged).
+
+After pass B (merge of es-spain 98cfaffc, 12 Nov 2026): the folio lines got neutral "número de reporte" twins; their
+Spain twins stay "número de referencia" (and "¿Tiene dónde apuntar?"), now beside the neutral ones.

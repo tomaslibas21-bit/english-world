@@ -1,0 +1,27 @@
+{
+"situation": "s88-first-day",
+"items": [
+{ "ctx": "desk", "say": "¡Gracias! Está genial", "intent": "desk_ok" },
+{ "ctx": "desk", "say": "¿Me dais una tarjeta de acceso?", "intent": "q_badge" },
+{ "ctx": "desk", "say": "¿Me dan una tarjeta para entrar?", "intent": "q_badge" },
+{ "ctx": "desk", "say": "¿A quién le pregunto si el ordenador no funciona?", "intent": "q_it" },
+{ "ctx": "desk", "say": "¿Este es mi portátil?", "intent": "q_desk" },
+{ "ctx": "tour", "say": "¿Dónde está la sala de reuniones?", "intent": "q_meeting" },
+{ "ctx": "tour", "say": "¿Dónde aparco?", "intent": "q_parking" },
+{ "ctx": "tour", "say": "¿Dónde están los servicios?", "intent": "q_restroom" },
+{ "ctx": "tour", "say": "¿A qué hora coméis?", "intent": "q_lunch_time" },
+{ "ctx": "tour", "say": "¿Dónde pongo la comida? ¿En la nevera?", "intent": "q_fridge" },
+{ "ctx": "coffee_show", "say": "Vale, enséñame", "intent": "show_me" },
+{ "ctx": "coffee", "say": "¿Puedo coger esta taza?", "intent": "q_mug" },
+{ "ctx": "mug", "say": "¡Uy, perdona!", "intent": "oops" },
+{ "ctx": "task", "say": "¿Me pasas el archivo?", "intent": "send_file" },
+{ "ctx": "task", "say": "Vale, ya lo hago yo", "intent": "task_ok" },
+{ "ctx": "task", "say": "Ahora mismo no puedo", "intent": "task_later" },
+{ "ctx": "lunch", "say": "¡Vale, me apunto!", "intent": ["lunch_yes", "yn:yes"] },
+{ "ctx": "lunch", "say": "Gracias, pero me he traído la comida", "intent": "lunch_no" },
+{ "ctx": "day", "say": "Me ha ido muy bien", "intent": "day_good" },
+{ "ctx": "day", "say": "Cansada, pero contenta", "intent": "day_tired" },
+{ "ctx": "closing", "say": "¡Venga, hasta mañana!", "intent": ["see_you", "g_bye"] },
+{ "ctx": "task", "say": "No lo voy a hacer", "intent": "any" }
+]
+}
