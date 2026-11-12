@@ -62,4 +62,15 @@ describe("the first-start choice of Spanish", () => {
     store.set(KEY, "neutral"); // the course's Settings, or a tap here
     expect(await render()).toBe("");
   });
+  test("starting without a tap saves the Spanish shown selected: asked once", async () => {
+    vi.stubEnv("VITE_DEFAULT_VARIETY", "neutral");
+    vi.resetModules();
+    const { commitVarietyChoice } = await import("../../src/ui/variety-choice");
+    commitVarietyChoice();
+    expect(store.get(KEY)).toBe("neutral");
+    expect(await render()).toBe("");
+    store.set(KEY, "spain");
+    commitVarietyChoice(); // a choice already saved stays
+    expect(store.get(KEY)).toBe("spain");
+  });
 });

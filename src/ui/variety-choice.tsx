@@ -6,3 +6,6 @@ import type { ReactElement } from "react";
 export function VarietyChoice(): ReactElement | null {
   return null;
 }
+
+/** Starting from the title form: saves the choice shown if none was tapped (the Spanish edition); nothing here. */
+export function commitVarietyChoice(): void {}

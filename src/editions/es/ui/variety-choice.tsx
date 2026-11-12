@@ -2,7 +2,8 @@
 // title form, while no choice is saved, three buttons (México / Latinoamérica neutro / España) and a note that
 // Settings can change it later. A tap saves the choice (state/variety.ts chooseVariety, the key that Spanish Master
 // English's Settings also writes), so after a reload, or once the course's Settings has chosen, it isn't shown again.
-// Until then the game speaks the build's default (Mexican; neutral in the course), the button shown as selected.
+// Until then the game speaks the build's default (Mexican; neutral in the course), the button shown as selected;
+// starting without a tap saves that one (commitVarietyChoice), so the question is asked only once.
 import { useState, type ReactElement } from "react";
 import { chooseVariety, hasVarietyChoice, loadVariety, type Variety } from "../../../state/variety";
 import { L } from "../../../ui/i18n";
@@ -26,4 +27,10 @@ export function VarietyChoice(): ReactElement | null {
       <p className="ts-help ts-variety-note" id="ts-variety-note">{L("Vėliau galėsi pakeisti Nustatymuose.")}</p>
     </div>
   );
+}
+
+/** Start / Continue on the title form: the Spanish shown as selected becomes the saved choice if none was tapped,
+ *  so the question is asked once, never again on the next start. */
+export function commitVarietyChoice(): void {
+  if (!hasVarietyChoice()) chooseVariety(loadVariety());
 }
