@@ -109,6 +109,8 @@ function ModeChoice() {
           </button>
         ))}
       </div>
+      {/* phones: the two ways side by side by name only, and what the chosen one is under them */}
+      <p className="ts-help ts-mode-note" aria-hidden="true">{modes.find((m) => m.id === play)?.sub}</p>
     </div>
   );
 }
