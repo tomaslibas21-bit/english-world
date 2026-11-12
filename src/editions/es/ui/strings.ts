@@ -20,6 +20,8 @@ export const STRINGS: Record<string, string> = {
   "3D miestas": "3D town",
   "Vaikščiok po miestą ir kalbink žmones. Geriausia – kompiuteryje.": "Walk around town and talk to people. Best on a computer.",
   "Kaip nori žaisti?": "How do you want to play?",
+  "Kokią ispanų kalbą nori girdėti?": "Which Spanish do you want to hear?",
+  "Vėliau galėsi pakeisti Nustatymuose.": "You can change it later in Settings.",
   "Kalbėk balsu arba rašyk": "Speak out loud or type",
   "Patarimai lietuviškai": "Tips in English",
   "{n} {conversations} pagal dainas": "{n} {conversations} based on songs",

@@ -46,6 +46,11 @@
 }
 .ts-pill:hover { border-color: #d3c5ae; color: var(--ink); }
 .ts-pill.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-strong); box-shadow: inset 0 0 0 1px var(--accent); }
+/* Puerto Colibrí's first-start choice of Spanish (src/editions/es/ui/variety-choice.tsx): three in a row, the
+   long name wider (on two lines on a phone, broken between its words) */
+.ts-pills-3 { grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, 1fr); gap: 8px; }
+.ts-pills-3 .ts-pill { padding: 6px; line-height: 1.2; font-size: 0.94em; }
+.ts-variety .ts-variety-note { margin: 0; }
 
 .ts-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .ts-mode {
