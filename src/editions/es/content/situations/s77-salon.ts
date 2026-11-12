@@ -900,7 +900,7 @@ export const salon: SituationDef = {
         { id: "bangs_trim", s: t("¿Me | puede | cortar | el | fleco?", "(For) me | can you | cut | the | bangs?", "Could you trim my bangs?",
           { neutral: t("¿Me | puede | cortar | el | flequillo?", "(For) me | can you | cut | the | bangs?", "Could you trim my bangs?"),
         spain: t("¿Me | puedes | cortar | el | flequillo?", "(For) me | can you | cut | the | bangs?", "Could you trim my bangs?") }),
-          note: "Bangs are “el fleco” in Mexico (“el flequillo” elsewhere)." },
+          note: "Bangs are “el fleco” in Mexico (“el flequillo” elsewhere).", noteSpain: "El flequillo: bangs (Mexico: el fleco)." },
         { id: "photo", s: t("¿Me | lo | puede | cortar | como | en | esta | foto?", "(For) me | it | can you | cut | like | in | this | photo?", "Could you cut it like in this photo?",
           { flags: { 1: "lo = my hair (el cabello)." },
         spain: t("¿Me | lo | puedes | cortar | como | en | esta | foto?", "(For) me | it | can you | cut | like | in | this | photo?", "Could you cut it like in this photo?") }) },

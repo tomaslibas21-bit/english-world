@@ -1743,7 +1743,7 @@ export const restaurant: SituationDef = {
         { spain: t("¿Nos | traes | la | cuenta, | por favor?", "(To) us | you-bring | the | check, | please?", "Could we get the check, please?") }) },
         { id: "check_please", s: t("La | cuenta, | por favor.", "The | check, | please.", "Check, please!") },
         { id: "check_can2", s: t("¿Me | cobra, | por favor?", "(From) me | you-charge, | please?", "Can I pay, please?",
-        { spain: t("¿Me | cobras, | por favor?", "(From) me | you-charge, | please?", "Can I pay, please?") }), note: "Very Mexican: “¿Me cobra?” – will you charge me?" },
+        { spain: t("¿Me | cobras, | por favor?", "(From) me | you-charge, | please?", "Can I pay, please?") }), note: "Very Mexican: “¿Me cobra?” – will you charge me?", noteSpain: "¿Me cobras?: will you charge me? Spain also says “La cuenta, por favor”." },
         { id: "just_check", s: t("Nada más | la | cuenta, | gracias.", "Just | the | check, | thanks.", "Just the check, thanks.") },
       ],
     },

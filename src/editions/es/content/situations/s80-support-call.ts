@@ -881,7 +881,7 @@ export const support: SituationDef = {
           { flags: { 6: "el trabajo: Spanish says the work; English has no article." } }) },
         { id: "tech_weekend", s: t("¿Tiene | algo | el | sábado?", "Do you have | something | on | Saturday?", "Do you have anything on Saturday?", { flags: { 2: FLAG_EL_DAY } }) },
         { id: "tech_afternoon", s: t("¿Hay | algo | en la tarde?", "Is there | something | in the afternoon?", "Is there anything in the afternoon?", { spain: t("¿Hay | algo | por la tarde?", "Is there | something | in the afternoon?", "Is there anything in the afternoon?") }),
-          note: "Mexico says en la tarde; por la tarde works too." },
+          note: "Mexico says en la tarde; por la tarde works too.", noteSpain: "Por la tarde: in the afternoon (Mexico: en la tarde)." },
         { id: "someone_yes", s: t("Mi | esposa | puede | estar | en casa.", "My | wife | can | be | at home.", "My wife can be home.") },
         { id: "someone_no", s: t("No, | vivo | {m:solo|f:sola}.", "No, | I-live | alone.", "No, I live alone.") },
       ],

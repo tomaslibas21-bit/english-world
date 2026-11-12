@@ -1246,7 +1246,7 @@ export const baggage: SituationDef = {
       items: [
         { id: "q_form", s: t("¿Tengo | que | llenar | algún | formulario?", "Do I have | to | fill out | any | form?", "Do I have to fill out a form?", { spain: t("¿Tengo | que | rellenar | algún | formulario?", "Do I have | to | fill out | any | form?", "Do I have to fill out a form?") }) },
         { id: "q_button", s: t("¿Hay | que | apretar | el | botón?", "Is it necessary | to | press | the | button?", "Do I have to press the button?", { spain: t("¿Hay | que | pulsar | el | botón?", "Is it necessary | to | press | the | button?", "Do I have to press the button?") }),
-          note: "Mexican customs used a red/green button (el semáforo); Cancún's airport no longer does." },
+          note: "Mexican customs used a red/green button (el semáforo); Cancún's airport no longer does.", noteSpain: "Pulsar: to press. Mexican customs used a red/green button (el semáforo); Cancún's airport no longer does." },
         { id: "q_allowance", s: t("¿Cuánto | puedo | traer | sin | pagar | impuestos?", "How much | can I | bring | without | paying | duties?", "How much can I bring in duty-free?") },
         { id: "q_cash", s: t("¿Tengo | que | declarar | el | dinero?", "Do I have | to | declare | the | money?", "Do I have to declare my cash?") },
         { id: "q_why", s: t("¿Por qué | no puede | pasar | la | fruta?", "Why | can't | go through | the | fruit?", "Why can't fruit come in?") },

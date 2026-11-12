@@ -895,7 +895,7 @@ export const cafe: SituationDef = {
         { id: "quisiera", s: t("Quisiera | {X.np}, | por favor.", "I'd like | {X.np}, | please.", "I'd like {X.np}, please."), register: "polite" },
         { id: "me_da", s: t("¿Me | da | {X.np}, | por favor?", "(To) me | you-give | {X.np}, | please?", "Can I have {X.np}, please?",
         { spain: t("¿Me | pones | {X.np}, | por favor?", "(For) me | you-put | {X.np}, | please?", "Can I have {X.np}, please?") }),
-          note: "Very common in Mexico: “¿Me da…?” – literally “do you give me…?”" },
+          note: "Very common in Mexico: “¿Me da…?” – literally “do you give me…?”", noteSpain: "¿Me pones…?: how Spain orders at a café or a bar (Mexico: ¿Me da…?)." },
         { id: "quiero", s: t("Quiero | {X.np}, | por favor.", "I want | {X.np}, | please.", "I'd like {X.np}, please."), note: "With “por favor” this is perfectly polite in Spanish." },
         { id: "please_only", s: t("{X.np}, | por favor.", "{X.np}, | please.", "{X.np}, please.") },
         { id: "voy_a_querer", s: t("Voy | a | querer | {X.np}.", "I'm going | to | want | {X.np}.", "I'll have {X.np}.",

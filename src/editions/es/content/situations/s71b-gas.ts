@@ -630,7 +630,7 @@ export const gas: SituationDef = {
         { id: "tip_for_you", s: t("Esto | es | para | usted.", "This | is | for | you.", "This is for you.") },
         { id: "keep_change", s: t("Quédese | con | el | cambio.", "Keep | with | the | change.", "Keep the change."), note: "When the change is a few pesos: it's the tip." },
         { id: "tip_amount", s: t("Le | dejo | veinte | de | propina.", "(To) you | I-leave | twenty | of | tip.", "Here's twenty for you."), note: "A tip of ten or twenty pesos is usual, more if she cleaned or checked something." },
-        { id: "tip_refresco", s: t("Para | su | refresco.", "For | your | soda.", "Get yourself a soda.", { spain: t("Para | un | café.", "For | a | coffee.", "Get yourself a soda.") }), note: "A friendly Mexican way to give a small tip." },
+        { id: "tip_refresco", s: t("Para | su | refresco.", "For | your | soda.", "Get yourself a soda.", { spain: t("Para | un | café.", "For | a | coffee.", "Get yourself a soda.") }), note: "A friendly Mexican way to give a small tip.", noteSpain: "Para un café: a friendly way to give a small tip (Mexico: para el refresco)." },
       ],
     },
     receipt: {

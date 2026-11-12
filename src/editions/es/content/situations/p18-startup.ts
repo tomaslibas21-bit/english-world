@@ -1188,7 +1188,7 @@ export const startup: SituationDef = {
       items: [
         { id: "onda", s: t("Poco a poco | le estoy agarrando la onda.", "Little by little | I'm getting the hang of it.", "I'm slowly getting the hang of it.",
           { neutral: t("Poco a poco | le estoy agarrando el ritmo.", "Little by little | I'm getting the hang of it.", "I'm slowly getting the hang of it."), spain: t("Poco a poco | le estoy cogiendo el ritmo.", "Little by little | I'm getting the hang of it.", "I'm slowly getting the hang of it.") }),
-          note: "Mexican: agarrarle la onda = get the hang of it (elsewhere: agarrarle el ritmo)." },
+          note: "Mexican: agarrarle la onda = get the hang of it (elsewhere: agarrarle el ritmo).", noteSpain: "Cogerle el ritmo: to get the hang of it (Mexico: agarrarle la onda)." },
         { id: "chino", s: t("Sí, | todo | está | en chino.", "Yes, | everything | is | in Chinese.", "Yeah, it's all Greek to me."), note: "estar en chino: too hard to understand (English says “Greek to me”)." },
         { id: "lot_learn", s: t("Hay | mucho | que aprender.", "There's | a lot | to learn.", "There's a lot to learn.") },
         { id: "great", s: t("Está | increíble, | pero | es | mucho.", "It's | amazing, | but | it's | a lot.", "It's great, but it's a lot.") },

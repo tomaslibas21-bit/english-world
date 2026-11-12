@@ -175,7 +175,7 @@ function askNext(c: Ctx) {
 const H_HELP: HintItem = { id: "help_me", s: t("Disculpe, | ¿me | puede | ayudar?", "Excuse me, | (to) me | can you | help?", "Excuse me, can you help me?") };
 const H_LOST: HintItem = { id: "lost_item", s: t("Perdí | mi | {X}.", "I lost | my | {X}.", "I lost my {X}.", { spain: t("He perdido | mi | {X}.", "I've lost | my | {X}.", "I lost my {X}.") }) };
 const H_SE_ME: HintItem = { id: "lost_item", s: t("Se me perdió | {X.the}.", "I lost | {X.the}.", "I've lost my {X}.", { spain: t("Se me ha perdido | {X.the}.", "I've lost | {X.the}.", "I've lost my {X}.") }),
-  note: "Se me perdió…: “it got lost on me”, the commonest way to say it in Mexico." };
+  note: "Se me perdió…: “it got lost on me”, the commonest way to say it in Mexico.", noteSpain: "Se me ha perdido…: “it got lost on me”, with Spain's perfect for what just happened (Mexico: se me perdió)." };
 const H_CANT_FIND: HintItem = { id: "cant_find", s: t("No encuentro | mi | {X}.", "I can't find | my | {X}.", "I can't find my {X}.") };
 /** "At the taxi", "I was at the colectivo": a vehicle gets "Tomé un taxi." (H_TOOK) instead. */
 const notRide = (e: EntityDef) => e.attrs?.kind !== "bus" && e.attrs?.kind !== "taxi";

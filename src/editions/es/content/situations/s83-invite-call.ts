@@ -1302,7 +1302,7 @@ export const inviteCall: SituationDef = {
           { flags: { 4: "Spanish uses an article before clock times; English has no separate word." } }) },
         { id: "meet_lets", s: t("Te | veo | afuera | de | {X.the}.", "You | I'll-see | outside | of | {X.the}.", "I'll see you outside {X.the}.", { spain: t("Te | veo | fuera | de | {X.the}.", "You | I'll-see | outside | of | {X.the}.", "I'll see you outside {X.the}.") }), only: (e) => ["cafe", "iglesia"].includes(e.id) },
         { id: "meet_ask", s: t("¿Dónde | nos vemos?", "Where | do we meet?", "Where should we meet?") },
-        { id: "pick_up", s: t("¿Paso | por | ti?", "Do I come by | for | you?", "Want me to pick you up?", { spain: t("¿Te | recojo?", "You | do I pick up?", "Want me to pick you up?") }), note: "Mexico: “¿Paso por ti?” = shall I pick you up?" },
+        { id: "pick_up", s: t("¿Paso | por | ti?", "Do I come by | for | you?", "Want me to pick you up?", { spain: t("¿Te | recojo?", "You | do I pick up?", "Want me to pick you up?") }), note: "Mexico: “¿Paso por ti?” = shall I pick you up?", noteSpain: "¿Te recojo?: shall I pick you up? (Mexico: ¿Paso por ti?)" },
       ],
     },
     meettime: {
@@ -1322,7 +1322,7 @@ export const inviteCall: SituationDef = {
           { neutral: t("Perdón, | solo | tengo | dos | entradas.", "Sorry, | only | I-have | two | tickets.", "Sorry, I only have two tickets.") }) },
         { id: "sis_merrier", s: t("¡Claro! | ¡Entre más, mejor!", "Sure! | The more the merrier!", "Sure! The more the merrier!",
           { neutral: t("¡Claro! | ¡Mientras más, mejor!", "Sure! | The more the merrier!", "Sure! The more the merrier!"), spain: t("¡Claro! | ¡Cuantos más, mejor!", "Sure! | The more the merrier!", "Sure! The more the merrier!") }),
-          note: "Mexico: “entre más, mejor”; elsewhere “mientras más, mejor”." },
+          note: "Mexico: “entre más, mejor”; elsewhere “mientras más, mejor”.", noteSpain: "Cuantos más, mejor: the more the merrier (Mexico: entre más, mejor)." },
         { id: "sis_ticket", s: t("¡Claro! | Compro | otro | boleto.", "Sure! | I'll-buy | another | ticket.", "Of course! I'll get another ticket.",
           { neutral: t("¡Claro! | Compro | otra | entrada.", "Sure! | I'll-buy | another | ticket.", "Of course! I'll get another ticket.") }) },
       ],

@@ -1379,7 +1379,7 @@ export const interview: SituationDef = {
       { id: "q_remote", s: t("¿Se puede | hacer | home office?", "Can one | do | home office?", "Can I work from home?", {
         flags: { 2: "Mexican: home office, from English, = working from home." },
         neutral: t("¿Se puede | trabajar | desde | casa?", "Can one | work | from | home?", "Can I work from home?") }) },
-      { id: "q_benefits", s: t("¿Qué | prestaciones | tiene | el | puesto?", "What | benefits | does it have | the | position?", "What are the benefits?", { spain: t("¿Qué | condiciones | tiene | el | puesto?", "What | conditions | does it have | the | position?", "What are the terms of the job?") }), note: "Prestaciones: the benefits that come with a job in Mexico (social security, aguinaldo, vacation…)." },
+      { id: "q_benefits", s: t("¿Qué | prestaciones | tiene | el | puesto?", "What | benefits | does it have | the | position?", "What are the benefits?", { spain: t("¿Qué | condiciones | tiene | el | puesto?", "What | conditions | does it have | the | position?", "What are the terms of the job?") }), note: "Prestaciones: the benefits that come with a job in Mexico (social security, aguinaldo, vacation…).", noteSpain: "Las condiciones: what comes with a job (Mexico: las prestaciones: social security, aguinaldo, vacation…)." },
     ] },
     ask_them3: { lt: "Ask about a typical day and the next steps", items: [
       { id: "q_day", s: t("¿Cómo | es | un | día | normal | aquí?", "How | is | a | day | normal | here?", "What does a typical day look like?") },
@@ -1390,7 +1390,7 @@ export const interview: SituationDef = {
       { id: "c_thanks_time", s: t("Muchas | gracias | por | su | tiempo.", "Many | thanks | for | your | time.", "Thank you for your time.") },
       { id: "c_nice_meet", s: t("Fue | un | gusto | conocerla.", "It was | a | pleasure | to meet you.", "It was nice to meet you.", { spain: t("Ha sido | un | placer | conocerla.", "It's been | a | pleasure | to meet you.", "It was nice to meet you.") }) },
       { id: "c_opportunity", s: t("Gracias | por | la | oportunidad.", "Thanks | for | the | opportunity.", "Thank you for the opportunity.") },
-      { id: "c_look_forward", s: t("Quedo | {m:atento|f:atenta} | a | su | llamada.", "I-remain | attentive | to | your | call.", "I look forward to hearing from you.", { spain: t("Quedo | a la espera | de | su | llamada.", "I-remain | waiting | for | your | call.", "I look forward to hearing from you.") }), note: "Very common in Mexican business: “Quedo atento / atenta…”." },
+      { id: "c_look_forward", s: t("Quedo | {m:atento|f:atenta} | a | su | llamada.", "I-remain | attentive | to | your | call.", "I look forward to hearing from you.", { spain: t("Quedo | a la espera | de | su | llamada.", "I-remain | waiting | for | your | call.", "I look forward to hearing from you.") }), note: "Very common in Mexican business: “Quedo atento / atenta…”.", noteSpain: "Quedo a la espera de…: a usual close in business calls and letters." },
     ] },
     offer: { lt: "Answer the job offer", items: [
       { id: "o_accept", s: t("¡Muchas | gracias! | ¡Acepto!", "Many | thanks! | I accept!", "Thank you! I accept!") },

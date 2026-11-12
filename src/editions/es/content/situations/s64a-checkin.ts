@@ -1303,7 +1303,7 @@ export const checkin: SituationDef = {
       items: [
         { id: "checkin_simple", s: t("Quisiera | hacer | el | check-in.", "I'd like | to do | the | check-in.", "I'd like to check in.") },
         { id: "checkin_doc", s: t("Vengo | a | documentar.", "I come | to | check in.", "I'm here to check in.", { spain: t("Vengo | a | facturar.", "I come | to | check in.", "I'm here to check in.") }),
-          note: "In Mexico, documentar is what you do at the airline counter: check in and drop off your bags." },
+          note: "In Mexico, documentar is what you do at the airline counter: check in and drop off your bags.", noteSpain: "Facturar: to check in and drop off your bags at the airline counter (Mexico: documentar)." },
         { id: "dest_checkin", s: t("Quisiera | hacer | el | check-in | para | mi | vuelo | a | la | Ciudad de México.", "I'd like | to do | the | check-in | for | my | flight | to | — | Mexico City.",
           "I'd like to check in for my flight to Mexico City.", { flags: { 8: "la: Spanish says la Ciudad de México; English has no article here." } }) },
       ],

@@ -1395,7 +1395,7 @@ export const videoCall: SituationDef = {
       lt: "Say when it will be ready",
       items: [
         { id: "w_when", s: t("Para | el | viernes.", "By | — | Friday.", "By Friday.", { flags: { 1: F_EL_DAY } }) },
-        { id: "w_when", s: t("Mañana | en la mañana.", "Tomorrow | in the morning.", "Tomorrow morning.", { spain: t("Mañana | por la mañana.", "Tomorrow | in the morning.", "Tomorrow morning.") }), note: "Mexico says en la mañana; por la mañana works too." },
+        { id: "w_when", s: t("Mañana | en la mañana.", "Tomorrow | in the morning.", "Tomorrow morning.", { spain: t("Mañana | por la mañana.", "Tomorrow | in the morning.", "Tomorrow morning.") }), note: "Mexico says en la mañana; por la mañana works too.", noteSpain: "Por la mañana: in the morning (Mexico: en la mañana)." },
         { id: "w_when", s: t("La | próxima | semana.", "— | Next | week.", "Next week.", { flags: { 0: F_ART_WEEK } }) },
         { id: "w_unsure", s: t("Todavía | no estoy | {m:seguro|f:segura}.", "Still | I'm not | sure.", "I'm not sure yet.") },
       ],

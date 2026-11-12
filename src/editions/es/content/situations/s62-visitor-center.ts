@@ -1195,7 +1195,7 @@ const GOTIT: HintItem[] = [
   { id: "g_gotit", s: t("¡Ya | entendí, | gracias!", "Now | I understood, | thanks!", "Got it, thanks!", { spain: t("¡Vale, | entendido, | gracias!", "Okay, | understood, | thanks!", "Got it, thanks!") }) },
   { id: "g_understand", s: t("Ah, | ahora | sí | entiendo.", "Oh, | now | for sure | I understand.", "Oh, now I understand.") },
   { id: "g_isee", s: t("Ya | me ubiqué. | ¡Gracias!", "Now | I've got my bearings. | Thanks!", "Okay, I know where it is now. Thanks!", { spain: t("Ya | me oriento. | ¡Gracias!", "Now | I've got my bearings. | Thanks!", "Okay, I know where it is now. Thanks!") }),
-    note: "“Ubicarse” = to know where you are, or where something is. Very common in Mexico." },
+    note: "“Ubicarse” = to know where you are, or where something is. Very common in Mexico.", noteSpain: "Orientarse: to get your bearings (Mexico: ubicarse)." },
 ];
 
 const WHERE_BASE: HintItem[] = [

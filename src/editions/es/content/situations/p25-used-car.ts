@@ -1766,7 +1766,7 @@ export const usedCar: SituationDef = {
         { id: "lets_talk", s: t("Bueno… | hablemos | de | números.", "Okay… | let's talk | about | numbers.", "Okay… let's talk.") },
         { id: "more_than_hoping", s: t("Es | un poco | más | de | lo que | quería | gastar.", "It's | a little | more | than | what | I wanted | to spend.", "That's a bit more than I was hoping to spend.") },
         { id: "flex", s: t("¿El | precio | es | negociable?", "The | price | is it | negotiable?", "Is there any flexibility on the price?") },
-        { id: "bit_much", s: t("Se me hace | un poco | caro.", "It seems to me | a little | expensive.", "That's a bit much for me.", { spain: t("Me parece | un poco | caro.", "It seems to me | a little | expensive.", "That's a bit much for me.") }), note: "Se me hace = it seems to me: a soft, very Mexican way to object." },
+        { id: "bit_much", s: t("Se me hace | un poco | caro.", "It seems to me | a little | expensive.", "That's a bit much for me.", { spain: t("Me parece | un poco | caro.", "It seems to me | a little | expensive.", "That's a bit much for me.") }), note: "Se me hace = it seems to me: a soft, very Mexican way to object.", noteSpain: "Me parece…: a soft way to object (Mexico: se me hace…)." },
         { id: "best_price", s: t("¿Cuál | es | su | último | precio?", "What | is | your | last | price?", "What's your best price?"), note: "Very common in Mexico, at the market and in private sales." },
       ],
     },

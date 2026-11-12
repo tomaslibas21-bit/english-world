@@ -732,7 +732,7 @@ export const security: SituationDef = {
     ok_cmd: { lt: "Say okay", items: [
       { id: "ok_okay", s: t("Está bien.", "Okay.", "Okay.", { spain: t("Vale.", "Okay.", "Okay.") }) },
       { id: "ok_sure", s: t("Claro.", "Sure.", "Sure.") },
-      { id: "div_done", s: t("Listo.", "Done.", "All done.", { spain: t("Ya está.", "Done.", "Done.") }), note: "Listo: the everyday “done / ready” in Mexico." },
+      { id: "div_done", s: t("Listo.", "Done.", "All done.", { spain: t("Ya está.", "Done.", "Done.") }), note: "Listo: the everyday “done / ready” in Mexico.", noteSpain: "Ya está: the everyday “done” (Mexico: listo)." },
     ] },
     ok_short: { lt: "Say okay", items: [
       { id: "ok_okay", s: t("Está bien.", "Okay.", "Okay.", { spain: t("Vale.", "Okay.", "Okay.") }) },

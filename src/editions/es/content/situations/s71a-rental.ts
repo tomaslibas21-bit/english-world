@@ -1059,7 +1059,7 @@ export const rental: SituationDef = {
       { id: "pick_up", s: t("Vengo | a | recoger | mi | auto.", "I'm here | to | pick up | my | car.", "I'm here to pick up my car.", { spain: t("Vengo | a | recoger | mi | coche.", "I'm here | to | pick up | my | car.", "I'm here to pick up my car.") }) },
     ] },
     walkin: { lt: "Rent a car without a reservation", items: [
-      { id: "rent", s: t("Quisiera | rentar | un | auto, | por favor.", "I'd like | to rent | a | car, | please.", "I'd like to rent a car, please.", { spain: t("Quisiera | alquilar | un | coche, | por favor.", "I'd like | to rent | a | car, | please.", "I'd like to rent a car, please.") }), note: "Mexico says rentar; alquilar is understood too." },
+      { id: "rent", s: t("Quisiera | rentar | un | auto, | por favor.", "I'd like | to rent | a | car, | please.", "I'd like to rent a car, please.", { spain: t("Quisiera | alquilar | un | coche, | por favor.", "I'd like | to rent | a | car, | please.", "I'd like to rent a car, please.") }), note: "Mexico says rentar; alquilar is understood too.", noteSpain: "Alquilar: to rent (Mexico: rentar)." },
       { id: "no_resv", s: t("No tengo | reservación.", "I don't have | a reservation.", "I don't have a reservation.", { spain: t("No tengo | reserva.", "I don't have | a reservation.", "I don't have a reservation.") }) },
       { id: "rent_have", s: t("¿Tienen | autos | disponibles?", "Do you have | cars | available?", "Do you have any cars available?", { spain: t("¿Tienen | coches | disponibles?", "Do you have | cars | available?", "Do you have any cars available?") }) },
     ] },
