@@ -142,7 +142,7 @@ function Frame({ head, body, name }: { head: React.ReactNode; body: React.ReactN
           <Showcase name={name} />
           <Perks />
         </div>
-        <div className="ts-body">{body}</div>
+        <main className="ts-body">{body}</main>
       </div>
     </div>
   );
