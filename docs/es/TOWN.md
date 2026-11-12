@@ -984,6 +984,69 @@ behind a theme switch (Maple Harbor's values switch them off):
 Tests: tests/es/town.test.ts "graphics round 3" now also keeps the bins, the bolardos and the bolero's stand clear of
 everyone and out of the cars' lanes; the new beach sitters are on loungers.
 
+## Graphics, round 6 (12 Nov 2026)
+
+From the third re-rating (notes GRAPHICS-AFTER3.md, 7.8): the Spanish-only areas still at 7 (the cenote and the ruins,
+the sky and the light, the pharmacy, the clinic, the offices, the gym, the police) and its open items. Faces, bodies and
+idle motion are shared character code and wait on a decision: not touched. Every change behind the edition's theme or
+in code only the edition runs (mexican.ts, TownMerger); Maple Harbor's rooms and talk spots are pixel-identical.
+
+- **The cenote** (mexican.ts `cenote`, seen 25–40 m off from the end of avenida Juárez; the learner never walks there):
+  the cliff round its far side higher (3.4–5.8 m) with its top rows leaning in over the water, the bottom row wet and
+  dark, moss here and there; bunches of hanging roots and a vine with its leaves under the lip where it is high; the
+  cave's mouth as a dark grotto at the water's edge framed by stones; a raised rim of stones on the town's side with
+  the deck over it (boards, a rail each side, steps down into the water); three inner tubes and a line of buoys on the
+  water; five coconut palms leaning over it (`farPalm`); the taquilla's palapa bigger, life vests hung on it, and its
+  sign on two posts facing the town; a sacbé (white limestone, a stone edge either side) from the mirador across the
+  meadow to the deck, a branch to the taquilla; and a pair chatting on it (theme `chatSpots`; far versions from
+  Juárez). The meadow's scrub keeps off the sacbé (theme `meadow.clear`).
+- **The ruins** (mexican.ts `ruins`): a castillo of three stepped tiers with mouldings, wide stairs up from the land
+  between balustrades, the temple on top with three doorways between two columns, a frieze with three niches and
+  patches of its old red stucco, cornices and what is left of the crest (its top at 9.5 m, was 7); the shrine on a round
+  platform lower on the point; the precinct's broken wall along the land side with a corbel-arched gateway towards the
+  beach and a brown sign by it ("Zona Arqueológica · Ruinas mayas · Templo del Mar", the sign atlas); five coconut palms
+  among the stones. Both in the far region's mesh: no draw call.
+- **Sky and light** (theme `light.late`; styleScene.ts `blocksGrade`, `skyDome`, `cloudBand`): a late afternoon. The
+  sun 37° up from the same side as before (offset −52, 46, 38 from the player; Game.ts's is 54°), golden (#ffd9a3),
+  3.05 outdoors; the hemisphere's fill a little lower (1.3) and cooler, its ground warmer, so shade reads blue against
+  the warm light; exposure 1.1; the fog warmer. The dome is painted: the zenith's blue down to a peach horizon, the
+  low sun's halo and disc, and a band of fair-weather cumulus round the horizon (a 2048 × 512 texture drawn once, going
+  twice round the sky, white tops over lavender bases, warmer towards the sun, drifting slowly): one texture lookup a
+  sky pixel, the same mesh and draw call. The shadow's box is shortened across the sun's way (to 0.9 × the share the
+  lower sun stretches its footprint), so the shadow pass draws about as many casters as at noon. Indoors everything is
+  as before.
+- **Rooms** (`roomExtras.rooms6`, interiors.ts `rooms6`; through each room's merger, no draw call; every conversation's
+  way from the door checked with the room's nav, the room's people clear):
+  - the pharmacy: "GENÉRICOS · PATENTE · PERFUMERÍA · CONSULTORIO MÉDICO" along the upper wall, a fridge of sueros orales
+    at the back, a vitrina of medicines on the counter's side of the way in with a "Genéricos" sign hung over it, the
+    green cross set in the floor, two ceiling fans;
+  - the clinic: a rosette set in the granito where the way to the doctor crosses the room, a planter faced with
+    talavera behind the waiting chairs, ceiling fans;
+  - the gym: "BOX · PESAS · CARDIO · BAILE · FUNCIONAL" along the upper wall, a boxing ring with ropes in the flag's
+    colours in the west half, two costales on a steel frame, ceiling fans;
+  - the police: "POLICÍA MUNICIPAL · SEGURIDAD PÚBLICA · ATENCIÓN CIUDADANA", four red plastic chairs on a beam where
+    Maple Harbor's bench was, a standing fan, a palm in a clay pot where its plant was, "Denuncia anónima · Llama al
+    089" on the wall, a ceiling fan;
+  - Línea Clara: someone's birthday, a star piñata and papel picado along the back of the open plan (behind everyone:
+    strung across the room they hid Brooks in s87 and Paul in s34 from the conversation's camera), ceiling fans;
+    Brotecito: a futbolito, a piñata, papel picado;
+  - the airport's halls: a round planter faced with talavera with a coconut palm and agaves before the arrivals' and
+    departures' partition, where the ways from the door part; further out either side a long planter faced with
+    talavera (a palm, agaves) with a banca along each side, clear of the transport desk and the souvenir stand; the high
+    windows on the back wall lower and set higher (1.0 m), and the welcome frieze a little smaller and lower
+    (25.6 × 1.6 m at 4.85), a band of wall between them;
+  - the car rental: the equipales, their table and petate moved up into the room where the door's view shows them, the
+    leaflets' stand to the counter's side of the way in.
+- **P25 at 412 × 915**: the conversation's camera (Game.ts `fitTalk`) treats a line through a house's portal (its slab
+  and the terrace's railing, 2.9–4.3 m up; town.ts `Town.portals`, filled by the edition's `casas` only) as hidden, as it
+  does a building or a post, so it frames Doña Margarita past the portal instead of behind it.
+- **The walking camera at the hotel and the taxi stand** (town.ts `TownMerger`, the edition's merger only): the hotel's
+  canopy and its two posts, the drop-off's posts and the taxi stand's sign and pole are looked through (thin: cut open
+  on the line to the player) rather than solid: walking by them the camera no longer shortens to a metre (the west
+  walk at the hotel's corner) or goes up over her head (the east walk at the sitio).
+
+Tests: tests/es/town.test.ts as before (the new pair on the sacbé is beyond the town's edge, clear of everyone).
+
 ## The tasks (in order)
 
 Each task is one area; each ends with before/after screenshots at phone size and the draw-call numbers.

@@ -875,14 +875,16 @@ export class Game implements GameApi {
       let x0 = o.x, x1 = o.x, z0 = o.z, z1 = o.z;
       for (const { ch } of who) { const q = ch.root.position; x0 = Math.min(x0, q.x); x1 = Math.max(x1, q.x); z0 = Math.min(z0, q.z); z1 = Math.max(z1, q.z); }
       const near = <T extends { minX: number; maxX: number; minZ: number; maxZ: number }>(b: T) => b.maxX > x0 - 1 && b.minX < x1 + 1 && b.maxZ > z0 - 1 && b.minZ < z1 + 1;
-      const tall = boxes.filter(near), low = col.boxes.filter(near);
+      const tall = boxes.filter(near), low = col.boxes.filter(near), overhead = this.town.portals.filter(near);
       const posts = col.circles.filter((c) => !(c as { npc?: string }).npc && c.x > x0 - 1 - c.r && c.x < x1 + 1 + c.r && c.z > z0 - 1 - c.r && c.z < z1 + 1 + c.r);
       const hidden = who.map(() => 0);
       return points(f, (q, k) => {
         for (let i = 1; i < 30; i++) {
           const t = i / 30, x = o.x + (q.x - o.x) * t, y = o.y + (q.y - o.y) * t, z = o.z + (q.z - o.z) * t;
           const inside = (b: { minX: number; maxX: number; minZ: number; maxZ: number }) => x > b.minX && x < b.maxX && z > b.minZ && z < b.maxZ;
-          if (tall.some((b) => y < b.h && inside(b)) || (y < 1.2 && low.some(inside)) || (y < 4 && posts.some((c) => (x - c.x) ** 2 + (z - c.z) ** 2 < c.r * c.r))) return ++hidden[k] < 4;
+          if (tall.some((b) => y < b.h && inside(b)) || (y < 1.2 && low.some(inside)) || (y < 4 && posts.some((c) => (x - c.x) ** 2 + (z - c.z) ** 2 < c.r * c.r))
+            // (this edition's houses: through a portal's slab or its terrace's railing, theme.ts `casas`)
+            || overhead.some((b) => y > b.y0 && y < b.y1 && inside(b))) return ++hidden[k] < 4;
         }
         return true;
       });
