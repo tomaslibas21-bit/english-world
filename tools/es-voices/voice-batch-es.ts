@@ -69,9 +69,9 @@ const PRICE = {
   tokensPerSecond: 25,
 };
 /** The owner's stop line for all three accent sets together, samples and redos included (4 Nov 2026: $38; 11 Nov,
- *  with Spain's set and the owner's top-up: $48). All bulk voicing goes through the Batch API; single requests only for
+ *  with Spain's set and the owner's top-up: $48; 12 Nov, to finish Spain's set, the redos and the missing clips: $54). All bulk voicing goes through the Batch API; single requests only for
  *  a few sample lines. */
-const CAP = Number(process.env.PC_CAP ?? 48);
+const CAP = Number(process.env.PC_CAP ?? 54);
 const MAX_TRIES = 4;
 
 const args = process.argv.slice(2);
@@ -178,8 +178,14 @@ function newestSource(): number {
  *  it again). The random conversations take a while, so `--workers=2` (the default; the machine is shared, so no
  *  more than two heavy processes) lists the conversations in parallel processes, niced. `--only=s73,s65b` lists only
  *  those conversations (with the global lines of their people), into <work>/lines-only.json, never the whole list:
- *  for trying a change quickly. */
+ *  for trying a change quickly. The clips in <work>/lines-extra.json (check-list-es.ts --extras) are added to it. */
 async function utterances(): Promise<EsUtt[]> {
+  const list = await listed();
+  // the clips check-list-es.ts --extras heard in its own runs and found missing from the list
+  const extra = path.join(WORK, "lines-extra.json");
+  return !flag("only") && fs.existsSync(extra) ? mergeUtts([list, readJson<EsUtt[]>(extra, [])]) : list;
+}
+async function listed(): Promise<EsUtt[]> {
   const only = flag("only");
   const cache = path.join(WORK, only ? "lines-only.json" : "lines.json");
   // --cached: the list as it is, even if the content changed since (for a sample while the list is made again)

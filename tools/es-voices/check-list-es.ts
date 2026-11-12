@@ -9,7 +9,9 @@
 //    never heard ("qty?"); per conversation, with examples. Values made by reach-es.ts are not junk: they are the point.
 // It proves nothing alone (a run can miss a moment); it shows where the list and the game disagree.
 //   EDITION=es npx tsx --import ./tools/edition-hook.mjs tools/es-voices/check-list-es.ts [s31 s73 …] [--lines=<lines.json>]
-//     [--runs=120] [--first=1000] [--seeds=3] [--json=<out>]
+//     [--runs=120] [--first=1000] [--seeds=3] [--json=<out>] [--extras]
+// --extras: the clips heard here and missing from the list go into <work>/lines-extra.json, which voice-batch-es.ts adds
+// to the list (a line said by whoever holds the floor at a rare moment, an item pair, a value the list's runs missed).
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -25,6 +27,7 @@ import { reachFilter } from "./reach-es";
 import type { EsUtt } from "./lines-es";
 
 const args = process.argv.slice(2);
+const has = (name: string) => args.includes(`--${name}`);
 const flag = (name: string) => args.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3);
 const only = args.filter((a) => !a.startsWith("--"));
 const WORK = process.env.PC_VOICING ?? path.join(os.homedir(), "puerto-colibri-voicing");
@@ -52,6 +55,7 @@ interface Report { heard: number; clips: number; missing: Record<Kind, Map<strin
 const reports = new Map<string, Report>();
 const runs = Number(flag("runs") ?? 120), first = Number(flag("first") ?? 1000), seeds = Number(flag("seeds") ?? 3);
 const heardKeys = new Set<string>();
+const extras = new Map<string, EsUtt>();
 const t0 = Date.now();
 for (const sit of SITUATIONS.filter((s) => !only.length || only.some((o) => s.id.startsWith(o)))) {
   const look = lookFor(sit);
@@ -90,6 +94,9 @@ for (const sit of SITUATIONS.filter((s) => !only.length || only.some((o) => s.id
             note += !ph.values.every((v) => sit.domains?.[v]) ? " (a value with no list)" : !inList ? ` (${JSON.stringify(b)} is not in the value list)` : f && !f(b) ? ` (${JSON.stringify(b)} cut by reach-es.ts)` : "";
           }
           r.missing[kind].set(`${h.line.lineId}|${voice}|${say}`, note);
+          const x = extras.get(k);
+          if (x) { if (!x.sits.includes(sit.id)) x.sits.push(sit.id); }
+          else extras.set(k, { voice, speed: n.speed ?? 1, say, shown: s.en, where: `${sit.id}:${h.line.lineId}`, sits: [sit.id], ...(variety === "neutral" ? { neutral: true } : variety === "spain" ? { spain: true } : {}), why: "heard check" });
         } finally { setVariety("default"); }
       }
     },
@@ -128,4 +135,12 @@ const dt = [...doubtful.values()].reduce((a, d) => a + d.n, 0);
 console.log(`\njunk check: ${dt} clips made from a guess and not heard here (who? ${[...doubtful.values()].reduce((a, d) => a + d.who, 0)}, list? ${[...doubtful.values()].reduce((a, d) => a + d.list, 0)}, qty? ${[...doubtful.values()].reduce((a, d) => a + d.qty, 0)})`);
 for (const [id, d] of [...doubtful].sort((a, b) => b[1].n - a[1].n)) console.log(`  ${id.padEnd(22)} ${String(d.n).padStart(5)}  who? ${d.who}  list? ${d.list}  qty? ${d.qty}${d.examples.length ? "\n      " + d.examples.join("\n      ") : ""}`);
 if (flag("json")) fs.writeFileSync(flag("json")!, JSON.stringify({ file: FILE, reports: Object.fromEntries([...reports].map(([id, r]) => [id, { heard: r.heard, clips: r.clips, pairs: r.pairs, pairsMissing: [...r.pairsMissing], missing: Object.fromEntries(Object.entries(r.missing).map(([k, m]) => [k, [...m.values()]])) }])), doubtful: Object.fromEntries(doubtful) }, null, 1));
+if (has("extras")) {
+  const f = path.join(WORK, "lines-extra.json");
+  const before: EsUtt[] = fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, "utf8")) : [];
+  const all = new Map(before.map((u) => [keyOf(u.voice, u.speed, u.say), u]));
+  for (const [k, u] of extras) if (!all.has(k)) all.set(k, u);
+  fs.writeFileSync(f, JSON.stringify([...all.values()], null, 1));
+  console.log(`\n${extras.size} missing clips written to ${f} (${all.size} in it now): voice-batch-es.ts adds them to the list`);
+}
 process.exit(total("who") + total("value") + total("item") + total("other") ? 1 : 0);
