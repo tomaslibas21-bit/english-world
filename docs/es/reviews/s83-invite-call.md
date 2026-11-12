@@ -125,3 +125,9 @@ las…", solo for "nada más", fuera de for "afuera de", ¿Te recojo? for "¿Pas
 Patterns: pickup reads "paso a buscarte / voy a por ti", time_ask_you reads "te viene bien". Merge records for the new
 units (lo sé, he visto, te viene, cuantos más, mejor). tests/es/spain/s83-invite-call.json: 22 items, all understood,
 0/1 false accepts. "¡Venga, hasta luego!" isn't read as a goodbye (global.ts g_bye has no "venga"): proposed to batch 1.
+
+## Spain review (12 Nov 2026)
+
+- Checked (fresh reviewer): every twin against its Mexican line (meaning, facts, prices, names), Peninsular wording, the perfect for today's events, tú/usted and vosotros by STYLE.md, glosses, spelling and ¿¡, the Spain transcripts (`--variety=spain --verbose`, untwinned lines read through their neutral fallback) and tests/es/spain.
+- Found: "¡Nada, tú solo ven!" (solo + imperative, a Latin American calque); "Perdón, se está cortando un poco. ¿Dijiste el viernes?" and "¡Ay, qué lindo, gracias!" had no twin (preterite for what was just said; lindo).
+- Fixed: "¡Nada, tú vente y ya está!"; twins "Perdona, se está cortando un poco. ¿Has dicho el viernes?" and "¡Ay, qué detalle, gracias! Pero mejor nos vemos allí.". Kept: ¿Sí? / ¿Diga?, ¡Chao!, el kiosco (the plaza's bandstand), boletos → entradas via the neutral twins.

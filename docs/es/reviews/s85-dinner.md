@@ -152,3 +152,10 @@ speaker's voice. No plural items, no values.
 
 After pass B (merge of es-spain 98cfaffc, 12 Nov 2026): the new for_the_road_flan line gets its Spain twin, "¡Espera!
 Te pongo un trozo de flan para llevar." (like for_the_road's "¡Espera!").
+
+## Spain review (12 Nov 2026)
+
+- Checked (fresh reviewer): every twin against its Mexican line (meaning, facts, prices, names), Peninsular wording, the perfect for today's events, tú/usted and vosotros by STYLE.md, glosses, spelling and ¿¡, the Spain transcripts (`--variety=spain --verbose`, untwinned lines read through their neutral fallback) and tests/es/spain.
+- Found: vosotros/os agree everywhere the learner speaks to both hosts (veros, para vosotros, os he traído, ¿os ayudo?, os aviso); the hosts' own lines are tú to the guest and nos/-mos for themselves. "Bueno, el flan lo hizo Natalia" (two lines) had no twin: Spain says the perfect for a dish on today's table.
+- Fixed: twins "…el flan lo ha hecho Natalia" (both lines). Spain corpus +2 (¿Lo habéis hecho vosotros?, ¡Qué casa más bonita tenéis!); made_yourself takes "lo habéis hecho vosotros".
+- For the owner: the hint notes and the intro are English and not per variety, so Spain shows "Ustedes: you're speaking to both hosts" under "Esto es para vosotros" (also gr_glad, hp_can_i) and the intro says "use ustedes".

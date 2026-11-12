@@ -123,3 +123,9 @@ value is the roses' $150 (a module constant).
   that collides with the bank (banco) in the same list, so the bench keeps banca (for the lead).
 - Grammar: lost takes me han robado; checked / not_checked he mirado, he buscado, por todas partes; bought_ctx he
   comprado…; last_seen cogí / he cogido; where_found ha encontrado; not_lost la he encontrado. Merges added.
+
+## Spain review (12 Nov 2026)
+
+- Checked (fresh reviewer): every twin against its Mexican line (meaning, facts, prices, names), Peninsular wording, the perfect for today's events, tú/usted and vosotros by STYLE.md, glosses, spelling and ¿¡, the Spain transcripts (`--variety=spain --verbose`, untwinned lines read through their neutral fallback) and tests/es/spain.
+- Found: "Pasan por la avenida a cada rato" (a cada rato is Latin American); "Solo cruce la plaza…" and "Solo levante la mano" (solo + imperative).
+- Fixed: "…cada poco" (merge swapped), "Solo tiene que cruzar la plaza y ahí está.", "…Solo tiene que levantar la mano." (flag moved to la). Kept: hijo/hija with usted from Mari, el 911, los colectivos, el kiosco.

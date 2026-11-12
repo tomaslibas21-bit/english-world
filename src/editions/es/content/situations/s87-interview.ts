@@ -787,6 +787,9 @@ export const interview: SituationDef = {
       // the IMSS (seguro social) and the other benefits the law requires: "¿Tienen IMSS?" had "Lo reviso y le aviso"
       "(hay | tienen | dan | tendria) (imss | el imss | seguro | infonavit | imss e infonavit | prima vacacional | reparto de utilidades | utilidades | fondo de ahorro | seguro de gastos medicos mayores)",
       "(me dan | me darian | me van a dar) de alta en el (imss | seguro | seguro social)", "(estaria | voy a estar) (dado | dada) de alta en el (imss | seguro | seguro social)",
+      // Spain: Seguridad Social, pagas extra
+      "(hay | tienen | dan | tendria) (seguridad social | pagas extra | paga extra | pagas extraordinarias | paga de navidad | seguro privado | seguro medico privado)",
+      "(me dan | me darian | me van a dar | me dais | estaria | voy a estar | estaria dado | estaria dada) de alta en la seguridad social", "(cuantas | con cuantas) pagas (son | hay | tiene | tendria | al ano)", "(que | cuales) son las condiciones [del puesto]",
     ] },
     q_day: { patterns: [
       "como es un dia (normal | tipico) [de trabajo] [aqui] #h:q_day", "que (haria | voy a hacer | tendria que hacer) (todos los dias | en el puesto | aqui)",
@@ -936,7 +939,7 @@ export const interview: SituationDef = {
     ask_about_again: [
       t("Cuénteme | un | poco | de | usted.", "Tell me | a | little | about | yourself.", "Tell me a little about yourself."),
       t("Solo | cuénteme | un | poco | de | usted: | su | trabajo | y | su | experiencia.", "Just | tell me | a | little | about | yourself: | your | work | and | your | experience.",
-        "Just tell me a little about yourself: your work and your experience."),
+        "Just tell me a little about yourself: your work and your experience.", { spain: t("Simplemente | cuénteme | un | poco | de | usted: | su | trabajo | y | su | experiencia.", "Just | tell me | a | little | about | yourself: | your | work | and | your | experience.", "Just tell me a little about yourself: your work and your experience.") }),
     ],
     ask_job_more: [
       t("¿Y | a | qué | se dedica?", "And | to | what | do you devote yourself?", "And what do you do?", { flags: { 1: "dedicarse a: to do for a living; a links it to qué." } }),
@@ -1040,7 +1043,7 @@ export const interview: SituationDef = {
     future_help: [t("No se preocupe. | ¿Qué | le gustaría | hacer | aquí?", "Don't worry. | What | would you like | to do | here?", "That's okay. What would you like to do here?")],
     // Teamwork
     ask_teamwork: [
-      t("¿Me | puede | contar | de | alguna | vez | que | trabajó | en equipo?", "(To) me | can you | tell | about | some | time | that | you worked | as a team?", "Can you tell me about a time you worked on a team?"),
+      t("¿Me | puede | contar | de | alguna | vez | que | trabajó | en equipo?", "(To) me | can you | tell | about | some | time | that | you worked | as a team?", "Can you tell me about a time you worked on a team?", { spain: t("¿Me | puede | hablar | de | alguna | vez | en | que | trabajó | en equipo?", "(To) me | can you | talk | about | some | time | — | when | you worked | as a team?", "Can you tell me about a time you worked on a team?") }),
       t("¿Me | da | un | ejemplo | de | trabajo | en equipo?", "(To) me | you-give | an | example | of | work | as a team?", "Can you give me an example of teamwork?"),
     ],
     teamwork_ack: [
@@ -1114,7 +1117,7 @@ export const interview: SituationDef = {
       flags: { 2: "Mexican: home office, from English, is what Mexican offices say for working from home." },
       neutral: t("Puede | trabajar | desde | casa | dos | días | a la semana.", "You can | work | from | home | two | days | a week.", "You can work from home two days a week.") })],
     a_benefits: [t("Tiene | todas | las | prestaciones | de ley: | seguro social, | aguinaldo | y | vacaciones.", "You have | all | the | benefits | by law: | social security, | Christmas bonus | and | vacation.",
-      "You get all the benefits the law requires: social security, a Christmas bonus and paid vacation.", { flags: { 6: "aguinaldo: the yearly bonus Mexican law requires, paid in December." }, spain: t("Tiene | todo | lo que | marca | la | ley: | Seguridad Social, | pagas extra | y | vacaciones.", "You have | everything | that | sets | the | law: | social security, | extra paychecks | and | vacation.", "You get everything the law requires: social security, the extra paychecks and vacation.", { flags: { 4: "la ley: Spanish uses the article here; English says the law too.", 7: "pagas extra: in Spain, the extra monthly paychecks (in summer and at Christmas)." } }) })],
+      "You get all the benefits the law requires: social security, a Christmas bonus and paid vacation.", { flags: { 6: "aguinaldo: the yearly bonus Mexican law requires, paid in December." }, spain: t("Tiene | todo | lo que | marca | la | ley: | Seguridad Social, | paga extra | de | Navidad | y | vacaciones.", "You have | everything | that | sets | the | law: | social security, | extra paycheck | at | Christmas | and | vacation.", "You get everything the law requires: social security, a Christmas bonus and paid vacation.", { flags: { 4: "la ley: Spanish uses the article here; English says the law too.", 7: "paga extra: an extra month's pay; here the one Mexico's law gives in December (the aguinaldo)." } }) })],
     a_day: [t("Contestaría | correos | y | llamadas | de | clientes, | y | ayudaría | al | equipo | con | los | proyectos.",
       "You would answer | emails | and | calls | from | clients, | and | you would help | the | team | with | the | projects.", "You'd answer client emails and calls, and help the team with projects.",
       { flags: { 8: "al = a + el: a marks the team as the one being helped." } })],
@@ -1412,7 +1415,7 @@ export const interview: SituationDef = {
     "ha sido": { reason: "grammatical_fusion", split: "ha → has + sido (participle): Spain's present perfect for today's events; one English verb phrase (it's been).", minimal: "Auxiliary and participle." },
     "viene bien": { reason: "lexical_expression", split: "viene → comes + bien → well: (eso nos) viene bien = it suits (us), Spain.", minimal: "Verb and adverb." },
     "seguridad social": { reason: "lexical_expression", split: "seguridad → security + social: the name of the public insurance = social security.", minimal: "Two words." },
-    "pagas extra": { reason: "lexical_expression", split: "pagas → paychecks + extra: Spain's two extra monthly paychecks a year.", minimal: "Two words." },
+    "paga extra": { reason: "lexical_expression", split: "paga → paycheck + extra: an extra month's pay (Spain has two a year).", minimal: "Two words." },
     "a jornada completa": { reason: "lexical_expression", split: "a → at + jornada → working day + completa → full = full-time.", minimal: "Three words." },
     "a usted": { reason: "lexical_expression", split: "a → to + usted → you: (gracias) a usted = thank you (answering thanks).", minimal: "Two words." },
     "me he perdido": { reason: "grammatical_fusion", split: "me → myself + he → have + perdido: the reflexive present perfect = I've gotten lost.", minimal: "Pronoun, auxiliary and participle." },

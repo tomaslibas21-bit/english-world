@@ -140,3 +140,9 @@ mexicano", "No sé, no en dólares"); "¡Qué buena noticia!" is now a trap for 
   q_training formación; q_remote teletrabajar; q_benefits condiciones / beneficios; q_hours jornada completa / media
   jornada; look_forward quedo a la espera. Merges for the new units.
 - Kept (justified warning): fu_here "Aquí mismo, con ustedes": ustedes is usted-plural to the company.
+
+## Spain review (12 Nov 2026)
+
+- Checked (fresh reviewer): every twin against its Mexican line (meaning, facts, prices, names), Peninsular wording, the perfect for today's events, tú/usted and vosotros by STYLE.md, glosses, spelling and ¿¡, the Spain transcripts (`--variety=spain --verbose`, untwinned lines read through their neutral fallback) and tests/es/spain.
+- Found: "Seguridad Social, pagas extra y vacaciones": the plural pagas extra are Spain's two extra paychecks, while the job's fact is one December bonus (aguinaldo). "Solo cuénteme un poco de usted…" (solo + imperative) and "¿Me puede contar de alguna vez que trabajó en equipo?" (contar de) had no twin. q_benefits didn't take a Spaniard's ¿Hay pagas extra? / ¿Me dan de alta en la Seguridad Social?
+- Fixed: "…Seguridad Social, paga extra de Navidad y vacaciones" (English: a Christmas bonus, as the Mexican line; merge paga extra); twins "Simplemente cuénteme…" and "¿Me puede hablar de alguna vez en que trabajó en equipo?"; q_benefits takes seguridad social, paga(s) extra, paga de Navidad, de alta en la Seguridad Social, ¿Cuántas pagas…?; Spain corpus +3. Kept: Licenciada, usted both ways, formación, jornada completa, aparcamiento.
