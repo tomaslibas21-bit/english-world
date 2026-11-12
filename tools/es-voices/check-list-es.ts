@@ -18,7 +18,7 @@ import { GLOBAL } from "../../src/content/global";
 import { NPCS } from "../../src/content/npcs";
 import { npcVoice } from "../../src/content/voices";
 import { withoutAddressedNames } from "../../src/audio-key";
-import { compose, placeholders, setVariety, type Sentence } from "../../src/convo/compose";
+import { addressInformal, compose, placeholders, setVariety, type Sentence } from "../../src/convo/compose";
 import { EDITION } from "../../src/edition";
 import { lookFor, observe } from "./runs-es";
 import { reachFilter } from "./reach-es";
@@ -36,7 +36,7 @@ const keyOf = (voice: string, speed: number, say: string) => `${voice}|${speed}|
 const have = new Map(list.map((u) => [keyOf(u.voice, u.speed, u.say), u]));
 /** The texts each voice says in the list, to tell a missing speaker from a missing text. */
 const textsAnyVoice = new Map<string, Set<string>>();
-for (const u of list) { const t = `${u.neutral ? "n" : "m"}|${u.say}`; if (!textsAnyVoice.has(t)) textsAnyVoice.set(t, new Set()); textsAnyVoice.get(t)!.add(u.voice); }
+for (const u of list) { const t = `${u.neutral ? "n" : u.spain ? "s" : "m"}|${u.say}`; if (!textsAnyVoice.has(t)) textsAnyVoice.set(t, new Set()); textsAnyVoice.get(t)!.add(u.voice); }
 
 /** The clip the game plays for a sentence (null: none, the browser speaks it; as lines-es.ts's add). */
 function clipKey(voice: string, speed: number, s: Sentence): string | null {
@@ -64,10 +64,10 @@ for (const sit of SITUATIONS.filter((s) => !only.length || only.some((o) => s.id
       r.heard++;
       const n = NPCS[h.line.npc];
       const src = (sit.lines[h.line.lineId] ?? GLOBAL.lines[h.line.lineId])?.[h.line.variant];
-      for (const variety of ["default", "neutral"] as const) {
+      for (const variety of ["default", "neutral", "spain"] as const) {
         setVariety(variety);
         try {
-          const s = variety === "default" ? h.line.sentence : src ? compose(src, h.line.vars, { look, addressee: h.gender, speaker: n.gender ?? "f", formal: !n.informal }) : null;
+          const s = variety === "default" ? h.line.sentence : src ? compose(src, h.line.vars, { look, addressee: h.gender, speaker: n.gender ?? "f", formal: !addressInformal(n) }) : null;
           if (!s) continue;
           const voice = npcVoice(n), k = clipKey(voice, n.speed ?? 1, s);
           if (!k) continue;
@@ -79,7 +79,7 @@ for (const sit of SITUATIONS.filter((s) => !only.length || only.some((o) => s.id
           if (ok) continue;
           const ph = src ? placeholders(src) : { entities: [], values: [] };
           const say = k.split("|").slice(2).join("|");
-          const elsewhere = textsAnyVoice.get(`${variety === "neutral" ? "n" : "m"}|${say}`);
+          const elsewhere = textsAnyVoice.get(`${variety === "neutral" ? "n" : variety === "spain" ? "s" : "m"}|${say}`);
           const kind: Kind = elsewhere?.size ? "who" : ph.values.length ? "value" : ph.entities.length ? "item" : "other";
           let note = `${h.line.lineId} [${h.how}${h.held ? ", held" : ""}] ${voice}: “${say}”`;
           if (kind === "who") note += ` (in the list for ${[...elsewhere!].join(", ")})`;

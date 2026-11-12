@@ -84,6 +84,51 @@ const MEXICO: Record<string, string> = {
   greg: "es-419-podcaster-4", whitaker: "es-419-csagent-9", russo: "es-419-assistant-1", emily: "es-419-assistant-2", tyler: "es-419-assistant-9",
   mr_grant: "es-419-concierge-8",
 };
+/** The catalog's Castilian voices (es-ES, `voices --lang=es-ES`, 12 Nov 2026). Spain's set (esp_) is voiced with these:
+ *  the sample sp1 gave the Mexican casting's es-419 voices a Castilian direction, and Gemini 3.1 Pro heard 39 of 80
+ *  clips as Latin American (seseo), so Spain's set gets its own voices, picked the same way (gender, age, manner). */
+export const ES_VOICES: { name: string; g: "f" | "m" | "n"; age: number; trait: string }[] = [
+  { name: "es-es-commercial-3", g: "f", age: 30, trait: "an influencer" },
+  { name: "es-es-commercial-7", g: "f", age: 30, trait: "an influencer" },
+  { name: "es-es-concierge-3", g: "f", age: 24, trait: "an executive assistant" },
+  { name: "es-es-csagent-5", g: "f", age: 34, trait: "a customer service agent" },
+  { name: "es-es-csagent-6", g: "f", age: 56, trait: "a customer service agent" },
+  { name: "es-es-podcaster-5", g: "f", age: 56, trait: "a radio host" },
+  { name: "es-es-techagent-5", g: "f", age: 29, trait: "a tech support agent" },
+  { name: "es-es-training-12", g: "f", age: 47, trait: "an instructional video host" },
+  { name: "es-es-tutor-12", g: "f", age: 41, trait: "a therapist" },
+  { name: "es-es-advisor-8", g: "n", age: 46, trait: "a lawyer" },
+  { name: "es-es-advisor-2", g: "m", age: 38, trait: "a lawyer" },
+  { name: "es-es-advisor-9", g: "m", age: 44, trait: "a lawyer" },
+  { name: "es-es-assistant-3", g: "m", age: 59, trait: "a sibling" },
+  { name: "es-es-assistant-4", g: "m", age: 54, trait: "a sibling" },
+  { name: "es-es-concierge-12", g: "m", age: 27, trait: "a tour guide" },
+  { name: "es-es-concierge-4", g: "m", age: 35, trait: "a tour guide" },
+  { name: "es-es-csagent-3", g: "m", age: 32, trait: "a sales associate" },
+  { name: "es-es-podcaster-7", g: "m", age: 51, trait: "a radio host" },
+  { name: "es-es-techagent-4", g: "m", age: 50, trait: "a tech support agent" },
+  { name: "es-es-training-11", g: "m", age: 31, trait: "a cooking show host" },
+  { name: "es-es-training-3", g: "m", age: 44, trait: "a cooking show host" },
+  { name: "es-es-training-9", g: "m", age: 23, trait: "an instructional video host" },
+];
+/** Spain's set: who speaks with which Castilian voice; the coaches' two voices belong to nobody else. */
+const SPAIN: Record<string, string> = {
+  coach_f: "es-es-commercial-7", coach_m: "es-es-csagent-3", amb_f: "es-es-concierge-3", amb_m: "es-es-concierge-12",
+  diaz: "es-es-training-12", priya: "es-es-techagent-5", aduana: "es-es-tutor-12", vinnie: "es-es-assistant-3", olivia: "es-es-commercial-3",
+  chuck: "es-es-assistant-4", mia: "es-es-concierge-3", rosa: "es-es-csagent-6", ben: "es-es-training-9", harold: "es-es-assistant-3",
+  marco: "es-es-training-11", marcus: "es-es-podcaster-5", marco_host: "es-es-techagent-5",
+  chloe: "es-es-concierge-3", okafor: "es-es-podcaster-7", linda: "es-es-csagent-5", jessie: "es-es-tutor-12", aaron: "es-es-concierge-4",
+  gloria: "es-es-csagent-6", claire: "es-es-commercial-3", netwave_bot: "es-es-advisor-8", patel: "es-es-techagent-4", rita: "es-es-csagent-6",
+  brooks: "es-es-training-12", maria: "es-es-techagent-5", kate: "es-es-tutor-12", paul: "es-es-training-11", sara: "es-es-concierge-3",
+  harris: "es-es-assistant-4", sophie: "es-es-commercial-3", mark: "es-es-training-11", lizzie: "es-es-techagent-5", sam: "es-es-concierge-12",
+  emma: "es-es-csagent-5", dan: "es-es-advisor-2", nora: "es-es-tutor-12", lucy: "es-es-commercial-3",
+  mrs_lee: "es-es-csagent-6", reyes: "es-es-advisor-9", carter: "es-es-training-12", sco: "es-es-advisor-8", frank: "es-es-assistant-3",
+  jordan: "es-es-techagent-5", walter: "es-es-podcaster-7", denise: "es-es-advisor-8", jake: "es-es-concierge-4", dot: "es-es-podcaster-5",
+  kevin: "es-es-concierge-12", grant: "es-es-training-3", nina: "es-es-csagent-5",
+  maggie: "es-es-podcaster-5", kyle: "es-es-training-9", harbor_bot: "es-es-advisor-8", brenda: "es-es-training-12", vanessa: "es-es-csagent-5",
+  greg: "es-es-advisor-9", whitaker: "es-es-assistant-4", russo: "es-es-concierge-3", emily: "es-es-tutor-12", tyler: "es-es-training-9",
+  mr_grant: "es-es-assistant-3",
+};
 /** Which casting: Gemini's 30 prebuilt voices ("prebuilt") or the catalog's Mexican voices ("mexico"). */
 export type Casting = "prebuilt" | "mexico";
 /** Chosen 5 Nov 2026 from the samples (docs/es/VOICES.md "Samples"): the catalog's native Mexican voices. */
@@ -230,7 +275,7 @@ export const SCENES: Record<string, Scene> = {
 
 /** The voice ids (src/editions/es/content/voices.ts) → who they are, and in which accent. */
 export function whoOf(voiceId: string): string | null {
-  return /^esn?_/.test(voiceId) ? voiceId.replace(/^esn?_/, "") : null;
+  return /^es[np]?_/.test(voiceId) ? voiceId.replace(/^es[np]?_/, "") : null;
 }
 export const accentOf = (voiceId: string): Accent => (voiceId.startsWith("esn_") ? "neutral" : voiceId.startsWith("esp_") ? "spain" : "mx");
 
@@ -238,6 +283,12 @@ export const accentOf = (voiceId: string): Accent => (voiceId.startsWith("esn_")
 export function roleOf(who: string, casting: Casting = CASTING): Role | null {
   const r = who === "coach_f" || who === "coach_m" ? COACH[who.slice(-1) as "f" | "m"] : who === "amb_f" || who === "amb_m" ? AMBIENT[who.slice(-1) as "f" | "m"] : CAST[who];
   return r ? { ...r, voice: voiceIn(casting, who, r) } : null;
+}
+
+/** The Gemini voice a line of `who` is recorded with in `accent`'s set: Spain's set has its own Castilian voices. */
+export function voiceFor(who: string, accent: Accent, casting: Casting = CASTING): string | null {
+  if (accent === "spain") return SPAIN[who] ?? null;
+  return roleOf(who, casting)?.voice ?? null;
 }
 
 /** The scenes that apply to `who` in conversation `sit`. */
@@ -297,5 +348,15 @@ export function castingProblems(casting: Casting = CASTING): string[] {
     for (const p of partners(n.id)) if (voiceOf(p) === voice && n.id < p) out.push(`${n.id} and ${p} meet in one conversation and share ${voice}`);
   }
   for (const id of Object.keys(CAST)) if (!NPCS[id]) out.push(`CAST has ${id}, who isn't in npcs.ts`);
+  const spCoach = new Set([SPAIN.coach_f, SPAIN.coach_m]);
+  for (const k of ["coach_f", "coach_m", "amb_f", "amb_m"]) if (!ES_VOICES.some((x) => x.name === SPAIN[k])) out.push(`Spain's ${k}: no Castilian voice`);
+  for (const n of Object.values(NPCS)) {
+    const voice = SPAIN[n.id];
+    const v = ES_VOICES.find((x) => x.name === voice);
+    if (!v) { out.push(`${n.id} (${n.name}) has no Castilian voice for Spain's set`); continue; }
+    if (v.g !== n.gender && v.g !== "n") out.push(`Spain's set: ${n.id} (${n.name}, ${n.gender}) has ${voice} (${v.g})`);
+    if (spCoach.has(voice)) out.push(`Spain's set: ${n.id} has a coach's voice (${voice})`);
+    for (const p of partners(n.id)) if (SPAIN[p] === voice && n.id < p) out.push(`Spain's set: ${n.id} and ${p} meet in one conversation and share ${voice}`);
+  }
   return out;
 }

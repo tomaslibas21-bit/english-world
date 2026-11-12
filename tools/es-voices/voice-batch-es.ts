@@ -40,7 +40,7 @@ import { NPCS } from "../../src/content/npcs";
 import { SITUATION_BY_ID } from "../../src/content/situations";
 import { placeholders } from "../../src/convo/compose";
 import { enumerateEs, mergeUtts, type EsUtt, type LinesResult } from "./lines-es";
-import { accentOf, castingProblems, roleOf, styleFor, whoOf, type Accent, type StyleOpts } from "./casting-es";
+import { accentOf, castingProblems, roleOf, styleFor, voiceFor, whoOf, type Accent, type StyleOpts } from "./casting-es";
 import { decodeAudio, trimAndNormalize } from "../audio-util";
 
 if (EDITION.id !== "es") { console.error("Run with the Spanish edition: EDITION=es npx tsx --import ./tools/edition-hook.mjs tools/es-voices/voice-batch-es.ts …"); process.exit(1); }
@@ -218,11 +218,11 @@ async function allLines(styleOpts?: StyleOpts): Promise<Line[]> {
   for (const u of await utterances()) {
     if (!/[a-z0-9áéíóúüñ]/i.test(u.say)) continue; // nothing to say: the game plays nothing (src/game/audio.ts)
     const who = whoOf(u.voice);
-    if (!who || !roleOf(who)) { nobody.add(u.voice); continue; }
+    if (!who || !roleOf(who) || !voiceFor(who, accentOf(u.voice))) { nobody.add(u.voice); continue; }
     // the same voice and manner in both sets; only the accent direction differs
     const accent = accentOf(u.voice);
     const s = styleFor(who, u.sits, { ...styleOpts, accent: styleOpts?.accent === "none" ? "none" : accent });
-    out.push({ key: audioKey(u.voice, u.speed, u.say), voice: u.voice, who, accent, speed: u.speed, say: u.say, shown: u.shown, text: geminiTextEs(SAY_AS[u.say] ?? u.say), gv: roleOf(who)!.voice, style: s.style, ...(s.fx ? { fx: s.fx } : {}), where: u.where, sits: u.sits, ...(u.neutral ? { neutral: true } : {}) });
+    out.push({ key: audioKey(u.voice, u.speed, u.say), voice: u.voice, who, accent, speed: u.speed, say: u.say, shown: u.shown, text: geminiTextEs(SAY_AS[u.say] ?? u.say), gv: voiceFor(who, accent)!, style: s.style, ...(s.fx ? { fx: s.fx } : {}), where: u.where, sits: u.sits, ...(u.neutral ? { neutral: true } : {}), ...(u.spain ? { spain: true } : {}) });
   }
   if (nobody.size) { console.log(`no casting for: ${[...nobody].join(", ")}`); process.exit(1); }
   return out;
@@ -1026,22 +1026,23 @@ async function project() {
   const running = new Set<string>();
   for (const j of jobsList()) if (j.batch && !j.fetched && !j.failed) for (const l of readJson<Line[]>(path.join(WORK, linesFile(j.file)), [])) running.add(l.key);
   const redo = Number(flag("redo") ?? 0.05);
-  // the conversations still to land (p18, p24–p30): about 11% more lines, as in Maple Harbor (3,636 of its 33,684)
-  const later = Number(flag("later") ?? 0.11);
+  // all 50 conversations are in the list since 12 Nov (the three texts frozen): nothing left to land unless --later says so
+  const later = Number(flag("later") ?? 0);
+  const name = (a: Accent) => (a === "mx" ? "Mexican" : a === "spain" ? "Spain's" : "neutral");
   const set: Record<string, number> = {};
-  for (const acc of ["mx", "neutral"] as Accent[]) {
+  for (const acc of ["mx", "neutral", "spain"] as Accent[]) {
     const ls = lines.filter((l) => l.accent === acc && !manifest[l.key] && !running.has(l.key));
     const audio = ls.reduce((a, l) => a + fit(l.say), 0), text = ls.reduce((a, l) => a + (l.text.length + l.style.length) * textPerChar, 0);
-    const price = priceOf(PRICE.batch, text, audio) * (1 + redo);
+    const price = priceOf(PRICE.batch, text, audio) * (1 + redo) * (1 + later);
     set[acc] = price;
-    console.log(`${acc === "mx" ? "Mexican" : "neutral"} set: ${ls.length} clips to record, ${(audio / 1e6).toFixed(2)}M audio tokens (${Math.round(audio / PRICE.tokensPerSecond / 60)} min), ${(text / 1e6).toFixed(2)}M text tokens: about $${price.toFixed(2)} in batch with ${Math.round(redo * 100)}% for redos`);
+    console.log(`${name(acc)} set: ${ls.length} clips to record, ${(audio / 1e6).toFixed(2)}M audio tokens (${Math.round(audio / PRICE.tokensPerSecond / 60)} min), ${(text / 1e6).toFixed(2)}M text tokens: about $${price.toFixed(2)} in batch with ${Math.round(redo * 100)}% for redos`);
   }
   const { spent, committed } = spend();
-  const now = spent + committed, both = set.mx + set.neutral, laterBoth = both * later;
-  console.log(`spent so far $${spent.toFixed(2)}${committed ? `, running $${committed.toFixed(2)}` : ""}; both sets now about $${both.toFixed(2)}, the later conversations about $${laterBoth.toFixed(2)} more (both sets); stop line $${CAP}`);
-  console.log(now + both + laterBoth <= CAP ? `both sets fit, the later conversations too: $${(now + both + laterBoth).toFixed(2)}`
-    : now + set.mx * (1 + later) <= CAP ? `both sets don't fit with the later conversations ($${(now + both + laterBoth).toFixed(2)}): the Mexican set first ($${(now + set.mx * (1 + later)).toFixed(2)} with its later conversations), the neutral set waits for the owner's OK`
-    : `even the Mexican set doesn't fit: $${(now + set.mx * (1 + later)).toFixed(2)}`);
+  const now = spent + committed, all = set.mx + set.neutral + set.spain;
+  console.log(`spent so far $${spent.toFixed(2)}${committed ? `, running $${committed.toFixed(2)}` : ""}; the three sets about $${all.toFixed(2)}; stop line $${CAP}`);
+  console.log(now + all <= CAP ? `all three sets fit: $${(now + all).toFixed(2)} of $${CAP}`
+    : now + set.mx + set.neutral <= CAP ? `all three don't fit ($${(now + all).toFixed(2)}): the Mexican and neutral sets first ($${(now + set.mx + set.neutral).toFixed(2)}), Spain's waits for the owner's OK`
+    : `the Mexican and neutral sets alone come to $${(now + set.mx + set.neutral).toFixed(2)}, over $${CAP}`);
 }
 
 /** One clip right away: `try "¡Hola!" --voice=<Gemini voice> --style="…" [--fx=phone]` → <work>/try/ (the standard
