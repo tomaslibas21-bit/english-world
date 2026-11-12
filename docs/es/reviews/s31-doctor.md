@@ -149,3 +149,26 @@ unnamed second antibiotic stay as the review left them.
 
 **Gates:** tsc clean; check-content 133/133 NLU, 18 sims 12/12, fuzz 80, 0 errors 0 warnings; corpus 326/326, 0/39;
 held-out 41/41, 0/3; vitest (es) 107/107.
+
+## Spain twins (11 Nov 2026)
+
+22 twins (Doctora Herrera keeps usted, as the brief says; no register change). Spain's words: conducir (drive_ok, the hint q_drive),
+datáfono (card_tap; the pattern also takes "¿Tiene datáfono?"), calentito, "unas décimas" for a temperature just above normal
+(temp_slight), "¿cómo de fuerte…?" for "¿qué tan fuerte…?", "Solo…" for "Nada más…" (= just), "¡Me alegro!" / "Menos mal que…"
+for "¡Qué bueno (que)…!", "vuelva" for "regrese", "¡Que se mejore pronto!" for "¡Que se alivie!", "más pequeño" for "más chico",
+"Ya está, ya ha pasado / ya me ha llegado" (Spain's perfect for what just happened). "Surtir una receta" is Mexican: the pharmacy
+lines take their neutral twins in Spain ("¿Sabe dónde comprar el medicamento?", from es-spain's merge). Left for the lead: the symptom
+entity "escurrimiento nasal" (Spain: moqueo / mucosidad) has no Spain noun (a two-unit entity; the doctor rarely says it); "¿Qué
+lo/la trae por aquí?" kept (Spain also says "le"). Spain corpus: 17 items (constipado, décimas, conducir, coger el coche, datáfono, vale).
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer, against docs/es/STYLE.md "Spain Spanish": every line's Spain reading (twin, else neutral), the hints and
+example answers, tú/usted and vosotros by the Spain rule, meaning and English against the Mexican line, Mexican-only
+things kept, and the Spain corpus.
+
+Found and fixed: Recent past in the perfect (¿Se ha tomado la temperatura?, acaba de empezar, no me la he tomado, he tomado ibuprofeno); revisar → examinar / mirar los oídos; voltéese → dese la vuelta; se lastimó un músculo → se ha dado un tirón; por cinco días → durante; seguido → a menudo; ¿Cuál brazo? → ¿Qué brazo?; meterme al mar → en el mar (grammar takes it); me escurre la nariz → me gotea; tableta left as is (pastilla in the pharmacy).
+
+English of every twin checked against its Mexican line (restored where a twin had rephrased it). Spain corpus items
+added for the new forms. Gates: Mexican, neutral and Spain checks 0 errors; coverage 0 false accepts.
+

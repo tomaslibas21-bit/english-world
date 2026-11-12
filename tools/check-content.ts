@@ -7,7 +7,7 @@ import { GLOBAL } from "../src/content/global";
 import { NPCS } from "../src/content/npcs";
 import { mergeRecord, mergeKey } from "../src/content/merges";
 import { buildNlu } from "../src/convo/dialogue";
-import { compose, splitUnits, placeholders } from "../src/convo/compose";
+import { compose, splitUnits, placeholders, setVariety, variety, type Variety } from "../src/convo/compose";
 import { resolveTarget } from "../src/convo/target";
 import type { EntityDef, SentSrc, SimTest, SituationDef } from "../src/content/types";
 import { fuzzSituation } from "./enumerate";
@@ -18,6 +18,9 @@ const args = process.argv.slice(2);
 const verbose = args.includes("--verbose");
 const fuzzRuns = Number(args.find((a) => a.startsWith("--fuzz="))?.slice(7) ?? 80);
 const filters = args.filter((a) => !a.startsWith("--"));
+// --variety=neutral|spain: the Spanish edition's sims, fuzz and checks in that Spanish (its twins said and shown)
+const VARIETY_ARG = args.find((a) => a.startsWith("--variety="))?.slice(10) as Variety | undefined;
+if (VARIETY_ARG) setVariety(VARIETY_ARG);
 // Arguments may be situation ids/prefixes, song numbers or paths to situation files.
 const fileArgs = filters.filter((f) => f.endsWith(".ts"));
 const loaded: SituationDef[] = [];
@@ -35,6 +38,7 @@ let errors = 0, warnings = 0;
 const err = (s: string) => { errors++; console.log("  ✗ " + s); };
 const warn = (s: string) => { warnings++; if (verbose) console.log("  ! " + s); };
 const unregistered = new Map<string, string>();
+const suggestErrs = new Set<string>();
 
 // The English edition glosses an article "—" (Lithuanian has none); the Spanish one with the English article, or "—"
 // with a flag where English has none (docs/es/STYLE.md).
@@ -43,7 +47,17 @@ const ARTICLES = ES ? new Set(["el", "la", "los", "las", "un", "una", "unos", "u
 const articleGlossOk = (gloss: string) => (ES ? /^(the|a|an|some|one)\b/i.test(gloss) : /^—/.test(gloss));
 function stripPunct(w: string) { return w.replace(/^[\s"“”'‘’(¿¡]+|[\s"“”'‘’.,!?;:)…]+$/g, ""); }
 
+/** Latin American words Spain says otherwise (docs/es/STYLE.md "Spain Spanish"): in a line as Spain's Spanish says it,
+ *  a warning (the line needs a Spain twin, or its entity an `attrs.spain` noun). */
+const LATAM = /\b(carros?|celulare?s?|computadoras?|jugos?|manej(?:ar|o|a|as|an|amos|ando|ado|e|en)|bolet(?:o|os)|departamentos?|papas|lentes|duraznos?|frijoles|camar(?:ón|ones)|estacion(?:ar|amiento)|ustedes)\b/i;
 function checkUnits(where: string, s: SentSrc, look: (id: string) => EntityDef | undefined, sampleVars: Record<string, any>[]) {
+  // a line's twins (the neutral and Spain's text) are checked as lines of their own
+  // (a twin without flags of its own is read with its line's: "los domingos" glossed "on Sundays" is flagged once)
+  for (const [k, tw] of [["neutral", s.neutral], ["spain", s.spain]] as const) if (tw) checkUnits(`${where} (${k} twin)`, { ...tw, flags: tw.flags ?? s.flags } as SentSrc, look, sampleVars);
+  if (variety() === "spain" && !where.endsWith("twin)")) {
+    const m = (s.spain ?? s.neutral ?? s).en.replace(/\{[^}]*\}/g, " ").match(LATAM);
+    if (m) warn(`${where}: Spain's text says "${m[0]}"`);
+  }
   // unit counts under all address/gender choices
   for (const formal of [true, false]) for (const g of ["m", "f"] as const) for (const sp of ["m", "f"] as const) {
     let ok = false; let lastErr = "";
@@ -194,7 +208,6 @@ function deepPartial(actual: any, exp: any): boolean {
   return actual === exp;
 }
 
-const suggestErrs = new Set<string>();
 function suggestErr(m: string) { if (!suggestErrs.has(m)) { suggestErrs.add(m); err(m); } }
 
 export function simulate(sit: SituationDef, sim: SimTest, seed: number) {

@@ -129,3 +129,17 @@ accepts 0/23 → 0/27 (+39, traps +4); blind set 39/40 as before (the harmless "
 **For the lead** (shared files, proposals): tools/es-voices/reach-es.ts could keep "s64a-checkin:seat_which" to two
 different seats (`b.sa.en !== b.sb.en`), dropping three clips per accent nobody hears; lines-es.ts (or check-content)
 could warn about a line with two entity placeholders, which the voice list never expands (none left in the edition).
+
+## Spain twins (11 Nov 2026)
+
+- 36 Spain twins (lines and hints), 21 items in tests/es/spain/s64a-checkin.json.
+- Register: no change. The brief's usted holds in Spain too (STYLE.md: officials, the airline, the hotel, older people, anyone senior); nobody here is `informalSpain`, so no line or hint moved between tú and usted. Emilio (the airline) keeps usted.
+- Words: facturar for documentar, reserva for reservación, embarque for abordaje, (maleta) facturada, coste for costo, aseos for baños, móvil, dentro for adentro, llevar for traer (what you carry), jersey for suéter, ¿Me deja su pasaporte? for ¿Me permite/presta…?; the perfect: ¿Ha hecho usted mismo su maleta?, Sí, la he hecho yo, ya he encontrado su reserva, ya ha pagado el sobrepeso; Ya está for Listo.
+- Grammar: packed_yes takes la he hecho (yo / yo mismo/a); ack_done takes ya lo he cambiado; ask_dollars takes solo llevo dólares; the sweater entity takes jersey.
+- Nothing left for the lead.
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
+
+- Read every twin: usted kept throughout, Spain's words right (billete, tarjeta de embarque, móvil, gafas, portátil, aseos, maleta, facturar, coger, aparcamiento, coche, jersey), the perfect for what just happened, "Ya está" for "Listo", Mexican-only names kept. Meaning, glosses and spelling: no problems found. No changes.

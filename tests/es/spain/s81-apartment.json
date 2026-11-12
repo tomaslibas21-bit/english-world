@@ -1,0 +1,18 @@
+{ "situation": "s81-apartment", "items": [
+  {"ctx": "purpose", "say": "Hola, vengo a ver el piso", "intent": "see_apartment"},
+  {"ctx": "purpose", "say": "Sí, por el piso", "intent": ["see_apartment", "yn:yes"]},
+  {"ctx": "people_q", "say": "Solo yo", "intent": "people_ans"},
+  {"ctx": "pets_q", "say": "No, no tengo mascotas", "intent": ["no_pets", "yn:no"]},
+  {"ctx": "questions", "say": "¿Cuánto es el alquiler?", "intent": "ask_rent"},
+  {"ctx": "questions", "say": "¿Cuánto es la fianza?", "intent": "ask_deposit"},
+  {"ctx": "questions", "say": "¿Hay frigorífico?", "intent": "ask_appliance"},
+  {"ctx": "questions", "say": "¿Hay aparcamiento?", "intent": "ask_parking"},
+  {"ctx": "questions", "say": "¿Hay ascensor?", "intent": "ask_floor"},
+  {"ctx": "questions", "say": "¿Cuántos dormitorios tiene?", "intent": "ask_size"},
+  {"ctx": "questions", "say": "¿Cuándo se paga el alquiler?", "intent": "ask_payrent"},
+  {"ctx": "questions", "say": "¿Me puede bajar un poco el alquiler?", "intent": "ask_lower"},
+  {"ctx": "questions", "say": "¿Hay una parada de autobús cerca?", "intent": "ask_bus"},
+  {"ctx": "questions", "say": "No, eso es todo, gracias", "intent": ["no_more", "yn:no"]},
+  {"ctx": "questions", "say": "¿Necesito avalista?", "intent": "ask_aval"},
+  {"ctx": "problem", "say": "El grifo de la cocina gotea", "intent": "report_problem"}
+] }

@@ -32,6 +32,19 @@ const SPAIN: Record<string, string> = {
   cogemos: "tomamos", conducir: "manejar", conduzco: "manejo", conduce: "maneja", aparcar: "estacionar", aparcamiento: "estacionamiento",
   gafas: "lentes", melocoton: "durazno", melocotones: "duraznos", judias: "frijoles", gamba: "camaron", gambas: "camarones",
   vosotros: "ustedes", vosotras: "ustedes", os: "les", vuestro: "su", vuestra: "su", vuestros: "sus", vuestras: "sus",
+  // (11 Nov 2026, Spain's text; words already in the conversations' own patterns, such as camarero, aseo, nevera or
+  // ducha, stay there) the card reader, peas, peanuts, apricots
+  datafono: "terminal", guisantes: "chicharos", cacahuete: "cacahuate", cacahuetes: "cacahuates",
+  albaricoque: "chabacano", albaricoques: "chabacanos",
+  // (12 Nov 2026, batch 4) rent, the plumber, the mop and bucket, the fridge, a car's trunk, tires and plates, investors
+  // (not mando = the remote: it is also "I send")
+  alquiler: "renta", alquileres: "rentas", fontanero: "plomero", fontaneros: "plomeros", fregona: "trapeador", fregonas: "trapeadores",
+  cubo: "cubeta", cubos: "cubetas", nevera: "refrigerador", neveras: "refrigeradores", maletero: "cajuela",
+  neumatico: "llanta", neumaticos: "llantas", matricula: "placas", inversor: "inversionista", inversores: "inversionistas",
+  // (batch 3) a pen
+  boli: "pluma", bolis: "plumas",
+  // (the p-conversations' review) a cost
+  coste: "costo", costes: "costos",
 };
 
 const PLEASE_ONE = new Set(["porfa", "porfavor", "porfis", "xfa", "plis", "please"]);
@@ -328,7 +341,7 @@ export const LANG: LangPack = {
 
   leads: [
     ["greet", "hola | buenos dias | buen dia | buenas tardes | buenas noches | buenas | hola buenos dias | hola buen dia | hola buenas tardes | hola buenas noches | hola buenas | hey | hola hola | ey | hola de nuevo | buenas buenas"],
-    ["open", "yo | ah | oh | ok | bueno | pues | pues bueno | bueno pues | a ver | este | mira | mire | oye | oiga | entonces | y | ah ok | ah bueno | ah si | ah claro | ah perfecto | perfecto | muy bien | genial | que bien | claro | vale | sale | va | orale | ay | uy | creo que | yo creo que | tal vez | quizas | quiza | la verdad | fijese que | fijate que | es que | o sea | ahora | ahora si | tambien | y tambien | ademas | ah perdon | oh perdon | ah hola | ok entonces | bueno entonces | pues mire | a ver a ver | dejeme ver | dejame ver | dejeme pensar | dejame pensar | este pues | bueno este | wow | ah que bien | de hecho | en realidad | solo | nomas | mmm a ver | claro que | por supuesto que | desde luego que | pues claro que | obvio que | obviamente | porque | pues porque | es que porque | vengo porque | vine porque | vengo nada mas porque | vine nada mas porque"],
+    ["open", "yo | ah | oh | ok | bueno | pues | pues bueno | bueno pues | a ver | este | mira | mire | oye | oiga | entonces | y | ah ok | ah bueno | ah si | ah claro | ah perfecto | perfecto | muy bien | genial | que bien | claro | vale | venga | vale pues | pues vale | venga vale | sale | va | orale | ay | uy | creo que | yo creo que | tal vez | quizas | quiza | la verdad | fijese que | fijate que | es que | o sea | ahora | ahora si | tambien | y tambien | ademas | ah perdon | oh perdon | ah hola | ok entonces | bueno entonces | pues mire | a ver a ver | dejeme ver | dejame ver | dejeme pensar | dejame pensar | este pues | bueno este | wow | ah que bien | de hecho | en realidad | solo | nomas | mmm a ver | claro que | por supuesto que | desde luego que | pues claro que | obvio que | obviamente | porque | pues porque | es que porque | vengo porque | vine porque | vengo nada mas porque | vine nada mas porque"],
     ["sorry", "perdon | disculpe | disculpa | perdone | perdona | lo siento | con permiso | perdon que le moleste | perdon que te moleste | disculpe la molestia | una disculpa | perdon perdon | ay perdon | disculpe usted"],
     // courtesy before a refusal: only what follows "pero" is the answer ("Gracias, pero no puedo")
     ["but", "gracias pero | muchas gracias pero | me encantaria pero | me gustaria pero | suena bien pero | que amable pero | muy amable pero | lo siento pero | perdon pero | buena idea pero | ya se pero | si pero | claro pero"],

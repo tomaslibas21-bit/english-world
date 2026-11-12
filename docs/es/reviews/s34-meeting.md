@@ -119,3 +119,23 @@ Tests: 11 NLU tests, 2 sims ("audit: the learner's own questions", "audit: help 
 perdón." fails wherever a pattern lacks it; "la semana que entra" / "la otra semana" could go into the shared {day}
 slot. For the owner: "la comida" (Mexico's lunch, s88 and here) and "la minuta" (a hint) have no neutral twins
 ("el almuerzo", "el acta"); both are accepted from learners now.
+
+## Spain twins (11 Nov 2026)
+
+19 twins. Coworkers say tú (unchanged). Register change in Spain: Sofía's plural "you" to the team is vosotros: "¿cómo vais con
+vuestros pendientes?", "¡Pronto os aviso!", "¿Lo podéis hablar vosotros dos…?", "Pablo y Sara, ¿lo podéis hablar…?" (the brief's
+"ustedes" there is the Latin American plural of tú). Also: móviles (the learner's add_test hint), "Mmm, vale", "¡De nada!" for
+"¡Con gusto!", "¡Qué bien!", "Me alegra saberlo", "Solo…" for "Nada más…", "Mañana por la mañana" (hint). "Pendientes" (to-dos)
+stays: the conversation teaches the word (term_pending). Spain corpus: 17 items (os, oímos, portátil, vale, tengáis).
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer, against docs/es/STYLE.md "Spain Spanish": every line's Spain reading (twin, else neutral), the hints and
+example answers, tú/usted and vosotros by the Spain rule, meaning and English against the Mexican line, Mexican-only
+things kept, and the Spain corpus.
+
+Found and fixed: Sara to the team said ustedes (¿Ya me escuchan?) → vosotros: ¿Ya me oís?; escuchar for hearing → oír throughout (lines and hints); agregar → añadir (6 lines, 3 hints); Este… → Esto…; laptop → he traído el portátil; ya terminé / ya entendí / ya quedó claro → perfect (grammar takes them); le hablo a sistemas → llamo a informática; la comida del equipo kept for Spain (twin over the neutral almuerzo). Kept: Ando con… (its hint note says Mexican).
+
+English of every twin checked against its Mexican line (restored where a twin had rephrased it). Spain corpus items
+added for the new forms. Gates: Mexican, neutral and Spain checks 0 errors; coverage 0 false accepts.
+

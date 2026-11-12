@@ -115,3 +115,40 @@ Story details, unchanged: s82 has neighbors upstairs ("los de arriba"), so the r
 through the floor above (plausible; no line names it); "la vecina de abajo" lives on the planta baja with Don Ernesto
 and the tiendita (no clash, no name). Not twinned (not on STYLE's list): "trapeador", "cubeta" (neutral "balde" is
 masculine, so an `attrs.neutral` would need the article too), "jalador", "llámale".
+
+## Spain twins (11 Nov 2026)
+
+72 Spain twins (lines and hints; the voicemail hints repeat the call's), no register change: Andrea and the learner
+say tú, Don Gilberto and the learner usted, as in Mexico. The phone: "¿Dígame? Soy Gilberto. ¿Quién es?", "soy
+Gilberto" on the voicemail and the callback, "¿quién es?" for "¿quién habla?"; the learner says "Le llamo" (Spain's
+le for usted) for "Le hablo"/"Lo llamo". Spain's words: piso (departamento/depa), suelo (the floor), fontanero
+(plomero), fregona and fregar (trapeador, trapear; also attrs.spain on the mop entity, cubo on the bucket), nevera,
+desagüe atascado (coladera tapada), cuadro eléctrico, interruptor (switch), resbala, menos mal (qué bueno), vale,
+chao (bye), aun así (igual), por la mañana, de camino, le viene mejor, lo siento muchísimo (qué pena con usted,
+which in Spain means "what a shame"), ¡Eh, eh! (¡Epa!), «SOCORRO». Spain's present perfect for what has just
+happened: ¿Qué ha pasado?, he visto, has mandado, te he traído, se me ha inundado, se ha atascado, ha bajado / he
+bajado, he puesto, se ha hecho daño (lastimarse → hacerse daño), me has salvado, he escuchado su mensaje. The flat
+is "el 1B" in Spain's twins ("del 1B"), not "el piso 1B". Left: jalador (the squeegee chip; no settled Spain word),
+chilaquiles (Mexican food), the anoche lines in the preterite (Spain says them so too). Patterns take the Spain forms
+(encima de la nevera, no hace falta, has salvado, hecho daño, lo he mirado, cuadro eléctrico / plomos, por la mañana,
+me viene bien, de camino). Spain corpus: 25 items, 24/24, 0/1 false accepts. Gates: Mexican, neutral and Spain 0
+errors, sims 12/12; corpus 356/356 0/86; held-out 35/37 0/2 (unchanged).
+
+After pass B (merge of es-spain 98cfaffc, 12 Nov 2026): the storm and the roof drain became the pipe that burst in 2B
+upstairs, with Don Ernesto downstairs. The twins of the five rewritten lines were written again against the new text:
+"¿Se está filtrando al piso de Don Ernesto?", "Vale. Luego llamo a la puerta de Don Ernesto.", "Mi fontanero tiene
+la agenda llena", the hint pipe "Ha reventado una tubería en el 2B." (drain and its desagüe twin are gone), and
+last_night "Empezó anoche, de madrugada." (both copies). The bucket keeps pass B's neutral balde and gets Spain's cubo
+(spainG m, spainPl cubos); the filtración note now says "ceiling or wall" like pass B's. Patterns: the burst pipe reads
+ha reventado / se ha roto / ha estallado, @up reads "(en el | del) piso de arriba", the not-sure answers read lo he
+mirado / he comprobado again. Spain corpus +3 (the pipe, Don Ernesto): 27/27, 0/1 false accepts.
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer, all Spain twins and the untwinned lines as Spain hears them (NPC lines and hints), the Spain corpus.
+
+Checked closely after the pass-B rework: Don Ernesto downstairs (gr_down_q, gr_down_unknown, gr_owner, gr_sure_down) and the 2B pipe (gr_guess_washer, the news hint, gr_damage) agree in every twin; Andrea tú, Don Gilberto usted both ways; the voicemail.
+Found and fixed: the report hint "Lamento informarle que se inundó el apartamento" had only its neutral twin (→ "Lamento informarle de que se ha inundado el piso.", as the voicemail copy); the inform hint (→ "informarle de que ha entrado agua por el techo"); the grammar now reads "informarle [de] que". The squeegee: "jalador" means nothing in Spain; the entity gets attrs.spain "rasqueta" (chip and lines say it), and rasqueta / rasqueta de suelo / escoba de goma are accepted.
+Kept: "Le habla…" (also Spain's formal phone formula), "Quedo atento a su llamada", chilaquiles.
+Spain corpus +2 (informarle de que, rasqueta).
+Gates: tsc clean; check-content Mexican, neutral and Spain 0 errors, 0 warnings; corpus 372/372 0/88; held-out 35/37 (unchanged); Spain 29/29 0/1; vitest es 178/178.

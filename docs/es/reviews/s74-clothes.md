@@ -115,3 +115,31 @@ line's text changed (English only: intro, tip, notes, three "Should I…", one g
 for a line random runs never reach, with *every* entity list (here `closing_bought`: "¡Que disfrute su amarillo
 nuevo!", "…su chica nueva!"); recording `usedLists` from the scripted sims too (step 0b) would drop that junk, and
 multi-entity lines (`color_list`, `color_yes`: a garment and its own colors) still depend on random runs.
+
+## Spain twins (11 Nov 2026)
+
+About 170 Spain twins (lines, the `_pl` lines and hints), 2 Spain nouns (tenis → zapatillas; the size chica → pequeña;
+the `G` helper takes spain / spainPl / spainG), 10 Spain multiword units in the file's `merges`.
+
+- **Register:** the brief's usted becomes **tú** in Spain (Valeria is `informalSpain`): "¿Te puedo ayudar en algo?",
+  "¿Te lo quieres probar?", "Pruébate…", "¿Qué tal te queda?", "¡Te sienta genial!", "¿Te lo llevas?", "Acerca tu
+  tarjeta", "¡Que disfrutes tu…!" ({tu@X}); the learner says tú to her ("¿Me enseñas…?", "¿Tienes una talla más
+  pequeña?", "¿Me puedes devolver el dinero?") and vosotros to the shop ("¿Tenéis…?", "¿Qué tallas tenéis?",
+  "¿Aceptáis Apple Pay?").
+- **Spain's words:** mirar (for ver: "Solo estoy mirando"), pequeña, zapatillas, bañadores, el datáfono, el móvil,
+  guardar (for apartar), el extracto (for estado de cuenta), solo (for nada más), "Lo siento" (for "Una disculpa"),
+  ¡Pasa, pasa!, Spain's perfect ("¿Qué te ha parecido?", "¿Has tenido algún problema?", "Lo he perdido", "He cambiado
+  de opinión"). Shoes keep the Mexican numbers (the shop is in Mexico).
+- **Grammar:** "no llevo el ticket", "lo he perdido", "se me ha perdido", "he cambiado de opinión".
+- Spain corpus tests/es/spain/s74-clothes.json: 27 items, all understood.
+- **For the lead:** "traje de baño" stays the entity's name in Spain's text (Spain says it too); "bañador" would need an
+  `attrs.spain` with its own gloss units (one word for "suit | for | bathing": target.ts could take `spainLt`). The size
+  chips ("chica (CH)") stay Mexican (chipLabel).
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
+
+- Register: Valeria says tú in every line; hints tú, vosotros for the shop (¿Tenéis…?, ¿Aceptáis…?). Correct.
+- Fixed: "Tranquilamente, mira lo que quieras" (odd fronted adverb) → "Mira tranquilamente, sin prisa."; "¡Me avisas cómo te queda(n)!" → "¡Ya me dices qué tal te queda(n)!"; "Solo guarda tu ticket" (calque) → "Solo tienes que guardar el ticket"; "juntas puntos" (Latin American) → "acumulas puntos"; "¡Listo! Solo escanea este código en tu casa" → "¡Ya está! … en casa"; untwinned "Listo." (size_ok) → "Vale.", "Listo, gracias." (paid) → "Ya está, gracias.".
+- Corpus: +3 items (Me está un poco grande, ¿Me lo puedo probar?, Me lo llevo).

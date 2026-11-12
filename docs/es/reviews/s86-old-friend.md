@@ -111,3 +111,24 @@ ans_price, number_fine; bye_take_care repeats bye_lucy's third goodbye word for 
 For the lead (shared files): TOWN.md "Named in the conversations, not built": Memo's restaurant on the malecón is La
 Palapa (Mexican food, about $200 a person); BRIEFS.md s86: the twins Mateo and Regina, Paola teaches English at a school
 in town. For the owner: Paola's job and the restaurant's name are invented, as her story was.
+
+## Spain twins (11 Nov 2026)
+
+- 38 Spain twins (lines and hints), 20 items in tests/es/spain/s86-old-friend.json (all understood, 0 false accepts).
+- Register: no change. Paola says tú both ways in every variety; one person, so no vosotros.
+- Words: ¡Espera! (for ¡Espérate!), del instituto (for de la escuela), profesora en un colegio, estás genial (for te ves
+  súper bien), maja / majo, ¡Qué bien! Me alegro (for ¡Qué bueno! Me da gusto), has elegido el mejor sitio, volví (for
+  regresé), ¿sabes qué? (for ¿qué crees?), unos doscientos pesos, dales recuerdos, padre / padres, mi marido, café (for
+  cafecito), sobre las ocho, ¡Vale!, pequeño / solo (for chiquito / nada más), vamos a tomar un zumo / un café (for vamos
+  por un jugo / un café), móvil, ¡Ya está! (for ¡Listo!), ¡Qué alegría verte!, me alegro mucho por ti.
+- Spain's present perfect for what just happened: ya he hablado mucho de mí, se me ha hecho tarde, te he guardado mi
+  número, me ha encantado verte, qué bien que nos hayamos encontrado, the learner's ¡Me he casado!. Paola's "me casé"
+  stays: she places it last spring.
+- Grammar: me he mudado / me he casado, mellizos and ¡Qué ilusión!, tu marido, allí nos vemos, no llevo el móvil, me
+  ha encantado verte / qué alegría verte, recuerdos a… Merges for the new units.
+
+## Spain review (12 Nov 2026)
+
+- Checked (fresh reviewer): every twin against its Mexican line (meaning, facts, prices, names), Peninsular wording, the perfect for today's events, tú/usted and vosotros by STYLE.md, glosses, spelling and ¿¡, the Spain transcripts (`--variety=spain --verbose`, untwinned lines read through their neutral fallback) and tests/es/spain.
+- Found: nothing to change (instituto, colegio, zumo, móvil, me ha encantado verte, la primavera pasada with the preterite, maj{o|a}).
+- Fixed: nothing.

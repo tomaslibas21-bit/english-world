@@ -406,16 +406,16 @@ export const interview: SituationDef = {
 
     // --- small talk -----------------------------------------------------------------------------
     found_ok: { patterns: [
-      "[si] (fue | estuvo) [muy | bien | super] (facil | sencillo) [llegar | encontrarlos | encontrar la oficina] #h:found_easy",
+      "[si] (fue | estuvo | ha sido) [muy | bien | super] (facil | sencillo) [llegar | encontrarlos | encontrar la oficina] #h:found_easy",
       "[si] (sin | sin ningun) problema #h:found_no_problem", "[si] llegué (bien | sin problema | rapido | rapidito | facil)",
       "[si] los encontré [muy] (facil | rapido | bien | sin problema)",
-      "[si] (use | con) (el gps | google maps | waze | el mapa | mi celular)", "[si] (tomé | agarré) un (taxi | uber | colectivo | camion)",
-      "[si] (vine | llegué) (caminando | en taxi | en carro | en camion | en colectivo | en bici | en uber)", "[si] (esta | queda) (cerca | muy cerca) de mi casa",
+      "[si] (use | con) (el gps | google maps | waze | el mapa | mi celular)", "[si] (tomé | agarré | cogí | he cogido | he tomado) un (taxi | uber | colectivo | camion | autobus)",
+      "[si] (vine | llegué | he venido | he llegado) (caminando | andando | a pie | en taxi | en carro | en coche | en camion | en autobus | en colectivo | en bici | en uber)", "[si] (esta | queda) (cerca | muy cerca) de mi casa",
       "[si] no (tuve | hubo) (problema | ningun problema)", "[si] [la] (oficina | direccion) es (facil | muy facil) de encontrar",
     ] },
     found_hard: { patterns: [
-      "[no | la verdad] me perdí [un poco | un poquito] [pero ya (estoy | llegué) aqui] #h:found_lost", "[no] (fue | estuvo) [un poco | algo | muy | bastante] (dificil | complicado) [llegar | encontrarlos]",
-      "[no] no (encontraba | encontré) (la oficina | el edificio | la entrada | la direccion) [al principio]", "[no] (habia | hubo) mucho trafico #h:found_traffic",
+      "[no | la verdad] (me perdí | me he perdido) [un poco | un poquito] [pero ya (estoy | llegué | he llegado) aqui] #h:found_lost", "[no] (fue | estuvo | ha sido) [un poco | algo | muy | bastante] (dificil | complicado) [llegar | encontrarlos]",
+      "[no] no (encontraba | encontré) (la oficina | el edificio | la entrada | la direccion) [al principio]", "[no] (habia | hubo | ha habido) mucho trafico #h:found_traffic",
       "[no] me costó [un poco de | algo de] trabajo [encontrarlos | llegar]", "[no] no (fue | estuvo) [tan | muy] facil",
     ] },
     // bare "Todo bien" / "Más o menos" answer "¿Nos encontró bien?" only (elsewhere they mean other things)
@@ -612,7 +612,7 @@ export const interview: SituationDef = {
     ] },
     working_on_it: { patterns: [
       "[pero] (estoy trabajando en eso | estoy mejorando | estoy aprendiendo | voy mejorando | cada vez estoy mejor | ya estoy mejorando) #h:wk_better",
-      "[pero] (estoy tomando | tomo) clases [de espanol] #h:wk_classes", "[pero] (hago | uso) (listas | una agenda | un calendario | una lista [de pendientes]) [cada dia | todos los dias] #h:wk_lists",
+      "[pero] (estoy tomando | tomo | estoy yendo a | voy a) clases [de espanol] #h:wk_classes", "[pero] (hago | uso) (listas | una agenda | un calendario | una lista [de pendientes]) [cada dia | todos los dias] #h:wk_lists",
       "[pero] estoy aprendiendo a (decir que no | pedir ayuda | delegar | relajarme | organizarme) #h:wk_say_no", "[pero] practico (todos los dias | mucho)",
       "[pero] (estudio | practico) espanol (todos los dias | en linea | con un maestro | en casa)", "[pero] (trato de | intento) (ser mas paciente | relajarme | delegar | organizarme mejor)",
     ] },
@@ -757,7 +757,7 @@ export const interview: SituationDef = {
     q_hours: { patterns: [
       "cual es el horario [de trabajo] #h:q_hours", "(cual | que) horario (tienen | manejan | es | seria)", "a que hora (se entra | se sale | entraria | saldria | entro | salgo | empieza | termina) [el trabajo | la jornada]",
       "de que hora a que hora (es | se trabaja | seria)", "cuantas horas (al dia | a la semana | por dia | por semana | se trabaja | trabajaria)",
-      "(es | el trabajo es | el puesto es) [de] tiempo completo #full", "(es | el trabajo es | el puesto es) [de] medio tiempo #part",
+      "(es | el trabajo es | el puesto es) [de | a] (tiempo completo | jornada completa) #full", "(es | el trabajo es | el puesto es) [de | a] (medio tiempo | media jornada) #part",
       "(se trabaja | hay que trabajar | trabajaria | tendria que trabajar) (los sabados | los fines de semana | de noche) #weekend",
       "(se trabajan | hay que trabajar | trabajaria | tendria que trabajar) horas extra #extra", "(hay | tienen) horas extra #extra", "(hay | tienen) hora de comida",
       "(es | se trabaja | trabajaria | seria) de lunes a viernes #days", "[y] (el horario | los horarios)",
@@ -766,7 +766,7 @@ export const interview: SituationDef = {
       "(cuanto | cuanto tiempo) (dura | es | tenemos | tengo | tendria | hay) (la comida | la hora de comida | la hora de la comida | para comer | el almuerzo) #lunch",
     ] },
     q_training: { patterns: [
-      "(hay | dan | tienen | me darian | habra | hay alguna) (capacitacion | entrenamiento | induccion) [para la gente nueva | para los nuevos] #h:q_training",
+      "(hay | dan | tienen | me darian | habra | hay alguna) (capacitacion | formacion | entrenamiento | induccion) [para la gente nueva | para los nuevos] #h:q_training",
       "quien me (va a capacitar | capacitaria | va a ensenar) #who", "(hay | tendria) (un mentor | alguien que me ensene)", "como (voy a aprender | aprendo) el trabajo #who",
     ] },
     q_start: { patterns: ["cuando (empezaria | podria empezar | empiezo | inicio | iniciaria | comenzaria) #h:q_start", "cual (seria | es) la fecha de (inicio | ingreso)", "cuando (es | seria) (el | mi) primer dia"] },
@@ -775,18 +775,21 @@ export const interview: SituationDef = {
       "con quien (trabajaria | voy a trabajar)", "quien seria mi (jefe | jefa | supervisor | supervisora) #boss", "cuantas personas trabajan (aqui | en la empresa | en linea clara)", "como es el equipo",
     ] },
     q_remote: { patterns: [
-      "(puedo | se puede | podria) (hacer home office | trabajar desde casa | trabajar en casa | trabajar a distancia) [algunos dias | a veces] #h:q_remote",
+      "(puedo | se puede | podria) (hacer home office | teletrabajar | trabajar desde casa | trabajar en casa | trabajar a distancia) [algunos dias | a veces] #h:q_remote", "(hay | tienen | dan) teletrabajo",
       "(hay | tienen | manejan | dan) (home office | trabajo remoto | trabajo hibrido | esquema hibrido)", "es (presencial | remoto | hibrido) [el trabajo | el puesto]",
       "(el trabajo | el puesto) es (presencial | remoto | hibrido)", "cuantos dias (de home office | de trabajo remoto | desde casa | de trabajo en casa) [hay | dan | tienen | puedo | son | serian]",
     ] },
     q_benefits: { patterns: [
-      "(que | cuales) prestaciones (tiene el puesto | tienen | ofrecen | hay | dan) #h:q_benefits", "cuales son las prestaciones", "(hay | tienen | dan) prestaciones [de ley]",
+      "(que | cuales) prestaciones (tiene el puesto | tienen | ofrecen | hay | dan) #h:q_benefits", "(que | cuales) (condiciones | beneficios | beneficios sociales) (tiene el puesto | tienen | ofrecen | hay | dan)", "cuales son las prestaciones", "(hay | tienen | dan) prestaciones [de ley]",
       "(hay | tienen | dan) (seguro medico | seguro de gastos medicos | seguro social | vales de despensa | aguinaldo)",
       "cuantos dias de vacaciones (tengo | tendria | dan | son | hay | tienen) #vac", "(cuantas | cuanto) vacaciones (tengo | dan | tendria | hay) #vac",
       "y (las prestaciones | con prestaciones)", "y las vacaciones #vac",
       // the IMSS (seguro social) and the other benefits the law requires: "¿Tienen IMSS?" had "Lo reviso y le aviso"
       "(hay | tienen | dan | tendria) (imss | el imss | seguro | infonavit | imss e infonavit | prima vacacional | reparto de utilidades | utilidades | fondo de ahorro | seguro de gastos medicos mayores)",
       "(me dan | me darian | me van a dar) de alta en el (imss | seguro | seguro social)", "(estaria | voy a estar) (dado | dada) de alta en el (imss | seguro | seguro social)",
+      // Spain: Seguridad Social, pagas extra
+      "(hay | tienen | dan | tendria) (seguridad social | pagas extra | paga extra | pagas extraordinarias | paga de navidad | seguro privado | seguro medico privado)",
+      "(me dan | me darian | me van a dar | me dais | estaria | voy a estar | estaria dado | estaria dada) de alta en la seguridad social", "(cuantas | con cuantas) pagas (son | hay | tiene | tendria | al ano)", "(que | cuales) son las condiciones [del puesto]",
     ] },
     q_day: { patterns: [
       "como es un dia (normal | tipico) [de trabajo] [aqui] #h:q_day", "que (haria | voy a hacer | tendria que hacer) (todos los dias | en el puesto | aqui)",
@@ -826,7 +829,7 @@ export const interview: SituationDef = {
       "[muchas | mil] gracias por (su tiempo | la oportunidad | esta oportunidad | la entrevista) [y] (fue | ha sido) un (gusto | placer) [conocerla | platicar con usted | hablar con usted] #nice",
     ] },
     look_forward: { patterns: [
-      "quedo (atento | atenta) a su (llamada | respuesta | correo) #h:c_look_forward", "espero (su llamada | su respuesta | noticias suyas | saber de ustedes) [pronto]",
+      "quedo (atento | atenta) a su (llamada | respuesta | correo) #h:c_look_forward", "quedo a la espera de su (llamada | respuesta | correo)", "espero (su llamada | su respuesta | noticias suyas | saber de ustedes) [pronto]",
       "ojala (me llamen | me llame | tengamos noticias)", "espero que me (llamen | llame | avisen)",
     ] },
     nice_meet: { patterns: [
@@ -910,14 +913,14 @@ export const interview: SituationDef = {
     ],
     // Small talk
     ask_found: [
-      t("¿Nos | encontró | bien?", "Us | you-found | well?", "Did you find us okay?"),
-      t("¿Fue | fácil | llegar?", "Was it | easy | to get here?", "Was it easy to get here?"),
+      t("¿Nos | encontró | bien?", "Us | you-found | well?", "Did you find us okay?", { spain: t("¿Nos | ha encontrado | bien?", "Us | you've found | well?", "Did you find us okay?") }),
+      t("¿Fue | fácil | llegar?", "Was it | easy | to get here?", "Was it easy to get here?", { spain: t("¿Ha sido | fácil | llegar?", "Has it been | easy | to get here?", "Was it easy to get here?") }),
     ],
-    found_good: [t("¡Qué | bueno!", "How | good!", "Good!"), t("Me alegro.", "I'm glad.", "Great.")],
+    found_good: [t("¡Qué | bueno!", "How | good!", "Good!", { spain: t("¡Qué | bien!", "How | good!", "Good!") }), t("Me alegro.", "I'm glad.", "Great.")],
     found_bad: [t("¡Ay, | no! | Bueno, | ya | está | aquí.", "Oh, | no! | Well, | now | you-are | here.", "Oh no! Well, you're here now.")],
     offer_drink: [
       t("¿Le | ofrezco | algo | de | tomar? | ¿Agua? | ¿Café?", "(To) you | I-offer | something | — | to drink? | Water? | Coffee?", "Can I get you anything? Water? Coffee?",
-        { flags: { 3: "algo de tomar: de links algo to the verb; = something to drink." } }),
+        { flags: { 3: "algo de tomar: de links algo to the verb; = something to drink." }, spain: t("¿Le | apetece | algo | de | beber? | ¿Agua? | ¿Café?", "(To) you | does it appeal | something | — | to drink? | Water? | Coffee?", "Can I get you something to drink? Water? Coffee?", { flags: { 3: "algo de beber: de links algo to the verb; = something to drink." } }) }),
       t("¿Gusta | un | vaso | de | agua | o | un | café?", "Would you like | a | glass | of | water | or | a | coffee?", "Would you like some water or coffee?", {
         flags: { 0: "Mexican: ¿Gusta…? = would you like…? (very polite)." },
         neutral: t("¿Quiere | un | vaso | de | agua | o | un | café?", "Do you want | a | glass | of | water | or | a | coffee?", "Would you like some water or coffee?") }),
@@ -936,7 +939,7 @@ export const interview: SituationDef = {
     ask_about_again: [
       t("Cuénteme | un | poco | de | usted.", "Tell me | a | little | about | yourself.", "Tell me a little about yourself."),
       t("Solo | cuénteme | un | poco | de | usted: | su | trabajo | y | su | experiencia.", "Just | tell me | a | little | about | yourself: | your | work | and | your | experience.",
-        "Just tell me a little about yourself: your work and your experience."),
+        "Just tell me a little about yourself: your work and your experience.", { spain: t("Simplemente | cuénteme | un | poco | de | usted: | su | trabajo | y | su | experiencia.", "Just | tell me | a | little | about | yourself: | your | work | and | your | experience.", "Just tell me a little about yourself: your work and your experience.") }),
     ],
     ask_job_more: [
       t("¿Y | a | qué | se dedica?", "And | to | what | do you devote yourself?", "And what do you do?", { flags: { 1: "dedicarse a: to do for a living; a links it to qué." } }),
@@ -966,7 +969,7 @@ export const interview: SituationDef = {
     exp_lot: [t("¡Uy, | es | mucha | experiencia!", "Wow, | it's | a lot of | experience!", "Wow, that's a lot of experience!"), t("¡Cuánta | experiencia!", "How much | experience!", "That's a lot of experience!")],
     exp_good: [t("Es | muy | buena | experiencia.", "It's | very | good | experience.", "That's great experience."), t("¡Excelente!", "Excellent!", "Great.")],
     no_exp_ok: [t("No se preocupe. | Aquí | damos | capacitación | a | la | gente | nueva.", "Don't worry. | Here | we-give | training | to | the | people | new.", "That's okay. We train new people here.",
-      { flags: { 5: "la gente: Spanish uses the article for people in general." } })],
+      { flags: { 5: "la gente: Spanish uses the article for people in general." }, spain: t("No se preocupe. | Aquí | damos | formación | a | la | gente | nueva.", "Don't worry. | Here | we-give | training | to | the | people | new.", "That's okay. We train new people here.", { flags: { 5: "la gente: Spanish uses the article for people in general." } }) })],
     from_lt: [t("¡Qué | bien! | {m:Bienvenido|f:Bienvenida} | a | Puerto Colibrí.", "How | nice! | Welcome | to | Puerto Colibrí.", "Oh, nice! Welcome to Puerto Colibrí!")],
     nice: [
       t("¡Qué | padre!", "How | cool!", "Oh, nice!", { flags: { 1: "Mexican: padre = cool, great." }, neutral: t("¡Qué | bien!", "How | nice!", "Oh, nice!") }),
@@ -1002,8 +1005,8 @@ export const interview: SituationDef = {
       t("Excelente.", "Excellent.", "Great."),
     ],
     strength_ack_many: [t("Son | muy | buenas | cualidades.", "They are | very | good | qualities.", "Those are great qualities.")],
-    s_team: [t("Qué | bueno, | porque | aquí | trabajamos | mucho | en equipo.", "How | good, | because | here | we-work | a lot | as a team.", "Good, because we work in teams a lot here.")],
-    s_fast: [t("¡Qué | bueno! | Aquí | hay | mucho | que | aprender.", "How | good! | Here | there is | a lot | — | to learn.", "Good! There's a lot to learn here.", { flags: { 5: "que: links mucho to the verb (a lot to learn)." } })],
+    s_team: [t("Qué | bueno, | porque | aquí | trabajamos | mucho | en equipo.", "How | good, | because | here | we-work | a lot | as a team.", "Good, because we work in teams a lot here.", { spain: t("Qué | bien, | porque | aquí | trabajamos | mucho | en equipo.", "How | good, | because | here | we-work | a lot | as a team.", "Good, because we work in teams a lot here.") })],
+    s_fast: [t("¡Qué | bueno! | Aquí | hay | mucho | que | aprender.", "How | good! | Here | there is | a lot | — | to learn.", "Good! There's a lot to learn here.", { flags: { 5: "que: links mucho to the verb (a lot to learn)." }, spain: t("¡Qué | bien! | Aquí | hay | mucho | que | aprender.", "How | good! | Here | there is | a lot | — | to learn.", "Good! There's a lot to learn here.", { flags: { 5: "que: links mucho to the verb (a lot to learn)." } }) })],
     s_people: [t("Eso | es | importante. | Va | a | trabajar | con | muchos | clientes.", "That | is | important. | You're going | to | work | with | many | clients.", "That's important. You'll work with a lot of clients.")],
     s_organized: [t("¡Aquí | nos encanta | la | gente | organizada!", "Here | we love | — | people | organized!", "We love organized people here!", { flags: { 2: "la gente: Spanish uses the article for people in general." } })],
     strength_help: [t("Por | ejemplo: | ¿es | {m:organizado|f:organizada}? | ¿Es | {m:bueno|f:buena} | con | la | gente?", "For | example: | are you | organized? | Are you | good | with | — | people?",
@@ -1040,7 +1043,7 @@ export const interview: SituationDef = {
     future_help: [t("No se preocupe. | ¿Qué | le gustaría | hacer | aquí?", "Don't worry. | What | would you like | to do | here?", "That's okay. What would you like to do here?")],
     // Teamwork
     ask_teamwork: [
-      t("¿Me | puede | contar | de | alguna | vez | que | trabajó | en equipo?", "(To) me | can you | tell | about | some | time | that | you worked | as a team?", "Can you tell me about a time you worked on a team?"),
+      t("¿Me | puede | contar | de | alguna | vez | que | trabajó | en equipo?", "(To) me | can you | tell | about | some | time | that | you worked | as a team?", "Can you tell me about a time you worked on a team?", { spain: t("¿Me | puede | hablar | de | alguna | vez | en | que | trabajó | en equipo?", "(To) me | can you | talk | about | some | time | — | when | you worked | as a team?", "Can you tell me about a time you worked on a team?") }),
       t("¿Me | da | un | ejemplo | de | trabajo | en equipo?", "(To) me | you-give | an | example | of | work | as a team?", "Can you give me an example of teamwork?"),
     ],
     teamwork_ack: [
@@ -1061,7 +1064,7 @@ export const interview: SituationDef = {
     // Salary
     ask_salary: [
       t("¿Cuáles | son | sus | pretensiones | salariales?", "What | are | your | expectations | salary?", "What are your salary expectations?",
-        { flags: { 3: "pretensiones salariales: the usual words in Mexican job ads and interviews." } }),
+        { flags: { 3: "pretensiones salariales: the usual words in Mexican job ads and interviews." }, spain: t("¿Cuáles | son | sus | expectativas | salariales?", "What | are | your | expectations | salary?", "What are your salary expectations?", { flags: { 3: "expectativas salariales: the usual words in Spanish job interviews." } }) }),
       t("¿Y | cuánto | le gustaría | ganar?", "And | how much | would you like | to earn?", "And what salary are you looking for?"),
     ],
     salary_noted: [
@@ -1082,7 +1085,7 @@ export const interview: SituationDef = {
       t("¿Cuándo | podría | empezar?", "When | could you | start?", "When can you start?"),
       t("Y | si | le | ofrecemos | el | puesto, | ¿cuándo | podría | empezar?", "And | if | you | we-offer | the | position, | when | could you | start?", "And if we offer you the job, when could you start?"),
     ],
-    start_ack: [t("Perfecto.", "Perfect.", "Perfect."), t("Muy | bien, | eso | nos | funciona.", "Very | good, | that | us | it-works.", "Great, that works for us.")],
+    start_ack: [t("Perfecto.", "Perfect.", "Perfect."), t("Muy | bien, | eso | nos | funciona.", "Very | good, | that | us | it-works.", "Great, that works for us.", { spain: t("Muy | bien, | eso | nos | viene bien.", "Very | good, | that | (to) us | it-suits.", "Great, that works for us.") })],
     notice_ack: [t("Claro, | es | completamente | normal.", "Of course, | it's | completely | normal.", "Of course, that's completely normal.")],
     // Why hire you
     ask_hire: [
@@ -1106,7 +1109,7 @@ export const interview: SituationDef = {
     a_hours: [t("Trabajamos | de | nueve | a | seis, | de | lunes | a | viernes.", "We-work | from | nine | to | six, | from | Monday | to | Friday.", "We work nine to six, Monday to Friday.")],
     a_lunch: [t("Y | tiene | una | hora | para | comer.", "And | you have | an | hour | to | eat.", "And you get an hour for lunch.")],
     a_lunch_time: [t("Tiene | una | hora | para | comer, | de | dos | a | tres.", "You have | an | hour | to | eat, | from | two | to | three.", "You get an hour for lunch, from two to three.")],
-    a_training: [t("¡Sí! | Tiene | dos | semanas | de | capacitación | con | un | compañero.", "Yes! | You have | two | weeks | of | training | with | a | colleague.", "Yes! You'll have two weeks of training with a colleague.")],
+    a_training: [t("¡Sí! | Tiene | dos | semanas | de | capacitación | con | un | compañero.", "Yes! | You have | two | weeks | of | training | with | a | colleague.", "Yes! You'll have two weeks of training with a colleague.", { spain: t("¡Sí! | Tiene | dos | semanas | de | formación | con | un | compañero.", "Yes! | You have | two | weeks | of | training | with | a | colleague.", "Yes! You'll have two weeks of training with a colleague.") })],
     a_start: [t("Probablemente | el | primero | del | próximo | mes.", "Probably | the | first | of the | next | month.", "Probably on the first of next month.")],
     a_team: [t("En | el | equipo | somos | ocho | personas.", "In | the | team | we-are | eight | people.", "There are eight people on the team.")],
     a_team2: [t("Trabajaría | con | María | y | otros | compañeros.", "You would work | with | María | and | other | colleagues.", "You'd work with María and a few others.")],
@@ -1114,15 +1117,15 @@ export const interview: SituationDef = {
       flags: { 2: "Mexican: home office, from English, is what Mexican offices say for working from home." },
       neutral: t("Puede | trabajar | desde | casa | dos | días | a la semana.", "You can | work | from | home | two | days | a week.", "You can work from home two days a week.") })],
     a_benefits: [t("Tiene | todas | las | prestaciones | de ley: | seguro social, | aguinaldo | y | vacaciones.", "You have | all | the | benefits | by law: | social security, | Christmas bonus | and | vacation.",
-      "You get all the benefits the law requires: social security, a Christmas bonus and paid vacation.", { flags: { 6: "aguinaldo: the yearly bonus Mexican law requires, paid in December." } })],
+      "You get all the benefits the law requires: social security, a Christmas bonus and paid vacation.", { flags: { 6: "aguinaldo: the yearly bonus Mexican law requires, paid in December." }, spain: t("Tiene | todo | lo que | marca | la | ley: | Seguridad Social, | paga extra | de | Navidad | y | vacaciones.", "You have | everything | that | sets | the | law: | social security, | extra paycheck | at | Christmas | and | vacation.", "You get everything the law requires: social security, a Christmas bonus and paid vacation.", { flags: { 4: "la ley: Spanish uses the article here; English says the law too.", 7: "paga extra: an extra month's pay; here the one Mexico's law gives in December (the aguinaldo)." } }) })],
     a_day: [t("Contestaría | correos | y | llamadas | de | clientes, | y | ayudaría | al | equipo | con | los | proyectos.",
       "You would answer | emails | and | calls | from | clients, | and | you would help | the | team | with | the | projects.", "You'd answer client emails and calls, and help the team with projects.",
       { flags: { 8: "al = a + el: a marks the team as the one being helped." } })],
     a_next: [t("Esta | semana | vamos | a | entrevistar | a | otros | candidatos.", "This | week | we're going | to | interview | — | other | candidates.", "We're interviewing a few other candidates this week.",
       { flags: { 5: "Personal a: Spanish marks people as the object; English needs no word." } })],
     a_touch: [t("Le | avisamos | a más tardar | el | viernes.", "You | we'll-let-know | at the latest | on | Friday.", "We'll let you know by Friday.", { flags: { 3: "el before a day: English says on." } })],
-    a_dress: [t("Casual de negocios. | Y | los | viernes, | más | casual.", "Business casual. | And | on | Fridays, | more | casual.", "Business casual. And on Fridays, more casual.", { flags: { 2: "los before a day: every (Friday); English says on." } })],
-    a_parking: [t("Sí, | hay | estacionamiento | atrás | del | edificio, | sin | costo.", "Yes, | there is | parking | behind | the | building, | without | cost.", "Yes, there's free parking behind the building.")],
+    a_dress: [t("Casual de negocios. | Y | los | viernes, | más | casual.", "Business casual. | And | on | Fridays, | more | casual.", "Business casual. And on Fridays, more casual.", { flags: { 2: "los before a day: every (Friday); English says on." }, spain: t("Arreglado | pero | informal. | Y | los | viernes, | más | informal.", "Neat | but | casual. | And | on | Fridays, | more | casual.", "Business casual. And on Fridays, more casual.", { flags: { 4: "los before a day: every (Friday); English says on." } }) })],
+    a_parking: [t("Sí, | hay | estacionamiento | atrás | del | edificio, | sin | costo.", "Yes, | there is | parking | behind | the | building, | without | cost.", "Yes, there's free parking behind the building.", { spain: t("Sí, | hay | aparcamiento | detrás | del | edificio, | gratis.", "Yes, | there is | parking | behind | the | building, | free.", "Yes, there's free parking behind the building.") })],
     a_like: [t("¡La | gente! | Aquí | todos | son | muy | amables.", "The | people! | Here | everyone | is | very | nice.", "The people! Everyone here is really friendly.")],
     a_mood: [t("Muy | bueno, | la verdad. | Es | un | equipo | muy | unido.", "Very | good, | honestly. | It's | a | team | very | close-knit.", "Really good, honestly. It's a very close-knit team.")],
     a_company: [t("Somos | una | empresa | de | servicios: | atendemos | a | clientes | de | toda | la | zona.", "We-are | a | company | of | services: | we-serve | — | clients | from | all | the | area.",
@@ -1132,17 +1135,17 @@ export const interview: SituationDef = {
       "Of course! We want our people to grow with us.", { flags: { 3: "buscar que + a verb: to try to make something happen.", 4: "la gente: Spanish uses the article for people in general." } })],
     a_training_who: [t("Un | compañero | del | equipo, | durante | las | primeras | dos | semanas.", "A | colleague | from the | team, | during | the | first | two | weeks.",
       "A colleague from the team, for the first two weeks.")],
-    a_fulltime: [t("Sí, | es | de tiempo completo.", "Yes, | it's | full-time.", "Yes, it's full-time.")],
-    a_not_part: [t("No, | es | de tiempo completo.", "No, | it's | full-time.", "No, it's full-time.")],
+    a_fulltime: [t("Sí, | es | de tiempo completo.", "Yes, | it's | full-time.", "Yes, it's full-time.", { spain: t("Sí, | es | a jornada completa.", "Yes, | it's | full-time.", "Yes, it's full-time.") })],
+    a_not_part: [t("No, | es | de tiempo completo.", "No, | it's | full-time.", "No, it's full-time.", { spain: t("No, | es | a jornada completa.", "No, | it's | full-time.", "No, it's full-time.") })],
     a_weekend: [t("No, | solo | de | lunes | a | viernes, | de | nueve | a | seis.", "No, | only | from | Monday | to | Friday, | from | nine | to | six.", "No, just Monday to Friday, nine to six.")],
     a_overtime: [t("Casi | nunca, | la verdad.", "Almost | never, | honestly.", "Hardly ever, to be honest.")],
     a_boss: [t("Su | jefe | sería | el | ingeniero | Montes.", "Your | boss | would be | — | Ingeniero | Montes.", "Your boss would be Mr. Montes.", {
       flags: { 3: "Spanish puts el before a title.", 4: "Ingeniero: an engineering graduate's title, used to address him in Mexican offices." } })],
-    a_parking_free: [t("Es | sin | costo. | Está | atrás | del | edificio.", "It's | without | cost. | It's | behind | the | building.", "It's free. It's behind the building.")],
+    a_parking_free: [t("Es | sin | costo. | Está | atrás | del | edificio.", "It's | without | cost. | It's | behind | the | building.", "It's free. It's behind the building.", { spain: t("Es | gratis. | Está | detrás | del | edificio.", "It's | free. | It's | behind | the | building.", "It's free. It's behind the building.") })],
     a_vacation: [t("Las | que | marca | la | ley. | Todo | viene | en | el | contrato.", "The ones | that | sets | the | law. | Everything | comes | in | the | contract.",
       "Whatever the law requires. It's all in the contract.")],
     a_next_hired: [t("Primero | firma | el | contrato, | y | después | empieza | la | capacitación.", "First | you-sign | the | contract, | and | then | starts | the | training.",
-      "First you sign the contract, and then your training starts.")],
+      "First you sign the contract, and then your training starts.", { spain: t("Primero | firma | el | contrato, | y | después | empieza | la | formación.", "First | you-sign | the | contract, | and | then | starts | the | training.", "First you sign the contract, and then your training starts.") })],
     a_next_offered: [t("Usted | me | avisa | el | viernes, | y | si | acepta, | le | mando | el | contrato.",
       "You | me | let-know | on | Friday, | and | if | you-accept, | you | I'll-send | the | contract.", "You let me know by Friday, and if you say yes, I'll send you the contract.",
       { flags: { 3: "el before a day: English says on." } })],
@@ -1158,11 +1161,11 @@ export const interview: SituationDef = {
     ],
     closing_reply: [
       t("Al contrario. | ¡Mucha | suerte | y | que | tenga | buen día!", "Thank you. | Much | luck | and | (I hope) | you have | a good day!", "Thank you! Good luck, and have a great day!",
-        { flags: { 0: "al contrario: on the contrary, the polite answer to “thank you for your time”." } }),
-      t("Con mucho gusto. | ¡Que | tenga | buen día!", "With great pleasure. | (I hope) | you have | a good day!", "My pleasure. Have a great day!"),
+        { flags: { 0: "al contrario: on the contrary, the polite answer to “thank you for your time”." }, spain: t("A usted. | ¡Mucha | suerte | y | que | tenga | un | buen | día!", "Thank you. | Much | luck | and | (I hope) | you have | a | good | day!", "Thank you! Good luck, and have a great day!", { flags: { 0: "a usted: thank you, the polite answer to “thank you for your time”." } }) }),
+      t("Con mucho gusto. | ¡Que | tenga | buen día!", "With great pleasure. | (I hope) | you have | a good day!", "My pleasure. Have a great day!", { spain: t("Nada, | a usted. | ¡Que | tenga | un | buen | día!", "Not at all, | thank you. | (I hope) | you have | a | good | day!", "Not at all, thank you. Have a good day!") }),
     ],
-    closing_bye: [t("Fue | un | gusto | {m:conocerlo|f:conocerla}. | ¡Que | tenga | buen día!", "It was | a | pleasure | to meet you. | (I hope) | you have | a good day!", "It was nice to meet you. Have a great day!")],
-    closing_nice: [t("Igualmente, | fue | un | gusto. | ¡Que | tenga | buen día!", "Likewise, | it was | a | pleasure. | (I hope) | you have | a good day!", "It was nice to meet you too. Have a great day!")],
+    closing_bye: [t("Fue | un | gusto | {m:conocerlo|f:conocerla}. | ¡Que | tenga | buen día!", "It was | a | pleasure | to meet you. | (I hope) | you have | a good day!", "It was nice to meet you. Have a great day!", { spain: t("Ha sido | un | placer | {m:conocerlo|f:conocerla}. | ¡Que | tenga | un | buen | día!", "It's been | a | pleasure | to meet you. | (I hope) | you have | a | good | day!", "It was nice to meet you. Have a great day!") })],
+    closing_nice: [t("Igualmente, | fue | un | gusto. | ¡Que | tenga | buen día!", "Likewise, | it was | a | pleasure. | (I hope) | you have | a good day!", "It was nice to meet you too. Have a great day!", { spain: t("Igualmente, | ha sido | un | placer. | ¡Que | tenga | un | buen | día!", "Likewise, | it's been | a | pleasure. | (I hope) | you have | a | good | day!", "It was nice to meet you too. Have a great day!") })],
     // The job offer (twist)
     offer: [t("¿Sabe | qué? | No necesito | esperar. | Nos gustaría | ofrecerle | el | puesto.", "You know | what? | I don't need | to wait. | We'd like | to offer you | the | position.",
       "You know what? I don't need to wait. We'd like to offer you the job!")],
@@ -1177,7 +1180,7 @@ export const interview: SituationDef = {
       "Oh, I'm so sorry, I need to take this call. I'll be right back.", {
         flags: { 7: "Mexican: ahorita = in a moment." },
         neutral: t("Ay, | perdóneme, | tengo | que | contestar | esta | llamada. | Enseguida | regreso.", "Oh, | forgive me, | I have | to | answer | this | call. | Right away | I'm-back.",
-          "Oh, I'm so sorry, I need to take this call. I'll be right back.") })],
+          "Oh, I'm so sorry, I need to take this call. I'll be right back."), spain: t("Ay, | perdóneme, | tengo | que | contestar | esta | llamada. | Enseguida | vuelvo.", "Oh, | forgive me, | I have | to | answer | this | call. | In a moment | I'm-back.", "Oh, I'm so sorry, I need to take this call. I'll be right back.") })],
     phone_back: [
       t("Gracias | por | esperar. | ¡Perdón | por | la | interrupción!", "Thanks | for | waiting. | Sorry | for | the | interruption!", "Thank you for waiting. Sorry about that!"),
       t("¡Perdón! | ¿En | qué | íbamos?", "Sorry! | In | what | were we going?", "Sorry about that! Where were we?"),
@@ -1209,8 +1212,8 @@ export const interview: SituationDef = {
     ] },
     found: { lt: "Say whether it was easy to find", items: [
       { id: "found_no_problem", s: t("Sí, | sin problema.", "Yes, | no problem.", "Yes, no problem.") },
-      { id: "found_easy", s: t("Sí, | fue | muy | fácil.", "Yes, | it was | very | easy.", "Yes, it was easy to find.") },
-      { id: "found_lost", s: t("Me perdí | un | poco.", "I got lost | a | little.", "I got a little lost.") },
+      { id: "found_easy", s: t("Sí, | fue | muy | fácil.", "Yes, | it was | very | easy.", "Yes, it was easy to find.", { spain: t("Sí, | ha sido | muy | fácil.", "Yes, | it's been | very | easy.", "Yes, it was easy to find.") }) },
+      { id: "found_lost", s: t("Me perdí | un | poco.", "I got lost | a | little.", "I got a little lost.", { spain: t("Me he perdido | un | poco.", "I've gotten lost | a | little.", "I got a little lost.") }) },
       { id: "found_traffic", s: t("Había | mucho | tráfico.", "There was | a lot of | traffic.", "There was a lot of traffic.") },
     ] },
     drink: { lt: "Say whether you'd like water or coffee", items: [
@@ -1219,12 +1222,12 @@ export const interview: SituationDef = {
       { id: "coffee", s: t("Un | café, | gracias.", "A | coffee, | thanks.", "Coffee would be great, thanks.") },
     ] },
     years: { lt: "Say how long you've worked", items: [
-      { id: "years_about", s: t("Como | diez | años.", "About | ten | years.", "About ten years.") },
+      { id: "years_about", s: t("Como | diez | años.", "About | ten | years.", "About ten years.", { spain: t("Unos | diez | años.", "About | ten | years.", "About ten years.", { flags: { 0: "unos before a number: about." } }) }) },
       { id: "years_for", s: t("Desde hace | cinco | años.", "For | five | years.", "For five years.") },
       { id: "years_since", s: t("Desde | el | 2015.", "Since | — | 2015.", "Since 2015.", { say: "Desde el dos mil quince.", flags: { 1: "Mexicans often say a year with el: desde el 2015." } }) },
     ] },
     studied: { lt: "Say what you studied", items: [
-      { id: "studied", s: t("Estudié | mercadotecnia.", "I studied | marketing.", "I studied marketing.") },
+      { id: "studied", s: t("Estudié | mercadotecnia.", "I studied | marketing.", "I studied marketing.", { spain: t("Estudié | marketing.", "I studied | marketing.", "I studied marketing.") }) },
       { id: "studied", s: t("Estudié | administración.", "I studied | business administration.", "I studied business administration.") },
     ] },
     phone: { lt: "Say it's no problem", items: [
@@ -1233,7 +1236,7 @@ export const interview: SituationDef = {
       { id: "np_worry", s: t("No se preocupe.", "Don't worry.", "Don't worry about it.") },
     ] },
     improve: { lt: "Say how you're working on it", items: [
-      { id: "wk_classes", s: t("Estoy | tomando | clases.", "I'm | taking | classes.", "I'm taking classes.") },
+      { id: "wk_classes", s: t("Estoy | tomando | clases.", "I'm | taking | classes.", "I'm taking classes.", { spain: t("Estoy | yendo | a | clases.", "I'm | going | to | classes.", "I'm taking classes.") }) },
       { id: "wk_lists", s: t("Hago | listas.", "I-make | lists.", "I make lists.") },
       { id: "wk_say_no", s: t("Estoy | aprendiendo | a | decir | que | no.", "I'm | learning | to | say | — | no.", "I'm learning to say no.", { flags: { 4: "decir que no: que links the verb to what is said." } }) },
     ] },
@@ -1280,7 +1283,7 @@ export const interview: SituationDef = {
       { id: "w_like", s: t("Me gusta | mucho | su | empresa.", "I like | a lot | your | company.", "I really like your company.") },
       { id: "w_grow", s: t("Quiero | crecer | y | aprender | cosas | nuevas.", "I want | to grow | and | to learn | things | new.", "I want to grow and learn new things.") },
       { id: "w_challenge", s: t("Estoy | {m:listo|f:lista} | para | un | nuevo | reto.", "I'm | ready | for | a | new | challenge.", "I'm ready for a new challenge.") },
-      { id: "w_heard", s: t("He escuchado | cosas | muy | buenas | de | Línea Clara.", "I've heard | things | very | good | about | Línea Clara.", "I've heard great things about Línea Clara.") },
+      { id: "w_heard", s: t("He escuchado | cosas | muy | buenas | de | Línea Clara.", "I've heard | things | very | good | about | Línea Clara.", "I've heard great things about Línea Clara.", { spain: t("He oído | cosas | muy | buenas | de | Línea Clara.", "I've heard | things | very | good | about | Línea Clara.", "I've heard great things about Línea Clara.") }) },
       { id: "w_use", s: t("Quiero | aplicar | mi | experiencia | aquí.", "I want | to apply | my | experience | here.", "I'd like to use my experience here.") },
       { id: "w_people", s: t("Me gusta | trabajar | con | la | gente.", "I like | to work | with | — | people.", "I enjoy working with people.", { flags: { 3: "la gente: Spanish uses the article for people in general." } }) },
       { id: "w_reputation", s: t("Su | empresa | tiene | muy | buena | reputación.", "Your | company | has | very | good | reputation.", "Your company has a great reputation.") },
@@ -1312,7 +1315,7 @@ export const interview: SituationDef = {
       { id: "wk_perfectionist", s: t("Soy | un | poco | perfeccionista.", "I'm | a | little | perfectionist.", "I'm a bit of a perfectionist.") },
       { id: "wk_impatient", s: t("A veces | soy | un | poco | impaciente.", "Sometimes | I'm | a | little | impatient.", "I can be a little impatient.") },
       { id: "wk_spanish", s: t("Mi | español | todavía | no es | perfecto, | pero | estoy | tomando | clases.", "My | Spanish | yet | isn't | perfect, | but | I'm | taking | classes.",
-        "My Spanish isn't perfect yet, but I'm taking classes.") },
+        "My Spanish isn't perfect yet, but I'm taking classes.", { spain: t("Mi | español | todavía | no es | perfecto, | pero | estoy | yendo | a | clases.", "My | Spanish | yet | isn't | perfect, | but | I'm | going | to | classes.", "My Spanish isn't perfect yet, but I'm taking classes.") }) },
       { id: "wk_public", s: t("Me cuesta | hablar | en | público.", "It's hard for me | to speak | in | public.", "Public speaking isn't easy for me.") },
       { id: "wk_area", s: t("Mi | área | de | oportunidad | es | la | paciencia.", "My | area | of | opportunity | is | — | patience.", "Patience is something I'm working on.", {
         flags: { 1: "Mexican office Spanish: área de oportunidad = something you can improve.", 5: "Spanish uses the article with qualities: la paciencia." },
@@ -1364,11 +1367,11 @@ export const interview: SituationDef = {
       { id: "h_experience", s: t("Tengo | la | experiencia | que | buscan.", "I-have | the | experience | that | you're looking for.", "I have the experience you're looking for.") },
       { id: "s_very", s: t("Porque | soy | {m:organizado|f:organizada} | y | aprendo | rápido.", "Because | I'm | organized | and | I-learn | fast.", "Because I'm organized, and I learn fast.") },
       { id: "h_right", s: t("Soy | la | persona | indicada | para | este | puesto.", "I'm | the | person | right | for | this | position.", "I'm the right person for this job.") },
-      { id: "h_chance", s: t("Deme | una | oportunidad | y | va a ver.", "Give me | a | chance | and | you'll see.", "Give me a chance, and you'll see!") },
+      { id: "h_chance", s: t("Deme | una | oportunidad | y | va a ver.", "Give me | a | chance | and | you'll see.", "Give me a chance, and you'll see!", { spain: t("Deme | una | oportunidad | y | ya verá.", "Give me | a | chance | and | you'll see.", "Give me a chance, and you'll see!") }) },
     ] },
     ask_them: { lt: "Ask about the job: hours, training, start date", items: [
       { id: "q_hours", s: t("¿Cuál | es | el | horario?", "What | is | the | schedule?", "What are the working hours?") },
-      { id: "q_training", s: t("¿Hay | capacitación?", "Is there | training?", "Is there any training?") },
+      { id: "q_training", s: t("¿Hay | capacitación?", "Is there | training?", "Is there any training?", { spain: t("¿Hay | formación?", "Is there | training?", "Is there any training?") }) },
       { id: "q_start", s: t("¿Cuándo | empezaría?", "When | would I start?", "When would I start?") },
     ] },
     ask_them2: { lt: "Ask about the team, home office, benefits", items: [
@@ -1376,7 +1379,7 @@ export const interview: SituationDef = {
       { id: "q_remote", s: t("¿Se puede | hacer | home office?", "Can one | do | home office?", "Can I work from home?", {
         flags: { 2: "Mexican: home office, from English, = working from home." },
         neutral: t("¿Se puede | trabajar | desde | casa?", "Can one | work | from | home?", "Can I work from home?") }) },
-      { id: "q_benefits", s: t("¿Qué | prestaciones | tiene | el | puesto?", "What | benefits | does it have | the | position?", "What are the benefits?"), note: "Prestaciones: the benefits that come with a job in Mexico (social security, aguinaldo, vacation…)." },
+      { id: "q_benefits", s: t("¿Qué | prestaciones | tiene | el | puesto?", "What | benefits | does it have | the | position?", "What are the benefits?", { spain: t("¿Qué | condiciones | tiene | el | puesto?", "What | conditions | does it have | the | position?", "What are the terms of the job?") }), note: "Prestaciones: the benefits that come with a job in Mexico (social security, aguinaldo, vacation…).", noteSpain: "Las condiciones: what comes with a job (Mexico: las prestaciones: social security, aguinaldo, vacation…)." },
     ] },
     ask_them3: { lt: "Ask about a typical day and the next steps", items: [
       { id: "q_day", s: t("¿Cómo | es | un | día | normal | aquí?", "How | is | a | day | normal | here?", "What does a typical day look like?") },
@@ -1385,9 +1388,9 @@ export const interview: SituationDef = {
     ] },
     closing: { lt: "Say thank you and goodbye", items: [
       { id: "c_thanks_time", s: t("Muchas | gracias | por | su | tiempo.", "Many | thanks | for | your | time.", "Thank you for your time.") },
-      { id: "c_nice_meet", s: t("Fue | un | gusto | conocerla.", "It was | a | pleasure | to meet you.", "It was nice to meet you.") },
+      { id: "c_nice_meet", s: t("Fue | un | gusto | conocerla.", "It was | a | pleasure | to meet you.", "It was nice to meet you.", { spain: t("Ha sido | un | placer | conocerla.", "It's been | a | pleasure | to meet you.", "It was nice to meet you.") }) },
       { id: "c_opportunity", s: t("Gracias | por | la | oportunidad.", "Thanks | for | the | opportunity.", "Thank you for the opportunity.") },
-      { id: "c_look_forward", s: t("Quedo | {m:atento|f:atenta} | a | su | llamada.", "I-remain | attentive | to | your | call.", "I look forward to hearing from you."), note: "Very common in Mexican business: “Quedo atento / atenta…”." },
+      { id: "c_look_forward", s: t("Quedo | {m:atento|f:atenta} | a | su | llamada.", "I-remain | attentive | to | your | call.", "I look forward to hearing from you.", { spain: t("Quedo | a la espera | de | su | llamada.", "I-remain | waiting | for | your | call.", "I look forward to hearing from you.") }), note: "Very common in Mexican business: “Quedo atento / atenta…”.", noteSpain: "Quedo a la espera de…: a usual close in business calls and letters." },
     ] },
     offer: { lt: "Answer the job offer", items: [
       { id: "o_accept", s: t("¡Muchas | gracias! | ¡Acepto!", "Many | thanks! | I accept!", "Thank you! I accept!") },
@@ -1407,6 +1410,18 @@ export const interview: SituationDef = {
     neg_money: { key: "neg_money", lt: "Understood! A tip: in an interview, put growth before money: “Quiero crecer profesionalmente”.", better: "Quiero crecer profesionalmente." },
   },
   merges: {
+    // Spain's twins (12 Nov 2026)
+    "ha encontrado": { reason: "grammatical_fusion", split: "ha → have + encontrado (participle): Spain's present perfect for what has just happened; one English verb phrase.", minimal: "Auxiliary and participle." },
+    "ha sido": { reason: "grammatical_fusion", split: "ha → has + sido (participle): Spain's present perfect for today's events; one English verb phrase (it's been).", minimal: "Auxiliary and participle." },
+    "viene bien": { reason: "lexical_expression", split: "viene → comes + bien → well: (eso nos) viene bien = it suits (us), Spain.", minimal: "Verb and adverb." },
+    "seguridad social": { reason: "lexical_expression", split: "seguridad → security + social: the name of the public insurance = social security.", minimal: "Two words." },
+    "paga extra": { reason: "lexical_expression", split: "paga → paycheck + extra: an extra month's pay (Spain has two a year).", minimal: "Two words." },
+    "a jornada completa": { reason: "lexical_expression", split: "a → at + jornada → working day + completa → full = full-time.", minimal: "Three words." },
+    "a usted": { reason: "lexical_expression", split: "a → to + usted → you: (gracias) a usted = thank you (answering thanks).", minimal: "Two words." },
+    "me he perdido": { reason: "grammatical_fusion", split: "me → myself + he → have + perdido: the reflexive present perfect = I've gotten lost.", minimal: "Pronoun, auxiliary and participle." },
+    "he oído": { reason: "grammatical_fusion", split: "he → have + oído (participle): one English verb phrase (I've heard).", minimal: "Auxiliary and participle." },
+    "ya verá": { reason: "lexical_expression", split: "ya → already + verá → you will see: = you'll see.", minimal: "Two words." },
+    "a la espera": { reason: "lexical_expression", split: "a → at + la → the + espera → wait: quedo a la espera = I look forward to (hearing).", minimal: "Three words." },
     "soy yo": { reason: "lexical_expression", split: "soy → I am + yo → I misreads the set reply: it's me.", minimal: "Two words." },
     "recursos humanos": { reason: "lexical_expression", split: "recursos → resources + humanos → human reverses the department's name: human resources.", minimal: "Two words." },
     "me perdí": { reason: "grammatical_fusion", split: "me → myself + perdí → I lost gives a false object; perderse = get lost.", minimal: "The pronoun and the verb." },

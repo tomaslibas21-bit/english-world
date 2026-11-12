@@ -129,3 +129,25 @@ cross-cutting check worth running: lines whose variants state different facts (a
 rotation says both when a question is asked twice. Unanswered, by choice: "¿Cuál es la contraseña del wifi?" (not
 "Sí, la contraseña…"), "¿Puedo traer a un amigo?", "¿Me das factura?", "¿Puedo pagar la mensualidad con tarjeta?"
 (not understood, safe).
+
+## Spain twins (11 Nov 2026)
+
+36 twins + 2 Spain nouns. Mónica says tú (unchanged). Spain's gym words: vestuarios (vestidores; the lockers forms and
+patterns now take vestuarios / taquillas), aseos, cinta (caminadora; `attrs.spain: "cinta"`), tarjeta de socio (credencial; Spain
+noun too), boxeo (box), asas + coge (agarra las manijas), aparcamiento / aparcar, datáfono, móvil, devuelvo, volver, and Spain's
+perfect for today ("¿Has traído candado?", "Ya has calentado", "¡Te lo has ganado!", "¡Lo has hecho muy bien!", the hint "¡Lo he
+conseguido!"), "solo por la mañana". Kept: the learner's "¿Qué horario tienen? / ¿Tienen…?" (the hint's note explains ustedes = the
+gym; Spain says it too, and the grammar takes "tenéis", see the corpus). Spain corpus: 15 items (apuntarme, tenéis, boli, vestuarios,
+aseo, móvil, datáfono).
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer, against docs/es/STYLE.md "Spain Spanish": every line's Spain reading (twin, else neutral), the hints and
+example answers, tú/usted and vosotros by the Spain rule, meaning and English against the Mexican line, Mexican-only
+things kept, and the Spain corpus.
+
+Found and fixed: The writer's own twins said ¡Listo! (warmed_up, done_it) → ¡Ya está!; Listo lines → Ya está / ¡Hecho!; seguido → a menudo; llena → rellena; ¿me prestas una identificación? → ¿me enseñas un documento de identidad?; casilleros → taquillas; descompuesta → estropeada; acuéstate en la banca → túmbate en el banco; ¿sí? → ¿vale?; remadora/¡Dale! → máquina de remo/¡Venga!; toma agua → bebe agua; Igual → Aun así; learner to the gym: ¿Tienen…? / ¿Cobran…? → vosotros (¿Tenéis…? ¿Cobráis…?), noted: q_hours keeps its ustedes note in English; hints in the perfect (he traído, se me ha olvidado, he vuelto, he entrado en calor, ha sido duro, ¿qué le ha pasado?), grammar extended.
+
+English of every twin checked against its Mexican line (restored where a twin had rephrased it). Spain corpus items
+added for the new forms. Gates: Mexican, neutral and Spain checks 0 errors; coverage 0 false accepts.
+

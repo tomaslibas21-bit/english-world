@@ -1,0 +1,27 @@
+{
+"situation": "p18-startup",
+"items": [
+{ "ctx": "hello", "say": "Poco a poco le estoy cogiendo el ritmo", "intent": "finding" },
+{ "ctx": "hello", "say": "Ya le he cogido el ritmo", "intent": "finding" },
+{ "ctx": "hello", "say": "¿Qué significa cogerle el ritmo?", "intent": "idiom_q" },
+{ "ctx": "pile", "say": "Estoy hasta el cuello con los informes de errores", "intent": "overloaded", "slots": { "t": "bugs" } },
+{ "ctx": "pile", "say": "Vale, puedo con todo", "intent": "can_do_all" },
+{ "ctx": "pile", "say": "¿Y los informes de errores?", "intent": ["what_about", "propose_ctx"] },
+{ "ctx": "priorities", "say": "Me voy a centrar en la presentación", "intent": "propose", "slots": { "a": "slides" } },
+{ "ctx": "priorities", "say": "La presentación para los inversores", "intent": "propose_ctx", "slots": { "a": "slides" } },
+{ "ctx": "priorities", "say": "Primero los informes de errores", "intent": ["propose", "propose_ctx"], "slots": { "a": "bugs" } },
+{ "ctx": "pushback", "say": "Vale, primero la presentación", "intent": ["propose", "propose_ctx"], "slots": { "a": "slides" } },
+{ "ctx": "deal", "say": "Vale, trato hecho", "intent": ["agree_ctx", "yn:yes", "g_ok"] },
+{ "ctx": "deal", "say": "Me viene bien", "intent": ["agree_ctx", "yn:yes", "g_ok"] },
+{ "ctx": "crash", "say": "Hay que llamar a Lalo ahora mismo", "intent": "plan" },
+{ "ctx": "owner", "say": "¿Cuándo vienen los inversores?", "intent": "ask_owner" },
+{ "ctx": "midnight", "say": "Lo siento, esta noche tengo planes", "intent": "cant_stay" },
+{ "ctx": "midnight", "say": "¿Las horas extra se pagan?", "intent": "paid_q" },
+{ "ctx": "tomorrow", "say": "Vale, nos vemos a las ocho", "intent": "meet_time" },
+{ "ctx": "tomorrow", "say": "A las ocho no me viene bien", "intent": "cant_time" },
+{ "ctx": "offer", "say": "Sí, al mediodía me viene bien", "intent": ["meet_time", "yn:yes"] },
+{ "ctx": "tomorrow", "say": "Vale, ¡dejémoslo por hoy!", "intent": "call_day" },
+{ "ctx": "pile", "say": "¿Qué caja?", "intent": "idiom_q" },
+{ "ctx": "priorities", "say": "No quiero empezar con los informes de errores", "intent": "any" }
+]
+}

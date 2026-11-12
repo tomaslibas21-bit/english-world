@@ -1,0 +1,78 @@
+{
+"situation": "s71b-gas",
+"items": [
+{
+"ctx": "order",
+"say": "Lleno, por favor",
+"intent": "fill"
+},
+{
+"ctx": "order",
+"say": "Medio depósito de magna, por favor",
+"intent": "half_tank"
+},
+{
+"ctx": "zeros",
+"say": "Espere, no está a cero",
+"intent": "zeros_ctx"
+},
+{
+"ctx": "zeros",
+"say": "¿Lo puede poner a cero?",
+"intent": "zeros_ctx"
+},
+{
+"ctx": "pump_on",
+"say": "¿Está a cero?",
+"intent": "zeros_q"
+},
+{
+"ctx": "extras",
+"say": "Sí, revíseme las ruedas",
+"intent": "check_order"
+},
+{
+"ctx": "extras",
+"say": "Solo el parabrisas",
+"intent": "check_order"
+},
+{
+"ctx": "extras",
+"say": "Póngale aire a las ruedas",
+"intent": [
+"air",
+"check_order"
+]
+},
+{
+"ctx": "pay",
+"say": "No llevo efectivo",
+"intent": "no_cash"
+},
+{
+"ctx": "pay",
+"say": "No llevo cambio",
+"intent": "no_change"
+},
+{
+"ctx": "anything",
+"say": "¿Dónde están los aseos?",
+"intent": "restroom"
+},
+{
+"ctx": "trouble",
+"say": "Mi coche no arranca",
+"intent": "trouble"
+},
+{
+"ctx": "trouble",
+"say": "Tengo una rueda pinchada",
+"intent": "trouble"
+},
+{
+"ctx": "trouble_help",
+"say": "¿Me puede pasar corriente?",
+"intent": "call_help"
+}
+]
+}

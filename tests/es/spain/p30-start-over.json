@@ -1,0 +1,26 @@
+{
+"situation": "p30-start-over",
+"items": [
+{ "ctx": "door", "say": "Hola, Diego. ¿Tienes un minuto?", "intent": "can_talk" },
+{ "ctx": "door", "say": "Sí, ya lo sé. Ha pasado mucho tiempo", "intent": "long_time" },
+{ "ctx": "door", "say": "He venido a disculparme", "intent": "apologize" },
+{ "ctx": "door", "say": "No he venido a pelearme", "intent": "any" },
+{ "ctx": "apology", "say": "Siento mucho lo que dije en tu barbacoa", "intent": "apologize" },
+{ "ctx": "apology", "say": "Perdóname por lo que dije en tu barbacoa", "intent": "apologize" },
+{ "ctx": "apology", "say": "Lo siento, pero era broma", "intent": "sorry_but" },
+{ "ctx": "responsibility", "say": "Me pasé. No te merecías eso", "intent": "own_it" },
+{ "ctx": "responsibility", "say": "Me he equivocado, y es culpa mía", "intent": "own_it" },
+{ "ctx": "turn", "say": "Vale, lo entiendo", "intent": ["accept_time", "g_ok"] },
+{ "ctx": "turn", "say": "Te he echado de menos", "intent": "missed_you" },
+{ "ctx": "nora", "say": "¡Hola, Natalia! ¡Qué alegría verte!", "intent": ["hi_nora", "g_hello"] },
+{ "ctx": "nora", "say": "Os he echado de menos", "intent": "missed_you" },
+{ "ctx": "nora", "say": "Os echaba de menos", "intent": "missed_you" },
+{ "ctx": "make_up", "say": "Te voy a llamar más a menudo, te lo prometo", "intent": "promise" },
+{ "ctx": "make_up", "say": "¡Vale! Tú dime cuándo", "intent": ["deal_ctx", "yn:yes"] },
+{ "ctx": "make_up", "say": "¡Pero si yo no sé cocinar!", "intent": "cant_cook" },
+{ "ctx": "start_over", "say": "¿Borrón y cuenta nueva?", "intent": "start_over" },
+{ "ctx": "start_over", "say": "Gracias, tío", "intent": ["thanks_mate", "g_thanks"] },
+{ "ctx": "closing", "say": "Yo también te he echado de menos", "intent": "missed_you" },
+{ "ctx": "make_up", "say": "No te voy a invitar a cenar", "intent": "any" }
+]
+}

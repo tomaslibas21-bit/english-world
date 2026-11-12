@@ -111,3 +111,17 @@ shoes_remind. Changed: greet_docs[2] (both texts), bags_end_belt, phone_where's 
 For the lead: the Spanish offer probe misses verb-list offers ("Puede tomársela, vaciarla o dejármela"); global
 g_meaning doesn't take "¿Qué es (una) charola?" (only "¿Qué significa…?"); "billetera" for the neutral wallet in
 s91a/s91b too.
+
+## Spain twins (11 Nov 2026)
+
+- 44 Spain twins (lines and hints), 19 items in tests/es/spain/s64b-security.json.
+- Register: no change. The brief's usted holds in Spain too (STYLE.md: officials, the airline, the hotel, older people, anyone senior); nobody here is `informalSpain`, so no line or hint moved between tú and usted. Oficial Torres keeps usted.
+- Words: el portátil for la laptop (masculine: sáquelo, póngalo), gafas for lentes, móvil, cartera for billetera, documentación for identificación, (lo) lleva for trae, coja for tome, póngase en las huellas for párese, aseos/delante, fuera for afuera, banco for banca, cola for fila, Vale / Ya está for Está bien / Listo, the perfect (ha detectado algo, ha pitado, ya los he revisado, se me ha olvidado).
+- Grammar: no (tengo | traigo | llevo) throughout; is_this_line takes ¿Es esta la cola para el control (de seguridad)?; ack_done takes ya lo he puesto todo; forgot takes se me ha olvidado; ask_restroom takes aseos/servicios. Merge: se me ha olvidado.
+- Nothing left for the lead.
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
+
+- Read every twin: usted kept throughout, Spain's words right (billete, tarjeta de embarque, móvil, gafas, portátil, aseos, maleta, facturar, coger, aparcamiento, coche, jersey), the perfect for what just happened, "Ya está" for "Listo", Mexican-only names kept. Meaning, glosses and spelling: no problems found. No changes.

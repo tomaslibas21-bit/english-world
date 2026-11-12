@@ -8,7 +8,7 @@
 // Nothing here is generative: every NPC sentence is an authored line.
 
 import type { Ctx, EntityDef, Handler, HintGroup, Pending, SentSrc, SituationDef, StepDef, Suggestion, Tip } from "../content/types";
-import { compose, type Sentence, type Vars } from "./compose";
+import { addressInformal, compose, type Sentence, type Vars } from "./compose";
 import { Nlu, type NluResult, type Parse, type ParsedSegment } from "./nlu";
 import { soundRepair } from "./soundalike";
 import { isConfirmation } from "./normalize";
@@ -32,7 +32,7 @@ export interface GlobalContent {
   reread?: (c: ConvCtx, p: Parse) => Parse;
 }
 
-export interface NpcInfo { id: string; name: string; gender: Gender; voice: string; speed?: number; /** addresses the player with "tu" */ informal?: boolean }
+export interface NpcInfo { id: string; name: string; gender: Gender; voice: string; speed?: number; /** addresses the player with "tu" */ informal?: boolean; /** and in Spain's Spanish too (compose.ts addressInformal) */ informalSpain?: boolean }
 
 export interface SpokenLine {
   npc: string;
@@ -215,7 +215,7 @@ export class Conversation {
   pushLine(lineId: string, idx: number, vars: Vars, slow = false) {
     const variants = this.sit.lines[lineId] ?? this.opt.global.lines[lineId];
     const npc = this.opt.npcs[this.speakerId];
-    const sentence = compose(variants[idx], vars, { look: this.look, addressee: this.opt.player.gender, speaker: npc?.gender ?? "f", formal: !npc?.informal });
+    const sentence = compose(variants[idx], vars, { look: this.look, addressee: this.opt.player.gender, speaker: npc?.gender ?? "f", formal: !addressInformal(npc) });
     const line: SpokenLine = { npc: this.speakerId, lineId, variant: idx, vars, sentence, slow: slow || this.slow };
     this.out.lines.push(line);
   }
@@ -512,6 +512,8 @@ export class Conversation {
       if (t.startsWith("h:")) used.push(t.slice(2));
       if (t.startsWith("tip:")) {
         const key = t.slice(4);
+        // (Spain's Spanish: tú to the café's or the shop's staff is what Spain says, so no tip about it)
+        if (key === "tu_staff" && addressInformal(this.opt.npcs[this.speakerId])) continue;
         const tip = this.opt.global.tips[key] ?? this.sit.tips?.[key];
         if (tip) this.tip(tip);
       }

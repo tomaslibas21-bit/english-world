@@ -155,3 +155,22 @@ card + "¿Cuánto puedo sacar?", a newcomer's foreign card, goodbye after a decl
 - Owner: selling dollars (the board's $18.10) isn't part of this visit; "Quiero comprar dólares" gets the rates only.
   A small sale flow with generic lines (no amount list) is possible. And: no account without the residence card (as
   the big banks do); or should the fictional bank open a basic account with the passport alone?
+
+## Spain twins (11 Nov 2026)
+
+15 twins + Spain nouns for the license (carné de conducir, m) and the lease (contrato de alquiler). Ricardo keeps usted (no
+register change). Also: "¿En qué puedo ayudarle?" for "¿Qué se le ofrece?", "Me alegro de verlo", "Por supuesto" for "Con gusto",
+"Vuelva", "con eso basta", móvil, "aquí fuera", the hint "Ya está, ya he firmado". Left Mexican: CLABE, CURP, RFC, NIP (the bank's
+own Mexican terms, taught by the conversation). Spain corpus: 12 items (carné de conducir, contrato de alquiler, boli, euro).
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer, against docs/es/STYLE.md "Spain Spanish": every line's Spain reading (twin, else neutral), the hints and
+example answers, tú/usted and vosotros by the Spain rule, meaning and English against the Mexican line, Mexican-only
+things kept, and the Spain corpus.
+
+Found and fixed: comprobante de domicilio → justificante de domicilio (entity forms too); ¿Trae…? → ¿Tiene…?; llenar → rellenar; depositar / depósito → ingresar / ingreso (grammar takes it); ¡Listo! / ¡Ya quedó! → ¡Hecho! / Ya está; saldo promedio → medio; pagar servicios → recibos; falla → fallo; anda lento → va lento; costo → coste; ¿Puso mal el PIN? → ¿Ha puesto…?; hints in the perfect (se ha tragado, se ha quedado, se ha comido, he puesto mal el PIN), llevo, más pequeños. Kept: cuenta de débito (the entity's gloss has three units; cuenta corriente would need its own), recibo de luz, CURP/CLABE (Mexican).
+
+English of every twin checked against its Mexican line (restored where a twin had rephrased it). Spain corpus items
+added for the new forms. Gates: Mexican, neutral and Spain checks 0 errors; coverage 0 false accepts.
+

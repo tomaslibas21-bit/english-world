@@ -1,0 +1,26 @@
+{
+"situation": "s86-old-friend",
+"items": [
+{ "ctx": "recognize", "say": "¡Paola! ¡Qué alegría verte!", "intent": "greet" },
+{ "ctx": "recognize", "say": "Perdona, ¿quién eres?", "intent": "who_are_you" },
+{ "ctx": "changed", "say": "¡Gracias! Tú también estás genial", "intent": "you_too" },
+{ "ctx": "changed", "say": "¡Qué va!", "intent": "modest_ctx" },
+{ "ctx": "upto", "say": "Me he mudado aquí hace poco", "intent": "news" },
+{ "ctx": "upto", "say": "¡Me he casado!", "intent": "news" },
+{ "ctx": "lucy1", "say": "¡Enhorabuena!", "intent": "react_news" },
+{ "ctx": "lucy2", "say": "¡Mellizos! ¡Qué ilusión!", "intent": "react_news" },
+{ "ctx": "family", "say": "Mis padres están bien, gracias", "intent": "family_ans" },
+{ "ctx": "family", "say": "¿Y tu marido qué tal está?", "intent": "ask_family" },
+{ "ctx": "mike_dinner", "say": "Vale, allí nos vemos", "intent": ["good_idea", "yn:yes"] },
+{ "ctx": "coffee", "say": "Ahora no, lo siento", "intent": ["decline", "yn:no", "no_sorry"] },
+{ "ctx": "coffee", "say": "¡Vale, me encantaría!", "intent": ["agree", "yn:yes"] },
+{ "ctx": "upto", "say": "¿Vamos a tomar un café?", "intent": "coffee_invite" },
+{ "ctx": "numbers", "say": "Toma mi móvil", "intent": "give_phone" },
+{ "ctx": "numbers", "say": "No llevo el móvil", "intent": "no_phone" },
+{ "ctx": "rush", "say": "Toma mi móvil", "intent": "give_phone" },
+{ "ctx": "closing", "say": "¡Me ha encantado verte!", "intent": "nice_to_see" },
+{ "ctx": "closing", "say": "Dale recuerdos a Memo", "intent": "say_hi_to" },
+{ "ctx": "number_sure", "say": "Vale, apunta: 984 123 4567", "intent": "number_ctx" },
+{ "ctx": "upto", "say": "No me he casado", "intent": "any" }
+]
+}

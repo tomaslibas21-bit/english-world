@@ -326,7 +326,7 @@ export const security: SituationDef = {
       "(necesita | quiere) (el | mi) pasaporte o (la | mi) licencia #which",
     ] },
     is_this_line: { patterns: [
-      "(es | esta es) la (fila | cola) (para | de) (seguridad | el filtro | el filtro de seguridad | la revision | revision) #h:line_q",
+      "(es | esta es | es esta) la (fila | cola) (para | de | del) (seguridad | el filtro | el filtro de seguridad | la revision | revision | el control | control | el control de seguridad | control de seguridad) #h:line_q",
       "(es aqui | aqui es) (la fila | la cola | el filtro | seguridad | la revision)", "(es | esta es) la (fila | cola)",
       "(es aqui | aqui es) la (fila | cola) (para | de | del) (seguridad | el filtro | filtro | el filtro de seguridad | la revision | revision)",
       "donde (esta | es) la (fila | cola) [para seguridad | del filtro | de seguridad]", "(es aqui | aqui es) el filtro de seguridad",
@@ -334,7 +334,7 @@ export const security: SituationDef = {
     ] },
     // The short replies to a command ("Pase por el arco" → "Listo")
     ack_done: { patterns: [
-      "(listo | lista) #h:div_done", "ya (esta | estoy | terminé | quedó)", "(ya esta | listo) todo", "ya (estoy | quedó) (listo | lista)",
+      "(listo | lista) #h:div_done", "[ya esta] ya (lo | la | los | las) he (puesto | dejado | sacado | metido) todo", "ya he (terminado | acabado)", "ya (esta | estoy | terminé | quedó)", "(ya esta | listo) todo", "ya (estoy | quedó) (listo | lista)",
       "(estoy | ya estoy) (listo | lista)", "listo ya esta [todo]",
       "ya (puse | meti | dejé) todo en (la | las) @tray", "todo (esta | va) en (la | las) @tray", "(puse | meti) todo en (la | las) @tray",
       "(mi | la) @comp (esta | ya esta) en (la | una) @tray",
@@ -374,8 +374,8 @@ export const security: SituationDef = {
       "no @tq sacar (mi | la | el) @comp [verdad]", "(mi | la | el) @comp (sale | se saca)",
     ] },
     no_laptop: { patterns: [
-      "no (tengo | traigo) (laptop | computadora | compu) #h:div_no_laptop", "no (tengo | traigo) (ninguna | una) (laptop | computadora | tablet)",
-      "no (tengo | traigo) @comp [conmigo]", "no (tengo | traigo) (aparatos | nada electronico | electronicos)", "sin (laptop | computadora)",
+      "no (tengo | traigo | llevo) (laptop | computadora | compu) #h:div_no_laptop", "no (tengo | traigo | llevo) (ninguna | una) (laptop | computadora | tablet)",
+      "no (tengo | traigo | llevo) @comp [conmigo]", "no (tengo | traigo | llevo) (aparatos | nada electronico | electronicos)", "sin (laptop | computadora)",
       "[no] (la laptop | la computadora | laptop | computadora) no (la traigo | la tengo | traigo | tengo)",
     ] },
     ask_liquids: { patterns: [
@@ -387,12 +387,12 @@ export const security: SituationDef = {
       "no @tq sacar (mis | los) liquidos [verdad]", "(puedo | se puede) dejar (mis | los) liquidos en (la | mi) @bag #leave", "(mis | los) liquidos (se quedan | los dejo) en (la | mi) @bag #leave",
     ] },
     no_liquids: { patterns: [
-      "no (tengo | traigo) liquidos #h:div_no_liquids", "no (tengo | traigo) (ningun liquido | nada liquido | nada de liquidos)", "sin liquidos",
+      "no (tengo | traigo | llevo) liquidos #h:div_no_liquids", "no (tengo | traigo | llevo) (ningun liquido | nada liquido | nada de liquidos)", "sin liquidos",
       "(mis | los) liquidos ya (estan | van) en (una | la) bolsa [transparente]", "(mis | los) liquidos (estan | van) en (una | la) bolsa transparente",
       "ya (los | las) tengo en (una | la) bolsa [transparente]", "(mis | los) liquidos (estan | van) en (la | mi) maleta (documentada | grande)",
     ] },
     no_plastic_bag: { patterns: [
-      "no (tengo | traigo) (bolsa | bolsita | bolsa transparente | bolsa de plastico | bolsa ziploc | ziploc)", "donde (consigo | hay) una (bolsa | bolsita) [transparente]", "hay (bolsas | bolsitas) [transparentes | de plastico]",
+      "no (tengo | traigo | llevo) (bolsa | bolsita | bolsa transparente | bolsa de plastico | bolsa ziploc | ziploc)", "donde (consigo | hay) una (bolsa | bolsita) [transparente]", "hay (bolsas | bolsitas) [transparentes | de plastico]",
       "(tiene | me da | me regala | me puede dar) una (bolsa | bolsita) [transparente]", "(tienes | me das) una (bolsa | bolsita) #tip:tu_staff",
     ] },
     ask_phone: { patterns: [
@@ -442,7 +442,7 @@ export const security: SituationDef = {
       "no (traigo | tengo) [mis | las | los | mi | el | la] {pocket} [ni {pocket}]", "(ninguno | ninguna) [de los dos]", "nada de eso",
     ] },
     forgot: { patterns: [
-      "se me olvidó #h:bt_forgot", "se me olvidó (que la traia | sacarla | la botella | el agua | tirarla)", "(olvidé | me olvidé de) (sacarla | la botella | el agua)",
+      "se me olvidó #h:bt_forgot", "se me ha olvidado [sacarla | la botella | el agua | tirarla]", "se me olvidó (que la traia | sacarla | la botella | el agua | tirarla)", "(olvidé | me olvidé de) (sacarla | la botella | el agua)",
       "[si] es (solo | nomas | nada mas) agua", "si es agua", "no sabia [que no se podia]", "no me acordé", "(que pena | una disculpa) [se me olvidó]", "fue mi culpa",
       "(ay | uy | ah | oh) (perdon | perdone | disculpe | lo siento)",
     ] },
@@ -512,7 +512,7 @@ export const security: SituationDef = {
       "donde (estan | quedan) las (salas | puertas)", "donde (esta | queda) (la | mi) (sala | puerta) (de embarque | de abordar)",
     ] },
     ask_restroom: { patterns: [
-      "donde (esta | estan | hay) (el bano | los banos | un bano | el sanitario | los sanitarios)", "hay (bano | banos) [adelante | despues del filtro | por aqui]",
+      "donde (esta | estan | hay) (el bano | los banos | un bano | el sanitario | los sanitarios)", "hay (bano | banos) [adelante | despues del filtro | por aqui]", "hay (aseos | servicios) [delante | adelante | despues del (filtro | control) | por aqui]",
       "donde (esta | estan) (el aseo | los aseos | el servicio | los servicios)",
     ] },
   },
@@ -521,12 +521,12 @@ export const security: SituationDef = {
     greet_docs: [
       t("¡Siguiente! | Pase de abordar | e | identificación, | por favor.", "Next! | Boarding pass | and | ID, | please.", "Next! Boarding pass and ID, please.",
         { flags: { 1: "Mexican: pase de abordar = boarding pass (tarjeta de embarque elsewhere).", 2: "e: y (and) becomes e before an i sound." },
-          neutral: t("¡Siguiente! | Tarjeta de embarque | e | identificación, | por favor.", "Next! | Boarding pass | and | ID, | please.", "Next! Boarding pass and ID, please.", { flags: { 2: "e: y (and) becomes e before an i sound." } }) }),
+          neutral: t("¡Siguiente! | Tarjeta de embarque | e | identificación, | por favor.", "Next! | Boarding pass | and | ID, | please.", "Next! Boarding pass and ID, please.", { flags: { 2: "e: y (and) becomes e before an i sound." } }), spain: t("¡Siguiente! | Tarjeta de embarque | y | documentación, | por favor.", "Next! | Boarding pass | and | ID, | please.", "Next! Boarding pass and ID, please.") }),
       t("Buenos días. | Sus | documentos, | por favor.", "Good morning. | Your | documents, | please.", "Good morning. Your documents, please."),
       // the 8:10 a.m. flight (s64a): check-in and the gate say "Buenos días" too
       t("Buenos días. | ¿Me | permite | su | identificación | y | su | pase de abordar?", "Good morning. | (To) me | you-allow | your | ID | and | your | boarding pass?", "Good morning. May I see your ID and your boarding pass?",
         { flags: { 7: "Mexican: pase de abordar = boarding pass (tarjeta de embarque elsewhere)." },
-          neutral: t("Buenos días. | ¿Me | permite | su | identificación | y | su | tarjeta de embarque?", "Good morning. | (To) me | you-allow | your | ID | and | your | boarding pass?", "Good morning. May I see your ID and your boarding pass?") }),
+          neutral: t("Buenos días. | ¿Me | permite | su | identificación | y | su | tarjeta de embarque?", "Good morning. | (To) me | you-allow | your | ID | and | your | boarding pass?", "Good morning. May I see your ID and your boarding pass?"), spain: t("Buenos días. | ¿Me | deja | su | documentación | y | su | tarjeta de embarque?", "Good morning. | (To) me | you-let-have | your | ID | and | your | boarding pass?", "Good morning. May I see your ID and your boarding pass?") }),
     ],
     ask_docs: [
       t("Sus | documentos, | por favor.", "Your | documents, | please.", "Your documents, please."),
@@ -536,27 +536,27 @@ export const security: SituationDef = {
       t("¿Y | su | pase de abordar?", "And | your | boarding pass?", "And your boarding pass?",
         { flags: { 2: "Mexican: pase de abordar = boarding pass (tarjeta de embarque elsewhere)." }, neutral: t("¿Y | su | tarjeta de embarque?", "And | your | boarding pass?", "And your boarding pass?") }),
     ],
-    docs_need_id: [t("¿Y | su | identificación?", "And | your | ID?", "And your ID?")],
+    docs_need_id: [t("¿Y | su | identificación?", "And | your | ID?", "And your ID?", { spain: t("¿Y | su | documentación?", "And | your | ID?", "And your ID?") })],
     phone_scan: [t("Claro, | póngalo | aquí, | en | el | lector.", "Sure, | put it | here, | on | the | scanner.", "Sure, just scan it here.")],
     docs_yes: [t("Sí, | por favor.", "Yes, | please.", "Yes, please.")],
     docs_okq: [t("Sí, | está bien.", "Yes, | it's fine.", "Yes, that's fine.")],
     docs_which: [t("Su | pasaporte, | por favor.", "Your | passport, | please.", "Your passport, please.")],
-    docs_done_already: [t("Ya | los | revisé, | gracias.", "Already | them | I-checked, | thanks.", "I've already checked them, thanks.", { flags: { 1: "los: them, the pronoun for los documentos (not the article)." } })],
+    docs_done_already: [t("Ya | los | revisé, | gracias.", "Already | them | I-checked, | thanks.", "I've already checked them, thanks.", { flags: { 1: "los: them, the pronoun for los documentos (not the article)." }, spain: t("Ya | los | he | revisado, | gracias.", "Already | them | I-have | checked, | thanks.", "I've already checked them, thanks.", {flags: {1: "los: them, the pronoun for los documentos (not the article)."}}) })],
     line_yes: [t("Es | aquí.", "It's | here.", "Right here.")],
     camera: [
-      t("Mire | hacia | acá | un | momento, | por favor.", "Look | toward | here | a | moment, | please.", "Look this way for a second, please."),
-      t("Un | momento. | Mire | hacia | acá, | por favor.", "One | moment. | Look | toward | here, | please.", "One moment. Look this way, please."),
+      t("Mire | hacia | acá | un | momento, | por favor.", "Look | toward | here | a | moment, | please.", "Look this way for a second, please.", { spain: t("Mire | hacia | aquí | un | momento, | por favor.", "Look | toward | here | a | moment, | please.", "Look this way for a second, please.") }),
+      t("Un | momento. | Mire | hacia | acá, | por favor.", "One | moment. | Look | toward | here, | please.", "One moment. Look this way, please.", { spain: t("Un | momento. | Mire | hacia | aquí, | por favor.", "One | moment. | Look | toward | here, | please.", "One moment. Look this way, please.") }),
     ],
     glasses_moment: [t("Sí, | un | momentito, | por favor.", "Yes, | a | quick moment, | please.", "Yes, just for a second, please.", { flags: { 2: "momentito: the diminutive of momento, very common in Mexico." } })],
-    glasses_keep: [t("Puede | dejarse | los | lentes | puestos.", "You-can | keep (on yourself) | the | glasses | on.", "You can keep your glasses on.")],
+    glasses_keep: [t("Puede | dejarse | los | lentes | puestos.", "You-can | keep (on yourself) | the | glasses | on.", "You can keep your glasses on.", { spain: t("Puede | dejarse | las | gafas | puestas.", "You-can | keep (on yourself) | the | glasses | on.", "You can keep your glasses on.") })],
     docs_ok: [
       t("Gracias.", "Thanks.", "Thank you."),
       t("Muy | bien, | gracias.", "Very | good, | thanks.", "All right, thanks."),
       t("Gracias, | todo | en | orden.", "Thanks, | all | in | order.", "Thanks, everything's in order."),
     ],
     divest: [
-      t("Saque | la | laptop | y | los | líquidos, | por favor.", "Take out | the | laptop | and | the | liquids, | please.", "Laptops and liquids out, please."),
-      t("Laptop | y | líquidos | afuera, | por favor.", "Laptop | and | liquids | out, | please.", "Laptop and liquids out, please."),
+      t("Saque | la | laptop | y | los | líquidos, | por favor.", "Take out | the | laptop | and | the | liquids, | please.", "Laptops and liquids out, please.", { spain: t("Saque | el | portátil | y | los | líquidos, | por favor.", "Take out | the | laptop | and | the | liquids, | please.", "Laptops and liquids out, please.") }),
+      t("Laptop | y | líquidos | afuera, | por favor.", "Laptop | and | liquids | out, | please.", "Laptop and liquids out, please.", { spain: t("Portátil | y | líquidos | fuera, | por favor.", "Laptop | and | liquids | out, | please.", "Laptop and liquids out, please.") }),
     ],
     divest2: [
       t("El | cinturón | y | la | chamarra | van | en | la | charola.", "The | belt | and | the | jacket | go | in | the | tray.", "Belts and jackets go in the tray.",
@@ -575,16 +575,16 @@ export const security: SituationDef = {
       t("Los | zapatos | se quedan | puestos.", "The | shoes | stay | on.", "Shoes stay on."),
     ],
     laptop_out: [
-      t("La | laptop | va | afuera, | aparte.", "The | laptop | goes | out, | separately.", "Your laptop comes out, on its own."),
-      t("Sí, | sáquela | y | póngala | aparte.", "Yes, | take it out | and | put it | separately.", "Yes, take it out and put it on its own."),
+      t("La | laptop | va | afuera, | aparte.", "The | laptop | goes | out, | separately.", "Your laptop comes out, on its own.", { spain: t("El | portátil | va | fuera, | aparte.", "The | laptop | goes | out, | separately.", "Your laptop comes out, on its own.") }),
+      t("Sí, | sáquela | y | póngala | aparte.", "Yes, | take it out | and | put it | separately.", "Yes, take it out and put it on its own.", { spain: t("Sí, | sáquelo | y | póngalo | aparte.", "Yes, | take it out | and | put it | separately.", "Yes, take it out and put it on its own.") }),
     ],
-    what_out: [t("La | laptop, | los | líquidos | y | lo | que | traiga | en | los | bolsillos.", "The | laptop, | the | liquids | and | what | — | you-have | in | the | pockets.", "Your laptop, your liquids, and whatever's in your pockets.", { flags: { 6: "lo que: what (whatever); que needs no word of its own here." } })],
+    what_out: [t("La | laptop, | los | líquidos | y | lo | que | traiga | en | los | bolsillos.", "The | laptop, | the | liquids | and | what | — | you-have | in | the | pockets.", "Your laptop, your liquids, and whatever's in your pockets.", { flags: { 6: "lo que: what (whatever); que needs no word of its own here." }, spain: t("El | portátil, | los | líquidos | y | lo | que | lleve | en | los | bolsillos.", "The | laptop, | the | liquids | and | what | — | you-have | in | the | pockets.", "Your laptop, your liquids, and whatever's in your pockets.", {flags: {6: "lo que: what (whatever); que needs no word of its own here."}}) })],
     tablet_no_stay: [t("No, | la | tableta | también | tiene | que | salir.", "No, | the | tablet | also | has | to | come out.", "Sorry, tablets have to come out too.")],
-    tablet_out: [t("Sí, | las | tabletas | también | van | afuera.", "Yes, | the | tablets | also | go | out.", "Yes, tablets come out too.")],
-    laptop_no_stay: [t("No, | aquí | la | laptop | tiene | que | salir.", "No, | here | the | laptop | has | to | come out.", "Sorry, not here. Laptops have to come out.")],
+    tablet_out: [t("Sí, | las | tabletas | también | van | afuera.", "Yes, | the | tablets | also | go | out.", "Yes, tablets come out too.", { spain: t("Sí, | las | tabletas | también | van | fuera.", "Yes, | the | tablets | also | go | out.", "Yes, tablets come out too.") })],
+    laptop_no_stay: [t("No, | aquí | la | laptop | tiene | que | salir.", "No, | here | the | laptop | has | to | come out.", "Sorry, not here. Laptops have to come out.", { spain: t("No, | aquí | el | portátil | tiene | que | salir.", "No, | here | the | laptop | has | to | come out.", "Sorry, not here. Laptops have to come out.") })],
     no_problem: [
       t("Muy | bien, | no hay problema.", "Very | good, | no problem.", "Okay, no problem."),
-      t("Está bien.", "That's fine.", "That's fine."),
+      t("Está bien.", "That's fine.", "That's fine.", { spain: t("Vale.", "Okay.", "Okay.") }),
     ],
     no_problem_q: [t("No, | ningún | problema.", "No, | no | problem.", "No, no problem at all.")],
     // "¿Por qué?" / "¿Qué pasó?" at their moment (ask_what)
@@ -599,18 +599,18 @@ export const security: SituationDef = {
     gel_too: [t("Sí, | cremas | y | geles | también | cuentan.", "Yes, | creams | and | gels | also | count.", "Yes, creams and gels count too.")],
     item_liquid: [t("Sí, | si | es | de | 100 | mililitros | o | menos, | en | la | bolsa.", "Yes, | if | it's | of | 100 | milliliters | or | less, | in | the | bag.", "Yes, if it's 100 milliliters or less, in the bag.",
       { say: "Sí, si es de cien mililitros o menos, en la bolsa." })],
-    plastic_bags: [t("Aquí | hay | bolsitas. | Tome | una.", "Here | there are | little bags. | Take | one.", "There are bags right here. Take one.")],
+    plastic_bags: [t("Aquí | hay | bolsitas. | Tome | una.", "Here | there are | little bags. | Take | one.", "There are bags right here. Take one.", { spain: t("Aquí | hay | bolsitas. | Coja | una.", "Here | there are | little bags. | Take | one.", "There are bags right here. Take one.") })],
     phone_where: [
       t("En | la | charola, | con | sus | llaves | y | su | cartera.", "In | the | tray, | with | your | keys | and | your | wallet.", "In the tray, with your keys and wallet.",
-        { flags: { 2: "Mexican: charola = tray (bandeja elsewhere)." }, neutral: t("En | la | bandeja, | con | sus | llaves | y | su | billetera.", "In | the | tray, | with | your | keys | and | your | wallet.", "In the tray, with your keys and wallet.") }),
+        { flags: { 2: "Mexican: charola = tray (bandeja elsewhere)." }, neutral: t("En | la | bandeja, | con | sus | llaves | y | su | billetera.", "In | the | tray, | with | your | keys | and | your | wallet.", "In the tray, with your keys and wallet."), spain: t("En | la | bandeja, | con | sus | llaves | y | su | cartera.", "In | the | tray, | with | your | keys | and | your | wallet.", "In the tray, with your keys and wallet.") }),
     ],
-    pockets_yes: [t("Sí, | por favor, | todo | afuera.", "Yes, | please, | everything | out.", "Yes, please. Everything out.")],
+    pockets_yes: [t("Sí, | por favor, | todo | afuera.", "Yes, | please, | everything | out.", "Yes, please. Everything out.", { spain: t("Sí, | por favor, | todo | fuera.", "Yes, | please, | everything | out.", "Yes, please. Everything out.") })],
     jacket_yes: [t("Quítesela | y | póngala | con | lo | demás, | por favor.", "Take it off | and | put it | with | the | rest, | please.", "Please take it off and put it with the rest.")],
     jacket_yes_m: [t("Quíteselo | y | póngalo | con | lo | demás, | por favor.", "Take it off | and | put it | with | the | rest, | please.", "Please take it off and put it with the rest.")],
     watch_yes: [t("El | reloj | también, | con | lo | demás.", "The | watch | too, | with | the | rest.", "Your watch too, with the rest.")],
     bins_here: [
       t("Aquí | están | las | charolas. | Tome | las | que | necesite.", "Here | are | the | trays. | Take | the ones | that | you-need.", "The trays are right here. Take as many as you need.",
-        { flags: { 3: "Mexican: charola = tray (bandeja elsewhere)." }, neutral: t("Aquí | están | las | bandejas. | Tome | las | que | necesite.", "Here | are | the | trays. | Take | the ones | that | you-need.", "The trays are right here. Take as many as you need.") }),
+        { flags: { 3: "Mexican: charola = tray (bandeja elsewhere)." }, neutral: t("Aquí | están | las | bandejas. | Tome | las | que | necesite.", "Here | are | the | trays. | Take | the ones | that | you-need.", "The trays are right here. Take as many as you need."), spain: t("Aquí | están | las | bandejas. | Coja | las | que | necesite.", "Here | are | the | trays. | Take | the ones | that | you-need.", "The trays are right here. Take as many as you need.") }),
     ],
     bag_no_tray: [t("La | maleta | va | así, | sin | charola.", "The | bag | goes | like this, | without | a tray.", "Your bag goes on as it is, no tray.",
       { flags: { 5: "Mexican: charola = tray (bandeja elsewhere)." }, neutral: t("La | maleta | va | así, | sin | bandeja.", "The | bag | goes | like this, | without | a tray.", "Your bag goes on as it is, no tray.") })],
@@ -620,13 +620,13 @@ export const security: SituationDef = {
       t("Las | salas | están | por | allá, | pasando | las | tiendas.", "The | gates | are | over | there, | past | the | shops.", "The gates are that way, past the shops.",
         { flags: { 1: "Mexican: la sala (de abordar) = the gate (la puerta elsewhere)." }, neutral: t("Las | puertas | están | por | allá, | pasando | las | tiendas.", "The | gates | are | over | there, | past | the | shops.", "The gates are that way, past the shops.") }),
     ],
-    restroom: [t("Hay | baños | aquí | adelante, | a la derecha.", "There are | restrooms | here | ahead, | on the right.", "There are restrooms just ahead, on the right.")],
+    restroom: [t("Hay | baños | aquí | adelante, | a la derecha.", "There are | restrooms | here | ahead, | on the right.", "There are restrooms just ahead, on the right.", { spain: t("Hay | aseos | aquí | delante, | a la derecha.", "There are | restrooms | here | ahead, | on the right.", "There are restrooms just ahead, on the right.") })],
     scanner: [
       t("Pase | al | escáner, | por favor.", "Step | into the | scanner, | please.", "Step into the scanner, please."),
       t("Ahora | pase | aquí, | por favor.", "Now | step | here, | please.", "Now step in here, please."),
     ],
     scanner2: [
-      t("Párese | en | las | huellas | y | levante | los | brazos.", "Stand | on | the | footprints | and | raise | the | arms.", "Stand on the footprints and raise your arms."),
+      t("Párese | en | las | huellas | y | levante | los | brazos.", "Stand | on | the | footprints | and | raise | the | arms.", "Stand on the footprints and raise your arms.", { spain: t("Póngase | en | las | huellas | y | levante | los | brazos.", "Stand | on | the | footprints | and | raise | the | arms.", "Stand on the footprints and raise your arms.") }),
       t("Los | pies | en | las | huellas | y | las | manos | arriba.", "The | feet | on | the | footprints | and | the | hands | up.", "Feet on the footprints, hands up."),
     ],
     walkthrough: [
@@ -637,15 +637,15 @@ export const security: SituationDef = {
       t("Pase, | por favor.", "Go through, | please.", "Go ahead, please."),
       t("Cuando | quiera, | pase.", "Whenever | you-want, | go through.", "Whenever you're ready, go ahead."),
     ],
-    scan_done: [t("Muy | bien. | No se mueva... | Listo, | puede | salir.", "Very | good. | Don't move... | Done, | you-can | step out.", "Good. Hold still... Okay, you can step out.")],
+    scan_done: [t("Muy | bien. | No se mueva... | Listo, | puede | salir.", "Very | good. | Don't move... | Done, | you-can | step out.", "Good. Hold still... Okay, you can step out.", { spain: t("Muy | bien. | No se mueva... | Ya está, | puede | salir.", "Very | good. | Don't move... | Done, | you-can | step out.", "Good. Hold still... Okay, you can step out.") })],
     walk_clear: [
       t("Todo | bien. | Gracias.", "All | good. | Thanks.", "All clear. Thank you."),
-      t("Listo, | todo | bien.", "Done, | all | good.", "Okay, you're good."),
+      t("Listo, | todo | bien.", "Done, | all | good.", "Okay, you're good.", { spain: t("Ya está, | todo | bien.", "Done, | all | good.", "Okay, you're good.") }),
     ],
-    alarm_scanner: [t("Mmm, | el | escáner | marcó | algo.", "Hmm, | the | scanner | flagged | something.", "Hmm, the scanner picked something up.")],
-    alarm_beep: [t("Uy, | sonó.", "Oops, | it beeped.", "Oops, it beeped.")],
+    alarm_scanner: [t("Mmm, | el | escáner | marcó | algo.", "Hmm, | the | scanner | flagged | something.", "Hmm, the scanner picked something up.", { spain: t("Mmm, | el | escáner | ha | detectado | algo.", "Hmm, | the | scanner | has | picked up | something.", "Hmm, the scanner picked something up.") })],
+    alarm_beep: [t("Uy, | sonó.", "Oops, | it beeped.", "Oops, it beeped.", { spain: t("Uy, | ha | pitado.", "Oops, | it has | beeped.", "Oops, it beeped.") })],
     ask_pockets: [
-      t("¿Trae | algo | en | los | bolsillos?", "Are you carrying | anything | in | the | pockets?", "Do you have anything in your pockets?"),
+      t("¿Trae | algo | en | los | bolsillos?", "Are you carrying | anything | in | the | pockets?", "Do you have anything in your pockets?", { spain: t("¿Lleva | algo | en | los | bolsillos?", "Are you carrying | anything | in | the | pockets?", "Do you have anything in your pockets?") }),
       t("¿Tiene | algo | en | los | bolsillos?", "Do you have | anything | in | the | pockets?", "Anything in your pockets?"),
     ],
     what_is_it: [t("¿Qué | es?", "What | is it?", "What is it?")],
@@ -657,7 +657,7 @@ export const security: SituationDef = {
         { flags: { 5: "Mexican: charola = tray (bandeja elsewhere)." }, neutral: t("Bueno, | deje | eso | en | la | bandeja | y | pase | otra vez.", "Okay, | leave | that | in | the | tray | and | go through | again.", "Okay, put that in the tray and walk through again.") }),
       t("No hay problema. | Deje | eso | aquí | y | pase | otra vez.", "No problem. | Leave | that | here | and | go through | again.", "No problem. Leave that here and walk through again."),
     ],
-    ask_belt_watch: [t("¿Trae | cinturón | o | reloj?", "Are you wearing | a belt | or | a watch?", "Are you wearing a belt or a watch?", { flags: { 0: "traer: to carry, and in Mexico also to wear." } })],
+    ask_belt_watch: [t("¿Trae | cinturón | o | reloj?", "Are you wearing | a belt | or | a watch?", "Are you wearing a belt or a watch?", { flags: { 0: "traer: to carry, and in Mexico also to wear." }, spain: t("¿Lleva | cinturón | o | reloj?", "Are you wearing | a belt | or | a watch?", "Are you wearing a belt or a watch?") })],
     put_it_bin_too: [t("Eso | también, | por favor. | Y | pase | otra vez.", "That | too, | please. | And | go through | again.", "That too, please. Then walk through again.")],
     shoes_yes: [t("Sí, | los | zapatos | también, | por favor.", "Yes, | the | shoes | too, | please.", "Yes, your shoes too, please.")],
     shoes_alarm: [t("Pueden | ser | los | zapatos. | Quíteselos, | por favor.", "They could | be | the | shoes. | Take them off, | please.", "It might be your shoes. Please take them off.")],
@@ -676,7 +676,7 @@ export const security: SituationDef = {
       t("Permítame | revisarla | un | momento.", "Allow me | to check it | a | moment.", "Let me take a quick look inside."),
     ],
     found_bottle: [
-      t("Trae | una | botella | de | agua.", "You're carrying | a | bottle | of | water.", "You have a water bottle in here."),
+      t("Trae | una | botella | de | agua.", "You're carrying | a | bottle | of | water.", "You have a water bottle in here.", { spain: t("Lleva | una | botella | de | agua.", "You're carrying | a | bottle | of | water.", "You have a water bottle in here.") }),
       t("Aquí | hay | una | botella | de | agua.", "Here | there's | a | bottle | of | water.", "There's a water bottle in here."),
     ],
     no_worries: [
@@ -701,7 +701,7 @@ export const security: SituationDef = {
     rest_fine: [t("Todo | lo | demás | está | bien.", "All | the | rest | is | fine.", "Everything else looks fine.")],
     bag_back: [
       t("Claro, | aquí tiene | su | maleta.", "Sure, | here's | your | bag.", "Sure, here's your bag."),
-      t("Listo, | puede | llevársela.", "Done, | you-can | take it.", "All done, you can take it."),
+      t("Listo, | puede | llevársela.", "Done, | you-can | take it.", "All done, you can take it.", { spain: t("Ya está, | puede | llevársela.", "Done, | you-can | take it.", "All done, you can take it.") }),
     ],
     all_set: [
       t("Ya | puede | continuar.", "Now | you-can | go on.", "You're all set."),
@@ -710,8 +710,8 @@ export const security: SituationDef = {
     bag_later: [t("Su | maleta | sale | del | otro | lado.", "Your | bag | comes out | on the | other | side.", "Your bag comes out on the other side.")],
     // said once the learner is through (the finish, "¿Me da mi maleta?"): they're already on the other side
     bags_end_belt: [t("Sus | cosas | salen | por | allá.", "Your | things | come out | over | there.", "Your things come out over there.")],
-    shoes_bench: [t("Ahí | hay | una | banca | para | ponerse | los | zapatos.", "There | there's | a | bench | to | put on | the | shoes.", "There's a bench over there to put your shoes back on.")],
-    shoes_bench_again: [t("Ahí, | en | la | banca.", "There, | on | the | bench.", "Over there, on the bench.")],
+    shoes_bench: [t("Ahí | hay | una | banca | para | ponerse | los | zapatos.", "There | there's | a | bench | to | put on | the | shoes.", "There's a bench over there to put your shoes back on.", { spain: t("Ahí | hay | un | banco | para | ponerse | los | zapatos.", "There | there's | a | bench | to | put on | the | shoes.", "There's a bench over there to put your shoes back on.") })],
+    shoes_bench_again: [t("Ahí, | en | la | banca.", "There, | on | the | bench.", "Over there, on the bench.", { spain: t("Ahí, | en | el | banco.", "There, | on | the | bench.", "Over there, on the bench.") })],
     bye: [
       t("¡Buen | viaje!", "Good | trip!", "Have a good trip!"),
       t("¡Que | tenga | buen | vuelo!", "(I hope) | you-have | a good | flight!", "Have a good flight!"),
@@ -725,41 +725,41 @@ export const security: SituationDef = {
       { id: "docs_both", s: t("Aquí tiene | mi | pasaporte | y | mi | pase de abordar.", "Here's | my | passport | and | my | boarding pass.", "Here's my passport and boarding pass.",
         { neutral: t("Aquí tiene | mi | pasaporte | y | mi | tarjeta de embarque.", "Here's | my | passport | and | my | boarding pass.", "Here's my passport and boarding pass.") }) },
       { id: "docs_phone", s: t("Mi | pase de abordar | está | en | mi | celular.", "My | boarding pass | is | on | my | phone.", "My boarding pass is on my phone.",
-        { neutral: t("Mi | tarjeta de embarque | está | en | mi | celular.", "My | boarding pass | is | on | my | phone.", "My boarding pass is on my phone.") }) },
+        { neutral: t("Mi | tarjeta de embarque | está | en | mi | celular.", "My | boarding pass | is | on | my | phone.", "My boarding pass is on my phone."), spain: t("Mi | tarjeta de embarque | está | en | mi | móvil.", "My | boarding pass | is | on | my | phone.", "My boarding pass is on my phone.") }) },
       { id: "docs_q", s: t("¿Necesita | mi | pasaporte?", "Do you need | my | passport?", "Do you need my passport?") },
-      { id: "line_q", s: t("¿Esta | es | la | fila | para | seguridad?", "This | is | the | line | for | security?", "Is this the line for security?") },
+      { id: "line_q", s: t("¿Esta | es | la | fila | para | seguridad?", "This | is | the | line | for | security?", "Is this the line for security?", { spain: t("¿Esta | es | la | cola | para | seguridad?", "This | is | the | line | for | security?", "Is this the line for security?") }) },
     ] },
     ok_cmd: { lt: "Say okay", items: [
-      { id: "ok_okay", s: t("Está bien.", "Okay.", "Okay.") },
+      { id: "ok_okay", s: t("Está bien.", "Okay.", "Okay.", { spain: t("Vale.", "Okay.", "Okay.") }) },
       { id: "ok_sure", s: t("Claro.", "Sure.", "Sure.") },
-      { id: "div_done", s: t("Listo.", "Done.", "All done."), note: "Listo: the everyday “done / ready” in Mexico." },
+      { id: "div_done", s: t("Listo.", "Done.", "All done.", { spain: t("Ya está.", "Done.", "Done.") }), note: "Listo: the everyday “done / ready” in Mexico.", noteSpain: "Ya está: the everyday “done” (Mexico: listo)." },
     ] },
     ok_short: { lt: "Say okay", items: [
-      { id: "ok_okay", s: t("Está bien.", "Okay.", "Okay.") },
+      { id: "ok_okay", s: t("Está bien.", "Okay.", "Okay.", { spain: t("Vale.", "Okay.", "Okay.") }) },
       { id: "ok_sure", s: t("Claro.", "Sure.", "Sure.") },
     ] },
     camera: { lt: "Look at the officer", items: [
       { id: "ok_sure", s: t("Claro.", "Sure.", "Sure.") },
-      { id: "cam_glasses", s: t("¿Me | quito | los | lentes?", "(Myself) | I-take off | the | glasses?", "Should I take off my glasses?", { flags: { 0: "quitarse: take off (your own clothes, glasses); me = myself." } }) },
+      { id: "cam_glasses", s: t("¿Me | quito | los | lentes?", "(Myself) | I-take off | the | glasses?", "Should I take off my glasses?", { flags: { 0: "quitarse: take off (your own clothes, glasses); me = myself." }, spain: t("¿Me | quito | las | gafas?", "(Myself) | I-take off | the | glasses?", "Should I take off my glasses?", {flags: {0: "quitarse: take off (your own clothes, glasses); me = myself."}}) }) },
     ] },
     divest: { lt: "Ask about shoes, the laptop or liquids", items: [
       { id: "div_shoes", s: t("¿Tengo | que | quitarme | los | zapatos?", "Do I have | to | take off | the | shoes?", "Do I need to take off my shoes?") },
-      { id: "div_laptop", s: t("¿Tengo | que | sacar | la | laptop?", "Do I have | to | take out | the | laptop?", "Should I take out my laptop?") },
-      { id: "div_no_laptop", s: t("No traigo | laptop.", "I don't have | a laptop.", "I don't have a laptop.", { flags: { 0: "traer: to bring, to have with you." } }) },
+      { id: "div_laptop", s: t("¿Tengo | que | sacar | la | laptop?", "Do I have | to | take out | the | laptop?", "Should I take out my laptop?", { spain: t("¿Tengo | que | sacar | el | portátil?", "Do I have | to | take out | the | laptop?", "Should I take out my laptop?") }) },
+      { id: "div_no_laptop", s: t("No traigo | laptop.", "I don't have | a laptop.", "I don't have a laptop.", { flags: { 0: "traer: to bring, to have with you." }, spain: t("No llevo | portátil.", "I don't have | a laptop.", "I don't have a laptop.") }) },
       { id: "div_liquids", s: t("¿Los | líquidos | van | en | una | bolsa?", "The | liquids | go | in | a | bag?", "Do liquids go in a bag?") },
-      { id: "div_no_liquids", s: t("No traigo | líquidos.", "I don't have | liquids.", "I don't have any liquids.") },
-      { id: "div_phone", s: t("¿Dónde | pongo | mi | celular?", "Where | do I put | my | phone?", "Where do I put my phone?") },
+      { id: "div_no_liquids", s: t("No traigo | líquidos.", "I don't have | liquids.", "I don't have any liquids.", { spain: t("No llevo | líquidos.", "I don't have | liquids.", "I don't have any liquids.") }) },
+      { id: "div_phone", s: t("¿Dónde | pongo | mi | celular?", "Where | do I put | my | phone?", "Where do I put my phone?", { spain: t("¿Dónde | pongo | mi | móvil?", "Where | do I put | my | phone?", "Where do I put my phone?") }) },
       { id: "div_bins", s: t("¿Dónde | están | las | charolas?", "Where | are | the | trays?", "Where are the trays?",
         { flags: { 3: "Mexican: charola = tray (bandeja elsewhere)." }, neutral: t("¿Dónde | están | las | bandejas?", "Where | are | the | trays?", "Where are the trays?") }) },
     ] },
     walk: { lt: "Walk through the scanner", items: [
-      { id: "div_done", s: t("Listo.", "Done.", "Done.") },
+      { id: "div_done", s: t("Listo.", "Done.", "Done.", { spain: t("Ya está.", "Done.", "Done.") }) },
       { id: "walk_like_this", s: t("¿Así?", "Like this?", "Like this?") },
       { id: "ok_sure", s: t("Claro.", "Sure.", "Sure.") },
     ] },
     beltwatch: { lt: "Answer about a belt or a watch", items: [
       { id: "pk_yes_my", s: t("Ah, | sí, | mi | cinturón.", "Oh, | yes, | my | belt.", "Oh, yes, my belt.") },
-      { id: "pk_no", s: t("No, | no traigo.", "No, | I'm not wearing any.", "No, I'm not.") },
+      { id: "pk_no", s: t("No, | no traigo.", "No, | I'm not wearing any.", "No, I'm not.", { spain: t("No, | no llevo.", "No, | I'm not wearing any.", "No, I'm not.") }) },
     ] },
     bag_q: { lt: "Say whether it's your bag", items: [
       { id: "bq_mine", s: t("Sí, | es | mía.", "Yes, | it's | mine.", "Yes, it's mine.") },
@@ -767,11 +767,11 @@ export const security: SituationDef = {
       { id: "bq_not", s: t("No es | mía.", "It's not | mine.", "It's not mine.") },
     ] },
     bottle_sorry: { lt: "Say sorry: you forgot", items: [
-      { id: "bt_forgot", s: t("Ay, | perdón, | se me olvidó.", "Oh, | sorry, | I forgot.", "Oh, sorry, I forgot.", { flags: { 2: "se me olvidó: it slipped my mind (literally: it forgot itself on me)." } }) },
+      { id: "bt_forgot", s: t("Ay, | perdón, | se me olvidó.", "Oh, | sorry, | I forgot.", "Oh, sorry, I forgot.", { flags: { 2: "se me olvidó: it slipped my mind (literally: it forgot itself on me)." }, spain: t("Ay, | perdón, | se me ha olvidado.", "Oh, | sorry, | I forgot.", "Oh, sorry, I forgot.") }) },
     ] },
     pockets: { lt: "Say what's in your pockets", items: [
       { id: "pk_keys", s: t("Solo | mis | llaves.", "Only | my | keys.", "Just my keys.") },
-      { id: "pk_phone", s: t("¡Ay, | mi | celular!", "Oh, | my | phone!", "Oh, my phone!") },
+      { id: "pk_phone", s: t("¡Ay, | mi | celular!", "Oh, | my | phone!", "Oh, my phone!", { spain: t("¡Ay, | mi | móvil!", "Oh, | my | phone!", "Oh, my phone!") }) },
       { id: "pk_nothing", s: t("No, | nada.", "No, | nothing.", "No, nothing.") },
       { id: "pk_belt", s: t("Creo | que | es | mi | cinturón.", "I think | that | it's | my | belt.", "I think it's my belt.") },
     ] },
@@ -795,6 +795,8 @@ export const security: SituationDef = {
     tu_staff: { key: "tu_staff", lt: "Understood! With an officer, usted is more polite: necesita, me da, tírela (necesitas, me das, tírala are for friends).", better: "¿Necesita mi pasaporte?" },
   },
   merges: {
+    // Spain's twins (11 Nov 2026)
+    "se me ha olvidado": { reason: "grammatical_fusion", split: "se me → (on) me + ha olvidado → has forgotten: Spain's perfect for se me olvidó = I forgot.", minimal: "Pronouns, auxiliary and participle." },
     "pase de abordar": { reason: "lexical_expression", split: "pase → pass + de → of + abordar → to board misreads the document's name: boarding pass.", minimal: "The three-word noun only." },
     "tarjeta de embarque": { reason: "lexical_expression", split: "tarjeta → card + de → of + embarque → boarding misreads the document's name: boarding pass.", minimal: "The three-word noun only." },
     "no hace falta": { reason: "lexical_expression", split: "no → no + hace → makes + falta → lack misreads the idiom: there's no need.", minimal: "Three words." },

@@ -96,3 +96,25 @@ third floor (or remap "room" to the plan picture). TOWN.md "Named in the convers
 building is gone (room 302 is on Línea Clara's third floor). Global g_dontknow holds a step that has `help`, so the
 call stops after "Bueno, no se preocupe" (handled here). The English original shares the drive-safe, reason-loop,
 time-question order, "wait a few minutes" and plan-question bugs (EN-FIXES-LEADS.md).
+
+## Spain twins (11 Nov 2026)
+
+- 41 Spain twins (lines and hints), 20 items in tests/es/spain/s90-running-late.json (19 understood, 0 false accepts).
+- Register: no change. Ingeniero Montes (the boss) and the learner keep usted; "Empiecen sin mí" / "No me esperen"
+  stay ustedes forms (said to the boss for the team).
+- Phone: ¿Sí? Buenos días; ¿Diga? ¿Quién es?; Buenos días, soy Montes; the learner's "Buenos días, ingeniero, soy …".
+- Spain's present perfect: ¿Qué ha pasado?, me han dicho, se le ha hecho tarde; the learner's Se me ha hecho tarde,
+  He perdido el autobús, No me ha sonado el despertador, Me he quedado dormido, Se me ha averiado el coche, He tenido
+  que llevar a mi hijo al médico.
+- Words: Estoy en un atasco, conduzca con cuidado, la tercera planta, un sitio (seat), Más o menos a qué hora / sobre
+  las 9:30, unos 20 minutos, menos mal, ¿En qué le puedo ayudar? (¿Qué se le ofrece?), Perdone por el retraso, vale.
+- Grammar: late takes se me ha hecho tarde; why takes he perdido, (no) me ha sonado, se me ha averiado/estropeado;
+  eta takes sobre / a eso de / hacia + time; ask_started ha empezado; ask_team han llegado; save_seat sitio.
+- Left for the lead: "Perdón, me tengo que ir, voy conduciendo" isn't read as a goodbye: global.ts leaving_why has
+  "voy manejando" only (proposal: add "(estoy | voy) conduciendo"). The room note picture still says "tercer piso".
+
+## Spain review (12 Nov 2026)
+
+- Checked (fresh reviewer): every twin against its Mexican line (meaning, facts, prices, names), Peninsular wording, the perfect for today's events, tú/usted and vosotros by STYLE.md, glosses, spelling and ¿¡, the Spain transcripts (`--variety=spain --verbose`, untwinned lines read through their neutral fallback) and tests/es/spain.
+- Found: nothing to change (¿Diga?, atasco, se me ha averiado el coche, he perdido el autobús, tercera planta, conduzca con cuidado, usted to the boss).
+- Fixed: nothing. Note: "Buenos días, ingeniero, soy…" keeps the Mexican title (STYLE.md: titles as Mexicans use them); a Spaniard at home would say señor Montes.

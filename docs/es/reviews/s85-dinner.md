@@ -131,3 +131,31 @@ speaker's voice. No plural items, no values.
   noches" as a hello at any hour (both handled here).
 - Left as they are: "¿Es casera?" gets "¡Sí, yo! Bueno, el flan lo hizo Natalia"; a bare "¿Qué lleva?" at the flan gets
   the recipe by text; "¿Qué hora es?" isn't understood (global, rare here).
+
+## Spain twins (11 Nov 2026)
+
+- 57 Spain twins (lines and hints), 22 items in tests/es/spain/s85-dinner.json (all understood, 0 false accepts).
+- Register: Diego and Natalia say tú to the learner in every variety. **Change:** the learner's hints to both hosts
+  move from ustedes to **vosotros** in Spain (friends one says tú to): ¡Qué alegría veros!, Esto es para vosotros,
+  Os he traído…, ¿Os ayudo en algo?, Os aviso cuando llegue. The English note on gf_for_you ("Ustedes: you're
+  speaking to…") is shared by all three texts and still says ustedes; left for the lead.
+- Words: ¿Qué te pongo (de beber)?, te apetece, ¡Que aproveche!, ¡Ya está!, café (for cafecito), trocito, sitio (for
+  lugar), judías, madre (for la mamá de Natalia), majo / maja, ¡Qué bien! / ¡Qué alegría! (for ¡Qué bueno! / ¡Qué
+  gusto!), menos mal, ¡Espera!, se me ha ido la mano con la sal, no tenías que haberte molestado, ¡Claro que sí!
+  (for the learner's ¡Con gusto!), ¡estaba buenísima!.
+- Spain's present perfect for what just happened: qué bien que hayas venido, has venido, has llegado, se me ha
+  olvidado, he hecho, se me ha quemado, has traído, os he traído, ¿Has cocinado tú?, me lo he pasado muy bien, nos
+  ha encantado verte, qué bien que te haya gustado.
+- Grammar: que aproveche, aseo / servicios, qué alegría veros, no he traído nada, quién ha preparado / lo has hecho
+  tú, trocito, fregar los platos, me lo he pasado muy bien. Merges for the new units.
+- Left for the lead (global.ts): "¿Qué tal estáis?" isn't read as g_howareyou ("¿Cómo estáis?" is).
+
+After pass B (merge of es-spain 98cfaffc, 12 Nov 2026): the new for_the_road_flan line gets its Spain twin, "¡Espera!
+Te pongo un trozo de flan para llevar." (like for_the_road's "¡Espera!").
+
+## Spain review (12 Nov 2026)
+
+- Checked (fresh reviewer): every twin against its Mexican line (meaning, facts, prices, names), Peninsular wording, the perfect for today's events, tú/usted and vosotros by STYLE.md, glosses, spelling and ¿¡, the Spain transcripts (`--variety=spain --verbose`, untwinned lines read through their neutral fallback) and tests/es/spain.
+- Found: vosotros/os agree everywhere the learner speaks to both hosts (veros, para vosotros, os he traído, ¿os ayudo?, os aviso); the hosts' own lines are tú to the guest and nos/-mos for themselves. "Bueno, el flan lo hizo Natalia" (two lines) had no twin: Spain says the perfect for a dish on today's table.
+- Fixed: twins "…el flan lo ha hecho Natalia" (both lines). Spain corpus +2 (¿Lo habéis hecho vosotros?, ¡Qué casa más bonita tenéis!); made_yourself takes "lo habéis hecho vosotros".
+- For the owner: the hint notes and the intro are English and not per variety, so Spain shows "Ustedes: you're speaking to both hosts" under "Esto es para vosotros" (also gr_glad, hp_can_i) and the intro says "use ustedes".

@@ -1,0 +1,97 @@
+{
+"situation": "s71a-rental",
+"items": [
+{
+"ctx": "resv",
+"say": "Hola, tengo una reserva",
+"intent": "have_resv"
+},
+{
+"ctx": "resv",
+"say": "He reservado un coche por internet",
+"intent": "have_resv"
+},
+{
+"ctx": "resv",
+"say": "Quiero alquilar un coche",
+"intent": "rent_walkin"
+},
+{
+"ctx": "size",
+"say": "¿Qué coches tiene?",
+"intent": "sizes_q"
+},
+{
+"ctx": "size",
+"say": "¿Cuánto cuesta un todoterreno?",
+"intent": "price_q"
+},
+{
+"ctx": "size",
+"say": "Un monovolumen, por favor",
+"intent": "size_ctx"
+},
+{
+"ctx": "license",
+"say": "Aquí tiene mi carné de conducir",
+"intent": "here_docs"
+},
+{
+"ctx": "license",
+"say": "¿Sirve mi carné de conducir de Estados Unidos?",
+"intent": "license_q"
+},
+{
+"ctx": "tpl",
+"say": "Vale, lo pago",
+"intent": "ok_ack"
+},
+{
+"ctx": "insurance",
+"say": "Quiero el seguro a todo riesgo",
+"intent": "ins_full"
+},
+{
+"ctx": "insurance",
+"say": "No necesito el seguro a todo riesgo",
+"intent": "ins_basic"
+},
+{"ctx": "insurance", "say": "Sí, añádamela, por favor", "intent": ["ins_full", "ins_yes_ctx", "yn:yes"]},
+{"ctx": "insurance", "say": "Añádame la cobertura a todo riesgo", "intent": "ins_full"},
+{
+"ctx": "deposit",
+"say": "Vale, no hay problema",
+"intent": "ok_ack"
+},
+{
+"ctx": "fuel",
+"say": "Lo devuelvo con el depósito lleno",
+"intent": "fuel_full"
+},
+{
+"ctx": "fuel",
+"say": "Prefiero pagar la gasolina por adelantado",
+"intent": "prepay_yes"
+},
+{
+"ctx": "extras",
+"say": "No, gracias, uso el móvil",
+"intent": "extras_no"
+},
+{
+"ctx": "keys_thanks",
+"say": "¿Dónde está el coche?",
+"intent": "where_car"
+},
+{
+"ctx": "keys_thanks",
+"say": "¿Qué hago si veo un arañazo?",
+"intent": "scratch_q"
+},
+{
+"ctx": "sign",
+"say": "Ya está, ya he firmado",
+"intent": "ok_ack"
+}
+]
+}

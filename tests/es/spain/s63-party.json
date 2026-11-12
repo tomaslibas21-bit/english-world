@@ -1,0 +1,19 @@
+{ "situation": "s63-party", "items": [
+  {"ctx": "name", "say": "Hola, soy Ryan. Encantado", "intent": ["intro_name", "nice_meet"]},
+  {"ctx": "name", "say": "¿Cómo te llamas?", "intent": "ask_name"},
+  {"ctx": "drink", "say": "Sí, una cerveza, porfa", "intent": ["drink_ans"], "slots": {"drink": "beer"}},
+  {"ctx": "drink", "say": "Un zumo de naranja, por favor", "intent": ["drink_ans"], "slots": {"drink": "juice"}},
+  {"ctx": "drink", "say": "No, gracias, estoy bien", "intent": ["drink_no", "drink_no_ctx"]},
+  {"ctx": "know", "say": "Trabajamos juntas", "intent": "know_ans"},
+  {"ctx": "from", "say": "Soy de Inglaterra, ¿y tú?", "intent": ["from_ans", "q_from", "ask_back"]},
+  {"ctx": "job", "say": "Soy camarera", "intent": "job_ans", "slots": {"job": "mesero"}},
+  {"ctx": "job", "say": "Soy fontanero", "intent": "job_ans", "slots": {"job": "plomero"}},
+  {"ctx": "job", "say": "¿Y tú a qué te dedicas?", "intent": "q_job"},
+  {"ctx": "like", "say": "Sí, me encanta", "intent": "like_yes"},
+  {"ctx": "fun", "say": "Me gusta correr y leer", "intent": "fun_ans"},
+  {"ctx": "why", "say": "Por el trabajo", "intent": "why_ans"},
+  {"ctx": "drink", "say": "No bebo alcohol", "intent": ["drink_no"]},
+  {"ctx": "name", "say": "¡Hola! ¿Qué tal estáis?", "intent": ["g_howareyou"]},
+  {"ctx": "drink", "say": "Vengo conduciendo, no puedo beber", "intent": "drink_no", "not": ["drink_ans"]},
+  {"ctx": "cafe", "say": "Sí, ya he ido", "intent": "cafe_ans_yes"}
+] }

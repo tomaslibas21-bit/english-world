@@ -1,14 +1,14 @@
-// The Spanish edition's choice of Spanish: Mexican (the default) or neutral Latin American, for the lines that have a
-// neutral twin (docs/es/STYLE.md). Kept apart from the settings, so the English edition's saved settings stay as they
+// The Spanish edition's choice of Spanish: Mexican (the default), neutral Latin American, or Spain's, for the lines that
+// have a twin (docs/es/STYLE.md). Kept apart from the settings, so the English edition's saved settings stay as they
 // are; the English edition never reads it.
-import { setVariety } from "../convo/compose";
+import { setVariety, type Variety } from "../convo/compose";
 import { EDITION } from "../edition";
 
-export type Variety = "default" | "neutral";
+export type { Variety };
 const KEY = `${EDITION.storage}-variety`;
 
 export function loadVariety(): Variety {
-  try { return localStorage.getItem(KEY) === "neutral" ? "neutral" : "default"; } catch { return "default"; }
+  try { const v = localStorage.getItem(KEY); return v === "neutral" || v === "spain" ? v : "default"; } catch { return "default"; }
 }
 
 /** Choose, remember and apply (the next line said or shown uses it). */

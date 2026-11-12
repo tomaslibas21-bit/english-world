@@ -4,7 +4,7 @@
 // (src/game/audio.ts).
 // Two accents, one switch: the Settings choice of Mexican or neutral Latin American Spanish (src/state/variety.ts,
 // compose's variety) picks both the text (a line's neutral twin) and the voices: es_<npcId> speak Mexican Spanish,
-// esn_<npcId> neutral Latin American Spanish, with the same Gemini voice and manner. One manifest holds both sets
+// esn_<npcId> neutral Latin American Spanish, esp_<npcId> Spain's (Castilian), with the same Gemini voice and manner. One manifest holds both sets
 // (the voice id is part of every clip's key), so text and pronunciation always match.
 import type { NpcDef } from "./npcs";
 import { variety } from "../../../convo/compose";
@@ -15,8 +15,8 @@ export const VOICES_V2 = true;
 /** The clip folder next to the game. */
 export const audioDir = (_v2 = VOICES_V2) => "audio-es/";
 
-/** The voice set of the Spanish the learner chose: "es" (Mexican, the default) or "esn" (neutral). */
-const set = () => (variety() === "neutral" ? "esn" : "es");
+/** The voice set of the Spanish the learner chose: "es" (Mexican, the default), "esn" (neutral) or "esp" (Spain's). */
+const set = () => { const v = variety(); return v === "neutral" ? "esn" : v === "spain" ? "esp" : "es"; };
 
 /** A character's voice id. */
 export const npcVoice = (n: NpcDef | undefined, _v2 = VOICES_V2): string => (n ? `${set()}_${n.id}` : `${set()}_coach_f`);

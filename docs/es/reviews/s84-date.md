@@ -113,3 +113,24 @@ is (lang.ts/nlu.ts: fixed negative phrases like "no te preocupes", "no pasa nada
 (2) lines-es.ts: in a conversation whose partner is the learner's choice (s84), voice every line in both partners'
 voices instead of the ones heard (the sims cover it here). **Owner:** the bill ($900 for two) and the dates' own facts
 (born in Puerto Colibrí, 31, a younger sister, parents nearby, the cat Luna) are new.
+
+## Spain twins (11 Nov 2026)
+
+- 48 Spain twins (lines and hints), 21 items in tests/es/spain/s84-date.json (all understood, 0 false accepts).
+- Register: no change. The date says tú both ways in every variety; one person, so no vosotros.
+- Words: aparcar, ¿Pagamos a medias?, cada uno, jersey, padres (for mis papás), calles (for cuadras), me viene bien
+  (for me queda bien), háblame de ti, qué detalle / majo, maja (for qué lindo), ¡Qué bien! (for ¡Qué bueno!), menos mal,
+  ¡Pues claro! (for ¡Obvio!), ¿vale? at the end of a request, ¡De nada! (for ¡Con gusto!), me alegro mucho, me lo he
+  pasado muy bien / genial (for la pasé), más o menos un diez por ciento (for como el diez).
+- Compliments: "te ves muy bien" becomes "estás muy guapo / guapa" in the partner's lines (the learner's gender) and
+  "¡Estás genial!" in the learner's hints (a hint can't follow the partner's gender).
+- Spain's present perfect for what just happened: he llegado, ya has llegado, ha llegado, te lo he dicho, no hemos
+  pedido, no nos han traído / han traído la cuenta, he ido, me ha encantado conocerte.
+- Grammar: me viene bien wherever me queda bien is read, para mí lo mismo, ¿cuánto ha sido?, jersey in @jacket,
+  ¿vienes mucho por aquí?. Merges for the new units.
+
+## Spain review (12 Nov 2026)
+
+- Checked (fresh reviewer): every twin against its Mexican line (meaning, facts, prices, names), Peninsular wording, the perfect for today's events, tú/usted and vosotros by STYLE.md, glosses, spelling and ¿¡, the Spain transcripts (`--variety=spain --verbose`, untwinned lines read through their neutral fallback) and tests/es/spain.
+- Found: nothing to change (perfect for tonight, aparcar, a medias, jersey, majo/maja, ¿qué día te viene bien? all right; the 10–15 % tip stays, it is Mexico's custom).
+- Fixed: nothing.

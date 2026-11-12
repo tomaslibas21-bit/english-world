@@ -34,8 +34,9 @@ decisions and the rules every conversation follows. The models that show all of 
     neutral — twin it), plátano, papa, jugo, departamento (twin: apartamento), manejar, estacionamiento,
     computadora, boleto (twin: pasaje where it matters, and entrada for a museum or a show), recámara (twin:
     dormitorio/habitación).
-- **Learners' Spain forms are correct answers** (owner, 1 Nov 2026). The town's people never say them (no Spain
-  voices, no vosotros in the game's own lines), but the checking accepts them like synonyms, with no tip:
+- **Learners' Spain forms are correct answers** (owner, 1 Nov 2026). In the Mexican and neutral texts the town's
+  people never say them (Spain's own text since 11 Nov: "Spain Spanish" below), but the checking accepts them like
+  synonyms, with no tip:
   - **vosotros** when the learner addresses two or more people: "¿Tenéis mesa?", "¿Qué queréis tomar?" (the engine
     reads the common verbs' vosotros forms as their ustedes forms; `grammarClasses` in `src/editions/es/convo/lang.ts`);
   - **Spain words**: coche (carro), móvil (celular), ordenador (computadora), zumo (jugo), patata (papa), coger (tomar),
@@ -44,8 +45,7 @@ decisions and the rules every conversation follows. The models that show all of 
   - **vale** (okay), **ponme / me pone** (Spain's way to order): in the yes answers and the order patterns.
   - Each conversation's tests include a few of them (the models have three or four each). A Spain word that isn't
     in `SPAIN` yet goes into the entity's `forms` or the pattern, or under `// NEEDS:`.
-  - Why: the town is Mexican, so Spain Spanish from its people would sound wrong, and a Spain switch would mean
-    voicing nearly every line twice; but a learner who learned "zumo" or "vosotros" is right and is understood.
+  - Why: a learner who learned "zumo" or "vosotros" is right and is understood, whichever text they chose.
 - **People:** a new Mexican cast with local names and looks (`src/editions/es/content/npcs.ts`). The owner makes new
   pictures with ChatGPT later; until then conversations show the 3D view. The 315 Maple Harbor pictures don't carry
   over.
@@ -53,6 +53,53 @@ decisions and the rules every conversation follows. The models that show all of 
   most suit both. A few are for movers: the apartment, the bank account, the job, the neighbors, the landlord.
 - **English:** all help, hints, glosses, notes and tips are in **American English** (owner's rule for all course
   content).
+
+## Spain Spanish (the third text, owner 11 Nov 2026)
+
+The Settings switch has three choices: **México** (the default), **Latinoamérica** (neutral) and **España**. A line's
+`spain:` twin is what a learner who chose España sees and hears (the `esp_` voices, a Castilian accent). A line without
+one says its neutral twin, else itself (compose.ts). The town, the people, the names, the prices in pesos, the places
+and the pictures stay Mexican: only the **Spanish** changes, as if Spaniards ran the conversation in that town.
+
+Start from the neutral text and change only what Spain says otherwise:
+
+- **Plural "you": vosotros** where the speaker says tú to each person ("¿Qué queréis tomar?", "Pasad", "vuestra
+  mesa"); **ustedes** stays where they say usted to each (officials, the bank, the doctor, older people).
+- **Spain's tú and usted** (`informalSpain` in npcs.ts; compose.ts `addressInformal`):
+  - **tú** both ways with young people and casual service: the café (Mariana), the restaurant (Luis, Lucía), the
+    clothes shop (Valeria), the salon (Paty), plus everyone already `informal` (the gym's Mónica, friends, the party,
+    coworkers, the date, neighbors of the learner's age). Their own lines and the learner's hints and examples to them
+    become tú in the twin ("¿Qué te pongo?", "¿Me pones un café?"). Lines shared from global.ts with `{u:|t:}` follow
+    by themselves.
+  - **usted** with officials (passport, customs, police, airport security), the bank, the doctor and the clinic,
+    the pharmacist, the hotel, older people (Doña Carmen, Doña Lupe, Don Rigo, Don Pancho…), landlords, the job
+    interview and anyone senior. Usted to one person stays as it is.
+  - Where a conversation's brief says tú or usted, the Spain twin may differ only by this rule: note each such change
+    in the conversation's review (docs/es/reviews/<id>.md).
+- **Spain's everyday words** where the neutral text has a Latin American one: coche (carro, auto), móvil (celular),
+  ordenador / portátil (computadora), zumo (jugo), patatas (papas), conducir (manejar), aparcar / aparcamiento
+  (estacionar / estacionamiento), billete (boleto, pasaje), piso (departamento, apartamento), gafas (lentes),
+  melocotón (durazno), judías (frijoles), gambas (camarones), guisantes (chícharos), nata (crema), tarta (pastel),
+  frigorífico / nevera (refrigerador), grifo (llave), ducha (regadera), dormitorio (recámara), salón (sala),
+  vaqueros (jeans), chaqueta (chamarra), jersey (suéter), zapatillas (tenis), bañador (traje de baño), camarero
+  (mesero), fontanero (plomero), **vale** (okay, de acuerdo, está bien where it means "okay"), ¿diga? / ¿dígame? (the
+  phone's "¿bueno?"/"¿aló?"), ahora mismo / enseguida, ¿qué te pongo? (the bar's "¿qué te sirvo?"), coger (to take a
+  bus or a taxi), la cuenta, el aseo / los servicios (the restroom).
+  Things that exist only in Mexico keep their Mexican names (tacos, tortillas, cenote, palapa, zócalo, tianguis,
+  mercado, colectivo, OXXO-like tiendas, pesos).
+- **Time**: "las nueve menos cuarto", "las nueve menos veinte" (the spoken time does it by itself; a time written into
+  a line's words, "cuarto para las nueve", needs the twin). Letters: be, uve, uve doble (by themselves).
+- **Entities**: a thing named with a Latin American noun gets `attrs.spain` (and `spainPl`, `spainG`, `spainF` like
+  `neutral*`): `attrs: { neutral: "auto", spain: "coche" }`.
+- **The twin changes only what it must**, keeps the line's ids, units in step with their glosses (glosses: "you
+  (all)" for vosotros forms where English needs it to be clear), and its English. No Spain slang (tío, guay, mola,
+  hostia), no Castilian spelling of loanwords beyond what is usual (wifi, email).
+- **Accepted answers**: the grammar keeps accepting every variety's forms, the learner's Latin American ones too, with
+  no tip for tú to Spain's informal-service staff. Each conversation gets a Spain corpus `tests/es/spain/<id>.json`
+  (the corpus format: what a learner from Spain says at each context, with vosotros, Spain's words and tú where Spain
+  says it): `coverage.ts <id> --dir=tests/es/spain --variety=spain` 0 false accepts.
+- **Checks**: `check-content.ts <id> --variety=spain --verbose` 0 errors (its warnings list the Latin American words a
+  line still says in Spain's text), and the usual Mexican and neutral gates unchanged.
 
 ## Usted and tú
 
@@ -67,7 +114,7 @@ decisions and the rules every conversation follows. The models that show all of 
   (a short English tip: "With staff, usted is more polite…"). Never block a conversation over the register.
 - Usted forms to know: puede, tiene, quiere, me da, deme, dígame, pase, siéntese, perdone/disculpe, su (your).
   Tú forms: puedes, tienes, quieres, me das, dame, dime, pasa, siéntate, perdona/disculpa, tu.
-- Plural "you" is always **ustedes** (Latin America; never vosotros).
+- Plural "you" is always **ustedes** in the Mexican and neutral texts; Spain's text says vosotros (above).
 
 ## The learner's gender
 

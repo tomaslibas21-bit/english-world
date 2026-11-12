@@ -138,3 +138,21 @@ card machine, receipt and hours, an acetaminophen allergy, "no me hizo nada" + c
 - Voices: s75's list grows by ~314 clips per accent (the 300 shortfalls and ~22 new or changed lines), about $0.22.
 - One speaker (Don Héctor), so no line is shared by two voices; no `attrs.plural` items (pastillas and curitas are written
   plural and come out plural).
+
+## Spain twins (11 Nov 2026)
+
+12 twins. Don Héctor keeps usted (no register change). Spain: "no conduzca", datáfono, móvil (hint), "Ya está, ya ha
+pasado", "Me alegro de verlo otra vez. ¿Viene con una receta?", "Ahora mismo" / "Claro" for "Con gusto", "solo" for "nada más",
+"detrás del mostrador", "¡Que se mejore pronto!". Spain corpus: 12 items (vengo a por, constipado, conducir, vale).
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer, against docs/es/STYLE.md "Spain Spanish": every line's Spain reading (twin, else neutral), the hints and
+example answers, tú/usted and vosotros by the Spain rule, meaning and English against the Mexican line, Mexican-only
+things kept, and the Spain corpus.
+
+Found and fixed: ¿Qué le damos? / ¿Qué se le ofrece? → ¿Qué necesita? / ¿Qué desea?; ¿Trae…? → ¿Tiene…?; el doctor → el médico (vaya al médico, pasar a ver al médico, consulta), grammar takes it; tableta(s) → pastilla(s); presión → tensión; el antigripal ya trae → lleva; no se asolee → no tome el sol; curitas → tiritas (entity attrs.spain too); por cinco días → durante; gracias por decírmelo; hints in the perfect (me he quemado, me han picado los mosquitos).
+
+English of every twin checked against its Mexican line (restored where a twin had rephrased it). Spain corpus items
+added for the new forms. Gates: Mexican, neutral and Spain checks 0 errors; coverage 0 false accepts.
+

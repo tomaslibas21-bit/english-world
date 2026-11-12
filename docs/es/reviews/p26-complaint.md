@@ -128,3 +128,30 @@ nueve pesos"); every value said is in it.
 ofrecimiento)" (p26 has it locally); "folio" for a case number is Mexican (and Chilean) usage, untwinned here and in
 s91b: STYLE.md's list with "número de referencia / de reporte" as the twin, if the owner wants it; lines-es.ts voices
 every global line for harbor_bot (the recorded message), which never says one.
+
+## Spain twins (11 Nov 2026)
+
+26 Spain twins (lines and hints), no register change: Jorge, Brenda and the learner keep usted (customer service).
+Spain's call-center Spanish: "le atiende Jorge" (habla Jorge), "soy Brenda", "le paso con mi gerente" (lo comunico),
+programar (agendar) the visit, número de referencia (folio), apuntar (anotar), atención al cliente, "Es válido
+durante seis meses" (tiene vigencia), montado (armado), comprobar (revisar), "que tenga un buen/excelente día"
+(Spain says the article), solo (nada más), oír (escuchar). Spain's present perfect for what has just happened: ¿Qué
+ha pasado?, ¿ya ha comprobado…?, ¿ha probado a apretar…?, Jorge ya me ha explicado. Kept: Profeco (Mexico's consumer
+office; the sofa and the shop are in Puerto Colibrí), the dates, pesos. The learner's angry plural "Sois unos
+inútiles" is read too (Spain says vosotros to a company's staff when it's rude; ustedes stays in the hints). Patterns
+take ha llegado / no ha venido, lo he comprobado, bien montado, sois, prográmelo, como muy tarde, boli / cojo /
+apuntar / apuntado. Spain corpus: 21 items, 20/20, 0/1 false accepts. Gates: Mexican, neutral and Spain 0 errors,
+sims 12/12; corpus 390/390 0/61; held-out 38/40 0/3 (unchanged).
+
+After pass B (merge of es-spain 98cfaffc, 12 Nov 2026): the folio lines got neutral "número de reporte" twins; their
+Spain twins stay "número de referencia" (and "¿Tiene dónde apuntar?"), now beside the neutral ones.
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer, all Spain twins and the untwinned lines as Spain hears them (NPC lines and hints), the Spain corpus.
+
+Checked: Jorge and Brenda usted both ways, the hold messages, the visit and refund facts, the reference number.
+Found and fixed: the Spain twin of kyle_tuesday_ok still said "¡Listo!" (→ "¡Perfecto!"); "costo" in eight lines (no tiene ningún costo, sin costo, Brenda's visit facts, the pickup) (→ coste); "Lamento que hoy no pudiéramos resolverlo" (→ "no hayamos podido"); the hint "Sí, ya lo revisé" to "¿ya ha comprobado…?" (→ "Sí, ya lo he comprobado."). The cost patterns and COST_Q read coste too.
+Kept: gerente, Profeco, días hábiles.
+Spain corpus +2 (coste).
+Gates: tsc clean; check-content Mexican, neutral and Spain 0 errors, 0 warnings; corpus 393/393 0/61; held-out 38/40 (unchanged); Spain 22/22 0/1; vitest es 178/178.

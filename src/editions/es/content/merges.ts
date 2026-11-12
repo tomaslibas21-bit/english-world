@@ -57,7 +57,12 @@ export const MERGES: Record<string, MergeRecord> = {
   "tómate tu tiempo": LEX("tómate → take (tú) + tu → your + tiempo → time; = take your time."),
   "sin prisa": LEX("sin → without + prisa → hurry; = no rush."),
   "no pasa nada": LEX("no → not + pasa → happens + nada → nothing; = no worries."),
+  "deja que": LEX("deja → let + que → that; with a subjunctive = let me (Spain: deja que te lo enseñe)."),
+  "deje que": LEX("deje → let (usted) + que → that; with a subjunctive = let me (Spain: deje que se lo enseñe)."),
   "me alegro": LEX("me → myself + alegro → I gladden; = I'm glad."),
+  "qué bien": LEX("qué → what + bien → well is a word-for-word exclamation; = how nice, great."),
+  "menos mal": LEX("menos → less + mal → bad; Spain's set phrase = good thing, thank goodness."),
+  "ahora mismo": LEX("ahora → now + mismo → same is false; = right now, right away."),
   "aquí está": LEX("aquí → here + está → is; = here it is."),
   "ahí está": LEX("ahí → there + está → is; = there it is."),
   "lo de siempre": LEX("lo → it + de → of + siempre → always; = the usual."),
@@ -79,6 +84,7 @@ export const MERGES: Record<string, MergeRecord> = {
   "para aquí": LEX("para → for + aquí → here; = for here."),
   "en efectivo": LEX("en → in + efectivo → effective; paying = in cash."),
   "a nombre de": LEX("a → to + nombre → name + de → of; = under the name of / for."),
+  "documento de identidad": LEX("documento → document + de → of + identidad → identity: one noun, an ID.", "Three words of one noun."),
   // telling the time
   "en punto": LEX("en → in + punto → point; = o'clock (sharp)."),
   "y media": LEX("y → and + media → half; = thirty (half past)."),
@@ -88,6 +94,9 @@ export const MERGES: Record<string, MergeRecord> = {
   "de la mañana": LEX("de → of + la → the + mañana → morning; after a time = a.m."),
   "de la tarde": LEX("de → of + la → the + tarde → afternoon; after a time = p.m."),
   "de la noche": LEX("de → of + la → the + noche → night; after a time = p.m. (at night)."),
+  "por la mañana": LEX("por → by + la → the + mañana → morning; Spain's time phrase = in the morning (en la mañana)."),
+  "por la tarde": LEX("por → by + la → the + tarde → afternoon; Spain's time phrase = in the afternoon (en la tarde)."),
+  "por la noche": LEX("por → by + la → the + noche → night; Spain's time phrase = at night (en la noche)."),
   // directions
   "a la derecha": LEX("a → to + la → the + derecha → right; = on the right / to the right."),
   "a la izquierda": LEX("a → to + la → the + izquierda → left; = on the left / to the left."),
@@ -107,7 +116,13 @@ const RULES: { re: RegExp; rec: MergeRecord }[] = [
   { re: /^se [a-záéíóúñü]+$/,
     rec: R("grammatical_fusion", "Impersonal or passive se has no English word of its own; the English verb phrase carries it (se puede → can I / is it possible).", "Two words.", "S-CLITIC") },
   // "dámelo", "tráigamela" are one word already; "me lo" / "se lo" before a verb: the two pronouns
-  { re: /^(me|te|se|nos) (lo|la|los|las)$/,
+  // Spain's perfect (docs/es/STYLE.md "Spain Spanish"): "he dicho" → "I said", "no te he entendido", "se ha ido"
+  { re: /^(no )?((me|te|se|le|lo|la|nos|os|les|los|las) ){0,2}(he|has|ha|hemos|habéis|han) [a-záéíóúñü]+(ado|ido|ído|to|cho|sto|elto|ierto|uesto)$/,
+    rec: R("grammatical_fusion", "haber + participle is one English verb (the perfect: I have said / I said); glossed together, as English often uses the simple past.", "Two to four words.", "S-PERFECT") },
+  // Spain's vosotros: "os" before a verb ("os traigo", "os lo traigo") and "os lo / os la…"
+  { re: /^(no )?os ((lo|la|los|las) )?[a-záéíóúñü]+$/,
+    rec: R("grammatical_fusion", "os → to/for you (all) before the verb, as me/te/nos are.", "Two or three words.", "S-CLITIC") },
+  { re: /^(me|te|se|nos|os) (lo|la|los|las)$/,
     rec: R("grammatical_fusion", "Two object pronouns before the verb are glossed together (me lo → it to me).", "Two words.", "S-CLITIC") },
 ];
 

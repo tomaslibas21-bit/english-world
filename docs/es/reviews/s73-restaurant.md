@@ -192,3 +192,39 @@ cash_still, tip_big, tip_amount, price_is).
 
 **Gates:** tsc clean; check-content 143/143 NLU tests, 18 sims all 12/12, fuzz 80, 0 errors 0 warnings; corpus 281/281,
 0/22 false accepts; held-out 40/40, 0/5; vitest (es) 109/109.
+
+## Spain twins (11 Nov 2026)
+
+198 Spain twins (lines, the `_pl` lines and hints), Spain nouns for 9 entities (agua sin gas / con gas, limonada
+sin gas / con gas, zumo de naranja, refresco de pomelo, patatas fritas, and the steak's points: poco hecha, medio
+hecha, al punto, hecha, muy hecha), 27 Spain multiword units in the file's `merges`.
+
+- **Register:** the brief's usted becomes **tú** in Spain (Lucía and Luis are `informalSpain`), and the waiter's
+  ustedes to a group becomes **vosotros** in every `_pl` line ("¿Qué os traigo de beber?", "Pasad por aquí", "¿Ya
+  estáis listos para pedir?", "Tomaos vuestro tiempo", "Aquí tenéis la cuenta", "¡Volved pronto!"). The learner's
+  hints say tú to them ("¿Me traes…?", "¿Nos traes la cuenta?", "¿Me cobras?", "Ponle cien pesos") and vosotros to the
+  restaurant ("¿Tenéis mesa para dos?", "¿Qué tenéis de beber?"). Lines said to one guest or a group alike (m_greet,
+  drinks_served, specials, host_order) take a Spain twin that needs no "you" ("el camarero de esta mesa", "las
+  bebidas", "Hoy recomiendo…").
+- **Spain's words:** la reserva, el camarero, la carta (the menu: el menú is a set meal in Spain), pedir (for
+  ordenar), dentro / fuera, de beber, de segundo (for plato fuerte), el punto of a steak, el datáfono, el pedido,
+  ¡Que aproveche!, calentito, pomelo, patatas, zumo, agua con gas / sin gas (in Spain "agua natural" is water that isn't
+  chilled), Spain's perfect for today ("¿Qué ha pasado?", "has pedido", "Te he traído el datáfono", "lo que ha
+  sobrado").
+- **Warnings left:** "frijoles" in ask_side, side_list and comes_side: refried beans are a Mexican dish (like tortillas),
+  and a Spaniard at a Mexican restaurant calls them frijoles, not judías.
+- **Grammar:** de primero / de segundo, "¿Qué tenéis de beber?", "Ya lo tenemos", "he pedido / no he pedido" in the
+  complaint, "Pagamos a medias".
+- Spain corpus tests/es/spain/s73-restaurant.json: 32 items, all understood.
+- **For the lead:** the doneness chips ("roja", "término medio"…) and "papas fritas", "agua natural" chips stay Mexican
+  (chipLabel). Whether a sit-down restaurant's host says tú to an adult guest in Spain is the owner's call (the
+  lead's `informalSpain` on Lucía and Luis says yes; a smart Madrid restaurant would often say usted).
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
+
+- Register: Lucía and Luis say tú to one and vosotros to a group (Pasad, Seguidme, os traigo, vuestra mesa, tomaos vuestro tiempo); clitics and possessives agree. The learner's hints use tú (¿Me traes…?, ¿Me pones…?, ¿Nos traes la cuenta?, Ponle cien pesos). Correct.
+- Fixed ("Listo" as "done" is Latin American): "¡Listo, ya está tu mesa!" → "¡Perfecto, ya está tu mesa!"; "Listo, ya lo he cambiado" → "Hecho, …"; "¡Muy amable! Listo, ya está" → "¡Muy amable! Pues ya está"; tip_none_ok "Ah... muy bien. Listo." gets a twin "Ah... muy bien. Pues ya está.".
+- Justified warnings: "frijoles" in the sides (frijoles refritos, a Mexican dish).
+- Owner question: Lucía (host) keeps tú, see the hand-back.

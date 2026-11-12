@@ -22,7 +22,11 @@ export interface SentSrc {
   /** Spanish edition: the same sentence in neutral Latin American Spanish, for a line with a Mexican-only word
    *  ("ahorita", "camión", "¿mande?"). Shown and played instead when the learner chooses neutral Spanish
    *  (compose.ts `setVariety`). The grammar accepts both anyway. */
-  neutral?: Omit<SentSrc, "neutral">;
+  neutral?: Omit<SentSrc, "neutral" | "spain">;
+  /** Spanish edition: the same sentence in Spain's Spanish (docs/es/STYLE.md "Spain Spanish"): the neutral text with
+   *  vosotros for plural "you", Spain's everyday words (coche, móvil, zumo, vale…) and Spain's tú/usted. Shown and
+   *  played when the learner chooses Spain's Spanish; a line without one says its neutral twin, else itself. */
+  spain?: Omit<SentSrc, "neutral" | "spain">;
 }
 
 export interface EntityDef {
@@ -67,6 +71,8 @@ export interface HintItem {
   register?: "polite" | "neutral" | "casual";
   /** Short Lithuanian usage note. */
   note?: string;
+  /** The Spanish edition: the note for Spain's text where it differs (vosotros: "Os: to both hosts"). */
+  noteSpain?: string;
 }
 
 export interface HintGroup {

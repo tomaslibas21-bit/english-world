@@ -91,3 +91,22 @@ sets). Leads from the cross-cutting audit (N/AUDIT/cross, N/AUDIT/neutral) were 
 - STYLE.md's example "a kilo of avocados $70" no longer matches the model ($60).
 - s66-taxi glosses "joven" as "young man" for both genders too.
 - The owner: Doña Lupe vs Doña Lupita (point 3).
+
+## Spain twins (11 Nov 2026)
+
+No line twins needed: Doña Lupe keeps usted, and her lines already read as Spain's once the neutral twins apply (the
+Mexican-only "pilón", "ándale", "ahorita" have neutral twins). One Spain noun: papa → patata (`P(…, { spain: "patata" })`, the
+helper now passes `spain`). "Limón" (a Mexican lime; Spain: lima) and "chile habanero" stay Mexican, as the market's own goods.
+Spain corpus: 15 items (¿Me pone…?, póngame, patatas, vale, llevo bolsa).
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer, against docs/es/STYLE.md "Spain Spanish": every line's Spain reading (twin, else neutral), the hints and
+example answers, tú/usted and vosotros by the Spain rule, meaning and English against the Mexican line, Mexican-only
+things kept, and the Spain corpus.
+
+Found and fixed: ¿Qué le damos? / ¿Qué se le ofrece? → ¿Qué le pongo? (Dígame, joven, for pásele); ahorita/ya se los escojo → ahora; ¿Trae bolsa? → ¿Lleva bolsa? (hint: Sí, llevo bolsa); le puse → le he puesto un poco de cilantro.
+
+English of every twin checked against its Mexican line (restored where a twin had rephrased it). Spain corpus items
+added for the new forms. Gates: Mexican, neutral and Spain checks 0 errors; coverage 0 false accepts.
+

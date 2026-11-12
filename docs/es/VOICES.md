@@ -1,5 +1,11 @@
 # Puerto Colibrí's voices (Gemini)
 
+**Spain's set (11 Nov 2026):** the owner added a third text, Spain's Spanish (docs/es/STYLE.md "Spain Spanish"),
+voiced as a third set `esp_<id>` with the same Gemini voice and manner per character and a Castilian accent direction
+(casting-es.ts `ACCENTS.spain`); the samples first (`sample --accent=spain`, then `judge`), then the set after the
+freeze of all three texts. The stop line for the three sets together is **$48** (the owner topped up the Google
+balance; `voice-batch-es.ts` CAP).
+
 **Status (5 Nov 2026, 09:45):** **recording on a paid key.** The owner saved a new key on 5 Nov at 08:16; its project accepted a one-line batch at 08:19 (last night's free-tier key got a 400 `FAILED_PRECONDITION`), so billing and the Batch API are on. The samples are done (below) and chose the casting: **the catalog's native Mexican voices** (`DEFAULT_CASTING = "mexico"`). The projection from their real tokens: **85,508 clips for both sets (all 50 conversations), about $29.82 with 5% for redos, $31.34 with what the samples cost**, under the $38 stop. The full sets go to the Batch API once every spoken line is frozen (the five open calls and the 5 Nov dialogue audit land first); a line changed after that is re-voiced inside the $38. Last night's state, for the record: the free tier answered 10 requests a day and had no Batch API, so nothing was recorded then.
 
 The owner's brief (4 Nov 2026, evening): every character of the Spanish edition gets a voice of their own, made with

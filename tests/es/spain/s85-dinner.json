@@ -1,0 +1,30 @@
+{
+"situation": "s85-dinner",
+"items": [
+{"ctx": "arrive", "say": "¡Qué alegría veros!", "intent": "greet_back"},
+{"ctx": "arrive", "say": "Hola, ¿cómo estáis?", "intent": "g_howareyou"},
+{"ctx": "arrive", "say": "Os he traído unas flores", "intent": "gift", "slots": {"gift": "flowers"}},
+{"ctx": "arrive", "say": "Perdonad, no he traído nada", "intent": "no_gift"},
+{"ctx": "arrive", "say": "Muy bien, gracias, ¿y vosotros?", "intent": "g_howareyou_answer"},
+{"ctx": "coat", "say": "Esto es para vosotros", "intent": "gift"},
+{"ctx": "drink", "say": "¿Qué tenéis?", "intent": "ask_drinks"},
+{"ctx": "drink", "say": "Ponme una cerveza, por favor", "intent": "drink_ans", "slots": {"drink": "beer"}},
+{"ctx": "ready_soon", "say": "¿Os ayudo en algo?", "intent": "offer_help"},
+{"ctx": "ready_soon", "say": "¿Dónde está el aseo?", "intent": "restroom"},
+{"ctx": "dinner", "say": "¡Que aproveche!", "intent": "provecho"},
+{"ctx": "dinner", "say": "¿Quién ha preparado la cena?", "intent": "made_yourself"},
+{"ctx": "howisit", "say": "¿Lo has hecho tú?", "intent": "made_yourself"},
+{"ctx": "howisit", "say": "¿Lo habéis hecho vosotros?", "intent": "made_yourself"},
+{"ctx": "coat", "say": "¡Qué casa más bonita tenéis!", "intent": "praise_home"},
+{"ctx": "howisit", "say": "¡Está buenísima!", "intent": "praise_food"},
+{"ctx": "seconds", "say": "Vale, un poquito", "intent": "more_yes"},
+{"ctx": "dessert", "say": "Un trocito, por favor", "intent": "more_yes"},
+{"ctx": "late", "say": "¿Os ayudo a fregar los platos?", "intent": "offer_help"},
+{"ctx": "leave", "say": "Un café, por favor", "intent": "drink_ans", "slots": {"drink": "coffee"}},
+{"ctx": "stay", "say": "Vale, un ratito más", "intent": "stay"},
+{"ctx": "closing", "say": "Os aviso cuando llegue", "intent": "will_text"},
+{"ctx": "closing", "say": "Gracias a vosotros", "intent": ["thanks_end", "thanks_back_ctx"]},
+{"ctx": "closing", "say": "Me lo he pasado muy bien, gracias por todo", "intent": "thanks_end"},
+{"ctx": "coat", "say": "No me gusta vuestra casa", "intent": "any"}
+]
+}

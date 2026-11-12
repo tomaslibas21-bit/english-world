@@ -118,3 +118,22 @@ casero"; p24 says apartment 3B, the 3D door is 1B: p24's reviewer). Not handled 
 ¡Muchas gracias!" (a bare "ya sé" isn't understood, so the whole turn fails); "¿De verdad? ¡Gracias!" likewise.
 For the owner (invented, kept modest): Doña Lupita is from Puerto Colibrí and has lived in the building for over
 twenty years; a garrafón about $50 and the laundry about $30 a kilo (Riviera Maya, Nov 2026).
+
+## Spain twins (11 Nov 2026)
+
+22 twins. Doña Lupita keeps usted (older neighbor; no register change). Spain: "por la mañana / tarde / noche" (8 lines),
+"esta mañana", "¿Ya se ha mudado…?", "aparcamiento… pocas plazas", "a dos calles, todo recto", "se estropea en su piso",
+"¡Encantada!" / "claro" for "con gusto", "solo" for "nada más", "me lo devuelve", "¡qué alegría!", "¡Qué bien!". "El camión" of
+the trash and the gas stays (a truck in Spain too). Spain corpus: 13 items (grifo, aparcar el coche, ¿Le apetece…?, la semana que viene).
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer, against docs/es/STYLE.md "Spain Spanish": every line's Spain reading (twin, else neutral), the hints and
+example answers, tú/usted and vosotros by the Spain rule, meaning and English against the Mexican line, Mexican-only
+things kept, and the Spain corpus.
+
+Found and fixed: Doña Lupita: me he confundido; ¿qué se le ofrece? / lo que se le ofrezca → ¿qué necesita? / lo que necesite; toque mi puerta → llame a mi puerta; el agua de la llave no se toma → del grifo no se bebe (and the hint); paredes delgadas → finas (also the writer's twin); ¡cómo no! → ¡claro que sí!; fíjese que → pues; ni lo he oído; le bajo → la bajo (and the writer's “¿Le podría bajar…?” → ¿La podría bajar…?); han sido los de arriba; me lo ha dejado; ahí nos vemos → entonces nos vemos; me viene bien; ha sido un placer; hints: una reunión → una cena, No volverá a pasar.
+
+English of every twin checked against its Mexican line (restored where a twin had rephrased it). Spain corpus items
+added for the new forms. Gates: Mexican, neutral and Spain checks 0 errors; coverage 0 false accepts.
+

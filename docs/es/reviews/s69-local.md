@@ -175,3 +175,17 @@ neutral twin is gone (no "sitio" left).
 TOWN.md). For TOWN.md "Facts the conversations share": La Cocina de Lucía takes reservations and walk-ins may wait in
 the evening (s73, s69); taxis are hailed on avenida Juárez, the sitio is by the airport (s66, s69). "¿Qué es un
 cenote?" after the tip uses the global g_meaning, as the pending global change ("¿Qué es X?" in g_meaning) would.
+
+## Spain twins (11 Nov 2026)
+
+- 56 Spain twins (lines and hints), 15 items in tests/es/spain/s69-local.json.
+- Register: no change. The brief's usted holds in Spain too (STYLE.md: officials, the airline, the hotel, older people, anyone senior); nobody here is `informalSpain`, so no line or hint moved between tú and usted. Doña Carmen keeps usted; her mijo/mija becomes hijo/hija (an older Spanish woman's word for a younger stranger), not a register change.
+- Words: por la mañana/tarde/noche, a una/dos calles, andando, coja (colectivo, taxi), conductor, furgonetas, solo for nada más, cada poco for cada rato, ¿Qué le apetece?, ¡Claro! for ¡Con gusto!, menú del día for comida corrida, Solo va gente de aquí for Va pura gente…, Vaya sin más for Llegue y ya, no se meta en el mar, muy dulce, Me gusta andar, the perfect (¿Ya ha cenado / ha ido / ha probado…?, ¡Me ha ayudado mucho!).
+- Grammar: ask_safe and ask_walk take andar/andando; not_hungry takes ya he comido. Merges: the perfects, le apetece, sin más, menú del día, cada poco.
+- Kept: cocina económica, pan dulce, marquesitas, panuchos (the town's own).
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
+
+- Read every twin: usted kept throughout, Spain's words right (billete, tarjeta de embarque, móvil, gafas, portátil, aseos, maleta, facturar, coger, aparcamiento, coche, jersey), the perfect for what just happened, "Ya está" for "Listo", Mexican-only names kept. Meaning, glosses and spelling: no problems found. No changes.

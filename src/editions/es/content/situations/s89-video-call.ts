@@ -21,7 +21,7 @@ import { GLOBAL_HANDLERS, expectHowAreYou } from "@/content/global";
 // Tasks for the learner's update
 
 const TASKS: EntityDef[] = [
-  ent("report", "reporte", "report", "m", { forms: ["reportes", "informe", "informes", "reporte mensual", "reporte de ventas", "reporte semanal"], chip: "el reporte" }),
+  ent("report", "reporte", "report", "m", { forms: ["reportes", "informe", "informes", "reporte mensual", "reporte de ventas", "reporte semanal", "informe mensual", "informe de ventas", "informe semanal"], chip: "el reporte", attrs: { spain: "informe", spainPl: "informes" } }),
   // "¿Y cómo vas con tu proyecto?" → "El proyecto va bien", "Estoy con un proyecto nuevo"
   ent("project", "proyecto", "project", "m", { forms: ["proyectos", "proyecto nuevo", "nuevo proyecto"], chip: "el proyecto" }),
   ent("presentation", "presentación", "presentation", "f", { forms: ["presentaciones", "powerpoint", "power point"], chip: "la presentación" }),
@@ -40,8 +40,8 @@ const TASKS: EntityDef[] = [
   ent("contract", "contrato", "contract", "m", { forms: ["contratos"], chip: "el contrato" }),
   ent("design", "diseño", "design", "m", { forms: ["disenos", "logo", "logotipo", "nuevo diseno"], chip: "el diseño" }),
   ent("invoices", "factura", "invoice", "f", { forms: ["facturas", "facturacion"], chip: "las facturas", attrs: { plural: true } }),
-  ent("training", "plan | de | capacitación", "plan | of | training", "m", { pl: "planes | de | capacitación", forms: ["capacitacion", "plan de entrenamiento", "entrenamiento", "curso de capacitacion"],
-    chip: "el plan de capacitación", attrs: { nat: "training plan", natPl: "training plans" } }),
+  ent("training", "plan | de | capacitación", "plan | of | training", "m", { pl: "planes | de | capacitación", forms: ["capacitacion", "plan de entrenamiento", "entrenamiento", "curso de capacitacion", "formacion", "plan de formacion", "curso de formacion"],
+    chip: "el plan de capacitación", attrs: { nat: "training plan", natPl: "training plans", spain: "plan | de | formación", spainPl: "planes | de | formación" } }),
   ent("campaign", "campaña | de | marketing", "campaign | of | marketing", "f", { pl: "campañas | de | marketing", forms: ["campana", "campana de mercadotecnia", "campana publicitaria", "campanas"],
     chip: "la campaña de marketing", attrs: { nat: "marketing campaign", natPl: "marketing campaigns" } }),
 ];
@@ -291,7 +291,7 @@ export const videoCall: SituationDef = {
       when_past: "[ayer | la semana pasada | el viernes | esta manana | hoy | ya | el fin de semana]",
       // "ahora estoy trabajando en…", "esta semana terminé…"
       upd_pre: "[ahora | ahorita | esta semana | hoy | la semana pasada | ayer | bueno | pues | entonces | por ahora | de momento]",
-      done_v: "(terminé | acabé | entregué | mandé | envié | hice | preparé | cerré | firmé | lancé | publiqué | subí | arreglé | revisé | actualicé | completé | escribí | diseñé)",
+      done_v: "(terminé | acabé | entregué | mandé | envié | hice | preparé | cerré | firmé | lancé | publiqué | subí | arreglé | revisé | actualicé | completé | escribí | diseñé | he terminado | he acabado | he entregado | he mandado | he enviado | he hecho | he preparado | he cerrado | he firmado | he lanzado | he publicado | he subido | he arreglado | he revisado | he actualizado | he completado | he escrito | he diseñado)",
       do_v: "(haciendo | preparando | escribiendo | terminando | revisando | actualizando | disenando | armando | planeando | corrigiendo | acabando)",
       mtg: "(junta | reunion | llamada | videollamada)",
       sofia_cut: "(se esta cortando | te estas cortando | se te esta cortando | se te corta | se corta | te cortas | se corto | se cortó)",
@@ -378,7 +378,7 @@ export const videoCall: SituationDef = {
       "[ay] [perdon] (ya | ahora) me (ven | ves | veis) [bien] #h:cam_see_now",
       "ahora si me (ven | ves)",
       "me (ven | ves | veis) (ahora | ya) [bien]",
-      "[ya] la (prendi | encendi | activé | puse) [ya]",
+      "[ya] la (prendi | encendi | activé | puse | he encendido | he puesto | he activado) [ya]",
       "ya (esta | quedó) (prendida | encendida | activada)",
       "[ya] (prendi | encendi | activé) (la | mi) camara",
       "[listo] ya (me ven | aparezco)",
@@ -392,7 +392,7 @@ export const videoCall: SituationDef = {
     better_now_ctx: { patterns: ["(ahora | ya)"] },
     cam_fix_ctx: { patterns: [
       "[ay] (perdon | perdona | perdonen | disculpa | disculpen | una disculpa | lo siento | ups) [no me (di | habia dado) cuenta]",
-      "[ay] [perdon | perdona | disculpa | disculpen] [ahorita | ya | ahora] (prendo | enciendo | activo | pongo) (la | mi) camara [ahorita | ya]",
+      "[ay] [perdon | perdona | disculpa | disculpen] [ahorita | ya | ahora | ahora mismo] (prendo | enciendo | activo | pongo) (la | mi) camara [ahorita | ya | ahora mismo]", "[ay] [perdon | perdona] (ahora mismo | enseguida) la (enciendo | pongo | activo)",
       "un (segundo | momento | segundito | momentito) [ya | ahorita] la (prendo | enciendo | activo | pongo)",
       "[ay] (perdon | perdona | disculpa | disculpen) [ahorita | ya] la (prendo | enciendo | activo | pongo)",
       "(ahorita | ahora | ya) la (prendo | enciendo | activo | pongo)",
@@ -488,7 +488,7 @@ export const videoCall: SituationDef = {
       "(hazle | haz) zoom", "mas grande",
     ] },
     tell_freeze: { patterns: [
-      "te congelaste [sofia] #h:f_froze",
+      "te congelaste [sofia] #h:f_froze", "te has (congelado | quedado congelada | quedado pillada) [sofia]",
       "(te quedaste | estas | sigues) (congelada | trabada | pegada)",
       "se te (congeló | trabó) [la imagen | la pantalla | el video]",
       "(te trabaste | se congeló | se trabó) [la imagen | la pantalla | el video | la llamada]",
@@ -797,14 +797,14 @@ export const videoCall: SituationDef = {
       "[yo] no voy a estar [la (proxima | siguiente) semana] [(estoy | voy a estar) de (vacaciones | viaje)]",
     ] },
     bye_all: { patterns: [
-      "(adios | bye | hasta luego | nos vemos | chao | hasta la proxima) [a todos | chicos | equipo] #h:b_bye",
+      "(adios | bye | hasta luego | nos vemos | chao | hasta la proxima) [a todos | chicos | equipo] #h:b_bye", "[venga | vale] hasta la semana que viene [a todos | chicos | equipo]",
       "que (tengan | tengas) (buen dia | buena semana | un buen dia | una buena semana | buen lunes)",
       "gracias a todos [adios | bye]",
     ] },
     bye_paul: { patterns: [
       "(adios | bye | nos vemos | cuidate | hasta luego) pablo #h:pl_bye",
       "(no te preocupes | no pasa nada | no hay problema) (adios | bye | nos vemos | cuidate | hasta luego)",
-      "(suerte | mucha suerte | que te vaya bien) (en | con) tu @mtg",
+      "(suerte | mucha suerte | que te vaya bien) (en | con) (tu | la) @mtg",
       "(suerte | mucha suerte)",
     ] },
     // "No te preocupes" when Pablo has to leave (a bare reassurance elsewhere means nothing here)
@@ -873,16 +873,16 @@ export const videoCall: SituationDef = {
 
   lines: {
     open: [
-      t("¡Hola | a todos! | ¿Me | escuchan | bien?", "Hi | everyone! | Me | do you hear | well?", "Hi, everyone! Can you all hear me okay?", { flags: { 3: F_USTEDES } }),
+      t("¡Hola | a todos! | ¿Me | escuchan | bien?", "Hi | everyone! | Me | do you hear | well?", "Hi, everyone! Can you all hear me okay?", { flags: { 3: F_USTEDES }, spain: t("¡Hola | a todos! | ¿Me | oís | bien?", "Hi | everyone! | Me | do you (all) hear | well?", "Hi, everyone! Can you all hear me okay?") }),
       t("¡Buenos días, | equipo! | ¿Todos | me | escuchan?", "Good morning, | team! | All of you | me | hear?", "Morning, team! Can everyone hear me?",
-        { flags: { 4: "escuchan: plural, agreeing with todos (all of you)." } }),
-      t("¡Hola! | ¿Me | escuchan? | ¿Me | ven?", "Hi! | Me | do you hear? | Me | do you see?", "Hi! Can you hear me? Can you see me?", { flags: { 2: F_USTEDES } }),
+        { flags: { 4: "escuchan: plural, agreeing with todos (all of you)." }, spain: t("¡Buenos días, | equipo! | ¿Me | oís | todos?", "Good morning, | team! | Me | do you (all) hear | everyone?", "Morning, team! Can everyone hear me?") }),
+      t("¡Hola! | ¿Me | escuchan? | ¿Me | ven?", "Hi! | Me | do you hear? | Me | do you see?", "Hi! Can you hear me? Can you see me?", { flags: { 2: F_USTEDES }, spain: t("¡Hola! | ¿Me | oís? | ¿Me | veis?", "Hi! | Me | do you (all) hear? | Me | do you (all) see?", "Hi! Can you hear me? Can you see me?") }),
     ],
     greet_back: [
-      t("¡Hola! | ¿Me | escuchan | bien?", "Hi! | Me | do you hear | well?", "Hi! Can you all hear me okay?", { flags: { 2: F_USTEDES } }),
+      t("¡Hola! | ¿Me | escuchan | bien?", "Hi! | Me | do you hear | well?", "Hi! Can you all hear me okay?", { flags: { 2: F_USTEDES }, spain: t("¡Hola! | ¿Me | oís | bien?", "Hi! | Me | do you (all) hear | well?", "Hi! Can you all hear me okay?") }),
     ],
     hear_reask: [
-      t("¿Me | escuchan | ahora?", "Me | do you hear | now?", "Can you hear me now?", { flags: { 1: F_USTEDES } }),
+      t("¿Me | escuchan | ahora?", "Me | do you hear | now?", "Can you hear me now?", { flags: { 1: F_USTEDES }, spain: t("¿Me | oís | ahora?", "Me | do you (all) hear | now?", "Can you hear me now?") }),
     ],
     hear_ok: [
       t("¡Perfecto!", "Perfect!", "Great!"),
@@ -890,7 +890,7 @@ export const videoCall: SituationDef = {
     ],
     mic_fix: [
       t("Mmm, | déjenme | revisar | el | micrófono. | ¿Y | ahora?", "Hmm, | let me | check | the | microphone. | And | now?", "Hmm, let me check my mic. How about now?",
-        { flags: { 1: "déjenme: let me, said to all of you (ustedes)." } }),
+        { flags: { 1: "déjenme: let me, said to all of you (ustedes)." }, spain: t("Mmm, | dejadme | mirar | el | micrófono. | ¿Y | ahora?", "Hmm, | let me (you all) | check | the | microphone. | And | now?", "Hmm, let me check my mic. How about now?") }),
     ],
     quiet_fix: [
       t("¡Ay, | perdón! | ¿Así | está | mejor?", "Oh, | sorry! | Like this | is it | better?", "Oh, sorry! Is this better?"),
@@ -912,7 +912,7 @@ export const videoCall: SituationDef = {
     // after a second "no" about the sound: she carries on instead of asking again
     go_on: [
       t("Bueno, | sigo. | Cualquier | cosa, | me | avisan.", "Okay, | I-go-on. | Any | thing, | me | you-all-let-know.", "Okay, I'll keep going. If anything acts up, just let me know.",
-        { flags: { 2: "cualquier cosa: anything at all; here, if anything comes up." } }),
+        { flags: { 2: "cualquier cosa: anything at all; here, if anything comes up." }, spain: t("Vale, | sigo. | Cualquier | cosa, | me | avisáis.", "Okay, | I'll go on. | Any | thing, | me | you (all) let know.", "Okay, I'll keep going. If anything acts up, just let me know.") }),
     ],
     two_minutes: [
       t("Démosle | dos | minutitos | más. | Todavía | hay | gente | conectándose.", "Let's give it | two | little minutes | more. | Still | there are | people | connecting.",
@@ -920,12 +920,12 @@ export const videoCall: SituationDef = {
     ],
     weekend_q: [
       t("Oye, | ¿qué tal | tu | fin de semana?", "Hey, | how was | your | weekend?", "So, how was your weekend?"),
-      t("Oye, | ¿cómo | estuvo | tu | fin de semana?", "Hey, | how | was | your | weekend?", "So, how was your weekend?"),
+      t("Oye, | ¿cómo | estuvo | tu | fin de semana?", "Hey, | how | was | your | weekend?", "So, how was your weekend?", { spain: t("Oye, | ¿qué tal | ha ido | el | fin de semana?", "Hey, | how | has gone | the | weekend?", "So, how was your weekend?") }),
     ],
     weekend_good: [
       t("¡Ay, | qué | bien!", "Oh, | how | good!", "Oh, nice!"),
       t("¡Qué | padre!", "How | cool!", "That sounds great!", { flags: { 1: "Mexican: padre = cool, great (elsewhere genial)." },
-        neutral: t("¡Qué | genial!", "How | great!", "That sounds great!") }),
+        neutral: t("¡Qué | genial!", "How | great!", "That sounds great!"), spain: t("¡Genial!", "Great!", "Awesome!") }),
     ],
     weekend_bad: [
       t("¡Ay, | qué | mal! | Bueno, | empieza | una | semana | nueva.", "Oh, | how | bad! | Well, | starts | a | week | new.", "Oh, that's too bad! Well, it's a new week!"),
@@ -967,17 +967,17 @@ export const videoCall: SituationDef = {
       t("Perdón, | ¿Pablo | está | en silencio | o | no?", "Sorry, | Pablo | is | on mute | or | not?", "Sorry, is Pablo on mute or not?"),
     ],
     paul_unmuted: [
-      t("¡Ay, | perdón! | ¿Ya | me | escuchan?", "Oh, | sorry! | Now | me | do you hear?", "Oh, sorry! Can you hear me now?", { flags: { 2: F_YA } }),
+      t("¡Ay, | perdón! | ¿Ya | me | escuchan?", "Oh, | sorry! | Now | me | do you hear?", "Oh, sorry! Can you hear me now?", { flags: { 2: F_YA }, spain: t("¡Ay, | perdón! | ¿Ya | me | oís?", "Oh, | sorry! | Now | me | do you (all) hear?", "Oh, sorry! Can you hear me now?") }),
     ],
     paul_reask: [
-      t("¿Ahora | sí | me | escuchan?", "Now | yes | me | do you hear?", "Can you hear me now?", { flags: { 1: "sí: stresses the change: now, for real." } }),
+      t("¿Ahora | sí | me | escuchan?", "Now | yes | me | do you hear?", "Can you hear me now?", { flags: { 1: "sí: stresses the change: now, for real." }, spain: t("¿Ahora | sí | me | oís?", "Now | — | me | do you (all) hear?", "Can you hear me now?", { flags: { 1: "sí here stresses the question: “now (for real)?”; no English word." } }) }),
     ],
     paul_ok: [
       t("Perfecto. | ¡Perdón, | chicos!", "Perfect. | Sorry, | guys!", "Great. Sorry about that, guys!"),
-      t("¡Qué | bueno! | ¡Perdón, | chicos!", "How | good! | Sorry, | guys!", "Phew! Sorry about that, guys!"),
+      t("¡Qué | bueno! | ¡Perdón, | chicos!", "How | good! | Sorry, | guys!", "Phew! Sorry about that, guys!", { spain: t("¡Qué | bien! | ¡Perdón, | chicos!", "How | great! | Sorry, | guys!", "Phew! Sorry about that, guys!") }),
     ],
     paul_ok_short: [
-      t("Está bien, | no hay problema.", "Okay, | no problem.", "Okay, no problem."),
+      t("Está bien, | no hay problema.", "Okay, | no problem.", "Okay, no problem.", { spain: t("Vale, | no hay problema.", "Okay, | no problem.", "Okay, no problem.") }),
     ],
     paul_now: [
       t("¿Y | ahora?", "And | now?", "What about now?"),
@@ -992,28 +992,28 @@ export const videoCall: SituationDef = {
     ],
     screen_share: [
       t("Bueno, | empecemos. | Les | comparto | mi | pantalla.", "Okay, | let's start. | (With) you | I-share | my | screen.", "Okay, let's get started. I'm going to share my screen.",
-        { flags: { 2: "les: (with) you all (ustedes)." } }),
+        { flags: { 2: "les: (with) you all (ustedes)." }, spain: t("Bueno, | empezamos. | Os | comparto | mi | pantalla.", "Well, | let's start. | (To) you (all) | I share | my | screen.", "Okay, let's get started. I'm going to share my screen.") }),
     ],
     screen_q: [
-      t("¿Todos | ven | mi | pantalla?", "All of you | see | my | screen?", "Can everyone see my screen?", { flags: { 1: F_USTEDES } }),
-      t("¿Ya | la | ven?", "Now | it | do you see?", "Can you all see it?", { flags: { 1: "la: it, la pantalla (the screen)." } }),
+      t("¿Todos | ven | mi | pantalla?", "All of you | see | my | screen?", "Can everyone see my screen?", { flags: { 1: F_USTEDES }, spain: t("¿Veis | todos | mi | pantalla?", "Do you see | everyone | my | screen?", "Can everyone see my screen?") }),
+      t("¿Ya | la | ven?", "Now | it | do you see?", "Can you all see it?", { flags: { 1: "la: it, la pantalla (the screen)." }, spain: t("¿Ya | la | veis?", "Now | it | do you (all) see?", "Can you all see it?", { flags: { 1: "la: it, la pantalla (the screen)." } }) }),
     ],
     screen_retry: [
-      t("Mmm, | déjenme | intentar | otra vez. | ¿Y | ahora?", "Hmm, | let me | try | again. | And | now?", "Hmm, let me try again. How about now?"),
+      t("Mmm, | déjenme | intentar | otra vez. | ¿Y | ahora?", "Hmm, | let me | try | again. | And | now?", "Hmm, let me try again. How about now?", { spain: t("Mmm, | dejadme | intentarlo | otra vez. | ¿Y | ahora?", "Hmm, | let me (you all) | try it | again. | And | now?", "Hmm, let me try again. How about now?") }),
     ],
     screen_reask: [
-      t("¿Ahora | sí | la | ven?", "Now | yes | it | do you see?", "Can you see it now?", { flags: { 1: "sí: stresses the change: now, for real.", 2: "la: it, la pantalla (the screen)." } }),
+      t("¿Ahora | sí | la | ven?", "Now | yes | it | do you see?", "Can you see it now?", { flags: { 1: "sí: stresses the change: now, for real.", 2: "la: it, la pantalla (the screen)." }, spain: t("¿Ahora | sí | la | veis?", "Now | — | it | do you (all) see?", "Can you see it now?", { flags: { 1: "sí here stresses the question: “now (for real)?”; no English word.", 2: "la: it, la pantalla (the screen)." } }) }),
     ],
     screen_give_up: [
       t("Mmm, | qué | raro. | Bueno, | les | mando | la | presentación | después.", "Hmm, | how | strange. | Okay, | (to) you | I-send | the | presentation | later.",
-        "Hmm, that's weird. Okay, I'll send you the presentation later."),
+        "Hmm, that's weird. Okay, I'll send you the presentation later.", { spain: t("Mmm, | qué | raro. | Bueno, | os | mando | la | presentación | después.", "Hmm, | how | strange. | Okay, | (to) you | I-send | the | presentation | later.", "Hmm, that's weird. Okay, I'll send you the presentation later.") }),
     ],
     screen_bigger: [
       t("Claro, | la | hago | más | grande. | ¿Así | está | mejor?", "Sure, | it | I-make | more | big. | Like this | is it | better?", "Sure, let me make it bigger. Is that better?", { flags: { 1: "la: it, la pantalla (the screen)." } }),
     ],
     present: [
       t("Miren: | este | mes | nuestras | ventas | subieron | un | diez | por ciento.", "Look: | this | month | our | sales | went up | — | ten | percent.",
-        "So, this month our sales are up ten percent.", { flags: { 6: "un: Spanish puts an article before a percentage; English has no word here." } }),
+        "So, this month our sales are up ten percent.", { flags: { 6: "un: Spanish puts an article before a percentage; English has no word here." }, spain: t("Mirad: | este | mes | nuestras | ventas | han subido | un | diez | por ciento.", "Look (all): | this | month | our | sales | have gone up | — | ten | percent.", "So, this month our sales are up ten percent.", { flags: { 6: "un before a percentage: no English word." } }) }),
     ],
     great_work: [
       t("¡Excelente | trabajo, | equipo!", "Excellent | work, | team!", "Great work, everyone!"),
@@ -1023,18 +1023,18 @@ export const videoCall: SituationDef = {
       t("¡Gracias! | Es | trabajo | de | todos.", "Thanks! | It's | work | of | everyone.", "Thanks! It's a team effort."),
     ],
     freeze_line: [
-      t("Miren: | este | mes | nuestras | ventas... | nuestras | ventas...", "Look: | this | month | our | sales... | our | sales...", "So, this month our sales... our sales..."),
+      t("Miren: | este | mes | nuestras | ventas... | nuestras | ventas...", "Look: | this | month | our | sales... | our | sales...", "So, this month our sales... our sales...", { spain: t("Mirad: | este | mes | nuestras | ventas... | nuestras | ventas...", "Look: | this | month | our | sales... | our | sales...", "So, this month our sales... our sales...") }),
     ],
     sara_froze: [
-      t("¡Sofía, | te congelaste!", "Sofía, | you froze!", "Sofía, you froze!"),
+      t("¡Sofía, | te congelaste!", "Sofía, | you froze!", "Sofía, you froze!", { spain: t("¡Sofía, | te has congelado!", "Sofía, | you've frozen!", "Sofía, you froze!") }),
     ],
     freeze_fix: [
       t("¡Perdón! | Hoy | el | internet | está | horrible. | ¿Ya | me | escuchan?", "Sorry! | Today | the | internet | is | terrible. | Now | me | do you hear?",
-        "Sorry about that! My Wi-Fi is terrible today. Can you hear me now?", { flags: { 6: F_YA } }),
+        "Sorry about that! My Wi-Fi is terrible today. Can you hear me now?", { flags: { 6: F_YA }, spain: t("¡Perdón! | Hoy | internet | va | fatal. | ¿Ya | me | oís?", "Sorry! | Today | the internet | is going | terribly. | Now | me | do you (all) hear?", "Sorry about that! My Wi-Fi is terrible today. Can you hear me now?") }),
     ],
     freeze_missed: [
       t("¡Perdón, | me congelé! | ¿Qué | me | decías?", "Sorry, | I froze! | What | (to) me | were you saying?", "Sorry, I froze! What were you saying?",
-        { flags: { 4: "decías: the imperfect, for something in progress (you were saying)." } }),
+        { flags: { 4: "decías: the imperfect, for something in progress (you were saying)." }, spain: t("¡Perdón, | me he congelado! | ¿Qué | me | decías?", "Sorry, | I've frozen! | What | (to) me | were you saying?", "Sorry, I froze! What were you saying?") }),
     ],
     freeze_where: [
       t("A ver, | ¿en qué | me quedé?", "Let's see, | where | was I?", "Okay, where was I?"),
@@ -1084,7 +1084,7 @@ export const videoCall: SituationDef = {
     sara_update: [
       t("¡Gracias! | Bueno, | ya | terminé | la | encuesta | de | clientes, | y | ahora | estoy | con | el | reporte.",
         "Thanks! | So, | already | I-finished | the | survey | of | customers, | and | now | I'm | with | the | report.",
-        "Thanks! So, I finished the customer survey, and now I'm working on the report.", { flags: { 10: "estar con: to be working on (something)." } }),
+        "Thanks! So, I finished the customer survey, and now I'm working on the report.", { flags: { 10: "estar con: to be working on (something)." }, spain: t("¡Gracias! | Bueno, | ya | he terminado | la | encuesta | de | clientes, | y | ahora | estoy | con | el | informe.", "Thanks! | Well, | already | I've finished | the | survey | of | customers, | and | now | I'm | with | the | report.", "Thanks! So, I finished the customer survey, and now I'm working on the report.") }),
     ],
     after_sara: [
       t("¡Gracias, | Sara! | ¿Y | tú?", "Thanks, | Sara! | And | you?", "Thanks, Sara! And you?"),
@@ -1109,7 +1109,7 @@ export const videoCall: SituationDef = {
     upd_ok_resp: [
       t("¡Qué | bueno! | ¿Y | en qué | estás | trabajando | ahorita?", "How | good! | And | on what | are you | working | right now?", "Good to hear! What are you working on right now?",
         { flags: { 6: F_AHORITA },
-          neutral: t("¡Qué | bueno! | ¿Y | en qué | estás | trabajando | ahora?", "How | good! | And | on what | are you | working | now?", "Good to hear! What are you working on right now?") }),
+          neutral: t("¡Qué | bueno! | ¿Y | en qué | estás | trabajando | ahora?", "How | good! | And | on what | are you | working | now?", "Good to hear! What are you working on right now?"), spain: t("¡Qué | bien! | ¿Y | en qué | estás | trabajando | ahora?", "How | great! | And | on what | are you | working | now?", "Good to hear! What are you working on right now?") }),
     ],
     // a status without the task: Sofía asks what it is (the same words as in s34, the same team in person)
     upd_problem_resp: [
@@ -1120,7 +1120,7 @@ export const videoCall: SituationDef = {
       t("Semana | pesada, | ¿eh? | ¿En qué | estás | trabajando?", "Week | heavy, | huh? | On what | are you | working?", "Busy week, huh? What are you working on?"),
     ],
     upd_done_what: [
-      t("¡Qué | bien! | ¿Qué | terminaste?", "How | good! | What | did you finish?", "Nice! What did you finish?"),
+      t("¡Qué | bien! | ¿Qué | terminaste?", "How | good! | What | did you finish?", "Nice! What did you finish?", { spain: t("¡Qué | bien! | ¿Qué | has terminado?", "How | great! | What | have you finished?", "Nice! What did you finish?") }),
     ],
     when_reask: [
       t("Entonces, | ¿para | cuándo | crees | que | tengas | {X.the} | {listo@X}?", "So, | by | when | you-think | that | you'll-have | {X.the} | ready?",
@@ -1130,7 +1130,7 @@ export const videoCall: SituationDef = {
       t("Entonces, | ¿en qué | estás | trabajando | ahora?", "So, | on what | are you | working | now?", "So, what are you working on right now?"),
     ],
     upd_nothing_resp: [
-      t("Está bien, | no te preocupes.", "Okay, | don't worry.", "Okay, no worries."),
+      t("Está bien, | no te preocupes.", "Okay, | don't worry.", "Okay, no worries.", { spain: t("Vale, | no te preocupes.", "Okay, | don't worry.", "Okay, no worries.") }),
     ],
     when_ok: [
       t("¡Perfecto, | gracias!", "Perfect, | thanks!", "Perfect, thanks!"),
@@ -1170,7 +1170,7 @@ export const videoCall: SituationDef = {
       t("¡Adiós, | Pablo!", "Bye, | Pablo!", "Bye, Pablo!"),
     ],
     paul_bye: [
-      t("¡Cuídense!", "Take care (all of you)!", "Take care!"),
+      t("¡Cuídense!", "Take care (all of you)!", "Take care!", { spain: t("¡Cuidaos!", "Take care (all)!", "Take care!") }),
       t("¡Adiós, | chicos!", "Bye, | guys!", "Bye, guys!"),
     ],
     questions_ask: [
@@ -1178,10 +1178,10 @@ export const videoCall: SituationDef = {
       t("¿Alguna | pregunta?", "Any | question?", "Any questions?"),
     ],
     qa_slides: [
-      t("¡Claro! | Les | mando | la | presentación | después de | la | llamada.", "Sure! | (To) you | I-send | the | presentation | after | the | call.", "Of course! I'll send you the presentation after the call."),
+      t("¡Claro! | Les | mando | la | presentación | después de | la | llamada.", "Sure! | (To) you | I-send | the | presentation | after | the | call.", "Of course! I'll send you the presentation after the call.", { spain: t("¡Claro! | Os | mando | la | presentación | después de | la | llamada.", "Sure! | (To) you | I-send | the | presentation | after | the | call.", "Of course! I'll send you the presentation after the call.") }),
     ],
     qa_link: [
-      t("Claro, | pongo | el | link | en | el | chat.", "Sure, | I-put | the | link | in | the | chat.", "Sure, I'll put the link in the chat."),
+      t("Claro, | pongo | el | link | en | el | chat.", "Sure, | I-put | the | link | in | the | chat.", "Sure, I'll put the link in the chat.", { spain: t("Claro, | pongo | el | enlace | en | el | chat.", "Sure, | I-put | the | link | in | the | chat.", "Sure, I'll put the link in the chat.") }),
     ],
     qa_deadline: [
       t("La | fecha límite | es | el | viernes.", "The | deadline | is | — | Friday.", "The deadline is Friday.", { flags: { 3: F_EL_DAY } }),
@@ -1193,7 +1193,7 @@ export const videoCall: SituationDef = {
       t("Claro. | Aquí | está.", "Sure. | Here | it is.", "Sure. Here it is."),
     ],
     qa_record: [
-      t("Sí, | luego | les | mando | la | grabación.", "Yes, | later | (to) you | I-send | the | recording.", "Yes, I'll send you the recording later."),
+      t("Sí, | luego | les | mando | la | grabación.", "Yes, | later | (to) you | I-send | the | recording.", "Yes, I'll send you the recording later.", { spain: t("Sí, | luego | os | mando | la | grabación.", "Yes, | later | (to) you | I-send | the | recording.", "Yes, I'll send you the recording later.") }),
     ],
     qa_none: [
       t("Perfecto.", "Perfect.", "Great."),
@@ -1256,7 +1256,7 @@ export const videoCall: SituationDef = {
       t("Este... | ¡sigues | con | la | cámara | prendida!", "Um... | you're still | with | the | camera | on!", "Um... your camera's still on!",
         { flags: { 0: "este: a filler, like um.", 5: "Mexican: prendida = on (prender = to turn on); elsewhere encendida." },
           neutral: t("Este... | ¡sigues | con | la | cámara | encendida!", "Um... | you're still | with | the | camera | on!", "Um... your camera's still on!",
-            { flags: { 0: "este: a filler, like um." } }) }),
+            { flags: { 0: "este: a filler, like um." } }), spain: t("Eh... | ¡sigues | con | la | cámara | encendida!", "Um... | you're still | with | the | camera | on!", "Um... your camera's still on!") }),
     ],
     sara_laugh: [
       t("¡Jaja! | No te preocupes. | ¡Adiós!", "Ha ha! | Don't worry. | Bye!", "Ha! No worries. Bye!"),
@@ -1277,10 +1277,10 @@ export const videoCall: SituationDef = {
         { id: "h_yes", s: t("Sí, | te | escucho | bien.", "Yes, | you | I-hear | well.", "Yes, I can hear you fine.") },
         { id: "h_loud", s: t("¡Sí, | fuerte y claro!", "Yes, | loud and clear!", "Yes, loud and clear!") },
         { id: "h_morning", s: t("¡Buenos días, | Sofía! | Sí, | te | escuchamos.", "Good morning, | Sofía! | Yes, | you | we-hear.", "Morning, Sofía! Yes, we can hear you.") },
-        { id: "h_quiet", s: t("Perdón, | se escucha | muy | bajito.", "Sorry, | it sounds | very | quiet.", "Sorry, you sound really quiet."),
+        { id: "h_quiet", s: t("Perdón, | se escucha | muy | bajito.", "Sorry, | it sounds | very | quiet.", "Sorry, you sound really quiet.", { spain: t("Perdón, | se oye | muy | bajito.", "Sorry, | it sounds | very | quiet.", "Sorry, you sound really quiet.") }),
           note: "Bajito: quiet, low (bajo with the friendly -ito)." },
         { id: "h_cant", s: t("Perdón, | no te escucho.", "Sorry, | I can't hear you.", "Sorry, I can't hear you.") },
-        { id: "q_hear_me", s: t("¿Me | escuchan?", "Me | do you hear?", "Can you hear me?"), note: "Escuchan: to the whole team (ustedes)." },
+        { id: "q_hear_me", s: t("¿Me | escuchan?", "Me | do you hear?", "Can you hear me?", { spain: t("¿Me | oís?", "Me | do you (all) hear?", "Can you hear me?") }), note: "Escuchan: to the whole team (ustedes).", noteSpain: "Oís: to the whole team (vosotros)." },
       ],
     },
     hear_now: {
@@ -1294,7 +1294,7 @@ export const videoCall: SituationDef = {
     camera: {
       lt: "Turn on your camera, or explain",
       items: [
-        { id: "cam_see_now", s: t("¡Ay, | perdón! | ¿Ya | me | ven?", "Oh, | sorry! | Now | me | do you see?", "Oh, sorry! Can you see me now?", { flags: { 2: F_YA } }) },
+        { id: "cam_see_now", s: t("¡Ay, | perdón! | ¿Ya | me | ven?", "Oh, | sorry! | Now | me | do you see?", "Oh, sorry! Can you see me now?", { flags: { 2: F_YA }, spain: t("¡Ay, | perdón! | ¿Ya | me | veis?", "Oh, | sorry! | Now | me | do you (all) see?", "Oh, sorry! Can you see me now?") }) },
         { id: "cam_broken", s: t("Perdón, | mi | cámara | no funciona.", "Sorry, | my | camera | doesn't work.", "Sorry, my camera isn't working.") },
         { id: "cam_second", s: t("Un | segundo, | por favor.", "One | second, | please.", "One second, please.") },
       ],
@@ -1304,7 +1304,7 @@ export const videoCall: SituationDef = {
       items: [
         { id: "m_on_mute", s: t("¡Pablo, | estás | en silencio!", "Pablo, | you're | on mute!", "Pablo, you're on mute!") },
         { id: "m_cant_hear", s: t("Pablo, | no te escuchamos.", "Pablo, | we can't hear you.", "Pablo, we can't hear you.") },
-        { id: "m_click", s: t("¡Dale | clic | al | micrófono!", "Give it | a click | on the | microphone!", "Click the microphone button!"),
+        { id: "m_click", s: t("¡Dale | clic | al | micrófono!", "Give it | a click | on the | microphone!", "Click the microphone button!", { spain: t("¡Dale | al | micrófono!", "Hit | on the | microphone!", "Click the mic!") }),
           note: "Mexicans also say “Pícale al micrófono”." },
         { id: "m_think", s: t("Creo | que | estás | en silencio.", "I-think | that | you're | on mute.", "I think you're muted.") },
         { id: "m_unmute", s: t("Pablo, | activa | tu | micrófono.", "Pablo, | turn on | your | microphone.", "Pablo, you need to unmute."),
@@ -1327,15 +1327,15 @@ export const videoCall: SituationDef = {
         { id: "s_face", s: t("No, | solo | te | veo | a ti.", "No, | only | you | I-see | you (again).", "No, I can only see you.",
           { flags: { 4: "a ti: you again, for emphasis; English says it once." } }) },
         { id: "s_loading", s: t("Todavía | está | cargando.", "Still | it's | loading.", "It's still loading.") },
-        { id: "s_small", s: t("Se ve | un | poco | chiquito.", "It looks | a | little | small.", "It's a bit small.") },
+        { id: "s_small", s: t("Se ve | un | poco | chiquito.", "It looks | a | little | small.", "It's a bit small.", { spain: t("Se ve | un | poco | pequeño.", "It looks | a | bit | small.", "It's a bit small.") }) },
       ],
     },
     freeze: {
       lt: "Tell Sofía her connection is breaking up",
       items: [
         { id: "f_breaking", s: t("Sofía, | se está cortando.", "Sofía, | it's cutting out.", "Sofía, you're breaking up.") },
-        { id: "f_froze", s: t("Perdón, | te congelaste.", "Sorry, | you froze.", "Sorry, you froze.") },
-        { id: "f_lost", s: t("Te | perdimos | un | momento.", "You | we-lost | a | moment.", "We lost you for a second.") },
+        { id: "f_froze", s: t("Perdón, | te congelaste.", "Sorry, | you froze.", "Sorry, you froze.", { spain: t("Perdona, | te has congelado.", "Sorry, | you've frozen.", "Sorry, you froze.") }) },
+        { id: "f_lost", s: t("Te | perdimos | un | momento.", "You | we-lost | a | moment.", "We lost you for a second.", { spain: t("Te | hemos perdido | un | momento.", "You | we've lost | a | moment.", "We lost you for a second.") }) },
       ],
     },
     echo: {
@@ -1366,7 +1366,7 @@ export const videoCall: SituationDef = {
     update: {
       lt: "Say briefly how your work is going", slot: "task", examples: ["report", "presentation", "website"],
       items: [
-        { id: "u_finished", s: t("Terminé | {X.the}.", "I-finished | {X.the}.", "I finished {X.the}.") },
+        { id: "u_finished", s: t("Terminé | {X.the}.", "I-finished | {X.the}.", "I finished {X.the}.", { spain: t("He terminado | {X.the}.", "I've finished | {X.the}.", "I finished {X.the}.") }) },
         { id: "u_working", s: t("Estoy | trabajando | en | {X.the}.", "I'm | working | on | {X.the}.", "I'm working on {X.the}.") },
         { id: "u_almost", s: t("Ya | casi | termino | {X.the}.", "Already | almost | I-finish | {X.the}.", "I'm almost done with {X.the}.",
           { flags: { 2: "Spanish uses the present here: ya casi termino = I'm almost done." } }) },
@@ -1395,7 +1395,7 @@ export const videoCall: SituationDef = {
       lt: "Say when it will be ready",
       items: [
         { id: "w_when", s: t("Para | el | viernes.", "By | — | Friday.", "By Friday.", { flags: { 1: F_EL_DAY } }) },
-        { id: "w_when", s: t("Mañana | en la mañana.", "Tomorrow | in the morning.", "Tomorrow morning."), note: "Mexico says en la mañana; por la mañana works too." },
+        { id: "w_when", s: t("Mañana | en la mañana.", "Tomorrow | in the morning.", "Tomorrow morning.", { spain: t("Mañana | por la mañana.", "Tomorrow | in the morning.", "Tomorrow morning.") }), note: "Mexico says en la mañana; por la mañana works too.", noteSpain: "Por la mañana: in the morning (Mexico: en la mañana)." },
         { id: "w_when", s: t("La | próxima | semana.", "— | Next | week.", "Next week.", { flags: { 0: F_ART_WEEK } }) },
         { id: "w_unsure", s: t("Todavía | no estoy | {m:seguro|f:segura}.", "Still | I'm not | sure.", "I'm not sure yet.") },
       ],
@@ -1406,7 +1406,7 @@ export const videoCall: SituationDef = {
         { id: "q_slides", s: t("¿Nos | puedes | mandar | las | diapositivas?", "(To) us | can you | send | the | slides?", "Could you send us the slides?") },
         { id: "q_link", s: t("¿Puedes | compartir | el | link?", "Can you | share | the | link?", "Could you share the link?"), note: "El enlace is the neutral word; el link is what offices say." },
         { id: "q_deadline", s: t("¿Cuál | es | la | fecha límite?", "Which | is | the | deadline?", "When's the deadline?") },
-        { id: "q_back", s: t("¿Puedes | regresar | a | la | diapositiva | anterior?", "Can you | go back | to | the | slide | previous?", "Could you go back to the last slide?") },
+        { id: "q_back", s: t("¿Puedes | regresar | a | la | diapositiva | anterior?", "Can you | go back | to | the | slide | previous?", "Could you go back to the last slide?", { spain: t("¿Puedes | volver | a | la | diapositiva | anterior?", "Can you | go back | to | the | slide | previous?", "Could you go back to the last slide?") }) },
         { id: "q_none", s: t("Ninguna | pregunta | de mi parte.", "No | question | from me.", "No questions from me.") },
       ],
     },
@@ -1474,6 +1474,15 @@ export const videoCall: SituationDef = {
   tips: {},
 
   merges: {
+    // Spain's twins (12 Nov 2026)
+    "ha ido": { reason: "grammatical_fusion", split: "ha → has + ido (participle): ¿qué tal ha ido…? = how did it go (Spain's present perfect for the weekend just past); one English verb phrase.", minimal: "Auxiliary and participle." },
+    "han subido": { reason: "grammatical_fusion", split: "han → have + subido (participle): Spain's present perfect for this month; one English verb phrase.", minimal: "Auxiliary and participle." },
+    "te has congelado": { reason: "grammatical_fusion", split: "te → yourself + has → you have + congelado → frozen: congelarse = to freeze (a video call); one English verb phrase.", minimal: "Pronoun, auxiliary and participle." },
+    "me he congelado": { reason: "grammatical_fusion", split: "me → myself + he → have + congelado → frozen: congelarse = to freeze (a video call); one English verb phrase.", minimal: "Pronoun, auxiliary and participle." },
+    "he terminado": { reason: "grammatical_fusion", split: "he → have + terminado (participle): Spain's present perfect for what has just happened; one English verb phrase.", minimal: "Auxiliary and participle." },
+    "has terminado": { reason: "grammatical_fusion", split: "has → you have + terminado (participle): Spain's present perfect; one English verb phrase.", minimal: "Auxiliary and participle." },
+    "hemos perdido": { reason: "grammatical_fusion", split: "hemos → we have + perdido (participle): Spain's present perfect for what has just happened; one English verb phrase.", minimal: "Auxiliary and participle." },
+    "por la mañana": { reason: "lexical_expression", split: "por → through + la → the + mañana → morning: = in the morning (Spain).", minimal: "Three words." },
     "a todos": { reason: "lexical_expression", split: "a → to + todos → all: the greeting's “everyone” (hola a todos = hi, everyone).", minimal: "Two words." },
     "fin de semana": { reason: "lexical_expression", split: "fin → end + de → of + semana → week is one English word: weekend.", minimal: "Three words." },
     "el mío": { reason: "lexical_expression", split: "el → the + mío → mine: Spanish puts an article before the possessive pronoun; English says mine.", minimal: "Two words." },

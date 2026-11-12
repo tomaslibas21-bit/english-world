@@ -1,0 +1,20 @@
+{ "situation": "s31-doctor", "items": [
+  {"ctx": "problem", "say": "Me encuentro fatal, tengo fiebre y tos", "intent": ["symptom", "feel_sick"]},
+  {"ctx": "problem", "say": "Tengo mocos y me duele la garganta", "intent": "symptom"},
+  {"ctx": "problem", "say": "Creo que estoy constipado", "intent": "symptom"},
+  {"ctx": "howlong", "say": "Desde ayer por la tarde", "intent": "howlong_ans"},
+  {"ctx": "howlong", "say": "Desde esta mañana", "intent": ["howlong_ans", "howlong_ctx"]},
+  {"ctx": "scale", "say": "Un siete, más o menos", "intent": "scale_ctx"},
+  {"ctx": "fever", "say": "Sí, tengo unas décimas", "intent": ["fever_yes_ctx", "temp_ans", "symptom"]},
+  {"ctx": "fever", "say": "No me la he tomado", "intent": ["temp_unknown"]},
+  {"ctx": "meds", "say": "Me he tomado un ibuprofeno", "intent": ["meds_ans", "meds_ctx"]},
+  {"ctx": "rx_q", "say": "¿Puedo conducir?", "intent": "ask_drive"},
+  {"ctx": "rx_q", "say": "¿Puedo coger el coche?", "intent": "ask_drive"},
+  {"ctx": "rx_q", "say": "¿Me puede hacer un justificante para el trabajo?", "intent": "ask_note"},
+  {"ctx": "pharmacy", "say": "Sí, sé a qué farmacia ir", "intent": ["pharmacy_ans", "yn:yes"]},
+  {"ctx": "pay", "say": "¿Tiene datáfono?", "intent": "pay_card"},
+  {"ctx": "pay", "say": "Con tarjeta, por favor", "intent": "pay_card"},
+  {"ctx": "closing", "say": "Vale, muchas gracias, doctora", "intent": "g_thanks"},
+  {"ctx": "rx_q", "say": "No conduzco", "intent": "any", "not": ["ask_drive"]},
+  {"ctx": "rx_q", "say": "¿Puedo meterme en el mar?", "intent": "ask_exercise"}
+] }

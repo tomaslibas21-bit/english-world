@@ -139,3 +139,29 @@ that waits; dollars and parts; a returning visitor), 1 sim updated (the personal
 
 **Gates:** `tsc` clean; `check-content` 0 errors, 0 warnings, 116/116 NLU, 27 sims 12/12 seeds, fuzz 80 no crash;
 corpus 350/350 (was 322/322), 0/99 traps (was 0/95); held-out 39/39, 0/5; `vitest --project es` 113/113.
+
+## Spain twins (11 Nov 2026)
+
+55 Spain twins (lines and hints), no register change: Doña Margarita and the learner keep usted. Spain's words: coche
+(carro/auto), conducir (manejar), prueba de conducción, descapotable (convertible), capota (techo), la radio (el
+radio), coger una emisora, maletero pequeño and nevera portátil (cajuela chica, hielera), garaje (cochera),
+revisiones (servicios), no funciona (no sirve), neumáticos (llantas), depósito (tanque), matrícula (placas), número
+de bastidor (número de serie), móvil, datáfono (terminal), cheque bancario (cheque de caja), sitio, delante de,
+entre nosotros (entre nos), de verdad (de veras), sincera (honesta), esta mañana (hoy en la mañana), llevarlo a su
+mecánico (con), un rasguñito (un rayoncito), me parece caro (se me hace caro), ¿Le vale…? (¿Le sirve…?), ¿Ha tenido
+algún accidente? (choque). Fuel use the Spanish way: "Gasta unos ocho litros a los cien" (12 km per liter). Spain's
+present perfect for what has just happened: ha venido, ha vuelto / ¿qué le ha parecido?, le ha robado el corazón, lo
+ha notado, ya lo ha conducido, ya le he bajado, he visto su anuncio. Kept: the Mexican car papers (factura endosada,
+tarjeta de circulación, refrendo, REPUVE, nacional), pesos, the streets. Patterns take he visto, revisiones, prueba de
+conducción, descapotable, cheque bancario / le vale, no llevo efectivo. Spain corpus: 23 items, 22/22, 0/1 false
+accepts. Gates: Mexican, neutral and Spain 0 errors, sims 12/12; corpus 350/350 0/99; held-out 39/39 0/5.
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer, all Spain twins and the untwinned lines as Spain hears them (NPC lines and hints), the Spain corpus.
+
+Checked: Margarita usted both ways, every twin (litros a los cien is right for Spain), papers (factura, tarjeta de circulación, refrendo, REPUVE: Mexican paperwork, kept), pesos and centavos kept.
+Found and fixed: "se ve más joven" (→ "parece más joven"); "Funciona perfecto" (→ perfectamente); the tires answer "No son nuevas" now that Spain says neumáticos (→ nuevos); "Espere, dije…" (→ "he dicho"); "Fue un placer…" ×2 and "El gusto fue mío" (→ ha sido); the hints "Los asientos se ven muy bien" (→ "están muy bien", grammar reads it) and "Los frenos se sienten un poco suaves" (→ "están un poco blandos").
+Note: the topic "Regatear por un carro usado" has no twin field (types.ts topic is plain).
+Spain corpus +3.
+Gates: tsc clean; check-content Mexican, neutral and Spain 0 errors, 0 warnings; corpus 350/350 0/99; held-out 39/39; Spain 25/25 0/1; vitest es 178/178.

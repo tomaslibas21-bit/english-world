@@ -108,3 +108,24 @@ value is the roses' $150 (a module constant).
 - s91b (its reviewer): the intro and header still put the police "across from the zócalo next to the museum".
 - English (EN-FIXES-LEADS): "Have you seen a black wallet?" is never answered; "How much are the roses?" after the loss
   gets "Okay."; the twist with the money gone ends "I hope you find it."
+
+## Spain twins (11 Nov 2026)
+
+- 51 Spain twins (lines and hints), 21 items in tests/es/spain/s91a-lost-wallet.json (all understood, 0 false accepts).
+- Register: no change. Doña Mari (older) and the learner keep usted; her mijo/mija becomes hijo/hija.
+- Spain's present perfect for this morning: ¿Qué le ha pasado?, se le ha caído, ¿Ha comprado algo esta mañana?, se lo
+  ha dejado en casa, alguien lo ha encontrado, Este niño ha encontrado…, ¿Ha perdido su…?; the learner's He perdido
+  mi…, Se me ha perdido…, Me han robado…, Ya he mirado, He buscado por todas partes.
+- Words: vuelva (regrese), dentro (adentro), móvil, los conductores / los taxistas (choferes), solo (nada más),
+  ¡menos mal!, ¿Y se enciende?, Se le ve preocupado, El ramo cuesta…, Cogí un taxi, marrón y pequeñita.
+- Entities: Spain nouns cartera (wallet; neutral billetera), móvil, bolso (m), marrón, pequeño.
+- Kept: 911 (the number in Mexico), the colectivo, the tianguis, the kiosco; banca (bench) — Spain says banco, but
+  that collides with the bank (banco) in the same list, so the bench keeps banca (for the lead).
+- Grammar: lost takes me han robado; checked / not_checked he mirado, he buscado, por todas partes; bought_ctx he
+  comprado…; last_seen cogí / he cogido; where_found ha encontrado; not_lost la he encontrado. Merges added.
+
+## Spain review (12 Nov 2026)
+
+- Checked (fresh reviewer): every twin against its Mexican line (meaning, facts, prices, names), Peninsular wording, the perfect for today's events, tú/usted and vosotros by STYLE.md, glosses, spelling and ¿¡, the Spain transcripts (`--variety=spain --verbose`, untwinned lines read through their neutral fallback) and tests/es/spain.
+- Found: "Pasan por la avenida a cada rato" (a cada rato is Latin American); "Solo cruce la plaza…" and "Solo levante la mano" (solo + imperative).
+- Fixed: "…cada poco" (merge swapped), "Solo tiene que cruzar la plaza y ahí está.", "…Solo tiene que levantar la mano." (flag moved to la). Kept: hijo/hija with usted from Mari, el 911, los colectivos, el kiosco.

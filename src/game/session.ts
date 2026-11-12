@@ -13,7 +13,7 @@ import { useStore, type TranscriptLine } from "../state/store";
 import { sitProgress, stars } from "../state/progress";
 import { audio } from "./audio";
 import { displayUtterance } from "../convo/normalize";
-import { compose } from "../convo/compose";
+import { addressInformal, compose } from "../convo/compose";
 import { setKnownNames } from "../convo/slots";
 import type { Nlu } from "../convo/nlu";
 import { L } from "../ui/i18n";
@@ -299,7 +299,7 @@ export class Session {
       const groups = ids.map((id) => ({ g: this.sit.hints[id] ?? GLOBAL.hints[id], chosen: c.chosen[id] })).filter((x) => !!x.g);
       const lastNpc = [...c.transcript].reverse().find((l) => l.who === "npc" && l.npc)?.npc ?? c.npcId;
       const prof = st.progress.profile;
-      const opts = { formal: !NPCS[c.npcId]?.informal, gender: prof?.gender ?? "m", npcGender: NPCS[lastNpc]?.gender ?? "f", vars: playerVars(prof) } as const;
+      const opts = { formal: !addressInformal(NPCS[c.npcId]), gender: prof?.gender ?? "m", npcGender: NPCS[lastNpc]?.gender ?? "f", vars: playerVars(prof) } as const;
       const heardAll = [heard, ...alts.slice(0, 3)];
       const cands = answerCandidates(this.sit, groups, opts, heardAll);
       const ranked = rankAnswers(heardAll, cands);

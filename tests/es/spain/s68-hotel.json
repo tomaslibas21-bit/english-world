@@ -1,0 +1,95 @@
+{
+"situation": "s68-hotel",
+"items": [
+{
+"ctx": "arrive",
+"say": "Buenas tardes, tengo una reserva",
+"intent": "checkin"
+},
+{
+"ctx": "arrive",
+"say": "He reservado una habitación",
+"intent": "checkin"
+},
+{
+"ctx": "arrive",
+"say": "No tengo reserva",
+"intent": "walkin"
+},
+{
+"ctx": "found",
+"say": "No, he reservado cuatro noches",
+"intent": "nights_fix"
+},
+{
+"ctx": "found",
+"say": "Vale, tres noches",
+"intent": "nights_ctx"
+},
+{
+"ctx": "walk_offer",
+"say": "Vale, me quedo con esa",
+"intent": "take_it"
+},
+{
+"ctx": "id",
+"say": "Aquí lo tiene",
+"intent": "hand_over"
+},
+{
+"ctx": "sign",
+"say": "Ya está",
+"intent": "sign_ok_ctx"
+},
+{
+"ctx": "sign",
+"say": "Ya he firmado",
+"intent": "sign_ok_ctx"
+},
+{
+"ctx": "anything",
+"say": "¿Hay aparcamiento?",
+"intent": "ask_parking"
+},
+{
+"ctx": "anything",
+"say": "¿Dónde está el ascensor?",
+"intent": "ask_elevator"
+},
+{
+"ctx": "anything",
+"say": "¿Dónde está la piscina?",
+"intent": "ask_pool"
+},
+{
+"ctx": "anything",
+"say": "Vale, eso es todo",
+"intent": "done"
+},
+{
+"ctx": "late",
+"say": "Hasta las dos, por favor",
+"intent": "late_two"
+},
+{
+"ctx": "p_report",
+"say": "No hay agua caliente en la ducha",
+"intent": "pr_hotwater"
+},
+{
+"ctx": "p_report",
+"say": "La tarjeta no funciona",
+"intent": "pr_key"
+},
+{
+"ctx": "room_return",
+"say": "Vale, vuelvo a las tres",
+"intent": "wait_room_ctx"
+},
+{
+"ctx": "room_return",
+"say": "Hola, ya he vuelto",
+"intent": "return_ready_ctx"
+}
+]
+}

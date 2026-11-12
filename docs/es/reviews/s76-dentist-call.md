@@ -139,3 +139,22 @@ zócalo; s65b's header comment still says "entre Juárez y Morelos". (3) Owner, 
 run $800–1,500 nearby, if a cleaning price is wanted. (4) Optional reach-es RULE: `availability` is voiced with 11 × 10
 pairs, but it only says (offer, late), (late, morning) and (monday_am, monday): ~100 never-played clips an accent.
 "¿Qué día es pasado mañana?" can't get a weekday (no calendar): it gets the opening again.
+
+## Spain twins (11 Nov 2026)
+
+11 twins. Lorena keeps usted (no register change). The phone: her "¿Bueno? ¿Ahora sí me escucha?" is "¿Oiga? ¿Me
+oye ahora?" in Spain (the hear_me pattern takes "oiga" / "diga" too). Also móvil, aparcar (line and the learner's q_park hint), "a
+una calle del zócalo" (the say follows), "Muy bien" / "sin problema" for "Con gusto", "¡Qué bien!", "el jueves por la tarde". Spain
+corpus: 14 items (pedir cita, me viene bien, por la mañana, aparcar, ¿Oiga?).
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer, against docs/es/STYLE.md "Spain Spanish": every line's Spain reading (twin, else neutral), the hints and
+example answers, tú/usted and vosotros by the Spain rule, meaning and English against the Mexican line, Mexican-only
+things kept, and the Spain corpus.
+
+Found and fixed: Listo → Ya está / Hecho; espacio / lugar / aparto / agendo → hueco / reservo / apunto; ¿Le queda bien? → ¿Le viene bien? (and the hints); escucha/escucho → oye/oigo; perfect for just now (lo he anotado, ha venido, la he encontrado, he cancelado, ha quedado, me ha pedido); llenar → rellenar; tolerancia → cortesía; ¿Qué se le ofrece? → ¿Qué desea?; hacer/agendar una cita → pedir cita; se me rompió / se me cayó una resina → se me ha roto / se me ha caído un empaste; writer's parking twin said consultorio → la clínica.
+
+English of every twin checked against its Mexican line (restored where a twin had rephrased it). Spain corpus items
+added for the new forms. Gates: Mexican, neutral and Spain checks 0 errors; coverage 0 false accepts.
+

@@ -122,3 +122,27 @@ mexicano", "No sé, no en dólares"); "¡Qué buena noticia!" is now a trap for 
 "No, todavía no tengo permiso" as "no sé" (fixed here with a whole pattern; other conversations may have the same
 "No, todavía no + answer"). Not changed (minor): something other than "no problem" while she takes the phone call
 ("Gracias", a question) is answered without her "Gracias por esperar"; "¡Mucha suerte!" in the goodbye after a hire.
+
+## Spain twins (11 Nov 2026)
+
+- 34 Spain twins (lines and hints), 22 items in tests/es/spain/s87-interview.json (all understood, 0 false accepts).
+- Register: no change. Licenciada Salinas and the learner keep usted (a job interview, STYLE.md); nobody is `informalSpain`.
+- Words: ¿Le apetece algo de beber?, formación (capacitación), expectativas salariales, eso nos viene bien, aparcamiento
+  detrás del edificio (gratis), a jornada completa, "Arreglado pero informal" (casual de negocios), ¡Qué bien! for
+  ¡Qué bueno!, "A usted" / "Nada, a usted" answering thanks, "Que tenga un buen día", Enseguida vuelvo; the learner's
+  Unos diez años, Estudié marketing, Estoy yendo a clases, He oído, Deme una oportunidad y ya verá, ¿Hay formación?,
+  ¿Qué condiciones tiene el puesto?, Quedo a la espera de su llamada.
+- Spain's present perfect for today: ¿Nos ha encontrado bien?, ¿Ha sido fácil llegar?, Me he perdido un poco,
+  Ha sido un placer conocerla.
+- Benefits: Spain's twin says "todo lo que marca la ley: Seguridad Social, pagas extra y vacaciones" (Mexico's
+  prestaciones de ley / aguinaldo). The job is still in Puerto Colibrí, so this reads as Spaniards describing it.
+- Grammar: found_ok/found_hard take ha sido, he cogido, me he perdido, ha habido; working_on_it voy a clases;
+  q_training formación; q_remote teletrabajar; q_benefits condiciones / beneficios; q_hours jornada completa / media
+  jornada; look_forward quedo a la espera. Merges for the new units.
+- Kept (justified warning): fu_here "Aquí mismo, con ustedes": ustedes is usted-plural to the company.
+
+## Spain review (12 Nov 2026)
+
+- Checked (fresh reviewer): every twin against its Mexican line (meaning, facts, prices, names), Peninsular wording, the perfect for today's events, tú/usted and vosotros by STYLE.md, glosses, spelling and ¿¡, the Spain transcripts (`--variety=spain --verbose`, untwinned lines read through their neutral fallback) and tests/es/spain.
+- Found: "Seguridad Social, pagas extra y vacaciones": the plural pagas extra are Spain's two extra paychecks, while the job's fact is one December bonus (aguinaldo). "Solo cuénteme un poco de usted…" (solo + imperative) and "¿Me puede contar de alguna vez que trabajó en equipo?" (contar de) had no twin. q_benefits didn't take a Spaniard's ¿Hay pagas extra? / ¿Me dan de alta en la Seguridad Social?
+- Fixed: "…Seguridad Social, paga extra de Navidad y vacaciones" (English: a Christmas bonus, as the Mexican line; merge paga extra); twins "Simplemente cuénteme…" and "¿Me puede hablar de alguna vez en que trabajó en equipo?"; q_benefits takes seguridad social, paga(s) extra, paga de Navidad, de alta en la Seguridad Social, ¿Cuántas pagas…?; Spain corpus +3. Kept: Licenciada, usted both ways, formación, jornada completa, aparcamiento.

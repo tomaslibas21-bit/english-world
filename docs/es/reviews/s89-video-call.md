@@ -128,3 +128,27 @@ come twice (same id, "grid"); a second no at paul_hear now ends with Sofía's pa
 
 **Tests:** NLU 126 → 144; sims 12 → 18 (all 12/12); corpus 457 → 538 understood (+81), traps 75 → 82 (+10, 3 old
 "any" items are answers now), 0 false accepts; held-out 41/43 → 43/43.
+
+## Spain twins (11 Nov 2026)
+
+- 43 Spain twins (lines and hints), 22 items in tests/es/spain/s89-video-call.json (all understood, 0 false accepts).
+- Register: Sofía, Pablo and Sara say tú to the learner in every variety. **Change:** their plural "you" to the team
+  moves from ustedes to **vosotros** in Spain: ¿Me oís? ¿Me veis?, dejadme…, me avisáis, Os comparto mi pantalla,
+  ¿Veis todos mi pantalla?, ¿Ya la veis?, Mirad:, os mando la presentación / la grabación, ¡Cuidaos!; the learner's
+  hints ¿Me oís? and ¿Ya me veis?.
+- Words: oír for the call's sound in the plural (¿Me oís?) and se oye muy bajito; Vale (for Bueno / Está bien), ¡Genial!
+  (for ¡Qué padre!), ¿Qué tal ha ido el fin de semana?, internet va fatal, el informe (for el reporte), el enlace (for
+  the link in Sofía's line; the learner's "link" hint stays), Eh… (for Este…), ¡Dale al micrófono!, pequeño (for
+  chiquito), mañana por la mañana, volver (for regresar). Entities: el reporte says informe in Spain and the training
+  plan plan de formación (attrs.spain, forms added).
+- Spain's present perfect for what just happened: te has congelado / me he congelado, te hemos perdido, he terminado,
+  ¿Qué has terminado?, ya he terminado la encuesta, este mes las ventas han subido.
+- Grammar: he terminado (and the other he + participle forms in @done_v), la he encendido / ahora mismo la enciendo,
+  te has congelado, suerte en la reunión, hasta la semana que viene. Merges for the new units.
+
+## Spain review (12 Nov 2026)
+
+- Checked (fresh reviewer): every twin against its Mexican line (meaning, facts, prices, names), Peninsular wording, the perfect for today's events, tú/usted and vosotros by STYLE.md, glosses, spelling and ¿¡, the Spain transcripts (`--variety=spain --verbose`, untwinned lines read through their neutral fallback) and tests/es/spain.
+- Found: vosotros agrees in every line to the team (oís, veis, dejadme, avisáis, os comparto/mando, mirad, cuidaos); hints to one person stay tú. "te escuchamos" answers stay (Spain says it too beside te oímos).
+- Fixed: nothing.
+- For the owner: the q_hear_me hint note still says "Escuchan: to the whole team (ustedes)" under Spain's "¿Me oís?" (notes aren't per variety).

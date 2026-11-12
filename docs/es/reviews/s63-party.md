@@ -115,3 +115,23 @@ line's words changed. Two sims added ("yes or no, and ask back", "neighbor, a st
 - global.ts LEAVING_PATTERNS: "Ya vamos" at a café question reads as a goodbye and ends the conversation (here the flow
   no longer re-asks, so it isn't reached).
 - Still open from the first review: g_bye takes "igualmente" / "tú también".
+
+## Spain twins (11 Nov 2026)
+
+17 twins + Spain nouns for camarero/a, fontanero/a (the J helper takes a Spain pair) and zumo. Guests say tú (unchanged).
+Register change in Spain: Ximena's plural "you" to the learner and Marcos is vosotros ("Entonces trabajáis juntos", "¡Sois
+vecinos!"). Also: "¡Qué bien que hayas venido!", "¡Vale! Si quieres algo, me lo dices", calentita, "solo" for "nada más", "a dos
+calles del zócalo", "tarta de tres leches", "pequeñito", "muy a menudo", "juegan al hockey", "¡Me ha encantado conocerte!" (the
+goodbye pattern now takes "me ha encantado / encantado de conocerte"). Spain corpus: 14 items (zumo, camarera, fontanero, porfa).
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer, against docs/es/STYLE.md "Spain Spanish": every line's Spain reading (twin, else neutral), the hints and
+example answers, tú/usted and vosotros by the Spain rule, meaning and English against the Mexican line, Mexican-only
+things kept, and the Spain corpus.
+
+Found and fixed: Writer's twin said “Su tarta … está buenísimo” → buenísima; ¿Te sirvo algo de tomar? / ¿Qué te sirvo? → ¿Te pongo algo de beber? / ¿Qué te pongo?; la hice → la he hecho; ha de ser → debe de ser; ya vengo → ahora vuelvo; ¡Listo! → ¡Hecho!; y pues → y bueno; extraño → echo de menos (and the hint); apenas llegué → llegué en mayo, hace nada; ¿ya fuiste? / ya fui → ¿has ido ya? / ya he ido; ¿Cuál café? → ¿Qué café?; ¿Qué te trajo? → ¿Qué te ha traído?; Vine → He venido; Juego {X} → Juego al {X}; con vista → con vistas; drink_no takes conduciendo/beber.
+
+English of every twin checked against its Mexican line (restored where a twin had rephrased it). Spain corpus items
+added for the new forms. Gates: Mexican, neutral and Spain checks 0 errors; coverage 0 false accepts.
+

@@ -4,7 +4,8 @@
 // and a look that follows their portrait (public/scenes-es/ref/cast/<id>.webp, docs/es/PICTURES.md section 4): LOOK
 // below, over Maple Harbor's build.
 // `informal` NPCs address the learner with tú (friends, colleagues, people of the learner's age); everyone else
-// with usted.
+// with usted. `informalSpain`: in Spain's Spanish (the Settings' third choice) these say tú too: casual service by
+// young people (the café, the restaurant, the clothes shop, the salon, the gym; docs/es/STYLE.md "Spain Spanish").
 import { NPCS as BASE, COACH_VOICE, type Look, type NpcDef } from "../../../content/npcs";
 
 export type { Accessory, HairStyle, Look, NpcDef } from "../../../content/npcs";
@@ -108,28 +109,28 @@ const CAST: Record<string, Cast> = {
   olivia: ["Fernanda", "Recepción del hotel", "Hotel reception"],
   chuck: ["Don Chuy", "Voluntario de turismo", "Tourist information volunteer"],
   // the center
-  mia: ["Mariana", "Barista", "Barista", { bio: "Draws a hummingbird in the foam of every latte." }],
+  mia: ["Mariana", "Barista", "Barista", { bio: "Draws a hummingbird in the foam of every latte.", informalSpain: true }],
   rosa: ["Doña Carmen", "Vecina de toda la vida", "Local, born and raised"],
   ben: ["Iván", "Taquilla del museo", "Museum tickets"],
   harold: ["Don Arturo", "Vigilante del museo", "Museum guard"],
-  marco: ["Luis", "Mesero", "Waiter"],
-  chloe: ["Valeria", "Vendedora", "Sales associate"],
+  marco: ["Luis", "Mesero", "Waiter", { informalSpain: true, roleSpain: "Camarero" }],
+  chloe: ["Valeria", "Vendedora", "Sales associate", { informalSpain: true }],
   okafor: ["Don Héctor", "Farmacéutico", "Pharmacist"],
-  jessie: ["Paty", "Estilista", "Hairdresser"],
+  jessie: ["Paty", "Estilista", "Hairdresser", { informalSpain: true }],
   aaron: ["Ricardo", "Cajero del banco", "Bank teller"],
   gloria: ["Gloria", "Empleada de correos", "Postal clerk"],
-  marco_host: ["Lucía", "Anfitriona del restaurante", "Restaurant host"],
+  marco_host: ["Lucía", "Anfitriona del restaurante", "Restaurant host", { informalSpain: true }],
   walter: ["Don Raúl", "Taquilla de autobuses", "Bus ticket office"],
   denise: ["Ana", "Conductora de autobús", "Bus driver"],
-  jake: ["Andrés", "Renta de autos", "Car rental agent"],
-  dot: ["Doña Chela", "Despachadora de gasolina", "Gas station attendant"],
-  kevin: ["Emilio", "Documentación de la aerolínea", "Airline check-in"],
+  jake: ["Andrés", "Renta de autos", "Car rental agent", { roleSpain: "Alquiler de coches" }],
+  dot: ["Doña Chela", "Despachadora de gasolina", "Gas station attendant", { roleSpain: "Empleada de la gasolinera" }],
+  kevin: ["Emilio", "Documentación de la aerolínea", "Airline check-in", { roleSpain: "Facturación de la aerolínea" }],
   grant: ["Oficial Torres", "Seguridad del aeropuerto", "Airport security"],
   nina: ["Daniela", "Agente de la puerta", "Gate agent"],
   linda: ["Lorena", "Recepción del consultorio dental", "Dental office reception"],
   claire: ["Karla", "Atención a clientes", "Customer service"],
   netwave_bot: ["NetWave", "Menú telefónico", "Automated phone menu"],
-  patel: ["Don Ernesto", "Dueño del departamento", "Landlord"],
+  patel: ["Don Ernesto", "Dueño del departamento", "Landlord", { roleSpain: "Dueño del piso" }],
   rita: ["Doña Lupita", "Vecina", "Neighbor", { informal: false }],
   brooks: ["Licenciada Salinas", "Gerente de recursos humanos", "HR manager"],
   maria: ["María", "Compañera de trabajo", "Coworker"],
@@ -160,7 +161,7 @@ const CAST: Record<string, Cast> = {
   kyle: ["Jorge", "Atención a clientes", "Customer service"],
   harbor_bot: ["Mensaje grabado", "Mensaje grabado", "Recorded message"],
   brenda: ["Brenda", "Gerente de atención a clientes", "Customer care manager"],
-  vanessa: ["Vanessa", "Líder de mercadotecnia", "Marketing lead"],
+  vanessa: ["Vanessa", "Líder de mercadotecnia", "Marketing lead", { roleSpain: "Responsable de marketing" }],
   greg: ["Gerardo", "Gerente de equipo", "Team manager"],
   whitaker: ["Chef Villanueva", "Jefe de cocina", "Head chef"],
   russo: ["Fátima", "Cocinera principiante", "Junior cook"],

@@ -1,0 +1,31 @@
+{
+"situation": "s87-interview",
+"items": [
+{ "ctx": "found", "say": "Sí, ha sido muy fácil", "intent": ["found_ok", "yn:yes", "found_ctx"] },
+{ "ctx": "found", "say": "Me he perdido un poco", "intent": ["found_hard", "found_ctx"] },
+{ "ctx": "found", "say": "He cogido un taxi", "intent": ["found_ok", "found_ctx"] },
+{ "ctx": "drink", "say": "Un vaso de agua, por favor", "intent": "want_drink" },
+{ "ctx": "about", "say": "Unos diez años", "intent": "years_ctx" },
+{ "ctx": "about", "say": "Ahora mismo estoy buscando trabajo", "intent": "between_jobs" },
+{ "ctx": "about", "say": "Llevo ocho años en atención al cliente", "intent": "field_is", "slots": { "field": "atencion"  } },
+{ "ctx": "why", "say": "He oído cosas muy buenas de Línea Clara", "intent": "why_ans" },
+{ "ctx": "improve", "say": "Estoy yendo a clases", "intent": "working_on_it" },
+{ "ctx": "future", "say": "Aquí mismo, con ustedes", "intent": ["future_ans", "future_ctx"] },
+{ "ctx": "salary", "say": "Unos dieciocho mil pesos al mes", "intent": "salary_ans" },
+{ "ctx": "range", "say": "Vale, me parece bien", "intent": ["yn:yes", "salary_flexible"] },
+{ "ctx": "hire", "say": "Deme una oportunidad y ya verá", "intent": "hire_ans" },
+{ "ctx": "questions", "say": "¿Hay formación?", "intent": "q_training" },
+{ "ctx": "questions", "say": "¿Se puede teletrabajar?", "intent": "q_remote" },
+{ "ctx": "questions", "say": "¿Qué condiciones tiene el puesto?", "intent": "q_benefits" },
+{ "ctx": "questions", "say": "¿Hay pagas extra?", "intent": "q_benefits" },
+{ "ctx": "questions", "say": "¿Cuántas pagas son?", "intent": "q_benefits" },
+{ "ctx": "questions", "say": "¿Me dan de alta en la Seguridad Social?", "intent": "q_benefits" },
+{ "ctx": "questions", "say": "¿Tienen aparcamiento?", "intent": "q_parking" },
+{ "ctx": "questions", "say": "¿Es a jornada completa?", "intent": "q_hours" },
+{ "ctx": "questions", "say": "¿Dónde están los servicios?", "intent": "q_restroom" },
+{ "ctx": "offer", "say": "¡Qué buena noticia!", "intent": "joy_ctx" },
+{ "ctx": "closing", "say": "Ha sido un placer conocerla", "intent": "nice_meet" },
+{ "ctx": "closing", "say": "Quedo a la espera de su llamada", "intent": "look_forward" },
+{ "ctx": "found", "say": "No he llegado bien", "intent": "any" }
+]
+}

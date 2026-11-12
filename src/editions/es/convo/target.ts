@@ -118,11 +118,16 @@ export function npUnits(b: NpBinding, kind: "np" | "the" | "pl" | "bare" | "head
  *  `attrs.neutralF` (else none). */
 export function neutralNoun(e: EntityDef, feminineForm = false): EntityDef {
   const a = e.attrs as Record<string, unknown> | undefined;
-  const n = (feminineForm ? a?.neutralF : a?.neutral) as string | undefined;
-  if (!n || variety() !== "neutral") return e;
-  const g = (a?.neutralG as "m" | "f" | undefined) ?? e.g;
+  const v = variety();
+  if (v === "default") return e;
+  // Spain's Spanish: the entity's Spain noun (`attrs.spain`, `spainPl`, `spainG`, `spainF`: "coche", "móvil", "zumo"),
+  // else its neutral one
+  const sp = v === "spain" && (feminineForm ? a?.spainF : a?.spain) ? "spain" : "neutral";
+  const n = (feminineForm ? a?.[sp + "F"] : a?.[sp]) as string | undefined;
+  if (!n) return e;
+  const g = (a?.[sp + "G"] as "m" | "f" | undefined) ?? e.g;
   // a compound's plural is its first word's: "licencia de conducir" → "licencias de conducir"
-  const pl = (a?.neutralPl as string | undefined) ?? (/^\S+ de /.test(n) ? n.replace(/^\S+/, (w) => pluralEs(w)) : undefined);
+  const pl = (a?.[sp + "Pl"] as string | undefined) ?? (/^\S+ de /.test(n) ? n.replace(/^\S+/, (w) => pluralEs(w)) : undefined);
   return { ...e, en: n, pl, g };
 }
 
@@ -229,6 +234,8 @@ export function timeSay(t: { h: number; m: number }): string {
   if (t.m === 0) return hour(t.h);
   if (t.m === 15) return `${hour(t.h)} y cuarto`;
   if (t.m === 30) return `${hour(t.h)} y media`;
+  // (Spain: "las nueve menos cuarto", "las nueve menos veinte"; Mexico and the neutral text: "cuarto para las nueve")
+  if (variety() === "spain" && t.m > 30) return `${hour(t.h + 1)} menos ${t.m === 45 ? "cuarto" : numberWords(60 - t.m)}`;
   if (t.m === 45) return `cuarto para ${hour(t.h + 1)}`;
   return `${hour(t.h)} y ${numberWords(t.m)}`;
 }
@@ -239,6 +246,8 @@ const LETTER_SAY: Record<string, string> = {
   Ñ: "eñe", O: "o", P: "pe", Q: "cu", R: "erre", S: "ese", T: "te", U: "u", V: "ve chica", W: "doble ve", X: "equis", Y: "i griega", Z: "zeta",
 };
 const LETTER_SAY_NEUTRAL: Record<string, string> = { ...LETTER_SAY, B: "be larga", V: "ve corta" };
+/** Spain: B "be", V "uve", W "uve doble", Y "i griega". */
+const LETTER_SAY_SPAIN: Record<string, string> = { ...LETTER_SAY, B: "be", V: "uve", W: "uve doble" };
 
 /** A value in the Spanish text, the English gloss and the spoken Spanish. `{$time}` carries its article: "las 8:30". */
 export function valueDisplay(kind: string, v: any): { en: string; lt: string; say: string } {
@@ -252,7 +261,7 @@ export function valueDisplay(kind: string, v: any): { en: string; lt: string; sa
   }
   if (kind === "letters" || kind === "spelled") {
     const up = String(v).toUpperCase().replace(/Ñ/g, "\u0001").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\u0001/g, "Ñ").replace(/[^A-Z0-9Ñ]/g, "").split("");
-    const names = variety() === "neutral" ? LETTER_SAY_NEUTRAL : LETTER_SAY;
+    const names = variety() === "spain" ? LETTER_SAY_SPAIN : variety() === "neutral" ? LETTER_SAY_NEUTRAL : LETTER_SAY;
     return { en: up.join("-"), lt: up.join("-"), say: up.map((c) => names[c] ?? numberWords(Number(c))).join(", ") };
   }
   if (typeof v === "number") return { en: String(v), lt: String(v), say: numberWords(v) };

@@ -1,0 +1,70 @@
+{
+"situation": "s66-taxi",
+"items": [
+{
+"ctx": "dest",
+"say": "Al centro, por favor",
+"intent": "dest"
+},
+{
+"ctx": "dest",
+"say": "¿Me lleva al alquiler de coches?",
+"intent": "dest"
+},
+{
+"ctx": "fare",
+"say": "Vale",
+"intent": "accept"
+},
+{
+"ctx": "fare",
+"say": "Vale, vamos",
+"intent": "accept"
+},
+{
+"ctx": "fare",
+"say": "¿Me lo deja en ochenta?",
+"intent": "haggle"
+},
+{
+"ctx": "haggle",
+"say": "Vale, ochenta está bien",
+"intent": "accept_ctx"
+},
+{
+"ctx": "first",
+"say": "No, ya he venido antes",
+"intent": "first_no"
+},
+{
+"ctx": "ac",
+"say": "Sí, póngame el aire, por favor",
+"intent": "ac_on"
+},
+{
+"ctx": "ac",
+"say": "¿Puede poner el aire?",
+"intent": "ac_on"
+},
+{
+"ctx": "stop",
+"say": "Vale, aquí",
+"intent": "stop"
+},
+{
+"ctx": "pay",
+"say": "No llevo efectivo",
+"intent": "no_cash"
+},
+{
+"ctx": "pay",
+"say": "Quédese con el cambio",
+"intent": "keep_change"
+},
+{
+"ctx": "closing",
+"say": "Muchas gracias, que vaya bien",
+"intent": "g_thanks"
+}
+]
+}

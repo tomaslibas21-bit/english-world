@@ -15,6 +15,7 @@ import { buildNlu } from "../src/convo/dialogue";
 import { setKnownNames } from "../src/convo/slots";
 import { situationContexts } from "./contexts";
 import { EDITION } from "../src/edition";
+import { setVariety, type Variety } from "../src/convo/compose";
 
 // corpus sentences use this learner (as the game registers the player's own name)
 setKnownNames([EDITION.simPlayer.name, EDITION.simPlayer.surname]);
@@ -24,6 +25,9 @@ interface Corpus { situation: string; items: Item[] }
 
 const args = process.argv.slice(2);
 const dir = args.find((a) => a.startsWith("--dir="))?.slice(6) ?? EDITION.corpusDir;
+// --variety=neutral|spain: the conversations as that Spanish says them (the Spain corpus: tests/es/spain, docs/es/STYLE.md)
+const varietyArg = args.find((a) => a.startsWith("--variety="))?.slice(10) as Variety | undefined;
+if (varietyArg) setVariety(varietyArg);
 const showFails = args.includes("--fails");
 const jsonOut = args.find((a) => a.startsWith("--json="))?.slice(7);
 const half = args.find((a) => a.startsWith("--half="))?.slice(7); // "odd" | "even": split a blind set into diagnosis / report halves

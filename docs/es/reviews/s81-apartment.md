@@ -140,3 +140,25 @@ id_later), all Don Ernesto's; no values added.
   the gym, Farmacia del Puerto a block up, mercado and beach two blocks up Flamboyán, the zócalo five minutes; leaving
   before the year loses the deposit (s81).
 - Kept: "Sí, dos meses" at the extra deposit gets the amount again (safe, one turn); the póliza's price stays vague.
+
+## Spain twins (11 Nov 2026)
+
+60 twins + Spain nouns frigorífico and vitrocerámica (stove; forms vitroceramica / placa / fogones added). Don Ernesto
+keeps usted (no register change). The flat is "el piso" (the neutral "apartamento"), the rent "el alquiler" (with agreement: "el
+alquiler es fijo"), the deposit "la fianza", "se alquila / alquilarlo", "el salón" (sala), "armarios empotrados" (clósets),
+ascensor, "plaza de aparcamiento detrás del edificio", fontanero, "se estropea" (se descompone), "a una calle / a dos calles, todo
+recto", "muy a menudo", "esta noche", "por la tarde", "¡Me alegro de que le guste / le haya gustado!", "seguro de impago" for the
+Mexican "póliza jurídica". "Colectivos" stay (Mexico's own). Patterns: "por la mañana / tarde / noche" accepted beside "en la…".
+Spain corpus: 15 items (piso, alquiler, fianza, frigorífico, ascensor, dormitorios, avalista).
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer, against docs/es/STYLE.md "Spain Spanish": every line's Spain reading (twin, else neutral), the hints and
+example answers, tú/usted and vosotros by the Spain rule, meaning and English against the Mexican line, Mexican-only
+things kept, and the Spain corpus.
+
+Found and fixed: chico → pequeño (perros, balcón, quedar pequeño; hints); ¿Trae alguna mascota? → ¿Viene con alguna mascota?; se alcanza a ver → se ve; adentro → dentro; primer piso → primera planta; comprobante de ingresos → justificante; ¿me presta su identificación? → ¿me deja…?; ¿Qué pasó? → ¿Qué ha pasado?; ¿le queda bien? → ¿le viene bien?; caminando → andando (also the writer's beach twin); toque mi puerta → llame a mi puerta (writer's twin); hints: El grifo de la cocina gotea, Perdone que le moleste (grammar takes it).
+
+English of every twin checked against its Mexican line (restored where a twin had rephrased it). Spain corpus items
+added for the new forms. Gates: Mexican, neutral and Spain checks 0 errors; coverage 0 false accepts.
+

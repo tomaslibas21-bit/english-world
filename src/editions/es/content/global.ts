@@ -8,36 +8,41 @@
 import type { GlobalContent, ConvCtx } from "../../../convo/dialogue";
 import type { Parse } from "../../../convo/nlu";
 import type { HintGroup, SentSrc } from "../../../content/types";
+import { addressInformal } from "../../../convo/compose";
 
 const t = (en: string, lt: string, nat: string, extra: Partial<SentSrc> = {}): SentSrc => ({ en, lt, nat, ...extra });
 
 export const GLOBAL_LINES: Record<string, SentSrc[]> = {
   g_not_understood: [
-    t("Perdón, | no {u:le|t:te} entendí.", "Sorry, | I didn't understand you.", "Sorry, I didn't understand you."),
+    t("Perdón, | no {u:le|t:te} entendí.", "Sorry, | I didn't understand you.", "Sorry, I didn't understand you.",
+      { spain: t("Perdón, | no {u:le|t:te} he entendido.", "Sorry, | I didn't understand you.", "Sorry, I didn't understand you.") }),
     t("Perdón, | ¿{u:puede|t:puedes} | repetir?", "Sorry, | can you | repeat?", "Sorry, could you say that again?"),
-    t("{u:Disculpe|t:Disculpa}, | no entendí.", "Sorry, | I didn't understand.", "Sorry, I didn't understand."),
+    t("{u:Disculpe|t:Disculpa}, | no entendí.", "Sorry, | I didn't understand.", "Sorry, I didn't understand.",
+      { spain: t("{u:Disculpe|t:Disculpa}, | no lo he entendido.", "Sorry, | I didn't understand (it).", "Sorry, I didn't get that.") }),
   ],
   g_yes_what: [
     t("¡Claro! | ¿En | qué | {u:le|t:te} | puedo | ayudar?", "Sure! | In | what | you | I-can | help?", "Sure! How can I help you?",
       { flags: { 4: "le/te: “you” as the one being helped (usted: le, tú: te)." } }),
   ],
   g_no_ok: [
-    t("Está bien, | no hay problema.", "Okay, | no problem.", "Okay, no problem."),
+    t("Está bien, | no hay problema.", "Okay, | no problem.", "Okay, no problem.", { spain: t("Vale, | no hay problema.", "Okay, | no problem.", "Okay, no problem.") }),
   ],
   /** A neutral reply when an understood answer would otherwise get none (dialogue.ts). */
   g_ack: [
     t("Ya veo.", "I see.", "I see."),
     t("Entendido.", "Got it.", "Got it."),
-    t("Muy | bien.", "Very | good.", "Okay."),
+    t("Muy | bien.", "Very | good.", "Okay.", { spain: t("Vale.", "Okay.", "Okay.") }),
   ],
   /** A name heard only by its sound: the person checks it, and the learner hears it said right (convo/soundalike.ts). */
   g_soundcheck: [
     t("Perdón, | ¿{X}?", "Sorry, | {X}?", "Sorry, {X}?"),
-    t("Perdón, | ¿{u:dijo|t:dijiste} | {X}?", "Sorry, | did you say | {X}?", "Sorry, did you say {X}?"),
+    t("Perdón, | ¿{u:dijo|t:dijiste} | {X}?", "Sorry, | did you say | {X}?", "Sorry, did you say {X}?",
+      { spain: t("Perdón, | ¿{u:ha dicho|t:has dicho} | {X}?", "Sorry, | did you say | {X}?", "Sorry, did you say {X}?") }),
   ],
   g_soundcheck_no: [
     t("¡Ay, | perdón! | ¿Me | lo | {u:repite|t:repites}?", "Oh, | sorry! | (To) me | it | you-repeat?", "Oh, sorry! Could you say it again?"),
-    t("¡Me equivoqué! | ¿Qué | {u:dijo|t:dijiste}?", "My mistake! | What | did you say?", "My mistake! What did you say?"),
+    t("¡Me equivoqué! | ¿Qué | {u:dijo|t:dijiste}?", "My mistake! | What | did you say?", "My mistake! What did you say?",
+      { spain: t("¡Me he equivocado! | ¿Qué | {u:ha dicho|t:has dicho}?", "My mistake! | What | did you say?", "My mistake! What did you say?") }),
   ],
   g_repeat_intro: [
     t("¡Claro!", "Sure!", "Sure!"),
@@ -61,14 +66,15 @@ export const GLOBAL_LINES: Record<string, SentSrc[]> = {
   ],
   g_welcome: [
     t("¡De nada!", "You're welcome!", "You're welcome!"),
-    t("¡Con gusto!", "My pleasure!", "My pleasure!"),
+    t("¡Con gusto!", "My pleasure!", "My pleasure!", { spain: t("¡Faltaría más!", "Not at all!", "Not at all!") }),
     t("¡No hay de qué!", "Don't mention it!", "Don't mention it!"),
   ],
   /** The thanks of someone who serves the learner (usted): also "¡A la orden!" (never from a friend or a colleague). */
   g_welcome_staff: [
     t("¡De nada!", "You're welcome!", "You're welcome!"),
-    t("¡Con gusto!", "My pleasure!", "My pleasure!"),
-    t("¡A la orden!", "At your service!", "Anytime!", { flags: { 0: "Mexican: what staff say after “gracias”." } }),
+    t("¡Con gusto!", "My pleasure!", "My pleasure!", { spain: t("¡A {u:usted|t:ti}!", "(Thanks) to you!", "Thank you!") }),
+    t("¡A la orden!", "At your service!", "Anytime!", { flags: { 0: "Mexican: what staff say after “gracias”." },
+      spain: t("¡Faltaría más!", "Not at all!", "Not at all!") }),
     t("¡No hay de qué!", "Don't mention it!", "Don't mention it!"),
   ],
   // a goodbye for any time of day; the day's own one when a greeting said which part of it it is (byeLine)
@@ -102,29 +108,33 @@ export const GLOBAL_LINES: Record<string, SentSrc[]> = {
     t("No me quejo. | ¿Y | {u:usted|t:tú}?", "I can't complain. | And | you?", "Can't complain. And you?"),
   ],
   g_glad: [
-    t("¡Qué | bueno!", "How | good!", "Glad to hear it!"),
+    t("¡Qué | bueno!", "How | good!", "Glad to hear it!", { spain: t("¡Cuánto | me alegro!", "How much | I'm glad!", "Glad to hear it!") }),
     t("¡Me alegro!", "I'm glad!", "Good to hear!"),
     t("¡Qué | bien!", "How | nice!", "Nice!"),
   ],
   g_asked_back: [
     t("Muy | bien, | gracias | por | preguntar.", "Very | well, | thanks | for | asking.", "Very well, thanks for asking!"),
     t("Bien, | gracias.", "Good, | thanks.", "Good, thanks!"),
-    t("Pues | aquí | andamos, | gracias.", "Well | here | we-go-on, | thanks.", "Hanging in there, thanks!", { flags: { 2: "Mexican: “aquí andamos” = getting by, fine." } }),
+    t("Pues | aquí | andamos, | gracias.", "Well | here | we-go-on, | thanks.", "Hanging in there, thanks!", { flags: { 2: "Mexican: “aquí andamos” = getting by, fine." },
+      spain: t("Pues | ahí | vamos, | gracias.", "Well | there | we-go, | thanks.", "Hanging in there, thanks!", { flags: { 2: "“Ahí vamos” = getting by, fine." } }) }),
   ],
   g_sorry_to_hear: [
     t("¡Ay, | lo siento!", "Oh, | I'm sorry!", "Oh no, I'm sorry to hear that."),
   ],
   /** "¿Qué hora es?": nobody here gives the time (a clock time would be a clip for every minute). */
   g_no_watch: [
-    t("Ay, | no | traigo | reloj, | perdón.", "Oh, | not | I-carry | watch, | sorry.", "Oh, I don't have a watch on me, sorry."),
-    t("Mmm, | no sé, | no | traigo | reloj.", "Hmm, | I don't know, | not | I-carry | watch.", "Hmm, I don't know, I don't have a watch on me."),
+    t("Ay, | no | traigo | reloj, | perdón.", "Oh, | not | I-carry | watch, | sorry.", "Oh, I don't have a watch on me, sorry.",
+      { spain: t("Ay, | no | llevo | reloj, | perdón.", "Oh, | not | I-wear | watch, | sorry.", "Oh, I don't have a watch on me, sorry.") }),
+    t("Mmm, | no sé, | no | traigo | reloj.", "Hmm, | I don't know, | not | I-carry | watch.", "Hmm, I don't know, I don't have a watch on me.",
+      { spain: t("Mmm, | no sé, | no | llevo | reloj.", "Hmm, | I don't know, | not | I-wear | watch.", "Hmm, I don't know, I don't have a watch on me.") }),
   ],
   g_hello: [
     t("¡Hola!", "Hi!", "Hi!"),
     t("¡Buenas!", "Hi!", "Hi!", { flags: { 0: "Short for buenos días / buenas tardes: a friendly hello at any time." } }),
   ],
   g_meaning: [
-    t("¡Buena | pregunta! | {u:Déjeme|t:Déjame} | {u:mostrarle|t:mostrarte}.", "Good | question! | Let me | show you.", "Good question! Let me show you."),
+    t("¡Buena | pregunta! | {u:Déjeme|t:Déjame} | {u:mostrarle|t:mostrarte}.", "Good | question! | Let me | show you.", "Good question! Let me show you.",
+      { spain: t("¡Buena | pregunta! | {u:Deje que|t:Deja que} | {u:se lo|t:te lo} | enseñe.", "Good | question! | Let me | it to you | I-show.", "Good question! Let me show you.") }),
     t("{u:Mire|t:Mira}, | {u:le|t:te} | explico.", "Look, | (to) you | I'll-explain.", "Here, let me explain."),
   ],
   g_write: [
@@ -151,7 +161,7 @@ export const GLOBAL_MACROS: Record<string, string | string[]> = {
   det: "(un | una | el | la | los | las | unos | unas | este | esta | ese | esa | mi | otro | otra)",
   greet: "(hola | buenos dias | buenas tardes | buenas noches | buenas | buen dia | hola buenas | hola buenos dias | hola buenas tardes)",
   // a short reason after "Perdón, me tengo que ir" in the same breath (#driving: "¡Maneje con cuidado!" fits)
-  leaving_why: "[perdon] [es que | porque] (estoy manejando [ahorita] #driving | voy manejando #driving | (tengo | traigo) prisa | voy tarde | tengo otra llamada | tengo una (cita | junta) [ahorita | ahora] | ya llegó mi (taxi | camion | autobus | uber) | se me acaba la (bateria | pila) | (tocan | estan tocando) la puerta)",
+  leaving_why: "[perdon] [es que | porque] (estoy manejando [ahorita] #driving | voy manejando #driving | (estoy | voy) conduciendo [ahora] #driving | (tengo | traigo) prisa | voy tarde | tengo otra llamada | tengo una (cita | junta) [ahorita | ahora] | ya llegó mi (taxi | camion | autobus | uber) | se me acaba la (bateria | pila) | (tocan | estan tocando) la puerta)",
 };
 
 /** Leaving early ("Perdón, me tengo que ir.", "Le llamo luego."), shared by every situation. #leaving = only a goodbye
@@ -170,8 +180,9 @@ export const GLOBAL_INTENTS: Record<string, { patterns: string[] }> = {
     "[perdon] @could_you (repetir | repetirlo | repetirmelo) [lo | eso | la pregunta] [otra vez | una vez mas] #h:c_say_again",
     "[perdon] [me] lo (repite | repites | puede repetir | puedes repetir | podria repetir) [otra vez] #h:c_repeat",
     "[perdon] @could_you (decir | decirlo | decirmelo) (otra vez | de nuevo | una vez mas)",
-    "[perdon] (que | como) (dijo | dijiste)",
-    "[perdon] no [le | te] (escuché | oi | entendi) [bien] [lo que dijo | lo que dijiste] #h:c_catch",
+    // (Spain's perfect for what was just said: "¿Qué has dicho?", "No te he oído bien")
+    "[perdon] (que | como) (dijo | dijiste | ha dicho | has dicho)",
+    "[perdon] no [le | te] (escuché | oi | entendi | he oido | he escuchado | he entendido) [bien] [lo que dijo | lo que dijiste | lo que ha dicho | lo que has dicho] #h:c_catch",
     "(otra vez | una vez mas | de nuevo | repita | repite) [por favor]",
   ] },
   g_slower: { patterns: [
@@ -183,7 +194,7 @@ export const GLOBAL_INTENTS: Record<string, { patterns: string[] }> = {
   ] },
   g_dont_understand: { patterns: [
     "[perdon] no (entiendo | le entiendo | te entiendo | comprendo) #h:c_dont_understand",
-    "[perdon] no (entendi | le entendi | te entendi) [la pregunta | nada | bien]",
+    "[perdon] no (entendi | le entendi | te entendi | lo entendi | he entendido | le he entendido | te he entendido | lo he entendido) [la pregunta | nada | bien]",
     "no le entiendo nada", "no entiendo nada",
   ] },
   g_spell: { patterns: [
@@ -234,6 +245,7 @@ export const GLOBAL_INTENTS: Record<string, { patterns: string[] }> = {
   g_hello: { patterns: ["@greet #h:s_hello"] },
   g_howareyou: { patterns: [
     "(como esta | como estas | que tal | como le va | como te va | como va todo | que onda | como ha estado | como has estado) [usted | tu] [hoy]",
+    "(que tal | como) estais [hoy]", "como os va",
     "@greet (como esta | como estas | que tal) [usted | tu]",
   ] },
   g_howareyou_answer: { patterns: [
@@ -248,7 +260,7 @@ export const GLOBAL_INTENTS: Record<string, { patterns: string[] }> = {
     "(dejeme | dejame | permitame | permiteme) (pensar | ver | revisar) [un momento]",
     "(espere | espera | permitame | permiteme) [un momento | un segundo]",
   ] },
-  g_sorry: { patterns: ["lo siento [mucho]", "(perdon | disculpe | disculpa) (por eso | por la molestia)", "una disculpa", "ups", "me equivoqué", "fue mi error"] },
+  g_sorry: { patterns: ["lo siento [mucho]", "(perdon | disculpe | disculpa) (por eso | por la molestia)", "una disculpa", "ups", "me equivoqué", "me he equivocado", "fue mi error", "ha sido mi error"] },
   g_dontknow: { patterns: ["no se", "no lo se", "no estoy (seguro | segura) [todavia]", "no tengo idea", "ni idea", "no se todavia", "todavia no se", "no me decido", "no he decidido [todavia]", "[ya] no (me acuerdo | recuerdo) [bien]"] },
   // "¿Qué hora es?" (nobody here gives the time: g_no_watch)
   // ("¿Tiene hora para el lunes?" asks for an appointment: no "tiene hora" here)
@@ -299,6 +311,11 @@ function offerAsked(c: ConvCtx): boolean {
  *  all), "Está bien, gracias" (I'm fine, thanks). */
 const BARE_THANKS = /^(?:(?:muchas|mil|muchisimas) )?gracias(?: (?:es todo|eso es todo|seria todo|eso seria todo|nada mas|por ahora|asi estoy bien))?(?: (?:senor|senora|senorita|joven))?$/;
 const FINE_THANKS = /^(?:esta bien|asi esta bien|estoy bien) (?:muchas )?gracias(?: (?:senor|senora|senorita|joven))?$/;
+/** At "¿Algo más?" only: "Vale, muchas gracias" (Spain), "Bueno, muchas gracias" (Mexico), "Perfecto, gracias" close
+ *  the order ("no, that's all"); at "¿Le pongo hielo?" they stay a yes. */
+/** "¿Sería todo?", "¿Eso es todo?": a closing with thanks there is "that's all" too. */
+const ALL_ASKED = /\b(?:seria todo|eso es todo|es todo|eso seria todo)$/;
+const CLOSE_THANKS = /^(?:vale|bueno|ok|perfecto|listo|genial|muy bien)(?: (?:pues|entonces))? (?:(?:muchas|mil|muchisimas) )?gracias(?: (?:senor|senora|senorita|joven))?$/;
 /** Conversations that read a polite closing at their offers themselves (rule 17: most ask once more, "Entonces, ¿sí
  *  la quiere?"): their reading stays. */
 const OWN_POLITE_CLOSING = new Set(["p25-used-car", "p27-meeting", "p28b-review", "p29-landlord", "p30-start-over", "s35-gym",
@@ -311,11 +328,12 @@ function reread(c: ConvCtx, p: Parse): Parse {
   if (OWN_POLITE_CLOSING.has(c.conv.sit.id)) return p;
   const pend = c.conv.pending, st = pend ? null : c.conv.effectiveStep();
   const no = pend ? pend.no : st?.no;
-  if (!no || !offerAsked(c)) return p;
+  if (!no || !(offerAsked(c) || ALL_ASKED.test(lastQuestion(c)))) return p;
   const h = fold(c.heard);
   const thanksOnly = !p.yn && p.segments.length > 0 && p.segments.every((sg) => sg.intent === "g_thanks") && BARE_THANKS.test(h);
   const fine = p.yn === "yes" && !p.segments.length && FINE_THANKS.test(h);
-  if (!thanksOnly && !fine) return p;
+  const closing = p.yn !== "no" && p.segments.every((sg) => sg.intent === "g_thanks" || sg.intent === "g_ok") && CLOSE_THANKS.test(h) && (OFFER_MORE.test(lastQuestion(c)) || ALL_ASKED.test(lastQuestion(c)));
+  if (!thanksOnly && !fine && !closing) return p;
   if (thanksOnly && (pend?.on?.g_thanks || c.conv.sit.handlers.g_thanks)) return p;
   return { ...p, yn: "no", segments: [], flags: new Set([...p.flags, "thanks"]), tags: [...p.tags, "polite_no"] };
 }
@@ -388,7 +406,7 @@ export const GLOBAL_HANDLERS: Record<string, (c: ConvCtx, slots: any) => void> =
   },
   g_thanks(c) {
     // "¡A la orden!" is what someone who serves the learner says, never a friend or a colleague
-    c.say(c.conv.opt.npcs[c.conv.speakerId]?.informal ? "g_welcome" : "g_welcome_staff");
+    c.say(addressInformal(c.conv.opt.npcs[c.conv.speakerId]) ? "g_welcome" : "g_welcome_staff");
     // "Buenas noches, gracias" at the end of an evening is good night
     if (/\bbuenas noches\b/.test(fold(c.heard)) && atGoodbye(c)) { c.say(byeLine(c)); c.end(); c.hold(); return; }
     if (c.conv.completed) c.hold();
@@ -490,7 +508,8 @@ export const GLOBAL_HINTS: Record<string, HintGroup> = {
       { id: "c_say_again", s: t("Perdón, | ¿{u:puede|t:puedes} | repetir?", "Sorry, | can you | repeat?", "Sorry, could you say that again?") },
       { id: "c_repeat", s: t("¿Me | lo | {u:repite|t:repites}, | por favor?", "(To) me | it | you-repeat, | please?", "Could you repeat that, please?") },
       { id: "c_slower", s: t("¿{u:Puede|t:Puedes} | hablar | más despacio, | por favor?", "Can you | speak | more slowly, | please?", "Could you speak more slowly, please?") },
-      { id: "c_catch", s: t("Perdón, | no escuché | bien.", "Sorry, | I didn't hear | well.", "Sorry, I didn't catch that.") },
+      { id: "c_catch", s: t("Perdón, | no escuché | bien.", "Sorry, | I didn't hear | well.", "Sorry, I didn't catch that.",
+        { spain: t("Perdón, | no he oído | bien.", "Sorry, | I didn't hear | well.", "Sorry, I didn't catch that.") }) },
       { id: "c_dont_understand", s: t("Perdón, | no entiendo.", "Sorry, | I don't understand.", "Sorry, I don't understand.") },
       { id: "c_spell", s: t("¿Cómo | se escribe?", "How | is it spelled?", "How do you spell that?") },
       { id: "c_meaning", s: t("¿Qué | significa | eso?", "What | means | that?", "What does that mean?") },

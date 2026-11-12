@@ -1,0 +1,17 @@
+{ "situation": "s76-dentist-call", "items": [
+  {"ctx": "help", "say": "Buenos días, quería pedir cita", "intent": ["book"]},
+  {"ctx": "help", "say": "Me duele mucho una muela", "intent": "reason_ans"},
+  {"ctx": "new_pt", "say": "Sí, es la primera vez", "intent": ["new_yes", "yn:yes"]},
+  {"ctx": "new_pt", "say": "No, ya he ido antes", "intent": ["new_no"]},
+  {"ctx": "insurance", "say": "No, no tengo seguro", "intent": ["insurance_no", "yn:no"]},
+  {"ctx": "hold", "say": "Vale, espero", "intent": ["hold_ok_ctx", "yn:yes"]},
+  {"ctx": "slot", "say": "Vale, me viene bien", "intent": ["accept", "yn:yes"]},
+  {"ctx": "slot", "say": "¿Tiene algo por la mañana?", "intent": "morning"},
+  {"ctx": "slot", "say": "¿Tiene algo por la tarde?", "intent": "later"},
+  {"ctx": "slot", "say": "Ese día no me viene bien", "intent": ["reject"]},
+  {"ctx": "slot", "say": "¿Dónde están?", "intent": "address_q"},
+  {"ctx": "more", "say": "¿Dónde puedo aparcar?", "intent": "parking_q"},
+  {"ctx": "slot", "say": "¿Me oye?", "intent": "hear_me"},
+  {"ctx": "slot", "say": "¿Oiga? ¿Me oye?", "intent": "hear_me"},
+  {"ctx": "slot", "say": "Sí, me viene bien", "intent": ["accept", "yn:yes"]}
+] }

@@ -1,0 +1,28 @@
+{
+"situation": "s84-date",
+"items": [
+{ "ctx": "greet_late", "say": "Tranquila, yo también acabo de llegar", "intent": "reassure" },
+{ "ctx": "greet_late", "say": "¡Estás guapísima!", "intent": "compliment" },
+{ "ctx": "greet_early", "say": "Perdona por llegar tarde", "intent": "sorry_late" },
+{ "ctx": "greet_early", "say": "¡Gracias! Tú también estás genial", "intent": ["you_too", "compliment"] },
+{ "ctx": "greet_meet", "say": "¿Vienes mucho por aquí?", "intent": "come_here_often" },
+{ "ctx": "drinks", "say": "Ponme una margarita, por favor", "intent": "drink_ans", "slots": { "drink": "margarita" } },
+{ "ctx": "drinks", "say": "Para mí lo mismo", "intent": "same_drink_ans" },
+{ "ctx": "job", "say": "Soy profesora. ¿Y tú?", "intent": "job_ans" },
+{ "ctx": "travel", "say": "Sí, ya he ido", "intent": "travel_yes_ctx" },
+{ "ctx": "travel", "say": "No, nunca he ido, pero me encantaría", "intent": "travel_no_ctx" },
+{ "ctx": "check", "say": "¿Pagamos a medias?", "intent": "split" },
+{ "ctx": "check", "say": "Invito yo", "intent": "pay_all" },
+{ "ctx": "check_offer", "say": "¿Cuánto ha sido?", "intent": "ask_amount" },
+{ "ctx": "cold", "say": "Toma, ponte mi jersey", "intent": "offer_jacket" },
+{ "ctx": "cold", "say": "¿Quieres mi chaqueta?", "intent": "offer_jacket" },
+{ "ctx": "nice", "say": "Yo también me lo he pasado muy bien", "intent": ["nice_time", "me_too_ctx"] },
+{ "ctx": "nice", "say": "Me lo he pasado genial", "intent": "nice_time" },
+{ "ctx": "day", "say": "El sábado me viene bien", "intent": ["agree_again", "propose_day"] },
+{ "ctx": "day", "say": "¿El domingo por la noche?", "intent": "day_ctx" },
+{ "ctx": "again", "say": "Vale, ¿a qué hora?", "intent": "agree_again" },
+{ "ctx": "closing", "say": "¡Vale, te escribo! ¡Buenas noches!", "intent": ["text_reply", "g_bye"] },
+{ "ctx": "nice", "say": "No me lo he pasado bien", "intent": "any" },
+{ "ctx": "drinks", "say": "Ayer me compré un coche nuevo", "intent": "none" }
+]
+}

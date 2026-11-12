@@ -1,0 +1,27 @@
+{
+"situation": "p27-meeting",
+"items": [
+{ "ctx": "pitch", "say": "Entiendo lo que dices, pero no sé si estoy de acuerdo", "intent": "disagree_polite" },
+{ "ctx": "pitch", "say": "¿La hemos probado bien?", "intent": "ask_q" },
+{ "ctx": "pitch", "say": "Gerardo, ¿tú qué opinas?", "intent": "ask_boss" },
+{ "ctx": "pitch", "say": "Me parece bien el plan", "intent": "agree_plan" },
+{ "ctx": "charts", "say": "Perdona, ¿puedo interrumpir un momento?", "intent": "interrupt_polite" },
+{ "ctx": "charts", "say": "Perdona, pero cuatro días no son suficientes", "intent": ["interrupt_polite", "give_reason"] },
+{ "ctx": "reason", "say": "El equipo de soporte no está listo", "intent": "give_reason" },
+{ "ctx": "counter", "say": "Entiendo lo que dices", "intent": "ack_point" },
+{ "ctx": "counter", "say": "Vale, es un problema", "intent": ["site_problem_ctx", "ack_point", "yn:yes"] },
+{ "ctx": "alternative", "say": "¿Hemos pensado en un lanzamiento de prueba?", "intent": "offer_alt" },
+{ "ctx": "alternative", "say": "¿Puedo añadir algo? ¿Y si la lanzamos como beta?", "intent": "offer_alt" },
+{ "ctx": "resolve", "say": "Vale, trato hecho", "intent": ["accept_deal", "yn:yes"] },
+{ "ctx": "resolve", "say": "Así sí me convence", "intent": "accept_deal" },
+{ "ctx": "resolve", "say": "Vale, tú ganas", "intent": "give_in" },
+{ "ctx": "resolve", "say": "Eso no me convence", "intent": "disagree_polite" },
+{ "ctx": "twist", "say": "Vale, adelante", "intent": ["let_her_ctx", "yn:yes"] },
+{ "ctx": "twist", "say": "¿Me dejas terminar?", "intent": "finish_first" },
+{ "ctx": "closing", "say": "El lunes me viene bien", "intent": "monday_yes" },
+{ "ctx": "coffee", "say": "Vale, me encantaría", "intent": ["coffee_yes_ctx", "yn:yes"] },
+{ "ctx": "coffee", "say": "Hoy no me viene bien", "intent": ["coffee_no_ctx", "yn:no"] },
+{ "ctx": "charts", "say": "Perdona que te interrumpa, pero todavía no está probada", "intent": "interrupt_polite" },
+{ "ctx": "alternative", "say": "No deberíamos añadir nada", "intent": "any" }
+]
+}

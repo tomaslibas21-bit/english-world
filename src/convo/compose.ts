@@ -30,16 +30,29 @@ function binding(vars: Vars, name: string): NpBinding | null {
 // ---------------------------------------------------------------------------
 
 /** Which Spanish the learner hears (the Spanish edition's setting): "neutral" takes a line's neutral twin
- *  (SentSrc.neutral) where it has one. The English edition never sets it. */
-let VARIETY: "default" | "neutral" = "default";
-export function setVariety(v: "default" | "neutral") { VARIETY = v; }
+ *  (SentSrc.neutral) where it has one; "spain" its Spain twin (SentSrc.spain), else its neutral one. The English
+ *  edition never sets it. */
+export type Variety = "default" | "neutral" | "spain";
+let VARIETY: Variety = "default";
+export function setVariety(v: Variety) { VARIETY = v; }
 export const variety = () => VARIETY;
+
+/** A character's role in the practised language as the chosen Spanish names it (Spain's `roleSpain`). */
+export function roleSaid(npc: { role: { en: string }; roleSpain?: string } | undefined): string {
+  return npc ? (VARIETY === "spain" && npc.roleSpain ? npc.roleSpain : npc.role.en) : "";
+}
+
+/** Whether a character says tú to the learner: `informal`, or in Spain's Spanish also `informalSpain` (Spain's tú in
+ *  casual service: the café, the shop, the salon, the gym; docs/es/STYLE.md "Spain Spanish"). */
+export function addressInformal(npc: { informal?: boolean; informalSpain?: boolean } | undefined): boolean {
+  return !!npc?.informal || (VARIETY === "spain" && !!npc?.informalSpain);
+}
 
 export interface ComposeOpts { look: EntityLookup; addressee?: Gender; speaker?: Gender; /** jūs (true, default) or tu (false) */ formal?: boolean }
 
 /** Compose a concrete sentence. Throws on authoring errors (validated at build time). */
 export function compose(src0: SentSrc, vars: Vars, opts: ComposeOpts): Sentence {
-  const src: SentSrc = VARIETY === "neutral" && src0.neutral ? src0.neutral : src0;
+  const src: SentSrc = VARIETY === "spain" ? src0.spain ?? src0.neutral ?? src0 : VARIETY === "neutral" ? src0.neutral ?? src0 : src0;
   const g = opts.addressee ?? "m";
   const sp = opts.speaker ?? "f";
   const formal = opts.formal ?? true;

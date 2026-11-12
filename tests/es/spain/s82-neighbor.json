@@ -1,0 +1,16 @@
+{ "situation": "s82-neighbor", "items": [
+  {"ctx": "intro", "say": "Hola, soy Ryan. Me acabo de mudar aquí al lado.", "intent": ["im_name_ctx", "moved_in"]},
+  {"ctx": "like_q", "say": "Sí, me gusta, pero todavía tengo muchas cajas", "intent": ["boxes", "like_ans_ctx"]},
+  {"ctx": "trash_q", "say": "¿Dónde se tira la basura?", "intent": "ask_trash"},
+  {"ctx": "trash_q", "say": "¿Se puede beber el agua del grifo?", "intent": "ask_water"},
+  {"ctx": "trash_q", "say": "¿Dónde puedo aparcar el coche?", "intent": "ask_parking"},
+  {"ctx": "trash_q", "say": "¿Hay una tienda cerca?", "intent": "ask_store"},
+  {"ctx": "needs", "say": "¿Me podría regar las plantas la semana que viene?", "intent": "water_plants"},
+  {"ctx": "needs", "say": "¿Me podría recoger un paquete el lunes?", "intent": "take_package"},
+  {"ctx": "needs", "say": "Perdone por el ruido de anoche", "intent": "noise_sorry"},
+  {"ctx": "needs", "say": "No volverá a pasar", "intent": "noise_promise"},
+  {"ctx": "needs", "say": "¿Le apetece venir a tomar un café algún día?", "intent": "invite_coffee"},
+  {"ctx": "away_when", "say": "El viernes", "intent": "away_when_ctx"},
+  {"ctx": "needs", "say": "No hice ninguna fiesta", "intent": "noise_deny"},
+  {"ctx": "needs", "say": "¿Podría bajar un poquito la música?", "intent": "noise_ask"}
+] }

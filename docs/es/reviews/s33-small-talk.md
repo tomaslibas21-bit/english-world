@@ -105,3 +105,23 @@ its id).
 **For the lead:** the scene phases above (pictures track); STYLE.md's Mexican-only list could add
 platicar (conversar) and carne asada as the party (parrillada), so the cross-cutting digest catches them; global
 g_meaning could take "¿Qué es (un/el) X?" (now only "¿Qué significa X?").
+
+## Spain twins (11 Nov 2026)
+
+18 twins. Don Pancho keeps usted (an older neighbor; no register change). Spain's words: jersey (suéter), móvil, autobús,
+charlar ("¡Ha sido un placer charlar con usted!" for "¡Qué gusto platicar con usted!", also the learner's by_better hint; its pattern
+now takes charlar / conversar / hablar), "Solo…" for "Nada más…", "¡Qué bien!" / "¡Menos mal que lleva paraguas!" for "¡Qué
+bueno…!", "por la tarde" for "en la tarde", "aquí" for "acá", "¡Qué maravilla! El agua del cenote está muy fresquita" for "¡Qué rico!…
+es bien fresquita", and the perfect "he sacado el jersey" / "haya venido". Spain corpus: 16 items.
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer, against docs/es/STYLE.md "Spain Spanish": every line's Spain reading (twin, else neutral), the hints and
+example answers, tú/usted and vosotros by the Spain rule, meaning and English against the Mexican line, Mexican-only
+things kept, and the Spain corpus.
+
+Found and fixed: Don Pancho's own g_* lines had no twin: no le he entendido, me he equivocado, ¿ha dicho…?; ¡Buen día! → ¡Buenos días! / ¡Muy buenas!; perfect for today and just now (ha amanecido, ha entrado un norte, ha empezado a llover, ha venido preparado, su autobús ha llegado / todavía no ha llegado, ¿cómo le ha ido el fin de semana?, se lo he dicho); extrañar → echar de menos (grammar takes it); alga café → marrón, huele fatal; traigo paraguas → llevo; hay sitio; la familia es lo primero; rápido se quita → se quita enseguida.
+
+English of every twin checked against its Mexican line (restored where a twin had rephrased it). Spain corpus items
+added for the new forms. Gates: Mexican, neutral and Spain checks 0 errors; coverage 0 false accepts.
+Also: g_meaning (Don Pancho's own) → “Deje que se lo enseñe” (the same twin now in global.ts, {u:Deje que|t:Deja que}).
