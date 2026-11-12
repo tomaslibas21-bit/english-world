@@ -1027,11 +1027,14 @@ in code only the edition runs (mexican.ts, TownMerger); Maple Harbor's rooms and
   - the police: "POLICÍA MUNICIPAL · SEGURIDAD PÚBLICA · ATENCIÓN CIUDADANA", four red plastic chairs on a beam where
     Maple Harbor's bench was, a standing fan, a palm in a clay pot where its plant was, "Denuncia anónima · Llama al
     089" on the wall, a ceiling fan;
-  - Línea Clara: someone's birthday, a star piñata over the open plan and two strings of papel picado across the room,
-    ceiling fans; Brotecito: a futbolito, a piñata, papel picado;
-  - the airport's halls: either side of the way in from the door a long planter faced with talavera (a palm, agaves)
-    with a banca along each side; the high windows on the back wall lower and set higher (1.0 m), and the welcome frieze
-    a little smaller and lower (25.6 × 1.6 m at 4.85), a band of wall between them;
+  - Línea Clara: someone's birthday, a star piñata and papel picado along the back of the open plan (behind everyone:
+    strung across the room they hid Brooks in s87 and Paul in s34 from the conversation's camera), ceiling fans;
+    Brotecito: a futbolito, a piñata, papel picado;
+  - the airport's halls: a round planter faced with talavera with a coconut palm and agaves before the arrivals' and
+    departures' partition, where the ways from the door part; further out either side a long planter faced with
+    talavera (a palm, agaves) with a banca along each side, clear of the transport desk and the souvenir stand; the high
+    windows on the back wall lower and set higher (1.0 m), and the welcome frieze a little smaller and lower
+    (25.6 × 1.6 m at 4.85), a band of wall between them;
   - the car rental: the equipales, their table and petate moved up into the room where the door's view shows them, the
     leaflets' stand to the counter's side of the way in.
 - **P25 at 412 × 915**: the conversation's camera (Game.ts `fitTalk`) treats a line through a house's portal (its slab
