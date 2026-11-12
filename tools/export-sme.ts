@@ -8,6 +8,9 @@
 //   by the course's files Worker (spanish-master-en-files) at https://audio.dvikalbesdainos.lt/spanish-master-en/
 //   game/audio-es/ only to a learner with the course's files token (src/game/audio.ts: clipUrl, filesToken; the upload
 //   is the course's scripts/game/upload-game-clips.mjs);
+// - the game starts in neutral Latin American Spanish until the learner chooses (VITE_DEFAULT_VARIETY=neutral,
+//   src/state/variety.ts): the course shows the game's phrase cards in the Spanish chosen in the game (its key
+//   "puerto-colibri-variety"), neutral before any choice, and a word saved in the game keeps the wording it was saved in;
 // - words the learner saves also go into the course's own flashcards (VITE_CARDS_TARGET=fluentsteps: the course keeps
 //   English Master's storage key "fluentsteps.songcards.v1" and its card format, src/state/cards.ts), and a home
 //   button leads back to the course (VITE_BACK_URL=/);
@@ -16,14 +19,17 @@
 //   npx tsx tools/export-sme.ts <path to a spanish-master-english checkout> [--audio=<clip base URL>]
 import { execFileSync } from "node:child_process";
 import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import path from "node:path";
+import { audioKey } from "../src/audio-key";
 
 const ROOT = path.resolve(import.meta.dirname, "..");
 const args = process.argv.slice(2);
 const target = args.find((a) => !a.startsWith("--"));
 /** The Spanish edition's clip folder (src/editions/es/content/voices.ts: audioDir). */
 const DIR = "audio-es/";
+/** The Spanish the game starts in, inside the course (src/state/variety.ts). */
+const DEFAULT_VARIETY = "neutral";
 const audio = args.find((a) => a.startsWith("--audio="))?.slice(8) ?? `https://audio.dvikalbesdainos.lt/spanish-master-en/game/${DIR}`;
 // the course's own files Worker config: only a Spanish Master English checkout has it
 if (!target || !existsSync(path.join(target, "workers/files/wrangler.spanish-en.jsonc")) || !existsSync(path.join(target, "src/components/AppShell.tsx"))) {
@@ -40,7 +46,7 @@ const out = mkdtempSync(path.join(tmpdir(), "puerto-colibri-sme-"));
 console.log(`building the Spanish edition for /game/ (${branch || "?"} ${commit || "?"}${dirty ? ", with uncommitted changes" : ""}; clips from ${audio}) …`);
 execFileSync("npx", ["vite", "build", "--outDir", out, "--emptyOutDir"], {
   cwd: ROOT, stdio: ["ignore", "ignore", "inherit"],
-  env: { ...process.env, EDITION: "es", VITE_EDITION: "es", GAME_BASE: "/game/", VITE_AUDIO_BASE: audio, VITE_CARDS_TARGET: "fluentsteps", VITE_BACK_URL: "/" },
+  env: { ...process.env, EDITION: "es", VITE_EDITION: "es", GAME_BASE: "/game/", VITE_AUDIO_BASE: audio, VITE_CARDS_TARGET: "fluentsteps", VITE_BACK_URL: "/", VITE_DEFAULT_VARIETY: DEFAULT_VARIETY },
 });
 const html = readFileSync(path.join(out, "index.html"), "utf8");
 if (!html.includes("Puerto Colibrí")) { console.error("the build is not the Spanish edition (no Puerto Colibrí in its index.html)"); process.exit(1); }
@@ -53,8 +59,28 @@ if (existsSync(clipDir)) {
   for (const f of readdirSync(clipDir)) if (f !== "manifest.json" && f !== "repair-versions.json") rmSync(path.join(clipDir, f), { recursive: true, force: true });
   if (existsSync(path.join(clipDir, "manifest.json"))) clips = Object.keys(JSON.parse(readFileSync(path.join(clipDir, "manifest.json"), "utf8"))).length;
 }
+/** Clips per voice set (es_ Mexican, esn_ neutral, esp_ Spain's), counted from the voicing's line list when it is on
+ *  this machine (~/puerto-colibri-voicing/lines.json + lines-extra.json; the manifest itself holds only keys). */
+function voiceSets(): Record<string, number> | undefined {
+  if (!clips) return undefined;
+  const dir = path.join(homedir(), "puerto-colibri-voicing");
+  const setOf = new Map<string, string>();
+  for (const f of ["lines.json", "lines-extra.json"]) {
+    const file = path.join(dir, f);
+    if (!existsSync(file)) continue;
+    for (const l of JSON.parse(readFileSync(file, "utf8")) as { voice: string; speed: number; say: string }[]) setOf.set(audioKey(l.voice, l.speed, l.say), l.voice.split("_")[0]);
+  }
+  if (!setOf.size) return undefined;
+  const out: Record<string, number> = { es: 0, esn: 0, esp: 0, other: 0 };
+  for (const k of Object.keys(JSON.parse(readFileSync(path.join(clipDir, "manifest.json"), "utf8")))) {
+    const s = setOf.get(k);
+    out[s && s in out ? s : "other"]++;
+  }
+  return out;
+}
+const sets = voiceSets();
 if (!clips) console.warn(`no clip list (public/${DIR}manifest.json): the game will speak every line with the browser's voice`);
-writeFileSync(path.join(out, "version.json"), JSON.stringify({ game: "Puerto Colibrí", edition: "es", branch, commit, dirty, built: new Date().toISOString(), clips, clipBase: audio }, null, 2) + "\n");
+writeFileSync(path.join(out, "version.json"), JSON.stringify({ game: "Puerto Colibrí", edition: "es", branch, commit, dirty, built: new Date().toISOString(), clips, voiceSets: sets, clipBase: audio, defaultVariety: DEFAULT_VARIETY }, null, 2) + "\n");
 
 const dest = path.join(target, "public/game");
 const themeFile = path.join(dest, "fs-theme.css");
@@ -67,4 +93,4 @@ if (theme) writeFileSync(themeFile, theme);
 let files = 0, bytes = 0;
 const walk = (d: string) => { for (const f of readdirSync(d)) { const p = path.join(d, f); const s = statSync(p); if (s.isDirectory()) walk(p); else { files++; bytes += s.size; } } };
 walk(dest);
-console.log(`copied into ${dest}: ${files} files, ${(bytes / 1048576).toFixed(1)} MB; ${clips} clips listed (they go to R2 separately)`);
+console.log(`copied into ${dest}: ${files} files, ${(bytes / 1048576).toFixed(1)} MB; ${clips} clips listed${sets ? ` (es_ ${sets.es}, esn_ ${sets.esn}, esp_ ${sets.esp}${sets.other ? `, ${sets.other} of no set known` : ""})` : ""} (they go to R2 separately); starts in ${DEFAULT_VARIETY} Spanish`);
