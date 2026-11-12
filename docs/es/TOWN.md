@@ -1047,6 +1047,43 @@ in code only the edition runs (mexican.ts, TownMerger); Maple Harbor's rooms and
 
 Tests: tests/es/town.test.ts as before (the new pair on the sacbé is beyond the town's edge, clear of everyone).
 
+## Graphics, round 7: the offices (12 Nov 2026)
+
+From the fourth re-rating (notes GRAPHICS-AFTER4.md, 8.0): the last Spanish-only area under 8, the offices. Línea Clara
+and Brotecito kept Maple Harbor's furniture under round 6's decorations: white desks on metal legs, dark office chairs,
+glass rooms in navy steel, the blue lounge sofa (with someone sitting on it), Brotecito's beanbags and its steel table and
+stools. All behind one switch (theme.ts `roomExtras.offices7`; interiors.ts `office7`, `brotecito7`): in this edition
+`office()` and `sproutly()` leave those pieces out and these draw the edition's own in their places, through each room's
+merger (no draw call), each with the collider of the piece it replaces, so the rooms' nav finds the same paths (the same
+lengths from the door to every speaker). Maple Harbor's rooms are pixel-identical.
+
+- **Línea Clara** (`office7`): five cedar desks with a pedestal of three drawers and brass pulls, a panel leg and a
+  modesty panel (the monitors as before), each with a chair of wood and woven bejuco (`caneChair`, its seat at 0.55 where
+  the office chair's was, so the three at their desks sit as before); the meeting room's and the sala de juntas' tables of
+  parota with turned legs (`parotaTable`) and cane chairs at Lic. Salinas', Gerardo's, Sofía's and Pablo's seats (0.48),
+  a jarra of agua de jamaica on the meeting table; Elena's desk and the cabinet behind her in cedar, her frames in
+  cedar (they frame the meeting room's south pane too); the meeting room's and the sala de juntas' long glass walls
+  framed in cedar (`glassFrame`: posts every metre or so, a top rail, a low rail; the sala de juntas' short front pane
+  is left bare: a rail across it crossed Sofía's face in s34's picture);
+  the reception and the kitchen's counter in cedar with talavera on their faces (`counterMx`), flowers, a bell, a clay pot
+  for café de olla and jarritos; the round table in parota with four equipales (`equipalS`) on a petate; the lounge a
+  Zapotec rug, **a settee of cedar and bejuco** (`caneSettee`) where the blue sofa was, its cushion's top at 0.58 so the
+  woman who sits there (roomPeople.ts) keeps her seat and pose, embroidered pillows, a low table with talavera set in its
+  top (`talaveraLowTable`), a palm in a clay pot; a cedar perchero with a sombrero and a rebozo where the coat rack was;
+  the bookcase in cedar with barro and talavera among the binders. The room's look (`roomLooks.office`): mosaicos de
+  pasta in the building's teal and terracotta with an ochre heart, warm cal walls over a teal dado.
+- **Brotecito** (`brotecito7`): before the big screen a petate, a cane settee and two equipales instead of the beanbags;
+  the long table a slab of parota with a dark live edge on two trestles, six wooden bancos; the coffee bar in cedar with
+  talavera on its face to the room and a pot of café de olla (its sign "Café de olla · Aguas frescas · Buena vibra");
+  palms and plants in clay pots; a zarape runner from the door into the room (the phone's door view was bare floor);
+  a terracotta floor under the brick (`roomLooks.sproutly`). Round 6's papel picado hangs along the back now, behind
+  Toño (strung across the room it covered him from the waist down in p18's picture).
+
+Draw calls in the offices' room views and their six conversations are the same as round 6's at every size (phone
+triangles in the office's door view 145k → 160k). Checks: es-tour --start=jump 50/50 at 375×812, 412×915 and 1280×800,
+every speaker in the picture, no head cut (p18 and p27 now with fewer rays blocked than before); Maple Harbor's 72 frozen
+room and talk-spot views pixel-identical with the same draw calls at both sizes.
+
 ## The tasks (in order)
 
 Each task is one area; each ends with before/after screenshots at phone size and the draw-call numbers.

@@ -107,6 +107,10 @@ export interface TownTheme {
      *  each side of the way in and its high windows clear of the welcome frieze; the car rental's equipales where the
      *  door shows them. */
     rooms6?: boolean;
+    /** (graphics round 7) the offices' own furniture: Línea Clara's and Brotecito's desks, chairs, tables and sofa as a
+     *  Caribbean Mexican office's (cedar desks, chairs of wood and bejuco, parota tables, a cane settee, equipales,
+     *  talavera on the counters), the glass rooms framed in cedar; each piece where Maple Harbor's was, with its collider. */
+    offices7?: boolean;
   };
   /** People who stand outdoors in this edition (added to layout.ts OUTDOOR_NPCS; a room that has them leaves them out). */
   outdoorNpcs: OutdoorSpot[];

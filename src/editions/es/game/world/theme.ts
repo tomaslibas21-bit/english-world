@@ -92,7 +92,7 @@ export const THEME: TownTheme = {
     "ONE MORE REP!": "¡UNA MÁS!",
     "Harbor Fitness": "Gimnasio Colibrí",
     Sproutly: "Brotecito",
-    "Coffee · Kombucha · Good vibes": "Café · Kombucha · Buena vibra",
+    "Coffee · Kombucha · Good vibes": "Café de olla · Aguas frescas · Buena vibra",
   },
   boards: {
     // Café La Ceiba (s72): its drinks and pan dulce, prices in pesos; iced, an extra shot and plant milks cost more
@@ -118,6 +118,8 @@ export const THEME: TownTheme = {
     upperMx: true, shopsMx5: true,
     // (graphics round 6) the last rooms below the upper wall, the halls' middles, the rental's equipales in view
     rooms6: true,
+    // (graphics round 7) the offices' own furniture
+    offices7: true,
   },
   // s71b: in Mexico an attendant fills the tank, so Doña Chela stands at the pump by the learner's car (beside pump 2,
   // the car facing the street), not in the shop; the learner talks to her from behind the car
@@ -302,6 +304,10 @@ export const THEME: TownTheme = {
     museum: { floor: "#cf9a72", floorKind: "barro", wall: "#f7f0e2", dado: "#8e2b1f", dadoH: 0.9, accent: "#3a2f22" },
     airport: { floor: "#e6dfd0", floorKind: "granito" },
     "the-pier": { wall: "#f6dfae", dado: "#1f8fb0", accent: "#14607a" },
+    // (graphics round 7) Línea Clara: mosaicos de pasta in its building's teal and terracotta, warm cal over a teal
+    // dado; Brotecito: terracotta under its brick
+    office: { floor: "#efe5d0", floorKind: "pasta", pasta: ["#2a6f6b", "#c0673f", "#e0a526"], wall: "#fbf4e6", dado: "#2a6f6b", dadoH: 1.0, accent: "#1f4f4c" },
+    sproutly: { floor: "#c9784d", floorKind: "barro" },
   },
   homeMx: true,
 
