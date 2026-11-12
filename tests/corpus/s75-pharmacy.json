@@ -331,5 +331,17 @@
   {"ctx": "dosage", "say": "So-so.", "intent": "any", "not": ["g_howareyou_bad"], "note": "logic audit 5 Nov 2026"},
   {"ctx": "pay", "say": "Can I have the receipt?", "intent": "receipt_q", "note": "logic audit 5 Nov 2026"},
   {"ctx": "pay", "say": "Can I have the receipt?", "intent": "any", "not": ["product_unknown"], "note": "logic audit 5 Nov 2026"},
-  {"ctx": "recommend", "say": "Can I have ibuprofen instead?", "intent": "change_product", "note": "logic audit 5 Nov 2026"}
+  {"ctx": "recommend", "say": "Can I have ibuprofen instead?", "intent": "change_product", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "howlong", "say": "I already took Tylenol, but it didn't help.", "intent": "tried_med", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "recommend", "say": "I already tried Tylenol.", "intent": "tried_med", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "meds", "say": "I took some ibuprofen this morning, but it didn't help.", "intent": "tried_med", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "recommend", "say": "Advil doesn't work for me.", "intent": ["tried_med", "other_option"], "note": "dead ends 12 Nov 2026"},
+  {"ctx": "allergy", "say": "I'm allergic to Tylenol.", "intent": "any", "not": ["tried_med"], "note": "dead ends 12 Nov 2026"},
+  {"ctx": "questions_q", "say": "And for a five-year-old?", "intent": "ask_kids", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "questions_q", "say": "What about for kids?", "intent": "ask_kids", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "recommend", "say": "And for my son?", "intent": "ask_kids", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "pay", "say": "What time do you close?", "intent": "ask_hours", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "more", "say": "What are your hours?", "intent": "ask_hours", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "need", "say": "How late are you open tonight?", "intent": "ask_hours", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "questions_q", "say": "When should I take it?", "intent": "any", "not": ["ask_hours"], "note": "dead ends 12 Nov 2026"}
 ]}

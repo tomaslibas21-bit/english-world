@@ -253,6 +253,11 @@ export const bank: SituationDef = {
       "(do | can) you (send | transfer) money @money_to", "i want to @send money to lithuania",
       "(how | can i) (pay | help) my family in lithuania", "(i need | i want | i would like) to (pay | support | help) my family in lithuania",
     ] },
+    // 12 Nov 2026 (dead ends): "Why?" at the Social Security question; the withdrawal limit
+    ssn_why_ctx: { patterns: ["why", "why [do you need | do you want | is that | is it] [it | that | one | my social security number | the number] [necessary | important]", "why do you ask", "what do you need it for"] },
+    withdraw_limit: { patterns: ["how much (can | could) i (withdraw | take out | get) [a day | per day | at once | at a time | from the @atm | at the @atm]",
+      "how much (cash | money) can i (withdraw | take out | get) [a day | per day | at once]", "what is the [daily] (limit | withdrawal limit | atm limit | cash limit)",
+      "is there a [daily] (limit | withdrawal limit | atm limit) [at @atm | for @atm | for withdrawals]", "how much can i take out of (the @atm | my account) [a day | per day]"] },
     withdraw: { patterns: [
       "i (would like | want | need) to (withdraw | take out | get) [some] (cash | money) [here] #h:cash_take",
       "(can | could) i (withdraw | take out | get) [some] (cash | money) [here | at the counter] #h:cash_take",
@@ -569,6 +574,11 @@ export const bank: SituationDef = {
     ssn_yes_type: [
       t("Great. | You | can | type | it | here.", "Puiku. | Jūs | galite | įvesti | jį | čia.", "Puiku. Įveskite jį čia."),
     ],
+    // 12 Nov 2026, new lines: why the number (taxes); the ATM limit (invented: $500 a day)
+    ssn_why: [t("It's | for | taxes. | But | you | can | open | the | account | without | one.", "Tai yra | dėl | mokesčių. | Bet | Jūs | galite | atidaryti | — | sąskaitą | be | jo.",
+      "Tai dėl mokesčių. Bet sąskaitą galite atidaryti ir be jo.")],
+    withdraw_limit: [t("At | the | ATM, | up | to | five | hundred | dollars | a | day.", "Prie | — | bankomato | — | iki | penkių | šimtų | dolerių | per | dieną.", "Bankomate – iki penkių šimtų dolerių per dieną.",
+      { flags: { 8: "“a” (a day) = per + the accusative dieną." } })],
     ssn_explain: [
       t("It's | a | nine-digit | number | for | work | and | taxes | in America.", "Tai yra | — | devynių skaitmenų | numeris | — | darbui | ir | mokesčiams | Amerikoje.",
         "Tai devynių skaitmenų numeris, reikalingas darbui ir mokesčiams Amerikoje.",
@@ -1123,7 +1133,7 @@ export const bank: SituationDef = {
       yes: (c) => { c.s.proof = "lease"; c.say("proof_ok"); },
       no: (c) => { c.s.proof = "later"; c.say("proof_later"); } },
     { id: "ssn", when: opening, done: (c) => c.s.ssn !== undefined, ask: (c) => c.say("ask_ssn"),
-      expects: ["ssn_none", "ssn_yes", "ask_ssn_what", "ssn_problem", "not_yet"],
+      expects: ["ssn_none", "ssn_yes", "ask_ssn_what", "ssn_problem", "not_yet", "ssn_why_ctx"],
       suggest: [{ lt: "Atsakyti, ar turi socialinio draudimo numerį", hint: "ssn" }],
       yes: (c) => { c.s.ssn = "yes"; c.say("ssn_yes_type"); },
       no: (c) => { c.s.ssn = "none"; c.say("ssn_none_ok"); },
@@ -1377,6 +1387,8 @@ export const bank: SituationDef = {
       if (c.step === "proof") { bank.handlers.no_proof(c, {}, { intent: "no_proof", slots: {}, tags: [] }); return; }
       c.say("no_problem");
     },
+    ssn_why_ctx(c) { c.say("ssn_why"); },
+    withdraw_limit(c) { c.say("withdraw_limit"); },
     ask_ssn_what(c) {
       if (c.step === "proof" && !/social|security|ssn/i.test(c.heard)) { c.say("ask_proof"); c.hold(); return; }
       c.say("ssn_explain");
@@ -1485,6 +1497,12 @@ export const bank: SituationDef = {
   },
 
   tests: [
+    // dead ends (12 Nov 2026): "Why?" at the Social Security question, the withdrawal limit
+    { say: "Why?", intent: "ssn_why_ctx", step: "ssn" },
+    { say: "Why do you need it?", intent: "ssn_why_ctx", step: "ssn" },
+    { say: "Why?", intent: "none", step: "proof" },
+    { say: "How much can I withdraw?", intent: "withdraw_limit", not: ["withdraw"] },
+    { say: "Is there a daily limit?", intent: "withdraw_limit" },
     // logic audit (5 Nov 2026)
     { say: "The first one.", intent: "acct_type_ans", step: "acct_type" },
     { say: "I don't know.", intent: "g_dontknow", step: "cash_offer", not: ["ask_difference"] },

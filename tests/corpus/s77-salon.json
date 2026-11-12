@@ -276,5 +276,15 @@
   {"ctx": "wash", "say": "Is it extra?", "intent": "extra_q", "note": "logic audit 5 Nov 2026"},
   {"ctx": "reveal", "say": "It doesn't matter.", "intent": "polite_ok", "note": "logic audit 5 Nov 2026"},
   {"ctx": "wash", "say": "That's fine, thanks.", "intent": "any", "not": ["wash_request", "confirm_yes"], "note": "logic audit 5 Nov 2026"},
-  {"ctx": "blowdry", "say": "I'm good, thanks.", "intent": "any", "not": ["style", "g_howareyou_answer"], "note": "logic audit 5 Nov 2026"}
+  {"ctx": "blowdry", "say": "I'm good, thanks.", "intent": "any", "not": ["style", "g_howareyou_answer"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "name", "say": "What's your name?", "intent": "q_name", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "service", "say": "Sorry, what was your name again?", "intent": "q_name", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "length", "say": "How long does it take?", "intent": "q_duration", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "service", "say": "How long will the haircut take?", "intent": "q_duration", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "wash", "say": "Will it take long?", "intent": "q_duration", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "pay", "say": "Is the tip included?", "intent": "q_tip_incl", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "service", "say": "Does the price include the tip?", "intent": "q_tip_incl", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "pay", "say": "How much should I tip?", "intent": "q_tip_incl", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "length", "say": "How long is my hair now?", "intent": "any", "not": ["q_duration"], "note": "dead ends 12 Nov 2026"},
+  {"ctx": "pay", "say": "I'll add twenty percent.", "intent": "add_tip", "not": ["q_tip_incl"], "note": "dead ends 12 Nov 2026"}
 ]}
