@@ -349,7 +349,7 @@ export const THEME: TownTheme = {
     [-5.05, -70.1], [2.05, -70.3], [35.65, 47.65],
     // (graphics round 5, with the far version of each person, `farPeople`) five more on the palapas' loungers, two more
     // travellers on the andenes' benches, two on the zócalo's side bancas
-    [-63.05, -70.0], [-54.05, -70.2], [31.95, -70.1], [42.95, -70.3], [75.05, -70.1],
+    [-63.05, -70.0], [-55.95, -70.2], [31.95, -70.1], [42.95, -70.3], [75.05, -70.1],
     [38.25, 47.65], [52.65, 47.65], [17, -27.95], [43.5, -24.55]],
   vendors: [[32, -44.25, 0], [26, -44.25, 0], [44, -44.75, 0], [38, -43.25, 0]],
   // (and those who sit or stand farther than 22 m from the player keep their pose: at that distance a breath shows
