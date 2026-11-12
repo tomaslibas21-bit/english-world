@@ -949,6 +949,41 @@ Outdoors only, every change behind a theme switch (Maple Harbor's values switch 
 Tests: tests/es/town.test.ts "graphics round 4" (the atrium clear of everyone, the stalls and the cross; the beach's
 sitters on loungers; the suitcases clear of everyone; the meadow clear of the cenote and the mirador).
 
+## Graphics, round 5 (12 Nov 2026)
+
+From the second re-rating (notes GRAPHICS-AFTER2.md, 7.6): its top five, in order of gain per effort. Every change
+behind a theme switch (Maple Harbor's values switch them off):
+
+- **Almendros** (mexican.ts `almendroCrown`, `almendroTrunk`): round 4's tiers narrowing upward read as fir trees. Now
+  three broad flat layers of leaves, the top one hardly narrower than the bottom, each a flat dome with lumps off its
+  edge, turned against the one below and stepped out to one side, with sky between the layers, on a straight trunk with
+  a level limb under each lower layer (184 + 26 triangles a tree). **Trunks fade with their crowns** (fade.ts: a trunk
+  mesh's `userData.fadeWith` names its crown mesh; each trunk follows its crown instance for instance), so a near crown
+  dropped from the picture no longer leaves a bare Y trunk.
+- **See-through thatch** (town.ts `mxRoofs`, the squares' `thinCast` meshes): the beach palapas' thatch and the airport
+  drop-off's thatched canopy are looked through by the walking camera (cutout.ts opens them on the line to the player)
+  instead of being roofs it must stay under; they still cast their shade.
+- **Adoquín** (`adoquin`; town.ts `adoquinMaps`, `withGrain`): grey and rose cobbles in courses with dark joints (a 2 m
+  tile) painted into the ground's own material where a mask over the ground says, curb to curb: avenida Juárez from
+  calle Flamboyán to calle Itzamná, calles Ceiba and Itzamná and avenida del Puerto round the zócalo. No draw call. And
+  on those sidewalks (mexican.ts `sidewalkProps`, in the town's small mesh): green bins on posts, iron bolardos at the
+  square's corners on Juárez, a bolero's shoeshine stand on the square's north edge.
+- **Rooms** (`roomExtras.upperMx`, interiors.ts `upperWindows`): the 8.6 m walls' upper part has a row of high windows
+  (frame, muntins, iron bars, terracotta sill) on the back and side walls and a painted greca in the room's accent under
+  the vigas, through each room's merger (no draw call). `roomExtras.shopsMx5`: the last of Maple Harbor's furniture in
+  the shops: Hilos' racks in carved wood, huipiles on wooden dress forms where the mannequins stood and on the two racks
+  round 4 left bare, rebozos (`hilos5`); El Faro's shelves of plain boxes become a tiendita's green shelves of sacks,
+  jars of dulces, salsas, cans and bags (`tienditaShelf`); the car rental's sofas, rug, coffee table and model car become
+  four equipales round an equipal table on a petate and a stand of the Riviera Maya's leaflets (`rental5`).
+- **People** (`farPeople`: 24): every townsperson (ambient.ts) is also built as a far version (characters/Character.ts
+  `Character.far`: the same parts with a sixth of the triangles, about 870 instead of 5,400, bound to the same skeleton:
+  `attachFar`), drawn instead of the whole one beyond 24 m of the camera. Then twelve more (`sitters`, `chatSpots`): five
+  on the palapas' loungers, a pair on the sand at the west end, two more travellers on the andenes' benches, two on the
+  zócalo's side bancas.
+
+Tests: tests/es/town.test.ts "graphics round 3" now also keeps the bins, the bolardos and the bolero's stand clear of
+everyone and out of the cars' lanes; the new beach sitters are on loungers.
+
 ## The tasks (in order)
 
 Each task is one area; each ends with before/after screenshots at phone size and the draw-call numbers.

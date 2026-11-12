@@ -11,6 +11,8 @@ interface FadeSet {
   /** How faded each instance is (0: not at all), and the attribute the shader reads it from. */
   now: Float32Array;
   attr: THREE.InstancedBufferAttribute;
+  /** The set whose fade this one follows too, instance for instance (a trunk its crown: userData.fadeWith). */
+  leader?: FadeSet;
 }
 
 /** At most this much of a faded prop's surface is left out (0–1). */
@@ -52,6 +54,12 @@ export class PropFader {
       mesh.material = withFade(copyOf(mesh.material));
       this.sets.push({ mesh, spheres, now, attr });
     });
+    // (a trunk that fades with its crown, userData.fadeWith: after its crown, each frame)
+    for (const set of this.sets) {
+      const lead = set.mesh.userData.fadeWith as THREE.InstancedMesh | undefined;
+      set.leader = lead ? this.sets.find((o) => o.mesh === lead) : undefined;
+    }
+    this.sets.sort((a, b) => (a.leader ? 1 : 0) - (b.leader ? 1 : 0));
   }
 
   get count() { return this.sets.reduce((n, s) => n + s.mesh.count, 0); }
@@ -74,7 +82,8 @@ export class PropFader {
     for (const set of this.sets) {
       let changed = -1, last = -1;
       for (let i = 0; i < set.mesh.count; i++) {
-        const want = on ? (deep ? deepFade(set.spheres, i, cam, subject, deep, this.a, this.b) : wantFade(set.spheres, i, cam, subject, this.a, this.b)) : 0;
+        let want = on ? (deep ? deepFade(set.spheres, i, cam, subject, deep, this.a, this.b) : wantFade(set.spheres, i, cam, subject, this.a, this.b)) : 0;
+        if (set.leader && set.leader.now[i] > want) want = set.leader.now[i];
         const cur = set.now[i];
         if (cur === want) continue;
         let next = cur + (want - cur) * k;

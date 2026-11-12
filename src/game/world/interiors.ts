@@ -164,6 +164,8 @@ function room(id: string, w: number, d: number, floor: string, wall: string, bui
   M.add("wall", wm, boxGeo(0.3, H, d, -w / 2 - 0.15, H / 2, 0), false);
   M.add("wall", wm, boxGeo(0.3, H, d, w / 2 + 0.15, H / 2, 0), false);
   if (THEME.roomWallH) upperWall(M, w, d, H, wall, look, opts.accent ?? "#8a6a4a");
+  // (theme.ts roomExtras.upperMx, graphics round 5: high windows and a painted greca up there)
+  if (THEME.roomWallH && THEME.roomExtras.upperMx && !UPPER_SKIP.includes(id)) upperWindows(M, w, d, H, opts.accent ?? "#8a6a4a");
   if (look?.dado) dadoBand(M, w, d, look.dado, look.dadoH ?? 1.05, opts.accent ?? "#8a6a4a");
   M.add("baseboard", base, boxGeo(w, 0.3, 0.34, 0, 0.15, -d / 2 - 0.1), false);
   M.add("baseboard", base, boxGeo(0.34, 0.3, d, -w / 2 - 0.1, 0.15, 0), false);
@@ -769,9 +771,12 @@ const B: Record<string, () => Interior> = {
   threads: () => room("threads", 16, 12, "#e9e3da", "#f3eef8", (c) => {
     const clothes = ["#e45b4f", "#4a7bb7", "#f2c14e", "#6fbf73", "#f4f4f4", "#3d3d46", "#b5838d", "#f28c28"];
     // (in this edition, theme.ts roomExtras.shopsMx, two of the racks hold rebozos and embroidered blouses: hilosMx)
+    // (theme.ts roomExtras.shopsMx5: the racks in carved wood instead of chrome, wood5)
+    const wood5 = !!THEME.roomExtras.shopsMx5, rackMat = mat(wood5 ? "#8a5a3a" : "#9aa5ad");
     for (const [rx, rz] of [[-4, -1], [-4, 2.5], [1, 0.5], [1, 3.4]]) {
-      c.M.add("rack", mat("#9aa5ad"), boxGeo(2.4, 0.05, 0.05, rx, 1.6, rz));
-      for (const s of [-1.1, 1.1]) c.M.add("rack", mat("#9aa5ad"), cylGeo(0.03, 0.03, 1.6, rx + s, 0.8, rz, 6));
+      c.M.add("rack", rackMat, boxGeo(2.4, wood5 ? 0.08 : 0.05, wood5 ? 0.08 : 0.05, rx, 1.6, rz));
+      for (const s of [-1.1, 1.1]) c.M.add("rack", rackMat, cylGeo(wood5 ? 0.05 : 0.03, wood5 ? 0.07 : 0.03, 1.6, rx + s, 0.8, rz, 6));
+      if (wood5) for (const s of [-1.1, 1.1]) { c.M.add("rack", rackMat, boxGeo(0.12, 0.08, 0.6, rx + s, 0.04, rz)); c.M.add("rack", rackMat, new THREE.SphereGeometry(0.08, 6, 4).translate(rx + s, 1.66, rz)); }
       if (!THEME.roomExtras.shopsMx4 && (!THEME.roomExtras.shopsMx || rz < 2)) for (let i = 0; i < 7; i++) c.M.add("cloth-" + clothes[i % 8], mat(clothes[(i + Math.round(rx)) % 8]), boxGeo(0.08, 0.8, 0.55, rx - 1 + i * 0.33, 1.15, rz), false);
       c.col.addBox(rx, rz, 2.6, 0.7);
     }
@@ -790,9 +795,14 @@ const B: Record<string, () => Interior> = {
     plant(c, -7.2, 5.2);
     // mannequins, tables of folded clothes, a wall of shoes, a bench by the fitting rooms, the till and shopping bags
     const S = smalls(c);
-    mannequin(c, S, -6.6, -4.3, "#e76f51", "#264653");
-    mannequin(c, S, -1.2, -3.9, "#2a9d8f", "#3d405b");
-    mannequin(c, S, 6.9, 0.8, "#f2cc8f", "#5c4b3a");
+    // (theme.ts roomExtras.shopsMx5: huipiles on wooden dress forms instead of the mannequins, and on the two racks
+    // round 4 left bare, hilos5)
+    if (wood5) hilos5(c, S);
+    else {
+      mannequin(c, S, -6.6, -4.3, "#e76f51", "#264653");
+      mannequin(c, S, -1.2, -3.9, "#2a9d8f", "#3d405b");
+      mannequin(c, S, 6.9, 0.8, "#f2cc8f", "#5c4b3a");
+    }
     if (THEME.roomExtras.guayabera) guayabera(c, S, -2.4, 4.7);
     foldedTable(c, S, -6.7, 0.8, ["#457b9d", "#f2cc8f", "#81b29a", "#e07a5f", "#f4f1ea", "#8e6bb0"]);
     foldedTable(c, S, 4.2, 1.0, ["#e76f51", "#2a9d8f", "#e9c46a", "#3d5a80", "#f4f1ea", "#b5838d"]);
@@ -1360,25 +1370,30 @@ const B: Record<string, () => Interior> = {
     for (let i = 0; i < 8; i++) c.M.add("key", mat("#c9a227"), boxGeo(0.1, 0.25, 0.04, -1.5 + i * 0.42, 2.3, -c.d / 2 + 0.1), false);
     // (theme.ts roomExtras.shopsMx4: the rates and the Riviera Maya's poster instead, rental4)
     if (!THEME.roomExtras.shopsMx4) for (const [px, cc] of [[-4.5, "#e45b4f"], [4.5, "#4a7bb7"]] as [number, string][]) wallPanel(c, textTexture("🚗", { bg: cc, fg: "#fff", w: 256, h: 256 }), px, 2.4, -c.d / 2 + 0.2, 1.8, 1.8);
-    sofa(c, -4.5, 2.5, "#1f8a70", 0, 2);
+    const eq5 = !!THEME.roomExtras.shopsMx5;
+    if (!eq5) sofa(c, -4.5, 2.5, "#1f8a70", 0, 2);
     if (!THEME.roomExtras.shopsMx) plant(c, 5.8, 3.6, 0.9);
     // a model car on a stand, chairs at the counter, the counter's computer, a coffee table, a water cooler, the town map
     const S = smalls(c);
-    S.add(cylGeo(0.55, 0.6, 0.75, 4.2, 0.375, 1.0, 20), "#e3f2ec");
-    S.add(cylGeo(0.58, 0.58, 0.04, 4.2, 0.77, 1.0, 20), "#1f8a70");
-    for (const [g, col] of carParts("#e45b4f")) S.add(g.scale(0.24, 0.24, 0.24).rotateY(0.6).translate(4.2, 0.79, 1.0), col);
-    c.col.addCircle(4.2, 1.0, 0.65);
+    // (theme.ts roomExtras.shopsMx5: equipales round a table where the sofas and the coffee table were, and a stand of
+    // the Riviera Maya's leaflets for the model car: rental5)
+    if (eq5) rental5(c, S);
+    else {
+      S.add(cylGeo(0.55, 0.6, 0.75, 4.2, 0.375, 1.0, 20), "#e3f2ec");
+      S.add(cylGeo(0.58, 0.58, 0.04, 4.2, 0.77, 1.0, 20), "#1f8a70");
+      for (const [g, col] of carParts("#e45b4f")) S.add(g.scale(0.24, 0.24, 0.24).rotateY(0.6).translate(4.2, 0.79, 1.0), col);
+      c.col.addCircle(4.2, 1.0, 0.65);
+    }
     for (const sx of [-0.85, 0.85]) { seat(c, sx, -1.75, Math.PI, "#1f8a70"); c.col.addCircle(sx, -1.75, 0.3); }
     S.add(boxGeo(0.6, 0.38, 0.04, 1.2, 1.38, -3.0), "#1d1d1d");
     S.add(boxGeo(0.06, 0.25, 0.06, 1.2, 1.17, -3.0), "#1d1d1d");
     S.add(boxGeo(0.44, 0.02, 0.14, 1.2, 1.09, -3.3), "#2b2f33");
     for (let i = 0; i < 3; i++) S.add(boxGeo(0.22, 0.012, 0.3, -1.4 + i * 0.26, 1.09, -2.6, 0.1 * i), ["#1f8a70", "#ffffff", "#e8c547"][i]);
-    rug(c, -4.5, 3.2, 3.4, 2.6, "#8fcbb8");
-    sofa(c, -2.4, 3.6, "#e8c547", -Math.PI / 2, 1.0);
+    if (!eq5) { rug(c, -4.5, 3.2, 3.4, 2.6, "#8fcbb8"); sofa(c, -2.4, 3.6, "#e8c547", -Math.PI / 2, 1.0); }
     S.add(boxGeo(0.7, 1.3, 0.3, 2.6, 0.65, 4.3), "#f4f4f4");
     for (let r = 0; r < 3; r++) for (let k = 0; k < 3; k++) S.add(boxGeo(0.16, 0.24, 0.02, 0, 0, 0).rotateX(-0.2).translate(2.38 + k * 0.22, 0.45 + r * 0.36, 4.12), ["#1f8a70", "#e45b4f", "#4a7bb7", "#e8c547"][(r + k) % 4]);
     c.col.addBox(2.6, 4.3, 0.75, 0.35);
-    coffeeTable(c, S, -4.5, 3.7);
+    if (!eq5) coffeeTable(c, S, -4.5, 3.7);
     // (in this edition, theme.ts roomExtras.roomsMx, the garrafón instead of the water cooler, a minisplit on the wall)
     if (THEME.roomExtras.roomsMx) { garrafon(c, S, -6.2, -4.2); minisplitAt(S, c.w / 2 - 0.02, 3.2, -1.5, -Math.PI / 2); } else waterCooler(c, S, -6.2, -4.2);
     wallPanel(c, townMap(), -c.w / 2 + 0.03, 2.1, -0.4, 2.4, 1.6, Math.PI / 2);
@@ -1393,8 +1408,12 @@ const B: Record<string, () => Interior> = {
     counter(c, -3, -2.8, 4, 1, "#d94b3d", "#f4f4f4");
     c.M.add("register", mat("#34495e"), boxGeo(0.5, 0.35, 0.4, -2.2, 1.25, -2.6));
     const snacks = ["#e45b4f", "#f2c14e", "#4a7bb7", "#6fbf73", "#f28c28", "#b5838d"];
-    shelf(c, 2, 0, 4, 1.6, "#f4f4f4", snacks, 0, 0.8);
-    shelf(c, 2, 2.8, 4, 1.6, "#f4f4f4", snacks, 0, 0.8);
+    // (theme.ts roomExtras.shopsMx5: a tiendita's shelves of bags, jars, cans and bottles instead of plain boxes)
+    // (built with the room's small things below)
+    if (!THEME.roomExtras.shopsMx5) {
+      shelf(c, 2, 0, 4, 1.6, "#f4f4f4", snacks, 0, 0.8);
+      shelf(c, 2, 2.8, 4, 1.6, "#f4f4f4", snacks, 0, 0.8);
+    }
     c.M.add("fridge", mat("#dff3fb", { transparent: 0.6 }), boxGeo(3.4, 2.3, 0.8, 4.5, 1.15, -4.4)); c.col.addBox(4.5, -4.4, 3.4, 0.8);
     for (let i = 0; i < 15; i++) c.M.add("drink-" + snacks[i % 6], mat(snacks[i % 6]), cylGeo(0.08, 0.08, 0.3, 3.1 + (i % 5) * 0.7, 0.5 + Math.floor(i / 5) * 0.7, -4.3, 6), false);
     c.M.add("coffee-machine", mat("#2b2b2b"), boxGeo(0.8, 1, 0.6, -6, 1.5, -4.5));
@@ -1434,6 +1453,7 @@ const B: Record<string, () => Interior> = {
       wallPanel(c, textTexture("Recargas · Pago de servicios", { bg: "#f6c000", fg: "#7a1f2a", w: 768, h: 128 }), -3, 0.62, -2.27, 2.2, 0.37);
     }
     if (THEME.roomExtras.shopsMx4) elFaro4(c, S);
+    if (THEME.roomExtras.shopsMx5) { tienditaShelf(c, S, 2, 0, 4, 1.6); tienditaShelf(c, S, 2, 2.8, 4, 1.6); }
     S.done();
   }, [{ npc: "dot", x: -3, z: -3.8, rot: 0, ax: -3, az: -1.7 }], { floorKind: "tile", accent: "#d94b3d" }),
 
@@ -3750,6 +3770,51 @@ function upperWall(M: Merger, w: number, d: number, H: number, wall: string, loo
   for (let x = -w / 2 + 0.6; x <= w / 2 - 0.5; x += 1.1) M.add("vigas", wood, boxGeo(0.2, 0.26, 0.42, x, H - 0.45, -d / 2 + 0.21), false);
 }
 
+/** The rooms whose upper walls have their own things (theme.ts roomExtras.upperMx leaves them as they are). */
+const UPPER_SKIP: string[] = [];
+
+/** (theme.ts roomExtras.upperMx) The upper walls of a tall room (theme.ts roomWallH) as a Mexican building's: a row of
+ *  high windows (ventanas altas) on the back wall and along each side wall, each with its frame, a cross of muntins, iron
+ *  bars and a terracotta sill, and a painted greca (a step-fret band in the room's accent) round the walls under the
+ *  vigas. Plain colors, through the room's merger: no draw call. */
+function upperWindows(M: Merger, w: number, d: number, H: number, accent: string) {
+  const pane = mat("#bfe1ef"), paneLow = mat("#a6d0e3"), frame = mat("#f7f2e6"), sill = mat("#b5523b"), iron = mat("#2b2b2b");
+  const ac = mat(accent), light = mat(mix(accent, "#ffffff", 0.55));
+  const WW = 1.4, WH = 1.5, Y = H - 2.35; // (the window's middle: 6.25 m in an 8.6 m room)
+  /** One window on a wall: `at(u, y, du, dy, depth)` makes a box at u along the wall, y up, `depth` out from it. */
+  const win = (at: (g: { w: number; h: number; t: number }, u: number, y: number, out: number) => THREE.BufferGeometry, u: number) => {
+    M.add("upper-win", frame, at({ w: WW + 0.2, h: WH + 0.2, t: 0.03 }, u, Y, 0.02), false);
+    M.add("upper-win", pane, at({ w: WW, h: WH * 0.55, t: 0.03 }, u, Y + WH * 0.225, 0.035), false);
+    M.add("upper-win", paneLow, at({ w: WW, h: WH * 0.45, t: 0.03 }, u, Y - WH * 0.275, 0.035), false);
+    M.add("upper-win", frame, at({ w: 0.07, h: WH, t: 0.03 }, u, Y, 0.05), false);
+    M.add("upper-win", frame, at({ w: WW, h: 0.07, t: 0.03 }, u, Y + 0.1, 0.05), false);
+    for (const k of [-0.48, -0.16, 0.16, 0.48]) M.add("upper-bars", iron, at({ w: 0.025, h: WH, t: 0.025 }, u + k * WW, Y, 0.075), false);
+    M.add("upper-sill", sill, at({ w: WW + 0.34, h: 0.1, t: 0.16 }, u, Y - WH / 2 - 0.12, 0.08), false);
+  };
+  const back = (g: { w: number; h: number; t: number }, u: number, y: number, out: number) => boxGeo(g.w, g.h, g.t, u, y, -d / 2 + out);
+  const nb = Math.max(1, Math.floor((w - 2) / 3.4));
+  for (let i = 0; i < nb; i++) win(back, -w / 2 + w * (i + 0.5) / nb);
+  for (const s of [-1, 1]) {
+    const side = (g: { w: number; h: number; t: number }, u: number, y: number, out: number) => boxGeo(g.t, g.h, g.w, s * (w / 2 - out), y, u);
+    const ns = Math.max(1, Math.floor((d - 2) / 3.4));
+    for (let i = 0; i < ns; i++) win(side, -d / 2 + d * (i + 0.5) / ns);
+  }
+  // the greca: a band of the accent with a step-fret in a lighter shade of it, 0.6 m under the vigas
+  const gy = H - 1.15;
+  M.add("upper-greca", ac, boxGeo(w, 0.36, 0.02, 0, gy, -d / 2 + 0.03), false);
+  for (const s of [-1, 1]) M.add("upper-greca", ac, boxGeo(0.02, 0.36, d, s * (w / 2 - 0.03), gy, 0), false);
+  const fret = (u0: number, len: number, put: (u: number, y: number, a: number, b: number) => THREE.BufferGeometry) => {
+    for (let u = u0 + 0.3; u < u0 + len - 0.3; u += 0.6) {
+      M.add("upper-fret", light, put(u - 0.12, gy + 0.06, 0.06, 0.2), false);
+      M.add("upper-fret", light, put(u, gy + 0.13, 0.3, 0.06), false);
+      M.add("upper-fret", light, put(u + 0.12, gy - 0.02, 0.06, 0.2), false);
+      M.add("upper-fret", light, put(u + 0.03, gy - 0.09, 0.12, 0.06), false);
+    }
+  };
+  fret(-w / 2, w, (u, y, a, b) => boxGeo(a, b, 0.02, u, y, -d / 2 + 0.045));
+  for (const s of [-1, 1]) fret(-d / 2, d, (u, y, a, b) => boxGeo(0.02, b, a, s * (w / 2 - 0.045), y, u));
+}
+
 /** A painted lower band on the walls (RoomLook `dado`, `h` m high) with a line of the accent along its top, on the back
  *  and side walls and on the inside of the low front wall. Through the room's merger. */
 function dadoBand(M: Merger, w: number, d: number, color: string, h: number, accent: string) {
@@ -3868,6 +3933,104 @@ function guayaberaHang(S: Smalls, x: number, y: number, z: number, col: string) 
   const pleat = mix(col, "#7d776c", 0.35);
   for (const p of [-0.16, 0.16]) S.add(boxGeo(0.084, 0.62, 0.02, x, y - 0.38, z + p), pleat);
   S.add(boxGeo(0.086, 0.12, 0.12, x, y - 0.25, z + 0.12), pleat);
+}
+
+/** (theme.ts roomExtras.shopsMx5) Hilos' last Maple Harbor things replaced: three wooden dress forms in huipiles (white
+ *  cotton, a broad embroidered square at the neck, flowers down the front, a band at the hem), where the mannequins
+ *  stood, and the two racks round 4 left bare hung with huipiles and rebozos. */
+function hilos5(c: Ctx, S: Smalls) {
+  const EMB = [["#c8102e", "#f6a800", "#2a9d5c"], ["#6d2e9e", "#e4007c", "#00a6a6"], ["#1f6fd1", "#f6c000", "#c8102e"]];
+  ([[-6.6, -4.3], [-1.2, -3.9], [6.9, 0.8]] as const).forEach(([x, z], k) => {
+    const e = EMB[k];
+    S.add(cylGeo(0.2, 0.24, 0.05, x, 0.025, z, 10), "#6b4a2e");
+    S.add(cylGeo(0.03, 0.03, 0.75, x, 0.4, z, 6), "#6b4a2e");
+    // the huipil: a straight white tunic to the knee over the form's shoulders
+    S.add(boxGeo(0.62, 0.95, 0.3, x, 1.18, z), "#f8f6f0");
+    S.add(boxGeo(0.3, 0.26, 0.31, x, 1.52, z), e[0]); // the embroidered square at the neck
+    S.add(boxGeo(0.18, 0.12, 0.315, x, 1.58, z), "#f8f6f0"); // the neck opening
+    for (let i = 0; i < 3; i++) S.add(new THREE.OctahedronGeometry(0.055, 0).translate(x - 0.12 + i * 0.12, 1.25 - (i % 2) * 0.08, z + 0.16), e[(i + 1) % 3]);
+    S.add(boxGeo(0.63, 0.07, 0.305, x, 0.76, z), e[1]); // the hem's band
+    S.add(boxGeo(0.63, 0.03, 0.306, x, 0.82, z), e[2]);
+    S.add(cylGeo(0.06, 0.06, 0.12, x, 1.71, z, 8), "#8a5a3a");
+    S.add(new THREE.SphereGeometry(0.1, 8, 6).scale(1, 1.2, 1).translate(x, 1.86, z), "#8a5a3a");
+    c.col.addCircle(x, z, 0.35);
+  });
+  // the bare racks: huipiles (west, by the door) and rebozos folded over the bar (by the counter)
+  for (let i = 0; i < 6; i++) {
+    const x = -5 + 0.2 + i * 0.36, e = EMB[i % 3];
+    S.add(boxGeo(0.08, 0.8, 0.52, x, 1.2, 2.5), "#f8f6f0");
+    S.add(boxGeo(0.085, 0.2, 0.3, x, 1.42, 2.5), e[0]);
+    S.add(boxGeo(0.085, 0.05, 0.52, x, 0.85, 2.5), e[1]);
+  }
+  const REBOZO = ["#2f5f9a", "#c8102e", "#6d2e9e", "#2a9d5c", "#e4007c", "#3a2f2a", "#00a6a6"];
+  for (let i = 0; i < 7; i++) {
+    const x = 0.05 + i * 0.32, col = REBOZO[i];
+    for (const s of [-1, 1]) S.add(boxGeo(0.09, 0.72, 0.05, x, 1.25, 3.4 + s * 0.05), col);
+    for (let f = 0; f < 3; f++) S.add(boxGeo(0.095, 0.06, 0.12, x, 0.86 - f * 0.05, 3.4), f % 2 ? "#f4f1ea" : col); // the fringe
+  }
+}
+
+/** (theme.ts roomExtras.shopsMx5) A tiendita's shelf, `w` m long and `h` high, open on both sides, in painted green
+ *  metal: bags of chips and pan dulce clipped up in strips, jars of dulces with red lids, cans and bottled salsas, sacks
+ *  of beans and rice on the bottom shelf. In place of shelf()'s plain boxes; the same footprint and collider. */
+function tienditaShelf(c: Ctx, S: Smalls, x: number, z: number, w: number, h: number) {
+  const d = 0.8, GREEN = "#2f7a58";
+  S.add(boxGeo(w, 0.04, d, x, 0.12, z), GREEN);
+  for (const sx of [-1, 1]) S.add(boxGeo(0.05, h + 0.25, d, x + sx * (w / 2 - 0.025), (h + 0.25) / 2, z), GREEN);
+  S.add(boxGeo(w, h - 0.3, 0.03, x, h / 2 + 0.1, z), "#e9e2d4"); // the back between the two sides
+  const shelves = [0.12, 0.55, 0.98, 1.41];
+  for (const y of shelves.slice(1)) S.add(boxGeo(w, 0.04, d, x, y, z), GREEN);
+  S.add(boxGeo(w, 0.2, 0.04, x, h + 0.15, z + d / 2), "#f6c000"); // the price strip on top
+  const BAGS = ["#f6a800", "#e4007c", "#1f6fd1", "#7ac143", "#ff5a36", "#f6c000", "#6d2e9e", "#00a6a6"];
+  const n = Math.floor((w - 0.2) / 0.3);
+  for (const side of [-1, 1]) {
+    const fz = z + side * (d / 2 - 0.12);
+    for (let k = 0; k < n; k++) {
+      const gx = x - w / 2 + 0.25 + k * 0.3;
+      // bottom: sacks of beans and rice
+      S.add(boxGeo(0.24, 0.3, 0.2, gx, 0.29, fz), ["#e8dcc0", "#d9c9a3", "#b0412e"][k % 3]);
+      // jars of dulces and bottles of salsa on the second shelf
+      if (k % 2) {
+        S.add(cylGeo(0.09, 0.09, 0.24, gx, 0.69, fz, 8), ["#f2b8c6", "#f6c000", "#c8102e"][k % 3]);
+        S.add(cylGeo(0.095, 0.095, 0.04, gx, 0.83, fz, 8), "#c8102e");
+      } else for (const o of [-0.06, 0.06]) {
+        S.add(cylGeo(0.035, 0.035, 0.2, gx + o, 0.67, fz, 6), ["#7a1f1a", "#c8352a", "#2a9d5c"][(k + (o > 0 ? 1 : 0)) % 3]);
+        S.add(cylGeo(0.02, 0.02, 0.06, gx + o, 0.8, fz, 5), "#f4f1ea");
+      }
+      // cans on the third
+      for (const o of [-0.07, 0.07]) S.add(cylGeo(0.055, 0.055, 0.13, gx + o, 1.065, fz, 8), ["#c8102e", "#f6a800", "#1f6fd1", "#7ac143"][(k + (o > 0 ? 2 : 0)) % 4]);
+      // bags on top, leaning
+      S.add(boxGeo(0.24, 0.3, 0.08, 0, 0, 0).rotateX(side * 0.25).translate(gx, 1.58, fz), BAGS[(k * 3 + (side > 0 ? 1 : 0)) % 8]);
+    }
+  }
+  c.col.addBox(x, z, w, d);
+}
+
+/** (theme.ts roomExtras.shopsMx5) The car rental's waiting corner as a Mexican office has it: four equipales (pigskin
+ *  barrel chairs on crossed cedar slats) round a low equipal table on a palm petate, where the sofas were, and a stand
+ *  of the Riviera Maya's leaflets (tours, cenotes, ruins) where the model car stood. */
+function rental5(c: Ctx, S: Smalls) {
+  const HIDE = "#c99a5e", SLAT = "#8a5a3a";
+  const equipal = (x: number, z: number, rot: number) => {
+    const put = (g: THREE.BufferGeometry, col: string) => S.add(g.rotateY(rot).translate(x, 0, z), col);
+    put(cylGeo(0.3, 0.26, 0.42, 0, 0.21, 0, 10), SLAT); // the base
+    for (let i = 0; i < 6; i++) put(boxGeo(0.03, 0.42, 0.04, 0, 0, 0).rotateZ(i % 2 ? 0.5 : -0.5).translate(Math.cos(i) * 0.28, 0.21, Math.sin(i) * 0.28), "#6b4a2e");
+    put(cylGeo(0.32, 0.32, 0.08, 0, 0.46, 0, 10), HIDE); // the seat
+    put(new THREE.CylinderGeometry(0.33, 0.33, 0.5, 10, 1, true, Math.PI * 0.85, Math.PI * 1.3).translate(0, 0.75, -0.02), HIDE); // the round back
+    c.col.addCircle(x, z, 0.36);
+  };
+  S.add(boxGeo(3.4, 0.015, 2.6, -4.5, 0.008, 3.2), "#d9c08f"); // the petate
+  for (let i = 0; i < 9; i++) S.add(boxGeo(3.4, 0.017, 0.04, -4.5, 0.009, 2.0 + i * 0.3), "#c2a670");
+  S.add(cylGeo(0.42, 0.36, 0.5, -4.5, 0.25, 3.3, 12), SLAT);
+  S.add(cylGeo(0.46, 0.46, 0.05, -4.5, 0.52, 3.3, 12), HIDE);
+  S.add(cylGeo(0.12, 0.1, 0.18, -4.5, 0.64, 3.3, 8), "#2f5f9a"); // a talavera vase
+  c.col.addCircle(-4.5, 3.3, 0.5);
+  equipal(-5.6, 2.6, 0.9); equipal(-3.4, 2.6, -0.9); equipal(-5.6, 4.1, Math.PI - 0.9); equipal(-3.4, 4.1, Math.PI + 0.9);
+  // the leaflets' stand: a wooden stand, three steps of folded leaflets in the Caribbean's colors
+  S.add(boxGeo(0.9, 1.2, 0.35, 4.2, 0.6, 1.0), SLAT);
+  const LEAF = ["#00a6a6", "#f6a800", "#e4007c", "#1f6fd1", "#7ac143", "#ff5a36"];
+  for (let r = 0; r < 3; r++) for (let k = 0; k < 3; k++) S.add(boxGeo(0.22, 0.3, 0.02, 0, 0, 0).rotateX(-0.2).translate(3.95 + k * 0.25, 0.55 + r * 0.33, 1.2), LEAF[(r * 3 + k) % 6]);
+  c.col.addCircle(4.2, 1.0, 0.65);
 }
 
 /** Hilos (theme.ts roomExtras.shopsMx4; s74) from the door: the services along the upper wall, straw hats hung on the

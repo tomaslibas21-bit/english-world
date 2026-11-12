@@ -1109,7 +1109,7 @@ export class Game implements GameApi {
     const blocked = talking || !!st.hud.panel || this.transitioning;
     this.updatePlayer(dt, blocked, this.transitioning && !talking && !st.hud.panel);
     this.updateNpcs(dt, talking);
-    if (!this.zone.interior) this.ambient.update(dt, this.player.root.position);
+    if (!this.zone.interior) this.ambient.update(dt, this.player.root.position, this.rig.cam.position);
     this.town.update(this.t, dt, this.rig.cam.position);
     this.zone.interior?.update?.(this.t, dt);
     this.guidance.visible = !talking;

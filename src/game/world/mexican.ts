@@ -228,23 +228,23 @@ export function kiosk(parts: Part[], col: Colliders, atlas: SignAtlas, x: number
 
 /** Palapas on the sand: a thatched umbrella on a wooden pole, with two wooden loungers in front of it (towards the
  *  sea) and a towel on one. */
-export function palapas(parts: Part[], col: Colliders, spots: [number, number][], thatch = false): [number, number][] {
+export function palapas(parts: Part[], col: Colliders, spots: [number, number][], thatch = false, roofs: Part[] = parts): [number, number][] {
   const r = rand(91);
   const towels = ["#e4007c", "#00a6a6", "#f6a800", "#ff5a36", "#1f6fd1"];
   const loungers: [number, number][] = [];
   spots.forEach(([x, z], i) => {
     parts.push([new THREE.CylinderGeometry(0.09, 0.11, 2.7, 6, 1, true).translate(x, 1.35, z), WOOD]);
-    parts.push([new THREE.ConeGeometry(2.1, 1.05, 10).translate(x, 3.05, z), THATCH]);
-    parts.push([new THREE.CylinderGeometry(2.1, 2.2, 0.3, 10, 1, true).translate(x, 2.4, z), THATCH_DARK]);
-    parts.push([new THREE.ConeGeometry(0.4, 0.4, 8).translate(x, 3.72, z), THATCH_DARK]);
+    roofs.push([new THREE.ConeGeometry(2.1, 1.05, 10).translate(x, 3.05, z), THATCH]);
+    roofs.push([new THREE.CylinderGeometry(2.1, 2.2, 0.3, 10, 1, true).translate(x, 2.4, z), THATCH_DARK]);
+    roofs.push([new THREE.ConeGeometry(0.4, 0.4, 8).translate(x, 3.72, z), THATCH_DARK]);
     if (thatch) {
       // (graphics round 4) the thatch in layers, a second, darker skirt of palm leaves over the first, and a ragged
       // fringe of leaf ends round its edge
-      parts.push([new THREE.ConeGeometry(1.55, 0.75, 10, 1, true).rotateY(0.3).translate(x, 3.3, z), THATCH_DARK]);
-      parts.push([new THREE.ConeGeometry(1.0, 0.5, 9, 1, true).rotateY(0.6).translate(x, 3.55, z), THATCH]);
+      roofs.push([new THREE.ConeGeometry(1.55, 0.75, 10, 1, true).rotateY(0.3).translate(x, 3.3, z), THATCH_DARK]);
+      roofs.push([new THREE.ConeGeometry(1.0, 0.5, 9, 1, true).rotateY(0.6).translate(x, 3.55, z), THATCH]);
       for (let k = 0; k < 18; k++) {
         const a = (k / 18) * Math.PI * 2 + (k % 2) * 0.08, rr = 2.12 + (k % 3) * 0.05;
-        parts.push([new THREE.ConeGeometry(0.17, 0.4 + (k % 3) * 0.1, 4).rotateX(Math.PI).translate(x + Math.cos(a) * rr, 2.12 - (k % 3) * 0.05, z + Math.sin(a) * rr), k % 2 ? THATCH : THATCH_DARK]);
+        roofs.push([new THREE.ConeGeometry(0.17, 0.4 + (k % 3) * 0.1, 4).rotateX(Math.PI).translate(x + Math.cos(a) * rr, 2.12 - (k % 3) * 0.05, z + Math.sin(a) * rr), k % 2 ? THATCH : THATCH_DARK]);
       }
     }
     col.addCircle(x, z, 0.16);
@@ -1164,14 +1164,14 @@ export function busTerminalFront(parts: Part[], col: Colliders, atlas: SignAtlas
  *  a palapa, a low hip of thatch no higher than `top` (the follow camera's box over it, Game.ts) with a fringe round its
  *  edge; agave planters along the forecourt either side of it; and the painted welcome sign on two posts at the
  *  forecourt's north end, facing the road. */
-export function airportFront(parts: Part[], col: Colliders, atlas: SignAtlas, c: { x0: number; x1: number; z0: number; z1: number; y: number; top: number }, welcome: [string, string]) {
+export function airportFront(parts: Part[], col: Colliders, atlas: SignAtlas, roofs: Part[], c: { x0: number; x1: number; z0: number; z1: number; y: number; top: number }, welcome: [string, string]) {
   const cx = (c.x0 + c.x1) / 2, cz = (c.z0 + c.z1) / 2, hw = (c.x1 - c.x0) / 2 + 0.5, hd = (c.z1 - c.z0) / 2 + 0.5, k = Math.SQRT2;
-  parts.push([box(c.x1 - c.x0, 0.2, c.z1 - c.z0, cx, c.y - 0.1, cz), "#8a6a4a"]); // the frame under the thatch
-  parts.push([new THREE.CylinderGeometry(1, 1, 0.36, 4, 1, true).rotateY(Math.PI / 4).scale(hw * k, 1, hd * k).translate(cx, c.y - 0.02, cz), THATCH_DARK]);
-  parts.push([new THREE.ConeGeometry(1, c.top - c.y, 4).rotateY(Math.PI / 4).scale(hw * k, 1, hd * k).translate(cx, c.y + (c.top - c.y) / 2, cz), THATCH]);
+  roofs.push([box(c.x1 - c.x0, 0.2, c.z1 - c.z0, cx, c.y - 0.1, cz), "#8a6a4a"]); // the frame under the thatch
+  roofs.push([new THREE.CylinderGeometry(1, 1, 0.36, 4, 1, true).rotateY(Math.PI / 4).scale(hw * k, 1, hd * k).translate(cx, c.y - 0.02, cz), THATCH_DARK]);
+  roofs.push([new THREE.ConeGeometry(1, c.top - c.y, 4).rotateY(Math.PI / 4).scale(hw * k, 1, hd * k).translate(cx, c.y + (c.top - c.y) / 2, cz), THATCH]);
   // the fringe's ragged lower edge all round
   const edge = (len: number, at: (u: number) => [number, number]) => {
-    for (let u = -len / 2 + 0.15; u < len / 2; u += 0.3) { const [x, z] = at(u); parts.push([new THREE.ConeGeometry(0.13, 0.42, 4).rotateX(Math.PI).translate(x, c.y - 0.32, z), Math.round(u / 0.3) % 2 ? THATCH : THATCH_DARK]); }
+    for (let u = -len / 2 + 0.15; u < len / 2; u += 0.3) { const [x, z] = at(u); roofs.push([new THREE.ConeGeometry(0.13, 0.42, 4).rotateX(Math.PI).translate(x, c.y - 0.32, z), Math.round(u / 0.3) % 2 ? THATCH : THATCH_DARK]); }
   };
   for (const s of [-1, 1]) { edge(hw * 2, (u) => [cx + u, cz + s * hd]); edge(hd * 2, (u) => [cx + s * hw, cz + u]); }
   planter(parts, col, c.x0 + 2.3, c.z0 - 8, Math.PI / 2, 6);
@@ -1327,6 +1327,48 @@ export function cables(parts: Part[], lines: Part[], col: Colliders, poles: [num
 }
 
 /** Clay pots with plants by the shops' doors (a pair at each spot: x, z of the door, how far either side, facing). */
+/** (graphics round 5, theme.ts `adoquin`) What stands on a centro's sidewalks: green trash bins on posts (x, z, which
+ *  way the bin's opening looks), rows of iron bolardos at the curb (from x0, z0 to x1, z1, one every 1.4 m) and a
+ *  shoeshine stand (a bolero's raised chair on its box, the brushes' box at its foot; x, z, the chair facing `rot`). */
+export function sidewalkProps(parts: Part[], col: Colliders, o: { bins: [number, number, number][]; bolardos: [number, number, number, number][]; bolero: [number, number, number] | null }) {
+  const GREEN = "#2f6b4f", IRON = "#2b2b2b";
+  for (const [x, z, rot] of o.bins) {
+    const add = (g: THREE.BufferGeometry, c: string) => parts.push([place(g, x, z, rot), c]);
+    add(cyl(0.05, 0.05, 1.05, 0, 0.52, -0.2, 6), IRON);
+    add(cyl(0.25, 0.21, 0.55, 0, 0.82, 0.05, 8), GREEN);
+    add(cyl(0.26, 0.26, 0.05, 0, 1.1, 0.05, 8), "#24533d");
+    add(box(0.3, 0.12, 0.02, 0, 0.88, 0.3), "#f4f1ea");
+    col.addCircle(x, z, 0.3);
+  }
+  for (const [x0, z0, x1, z1] of o.bolardos) {
+    const n = Math.max(1, Math.round(Math.hypot(x1 - x0, z1 - z0) / 1.4));
+    for (let i = 0; i <= n; i++) {
+      const x = x0 + (x1 - x0) * i / n, z = z0 + (z1 - z0) * i / n;
+      parts.push([cyl(0.1, 0.13, 0.7, x, 0.35, z, 6), IRON]);
+      parts.push([new THREE.SphereGeometry(0.11, 6, 3).translate(x, 0.72, z), IRON]);
+      parts.push([cyl(0.135, 0.135, 0.06, x, 0.5, z, 6), "#c9a227"]);
+      col.addCircle(x, z, 0.15);
+    }
+  }
+  if (o.bolero) {
+    const [x, z, rot] = o.bolero, add = (g: THREE.BufferGeometry, c: string) => parts.push([place(g, x, z, rot), c]);
+    const WOODB = "#7a4a2c", RED = "#b5332e";
+    add(box(0.9, 0.42, 1.0, 0, 0.21, -0.05), WOODB); // the platform
+    add(box(0.62, 0.08, 0.5, 0, 0.84, -0.1), RED); // the seat
+    add(box(0.62, 0.62, 0.08, 0, 1.17, -0.36), RED); // its back
+    for (const sx of [-1, 1]) {
+      add(box(0.06, 0.42, 0.46, sx * 0.31, 0.63, -0.1), WOODB);
+      add(box(0.08, 0.06, 0.46, sx * 0.34, 1.02, -0.1), WOODB); // the arms
+      add(box(0.1, 0.32, 0.12, sx * 0.13, 0.58, 0.32), "#9a9a9a"); // the foot rests
+    }
+    add(box(0.42, 0.24, 0.26, 0.15, 0.12, 0.8), "#5a3a22"); // the brushes' box
+    add(box(0.06, 0.12, 0.26, 0.15, 0.3, 0.8), "#5a3a22");
+    add(cyl(0.025, 0.025, 1.5, -0.4, 1.17, -0.45, 5), IRON); // the umbrella
+    add(new THREE.ConeGeometry(0.85, 0.32, 8, 1, true).translate(-0.4, 1.95, -0.3), "#1f6fd1");
+    blockRect(col, x, z, rot, -0.5, 0.5, -0.6, 0.95);
+  }
+}
+
 export function macetas(parts: Part[], col: Colliders, spots: [number, number, number][]) {
   const r = rand(7171);
   for (const [x, z, half] of spots) for (const s of [-1, 1]) {
@@ -1496,6 +1538,17 @@ export function tropicalTrunk(): THREE.BufferGeometry {
   return mergeGeometries(parts.map((g) => g.toNonIndexed()), false)!;
 }
 
+/** An almendro's trunk: straight up through its layers (they hang off it), with a level limb out under each of the two
+ *  lower layers, so between the layers it reads as the tree it is. */
+export function almendroTrunk(): THREE.BufferGeometry {
+  const parts = [
+    new THREE.CylinderGeometry(0.09, 0.26, 4.6, 5, 1, true).translate(0, 2.3, 0),
+    new THREE.CylinderGeometry(0.05, 0.1, 1.9, 4, 1, true).rotateZ(1.45).translate(0.85, 2.95, -0.1),
+    new THREE.CylinderGeometry(0.05, 0.09, 1.6, 4, 1, true).rotateZ(-1.45).rotateY(0.9).translate(-0.45, 3.75, 0.5),
+  ];
+  return mergeGeometries(parts.map((g) => g.toNonIndexed()), false)!;
+}
+
 /** A flamboyán's (or a parota's) crown: wide, flat-topped and a little lumpy, lower at its rim, lifted high. Few
  *  triangles (a town has a hundred and more, all drawn wherever one is in view): a faceted dome, flat lumps on it and
  *  round its rim. */
@@ -1513,13 +1566,22 @@ export function flamboyanCrown(): THREE.BufferGeometry {
   return mergeGeometries(parts.map((g) => (g.index ? g.toNonIndexed() : g)), false)!;
 }
 
-/** An almendro's (Indian almond's) crown: flat tiers of leaves stacked like a pagoda, each smaller than the one below,
- *  each with a low cone of leaves for its top. */
+/** An almendro's (Indian almond's) crown, as the tree grows: its branches come out in whorls, level, so the crown is
+ *  three broad flat layers of leaves with sky between them, the top one hardly narrower than the bottom (wider than
+ *  tall, never a cone: graphics round 5, the round-4 tiers narrowing upward read as fir trees). Each layer is a flat
+ *  dome of leaves and three or four flat lumps off its edge, turned against the one below, so its outline is ragged and
+ *  lop-sided; the layers step out to one side and back as they rise. */
 export function almendroCrown(): THREE.BufferGeometry {
+  const lump = (sx: number, sy: number, sz: number, x: number, y: number, z: number, rot = 0) => new THREE.OctahedronGeometry(1, 0).rotateY(rot).scale(sx, sy, sz).translate(x, y, z);
   const parts: THREE.BufferGeometry[] = [];
-  ([[2.3, 3.0, 0], [1.85, 3.75, 0.45], [1.35, 4.45, 0.9], [0.75, 5.05, 1.3]] as const).forEach(([r, y, rot]) => {
-    parts.push(new THREE.CylinderGeometry(r * 0.82, r, 0.42, 7, 1, true).rotateY(rot).translate(0, y, 0));
-    parts.push(new THREE.ConeGeometry(r * 0.84, 0.32, 7, 1, true).rotateY(rot).translate(0, y + 0.37, 0));
+  // [radius x, radius z, height, offset x, offset z, turn, lumps]
+  ([[2.75, 2.35, 3.05, 0.15, -0.1, 0.2, 4], [2.35, 2.05, 3.85, -0.35, 0.25, 1.3, 4], [1.75, 1.55, 4.55, 0.25, 0.05, 2.2, 3]] as const).forEach(([rx, rz, y, ox, oz, rot, n], t) => {
+    parts.push(new THREE.SphereGeometry(1, 8, 2, 0, Math.PI * 2, 0, Math.PI / 2).scale(rx, 0.34, rz).rotateY(rot).translate(ox, y, oz));
+    parts.push(new THREE.CircleGeometry(1, 8).rotateX(Math.PI / 2).scale(rx, 1, rz).rotateY(rot).translate(ox, y, oz)); // (its underside)
+    for (let i = 0; i < n; i++) {
+      const a = rot + (i / n) * Math.PI * 2 + t * 0.4, r = 0.82 + (i % 2) * 0.12;
+      parts.push(lump(0.95 - t * 0.12, 0.2, 0.75 - t * 0.08, ox + Math.cos(a) * rx * r, y + 0.05 - (i % 2) * 0.06, oz + Math.sin(a) * rz * r, a));
+    }
   });
   return mergeGeometries(parts.map((g) => (g.index ? g.toNonIndexed() : g)), false)!;
 }
