@@ -202,7 +202,7 @@ export const support: SituationDef = {
       since_tail: "(desde (ayer | anoche | hoy (en | por) la manana | esta manana | la manana | ayer (en | por) la tarde | ayer (en | por) la noche | el fin de semana | {day} | hace {number} dias | hace unos dias | antier) #since | desde {time} [de (ayer | anoche | hoy)] #since | (ayer | anoche | esta manana | hoy (en | por) la manana | ayer (en | por) la tarde | ayer (en | por) la noche | el {day}) #since)",
       when: "(ayer | esta manana | anoche | hace rato | hace un rato | hoy | hoy (en | por) la manana | hace una hora)",
       times: "(una vez | dos veces | tres veces | muchas veces | varias veces | mil veces | {number} veces | un par de veces | como {number} veces | como mil veces)",
-      off_on: "(apagué y (lo prendí | lo encendí | lo volví a prender | lo volví a encender | lo volví a conectar | lo conecté) | desconecté [y (lo volví a conectar | lo conecté | lo conecté otra vez)] | reinicié)",
+      off_on: "(apagué y (lo prendí | lo encendí | lo volví a prender | lo volví a encender | lo volví a conectar | lo conecté) | desconecté [y (lo volví a conectar | lo conecté | lo conecté otra vez)] | reinicié | he reiniciado | he apagado y (lo he encendido | lo he vuelto a encender | lo he vuelto a conectar) | he desconectado [y (lo he vuelto a conectar | lo he conectado)])",
       who: "(mi esposa | mi esposo | mi pareja | mi novio | mi novia | mi hijo | mi hija | mi mama | mi papa | mi hermano | mi hermana | mi roomie | mi companero de cuarto | mi companera de cuarto | mi companero | mi companera | mi vecina | mi vecino | mi amigo | mi amiga | alguien | mi suegra | mi suegro | mi marido | mi mujer | la senora que me ayuda | mi abuela)",
       boss: "(supervisor | supervisora | gerente | encargado | encargada | jefe | jefa | superior)",
       ref: "(numero de reporte | numero de incidencia | folio | numero de folio | numero de ticket | numero de caso | numero de referencia | numero de seguimiento)",
@@ -324,7 +324,7 @@ export const support: SituationDef = {
     ] },
     it_broken_ctx: { patterns: ["no (funciona | sirve | jala | conecta | se conecta)", "(ya no) (funciona | sirve)", "dejó de funcionar", "se cayó", "esta (descompuesto | descompuesta | caido)"] },
     charged_twice: { patterns: [
-      "me (cobraron | cobró) dos veces [este mes | el mismo recibo] #h:bill_twice", "(ustedes) me (cobraron | hicieron) (dos veces | doble cargo | un cargo doble | un doble cargo) [este mes]",
+      "me (cobraron | cobró | han cobrado | ha cobrado) dos veces [este mes | el mismo recibo] #h:bill_twice", "(ustedes) me (cobraron | hicieron) (dos veces | doble cargo | un cargo doble | un doble cargo) [este mes]",
       "(me hicieron | tengo | hay | me aparece | me aparecen | veo) (un cargo doble | un doble cargo | dos cargos | doble cobro | un cobro doble | dos cobros) [en mi (tarjeta | cuenta | recibo | estado de cuenta)] [este mes]",
       "(pagué | me cobraron) doble", "(pagué | se pagó) dos veces [este mes]", "creo que (pagué | me cobraron) dos veces", "mi recibo esta mal",
       "me cobraron (doble | de mas | dos veces lo mismo)", "me (han | habeis) cobrado dos veces [este mes]",
@@ -373,7 +373,7 @@ export const support: SituationDef = {
       "[no] no se (como | como hacerlo | como se hace | hacerlo)",
     ] },
     done_ctx: { patterns: [
-      "listo #h:done", "(ya | listo ya) (esta | quedó | lo hice)", "[listo] ya lo (desconecté | apagué | hice) #h:done_unplugged",
+      "listo #h:done", "(hecho | ya esta) [ya esta]", "(ya | listo ya) (esta | quedó | lo hice)", "[listo] ya lo (desconecté | apagué | hice | he desconectado | he apagado | he hecho) #h:done_unplugged",
       "ya (esta desconectado | lo volví a conectar | lo conecté | lo prendí | esta conectado [otra vez | de nuevo])",
       "(ok | listo) ya lo (desconecté | conecté)", "(ya | ya esta) (desconectado | conectado)", "lo (desconecté | volví a conectar | conecté)", "ya",
     ] },
@@ -385,7 +385,7 @@ export const support: SituationDef = {
     ] },
     still_red: { patterns: [
       "[si] (sigue | todavia esta | aun esta | continua) [parpadeando] [en] (@red | igual | parpadeando) [parpadeando] #h:still_red",
-      "[si] sigue (igual | parpadeando | sin funcionar | sin servicio | sin internet)", "[no] no (cambió | pasó) nada #h:still_nothing", "[no] nada (cambió | pasó)",
+      "[si] sigue (igual | parpadeando | sin funcionar | sin servicio | sin internet)", "[no] no (cambió | pasó | ha cambiado | ha pasado) nada #h:still_nothing", "[no] nada (cambió | pasó)",
       "[no] (sigue | esta) igual", "[si] (igual | todo igual | lo mismo | igualito)", "[no] sigue sin (funcionar | servir)", "[no] (todavia | ya | aun) no (funciona | sirve | prende | jala)",
       "[no] no (se puso | esta | se pone) [en] verde", "[si] (todavia | aun) [en] @red", "[si] [en] @red todavia",
     ] },
@@ -538,7 +538,8 @@ export const support: SituationDef = {
           neutral: t("Para | contratar | o | recargar | saldo, | diga | «ventas» | o | marque | 3.", "For | signing up | or | topping up | credit, | say | “ventas” | or | press | 3.",
             "To sign up or top up your credit, say “ventas” or press 3.", { say: "Para contratar o recargar saldo, diga ventas, o marque tres." }) }),
     ],
-    bot_didnt_get: [t("Lo siento, | no le entendí.", "I'm sorry, | I didn't understand you.", "Sorry, I didn't get that.")],
+    bot_didnt_get: [t("Lo siento, | no le entendí.", "I'm sorry, | I didn't understand you.", "Sorry, I didn't get that.",
+        { spain: t("Lo siento, | no le he entendido.", "I'm sorry, | I didn't understand you.", "Sorry, I didn't get that.") })],
     bot_agent: [
       t("Con gusto | le | ayudo. | ¿Llama | por | pagos | o | por | soporte | técnico?", "Gladly | (to) you | I-help. | Are you calling | about | payments | or | about | support | technical?",
         "I can help with that. Are you calling about billing or technical support?", { spain: t("Claro, | le | ayudo. | ¿Llama | por | pagos | o | por | soporte | técnico?", "Sure, | (to) you | I-help. | Are you calling | about | payments | or | about | support | technical?", "I can help with that. Are you calling about billing or technical support?") }),
@@ -546,15 +547,18 @@ export const support: SituationDef = {
     bot_sales: [
       t("Nuestra | área | de | ventas | está | cerrada | en este momento. | {m:Lo|f:La} | comunico | con | atención a clientes.",
         "Our | department | of | sales | is | closed | at the moment. | You | I-connect | with | customer service.",
-        "Our sales team is closed right now. I'll connect you to customer service.", { flags: { 7: FLAG_YOU_LO } }),
+        "Our sales team is closed right now. I'll connect you to customer service.", { flags: { 7: FLAG_YOU_LO },
+        spain: t("Nuestra | área | de | ventas | está | cerrada | en este momento. | Le | paso | con | atención al cliente.", "Our | department | of | sales | is | closed | at the moment. | (To) you | I-put-through | with | customer service.", "Our sales team is closed right now. I'll connect you to customer service.", { flags: { 7: "le: “you” (usted); pasar con = to put you through to." } }) }),
     ],
     bot_connect_support: [
       t("Por favor, | espere | en | la | línea | mientras | {m:lo|f:la} | comunico | con | soporte | técnico.", "Please, | wait | on | the | line | while | you | I-connect | with | support | technical.",
-        "Please hold while I connect you to technical support.", { flags: { 6: FLAG_YOU_LO } }),
+        "Please hold while I connect you to technical support.", { flags: { 6: FLAG_YOU_LO },
+        spain: t("Por favor, | espere | en | la | línea | mientras | le | paso | con | el | servicio | técnico.", "Please, | wait | on | the | line | while | (to) you | I-put-through | with | the | service | technical.", "Please hold while I connect you to technical support.", { flags: { 6: "le: “you” (usted); pasar con = to put you through to." } }) }),
     ],
     bot_connect_billing: [
       t("Por favor, | espere | en | la | línea | mientras | {m:lo|f:la} | comunico | con | el | área | de | pagos.", "Please, | wait | on | the | line | while | you | I-connect | with | the | department | of | payments.",
-        "Please hold while I connect you to billing.", { flags: { 6: FLAG_YOU_LO, 10: "el área: área is feminine but takes el, like el agua." } }),
+        "Please hold while I connect you to billing.", { flags: { 6: FLAG_YOU_LO, 10: "el área: área is feminine but takes el, like el agua." },
+        spain: t("Por favor, | espere | en | la | línea | mientras | le | paso | con | el | área | de | facturación.", "Please, | wait | on | the | line | while | (to) you | I-put-through | with | the | department | of | billing.", "Please hold while I connect you to billing.", { flags: { 6: "le: “you” (usted); pasar con = to put you through to.", 10: "el área: área is feminine but takes el, like el agua." } }) }),
     ],
     bot_connect_agent: [
       t("Por favor, | espere | al | siguiente | asesor | disponible.", "Please, | wait | for the | next | agent | available.", "Please hold for the next available agent.",
@@ -600,7 +604,8 @@ export const support: SituationDef = {
       t("¿Y | cuál | es | su | número | de | cuenta?", "And | which | is | your | number | of | account?", "And what's your account number?"),
     ],
     account_found: [
-      t("Listo, | ya | tengo | su | cuenta | aquí.", "Ready, | now | I-have | your | account | here.", "Okay, I have your account here."),
+      t("Listo, | ya | tengo | su | cuenta | aquí.", "Ready, | now | I-have | your | account | here.", "Okay, I have your account here.",
+        { spain: t("Ya está, | ya | tengo | su | cuenta | aquí.", "Done, | now | I-have | your | account | here.", "Okay, I have your account here.") }),
       t("Perfecto, | ya | me | aparece | su | cuenta.", "Perfect, | now | (to) me | it-shows-up | your | account.", "Great, I've got your account up."),
     ],
     acct_lookup: [
@@ -609,15 +614,18 @@ export const support: SituationDef = {
     ],
     acct_by_name: [
       t("Está bien, | la | busco | con | su | nombre. | Listo, | ya | la | tengo.", "That's fine, | it | I'll-look-up | with | your | name. | Done, | now | it | I-have.",
-        "That's fine, I'll look it up by your name. There, I've got it.", { flags: { 1: "la: it, la cuenta.", 8: "la: it, la cuenta." } }),
+        "That's fine, I'll look it up by your name. There, I've got it.", { flags: { 1: "la: it, la cuenta.", 8: "la: it, la cuenta." },
+        spain: t("Está bien, | la | busco | con | su | nombre. | Ya está, | ya | la | tengo.", "That's fine, | it | I'll-look-up | with | your | name. | Done, | now | it | I-have.", "That's fine, I'll look it up by your name. There, I've got it.", { flags: { 1: "la: it, la cuenta.", 8: "la: it, la cuenta." } }) }),
     ],
     acct_where: [
       t("Viene | hasta arriba | de | su | recibo.", "It comes | at the very top | of | your | bill.", "It's at the top of your bill.",
-        { flags: { 4: "recibo: in Mexico also the monthly bill (el recibo de luz, de teléfono)." } }),
+        { flags: { 4: "recibo: in Mexico also the monthly bill (el recibo de luz, de teléfono)." },
+        spain: t("Viene | arriba del todo | en | su | factura.", "It comes | at the very top | on | your | bill.", "It's at the top of your bill.") }),
     ],
     ask_problem: [
       t("¿En | qué | le | puedo | ayudar | hoy?", "In | what | (to) you | can I | help | today?", "How can I help you today?"),
-      t("Cuénteme, | ¿qué | pasó?", "Tell me, | what | happened?", "So, what's going on?"),
+      t("Cuénteme, | ¿qué | pasó?", "Tell me, | what | happened?", "So, what's going on?",
+        { spain: t("Cuénteme, | ¿qué | ha pasado?", "Tell me, | what | has happened?", "So, what's going on?") }),
     ],
     ask_problem_again: [t("Entonces, | ¿en | qué | le | puedo | ayudar?", "So, | in | what | (to) you | can I | help?", "So, how can I help?")],
     sorry_problem: [
@@ -639,16 +647,19 @@ export const support: SituationDef = {
     ],
     lights_meaning: [
       t("Okey, | eso | normalmente | quiere decir | que | no hay | señal.", "Okay, | that | usually | means | that | there isn't | signal.",
-        "Okay, that usually means there's no signal."),
+        "Okay, that usually means there's no signal.",
+        { spain: t("Vale, | eso | normalmente | quiere decir | que | no hay | señal.", "Okay, | that | usually | means | that | there isn't | signal.", "Okay, that usually means there's no signal.") }),
     ],
     lights_off: [
       t("Mmm, | entonces | no le está llegando | señal.", "Hmm, | so | it's not reaching you | signal.", "Hmm, so no signal is getting through to you."),
     ],
     ask_restart: [
       t("¿Ya | intentó | desconectarlo | y | volverlo a conectar?", "Already | did you try | to unplug it | and | to plug it back in?",
-        "Have you tried unplugging it and plugging it back in?", { flags: { 0: "Ya in a question: already, as in English have you … yet." } }),
+        "Have you tried unplugging it and plugging it back in?", { flags: { 0: "Ya in a question: already, as in English have you … yet." },
+        spain: t("¿Ha probado | a | desconectarlo | y | volverlo a conectar?", "Have you tried | — | to unplug it | and | to plug it back in?", "Have you tried unplugging it and plugging it back in?") }),
       t("¿Ya | reinició | el | módem?", "Already | did you restart | the | modem?", "Have you tried restarting the modem?",
-        { flags: { 3: FLAG_MODEM }, neutral: t("¿Ya | reinició | el | router?", "Already | did you restart | the | router?", "Have you tried restarting the router?") }),
+        { flags: { 3: FLAG_MODEM }, neutral: t("¿Ya | reinició | el | router?", "Already | did you restart | the | router?", "Have you tried restarting the router?"),
+        spain: t("¿Ha reiniciado | ya | el | router?", "Have you restarted | already | the | router?", "Have you tried restarting the router?") }),
     ],
     restart_ok: [t("Gracias | por | intentarlo.", "Thanks | for | trying it.", "Thanks for trying that.")],
     restart_now: [
@@ -671,12 +682,13 @@ export const support: SituationDef = {
     wait_here: [t("Claro, | sin prisa.", "Sure, | no rush.", "Sure, no rush.")],
     green_ok: [
       t("¡Ah, | qué | bien! | Pero | todavía | veo | una | falla | en | la | línea.", "Oh, | how | good! | But | still | I-see | a | fault | on | the | line.",
-        "Oh, good! But I'm still seeing a problem on the line."),
+        "Oh, good! But I'm still seeing a problem on the line.",
+        { spain: t("¡Ah, | qué | bien! | Pero | todavía | veo | una | avería | en | la | línea.", "Oh, | how | good! | But | still | I-see | a | fault | on | the | line.", "Oh, good! But I'm still seeing a problem on the line.") }),
     ],
     line_test: [t("Déjeme | hacer | una | prueba | de | su | línea.", "Let me | do | a | test | of | your | line.", "Let me run a test on your line.")],
     line_problem: [
       t("Ya veo: | hay | una | falla | en | la | línea, | afuera | de | su | casa.", "I see: | there is | a | fault | on | the | line, | outside | of | your | house.",
-        "Okay, I see a problem with the line outside your home.", { spain: t("Ya veo: | hay | una | falla | en | la | línea, | fuera | de | su | casa.", "I see: | there is | a | fault | on | the | line, | outside | of | your | house.", "Okay, I see a problem with the line outside your home.") }),
+        "Okay, I see a problem with the line outside your home.", { spain: t("Ya veo: | hay | una | avería | en | la | línea, | fuera | de | su | casa.", "I see: | there is | a | fault | on | the | line, | outside | of | your | house.", "Okay, I see a problem with the line outside your home.") }),
     ],
     need_tech: [
       t("Vamos | a | tener | que | mandarle | un | técnico.", "We're going | to | have | to | send you | a | technician.", "We'll need to send a technician."),
@@ -685,11 +697,13 @@ export const support: SituationDef = {
       t("Le | puedo | agendar | la | visita | el | {$weekday}, | entre | {$win}. | ¿Le queda | bien?",
         "(For) you | I can | schedule | the | visit | on | {$weekday}, | between | {$win}. | Does it suit you | well?",
         "I can book the visit for {$weekday}, between {$win}. Does that work for you?",
-        { say: "Le puedo agendar la visita el {$weekday}, entre {$win}. ¿Le queda bien?", flags: { 5: FLAG_EL_DAY } }),
+        { say: "Le puedo agendar la visita el {$weekday}, entre {$win}. ¿Le queda bien?", flags: { 5: FLAG_EL_DAY },
+        spain: t("Le | puedo | programar | la | visita | el | {$weekday}, | entre | {$win}. | ¿Le viene | bien?", "(For) you | I-can | schedule | the | visit | on | {$weekday}, | between | {$win}. | Does it suit you | well?", "I can book the visit for {$weekday}, between {$win}. Does that work for you?") }),
       t("La | primera | cita | disponible | es | el | {$weekday}, | entre | {$win}. | ¿Le queda | bien?",
         "The | first | appointment | available | is | on | {$weekday}, | between | {$win}. | Does it suit you | well?",
         "The earliest appointment is {$weekday}, between {$win}. Does that work for you?",
-        { say: "La primera cita disponible es el {$weekday}, entre {$win}. ¿Le queda bien?", flags: { 5: FLAG_EL_DAY } }),
+        { say: "La primera cita disponible es el {$weekday}, entre {$win}. ¿Le queda bien?", flags: { 5: FLAG_EL_DAY },
+        spain: t("La | primera | cita | disponible | es | el | {$weekday}, | entre | {$win}. | ¿Le viene | bien?", "The | first | appointment | available | is | on | {$weekday}, | between | {$win}. | Does it suit you | well?", "The earliest appointment is {$weekday}, between {$win}. Does that work for you?") }),
     ],
     tech_offer_alt: [
       t("También | tenemos | el | {$weekday}, | entre | {$win}.", "Also | we-have | — | {$weekday}, | between | {$win}.", "We also have {$weekday}, between {$win}.",
@@ -700,9 +714,11 @@ export const support: SituationDef = {
     no_earlier: [
       t("Lo siento, | es | el | horario | más | temprano | que | tenemos.", "I'm sorry, | it's | the | time slot | most | early | that | we-have.", "Sorry, that's the earliest slot we have."),
     ],
-    no_day: [t("Lo siento, | ese | día | ya | no tenemos | lugar.", "I'm sorry, | that | day | anymore | we don't have | room.", "Sorry, we're fully booked that day.")],
+    no_day: [t("Lo siento, | ese | día | ya | no tenemos | lugar.", "I'm sorry, | that | day | anymore | we don't have | room.", "Sorry, we're fully booked that day.",
+        { spain: t("Lo siento, | ese | día | ya | no tenemos | hueco.", "I'm sorry, | that | day | anymore | we don't have | an opening.", "Sorry, we're fully booked that day.") })],
     tech_offer_again: [
-      t("Entonces, | ¿le queda | bien | el | {D}?", "So, | does it suit you | well | — | {D}?", "So, does {D} work for you?", { flags: { 3: FLAG_EL_DAY } }),
+      t("Entonces, | ¿le queda | bien | el | {D}?", "So, | does it suit you | well | — | {D}?", "So, does {D} work for you?", { flags: { 3: FLAG_EL_DAY },
+        spain: t("Entonces, | ¿le viene | bien | el | {D}?", "So, | does it suit you | well | — | {D}?", "So, does {D} work for you?", { flags: { 3: FLAG_EL_DAY } }) }),
     ],
     billing_first: [
       t("Con gusto | le | ayudo. | Primero, | ¿me | da | su | número | de | cuenta?", "Gladly | (to) you | I-help. | First, | (to) me | you-give | your | number | of | account?",
@@ -716,7 +732,8 @@ export const support: SituationDef = {
     no_problem_alt: [t("No hay problema.", "No problem.", "No problem.")],
     tech_booked: [
       t("¡Listo! | El | técnico | va | el | {$weekday}, | entre | {$win}.", "Done! | The | technician | is going | on | {$weekday}, | between | {$win}.",
-        "All set! The technician will come on {$weekday}, between {$win}.", { say: "¡Listo! El técnico va el {$weekday}, entre {$win}.", flags: { 4: FLAG_EL_DAY } }),
+        "All set! The technician will come on {$weekday}, between {$win}.", { say: "¡Listo! El técnico va el {$weekday}, entre {$win}.", flags: { 4: FLAG_EL_DAY },
+        spain: t("¡Hecho! | El | técnico | va | el | {$weekday}, | entre | {$win}.", "Done! | The | technician | is going | on | {$weekday}, | between | {$win}.", "All set! The technician will come on {$weekday}, between {$win}.") }),
     ],
     tech_call_ahead: [
       t("Le | van | a | llamar | media | hora | antes de | llegar.", "(To) you | they're going | to | call | half | an hour | before | arriving.",
@@ -741,7 +758,8 @@ export const support: SituationDef = {
     ],
     tech_free: [
       t("No tiene | ningún | costo, | porque | la | falla | es | de | nuestro | lado.", "It doesn't have | any | cost, | because | the | fault | is | on | our | side.",
-        "There's no charge, since the problem is on our end."),
+        "There's no charge, since the problem is on our end.",
+        { spain: t("No tiene | ningún | coste, | porque | la | avería | es | cosa | nuestra.", "It doesn't have | any | cost, | because | the | fault | is | thing | ours.", "There's no charge, since the problem is on our end.") }),
     ],
     tech_takes: [t("Normalmente | como | una | hora.", "Usually | about | an | hour.", "Usually about an hour.")],
     // "¿Tengo que estar en casa?"
@@ -793,9 +811,11 @@ export const support: SituationDef = {
     ],
     speak_up_ok: [
       t("¡Ay, | perdón! | ¿Así | está | mejor?", "Oh, | sorry! | Like this | is it | better?", "Oh, sorry! Is this better?"),
-      t("¡Perdón! | ¿Ya | me | escucha?", "Sorry! | Now | me | do you hear?", "Sorry about that! Can you hear me now?"),
+      t("¡Perdón! | ¿Ya | me | escucha?", "Sorry! | Now | me | do you hear?", "Sorry about that! Can you hear me now?",
+        { spain: t("¡Perdón! | ¿Ya | me | oye?", "Sorry! | Now | me | do you hear?", "Sorry about that! Can you hear me now?") }),
     ],
-    hear_you: [t("Sí, | {m:lo|f:la} | escucho | bien.", "Yes, | you | I-hear | fine.", "Yes, I can hear you fine.", { flags: { 1: FLAG_YOU_LO } })],
+    hear_you: [t("Sí, | {m:lo|f:la} | escucho | bien.", "Yes, | you | I-hear | fine.", "Yes, I can hear you fine.", { flags: { 1: FLAG_YOU_LO },
+        spain: t("Sí, | {m:lo|f:la} | oigo | bien.", "Yes, | you | I-hear | fine.", "Yes, I can hear you fine.", { flags: { 1: FLAG_YOU_LO } }) })],
     hear_great: [t("¡Qué | bien!", "How | good!", "Great!")],
 
     anything_else: [
@@ -862,21 +882,24 @@ export const support: SituationDef = {
       lt: "Say you were charged twice",
       items: [
         { id: "bill_twice", s: t("Me | cobraron | dos | veces | este | mes.", "(To) me | they-charged | two | times | this | month.", "I was charged twice this month.",
-          { flags: { 1: "cobraron: they charged; Spanish says they instead of a passive." } }) },
+          { flags: { 1: "cobraron: they charged; Spanish says they instead of a passive." },
+        spain: t("Me | han cobrado | dos | veces | este | mes.", "(To) me | they-have-charged | two | times | this | month.", "I was charged twice this month.", { flags: { 1: "han cobrado: they have charged; Spanish says they instead of a passive." } }) }) },
       ],
     },
     restart: {
       lt: "Answer about restarting the modem",
       items: [
         { id: "restart_did", s: t("Sí, | ya | lo | reinicié | tres | veces.", "Yes, | already | it | I-restarted | three | times.", "Yes, I already restarted it three times.",
-          { flags: { 2: "lo: it, el módem." } }) },
+          { flags: { 2: "lo: it, el módem." },
+        spain: t("Sí, | ya | lo | he reiniciado | tres | veces.", "Yes, | already | it | I-have-restarted | three | times.", "Yes, I already restarted it three times.", { flags: { 2: "lo: it, el router." } }) }) },
         { id: "restart_not", s: t("No, | todavía no.", "No, | not yet.", "No, not yet.") },
       ],
     },
     tech: {
       lt: "Agree on the technician's visit",
       items: [
-        { id: "tech_ok", s: t("Me queda | bien.", "It suits me | well.", "That works for me.") },
+        { id: "tech_ok", s: t("Me queda | bien.", "It suits me | well.", "That works for me.",
+        { spain: t("Me viene | bien.", "It suits me | well.", "That works for me.") }) },
         { id: "tech_work", s: t("Perdón, | a | esa | hora | estoy | en | el | trabajo.", "Sorry, | at | that | time | I'm | at | — | work.", "Sorry, I'm at work then.",
           { flags: { 6: "el trabajo: Spanish says the work; English has no article." } }) },
         { id: "tech_weekend", s: t("¿Tiene | algo | el | sábado?", "Do you have | something | on | Saturday?", "Do you have anything on Saturday?", { flags: { 2: FLAG_EL_DAY } }) },
@@ -902,7 +925,8 @@ export const support: SituationDef = {
       items: [
         { id: "ph_speak_up", s: t("Perdón, | ¿puede | hablar | más | fuerte?", "Sorry, | can you | speak | more | loudly?", "Sorry, could you speak up?") },
         { id: "ph_breaking", s: t("Perdón, | se está cortando.", "Sorry, | it's cutting out.", "Sorry, you're breaking up.") },
-        { id: "ph_hear", s: t("¿Me | escucha | ahora?", "Me | do you hear | now?", "Can you hear me now?") },
+        { id: "ph_hear", s: t("¿Me | escucha | ahora?", "Me | do you hear | now?", "Can you hear me now?",
+        { spain: t("¿Me | oye | ahora?", "Me | do you hear | now?", "Can you hear me now?") }) },
       ],
     },
     since: {
@@ -925,8 +949,10 @@ export const support: SituationDef = {
     done: {
       lt: "Say you've unplugged it",
       items: [
-        { id: "done", s: t("Listo, | ya está.", "Ready, | that's it.", "Okay, done.") },
-        { id: "done_unplugged", s: t("Ya | lo | desconecté.", "Already | it | I-unplugged.", "Okay, I unplugged it.") },
+        { id: "done", s: t("Listo, | ya está.", "Ready, | that's it.", "Okay, done.",
+        { spain: t("Hecho, | ya está.", "Done, | that's it.", "Okay, done.") }) },
+        { id: "done_unplugged", s: t("Ya | lo | desconecté.", "Already | it | I-unplugged.", "Okay, I unplugged it.",
+        { spain: t("Ya | lo | he desconectado.", "Already | it | I-have-unplugged.", "Okay, I unplugged it.") }) },
       ],
     },
     still: {
@@ -934,7 +960,8 @@ export const support: SituationDef = {
       items: [
         { id: "still_red", s: t("Sigue | parpadeando | en | rojo.", "It keeps | blinking | in | red.", "It's still blinking red.") },
         { id: "still_nothing", s: t("No, | no cambió | nada.", "No, | didn't change | nothing.", "No, nothing changed.",
-          { flags: { 1: "Spanish uses a double negative: no … nada = nothing." } }) },
+          { flags: { 1: "Spanish uses a double negative: no … nada = nothing." },
+        spain: t("No, | no ha cambiado | nada.", "No, | hasn't changed | nothing.", "No, nothing changed.", { flags: { 1: "Spanish uses a double negative: no … nada = nothing." } }) }) },
       ],
     },
     someone: {
@@ -949,7 +976,8 @@ export const support: SituationDef = {
       items: [
         { id: "hear_better", s: t("Sí, | así | está | mejor.", "Yes, | like this | it's | better.", "Yes, that's better.") },
         { id: "hear_now", s: t("Sí, | ya | {sm:lo|sf:la} | escucho.", "Yes, | now | you | I-hear.", "Yes, I can hear you now.",
-          { flags: { 2: "lo / la: you; la for a woman, as Karla is." } }) },
+          { flags: { 2: "lo / la: you; la for a woman, as Karla is." },
+        spain: t("Sí, | ya | {sm:lo|sf:la} | oigo.", "Yes, | now | you | I-hear.", "Yes, I can hear you now.", { flags: { 2: "lo / la: you; la for a woman, as Karla is." } }) }) },
       ],
     },
     more: {
@@ -963,7 +991,10 @@ export const support: SituationDef = {
   },
 
   merges: {
-    "por la tarde": { reason: "lexical_expression", split: "por → by, la → the, tarde → afternoon; Spain's time phrase = in the afternoon.", minimal: "Three words." },
+    "atención al cliente": { reason: "lexical_expression", split: "atención → attention + al → to the + cliente → customer: one name, customer service.", minimal: "Three words." },
+    "arriba del todo": { reason: "lexical_expression", split: "arriba → up + del → of the + todo → all: = at the very top.", minimal: "Three words." },
+    "le viene": { reason: "lexical_expression", split: "le → (to) you + viene → comes: venir bien = to suit (Spain, for times and plans).", minimal: "Two words." },
+    "me viene": { reason: "lexical_expression", split: "me → (to) me + viene → comes: venir bien = to suit (Spain, for times and plans).", minimal: "Two words." },
     "le atiende": { reason: "lexical_expression", split: "le → (to) you + atiende → attends is the call-center formula: you're speaking with.", minimal: "Two words; the name stays outside." },
     "en este momento": { reason: "lexical_expression", split: "en → in + este → this + momento → moment is the fixed adverb: at the moment.", minimal: "Three words." },
     "atención a clientes": { reason: "lexical_expression", split: "atención → attention + a → to + clientes → customers is the department's name: customer service.", minimal: "Three words, one name." },
@@ -973,7 +1004,6 @@ export const support: SituationDef = {
     "vuelva a conectarlo": { reason: "lexical_expression", split: "vuelva → return + a + conectarlo → connect it: volver a + verb means again; = plug it back in.", minimal: "The periphrasis." },
     "mayor de edad": { reason: "lexical_expression", split: "mayor → older + de → of + edad → age is the fixed term: an adult (18 or older).", minimal: "Three words." },
     "antes de": { reason: "lexical_expression", split: "antes → before + de → of: de has no English word before a verb; = before.", minimal: "Two words." },
-    "ahora mismo": { reason: "lexical_expression", split: "ahora → now + mismo → same is false; = right now.", minimal: "Two words." },
     "se está cortando": { reason: "lexical_expression", split: "se → itself + está → is + cortando → cutting: the phone phrase = it's cutting out (you're breaking up).", minimal: "Three words." },
     "en la tarde": { reason: "lexical_expression", split: "en → in + la → the + tarde → afternoon: Mexico's way to say in the afternoon; the article lines up with English's.", minimal: "Three words." },
     "no le está llegando": { reason: "grammatical_fusion", split: "no → not + le → to you + está → is + llegando → arriving: English puts not inside the verb phrase (it isn't reaching you).", minimal: "Negation, pronoun and the progressive." },

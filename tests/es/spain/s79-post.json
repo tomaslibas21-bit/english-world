@@ -11,5 +11,6 @@
   {"ctx": "gift", "say": "Sí, es un regalo para mi madre", "intent": "gift_yes"},
   {"ctx": "gift", "say": "No, no es un regalo", "intent": "gift_no"},
   {"ctx": "stamps_offer", "say": "No necesito sellos, gracias", "intent": "no_stamps"},
-  {"ctx": "stamps_qty", "say": "Cinco, por favor", "intent": "stamps_ctx", "slots": {"number": 5}}
+  {"ctx": "stamps_qty", "say": "Cinco, por favor", "intent": "stamps_ctx", "slots": {"number": 5}},
+  {"ctx": "stamps_qty", "say": "Cinco sellos, por favor", "intent": ["stamps_qty", "stamps_ctx"], "slots": {"number": 5}}
 ] }

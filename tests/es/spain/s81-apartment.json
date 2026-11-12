@@ -13,5 +13,6 @@
   {"ctx": "questions", "say": "¿Me puede bajar un poco el alquiler?", "intent": "ask_lower"},
   {"ctx": "questions", "say": "¿Hay una parada de autobús cerca?", "intent": "ask_bus"},
   {"ctx": "questions", "say": "No, eso es todo, gracias", "intent": ["no_more", "yn:no"]},
-  {"ctx": "questions", "say": "¿Necesito avalista?", "intent": "ask_aval"}
+  {"ctx": "questions", "say": "¿Necesito avalista?", "intent": "ask_aval"},
+  {"ctx": "problem", "say": "El grifo de la cocina gotea", "intent": "report_problem"}
 ] }

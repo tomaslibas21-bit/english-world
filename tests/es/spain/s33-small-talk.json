@@ -13,5 +13,7 @@
   {"ctx": "like_q", "say": "Me encanta", "intent": "like_yes_ctx"},
   {"ctx": "closing", "say": "Bueno, me voy. Ha sido un placer charlar con usted", "intent": ["leave", "nice_talk", "g_bye"]},
   {"ctx": "closing", "say": "Ahí viene mi autobús", "intent": ["leave"]},
-  {"ctx": "closing", "say": "Vale, hasta luego, Don Pancho", "intent": ["g_bye"]}
+  {"ctx": "closing", "say": "Vale, hasta luego, Don Pancho", "intent": ["g_bye"]},
+  {"ctx": "closing", "say": "¡Venga, hasta luego!", "intent": ["g_bye"]},
+  {"ctx": "closing", "say": "Vale, nos vemos", "intent": ["g_bye"]}
 ] }

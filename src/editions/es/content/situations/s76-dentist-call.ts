@@ -399,7 +399,7 @@ export const dentist: SituationDef = {
 
   grammar: {
     macros: {
-      cita: "(una cita | cita | una consulta | consulta | un espacio | una hora | hora | un turno)",
+      cita: "(una cita | cita | una consulta | consulta | un espacio | un hueco | una hora | hora | un turno)",
       make: "(hacer | sacar | agendar | pedir | tomar | programar | reservar | apartar | conseguir)",
       want: "(quisiera | quiero | me gustaria | necesito | queria)",
       dent: "(el dentista | la dentista | un dentista | una dentista | el doctor | la doctora | el odontologo | la odontologa | un odontologo | dentista | odontologo)",
@@ -454,10 +454,10 @@ export const dentist: SituationDef = {
       "@hurt [mucho | muchisimo | bastante] (una muela | un diente | la muela | el diente | una muela del juicio | la muela del juicio | los dientes | las muelas | las encias) [desde hace {number} dias] #pain #h:reason_hurts",
       "@hurt (mucho | muchisimo) (una muela | un diente | la muela | el diente) #pain",
       "@hurt (mucho | muchisimo) #pain",
-      "se me (rompió | quebró | despostilló | partió | astilló) (un diente | una muela | el diente | la muela) #broken #h:reason_broke",
+      "se me (rompió | quebró | despostilló | partió | astilló | ha roto | ha partido) (un diente | una muela | el diente | la muela) #broken #h:reason_broke",
       "me (rompí | quebré | despostillé) (un diente | una muela) #broken",
       "tengo (un diente | una muela) (roto | rota | quebrado | quebrada | astillado | despostillado | flojo #pain) #broken",
-      "se me cayó (una | la | un | mi) {reason} #filling #h:reason_filling",
+      "se me (cayó | ha caido) (una | la | un | mi) {reason} #filling #h:reason_filling",
       "[solo | nada mas | nomas | solamente] (una | un) {reason} #h:reason_just",
       "(una | un) {reason}", "{reason}",
       "(una | un) {reason} y (una | un) {reason}",
@@ -779,7 +779,8 @@ export const dentist: SituationDef = {
     ],
     ask_help: [
       t("¿En | qué | le | puedo | ayudar?", "In | what | (to) you | can I | help?", "How can I help you?"),
-      t("Dígame, | ¿qué | se le ofrece?", "Tell me, | what | do you need?", "Yes, what can I do for you?", { flags: { 2: "¿Qué se le ofrece?: a polite Mexican “What can I do for you?”" } }),
+      t("Dígame, | ¿qué | se le ofrece?", "Tell me, | what | do you need?", "Yes, what can I do for you?", { flags: { 2: "¿Qué se le ofrece?: a polite Mexican “What can I do for you?”" },
+        spain: t("Dígame, | ¿qué | desea?", "Tell me, | what | would you like?", "Yes, what can I do for you?") }),
     ],
     ask_reason: [
       t("Claro. | ¿Es | para | una | revisión, | o | tiene | alguna | molestia?", "Sure. | Is it | for | a | checkup, | or | do you have | some | discomfort?",
@@ -797,7 +798,8 @@ export const dentist: SituationDef = {
     ],
     noted: [
       t("Ajá, | entiendo.", "Uh-huh, | I understand.", "I see."),
-      t("Muy | bien, | ya | lo | anoté.", "Very | good, | already | it | I-wrote-down.", "Okay, I've made a note of it."),
+      t("Muy | bien, | ya | lo | anoté.", "Very | good, | already | it | I-wrote-down.", "Okay, I've made a note of it.",
+        { spain: t("Muy | bien, | ya | lo | he anotado.", "Very | good, | already | it | I-have-written-down.", "Okay, I've made a note of it.") }),
     ],
     // In Mexico "¡Qué pena!" first means "how embarrassing", so Lorena says she's sorry
     sorry_pain: [
@@ -811,7 +813,8 @@ export const dentist: SituationDef = {
     ],
     ask_before: [
       t("¿Ya | había venido | antes | con | nosotros?", "Already | had you come | before | with | us?", "Have you been to see us before?",
-        { flags: { 1: "había venido: the past perfect, a polite and common way to ask this in Mexico." } }),
+        { flags: { 1: "había venido: the past perfect, a polite and common way to ask this in Mexico." },
+        spain: t("¿Ya | ha venido | antes | con | nosotros?", "Already | have you come | before | with | us?", "Have you been to see us before?") }),
     ],
     new_welcome: [
       t("Perfecto, | {m:bienvenido|f:bienvenida}.", "Perfect, | welcome.", "Great, welcome!"),
@@ -865,13 +868,15 @@ export const dentist: SituationDef = {
       t("Perdón, | se oye | entrecortado. | ¿Me | lo | puede | repetir?", "Sorry, | it sounds | choppy. | (To) me | it | can you | repeat?", "Sorry, the line is breaking up. Could you repeat that?"),
     ],
     speak_up_ok: [
-      t("¡Perdón! | ¿Así | me | escucha | mejor?", "Sorry! | Like this | me | do you hear | better?", "Sorry! Can you hear me better now?"),
+      t("¡Perdón! | ¿Así | me | escucha | mejor?", "Sorry! | Like this | me | do you hear | better?", "Sorry! Can you hear me better now?",
+        { spain: t("¡Perdón! | ¿Así | me | oye | mejor?", "Sorry! | Like this | me | do you hear | better?", "Sorry! Can you hear me better now?") }),
       t("¿Bueno? | ¿Ahora sí | me | escucha?", "Hello? | Now | me | do you hear?", "Hello? Can you hear me now?",
         { flags: { 0: "Mexican: ¿Bueno? is how Mexicans say hello on the phone and check the line.", 1: "ahora sí: “now (at last)”; sí adds emphasis, not yes." },
           neutral: t("¿Hola? | ¿Ahora sí | me | escucha?", "Hello? | Now | me | do you hear?", "Hello? Can you hear me now?", { flags: { 1: "ahora sí: “now (at last)”; sí adds emphasis, not yes." } }), spain: t("¿Oiga? | ¿Me | oye | ahora?", "Hello? | Me | do you hear | now?", "Hello? Can you hear me now?") }),
     ],
     hear_you: [
-      t("Sí, | {m:lo|f:la} | escucho | bien.", "Yes, | you | I-hear | well.", "Yes, I can hear you fine.", { flags: { 1: "lo / la: “you” (usted), lo for a man and la for a woman." } }),
+      t("Sí, | {m:lo|f:la} | escucho | bien.", "Yes, | you | I-hear | well.", "Yes, I can hear you fine.", { flags: { 1: "lo / la: “you” (usted), lo for a man and la for a woman." },
+        spain: t("Sí, | {m:lo|f:la} | oigo | bien.", "Yes, | you | I-hear | well.", "Yes, I can hear you fine.", { flags: { 1: "lo / la: “you” (usted), lo for a man and la for a woman." } }) }),
       t("Sí, | perfectamente.", "Yes, | perfectly.", "Yes, loud and clear."),
     ],
     hear_great: [t("¡Qué | bueno!", "How | good!", "Great!", { spain: t("¡Qué | bien!", "How | good!", "Great!") })],
@@ -901,11 +906,13 @@ export const dentist: SituationDef = {
     hold_quick: [t("Bueno, | es | rapidito.", "Okay, | it's | very quick.", "Okay, I'll be quick.", { flags: { 2: "rapidito: the diminutive of rápido, “real quick”." } })],
     offer: [
       t("¿Qué tal | {$slot}?", "How about | {$slot}?", "How about {$slot}?"),
-      t("Tengo | un | espacio | {$slot}. | ¿Le | queda | bien?", "I have | an | opening | {$slot}. | (For) you | does it suit | well?", "I have an opening {$slot}. Does that work for you?"),
+      t("Tengo | un | espacio | {$slot}. | ¿Le | queda | bien?", "I have | an | opening | {$slot}. | (For) you | does it suit | well?", "I have an opening {$slot}. Does that work for you?",
+        { spain: t("Tengo | un | hueco | {$slot}. | ¿Le | viene | bien?", "I have | an | opening | {$slot}. | (For) you | does it come | well?", "I have an opening {$slot}. Does that work for you?") }),
       t("Le | puedo | dar | {$slot}. | ¿Le | sirve?", "(To) you | I can | give | {$slot}. | (To) you | does it work?", "I can give you {$slot}. Does that work?",
         { flags: { 5: "¿Le sirve?: “does it work for you?”, very common in Mexico." } }),
     ],
-    offer_again: [t("Entonces, | ¿le | aparto | {$slot}?", "So, | (for) you | should I hold | {$slot}?", "So, should I put you down for {$slot}?")],
+    offer_again: [t("Entonces, | ¿le | aparto | {$slot}?", "So, | (for) you | should I hold | {$slot}?", "So, should I put you down for {$slot}?",
+        { spain: t("Entonces, | ¿le | reservo | {$slot}?", "So, | (for) you | should I book | {$slot}?", "So, should I put you down for {$slot}?") })],
     move_offer: [
       t("A ver... | ¿Qué tal | el | jueves | en la tarde, | a | las | cuatro | y media?", "Let's see... | How about | — | Thursday | in the afternoon, | at | — | four | thirty?",
         "Let's see... How about Thursday afternoon, at four thirty?",
@@ -913,37 +920,47 @@ export const dentist: SituationDef = {
     ],
     earliest: [t("Lo siento, | es | lo | más | pronto | que | tengo.", "I'm sorry, | it's | the | most | soon | that | I have.", "I'm sorry, that's the earliest I have.",
       { flags: { 2: "lo makes más pronto a noun phrase: the soonest." } })],
-    no_today: [t("Lo siento, | hoy | ya | no tenemos | lugar.", "I'm sorry, | today | already | we don't have | room.", "I'm sorry, we're fully booked today.")],
+    no_today: [t("Lo siento, | hoy | ya | no tenemos | lugar.", "I'm sorry, | today | already | we don't have | room.", "I'm sorry, we're fully booked today.",
+        { spain: t("Lo siento, | hoy | ya | no tenemos | hueco.", "I'm sorry, | today | already | we don't have | an opening.", "I'm sorry, we're fully booked today.") })],
     latest: [t("Lo siento, | nuestra | última | cita | es | a | {$at}.", "I'm sorry, | our | last | appointment | is | at | {$at}.", "I'm sorry, our last appointment is at {$at}.")],
     closed_weekend: [
       t("Lo siento, | el | sábado | ya | está | lleno, | y | los | domingos | no abrimos.", "I'm sorry, | — | Saturday | already | is | full, | and | on | Sundays | we don't open.",
         "I'm sorry, Saturday is already full, and we're closed on Sundays.", { flags: { 1: "el before a weekday = on; English needs no word here.", 7: "los + a weekday in the plural = every week on that day." } }),
     ],
-    day_full: [t("Lo siento, | ese | día | ya | no tengo | lugar.", "I'm sorry, | that | day | already | I don't have | room.", "I'm sorry, that day is already full.")],
+    day_full: [t("Lo siento, | ese | día | ya | no tengo | lugar.", "I'm sorry, | that | day | already | I don't have | room.", "I'm sorry, that day is already full.",
+        { spain: t("Lo siento, | ese | día | ya | no tengo | hueco.", "I'm sorry, | that | day | already | I don't have | an opening.", "I'm sorry, that day is already full.") })],
     // a calendar date asked for at the start of the call ("…para el 12 de noviembre"), when Lorena first offers a time
     date_full: [t("Lo siento, | para | la | fecha | que | me | pidió | ya | no tengo | lugar.", "I'm sorry, | for | the | date | that | (of) me | you-asked-for | already | I don't have | room.",
-      "I'm sorry, I'm already full on the date you asked for.")],
+      "I'm sorry, I'm already full on the date you asked for.",
+        { spain: t("Lo siento, | para | la | fecha | que | me | ha pedido | ya | no tengo | hueco.", "I'm sorry, | for | the | date | that | (of) me | you-have-asked-for | already | I don't have | an opening.", "I'm sorry, I'm already full on the date you asked for.") })],
     not_that_time: [t("Mmm, | a | esa | hora | no tengo | nada.", "Hmm, | at | that | time | I don't have | anything.", "Hmm, I don't have anything at that time.")],
     availability: [t("Tengo | {$slot} | o | {$slot2}.", "I have | {$slot} | or | {$slot2}.", "I have {$slot} or {$slot2}.", { say: "Tengo {$slot} o {$slot2}." })],
     booked: [
-      t("¡Listo! | Queda | su | cita | {$slot}.", "Done! | Is set | your | appointment | {$slot}.", "All set! Your appointment is {$slot}."),
+      t("¡Listo! | Queda | su | cita | {$slot}.", "Done! | Is set | your | appointment | {$slot}.", "All set! Your appointment is {$slot}.",
+        { spain: t("¡Ya está! | Queda | su | cita | {$slot}.", "Done! | Is set | your | appointment | {$slot}.", "All set! Your appointment is {$slot}.") }),
       // "para": without it, "le agendo la cita mañana…" could be heard as booking it tomorrow
-      t("Perfecto, | le | agendo | la | cita | para | {$slot}.", "Perfect, | (for) you | I-book | the | appointment | for | {$slot}.", "Perfect, I'll book you in for {$slot}."),
+      t("Perfecto, | le | agendo | la | cita | para | {$slot}.", "Perfect, | (for) you | I-book | the | appointment | for | {$slot}.", "Perfect, I'll book you in for {$slot}.",
+        { spain: t("Perfecto, | le | apunto | la | cita | para | {$slot}.", "Perfect, | (for) you | I-write-down | the | appointment | for | {$slot}.", "Perfect, I'll book you in for {$slot}.") }),
     ],
-    appt_set: [t("Su | cita | ya | quedó | {$slot}.", "Your | appointment | already | is set for | {$slot}.", "Your appointment is already set for {$slot}.")],
-    moved: [t("Listo, | su | cita | queda | cambiada | para | {$slot}.", "Done, | your | appointment | is | changed | to | {$slot}.", "Done! Your appointment is now {$slot}.")],
+    appt_set: [t("Su | cita | ya | quedó | {$slot}.", "Your | appointment | already | is set for | {$slot}.", "Your appointment is already set for {$slot}.",
+        { spain: t("Su | cita | ya | ha quedado | {$slot}.", "Your | appointment | already | has been set for | {$slot}.", "Your appointment is already set for {$slot}.") })],
+    moved: [t("Listo, | su | cita | queda | cambiada | para | {$slot}.", "Done, | your | appointment | is | changed | to | {$slot}.", "Done! Your appointment is now {$slot}.",
+        { spain: t("Hecho, | su | cita | queda | cambiada | para | {$slot}.", "Done, | your | appointment | is | changed | to | {$slot}.", "Done! Your appointment is now {$slot}.") })],
     text_reminder: [t("Un | día | antes | le | mandamos | un | mensaje | para | confirmar.", "One | day | before | (to) you | we-send | a | message | to | confirm.", "We'll send you a text the day before to confirm.")],
     arrive_early: [
       t("Le | pido | que | llegue | diez | minutos | antes | para | llenar | su | historia clínica.", "(Of) you | I-ask | that | you-arrive | ten | minutes | early | to | fill out | your | medical history.",
-        "Please arrive ten minutes early to fill out your medical history form.", { flags: { 3: "llegue: the subjunctive, used after pido que (I ask that)." } }),
+        "Please arrive ten minutes early to fill out your medical history form.", { flags: { 3: "llegue: the subjunctive, used after pido que (I ask that)." },
+        spain: t("Le | pido | que | llegue | diez | minutos | antes | para | rellenar | su | historia clínica.", "(Of) you | I-ask | that | you-arrive | ten | minutes | early | to | fill out | your | medical history.", "Please arrive ten minutes early to fill out your medical history form.") }),
     ],
     bring_id: [
       t("Le | pido | que | llegue | puntual; | tenemos | quince | minutos | de | tolerancia.", "(Of) you | I-ask | that | you-arrive | on time; | we have | fifteen | minutes | of | leeway.",
-        "Please be on time; we can only wait fifteen minutes for late arrivals.", { flags: { 9: "tolerancia: how late you can arrive before the appointment is lost." } }),
+        "Please be on time; we can only wait fifteen minutes for late arrivals.", { flags: { 9: "tolerancia: how late you can arrive before the appointment is lost." },
+        spain: t("Le | pido | que | llegue | puntual; | tenemos | quince | minutos | de | cortesía.", "(Of) you | I-ask | that | you-arrive | on time; | we have | fifteen | minutes | of | grace.", "Please be on time; we can only wait fifteen minutes for late arrivals.", { flags: { 9: "cortesía: here, the grace period, how late you can arrive before the appointment is lost." } }) }),
     ],
     anything_else: [
       t("¿Algo | más | en | que | le | pueda | ayudar?", "Anything | else | in | which | (to) you | I can | help?", "Is there anything else I can help you with?"),
-      t("¿Se le ofrece | algo | más?", "Do you need | anything | else?", "Anything else I can do for you?", { flags: { 0: "¿Se le ofrece…?: very polite and common in Mexico: is there anything you need?" } }),
+      t("¿Se le ofrece | algo | más?", "Do you need | anything | else?", "Anything else I can do for you?", { flags: { 0: "¿Se le ofrece…?: very polite and common in Mexico: is there anything you need?" },
+        spain: t("¿Desea | algo | más?", "Would you like | anything | else?", "Anything else I can do for you?") }),
     ],
     anything_else_yes: [t("Claro, | dígame.", "Sure, | tell me.", "Sure, what can I do for you?")],
     see_you: [
@@ -962,7 +979,7 @@ export const dentist: SituationDef = {
         { say: "Estamos en la calle Hidalgo número doce, a una cuadra del zócalo.", write: "Clínica Dental Coral · calle Hidalgo 12", spell: "Hidalgo",
           flags: { 2: "Spanish puts la before calle; English has no word here." }, spain: t("Estamos | en | la | calle | Hidalgo | número | 12, | a | una | calle | del | zócalo.", "We are | on | — | street | Hidalgo | number | 12, | at | one | street | from the | main square.", "We're at 12 Hidalgo Street, a block from the main square.", { flags: { 2: "Spanish puts la before calle; English has no word here." }, say: "Estamos en la calle Hidalgo número doce, a una calle del zócalo." }) }),
     ],
-    parking: [t("Puede | estacionarse | en | la | calle, | enfrente | del | consultorio.", "You can | park | on | the | street, | in front | of the | office.", "You can park on the street, right in front of the office.", { spain: t("Puede | aparcar | en | la | calle, | enfrente | del | consultorio.", "You can | park | on | the | street, | in front | of the | office.", "You can park on the street, right in front of the office.") })],
+    parking: [t("Puede | estacionarse | en | la | calle, | enfrente | del | consultorio.", "You can | park | on | the | street, | in front | of the | office.", "You can park on the street, right in front of the office.", { spain: t("Puede | aparcar | en | la | calle, | delante | de | la | clínica.", "You can | park | on | the | street, | in front | of | the | clinic.", "You can park on the street, right in front of the office.") })],
     duration: [t("Más o menos | una | hora, | por | ser | primera | vez.", "More or less | an | hour, | for | being | first | time.", "About an hour, since it's your first visit.")],
     duration_short: [t("Como | media | hora.", "Like | half | hour.", "About half an hour.")],
     bring: [
@@ -1014,10 +1031,12 @@ export const dentist: SituationDef = {
     ],
     found_appt: [
       t("Aquí | veo | su | cita: | {$slot}.", "Here | I-see | your | appointment: | {$slot}.", "I see your appointment here: {$slot}."),
-      t("Ya | la | encontré: | {$slot}.", "Already | it | I-found: | {$slot}.", "Found it: {$slot}.", { flags: { 1: "la: it, la cita." } }),
+      t("Ya | la | encontré: | {$slot}.", "Already | it | I-found: | {$slot}.", "Found it: {$slot}.", { flags: { 1: "la: it, la cita." },
+        spain: t("Ya | la | he encontrado: | {$slot}.", "Already | it | I-have-found: | {$slot}.", "Found it: {$slot}.", { flags: { 1: "la: it, la cita." } }) }),
     ],
     offer_reschedule: [t("¿Quiere | cambiarla | para | otro | día?", "Do you want | to change it | to | another | day?", "Would you like to reschedule it for another day?")],
-    canceled: [t("Muy | bien, | ya | cancelé | su | cita.", "Very | good, | already | I-canceled | your | appointment.", "Okay, I've canceled your appointment.")],
+    canceled: [t("Muy | bien, | ya | cancelé | su | cita.", "Very | good, | already | I-canceled | your | appointment.", "Okay, I've canceled your appointment.",
+        { spain: t("Muy | bien, | ya | he cancelado | su | cita.", "Very | good, | already | I-have-canceled | your | appointment.", "Okay, I've canceled your appointment.") })],
 
     // this week's only opening (twist)
     only_offer: [
@@ -1046,9 +1065,11 @@ export const dentist: SituationDef = {
     book: {
       lt: "Say you'd like an appointment", slot: "reason", examples: ["checkup", "cleaning"],
       items: [
-        { id: "book_like", s: t("Quisiera | hacer | una | cita.", "I'd like | to make | an | appointment.", "I'd like to make an appointment.") },
+        { id: "book_like", s: t("Quisiera | hacer | una | cita.", "I'd like | to make | an | appointment.", "I'd like to make an appointment.",
+        { spain: t("Quisiera | pedir | una | cita.", "I'd like | to ask for | an | appointment.", "I'd like to make an appointment.") }) },
         { id: "book_could", s: t("¿Me | puede | dar | una | cita, | por favor?", "(To) me | can you | give | an | appointment, | please?", "Could I get an appointment, please?"), register: "polite" },
-        { id: "book_calling", s: t("Llamo | para | hacer | una | cita.", "I'm calling | to | make | an | appointment.", "I'm calling to make an appointment.") },
+        { id: "book_calling", s: t("Llamo | para | hacer | una | cita.", "I'm calling | to | make | an | appointment.", "I'm calling to make an appointment.",
+        { spain: t("Llamo | para | pedir | una | cita.", "I'm calling | to | ask for | an | appointment.", "I'm calling to make an appointment.") }) },
         { id: "book_asap", s: t("Necesito | ver | a | un | dentista | lo antes posible.", "I need | to see | — | a | dentist | as soon as possible.", "I need to see a dentist as soon as possible.",
           { flags: { 2: "Personal a: Spanish marks a person after the verb; English has no word here." } }) },
         { id: "reason_have", s: t("Tengo | dolor | de | muelas.", "I have | pain | of | teeth.", "I have a toothache.",
@@ -1056,7 +1077,8 @@ export const dentist: SituationDef = {
         { id: "book_checkup", s: t("Quisiera | una | cita | para | {X.np}.", "I'd like | an | appointment | for | {X.np}.", "I'd like an appointment for {X.np}."), only: (e) => ["checkup", "cleaning"].includes(e.id) },
         { id: "book_need", s: t("Necesito | {X.np}.", "I need | {X.np}.", "I need {X.np}."), only: (e) => ["checkup", "cleaning"].includes(e.id) },
         { id: "book_available", s: t("¿Tiene | algo | esta | semana?", "Do you have | anything | this | week?", "Do you have anything this week?") },
-        { id: "book_gustaria", s: t("Me gustaría | agendar | una | cita.", "I'd like | to schedule | an | appointment.", "I'd like to schedule an appointment."), register: "polite" },
+        { id: "book_gustaria", s: t("Me gustaría | agendar | una | cita.", "I'd like | to schedule | an | appointment.", "I'd like to schedule an appointment.",
+        { spain: t("Me gustaría | pedir | cita.", "I'd like | to ask for | an appointment.", "I'd like to schedule an appointment.") }), register: "polite" },
       ],
     },
     reason: {
@@ -1068,9 +1090,11 @@ export const dentist: SituationDef = {
         { id: "reason_for", s: t("Es | para | una | revisión.", "It's | for | a | checkup.", "It's for a checkup.") },
         { id: "reason_just", s: t("Solo | una | limpieza.", "Just | a | cleaning.", "Just a cleaning.") },
         { id: "reason_broke", s: t("Se me rompió | un | diente.", "Broke on me | a | tooth.", "I broke a tooth.",
-          { flags: { 0: "se me rompió: “it broke on me”; Spanish puts accidents this way." } }) },
+          { flags: { 0: "se me rompió: “it broke on me”; Spanish puts accidents this way." },
+        spain: t("Se me ha roto | un | diente.", "Has broken on me | a | tooth.", "I broke a tooth.", { flags: { 0: "se me ha roto: “it has broken on me”; Spanish puts accidents this way." } }) }) },
         { id: "reason_filling", s: t("Se me cayó | una | resina.", "Fell out on me | a | filling.", "A filling fell out.",
-          { flags: { 0: "se me cayó: “it fell out on me”; Spanish puts accidents this way.", 2: "resina: a white filling, the usual kind in Mexico." } }) },
+          { flags: { 0: "se me cayó: “it fell out on me”; Spanish puts accidents this way.", 2: "resina: a white filling, the usual kind in Mexico." },
+        spain: t("Se me ha caído | un | empaste.", "Has fallen out on me | a | filling.", "A filling fell out.", { flags: { 0: "se me ha caído: “it has fallen out on me”; Spanish puts accidents this way." } }) }) },
       ],
     },
     pain: {
@@ -1119,7 +1143,8 @@ export const dentist: SituationDef = {
       lt: "Say if you can hear her now",
       items: [
         { id: "hear_better", s: t("Sí, | mucho | mejor.", "Yes, | much | better.", "Yes, much better.") },
-        { id: "hear_now", s: t("Sí, | ya | la | escucho.", "Yes, | now | you | I-hear.", "Yes, I can hear you now.", { flags: { 2: "la: “you” (usted), for a woman, Lorena." } }) },
+        { id: "hear_now", s: t("Sí, | ya | la | escucho.", "Yes, | now | you | I-hear.", "Yes, I can hear you now.", { flags: { 2: "la: “you” (usted), for a woman, Lorena." },
+        spain: t("Sí, | ya | la | oigo.", "Yes, | now | you | I-hear.", "Yes, I can hear you now.", { flags: { 2: "la: “you” (usted), for a woman, Lorena." } }) }) },
       ],
     },
     spell: {
@@ -1159,14 +1184,16 @@ export const dentist: SituationDef = {
     slot: {
       lt: "Agree on a time",
       items: [
-        { id: "slot_ok", s: t("Sí, | me queda | bien.", "Yes, | it suits me | well.", "Yes, that works for me.", { flags: { 1: "me queda bien: it suits me; for times, sizes and colors." } }) },
+        { id: "slot_ok", s: t("Sí, | me queda | bien.", "Yes, | it suits me | well.", "Yes, that works for me.", { flags: { 1: "me queda bien: it suits me; for times, sizes and colors." },
+        spain: t("Sí, | me viene | bien.", "Yes, | it comes to me | well.", "Yes, that works for me.", { flags: { 1: "me viene bien: it suits me (Spain, for times and plans)." } }) }) },
         { id: "slot_earlier", s: t("¿Tiene | algo | antes?", "Do you have | anything | before?", "Do you have anything earlier?") },
         { id: "slot_later", s: t("¿Tiene | algo | más tarde?", "Do you have | anything | later?", "Do you have anything later?") },
         { id: "slot_perfect", s: t("El | martes | a | las | diez | está | perfecto.", "— | Tuesday | at | — | ten | is | perfect.", "Tuesday at ten is perfect.",
           { flags: { 0: "el before a weekday = on; English needs no word here.", 3: "Spanish uses an article before clock times; English has no separate word." } }) },
         { id: "slot_day", s: t("¿Puedo | ir | el | viernes?", "Can I | go | — | Friday?", "Could I come on Friday?", { flags: { 2: "el before a weekday = on." } }) },
         { id: "slot_work", s: t("Perdón, | a | esa | hora | trabajo.", "Sorry, | at | that | time | I work.", "Sorry, I'm at work then.") },
-        { id: "slot_no", s: t("No me queda.", "It doesn't suit me.", "That doesn't work for me.") },
+        { id: "slot_no", s: t("No me queda.", "It doesn't suit me.", "That doesn't work for me.",
+        { spain: t("No me viene bien.", "It doesn't suit me.", "That doesn't work for me.") }) },
       ],
     },
     phone: {
@@ -1174,7 +1201,8 @@ export const dentist: SituationDef = {
       items: [
         { id: "ph_speak_up", s: t("Perdón, | ¿puede | hablar | más | fuerte?", "Sorry, | can you | speak | more | loud?", "Sorry, could you speak up?") },
         { id: "ph_breaking", s: t("Perdón, | se está cortando.", "Sorry, | it's breaking up.", "Sorry, you're breaking up.") },
-        { id: "ph_hear", s: t("¿Me | escucha?", "Me | do you hear?", "Can you hear me?") },
+        { id: "ph_hear", s: t("¿Me | escucha?", "Me | do you hear?", "Can you hear me?",
+        { spain: t("¿Me | oye?", "Me | do you hear?", "Can you hear me?") }) },
         { id: "c_repeat", s: t("Perdón, | ¿me | lo | puede | repetir?", "Sorry, | (to) me | it | can you | repeat?", "Sorry, could you say that again?") },
         { id: "c_spell", s: t("¿Cómo | se escribe?", "How | is it spelled?", "How do you spell that?") },
       ],
@@ -1216,7 +1244,8 @@ export const dentist: SituationDef = {
   },
 
   merges: {
-    "por la tarde": { reason: "lexical_expression", split: "por → by, la → the, tarde → afternoon; Spain's time phrase = in the afternoon.", minimal: "Three words." },
+    "me viene": { reason: "lexical_expression", split: "me → (to) me + viene → comes: venir bien = to suit (Spain, for times and plans).", minimal: "Two words." },
+    "no me viene bien": { reason: "lexical_expression", split: "no → not + me → (to) me + viene bien → comes well: = it doesn't suit me.", minimal: "Four words." },
     "clínica dental coral": { reason: "lexical_expression", split: "clínica → clinic + dental → dental + coral → coral would translate the office's proper name.", minimal: "A proper name." },
     "le duele": { reason: "grammatical_fusion", split: "le → to you + duele → it hurts is a word-for-word reading of one English verb phrase (does it hurt you).", minimal: "Two words." },
     "se le ofrece": { reason: "grammatical_fusion", split: "se → itself + le → to you + ofrece → offers is false; ¿qué se le ofrece? = what do you need.", minimal: "The pronouns and the verb only." },

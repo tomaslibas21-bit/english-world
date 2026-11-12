@@ -15,5 +15,6 @@
   {"ctx": "aob", "say": "¿Puedo trabajar desde casa el viernes?", "intent": "aob_wfh"},
   {"ctx": "summary", "say": "Vale, hoy os lo mando", "intent": ["will_send", "can_do"]},
   {"ctx": "closing", "say": "¡Gracias a todos, que tengáis un buen día!", "intent": ["bye_all", "g_thanks"]},
-  {"ctx": "closing", "say": "¡Hasta luego, chicos!", "intent": ["bye_all", "g_bye"]}
+  {"ctx": "closing", "say": "¡Hasta luego, chicos!", "intent": ["bye_all", "g_bye"]},
+  {"ctx": "add", "say": "Quiero añadir algo", "intent": "add_req"}
 ] }

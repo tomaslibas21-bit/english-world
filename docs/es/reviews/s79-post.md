@@ -122,3 +122,15 @@ price for every country (EMS to Australia and New Zealand is 35–40% above the 
 12 twins. Gloria keeps usted (no register change). Spain: "número de seguimiento" for "número de guía" (5 lines and the hint),
 datáfono, devolver, "¿En qué puedo ayudarle?" for "¿Qué se le ofrece?", "Muy bien / Claro / sin problema" for "Con gusto", "Solo
 uno" (hint). Spain corpus: 13 items (sellos, número de seguimiento, mi madre).
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer, against docs/es/STYLE.md "Spain Spanish": every line's Spain reading (twin, else neutral), the hints and
+example answers, tú/usted and vosotros by the Spain rule, meaning and English against the Mexican line, Mexican-only
+things kept, and the Spain corpus.
+
+Found and fixed: timbres/estampillas → sellos (masculine like the Mexican lines; say texts too); ¿Trae…? (the parcel) → ¿Lleva…?, adentro → dentro; llenar → rellenar; un aproximado → una cifra aproximada; rastreo → seguimiento; ¡El que sigue! → ¡El siguiente!; Listo → Hecho / Ya está; ¿Me presta una identificación? → ¿Me enseña un documento de identidad?; the writer's twin “que le dejaron” → han dejado; hints in the perfect (he perdido, he firmado, me han dejado).
+
+English of every twin checked against its Mexican line (restored where a twin had rephrased it). Spain corpus items
+added for the new forms. Gates: Mexican, neutral and Spain checks 0 errors; coverage 0 false accepts.
+

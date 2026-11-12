@@ -13,5 +13,7 @@
   {"ctx": "lockers", "say": "¿Me dejas una toalla?", "intent": "towel_q"},
   {"ctx": "lockers", "say": "No, ya estoy lista", "intent": ["change_no", "ready"]},
   {"ctx": "pay", "say": "No llevo efectivo", "intent": "no_cash"},
-  {"ctx": "pay", "say": "No quiero pagar con el móvil", "intent": "any", "not": ["pay_phone"]}
+  {"ctx": "pay", "say": "No quiero pagar con el móvil", "intent": "any", "not": ["pay_phone"]},
+  {"ctx": "plan", "say": "¿Cobráis inscripción?", "intent": "ask_fee"},
+  {"ctx": "lockers", "say": "¿Puedo beber agua?", "intent": "water_q"}
 ] }
