@@ -46,6 +46,13 @@ const WALK = 4.4, RUN = 7.4;
 
 const isCall = (s: SituationDef) => s.mode === "phone" || s.mode === "video" || s.location === "phone";
 /** A point `d` metres in front of someone facing `rot` (0 = +Z), turned towards them. */
+/** A person's name tag: their name, their role in the practised language (in the Spanish chosen: roleSaid) and in the
+ *  learner's language under it (unless it is the same word, like "Barista"). */
+function nameTagHtml(def: (typeof NPCS)[string]): string {
+  const lt = def.role.lt.toLowerCase() === def.role.en.toLowerCase() ? "" : `<i lang="${EDITION.helper}">${def.role.lt}</i>`;
+  return `<b>${def.name}</b><span lang="${TL}">${roleSaid(def)}</span>${lt}`;
+}
+
 function inFrontOf(x: number, z: number, rot: number, d: number) {
   return { x: x + Math.sin(rot) * d, z: z + Math.cos(rot) * d, rot: rot + Math.PI };
 }
@@ -87,6 +94,23 @@ const AT_WORK: Record<string, "wipe" | "type"> = {
  *  --conversation-image-height and its shorter screens). */
 function talkPictureHeight(h: number): number {
   return h <= 620 ? 100 : h <= 700 ? Math.max(100, h * 0.2) : Math.min(230, Math.max(110, h * 0.25));
+}
+
+const headBox = new THREE.Vector3();
+/** How far above its feet the top of a person's head is, hair and hats included (the box of their own meshes; the
+ *  blob shadow left out). */
+function headTop(ch: GameCharacter): number {
+  let top = -Infinity;
+  ch.root.updateMatrixWorld(true);
+  ch.root.traverse((o) => {
+    const g = (o as THREE.Mesh).isMesh && o.visible ? (o as THREE.Mesh).geometry : null;
+    if (!g) return;
+    if (!g.boundingBox) g.computeBoundingBox();
+    const b = g.boundingBox;
+    if (!b || b.max.y - b.min.y < 0.05) return;
+    for (const x of [b.min.x, b.max.x]) for (const z of [b.min.z, b.max.z]) top = Math.max(top, headBox.set(x, b.max.y, z).applyMatrix4(o.matrixWorld).y);
+  });
+  return Number.isFinite(top) ? top - ch.root.position.y : ch.height * 1.04;
 }
 
 export class Game implements GameApi {
@@ -397,9 +421,7 @@ export class Game implements GameApi {
       this.npcLayer.add(ch.root);
       const tag = document.createElement("div");
       tag.className = "nametag";
-      // who they are in English, and in Lithuanian under it (unless it is the same word, like "Barista")
-      const lt = def.role.lt.toLowerCase() === def.role.en.toLowerCase() ? "" : `<i lang="${EDITION.helper}">${def.role.lt}</i>`;
-      tag.innerHTML = `<b>${def.name}</b><span lang="${TL}">${roleSaid(def)}</span>${lt}`;
+      tag.innerHTML = nameTagHtml(def);
       this.tagLayer.appendChild(tag);
       const ap = sp as { ax?: number; az?: number };
       this.npcs.push({ id: sp.npc, ch, home: new THREE.Vector3(sp.x, 0, sp.z), rot: sp.rot, tag, sit: sp.sit, waved: false, approach: ap.ax !== undefined && ap.az !== undefined ? new THREE.Vector3(ap.ax, 0, ap.az) : undefined });
@@ -825,6 +847,10 @@ export class Game implements GameApi {
     // --conversation-image-height; the loop's applyViewShift centres it there): each point must fall in that strip too,
     // 10 px in, for the people spoken with. A framing the old test passed and the strip shows stays as it was.
     const sideways = h <= 520 && w > h, strip = !wide && !sideways ? talkPictureHeight(h) : 0, ssy = (h - strip) / 2;
+    // And the top of the head of each person spoken with (hair and hats included, 0.12 m to each side) under the
+    // picture's top edge, 10 px in: the head and chest points alone passed with the top of a head cut off by the
+    // strip's top edge (s65a's officer, s79's clerk…).
+    const tops = who.map(({ ch }) => headTop(ch));
     const fits = (f: Shot) => points(f, (q, i) => {
       q.project(cam);
       const px = (q.x + 1) / 2 * w - sx, py = (1 - q.y) / 2 * h - sy;
@@ -832,7 +858,10 @@ export class Game implements GameApi {
       // (the people spoken with: the player, nearest the camera, may reach below the strip)
       const sy2 = (1 - q.y) / 2 * h - ssy;
       return !strip || i === 0 || (sy2 >= m && sy2 <= strip - m);
-    });
+    }) && who.every(({ ch }, i) => i === 0 || [-0.12, 0, 0.12].every((s) => {
+      const q = v.copy(ch.root.position).addScaledVector(right, s).setY(ch.root.position.y + tops[i]).project(cam);
+      return q.z <= 1 && (strip ? (1 - q.y) / 2 * h - ssy : (1 - q.y) / 2 * h - sy) >= m;
+    }));
     // Outdoors: the camera clear of anything solid, and nothing in front of anyone: of the six lines from the camera to
     // a person's points, at most three may pass through a building (to its roof), a post or a trunk (the colliders'
     // circles, to 4 m; not the people's own) or something low (the colliders' boxes: cars, counters, walls, to 1.2 m).
@@ -867,13 +896,19 @@ export class Game implements GameApi {
       f.pos.y = f.look.y + (this.zone.interior ? lift * d / d0 : Math.max(lift * d / d0, run * 0.5));
       return f;
     };
+    // On a phone held upright the camera also looks a little higher (up to 0.4 m at the people) before it backs off:
+    // the heads come down into the strip and the people keep their size; the player, in front, sinks a little.
+    const raise = strip ? [0, 0.1, 0.2, 0.3, 0.4] : [0];
     let best: Shot | null = null;
     for (let d = d0; d <= max * 1.001; d = Math.min(d * 1.08, d < max ? max : d * 2)) {
       for (const side of this.zone.interior ? [undefined] : [1, -1] as const) {
-        const f = at(d, side);
-        if (!seen(f)) continue;
-        best ??= f;
-        if (fits(f)) return f;
+        const f0 = at(d, side);
+        if (!seen(f0)) continue;
+        best ??= f0;
+        for (const r of raise) {
+          const f = r ? { pos: f0.pos, look: f0.look.clone().setY(f0.look.y + r) } : f0;
+          if (fits(f)) return f;
+        }
       }
     }
     return best ?? first;
@@ -1482,6 +1517,15 @@ export class Game implements GameApi {
   get groundCanvas() { return this.town?.groundCanvas; }
   get doors(): Door[] { return this.town?.doors ?? []; }
   get zoneId() { return this.zone?.id; }
+
+  refreshNameTags() {
+    for (const n of this.npcs) {
+      const def = NPCS[n.id];
+      if (!def) continue;
+      const html = nameTagHtml(def);
+      if (n.tag.innerHTML !== html) { n.tag.innerHTML = html; n.tagSize = undefined; }
+    }
+  }
 
   setQuality(q: "high" | "low") {
     this.renderer.shadowMap.enabled = q === "high";
