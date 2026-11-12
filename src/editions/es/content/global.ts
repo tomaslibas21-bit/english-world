@@ -160,7 +160,7 @@ export const GLOBAL_MACROS: Record<string, string | string[]> = {
   det: "(un | una | el | la | los | las | unos | unas | este | esta | ese | esa | mi | otro | otra)",
   greet: "(hola | buenos dias | buenas tardes | buenas noches | buenas | buen dia | hola buenas | hola buenos dias | hola buenas tardes)",
   // a short reason after "Perdón, me tengo que ir" in the same breath (#driving: "¡Maneje con cuidado!" fits)
-  leaving_why: "[perdon] [es que | porque] (estoy manejando [ahorita] #driving | voy manejando #driving | (tengo | traigo) prisa | voy tarde | tengo otra llamada | tengo una (cita | junta) [ahorita | ahora] | ya llegó mi (taxi | camion | autobus | uber) | se me acaba la (bateria | pila) | (tocan | estan tocando) la puerta)",
+  leaving_why: "[perdon] [es que | porque] (estoy manejando [ahorita] #driving | voy manejando #driving | (estoy | voy) conduciendo [ahora] #driving | (tengo | traigo) prisa | voy tarde | tengo otra llamada | tengo una (cita | junta) [ahorita | ahora] | ya llegó mi (taxi | camion | autobus | uber) | se me acaba la (bateria | pila) | (tocan | estan tocando) la puerta)",
 };
 
 /** Leaving early ("Perdón, me tengo que ir.", "Le llamo luego."), shared by every situation. #leaving = only a goodbye
@@ -244,6 +244,7 @@ export const GLOBAL_INTENTS: Record<string, { patterns: string[] }> = {
   g_hello: { patterns: ["@greet #h:s_hello"] },
   g_howareyou: { patterns: [
     "(como esta | como estas | que tal | como le va | como te va | como va todo | que onda | como ha estado | como has estado) [usted | tu] [hoy]",
+    "(que tal | como) estais [hoy]", "como os va",
     "@greet (como esta | como estas | que tal) [usted | tu]",
   ] },
   g_howareyou_answer: { patterns: [

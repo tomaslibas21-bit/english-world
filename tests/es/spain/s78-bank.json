@@ -10,5 +10,7 @@
   {"ctx": "form", "say": "¿Me deja un boli?", "intent": "ask_pen"},
   {"ctx": "form", "say": "Ya está, ya he firmado", "intent": "signed"},
   {"ctx": "slow", "say": "Vale, no pasa nada", "intent": ["no_problem", "yn:yes", "g_ok"]},
-  {"ctx": "form", "say": "¿Dónde firmo?", "intent": "where_sign"}
+  {"ctx": "form", "say": "¿Dónde firmo?", "intent": "where_sign"},
+  {"ctx": "deposit", "say": "Quisiera ingresar mil pesos", "intent": "deposit_ans"},
+  {"ctx": "help_card", "say": "El cajero se ha tragado mi tarjeta", "intent": "card_kept"}
 ] }

@@ -265,9 +265,11 @@ export const mercado: SituationDef = {
     greet: [
       t("¡Pásele, | {m:joven|f:joven}! | ¿Qué | le | damos?", "Come in, | {m:young man|f:young lady}! | What | (to) you | we-give?", "Come on in! What can I get you?",
         { flags: { 0: "Mexican markets: “pásele” = come on in, have a look." },
-          neutral: t("¡Adelante, | {m:joven|f:joven}! | ¿Qué | le | damos?", "Come in, | {m:young man|f:young lady}! | What | (to) you | we-give?", "Come on in! What can I get you?") }),
+          neutral: t("¡Adelante, | {m:joven|f:joven}! | ¿Qué | le | damos?", "Come in, | {m:young man|f:young lady}! | What | (to) you | we-give?", "Come on in! What can I get you?"),
+        spain: t("¡Dígame, | {m:joven|f:joven}! | ¿Qué | le | pongo?", "Tell me, | {m:young man|f:young lady}! | What | (for) you | I-put?", "Come on in! What can I get you?", { flags: { 4: "poner (in a shop or a bar, Spain): to give you, to serve you." } }) }),
       t("¡Buenos días! | ¿Qué | se | le | ofrece?", "Good morning! | What | (itself) | (to) you | offers?", "Good morning! What can I do for you?",
-        { flags: { 2: "se le ofrece: “is offered to you” – a set, polite shop question." } }),
+        { flags: { 2: "se le ofrece: “is offered to you” – a set, polite shop question." },
+        spain: t("¡Buenos días! | ¿Qué | le | pongo?", "Good morning! | What | (for) you | I-put?", "Good morning! What can I do for you?", { flags: { 3: "poner (in a shop or a bar, Spain): to give you, to serve you." } }) }),
       t("¡Buenas, | {m:marchante|f:marchanta}! | ¿Qué | va | a | llevar?", "Hi, | customer! | What | are you going | to | take?", "Hi there! What are you getting today?",
         { flags: { 1: "Mexican markets: marchante / marchanta = a regular customer, said warmly." },
           neutral: t("¡Buenas, | {m:joven|f:joven}! | ¿Qué | va | a | llevar?", "Hi, | {m:young man|f:young lady}! | What | are you going | to | take?", "Hi there! What are you getting today?") }),
@@ -276,7 +278,8 @@ export const mercado: SituationDef = {
       t("¡Buenos días! | ¿Cómo | está?", "Good morning! | How | are you?", "Good morning! How are you?"),
     ],
     ask_order: [
-      t("¿Qué | le | damos?", "What | (to) you | we-give?", "What can I get you?"),
+      t("¿Qué | le | damos?", "What | (to) you | we-give?", "What can I get you?",
+        { spain: t("¿Qué | le | pongo?", "What | (for) you | I-put?", "What can I get you?") }),
       t("¿Qué | va | a | llevar?", "What | are you going | to | take?", "What are you getting?"),
     ],
     ask_qty: [
@@ -302,9 +305,11 @@ export const mercado: SituationDef = {
     ],
     ack_ripe: [t("Muy | bien.", "Very | good.", "Okay."), t("Ahorita | se | {lo@X:pl} | escojo.", "Right now | for you | them | I-pick.", "I'll pick them out for you.",
       { flags: { 0: "Mexican: ahorita = right now, in a moment.", 2: "los / las: “them” (a pronoun here, not the article)." },
+        spain: t("Ahora | se | {lo@X:pl} | escojo.", "Now | for you | them | I-pick.", "I'll pick them out for you.", { flags: { 2: "los / las: “them” (a pronoun here, not the article)." } }),
         neutral: t("Ya | se | {lo@X:pl} | escojo.", "Now | for you | them | I-pick.", "I'll pick them out for you.", { flags: { 2: "los / las: “them” (a pronoun here, not the article)." } }) })],
     ack_ripe_one: [t("Muy | bien.", "Very | good.", "Okay."), t("Ahorita | se | {lo@X} | escojo.", "Right now | for you | it | I-pick.", "I'll pick a good one for you.",
       { flags: { 0: "Mexican: ahorita = right now, in a moment.", 2: "lo / la: “it” (a pronoun here, not the article)." },
+        spain: t("Ahora | se | {lo@X} | escojo.", "Now | for you | it | I-pick.", "I'll pick a good one for you.", { flags: { 2: "lo / la: “it” (a pronoun here, not the article)." } }),
         neutral: t("Ya | se | {lo@X} | escojo.", "Now | for you | it | I-pick.", "I'll pick a good one for you.", { flags: { 2: "lo / la: “it” (a pronoun here, not the article)." } }) })],
     // what Licha says as she weighs (X = the product, in the plural)
     got_kilo: [t("Un | kilo | de | {X.pl}...", "A | kilo | of | {X.pl}...", "A kilo of {X.pl}…")],
@@ -332,7 +337,8 @@ export const mercado: SituationDef = {
     ],
     which_product: [t("¿De | cuál?", "Of | which one?", "Which one?")],
     ask_more: [
-      t("¿Qué | más | le | damos?", "What | else | (to) you | we-give?", "What else can I get you?"),
+      t("¿Qué | más | le | damos?", "What | else | (to) you | we-give?", "What else can I get you?",
+        { spain: t("¿Qué | más | le | pongo?", "What | else | (for) you | I-put?", "What else can I get you?") }),
       t("¿Algo | más?", "Anything | else?", "Anything else?"),
       t("¿Qué | más | va | a | llevar?", "What | else | are you going | to | take?", "What else are you getting?"),
     ],
@@ -350,8 +356,10 @@ export const mercado: SituationDef = {
     recommend_papaya: [t("Llévese | una | papaya, | está | dulcecita.", "Take | a | papaya, | it's | nice and sweet.", "Take a papaya, it's nice and sweet.", { flags: { 4: "-ita: a fond diminutive, “nice and sweet”." } })],
     removed: [t("Muy | bien, | sin | {X.pl}.", "Very | good, | without | {X.pl}.", "Okay, no {X.pl}.")],
     ask_bag: [
-      t("¿Trae | bolsa?", "Do you bring | bag?", "Did you bring a bag?"),
-      t("¿Trae | su | bolsa?", "Do you bring | your | bag?", "Have you got your bag?"),
+      t("¿Trae | bolsa?", "Do you bring | bag?", "Did you bring a bag?",
+        { spain: t("¿Lleva | bolsa?", "Do you carry | bag?", "Did you bring a bag?") }),
+      t("¿Trae | su | bolsa?", "Do you bring | your | bag?", "Have you got your bag?",
+        { spain: t("¿Lleva | su | bolsa?", "Do you carry | your | bag?", "Have you got your bag?") }),
     ],
     bag_ok: [t("Muy | bien, | aquí | se | lo | pongo.", "Very | good, | here | for you | it | I-put.", "Great, I'll put it in here.")],
     bag_give: [t("Aquí | le | pongo | una | bolsita.", "Here | (for) you | I-put | a | little bag.", "Here, I'll put it in a bag for you.")],
@@ -397,6 +405,7 @@ export const mercado: SituationDef = {
     pilon: [
       t("Le | puse | un | pilón | de | cilantro.", "(For) you | I-put | a | little extra | of | cilantro.", "I put in some cilantro for you, on the house.",
         { flags: { 3: "Mexican: el pilón = a little extra the seller adds for free." },
+          spain: t("Le | he puesto | un | poco | de | cilantro | de | regalo.", "(For) you | I-have-put | a | little | of | cilantro | as | a gift.", "I put in some cilantro for you, on the house."),
           neutral: t("Le | puse | un | poco | de | cilantro | de | regalo.", "(For) you | I-put | a | little | of | cilantro | as | a gift.", "I put in some cilantro for you, on the house.") }),
     ],
     closing: [
@@ -471,7 +480,8 @@ export const mercado: SituationDef = {
     bag: {
       lt: "Your bag",
       items: [
-        { id: "bag_yes", s: t("Sí, | traigo | bolsa.", "Yes, | I-bring | bag.", "Yes, I brought a bag.") },
+        { id: "bag_yes", s: t("Sí, | traigo | bolsa.", "Yes, | I-bring | bag.", "Yes, I brought a bag.",
+        { spain: t("Sí, | llevo | bolsa.", "Yes, | I-carry | bag.", "Yes, I brought a bag.") }) },
         { id: "bag_no", s: t("¿Me | da | una | bolsa?", "(To) me | you-give | a | bag?", "Could I have a bag?") },
       ],
     },

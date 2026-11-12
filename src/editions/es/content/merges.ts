@@ -58,6 +58,9 @@ export const MERGES: Record<string, MergeRecord> = {
   "sin prisa": LEX("sin → without + prisa → hurry; = no rush."),
   "no pasa nada": LEX("no → not + pasa → happens + nada → nothing; = no worries."),
   "me alegro": LEX("me → myself + alegro → I gladden; = I'm glad."),
+  "qué bien": LEX("qué → what + bien → well is a word-for-word exclamation; = how nice, great."),
+  "menos mal": LEX("menos → less + mal → bad; Spain's set phrase = good thing, thank goodness."),
+  "ahora mismo": LEX("ahora → now + mismo → same is false; = right now, right away."),
   "aquí está": LEX("aquí → here + está → is; = here it is."),
   "ahí está": LEX("ahí → there + está → is; = there it is."),
   "lo de siempre": LEX("lo → it + de → of + siempre → always; = the usual."),
@@ -79,6 +82,7 @@ export const MERGES: Record<string, MergeRecord> = {
   "para aquí": LEX("para → for + aquí → here; = for here."),
   "en efectivo": LEX("en → in + efectivo → effective; paying = in cash."),
   "a nombre de": LEX("a → to + nombre → name + de → of; = under the name of / for."),
+  "documento de identidad": LEX("documento → document + de → of + identidad → identity: one noun, an ID.", "Three words of one noun."),
   // telling the time
   "en punto": LEX("en → in + punto → point; = o'clock (sharp)."),
   "y media": LEX("y → and + media → half; = thirty (half past)."),
@@ -88,6 +92,9 @@ export const MERGES: Record<string, MergeRecord> = {
   "de la mañana": LEX("de → of + la → the + mañana → morning; after a time = a.m."),
   "de la tarde": LEX("de → of + la → the + tarde → afternoon; after a time = p.m."),
   "de la noche": LEX("de → of + la → the + noche → night; after a time = p.m. (at night)."),
+  "por la mañana": LEX("por → by + la → the + mañana → morning; Spain's time phrase = in the morning (en la mañana)."),
+  "por la tarde": LEX("por → by + la → the + tarde → afternoon; Spain's time phrase = in the afternoon (en la tarde)."),
+  "por la noche": LEX("por → by + la → the + noche → night; Spain's time phrase = at night (en la noche)."),
   // directions
   "a la derecha": LEX("a → to + la → the + derecha → right; = on the right / to the right."),
   "a la izquierda": LEX("a → to + la → the + izquierda → left; = on the left / to the left."),

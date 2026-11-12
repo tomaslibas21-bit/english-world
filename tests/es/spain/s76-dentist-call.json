@@ -12,5 +12,6 @@
   {"ctx": "slot", "say": "¿Dónde están?", "intent": "address_q"},
   {"ctx": "more", "say": "¿Dónde puedo aparcar?", "intent": "parking_q"},
   {"ctx": "slot", "say": "¿Me oye?", "intent": "hear_me"},
-  {"ctx": "slot", "say": "¿Oiga? ¿Me oye?", "intent": "hear_me"}
+  {"ctx": "slot", "say": "¿Oiga? ¿Me oye?", "intent": "hear_me"},
+  {"ctx": "slot", "say": "Sí, me viene bien", "intent": ["accept", "yn:yes"]}
 ] }

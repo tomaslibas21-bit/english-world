@@ -12,5 +12,8 @@
   {"ctx": "like", "say": "Sí, me encanta", "intent": "like_yes"},
   {"ctx": "fun", "say": "Me gusta correr y leer", "intent": "fun_ans"},
   {"ctx": "why", "say": "Por el trabajo", "intent": "why_ans"},
-  {"ctx": "drink", "say": "No bebo alcohol", "intent": ["drink_no"]}
+  {"ctx": "drink", "say": "No bebo alcohol", "intent": ["drink_no"]},
+  {"ctx": "name", "say": "¡Hola! ¿Qué tal estáis?", "intent": ["g_howareyou"]},
+  {"ctx": "drink", "say": "Vengo conduciendo, no puedo beber", "intent": "drink_no", "not": ["drink_ans"]},
+  {"ctx": "cafe", "say": "Sí, ya he ido", "intent": "cafe_ans_yes"}
 ] }

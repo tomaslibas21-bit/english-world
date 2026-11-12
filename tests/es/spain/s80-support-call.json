@@ -13,5 +13,7 @@
   {"ctx": "tech", "say": "Vale, me viene bien", "intent": ["tech_accept", "yn:yes"]},
   {"ctx": "tech", "say": "¿Tiene algo por la tarde?", "intent": "tech_other"},
   {"ctx": "more", "say": "¿Me da un número de incidencia?", "intent": "reference_q"},
-  {"ctx": "more", "say": "¿Me lo puede mandar por mensaje?", "intent": "text_me"}
+  {"ctx": "more", "say": "¿Me lo puede mandar por mensaje?", "intent": "text_me"},
+  {"ctx": "account", "say": "Perdone, le tengo que colgar, es que voy conduciendo", "intent": ["g_bye"]},
+  {"ctx": "problem", "say": "Lo siento, tengo que colgar, estoy conduciendo", "intent": ["g_bye"]}
 ] }

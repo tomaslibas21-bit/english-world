@@ -129,3 +129,15 @@ the rest).
 for "número de reporte" (line and hint; the pattern takes "incidencia"), "Claro, le ayudo" for "Con gusto le ayudo", "no le he oído
 bien", "fuera de su casa", "por la tarde" (hints). The NetWave menu needs no twin. Spain corpus: 15 items (a mano, cada dos por
 tres, lo he reiniciado, incidencia).
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer, against docs/es/STYLE.md "Spain Spanish": every line's Spain reading (twin, else neutral), the hints and
+example answers, tú/usted and vosotros by the Spain rule, meaning and English against the Mexican line, Mexican-only
+things kept, and the Spain corpus.
+
+Found and fixed: {lo} comunico con → le paso con (atención al cliente, servicio técnico, facturación); no le entendí → he entendido; Listo → Ya está / Hecho; hasta arriba de su recibo → arriba del todo en su factura; ¿qué pasó? → ¿qué ha pasado?; Okey → Vale; ¿Ya intentó / reinició? → ¿Ha probado a… / Ha reiniciado ya…?; falla → avería (also the writer's twin); agendar → programar; ¿Le queda bien? → ¿Le viene bien?; lugar → hueco; costo → coste; escucha → oye; hints in the perfect (han cobrado, he reiniciado, he desconectado, no ha cambiado), grammar extended. Kept: El wifi no sirve (its note explains the Mexican phrase).
+
+English of every twin checked against its Mexican line (restored where a twin had rephrased it). Spain corpus items
+added for the new forms. Gates: Mexican, neutral and Spain checks 0 errors; coverage 0 false accepts.
+

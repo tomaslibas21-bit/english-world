@@ -127,3 +127,15 @@ vuestros pendientes?", "¡Pronto os aviso!", "¿Lo podéis hablar vosotros dos�
 "ustedes" there is the Latin American plural of tú). Also: móviles (the learner's add_test hint), "Mmm, vale", "¡De nada!" for
 "¡Con gusto!", "¡Qué bien!", "Me alegra saberlo", "Solo…" for "Nada más…", "Mañana por la mañana" (hint). "Pendientes" (to-dos)
 stays: the conversation teaches the word (term_pending). Spain corpus: 17 items (os, oímos, portátil, vale, tengáis).
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer, against docs/es/STYLE.md "Spain Spanish": every line's Spain reading (twin, else neutral), the hints and
+example answers, tú/usted and vosotros by the Spain rule, meaning and English against the Mexican line, Mexican-only
+things kept, and the Spain corpus.
+
+Found and fixed: Sara to the team said ustedes (¿Ya me escuchan?) → vosotros: ¿Ya me oís?; escuchar for hearing → oír throughout (lines and hints); agregar → añadir (6 lines, 3 hints); Este… → Esto…; laptop → he traído el portátil; ya terminé / ya entendí / ya quedó claro → perfect (grammar takes them); le hablo a sistemas → llamo a informática; la comida del equipo kept for Spain (twin over the neutral almuerzo). Kept: Ando con… (its hint note says Mexican).
+
+English of every twin checked against its Mexican line (restored where a twin had rephrased it). Spain corpus items
+added for the new forms. Gates: Mexican, neutral and Spain checks 0 errors; coverage 0 false accepts.
+

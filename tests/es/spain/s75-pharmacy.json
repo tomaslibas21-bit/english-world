@@ -10,5 +10,6 @@
   {"ctx": "recommend", "say": "¿Da sueño? Tengo que conducir", "intent": "ask_drowsy"},
   {"ctx": "recommend", "say": "¿Hay algo más barato?", "intent": "ask_cheaper"},
   {"ctx": "recommend", "say": "¿Necesito receta?", "intent": "ask_rx_needed"},
-  {"ctx": "recommend", "say": "No, gracias, no me lo llevo", "intent": ["decline_rec", "yn:no"]}
+  {"ctx": "recommend", "say": "No, gracias, no me lo llevo", "intent": ["decline_rec", "yn:no"]},
+  {"ctx": "need", "say": "Me he quemado con el sol", "intent": ["symptom_state"]}
 ] }
