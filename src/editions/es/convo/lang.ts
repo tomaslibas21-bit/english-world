@@ -43,6 +43,8 @@ const SPAIN: Record<string, string> = {
   neumatico: "llanta", neumaticos: "llantas", matricula: "placas", inversor: "inversionista", inversores: "inversionistas",
   // (batch 3) a pen
   boli: "pluma", bolis: "plumas",
+  // (the p-conversations' review) a cost
+  coste: "costo", costes: "costos",
 };
 
 const PLEASE_ONE = new Set(["porfa", "porfavor", "porfis", "xfa", "plis", "please"]);
