@@ -48,7 +48,7 @@ function VarietyToggle() {
   return (
     <div className="set-row">
       <div className="txt"><b>Which Spanish</b><span>Mexican (ahorita, el camión, ¿mande?), neutral Latin American, or Spain's (vosotros, coche, vale; tú in the café and the shops). The voices change with it. Your answers are understood in any of them.</span></div>
-      <div className="seg seg-variety">{OPTIONS.map(([k, n]) => <button key={k} className={v === k ? "on" : ""} aria-pressed={v === k} onClick={() => { chooseVariety(k); setV(k); }}>{n}</button>)}</div>
+      <div className="seg seg-variety">{OPTIONS.map(([k, n]) => <button key={k} className={v === k ? "on" : ""} aria-pressed={v === k} onClick={() => { chooseVariety(k); setV(k); game?.refreshNameTags(); }}>{n}</button>)}</div>
     </div>
   );
 }

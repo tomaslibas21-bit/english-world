@@ -46,6 +46,13 @@ const WALK = 4.4, RUN = 7.4;
 
 const isCall = (s: SituationDef) => s.mode === "phone" || s.mode === "video" || s.location === "phone";
 /** A point `d` metres in front of someone facing `rot` (0 = +Z), turned towards them. */
+/** A person's name tag: their name, their role in the practised language (in the Spanish chosen: roleSaid) and in the
+ *  learner's language under it (unless it is the same word, like "Barista"). */
+function nameTagHtml(def: (typeof NPCS)[string]): string {
+  const lt = def.role.lt.toLowerCase() === def.role.en.toLowerCase() ? "" : `<i lang="${EDITION.helper}">${def.role.lt}</i>`;
+  return `<b>${def.name}</b><span lang="${TL}">${roleSaid(def)}</span>${lt}`;
+}
+
 function inFrontOf(x: number, z: number, rot: number, d: number) {
   return { x: x + Math.sin(rot) * d, z: z + Math.cos(rot) * d, rot: rot + Math.PI };
 }
@@ -397,9 +404,7 @@ export class Game implements GameApi {
       this.npcLayer.add(ch.root);
       const tag = document.createElement("div");
       tag.className = "nametag";
-      // who they are in English, and in Lithuanian under it (unless it is the same word, like "Barista")
-      const lt = def.role.lt.toLowerCase() === def.role.en.toLowerCase() ? "" : `<i lang="${EDITION.helper}">${def.role.lt}</i>`;
-      tag.innerHTML = `<b>${def.name}</b><span lang="${TL}">${roleSaid(def)}</span>${lt}`;
+      tag.innerHTML = nameTagHtml(def);
       this.tagLayer.appendChild(tag);
       const ap = sp as { ax?: number; az?: number };
       this.npcs.push({ id: sp.npc, ch, home: new THREE.Vector3(sp.x, 0, sp.z), rot: sp.rot, tag, sit: sp.sit, waved: false, approach: ap.ax !== undefined && ap.az !== undefined ? new THREE.Vector3(ap.ax, 0, ap.az) : undefined });
@@ -1482,6 +1487,15 @@ export class Game implements GameApi {
   get groundCanvas() { return this.town?.groundCanvas; }
   get doors(): Door[] { return this.town?.doors ?? []; }
   get zoneId() { return this.zone?.id; }
+
+  refreshNameTags() {
+    for (const n of this.npcs) {
+      const def = NPCS[n.id];
+      if (!def) continue;
+      const html = nameTagHtml(def);
+      if (n.tag.innerHTML !== html) { n.tag.innerHTML = html; n.tagSize = undefined; }
+    }
+  }
 
   setQuality(q: "high" | "low") {
     this.renderer.shadowMap.enabled = q === "high";
