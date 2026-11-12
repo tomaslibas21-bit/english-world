@@ -492,5 +492,13 @@
   { "ctx": "problem", "say": "Good, but the heating doesn't work", "intent": "report_problem", "not": ["all_good"] },
   {"ctx": "questions", "say": "Is there internet?", "intent": "ask_utilities", "slots": {"utility": "internet"}, "note": "logic audit 5 Nov 2026"},
   {"ctx": "questions", "say": "Is there internet?", "intent": "any", "not": ["ask_unknown"], "note": "logic audit 5 Nov 2026"},
-  {"ctx": "decision", "say": "I really like it.", "intent": "like_it", "note": "logic audit 5 Nov 2026"}
+  {"ctx": "decision", "say": "I really like it.", "intent": "like_it", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "questions", "say": "Can I break the lease early?", "intent": "lease_break", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "questions", "say": "Can I break the lease early?", "intent": "any", "not": ["ask_lease", "take"], "note": "dead ends 12 Nov 2026"},
+  {"ctx": "questions", "say": "What if I need to move out early?", "intent": "lease_break", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "questions", "say": "Could I end the contract before it ends?", "intent": "lease_break", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "docs", "say": "I don't have my ID with me.", "intent": "no_id", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "docs", "say": "I don't have my ID with me.", "intent": "any", "not": ["here_you_go", "passport_ok", "id_ctx"], "note": "dead ends 12 Nov 2026"},
+  {"ctx": "docs", "say": "Sorry, I forgot my passport at home.", "intent": "no_id", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "docs", "say": "I didn't bring my ID today.", "intent": "no_id", "note": "dead ends 12 Nov 2026"}
 ]}
