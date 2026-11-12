@@ -124,4 +124,4 @@ Found and fixed: Don Pancho's own g_* lines had no twin: no le he entendido, me 
 
 English of every twin checked against its Mexican line (restored where a twin had rephrased it). Spain corpus items
 added for the new forms. Gates: Mexican, neutral and Spain checks 0 errors; coverage 0 false accepts.
-
+Also: g_meaning (Don Pancho's own) → “Deje que se lo enseñe” (the same twin now in global.ts, {u:Deje que|t:Deja que}).

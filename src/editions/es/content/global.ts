@@ -133,7 +133,8 @@ export const GLOBAL_LINES: Record<string, SentSrc[]> = {
     t("¡Buenas!", "Hi!", "Hi!", { flags: { 0: "Short for buenos días / buenas tardes: a friendly hello at any time." } }),
   ],
   g_meaning: [
-    t("¡Buena | pregunta! | {u:Déjeme|t:Déjame} | {u:mostrarle|t:mostrarte}.", "Good | question! | Let me | show you.", "Good question! Let me show you."),
+    t("¡Buena | pregunta! | {u:Déjeme|t:Déjame} | {u:mostrarle|t:mostrarte}.", "Good | question! | Let me | show you.", "Good question! Let me show you.",
+      { spain: t("¡Buena | pregunta! | {u:Deje que|t:Deja que} | {u:se lo|t:te lo} | enseñe.", "Good | question! | Let me | it to you | I-show.", "Good question! Let me show you.") }),
     t("{u:Mire|t:Mira}, | {u:le|t:te} | explico.", "Look, | (to) you | I'll-explain.", "Here, let me explain."),
   ],
   g_write: [

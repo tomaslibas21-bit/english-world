@@ -945,7 +945,7 @@ export const smallTalk: SituationDef = {
     g_no_worries: [t("¡No se preocupe!", "Don't worry!", "Don't worry!")],
     g_soundcheck: [t("Perdón, | ¿{X}?", "Sorry, | {X}?", "Sorry, {X}?"), t("Perdón, | ¿dijo | {X}?", "Sorry, | did you say | {X}?", "Sorry, did you say {X}?",
         { spain: t("Perdón, | ¿ha dicho | {X}?", "Sorry, | did you say | {X}?", "Sorry, did you say {X}?") })],
-    g_meaning: [t("¡Buena | pregunta! | Déjeme | mostrarle.", "Good | question! | Let me | show you.", "Good question! Let me show you."), t("Mire, | le | explico.", "Look, | (to) you | I'll-explain.", "Here, let me explain.")],
+    g_meaning: [t("¡Buena | pregunta! | Déjeme | mostrarle.", "Good | question! | Let me | show you.", "Good question! Let me show you.", { spain: t("¡Buena | pregunta! | Deje que | se lo | enseñe.", "Good | question! | Let me | it to you | I-show.", "Good question! Let me show you.") }), t("Mire, | le | explico.", "Look, | (to) you | I'll-explain.", "Here, let me explain.")],
     g_write: [t("Claro, | aquí tiene.", "Sure, | here you go.", "Sure, here you go.")],
 
     // --- greetings --------------------------------------------------------------------------
