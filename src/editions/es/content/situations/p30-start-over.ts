@@ -670,7 +670,9 @@ export const startOver: SituationDef = {
     ],
     anytime_wait: [
       t("Cuando quieras. | Solo | no me hagas | esperar | dos | meses | la | próxima | vez.", "Anytime. | Just | don't make me | wait | two | months | — | next | time.",
-        "Anytime. Just don't make me wait two months next time.", { flags: { 6: "The article before próxima vez has no English word." } }),
+        "Anytime. Just don't make me wait two months next time.", { flags: { 6: "The article before próxima vez has no English word." },
+          spain: t("Cuando quieras. | Pero | no me hagas | esperar | dos | meses | la | próxima | vez.", "Anytime. | But | don't make me | wait | two | months | — | next | time.",
+            "Anytime. Just don't make me wait two months next time.", { flags: { 6: "The article before próxima vez has no English word." } }) }),
     ],
     hush: [t("¡Ay, | ya | cállate! | Entra.", "Oh, | already | shut up! | Come in.", "Oh, hush. Come inside.", { flags: { 1: "ya: here “enough”, said with a smile." } })],
 

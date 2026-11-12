@@ -1583,7 +1583,8 @@ export const meeting: SituationDef = {
         "Not clear? It's crystal clear. What exactly worries you?", { flags: { 3: "-ísimo: very, extremely (clarísimo = crystal clear)." } }),
     ],
     v_c_which: [
-      t("¿Cuál | problema? | ¿Qué | te | preocupa | exactamente?", "Which | problem? | What | you | worries | exactly?", "What problem? What exactly worries you?"),
+      t("¿Cuál | problema? | ¿Qué | te | preocupa | exactamente?", "Which | problem? | What | you | worries | exactly?", "What problem? What exactly worries you?",
+        { spain: t("¿Qué | problema? | ¿Qué | te | preocupa | exactamente?", "What | problem? | What | you | worries | exactly?", "What problem? What exactly worries you?") }),
     ],
     v_c_why: [
       t("¿Por qué? | A ver, | ¿qué | te | preocupa | exactamente?", "Why? | Let's see, | what | you | worries | exactly?", "Why? Okay, what exactly worries you?"),
@@ -1617,7 +1618,10 @@ export const meeting: SituationDef = {
     v_counter1: [
       t("Pero | aquí | está | el | punto: | la | página | vieja | nos | cuesta | sesenta | mil | pesos | al | mes.",
         "But | here | is | the | point: | the | site | old | (to) us | costs | sixty | thousand | pesos | per | month.",
-        "But here's the thing: the old site costs us sixty thousand pesos a month."),
+        "But here's the thing: the old site costs us sixty thousand pesos a month.",
+        { spain: t("Pero | la | cuestión | es | esta: | la | página | vieja | nos | cuesta | sesenta | mil | pesos | al | mes.",
+          "But | the | thing | is | this: | the | site | old | (to) us | costs | sixty | thousand | pesos | per | month.",
+          "But here's the thing: the old site costs us sixty thousand pesos a month.") }),
     ],
     v_counter2: [
       t("Y | el | sesenta | por ciento | de | nuestros | visitantes | entra | desde | el | celular. | Y | ahí, | la | página | vieja | es | un | desastre.",
@@ -1808,7 +1812,9 @@ export const meeting: SituationDef = {
           note: "From the song. A “Perdón” first is enough to make it polite." },
         { id: "jump_in", s: t("¿Me | permites | un | segundo?", "(To) me | you-allow | a | second?", "Can I jump in for a second?"), note: "Very common in Mexico: “¿Me permites?”" },
         { id: "sorry_interrupt", s: t("Perdón | que | te | interrumpa, | pero…", "Sorry | that | you | I-interrupt, | but…", "Sorry to interrupt, but…",
-          { flags: { 3: "interrumpa: the subjunctive after “perdón que”." } }) },
+          { flags: { 3: "interrumpa: the subjunctive after “perdón que”." },
+            spain: t("Perdona | que | te | interrumpa, | pero…", "Sorry | that | you | I-interrupt, | but…", "Sorry to interrupt, but…",
+              { flags: { 3: "interrumpa: the subjunctive after “perdona que”." } }) }) },
         { id: "add_something", s: t("¿Puedo | agregar | algo?", "Can-I | add | something?", "Could I add something?", { spain: t("¿Puedo | añadir | algo?", "Can-I | add | something?", "Could I add something?") }) },
       ],
     },

@@ -142,3 +142,13 @@ last_night "Empezó anoche, de madrugada." (both copies). The bucket keeps pass 
 (spainG m, spainPl cubos); the filtración note now says "ceiling or wall" like pass B's. Patterns: the burst pipe reads
 ha reventado / se ha roto / ha estallado, @up reads "(en el | del) piso de arriba", the not-sure answers read lo he
 mirado / he comprobado again. Spain corpus +3 (the pipe, Don Ernesto): 27/27, 0/1 false accepts.
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer, all Spain twins and the untwinned lines as Spain hears them (NPC lines and hints), the Spain corpus.
+
+Checked closely after the pass-B rework: Don Ernesto downstairs (gr_down_q, gr_down_unknown, gr_owner, gr_sure_down) and the 2B pipe (gr_guess_washer, the news hint, gr_damage) agree in every twin; Andrea tú, Don Gilberto usted both ways; the voicemail.
+Found and fixed: the report hint "Lamento informarle que se inundó el apartamento" had only its neutral twin (→ "Lamento informarle de que se ha inundado el piso.", as the voicemail copy); the inform hint (→ "informarle de que ha entrado agua por el techo"); the grammar now reads "informarle [de] que". The squeegee: "jalador" means nothing in Spain; the entity gets attrs.spain "rasqueta" (chip and lines say it), and rasqueta / rasqueta de suelo / escoba de goma are accepted.
+Kept: "Le habla…" (also Spain's formal phone formula), "Quedo atento a su llamada", chilaquiles.
+Spain corpus +2 (informarle de que, rasqueta).
+Gates: tsc clean; check-content Mexican, neutral and Spain 0 errors, 0 warnings; corpus 372/372 0/88; held-out 35/37 (unchanged); Spain 29/29 0/1; vitest es 178/178.

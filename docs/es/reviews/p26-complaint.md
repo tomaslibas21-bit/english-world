@@ -145,3 +145,13 @@ sims 12/12; corpus 390/390 0/61; held-out 38/40 0/3 (unchanged).
 
 After pass B (merge of es-spain 98cfaffc, 12 Nov 2026): the folio lines got neutral "número de reporte" twins; their
 Spain twins stay "número de referencia" (and "¿Tiene dónde apuntar?"), now beside the neutral ones.
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer, all Spain twins and the untwinned lines as Spain hears them (NPC lines and hints), the Spain corpus.
+
+Checked: Jorge and Brenda usted both ways, the hold messages, the visit and refund facts, the reference number.
+Found and fixed: the Spain twin of kyle_tuesday_ok still said "¡Listo!" (→ "¡Perfecto!"); "costo" in eight lines (no tiene ningún costo, sin costo, Brenda's visit facts, the pickup) (→ coste); "Lamento que hoy no pudiéramos resolverlo" (→ "no hayamos podido"); the hint "Sí, ya lo revisé" to "¿ya ha comprobado…?" (→ "Sí, ya lo he comprobado."). The cost patterns and COST_Q read coste too.
+Kept: gerente, Profeco, días hábiles.
+Spain corpus +2 (coste).
+Gates: tsc clean; check-content Mexican, neutral and Spain 0 errors, 0 warnings; corpus 393/393 0/61; held-out 38/40 (unchanged); Spain 22/22 0/1; vitest es 178/178.

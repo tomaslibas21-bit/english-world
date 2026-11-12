@@ -21,6 +21,7 @@
 { "ctx": "tomorrow", "say": "A las ocho no me viene bien", "intent": "cant_time" },
 { "ctx": "offer", "say": "Sí, al mediodía me viene bien", "intent": ["meet_time", "yn:yes"] },
 { "ctx": "tomorrow", "say": "Vale, ¡dejémoslo por hoy!", "intent": "call_day" },
+{ "ctx": "pile", "say": "¿Qué caja?", "intent": "idiom_q" },
 { "ctx": "priorities", "say": "No quiero empezar con los informes de errores", "intent": "any" }
 ]
 }

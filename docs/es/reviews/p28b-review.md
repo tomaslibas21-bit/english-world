@@ -102,3 +102,13 @@ menu, not her single offer said back).
 - Words: formación (capacitación), becario(s) (practicante), enfadado, estantería (repisa), te enseño la mía (te comparto), Qué bien (Qué bueno), Me alegro de que… (Me da gusto que…), De todas formas lo voy a apuntar (Igual lo voy a anotar), por la noche, en primavera, ¿vale?, vale, Ya está / Hecho (Listo), Ay (Auch), hacer un curso, más a menudo, te lo agradezco, Valoro mucho…, Me parece bien (Suena bien).
 - Grammar: the Spain perfects in went_well, client_late, no_chance, wrong_tab; formación in the budget and course answers (and the course-word test in the handler); te lo agradezco; más a menudo. Merges: 18.
 - Left for the lead: "retroalimentación" stays in about ten lines and hints; a Madrid manager would more often say "feedback" or "comentarios", but the word is correct Spanish and the hints and patterns turn on it. Held-out "Ahorita no, por favor" → yn:no was already misread before the twins.
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer, all Spain twins and the untwinned lines as Spain hears them (NPC lines and hints), the Spain corpus.
+
+Checked: Elena tú both ways, every praise twin (perfect for this year), the feedback, goals, the role reversal, the check-in.
+Decided: "retroalimentación" → "feedback" in the Spain text, everywhere (what a Madrid office says in a review; "comentarios" stays where the line already says it). Twinned: consent_ask, goals_suggest, goal_present, support_offer, rev_ask, rev_tip_more_feedback, the hints thanks_for_fb and regular_feedback (the writer's twin still said retroalimentación), and the more_feedback entity (spain "más | feedback").
+Also fixed: "¿Por qué crees que salió tan bien?" (→ ha salido); team_react (→ ha ayudado / lo has mantenido todo); "Le damos seguimiento" in the line and the hint (→ "Hacemos un seguimiento", grammar reads it); "como dijiste" ×3 (→ como has dicho); the hint "afecta mi sueldo" (→ "afecta a mi sueldo", grammar reads it).
+Spain corpus +3.
+Gates: tsc clean; check-content Mexican, neutral and Spain 0 errors, 0 warnings; corpus 297/297 0/25; held-out 36/37 (unchanged); Spain 24/24 0/1; vitest es 178/178.

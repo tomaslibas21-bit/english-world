@@ -105,3 +105,11 @@ surprise_me, deal_later, deal_let_go, slow_start. One gloss changed (door_what),
 - Words: echar de menos everywhere for extrañar (te hemos echado de menos, te he echado de menos, Michi también te ha echado de menos), barbacoa (carne asada / parrillada), delante de todos, dentro, ¿Y qué quieres? (¿Y qué se te ofrece?), sin más (y ya), hablar del tiempo (del clima), qué alegría verte, ¿vale?, vale, ya lo sé, más a menudo, ¡Vale! (¡Sale!). Spain's present perfect for what just happened: mira quién ha venido, ¿has venido a disculparte o a pelearte?, no has venido hasta aquí…, ya te he oído, ya me lo has dicho, ya te he perdonado, ya lo he pensado, ha aparecido, he venido a disculparme.
 - Grammar: he venido a… in the apology and announce patterns; me he equivocado (y ha sido culpa mía); "¡Pero si yo no sé cocinar!". Merges: 17.
 - Kept: lancha, Michi, the cookout story's past tense (dijiste, en tu barbacoa: a finished event two months ago).
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer, all Spain twins and the untwinned lines as Spain hears them (NPC lines and hints), the Spain corpus.
+
+Checked: Diego tú, Natalia and Diego together (vosotros: "Os he echado de menos"; "Te hemos echado de menos"), the two-month past (preterite right for the barbecue).
+Found and fixed: "Solo no me hagas esperar…" (→ "Pero no me hagas esperar…").
+Gates: tsc clean; check-content Mexican, neutral and Spain 0 errors, 0 warnings; corpus 403/403 0/77; held-out 39/39; Spain 19/19 0/2; vitest es 178/178.

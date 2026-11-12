@@ -153,6 +153,19 @@
 "intent": "not_item"
 },
 {
+"ctx": "g_what",
+"say": "Le llamo para informarle de que ha entrado agua por el techo",
+"intent": "flood"
+},
+{
+"ctx": "l_need",
+"say": "¿Me puedes traer una rasqueta?",
+"intent": "ask_help",
+"slots": {
+"stuff": "squeegee"
+}
+},
+{
 "ctx": "g_request",
 "say": "No necesito un fontanero",
 "intent": "any"

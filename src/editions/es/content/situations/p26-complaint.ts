@@ -528,7 +528,7 @@ function acceptOffer(c: Ctx) {
   B(c, "brenda_anything");
   expectAnything(c);
 }
-const COST_Q = /\b(costo|gratis|cobr\w*|pagar|cuesta)\b/;
+const COST_Q = /\b(costo|coste|gratis|cobr\w*|pagar|cuesta)\b/;
 /** "Gracias." / "Muchas gracias." and nothing else (at Brenda's offer: asked again, rule 17). */
 const BARE_THANKS = /^\W*(ok\W+|bueno\W+|pues\W+)?(muchas\W+|mil\W+|muchisimas\W+)?gracias(\W+por\W+(la|su|el)\W+(oferta|ofrecimiento|propuesta|cupon|cojin|visita))?(\W+(senora|brenda))?\W*$/;
 /** "Gracias por la oferta, pero no." / "No, gracias por la oferta.": a refusal. */
@@ -1168,34 +1168,34 @@ export const complaint: SituationDef = {
     ] },
     // "¿La visita tiene costo?" (5 Nov 2026): the warranty visit costs nothing; then the offer again, nothing booked
     visit_cost: { patterns: [
-      "(la @visit | el @tech | que venga el @tech) (tiene | tendria | va a tener) [algun] (costo | cargo | cobro) [extra | adicional] [para mi]",
+      "(la @visit | el @tech | que venga el @tech) (tiene | tendria | va a tener) [algun] ((costo | coste) | cargo | cobro) [extra | adicional] [para mi]",
       "(cuanto | que) (cuesta | costaria | cobran | cobra | me cobran | me cobrarian | me van a cobrar | me va a cobrar | va a costar | me va a costar | sale | me sale) (la @visit | el @tech | que venga el @tech)",
       "(cuanto | que) (cobra | cobran) el @tech (por la @visit | por venir | por ir)",
       "(me van a | me va a | van a | me) (cobrar | cobran | cobra) (la @visit | el @tech | por la @visit)",
-      "(la @visit | el @tech) (es | sera | va a ser | seria) (gratis | sin costo | gratuita | gratuito)",
-      "(es | sera | seria) (gratis | sin costo) (la @visit | el @tech)",
+      "(la @visit | el @tech) (es | sera | va a ser | seria) (gratis | sin (costo | coste) | gratuita | gratuito)",
+      "(es | sera | seria) (gratis | sin (costo | coste)) (la @visit | el @tech)",
       "(la @visit | el @tech) (cuesta | se cobra | se paga | cobra) [algo]",
-      "(la @visit | el @tech) no (tiene costo | tiene ningun costo | cuesta nada | se cobra | cobra nada)",
+      "(la @visit | el @tech) no (tiene (costo | coste) | tiene ningun (costo | coste) | cuesta nada | se cobra | cobra nada)",
       "(hay que | tengo que | tendria que | voy a tener que | debo) pagar (la @visit | el @tech | por la @visit | algo por la @visit)",
-      "si (la @visit | el @tech) (es gratis | no tiene costo | no cuesta nada | no se cobra) [esta bien | ok | de acuerdo | me parece bien | va | sale | vale]",
+      "si (la @visit | el @tech) (es gratis | no tiene (costo | coste) | no cuesta nada | no se cobra) [esta bien | ok | de acuerdo | me parece bien | va | sale | vale]",
     ] },
     // the same, bare ("¿Tiene algún costo?", "¿Es gratis?"): only right after Jorge offers the visit
     cost_ctx: { patterns: [
-      "(tiene | tendria) [algun] (costo | cargo | cobro) [extra | adicional | para mi]",
-      "(hay | habria) (algun | un) (costo | cargo | cobro) [extra | adicional]",
+      "(tiene | tendria) [algun] ((costo | coste) | cargo | cobro) [extra | adicional | para mi]",
+      "(hay | habria) (algun | un) ((costo | coste) | cargo | cobro) [extra | adicional]",
       "(cuanto | que) (cuesta | costaria | me cobran | me cobrarian | me van a cobrar | me va a cobrar | va a costar | me va a costar | me cuesta | cobran | sale | me sale) [eso]",
       "cuanto (es | seria | va a ser)",
-      "(es | sera | seria) (gratis | sin costo | gratuito | gratuita)",
+      "(es | sera | seria) (gratis | sin (costo | coste) | gratuito | gratuita)",
       "me (van a | va a)? (cobrar | cobran | cobra) [algo | eso]",
       "(cobran | se cobra | se paga | cuesta) algo",
       "(hay que | tengo que | tendria que | voy a tener que | debo) pagar [algo] [extra | mas]",
-      "no (tiene | tendria) (costo | ningun costo)", "no (cuesta | cobran) nada",
-      "si (es gratis | no tiene costo | no cuesta nada | no me cobran [nada]) [esta bien | ok | de acuerdo | me parece bien | va | sale | vale]",
+      "no (tiene | tendria) ((costo | coste) | ningun (costo | coste))", "no (cuesta | cobran) nada",
+      "si (es gratis | no tiene (costo | coste) | no cuesta nada | no me cobran [nada]) [esta bien | ok | de acuerdo | me parece bien | va | sale | vale]",
       // audit, 5 Nov: asked again; what is on the table named (Brenda's coupon, the new sofa, its delivery, the pickup)
-      "(seguro que | de verdad | entonces | o sea que) no (me cobran | me van a cobrar | cobran | cuesta | me cuesta | tiene costo | tiene ningun costo) [nada]",
+      "(seguro que | de verdad | entonces | o sea que) no (me cobran | me van a cobrar | cobran | cuesta | me cuesta | tiene (costo | coste) | tiene ningun (costo | coste)) [nada]",
       "no me (cobran | van a cobrar | cuesta) nada",
-      "(eso | esto | el cupon | el cojin | el envio | la entrega | el flete | la recoleccion | el cambio | el @sofa nuevo | el nuevo) (tiene | tendria | va a tener) [algun] (costo | cargo | cobro) [extra | adicional | para mi]",
-      "(el envio | la entrega | el flete | la recoleccion | el cambio | el @sofa nuevo | el nuevo | el cupon | el cojin) (es | sera | seria) (gratis | sin costo | gratuito | gratuita)",
+      "(eso | esto | el cupon | el cojin | el envio | la entrega | el flete | la recoleccion | el cambio | el @sofa nuevo | el nuevo) (tiene | tendria | va a tener) [algun] ((costo | coste) | cargo | cobro) [extra | adicional | para mi]",
+      "(el envio | la entrega | el flete | la recoleccion | el cambio | el @sofa nuevo | el nuevo | el cupon | el cojin) (es | sera | seria) (gratis | sin (costo | coste) | gratuito | gratuita)",
       "(cuanto | que) (cuesta | me cobran | me van a cobrar | cobran | sale) (el envio | la entrega | el flete | la recoleccion | el cambio)",
       "(me van a | me va a | me) (cobrar | cobran | cobra) (el envio | la entrega | el flete | la recoleccion | el cambio | por (el envio | la entrega | el flete | la recoleccion | el cambio | el @sofa nuevo))",
       "(hay que | tengo que | tendria que | voy a tener que | debo) pagar (el envio | la entrega | el flete | la recoleccion | el cambio | por (el envio | la entrega | el flete | la recoleccion | el cambio))",
@@ -1572,11 +1572,11 @@ export const complaint: SituationDef = {
     // "¿La visita tiene costo?" (no "No," first: "¿Es gratis?" must not get a no)
     kyle_visit_free: [
       t("No tiene | ningún | costo: | la | visita | está | cubierta | por | la | garantía.", "It doesn't have | any | cost: | the | visit | is | covered | by | the | warranty.",
-        "There's no charge: the visit is covered under the warranty."),
+        "There's no charge: the visit is covered under the warranty.", { spain: t("No tiene | ningún | coste: | la | visita | está | cubierta | por | la | garantía.", "It doesn't have | any | cost: | the | visit | is | covered | by | the | warranty.", "There's no charge: the visit is covered under the warranty.") }),
     ],
     // the cost asked again (audit, 5 Nov): a reminder, whichever way it was asked ("¿Es gratis?", "¿Me cobran algo?")
     kyle_cost_again: [
-      t("Como | le | comentaba, | no tiene | ningún | costo.", "As | (to) you | I-was-saying, | it doesn't have | any | cost.", "Like I said, there's no charge."),
+      t("Como | le | comentaba, | no tiene | ningún | costo.", "As | (to) you | I-was-saying, | it doesn't have | any | cost.", "Like I said, there's no charge.", { spain: t("Como | le | comentaba, | no tiene | ningún | coste.", "As | (to) you | I-was-saying, | it doesn't have | any | cost.", "Like I said, there's no charge.") }),
     ],
     // "¿A qué hora viene el técnico?" while his Tuesday visit is offered (audit, 5 Nov); Monday's window, as his slots go
     kyle_tuesday_time: [
@@ -1636,7 +1636,7 @@ export const complaint: SituationDef = {
     ],
     kyle_tuesday_ok: [
       t("¡Listo! | Su | visita | queda | agendada | para | el | próximo | martes.", "Done! | Your | visit | stays | scheduled | for | — | next | Tuesday.",
-        "Okay! You're all set for next Tuesday.", { flags: { 6: "el: Spanish puts the article before próximo martes; English has none." }, spain: t("¡Listo! | Su | visita | queda | programada | para | el | próximo | martes.", "Done! | Your | visit | stays | scheduled | for | — | next | Tuesday.", "Okay! You're all set for next Tuesday.", { flags: { 6: "el: Spanish puts the article before próximo martes; English has none." } }) }),
+        "Okay! You're all set for next Tuesday.", { flags: { 6: "el: Spanish puts the article before próximo martes; English has none." }, spain: t("¡Perfecto! | Su | visita | queda | programada | para | el | próximo | martes.", "Perfect! | Your | visit | stays | scheduled | for | — | next | Tuesday.", "Okay! You're all set for next Tuesday.", { flags: { 6: "el: Spanish puts the article before próximo martes; English has none." } }) }),
     ],
     kyle_understand: [t("Entiendo.", "I understand.", "I understand.")],
     kyle_bye: [
@@ -1694,18 +1694,20 @@ export const complaint: SituationDef = {
     ],
     brenda_visit_info: [
       t("El | técnico | va | el | miércoles, | entre | {$win}, | sin | costo | para | usted.", "The | technician | goes | on | Wednesday, | between | {$win}, | without | cost | for | you.",
-        "The technician would come on Wednesday, between {$win}, at no cost to you.", { say: "El técnico va el miércoles, entre {$win}, sin costo para usted.", flags: { 3: F_EL_DAY } }),
+        "The technician would come on Wednesday, between {$win}, at no cost to you.", { say: "El técnico va el miércoles, entre {$win}, sin costo para usted.", flags: { 3: F_EL_DAY },
+          spain: t("El | técnico | va | el | miércoles, | entre | {$win}, | sin | coste | para | usted.", "The | technician | goes | on | Wednesday, | between | {$win}, | without | cost | for | you.",
+            "The technician would come on Wednesday, between {$win}, at no cost to you.", { say: "El técnico va el miércoles, entre {$win}, sin coste para usted.", flags: { 3: F_EL_DAY } }) }),
     ],
     brenda_visit_free: [
       t("No tiene | ningún | costo: | la | visita | está | cubierta | por | la | garantía.", "It doesn't have | any | cost: | the | visit | is | covered | by | the | warranty.",
-        "There's no charge: the visit is covered under the warranty."),
+        "There's no charge: the visit is covered under the warranty.", { spain: t("No tiene | ningún | coste: | la | visita | está | cubierta | por | la | garantía.", "It doesn't have | any | cost: | the | visit | is | covered | by | the | warranty.", "There's no charge: the visit is covered under the warranty.") }),
     ],
     // a bare "¿Tiene algún costo?" about her coupon, the new sofa, its delivery, the pickup (audit, 5 Nov)
     brenda_no_cost: [
-      t("No tiene | ningún | costo | para | usted.", "It doesn't have | any | cost | for | you.", "It won't cost you anything."),
+      t("No tiene | ningún | costo | para | usted.", "It doesn't have | any | cost | for | you.", "It won't cost you anything.", { spain: t("No tiene | ningún | coste | para | usted.", "It doesn't have | any | cost | for | you.", "It won't cost you anything.") }),
     ],
     brenda_cost_again: [
-      t("Como | le | comentaba, | no tiene | ningún | costo.", "As | (to) you | I-was-saying, | it doesn't have | any | cost.", "Like I said, there's no charge."),
+      t("Como | le | comentaba, | no tiene | ningún | costo.", "As | (to) you | I-was-saying, | it doesn't have | any | cost.", "Like I said, there's no charge.", { spain: t("Como | le | comentaba, | no tiene | ningún | coste.", "As | (to) you | I-was-saying, | it doesn't have | any | cost.", "Like I said, there's no charge.") }),
     ],
     brenda_decline_ack: [t("Entiendo.", "I understand.", "Understood."), t("Comprendo.", "I understand.", "Fair enough.")],
     brenda_day_off: [
@@ -1737,10 +1739,10 @@ export const complaint: SituationDef = {
         "I can send you a brand-new sofa, same model or better."),
     ],
     brenda_pickup: [
-      t("Además, | recogemos | el | sofá | dañado | sin | costo.", "Also, | we-pick-up | the | sofa | damaged | without | cost.", "We'll also pick up the damaged sofa for free."),
+      t("Además, | recogemos | el | sofá | dañado | sin | costo.", "Also, | we-pick-up | the | sofa | damaged | without | cost.", "We'll also pick up the damaged sofa for free.", { spain: t("Además, | recogemos | el | sofá | dañado | sin | coste.", "Also, | we-pick-up | the | sofa | damaged | without | cost.", "We'll also pick up the damaged sofa for free.") }),
     ],
     brenda_pickup_yes: [
-      t("Sí, | recogemos | el | sofá | dañado | sin | costo.", "Yes, | we-pick-up | the | sofa | damaged | without | cost.", "Yes, we'll pick up the damaged sofa for free."),
+      t("Sí, | recogemos | el | sofá | dañado | sin | costo.", "Yes, | we-pick-up | the | sofa | damaged | without | cost.", "Yes, we'll pick up the damaged sofa for free.", { spain: t("Sí, | recogemos | el | sofá | dañado | sin | coste.", "Yes, | we-pick-up | the | sofa | damaged | without | cost.", "Yes, we'll pick up the damaged sofa for free.") }),
     ],
     brenda_timeline: [
       t("La | entrega | normalmente | tarda | de | 10 | a | 14 | días | hábiles.", "The | delivery | usually | takes | from | 10 | to | 14 | days | business.",
@@ -1847,7 +1849,8 @@ export const complaint: SituationDef = {
       t("Cuídese | mucho, | y | que | tenga | buen | día.", "Take care of yourself | a lot, | and | (I hope) | you have | a good | day.", "Take care, and have a good day.", { spain: t("Cuídese | mucho, | y | que | tenga | un | buen | día.", "Take care of yourself | a lot, | and | (I hope) | you have | a | good | day.", "Take care, and have a good day.") }),
     ],
     brenda_walk: [
-      t("Lamento | que | hoy | no pudiéramos | resolverlo.", "I regret | that | today | we couldn't | solve it.", "I'm sorry we couldn't sort this out today."),
+      t("Lamento | que | hoy | no pudiéramos | resolverlo.", "I regret | that | today | we couldn't | solve it.", "I'm sorry we couldn't sort this out today.",
+        { spain: t("Lamento | que | hoy | no hayamos podido | resolverlo.", "I regret | that | today | we haven't been able | to solve it.", "I'm sorry we couldn't sort this out today.") }),
     ],
     brenda_rude: [
       t("Entiendo | que | esté | {m:molesto|f:molesta}. | A ver | qué | puedo | hacer.", "I understand | that | you are | upset. | Let's see | what | I can | do.",
@@ -1882,7 +1885,7 @@ export const complaint: SituationDef = {
     plugged: {
       lt: "Calmly say you've already checked",
       items: [
-        { id: "plugged_yes", s: t("Sí, | ya | lo | revisé.", "Yes, | already | it | I-checked.", "Yes, I already checked.") },
+        { id: "plugged_yes", s: t("Sí, | ya | lo | revisé.", "Yes, | already | it | I-checked.", "Yes, I already checked.", { spain: t("Sí, | ya | lo | he comprobado.", "Yes, | already | it | I've-checked.", "Yes, I already checked.") }) },
         { id: "checked", s: t("Está | bien | armado: | la | pata | está | rota.", "It's | well | assembled: | the | leg | is | broken.", "It's put together fine: the leg is broken.",
           { flags: { 4: F_PATA }, spain: t("Está | bien | montado: | la | pata | está | rota.", "It's | well | assembled: | the | leg | is | broken.", "It's put together fine: the leg is broken.", { flags: { 4: F_PATA } }) }) },
         { id: "still_not", s: t("Sigue | igual.", "It stays | the same.", "It's still the same.") },
@@ -1990,6 +1993,7 @@ export const complaint: SituationDef = {
 
   merges: {
     // Spain's twins (12 Nov 2026)
+    "no hayamos podido": { reason: "grammatical_fusion", split: "no → not + hayamos (subjunctive of haber) + podido → been able: the perfect subjunctive after lamento que, for today; English says we couldn't.", minimal: "Negation, auxiliary and participle." },
     "ha pasado": { reason: "grammatical_fusion", split: "ha → has + pasado (participle): Spain's present perfect, ¿qué ha pasado? = what's happened.", minimal: "Auxiliary and participle." },
     "ha comprobado": { reason: "grammatical_fusion", split: "ha → have (usted) + comprobado (participle): Spain's present perfect in a have-you-yet question.", minimal: "Auxiliary and participle." },
     "ha probado a": { reason: "grammatical_fusion", split: "ha → have (usted) + probado → tried + a: probar a + verb = to try doing something (Spain).", minimal: "Auxiliary, participle and preposition." },

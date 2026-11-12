@@ -21,6 +21,8 @@
 { "ctx": "reference", "say": "No tengo con qué apuntar", "intent": "no_pen" },
 { "ctx": "readback", "say": "HP 4471, apuntado", "intent": "ref_readback" },
 { "ctx": "closing", "say": "Que tenga un buen día", "intent": ["have_nice_day", "g_bye"] },
+{ "ctx": "history", "say": "¿La visita tiene algún coste?", "intent": "visit_cost", "not": ["accept_offer", "agree"] },
+{ "ctx": "history", "say": "¿Tiene algún coste?", "intent": "cost_ctx" },
 { "ctx": "offer", "say": "No quiero un cupón", "intent": "any" }
 ]
 }

@@ -140,3 +140,11 @@ llamado todos los días", "Le he dejado tres mensajes", "ya lo he mirado dos vec
 San Cristóbal, Chucho, the 9-to-12 window, "viejito". Patterns take el alquiler, por la mañana/tarde, me viene bien,
 dentro/fuera, el mando, the he + participle forms, perdone que le moleste. Spain corpus: 21 items, 20/20, 0/1 false
 accepts. Gates: Mexican, neutral and Spain 0 errors, sims 12/12; corpus 315/315 0/77; held-out 37/37 0/5.
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer, all Spain twins and the untwinned lines as Spain hears them (NPC lines and hints), the Spain corpus.
+
+Checked: Don Ernesto and Doña Lupita usted both ways, the AC facts, Chucho's days, the rent.
+Found and fixed: "Listo: “Chucho, …”" ×3 (→ "Ya está:", spoken forms too); "¡Ya le mandé el mensaje!" (→ he mandado); "como le prometí" (→ he prometido); "La mitad del costo" (→ coste); "ya entendí" ×2 (→ "ya lo entiendo"); Lupita's "tome mucha agua" (→ beba).
+Gates: tsc clean; check-content Mexican, neutral and Spain 0 errors, 0 warnings; corpus 315/315 0/77; held-out 37/37; Spain 20/20 0/1; vitest es 178/178.
