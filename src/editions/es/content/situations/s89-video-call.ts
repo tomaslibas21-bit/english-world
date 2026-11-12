@@ -1280,7 +1280,7 @@ export const videoCall: SituationDef = {
         { id: "h_quiet", s: t("Perdón, | se escucha | muy | bajito.", "Sorry, | it sounds | very | quiet.", "Sorry, you sound really quiet.", { spain: t("Perdón, | se oye | muy | bajito.", "Sorry, | it sounds | very | quiet.", "Sorry, you sound really quiet.") }),
           note: "Bajito: quiet, low (bajo with the friendly -ito)." },
         { id: "h_cant", s: t("Perdón, | no te escucho.", "Sorry, | I can't hear you.", "Sorry, I can't hear you.") },
-        { id: "q_hear_me", s: t("¿Me | escuchan?", "Me | do you hear?", "Can you hear me?", { spain: t("¿Me | oís?", "Me | do you (all) hear?", "Can you hear me?") }), note: "Escuchan: to the whole team (ustedes)." },
+        { id: "q_hear_me", s: t("¿Me | escuchan?", "Me | do you hear?", "Can you hear me?", { spain: t("¿Me | oís?", "Me | do you (all) hear?", "Can you hear me?") }), note: "Escuchan: to the whole team (ustedes).", noteSpain: "Oís: to the whole team (vosotros)." },
       ],
     },
     hear_now: {

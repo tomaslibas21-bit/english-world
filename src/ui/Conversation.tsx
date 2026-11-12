@@ -596,7 +596,7 @@ function HintGroupView({ id, g, sit, formal, gender, chosen, lt, ipa, used }: { 
           <div className="ex">
             <Interlinear s={full} lt={lt} ipa={ipa} compactNat />
             {!hasGap && it.register && <span className={"tag " + it.register}>{it.register === "polite" ? L("mandagu") : L("laisviau")}</span>}
-            {it.note && <div className="note">{it.note}</div>}
+            {(variety() === "spain" && it.noteSpain || it.note) && <div className="note">{variety() === "spain" && it.noteSpain || it.note}</div>}
           </div>
           <button className="play" onClick={() => { game?.activeSession?.stopListening(); audio.play(coachVoice(useStore.getState().progress.profile?.gender), 1, full.say); }} title={L("Klausyti")} aria-label={L("Klausyti")}><Icon name="speaker" size={20} /></button>
         </div>

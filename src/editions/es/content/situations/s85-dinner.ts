@@ -1147,8 +1147,8 @@ export const dinner: SituationDef = {
       lt: "Say hello and thank them for inviting you",
       items: [
         { id: "gr_thanks", s: t("¡Gracias | por | invitarme!", "Thanks | for | inviting me!", "Thanks for inviting me!") },
-        { id: "gr_glad", s: t("¡Qué | gusto | verlos!", "What | pleasure | to-see-you-all!", "So good to see you!", { spain: t("¡Qué | alegría | veros!", "What | a joy | to see you (all)!", "So good to see you!") }), note: "Verlos: “to see you” when you speak to both hosts." },
-        { id: "gf_for_you", s: t("Esto | es | para | ustedes.", "This | is | for | you all.", "This is for you.", { spain: t("Esto | es | para | vosotros.", "This | is | for | you all.", "This is for you.") }), note: "Ustedes: you're speaking to both hosts." },
+        { id: "gr_glad", s: t("¡Qué | gusto | verlos!", "What | pleasure | to-see-you-all!", "So good to see you!", { spain: t("¡Qué | alegría | veros!", "What | a joy | to see you (all)!", "So good to see you!") }), note: "Verlos: “to see you” when you speak to both hosts.", noteSpain: "Veros: “to see you” when you speak to both hosts (vosotros)." },
+        { id: "gf_for_you", s: t("Esto | es | para | ustedes.", "This | is | for | you all.", "This is for you.", { spain: t("Esto | es | para | vosotros.", "This | is | for | you all.", "This is for you.") }), note: "Ustedes: you're speaking to both hosts.", noteSpain: "Vosotros: you're speaking to both hosts." },
         { id: "gf_brought", s: t("Les | traje | unas | flores.", "(To) you all | I-brought | some | flowers.", "I brought you some flowers.", { spain: t("Os | he traído | unas | flores.", "(To) you (all) | I've brought | some | flowers.", "I brought you some flowers.") }) },
       ],
     },
@@ -1182,7 +1182,7 @@ export const dinner: SituationDef = {
     help: {
       lt: "Offer to help",
       items: [
-        { id: "hp_can_i", s: t("¿Les | ayudo | en | algo?", "(To) you all | I-help | in | something?", "Can I help with anything?", { spain: t("¿Os | ayudo | en | algo?", "(To) you (all) | do I help | in | anything?", "Can I help with anything?") }), note: "Les: to both hosts. To one of them: ¿Te ayudo?" },
+        { id: "hp_can_i", s: t("¿Les | ayudo | en | algo?", "(To) you all | I-help | in | something?", "Can I help with anything?", { spain: t("¿Os | ayudo | en | algo?", "(To) you (all) | do I help | in | anything?", "Can I help with anything?") }), note: "Les: to both hosts. To one of them: ¿Te ayudo?", noteSpain: "Os: to both hosts. To one of them: ¿Te ayudo?" },
         { id: "hp_what", s: t("¿Qué | puedo | hacer?", "What | I-can | do?", "What can I do?") },
         { id: "hp_table", s: t("¿Pongo | la | mesa?", "I-set | the | table?", "Should I set the table?") },
       ],

@@ -71,6 +71,8 @@ export interface HintItem {
   register?: "polite" | "neutral" | "casual";
   /** Short Lithuanian usage note. */
   note?: string;
+  /** The Spanish edition: the note for Spain's text where it differs (vosotros: "Os: to both hosts"). */
+  noteSpain?: string;
 }
 
 export interface HintGroup {
