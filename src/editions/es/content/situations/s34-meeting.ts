@@ -1797,7 +1797,7 @@ export const meeting: SituationDef = {
       items: [
         { id: "t_task", s: t("En | {X.the}.", "On | {X.the}.", "On {X.the}.") },
         { id: "u_working", s: t("Estoy | trabajando | en | {X.the}.", "I'm | working | on | {X.the}.", "I'm working on {X.the}.") },
-        { id: "t_ando", s: t("Ando | con | {X.the}.", "I'm-going-around | with | {X.the}.", "I'm on {X.the}."), note: "Very Mexican: “ando con…” = I'm busy with…" },
+        { id: "t_ando", s: t("Ando | con | {X.the}.", "I'm-going-around | with | {X.the}.", "I'm on {X.the}.", { spain: t("Estoy | con | {X.the}.", "I'm | with | {X.the}.", "I'm on {X.the}.") }), note: "Very Mexican: “ando con…” = I'm busy with…", noteSpain: "Estoy con…: I'm on… / I'm busy with… (Mexico: ando con…)." },
       ],
     },
     when: {

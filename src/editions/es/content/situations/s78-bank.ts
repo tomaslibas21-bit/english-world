@@ -610,7 +610,7 @@ export const bank: SituationDef = {
     ] },
     show_doc: { patterns: [
       "aqui (esta | tiene) [mi] {doc} #h:id_here", "(tome | tenga | le doy | le paso) [mi] {doc}", "(este | esta) es mi {doc}", "(tengo | traigo) [mi | un | una] {doc} [aqui | conmigo]",
-      "solo (tengo | traigo) [mi | un | una] {doc} #h:id_only", "(sirve | le sirve | esta bien | vale) [mi | un | una] {doc} #h:id_ok",
+      "solo (tengo | traigo | llevo) [mi | un | una | el | la] {doc} #h:id_only", "(sirve | le sirve | esta bien | vale) [mi | un | una] {doc} #h:id_ok",
       "(puedo usar | puedo darle | acepta | aceptan) [mi | un | una] {doc}", "tambien (tengo | traigo | llevo) [mi | un | una] {doc} #h:id_license",
       "(tengo | traigo) [mi] {doc} y [mi] {doc}", "aqui (esta | tiene | estan) [mi] {doc} y [mi] {doc} #h:docs_both", "[el | mi | un | una] {doc} (sirve | esta bien | le sirve | vale)", "(necesita | quiere) [ver] mi {doc}",
       "no (tengo | traigo) [mi | un] {nod:doc} pero (tengo | traigo) [mi | un | una] {doc}", "[mi] {nod:doc} no pero (tengo | traigo) [mi] {doc}",
@@ -1331,7 +1331,7 @@ export const bank: SituationDef = {
       { id: "id_here", s: t("Aquí | está | mi | pasaporte.", "Here | is | my | passport.", "Here's my passport.") },
       { id: "form_here", s: t("Aquí tiene.", "Here you go.", "Here you go.") },
       { id: "id_ok", s: t("¿Sirve | mi | pasaporte?", "Does it work | my | passport?", "Is my passport okay?") },
-      { id: "id_only", s: t("Solo | traigo | mi | pasaporte.", "Only | I-have-with-me | my | passport.", "I only have my passport with me."), note: "traer: to bring; Mexicans say traigo for what they have on them." },
+      { id: "id_only", s: t("Solo | traigo | mi | pasaporte.", "Only | I-have-with-me | my | passport.", "I only have my passport with me.", { spain: t("Solo | llevo | el | pasaporte.", "Only | I-carry | the | passport.", "I only have my passport with me.", { flags: { 2: "el: Spanish says the passport where English says my passport." } }) }), note: "traer: to bring; Mexicans say traigo for what they have on them.", noteSpain: "llevar: to have on you (Mexico: traigo)." },
       { id: "id_license", s: t("También | traigo | mi | tarjeta | de | residente.", "Also | I-have-with-me | my | card | of | resident.", "I also have my residence card.",
         { spain: t("También | llevo | mi | tarjeta | de | residente.", "Also | I-have-with-me | my | card | of | resident.", "I also have my residence card.") }) },
     ] },

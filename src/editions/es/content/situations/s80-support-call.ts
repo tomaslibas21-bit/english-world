@@ -869,7 +869,7 @@ export const support: SituationDef = {
         { id: "prob_none", s: t("No tengo | internet | desde | ayer.", "I don't have | internet | since | yesterday.", "I haven't had internet since yesterday.") },
         { id: "prob_stopped", s: t("Mi | internet | dejó | de | funcionar | ayer.", "My | internet | stopped | — | working | yesterday.", "My internet stopped working yesterday.",
           { flags: { 3: "dejar de + verb: to stop doing it; de has no word in English." } }) },
-        { id: "prob_wifi", s: t("El | wifi | no sirve.", "The | Wi-Fi | doesn't work.", "The Wi-Fi isn't working."), note: "No sirve: very common in Mexico for doesn't work." },
+        { id: "prob_wifi", s: t("El | wifi | no sirve.", "The | Wi-Fi | doesn't work.", "The Wi-Fi isn't working.", { spain: t("El | wifi | no funciona.", "The | Wi-Fi | doesn't work.", "The Wi-Fi isn't working.") }), note: "No sirve: very common in Mexico for doesn't work.", noteSpain: "No funciona: doesn't work (Mexico: no sirve)." },
         { id: "prob_connect", s: t("No me puedo | conectar | a | internet.", "I can't | connect | to | the internet.", "I can't connect to the internet.") },
         { id: "prob_router", s: t("Mi | módem | parpadea | en | rojo.", "My | modem | is blinking | in | red.", "My modem is blinking red.",
           { flags: { 1: FLAG_MODEM }, neutral: t("Mi | router | parpadea | en | rojo.", "My | router | is blinking | in | red.", "My router is blinking red.") }) },

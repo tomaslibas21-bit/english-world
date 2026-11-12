@@ -1063,7 +1063,8 @@ export const kitchen: SituationDef = {
       t("Muy | bien, | gracias. | ¿Y | tú?", "Very | well, | thanks. | And | you?", "Very well, thanks. And you?"),
     ],
     g_meaning: [
-      t("¡Buena | pregunta! | Déjame | mostrarte.", "Good | question! | Let me | show you.", "Good question! Let me show you."),
+      t("¡Buena | pregunta! | Déjame | mostrarte.", "Good | question! | Let me | show you.", "Good question! Let me show you.",
+        { spain: t("¡Buena | pregunta! | Deja que | te lo | enseñe.", "Good | question! | Let | it to you | I-show.", "Good question! Let me show you.") }),
       t("Mira, | te | explico.", "Look, | (to) you | I'll-explain.", "Here, let me explain."),
     ],
     g_write: [
