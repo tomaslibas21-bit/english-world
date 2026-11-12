@@ -17,6 +17,13 @@ export function loadVariety(): Variety {
   try { const v = localStorage.getItem(KEY); return known(v) ? v : DEFAULT_VARIETY; } catch { return DEFAULT_VARIETY; }
 }
 
+/** Whether a Spanish has been chosen and saved: here (the title form, Settings) or in Spanish Master English's Settings,
+ *  which writes the same key (src/lib/course/game-variety.ts there). The default is not a choice: until the key holds a
+ *  known value, the first-start chooser (src/editions/es/ui/variety-choice.tsx) is shown. */
+export function hasVarietyChoice(): boolean {
+  try { return known(localStorage.getItem(KEY)); } catch { return false; }
+}
+
 /** Choose, remember and apply (the next line said or shown uses it). */
 export function chooseVariety(v: Variety) {
   setVariety(v);
