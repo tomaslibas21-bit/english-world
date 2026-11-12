@@ -587,7 +587,8 @@ export const landlord: SituationDef = {
     ] },
     withhold: { patterns: [
       "i (will not | am not going to) pay [the | my] rent [until (you fix it | it is fixed | the heating is fixed | the heat is fixed | it works | the heating works | you fix the heating)] #tip:withhold",
-      "i am not paying [the | my] rent [until (you fix it | it is fixed | the heating is fixed | it works)] #tip:withhold",
+      "i am not paying [the | my] rent [this month] [until (you fix it | it is fixed | the heating is fixed | it works)] #tip:withhold",
+      "i (am not | will not be) paying [the | my] rent (this month | next month) #tip:withhold", "i (will not | am not going to) pay [the | my] rent (this month | next month) #tip:withhold",
       "i (will not | am not going to) pay [this month | anything] #tip:withhold",
       "no heat no rent #tip:withhold", "i will stop paying [the | my] rent #tip:withhold",
       "i will pay [the rent] when (you fix it | it is fixed | the heating works) #tip:withhold",
@@ -606,6 +607,12 @@ export const landlord: SituationDef = {
       "why should i (fix | repair | do) it [myself]", "[no] you (fix | repair) it", "i do not know how [to (fix | do) it]", "i can not [do (that | this | it)]", "i (will not | am not going to) pay for (it | the repair | that | the repairs)", "i (do not | can not) have (the tools | a wrench | tools | time)",
       "no way #tip:bare_no #noway",
     ] },
+    // "Who pays for the repair?" / "Do I have to pay anything?", "I'll think about it." at his offer (12 Nov 2026)
+    who_pays: { patterns: [
+      "who (pays | is paying | will pay) (for (the | this | that) (repair | repairs | fix) | for it | for that)", "who pays", "do i (have to | need to) pay (anything | for (it | the repair | the repairs | that))",
+      "(is | will) (it | the repair) (be | cost) (free | anything) [for me]", "how much (do | will) i (have to | need to) pay", "(does | will) it cost me anything",
+    ] },
+    think_offer: { patterns: ["[okay] i will think about it", "[okay] (let me | i need to | i have to) think about it", "i am not sure [about that]", "can i think about it"] },
     accept_offer: { patterns: [
       "[okay] i will (do it | fix it | try) [myself]", "(fine | okay | sure | all right) i (can | will) try", "i can (fix it | do it) [myself]",
       "[okay] send me the wrench", "i will give it a try", "let me try", "half is (fine | okay | good)",
@@ -875,6 +882,12 @@ export const landlord: SituationDef = {
       t("My | repairman, | Gus, | can | lend | you | his | wrench.", "Mano | meistras, | Gusas, | gali | paskolinti | jums | savo | veržliaraktį.",
         "Mano meistras Gusas gali jums paskolinti savo veržliaraktį.", { flags: { 6: "“his” = savo: it refers back to the subject Gusas." } }),
     ],
+    // 12 Nov 2026, new lines: who pays, "I'll think about it."
+    pay_other_half: [t("Just | the | other | half. | And | your | Saturday.", "Tik | — | kitą | pusę. | Ir | Jūsų | šeštadienį.", "Tik kitą pusę. Ir savo šeštadienį.")],
+    pay_on_me: [t("Me. | It's | in | the | lease.", "Aš. | Tai yra | — | — | nuomos sutartyje.", "Aš. Taip parašyta nuomos sutartyje.",
+      { flags: { 2: "“in”: the locative sutartyje carries it.", 4: "lease = the rental contract (nuomos sutartis)." } })],
+    think_fast: [t("Think | fast. | Florida | is | waiting.", "Galvokite | greitai. | Florida | — | laukia.", "Galvokite greitai. Florida laukia.",
+      { flags: { 3: "“is waiting”: the present laukia carries it." } })],
     offer_reask: [t("So? | Half | the | cost. | Deal?", "Tai? | Pusė | — | kainos. | Sutarta?", "Tai kaip? Pusė kainos. Sutarta?")],
     offer_refused_react: [
       t("Worth | a | try. | Fine, | fine. | I'll call | Gus.", "Verta | — | pabandyti. | Gerai, | gerai. | Paskambinsiu | Gusui.", "Verta buvo pabandyti. Gerai, gerai, paskambinsiu Gusui.",
@@ -1444,6 +1457,8 @@ export const landlord: SituationDef = {
         P(c, "rent_is_rent");
         return;
       }
+      // the heat is settled (a day for Gus): "I'm not paying rent this month." at "Anything else?" (12 Nov 2026)
+      if (c.s.date) { P(c, "rent_is_rent"); return; }
       P(c, "rent_threat_react"); rude(c);
     },
 
@@ -1458,6 +1473,17 @@ export const landlord: SituationDef = {
       P(c, c.s.offer ? "i_know" : "ack");
     },
     accept_offer(c) { if (offerOpen(c)) { acceptOffer(c); return; } P(c, "ack"); },
+    // 12 Nov 2026: who pays (his half-and-half offer on the table: the other half; otherwise: he does, the lease says so)
+    who_pays(c) {
+      if (offerOpen(c)) { P(c, "pay_other_half"); c.hold(); return; }
+      P(c, c.s.offer === "accepted" ? "pay_other_half" : "pay_on_me");
+    },
+    // "I'll think about it." to his offer: hurry up, once; then he gives in
+    think_offer(c) {
+      if (!offerOpen(c)) { P(c, "ack"); return; }
+      if (!c.s.thinkSaid) { c.s.thinkSaid = true; P(c, "think_fast"); c.hold(); return; }
+      refuse(c);
+    },
     walk_away(c, _slots, seg) {
       // "Forget it." to "Fix it yourself": no to the offer (curt)
       if (offerOpen(c) && seg.tags.includes("forget")) { c.tip(TIPS.bare_no); refuse(c); return; }
@@ -1583,6 +1609,11 @@ export const landlord: SituationDef = {
   },
 
   tests: [
+    // dead ends (12 Nov 2026): who pays, "I'll think about it." at his offer, no rent this month
+    { say: "Who pays for the repair?", intent: "who_pays", step: "thermostat" },
+    { say: "Do I have to pay anything?", intent: "who_pays", step: "offer", not: ["accept_offer"] },
+    { say: "I'll think about it.", intent: "think_offer", step: "offer", not: ["accept_offer"] },
+    { say: "I'm not paying rent this month.", intent: "withhold", step: "wrap", not: ["pay_rent"] },
     // logic audit (5 Nov 2026): a day echoed as a question books nothing; "Do I have to be home?"
     { say: "Wednesday?", intent: "day_ctx", step: "date", slots: { day: "wednesday" }, not: ["accept_date"] },
     { say: "Friday?", intent: "day_ctx", step: "date", slots: { day: "friday" }, not: ["accept_date"] },

@@ -286,13 +286,15 @@ function missedNote(c: Ctx): string {
 
 function closingPending(): Pending {
   return {
-    id: "closing", expects: ["monday_yes", "monday_no_ctx"], hints: ["bye"],
+    id: "closing", expects: ["monday_yes", "monday_no_ctx", "monday_time_ctx"], hints: ["bye"],
     suggest: [{ lt: "Atsakyti Gregui ir atsisveikinti", hint: "bye" }],
     yes: (cc) => closingTurn(cc, "yes"),
     no: (cc) => closingTurn(cc, "no"),
     on: {
       monday_yes: (cc) => closingTurn(cc, "yes"),
       monday_no_ctx: (cc) => closingTurn(cc, "no"),
+      // "At what time?" (12 Nov 2026: not understood before): Greg answers, and his question stays open
+      monday_time_ctx: (cc) => { G(cc, "g_same_time"); cc.expect(closingPending()); },
       g_bye: (cc) => closingTurn(cc, "bye"),
       g_thanks: (cc) => closingTurn(cc, "yes"),
       g_ok: (cc) => closingTurn(cc, "yes"),
@@ -791,7 +793,7 @@ const AUTO: Record<string, string> = {
 const PITCH_EX = ["disagree_polite", "rude_disagree", "give_reason", "offer_alt", "ask_q", "agree_plan", "ask_boss", "ack_point", "accept_deal", "give_in", "agree_to_disagree", "walk_away"];
 const CHARTS_EX = ["interrupt_polite", "interrupt_ctx", "rude_interrupt", "give_reason", "disagree_polite", "offer_alt", "walk_away"];
 const REASON_EX = ["give_reason", "concern_ctx", "disagree_polite", "offer_alt", "ask_q", "interrupt_polite", "walk_away"];
-const COUNTER_EX = ["site_problem_ctx", "ack_point", "give_reason", "disagree_polite", "rude_disagree", "offer_alt", "agree_to_disagree", "give_in", "agree_plan", "accept_deal", "walk_away"];
+const COUNTER_EX = ["site_problem_ctx", "cost_echo_ctx", "ack_point", "give_reason", "disagree_polite", "rude_disagree", "offer_alt", "agree_to_disagree", "give_in", "agree_plan", "accept_deal", "walk_away"];
 const ALT_EX = ["offer_alt", "counter_offer", "agree_to_disagree", "give_in", "give_reason", "ack_point", "ask_boss", "walk_away"];
 const RESOLVE_EX = ["accept_deal", "counter_offer", "agree_to_disagree", "offer_alt", "disagree_polite", "ack_point", "agree_plan", "give_in", "ask_boss", "walk_away"];
 
@@ -1118,6 +1120,11 @@ export const meeting: SituationDef = {
     ] },
 
     // "Do you agree that the old site is a problem?" – "Yes, it is." / "It's not a problem." (only then)
+    // "Four thousand a month?": her number said back at her strong point (12 Nov 2026)
+    cost_echo_ctx: { patterns: [
+      "[really] (4000 | four thousand | {price}) [dollars] [a | per | every] month", "[really] (4000 | four thousand | {price}) [dollars]",
+      "four grand a month", "(every | each) month", "that much [every month | a month]", "(is | does) it (really | actually) cost (that much | four thousand [dollars] [a month])",
+    ] },
     site_problem_ctx: { patterns: [
       "(it is | it really is | that is) [a] [big | real | huge] problem",
       "[yes] it is",
@@ -1260,6 +1267,11 @@ export const meeting: SituationDef = {
       "(sounds good | perfect) see you (then | monday)",
       "(i will | we will) be there",
     ] },
+    // "At what time?" to "Same time Monday?" (12 Nov 2026)
+    monday_time_ctx: { patterns: [
+      "[at] what time [again | on monday | is it | is the meeting]", "(what | which) time (is | was) (it | the meeting) [again]", "when [is it | on monday | exactly]",
+      "same time as today", "at nine [again]", "the same time as (today | this morning)",
+    ] },
     monday_no_ctx: { patterns: [
       "monday (does not work | is not (good | possible)) [for me]",
       "i can not (on | do) monday",
@@ -1360,6 +1372,8 @@ export const meeting: SituationDef = {
     g_monday: [
       t("Good | meeting, | everyone. | Same | time | Monday?", "Geras | susirinkimas, | visi. | Tuo pačiu | laiku | pirmadienį?", "Geras susirinkimas, kolegos. Tuo pačiu laiku pirmadienį?"),
     ],
+    // "At what time?" (12 Nov 2026, a new line; the meeting is at nine)
+    g_same_time: [t("Nine | o'clock, | like | today.", "Devintą | valandą, | kaip | šiandien.", "Devintą valandą, kaip šiandien.")],
     g_calendar: [
       t("No? | Then | I'll find | another | time.", "Ne? | Tada | rasiu | kitą | laiką.", "Ne? Tada rasiu kitą laiką."),
     ],
@@ -1501,6 +1515,8 @@ export const meeting: SituationDef = {
         "O 60 % mūsų lankytojų naršo telefonu. O telefone senoji svetainė – tikra katastrofa.",
         { say: "And sixty percent of our visitors use phones. On a phone, the old site is a disaster.", flags: { 2: "“of”: the genitive lankytojų carries it (mūsų intervenes)." } }),
     ],
+    // "Four thousand a month?" said back (12 Nov 2026, a new line)
+    v_cost_echo: [t("Every | month. | That's | real | money.", "Kiekvieną | mėnesį. | Tai yra | tikri | pinigai.", "Kiekvieną mėnesį. Tai tikri pinigai.")],
     v_counter_reask: [
       t("So? | Is | the | old | site | a | problem | or | not?", "Tai? | Ar yra | — | senoji | svetainė | — | problema | ar | ne?", "Tai kaip? Senoji svetainė – problema ar ne?",
         { flags: { 1: "“Is” in a yes/no question = ar; yra keeps the copula." } }),
@@ -1963,6 +1979,8 @@ export const meeting: SituationDef = {
     interrupt_ctx(c, _sl, sg) { onInterrupt(c, sg, true); },
     rude_interrupt(c, _sl, sg) { onInterrupt(c, sg, false); },
     ack_point(c, _sl, sg) { onAck(c, sg, "ack"); },
+    monday_time_ctx(c) { G(c, "g_same_time"); },
+    cost_echo_ctx(c) { if (c.s.counterSaid) V(c, "v_cost_echo"); else c.say("g_ack"); },
     site_problem_ctx(c, _sl, sg) {
       if (twistGuard(c)) return;
       if (phase(c) !== "counter") return;
@@ -2154,6 +2172,9 @@ export const meeting: SituationDef = {
     { say: "Let me to finish.", intent: "finish_first" },
     // --- the goodbye ---
     { say: "Monday works for me.", intent: "monday_yes" },
+    // dead ends (12 Nov 2026): the time on Monday, her cost said back
+    { say: "Four thousand a month?", intent: "cost_echo_ctx", step: "counter" },
+    { say: "Four thousand dollars a month?", intent: "cost_echo_ctx", step: "counter", not: ["ack_point"] },
     { say: "See you Monday.", intent: "monday_yes" },
     { say: "I'd say green.", intent: "none" },
     // --- walking out ---

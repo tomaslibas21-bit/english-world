@@ -283,5 +283,15 @@
   {"ctx": "home", "say": "Do I have to be home?", "intent": "home_q_ctx", "note": "logic audit 5 Nov 2026"},
   {"ctx": "home", "say": "I don't know.", "intent": "g_dontknow", "note": "logic audit 5 Nov 2026"},
   {"ctx": "date", "say": "Friday?", "intent": "any", "not": ["accept_date"], "note": "logic audit 5 Nov 2026"},
-  {"ctx": "home", "say": "Do I have to be home?", "intent": "any", "not": ["home_yes", "not_home"], "note": "logic audit 5 Nov 2026"}
+  {"ctx": "home", "say": "Do I have to be home?", "intent": "any", "not": ["home_yes", "not_home"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "thermostat", "say": "Who pays for the repair?", "intent": "who_pays", "note": "dead end 12 Nov 2026"},
+  {"ctx": "offer", "say": "Do I have to pay anything?", "intent": "who_pays", "note": "dead end 12 Nov 2026"},
+  {"ctx": "offer", "say": "Who's paying for the repair?", "intent": "who_pays", "note": "dead end 12 Nov 2026"},
+  {"ctx": "offer", "say": "I'll think about it.", "intent": "think_offer", "note": "dead end 12 Nov 2026"},
+  {"ctx": "offer", "say": "Let me think about it.", "intent": "think_offer", "note": "dead end 12 Nov 2026"},
+  {"ctx": "offer", "say": "I'll think about it.", "intent": "any", "not": ["accept_offer"], "note": "dead end 12 Nov 2026"},
+  {"ctx": "offer", "say": "Do I have to pay anything?", "intent": "any", "not": ["accept_offer"], "note": "dead end 12 Nov 2026"},
+  {"ctx": "wrap", "say": "I'm not paying rent this month.", "intent": "withhold", "note": "dead end 12 Nov 2026"},
+  {"ctx": "wrap", "say": "I won't pay the rent this month.", "intent": "withhold", "note": "dead end 12 Nov 2026"},
+  {"ctx": "wrap", "say": "I'm not paying rent this month.", "intent": "any", "not": ["pay_rent"], "note": "dead end 12 Nov 2026"}
 ] }

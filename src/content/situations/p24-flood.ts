@@ -147,6 +147,15 @@ const bump = (c: Ctx, id: string): number => { c.s.asks ||= {}; c.s.asks[id] = (
 const inLizzie = (c: Ctx) => c.s.phase === "lizzie";
 const inGrant = (c: Ctx) => c.s.phase === "grant";
 const inVm = (c: Ctx) => c.s.phase === "vm";
+/** "What time will you come?" to Lizzie (12 Nov 2026: not understood before): twenty minutes with the mop, around
+ *  eleven after brunch, or "call me" when she isn't coming. */
+function lizzieEta(c: Ctx) {
+  if (c.s.onWay) L(c, "l_on_way");
+  else if (c.s.comeDone && !c.s.coming) L(c, "l_not_coming");
+  else L(c, "l_eta_brunch");
+  // her open question (her offer, or the goodbye) waits for the answer
+  if (c.step === "l_come" || c.step === "l_bye") c.hold();
+}
 const toArr = (x: any): any[] => (x == null ? [] : Array.isArray(x) ? x : [x]);
 /** A thanks inside another answer ("No, thank you.", "Nothing else, thanks.", "Thanks, bye!"). */
 const heardThanks = (c: Ctx) => /\b(thank|thanks|appreciate)\b/i.test(c.heard);
@@ -598,6 +607,7 @@ function grantBye(c: Ctx) {
 type H = (c: Ctx, slots: any, seg: Segment) => void;
 
 const LIZZIE: Record<string, H> = {
+  ask_eta: (c) => { lizzieEta(c); },
   cancel_brunch: (c) => { cancelBrunch(c); },
   flood: (c, _sl, sg) => { if (sg.tags.includes("cancel")) cancelBrunch(c); explain(c); },
   cat_fridge: (c) => { if (once(c, "l_cat")) L(c, "l_cat"); },
@@ -1149,6 +1159,8 @@ export const flood: SituationDef = {
     ] },
     ask_eta: { patterns: [
       "when (will | can) you (be here | get here | come | arrive)",
+      "(at | around) what time (will | can) you (be here | get here | come | come over | arrive)", "what time (will | can | are) you (be here | get here | come | come over | arrive | coming | coming over)",
+      "what time (should | can) i expect you",
       "how long will it take you [to get here]",
       "are you coming [now | right now]",
     ] },
@@ -1259,6 +1271,8 @@ export const flood: SituationDef = {
     l_sure: [
       t("You | sure? | I | can | come over | after | brunch.", "Tu | {m:tikras|f:tikra}? | Aš | galiu | užsukti | po | brunčo.", "Tikrai? Galiu užsukti po brunčo."),
     ],
+    // 12 Nov 2026, a new line (brunch is at nine): "What time will you come?"
+    l_eta_brunch: [t("Around | eleven, | after | brunch.", "Apie | vienuoliktą, | po | brunčo.", "Apie vienuoliktą, po brunčo.")],
     l_coming_yes: [t("Yay! | I'll come | right after | brunch.", "Valio! | Ateisiu | iškart po | brunčo.", "Valio! Ateisiu iškart po brunčo.")],
     l_not_coming: [
       t("Okay, | but | call | me | if | you | need | me.", "Gerai, | bet | paskambink | man | jei | tau | prireiks | manęs.", "Gerai, bet paskambink, jei manęs prireiks."),
@@ -2033,6 +2047,9 @@ export const flood: SituationDef = {
     { say: "I apologize for any inconvenience.", intent: "apologize", step: "g_close" },
     { say: "Who's going to pay for the damage?", intent: "ask_damage", step: "g_close" },
     { say: "When will you be here?", intent: "ask_eta", step: "g_close" },
+    // dead end (12 Nov 2026): "What time will you come?" to Lizzie
+    { say: "What time will you come?", intent: "ask_eta", step: "l_come" },
+    { say: "What time will you come over?", intent: "ask_eta", step: "l_bye" },
     { say: "Fix it now!", intent: "demand_rude", step: "g_request" },
     { say: "Please call me back at your earliest convenience.", intent: "vm_close", step: "vm_msg" },
     { say: "I look forward to hearing from you.", intent: "vm_close", step: "vm_msg" },

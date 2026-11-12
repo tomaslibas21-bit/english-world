@@ -356,5 +356,9 @@
   {"ctx": "l_come", "say": "Yes, I'm sure.", "intent": "sure_ctx", "note": "logic audit 5 Nov 2026"},
   {"ctx": "g_down", "say": "I put towels on the floor.", "intent": "water_off", "note": "logic audit 5 Nov 2026"},
   {"ctx": "l_come", "say": "Yes, please.", "intent": "any", "not": ["need_nothing", "come_no"], "note": "logic audit 5 Nov 2026"},
-  {"ctx": "g_down", "say": "I put towels on the floor.", "intent": "any", "not": ["down_no_ctx", "downstairs_no"], "note": "logic audit 5 Nov 2026"}
+  {"ctx": "g_down", "say": "I put towels on the floor.", "intent": "any", "not": ["down_no_ctx", "downstairs_no"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "l_come", "say": "What time will you come?", "intent": "ask_eta", "note": "dead end 12 Nov 2026"},
+  {"ctx": "l_come", "say": "What time will you come over?", "intent": "ask_eta", "note": "dead end 12 Nov 2026"},
+  {"ctx": "l_bye", "say": "What time will you get here?", "intent": "ask_eta", "note": "dead end 12 Nov 2026"},
+  {"ctx": "l_come", "say": "What time will you come?", "intent": "any", "not": ["need_nothing", "come_no", "sure_ctx"], "note": "dead end 12 Nov 2026"}
 ] }

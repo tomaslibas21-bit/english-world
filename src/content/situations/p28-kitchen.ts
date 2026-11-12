@@ -211,6 +211,12 @@ export const kitchen: SituationDef = {
   },
 
   intents: {
+    // "Did you like it?" (about the soup) and "Who's Mia?" (12 Nov 2026: not understood before)
+    q_liked: { patterns: [
+      "[so] [chef] (did | do) you like (it | my soup | the soup | my beet soup) [@chef]", "[so] (is | was) it (good | okay | any good | tasty) [@chef]",
+      "[so] how (was | is) (it | my soup | the soup) [@chef]", "(do | did) you (like | love) (my | the) (cold beet soup | beet soup)",
+    ] },
+    q_mia: { patterns: ["who is (mia | mia russo) [@chef]", "mia who", "who is the new (cook | junior cook | girl)", "(who | what) is mia russo"] },
     // --- the chef: serving the soup -------------------------------------------------
     offer_taste: { patterns: [
       "(could | can | would) you [please] @taste (it | this | my @soup | the @soup | some) [for me] [@chef] #h:could_taste",
@@ -905,6 +911,11 @@ export const kitchen: SituationDef = {
         { flags: { 0: "“'s” (is): the verb bijo carries it.", 2: "“scared” = the verb bijoti.", 7: "“Would” in a yes/no question = ar; the conditional sits on paragautum." } }),
     ],
     handoff3: [t("The way | I | just | did | with | you. | Gently.", "Taip, kaip | aš | ką tik | padariau | su | tavimi. | Švelniai.", "Taip, kaip ką tik padariau su tavimi. Švelniai.")],
+    // "Did you like it?" and "Who's Mia?" (12 Nov 2026, new lines)
+    liked_wait: [t("Patience. | First, | the | feedback.", "Kantrybės. | Pirma, | — | pastabos.", "Kantrybės. Pirma – pastabos.")],
+    liked_yes: [t("I | did. | It | just | needs | a little | more | acid.", "Man | patiko. | Jai | tik | reikia | truputį | daugiau | rūgštumo.", "Patiko. Tik jai reikia truputį daugiau rūgštumo.",
+      { flags: { 1: "“did” stands for “liked”: patiko (with man) carries it." } })],
+    mia_who: [t("Mia | Russo. | Our | new | junior | cook.", "Mija | Russo. | Mūsų | naujoji | jaunesnioji | virėja.", "Mija Russo, mūsų naujoji jaunesnioji virėja.")],
     handoff_again: [t("So? | Will | you | help | her?", "Na? | Ar | tu | padėsi | jai?", "Na? Padėsi jai?", { flags: { 1: "Question “Will” = ar; the future padėsi carries it." } })],
     handoff_yes: [t("Thanks. | Mia! | Come | here | a | sec.", "Ačiū. | Mija! | Ateik | čia | — | sekundėlei.", "Ačiū. Mija! Ateik sekundėlei.")],
     handoff_anyway: [t("Too | late. | Mia! | Come | here | a | sec.", "Per | vėlu. | Mija! | Ateik | čia | — | sekundėlei.", "Per vėlu. Mija! Ateik sekundėlei.")],
@@ -1509,6 +1520,13 @@ export const kitchen: SituationDef = {
   start: () => { /* the serve step greets */ },
 
   handlers: {
+    // 12 Nov 2026: "Did you like it?" before his feedback, after it, after the second taste; "Who's Mia?"
+    q_liked(c) {
+      if (!c.s.fbGiven) { C(c, "liked_wait"); return; }
+      C(c, c.s.againDone ? "again_react" : "liked_yes");
+      c.hold();
+    },
+    q_mia(c) { C(c, "mia_who"); if (c.step === "handoff" || inMia(c)) c.hold(); },
     // --- the soup ---
     offer_taste(c, _slots, seg) {
       const fb = seg.tags.includes("fb");
@@ -1745,6 +1763,11 @@ export const kitchen: SituationDef = {
   finish: (c) => { closing(c); },
 
   tests: [
+    // dead ends (12 Nov 2026): "Did you like it?", "Who's Mia?"
+    { say: "Did you like it?", intent: "q_liked", step: "receive" },
+    { say: "So, did you like my soup?", intent: "q_liked", step: "consent" },
+    { say: "Who's Mia?", intent: "q_mia", step: "handoff" },
+    { say: "Who is Mia?", intent: "q_mia", step: "handoff", not: ["help_yes", "help_no"] },
     // logic audit (5 Nov 2026): "How much should I add?" while he waits; "I like it." to the croutons
     { say: "How much should I add?", intent: "ask_example", step: "again" },
     { say: "I like it.", intent: "praise_general", step: "second", not: ["reject_rude", "keep_own"] },

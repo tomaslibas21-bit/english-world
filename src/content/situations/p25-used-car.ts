@@ -638,6 +638,8 @@ const H: Record<string, Handler> = {
   q_accident(c) { answer(c, "accident", "a_accident"); },
   q_why(c) { answer(c, "why", "a_why"); },
   q_service(c) { answer(c, "service", "a_service"); },
+  // "Is it in your name?" (12 Nov 2026: not understood before)
+  q_title(c) { answer(c, "title", "a_title"); },
   q_problems(c) {
     if (flawPending(c)) fireFlaw(c);
     answer(c, "problems", c.s.flawKnown ? "a_problems_flaw" : "a_problems_ok");
@@ -849,6 +851,11 @@ const H: Record<string, Handler> = {
     c.say("pay_card_no");
     if (c.s.outcome === "deal" && !c.s.paid) { c.say("pay_options"); c.hold(); }
   },
+  // "Can I pay in installments?" / "half now and half tomorrow" (12 Nov 2026: not understood before): all at once
+  pay_parts(c) {
+    c.say("pay_whole");
+    if (c.s.outcome === "deal" && !c.s.paid) { c.say("pay_options"); c.s.payAsked = "how"; c.hold(); }
+  },
 
   // --- thanks and goodbye ---
   pleasure(c) {
@@ -1016,6 +1023,11 @@ export const usedCar: SituationDef = {
     q_year: { patterns: [
       "what year is @car", "how old is @car", "is (it | she) [an] old car", "when was (it | she | the car) (made | built)", "is (it | she) a (ninety eight | 98 | 1998)",
       "what model year is (it | she)", "(what | which) year (was | is) (it | she) (made | built)", "is (it | she) (really | actually) from (ninety eight | 1998)",
+    ] },
+    // "Is it in your name?" (12 Nov 2026)
+    q_title: { patterns: [
+      "is (it | she | the car | @car | the title) in your name #h:q_title", "whose name is (it | she | the car | the title) in",
+      "is (it | she | the car) registered (to | in) your name", "is (it | she | the car | @car) (yours | really yours)", "do you own (it | her | the car | @car)",
     ] },
     q_owners: { patterns: [
       "how many owners (has | did) (it | she) (had | have)", "how many [previous] owners [has (it | she) had]", "are you the (first | only | original) owner",
@@ -1306,6 +1318,14 @@ export const usedCar: SituationDef = {
     ] },
     // "I don't have cash": never the cash lever
     no_cash: { patterns: ["(i | we) do not have [any | enough] cash [with me | on me]", "no cash", "i can not pay (in | with) cash", "i have no cash"] },
+    // "Can I pay in installments?", "Can I pay half now and half tomorrow?" (12 Nov 2026)
+    pay_parts: { patterns: [
+      "(can | could | may) i pay (in | by) (installments | instalments | monthly payments | parts | two parts)", "(can | could | may) i pay (it | her | you) (in | by) (installments | instalments | parts | two parts)",
+      "(can | could | may) i pay [you] (half | part | some) [of it] (now | today) and (half | the rest | the other half) (tomorrow | later | next week | next month | on monday | on friday)",
+      "(half | part) (now | today) and (half | the rest | the other half) (tomorrow | later | next week | next month)", "i (can | could | would like to | want to) pay (half | part) (now | today) and (half | the rest | the other half) (tomorrow | later | next week | next month)",
+      "(do you | can you) (do | offer | take) (installments | instalments | payment plans | a payment plan | financing)", "(is there | do you have) [a] (payment plan | financing)",
+      "(can | could | may) i pay (monthly | over time | a little every month | every month)", "(can | could | may) i pay the rest (tomorrow | later | next week | next month)",
+    ] },
     pay_card: { patterns: [
       "(can | could) i pay (by | with) [a] (card | credit card | debit card | my card | my credit card | my debit card)", "do you (take | accept) (cards | credit cards | card)", "(by | with) card",
       "card", "i will pay (by | with) [a] card",
@@ -1402,6 +1422,12 @@ export const usedCar: SituationDef = {
         "Aš kraustausi | į | — | butą | be | garažo. | Ji | nusipelno | geresnio | nei | — | gatvė.",
         "Kraustausi į butą be garažo. Ji nusipelno geresnės vietos nei gatvė.",
         { flags: { 3: "condo = an apartment you own.", 8: "“better” = a better place: geresnio (genitive after nusipelno)." } }),
+    ],
+    // "Is it in your name?" (12 Nov 2026, a new line)
+    a_title: [
+      t("Yes, | the | title | is | in | my | name. | All | clean.", "Taip, | — | nuosavybės dokumentas | yra | — | mano | vardu. | Viskas | tvarkoje.",
+        "Taip, nuosavybės dokumentas mano vardu. Viskas tvarkoje.",
+        { flags: { 2: "title = the US document that shows who owns the car.", 4: "“in”: the instrumental vardu carries it." } }),
     ],
     a_service: [
       t("Every | oil change | is | in | this | folder. | I'm | that | kind | of | person.", "Kiekvienas | tepalų keitimas | yra | — | šiame | aplanke. | Aš esu | tokio | tipo | — | žmogus.",
@@ -1670,6 +1696,11 @@ export const usedCar: SituationDef = {
       t("A | cashier's check | is | fine. | My | bank | is | on the square.", "— | Banko čekis | yra | tinkamas. | Mano | bankas | yra | aikštėje.",
         "Banko čekis tinka. Mano bankas – aikštėje."),
     ],
+    // the answer to installments or "half now, half tomorrow" (12 Nov 2026, a new line)
+    pay_whole: [
+      t("Sorry, | all | at once. | I'm | not | a | bank.", "Atsiprašau, | visą sumą | iš karto. | Aš | nesu | — | bankas.", "Atsiprašau, visą sumą iš karto. Aš ne bankas.",
+        { flags: { 3: "“'m” (am): the negated copula nesu (under “not”) carries it." } }),
+    ],
     pay_card_no: [
       t("I'm | not | a | store, | I'm afraid.", "Aš | nesu | — | parduotuvė, | deja.", "Deja, aš ne parduotuvė.",
         { flags: { 0: "“'m” (am): the negated copula nesu (under “not”) carries it." } }),
@@ -1856,6 +1887,7 @@ export const usedCar: SituationDef = {
     "must be": { reason: "lexical_expression", split: "must → turite + be → būti gives “turite būti” (obligation); the epistemic must = turbūt esate.", minimal: "Modal and verb." },
     "goes down": { reason: "lexical_expression", split: "goes → eina + down → žemyn is false; a roof lowering = nusileidžia (C-PHR).", minimal: "Verb and particle." },
     "like a dream": { reason: "lexical_expression", split: "like → kaip, a → —, dream → sapnas gives “kaip sapnas”, a calque; = puikiai.", minimal: "The whole simile." },
+    "at once": { reason: "lexical_expression", split: "at → prie + once → kartą is false; = iš karto.", minimal: "Two words." },
     "oil change": { reason: "lexical_expression", split: "oil → aliejus + change → pokytis gives “aliejaus pokytis”; the service = tepalų keitimas.", minimal: "Two words, one service." },
     "with no": { reason: "lexical_expression", split: "with → su + no → jokio gives “su jokiu garažu”; “with no” = be.", minimal: "Two words." },
     "started it": { reason: "lexical_expression", split: "started → pradėjo + it → tai; blaming (“X started it”) = pirmoji pradėjo; “it” has no referent.", minimal: "Verb and empty object." },
@@ -1975,7 +2007,7 @@ export const usedCar: SituationDef = {
         c.s.payAsked = "how";
         c.say("ask_pay");
       },
-      expects: ["pay_cash", "pay_transfer", "pay_check", "pay_card", "cash_lever", "no_cash"],
+      expects: ["pay_cash", "pay_transfer", "pay_check", "pay_card", "pay_parts", "cash_lever", "no_cash"],
       suggest: [{ lt: "Pasakyti, kaip sumokėsi", hint: "pay" }],
       yes: (c) => { if (c.s.payAsked === "cash") paid(c, "pay_cash_r", "cash"); else { c.say("pay_options"); c.hold(); } },
       no: (c) => { c.say("pay_options"); c.s.payAsked = "how"; c.hold(); },
@@ -2140,6 +2172,12 @@ export const usedCar: SituationDef = {
     { say: "Can I pay by bank transfer?", intent: "pay_transfer", step: "pay" },
     { say: "Is a cashier's check okay?", intent: "pay_check", step: "pay" },
     { say: "Can I pay by card?", intent: "pay_card", step: "pay" },
+    // dead ends (12 Nov 2026): installments, half now and half tomorrow, whose name the car is in
+    { say: "Can I pay in installments?", intent: "pay_parts", step: "pay" },
+    { say: "Can I pay half now and half tomorrow?", intent: "pay_parts", step: "pay" },
+    { say: "Half now and the rest next week?", intent: "pay_parts", step: "pay", not: ["pay_cash"] },
+    { say: "Is it in your name?", intent: "q_title", step: "look" },
+    { say: "Is the car in your name?", intent: "q_title", step: "look" },
     { say: "It was a pleasure doing business with you.", intent: "pleasure" },
     { say: "I promise to look after her.", intent: "look_after" },
     { say: "Thank you so much!", intent: "thanks_so_much" },
