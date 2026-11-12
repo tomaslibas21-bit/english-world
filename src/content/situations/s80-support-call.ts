@@ -289,6 +289,8 @@ export const support: SituationDef = {
     tech_other: { patterns: [
       "(do you have | is there) anything [on | on the] (saturday | weekend) #h:tech_weekend", "(do you have | is there) anything in the (afternoon | evening) #h:tech_afternoon",
       "(can | could) (he | she | they | you | @tech) come [on] {day} [instead]", "what about (saturday | the weekend | {day} | the afternoon)",
+      // "Can't you come today?" (12 Nov 2026: not understood): "fully booked that day" and the next window, like "tomorrow"
+      "(can not | could not) (he | she | they | you | @tech | someone) come [on] {day}", "is there (no one | nobody | anyone | anything) {day}",
       "(can | could) (he | she | they | you | @tech) come (in the afternoon | later | in the evening | after work | on the weekend) [instead]",
       "(do you have | is there) (anything | something) (later | on another day | next week | in the (afternoon | evening))", "(saturday | the weekend | the afternoon) would be better",
       "is {day} possible", "(what about | how about) {day} [morning | afternoon]", "(is | would) {day} [morning | afternoon] (possible | okay | available)",
@@ -297,6 +299,9 @@ export const support: SituationDef = {
       "how much is (the visit | the technician | the technician visit | it) #generic"] },
     tech_when_q: { patterns: ["what time will (the technician | they | he | she) (come | arrive | be here | get here)", "when will (the technician | they | he | she) (come | arrive | be here)", "will they call (me | first) [before]", "will (you | they) let me know [before]"] },
     tech_time_q: { patterns: ["how long will (it | the visit | the repair) take", "how long does it take"] },
+    // "Do I have to be home?" (12 Nov 2026: not understood)
+    tech_home_q: { patterns: ["do i (have to | need to) be (home | there | at home) [for (it | the visit | the technician)]",
+      "(does | do) (someone | somebody | anyone | i) (have to | need to) be (home | there | at home)", "(should | must) i be (home | there | at home)"] },
 
     // --- other requests
     manager: { patterns: [
@@ -535,6 +540,9 @@ export const support: SituationDef = {
         "Tai nemokama, nes problema mūsų pusėje.", { flags: { 0: "Negative concord: nėra is the negated copula; the noun takes the genitive.", 7: "“on”: the locative pusėje carries it." } }),
     ],
     tech_takes: [t("Usually | about | an | hour.", "Paprastai | apie | — | valandą.", "Paprastai apie valandą.")],
+    // 12 Nov 2026, a new line: "Do I have to be home?" (the rule ask_someone states: someone 18 or older)
+    tech_home: [t("Yes, | you | or | someone | 18 | or | older.", "Taip, | Jūs | arba | kas nors | 18 metų | ar | vyresnis.", "Taip, Jūs arba kas nors ne jaunesnis kaip 18 metų.",
+      { say: "Yes, you or someone eighteen or older." })],
 
     // billing
     billing_check: [t("Let | me | check...", "Leiskite | man | patikrinti...", "Tuoj patikrinsiu...")],
@@ -825,7 +833,7 @@ export const support: SituationDef = {
         const w = WINDOWS[c.s.window];
         c.say("tech_offer_again", { D: w.d, win: win(c.s.window) });
       },
-      expects: ["tech_accept", "tech_busy", "tech_other", "tech_cost_q", "tech_time_q", "tech_when_q"],
+      expects: ["tech_accept", "tech_busy", "tech_other", "tech_cost_q", "tech_time_q", "tech_when_q", "tech_home_q"],
       suggest: [{ lt: "Sutikti arba paprašyti kito laiko", hint: "tech" }],
       yes: (c) => { bookTech(c); },
       no: (c) => { support.handlers.tech_busy(c, {}, { intent: "tech_busy", slots: {}, tags: [] }); } },
@@ -994,6 +1002,7 @@ export const support: SituationDef = {
       c.say("tech_call_ahead");
     },
     tech_time_q(c) { c.say("tech_takes"); },
+    tech_home_q(c) { if (c.s.diagnosed) c.say("tech_home"); },
 
     // --- other
     manager(c) {
@@ -1044,6 +1053,9 @@ export const support: SituationDef = {
   },
 
   tests: [
+    // dead ends (12 Nov 2026)
+    { say: "Do I have to be home?", intent: "tech_home_q", step: "tech", not: ["tech_accept"] },
+    { say: "Can't you come today?", intent: "tech_other", step: "tech", slots: { day: "today" }, not: ["tech_accept"] },
     // logic audit (5 Nov 2026)
     { say: "What time will the technician come?", intent: "tech_when_q", step: "tech" },
     { say: "How much is it?", intent: "tech_cost_q", step: "tech" },

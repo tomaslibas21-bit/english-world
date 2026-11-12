@@ -275,5 +275,14 @@
   {"ctx": "so_agree", "say": "Okay, thanks.", "intent": "yn:yes", "note": "logic audit 5 Nov 2026"},
   {"ctx": "coffee", "say": "That's okay, thanks.", "intent": ["g_thanks", "yn:yes"], "note": "logic audit 5 Nov 2026"},
   {"ctx": "resolve", "say": "I see your point.", "intent": "any", "not": ["accept_deal", "give_in"], "note": "logic audit 5 Nov 2026"},
-  {"ctx": "resolve", "say": "Two weeks?", "intent": "any", "not": ["accept_deal", "give_in"], "note": "logic audit 5 Nov 2026"}
+  {"ctx": "resolve", "say": "Two weeks?", "intent": "any", "not": ["accept_deal", "give_in"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "counter", "say": "Four thousand a month?", "intent": "cost_echo_ctx", "note": "dead end 12 Nov 2026"},
+  {"ctx": "counter", "say": "Four thousand dollars a month?", "intent": "cost_echo_ctx", "note": "dead end 12 Nov 2026"},
+  {"ctx": "counter", "say": "Really? Four thousand?", "intent": "cost_echo_ctx", "note": "dead end 12 Nov 2026"},
+  {"ctx": "counter", "say": "Every month?", "intent": "cost_echo_ctx", "note": "dead end 12 Nov 2026"},
+  {"ctx": "counter", "say": "Four thousand a month?", "intent": "any", "not": ["ack_point", "give_in", "accept_deal"], "note": "dead end 12 Nov 2026"},
+  {"ctx": "closing", "say": "At what time?", "intent": "monday_time_ctx", "note": "dead end 12 Nov 2026"},
+  {"ctx": "closing", "say": "What time again?", "intent": "monday_time_ctx", "note": "dead end 12 Nov 2026"},
+  {"ctx": "closing", "say": "Same time as today?", "intent": "monday_time_ctx", "note": "dead end 12 Nov 2026"},
+  {"ctx": "closing", "say": "At what time?", "intent": "any", "not": ["monday_yes", "monday_no_ctx"], "note": "dead end 12 Nov 2026"}
 ] }

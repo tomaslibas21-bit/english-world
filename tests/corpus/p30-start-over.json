@@ -275,5 +275,13 @@
   {"ctx": "apology", "say": "Yes.", "intent": "yn:yes", "note": "logic audit 5 Nov 2026"},
   {"ctx": "make_up", "say": "No.", "intent": "yn:no", "note": "logic audit 5 Nov 2026"},
   {"ctx": "make_up", "say": "Whatever you want.", "intent": "any", "not": ["blame", "rude"], "note": "logic audit 5 Nov 2026"},
-  {"ctx": "make_up", "say": "Sorry again.", "intent": "any", "not": ["blame", "rude", "excuse"], "note": "logic audit 5 Nov 2026"}
+  {"ctx": "make_up", "say": "Sorry again.", "intent": "any", "not": ["blame", "rude", "excuse"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "make_up", "say": "What should I cook?", "intent": "q_cook", "note": "dead end 12 Nov 2026"},
+  {"ctx": "make_up", "say": "What do you want me to cook?", "intent": "q_cook", "note": "dead end 12 Nov 2026"},
+  {"ctx": "make_up", "say": "I can't today.", "intent": "cant_today", "note": "dead end 12 Nov 2026"},
+  {"ctx": "make_up", "say": "Sorry, not today.", "intent": "cant_today", "note": "dead end 12 Nov 2026"},
+  {"ctx": "make_up", "say": "I can't today.", "intent": "any", "not": ["deal_ctx"], "note": "dead end 12 Nov 2026"},
+  {"ctx": "apology", "say": "Are you still mad?", "intent": "q_mad", "note": "dead end 12 Nov 2026"},
+  {"ctx": "turn", "say": "Are you still mad at me?", "intent": "q_mad", "note": "dead end 12 Nov 2026"},
+  {"ctx": "make_up", "say": "Do you still hate me?", "intent": "q_mad", "note": "dead end 12 Nov 2026"}
 ] }

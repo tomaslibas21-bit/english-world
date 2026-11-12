@@ -15,10 +15,15 @@ npx tsx tools/export-sme.ts <spanish-master-english checkout>
 - builds this repository with `VITE_EDITION=es` for the base `/game/`, the clips from
   `https://audio.dvikalbesdainos.lt/spanish-master-en/game/audio-es/` (that course's files Worker), words saved into the
   course's flashcards (`VITE_CARDS_TARGET=fluentsteps`: the course keeps English Master's storage key and card format),
-  and a home button back to the course (`VITE_BACK_URL=/`);
+  a home button back to the course (`VITE_BACK_URL=/`), and neutral Latin American Spanish until the learner chooses
+  (`VITE_DEFAULT_VARIETY=neutral`, `src/state/variety.ts`; the game on its own starts in Mexican Spanish). The choice
+  stays in the game's key `puerto-colibri-variety`, which the course reads too: its game flashcards come in three decks
+  (México, Latinoamérica, España, the same card ids) and show the one chosen;
 - replaces the course's `public/game/`: the code, `scenes-es/` (without `ref/`), `title/`, and of the clips only their
   list (`audio-es/manifest.json`, `repair-versions.json`); Maple Harbor's `audio/`, `audio-v2/` and `scenes/` never go;
-  the course's own `public/game/fs-theme.css` is kept; `version.json` records the branch and commit;
+  the course's own `public/game/fs-theme.css` is kept; `version.json` records the branch and commit, the clips listed
+  per voice set (`es_` Mexican, `esn_` neutral, `esp_` Spain's: all three in the one `audio-es/` folder and manifest,
+  counted from `~/puerto-colibri-voicing/lines.json` when it is there) and the Spanish it starts in;
 - refuses a checkout that is not that course (it needs `workers/files/wrangler.spanish-en.jsonc`).
 
 Nothing in it touches the English edition or its English Master export (`tools/export-fluent-steps.ts`): the

@@ -44,6 +44,12 @@ export interface TownTheme {
     museumStairs?: boolean;
     /** Diego and Natalia's dinner: cochinita pibil, tortillas and agua de jamaica instead of the lasagna; Michi the cat. */
     yucatanDinner?: boolean;
+    /** (graphics round 5) The tall rooms' upper walls (theme.ts roomWallH): high windows with iron bars and a painted
+     *  greca under the vigas. */
+    upperMx?: boolean;
+    /** (graphics round 5) The last of Maple Harbor's furniture in the shops replaced: Hilos' wooden racks of huipiles
+     *  and dress forms, El Faro's tiendita shelves of bags, jars and cans, the car rental's equipales. */
+    shopsMx5?: boolean;
     /** The clothes shop: a white linen guayabera on a mannequin by the door. */
     guayabera?: boolean;
     // graphics round 2 (docs/es/TOWN.md "Graphics, round 2")
@@ -95,6 +101,16 @@ export interface TownTheme {
     /** The big halls (the airport, the museum, the hotel) and the homes: woven rugs and benches where the phone's view
      *  is pale floor, the hotel's hammock hung across a corner instead of flat on the wall, El Muelle's walls. */
     hallsMx?: boolean;
+    /** (graphics round 6) the pharmacy, the clinic, the offices, the gym and the police dressed as a Mexican town has
+     *  them (rooms6: a suero fridge and a vitrina, a planter of talavera, a boxing ring and costales, plastic chairs and
+     *  a standing fan, piñatas and papel picado, a futbolito), ceiling fans; the airport's halls a planter with bancas
+     *  each side of the way in and its high windows clear of the welcome frieze; the car rental's equipales where the
+     *  door shows them. */
+    rooms6?: boolean;
+    /** (graphics round 7) the offices' own furniture: Línea Clara's and Brotecito's desks, chairs, tables and sofa as a
+     *  Caribbean Mexican office's (cedar desks, chairs of wood and bejuco, parota tables, a cane settee, equipales,
+     *  talavera on the counters), the glass rooms framed in cedar; each piece where Maple Harbor's was, with its collider. */
+    offices7?: boolean;
   };
   /** People who stand outdoors in this edition (added to layout.ts OUTDOOR_NPCS; a room that has them leaves them out). */
   outdoorNpcs: OutdoorSpot[];
@@ -209,6 +225,14 @@ export interface TownTheme {
   /** (graphics round 4) The meadow round the cenote as scrub: shrubs and tall grass over x0…x1, z0…z1 but in the `clear`
    *  circles (x, z, radius), and ceibas over the selva (x, z) (mexican.ts `meadow`; null: bare grass). */
   meadow: { x0: number; x1: number; z0: number; z1: number; clear: [number, number, number][]; ceibas: [number, number][] } | null;
+  /** (graphics round 5) Adoquín (cobbled stone) on these stretches of street (x0, z0, x1, z1: the road between its
+   *  curbs), painted into the ground's own material (town.ts withGrain: no draw call); and a few things on the
+   *  sidewalks there (mexican.ts `sidewalkProps`: trash bins on posts, bollards, a shoeshine stand: x, z, heading)
+   *  (null: asphalt). */
+  /** (graphics round 5) The townspeople (ambient.ts) drawn in a version with a third of the triangles farther than this
+   *  from the camera (metres; null: always whole). */
+  farPeople: number | null;
+  adoquin: { streets: [number, number, number, number][]; bins: [number, number, number][]; bolardos: [number, number, number, number][]; bolero: [number, number, number] | null } | null;
   /** A cenote in the meadow beyond the town's west edge (its water's middle and its painted sign): seen from the ends
    *  of the streets, not reached on foot. */
   cenote: { x: number; z: number; sign: string } | null;
@@ -291,7 +315,13 @@ export interface TownTheme {
   /** The light outdoors graded for this town (styleScene.ts; the rooms keep the game's): the sun's color, the tone
    *  curve's exposure, the sky's zenith, middle and horizon, the fog's color (the sea fades into it too), the
    *  hemisphere's sky and ground colors, and how much bigger the clouds are (null: Maple Harbor's light). */
-  light: { sun: string; exposure: number; sky: [string, string, string]; fog: string; hemi: [string, string]; clouds: number } | null;
+  light: {
+    sun: string; exposure: number; sky: [string, string, string]; fog: string; hemi: [string, string]; clouds: number;
+    /** (graphics round 6) a later sun: where it shines from (offset from the player, as Game.ts's (-40, 70, 30)), the
+     *  sun's and the hemisphere's intensities outdoors, and the sky dome painted (styleScene.ts `skyDome`): the sun's
+     *  warm halo in `glow` and a band of fair-weather cumulus over the horizon. Unset: round 1's noon. */
+    late?: { at: [number, number, number]; sunI: number; hemiI: number; glow: string; clouds: [string, string] };
+  } | null;
   /** Townspeople sitting or standing (not walking) farther than this from the player keep their pose (ambient.ts
    *  `holdPose`: their matrices and skeleton left as they are): the edition's added vendors, sitters and pairs cost a
    *  frame next to nothing where they are too far to see breathe (null: all of them are animated every frame, as in
@@ -413,6 +443,8 @@ export const THEME: TownTheme = {
   beachLife: false,
   poleFade: null,
   meadow: null,
+  adoquin: null,
+  farPeople: null,
   cenote: null,
   ruins: null,
   sea: null,

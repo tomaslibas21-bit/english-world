@@ -124,7 +124,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .objective-card .kicker { font-size: 12px; font-weight: 900; letter-spacing: 0.08em; color: var(--accent); text-transform: uppercase; display: flex; gap: 8px; align-items: center; min-height: 20px; }
 .objective-card .kicker-label { display: inline-flex; align-items: center; gap: 6px; }
 .objective-card .collapse-btn {
-  margin: -6px -7px -6px auto; border: 0; background: none; color: var(--ink-faint); width: 32px; height: 32px; border-radius: 10px;
+  position: relative; margin: -6px -7px -6px auto; border: 0; background: none; color: var(--ink-faint); width: 32px; height: 32px; border-radius: 10px;
   display: grid; place-items: center; transition: background-color 0.15s, color 0.15s;
 }
 .objective-card .collapse-btn:hover { background: rgba(31, 42, 51, 0.06); color: var(--ink-soft); }
@@ -178,7 +178,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   background: rgba(255,255,255,0.16); border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 6px; padding: 0 5px;
   font-family: var(--ui); font-weight: 800; vertical-align: 0.05em; line-height: 1;
 }
-.help-strip button { display: inline-flex; align-items: center; gap: 3px; background: none; border: 0; color: #cfe8ff; font-weight: 800; padding: 1px 4px; margin-left: 4px; border-radius: 6px; }
+.help-strip button { position: relative; display: inline-flex; align-items: center; gap: 3px; background: none; border: 0; color: #cfe8ff; font-weight: 800; padding: 1px 4px; margin-left: 4px; border-radius: 6px; }
 .help-strip button:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
 
 .fade { position: fixed; inset: 0; background: #0e1419; pointer-events: none; z-index: 40; transition: opacity 0.3s ease; }
@@ -232,7 +232,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .slow-toggle:disabled { cursor: default; opacity: 0.85; }
 .head-actions { display: flex; gap: 4px; flex: none; }
 .close-x {
-  border: 0; background: rgba(31, 42, 51, 0.055); border-radius: 12px; width: 38px; height: 38px; flex: none;
+  border: 0; background: rgba(31, 42, 51, 0.055); border-radius: 12px; width: 44px; height: 44px; flex: none;
   display: grid; place-items: center; color: var(--ink-soft); transition: background-color 0.15s, color 0.15s, transform 0.1s;
 }
 .close-x:hover { background: rgba(31, 42, 51, 0.1); color: var(--ink); }
@@ -318,7 +318,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .msg .meta span { margin-right: 3px; }
 .msg .meta button {
   border: 0; background: rgba(31, 111, 120, 0.08); color: var(--accent); border-radius: 10px; min-width: 40px; min-height: 30px; padding: 0 9px;
-  display: inline-grid; place-items: center; transition: background-color 0.15s, transform 0.1s;
+  display: inline-grid; place-items: center; transition: background-color 0.15s, transform 0.1s; position: relative;
 }
 .msg .meta button:hover { background: rgba(31, 111, 120, 0.16); }
 .msg .meta button:active { transform: scale(0.93); }
@@ -358,8 +358,8 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   font-family: var(--ui); font-size: 0.8em; font-weight: 800; line-height: 1; color: var(--accent); opacity: 0.7; cursor: pointer;
   transition: opacity 0.15s;
 }
-/* a 28 × 28 px target round the small glyph, reaching out past the sentence's end rather than over the word */
-.nat-star::before { content: ""; position: absolute; left: -6px; top: 50%; width: 28px; height: 28px; margin-top: -14px; }
+/* a 44 × 44 px target round the small glyph, reaching out past the sentence's end rather than over the word */
+.nat-star::before { content: ""; position: absolute; left: -6px; top: 50%; width: 44px; height: 44px; margin-top: -22px; }
 .nat-star:hover, .nat-star[aria-expanded="true"] { opacity: 1; }
 .nat-tipbox {
   position: fixed; z-index: 35; width: max-content; max-width: min(260px, calc(100vw - 32px));
@@ -385,7 +385,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .transcript { min-height: 28%; }
 .yt-title { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 8px; margin-bottom: 8px; min-height: 36px; }
 .yt-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
-.say-toggles .toggle { min-height: 30px; padding: 4px 10px; }
+.say-toggles .toggle { min-height: 30px; min-width: 44px; padding: 4px 10px; position: relative; }
 .say-toggles .short { display: none; }
 .yt-title b { display: inline-flex; align-items: center; gap: 8px; font-size: 0.88em; color: var(--accent); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 900; }
 .yt-title.phase-you b::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: ytpulse 1.8s ease-out infinite; }
@@ -597,21 +597,32 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .switch.on { background: var(--accent); }
 .switch.on::after { left: 28px; }
 .seg { display: inline-flex; flex-wrap: wrap; max-width: 100%; background: #eef0f2; border-radius: 12px; padding: 3px; }
-.seg button { border: 0; background: none; border-radius: 9px; padding: 6px 12px; font-weight: 800; color: var(--ink-soft); transition: background-color 0.15s, color 0.15s; }
+.seg button { border: 0; background: none; border-radius: 9px; padding: 6px 12px; min-height: 44px; min-width: 44px; font-weight: 800; color: var(--ink-soft); transition: background-color 0.15s, color 0.15s; }
 .seg button:hover { color: var(--ink); }
 .seg button.on { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+/* the Spanish edition's "Which Spanish" switch: one full-width row on a phone (three names don't fit side by side at
+   the default padding, and España used to drop to a second line by itself), 44 px tall to tap */
+.seg.seg-variety { display: flex; width: 100%; }
+.seg-variety button { flex: 1 1 auto; min-height: 44px; padding: 6px 8px; }
 .info-box { background: #f1f6f7; border: 1px solid #e1ecee; border-radius: 14px; padding: 12px 14px; font-size: 0.88em; line-height: 1.55; color: #3d4a55; }
 
+/* Tap targets of at least 44 × 44 px: small controls keep their look and get a larger invisible hit area, centred
+   on them (each has position: relative). The switches, the replay and "slower" buttons, the answer toggles, the task
+   card's collapse button and the help strip's "Got it". */
+.switch::before, .msg .meta button::before, .say-toggles .toggle::before, .objective-card .collapse-btn::before, .help-strip button::before {
+  content: ""; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%);
+}
+
 /* ---------- touch controls ---------- */
-.joy { position: fixed; left: 18px; bottom: 18px; width: 140px; height: 140px; border-radius: 50%; background: rgba(255,255,255,0.28); border: 3px solid rgba(255,255,255,0.6); z-index: 12; touch-action: none; }
+.joy { position: fixed; left: calc(18px + env(safe-area-inset-left)); bottom: calc(18px + env(safe-area-inset-bottom)); width: 140px; height: 140px; border-radius: 50%; background: rgba(255,255,255,0.28); border: 3px solid rgba(255,255,255,0.6); z-index: 12; touch-action: none; }
 .joy .knob { position: absolute; left: 50%; top: 50%; width: 62px; height: 62px; margin: -31px 0 0 -31px; border-radius: 50%; background: rgba(255,255,255,0.9); box-shadow: 0 3px 10px rgba(0,0,0,0.25); }
 .joy, .joy *, .jump-btn, .act-btn { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
-.prompt.touch { left: auto; right: 16px; bottom: 132px; transform: none; font-size: 0.95em; padding: 8px 14px; max-width: calc(100vw - 190px); }
+.prompt.touch { left: auto; right: calc(16px + env(safe-area-inset-right)); bottom: calc(132px + env(safe-area-inset-bottom)); transform: none; font-size: 0.95em; padding: 8px 14px; max-width: calc(100vw - 190px); }
 .prompt.touch kbd { display: none; }
 .joy.run { border-color: rgba(255, 214, 102, 0.95); background: rgba(255, 214, 102, 0.22); }
-.jump-btn { position: fixed; right: 26px; bottom: 34px; width: 74px; height: 74px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.7); background: rgba(255,255,255,0.3); color: #fff; z-index: 12; touch-action: none; display: grid; place-items: center; padding: 0; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.25)); }
+.jump-btn { position: fixed; right: calc(26px + env(safe-area-inset-right)); bottom: calc(34px + env(safe-area-inset-bottom)); width: 74px; height: 74px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.7); background: rgba(255,255,255,0.3); color: #fff; z-index: 12; touch-action: none; display: grid; place-items: center; padding: 0; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.25)); }
 .jump-btn:active { background: rgba(255,255,255,0.55); }
-.act-btn { position: fixed; right: 22px; bottom: 26px; width: 92px; height: 92px; border-radius: 50%; border: 0; background: var(--accent); color: #fff; font-weight: 900; font-size: 0.95em; z-index: 12; box-shadow: 0 5px 0 rgba(0,0,0,0.2); }
+.act-btn { position: fixed; right: calc(22px + env(safe-area-inset-right)); bottom: calc(26px + env(safe-area-inset-bottom)); width: 92px; height: 92px; border-radius: 50%; border: 0; background: var(--accent); color: #fff; font-weight: 900; font-size: 0.95em; z-index: 12; box-shadow: 0 5px 0 rgba(0,0,0,0.2); }
 
 @media (max-width: 900px) {
   .convo {
@@ -685,7 +696,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .toolbar-tools { grid-template-rows: repeat(2, 46px); gap: 8px; }
   .toolbar .icon-btn { width: 46px; height: 46px; }
   .minimap { width: 88px; height: 88px; }
-  .objective-card { max-width: calc(100vw - 350px); max-height: calc(100dvh - 180px); overflow-y: auto; }
+  .objective-card { max-width: calc(100vw - 350px); max-height: calc(100dvh - 180px - env(safe-area-inset-bottom)); overflow-y: auto; }
 }
 @media (max-width: 480px) {
   body { font-size: calc(17px * var(--scale)); }

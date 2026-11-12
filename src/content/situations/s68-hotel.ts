@@ -478,6 +478,9 @@ export const hotel: SituationDef = {
     gym: [t("Yes, | on | the | second | floor. | It's | open | 24 | hours.", "Taip, | — | — | antrame | aukšte. | Jis yra | atidarytas | 24 | valandas.", "Taip, antrame aukšte. Jis veikia visą parą.",
       { say: "Yes, on the second floor. It's open twenty-four hours.", flags: { 1: "“on”: no separate word; the locative antrame aukšte carries it." } })],
     pool: [t("Sorry, | we | don't have | a | pool.", "Atsiprašau, | mes | neturime | — | baseino.", "Atsiprašau, baseino neturime.")],
+    // 12 Nov 2026, a new line: the answer to "How much is parking?"
+    parking_price: [t("It's | $15 | a | night.", "Tai kainuoja | 15 $ | — | už naktį.", "Tai kainuoja 15 $ už naktį.",
+      { say: "It's fifteen dollars a night.", flags: { 0: "“It's”: kainuoja (costs) carries the copula here." } })],
     parking: [t("Yes, | parking | is | $15 | a | night.", "Taip, | automobilio statymas | kainuoja | 15 $ | — | už naktį.", "Taip, automobilio statymas – 15 $ už naktį.",
       { say: "Yes, parking is fifteen dollars a night.", flags: { 2: "“is”: kainuoja (costs) carries the copula here." } })],
     view_offer: [t("I | have | a | room | with | an | ocean | view | for | $20 | more | per | night. | Would | you | like | it?", "Aš | turiu | — | kambarį | su | — | vandenyno | vaizdu | už | 20 $ | daugiau | už | naktį. | Ar | jūs | norėtumėte | jo?",
@@ -988,7 +991,8 @@ export const hotel: SituationDef = {
     ask_elevator(c) { c.say("elevator"); },
     ask_gym(c) { c.say("gym"); },
     ask_pool(c) { c.say("pool"); },
-    ask_parking(c) { c.say("parking"); },
+    // "How much is parking?" isn't a yes/no question: no "Yes" (12 Nov 2026)
+    ask_parking(c) { c.say(/\bhow much\b/i.test(c.heard || "") ? "parking_price" : "parking"); },
     ask_view(c) { if (c.s.room === "518") { c.say("room_518"); return; } c.say("view_offer"); c.expect(viewPending()); },
     ask_quiet(c) { c.say("quiet_ok"); },
     ask_twobeds(c) {
@@ -1042,6 +1046,8 @@ export const hotel: SituationDef = {
   },
 
   tests: [
+    // 12 Nov 2026: "How much is parking?" gets the price without "Yes"
+    { say: "How much is parking?", intent: "ask_parking" },
     // logic audit (5 Nov 2026): the $100 cash deposit instead of a card
     { say: "Here's a hundred dollars.", intent: "deposit_ctx", step: "card" },
     { say: "I'll leave a cash deposit.", intent: "deposit_ctx", step: "card" },

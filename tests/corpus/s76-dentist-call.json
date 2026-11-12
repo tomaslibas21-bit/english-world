@@ -256,5 +256,14 @@
   {"ctx": "more", "say": "What time is my appointment?", "intent": "appt_when_q", "note": "logic audit 5 Nov 2026"},
   {"ctx": "more", "say": "Yes, one question.", "intent": "have_question", "note": "logic audit 5 Nov 2026"},
   {"ctx": "slot", "say": "Maybe.", "intent": "any", "not": ["accept"], "note": "logic audit 5 Nov 2026"},
-  {"ctx": "slot", "say": "What time?", "intent": "any", "not": ["accept"], "note": "logic audit 5 Nov 2026"}
+  {"ctx": "slot", "say": "What time?", "intent": "any", "not": ["accept"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "slot", "say": "Do you have anything on November 12th?", "intent": "date_req", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "slot", "say": "Could I come on December 3rd?", "intent": "date_req", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "slot", "say": "What about the 20th?", "intent": "date_req", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "slot", "say": "Is November 15th available?", "intent": "date_req", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "help", "say": "Who am I speaking with?", "intent": "who_q", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "slot", "say": "Sorry, who is this?", "intent": "who_q", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "name", "say": "Sorry, what was your name?", "intent": "who_q", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "dob", "say": "November 12th, 1990.", "intent": "any", "not": ["date_req"], "note": "dead ends 12 Nov 2026"},
+  {"ctx": "name", "say": "My name is Tomas.", "intent": "any", "not": ["who_q"], "note": "dead ends 12 Nov 2026"}
 ]}

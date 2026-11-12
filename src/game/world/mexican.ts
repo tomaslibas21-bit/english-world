@@ -228,23 +228,23 @@ export function kiosk(parts: Part[], col: Colliders, atlas: SignAtlas, x: number
 
 /** Palapas on the sand: a thatched umbrella on a wooden pole, with two wooden loungers in front of it (towards the
  *  sea) and a towel on one. */
-export function palapas(parts: Part[], col: Colliders, spots: [number, number][], thatch = false): [number, number][] {
+export function palapas(parts: Part[], col: Colliders, spots: [number, number][], thatch = false, roofs: Part[] = parts): [number, number][] {
   const r = rand(91);
   const towels = ["#e4007c", "#00a6a6", "#f6a800", "#ff5a36", "#1f6fd1"];
   const loungers: [number, number][] = [];
   spots.forEach(([x, z], i) => {
     parts.push([new THREE.CylinderGeometry(0.09, 0.11, 2.7, 6, 1, true).translate(x, 1.35, z), WOOD]);
-    parts.push([new THREE.ConeGeometry(2.1, 1.05, 10).translate(x, 3.05, z), THATCH]);
-    parts.push([new THREE.CylinderGeometry(2.1, 2.2, 0.3, 10, 1, true).translate(x, 2.4, z), THATCH_DARK]);
-    parts.push([new THREE.ConeGeometry(0.4, 0.4, 8).translate(x, 3.72, z), THATCH_DARK]);
+    roofs.push([new THREE.ConeGeometry(2.1, 1.05, 10).translate(x, 3.05, z), THATCH]);
+    roofs.push([new THREE.CylinderGeometry(2.1, 2.2, 0.3, 10, 1, true).translate(x, 2.4, z), THATCH_DARK]);
+    roofs.push([new THREE.ConeGeometry(0.4, 0.4, 8).translate(x, 3.72, z), THATCH_DARK]);
     if (thatch) {
       // (graphics round 4) the thatch in layers, a second, darker skirt of palm leaves over the first, and a ragged
       // fringe of leaf ends round its edge
-      parts.push([new THREE.ConeGeometry(1.55, 0.75, 10, 1, true).rotateY(0.3).translate(x, 3.3, z), THATCH_DARK]);
-      parts.push([new THREE.ConeGeometry(1.0, 0.5, 9, 1, true).rotateY(0.6).translate(x, 3.55, z), THATCH]);
+      roofs.push([new THREE.ConeGeometry(1.55, 0.75, 10, 1, true).rotateY(0.3).translate(x, 3.3, z), THATCH_DARK]);
+      roofs.push([new THREE.ConeGeometry(1.0, 0.5, 9, 1, true).rotateY(0.6).translate(x, 3.55, z), THATCH]);
       for (let k = 0; k < 18; k++) {
         const a = (k / 18) * Math.PI * 2 + (k % 2) * 0.08, rr = 2.12 + (k % 3) * 0.05;
-        parts.push([new THREE.ConeGeometry(0.17, 0.4 + (k % 3) * 0.1, 4).rotateX(Math.PI).translate(x + Math.cos(a) * rr, 2.12 - (k % 3) * 0.05, z + Math.sin(a) * rr), k % 2 ? THATCH : THATCH_DARK]);
+        roofs.push([new THREE.ConeGeometry(0.17, 0.4 + (k % 3) * 0.1, 4).rotateX(Math.PI).translate(x + Math.cos(a) * rr, 2.12 - (k % 3) * 0.05, z + Math.sin(a) * rr), k % 2 ? THATCH : THATCH_DARK]);
       }
     }
     col.addCircle(x, z, 0.16);
@@ -757,89 +757,193 @@ function jungle(parts: Part[], r: () => number, x: number, y: number, z: number,
   for (let i = 0; i < 3; i++) parts.push([new THREE.IcosahedronGeometry(s * (0.55 + r() * 0.35), 0).scale(1, 0.8, 1).translate(x + (r() - 0.5) * s, y + s * 0.4 + r() * s * 0.3, z + (r() - 0.5) * s), greens[Math.floor(r() * greens.length)]]);
 }
 
-/** A cenote in the meadow west of town (TOWN.md task 8): turquoise water at the foot of a curved limestone cliff with a
- *  dark cave mouth, vines hanging and the jungle on top, a low rim of stones on the town's side (east) with a wooden
- *  deck and steps down to the water, and a palapa where the entrance is paid, with its painted sign. One part of the
- *  town's merged meshes (the one that casts no shadow: it is seen from afar, beyond the town's edge); nothing to walk
- *  on. */
-export function cenote(parts: Part[], atlas: SignAtlas, x: number, z: number, sign: string) {
-  const r = rand(808);
-  const R = 5.2;
-  // the water: dark at the edge, turquoise, light over the white sand in the middle
-  parts.push([new THREE.CircleGeometry(R + 0.4, 32).rotateX(-Math.PI / 2).translate(x, 0.03, z), "#13808a"]);
-  parts.push([new THREE.CircleGeometry(R - 0.3, 32).rotateX(-Math.PI / 2).translate(x, 0.04, z), "#22aeb0"]);
-  parts.push([new THREE.CircleGeometry(R * 0.5, 24).rotateX(-Math.PI / 2).translate(x + 0.8, 0.05, z), "#5fd3c8"]);
-  // the cliff round the far side (west), higher in the middle, leaning in over the water; the cave's dark mouth in it
-  for (let i = 0; i <= 16; i++) {
-    const a = Math.PI * 0.45 + (i / 16) * Math.PI * 1.1; // from the north-west round to the south-west
-    const k = Math.sin(((i / 16)) * Math.PI); // highest in the middle
-    for (const [rr, y, s] of [[R + 0.9, 0.6, 2.2], [R + 1.4, 1.6 + k * 0.8, 2.0], [R + 0.6, 2.6 + k * 1.0, 1.7]] as [number, number, number][]) {
-      stone(parts, r, x + Math.cos(a) * rr, y * (0.6 + k * 0.5), z + Math.sin(a) * rr, s + r() * 0.6, 0.8);
-    }
-    if (i % 2 === 0) jungle(parts, r, x + Math.cos(a) * (R + 2.2), 2.6 + k * 1.8, z + Math.sin(a) * (R + 2.2), 1.6 + r());
-    if (i % 3 === 1) parts.push([box(0.06, 1.2 + r() * 1.2, 0.06, x + Math.cos(a) * (R + 0.2), 2.2 + k * 0.8, z + Math.sin(a) * (R + 0.2)), "#3f7d3a"]); // a vine
+/** A coconut palm for the far scenery (the cenote's rim, the ruins), merged with it: a trunk of six segments leaning
+ *  `lean` (the top's offset as a share of the height) towards `dir` (radians, 0: +x), curving out more near the top,
+ *  a crown of nine drooping fronds, coconuts under them. About 200 triangles. */
+function farPalm(parts: Part[], r: () => number, x: number, z: number, h: number, dir: number, lean: number) {
+  const dx = Math.cos(dir), dz = Math.sin(dir), N = 6, up = new THREE.Vector3(0, 1, 0), q = new THREE.Quaternion();
+  const at = (t: number) => new THREE.Vector3(x + dx * lean * h * t * t, h * t, z + dz * lean * h * t * t);
+  for (let i = 0; i < N; i++) {
+    const A = at(i / N), B = at((i + 1) / N), v = B.clone().sub(A), t = i / N;
+    q.setFromUnitVectors(up, v.clone().normalize());
+    parts.push([new THREE.CylinderGeometry(0.16 - t * 0.05, 0.2 - t * 0.05, v.length() + 0.04, 6, 1, true).applyQuaternion(q).translate((A.x + B.x) / 2, (A.y + B.y) / 2, (A.z + B.z) / 2), i % 2 ? "#8b6a4f" : "#9a7a5c"]);
   }
-  parts.push([new THREE.CircleGeometry(1.6, 16, 0, Math.PI).scale(1.3, 0.75, 1).rotateY(Math.PI / 2).translate(x - R - 0.25, 0.05, z), "#1d2a2c"]);
-  // the low rim on the town's side, and the deck with its steps down to the water
-  for (let i = 0; i < 12; i++) {
-    const a = -Math.PI * 0.55 + (i / 11) * Math.PI * 1.1;
-    if (Math.abs(a) < 0.22) continue; // the deck
-    stone(parts, r, x + Math.cos(a) * (R + 0.5), 0.15, z + Math.sin(a) * (R + 0.5), 0.9 + r() * 0.5, 0.5);
+  const T = at(1);
+  for (let k = 0; k < 9; k++) {
+    const a = (k / 9) * Math.PI * 2 + r() * 0.4, len = 2.6 + r() * 0.8, droop = 0.25 + (k % 3) * 0.22;
+    const f = new THREE.ConeGeometry(0.42, len, 4, 1).translate(0, len / 2, 0).scale(1, 1, 0.16).rotateX(Math.PI / 2 + droop).rotateY(a).translate(T.x, T.y, T.z);
+    parts.push([f, ["#3f8f3a", "#4fa64a", "#57b04f"][k % 3]]);
   }
-  const WOOD = "#8a6a4a", DARK = "#6b4f36";
-  parts.push([box(2.2, 0.1, 1.8, x + R + 0.6, 0.55, z), WOOD]);
-  for (const [px, pz] of [[0.9, 0.8], [0.9, -0.8], [-0.9, 0.8], [-0.9, -0.8]]) parts.push([box(0.12, 0.6, 0.12, x + R + 0.6 + px, 0.25, z + pz), DARK]);
-  for (let i = 0; i < 3; i++) parts.push([box(0.4, 0.06, 1.4, x + R - 0.75 - i * 0.4, 0.42 - i * 0.14, z), WOOD]);
-  for (const s of [-1, 1]) {
-    parts.push([box(0.06, 0.9, 0.06, x + R + 1.6, 0.95, z + s * 0.85), DARK], [box(0.06, 0.9, 0.06, x + R - 0.4, 0.95, z + s * 0.85), DARK]);
-    parts.push([box(2.1, 0.06, 0.06, x + R + 0.6, 1.38, z + s * 0.85), DARK]);
-  }
-  // the palapa where the entrance is paid, and the sign on a post facing the town
-  const hx = x + R + 4.2, hz = z + 4.4;
-  for (const [px, pz] of [[1.2, 1.0], [1.2, -1.0], [-1.2, 1.0], [-1.2, -1.0]]) parts.push([cyl(0.08, 0.1, 2.3, hx + px, 1.15, hz + pz, 6), WOOD]);
-  parts.push([box(1.8, 0.95, 0.5, hx, 0.475, hz + 0.7), "#2a9d8f"], [box(1.9, 0.06, 0.6, hx, 0.98, hz + 0.7), "#c08a52"]);
-  parts.push([new THREE.ConeGeometry(2.2, 1.4, 4).rotateY(Math.PI / 4).scale(1.15, 1, 1).translate(hx, 2.95, hz), THATCH]);
-  parts.push([new THREE.ConeGeometry(0.5, 0.5, 4).rotateY(Math.PI / 4).translate(hx, 3.75, hz), THATCH_DARK]);
-  const sx = x + R + 5.6, sz = z - 1.6;
-  parts.push([cyl(0.06, 0.06, 1.7, sx, 0.85, sz, 6), WOOD]);
-  atlas.add("cenote:" + sign, 512, 192, drawPainted(sign, "Nado · Snorkel · Entrada", "#e9f7f2", "#13808a", "#1f4f8f"), 1.8, 0.68, sx + 0.05, 1.6, sz, Math.PI / 2);
-  for (const [jx, jz, s] of [[x + R + 6.5, z + 7.5, 2.4], [x + 2, z + R + 2.6, 2.2], [x + 3, z - R - 2.4, 2.0], [x + R + 7, z - 5, 1.8]] as [number, number, number][]) jungle(parts, r, jx, 0, jz, s);
+  for (let i = 0; i < 4; i++) parts.push([new THREE.OctahedronGeometry(0.17, 0).translate(T.x + Math.cos(i * 1.6) * 0.25, T.y - 0.3, T.z + Math.sin(i * 1.6) * 0.25), i % 2 ? "#6b4a2b" : "#6f8a2f"]);
 }
 
-/** Small Mayan ruins on a rocky point by the sea west of the beach (TOWN.md task 8), in Tulum's way: a stepped platform
- *  of grey limestone on the rocks, a little temple on it with a dark doorway between two columns and a cornice, stairs
- *  up from the land, a smaller shrine lower down, fallen stones; the temple faces the land (`rot` 0: +z). */
-export function ruins(parts: Part[], x: number, z: number) {
-  const r = rand(919);
-  const GREY = ["#c9c1aa", "#b9b09a", "#d6cfbb", "#a9a08a"], DARK = "#3a3530";
-  // the point: big rocks from the shore out into the sea, highest under the platform
-  for (let i = 0; i < 16; i++) {
-    const a = r() * Math.PI * 2, d = r() * 7;
-    const rx = x + Math.cos(a) * d * 1.1, rz = z - 3 + Math.sin(a) * d - r() * 3;
-    stone(parts, r, rx, -0.4 + Math.max(0, 2.2 - d * 0.35), rz, 3.5 + r() * 2.5, 0.75, ["#9a9483", "#8d8778", "#a8a190"][i % 3]);
+/** A cenote in the meadow west of town (TOWN.md task 8; graphics round 6), seen from the end of avenida Juárez 25–40 m
+ *  away: turquoise water at the foot of a curved limestone cliff round its far side (west), high in the middle and
+ *  leaning out over the water at the top, a dark cave mouth in it, a curtain of hanging roots and vines from its lip to
+ *  the water, ferns and the selva on top; on the town's side (east) a raised rim of stones and a wooden deck over it with
+ *  a rail and steps down into the water, inner tubes and a line of buoys on the water; coconut palms leaning over it; the
+ *  taquilla's palapa with its painted sign facing the town; a sacbé (a white limestone path with an edge of stones) out
+ *  across the meadow from the mirador to the deck. One part of the town's merged meshes (the one that casts no shadow:
+ *  it is seen from afar, beyond the town's edge); nothing to walk on. */
+export function cenote(parts: Part[], atlas: SignAtlas, x: number, z: number, sign: string) {
+  const r = rand(808);
+  const R = 6.0;
+  // the water: dark at the edge, turquoise, light over the white sand in the middle
+  parts.push([new THREE.CircleGeometry(R + 0.5, 36).rotateX(-Math.PI / 2).translate(x, 0.03, z), "#0f6f7c"]);
+  parts.push([new THREE.CircleGeometry(R - 0.3, 36).rotateX(-Math.PI / 2).translate(x, 0.04, z), "#1fa9b0"]);
+  parts.push([new THREE.CircleGeometry(R * 0.5, 24).rotateX(-Math.PI / 2).translate(x + 0.9, 0.05, z), "#5fd3c8"]);
+  // the cliff round the far side (west), highest in the middle, its top rows leaning in over the water
+  const top = (k: number) => 3.4 + k * 2.4;
+  for (let i = 0; i <= 18; i++) {
+    const a = Math.PI * 0.42 + (i / 18) * Math.PI * 1.16; // from the north-west round to the south-west
+    const k = Math.sin((i / 18) * Math.PI), T = top(k);
+    for (const [rr, f, sz] of [[R + 1.0, 0.12, 2.3], [R + 1.4, 0.4, 2.2], [R + 0.9, 0.66, 1.9], [R + 0.25, 0.9, 1.7]] as [number, number, number][]) {
+      // (the bottom row wet and dark, moss here and there higher up)
+      stone(parts, r, x + Math.cos(a) * rr, T * f, z + Math.sin(a) * rr, sz + r() * 0.7, 0.85, f < 0.2 ? ["#9a9179", "#8e8670"][i % 2] : (i * 7 + f * 10) % 5 < 1 ? "#93a06a" : undefined);
+    }
+    if (i % 2 === 0) jungle(parts, r, x + Math.cos(a) * (R + 2.4), T + 0.2, z + Math.sin(a) * (R + 2.4), 1.7 + r());
+    // the hanging roots and vines in bunches under the lip where the cliff is high: a few down to the water, most
+    // ending on the way, a vine with its leaves among them
+    if (k > 0.3 && i % 2 === 1) {
+      const a0 = a + (r() - 0.5) * 0.1, n = 3 + Math.floor(r() * 3);
+      for (let m = 0; m < n; m++) {
+        const aa = a0 + (m - n / 2) * 0.035, rr = R - 0.25 - r() * 0.45, y1 = T * 0.9, y0 = m === 0 ? 0.12 : y1 * (0.25 + r() * 0.6);
+        const vine = m === n - 1;
+        parts.push([box(vine ? 0.06 : 0.035, y1 - y0, vine ? 0.06 : 0.035, x + Math.cos(aa) * rr, (y0 + y1) / 2, z + Math.sin(aa) * rr), vine ? "#3f7d3a" : ["#5a4232", "#4a3628", "#6b5040"][m % 3]]);
+        if (vine) for (let l = 0; l < 4; l++) parts.push([box(0.26, 0.16, 0.05, x + Math.cos(aa) * (rr - 0.05), y0 + (y1 - y0) * (0.1 + l * 0.25), z + Math.sin(aa) * (rr - 0.05)).rotateY(0), ["#4f9a3e", "#5aa83c"][l % 2]]);
+      }
+    }
   }
-  // the platform in two tiers, the stairs up from the land (south), the temple on top
+  // the cave's dark mouth, under the cliff's highest part
+  parts.push([new THREE.CircleGeometry(2.0, 16, 0, Math.PI).scale(1.25, 1.0, 1).rotateY(Math.PI / 2).translate(x - R + 0.45, 0.04, z), "#2a4446"]);
+  parts.push([new THREE.CircleGeometry(1.7, 16, 0, Math.PI).scale(1.2, 0.95, 1).rotateY(Math.PI / 2).translate(x - R + 0.5, 0.04, z), "#0e1a1c"]);
+  for (const [oz, oy, sz] of [[-2.3, 0.7, 1.4], [2.3, 0.7, 1.4], [-1.4, 2.0, 1.3], [1.4, 2.0, 1.3], [0, 2.35, 1.5]] as [number, number, number][]) stone(parts, r, x - R + 0.15, oy, z + oz, sz, 0.8);
+  // the raised rim on the town's side, the deck's gap in it
+  for (let i = 0; i < 15; i++) {
+    const a = -Math.PI * 0.58 + (i / 14) * Math.PI * 1.16;
+    if (Math.abs(a) < 0.26) continue; // the deck
+    stone(parts, r, x + Math.cos(a) * (R + 0.7), 0.3, z + Math.sin(a) * (R + 0.7), 1.4 + r() * 0.6, 0.55);
+    if (i % 3 === 0) jungle(parts, r, x + Math.cos(a) * (R + 1.9), 0, z + Math.sin(a) * (R + 1.9), 0.9 + r() * 0.4);
+  }
+  // the deck over the rim, its rail, the steps down into the water
+  const WOOD = "#8a6a4a", DARK = "#6b4f36", dx = x + R + 0.4;
+  parts.push([box(3.2, 0.12, 2.6, dx, 0.8, z), WOOD]);
+  for (let i = 0; i < 6; i++) parts.push([box(0.03, 0.125, 2.6, dx - 1.5 + i * 0.6, 0.81, z), DARK]); // the boards' joints
+  for (const [px, pz] of [[1.4, 1.15], [1.4, -1.15], [-1.4, 1.15], [-1.4, -1.15]]) parts.push([box(0.14, 0.8, 0.14, dx + px, 0.4, z + pz), DARK]);
+  for (let i = 0; i < 4; i++) parts.push([box(0.42, 0.08, 1.2, dx - 1.8 - i * 0.4, 0.62 - i * 0.17, z), WOOD]);
+  for (const s of [-1, 1]) {
+    for (const px of [-1.5, -0.5, 0.5, 1.5]) parts.push([box(0.07, 0.95, 0.07, dx + px, 1.32, z + s * 1.25), DARK]);
+    parts.push([box(3.1, 0.07, 0.07, dx, 1.78, z + s * 1.25), DARK]);
+  }
+  // on the water: three inner tubes, a line of buoys across
+  for (const [ox, oz, c] of [[-1.6, 2.2, "#f2c14e"], [-3.4, -1.4, "#e45b7f"], [0.6, -2.8, "#ff8c42"]] as [number, number, string][]) {
+    parts.push([new THREE.TorusGeometry(0.42, 0.16, 6, 12).rotateX(Math.PI / 2).translate(x + ox, 0.1, z + oz), c]);
+  }
+  for (let i = 0; i <= 10; i++) {
+    const t = i / 10, bx = x + R - 1.0 - t * (2 * R - 2.4), bz = z - 3.6 + Math.sin(t * Math.PI) * 0.6;
+    parts.push([new THREE.SphereGeometry(0.13, 6, 4).translate(bx, 0.1, bz), i % 2 ? "#ffffff" : "#e63946"]);
+    if (i < 10) parts.push([box((2 * R - 2.4) / 10, 0.02, 0.02, bx - (2 * R - 2.4) / 20, 0.1, bz), "#f4f1ea"]);
+  }
+  // coconut palms on the rim leaning over the water, and two by the taquilla
+  for (const [px, pz, h, lean] of [[x + 2.5, z + R + 1.6, 8.5, 0.32], [x + 0.5, z - R - 1.8, 9.5, 0.28], [x - 3.5, z + R + 0.8, 10, 0.22], [x + R + 7.5, z + 7.5, 8, 0.12], [x + R + 3.2, z - 5.5, 9, 0.16]] as [number, number, number, number][]) {
+    farPalm(parts, r, px, pz, h, Math.atan2(z - pz, x - px) + (r() - 0.5) * 0.5, lean);
+  }
+  // the taquilla's palapa where the entrance is paid, and the sign on two posts facing the town
+  const hx = x + R + 4.8, hz = z + 4.6;
+  for (const [px, pz] of [[1.4, 1.2], [1.4, -1.2], [-1.4, 1.2], [-1.4, -1.2]]) parts.push([cyl(0.09, 0.11, 2.6, hx + px, 1.3, hz + pz, 6), WOOD]);
+  parts.push([box(2.2, 1.0, 0.55, hx + 0.6, 0.5, hz), "#2a9d8f"], [box(2.3, 0.06, 0.65, hx + 0.6, 1.03, hz), "#c08a52"]);
+  parts.push([new THREE.ConeGeometry(2.7, 1.6, 4).rotateY(Math.PI / 4).scale(1.15, 1, 1).translate(hx, 3.35, hz), THATCH]);
+  parts.push([new THREE.ConeGeometry(0.6, 0.6, 4).rotateY(Math.PI / 4).translate(hx, 4.25, hz), THATCH_DARK]);
+  for (let i = 0; i < 4; i++) parts.push([box(0.42, 0.6, 0.06, hx - 1.2 + i * 0.5, 1.6, hz - 1.25), ["#f77f00", "#e63946", "#2a9d8f", "#f2c14e"][i]]); // life vests hung up
+  const sx = x + R + 6.2, sz = z - 2.4;
+  for (const s of [-1, 1]) parts.push([cyl(0.07, 0.07, 2.6, sx, 1.3, sz + s * 1.35, 6), WOOD]);
+  parts.push([box(0.12, 0.12, 3.0, sx, 2.62, sz), DARK]);
+  atlas.add("cenote:" + sign, 512, 192, drawPainted(sign, "Nado · Snorkel · Entrada", "#e9f7f2", "#13808a", "#1f4f8f"), 2.6, 0.98, sx + 0.07, 1.95, sz, Math.PI / 2);
+  // the sacbé from the mirador across the meadow to the deck: limestone, a stone edge either side, and a branch to the
+  // taquilla
+  const path = (x0: number, z0: number, x1: number, z1: number, w: number) => {
+    const L = Math.hypot(x1 - x0, z1 - z0), ang = Math.atan2(x1 - x0, z1 - z0);
+    parts.push([new THREE.PlaneGeometry(w, L).rotateX(-Math.PI / 2).rotateY(ang).translate((x0 + x1) / 2, 0.035, (z0 + z1) / 2), "#e6dcc3"]);
+    const n = Math.floor(L / 1.3);
+    for (let i = 0; i <= n; i++) for (const s of [-1, 1]) {
+      const t = i / n, ex = x0 + (x1 - x0) * t + Math.cos(ang) * s * (w / 2 + 0.1), ez = z0 + (z1 - z0) * t - Math.sin(ang) * s * (w / 2 + 0.1);
+      parts.push([box(0.45 + r() * 0.3, 0.16, 0.3, ex, 0.06, ez).rotateY(0), LIMESTONE[Math.floor(r() * LIMESTONE.length)]]);
+    }
+  };
+  path(-109.6, -6.6, dx + 1.7, z, 2.2);
+  path(hx + 2.8, z + 0.6, hx + 1.4, hz - 1.0, 1.4);
+  for (const [jx, jz, sj] of [[x + R + 7.5, z + 9.5, 2.4], [x + 2, z + R + 3.4, 2.2], [x + 3, z - R - 3.2, 2.0], [x + R + 8, z - 7, 1.8]] as [number, number, number][]) jungle(parts, r, jx, 0, jz, sj);
+}
+
+/** Small Mayan ruins on a rocky point by the sea west of the beach (TOWN.md task 8; graphics round 6), in Tulum's way:
+ *  a castillo of three stepped tiers of grey limestone on the rocks, wide stairs up from the land between their
+ *  balustrades, the temple on top with three doorways between two columns, a frieze with its niches and the red of its
+ *  old stucco, and what is left of its crest; a smaller shrine on a round platform lower on the point; the walled
+ *  precinct's wall along the land side, broken, with its gateway towards the beach and a brown sign by it; coconut palms
+ *  among the stones; fallen stones. The castillo faces the land (+z). */
+export function ruins(parts: Part[], x: number, z: number, atlas?: SignAtlas) {
+  const r = rand(919);
+  const GREY = ["#c9c1aa", "#b9b09a", "#d6cfbb", "#a9a08a"], DARK = "#3a3530", RED = "#a8553e";
+  // the point: big rocks from the shore out into the sea, highest under the castillo
+  for (let i = 0; i < 22; i++) {
+    const a = r() * Math.PI * 2, d = r() * 8;
+    const rx = x + Math.cos(a) * d * 1.15, rz = z - 3.5 + Math.sin(a) * d - r() * 3;
+    stone(parts, r, rx, -0.4 + Math.max(0, 2.4 - d * 0.35), rz, 3.6 + r() * 2.8, 0.75, ["#9a9483", "#8d8778", "#a8a190"][i % 3]);
+  }
   const add = (g: THREE.BufferGeometry, c: string) => parts.push([g.translate(x, 0, z), c]);
-  add(box(9, 1.0, 7, 0, 2.6, -2.6), GREY[0]);
-  add(box(6.6, 0.8, 5, 0, 3.5, -2.8), GREY[1]);
-  for (let i = 0; i < 9; i++) add(box(2.4, 0.42, 0.5, 0, 0.21 + i * 0.42, 2.6 - i * 0.48), GREY[i % 2 ? 2 : 0]);
-  add(box(4.2, 2.3, 3.2, 0, 5.05, -3.1), GREY[2]);
-  add(box(4.6, 0.3, 3.6, 0, 6.35, -3.1), GREY[1]); // the cornice
-  add(box(4.3, 0.35, 3.3, 0, 6.67, -3.1), GREY[0]); // the roof
-  for (const s of [-1.6, -0.55, 0.55, 1.6]) add(box(0.5, 0.35, 0.5, s, 7.0, -3.1), GREY[3]); // what is left of the crest
-  add(box(1.6, 1.7, 0.1, 0, 4.75, -1.47), DARK); // the doorway
-  for (const s of [-1, 1]) add(cyl(0.22, 0.24, 1.75, s * 0.55, 4.77, -1.38, 8), GREY[3]);
-  add(box(1.8, 0.25, 0.4, 0, 5.75, -1.4), GREY[1]); // the lintel
+  // the castillo's three tiers, each with a moulding along its top
+  for (const [w, h, d, y, zc] of [[13, 1.5, 9.6, 2.35, -3.2], [10, 1.2, 7.6, 3.7, -3.5], [7.6, 1.0, 5.8, 4.8, -3.7]] as [number, number, number, number, number][]) {
+    add(box(w, h, d, 0, y, zc), GREY[0]);
+    add(box(w + 0.3, 0.18, d + 0.3, 0, y + h / 2 - 0.09, zc), GREY[1]);
+  }
+  // the stairs up from the land, between two balustrades
+  for (let i = 0; i < 12; i++) add(box(3.4, 0.44, 0.52, 0, 0.22 + i * 0.44, 5.0 - i * 0.48), GREY[i % 2 ? 2 : 0]);
+  for (const s of [-1, 1]) add(box(0.55, 0.9, 7.6, 0, 0, 0).rotateX(0.76).translate(s * 1.98, 2.95, 2.35), GREY[3]);
+  // the temple on top: three doorways between two columns, a frieze with three niches, the cornices and the roof
+  add(box(6.2, 2.6, 4.2, 0, 6.6, -3.9), GREY[2]);
+  for (const dxx of [-1.75, 0, 1.75]) add(box(dxx === 0 ? 1.1 : 0.9, 1.75, 0.1, dxx, 6.18, -1.76), DARK);
+  for (const s of [-1, 1]) add(cyl(0.26, 0.28, 1.9, s * 0.88, 6.25, -1.62, 8), GREY[3]);
+  add(box(6.6, 0.18, 4.6, 0, 7.98, -3.9), GREY[1]);
+  add(box(6.5, 0.6, 4.5, 0, 8.37, -3.9), GREY[0]);
+  for (const nx of [-2.0, 0, 2.0]) add(box(0.7, 0.42, 0.1, nx, 8.37, -1.62), DARK);
+  add(box(6.8, 0.18, 4.8, 0, 8.76, -3.9), GREY[1]);
+  add(box(6.3, 0.3, 4.3, 0, 9.0, -3.9), GREY[0]);
+  for (const cx of [-2.2, -0.75, 0.7, 2.1]) add(box(0.55, 0.3 + r() * 0.4, 0.55, cx, 9.3, -3.9), GREY[3]);
+  // the old stucco's red, left in patches on the frieze and the doorways' jambs
+  for (const [px, py, pw, ph] of [[-2.7, 8.4, 0.8, 0.35], [1.1, 8.3, 0.6, 0.3], [-1.25, 6.6, 0.25, 0.8], [2.5, 6.9, 0.35, 0.6]] as [number, number, number, number][]) add(box(pw, ph, 0.04, px, py, -1.78), RED);
   // the weathered corners: stones missing from the tiers
-  for (const [bx, by, bz] of [[-4.3, 3.0, 0.7], [4.2, 2.3, -6.0], [3.1, 3.8, -0.4]]) add(box(0.7, 0.5, 0.7, bx, by, bz), "#8d8778");
-  // a little shrine lower down on the point, and fallen stones
-  add(box(2.6, 0.6, 2.4, -6.6, 1.3, -6.4), GREY[1]);
-  add(box(1.6, 1.3, 1.4, -6.6, 2.25, -6.4), GREY[2]);
-  add(box(1.9, 0.25, 1.7, -6.6, 3.0, -6.4), GREY[0]);
-  add(box(0.6, 0.8, 0.08, -6.6, 1.95, -5.66), DARK);
-  for (let i = 0; i < 7; i++) add(box(0.5 + r() * 0.4, 0.35, 0.4 + r() * 0.3, -3 + r() * 8, 0.3 + r() * 1.2, 1.5 + r() * 2.5).rotateY(r() * 2), GREY[i % 4]);
-  // and the jungle at the land's edge
-  for (const [jx, jz, s] of [[-5.5, 3.5, 2.2], [5.8, 3.0, 2.4], [7.5, -1.5, 1.8], [-8.5, 0.5, 1.9]] as [number, number, number][]) jungle(parts, r, x + jx, 0, z + jz, s);
+  for (const [bx, by, bz] of [[-6.3, 2.9, 1.3], [6.1, 2.3, -7.6], [4.6, 4.1, 0.0], [-4.8, 4.0, -6.9]]) add(box(0.8, 0.55, 0.8, bx, by, bz), "#8d8778");
+  // the shrine lower down on the point, on its round platform
+  add(cyl(2.4, 2.6, 1.0, -8.4, 1.3, -8.0, 14), GREY[1]);
+  add(box(2.2, 1.7, 1.9, -8.4, 2.65, -8.0), GREY[2]);
+  add(box(2.5, 0.25, 2.2, -8.4, 3.62, -8.0), GREY[0]);
+  add(box(0.7, 1.0, 0.08, -8.4, 2.3, -7.03), DARK);
+  // the precinct's wall along the land (east) side, broken, its gateway (a corbel arch) towards the beach
+  for (let i = 0; i < 9; i++) {
+    const wz = 9 - i * 2.2, gate = i === 3;
+    if (gate) {
+      for (const s of [-1, 1]) add(box(1.4, 2.3, 0.6, 10.5, 1.15, wz + s * 0.85), GREY[1]);
+      for (let k = 0; k < 3; k++) add(box(1.4, 0.24, 1.9 - k * 0.45, 10.5, 2.42 + k * 0.24, wz), GREY[k % 2 ? 0 : 2]);
+      continue;
+    }
+    const h = 1.2 + r() * 0.8;
+    add(box(1.4, h, 2.25, 10.5, h / 2, wz), GREY[(i % 2) * 2]);
+    add(box(1.55, 0.14, 2.3, 10.5, h + 0.05, wz), GREY[1]);
+  }
+  for (let i = 0; i < 5; i++) { const h = 1.0 + r() * 0.8; add(box(2.25, h, 1.4, 9.4 - i * 2.2 - 1.1, h / 2, 10.0), GREY[(i % 2) * 2]); }
+  // fallen stones, and the jungle at the land's edge
+  for (let i = 0; i < 9; i++) add(box(0.5 + r() * 0.4, 0.35, 0.4 + r() * 0.3, -4 + r() * 12, 0.3 + r() * 1.0, 2.0 + r() * 3.5).rotateY(r() * 2), GREY[i % 4]);
+  for (const [jx, jz, sj] of [[-6.5, 6.5, 2.2], [7.0, 7.5, 2.0], [-10.5, 2.5, 1.9]] as [number, number, number][]) jungle(parts, r, x + jx, 0, z + jz, sj);
+  // coconut palms among the stones, leaning out towards the sea
+  for (const [px, pz, h, dir] of [[-6.0, 3.0, 9.5, -2.2], [6.8, 4.2, 8.5, -0.9], [8.2, -5.0, 10, -1.2], [-10.2, -3.0, 8, -2.6], [4.0, 8.2, 9, 0.2]] as [number, number, number, number][]) {
+    farPalm(parts, r, x + px, z + pz, h, dir, 0.18 + r() * 0.12);
+  }
+  // the sign by the gateway, facing the beach (east)
+  if (atlas) {
+    const sx = x + 12.2, sz = z + 4.4;
+    for (const s of [-1, 1]) parts.push([cyl(0.06, 0.06, 2.2, sx, 1.1, sz + s * 1.0, 6), "#5a3a22"]);
+    atlas.add("ruinas", 512, 192, drawPainted("Zona Arqueológica", "Ruinas mayas · Templo del Mar", "#6b4226", "#fff7e6", "#3b2414"), 2.2, 0.82, sx + 0.06, 1.75, sz, Math.PI / 2);
+  }
 }
 
 // ------------------------------------------------------------------------------------------------ the tianguis
@@ -1164,14 +1268,14 @@ export function busTerminalFront(parts: Part[], col: Colliders, atlas: SignAtlas
  *  a palapa, a low hip of thatch no higher than `top` (the follow camera's box over it, Game.ts) with a fringe round its
  *  edge; agave planters along the forecourt either side of it; and the painted welcome sign on two posts at the
  *  forecourt's north end, facing the road. */
-export function airportFront(parts: Part[], col: Colliders, atlas: SignAtlas, c: { x0: number; x1: number; z0: number; z1: number; y: number; top: number }, welcome: [string, string]) {
+export function airportFront(parts: Part[], col: Colliders, atlas: SignAtlas, roofs: Part[], c: { x0: number; x1: number; z0: number; z1: number; y: number; top: number }, welcome: [string, string]) {
   const cx = (c.x0 + c.x1) / 2, cz = (c.z0 + c.z1) / 2, hw = (c.x1 - c.x0) / 2 + 0.5, hd = (c.z1 - c.z0) / 2 + 0.5, k = Math.SQRT2;
-  parts.push([box(c.x1 - c.x0, 0.2, c.z1 - c.z0, cx, c.y - 0.1, cz), "#8a6a4a"]); // the frame under the thatch
-  parts.push([new THREE.CylinderGeometry(1, 1, 0.36, 4, 1, true).rotateY(Math.PI / 4).scale(hw * k, 1, hd * k).translate(cx, c.y - 0.02, cz), THATCH_DARK]);
-  parts.push([new THREE.ConeGeometry(1, c.top - c.y, 4).rotateY(Math.PI / 4).scale(hw * k, 1, hd * k).translate(cx, c.y + (c.top - c.y) / 2, cz), THATCH]);
+  roofs.push([box(c.x1 - c.x0, 0.2, c.z1 - c.z0, cx, c.y - 0.1, cz), "#8a6a4a"]); // the frame under the thatch
+  roofs.push([new THREE.CylinderGeometry(1, 1, 0.36, 4, 1, true).rotateY(Math.PI / 4).scale(hw * k, 1, hd * k).translate(cx, c.y - 0.02, cz), THATCH_DARK]);
+  roofs.push([new THREE.ConeGeometry(1, c.top - c.y, 4).rotateY(Math.PI / 4).scale(hw * k, 1, hd * k).translate(cx, c.y + (c.top - c.y) / 2, cz), THATCH]);
   // the fringe's ragged lower edge all round
   const edge = (len: number, at: (u: number) => [number, number]) => {
-    for (let u = -len / 2 + 0.15; u < len / 2; u += 0.3) { const [x, z] = at(u); parts.push([new THREE.ConeGeometry(0.13, 0.42, 4).rotateX(Math.PI).translate(x, c.y - 0.32, z), Math.round(u / 0.3) % 2 ? THATCH : THATCH_DARK]); }
+    for (let u = -len / 2 + 0.15; u < len / 2; u += 0.3) { const [x, z] = at(u); roofs.push([new THREE.ConeGeometry(0.13, 0.42, 4).rotateX(Math.PI).translate(x, c.y - 0.32, z), Math.round(u / 0.3) % 2 ? THATCH : THATCH_DARK]); }
   };
   for (const s of [-1, 1]) { edge(hw * 2, (u) => [cx + u, cz + s * hd]); edge(hd * 2, (u) => [cx + s * hw, cz + u]); }
   planter(parts, col, c.x0 + 2.3, c.z0 - 8, Math.PI / 2, 6);
@@ -1327,6 +1431,48 @@ export function cables(parts: Part[], lines: Part[], col: Colliders, poles: [num
 }
 
 /** Clay pots with plants by the shops' doors (a pair at each spot: x, z of the door, how far either side, facing). */
+/** (graphics round 5, theme.ts `adoquin`) What stands on a centro's sidewalks: green trash bins on posts (x, z, which
+ *  way the bin's opening looks), rows of iron bolardos at the curb (from x0, z0 to x1, z1, one every 1.4 m) and a
+ *  shoeshine stand (a bolero's raised chair on its box, the brushes' box at its foot; x, z, the chair facing `rot`). */
+export function sidewalkProps(parts: Part[], col: Colliders, o: { bins: [number, number, number][]; bolardos: [number, number, number, number][]; bolero: [number, number, number] | null }) {
+  const GREEN = "#2f6b4f", IRON = "#2b2b2b";
+  for (const [x, z, rot] of o.bins) {
+    const add = (g: THREE.BufferGeometry, c: string) => parts.push([place(g, x, z, rot), c]);
+    add(cyl(0.05, 0.05, 1.05, 0, 0.52, -0.2, 6), IRON);
+    add(cyl(0.25, 0.21, 0.55, 0, 0.82, 0.05, 8), GREEN);
+    add(cyl(0.26, 0.26, 0.05, 0, 1.1, 0.05, 8), "#24533d");
+    add(box(0.3, 0.12, 0.02, 0, 0.88, 0.3), "#f4f1ea");
+    col.addCircle(x, z, 0.3);
+  }
+  for (const [x0, z0, x1, z1] of o.bolardos) {
+    const n = Math.max(1, Math.round(Math.hypot(x1 - x0, z1 - z0) / 1.4));
+    for (let i = 0; i <= n; i++) {
+      const x = x0 + (x1 - x0) * i / n, z = z0 + (z1 - z0) * i / n;
+      parts.push([cyl(0.1, 0.13, 0.7, x, 0.35, z, 6), IRON]);
+      parts.push([new THREE.SphereGeometry(0.11, 6, 3).translate(x, 0.72, z), IRON]);
+      parts.push([cyl(0.135, 0.135, 0.06, x, 0.5, z, 6), "#c9a227"]);
+      col.addCircle(x, z, 0.15);
+    }
+  }
+  if (o.bolero) {
+    const [x, z, rot] = o.bolero, add = (g: THREE.BufferGeometry, c: string) => parts.push([place(g, x, z, rot), c]);
+    const WOODB = "#7a4a2c", RED = "#b5332e";
+    add(box(0.9, 0.42, 1.0, 0, 0.21, -0.05), WOODB); // the platform
+    add(box(0.62, 0.08, 0.5, 0, 0.84, -0.1), RED); // the seat
+    add(box(0.62, 0.62, 0.08, 0, 1.17, -0.36), RED); // its back
+    for (const sx of [-1, 1]) {
+      add(box(0.06, 0.42, 0.46, sx * 0.31, 0.63, -0.1), WOODB);
+      add(box(0.08, 0.06, 0.46, sx * 0.34, 1.02, -0.1), WOODB); // the arms
+      add(box(0.1, 0.32, 0.12, sx * 0.13, 0.58, 0.32), "#9a9a9a"); // the foot rests
+    }
+    add(box(0.42, 0.24, 0.26, 0.15, 0.12, 0.8), "#5a3a22"); // the brushes' box
+    add(box(0.06, 0.12, 0.26, 0.15, 0.3, 0.8), "#5a3a22");
+    add(cyl(0.025, 0.025, 1.5, -0.4, 1.17, -0.45, 5), IRON); // the umbrella
+    add(new THREE.ConeGeometry(0.85, 0.32, 8, 1, true).translate(-0.4, 1.95, -0.3), "#1f6fd1");
+    blockRect(col, x, z, rot, -0.5, 0.5, -0.6, 0.95);
+  }
+}
+
 export function macetas(parts: Part[], col: Colliders, spots: [number, number, number][]) {
   const r = rand(7171);
   for (const [x, z, half] of spots) for (const s of [-1, 1]) {
@@ -1496,6 +1642,17 @@ export function tropicalTrunk(): THREE.BufferGeometry {
   return mergeGeometries(parts.map((g) => g.toNonIndexed()), false)!;
 }
 
+/** An almendro's trunk: straight up through its layers (they hang off it), with a level limb out under each of the two
+ *  lower layers, so between the layers it reads as the tree it is. */
+export function almendroTrunk(): THREE.BufferGeometry {
+  const parts = [
+    new THREE.CylinderGeometry(0.09, 0.26, 4.6, 5, 1, true).translate(0, 2.3, 0),
+    new THREE.CylinderGeometry(0.05, 0.1, 1.9, 4, 1, true).rotateZ(1.45).translate(0.85, 2.95, -0.1),
+    new THREE.CylinderGeometry(0.05, 0.09, 1.6, 4, 1, true).rotateZ(-1.45).rotateY(0.9).translate(-0.45, 3.75, 0.5),
+  ];
+  return mergeGeometries(parts.map((g) => g.toNonIndexed()), false)!;
+}
+
 /** A flamboyán's (or a parota's) crown: wide, flat-topped and a little lumpy, lower at its rim, lifted high. Few
  *  triangles (a town has a hundred and more, all drawn wherever one is in view): a faceted dome, flat lumps on it and
  *  round its rim. */
@@ -1513,13 +1670,22 @@ export function flamboyanCrown(): THREE.BufferGeometry {
   return mergeGeometries(parts.map((g) => (g.index ? g.toNonIndexed() : g)), false)!;
 }
 
-/** An almendro's (Indian almond's) crown: flat tiers of leaves stacked like a pagoda, each smaller than the one below,
- *  each with a low cone of leaves for its top. */
+/** An almendro's (Indian almond's) crown, as the tree grows: its branches come out in whorls, level, so the crown is
+ *  three broad flat layers of leaves with sky between them, the top one hardly narrower than the bottom (wider than
+ *  tall, never a cone: graphics round 5, the round-4 tiers narrowing upward read as fir trees). Each layer is a flat
+ *  dome of leaves and three or four flat lumps off its edge, turned against the one below, so its outline is ragged and
+ *  lop-sided; the layers step out to one side and back as they rise. */
 export function almendroCrown(): THREE.BufferGeometry {
+  const lump = (sx: number, sy: number, sz: number, x: number, y: number, z: number, rot = 0) => new THREE.OctahedronGeometry(1, 0).rotateY(rot).scale(sx, sy, sz).translate(x, y, z);
   const parts: THREE.BufferGeometry[] = [];
-  ([[2.3, 3.0, 0], [1.85, 3.75, 0.45], [1.35, 4.45, 0.9], [0.75, 5.05, 1.3]] as const).forEach(([r, y, rot]) => {
-    parts.push(new THREE.CylinderGeometry(r * 0.82, r, 0.42, 7, 1, true).rotateY(rot).translate(0, y, 0));
-    parts.push(new THREE.ConeGeometry(r * 0.84, 0.32, 7, 1, true).rotateY(rot).translate(0, y + 0.37, 0));
+  // [radius x, radius z, height, offset x, offset z, turn, lumps]
+  ([[2.75, 2.35, 3.05, 0.15, -0.1, 0.2, 4], [2.35, 2.05, 3.85, -0.35, 0.25, 1.3, 4], [1.75, 1.55, 4.55, 0.25, 0.05, 2.2, 3]] as const).forEach(([rx, rz, y, ox, oz, rot, n], t) => {
+    parts.push(new THREE.SphereGeometry(1, 8, 2, 0, Math.PI * 2, 0, Math.PI / 2).scale(rx, 0.34, rz).rotateY(rot).translate(ox, y, oz));
+    parts.push(new THREE.CircleGeometry(1, 8).rotateX(Math.PI / 2).scale(rx, 1, rz).rotateY(rot).translate(ox, y, oz)); // (its underside)
+    for (let i = 0; i < n; i++) {
+      const a = rot + (i / n) * Math.PI * 2 + t * 0.4, r = 0.82 + (i % 2) * 0.12;
+      parts.push(lump(0.95 - t * 0.12, 0.2, 0.75 - t * 0.08, ox + Math.cos(a) * rx * r, y + 0.05 - (i % 2) * 0.06, oz + Math.sin(a) * rz * r, a));
+    }
   });
   return mergeGeometries(parts.map((g) => (g.index ? g.toNonIndexed() : g)), false)!;
 }

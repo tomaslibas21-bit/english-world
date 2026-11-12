@@ -206,5 +206,11 @@
   { "ctx": "numbers", "say": "I prefer not to.", "intent": "refuse_number_ctx", "note": "logic audit 5 Nov 2026" },
   { "ctx": "numbers", "say": "Sure, my number is 555 0142.", "intent": "any", "not": ["refuse_number_ctx"], "note": "logic audit 5 Nov 2026" },
   { "ctx": "coffee", "say": "I already have plans.", "intent": "decline", "note": "logic audit 5 Nov 2026" },
-  { "ctx": "coffee", "say": "I don't have plans today.", "intent": "any", "not": ["decline"], "note": "logic audit 5 Nov 2026" }
+  { "ctx": "coffee", "say": "I don't have plans today.", "intent": "any", "not": ["decline"], "note": "logic audit 5 Nov 2026" },
+  {"ctx": "upto", "say": "What do you do?", "intent": "ask_job", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "upto", "say": "Where do you work now?", "intent": "ask_job", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "mike", "say": "What do you do for a living?", "intent": "ask_job", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "upto", "say": "Are you working these days?", "intent": "ask_job", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "upto", "say": "I do a lot of work.", "intent": "any", "not": ["ask_job"], "note": "dead ends 12 Nov 2026"},
+  {"ctx": "upto", "say": "I work at Brightline now.", "intent": "news", "not": ["ask_job"], "note": "dead ends 12 Nov 2026"}
 ]}

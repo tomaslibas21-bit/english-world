@@ -282,5 +282,14 @@
   {"ctx": "offer", "say": "Thanks for the offer, but no.", "intent": "decline_offer", "note": "logic audit 5 Nov 2026"},
   {"ctx": "offer", "say": "Thank you for the coupon, but no thanks.", "intent": "decline_offer", "note": "logic audit 5 Nov 2026"},
   {"ctx": "book_tuesday", "say": "No.", "intent": "yn:no", "note": "logic audit 5 Nov 2026"},
-  {"ctx": "offer", "say": "Thanks for the offer, but no.", "intent": "any", "not": ["accept_offer"], "note": "logic audit 5 Nov 2026"}
+  {"ctx": "offer", "say": "Thanks for the offer, but no.", "intent": "any", "not": ["accept_offer"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "offer", "say": "Is there any cost?", "intent": "q_cost", "note": "dead end 12 Nov 2026"},
+  {"ctx": "offer", "say": "Do I have to pay anything for the visit?", "intent": "q_cost", "note": "dead end 12 Nov 2026"},
+  {"ctx": "offer", "say": "Will I be charged for it?", "intent": "q_cost", "note": "dead end 12 Nov 2026"},
+  {"ctx": "history", "say": "Is there any cost?", "intent": "q_cost", "note": "dead end 12 Nov 2026"},
+  {"ctx": "offer", "say": "Wednesday is fine. Is there any cost?", "intent": ["accept_offer", "q_cost"], "note": "dead end 12 Nov 2026"},
+  {"ctx": "offer", "say": "When does the coupon expire?", "intent": "q_coupon_expire", "note": "dead end 12 Nov 2026"},
+  {"ctx": "offer", "say": "How long is the coupon valid?", "intent": "q_coupon_expire", "note": "dead end 12 Nov 2026"},
+  {"ctx": "offer", "say": "Is there any cost?", "intent": "any", "not": ["accept_offer"], "note": "dead end 12 Nov 2026"},
+  {"ctx": "offer", "say": "When does the coupon expire?", "intent": "any", "not": ["accept_offer"], "note": "dead end 12 Nov 2026"}
 ] }

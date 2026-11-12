@@ -25,6 +25,9 @@ export interface Town {
   /** `cam`: where the camera is (the edition's small things far from it are left out: theme.ts `farHide`). */
   update(t: number, dt: number, cam?: THREE.Vector3): void;
   walkableAt(x: number, z: number): boolean;
+  /** (theme.ts `casas`, graphics round 6) the houses' portals overhead (their slab and the terrace's railing on it): the
+   *  conversation's camera treats a line through one as hidden (Game.ts fitTalk). Empty in Maple Harbor. */
+  portals: { minX: number; maxX: number; minZ: number; maxZ: number; y0: number; y1: number }[];
 }
 
 const PPM = 6; // ground texture pixels per metre
@@ -66,6 +69,8 @@ export function buildTown(): Town {
   mxFlat.length = 0;
   wires.length = 0;
   mxFar.length = 0;
+  portals.length = 0;
+  mxRoofs.length = 0;
   poleParts.length = 0;
   farHidden.length = 0;
   beachPalms.length = 0;
@@ -76,7 +81,7 @@ export function buildTown(): Town {
   const gtex = new THREE.CanvasTexture(groundCanvas);
   gtex.colorSpace = THREE.SRGBColorSpace;
   gtex.anisotropy = 8;
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(GW, GD), STYLED ? groundMaterial(gtex) : withGrain(new THREE.MeshLambertMaterial({ map: gtex })));
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(GW, GD), STYLED ? groundMaterial(gtex) : withGrain(new THREE.MeshLambertMaterial({ map: gtex }), THEME.adoquin ? adoquinMaps(THEME.adoquin.streets) : null));
   ground.rotation.x = -Math.PI / 2;
   ground.position.set(WORLD.minX + GW / 2, 0, G0Z + GD / 2);
   ground.receiveShadow = true;
@@ -200,13 +205,14 @@ export function buildTown(): Town {
   // (theme.ts `regions`: a mesh for each part of town)
   if (M instanceof TownMerger) {
     // (theme.ts `townMerge`: the edition's pieces in the town's squares too, each drawn only where it is in view)
-    M.addParts(mx, "cast"); M.addParts(mxFlat, "still"); M.addParts(mxFar, "still"); M.addParts(wires, "thin");
+    M.addParts(mx, "cast"); M.addParts(mxFlat, "still"); M.addParts(mxFar, "still"); M.addParts(wires, "thin"); M.addParts(mxRoofs, "thinCast");
   } else {
     if (mx.length) group.add(staticColoured(mx, "town-mx"));
     if (mxFlat.length) { const m = staticColoured(mxFlat, "town-mx-small"); m.castShadow = false; group.add(m); }
     // (theme.ts `regions`: what stands at the town's far ends in a mesh of its own, drawn only where it is in view; and
     // the overhead lines in a western and an eastern half)
     if (mxFar.length) { const m = staticColoured(mxFar, "town-mx-far"); m.castShadow = false; group.add(m); }
+    if (mxRoofs.length) { const m = staticColoured(mxRoofs, "town-mx-roofs"); m.userData.thin = true; group.add(m); }
     for (const half of ["w", "e"]) {
       const list = wires.filter(([g]) => (g.boundingSphere ?? (g.computeBoundingSphere(), g.boundingSphere!)).center.x < 0 === (half === "w"));
       if (list.length) { const m = staticColoured(list, "cables-" + half); m.castShadow = false; m.userData.thin = true; group.add(m); }
@@ -241,7 +247,7 @@ export function buildTown(): Town {
   const gulls = STYLED ? [] : makeGulls(group);
 
   return {
-    group, colliders, doors, seats: [...seats], groundCanvas,
+    group, colliders, doors, seats: [...seats], groundCanvas, portals: [...portals],
     update(t, dt, cam) {
       seaMat.uniforms.uTime.value = t;
       if (cam) for (const f of farHidden) f.mesh.visible = (cam.x - f.x) ** 2 + (cam.z - f.z) ** 2 < f.r * f.r;
@@ -310,7 +316,49 @@ const wind = { value: 0 };
 
 /** The ground's colours times a fine tiling grain (specks and soft blotches around mid grey, 4 m a tile): up close the
  *  asphalt, sand and grass get texture instead of the blur of their 6 px/m map; far away it averages out. */
-function withGrain(m: THREE.MeshLambertMaterial) {
+/** (theme.ts `adoquin`, graphics round 5) The cobbles: a 2 m tile of grey and rose stones laid in courses across the
+ *  street with dark joints, and where they are (a mask over the ground, its map's layout, 3 px a metre). */
+function adoquinMaps(streets: [number, number, number, number][]) {
+  const S = 256, c = document.createElement("canvas");
+  c.width = c.height = S;
+  const x = c.getContext("2d")!, r = rand(77);
+  x.fillStyle = "#6f6558"; x.fillRect(0, 0, S, S);
+  // courses 0.25 m deep (32 px), stones 0.28–0.4 m long, each course's joints offset; a stone a shade of grey or rose
+  const tones = ["#b8ae9e", "#aea392", "#c2b6a3", "#b3a596", "#c4a99a", "#a99d8c", "#bdb2a2", "#c9b2a0"];
+  for (let row = 0; row < S / 32; row++) {
+    let u = -((row * 47) % 40);
+    while (u < S) {
+      const len = 36 + Math.floor(r() * 16);
+      const t = tones[Math.floor(r() * tones.length)];
+      for (const ox of [-S, 0, S]) {
+        x.fillStyle = t;
+        const x0 = u + ox + 2, y0 = row * 32 + 2, w = len - 4, h = 28;
+        x.beginPath(); x.roundRect(x0, y0, w, h, 5); x.fill();
+        // worn top: a lighter middle, a darker lower edge
+        x.fillStyle = "rgba(255,255,255,0.08)"; x.beginPath(); x.roundRect(x0 + 4, y0 + 3, w - 8, h * 0.45, 4); x.fill();
+        x.fillStyle = "rgba(0,0,0,0.10)"; x.fillRect(x0 + 2, y0 + h - 5, w - 4, 4);
+      }
+      u += len;
+    }
+  }
+  const tile = new THREE.CanvasTexture(c);
+  tile.colorSpace = THREE.SRGBColorSpace;
+  tile.wrapS = tile.wrapT = THREE.RepeatWrapping;
+  tile.anisotropy = 8;
+  const K = 3, mc = document.createElement("canvas");
+  mc.width = Math.round(GW * K); mc.height = Math.round(GD * K);
+  const mx2 = mc.getContext("2d")!;
+  mx2.fillStyle = "#000"; mx2.fillRect(0, 0, mc.width, mc.height);
+  mx2.fillStyle = "#fff";
+  for (const [x0, z0, x1, z1] of streets) {
+    const [a, b] = toC(Math.min(x0, x1), Math.min(z0, z1)), [c2, d] = toC(Math.max(x0, x1), Math.max(z0, z1));
+    mx2.fillRect(a / PPM * K, b / PPM * K, (c2 - a) / PPM * K, (d - b) / PPM * K);
+  }
+  const mask = new THREE.CanvasTexture(mc);
+  return { tile, mask };
+}
+
+function withGrain(m: THREE.MeshLambertMaterial, ado: { tile: THREE.Texture; mask: THREE.Texture } | null = null) {
   const S = 256, c = document.createElement("canvas");
   c.width = c.height = S;
   const x = c.getContext("2d")!, r = rand(11);
@@ -339,7 +387,22 @@ function withGrain(m: THREE.MeshLambertMaterial) {
   }
   const clouds = new THREE.CanvasTexture(cc);
   clouds.wrapS = clouds.wrapT = THREE.RepeatWrapping;
-  m.onBeforeCompile = (sh) => {
+  if (ado) {
+    // (theme.ts `adoquin`) the cobbles over the ground's colour where the mask says, then the grain and the clouds' shade
+    // as everywhere
+    m.onBeforeCompile = (sh) => {
+      grainShader(sh);
+      sh.uniforms.adoMap = { value: ado.tile };
+      sh.uniforms.adoMask = { value: ado.mask };
+      sh.fragmentShader = sh.fragmentShader.replace("uniform sampler2D grainMap;", "uniform sampler2D grainMap;\nuniform sampler2D adoMap;\nuniform sampler2D adoMask;")
+        .replace("#include <map_fragment>\n", "#include <map_fragment>\n        diffuseColor.rgb = mix(diffuseColor.rgb, texture2D(adoMap, vGrainUv * 2.0).rgb, texture2D(adoMask, vMapUv).r);\n");
+    };
+    m.customProgramCacheKey = () => "ground-adoquin";
+    return m;
+  }
+  m.onBeforeCompile = grainShader;
+  return m;
+  function grainShader(sh: THREE.WebGLProgramParametersWithUniforms) {
     sh.uniforms.grainMap = { value: grain };
     sh.uniforms.cloudMap = { value: clouds };
     sh.uniforms.uWind = wind;
@@ -350,8 +413,7 @@ function withGrain(m: THREE.MeshLambertMaterial) {
         diffuseColor.rgb *= 0.78 + 0.44 * texture2D(grainMap, vGrainUv).r;
         float cloud = texture2D(cloudMap, (vGrainUv * 4.0 + vec2(uWind * 1.3, uWind * 0.55)) / 110.0).a;
         diffuseColor.rgb *= 1.0 - 0.17 * smoothstep(0.3, 0.85, cloud);`);
-  };
-  return m;
+  }
 }
 
 /** The wind in the trees: the crown sways a little, more towards the top, each tree in its own time (the instance's
@@ -850,9 +912,11 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     }
   }
   if (b.style === "hotel") {
-    M.add("canopy", mat("#8a2f3b"), boxGeo(8, 0.35, 4, 0, 3.4, 0).rotateY(rotY).translate(dx + n[0] * 2, 0, dz + n[1] * 2));
+    // (the edition's merger has the walking camera look through the hotel's canopy and its posts: graphics round 6)
+    const tm = THEME.townMerge ? "hotel-" : "";
+    M.add(tm + "canopy", mat("#8a2f3b"), boxGeo(8, 0.35, 4, 0, 3.4, 0).rotateY(rotY).translate(dx + n[0] * 2, 0, dz + n[1] * 2));
     for (const s of [-1, 1]) {
-      M.add("canopy-post", mat("#c8a86a"), cylGeo(0.08, 0.08, 3.4, dx + t[0] * s * 3.7 + n[0] * 3.8, 1.7, dz + t[1] * s * 3.7 + n[1] * 3.8, 6));
+      M.add(tm + "canopy-post", mat("#c8a86a"), cylGeo(0.08, 0.08, 3.4, dx + t[0] * s * 3.7 + n[0] * 3.8, 1.7, dz + t[1] * s * 3.7 + n[1] * 3.8, 6));
       col.addCircle(dx + t[0] * s * 3.7 + n[0] * 3.8, dz + t[1] * s * 3.7 + n[1] * 3.8, 0.15);
       // flags
       M.add("flagpole", mat("#dddddd"), cylGeo(0.06, 0.06, 9, dx + t[0] * s * 7 + n[0] * 0.8, 9.5, dz + t[1] * s * 7 + n[1] * 0.8, 6));
@@ -873,7 +937,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   if (b.style === "terminal") {
     // (thatched like a palapa in the edition's town, theme.ts `airportOut`: addTownMx)
     if (!THEME.airportOut) M.add("terminal-canopy", mat("#f4f6f8"), boxGeo(8, 0.4, 20, dx - 4, 5.4, dz));
-    for (const oz of [-9, -3, 3, 9]) { M.add("canopy-post", mat("#b8c2cc"), cylGeo(0.15, 0.15, 5.4, dx - 7.5, 2.7, dz + oz, 8)); col.addCircle(dx - 7.5, dz + oz, 0.2); }
+    for (const oz of [-9, -3, 3, 9]) { M.add(THEME.townMerge ? "dropoff-post" : "canopy-post", mat("#b8c2cc"), cylGeo(0.15, 0.15, 5.4, dx - 7.5, 2.7, dz + oz, 8)); col.addCircle(dx - 7.5, dz + oz, 0.2); }
     // control tower
     M.add("tower", mat("#dde6ee"), cylGeo(1.6, 2, 24, b.x + 12, 12, b.z + 16, 12));
     M.add("tower-top", darkGlass, cylGeo(3, 2.4, 3, b.x + 12, 25.5, b.z + 16, 12));
@@ -895,6 +959,8 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     if (THEME.casas) {
       const P = (u: number, v: number): [number, number] => [dx + t[0] * u + n[0] * v, dz + t[1] * u + n[1] * v];
       MX.casa(mx, mxFlat, P, rotY, halfWidth * 2, halfDepth * 2, b.h, b.color, b.trim ?? "#ffffff", 700 + b.id.length * 53 + Math.round(b.x));
+      const cs = [P(-3.25, 0), P(3.25, 0), P(-3.25, 2.65), P(3.25, 2.65)];
+      portals.push({ minX: Math.min(...cs.map((q) => q[0])), maxX: Math.max(...cs.map((q) => q[0])), minZ: Math.min(...cs.map((q) => q[1])), maxZ: Math.max(...cs.map((q) => q[1])), y0: 2.9, y1: 4.3 });
     } else {
       M.add("porch-roof", mat(b.roofColor ?? "#6b4f3a"), boxGeo(6.4, 0.2, 2.8, 0, 3.1, 0).rotateY(rotY).translate(dx + n[0] * 1.3, 0, dz + n[1] * 1.3));
       for (const s of [-1, 1]) M.add("porch-post", mat("#ffffff"), cylGeo(0.1, 0.1, 2.8, dx + t[0] * s * 2.8 + n[0] * 2.5, 1.55, dz + t[1] * s * 2.8 + n[1] * 2.5, 6));
@@ -1643,10 +1709,12 @@ function tropicalTrees(group: THREE.Group, col: Colliders, r: () => number, rl: 
     const t = new THREE.InstancedMesh(trunk, trunkMat, Math.max(1, n)), l = new THREE.InstancedMesh(crown, leafMat, Math.max(1, n));
     t.count = l.count = 0;
     t.castShadow = l.castShadow = t.receiveShadow = l.receiveShadow = true;
+    // (graphics round 5) a trunk fades with its crown (fade.ts): no bare trunk left standing where a crown went
+    t.userData.fadeWith = l;
     group.add(t, l);
     return [t, l] as const;
   };
-  const sets = [make(MX.tropicalTrunk(), MX.flamboyanCrown(), counts[0]), make(MX.tropicalTrunk(), MX.almendroCrown(), counts[1]), make(roundTrunk, roundCrown, counts[2])];
+  const sets = [make(MX.tropicalTrunk(), MX.flamboyanCrown(), counts[0]), make(MX.almendroTrunk(), MX.almendroCrown(), counts[1]), make(roundTrunk, roundCrown, counts[2])];
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), s = new THREE.Vector3();
   // (a town tree where the theme wants a palm instead, theme.ts `treePalms`: a coconut palm there, the tree unseen)
   const palm = (x: number, z: number) => THEME.treePalms.some(([x0, x1, z0, z1]) => x > x0 && x < x1 && z > z0 && z < z1);
@@ -1771,7 +1839,8 @@ function addTownMx(M: Merger, col: Colliders) {
   if (L) MX.letras(mx, col, L.text, L.x, L.z, L.h, L.colors);
   if (THEME.palapas.length) {
     // (graphics round 4, theme.ts `beachLife`: the palapas thatched in layers, and their loungers places to sit)
-    const loungers = MX.palapas(mx, col, THEME.palapas, !!THEME.beachLife);
+    // (graphics round 5: their thatch looked through by the walking camera, mxRoofs)
+    const loungers = MX.palapas(mx, col, THEME.palapas, !!THEME.beachLife, mxRoofs);
     if (THEME.beachLife) for (const [x, z] of loungers) seats.push({ x, z, rot: Math.PI, y: 0.42 });
   }
   if (THEME.lanchas) MX.beachedLanchas(mx, col, THEME.lanchas.beached);
@@ -1788,7 +1857,7 @@ function addTownMx(M: Merger, col: Colliders) {
   // (graphics round 4) the scrub on the meadow round it, ceibas over the selva behind it
   const md = THEME.meadow;
   if (md) MX.meadow(THEME.regions ? mxFar : mxFlat, md.x0, md.x1, md.z0, md.z1, md.clear, md.ceibas);
-  if (THEME.ruins) MX.ruins(THEME.regions ? mxFar : mxFlat, THEME.ruins.x, THEME.ruins.z);
+  if (THEME.ruins) MX.ruins(THEME.regions ? mxFar : mxFlat, THEME.ruins.x, THEME.ruins.z, a);
   // (graphics round 2) the bus terminal's andenes and coaches, the airport's thatched canopy, planters and welcome sign
   const bt = THEME.busTerminal, station = BUILDINGS.find((b) => b.id === "station");
   if (bt && station) {
@@ -1808,6 +1877,8 @@ function addTownMx(M: Merger, col: Colliders) {
     if (sw.trike) MX.waterTrike(mx, col, ...sw.trike);
   }
   if (THEME.terrace.length) MX.terrace(mx, col, THEME.terrace);
+  // (graphics round 5) the centro's sidewalks: bins, bolardos, a shoeshine stand (the cobbles: withGrain)
+  if (THEME.adoquin) MX.sidewalkProps(mxFlat, col, THEME.adoquin);
   if (THEME.beach) {
     MX.towels(mxFlat, THEME.beach.towels);
     if (THEME.beach.cocos) MX.cocoCart(mx, col, a, ...THEME.beach.cocos);
@@ -1819,7 +1890,7 @@ function addTownMx(M: Merger, col: Colliders) {
     // the canopy over the drop-off (buildBuilding: 8 m out from the door, 20 m along the front, on posts 5.4 m high);
     // the thatch stays under the follow camera's box over it (Game.ts: 6.2 m)
     const dx = terminal.x - terminal.w / 2, dz = terminal.z;
-    MX.airportFront(mx, col, a, { x0: dx - 8, x1: dx, z0: dz - 10, z1: dz + 10, y: 5.5, top: 6.15 }, THEME.airportOut.welcome);
+    MX.airportFront(mx, col, a, mxRoofs, { x0: dx - 8, x1: dx, z0: dz - 10, z1: dz + 10, y: 5.5, top: 6.15 }, THEME.airportOut.welcome);
     // (graphics round 4) the thatch over the front hall and the greca along its front
     if (THEME.airportOut.terminal) MX.airportTerminal(mx, mxFlat, col, terminal, THEME.airportOut.terminal.hall, [[terminal.z - terminal.d / 2, dz - 11], [dz + 11, terminal.z + terminal.d / 2]]);
   }
@@ -2198,11 +2269,13 @@ class TownMerger extends Merger {
     if (e.flat) { g.deleteAttribute("normal"); g.computeVertexNormals(); } // (each triangle its own normal)
     else if (!g.attributes.normal) g.computeVertexNormals();
     // (the gas station's canopy: a roof the walking camera looks through, as Maple Harbor's own mesh is: after M.build)
-    this.put(g, e.color, /^gas-canopy/.test(key) ? "thinCast" : k.cast ? "cast" : "still");
+    // (graphics round 6: and the hotel's canopy and its posts, the drop-off's posts, the taxi stand's sign pole: the camera
+    // no longer shortens to a metre or goes up over her head walking by one, it looks through)
+    this.put(g, e.color, /^gas-canopy|^hotel-canopy|^dropoff-post$|^taxi-sign-pole$/.test(key) ? "thinCast" : k.cast ? "cast" : "still");
   }
   /** The edition's vertex-coloured pieces (mexican.ts: flat-shaded) into the squares too: `kind` "thin" for the overhead
    *  lines (a mesh the walking camera looks through: userData.thin, no shadow). */
-  addParts(parts: MX.Part[], kind: "cast" | "still" | "thin") {
+  addParts(parts: MX.Part[], kind: Kind) {
     for (const [geo, col] of parts) {
       const g = geo.index ? geo.toNonIndexed() : geo;
       g.deleteAttribute("normal"); g.computeVertexNormals();
@@ -2241,6 +2314,11 @@ const wires: MX.Part[] = [];
 const poleParts: MX.Part[] = [];
 /** (theme.ts `regions`) the cenote, the ruins and the mirador at the town's far ends. */
 const mxFar: MX.Part[] = [];
+/** (theme.ts `casas`) the houses' portals overhead, for the conversation's camera (Town.portals). */
+const portals: Town["portals"] = [];
+/** (graphics round 5) roofs the walking camera looks through rather than stays under (userData.thin, cutout.ts), that
+ *  still cast their shade: the palapas' thatch on the beach, the airport drop-off's thatch. */
+const mxRoofs: MX.Part[] = [];
 /** (theme.ts `farHide`) meshes of small things left out when the camera is farther than `r` from (x, z). */
 const farHidden: { mesh: THREE.Object3D; x: number; z: number; r: number }[] = [];
 let atlas: MX.SignAtlas | null = null;
@@ -2379,8 +2457,10 @@ function addTransport(M: Merger, col: Colliders, group: THREE.Group, r: () => nu
     ? new THREE.Mesh(new THREE.PlaneGeometry(2.3, 0.6), new THREE.MeshBasicMaterial({ map: textTexture(THEME.taxi.sign, { bg: THEME.taxi.trim, fg: "#ffffff", border: "#ffffff", w: 512, h: 134 }) }))
     : new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.5), new THREE.MeshBasicMaterial({ map: textTexture("TAXI", { bg: "#f5c518", fg: "#222", w: 256, h: 96 }) }));
   taxiSign.position.set(126.5, 2.4, 1.2); taxiSign.rotation.y = Math.PI;
-  M.add("sign-pole", mat("#9aa5ad"), cylGeo(0.05, 0.05, 2.5, 126.5, 1.25, 1.25, 6));
+  M.add(THEME.townMerge ? "taxi-sign-pole" : "sign-pole", mat("#9aa5ad"), cylGeo(0.05, 0.05, 2.5, 126.5, 1.25, 1.25, 6));
   col.addCircle(126.5, 1.25, 0.1);
+  // (the edition's: looked through by the walking camera, as its pole is: graphics round 6, TownMerger)
+  if (THEME.taxi && THEME.townMerge) taxiSign.userData.thin = true;
   group.add(taxiSign);
   // bus stop shelter
   const b = BUS_STOP;

@@ -458,5 +458,12 @@
   {"ctx": "dessert", "say": "Dessert.", "intent": "dessert_some_ctx", "note": "logic audit 5 Nov 2026"},
   {"ctx": "check", "say": "Something sweet, please.", "intent": "dessert_some_ctx", "note": "logic audit 5 Nov 2026"},
   {"ctx": "dessert", "say": "No dessert for me, thanks.", "intent": "any", "not": ["dessert_some_ctx"], "note": "logic audit 5 Nov 2026"},
-  {"ctx": "dessert", "say": "A dessert, please.", "intent": "any", "not": ["order", "check_ask"], "note": "logic audit 5 Nov 2026"}
+  {"ctx": "dessert", "say": "A dessert, please.", "intent": "any", "not": ["order", "check_ask"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "drinks", "say": "What is iced tea?", "intent": "ask_desc", "slots": {"dish": {"drink": "iced_tea"}}, "note": "dead ends 12 Nov 2026"},
+  {"ctx": "drinks", "say": "What's sweet tea?", "intent": "ask_desc", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "tip", "say": "Can I leave the tip in cash?", "intent": "tip_cash", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "tip", "say": "Could I tip in cash?", "intent": "tip_cash", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "tip", "say": "I'd rather leave the tip in cash.", "intent": "tip_cash", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "tip", "say": "Can I leave a tip on the table?", "intent": "tip_cash", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "tip", "say": "I don't have cash for the tip.", "intent": "any", "not": ["tip_cash"], "note": "dead ends 12 Nov 2026"}
 ]}

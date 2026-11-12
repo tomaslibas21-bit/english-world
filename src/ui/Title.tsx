@@ -9,6 +9,7 @@ import { ltCount } from "./lt";
 import { Icon } from "./icons";
 import { L, Lx, TL } from "./i18n";
 import { EDITION } from "../edition";
+import { VarietyChoice, commitVarietyChoice } from "./variety-choice";
 import "./light.css";
 import "./title.css";
 
@@ -111,6 +112,8 @@ function ModeChoice() {
           </button>
         ))}
       </div>
+      {/* phones: the two ways side by side by name only, and what the chosen one is under them */}
+      <p className="ts-help ts-mode-note" aria-hidden="true">{modes.find((m) => m.id === play)?.sub}</p>
     </div>
   );
 }
@@ -142,7 +145,7 @@ function Frame({ head, body, name }: { head: React.ReactNode; body: React.ReactN
           {EDITION.id === "en" && <Showcase name={name} />}
           <Perks />
         </div>
-        <div className="ts-body">{body}</div>
+        <main className="ts-body">{body}</main>
       </div>
     </div>
   );
@@ -175,7 +178,8 @@ export function Title({ onPlay }: { onPlay: () => void }) {
             <span>{Lx("Įveikta {done} iš {total}", { done: <b>{done}</b>, total: SITUATIONS.length })}</span>
             {totalStars > 0 && <span className="ts-stars"><Icon name="star" size={16} label={L("Žvaigždučių:")} /> {totalStars}</span>}
           </div>
-          <button className="btn ts-go" onClick={onPlay} autoFocus>{L("Tęsti")} <Icon name="play" size={17} /></button>
+          <VarietyChoice />
+          <button className="btn ts-go" onClick={() => { commitVarietyChoice(); onPlay(); }} autoFocus>{L("Tęsti")} <Icon name="play" size={17} /></button>
           <ModeChoice />
           <button type="button" className="ts-link" onClick={() => setCreating(true)}><Icon name="pencil" size={16} /> {L("Keisti vardą")}</button>
         </div>
@@ -191,6 +195,7 @@ function Create({ onDone, canCancel, onCancel }: { onDone: () => void; canCancel
   const ready = !!name.trim() && !!gender;
   const start = () => {
     if (!ready) return;
+    commitVarietyChoice();
     // no avatar to design: a default look by gender (the conversations are what matters)
     const look = LOOKS.find((l) => l.id === (prev?.lookId ?? (gender === "f" ? "f1" : "m1"))) ?? LOOKS[0];
     useStore.getState().setProfile({ name: name.trim(), surname: surname.trim(), gender: gender!, look: look.look, lookId: look.id });
@@ -219,6 +224,7 @@ function Create({ onDone, canCancel, onCancel }: { onDone: () => void; canCancel
               <button type="button" role="radio" aria-checked={gender === "f"} className={"ts-pill" + (gender === "f" ? " on" : "")} onClick={() => setGender("f")}>{L("Moteris")}</button>
             </div>
           </div>
+          <VarietyChoice />
           <ModeChoice />
           <div className="ts-actions">
             {canCancel && <button type="button" className="btn ghost" onClick={onCancel}>{L("Atgal")}</button>}

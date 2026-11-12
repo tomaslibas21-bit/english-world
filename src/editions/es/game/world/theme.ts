@@ -92,7 +92,7 @@ export const THEME: TownTheme = {
     "ONE MORE REP!": "¡UNA MÁS!",
     "Harbor Fitness": "Gimnasio Colibrí",
     Sproutly: "Brotecito",
-    "Coffee · Kombucha · Good vibes": "Café · Kombucha · Buena vibra",
+    "Coffee · Kombucha · Good vibes": "Café de olla · Aguas frescas · Buena vibra",
   },
   boards: {
     // Café La Ceiba (s72): its drinks and pan dulce, prices in pesos; iced, an extra shot and plant milks cost more
@@ -114,6 +114,12 @@ export const THEME: TownTheme = {
     services: true, terminalMx: true, roomsMx: true,
     // graphics round 4: the shops and the clinic as Mexican ones from the door, the bank's floor, the halls and homes
     shopsMx4: true, clinicMx4: true, bankMx: true, hallsMx: true,
+    // graphics round 5: the upper walls dressed (high windows, a greca), the shops' last Maple Harbor furniture replaced
+    upperMx: true, shopsMx5: true,
+    // (graphics round 6) the last rooms below the upper wall, the halls' middles, the rental's equipales in view
+    rooms6: true,
+    // (graphics round 7) the offices' own furniture
+    offices7: true,
   },
   // s71b: in Mexico an attendant fills the tank, so Doña Chela stands at the pump by the learner's car (beside pump 2,
   // the car facing the street), not in the shop; the learner talks to her from behind the car
@@ -298,6 +304,10 @@ export const THEME: TownTheme = {
     museum: { floor: "#cf9a72", floorKind: "barro", wall: "#f7f0e2", dado: "#8e2b1f", dadoH: 0.9, accent: "#3a2f22" },
     airport: { floor: "#e6dfd0", floorKind: "granito" },
     "the-pier": { wall: "#f6dfae", dado: "#1f8fb0", accent: "#14607a" },
+    // (graphics round 7) Línea Clara: mosaicos de pasta in its building's teal and terracotta, warm cal over a teal
+    // dado; Brotecito: terracotta under its brick
+    office: { floor: "#efe5d0", floorKind: "pasta", pasta: ["#2a6f6b", "#c0673f", "#e0a526"], wall: "#fbf4e6", dado: "#2a6f6b", dadoH: 1.0, accent: "#1f4f4c" },
+    sproutly: { floor: "#c9784d", floorKind: "barro" },
   },
   homeMx: true,
 
@@ -338,19 +348,34 @@ export const THEME: TownTheme = {
   // more people on the malecón and the beach (a pair chatting by the bench at x 46, another on the sand by the
   // palapas), sitting on the zócalo's south bancas and the malecón's benches, and four of the tianguis' vendors behind
   // their stalls (pottery, fruit, hats, vegetables), facing the square
-  chatSpots: [[43.5, -63.75, 44.7, -63.45], [-2.6, -68.2, -1.5, -67.9]],
+  chatSpots: [[43.5, -63.75, 44.7, -63.45], [-2.6, -68.2, -1.5, -67.9],
+    // (graphics round 5) a pair on the sand between the palapas at the west end
+    [-72.6, -67.5, -71.5, -67.2],
+    // (graphics round 6) a pair on the sacbé out to the cenote (beyond the town's edge: far versions from Juárez)
+    [-122.4, -6.9, -121.5, -5.9]],
   sitters: [[24.05, -17.4], [37.45, -17.4], [0.45, -65.05], [21.55, -65.05], [-39.55, -65.05],
     // (graphics round 4) two under the palapas by the letters, on their loungers (`beachLife`), and a traveller on
     // andén 2's bench (a person is ~4,000 triangles, in every view that sees them: no more, for the phones' budget)
-    [-5.05, -70.1], [2.05, -70.3], [35.65, 47.65]],
+    [-5.05, -70.1], [2.05, -70.3], [35.65, 47.65],
+    // (graphics round 5, with the far version of each person, `farPeople`) five more on the palapas' loungers, two more
+    // travellers on the andenes' benches, two on the zócalo's side bancas
+    [-63.05, -70.0], [-55.95, -70.2], [31.95, -70.1], [42.95, -70.3], [75.05, -70.1],
+    [38.25, 47.65], [52.65, 47.65], [17, -27.95], [43.5, -24.55]],
   vendors: [[32, -44.25, 0], [26, -44.25, 0], [44, -44.75, 0], [38, -43.25, 0]],
   // (and those who sit or stand farther than 22 m from the player keep their pose: at that distance a breath shows
   // nothing, and the town's people cost the frame no more than before the round)
   stillBeyond: 22,
+  // (graphics round 5) the townspeople farther than 24 m from the camera in their far version (a third of the triangles)
+  farPeople: 24,
   // the town's name on the malecón where calle Ceiba meets it, the sea behind it (clear of the bench at x 0, the
   // sidewalk's palms and lamps, and the chatting pair)
   // the light outdoors: a warmer sun, a touch more exposure, a bluer zenith over a warm horizon, bigger cumulus
-  light: { sun: "#ffe9c4", exposure: 1.06, sky: ["#3f9be6", "#a3d6f5", "#fde9cc"], fog: "#d6ecf2", hemi: ["#e6f4ff", "#9cc27a"], clouds: 1.5 },
+  // (graphics round 6, `late`) a late afternoon: the sun lower (37° up, from the same side) and golden, a little less
+  // flat fill (cooler, so shade reads blue against the warm light), the dome painted with the sun's halo and cumulus
+  light: {
+    sun: "#ffd9a3", exposure: 1.1, sky: ["#3a8fe0", "#9ccff2", "#fbdcb6"], fog: "#e6e2d6", hemi: ["#dce8ff", "#b3ad78"], clouds: 1.5,
+    late: { at: [-52, 46, 38], sunI: 3.05, hemiI: 1.3, glow: "#ffad5c", clouds: ["#fffdf6", "#d3cbdc"] },
+  },
   // the houses' fronts: a rodapié, a grille over the door with its number on a talavera tile, plants by it
   houseFronts: { sophie: "12", dan: "24", house3: "31", house4: "47", house5: "53" },
   // the streets as a Mexican town paints them: no white edge lines, the curbs yellow by the corners
@@ -411,6 +436,16 @@ export const THEME: TownTheme = {
   poleFade: [6, 8],
   // the meadow out to the cenote as the Yucatán's scrub (clear of the cenote and its palapa, the mirador and the end of
   // avenida Juárez), two ceibas standing over the selva behind it
-  meadow: { x0: -152, x1: -113, z0: -36, z1: 26, clear: [[-136, -6, 13], [-127.6, -1.6, 4], [-107, -7.5, 5], [-112, -8, 6]], ceibas: [[-150, -16], [-147, 9]] },
+  meadow: { x0: -152, x1: -113, z0: -36, z1: 26, clear: [[-136, -6, 13], [-127.6, -1.6, 4], [-107, -7.5, 5], [-112, -8, 6], [-116.5, -6.4, 2], [-120.5, -6.3, 2], [-123.5, -6.2, 2]], ceibas: [[-150, -16], [-147, 9]] },
+  // Graphics, round 5 (docs/es/TOWN.md "Graphics, round 5"): adoquín on avenida Juárez through the centro (calle
+  // Flamboyán to calle Itzamná) and on the streets round the zócalo (Ceiba, Itzamná, avenida del Puerto along the
+  // square), curb to curb; green bins on the sidewalks, iron bolardos at the square's corners on Juárez, a bolero's
+  // stand on the square's north edge
+  adoquin: {
+    streets: [[-74, -13, 74, -3], [-4.5, -50.5, 4.5, -13], [66, -50.5, 74, -13], [-4.5, -59.5, 74, -50.5]],
+    bins: [[19.5, -13.7, Math.PI], [-36, -2.4, 0], [-17, -2.4, 0], [20, -2.4, 0], [56, -2.4, 0], [-4.8, -30, Math.PI / 2]],
+    bolardos: [[8.2, -13.5, 12.4, -13.5], [46.2, -13.5, 49.8, -13.5]],
+    bolero: [44.6, -17.3, Math.PI],
+  },
   letras: { text: "PUERTO COLIBRÍ", x: 2.8, z: -63.55, h: 1.45, colors: ["#e4007c", "#f77f00", "#00a6a6", "#f6c000", "#7ac143", "#6d2e9e", "#1f6fd1", "#ff5a36"] },
 };

@@ -363,6 +363,12 @@ export const dentist: SituationDef = {
     ] },
     morning: { patterns: ["(anything | something) in the morning", "(do you have | is there) anything in the morning", "mornings are better", "the morning would be better", "i prefer (mornings | the morning)",
       "(the)? morning is better [for me]", "(in the)? morning (is | would be) (better | good | best) [for me]"] },
+    // 12 Nov 2026 (dead ends): a calendar date ("Do you have anything on November 12th?"); who is on the phone
+    date_req: { patterns: [
+      "(do you have | is there | have you got) anything [on] [the] {date}", "(can | could) (i | we) (come | do it | make it) [on] [the] {date} [at {time}] [instead]", "(how | what) about [the] {date} [at {time}]",
+      "is [the] {date} (possible | available | free | okay)", "[on] [the] {date} (would be better | is better | please)", "do you have anything [on] the {ordinal} [of the month]", "(how | what) about the {ordinal}",
+    ] },
+    who_q: { patterns: ["who am i (speaking | talking) (with | to)", "[sorry] who is (this | speaking)", "[sorry] (what is | what was) your name [again]", "may i ask who is speaking", "(and | sorry) your name is"] },
     day_req: { patterns: [
       "(can | could) i come [on] @dayp [at {time}] [instead] #h:slot_day", "how about @dayp [at {time}]", "(is | what about) @dayp [at {time}] [possible | available | free | okay]",
       "do you have anything [on] @dayp", "@dayp [at {time}] (would be better | is better | please)", "i can (come | do) [on] @dayp [at {time}]", "(what about | how about) (next week | {day})",
@@ -597,6 +603,9 @@ export const dentist: SituationDef = {
       { say: "Sorry, our last appointment is at {$slot}." })],
     closed_weekend: [t("Sorry, | we're | closed | on weekends.", "Atsiprašau, | mes | nedirbame | savaitgaliais.", "Atsiprašau, savaitgaliais nedirbame.",
       { flags: { 2: "“'re closed” = nedirbame (we don't work): the negated verb carries the copula." } })],
+    // 12 Nov 2026, new lines: a date that's full; who is speaking
+    date_full: [t("Let | me | check… | Sorry, | that | day | is | full.", "Leiskite | man | patikrinti… | Atsiprašau, | ta | diena | yra | užimta.", "Tuoj patikrinsiu… Atsiprašau, ta diena užimta.")],
+    linda_name: [t("This is | Linda, | the | receptionist.", "Kalba | Linda, | — | registratorė.", "Kalba Linda, registratorė.")],
     not_that_time: [t("Hmm, | I | don't have | anything | at | that | time.", "Hmm, | aš | neturiu | nieko | — | tuo | metu.", "Hmm, tuo metu nieko neturiu.",
       { flags: { 4: "“at”: the instrumental tuo metu carries it." } })],
     availability: [
@@ -1091,6 +1100,13 @@ export const dentist: SituationDef = {
       if (c.s.offer === key) { accept(c); return; }
       offer(c, key); c.hold();
     },
+    // 12 Nov 2026: a calendar date: that day is full, her offer again; her name
+    date_req(c) {
+      holdOk(c);
+      c.say("date_full");
+      if (readyForSlot(c)) { offer(c, c.s.offer ?? earliest(c), !!c.s.offer); c.hold(); }
+    },
+    who_q(c) { c.say("linda_name"); },
     time_req(c) {
       if (!readyForSlot(c)) return;
       c.say("not_that_time");
@@ -1234,6 +1250,11 @@ export const dentist: SituationDef = {
   },
 
   tests: [
+    // dead ends (12 Nov 2026): a calendar date, who is speaking
+    { say: "Do you have anything on November 12th?", intent: "date_req", not: ["day_req"] },
+    { say: "How about the 12th?", intent: "date_req" },
+    { say: "Who am I speaking with?", intent: "who_q" },
+    { say: "Sorry, who is this?", intent: "who_q" },
     // logic audit (5 Nov 2026)
     { say: "Maybe.", intent: "maybe_ctx", step: "slot", not: ["accept"] },
     { say: "Let me check my calendar.", intent: "maybe_ctx", step: "slot" },

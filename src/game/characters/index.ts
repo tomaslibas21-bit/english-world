@@ -37,6 +37,8 @@ export interface GameCharacter {
   fidgets?: boolean;
   busy?: "wipe" | "type" | "cup" | "paper" | null;
   holdMoment?(kind: Moment): void;
+  /** Drawn as its far version (the original Character, once one is attached: Character.far, attachFar). */
+  setFar?(on: boolean): void;
   /** Frees GPU memory the character doesn't share (Game calls it before removing an NPC). The styled
    *  characters need none: their geometry is cached per look, their materials are shared and the
    *  skeleton frees its bone texture when removed from the scene. */
@@ -57,4 +59,13 @@ export function withBackpack(look: Look): Look {
 
 export function createCharacter(look: Look): GameCharacter {
   return STYLED ? new StyledCharacter(look) : new Character(look);
+}
+
+/** Gives `ch` (made by createCharacter from `look`, posed: seated or not) a far version in fewer triangles (graphics
+ *  round 5, theme.ts `farPeople`); false where there is none (the styled characters). */
+export function addFarVersion(ch: GameCharacter, look: Look): boolean {
+  if (!(ch instanceof Character)) return false;
+  const twin = Character.far(look);
+  if (ch.anim === "sit") { twin.seatY = ch.seatY; twin.setAnim("sit"); }
+  return ch.attachFar(twin);
 }

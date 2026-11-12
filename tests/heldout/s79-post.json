@@ -101,7 +101,7 @@
   { "ctx": "insurance", "say": "No, $200 is enough.", "intent": ["insurance_no", "yn:no"] },
   { "ctx": "insurance", "say": "Yes, please.", "intent": ["insurance_yes", "yn:yes"] },
   { "ctx": "insurance", "say": "No, thanks.", "intent": ["insurance_no", "yn:no"] },
-  { "ctx": "insurance", "say": "How much is the extra insurance?", "intent": ["ask_price", "ask_insured"] },
+  { "ctx": "insurance", "say": "How much is the extra insurance?", "intent": ["ask_price", "ask_insured", "ins_price_q"] },
   { "ctx": "insurance", "say": "not needed it's cheap things", "intent": "insurance_no" },
 
   { "ctx": "stamps_offer", "say": "Yes, five stamps for postcards to Lithuania.", "intent": ["buy_stamps", "stamps_qty"] },

@@ -264,5 +264,6 @@
   {"ctx": "late", "say": "Yes, thanks.", "intent": "any", "not": ["late_two"], "note": "logic audit 5 Nov 2026"},
   {"ctx": "card", "say": "Here's a hundred dollars.", "intent": "deposit_ctx", "note": "logic audit 5 Nov 2026"},
   {"ctx": "card", "say": "I'll leave a cash deposit.", "intent": "deposit_ctx", "note": "logic audit 5 Nov 2026"},
-  {"ctx": "anything", "say": "Here's a hundred dollars.", "intent": "any", "not": ["deposit_ctx"], "note": "logic audit 5 Nov 2026"}
+  {"ctx": "anything", "say": "Here's a hundred dollars.", "intent": "any", "not": ["deposit_ctx"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "name", "say": "How much is parking?", "intent": "ask_parking", "note": "dead ends 12 Nov 2026"}
 ]}

@@ -172,6 +172,13 @@ const mains = (c: Ctx) => items(c).filter((i) => i.cat === "main");
 const starters = (c: Ctx) => items(c).filter((i) => i.cat === "starter");
 const desserts = (c: Ctx) => items(c).filter((i) => i.cat === "dessert");
 const generic = (it: Item) => byId(it.id).attrs?.generic as string | undefined;
+/** The kinds the waiter asks about after a generic drink ("¿La limonada natural o mineral?"): the chips, and the
+ *  examples of that kind's own hint group (drink_kind_<generic>), so the guide names the kind instead of repeating
+ *  "Una limonada, por favor", which only makes the waiter ask again. */
+const KIND_OPTS: Record<string, string[]> = {
+  water: ["still_water", "sparkling_water"], lemonade: ["lemonade_still", "lemonade_soda"], wine: ["red_wine", "white_wine"],
+  soda: ["coke", "diet_coke", "grapefruit_soda"], fresca: ["horchata", "jamaica", "chaya"], coffee: ["americano", "cafe_de_olla", "decaf", "espresso", "cappuccino"],
+};
 const family = (id: string) => (byId(id).attrs?.generic ?? byId(id).attrs?.family) as string | undefined;
 const needsSide = (it: Item) => it.cat === "main" && !!byId(it.id).attrs?.side;
 const needsDone = (it: Item) => it.cat === "main" && !!byId(it.id).attrs?.doneness;
@@ -1564,6 +1571,13 @@ export const restaurant: SituationDef = {
   },
 
   hints: {
+    ...Object.fromEntries(Object.entries(KIND_OPTS).map(([g, ids]) => [`drink_kind_${g}`, {
+      lt: "Say which one", slot: "drink", examples: ids,
+      items: [
+        { id: "please_only", s: t("{X.np}, | por favor.", "{X.np}, | please.", "{X.np}, please.") },
+        { id: "id_like", s: t("Quisiera | {X.np}, | por favor.", "I'd like | {X.np}, | please.", "I'd like {X.np}, please."), register: "polite" },
+      ],
+    }])),
     resv: {
       lt: "Say you have a reservation",
       items: [
@@ -1990,11 +2004,8 @@ export const restaurant: SituationDef = {
       expects: ["order", "kind_ctx"],
       suggest: (c) => {
         const g = generic(drinks(c).find((d) => generic(d)) ?? { cat: "drink", id: "water", qty: 1 });
-        const opts: Record<string, string[]> = {
-          water: ["still_water", "sparkling_water"], lemonade: ["lemonade_still", "lemonade_soda"], wine: ["red_wine", "white_wine"],
-          soda: ["coke", "diet_coke", "grapefruit_soda"], fresca: ["horchata", "jamaica", "chaya"], coffee: ["americano", "cafe_de_olla", "decaf", "espresso", "cappuccino"],
-        };
-        return [{ lt: "Say which one", hint: "drink", options: opts[g ?? "water"] ?? opts.water }];
+        const kind = g && KIND_OPTS[g] ? g : "water";
+        return [{ lt: "Say which one", hint: `drink_kind_${kind}`, options: KIND_OPTS[kind] }];
       },
       help: (c) => { c.say("drinks_list"); } },
     { id: "drinks_ack", when: (c) => !!c.s.drinksDone && drinks(c).length > 0 && !food(c).length && !c.s.served, done: (c) => !!c.s.drinksAcked,

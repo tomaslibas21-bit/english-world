@@ -949,6 +949,141 @@ Outdoors only, every change behind a theme switch (Maple Harbor's values switch 
 Tests: tests/es/town.test.ts "graphics round 4" (the atrium clear of everyone, the stalls and the cross; the beach's
 sitters on loungers; the suitcases clear of everyone; the meadow clear of the cenote and the mirador).
 
+## Graphics, round 5 (12 Nov 2026)
+
+From the second re-rating (notes GRAPHICS-AFTER2.md, 7.6): its top five, in order of gain per effort. Every change
+behind a theme switch (Maple Harbor's values switch them off):
+
+- **Almendros** (mexican.ts `almendroCrown`, `almendroTrunk`): round 4's tiers narrowing upward read as fir trees. Now
+  three broad flat layers of leaves, the top one hardly narrower than the bottom, each a flat dome with lumps off its
+  edge, turned against the one below and stepped out to one side, with sky between the layers, on a straight trunk with
+  a level limb under each lower layer (184 + 26 triangles a tree). **Trunks fade with their crowns** (fade.ts: a trunk
+  mesh's `userData.fadeWith` names its crown mesh; each trunk follows its crown instance for instance), so a near crown
+  dropped from the picture no longer leaves a bare Y trunk.
+- **See-through thatch** (town.ts `mxRoofs`, the squares' `thinCast` meshes): the beach palapas' thatch and the airport
+  drop-off's thatched canopy are looked through by the walking camera (cutout.ts opens them on the line to the player)
+  instead of being roofs it must stay under; they still cast their shade.
+- **Adoquín** (`adoquin`; town.ts `adoquinMaps`, `withGrain`): grey and rose cobbles in courses with dark joints (a 2 m
+  tile) painted into the ground's own material where a mask over the ground says, curb to curb: avenida Juárez from
+  calle Flamboyán to calle Itzamná, calles Ceiba and Itzamná and avenida del Puerto round the zócalo. No draw call. And
+  on those sidewalks (mexican.ts `sidewalkProps`, in the town's small mesh): green bins on posts, iron bolardos at the
+  square's corners on Juárez, a bolero's shoeshine stand on the square's north edge.
+- **Rooms** (`roomExtras.upperMx`, interiors.ts `upperWindows`): the 8.6 m walls' upper part has a row of high windows
+  (frame, muntins, iron bars, terracotta sill) on the back and side walls and a painted greca in the room's accent under
+  the vigas, through each room's merger (no draw call). `roomExtras.shopsMx5`: the last of Maple Harbor's furniture in
+  the shops: Hilos' racks in carved wood, huipiles on wooden dress forms where the mannequins stood and on the two racks
+  round 4 left bare, rebozos (`hilos5`); El Faro's shelves of plain boxes become a tiendita's green shelves of sacks,
+  jars of dulces, salsas, cans and bags (`tienditaShelf`); the car rental's sofas, rug, coffee table and model car become
+  four equipales round an equipal table on a petate and a stand of the Riviera Maya's leaflets (`rental5`).
+- **People** (`farPeople`: 24): every townsperson (ambient.ts) is also built as a far version (characters/Character.ts
+  `Character.far`: the same parts with a sixth of the triangles, about 870 instead of 5,400, bound to the same skeleton:
+  `attachFar`), drawn instead of the whole one beyond 24 m of the camera. Then twelve more (`sitters`, `chatSpots`): five
+  on the palapas' loungers, a pair on the sand at the west end, two more travellers on the andenes' benches, two on the
+  zócalo's side bancas.
+
+Tests: tests/es/town.test.ts "graphics round 3" now also keeps the bins, the bolardos and the bolero's stand clear of
+everyone and out of the cars' lanes; the new beach sitters are on loungers.
+
+## Graphics, round 6 (12 Nov 2026)
+
+From the third re-rating (notes GRAPHICS-AFTER3.md, 7.8): the Spanish-only areas still at 7 (the cenote and the ruins,
+the sky and the light, the pharmacy, the clinic, the offices, the gym, the police) and its open items. Faces, bodies and
+idle motion are shared character code and wait on a decision: not touched. Every change behind the edition's theme or
+in code only the edition runs (mexican.ts, TownMerger); Maple Harbor's rooms and talk spots are pixel-identical.
+
+- **The cenote** (mexican.ts `cenote`, seen 25–40 m off from the end of avenida Juárez; the learner never walks there):
+  the cliff round its far side higher (3.4–5.8 m) with its top rows leaning in over the water, the bottom row wet and
+  dark, moss here and there; bunches of hanging roots and a vine with its leaves under the lip where it is high; the
+  cave's mouth as a dark grotto at the water's edge framed by stones; a raised rim of stones on the town's side with
+  the deck over it (boards, a rail each side, steps down into the water); three inner tubes and a line of buoys on the
+  water; five coconut palms leaning over it (`farPalm`); the taquilla's palapa bigger, life vests hung on it, and its
+  sign on two posts facing the town; a sacbé (white limestone, a stone edge either side) from the mirador across the
+  meadow to the deck, a branch to the taquilla; and a pair chatting on it (theme `chatSpots`; far versions from
+  Juárez). The meadow's scrub keeps off the sacbé (theme `meadow.clear`).
+- **The ruins** (mexican.ts `ruins`): a castillo of three stepped tiers with mouldings, wide stairs up from the land
+  between balustrades, the temple on top with three doorways between two columns, a frieze with three niches and
+  patches of its old red stucco, cornices and what is left of the crest (its top at 9.5 m, was 7); the shrine on a round
+  platform lower on the point; the precinct's broken wall along the land side with a corbel-arched gateway towards the
+  beach and a brown sign by it ("Zona Arqueológica · Ruinas mayas · Templo del Mar", the sign atlas); five coconut palms
+  among the stones. Both in the far region's mesh: no draw call.
+- **Sky and light** (theme `light.late`; styleScene.ts `blocksGrade`, `skyDome`, `cloudBand`): a late afternoon. The
+  sun 37° up from the same side as before (offset −52, 46, 38 from the player; Game.ts's is 54°), golden (#ffd9a3),
+  3.05 outdoors; the hemisphere's fill a little lower (1.3) and cooler, its ground warmer, so shade reads blue against
+  the warm light; exposure 1.1; the fog warmer. The dome is painted: the zenith's blue down to a peach horizon, the
+  low sun's halo and disc, and a band of fair-weather cumulus round the horizon (a 2048 × 512 texture drawn once, going
+  twice round the sky, white tops over lavender bases, warmer towards the sun, drifting slowly): one texture lookup a
+  sky pixel, the same mesh and draw call. The shadow's box is shortened across the sun's way (to 0.9 × the share the
+  lower sun stretches its footprint), so the shadow pass draws about as many casters as at noon. Indoors everything is
+  as before.
+- **Rooms** (`roomExtras.rooms6`, interiors.ts `rooms6`; through each room's merger, no draw call; every conversation's
+  way from the door checked with the room's nav, the room's people clear):
+  - the pharmacy: "GENÉRICOS · PATENTE · PERFUMERÍA · CONSULTORIO MÉDICO" along the upper wall, a fridge of sueros orales
+    at the back, a vitrina of medicines on the counter's side of the way in with a "Genéricos" sign hung over it, the
+    green cross set in the floor, two ceiling fans;
+  - the clinic: a rosette set in the granito where the way to the doctor crosses the room, a planter faced with
+    talavera behind the waiting chairs, ceiling fans;
+  - the gym: "BOX · PESAS · CARDIO · BAILE · FUNCIONAL" along the upper wall, a boxing ring with ropes in the flag's
+    colours in the west half, two costales on a steel frame, ceiling fans;
+  - the police: "POLICÍA MUNICIPAL · SEGURIDAD PÚBLICA · ATENCIÓN CIUDADANA", four red plastic chairs on a beam where
+    Maple Harbor's bench was, a standing fan, a palm in a clay pot where its plant was, "Denuncia anónima · Llama al
+    089" on the wall, a ceiling fan;
+  - Línea Clara: someone's birthday, a star piñata and papel picado along the back of the open plan (behind everyone:
+    strung across the room they hid Brooks in s87 and Paul in s34 from the conversation's camera), ceiling fans;
+    Brotecito: a futbolito, a piñata, papel picado;
+  - the airport's halls: a round planter faced with talavera with a coconut palm and agaves before the arrivals' and
+    departures' partition, where the ways from the door part; further out either side a long planter faced with
+    talavera (a palm, agaves) with a banca along each side, clear of the transport desk and the souvenir stand; the high
+    windows on the back wall lower and set higher (1.0 m), and the welcome frieze a little smaller and lower
+    (25.6 × 1.6 m at 4.85), a band of wall between them;
+  - the car rental: the equipales, their table and petate moved up into the room where the door's view shows them, the
+    leaflets' stand to the counter's side of the way in.
+- **P25 at 412 × 915**: the conversation's camera (Game.ts `fitTalk`) treats a line through a house's portal (its slab
+  and the terrace's railing, 2.9–4.3 m up; town.ts `Town.portals`, filled by the edition's `casas` only) as hidden, as it
+  does a building or a post, so it frames Doña Margarita past the portal instead of behind it.
+- **The walking camera at the hotel and the taxi stand** (town.ts `TownMerger`, the edition's merger only): the hotel's
+  canopy and its two posts, the drop-off's posts and the taxi stand's sign and pole are looked through (thin: cut open
+  on the line to the player) rather than solid: walking by them the camera no longer shortens to a metre (the west
+  walk at the hotel's corner) or goes up over her head (the east walk at the sitio).
+
+Tests: tests/es/town.test.ts as before (the new pair on the sacbé is beyond the town's edge, clear of everyone).
+
+## Graphics, round 7: the offices (12 Nov 2026)
+
+From the fourth re-rating (notes GRAPHICS-AFTER4.md, 8.0): the last Spanish-only area under 8, the offices. Línea Clara
+and Brotecito kept Maple Harbor's furniture under round 6's decorations: white desks on metal legs, dark office chairs,
+glass rooms in navy steel, the blue lounge sofa (with someone sitting on it), Brotecito's beanbags and its steel table and
+stools. All behind one switch (theme.ts `roomExtras.offices7`; interiors.ts `office7`, `brotecito7`): in this edition
+`office()` and `sproutly()` leave those pieces out and these draw the edition's own in their places, through each room's
+merger (no draw call), each with the collider of the piece it replaces, so the rooms' nav finds the same paths (the same
+lengths from the door to every speaker). Maple Harbor's rooms are pixel-identical.
+
+- **Línea Clara** (`office7`): five cedar desks with a pedestal of three drawers and brass pulls, a panel leg and a
+  modesty panel (the monitors as before), each with a chair of wood and woven bejuco (`caneChair`, its seat at 0.55 where
+  the office chair's was, so the three at their desks sit as before); the meeting room's and the sala de juntas' tables of
+  parota with turned legs (`parotaTable`) and cane chairs at Lic. Salinas', Gerardo's, Sofía's and Pablo's seats (0.48),
+  a jarra of agua de jamaica on the meeting table; Elena's desk and the cabinet behind her in cedar, her frames in
+  cedar (they frame the meeting room's south pane too); the meeting room's and the sala de juntas' long glass walls
+  framed in cedar (`glassFrame`: posts every metre or so, a top rail, a low rail; the sala de juntas' short front pane
+  is left bare: a rail across it crossed Sofía's face in s34's picture);
+  the reception and the kitchen's counter in cedar with talavera on their faces (`counterMx`), flowers, a bell, a clay pot
+  for café de olla and jarritos; the round table in parota with four equipales (`equipalS`) on a petate; the lounge a
+  Zapotec rug, **a settee of cedar and bejuco** (`caneSettee`) where the blue sofa was, its cushion's top at 0.58 so the
+  woman who sits there (roomPeople.ts) keeps her seat and pose, embroidered pillows, a low table with talavera set in its
+  top (`talaveraLowTable`), a palm in a clay pot; a cedar perchero with a sombrero and a rebozo where the coat rack was;
+  the bookcase in cedar with barro and talavera among the binders. The room's look (`roomLooks.office`): mosaicos de
+  pasta in the building's teal and terracotta with an ochre heart, warm cal walls over a teal dado.
+- **Brotecito** (`brotecito7`): before the big screen a petate, a cane settee and two equipales instead of the beanbags;
+  the long table a slab of parota with a dark live edge on two trestles, six wooden bancos; the coffee bar in cedar with
+  talavera on its face to the room and a pot of café de olla (its sign "Café de olla · Aguas frescas · Buena vibra");
+  palms and plants in clay pots; a zarape runner from the door into the room (the phone's door view was bare floor);
+  a terracotta floor under the brick (`roomLooks.sproutly`). Round 6's papel picado hangs along the back now, behind
+  Toño (strung across the room it covered him from the waist down in p18's picture).
+
+Draw calls in the offices' room views and their six conversations are the same as round 6's at every size (phone
+triangles in the office's door view 145k → 160k). Checks: es-tour --start=jump 50/50 at 375×812, 412×915 and 1280×800,
+every speaker in the picture, no head cut (p18 and p27 now with fewer rays blocked than before); Maple Harbor's 72 frozen
+room and talk-spot views pixel-identical with the same draw calls at both sizes.
+
 ## The tasks (in order)
 
 Each task is one area; each ends with before/after screenshots at phone size and the draw-call numbers.

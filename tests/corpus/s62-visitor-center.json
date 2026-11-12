@@ -212,5 +212,7 @@
   {"ctx": "more", "say": "Where's the restroom?", "intent": "ask_restroom", "note": "logic audit 5 Nov 2026"},
   {"ctx": "cafe_offer", "say": "Where's the restroom?", "intent": "ask_restroom", "note": "logic audit 5 Nov 2026"},
   {"ctx": "cafe_offer", "say": "Where's the restroom?", "intent": "any", "not": ["accept_ctx", "yn:yes"], "note": "logic audit 5 Nov 2026"},
-  {"ctx": "cafe_offer", "say": "What time do you close?", "intent": "any", "not": ["accept_ctx", "yn:yes"], "note": "logic audit 5 Nov 2026"}
+  {"ctx": "cafe_offer", "say": "What time do you close?", "intent": "any", "not": ["accept_ctx", "yn:yes"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "need", "say": "How much does it cost?", "intent": "map_free", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "cafe", "say": "How much is the map?", "intent": "map_free", "note": "dead ends 12 Nov 2026"}
 ]}

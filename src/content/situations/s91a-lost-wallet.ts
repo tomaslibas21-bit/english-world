@@ -226,6 +226,13 @@ export const lostWallet: SituationDef = {
       "i am looking for my {item}", "(did | have) you (see | seen | find | found) (a | my) [{color}] [{material}] {item} [here | around here | anywhere]",
       "my {item} i (can not | can't) find it", "it is my {item} [it is (gone | missing | lost)]", "[i think] i (left | forgot) my {item} somewhere",
     ] },
+    // "If you find it, can you call me?" (12 Nov 2026): she takes the number
+    call_me: { patterns: [
+      "[and] [if (you | someone | somebody) (find | finds | see | sees) (it | @my_item | something | anything)] (can | could | would | will) you (call | phone | text) me [please] [if (you | someone | somebody) (find | finds | see | sees) (it | @my_item | something | anything) | if it turns up]",
+      "[please] (call | phone | text) me if (you | someone | somebody) (find | finds | see | sees) (it | @my_item | something | anything)", "[please] (call | phone | text) me if it turns up",
+      "(can | could | may) i (leave | give) you my (number | phone number)",
+    ] },
+    number_ctx: { patterns: ["[sure | okay] [it is | my number is | my phone number is | here is my number | here it is] {digits} #h:cn_number"] },
     seen_anyone: { patterns: ["did you see (anyone | anybody | someone | somebody | anything)", "have you seen (anyone | anybody | someone | anything) [suspicious]"] },
     not_lost: { patterns: [
       "i did not lose (my {item} | anything)", "i am just looking [at the flowers]",
@@ -503,6 +510,9 @@ export const lostWallet: SituationDef = {
     // new lines (5 Nov 2026, the logic audit; they need a voice)
     not_seen: [t("No, | I | haven't seen | anything, | sorry.", "Ne, | aš | nemačiau | nieko, | atsiprašau.", "Ne, nieko nemačiau, atsiprašau.",
       { flags: { 3: "Negative concord: nieko stands under “anything”, the ne- of nemačiau under “haven't seen”." } })],
+    // 12 Nov 2026, new lines: "If you find it, can you call me?" and the number
+    call_you: [t("Of course, | dear! | Leave | me | your | number.", "Žinoma, | {m:mielasis|f:mieloji}! | Palikite | man | savo | numerį.", "Žinoma, {m:mielasis|f:mieloji}! Palikite man savo numerį.")],
+    number_ok: [t("Got it. | I'll call | you | if | it | turns up.", "Užsirašiau. | Paskambinsiu | Jums, | jei | {jis@X:nom} | atsiras.", "Užsirašiau. Jei {jis@X:nom} atsiras, paskambinsiu Jums.")],
     flower_price: [t("Ten | dollars | a | bunch, | dear.", "Dešimt | dolerių | už | puokštę, | {m:mielasis|f:mieloji}.", "Dešimt dolerių už puokštę, {m:mielasis|f:mieloji}.",
       { say: "Ten dollars a bunch, dear.", flags: { 2: "“a” (a bunch = per bunch): už carries it." } })],
     good_luck: [
@@ -575,6 +585,13 @@ export const lostWallet: SituationDef = {
         { id: "i_know", s: t("Yes, | I | know | where | it | is.", "Taip, | aš | žinau, | kur | ji | yra.", "Taip, žinau, kur ji.") },
       ],
     },
+    // 12 Nov 2026: the number after "Leave me your number."
+    number: {
+      lt: "Pasakyti savo telefono numerį",
+      items: [
+        { id: "cn_number", s: t("My | number | is | 555-0142.", "Mano | numeris | yra | 555-0142.", "Mano numeris – 555-0142.", { say: "My number is five five five, oh one four two." }) },
+      ],
+    },
     police: {
       lt: "Paklausti, kur policija ir kaip ten nueiti",
       items: [
@@ -633,6 +650,7 @@ export const lostWallet: SituationDef = {
     "just in case": { reason: "lexical_expression", split: "just → tik, in → į, case → atvejis is false; = dėl viso pikto.", minimal: "All three words form the expression." },
     "i'll keep an eye out": { reason: "lexical_expression", split: "keep → laikysiu, an → —, eye → akį, out → lauke is false; the idiom = pasidairysiu (future ending carries “'ll”).", minimal: "The whole idiom; no part is independently glossable." },
     "in case": { reason: "lexical_expression", split: "in → į + case → atvejis is false; the conjunction “in case” = jeigu (netyčia).", minimal: "Two words." },
+    "turns up": { reason: "lexical_expression", split: "turns → sukasi + up → aukštyn is false; something lost “turns up” = atsiras.", minimal: "Two words." },
     "too bad": { reason: "lexical_expression", split: "too → per + bad → blogai gives “too badly”; the reaction “too bad” = kaip gaila.", minimal: "Two words." },
     "lost and found": { reason: "lexical_expression", split: "lost → pamestas, and → ir, found → rastas names no office; = radinių skyrius.", minimal: "All three words name the office." },
     "around the corner": { reason: "lexical_expression", split: "around → aplink, the → —, corner → kampas gives a false “around a corner”; = už kampo (very near).", minimal: "All three words form the expression." },
@@ -831,6 +849,16 @@ export const lostWallet: SituationDef = {
     cancel_cards(c) { if (!mark(c)) return; c.say("cards"); },
     what_do(c) { if (!mark(c)) return; c.say("what_do"); c.s.policeSuggested = true; },
     seen_anyone(c) { if (!mark(c)) return; c.say("not_seen"); },
+    call_me(c) {
+      if (!mark(c)) return;
+      if (c.s.numberLeft) { c.say("number_ok", { X: item(c) }); return; }
+      c.say("call_you");
+      // she waits for the number (anything else drops the question)
+      c.expect({ id: "number", optional: true, expects: ["number_ctx"], hints: ["number"], suggest: [{ lt: "Pasakyti savo telefono numerį", hint: "number" }],
+        on: { number_ctx: (cc, sl, sg) => lostWallet.handlers.number_ctx(cc, sl, sg) } });
+      c.hold();
+    },
+    number_ctx(c) { if (!mark(c)) return; c.s.numberLeft = true; c.say("number_ok", { X: item(c) }); },
     checked(c) { if (!mark(c)) return; c.s.pocketsDone = true; c.say("ok"); },
     will_go_back(c) { if (!mark(c)) return; c.say("ok"); },
     hope_so(c) { if (!mark(c)) return; c.say("ok"); },
@@ -940,6 +968,10 @@ export const lostWallet: SituationDef = {
     { say: "I don't have my wallet anymore", intent: "lost" },
     { say: "Hello, I'm looking for my wallet", intent: "lost" },
     { say: "Sorry, have you seen a black wallet?", intent: "lost" },
+    // 12 Nov 2026: "If you find it, can you call me?", then the number
+    { say: "If you find it, can you call me?", intent: "call_me" },
+    { say: "Could you call me if it turns up?", intent: "call_me" },
+    { say: "Can I leave you my number?", intent: "call_me" },
     { say: "No, I'm not okay", intent: "help_req" },
     { say: "I took money from the ATM", intent: "last_seen", slots: { seen: { place: "atm" } } },
     { say: "I don't remember, maybe at the market", intent: "last_seen", slots: { seen: { place: "market" } } },
@@ -968,6 +1000,8 @@ export const lostWallet: SituationDef = {
     { name: "happy path", turns: ["Excuse me, can you help me, please?", "I've lost my wallet.", "At the café, when I paid for my coffee.", "It's brown, leather, and small.", "Where's the nearest police station?", "Thank you so much!"], expect: { complete: true }, auto: AUTO },
     // the script goes on to the police station: no found wallet (twist) here
     { name: "short answers, questions", setup: (s) => { s.foundTwist = false; }, turns: ["Hi! I can't find my wallet.", "About an hour ago.", "At the bakery.", "Should I call 911?", "Could you show me on the map?", "Thanks, bye!"], expect: { complete: true }, auto: AUTO },
+    // 12 Nov 2026: "If you find it, can you call me?" → "Leave me your number." → the number
+    { name: "call me, the number", setup: (s) => { s.foundTwist = false; }, turns: ["Excuse me, can you help me, please?", "I've lost my wallet.", "If you find it, can you call me?", "My number is 555 0142.", "At the café, when I paid for my coffee.", "It's brown, leather, and small.", "Where's the nearest police station?", "Thank you so much!"], expect: { complete: true, state: { numberLeft: true } }, auto: AUTO },
     { name: "stolen, bus, cards", turns: ["I think someone stole my wallet.", "I think I left it on the bus.", "Should I cancel my cards?", "No, where is it?", "Is it far?", "Thank you, you're very kind."], expect: { complete: true }, auto: AUTO },
   ],
 };

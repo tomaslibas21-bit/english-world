@@ -200,6 +200,10 @@ describe("graphics round 3: the town's new things keep clear of everyone", () =>
     ["the mirador", turned(THEME.mirador!.x, THEME.mirador!.z, THEME.mirador!.rot, 2.0, 1.5)],
     ...THEME.cables!.poles.map(([x, z]) => ["a pole", box(x, z, 0.18, 0.18)] as [string, ReturnType<typeof box>]),
     ...THEME.taxis.map(([x, z, rot]) => ["a taxi", turned(x, z, rot, CAR.width / 2 + 0.1, CAR.length / 2 + 0.1)] as [string, ReturnType<typeof box>]),
+    // (graphics round 5) the centro's bins, bolardos and the bolero's stand
+    ...THEME.adoquin!.bins.map(([x, z]) => ["a bin", box(x, z, 0.3, 0.3)] as [string, ReturnType<typeof box>]),
+    ...THEME.adoquin!.bolardos.map(([x0, z0, x1, z1]) => ["bolardos", { x0: Math.min(x0, x1) - 0.15, x1: Math.max(x0, x1) + 0.15, z0: Math.min(z0, z1) - 0.15, z1: Math.max(z0, z1) + 0.15 }] as [string, ReturnType<typeof box>]),
+    ["the bolero's stand", turned(THEME.adoquin!.bolero![0], THEME.adoquin!.bolero![1], THEME.adoquin!.bolero![2], 0.5, 0.95)],
   ];
 
   it("everyone's spot, talk spot, chatting pair, sitter and vendor stays at least 1 m from them", () => {

@@ -282,7 +282,9 @@ export const post: SituationDef = {
     ask_cheaper: { patterns: ["is there (anything | something) cheaper #h:q_cheaper", "(what is | what about) the cheapest (way | option)", "do you have (anything | something) cheaper", "that is (too | a bit | a little) expensive", "which [one] is (cheaper | the cheapest)", "is there a cheaper (way | option)"] },
     ask_faster: { patterns: ["(which | what) is [the] (faster | fastest | quicker)", "is there (anything | something) faster", "what is the fastest way", "which one is faster"] },
     ask_options: { patterns: ["what are my options", "what (options | services) do you have", "what is the difference", "how can i send it"] },
-    ask_price: { patterns: ["how much (is it | does it cost | is that | will it cost | is (priority | express | the express one | the priority one)) #h:q_price", "how much to send (it | this) [to {dest}]", "what is the price", "how much is {service}"] },
+    ask_price: { patterns: ["how much (is it | does it cost | is that | will it cost | is (priority | express | the express one | the priority one)) #h:q_price", "how much to send (it | this) [to {dest}]", "what is the price", "how much is {service}",
+      // "What if I send it express?" (12 Nov 2026: not understood): that service's days and price, nothing chosen
+      "what if i send it [by | with] {service}", "what if i (choose | take | use | pick) {service}", "what about {service}", "how much (would it be | is it | does it cost) (with | by) {service}"] },
     ask_time: { patterns: [
       "how long (does it | will it | does {service} | does that) take #h:q_long", "when will it (arrive | get there | be there)", "how many days (does it take | is that)",
       "will it (arrive | get there) (by | before) (friday | next week | {day})", "how fast is it",
@@ -309,7 +311,15 @@ export const post: SituationDef = {
       "(my | which) address [here | in the us | in lithuania] [or (in lithuania | here | there)]"] },
     // "How much are they?" / "How much are five stamps?" at the stamps (not understood)
     stamps_price_q: { patterns: ["how much (are | is) (they | it | the stamps | a stamp | stamps | one | each one | {number:number} stamps)", "how much does (a | one) stamp cost", "how much (do | does) (they | it | the stamps) cost"] },
-    insurance_yes: { patterns: ["[yes] i would like (insurance | extra insurance | more insurance) #h:ins_yes", "[yes] (please add | add) insurance", "yes (to be safe | just in case)"] },
+    insurance_yes: { patterns: ["[yes] i would like (insurance | extra insurance | more insurance) #h:ins_yes", "[yes] (please add | add) insurance", "yes (to be safe | just in case)",
+      // "With insurance, please." (12 Nov 2026: not understood at "Is it a gift?")
+      "[yes] with [extra] insurance [please]", "[yes] [please] add [the] [extra] insurance [please]"] },
+    // the price of extra insurance, and "Can I insure it?" (12 Nov 2026: not understood)
+    ins_price_q: { patterns: ["how much (is | does) [the] [extra] insurance [cost]", "how much (would | will | is) (it | that) (be | cost) with [extra] insurance", "how much is it with [extra] insurance",
+      "how much (more | extra) (is it | would it be | does it cost | is that) [for insurance | with insurance]", "how much (more | extra) for [the] [extra] insurance", "what does [the] [extra] insurance cost"] },
+    ins_can_q: { patterns: ["(can | could) i insure (it | this | the package | my package | the box | this box)", "(can | could) i (add | buy) insurance [for it | to it]", "(do you have | do you offer) [extra] insurance", "is (extra | more) insurance (possible | available)"] },
+    // "Where's the mailbox?" (12 Nov 2026: not understood)
+    ask_mailbox: { patterns: ["where is the (mailbox | mail box | drop box | mail drop)", "is there a (mailbox | mail box) [here | nearby | outside]", "where (can | do) i (mail | drop off | send) (a letter | letters | this letter | my letter | a postcard | postcards | my postcards)"] },
     insurance_no: { patterns: ["[no] i do not need (it | insurance | extra insurance) #h:ins_no", "[it is okay | it is fine] no [extra] insurance [thanks]", "[no] (it is not | it is not very) (expensive | valuable | worth much)", "[no] (that is | it is) enough", "no (insurance | extra insurance) [thanks]", "[no] (that is | it is) (fine | okay) without (it | insurance)", "no two hundred is enough"] },
     stamps_qty: { patterns: ["{number} [stamps | global forever stamps] [please] #h:stamps_qty", "(i need | i would like | can i get | give me) {number} [stamps | global forever stamps]", "[i would like] a sheet [of stamps] [please] #sheet #h:stamps_sheet", "(one | just one) [stamp] [please]"] },
     stamps_ctx: { patterns: ["{number} #h:stamps_qty", "(just | only) {number}"] },
@@ -515,6 +525,11 @@ export const post: SituationDef = {
       t("Okay, | that's | $4.35 | more.", "Gerai, | tai yra | 4,35 dolerio | daugiau.", "Gerai, tai dar 4,35 dolerio.", { say: "Okay, that's four thirty-five more." }),
     ],
     no_problem: [t("No | problem.", "Jokių | problemų.", "Jokių problemų.")],
+    // 12 Nov 2026, new lines: the price of extra insurance; the mailbox (the blue one by the door, src/game/world/town.ts)
+    ins_price: [t("Extra | insurance | is | $4.35.", "Papildomas | draudimas | kainuoja | 4,35 dolerio.", "Papildomas draudimas kainuoja 4,35 dolerio.",
+      { say: "Extra insurance is four thirty-five.", flags: { 2: "“is” in a price statement = kainuoja." } })],
+    mailbox: [t("There's | a | blue | mailbox | right | outside, | next to | the | door.", "Yra | — | mėlyna | pašto dėžutė | iškart | lauke, | prie | — | durų.",
+      "Mėlyna pašto dėžutė – iškart lauke, prie durų.", { flags: { 0: "Existential “there's” = yra." } })],
     offer_stamps: [
       t("Do | you | need | any | stamps | today?", "Ar | jums | reikia | — | pašto ženklų | šiandien?", "Ar šiandien jums reikia pašto ženklų?",
         { flags: { 0: "Question “Do” = the particle ar.", 3: "Partitive: the genitive pašto ženklų carries “any”." } }),
@@ -811,6 +826,7 @@ export const post: SituationDef = {
   },
 
   merges: {
+    "next to": { reason: "lexical_expression", split: "next → kitas + to → į is false; = šalia (C-LEX).", minimal: "Two words." },
     "in line": { reason: "grammatical_fusion", split: "in → į + line → linija is false; the locative eilėje carries “in”.", minimal: "Two words." },
     "in there": { reason: "lexical_expression", split: "in → į + there → ten is false; “in there” = viduje.", minimal: "Two words." },
     "can't go": { reason: "grammatical_fusion", split: "Lithuanian negation is the prefix ne-; “can't go” (of mail) = negalima siųsti.", minimal: "Two words." },
@@ -914,7 +930,7 @@ export const post: SituationDef = {
       suggest: [{ lt: "Pasirašyti deklaraciją", hint: "sign" }],
       yes: (c) => { c.s.customsSigned = true; c.event("sign"); c.say("signed_thanks"); } },
     { id: "insurance", when: (c) => sending(c) && customsDone(c) && !!c.s.askInsurance && c.s.service !== "first", done: (c) => c.s.insurance !== undefined && c.s.insurance !== "ask",
-      ask: (c) => c.say("ask_insurance"), expects: ["insurance_yes", "insurance_no"],
+      ask: (c) => c.say("ask_insurance"), expects: ["insurance_yes", "insurance_no", "ins_price_q", "ins_can_q"],
       suggest: [{ lt: "Atsakyti dėl papildomo draudimo", hint: "insurance" }],
       yes: (c) => {
         if (POLITE_NO.test(c.heard)) { c.s.insurance = false; c.say("no_problem"); return; }
@@ -1121,6 +1137,14 @@ export const post: SituationDef = {
     },
     ask_tracking(c) { c.say(c.s.sent ? "tracking_on_receipt" : "tracking_yes"); },
     ask_insured(c) { c.say(c.s.service === "first" ? "no_problem" : "insured_info"); },
+    ins_price_q(c) { c.say("ins_price"); },
+    ins_can_q(c, slots, seg) {
+      // at the offer it is a yes; before it: what's covered and what extra costs (nothing added on a question)
+      if (c.step === "insurance") { post.handlers.insurance_yes(c, slots, seg); return; }
+      if (c.s.service !== "first" && c.s.insurance !== true) c.say("insured_info");
+      c.say("ins_price");
+    },
+    ask_mailbox(c) { c.say("mailbox"); },
     ask_kilos(c) { if (c.s.weighed) c.say(prof(c).kilos); else weigh(c); },
     ask_customs(c) { c.say("customs_explain"); },
     what_write(c) { c.say("write_help"); },
@@ -1224,6 +1248,13 @@ export const post: SituationDef = {
   },
 
   tests: [
+    // dead ends (12 Nov 2026)
+    { say: "With insurance, please.", intent: "insurance_yes", step: "gift", not: ["gift_yes"] },
+    { say: "How much would it be with insurance?", intent: "ins_price_q", step: "insurance", not: ["insurance_yes"] },
+    { say: "How much is the insurance?", intent: "ins_price_q", step: "insurance" },
+    { say: "Can I insure it?", intent: "ins_can_q", step: "service" },
+    { say: "Where's the mailbox?", intent: "ask_mailbox" },
+    { say: "What if I send it express?", intent: "ask_price", step: "service", slots: { service: "express" }, not: ["service_ans"] },
     // logic audit (5 Nov 2026)
     { say: "How much are five stamps?", intent: "stamps_price_q", step: "stamps_offer", not: ["stamps_qty"] },
     { say: "How much are they?", intent: "stamps_price_q", step: "stamps_offer" },

@@ -214,6 +214,11 @@ export const neighbor: SituationDef = {
       "is it a quiet building", "is it (quiet | noisy | loud) [here] [at night]", "are the neighbors (nice | quiet | noisy | friendly | okay | ok | good)", "how are the neighbors",
       "are the walls thin",
     ] },
+    // "Who's the landlord?", "Which apartment is yours?", "Where are you from?" / "And you?" (12 Nov 2026: not understood)
+    ask_landlord_who: { patterns: ["who is (the | your | our) landlord", "who (owns | runs | manages) (the | this) building", "who is the (owner | building manager | manager) [of (the | this) building]"] },
+    ask_rita_apt: { patterns: ["which (apartment | one | door | place | flat #tip:uk_flat) is (yours | your apartment | your place)", "where do you live", "which apartment (do you live in | are you in)", "what is your apartment number", "do you live (here | next door)"] },
+    ask_rita_from: { patterns: ["where are you from", "(and | so) where are you from", "are you from (here | around here | maple harbor)", "where did you grow up", "(and | what about | how about) you where are you from"] },
+    rita_from_ctx: { patterns: ["(and | what about | how about) (you | yourself)"] },
     ask_landlord: { patterns: ["what is (the landlord | mister patel) like", "is (mister patel | the landlord) nice", "do you know mister patel", "is (mister patel | the landlord) a (good | nice) (landlord | guy | man | person)"] },
     ask_store: { patterns: [
       "is there a (grocery store | supermarket | store | shop) (nearby | near here | close by | around here) #h:q_store",
@@ -441,6 +446,12 @@ export const neighbor: SituationDef = {
       t("Mr. | Patel? | He's | great. | He | fixes | everything | really | fast.", "Ponas | Patelis? | Jis yra | puikus. | Jis | sutaiso | viską | labai | greitai.",
         "Ponas Patelis? Jis puikus – viską sutaiso labai greitai."),
     ],
+    // 12 Nov 2026, new lines: the landlord's name (he lives on the first floor, s81), Rita's door, where Rita is from
+    landlord_who: [t("Mr. | Patel. | He | lives | on | the | first | floor.", "Ponas | Patelis. | Jis | gyvena | — | — | pirmame | aukšte.", "Ponas Patelis. Jis gyvena pirmame aukšte.",
+      { flags: { 4: "Locative: the ending of pirmame aukšte carries “on” (C-CASE-DASH)." } })],
+    rita_apt: [t("Right | here, | next to | yours!", "Štai | čia, | šalia | tavojo!", "Štai čia, šalia tavojo!")],
+    rita_from: [t("Me? | I | grew up | right | here, | in | Maple Harbor!", "Aš? | Aš | užaugau | būtent | čia, | — | Maple Harbore!", "Aš? Užaugau čia pat, Maple Harbore!",
+      { flags: { 5: "“in”: the locative Maple Harbore carries it." } })],
     store: [t("There's | a | grocery | store | two | blocks | away.", "Yra | — | maisto | parduotuvė | dviejų | kvartalų | atstumu.", "Už dviejų kvartalų yra maisto parduotuvė.")],
     unknown_q: [
       t("Hmm, | I'm | not | sure. | Maybe | ask | Mr. | Patel!", "Hmm, | aš | nesu | {sm:tikras|sf:tikra}. | Gal | paklausk | pono | Patelio!",
@@ -695,6 +706,9 @@ export const neighbor: SituationDef = {
   },
 
   merges: {
+    "next to": { reason: "lexical_expression", split: "next → kitas + to → į is false; = šalia (C-LEX).", minimal: "Two words." },
+    "grew up": { reason: "lexical_expression", split: "grew → augo + up → aukštyn is false; = užaugo (C-PHR).", minimal: "Verb and particle." },
+    "maple harbor": { reason: "lexical_expression", split: "A proper name; maple → klevas + harbor → uostas would translate the town's name.", minimal: "Two-word name." },
     "move in": { reason: "lexical_expression", split: "move → kraustytis + in → į leaves a stray preposition; the prefix į- of įsikraustyti carries “in” (C-PHR).", minimal: "Verb and particle." },
     "moved in": { reason: "lexical_expression", split: "moved → kraustėsi + in → į leaves a stray preposition; = įsikraustė (C-PHR).", minimal: "Verb and particle." },
     "next door": { reason: "lexical_expression", split: "next → kitas + door → durys gives “kitos durys”; = kaimynystėje / gretimame bute (C-LEX).", minimal: "Two words." },
@@ -742,15 +756,16 @@ export const neighbor: SituationDef = {
       ask: (c) => {
         c.s.fromAsked = true;
         c.say("ask_from");
-        c.expect({ id: "from_q", optional: true, expects: ["from_ans", "from_ans_ctx", "from_other_ctx"], hints: ["from"],
+        c.expect({ id: "from_q", optional: true, expects: ["from_ans", "from_ans_ctx", "from_other_ctx", "rita_from_ctx"], hints: ["from"],
           suggest: [{ lt: "Pasakyti, iš kur esi", hint: "from", options: "country" }],
           on: {
             from_ans: (cc, sl, sg) => { neighbor.handlers.from_ans(cc, sl, sg); },
             from_ans_ctx: (cc, sl, sg) => { neighbor.handlers.from_ans_ctx(cc, sl, sg); },
             from_other_ctx: (cc, sl, sg) => { neighbor.handlers.from_other_ctx(cc, sl, sg); },
+            rita_from_ctx: (cc, sl, sg) => { neighbor.handlers.rita_from_ctx(cc, sl, sg); },
           } });
       },
-      expects: ["from_ans", "from_ans_ctx", "from_other_ctx"] },
+      expects: ["from_ans", "from_ans_ctx", "from_other_ctx", "rita_from_ctx"] },
     { id: "like_q", when: (c) => !known(c) && !!c.s.introduced && c.s.askLike, done: (c) => !!c.s.likeAsked,
       ask: (c) => {
         c.s.likeAsked = true;
@@ -865,9 +880,11 @@ export const neighbor: SituationDef = {
     },
 
     // --- small talk ---
-    from_ans(c, slots) { fromReact(c, slots.country); },
-    from_ans_ctx(c, slots) { fromReact(c, slots.country); },
-    from_other_ctx(c) { c.say("from_other"); },
+    from_ans(c, slots) { fromReact(c, slots.country); ritaFromBack(c); },
+    from_ans_ctx(c, slots) { fromReact(c, slots.country); ritaFromBack(c); },
+    from_other_ctx(c) { c.say("from_other"); ritaFromBack(c); },
+    ask_rita_from(c) { ritaFrom(c); },
+    rita_from_ctx(c) { ritaFrom(c); },
     like_ans_ctx(c) { if (!/boxes/i.test(c.heard)) react(c, "like_react"); },
     boxes(c) { react(c, "boxes_react"); },
 
@@ -882,6 +899,8 @@ export const neighbor: SituationDef = {
     ask_internet(c) { building(c); c.say("internet"); },
     ask_quiet(c) { building(c); c.say("quiet"); },
     ask_landlord(c) { building(c); c.say("landlord"); },
+    ask_landlord_who(c) { building(c); c.say("landlord_who"); },
+    ask_rita_apt(c) { c.say("rita_apt"); },
     ask_store(c) { building(c); c.say("store"); },
     ask_unknown(c) { c.say("unknown_q"); },
     no_more(c) {
@@ -997,6 +1016,11 @@ export const neighbor: SituationDef = {
   },
 
   tests: [
+    // dead ends (12 Nov 2026)
+    { say: "Who's the landlord?", intent: "ask_landlord_who" },
+    { say: "Which apartment is yours?", intent: "ask_rita_apt" },
+    { say: "Where are you from?", intent: "ask_rita_from", not: ["from_ans"] },
+    { say: "I'm from Canada. And you?", intent: "from_ans", step: "from_q", slots: { country: "canada" } },
     // logic audit (5 Nov 2026)
     { say: "Yes, should I bring anything?", intent: "coffee_yes" },
     { say: "Hi! I'm Tomas. I just moved in next door.", intent: "im_name_ctx", step: "intro" },
@@ -1130,6 +1154,17 @@ function introduce(c: Ctx, named: boolean) {
       my_name: (cc) => { cc.s.named = true; cc.say("nice_meet_short"); },
       bare_name_ctx: (cc) => { cc.s.named = true; cc.say("nice_meet_short"); },
     } });
+}
+
+/** "I'm from Canada. And you?": Rita answers the question back (12 Nov 2026), once a turn. */
+function ritaFromBack(c: Ctx) {
+  if (/\b(and you|what about you|how about you|and yourself|where are you from)\b/i.test(c.heard)) ritaFrom(c);
+}
+const ritaFromSaid = new WeakSet<object>(); // a turn's context: "Canada. And you?" is two pieces, one answer
+function ritaFrom(c: Ctx) {
+  if (ritaFromSaid.has(c)) return;
+  ritaFromSaid.add(c);
+  c.say("rita_from");
 }
 
 function fromReact(c: Ctx, country?: string) {

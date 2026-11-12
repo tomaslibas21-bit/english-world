@@ -196,5 +196,12 @@
   {"ctx": "tech", "say": "No, that's all. Bye.", "intent": "any", "not": ["tech_busy", "tech_accept"]},
   {"ctx": "tech", "say": "What time will the technician come?", "intent": "tech_when_q", "note": "logic audit 5 Nov 2026"},
   {"ctx": "more", "say": "When will the technician come?", "intent": "tech_when_q", "note": "logic audit 5 Nov 2026"},
-  {"ctx": "tech", "say": "How much is it?", "intent": "tech_cost_q", "note": "logic audit 5 Nov 2026"}
+  {"ctx": "tech", "say": "How much is it?", "intent": "tech_cost_q", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "tech", "say": "Do I have to be home?", "intent": "tech_home_q", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "tech", "say": "Do I have to be home?", "intent": "any", "not": ["tech_accept", "tech_busy"], "note": "dead ends 12 Nov 2026"},
+  {"ctx": "tech", "say": "Does someone need to be home?", "intent": "tech_home_q", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "tech", "say": "Should I be there for the visit?", "intent": "tech_home_q", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "tech", "say": "Can't you come today?", "intent": "tech_other", "slots": {"day": "today"}, "note": "dead ends 12 Nov 2026"},
+  {"ctx": "tech", "say": "Can't you come today?", "intent": "any", "not": ["tech_accept"], "note": "dead ends 12 Nov 2026"},
+  {"ctx": "tech", "say": "Couldn't someone come tomorrow?", "intent": "tech_other", "slots": {"day": "tomorrow"}, "note": "dead ends 12 Nov 2026"}
 ]}
