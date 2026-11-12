@@ -232,5 +232,7 @@
   {"ctx": "dest", "say": "I want to go to beach.", "intent": "buy", "slots": {"dest": "seaside"}},
   {"ctx": "dest", "say": "I want to buy a train ticket to Portland.", "intent": "buy", "slots": {"dest": "portland"}},
   {"ctx": "travel_day", "say": "no tomorrow", "intent": "travel_ctx"},
-  {"ctx": "travel_day", "say": "no next week", "intent": "travel_ctx", "slots": {"day": "next_week"}}
+  {"ctx": "travel_day", "say": "no next week", "intent": "travel_ctx", "slots": {"day": "next_week"}},
+  {"ctx": "pay", "say": "Can I pay with my phone?", "intent": "pay_card", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "pay", "say": "Do you take Apple Pay?", "intent": "pay_card", "note": "dead ends 12 Nov 2026"}
 ]}

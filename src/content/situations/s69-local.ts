@@ -290,6 +290,16 @@ const H: Record<string, Handler> = {
   ask_safe(c) { c.say("safe"); },
   no_crowds(c) { c.say("no_crowds"); c.s.topic = "park"; if (!c.s.recs.includes("park")) c.s.recs.push("park"); c.s.sightRec = true; },
   no_walk(c) { c.say("no_walk"); },
+  // 12 Nov 2026 (dead ends): a taxi, Rosa's name, what a place is or is like
+  ask_taxi(c) { c.say("taxi_far"); },
+  ask_name(c) { c.say("rosa_name"); },
+  ask_what(c, slots) {
+    const id = (slots.spot as string | undefined) ?? c.s.topic;
+    if (!id) { aboutSpot(c, slots, {}, "which_spot"); return; }
+    if (slots.spot && slots.spot !== c.s.topic) c.s.topic = slots.spot;
+    // "What is The Pier?": the name doesn't say it is a restaurant; "What's it like?": her tip about it again
+    c.say(id === "pier" && !/\blike\b/i.test(c.heard || "") ? "what_pier" : `rec_${id}`);
+  },
   thanks_tip(c) {
     c.say("thanks_reply");
     if (c.step === "more") c.s.moreDone = true;
@@ -349,7 +359,7 @@ function wrap(hs: Record<string, Handler>): Record<string, Handler> {
     out[id] = (c, slots, seg) => {
       if (!onceThisTurn(c, "h:" + id)) return;
       // (not a request for tips: small talk, and trying to buy fruit from Rosa)
-      if (!["are_you_local", "weather_ok", "g_thanks", "help_me", "tried_yes_ctx", "tried_no_ctx", "buy_produce"].includes(id)) c.s.asked = true;
+      if (!["are_you_local", "weather_ok", "g_thanks", "help_me", "tried_yes_ctx", "tried_no_ctx", "buy_produce", "ask_name"].includes(id)) c.s.asked = true;
       h(c, slots, seg);
     };
   }
@@ -473,6 +483,11 @@ export const local: SituationDef = {
     no_crowds: { patterns: ["i do not like (crowds | tourists | touristy places | crowded places | busy places)", "(i want | i would like) somewhere (quiet | not touristy | without tourists)"] },
     no_walk: { patterns: ["i do not want to walk (that far | so far | there)", "that is too far [to walk]", "i can not walk (that far | so far)", "is there a bus [there | to {spot}]",
       "where (do | can) (i | we) (catch | get | take) the bus", "how (do | can) (i | we) get (there | to {spot}) by bus", "can (i | we) (take | get) (a | the) bus [there | to {spot}]"] },
+    // 12 Nov 2026 (dead ends)
+    ask_taxi: { patterns: ["(can | could | should) (i | we) (take | get | call) a (taxi | cab) [there | to {spot} | from here] [instead]", "where (can | do | could) (i | we) (get | find | take | catch) a (taxi | cab)",
+      "(is there | where is) a (taxi | cab | taxi stand) [near here | nearby | around here | @here_]", "how (do | can) (i | we) get a (taxi | cab)", "where is the taxi stand", "what about a (taxi | cab)"] },
+    ask_name: { patterns: ["what is your name", "[sorry] what was your name [again]", "may i ask your name", "and your name [is]"] },
+    ask_what: { patterns: ["what is {spot}", "what (kind | sort) of place is {spot}", "what is (it | that | that place | {spot}) like", "what (is | was) that [place]", "tell me more [about it | about {spot}]"] },
     thanks_tip: { patterns: [
       "(thanks | thank you) for the (tip | tips | advice | recommendation | recommendations | help) #h:t_tip", "you have been (really | so | very) helpful #h:t_helpful", "that is (really | very | so) helpful",
       "(that | it) sounds (great | good | lovely | amazing | perfect | wonderful) #h:t_sounds", "i will (check it out | try it | go there | try that) #h:t_check", "great tip", "(that is | what) a great (tip | idea)",
@@ -654,6 +669,11 @@ export const local: SituationDef = {
     worth: [t("Absolutely! | You'll love | it.", "Absoliučiai! | Jums patiks | tai.", "Tikrai! Jums patiks.")],
     safe: [t("Oh, | yes, | it's | very | safe. | But | the | lighthouse | path | is | dark, | so | take | a | taxi | back.", "O, | taip, | čia yra | labai | saugu. | Bet | — | švyturio | takas | yra | tamsus, | tad | važiuokite | — | taksi | atgal.", "O, taip, čia labai saugu. Bet takas prie švyturio tamsus, tad atgal grįžkite taksi.")],
     no_walk: [t("Then | take | bus | number | three. | It | stops | right | here.", "Tada | važiuokite | autobusu | numeris | trys. | Jis | sustoja | būtent | čia.", "Tada važiuokite trečiu autobusu. Jis sustoja čia pat.")],
+    // 12 Nov 2026, new lines: the taxi stand (layout: out by the airport road), her name, what The Pier is
+    taxi_far: [t("The | taxi | stand | is | out | by | the | airport. | Bus | number | three | stops | right | here.", "— | Taksi | stotelė | yra | toli, | prie | — | oro uosto. | Autobusas | numeris | trys | sustoja | būtent | čia.",
+      "Taksi stotelė toli, prie oro uosto. O trečias autobusas sustoja čia pat.")],
+    rosa_name: [t("I'm | Rosa, | dear. | Nice | to meet | you!", "Aš esu | Rosa, | {m:mielasis|f:mieloji}. | Malonu | susipažinti | su Jumis!", "Aš Rosa, {m:mielasis|f:mieloji}. Malonu susipažinti!")],
+    what_pier: [t("It's | a | seafood | restaurant | down | by | the | harbor.", "Tai yra | — | jūros gėrybių | restoranas | ten | prie | — | uosto.", "Tai jūros gėrybių restoranas prie uosto.")],
     which_spot: [t("Which | place, | dear?", "Kuri | vieta, | {m:mielasis|f:mieloji}?", "Apie kurią vietą klausiate, {m:mielasis|f:mieloji}?")],
     no_problem: [t("Oh, | okay!", "O, | gerai!", "O, gerai!")],
     help_sure: [t("Of course, | dear! | What | do | you | need?", "Žinoma, | {m:mielasis|f:mieloji}! | Ko | — | jums | reikia?", "Žinoma, {m:mielasis|f:mieloji}! Ko jums reikia?", { flags: { 3: "Question “do” has no Lithuanian word; the dative jums + reikia carries it." } })],
@@ -993,6 +1013,13 @@ export const local: SituationDef = {
   },
 
   tests: [
+    // dead ends (12 Nov 2026): a taxi, her name, what a place is
+    { say: "Can I take a taxi?", intent: "ask_taxi" },
+    { say: "Where can I get a taxi?", intent: "ask_taxi", not: ["no_walk"] },
+    { say: "What's your name?", intent: "ask_name" },
+    { say: "What is The Pier?", intent: "ask_what", slots: { spot: "pier" }, not: ["ask_walk"] },
+    { say: "What's it like?", intent: "ask_what" },
+    { say: "What's The Pier like?", intent: "ask_what", slots: { spot: "pier" } },
     // logic audit (5 Nov 2026)
     { say: "Where do I catch the bus?", intent: "no_walk" },
     { say: "How do I get there by bus?", intent: "no_walk" },

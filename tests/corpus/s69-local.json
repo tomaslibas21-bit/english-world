@@ -155,5 +155,16 @@
   {"ctx": "from", "say": "Where is The Pier?", "intent": "ask_walk", "slots": {"spot": "pier"}, "note": "logic audit 5 Nov 2026"},
   {"ctx": "need", "say": "Where's a nice place to watch the sunset?", "intent": "ask_sight", "note": "logic audit 5 Nov 2026"},
   {"ctx": "food_kind", "say": "No, thanks.", "intent": "yn:no", "note": "logic audit 5 Nov 2026"},
-  {"ctx": "need", "say": "Where do I catch the bus?", "intent": "any", "not": ["ask_sight", "ask_food"], "note": "logic audit 5 Nov 2026"}
+  {"ctx": "need", "say": "Where do I catch the bus?", "intent": "any", "not": ["ask_sight", "ask_food"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "more", "say": "Can I take a taxi?", "intent": "ask_taxi", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "from", "say": "Where can I get a taxi?", "intent": "ask_taxi", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "sight", "say": "Is there a taxi stand near here?", "intent": "ask_taxi", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "walk", "say": "Could I take a cab there instead?", "intent": "ask_taxi", "not": ["walk_yes_ctx"], "note": "dead ends 12 Nov 2026"},
+  {"ctx": "more", "say": "What's your name?", "intent": "ask_name", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "from", "say": "Sorry, what was your name?", "intent": "ask_name", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "from", "say": "What is The Pier?", "intent": "ask_what", "slots": {"spot": "pier"}, "note": "dead ends 12 Nov 2026"},
+  {"ctx": "sight", "say": "What's it like?", "intent": "ask_what", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "more", "say": "What kind of place is Lucia's?", "intent": "ask_what", "slots": {"spot": "trattoria"}, "note": "dead ends 12 Nov 2026"},
+  {"ctx": "more", "say": "Tell me more about it.", "intent": "ask_what", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "more", "say": "I don't like taxis.", "intent": "any", "not": ["ask_taxi"], "note": "dead ends 12 Nov 2026"}
 ]}

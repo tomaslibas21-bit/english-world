@@ -455,9 +455,12 @@ function acceptOffer(c: Ctx) {
   c.s.accepted = c.s.offerKind;
   c.s.offerQ = false;
   B(c, c.s.offerKind === "coupon" ? "brenda_partial" : "brenda_partial_visit");
+  // "Wednesday is fine. Is there any cost?": the cost before her next question (12 Nov 2026)
+  if (COST_Q.test(heard(c)) && once(c, "cost")) B(c, "no_cost");
   B(c, "brenda_anything");
   expectAnything(c);
 }
+const COST_Q = /\b(any|a) (cost|charge|fee)\b|\bpay anything\b|\bcharged\b|\bcost (anything|extra)\b/i;
 
 /** After the coupon or the visit was taken: "Can I help you with anything else?" A refund or a replacement
  *  asked for now still works; "No, that's all" leaves it at the coupon (the reference number, then goodbye). */
@@ -726,6 +729,16 @@ export const complaint: SituationDef = {
   },
 
   intents: {
+    // "Is there any cost?" (the visit), "When does the coupon expire?" (12 Nov 2026: not understood before)
+    q_cost: { patterns: [
+      "is there (any | a) (cost | charge | fee) [for (it | that | the visit | the repair | the technician)]", "(is | will) (it | that | the visit | the repair) (be free | free) [of charge]",
+      "do i (have to | need to) pay [anything] [for (it | that | the visit | the repair | the technician)]", "will i (have to pay | be charged) [anything] [for (it | that | the visit | the repair)]",
+      "how much (is | does) (the visit | the repair | the technician) [cost]", "(does | will) (it | that | the visit | the repair) cost (anything | me anything | extra)",
+    ] },
+    q_coupon_expire: { patterns: [
+      "when does (the | this | that | your) coupon expire", "(does | will) (the | this | that) coupon expire", "how long (is | does) (the | this | that) coupon (valid | good | last) [for]",
+      "is (the | this | that) coupon valid (for long | forever)", "when (can | do) i (use | have to use) (the | this | that) coupon [by]",
+    ] },
     // --- the complaint and what happened -----------------------------------------------------
     complain_open: { patterns: [
       "i would like to make a [formal] complaint [about @problem_of] #h:make_complaint",
@@ -1402,6 +1415,11 @@ export const complaint: SituationDef = {
         "Galiu atsiųsti pas jus meistrą trečiadienį, nuo 10 iki 14 valandos.",
         { say: "I can get a technician out to you on Wednesday, between ten and two.", flags: { 2: "“get … out” = atsiųsti.", 5: "“out”: the particle of “get … out”, carried by atsiųsti (under “get”).", 12: F_PM2 } }),
     ],
+    // 12 Nov 2026, new lines: the cost ("No charge…": Kyle or Brenda), the coupon's date (Brenda; a year is new)
+    no_cost: [t("No | charge. | The | fridge | is | under | warranty.", "Jokio | mokesčio. | — | Šaldytuvui | — | taikoma | garantija.", "Jokio mokesčio. Šaldytuvui taikoma garantija.",
+      { flags: { 4: "“is under warranty”: taikoma garantija carries it.", 5: "“under warranty” = taikoma garantija." } })],
+    coupon_expire: [t("It's | good | for | a | year. | The | mug | is | forever.", "Jis | galioja | — | — | metus. | — | Puodelis | yra | amžinas.", "Jis galioja metus. O puodelis – amžinas.",
+      { flags: { 2: "“for” + a time: the accusative metus carries it." } })],
     brenda_offer_q: [t("How | does | that | sound?", "Kaip | — | tai | skamba?", "Kaip jums tai atrodo?", { flags: { 1: "Question “does” has no Lithuanian word; the tense sits on skamba." } })],
     brenda_decline_ack: [t("Understood.", "Supratau.", "Supratau."), t("Fair enough.", "Na, gerai.", "Na, gerai.")],
     brenda_day_off: [
@@ -1836,6 +1854,18 @@ export const complaint: SituationDef = {
 
   handlers: {
     ...Object.fromEntries(INTENT_IDS.map((id) => [id, handle(id)])),
+    // 12 Nov 2026: the visit's cost (the fridge is three weeks old: under warranty), the coupon's date
+    q_cost(c) {
+      if (c.s.over || !once(c, "cost")) return;
+      (c.s.transferred ? B : K)(c, "no_cost");
+      if (c.step === "offer" && c.s.offerQ && !c.s.accepted) c.hold();
+    },
+    q_coupon_expire(c) {
+      if (c.s.over) return;
+      if (c.s.offerKind !== "coupon" || !c.s.transferred) { (c.s.transferred ? B : K)(c, "no_cost"); return; }
+      B(c, "coupon_expire");
+      if (c.step === "offer" && c.s.offerQ && !c.s.accepted) c.hold();
+    },
     // global skills with a meaning here
     g_bye(c) { endCall(c); },
     g_thanks(c, slots) {
@@ -1869,6 +1899,10 @@ export const complaint: SituationDef = {
   },
 
   tests: [
+    // dead ends (12 Nov 2026): the cost, the coupon's date
+    { say: "Is there any cost?", intent: "q_cost", step: "offer" },
+    { say: "Wednesday is fine. Is there any cost?", intent: "accept_offer", step: "offer" },
+    { say: "When does the coupon expire?", intent: "q_coupon_expire", step: "offer", not: ["accept_offer", "decline_offer"] },
     // logic audit (5 Nov 2026): a polite decline with "thanks for the offer"
     { say: "Thanks for the offer, but no.", intent: "decline_offer", step: "offer" },
     { say: "Thank you for the coupon, but no thanks.", intent: "decline_offer", step: "offer", not: ["accept_offer"] },

@@ -300,5 +300,15 @@
   {"ctx": "check_q", "say": "No.", "intent": "yn:no", "note": "logic audit 5 Nov 2026"},
   {"ctx": "check_q", "say": "I'll pay cash.", "intent": "pay_cash", "note": "logic audit 5 Nov 2026"},
   {"ctx": "price", "say": "That's okay, thanks.", "intent": "any", "not": ["shake", "walk_rude"], "note": "logic audit 5 Nov 2026"},
-  {"ctx": "check_q", "say": "No, thanks.", "intent": "any", "not": ["pay_check", "pay_cash"], "note": "logic audit 5 Nov 2026"}
+  {"ctx": "check_q", "say": "No, thanks.", "intent": "any", "not": ["pay_check", "pay_cash"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "pay", "say": "Can I pay in installments?", "intent": "pay_parts", "note": "dead end 12 Nov 2026"},
+  {"ctx": "pay", "say": "Can I pay half now and half tomorrow?", "intent": "pay_parts", "note": "dead end 12 Nov 2026"},
+  {"ctx": "pay", "say": "Could I pay monthly?", "intent": "pay_parts", "note": "dead end 12 Nov 2026"},
+  {"ctx": "pay", "say": "Do you do payment plans?", "intent": "pay_parts", "note": "dead end 12 Nov 2026"},
+  {"ctx": "look", "say": "Can I pay in installments?", "intent": "pay_parts", "note": "dead end 12 Nov 2026"},
+  {"ctx": "look", "say": "Is it in your name?", "intent": "q_title", "note": "dead end 12 Nov 2026"},
+  {"ctx": "look", "say": "Is the title in your name?", "intent": "q_title", "note": "dead end 12 Nov 2026"},
+  {"ctx": "look", "say": "Is the car registered in your name?", "intent": "q_title", "note": "dead end 12 Nov 2026"},
+  {"ctx": "pay", "say": "Half now and half tomorrow?", "intent": "any", "not": ["pay_cash", "pay_check", "pay_transfer"], "note": "dead end 12 Nov 2026"},
+  {"ctx": "price", "say": "Can I pay in installments?", "intent": "any", "not": ["accept_deal", "accept_ctx"], "note": "dead end 12 Nov 2026"}
 ] }

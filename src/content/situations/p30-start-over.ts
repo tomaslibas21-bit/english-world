@@ -162,6 +162,18 @@ export const startOver: SituationDef = {
   },
 
   intents: {
+    // 12 Nov 2026 (not understood before): "What should I cook?", "I can't today." at his price, "Are you still mad?"
+    q_cook: { patterns: [
+      "[so] what (should i | do you want me to | would you like me to) (cook | make | bring) [for dinner]", "what (do you want | would you like) (for dinner | to eat)",
+      "any (requests | wishes) [for dinner]", "what kind of (dinner | food) (do you want | would you like)", "what (should | can) i cook for you",
+    ] },
+    cant_today: { patterns: [
+      "[sorry] i can not (today | do it today | make it today | do today) [sorry]", "[sorry] not today [sorry]", "[sorry] (today | today is) (does not work | is not good | is bad) [for me]",
+      "[sorry] i am (busy | working) today", "can we do it another day", "(how about | what about) another day",
+    ] },
+    q_mad: { patterns: [
+      "are you still (mad | angry | upset) [at me | with me]", "(are | were) you (mad | angry | upset) at me", "do you still hate me", "do you hate me", "are you still mad about (it | that | the barbecue)",
+    ] },
     // --- at the door -------------------------------------------------------------------------
     // a bare name ("Dan." / "Nora!"): a catch-all, so "Hi Dan, do you have a minute?" keeps the name as an address
     voc_unknown: { patterns: ["(dan | danny | nora)"] },
@@ -637,6 +649,12 @@ export const startOver: SituationDef = {
     ],
     deal: [t("Deal.", "Sutarta.", "Sutarta."), t("Good. | It's a deal.", "Gerai. | Sutarta.", "Gerai. Sutarta.")],
     deal_q: [t("So? | Deal?", "Tai? | Sutarta?", "Tai kaip? Sutarta?")],
+    // 12 Nov 2026, new lines (the lasagna is Nora's recipe, s85): "What should I cook?", "I can't today." (his price), "Are you still mad?"
+    cook_what: [t("Surprise | me. | Just | not | lasagna. | That's | Nora's | thing.", "Nustebink | mane. | Tik | ne | lazaniją. | Tai yra | Noros | sritis.", "Nustebink mane. Tik ne lazaniją – tai Noros sritis.")],
+    not_today: [t("Who | said | today? | Next | Saturday | works.", "Kas | sakė | šiandien? | Kitas | šeštadienis | tinka.", "Kas sakė, kad šiandien? Kitas šeštadienis tinka.")],
+    another_day: [t("Okay. | Another | day, | then. | But | soon.", "Gerai. | Kitą | dieną, | tada. | Bet | greitai.", "Gerai, tada kitą dieną. Bet greitai.")],
+    still_mad: [t("A little. | Keep | talking.", "Truputį. | Toliau | kalbėk.", "Truputį. Kalbėk toliau.")],
+    not_mad: [t("Not | anymore. | Well, | maybe | a little.", "Jau | nebe. | Na, | gal | truputį.", "Jau nebe. Na, gal truputį.")],
     wrong_answer: [t("Wrong | answer. | Try | again.", "Neteisingas | atsakymas. | Bandyk | dar kartą.", "Neteisingas atsakymas. Bandyk dar kartą.")],
     cant_cook_react: [t("I | know. | That's | the | punishment.", "Aš | žinau. | Tai yra | — | bausmė.", "Žinau. Tai ir yra bausmė.")],
     offer_react: [
@@ -1005,6 +1023,12 @@ export const startOver: SituationDef = {
   },
 
   tests: [
+    // dead ends (12 Nov 2026)
+    { say: "What should I cook?", intent: "q_cook", step: "make_up" },
+    { say: "I can't today.", intent: "cant_today", step: "make_up", not: ["deal_ctx"] },
+    { say: "Sorry, not today.", intent: "cant_today", step: "make_up" },
+    { say: "Are you still mad?", intent: "q_mad", step: "apology" },
+    { say: "Are you still mad at me?", intent: "q_mad", step: "make_up" },
     // logic audit (5 Nov 2026): "Whatever you want." names his price; "Sorry again." is an apology
     { say: "Whatever you want.", intent: "deal_ctx", step: "make_up" },
     { say: "Sorry again.", intent: "g_repeat", step: "make_up" },
@@ -1397,6 +1421,22 @@ function stepYes(c: Ctx) {
 // Handlers
 
 const HANDLERS: Record<string, H> = {
+  // 12 Nov 2026: answers for three dead ends
+  q_cook(c) {
+    if (c.s.variant === "dinner" && (c.s.dealOffered || c.s.makeUpDone)) { dan(c, "cook_what"); c.hold(); }
+  },
+  cant_today(c) {
+    if (!c.s.dealOffered) return;
+    // lunch is today: another day, then (made up); dinner or the boat was never today
+    if (c.s.variant === "stay") { if (!once(c, "deal")) return; dan(c, "another_day"); settle(c); return; }
+    dan(c, "not_today");
+    c.hold();
+  },
+  q_mad(c) {
+    if (timeOpen(c)) { dan(c, "just_time"); c.hold(); return; }
+    dan(c, c.s.turnDone ? "not_mad" : "still_mad");
+    c.hold();
+  },
   g_repeat(c) {
     if (/^\W*(i'?m\s+)?sorry again\W*$/i.test(c.heard) && !/\?/.test(c.heard)) { apologyMove(c, []); return; }
     GLOBAL_HANDLERS.g_repeat(c as any, {});

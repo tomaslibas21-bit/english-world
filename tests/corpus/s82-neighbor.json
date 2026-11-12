@@ -296,5 +296,14 @@
   {"ctx": "complaint", "say": "My music?", "intent": "which_music_ctx", "note": "logic audit 5 Nov 2026"},
   {"ctx": "complaint", "say": "What time?", "intent": "which_music_ctx", "note": "logic audit 5 Nov 2026"},
   {"ctx": "complaint", "say": "What time?", "intent": "any", "not": ["coffee_yes"], "note": "logic audit 5 Nov 2026"},
-  {"ctx": "away_when", "say": "I don't know yet.", "intent": "g_dontknow", "note": "logic audit 5 Nov 2026"}
+  {"ctx": "away_when", "say": "I don't know yet.", "intent": "g_dontknow", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "trash_q", "say": "Who's the landlord?", "intent": "ask_landlord_who", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "needs", "say": "Who owns the building?", "intent": "ask_landlord_who", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "trash_q", "say": "Which apartment is yours?", "intent": "ask_rita_apt", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "needs", "say": "Where do you live?", "intent": "ask_rita_apt", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "from_q", "say": "I'm from Canada. And you?", "intent": "from_ans", "slots": {"country": "canada"}, "note": "dead ends 12 Nov 2026"},
+  {"ctx": "from_q", "say": "And you?", "intent": "rita_from_ctx", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "trash_q", "say": "Where are you from?", "intent": "ask_rita_from", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "needs", "say": "Are you from here?", "intent": "ask_rita_from", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "trash_q", "say": "And you?", "intent": "none", "note": "dead ends 12 Nov 2026"}
 ]}

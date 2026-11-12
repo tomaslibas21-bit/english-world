@@ -285,6 +285,12 @@ export const salon: SituationDef = {
     ask_jessie: { patterns: ["and you", "what about you", "how about you", "(are you | do you have) (doing anything | any plans) [this weekend]", "and yourself"] },
 
     // --- paying, tip, next time ----------------------------------------------------------------
+    // 12 Nov 2026 (dead ends): her name, how long it takes, whether the tip is included
+    q_name: { patterns: ["what is your name", "[sorry] what was your name [again]", "may i ask your name", "and your name is", "and you are"] },
+    q_duration: { patterns: ["how long (does it | will it | is it going to | does this | will this) take", "how long (does | will) (the | a | my) (cut | haircut | trim | appointment) take",
+      "how much time (does it | will it | do you need) [take]", "how long will (i | we) be here", "how long (is | does) the appointment [take | last]", "will it take long", "is it going to take long"] },
+    q_tip_incl: { patterns: ["is [the | a] (tip | gratuity) included [in the price]", "(does | is) the price include (the | a) tip", "is (service | the service charge) included",
+      "is the tip (extra | separate)", "do (i | people) (usually | normally) tip [here]", "how much (should | do) (i | people) [usually | normally] tip", "should i (tip | leave a tip)"] },
     ask_owe: { patterns: [
       "how much do i owe you #h:owe", "what do i owe you", "how much (is it | is that | was that | do i pay)", "what is the (total | price)", "how much",
       "how much is (a | the) (trim | haircut | cut)", "how much for (a | the) (trim | haircut | wash)", "how much (with | including) the tip",
@@ -483,6 +489,11 @@ export const salon: SituationDef = {
     price_bangs: [t("A | bangs | trim | is | {$price}.", "— | Kirpčiukų | patrumpinimas | kainuoja | {$price}.", "Kirpčiukų patrumpinimas kainuoja {$price}.")],
     price_extras: [t("A | wash | or | a | blow-dry | is | five | dollars | extra.", "— | Plovimas | ar | — | džiovinimas | kainuoja | penkis | dolerius | papildomai.",
       "Plovimas ar džiovinimas – po penkis dolerius papildomai.")],
+    // 12 Nov 2026, new lines: her name, how long it takes, the tip isn't included
+    jessie_name: [t("I'm | Jessie! | Nice | to meet | you!", "Aš esu | Jessie! | Malonu | susipažinti | su Jumis!", "Aš Jessie! Malonu susipažinti!")],
+    cut_time: [t("About | thirty | minutes.", "Maždaug | trisdešimt | minučių.", "Maždaug pusvalandį.")],
+    tip_not_incl: [t("No, | it's | not | included. | Most | people | add | fifteen | to | twenty | percent.", "Ne, | jie | ne | įskaičiuoti. | Dauguma | žmonių | prideda | penkiolika | iki | dvidešimties | procentų.",
+      "Ne, arbatpinigiai neįskaičiuoti. Dauguma žmonių prideda 15–20 procentų.", { flags: { 1: "“it” = the tip (arbatpinigiai, plural), hence jie." } })],
     tip_later: [t("Sure, | you | can | add | it | when | you | pay.", "Žinoma, | jūs | galite | pridėti | juos, | kai | jūs | mokėsite.", "Žinoma, galėsite pridėti mokėdami.",
       { flags: { 4: "“it” = the tip (arbatpinigiai, plural), hence juos." } })],
     book_first: [t("Sure, | let's do | that | at the end.", "Žinoma, | padarykime | tai | pabaigoje.", "Žinoma, tai padarysime pabaigoje.")],
@@ -985,6 +996,10 @@ export const salon: SituationDef = {
     },
     keep_layers(c) { c.s.layers = true; c.say("ack"); },
     no_wash(c) { if (c.s.wash !== undefined) { c.say("ack"); return; } c.s.wash = false; c.say("no_wash_ok"); },
+    // 12 Nov 2026 (dead ends): her name, the time a cut takes (invented: about thirty minutes), the tip
+    q_name(c) { c.say("jessie_name"); },
+    q_duration(c) { c.say("cut_time"); },
+    q_tip_incl(c) { c.say("tip_not_incl"); },
     no_tip(c) { c.say(c.s.paid ? "paid" : "ack"); },
     see_you(c) { c.say("g_bye"); c.end(); },
     no_bangs(c) { c.s.bangs = false; c.say("ack"); },
@@ -1147,6 +1162,11 @@ export const salon: SituationDef = {
   },
 
   tests: [
+    // dead ends (12 Nov 2026): her name, how long it takes, the tip
+    { say: "What's your name?", intent: "q_name" },
+    { say: "How long does it take?", intent: "q_duration" },
+    { say: "Is the tip included?", intent: "q_tip_incl", not: ["ask_owe", "add_tip"] },
+    { say: "How much with the tip?", intent: "ask_owe", not: ["q_tip_incl"] },
     // logic audit (5 Nov 2026)
     { say: "That's fine, thanks.", intent: "decline_ctx", step: "wash", not: ["wash_request"] },
     { say: "I'm good, thanks.", intent: "decline_ctx", step: "blowdry" },

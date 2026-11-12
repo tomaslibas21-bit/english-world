@@ -39,7 +39,7 @@ const DRINKS: EntityDef[] = [
   ent("lemonade", "lemonade", "limonadas/limonado/limonadui/limonadą/limonadu/limonade", "m", { pl: "lemonades",
     forms: ["lemonades", "pink lemonade", "fresh lemonade", "homemade lemonade", "lemonde"], attrs: { price: 400, refill: true } }),
   ent("iced_tea", "iced | tea", `ledinė/ledinės/ledinei/ledinę/ledine/ledinėje | ${ARBATA}`, "f", {
-    forms: ["iced tea", "ice tea", "iced teas", "sweet tea", "unsweetened iced tea", "unsweet tea"], attrs: { price: 400, refill: true } }),
+    forms: ["iced tea", "ice tea", "iced teas", "sweet tea", "unsweetened iced tea", "unsweet tea"], attrs: { price: 400, refill: true, desc: "desc_iced_tea" } }),
   ent("soda", "soda", "gazuotas gėrimas/gazuoto gėrimo/gazuotam gėrimui/gazuotą gėrimą/gazuotu gėrimu/gazuotame gėrime", "m", {
     forms: ["sodas", "soft drink", "soft drinks", "pop", "fizzy drink", "a fizzy drink"], chip: "gazuotas gėrimas", attrs: { generic: "soda", price: 300 } }),
   ent("coke", "Coke", KOLA, "f", { pl: "Cokes", forms: ["coke", "cokes", "coca cola", "cola", "pepsi", "coca-cola"], attrs: { family: "soda", price: 300, refill: true } }),
@@ -677,6 +677,10 @@ export const restaurant: SituationDef = {
       "(i will | i would like to | let me) leave a tip", "(i will | i would like to | let me) (add | leave | give) {number} percent",
       "(i will | let me) tip [{number} [percent]]",
     ] },
+    // 12 Nov 2026: the tip in cash while paying by card
+    tip_cash: { patterns: ["(can | could | may) (i | we) (leave | give | pay | do) the tip in cash", "(can | could | may) (i | we) tip (in | with) cash",
+      "(i will | i would like to | i want to | i would rather | let me | i am going to) (leave | give | pay | do) the tip in cash", "[is it okay if] i (leave | give) the tip in cash",
+      "(can | could | may) (i | we) leave [a | the] (tip | cash tip) on the table", "the tip in cash [please]", "i will tip (in | with) cash", "i (have | will leave) cash for the tip"] },
     tip_none: { patterns: ["(no | without) tip", "(i will | we will) not (tip | leave a tip)", "(i | we) do not want to (tip | leave a tip)", "(skip | no) the tip", "zero percent"] },
     // --- Changes of mind
     reject: { patterns: [
@@ -1059,6 +1063,9 @@ export const restaurant: SituationDef = {
     desc_tiramisu: [t("It's | an | Italian | dessert | with | coffee | and | mascarpone.", "Tai yra | — | itališkas | desertas | su | kava | ir | maskarponės sūriu.", "Tai itališkas desertas su kava ir maskarponės sūriu.")],
     desc_panna_cotta: [t("It's | a | cream | dessert | with | berry | sauce.", "Tai yra | — | grietinėlės | desertas | su | uogų | padažu.", "Tai grietinėlės desertas su uogų padažu.")],
     desc_gelato: [t("It's | Italian | ice cream.", "Tai yra | itališki | ledai.", "Tai itališki ledai.")],
+    desc_iced_tea: [t("It's | cold | black | tea | with | ice | and | lemon.", "Tai yra | šalta | juodoji | arbata | su | ledukais | ir | citrina.", "Tai šalta juodoji arbata su ledukais ir citrina.")],
+    desc_drink: [t("It's | one | of | our | most | popular | drinks.", "Tai yra | vienas | iš | mūsų | — | populiariausių | gėrimų.", "Tai vienas populiariausių mūsų gėrimų.",
+      { flags: { 4: "“most”: the superlative suffix of populiariausių carries it." } })],
     desc_generic: [
       t("It's | one | of | our | most | popular | dishes.", "Tai yra | vienas | iš | mūsų | — | populiariausių | patiekalų.", "Tai vienas populiariausių mūsų patiekalų.",
         { flags: { 4: "“most”: the superlative suffix of populiariausių carries it." } }),
@@ -1232,6 +1239,8 @@ export const restaurant: SituationDef = {
       t("Perfect, | you're all set.", "Puiku, | viskas sutvarkyta.", "Puiku, viskas sutvarkyta."),
       t("That's | very | kind. | You're all set!", "Tai yra | labai | malonu. | Viskas sutvarkyta!", "Labai malonu. Viskas sutvarkyta!"),
     ],
+    // 12 Nov 2026, new lines: the tip in cash; what a drink is
+    tip_cash_ok: [t("Of course! | Just | skip | the | tip | on the screen, | then.", "Žinoma! | Tiesiog | praleiskite | — | arbatpinigius | ekrane, | tada.", "Žinoma! Tada tiesiog praleiskite arbatpinigius ekrane.")],
     tip_none_ok: [t("Oh... | okay. | You're all set.", "O... | gerai. | Viskas sutvarkyta.", "O... gerai. Viskas sutvarkyta.")],
     cash_ok: [
       t("Great, | I'll bring | your | change | right | over.", "Puiku, | atnešiu | jūsų | grąžą | tuoj | —.", "Puiku, tuoj atnešiu grąžą.",
@@ -1832,7 +1841,7 @@ export const restaurant: SituationDef = {
         if (!c.s.readerSaid) { c.s.readerSaid = true; c.say(c.s.wantPay ? "reader_here" : "card_reader"); return; }
         c.say("tip_screen");
       },
-      expects: ["tip_ctx", "tip_give", "tip_none", "ask_tip"],
+      expects: ["tip_ctx", "tip_give", "tip_none", "ask_tip", "tip_cash"],
       suggest: [
         { lt: "Pasirinkti arbatpinigius (paprastai 15–20 %)", hint: "tip" },
       ] },
@@ -1992,7 +2001,8 @@ export const restaurant: SituationDef = {
       const id = dishOf(slots.dish);
       if (!id) { c.say("which_item"); return; }
       c.s.mentioned = id;
-      c.say((byId(id).attrs?.desc as string | undefined) ?? "desc_generic");
+      // a drink without its own description isn't "one of our most popular dishes" (12 Nov 2026)
+      c.say((byId(id).attrs?.desc as string | undefined) ?? (DRINKS.some((d) => d.id === id) ? "desc_drink" : "desc_generic"));
     },
     ask_spicy(c, slots) {
       const id = dishOf(slots.dish) ?? (/\b(it|that|this)\b/i.test(c.heard) ? lastDish(c) : undefined);
@@ -2166,6 +2176,13 @@ export const restaurant: SituationDef = {
       if (c.s.payMethod) { c.s.paid = true; c.complete(); c.event("pay", { method: c.s.payMethod, tip: c.s.tip }); }
       c.say(c.s.payMethod === "card" ? "tip_thanks" : "thanks_tip");
     },
+    // "Can I leave the tip in cash?" at the card reader (12 Nov 2026): the card without a tip, the tip on the table
+    tip_cash(c) {
+      if (c.s.payMethod === "cash" && !c.s.paid) { (restaurant.handlers as any).tip_give(c, {}); return; }
+      if (c.s.payMethod !== "card" || c.s.paid) { c.say("no_problem"); return; }
+      c.s.paid = true; c.complete(); c.s.tip = "cash"; c.event("pay", { method: "card", tip: 0 });
+      c.say("tip_cash_ok");
+    },
     tip_none(c) {
       c.tip(TIPS.tipping);
       if (c.s.payMethod === "card" && !c.s.paid) { c.s.paid = true; c.complete(); c.s.tip = 0; c.event("pay", { method: "card", tip: 0 }); c.say("tip_none_ok"); }
@@ -2222,6 +2239,11 @@ export const restaurant: SituationDef = {
   },
 
   tests: [
+    // dead ends (12 Nov 2026): what iced tea is; the tip in cash at the card reader
+    { say: "What is iced tea?", intent: "ask_desc" },
+    { say: "Can I leave the tip in cash?", intent: "tip_cash", step: "tip" },
+    { say: "I'll leave the tip in cash.", intent: "tip_cash", step: "tip", not: ["tip_give"] },
+    { say: "Twenty percent.", intent: "tip_ctx", step: "tip", not: ["tip_cash"] },
     // logic audit (5 Nov 2026)
     { say: "A dessert, please.", intent: "dessert_some_ctx", step: "dessert", not: ["order"] },
     { say: "Yes, a dessert.", intent: "dessert_some_ctx", step: "dessert" },

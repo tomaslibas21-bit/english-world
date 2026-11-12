@@ -114,6 +114,8 @@ function recommendation(c: Ctx): string {
   let p = REC[c.s.symptom] ?? "ibuprofen";
   if (p === "ibuprofen" && unsafe(c, "ibuprofen")) p = "acetaminophen";
   else if (p === "acetaminophen" && unsafe(c, "acetaminophen") && !unsafe(c, "ibuprofen")) p = "ibuprofen";
+  // "I already took Tylenol, but it didn't help" (12 Nov 2026): the other one, when it's safe
+  if (p === c.s.tried && ALT[p] && !unsafe(c, ALT[p])) p = ALT[p];
   return p;
 }
 
@@ -283,6 +285,7 @@ export const pharmacy: SituationDef = {
       rel_child: "(son | daughter | kid | child | little boy | little girl | baby | little one | kids | children | boy | girl)",
       rel_adult: "(husband | wife | mom | mother | dad | father | friend | partner | boyfriend | girlfriend | grandma | grandpa | grandmother | grandfather | brother | sister | colleague | neighbor | roommate)",
       vit_item: "(vitamins | a multivitamin | multivitamins | vitamin (c | d | b12 | b) | fish oil | omega three | magnesium | iron | supplements | probiotics | calcium)",
+      tried_med: "(tylenol #aceta | acetaminophen #aceta | paracetamol #aceta | advil #nsaid | ibuprofen #nsaid | motrin #nsaid | aspirin #nsaid)",
       allergen: "(aspirin #nsaid | ibuprofen #nsaid | advil #nsaid | nsaids #nsaid | anti inflammatories #nsaid | acetaminophen #aceta | tylenol #aceta | paracetamol #aceta | penicillin #pen | amoxicillin #pen | [some] antibiotics #other | nuts #other | peanuts #other | latex #other | codeine #other | cats #other | dogs #other | pollen #other | dust #other | hay fever #other | grass #other | sulfa #other | shellfish #other | eggs #other | milk #other | lactose #other | gluten #other)",
       badly: "(bad | terrible | awful | little | slight | mild | really bad | horrible | nasty | slight)",
       for_sym: "for [a | an | my | the | this] [@badly] {symptom}",
@@ -504,7 +507,19 @@ export const pharmacy: SituationDef = {
     ask_kids: { patterns: [
       "is (it | this) (safe | okay | good) for (children | kids | my son | my daughter | a child | babies) #h:q_kids", "are (they | these) (safe | okay | good) for (children | kids | my son | my daughter | a child | babies) #h:q_kids", "can (children | kids | my son | my daughter | a child) take (it | this | them)",
       "do you have (it | this | something | anything) for (children | kids)", "is there a (children's | kids | kid's) version",
+      // "And for a five-year-old?" (12 Nov 2026)
+      "[and] [what about | how about] for (a child | children | kids | my son | my daughter | a little kid | a {n:number} year old | {n:number} year olds)",
+      "[and] (what | how) about (a child | children | kids | my son | my daughter | a {n:number} year old | {n:number} year olds)",
+      "[and] (the dose | the dosage) for (a child | children | kids | a {n:number} year old)", "how much (for | should) a {n:number} year old [take]",
     ] },
+    // 12 Nov 2026 (dead ends): a medicine already taken that didn't help; the opening hours
+    tried_med: { patterns: [
+      "i (already | just) (took | tried | had) @tried_med [this morning | earlier | today | yesterday | last night] [but (it | they) (did not | does not | do not) (help | work)]",
+      "i (took | tried | had) @tried_med [this morning | earlier | today | yesterday | last night] but (it | they) (did not | does not | do not) (help | work) [at all]",
+      "@tried_med (did not | does not | do not) (help | work) [at all]", "i (already | just) (took | tried) some @tried_med",
+    ] },
+    ask_hours: { patterns: ["(what time | when) do you (close | open) [today | tonight | tomorrow]", "what are your [opening] hours", "how late are you open [today | tonight]",
+      "(until | till) (when | what time) are you open", "are you open (late | tomorrow | every day | on (sunday | sundays | saturday | the weekend | weekends))", "when does the pharmacy (close | open)"] },
     ask_side_effects: { patterns: ["(are there | does it have) any side effects", "what are the side effects", "(is it | is this) safe"] },
     ask_how_long_take: { patterns: ["how long should i take (it | them) [for]", "for how many days [should i take it]", "how many days should i take (it | them)", "until when"] },
     ask_price: { patterns: [
@@ -642,6 +657,9 @@ export const pharmacy: SituationDef = {
     ask_symptoms: [
       t("I'm | sorry | to hear | that. | What | are | your | symptoms?", "Man | gaila | girdėti | tai. | Kokie | yra | jūsų | simptomai?", "Gaila tai girdėti. Kokie jūsų simptomai?"),
     ],
+    // 12 Nov 2026, new lines: another medicine after one that didn't help; the opening hours (invented: 8 to 9)
+    tried_other: [t("I see. | Then | let's | try | something | different.", "Aišku. | Tada | — | išbandykime | ką nors | kita.", "Aišku. Tada išbandykime ką nors kita.")],
+    hours: [t("We're | open | every | day, | from | eight | to | nine.", "Mes | dirbame | kiekvieną | dieną, | nuo | aštuonių | iki | devynių.", "Dirbame kasdien nuo aštuonių iki devynių.")],
     ack: [t("Okay.", "Gerai.", "Gerai."), t("Got it.", "Supratau.", "Supratau."), t("I see.", "Aišku.", "Aišku.")],
     ask_meds_which: [t("What | are | you | taking?", "Ką | — | jūs | vartojate?", "Ką vartojate?", { flags: { 1: "Progressive “are” has no Lithuanian word (linked to “taking”)." } })],
     ask_allergy_which: [t("What | are | you | allergic | to?", "Kam | esate | jūs | {m:alergiškas|f:alergiška} | —?", "Kam esate {m:alergiškas|f:alergiška}?",
@@ -1513,6 +1531,17 @@ export const pharmacy: SituationDef = {
       if (!id) return;
       sayP(c, "alcohol_no", id);
     },
+    // 12 Nov 2026 (dead ends): a medicine that didn't help; the opening hours
+    tried_med(c, _slots, seg) {
+      const med = seg.tags.includes("aceta") ? "acetaminophen" : "ibuprofen";
+      c.s.tried = med;
+      const alt = ALT[med];
+      if (unsafe(c, alt)) { c.say("ack"); return; }
+      c.say("tried_other");
+      if (product(c) === med) { const i = basket(c).indexOf(med); if (i >= 0) basket(c).splice(i, 1); c.s.product = undefined; c.s.dosageGiven = false; c.s.offer = undefined; c.s.recSaid = false; }
+      else if (!product(c) && c.s.offer === med) { c.s.offer = undefined; c.s.recSaid = false; }
+    },
+    ask_hours(c) { c.say("hours"); },
     ask_kids(c, slots) {
       // sunscreen, Band-Aids, aloe: "Of course" (the dose by weight is for medicines)
       const id = slots?.product ? last(slots.product) : (product(c) ?? c.s.offer);
@@ -1677,6 +1706,13 @@ export const pharmacy: SituationDef = {
   },
 
   tests: [
+    // dead ends (12 Nov 2026): a medicine that didn't help, a child's dose, the opening hours
+    { say: "I already took Tylenol, but it didn't help.", intent: "tried_med", not: ["allergy_ans", "meds_ans"] },
+    { say: "I took Advil this morning, but it didn't help.", intent: "tried_med" },
+    { say: "And for a five-year-old?", intent: "ask_kids" },
+    { say: "What about my daughter?", intent: "ask_kids" },
+    { say: "What time do you close?", intent: "ask_hours" },
+    { say: "Are you open on Sunday?", intent: "ask_hours" },
     // logic audit (5 Nov 2026)
     { say: "I take antidepressants.", intent: "meds_ans", step: "meds" },
     { say: "I take heart medicine.", intent: "meds_ans", step: "meds" },

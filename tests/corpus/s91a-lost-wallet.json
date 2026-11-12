@@ -1253,6 +1253,45 @@
     "seen_anyone"
    ],
    "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "If you find it, can you call me?",
+   "intent": "call_me",
+   "note": "dead ends 12 Nov 2026"
+  },
+  {
+   "ctx": "describe",
+   "say": "Please call me if someone finds it.",
+   "intent": "call_me",
+   "note": "dead ends 12 Nov 2026"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "Could I give you my number?",
+   "intent": "call_me",
+   "note": "dead ends 12 Nov 2026"
+  },
+  {
+   "ctx": "number",
+   "say": "My number is 555 0142.",
+   "intent": "number_ctx",
+   "note": "dead ends 12 Nov 2026"
+  },
+  {
+   "ctx": "number",
+   "say": "Sure, it's 555 0199.",
+   "intent": "number_ctx",
+   "note": "dead ends 12 Nov 2026"
+  },
+  {
+   "ctx": "police",
+   "say": "Should I call the police?",
+   "intent": "any",
+   "not": [
+    "call_me"
+   ],
+   "note": "dead ends 12 Nov 2026"
   }
  ]
 }

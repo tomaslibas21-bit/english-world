@@ -273,5 +273,14 @@
   {"ctx": "mia_open", "say": "No.", "intent": "yn:no", "note": "logic audit 5 Nov 2026"},
   {"ctx": "mia_worked", "say": "Yes.", "intent": "yn:yes", "note": "logic audit 5 Nov 2026"},
   {"ctx": "second", "say": "I like it.", "intent": "any", "not": ["reject_rude", "keep_own"], "note": "logic audit 5 Nov 2026"},
-  {"ctx": "again", "say": "How much should I add?", "intent": "any", "not": ["no_questions"], "note": "logic audit 5 Nov 2026"}
+  {"ctx": "again", "say": "How much should I add?", "intent": "any", "not": ["no_questions"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "consent", "say": "Did you like it?", "intent": "q_liked", "note": "dead end 12 Nov 2026"},
+  {"ctx": "receive", "say": "Did you like it?", "intent": "q_liked", "note": "dead end 12 Nov 2026"},
+  {"ctx": "receive", "say": "So, did you like my soup?", "intent": "q_liked", "note": "dead end 12 Nov 2026"},
+  {"ctx": "receive", "say": "Was it good, Chef?", "intent": "q_liked", "note": "dead end 12 Nov 2026"},
+  {"ctx": "handoff", "say": "Who's Mia?", "intent": "q_mia", "note": "dead end 12 Nov 2026"},
+  {"ctx": "handoff", "say": "Who is Mia?", "intent": "q_mia", "note": "dead end 12 Nov 2026"},
+  {"ctx": "handoff", "say": "Mia who?", "intent": "q_mia", "note": "dead end 12 Nov 2026"},
+  {"ctx": "handoff", "say": "Who's Mia?", "intent": "any", "not": ["help_yes", "help_no"], "note": "dead end 12 Nov 2026"},
+  {"ctx": "consent", "say": "Did you like it?", "intent": "any", "not": ["want_feedback", "no_feedback"], "note": "dead end 12 Nov 2026"}
 ] }

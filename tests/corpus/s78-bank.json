@@ -243,5 +243,13 @@
   {"ctx": "acct_type", "say": "The second one, please.", "intent": "acct_type_ans", "note": "logic audit 5 Nov 2026"},
   {"ctx": "cash_offer", "say": "I don't know.", "intent": "g_dontknow", "note": "logic audit 5 Nov 2026"},
   {"ctx": "cash_offer", "say": "I don't know.", "intent": "any", "not": ["ask_difference"], "note": "logic audit 5 Nov 2026"},
-  {"ctx": "savings", "say": "Is it free?", "intent": "fee_q", "note": "logic audit 5 Nov 2026"}
+  {"ctx": "savings", "say": "Is it free?", "intent": "fee_q", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "ssn", "say": "Why?", "intent": "ssn_why_ctx", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "ssn", "say": "Why do you need my Social Security number?", "intent": "ssn_why_ctx", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "ssn", "say": "What do you need it for?", "intent": ["ssn_why_ctx", "ask_ssn_what"], "note": "dead ends 12 Nov 2026"},
+  {"ctx": "help", "say": "How much can I withdraw?", "intent": "withdraw_limit", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "form", "say": "How much cash can I take out a day?", "intent": "withdraw_limit", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "more", "say": "Is there a limit at the ATM?", "intent": "withdraw_limit", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "help", "say": "I'd like to withdraw some cash.", "intent": "withdraw", "not": ["withdraw_limit"], "note": "dead ends 12 Nov 2026"},
+  {"ctx": "proof", "say": "Why?", "intent": "any", "not": ["ssn_why_ctx"], "note": "dead ends 12 Nov 2026"}
 ]}

@@ -1567,6 +1567,46 @@
     "missing_some"
    ],
    "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "found",
+   "say": "Who brought it in?",
+   "intent": "found_who",
+   "note": "dead ends 12 Nov 2026"
+  },
+  {
+   "ctx": "found",
+   "say": "Who turned it in?",
+   "intent": "found_who",
+   "note": "dead ends 12 Nov 2026"
+  },
+  {
+   "ctx": "found",
+   "say": "Do you know who found it?",
+   "intent": "found_who",
+   "note": "dead ends 12 Nov 2026"
+  },
+  {
+   "ctx": "found",
+   "say": "Where did they find it?",
+   "intent": "found_where",
+   "note": "dead ends 12 Nov 2026"
+  },
+  {
+   "ctx": "found",
+   "say": "Where was it found?",
+   "intent": "found_where",
+   "note": "dead ends 12 Nov 2026"
+  },
+  {
+   "ctx": "where",
+   "say": "Has anyone found a wallet?",
+   "intent": "any",
+   "not": [
+    "found_where",
+    "found_who"
+   ],
+   "note": "dead ends 12 Nov 2026"
   }
  ]
 }

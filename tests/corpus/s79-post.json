@@ -196,5 +196,21 @@
   {"ctx": "stamps_offer", "say": "How much are five stamps?", "intent": "stamps_price_q", "note": "logic audit 5 Nov 2026"},
   {"ctx": "stamps_offer", "say": "How much are they?", "intent": "stamps_price_q", "note": "logic audit 5 Nov 2026"},
   {"ctx": "stamps_offer", "say": "How much are five stamps?", "intent": "any", "not": ["stamps_qty"], "note": "logic audit 5 Nov 2026"},
-  {"ctx": "more", "say": "Thanks, that's all.", "intent": "more_no", "note": "logic audit 5 Nov 2026"}
+  {"ctx": "more", "say": "Thanks, that's all.", "intent": "more_no", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "gift", "say": "With insurance, please.", "intent": "insurance_yes", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "gift", "say": "With insurance, please.", "intent": "any", "not": ["gift_yes", "gift_no"], "note": "dead ends 12 Nov 2026"},
+  {"ctx": "insurance", "say": "How much would it be with insurance?", "intent": "ins_price_q", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "insurance", "say": "How much would it be with insurance?", "intent": "any", "not": ["insurance_yes", "insurance_no"], "note": "dead ends 12 Nov 2026"},
+  {"ctx": "insurance", "say": "How much is the extra insurance?", "intent": "ins_price_q", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "insurance", "say": "How much more is it?", "intent": "ins_price_q", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "service", "say": "Can I insure it?", "intent": "ins_can_q", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "insurance", "say": "Can I insure it?", "intent": "ins_can_q", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "hazmat", "say": "Do you offer extra insurance?", "intent": "ins_can_q", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "service", "say": "Where's the mailbox?", "intent": "ask_mailbox", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "more", "say": "Where can I mail a letter?", "intent": "ask_mailbox", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "hazmat", "say": "Is there a mailbox outside?", "intent": "ask_mailbox", "note": "dead ends 12 Nov 2026"},
+  {"ctx": "service", "say": "What if I send it express?", "intent": "ask_price", "slots": {"service": "express"}, "note": "dead ends 12 Nov 2026"},
+  {"ctx": "service", "say": "What if I send it express?", "intent": "any", "not": ["service_ans"], "note": "dead ends 12 Nov 2026"},
+  {"ctx": "service", "say": "How much would it be with Priority?", "intent": "ask_price", "slots": {"service": "priority"}, "note": "dead ends 12 Nov 2026"},
+  {"ctx": "hazmat", "say": "What about Express?", "intent": "ask_price", "note": "dead ends 12 Nov 2026"}
 ]}

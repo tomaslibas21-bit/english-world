@@ -501,7 +501,8 @@ const H: Record<string, Handler> = {
     c.say("map_give");
   },
   map_free(c) {
-    c.say("map_free");
+    // "How much does it cost?" isn't a yes/no question: no "Yep" (12 Nov 2026)
+    c.say(/\bhow much\b/i.test(c.heard || "") ? "map_free_how" : "map_free");
     if (giveMap(c)) c.say("map_give");
   },
   map_here(c) {
@@ -1264,6 +1265,8 @@ export const visitorCenter: SituationDef = {
     map_free: [
       t("Yep, | totally | free!", "Taip, | visiškai | nemokamai!", "Taip, visiškai nemokamai!"),
     ],
+    // the answer to "How much is the map?" (12 Nov 2026, a new line)
+    map_free_how: [t("It's | totally | free!", "Jis yra | visiškai | nemokamas!", "Jis visiškai nemokamas!")],
     map_ok_no: [
       t("No | problem! | They're | right | here | if | you | change your mind.", "Jokių | problemų! | Jie yra | būtent | čia, | jei | jūs | persigalvosite.", "Jokių problemų! Jie čia, jei persigalvosite."),
     ],
@@ -1987,6 +1990,7 @@ export const visitorCenter: SituationDef = {
     { say: "Can I get a map?", intent: "ask_map" },
     { say: "I'd like a map, please.", intent: "ask_map" },
     { say: "Is the map free?", intent: "map_free" },
+    { say: "How much does the map cost?", intent: "map_free" },
     { say: "Where are we on the map?", intent: "map_here" },
     { say: "I don't need a map", intent: "map_no", not: ["ask_map"] },
     { say: "No map, thanks", intent: "map_no", not: ["ask_map"] },

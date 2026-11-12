@@ -156,6 +156,7 @@ const H: Record<string, Handler> = {
     if (askedBack(seg)) tell(c, "family");
   },
   ask_family(c) { hi(c); c.s.lastTopic = "family"; tell(c, "family"); },
+  ask_job(c) { hi(c); if (once(c, "job")) c.say("lucy_job"); },
   and_you(c) {
     hi(c);
     const tp = c.s.lastTopic as "been" | "news" | "family" | undefined;
@@ -380,6 +381,12 @@ export const oldFriend: SituationDef = {
       "(good | fine | great | well) [thanks | thank you] (and | how is) your family #askback",
     ] },
     ask_family: { patterns: ["how is your (family | husband | brother | sister | mom | mother | dad | father | family doing)", "how are your (parents | kids | twins)"] },
+    // "What do you do?" (her job; 12 Nov 2026)
+    ask_job: { patterns: [
+      "what do you do [now | these days | for (work | a living)]", "what (is | is your) (job | work) [now]", "what is your job [now]", "where do you work [now | these days]",
+      "(are you | do you) (working | work) [now | these days | here | in town]", "what (kind of | sort of)? (work | job) do you do [now]", "what are you doing (for work | these days | now)",
+      "do you have a job [now]",
+    ] },
     and_you: { patterns: ["(and you | how about you | and yourself | how about yourself) #h:ab_and_you", "what about you #h:ab_what_about", "you", "and yours #h:ab_yours", "what about yours"] },
     mike_yes: { patterns: [
       "(yes | yeah) [of course] [i remember him] [how is he] #h:mk_of_course", "(yes | yeah) i do [remember him] #h:mk_yes", "of course [i remember him] [how is he]", "mike [yes] [of course]", "how is he [doing]",
@@ -504,6 +511,8 @@ export const oldFriend: SituationDef = {
         "Na, | aš | persikėliau | atgal | namo | praėjusį | pavasarį. | Ir | spėk | ką? | Aš | {sm:vedžiau|sf:ištekėjau}!",
         "Na, praėjusį pavasarį grįžau namo. Ir įsivaizduok – {sm:vedžiau|sf:ištekėjau}!"),
     ],
+    // 12 Nov 2026, a new line: her job
+    lucy_job: [t("I'm | a | teacher | now. | Third | grade!", "Aš esu | — | mokytoja | dabar. | Trečia | klasė!", "Dabar esu mokytoja. Mokau trečiokus!")],
     lucy_news2: [
       t("Thanks! | And... | we | have | twins!", "Ačiū! | Ir... | mes | turime | dvynukus!", "Ačiū! Ir... turime dvynukus!"),
     ],
@@ -924,6 +933,11 @@ export const oldFriend: SituationDef = {
     { say: "I'm a nurse now.", intent: "news", step: "upto" },
     { say: "I work in a hospital now.", intent: "news", step: "upto" },
     { say: "I'm not a nurse now.", intent: "none", step: "upto" },
+    // 12 Nov 2026: her job
+    { say: "What do you do?", intent: "ask_job", step: "upto" },
+    { say: "Where do you work now?", intent: "ask_job" },
+    { say: "What do you do for work?", intent: "ask_job", step: "mike" },
+    { say: "I do a lot of work.", intent: "none", step: "upto", not: ["ask_job"] },
   ],
 
   sims: [

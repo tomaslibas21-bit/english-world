@@ -295,6 +295,11 @@ export const apartment: SituationDef = {
       "(is there | do i need to sign) a lease", "(what about | and) the (lease | contract #tip:us_lease)", "how long do i (have to | need to) stay",
       "is it (month to month | a long term lease)", "what are the (terms | conditions) [of the (lease | contract)]", "do i (have to | need to) sign for (a year | one year | twelve months | a whole year | 12 months)",
     ] },
+    // "Can I break the lease early?" (12 Nov 2026: not understood)
+    lease_break: { patterns: [
+      "(can | could) i (break | end | cancel | get out of) the (lease | contract) [early | before (the end | it ends)]", "what if i (have to | need to | want to) (leave | move out | break the lease) [early | before the end]",
+      "(can | could) i move out (early | before the (lease | year) (ends | is over))", "what happens if i (break the lease | move out early | leave early)",
+    ] },
     ask_movein: { patterns: [
       "when can i move in #h:q_movein", "when is (it | @the_apt) (available | free)", "is it available (now | right away | immediately)",
       "when can i (get the keys | move)", "(can | could) i move in @when_mv", "how soon can i move in", "when would i be able to move in",
@@ -440,6 +445,11 @@ export const apartment: SituationDef = {
       "i (can | could) show you my (pay stubs | bank statement | contract | job offer | offer letter)", "i have a letter from my (employer | boss | company | work)",
       "(i can | i will | can i) (send | email | bring) [you] (the | my | a) (letter | contract | offer letter | job offer) [to you] [by email | tomorrow | later]",
       "i have a job offer letter", "i have a (contract | work contract | job) (with | at) brightline", "i have my (bank statements | bank statement | pay stubs | work contract)",
+    ] },
+    // "I don't have my ID with me." (12 Nov 2026: not understood)
+    no_id: { patterns: [
+      "[sorry] i (do not have | did not bring | forgot) my (id | passport | id card | driver's license | license | documents) [with me | today | here | right now]",
+      "[sorry] i (left | forgot) (it | my id | my passport | my documents) at home", "[sorry] i do not have (it | them) with me [right now | today]",
     ] },
     no_job: { patterns: [
       "i do not have a job [yet | right now]", "i am [still] looking for a job", "i am not working (yet | right now | at the moment)",
@@ -700,6 +710,9 @@ export const apartment: SituationDef = {
         { flags: { 3: "“for” (duration): the dative dvylikai carries it." } }),
       t("It's | a | one-year | lease.", "Tai yra | — | vienerių metų | sutartis.", "Tai vienerių metų nuomos sutartis."),
     ],
+    // 12 Nov 2026, a new line: breaking the lease early (the deposit is one month's rent)
+    lease_break_line: [t("You | can, | but | you'd | lose | the | deposit.", "Jūs | galite, | bet | Jūs | prarastumėte | — | užstatą.", "Galite, bet tada prarastumėte užstatą.",
+      { flags: { 3: "“'d” (would): the conditional ending of prarastumėte carries it (linked to “lose”)." } })],
     lease_min: [
       t("The | minimum | is | twelve | months, | sorry.", "— | Minimumas | yra | dvylika | mėnesių, | atsiprašau.", "Mažiausiai dvylika mėnesių, atsiprašau."),
     ],
@@ -787,6 +800,8 @@ export const apartment: SituationDef = {
       t("That's | great, | thanks.", "Tai | puiku, | ačiū.", "Puiku, ačiū."),
     ],
     passport_ok: [t("A | passport | is fine.", "— | Pasas | tinka.", "Pasas tinka.")],
+    // 12 Nov 2026, a new line: no ID with them today
+    docs_later: [t("That's | okay. | Just | bring | it | tomorrow.", "Tai | gerai. | Tiesiog | atneškite | jį | rytoj.", "Nieko tokio. Tiesiog atneškite jį rytoj.")],
     no_job_ok: [
       t("That's | okay. | A | bank | statement | works | too.", "Tai | gerai. | — | Banko | išrašas | tinka | irgi.", "Nieko tokio. Tiks ir banko išrašas."),
     ],
@@ -1182,7 +1197,7 @@ export const apartment: SituationDef = {
       suggest: [{ lt: "Pasakyti, kada norėtum įsikelti", hint: "movein" }],
       help: (c) => { c.say("movein_info"); c.s.moveinKnown = true; } },
     { id: "docs", when: (c) => view(c) && c.s.decision === "take" && c.s.askDocs, done: (c) => !!c.s.docsOk,
-      ask: (c) => c.say("docs_ask"), expects: ["here_you_go", "passport_ok", "have_job", "no_job", "sign_here_ctx", "id_ctx"],
+      ask: (c) => c.say("docs_ask"), expects: ["here_you_go", "passport_ok", "have_job", "no_job", "no_id", "sign_here_ctx", "id_ctx"],
       suggest: [{ lt: "Parodyti asmens dokumentą", hint: "docs" }],
       yes: (c) => { c.s.docsOk = true; c.say("docs_ok"); } },
     { id: "sign", when: (c) => view(c) && c.s.decision === "take", done: (c) => !!c.s.signed,
@@ -1364,6 +1379,8 @@ export const apartment: SituationDef = {
     passport_ok(c) { c.say("passport_ok"); if (c.s.decision === "take") c.s.docsOk = true; },
     have_job(c) { c.say("docs_ok"); if (c.s.decision === "take") c.s.docsOk = true; },
     no_job(c) { c.say("no_job_ok"); if (c.s.decision === "take") c.s.docsOk = true; },
+    no_id(c) { c.say("docs_later"); if (c.s.decision === "take") c.s.docsOk = true; },
+    lease_break(c) { c.say("lease_break_line"); },
     where_sign(c) {
       if (!view(c)) { c.say("ack"); return; }
       if (c.s.decision !== "take") { take(c); return; }
@@ -1442,6 +1459,9 @@ export const apartment: SituationDef = {
   },
 
   tests: [
+    // dead ends (12 Nov 2026)
+    { say: "Can I break the lease early?", intent: "lease_break", not: ["ask_lease"] },
+    { say: "I don't have my ID with me.", intent: "no_id", step: "docs", not: ["here_you_go", "passport_ok"] },
     // logic audit (5 Nov 2026)
     { say: "Is there internet?", intent: "ask_utilities", slots: { utility: "internet" }, not: ["ask_unknown"] },
     { say: "Hi, I'm here to see the apartment.", intent: "see_apartment" },

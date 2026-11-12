@@ -4159,6 +4159,45 @@
     "story_ctx"
    ],
    "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "questions",
+   "say": "What does the company do?",
+   "intent": "q_company",
+   "note": "dead ends 12 Nov 2026"
+  },
+  {
+   "ctx": "questions",
+   "say": "What does Brightline do exactly?",
+   "intent": "q_company",
+   "note": "dead ends 12 Nov 2026"
+  },
+  {
+   "ctx": "questions",
+   "say": "Could you tell me a little about the company?",
+   "intent": "q_company",
+   "note": "dead ends 12 Nov 2026"
+  },
+  {
+   "ctx": "questions",
+   "say": "What kind of business is this?",
+   "intent": "q_company",
+   "note": "dead ends 12 Nov 2026"
+  },
+  {
+   "ctx": "about",
+   "say": "What does your company do?",
+   "intent": "q_company",
+   "note": "dead ends 12 Nov 2026"
+  },
+  {
+   "ctx": "questions",
+   "say": "What do you like about the company?",
+   "intent": "q_like",
+   "not": [
+    "q_company"
+   ],
+   "note": "dead ends 12 Nov 2026"
   }
  ]
 }

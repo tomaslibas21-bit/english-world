@@ -435,7 +435,7 @@ const S_STRENGTH_MORE: Suggestion = { lt: "Papasakoti, ką darai gerai", hint: "
 const S_SIDE: Suggestion = { lt: "Pasakyti, kad jaudiniesi, arba paprašyti pakartoti", hint: "side" };
 const S_ASK: Suggestion = { lt: "Paklausti apie darbą: darbo laiką, mokymus, pradžią", hint: "ask_them" };
 const S_NO_Q: Suggestion = { lt: "Pasakyti, kad klausimų nebeturi", hint: "no_q" };
-const Q_INTENTS = ["q_hours", "q_training", "q_start", "q_team", "q_remote", "q_benefits", "q_day", "q_next", "q_dress", "q_parking", "q_like",
+const Q_INTENTS = ["q_hours", "q_training", "q_start", "q_team", "q_remote", "q_benefits", "q_day", "q_next", "q_dress", "q_parking", "q_like", "q_company",
   "salary_range_q", "no_questions", "can_ask", "can_ask_ctx", "q_other_ctx"];
 /** Model questions in sets of three (hint group, the answer keys it covers). */
 const Q_SETS: [string, string[], string][] = [
@@ -1097,6 +1097,13 @@ export const interview: SituationDef = {
     ] },
     q_dress: { patterns: ["(is there | do you have) a dress code #h:q_dress", "what (should | do) i wear [to work]", "what is the dress code"] },
     q_parking: { patterns: ["(is there | do you have) parking", "where can i park", "is parking (free | included)", "(is there | do you have | can i get) [a] [free] (parking | parking lot | parking space | place to park | parking garage | parking spot | parking place)", "can i park (here | near the office | at the office)"] },
+    // "What does the company do?" (12 Nov 2026): Brightline designs websites and apps (p27's website, p28b's app launch and client projects)
+    q_company: { patterns: [
+      "what (does | do) (the company | your company | this company | brightline) do [exactly]", "what (exactly)? (does | do) (brightline | the company | your company) do",
+      "what (kind | type | sort) of (company | business) is (this | it | brightline)", "what is brightline", "what (does | do) (brightline | your company | the company) (make | sell | offer)",
+      "(tell me | can you tell me | could you tell me) [a little | a bit | more] about (the company | your company | brightline | this company)",
+      "what (kind | type) of (work | projects) (does | do) (the company | brightline | your company | you) do",
+    ] },
     q_like: { patterns: ["what do you like [most] about working here", "what do you like about (the company | brightline | this company)", "do you like working here",
       "what is the (work)? (environment | atmosphere | culture) like [here]", "how is the (work)? (environment | atmosphere) [here]", "what is the (company)? culture like"] },
     // "So, what questions do you have for me?" → "Yes, a few.": go ahead
@@ -1484,6 +1491,9 @@ export const interview: SituationDef = {
     a_dress: [t("It's | business | casual.", "Tai yra | dalykinis | laisvas stilius.", "Laisvas dalykinis stilius.")],
     a_parking: [t("Yes, | there's | free | parking | behind | the | building.", "Taip, | yra | nemokama | stovėjimo aikštelė | už | — | pastato.",
       "Taip, už pastato yra nemokama stovėjimo aikštelė.")],
+    // 12 Nov 2026, a new line: what Brightline does
+    a_company: [t("We | design | websites | and | apps | for | local | businesses.", "Mes | kuriame | svetaines | ir | programėles | — | vietos | verslams.",
+      "Kuriame svetaines ir programėles vietos verslams.", { flags: { 5: "“for”: the dative verslams carries it." } })],
     a_like: [t("The | people! | Everyone | here | is | really | friendly.", "— | Žmonės! | Visi | čia | yra | tikrai | draugiški.", "Žmonės! Visi čia labai draugiški.")],
     a_unknown: [
       t("Good | question! | I'll check | and | let | you | know.", "Geras | klausimas! | Pasitikslinsiu | ir | pranešiu | jums | —.", "Geras klausimas! Pasitikslinsiu ir jums pranešiu.",
@@ -2175,6 +2185,7 @@ export const interview: SituationDef = {
     q_dress(c) { answerQ(c, "dress", () => c.say("a_dress")); },
     q_parking(c) { answerQ(c, "parking", () => c.say("a_parking")); },
     q_like(c) { answerQ(c, "like", () => c.say("a_like")); },
+    q_company(c) { answerQ(c, "company", () => c.say("a_company")); },
     q_other_ctx(c) { answerQ(c, "unknown", () => c.say("a_unknown")); },
     no_questions(c) { if (c.step === "questions") c.s.qDone = true; else if (!c.s.__finished) c.say("ack"); },
 
@@ -2272,6 +2283,11 @@ export const interview: SituationDef = {
     { say: "I can't start before next month.", intent: "start_ans" },
     { say: "Because I'm the right person for this job.", intent: "hire_ans" },
     { say: "What are the working hours?", intent: "q_hours" },
+    // 12 Nov 2026: what the company does
+    { say: "What does the company do?", intent: "q_company", step: "questions" },
+    { say: "What does Brightline do?", intent: "q_company" },
+    { say: "Can you tell me a little about the company?", intent: "q_company", step: "questions" },
+    { say: "What kind of company is this?", intent: "q_company" },
     { say: "Is there any training?", intent: "q_training" },
     { say: "How much holiday do I get?", intent: "q_benefits" },
     { say: "What does a typical day look like?", intent: "q_day" },
