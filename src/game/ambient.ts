@@ -3,7 +3,7 @@
 // give way to the player (cars stop, people wait) and never start conversations.
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { createCharacter, type GameCharacter } from "./characters";
+import { createCharacter, addFarVersion, type GameCharacter } from "./characters";
 import { STYLED, IS_TOON, vertexColorMaterial, makeOutline, outlineColorFor } from "./style";
 import { carGeometry as styledCarGeometry } from "./world/styled";
 import { carGeometry, mxTaxiParts, colectivoParts, busParts, VEHICLE_LENGTH } from "./world/car";
@@ -27,6 +27,8 @@ interface Walker {
   /** Holding their pose far from the player (theme.ts `stillBeyond`): their parts' matrices frozen; `posed` once they
    *  have taken it (sitting down, facing the other one). */
   still?: boolean; posed?: boolean;
+  /** Their look (for their far version, theme.ts `farPeople`), and whether that is drawn now. */
+  look?: Look; far?: boolean;
 }
 
 /** Two people talking in turns: one talks for a couple of seconds while the other listens (eyes on them, a nod
@@ -176,6 +178,8 @@ export class Ambient {
     this.seatPeople(seats, high);
     this.standPairs(high ? CHAT_SPOTS.length : 1, colliders);
     if (high) this.standAlone(THEME.vendors, colliders);
+    // (graphics round 5, theme.ts `farPeople`) each of them in fewer triangles too, drawn when far from the camera
+    if (THEME.farPeople !== null) for (const w of this.walkers) if (w.look) addFarVersion(w.ch, w.look);
     const carMat = STYLED ? vertexColorMaterial("prop") : new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
     for (let i = 0; i < nc; i++) {
       const lane = LANES[i % LANES.length];
@@ -202,7 +206,7 @@ export class Ambient {
     const ch = createCharacter(look);
     ch.root.traverse((o) => { o.castShadow = false; });
     this.group.add(ch.root);
-    const w: Walker = { ch, female, kind, path: null, wait: 0.5 + this.r() * 4, speed: 1.7 + this.r() * 0.6, heading: 0, greetT: 0, lastTarget: -1 };
+    const w: Walker = { ch, female, kind, path: null, wait: 0.5 + this.r() * 4, speed: 1.7 + this.r() * 0.6, heading: 0, greetT: 0, lastTarget: -1, look };
     this.walkers.push(w);
     return w;
   }
@@ -319,7 +323,7 @@ export class Ambient {
     return { female: w.female };
   }
 
-  update(dt: number, player: THREE.Vector3) {
+  update(dt: number, player: THREE.Vector3, cam?: THREE.Vector3) {
     // at most one path search every 0.3 s (a long search takes a few milliseconds)
     this.pathCooldown -= dt;
     this.pathBudget = this.pathCooldown <= 0 ? 1 : 0;
@@ -335,6 +339,11 @@ export class Ambient {
         w.posed = true;
         if (far !== !!w.still) { w.still = far; holdPose(w.ch.root, far); }
         if (!far) w.ch.update(dt);
+      }
+      // (theme.ts `farPeople`) far from the camera, the far version
+      if (cam && THEME.farPeople !== null) {
+        const p = w.ch.root.position, far = (p.x - cam.x) ** 2 + (p.z - cam.z) ** 2 > THEME.farPeople ** 2;
+        if (far !== !!w.far) { w.far = far; w.ch.setFar?.(far); }
       }
       if (w.dog) {
         const p = w.ch.root.position;

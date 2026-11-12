@@ -44,6 +44,12 @@ export interface TownTheme {
     museumStairs?: boolean;
     /** Diego and Natalia's dinner: cochinita pibil, tortillas and agua de jamaica instead of the lasagna; Michi the cat. */
     yucatanDinner?: boolean;
+    /** (graphics round 5) The tall rooms' upper walls (theme.ts roomWallH): high windows with iron bars and a painted
+     *  greca under the vigas. */
+    upperMx?: boolean;
+    /** (graphics round 5) The last of Maple Harbor's furniture in the shops replaced: Hilos' wooden racks of huipiles
+     *  and dress forms, El Faro's tiendita shelves of bags, jars and cans, the car rental's equipales. */
+    shopsMx5?: boolean;
     /** The clothes shop: a white linen guayabera on a mannequin by the door. */
     guayabera?: boolean;
     // graphics round 2 (docs/es/TOWN.md "Graphics, round 2")
@@ -209,6 +215,14 @@ export interface TownTheme {
   /** (graphics round 4) The meadow round the cenote as scrub: shrubs and tall grass over x0…x1, z0…z1 but in the `clear`
    *  circles (x, z, radius), and ceibas over the selva (x, z) (mexican.ts `meadow`; null: bare grass). */
   meadow: { x0: number; x1: number; z0: number; z1: number; clear: [number, number, number][]; ceibas: [number, number][] } | null;
+  /** (graphics round 5) Adoquín (cobbled stone) on these stretches of street (x0, z0, x1, z1: the road between its
+   *  curbs), painted into the ground's own material (town.ts withGrain: no draw call); and a few things on the
+   *  sidewalks there (mexican.ts `sidewalkProps`: trash bins on posts, bollards, a shoeshine stand: x, z, heading)
+   *  (null: asphalt). */
+  /** (graphics round 5) The townspeople (ambient.ts) drawn in a version with a third of the triangles farther than this
+   *  from the camera (metres; null: always whole). */
+  farPeople: number | null;
+  adoquin: { streets: [number, number, number, number][]; bins: [number, number, number][]; bolardos: [number, number, number, number][]; bolero: [number, number, number] | null } | null;
   /** A cenote in the meadow beyond the town's west edge (its water's middle and its painted sign): seen from the ends
    *  of the streets, not reached on foot. */
   cenote: { x: number; z: number; sign: string } | null;
@@ -413,6 +427,8 @@ export const THEME: TownTheme = {
   beachLife: false,
   poleFade: null,
   meadow: null,
+  adoquin: null,
+  farPeople: null,
   cenote: null,
   ruins: null,
   sea: null,
