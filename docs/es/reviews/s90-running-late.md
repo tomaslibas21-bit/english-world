@@ -112,3 +112,9 @@ time-question order, "wait a few minutes" and plan-question bugs (EN-FIXES-LEADS
   eta takes sobre / a eso de / hacia + time; ask_started ha empezado; ask_team han llegado; save_seat sitio.
 - Left for the lead: "Perdón, me tengo que ir, voy conduciendo" isn't read as a goodbye: global.ts leaving_why has
   "voy manejando" only (proposal: add "(estoy | voy) conduciendo"). The room note picture still says "tercer piso".
+
+## Spain review (12 Nov 2026)
+
+- Checked (fresh reviewer): every twin against its Mexican line (meaning, facts, prices, names), Peninsular wording, the perfect for today's events, tú/usted and vosotros by STYLE.md, glosses, spelling and ¿¡, the Spain transcripts (`--variety=spain --verbose`, untwinned lines read through their neutral fallback) and tests/es/spain.
+- Found: nothing to change (¿Diga?, atasco, se me ha averiado el coche, he perdido el autobús, tercera planta, conduzca con cuidado, usted to the boss).
+- Fixed: nothing. Note: "Buenos días, ingeniero, soy…" keeps the Mexican title (STYLE.md: titles as Mexicans use them); a Spaniard at home would say señor Montes.

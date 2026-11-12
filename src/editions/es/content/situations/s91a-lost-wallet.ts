@@ -604,7 +604,7 @@ export const lostWallet: SituationDef = {
       t("Entonces | pregúnteles | a | los | choferes | de | los | colectivos. | Pasan | por | la | avenida | cada rato.",
         "Then | ask (them) | — | the | drivers | of | the | colectivos. | They-pass | along | the | avenue | every few minutes.",
         "Then ask the colectivo drivers. They come along the main road every few minutes.",
-        { flags: { 2: "a: the personal a before people; English has no word here.", 7: "colectivo: the shared van that runs along the coast." }, spain: t("Entonces | pregúnteles | a | los | conductores | de | los | colectivos. | Pasan | por | la | avenida | a cada rato.", "Then | ask (them) | — | the | drivers | of | the | colectivos. | They-pass | along | the | avenue | every few minutes.", "Then ask the colectivo drivers. They come along the main road every few minutes.", { flags: { 2: "a: the personal a before people; English has no word here.", 7: "colectivo: the shared van that runs along the coast road." } }) }),
+        { flags: { 2: "a: the personal a before people; English has no word here.", 7: "colectivo: the shared van that runs along the coast." }, spain: t("Entonces | pregúnteles | a | los | conductores | de | los | colectivos. | Pasan | por | la | avenida | cada poco.", "Then | ask (them) | — | the | drivers | of | the | colectivos. | They-pass | along | the | avenue | every few minutes.", "Then ask the colectivo drivers. They come along the main road every few minutes.", { flags: { 2: "a: the personal a before people; English has no word here.", 7: "colectivo: the shared van that runs along the coast road." } }) }),
     ],
     bus_keep: [t("A veces | guardan | las | cosas | que | encuentran.", "Sometimes | they-keep | the | things | that | they-find.", "Sometimes they keep things people leave behind.")],
     call_taxi: [
@@ -644,7 +644,7 @@ export const lostWallet: SituationDef = {
       "It's right over there, across the square, next to the church.")],
     directions2: [
       t("¿Ve | la | iglesia? | La | policía | está | al lado.", "Do you see | the | church? | The | police | is | next to it.", "See the church? The police station is right next to it."),
-      t("Nada más | cruce | la | plaza | y | ahí | está.", "Just | cross | the | square | and | there | it is.", "Just cross the square and it's right there.", { spain: t("Solo | cruce | la | plaza | y | ahí | está.", "Just | cross | the | square | and | there | it is.", "Just cross the square and it's right there.") }),
+      t("Nada más | cruce | la | plaza | y | ahí | está.", "Just | cross | the | square | and | there | it is.", "Just cross the square and it's right there.", { spain: t("Solo | tiene | que | cruzar | la | plaza | y | ahí | está.", "Just | you have | to | cross | the | square | and | there | it is.", "Just cross the square and it's right there.") }),
     ],
     where_church: [t("Al fondo | de | la | plaza, | enfrente del | kiosco. | La | policía | está | al lado.", "At the far end | of | the | square, | across from the | bandstand. | The | police | is | next to it.",
       "At the far end of the square, facing the bandstand. The police station is right next to it.")],
@@ -652,7 +652,7 @@ export const lostWallet: SituationDef = {
       "It's at the end of avenida Juárez, by the airport.")],
     where_colectivos: [t("Pasan | por | la | avenida | Juárez, | al otro lado | de | la | plaza. | Nada más | levante | la | mano.",
       "They-pass | along | the | avenue | Juárez, | on the other side | of | the | square. | Just | raise | your | hand.",
-      "They come along avenida Juárez, across the square. Just wave one down.", { flags: { 11: "Spanish says la mano (the hand) for a body part; English says your hand." }, spain: t("Pasan | por | la | avenida | Juárez, | al otro lado | de | la | plaza. | Solo | levante | la | mano.", "They-pass | along | the | avenue | Juárez, | on the other side | of | the | square. | Just | raise | your | hand.", "They come along avenida Juárez, across the square. Just wave one down.", { flags: { 11: "Spanish says la mano (the hand) for a body part; English says your hand." } }) })],
+      "They come along avenida Juárez, across the square. Just wave one down.", { flags: { 11: "Spanish says la mano (the hand) for a body part; English says your hand." }, spain: t("Pasan | por | la | avenida | Juárez, | al otro lado | de | la | plaza. | Solo | tiene | que | levantar | la | mano.", "They-pass | along | the | avenue | Juárez, | on the other side | of | the | square. | Just | you have | to | raise | your | hand.", "They come along avenida Juárez, across the square. Just wave one down.", { flags: { 13: "Spanish says la mano (the hand) for a body part; English says your hand." } }) })],
     map_show: [t("Claro, | mire. | Aquí está, | en | mi | celular.", "Sure, | look. | Here it is, | on | my | phone.", "Sure, look. Here it is, on my phone.", { spain: t("Claro, | mire. | Aquí está, | en | mi | móvil.", "Sure, | look. | Here it is, | on | my | phone.", "Sure, look. Here it is, on my phone.") })],
     map_mark: [t("Se la | marco | en | su | mapa.", "It for you | I-mark | on | your | map.", "I'll mark it on your map for you.", { flags: { 0: "se la: it (la policía) for you." } })],
     far: [
@@ -849,7 +849,7 @@ export const lostWallet: SituationDef = {
     "he buscado": { reason: "grammatical_fusion", split: "he → have + buscado → searched: Spain's present perfect for what has just happened; one English verb phrase (I've looked).", minimal: "Auxiliary and participle." },
     "se le ha caído": { reason: "grammatical_fusion", split: "se → itself + le → from you + ha caído → has fallen: the accidental se = you've dropped it.", minimal: "Pronouns, auxiliary and participle." },
     "se me ha perdido": { reason: "grammatical_fusion", split: "se → itself + me → from me + ha perdido → has got lost: the accidental se = I've lost.", minimal: "Pronouns, auxiliary and participle." },
-    "a cada rato": { reason: "lexical_expression", split: "a → at + cada → each + rato → while = every few minutes.", minimal: "Three words." },
+    "cada poco": { reason: "lexical_expression", split: "cada → each + poco → little: = every few minutes (Spain).", minimal: "Two words." },
     "ahora mismo": { reason: "lexical_expression", split: "ahora → now + mismo → same = right now.", minimal: "Two words." },
     "menos mal": { reason: "lexical_expression", split: "menos → less + mal → bad is a fixed phrase = thank goodness.", minimal: "Two words." },
     "por todas partes": { reason: "lexical_expression", split: "por → through + todas → all + partes → parts = everywhere.", minimal: "Three words." },

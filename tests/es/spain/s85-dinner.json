@@ -14,6 +14,8 @@
 {"ctx": "dinner", "say": "¡Que aproveche!", "intent": "provecho"},
 {"ctx": "dinner", "say": "¿Quién ha preparado la cena?", "intent": "made_yourself"},
 {"ctx": "howisit", "say": "¿Lo has hecho tú?", "intent": "made_yourself"},
+{"ctx": "howisit", "say": "¿Lo habéis hecho vosotros?", "intent": "made_yourself"},
+{"ctx": "coat", "say": "¡Qué casa más bonita tenéis!", "intent": "praise_home"},
 {"ctx": "howisit", "say": "¡Está buenísima!", "intent": "praise_food"},
 {"ctx": "seconds", "say": "Vale, un poquito", "intent": "more_yes"},
 {"ctx": "dessert", "say": "Un trocito, por favor", "intent": "more_yes"},

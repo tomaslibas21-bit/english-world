@@ -645,7 +645,7 @@ export const dinner: SituationDef = {
       // "¿Quién cocinó?" is answered "¡Yo!", never "¡Sí, yo!"
       "quien (cocinó | cocino | hizo | preparó | preparo) [(la cochinita | la comida | esto | todo | la cena)] #who", "quien (hizo | preparó | preparo) (el flan | el postre) #flan #who",
       // Spain's present perfect
-      "quien ha (cocinado | hecho | preparado) [(la cochinita | la comida | esto | todo | la cena)] #who", "(lo | la) has (hecho | cocinado | preparado) tu", "(tu | vosotros) (lo | la)? (has | habeis) (hecho | cocinado | preparado) [todo | la cochinita | la comida | esto]",
+      "quien ha (cocinado | hecho | preparado) [(la cochinita | la comida | esto | todo | la cena)] #who", "(lo | la) (has | habeis) (hecho | cocinado | preparado) (tu | vosotros | vosotras)", "(tu | vosotros) (lo | la)? (has | habeis) (hecho | cocinado | preparado) [todo | la cochinita | la comida | esto]",
     ] },
     recipe: { patterns: [
       "(me das | me pasas | me compartes | me puedes dar | me podrias dar | me mandas | me regalas | me escribes) la receta #h:cm_recipe", "(puedo tener | quiero | me encantaria tener) la receta",
@@ -977,12 +977,12 @@ export const dinner: SituationDef = {
     ],
     i_did: [
       t("¡Sí, | yo! | Bueno, | el | flan | lo | hizo | Natalia.", "Yes, | me! | Well, | the | flan | it | made | Natalia.", "Yep, me! Well, Natalia made the flan.",
-        { flags: { 5: "lo repeats the flan: the object comes first for emphasis." } }),
+        { flags: { 5: "lo repeats the flan: the object comes first for emphasis." }, spain: t("¡Sí, | yo! | Bueno, | el | flan | lo | ha hecho | Natalia.", "Yes, | me! | Well, | the | flan | it | has made | Natalia.", "Yep, me! Well, Natalia made the flan.", { flags: { 5: "lo repeats the flan: the object comes first for emphasis." } }) }),
     ],
     // "¿Quién cocinó?"
     i_did_who: [
       t("¡Yo! | Bueno, | el | flan | lo | hizo | Natalia.", "Me! | Well, | the | flan | it | made | Natalia.", "I did! Well, Natalia made the flan.",
-        { flags: { 4: "lo repeats the flan: the object comes first for emphasis." } }),
+        { flags: { 4: "lo repeats the flan: the object comes first for emphasis." }, spain: t("¡Yo! | Bueno, | el | flan | lo | ha hecho | Natalia.", "Me! | Well, | the | flan | it | has made | Natalia.", "I did! Well, Natalia made the flan.", { flags: { 4: "lo repeats the flan: the object comes first for emphasis." } }) }),
     ],
     flan_mine: [
       t("¡Sí, | yo! | Es | la | receta | de | mi | abuela.", "Yes, | me! | It's | the | recipe | of | my | grandma.", "Yep, I did! It's my grandma's recipe."),

@@ -126,3 +126,9 @@ in town. For the owner: Paola's job and the restaurant's name are invented, as h
   stays: she places it last spring.
 - Grammar: me he mudado / me he casado, mellizos and ¡Qué ilusión!, tu marido, allí nos vemos, no llevo el móvil, me
   ha encantado verte / qué alegría verte, recuerdos a… Merges for the new units.
+
+## Spain review (12 Nov 2026)
+
+- Checked (fresh reviewer): every twin against its Mexican line (meaning, facts, prices, names), Peninsular wording, the perfect for today's events, tú/usted and vosotros by STYLE.md, glosses, spelling and ¿¡, the Spain transcripts (`--variety=spain --verbose`, untwinned lines read through their neutral fallback) and tests/es/spain.
+- Found: nothing to change (instituto, colegio, zumo, móvil, me ha encantado verte, la primavera pasada with the preterite, maj{o|a}).
+- Fixed: nothing.

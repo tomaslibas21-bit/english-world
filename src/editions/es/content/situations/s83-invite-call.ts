@@ -1037,7 +1037,7 @@ export const inviteCall: SituationDef = {
     fav_band: [t("¿Tu | grupo | favorito? | ¡Genial!", "Your | band | favorite? | Great!", "Your favorite band? Awesome!")],
     bad_line: [
       t("Perdón, | se está cortando | un | poco. | ¿Dijiste | el | viernes?", "Sorry, | it's breaking up | a | little. | Did you say | — | Friday?",
-        "Sorry, you're breaking up a little. Did you say Friday?", { flags: { 5: "el before a weekday; English needs no word here." } }),
+        "Sorry, you're breaking up a little. Did you say Friday?", { flags: { 5: "el before a weekday; English needs no word here." }, spain: t("Perdona, | se está cortando | un | poco. | ¿Has dicho | el | viernes?", "Sorry, | it's breaking up | a | little. | Did you say | — | Friday?", "Sorry, you're breaking up a little. Did you say Friday?", { flags: { 5: "el before a weekday; English needs no word here." } }) }),
     ],
     bad_line_q: [
       t("Perdón, | ¿dijiste | el | viernes?", "Sorry, | did you say | — | Friday?", "Sorry, did you say Friday?", { flags: { 2: "el before a weekday; English needs no word here." } }),
@@ -1098,7 +1098,7 @@ export const inviteCall: SituationDef = {
     ],
     pickup: [
       t("¡Ay, | qué | lindo, | gracias! | Pero | mejor | nos vemos | allá.", "Aw, | how | sweet, | thanks! | But | better | we meet | there.",
-        "Aw, that's sweet, thanks! But let's just meet there."),
+        "Aw, that's sweet, thanks! But let's just meet there.", { spain: t("¡Ay, | qué | detalle, | gracias! | Pero | mejor | nos vemos | allí.", "Aw, | what | a sweet thing, | thanks! | But | better | we meet | there.", "Aw, that's sweet, thanks! But let's just meet there.") }),
     ],
     meet_change: [
       t("Mmm, | los | viernes | en | el | kiosco | hay | mucha | gente. | ¿Mejor | en | la | taquería | del | mercado? | Así | cenamos | unos | tacos | antes.",
@@ -1137,7 +1137,7 @@ export const inviteCall: SituationDef = {
     pay_again: [t("¿Y | cuánto | te | debo?", "And | how much | (to) you | do I owe?", "So how much do I owe you?")],
     bbq_again: [t("Entonces, | ¿vienes | a | la | carne asada?", "So, | are you coming | to | the | cookout?", "So, are you coming to the cookout?",
       { neutral: t("Entonces, | ¿vienes | a | la | parrillada?", "So, | are you coming | to | the | cookout?", "So, are you coming to the cookout?"), spain: t("Entonces, | ¿vienes | a | la | barbacoa?", "So, | are you coming | to | the | cookout?", "So, are you coming to the cookout?") })],
-    bring_nothing: [t("¡Nada, | nada más | ven!", "Nothing, | just | come!", "Nothing, just come!", { spain: t("¡Nada, | tú | solo | ven!", "Nothing, | you | just | come!", "Nothing, just come!") })],
+    bring_nothing: [t("¡Nada, | nada más | ven!", "Nothing, | just | come!", "Nothing, just come!", { spain: t("¡Nada, | tú | vente | y | ya está!", "Nothing, | you | come along | and | that's it!", "Nothing, just come!") })],
     bbq_time: [t("Como | a | las | dos | de la tarde.", "Like | at | — | two | p.m.", "Around two in the afternoon.", { flags: { 2: "Spanish uses an article before clock times; English has no separate word." }, spain: t("Sobre | las | dos | de la tarde.", "Around | — | two | p.m.", "Around two in the afternoon.", { flags: { 1: "Spanish uses an article before clock times; English has no separate word." } }) })],
     ask_sister: [
       t("Oye, | ¿y | puedo | llevar | a | mi | hermana? | Le encanta | la | música | en vivo.", "Hey, | and | can I | bring | — | my | sister? | She loves | — | music | live.",

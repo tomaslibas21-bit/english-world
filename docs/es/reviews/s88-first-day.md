@@ -115,3 +115,9 @@ N/EN-FIXES-LEADS.md.
   ha ido / ha sido; see_you takes "Venga/Vale, hasta mañana". Merges for the new units.
 - The two warnings (a_badge, a_badge_have neutral twins: the pronoun la glossed "it") were there before; the Spain
   twins carry a flag for it.
+
+## Spain review (12 Nov 2026)
+
+- Checked (fresh reviewer): every twin against its Mexican line (meaning, facts, prices, names), Peninsular wording, the perfect for today's events, tú/usted and vosotros by STYLE.md, glosses, spelling and ¿¡, the Spain transcripts (`--variety=spain --verbose`, untwinned lines read through their neutral fallback) and tests/es/spain.
+- Found: menú del día (for comida corrida) and tarjeta de acceso (for gafete) are right for Spain; cocina económica stays (a Mexican place). "¡En la nevera! Solo ponle tu nombre." (solo + imperative).
+- Fixed: "¡En la nevera! Solo tienes que ponerle tu nombre.".

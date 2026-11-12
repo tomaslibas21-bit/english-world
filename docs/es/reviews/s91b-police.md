@@ -193,3 +193,9 @@ read digit by digit). EN-FIXES-LEADS: the same no-number "we'll call you" and th
 - Grammar: stolen_yes/no, happened (he ido a pagar), whenp (sobre / hacia + time), bank_called, have_id (llevo,
   carné de conducir, DNI, documento de identidad), no_id_ctx (me lo han robado todo), pen (me deja, boli),
   found_who_ctx (han encontrado). Merges added.
+
+## Spain review (12 Nov 2026)
+
+- Checked (fresh reviewer): every twin against its Mexican line (meaning, facts, prices, names), Peninsular wording, the perfect for today's events, tú/usted and vosotros by STYLE.md, glosses, spelling and ¿¡, the Spain transcripts (`--variety=spain --verbose`, untwinned lines read through their neutral fallback) and tests/es/spain.
+- Found: two hint twins had lost their amount ("y unos | | en efectivo", "Unos | ."): $500 missing from the Spain text.
+- Fixed: "Mis tarjetas, el carné de conducir y unos $500 en efectivo." and "Unos $500.". Kept as the writer chose: el reporte vs la denuncia (the scene's point), el 911, la banca (bench; banco is the bank in the same list).

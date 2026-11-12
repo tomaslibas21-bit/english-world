@@ -145,3 +145,10 @@ come twice (same id, "grid"); a second no at paul_hear now ends with Sofía's pa
   ¿Qué has terminado?, ya he terminado la encuesta, este mes las ventas han subido.
 - Grammar: he terminado (and the other he + participle forms in @done_v), la he encendido / ahora mismo la enciendo,
   te has congelado, suerte en la reunión, hasta la semana que viene. Merges for the new units.
+
+## Spain review (12 Nov 2026)
+
+- Checked (fresh reviewer): every twin against its Mexican line (meaning, facts, prices, names), Peninsular wording, the perfect for today's events, tú/usted and vosotros by STYLE.md, glosses, spelling and ¿¡, the Spain transcripts (`--variety=spain --verbose`, untwinned lines read through their neutral fallback) and tests/es/spain.
+- Found: vosotros agrees in every line to the team (oís, veis, dejadme, avisáis, os comparto/mando, mirad, cuidaos); hints to one person stay tú. "te escuchamos" answers stay (Spain says it too beside te oímos).
+- Fixed: nothing.
+- For the owner: the q_hear_me hint note still says "Escuchan: to the whole team (ustedes)" under Spain's "¿Me oís?" (notes aren't per variety).

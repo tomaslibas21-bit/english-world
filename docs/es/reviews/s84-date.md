@@ -128,3 +128,9 @@ voices instead of the ones heard (the sims cover it here). **Owner:** the bill (
   pedido, no nos han traído / han traído la cuenta, he ido, me ha encantado conocerte.
 - Grammar: me viene bien wherever me queda bien is read, para mí lo mismo, ¿cuánto ha sido?, jersey in @jacket,
   ¿vienes mucho por aquí?. Merges for the new units.
+
+## Spain review (12 Nov 2026)
+
+- Checked (fresh reviewer): every twin against its Mexican line (meaning, facts, prices, names), Peninsular wording, the perfect for today's events, tú/usted and vosotros by STYLE.md, glosses, spelling and ¿¡, the Spain transcripts (`--variety=spain --verbose`, untwinned lines read through their neutral fallback) and tests/es/spain.
+- Found: nothing to change (perfect for tonight, aparcar, a medias, jersey, majo/maja, ¿qué día te viene bien? all right; the 10–15 % tip stays, it is Mexico's custom).
+- Fixed: nothing.
