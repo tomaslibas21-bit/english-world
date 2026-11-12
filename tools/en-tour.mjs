@@ -320,8 +320,28 @@ function inPicture({ ids, at }) {
     // (hidden: at least four of the six rays to the head and the chest, and 0.25 m to each side, blocked)
     const hidden = ys.flatMap((y) => [-0.25, 0, 0.25].map((s) => hider(p.clone().addScaledVector(right, s).setY(p.y + y))));
     const behind = hidden.filter(Boolean).length >= 4 ? hidden.find(Boolean) : null;
-    res.people.push({ id, margin: Math.round(worst), hidden });
+    // the top of the head (hair and hats included: the character's own box), 0.12 m to each side across the view,
+    // against the top of the picture (the canvas; on a phone the strip above the panel starts there too): `top`, in
+    // px below the picture's top edge (negative: cut)
+    const box = new game.rig.target.constructor(), tops = [];
+    let topY = -Infinity;
+    a.ch.root.updateMatrixWorld(true);
+    a.ch.root.traverse((o) => {
+      if (!o.isMesh || !o.visible || !o.geometry) return;
+      if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+      const bb = o.geometry.boundingBox;
+      if (!bb || bb.max.y - bb.min.y < 0.05) return; // (the blob shadow)
+      for (const x of [bb.min.x, bb.max.x]) for (const z of [bb.min.z, bb.max.z]) topY = Math.max(topY, box.set(x, bb.max.y, z).applyMatrix4(o.matrixWorld).y);
+    });
+    if (!Number.isFinite(topY)) topY = p.y + h;
+    for (const s of [-0.12, 0, 0.12]) {
+      const v = p.clone().addScaledVector(right, s).setY(topY).project(cam);
+      tops.push(v.z > 1 ? -999 : cv.top + (1 - v.y) / 2 * cv.height - cv.top);
+    }
+    const top = Math.round(Math.min(...tops));
+    res.people.push({ id, margin: Math.round(worst), top, topY: +(topY - p.y).toFixed(3), hidden });
     if (id === "player") continue;
+    if (top < 0) res.out.push(`${id} head cut ${-top} px`);
     if (worst < 0) res.out.push(`${id} ${Math.round(-worst)} px`);
     else if (behind) res.out.push(`${id} hidden by ${behind}`);
   }
