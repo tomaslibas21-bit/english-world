@@ -41,6 +41,8 @@ const SPAIN: Record<string, string> = {
   alquiler: "renta", alquileres: "rentas", fontanero: "plomero", fontaneros: "plomeros", fregona: "trapeador", fregonas: "trapeadores",
   cubo: "cubeta", cubos: "cubetas", nevera: "refrigerador", neveras: "refrigeradores", maletero: "cajuela",
   neumatico: "llanta", neumaticos: "llantas", matricula: "placas", inversor: "inversionista", inversores: "inversionistas",
+  // (batch 3) a pen
+  boli: "pluma", bolis: "plumas",
 };
 
 const PLEASE_ONE = new Set(["porfa", "porfavor", "porfis", "xfa", "plis", "please"]);
