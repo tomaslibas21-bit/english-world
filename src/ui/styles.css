@@ -866,6 +866,14 @@ body.scene-on .tag-layer { display: none; }
   .coach-skip { padding: 0 6px; }
   .coach-next { min-width: 76px; }
 }
+/* the smallest phones: no icon, so the words have the card's width */
+@media (max-width: 360px) {
+  .coach-icon { display: none; }
+  .coach-text p { font-size: 0.82em; }
+  .coach-switch { font-size: 0.84em; gap: 8px; }
+  .coach-dots { display: none; }
+  .coach-row { justify-content: flex-end; }
+}
 @keyframes coach-in-top { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
 /* a phone held sideways: low, between the stick and the buttons */
 @media (max-height: 520px) and (orientation: landscape) {
