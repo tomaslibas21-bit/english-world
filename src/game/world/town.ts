@@ -5,6 +5,7 @@ import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, TAXI, BUS_STOP, FOUNTAIN, LI
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
 import { carParts } from "./car";
 import { STYLED, IS_REAL, grade } from "../style";
+import { SHORE, sandY, SAND_GLSL, SHORE_GLSL, SWELL_GLSL } from "../water";
 import { GROUND_BLOCKS, groundPalette, groundExtras, groundMaterial, seaMaterial, trunkGeometry, canopyGeometry, canopyMaterial, bushGeometry, bushMaterial, outlineInstanced, cloudMaterial, cloudPuff } from "./styled";
 
 export interface Door { loc: string; bid: string; x: number; z: number; face: "n" | "s" | "e" | "w"; name: string; outX: number; outZ: number; rot: number }
@@ -63,7 +64,7 @@ export function buildTown(): Town {
   const gtex = new THREE.CanvasTexture(groundCanvas);
   gtex.colorSpace = THREE.SRGBColorSpace;
   gtex.anisotropy = 8;
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(GW, GD), STYLED ? groundMaterial(gtex) : withGrain(new THREE.MeshLambertMaterial({ map: gtex })));
+  const ground = new THREE.Mesh(groundGeometry(), STYLED ? groundMaterial(gtex) : withGrain(new THREE.MeshLambertMaterial({ map: gtex })));
   ground.rotation.x = -Math.PI / 2;
   ground.position.set(WORLD.minX + GW / 2, 0, G0Z + GD / 2);
   ground.receiveShadow = true;
@@ -103,9 +104,10 @@ export function buildTown(): Town {
     uniforms: { uTime: { value: 0 }, uFog: { value: new THREE.Color("#cfe8f5") } },
     vertexShader: `varying vec2 vUv; varying vec3 vW; uniform float uTime;
       void main(){ vUv = uv; vec4 w = modelMatrix * vec4(position,1.0);
-        w.y += sin(w.x*0.08 + uTime*0.9)*0.12 + cos(w.z*0.11 + uTime*0.7)*0.1; vW = w.xyz;
+        w.y += ${SWELL_GLSL}; vW = w.xyz;
         gl_Position = projectionMatrix * viewMatrix * w; }`,
     fragmentShader: `varying vec2 vUv; varying vec3 vW; uniform float uTime; uniform vec3 uFog;
+      ${SAND_GLSL}
       void main(){
         float shore = smoothstep(${(SEA_Z + 1).toFixed(1)}, ${(SEA_Z - 14).toFixed(1)}, vW.z);
         vec3 deep = vec3(0.13,0.47,0.62); vec3 shallow = vec3(0.35,0.78,0.80);
@@ -117,8 +119,8 @@ export function buildTown(): Town {
         c += vec3(0.04) * chop;
         float glint = pow(max(0.0, sin(vW.x*2.1 + uTime*2.4) * sin(vW.z*1.7 - uTime*2.0) * sin(vW.x*0.5 - vW.z*0.6 + uTime)), 18.0);
         c += vec3(0.55) * glint * (0.4 + 0.6 * shore);
-        float foam = smoothstep(${(SEA_Z - 1.2).toFixed(1)}, ${(SEA_Z + 0.6).toFixed(1)}, vW.z + sin(vW.x*0.25 + uTime*1.5)*0.5);
-        c = mix(c, vec3(0.97,0.98,0.96), foam*0.85);
+        // the sand under the shallows, the foam along the waterline as it washes up and down the beach (water.ts)
+        ${SHORE_GLSL()}
         float dist = length(vW.xz - cameraPosition.xz);
         c = mix(c, uFog, smoothstep(160.0, 420.0, dist));
         gl_FragColor = vec4(c, 1.0); }`,
@@ -147,8 +149,9 @@ export function buildTown(): Town {
   colliders.addBox(WORLD.minX - 1, 0, 2, 220);
   colliders.addBox(WORLD.maxX + 1, 0, 2, 220);
   // the sea on both sides of the pier deck (x -41.3…-18.7); the deck has its own edges
-  colliders.addBox((WORLD.minX - 4 + -41.3) / 2, SEA_Z - 30, -41.3 - (WORLD.minX - 4), 60);
-  colliders.addBox((-18.7 + WORLD.maxX + 4) / 2, SEA_Z - 30, WORLD.maxX + 4 - -18.7, 60);
+  // ("sea": the passers-by and the way-finding stop at it; the player wades in to the shore's limit, Game.ts)
+  colliders.addBox((WORLD.minX - 4 + -41.3) / 2, SEA_Z - 30, -41.3 - (WORLD.minX - 4), 60, "sea");
+  colliders.addBox((-18.7 + WORLD.maxX + 4) / 2, SEA_Z - 30, WORLD.maxX + 4 - -18.7, 60, "sea");
 
   if (!STYLED) { addMarkings(group); group.add(makeFlowers(rand(41))); }
   if (details.length) {
@@ -206,6 +209,32 @@ export function buildTown(): Town {
 
 // ---------------------------------------------------------------------------
 
+/** The ground: flat, but for its last metres at the sea, where the sand slopes down under the water (water.ts sandY:
+ *  the sea then meets real sand, and its swell washes up and down it). A strip of small quads there, one big one for
+ *  the rest; laid out as PlaneGeometry lays its own (the mesh is turned flat), with the same texture coordinates. */
+function groundGeometry() {
+  const zs = [WORLD.maxZ], x0 = WORLD.minX, z0 = G0Z;
+  for (let z = SHORE.top + 1.2; z > z0 + 1e-3; z -= 0.45) zs.push(z);
+  zs.push(z0);
+  const nx = Math.round(GW / 3), pos: number[] = [], uv: number[] = [], idx: number[] = [];
+  const cx = x0 + GW / 2, cz = z0 + GD / 2;
+  for (const z of zs) for (let i = 0; i <= nx; i++) {
+    const x = x0 + (GW * i) / nx;
+    pos.push(x - cx, -(z - cz), sandY(x, z));
+    uv.push((x - x0) / GW, 1 - (z - z0) / GD);
+  }
+  for (let k = 0; k + 1 < zs.length; k++) for (let i = 0; i < nx; i++) {
+    const a = k * (nx + 1) + i, b = a + 1, c = a + nx + 1, d = c + 1;
+    idx.push(a, b, c, b, d, c);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+
 function toC(x: number, z: number): [number, number] { return [(x - WORLD.minX) * PPM, (z - G0Z) * PPM]; }
 
 /** The town's clock for the shaders that move (the trees' wind, the clouds' shadows). */
@@ -246,11 +275,13 @@ function withGrain(m: THREE.MeshLambertMaterial) {
     sh.uniforms.grainMap = { value: grain };
     sh.uniforms.cloudMap = { value: clouds };
     sh.uniforms.uWind = wind;
-    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying vec2 vGrainUv;")
-      .replace("#include <project_vertex>", "#include <project_vertex>\nvGrainUv = (modelMatrix * vec4(transformed, 1.0)).xz / 4.0;");
-    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nuniform sampler2D grainMap;\nuniform sampler2D cloudMap;\nuniform float uWind;\nvarying vec2 vGrainUv;")
+    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying vec2 vGrainUv;\nvarying float vWet;")
+      .replace("#include <project_vertex>", "#include <project_vertex>\nvec4 grainW = modelMatrix * vec4(transformed, 1.0);\nvGrainUv = grainW.xz / 4.0;\nvWet = grainW.y;");
+    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nuniform sampler2D grainMap;\nuniform sampler2D cloudMap;\nuniform float uWind;\nvarying vec2 vGrainUv;\nvarying float vWet;")
       .replace("#include <map_fragment>", `#include <map_fragment>
         diffuseColor.rgb *= 0.78 + 0.44 * texture2D(grainMap, vGrainUv).r;
+        // the sand going down to the water: wet, darker (the sea's own shader takes over under the surface)
+        diffuseColor.rgb *= mix(vec3(1.0), vec3(0.80, 0.76, 0.69), smoothstep(-0.015, -0.19, vWet));
         float cloud = texture2D(cloudMap, (vGrainUv * 4.0 + vec2(uWind * 1.3, uWind * 0.55)) / 110.0).a;
         diffuseColor.rgb *= 1.0 - 0.17 * smoothstep(0.3, 0.85, cloud);`);
   };
@@ -1270,7 +1301,7 @@ function addStreetProps(M: Merger, col: Colliders, group: THREE.Group, r: () => 
   const car = (x: number, z: number, rot: number, color: string) => {
     if (!STYLED) {
       for (const [g, c] of carParts(color)) parked.push([g.rotateY(rot).translate(x, 0, z), c]);
-      col.addBox(x, z, Math.abs(Math.cos(rot)) * 2 + Math.abs(Math.sin(rot)) * 4.3, Math.abs(Math.sin(rot)) * 2 + Math.abs(Math.cos(rot)) * 4.3);
+      col.addBox(x, z, Math.abs(Math.cos(rot)) * 2 + Math.abs(Math.sin(rot)) * 4.3, Math.abs(Math.sin(rot)) * 2 + Math.abs(Math.cos(rot)) * 4.3, "car");
       return;
     }
     const body = mat(color, { flat: true });
@@ -1280,7 +1311,7 @@ function addStreetProps(M: Merger, col: Colliders, group: THREE.Group, r: () => 
     for (const [wx, wz] of [[-0.9, 1.3], [0.9, 1.3], [-0.9, -1.3], [0.9, -1.3]]) {
       M.add("wheel", mat("#222"), cylGeo(0.36, 0.36, 0.3, 0, 0, 0, 10).rotateZ(Math.PI / 2).translate(wx, 0.36, wz).rotateY(rot).translate(x, 0, z));
     }
-    col.addBox(x, z, Math.abs(Math.cos(rot)) * 2 + Math.abs(Math.sin(rot)) * 4.3, Math.abs(Math.sin(rot)) * 2 + Math.abs(Math.cos(rot)) * 4.3);
+    col.addBox(x, z, Math.abs(Math.cos(rot)) * 2 + Math.abs(Math.sin(rot)) * 4.3, Math.abs(Math.sin(rot)) * 2 + Math.abs(Math.cos(rot)) * 4.3, "car");
   };
   let ci = 0;
   for (const [x, z, rot] of PARKED_CARS) car(x, z, rot, colors[ci++ % colors.length]);
@@ -1611,7 +1642,7 @@ function addTransport(M: Merger, col: Colliders, group: THREE.Group, r: () => nu
       M.add("wheel", mat("#222"), cylGeo(0.36, 0.36, 0.3, 0, 0, 0, 10).rotateZ(Math.PI / 2).translate(wx, 0.36, wz).rotateY(rot).translate(x, 0, z));
     }
   }
-  col.addBox(x, z, 4.4, 2.1);
+  col.addBox(x, z, 4.4, 2.1, "car");
   const taxiSign = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.5), new THREE.MeshBasicMaterial({ map: textTexture("TAXI", { bg: "#f5c518", fg: "#222", w: 256, h: 96 }) }));
   taxiSign.position.set(126.5, 2.4, 1.2); taxiSign.rotation.y = Math.PI;
   M.add("sign-pole", mat("#9aa5ad"), cylGeo(0.05, 0.05, 2.5, 126.5, 1.25, 1.25, 6));
@@ -1671,7 +1702,7 @@ function addTransport(M: Merger, col: Colliders, group: THREE.Group, r: () => nu
     const body = mat(c, { flat: true });
     M.add("car-" + c, body, boxGeo(1.9, 0.7, 4.2, cx, 0.65, 20));
     M.add("car-" + c, body, boxGeo(1.7, 0.6, 2.2, cx, 1.3, 19.8));
-    col.addBox(cx, 20, 2, 4.3);
+    col.addBox(cx, 20, 2, 4.3, "car");
   }
   void r;
 }
@@ -1697,7 +1728,7 @@ function addMaggiesCar(M: Merger, col: Colliders, group: THREE.Group) {
   for (const [wx, wz] of [[-0.9, 1.35], [0.9, 1.35], [-0.9, -1.35], [0.9, -1.35]]) {
     M.add("wheel", mat("#222"), cylGeo(0.36, 0.36, 0.3, 0, 0, 0, 10).rotateZ(Math.PI / 2).translate(wx, 0.36, wz).rotateY(rot).translate(x, 0, z));
   }
-  col.addBox(x, z, Math.abs(Math.cos(rot)) * 2 + Math.abs(Math.sin(rot)) * 4.4, Math.abs(Math.sin(rot)) * 2 + Math.abs(Math.cos(rot)) * 4.4);
+  col.addBox(x, z, Math.abs(Math.cos(rot)) * 2 + Math.abs(Math.sin(rot)) * 4.4, Math.abs(Math.sin(rot)) * 2 + Math.abs(Math.cos(rot)) * 4.4, "car");
   // the sign on the windshield, read from the street
   // (bold, on two lines and as big as the windshield allows: the thin one-line script could not be read from the street)
   const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 0.4), new THREE.MeshBasicMaterial({ map: textTexture("FOR SALE $9,000", { bg: "#fffaf0", fg: "#c0182f", w: 384, h: 134, lines: 2 }) }));

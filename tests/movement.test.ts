@@ -1,5 +1,5 @@
 // The walk (movement.ts), the follow camera's room (occlusion.ts, camera.ts) and the trees that fade (fade.ts), without
-// a browser: the direction pressed and the camera's swing, the eased turn and speed, the hop's limits, what blocks the
+// a browser: the direction pressed and the camera's swing, the eased turn and speed, the jump and what it can land on (ledges.ts), the shore (water.ts), what blocks the
 // camera's line to the player and where the camera ends up.
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
@@ -8,6 +8,8 @@ import { OcclusionField } from "../src/game/occlusion";
 import { wantFade } from "../src/game/fade";
 import { CameraRig } from "../src/game/camera";
 import { Colliders } from "../src/game/world/util";
+import { Ledges } from "../src/game/ledges";
+import { Wading, sandY, SHORE, SEA_LEVEL } from "../src/game/water";
 
 const PI = Math.PI;
 const near = (a: number, b: number, eps = 1e-6) => Math.abs(angleDiff(a, b)) < eps;
@@ -117,22 +119,22 @@ describe("Gait: the turn and the speed", () => {
   });
 });
 
-describe("Hop: a small jump that can't get over anything", () => {
-  it("goes up about half a metre and lands within half a second, softly", () => {
+describe("Hop: a jump that lands on what is under it", () => {
+  it("goes up about three quarters of a metre and lands in a little over half a second, softly", () => {
     const h = new Hop();
     expect(h.start()).toBe(true);
     let peak = 0, t = 0, landed = 0;
     while (h.air && t < 2) { landed = h.update(1 / 60); peak = Math.max(peak, h.y); t += 1 / 60; }
     expect(peak).toBeLessThanOrEqual(Hop.PEAK + 1e-6);
-    expect(peak).toBeGreaterThan(0.4);
-    expect(Hop.PEAK).toBeLessThan(0.6);
-    expect(t).toBeLessThan(0.6);
+    expect(peak).toBeGreaterThan(0.65);
+    expect(Hop.PEAK).toBeLessThan(0.85);
+    expect(t).toBeLessThan(0.65);
     expect(landed).toBeGreaterThan(0);
     expect(h.y).toBe(0);
     expect(h.squash).toBeGreaterThan(0); // the landing's squash
   });
 
-  it("no second hop in the air or the instant it lands; land() puts them down at once", () => {
+  it("no second jump in the air or the instant it lands; land() puts them down at once", () => {
     const h = new Hop();
     h.start();
     h.update(1 / 60);
@@ -143,13 +145,186 @@ describe("Hop: a small jump that can't get over anything", () => {
     expect(h.start()).toBe(true);
   });
 
-  it("the walls and fences are on the ground plan: a hop changes nothing about where one can go", () => {
-    // a fence 1 m high and 0.2 m thick between x 0.9 and 1.1; walking (or hopping) at it stops at it
+  it("lands on a seat that comes under it, stands there, and falls when it walks off the edge", () => {
+    const h = new Hop();
+    h.start();
+    let landed = 0, t = 0;
+    // over the street until the feet are above the seat (0.55 m), then over the seat
+    while (h.air && t < 2) { landed = h.update(1 / 60, h.y > 0.55 && h.vy < 2 ? 0.55 : 0); t += 1 / 60; }
+    expect(h.y).toBeCloseTo(0.55, 5);
+    expect(h.lift).toBe(0);
+    expect(landed).toBeGreaterThan(0);
+    expect(landed).toBeLessThan(0.6); // a short drop onto it: a softer landing than onto the street
+    // standing on it
+    for (let i = 0; i < 30; i++) h.update(1 / 60, 0.55);
+    expect(h.air).toBe(false);
+    // off the edge: a fall, not a snap
+    h.update(1 / 60, 0);
+    expect(h.air).toBe(true);
+    expect(h.y).toBeGreaterThan(0.5);
+    let fell = 0;
+    for (let i = 0; i < 60 && h.air; i++) fell = Math.max(fell, h.update(1 / 60, 0));
+    expect(h.y).toBe(0);
+    expect(fell).toBeGreaterThan(0);
+  });
+
+  it("follows the sand down into the shallows without falling, and a jump from there comes back to it", () => {
+    const h = new Hop();
+    for (let i = 0; i <= 40; i++) { h.update(1 / 60, -i * 0.01); expect(h.air).toBe(false); }
+    expect(h.y).toBeCloseTo(-0.4, 5);
+    h.start();
+    let top = -1;
+    for (let i = 0; i < 80 && h.air; i++) { h.update(1 / 60, -0.4); top = Math.max(top, h.y); }
+    expect(top).toBeGreaterThan(0.2);
+    expect(h.y).toBeCloseTo(-0.4, 5);
+  });
+
+  it("the walls and fences are on the ground plan: a jump changes nothing about where one can go", () => {
+    // a fence 1 m high and 0.2 m thick between x 0.9 and 1.1; walking (or jumping) at it stops at it
     const c = new Colliders();
     c.addBox(1, 0, 0.2, 10);
     const p = new THREE.Vector3(0, 0, 0);
-    for (let i = 0; i < 60; i++) { p.x += 0.1; p.y = new Hop().start() ? 0.5 : 0; c.resolve(p, 0.38); }
+    for (let i = 0; i < 60; i++) { p.x += 0.1; c.resolve(p, 0.38, true); }
     expect(p.x).toBeLessThanOrEqual(0.9 - 0.38 + 1e-6);
+  });
+});
+
+/** A street corner as the town builds one: a bench (a seat 0.55 m up, its back to 1.05 m, a collider thinner than the
+ *  seat), a planter 0.5 m high, a fence 1 m high, a counter, a car, a café table with its chair, a pier's deck under its
+ *  invisible edge, and someone standing (a collider with nothing built in it). */
+function corner() {
+  const g = new THREE.Group();
+  const add = (geo: THREE.BufferGeometry) => g.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial()));
+  const col = new Colliders();
+  // the bench at (0, 0): seat z -0.25…0.25, back at z -0.22
+  add(new THREE.BoxGeometry(1.8, 0.1, 0.5).translate(0, 0.5, 0));
+  add(new THREE.BoxGeometry(1.8, 0.5, 0.08).translate(0, 0.8, -0.22));
+  for (const s of [-0.75, 0.75]) add(new THREE.BoxGeometry(0.08, 0.5, 0.4).translate(s, 0.25, 0));
+  col.addBox(0, 0, 2.2, 0.3);
+  // the planter at (6, 0), 1.6 × 0.6, 0.5 m high
+  add(new THREE.BoxGeometry(1.6, 0.5, 0.6).translate(6, 0.25, 0));
+  col.addBox(6, 0, 1.7, 0.7);
+  // the fence at (12, 0), 1 m high
+  add(new THREE.BoxGeometry(0.2, 1, 6).translate(12, 0.5, 0));
+  col.addBox(12, 0, 0.2, 6);
+  // the counter at (18, 0), 1 m high and 0.7 m deep
+  add(new THREE.BoxGeometry(3, 1, 0.7).translate(18, 0.5, 0));
+  col.addBox(18, 0, 3, 0.7);
+  // the car at (24, 0): a body from 0.3 to 1 m, bumpers 0.42 m up at its ends
+  add(new THREE.BoxGeometry(1.9, 0.7, 4.2).translate(24, 0.65, 0));
+  for (const s of [-2.17, 2.17]) add(new THREE.BoxGeometry(1.96, 0.16, 0.12).translate(24, 0.42, s));
+  col.addBox(24, 0, 2, 4.4);
+  // the café table at (30, 0) with a chair 0.5 m high beside it
+  add(new THREE.CylinderGeometry(0.5, 0.5, 0.06, 12).translate(30, 0.75, 0));
+  add(new THREE.BoxGeometry(0.45, 0.5, 0.45).translate(30.8, 0.25, 0));
+  col.addCircle(30, 0, 0.9);
+  // the pier's deck (0.3 m thick, 10 m wide) and its edge at x 41: an invisible wall
+  add(new THREE.BoxGeometry(10, 0.3, 8).translate(40, 0.15, 0));
+  col.addBox(44.9, 0, 0.3, 8);
+  // someone standing at (50, 0)
+  col.addCircle(50, 0, 0.45);
+  const led = Ledges.build(g, col, { keep: [[30.8, 0]] });
+  return { led, col };
+}
+
+describe("Ledges: what can be jumped onto, from the place's own geometry", () => {
+  const { led, col } = corner();
+  /** Walks from (x, z0) along +z or -z at ground level, jumping when asked; returns where they end up. */
+  const walk = (x: number, z0: number, dz: number, jumpAt: number | null, steps = 140) => {
+    const p = new THREE.Vector3(x, 0, z0), hop = new Hop();
+    let on = 0;
+    for (let i = 0; i < steps; i++) {
+      if (jumpAt !== null && i === jumpAt) hop.start();
+      p.z += dz * 4.4 / 60;
+      col.resolve(p, 0.38, true);
+      led.resolve(p, 0.38, hop.y, hop.air);
+      const under = led.support(p.x, p.z, hop.y, hop.air);
+      on = Math.max(on, under);
+      hop.update(1 / 60, under);
+    }
+    return { z: p.z, y: hop.y, on };
+  };
+
+  it("the bench and the planter are split into pieces with a height; nothing else is touched", () => {
+    expect(led.ready).toBe(true);
+    const split = col.boxes.filter((b) => b.split).map((b) => Math.round((b.minX + b.maxX) / 2));
+    expect(split).toEqual([0, 6]);
+    expect(col.circles.some((c) => c.split)).toBe(false);
+    // the seat is the whole seat, wider than its collider; the back stays a wall
+    expect(led.support(0, 0.1, 0.6, true)).toBeCloseTo(0.55, 2);
+    expect(led.pieces.some((q) => q.top === Infinity && q.minZ < -0.2 && q.maxX > 0.5 && q.minX < -0.5 && q.maxX < 2)).toBe(true);
+  });
+
+  it("walking at a bench stops at it; a jump lands on its seat; its back still stops them", () => {
+    const stopped = walk(0, 2, -1, null);
+    expect(stopped.y).toBe(0);
+    expect(stopped.z).toBeGreaterThan(0.25 + 0.38 - 0.13);
+    const on = walk(0, 2, -1, 14);
+    expect(on.y).toBeCloseTo(0.55, 2);
+    expect(on.z).toBeGreaterThan(-0.3 + 0.38 - 0.13); // held by the back, standing on the seat
+    expect(on.z).toBeLessThan(0.3);
+  });
+
+  it("a jump clears a planter; without one it is in the way", () => {
+    expect(walk(6, 2, -1, null).z).toBeGreaterThan(0.3);
+    const over = walk(6, 2, -1, 12, 200);
+    expect(over.z).toBeLessThan(-1);
+    expect(over.y).toBe(0);
+  });
+
+  it("no jump gets onto or over a fence, a counter, a car, a café table or its chair, a pier's edge or a person", () => {
+    for (const [x, edge] of [[12, 3], [18, 0.35], [24, 2.2], [30, 0.9], [30.8, 0.4], [44.9, 4], [50, 0.45]] as const) {
+      for (const jumpAt of [null, 4, 10, 16, 22, 28]) {
+        const z0 = edge + 2.6;
+        const r = walk(x, z0, -1, jumpAt);
+        // never on it or over it (a round thing met off its middle is walked round, on the ground)
+        expect(r.on, `x ${x}, jump at ${jumpAt}`).toBe(0);
+        expect(r.y).toBe(0);
+        if (x !== 30.8 && x !== 50 && x !== 30) expect(r.z, `x ${x}, jump at ${jumpAt}`).toBeGreaterThan(Math.min(edge, 0.3));
+      }
+    }
+  });
+});
+
+describe("the shore: the sand under the sea, and wading", () => {
+  it("the sand is flat up the beach, slopes under the water without a step, and is knee to waist deep at the limit", () => {
+    expect(sandY(0, SHORE.top + 2)).toBe(0);
+    let last = 0;
+    for (let z = SHORE.top + 1; z > SHORE.limit; z -= 0.05) {
+      const y = sandY(10, z);
+      expect(y).toBeLessThanOrEqual(last + 1e-9);
+      expect(last - y).toBeLessThan(0.03);
+      last = y;
+    }
+    // the ground's edge is always under the water, whatever the swell
+    for (let x = -100; x < 180; x += 7) expect(sandY(x, SHORE.edge)).toBeLessThan(SEA_LEVEL - 0.27);
+    const deep = SEA_LEVEL - sandY(10, SHORE.limit);
+    expect(deep).toBeGreaterThan(0.3);
+    expect(deep).toBeLessThan(0.6);
+  });
+
+  it("the water slows a wader, and the seaward part of a step fades to nothing at the limit", () => {
+    expect(Wading.pace(0)).toBe(1);
+    expect(Wading.pace(0.4)).toBeLessThan(0.8);
+    expect(Wading.pace(0.4)).toBeGreaterThan(0.45);
+    expect(Wading.hold(-60, -0.1)).toBe(-0.1);
+    expect(Wading.hold(SHORE.limit + 0.3, -0.1)).toBeGreaterThan(-0.05);
+    expect(Wading.hold(SHORE.limit, -0.1)).toBeCloseTo(0, 9);
+    expect(Wading.hold(SHORE.limit, 0.1)).toBe(0.1); // back towards the beach: free
+    let z = SHORE.limit + 2;
+    for (let i = 0; i < 600; i++) z += Wading.hold(z, -4.4 / 60);
+    expect(z).toBeGreaterThanOrEqual(SHORE.limit);
+    expect(z).toBeLessThan(SHORE.limit + 0.2);
+  });
+
+  it("the sea is closed to the passers-by and open to the player as far as the limit", () => {
+    const c = new Colliders();
+    c.addBox(0, -100, 200, 56, "sea"); // z -128…-72
+    const walker = new THREE.Vector3(0, 0, -73), player = new THREE.Vector3(0, 0, -73);
+    c.resolve(walker, 0.38);
+    c.resolve(player, 0.38, true);
+    expect(walker.z).toBeGreaterThan(-72);
+    expect(player.z).toBe(-73);
   });
 });
 

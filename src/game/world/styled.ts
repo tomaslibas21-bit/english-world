@@ -7,6 +7,7 @@ import { STYLE, IS_TOON, IS_STORY, IS_REAL, grade, gradeHex, surface, toonRamp, 
 import { ROADS, SIDEWALK, SEA_Z } from "./layout";
 import { chamferBox, blobCluster, lumpySphere, paint } from "./shapes";
 import { rand } from "./util";
+import { SWELL_GLSL } from "../water";
 import { styleLook } from "../styleScene";
 
 // ---------------------------------------------------------------------------- ground
@@ -139,7 +140,7 @@ export function seaMaterial(): THREE.ShaderMaterial {
     defines: { STYLE_TOON: IS_TOON ? 1 : 0, STYLE_STORY: IS_STORY ? 1 : 0, STYLE_REAL: IS_REAL ? 1 : 0 },
     vertexShader: `varying vec3 vW; uniform float uTime;
       void main(){ vec4 w = modelMatrix * vec4(position,1.0);
-        w.y += sin(w.x*0.08 + uTime*0.9)*0.12 + cos(w.z*0.11 + uTime*0.7)*0.1; vW = w.xyz;
+        w.y += ${SWELL_GLSL}; vW = w.xyz;
         gl_Position = projectionMatrix * viewMatrix * w; }`,
     fragmentShader: `varying vec3 vW; uniform float uTime; uniform vec3 uFog; uniform float uFogNear; uniform float uFogFar;
       uniform vec3 uDeep; uniform vec3 uShallow; uniform vec3 uFoam; uniform vec3 uSkyTop; uniform vec3 uSkyLow; uniform vec3 uSun;
