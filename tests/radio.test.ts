@@ -7,7 +7,7 @@ import { SITUATIONS } from "../src/content/situations";
 import { buildTimeline, lineAt, shortGloss, unitAt, wordsBegun } from "../src/radio/lyrics";
 import { BufferOutput, NeedsTap, type RadioOutput } from "../src/radio/output";
 import { readSaved, stationOrder, step, type Station } from "../src/radio/playlist";
-import { FADE_OUT_MS, MUSIC_LEVEL, RESUME_AFTER_MS, Radio, type RadioDeps } from "../src/radio/radio";
+import { FADE_IN_MS, FADE_OUT_MS, MUSIC_LEVEL, RESUME_AFTER_MS, SKIP_OUT_MS, VOICE_FADE_MS, Radio, type RadioDeps } from "../src/radio/radio";
 import { radioConfig, readSongLines, readSongList, songAudioUrls, songDataUrls, type SongLine, type SongMeta } from "../src/radio/songs";
 
 const song = (id: string, g = "pop", a = `/songs/audio/${id}.mp3`): SongMeta => ({ id, c: "g", n: 1, t: `Song ${id}`, tl: `Daina ${id}`, tp: "", g, d: 200, a });
@@ -106,7 +106,7 @@ describe("the lyric clocks", () => {
 
 describe("the playing order", () => {
   const songs = ["A", "B", "C", "D", "E", "F"].map((id) => song(id));
-  const all: Station = { id: "all", name: "All", lt: "", shuffle: true, has: () => true };
+  const all: Station = { id: "all", name: "All", freq: 90, lt: "", shuffle: true, has: () => true };
 
   it("keeps the list's own order, or one shuffle per seed", () => {
     expect(stationOrder(songs, all, false, 7)).toEqual(["A", "B", "C", "D", "E", "F"]);
@@ -147,7 +147,7 @@ describe("the playing order", () => {
   it("starts fresh from anything unreadable in storage", () => {
     expect(readSaved(null).on).toBe(false);
     expect(readSaved("{oops").lyrics).toBe(true);
-    expect(readSaved(JSON.stringify({ on: true, station: 5, at: -3, lyrics: false, seed: "x" }))).toEqual({ on: true, station: "", shuffle: null, seed: 1, song: null, at: 0, lyrics: false });
+    expect(readSaved(JSON.stringify({ on: true, station: 5, at: -3, lyrics: false, seed: "x" }))).toEqual({ on: true, station: "", shuffle: null, seed: 1, song: null, at: 0, lyrics: false, introduced: false });
   });
 });
 
@@ -178,7 +178,9 @@ class FakeOutput implements RadioOutput {
   }
   pause() { this.run++; if (this.sounding) this.log.push("pause"); this.sounding = false; }
   position() { return this.at; }
-  setVolume(volume: number) { this.volume = volume; }
+  /** every change of volume asked for: [to, over how many ms] */
+  fades: [number, number][] = [];
+  setVolume(volume: number, ms = 0) { this.volume = volume; this.fades.push([volume, ms]); }
   unlock() { this.log.push("unlock"); }
   /** the last thing the radio played */
   get last() { return this.log.filter((l) => l.startsWith("play")).at(-1); }
@@ -188,8 +190,8 @@ class FakeOutput implements RadioOutput {
 describe("the radio", () => {
   const songs = ["A", "B", "C", "D"].map((id) => song(id, id === "C" ? "roots reggae" : "pop"));
   const stations: Station[] = [
-    { id: "all", name: "All songs", lt: "visos", shuffle: false, has: () => true },
-    { id: "reggae", name: "Reggae", lt: "regis", shuffle: false, has: (s) => /reggae/.test(s.g) },
+    { id: "all", name: "All songs", freq: 98.7, lt: "visos", shuffle: false, has: () => true },
+    { id: "reggae", name: "Reggae", freq: 104.3, lt: "regis", shuffle: false, has: (s) => /reggae/.test(s.g) },
   ];
   let out: FakeOutput, store: Record<string, string>, fetched: string[], token: string | null;
   const deps = (over: Partial<RadioDeps> = {}): RadioDeps => ({
@@ -202,7 +204,8 @@ describe("the radio", () => {
     },
     ...over,
   });
-  const settle = () => vi.advanceTimersByTimeAsync(0);
+  /** let what was asked for happen: a song starts, or the dip of a skipped song has passed */
+  const settle = () => vi.advanceTimersByTimeAsync(SKIP_OUT_MS);
   const saved = () => JSON.parse(store["radio-test"] ?? "null");
 
   beforeEach(() => {
@@ -216,25 +219,93 @@ describe("the radio", () => {
   it("is not there without songs", () => {
     const radio = new Radio(deps({ config: null }));
     expect(radio.store.getState().available).toBe(false);
-    radio.press();
+    radio.power();
     expect(radio.store.getState().on).toBe(false);
     expect(out.log).toEqual([]);
   });
 
-  it("the first press turns it on, shows the card and plays the station's first song with the course's token", async () => {
+  it("the button is the power switch: one press on, the next off, and the set opens by itself only the first time", async () => {
     const radio = new Radio(deps());
-    radio.press();
+    radio.power();
     expect(out.log).toEqual(["unlock"]); // in the tap itself, before anything is fetched
     await settle();
     const s = radio.store.getState();
     expect([s.on, s.open, s.playing, s.song?.id]).toEqual([true, true, true, "A"]);
     expect(out.url).toBe("https://files.example/course/songs/audio/A.mp3?t=tok");
-    expect(out.volume).toBeCloseTo(0.5 * MUSIC_LEVEL);
     expect(fetched).toContain("https://files.example/course/songs/data/A.json?t=tok");
     expect(s.timeline?.lines).toHaveLength(1);
-    radio.press();
-    expect(radio.store.getState().open).toBe(false);
-    expect(radio.store.getState().on).toBe(true); // closing the card doesn't stop the music
+    radio.setOpen(false);
+    radio.power();
+    expect(radio.store.getState()).toMatchObject({ on: false, open: false });
+    await vi.advanceTimersByTimeAsync(FADE_OUT_MS);
+    radio.power();
+    await settle();
+    expect(radio.store.getState()).toMatchObject({ on: true, open: false, playing: true }); // no set in the way the second time
+    expect(saved().introduced).toBe(true);
+  });
+
+  it("fades in over a second when turned on, and out over about a second when turned off: never a cut", async () => {
+    const radio = new Radio(deps());
+    radio.setOn(true); await settle();
+    expect(out.fades.slice(-2)).toEqual([[0, 0], [0.5 * MUSIC_LEVEL, FADE_IN_MS]]);
+    radio.setOn(false);
+    expect(out.fades.at(-1)).toEqual([0, FADE_OUT_MS]);
+    expect(radio.store.getState().on).toBe(false); // off at once for the eye
+    expect(out.sounding).toBe(true); // while the ear hears it leave
+    await vi.advanceTimersByTimeAsync(FADE_OUT_MS - 1);
+    expect(out.sounding).toBe(true);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(out.sounding).toBe(false);
+    expect(radio.store.getState().playing).toBe(false);
+  });
+
+  it("turned on again while it fades out, the music just lifts again", async () => {
+    const radio = new Radio(deps());
+    radio.setOn(true); await settle();
+    const plays = out.log.filter((l) => l.startsWith("play")).length;
+    radio.setOn(false);
+    await vi.advanceTimersByTimeAsync(300);
+    radio.setOn(true);
+    expect(out.fades.at(-1)![0]).toBeCloseTo(0.5 * MUSIC_LEVEL);
+    await vi.advanceTimersByTimeAsync(FADE_OUT_MS * 2);
+    expect(out.sounding).toBe(true);
+    expect(radio.store.getState()).toMatchObject({ on: true, playing: true });
+    expect(out.log.filter((l) => l.startsWith("play"))).toHaveLength(plays); // the same song went on, nothing restarted
+    expect(out.log).not.toContain("pause");
+  });
+
+  it("a skipped song dips out and the new one comes in; a song that ends goes straight into the next", async () => {
+    const radio = new Radio(deps());
+    radio.setOn(true); await settle();
+    radio.next();
+    expect(radio.store.getState().song?.id).toBe("B"); // the radio is at the new song at once
+    expect(out.fades.at(-1)).toEqual([0, SKIP_OUT_MS]);
+    expect(out.last).toBe("play A.mp3@0"); // the old one is still leaving
+    await vi.advanceTimersByTimeAsync(SKIP_OUT_MS);
+    expect(out.last).toBe("play B.mp3@0");
+    expect(out.fades.at(-1)![1]).toBeGreaterThan(0); // it fades in
+    out.onEnded!();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(out.last).toBe("play C.mp3@0"); // no wait at a song's own end
+    expect(out.fades.at(-1)).toEqual([0.5 * MUSIC_LEVEL, 0]);
+    // two quick skips: the song in between never starts
+    radio.next(); radio.next();
+    await settle();
+    expect(out.log.filter((l) => l.startsWith("play")).map((l) => l.slice(5, 6))).toEqual(["A", "B", "C", "A"]);
+  });
+
+  it("a station change turns the dial: the tuning sweep plays only while the radio sounds for the learner", async () => {
+    const tune = vi.fn();
+    const radio = new Radio(deps({ tune }));
+    await radio.init();
+    radio.setStation("reggae");
+    expect(tune).not.toHaveBeenCalled(); // off: the needle moves in silence
+    radio.setOn(true); await settle();
+    radio.setStation("all"); await settle();
+    expect(tune).toHaveBeenCalledOnce();
+    radio.hold("conversation");
+    radio.setStation("reggae");
+    expect(tune).toHaveBeenCalledOnce(); // never over a conversation
   });
 
   it("goes to the next song when one ends, and back and forth on request", async () => {
@@ -365,6 +436,7 @@ describe("the radio", () => {
     const radio = new Radio(deps());
     radio.setOn(true); await settle();
     radio.hold("voice");
+    expect(out.fades.at(-1)).toEqual([0, VOICE_FADE_MS]); // a voice in the town: a quicker fade than a conversation's
     await vi.advanceTimersByTimeAsync(100);
     radio.release("voice");
     await vi.advanceTimersByTimeAsync(FADE_OUT_MS + RESUME_AFTER_MS);
@@ -404,7 +476,7 @@ describe("the radio", () => {
   it("a press before the song list has arrived keeps the remembered song and place", async () => {
     store["radio-test"] = JSON.stringify({ on: false, station: "all", song: "C", at: 33 });
     const radio = new Radio(deps());
-    radio.press(); // the list is still on its way
+    radio.power(); // the list is still on its way
     expect(saved()).toMatchObject({ on: true, song: "C", at: 33 });
     await settle(); await settle();
     expect(out.last).toBe("play C.mp3@33");

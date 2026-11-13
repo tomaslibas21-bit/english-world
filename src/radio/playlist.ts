@@ -6,6 +6,8 @@ export interface Station {
   id: string;
   name: string;
   lt: string;
+  /** its place on the radio set's FM dial (88–108): where the needle goes */
+  freq: number;
   /** starts shuffled (the learner can change it) */
   shuffle: boolean;
   has(song: SongMeta): boolean;
@@ -57,9 +59,11 @@ export interface RadioSaved {
   at: number;
   /** the lyric strip is shown */
   lyrics: boolean;
+  /** the radio set has opened by itself once, the first time the radio was turned on */
+  introduced: boolean;
 }
 
-export const RADIO_DEFAULTS: RadioSaved = { on: false, station: "", shuffle: null, seed: 1, song: null, at: 0, lyrics: true };
+export const RADIO_DEFAULTS: RadioSaved = { on: false, station: "", shuffle: null, seed: 1, song: null, at: 0, lyrics: true, introduced: false };
 
 export function readSaved(raw: string | null): RadioSaved {
   try {
@@ -73,6 +77,7 @@ export function readSaved(raw: string | null): RadioSaved {
       song: typeof v.song === "string" ? v.song : null,
       at: Number.isFinite(v.at) && Number(v.at) > 0 ? Number(v.at) : 0,
       lyrics: v.lyrics !== false,
+      introduced: v.introduced === true,
     };
   } catch { return { ...RADIO_DEFAULTS }; }
 }
