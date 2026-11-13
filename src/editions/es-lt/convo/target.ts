@@ -42,7 +42,8 @@ export function npUnits(b: NpBinding, kind: "np" | "the" | "pl" | "bare" | "head
   const sp = ES.npUnits(b, kind, c as Case, look, fem);
   const base = look(b.id);
   if (!base) throw new Error(`Unknown entity "${b.id}"`);
-  const e = entityForPlayer(base, fem);
+  // the Spanish chosen now may name it with other units ("cuenta | corriente"): its own Lithuanian gloss then
+  const e = (ES as unknown as { neutralNoun: (e: EntityDef, f?: boolean) => EntityDef }).neutralNoun(entityForPlayer(base, fem), fem && !!base.enF);
   const qty = b.qty ?? 1;
   const plural = kind === "pl" || qty > 1;
   const g = ltGender(e);

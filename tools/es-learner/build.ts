@@ -67,7 +67,7 @@ for (const f of files.sort()) {
       if (units(lt.lt) !== units(w.es)) errors.push(`entity units ${units(lt.lt)} ≠ ${units(w.es)}: ${w.key} ${lt.lt}`);
       if (w.esPl && lt.ltPl && units(lt.ltPl) !== units(w.esPl)) errors.push(`entity plural units: ${w.key} ${lt.ltPl}`);
       for (const u of lt.lt.split(" | ")) { const n = u.split("/").length; if (n !== 1 && n !== 6) errors.push(`a unit needs 1 or 6 forms: ${w.key} "${u}"`); }
-      for (const k of Object.keys(w.fields ?? {})) if (lt[k] === undefined && k !== "lt" && k !== "nat" && k !== "natPl") warns.push(`entity ${w.key}: no ${k}`);
+      for (const k of Object.keys(w.fields ?? {})) if (lt[k] === undefined && k !== "lt" && k !== "nat" && k !== "natPl") (/^(neutral|spain)Lt/.test(k) ? errors : warns).push(`entity ${w.key}: no ${k}`);
       if (w.esPl && !lt.ltPl) errors.push(`entity ${w.key}: no ltPl (the Spanish has a plural)`);
       for (const k of ["nat", "natPl"]) if (lt[k] && lt[k].split("/").length !== 6 && lt[k].includes("/")) errors.push(`entity ${w.key}: ${k} needs six case forms or none`);
       if (lt.ltPl) for (const u of lt.ltPl.split(" | ")) { const n = u.split("/").length; if (n !== 1 && n !== 6) errors.push(`a plural unit needs 1 or 6 forms: ${w.key} "${u}"`); }

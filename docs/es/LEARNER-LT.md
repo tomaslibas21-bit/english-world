@@ -50,6 +50,8 @@ English, and `flags` the notes on units (by unit index). Write `lt` as an object
 - `nat`/`natPl` (the natural name where the gloss units alone read badly: agua | de | jamaica → hibiskų gėrimas) is
   the whole phrase in its six cases: "hibiskų gėrimas/hibiskų gėrimo/hibiskų gėrimui/hibiskų gėrimą/hibiskų
   gėrimu/hibiskų gėrime". Otherwise leave it out.
+- `neutralLt`/`spainLt` (and their `…Pl`): when the item's `fields` has them, the gloss of the neutral or Spain noun,
+  which has other units than the Mexican one ("cuenta | corriente"): case forms per unit, as `lt`.
 - `g` is the Lithuanian gender of the head noun.
 - `ltF`/`ltPlF`: the feminine forms when the entity describes the learner (jobs).
 
