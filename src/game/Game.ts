@@ -19,6 +19,7 @@ import { ROOM_PEOPLE } from "./world/roomPeople";
 import { AMBIENT_LINES } from "../content/ambient";
 import { ambientVoice } from "../content/voices";
 import { audio } from "./audio";
+import { radio } from "../radio";
 import { Dust } from "./dust";
 import { Pigeons } from "./pigeons";
 import { NPCS, type Look } from "../content/npcs";
@@ -513,6 +514,7 @@ export class Game implements GameApi {
     if (k === "j") st.setHud({ panel: "journal" });
     if (k === "p") st.setHud({ panel: "phone" });
     if (k === "g") this.autoWalkToObjective();
+    if (k === "r" && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) radio.press();
     if (k === "escape") st.setHud({ panel: "settings" });
   };
   private onKeyUp = (e: KeyboardEvent) => { this.keys.delete(e.key.toLowerCase()); };
@@ -1520,6 +1522,7 @@ export class Game implements GameApi {
     this.unbindAmbience = null;
     audio.stopAmbience();
     audio.stop();
+    radio.shutdown();
     for (const n of this.npcs) n.tag.remove();
     this.npcs = [];
     this.renderer.domElement.remove();

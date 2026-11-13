@@ -794,6 +794,12 @@ export class AudioSystem {
     }
   }
 
+  /** The game's one Web Audio context, for another output that must share it (the radio on iPhone, src/radio/
+   *  output.ts). Not resumed here: a tap does that (unlock()). */
+  context(): AudioContext | null {
+    try { return this.ac(false); } catch { return null; }
+  }
+
   private ac(resume = true) {
     if (!this.ctx || this.ctx.state === "closed") {
       const AC = window.AudioContext || (window as any).webkitAudioContext;

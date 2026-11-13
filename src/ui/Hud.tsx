@@ -9,6 +9,8 @@ import { sitProgress, stars } from "../state/progress";
 import { Icon, InlineIcon, Stars, drawIcon, iconForEmoji, splitLead, type IconName } from "./icons";
 import { switchPlayMode } from "./playMode";
 import { useCards, dueCards } from "../state/cards";
+import { LyricStrip, RadioTool } from "./Radio";
+import { useRadio } from "../radio";
 import "./light.css";
 
 /** Inside English Master (VITE_BACK_URL, e.g. "/"): the way back to the course site. */
@@ -33,6 +35,7 @@ export function Hud() {
   const hud = useStore((s) => s.hud);
   const conv = useStore((s) => s.conv);
   const due = useDueCards();
+  const hasRadio = useRadio((s) => s.available);
   const [helpOpen, setHelpOpen] = useState(() => { try { return localStorage.getItem("ew-help-closed") !== "1"; } catch { return true; } });
   if (conv.active) return <Fade />;
   const banner = hud.zoneBanner ? splitLead(hud.zoneBanner.title) : null;
@@ -40,7 +43,7 @@ export function Hud() {
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")}>
       <Objective />
       <Minimap />
-      <div className="toolbar">
+      <div className={"toolbar" + (hasRadio ? " has-radio" : "")}>
         <div className="toolbar-tools">
           {COURSE_URL && <a className="icon-btn" href={COURSE_URL} title="Grįžti į kursą" aria-label="Grįžti į kursą"><Icon name="home" size={25} /></a>}
           <ToolButton icon="clapper" title="Visos situacijos" panel="scenarios" />
@@ -51,11 +54,15 @@ export function Hud() {
           <ToolButton icon="settings" title="Nustatymai (Esc)" panel="settings" />
           <SectionHelpButton />
         </div>
-        <button className="icon-btn light-mode-btn" onClick={() => switchPlayMode("light")} title="Lengvas režimas" aria-label="Lengvas režimas">
-          <span aria-hidden>LR</span>
-          <span className="toolbar-tooltip" aria-hidden>Lengvas režimas</span>
-        </button>
+        <div className="toolbar-extra">
+          <RadioTool />
+          <button className="icon-btn light-mode-btn" onClick={() => switchPlayMode("light")} title="Lengvas režimas" aria-label="Lengvas režimas">
+            <span aria-hidden>LR</span>
+            <span className="toolbar-tooltip" aria-hidden>Lengvas režimas</span>
+          </button>
+        </div>
       </div>
+      {!hud.panel && <LyricStrip />}
       {hud.zoneBanner && banner && <div className="zone-banner"><h2>{banner.icon && <Icon name={banner.icon} size="0.8em" className="zb-ico" />}{banner.rest}</h2>{hud.zoneBanner.sub && <p>{hud.zoneBanner.sub}</p>}</div>}
       {hud.prompt && !hud.panel && (
         <button className={"prompt" + (hud.showTouch ? " touch" : "")} onClick={() => game?.interact()}>
@@ -67,7 +74,7 @@ export function Hud() {
         <div className="help-strip">
           Vaikščiok <kbd><Icon name="arrowUp" size="1em" strokeWidth={2.25} label="aukštyn" /></kbd><kbd><Icon name="arrowDown" size="1em" strokeWidth={2.25} label="žemyn" /></kbd><kbd><Icon name="arrowLeft" size="1em" strokeWidth={2.25} label="kairėn" /></kbd><kbd><Icon name="arrowRight" size="1em" strokeWidth={2.25} label="dešinėn" /></kbd> arba <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> · bėgti <kbd>Shift</kbd> · pašokti <kbd>Tarpas</kbd><br />
           Spustelėk žemę – nueisi ten · tempk pele – apsidairyk · <kbd>E</kbd> – kalbėtis / įeiti<br />
-          <kbd>G</kbd> – nueiti iki užduoties · <kbd>M</kbd> žemėlapis · <kbd>J</kbd> užduotys · <kbd>P</kbd> telefonas
+          <kbd>G</kbd> – nueiti iki užduoties · <kbd>M</kbd> žemėlapis · <kbd>J</kbd> užduotys · <kbd>P</kbd> telefonas{hasRadio && <> · <kbd>R</kbd> radijas</>}
           <button onClick={() => { setHelpOpen(false); try { localStorage.setItem("ew-help-closed", "1"); } catch { /* ignore */ } }}>Supratau <Icon name="close" size={15} strokeWidth={2.25} /></button>
         </div>
       )}
