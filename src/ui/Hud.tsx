@@ -223,8 +223,10 @@ function Minimap() {
     x.restore();
   }, [mm]);
   return (
-    <div className={"minimap" + (inside ? " inside" : "") + (live ? " live" : "")} style={inside && box ? { width: box.w + 2, height: box.h + 2 } : undefined}
-      onClick={() => useStore.getState().setHud({ panel: "map" })} title="Žemėlapis (M)">
+    <div className={"minimap" + (inside ? " inside" : "") + (live ? " live" : "")}
+      style={inside && box ? { width: box.w + 2, height: box.h + 2 } : undefined}
+      onClick={() => useStore.getState().setHud({ panel: "map" })}
+      title="Žemėlapis (M)">
       <canvas ref={ref} />
       <div className="label">{inside ? "" : zoneName}</div>
       <div className="mm-card" ref={card} aria-hidden={!inside}>
