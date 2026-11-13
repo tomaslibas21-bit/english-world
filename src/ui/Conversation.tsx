@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { chipLabel } from "./chip-label";
 import { useStore, type TranscriptLine } from "../state/store";
 import { Interlinear } from "./Interlinear";
 import { NPCS } from "../content/npcs";
@@ -482,17 +483,6 @@ function CallStrip({ sit }: { sit: SituationDef }) {
   );
 }
 
-function chipLabel(e: EntityDef, fem = false) {
-  if (fem && e.ltF) return e.ltF.split(" | ").map((p) => p.split("/")[0]).join(" ");
-  // the Spanish edition's neutral or Spain text: the entity's own word there (attrs.neutralChip / spainChip, else its
-  // neutral / Spain noun), so a learner who chose España sees "pequeña", "coche" on the chips
-  const a = e.attrs as Record<string, unknown> | undefined, v = variety();
-  const alt = v === "spain" ? a?.spainChip ?? a?.spain ?? a?.neutralChip ?? a?.neutral : v === "neutral" ? a?.neutralChip ?? a?.neutral : undefined;
-  if (e.chip && typeof alt === "string") return alt;
-  if (e.chip) return e.chip;
-  const parts = e.lt.split(" | ").map((p) => p.split("/")[0]);
-  return parts.join(" ");
-}
 
 function optionEntities(sit: SituationDef, options?: string | string[]): EntityDef[] {
   if (!options) return [];
