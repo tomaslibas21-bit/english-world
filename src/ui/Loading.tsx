@@ -1,19 +1,33 @@
+import { useState, type CSSProperties } from "react";
 import { EDITION } from "../edition";
 import { L } from "./i18n";
 
-/** Matches the static logo in index.html, so booting React and loading the town share one screen. The Spanish
- *  edition shows its name in the title screen's lettering (vite.config.ts `loading` puts the same into index.html). */
+// The logo is already on the page when the game's script starts (index.html, put there by vite.config.ts from
+// src/ui/loadingArt.ts, or the Spanish edition's file of that name). Keep its markup, and the moment its animations began, before React clears the page.
+const FIRST = typeof document === "undefined" ? null : document.querySelector(".ew-loading");
+const ART = FIRST?.querySelector(".ew-logo")?.innerHTML ?? "";
+const BEGAN = began(FIRST);
+
+/** When the logo on the page began moving (performance.now()'s clock): now, less its longest-running animation, less
+ *  the time it had already been up on the page before this one (the --ew-t the page set, tools/loading-screen.ts). */
+function began(el: Element | null): number {
+  if (typeof performance === "undefined") return 0;
+  let run = 0;
+  try {
+    for (const a of el?.getAnimations?.({ subtree: true }) ?? []) run = Math.max(run, Number(a.currentTime) || 0);
+  } catch { /* an old browser: the logo arrives again, once */ }
+  const carried = parseFloat((el as HTMLElement | null)?.style.getPropertyValue("--ew-t") ?? "") || 0;
+  return performance.now() - run + Math.min(0, carried);
+}
+
+/** The same logo as on the static page (index.html), so booting React and loading the town share one screen: the
+ *  markup is the page's own, and --ew-t tells its animations how long the logo has been up already
+ *  (public/loading.css), so it does not arrive a second time and its loops carry on in step. */
 export function Loading() {
-  if (EDITION.id !== "en") {
-    return (
-      <div className="loading ew-loading" role="status" aria-label={L("Kraunamas „{name}“", { name: EDITION.brand })}>
-        <div className="pc-loading-word" aria-hidden="true">{EDITION.brand.split(" ")[0]} <em>{EDITION.brand.split(" ").slice(1).join(" ")}</em></div>
-      </div>
-    );
-  }
+  const [t] = useState(() => `${-Math.round(performance.now() - BEGAN)}ms`);
   return (
-    <div className="loading ew-loading" role="status" aria-label={L("Kraunamas „{name}“", { name: EDITION.brand })}>
-      <svg className="ew-loading-logo" viewBox="0 0 306 198" aria-hidden="true"><use href={`${import.meta.env.BASE_URL}brand/loading-wordmark.svg#wordmark`} /></svg>
+    <div className="loading ew-loading" role="status" aria-label={L("Kraunamas „{name}“", { name: EDITION.brand })} style={{ "--ew-t": t } as CSSProperties}>
+      <div className="ew-logo" dangerouslySetInnerHTML={{ __html: ART }} />
     </div>
   );
 }

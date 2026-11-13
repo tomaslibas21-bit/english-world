@@ -1084,6 +1084,26 @@ triangles in the office's door view 145k → 160k). Checks: es-tour --start=jump
 every speaker in the picture, no head cut (p18 and p27 now with fewer rays blocked than before); Maple Harbor's 72 frozen
 room and talk-spot views pixel-identical with the same draw calls at both sizes.
 
+## Characters, second version: the beach people (13 Nov 2026)
+
+The faces, bodies and idle motion are the shared character code's second version (docs/CHARACTERS.md; the same in Maple
+Harbor). This edition's own part is the beach:
+
+- **Beachwear** (theme `beachwear`; ambient.ts `beachLook`): the townspeople who sit, stand or chat south of z −62 (the
+  malecón's benches, the pairs on the malecón and on the sand, the palapas' loungers) are dressed for the beach, and a
+  quarter of the passers-by too (they come and go from it). Men: swim trunks (to the knee, a white stripe down the
+  side, a drawstring) with a T-shirt or a tank, or shorts and a short-sleeved shirt; a bucket hat or a straw one now
+  and then. Women: a one-piece swimsuit always under a sarong (tied on the hip) or an open shirt, a sundress, or
+  shorts and a tank; a broad sun hat often. Everyone in sandals; sunglasses on some. Each keeps the skin, hair, glasses,
+  height and build the town's draw gave them; the beach's colors are the theme's (`swim`, `wraps`, `tops`, `covers`,
+  `shorts`, `sandals`). The draws are a stream of their own (`rBeach`), so everyone else in town looks as before.
+- **The loungers** (town.ts `Seat.recline`): whoever sits on a palapa's lounger lies back against its rest, legs out
+  along it, hands on the belly, the head up towards the sea.
+- The pieces themselves (Look.swim, Look.sleeves, the accessories sarong, coverup, sunhat, bucket) are in the shared
+  Character.ts; Maple Harbor wears none (tests/characters.test.ts), and tests/es/beachwear.test.ts keeps a swimsuit under
+  a sarong or a shirt and swim trunks with a top.
+- The cast (the 58 with portraits) is dressed as before.
+
 ## The tasks (in order)
 
 Each task is one area; each ends with before/after screenshots at phone size and the draw-call numbers.
