@@ -2501,6 +2501,15 @@ function addTransport(M: Merger, col: Colliders, group: THREE.Group, r: () => nu
     M.add("canopy-post", mat("#d9d9d9"), cylGeo(0.18, 0.18, 4.6, px, 2.3, 3), false);
     col.addBox(px, 5.5, 1.1, 0.8);
   }
+  // the station's name on the canopy's front, where the street sees it (the canopy hides the shop's sign behind it from
+  // the street); see-through for the walking camera with the canopy (its name: buildTown, userData.thin)
+  const gasName = BUILDINGS.find((b) => b.id === "gas")?.sign;
+  if (gasName) {
+    const gs = new THREE.Mesh(new THREE.PlaneGeometry(7, 0.58), new THREE.MeshBasicMaterial({ map: textTexture(gasName, { bg: "#f4f4f4", fg: "#d94b3d", w: 1024, h: 85 }), alphaTest: 0.5, toneMapped: false }));
+    gs.name = "gas-canopy-sign";
+    gs.position.set(112, 5.0, 0.94); gs.rotation.y = Math.PI;
+    group.add(gs);
+  }
   // the pumps' numbers on the canopy's posts, towards the street (on the pumps, the posts hid them from the street)
   for (let i = 0; i < 3; i++) {
     const n = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.6), new THREE.MeshBasicMaterial({ map: textTexture(String(i + 1), { bg: "#ffffff", fg: "#d94b3d", w: 128, h: 128 }) }));
