@@ -903,7 +903,8 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     M.add("steps", mat("#e3ddd0"), boxGeo(16, 0.3, 3.4, 0, 0.15, 0).rotateY(rotY).translate(dx + n[0] * 1.7, 0, dz + n[1] * 1.7));
     M.add("steps", mat("#e3ddd0"), boxGeo(16, 0.3, 2.4, 0, 0.45, 0).rotateY(rotY).translate(dx + n[0] * 1.2, 0, dz + n[1] * 1.2));
     M.add("pediment", mat("#f7f3ea"), boxGeo(16, 0.8, 3.6, 0, 7.4, 0).rotateY(rotY).translate(dx + n[0] * 1.6, 0, dz + n[1] * 1.6));
-    const banner = textTexture(townSign("The Colors of the Night"), { bg: "#2b2d6e", fg: "#ffd166", w: 256, h: 512 });
+    // (the words a line each down the banner, big enough to read from the street: one line across it was too small)
+    const banner = textTexture(townSign("The Colors of the Night"), { bg: "#2b2d6e", fg: "#ffd166", w: 256, h: 512, lines: 4 });
     for (const s of [-1, 1]) {
       const bm = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 3.2), new THREE.MeshBasicMaterial({ map: banner }));
       bm.position.set(dx + t[0] * s * 9.5 + n[0] * 0.1, 5.2, dz + t[1] * s * 9.5 + n[1] * 0.1);
@@ -1377,7 +1378,7 @@ function frontExtras(id: string, M: Merger, col: Colliders, group: THREE.Group, 
   /** A flat notice on the facade (or on a window), facing the street. */
   const notice = (text: string, bg: string, fg: string, u: number, y: number, w: number, h: number, v = 0.12) => {
     const [x, z] = P(u, v);
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: textTexture(townSign(text), { bg, fg, w: 512, h: Math.round(512 * h / w) }), toneMapped: false }));
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: textTexture(townSign(text), { bg, fg, w: 512, h: Math.round(512 * h / w), lines: 2 }), toneMapped: false }));
     m.position.set(x, y, z); m.rotation.y = rotY;
     group.add(m);
   };
@@ -1451,7 +1452,7 @@ function frontExtras(id: string, M: Merger, col: Colliders, group: THREE.Group, 
     }
     block(5, 1.05, 1.1, 1.65);
     block(5, 1, 1.6, 0.7);
-    notice("Open 5 AM – 11 PM", "#ffffff", "#1f7f8c", -2.2, 1.7, 1.1, 0.34);
+    notice("Open 5 AM – 11 PM", "#ffffff", "#1f7f8c", -2.2, 1.75, 1.5, 0.5);
     notice("First session FREE!", "#f0883e", "#ffffff", 6.33, 1.95, 2.1, 0.5);
   }
 }
@@ -2497,9 +2498,10 @@ function addTransport(M: Merger, col: Colliders, group: THREE.Group, r: () => nu
     M.add("canopy-post", mat("#d9d9d9"), cylGeo(0.18, 0.18, 4.6, px, 2.3, 3), false);
     col.addBox(px, 5.5, 1.1, 0.8);
   }
+  // the pumps' numbers on the canopy's posts, towards the street (on the pumps, the posts hid them from the street)
   for (let i = 0; i < 3; i++) {
-    const n = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.6), new THREE.MeshBasicMaterial({ map: textTexture(String(i + 1), { bg: "#ffffff", fg: "#d94b3d", w: 64, h: 64 }) }));
-    n.position.set(104 + i * 6, 1.9, 5.19); n.rotation.y = Math.PI;
+    const n = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.6), new THREE.MeshBasicMaterial({ map: textTexture(String(i + 1), { bg: "#ffffff", fg: "#d94b3d", w: 128, h: 128 }) }));
+    n.position.set(104 + i * 6, 2.2, 2.8); n.rotation.y = Math.PI;
     group.add(n);
   }
   // rental cars lot
@@ -2535,8 +2537,9 @@ function addMaggiesCar(M: Merger, col: Colliders, group: THREE.Group) {
   }
   col.addBox(x, z, Math.abs(Math.cos(rot)) * 2 + Math.abs(Math.sin(rot)) * 4.4, Math.abs(Math.sin(rot)) * 2 + Math.abs(Math.cos(rot)) * 4.4);
   // the sign on the windshield, read from the street
-  const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 0.32), new THREE.MeshBasicMaterial({ map: textTexture(townSign("FOR SALE $9,000"), { bg: "#fffaf0", fg: "#c0182f", w: 384, h: 128, script: true }) }));
-  const off = new THREE.Vector3(0.25, 1.15, 0.645).applyAxisAngle(new THREE.Vector3(0, 1, 0), rot);
+  // (bold, on two lines and as big as the windshield allows: the thin one-line script could not be read from the street)
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 0.4), new THREE.MeshBasicMaterial({ map: textTexture(townSign("FOR SALE $9,000"), { bg: "#fffaf0", fg: "#c0182f", w: 384, h: 134, lines: 2 }) }));
+  const off = new THREE.Vector3(0.2, 1.2, 0.645).applyAxisAngle(new THREE.Vector3(0, 1, 0), rot);
   sign.position.set(x + off.x, off.y, z + off.z);
   sign.rotation.y = rot;
   group.add(sign);
@@ -2577,7 +2580,7 @@ function addBackyard(M: Merger, col: Colliders, group: THREE.Group) {
   // a little sign in the front garden pointing to the party
   M.add("sign-pole", mat("#8a6a4a"), cylGeo(0.05, 0.05, 1.3, bx + 7.6, 0.65, bz - 18.4, 6));
   col.addCircle(bx + 7.6, bz - 18.4, 0.1);
-  const partySign = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.5), new THREE.MeshBasicMaterial({ map: textTexture(townSign("Party → backyard"), { bg: "#fff6e0", fg: "#b5485d", w: 384, h: 128 }) }));
+  const partySign = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.5), new THREE.MeshBasicMaterial({ map: textTexture(townSign("Party → backyard"), { bg: "#fff6e0", fg: "#b5485d", w: 384, h: 128, lines: 2 }) }));
   partySign.position.set(bx + 7.6, 1.35, bz - 18.47);
   partySign.rotation.y = Math.PI;
   group.add(partySign);
