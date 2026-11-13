@@ -153,10 +153,12 @@ export class Radio {
   // ---------------------------------------------------------------- what the learner does
 
   /** The toolbar's button, the radio's power switch: one press on, the next off. The very first time it is turned
-   *  on, the radio set opens by itself, so the learner finds the stations. */
+   *  on, the radio set opens by itself, so the learner finds the stations. Switched off, an open set folds away:
+   *  off looks off. (The set's own knob leaves the set open: the learner is using it.) */
   power() {
     if (!this.state.available) return;
-    if (!this.state.on && !this.saved.introduced) { this.saved.introduced = true; this.set({ open: true }); }
+    if (this.state.on) this.set({ open: false });
+    else if (!this.saved.introduced) { this.saved.introduced = true; this.set({ open: true }); }
     this.setOn(!this.state.on);
   }
 

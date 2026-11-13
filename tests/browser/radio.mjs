@@ -130,6 +130,8 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
         return { needle: (n.left + n.width / 2 - d.left) / d.width, marksInside: marks.every((m) => m.left >= d.left && m.right <= d.right) };
       });
       check(`${label}: the needle stands at 98.7 on a dial whose numbers all fit`, Math.abs(dial.needle - (0.06 + ((98.7 - 88) / 20) * 0.88)) < 0.02 && dial.marksInside, dial);
+      const header = await page.evaluate(() => { const n = document.querySelector(".rs-name"), t = document.querySelector(".rs-title"), f = document.querySelector(".rs-freq"); return { name: [n.scrollWidth, n.clientWidth], title: [t.scrollWidth, t.clientWidth], freq: f.textContent, under: f.getBoundingClientRect().top >= n.getBoundingClientRect().bottom - 6 }; });
+      check(`${label}: the station's name shows in full, with its frequency under it`, header.name[0] <= header.name[1] + 1 && header.title[0] <= header.title[1] + 1 && header.freq === "98.7 FM" && header.under, header);
       await page.locator(".rs-x").click();
 
       // ---- folded away: the lit button and the station's plate; a tap on the button is off, the next is on
@@ -156,6 +158,14 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       await page.evaluate(() => document.querySelector(".stage").dispatchEvent(new PointerEvent("pointerdown", { bubbles: true })));
       await page.waitForTimeout(100);
       check(`${label}: folded away again, still playing`, await page.locator(".radio-set").count() === 0 && (await state(page)).on, null);
+      // switched off with the set open: off looks off, the set folds away too; on again shows the plate only
+      await page.locator(".radio-plate").click();
+      await page.evaluate(() => window.__ew.radio.power());
+      check(`${label}: switched off with the set open, the set folds away`, await page.locator(".radio-set").count() === 0 && await page.locator(".radio-plate").count() === 0 && !(await state(page)).on, await state(page));
+      await page.waitForTimeout(1100);
+      await page.evaluate(() => window.__ew.radio.power());
+      await playing(page);
+      check(`${label}: on again brings the plate, not the set`, await page.locator(".radio-set").count() === 0 && await page.locator(".radio-plate").count() === 1, null);
 
       // ---- the lyric strip: the sung line, the word lit, the glosses with the game's translation setting
       await until(page, () => !!document.querySelector(".radio-strip .ru.now, .radio-strip .ru.sung"));
@@ -173,6 +183,10 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       await page.evaluate(() => window.__ew.store.getState().setSettings({ lt: true }));
 
       // ---- a conversation: silent, and silent for a microphone after it
+      // (a fresh song first: the fixture "songs" are only a few seconds long)
+      await page.evaluate(() => window.__ew.radio.next());
+      await playing(page);
+      await page.waitForTimeout(400);
       const before = (await state(page)).position;
       await page.evaluate(() => window.__ew.game.startScenario("s72-cafe"));
       await until(page, () => window.__ew.store.getState().conv.active);
@@ -274,6 +288,15 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       check(`${name} ${width}×${height}: every tool, the radio and the light-mode button are on screen and apart`, boxes.tools.every(inside) && boxes.tools.every((a, i) => boxes.tools.every((b, j) => i === j || apart(a, b))), boxes);
       check(`${name} ${width}×${height}: the tools stay clear of the movement controls`, boxes.tools.every((t) => apart(t, boxes.jump) && apart(t, boxes.joy)), boxes);
       check(`${name} ${width}×${height}: the open radio set fits the screen`, inside(boxes.card), boxes);
+      // the largest text size (Nustatymai: A++): every station's name still shows in full, and the set still fits
+      await page.evaluate(() => window.__ew.store.getState().setSettings({ textSize: 1.3 }));
+      for (const id of ["town", "soul", "sunny"]) {
+        await page.evaluate((station) => window.__ew.radio.setStation(station), id);
+        await until(page, () => document.querySelector(".radio-set").getAnimations().every((a) => a.playState === "finished"), 15000);
+        await page.waitForTimeout(120);
+        const big = await page.evaluate(() => { const n = document.querySelector(".rs-name"), r = document.querySelector(".radio-set").getBoundingClientRect(); return { text: n.textContent, full: n.scrollWidth <= n.clientWidth + 1, l: r.left, t: r.top, r: r.right, b: r.bottom, w: innerWidth, h: innerHeight }; });
+        check(`${name} ${width}×${height}: at the largest text “${big.text}” shows in full and the set fits`, big.full && big.l >= 0 && big.t >= 0 && big.r <= big.w && big.b <= big.h, big);
+      }
       await context.close();
     }
   } finally { await browser.close(); }
