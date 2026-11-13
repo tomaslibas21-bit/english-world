@@ -49,7 +49,8 @@ English, and `flags` the notes on units (by unit index). Write `lt` as an object
 - Always give `ltPl` when the item has `esPl`, even if `fields` has none: English adds "s", Lithuanian can't.
 - `nat`/`natPl` (the natural name where the gloss units alone read badly: agua | de | jamaica → hibiskų gėrimas) is
   the whole phrase in its six cases: "hibiskų gėrimas/hibiskų gėrimo/hibiskų gėrimui/hibiskų gėrimą/hibiskų
-  gėrimu/hibiskų gėrime". Otherwise leave it out.
+  gėrimu/hibiskų gėrime". **Every entity whose `lt` has more than one unit needs it**: the answer chips show its
+  nominative („vietinis maistas“, „itališkas maistas“), never the gloss joined in Spanish order.
 - `neutralLt`/`spainLt` (and their `…Pl`): when the item's `fields` has them, the gloss of the neutral or Spain noun,
   which has other units than the Mexican one ("cuenta | corriente"): case forms per unit, as `lt`.
 - `g` is the Lithuanian gender of the head noun.

@@ -16,7 +16,9 @@
 //   button leads back to the course (VITE_BACK_URL=/);
 // - the course's own file in that folder, fs-theme.css (the game's look in the course's themes), is kept; version.json
 //   says which commit the build came from.
-//   npx tsx tools/export-sme.ts <path to a spanish-master-english checkout> [--audio=<clip base URL>]
+//   npx tsx tools/export-sme.ts <path to a spanish-master-english or spanish-master checkout> [--audio=<clip base URL>]
+// For Spanish Master (Lithuanian learners) it builds with the learner layer (VITE_LEARNER=lt) and the clips of its
+// own folder, spanish-master/game/audio-es/.
 import { execFileSync } from "node:child_process";
 import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
@@ -30,12 +32,20 @@ const target = args.find((a) => !a.startsWith("--"));
 const DIR = "audio-es/";
 /** The Spanish the game starts in, inside the course (src/state/variety.ts). */
 const DEFAULT_VARIETY = "neutral";
-const audio = args.find((a) => a.startsWith("--audio="))?.slice(8) ?? `https://audio.dvikalbesdainos.lt/spanish-master-en/game/${DIR}`;
-// the course's own files Worker config: only a Spanish Master English checkout has it
-if (!target || !existsSync(path.join(target, "workers/files/wrangler.spanish-en.jsonc")) || !existsSync(path.join(target, "src/components/AppShell.tsx"))) {
-  console.error("Usage: npx tsx tools/export-sme.ts <path to a spanish-master-english checkout>");
+/** The course, known by its files Worker config: Spanish Master English (wrangler.spanish-en.jsonc: the learner's
+ *  language is English) or Spanish Master (wrangler.spanish.jsonc: Lithuanian, docs/es/LEARNER-LT.md). Each has its
+ *  own clip folder on R2, under its own Worker. */
+const COURSES = {
+  sme: { worker: "wrangler.spanish-en.jsonc", folder: "spanish-master-en", learner: "" },
+  sm: { worker: "wrangler.spanish.jsonc", folder: "spanish-master", learner: "lt" },
+} as const;
+const course = target && (Object.keys(COURSES) as (keyof typeof COURSES)[]).find((c) => existsSync(path.join(target, "workers/files", COURSES[c].worker)));
+if (!target || !course || !existsSync(path.join(target, "src/components/AppShell.tsx"))) {
+  console.error("Usage: npx tsx tools/export-sme.ts <path to a spanish-master-english or spanish-master checkout>");
   process.exit(1);
 }
+const { folder, learner } = COURSES[course];
+const audio = args.find((a) => a.startsWith("--audio="))?.slice(8) ?? `https://audio.dvikalbesdainos.lt/${folder}/game/${DIR}`;
 
 const git = (...a: string[]) => { try { return execFileSync("git", a, { cwd: ROOT, encoding: "utf8" }).trim(); } catch { return ""; } };
 const commit = git("rev-parse", "--short=8", "HEAD");
@@ -43,10 +53,10 @@ const branch = git("branch", "--show-current");
 const dirty = git("status", "--porcelain", "--", "src", "public", "index.html", "vite.config.ts") !== "";
 
 const out = mkdtempSync(path.join(tmpdir(), "puerto-colibri-sme-"));
-console.log(`building the Spanish edition for /game/ (${branch || "?"} ${commit || "?"}${dirty ? ", with uncommitted changes" : ""}; clips from ${audio}) …`);
+console.log(`building the Spanish edition${learner ? ` for a ${learner} learner` : ""} for ${course}'s /game/ (${branch || "?"} ${commit || "?"}${dirty ? ", with uncommitted changes" : ""}; clips from ${audio}) …`);
 execFileSync("npx", ["vite", "build", "--outDir", out, "--emptyOutDir"], {
   cwd: ROOT, stdio: ["ignore", "ignore", "inherit"],
-  env: { ...process.env, EDITION: "es", VITE_EDITION: "es", GAME_BASE: "/game/", VITE_AUDIO_BASE: audio, VITE_CARDS_TARGET: "fluentsteps", VITE_BACK_URL: "/", VITE_DEFAULT_VARIETY: DEFAULT_VARIETY },
+  env: { ...process.env, EDITION: "es", VITE_EDITION: "es", VITE_LEARNER: learner, LEARNER: learner, GAME_BASE: "/game/", VITE_AUDIO_BASE: audio, VITE_CARDS_TARGET: "fluentsteps", VITE_BACK_URL: "/", VITE_DEFAULT_VARIETY: DEFAULT_VARIETY },
 });
 const html = readFileSync(path.join(out, "index.html"), "utf8");
 if (!html.includes("Puerto Colibrí")) { console.error("the build is not the Spanish edition (no Puerto Colibrí in its index.html)"); process.exit(1); }
@@ -80,7 +90,7 @@ function voiceSets(): Record<string, number> | undefined {
 }
 const sets = voiceSets();
 if (!clips) console.warn(`no clip list (public/${DIR}manifest.json): the game will speak every line with the browser's voice`);
-writeFileSync(path.join(out, "version.json"), JSON.stringify({ game: "Puerto Colibrí", edition: "es", branch, commit, dirty, built: new Date().toISOString(), clips, voiceSets: sets, clipBase: audio, defaultVariety: DEFAULT_VARIETY }, null, 2) + "\n");
+writeFileSync(path.join(out, "version.json"), JSON.stringify({ game: "Puerto Colibrí", edition: "es", learner: learner || "en", branch, commit, dirty, built: new Date().toISOString(), clips, voiceSets: sets, clipBase: audio, defaultVariety: DEFAULT_VARIETY }, null, 2) + "\n");
 
 const dest = path.join(target, "public/game");
 const themeFile = path.join(dest, "fs-theme.css");

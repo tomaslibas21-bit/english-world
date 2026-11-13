@@ -22,7 +22,7 @@ const valuePh = (s: string) => [...s.matchAll(/\{\$(\w+)\}/g)].map((m) => m[1]).
 const LT_CASED = /\{[A-Z](?:\.(?:np|pl))?:(?:nom|gen|dat|acc|ins|loc)(?::pl)?\}/;
 const LT_BARE = /\{[A-Z](?:\.(?:np|the|pl))?\}/;
 const ENGLISHY = /\b(the|and|you|your|with|is|are|it's|I'm|don't|please|thank)\b/i;
-const LOWER_JUS = /(^|[^„"])\b(jūs|jus|jums|jūsų)\b/;
+const LOWER_JUS = /(?<![\p{L}„"])(jūs|jus|jums|jūsų)(?![\p{L}])/u;
 
 let wrote = 0, bad = 0;
 const files = fs.existsSync(DONE) ? fs.readdirSync(DONE).filter((f) => f.endsWith(".json") && (!only.length || only.some((o) => f.startsWith(o)))) : [];
@@ -69,6 +69,8 @@ for (const f of files.sort()) {
       for (const u of lt.lt.split(" | ")) { const n = u.split("/").length; if (n !== 1 && n !== 6) errors.push(`a unit needs 1 or 6 forms: ${w.key} "${u}"`); }
       for (const k of Object.keys(w.fields ?? {})) if (lt[k] === undefined && k !== "lt" && k !== "nat" && k !== "natPl") (/^(neutral|spain)Lt/.test(k) ? errors : warns).push(`entity ${w.key}: no ${k}`);
       if (w.esPl && !lt.ltPl) errors.push(`entity ${w.key}: no ltPl (the Spanish has a plural)`);
+      // a chip shows the natural name's nominative; a gloss joined in Spanish order ("maistas jukatanietiškas") never
+      if (units(lt.lt) > 1 && !lt.nat) errors.push(`entity ${w.key}: a gloss of ${units(lt.lt)} units needs nat (six case forms of the natural name; the chip shows its nominative)`);
       for (const k of ["nat", "natPl"]) if (lt[k] && lt[k].split("/").length !== 6 && lt[k].includes("/")) errors.push(`entity ${w.key}: ${k} needs six case forms or none`);
       if (lt.ltPl) for (const u of lt.ltPl.split(" | ")) { const n = u.split("/").length; if (n !== 1 && n !== 6) errors.push(`a plural unit needs 1 or 6 forms: ${w.key} "${u}"`); }
       table.entity[w.key] = lt;
