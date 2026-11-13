@@ -84,9 +84,9 @@ export const GLOBAL_LINES: Record<string, SentSrc[]> = {
     t("¡Hasta luego! | ¡Que | {u:le|t:te} | vaya | bien!", "See you later! | (I hope) | (for) you | it-goes | well!", "See you! All the best!"),
   ],
   g_bye_day: [
-    // Spain says it with "un" (without it, it sounds Latin American there)
+    // México says it without "un"; the neutral text and Spain (which falls back to it) with "un" (the owner, 14 Nov)
     t("¡Adiós! | ¡Que | {u:tenga|t:tengas} | buen día!", "Bye! | (I hope) | you have | a good day!", "Bye! Have a good day!",
-      { spain: t("¡Adiós! | ¡Que | {u:tenga|t:tengas} | un | buen día!", "Bye! | (I hope) | you have | a | good day!", "Bye! Have a good day!") }),
+      { neutral: t("¡Adiós! | ¡Que | {u:tenga|t:tengas} | un | buen día!", "Bye! | (I hope) | you have | a | good day!", "Bye! Have a good day!") }),
   ],
   g_bye_afternoon: [
     t("¡Adiós! | ¡Que | {u:tenga|t:tengas} | buena tarde!", "Bye! | (I hope) | you have | a good afternoon!", "Bye! Have a good afternoon!"),
@@ -529,7 +529,7 @@ export const GLOBAL_HINTS: Record<string, HintGroup> = {
       { id: "s_thanks", s: t("¡Muchas | gracias!", "Many | thanks!", "Thank you very much!") },
       { id: "s_thanks_help", s: t("¡Gracias | por | {u:su|t:tu} | ayuda!", "Thanks | for | your | help!", "Thanks for your help!") },
       { id: "s_bye", s: t("¡Que | {u:tenga|t:tengas} | buen día!", "(I hope) | you have | a good day!", "Have a nice day!",
-        { spain: t("¡Que | {u:tenga|t:tengas} | un | buen día!", "(I hope) | you have | a | good day!", "Have a nice day!") }) },
+        { neutral: t("¡Que | {u:tenga|t:tengas} | un | buen día!", "(I hope) | you have | a | good day!", "Have a nice day!") }) },
       { id: "s_bye2", s: t("¡Adiós!", "Goodbye!", "Goodbye!") },
       { id: "s_hello", s: t("¡Hola! | ¿Cómo | {u:está|t:estás}?", "Hi! | How | are you?", "Hi! How are you?") },
     ],
