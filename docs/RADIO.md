@@ -1,8 +1,30 @@
 # The town's radio
 
-The learner can listen to the course's songs while walking around the town: a radio button in the toolbar (key R), a
-card with the stations and the buttons, and a lyric strip with the line being sung and each word's gloss under it.
-The game has no songs of its own. It plays the ones the course it sits in already has.
+The learner can listen to the course's songs while walking around the town: a power button in the toolbar (key R), a
+small radio set with the stations and the keys, and a lyric strip with the line being sung and each word's gloss under
+it. Maple Harbor's station is Maple FM, Puerto Colibrí's Radio Colibrí. The game has no songs of its own. It plays the
+ones the course it sits in already has.
+
+## Look and feel
+
+The owner's brief (13 Nov 2026): a nice feel, easy to turn on and off, calm while walking, each town's own look.
+
+- **One tap on, one tap off.** The toolbar's radio button is the power switch; R does the same. On shows at a glance:
+  the button's lamp glows, and a plate beside it names the station, with three moving bars. A new song's title shows on
+  the plate for five seconds.
+- **The radio set** opens from the plate and folds away at a tap anywhere else. The very first time the radio is turned
+  on it opens by itself, once (`introduced` in the saved state). It has an FM dial whose needle glides to the station
+  (`freq` in `src/content/radio.ts`), the stations as preset buttons, the song, and five keys around the on-off knob.
+- **Skins.** The set is an object with colours of its own, so it reads the same in every course theme. `RADIO_SKIN` in
+  `src/content/radio.ts` picks one: `maple` (navy, brass, a cream dial, a maple-red needle, the name in serif italic)
+  or `colibri` (teal, coral and sun yellow under a string of papel picado, the name as a hand-painted sign). Their
+  variables are at the top of `src/ui/radio.css`.
+- **Names.** Station names stay as they are in every learner language; the line under each is translated.
+- **Fades, never a cut.** On: 1 s in. Off: 0.9 s out, and turning it on again meanwhile just lifts the music. A skipped
+  song dips 0.2 s out and 0.5 s in; a song that ends goes straight into the next. Changing station plays a soft tuning
+  sweep (half a second of quiet filtered static, `tune()` in `src/radio/index.ts`), which never delays the song and is
+  silent at volume 0. "Less motion" stills the needle and the bars.
+- **One hard cut stays:** a microphone that starts listening while music still sounds (below).
 
 ## Where the songs come from
 
@@ -27,8 +49,10 @@ The game has no songs of its own. It plays the ones the course it sits in alread
 
 ## Stations
 
-`src/content/radio.ts` lists them. A station is a name, a line in the learner's language, a filter over the list
-(Maple Harbor's two genre stations match words of the list's genre text) and whether it starts shuffled. The same file
+`src/content/radio.ts` lists them. A station is a name, its place on the dial, a line in the learner's language, a
+filter over the list and whether it starts shuffled. Maple Harbor has Maple FM (every song) and two genre stations
+that match words of the list's genre text, Soul & Funk and Sunny Side. A shuffle the learner turns off stays off when
+the station changes. The same file
 says which course song each conversation is built on: walking into a place puts its song next, once per visit to the
 page.
 
@@ -39,11 +63,11 @@ stands:
 
 | Hold | From | How |
 | --- | --- | --- |
-| conversation | `conv.active` in the store | fades out over 250 ms, then pauses |
-| voice | the voice player is loading or speaking | the same |
+| conversation | `conv.active` in the store | fades out over 0.9 s, then pauses |
+| voice | the voice player is loading or speaking | fades out over 0.5 s, then pauses |
 | microphone | `watchMicrophone()` in `src/convo/audioFocus.ts`, called first thing in `captureAudio()` | pauses at once, before the audio route changes |
 
-The music comes back 0.7 s after the last hold is gone, from where it stopped, if the radio is on. Pause is pause: no
+The music comes back 0.7 s after the last hold is gone, fading in over a second from where it stopped, if the radio is on. Pause is pause: no
 hold's end turns a paused radio on. The system's media keys go through the radio (`navigator.mediaSession`), and the
 media element refuses any start the radio didn't ask for.
 
@@ -61,12 +85,12 @@ Not checked on a physical iPhone. The browser checks run the iPhone branch in Ch
 ## Remembered
 
 `ew-radio-v1` in localStorage (a note of this device's, not part of the save the course backs up): on or off, the station, the shuffle choice and its seed, the song and the
-place in it, whether the lyric strip shows. A visit that starts with the radio on goes on by itself where the browser
+place in it, whether the lyric strip shows, and whether the set has opened by itself yet. A visit that starts with the radio on goes on by itself where the browser
 allows it, and at the first tap where it asks for one.
 
 ## Checks
 
-- `tests/radio.test.ts`: the addresses, the lyric clocks, the order, storage, every hold, the fallback address, the
-  iPhone output.
+- `tests/radio.test.ts`: the addresses, the lyric clocks, the order, storage, the power switch, the fades and dips,
+  every hold, the fallback address, the iPhone output.
 - `tests/browser/radio.mjs`: the real game in Chrome and WebKit, on a desktop and as an iPhone, with fixture songs. Its
   header says how to run it.

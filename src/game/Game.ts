@@ -523,7 +523,7 @@ export class Game implements GameApi {
     if (k === "j") st.setHud({ panel: "journal" });
     if (k === "p") st.setHud({ panel: "phone" });
     if (k === "g") this.autoWalkToObjective();
-    if (k === "r" && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) radio.press();
+    if (k === "r" && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) radio.power();
     if (k === "escape") st.setHud({ panel: "settings" });
   };
   private onKeyUp = (e: KeyboardEvent) => { this.keys.delete(e.key.toLowerCase()); };
