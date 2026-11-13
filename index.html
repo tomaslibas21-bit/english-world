@@ -5,18 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#f5efe5" />
     <link rel="stylesheet" href="/loading.css" />
-    <link rel="preload" href="/brand/loading-wordmark.svg" as="image" type="image/svg+xml" />
     <style>html,body{margin:0;height:100%;background:#f5efe5}</style>
     <title>English World · Maple Harbor</title>
     <meta name="description" content="Kalbėk angliškai gyvame pasaulyje: pasivaikščiok po Amerikos miestelį ir kalbėkis su jo žmonėmis." />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%231f6f78'/%3E%3Cpath d='M16 40c6-16 26-22 32-8' stroke='%23ffd166' stroke-width='6' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='24' cy='26' r='4' fill='%23fff'/%3E%3C/svg%3E" />
   </head>
   <body>
-    <div id="root">
-      <div class="loading ew-loading" role="status" aria-label="Kraunamas „English World“">
-        <svg class="ew-loading-logo" viewBox="0 0 306 198" aria-hidden="true"><use href="%BASE_URL%brand/loading-wordmark.svg#wordmark"></use></svg>
-      </div>
-    </div>
+    <!-- the loading screen: the town's logo, put here when the page is built (vite.config.ts, src/ui/loadingArt.ts) -->
+    <div id="root"><!--loading--></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

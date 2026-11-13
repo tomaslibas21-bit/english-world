@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useStore } from "../state/store";
 import { SectionHelpButton } from "./sectionHelp";
 import { game } from "../game/gameRef";
@@ -6,7 +6,7 @@ import { WORLD, SEA_Z } from "../game/world/layout";
 import { LOCATIONS } from "../content/locations";
 import { SITUATION_BY_ID } from "../content/situations";
 import { sitProgress, stars } from "../state/progress";
-import { Icon, InlineIcon, Stars, drawIcon, iconForEmoji, splitLead, type IconName } from "./icons";
+import { Icon, InlineIcon, Stars, iconForEmoji, splitLead, type IconName } from "./icons";
 import { switchPlayMode } from "./playMode";
 import { useCards, dueCards } from "../state/cards";
 import { LyricStrip, RadioTool } from "./Radio";
@@ -159,24 +159,49 @@ function Arrow({ angle }: { angle: number }) {
 
 function Minimap() {
   const ref = useRef<HTMLCanvasElement>(null);
+  const card = useRef<HTMLDivElement>(null);
   const mm = useStore((s) => s.hud.minimap);
   const zoneName = useStore((s) => s.hud.zoneName);
+  // Indoors there is no map to show: the round map folds into a small card with the place's name (all of it, on as
+  // many lines as it needs) and unfolds again at the door. The frame glides between the two shapes, so indoors it
+  // takes the card's own size, measured here (styles.css ".minimap").
+  const inside = mm.zone !== "town";
+  const place = useRef("");
+  if (inside) place.current = zoneName;
+  const [box, setBox] = useState<{ w: number; h: number } | null>(null);
+  // it glides only once it has been drawn: a map that appears indoors (the game opens in a room, the buttons come
+  // back after a conversation) is the card at once
+  const [live, setLive] = useState(false);
+  useEffect(() => { const id = requestAnimationFrame(() => requestAnimationFrame(() => setLive(true))); return () => cancelAnimationFrame(id); }, []);
+  useLayoutEffect(() => {
+    const el = card.current;
+    if (!inside || !el) { setBox(null); return; }
+    const name = el.querySelector("b")!, words = name.firstElementChild as HTMLElement;
+    const measure = () => {
+      // a name on two lines leaves its box as wide as it may be: hold the box to the words themselves (layout
+      // sizes, which the card's arriving scale does not touch; a pixel to spare, for the rounding)
+      name.style.width = "";
+      const w = words.offsetWidth + 1;
+      if (w > 1 && w < name.clientWidth) name.style.width = `${w}px`;
+      setBox((b) => (b && b.w === el.offsetWidth && b.h === el.offsetHeight ? b : { w: el.offsetWidth, h: el.offsetHeight }));
+    };
+    measure();
+    // again when the card's size changes (the text size setting, a turned phone) or its font arrives
+    const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+    ro?.observe(el);
+    window.addEventListener("resize", measure);
+    document.fonts?.addEventListener?.("loadingdone", measure);
+    return () => { ro?.disconnect(); window.removeEventListener("resize", measure); document.fonts?.removeEventListener?.("loadingdone", measure); };
+  }, [inside, zoneName]);
   useEffect(() => {
     const c = ref.current;
     const g = game?.groundCanvas;
-    if (!c) return;
+    // indoors the last picture of the town stays on the canvas while it fades out
+    if (!c || !g || mm.zone !== "town") return;
     const x = c.getContext("2d")!;
     const S = 220;
     c.width = S; c.height = S;
     x.clearRect(0, 0, S, S);
-    if (mm.zone !== "town") {
-      x.fillStyle = "#f3eadb"; x.fillRect(0, 0, S, S);
-      drawIcon(x, "home", S / 2, S / 2 - 14, 46, "#1f6f78");
-      x.font = "800 15px Nunito"; x.fillStyle = "#52606d"; x.textAlign = "center";
-      x.fillText("Viduje", S / 2, S / 2 + 28);
-      return;
-    }
-    if (!g) return;
     const PPM = g.width / (WORLD.maxX - WORLD.minX);
     const view = 90; // metres across
     const sx = (mm.px - WORLD.minX) * PPM - (view / 2) * PPM;
@@ -198,9 +223,18 @@ function Minimap() {
     x.restore();
   }, [mm]);
   return (
-    <div className="minimap" onClick={() => useStore.getState().setHud({ panel: "map" })} title="Žemėlapis (M)">
+    <div className={"minimap" + (inside ? " inside" : "") + (live ? " live" : "")}
+      style={inside && box ? { width: box.w + 2, height: box.h + 2 } : undefined}
+      onClick={() => useStore.getState().setHud({ panel: "map" })}
+      title="Žemėlapis (M)">
       <canvas ref={ref} />
-      <div className="label">{zoneName}</div>
+      <div className="label">{inside ? "" : zoneName}</div>
+      <div className="mm-card" ref={card} aria-hidden={!inside}>
+        <span className="mm-ico"><Icon name="home" size={21} strokeWidth={2} /></span>
+        <small>Viduje</small>
+        <b><span>{place.current}</span></b>
+        <span className="mm-go"><Icon name="map" size={18} strokeWidth={2} /></span>
+      </div>
     </div>
   );
 }
