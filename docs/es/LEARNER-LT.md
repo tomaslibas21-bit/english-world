@@ -39,7 +39,7 @@ English, and `flags` the notes on units (by unit index). Write `lt` as an object
   - "a marks a person as the object; English needs no word." becomes "a žymi asmenį – lietuviškai jo nereikia."
   - Compare with Lithuanian, not with English. Drop a note only if it makes no sense for a Lithuanian, and say so in your report.
 - Placeholders:
-  - An entity placeholder in the Spanish (`{X}`, `{X.np}`, `{X.the}`, `{X.pl}`, and the same for S, T, C, D…) gets its Lithuanian case in the gloss and in nat: `{X:acc}`, `{X.np:gen}`, `{X.pl:nom}`. The cases are nom gen dat acc ins loc. `X.the` and `X.np` both become `{X.np:case}` or `{X:case}` (Lithuanian has no article).
+  - An entity placeholder in the Spanish (`{X}`, `{X.np}`, `{X.the}`, `{X.pl}`, and the same for S, T, C, D…) gets its Lithuanian case in the gloss and in nat: `{X:acc}`, `{X.np:gen}`, `{X.pl:nom}`. The cases are nom gen dat acc ins loc. Keep the Spanish kind: `{X.the}` → `{X.the:case}`, `{X.np}` → `{X.np:case}` (Lithuanian writes no article for either, but `{X.np}` with two says the number: „du avokadai“, and `{X.the}` doesn't).
   - Spanish agreement (`{lo@X}`, `{nuevo@X:pl}`) becomes Lithuanian agreement where a word must agree, `{jis@X:acc}` (lemmas in src/convo/lt-morph.ts), or a plain word where none is needed.
   - Values (`{$price}`, `{$time}`, `{$name}`…) stay exactly as they are; the engine writes them in Lithuanian.
 

@@ -113,6 +113,8 @@ function valueText(en: string): string | undefined {
 export function valueDisplay(kind: string, v: any): { en: string; lt: string; say: string } {
   const r = ES.valueDisplay(kind, v);
   if (v && typeof v === "object" && typeof v.lt === "string") return { ...r, lt: valueText(v.lt) ?? r.lt };
+  // a decimal number (a temperature, 38.3): Lithuanian writes a comma
+  if (typeof v === "number" && !Number.isInteger(v)) return { ...r, lt: String(v).replace(".", ",") };
   if (v != null && (kind === "price" || kind === "total" || kind === "amount" || kind === "fare" || kind === "rent" || kind === "deposit")) return { ...r, lt: priceLt(v) };
   return r;
 }
