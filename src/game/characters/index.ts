@@ -1,7 +1,7 @@
 // Character factory: the original blocky Character for "blocks", a styled one otherwise.
 import * as THREE from "three";
 import type { Look } from "../../content/npcs";
-import { Character, type Anim, type Moment } from "./Character";
+import { Character, type Anim, type Moment, type Mood } from "./Character";
 import { StyledCharacter } from "./StyledCharacter";
 import { STYLED } from "../style";
 
@@ -14,7 +14,17 @@ export interface GameCharacter {
   update(dt: number): void;
   /** Talk for `seconds`; `level` tells how loud the voice is right now (0–1; -1: it has ended; null: no recording to
    *  follow), for the mouth. */
-  talk(seconds: number, level?: () => number | null): void;
+  talk(seconds: number, level?: () => number | null, vowel?: () => number | null): void;
+  /** (The original Character.) An expression for a while: the conversation gives each line its own (mood.ts moodOf). */
+  express?(kind: Mood, seconds?: number): void;
+  /** Where the learner is (a point kept up to date by the game): the eyes and the head turn to it when it comes within
+   *  `noticeWithin` m, or steadily while `attentive`. */
+  watch?: THREE.Vector3 | null;
+  noticeWithin?: number;
+  /** Their eyes stay on the watched point (someone taking part in the conversation). */
+  steady?: boolean;
+  /** Leaning back on a lounger while sitting (radians). */
+  recline?: number;
   /** The real speed (m/s) and a sideways lean into turns (the original Character; others ignore them). */
   moveSpeed?: number;
   bank?: number;
@@ -37,6 +47,8 @@ export interface GameCharacter {
   fidgets?: boolean;
   busy?: "wipe" | "type" | "cup" | "paper" | null;
   holdMoment?(kind: Moment): void;
+  /** Drawn as its far version (the original Character, once one is attached: Character.far, attachFar). */
+  setFar?(on: boolean): void;
   /** Frees GPU memory the character doesn't share (Game calls it before removing an NPC). The styled
    *  characters need none: their geometry is cached per look, their materials are shared and the
    *  skeleton frees its bone texture when removed from the scene. */
@@ -57,4 +69,13 @@ export function withBackpack(look: Look): Look {
 
 export function createCharacter(look: Look): GameCharacter {
   return STYLED ? new StyledCharacter(look) : new Character(look);
+}
+
+/** Gives `ch` (made by createCharacter from `look`, posed: seated or not) a far version in fewer triangles (graphics
+ *  round 5, theme.ts `farPeople`); false where there is none (the styled characters). */
+export function addFarVersion(ch: GameCharacter, look: Look): boolean {
+  if (!(ch instanceof Character)) return false;
+  const twin = Character.far(look);
+  if (ch.anim === "sit") { twin.seatY = ch.seatY; twin.setAnim("sit"); }
+  return ch.attachFar(twin);
 }

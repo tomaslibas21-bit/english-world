@@ -3,11 +3,25 @@
 // in advance by tools/build-audio.ts. `informal` NPCs address the player with Lithuanian "tu".
 import type { NpcInfo } from "../convo/dialogue";
 
-export type HairStyle = "short" | "long" | "bun" | "ponytail" | "curly" | "bald" | "buzz" | "bob" | "wavy" | "side";
+export type HairStyle = "short" | "long" | "bun" | "ponytail" | "curly" | "bald" | "buzz" | "bob" | "wavy" | "side"
+  // a long braid over the right shoulder (the Spanish edition's Lucía)
+  | "braid";
 export type Accessory = "apron" | "cap" | "glasses" | "sunglasses" | "hat" | "tie" | "beard" | "mustache" | "headset" | "scarf"
   | "badge" | "police" | "vest" | "bowtie" | "earrings" | "pilot" | "chef" | "cardigan" | "lanyard" | "flower"
   // sunglasses / reading glasses pushed up on the head
-  | "shades" | "readers";
+  | "shades" | "readers"
+  // a straw hat with a wide brim (the Spanish edition's passers-by: theme.ts `walkers`)
+  | "strawhat"
+  // the Spanish edition's garments (graphics round 3; Maple Harbor uses none): a jipi (the Yucatán's Panama hat), a
+  // bandana tied over the hair, a blouse embroidered with flowers round its neck, a hipil (embroidered at the neck and
+  // round the skirt's hem), a guayabera's pleats, pockets and buttons, a rebozo over the shoulders (in accColor)
+  | "jipi" | "bandana" | "embroidered" | "hipil" | "guayabera" | "rebozo"
+  // an apron from the waist down only (a waiter's), in accColor
+  | "waistapron"
+  // beachwear (the Spanish edition's beach, theme.ts `beachwear`; Maple Harbor uses none): a sarong tied over a skirt's
+  // shape, a light shirt worn open over a swimsuit (in accColor), a broad-brimmed sun hat (its ribbon in accColor), a
+  // bucket hat (in accColor)
+  | "sarong" | "coverup" | "sunhat" | "bucket";
 
 export interface Look {
   skin: string;
@@ -31,10 +45,25 @@ export interface Look {
   phone?: boolean;
   /** A backpack in this colour: only the player has one (townspeople and NPCs never do), so they're told apart. */
   backpack?: string;
+  /** A woman's figure or a man's (the shoulders, the waist, the hips): given where it is known (the cast's gender, the
+   *  passers-by), else guessed from the hair, a skirt, a beard. */
+  female?: boolean;
+  /** Sleeves: long ones unless given (everyone in Maple Harbor); short ones end above the elbow, none leaves the arms
+   *  bare. */
+  sleeves?: "short" | "none";
+  /** Swimwear (the Spanish edition's beach; Maple Harbor uses none): "trunks", swim shorts to the knee in the bottom's
+   *  colour, a stripe down their side; "suit", a one-piece swimsuit in the top's colour, the legs and arms bare. */
+  swim?: "trunks" | "suit";
+  /** The face's own touches (the Spanish edition's cast; Maple Harbor's faces have none): the brows' weight (1: as
+   *  everyone's), their arch (radians round; 1.05 as everyone's) and tilt (+: the outer ends up), and the lines of a
+   *  life of smiling (beside the mouth, at the eyes' outer corners). */
+  face?: { brow?: number; arch?: number; tilt?: number; lines?: boolean };
 }
 
 export interface NpcDef extends NpcInfo {
   role: { en: string; lt: string };
+  /** The Spanish edition: the role as Spain names it, where it differs ("Alquiler de coches"; compose.ts roleSaid). */
+  roleSpain?: string;
   look: Look;
   bio?: string;
 }
