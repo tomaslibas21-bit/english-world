@@ -251,7 +251,7 @@ export class Game implements GameApi {
     // time once the town is up; never a café table's chairs, nor what the camera's field holds solid (a gazebo)
     this.ledges = Ledges.build(this.town.group, this.town.colliders, {
       skip: moves, keep: this.town.seats.filter((s) => s.table).map((s) => [s.x, s.z]), tall: (x, z) => this.field.overSolid(x, z),
-    }, (next) => setTimeout(next, 30));
+    }, (next) => setTimeout(next, 16));
     // the boats lying in the shallows are in a wader's way
     const hull = new THREE.Box3();
     for (const o of this.town.group.children) if (o.userData.boat) {
