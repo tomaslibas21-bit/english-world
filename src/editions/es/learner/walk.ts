@@ -25,7 +25,7 @@ export interface LearnerItem {
 /** The translation of a sentence. */
 export interface SentLt { gloss: string; nat: string; flags?: Record<string, string> }
 /** The translation of an entity: Lithuanian case forms per unit ("latė/latės/latei/latę/late/latėje"), gender. */
-export interface EntityLt { lt: string; ltPl?: string; ltF?: string; ltPlF?: string; g: "m" | "f"; gF?: "m" | "f"; nat?: string; natPl?: string; natF?: string; natPlF?: string; neutralLt?: string; neutralLtPl?: string; spainLt?: string; spainLtPl?: string }
+export interface EntityLt { lt: string; ltPl?: string; ltF?: string; ltPlF?: string; g: "m" | "f"; gF?: "m" | "f"; nat?: string; natPl?: string; natF?: string; natPlF?: string; plOnly?: boolean; neutralLt?: string; neutralLtPl?: string; spainLt?: string; spainLtPl?: string }
 /** A conversation's table (src/editions/es-lt/tables/<sit>.json). */
 export interface LearnerTable { sent: Record<string, SentLt>; entity: Record<string, EntityLt>; text: Record<string, string> }
 
@@ -95,6 +95,8 @@ export function applyLearner(def: any, table: LearnerTable): string[] {
     for (const f of ENTITY_FIELDS) if (t[f] !== undefined) e[f] = t[f]; else if (f !== "lt") delete e[f];
     // the Lithuanian gender has its own field: `g` / `gF` are the Spanish ones (un/una, the agreement)
     e.ltG = t.g;
+    // a noun Lithuanian has only in the plural (marškiniai, kelnės, kopėčios): its plural forms, plural agreement
+    if (t.plOnly) e.ltPlOnly = true;
     if (t.gF) e.ltGF = t.gF;
     e.attrs = { ...(e.attrs ?? {}) };
     for (const f of ATTR_FIELDS) if (t[f] !== undefined) e.attrs[f] = t[f]; else if (f === "nat" || f === "natPl") delete e.attrs[f];

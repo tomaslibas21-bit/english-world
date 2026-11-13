@@ -55,6 +55,8 @@ English, and `flags` the notes on units (by unit index). Write `lt` as an object
   cases ("turistų gidė/…"): a woman learner's chip shows it.
 - `neutralLt`/`spainLt` (and their `…Pl`): when the item's `fields` has them, the gloss of the neutral or Spain noun,
   which has other units than the Mexican one ("cuenta | corriente"): case forms per unit, as `lt`.
+- `plOnly: true` for a noun Lithuanian has only in the plural (camisa → marškiniai, escalera → kopėčios): give its
+  forms in `ltPl` (and `lt` the same); the gloss and every agreement ({naujas@X}, {šis@X}) then use the plural.
 - `g` is the Lithuanian gender of the head noun.
 - `ltF`/`ltPlF`: the feminine forms when the entity describes the learner (jobs).
 

@@ -30,7 +30,7 @@ export function entityForPlayer(e: EntityDef, fem: boolean): EntityDef {
 }
 
 /** Agreement with an entity in the gloss: {puikus@X:nom} → "puiki" for a Lithuanian feminine X. */
-export const agreeGloss = (lemma: string, e: EntityDef, c: Case, plural: boolean) => agree(lemma, ltGender(e), c, plural);
+export const agreeGloss = (lemma: string, e: EntityDef, c: Case, plural: boolean) => agree(lemma, ltGender(e), c, plural || !!e.ltPlOnly);
 
 /** A count before a noun: du/dvi, trys, keturi/keturios in their case; larger numbers as digits. */
 function countWord(n: number, g: Gender, c: Case): string {
@@ -48,7 +48,9 @@ export function npUnits(b: NpBinding, kind: "np" | "the" | "pl" | "bare" | "head
   const qty = b.qty ?? 1;
   const plural = kind === "pl" || qty > 1;
   const g = ltGender(e);
-  const head = splitUnitsLt(plural ? e.ltPl ?? e.lt : e.lt);
+  // a noun Lithuanian has only in the plural (marškiniai) is plural in the gloss whatever the Spanish says
+  const ltPlural = plural || !!e.ltPlOnly;
+  const head = splitUnitsLt(ltPlural ? e.ltPl ?? e.lt : e.lt);
   const mods = (b.mods || []).map((m) => look(m)).filter(Boolean) as EntityDef[];
   const pre = mods.filter((m) => m.attrs?.pre), post = mods.filter((m) => !m.attrs?.pre);
   const modCount = mods.reduce((a, m) => a + splitUnitsLt(m.lt).length, 0);
@@ -69,7 +71,7 @@ export function npUnits(b: NpBinding, kind: "np" | "the" | "pl" | "bare" | "head
   const modForms = (m: EntityDef) => {
     const u = splitUnitsLt(m.lt);
     // only the last unit agrees with the noun ("labai | šaltą"); a phrase ("su ledu") keeps its own forms
-    return u.length === 1 ? [agree(parseForms(u[0])[0], g, cs, plural)] : u.map((x) => parseForms(x)[0]);
+    return u.length === 1 ? [agree(parseForms(u[0])[0], g, cs, ltPlural)] : u.map((x) => parseForms(x)[0]);
   };
   for (const m of pre) lt.push(...modForms(m));
   const headForms = head.map((u) => parseForms(u)[caseIndex(cs)]);
@@ -79,7 +81,7 @@ export function npUnits(b: NpBinding, kind: "np" | "the" | "pl" | "bare" | "head
   const adj = mods.filter((m) => splitUnitsLt(m.lt).length === 1).flatMap(modForms);
   const phrases = mods.filter((m) => splitUnitsLt(m.lt).length > 1).map((m) => modForms(m).join(" "));
   const femNat = fem && base.ltF ? ((plural ? e.attrs?.natPlF : e.attrs?.natF) as string | undefined) : undefined;
-  const natSpec = femNat ?? ((plural ? e.attrs?.natPl : e.attrs?.nat) as string | undefined);
+  const natSpec = femNat ?? ((ltPlural ? e.attrs?.natPl ?? e.attrs?.nat : e.attrs?.nat) as string | undefined);
   const natHead = natSpec ? parseForms(natSpec)[caseIndex(cs)] : headForms.filter((x) => x !== "—").join(" ");
   const natLt = [...(nArt && qty > 1 ? [lt[0]] : []), ...adj, natHead, ...phrases];
   return { en: sp.en, lt, natLt, flags };

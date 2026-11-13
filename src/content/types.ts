@@ -55,6 +55,8 @@ export interface EntityDef {
    *  there) and of `ltF`. */
   ltG?: Gender;
   ltGF?: Gender;
+  /** …and a noun Lithuanian has only in the plural (marškiniai, kopėčios): the plural forms, plural agreement. */
+  ltPlOnly?: boolean;
   /** Spanish edition: the practised language's feminine forms for an entity that describes the player ("enfermera"). */
   enF?: string;
   plF?: string;
