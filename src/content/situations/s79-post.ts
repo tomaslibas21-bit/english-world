@@ -185,7 +185,7 @@ export const post: SituationDef = {
   location: "post-office",
   npc: "gloria",
   goal: "Išsiųsk siuntinį į Lietuvą ir gauk sekimo numerį.",
-  intro: "Paštas Main Street gatvėje. Stovi eilėje su dėže – mamai į Lietuvą siunti šaliką, šokoladą ir arbatą. Prie langelio – pašto darbuotoja Gloria.",
+  intro: "Paštas Main Street gatvėje. Tu stovi eilėje su dėže – mamai į Lietuvą siunti šaliką, šokoladą ir arbatą. Prie langelio – pašto darbuotoja Gloria.",
   entities: { dest: DESTS, thing: THINGS, service: SERVICES },
 
   grammar: {

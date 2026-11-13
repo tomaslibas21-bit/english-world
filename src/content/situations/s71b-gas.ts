@@ -75,7 +75,7 @@ export const gas: SituationDef = {
   location: "gas-station",
   npc: "dot",
   goal: "Užsipilk degalų ir susimokėk kasoje.",
-  intro: "„Gas & Go“ – degalinė prie kelio, kasoje dirba Dot. JAV dažnai mokama iš anksto: pasakyk kolonėlės numerį ir sumą. Užsienio kortelės prie kolonėlės dažnai neveikia, nes kolonėlė prašo pašto kodo (ZIP).",
+  intro: "Tu sustoji pripilti bako. „Gas & Go“ – degalinė prie kelio, kasoje dirba Dot. JAV dažnai mokama iš anksto: pasakyk kolonėlės numerį ir sumą. Užsienio kortelės prie kolonėlės dažnai neveikia, nes kolonėlė prašo pašto kodo (ZIP).",
   entities: { snack: SNACKS },
 
   grammar: {

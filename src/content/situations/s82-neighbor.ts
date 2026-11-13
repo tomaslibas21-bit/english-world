@@ -115,7 +115,7 @@ export const neighbor: SituationDef = {
   location: "apartments",
   npc: "rita",
   goal: "Susipažink su kaimyne ir paprašyk jos paslaugos (arba atsiprašyk dėl triukšmo).",
-  intro: "Maple gatvės daugiabutis, antras aukštas. Ką tik atsikraustei – už gretimų durų gyvena Rita.",
+  intro: "Maple gatvės daugiabutis, antras aukštas. Tu ką tik atsikraustei – už gretimų durų gyvena Rita.",
   entities: { thing: THINGS, country: COUNTRIES },
 
   grammar: {

@@ -940,7 +940,7 @@ export const usedCar: SituationDef = {
   location: "cedar-lane",
   npc: "maggie",
   goal: "Apžiūrėk kabrioletą ir išsiderėk gerą kainą – arba mandagiai atsisakyk.",
-  intro: "Šeštadienį internete pamatei skelbimą: vyšninės spalvos 1998-ųjų kabrioletas, 9 000 dolerių. Dabar stovi Cedar gatvėje, Megės Holt kieme, o automobilis spindi saulėje. Apžiūrėk jį, išbandyk ir pabandyk numušti kainą – bet mandagiai: Megė savo mašiną myli.",
+  intro: "Šeštadienį tu internete pamatei skelbimą: vyšninės spalvos 1998-ųjų kabrioletas, 9 000 dolerių. Dabar stovi Cedar gatvėje, Megės Holt kieme, o automobilis spindi saulėje. Apžiūrėk jį, išbandyk ir pabandyk numušti kainą – bet mandagiai: Megė savo mašiną myli.",
 
   grammar: {
     macros: {
