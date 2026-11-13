@@ -163,15 +163,18 @@ export class Gait {
   }
 }
 
-/** A small hop: up about half a metre and down again in half a second, a squash on landing. Only how high the body is
- *  drawn changes: the player stays on the ground for everything else (walls, fences, doors, the people), so a hop can
- *  never get over anything, onto a roof or out of the town. */
+/** A jump: up about three quarters of a metre and down again in a little over half a second, a squash on landing.
+ *  `y` is how high the feet are; `ground` what they stand on or are over (0: the street; a bench's seat, a planter's
+ *  rim: ledges.ts; below 0 in the shallows). A jump lands on whatever is under it when it comes down, and walking off
+ *  an edge is a fall. Walls, fences, people and everything above knee height stay on the ground plan (the colliders):
+ *  no jump gets over those, onto a roof or out of the town. */
 export class Hop {
-  static readonly V0 = 4.6;
+  static readonly V0 = 5.45;
   static readonly G = 19;
-  /** The highest a hop goes (m). */
+  /** The highest a jump goes above where it started (m). */
   static readonly PEAK = (Hop.V0 * Hop.V0) / (2 * Hop.G);
   y = 0;
+  ground = 0;
   vy = 0;
   air = false;
   /** The landing's squash (0–1) and how it springs back. */
@@ -179,7 +182,7 @@ export class Hop {
   private squashVel = 0;
   private wait = 0;
 
-  /** Starts a hop (false while in the air or just landed). */
+  /** Starts a jump (false while in the air or just landed). */
   start(): boolean {
     if (this.air || this.wait > 0) return false;
     this.air = true;
@@ -189,19 +192,26 @@ export class Hop {
     return true;
   }
 
-  /** Back on the ground at once (a conversation starts, a door, a ride). */
-  land() { this.y = 0; this.vy = 0; this.air = false; this.squash = 0; this.squashVel = 0; this.wait = 0; }
+  /** Standing at once on what is under them (a conversation starts, a door, a ride). */
+  land(ground = 0) { this.y = this.ground = ground; this.vy = 0; this.air = false; this.squash = 0; this.squashVel = 0; this.wait = 0; }
 
-  /** Returns how hard it just landed (0: it didn't). */
-  update(dt: number): number {
+  /** `ground`: how high what is under them stands now. Returns how hard they just landed (0: they didn't). */
+  update(dt: number, ground = 0): number {
     let landed = 0;
+    this.ground = ground;
     this.wait = Math.max(0, this.wait - dt);
+    if (!this.air) {
+      // a step down is a fall; the sand sloping away is followed, and a small step up (onto a terrace's boards from
+      // the sand) is taken in a moment, not in one frame
+      if (ground < this.y - 0.03) { this.air = true; this.vy = 0; }
+      else this.y = ground > this.y ? Math.min(ground, this.y + Math.max(0.6 * dt, (ground - this.y) * Math.min(1, dt * 18))) : ground;
+    }
     if (this.air) {
       this.vy -= Hop.G * dt;
       this.y += this.vy * dt;
-      if (this.y <= 0) {
+      if (this.y <= ground && this.vy <= 0) {
         landed = Math.min(1, -this.vy / Hop.V0);
-        this.y = 0; this.vy = 0; this.air = false; this.wait = 0.12;
+        this.y = ground; this.vy = 0; this.air = false; this.wait = 0.12;
         this.squash = 0.55 * landed;
         this.squashVel = 0;
       }
@@ -211,6 +221,9 @@ export class Hop {
     return landed;
   }
 
-  /** How far the legs tuck (0–1): up in the middle of the hop. */
-  get tuck() { return this.air ? Math.min(1, this.y / (Hop.PEAK * 0.6)) : 0; }
+  /** How high the feet are above what is under them. */
+  get lift() { return Math.max(0, this.y - this.ground); }
+
+  /** How far the legs tuck (0–1): up in the middle of the jump. */
+  get tuck() { return this.air ? Math.min(1, this.lift / (Hop.PEAK * 0.6)) : 0; }
 }

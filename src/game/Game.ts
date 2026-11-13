@@ -8,7 +8,10 @@ import { createCharacter, setBlobShadows, withBackpack, type GameCharacter } fro
 import { moodOf } from "./characters/mood";
 import { styleRenderer, createStyleFx, type StyleFx } from "./styleScene";
 import { CameraRig } from "./camera";
-import { Steer, Gait, Hop } from "./movement";
+import { Steer, Gait, Hop, angleDiff, smoothstep } from "./movement";
+import { Ledges } from "./ledges";
+import { coach } from "./coach";
+import { Wading, Splashes, floorY, swell, SEA_LEVEL, SHORE } from "./water";
 import { OcclusionField } from "./occlusion";
 import { PropFader } from "./fade";
 import { CUT, withCutout } from "./cutout";
@@ -41,7 +44,10 @@ type TagBox = { x0: number; x1: number; y0: number; y1: number };
 interface NpcActor { id: string; ch: GameCharacter; home: THREE.Vector3; rot: number; tag: HTMLDivElement; tagSize?: [number, number]; sit?: boolean; waved: boolean; approach?: THREE.Vector3 }
 interface ZoneState { id: string; group: THREE.Group; colliders: import("./world/util").Colliders; nav: NavGrid; interior?: Interior }
 
-const WALK = 4.4, RUN = 7.4;
+/** Walking, the jog one falls into outdoors after a moment on the move, and running (Shift, the stick at its edge). */
+const WALK = 4.4, JOG = 6.0, RUN = 7.4;
+/** How long one walks steadily one way before the jog (s), and how long it takes to come on. */
+const JOG_AFTER = 1.5, JOG_EASE = 0.9;
 
 const isCall = (s: SituationDef) => s.mode === "phone" || s.mode === "video" || s.location === "phone";
 /** A point `d` metres in front of someone facing `rot` (0 = +Z), turned towards them. */
@@ -176,6 +182,15 @@ export class Game implements GameApi {
   private gaitOn = false;
   private hop = new Hop();
   private joyRun = false;
+  /** How long the player has walked steadily one way (the jog comes on after JOG_AFTER), and which way that was. */
+  private jogT = 0;
+  private jogDir: number | null = null;
+  /** What can be jumped onto outdoors, from the town's own geometry (ledges.ts), and the shallows (water.ts). */
+  private ledges: Ledges | null = null;
+  private wading = new Wading();
+  private splashes = new Splashes();
+  private wet = false;
+  private washT = 0;
   /** Stepping out of a door by itself (m still to go), so the street shows ahead. */
   private stepOut = 0;
   /** The foot that came down last (the legs' swing, Character.stepPhase), for the footsteps. */
@@ -226,6 +241,17 @@ export class Game implements GameApi {
     this.field = OcclusionField.fromObject(this.town.group, { minX: WORLD.minX - 24, maxX: WORLD.maxX + 24, minZ: WORLD.minZ - 24, maxZ: WORLD.maxZ + 24 }, { skip: moves });
     this.field.fillFootprints(this.town.colliders.boxes, this.town.colliders.circles);
     this.fader = new PropFader(this.town.group, moves);
+    // what is low enough to jump onto (benches, planters, low walls), read from the meshes a few milliseconds at a
+    // time once the town is up; never a café table's chairs, nor what the camera's field holds solid (a gazebo)
+    this.ledges = Ledges.build(this.town.group, this.town.colliders, {
+      skip: moves, keep: this.town.seats.filter((s) => s.table).map((s) => [s.x, s.z]), tall: (x, z) => this.field.overSolid(x, z),
+    }, (next) => setTimeout(next, 16));
+    // the boats lying in the shallows are in a wader's way
+    const hull = new THREE.Box3();
+    for (const o of this.town.group.children) if (o.userData.boat) {
+      hull.setFromObject(o);
+      if (hull.max.z > SHORE.limit - 1) this.ledges.add({ minX: hull.min.x, maxX: hull.max.x, minZ: hull.min.z, maxZ: hull.max.z, top: Infinity });
+    }
     withCutout(this.town.group);
     const nav = new NavGrid(WORLD.minX, WORLD.minZ, WORLD.maxX, WORLD.maxZ, 1, this.town.colliders);
     // pedestrians prefer sidewalks: roads cost more, crosswalks are cheap
@@ -253,7 +279,7 @@ export class Game implements GameApi {
     const places: [number, number][] = this.town.doors.filter((d) => d.loc !== "airport").map((d) => [d.outX, d.outZ]);
     places.push([22, -20], [40, -46], [16, -36], [-12, -62], [30, -63], [-30, -61], [96, -30], [-6, 46], [62, 44], [-42, 44], [118, 2]);
     this.ambient = new Ambient(nav, places, st.settings.quality, this.town.seats, this.town.colliders);
-    this.scene.add(this.npcLayer, this.guidance.group, this.ambient.group, this.dust.group);
+    this.scene.add(this.npcLayer, this.guidance.group, this.ambient.group, this.dust.group, this.splashes.group);
     this.rig.space = {
       free: (a, b) => (this.zone?.interior ? 1 : this.field.free(a, b)),
       inside: (q) => !this.zone?.interior && this.field.solidAt(q.x, q.y, q.z, 0.15),
@@ -280,6 +306,8 @@ export class Game implements GameApi {
     // Keep the logo over the canvas until an actual town frame is ready to show.
     this.renderer.render(this.scene, this.rig.cam);
     this.onReady?.();
+    // the first time in the town: a few hints, one at a time (coach.ts)
+    coach.begin();
   }
 
   private setupLights() {
@@ -337,8 +365,11 @@ export class Game implements GameApi {
       this.zone = z;
       this.scene.add(z.group);
       const indoor = !!z.interior;
+      this.jogT = 0;
       const sp = spawn ?? (z.interior ? z.interior.spawn : { x: 0, z: 0, rot: 0 });
-      this.player.root.position.set(sp.x, 0, sp.z);
+      // (on the sand where it slopes under the sea, if that is where they were)
+      const floor = indoor ? 0 : floorY(sp.x, sp.z);
+      this.player.root.position.set(sp.x, floor, sp.z);
       this.heading = sp.rot;
       this.player.root.rotation.y = sp.rot;
       this.vel.set(0, 0, 0);
@@ -349,7 +380,7 @@ export class Game implements GameApi {
       this.gait.sync(sp.rot, this.steer.held ? this.gait.speed : 0);
       this.gaitOn = this.steer.held;
       this.stepOut = via === "out" && !this.steer.held && this.town.walkableAt(sp.x + Math.sin(sp.rot) * 1.4, sp.z + Math.cos(sp.rot) * 1.4) ? 1.2 : 0;
-      this.hop.land();
+      this.hop.land(floor);
       this.fader.reset();
       CUT.r.value = 0;
       this.moveVel.set(0, 0, 0);
@@ -530,11 +561,11 @@ export class Game implements GameApi {
 
   setJoystick(x: number, y: number) { this.joy.x = x; this.joy.y = y; if (x || y) { this.autoPath = null; this.autoTarget = null; } }
 
-  /** A small hop (Space, or the phone's button): not in a conversation, over a panel or through a door. */
+  /** A jump (Space, or the phone's button): not in a conversation, over a panel or through a door. */
   jump() {
     const st = useStore.getState();
     if (this.session?.active || st.conv.active || st.hud.panel || this.transitioning || !this.player) return;
-    if (this.hop.start()) audio.step(!!this.zone.interior, false);
+    if (this.hop.start()) { audio.step(!!this.zone.interior, false); coach.did("jump"); }
   }
 
   /** Outdoors, walking: the passers-by, their dogs, the cars and the town's people (not the player) that would stand
@@ -560,7 +591,7 @@ export class Game implements GameApi {
 
   /** The hop as drawn (the body off the ground, the legs, the landing's squash). */
   private applyHop() {
-    this.player.lift = this.hop.y;
+    this.player.lift = this.hop.lift;
     this.player.tuck = this.hop.tuck;
     this.player.squash = this.hop.squash;
   }
@@ -624,9 +655,22 @@ export class Game implements GameApi {
 
   walkTo(x: number, z: number, target: Game["autoTarget"]) {
     const p = this.player.root.position;
-    const path = this.zone.nav.path(p.x, p.z, x, z);
+    const nav = this.zone.nav;
+    // standing on something they jumped onto (a bench's seat): first straight down off it, to the nearest open spot
+    // that its back or a wall beside it doesn't stand in the way of; the walk is planned from there
+    let from: [number, number] = [p.x, p.z], down: [number, number][] = [];
+    if (!this.zone.interior && this.ledges && this.hop.ground > 0.05) {
+      let bd = Infinity;
+      for (let dz = -3; dz <= 3; dz++) for (let dx = -3; dx <= 3; dx++) {
+        const i = nav.idx(p.x + dx * nav.cell, p.z + dz * nav.cell);
+        if (!nav.free(i)) continue;
+        const [cx, cz] = nav.center(i), d = Math.hypot(cx - p.x, cz - p.z);
+        if (d < bd && this.ledges.clear(p.x, p.z, cx, cz, this.hop.y)) { bd = d; from = [cx, cz]; down = [from]; }
+      }
+    }
+    const path = nav.path(from[0], from[1], x, z);
     if (!path) { useStore.getState().toast({ kind: "info", title: "Ten nueiti negalima" }); return; }
-    this.autoPath = path.slice(1);
+    this.autoPath = [...down, ...path.slice(1)];
     this.autoTarget = target;
     this.stepOut = 0;
   }
@@ -754,12 +798,13 @@ export class Game implements GameApi {
   private startSession(sit: SituationDef, actor: NpcActor | null) {
     this.cancelRide();
     // a hop ends at once, and the player's own walk gives way to the conversation's stop (as it always was)
-    this.hop.land(); this.applyHop();
-    this.steer.reset(); this.gaitOn = false; this.stepOut = 0;
+    this.hop.land(this.hop.ground); this.applyHop();
+    this.steer.reset(); this.gaitOn = false; this.stepOut = 0; this.jogT = 0;
     this.fader.reset();
     CUT.r.value = 0;
     this.autoPath = null; this.autoTarget = null; this.keys.clear(); this.joy = { x: 0, y: 0 };
     this.talkNpc = actor;
+    coach.did("talk");
     const st = useStore.getState();
     st.setHud({ prompt: null, panel: null });
     if (actor) {
@@ -1135,7 +1180,7 @@ export class Game implements GameApi {
     this.rig.motion.speed = speed;
     // (where they will be in a moment, walking on as now, out of the walls: the camera makes room before it is needed)
     this.rig.motion.next.copy(this.player.root.position).addScaledVector(this.moveVel, 0.3).setY(0);
-    if (speed > 0.3) this.zone.colliders.resolve(this.rig.motion.next, 0.38);
+    if (speed > 0.3) this.zone.colliders.resolve(this.rig.motion.next, 0.38, !this.zone.interior);
     this.rig.dragging = this.pointer.down && this.pointer.moved > 6;
     this.rig.target.lerp(this.player.root.position, Math.min(1, dt * 10));
     this.rig.update(dt, this.heading, speed > 0.7, true, st.settings.cameraFollow && !this.pointer.down);
@@ -1226,7 +1271,17 @@ export class Game implements GameApi {
     const steer = this.steer.update(stick ? this.joy.x : ix, stick ? this.joy.y : iz, stick, camYaw, turned, dt);
     if (steer.dir !== null) this.stepOut = 0;
     let want = new THREE.Vector3();
-    let speed = this.keys.has("shift") || this.joyRun ? RUN : WALK;
+    // the pace: a walk; outdoors a jog after a moment's steady walking one way (a turn, a stop or deep water starts the
+    // count again), a run with Shift or the stick at its edge; indoors always a walk; slower the deeper one wades
+    const indoor = !!this.zone.interior;
+    if (!indoor && steer.dir !== null && this.wading.depth < 0.3 && !(this.jogT > 0.4 && this.lastSpeed < 2)) {
+      if (this.jogDir === null || Math.abs(angleDiff(steer.dir, this.jogDir)) > 0.55) { this.jogDir = steer.dir; this.jogT = 0; }
+      // (a long curve is still one way: the direction counted from follows slowly)
+      this.jogDir += angleDiff(steer.dir, this.jogDir) * Math.min(1, dt * 0.8);
+      this.jogT += dt;
+    } else { this.jogT = 0; this.jogDir = null; }
+    const pace = indoor ? 1 : Wading.pace(this.wading.depth);
+    let speed = (indoor ? WALK : this.keys.has("shift") || this.joyRun ? RUN : WALK + (JOG - WALK) * smoothstep(JOG_AFTER, JOG_AFTER + JOG_EASE, this.jogT)) * pace;
     const before = p.clone();
     if (through) {
       // (through a door: nothing moves until the other side)
@@ -1254,7 +1309,7 @@ export class Game implements GameApi {
         } else {
           want.set(tx - p.x, 0, tz - p.z).normalize();
           const remaining = d + this.autoPath.slice(1).reduce((a, b, i, arr) => a + (i ? Math.hypot(b[0] - arr[i - 1][0], b[1] - arr[i - 1][1]) : 0), 0);
-          speed = remaining > 12 ? RUN : WALK;
+          speed = (remaining > 12 && !indoor ? RUN : WALK) * pace;
           // arrive next to an NPC rather than on top of them (a spot of their own to talk from, across a counter or a
           // table, is walked onto); and, held up on the way (walking but getting nowhere: someone in the way), as soon
           // as they are close enough to talk to
@@ -1270,9 +1325,17 @@ export class Game implements GameApi {
       if (this.vel.lengthSq() < 0.0004) this.vel.set(0, 0, 0);
     }
     if (!through) {
-      p.addScaledVector(this.vel, dt);
-      this.zone.colliders.resolve(p, 0.38);
-      if (!this.zone.interior) { this.ambient.resolvePlayer(p, 0.38); this.ambient.resolvePeople(p, 0.38); }
+      p.x += this.vel.x * dt;
+      // (out in the shallows the seaward part of a step fades to nothing at the wading limit: no wall, no bounce)
+      p.z += indoor ? this.vel.z * dt : Wading.hold(p.z, this.vel.z * dt);
+      // outdoors the player's own ground plan: what is low enough to jump onto has its height (ledges.ts), and the
+      // sea's edge is open as far as one can wade
+      this.zone.colliders.resolve(p, 0.38, !indoor);
+      if (!indoor) {
+        this.ledges?.resolve(p, 0.38, this.hop.y, this.hop.air);
+        if (p.z < SHORE.limit) p.z = SHORE.limit;
+        this.ambient.resolvePlayer(p, 0.38); this.ambient.resolvePeople(p, 0.38, true);
+      }
     }
     if (this.stepOut > 0) {
       // (stepping out of a door: done after its two steps, or at once if something stands in the way)
@@ -1305,21 +1368,41 @@ export class Game implements GameApi {
       if (Math.abs(d) > 1e-3) this.player.root.rotation.y += d * Math.min(1, dt * 9);
     }
     const running = moved > 5.5 || (through && this.gaitOn && this.gait.speed > 5.5);
-    const pace = through && this.gaitOn ? this.gait.speed : moved;
-    this.player.setAnim(running ? "run" : pace > 0.4 ? "walk" : "idle");
-    this.player.moveSpeed = pace;
+    const going = through && this.gaitOn ? this.gait.speed : moved;
+    this.player.setAnim(running ? "run" : going > 0.4 ? "walk" : "idle");
+    this.player.moveSpeed = going;
+    // the guide's hints about walking and running tick themselves off; later, a long stretch at a walk brings the tip
+    // about running, once
+    if (this.gaitOn && !blocked) {
+      coach.did("walk", moved * dt);
+      if (moved > 5.5) coach.did("run", dt);
+    }
+    coach.stroll(dt, indoor || blocked || !this.gaitOn || moved < 2 || this.keys.has("shift") || this.joyRun, useStore.getState().hud.showTouch);
     // a lean into turns, more the faster you go
     const dh = Math.atan2(Math.sin(this.heading - this.lastHeading), Math.cos(this.heading - this.lastHeading));
     const turn = this.vel.lengthSq() > 0.05 ? dh / Math.max(dt, 1e-4) : 0;
     this.lastHeading = this.heading;
     const bank = THREE.MathUtils.clamp(-turn * moved * 0.012, -0.14, 0.14);
     this.player.bank = (this.player.bank ?? 0) + (bank - (this.player.bank ?? 0)) * Math.min(1, dt * 8);
-    // a hop (Space, the phone's button): only the body is drawn off the ground; a soft landing
-    const landed = this.hop.update(dt);
+    // what is under their feet: a bench's seat or a planter's rim they jumped onto, else the ground, which by the sea
+    // is the sand sloping down under the water (but for a pier's or a terrace's boards over it). A jump lands on it;
+    // walking off an edge is a fall.
+    const on = indoor ? 0 : this.ledges?.support(p.x, p.z, this.hop.y, this.hop.air) ?? 0;
+    const ground = indoor ? 0 : on > 0 ? on : floorY(p.x, p.z);
+    const landed = this.hop.update(dt, ground);
     this.applyHop();
+    // the water at their feet: deep enough to wade in, it slows them, splashes at each step and rings their legs
+    const surface = indoor ? 0 : SEA_LEVEL + swell(p.x, p.z, this.t);
+    const depth = indoor ? 0 : Math.max(0, surface - this.hop.y);
+    this.wading.depth = indoor ? 0 : Math.max(0, surface - ground);
+    const wet = depth > 0.05;
+    this.washT -= dt;
+    if (wet && !this.wet && this.washT <= 0 && moved > 1) { audio.wash(); this.washT = 6; }
+    this.wet = wet;
+    this.splashes.update(dt, this.t, wet ? { x: p.x, y: surface, z: p.z } : null, Math.min(1, moved / WALK));
     // footsteps when a foot comes down (in time with the legs, Character.stepPhase; else a stride's distance apart) and,
     // outdoors at a run, dust at the heels; a puff when stopping short or landing
-    const fancy = useStore.getState().settings.quality === "high" && !this.zone.interior;
+    const fancy = useStore.getState().settings.quality === "high" && !this.zone.interior && !wet && ground < 0.2;
     const phase = this.player.stepPhase;
     if (moved > 0.4 && !this.hop.air) {
       let step = false;
@@ -1332,12 +1415,19 @@ export class Game implements GameApi {
         const stride = running ? 2.1 : 1.84;
         if (this.stepDist > stride) { this.stepDist -= stride; step = true; }
       }
-      if (step) {
+      if (step && wet) {
+        const k = Math.min(1, depth / 0.5) * Math.min(1, moved / WALK);
+        audio.splash(k);
+        this.splashes.burst(p.x, surface, p.z, this.vel.x / moved, this.vel.z / moved, k);
+      } else if (step) {
         audio.step(!!this.zone.interior, running);
         if (fancy && running) this.dust.puff(p.x, p.z, this.vel.x / moved, this.vel.z / moved);
       }
     } else { this.stepDist = 0.6; this.stepN = null; }
-    if (landed > 0) {
+    if (landed > 0 && wet) {
+      audio.splash(Math.min(1, 0.5 + landed));
+      this.splashes.burst(p.x, surface, p.z, 0, 0, 1);
+    } else if (landed > 0) {
       audio.land(!!this.zone.interior, landed);
       if (fancy) this.dust.puff(p.x, p.z, Math.sin(this.heading), Math.cos(this.heading), 0.9);
     }
@@ -1345,6 +1435,8 @@ export class Game implements GameApi {
     this.lastSpeed = moved;
     this.dust.update(dt);
     if (!this.zone.interior) this.pigeons.update(dt, p, moved);
+    // (the character stands on what is under them: the blob shadow and the camera with it; `lift` is the jump above it)
+    p.y = this.hop.ground;
     this.player.update(dt);
   }
 
@@ -1531,6 +1623,7 @@ export class Game implements GameApi {
 
   dispose() {
     this.disposed = true;
+    useStore.getState().setHud({ coach: null });
     this.renderer.setAnimationLoop(null);
     window.removeEventListener("keydown", this.onKeyDown);
     window.removeEventListener("keyup", this.onKeyUp);

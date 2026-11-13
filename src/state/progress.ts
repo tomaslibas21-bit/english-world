@@ -25,6 +25,8 @@ export interface Progress {
   place: { zone: string; x: number; z: number; rot: number } | null;
   seenIntro: Record<string, boolean>;
   started: number;
+  /** The 3D town's first-time guide: `done` once finished or skipped; `run`: the tip about running was shown. */
+  coach?: { done?: boolean; run?: boolean };
 }
 
 const KEY = "english-world-progress-v1";

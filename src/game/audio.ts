@@ -1022,6 +1022,65 @@ export class AudioSystem {
     }
   }
 
+  /** A second and a half of even noise (water). */
+  private hissBuffer: AudioBuffer | null = null;
+  private hiss(ctx: AudioContext) {
+    if (!this.hissBuffer) {
+      this.hissBuffer = ctx.createBuffer(1, Math.round(ctx.sampleRate * 1.5), ctx.sampleRate);
+      const d = this.hissBuffer.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    return this.hissBuffer;
+  }
+
+  /** A step in the shallows: a splash, a spray of water thrown up and falling back (`strength` 0–1). */
+  splash(strength = 0.6) {
+    const ctx = this.ac();
+    if (!ctx || this.volume <= 0) return;
+    const now = ctx.currentTime;
+    for (const [at, freq, q, len, vol] of [[0, 900, 0.7, 0.2, 1], [0.03, 2600, 0.9, 0.28, 0.55], [0.1, 4200, 1.2, 0.22, 0.25]] as const) {
+      const src = ctx.createBufferSource();
+      src.buffer = this.hiss(ctx);
+      src.loop = true;
+      src.playbackRate.value = 0.8 + Math.random() * 0.5;
+      const f = ctx.createBiquadFilter();
+      f.type = "bandpass";
+      f.frequency.setValueAtTime(freq * (0.85 + Math.random() * 0.3), now + at);
+      f.frequency.exponentialRampToValueAtTime(freq * 0.55, now + at + len);
+      f.Q.value = q;
+      const g = ctx.createGain();
+      const v = this.volume * 0.085 * (0.45 + 0.55 * strength) * vol;
+      g.gain.setValueAtTime(0, now + at);
+      g.gain.linearRampToValueAtTime(v, now + at + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + at + len);
+      src.connect(f); f.connect(g); g.connect(ctx.destination);
+      src.start(now + at); src.stop(now + at + len + 0.03);
+    }
+  }
+
+  /** A small wave running up the sand and drawing back, as one walks into the sea: a hiss that swells and fades. */
+  wash() {
+    const ctx = this.ac();
+    if (!ctx || this.volume <= 0) return;
+    const now = ctx.currentTime;
+    const src = ctx.createBufferSource();
+    src.buffer = this.hiss(ctx);
+    src.loop = true;
+    src.playbackRate.value = 0.6;
+    const f = ctx.createBiquadFilter();
+    f.type = "bandpass";
+    f.frequency.setValueAtTime(700, now);
+    f.frequency.linearRampToValueAtTime(2400, now + 0.55);
+    f.frequency.linearRampToValueAtTime(900, now + 1.7);
+    f.Q.value = 0.5;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, now);
+    g.gain.linearRampToValueAtTime(this.volume * 0.075, now + 0.5);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 1.8);
+    src.connect(f); f.connect(g); g.connect(ctx.destination);
+    src.start(now); src.stop(now + 1.85);
+  }
+
   sfx(name: "success" | "pop" | "door" | "cheer" | "soft" | "listen" | "coin" | "car" | "error" | "ring" | "beep" | "knock" | "tick") {
     audioDiagnostic("context.effect", { reason: name });
     const ctx = this.ac();
