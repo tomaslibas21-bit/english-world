@@ -172,12 +172,12 @@ const JOBS: EntityDef[] = [
 const jobIds = new Set(JOBS.map((e) => e.id));
 
 /** Workplaces and fields ("Trabajo en un hospital / en turismo"): Marcos asks what the learner does there. */
-const FL = (id: string, es: string, en: string, g: "m" | "f", forms: string[] = []) => ent(id, es, en, g, { art: "", forms: [...new Set([fold(es), ...forms])] });
+const FL = (id: string, es: string, en: string, g: "m" | "f", forms: string[] = [], nat?: string) => ent(id, es, en, g, { art: "", forms: [...new Set([fold(es), ...forms])], ...(nat ? { attrs: { nat } } : {}) });
 const FIELDS: EntityDef[] = [
   FL("hospital", "hospital", "hospital", "m", ["una clinica", "clinica", "un consultorio"]), FL("banco", "banco", "bank", "m"), FL("escuela", "escuela", "school", "f", ["colegio", "una primaria", "una secundaria"]),
   FL("oficina", "oficina", "office", "f"), FL("restaurante", "restaurante", "restaurant", "m", ["un restaurant"]), FL("hotel", "hotel", "hotel", "m", ["un hostal", "hostal", "un resort"]),
   FL("fabrica", "fábrica", "factory", "f"), FL("tienda", "tienda", "store", "f", ["un supermercado", "supermercado"]), FL("universidad", "universidad", "university", "f"),
-  FL("agencia", "agencia | de | viajes", "agency | of | travel", "f", ["agencia de viajes"]), FL("laboratorio", "laboratorio", "lab", "m"),
+  FL("agencia", "agencia | de | viajes", "agency | of | travel", "f", ["agencia de viajes"], "travel agency"), FL("laboratorio", "laboratorio", "lab", "m"),
   FL("turismo", "turismo", "tourism", "m", ["el turismo"]), FL("ventas", "ventas", "sales", "f"), FL("mercadotecnia", "mercadotecnia", "marketing", "f", ["marketing", "el marketing", "publicidad"]),
   FL("informatica", "informática", "IT", "f", ["sistemas", "tecnologia", "computacion", "software"]), FL("finanzas", "finanzas", "finance", "f"),
   FL("salud", "salud", "healthcare", "f", ["la salud", "medicina"]), FL("educacion", "educación", "education", "f", ["la educacion"]),
