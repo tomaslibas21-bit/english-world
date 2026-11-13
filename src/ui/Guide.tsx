@@ -1,6 +1,6 @@
 // The first-time guide's card in the 3D town (game/coach.ts): one hint at a time, low in the picture and out of the
 // way of the task card, the map and the controls. It never takes the keys or blocks a tap on the town.
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { useStore } from "../state/store";
 import { coach, type CoachStep } from "../game/coach";
 import { useRadio } from "../radio";
@@ -29,11 +29,24 @@ export function Guide() {
   const radioOn = useRadio((s) => s.on);
   // the radio's hint is done when the radio is switched on (by its button or R)
   useEffect(() => { if (radioOn) coach.did("radio"); }, [radioOn, c?.step]);
+  // on a phone held upright the card sits right under the task card, however tall that is (folded, or opened by hand)
+  const [under, setUnder] = useState<number | null>(null);
+  const shown = !!c && !panel;
+  useLayoutEffect(() => {
+    const card = document.querySelector(".objective-card");
+    if (!shown || !card || typeof ResizeObserver === "undefined") return;
+    const place = () => setUnder(window.innerWidth <= 600 && window.innerHeight > 520 ? Math.round(card.getBoundingClientRect().bottom) + 8 : null);
+    const ro = new ResizeObserver(place);
+    ro.observe(card);
+    window.addEventListener("resize", place);
+    place();
+    return () => { ro.disconnect(); window.removeEventListener("resize", place); };
+  }, [shown]);
   if (!c || panel) return null;
   const [title, body] = words(c.step, touch);
   const last = c.n === c.of;
   return (
-    <div className={"coach" + (c.ok ? " ok" : "")} role="status" aria-live="polite">
+    <div className={"coach" + (c.ok ? " ok" : "")} role="status" aria-live="polite" style={under !== null ? { top: under } : undefined}>
       <span className="coach-icon" aria-hidden><Icon name={c.ok ? "check" : ICON[c.step]} size={24} strokeWidth={2} /></span>
       <div className="coach-text">
         <b>{title}</b>
