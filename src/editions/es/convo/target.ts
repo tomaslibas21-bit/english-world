@@ -114,8 +114,9 @@ export function npUnits(b: NpBinding, kind: "np" | "the" | "pl" | "bare" | "head
 /** The neutral Latin American text names a thing with the entity's `attrs.neutral` noun where the Mexican one is
  *  Mexican-only ("tomate" for "jitomate", "camiseta" for "playera", "billetera" for "cartera"): its plural
  *  `attrs.neutralPl` (else the regular one, a compound's on its first word), its gender `attrs.neutralG` (else the
- *  head's; it picks the article and the agreement). The English gloss stays. For a learner's feminine form (`enF`),
- *  `attrs.neutralF` (else none). */
+ *  head's; it picks the article and the agreement). The English gloss stays, unless the noun brings its own
+ *  (`attrs.neutralLt` / `neutralLtPl`: "cuenta | corriente" → "account | checking" where the Mexican one is "cuenta |
+ *  de | débito" → "account | of | debit"). For a learner's feminine form (`enF`), `attrs.neutralF` (else none). */
 export function neutralNoun(e: EntityDef, feminineForm = false): EntityDef {
   const a = e.attrs as Record<string, unknown> | undefined;
   const v = variety();
@@ -128,6 +129,9 @@ export function neutralNoun(e: EntityDef, feminineForm = false): EntityDef {
   const g = (a?.[sp + "G"] as "m" | "f" | undefined) ?? e.g;
   // a compound's plural is its first word's: "licencia de conducir" → "licencias de conducir"
   const pl = (a?.[sp + "Pl"] as string | undefined) ?? (/^\S+ de /.test(n) ? n.replace(/^\S+/, (w) => pluralEs(w)) : undefined);
+  // a noun with its own gloss (its units differ from the Mexican one's)
+  const lt = feminineForm ? undefined : (a?.[sp + "Lt"] as string | undefined);
+  if (lt) return { ...e, en: n, pl, g, lt, ltPl: a?.[sp + "LtPl"] as string | undefined };
   return { ...e, en: n, pl, g };
 }
 

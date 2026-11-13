@@ -174,3 +174,11 @@ Found and fixed: comprobante de domicilio → justificante de domicilio (entity 
 English of every twin checked against its Mexican line (restored where a twin had rephrased it). Spain corpus items
 added for the new forms. Gates: Mexican, neutral and Spain checks 0 errors; coverage 0 false accepts.
 
+
+## Lead's wording call (13 Nov 2026)
+
+Neutral and Spain: cuenta de débito → cuenta corriente (ask_type ×2, ask_type_again[0], explain_types, recommend_both,
+type_which, ack_not_type, and the entity: attrs.neutral "cuenta | corriente" with its own gloss, `neutralLt` "account |
+checking", which the composer now reads: src/editions/es/convo/target.ts `neutralNoun`). México keeps cuenta de débito; the
+debit card stays tarjeta de débito everywhere. "Corriente" / "cuenta corriente" understood in every set; "Una cuenta
+corriente (de débito) y una de ahorro" at the type question is now both (it recorded savings). NLU tests +7, Spain corpus +2.
