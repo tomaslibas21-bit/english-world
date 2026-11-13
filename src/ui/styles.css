@@ -136,12 +136,31 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .arrow { display: inline-block; width: 22px; height: 22px; transition: transform 0.2s; }
 .objective-card.collapsed p, .objective-card.collapsed .row { display: none; }
 
+/* The little map: round outdoors; indoors it folds into a small card with the place's name (Hud.tsx Minimap). The
+   frame glides between the two: indoors its size is the card's, set on the element. */
 .minimap {
-  position: absolute; top: 14px; right: 14px; width: 170px; height: 170px; border-radius: 50%;
-  overflow: hidden; box-shadow: var(--shadow); border: 5px solid var(--panel-solid); background: #8fc66a; cursor: pointer;
+  --mm: 170px; --mm-edge: 5px;
+  position: absolute; top: 14px; right: 14px; width: var(--mm); height: var(--mm); border-radius: calc(var(--mm) / 2);
+  overflow: hidden; box-shadow: var(--shadow); border: var(--mm-edge) solid var(--panel-solid); background: #8fc66a; cursor: pointer;
+  transition: width 0.42s cubic-bezier(0.3, 0.9, 0.25, 1), height 0.42s cubic-bezier(0.3, 0.9, 0.25, 1), border-radius 0.42s cubic-bezier(0.3, 0.9, 0.25, 1),
+    border-width 0.3s ease, border-color 0.3s ease, background-color 0.3s ease;
 }
-.minimap canvas { width: 100%; height: 100%; }
-.minimap .label { position: absolute; bottom: 8px; left: 0; right: 0; text-align: center; font-size: 11px; font-weight: 900; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
+.minimap canvas { position: absolute; top: 0; right: 0; width: calc(var(--mm) - 2 * var(--mm-edge)); height: calc(var(--mm) - 2 * var(--mm-edge)); transition: opacity 0.3s ease 0.1s; }
+.minimap .label { position: absolute; top: calc(var(--mm) - 2 * var(--mm-edge) - 25px); right: 0; width: calc(var(--mm) - 2 * var(--mm-edge)); text-align: center; font-size: 11px; font-weight: 900; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.6); transition: opacity 0.2s ease; }
+.minimap.inside { border-radius: 20px; border-width: 1px; border-color: rgba(255, 255, 255, 0.75); background: var(--panel); }
+.minimap.inside canvas, .minimap.inside .label { opacity: 0; transition-delay: 0s; transition-duration: 0.18s; }
+.mm-card {
+  position: absolute; top: 0; right: 0; width: max-content; max-width: min(17.5em, calc(100vw - 30px)); padding: 9px 12px 9px 9px;
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "ico kick go" "ico name go"; column-gap: 10px; align-items: center;
+  text-align: left; opacity: 0; transform: scale(0.9); transform-origin: 100% 0; pointer-events: none;
+  transition: opacity 0.16s ease, transform 0.3s ease;
+}
+.minimap.inside .mm-card { opacity: 1; transform: none; transition: opacity 0.26s ease 0.14s, transform 0.4s cubic-bezier(0.3, 0.9, 0.25, 1) 0.06s; }
+.mm-ico { grid-area: ico; width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
+.mm-card small { grid-area: kick; align-self: end; font-size: 0.62em; font-weight: 900; letter-spacing: 0.11em; text-transform: uppercase; color: var(--ink-faint); line-height: 1.3; }
+.mm-card b { grid-area: name; align-self: start; font-size: 0.88em; font-weight: 800; line-height: 1.2; color: var(--ink); overflow-wrap: anywhere; text-wrap: balance; }
+.mm-go { grid-area: go; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; color: var(--ink-faint); transition: background-color 0.15s, color 0.15s; }
+.minimap.inside:hover .mm-go { background: var(--accent-soft); color: var(--accent); }
 
 .toolbar { position: absolute; right: max(14px, env(safe-area-inset-right)); top: 200px; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
 .toolbar-tools { display: grid; grid-auto-flow: column; grid-template-rows: repeat(8, 52px); gap: 10px; }
@@ -666,8 +685,14 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .call-strip .tile .face { display: none; }
   .map-wrap { grid-template-columns: 1fr; }
   .objective-card { width: calc(100vw - 120px); }
-  .minimap { width: 88px; height: 88px; border-width: 3px; }
+  .minimap { --mm: 88px; --mm-edge: 3px; }
   .minimap .label { display: none; }
+  .mm-card { width: 98px; max-width: none; padding: 8px 7px 9px; grid-template-columns: auto auto; grid-template-areas: "ico kick" "name name"; justify-content: center; column-gap: 4px; row-gap: 3px; text-align: center; }
+  .mm-ico { width: auto; height: auto; background: none; border-radius: 0; }
+  .mm-ico .ui-icon { width: 15px; height: 15px; }
+  .mm-card small { align-self: center; font-size: 9.5px; letter-spacing: 0.09em; }
+  .mm-card b { font-size: 11.5px; line-height: 1.17; }
+  .mm-go { display: none; }
   .toolbar { top: 112px; right: max(10px, env(safe-area-inset-right)); }
   .toolbar-tools { grid-template-rows: repeat(8, 46px); }
   .icon-btn { width: 46px; height: 46px; border-radius: 14px; }
@@ -691,7 +716,13 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .toolbar { top: 12px; right: max(112px, calc(env(safe-area-inset-right) + 100px)); gap: 8px; }
   .toolbar-tools { grid-template-rows: repeat(2, 46px); gap: 8px; }
   .toolbar .icon-btn { width: 46px; height: 46px; }
-  .minimap { width: 88px; height: 88px; }
+  .minimap { --mm: 88px; --mm-edge: 5px; }
+  .mm-card { width: 90px; max-width: none; padding: 8px 6px 9px; grid-template-columns: auto auto; grid-template-areas: "ico kick" "name name"; justify-content: center; column-gap: 4px; row-gap: 3px; text-align: center; }
+  .mm-ico { width: auto; height: auto; background: none; border-radius: 0; }
+  .mm-ico .ui-icon { width: 15px; height: 15px; }
+  .mm-card small { align-self: center; font-size: 9.5px; letter-spacing: 0.09em; }
+  .mm-card b { font-size: 11px; line-height: 1.17; }
+  .mm-go { display: none; }
   .objective-card { max-width: calc(100vw - 350px); max-height: calc(100dvh - 180px - env(safe-area-inset-bottom)); overflow-y: auto; }
 }
 @media (max-width: 480px) {
@@ -706,6 +737,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 @media (prefers-reduced-motion: reduce) {
   .yt-title.phase-you b::before, .ended-badge, .sheet, .objective-card.fresh, .nat-tipbox { animation: none; }
   .nat-star { transition: none; }
+  .minimap, .minimap canvas, .minimap .label, .mm-card, .minimap.inside .mm-card { transition: none; }
   .scn-card, .scn-card:hover, .icon-btn, .icon-btn:hover, .mic { transition: none; transform: none; }
   .map-pin { transition: none; }
   .map-pin:hover { transform: translate(-50%, -50%); }
