@@ -40,6 +40,7 @@
 .radio-plate:hover { filter: brightness(1.08); }
 @keyframes radio-plate { from { opacity: 0; transform: translate(10px, -50%) scale(0.92); } }
 .radio-plate-text { overflow: hidden; text-overflow: ellipsis; animation: radio-text 0.5s ease; }
+.radio-plate-more { flex: none; margin: 0 -5px 0 -3px; color: var(--rs-ink-soft); }
 @keyframes radio-text { from { opacity: 0; transform: translateY(4px); } }
 .radio-skin-maple .radio-plate-text { font-family: var(--en); font-style: italic; font-weight: 600; font-size: 1.12em; }
 .radio-skin-colibri .radio-plate-text { font-family: var(--ui); font-weight: 900; font-size: 0.8em; letter-spacing: 0.05em; text-transform: uppercase; color: var(--rs-trim); }
