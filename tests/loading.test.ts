@@ -52,6 +52,19 @@ describe("the loading screen", () => {
     for (const ref of LOADING_ART.matchAll(/(?:url\(#|href="#)([\w-]+)/g)) expect(ids).toContain(ref[1]);
   });
 
+  it("every moving part is a layer of its own (an element, not a part inside one SVG), so it moves off the main thread", () => {
+    const style = LOADING_ART.slice(0, LOADING_ART.indexOf("</style>"));
+    const moving = [...style.matchAll(/\.([\w-]+) \{[^{}]*animation(?:-delay|-duration)?:/g)].map((m) => m[1]);
+    expect(moving.length).toBeGreaterThan(4);
+    for (const name of new Set([...moving, "ew-flag", "ew-logo-pop"])) {
+      const elements = [...LOADING_ART.matchAll(new RegExp(`<(\\w+) class="[^"]*\\b${name}\\b[^"]*"`, "g"))];
+      expect(elements.length, name).toBeGreaterThan(0);
+      for (const el of elements) { expect(el[0], name).toMatch(/^<(svg|div) /); expect(el[0], name).toContain("ew-layer"); }
+    }
+    // and nothing inside a layer is animated by class
+    expect(LOADING_ART).not.toMatch(/<(g|path|circle|rect|use) [^>]*class="/);
+  });
+
   it("every animation starts from --ew-t, so a redrawn logo carries on, and stands still on request", () => {
     const rules = (css + LOADING_ART).match(/[^{}]*\{[^{}]*animation:[^{}]*\}/g) ?? [];
     expect(rules.length).toBeGreaterThan(8);
