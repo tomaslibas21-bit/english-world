@@ -8,6 +8,17 @@ let playbacks = 0;
 let leaseId = 0, unconfirmed = 0;
 export const microphoneHandoffState = () => ({ captures: captures.size, unconfirmed });
 
+const microphoneWatchers = new Set<(listening: boolean) => void>();
+/** Told the moment a microphone is asked for, before the audio route changes, and again when the last one is
+ *  released. The town's radio stops for it (src/radio/): music never plays into speech recognition. */
+export function watchMicrophone(watcher: (listening: boolean) => void) {
+  microphoneWatchers.add(watcher);
+  return () => { microphoneWatchers.delete(watcher); };
+}
+function tellMicrophoneWatchers(listening: boolean) {
+  for (const watcher of microphoneWatchers) { try { watcher(listening); } catch { /* a watcher never blocks the microphone */ } }
+}
+
 /** Protect an output from a late capture-end callback. Releasing does not reconfigure audio:
  *  any pending recovery belongs to the next idle playback start, never an audible sentence. */
 export function holdPlaybackRoute() {
@@ -59,6 +70,7 @@ export async function waitForMicrophone() {
 export function captureAudio(recognizerId?: number) {
   const id = ++leaseId;
   const detail = () => ({ leaseId: id, recognizerId, ...microphoneHandoffState() });
+  tellMicrophoneWatchers(true);
   recoveryPending = true;
   route("auto"); // "playback" is incompatible with capture on Safari.
   let resolve!: () => void;
@@ -75,6 +87,7 @@ export function captureAudio(recognizerId?: number) {
     released = true;
     clearTimeout(timer);
     captures.delete(done);
+    if (!captures.size) tellMicrophoneWatchers(false);
     if (reason !== "recognition-end") { timedOut = true; unconfirmed++; }
     audioDiagnostic("capture.release", { ...detail(), reason });
     // An old recogniser ending must not change a newer recogniser's capture route.

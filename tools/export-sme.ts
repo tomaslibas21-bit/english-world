@@ -14,6 +14,8 @@
 // - words the learner saves also go into the course's own flashcards (VITE_CARDS_TARGET=fluentsteps: the course keeps
 //   English Master's storage key "fluentsteps.songcards.v1" and its card format, src/state/cards.ts), and a home
 //   button leads back to the course (VITE_BACK_URL=/);
+// - the town's radio plays the course's own songs (src/radio/songs.ts, docs/RADIO.md): the list is the site's
+//   /songs/index.json, the words and recordings come from the files Worker with the learner's files token;
 // - the course's own file in that folder, fs-theme.css (the game's look in the course's themes), is kept; version.json
 //   says which commit the build came from.
 //   npx tsx tools/export-sme.ts <path to a spanish-master-english checkout> [--audio=<clip base URL>]
@@ -46,7 +48,12 @@ const out = mkdtempSync(path.join(tmpdir(), "puerto-colibri-sme-"));
 console.log(`building the Spanish edition for /game/ (${branch || "?"} ${commit || "?"}${dirty ? ", with uncommitted changes" : ""}; clips from ${audio}) …`);
 execFileSync("npx", ["vite", "build", "--outDir", out, "--emptyOutDir"], {
   cwd: ROOT, stdio: ["ignore", "ignore", "inherit"],
-  env: { ...process.env, EDITION: "es", VITE_EDITION: "es", GAME_BASE: "/game/", VITE_AUDIO_BASE: audio, VITE_CARDS_TARGET: "fluentsteps", VITE_BACK_URL: "/", VITE_DEFAULT_VARIETY: DEFAULT_VARIETY },
+  env: {
+    ...process.env, EDITION: "es", VITE_EDITION: "es", GAME_BASE: "/game/", VITE_AUDIO_BASE: audio, VITE_CARDS_TARGET: "fluentsteps", VITE_BACK_URL: "/", VITE_DEFAULT_VARIETY: DEFAULT_VARIETY,
+    // the town's radio (src/radio/songs.ts): the course's own songs; its list names the recordings in the Lithuanian
+    // edition's folder, which this course's files Worker serves under its own
+    VITE_RADIO_INDEX: "/songs/index.json", VITE_RADIO_FILES: "https://audio.dvikalbesdainos.lt/spanish-master-en", VITE_RADIO_RECORDINGS: "https://audio.dvikalbesdainos.lt/spanish-master",
+  },
 });
 const html = readFileSync(path.join(out, "index.html"), "utf8");
 if (!html.includes("Puerto Colibrí")) { console.error("the build is not the Spanish edition (no Puerto Colibrí in its index.html)"); process.exit(1); }
