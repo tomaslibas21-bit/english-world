@@ -18,7 +18,8 @@ export function parseForms(spec: string): string[] {
 type Table = { m: string[]; f: string[]; mpl?: string[]; fpl?: string[] };
 
 const FIXED: Record<string, Table> = {
-  vienas: { m: ["vienas", "vieno", "vienam", "vieną", "vienu", "viename"], f: ["viena", "vienos", "vienai", "vieną", "viena", "vienoje"] },
+  vienas: { m: ["vienas", "vieno", "vienam", "vieną", "vienu", "viename"], f: ["viena", "vienos", "vienai", "vieną", "viena", "vienoje"],
+    mpl: ["vieni", "vienų", "vieniems", "vienus", "vienais", "vienuose"], fpl: ["vienos", "vienų", "vienoms", "vienas", "vienomis", "vienose"] },
   jis: {
     m: ["jis", "jo", "jam", "jį", "juo", "jame"], f: ["ji", "jos", "jai", "ją", "ja", "joje"],
     mpl: ["jie", "jų", "jiems", "juos", "jais", "juose"], fpl: ["jos", "jų", "joms", "jas", "jomis", "jose"],
@@ -31,8 +32,10 @@ const FIXED: Record<string, Table> = {
     m: ["šis", "šio", "šiam", "šį", "šiuo", "šiame"], f: ["ši", "šios", "šiai", "šią", "šia", "šioje"],
     mpl: ["šie", "šių", "šiems", "šiuos", "šiais", "šiuose"], fpl: ["šios", "šių", "šioms", "šias", "šiomis", "šiose"],
   },
-  koks: { m: ["koks", "kokio", "kokiam", "kokį", "kokiu", "kokiame"], f: ["kokia", "kokios", "kokiai", "kokią", "kokia", "kokioje"] },
-  kitas: { m: ["kitas", "kito", "kitam", "kitą", "kitu", "kitame"], f: ["kita", "kitos", "kitai", "kitą", "kita", "kitoje"] },
+  koks: { m: ["koks", "kokio", "kokiam", "kokį", "kokiu", "kokiame"], f: ["kokia", "kokios", "kokiai", "kokią", "kokia", "kokioje"],
+    mpl: ["kokie", "kokių", "kokiems", "kokius", "kokiais", "kokiuose"], fpl: ["kokios", "kokių", "kokioms", "kokias", "kokiomis", "kokiose"] },
+  kitas: { m: ["kitas", "kito", "kitam", "kitą", "kitu", "kitame"], f: ["kita", "kitos", "kitai", "kitą", "kita", "kitoje"],
+    mpl: ["kiti", "kitų", "kitiems", "kitus", "kitais", "kituose"], fpl: ["kitos", "kitų", "kitoms", "kitas", "kitomis", "kitose"] },
   savo: { m: Array(6).fill("savo"), f: Array(6).fill("savo") },
   // -is adjective with an -as-type plural (not *dideliai)
   didelis: {

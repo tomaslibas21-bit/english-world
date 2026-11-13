@@ -132,7 +132,7 @@ export function timeSay(t: { h: number; m: number }): string {
 }
 
 /** A value ({$price}, {$time}, {$num}, {$letters}…) in the practised language, the gloss and the spoken form. */
-export function valueDisplay(kind: string, v: any): { en: string; lt: string; say: string } {
+export function valueDisplay(kind: string, v: any, _c?: Case): { en: string; lt: string; say: string } {
   if (v == null) return { en: "…", lt: "…", say: "" };
   if (kind === "price" || kind === "total" || kind === "amount" || kind === "fare" || kind === "rent" || kind === "deposit") {
     return { en: priceEn(v), lt: priceLt(v), say: priceSay(v) };

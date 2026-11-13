@@ -7,6 +7,7 @@
 //   4. unless a handler held the turn, the NPC asks the next unfinished step.
 // Nothing here is generative: every NPC sentence is an authored line.
 
+import { learnerLabel } from "../content/learner";
 import type { Ctx, EntityDef, Handler, HintGroup, Pending, SentSrc, SituationDef, StepDef, Suggestion, Tip } from "../content/types";
 import { addressInformal, compose, type Sentence, type Vars } from "./compose";
 import { Nlu, type NluResult, type Parse, type ParsedSegment } from "./nlu";
@@ -471,7 +472,7 @@ export class Conversation {
       for (const st of this.sit.steps) {
         const { applies, done } = stepState(st);
         if (!applies && !done) continue;
-        const lt = st.label ?? this.stepSuggest(st)?.[0]?.lt;
+        const lt = st.label ?? learnerLabel(this.sit.id, this.stepSuggest(st)?.[0]?.lt ?? "");
         if (lt) out.push({ id: st.id, lt, done, current: false });
       }
     }
@@ -486,7 +487,7 @@ export class Conversation {
     const hints = this.pending?.hints ?? st?.hints ?? suggest.map((x) => x.hint).filter(Boolean) as string[];
     const returning = returningSuggestion(this.sit.id, this.opt.visits ?? 0, this.lastTurn.map(l => l.lineId), this.pending?.id, st?.id);
     return {
-      suggest: returning ? [returning, ...suggest] : suggest,
+      suggest: (returning ? [returning, ...suggest] : suggest).map((x) => ({ ...x, lt: learnerLabel(this.sit.id, x.lt) })),
       hints: [...new Set(returning?.hint ? [returning.hint, ...hints] : hints)],
     };
   }
