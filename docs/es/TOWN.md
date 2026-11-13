@@ -1104,6 +1104,36 @@ Harbor). This edition's own part is the beach:
   a sarong or a shirt and swim trunks with a top.
 - The cast (the 58 with portraits) is dressed as before.
 
+## World v2: street palms, ceibas, people on the meadows (14 Nov 2026)
+
+With main's world-v2 (docs/WALKING.md: the sloping beach with foam along the waterline, wading, jumping onto low
+things, the jog, the first-time guide), three things of this edition's own, all theme data
+(`src/editions/es/game/world/theme.ts`):
+
+- **Street palms** (`palms`, 18 more): the length of avenida Juárez at the curb, 0.75 m in from the road, nine on the
+  south side and five on the north, each between two shop fronts or at a building's corner: never before a door or the
+  middle of a sign, never within a corner's sidewalk (the crossings stay open). Four more round the zócalo: two on calle
+  Ceiba's side, two behind the tianguis on the south side. They are instances of the palm mesh there already was: no new
+  draw call. Each has the palm's 0.4 m collider; the sidewalk keeps 2.4 m beside it.
+- **Two ceibas** (`ceibas`: x, z, size; mexican.ts `ceibaTrunk`, `ceibaCrown`, town.ts `tropicalTrees`): one in the
+  park, one on the lawn where the avenue ends at the mirador. A tall grey trunk on buttress roots, a wide flat crown
+  10 to 13 m up: from the street one sees the trunk and the crown's shadow, from down the avenue the crown over the
+  roofs. Each is a mesh of its own (trunk and crown in one, coloured in the vertices; an InstancedMesh of one, so it
+  fades out of the walking camera's way as the trees do): one draw call, and one in the shadow pass, only where it is
+  in view.
+- **People on the meadows** (`chatSpots`, four more pairs): on the grass north of the sacbé, on the path to the ruins'
+  gateway, by the park's pond, and out east where the planes come in. One draw call a person where they are in view (the
+  far version beyond 24 m, as the others).
+- **Jumping** here lands on the bancas (the zócalo's and the malecón's, from the front or an end), the palapas'
+  loungers (from a side), the letters' plinth. The malecón's wall (0.78 m) stays a wall, the beached lanchas' sides too.
+- The sea keeps its colours (`sea`); `seaColors` draws the shore's foam with water.ts's `SHORE_GLSL`.
+
+Draw calls on a phone (375×812, the built game, 22 walking views of the avenue, the zócalo, the park and the meadows,
+against spanish-edition before this and before the characters' second version): 1,968 → 2,003 (+1.8 %); the most at
+one view +5 (the zócalo, and the avenue's west end with its ceiba and the pair on the meadow).
+
+Checks: `tests/es/town.test.ts` "world-v2: street palms, ceibas and people on the meadows".
+
 ## The tasks (in order)
 
 Each task is one area; each ends with before/after screenshots at phone size and the draw-call numbers.

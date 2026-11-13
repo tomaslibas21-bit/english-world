@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { SITUATIONS, SITUATION_BY_ID } from "../../src/content/situations";
 import { LOCATIONS, NAME_MEANING, placeLtNamed } from "../../src/content/locations";
 import { NPCS } from "../../src/content/npcs";
-import { CAR, CHAT_SPOTS, FOUNTAIN, OUTDOOR_NPCS, PARKED_CARS, SQUARE, STALLS, TRAFFIC_LANES } from "../../src/game/world/layout";
+import { BUILDINGS, CAR, CHAT_SPOTS, FOUNTAIN, OUTDOOR_NPCS, PARK, PARKED_CARS, ROADS, SIDEWALK, SQUARE, STALLS, TRAFFIC_LANES, WORLD } from "../../src/game/world/layout";
 import { THEME } from "../../src/game/world/theme";
 import { STALL_SIZE } from "../../src/game/world/mexican";
 
@@ -277,6 +277,67 @@ describe("graphics round 4: the town's new things keep clear of everyone", () =>
     const m = THEME.meadow!, cen = THEME.cenote!, mi = THEME.mirador!;
     expect(m.clear.some(([x, z, r]) => Math.hypot(x - cen.x, z - cen.z) < 1 && r >= 12)).toBe(true);
     expect(m.clear.some(([x, z, r]) => Math.hypot(x - mi.x, z - mi.z) < 1 && r >= 4)).toBe(true);
+  });
+});
+
+describe("world-v2: street palms, ceibas and people on the meadows", () => {
+  const juarez = ROADS.find((r) => r.name === "Main Street")!;
+  const atCurb = (z: number) => { const off = Math.abs(z - juarez.z1) - juarez.w / 2; return off > 0.4 && off < 1.2; };
+  // (the airport's stretch of the avenue had its palms before, further from the curb)
+  const street = THEME.palms.filter(([x, z]) => atCurb(z) && x < 100);
+  const pairs = THEME.chatSpots.slice(-4);
+  const people: [string, number, number][] = [
+    ...OUTDOOR_NPCS.map((n) => [n.npc, n.x, n.z] as [string, number, number]),
+    ...OUTDOOR_NPCS.filter((n) => n.ax !== undefined).map((n) => [n.npc + "'s talk spot", n.ax!, n.az!] as [string, number, number]),
+    ...CHAT_SPOTS.flatMap(([ax, az, bx, bz]) => [["a chatting pair", ax, az], ["a chatting pair", bx, bz]] as [string, number, number][]),
+    ...THEME.sitters.map(([x, z]) => ["a sitter", x, z] as [string, number, number]),
+    ...THEME.vendors.map(([x, z]) => ["a vendor", x, z] as [string, number, number]),
+  ];
+  const onRoad = (x: number, z: number, pad: number) => ROADS.some((r) => (r.z1 === r.z2
+    ? x > r.x1 && x < r.x2 && Math.abs(z - r.z1) < r.w / 2 + pad : z > r.z1 && z < r.z2 && Math.abs(x - r.x1) < r.w / 2 + pad));
+
+  it("the street palms line both sides of avenida Juárez at the curb, clear of the corners and never before a door", () => {
+    expect(street.length).toBeGreaterThanOrEqual(12);
+    for (const side of [-1, 1]) expect(street.filter(([, z]) => Math.sign(z - juarez.z1) === side).length).toBeGreaterThanOrEqual(5);
+    for (const [x, z] of street) {
+      for (const r of ROADS.filter((q) => q.x1 === q.x2)) expect(Math.abs(x - r.x1), `the palm at ${x} and the corner of ${r.name}`).toBeGreaterThan(r.w / 2 + SIDEWALK);
+      // the doors that open onto the avenue, each in the middle of its front, on the palm's side of the street
+      const fronts = BUILDINGS.filter((b) => b.loc && (z < juarez.z1 ? b.face === "s" && b.z + b.d / 2 > -20 && b.z < juarez.z1 : b.face === "n" && b.z - b.d / 2 < 2 && b.z > juarez.z1));
+      expect(fronts.length).toBeGreaterThan(3);
+      for (const b of fronts) expect(Math.abs(x - b.x), `the palm at ${x} and ${b.id}'s door`).toBeGreaterThan(3);
+    }
+  });
+
+  it("every palm and both ceibas keep clear of everyone, the stalls and the cars' lanes", () => {
+    const trees: [string, number, number, number][] = [...THEME.palms.map(([x, z]) => ["a palm", x, z, 0.4] as [string, number, number, number]), ...THEME.ceibas.map(([x, z, sc]) => ["a ceiba", x, z, 0.95 * sc] as [string, number, number, number])];
+    for (const [what, x, z, r] of trees) {
+      for (const [who, px, pz] of people) expect(Math.hypot(px - x, pz - z), `${what} at ${x}, ${z} and ${who}`).toBeGreaterThan(r + 1);
+      for (const st of STALLS) expect(Math.abs(st.x - x) > STALL_SIZE.lona.x + r + 0.3 || Math.abs(st.z - z) > STALL_SIZE.lona.z1 + r + 0.3, `${what} at ${x}, ${z} and a stall`).toBe(true);
+      for (const l of TRAFFIC_LANES) if (x > l.from && x < l.to) expect(Math.abs(z - l.z), `${what} at ${x}, ${z} and the lane at z ${l.z}`).toBeGreaterThan(CAR.width / 2 + r + 0.2);
+    }
+  });
+
+  it("the ceibas stand on grass: one in the park, one on the lawn at the west end of the avenue, off every street and sidewalk", () => {
+    expect(THEME.ceibas.length).toBe(2);
+    for (const [x, z, sc] of THEME.ceibas) {
+      expect(onRoad(x, z, SIDEWALK + 0.95 * sc), `the ceiba at ${x}, ${z}`).toBe(false);
+      expect(x > WORLD.minX + 2 && x < WORLD.maxX - 2, `the ceiba at ${x}`).toBe(true);
+      for (const b of BUILDINGS) expect(Math.abs(x - b.x) > b.w / 2 + 2 || Math.abs(z - b.z) > b.d / 2 + 2, `the ceiba at ${x}, ${z} and ${b.id}`).toBe(true);
+    }
+    expect(THEME.ceibas.some(([x, z]) => x > PARK.x1 && x < PARK.x2 && z > PARK.z1 && z < PARK.z2)).toBe(true);
+  });
+
+  it("the pairs on the meadows stand off the streets, a step apart, facing each other, clear of everyone else", () => {
+    expect(pairs.length).toBe(4);
+    for (const [ax, az, bx, bz] of pairs) {
+      const d = Math.hypot(ax - bx, az - bz);
+      expect(d > 0.8 && d < 1.5, `the pair at ${ax}, ${az}`).toBe(true);
+      for (const [x, z] of [[ax, az], [bx, bz]]) {
+        expect(onRoad(x, z, SIDEWALK), `the pair at ${x}, ${z}`).toBe(false);
+        for (const [who, px, pz] of people) if (!(px === ax && pz === az) && !(px === bx && pz === bz)) expect(Math.hypot(px - x, pz - z), `the pair at ${x}, ${z} and ${who}`).toBeGreaterThan(1.5);
+        for (const [tx, tz] of [...THEME.palms, ...THEME.ceibas]) expect(Math.hypot(tx - x, tz - z), `the pair at ${x}, ${z} and a tree`).toBeGreaterThan(1.5);
+      }
+    }
   });
 });
 
