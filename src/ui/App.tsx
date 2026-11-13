@@ -13,6 +13,7 @@ import { takeAutoStart, takeLinkedSituation } from "./playMode";
 import { refreshLocalState } from "../convo/speech";
 import { L } from "./i18n";
 import { audio } from "../game/audio";
+import { radio } from "../radio";
 import { AudioDiagnostics } from "./AudioDiagnostics";
 import { Loading } from "./Loading";
 import { EDITION } from "../edition";
@@ -47,7 +48,7 @@ function Play() {
         if (sit) g!.startScenario(sit);
       };
       g.init();
-      (window as any).__ew = { game: g, store: useStore };
+      (window as any).__ew = { game: g, store: useStore, radio, voice: audio.getState };
     });
     return () => { gone = true; g?.dispose(); setGame(null); };
   }, []);

@@ -5,7 +5,9 @@
 //   served at https://audio.dvikalbesdainos.lt/fluent-steps/game/audio/ (the Gemini voices: …/game/audio-v2/; upload new clips there
 //   after `npm run audio`; a site deploy has a 20,000-file limit, and there are about 21,500 clips);
 // - words the learner saves also go into the course's own flashcards (VITE_CARDS_TARGET=fluentsteps,
-//   see src/state/cards.ts), and a home button leads back to the course (VITE_BACK_URL=/).
+//   see src/state/cards.ts), and a home button leads back to the course (VITE_BACK_URL=/);
+// - the town's radio plays the course's own songs (src/radio/songs.ts): their list is the site's /songs/index.json,
+//   their words and recordings come from the course's files folder with the learner's files token.
 //   npx tsx tools/export-fluent-steps.ts <path to a fluent-steps checkout> [--audio=<clip base URL>]
 import { execFileSync } from "node:child_process";
 import { cpSync, existsSync, mkdtempSync, readdirSync, rmSync, statSync } from "node:fs";
@@ -28,7 +30,10 @@ const out = mkdtempSync(path.join(tmpdir(), "english-world-fs-"));
 console.log(`building for /zaidimas/ (clips from ${audio}) …`);
 execFileSync("npx", ["vite", "build", "--outDir", out, "--emptyOutDir"], {
   cwd: ROOT, stdio: ["ignore", "ignore", "inherit"],
-  env: { ...process.env, GAME_BASE: "/zaidimas/", VITE_AUDIO_BASE: audio, VITE_CARDS_TARGET: "fluentsteps", VITE_BACK_URL: "/" },
+  env: {
+    ...process.env, GAME_BASE: "/zaidimas/", VITE_AUDIO_BASE: audio, VITE_CARDS_TARGET: "fluentsteps", VITE_BACK_URL: "/",
+    VITE_RADIO_INDEX: "/songs/index.json", VITE_RADIO_FILES: "https://audio.dvikalbesdainos.lt/fluent-steps",
+  },
 });
 
 // the clips live on R2: keep only the clip list of the voices in use
