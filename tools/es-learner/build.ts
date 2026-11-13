@@ -18,7 +18,7 @@ const units = (s: string) => s.split(" | ").length;
 /** Both resolutions of every choice ({m:a|f:b}, {u:a|t:b}, {j:a|t:b}, {sm:a|sf:b}): the unit count must hold in each. */
 const resolutions = (s: string) => [0, 1].map((i) => s.replace(/\{(m|sm|u|j):([^|{}]*)\|(f|sf|t):([^{}]*)\}/g, (_m, _a, a, _b, b) => (i ? b : a)));
 const entityPh = (s: string) => [...s.matchAll(/\{([A-Z])(?:\.(np|the|pl))?(?::(?:nom|gen|dat|acc|ins|loc))?(?::pl)?\}/g)].map((m) => m[1]).sort().join(",");
-const valuePh = (s: string) => [...s.matchAll(/\{\$(\w+)\}/g)].map((m) => m[1]).sort().join(",");
+const valuePh = (s: string) => [...s.matchAll(/\{\$(\w+)(?::(?:nom|gen|dat|acc|ins|loc))?\}/g)].map((m) => m[1]).sort().join(",");
 const LT_CASED = /\{[A-Z](?:\.(?:np|the|pl))?:(?:nom|gen|dat|acc|ins|loc)(?::pl)?\}/;
 const LT_BARE = /\{[A-Z](?:\.(?:np|the|pl))?\}/;
 const ENGLISHY = /\b(the|and|you|your|with|is|are|it's|I'm|don't|please|thank)\b/i;

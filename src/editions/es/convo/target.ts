@@ -254,7 +254,7 @@ const LETTER_SAY_NEUTRAL: Record<string, string> = { ...LETTER_SAY, B: "be larga
 const LETTER_SAY_SPAIN: Record<string, string> = { ...LETTER_SAY, B: "be", V: "uve", W: "uve doble" };
 
 /** A value in the Spanish text, the English gloss and the spoken Spanish. `{$time}` carries its article: "las 8:30". */
-export function valueDisplay(kind: string, v: any): { en: string; lt: string; say: string } {
+export function valueDisplay(kind: string, v: any, _c?: Case): { en: string; lt: string; say: string } {
   if (v == null) return { en: "…", lt: "…", say: "" };
   if (kind === "price" || kind === "total" || kind === "amount" || kind === "fare" || kind === "rent" || kind === "deposit") {
     return { en: priceEn(v), lt: priceLt(v), say: priceSay(v) };

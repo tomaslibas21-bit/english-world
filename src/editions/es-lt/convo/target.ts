@@ -90,11 +90,16 @@ export function npUnits(b: NpBinding, kind: "np" | "the" | "pl" | "bare" | "head
 }
 const splitUnitsLt = (s: string) => s.split(" | ").map((x) => x.trim());
 
-/** "85 pesai", "21 pesas", "12 pesų", "85,50 peso". */
-export function priceLt(cents: number): string {
-  const d = Math.floor(cents / 100), c = cents % 100;
+/** The peso after a number, in a case: 1 (21, 31…) pesas, 2–9 pesai, 10–20 and round tens pesų. */
+const PESO: Record<Case, [string, string]> = {
+  nom: ["pesas", "pesai"], gen: ["peso", "pesų"], dat: ["pesui", "pesams"], acc: ["pesą", "pesus"], ins: ["pesu", "pesais"], loc: ["pese", "pesuose"],
+};
+/** "85 pesai", "21 pesas", "12 pesų", "85,50 peso"; in a case: "kainuoja 45 pesus" ({$price:acc}), "nuo 45 pesų". */
+export function priceLt(cents: number, c: Case = "nom"): string {
+  const d = Math.floor(cents / 100), ct = cents % 100;
   const n = String(d).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-  return c ? `${n},${String(c).padStart(2, "0")} peso` : `${n} ${ltCount(d, "pesas", "pesai", "pesų")}`;
+  if (ct) return `${n},${String(ct).padStart(2, "0")} peso`;
+  return `${n} ${ltCount(d, PESO[c][0], PESO[c][1], "pesų")}`;
 }
 
 /** Every Lithuanian text the tables have, by its English (a value a handler builds at run time: s80's weekday
@@ -137,7 +142,7 @@ function timeOrDayLt(en: string): string | undefined {
 }
 
 /** A value in the Spanish text, the Lithuanian gloss and the spoken Spanish. */
-export function valueDisplay(kind: string, v: any): { en: string; lt: string; say: string } {
+export function valueDisplay(kind: string, v: any, c?: Case): { en: string; lt: string; say: string } {
   const r = ES.valueDisplay(kind, v);
   // a time: Lithuanian says the 24-hour clock (19:00), never 7:00 PM
   if (v && (kind === "time" || kind.endsWith("Time")) && typeof v.h === "number") return { ...r, lt: `${v.h}:${String(v.m ?? 0).padStart(2, "0")}` };
@@ -147,6 +152,6 @@ export function valueDisplay(kind: string, v: any): { en: string; lt: string; sa
   }
   // a decimal number (a temperature, 38.3): Lithuanian writes a comma
   if (typeof v === "number" && !Number.isInteger(v)) return { ...r, lt: String(v).replace(".", ",") };
-  if (v != null && (kind === "price" || kind === "total" || kind === "amount" || kind === "fare" || kind === "rent" || kind === "deposit")) return { ...r, lt: priceLt(v) };
+  if (v != null && (kind === "price" || kind === "total" || kind === "amount" || kind === "fare" || kind === "rent" || kind === "deposit")) return { ...r, lt: priceLt(v, c) };
   return r;
 }

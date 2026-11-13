@@ -18,7 +18,8 @@ export type Vars = Record<string, any>;
 export type EntityLookup = (id: string) => import("../content/types").EntityDef | undefined;
 
 const PH_EN = /^(.*?)\{([A-Za-z_]\w*)(?:\.(np|the|pl|bare))?\}(.*)$/;
-const PH_VAL = /\{\$([a-zA-Z_]\w*)\}/g;
+/** A value: {$price}; the learner's language may give it a case ({$price:acc}: Puerto Colibrí for Lithuanians). */
+const PH_VAL = /\{\$([a-zA-Z_]\w*)(?::(nom|gen|dat|acc|ins|loc))?\}/g;
 
 function binding(vars: Vars, name: string): NpBinding | null {
   const v = vars[name];
@@ -78,7 +79,7 @@ export function compose(src0: SentSrc, vars: Vars, opts: ComposeOpts): Sentence 
     const e0 = b ? opts.look(b.id) : undefined;
     return e0 ? { e: entityForPlayer(e0, g === "f"), plural: (b?.qty ?? 1) > 1 } : null;
   });
-  const valuesIn = (s: string, which: "en" | "lt" | "say") => s.replace(PH_VAL, (_m, name: string) => valueDisplay(name, vars[name])[which]);
+  const valuesIn = (s: string, which: "en" | "lt" | "say") => s.replace(PH_VAL, (_m, name: string, c?: Case) => valueDisplay(name, vars[name], c)[which]);
 
   for (let i = 0; i < enU.length; i++) {
     const en = enU[i], lt = ltU[i];
