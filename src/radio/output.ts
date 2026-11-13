@@ -164,11 +164,12 @@ export class BufferOutput implements RadioOutput {
   async play(url: string, at: number): Promise<boolean> {
     const run = ++this.run;
     this.stopSource();
+    // the place asked for is the place from now on, also for a pause that comes while the song is still loading
+    this.offset = Math.max(0, at);
     if (this.url !== url || !this.buffer) {
       // the last song's sound leaves memory before the next one is decoded
       this.buffer = null;
       this.url = url;
-      this.offset = 0;
       const ahead = this.ahead?.url === url ? this.ahead.bytes : null;
       this.ahead = null;
       const buffer = await this.decode(await (ahead ?? this.fetchBytes(url)));
