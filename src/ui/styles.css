@@ -147,7 +147,8 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 }
 .minimap canvas { position: absolute; top: 0; right: 0; width: calc(var(--mm) - 2 * var(--mm-edge)); height: calc(var(--mm) - 2 * var(--mm-edge)); transition: opacity 0.3s ease 0.1s; }
 .minimap .label { position: absolute; top: calc(var(--mm) - 2 * var(--mm-edge) - 25px); right: 0; width: calc(var(--mm) - 2 * var(--mm-edge)); text-align: center; font-size: 11px; font-weight: 900; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.6); transition: opacity 0.2s ease; }
-.minimap.inside { border-radius: 20px; border-width: 1px; border-color: rgba(255, 255, 255, 0.75); background: var(--panel); }
+/* --g-edge: the card edge of a course's theme (its fs-theme.css), where the game runs inside a course */
+.minimap.inside { border-radius: 20px; border-width: 1px; border-color: var(--g-edge, rgba(255, 255, 255, 0.75)); background: var(--panel); }
 .minimap.inside canvas, .minimap.inside .label { opacity: 0; transition-delay: 0s; transition-duration: 0.18s; }
 .mm-card {
   position: absolute; top: 0; right: 0; width: max-content; max-width: min(18em, calc(100vw - 30px)); padding: 9px 11px 9px 9px;
