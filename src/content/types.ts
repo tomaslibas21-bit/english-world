@@ -51,6 +51,10 @@ export interface EntityDef {
   ltPlF?: string;
   /** Gender of the feminine forms (default "f"). */
   gF?: Gender;
+  /** Puerto Colibrí for Lithuanians (docs/es/LEARNER-LT.md): the Lithuanian gender of `lt` (`g` is the Spanish one
+   *  there) and of `ltF`. */
+  ltG?: Gender;
+  ltGF?: Gender;
   /** Spanish edition: the practised language's feminine forms for an entity that describes the player ("enfermera"). */
   enF?: string;
   plF?: string;
