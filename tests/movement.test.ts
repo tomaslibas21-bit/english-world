@@ -9,7 +9,7 @@ import { wantFade } from "../src/game/fade";
 import { CameraRig } from "../src/game/camera";
 import { Colliders } from "../src/game/world/util";
 import { Ledges } from "../src/game/ledges";
-import { Wading, sandY, SHORE, SEA_LEVEL } from "../src/game/water";
+import { Wading, sandY, floorY, DECKS, SHORE, SEA_LEVEL } from "../src/game/water";
 
 const PI = Math.PI;
 const near = (a: number, b: number, eps = 1e-6) => Math.abs(angleDiff(a, b)) < eps;
@@ -301,6 +301,24 @@ describe("the shore: the sand under the sea, and wading", () => {
     const deep = SEA_LEVEL - sandY(10, SHORE.limit);
     expect(deep).toBeGreaterThan(0.3);
     expect(deep).toBeLessThan(0.6);
+  });
+
+  it("a pier's boards hold one up over the sand that slopes away under them, and the step up onto them takes a moment", () => {
+    DECKS.length = 0;
+    expect(floorY(-30, SHORE.edge)).toBeLessThan(-0.4);
+    DECKS.push({ x0: -32, x1: -28, z0: -76, z1: -62 });
+    expect(floorY(-30, SHORE.edge)).toBe(0);
+    expect(floorY(-30, -70)).toBe(0);
+    expect(floorY(-20, SHORE.edge)).toBeLessThan(-0.4);
+    DECKS.length = 0;
+    // from the sand 15 cm under a terrace's boards onto them: up in a few frames, never a fall
+    const h = new Hop();
+    h.land(-0.15);
+    h.update(1 / 60, 0);
+    expect(h.y).toBeGreaterThan(-0.15);
+    expect(h.y).toBeLessThan(0);
+    for (let i = 0; i < 20; i++) { h.update(1 / 60, 0); expect(h.air).toBe(false); }
+    expect(h.y).toBe(0);
   });
 
   it("the water slows a wader, and the seaward part of a step fades to nothing at the limit", () => {

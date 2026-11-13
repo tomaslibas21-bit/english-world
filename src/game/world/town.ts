@@ -8,7 +8,7 @@ import { THEME, type TianguisGoods } from "./theme";
 import * as MX from "./mexican";
 import { LOCATIONS } from "../../content/locations";
 import { STYLED, IS_REAL, grade } from "../style";
-import { SHORE, sandY, SAND_GLSL, SHORE_GLSL, SWELL_GLSL } from "../water";
+import { SHORE, DECKS, sandY, SAND_GLSL, SHORE_GLSL, SWELL_GLSL } from "../water";
 import { GROUND_BLOCKS, groundPalette, groundExtras, groundMaterial, seaMaterial, trunkGeometry, canopyGeometry, canopyMaterial, bushGeometry, bushMaterial, outlineInstanced, cloudMaterial, cloudPuff } from "./styled";
 
 export interface Door { loc: string; bid: string; x: number; z: number; face: "n" | "s" | "e" | "w"; name: string; outX: number; outZ: number; rot: number }
@@ -65,6 +65,7 @@ export function buildTown(): Town {
   const M = THEME.townMerge && !STYLED ? new TownMerger(THEME.townMerge) : new Merger();
   const r = rand(7);
   sprays.length = 0; // a new game builds a new town
+  DECKS.length = 0;
   seats.length = 0;
   details.length = 0;
   displays.length = 0;
@@ -2469,6 +2470,8 @@ function addHarbor(M: Merger, col: Colliders, group: THREE.Group, r: () => numbe
   for (let i = -10; i <= 10; i += 2.5) for (const zz of [-72, -88]) M.add("pier-post", mat("#7a5a3a"), cylGeo(0.2, 0.2, 2, -30 + i, -0.6, zz, 6));
   for (const s of [-1, 1]) M.add("pier-rail", mat("#f4f1ea"), boxGeo(0.1, 1, 14, -30 + s * 2.15, 0.8, -69));
   col.addBox(-32.3, -69, 0.2, 14); col.addBox(-27.7, -69, 0.2, 14);
+  // (one walks on the boards, not on the sand sloping away under them: water.ts)
+  DECKS.push({ x0: -32.3, x1: -27.7, z0: -76.1, z1: -62 }, { x0: -41.3, x1: -18.7, z0: -88.4, z1: -72 });
   // pier deck area is walkable: remove the sea collider there by leaving a gap (see buildTown); add deck edges
   col.addBox(-41.2, -80, 0.3, 16); col.addBox(-18.8, -80, 0.3, 16); col.addBox(-30, -88.2, 22, 0.3);
   col.addBox(-37.5, -72.2, 7.6, 0.3); col.addBox(-22.5, -72.2, 7.6, 0.3);

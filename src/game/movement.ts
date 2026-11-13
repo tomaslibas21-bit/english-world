@@ -201,9 +201,10 @@ export class Hop {
     this.ground = ground;
     this.wait = Math.max(0, this.wait - dt);
     if (!this.air) {
-      // a step down is a fall; a small step up (or the sand sloping) is followed
+      // a step down is a fall; the sand sloping away is followed, and a small step up (onto a terrace's boards from
+      // the sand) is taken in a moment, not in one frame
       if (ground < this.y - 0.03) { this.air = true; this.vy = 0; }
-      else this.y = ground;
+      else this.y = ground > this.y ? Math.min(ground, this.y + Math.max(0.6 * dt, (ground - this.y) * Math.min(1, dt * 18))) : ground;
     }
     if (this.air) {
       this.vy -= Hop.G * dt;

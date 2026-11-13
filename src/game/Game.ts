@@ -11,7 +11,7 @@ import { CameraRig } from "./camera";
 import { Steer, Gait, Hop, angleDiff, smoothstep } from "./movement";
 import { Ledges } from "./ledges";
 import { coach } from "./coach";
-import { Wading, Splashes, sandY, swell, SEA_LEVEL, SHORE } from "./water";
+import { Wading, Splashes, floorY, swell, SEA_LEVEL, SHORE } from "./water";
 import { OcclusionField } from "./occlusion";
 import { PropFader } from "./fade";
 import { CUT, withCutout } from "./cutout";
@@ -379,7 +379,7 @@ export class Game implements GameApi {
       this.jogT = 0;
       const sp = spawn ?? (z.interior ? z.interior.spawn : { x: 0, z: 0, rot: 0 });
       // (on the sand where it slopes under the sea, if that is where they were)
-      const floor = indoor ? 0 : sandY(sp.x, sp.z);
+      const floor = indoor ? 0 : floorY(sp.x, sp.z);
       this.player.root.position.set(sp.x, floor, sp.z);
       this.heading = sp.rot;
       this.player.root.rotation.y = sp.rot;
@@ -1404,9 +1404,10 @@ export class Game implements GameApi {
     const bank = THREE.MathUtils.clamp(-turn * moved * 0.012, -0.14, 0.14);
     this.player.bank = (this.player.bank ?? 0) + (bank - (this.player.bank ?? 0)) * Math.min(1, dt * 8);
     // what is under their feet: a bench's seat or a planter's rim they jumped onto, else the ground, which by the sea
-    // is the sand sloping down under the water. A jump lands on it; walking off an edge is a fall.
+    // is the sand sloping down under the water (but for a pier's or a terrace's boards over it). A jump lands on it;
+    // walking off an edge is a fall.
     const on = indoor ? 0 : this.ledges?.support(p.x, p.z, this.hop.y, this.hop.air) ?? 0;
-    const ground = indoor ? 0 : on > 0 ? on : sandY(p.x, p.z);
+    const ground = indoor ? 0 : on > 0 ? on : floorY(p.x, p.z);
     const landed = this.hop.update(dt, ground);
     this.applyHop();
     // the water at their feet: deep enough to wade in, it slows them, splashes at each step and rings their legs
