@@ -490,10 +490,11 @@ export class Ambient {
     if (!this.colliders?.blocked(nx, nz, 0.2)) { p.x = nx; p.z = nz; }
   }
 
-  /** Keep the player out of the people walking about and their dogs (the others stand or sit where colliders are). */
-  resolvePeople(p: THREE.Vector3, r: number) {
+  /** Keep the player out of the people walking about and their dogs (the others stand or sit where colliders are;
+   *  `seated`: and out of the people sitting, for a player who can jump onto the bench they sit on). */
+  resolvePeople(p: THREE.Vector3, r: number, seated = false) {
     for (const w of this.walkers) {
-      if (w.kind !== "walk") continue;
+      if (w.kind !== "walk" && !(seated && w.kind === "sit")) continue;
       for (const [x, z, reach] of [[w.ch.root.position.x, w.ch.root.position.z, r + 0.3], ...(w.dog ? [[w.dog.root.position.x, w.dog.root.position.z, r + 0.22]] : [])]) {
         const dx = p.x - x, dz = p.z - z, d = Math.hypot(dx, dz);
         if (d < reach && d > 1e-4) { p.x = x + (dx / d) * reach; p.z = z + (dz / d) * reach; }

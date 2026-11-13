@@ -140,6 +140,8 @@ export interface HudState {
   fade: number;
   panel: null | "map" | "journal" | "phone" | "settings" | "phrasebook" | "help" | "scenarios";
   showTouch: boolean;
+  /** The first-time guide's hint on show (game/coach.ts): which, its number, and `ok` for the moment it was just done. */
+  coach: { step: "walk" | "run" | "jump" | "talk" | "radio" | "scenes"; n: number; of: number; ok: boolean } | null;
 }
 
 interface Store {
@@ -191,6 +193,7 @@ export const useStore = create<Store>((set, get) => ({
   hud: {
     zoneName: "", zoneBanner: null, prompt: null, walking: false, objective: null, minimap: { px: 0, pz: 0, heading: 0, zone: "town" }, fade: 0, panel: null,
     showTouch: typeof window !== "undefined" && (("ontouchstart" in window) || navigator.maxTouchPoints > 1),
+    coach: null,
   },
   toasts: [],
   loadingText: "",

@@ -10,7 +10,7 @@ import { STRINGS } from "../src/editions/es/ui/strings";
 const ROOT = path.resolve(import.meta.dirname, "..");
 const FILES = [
   ...readdirSync(path.join(ROOT, "src/ui")).filter((f) => /\.(tsx?|ts)$/.test(f) && f !== "strings.ts" && f !== "i18n.ts" && f !== "lt.ts" && f !== "AudioDiagnostics.tsx").map((f) => `src/ui/${f}`),
-  ...["src/game/Game.ts", "src/game/LightGame.ts", "src/game/given.ts", "src/game/session.ts", "src/game/convEvents.ts", "src/game/ambient.ts",
+  ...["src/game/Game.ts", "src/game/LightGame.ts", "src/game/given.ts", "src/game/session.ts", "src/game/convEvents.ts", "src/game/ambient.ts", "src/game/coach.ts",
     "src/state/store.ts", "src/state/cards.ts", "src/state/progress.ts", "src/convo/suggest.ts"],
 ];
 const LT_LETTERS = /[ąčęėįšųūžĄČĘĖĮŠŲŪŽ„“]/;

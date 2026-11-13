@@ -1719,6 +1719,23 @@ export function almendroTrunk(): THREE.BufferGeometry {
   return mergeGeometries(parts.map((g) => g.toNonIndexed()), false)!;
 }
 
+/** A ceiba's trunk (theme.ts `ceibas`): tall and grey, standing on buttress roots, two limbs reaching out under the
+ *  crown. Open-ended, as the other trunks. */
+export function ceibaTrunk(): THREE.BufferGeometry {
+  const parts: THREE.BufferGeometry[] = [new THREE.CylinderGeometry(0.42, 0.62, 10, 8, 1, true).translate(0, 5, 0)];
+  for (let k = 0; k < 5; k++) {
+    const a = (k / 5) * Math.PI * 2;
+    parts.push(new THREE.ConeGeometry(0.5, 2.2, 4).scale(0.35, 1, 1).rotateY(-a).translate(Math.cos(a) * 0.6, 1.0, Math.sin(a) * 0.6));
+  }
+  for (const s of [-1, 1]) parts.push(new THREE.CylinderGeometry(0.12, 0.22, 3.2, 6, 1, true).rotateZ(s * 0.8).translate(s * 1.1, 10.6, 0));
+  return mergeGeometries(parts.map((g) => (g.index ? g.toNonIndexed() : g)), false)!;
+}
+
+/** A ceiba's crown: the flamboyán's wide flat one, twice as wide, high over the roofs. */
+export function ceibaCrown(): THREE.BufferGeometry {
+  return flamboyanCrown().scale(2.1, 1.5, 2.1).translate(0, 6.2, 0);
+}
+
 /** A flamboyán's (or a parota's) crown: wide, flat-topped and a little lumpy, lower at its rim, lifted high. Few
  *  triangles (a town has a hundred and more, all drawn wherever one is in view): a faceted dome, flat lumps on it and
  *  round its rim. */

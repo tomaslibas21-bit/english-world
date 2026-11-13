@@ -212,6 +212,9 @@ export interface TownTheme {
   /** (graphics round 4) Where a town tree stands in one of these rectangles (x0, x1, z0, z1) a coconut palm stands
    *  instead (a flamboyán's crown would cut through the canopies and coaches there). */
   treePalms: [number, number, number, number][];
+  /** Ceibas in town (the Maya's tree: a tall grey trunk on buttress roots, a wide flat crown high over the roofs): x, z
+   *  and size each. They fade out of the walking camera's way as the other trees do. */
+  ceibas: [number, number, number][];
   /** (graphics round 4) The houses' fronts as Mexican houses (mexican.ts `casa`): a concrete portal with the upstairs
    *  terrace on it behind an iron railing, plastic chairs under it, rebar at the roof's corners and the wash on a line
    *  up there (false: Maple Harbor's porch roof on two posts). */
@@ -441,6 +444,7 @@ export const THEME: TownTheme = {
   treeColors: [],
   tropicalTrees: false,
   treePalms: [],
+  ceibas: [],
   casas: false,
   atrio: null,
   beachLife: false,

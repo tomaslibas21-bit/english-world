@@ -162,20 +162,24 @@ export function rand(seed: number) {
   };
 }
 
-export interface AABB { minX: number; minZ: number; maxX: number; maxZ: number; tag?: string }
+/** `split`: low enough to jump onto; for the player its pieces (ledges.ts) stand in for it. */
+export interface AABB { minX: number; minZ: number; maxX: number; maxZ: number; tag?: string; split?: boolean }
 
 /** 2D (XZ) colliders: axis-aligned boxes and circles. */
 export class Colliders {
   boxes: AABB[] = [];
-  circles: { x: number; z: number; r: number }[] = [];
+  circles: { x: number; z: number; r: number; split?: boolean }[] = [];
   addBox(cx: number, cz: number, w: number, d: number, tag?: string) {
     this.boxes.push({ minX: cx - w / 2, maxX: cx + w / 2, minZ: cz - d / 2, maxZ: cz + d / 2, tag });
   }
   addCircle(x: number, z: number, r: number) { this.circles.push({ x, z, r }); }
-  /** Push a circle of radius r at (x,z) out of all colliders. */
-  resolve(p: THREE.Vector3, r: number) {
+  /** Push a circle of radius r at (x,z) out of all colliders (`jumper`, the player outdoors: but those split into
+   *  pieces with a height, which ledges.ts then settles for someone who can jump, and the sea, whose shallows they
+   *  wade into: water.ts). */
+  resolve(p: THREE.Vector3, r: number, jumper = false) {
     for (let iter = 0; iter < 2; iter++) {
       for (const b of this.boxes) {
+        if (jumper && (b.split || b.tag === "sea")) continue;
         const cx = Math.max(b.minX, Math.min(p.x, b.maxX));
         const cz = Math.max(b.minZ, Math.min(p.z, b.maxZ));
         const dx = p.x - cx, dz = p.z - cz;
@@ -194,6 +198,7 @@ export class Colliders {
         }
       }
       for (const c of this.circles) {
+        if (jumper && c.split) continue;
         const dx = p.x - c.x, dz = p.z - c.z;
         const d2 = dx * dx + dz * dz, rr = r + c.r;
         if (d2 < rr * rr && d2 > 1e-9) {

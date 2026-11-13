@@ -7,6 +7,7 @@ import { STYLE, IS_TOON, IS_STORY, IS_REAL, grade, gradeHex, surface, toonRamp, 
 import { ROADS, SIDEWALK, SEA_Z } from "./layout";
 import { chamferBox, blobCluster, lumpySphere, paint } from "./shapes";
 import { rand } from "./util";
+import { SWELL_GLSL, SAND_GLSL } from "../water";
 import { styleLook } from "../styleScene";
 
 // ---------------------------------------------------------------------------- ground
@@ -139,22 +140,25 @@ export function seaMaterial(): THREE.ShaderMaterial {
     defines: { STYLE_TOON: IS_TOON ? 1 : 0, STYLE_STORY: IS_STORY ? 1 : 0, STYLE_REAL: IS_REAL ? 1 : 0 },
     vertexShader: `varying vec3 vW; uniform float uTime;
       void main(){ vec4 w = modelMatrix * vec4(position,1.0);
-        w.y += sin(w.x*0.08 + uTime*0.9)*0.12 + cos(w.z*0.11 + uTime*0.7)*0.1; vW = w.xyz;
+        w.y += ${SWELL_GLSL}; vW = w.xyz;
         gl_Position = projectionMatrix * viewMatrix * w; }`,
     fragmentShader: `varying vec3 vW; uniform float uTime; uniform vec3 uFog; uniform float uFogNear; uniform float uFogFar;
       uniform vec3 uDeep; uniform vec3 uShallow; uniform vec3 uFoam; uniform vec3 uSkyTop; uniform vec3 uSkyLow; uniform vec3 uSun;
+      ${SAND_GLSL}
       void main(){
+        // (the water over the sand where the beach slopes under it, water.ts: the foam follows the waterline)
+        float depth = vW.y - sandY(vW.xz);
         float shore = smoothstep(${(sz + 1).toFixed(1)}, ${(sz - 18).toFixed(1)}, vW.z);
         vec3 c = mix(uShallow, uDeep, shore);
         float w = sin(vW.x*0.35 + uTime*1.3 + sin(vW.z*0.2)) * sin(vW.z*0.42 - uTime*1.1);
         #if STYLE_TOON
           c = mix(c, uShallow * 1.18, step(0.62, w) * 0.55);          // banded cartoon ripples
-          float f = step(${(sz - 1.0).toFixed(1)}, vW.z + sin(vW.x*0.3 + uTime*1.5)*0.6);
+          float f = step(depth, 0.13 + 0.05 * sin(vW.x*0.9 + uTime*1.5));
           float f2 = step(0.5, sin((vW.z - ${sz.toFixed(1)}) * 1.6 + uTime * 1.2)) * step(${(sz - 5.0).toFixed(1)}, vW.z);
           c = mix(c, uFoam, max(f, f2 * 0.35));
         #elif STYLE_STORY
           c += vec3(0.05, 0.05, 0.04) * smoothstep(0.7, 0.95, w);     // soft light strokes
-          float f = smoothstep(${(sz - 1.4).toFixed(1)}, ${(sz + 0.4).toFixed(1)}, vW.z + sin(vW.x*0.25 + uTime*1.2)*0.5);
+          float f = 1.0 - smoothstep(0.03, 0.3 + 0.08 * sin(vW.x*0.7 + uTime*1.2), depth);
           c = mix(c, uFoam, f * 0.8);
         #else
           // a little physically-flavoured water: waves, fresnel sky reflection and sun glints
@@ -170,7 +174,7 @@ export function seaMaterial(): THREE.ShaderMaterial {
           c = mix(c, sky, clamp(fres, 0.0, 0.65));
           float spec = pow(max(dot(R, uSun), 0.0), 180.0);
           c += vec3(1.0, 0.95, 0.85) * spec * 3.0;
-          float f = smoothstep(${(sz - 1.2).toFixed(1)}, ${(sz + 0.6).toFixed(1)}, vW.z + sin(vW.x*0.25 + uTime*1.5)*0.5);
+          float f = 1.0 - smoothstep(0.03, 0.26 + 0.08 * sin(vW.x*0.7 + uTime*1.5), depth);
           c = mix(c, uFoam, f * 0.75);
         #endif
         gl_FragColor = vec4(c, 1.0);

@@ -171,7 +171,14 @@ export const THEME: TownTheme = {
   papelPicado: [[12, -18, 4.6], [48, -18, 4.6], [10, -44, 4.6], [50, -44, 4.6], [30, -16, 4.8], [52, -30, 4.6], [8, -30, 4.6], [30, -47, 4.6]],
   palms: [[8.6, -17.4], [47.6, -17.6], [8.4, -47.2], [49, -47.4], [20.5, -16.6], [39.5, -16.6], [6.8, -32], [51.4, -26],
     // (graphics round 2) along avenida Juárez up to the airport, and in the terminal's forecourt either side of its canopy
-    [104, -15], [110, -15], [116, -15], [104, -1.3], [110, -1.3], [116, -1.3], [130.5, -22.5], [130.5, -27], [130.5, 6.5], [130.5, 11]],
+    [104, -15], [110, -15], [116, -15], [104, -1.3], [110, -1.3], [116, -1.3], [130.5, -22.5], [130.5, -27], [130.5, 6.5], [130.5, 11],
+    // (world-v2) street palms the length of avenida Juárez, at the curb and between the shop fronts (never before a
+    // door or the middle of a sign), the south side then the north; and four more round the zócalo
+    [-98, -2.25], [-78, -2.25], [-50, -2.25], [-32, -2.25], [-16, -2.25], [21.5, -2.25], [40, -2.25], [62.5, -2.25], [94.5, -2.25],
+    [-100, -13.75], [-45, -13.75], [-10.5, -13.75], [78, -13.75], [91, -13.75],
+    [6.9, -22.5], [6.9, -40.5], [19.5, -47.3], [40.5, -47.3]],
+  // (world-v2) a ceiba in the park and one on the lawn where avenida Juárez ends at the mirador
+  ceibas: [[88, -22, 1], [-105, -21, 0.9]],
   market: "mercado",
 
   // Beyond the square (docs/es/TOWN.md tasks 1–5): the malecón and the beach, the buildings' Mexican details, the
@@ -354,7 +361,10 @@ export const THEME: TownTheme = {
     // (graphics round 5) a pair on the sand between the palapas at the west end
     [-72.6, -67.5, -71.5, -67.2],
     // (graphics round 6) a pair on the sacbé out to the cenote (beyond the town's edge: far versions from Juárez)
-    [-122.4, -6.9, -121.5, -5.9]],
+    [-122.4, -6.9, -121.5, -5.9],
+    // (world-v2) people on the empty meadows: two on the grass north of the sacbé, two on the path to the ruins' gateway, two by
+    // the park's pond, two out east watching the planes come in
+    [-118.6, -14.6, -117.7, -14.0], [-113.5, -65.3, -112.7, -64.7], [95.6, -36.2, 96.6, -35.8], [137.2, 43.6, 138.2, 44.1]],
   sitters: [[24.05, -17.4], [37.45, -17.4], [0.45, -65.05], [21.55, -65.05], [-39.55, -65.05],
     // (graphics round 4) two under the palapas by the letters, on their loungers (`beachLife`), and a traveller on
     // andén 2's bench (a person is ~4,000 triangles, in every view that sees them: no more, for the phones' budget)

@@ -13,6 +13,7 @@ import { LyricStrip, RadioTool } from "./Radio";
 import { useRadio } from "../radio";
 import { L, Lx } from "./i18n";
 import { EDITION } from "../edition";
+import { Guide } from "./Guide";
 import "./light.css";
 
 /** Inside English Master (VITE_BACK_URL, e.g. "/"): the way back to the course site. */
@@ -72,7 +73,8 @@ export function Hud() {
           <span className="prompt-text">{hud.prompt.label}{hud.prompt.lt && <small lang={EDITION.helper}>{hud.prompt.lt}</small>}</span>
         </button>
       )}
-      {helpOpen && !hud.showTouch && (
+      <Guide />
+      {helpOpen && !hud.showTouch && !hud.coach && (
         <div className="help-strip">
           {Lx("Vaikščiok {arrows} arba {wasd} · bėgti {shift} · pašokti {space}", {
             arrows: <><kbd><Icon name="arrowUp" size="1em" strokeWidth={2.25} label={L("aukštyn")} /></kbd><kbd><Icon name="arrowDown" size="1em" strokeWidth={2.25} label={L("žemyn")} /></kbd><kbd><Icon name="arrowLeft" size="1em" strokeWidth={2.25} label={L("kairėn")} /></kbd><kbd><Icon name="arrowRight" size="1em" strokeWidth={2.25} label={L("dešinėn")} /></kbd></>,
@@ -114,7 +116,9 @@ function Objective() {
   // on a phone it folds away by itself while you walk (and opens when you stop), until you fold or open it yourself
   const [manual, setManual] = useState<boolean | null>(null);
   const walking = useStore((s) => s.hud.walking);
-  const collapsed = manual ?? (walking && typeof window !== "undefined" && window.innerWidth < 600);
+  // (and while the first-time guide's card is up, which sits under it)
+  const coachOn = useStore((s) => !!s.hud.coach);
+  const collapsed = manual ?? ((walking || coachOn) && typeof window !== "undefined" && window.innerWidth < 600);
   const setCollapsed = (v: boolean) => setManual(v);
   if (!o) {
     return (
@@ -253,9 +257,9 @@ function TouchControls() {
   return (
     <>
       <div className="joy" ref={ref}><div className="knob" ref={knob} /></div>
-      {prompt
-        ? <button className="act-btn" onClick={() => game?.interact()}>{prompt.kind === "talk" ? L("Kalbėti") : prompt.kind === "exit" ? L("Išeiti") : L("Įeiti")}</button>
-        : <button className="jump-btn" aria-label={L("Pašokti")} title={L("Pašokti")} onPointerDown={(e) => { e.preventDefault(); game?.jump(); }}><Icon name="chevronUp" size={34} strokeWidth={2.5} /></button>}
+      {/* the jump stays under the right thumb; with someone to talk to or a door to go through it moves over for that button */}
+      {prompt && <button className="act-btn" onClick={() => game?.interact()}>{prompt.kind === "talk" ? L("Kalbėti") : prompt.kind === "exit" ? L("Išeiti") : L("Įeiti")}</button>}
+      <button className={"jump-btn" + (prompt ? " beside" : "")} aria-label={L("Pašokti")} title={L("Pašokti")} onPointerDown={(e) => { e.preventDefault(); game?.jump(); }}><Icon name="chevronUp" size={34} strokeWidth={2.5} /></button>
     </>
   );
 }
