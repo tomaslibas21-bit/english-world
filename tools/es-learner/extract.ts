@@ -29,7 +29,7 @@ for (const sit of SITUATIONS as any[]) {
   if (only.length && !only.some((o) => sit.id.startsWith(o))) continue;
   const items: LearnerItem[] = learnerItems(sit);
   const have = new Set(items.filter((i) => i.kind === "text").map((i) => i.en));
-  for (const s of literals(path.join(SRC, sit.id + ".ts"))) if (!have.has(s) && /[a-z]/i.test(s) && !/^[a-z_0-9]+$/.test(s)) { items.push({ kind: "text", en: s, where: "code" }); have.add(s); }
+  for (const s of literals(path.join(SRC, sit.id + ".ts"))) if (!have.has(s) && /[a-z]/i.test(s) && !/^[a-z0-9]+(_[a-z0-9]+)+$/.test(s) && !/^[a-z]+\d+$/.test(s)) { items.push({ kind: "text", en: s, where: "code" }); have.add(s); }
   const file = path.join(out, sit.id + ".json");
   fs.writeFileSync(file, JSON.stringify({ sit: sit.id, title: sit.title, items: items.map((i) => ({ ...i, lt: "" })) }, null, 1));
   total += items.length;
