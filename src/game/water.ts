@@ -26,6 +26,16 @@ export function sandY(x: number, z: number) {
   return -SHORE.drop - (t - 1) * RUN * BED;
 }
 
+/** Floors built out over the shore (a pier's boardwalk and deck, a terrace on the sand): one walks on them, not on the
+ *  sand that slopes away under them. The town lists them as it builds them (town.ts). */
+export const DECKS: { x0: number; x1: number; z0: number; z1: number }[] = [];
+
+/** What is underfoot at (x, z) by the sea: a deck's boards (0), else the sand. */
+export function floorY(x: number, z: number) {
+  for (const d of DECKS) if (x > d.x0 && x < d.x1 && z > d.z0 && z < d.z1) return 0;
+  return sandY(x, z);
+}
+
 /** The same in the sea's shaders: `float sandY(vec2 p)` (p = world x, z). */
 export const SAND_GLSL = `
   float sandY(vec2 p) {
@@ -58,10 +68,6 @@ export const SHORE_GLSL = (foam = "vec3(0.985, 0.99, 0.975)", wet = "vec3(0.78, 
 export class Wading {
   /** The water over the sand at the player's feet now (m; 0 on dry sand). */
   depth = 0;
-  /** The floor under (x, z): the sand, above or under the water. */
-  floor(x: number, z: number) { return sandY(x, z); }
-  /** The water's depth at (x, z) at time `t` (the swell included; 0 where the sand is dry). */
-  depthAt(x: number, z: number, t: number) { return Math.max(0, SEA_LEVEL + swell(x, z, t) - sandY(x, z)); }
   /** How much of their pace is left at this depth (1 on dry sand; about half at the limit). */
   static pace(depth: number) { return 1 - 0.5 * THREE.MathUtils.smoothstep(depth, 0.08, SHORE.deep); }
   /** The soft limit: the seaward part of a step fades away over the last metre and a half, and nothing gets past
