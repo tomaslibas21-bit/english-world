@@ -6,7 +6,7 @@ import { WORLD, SEA_Z } from "../game/world/layout";
 import { LOCATIONS } from "../content/locations";
 import { SITUATION_BY_ID } from "../content/situations";
 import { sitProgress, stars } from "../state/progress";
-import { Icon, InlineIcon, Stars, drawIcon, iconForEmoji, splitLead, type IconName } from "./icons";
+import { Icon, InlineIcon, Stars, iconForEmoji, splitLead, type IconName } from "./icons";
 import { switchPlayMode } from "./playMode";
 import { useCards, dueCards } from "../state/cards";
 import { LyricStrip, RadioTool } from "./Radio";
@@ -169,6 +169,10 @@ function Minimap() {
   const place = useRef("");
   if (inside) place.current = zoneName;
   const [box, setBox] = useState<{ w: number; h: number } | null>(null);
+  // it glides only once it has been drawn: a map that appears indoors (the game opens in a room, the buttons come
+  // back after a conversation) is the card at once
+  const [live, setLive] = useState(false);
+  useEffect(() => { const id = requestAnimationFrame(() => requestAnimationFrame(() => setLive(true))); return () => cancelAnimationFrame(id); }, []);
   useLayoutEffect(() => {
     const el = card.current;
     if (!inside || !el) { setBox(null); return; }
@@ -219,7 +223,7 @@ function Minimap() {
     x.restore();
   }, [mm]);
   return (
-    <div className={"minimap" + (inside ? " inside" : "")} style={inside && box ? { width: box.w + 2, height: box.h + 2 } : undefined}
+    <div className={"minimap" + (inside ? " inside" : "") + (live ? " live" : "")} style={inside && box ? { width: box.w + 2, height: box.h + 2 } : undefined}
       onClick={() => useStore.getState().setHud({ panel: "map" })} title="Žemėlapis (M)">
       <canvas ref={ref} />
       <div className="label">{inside ? "" : zoneName}</div>

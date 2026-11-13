@@ -142,21 +142,28 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   --mm: 170px; --mm-edge: 5px;
   position: absolute; top: 14px; right: 14px; width: var(--mm); height: var(--mm); border-radius: calc(var(--mm) / 2);
   overflow: hidden; box-shadow: var(--shadow); border: var(--mm-edge) solid var(--panel-solid); background: #8fc66a; cursor: pointer;
+}
+/* .live: from its second frame on (a map that appears indoors is the card at once, with no glide) */
+.minimap.live {
   transition: width 0.42s cubic-bezier(0.3, 0.9, 0.25, 1), height 0.42s cubic-bezier(0.3, 0.9, 0.25, 1), border-radius 0.42s cubic-bezier(0.3, 0.9, 0.25, 1),
     border-width 0.3s ease, border-color 0.3s ease, background-color 0.3s ease;
 }
-.minimap canvas { position: absolute; top: 0; right: 0; width: calc(var(--mm) - 2 * var(--mm-edge)); height: calc(var(--mm) - 2 * var(--mm-edge)); transition: opacity 0.3s ease 0.1s; }
-.minimap .label { position: absolute; top: calc(var(--mm) - 2 * var(--mm-edge) - 25px); right: 0; width: calc(var(--mm) - 2 * var(--mm-edge)); text-align: center; font-size: 11px; font-weight: 900; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.6); transition: opacity 0.2s ease; }
+.minimap canvas { position: absolute; top: 0; right: 0; width: calc(var(--mm) - 2 * var(--mm-edge)); height: calc(var(--mm) - 2 * var(--mm-edge)); }
+.minimap.live canvas { transition: opacity 0.3s ease 0.1s; }
+.minimap .label { position: absolute; top: calc(var(--mm) - 2 * var(--mm-edge) - 25px); right: 0; width: calc(var(--mm) - 2 * var(--mm-edge)); text-align: center; font-size: 11px; font-weight: 900; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
+.minimap.live .label { transition: opacity 0.2s ease; }
 /* --g-edge: the card edge of a course's theme (its fs-theme.css), where the game runs inside a course */
 .minimap.inside { border-radius: 20px; border-width: 1px; border-color: var(--g-edge, rgba(255, 255, 255, 0.75)); background: var(--panel); }
-.minimap.inside canvas, .minimap.inside .label { opacity: 0; transition-delay: 0s; transition-duration: 0.18s; }
+.minimap.inside canvas, .minimap.inside .label { opacity: 0; }
+.minimap.live.inside canvas, .minimap.live.inside .label { transition-delay: 0s; transition-duration: 0.18s; }
 .mm-card {
   position: absolute; top: 0; right: 0; width: max-content; max-width: min(18em, calc(100vw - 30px)); padding: 9px 11px 9px 9px;
   display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "ico kick go" "ico name go"; column-gap: 10px; align-items: center;
   text-align: left; opacity: 0; transform: scale(0.9); transform-origin: 100% 0; pointer-events: none;
-  transition: opacity 0.16s ease, transform 0.3s ease;
 }
-.minimap.inside .mm-card { opacity: 1; transform: none; transition: opacity 0.26s ease 0.14s, transform 0.4s cubic-bezier(0.3, 0.9, 0.25, 1) 0.06s; }
+.minimap.live .mm-card { transition: opacity 0.16s ease, transform 0.3s ease; }
+.minimap.inside .mm-card { opacity: 1; transform: none; }
+.minimap.live.inside .mm-card { transition: opacity 0.26s ease 0.14s, transform 0.4s cubic-bezier(0.3, 0.9, 0.25, 1) 0.06s; }
 .mm-ico { grid-area: ico; width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
 .mm-card small { grid-area: kick; align-self: end; font-size: 0.62em; font-weight: 900; letter-spacing: 0.11em; text-transform: uppercase; color: var(--ink-faint); line-height: 1.3; }
 .mm-card b { grid-area: name; align-self: start; justify-self: start; max-width: 12.5em; font-size: 0.88em; font-weight: 800; line-height: 1.2; color: var(--ink); overflow-wrap: anywhere; text-wrap: balance; }
@@ -738,7 +745,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 @media (prefers-reduced-motion: reduce) {
   .yt-title.phase-you b::before, .ended-badge, .sheet, .objective-card.fresh, .nat-tipbox { animation: none; }
   .nat-star { transition: none; }
-  .minimap, .minimap canvas, .minimap .label, .mm-card, .minimap.inside .mm-card { transition: none; }
+  .minimap.live, .minimap.live canvas, .minimap.live .label, .minimap.live .mm-card, .minimap.live.inside canvas, .minimap.live.inside .label, .minimap.live.inside .mm-card { transition: none; }
   .scn-card, .scn-card:hover, .icon-btn, .icon-btn:hover, .mic { transition: none; transform: none; }
   .map-pin { transition: none; }
   .map-pin:hover { transform: translate(-50%, -50%); }
