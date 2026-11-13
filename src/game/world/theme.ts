@@ -11,6 +11,9 @@ export interface BuildingLook {
   color?: string; trim?: string; awning?: string; roofColor?: string;
   /** Another roof than layout.ts's: a flat one, or a palapa (a thatched hip roof). */
   roof?: "flat" | "gable" | "palapa";
+  /** The painted sign of a shop or restaurant with a long name: its name big and a smaller line under it, on a taller
+   *  board than the one-line sign (El Muelle: "Restaurante El Muelle" across the facade was wider than a phone's view). */
+  signLines?: [string, string];
 }
 
 /** What drives past (Ambient): Maple Harbor's cars, or a town's own vehicles. */

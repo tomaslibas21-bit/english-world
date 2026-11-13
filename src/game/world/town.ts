@@ -880,12 +880,15 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
 
   // sign
   if (b.sign) {
-    // a shop's sign painted by hand in a Mexican town (theme.ts), else a printed board
-    const tex = THEME.mexican && (b.style === "shop" || b.style === "restaurant")
-      ? MX.paintedSignTexture(b.sign, b.trim ?? "#333", "#fff6dc", new THREE.Color(b.trim ?? "#333").multiplyScalar(0.5).getStyle())
+    // a shop's sign painted by hand in a Mexican town (theme.ts), else a printed board; (theme.ts `signLines`) a long
+    // name painted big over a smaller line, on a taller board
+    const painted = THEME.mexican && (b.style === "shop" || b.style === "restaurant");
+    const lines = painted ? THEME.buildings[b.id]?.signLines : undefined;
+    const tex = painted
+      ? MX.paintedSignTexture(lines?.[0] ?? b.sign, b.trim ?? "#333", "#fff6dc", new THREE.Color(b.trim ?? "#333").multiplyScalar(0.5).getStyle(), lines?.[1])
       : textTexture(b.sign, { bg: "#fffaf0", fg: signInk(b), border: b.trim, w: 768, h: 160 });
-    const sw = Math.min(halfWidth * 2 - 1.5, Math.max(5, b.sign.length * 0.55));
-    const sign = new THREE.Mesh(new THREE.PlaneGeometry(sw, sw * 160 / 768), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
+    const sw = Math.min(halfWidth * 2 - 1.5, Math.max(5, lines ? lines[0].length * 0.78 : b.sign.length * 0.55));
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(sw, sw * (lines ? 256 : 160) / 768), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
     const sy = b.style === "house" ? 0 : b.style === "hotel" || b.style === "office" || b.style === "apartments" ? Math.min(b.h - 1.5, 8.2) : Math.min(b.h - 1.1, 4.8);
     // centred on the facade (the same place as the door, unless the door is off-centre)
     sign.position.set(dx - t[0] * doorOff + n[0] * 0.2, sy, dz - t[1] * doorOff + n[1] * 0.2);

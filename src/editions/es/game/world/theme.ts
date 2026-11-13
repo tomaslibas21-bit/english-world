@@ -156,7 +156,9 @@ export const THEME: TownTheme = {
     // (graphics round 4) the airport's terminal in cream stucco and terracotta under its palapa, not a blue glass box
     terminal: { color: "#f4ead5", trim: "#b5523b" },
     // (graphics round 4) El Muelle in warm sand and teal under its palapa, where it was white and navy
-    pier: { color: "#f6dcaa", trim: "#2a6f6b", awning: "#2a9d8f", roof: "palapa" },
+    pier: { color: "#f6dcaa", trim: "#2a6f6b", awning: "#2a9d8f", roof: "palapa",
+      // its name big over a smaller line: the whole sign in a phone's narrow view, and taller letters than across it
+      signLines: ["El Muelle", "Restaurante · Mariscos"] },
     sophie: { color: "#5fbfb0", trim: "#fff3e0", roofColor: "#fff3e0", roof: "flat" },
     dan: { color: "#f6bd60", trim: "#fff3e0", roofColor: "#fff3e0", roof: "flat" },
     house3: { color: "#e5989b", trim: "#fff3e0", roofColor: "#fff3e0", roof: "flat" },
