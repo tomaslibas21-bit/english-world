@@ -388,7 +388,7 @@ export const clothes: SituationDef = {
   location: "threads",
   npc: "chloe",
   goal: "Išsirink drabužį, pasimatuok ir nusipirk (ar pasikeisk).",
-  intro: "„Threads“ – drabužių parduotuvė pagrindinėje gatvėje. Vitrinoje kabo ryški geltona striukė. Pardavėja Chloe tvarko lentynas.",
+  intro: "Tu renkiesi drabužius „Threads“ parduotuvėje pagrindinėje gatvėje. Vitrinoje kabo ryški geltona striukė. Pardavėja Chloe tvarko lentynas.",
   entities: { clothing: CLOTHING, color: COLORS, size: SIZES },
 
   merges: {

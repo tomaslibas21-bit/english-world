@@ -124,7 +124,7 @@ export const tickets: SituationDef = {
   location: "station",
   npc: "walter",
   goal: "Nusipirk traukinio bilietą į pajūrį ir sužinok, kada ir iš kurio kelio išvyksta traukinys.",
-  intro: "Union Station – miesto traukinių stotis. Prie bilietų kasos langelio dirba Walter. Amerikoje bilietas į abi puses vadinamas „round-trip“, o traukiniai išvyksta iš kelio („track“), ne nuo perono.",
+  intro: "Tau reikia traukinio bilieto. Union Station – miesto traukinių stotis. Prie bilietų kasos langelio dirba Walter. Amerikoje bilietas į abi puses vadinamas „round-trip“, o traukiniai išvyksta iš kelio („track“), ne nuo perono.",
   entities: { dest: DESTS, weekday: WEEKDAYS },
 
   grammar: {

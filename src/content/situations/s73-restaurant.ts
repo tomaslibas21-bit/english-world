@@ -268,7 +268,7 @@ export const restaurant: SituationDef = {
   npc: "marco_host",
   npcs: ["marco"],
   goal: "Pavakarieniauk restorane: užsisakyk, jei reikia – pasiskųsk, ir paprašyk sąskaitos.",
-  intro: "„Lucia's Trattoria“ – jaukus itališkas restoranas pagrindinėje gatvėje. Prie durų svečius pasitinka administratorė Lucia, prie staliuko aptarnaus padavėjas Marco. Amerikoje arbatpinigiai į sąskaitą paprastai neįskaičiuojami.",
+  intro: "Tu ateini vakarieniauti į „Lucia's Trattoria“ – jaukų itališką restoraną pagrindinėje gatvėje. Prie durų svečius pasitinka administratorė Lucia, prie staliuko aptarnaus padavėjas Marco. Amerikoje arbatpinigiai į sąskaitą paprastai neįskaičiuojami.",
   entities: { drink: DRINKS, starter: STARTERS, main: MAINS, side: SIDES, doneness: DONENESS, dessert: DESSERTS },
 
   grammar: {

@@ -471,7 +471,7 @@ export const smallTalk: SituationDef = {
   location: "bus-stop",
   npc: "frank",
   goal: "Pasišnekėk su kaimynu apie orą ir savaitgalį, o atvažiavus autobusui mandagiai atsisveikink.",
-  intro: "Rytas Ąžuolų alėjoje, autobuso stotelėje. Čia jau laukia Frankas – kaimynas pensininkas, kuris mėgsta pasikalbėti apie orus. Palaikyk pokalbį: atsakyk, paklausk jo atgal („And you?“) ir parodyk susidomėjimą.",
+  intro: "Rytas: tu lauki autobuso Ąžuolų alėjos stotelėje. Čia jau laukia Frankas – kaimynas pensininkas, kuris mėgsta pasikalbėti apie orus. Palaikyk pokalbį: atsakyk, paklausk jo atgal („And you?“) ir parodyk susidomėjimą.",
   entities: { country: COUNTRIES, city: CITIES },
 
   grammar: {

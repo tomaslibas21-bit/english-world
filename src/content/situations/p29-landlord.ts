@@ -407,7 +407,7 @@ export const landlord: SituationDef = {
   npc: "patel",
   npcs: ["rita"],
   goal: "Mandagiai, bet tvirtai paprašyk nuomotojo sutaisyti šildymą ir sutark dėl remonto datos.",
-  intro: "Maple gatvės daugiabutis, trečiadienio rytas. Tavo bute jau savaitę neveikia šildymas, o savininkas ponas Patelis neatsiliepia telefonu. Ir štai jis – su lagaminu ir saulės akiniais – jau vestibiulyje prie lauko durų.",
+  intro: "Tu nuomojiesi butą Maple gatvės daugiabutyje. Trečiadienio rytas. Tavo bute jau savaitę neveikia šildymas, o savininkas ponas Patelis neatsiliepia telefonu. Ir štai jis – su lagaminu ir saulės akiniais – jau vestibiulyje prie lauko durų.",
   entities: { visitday: VISIT_DAYS },
 
   grammar: {

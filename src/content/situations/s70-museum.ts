@@ -508,7 +508,7 @@ export const museum: SituationDef = {
   npc: "ben",
   npcs: ["harold"],
   goal: "Nusipirk bilietą, pasiimk audiogidą ir sužinok, kur nauja paroda.",
-  intro: "Maple Harboro meno muziejus: aukštos lubos, marmurinės grindys ir tyla. Prie bilietų kasos – Benas. Salėse budi prižiūrėtojas Haroldas.",
+  intro: "Tu atėjai į Maple Harboro meno muziejų: aukštos lubos, marmurinės grindys ir tyla. Prie bilietų kasos – Benas. Salėse budi prižiūrėtojas Haroldas.",
   entities: { ttype: TTYPES, lang: LANGS },
 
   grammar: {

@@ -136,7 +136,7 @@ export const apartment: SituationDef = {
   location: "apartments",
   npc: "patel",
   goal: "Apžiūrėk butą ir išsiaiškink nuomos sąlygas.",
-  intro: "Daugiabutis Maple gatvėje. Savininkas ponas Patelis aprodo išnuomojamą vieno miegamojo butą antrame aukšte.",
+  intro: "Tu ieškai buto nuomai. Daugiabutis Maple gatvėje. Savininkas ponas Patelis aprodo išnuomojamą vieno miegamojo butą antrame aukšte.",
   entities: { utility: UTILITIES, appliance: APPLIANCES },
 
   grammar: {

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { chipLabel } from "./chip-label";
-import { SceneIntro } from "./SceneIntro";
+import { SceneIntro, sceneText } from "./SceneIntro";
 import { useStore, type TranscriptLine } from "../state/store";
 import { Interlinear } from "./Interlinear";
 import { NPCS } from "../content/npcs";
@@ -280,7 +280,7 @@ function NpcInfo({ sit }: { sit: SituationDef }) {
         <button className="close-x" onClick={close} aria-label={L("Uždaryti informaciją")}><Icon name="close" size={20} /></button>
       </div>
       <p className="place" lang={EDITION.helper}>{sit.mode === "video" ? L("Vaizdo skambutis") : placeLtNamed(sit.location)}</p>
-      {sit.intro && <p className="scene-intro-text" lang={EDITION.helper}>{sit.intro}</p>}
+      {sit.intro && <p className="scene-intro-text" lang={EDITION.helper}>{sceneText(sit.intro, useStore.getState().progress.profile?.gender ?? "m")}</p>}
       {EDITION.reports && <ReportProblem />}
     </div>}
   </div>;

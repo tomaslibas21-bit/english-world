@@ -815,7 +815,7 @@ export const meeting: SituationDef = {
   npc: "vanessa",
   npcs: ["greg"],
   goal: "Mandagiai nesutik su kolegės planu ir kartu raskite kompromisą.",
-  intro: "„Brightline“ biuras, pirmadienis, 9:00, stiklinė posėdžių salė. Kolegė Vanesa pristato planą: šį penktadienį paleisti naują svetainę ir tą pačią dieną išjungti senąją. Tau planas atrodo per skubotas – pasakyk tai mandagiai, bet aiškiai.",
+  intro: "Tu dirbi „Brightline“ komandoje. Pirmadienis, 9:00, stiklinė posėdžių salė. Kolegė Vanesa pristato planą: šį penktadienį paleisti naują svetainę ir tą pačią dieną išjungti senąją. Tau planas atrodo per skubotas – pasakyk tai mandagiai, bet aiškiai.",
 
   grammar: {
     macros: {

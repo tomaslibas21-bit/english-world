@@ -108,7 +108,7 @@ export const rental: SituationDef = {
   location: "car-rental",
   npc: "jake",
   goal: "Išsinuomok automobilį: pasitikslink draudimą, užstatą ir grąžinimo laiką.",
-  intro: "„Harbor Car Rental“ – automobilių nuomos punktas. Už prekystalio – Jake. JAV nuomojant automobilį reikia vairuotojo pažymėjimo ir kredito kortelės, o kortelėje dažnai užblokuojamas užstatas.",
+  intro: "Tu nori išsinuomoti automobilį. „Harbor Car Rental“ – automobilių nuomos punktas. Už prekystalio – Jake. JAV nuomojant automobilį reikia vairuotojo pažymėjimo ir kredito kortelės, o kortelėje dažnai užblokuojamas užstatas.",
   entities: { size: SIZES, extra: EXTRAS, weekday: WEEKDAYS },
 
   grammar: {
