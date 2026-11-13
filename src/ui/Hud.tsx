@@ -172,12 +172,22 @@ function Minimap() {
   useLayoutEffect(() => {
     const el = card.current;
     if (!inside || !el) { setBox(null); return; }
-    const measure = () => setBox((b) => (b && b.w === el.offsetWidth && b.h === el.offsetHeight ? b : { w: el.offsetWidth, h: el.offsetHeight }));
+    const name = el.querySelector("b")!, words = name.firstElementChild as HTMLElement;
+    const measure = () => {
+      // a name on two lines leaves its box as wide as it may be: hold the box to the words themselves (layout
+      // sizes, which the card's arriving scale does not touch; a pixel to spare, for the rounding)
+      name.style.width = "";
+      const w = words.offsetWidth + 1;
+      if (w > 1 && w < name.clientWidth) name.style.width = `${w}px`;
+      setBox((b) => (b && b.w === el.offsetWidth && b.h === el.offsetHeight ? b : { w: el.offsetWidth, h: el.offsetHeight }));
+    };
     measure();
-    if (typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
+    // again when the card's size changes (the text size setting, a turned phone) or its font arrives
+    const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+    ro?.observe(el);
+    window.addEventListener("resize", measure);
+    document.fonts?.addEventListener?.("loadingdone", measure);
+    return () => { ro?.disconnect(); window.removeEventListener("resize", measure); document.fonts?.removeEventListener?.("loadingdone", measure); };
   }, [inside, zoneName]);
   useEffect(() => {
     const c = ref.current;
@@ -216,7 +226,7 @@ function Minimap() {
       <div className="mm-card" ref={card} aria-hidden={!inside}>
         <span className="mm-ico"><Icon name="home" size={21} strokeWidth={2} /></span>
         <small>Viduje</small>
-        <b>{place.current}</b>
+        <b><span>{place.current}</span></b>
         <span className="mm-go"><Icon name="map" size={18} strokeWidth={2} /></span>
       </div>
     </div>

@@ -150,7 +150,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .minimap.inside { border-radius: 20px; border-width: 1px; border-color: rgba(255, 255, 255, 0.75); background: var(--panel); }
 .minimap.inside canvas, .minimap.inside .label { opacity: 0; transition-delay: 0s; transition-duration: 0.18s; }
 .mm-card {
-  position: absolute; top: 0; right: 0; width: max-content; max-width: min(17.5em, calc(100vw - 30px)); padding: 9px 12px 9px 9px;
+  position: absolute; top: 0; right: 0; width: max-content; max-width: min(18em, calc(100vw - 30px)); padding: 9px 11px 9px 9px;
   display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "ico kick go" "ico name go"; column-gap: 10px; align-items: center;
   text-align: left; opacity: 0; transform: scale(0.9); transform-origin: 100% 0; pointer-events: none;
   transition: opacity 0.16s ease, transform 0.3s ease;
@@ -158,9 +158,9 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .minimap.inside .mm-card { opacity: 1; transform: none; transition: opacity 0.26s ease 0.14s, transform 0.4s cubic-bezier(0.3, 0.9, 0.25, 1) 0.06s; }
 .mm-ico { grid-area: ico; width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
 .mm-card small { grid-area: kick; align-self: end; font-size: 0.62em; font-weight: 900; letter-spacing: 0.11em; text-transform: uppercase; color: var(--ink-faint); line-height: 1.3; }
-.mm-card b { grid-area: name; align-self: start; font-size: 0.88em; font-weight: 800; line-height: 1.2; color: var(--ink); overflow-wrap: anywhere; text-wrap: balance; }
-.mm-go { grid-area: go; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; color: var(--ink-faint); transition: background-color 0.15s, color 0.15s; }
-.minimap.inside:hover .mm-go { background: var(--accent-soft); color: var(--accent); }
+.mm-card b { grid-area: name; align-self: start; justify-self: start; max-width: 12.5em; font-size: 0.88em; font-weight: 800; line-height: 1.2; color: var(--ink); overflow-wrap: anywhere; text-wrap: balance; }
+.mm-go { grid-area: go; display: grid; place-items: center; width: 32px; height: 32px; margin-left: 2px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel-solid); color: var(--ink-soft); transition: background-color 0.15s, color 0.15s, border-color 0.15s; }
+.minimap.inside:hover .mm-go { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
 
 .toolbar { position: absolute; right: max(14px, env(safe-area-inset-right)); top: 200px; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
 .toolbar-tools { display: grid; grid-auto-flow: column; grid-template-rows: repeat(8, 52px); gap: 10px; }
@@ -687,11 +687,11 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .objective-card { width: calc(100vw - 120px); }
   .minimap { --mm: 88px; --mm-edge: 3px; }
   .minimap .label { display: none; }
-  .mm-card { width: 98px; max-width: none; padding: 8px 7px 9px; grid-template-columns: auto auto; grid-template-areas: "ico kick" "name name"; justify-content: center; column-gap: 4px; row-gap: 3px; text-align: center; }
+  .mm-card { width: 95px; max-width: none; padding: 8px 6px 9px; grid-template-columns: auto auto; grid-template-areas: "ico kick" "name name"; justify-content: center; column-gap: 4px; row-gap: 3px; text-align: center; }
   .mm-ico { width: auto; height: auto; background: none; border-radius: 0; }
   .mm-ico .ui-icon { width: 15px; height: 15px; }
   .mm-card small { align-self: center; font-size: 9.5px; letter-spacing: 0.09em; }
-  .mm-card b { font-size: 11.5px; line-height: 1.17; }
+  .mm-card b { justify-self: center; max-width: none; font-size: 11.5px; line-height: 1.17; }
   .mm-go { display: none; }
   .toolbar { top: 112px; right: max(10px, env(safe-area-inset-right)); }
   .toolbar-tools { grid-template-rows: repeat(8, 46px); }
@@ -721,7 +721,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .mm-ico { width: auto; height: auto; background: none; border-radius: 0; }
   .mm-ico .ui-icon { width: 15px; height: 15px; }
   .mm-card small { align-self: center; font-size: 9.5px; letter-spacing: 0.09em; }
-  .mm-card b { font-size: 11px; line-height: 1.17; }
+  .mm-card b { justify-self: center; max-width: none; font-size: 11px; line-height: 1.17; }
   .mm-go { display: none; }
   .objective-card { max-width: calc(100vw - 350px); max-height: calc(100dvh - 180px - env(safe-area-inset-bottom)); overflow-y: auto; }
 }
