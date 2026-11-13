@@ -716,7 +716,8 @@ export const cafe: SituationDef = {
       t("¡Buen provecho!", "Enjoy your meal!", "Enjoy!",
         { spain: t("¡Que aproveche!", "Enjoy your meal!", "Enjoy!") }),
       t("¡Que | tenga | buen día!", "(I hope) | you have | a good day!", "Have a great day!",
-        { spain: t("¡Que | tengas | buen día!", "(I hope) | you have | a good day!", "Have a great day!") }),
+        { neutral: t("¡Que | tenga | un | buen día!", "(I hope) | you have | a | good day!", "Have a great day!"),
+          spain: t("¡Que | tengas | un | buen día!", "(I hope) | you have | a | good day!", "Have a great day!") }),
     ],
     menu_line: [
       t("Tenemos | café, | té, | chocolate | y | pan dulce.", "We have | coffee, | tea, | hot chocolate | and | sweet bread.", "We have coffee, tea, hot chocolate and Mexican pastries."),
@@ -1412,6 +1413,10 @@ export const cafe: SituationDef = {
   },
 
   tests: [
+    // the goodbye with or without "un", in every Spanish (the owner, 14 Nov 2026)
+    { say: "¡Que tenga buen día!", intent: "g_bye" },
+    { say: "Que tengas un buen día", intent: "g_bye" },
+    { say: "¡Que pases un buen día!", intent: "g_bye" },
     // ordering, with every hint pattern
     { say: "Quisiera un latte, por favor", intent: "order", slots: { items: { item: { drink: "latte" } } } },
     { say: "¿Me da un café de olla?", intent: "order", slots: { items: { item: { drink: "cafe_de_olla" } } } },

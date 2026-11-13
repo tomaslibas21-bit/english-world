@@ -333,6 +333,12 @@ export interface TownTheme {
    *  frame next to nothing where they are too far to see breathe (null: all of them are animated every frame, as in
    *  Maple Harbor). */
   stillBeyond: number | null;
+  /** Beachwear (characters v2, 13 Nov 2026; Character.ts: swim trunks, a one-piece under a sarong or an open shirt, a
+   *  sundress, short sleeves or none, sun hats, sandals): worn by the townspeople who sit, stand or chat south of `z`
+   *  (the malecón and the sand), and by this share of the passers-by (`walkers`: they come and go from the beach).
+   *  Those on the palapas' loungers lie back (town.ts Seat.recline). Its colors: swimwear, sarongs and sundresses,
+   *  T-shirts and tanks, cover-ups, shorts, sandals. null: no one (Maple Harbor). */
+  beachwear: { z: number; walkers: number; swim: string[]; wraps: string[]; tops: string[]; covers: string[]; shorts: string[]; sandals: string[] } | null;
 
   // Graphics round 3 (5 Nov 2026; docs/es/TOWN.md "Graphics, round 3"). Off in Maple Harbor.
   /** The trees in the walking camera's way (fade.ts) fade further than Maple Harbor's (to `most` of their surface, she
@@ -474,6 +480,7 @@ export const THEME: TownTheme = {
   houseFronts: {},
   light: null,
   stillBeyond: null,
+  beachwear: null,
   fade: null,
   regions: false,
   farHide: null,

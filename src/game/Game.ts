@@ -5,6 +5,7 @@ import { buildTown, type Town, type Door } from "./world/town";
 import { getInterior, type Interior } from "./world/interiors";
 import { OUTDOOR_NPCS, AIRPORT_EXIT, WORLD, BUILDINGS, ROADS, DROPOFF, SEA_Z, FOUNTAIN, PARK } from "./world/layout";
 import { createCharacter, setBlobShadows, withBackpack, type GameCharacter } from "./characters";
+import { moodOf } from "./characters/mood";
 import { styleRenderer, createStyleFx, type StyleFx } from "./styleScene";
 import { CameraRig } from "./camera";
 import { Steer, Gait, Hop, angleDiff, smoothstep } from "./movement";
@@ -160,6 +161,10 @@ export class Game implements GameApi {
   private pathT = 0;
   private session: Session | null = null;
   private talkNpc: NpcActor | null = null;
+  /** Where the learner's head is (kept up to date in updateNpcs): the people's eyes and heads turn to it (characters:
+   *  `watch`); and the head of the person the learner talks with, for the player's own. */
+  private learnerAt = new THREE.Vector3();
+  private talkAt = new THREE.Vector3();
   private hudBoxCache: TagBox[] = [];
   private hudCheck = 0;
   private tagLayer: HTMLDivElement;
@@ -292,7 +297,7 @@ export class Game implements GameApi {
       overSolid: (x, z) => !this.zone?.interior && this.field.overSolid(x, z),
     };
     const prof = st.progress.profile!;
-    this.player = createCharacter(withBackpack(prof.look));
+    this.player = createCharacter(withBackpack({ ...prof.look, female: prof.look.female ?? prof.gender === "f" }));
     this.player.fidgets = false;
     this.scene.add(this.player.root);
     await audio.init();
@@ -445,7 +450,8 @@ export class Game implements GameApi {
       if ((sp.npc === "sam" || sp.npc === "emma") && sp.npc !== partner) continue;
       const def = NPCS[sp.npc];
       if (!def) continue;
-      const ch = createCharacter(def.look);
+      const ch = createCharacter({ ...def.look, female: def.look.female ?? def.gender === "f" });
+      ch.watch = this.learnerAt;
       ch.root.position.set(sp.x, 0, sp.z);
       ch.root.rotation.y = sp.rot;
       if (sp.sit) { ch.seatY = sp.seat ?? 0.5; ch.setAnim("sit"); }
@@ -479,6 +485,8 @@ export class Game implements GameApi {
     for (const p of people) {
       const female = r() < 0.5;
       const ch = createCharacter({ ...walkerLook(female, r), carry: p.carry, phone: p.phone ?? (!p.sit && !p.run && r() < 0.5) });
+      ch.watch = this.learnerAt;
+      ch.noticeWithin = 3.5;
       ch.root.position.set(p.x, p.run ?? 0, p.z);
       ch.root.rotation.y = p.rot;
       if (p.sit !== undefined) { ch.seatY = p.sit; ch.setAnim("sit"); }
@@ -613,7 +621,7 @@ export class Game implements GameApi {
         const line = AMBIENT_LINES[Math.floor(Math.random() * AMBIENT_LINES.length)];
         const voice = ambientVoice(female ? "f" : "m");
         audio.play(voice, 1, line.en, { male: !female });
-        w.ch.talk(audio.clipDuration(voice, 1, line.en) ?? 1.2, () => audio.level());
+        w.ch.talk(audio.clipDuration(voice, 1, line.en) ?? 1.2, () => audio.level(), () => audio.vowel());
         st.toast({ kind: "info", title: L("„{line}“", { line: line.en }), body: line.lt });
         return;
       }
@@ -843,10 +851,13 @@ export class Game implements GameApi {
       this.player.setAnim("idle");
     }
     const session: Session = new Session(sit.id, {
-      npcTalk: (npcId, secs) => {
+      npcTalk: (npcId, secs, text) => {
         const n = this.npcs.find((x) => x.id === npcId);
-        // the mouth follows the recording while the line is this person's
-        if (n) n.ch.talk(secs, () => (useStore.getState().conv.npcId === npcId ? audio.level() : -1));
+        if (!n) return;
+        // the mouth follows the recording while the line is this person's (its loudness and its sound), and the face
+        // what the line says
+        n.ch.talk(secs, () => (useStore.getState().conv.npcId === npcId ? audio.level() : -1), () => audio.vowel());
+        if (text) n.ch.express?.(moodOf(text), secs + 1.2);
       },
       npcReact: (npcId, kind) => { this.npcs.find((x) => x.id === npcId)?.ch.react?.(kind); },
       // ignore events from a conversation already closed (e.g. Esc during the driver's goodbye):
@@ -1469,10 +1480,17 @@ export class Game implements GameApi {
   private updateNpcs(dt: number, talking: boolean) {
     const p = this.player.root.position;
     const taking = talking ? this.session?.sit.npcs ?? [] : [];
+    // the people look at the learner's head; the player at the one they talk with
+    this.learnerAt.set(p.x, p.y + (this.player.lift ?? 0) + 1.5, p.z);
+    const partner = talking ? this.talkNpc : null;
+    if (partner) { const q = partner.ch.root.position; this.talkAt.set(q.x, q.y + (partner.sit ? 1.3 : 1.5), q.z); }
+    this.player.watch = partner ? this.talkAt : null;
+    this.player.steady = !!partner;
     for (const n of this.npcs) {
       const d = n.ch.root.position.distanceTo(p);
       // with the player close by, or in the conversation, they stop what they were doing and pay attention
       n.ch.attentive = d < 5.5 || (talking && (n === this.talkNpc || taking.includes(n.id)));
+      n.ch.steady = talking && (n === this.talkNpc || taking.includes(n.id));
       if (talking && !n.sit && d < 7 && (n === this.talkNpc || taking.includes(n.id))) {
         // in a conversation the people taking part turn to the player
         const want = Math.atan2(p.x - n.home.x, p.z - n.home.z);

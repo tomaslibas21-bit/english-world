@@ -98,6 +98,9 @@ export class AudioSystem {
   private clip: { el?: HTMLAudioElement; key: string; done: boolean; position?: () => number; envelopeKey?: string } | null = null;
   /** Each clip's loudness: null while being worked out, empty when that failed. */
   private envelopes = new Map<string, Float32Array | null>();
+  /** Each clip's sound, as often: how round it is (0: a bright, wide "ee" or an "s"; 1: a dark, round "oo"), for the
+   *  mouth's shape (worked out with the loudness, see envelope()). */
+  private vowels = new Map<string, Float32Array>();
   private decoder: BaseAudioContext | null = null;
   /** Decoded normal/slow recordings share a 24 MiB budget; the active source retains
    *  its own buffer if the next few clips evict it. No whole-course PCM downloads. */
@@ -592,6 +595,17 @@ export class AudioSystem {
     return env[Math.min(env.length - 1, Math.floor(time * ENVELOPE_RATE))] ?? 0;
   }
 
+  /** How round the sound of the line playing now is at this moment (0: wide, as in "ee"; 1: round, as in "oo"), for
+   *  the shape of the speaker's mouth; null when that isn't known (see level()). */
+  vowel(): number | null {
+    const c = this.clip;
+    if (!c || c.done || c.el?.ended) return null;
+    const v = this.vowels.get(c.envelopeKey ?? c.key);
+    if (!v?.length) return null;
+    const time = c.position?.() ?? c.el?.currentTime ?? 0;
+    return v[Math.min(v.length - 1, Math.floor(time * ENVELOPE_RATE))] ?? null;
+  }
+
   /** Works out a clip's loudness, 30 times a second, from a second copy of the file (decoded, never played: the voice
    *  itself keeps playing through the <audio> element as before). It costs one more small download; when it fails
    *  (no fetch, no decoder) the mouth keeps its rhythm. */
@@ -616,17 +630,38 @@ export class AudioSystem {
   private envelope(key: string, buf: AudioBuffer) {
     if (this.envelopes.get(key)?.length) return;
     const data = buf.getChannelData(0), step = buf.sampleRate / ENVELOPE_RATE;
-    const env = new Float32Array(Math.ceil(data.length / step));
+    const env = new Float32Array(Math.ceil(data.length / step)), bright = new Float32Array(env.length);
+    // (a sample apart, so the measure is the same at any sample rate: about 0.18 ms)
+    const lag = Math.max(1, Math.round(buf.sampleRate / 5500));
     for (let i = 0; i < env.length; i++) {
-      let sum = 0;
+      let sum = 0, diff = 0;
       const a = Math.floor(i * step), b = Math.min(data.length, Math.floor((i + 1) * step));
-      for (let j = a; j < b; j++) sum += data[j] * data[j];
+      for (let j = a; j < b; j++) {
+        sum += data[j] * data[j];
+        // how fast the wave changes against how big it is: small for a dark sound ("oo", "oh", "m"), big for a
+        // bright one ("ee", "s")
+        const d = data[j] - (j >= lag ? data[j - lag] : 0);
+        diff += d * d;
+      }
       env[i] = Math.sqrt(sum / Math.max(1, b - a));
+      bright[i] = sum > 0 ? Math.sqrt(diff / sum) : 0;
     }
     // as loud as the line gets (its 90th percentile, so one peak doesn't decide it) is a wide-open mouth; quiet
     // breaths and room noise keep it shut
     const peak = Float32Array.from(env).sort()[Math.floor(env.length * 0.9)] || 1;
     for (let i = 0; i < env.length; i++) { const v = env[i] / peak; env[i] = v < 0.12 ? 0 : Math.min(1, (v - 0.12) / 0.75); }
+    // the sound's roundness, against this voice's own range (its darkest and brightest voiced moments), smoothed a
+    // little: each voice has its own pitch and colour
+    const voiced = Array.from(bright).filter((_, i) => env[i] > 0.15).sort((x, y) => x - y);
+    if (voiced.length >= 4) {
+      const lo = voiced[Math.floor(voiced.length * 0.12)], hi = voiced[Math.floor(voiced.length * 0.88)];
+      const round = new Float32Array(env.length);
+      for (let i = 0; i < env.length; i++) round[i] = hi > lo ? 1 - Math.min(1, Math.max(0, (bright[i] - lo) / (hi - lo))) : 0.4;
+      const smooth = new Float32Array(env.length);
+      for (let i = 0; i < env.length; i++) smooth[i] = (round[Math.max(0, i - 1)] + 2 * round[i] + round[Math.min(env.length - 1, i + 1)]) / 4;
+      if (this.vowels.size > 300) this.vowels.delete(this.vowels.keys().next().value!);
+      this.vowels.set(key, smooth);
+    }
     if (this.envelopes.size > 300) this.envelopes.delete(this.envelopes.keys().next().value!);
     this.envelopes.set(key, env);
   }
