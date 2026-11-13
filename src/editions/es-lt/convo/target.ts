@@ -60,7 +60,9 @@ export function npUnits(b: NpBinding, kind: "np" | "the" | "pl" | "bare" | "head
   const lt: string[] = [];
   const flags: Record<number, string> = {};
   if (nArt) {
-    if (qty > 1) lt.push(countWord(qty, g, cs));
+    // a count only where the Spanish says one ({X.np} with two: "dos cafés"); {X.the} with two is the definite
+    // plural ("las diapositivas"), no number in Lithuanian
+    if (kind === "np" && qty > 1) lt.push(countWord(qty, g, cs));
     else if (plural && kind === "np") {
       // unos / unas: "some", carried by the genitive in Lithuanian ("Noriu takų")
       lt.push("—");
@@ -83,7 +85,7 @@ export function npUnits(b: NpBinding, kind: "np" | "the" | "pl" | "bare" | "head
   const femNat = fem && base.ltF ? ((plural ? e.attrs?.natPlF : e.attrs?.natF) as string | undefined) : undefined;
   const natSpec = femNat ?? ((ltPlural ? e.attrs?.natPl ?? e.attrs?.nat : e.attrs?.nat) as string | undefined);
   const natHead = natSpec ? parseForms(natSpec)[caseIndex(cs)] : headForms.filter((x) => x !== "—").join(" ");
-  const natLt = [...(nArt && qty > 1 ? [lt[0]] : []), ...adj, natHead, ...phrases];
+  const natLt = [...(nArt && kind === "np" && qty > 1 ? [lt[0]] : []), ...adj, natHead, ...phrases];
   return { en: sp.en, lt, natLt, flags };
 }
 const splitUnitsLt = (s: string) => s.split(" | ").map((x) => x.trim());
