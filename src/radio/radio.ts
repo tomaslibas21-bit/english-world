@@ -54,15 +54,24 @@ export interface RadioDeps {
   volume(): number;
   storageKey: string;
   random?: () => number;
+  /** a soft tuning sweep, when the learner changes station (never needed for the music itself) */
+  tune?: () => void;
 }
 
 /** Music sits under the voices: this share of the game's volume. */
 export const MUSIC_LEVEL = 0.6;
-/** A hold fades the music out over this long, then pauses it (a microphone cuts it at once). */
-export const FADE_OUT_MS = 250;
+/** Never a hard cut: turning the radio on or off, and a conversation, fade over about a second; a voice in the town
+ *  a little faster. The one exception is a microphone, which silences it at once. */
+export const FADE_IN_MS = 1000;
+export const FADE_OUT_MS = 900;
+export const VOICE_FADE_MS = 500;
+/** Skipping a song is a short dip: out, then the new song in. */
+export const SKIP_OUT_MS = 220;
+export const SKIP_IN_MS = 500;
+/** Turned on again while it was still fading out: the music just lifts again. */
+const LIFT_MS = 400;
 /** The music comes back this long after the last hold is gone, fading in. */
 export const RESUME_AFTER_MS = 700;
-export const FADE_IN_MS = 600;
 /** After this many songs in a row that won't play, the radio stops trying. */
 const MAX_FAILURES = 3;
 const SAVE_EVERY_MS = 5000;
@@ -84,6 +93,7 @@ export class Radio {
   private loading: Promise<void> | null = null;
   private lines = new Map<string, Timeline | null>();
   private fadeTimer: ReturnType<typeof setTimeout> | undefined;
+  private switchTimer: ReturnType<typeof setTimeout> | undefined;
   private resumeTimer: ReturnType<typeof setTimeout> | undefined;
   private saveTimer: ReturnType<typeof setInterval> | undefined;
 
@@ -97,7 +107,7 @@ export class Radio {
       station: station?.id ?? "", shuffle: this.saved.shuffle ?? station?.shuffle ?? false,
       lyrics: this.saved.lyrics, open: false, song: null, timeline: null, upNext: null,
     }));
-    deps.output.onEnded = () => this.go(1);
+    deps.output.onEnded = () => this.go(1, true);
     deps.output.onStopped = (reason) => this.stopped(reason);
   }
 
@@ -123,7 +133,7 @@ export class Radio {
         this.resumeAt = this.cursor ? this.saved.at : 0;
         this.set({ ready: true, failed: false, song: this.cursor ? this.byId.get(this.cursor)! : null });
         if (this.saved.on && !this.state.on) this.set({ on: true });
-        if (this.state.on) this.start(false);
+        if (this.state.on) this.start(FADE_IN_MS);
       } catch {
         if (this.state.on) this.set({ failed: true });
       } finally {
@@ -142,30 +152,44 @@ export class Radio {
 
   // ---------------------------------------------------------------- what the learner does
 
-  /** The toolbar's button: the first press turns the radio on and shows its card; later ones show or hide the card. */
-  press() {
+  /** The toolbar's button, the radio's power switch: one press on, the next off. The very first time it is turned
+   *  on, the radio set opens by itself, so the learner finds the stations. */
+  power() {
     if (!this.state.available) return;
-    if (!this.state.on) { this.set({ open: true }); this.setOn(true); return; }
-    this.set({ open: !this.state.open });
+    if (!this.state.on && !this.saved.introduced) { this.saved.introduced = true; this.set({ open: true }); }
+    this.setOn(!this.state.on);
   }
 
   setOpen(open: boolean) { this.set({ open }); }
 
-  /** Play or pause. Call it from a tap: that is what lets the browser play at all. */
+  /** On or off, with a fade. Call it from a tap: that is what lets the browser play at all. */
   setOn(on: boolean) {
     if (!this.state.available) return;
+    const out = this.deps.output;
     if (!on) {
       clearTimeout(this.resumeTimer);
-      this.silence();
+      clearTimeout(this.switchTimer);
       this.set({ on: false, needsTap: false });
+      if (this.state.playing && !this.holds.size) {
+        out.setVolume(0, FADE_OUT_MS);
+        clearTimeout(this.fadeTimer);
+        this.fadeTimer = setTimeout(() => this.silence(), FADE_OUT_MS);
+      } else this.silence();
       this.save();
       return;
     }
-    this.deps.output.unlock();
+    out.unlock();
     this.failures = 0;
     this.set({ on: true, failed: false });
     this.save();
-    if (this.state.ready) this.start(false);
+    if (this.state.playing) {
+      // still fading out from a moment ago: it lifts again from where it is
+      clearTimeout(this.fadeTimer);
+      if (!this.holds.size) out.setVolume(this.level(), LIFT_MS);
+      this.startSaving();
+      return;
+    }
+    if (this.state.ready) this.start(FADE_IN_MS);
     else void this.init();
   }
 
@@ -181,6 +205,7 @@ export class Radio {
     this.newSeed();
     this.reorder();
     this.cursor = null;
+    if (this.state.on && !this.holds.size) this.deps.tune?.();
     if (this.order.length) this.playSong(this.order[0], 0);
     else this.save();
   }
@@ -205,7 +230,7 @@ export class Radio {
   gesture() {
     if (!this.state.on) return;
     this.deps.output.unlock();
-    if (this.state.needsTap && !this.holds.size) this.start(false);
+    if (this.state.needsTap && !this.holds.size) this.start(FADE_IN_MS);
   }
 
   /** The learner walked into a place whose conversation is built on one of these songs: the first of them that the
@@ -224,7 +249,7 @@ export class Radio {
 
   // ---------------------------------------------------------------- holds
 
-  /** Something that the music must not sound over begins. `now`: no fade (a microphone). */
+  /** Something that the music must not sound over begins: it fades out and pauses. `now`: no fade (a microphone). */
   hold(reason: Hold, now = false) {
     const first = !this.holds.size;
     this.holds.add(reason);
@@ -232,9 +257,10 @@ export class Radio {
     if (!this.state.held) this.set({ held: true });
     if (now) { this.silence(); return; }
     if (!first || !this.sounding()) return;
-    this.deps.output.setVolume(0, FADE_OUT_MS);
+    const ms = reason === "voice" ? VOICE_FADE_MS : FADE_OUT_MS;
+    this.deps.output.setVolume(0, ms);
     clearTimeout(this.fadeTimer);
-    this.fadeTimer = setTimeout(() => this.silence(), FADE_OUT_MS);
+    this.fadeTimer = setTimeout(() => this.silence(), ms);
   }
 
   /** It is over. When nothing else holds the radio, the music comes back a moment later. */
@@ -242,7 +268,7 @@ export class Radio {
     if (!this.holds.delete(reason) || this.holds.size) return;
     this.set({ held: false });
     clearTimeout(this.resumeTimer);
-    this.resumeTimer = setTimeout(() => { if (this.state.on) this.start(true); }, RESUME_AFTER_MS);
+    this.resumeTimer = setTimeout(() => { if (this.state.on) this.start(FADE_IN_MS); }, RESUME_AFTER_MS);
   }
 
   /** The output is playing or about to. */
@@ -252,6 +278,7 @@ export class Radio {
   /** Stop the sound now and remember the place. */
   private silence() {
     clearTimeout(this.fadeTimer);
+    clearTimeout(this.switchTimer);
     if (this.sounding()) this.resumeAt = this.deps.output.position();
     this.run++;
     this.starting = false;
@@ -269,10 +296,10 @@ export class Radio {
   }
   /** which of a song's addresses played it (the files folder, or the course's site for a free example) */
   private played = new Map<string, number>();
-  private attempt: { song: SongMeta; at: number; fadeIn: boolean; index: number } | null = null;
+  private attempt: { song: SongMeta; at: number; fade: number; index: number } | null = null;
 
-  /** Begin, or go on with, the song the radio is at. */
-  private start(fadeIn: boolean) {
+  /** Begin, or go on with, the song the radio is at, fading in over `fade` ms. */
+  private start(fade: number) {
     if (!this.state.on || !this.state.ready || this.holds.size || this.sounding()) return;
     let song = this.state.song;
     if (!song) {
@@ -283,11 +310,12 @@ export class Radio {
       if (id === this.queued) { this.queued = null; this.set({ upNext: null }); } else this.cursor = id;
       this.resumeAt = id === this.saved.song ? this.saved.at : 0;
     }
-    this.sound(song, this.resumeAt, fadeIn);
+    this.sound(song, this.resumeAt, fade);
   }
 
-  /** Move to the next (1) or the previous (-1) song. */
-  private go(dir: 1 | -1) {
+  /** Move to the next (1) or the previous (-1) song. `auto`: the song before ended by itself (or wouldn't play), so
+   *  the next one starts at once; the learner's own skip is a short dip. */
+  private go(dir: 1 | -1, auto = false) {
     if (!this.state.ready) return;
     let id: string | null, turn = true;
     const outOfTurn = !!this.state.song && this.state.song.id !== this.cursor;
@@ -309,29 +337,49 @@ export class Radio {
       }
       this.cursor = id;
     }
-    if (id) this.playSong(id, 0, turn);
+    if (id) this.playSong(id, 0, turn, !auto);
   }
 
-  /** `turn`: the song is the station's own next one (false: one played out of turn, the station keeps its place). */
-  private playSong(id: string, at: number, turn = true) {
+  /** `turn`: the song is the station's own next one (false: one played out of turn, the station keeps its place).
+   *  `dip`: the learner asked for it while music sounds, so the old song dips out before the new one comes in. */
+  private playSong(id: string, at: number, turn = true, dip = true) {
     const song = this.byId.get(id);
     if (!song) return;
     if (turn && this.order.includes(id)) this.cursor = id;
-    this.silence();
+    const out = this.deps.output;
+    if (!(dip && this.state.playing && this.state.on && !this.holds.size)) {
+      this.silence();
+      this.resumeAt = at;
+      this.set({ song, timeline: this.lines.get(id) ?? null, needsTap: false });
+      this.save();
+      if (this.state.on && !this.holds.size) this.sound(song, at, dip ? SKIP_IN_MS : 0);
+      return;
+    }
+    // the old song is still sounding for a moment, but the radio is already at the new one
+    clearTimeout(this.fadeTimer);
+    clearTimeout(this.switchTimer);
+    this.run++;
+    this.starting = false;
+    this.stopSaving();
     this.resumeAt = at;
-    this.set({ song, timeline: this.lines.get(id) ?? null, needsTap: false });
+    this.set({ song, timeline: this.lines.get(id) ?? null, needsTap: false, playing: false });
     this.save();
-    if (this.state.on && !this.holds.size) this.sound(song, at, false);
+    out.setVolume(0, SKIP_OUT_MS);
+    this.switchTimer = setTimeout(() => {
+      out.pause();
+      if (this.state.on && !this.holds.size) this.sound(song, at, SKIP_IN_MS);
+    }, SKIP_OUT_MS);
   }
 
-  /** The one place a sound starts. `index`: which of the song's addresses to try. */
-  private sound(song: SongMeta, at: number, fadeIn: boolean, index = this.played.get(song.id) ?? 0) {
+  /** The one place a sound starts. `fade`: how long it fades in (0: at once, a song following another);
+   *  `index`: which of the song's addresses to try. */
+  private sound(song: SongMeta, at: number, fade: number, index = this.played.get(song.id) ?? 0) {
     if (this.holds.size || !this.state.on) return;
     const run = ++this.run, out = this.deps.output;
     this.starting = true;
-    this.attempt = { song, at, fadeIn, index };
+    this.attempt = { song, at, fade, index };
     if (this.state.song !== song) this.set({ song, timeline: this.lines.get(song.id) ?? null });
-    out.setVolume(fadeIn ? 0 : this.level());
+    out.setVolume(fade ? 0 : this.level());
     out.play(this.audioUrl(song, index), at).then((sounds) => {
       if (run !== this.run) return;
       this.starting = false;
@@ -340,7 +388,7 @@ export class Radio {
       if (this.holds.size || !this.state.on) { out.pause(); return; }
       this.failures = 0;
       this.played.set(song.id, index);
-      if (fadeIn) out.setVolume(this.level(), FADE_IN_MS);
+      if (fade) out.setVolume(this.level(), fade);
       this.set({ playing: true, needsTap: false, failed: false });
       this.startSaving();
       const ahead = this.peekNext();
@@ -359,7 +407,7 @@ export class Radio {
   private startFailed() {
     const a = this.attempt;
     this.attempt = null;
-    if (a && a.index + 1 < songAudioUrls(this.deps.config!, a.song, null).length) { this.sound(a.song, a.at, a.fadeIn, a.index + 1); return; }
+    if (a && a.index + 1 < songAudioUrls(this.deps.config!, a.song, null).length) { this.sound(a.song, a.at, a.fade, a.index + 1); return; }
     this.songFailed();
   }
 
@@ -376,7 +424,7 @@ export class Radio {
       this.save();
       return;
     }
-    this.go(1);
+    this.go(1, true);
   }
 
   private stopped(reason: "error" | "interrupted") {

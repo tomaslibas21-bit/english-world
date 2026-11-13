@@ -72,7 +72,8 @@ export class SignAtlas {
     }
     const tex = new THREE.CanvasTexture(cv);
     tex.colorSpace = THREE.SRGBColorSpace;
-    tex.anisotropy = 4;
+    // sharp at an angle too (three.js keeps it to what the graphics card can do)
+    tex.anisotropy = 16;
     const geos = this.quads.map(({ key, w, h, m }) => {
       const c = this.cells.get(key)!;
       const g = new THREE.PlaneGeometry(w, h);
@@ -116,15 +117,18 @@ const drawPainted = (title: string, sub: string, bg: string, fg: string, edge: s
   x.fillStyle = edge; roundRect(x, 0, 0, w, h, h * 0.12); x.fill();
   x.fillStyle = bg; roundRect(x, h * 0.06, h * 0.06, w - h * 0.12, h - h * 0.12, h * 0.1); x.fill();
   const ty = sub ? h * 0.42 : h * 0.52;
-  const s = fit(x, title, h * (sub ? 0.46 : 0.58), w * 0.78, "Georgia, 'Times New Roman', serif", "italic 900");
+  // (the words clear of the flowers in the corners, on a short board too)
+  const room = Math.min(w * 0.78, w - h * 0.86);
+  const s = fit(x, title, h * (sub ? 0.46 : 0.58), room, "Georgia, 'Times New Roman', serif", "italic 900");
   x.textAlign = "center"; x.textBaseline = "middle";
   x.lineJoin = "round"; x.lineWidth = s * 0.16; x.strokeStyle = edge;
   x.fillStyle = edge; x.fillText(title, w / 2 + s * 0.06, ty + s * 0.06);
   x.strokeText(title, w / 2, ty);
   x.fillStyle = fg; x.fillText(title, w / 2, ty);
   if (sub) {
-    const ss = fit(x, sub, h * 0.2, w * 0.8, FONT, "800");
-    x.font = `800 ${ss}px ${FONT}`; x.fillStyle = edge; x.fillText(sub, w / 2, h * 0.8);
+    const ss = fit(x, sub, h * 0.2, room, FONT, "800");
+    // (in the edge's colour on a light board, the letters' on a dark one)
+    x.font = `800 ${ss}px ${FONT}`; x.fillStyle = luma(bg) < 0.45 ? fg : edge; x.fillText(sub, w / 2, h * 0.8);
   }
   for (const [px, py] of [[h * 0.32, h * 0.32], [w - h * 0.32, h * 0.32], [h * 0.32, h * 0.68], [w - h * 0.32, h * 0.68]]) {
     for (let i = 0; i < 5; i++) {
@@ -134,6 +138,48 @@ const drawPainted = (title: string, sub: string, bg: string, fg: string, edge: s
     x.fillStyle = edge; x.beginPath(); x.arc(px, py, h * 0.035, 0, Math.PI * 2); x.fill();
   }
 };
+
+/** A painted board read from across the street (a cart's, a stall's, a kiosk's): the words in heavy upright letters,
+ *  on one line or two (whichever comes out bigger; a name with a "·" breaks there), and no outline or shadow round them
+ *  (at a distance drawPainted's outlined script closes the letters up: it reads only on a shop's big board), a smaller
+ *  line under them, and a painted flower at each end where there is room. */
+const drawBoard = (title: string, sub: string, bg: string, fg: string, edge: string): Draw => (x, w, h) => {
+  const b = Math.min(w, h) * 0.06;
+  x.fillStyle = edge; roundRect(x, 0, 0, w, h, h * 0.12); x.fill();
+  x.fillStyle = bg; roundRect(x, b, b, w - 2 * b, h - 2 * b, h * 0.1); x.fill();
+  x.textAlign = "center"; x.textBaseline = "middle";
+  const subH = sub ? h * 0.25 : 0, room = h - 2 * b - subH - h * 0.06, maxW = w - 2 * b - h * 0.14;
+  const words = title.split(" · ").length === 2 ? [title.split(" · ")] : [];
+  const ws = title.split(" ");
+  if (!words.length) for (let k = 1; k < ws.length; k++) words.push([ws.slice(0, k).join(" "), ws.slice(k).join(" ")]);
+  let rows = [title], size = 0, wide = Infinity;
+  for (const r of [[title], ...words]) {
+    let s = Math.floor((room / r.length) * (r.length > 1 ? 0.86 : 0.74));
+    const widest = () => Math.max(...r.map((t) => x.measureText(t).width));
+    x.font = `900 ${s}px ${FONT}`;
+    while (widest() > maxW && s > 8) { s -= 1; x.font = `900 ${s}px ${FONT}`; }
+    if (s > size || (s === size && widest() < wide)) { rows = r; size = s; wide = widest(); }
+  }
+  const top = b + h * 0.03, mid = top + room / 2;
+  x.font = `900 ${size}px ${FONT}`; x.fillStyle = fg;
+  rows.forEach((r, i) => x.fillText(r, w / 2, mid + (i - (rows.length - 1) / 2) * size * 1.04 + size * 0.04));
+  if (sub) {
+    const ss = fit(x, sub, subH * 0.84, maxW, FONT, "800");
+    x.font = `800 ${ss}px ${FONT}`; x.fillStyle = luma(bg) < 0.45 ? fg : edge;
+    x.fillText(sub, w / 2, h - b - subH / 2 - h * 0.02);
+  }
+  // a flower at each end, beside the words, where they leave room for one
+  const r0 = Math.min(h * 0.07, ((w - wide) / 2 - b - 6) / 3.2);
+  if (r0 > h * 0.035) for (const px of [b + 3 + r0 * 1.6, w - b - 3 - r0 * 1.6]) {
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2;
+      x.fillStyle = fg; x.beginPath(); x.arc(px + Math.cos(a) * r0 * 0.9, mid + Math.sin(a) * r0 * 0.9, r0 * 0.68, 0, Math.PI * 2); x.fill();
+    }
+    x.fillStyle = edge; x.beginPath(); x.arc(px, mid, r0 * 0.5, 0, Math.PI * 2); x.fill();
+  }
+};
+/** A colour's brightness (0 dark … 1 light). */
+const luma = (c: string) => { const k = new THREE.Color(c); return 0.2126 * k.r + 0.7152 * k.g + 0.0722 * k.b; };
 
 /** The stop sign: a red octagon with a white border and the word (ALTO), clear round it. */
 const drawOctagon = (word: string): Draw => (x, w, h) => {
@@ -151,8 +197,8 @@ const drawDiamond = (word: string): Draw => (x, w, h) => {
   x.fillStyle = "#1d1d1d"; dia(w * 0.5); x.fill();
   x.fillStyle = "#f6c90e"; dia(w * 0.44); x.fill();
   x.fillStyle = "#1d1d1d"; x.textAlign = "center"; x.textBaseline = "middle";
-  fit(x, word, h * 0.2, w * 0.46);
-  x.fillText(word, w / 2, h * 0.44);
+  fit(x, word, h * 0.25, w * 0.54);
+  x.fillText(word, w / 2, h * 0.43);
   x.beginPath(); x.ellipse(w / 2, h * 0.64, w * 0.15, h * 0.06, 0, Math.PI, 0); x.fill();
   x.fillRect(w * 0.3, h * 0.64, w * 0.4, h * 0.025);
 };
@@ -192,7 +238,7 @@ export function malecon(parts: Part[], col: Colliders, atlas: SignAtlas, name: s
     x.fillStyle = "#f7f3ea"; roundRect(x, 2, 2, w - 4, h - 4, 14); x.fill();
     x.lineWidth = 8; x.strokeStyle = "#1f6f8b"; roundRect(x, 10, 10, w - 20, h - 20, 10); x.stroke();
     x.fillStyle = "#1f6f8b"; x.textAlign = "center"; x.textBaseline = "middle";
-    fit(x, name, h * 0.5, w * 0.8, "Georgia, serif", "italic 900"); x.fillText(name, w / 2, h / 2 + 3);
+    fit(x, name, h * 0.56, w * 0.8, "Georgia, serif", "900"); x.fillText(name, w / 2, h / 2 + 3);
   }, 1.2, 0.4, -34.1, 0.55, z + 0.19, 0);
   // benches facing the sea, between the openings and clear of the lamps
   const benches: [number, number, number][] = [];
@@ -223,7 +269,13 @@ export function kiosk(parts: Part[], col: Colliders, atlas: SignAtlas, x: number
   parts.push([new THREE.ConeGeometry(0.5, 0.4, 4).rotateY(Math.PI / 4).translate(x, 3.75, z + 0.15), THATCH_DARK]);
   col.addBox(x, z + 0.15, 2.6, 2.0);
   // the sign painted on its front under the counter, towards the street
-  atlas.add("kiosk", 512, 160, drawPainted(sign, "Snorkel · Ruinas · Tulum", "#fdf3d7", "#1f6f8b", "#0f4c5c"), 2.3, 0.72, x, 0.6, z + 0.77, 0);
+  atlas.add("kiosk", 512, 160, drawBoard(sign, "Snorkel · Ruinas · Tulum", "#fdf3d7", "#1f6f8b", "#0f4c5c"), 2.3, 0.72, x, 0.6, z + 0.77, 0);
+  // and its name on a board standing on the front of the roof, over the heads of whoever is at the counter (from the
+  // walkway in front, the one under the counter is behind the learner)
+  for (const s of [-1, 1]) parts.push([cyl(0.04, 0.04, 0.5, x + s * 0.9, 2.72, z + 0.95, 6), WOOD]);
+  parts.push([box(2.48, 0.8, 0.05, x, 3.33, z + 0.95), "#0f4c5c"]);
+  atlas.add("kioskroof:" + sign, 640, 206, drawBoard(sign, "", "#fdf3d7", "#1f6f8b", "#0f4c5c"), 2.44, 0.78, x, 3.33, z + 0.98, 0);
+  atlas.add("kioskroof:" + sign, 640, 206, drawBoard(sign, "", "#fdf3d7", "#1f6f8b", "#0f4c5c"), 2.44, 0.78, x, 3.33, z + 0.92, Math.PI);
 }
 
 /** Palapas on the sand: a thatched umbrella on a wooden pole, with two wooden loungers in front of it (towards the
@@ -491,8 +543,10 @@ export function church(parts: Part[], col: Colliders, x: number, z: number, face
 
 /** A street sign post at a corner: a pole and two name blades, one along each street (both read from both sides). */
 export function streetSign(parts: Part[], col: Colliders, atlas: SignAtlas, x: number, z: number, ew: string, ns: string) {
-  parts.push([cyl(0.045, 0.05, 3.3, x, 1.65, z, 6), "#7d868c"]);
-  parts.push([new THREE.SphereGeometry(0.07, 6, 5).translate(x, 3.32, z), "#7d868c"]);
+  // (the pole up to the blades, one standing on the other: through them, it hid a letter in the middle of the name)
+  const top = ns ? 2.5 : 2.86;
+  parts.push([cyl(0.045, 0.05, top, x, top / 2, z, 6), "#7d868c"]);
+  if (ns && ew) parts.push([box(0.07, 0.05, 0.07, x, 2.84, z), "#7d868c"]);
   if (ew) atlas.add("street:" + ew, 384, 96, drawBlade(ew), 1.3, 0.32, x, 3.02, z, 0, true);
   if (ns) atlas.add("street:" + ns, 384, 96, drawBlade(ns), 1.3, 0.32, x, 2.66, z, Math.PI / 2, true);
   col.addCircle(x, z, 0.1);
@@ -515,7 +569,8 @@ export function tope(parts: Part[], col: Colliders, atlas: SignAtlas, word: stri
     parts.push([place(g, x1 + (x2 - x1) * f, z1 + (z2 - z1) * f, rot), i % 2 ? "#2a2a2a" : "#f2c230"]);
   }
   parts.push([cyl(0.04, 0.04, 2.3, sx, 1.15, sz, 6), "#7d868c"]);
-  atlas.add("tope:" + word, 128, 128, drawDiamond(word), 0.75, 0.75, sx, 2.2, sz, srot, false);
+  // (in front of its post: on it, the post hid the middle of the word)
+  atlas.add("tope:" + word, 128, 128, drawDiamond(word), 0.75, 0.75, sx + Math.sin(srot) * 0.05, 2.2, sz + Math.cos(srot) * 0.05, srot, false);
   col.addCircle(sx, sz, 0.08);
 }
 
@@ -535,13 +590,22 @@ export function foodCart(parts: Part[], col: Colliders, atlas: SignAtlas, x: num
   add(cyl(0.26, 0.24, 0.42, 0.1, 1.36, 0.6, 14), "#dfe3e6"); // the pot of elotes and its lid
   add(new THREE.SphereGeometry(0.26, 12, 4, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 0.4, 1).translate(0.1, 1.57, 0.6), "#c9ced3");
   for (const [bx, c] of [[-0.25, "#f4f1ea"], [-0.32, "#c8102e"], [-0.18, "#f2c230"]] as [number, string][]) add(cyl(0.04, 0.04, 0.18, bx, 1.24, 0.1 + bx, 8), c);
-  add(cyl(0.02, 0.02, 1.7, -0.36, 1.95, 0.9, 5), "#7d868c");
+  // the parasol on the box's front edge, in line with the name's board (beside it, its pole crossed the words)
+  add(cyl(0.02, 0.02, 1.7, 0, 1.95, 1.0, 5), "#7d868c");
   const colours = ["#f6a800", "#ffffff", "#e4007c", "#ffffff", "#00a6a6", "#ffffff", "#7ac143", "#ffffff"];
-  for (let i = 0; i < 8; i++) add(new THREE.ConeGeometry(1.0, 0.42, 1, 1, false, (i / 8) * Math.PI * 2, Math.PI / 4).translate(-0.36, 2.9, 0.9), colours[i]);
+  for (let i = 0; i < 8; i++) add(new THREE.ConeGeometry(1.0, 0.42, 1, 1, false, (i / 8) * Math.PI * 2, Math.PI / 4).translate(0, 2.9, 1.0), colours[i]);
   // the sign on both sides of the box
   for (const s of [-1, 1]) {
     const o = new THREE.Vector3(s * 0.44, 0.84, 0.45).applyAxisAngle(new THREE.Vector3(0, 1, 0), rot);
-    atlas.add("cart:" + sign, 384, 128, drawPainted(sign, "", "#fff3d0", "#c8102e", "#7a1020"), 1.1, 0.37, x + o.x, o.y, z + o.z, rot + s * Math.PI / 2);
+    atlas.add("cart:" + sign, 384, 128, drawBoard(sign, "", "#fff3d0", "#c8102e", "#7a1020"), 1.1, 0.37, x + o.x, o.y, z + o.z, rot + s * Math.PI / 2);
+  }
+  // and its name big on a board over the box, on two posts, read from across the square (the one on the box's side
+  // is a hand high: from the walkway its letters were a few pixels, and the learner stood in front of it)
+  for (const bz of [-0.1, 0.92]) add(box(0.04, 0.6, 0.04, 0, 1.43, bz), "#26292e");
+  add(box(0.04, 0.82, 1.54, 0, 2.11, 0.23), "#7a1020");
+  for (const s of [-1, 1]) {
+    const o = new THREE.Vector3(s * 0.025, 2.11, 0.23).applyAxisAngle(new THREE.Vector3(0, 1, 0), rot);
+    atlas.add("cartboard:" + sign, 480, 256, drawBoard(sign, "", "#fff3d0", "#c8102e", "#7a1020"), 1.5, 0.8, x + o.x, o.y, z + o.z, rot + s * Math.PI / 2);
   }
   blockRect(col, x, z, rot, -0.6, 0.6, -1.2, 1.15);
 }
@@ -579,14 +643,14 @@ export function tiendita(parts: Part[], col: Colliders, atlas: SignAtlas, P: (u:
 }
 
 /** The shop signs painted by hand (task 2): a painted board with the name, as drawPainted, on its own canvas (the
- *  same size as Maple Harbor's printed board). */
-export function paintedSignTexture(text: string, bg: string, fg: string, edge: string) {
+ *  same size as Maple Harbor's printed board; with a smaller line under the name, a taller one: 768 × 256). */
+export function paintedSignTexture(text: string, bg: string, fg: string, edge: string, sub = "") {
   const cv = document.createElement("canvas");
-  cv.width = 768; cv.height = 160;
-  drawPainted(text, "", bg, fg, edge)(cv.getContext("2d")!, 768, 160);
+  cv.width = 768; cv.height = sub ? 256 : 160;
+  drawPainted(text, sub, bg, fg, edge)(cv.getContext("2d")!, cv.width, cv.height);
   const t = new THREE.CanvasTexture(cv);
   t.colorSpace = THREE.SRGBColorSpace;
-  t.anisotropy = 4;
+  t.anisotropy = 16;
   return t;
 }
 
@@ -858,7 +922,7 @@ export function cenote(parts: Part[], atlas: SignAtlas, x: number, z: number, si
   const sx = x + R + 6.2, sz = z - 2.4;
   for (const s of [-1, 1]) parts.push([cyl(0.07, 0.07, 2.6, sx, 1.3, sz + s * 1.35, 6), WOOD]);
   parts.push([box(0.12, 0.12, 3.0, sx, 2.62, sz), DARK]);
-  atlas.add("cenote:" + sign, 512, 192, drawPainted(sign, "Nado · Snorkel · Entrada", "#e9f7f2", "#13808a", "#1f4f8f"), 2.6, 0.98, sx + 0.07, 1.95, sz, Math.PI / 2);
+  atlas.add("cenote:" + sign, 512, 192, drawBoard(sign, "Nado · Snorkel · Entrada", "#e9f7f2", "#13808a", "#1f4f8f"), 2.6, 0.98, sx + 0.07, 1.95, sz, Math.PI / 2);
   // the sacbé from the mirador across the meadow to the deck: limestone, a stone edge either side, and a branch to the
   // taquilla
   const path = (x0: number, z0: number, x1: number, z1: number, w: number) => {
@@ -942,7 +1006,7 @@ export function ruins(parts: Part[], x: number, z: number, atlas?: SignAtlas) {
   if (atlas) {
     const sx = x + 12.2, sz = z + 4.4;
     for (const s of [-1, 1]) parts.push([cyl(0.06, 0.06, 2.2, sx, 1.1, sz + s * 1.0, 6), "#5a3a22"]);
-    atlas.add("ruinas", 512, 192, drawPainted("Zona Arqueológica", "Ruinas mayas · Templo del Mar", "#6b4226", "#fff7e6", "#3b2414"), 2.2, 0.82, sx + 0.06, 1.75, sz, Math.PI / 2);
+    atlas.add("ruinas", 512, 192, drawBoard("Zona Arqueológica", "Ruinas mayas · Templo del Mar", "#6b4226", "#fff7e6", "#3b2414"), 2.2, 0.82, sx + 0.06, 1.75, sz, Math.PI / 2);
   }
 }
 
@@ -999,7 +1063,7 @@ export function tianguisStall(parts: Part[], goodsParts: Part[], col: Colliders,
   const ink = darker(lona.toLowerCase() === "#f6c000" ? "#c98a00" : lona);
   add(box(1.78, 0.56, 0.03, 0, yf + 0.33, zf), "#3b2a20");
   const o = new THREE.Vector3(0, 0, zf + 0.02).applyAxisAngle(new THREE.Vector3(0, 1, 0), rot);
-  atlas.add("tianguis:" + sign.join("|") + ink, 512, 160, drawPainted(sign[0], sign[1], "#fff6dc", ink, "#3b2a20"), 1.72, 0.52, x + o.x, yf + 0.33, z + o.z, rot);
+  atlas.add("tianguis:" + sign.join("|") + ink, 512, 160, drawBoard(sign[0], sign[1], "#fff6dc", ink, "#3b2a20"), 1.72, 0.52, x + o.x, yf + 0.33, z + o.z, rot);
   // solid: the table, the front poles
   blockRect(col, x, z, rot, -STALL_SIZE.table.x, STALL_SIZE.table.x, STALL_SIZE.table.z0, STALL_SIZE.table.z1);
   for (const s of [-1, 1]) { const q = new THREE.Vector3(s * xp, 0, zf).applyAxisAngle(new THREE.Vector3(0, 1, 0), rot); col.addCircle(x + q.x, z + q.z, 0.08); }
@@ -1284,7 +1348,7 @@ export function airportFront(parts: Part[], col: Colliders, atlas: SignAtlas, ro
   const sx = c.x0 + 1.2, sz = c.z0 - 3.6, rot = -1.15;
   const ax = Math.cos(rot), az = -Math.sin(rot); // (along the sign)
   for (const s of [-1, 1]) { parts.push([cyl(0.09, 0.1, 3.9, sx + s * 2.45 * ax, 1.95, sz + s * 2.45 * az, 8), WOOD]); col.addCircle(sx + s * 2.45 * ax, sz + s * 2.45 * az, 0.14); }
-  atlas.add("welcome:" + welcome[0], 640, 192, drawPainted(welcome[0], welcome[1], "#fff6dc", "#1f6f8b", "#e4007c"), 5.0, 1.5, sx + 0.1 * Math.sin(rot), 3.0, sz + 0.1 * Math.cos(rot), rot, true);
+  atlas.add("welcome:" + welcome[0], 640, 192, drawBoard(welcome[0], welcome[1], "#fff6dc", "#1f6f8b", "#e4007c"), 5.0, 1.5, sx + 0.1 * Math.sin(rot), 3.0, sz + 0.1 * Math.cos(rot), rot, true);
 }
 
 /** An iron banca for the zócalo (theme.ts `zocalo`), made round (x, z) as town.ts's street bench is (the seat facing
@@ -1379,7 +1443,8 @@ export function houseDetails(parts: Part[], atlas: SignAtlas, P: (u: number, v: 
   at(new THREE.TorusGeometry(0.16, 0.02, 4, 12), 0, v, IRON);
   parts[parts.length - 1][0].translate(0, 1.75, 0);
   const [tx, tz] = P(-(doorW / 2 + 0.62), 0.05);
-  atlas.add("tile:" + num, 128, 96, drawTile(num), 0.36, 0.27, tx, 1.95, tz, rot);
+  // (bigger, and lower: at 1.95 m the portal's slab hid half of it from the walking camera)
+  atlas.add("tile:" + num, 160, 120, drawTile(num), 0.46, 0.34, tx, 1.62, tz, rot);
   for (const s of [-1, 1]) {
     at(cyl(0.2, 0.15, 0.36, 0, 0.18, 0), s * (doorW / 2 + 0.55), 0.55, "#c56f4c");
     at(new THREE.IcosahedronGeometry(0.28, 0).scale(1, 1.2, 1).translate(0, 0.62, 0), s * (doorW / 2 + 0.55), 0.55, s > 0 ? "#3f7d3a" : "#4a8a3c");
@@ -1513,8 +1578,8 @@ export function fruitCart(parts: Part[], col: Colliders, atlas: SignAtlas, x: nu
   const colours = ["#e4007c", "#ffffff", "#f6c000", "#ffffff", "#00a6a6", "#ffffff", "#f77f00", "#ffffff"];
   for (let i = 0; i < 8; i++) add(new THREE.ConeGeometry(1.0, 0.4, 1, 1, false, (i / 8) * Math.PI * 2, Math.PI / 4).translate(0.5, 2.95, 0), colours[i]);
   for (const s of [-1, 1]) {
-    const o = new THREE.Vector3(0, 0.75, s * 0.385).applyAxisAngle(new THREE.Vector3(0, 1, 0), rot);
-    atlas.add("fruit:" + sign, 384, 128, drawPainted(sign, "", "#fff3d0", "#1f8a4c", "#14532d"), 1.2, 0.4, x + o.x, o.y, z + o.z, rot + (s > 0 ? 0 : Math.PI));
+    const o = new THREE.Vector3(0, 0.8, s * 0.385).applyAxisAngle(new THREE.Vector3(0, 1, 0), rot);
+    atlas.add("fruit:" + sign, 384, 128, drawBoard(sign, "", "#fff3d0", "#1f8a4c", "#14532d"), 1.28, 0.42, x + o.x, o.y, z + o.z, rot + (s > 0 ? 0 : Math.PI));
   }
   blockRect(col, x, z, rot, -0.75, 0.75, -0.75, 1.1);
 }
@@ -1588,7 +1653,7 @@ export function cocoCart(parts: Part[], col: Colliders, atlas: SignAtlas, x: num
   for (let i = 0; i < 8; i++) add(new THREE.ConeGeometry(0.95, 0.38, 1, 1, false, (i / 8) * Math.PI * 2, Math.PI / 4).translate(-0.6, 2.85, 0.3), colours[i]);
   for (const s of [-1, 1]) {
     const o = new THREE.Vector3(0, 0.7, s * 0.41).applyAxisAngle(new THREE.Vector3(0, 1, 0), rot);
-    atlas.add("coco:" + sign, 384, 128, drawPainted(sign, "", "#eafbe0", "#1f6fd1", "#0b3b7a"), 1.2, 0.4, x + o.x, o.y, z + o.z, rot + (s > 0 ? 0 : Math.PI));
+    atlas.add("coco:" + sign, 384, 160, drawBoard(sign, "", "#eafbe0", "#1f6fd1", "#0b3b7a"), 1.34, 0.56, x + o.x, o.y, z + o.z, rot + (s > 0 ? 0 : Math.PI));
   }
   blockRect(col, x, z, rot, -0.8, 0.8, -0.7, 0.7);
 }
@@ -1622,8 +1687,9 @@ export function mirador(parts: Part[], col: Colliders, atlas: SignAtlas, x: numb
   add(box(1.6, 0.08, 0.4, 0, 0.95, -0.6), "#8a6a4a");
   for (const s of [-1, 1]) add(box(0.08, 0.42, 0.36, s * 0.7, 0.71, -0.6), "#7a5a3a");
   add(cyl(0.05, 0.05, 2.3, 1.6, 1.15, -1.2, 6), "#7a5a3a");
-  const o = new THREE.Vector3(1.6, 2.15, -1.12).applyAxisAngle(new THREE.Vector3(0, 1, 0), rot);
-  atlas.add("mirador:" + sign, 512, 160, drawPainted(sign, "", "#fff3d0", "#2f6b34", "#1d4a22"), 1.6, 0.5, x + o.x, o.y, z + o.z, rot + Math.PI);
+  // (on the post's side it is read from: behind it, the post hid the middle of the words)
+  const o = new THREE.Vector3(1.6, 2.15, -1.27).applyAxisAngle(new THREE.Vector3(0, 1, 0), rot);
+  atlas.add("mirador:" + sign, 512, 160, drawBoard(sign, "", "#fff3d0", "#2f6b34", "#1d4a22"), 1.6, 0.5, x + o.x, o.y, z + o.z, rot + Math.PI);
   blockRect(col, x, z, rot, -2.0, 2.0, -1.5, 1.5);
 }
 

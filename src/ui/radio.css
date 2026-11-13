@@ -1,64 +1,137 @@
-/* The town's radio (src/ui/Radio.tsx): its toolbar button, the card, the lyric strip.
-   The card paints with the game's variables only (no fixed light colours), so a course's themes carry it along
-   (fluent-steps public/zaidimas/fs-theme.css); the strip lies on the 3D picture and keeps its own dark plate. */
+/* The town's radio (src/ui/Radio.tsx): the power button in the toolbar, the dial plate beside it, the radio set, the
+   lyric strip. The set is a small object with colours of its own, one skin per town (src/content/radio.ts RADIO_SKIN),
+   so it reads the same in every course theme, light or dark (fluent-steps public/zaidimas/fs-theme.css restyles the
+   game's own classes, not these). */
 
+/* Maple Harbor: a navy tabletop set with brass trim, a cream dial and a maple-red needle. */
+.radio-skin-maple {
+  --rs-body: #223b52; --rs-body-2: #172b3d; --rs-edge: #c9a45c; --rs-trim: #e0bf7a;
+  --rs-plate: #f7edd8; --rs-plate-ink: #3a3024; --rs-needle: #c2412d;
+  --rs-ink: #f6eedd; --rs-ink-soft: rgba(246, 238, 221, 0.74); --rs-lamp: #ffc24d;
+  --rs-key: rgba(246, 238, 221, 0.1); --rs-key-on: rgba(224, 191, 122, 0.3);
+  --rs-knob: linear-gradient(180deg, #ecd08f, #b98d3e); --rs-knob-ink: #2a2112;
+  --rs-radius: 18px; --rs-strip: rgba(19, 33, 47, 0.82);
+}
+/* Puerto Colibrí: a hand-painted teal set, coral and sun yellow, under a string of papel picado. */
+.radio-skin-colibri {
+  --rs-body: #108384; --rs-body-2: #0a6667; --rs-edge: #fff3dc; --rs-trim: #ffd166;
+  --rs-plate: #fff3dc; --rs-plate-ink: #5a3418; --rs-needle: #f0563f;
+  --rs-ink: #fff8ea; --rs-ink-soft: rgba(255, 248, 234, 0.8); --rs-lamp: #ffd166;
+  --rs-key: rgba(255, 248, 234, 0.14); --rs-key-on: rgba(255, 209, 102, 0.36);
+  --rs-knob: linear-gradient(180deg, #ff8f6b, #ec5638); --rs-knob-ink: #fff8ea;
+  --rs-radius: 22px 17px 24px 16px / 17px 23px 16px 22px; --rs-strip: rgba(7, 66, 68, 0.86);
+}
+
+/* ---------- the power button, and the plate beside it while the radio is on ---------- */
 /* the radio and the light-mode button: one under the other beside a single column of tools, side by side under two */
 .toolbar-extra { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
-.radio-btn.on { color: var(--accent-strong); }
-.radio-btn[aria-expanded="true"] { box-shadow: var(--ring), 0 6px 16px -6px rgba(20, 30, 40, 0.3); }
-/* three small bars that move while a song plays */
-.radio-eq { position: absolute; top: 6px; right: 6px; display: flex; align-items: flex-end; gap: 2px; height: 10px; }
-.radio-eq i { width: 2.5px; height: 100%; border-radius: 2px; background: var(--warm); transform-origin: bottom; animation: radio-eq 0.9s ease-in-out infinite; }
-.radio-eq i:nth-child(2) { animation-delay: -0.3s; }
-.radio-eq i:nth-child(3) { animation-delay: -0.6s; }
+.radio-tool { position: relative; display: flex; }
+.radio-lamp { position: absolute; top: 7px; right: 7px; width: 8px; height: 8px; border-radius: 50%; background: rgba(120, 130, 140, 0.32); transition: background-color 0.5s ease, box-shadow 0.5s ease; }
+.radio-btn.on { box-shadow: 0 0 0 2px var(--rs-edge), 0 6px 16px -6px rgba(20, 30, 40, 0.35); }
+.radio-btn.on .radio-lamp { background: var(--rs-lamp); box-shadow: 0 0 0 2px rgba(255, 194, 77, 0.28), 0 0 9px 2px var(--rs-lamp); }
+
+.radio-plate {
+  position: absolute; right: calc(100% + 8px); top: 50%; transform: translateY(-50%); height: 38px; max-width: min(220px, calc(100vw - 150px));
+  display: flex; align-items: center; gap: 9px; padding: 0 15px 0 12px; border-radius: 999px; white-space: nowrap;
+  background: linear-gradient(180deg, var(--rs-body), var(--rs-body-2)); border: 1.5px solid var(--rs-edge); color: var(--rs-ink);
+  box-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.55); animation: radio-plate 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.15);
+}
+.radio-plate::before { content: ""; position: absolute; inset: -4px; }
+.radio-plate:hover { filter: brightness(1.08); }
+@keyframes radio-plate { from { opacity: 0; transform: translate(10px, -50%) scale(0.92); } }
+.radio-plate-text { overflow: hidden; text-overflow: ellipsis; animation: radio-text 0.5s ease; }
+.radio-plate-more { flex: none; margin: 0 -5px 0 -3px; color: var(--rs-ink-soft); }
+@keyframes radio-text { from { opacity: 0; transform: translateY(4px); } }
+.radio-skin-maple .radio-plate-text { font-family: var(--en); font-style: italic; font-weight: 600; font-size: 1.12em; }
+.radio-skin-colibri .radio-plate-text { font-family: var(--ui); font-weight: 900; font-size: 0.8em; letter-spacing: 0.05em; text-transform: uppercase; color: var(--rs-trim); }
+/* three small bars: they move while a song sounds and rest while it loads */
+.radio-eq { display: flex; align-items: flex-end; gap: 2.5px; height: 13px; flex: none; }
+.radio-eq i { width: 3px; height: 100%; border-radius: 2px; background: var(--rs-lamp); transform-origin: bottom; transform: scaleY(0.3); }
+.radio-plate.playing .radio-eq i { animation: radio-eq 0.9s ease-in-out infinite; }
+.radio-plate.playing .radio-eq i:nth-child(2) { animation-delay: -0.3s; }
+.radio-plate.playing .radio-eq i:nth-child(3) { animation-delay: -0.6s; }
 @keyframes radio-eq { 0%, 100% { transform: scaleY(0.35); } 50% { transform: scaleY(1); } }
 
-.radio-card {
+/* ---------- the radio set ---------- */
+.radio-set {
   /* beside the tools, level with their top: clear of the lyric strip and the "E" prompt at the bottom */
-  position: fixed; z-index: 13; right: calc(max(14px, env(safe-area-inset-right)) + 64px); top: 200px; width: min(350px, calc(100vw - 20px));
-  background: var(--panel-solid); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow);
-  padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 9px; animation: radio-in 0.18s ease;
+  position: fixed; z-index: 13; right: calc(max(14px, env(safe-area-inset-right)) + 64px); top: 200px; width: min(340px, calc(100vw - 20px));
+  display: flex; flex-direction: column; gap: 10px; padding: 12px 13px 13px; color: var(--rs-ink); text-align: left;
+  background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0 2px, transparent 2px 7px), linear-gradient(180deg, var(--rs-body), var(--rs-body-2));
+  border: 2px solid var(--rs-edge); border-radius: var(--rs-radius);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 22px 44px -16px rgba(0, 0, 0, 0.6), 0 5px 12px -5px rgba(0, 0, 0, 0.4);
+  animation: radio-in 0.24s cubic-bezier(0.2, 0.9, 0.3, 1.1);
 }
-@keyframes radio-in { from { opacity: 0; transform: translateY(6px); } }
-.radio-head { display: flex; align-items: center; justify-content: space-between; min-height: 30px; }
-.radio-title { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
-.radio-x { position: relative; width: 30px; height: 30px; border-radius: 10px; border: 0; background: none; color: var(--ink-faint); display: grid; place-items: center; }
-.radio-x::before { content: ""; position: absolute; inset: -7px; }
-.radio-x:hover { background: var(--accent-soft); color: var(--ink-soft); }
-.radio-stations { display: flex; flex-wrap: wrap; gap: 7px; }
-.radio-station {
-  flex: 1 1 96px; min-height: 44px; padding: 6px 10px; border-radius: 12px; border: 1px solid var(--line); background: transparent; color: var(--ink);
-  display: flex; flex-direction: column; align-items: flex-start; justify-content: center; text-align: left; line-height: 1.15;
+@keyframes radio-in { from { opacity: 0; transform: translateY(8px) scale(0.97); } }
+.radio-skin-colibri.radio-set { padding-top: 24px; border-width: 2.5px; }
+.radio-bunting { position: absolute; left: 8px; right: 8px; top: -13px; width: calc(100% - 16px); height: 30px; pointer-events: none; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.25)); }
+
+.rs-top { display: flex; align-items: center; gap: 9px; min-height: 32px; }
+.rs-lamp { width: 9px; height: 9px; border-radius: 50%; flex: none; background: rgba(255, 255, 255, 0.22); transition: background-color 0.6s ease, box-shadow 0.6s ease; }
+.radio-set.on .rs-lamp { background: var(--rs-lamp); box-shadow: 0 0 0 2px rgba(255, 194, 77, 0.25), 0 0 10px 2px var(--rs-lamp); }
+.rs-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.15; }
+.radio-skin-maple .rs-name { font-family: var(--en); font-style: italic; font-weight: 600; font-size: 1.62em; letter-spacing: 0.005em; }
+.radio-skin-colibri .rs-name { font-family: var(--ui); font-weight: 900; font-size: 1.16em; letter-spacing: 0.07em; text-transform: uppercase; color: var(--rs-trim); transform: rotate(-2deg); text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.22); padding: 2px 2px 2px 0; }
+.rs-freq { margin-left: auto; flex: none; font-family: var(--ui); font-weight: 800; font-size: 0.7em; letter-spacing: 0.09em; color: var(--rs-ink-soft); }
+.rs-x { position: relative; flex: none; width: 30px; height: 30px; border-radius: 10px; border: 0; background: none; color: var(--rs-ink-soft); display: grid; place-items: center; }
+.rs-x::before { content: ""; position: absolute; inset: -7px; }
+.rs-x:hover { background: var(--rs-key); color: var(--rs-ink); }
+
+/* the dial: an FM scale behind glass, lit while the radio is on; the needle glides to the station */
+.rs-dial {
+  position: relative; height: 40px; border-radius: 10px; overflow: hidden; background: var(--rs-plate);
+  box-shadow: inset 0 2px 7px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(0, 0, 0, 0.2); filter: saturate(0.45) brightness(0.72); transition: filter 0.9s ease;
 }
-.radio-station b { font-size: 0.86em; font-weight: 800; }
-.radio-station small { font-size: 0.68em; color: var(--ink-soft); font-weight: 600; margin-top: 2px; }
-.radio-station:hover { border-color: var(--accent-soft-2); background: var(--accent-soft); }
-.radio-station.on { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
-.radio-now { display: flex; flex-direction: column; gap: 1px; min-height: 2.6em; padding: 0 2px; line-height: 1.25; }
-.radio-now b { font-family: var(--en); font-weight: 600; font-size: 1.16em; color: var(--ink); }
-.radio-now span { font-size: 0.84em; color: var(--ink-soft); font-weight: 600; }
-.radio-now small { font-size: 0.72em; color: var(--ink-faint); font-weight: 600; margin-top: 1px; }
-.radio-now em { font-style: normal; font-size: 0.78em; color: var(--accent-strong); font-weight: 700; margin-top: 4px; }
-.radio-now em i { font-family: var(--en); font-size: 1.12em; }
-.radio-keys { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-.radio-key {
-  width: 46px; height: 46px; border-radius: 14px; border: 1px solid transparent; background: none; color: var(--ink-soft); display: grid; place-items: center;
+.radio-set.on .rs-dial { filter: none; background: radial-gradient(130% 150% at 50% -10%, #fffdf2, var(--rs-plate) 70%); }
+.rs-dial::before { /* a tick for every megahertz */
+  content: ""; position: absolute; left: 6%; right: 6%; bottom: 5px; height: 8px; opacity: 0.55; border-right: 1.5px solid var(--rs-plate-ink);
+  background: repeating-linear-gradient(90deg, var(--rs-plate-ink) 0 1.5px, transparent 1.5px 5%);
+}
+.rs-dial span { position: absolute; top: 5px; transform: translateX(-50%); font-family: var(--ui); font-weight: 800; font-size: 10.5px; line-height: 1; color: var(--rs-plate-ink); opacity: 0.82; }
+.rs-needle { position: absolute; top: 3px; bottom: 3px; width: 3px; margin-left: -1.5px; border-radius: 2px; background: var(--rs-needle); transition: left 0.75s cubic-bezier(0.3, 1.35, 0.5, 1); }
+.radio-set.on .rs-needle { box-shadow: 0 0 7px var(--rs-needle); }
+
+/* the stations: preset buttons under the dial */
+.rs-presets { display: flex; gap: 6px; }
+.rs-preset {
+  flex: 1 1 0; min-width: 0; min-height: 48px; padding: 6px 9px; border-radius: 11px; border: 1px solid rgba(255, 255, 255, 0.2); background: var(--rs-key); color: var(--rs-ink);
+  display: flex; flex-direction: column; align-items: flex-start; justify-content: center; text-align: left; line-height: 1.15; transition: background-color 0.2s, color 0.2s, transform 0.15s;
+}
+.rs-preset b { font-size: 0.84em; font-weight: 800; }
+.rs-preset small { font-size: 0.66em; font-weight: 600; color: var(--rs-ink-soft); margin-top: 2px; }
+.rs-preset:hover { background: var(--rs-key-on); }
+.rs-preset:active { transform: translateY(1px); }
+.rs-preset.on { background: var(--rs-plate); color: var(--rs-plate-ink); border-color: var(--rs-edge); box-shadow: inset 0 -3px 0 var(--rs-needle); }
+.rs-preset.on small { color: var(--rs-plate-ink); opacity: 0.74; }
+
+.rs-now { display: flex; flex-direction: column; gap: 2px; min-height: 2.5em; padding: 0 2px; line-height: 1.25; }
+.rs-now b { font-family: var(--en); font-weight: 600; font-size: 1.2em; }
+.rs-now span { font-size: 0.8em; font-weight: 600; color: var(--rs-ink-soft); }
+.rs-now em { font-style: normal; font-size: 0.78em; font-weight: 700; color: var(--rs-trim); margin-top: 2px; }
+.rs-now em i { font-family: var(--en); font-size: 1.12em; }
+
+.rs-keys { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.rs-key {
+  width: 46px; height: 46px; border-radius: 14px; border: 1px solid transparent; background: none; color: var(--rs-ink-soft); display: grid; place-items: center;
   transition: background-color 0.15s, color 0.15s, transform 0.15s;
 }
-.radio-key:hover:not(:disabled) { background: var(--accent-soft); color: var(--accent-strong); }
-.radio-key:active:not(:disabled) { transform: scale(0.94); }
-.radio-key:disabled { opacity: 0.4; }
-.radio-key.on { color: var(--accent-strong); background: var(--accent-soft); border-color: var(--accent-soft-2); }
-.radio-key.main { width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(180deg, var(--accent-hi), var(--accent)); color: var(--accent-ink); box-shadow: var(--shadow-sm); }
-.radio-key.main:hover:not(:disabled) { background: linear-gradient(180deg, var(--accent-hi), var(--accent-strong)); color: var(--accent-ink); }
+.rs-key:hover:not(:disabled) { background: var(--rs-key); color: var(--rs-ink); }
+.rs-key:active:not(:disabled) { transform: scale(0.94); }
+.rs-key:disabled { opacity: 0.4; }
+.rs-key.on { color: var(--rs-ink); background: var(--rs-key-on); border-color: rgba(255, 255, 255, 0.22); }
+.rs-key.rs-knob {
+  width: 58px; height: 58px; border-radius: 50%; background: var(--rs-knob); color: var(--rs-knob-ink); border: 2px solid rgba(0, 0, 0, 0.2);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.4), 0 7px 16px -7px rgba(0, 0, 0, 0.7);
+}
+.rs-key.rs-knob:hover:not(:disabled) { background: var(--rs-knob); color: var(--rs-knob-ink); filter: brightness(1.07); }
 
-/* the lyric strip: above the "E" prompt (and above the first-visit help while that is open) */
+/* ---------- the lyric strip: above the "E" prompt (and above the first-visit help while that is open) ---------- */
 .hud > .radio-strip { pointer-events: none; }
 .radio-strip { position: absolute; left: 50%; transform: translateX(-50%); bottom: 96px; width: max-content; max-width: min(760px, calc(100vw - 190px)); }
 .hud:has(.help-strip) .radio-strip { bottom: 190px; }
 .radio-line {
   display: flex; flex-wrap: wrap; justify-content: center; column-gap: 0.5em; row-gap: 0.2em; padding: 7px 16px 8px; border-radius: 16px;
-  background: rgba(24, 32, 40, 0.74); box-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.45); animation: radio-line 0.3s ease;
+  background: var(--rs-strip, rgba(24, 32, 40, 0.78)); box-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.45); animation: radio-line 0.3s ease;
 }
 @keyframes radio-line { from { opacity: 0; transform: translateY(5px); } }
 .ru { display: inline-flex; flex-direction: column; align-items: center; text-align: center; }
@@ -74,12 +147,12 @@
 /* two columns of tools (styles.css): the radio beside the light-mode button; with the radio, a little sooner */
 @media (min-width: 901px) and (min-height: 521px) and (max-height: 900px) {
   .hud.has-touch .toolbar-extra { flex-direction: row; }
-  .hud.has-touch .radio-card { right: calc(max(14px, env(safe-area-inset-right)) + 126px); }
+  .hud.has-touch .radio-set { right: calc(max(14px, env(safe-area-inset-right)) + 126px); }
 }
 @media (max-height: 822px) {
   .toolbar.has-radio .toolbar-tools { grid-template-rows: repeat(4, 52px); }
   .toolbar-extra { flex-direction: row; }
-  .radio-card { right: calc(max(14px, env(safe-area-inset-right)) + 126px); }
+  .radio-set { right: calc(max(14px, env(safe-area-inset-right)) + 126px); }
 }
 @media (max-width: 900px) and (max-height: 822px) {
   .toolbar.has-radio .toolbar-tools { grid-template-rows: repeat(4, 46px); }
@@ -88,16 +161,19 @@
   .toolbar.has-radio .toolbar-tools { grid-template-rows: repeat(2, 46px); }
   .toolbar-extra { gap: 8px; }
 }
-/* phones: the card across the top, so the thumbs stay on the joystick; the strip clear of the tools on the right */
+/* phones: the set across the top, so the thumbs stay on the joystick; the strip clear of the tools on the right */
 @media (max-width: 900px), (max-height: 520px) {
-  .radio-card { top: calc(8px + env(safe-area-inset-top)); left: 50%; right: auto; transform: translateX(-50%); width: min(420px, calc(100vw - 16px)); animation: none; }
+  .radio-set { top: calc(8px + env(safe-area-inset-top)); left: 50%; right: auto; margin-left: calc(min(420px, 100vw - 16px) / -2); width: min(420px, calc(100vw - 16px)); }
+  .radio-skin-colibri.radio-set { top: calc(18px + env(safe-area-inset-top)); }
 }
 @media (max-width: 900px) {
   .radio-strip { left: 8px; right: 66px; transform: none; width: auto; max-width: none; display: flex; justify-content: center; }
   .radio-line { padding: 6px 10px 7px; column-gap: 0.42em; }
   .ru .rt { font-size: 1.18em; }
   .ru .rg { font-size: 0.68em; }
+  .radio-plate { height: 36px; max-width: min(190px, calc(100vw - 136px)); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .radio-eq i, .radio-card, .radio-line { animation: none; }
+  .radio-eq i, .radio-plate.playing .radio-eq i, .radio-set, .radio-line, .radio-plate, .radio-plate-text { animation: none; }
+  .rs-needle, .rs-dial, .rs-lamp, .radio-lamp { transition: none; }
 }

@@ -98,8 +98,9 @@ export function cylGeo(rt: number, rb: number, h: number, x: number, y: number, 
   return g;
 }
 
-/** Text sign as a canvas texture. */
-export function textTexture(text: string, opts: { bg?: string; fg?: string; font?: string; w?: number; h?: number; border?: string; script?: boolean } = {}) {
+/** Text sign as a canvas texture. `lines`: the text may be broken at its spaces onto up to that many lines, whichever
+ *  way its letters come out biggest (a small board with a long text, a tall banner). */
+export function textTexture(text: string, opts: { bg?: string; fg?: string; font?: string; w?: number; h?: number; border?: string; script?: boolean; lines?: number } = {}) {
   const w = opts.w ?? 512, h = opts.h ?? 128;
   const c = document.createElement("canvas");
   c.width = w; c.height = h;
@@ -109,15 +110,34 @@ export function textTexture(text: string, opts: { bg?: string; fg?: string; font
   x.fill();
   if (opts.border) { x.lineWidth = h * 0.06; x.strokeStyle = opts.border; x.stroke(); }
   x.fillStyle = opts.fg ?? "#222";
-  let size = h * 0.52;
   const family = opts.font ?? (opts.script ? "'Georgia', serif" : "'Nunito', 'Arial Rounded MT Bold', Arial, sans-serif");
+  /** The biggest size up to `size` px with which every row is at most 90% of the board wide. */
+  const fit = (rows: string[], size: number) => {
+    x.font = `800 ${size}px ${family}`;
+    while (Math.max(...rows.map((r) => x.measureText(r).width)) > w * 0.9 && size > 10) { size -= 2; x.font = `800 ${size}px ${family}`; }
+    return size;
+  };
+  const widest = (rows: string[]) => Math.max(...rows.map((r) => x.measureText(r).width));
+  let rows = [text], size = fit(rows, h * 0.52), wide = widest(rows);
+  // (a dash stays with what follows it, a "·" between two parts is dropped where the line breaks)
+  const words = text.split(" ").reduce<string[]>((a, w) => (a.length && /^[–-]$/.test(a[a.length - 1]) ? (a[a.length - 1] += " " + w) : a.push(w), a), []);
+  for (let n = 2; n <= Math.min(opts.lines ?? 1, words.length); n++) {
+    // every way of cutting the words into n rows (a sign has a handful of words)
+    const cuts = (from: number, left: number): number[][] => left === 0 ? [[]] : Array.from({ length: words.length - from - left }, (_, i) => from + 1 + i).flatMap((k) => cuts(k, left - 1).map((r) => [k, ...r]));
+    for (const cut of cuts(0, n - 1)) {
+      const r = [0, ...cut].map((a, i) => words.slice(a, [...cut, words.length][i]).join(" ").replace(/^· | ·$/g, ""));
+      // the biggest letters; as big, the evenest lines ("2 for $5" over "Weekly Deals", not "2 for" over the rest)
+      const s = fit(r, (h * 0.84) / (n * 1.06)), wd = widest(r);
+      if (s > size || (s === size && n === rows.length && wd < wide)) { size = s; rows = r; wide = wd; }
+    }
+  }
   x.font = `800 ${size}px ${family}`;
-  while (x.measureText(text).width > w * 0.9 && size > 10) { size -= 2; x.font = `800 ${size}px ${family}`; }
   x.textAlign = "center"; x.textBaseline = "middle";
-  x.fillText(text, w / 2, h / 2 + size * 0.04);
+  rows.forEach((r, i) => x.fillText(r, w / 2, h / 2 + (i - (rows.length - 1) / 2) * size * 1.06 + size * 0.04));
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
-  t.anisotropy = 4;
+  // sharp at an angle too (three.js keeps it to what the graphics card can do)
+  t.anisotropy = 16;
   return t;
 }
 

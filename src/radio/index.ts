@@ -9,6 +9,7 @@ import { STATIONS, songOfSituation } from "../content/radio";
 import { BufferOutput, HtmlOutput } from "./output";
 import { Radio, type RadioState } from "./radio";
 import { radioConfig } from "./songs";
+import { L } from "../ui/i18n";
 
 /** A note of this device's, not progress: like "ew-help-closed", outside the save's "english-world-" names, which the
  *  course backs up (fluent-steps src/lib/backup.ts). */
@@ -20,6 +21,41 @@ async function fetchJson(url: string): Promise<unknown> {
   return r.json();
 }
 
+/** The sound of a dial turned between two stations: half a second of quiet static swept upwards, with a faint
+ *  whistle. It plays in the game's own audio context beside the music, never holds anything up, and is silent with
+ *  the volume at 0 or before the first tap has woken the context. */
+function tune() {
+  const volume = useStore.getState().settings.volume;
+  const ctx = audio.context();
+  if (!ctx || volume <= 0) return;
+  if (ctx.state !== "running") { try { void ctx.resume().catch(() => {}); } catch { /* the next tap */ } return; }
+  try {
+    const now = ctx.currentTime, length = 0.55;
+    const noise = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * length), ctx.sampleRate);
+    const data = noise.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    const source = ctx.createBufferSource(), band = ctx.createBiquadFilter(), gain = ctx.createGain();
+    source.buffer = noise;
+    band.type = "bandpass"; band.Q.value = 5;
+    band.frequency.setValueAtTime(500, now);
+    band.frequency.exponentialRampToValueAtTime(2800, now + length);
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.07 * volume, now + 0.12);
+    gain.gain.linearRampToValueAtTime(0, now + length);
+    source.connect(band); band.connect(gain); gain.connect(ctx.destination);
+    const whistle = ctx.createOscillator(), soft = ctx.createGain();
+    whistle.type = "sine";
+    whistle.frequency.setValueAtTime(1900, now);
+    whistle.frequency.exponentialRampToValueAtTime(700, now + length * 0.8);
+    soft.gain.setValueAtTime(0, now);
+    soft.gain.linearRampToValueAtTime(0.006 * volume, now + 0.1);
+    soft.gain.linearRampToValueAtTime(0, now + length * 0.8);
+    whistle.connect(soft); soft.connect(ctx.destination);
+    source.start(now); source.stop(now + length);
+    whistle.start(now); whistle.stop(now + length);
+  } catch { /* no sweep: the station changes all the same */ }
+}
+
 export const radio = new Radio({
   config: typeof window === "undefined" ? null : radioConfig(),
   stations: STATIONS,
@@ -28,6 +64,7 @@ export const radio = new Radio({
   fetchJson,
   volume: () => useStore.getState().settings.volume,
   storageKey: RADIO_STORAGE,
+  tune,
 });
 
 export function useRadio<T>(pick: (s: RadioState) => T): T { return useZustand(radio.store, pick); }
@@ -84,5 +121,9 @@ export function bindRadio() {
       } catch { /* no lock-screen card */ }
     });
   }
+  // the power button has no room for words: a radio that can't play says so in a toast, once
+  radio.store.subscribe((s, before) => {
+    if (s.failed && !before.failed) useStore.getState().toast({ kind: "info", title: L("Radijas dabar nepasiekiamas. Pabandyk vėliau.") });
+  });
   void radio.init().then(() => radio.suggest(songsAt(useStore.getState().hud.minimap.zone)));
 }
