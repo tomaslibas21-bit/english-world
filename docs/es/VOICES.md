@@ -6,6 +6,19 @@ voiced as a third set `esp_<id>` with the same Gemini voice and manner per chara
 freeze of all three texts. The stop line for the three sets together is **$48** (the owner topped up the Google
 balance; `voice-batch-es.ts` CAP).
 
+**12 Nov 2026: the freeze and Spain's own voices.** The three texts were frozen at spanish-edition e93082c4. `plan`
+lists 129,965 clips: 43,298 Mexican, 43,279 neutral and 43,388 Spain (11,794 of them a Spain twin's own text).
+`project m1 m1b` puts all three sets at $45.46 with 5% for redos, so $47.00 of $48 with what was already spent.
+- The sample `sp1` (80 clips, the Mexican casting's es-419 voices with the Castilian direction) was heard by Gemini 3.1
+  Pro (`PC_JUDGE=gemini-3.1-pro-preview judge`) as Spain in only 41 of 80 clips, with seseo in the rest. So Spain's set
+  gets its own voices: the catalog's 22 Castilian ones (`voices --lang=es-ES`), cast by gender, age and manner with
+  the same checks (casting-es.ts `ES_VOICES`, `SPAIN`, `voiceFor`).
+- The sample `sp2` on those voices was heard as Spain in 61 of 80 clips. Of the 33 lines with a θ sound (z, ce, ci),
+  29 had distinción. For comparison, the Mexican casting's m1 sample was heard as Mexican in 86 of 122.
+- Each character therefore has one voice in the Mexican and neutral sets and another in Spain's.
+- Only the samples and the listener went as regular requests; the three sets and every redo go through the Batch API
+  (`REGULAR_MAX` 300 stops anything bigger). The ledger keeps regular and batch apart.
+
 **Status (5 Nov 2026, 09:45):** **recording on a paid key.** The owner saved a new key on 5 Nov at 08:16; its project accepted a one-line batch at 08:19 (last night's free-tier key got a 400 `FAILED_PRECONDITION`), so billing and the Batch API are on. The samples are done (below) and chose the casting: **the catalog's native Mexican voices** (`DEFAULT_CASTING = "mexico"`). The projection from their real tokens: **85,508 clips for both sets (all 50 conversations), about $29.82 with 5% for redos, $31.34 with what the samples cost**, under the $38 stop. The full sets go to the Batch API once every spoken line is frozen (the five open calls and the 5 Nov dialogue audit land first); a line changed after that is re-voiced inside the $38. Last night's state, for the record: the free tier answered 10 requests a day and had no Batch API, so nothing was recorded then.
 
 The owner's brief (4 Nov 2026, evening): every character of the Spanish edition gets a voice of their own, made with
