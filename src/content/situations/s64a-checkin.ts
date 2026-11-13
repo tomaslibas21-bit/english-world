@@ -378,7 +378,7 @@ export const checkin: SituationDef = {
   location: "airport",
   npc: "kevin",
   goal: "Užsiregistruok skrydžiui: parodyk pasą, priduok lagaminą, išsirink vietą ir sužinok vartus.",
-  intro: "Maple Harbor oro uostas. Šiandien skrendi į Bostoną (skrydis 223). Turi vieną lagaminą ir kuprinę. Prie registracijos stalo – aviakompanijos darbuotojas Kevinas. JAV bagažas sveriamas svarais: 50 svarų – maždaug 23 kg.",
+  intro: "Maple Harbor oro uostas. Šiandien tu skrendi į Bostoną (skrydis 223). Turi vieną lagaminą ir kuprinę. Prie registracijos stalo – aviakompanijos darbuotojas Kevinas. JAV bagažas sveriamas svarais: 50 svarų – maždaug 23 kg.",
   entities: { city: CITIES, seat: SEATS },
 
   grammar: {

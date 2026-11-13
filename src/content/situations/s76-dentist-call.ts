@@ -211,7 +211,7 @@ export const dentist: SituationDef = {
   npc: "linda",
   mode: "phone",
   goal: "Paskambink į odontologijos kliniką ir užsiregistruok vizitui.",
-  intro: "Skambini į odontologijos kliniką „Green Street Dental“: jau kelias dienas skauda dantį (o gal tiesiog laikas profilaktinei patikrai). Atsiliepia registratorė Linda. Telefonu nieko nematai – tad drąsiai klausk, prašyk pakartoti ir sakyk paraidžiui.",
+  intro: "Tu skambini į odontologijos kliniką „Green Street Dental“: jau kelias dienas skauda dantį (o gal tiesiog laikas profilaktinei patikrai). Atsiliepia registratorė Linda. Telefonu nieko nematai – tad drąsiai klausk, prašyk pakartoti ir sakyk paraidžiui.",
   entities: { reason: REASONS, wday: WDAYS },
 
   grammar: {

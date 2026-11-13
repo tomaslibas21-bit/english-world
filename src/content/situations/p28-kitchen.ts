@@ -172,7 +172,7 @@ export const kitchen: SituationDef = {
   npc: "whitaker",
   npcs: ["russo"],
   goal: "Gražiai priimk šefo pastabas, o paskui konstruktyviai įvertink naujokės patiekalą.",
-  intro: "„The Pier“ restorano virtuvė, 16.30 – valanda iki vakaro aptarnavimo. Šįvakar nori įtraukti savo šaltibarščius į dienos pasiūlymus, bet pirmiausia jų turi paragauti šefas Vitakeris. Jis kalba tyliai, bet nieko nepraleidžia pro akis – o po to, ko gero, paprašys tavęs padėti naujai virėjai Mijai.",
+  intro: "Tu – {m:virėjas|f:virėja} „The Pier“ restorane. Virtuvė, 16.30 – valanda iki vakaro aptarnavimo. Šįvakar nori įtraukti savo šaltibarščius į dienos pasiūlymus, bet pirmiausia jų turi paragauti šefas Vitakeris. Jis kalba tyliai, bet nieko nepraleidžia pro akis – o po to, ko gero, paprašys tavęs padėti naujai virėjai Mijai.",
   entities: { good_part: GOOD_PARTS, ingredient: INGREDIENTS, other_food: OTHER_FOODS },
 
   grammar: {

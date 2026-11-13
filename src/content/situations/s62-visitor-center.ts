@@ -945,7 +945,7 @@ export const visitorCenter: SituationDef = {
   location: "visitor-center",
   npc: "chuck",
   goal: "Gauk miesto žemėlapį ir sužinok, kaip nueiti į kavinę. Chuck kalba labai greitai – drąsiai prašyk pakartoti, kalbėti lėčiau ar paraidžiui.",
-  intro: "Lankytojų centras: stendai su lankstinukais, ant sienos – didelis miesto žemėlapis. Už stalo – savanoris Chuckas. Jis labai draugiškas, bet kalba kaip kulkosvaidis. Nebijok jo sustabdyti: pasitikslinti yra visiškai normalu.",
+  intro: "Tu ką tik atvykai į Maple Harborą ir užsuki į lankytojų centrą: stendai su lankstinukais, ant sienos – didelis miesto žemėlapis. Už stalo – savanoris Chuckas. Jis labai draugiškas, bet kalba kaip kulkosvaidis. Nebijok jo sustabdyti: pasitikslinti yra visiškai normalu.",
   entities: { place: PLACES, dir: DIRS, street: STREETS, word: WORDS },
 
   grammar: {

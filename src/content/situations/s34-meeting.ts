@@ -643,7 +643,7 @@ export const meeting: SituationDef = {
   npc: "kate",
   npcs: ["paul", "sara"],
   goal: "Dalyvauk komandos susirinkime: pristatyk savo naujienas, paprašyk paaiškinti ir padėk susirinkimą užbaigti.",
-  intro: "Pirmadienio rytas „Brightline“ biure, posėdžių salėje. Susirinkimą veda Keitė, šalia sėdi Paulas, o Sara jungiasi iš namų – ją matote ekrane. Papasakok savo naujienas, paklausk, jei kas neaišku, ir pasakyk savo nuomonę.",
+  intro: "Tu dirbi Keitės komandoje „Brightline“ biure. Pirmadienio rytas, posėdžių salė. Susirinkimą veda Keitė, šalia sėdi Paulas, o Sara jungiasi iš namų – ją matote ekrane. Papasakok savo naujienas, paklausk, jei kas neaišku, ir pasakyk savo nuomonę.",
   entities: { task: TASKS, deliv: DELIVS },
 
   grammar: {

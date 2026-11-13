@@ -191,7 +191,7 @@ export const security: SituationDef = {
   location: "airport",
   npc: "grant",
   goal: "Praeik saugumo patikrą.",
-  intro: "Saugumo patikra (TSA). Pareigūnas Grantas tikrina dokumentus ir bagažą. Batų JAV nusiauti nebereikia, bet šiame oro uoste nešiojamąjį kompiuterį ir skysčius (talpos iki 3,4 uncijos, t. y. 100 ml, viename skaidriame maišelyje) reikia išimti į dėžę.",
+  intro: "Tu eini per oro uosto saugumo patikrą (TSA). Pareigūnas Grantas tikrina dokumentus ir bagažą. Batų JAV nusiauti nebereikia, bet šiame oro uoste nešiojamąjį kompiuterį ir skysčius (talpos iki 3,4 uncijos, t. y. 100 ml, viename skaidriame maišelyje) reikia išimti į dėžę.",
 
   grammar: {
     macros: {

@@ -706,7 +706,7 @@ export const complaint: SituationDef = {
   npcs: ["brenda"],
   mode: "phone",
   goal: "Mandagiai, bet tvirtai pateik skundą ir pasiek, kad tau grąžintų pinigus arba pakeistų šaldytuvą.",
-  intro: "Prieš tris savaites nusipirkai naują šaldytuvą su prašmatniu ekranu, o praėjusį antradienį jis paniūniavo melodiją ir nutilo. Meistras turėjo atvykti jau du kartus, bet taip ir neatvyko. Skambini į „Harbor Home“ jau trečią kartą – kalbėk mandagiai, bet nenusileisk.",
+  intro: "Prieš tris savaites tu nusipirkai naują šaldytuvą su prašmatniu ekranu, o praėjusį antradienį jis paniūniavo melodiją ir nutilo. Meistras turėjo atvykti jau du kartus, bet taip ir neatvyko. Skambini į „Harbor Home“ jau trečią kartą – kalbėk mandagiai, bet nenusileisk.",
   entities: { dday: DAYS },
 
   grammar: {

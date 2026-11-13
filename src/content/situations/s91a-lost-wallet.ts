@@ -159,7 +159,7 @@ export const lostWallet: SituationDef = {
   location: "town-square",
   npc: "mrs_lee",
   goal: "Paprašyk pagalbos: pametei piniginę.",
-  intro: "Sekmadienis, ūkininkų turgus aikštėje. Nori susimokėti už braškes, kiši ranką į kišenę – piniginės nėra! Prie gėlių prekystalio stovi malonioji ponia Li. Paprašyk jos pagalbos.",
+  intro: "Sekmadienis, ūkininkų turgus aikštėje. Tu nori susimokėti už braškes, kiši ranką į kišenę – piniginės nėra! Prie gėlių prekystalio stovi malonioji ponia Li. Paprašyk jos pagalbos.",
   entities: { item: ITEMS, place: PLACES, color: COLORS, material: MATERIALS, size: SIZES },
 
   grammar: {

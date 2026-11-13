@@ -445,7 +445,7 @@ export const inviteCall: SituationDef = {
   npc: "lizzie",
   mode: "phone",
   goal: "Pakviesk Lizzie į koncertą penktadienį ir susitarkite dėl laiko ir vietos.",
-  intro: "Turi du bilietus į koncertą penktadienį – durys atsidaro aštuntą vakaro. Skambini draugei Lizzie.",
+  intro: "Tu turi du bilietus į koncertą penktadienį – durys atsidaro aštuntą vakaro. Skambini draugei Lizzie.",
   entities: { genre: GENRES, place: PLACES, wday: WDAYS },
 
   grammar: {
