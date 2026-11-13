@@ -309,7 +309,8 @@ export const runningLate: SituationDef = {
 
   grammar: {
     macros: {
-      mh: "(ingeniero | ingeniero montes | inge | senor montes | jefe)",
+      // Spain's twins say "señor Montes" (Mexico and the neutral text: "ingeniero"): every set takes all of them
+      mh: "(ingeniero | ingeniero montes | inge | senor montes | senor | jefe)",
       pre: "[@mh] [perdon | disculpe | disculpa #tip:tu_staff | una disculpa | lo siento [mucho] | fijese que | fijate que #tip:tu_staff | es que | desgraciadamente | lamentablemente | tengo un (problema | problemita | pequeno problema) | (le | solo le | nada mas le | nomas le) (llamo | hablo | marco) para (avisarle | decirle) [que] | (te | solo te) (llamo | hablo | marco) para (avisarte | decirte) [que] #tip:tu_staff | (le | te) (queria | quiero) (avisar | decir) [que] | (queria | quiero | solo queria) (avisarle | decirle) [que] | (le | te) aviso que | (solo | nada mas | nomas) que] [@mh] [pero] [hoy]",
       for_mtg: "[a la (junta | reunion) [de las nueve | de hoy] | a la oficina | al trabajo | hoy | esta manana | otra vez | de nuevo | hoy otra vez]",
       bitlate: "[un poco | un poquito | algo | un rato | un poco mas]",
@@ -990,9 +991,10 @@ export const runningLate: SituationDef = {
       lt: "Say hello and who's calling",
       items: [
         { id: "id_habla", s: t("Buenos días, | ingeniero, | habla | {$name}.", "Good morning, | ingeniero, | speaking | {$name}.", "Good morning, it's {$name}.",
-          { flags: { 1: "Ingeniero: a title for an engineer; in Mexico you address your boss by it.", 2: "habla + name: on the phone, “it's …”." }, spain: t("Buenos días, | ingeniero, | soy | {$name}.", "Good morning, | ingeniero, | it's | {$name}.", "Good morning, it's {$name}.", { flags: { 1: "Ingeniero: a title for an engineer; in Mexico you address your boss by it." } }) }),
+          { flags: { 1: "Ingeniero: a title for an engineer; in Mexico you address your boss by it.", 2: "habla + name: on the phone, “it's …”." }, spain: t("Buenos días, | señor | Montes, | soy | {$name}.", "Good morning, | Mr. | Montes, | it's | {$name}.", "Good morning, it's {$name}.", { flags: { 1: "señor + surname: how you address your boss politely in Spain (Mexico: ingeniero)." } }) }),
           note: "On the phone, say “Habla…” or “Soy…”, not “Me llamo…”." },
-        { id: "id_habla", s: t("Ingeniero, | soy | {$name}.", "Ingeniero, | I'm | {$name}.", "Hi, it's {$name}.") },
+        { id: "id_habla", s: t("Ingeniero, | soy | {$name}.", "Ingeniero, | I'm | {$name}.", "Hi, it's {$name}.",
+          { spain: t("Señor | Montes, | soy | {$name}.", "Mr. | Montes, | I'm | {$name}.", "Hi, it's {$name}.", { flags: { 0: "señor + surname: how you address your boss politely in Spain (Mexico: ingeniero)." } }) }) },
       ],
     },
     late: {
@@ -1006,7 +1008,8 @@ export const runningLate: SituationDef = {
         { id: "not_on_time", s: t("No voy | a | llegar | a tiempo.", "I'm not going | to | arrive | on time.", "I won't make it on time.") },
         { id: "calling_late", s: t("Le | llamo | para | avisarle | que | voy | a | llegar | tarde.", "(to) you | I'm calling | to | let you know | that | I'm going | to | arrive | late.",
           "I'm calling to let you know I'll be late."), register: "polite" },
-        { id: "running_late", s: t("Perdón, | ingeniero, | pero | voy | tarde.", "Sorry, | ingeniero, | but | I'm going | late.", "I'm sorry, but I'm running late.") },
+        { id: "running_late", s: t("Perdón, | ingeniero, | pero | voy | tarde.", "Sorry, | ingeniero, | but | I'm going | late.", "I'm sorry, but I'm running late.",
+          { spain: t("Perdón, | señor | Montes, | pero | voy | tarde.", "Sorry, | Mr. | Montes, | but | I'm going | late.", "I'm sorry, but I'm running late.", { flags: { 1: "señor + surname: how you address your boss politely in Spain (Mexico: ingeniero)." } }) }) },
       ],
     },
     reason: {
@@ -1553,6 +1556,13 @@ export const runningLate: SituationDef = {
     { say: "No puedo llegar a tiempo.", intent: "late", not: ["cant_come", "not_late"] },
     { say: "No voy a poder llegar a tiempo a la junta.", intent: "late", not: ["cant_come", "not_late"] },
     { say: "Ingeniero.", intent: "greet_harris", step: "opening", not: ["identify_ctx"] },
+    // Spain's "señor Montes" (13 Nov 2026): understood in every set, a title alone is a greeting
+    { say: "Señor Montes.", intent: "greet_harris", step: "opening", not: ["identify_ctx"] },
+    { say: "Buenos días, señor Montes.", intent: "greet_harris", step: "opening", not: ["identify_ctx"] },
+    { say: "Oiga, señor.", intent: "greet_harris", step: "opening", not: ["identify_ctx"] },
+    { say: "Buenos días, señor Montes, soy Ryan.", intent: "identify", slots: { name: "Ryan" } },
+    { say: "Perdón, señor Montes, pero voy tarde.", intent: "late" },
+    { say: "¿Está el señor Montes?", intent: "is_harris", step: "opening" },
     { say: "Voy a llegar unos minutos tarde.", intent: "late", step: "opening", not: ["identify_ctx", "eta"] },
     { say: "¿Y si nadie viene?", intent: "none", step: "opening", not: ["identify_ctx"] },
     { say: "No, mejor empiecen.", intent: "start_without", not: ["wait_for_me"] },

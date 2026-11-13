@@ -67,6 +67,8 @@ const F_GANAS = "Mexican: echarle ganas = to give it your all.";
 const F_GANAS_N = "dar con todo = to give it your all.";
 const F_CHAMBA = "Mexican: la chamba = work, a job (informal).";
 const F_CHINO = "estar en chino = to be impossible to understand (English says “Greek to me”).";
+const F_CHINO_N = "sonar a chino = to be impossible to understand (English says “Greek to me”).";
+const F_TEJADO = "Spain: la pelota está en tu tejado = the ball is in your court.";
 const F_CRACK = "un crack = an ace, a star (from soccer slang).";
 const F_CON = "poder con algo = to handle it.";
 const F_SI = "sí stresses the contrast: what CAN you do.";
@@ -151,7 +153,7 @@ const IDIOM_WORDS: [RegExp, string][] = [
   [/\bcheck ?-?in\b|\bchequin\b/, "checkin"], [/\bchino\b/, "chino"], [/\bonda\b|\britmo\b/, "onda"], [/\bcrack\b/, "crack"],
   [/\bmanos\b|\bobra\b/, "manos"], [/\bcaja\b/, "caja"], [/\bcuello\b/, "cuello"], [/\bpagina\b/, "pagina"],
   [/\bparejo\b|\bde (tu|su|nuestra) parte\b/, "parejo"], [/\baventon\b|\ba la carrera\b/, "aventon"], [/\bceros?\b/, "cero"],
-  [/\bcancha\b|\bpelota\b/, "cancha"], [/\baparte\b/, "aparte"], [/\bpor hoy\b/, "por_hoy"], [/\bpilas\b/, "pilas"],
+  [/\bcancha\b|\btejado\b|\bpelota\b/, "cancha"], [/\baparte\b/, "aparte"], [/\bpor hoy\b/, "por_hoy"], [/\bpilas\b/, "pilas"],
   [/\bganas\b|\bdale con todo\b|\bdar con todo\b/, "ganas"], [/\bchamba\b/, "chamba"],
 ];
 function idiomFromWords(w: unknown): string | undefined {
@@ -280,7 +282,7 @@ export const startup: SituationDef = {
       // every idiom Toño uses ("¿Qué significa…?"), with the forms people say when they repeat it
       idiom: { lexicon: [
         { id: "checkin", forms: ["check in", "checkin", "un check in", "el check in", "hacer un check in", "chequin", "chek in"] },
-        { id: "chino", forms: ["en chino", "esta en chino", "todo esta en chino", "chino"] },
+        { id: "chino", forms: ["en chino", "esta en chino", "todo esta en chino", "chino", "a chino", "suena a chino", "me suena a chino", "te suena a chino", "todo te suena a chino", "sonar a chino"] },
         { id: "onda", forms: ["agarrar la onda", "agarrarle la onda", "le vas a agarrar la onda", "la onda", "onda", "agarrarle el ritmo", "agarrar el ritmo", "el ritmo", "cogerle el ritmo", "coger el ritmo", "le cogeras el ritmo"] },
         { id: "crack", forms: ["crack", "un crack", "eres un crack"] },
         { id: "manos", forms: ["manos a la obra", "a la obra", "la obra"] },
@@ -290,7 +292,8 @@ export const startup: SituationDef = {
         { id: "parejo", forms: ["jalar parejo", "jalamos parejo", "jale parejo", "jala parejo", "no jala parejo", "parejo", "poner de su parte", "poner de tu parte", "poner de nuestra parte"] },
         { id: "aventon", forms: ["al aventon", "aventon", "hacer las cosas al aventon", "a la carrera"] },
         { id: "cero", forms: ["empezar de cero", "de cero", "volver a empezar de cero", "desde cero", "cero"] },
-        { id: "cancha", forms: ["la pelota esta en tu cancha", "en tu cancha", "tu cancha", "la cancha", "cancha", "la pelota", "en mi cancha"] },
+        { id: "cancha", forms: ["la pelota esta en tu cancha", "en tu cancha", "tu cancha", "la cancha", "cancha", "la pelota", "en mi cancha",
+          "la pelota esta en tu tejado", "en tu tejado", "tu tejado", "el tejado", "tejado", "en mi tejado"] },
         { id: "aparte", forms: ["lo vemos aparte", "verlo aparte", "aparte"] },
         { id: "por_hoy", forms: ["dejarlo por hoy", "dejemoslo por hoy", "lo dejas por hoy", "por hoy"] },
         { id: "pilas", forms: ["ponerse las pilas", "ponerte las pilas", "ponte las pilas", "las pilas", "pilas"] },
@@ -300,14 +303,14 @@ export const startup: SituationDef = {
       // a bare echo ("¿Manos a la obra?"): only the idioms a learner wouldn't say as an answer of their own
       echo: { lexicon: [
         { id: "checkin", forms: ["check in", "un check in", "checkin"] },
-        { id: "chino", forms: ["en chino"] },
+        { id: "chino", forms: ["en chino", "a chino"] },
         { id: "manos", forms: ["manos a la obra"] },
         { id: "caja", forms: ["fuera de la caja", "pensar fuera de la caja"] },
         // the neutral text's idioms too ("¿Poner de nuestra parte?", "¿A la carrera?")
         { id: "parejo", forms: ["jalar parejo", "poner de nuestra parte", "poner de su parte", "ponga de su parte"] },
         { id: "aventon", forms: ["al aventon", "a la carrera"] },
         { id: "cero", forms: ["de cero", "empezar de cero"] },
-        { id: "cancha", forms: ["en mi cancha", "mi cancha", "en tu cancha"] },
+        { id: "cancha", forms: ["en mi cancha", "mi cancha", "en tu cancha", "en mi tejado", "mi tejado", "en tu tejado"] },
         { id: "aparte", forms: ["aparte", "lo vemos aparte"] },
         { id: "por_hoy", forms: ["dejarlo por hoy"] },
         { id: "pilas", forms: ["ponerse las pilas", "las pilas"] },
@@ -327,6 +330,8 @@ export const startup: SituationDef = {
     finding: { patterns: [
       "[poco a poco | ya] (le estoy agarrando | le voy agarrando | ya le estoy agarrando | le agarré | ya le agarré | le estoy cogiendo | le voy cogiendo | ya le estoy cogiendo | le he cogido | ya le he cogido | le estoy pillando | ya le he pillado) (la onda | el ritmo | el hilo | la mano) [poco a poco] #learn #idiom #h:onda",
       "[si] [todavia | casi] (todo | todo todavia | muchas cosas | casi todo) (esta | estan | me suena | me suenan) en chino [para mi] [pero me (gusta | encanta)] #learn #chino #idiom #h:chino",
+      // the neutral and Spain idiom: "Sí, todo me suena a chino"
+      "[si] [todavia | casi] [todo | todo todavia | muchas cosas | casi todo | todo esto | esto] (me suena | me suenan | me sigue sonando | me siguen sonando | suena | suenan) a chino [para mi] [pero me (gusta | encanta)] #learn #chino #idiom #h:chino",
       "[si] (un poco | bastante | totalmente | muchas cosas | todo) en chino #learn #chino #idiom",
       "hay (mucho | muchisimo | tanto | un monton) que aprender [aqui] [pero me (gusta | encanta)] #learn #h:lot_learn",
       "(esta | es) [muy] (increible | genial | padre | padrisimo | interesante | muy bien | bien) pero (es mucho | hay mucho que aprender | es mucho trabajo | es una locura) #good #h:great",
@@ -592,7 +597,8 @@ export const startup: SituationDef = {
       "quien (la regó | metio la pata)",
       "quien es (el | la) culpable",
     ] },
-    ball_back: { patterns: ["(la pelota esta en tu cancha | esta en tu cancha | en tu cancha) #idiom", "no (la pelota esta | esta) en tu cancha #idiom"] },
+    // Spain's idiom too: "la pelota está en tu tejado"
+    ball_back: { patterns: ["(la pelota esta en tu | esta en tu | en tu) (cancha | tejado) #idiom", "no (la pelota esta | esta) en tu (cancha | tejado) #idiom"] },
 
     // --- midnight ------------------------------------------------------------------------------
     stay_limit: { patterns: [
@@ -752,9 +758,13 @@ export const startup: SituationDef = {
     ],
     hello_q: [
       t("¿Cómo | vas | con | tu | primera | semana? | Al principio | todo | está | en chino, | ¿no?", "How | are-you-doing | with | your | first | week? | At first | everything | is | in Chinese, | right?",
-        "So, how's your first week going? It's all Greek to you at first, right?", { flags: { 9: F_CHINO } }),
+        "So, how's your first week going? It's all Greek to you at first, right?",
+        { flags: { 9: F_CHINO }, neutral: t("¿Cómo | vas | con | tu | primera | semana? | Al principio | todo | te | suena a chino, | ¿no?", "How | are-you-doing | with | your | first | week? | At first | everything | to-you | sounds like Chinese, | right?",
+          "So, how's your first week going? It's all Greek to you at first, right?", { flags: { 9: F_CHINO_N } }) }),
       t("¡Primera | semana! | ¿Cómo | vas? | Todo | está | en chino, | ¿verdad?", "First | week! | How | are-you-doing? | Everything | is | in Chinese, | right?",
-        "Week one! How's it going? It's all Greek to you, right?", { flags: { 6: F_CHINO } }),
+        "Week one! How's it going? It's all Greek to you, right?",
+        { flags: { 6: F_CHINO }, neutral: t("¡Primera | semana! | ¿Cómo | vas? | Todo | te | suena a chino, | ¿verdad?", "First | week! | How | are-you-doing? | Everything | to-you | sounds like Chinese, | right?",
+          "Week one! How's it going? It's all Greek to you, right?", { flags: { 6: F_CHINO_N } }) }),
     ],
     hello_reask: [
       t("¿Y? | ¿Cómo | va | tu | primera | semana?", "So? | How | is-going | your | first | week?", "So? How's week one?"),
@@ -933,7 +943,7 @@ export const startup: SituationDef = {
     ],
     crash_3: [
       t("Se cayeron | los | servidores. | Hay que | empezar de cero. | ¡La pelota está en tu cancha!", "Crashed | the | servers. | We-have-to | start from scratch. | The ball is in your court!",
-        "The servers crashed. We're back to square one. The ball is in your court!", { spain: t("Se han caído | los | servidores. | Hay que | empezar de cero. | ¡La pelota está en tu cancha!", "Have crashed | the | servers. | We-have-to | start from scratch. | The ball is in your court!", "The servers crashed. We're back to square one. The ball is in your court!") }),
+        "The servers crashed. We're back to square one. The ball is in your court!", { spain: t("Se han caído | los | servidores. | Hay que | empezar de cero. | ¡La pelota está en tu tejado!", "Have crashed | the | servers. | We-have-to | start from scratch. | The ball is in your court!", "The servers crashed. We're back to square one. The ball is in your court!", { flags: { 5: F_TEJADO } }) }),
     ],
     crash_reask: [
       t("¿Y? | ¿Qué | hacemos | primero?", "So? | What | do-we-do | first?", "So? What do we do first?"),
@@ -959,7 +969,8 @@ export const startup: SituationDef = {
           "Thank you. And nobody cuts corners ever again.", { flags: { 6: F_AVENTON_N } }) }),
     ],
     crash_who: [t("¿La verdad? | Yo. | Subí | la | actualización | a | las dos | de la mañana.", "Honestly? | Me. | I-pushed | the | update | at | two | in the morning.", "Honestly? Me. I pushed the update at two a.m.")],
-    ball_back_react: [t("¡Ja! | No, | no. | La pelota está en tu cancha.", "Ha! | No, | no. | The ball is in your court.", "Ha! Nope. The ball is in your court.")],
+    ball_back_react: [t("¡Ja! | No, | no. | La pelota está en tu cancha.", "Ha! | No, | no. | The ball is in your court.", "Ha! Nope. The ball is in your court.",
+      { spain: t("¡Ja! | No, | no. | La pelota está en tu tejado.", "Ha! | No, | no. | The ball is in your court.", "Ha! Nope. The ball is in your court.", { flags: { 3: F_TEJADO } }) })],
     crash_skip: [t("Bueno. | Le | llamo | a | Lalo. | Primero | arreglamos, | luego | hablamos.", "Okay. | — | I'll-call | — | Lalo. | First | we-fix, | then | we-talk.", "Okay. I'll call Lalo. Fix first, talk later.", { flags: { 1: F_LE, 3: F_A } })],
 
     // --- who owns what -------------------------------------------------------------------------
@@ -1104,7 +1115,9 @@ export const startup: SituationDef = {
       t("¡Ja! | Quiere decir | que | es | muy | difícil | de | entender. | Como | si | estuviera | en | chino.", "Ha! | It-means | that | it's | very | hard | to | understand. | As | if | it-were | in | Chinese.",
         "Ha! It means it's really hard to understand. As if it were in Chinese."),
       t("Cuando | algo | está | en chino, | no se entiende | nada. | Es | normal | la | primera | semana.", "When | something | is | in Chinese, | you-can't-understand | anything. | It's | normal | the | first | week.",
-        "When something's “in Chinese”, you can't understand any of it. Totally normal in week one.", { flags: { 3: F_CHINO } }),
+        "When something's “in Chinese”, you can't understand any of it. Totally normal in week one.",
+        { flags: { 3: F_CHINO }, neutral: t("Cuando | algo | te | suena a chino, | no entiendes | nada. | Es | normal | la | primera | semana.", "When | something | to-you | sounds like Chinese, | you-don't-understand | anything. | It's | normal | the | first | week.",
+          "When something sounds like Chinese to you, you don't understand any of it. Totally normal in week one.", { flags: { 3: F_CHINO_N } }) }),
     ],
     mean_onda: [
       t("Agarrarle la onda | es | entender | cómo | funcionan | las | cosas. | Poco a poco.", "Getting the hang of it | is | to-understand | how | work | — | things. | Little by little.",
@@ -1157,7 +1170,9 @@ export const startup: SituationDef = {
     mean_cancha: [
       t("Quiere decir | que | te toca | a | ti. | Tú | decides | qué | sigue.", "It-means | that | it's your turn | — | you. | You | decide | what | comes-next.", "It means it's your turn. You decide what happens next.",
         { flags: { 3: "a ti doubles te (te toca a ti = it's your turn)." } }),
-      t("Es | del | tenis. | Yo | te | paso | la | pelota. | ¡Ahora | juegas | tú!", "It's | from-the | tennis. | I | to-you | pass | the | ball. | Now | play | you!", "It's from tennis. I hit the ball to you. Now you play!"),
+      t("Es | del | tenis. | Yo | te | paso | la | pelota. | ¡Ahora | juegas | tú!", "It's | from-the | tennis. | I | to-you | pass | the | ball. | Now | play | you!", "It's from tennis. I hit the ball to you. Now you play!",
+        { spain: t("Es | como | un | juego: | yo | te | lanzo | la | pelota | a | tu | tejado. | ¡Ahora | juegas | tú!", "It's | like | a | game: | I | to-you | throw | the | ball | onto | your | roof. | Now | play | you!",
+          "It's like a game: I throw the ball onto your roof. Now it's your move!", { flags: { 11: F_TEJADO } }) }),
     ],
     mean_aparte: [
       t("¡Perdón! | Quiere decir: | “Lo | hablamos | después, | tú | y | yo.”", "Sorry! | It-means: | “It | we'll-discuss | later, | you | and | me.”", "Sorry! It means “let's talk about it later, just us.”"),
@@ -1189,7 +1204,9 @@ export const startup: SituationDef = {
         { id: "onda", s: t("Poco a poco | le estoy agarrando la onda.", "Little by little | I'm getting the hang of it.", "I'm slowly getting the hang of it.",
           { neutral: t("Poco a poco | le estoy agarrando el ritmo.", "Little by little | I'm getting the hang of it.", "I'm slowly getting the hang of it."), spain: t("Poco a poco | le estoy cogiendo el ritmo.", "Little by little | I'm getting the hang of it.", "I'm slowly getting the hang of it.") }),
           note: "Mexican: agarrarle la onda = get the hang of it (elsewhere: agarrarle el ritmo).", noteSpain: "Cogerle el ritmo: to get the hang of it (Mexico: agarrarle la onda)." },
-        { id: "chino", s: t("Sí, | todo | está | en chino.", "Yes, | everything | is | in Chinese.", "Yeah, it's all Greek to me."), note: "estar en chino: too hard to understand (English says “Greek to me”)." },
+        { id: "chino", s: t("Sí, | todo | está | en chino.", "Yes, | everything | is | in Chinese.", "Yeah, it's all Greek to me.",
+          { neutral: t("Sí, | todo | me | suena a chino.", "Yes, | everything | to-me | sounds like Chinese.", "Yeah, it's all Greek to me.") }),
+          note: "estar en chino (elsewhere: sonar a chino): too hard to understand (English says “Greek to me”).", noteSpain: "Sonar a chino: too hard to understand (English says “Greek to me”; Mexico: estar en chino)." },
         { id: "lot_learn", s: t("Hay | mucho | que aprender.", "There's | a lot | to learn.", "There's a lot to learn.") },
         { id: "great", s: t("Está | increíble, | pero | es | mucho.", "It's | amazing, | but | it's | a lot.", "It's great, but it's a lot.") },
         { id: "love", s: t("¡Me encanta | estar | aquí!", "I love | being | here!", "I love it here!") },
@@ -1359,6 +1376,8 @@ export const startup: SituationDef = {
     "hay que": { reason: "lexical_expression", split: "hay → there is + que → that; = we have to (impersonal).", minimal: "Two words." },
     "empezar de cero": { reason: "lexical_expression", split: "empezar → start, de → from, cero → zero; = start from scratch (back to square one).", minimal: "Three words." },
     "la pelota está en tu cancha": { reason: "lexical_expression", split: "la → the, pelota → ball, está → is, en → in, tu → your, cancha → court; the idiom = the ball is in your court.", minimal: "The idiom." },
+    "la pelota está en tu tejado": { reason: "lexical_expression", split: "la → the, pelota → ball, está → is, en → on, tu → your, tejado → roof; Spain's idiom = the ball is in your court.", minimal: "The idiom." },
+    "suena a chino": { reason: "lexical_expression", split: "suena → sounds, a → like, chino → Chinese; the idiom sonar a chino = to be Greek to someone.", minimal: "Three words." },
     "ahora mismo": { reason: "lexical_expression", split: "ahora → now + mismo → same; = right now.", minimal: "Two words." },
     "lo que sea": { reason: "lexical_expression", split: "lo que → what + sea → may be; = anything.", minimal: "Three words." },
     "se acabó": { reason: "grammatical_fusion", split: "se → itself + acabó → ended; = it's over.", minimal: "Two words." },
@@ -1799,6 +1818,15 @@ export const startup: SituationDef = {
     { say: "Poco a poco le estoy agarrando la onda", intent: "finding", step: "hello" },
     { say: "Sí, todo está en chino", intent: "finding", step: "hello" },
     { say: "Si, todo esta en chino", intent: "finding", step: "hello" },
+    // the neutral and Spain idiom (13 Nov 2026): understood in every set
+    { say: "Sí, todo me suena a chino", intent: "finding", step: "hello" },
+    { say: "Todavía me suena a chino", intent: "finding", step: "hello" },
+    { say: "¿Qué significa sonar a chino?", intent: "idiom_q", slots: { id: "chino" } },
+    { say: "¿Cómo que me suena a chino?", intent: "idiom_q", slots: { id: "chino" } },
+    { say: "¿Qué significa la pelota está en tu tejado?", intent: "idiom_q", slots: { id: "cancha" } },
+    { say: "¿Qué tejado?", intent: "idiom_q", slots: { id: "cancha" } },
+    { say: "No, la pelota está en tu tejado", intent: "ball_back", step: "crash" },
+    { say: "Está en tu tejado", intent: "ball_back", step: "crash" },
     { say: "Hay mucho que aprender", intent: "finding", step: "hello" },
     { say: "Está increíble, pero es mucho", intent: "finding", step: "hello" },
     { say: "¡Me encanta estar aquí!", intent: "finding", step: "hello" },
