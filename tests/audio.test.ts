@@ -93,6 +93,46 @@ describe("recorded voice reliability", () => {
     players[0].emitEnded(); await done;
   });
 
+  it("a clip list that arrives slowly but steadily is taken, however long it takes (a slow phone connection)", async () => {
+    // 25 s in all, a piece every 5 s: longer than any stall, never one itself
+    const body = new TextEncoder().encode(JSON.stringify({ [key]: 1 }));
+    let asked = 0;
+    fetcher.mockImplementation(async (url: string) => {
+      if (!url.endsWith("manifest.json")) return Response.json({});
+      asked++;
+      let i = 0;
+      return new Response(new ReadableStream({
+        async pull(c) {
+          await new Promise((r) => setTimeout(r, 5000));
+          if (i < body.length) c.enqueue(body.slice(i, (i += Math.ceil(body.length / 5)))); else c.close();
+        },
+      }));
+    });
+    const init = audio.init();
+    await vi.advanceTimersByTimeAsync(40000);
+    await init;
+    expect(asked).toBe(1);
+    expect(audio.ready).toBe(true);
+    expect(audio.hasClip(voice, 1, line)).toBe(true);
+  });
+
+  it("a clip list that stands still is given up after the stall time and asked for once more", async () => {
+    let asked = 0;
+    fetcher.mockImplementation((url: string, opts?: { signal?: AbortSignal }) => {
+      if (!url.endsWith("manifest.json")) return Promise.resolve(Response.json({}));
+      // the first answer never comes; the second is there at once
+      if (asked++ > 0) return Promise.resolve(Response.json({ [key]: 1 }));
+      return new Promise((_, reject) => opts?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError"))));
+    });
+    const init = audio.init();
+    await vi.advanceTimersByTimeAsync(7000);
+    expect(asked).toBe(1);
+    await vi.advanceTimersByTimeAsync(2000);
+    await init;
+    expect(asked).toBe(2);
+    expect(audio.ready).toBe(true);
+  });
+
   it("retries a failed manifest instead of permanently choosing browser voices", async () => {
     let failures = 1;
     fetcher.mockImplementation(async (url: string) => {
