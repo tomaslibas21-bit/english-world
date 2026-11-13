@@ -1129,7 +1129,7 @@ things, the jog, the first-time guide), three things of this edition's own, all 
 - The sea keeps its colours (`sea`); `seaColors` draws the shore's foam with water.ts's `SHORE_GLSL`.
 
 Draw calls on a phone (375×812, the built game, 22 walking views of the avenue, the zócalo, the park and the meadows,
-against spanish-edition before this and before the characters' second version): 1,968 → 2,003 (+1.8 %); the most at
+against spanish-edition db7e36cf, the characters' second version in both): 1,968 → 2,003 (+1.8 %); the most at
 one view +5 (the zócalo, and the avenue's west end with its ceiba and the pair on the meadow).
 
 Checks: `tests/es/town.test.ts` "world-v2: street palms, ceibas and people on the meadows".
