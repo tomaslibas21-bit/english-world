@@ -756,6 +756,11 @@ body.scene-on .tag-layer { display: none; }
   background: var(--panel-solid); box-shadow: var(--shadow); font-size: 0.95em;
 }
 .npc-identity { display: flex; align-items: center; gap: 14px; }
+/* the scene (src/ui/SceneIntro.tsx): who you are here, before the first line; under "i" afterwards */
+.scene-intro { margin: 8px 12px 4px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--accent-soft); }
+.scene-intro-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.scene-intro p { margin: 0 0 10px; line-height: 1.45; }
+.npc-info .scene-intro-text { margin: 10px 0 0; line-height: 1.45; }
 .npc-info .who { min-width: 0; }
 .npc-identity > .close-x { margin-left: auto; }
 .npc-info .who b { display: block; font-size: 1.2em; }

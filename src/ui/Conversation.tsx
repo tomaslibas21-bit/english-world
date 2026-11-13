@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { SceneIntro } from "./SceneIntro";
 import { useStore, type TranscriptLine } from "../state/store";
 import { Interlinear } from "./Interlinear";
 import { NPCS } from "../content/npcs";
@@ -133,6 +134,7 @@ export function Conversation() {
         </div>
       </div>
 
+      <SceneIntro sit={sit} />
       <AudioRecovery />
       {(sit.mode === "video" || sit.mode === "phone") && <CallStrip sit={sit} />}
       <Mission />
@@ -275,6 +277,7 @@ function NpcInfo({ sit }: { sit: SituationDef }) {
         <button className="close-x" onClick={close} aria-label="Uždaryti informaciją"><Icon name="close" size={20} /></button>
       </div>
       <p className="place" lang="lt">{sit.mode === "video" ? "Vaizdo skambutis" : placeLtNamed(sit.location)}</p>
+      {sit.intro && <p className="scene-intro-text" lang="lt">{sit.intro}</p>}
       <ReportProblem />
     </div>}
   </div>;

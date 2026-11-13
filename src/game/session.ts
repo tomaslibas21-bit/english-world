@@ -29,6 +29,9 @@ export interface SessionHooks {
   onEnd(sit: SituationDef, completed: boolean): void;
 }
 
+/** How long the scene card waits before the person speaks anyway (the learner can close it sooner). */
+const INTRO_MS = 6000;
+
 export class Session {
   sit: SituationDef;
   conv: Conversation;
@@ -87,9 +90,23 @@ export class Session {
       suggest: [], hints: [], chosen: {}, openHint: null, mic: { status: speechSupported() ? "off" : "unsupported", heard: "" },
       failures: 0, misses: 0, slowMode: this.conv.slow, lastHeard: "", prefix: false, completed: false, speaking: null, reveal: {}, note: null, typing: !speechSupported(), newExpressions: [],
       checklist: [], focus: 0, stepId: null, guess: null, practice: null, speechChoices:undefined, run: st.conv.run + 1, guideHidden: false,
+      introOpen: !!this.sit.intro,
     });
     const out = this.conv.start();
+    await this.introRead();
     await this.play(out);
+  }
+
+  /** The scene card first (who you are here, where: SituationDef.intro, src/ui/SceneIntro.tsx): the person starts
+   *  speaking when it is closed, or after a few seconds; the card closes then and stays one tap away under "i". */
+  private introRead(): Promise<void> {
+    if (!useStore.getState().conv.introOpen) return Promise.resolve();
+    return new Promise((resolve) => {
+      let unsub = () => {};
+      const done = () => { clearTimeout(timer); unsub(); if (useStore.getState().conv.introOpen) useStore.getState().setConv({ introOpen: false }); resolve(); };
+      const timer = setTimeout(done, INTRO_MS);
+      unsub = useStore.subscribe((st) => { if (!st.conv.introOpen || !this.alive) done(); });
+    });
   }
 
   private pushLine(l: Omit<TranscriptLine, "id">) {
