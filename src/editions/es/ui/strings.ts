@@ -354,6 +354,8 @@ export const STRINGS: Record<string, string> = {
   "Pokalbio metu vietoje 3D vaizdo rodomas piešinys, kuris keičiasi pagal pokalbio etapą.": "During a conversation, a picture that changes with the stage of the conversation is shown instead of the 3D view.",
   "Teksto dydis": "Text size",
   "Garsumas": "Volume",
+  "Garsai": "Sounds",
+  "Žingsniai, jūra, miestelio garsai – tyliau už balsus.": "Footsteps, the sea, the town's sounds: quieter than the voices.",
   "Pasaulio stilius": "World style",
   "Bandomieji 3D miesto stiliai. Pakeitus puslapis persikrauna.": "Trial styles for the 3D town. The page reloads when you change it.",
   "Kaladėlės": "Blocks",

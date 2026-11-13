@@ -420,6 +420,10 @@ function Settings({ close }: { close: () => void }) {
           <div className="txt"><b>{L("Garsumas")}</b></div>
           <input type="range" min={0} max={1} step={0.05} value={s.volume} onChange={(e) => { set({ volume: +e.target.value }); audio.volume = +e.target.value; }} style={{ width: 160 }} />
         </div>
+        <div className="set-row">
+          <div className="txt"><b>{L("Garsai")}</b><span>{L("Žingsniai, jūra, miestelio garsai – tyliau už balsus.")}</span></div>
+          <input type="range" min={0} max={1} step={0.05} value={s.sounds} aria-label={L("Garsai")} onChange={(e) => { set({ sounds: +e.target.value }); audio.sounds = +e.target.value; if (+e.target.value > 0) audio.sfx("pop"); }} style={{ width: 160 }} />
+        </div>
         {s.play !== "light" && STYLES_ENABLED && <div className="set-row">
           <div className="txt"><b>{L("Pasaulio stilius")}</b><span>{L("Bandomieji 3D miesto stiliai. Pakeitus puslapis persikrauna.")}</span></div>
           <div className="seg">{([["blocks", L("Kaladėlės")], ["toon", L("Animacija")], ["storybook", L("Iliustracija")], ["realistic", L("Tikroviškas")]] as const).map(([v, n]) => (
