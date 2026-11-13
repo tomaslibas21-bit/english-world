@@ -1,7 +1,7 @@
 // Character factory: the original blocky Character for "blocks", a styled one otherwise.
 import * as THREE from "three";
 import type { Look } from "../../content/npcs";
-import { Character, type Anim, type Moment } from "./Character";
+import { Character, type Anim, type Moment, type Mood } from "./Character";
 import { StyledCharacter } from "./StyledCharacter";
 import { STYLED } from "../style";
 
@@ -14,7 +14,17 @@ export interface GameCharacter {
   update(dt: number): void;
   /** Talk for `seconds`; `level` tells how loud the voice is right now (0–1; -1: it has ended; null: no recording to
    *  follow), for the mouth. */
-  talk(seconds: number, level?: () => number | null): void;
+  talk(seconds: number, level?: () => number | null, vowel?: () => number | null): void;
+  /** (The original Character.) An expression for a while: the conversation gives each line its own (mood.ts moodOf). */
+  express?(kind: Mood, seconds?: number): void;
+  /** Where the learner is (a point kept up to date by the game): the eyes and the head turn to it when it comes within
+   *  `noticeWithin` m, or steadily while `attentive`. */
+  watch?: THREE.Vector3 | null;
+  noticeWithin?: number;
+  /** Their eyes stay on the watched point (someone taking part in the conversation). */
+  steady?: boolean;
+  /** Leaning back on a lounger while sitting (radians). */
+  recline?: number;
   /** The real speed (m/s) and a sideways lean into turns (the original Character; others ignore them). */
   moveSpeed?: number;
   bank?: number;

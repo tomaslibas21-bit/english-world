@@ -6,17 +6,22 @@
 //   ?view=room   the fixed camera indoors (about 12 m away, pitch 0.78), at the game's pixel size
 //   ?ids=mia,ben,…  which people (NPC ids, "player" for the player's looks f1…m3 with their backpacks, "player-plain"
 //                without, or "walkers" for passers-by); default all NPCs
-//   ?yaw=30      turn them (degrees; 0 = facing the camera)   ?anim=idle|talk|blink|walk|wave|sit|nod|puzzled   ?t=1.3 (pose time)
+//   ?yaw=30      turn them (degrees; 0 = facing the camera)   ?anim=idle|talk|blink|walk|wave|sit|nod|puzzled|clap   ?t=1.3 (pose time)
 //   ?level=0.7   with anim=talk: the voice's loudness the mouth follows   ?seat=0.55 with anim=sit: the seat's height (a
 //                bench and the floor are drawn)
 //   ?carry=coffee|bag|cup|paper &phone=1   what they hold   ?busy=wipe|type|cup|paper   what their hands are busy with
-//   ?moment=glance|shift|scratch|phone|sip|type|wipe|lean   one of the little things people do while waiting, held
+//   ?moment=glance|shift|scratch|phone|sip|type|wipe|lean|hips|watch|neck|back|ankles   one of the little things people do
+//                while waiting, held
+//   ?round=0.9   with anim=talk and level: how round the sound is (0 a wide "ee" … 1 a round "oo")
+//   ?mood=friendly|neutral|surprised|concerned   the expression   ?gesture=palm|both|chest|explain|shrug (with anim=talk)
+//   ?watch=1.5,1.6,2   a point (x, y, z from the person's feet) they look at, their attention on it
+//   ?recline=0.8 with anim=sit: leaning back on a lounger   ?ids=beach: one of each beachwear piece (Character.ts)
 //   ?cols=10 &cell=150 (cell width in px) &screenH=800 (game viewport height the pixel size is matched to)
 import * as THREE from "three";
 import { NPCS, type Look } from "../content/npcs";
 import { LOOKS } from "../ui/Title";
 import { createCharacter, withBackpack } from "../game/characters";
-import type { Moment } from "../game/characters/Character";
+import type { Moment, Mood, Character } from "../game/characters/Character";
 import { walkerLook } from "../game/ambient";
 import { rand } from "../game/world/util";
 
@@ -39,7 +44,19 @@ for (const id of (q.get("ids") ?? Object.keys(NPCS).join(",")).split(",")) {
   // the player's looks as in the game (with the backpack); "player-plain" without it
   else if (id === "player" || id === "player-plain") for (const l of LOOKS) people.push({ name: l.id, look: id === "player" ? withBackpack(l.look) : l.look });
   else if (LOOKS.some((l) => l.id === id)) people.push({ name: id, look: withBackpack(LOOKS.find((l) => l.id === id)!.look) });
-  else if (id.startsWith("walkers")) {
+  else if (id === "beach") {
+    // the beachwear pieces (Character.ts; the Spanish edition's beach wears them, theme.ts `beachwear`), one of each
+    const B: [string, Look][] = [
+      ["trunks, tee", { skin: "#c68e63", hair: { style: "short", color: "#1f1a17" }, top: "#f4f1ea", bottom: "#e4572e", swim: "trunks", sleeves: "short", flipflops: true, shoes: "#2b2d42", female: false }],
+      ["trunks, tank, bucket", { skin: "#a0694a", hair: { style: "buzz", color: "#1f1a17" }, top: "#ffd166", bottom: "#1f6fd1", swim: "trunks", sleeves: "none", flipflops: true, shoes: "#3a2f2a", acc: ["bucket", "sunglasses"], accColor: "#f4f1ea", female: false, build: 1.1 }],
+      ["suit, sarong, sun hat", { skin: "#d9a47e", hair: { style: "long", color: "#2b1d16" }, top: "#e4007c", bottom: "#00a6a6", swim: "suit", skirt: true, flipflops: true, shoes: "#f4f1ea", acc: ["sarong", "sunhat"], accColor: "#e4007c", female: true }],
+      ["suit, cover-up", { skin: "#b07a52", hair: { style: "bun", color: "#1f1a17" }, top: "#1f6fd1", bottom: "#1f6fd1", swim: "suit", flipflops: true, shoes: "#d8c3a0", acc: ["coverup", "shades"], accColor: "#fbf6ea", female: true }],
+      ["suit, sarong, cover-up", { skin: "#e8c09a", hair: { style: "ponytail", color: "#5a3a25" }, top: "#f6a800", bottom: "#ff8fab", swim: "suit", skirt: true, flipflops: true, shoes: "#f4f1ea", acc: ["sarong", "coverup", "sunhat"], accColor: "#ffffff", female: true }],
+      ["sundress, straw hat", { skin: "#8a5a3c", hair: { style: "wavy", color: "#1f1a17" }, top: "#7ac143", bottom: "#7ac143", skirt: true, sleeves: "none", flipflops: true, shoes: "#5c4b3a", acc: ["strawhat"], female: true }],
+      ["shorts, open shirt", { skin: "#f2d3bd", hair: { style: "side", color: "#b8b3ac" }, top: "#9ad1d4", bottom: "#d8c3a0", shorts: true, sleeves: "short", flipflops: true, shoes: "#5c4b3a", acc: ["strawhat", "glasses"], female: false, build: 1.12 }],
+    ];
+    for (const [name, look] of B) people.push({ name, look });
+  } else if (id.startsWith("walkers")) {
     // the same random stream as the town's passers-by (Ambient), so the first seven are the town's own
     const n = +(id.slice(7) || 12), r = rand(4242);
     for (let i = 0; i < n; i++) people.push({ name: `walker ${i}`, look: walkerLook(i % 2 === 0, r) });
@@ -124,13 +141,18 @@ people.forEach((p, i) => {
   if (anim === "walk" || anim === "wave" || anim === "sit") ch.setAnim(anim);
   if (busy) ch.busy = busy;
   if (moment) ch.holdMoment?.(moment);
-  if (anim === "talk") ch.talk(30, level === null ? undefined : () => Number(level));
-  if (anim === "nod" || anim === "puzzled") ch.react?.(anim);
+  if (anim === "talk") ch.talk(30, level === null ? undefined : () => Number(level), q.get("round") === null ? undefined : () => Number(q.get("round")));
+  if (q.get("mood")) { ch.express?.(q.get("mood") as Mood, 1e9); (ch as unknown as { face: Record<string, number> }).face.oh = q.get("mood") === "surprised" ? 1 : 0; }
+  if (q.get("gesture")) (ch as unknown as Character).holdGesture?.(q.get("gesture")!, q.get("side") === "l" ? -1 : 1);
+  if (q.get("watch")) { const [wx, wy, wz] = q.get("watch")!.split(",").map(Number); ch.watch = new THREE.Vector3(wx, wy, wz); ch.attentive = true; }
+  if (q.get("recline")) ch.recline = Number(q.get("recline"));
+  if (anim === "nod" || anim === "puzzled" || anim === "clap") ch.react?.(anim);
   // pose at a fixed time: update() advances the character's own clock, which starts at a random value
   const c = ch as unknown as { t: number; blinkT: number };
   c.t = 0;
   c.blinkT = anim === "blink" ? 0.087 : 99;
-  ch.update(poseT);
+  // (several steps, so what eases in (the expression, the gaze, a gesture) has arrived)
+  for (let k = 0; k < 40; k++) { c.blinkT = 99; ch.update(poseT / 40); }
   if (anim === "blink") { c.blinkT = 0.087; ch.update(0.001); }
   scene.add(ch.root);
   const col = i % cols, row = Math.floor(i / cols);
