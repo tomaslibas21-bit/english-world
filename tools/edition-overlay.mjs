@@ -31,7 +31,8 @@ export function overlayFile(file, edition, importer = "", learner = learnerFromE
   return null;
 }
 
-/** The Vite plugin. The Spanish edition's page also gets its own title, language and loading screen. */
+/** The Vite plugin. The Spanish edition's page also gets its own title and language (its loading screen:
+ *  tools/loading-screen.ts). */
 export function editionOverlay(edition = editionFromEnv(), page = {}, learner = learnerFromEnv()) {
   return {
     name: "edition-overlay",
@@ -50,10 +51,6 @@ export function editionOverlay(edition = editionFromEnv(), page = {}, learner = 
       if (page.lang) out = out.replace(/<html lang="[^"]*">/, `<html lang="${page.lang}">`);
       if (page.title) out = out.replace(/<title>[^<]*<\/title>/, `<title>${page.title}</title>`);
       if (page.description) out = out.replace(/<meta name="description" content="[^"]*" \/>/, `<meta name="description" content="${page.description}" />`);
-      if (page.loading) {
-        out = out.replace(/<link rel="preload" href="\/brand\/loading-wordmark\.svg"[^>]*>\s*/, "");
-        out = out.replace(/<div class="loading ew-loading"[\s\S]*?<\/svg>\s*<\/div>/, page.loading);
-      }
       return out;
     },
   };
