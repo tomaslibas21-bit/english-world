@@ -133,7 +133,8 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       await page.locator(".rs-x").click();
 
       // ---- folded away: the lit button and the station's plate; a tap on the button is off, the next is on
-      await page.waitForTimeout(600); // the plate has slid in
+      // the plate has slid in (a slow machine draws few frames, so wait for the animation itself, not a time)
+      await until(page, () => { const el = document.querySelector(".radio-plate"); return !!el && el.getAnimations().every((a) => a.playState === "finished"); }, 15000);
       const folded = await page.evaluate(() => {
         const box = (sel) => { const r = document.querySelector(sel)?.getBoundingClientRect(); return r ? { l: r.left, t: r.top, r: r.right, b: r.bottom } : null; };
         return { plate: box(".radio-plate"), text: document.querySelector(".radio-plate-text")?.textContent, lit: document.querySelector(".radio-btn").classList.contains("on"),

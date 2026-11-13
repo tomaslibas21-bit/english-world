@@ -35,7 +35,7 @@ export function RadioTool() {
 }
 
 /** While the radio plays: the station's name on a small plate beside the button. A new song's title shows on it for
- *  a few seconds. A tap opens the radio set. */
+ *  a few seconds. A tap opens the radio set (the small chevron says so). */
 function RadioPlate() {
   const station = useRadio((s) => s.station);
   const song = useRadio((s) => s.song);
@@ -54,6 +54,7 @@ function RadioPlate() {
     <button className={"radio-plate" + (playing ? " playing" : "")} onClick={() => radio.setOpen(true)} title="Stotys ir dainos" aria-label={`${name}. Stotys ir dainos`}>
       <span className="radio-eq" aria-hidden><i /><i /><i /></span>
       <span className="radio-plate-text" lang="en" key={title ?? name}>{title ?? name}</span>
+      <Icon name="chevronDown" size={15} strokeWidth={2.25} className="radio-plate-more" />
     </button>
   );
 }

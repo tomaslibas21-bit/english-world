@@ -12,7 +12,7 @@ The owner's brief (13 Nov 2026): a nice feel, easy to turn on and off, calm whil
 - **One tap on, one tap off.** The toolbar's radio button is the power switch; R does the same. On shows at a glance:
   the button's lamp glows, and a plate beside it names the station, with three moving bars. A new song's title shows on
   the plate for five seconds.
-- **The radio set** opens from the plate and folds away at a tap anywhere else. The very first time the radio is turned
+- **The radio set** opens from the plate (its small chevron says so) and folds away at a tap anywhere else. The very first time the radio is turned
   on it opens by itself, once (`introduced` in the saved state). It has an FM dial whose needle glides to the station
   (`freq` in `src/content/radio.ts`), the stations as preset buttons, the song, and five keys around the on-off knob.
 - **Skins.** The set is an object with colours of its own, so it reads the same in every course theme. `RADIO_SKIN` in
