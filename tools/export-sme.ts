@@ -14,6 +14,8 @@
 // - words the learner saves also go into the course's own flashcards (VITE_CARDS_TARGET=fluentsteps: the course keeps
 //   English Master's storage key "fluentsteps.songcards.v1" and its card format, src/state/cards.ts), and a home
 //   button leads back to the course (VITE_BACK_URL=/);
+// - the town's radio plays the course's own songs (src/radio/songs.ts, docs/RADIO.md): the list is the site's
+//   /songs/index.json, the words and recordings come from the files Worker with the learner's files token;
 // - the course's own file in that folder, fs-theme.css (the game's look in the course's themes), is kept; version.json
 //   says which commit the build came from.
 //   npx tsx tools/export-sme.ts <path to a spanish-master-english or spanish-master checkout> [--audio=<clip base URL>]
@@ -45,6 +47,11 @@ if (!target || !course || !existsSync(path.join(target, "src/components/AppShell
   process.exit(1);
 }
 const { folder, learner } = COURSES[course];
+/** The radio's sources per course (src/radio/songs.ts, docs/RADIO.md). */
+const RADIO: Record<keyof typeof COURSES, Record<string, string>> = {
+  sme: { VITE_RADIO_INDEX: "/songs/index.json", VITE_RADIO_FILES: "https://audio.dvikalbesdainos.lt/spanish-master-en", VITE_RADIO_RECORDINGS: "https://audio.dvikalbesdainos.lt/spanish-master" },
+  sm: { VITE_RADIO_INDEX: "/songs/index.json", VITE_RADIO_FILES: "https://audio.dvikalbesdainos.lt/spanish-master" },
+};
 const audio = args.find((a) => a.startsWith("--audio="))?.slice(8) ?? `https://audio.dvikalbesdainos.lt/${folder}/game/${DIR}`;
 
 const git = (...a: string[]) => { try { return execFileSync("git", a, { cwd: ROOT, encoding: "utf8" }).trim(); } catch { return ""; } };
@@ -56,7 +63,12 @@ const out = mkdtempSync(path.join(tmpdir(), "puerto-colibri-sme-"));
 console.log(`building the Spanish edition${learner ? ` for a ${learner} learner` : ""} for ${course}'s /game/ (${branch || "?"} ${commit || "?"}${dirty ? ", with uncommitted changes" : ""}; clips from ${audio}) …`);
 execFileSync("npx", ["vite", "build", "--outDir", out, "--emptyOutDir"], {
   cwd: ROOT, stdio: ["ignore", "ignore", "inherit"],
-  env: { ...process.env, EDITION: "es", VITE_EDITION: "es", VITE_LEARNER: learner, LEARNER: learner, GAME_BASE: "/game/", VITE_AUDIO_BASE: audio, VITE_CARDS_TARGET: "fluentsteps", VITE_BACK_URL: "/", VITE_DEFAULT_VARIETY: DEFAULT_VARIETY },
+  env: {
+    ...process.env, EDITION: "es", VITE_EDITION: "es", VITE_LEARNER: learner, LEARNER: learner, GAME_BASE: "/game/", VITE_AUDIO_BASE: audio, VITE_CARDS_TARGET: "fluentsteps", VITE_BACK_URL: "/", VITE_DEFAULT_VARIETY: DEFAULT_VARIETY,
+    // the town's radio (src/radio/songs.ts): the course's own songs (its list, /songs/index.json), through the
+    // course's own files Worker; Spanish Master English's list names recordings in Spanish Master's folder too
+    ...RADIO[course],
+  },
 });
 const html = readFileSync(path.join(out, "index.html"), "utf8");
 if (!html.includes("Puerto Colibrí")) { console.error("the build is not the Spanish edition (no Puerto Colibrí in its index.html)"); process.exit(1); }

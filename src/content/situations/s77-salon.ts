@@ -61,7 +61,7 @@ export const salon: SituationDef = {
   location: "salon",
   npc: "jessie",
   goal: "Pasakyk kirpėjai, ką nori, ir susimokėk.",
-  intro: "„Snip & Style“ – kirpykla pagrindinėje gatvėje. Jūsų vizitas – trečią valandą. Kirpėja Jessie mėgsta pasikalbėti – ypač apie savo katę Mochi.",
+  intro: "„Snip & Style“ – kirpykla pagrindinėje gatvėje. Tavo vizitas – trečią valandą. Kirpėja Jessie mėgsta pasikalbėti – ypač apie savo katę Mochi.",
 
   merges: {
     "a bit": { reason: "lexical_expression", split: "a → — + bit → gabalėlis gives a false “piece”; the degree adverb = truputį.", minimal: "Two words (C-LEX)." },

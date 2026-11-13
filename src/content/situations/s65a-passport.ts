@@ -447,7 +447,7 @@ export const passport: SituationDef = {
   location: "airport",
   npc: "diaz",
   goal: "Praeik pasų kontrolę: atsakyk į pareigūnės klausimus.",
-  intro: "Maple Harbor oro uostas. Išlipai iš lėktuvo ir stovi eilėje prie pasų kontrolės. Turi ESTA leidimą, o lagamine – lauktuvių: lietuviško sūrio ir šokolado.",
+  intro: "Maple Harbor oro uostas. Tu išlipai iš lėktuvo ir stovi eilėje prie pasų kontrolės. Turi ESTA leidimą, o lagamine – lauktuvių: lietuviško sūrio ir šokolado.",
   entities: { rel: RELS, good: GOODS },
 
   grammar: {

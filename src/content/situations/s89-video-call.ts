@@ -232,7 +232,7 @@ export const videoCall: SituationDef = {
   npcs: ["paul", "sara"],
   mode: "video",
   goal: "Dalyvauk komandos vaizdo skambutyje ir padėk kolegoms su technika.",
-  intro: "Pirmadienis, 10 val. Prisijungi prie „Brightline“ komandos vaizdo skambučio iš namų. Susitikimą veda Keitė, dalyvauja Paulas ir Sara. Padėk kolegoms su technika, trumpai papasakok, kaip sekasi, ir paklausk, ko reikia.",
+  intro: "Pirmadienis, 10 val. Tu prisijungi prie „Brightline“ komandos vaizdo skambučio iš namų. Susitikimą veda Keitė, dalyvauja Paulas ir Sara. Padėk kolegoms su technika, trumpai papasakok, kaip sekasi, ir paklausk, ko reikia.",
   entities: { task: TASKS },
 
   grammar: {

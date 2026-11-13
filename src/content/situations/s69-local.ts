@@ -379,7 +379,7 @@ export const local: SituationDef = {
   location: "town-square",
   npc: "rosa",
   goal: "Paprašyk vietinės gyventojos patarimų: kur pavalgyti ir ką pamatyti.",
-  intro: "Miesto aikštė. Ant suoliuko prie fontano sėdi Rosa – žilaplaukė ponia su megztuku. Ji čia gimė ir užaugo, todėl žino kiekvieną Maple Harboro kampelį.",
+  intro: "Tu dar tik susipažįsti su miestu ir ieškai gerų vietų. Miesto aikštė. Ant suoliuko prie fontano sėdi Rosa – žilaplaukė ponia su megztuku. Ji čia gimė ir užaugo, todėl žino kiekvieną Maple Harboro kampelį.",
   entities: { spot: SPOTS, cuisine: CUISINES, country: COUNTRIES },
 
   grammar: {

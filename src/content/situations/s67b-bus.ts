@@ -155,7 +155,7 @@ export const bus: SituationDef = {
   location: "station",
   npc: "denise",
   goal: "Sužinok, ar autobusas važiuoja ten, kur reikia, ir paprašyk pasakyti, kur išlipti.",
-  intro: "Autobusų aikštelė prie stoties. Prie durų – 7-ojo maršruto autobusas, vairuotoja Denise. Bilietas kainuoja 2,50 $. JAV autobuse vairuotojas grąžos neduoda: mokama tikslia suma arba pridedant kortelę ar telefoną.",
+  intro: "Tu važiuosi miesto autobusu. Autobusų aikštelė prie stoties. Prie durų – 7-ojo maršruto autobusas, vairuotoja Denise. Bilietas kainuoja 2,50 $. JAV autobuse vairuotojas grąžos neduoda: mokama tikslia suma arba pridedant kortelę ar telefoną.",
   entities: { dest: DESTS },
 
   grammar: {

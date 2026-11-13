@@ -243,7 +243,7 @@ export const pharmacy: SituationDef = {
   location: "pharmacy",
   npc: "okafor",
   goal: "Nusipirk vaistų ir pasiteirauk, kaip juos vartoti.",
-  intro: "„Harbor Pharmacy“ – vaistinė pagrindinėje gatvėje. Nereceptiniai vaistai stovi lentynose, o gale, prie prekystalio, dirba vaistininkas ponas Okaforas. Čia galite ir atsiimti vaistus pagal receptą.",
+  intro: "Tu užsuki į „Harbor Pharmacy“ – vaistinę pagrindinėje gatvėje. Nereceptiniai vaistai stovi lentynose, o gale, prie prekystalio, dirba vaistininkas ponas Okaforas. Čia gali ir atsiimti vaistus pagal receptą.",
   entities: { symptom: SYMPTOMS, product: PRODUCTS },
 
   merges: {

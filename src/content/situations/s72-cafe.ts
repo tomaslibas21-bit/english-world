@@ -267,7 +267,7 @@ export const cafe: SituationDef = {
   location: "sunny-cup",
   npc: "mia",
   goal: "Užsisakyk gėrimą (ir, jei nori, ką nors užkąsti), pasakyk, ar gersi čia, ar išsineši, ir susimokėk.",
-  intro: "„Sunny Cup“ – jauki kavinė aikštėje. Už prekystalio – barista Mia. Meniu kabo ant lentos už jos.",
+  intro: "Tu užsuki kavos į „Sunny Cup“ – jaukią kavinę aikštėje. Už prekystalio – barista Mia. Meniu kabo ant lentos už jos.",
   entities: { drink: DRINKS, food: FOODS, size: SIZES, milk: MILKS, temp: TEMPS },
 
   grammar: {
