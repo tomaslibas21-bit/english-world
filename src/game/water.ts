@@ -8,15 +8,15 @@ import { SEA_Z } from "./world/layout";
 export const SEA_LEVEL = -0.25;
 /** The sand starts down at `top` (give or take the shoreline's wobble), is `drop` under at the ground's edge, and goes
  *  on down to the wading limit. */
-export const SHORE = { top: SEA_Z + 0.9, edge: SEA_Z - 2, drop: 0.56, limit: SEA_Z - 5.4, deep: 0.4 };
+export const SHORE = { top: SEA_Z + 1.9, edge: SEA_Z - 2, drop: 0.56, limit: SEA_Z - 5.4, deep: 0.4 };
 /** The slope's length (m): short enough that the sand is `drop` under by the ground's edge wherever the shoreline's
  *  wobble puts its start (the edge of the ground's mesh is then always under water, whatever the swell). */
-const RUN = SHORE.top - SHORE.edge - 0.85;
+const RUN = SHORE.top - SHORE.edge - 0.6;
 /** The seabed's fall beyond the slope (m per m): `deep` under the surface at the limit. */
 const BED = (-SEA_LEVEL + SHORE.deep - SHORE.drop) / (SHORE.top - RUN - SHORE.limit);
 
 /** The shoreline's wobble: how far the slope's start moves up or down the beach along x (m). */
-export const shoreWobble = (x: number) => 0.55 * Math.sin(x * 0.09) + 0.3 * Math.sin(x * 0.23 + 1.3);
+export const shoreWobble = (x: number) => 0.4 * Math.sin(x * 0.09) + 0.2 * Math.sin(x * 0.23 + 1.3);
 
 /** The sand's height at (x, z): 0 up the beach, sloping under the sea, and on down as the seabed. */
 export function sandY(x: number, z: number) {
@@ -29,7 +29,7 @@ export function sandY(x: number, z: number) {
 /** The same in the sea's shaders: `float sandY(vec2 p)` (p = world x, z). */
 export const SAND_GLSL = `
   float sandY(vec2 p) {
-    float t = (${(SHORE.top).toFixed(3)} + 0.55 * sin(p.x * 0.09) + 0.3 * sin(p.x * 0.23 + 1.3) - p.y) / ${RUN.toFixed(3)};
+    float t = (${(SHORE.top).toFixed(3)} + 0.4 * sin(p.x * 0.09) + 0.2 * sin(p.x * 0.23 + 1.3) - p.y) / ${RUN.toFixed(3)};
     if (t <= 0.0) return 0.0;
     if (t < 1.0) return -${SHORE.drop.toFixed(3)} * t * t * (3.0 - 2.0 * t) * (0.5 + 0.5 * t);
     return -${SHORE.drop.toFixed(3)} - (t - 1.0) * ${(RUN * BED).toFixed(4)};
@@ -48,10 +48,10 @@ export const SHORE_GLSL = (foam = "vec3(0.985, 0.99, 0.975)", wet = "vec3(0.78, 
       float lace = sin(vW.x * 2.3 + sin(vW.z * 3.1 + uTime * 0.6) * 1.4) * sin(vW.z * 2.9 - uTime * 0.9 + sin(vW.x * 1.7) * 1.2);
       float bub = sin(vW.x * 7.0 + uTime * 1.3) * sin(vW.z * 8.0 - uTime * 1.1);
       c = mix(${wet}, c, smoothstep(0.0, 0.30, depth) * 0.82 + 0.18);
-      float line = 1.0 - smoothstep(0.015, 0.07 + 0.035 * lace, depth);
-      float wash = (1.0 - smoothstep(0.05, 0.42, depth)) * smoothstep(-0.25, 0.75, lace + bub * 0.35);
-      float far = (1.0 - smoothstep(0.3, 0.75, depth)) * smoothstep(0.55, 0.95, lace * bub + 0.35 * sin(vW.x * 0.6 + uTime * 0.5));
-      c = mix(c, ${foam}, clamp(line * 0.95 + wash * 0.62 + far * 0.3, 0.0, 0.96));
+      float line = 1.0 - smoothstep(0.04, 0.12 + 0.05 * lace, depth);
+      float wash = (1.0 - smoothstep(0.08, 0.36 + 0.1 * lace, depth)) * (0.5 + 0.5 * smoothstep(-0.5, 0.5, lace + bub * 0.4));
+      float far = (1.0 - smoothstep(0.3, 0.8, depth)) * smoothstep(0.45, 0.95, lace * bub + 0.35 * sin(vW.x * 0.6 + uTime * 0.5));
+      c = mix(c, ${foam}, clamp(line * 0.97 + wash * 0.8 + far * 0.36, 0.0, 0.97));
     }`;
 
 /** The player in the shallows: how deep the water is at their feet, how much it slows them, and where it stops them. */

@@ -72,7 +72,7 @@ export function buildTown(): Town {
   group.add(ground);
 
   // outer grass beyond the playable area + hills
-  const outer = new THREE.Mesh(new THREE.PlaneGeometry(900, 640), mat("#7fb85e"));
+  const outer = new THREE.Mesh(outerGeometry(), mat("#7fb85e"));
   outer.rotation.x = -Math.PI / 2;
   // the outer grass stops at the shore, so the sea near the beach is not hidden under it
   outer.position.set(35, -0.05, SEA_Z + 1 + 320);
@@ -214,7 +214,7 @@ export function buildTown(): Town {
  *  the rest; laid out as PlaneGeometry lays its own (the mesh is turned flat), with the same texture coordinates. */
 function groundGeometry() {
   const zs = [WORLD.maxZ], x0 = WORLD.minX, z0 = G0Z;
-  for (let z = SHORE.top + 1.2; z > z0 + 1e-3; z -= 0.45) zs.push(z);
+  for (let z = SHORE.top + 0.9; z > z0 + 1e-3; z -= 0.45) zs.push(z);
   zs.push(z0);
   const nx = Math.round(GW / 3), pos: number[] = [], uv: number[] = [], idx: number[] = [];
   const cx = x0 + GW / 2, cz = z0 + GD / 2;
@@ -233,6 +233,17 @@ function groundGeometry() {
   g.setIndex(idx);
   g.computeVertexNormals();
   return g;
+}
+
+/** The grass beyond the town (900 × 640 m, laid out as PlaneGeometry lays its own), cut back from the sea along the
+ *  town's own beach, where the ground's sand slopes down below it (groundGeometry). */
+function outerGeometry() {
+  const back = 2.6, x0 = WORLD.minX + 1 - 35, x1 = WORLD.maxX - 1 - 35;
+  return mergeGeometries([
+    new THREE.PlaneGeometry(900, 640 - back).translate(0, -back / 2, 0),
+    new THREE.PlaneGeometry(x0 + 450, back).translate((x0 - 450) / 2, 320 - back / 2, 0),
+    new THREE.PlaneGeometry(450 - x1, back).translate((x1 + 450) / 2, 320 - back / 2, 0),
+  ], false)!;
 }
 
 function toC(x: number, z: number): [number, number] { return [(x - WORLD.minX) * PPM, (z - G0Z) * PPM]; }
