@@ -29,6 +29,7 @@ export class LightGame implements GameApi {
     this.loading = audio.init().then(() => {
       this.loaded = true;
       audio.volume = useStore.getState().settings.volume;
+      audio.sounds = useStore.getState().settings.sounds;
     });
     window.addEventListener("keydown", this.onKeyDown);
     this.onReady?.();

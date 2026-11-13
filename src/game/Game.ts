@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { showConversationEvent } from "./convEvents";
 import { buildTown, type Town, type Door } from "./world/town";
 import { getInterior, type Interior } from "./world/interiors";
-import { OUTDOOR_NPCS, AIRPORT_EXIT, WORLD, BUILDINGS, ROADS, DROPOFF, SEA_Z, FOUNTAIN, PARK } from "./world/layout";
+import { OUTDOOR_NPCS, AIRPORT_EXIT, WORLD, BUILDINGS, ROADS, DROPOFF, SEA_Z, BEACH_Z, FOUNTAIN, PARK, SQUARE } from "./world/layout";
 import { createCharacter, setBlobShadows, withBackpack, type GameCharacter } from "./characters";
 import { moodOf } from "./characters/mood";
 import { styleRenderer, createStyleFx, type StyleFx } from "./styleScene";
@@ -23,6 +23,8 @@ import { ROOM_PEOPLE } from "./world/roomPeople";
 import { AMBIENT_LINES } from "../content/ambient";
 import { ambientVoice } from "../content/voices";
 import { audio } from "./audio";
+import { TOWN_SOUNDS } from "./townSounds";
+import { nearLevel, surfLevel, surfaceAt, type Surface } from "./soundscape";
 import { radio } from "../radio";
 import { Dust } from "./dust";
 import { Pigeons } from "./pigeons";
@@ -303,6 +305,7 @@ export class Game implements GameApi {
     await audio.init();
     if (this.disposed) return;
     audio.volume = st.settings.volume;
+    audio.sounds = st.settings.sounds;
     this.unbindAmbience = useStore.subscribe(() => {
       if (!this.ambienceAllowed() || useStore.getState().settings.volume <= 0) audio.stopAmbience();
     });
@@ -570,11 +573,18 @@ export class Game implements GameApi {
 
   setJoystick(x: number, y: number) { this.joy.x = x; this.joy.y = y; if (x || y) { this.autoPath = null; this.autoTarget = null; } }
 
+  /** What the player stands on, for the sound of their steps (soundscape.ts): `raised` on a pier's or a terrace's
+   *  boards or a bench (ledges.ts). */
+  private underfoot(raised: boolean): Surface {
+    const p = this.player.root.position;
+    return surfaceAt({ indoor: !!this.zone.interior, warm: !!this.zone.interior?.warm, raised, x: p.x, z: p.z, beachZ: BEACH_Z, park: PARK });
+  }
+
   /** A jump (Space, or the phone's button): not in a conversation, over a panel or through a door. */
   jump() {
     const st = useStore.getState();
     if (this.session?.active || st.conv.active || st.hud.panel || this.transitioning || !this.player) return;
-    if (this.hop.start()) { audio.step(!!this.zone.interior, false); coach.did("jump"); }
+    if (this.hop.start()) { audio.jump(); coach.did("jump"); }
   }
 
   /** Outdoors, walking: the passers-by, their dogs, the cars and the town's people (not the player) that would stand
@@ -1245,13 +1255,20 @@ export class Game implements GameApi {
     if (this.hudT <= 0) {
       this.hudT = 0.12;
       this.updateHud();
-      // Brief gull/bird/cup sounds only while the town is visible and no conversation or panel is open.
+      // The town's sounds where the player stands (audio.ambience), only while the town is visible and no
+      // conversation or panel is open: gulls, birds and the surf by the sea, a murmur where people gather, a cup in a
+      // café, the harbour's bell by the pier, a few far-off notes on the square.
       const px = this.player.root.position.x, pz = this.player.root.position.z, sea = THREE.MathUtils.clamp(1 - (pz - SEA_Z) / 70, 0, 1);
-      const out = !this.zone.interior;
+      const out = !this.zone.interior, { tropical, marketOutdoors } = TOWN_SOUNDS;
       const inPark = px > PARK.x1 - 6 && px < PARK.x2 + 6 && pz > PARK.z1 - 6 && pz < PARK.z2 + 6;
+      const onSquare = px > SQUARE.x1 - 4 && px < SQUARE.x2 + 4 && pz > SQUARE.z1 - 4 && pz < SQUARE.z2 + 4;
       const cafe = this.zone.interior && ["sunny-cup", "trattoria", "the-pier"].includes(this.zone.id);
+      const near = (loc: string, reach?: number) => { const d = this.town.doors.find((door) => door.loc === loc); return d ? nearLevel(Math.hypot(px - d.outX, pz - d.outZ), reach) : 0; };
+      // people's murmur: in the market and the cafés; outdoors on the square, and around a market hall's door
+      const market = !out ? (this.zone.id === "market" ? 0.75 : cafe ? 0.45 : 0) : Math.max(onSquare ? 0.3 : 0, marketOutdoors ? near("market") : 0);
       audio.ambience(this.ambienceAllowed(), {
-        sea, gulls: out && sea > 0.4, birds: out ? (inPark ? 1 : 0.35 * (1 - sea)) : 0, cafe,
+        sea, surf: out ? surfLevel(pz - SHORE.top) : 0, gulls: out && sea > 0.4, birds: out ? (inPark ? 1 : 0.35 * (1 - sea)) : 0, cafe,
+        market, harbor: out ? near("the-pier", 34) * sea : 0, plaza: out && onSquare ? 1 : 0, tropical,
       });
       // the edition's own town sounds (theme.ts: Puerto Colibrí's church bell, street vendors and trucks; none in
       // Maple Harbor): how near the church, the square and the streets of houses are
@@ -1439,7 +1456,7 @@ export class Game implements GameApi {
         audio.splash(k);
         this.splashes.burst(p.x, surface, p.z, this.vel.x / moved, this.vel.z / moved, k);
       } else if (step) {
-        audio.step(!!this.zone.interior, running);
+        audio.step(this.underfoot(on > 0), running);
         if (fancy && running) this.dust.puff(p.x, p.z, this.vel.x / moved, this.vel.z / moved);
       }
     } else { this.stepDist = 0.6; this.stepN = null; }
@@ -1447,7 +1464,7 @@ export class Game implements GameApi {
       audio.splash(Math.min(1, 0.5 + landed));
       this.splashes.burst(p.x, surface, p.z, 0, 0, 1);
     } else if (landed > 0) {
-      audio.land(!!this.zone.interior, landed);
+      audio.land(this.underfoot(on > 0), landed);
       if (fancy) this.dust.puff(p.x, p.z, Math.sin(this.heading), Math.cos(this.heading), 0.9);
     }
     if (fancy && this.lastSpeed > 6 && moved < 2.5) this.dust.puff(p.x, p.z, Math.sin(this.heading), Math.cos(this.heading), 1.3);
