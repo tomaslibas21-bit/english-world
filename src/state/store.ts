@@ -17,6 +17,8 @@ export interface Settings {
   confirmSpeech: boolean;
   slowVoice: boolean;
   volume: number;
+  /** How loud the game's sounds are beside the voices: steps, the sea, the town, the effects (0–1; 0: none). */
+  sounds: number;
   textSize: number;
   quality: "high" | "low";
   cameraFollow: boolean;
@@ -46,7 +48,7 @@ function defaultPlayMode(): PlayMode {
 
 export const DEFAULT_SETTINGS: Settings = {
   lt: true, ltNatural: false, ipa: false, suggestions: false, hintsOpen: false,
-  confirmSpeech:false, slowVoice: false, volume: 0.9,
+  confirmSpeech:false, slowVoice: false, volume: 0.9, sounds: 0.8,
   textSize: typeof window === "undefined" || window.innerWidth > 900 ? 1.15 : 1,
   quality: "high", cameraFollow: true, onDevice: false, sayLt: true, sayIpa: true, scenes: true, worldStyle: "blocks",
   play: defaultPlayMode(),

@@ -96,6 +96,11 @@ export function bindRadio() {
   const voice = () => { const state = audio.getState(); if (state === "loading" || state === "playing") radio.hold("voice"); else radio.release("voice"); };
   audio.subscribe(voice);
   watchMicrophone((listening) => { if (listening) radio.hold("microphone", true); else radio.release("microphone"); });
+  // the town's quiet loops (the surf, a market's murmur) play lower under the radio's music, and its own far-off
+  // notes not at all (audio.ts underRadio)
+  const music = () => audio.underRadio(radio.store.getState().playing);
+  radio.store.subscribe(music);
+  music();
   // the holds that stand already, before the list arrives and anything could play
   if (useStore.getState().conv.active) { conversation = true; radio.hold("conversation"); }
   voice();
