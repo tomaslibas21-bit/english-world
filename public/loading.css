@@ -1,5 +1,7 @@
-/* The same outlined wordmark is used before JavaScript, while the town loads and on /zaisti.
-   Its fixed proportions do not depend on fonts arriving before or after a navigation. */
+/* The loading screen: the town's logo (its picture, the wordmark and a string of flags), drawn before JavaScript, while
+   the town loads and on the course's way in. The logo itself is the edition's (src/ui/loadingArt.ts, put into
+   index.html by vite.config.ts); here are the screen, the logo's layout and the motion both towns share.
+   Everything is outlined SVG with fixed proportions, so nothing depends on fonts arriving. */
 .ew-loading {
   position: fixed;
   inset: 0;
@@ -16,13 +18,49 @@
     radial-gradient(90% 60% at 100% 100%, #fbe6cf 0%, rgba(251, 230, 207, 0) 65%),
     linear-gradient(180deg, #f9f5ee 0%, #f3ece1 100%)));
 }
-.ew-loading-logo {
-  display: block;
-  width: clamp(188px, 35.3vw, 306px);
-  height: auto;
-  aspect-ratio: 306 / 198;
-  overflow: visible;
+.ew-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: clamp(236px, 36vw, 320px);
 }
+.ew-logo svg { display: block; height: auto; overflow: visible; }
+/* The picture and the flags are stacks of layers, each the size of the drawing (220 x 170; the flags' 120 x 24): a
+   part that moves is an element of its own, moved only by transform and opacity, so the browser animates it off the
+   main thread and the logo keeps moving while the game's script is busy building the town. */
+.ew-logo-art, .ew-logo-hint { position: relative; }
+.ew-logo-art { width: 74%; }
+.ew-logo-art::before { content: ""; display: block; padding-top: 77.273%; }
+.ew-logo-hint { width: 38%; margin-top: 7.5%; }
+.ew-logo-hint::before { content: ""; display: block; padding-top: 20%; }
+.ew-logo .ew-layer { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+.ew-logo-caps { width: 36%; margin-top: 5%; }
+.ew-logo-word { width: 100%; margin-top: 4%; }
+.ew-logo-caps + .ew-logo-word { margin-top: 3%; }
+
+/* Arriving, once. Each delay starts from --ew-t (0 on the page itself; minus the time already shown when the game
+   redraws the logo, Loading.tsx), so the logo never arrives twice and its loops carry on where they were. */
+.ew-logo-pop { transform-origin: 50.909% 51.765%; animation: ew-logo-pop 0.75s cubic-bezier(0.3, 1.45, 0.5, 1) both; animation-delay: var(--ew-t, 0s); }
+@keyframes ew-logo-pop { from { opacity: 0; transform: scale(0.72); } 45% { opacity: 1; } to { opacity: 1; transform: none; } }
+.ew-logo-caps { animation: ew-logo-rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: calc(var(--ew-t, 0s) + 0.18s); }
+.ew-logo-word { animation: ew-logo-rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: calc(var(--ew-t, 0s) + 0.25s); }
+.ew-logo-hint { animation: ew-logo-rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: calc(var(--ew-t, 0s) + 0.45s); }
+@keyframes ew-logo-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* The string of flags: a slow wave from flag to flag, the only "still loading" sign. Each flag turns about the point
+   it hangs from (its transform-origin, set on the flag). */
+.ew-flag { animation: ew-flag 2.6s ease-in-out infinite; animation-delay: calc(var(--ew-t, 0s) + var(--i) * 0.18s); }
+@keyframes ew-flag {
+  0%, 100% { transform: rotate(-4deg); opacity: 0.6; }
+  28% { transform: rotate(7deg); opacity: 1; }
+  60% { transform: rotate(-2deg); opacity: 0.82; }
+}
+
+/* A still logo for those who asked for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  .ew-logo, .ew-logo * { animation: none !important; }
+}
+
 /* The course uses data-theme and different token names; the static game uses data-fs-theme. */
 :root[data-theme] .ew-loading {
   --ink: var(--foreground);
@@ -32,13 +70,12 @@
   --ink: #1f2a33;
   --accent: #1f6f78;
 }
-/* The Spanish edition's loading screen: its name, "Puerto Colibrí", in the title screen's lettering (title.css .ts-title). */
-.pc-loading-word {
-  font-family: "EB Garamond", Georgia, "Times New Roman", serif;
-  font-weight: 600;
-  font-size: clamp(2.6em, 7vw, 4.2em);
-  line-height: 1;
-  letter-spacing: -0.015em;
-  color: var(--ink, #1f2a33);
+
+/* The wordmark alone (brand/loading-wordmark.svg), as the course's way in still draws it until it shows the logo. */
+.ew-loading-logo {
+  display: block;
+  width: clamp(188px, 35.3vw, 306px);
+  height: auto;
+  aspect-ratio: 306 / 198;
+  overflow: visible;
 }
-.pc-loading-word em { font-style: italic; font-weight: 500; color: var(--accent, #1f6f78); }

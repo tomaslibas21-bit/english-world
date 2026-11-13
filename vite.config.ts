@@ -4,6 +4,9 @@ import { fileURLToPath } from "node:url";
 import { rmSync } from "node:fs";
 import path from "node:path";
 import { editionFromEnv, editionOverlay, learnerFromEnv } from "./tools/edition-overlay.mjs";
+import { loadingScreen } from "./tools/loading-screen.ts";
+import { LOADING_ART as MAPLE_HARBOR } from "./src/ui/loadingArt.ts";
+import { LOADING_ART as PUERTO_COLIBRI } from "./src/editions/es/ui/loadingArt.ts";
 
 // Hosting: GAME_BASE=/game/ builds the game for a sub-path of another site (e.g. https://site/game/).
 // GitHub Pages builds with GAME_BASE=/<repository>/ (.github/workflows/deploy.yml, docs/HOSTING.md).
@@ -13,18 +16,19 @@ import { editionFromEnv, editionOverlay, learnerFromEnv } from "./tools/edition-
 const EDITION = process.env.VITEST ? "en" : editionFromEnv();
 // The learner layer (docs/es/LEARNER-LT.md): VITE_LEARNER=lt builds Puerto Colibrí for Lithuanians (Spanish Master).
 const LEARNER = process.env.VITEST ? "" : learnerFromEnv();
-const PAGES: Record<string, { lang: string; title: string; description: string; loading?: string }> = {
+// The loading screen (the town's logo: src/ui/loadingArt.ts, src/editions/es/ui/loadingArt.ts) is put into index.html
+// here (tools/loading-screen.ts); `loading` is what a screen reader hears while it shows.
+const PAGES: Record<string, { lang: string; title: string; description: string; loading: string }> = {
   es: {
     lang: "en",
     title: "Puerto Colibrí",
-    // the static loading screen (index.html) with the game's own name instead of the English World wordmark
-    loading: '<div class="loading ew-loading" role="status" aria-label="Loading Puerto Colibrí"><div class="pc-loading-word" aria-hidden="true">Puerto <em>Colibrí</em></div></div>',
+    loading: "Loading Puerto Colibrí",
     description: "Speak Spanish in a living town: walk around a small Mexican beach town and talk with its people.",
   },
   "es-lt": {
     lang: "lt",
     title: "Puerto Colibrí",
-    loading: '<div class="loading ew-loading" role="status" aria-label="Kraunama: Puerto Colibrí"><div class="pc-loading-word" aria-hidden="true">Puerto <em>Colibrí</em></div></div>',
+    loading: "Kraunama: Puerto Colibrí",
     description: "Kalbėk ispaniškai gyvame miestelyje: vaikštinėk po nedidelį Meksikos pajūrio miestelį ir kalbėkis su jo žmonėmis.",
   },
 };
@@ -44,9 +48,16 @@ function editionPictures(edition: string) {
   };
 }
 
+const PAGE = PAGES[LEARNER ? `${EDITION}-${LEARNER}` : EDITION];
+
 export default defineConfig({
   base: process.env.GAME_BASE || "/",
-  plugins: [editionOverlay(EDITION, PAGES[LEARNER ? `${EDITION}-${LEARNER}` : EDITION], LEARNER), react(), editionPictures(EDITION)],
+  plugins: [
+    editionOverlay(EDITION, PAGE, LEARNER),
+    loadingScreen(PAGE?.loading ?? "Kraunamas „English World“", EDITION === "es" ? PUERTO_COLIBRI : MAPLE_HARBOR),
+    react(),
+    editionPictures(EDITION),
+  ],
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   server: { port: 5188, host: true },
   build: { target: "es2022", chunkSizeWarningLimit: 4000 },

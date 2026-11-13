@@ -1,0 +1,74 @@
+import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { LOADING_ART } from "../src/ui/loadingArt";
+import { LOADING_BEGAN_KEY, loadingMarkup, loadingScreen } from "../tools/loading-screen";
+
+// The loading screen is put into index.html when the page is built, and the game's script reuses that markup
+// (src/ui/Loading.tsx): the page must keep its marker, and the logo must be a self-contained, still-able picture.
+describe("the loading screen", () => {
+  const page = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  const css = readFileSync(new URL("../public/loading.css", import.meta.url), "utf8");
+
+  it("index.html has one place for the logo, inside #root", () => {
+    expect(page.match(/<!--loading-->/g)).toHaveLength(1);
+    expect(page).toContain('<div id="root"><!--loading--></div>');
+  });
+
+  it("the built page shows the logo before any script", () => {
+    const out = loadingScreen("Kraunama", LOADING_ART).transformIndexHtml(page);
+    expect(out).not.toContain("<!--loading-->");
+    expect(out).toContain(loadingMarkup("Kraunama", LOADING_ART));
+    expect(out.indexOf('class="ew-logo"')).toBeLessThan(out.indexOf("<script"));
+    expect(() => loadingScreen("x", LOADING_ART).transformIndexHtml("<html></html>")).toThrow();
+  });
+
+  it("carries on from a page that was already showing the logo", () => {
+    const out = loadingMarkup("Kraunama", LOADING_ART);
+    const script = out.slice(out.indexOf("</div></div><script>") + "</div></div><script>".length, out.lastIndexOf("</script>"));
+    // run the page's one line of script against a stand-in page, 1.5 s after the page before began showing the logo
+    const run = (stored: string | null, now: number) => {
+      const set: Record<string, string> = {}, removed: string[] = [];
+      const sessionStorage = { getItem: (k: string) => (k === LOADING_BEGAN_KEY ? stored : null), removeItem: (k: string) => { removed.push(k); } };
+      const document = { currentScript: { previousElementSibling: { style: { setProperty: (k: string, v: string) => { set[k] = v; } } } } };
+      new Function("sessionStorage", "document", "Date", script)(sessionStorage, document, { now: () => now });
+      return { set, removed };
+    };
+    expect(run("1000000", 1001500)).toEqual({ set: { "--ew-t": "-1500ms" }, removed: [LOADING_BEGAN_KEY] });
+    expect(run(null, 1001500).set).toEqual({});          // came straight to the game
+    expect(run("1000000", 1090000).set).toEqual({});     // an old mark: the logo arrives afresh
+    expect(run("2000000", 1001500).set).toEqual({});     // a clock set back
+  });
+
+  it("is Maple Harbor's: the lighthouse, not the other town's hummingbird", () => {
+    expect(LOADING_ART).toContain("mh-beam");
+    expect(LOADING_ART).not.toContain("pc-");
+  });
+
+  it("the logo is a picture, a wordmark and the flags, with nothing to fetch or run", () => {
+    for (const part of ["ew-logo-art", "ew-logo-word", "ew-logo-hint", "ew-flag"]) expect(LOADING_ART).toContain(part);
+    expect(LOADING_ART).not.toMatch(/<script|<img|<image|url\(\s*['"]?(?!#)|<use[^>]+href="(?!#)|<text|font-family/);
+    const ids = [...LOADING_ART.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const ref of LOADING_ART.matchAll(/(?:url\(#|href="#)([\w-]+)/g)) expect(ids).toContain(ref[1]);
+  });
+
+  it("every moving part is a layer of its own (an element, not a part inside one SVG), so it moves off the main thread", () => {
+    const style = LOADING_ART.slice(0, LOADING_ART.indexOf("</style>"));
+    const moving = [...style.matchAll(/\.([\w-]+) \{[^{}]*animation(?:-delay|-duration)?:/g)].map((m) => m[1]);
+    expect(moving.length).toBeGreaterThan(4);
+    for (const name of new Set([...moving, "ew-flag", "ew-logo-pop"])) {
+      const elements = [...LOADING_ART.matchAll(new RegExp(`<(\\w+) class="[^"]*\\b${name}\\b[^"]*"`, "g"))];
+      expect(elements.length, name).toBeGreaterThan(0);
+      for (const el of elements) { expect(el[0], name).toMatch(/^<(svg|div) /); expect(el[0], name).toContain("ew-layer"); }
+    }
+    // and nothing inside a layer is animated by class
+    expect(LOADING_ART).not.toMatch(/<(g|path|circle|rect|use) [^>]*class="/);
+  });
+
+  it("every animation starts from --ew-t, so a redrawn logo carries on, and stands still on request", () => {
+    const rules = (css + LOADING_ART).match(/[^{}]*\{[^{}]*animation:[^{}]*\}/g) ?? [];
+    expect(rules.length).toBeGreaterThan(8);
+    for (const r of rules) if (!/animation:\s*none/.test(r)) expect(r, r).toContain("var(--ew-t, 0s)");
+    expect(css).toMatch(/prefers-reduced-motion: reduce\) \{\s*\.ew-logo, \.ew-logo \* \{ animation: none !important; \}/);
+  });
+});
