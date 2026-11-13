@@ -618,6 +618,8 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .joy.run { border-color: rgba(255, 214, 102, 0.95); background: rgba(255, 214, 102, 0.22); }
 .jump-btn { position: fixed; right: calc(26px + env(safe-area-inset-right)); bottom: calc(34px + env(safe-area-inset-bottom)); width: 74px; height: 74px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.7); background: rgba(255,255,255,0.3); color: #fff; z-index: 12; touch-action: none; display: grid; place-items: center; padding: 0; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.25)); }
 .jump-btn:active { background: rgba(255,255,255,0.55); }
+/* beside the talk / enter button (to its left, the same height off the bottom), a little smaller: still 56 px to tap */
+.jump-btn.beside { right: calc(128px + env(safe-area-inset-right)); bottom: calc(40px + env(safe-area-inset-bottom)); width: 60px; height: 60px; }
 .act-btn { position: fixed; right: calc(22px + env(safe-area-inset-right)); bottom: calc(26px + env(safe-area-inset-bottom)); width: 92px; height: 92px; border-radius: 50%; border: 0; background: var(--accent); color: #fff; font-weight: 900; font-size: 0.95em; z-index: 12; box-shadow: 0 5px 0 rgba(0,0,0,0.2); }
 
 @media (max-width: 900px) {
@@ -823,3 +825,45 @@ body.scene-on .tag-layer { display: none; }
   }
   .convo-head .toggle { font-size: min(0.76em, 5cqw); }
 }
+
+/* ---------- the first-time guide (Guide.tsx): a small card low in the picture, never in the way ---------- */
+.coach {
+  position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 11;
+  display: flex; gap: 12px; align-items: flex-start; width: min(430px, calc(100vw - 28px));
+  background: rgba(255, 255, 255, 0.96); color: var(--ink, #1f2a33); border-radius: 18px; padding: 12px 14px 10px;
+  box-shadow: 0 14px 34px -14px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(31, 42, 51, 0.06);
+  animation: coach-in 0.35s ease both;
+}
+@keyframes coach-in { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.coach-icon { flex: none; width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); transition: background-color 0.2s, color 0.2s; }
+.coach.ok .coach-icon { background: #dff2ec; color: #1e8a6e; }
+.coach-text { flex: 1; min-width: 0; }
+.coach-text b { display: block; font-size: 1.02em; line-height: 1.25; }
+.coach-text p { margin: 2px 0 0; font-size: 0.9em; line-height: 1.4; color: #44525e; }
+.coach-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.coach-dots { display: inline-flex; gap: 5px; margin-right: auto; }
+.coach-dots i { width: 7px; height: 7px; border-radius: 50%; background: #d5dbe0; }
+.coach-dots i.on { background: var(--accent); }
+.coach-skip { background: none; border: 0; color: #5b6a76; font-weight: 800; font-size: 0.88em; min-height: 44px; padding: 0 10px; border-radius: 10px; }
+.coach-skip:hover { background: rgba(31, 42, 51, 0.06); }
+.coach-next { min-height: 44px; min-width: 84px; }
+.coach-switch { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-weight: 800; font-size: 0.9em; }
+/* on a phone held upright: under the task card (folded while the guide is up, Hud.tsx) and beside the buttons, clear
+   of the middle of the picture, where the player walks */
+@media (max-width: 600px) {
+  .coach {
+    left: max(8px, env(safe-area-inset-left)); right: auto; bottom: auto; top: calc(104px + env(safe-area-inset-top)); transform: none;
+    width: calc(100vw - 78px - env(safe-area-inset-left) - env(safe-area-inset-right)); gap: 10px; padding: 10px 12px 8px; border-radius: 16px;
+    animation-name: coach-in-top;
+  }
+  .coach-icon { width: 36px; height: 36px; border-radius: 12px; }
+  .coach-text p { font-size: 0.86em; line-height: 1.35; }
+  .coach-row { margin-top: 4px; }
+}
+@keyframes coach-in-top { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+/* a phone held sideways: low, between the stick and the buttons */
+@media (max-height: 520px) and (orientation: landscape) {
+  .hud.has-touch .coach { top: auto; left: 50%; transform: translateX(-50%); bottom: calc(8px + env(safe-area-inset-bottom)); width: min(400px, calc(100vw - 400px)); animation-name: coach-in; }
+}
+/* the song's line gives way to the guide while it is up */
+.hud:has(.coach) .radio-strip { display: none; }

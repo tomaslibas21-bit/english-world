@@ -75,6 +75,17 @@ export class Ledges {
     }
   }
 
+  /** Can someone whose feet are `feet` m up go straight from (ax, az) to (bx, bz): no piece standing higher than
+   *  their feet in the way (a bench's back between its seat and the lawn behind it)? */
+  clear(ax: number, az: number, bx: number, bz: number, feet: number, r = 0.3) {
+    const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / 0.1));
+    for (let i = 0; i <= n; i++) {
+      const x = ax + ((bx - ax) * i) / n, z = az + ((bz - az) * i) / n;
+      for (const b of this.near(x, z)) if (b.top > feet + 0.02 && x > b.minX - r && x < b.maxX + r && z > b.minZ - r && z < b.maxZ + r) return false;
+    }
+    return true;
+  }
+
   /** How high the thing under (x, z) stands that feet at `feet` m are on or over (0: the ground). */
   support(x: number, z: number, feet: number, air: boolean) {
     const reach = feet + (air ? 0.02 : STEP), m = 0.2;

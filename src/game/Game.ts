@@ -9,6 +9,7 @@ import { styleRenderer, createStyleFx, type StyleFx } from "./styleScene";
 import { CameraRig } from "./camera";
 import { Steer, Gait, Hop, angleDiff, smoothstep } from "./movement";
 import { Ledges } from "./ledges";
+import { coach } from "./coach";
 import { Wading, Splashes, sandY, swell, SEA_LEVEL, SHORE } from "./water";
 import { OcclusionField } from "./occlusion";
 import { PropFader } from "./fade";
@@ -300,6 +301,8 @@ export class Game implements GameApi {
     // Keep the logo over the canvas until an actual town frame is ready to show.
     this.renderer.render(this.scene, this.rig.cam);
     this.onReady?.();
+    // the first time in the town: a few hints, one at a time (coach.ts)
+    coach.begin();
   }
 
   private setupLights() {
@@ -554,7 +557,7 @@ export class Game implements GameApi {
   jump() {
     const st = useStore.getState();
     if (this.session?.active || st.conv.active || st.hud.panel || this.transitioning || !this.player) return;
-    if (this.hop.start()) audio.step(!!this.zone.interior, false);
+    if (this.hop.start()) { audio.step(!!this.zone.interior, false); coach.did("jump"); }
   }
 
   /** Outdoors, walking: the passers-by, their dogs, the cars and the town's people (not the player) that would stand
@@ -644,9 +647,22 @@ export class Game implements GameApi {
 
   walkTo(x: number, z: number, target: Game["autoTarget"]) {
     const p = this.player.root.position;
-    const path = this.zone.nav.path(p.x, p.z, x, z);
+    const nav = this.zone.nav;
+    // standing on something they jumped onto (a bench's seat): first straight down off it, to the nearest open spot
+    // that its back or a wall beside it doesn't stand in the way of; the walk is planned from there
+    let from: [number, number] = [p.x, p.z], down: [number, number][] = [];
+    if (!this.zone.interior && this.ledges && this.hop.ground > 0.05) {
+      let bd = Infinity;
+      for (let dz = -3; dz <= 3; dz++) for (let dx = -3; dx <= 3; dx++) {
+        const i = nav.idx(p.x + dx * nav.cell, p.z + dz * nav.cell);
+        if (!nav.free(i)) continue;
+        const [cx, cz] = nav.center(i), d = Math.hypot(cx - p.x, cz - p.z);
+        if (d < bd && this.ledges.clear(p.x, p.z, cx, cz, this.hop.y)) { bd = d; from = [cx, cz]; down = [from]; }
+      }
+    }
+    const path = nav.path(from[0], from[1], x, z);
     if (!path) { useStore.getState().toast({ kind: "info", title: "Ten nueiti negalima" }); return; }
-    this.autoPath = path.slice(1);
+    this.autoPath = [...down, ...path.slice(1)];
     this.autoTarget = target;
     this.stepOut = 0;
   }
@@ -780,6 +796,7 @@ export class Game implements GameApi {
     CUT.r.value = 0;
     this.autoPath = null; this.autoTarget = null; this.keys.clear(); this.joy = { x: 0, y: 0 };
     this.talkNpc = actor;
+    coach.did("talk");
     const st = useStore.getState();
     st.setHud({ prompt: null, panel: null });
     if (actor) {
@@ -1343,6 +1360,13 @@ export class Game implements GameApi {
     const going = through && this.gaitOn ? this.gait.speed : moved;
     this.player.setAnim(running ? "run" : going > 0.4 ? "walk" : "idle");
     this.player.moveSpeed = going;
+    // the guide's hints about walking and running tick themselves off; later, a long stretch at a walk brings the tip
+    // about running, once
+    if (this.gaitOn && !blocked) {
+      coach.did("walk", moved * dt);
+      if (moved > 5.5) coach.did("run", dt);
+    }
+    coach.stroll(dt, indoor || blocked || !this.gaitOn || moved < 2 || this.keys.has("shift") || this.joyRun, useStore.getState().hud.showTouch);
     // a lean into turns, more the faster you go
     const dh = Math.atan2(Math.sin(this.heading - this.lastHeading), Math.cos(this.heading - this.lastHeading));
     const turn = this.vel.lengthSq() > 0.05 ? dh / Math.max(dt, 1e-4) : 0;
@@ -1580,6 +1604,7 @@ export class Game implements GameApi {
 
   dispose() {
     this.disposed = true;
+    useStore.getState().setHud({ coach: null });
     this.renderer.setAnimationLoop(null);
     window.removeEventListener("keydown", this.onKeyDown);
     window.removeEventListener("keyup", this.onKeyUp);
