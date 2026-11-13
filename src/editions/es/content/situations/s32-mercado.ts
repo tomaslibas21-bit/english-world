@@ -158,7 +158,7 @@ export const mercado: SituationDef = {
   location: "market",
   npc: "marcus",
   goal: "Buy fruit and vegetables for the week: ask the price, say how much you want (by the kilo or by the piece), and pay.",
-  intro: "The Mercado Municipal is a covered market hall off the zócalo. Doña Licha has sold fruit and vegetables here for thirty years. Prices are per kilo (el kilo) or per piece (la pieza); most people pay in cash.",
+  intro: "You're doing your shopping at the Mercado Municipal, a covered market hall off the zócalo. Doña Licha has sold fruit and vegetables here for thirty years. Prices are per kilo (el kilo) or per piece (la pieza); most people pay in cash.",
   entities: { product: PRODUCTS },
 
   grammar: {

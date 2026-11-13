@@ -135,7 +135,7 @@ export const apartment: SituationDef = {
   location: "apartments",
   npc: "patel",
   goal: "Look at the apartment and find out the terms: the rent, the utilities, the deposit and the lease. Then decide whether to take it.",
-  intro: "Departamentos Las Palmas, a small building in Puerto Colibrí. Don Ernesto, the landlord, is showing a one-bedroom apartment one floor up. Prices are in Mexican pesos.",
+  intro: "You're looking for an apartment to rent. At Departamentos Las Palmas, a small building in Puerto Colibrí, Don Ernesto, the landlord, is showing you a one-bedroom apartment one floor up. Prices are in Mexican pesos.",
   entities: { utility: UTILITIES, appliance: APPLIANCES },
 
   grammar: {

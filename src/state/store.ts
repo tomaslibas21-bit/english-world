@@ -116,12 +116,14 @@ export interface ConvUI {
   /** "Slėpti pagalbą": the "your turn" guide (what to do now and model answers) is hidden in this
    *  conversation only; the next one starts with it shown again. */
   guideHidden: boolean;
+  /** The scene card (SituationDef.intro, src/ui/SceneIntro.tsx) is open: the person's first line waits for it. */
+  introOpen: boolean;
 }
 
 export const EMPTY_CONV: ConvUI = {
   active: false, sitId: "", npcId: "", hostId: "", mode: "talk", transcript: [], phase: "npc", suggest: [], hints: [], chosen: {}, openHint: null,
   mic: { status: "off", heard: "" }, failures: 0, misses: 0, slowMode: false, lastHeard: "", prefix: false, completed: false, speaking: null, reveal: {}, note: null,
-  typing: false, newExpressions: [], checklist: [], focus: 0, stepId: null, guess: null, practice: null, run: 0, guideHidden: false,
+  typing: false, newExpressions: [], checklist: [], focus: 0, stepId: null, guess: null, practice: null, run: 0, guideHidden: false, introOpen: false,
 };
 
 export interface Toast { id: number; kind: "info" | "success" | "tip" | "stamp"; title: string; body?: string; better?: string; ms?: number }
