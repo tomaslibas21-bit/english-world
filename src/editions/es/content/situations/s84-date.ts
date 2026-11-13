@@ -111,7 +111,7 @@ const COUNTRIES: EntityDef[] = [
   ent("chiapas", "Chiapas", "Chiapas", "m", { art: "", forms: ["san cristobal", "san cristobal de las casas", "palenque"] }),
   ent("guanajuato", "Guanajuato", "Guanajuato", "m", { art: "", forms: ["san miguel de allende", "san miguel"] }),
   ent("merida", "Mérida", "Mérida", "f", { art: "", forms: ["merida", "yucatan"] }),
-  ent("home", "mi | país", "my | country", "m", { art: "", forms: HOME_FORMS }),
+  ent("home", "mi | país", "my | country", "m", { art: "", forms: HOME_FORMS, attrs: { nat: "my country" } }),
 ];
 const TRIP = ["oaxaca", "chiapas", "guanajuato", "merida"];
 
