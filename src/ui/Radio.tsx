@@ -107,8 +107,10 @@ function RadioSet() {
       {RADIO_SKIN === "colibri" && <Bunting />}
       <div className="rs-top">
         <span className="rs-lamp" aria-hidden />
-        <b className="rs-name" lang="en">{station.name}</b>
-        <span className="rs-freq" aria-hidden>{station.freq.toFixed(1)} FM</span>
+        <div className="rs-title">
+          <b className="rs-name" lang="en">{station.name}</b>
+          <span className="rs-freq" aria-hidden>{station.freq.toFixed(1)} FM</span>
+        </div>
         <button className="rs-x" onClick={() => radio.setOpen(false)} aria-label="Uždaryti" title="Uždaryti"><Icon name="close" size={17} strokeWidth={2.25} /></button>
       </div>
       <div className="rs-dial" aria-hidden>

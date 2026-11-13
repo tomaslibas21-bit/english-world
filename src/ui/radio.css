@@ -54,8 +54,9 @@
 
 /* ---------- the radio set ---------- */
 .radio-set {
-  /* beside the tools, level with their top: clear of the lyric strip and the "E" prompt at the bottom */
-  position: fixed; z-index: 13; right: calc(max(14px, env(safe-area-inset-right)) + 64px); top: 200px; width: min(340px, calc(100vw - 20px));
+  /* beside the tools, level with their top: clear of the lyric strip and the "E" prompt at the bottom. Its width
+     follows the text size (Nustatymai: A, A+, A++), so the set keeps its proportions and the station's name its room */
+  position: fixed; z-index: 13; right: calc(max(14px, env(safe-area-inset-right)) + 64px); top: clamp(14px, calc(100dvh - 22em), 200px); width: min(16.5em, calc(100vw - 20px));
   display: flex; flex-direction: column; gap: 10px; padding: 12px 13px 13px; color: var(--rs-ink); text-align: left;
   background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0 2px, transparent 2px 7px), linear-gradient(180deg, var(--rs-body), var(--rs-body-2));
   border: 2px solid var(--rs-edge); border-radius: var(--rs-radius);
@@ -66,13 +67,17 @@
 .radio-skin-colibri.radio-set { padding-top: 24px; border-width: 2.5px; }
 .radio-bunting { position: absolute; left: 8px; right: 8px; top: -13px; width: calc(100% - 16px); height: 30px; pointer-events: none; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.25)); }
 
-.rs-top { display: flex; align-items: center; gap: 9px; min-height: 32px; }
+.rs-top { display: flex; align-items: flex-start; gap: 9px; min-height: 32px; }
+.rs-top .rs-lamp { margin-top: 0.62em; }
 .rs-lamp { width: 9px; height: 9px; border-radius: 50%; flex: none; background: rgba(255, 255, 255, 0.22); transition: background-color 0.6s ease, box-shadow 0.6s ease; }
 .radio-set.on .rs-lamp { background: var(--rs-lamp); box-shadow: 0 0 0 2px rgba(255, 194, 77, 0.25), 0 0 10px 2px var(--rs-lamp); }
-.rs-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.15; }
+/* the station's name always shows in full, at every text size: it has the header's line to itself, with the
+   frequency under it like a station's logo, and a name too long for the line takes a second one */
+.rs-title { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; }
+.rs-name { max-width: 100%; text-wrap: balance; overflow-wrap: break-word; line-height: 1.12; }
 .radio-skin-maple .rs-name { font-family: var(--en); font-style: italic; font-weight: 600; font-size: 1.62em; letter-spacing: 0.005em; }
-.radio-skin-colibri .rs-name { font-family: var(--ui); font-weight: 900; font-size: 1.16em; letter-spacing: 0.07em; text-transform: uppercase; color: var(--rs-trim); transform: rotate(-2deg); text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.22); padding: 2px 2px 2px 0; }
-.rs-freq { margin-left: auto; flex: none; font-family: var(--ui); font-weight: 800; font-size: 0.7em; letter-spacing: 0.09em; color: var(--rs-ink-soft); }
+.radio-skin-colibri .rs-name { font-family: var(--ui); font-weight: 900; font-size: 1.1em; letter-spacing: 0.055em; text-transform: uppercase; color: var(--rs-trim); transform: rotate(-2deg); transform-origin: left center; text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.22); padding: 3px 2px 2px 0; }
+.rs-freq { white-space: nowrap; font-family: var(--ui); font-weight: 800; font-size: 0.66em; letter-spacing: 0.12em; color: var(--rs-ink-soft); margin-top: 1px; }
 .rs-x { position: relative; flex: none; width: 30px; height: 30px; border-radius: 10px; border: 0; background: none; color: var(--rs-ink-soft); display: grid; place-items: center; }
 .rs-x::before { content: ""; position: absolute; inset: -7px; }
 .rs-x:hover { background: var(--rs-key); color: var(--rs-ink); }
@@ -165,6 +170,17 @@
 @media (max-width: 900px), (max-height: 520px) {
   .radio-set { top: calc(8px + env(safe-area-inset-top)); left: 50%; right: auto; margin-left: calc(min(420px, 100vw - 16px) / -2); width: min(420px, calc(100vw - 16px)); }
   .radio-skin-colibri.radio-set { top: calc(18px + env(safe-area-inset-top)); }
+}
+/* a phone held sideways: no room for the dial window, and everything a little closer together */
+@media (max-height: 520px) {
+  .radio-set { gap: 7px; padding-bottom: 10px; }
+  .rs-dial { display: none; }
+  .rs-preset { min-height: 44px; padding: 4px 9px; }
+  .rs-now { min-height: 0; }
+}
+/* the smallest phones held sideways: the stations by name only */
+@media (max-height: 420px) {
+  .rs-preset small { display: none; }
 }
 @media (max-width: 900px) {
   .radio-strip { left: 8px; right: 66px; transform: none; width: auto; max-width: none; display: flex; justify-content: center; }

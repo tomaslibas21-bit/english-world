@@ -12,6 +12,11 @@ The owner's brief (13 Nov 2026): a nice feel, easy to turn on and off, calm whil
 - **One tap on, one tap off.** The toolbar's radio button is the power switch; R does the same. On shows at a glance:
   the button's lamp glows, and a plate beside it names the station, with three moving bars. A new song's title shows on
   the plate for five seconds.
+- **Off looks off.** Switched off with the toolbar button (or R), an open set folds away too. The set's own knob
+  turns the radio off without closing the set the learner is using.
+- **The station's name always shows in full.** It has the header's line to itself with the frequency under it, the
+  set's width follows the text size (A, A+, A++), and a long name ("Todas las canciones") takes two lines. On a phone
+  held sideways the dial window, and on the smallest the stations' second lines, give way so the set fits.
 - **The radio set** opens from the plate (its small chevron says so) and folds away at a tap anywhere else. The very first time the radio is turned
   on it opens by itself, once (`introduced` in the saved state). It has an FM dial whose needle glides to the station
   (`freq` in `src/content/radio.ts`), the stations as preset buttons, the song, and five keys around the on-off knob.

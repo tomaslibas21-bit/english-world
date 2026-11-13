@@ -234,14 +234,17 @@ describe("the radio", () => {
     expect(out.url).toBe("https://files.example/course/songs/audio/A.mp3?t=tok");
     expect(fetched).toContain("https://files.example/course/songs/data/A.json?t=tok");
     expect(s.timeline?.lines).toHaveLength(1);
-    radio.setOpen(false);
-    radio.power();
+    radio.power(); // off with the set still open: it folds away, off looks off
     expect(radio.store.getState()).toMatchObject({ on: false, open: false });
     await vi.advanceTimersByTimeAsync(FADE_OUT_MS);
     radio.power();
     await settle();
     expect(radio.store.getState()).toMatchObject({ on: true, open: false, playing: true }); // no set in the way the second time
     expect(saved().introduced).toBe(true);
+    // the set's own knob turns the radio off without closing the set the learner is using
+    radio.setOpen(true);
+    radio.toggle();
+    expect(radio.store.getState()).toMatchObject({ on: false, open: true });
   });
 
   it("fades in over a second when turned on, and out over about a second when turned off: never a cut", async () => {
