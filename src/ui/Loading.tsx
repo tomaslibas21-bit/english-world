@@ -6,14 +6,16 @@ const FIRST = typeof document === "undefined" ? null : document.querySelector(".
 const ART = FIRST?.querySelector(".ew-logo")?.innerHTML ?? "";
 const BEGAN = began(FIRST);
 
-/** When the logo on the page began moving (performance.now()'s clock): now, less its longest-running animation. */
+/** When the logo on the page began moving (performance.now()'s clock): now, less its longest-running animation, less
+ *  the time it had already been up on the page before this one (the --ew-t the page set, tools/loading-screen.ts). */
 function began(el: Element | null): number {
   if (typeof performance === "undefined") return 0;
   let run = 0;
   try {
     for (const a of el?.getAnimations?.({ subtree: true }) ?? []) run = Math.max(run, Number(a.currentTime) || 0);
   } catch { /* an old browser: the logo arrives again, once */ }
-  return performance.now() - run;
+  const carried = parseFloat((el as HTMLElement | null)?.style.getPropertyValue("--ew-t") ?? "") || 0;
+  return performance.now() - run + Math.min(0, carried);
 }
 
 /** The same logo as on the static page (index.html), so booting React and loading the town share one screen: the

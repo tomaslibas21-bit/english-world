@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { LOADING_ART } from "../src/ui/loadingArt";
-import { loadingMarkup, loadingScreen } from "../tools/loading-screen";
+import { LOADING_BEGAN_KEY, loadingMarkup, loadingScreen } from "../tools/loading-screen";
 
 // The loading screen is put into index.html when the page is built, and the game's script reuses that markup
 // (src/ui/Loading.tsx): the page must keep its marker, and the logo must be a self-contained, still-able picture.
@@ -20,6 +20,23 @@ describe("the loading screen", () => {
     expect(out).toContain(loadingMarkup("Kraunama", LOADING_ART));
     expect(out.indexOf('class="ew-logo"')).toBeLessThan(out.indexOf("<script"));
     expect(() => loadingScreen("x", LOADING_ART).transformIndexHtml("<html></html>")).toThrow();
+  });
+
+  it("carries on from a page that was already showing the logo", () => {
+    const out = loadingMarkup("Kraunama", LOADING_ART);
+    const script = out.slice(out.indexOf("</div></div><script>") + "</div></div><script>".length, out.lastIndexOf("</script>"));
+    // run the page's one line of script against a stand-in page, 1.5 s after the page before began showing the logo
+    const run = (stored: string | null, now: number) => {
+      const set: Record<string, string> = {}, removed: string[] = [];
+      const sessionStorage = { getItem: (k: string) => (k === LOADING_BEGAN_KEY ? stored : null), removeItem: (k: string) => { removed.push(k); } };
+      const document = { currentScript: { previousElementSibling: { style: { setProperty: (k: string, v: string) => { set[k] = v; } } } } };
+      new Function("sessionStorage", "document", "Date", script)(sessionStorage, document, { now: () => now });
+      return { set, removed };
+    };
+    expect(run("1000000", 1001500)).toEqual({ set: { "--ew-t": "-1500ms" }, removed: [LOADING_BEGAN_KEY] });
+    expect(run(null, 1001500).set).toEqual({});          // came straight to the game
+    expect(run("1000000", 1090000).set).toEqual({});     // an old mark: the logo arrives afresh
+    expect(run("2000000", 1001500).set).toEqual({});     // a clock set back
   });
 
   it("is Maple Harbor's: the lighthouse, not the other town's hummingbird", () => {
