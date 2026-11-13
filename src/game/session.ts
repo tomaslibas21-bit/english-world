@@ -23,7 +23,8 @@ const nluCache = new Map<string, Nlu>();
 let lineId = 1;
 
 export interface SessionHooks {
-  npcTalk(npcId: string, seconds: number): void;
+  /** (`text`: what they say, for the face.) */
+  npcTalk(npcId: string, seconds: number, text?: string): void;
   /** The person's face as the learner's answer lands: a nod (understood), a puzzled look (not, or not sure). */
   npcReact?(npcId: string, kind: "nod" | "puzzled" | "clap"): void;
   onEvent(name: string, data: any): void;
@@ -138,7 +139,7 @@ export class Session {
       const slow = !!l.slow || useStore.getState().settings.slowVoice;
       useStore.getState().setConv({ speaking: id, npcId: l.npc });
       const dur = audio.clipDuration(npcVoice(npc), npc?.speed ?? 1, l.sentence.say) ?? Math.max(1.2, l.sentence.say.length * 0.06);
-      this.hooks.npcTalk(l.npc, dur / (slow ? 0.82 : 1));
+      this.hooks.npcTalk(l.npc, dur / (slow ? 0.82 : 1), l.sentence.say);
       if (!await audio.play(npcVoice(npc), npc?.speed ?? 1, l.sentence.say, { slow, male: npc?.gender === "m" })) return;
       await wait(160);
     }

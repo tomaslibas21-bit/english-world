@@ -17,7 +17,11 @@ export type Accessory = "apron" | "cap" | "glasses" | "sunglasses" | "hat" | "ti
   // round the skirt's hem), a guayabera's pleats, pockets and buttons, a rebozo over the shoulders (in accColor)
   | "jipi" | "bandana" | "embroidered" | "hipil" | "guayabera" | "rebozo"
   // an apron from the waist down only (a waiter's), in accColor
-  | "waistapron";
+  | "waistapron"
+  // beachwear (the Spanish edition's beach, theme.ts `beachwear`; Maple Harbor uses none): a sarong tied over a skirt's
+  // shape, a light shirt worn open over a swimsuit (in accColor), a broad-brimmed sun hat (its ribbon in accColor), a
+  // bucket hat (in accColor)
+  | "sarong" | "coverup" | "sunhat" | "bucket";
 
 export interface Look {
   skin: string;
@@ -41,6 +45,15 @@ export interface Look {
   phone?: boolean;
   /** A backpack in this colour: only the player has one (townspeople and NPCs never do), so they're told apart. */
   backpack?: string;
+  /** A woman's figure or a man's (the shoulders, the waist, the hips): given where it is known (the cast's gender, the
+   *  passers-by), else guessed from the hair, a skirt, a beard. */
+  female?: boolean;
+  /** Sleeves: long ones unless given (everyone in Maple Harbor); short ones end above the elbow, none leaves the arms
+   *  bare. */
+  sleeves?: "short" | "none";
+  /** Swimwear (the Spanish edition's beach; Maple Harbor uses none): "trunks", swim shorts to the knee in the bottom's
+   *  colour, a stripe down their side; "suit", a one-piece swimsuit in the top's colour, the legs and arms bare. */
+  swim?: "trunks" | "suit";
   /** The face's own touches (the Spanish edition's cast; Maple Harbor's faces have none): the brows' weight (1: as
    *  everyone's), their arch (radians round; 1.05 as everyone's) and tilt (+: the outer ends up), and the lines of a
    *  life of smiling (beside the mouth, at the eyes' outer corners). */
