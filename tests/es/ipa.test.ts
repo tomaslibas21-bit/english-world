@@ -46,7 +46,18 @@ describe("Spanish IPA", () => {
     expect(ipaForUnit("Xcacel")).toBe("ʃkaˈsel");
     expect(ipaForUnit("¿Me puede dar")).toBe("me ˈpwede daɾ");
     expect(ipaForUnit("$85")).toBe("oˈtʃenta i ˈsinko ˈpesos");
+    // the parent's spot check (13 Nov): sc in seseo, stress by the spelling (-z), a final -y after a consonant
+    const seseo: Record<string, string> = {
+      trescientos: "tɾeˈsjentos", piscina: "piˈsina", descenso: "deˈsenso", ascensor: "asenˈsoɾ", excelente: "ekseˈlente",
+      Jerez: "xeˈɾes", feliz: "feˈlis", arroz: "aˈros", capaz: "kaˈpas", nariz: "naˈɾis", actriz: "akˈtɾis",
+      whisky: "ˈwiski", rugby: "ˈruɡbi", sexy: "ˈseksi", jersey: "xeɾˈsei̯", penalty: "peˈnalti", estoy: "esˈtoi̯",
+    };
+    for (const [w, ipa] of Object.entries(seseo)) expect(ipaForUnit(w), w).toBe(ipa);
     setVariety("spain");
+    const spain: Record<string, string> = {
+      trescientos: "tɾesˈθjentos", piscina: "pisˈθina", Jerez: "xeˈɾeθ", feliz: "feˈliθ", arroz: "aˈroθ", whisky: "ˈwiski",
+    };
+    for (const [w, ipa] of Object.entries(spain)) expect(ipaForUnit(w), w).toBe(ipa);
     expect(ipaForUnit("cerveza")).toBe("θeɾˈbeθa");
     expect(ipaForUnit("gracias")).toBe("ˈɡɾaθjas");
     setVariety("default");

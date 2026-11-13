@@ -44,7 +44,8 @@ function segments(w: string, spain: boolean): Seg[] {
       case "h": break; // silent (ch is read below)
       case "c":
         if (n === "h") { out.push({ p: "tʃ", v: false }); i++; }
-        else if ("eéií".includes(n)) out.push({ p: spain ? "θ" : "s", v: false });
+        // sc before e/i is one s where c is s (piscina, trescientos, excelente); Spain says both (pisθina)
+        else if ("eéií".includes(n)) { if (spain || !/s$/.test(out[out.length - 1]?.p ?? "")) out.push({ p: spain ? "θ" : "s", v: false }); }
         else out.push({ p: "k", v: false });
         break;
       case "z": out.push({ p: spain ? "θ" : "s", v: false }); break;
@@ -57,8 +58,8 @@ function segments(w: string, spain: boolean): Seg[] {
       case "j": out.push({ p: "x", v: false }); break;
       case "l": if (n === "l") { out.push({ p: "ʝ", v: false }); i++; } else out.push({ p: "l", v: false }); break;
       case "y":
-        // y at the end of a word after a vowel (hoy, muy) and the word y itself are the vowel i
-        if (!n && (i === 0 || VOWELS.includes(prev))) out.push({ p: "i", v: true });
+        // y at the end of a word (hoy, muy, whisky, rugby) and the word y itself are the vowel i
+        if (!n) out.push({ p: "i", v: true });
         else out.push({ p: "ʝ", v: false });
         break;
       case "ñ": out.push({ p: "ɲ", v: false }); break;
@@ -96,7 +97,7 @@ function glides(segs: Seg[]): Seg[] {
 const ONSETS = new Set(["pl", "pɾ", "bl", "bɾ", "fl", "fɾ", "tɾ", "dɾ", "kl", "kɾ", "ɡl", "ɡɾ"]);
 
 /** Syllables (onset maximized within Spanish's two-consonant onsets) and the stressed one. */
-function syllabify(segs: Seg[]): { syl: Seg[][]; stress: number } {
+function syllabify(segs: Seg[], endsVowelNS: boolean): { syl: Seg[][]; stress: number } {
   const nuclei = segs.map((s, i) => (s.v ? i : -1)).filter((i) => i >= 0);
   if (!nuclei.length) return { syl: [segs], stress: 0 };
   const starts: number[] = [0];
@@ -121,9 +122,6 @@ function syllabify(segs: Seg[]): { syl: Seg[][]; stress: number } {
   const syl = starts.map((s, i) => segs.slice(s, starts[i + 1] ?? segs.length));
   const accented = syl.findIndex((sy) => sy.some((s) => s.acc));
   if (accented >= 0) return { syl, stress: accented };
-  const last = segs[segs.length - 1];
-  // a final -y counts as a consonant (estoy, Uruguay: stressed on the last syllable)
-  const endsVowelNS = last && (last.v || last.p === "n" || last.p === "s");
   return { syl, stress: syl.length >= 2 && endsVowelNS ? syl.length - 2 : syl.length - 1 };
 }
 
@@ -135,7 +133,10 @@ export function ipaWord(word: string, spain = variety() === "spain"): string {
   if (/-/.test(w)) return w.split("-").filter(Boolean).map((p) => ipaWord(p, spain)).join(" ");
   if (!/[a-zñáéíóúü]/.test(w)) return "";
   const segs = glides(segments(w, spain));
-  const { syl, stress } = syllabify(segs);
+  // the stress rule reads the spelling: a vowel, n or s at the end (not z: feliz, Jerez; not -y after a vowel: estoy,
+  // Uruguay; but -y after a consonant is a vowel: whisky, rugby)
+  const endsVowelNS = /[aeiouns]$|[^aeiouáéíóú]y$/.test(w);
+  const { syl, stress } = syllabify(segs, endsVowelNS);
   const parts = syl.map((sy) => sy.map((s) => s.p).join(""));
   if (parts.length < 2) return parts.join("");
   return parts.map((p, i) => (i === stress ? "ˈ" + p : p)).join("");
