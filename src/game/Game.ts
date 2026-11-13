@@ -300,8 +300,8 @@ export class Game implements GameApi {
     this.player = createCharacter(withBackpack({ ...prof.look, female: prof.look.female ?? prof.gender === "f" }));
     this.player.fidgets = false;
     this.scene.add(this.player.root);
-    await audio.init();
-    if (this.disposed) return;
+    // (the clip list loads meanwhile: the town doesn't wait for it, a conversation's first line does, audio.play)
+    void audio.init();
     audio.volume = st.settings.volume;
     this.unbindAmbience = useStore.subscribe(() => {
       if (!this.ambienceAllowed() || useStore.getState().settings.volume <= 0) audio.stopAmbience();

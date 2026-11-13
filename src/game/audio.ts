@@ -34,6 +34,8 @@ const SILENCE = "data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEARKwAAIhYA
 
 /** The clips' loudness is worked out this many times a second. */
 const ENVELOPE_RATE = 30;
+/** How long the clip list's download may stand still (no answer yet, or no more bytes) before it is given up (ms). */
+const MANIFEST_STALL_MS = 8000;
 
 /** iOS media-element playback and native speech recognition share a problematic native
  *  session. Use the game's Web Audio output for recordings on iPhone/iPad, including
@@ -137,14 +139,32 @@ export class AudioSystem {
     }
     this.initializing = (async () => {
       // One failed request must not disable recorded voices for the rest of this visit. The second
-      // attempt bypasses a stale HTTP/service-worker response; each request has a bounded loading time.
+      // attempt bypasses a stale HTTP/service-worker response. Each request is bounded by how long it may stand
+      // still (STALL: no answer, or no more of it, for that long), not by how long it takes: on a slow phone
+      // connection a big clip list arrives steadily for longer than any fixed limit worth waiting for a dead one.
       const read = async (file: string) => {
         for (const cache of ["no-cache", "reload"] as const) {
           const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), 6000);
+          let timer: ReturnType<typeof setTimeout> | undefined;
+          const alive = () => { clearTimeout(timer); timer = setTimeout(() => controller.abort(), MANIFEST_STALL_MS); };
+          alive();
           try {
             const r = await fetch(`${import.meta.env.BASE_URL}${audioDir()}${file}`, { cache, signal: controller.signal });
-            if (r.ok) return await r.json();
+            if (!r.ok) continue;
+            const reader = r.body?.getReader?.();
+            if (!reader) return await r.json();
+            const parts: Uint8Array[] = [];
+            let size = 0;
+            for (;;) {
+              alive();
+              const { done, value } = await reader.read();
+              if (done) break;
+              parts.push(value); size += value.length;
+            }
+            const all = new Uint8Array(size);
+            let at = 0;
+            for (const part of parts) { all.set(part, at); at += part.length; }
+            return JSON.parse(new TextDecoder().decode(all));
           } catch { /* retry once, then leave offline fallback available */ }
           finally { clearTimeout(timer); }
         }
