@@ -32,12 +32,25 @@ export class Chatter {
   private t: number;
   private talk = 0;
   private nod = 0;
+  /** Each one's head (they look at each other while one talks), and what each watched before (the learner). */
+  private heads = [new THREE.Vector3(), new THREE.Vector3()];
+  private watched: (THREE.Vector3 | null | undefined)[] | null = null;
   constructor(private a: GameCharacter, private b: GameCharacter, private r: () => number) {
     this.who = r() < 0.5 ? 0 : 1;
     this.t = r() * 3;
   }
+  /** Their eyes on each other (while one talks), or free again (a pause: they may glance at the learner). */
+  private face(on: boolean) {
+    this.watched ??= [this.a.watch, this.b.watch];
+    [this.a, this.b].forEach((c, i) => {
+      const o = i ? this.a : this.b, p = o.root.position;
+      if (on) this.heads[i].set(p.x, p.y + (o.anim === "sit" ? 1.25 : 1.5), p.z);
+      c.watch = on ? this.heads[i] : this.watched![i] ?? null;
+      c.steady = on;
+    });
+  }
   /** A pause of `s` seconds (one of them is greeted by the player). */
-  hold(s: number) { this.t = s; this.talk = 0; this.a.attentive = this.b.attentive = false; }
+  hold(s: number) { this.t = s; this.talk = 0; this.a.attentive = this.b.attentive = false; this.face(false); }
   update(dt: number) {
     const [speaker, listener] = this.who ? [this.b, this.a] : [this.a, this.b];
     if (this.talk > 0) {
@@ -50,11 +63,12 @@ export class Chatter {
     this.a.attentive = this.b.attentive = false;
     this.t -= dt;
     if (this.t > 0) return;
-    if (this.r() < 0.22) { this.t = 1.5 + this.r() * 3; return; }
+    if (this.r() < 0.22) { this.t = 1.5 + this.r() * 3; this.face(false); return; }
     this.talk = 1.6 + this.r() * 2.6;
     this.nod = this.talk * (0.3 + this.r() * 0.4);
     speaker.talk(this.talk);
     speaker.attentive = listener.attentive = true;
+    this.face(true);
   }
 }
 interface Car {
@@ -85,7 +99,7 @@ export function walkerLook(female: boolean, r: () => number): Look {
   return {
     skin: pick(SKINS), hair: { style: pick(female ? F_HAIR : M_HAIR), color: pick(HAIRS) },
     top: pick(TOPS), bottom: pick(BOTTOMS), skirt: female && r() < 0.3, acc,
-    height: 0.92 + r() * 0.14, build: 0.92 + r() * 0.2,
+    height: 0.92 + r() * 0.14, build: 0.92 + r() * 0.2, female,
   };
 }
 
@@ -98,6 +112,8 @@ export function walkerThings(look: Look, r: () => number): Look {
 
 export class Ambient {
   group = new THREE.Group();
+  /** Where the learner's head is: the townspeople glance at it when it comes near (characters: `watch`). */
+  private learner = new THREE.Vector3(0, -99, 0);
   private walkers: Walker[] = [];
   private chats: Chatter[] = [];
   private cars: Car[] = [];
@@ -148,6 +164,9 @@ export class Ambient {
   private person(look: Look, female: boolean, kind: Walker["kind"]): Walker {
     const ch = createCharacter(look);
     ch.root.traverse((o) => { o.castShadow = false; });
+    // (they glance at the learner passing by)
+    ch.watch = this.learner;
+    ch.noticeWithin = 4;
     this.group.add(ch.root);
     const w: Walker = { ch, female, kind, path: null, wait: 0.5 + this.r() * 4, speed: 1.7 + this.r() * 0.6, heading: 0, greetT: 0, lastTarget: -1 };
     this.walkers.push(w);
@@ -248,6 +267,7 @@ export class Ambient {
   }
 
   update(dt: number, player: THREE.Vector3) {
+    this.learner.set(player.x, player.y + 1.5, player.z);
     // at most one path search every 0.3 s (a long search takes a few milliseconds)
     this.pathCooldown -= dt;
     this.pathBudget = this.pathCooldown <= 0 ? 1 : 0;
