@@ -67,17 +67,14 @@
 .radio-skin-colibri.radio-set { padding-top: 24px; border-width: 2.5px; }
 .radio-bunting { position: absolute; left: 8px; right: 8px; top: -13px; width: calc(100% - 16px); height: 30px; pointer-events: none; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.25)); }
 
-.rs-top { display: flex; align-items: flex-start; gap: 9px; min-height: 32px; }
-.rs-top .rs-lamp { margin-top: 0.62em; }
+.rs-top { display: flex; align-items: center; gap: 9px; min-height: 32px; }
 .rs-lamp { width: 9px; height: 9px; border-radius: 50%; flex: none; background: rgba(255, 255, 255, 0.22); transition: background-color 0.6s ease, box-shadow 0.6s ease; }
 .radio-set.on .rs-lamp { background: var(--rs-lamp); box-shadow: 0 0 0 2px rgba(255, 194, 77, 0.25), 0 0 10px 2px var(--rs-lamp); }
-/* the station's name always shows in full, at every text size: it has the header's line to itself, with the
-   frequency under it like a station's logo, and a name too long for the line takes a second one */
-.rs-title { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; }
-.rs-name { max-width: 100%; text-wrap: balance; overflow-wrap: break-word; line-height: 1.12; }
+/* the station's name always shows in full, at every text size: it has the header's line to itself (no frequency
+   beside it; the dial says where the station is), and a name too long for the line takes a second one */
+.rs-name { flex: 1 1 auto; min-width: 0; text-wrap: balance; overflow-wrap: break-word; line-height: 1.12; }
 .radio-skin-maple .rs-name { font-family: var(--en); font-style: italic; font-weight: 600; font-size: 1.62em; letter-spacing: 0.005em; }
 .radio-skin-colibri .rs-name { font-family: var(--ui); font-weight: 900; font-size: 1.1em; letter-spacing: 0.055em; text-transform: uppercase; color: var(--rs-trim); transform: rotate(-2deg); transform-origin: left center; text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.22); padding: 3px 2px 2px 0; }
-.rs-freq { white-space: nowrap; font-family: var(--ui); font-weight: 800; font-size: 0.66em; letter-spacing: 0.12em; color: var(--rs-ink-soft); margin-top: 1px; }
 .rs-x { position: relative; flex: none; width: 30px; height: 30px; border-radius: 10px; border: 0; background: none; color: var(--rs-ink-soft); display: grid; place-items: center; }
 .rs-x::before { content: ""; position: absolute; inset: -7px; }
 .rs-x:hover { background: var(--rs-key); color: var(--rs-ink); }
@@ -145,6 +142,9 @@
 .ru.sung .rt, .ru.now .rt { color: #ffd66b; }
 .ru.sung .rg, .ru.now .rg { color: #ffe9ad; }
 .ru.now .rt { text-shadow: 0 0 12px rgba(255, 214, 107, 0.5); }
+/* a bilingual song's line sung in the learner's language: the glosses' own type, so it reads as that language */
+.radio-line.translation .rt { font-family: var(--ui); font-weight: 700; font-size: 1.12em; line-height: 1.38; }
+.radio-line.translation .ru.sung .rt, .radio-line.translation .ru.now .rt { color: #ffe9ad; }
 
 /* touch screens: above the joystick, the action button and the door prompt */
 .hud.has-touch .radio-strip { bottom: calc(190px + env(safe-area-inset-bottom)); }
