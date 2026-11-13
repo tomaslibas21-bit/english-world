@@ -129,6 +129,49 @@ function holdPose(root: THREE.Object3D, hold: boolean) {
 /** This edition's own draws for its passers-by's straw hats, shorts and sandals (theme.ts `walkers`), so that `r`'s stay
  *  as they are; started again with each town's townspeople (Ambient). */
 let rWear = rand(9090);
+/** And for its beach people's clothes (theme.ts `beachwear`). */
+let rBeach = rand(5151);
+
+/** A townsperson dressed for the beach (theme.ts `beachwear`; Character.ts's beachwear, which Maple Harbor never
+ *  wears): `look` keeps its skin, hair, glasses, height and build, and what it carries. Men: swim trunks with a
+ *  T-shirt or a tank, or shorts and a short-sleeved shirt; a bucket hat or a straw one now and then. Women: a one-piece
+ *  swimsuit under a sarong or under an open shirt, a sundress, or shorts and a tank; a sun hat often. Sandals. */
+export function beachLook(look: Look, female: boolean, r: () => number = rBeach): Look {
+  const B = THEME.beachwear;
+  if (!B) return look;
+  const pick = <T,>(a: T[]) => a[Math.floor(r() * a.length)];
+  const acc: NonNullable<Look["acc"]> = (look.acc ?? []).filter((a) => a === "glasses" || a === "sunglasses" || a === "earrings" || a === "beard");
+  const x = r(), hat = r();
+  if (r() < 0.3 && !acc.includes("glasses") && !acc.includes("sunglasses")) acc.push("sunglasses");
+  const out: Look = {
+    skin: look.skin, hair: look.hair, height: look.height, build: look.build, female, carry: look.carry, phone: look.phone,
+    top: pick(B.tops), bottom: pick(B.swim), shoes: pick(B.sandals), flipflops: true, acc,
+  };
+  if (female) {
+    const suit = pick(B.swim);
+    if (x < 0.36) {
+      // a swimsuit under a sarong
+      Object.assign(out, { swim: "suit", top: suit, bottom: pick(B.wraps), skirt: true });
+      acc.push("sarong");
+    } else if (x < 0.62) {
+      // a swimsuit under an open shirt, a sarong too as often as not
+      Object.assign(out, { swim: "suit", top: suit, bottom: suit, accColor: pick(B.covers) });
+      acc.push("coverup");
+      if (r() < 0.5) { out.skirt = true; out.bottom = pick(B.wraps); acc.push("sarong"); }
+    } else if (x < 0.86) {
+      // a sundress
+      const c = pick(B.wraps);
+      Object.assign(out, { top: c, bottom: c, skirt: true, sleeves: "none" });
+    } else Object.assign(out, { shorts: true, sleeves: "none", bottom: pick(B.shorts) });
+    if (hat < 0.42) { acc.push("sunhat"); out.accColor ??= pick(B.swim); } else if (hat < 0.55) acc.push("strawhat");
+  } else {
+    if (x < 0.5) Object.assign(out, { swim: "trunks", sleeves: "short" });
+    else if (x < 0.78) Object.assign(out, { swim: "trunks", sleeves: "none" });
+    else Object.assign(out, { shorts: true, sleeves: "short", bottom: pick(B.shorts) });
+    if (hat < 0.2) { acc.push("bucket"); out.accColor = pick(B.covers); } else if (hat < 0.4) acc.push("strawhat");
+  }
+  return out;
+}
 
 /** A passer-by's look, drawn from `r` (the town's random stream; the dev lineup passes its own); in this edition's
  *  colors (theme.ts `walkers`; Maple Harbor's below). */
@@ -180,6 +223,7 @@ export class Ambient {
   constructor(private nav: NavGrid, private places: [number, number][], quality: "high" | "low", seats: Seat[] = [], colliders?: Colliders) {
     this.colliders = colliders;
     rWear = rand(9090);
+    rBeach = rand(5151);
     const high = quality === "high";
     // each person is a single draw call (characters/Character.ts), so the town can hold a crowd
     const nw = high ? 12 : 6, nc = high ? 8 : 4;
@@ -232,7 +276,9 @@ export class Ambient {
 
   private addWalker(i: number) {
     const female = i % 2 === 0;
-    const look = walkerThings(walkerLook(female, this.r), this.rThings);
+    // (theme.ts `beachwear`: some of them come from the beach)
+    const B = THEME.beachwear, plain = walkerLook(female, this.r);
+    const look = walkerThings(B && rBeach() < B.walkers ? beachLook(plain, female) : plain, this.rThings);
     const w = this.person(look, female, "walk");
     w.ch.root.userData.carry = look.carry;
     const k = Math.floor(this.r() * this.places.length);
@@ -250,10 +296,18 @@ export class Ambient {
     const r = this.rPeople;
     const sit = (s: Seat, carry?: Look["carry"]) => {
       const female = r() < 0.5;
-      const w = this.person({ ...walkerLook(female, r), carry }, female, "sit");
+      // (theme.ts `beachwear`: on the malecón and the sand, dressed for the beach)
+      const plain = { ...walkerLook(female, r), carry };
+      const w = this.person(THEME.beachwear && s.z < THEME.beachwear.z ? beachLook(plain, female) : plain, female, "sit");
       w.ch.root.position.set(s.x, 0, s.z);
       w.ch.root.rotation.y = s.rot;
       w.ch.seatY = s.y;
+      if (s.recline) {
+        // a lounger: lying back against its rest, the hips half a metre back from the seat's middle, on its board
+        w.ch.root.position.set(s.x - Math.sin(s.rot) * 0.5, 0, s.z - Math.cos(s.rot) * 0.5);
+        w.ch.seatY = s.y - 0.06;
+        w.ch.recline = s.recline;
+      }
       w.ch.setAnim("sit");
       return w;
     };
@@ -297,7 +351,8 @@ export class Ambient {
     for (const [ax, az, bx, bz] of CHAT_SPOTS.slice(0, n)) {
       const two = [[ax, az, bx, bz], [bx, bz, ax, az]].map(([x, z, ox, oz]) => {
         const female = r() < 0.5;
-        const w = this.person(walkerThings(walkerLook(female, r), r), female, "stand");
+        const plain = walkerThings(walkerLook(female, r), r);
+        const w = this.person(THEME.beachwear && z < THEME.beachwear.z ? beachLook(plain, female) : plain, female, "stand");
         w.ch.root.position.set(x, 0, z);
         // facing the other one
         w.ch.root.rotation.y = w.heading = Math.atan2(ox - x, oz - z);

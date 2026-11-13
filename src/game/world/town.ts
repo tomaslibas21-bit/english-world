@@ -13,7 +13,11 @@ import { GROUND_BLOCKS, groundPalette, groundExtras, groundMaterial, seaMaterial
 export interface Door { loc: string; bid: string; x: number; z: number; face: "n" | "s" | "e" | "w"; name: string; outX: number; outZ: number; rot: number }
 
 /** A place to sit (the café chairs and the benches): the seat's top `y`, facing `rot`; a café chair's table. */
-export interface Seat { x: number; z: number; rot: number; y: number; table?: [number, number] }
+export interface Seat {
+  x: number; z: number; rot: number; y: number; table?: [number, number];
+  /** A lounger (the Spanish edition's palapas): whoever sits here lies back this far (radians from upright). */
+  recline?: number;
+}
 
 export interface Town {
   group: THREE.Group;
@@ -1846,7 +1850,7 @@ function addTownMx(M: Merger, col: Colliders) {
     // (graphics round 4, theme.ts `beachLife`: the palapas thatched in layers, and their loungers places to sit)
     // (graphics round 5: their thatch looked through by the walking camera, mxRoofs)
     const loungers = MX.palapas(mx, col, THEME.palapas, !!THEME.beachLife, mxRoofs);
-    if (THEME.beachLife) for (const [x, z] of loungers) seats.push({ x, z, rot: Math.PI, y: 0.42 });
+    if (THEME.beachLife) for (const [x, z] of loungers) seats.push({ x, z, rot: Math.PI, y: 0.42, recline: 0.9 });
   }
   if (THEME.lanchas) MX.beachedLanchas(mx, col, THEME.lanchas.beached);
   if (THEME.church) MX.church(mx, col, THEME.church.x, THEME.church.z, THEME.church.face);

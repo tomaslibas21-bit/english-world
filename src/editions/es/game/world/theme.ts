@@ -367,6 +367,18 @@ export const THEME: TownTheme = {
   // (and those who sit or stand farther than 22 m from the player keep their pose: at that distance a breath shows
   // nothing, and the town's people cost the frame no more than before the round)
   stillBeyond: 22,
+  // (characters v2) the people on the malecón and the sand (south of z −62) dressed for the beach, and a quarter of the
+  // passers-by: swim trunks with a T-shirt or a tank, a one-piece under a sarong or an open shirt, sundresses, sun hats,
+  // sandals; those on the loungers lie back
+  beachwear: {
+    z: -62, walkers: 0.25,
+    swim: ["#e4572e", "#1f6fd1", "#00a6a6", "#e4007c", "#f6a800", "#2a9d5c", "#ff5a36", "#3d405b"],
+    wraps: ["#ff8fab", "#00a6a6", "#f6a800", "#7ac143", "#e4007c", "#9ad1d4", "#ff5a36"],
+    tops: ["#f4f1ea", "#ffd166", "#9ad1d4", "#fbe9c8", "#b8e0d2", "#f7c6c7"],
+    covers: ["#fbf6ea", "#ffffff", "#fbe9c8", "#c9e4f2"],
+    shorts: ["#d8c3a0", "#8fa7c4", "#f4f1ea", "#4a6fa5"],
+    sandals: ["#5c4b3a", "#2b2d42", "#f4f1ea", "#d8c3a0"],
+  },
   // (graphics round 5) the townspeople farther than 24 m from the camera in their far version (a third of the triangles)
   farPeople: 24,
   // the town's name on the malecón where calle Ceiba meets it, the sea behind it (clear of the bench at x 0, the
