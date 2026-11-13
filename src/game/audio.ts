@@ -2,9 +2,10 @@
 // or when the learner explicitly chooses it after a failed download. No network TTS is ever called.
 import { audioKey, withoutAddressedNames } from "../audio-key";
 import { audioDir } from "../content/voices";
-import { holdPlaybackRoute, microphoneHandoffState, playbackRoute, waitForMicrophone } from "../convo/audioFocus";
+import { holdPlaybackRoute, microphoneHandoffState, playbackRoute, waitForMicrophone, watchMicrophone } from "../convo/audioFocus";
 import { audioDiagnostic, audioDiagnosticsEnabled, audioSessionSnapshot, diagnosticError } from "../convo/audioDiagnostics";
 import { stretchSpeech } from "./timeStretch";
+import { BIRDSONG, LOOPS, STEPS, type LoopName, type Surface } from "./soundscape";
 
 export type DiagnosticPipeline = "html" | "buffer";
 export interface DiagnosticPlaybackState {
@@ -78,9 +79,20 @@ export class AudioSystem {
   private setState(state: PlaybackState) {
     if (state === this.state) return;
     this.state = state;
+    // the world's sounds make way for a voice (hush, below)
+    this.hush("voice", state === "loading" || state === "playing");
     for (const listener of this.listeners) listener();
   }
   volume = 0.9;
+  /** The "Sounds" setting: how loud everything that is not a voice is, beside the voices (0–1; 0.8 is the level the
+   *  sounds were tuned at, 0 none at all). */
+  private soundsLevel = 0.8;
+  get sounds() { return this.soundsLevel; }
+  set sounds(v: number) { this.soundsLevel = Math.max(0, Math.min(1, v)); this.levelBuses(0.05); }
+  constructor() {
+    // never a sound of the world while the microphone listens
+    watchMicrophone((listening) => this.hush("microphone", listening, true));
+  }
   /** Where the clips live: next to the game by default, or VITE_AUDIO_BASE (e.g. a CDN). */
   base = (import.meta.env.VITE_AUDIO_BASE as string | undefined) || `${import.meta.env.BASE_URL}${audioDir()}`;
   ready = false;
@@ -849,13 +861,129 @@ export class AudioSystem {
     return this.ctx;
   }
 
+  // ---- The world's sounds (steps, water, the places' ambience) and the effects (a task done, a door, a coin).
+  // Both go through a bus of their own, scaled by the "Sounds" setting; the world's bus also falls silent whenever
+  // something must be heard or listened to: a conversation or an open panel, a voice, the microphone, a hidden page.
+  private worldBus: GainNode | null = null;
+  private fxBus: GainNode | null = null;
+  private busCtx: AudioContext | null = null;
+  private hushed = new Set<string>();
+  /** Under the radio's music the places' loops play lower, and the town's own bit of music not at all. */
+  private underMusic = 1;
+  private buses(ctx: AudioContext) {
+    if (this.busCtx !== ctx || !this.worldBus || !this.fxBus) {
+      this.busCtx = ctx;
+      this.worldBus = ctx.createGain(); this.worldBus.gain.value = this.hushed.size ? 0 : this.soundsLevel / 0.8; this.worldBus.connect(ctx.destination);
+      this.fxBus = ctx.createGain(); this.fxBus.gain.value = this.soundsLevel / 0.8; this.fxBus.connect(ctx.destination);
+      // a new context: the recordings stay, what played them in the old one does not
+      for (const l of this.loops.values()) { l.src = undefined; l.gain = undefined; l.quietSince = undefined; }
+    }
+  }
+  /** Where a sound of the world goes. */
+  private out(ctx: AudioContext): AudioNode { this.buses(ctx); return this.worldBus!; }
+  /** Where an effect goes. */
+  private fx(ctx: AudioContext): AudioNode { this.buses(ctx); return this.fxBus!; }
+  private levelBuses(seconds: number) {
+    const ctx = this.busCtx;
+    if (!ctx || ctx.state === "closed") return;
+    const set = (bus: GainNode | null, v: number) => {
+      if (!bus) return;
+      bus.gain.cancelScheduledValues(ctx.currentTime);
+      bus.gain.setTargetAtTime(v, ctx.currentTime, Math.max(0.005, seconds / 3));
+    };
+    set(this.worldBus, this.hushed.size ? 0 : this.soundsLevel / 0.8);
+    set(this.fxBus, this.soundsLevel / 0.8);
+  }
+  /** The world falls silent for `reason` ("voice", "microphone", "away": a conversation, a panel, a hidden page) and
+   *  comes back when no reason is left: softly, or at once (`now`, for the microphone). */
+  hush(reason: string, on: boolean, now = false) {
+    const was = this.hushed.size > 0;
+    if (on) this.hushed.add(reason); else this.hushed.delete(reason);
+    if (was !== this.hushed.size > 0) this.levelBuses(on ? (now ? 0.03 : 0.25) : 0.5);
+  }
+  /** The radio is playing music (src/radio/index.ts): the places' loops go lower under it. */
+  underRadio(playing: boolean) { this.underMusic = playing ? 0.4 : 1; }
+
+  // ---- The places' quiet loops (soundscape.ts LOOPS: the sea, a market's murmur): fetched the first time one is
+  // wanted, started when it can be heard, faded with the distance, stopped a few seconds after it has faded out.
+  private loops = new Map<LoopName, { buf?: AudioBuffer; loading?: boolean; failed?: boolean; src?: AudioBufferSourceNode; gain?: GainNode; quietSince?: number }>();
+  private fetchClip(ctx: AudioContext, file: string): Promise<AudioBuffer> {
+    return fetch(`${import.meta.env.BASE_URL}sfx/${file}`)
+      .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
+      .then((bytes) => new Promise<AudioBuffer>((done, fail) => { ctx.decodeAudioData(bytes, done, fail); }));
+  }
+  private loop(name: LoopName, level: number) {
+    const ctx = this.ctx;
+    if (!ctx || ctx.state !== "running") return;
+    let l = this.loops.get(name);
+    if (!l) this.loops.set(name, (l = {}));
+    const def = LOOPS[name], state = l;
+    if (level > 0.02 && !l.buf && !l.loading && !l.failed) {
+      l.loading = true;
+      this.fetchClip(ctx, def.file).then((buf) => { state.buf = buf; }, () => { state.failed = true; }).finally(() => { state.loading = false; });
+    }
+    if (!l.buf) return;
+    const now = ctx.currentTime, target = Math.max(0, level) * this.volume * def.gain * this.underMusic;
+    if (target > 0.0008 && !l.src) {
+      const src = ctx.createBufferSource(), gain = ctx.createGain();
+      src.buffer = l.buf; src.loop = true; src.loopStart = def.start; src.loopEnd = def.end;
+      gain.gain.value = 0;
+      src.connect(gain); gain.connect(this.out(ctx));
+      // from anywhere in the loop, so two visits to the shore do not begin with the same wave
+      src.start(now, def.start + Math.random() * (def.end - def.start));
+      l.src = src; l.gain = gain;
+    }
+    if (!l.src || !l.gain) return;
+    l.gain.gain.setTargetAtTime(target, now, 0.7);
+    if (target > 0.0008) l.quietSince = undefined;
+    else if (l.quietSince === undefined) l.quietSince = now;
+    else if (now - l.quietSince > 4) this.endLoop(l, 0);
+  }
+  private endLoop(l: { src?: AudioBufferSourceNode; gain?: GainNode; quietSince?: number }, fade: number) {
+    const ctx = this.ctx, src = l.src, gain = l.gain;
+    l.src = undefined; l.gain = undefined; l.quietSince = undefined;
+    if (!src || !gain) return;
+    try {
+      if (ctx && fade > 0) { gain.gain.cancelScheduledValues(ctx.currentTime); gain.gain.setTargetAtTime(0, ctx.currentTime, fade / 3); src.stop(ctx.currentTime + fade); }
+      else src.stop();
+    } catch { /* already stopped */ }
+    src.onended = () => { src.disconnect(); gain.disconnect(); };
+  }
+
+  // ---- Tropical birds (soundscape.ts BIRDSONG): a few seconds of the recording now and then, from a different
+  // place in it each time.
+  private birdsongClip: { buf?: AudioBuffer; loading?: boolean; failed?: boolean } | null = null;
+  private birdsong(at: number, vol: number) {
+    const ctx = this.ctx!;
+    const clip = (this.birdsongClip ??= {});
+    if (!clip.buf) {
+      if (!clip.loading && !clip.failed) {
+        clip.loading = true;
+        this.fetchClip(ctx, BIRDSONG.file).then((buf) => { clip.buf = buf; }, () => { clip.failed = true; }).finally(() => { clip.loading = false; });
+      }
+      return false;
+    }
+    const len = 2.2 + Math.random() * 1.6, from = 0.3 + Math.random() * Math.max(0.1, Math.min(clip.buf.duration, BIRDSONG.length) - len - 0.6);
+    const src = ctx.createBufferSource(); src.buffer = clip.buf;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, at);
+    g.gain.linearRampToValueAtTime(vol * BIRDSONG.gain, at + 0.35);
+    g.gain.setValueAtTime(vol * BIRDSONG.gain, at + len - 0.6);
+    g.gain.linearRampToValueAtTime(0, at + len);
+    src.connect(g); g.connect(this.out(ctx));
+    this.trackAmbient([src], [src, g]);
+    src.start(at, from, len + 0.05);
+    return true;
+  }
+
   private noise: AudioBuffer | null = null;
-  private amb: { nextGull: number; nextBird: number; nextClink: number } | null = null;
+  private amb: { nextGull: number; nextBird: number; nextClink: number; nextBell: number; nextHorn: number; nextTune: number } | null = null;
   private ambientSounds = new Set<() => void>();
 
   /** Environmental sounds belong to the visible town, never the conversation or a background tab. */
   stopAmbience() {
     for (const stop of this.ambientSounds) stop();
+    for (const l of this.loops.values()) this.endLoop(l, 0.35);
     this.amb = null;
   }
 
@@ -872,30 +1000,120 @@ export class AudioSystem {
     sources[0].onended = stop;
   }
 
-  /** Brief, recognizable town sounds only. Continuous filtered-noise beds sounded like unwanted hiss. */
-  ambience(on: boolean, { sea = 0, gulls = false, birds = 0, cafe = false }: { sea?: number; gulls?: boolean; birds?: number; cafe?: boolean } = {}) {
+  /** The town's sounds where the player stands, asked for about eight times a second (Game.ts). Brief, recognizable
+   *  sounds at random moments (gulls, birds, a cup, the harbour's bell), and two quiet recorded loops that rise and
+   *  fall with the distance (the surf, a market's murmur). A continuous bed of filtered noise was tried once and
+   *  sounded like hiss; the loops are recordings.
+   *  `sea` 0–1: how near the sea is, for the gulls; `surf` 0–1: the surf's loudness; `market`, `harbor`, `plaza` 0–1:
+   *  how near those are; `tropical`: Puerto Colibrí's birds and its bit of far-off music instead of Maple Harbor's. */
+  ambience(on: boolean, { sea = 0, surf = 0, gulls = false, birds = 0, cafe = false, market = 0, harbor = 0, plaza = 0, tropical = false }:
+    { sea?: number; surf?: number; gulls?: boolean; birds?: number; cafe?: boolean; market?: number; harbor?: number; plaza?: number; tropical?: boolean } = {}) {
     const ctx = this.ctx;
-    if (!on || document.hidden || this.volume <= 0 || !ctx || ctx.state !== "running") {
+    const live = on && !document.hidden && this.volume > 0 && this.soundsLevel > 0 && !!ctx && ctx.state === "running";
+    this.hush("away", !live);
+    if (!live) {
       this.stopAmbience();
       return;
     }
     const now = ctx.currentTime, v = this.volume;
-    this.amb ??= { nextGull: now + 4, nextBird: now + 2, nextClink: now + 3 };
+    this.amb ??= { nextGull: now + 4, nextBird: now + 2, nextClink: now + 3, nextBell: now + 5, nextHorn: now + 40 + Math.random() * 40, nextTune: now + 12 + Math.random() * 15 };
+    this.loop("sea", surf);
+    this.loop("market", market);
     if (gulls && now > this.amb.nextGull) {
       this.amb.nextGull = now + 6 + Math.random() * 9;
       const calls = 1 + Math.floor(Math.random() * 3);
       for (let k = 0; k < calls; k++) this.gull(now + k * 0.42, v * 0.035 * Math.max(0.4, sea));
     }
-    // birdsong among the trees: a few quick chirps now and then
+    // birdsong among the trees: a few quick chirps now and then; in the tropical town, a few seconds of its birds
     if (birds > 0.05 && now > this.amb.nextBird) {
-      this.amb.nextBird = now + (2.5 + Math.random() * 6) / Math.max(0.3, birds);
-      const n = 2 + Math.floor(Math.random() * 4), top = 3200 + Math.random() * 1800;
-      for (let k = 0; k < n; k++) this.chirp(now + k * (0.09 + Math.random() * 0.05), top * (0.92 + Math.random() * 0.16), v * 0.022 * birds);
+      if (tropical && Math.random() < 0.6 && this.birdsong(now + 0.05, v * Math.min(1, 0.45 + birds * 0.55))) {
+        this.amb.nextBird = now + (9 + Math.random() * 14) / Math.max(0.4, birds);
+      } else {
+        this.amb.nextBird = now + (2.5 + Math.random() * 6) / Math.max(0.3, birds);
+        const n = 2 + Math.floor(Math.random() * 4), top = 3200 + Math.random() * 1800;
+        for (let k = 0; k < n; k++) this.chirp(now + k * (0.09 + Math.random() * 0.05), top * (0.92 + Math.random() * 0.16), v * 0.022 * birds);
+      }
     }
     if (cafe && now > this.amb.nextClink) {
       this.amb.nextClink = now + 3 + Math.random() * 6;
       this.clink(now + Math.random() * 0.2, v * 0.03);
     }
+    // by the pier: a buoy's bell rocking on the swell, and once in a long while a boat's horn far out
+    if (harbor > 0.25 && now > this.amb.nextBell) {
+      this.amb.nextBell = now + 9 + Math.random() * 16;
+      this.bell(now + Math.random() * 0.3, v * 0.022 * harbor);
+      if (Math.random() < 0.5) this.bell(now + 0.9 + Math.random() * 0.5, v * 0.014 * harbor);
+    }
+    if (harbor > 0.4 && now > this.amb.nextHorn) {
+      this.amb.nextHorn = now + 70 + Math.random() * 90;
+      this.horn(now + 0.2, v * 0.02);
+    }
+    // on the square: a few notes of music from somewhere down a street (not under the radio's own music)
+    if (plaza > 0.3 && this.underMusic === 1 && now > this.amb.nextTune) {
+      this.amb.nextTune = now + 28 + Math.random() * 30;
+      this.tune(now + 0.2, v * 0.017 * plaza, tropical);
+    }
+  }
+
+  /** A buoy's bell: one soft, clear note that rings on. */
+  private bell(at: number, vol: number) {
+    const ctx = this.ctx!;
+    const f = 660 * (0.98 + Math.random() * 0.04);
+    for (const [mult, level, ring] of [[1, 1, 1.9], [2.76, 0.35, 1.1], [5.4, 0.12, 0.6]] as const) {
+      const o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = f * mult;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, at);
+      g.gain.linearRampToValueAtTime(vol * level, at + 0.006);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + ring);
+      o.connect(g); g.connect(this.out(ctx));
+      this.trackAmbient([o], [o, g]);
+      o.start(at); o.stop(at + ring + 0.05);
+    }
+  }
+
+  /** A boat's horn far out: one low, soft, long note. */
+  private horn(at: number, vol: number) {
+    const ctx = this.ctx!;
+    const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 420; f.Q.value = 0.4;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, at);
+    g.gain.linearRampToValueAtTime(vol, at + 0.25);
+    g.gain.setValueAtTime(vol, at + 1.1);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + 1.9);
+    const tones = [116, 146].map((hz) => { const o = ctx.createOscillator(); o.type = "sawtooth"; o.frequency.value = hz; o.connect(f); return o; });
+    f.connect(g); g.connect(this.out(ctx));
+    this.trackAmbient(tones, [...tones, f, g]);
+    for (const o of tones) { o.start(at); o.stop(at + 2); }
+  }
+
+  /** A few notes of music from down a street, muffled by the distance: plucked, on a five-note scale (a marimba's in
+   *  the tropical town, a music box's in the other). Never a tune anyone knows: the notes are picked afresh. */
+  private tune(at: number, vol: number, tropical: boolean) {
+    const ctx = this.ctx!;
+    const scale = tropical ? [392, 440, 523.25, 587.33, 659.25, 784] : [523.25, 587.33, 659.25, 783.99, 880, 1046.5];
+    const beat = tropical ? 0.19 : 0.26, n = 5 + Math.floor(Math.random() * 4);
+    const far = ctx.createBiquadFilter(); far.type = "lowpass"; far.frequency.value = tropical ? 1500 : 2200; far.Q.value = 0.3;
+    const g = ctx.createGain(); g.gain.value = 1;
+    far.connect(g); g.connect(this.out(ctx));
+    const notes: OscillatorNode[] = [], nodes: AudioNode[] = [far, g];
+    let i = Math.floor(Math.random() * scale.length), t = at;
+    for (let k = 0; k < n; k++) {
+      i = Math.max(0, Math.min(scale.length - 1, i + [-2, -1, -1, 1, 1, 2][Math.floor(Math.random() * 6)]));
+      for (const [mult, level, ring] of (tropical ? [[1, 1, 0.42], [4, 0.18, 0.12]] : [[1, 1, 0.7], [3, 0.1, 0.3]]) as [number, number, number][]) {
+        const o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = scale[i] * mult;
+        const ng = ctx.createGain();
+        ng.gain.setValueAtTime(0, t);
+        ng.gain.linearRampToValueAtTime(vol * level, t + 0.006);
+        ng.gain.exponentialRampToValueAtTime(0.0001, t + ring);
+        o.connect(ng); ng.connect(far);
+        o.start(t); o.stop(t + ring + 0.05);
+        notes.push(o); nodes.push(o, ng);
+      }
+      t += beat * (Math.random() < 0.25 ? 2 : 1);
+    }
+    // the last note to end frees them all
+    const last = notes[notes.length - 2];
+    this.trackAmbient([last, ...notes.filter((o) => o !== last)], nodes);
   }
 
   /** One bird's chirp: a quick rising and falling whistle. */
@@ -909,7 +1127,7 @@ export class AudioSystem {
     g.gain.setValueAtTime(0, at);
     g.gain.linearRampToValueAtTime(vol, at + 0.01);
     g.gain.exponentialRampToValueAtTime(0.0001, at + 0.08);
-    o.connect(g); g.connect(ctx.destination);
+    o.connect(g); g.connect(this.out(ctx));
     this.trackAmbient([o], [o, g]);
     o.start(at); o.stop(at + 0.1);
   }
@@ -923,7 +1141,7 @@ export class AudioSystem {
       g.gain.setValueAtTime(0, at + dt);
       g.gain.linearRampToValueAtTime(vol, at + dt + 0.003);
       g.gain.exponentialRampToValueAtTime(0.0001, at + dt + 0.25);
-      o.connect(g); g.connect(ctx.destination);
+      o.connect(g); g.connect(this.out(ctx));
       this.trackAmbient([o], [o, g]);
       o.start(at + dt); o.stop(at + dt + 0.3);
     }
@@ -942,7 +1160,7 @@ export class AudioSystem {
       g.gain.setValueAtTime(0, at);
       g.gain.linearRampToValueAtTime(this.volume * 0.06 * vol * (1 - k / 9), at + 0.008);
       g.gain.exponentialRampToValueAtTime(0.0001, at + 0.05);
-      src.connect(f); f.connect(g); g.connect(ctx.destination);
+      src.connect(f); f.connect(g); g.connect(this.out(ctx));
       this.trackAmbient([src], [src, f, g]);
       src.start(at); src.stop(at + 0.07);
     }
@@ -964,7 +1182,7 @@ export class AudioSystem {
     g.gain.setValueAtTime(0, at);
     g.gain.linearRampToValueAtTime(vol, at + 0.04);
     g.gain.exponentialRampToValueAtTime(0.0001, at + 0.38);
-    o.connect(f); f.connect(g); g.connect(ctx.destination);
+    o.connect(f); f.connect(g); g.connect(this.out(ctx));
     this.trackAmbient([o, wob], [o, wob, wg, f, g]);
     o.start(at); wob.start(at); o.stop(at + 0.42); wob.stop(at + 0.42);
   }
@@ -978,48 +1196,93 @@ export class AudioSystem {
     return this.noise;
   }
 
-  /** One footstep: a short burst of filtered noise, a little different each time (lower and softer indoors). */
-  step(indoor: boolean, run: boolean) {
-    const ctx = this.ac();
-    if (!ctx || this.volume <= 0) return;
-    const now = ctx.currentTime;
+  /** A short burst of noise through a band, for steps and landings. */
+  private burst(ctx: AudioContext, at: number, f: number, q: number, attack: number, len: number, vol: number, rate: number) {
     const src = ctx.createBufferSource();
     src.buffer = this.noiseBurst(ctx);
-    src.playbackRate.value = 0.85 + Math.random() * 0.3;
-    const f = ctx.createBiquadFilter();
-    f.type = "bandpass";
-    f.frequency.value = (indoor ? 650 : 1150) * (0.85 + Math.random() * 0.3);
-    f.Q.value = 1.1;
+    src.playbackRate.value = rate;
+    const band = ctx.createBiquadFilter();
+    band.type = "bandpass"; band.frequency.value = f; band.Q.value = q;
     const g = ctx.createGain();
-    const v = this.volume * (indoor ? 0.09 : 0.07) * (run ? 1.3 : 1);
-    g.gain.setValueAtTime(0, now);
-    g.gain.linearRampToValueAtTime(v, now + 0.006);
-    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
-    src.connect(f); f.connect(g); g.connect(ctx.destination);
-    src.start(now); src.stop(now + 0.12);
+    g.gain.setValueAtTime(0, at);
+    g.gain.linearRampToValueAtTime(vol, at + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + len);
+    src.connect(band); band.connect(g); g.connect(this.out(ctx));
+    src.start(at); src.stop(at + len + 0.03);
+  }
+  /** A short low note that drops: a foot on boards. */
+  private thump(ctx: AudioContext, at: number, f: number, len: number, vol: number) {
+    const o = ctx.createOscillator(); o.type = "sine";
+    o.frequency.setValueAtTime(f, at);
+    o.frequency.exponentialRampToValueAtTime(f * 0.65, at + len);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, at);
+    g.gain.linearRampToValueAtTime(vol, at + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + len);
+    o.connect(g); g.connect(this.out(ctx));
+    o.start(at); o.stop(at + len + 0.03);
   }
 
-  /** A hop's landing: both feet at once, a soft low thud (`strength` 0–1). */
-  land(indoor: boolean, strength = 1) {
+  /** One footstep on what is underfoot (soundscape.ts STEPS): stone as the street always sounded, sand and grass
+   *  softer and duller with a faint rustle, boards with a low knock, tiles with a tiny tap; a little different each
+   *  time, a little louder at a run. */
+  step(surface: Surface, run: boolean) {
     const ctx = this.ac();
     if (!ctx || this.volume <= 0) return;
-    const now = ctx.currentTime;
+    const s = STEPS[surface], now = ctx.currentTime, k = this.volume * (run ? 1.3 : 1);
+    const vary = () => 0.85 + Math.random() * 0.3;
+    this.burst(ctx, now, s.f * vary(), s.q, s.attack, s.len, k * s.vol, s.rate * vary());
+    if (s.grain) this.burst(ctx, now + 0.012, s.grain.f * vary(), 0.7, 0.02, s.len * 0.9, k * s.grain.vol, 1.5);
+    if (s.knock) this.thump(ctx, now, s.knock.f * vary(), 0.07, k * s.knock.vol);
+    if (s.click) this.burst(ctx, now, s.click.f * vary(), 2.5, 0.002, 0.03, k * s.click.vol, 1.6);
+  }
+
+  /** A hop's landing: both feet at once, a soft low thud (`strength` 0–1), of the surface landed on. */
+  land(surface: Surface, strength = 1) {
+    const ctx = this.ac();
+    if (!ctx || this.volume <= 0) return;
+    const s = STEPS[surface], now = ctx.currentTime, indoor = surface === "tile";
+    const soft = surface === "sand" || surface === "grass";
     for (const [at, lift] of [[0, 1], [0.035, 0.7]] as const) {
-      const src = ctx.createBufferSource();
-      src.buffer = this.noiseBurst(ctx);
-      src.playbackRate.value = 0.7 + Math.random() * 0.15;
-      const f = ctx.createBiquadFilter();
-      f.type = "bandpass";
-      f.frequency.value = (indoor ? 420 : 700) * (0.9 + Math.random() * 0.2);
-      f.Q.value = 0.9;
-      const g = ctx.createGain();
-      const v = this.volume * (indoor ? 0.12 : 0.1) * (0.6 + 0.4 * strength) * lift;
-      g.gain.setValueAtTime(0, now + at);
-      g.gain.linearRampToValueAtTime(v, now + at + 0.008);
-      g.gain.exponentialRampToValueAtTime(0.0001, now + at + 0.13);
-      src.connect(f); f.connect(g); g.connect(ctx.destination);
-      src.start(now + at); src.stop(now + at + 0.16);
+      const v = this.volume * (indoor ? 0.12 : soft ? 0.085 : 0.1) * (0.6 + 0.4 * strength) * lift;
+      this.burst(ctx, now + at, s.f * 0.62 * (0.9 + Math.random() * 0.2), 0.9, soft ? 0.014 : 0.008, soft ? 0.17 : 0.13, v, 0.7 + Math.random() * 0.15);
     }
+    if (s.knock) this.thump(ctx, now, 110, 0.11, this.volume * 0.028 * (0.6 + 0.4 * strength));
+    if (s.grain) this.burst(ctx, now + 0.02, s.grain.f, 0.7, 0.03, 0.16, this.volume * s.grain.vol * 1.4, 1.5);
+  }
+
+  /** Taking off: a short, springy note that rises, as a hop sounded in an old video game, played softly, with a
+   *  breath of air under it. Made here from two plain waves, after no game's or show's sound. */
+  jump() {
+    const ctx = this.ac();
+    if (!ctx || this.volume <= 0) return;
+    const now = ctx.currentTime, v = this.volume * 0.042, base = 300 * (0.97 + Math.random() * 0.06);
+    const soft = ctx.createBiquadFilter(); soft.type = "lowpass"; soft.frequency.value = 2600; soft.Q.value = 0.3;
+    soft.connect(this.out(ctx));
+    for (const [mult, type, level] of [[1, "triangle", 1], [2, "sine", 0.2]] as const) {
+      const o = ctx.createOscillator(); o.type = type;
+      o.frequency.setValueAtTime(base * mult, now);
+      o.frequency.exponentialRampToValueAtTime(base * mult * 1.95, now + 0.12);
+      o.frequency.exponentialRampToValueAtTime(base * mult * 1.78, now + 0.25);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, now);
+      g.gain.linearRampToValueAtTime(v * level, now + 0.008);
+      g.gain.exponentialRampToValueAtTime(v * level * 0.45, now + 0.13);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + 0.27);
+      o.connect(g); g.connect(soft);
+      o.start(now); o.stop(now + 0.3);
+      if (mult === 2) o.onended = () => soft.disconnect();
+    }
+    const air = ctx.createBufferSource(); air.buffer = this.hiss(ctx); air.playbackRate.value = 0.9;
+    const band = ctx.createBiquadFilter(); band.type = "bandpass"; band.Q.value = 0.8;
+    band.frequency.setValueAtTime(650, now);
+    band.frequency.exponentialRampToValueAtTime(1900, now + 0.16);
+    const ag = ctx.createGain();
+    ag.gain.setValueAtTime(0, now);
+    ag.gain.linearRampToValueAtTime(v * 0.38, now + 0.03);
+    ag.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+    air.connect(band); band.connect(ag); ag.connect(this.out(ctx));
+    air.start(now, Math.random()); air.stop(now + 0.2);
   }
 
   /** A second and a half of even noise (water). */
@@ -1053,7 +1316,7 @@ export class AudioSystem {
       g.gain.setValueAtTime(0, now + at);
       g.gain.linearRampToValueAtTime(v, now + at + 0.012);
       g.gain.exponentialRampToValueAtTime(0.0001, now + at + len);
-      src.connect(f); f.connect(g); g.connect(ctx.destination);
+      src.connect(f); f.connect(g); g.connect(this.out(ctx));
       src.start(now + at); src.stop(now + at + len + 0.03);
     }
   }
@@ -1077,7 +1340,7 @@ export class AudioSystem {
     g.gain.setValueAtTime(0, now);
     g.gain.linearRampToValueAtTime(this.volume * 0.075, now + 0.5);
     g.gain.exponentialRampToValueAtTime(0.0001, now + 1.8);
-    src.connect(f); f.connect(g); g.connect(ctx.destination);
+    src.connect(f); f.connect(g); g.connect(this.out(ctx));
     src.start(now); src.stop(now + 1.85);
   }
 
@@ -1087,7 +1350,7 @@ export class AudioSystem {
     if (!ctx) return;
     const now = ctx.currentTime;
     const g = ctx.createGain();
-    g.connect(ctx.destination);
+    g.connect(this.fx(ctx));
     const vol = this.volume * 0.18;
     const tone = (f: number, t0: number, dur: number, type: OscillatorType = "sine", v = vol) => {
       const o = ctx.createOscillator();
