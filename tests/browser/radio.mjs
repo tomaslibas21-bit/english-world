@@ -37,7 +37,13 @@ function init(token) {
   // what makes sound: media elements, and Web Audio sources as long as a song
   const probe = (window.radioProbe = { audios: [], sources: [] });
   const NativeAudio = window.Audio;
-  window.Audio = function (...args) { const el = new NativeAudio(...args); probe.audios.push(el); return el; };
+  probe.volumes = [];
+  window.Audio = function (...args) {
+    const el = new NativeAudio(...args);
+    probe.audios.push(el);
+    el.addEventListener("volumechange", () => { if (!el.src.startsWith("data:")) probe.volumes.push(el.volume); });
+    return el;
+  };
   const Native = window.AudioContext || window.webkitAudioContext;
   if (Native) {
     const create = Native.prototype.createBufferSource;
@@ -111,11 +117,14 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       check(`${label}: silent until asked`, !s.on && !s.sounding, s);
       await (phone ? button.tap() : button.click());
       await playing(page);
-      const rising = (await state(page)).volume;
       await page.waitForTimeout(1300);
       s = await state(page);
       check(`${label}: a tap turns it on and a song sounds`, s.on && s.playing && s.sounding && s.song, s);
-      if (!phone) check(`${label}: the music fades in (not a jump to full volume)`, rising < s.volume && s.volume > 0.3, { rising, full: s.volume });
+      if (!phone) {
+        // every step of the fade as the media element saw it: many small rises from silence, not one jump
+        const steps = await page.evaluate(() => [...new Set(window.radioProbe.volumes)]);
+        check(`${label}: the music fades in (not a jump to full volume)`, steps.filter((v) => v > 0.02 && v < s.volume - 0.02).length >= 5 && s.volume > 0.3, { steps: steps.length, full: s.volume });
+      }
       check(`${label}: the recording and its words were asked for with the course's token`, asked.some((u) => u.endsWith(`.mp3?t=${TOKEN}`)) && asked.some((u) => u.endsWith(`.json?t=${TOKEN}`)), asked);
       check(`${label}: ${phone ? "no media element (the game's Web Audio, decoded at 32 kHz)" : "one media element"}`, phone ? s.audios === 0 && s.rates.join() === "32000" : s.rates.length === 0 && s.audios >= 1, s);
       // the very first time, the radio set opens by itself: Maple FM on the dial, three stations, five keys
@@ -130,8 +139,8 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
         return { needle: (n.left + n.width / 2 - d.left) / d.width, marksInside: marks.every((m) => m.left >= d.left && m.right <= d.right) };
       });
       check(`${label}: the needle stands at 98.7 on a dial whose numbers all fit`, Math.abs(dial.needle - (0.06 + ((98.7 - 88) / 20) * 0.88)) < 0.02 && dial.marksInside, dial);
-      const header = await page.evaluate(() => { const n = document.querySelector(".rs-name"), t = document.querySelector(".rs-title"), f = document.querySelector(".rs-freq"); return { name: [n.scrollWidth, n.clientWidth], title: [t.scrollWidth, t.clientWidth], freq: f.textContent, under: f.getBoundingClientRect().top >= n.getBoundingClientRect().bottom - 6 }; });
-      check(`${label}: the station's name shows in full, with its frequency under it`, header.name[0] <= header.name[1] + 1 && header.title[0] <= header.title[1] + 1 && header.freq === "98.7 FM" && header.under, header);
+      const header = await page.evaluate(() => { const n = document.querySelector(".rs-name"), top = document.querySelector(".rs-top"); return { name: [n.scrollWidth, n.clientWidth], right: n.getBoundingClientRect().right, x: document.querySelector(".rs-x").getBoundingClientRect().left, text: top.textContent.trim() }; });
+      check(`${label}: the station's name shows in full, alone in the header (no frequency beside it)`, header.name[0] <= header.name[1] + 1 && header.right <= header.x + 1 && header.text === "Maple FM", header);
       await page.locator(".rs-x").click();
 
       // ---- folded away: the lit button and the station's plate; a tap on the button is off, the next is on

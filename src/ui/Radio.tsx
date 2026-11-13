@@ -109,10 +109,7 @@ function RadioSet() {
       {RADIO_SKIN === "colibri" && <Bunting />}
       <div className="rs-top">
         <span className="rs-lamp" aria-hidden />
-        <div className="rs-title">
-          <b className="rs-name" lang={TL}>{station.name}</b>
-          <span className="rs-freq" aria-hidden>{station.freq.toFixed(1)} FM</span>
-        </div>
+        <b className="rs-name" lang={TL}>{station.name}</b>
         <button className="rs-x" onClick={() => radio.setOpen(false)} aria-label={L("Uždaryti")} title={L("Uždaryti")}><Icon name="close" size={17} strokeWidth={2.25} /></button>
       </div>
       <div className="rs-dial" aria-hidden>
@@ -143,7 +140,8 @@ function RadioSet() {
 }
 
 /** The line being sung, at the bottom of the town: sung words lit, each unit's gloss under it (with the game's
- *  translations on). Between lines it shows nothing; taps go through it to the ground. */
+ *  translations on). A bilingual song's line sung in the learner's language is a row of its own, its words lit the
+ *  same way and nothing under them. Between lines it shows nothing; taps go through it to the ground. */
 export function LyricStrip() {
   const show = useRadio((s) => s.on && s.lyrics && s.playing);
   const timeline = useRadio((s) => s.timeline);
@@ -164,13 +162,14 @@ export function LyricStrip() {
   }, [show, timeline]);
   if (!show || !timeline || at.line < 0) return null;
   const line = timeline.lines[at.line];
+  const translation = line.part === "translation";
   return (
     <div className={"radio-strip " + SKIN} aria-hidden>
-      <div className="radio-line" key={at.line}>
+      <div className={"radio-line" + (translation ? " translation" : "")} key={at.line}>
         {line.u.map((u, k) => (
           <span className={"ru" + (k < at.unit ? " sung" : k === at.unit ? " now" : "")} key={k}>
-            <span className="rt" lang={TL}>{u[0]}</span>
-            {glosses && <span className="rg" lang={EDITION.helper}>{shortGloss(u[1])}</span>}
+            <span className="rt" lang={translation ? EDITION.helper : TL}>{u[0]}</span>
+            {glosses && <span className="rg" lang={EDITION.helper}>{translation ? "\u00a0" : shortGloss(u[1])}</span>}
           </span>
         ))}
       </div>

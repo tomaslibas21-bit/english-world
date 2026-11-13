@@ -25,16 +25,30 @@ function rng(seed: number): () => number {
   };
 }
 
-/** The station's songs in playing order: the list's own order, or a shuffle of it by `seed`. */
+/** The station's songs in playing order: the list's own order, or a shuffle of it by `seed`.
+ *
+ *  The shuffle is a fair mix of the course's kinds of song (its collections: grammar, vocabulary, situations,
+ *  bilingual…). A plain shuffle can put five songs of one kind at the start by chance; here each kind is shuffled by
+ *  itself and then spread evenly through the whole order, each from a random starting point. Any stretch of the order
+ *  holds the kinds in about the station's own proportions, and two songs of a small kind are never close together. */
 export function stationOrder(songs: SongMeta[], station: Station, shuffle: boolean, seed: number): string[] {
-  const ids = songs.filter((s) => station.has(s)).map((s) => s.id);
-  if (!shuffle) return ids;
+  const mine = songs.filter((s) => station.has(s));
+  if (!shuffle) return mine.map((s) => s.id);
   const random = rng(seed);
-  for (let i = ids.length - 1; i > 0; i--) {
-    const j = Math.floor(random() * (i + 1));
-    [ids[i], ids[j]] = [ids[j], ids[i]];
+  const kinds = new Map<string, string[]>();
+  for (const s of mine) { const k = s.c || ""; if (!kinds.has(k)) kinds.set(k, []); kinds.get(k)!.push(s.id); }
+  const placed: { id: string; at: number }[] = [];
+  for (const ids of kinds.values()) {
+    for (let i = ids.length - 1; i > 0; i--) {
+      const j = Math.floor(random() * (i + 1));
+      [ids[i], ids[j]] = [ids[j], ids[i]];
+    }
+    // this kind's songs at even steps through the order, the first one anywhere within a step, each a little off
+    // its mark so that the kinds don't fall into a fixed pattern
+    const start = random();
+    ids.forEach((id, k) => placed.push({ id, at: (k + start + (random() - 0.5) * 0.4) / ids.length }));
   }
-  return ids;
+  return placed.sort((a, b) => a.at - b.at).map((p) => p.id);
 }
 
 /** The song after (`dir` 1) or before (-1) `current` in `order`; the first one when `current` isn't in it. `wrapped`:

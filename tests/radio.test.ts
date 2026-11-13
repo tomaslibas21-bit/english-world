@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { captureAudio, watchMicrophone } from "../src/convo/audioFocus";
 import { STATIONS, songOfSituation } from "../src/content/radio";
 import { SITUATIONS } from "../src/content/situations";
-import { buildTimeline, lineAt, shortGloss, unitAt, wordsBegun } from "../src/radio/lyrics";
+import { buildTimeline, lineAt, shortGloss, unitAt, withSungTranslations, wordsBegun } from "../src/radio/lyrics";
 import { BufferOutput, NeedsTap, type RadioOutput } from "../src/radio/output";
 import { readSaved, stationOrder, step, type Station } from "../src/radio/playlist";
 import { FADE_IN_MS, FADE_OUT_MS, MUSIC_LEVEL, RESUME_AFTER_MS, SKIP_OUT_MS, VOICE_FADE_MS, Radio, type RadioDeps } from "../src/radio/radio";
@@ -97,6 +97,47 @@ describe("the lyric clocks", () => {
     expect(unitAt(odd, 4.5)).toBe(1);
   });
 
+  // the first lines of SB20 "Lo siento" as the Spanish course has them (public/songs/data/SB20.json)
+  const bilingual: SongLine[] = [
+    { s: 17.23, e: 19.47, src: "Perdóname", lt: "Forgive me", u: [["Perdóname", "Forgive me", 1]], w: [[17.23, 19.47]], wt: ["Perdóname"], en: { s: 10.47, e: 11.69, w: [[10.47, 11.09], [11.11, 11.69]] } },
+    { s: 34.43, e: 37.43, src: "Estoy frente a tu puerta", lt: "I'm standing at your door", u: [["Estoy", "I am", 1], ["frente a", "in front of", 2], ["tu", "your", 1], ["puerta", "door", 1]],
+      w: [[34.43, 35.49], [35.51, 36.21], [36.23, 36.35], [36.37, 36.65], [36.67, 37.43]], wt: ["Estoy", "frente", "a", "tu", "puerta"], en: { s: 19.55, e: 30.15, w: [[19.55, 19.85], [27.83, 28.77], [28.79, 29.05], [29.07, 29.31], [29.33, 30.15]] } },
+  ];
+
+  it("a bilingual song's line is shown twice, as it is sung: first in the learner's language, then in the song's", () => {
+    const rows = withSungTranslations(bilingual);
+    expect(rows.map((r) => [r.part ?? "song", r.src])).toEqual([
+      ["translation", "Forgive me"], ["song", "Perdóname"], ["translation", "I'm standing at your door"], ["song", "Estoy frente a tu puerta"],
+    ]);
+    expect(rows[2].u.map((u) => u[0])).toEqual(["I'm", "standing", "at", "your", "door"]); // its words, as the course's player splits them
+    expect(rows[2].u.every((u) => u[1] === "")).toBe(true); // nothing under them: they are the song, not glosses
+    const tl = buildTimeline(rows);
+    expect(lineAt(tl, 10.6)).toBe(0); // "Forgive me" while it is sung
+    expect(unitAt(rows[0], 10.6)).toBe(0);
+    expect(unitAt(rows[0], 11.2)).toBe(1); // "me" lit at its own time
+    expect(lineAt(tl, 17.5)).toBe(1); // then "Perdóname"
+    expect(lineAt(tl, 19.6)).toBe(2);
+    expect(unitAt(rows[2], 19.6)).toBe(0); // "I'm"
+    expect(unitAt(rows[2], 28)).toBe(1); // "standing", sung eight seconds later
+    expect(lineAt(tl, 34.5)).toBe(3);
+    expect(unitAt(rows[3], 35.6)).toBe(1); // "frente a": the Spanish follows its own word times, glosses under it
+    expect(rows[3].u[1][1]).toBe("in front of");
+  });
+
+  it("a sung translation without a time for every word shows at the line's time with no word lit; a line without one stays as it is", () => {
+    const rows = withSungTranslations([
+      { ...bilingual[0], en: { s: 10.47, e: 11.69, w: [[10.47, 11.09]] } },
+      { ...bilingual[1], en: { s: 19.55, e: 30.15 } },
+      { ...bilingual[1], en: undefined },
+    ]);
+    expect(rows.map((r) => r.part ?? "song")).toEqual(["translation", "song", "translation", "song", "song"]);
+    const tl = buildTimeline(rows);
+    expect(lineAt(tl, 10.8)).toBe(0);
+    for (const t of [10.5, 11, 11.6, 12.5]) expect(unitAt(rows[0], t)).toBe(-1);
+    expect(lineAt(tl, 25)).toBe(2);
+    expect(unitAt(rows[2], 25)).toBe(-1);
+  });
+
   it("keeps a gloss's meaning and drops its literal one", () => {
     expect(shortGloss("Lipkite! (šokite į vidų)")).toBe("Lipkite!");
     expect(shortGloss("(pažodžiui)")).toBe("(pažodžiui)");
@@ -114,6 +155,27 @@ describe("the playing order", () => {
     expect(a).toEqual(stationOrder(songs, all, true, 7));
     expect([...a].sort()).toEqual(["A", "B", "C", "D", "E", "F"]);
     expect(new Set([1, 2, 3, 4, 5, 6, 7, 8].map((seed) => stationOrder(songs, all, true, seed).join(""))).size).toBeGreaterThan(3);
+  });
+
+  it("a shuffle is a fair mix of the course's kinds of song: each kind spread evenly, never bunched at the start", () => {
+    // Radio Colibrí as the Spanish course fills it: 32 vocabulary, 18 situation, 12 grammar and 8 bilingual songs
+    const mix: SongMeta[] = [];
+    for (const [c, n] of [["v", 32], ["s", 18], ["g", 12], ["b", 8]] as const) for (let i = 0; i < n; i++) mix.push({ ...song(`${c}${i}`), c });
+    for (let seed = 1; seed <= 300; seed++) {
+      const order = stationOrder(mix, all, true, seed * 7919);
+      expect([...order].sort()).toEqual(mix.map((s) => s.id).sort()); // every song, once
+      const kinds = order.map((id) => id[0]);
+      const b = kinds.flatMap((k, i) => (k === "b" ? [i] : []));
+      for (let i = 1; i < b.length; i++) expect(b[i] - b[i - 1], `seed ${seed}`).toBeGreaterThanOrEqual(4); // bilingual songs far apart
+      for (let from = 0; from + 10 <= kinds.length; from += 5) {
+        const window = kinds.slice(from, from + 10);
+        expect(window.filter((k) => k === "b").length, `seed ${seed} at ${from}`).toBeLessThanOrEqual(2);
+        expect(window.filter((k) => k === "v").length, `seed ${seed} at ${from}`).toBeGreaterThanOrEqual(3);
+        expect(new Set(window).size, `seed ${seed} at ${from}`).toBeGreaterThanOrEqual(3);
+      }
+    }
+    // and it is still a shuffle: different seeds, different starts
+    expect(new Set(Array.from({ length: 40 }, (_, i) => stationOrder(mix, all, true, i + 1)[0])).size).toBeGreaterThan(12);
   });
 
   it("goes forth and back, around the ends", () => {
