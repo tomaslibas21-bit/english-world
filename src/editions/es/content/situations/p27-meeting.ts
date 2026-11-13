@@ -863,7 +863,7 @@ export const meeting: SituationDef = {
   npc: "vanessa",
   npcs: ["greg"],
   goal: "Disagree politely with a colleague's plan and find a compromise together.",
-  intro: "Monday, 9 a.m., in Línea Clara's meeting room. Gerardo, the team manager, opens the meeting, and Vanessa from marketing presents her plan: launch the new website this Friday and shut the old one down the same day. You think it's too rushed: say so politely, cut in when you need to, explain why, and find a compromise together. Colleagues here say tú to each other.",
+  intro: "You work on Gerardo's team at Línea Clara. Monday, 9 a.m., in the meeting room. Gerardo, the team manager, opens the meeting, and Vanessa from marketing presents her plan: launch the new website this Friday and shut the old one down the same day. You think it's too rushed: say so politely, cut in when you need to, explain why, and find a compromise together. Colleagues here say tú to each other.",
 
   grammar: {
     macros: {

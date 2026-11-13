@@ -510,7 +510,7 @@ export const local: SituationDef = {
   location: "town-square",
   npc: "rosa",
   goal: "Ask a local for tips: where to eat and what to see. Then ask a follow-up question or two.",
-  intro: "The zócalo. Doña Carmen sits on her bench by the bandstand, fanning herself. She was born and raised in Puerto Colibrí and knows every corner of it, from the best cochinita to the quietest cenote.",
+  intro: "You're new in town and looking for good places to eat and things to see. The zócalo: Doña Carmen sits on her bench by the bandstand, fanning herself. She was born and raised in Puerto Colibrí and knows every corner of it, from the best cochinita to the quietest cenote.",
   entities: { spot: SPOTS, cuisine: CUISINES, country: COUNTRIES, place: PLACES },
 
   grammar: {

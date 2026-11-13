@@ -292,7 +292,7 @@ export const cafe: SituationDef = {
   location: "sunny-cup",
   npc: "mia",
   goal: "Order a drink (and something to eat, if you like), say whether it's for here or to go, and pay.",
-  intro: "Café La Ceiba is on avenida Juárez, across from the visitor center, under a green-and-white awning. Mariana is behind the counter; the menu is on the board behind her. Prices are in pesos: $45 means 45 pesos.",
+  intro: "You stop for a coffee at Café La Ceiba, on avenida Juárez, across from the visitor center, under a green-and-white awning. Mariana is behind the counter; the menu is on the board behind her. Prices are in pesos: $45 means 45 pesos.",
   entities: { drink: DRINKS, food: FOODS, size: SIZES, milk: MILKS, temp: TEMPS },
 
   // Spain twins' multiword units (docs/es/STYLE.md "Spain Spanish")

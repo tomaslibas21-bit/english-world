@@ -626,7 +626,7 @@ export const museum: SituationDef = {
   npc: "ben",
   npcs: ["harold"],
   goal: "Buy a ticket, get an audio guide if you want one, and find out where the new exhibition is.",
-  intro: "The Museo de la Costa Maya, across from the zócalo: cool white halls and quiet galleries. Iván sells the tickets; Don Arturo, the guard, watches over the art. Prices are in Mexican pesos.",
+  intro: "You've come to see the Museo de la Costa Maya, across from the zócalo: cool white halls and quiet galleries. Iván sells the tickets; Don Arturo, the guard, watches over the art. Prices are in Mexican pesos.",
   entities: { ttype: TTYPES, lang: LANGS },
 
   grammar: {

@@ -732,7 +732,7 @@ export const meeting: SituationDef = {
   npc: "kate",
   npcs: ["paul", "sara"],
   goal: "Take part in a team meeting: give your update, ask for an explanation, say what you think and help wrap it up.",
-  intro: "Monday morning at Línea Clara, in the meeting room. Sofía runs the team meeting, Pablo sits across the table, and Sara joins from home on the screen. Give your update, ask when something isn't clear, and say what you think. Colleagues here say tú to each other.",
+  intro: "You're on Sofía's team at Línea Clara. Monday morning, in the meeting room. Sofía runs the team meeting, Pablo sits across the table, and Sara joins from home on the screen. Give your update, ask when something isn't clear, and say what you think. Colleagues here say tú to each other.",
   entities: { task: TASKS, deliv: DELIVS },
 
   grammar: {

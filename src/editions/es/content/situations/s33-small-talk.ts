@@ -567,7 +567,7 @@ export const smallTalk: SituationDef = {
   location: "bus-stop",
   npc: "frank",
   goal: "Chat with your neighbor about the weather and the weekend, and say goodbye politely when your bus comes.",
-  intro: "Morning at the Calle Ceiba bus stop. Don Pancho, a retired neighbor, is already waiting, and he loves to talk about the weather: the heat, the rain, the hurricane season. Keep the chat going: answer, ask him back (“¿Y usted?”) and show interest.",
+  intro: "Morning, and you're waiting at the Calle Ceiba bus stop. Don Pancho, a retired neighbor, is already waiting, and he loves to talk about the weather: the heat, the rain, the hurricane season. Keep the chat going: answer, ask him back (“¿Y usted?”) and show interest.",
   entities: { country: COUNTRIES, city: CITIES },
 
   grammar: {

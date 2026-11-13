@@ -78,7 +78,7 @@ export const gas: SituationDef = {
   location: "gas-station",
   npc: "dot",
   goal: "Tell the attendant how much gas you want and which kind, make sure the pump starts at zero, and pay her at the car.",
-  intro: "Gasolinera El Faro. In Mexico an attendant fills the tank for you: say “Lleno” (full) or an amount in pesos, and magna (regular) or premium. Check the pump starts at zero, and a small tip is usual.",
+  intro: "You pull in at Gasolinera El Faro to fill up your car. In Mexico an attendant fills the tank for you: say “Lleno” (full) or an amount in pesos, and magna (regular) or premium. Check the pump starts at zero, and a small tip is usual.",
   entities: { grade: GRADES },
 
   grammar: {
