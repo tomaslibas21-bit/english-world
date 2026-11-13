@@ -60,7 +60,7 @@ export const LOOPS = {
 } as const;
 export type LoopName = keyof typeof LOOPS;
 /** Tropical birds, nine and a half seconds of them: a few seconds are played now and then, never the whole. */
-export const BIRDSONG = { file: "birds.mp3", length: 9.5, gain: 0.11 } as const;
+export const BIRDSONG = { file: "birds.mp3", length: 9.5, gain: 0.085 } as const;
 
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 
