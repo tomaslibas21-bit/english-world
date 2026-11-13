@@ -10,6 +10,7 @@ import { STRINGS } from "@/ui/strings";
 import { learnerItems } from "../../src/editions/es/learner/walk";
 import { sharedContent } from "../../src/editions/es/learner/shared";
 import { playSim } from "../../tools/sim-play";
+import { chipLabel } from "@/ui/chip-label";
 
 const MISSING = (Situations as unknown as { LEARNER_MISSING: Record<string, string[]> }).LEARNER_MISSING;
 const ENGLISH = /\b(the|and|you|your|please|thanks|thank you|would|could|I'm|it's|don't)\b/i;
@@ -30,6 +31,16 @@ describe("Puerto Colibrí for Lithuanians", () => {
   it("has Lithuanian for the town-wide text (cast, places, global lines)", () => {
     const left = learnerItems(sharedContent()).filter((i) => (i.kind === "text" ? ENGLISH.test(i.en ?? "") : i.kind === "sent" && ENGLISH.test(i.nat ?? "")));
     expect(left.slice(0, 10).map((i) => i.en ?? i.nat)).toEqual([]);
+  });
+
+  it("answer chips say the natural Lithuanian name in the nominative, never the gloss in Spanish order", () => {
+    const bad: string[] = [];
+    for (const sit of SITUATIONS) for (const [type, list] of Object.entries(sit.entities ?? {})) for (const e of list) {
+      if (e.chip || e.lt.split(" | ").length < 2) continue;
+      const nat = typeof e.attrs?.nat === "string" ? e.attrs.nat.split("/") : [];
+      if (nat.length !== 6 || chipLabel(e) !== nat[0].trim()) bad.push(`${sit.id} ${type}/${e.id}: "${chipLabel(e)}"`);
+    }
+    expect(bad.slice(0, 20)).toEqual([]);
   });
 
   for (const sit of SITUATIONS) {
