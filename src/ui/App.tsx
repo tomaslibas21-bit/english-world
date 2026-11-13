@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useStore, type PlayMode } from "../state/store";
 import type { Game } from "../game/Game";
 import { setGame, game } from "../game/gameRef";
+import { coach } from "../game/coach";
 import { Title } from "./Title";
 import { Hud } from "./Hud";
 import { Conversation } from "./Conversation";
@@ -48,7 +49,7 @@ function Play() {
         if (sit) g!.startScenario(sit);
       };
       g.init();
-      (window as any).__ew = { game: g, store: useStore, radio, voice: audio.getState };
+      (window as any).__ew = { game: g, store: useStore, radio, voice: audio.getState, coach };
     });
     return () => { gone = true; g?.dispose(); setGame(null); };
   }, []);
