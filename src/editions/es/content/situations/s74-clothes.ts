@@ -413,7 +413,7 @@ export const clothes: SituationDef = {
   location: "threads",
   npc: "chloe",
   goal: "Pick something to wear, try it on and buy it (or exchange something you bought).",
-  intro: "Boutique Hilos is a small clothing store downtown. A white linen guayabera hangs on the mannequin by the door. Valeria, the sales associate, is folding shirts. Prices are in pesos and already include tax.",
+  intro: "You're shopping for clothes at Boutique Hilos, a small store downtown. A white linen guayabera hangs on the mannequin by the door. Valeria, the sales associate, is folding shirts. Prices are in pesos and already include tax.",
   entities: { clothing: CLOTHING, color: COLORS, size: SIZES },
 
   merges: {

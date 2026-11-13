@@ -162,7 +162,7 @@ export const kitchen: SituationDef = {
   npc: "whitaker",
   npcs: ["russo"],
   goal: "Take the head chef's feedback well, then give the new cook kind, useful feedback on her dish.",
-  intro: "The kitchen of El Muelle, an hour before the evening service. You want your fish chowder, the way they make it back home, on tonight's specials board, but first Chef Villanueva has to taste it. He's calm, and he misses nothing. Afterwards he may ask you to help Fátima, the new junior cook. In this kitchen everyone says tú to you.",
+  intro: "You're a cook at El Muelle, the seafood restaurant on the malecón. The kitchen, an hour before the evening service: you want your fish chowder, the way they make it back home, on tonight's specials board, but first Chef Villanueva has to taste it. He's calm, and he misses nothing. Afterwards he may ask you to help Fátima, the new junior cook. In this kitchen everyone says tú to you.",
   entities: { good_part: GOOD_PARTS, ingredient: INGREDIENTS, other_food: OTHER_FOODS },
 
   grammar: {

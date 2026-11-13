@@ -46,6 +46,9 @@ export const STRINGS: Record<string, string> = {
   "Moteris": "Woman",
   "Atgal": "Back",
   "Pradėti": "Start",
+  // the scene card (src/ui/SceneIntro.tsx)
+  "Scena": "The scene",
+  "Uždaryti sceną": "Close the scene",
   "Geriausia – kompiuteris su mikrofonu ir Chrome naršyklė. Galima ir rašyti. Pažanga saugoma šioje naršyklėje.": "Works best on a computer with a microphone and the Chrome browser. You can type, too. Your progress is saved in this browser.",
   "pokalbis": "conversation",
   "pokalbiai": "conversations",

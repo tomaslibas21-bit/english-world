@@ -50,8 +50,14 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
 });
-async function opening() {
+/** Start the conversation and close its scene card at once (src/ui/SceneIntro.tsx), as a learner who taps it. */
+function beginPastScene() {
   const begin = session.begin();
+  useStore.getState().setConv({ introOpen: false });
+  return begin;
+}
+async function opening() {
+  const begin = beginPastScene();
   // The NPC line awaits audio plus a 160 ms sentence gap; stop before the 250 ms microphone timer.
   while (useStore.getState().conv.phase === "npc") await vi.advanceTimersByTimeAsync(160);
   await begin;
@@ -63,12 +69,26 @@ function hidden(value: boolean) {
   doc.dispatchEvent(new Event("visibilitychange"));
 }
 
+describe("the scene card", () => {
+  it("the person's first line waits for it, and starts after a few seconds if it stays open", async () => {
+    const begin = session.begin();
+    expect(useStore.getState().conv.introOpen).toBe(true);
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(vi.mocked(audio.play)).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(useStore.getState().conv.introOpen).toBe(false);
+    while (useStore.getState().conv.phase === "npc") await vi.advanceTimersByTimeAsync(160);
+    await begin;
+    expect(vi.mocked(audio.play)).toHaveBeenCalled();
+  });
+});
+
 describe("automatic-only learner microphone", () => {
   it("starts only after NPC playback and the normal delay, including saved manual-only learners", async () => {
     useStore.setState({ settings: migrateSettings({ v: 4, autoListen: false }) });
     let complete!: (ok: boolean) => void;
     vi.mocked(audio.play).mockImplementationOnce(() => new Promise(resolve => { complete = resolve; }));
-    const begin = session.begin();
+    const begin = beginPastScene();
     await vi.advanceTimersByTimeAsync(1000);
     expect(useStore.getState().conv.phase).toBe("npc");
     expect(attempts).toHaveLength(0);

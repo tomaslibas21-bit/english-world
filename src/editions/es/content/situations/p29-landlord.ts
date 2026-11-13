@@ -446,7 +446,7 @@ export const landlord: SituationDef = {
   npc: "patel",
   npcs: ["rita"],
   goal: "Politely but firmly get your landlord to fix the AC, and agree on a day for the repair.",
-  intro: "Departamentos Las Palmas, a hot Wednesday morning. Your AC has only blown warm air for a week, and Don Ernesto, the landlord, doesn't answer his phone. And there he is at the door downstairs, with a suitcase and a sun hat. Prices are in Mexican pesos.",
+  intro: "You rent an apartment at Departamentos Las Palmas. A hot Wednesday morning. Your AC has only blown warm air for a week, and Don Ernesto, the landlord, doesn't answer his phone. And there he is at the door downstairs, with a suitcase and a sun hat. Prices are in Mexican pesos.",
 
   grammar: {
     macros: {
