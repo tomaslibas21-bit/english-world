@@ -687,11 +687,11 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .objective-card { width: calc(100vw - 120px); }
   .minimap { --mm: 88px; --mm-edge: 3px; }
   .minimap .label { display: none; }
-  .mm-card { width: 95px; max-width: none; padding: 8px 6px 9px; grid-template-columns: auto auto; grid-template-areas: "ico kick" "name name"; justify-content: center; column-gap: 4px; row-gap: 3px; text-align: center; }
+  .mm-card { width: 98px; max-width: none; padding: 8px 4px 9px; grid-template-columns: auto auto; grid-template-areas: "ico kick" "name name"; justify-content: center; column-gap: 4px; row-gap: 3px; text-align: center; }
   .mm-ico { width: auto; height: auto; background: none; border-radius: 0; }
   .mm-ico .ui-icon { width: 15px; height: 15px; }
   .mm-card small { align-self: center; font-size: 9.5px; letter-spacing: 0.09em; }
-  .mm-card b { justify-self: center; max-width: none; font-size: 11.5px; line-height: 1.17; }
+  .mm-card b { justify-self: center; max-width: none; font-size: 11.25px; line-height: 1.18; }
   .mm-go { display: none; }
   .toolbar { top: 112px; right: max(10px, env(safe-area-inset-right)); }
   .toolbar-tools { grid-template-rows: repeat(8, 46px); }
@@ -717,11 +717,11 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .toolbar-tools { grid-template-rows: repeat(2, 46px); gap: 8px; }
   .toolbar .icon-btn { width: 46px; height: 46px; }
   .minimap { --mm: 88px; --mm-edge: 5px; }
-  .mm-card { width: 90px; max-width: none; padding: 8px 6px 9px; grid-template-columns: auto auto; grid-template-areas: "ico kick" "name name"; justify-content: center; column-gap: 4px; row-gap: 3px; text-align: center; }
+  .mm-card { width: 92px; max-width: none; padding: 8px 4px 9px; grid-template-columns: auto auto; grid-template-areas: "ico kick" "name name"; justify-content: center; column-gap: 4px; row-gap: 3px; text-align: center; }
   .mm-ico { width: auto; height: auto; background: none; border-radius: 0; }
   .mm-ico .ui-icon { width: 15px; height: 15px; }
   .mm-card small { align-self: center; font-size: 9.5px; letter-spacing: 0.09em; }
-  .mm-card b { justify-self: center; max-width: none; font-size: 11px; line-height: 1.17; }
+  .mm-card b { justify-self: center; max-width: none; font-size: 10.5px; line-height: 1.18; }
   .mm-go { display: none; }
   .objective-card { max-width: calc(100vw - 350px); max-height: calc(100dvh - 180px - env(safe-area-inset-bottom)); overflow-y: auto; }
 }
