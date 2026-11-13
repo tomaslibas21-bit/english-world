@@ -112,7 +112,16 @@ function valueText(en: string): string | undefined {
 /** A value in the Spanish text, the Lithuanian gloss and the spoken Spanish. */
 export function valueDisplay(kind: string, v: any): { en: string; lt: string; say: string } {
   const r = ES.valueDisplay(kind, v);
-  if (v && typeof v === "object" && typeof v.lt === "string") return { ...r, lt: valueText(v.lt) ?? r.lt };
+  // a time: Lithuanian says the 24-hour clock (19:00), never 7:00 PM
+  if (v && (kind === "time" || kind.endsWith("Time")) && typeof v.h === "number") return { ...r, lt: `${v.h}:${String(v.m ?? 0).padStart(2, "0")}` };
+  if (v && typeof v === "object" && typeof v.lt === "string") {
+    const ampm = /^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/i.exec(v.lt.trim());
+    if (ampm) {
+      const h = (Number(ampm[1]) % 12) + (/pm/i.test(ampm[3]) ? 12 : 0);
+      return { ...r, lt: `${h}:${ampm[2] ?? "00"}` };
+    }
+    return { ...r, lt: valueText(v.lt) ?? r.lt };
+  }
   // a decimal number (a temperature, 38.3): Lithuanian writes a comma
   if (typeof v === "number" && !Number.isInteger(v)) return { ...r, lt: String(v).replace(".", ",") };
   if (v != null && (kind === "price" || kind === "total" || kind === "amount" || kind === "fare" || kind === "rent" || kind === "deposit")) return { ...r, lt: priceLt(v) };
