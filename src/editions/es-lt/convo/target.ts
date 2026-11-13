@@ -109,18 +109,34 @@ function valueText(en: string): string | undefined {
   return VALUE_TEXT.get(en);
 }
 
+/** Days as a handler's English names them, said when (the accusative of a weekday: "antradienį"). */
+const DAYS_LT: Record<string, string> = {
+  today: "šiandien", tonight: "šįvakar", tomorrow: "rytoj", "the day after tomorrow": "poryt", "next week": "kitą savaitę",
+  monday: "pirmadienį", tuesday: "antradienį", wednesday: "trečiadienį", thursday: "ketvirtadienį", friday: "penktadienį",
+  saturday: "šeštadienį", sunday: "sekmadienį",
+};
+/** A clock time or a day in a handler's English ("10:15 AM", "7 PM", "tomorrow", "Tuesday at 10 AM") the Lithuanian
+ *  way: the 24-hour clock, the day in the accusative ("antradienį 10:00"). */
+function timeOrDayLt(en: string): string | undefined {
+  const t = en.trim();
+  const clock = (h: string, m: string | undefined, ap: string) => `${(Number(h) % 12) + (/pm/i.test(ap) ? 12 : 0)}:${m ?? "00"}`;
+  const ampm = /^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/i.exec(t);
+  if (ampm) return clock(ampm[1], ampm[2], ampm[3]);
+  const day = DAYS_LT[t.toLowerCase()];
+  if (day) return day;
+  const at = /^(.+?) at (\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/i.exec(t);
+  if (at) { const d = DAYS_LT[at[1].toLowerCase()] ?? valueText(at[1]); if (d) return `${d} ${clock(at[2], at[3], at[4])}`; }
+  return undefined;
+}
+
 /** A value in the Spanish text, the Lithuanian gloss and the spoken Spanish. */
 export function valueDisplay(kind: string, v: any): { en: string; lt: string; say: string } {
   const r = ES.valueDisplay(kind, v);
   // a time: Lithuanian says the 24-hour clock (19:00), never 7:00 PM
   if (v && (kind === "time" || kind.endsWith("Time")) && typeof v.h === "number") return { ...r, lt: `${v.h}:${String(v.m ?? 0).padStart(2, "0")}` };
   if (v && typeof v === "object" && typeof v.lt === "string") {
-    const ampm = /^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/i.exec(v.lt.trim());
-    if (ampm) {
-      const h = (Number(ampm[1]) % 12) + (/pm/i.test(ampm[3]) ? 12 : 0);
-      return { ...r, lt: `${h}:${ampm[2] ?? "00"}` };
-    }
-    return { ...r, lt: valueText(v.lt) ?? r.lt };
+    const lt = valueText(v.lt) ?? timeOrDayLt(v.lt);
+    return { ...r, lt: lt ?? r.lt };
   }
   // a decimal number (a temperature, 38.3): Lithuanian writes a comma
   if (typeof v === "number" && !Number.isInteger(v)) return { ...r, lt: String(v).replace(".", ",") };
