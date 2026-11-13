@@ -19,8 +19,15 @@ While the game loads, the learner sees the town's logo: a picture, the wordmark 
    pops in, the bird or the leaf comes, the words rise) and its loops carry on in step.
 3. With `prefers-reduced-motion` the logo stands still.
 
-A new picture must keep to this: every `animation` rule gets `animation-delay: calc(var(--ew-t, 0s) + …)`, ids
-are unique, nothing is fetched (tests/loading.test.ts).
+4. The picture and the flags are stacks of layers, each the size of the drawing: a part that moves is an element
+   of its own (an `<svg class="ew-layer">` or a `<div class="ew-layer">`), moved only by `transform` and
+   `opacity`. A browser animates such elements off the main thread, so the wings keep beating while the game's
+   script builds the town (that blocks the main thread for about a second on a fast computer and several on a
+   phone). Chromium also does this for parts inside one SVG; Safari does not, hence the layers.
+
+A new picture must keep to this: every `animation` rule gets `animation-delay: calc(var(--ew-t, 0s) + …)`, every
+animated class is on a layer, lengths are percentages of the drawing, ids are unique, nothing is fetched
+(tests/loading.test.ts).
 
 ## A course's way into the game
 
