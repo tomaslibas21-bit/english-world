@@ -829,7 +829,7 @@ body.scene-on .tag-layer { display: none; }
 /* ---------- the first-time guide (Guide.tsx): a small card low in the picture, never in the way ---------- */
 .coach {
   position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 11;
-  display: flex; gap: 12px; align-items: flex-start; width: min(430px, calc(100vw - 28px));
+  display: flex; flex-wrap: wrap; gap: 0 12px; align-items: flex-start; width: min(430px, calc(100vw - 28px));
   background: rgba(255, 255, 255, 0.96); color: var(--ink, #1f2a33); border-radius: 18px; padding: 12px 14px 10px;
   box-shadow: 0 14px 34px -14px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(31, 42, 51, 0.06);
   animation: coach-in 0.35s ease both;
@@ -840,7 +840,7 @@ body.scene-on .tag-layer { display: none; }
 .coach-text { flex: 1; min-width: 0; }
 .coach-text b { display: block; font-size: 1.02em; line-height: 1.25; }
 .coach-text p { margin: 2px 0 0; font-size: 0.9em; line-height: 1.4; color: #44525e; }
-.coach-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.coach-row { flex-basis: 100%; display: flex; align-items: center; gap: 8px; margin-top: 6px; }
 .coach-dots { display: inline-flex; gap: 5px; margin-right: auto; }
 .coach-dots i { width: 7px; height: 7px; border-radius: 50%; background: #d5dbe0; }
 .coach-dots i.on { background: var(--accent); }
@@ -853,12 +853,18 @@ body.scene-on .tag-layer { display: none; }
 @media (max-width: 600px) {
   .coach {
     left: max(8px, env(safe-area-inset-left)); right: auto; bottom: auto; top: calc(104px + env(safe-area-inset-top)); transform: none;
-    width: calc(100vw - 78px - env(safe-area-inset-left) - env(safe-area-inset-right)); gap: 10px; padding: 10px 12px 8px; border-radius: 16px;
+    width: calc(100vw - 78px - env(safe-area-inset-left) - env(safe-area-inset-right)); gap: 0 10px; padding: 10px 12px 8px; border-radius: 16px;
     animation-name: coach-in-top;
   }
+  /* (with the radio the buttons stand two abreast) */
+  .hud:has(.toolbar.has-radio) .coach { width: calc(100vw - 136px - env(safe-area-inset-left) - env(safe-area-inset-right)); }
   .coach-icon { width: 36px; height: 36px; border-radius: 12px; }
   .coach-text p { font-size: 0.86em; line-height: 1.35; }
-  .coach-row { margin-top: 4px; }
+  .coach-row { margin-top: 2px; gap: 6px; }
+  .coach-dots { gap: 4px; }
+  .coach-dots i { width: 6px; height: 6px; }
+  .coach-skip { padding: 0 6px; }
+  .coach-next { min-width: 76px; }
 }
 @keyframes coach-in-top { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
 /* a phone held sideways: low, between the stick and the buttons */

@@ -43,11 +43,11 @@ export function Guide() {
             <span>Iliustruotos scenos</span>
           </label>
         )}
-        <div className="coach-row">
-          <span className="coach-dots" aria-label={`${c.n} / ${c.of}`}>{Array.from({ length: c.of }, (_, i) => <i key={i} className={i < c.n ? "on" : ""} />)}</span>
-          {!last && <button className="coach-skip" onClick={() => coach.finish()}>Praleisti</button>}
-          <button className="btn small coach-next" onClick={() => (last ? coach.finish() : coach.next())}>{last ? "Baigti" : "Toliau"}</button>
-        </div>
+      </div>
+      <div className="coach-row">
+        <span className="coach-dots" aria-label={`${c.n} / ${c.of}`}>{Array.from({ length: c.of }, (_, i) => <i key={i} className={i < c.n ? "on" : ""} />)}</span>
+        {!last && <button className="coach-skip" onClick={() => coach.finish()}>Praleisti</button>}
+        <button className="btn small coach-next" onClick={() => (last ? coach.finish() : coach.next())}>{last ? "Baigti" : "Toliau"}</button>
       </div>
     </div>
   );
