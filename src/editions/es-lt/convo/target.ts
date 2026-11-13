@@ -122,10 +122,17 @@ function timeOrDayLt(en: string): string | undefined {
   const clock = (h: string, m: string | undefined, ap: string) => `${(Number(h) % 12) + (/pm/i.test(ap) ? 12 : 0)}:${m ?? "00"}`;
   const ampm = /^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/i.exec(t);
   if (ampm) return clock(ampm[1], ampm[2], ampm[3]);
-  const day = DAYS_LT[t.toLowerCase()];
+  const dayOf = (d: string) => {
+    const lc = d.toLowerCase();
+    if (DAYS_LT[lc]) return DAYS_LT[lc];
+    // "next Tuesday": kitą antradienį
+    const next = /^next (\w+)$/.exec(lc);
+    return next && DAYS_LT[next[1]] && next[1] !== "week" ? `kitą ${DAYS_LT[next[1]]}` : undefined;
+  };
+  const day = dayOf(t);
   if (day) return day;
   const at = /^(.+?) at (\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/i.exec(t);
-  if (at) { const d = DAYS_LT[at[1].toLowerCase()] ?? valueText(at[1]); if (d) return `${d} ${clock(at[2], at[3], at[4])}`; }
+  if (at) { const d = dayOf(at[1]) ?? valueText(at[1]); if (d) return `${d} ${clock(at[2], at[3], at[4])}`; }
   return undefined;
 }
 
