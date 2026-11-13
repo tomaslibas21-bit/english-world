@@ -401,6 +401,15 @@ describe("the radio", () => {
     expect(radio.store.getState()).toMatchObject({ on: true, playing: true });
   });
 
+  it("a press before the song list has arrived keeps the remembered song and place", async () => {
+    store["radio-test"] = JSON.stringify({ on: false, station: "all", song: "C", at: 33 });
+    const radio = new Radio(deps());
+    radio.press(); // the list is still on its way
+    expect(saved()).toMatchObject({ on: true, song: "C", at: 33 });
+    await settle(); await settle();
+    expect(out.last).toBe("play C.mp3@33");
+  });
+
   it("waits for a tap when the browser asks for one, and starts at the next tap", async () => {
     store["radio-test"] = JSON.stringify({ on: true, station: "all", song: "B", at: 10 });
     const radio = new Radio(deps());
@@ -556,11 +565,12 @@ describe("the iPhone output: the game's own Web Audio, no media element", () => 
     const ctx = context();
     let arrive!: (b: ArrayBuffer) => void;
     const out = new BufferOutput(() => ctx as any, () => new Promise((r) => { arrive = r; }));
-    const playing = out.play("a.mp3", 0);
+    const playing = out.play("a.mp3", 61);
     out.pause();
     arrive(new ArrayBuffer(8));
     expect(await playing).toBe(false);
     expect(ctx.sources).toHaveLength(0);
+    expect(out.position()).toBe(61); // the place it was asked to start from is kept
   });
 
   it("asks for a tap when the context isn't running, and stops when the system takes it", async () => {

@@ -414,10 +414,9 @@ export class Radio {
 
   save() {
     const s = this.state;
-    this.saved = {
-      ...this.saved, on: s.on, station: s.station, lyrics: s.lyrics,
-      song: this.cursor, at: s.song && s.song.id === this.cursor ? Math.floor(this.position()) : 0,
-    };
+    this.saved = { ...this.saved, on: s.on, station: s.station, lyrics: s.lyrics };
+    // before the list has arrived the radio doesn't know its place yet: what was remembered stays
+    if (s.ready) { this.saved.song = this.cursor; this.saved.at = s.song && s.song.id === this.cursor ? Math.floor(this.position()) : 0; }
     storeSaved(this.deps.storageKey, this.saved);
   }
 
