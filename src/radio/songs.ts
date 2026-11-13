@@ -45,6 +45,12 @@ export interface SongLine {
   /** each word's [start, end], and its text */
   w: [number, number][];
   wt: string[];
+  /** A bilingual song (the Spanish courses' collection b): the line is first sung in the learner's language, `lt`
+   *  word by word, then in the song's. This is that first singing: its start, end and each word's [start, end], one
+   *  per word of `lt`. `s`, `e` and `w` stay the second singing's. */
+  en?: { s: number; e: number; w?: [number, number][] };
+  /** set by the radio on a row it makes for that first singing (lyrics.ts withSungTranslations) */
+  part?: "translation";
 }
 
 export interface Song extends SongMeta { L: SongLine[] }

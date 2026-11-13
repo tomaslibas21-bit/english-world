@@ -7,7 +7,7 @@
 //      conversation, a voice clip, a microphone. Nothing here starts sound while a hold stands.
 //   2. Sound starts only from start(), and start() checks rule 1 last, right before the output plays.
 import { createStore, type StoreApi } from "zustand/vanilla";
-import { buildTimeline, type Timeline } from "./lyrics";
+import { buildTimeline, withSungTranslations, type Timeline } from "./lyrics";
 import { NeedsTap, type RadioOutput } from "./output";
 import { loadSaved, stationOrder, step, storeSaved, type RadioSaved, type Station } from "./playlist";
 import { readSongLines, readSongList, songAudioUrls, songDataUrls, type RadioConfig, type SongMeta } from "./songs";
@@ -450,7 +450,7 @@ export class Radio {
     const urls = songDataUrls(this.deps.config!, song.id, this.deps.token());
     const read = (i: number): Promise<unknown> => this.deps.fetchJson(urls[i]).catch((error) => { if (i + 1 < urls.length) return read(i + 1); throw error; });
     void read(0).then(
-      (data) => { const lines = readSongLines(data); return lines.length ? buildTimeline(lines) : null; },
+      (data) => { const lines = readSongLines(data); return lines.length ? buildTimeline(withSungTranslations(lines)) : null; },
       () => undefined, // not kept: asked for again the next time the song plays
     ).then((timeline) => {
       if (timeline === undefined) return;

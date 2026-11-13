@@ -14,9 +14,10 @@ The owner's brief (13 Nov 2026): a nice feel, easy to turn on and off, calm whil
   the plate for five seconds.
 - **Off looks off.** Switched off with the toolbar button (or R), an open set folds away too. The set's own knob
   turns the radio off without closing the set the learner is using.
-- **The station's name always shows in full.** It has the header's line to itself with the frequency under it, the
-  set's width follows the text size (A, A+, A++), and a long name ("Todas las canciones") takes two lines. On a phone
-  held sideways the dial window, and on the smallest the stations' second lines, give way so the set fits.
+- **The station's name always shows in full.** It has the header's line to itself: no frequency is written there (the
+  owner's call, 13 Nov; the dial and its needle say where the station is). The set's width follows the text size (A,
+  A+, A++), and a long name ("Todas las canciones") takes two lines. On a phone held sideways the dial window, and on
+  the smallest the stations' second lines, give way so the set fits.
 - **The radio set** opens from the plate (its small chevron says so) and folds away at a tap anywhere else. The very first time the radio is turned
   on it opens by itself, once (`introduced` in the saved state). It has an FM dial whose needle glides to the station
   (`freq` in `src/content/radio.ts`), the stations as preset buttons, the song, and five keys around the on-off knob.
@@ -57,7 +58,22 @@ The owner's brief (13 Nov 2026): a nice feel, easy to turn on and off, calm whil
 `src/content/radio.ts` lists them. A station is a name, its place on the dial, a line in the learner's language, a
 filter over the list and whether it starts shuffled. Maple Harbor has Maple FM (every song) and two genre stations
 that match words of the list's genre text, Soul & Funk and Sunny Side. A shuffle the learner turns off stays off when
-the station changes. The same file
+the station changes.
+
+**A shuffle is a fair mix** (`stationOrder` in `src/radio/playlist.ts`). Each of the course's kinds of song (the list's
+collections: grammar, vocabulary, situations, bilingual…) is shuffled by itself and then spread evenly through the
+whole order. A plain shuffle put two or more of Radio Colibrí's 8 bilingual songs among the first five in about one
+visit in ten; now any ten songs in a row hold the kinds in about the station's own proportions.
+
+## Bilingual songs
+
+The Spanish courses' bilingual songs (collection b) sing every line twice: first in the learner's language, then in
+Spanish. A line's data carries the first singing as `en` (start, end, a time for each word of `lt`). That singing is
+part of the song, not a gloss, so the lyric strip gives it a row of its own before the line, its words lit at their
+own times and nothing under them (`withSungTranslations` in `src/radio/lyrics.ts`), as the course's song player does
+(player-engine.ts, `englishPages`). Without a time for every word the row shows for the singing's length with no word
+lit. Checked against the course's player itself, run from a scratch copy with a stand-in recording: at the middle of
+every sung part of SB20, SB01 and SB13 (172 moments) both show the same part, the same words, in the same order. The same file
 says which course song each conversation is built on: walking into a place puts its song next, once per visit to the
 page.
 
@@ -95,7 +111,7 @@ allows it, and at the first tap where it asks for one.
 
 ## Checks
 
-- `tests/radio.test.ts`: the addresses, the lyric clocks, the order, storage, the power switch, the fades and dips,
-  every hold, the fallback address, the iPhone output.
+- `tests/radio.test.ts`: the addresses, the lyric clocks, bilingual lines, the order and its fair mix, storage, the
+  power switch, the fades and dips, every hold, the fallback address, the iPhone output.
 - `tests/browser/radio.mjs`: the real game in Chrome and WebKit, on a desktop and as an iPhone, with fixture songs. Its
   header says how to run it.

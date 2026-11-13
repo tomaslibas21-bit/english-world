@@ -19,6 +19,24 @@ export interface Timeline {
   to: number[];
 }
 
+/** A bilingual song's line is sung twice: first in the learner's language, then in the song's (`en` in the data).
+ *  The first singing is part of the song, not a gloss, so it gets a row of its own before the line, as in the
+ *  course's song player (player-engine.ts, englishPages): the words of `lt`, each lit at its own time. Where the
+ *  data has no time for every word, the row shows for the singing's length with no word lit. */
+export function withSungTranslations(lines: SongLine[]): SongLine[] {
+  const rows: SongLine[] = [];
+  for (const line of lines) {
+    const en = line.en;
+    const words = typeof line.lt === "string" ? line.lt.split(/\s+/).filter(Boolean) : [];
+    if (en && Number.isFinite(en.s) && Number.isFinite(en.e) && words.length) {
+      const timed = Array.isArray(en.w) && en.w.length === words.length;
+      rows.push({ s: en.s, e: en.e, src: line.lt, lt: "", u: words.map((w): [string, string, number] => [w, "", 1]), w: timed ? en.w! : [], wt: words, part: "translation" });
+    }
+    rows.push(line);
+  }
+  return rows;
+}
+
 export function buildTimeline(lines: SongLine[]): Timeline {
   const n = lines.length, from = new Array<number>(n), to = new Array<number>(n);
   for (let i = 0; i < n; i++) from[i] = i === 0 ? lines[0].s - 1.05 : Math.max(lines[i].s - PRE, from[i - 1] + D);
