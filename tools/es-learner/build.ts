@@ -68,6 +68,7 @@ for (const f of files.sort()) {
       if (w.esPl && lt.ltPl && units(lt.ltPl) !== units(w.esPl)) errors.push(`entity plural units: ${w.key} ${lt.ltPl}`);
       for (const u of lt.lt.split(" | ")) { const n = u.split("/").length; if (n !== 1 && n !== 6) errors.push(`a unit needs 1 or 6 forms: ${w.key} "${u}"`); }
       for (const k of Object.keys(w.fields ?? {})) if (lt[k] === undefined && k !== "lt" && k !== "nat" && k !== "natPl") (/^(neutral|spain)Lt/.test(k) ? errors : warns).push(`entity ${w.key}: no ${k}`);
+      if (lt.ltF && lt.nat && !lt.natF) errors.push(`entity ${w.key}: has ltF and nat, so it needs natF (the feminine natural name, six cases)`);
       if (w.esPl && !lt.ltPl) errors.push(`entity ${w.key}: no ltPl (the Spanish has a plural)`);
       // a chip shows the natural name's nominative; a gloss joined in Spanish order ("maistas jukatanietiškas") never
       if (units(lt.lt) > 1 && !lt.nat) errors.push(`entity ${w.key}: a gloss of ${units(lt.lt)} units needs nat (six case forms of the natural name; the chip shows its nominative)`);

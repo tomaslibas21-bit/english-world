@@ -25,7 +25,7 @@ export interface LearnerItem {
 /** The translation of a sentence. */
 export interface SentLt { gloss: string; nat: string; flags?: Record<string, string> }
 /** The translation of an entity: Lithuanian case forms per unit ("latė/latės/latei/latę/late/latėje"), gender. */
-export interface EntityLt { lt: string; ltPl?: string; ltF?: string; ltPlF?: string; g: "m" | "f"; gF?: "m" | "f"; nat?: string; natPl?: string; neutralLt?: string; neutralLtPl?: string; spainLt?: string; spainLtPl?: string }
+export interface EntityLt { lt: string; ltPl?: string; ltF?: string; ltPlF?: string; g: "m" | "f"; gF?: "m" | "f"; nat?: string; natPl?: string; natF?: string; natPlF?: string; neutralLt?: string; neutralLtPl?: string; spainLt?: string; spainLtPl?: string }
 /** A conversation's table (src/editions/es-lt/tables/<sit>.json). */
 export interface LearnerTable { sent: Record<string, SentLt>; entity: Record<string, EntityLt>; text: Record<string, string> }
 
@@ -56,7 +56,7 @@ function walk(o: any, where: string, v: Visit, seen: WeakSet<object>) {
 const ENTITY_FIELDS = ["lt", "ltPl", "ltF", "ltPlF"] as const;
 /** Learner text in an entity's attrs: its natural name, and the gloss of the neutral / Spain noun where that noun has
  *  other units than the Mexican one ("cuenta | corriente" for "cuenta | de | débito"). */
-const ATTR_FIELDS = ["nat", "natPl", "neutralLt", "neutralLtPl", "spainLt", "spainLtPl"] as const;
+const ATTR_FIELDS = ["nat", "natPl", "natF", "natPlF", "neutralLt", "neutralLtPl", "spainLt", "spainLtPl"] as const;
 
 /** Every piece of learner text in a conversation (or any content object), deduplicated. */
 export function learnerItems(def: any): LearnerItem[] {

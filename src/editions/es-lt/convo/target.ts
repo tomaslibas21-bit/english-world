@@ -8,6 +8,7 @@ import { agree, caseIndex, parseForms, type Case, type Gender } from "@/convo/lt
 import type { EntityLookup, NpBinding } from "@/convo/compose";
 import { ltCount } from "@/ui/lt-lithuanian";
 import * as ES from "@/convo/target";
+import { TABLES } from "../tables/tables.gen";
 
 // everything else is the Spanish edition's (its own names too: pluralEs, agreeEs, neutralNoun); the declarations
 // below take precedence over these
@@ -77,7 +78,8 @@ export function npUnits(b: NpBinding, kind: "np" | "the" | "pl" | "bare" | "head
   // natural Lithuanian: one-word modifiers before the noun, phrases after it; the entity's natural name if it has one
   const adj = mods.filter((m) => splitUnitsLt(m.lt).length === 1).flatMap(modForms);
   const phrases = mods.filter((m) => splitUnitsLt(m.lt).length > 1).map((m) => modForms(m).join(" "));
-  const natSpec = (plural ? e.attrs?.natPl : e.attrs?.nat) as string | undefined;
+  const femNat = fem && base.ltF ? ((plural ? e.attrs?.natPlF : e.attrs?.natF) as string | undefined) : undefined;
+  const natSpec = femNat ?? ((plural ? e.attrs?.natPl : e.attrs?.nat) as string | undefined);
   const natHead = natSpec ? parseForms(natSpec)[caseIndex(cs)] : headForms.filter((x) => x !== "—").join(" ");
   const natLt = [...(nArt && qty > 1 ? [lt[0]] : []), ...adj, natHead, ...phrases];
   return { en: sp.en, lt, natLt, flags };
@@ -91,9 +93,22 @@ export function priceLt(cents: number): string {
   return c ? `${n},${String(c).padStart(2, "0")} peso` : `${n} ${ltCount(d, "pesas", "pesai", "pesų")}`;
 }
 
+/** Every Lithuanian text the tables have, by its English (a value a handler builds at run time: s80's weekday
+ *  {en: "el jueves", lt: "Thursday"}); the conversations' own first, then the town-wide one. */
+let VALUE_TEXT: Map<string, string> | null = null;
+function valueText(en: string): string | undefined {
+  if (!VALUE_TEXT) {
+    VALUE_TEXT = new Map();
+    for (const [id, t] of Object.entries(TABLES)) if (id !== "_shared") for (const [k, v] of Object.entries(t.text)) if (!VALUE_TEXT.has(k)) VALUE_TEXT.set(k, v);
+    for (const [k, v] of Object.entries(TABLES._shared?.text ?? {})) if (!VALUE_TEXT.has(k)) VALUE_TEXT.set(k, v);
+  }
+  return VALUE_TEXT.get(en);
+}
+
 /** A value in the Spanish text, the Lithuanian gloss and the spoken Spanish. */
 export function valueDisplay(kind: string, v: any): { en: string; lt: string; say: string } {
   const r = ES.valueDisplay(kind, v);
+  if (v && typeof v === "object" && typeof v.lt === "string") return { ...r, lt: valueText(v.lt) ?? r.lt };
   if (v != null && (kind === "price" || kind === "total" || kind === "amount" || kind === "fare" || kind === "rent" || kind === "deposit")) return { ...r, lt: priceLt(v) };
   return r;
 }

@@ -51,6 +51,8 @@ English, and `flags` the notes on units (by unit index). Write `lt` as an object
   the whole phrase in its six cases: "hibiskų gėrimas/hibiskų gėrimo/hibiskų gėrimui/hibiskų gėrimą/hibiskų
   gėrimu/hibiskų gėrime". **Every entity whose `lt` has more than one unit needs it**: the answer chips show its
   nominative („vietinis maistas“, „itališkas maistas“), never the gloss joined in Spanish order.
+- `natF`/`natPlF`: an entity with `ltF` (a job: guía de turistas) and a `nat` gets the feminine natural name too, six
+  cases ("turistų gidė/…"): a woman learner's chip shows it.
 - `neutralLt`/`spainLt` (and their `…Pl`): when the item's `fields` has them, the gloss of the neutral or Spain noun,
   which has other units than the Mexican one ("cuenta | corriente"): case forms per unit, as `lt`.
 - `g` is the Lithuanian gender of the head noun.

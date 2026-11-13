@@ -5,15 +5,16 @@ import { variety } from "../convo/compose";
 
 /** An entity's natural name in the learner's language (`attrs.nat`), in the nominative: Puerto Colibrí for Lithuanians
  *  gives it as six case forms ("vietinis maistas/vietinio maisto/…"). */
-function natName(e: EntityDef): string | undefined {
-  const nat = e.attrs?.nat;
+function natName(e: EntityDef, fem = false): string | undefined {
+  const nat = (fem && e.ltF && e.attrs?.natF) || e.attrs?.nat;
   if (typeof nat !== "string" || !nat) return undefined;
   const forms = nat.split("/");
   return forms.length === 6 ? forms[0].trim() : nat;
 }
 
 export function chipLabel(e: EntityDef, fem = false): string {
-  if (fem && e.ltF) return e.ltF.split(" | ").map((p) => p.split("/")[0]).join(" ");
+  // a woman learner's job: its feminine natural name (attrs.natF), else its feminine forms
+  if (fem && e.ltF) return natName(e, true) && e.attrs?.natF ? natName(e, true)! : e.ltF.split(" | ").map((p) => p.split("/")[0]).join(" ");
   // the Spanish edition's neutral or Spain text: the entity's own word there (attrs.neutralChip / spainChip, else its
   // neutral / Spain noun), so a learner who chose España sees "pequeña", "coche" on the chips
   const a = e.attrs as Record<string, unknown> | undefined, v = variety();
