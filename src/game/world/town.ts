@@ -2503,7 +2503,8 @@ function addTransport(M: Merger, col: Colliders, group: THREE.Group, r: () => nu
   }
   // the station's name on the canopy's front, where the street sees it (the canopy hides the shop's sign behind it from
   // the street); see-through for the walking camera with the canopy (its name: buildTown, userData.thin)
-  const gasName = BUILDINGS.find((b) => b.id === "gas")?.sign;
+  // (this edition's name for it: themed, as the building's own sign)
+  const gasDef = BUILDINGS.find((b) => b.id === "gas"), gasName = gasDef && themed(gasDef).sign;
   if (gasName) {
     const gs = new THREE.Mesh(new THREE.PlaneGeometry(7, 0.58), new THREE.MeshBasicMaterial({ map: textTexture(gasName, { bg: "#f4f4f4", fg: "#d94b3d", w: 1024, h: 85 }), alphaTest: 0.5, toneMapped: false }));
     gs.name = "gas-canopy-sign";
