@@ -716,7 +716,8 @@ export const cafe: SituationDef = {
       t("¡Buen provecho!", "Enjoy your meal!", "Enjoy!",
         { spain: t("¡Que aproveche!", "Enjoy your meal!", "Enjoy!") }),
       t("¡Que | tenga | buen día!", "(I hope) | you have | a good day!", "Have a great day!",
-        { spain: t("¡Que | tengas | un | buen día!", "(I hope) | you have | a | good day!", "Have a great day!") }),
+        { neutral: t("¡Que | tenga | un | buen día!", "(I hope) | you have | a | good day!", "Have a great day!"),
+          spain: t("¡Que | tengas | un | buen día!", "(I hope) | you have | a | good day!", "Have a great day!") }),
     ],
     menu_line: [
       t("Tenemos | café, | té, | chocolate | y | pan dulce.", "We have | coffee, | tea, | hot chocolate | and | sweet bread.", "We have coffee, tea, hot chocolate and Mexican pastries."),
