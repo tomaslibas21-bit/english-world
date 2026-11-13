@@ -84,7 +84,9 @@ export const GLOBAL_LINES: Record<string, SentSrc[]> = {
     t("¡Hasta luego! | ¡Que | {u:le|t:te} | vaya | bien!", "See you later! | (I hope) | (for) you | it-goes | well!", "See you! All the best!"),
   ],
   g_bye_day: [
-    t("¡Adiós! | ¡Que | {u:tenga|t:tengas} | buen día!", "Bye! | (I hope) | you have | a good day!", "Bye! Have a good day!"),
+    // Spain says it with "un" (without it, it sounds Latin American there)
+    t("¡Adiós! | ¡Que | {u:tenga|t:tengas} | buen día!", "Bye! | (I hope) | you have | a good day!", "Bye! Have a good day!",
+      { spain: t("¡Adiós! | ¡Que | {u:tenga|t:tengas} | un | buen día!", "Bye! | (I hope) | you have | a | good day!", "Bye! Have a good day!") }),
   ],
   g_bye_afternoon: [
     t("¡Adiós! | ¡Que | {u:tenga|t:tengas} | buena tarde!", "Bye! | (I hope) | you have | a good afternoon!", "Bye! Have a good afternoon!"),
@@ -237,6 +239,8 @@ export const GLOBAL_INTENTS: Record<string, { patterns: string[] }> = {
   g_bye: { patterns: [
     "(adios | hasta luego | nos vemos | hasta pronto | hasta manana | bye | chao | hasta la proxima) #h:s_bye2",
     "que (tenga | tengas) (buen dia | un buen dia | buena tarde | buenas tardes | buena noche | buen fin de semana | bonito dia) #h:s_bye",
+    // with "un" or without it, in every Spanish (Spain says "un buen día"), and the plural and "pasar" forms
+    "que (tengan | tengais | pase | pases | pasen | paseis) (buen dia | un buen dia | una buena tarde | buena tarde | buen fin de semana | un buen fin de semana)",
     "que (le | te) vaya [muy] bien", "que (este | estes) [muy] bien", "que (descanse | descanses)",
     "(igualmente | usted tambien | tu tambien)",
     "(cuidese | cuidate) [mucho]",
@@ -524,7 +528,8 @@ export const GLOBAL_HINTS: Record<string, HintGroup> = {
     items: [
       { id: "s_thanks", s: t("¡Muchas | gracias!", "Many | thanks!", "Thank you very much!") },
       { id: "s_thanks_help", s: t("¡Gracias | por | {u:su|t:tu} | ayuda!", "Thanks | for | your | help!", "Thanks for your help!") },
-      { id: "s_bye", s: t("¡Que | {u:tenga|t:tengas} | buen día!", "(I hope) | you have | a good day!", "Have a nice day!") },
+      { id: "s_bye", s: t("¡Que | {u:tenga|t:tengas} | buen día!", "(I hope) | you have | a good day!", "Have a nice day!",
+        { spain: t("¡Que | {u:tenga|t:tengas} | un | buen día!", "(I hope) | you have | a | good day!", "Have a nice day!") }) },
       { id: "s_bye2", s: t("¡Adiós!", "Goodbye!", "Goodbye!") },
       { id: "s_hello", s: t("¡Hola! | ¿Cómo | {u:está|t:estás}?", "Hi! | How | are you?", "Hi! How are you?") },
     ],
