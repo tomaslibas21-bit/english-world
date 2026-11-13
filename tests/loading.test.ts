@@ -22,6 +22,11 @@ describe("the loading screen", () => {
     expect(() => loadingScreen("x", LOADING_ART).transformIndexHtml("<html></html>")).toThrow();
   });
 
+  it("is Maple Harbor's: the lighthouse, not the other town's hummingbird", () => {
+    expect(LOADING_ART).toContain("mh-beam");
+    expect(LOADING_ART).not.toContain("pc-");
+  });
+
   it("the logo is a picture, a wordmark and the flags, with nothing to fetch or run", () => {
     for (const part of ["ew-logo-art", "ew-logo-word", "ew-logo-hint", "ew-flag"]) expect(LOADING_ART).toContain(part);
     expect(LOADING_ART).not.toMatch(/<script|<img|<image|url\(\s*['"]?(?!#)|<use[^>]+href="(?!#)|<text|font-family/);

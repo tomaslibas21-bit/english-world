@@ -30,13 +30,7 @@ export const LOADING_ART = `<style>
 @keyframes mh-leafin { from { opacity: 0; transform: translate(14px, -34px) rotate(-30deg); } 35% { opacity: 1; } to { opacity: 1; transform: none; } }
 .mh-leaf { transform-origin: 0 16px; animation: mh-leaf 3.4s ease-in-out infinite alternate; animation-delay: calc(var(--ew-t, 0s) - 1.7s); }
 @keyframes mh-leaf { from { transform: rotate(-7deg); } to { transform: rotate(6deg); } }
-
-@media (prefers-reduced-motion: reduce) {
-  .ew-logo *, .ew-logo { animation: none !important; }
-  .ew-flag { opacity: 0.9; }
-  .pc-wing-near { transform: rotate(8deg); } .pc-wing-far { transform: rotate(34deg); }
-  .mh-fall { opacity: 0; }
-}
+@media (prefers-reduced-motion: reduce) { .mh-beam { opacity: 0.6; } }
 </style>
 <svg class="ew-logo-art" viewBox="0 0 220 170" aria-hidden="true">
   <defs>
