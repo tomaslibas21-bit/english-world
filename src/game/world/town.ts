@@ -704,7 +704,8 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     const banner = textTexture("The Colors of the Night", { bg: "#2b2d6e", fg: "#ffd166", w: 256, h: 512, lines: 4 });
     for (const s of [-1, 1]) {
       const bm = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 3.2), new THREE.MeshBasicMaterial({ map: banner }));
-      bm.position.set(dx + t[0] * s * 9.5 + n[0] * 0.1, 5.2, dz + t[1] * s * 9.5 + n[1] * 0.1);
+      // (hung clear of the upper windows' sills, which crossed its words)
+      bm.position.set(dx + t[0] * s * 9.5 + n[0] * 0.2, 5.2, dz + t[1] * s * 9.5 + n[1] * 0.2);
       bm.rotation.y = rotY;
       group.add(bm);
     }
