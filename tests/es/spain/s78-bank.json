@@ -3,6 +3,8 @@
   {"ctx": "help", "say": "Quiero sacar dinero", "intent": "withdraw"},
   {"ctx": "help", "say": "¿A cuánto está el dólar?", "intent": "rate_q"},
   {"ctx": "acct_type", "say": "De débito, por favor", "intent": "acct_type_ans", "slots": {"acct": "checking"}},
+  {"ctx": "acct_type", "say": "Corriente, por favor", "intent": "acct_type_ans", "slots": {"acct": "checking"}},
+  {"ctx": "acct_type", "say": "Una cuenta corriente y una de ahorro", "intent": "both_ctx"},
   {"ctx": "id", "say": "Aquí tiene mi pasaporte", "intent": "show_doc", "slots": {"doc": "passport"}},
   {"ctx": "id", "say": "Tengo el carné de conducir", "intent": "show_doc", "slots": {"doc": "license"}},
   {"ctx": "proof", "say": "Aquí tiene mi contrato de alquiler", "intent": "give_proof", "slots": {"proof": "lease"}},

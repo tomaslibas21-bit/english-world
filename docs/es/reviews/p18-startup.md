@@ -130,3 +130,12 @@ Found and fixed: "¡Listo!" left in close_q (→ "¡Perfecto!"); "clientes enoja
 Kept on purpose: the song's idioms ("todo está en chino", "la pelota está en tu cancha", "dale con todo") — they are what the conversation teaches; Spain would say "me suena a chino" / "la pelota está en tu tejado". mean_chamba's "Así le decimos en México" (its English says "we", and the twin keeps the English).
 Spain corpus +1 ("¿Qué caja?").
 Gates: tsc clean; check-content Mexican, neutral and Spain 0 errors, 0 warnings; corpus 233/233 0/32; held-out 39/40 (the known goodbye miss); Spain 21/21 0/1; vitest es 178/178.
+
+## Lead's wording calls (13 Nov 2026)
+
+- Neutral and Spain: "estar en chino" → the pan-Hispanic "sonar a chino" (hello_q ×2, mean_chino[1], the hint finding.chino:
+  "Sí, todo me suena a chino."; flag F_CHINO_N). México unchanged.
+- Spain only: "la pelota está en tu cancha" → "la pelota está en tu tejado" (crash_3, ball_back_react, mean_cancha[1]: "Es como
+  un juego: yo te lanzo la pelota a tu tejado."; flag F_TEJADO). Neutral keeps cancha.
+- Every form is understood in every set: the idiom and echo forms, IDIOM_WORDS (tejado), the finding pattern ("me suena a
+  chino"), ball_back ("en tu tejado"). NLU tests +8, Spain corpus +4.

@@ -29,8 +29,10 @@ import { expectHowAreYou } from "@/content/global";
 const ACCTS: EntityDef[] = [
   ent("checking", "cuenta | de | débito", "account | of | debit", "f", { pl: "cuentas | de | débito", ltPl: "accounts | of | debit", chip: "cuenta de débito",
     forms: ["cuenta de debito", "de debito", "debito", "la de debito", "una de debito", "cuenta debito", "cuenta corriente", "corriente", "cuenta de cheques", "de cheques",
-      "cuenta normal", "la normal", "una normal", "cuenta basica", "la basica", "una basica", "cuenta de nomina", "de nomina", "la de nomina", "cuenta para el dia a dia"],
-    attrs: { nat: "checking account" } }),
+      "cuenta normal", "la normal", "una normal", "cuenta basica", "la basica", "una basica", "cuenta de nomina", "de nomina", "la de nomina", "cuenta para el dia a dia", "la corriente", "una corriente", "la cuenta corriente", "una cuenta corriente"],
+    // the neutral and Spain word (Mexico says cuenta de débito): its own gloss, two units
+    attrs: { nat: "checking account", natPl: "checking accounts", neutral: "cuenta | corriente", neutralPl: "cuentas | corrientes", neutralLt: "account | checking", neutralLtPl: "accounts | checking",
+      neutralChip: "cuenta corriente" } }),
   ent("savings", "cuenta | de | ahorro", "account | of | savings", "f", { pl: "cuentas | de | ahorro", ltPl: "accounts | of | savings", chip: "cuenta de ahorro",
     forms: ["cuenta de ahorro", "cuenta de ahorros", "de ahorro", "de ahorros", "ahorro", "ahorros", "la de ahorro", "una de ahorro", "la de ahorros", "cuenta de inversion", "de inversion"],
     attrs: { nat: "savings account" } }),
@@ -508,7 +510,7 @@ export const bank: SituationDef = {
       "(quiero | quisiera | me gustaria | queremos) (ser | hacerme) cliente [del banco | de este banco | de su banco | de ustedes]",
       "(me puede | me podria | puede | podria) (abrir | ayudar a abrir) @acct_np", "(me puedes | puedes) (abrir | ayudar a abrir) @acct_np #tip:tu_staff",
       "me interesa (abrir @acct_np | una cuenta | {acct})", "(busco | estoy buscando) @acct_np",
-      "(quiero | quisiera | necesito) abrir (una cuenta de debito y una de ahorro | las dos | ambas) #both",
+      "(quiero | quisiera | necesito) abrir (una cuenta de debito y una de ahorro | una cuenta corriente y una de ahorro | una corriente y una de ahorro | las dos | ambas) #both",
       "que (necesito | se necesita | ocupo | hace falta | me piden | piden) para abrir @acct_np #needq", "(cuales son los | que) requisitos (para abrir @acct_np | hay | piden | necesito) #needq",
       "(quiero | quisiera | necesito) una tarjeta de debito",
       "mi (empresa | jefe | trabajo | patron) (necesita | me pide | quiere) (una cuenta | mi cuenta | mi clabe | mi numero de cuenta)",
@@ -595,10 +597,12 @@ export const bank: SituationDef = {
       "[es] para recibir mi (sueldo | nomina | salario | pago) #chk", "la que (tiene | trae | viene con) tarjeta #chk", "la que (da | paga | genera) (intereses | interes | rendimiento) #sav", "[es] para ahorrar [dinero] #sav", "(quiero | necesito) ahorrar [dinero] #sav", "para guardar (dinero | mi dinero) #sav",
       "(quiero | quisiera) (las dos | ambas) #both",
     ] },
-    // "La primera" / "La segunda" to "¿de débito o de ahorro?" (every list says débito first)
+    // "La primera" / "La segunda" to "¿de débito o de ahorro?" (every list says débito / corriente first)
     which_ctx: { patterns: ["(la | el) (primera | primero) [opcion]", "(la | el) (segunda | segundo) [opcion] #sav"] },
     // "Las dos" / "Ambas": only where an account is being chosen
-    both_ctx: { patterns: ["(las dos | ambas | los dos | una de cada una | una de cada) #h:type_both", "(de debito y de ahorro | debito y ahorro)"] },
+    both_ctx: { patterns: ["(las dos | ambas | los dos | una de cada una | una de cada) #h:type_both", "(de debito y de ahorro | debito y ahorro | corriente y de ahorro | corriente y ahorro)",
+      // "Una cuenta corriente y una de ahorro" is both (it was read as two answers, the last one winning)
+      "[una] [cuenta] (de debito | corriente) y (una | otra) [cuenta] de (ahorro | ahorros)"] },
     acct_type_not: { patterns: [
       "no (quiero | necesito) [una | la] {acct} [por ahora | todavia | gracias]", "[la] {acct} no [gracias]", "sin {acct}",
     ] },
@@ -731,7 +735,7 @@ export const bank: SituationDef = {
     fee_q: { patterns: [
       "(hay | tiene | cobran) (comision | comisiones) (mensual | mensuales | por manejo de cuenta | cada mes | al mes) #h:q_fee", "cuanto (cuesta | cobran por) (la cuenta | tener la cuenta) [al mes]",
       "(es | la cuenta es) gratis", "(tengo que | hay que) pagar (algo | cada mes | al mes)", "(cuales son | que) (las comisiones | comisiones) [hay | tiene | cobran]",
-      "(cobran | cobra) algo (por la cuenta | al mes | cada mes)", "(la cuenta | la de debito | la de ahorro) tiene comision",
+      "(cobran | cobra) algo (por la cuenta | al mes | cada mes)", "(la cuenta | la de debito | la corriente | la cuenta corriente | la de ahorro) tiene comision",
     ] },
     minbal_q: { patterns: [
       "(hay | tiene) [un] saldo minimo", "cual es el saldo minimo", "cuanto (tengo que | hay que | debo) (tener | dejar | mantener) en la cuenta", "(hay | tiene) [un] saldo promedio",
@@ -913,25 +917,37 @@ export const bank: SituationDef = {
     ask_type: [
       t("¡Claro! | ¿Qué | tipo | de | cuenta | busca: | de | débito | o | de | ahorro?", "Sure! | What | kind | of | account | are you looking for: | — | debit | or | — | savings?",
         "Sure! What kind of account are you looking for: checking or savings?",
-        { flags: { 7: "de débito: a debit account, the everyday account with a debit card (a checking account).", 9: "de: of; cuenta de ahorro is a savings account." } }),
+        { flags: { 7: "de débito: a debit account, the everyday account with a debit card (a checking account).", 9: "de: of; cuenta de ahorro is a savings account." },
+          neutral: t("¡Claro! | ¿Qué | tipo | de | cuenta | busca: | corriente | o | de | ahorro?", "Sure! | What | kind | of | account | are you looking for: | checking | or | — | savings?",
+            "Sure! What kind of account are you looking for: checking or savings?",
+            { flags: { 6: "corriente: a checking account, the everyday account with a debit card.", 8: "de: of; cuenta de ahorro is a savings account." } }) }),
       t("Con gusto. | ¿La | quiere | de | débito | o | de | ahorro?", "Gladly. | It | do you want | — | debit | or | — | savings?", "Of course. Would you like checking or savings?",
-        { flags: { 1: "la: it, the object pronoun for la cuenta (not an article).", 3: "de débito: a debit account, the everyday account (a checking account).", 6: "de: of; de ahorro is a savings account." }, spain: t("Por supuesto. | ¿La | quiere | de | débito | o | de | ahorro?", "Of course. | It | do you want | — | debit | or | — | savings?", "Of course. Would you like checking or savings?", { flags: { 1: "la: it, the object pronoun for la cuenta (not an article).", 3: "de débito: a debit account, the everyday account (a checking account).", 6: "de: of; de ahorro is a savings account." } }) }),
+        { flags: { 1: "la: it, the object pronoun for la cuenta (not an article).", 3: "de débito: a debit account, the everyday account (a checking account).", 6: "de: of; de ahorro is a savings account." },
+          neutral: t("Con gusto. | ¿La | quiere | corriente | o | de | ahorro?", "Gladly. | It | do you want | checking | or | — | savings?", "Of course. Would you like checking or savings?",
+            { flags: { 1: "la: it, the object pronoun for la cuenta (not an article).", 3: "corriente: a checking account, the everyday account with a debit card.", 5: "de: of; de ahorro is a savings account." } }),
+          spain: t("Por supuesto. | ¿La | quiere | corriente | o | de | ahorro?", "Of course. | It | do you want | checking | or | — | savings?", "Of course. Would you like checking or savings?", { flags: { 1: "la: it, the object pronoun for la cuenta (not an article).", 3: "corriente: a checking account, the everyday account with a debit card.", 5: "de: of; de ahorro is a savings account." } }) }),
     ],
     ask_type_again: [
-      t("Entonces, | ¿de | débito | o | de | ahorro?", "So, | — | debit | or | — | savings?", "So, checking or savings?", { flags: { 1: "de: of; English says just checking or savings." } }),
+      t("Entonces, | ¿de | débito | o | de | ahorro?", "So, | — | debit | or | — | savings?", "So, checking or savings?", { flags: { 1: "de: of; English says just checking or savings." },
+        neutral: t("Entonces, | ¿corriente | o | de | ahorro?", "So, | checking | or | — | savings?", "So, checking or savings?", { flags: { 3: "de: of; English says just savings." } }) }),
       t("¿Cuál | le gustaría?", "Which one | would you like?", "Which one would you like?"),
     ],
     explain_types: [
       t("La | cuenta | de | débito | es | para | el | día a día, | y | viene | con | tarjeta | de | débito.",
         "The | account | of | debit | is | for | the | day-to-day, | and | it comes | with | a card | of | debit.",
-        "A checking account is for everyday spending, and it comes with a debit card."),
+        "A checking account is for everyday spending, and it comes with a debit card.",
+        { neutral: t("La | cuenta | corriente | es | para | el | día a día, | y | viene | con | tarjeta | de | débito.",
+          "The | account | checking | is | for | the | day-to-day, | and | it comes | with | a card | of | debit.",
+          "A checking account is for everyday spending, and it comes with a debit card.") }),
     ],
     explain_savings: [
       t("La | cuenta | de | ahorro | le | da | intereses.", "The | account | of | savings | (to) you | gives | interest.", "A savings account earns you interest."),
     ],
     recommend_both: [
       t("La mayoría | empieza | con | la | de | débito. | Muchos | abren | las | dos.", "Most people | start | with | the | — | debit one. | Many | open | the | two.",
-        "Most people start with checking. Many open both.", { flags: { 4: "la de débito: the debit one (la cuenta is understood)." } }),
+        "Most people start with checking. Many open both.", { flags: { 4: "la de débito: the debit one (la cuenta is understood)." },
+          neutral: t("La mayoría | empieza | con | la | corriente. | Muchos | abren | las | dos.", "Most people | start | with | the | checking one. | Many | open | the | two.",
+            "Most people start with checking. Many open both.", { flags: { 4: "la corriente: the checking one (la cuenta is understood)." } }) }),
     ],
     ack_type: [
       t("Muy | buena | opción.", "Very | good | choice.", "Great choice."),
@@ -939,10 +955,14 @@ export const bank: SituationDef = {
       t("Muy | bien.", "Very | good.", "Sounds good."),
     ],
     type_which: [t("Perdón, | ¿cuál | de | las | dos: | de | débito | o | de | ahorro?", "Sorry, | which | of | the | two: | — | debit | or | — | savings?",
-      "Sorry, which one: checking or savings?", { flags: { 5: "de: of; English says just checking or savings." } })],
+      "Sorry, which one: checking or savings?", { flags: { 5: "de: of; English says just checking or savings." },
+        neutral: t("Perdón, | ¿cuál | de | las | dos: | corriente | o | de | ahorro?", "Sorry, | which | of | the | two: | checking | or | — | savings?",
+          "Sorry, which one: checking or savings?", { flags: { 7: "de: of; English says just savings." } }) })],
     ack_both: [t("Perfecto, | abrimos | las | dos.", "Perfect, | we'll-open | the | two.", "Great, we'll open both.")],
     ack_not_type: [t("Bueno, | entonces | solo | la | de | débito.", "Okay, | then | only | the | — | debit one.", "Okay, just checking then.",
-      { flags: { 4: "la de débito: the debit one (la cuenta is understood)." } })],
+      { flags: { 4: "la de débito: the debit one (la cuenta is understood)." },
+        neutral: t("Bueno, | entonces | solo | la | corriente.", "Okay, | then | only | the | checking one.", "Okay, just checking then.",
+          { flags: { 4: "la corriente: the checking one (la cuenta is understood)." } }) })],
     ack_not_type_s: [t("Bueno, | entonces | la | de | ahorro.", "Okay, | then | the | — | savings one.", "Okay, savings then.",
       { flags: { 3: "la de ahorro: the savings one (la cuenta is understood)." } })],
 
@@ -1627,7 +1647,7 @@ export const bank: SituationDef = {
       if (!customer(c)) c.s.newcomer = true;
       if (c.s.opening || customer(c)) { if (c.step === "proof") bank.handlers.no_proof(c, {}, { intent: "no_proof", slots: {}, tags: [] }); return; }
       // "Me acabo de mudar y necesito una cuenta": the request itself follows, so Ricardo doesn't offer it
-      if (/\b(abrir|cuenta|debito|ahorro)\b/.test(words(c))) return;
+      if (/\b(abrir|cuenta|debito|corriente|ahorro)\b/.test(words(c))) return;
       c.say("welcome_town");
       c.expect(openOffer());
     },
@@ -1897,7 +1917,7 @@ export const bank: SituationDef = {
       c.s.topic = c.s.topic || "account";
       // "¿Es gratis?" / "¿Tengo que pagar algo?" is about what is on the table (it got the account's fees at the app's
       // offer); "¿Hay comisión mensual?" names the account
-      const bare = !/\b(cuenta|cuentas|comision|comisiones|mes|mensual|mensuales|manejo|debito|ahorro)\b/.test(words(c));
+      const bare = !/\b(cuenta|cuentas|comision|comisiones|mes|mensual|mensuales|manejo|debito|corriente|ahorro)\b/.test(words(c));
       if (c.step === "savings") { c.say("savings_fee"); return; }
       if (bare && c.step === "app") { c.say("app_info"); return; }
       if (bare && c.step !== "deposit" && !opening(c) && ["transfer", "exchange", "card", "cash"].includes(c.s.topic)) { bank.handlers.cost_q(c, slots, seg); return; }
@@ -2129,6 +2149,14 @@ export const bank: SituationDef = {
     { say: "¿Cuántos pesos son doscientos dólares?", intent: "rate_q", step: "euros", not: ["euro_amount", "euro_ctx"] },
     // Spain forms are correct, with no dialect correction.
     { say: "Quiero abrir una cuenta corriente", intent: "open_account", slots: { acct: "checking" } },
+    // cuenta corriente: the neutral and Spain word (13 Nov 2026), understood in every set
+    { say: "Corriente, por favor", intent: "acct_type_ans", step: "acct_type", slots: { acct: "checking" } },
+    { say: "La cuenta corriente", intent: "acct_type_ans", step: "acct_type", slots: { acct: "checking" } },
+    { say: "Corriente y de ahorro", intent: "both_ctx", step: "acct_type" },
+    { say: "Una cuenta corriente y una de ahorro", intent: "both_ctx", step: "acct_type" },
+    { say: "Una cuenta de débito y una de ahorro", intent: "both_ctx", step: "acct_type" },
+    { say: "Corriente, no de ahorro", intent: "acct_type_ans", step: "acct_type", slots: { acct: "checking" }, not: ["acct_type_not"] },
+    { say: "No quiero cuenta corriente", intent: "acct_type_not", step: "acct_type", not: ["acct_type_ans"] },
     { say: "Voy a ingresar mil pesos", intent: "deposit_ans", step: "deposit", slots: { price: 100000 } },
     { say: "¿Tenéis aplicación?", intent: "app_q" },
     { say: "Vale, eso es todo", intent: "more_no", step: "more" },

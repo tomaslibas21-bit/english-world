@@ -118,3 +118,9 @@ time-question order, "wait a few minutes" and plan-question bugs (EN-FIXES-LEADS
 - Checked (fresh reviewer): every twin against its Mexican line (meaning, facts, prices, names), Peninsular wording, the perfect for today's events, tú/usted and vosotros by STYLE.md, glosses, spelling and ¿¡, the Spain transcripts (`--variety=spain --verbose`, untwinned lines read through their neutral fallback) and tests/es/spain.
 - Found: nothing to change (¿Diga?, atasco, se me ha averiado el coche, he perdido el autobús, tercera planta, conduzca con cuidado, usted to the boss).
 - Fixed: nothing. Note: "Buenos días, ingeniero, soy…" keeps the Mexican title (STYLE.md: titles as Mexicans use them); a Spaniard at home would say señor Montes.
+
+## Lead's wording call (13 Nov 2026)
+
+Spain: the learner's "ingeniero" → "señor Montes" in the hints (identify.id_habla ×2, late.running_late: "Buenos días, señor
+Montes, soy…", "Señor Montes, soy…", "Perdón, señor Montes, pero voy tarde."). México and neutral keep ingeniero. "Señor" and
+"señor Montes" are understood in every set (@mh), alone as a greeting too. NLU tests +6, Spain corpus +2.
