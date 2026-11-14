@@ -4,7 +4,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useStore } from "../state/store";
 import { RADIO_NAME, RADIO_SKIN, STATIONS } from "../content/radio";
-import type { Station } from "../radio/playlist";
+import { notedLineAt } from "../radio/extras";
+import { LYRIC_SIZES, type Station } from "../radio/playlist";
 import { bindRadio, radio, useRadio } from "../radio";
 import { lineAt, shortGloss, unitAt } from "../radio/lyrics";
 import { Icon } from "./icons";
@@ -217,6 +218,27 @@ function RadioSet() {
           <button className="rs-key" onClick={() => radio.next()} disabled={!s.ready} aria-label="Kita daina" title="Kita daina"><Icon name="skipNext" size={22} /></button>
           <button className={"rs-key" + (s.lyrics ? " on" : "")} onClick={() => radio.setLyrics(!s.lyrics)} aria-pressed={s.lyrics} aria-label="Rodyti dainos žodžius" title="Rodyti dainos žodžius"><Icon name="lyrics" size={22} /></button>
         </div>
+        {/* the lyric strip's own settings: its type size, the whole sentence's translation, the course's notes on the
+            line, the line's picture. They are the course's song player's, by its words for them */}
+        <div className={"rs-opts" + (s.lyrics ? "" : " off")} role="group" aria-label="Dainos žodžiai">
+          <button className="rs-opt rs-opt-size" onClick={() => radio.nextLyricSize()} disabled={!s.lyrics} title="Dainos žodžių dydis" aria-label={`Teksto dydis: ${s.lyricSize + 1} iš ${LYRIC_SIZES.length}`}>
+            <span className="rs-opt-sign rs-aa" aria-hidden>A<small>a</small></span>
+            <span className="rs-opt-text">Teksto dydis</span>
+            <span className="rs-steps" aria-hidden>{LYRIC_SIZES.map((_, k) => <i key={k} className={k <= s.lyricSize ? "on" : undefined} />)}</span>
+          </button>
+          <button className={"rs-opt" + (s.nat ? " on" : "")} onClick={() => radio.setNat(!s.nat)} disabled={!s.lyrics} aria-pressed={s.nat} title="Visos eilutės vertimas po žodžiais">
+            <span className="rs-opt-sign" aria-hidden><Icon name="list" size={19} /></span>
+            <span className="rs-opt-text">Sakinio vertimas</span>
+          </button>
+          <button className={"rs-opt" + (s.notes ? " on" : "")} onClick={() => radio.setNotes(!s.notes)} disabled={!s.lyrics} aria-pressed={s.notes} title="Kas eilutėje gali suklaidinti: žodžiai, posakiai, gramatika">
+            <span className="rs-opt-sign" aria-hidden><Icon name="bulb" size={19} /></span>
+            <span className="rs-opt-text">Paaiškinimai</span>
+          </button>
+          <button className={"rs-opt" + (s.pictures ? " on" : "")} onClick={() => radio.setPictures(!s.pictures)} disabled={!s.lyrics} aria-pressed={s.pictures} title="Eilutės paveikslėlis šalia žodžių">
+            <span className="rs-opt-sign" aria-hidden><Icon name="frame" size={19} /></span>
+            <span className="rs-opt-text">Paveikslėliai</span>
+          </button>
+        </div>
       </div>
       <div className="rs-stations" role="radiogroup" aria-label="Stotys">
         {offered.map((st, i) => (
@@ -230,38 +252,63 @@ function RadioSet() {
 /** The line being sung, at the bottom of the town: sung words lit, each unit's gloss under it (with the game's
  *  translations on). A bilingual song's line sung in the learner's language is a row of its own, its words lit the
  *  same way and nothing under them: with the glosses shown, the strip keeps their height and the line sits in its
- *  middle (radio.css). Between lines it shows nothing; taps go through it to the ground. */
+ *  middle (radio.css). With the radio set's switches on, the whole sentence's translation stands under the words, the
+ *  line's picture beside them, and the course's notes on the line under the plate. The strip's type follows the
+ *  set's size key: one factor on the strip, which every size in it is a share of. Between lines it shows nothing;
+ *  taps go through it to the ground. */
 export function LyricStrip() {
   const show = useRadio((s) => s.on && s.lyrics && s.playing);
   const timeline = useRadio((s) => s.timeline);
+  const size = useRadio((s) => s.lyricSize);
+  const nat = useRadio((s) => s.nat);
+  const lineNotes = useRadio((s) => (s.notes ? s.lineNotes : null));
+  const pictures = useRadio((s) => (s.pictures ? s.linePictures : null));
   const glosses = useStore((s) => s.settings.lt);
-  const [at, setAt] = useState<{ line: number; unit: number }>({ line: -1, unit: -1 });
+  const [at, setAt] = useState<{ line: number; unit: number; notes: number }>({ line: -1, unit: -1, notes: -1 });
   useEffect(() => {
-    if (!show || !timeline) { setAt({ line: -1, unit: -1 }); return; }
+    if (!show || !timeline) { setAt({ line: -1, unit: -1, notes: -1 }); return; }
     let frame = 0;
     const tick = () => {
       const t = radio.position();
       const line = lineAt(timeline, t);
       const unit = line < 0 ? -1 : unitAt(timeline.lines[line], t);
-      setAt((was) => (was.line === line && was.unit === unit ? was : { line, unit }));
+      // the line whose notes show: this one, or an earlier one whose notes are still being read
+      const notes = lineNotes && line >= 0 ? notedLineAt(lineNotes, timeline.lines, line, t) : -1;
+      setAt((was) => (was.line === line && was.unit === unit && was.notes === notes ? was : { line, unit, notes }));
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [show, timeline]);
+  }, [show, timeline, lineNotes]);
   if (!show || !timeline || at.line < 0) return null;
   const line = timeline.lines[at.line];
   const translation = line.part === "translation";
+  const picture = pictures && line.i !== undefined ? pictures[line.i] ?? null : null;
+  const notes = lineNotes && at.notes >= 0 ? lineNotes.get(at.notes) ?? null : null;
+  // a bilingual song's row in the learner's language is the sentence's translation already: under it the same
+  // words keep their room unseen, so that the strip is as tall as for the song's own row
+  const sentence = nat ? (translation ? line.src : line.lt) : "";
   return (
-    <div className={"radio-strip " + SKIN} aria-hidden>
-      <div className={"radio-line" + (translation ? " translation" : "") + (glosses ? " glossed" : "")} key={at.line}>
-        {line.u.map((u, k) => (
-          <span className={"ru" + (k < at.unit ? " sung" : k === at.unit ? " now" : "")} key={k}>
-            <span className="rt" lang={translation ? "lt" : "en"}>{u[0]}</span>
-            {glosses && !translation && <span className="rg" lang="lt">{shortGloss(u[1])}</span>}
-          </span>
-        ))}
+    <div className={"radio-strip " + SKIN} style={{ "--rl": LYRIC_SIZES[size] ?? 1 } as React.CSSProperties} aria-hidden>
+      <div className={"radio-card" + (picture ? " pictured" : "")}>
+        {picture && <img className="radio-pic" src={picture} alt="" decoding="async" key={picture} />}
+        <div className="radio-words">
+          <div className={"radio-line" + (translation ? " translation" : "") + (glosses ? " glossed" : "")} key={at.line}>
+            {line.u.map((u, k) => (
+              <span className={"ru" + (k < at.unit ? " sung" : k === at.unit ? " now" : "")} key={k}>
+                <span className="rt" lang={translation ? "lt" : "en"}>{u[0]}</span>
+                {glosses && !translation && <span className="rg" lang="lt">{shortGloss(u[1])}</span>}
+              </span>
+            ))}
+          </div>
+          {sentence && <div className={"radio-nat" + (translation ? " unseen" : "")} lang="lt" key={`n${at.line}`}>{sentence}</div>}
+        </div>
       </div>
+      {notes && (
+        <div className="radio-notes" lang="lt" key={`p${at.notes}`}>
+          {notes.map((n, k) => <p key={k}>{n.es && <b lang="en">{n.es}</b>}{n.lt}</p>)}
+        </div>
+      )}
     </div>
   );
 }

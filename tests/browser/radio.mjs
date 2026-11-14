@@ -35,6 +35,11 @@ const lines = Array.from({ length: 55 }, (_, i) => {
   const s = 0.4 + i * 1.6;
   return { s, e: s + 1.4, sec: 0, lab: "", src: "Every evening home", lt: "Kiekvieną vakarą namo", u: [["Every evening,", "Kiekvieną vakarą,", 2], ["home", "namo (į namus)", 1]], w: [[s, s + 0.4], [s + 0.5, s + 0.9], [s + 1, s + 1.4]], wt: ["Every", "evening,", "home"] };
 });
+// what goes with the lines (src/radio/extras.ts): the course's note on every third line, and one picture, listed in
+// the plain kind of list (this course's site has no flashcard list for the song: that address answers 404)
+const notes = { song: "G01", lines: lines.map((_, i) => ({ i, es: "Every evening", lt: `Pastaba apie ${i + 1} eilutę.`, more: "Daugiau." })).filter((n) => n.i % 3 === 0) };
+const art = { version: 1, lines: { "every-evening-home": "art/flashcards/v1/line.png" } };
+const picture = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64");
 let checks = 0;
 const check = (name, value, detail) => { assert(value, `${name}: ${JSON.stringify(detail)}`); console.log("ok", name); checks++; };
 
@@ -45,6 +50,8 @@ function init(token) {
       profile: { name: "Test", gender: "m", lookId: "m1", look: { skin: "#f2d3bd", hair: { style: "short", color: "#5a3a25" }, top: "#2a9d8f", bottom: "#264653" } },
       settings: { v: 5, play: "town", quality: "low", scenes: false, volume: 0.8, cameraFollow: false },
       sits: {}, phrases: {}, seenIntro: {}, started: Date.now(), place: { zone: "town", x: -70, z: -30, rot: Math.PI },
+      // the first-time guide is done: while its card is up, the lyric strip is not shown (styles.css)
+      coach: { done: true },
     }));
   }
   localStorage.setItem("fs-files-token", JSON.stringify({ token, exp: Math.floor(Date.now() / 1000) + 3600 }));
@@ -83,7 +90,8 @@ const state = (page) => page.evaluate(() => {
     volume: probe.audios.find((el) => !el.src.startsWith("data:"))?.volume ?? null,
   };
 });
-const until = (page, test, ms = 8000) => page.waitForFunction(test, null, { timeout: ms });
+// (20 s: a machine busy with other work takes that long to open a conversation's room)
+const until = (page, test, ms = 20000) => page.waitForFunction(test, null, { timeout: ms });
 const playing = (page) => until(page, () => window.__ew.radio.store.getState().playing).catch(async (error) => { console.log("not playing:", await state(page)); throw error; });
 
 for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
@@ -105,8 +113,13 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
         asked.push(url.pathname + url.search);
         if (url.searchParams.get("t") !== TOKEN) return route.fulfill({ status: 401, json: { error: "sign-in" } });
         if (url.pathname.includes("V01")) return route.fulfill({ status: 404, json: { error: "not found" } });
+        if (url.pathname.includes("/songs/notes/")) return url.pathname.includes("G01") ? route.fulfill({ json: notes }) : route.fulfill({ status: 404, json: { error: "not found" } });
         return url.pathname.endsWith(".mp3") ? route.fulfill(recording(url.pathname)) : route.fulfill({ json: { L: lines } });
       });
+      // the lines' pictures: no flashcard list for the song, a plain list of its lines, the picture on the files host
+      await page.route("**/art/flashcards/v1/manifests/songs/*.json", (route) => { asked.push(new URL(route.request().url()).pathname); return route.fulfill({ status: 404, body: "" }); });
+      await page.route("**/songs/art/*.json", (route) => { asked.push(new URL(route.request().url()).pathname); return route.fulfill({ json: art }); });
+      await page.route("**/radio-files/art/**", (route) => { asked.push(new URL(route.request().url()).pathname + new URL(route.request().url()).search); return route.fulfill({ contentType: "image/png", body: picture }); });
       await page.route(/\/songs\/(audio|data)\/[GVS]\d\d\.(mp3|json)/, (route) => {
         const url = new URL(route.request().url());
         if (url.pathname.startsWith("/radio-files/")) return route.fallback();
@@ -153,6 +166,9 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
         rows.map((r) => `${r.name} ${r.count}`).join("|") === "Grammar FM 2|Vocab FM 1|Situations FM 1|Random FM 4|Favorites FM null" && rows.map((r) => r.on).join() === "true,false,false,false,false" && rows[4].empty && !rows[0].empty, rows);
       const keys = await page.locator(".rs-key, .rs-st, .rs-heart").evaluateAll((els) => els.map((el) => { const r = el.getBoundingClientRect(); return Math.min(r.width, r.height); }));
       check(`${label}: every key, every station and the heart is at least 44 px`, keys.length === 11 && keys.every((k) => k >= 44), keys);
+      const opts = await page.locator(".rs-opt").evaluateAll((els) => els.map((el) => { const r = el.getBoundingClientRect(), t = el.querySelector(".rs-opt-text"); return { text: t.textContent, w: r.width, h: r.height, full: t.scrollWidth <= t.clientWidth + 1, on: el.getAttribute("aria-pressed") }; }));
+      check(`${label}: under the keys, the strip's four settings by the course's words for them, each at least 44 px, all off at first`, opts.map((o) => o.text).join("|") === "Teksto dydis|Sakinio vertimas|Paaiškinimai|Paveikslėliai"
+        && opts.every((o) => o.w >= 44 && o.h >= 44 && o.full) && opts.slice(1).every((o) => o.on === "false"), opts);
       const dial = await page.evaluate(() => {
         const d = document.querySelector(".rs-dial").getBoundingClientRect(), n = document.querySelector(".rs-needle").getBoundingClientRect();
         const marks = [...document.querySelectorAll(".rs-dial span")].map((el) => el.getBoundingClientRect());
@@ -168,12 +184,14 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       const heart = page.locator(".rs-heart");
       const top = await page.locator(".rs-keys").boundingBox();
       await (phone ? heart.tap() : heart.click());
+      // (what it says stays for four seconds: read it first, a slow machine takes that long over the other checks)
+      const said = await page.locator(".rs-hearted").textContent();
       let note = await page.evaluate((key) => JSON.parse(localStorage.getItem(key) ?? "null"), FAVORITES);
       s = await state(page);
       check(`${label}: the heart writes the song into the course's favorites, as the course writes them`, note && Object.keys(note).join() === "G01" && note.G01.liked === true && Math.abs(note.G01.at - Date.now()) < 60000 && s.liked && s.counts.favorites === 1
         && await heart.getAttribute("aria-pressed") === "true" && s.playing && s.sounding, { note, s });
       const after = await page.locator(".rs-keys").boundingBox();
-      check(`${label}: it says so, nothing under it moves, and Favorites FM has a song`, (await page.locator(".rs-hearted").textContent()).startsWith("Pridėta prie mėgstamų") && Math.abs(after.y - top.y) <= 1
+      check(`${label}: it says so, nothing under it moves, and Favorites FM has a song`, said.startsWith("Pridėta prie mėgstamų") && Math.abs(after.y - top.y) <= 1
         && await page.locator(".rs-st-favorites .rs-st-count").textContent() === "1" && await page.locator(".rs-st-favorites").getAttribute("aria-disabled") === "false", { top, after });
       const first = note.G01.at;
       await (phone ? heart.tap() : heart.click());
@@ -224,19 +242,73 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       check(`${label}: on again brings the plate, not the set`, await page.locator(".radio-set").count() === 0 && await page.locator(".radio-plate").count() === 1, null);
 
       // ---- the lyric strip: the sung line, the word lit, the glosses with the game's translation setting
-      await until(page, () => !!document.querySelector(".radio-strip .ru.now, .radio-strip .ru.sung"));
-      const strip = await page.evaluate(() => {
-        const el = document.querySelector(".radio-strip"), r = el.getBoundingClientRect();
+      // (looked at in the moment a word is lit: between two lines' first words none is)
+      const strip = await (await until(page, () => {
+        const el = document.querySelector(".radio-strip");
+        if (!el || !el.querySelector(".ru.now, .ru.sung")) return null;
+        const r = el.getBoundingClientRect();
         const box = (sel) => { const x = document.querySelector(sel)?.getBoundingClientRect(); return x ? { l: x.left, t: x.top, r: x.right, b: x.bottom } : null; };
         return { words: [...el.querySelectorAll(".rt")].map((x) => x.textContent), glosses: [...el.querySelectorAll(".rg")].map((x) => x.textContent), lit: el.querySelectorAll(".ru.now, .ru.sung").length,
           box: { l: r.left, t: r.top, r: r.right, b: r.bottom }, joy: box(".joy"), jump: box(".jump-btn"), tools: box(".toolbar"), through: getComputedStyle(el).pointerEvents, w: innerWidth, h: innerHeight };
-      });
+      })).jsonValue();
       check(`${label}: the strip shows the line with a gloss under each unit (the literal meaning left out)`, strip.words.join("|") === "Every evening,|home" && strip.glosses.join("|") === "Kiekvieną vakarą,|namo" && strip.lit >= 1, strip);
-      check(`${label}: the strip is on screen, clear of the controls, and lets taps through`, strip.box.l >= 0 && strip.box.r <= strip.w && strip.box.b <= strip.h && apart(strip.box, strip.joy) && apart(strip.box, strip.jump) && apart(strip.box, strip.tools) && strip.through === "none", strip);
+      check(`${label}: the strip is on screen, clear of the controls, and lets taps through`, strip.box.r - strip.box.l > 60 && strip.box.b - strip.box.t > 20 && strip.box.l >= 0 && strip.box.r <= strip.w && strip.box.b <= strip.h && apart(strip.box, strip.joy) && apart(strip.box, strip.jump) && apart(strip.box, strip.tools) && strip.through === "none", strip);
       await page.evaluate(() => window.__ew.store.getState().setSettings({ lt: false }));
       await page.waitForTimeout(100);
       check(`${label}: no glosses with the game's translations off`, await page.locator(".radio-strip .rg").count() === 0 && await page.locator(".radio-strip .rt").count() > 0, null);
       await page.evaluate(() => window.__ew.store.getState().setSettings({ lt: true }));
+
+      // ---- the strip's settings in the set: its size, the sentence's translation, the course's notes, the line's picture
+      await until(page, () => !!document.querySelector(".radio-strip .rg"));
+      const measure = () => page.evaluate(() => {
+        const el = document.querySelector(".radio-strip"); if (!el) return null;
+        const r = el.getBoundingClientRect(), card = el.querySelector(".radio-card").getBoundingClientRect(), px = (sel) => parseFloat(getComputedStyle(el.querySelector(sel)).fontSize);
+        const box = (sel) => { const x = document.querySelector(sel)?.getBoundingClientRect(); return x ? { l: x.left, t: x.top, r: x.right, b: x.bottom } : null; };
+        return { rt: px(".rt"), rg: px(".rg"), card: card.height, box: { l: r.left, t: r.top, r: r.right, b: r.bottom }, nat: el.querySelector(".radio-nat")?.textContent ?? null, natSeen: el.querySelector(".radio-nat") ? getComputedStyle(el.querySelector(".radio-nat")).visibility : null,
+          notes: [...el.querySelectorAll(".radio-notes p")].map((p) => p.textContent), pic: el.querySelector(".radio-pic")?.naturalWidth ?? null, picSide: el.querySelector(".radio-pic")?.getBoundingClientRect().width ?? null,
+          joy: box(".joy"), jump: box(".jump-btn"), tools: box(".toolbar"), through: getComputedStyle(el).pointerEvents, w: innerWidth, h: innerHeight };
+      });
+      const fits = (m) => m.box.r - m.box.l > 60 && m.box.b - m.box.t > 20 && m.box.l >= 0 && m.box.r <= m.w && m.box.t >= 0 && m.box.b <= m.h && apart(m.box, m.joy) && apart(m.box, m.jump) && apart(m.box, m.tools) && m.through === "none";
+      const usual = await measure();
+      await page.locator(".radio-plate").click();
+      const chip = (name) => page.locator(".rs-opt", { hasText: name });
+      const press = (name) => (phone ? chip(name).tap() : chip(name).click());
+      const savedNote = () => page.evaluate(() => JSON.parse(localStorage.getItem("ew-radio-v2")));
+      const sizes = [];
+      for (let i = 0; i < 4; i++) {
+        await press("Teksto dydis");
+        await page.waitForTimeout(80);
+        const m = await measure();
+        sizes.push({ step: (await savedNote()).size, rt: m.rt / usual.rt, rg: m.rg / usual.rg, fits: fits(m), steps: await page.locator(".rs-steps i.on").count() });
+      }
+      const near = (a, b) => Math.abs(a - b) < 0.02;
+      check(`${label}: the size key takes the strip's type up a step each press and round again: words and glosses together, remembered, shown on the key`,
+        sizes.map((x) => x.step).join() === "2,3,0,1" && [1.2, 1.45, 0.85, 1].every((f, i) => near(sizes[i].rt, f) && near(sizes[i].rg, f)) && sizes.map((x) => x.steps).join() === "3,4,1,2", sizes);
+      check(`${label}: at every size the strip is on screen, clear of the controls, and lets taps through`, sizes.every((x) => x.fits), sizes);
+      await press("Sakinio vertimas");
+      await page.waitForTimeout(80);
+      let m = await measure();
+      check(`${label}: "Sakinio vertimas" puts the whole sentence under the words`, m.nat === "Kiekvieną vakarą namo" && m.natSeen === "visible" && m.card > usual.card && (await savedNote()).nat === true && fits(m), m);
+      const before2 = asked.length;
+      await press("Paaiškinimai");
+      await until(page, () => !!document.querySelector(".radio-notes"), 15000);
+      m = await measure();
+      check(`${label}: "Paaiškinimai" shows the course's note on the line, fetched with the token only now`, m.notes.length === 1 && /^Every eveningPastaba apie \d+ eilutę\.$/.test(m.notes[0])
+        && asked.slice(before2).some((u) => u === `/radio-files/songs/notes/G01.json?t=${TOKEN}`) && !asked.slice(0, before2).some((u) => u.includes("/notes/")) && (await savedNote()).notes === true && fits(m), { m, asked: asked.slice(before2) });
+      const before3 = asked.length;
+      await press("Paveikslėliai");
+      await until(page, () => (document.querySelector(".radio-pic")?.naturalWidth ?? 0) > 0, 15000);
+      m = await measure();
+      check(`${label}: "Paveikslėliai" shows the line's picture beside the words: listed on the course's site, the file from the files host without the token`,
+        m.pic > 0 && m.picSide >= 56 && asked.slice(before3).join("|") === "/art/flashcards/v1/manifests/songs/G01.json|/songs/art/G01.json|/radio-files/art/flashcards/v1/line.png"
+        && !asked.slice(0, before3).some((u) => u.includes("/art/")) && (await savedNote()).pictures === true, { m, asked: asked.slice(before3) });
+      check(`${label}: with all of it on, at the biggest size too, the strip is on screen, clear of the controls, and lets taps through`, fits(m)
+        && await (async () => { await press("Teksto dydis"); await press("Teksto dydis"); await page.waitForTimeout(120); const big = await measure(); await press("Teksto dydis"); await press("Teksto dydis"); return fits(big) && near(big.rt / usual.rt, 1.45); })(), m);
+      for (const name of ["Sakinio vertimas", "Paaiškinimai", "Paveikslėliai"]) await press(name);
+      await page.waitForTimeout(120);
+      m = await measure();
+      check(`${label}: switched off again, the strip is as it was`, m.nat === null && m.notes.length === 0 && m.pic === null && Math.abs(m.card - usual.card) <= 1 && near(m.rt / usual.rt, 1), { m, usual });
+      await page.locator(".rs-x").click();
 
       // ---- a conversation: silent, and silent for a microphone after it
       const before = (await state(page)).position;
