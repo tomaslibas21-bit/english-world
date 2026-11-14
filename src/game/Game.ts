@@ -223,6 +223,7 @@ export class Game implements GameApi {
   /** What a dive shows (rides/undersea.ts), and the air's own fog and the camera's lean to go back to after it. */
   private undersea!: Undersea;
   private airFog: THREE.Fog | null = null;
+  private dry: THREE.Object3D[] = [];
   private airCam: { pitch: number; dist: number } | null = null;
   /** Stepping out of a door by itself (m still to go), so the street shows ahead. */
   private stepOut = 0;
@@ -668,11 +669,20 @@ export class Game implements GameApi {
       this.scene.fog = this.undersea.fog;
       this.scene.background = this.undersea.fog.color;
       this.sky.visible = false;
+      // (the town is above the water, out of sight: left out of the picture, but for the pier and the boats' hulls,
+      // so a dive costs a phone less than the street does)
+      for (const o of this.town.group.children) if (o.visible && !o.userData.boat && !/^pier/.test(o.name)) { o.visible = false; this.dry.push(o); }
+      this.ambient.group.visible = false;
+      this.npcLayer.visible = false;
     } else {
       this.scene.fog = this.zone?.interior ? null : this.airFog;
       this.scene.background = this.zone?.interior ? this.scene.background : null;
       this.sky.visible = !this.zone?.interior;
       this.airFog = null;
+      for (const o of this.dry) o.visible = true;
+      this.dry.length = 0;
+      this.ambient.group.visible = !this.zone?.interior;
+      this.npcLayer.visible = true;
     }
   }
 

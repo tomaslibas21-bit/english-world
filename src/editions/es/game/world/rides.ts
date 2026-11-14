@@ -6,8 +6,8 @@ export type { CarSpot, BoatSpot, RidesPlan } from "@/game/world/rides";
 
 export const RIDES: RidesPlan = {
   cars: [
-    // avenida Juárez's north curb by the park, the first thing one sees walking out of the airport
-    { id: "park", x: 106, z: -11.8, rot: -Math.PI / 2, paint: "#f0508f", inside: "#fff4e3", people: 2 },
+    // avenida Juárez's north curb by the park, down the avenue from the airport's door, the road ahead of it clear
+    { id: "park", x: 80.5, z: -11.8, rot: -Math.PI / 2, paint: "#f0508f", inside: "#fff4e3", people: 2 },
     // calle Itzamná's last block, looking out over avenida del Puerto to the sea
     { id: "east", x: 72.8, z: -42, rot: Math.PI, paint: "#18b7ae", people: 1 },
     // calle Flamboyán beside the mercado, facing the sea

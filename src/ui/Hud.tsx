@@ -79,7 +79,7 @@ export function Hud() {
       )}
       <Guide />
       {/* at a wheel, at the boat's helm or in the water: what the keys do there (a computer; a phone has its buttons) */}
-      {hud.ride && !hud.showTouch && !hud.panel && (
+      {hud.ride && !hud.showTouch && !hud.panel && !hud.coach && (
         <div className="help-strip ride-strip">
           {hud.ride === "car"
             ? Lx("Vairuok {arrows} arba {wasd} · stabdyti {space} · išlipti {e}", { arrows: RIDE_ARROWS(), wasd: <><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></>, space: <kbd>{L("Tarpas")}</kbd>, e: <kbd>E</kbd> })
