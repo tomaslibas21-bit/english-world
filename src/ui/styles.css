@@ -925,14 +925,16 @@ body.scene-on .tag-layer { display: none; }
   .coach-row { margin-top: 0; }
   .coach-dots { display: none; }
   .coach-row { justify-content: flex-end; }
+  /* (at a door or by someone, the prompt needs the room: the hint keeps its title and its buttons) */
+  .hud:has(.prompt) .coach .coach-text p { display: none; }
 }
 @keyframes coach-in-top { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
 /* a phone held sideways: low, between the stick and the buttons (the task card is folded meanwhile, Hud.tsx); the
    prompt over the buttons keeps to their side */
 @media (max-height: 520px) and (orientation: landscape) {
-  .hud.has-touch .coach { top: auto; left: calc(50% - 30px); transform: translateX(-50%); bottom: calc(8px + env(safe-area-inset-bottom)); width: min(380px, calc(100vw - 440px)); animation-name: coach-in; }
+  .hud.has-touch .coach { top: auto; left: calc(50% - 60px); transform: translateX(-50%); bottom: calc(8px + env(safe-area-inset-bottom)); width: min(370px, calc(100vw - 470px)); animation-name: coach-in; }
   .hud.has-touch .coach .coach-text p { font-size: 0.84em; line-height: 1.32; }
-  .hud:has(.coach) .prompt.touch { max-width: calc(50vw - min(190px, 50vw - 220px) - 54px); }
+  .hud:has(.coach) .prompt.touch { max-width: calc(50vw - min(185px, 50vw - 235px) - 90px); }
 }
 /* the song's line gives way to the guide while it is up */
 .hud:has(.coach) .radio-strip { display: none; }
