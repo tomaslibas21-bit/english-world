@@ -118,7 +118,7 @@ function Objective() {
   const walking = useStore((s) => s.hud.walking);
   // (and while the first-time guide's card is up, which sits under it)
   const coachOn = useStore((s) => !!s.hud.coach);
-  const collapsed = manual ?? ((walking || coachOn) && typeof window !== "undefined" && window.innerWidth < 600);
+  const collapsed = manual ?? (typeof window !== "undefined" && ((walking && window.innerWidth < 600) || (coachOn && (window.innerWidth < 600 || window.innerHeight <= 520))));
   const setCollapsed = (v: boolean) => setManual(v);
   if (!o) {
     return (

@@ -871,31 +871,37 @@ body.scene-on .tag-layer { display: none; }
 }
 
 /* ---------- the first-time guide (Guide.tsx): a small card low in the picture, never in the way ---------- */
+/* It is painted with the game's own variables (--panel-solid, --ink, --accent…; --g-*: a course's theme, its
+   fs-theme.css), as the task card and the toasts are, so it follows every theme of every course (the solid panel
+   colour: a see-through theme's card would let the town show through its words). It stands above where the talk / enter prompt
+   appears (the prompt: bottom 34 px, about 52 px tall), so the two never cover each other. */
 .coach {
-  position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 11;
+  position: absolute; left: 50%; bottom: 112px; transform: translateX(-50%); z-index: 11;
   display: flex; flex-wrap: wrap; gap: 0 12px; align-items: flex-start; width: min(430px, calc(100vw - 28px));
-  background: rgba(255, 255, 255, 0.96); color: var(--ink, #1f2a33); border-radius: 18px; padding: 12px 14px 10px;
-  box-shadow: 0 14px 34px -14px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(31, 42, 51, 0.06);
+  background: var(--panel-solid); color: var(--ink); border-radius: 18px; padding: 12px 14px 10px;
+  border: 1px solid var(--g-edge, rgba(255, 255, 255, 0.75)); box-shadow: var(--shadow);
   animation: coach-in 0.35s ease both;
 }
+/* a wide touch screen (a tablet): above the stick, the buttons and the prompt over them */
+.hud.has-touch .coach { bottom: calc(224px + env(safe-area-inset-bottom)); }
 @keyframes coach-in { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
 .coach-icon { flex: none; width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); transition: background-color 0.2s, color 0.2s; }
-.coach.ok .coach-icon { background: #dff2ec; color: #1e8a6e; }
+.coach.ok .coach-icon { background: var(--g-good-bg, #dff2ec); color: var(--g-good-fg, #1e8a6e); }
 .coach-text { flex: 1; min-width: 0; }
-.coach-text b { display: block; font-size: 1.02em; line-height: 1.25; }
-.coach-text p { margin: 2px 0 0; font-size: 0.9em; line-height: 1.4; color: #44525e; }
+.coach-text b { display: block; font-size: 1.02em; line-height: 1.25; color: var(--ink); }
+.coach-text p { margin: 2px 0 0; font-size: 0.9em; line-height: 1.4; color: var(--ink-soft); }
 .coach-row { flex-basis: 100%; display: flex; align-items: center; gap: 8px; margin-top: 6px; }
 .coach-dots { display: inline-flex; gap: 5px; margin-right: auto; }
-.coach-dots i { width: 7px; height: 7px; border-radius: 50%; background: #d5dbe0; }
-.coach-dots i.on { background: var(--accent); }
-.coach-skip { background: none; border: 0; color: #5b6a76; font-weight: 800; font-size: 0.88em; min-height: 44px; padding: 0 10px; border-radius: 10px; }
-.coach-skip:hover { background: rgba(31, 42, 51, 0.06); }
+.coach-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-faint); opacity: 0.4; }
+.coach-dots i.on { background: var(--accent); opacity: 1; }
+.coach-skip { background: none; border: 0; color: var(--ink-soft); font-weight: 800; font-size: 0.88em; min-height: 44px; padding: 0 10px; border-radius: 10px; }
+.coach-skip:hover { background: var(--g-hover, rgba(31, 42, 51, 0.06)); }
 .coach-next { min-height: 44px; min-width: 84px; }
-.coach-switch { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-weight: 800; font-size: 0.9em; }
+.coach-switch { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-weight: 800; font-size: 0.9em; color: var(--ink); }
 /* on a phone held upright: under the task card (folded while the guide is up, Hud.tsx) and beside the buttons, clear
    of the middle of the picture, where the player walks */
 @media (max-width: 600px) {
-  .coach {
+  .coach, .hud.has-touch .coach {
     left: max(8px, env(safe-area-inset-left)); right: auto; bottom: auto; top: calc(104px + env(safe-area-inset-top)); transform: none;
     width: calc(100vw - 78px - env(safe-area-inset-left) - env(safe-area-inset-right)); gap: 0 10px; padding: 10px 12px 8px; border-radius: 16px;
     animation-name: coach-in-top;
@@ -912,16 +918,21 @@ body.scene-on .tag-layer { display: none; }
 }
 /* the smallest phones: no icon, so the words have the card's width */
 @media (max-width: 360px) {
+  .coach, .hud.has-touch .coach { padding: 8px 11px 5px; }
   .coach-icon { display: none; }
-  .coach-text p { font-size: 0.82em; }
-  .coach-switch { font-size: 0.84em; gap: 8px; }
+  .coach-text p { font-size: 0.82em; line-height: 1.27; margin-top: 1px; }
+  .coach-switch { font-size: 0.84em; gap: 8px; margin-top: 4px; }
+  .coach-row { margin-top: 0; }
   .coach-dots { display: none; }
   .coach-row { justify-content: flex-end; }
 }
 @keyframes coach-in-top { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
-/* a phone held sideways: low, between the stick and the buttons */
+/* a phone held sideways: low, between the stick and the buttons (the task card is folded meanwhile, Hud.tsx); the
+   prompt over the buttons keeps to their side */
 @media (max-height: 520px) and (orientation: landscape) {
-  .hud.has-touch .coach { top: auto; left: 50%; transform: translateX(-50%); bottom: calc(8px + env(safe-area-inset-bottom)); width: min(400px, calc(100vw - 400px)); animation-name: coach-in; }
+  .hud.has-touch .coach { top: auto; left: calc(50% - 30px); transform: translateX(-50%); bottom: calc(8px + env(safe-area-inset-bottom)); width: min(380px, calc(100vw - 440px)); animation-name: coach-in; }
+  .hud.has-touch .coach .coach-text p { font-size: 0.84em; line-height: 1.32; }
+  .hud:has(.coach) .prompt.touch { max-width: calc(50vw - min(190px, 50vw - 220px) - 54px); }
 }
 /* the song's line gives way to the guide while it is up */
 .hud:has(.coach) .radio-strip { display: none; }
