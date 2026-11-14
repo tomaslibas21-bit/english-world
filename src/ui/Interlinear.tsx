@@ -1,7 +1,9 @@
 // Interlinear sentence: each English unit with its optional IPA right under it and its Lithuanian gloss
 // below that, centred together; wrapping between units (a unit wider than the line wraps inside itself);
 // natural Lithuanian as a separate line (LT toggle). On the other person's lines with that line off, a natural
-// sentence that tells more than the glosses waits behind a small "*" after the last word (NatTip, natTip.ts).
+// sentence that tells more than the glosses waits behind a small "*" after the last word (NatTip, natTip.ts). The
+// same asterisk holds the line's word notes (a unit's `flag`: "cochinita pibil: Yucatán's slow-roasted pork…"), which
+// a dotted underline also shows to a mouse: on a phone the asterisk is the only way to them (owner, 14 Nov 2026).
 // Tapping a unit opens a small popover to save it (or the whole sentence) as a card (Cards.tsx);
 // saved units get a tiny dot.
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from "react";
@@ -25,7 +27,10 @@ export function Interlinear({ s, lt, ipa, nat, natTip, compactNat, highlight }: 
   useEffect(() => { setOpen(null); }, [s.en]); // another sentence in the same place
   const saysMore = useMemo(() => natSaysMore(s), [s]);
   const matchesGloss = useMemo(() => natMatchesGloss(s), [s]);
-  const star = lt && !!s.nat?.trim() && (compactNat ? !matchesGloss : !!natTip && nat === false && saysMore);
+  const natStar = lt && !!s.nat?.trim() && (compactNat ? !matchesGloss : !!natTip && nat === false && saysMore);
+  /** the line's word notes, each once */
+  const notes = useMemo(() => (lt ? [...new Set(s.units.map((u) => u.flag?.trim()).filter((f): f is string => !!f))] : []), [s, lt]);
+  const star = natStar || notes.length > 0;
   // only a deliberate tap on a word opens the popover (not a text selection or a drag)
   const onClick = (e: MouseEvent<HTMLDivElement>) => {
     const el = unitOf(e.target), from = down.current;
@@ -50,7 +55,7 @@ export function Interlinear({ s, lt, ipa, nat, natTip, compactNat, highlight }: 
           );
           // the asterisk right after the last word, beside its unit rather than in it (so a tap on it is not a tap
           // on the word), the two kept on one line
-          return star && i === s.units.length - 1 ? <span className="nat-last" key={i}>{unit}<NatTip key={s.en + "|" + s.nat} text={s.nat} /></span> : unit;
+          return star && i === s.units.length - 1 ? <span className="nat-last" key={i}>{unit}<NatTip key={s.en + "|" + s.nat} text={natStar ? s.nat ?? "" : ""} notes={notes} /></span> : unit;
         })}
       </div>
       {lt && !compactNat && nat !== false && s.nat && <div className="nat" lang="lt">{s.nat}</div>}
@@ -64,12 +69,12 @@ function keyboardFocus(el: Element): boolean {
   try { return el.matches(":focus-visible"); } catch { return true; }
 }
 
-/** The natural sentence behind a small "*". A mouse over it, keyboard focus or a tap shows it; a second tap, a tap
+/** The natural sentence (and the line's word notes) behind a small "*". A mouse over it, keyboard focus or a tap shows it; a second tap, a tap
  *  elsewhere or Esc hides it. The tooltip floats above the asterisk (below it when there's no room above), inside
  *  the conversation panel, so opening it never moves the sentence. Like the word popover it lives at the end of
  *  the page: the transcript doesn't clip it, and screen readers don't announce it as a new transcript line (they
  *  read it as the asterisk's description). */
-function NatTip({ text }: { text: string }) {
+function NatTip({ text, notes = [] }: { text: string; notes?: string[] }) {
   const id = useId();
   const starRef = useRef<HTMLButtonElement>(null);
   const boxRef = useRef<HTMLSpanElement>(null);
@@ -129,11 +134,12 @@ function NatTip({ text }: { text: string }) {
       onPointerEnter={enter} onPointerLeave={leave}
       style={(spot ? { left: spot.left, top: spot.top, "--arrow": spot.arrow + "px" } : { left: 0, top: 0, visibility: "hidden" }) as CSSProperties}>
       {text}
+      {notes.map((n, i) => <span key={i} className={"nat-tipnote" + (text || i ? " sep" : "")}>{n}</span>)}
     </span>
   );
   return (
     <>
-      <button ref={starRef} type="button" className="nat-star" aria-label="Natūralus vertimas" aria-expanded={open} aria-describedby={id}
+      <button ref={starRef} type="button" className="nat-star" aria-label={text ? "Natūralus vertimas" : "Pastabos"} aria-expanded={open} aria-describedby={id}
         onClick={() => setTapped((v) => !v)} onPointerEnter={enter} onPointerLeave={leave}
         onFocus={(e) => setFocused(keyboardFocus(e.currentTarget))}
         onBlur={(e) => {
