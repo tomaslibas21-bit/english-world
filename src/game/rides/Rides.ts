@@ -425,6 +425,8 @@ export class Rides {
    *  boat on the swell, its bow up at speed. */
   private place(r: Ride, dt: number, t: number) {
     const m = r.m, mesh = r.mesh;
+    // (its shadow only where the player is near enough to see it: a car down the street is not drawn again for the sun)
+    mesh.castShadow = (m.x - this.learner.x) ** 2 + (m.z - this.learner.z) ** 2 < 36 * 36;
     if (r.kind === "car") {
       const lean = THREE.MathUtils.clamp(m.steer * m.speed * 0.006, -0.05, 0.05), nod = m.bump * 0.035;
       mesh.position.set(m.x, 0, m.z);
