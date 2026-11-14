@@ -316,6 +316,8 @@ export class Ledges {
           }
         }
         if (!low) return false;
+        /** The lowest top in the collider itself. */
+        const floor = note.low;
         // what is built in the collider, followed out into the ring (the rest of the seat, the back behind it)
         while (stack.length) {
           const q = stack.pop()!, qi = q % w, qk = (q - qi) / w;
@@ -330,9 +332,10 @@ export class Ledges {
               low++;
               // a low top that runs on past the ring is a floor passing under the collider (a pier's deck under its
               // edge, a terrace under its rail), not a thing to jump onto: the collider stays the wall it was
-              // (a metre of it or more: a hydrant by a bench is not a floor)
+              // (a metre of it or more: a hydrant by a bench is not a floor; and as low as what is lowest in the
+              // collider itself: a boardwalk that starts beside the end of a low wall passes under nothing)
               // (unless the town says it is one: a deck's edge that is a ledge, tagged so)
-              if (!ledge && (ni === 0 || nk === 0 || ni === w - 1 || nk === h - 1) && !own[(k0 + nk) * nx + i0 + ni] && ++past * CELL >= 1) return false;
+              if (!ledge && t <= floor + 0.05 && (ni === 0 || nk === 0 || ni === w - 1 || nk === h - 1) && !own[(k0 + nk) * nx + i0 + ni] && ++past * CELL >= 1) return false;
             }
             stack.push(n);
           }

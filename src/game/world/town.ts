@@ -2476,7 +2476,10 @@ function addHarbor(M: Merger, col: Colliders, group: THREE.Group, r: () => numbe
     else M.add("pier-post", mat("#7a5a3a"), cylGeo(0.22, 0.22, 2.4, -30 + i, -0.35, -72, 8));
   }
   for (const s of [-1, 1]) M.add("pier-rail", mat("#f4f1ea"), boxGeo(0.1, 1, 14, -30 + s * 2.15, 0.8, -69));
-  col.addBox(-32.3, -69, 0.2, 14); col.addBox(-27.7, -69, 0.2, 14);
+  // (each on its rail, and a ledge for the player: the rail's height is read there, and a jump from the boards gets
+  // onto it and down to the beach beside the pier; from the sand it is too high: ledges.ts)
+  // (the last of each, by the restaurant's front and under its awning, stays the wall it was)
+  for (const rx of [-32.15, -27.85]) { col.addBox(rx, -67.5, 0.2, 11, "ledge"); col.addBox(rx, -74.5, 0.2, 3); }
   // (one walks on the boards, not on the sand sloping away under them: water.ts)
   DECKS.push({ x0: -32.3, x1: -27.7, z0: -76.1, z1: -62, y: 0.3 }, { x0: -41.3, x1: -18.7, z0: -88.4, z1: -72, y: 0.3 });
   // pier deck area is walkable: remove the sea collider there by leaving a gap (see buildTown); add deck edges
