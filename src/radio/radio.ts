@@ -9,9 +9,10 @@
 import { createStore, type StoreApi } from "zustand/vanilla";
 import { buildTimeline, withSungTranslations, type Timeline } from "./lyrics";
 import { NeedsTap, type RadioOutput } from "./output";
+import { carried, readLinePictures, readSongNotes, songArtUrls, type LineNote } from "./extras";
 import type { FavoriteStore } from "./favorites";
-import { loadSaved, nextStation, shuffled, stationOrder, stationSongs, step, storeSaved, type RadioSaved, type Station } from "./playlist";
-import { readSongLines, readSongList, songAudioUrls, songDataUrls, type RadioConfig, type SongMeta } from "./songs";
+import { LYRIC_SIZES, loadSaved, nextStation, shuffled, stationOrder, stationSongs, step, storeSaved, type RadioSaved, type Station } from "./playlist";
+import { readSongLines, readSongList, songAudioUrls, songDataUrls, songNotesUrls, type RadioConfig, type SongMeta } from "./songs";
 
 /** What stops the music: a conversation is open, a voice is loading or speaking, a microphone is listening. */
 export type Hold = "conversation" | "voice" | "microphone";
@@ -42,6 +43,18 @@ export interface RadioState {
   liked: boolean;
   /** the lyric strip is shown */
   lyrics: boolean;
+  /** the strip's type size: a step of LYRIC_SIZES */
+  lyricSize: number;
+  /** the strip also shows the whole sentence's translation / the course's notes on the line / the line's picture */
+  nat: boolean;
+  notes: boolean;
+  pictures: boolean;
+  /** the song's notes by line index (the line's place in the song's file), once they are here; null: none, or the
+   *  notes are switched off */
+  lineNotes: Map<number, LineNote[]> | null;
+  /** the picture to show with each line, by line index (a line without its own keeps the one before); null: none,
+   *  or the pictures are switched off */
+  linePictures: (string | null)[] | null;
   /** the radio card is open */
   open: boolean;
   song: SongMeta | null;
@@ -118,7 +131,8 @@ export class Radio {
       available: !!deps.config && deps.stations.length > 0,
       ready: false, on: false, playing: false, held: false, needsTap: false, failed: false,
       station: station?.id ?? "", shuffle: shuffled(station, this.saved.shuffle), counts: {}, place: null, liked: false,
-      lyrics: this.saved.lyrics, open: false, song: null, timeline: null, upNext: null,
+      lyrics: this.saved.lyrics, lyricSize: this.saved.size, nat: this.saved.nat, notes: this.saved.notes, pictures: this.saved.pictures,
+      lineNotes: null, linePictures: null, open: false, song: null, timeline: null, upNext: null,
     }));
     deps.output.onEnded = () => this.go(1, true);
     deps.output.onStopped = (reason) => this.stopped(reason);
@@ -126,8 +140,11 @@ export class Radio {
 
   private get state() { return this.store.getState(); }
   private set(patch: Partial<RadioState>) {
+    // another song: what went with the one before leaves with it
+    if ("song" in patch && patch.song?.id !== this.state.song?.id) patch = { lineNotes: null, linePictures: null, ...patch };
     this.store.setState(patch);
     if ("song" in patch || "station" in patch) this.mark();
+    if ("song" in patch || "timeline" in patch) this.extras();
   }
   private stationOf(id: string): Station | undefined { return this.deps.stations.find((s) => s.id === id) ?? this.deps.stations[0]; }
   /** The station to play: `id`'s, or the first one that has songs when that one has none (a course without that
@@ -141,8 +158,9 @@ export class Radio {
 
   // ---------------------------------------------------------------- the list
 
-  /** Fetch the song list (once; a failed try is made again at the next call) and, if the radio was on when the
-   *  learner left, turn it on again. */
+  /** Fetch the song list (once; a failed try is made again at the next call). A visit starts with the radio off, even
+   *  if it was playing when the learner left (owner, 14 Nov 2026): the station, the song and the place in it are
+   *  remembered, and the first press goes on from there, not from the first song. */
   init(): Promise<void> {
     const cfg = this.deps.config;
     if (!cfg || !this.state.available || this.state.ready) return Promise.resolve();
@@ -160,8 +178,7 @@ export class Radio {
         this.cursor = kept && this.order.includes(kept) ? kept : null;
         this.resumeAt = this.cursor && this.cursor === this.saved.song ? this.saved.at : 0;
         this.set({ ready: true, failed: false, song: this.cursor ? this.byId.get(this.cursor)! : null });
-        if (this.saved.on && !this.state.on) this.set({ on: true });
-        if (this.state.on) this.start(FADE_IN_MS);
+        if (this.state.on) this.start(FADE_IN_MS); // pressed while the list was on its way
       } catch {
         if (this.state.on) this.set({ failed: true });
       } finally {
@@ -305,7 +322,19 @@ export class Radio {
     else this.mark();
   }
 
-  setLyrics(lyrics: boolean) { this.set({ lyrics }); this.save(); }
+  setLyrics(lyrics: boolean) { this.set({ lyrics }); this.save(); this.extras(); }
+
+  /** The strip's type, one step bigger; after the biggest, the smallest again. */
+  nextLyricSize() { this.set({ lyricSize: (this.state.lyricSize + 1) % LYRIC_SIZES.length }); this.save(); }
+
+  /** Under each line: the whole sentence in the learner's language. */
+  setNat(nat: boolean) { this.set({ nat }); this.save(); }
+
+  /** Under the line: the course's notes on it ("Paaiškinimai"). They are fetched only while this is on. */
+  setNotes(notes: boolean) { this.set(notes ? { notes } : { notes, lineNotes: null }); this.save(); this.extras(); }
+
+  /** Beside the line: its picture, the flashcards' own. They are fetched only while this is on. */
+  setPictures(pictures: boolean) { this.set(pictures ? { pictures } : { pictures, linePictures: null }); this.save(); this.extras(); }
 
   /** The game's volume changed. */
   volumeChanged() { if (!this.holds.size) this.deps.output.setVolume(this.level()); }
@@ -500,6 +529,7 @@ export class Radio {
       this.startFailed();
     });
     this.loadLines(song);
+    this.extras();
   }
 
   /** The recording didn't start: its other address is tried (a free example lives on the course's site), then the
@@ -572,11 +602,59 @@ export class Radio {
     });
   }
 
+  // ---------------------------------------------------------------- what goes with the lines (extras.ts)
+
+  private songNotes = new Map<string, Map<number, LineNote[]>>();
+  private songPictures = new Map<string, (string | null)[] | null>();
+  private asked = new Set<string>();
+
+  /** The notes and the pictures of the song that plays, when the strip shows and they are switched on: from what
+   *  was fetched before, or fetched now (once per song; a failed try is made again the next time the song plays).
+   *  Neither holds the music up, and a song plays on without them. */
+  private extras() {
+    const s = this.state, song = s.song, cfg = this.deps.config;
+    if (!song || !cfg || !s.on || !s.lyrics) return;
+    const keep = <T,>(map: Map<string, T>, value: T) => { if (map.size >= 12) map.delete(map.keys().next().value!); map.set(song.id, value); };
+    if (s.notes && !s.lineNotes) {
+      const have = this.songNotes.get(song.id);
+      if (have) this.store.setState({ lineNotes: have });
+      else if (!this.asked.has(`notes ${song.id}`)) {
+        this.asked.add(`notes ${song.id}`);
+        const urls = songNotesUrls(cfg, song.id, this.deps.token());
+        const read = (i: number): Promise<unknown> => this.deps.fetchJson(urls[i]).catch((error) => { if (i + 1 < urls.length) return read(i + 1); throw error; });
+        void read(0).then((data) => {
+          const notes = readSongNotes(data);
+          keep(this.songNotes, notes);
+          if (this.state.song?.id === song.id && this.state.notes) this.store.setState({ lineNotes: notes });
+        }, () => { /* no notes for this song now */ }).finally(() => this.asked.delete(`notes ${song.id}`));
+      }
+    }
+    // the pictures go by the lines' own text, so they wait for the song's words
+    const lines = s.timeline?.lines.filter((l) => l.part !== "translation");
+    if (s.pictures && !s.linePictures && lines?.length) {
+      if (this.songPictures.has(song.id)) { const have = this.songPictures.get(song.id); if (have) this.store.setState({ linePictures: have }); }
+      else if (!this.asked.has(`pictures ${song.id}`)) {
+        this.asked.add(`pictures ${song.id}`);
+        const urls = songArtUrls(cfg, song.id);
+        const read = (i: number): Promise<unknown> => this.deps.fetchJson(urls[i]).catch((error) => { if (i + 1 < urls.length) return read(i + 1); throw error; });
+        void read(0).then((data) => readLinePictures(data, cfg, song.id, lines)).then((own) => {
+          // by the line's place in the song's file, as the notes are (the timeline's rows carry it)
+          const byIndex: (string | null)[] = [];
+          lines.forEach((l, k) => { if (l.i !== undefined) byIndex[l.i] = own[k]; });
+          for (let i = 0; i < byIndex.length; i++) byIndex[i] ??= null;
+          const pictures = byIndex.some(Boolean) ? carried(byIndex) : null;
+          keep(this.songPictures, pictures);
+          if (pictures && this.state.song?.id === song.id && this.state.pictures) this.store.setState({ linePictures: pictures });
+        }, () => { /* no pictures for this song now */ }).finally(() => this.asked.delete(`pictures ${song.id}`));
+      }
+    }
+  }
+
   // ---------------------------------------------------------------- remembered in this browser
 
   save() {
     const s = this.state;
-    this.saved = { ...this.saved, on: s.on, station: s.station, lyrics: s.lyrics };
+    this.saved = { ...this.saved, on: s.on, station: s.station, lyrics: s.lyrics, size: s.lyricSize, nat: s.nat, notes: s.notes, pictures: s.pictures };
     // before the list has arrived the radio doesn't know its place yet: what was remembered stays
     if (s.ready) { this.saved.song = this.cursor; this.saved.at = s.song && s.song.id === this.cursor ? Math.floor(this.position()) : 0; }
     storeSaved(this.deps.storageKey, this.saved);

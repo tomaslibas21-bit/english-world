@@ -6,10 +6,11 @@ import { STATIONS, songOfSituation } from "../src/content/radio";
 import { SITUATIONS } from "../src/content/situations";
 import { buildTimeline, lineAt, shortGloss, unitAt, withSungTranslations, wordsBegun } from "../src/radio/lyrics";
 import { BufferOutput, NeedsTap, type RadioOutput } from "../src/radio/output";
+import { carried, lineKey, notedLineAt, readLinePictures, readSongNotes, songArtUrls } from "../src/radio/extras";
 import { likedSongs, readFavorites, withToggled, type FavoriteStore } from "../src/radio/favorites";
-import { loadSaved, nextStation, readSaved, stationOrder, stationSongs, step, type Station } from "../src/radio/playlist";
+import { LYRIC_SIZES, loadSaved, nextStation, readSaved, stationOrder, stationSongs, step, type Station } from "../src/radio/playlist";
 import { FADE_IN_MS, FADE_OUT_MS, MUSIC_LEVEL, RESUME_AFTER_MS, SKIP_OUT_MS, VOICE_FADE_MS, Radio, type RadioDeps } from "../src/radio/radio";
-import { radioConfig, readSongLines, readSongList, songAudioUrls, songDataUrls, type SongLine, type SongMeta } from "../src/radio/songs";
+import { radioConfig, readSongLines, readSongList, songAudioUrls, songDataUrls, songNotesUrls, type SongLine, type SongMeta } from "../src/radio/songs";
 
 const song = (id: string, g = "pop", a = `/songs/audio/${id}.mp3`): SongMeta => ({ id, c: "g", n: 1, t: `Song ${id}`, tl: `Daina ${id}`, tp: "", g, d: 200, a });
 const line = (s: number, words: [number, number][], units: [string, string, number][]): SongLine =>
@@ -242,14 +243,19 @@ describe("the playing order", () => {
     expect(readSaved(null).on).toBe(false);
     expect(readSaved("{oops").lyrics).toBe(true);
     expect(readSaved(JSON.stringify({ on: true, station: 5, at: -3, lyrics: false, seed: "x", shuffle: "yes", places: { grammar: "G07", vocab: 3 } })))
-      .toEqual({ on: true, station: "", shuffle: false, seed: 1, song: null, at: 0, places: { grammar: "G07" }, lyrics: false, introduced: false });
+      .toEqual({ on: true, station: "", shuffle: false, seed: 1, song: null, at: 0, places: { grammar: "G07" }, lyrics: false, size: 1, nat: false, notes: false, pictures: false, introduced: false });
+    // the strip's own settings: a size that is one of the steps, the three switches only when they say true
+    expect(readSaved(JSON.stringify({ size: 3, nat: true, notes: true, pictures: true }))).toMatchObject({ size: 3, nat: true, notes: true, pictures: true });
+    for (const size of [-1, 4, 1.5, "2", null]) expect(readSaved(JSON.stringify({ size, nat: "yes", notes: 1 }))).toMatchObject({ size: 1, nat: false, notes: false, pictures: false });
+    expect(LYRIC_SIZES).toHaveLength(4);
+    expect(LYRIC_SIZES[1]).toBe(1); // the size it starts at is the strip's usual one
   });
 
   it("a visit after the first radio keeps only on/off and the strip: the stations and the order start anew", () => {
     const store: Record<string, string> = { "ew-radio-v1": JSON.stringify({ on: true, station: "soul", shuffle: true, seed: 9, song: "S70", at: 44, lyrics: false, introduced: true }) };
     vi.stubGlobal("localStorage", { getItem: (k: string) => store[k] ?? null, setItem: (k: string, v: string) => { store[k] = v; } });
     try {
-      expect(loadSaved("ew-radio-v2", "ew-radio-v1")).toEqual({ on: true, station: "", shuffle: false, seed: 1, song: null, at: 0, places: {}, lyrics: false, introduced: false });
+      expect(loadSaved("ew-radio-v2", "ew-radio-v1")).toEqual({ on: true, station: "", shuffle: false, seed: 1, song: null, at: 0, places: {}, lyrics: false, size: 1, nat: false, notes: false, pictures: false, introduced: false });
       store["ew-radio-v2"] = JSON.stringify({ on: false, station: "vocab", song: "V40", at: 12 });
       expect(loadSaved("ew-radio-v2", "ew-radio-v1")).toMatchObject({ on: false, station: "vocab", song: "V40", at: 12 }); // its own note, once it has one
     } finally { vi.unstubAllGlobals(); }
@@ -576,7 +582,7 @@ describe("the radio", () => {
     expect(saved().on).toBe(false);
   });
 
-  it("remembers on, station, the song and the place in it, and the lyric strip", async () => {
+  it("remembers the station, the song and the place in it, and the lyric strip; the next visit starts off and goes on from there at the first press", async () => {
     let radio = new Radio(deps());
     radio.setOn(true); await settle();
     radio.next(); await settle();
@@ -584,11 +590,16 @@ describe("the radio", () => {
     out.at = 61.7;
     await vi.advanceTimersByTimeAsync(5000);
     expect(saved()).toMatchObject({ on: true, station: "all", song: "B", at: 61, lyrics: false });
-    // the next visit: the song list arrives, and the radio goes on from there
+    // the next visit: the song list arrives and the radio stays off, silent, at the remembered song
     out = new FakeOutput();
     radio = new Radio(deps());
     expect(radio.store.getState().lyrics).toBe(false);
     await radio.init(); await settle();
+    expect(out.sounding).toBe(false);
+    expect(radio.store.getState()).toMatchObject({ on: false, playing: false, station: "all" });
+    expect(radio.store.getState().song?.id).toBe("B");
+    // the first press goes on from the place it was left, not from the first song
+    radio.power(); await settle();
     expect(out.last).toBe("play B.mp3@61");
     expect(radio.store.getState()).toMatchObject({ on: true, playing: true });
   });
@@ -605,8 +616,10 @@ describe("the radio", () => {
   it("waits for a tap when the browser asks for one, and starts at the next tap", async () => {
     store["radio-test"] = JSON.stringify({ on: true, station: "all", song: "B", at: 10 });
     const radio = new Radio(deps());
-    out.next = "tap";
     await radio.init(); await settle();
+    expect(radio.store.getState()).toMatchObject({ on: false, playing: false }); // a visit starts off
+    out.next = "tap";
+    radio.setOn(true); await settle();
     expect(radio.store.getState()).toMatchObject({ on: true, playing: false, needsTap: true, failed: false });
     out.next = "ok";
     radio.gesture(); await settle();
@@ -693,6 +706,94 @@ describe("the radio", () => {
     expect(out.volume).toBeCloseTo(MUSIC_LEVEL);
     volume = 0; radio.volumeChanged();
     expect(out.volume).toBe(0);
+  });
+});
+
+describe("what goes with a line: the course's notes and pictures", () => {
+  const cfg = radioConfig({ VITE_RADIO_INDEX: "/songs/index.json", VITE_RADIO_FILES: "https://audio.example/fluent-steps" })!;
+  const sha = async (text: string) => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text))), (b) => b.toString(16).padStart(2, "0")).join("");
+  const hash = (c: string) => c.repeat(64);
+
+  it("a song file's lines remember their place in the file, which the notes name them by", () => {
+    const good = line(1, [[1, 2]], [["Hi", "Labas", 1]]);
+    const read = readSongLines({ L: [good, { s: 1 }, good, null, good] }); // two lines that can't be shown are left out
+    expect(read.map((l) => l.i)).toEqual([0, 2, 4]);
+    const rows = withSungTranslations([{ ...good, i: 7, lt: "Forgive me", en: { s: 0.2, e: 0.8 } }]);
+    expect(rows.map((r) => [r.part ?? "song", r.i])).toEqual([["translation", 7], ["song", 7]]); // both singings are that line
+  });
+
+  it("reads the notes as the course's player does, and asks for them like the song's words", () => {
+    expect(songNotesUrls(cfg, "G05", "tok/en")).toEqual(["https://audio.example/fluent-steps/songs/notes/G05.json?t=tok%2Fen", "/songs/notes/G05.json"]);
+    expect(songNotesUrls(radioConfig({ VITE_RADIO_INDEX: "/songs/index.json" })!, "G05", "tok")).toEqual(["/songs/notes/G05.json"]);
+    const notes = readSongNotes({ song: "G01", title: { es: "The Long Way", lt: "…" }, lines: [
+      { i: 1, es: "the city sings", lt: " he, she, it gauna -s. ", more: "Daugiskaitoje -s nėra." }, { i: 9, es: "nobody", lt: "Vienas neiginys." }, { i: 9, es: "else", lt: "Kitas." },
+      { i: "3", es: "x", lt: "y" }, { i: 4, es: "x", lt: " " }, { i: 5, es: "x" }, null,
+    ] });
+    expect([...notes.keys()]).toEqual([1, 9]);
+    expect(notes.get(1)).toEqual([{ es: "the city sings", lt: "he, she, it gauna -s." }]); // the second layer ("more") stays in the course
+    expect(notes.get(9)).toHaveLength(2);
+    for (const broken of [null, {}, { lines: "no" }, "text"]) expect(readSongNotes(broken).size).toBe(0);
+  });
+
+  it("a note shows with its line and stays a while after it, until the next note or its time is up", () => {
+    const at = (s: number, i: number): SongLine => ({ ...line(s, [[s, s + 2]], [["x", "y", 1]]), i });
+    const lines = [at(10, 0), at(14, 1), at(18, 2), at(22, 3), at(40, 4)];
+    const notes = readSongNotes({ lines: [{ i: 1, es: "a", lt: "A" }, { i: 3, es: "b", lt: "B" }] });
+    expect(notedLineAt(notes, lines, 0, 10.5)).toBe(-1); // a line without a note, none before it
+    expect(notedLineAt(notes, lines, 1, 14.2)).toBe(1);
+    expect(notedLineAt(notes, lines, 2, 19)).toBe(1); // still being read during the next line
+    expect(notedLineAt(notes, lines, 3, 22.1)).toBe(3); // the next note takes its place
+    expect(notedLineAt(notes, lines, 4, 40.5)).toBe(-1); // 18 s after the last note's line began: gone
+    expect(notedLineAt(notes, lines, 3, 60)).toBe(3); // the line's own note for as long as the line is on show
+    expect(notedLineAt(notes, lines, 9, 1)).toBe(-1);
+    // a bilingual song's row in the learner's language and the song's own row are the same line
+    const both = [{ ...at(10, 5), part: "translation" as const }, at(13, 5)];
+    const five = readSongNotes({ lines: [{ i: 5, es: "a", lt: "A" }] });
+    expect([notedLineAt(five, both, 0, 10.1), notedLineAt(five, both, 1, 13.1)]).toEqual([5, 5]);
+  });
+
+  it("knows a line by the course's key for it", () => {
+    expect(lineKey("Every evening, every evening,")).toBe("every-evening-every-evening");
+    expect(lineKey("“Do you love me?” “Yes, I do.”")).toBe("do-you-love-me-yes-i-do");
+    expect(lineKey("It’s `fine` (again)")).toBe("it's-'fine'");
+    expect(lineKey("¿Cómo estás, mamá?")).toBe("cómo-estás-mamá");
+    expect(lineKey(" … ")).toBe("");
+  });
+
+  it("finds each line's picture in the flashcards' list: only one approved for exactly this line", async () => {
+    expect(songArtUrls(cfg, "G01")).toEqual(["/art/flashcards/v1/manifests/songs/G01.json", "/songs/art/G01.json"]);
+    const lines = [{ src: "Every evening, every evening," }, { src: " the city sings and we go slow. " }, { src: "Hey!" }, { src: "You work across the river" }, { src: "Not approved" }];
+    const entry = async (src: string, path: string, over: object = {}) => [await sha(`songs:G01#${lineKey(src)}`), { target_sha256: await sha(src.trim()), path, approved: true, ...over }];
+    const cards = Object.fromEntries([
+      await entry(lines[0].src, `art/flashcards/v1/${hash("a")}.webp`),
+      await entry(lines[1].src, `art/flashcards/v1/${hash("b")}.webp`),
+      [await sha(`songs:G01#${lineKey(lines[3].src)}`), { target_sha256: await sha("You worked across the river"), path: `art/flashcards/v1/${hash("c")}.webp`, approved: true }], // made for other words
+      await entry(lines[4].src, `art/flashcards/v1/${hash("d")}.webp`, { approved: false }),
+    ]);
+    const own = await readLinePictures({ version: 1, cards }, cfg, "G01", lines);
+    expect(own).toEqual([`https://audio.example/fluent-steps/art/flashcards/v1/${hash("a")}.webp`, `https://audio.example/fluent-steps/art/flashcards/v1/${hash("b")}.webp`, null, null, null]);
+    expect(carried(own).slice(2)).toEqual([own[1], own[1], own[1]]); // a line without its own keeps the one before
+    expect(carried([null, "x", null])).toEqual([null, "x", "x"]);
+    expect(await readLinePictures({ version: 2, cards }, cfg, "G01", lines)).toEqual([null, null, null, null, null]);
+    expect(await readLinePictures(null, cfg, "G01", lines)).toEqual([null, null, null, null, null]);
+    // another song's list doesn't fit: the card's identity names the song
+    expect((await readLinePictures({ version: 1, cards }, cfg, "G02", lines)).every((p) => p === null)).toBe(true);
+  });
+
+  it("or in a plain list by the line's key; a picture's address is a picture file on the files host, nothing else", async () => {
+    const lines = [{ src: "Abro la puerta a las cinco" }, { src: "¡Hola! ¿Cómo estás?" }, { src: "Con grasa" }, { src: "Otra" }, { src: "Mala" }, { src: "Peor" }];
+    const data = { version: 1, lines: {
+      "abro-la-puerta-a-las-cinco": "https://audio.example/spanish-master/art/flashcards/v1/one.webp",
+      "hola-cómo-estás": "art/flashcards/v1/two.webp",
+      "con-grasa": "/art/three.jpg",
+      "otra": "javascript:alert(1)", "mala": "http://elsewhere.example/x.webp", "peor": "../secret/x.webp",
+    } };
+    expect(await readLinePictures(data, cfg, "SG01", lines)).toEqual([
+      "https://audio.example/spanish-master/art/flashcards/v1/one.webp", "https://audio.example/fluent-steps/art/flashcards/v1/two.webp", "https://audio.example/fluent-steps/art/three.jpg", null, null, null,
+    ]);
+    expect((await readLinePictures({ ...data, base: "https://cdn.example/pics/" }, cfg, "SG01", lines))[1]).toBe("https://cdn.example/pics/art/flashcards/v1/two.webp");
+    // a local trial without a files folder: from the list's own site
+    expect((await readLinePictures(data, radioConfig({ VITE_RADIO_INDEX: "/songs/index.json" })!, "SG01", lines))[1]).toBe("/art/flashcards/v1/two.webp");
   });
 });
 
@@ -881,10 +982,73 @@ describe("the stations: the course's songs, kind by kind", () => {
     expect(now(radio)).toEqual(["grammar", "G1"]);
   });
 
+  it("the strip's size goes up a step at each press and round again; it and the three switches are remembered", async () => {
+    let radio = await on();
+    expect(radio.store.getState()).toMatchObject({ lyricSize: 1, nat: false, notes: false, pictures: false });
+    const sizes = [];
+    for (let i = 0; i < 5; i++) { radio.nextLyricSize(); sizes.push(radio.store.getState().lyricSize); }
+    expect(sizes).toEqual([2, 3, 0, 1, 2]);
+    radio.setNat(true); radio.setNotes(true); radio.setPictures(true);
+    expect(saved()).toMatchObject({ size: 2, nat: true, notes: true, pictures: true });
+    out = new FakeOutput();
+    radio = new Radio(deps());
+    expect(radio.store.getState()).toMatchObject({ lyricSize: 2, nat: true, notes: true, pictures: true });
+    expect(out.sounding).toBe(false); // none of this turns the radio on
+  });
+
+  it("the notes and the pictures are fetched only while they are switched on, once per song, and leave with the song", async () => {
+    const asked: string[] = [];
+    const words = (id: string) => ({ L: [line(1, [[1, 2]], [[`${id} one`, "viena", 2]]), line(4, [[4, 5]], [[`${id} two`, "dvi", 2]])] });
+    const sha = async (text: string) => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text))), (b) => b.toString(16).padStart(2, "0")).join("");
+    const cards = { [await sha("songs:G1#g1-one")]: { target_sha256: await sha("G1 one"), path: "art/flashcards/v1/g1.webp", approved: true } };
+    const fetchJson = async (url: string) => {
+      asked.push(url.replace(/\?.*/, ""));
+      if (url === "/songs/index.json") return { songs };
+      if (url.includes("/songs/notes/G1.json")) return { lines: [{ i: 1, es: "two", lt: "Dvi." }] };
+      if (url.includes("/manifests/songs/G1.json")) return { version: 1, cards };
+      if (url.includes("/songs/data/")) return words(url.replace(/\?.*/, "").split("/").pop()!.replace(".json", ""));
+      throw new Error("404"); // G2 has neither notes nor pictures
+    };
+    const files = { config: { index: "/songs/index.json", files: "https://files.example/course", recordings: null }, token: () => "tok", fetchJson };
+    // (the pictures' hashes are worked out off the clock the test holds: let them finish)
+    const hashed = async () => { for (let i = 0; i < 12; i++) { await sha("wait"); await settle(); } };
+    const radio = await on(files);
+    await settle();
+    expect(asked.filter((u) => /notes|art/.test(u))).toEqual([]); // both off: nothing asked for
+    expect(radio.store.getState()).toMatchObject({ lineNotes: null, linePictures: null });
+    radio.setNotes(true); radio.setPictures(true);
+    await hashed();
+    expect(asked.filter((u) => /notes|art/.test(u))).toEqual(["https://files.example/course/songs/notes/G1.json", "/art/flashcards/v1/manifests/songs/G1.json"]);
+    expect([...radio.store.getState().lineNotes!]).toEqual([[1, [{ es: "two", lt: "Dvi." }]]]);
+    expect(radio.store.getState().linePictures).toEqual(["https://files.example/course/art/flashcards/v1/g1.webp", "https://files.example/course/art/flashcards/v1/g1.webp"]); // the second line keeps the first's
+    // the next song has neither: what went with G1 leaves, both of its lists are tried, the music plays on
+    radio.next(); await settle(); await settle();
+    expect(radio.store.getState()).toMatchObject({ lineNotes: null, linePictures: null, playing: true });
+    expect(asked.slice(-4).sort()).toEqual(["/art/flashcards/v1/manifests/songs/G2.json", "/songs/art/G2.json", "/songs/notes/G2.json", "https://files.example/course/songs/notes/G2.json"].sort());
+    // back at G1: from what was fetched before, nothing asked again
+    const before = asked.length;
+    radio.previous(); await hashed();
+    expect(radio.store.getState().lineNotes?.size).toBe(1);
+    expect(radio.store.getState().linePictures).toHaveLength(2);
+    expect(asked.slice(before).filter((u) => /notes|art/.test(u))).toEqual([]);
+    radio.setNotes(false); radio.setPictures(false);
+    expect(radio.store.getState()).toMatchObject({ lineNotes: null, linePictures: null });
+    // with the strip itself off, switching them on fetches nothing
+    radio.next(); await settle(); radio.next(); await settle(); await settle(); // G3, never asked about
+    radio.setLyrics(false);
+    radio.setNotes(true); radio.setPictures(true);
+    await settle();
+    expect(asked.filter((u) => /(notes|art)\/G3|manifests\/songs\/G3/.test(u))).toEqual([]);
+    radio.setLyrics(true); await settle();
+    expect(asked.some((u) => u.endsWith("/songs/notes/G3.json"))).toBe(true);
+  });
+
   it("a remembered station that has no songs any more gives way to the first that has", async () => {
     store["radio-test"] = JSON.stringify({ on: true, station: "favorites", song: "V2", at: 30 });
     const radio = new Radio(deps());
     await radio.init(); await settle();
+    expect(radio.store.getState()).toMatchObject({ station: "grammar", on: false });
+    radio.setOn(true); await settle();
     expect(now(radio)).toEqual(["grammar", "G1"]);
     expect(out.last).toBe("play G1.mp3@0");
   });

@@ -1194,7 +1194,7 @@ export class Game implements GameApi {
     this.zone.interior?.update?.(this.t, dt);
     this.guidance.visible = !talking;
     this.guidance.group.visible = !talking;
-    this.guidance.update(dt);
+    this.guidance.update(dt, this.zone.interior ? undefined : floorY);
     // guidance path (throttled)
     this.pathT -= dt;
     if (this.pathT <= 0 && !talking) {

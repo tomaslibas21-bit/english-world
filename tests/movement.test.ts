@@ -505,6 +505,22 @@ describe("Ledges: climbing higher, a step at a time", () => {
     expect(p.x).toBeLessThan(40 - 0.38 + 0.13);
   });
 
+  it("a low wall with a boardwalk starting beside its end is still a wall to jump onto (the boards pass under nothing)", () => {
+    const g2 = new THREE.Group(), c2 = new Colliders();
+    const put = (geo: THREE.BufferGeometry) => g2.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial()));
+    // the wall: 14 m long, 0.5 m thick, 0.78 m high, from x 0 to 14; the boards (0.3 m thick) from x 14.3 on, wide
+    put(new THREE.BoxGeometry(14, 0.78, 0.5).translate(7, 0.39, 0));
+    c2.addBox(7, 0, 14, 0.5);
+    put(new THREE.BoxGeometry(5, 0.3, 14).translate(16.8, 0.15, 0));
+    // and a deck's plain edge beside it: the boards under an invisible wall, as before
+    c2.addBox(19.2, 0, 0.3, 14);
+    const l2 = Ledges.build(g2, c2);
+    expect(c2.boxes[0].split).toBe(true);
+    expect(l2.support(7, 0, 1, true)).toBeCloseTo(0.78, 2);
+    expect(l2.support(13.5, 0, 1, true)).toBeCloseTo(0.78, 2);
+    expect(c2.boxes[1].split).toBeFalsy();
+  });
+
   it("pieces that come and go (a car that has stopped) count like the others", () => {
     const l = new Ledges();
     const hood = { minX: -1, maxX: 1, minZ: 1, maxZ: 2, top: 0.9 };
