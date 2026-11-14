@@ -312,7 +312,7 @@ A learner who goes looking won't find these; where they are, so that every conve
   Turística, with the sitio beside it. The conversations treat it as the edge of town, reached by taxi (s62: "Está al
   final de la avenida Juárez… mejor tome un taxi"); at the sitio, which stands next to the terminal, Don Rigo says "El
   aeropuerto está aquí al lado" and quotes no fare to it (s66, since its audit: the old $350 is gone).
-- **Cenote Ka'an**: past the meadow at the west end of avenida Juárez. Since 14 Nov one walks out to it along the sacbé and swims in it ("Convertibles, the lancha, Cenote Ka'an"); the conversations' cenote is another, twenty minutes by colectivo (s69, s62).
+- **Cenote Ka'an**: past the meadow at the west end of avenida Juárez. Since 14 Nov one walks out to it along the sacbé and swims in it ("Convertibles, the lancha, Cenote Ka'an"); the conversations' cenote is another, twenty minutes by colectivo (s69, s62). Since 15 Nov the cave's mouth at its far side leads into the aluxes' grotto: five chambers, glyph stones found by ear, two aluxes to talk with (docs/es/GRUTA.md).
 - **The ruins**: on the rocky point past the beach's west end; half an hour on foot along the beach (s69).
 - s62's trips (a cenote, the ruins of Tulum, Xcacel, Chemuyil) are further on, by colectivo.
 

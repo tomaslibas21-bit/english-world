@@ -146,7 +146,7 @@ export class CaveQuest {
       this.callingId = null;
       this.view.setCalling(null);
       // (a breath between them; longer when nothing could be played: no clip, the sound off)
-      this.nextCall = said ? 1.3 + Math.random() * 0.8 : 3.5;
+      this.nextCall = said ? 2.1 + Math.random() * 1.2 : 3.5;
     });
   }
 
