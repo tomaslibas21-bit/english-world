@@ -1,5 +1,6 @@
 // The first-time guide's card in the 3D town (game/coach.ts): one hint at a time, low in the picture and out of the
-// way of the task card, the map and the controls. It never takes the keys or blocks a tap on the town.
+// way of the task card, the map, the controls and the talk / enter prompt. It never takes the keys or blocks a tap on
+// the town. Its colours are the game's own variables, so it follows a course's theme (styles.css `.coach`).
 import { useEffect, useLayoutEffect, useState } from "react";
 import { useStore } from "../state/store";
 import { coach, type CoachStep } from "../game/coach";
@@ -16,7 +17,7 @@ function words(step: CoachStep, touch: boolean): [string, string] {
     case "jump": return ["Pašok", touch ? "Mygtukas dešinėje – pašokti. Užšok ant suoliuko, įbrisk į jūrą." : "Tarpas – pašokti. Užšok ant suoliuko, įbrisk į jūrą."];
     case "talk": return ["Kalbėkis", touch ? "Prieik prie žmogaus ir bakstelėk „Kalbėti“. Užduoties kortelė rodo, pas ką eiti, o „Nuvesk mane“ nuveda." : "Prieik prie žmogaus ir spausk E. Užduoties kortelė rodo, pas ką eiti, o „Nuvesk mane“ nuveda."];
     case "radio": return ["Radijas", touch ? "Radijo mygtukas dešinėje: kurso dainos, kol vaikštai." : "R arba radijo mygtukas dešinėje: kurso dainos, kol vaikštai."];
-    case "scenes": return ["Pokalbių vaizdas", "Pokalbio metu rodomas piešinys. Išjunk „Iliustruotos scenos“ – pokalbis vyks 3D mieste, o žmogaus lūpos judės pagal balsą."];
+    case "scenes": return ["Pokalbių vaizdas", "Pokalbio metu rodomas piešinys. Išjungus pokalbis vyksta 3D mieste, o žmogaus lūpos juda pagal balsą."];
   }
 }
 

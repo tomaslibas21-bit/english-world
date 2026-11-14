@@ -57,8 +57,10 @@ Shared by every edition of the game (the code is in `src/game/`; each town keeps
   between pictures and the 3D town for conversations („Iliustruotos scenos“, a switch in the card). Each ticks itself
   off when the learner does it (7 m walked, 1.2 s at a run, a jump, a conversation started, the radio switched on) or
   with „Toliau“; „Praleisti“ ends them all. The card is under the folded task card on a phone and low in the middle on
-  a computer; it takes no keys, is hidden while a panel or a conversation is open, and is remembered with the progress
-  (`progress.coach.done`).
+  a computer, above where the talk / enter prompt appears, so neither covers the other (nor the stick and the buttons:
+  checked at 1459×812, 820×1180, 375×812, 320×568 and 844×390). It is painted with the game's own variables
+  (`--panel-solid`, `--ink`, `--accent`, a course's `--g-*`), so it follows every theme of every course. It takes no
+  keys, is hidden while a panel or a conversation is open, and is remembered with the progress (`progress.coach.done`).
 - The tip about running: once, the first time someone walks on for six seconds without running, after the guide
   (`progress.coach.run`): „Laikyk Shift – bėgsi.“ on a computer, „Patrauk vairalazdę iki krašto – bėgsi.“ on a phone.
 - The words are written in Lithuanian; the Spanish edition wraps them in `L()` and translates them
