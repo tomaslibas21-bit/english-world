@@ -396,6 +396,9 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   animation: nat-tip-in 0.14s ease-out;
 }
 .nat-tipbox[hidden] { display: none; }
+/* a word note under the natural sentence (or under the note before it) */
+.nat-tipnote { display: block; font-weight: 500; }
+.nat-tipnote.sep { margin-top: 5px; padding-top: 5px; border-top: 1px solid var(--line); }
 /* the arrow: under the tooltip, pointing down at the asterisk (on top when the tooltip opened below it) */
 .nat-tipbox::before {
   content: ""; position: absolute; left: var(--arrow, 50%); bottom: -6px; width: 11px; height: 11px;
