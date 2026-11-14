@@ -653,6 +653,9 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .jump-btn { position: fixed; right: calc(26px + env(safe-area-inset-right)); bottom: calc(34px + env(safe-area-inset-bottom)); width: 74px; height: 74px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.7); background: rgba(255,255,255,0.3); color: #fff; z-index: 12; touch-action: none; display: grid; place-items: center; padding: 0; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.25)); }
 .jump-btn:active { background: rgba(255,255,255,0.55); }
 /* beside the talk / enter button (to its left, the same height off the bottom), a little smaller: still 56 px to tap */
+/* at a wheel the jump button is the brake */
+.jump-btn.brake-btn { font-weight: 900; font-size: 0.82em; letter-spacing: 0.04em; background: rgba(214, 62, 62, 0.62); border-color: rgba(255,255,255,0.8); }
+.jump-btn.brake-btn:active { background: rgba(214, 62, 62, 0.9); }
 .jump-btn.beside { right: calc(128px + env(safe-area-inset-right)); bottom: calc(40px + env(safe-area-inset-bottom)); width: 60px; height: 60px; }
 .act-btn { position: fixed; right: calc(22px + env(safe-area-inset-right)); bottom: calc(26px + env(safe-area-inset-bottom)); width: 92px; height: 92px; border-radius: 50%; border: 0; background: var(--accent); color: #fff; font-weight: 900; font-size: 0.95em; z-index: 12; box-shadow: 0 5px 0 rgba(0,0,0,0.2); }
 

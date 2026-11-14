@@ -17,6 +17,7 @@ import { rand, type Colliders } from "./world/util";
 import { CAR, TRAFFIC_LANES, CHAT_SPOTS } from "./world/layout";
 import type { Seat } from "./world/town";
 import { Dog } from "./dog";
+import { aheadIn, pushOutOfBox } from "./rides/drive";
 
 /** A townsperson: one who strolls between places ("walk"), sits at a café table or on a bench ("sit"), or stands
  *  chatting with someone ("stand"). */
@@ -113,7 +114,7 @@ const M_HAIR: HairStyle[] = ["short", "buzz", "side", "bald", "curly", "wavy"];
 const CAR_COLORS = ["#e45b4f", "#4a7bb7", "#f2f2f2", "#3d3d46", "#6fbf73", "#f2c14e", "#9b5de5", "#b0b7bf"];
 
 const LANES = TRAFFIC_LANES;
-const _hand = new THREE.Vector3(), _steer = new THREE.Vector3();
+const _hand = new THREE.Vector3(), _steer = new THREE.Vector3(), _side = { x: 0, z: 0 };
 
 const NOOP = () => {};
 
@@ -229,6 +230,10 @@ export class Ambient {
   private pathCooldown = 0;
   /** Where the town's NPCs stand (Game sets it): passers-by step round them. */
   obstacles: [number, number][] = [];
+  /** The cars one can drive (src/game/rides), as they stand or roll now: the passers-by step out of their way, the
+   *  traffic stops behind them. `riding`: the player is in one (their place is the car's own). */
+  rideBoxes: { x: number; z: number; heading: number; hl: number; hw: number }[] = [];
+  riding = false;
   private colliders?: Colliders;
 
   constructor(private nav: NavGrid, private places: [number, number][], quality: "high" | "low", seats: Seat[] = [], colliders?: Colliders) {
@@ -442,9 +447,14 @@ export class Ambient {
   private updateWalker(w: Walker, dt: number, player: THREE.Vector3) {
     const p = w.ch.root.position;
     w.greetT -= dt;
+    // a car one can drive is never where someone on foot is: they step out of its way, standing or walking
+    for (const b of this.rideBoxes) if (Math.abs(b.x - p.x) < 4 && Math.abs(b.z - p.z) < 4) {
+      _side.x = p.x; _side.z = p.z;
+      if (pushOutOfBox(_side, 0.32, b.x, b.z, b.heading, b.hl, b.hw)) { p.x = _side.x; p.z = _side.z; }
+    }
     // the player has right of way: a walker within arm's length steps aside (back and to one side), also while
     // standing, so the player's walk is never held up by someone waiting for them to pass
-    {
+    if (!this.riding) {
       const dx = p.x - player.x, dz = p.z - player.z, d = Math.hypot(dx, dz);
       if (d < 0.75 && d > 1e-4) {
         const k = 0.75 - d, ux = dx / d, uz = dz / d;
@@ -480,7 +490,7 @@ export class Ambient {
     const d = dir.length();
     if (d < 0.3) { w.path.shift(); if (!w.path.length) { w.path = null; w.wait = 2 + this.r() * 6; } w.ch.update(dt); return; }
     dir.divideScalar(d);
-    if (dP < 1.4 && dir.dot(toP.clone().divideScalar(Math.max(dP, 1e-3))) > 0.2) {
+    if (!this.riding && dP < 1.4 && dir.dot(toP.clone().divideScalar(Math.max(dP, 1e-3))) > 0.2) {
       if (w.ch.anim === "walk") w.ch.setAnim("idle");
       if (w.greetT <= 0 && this.r() < 0.5) { w.greetT = 25; w.ch.setAnim("wave"); setTimeout(() => { if (w.ch.anim === "wave") w.ch.setAnim("idle"); }, 1400); }
       w.ch.update(dt);
@@ -494,7 +504,7 @@ export class Ambient {
     if (!this.colliders?.blocked(nx, nz, 0.25)) { p.x = nx; p.z = nz; } else { p.x += dir.x * step; p.z += dir.z * step; }
     for (const o of this.walkers) if (o !== w) this.keepOut(p, o.ch.root.position.x, o.ch.root.position.z, 0.55);
     for (const [x, z] of this.obstacles) this.keepOut(p, x, z, 0.62);
-    this.keepOut(p, player.x, player.z, 0.68);
+    if (!this.riding) this.keepOut(p, player.x, player.z, 0.68);
     const h = Math.atan2(way.x, way.z);
     let dh = h - w.heading; dh = Math.atan2(Math.sin(dh), Math.cos(dh));
     w.heading += dh * Math.min(1, dt * 8);
@@ -520,7 +530,13 @@ export class Ambient {
       return;
     }
     // obstacles: the player, people and the car ahead
-    let gap = this.blockedAhead(c, player.x, player.z);
+    let gap = this.riding ? Infinity : this.blockedAhead(c, player.x, player.z);
+    // (and a car one can drive, parked in the lane or rolling along it)
+    for (const b of this.rideBoxes) {
+      const ex = Math.abs(Math.sin(b.heading)) * b.hl + Math.abs(Math.cos(b.heading)) * b.hw, ez = Math.abs(Math.cos(b.heading)) * b.hl + Math.abs(Math.sin(b.heading)) * b.hw;
+      const a = (b.x - c.x) * c.dir;
+      if (a > 0 && a < 18 + ex && Math.abs(b.z - c.lane) < ez + this.half(c).z + 0.15) gap = Math.min(gap, a - ex - this.half(c).x + 0.6);
+    }
     for (const w of this.walkers) if (w.kind === "walk") gap = Math.min(gap, this.blockedAhead(c, w.ch.root.position.x, w.ch.root.position.z));
     for (const o of this.cars) if (o !== c && o.lane === c.lane && o.hidden <= 0) {
       // (between two cars: half of each, CAR.length; a bus is longer)
@@ -598,6 +614,31 @@ export class Ambient {
         const dx = p.x - x, dz = p.z - z, d = Math.hypot(dx, dz);
         if (d < reach && d > 1e-4) { p.x = x + (dx / d) * reach; p.z = z + (dz / d) * reach; }
       }
+    }
+  }
+
+  /** How far ahead of a car at (x, z) going along (fx, fz) the nearest passer-by or dog is, in the strip `half` m to
+   *  each side of its way and within `reach` m (Infinity: nobody): it stops short of them (rides/drive.ts). */
+  personAhead(x: number, z: number, fx: number, fz: number, reach: number, half: number) {
+    let gap = Infinity;
+    for (const w of this.walkers) {
+      if (w.kind !== "walk") continue;
+      const p = w.ch.root.position;
+      gap = Math.min(gap, aheadIn(x, z, fx, fz, p.x, p.z, reach, half));
+      // (and where they will be in a moment, walking on: someone about to step into its way is seen in time)
+      if (w.wait <= 0 && w.path?.length) gap = Math.min(gap, aheadIn(x, z, fx, fz, p.x + Math.sin(w.heading) * w.speed * 1.3, p.z + Math.cos(w.heading) * w.speed * 1.3, reach, half));
+      if (w.dog) gap = Math.min(gap, aheadIn(x, z, fx, fz, w.dog.root.position.x, w.dog.root.position.z, reach, half));
+    }
+    return gap;
+  }
+
+  /** A point (a driven car's front, middle or back, `r` across) pushed out of the traffic's cars. */
+  pushOutOfCars(p: { x: number; z: number }, r: number) {
+    for (const c of this.cars) {
+      if (c.hidden > 0 || c.mesh.scale.x < 0.5) continue;
+      const h = this.half(c);
+      if (Math.abs(c.x - p.x) > h.x + r || Math.abs(c.lane - p.z) > h.z + r) continue;
+      pushOutOfBox(p, r, c.x, c.lane, Math.PI / 2, h.x, h.z);
     }
   }
 

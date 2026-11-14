@@ -312,7 +312,7 @@ A learner who goes looking won't find these; where they are, so that every conve
   Turística, with the sitio beside it. The conversations treat it as the edge of town, reached by taxi (s62: "Está al
   final de la avenida Juárez… mejor tome un taxi"); at the sitio, which stands next to the terminal, Don Rigo says "El
   aeropuerto está aquí al lado" and quotes no fare to it (s66, since its audit: the old $350 is gone).
-- **Cenote Ka'an**: past the meadow at the west end of avenida Juárez; not on foot, twenty minutes by colectivo (s69, s62).
+- **Cenote Ka'an**: past the meadow at the west end of avenida Juárez. Since 14 Nov one walks out to it along the sacbé and swims in it ("Convertibles, the lancha, Cenote Ka'an"); the conversations' cenote is another, twenty minutes by colectivo (s69, s62).
 - **The ruins**: on the rocky point past the beach's west end; half an hour on foot along the beach (s69).
 - s62's trips (a cenote, the ruins of Tulum, Xcacel, Chemuyil) are further on, by colectivo.
 
@@ -1162,6 +1162,37 @@ this town's own code. What the survey of this town found (`Ledges.things`, one o
 `src/dev/climbAudit.ts` on this town: the highest one can stand is 1.65 m, nobody gets beyond
 the bounds or the wading limit, and there is no ground reached only by jumping. Everything that could be jumped onto
 before still can (the 50 boxes and 12 circles split before are all split now, with as many low pieces or more).
+
+## Convertibles, the lancha, Cenote Ka'an (14 Nov 2026, evening)
+
+The engine's round (docs/RIDES.md: convertibles one takes from their owners and drives, a boat, swimming, a dive) as
+Puerto Colibrí has it. The town's plan is `src/editions/es/game/world/rides.ts`, its people's lines
+`src/editions/es/content/rides.ts` (Lithuanian meanings: `src/editions/es-lt/content/rides.ts`).
+
+- **Three convertibles** at the curb, their owners in them: a pink one on avenida Juárez's north side by the park
+  (the first thing one sees walking out of the airport), a turquoise one in calle Itzamná's last block and a yellow
+  one on calle Flamboyán beside the mercado, both looking out to the sea. The prompt is "Drive: Convertible"
+  ("Vairuoti: Convertible", with "Kabrioletas" under it, for Lithuanians). The owners' lines are Spanish that is said
+  the same in every country ("¡Oye, cuídamelo!", "¡Luego me lo devuelves!", "¡Todo tuyo! ¡Diviértete!", "¡Anda, date
+  una vuelta!"; back in it: "¡Gracias por traerlo de vuelta!", "¡Qué rápido!"), as bubbles with their meaning: no
+  clips are recorded for them.
+- **The lancha** one takes out is the one that lay off the beach east of El Muelle (it left the theme's
+  `lanchas.afloat`): afloat a step past where one wades to, its bow out to sea. "Take out: Lancha". One gets out of
+  it into the shallows by the beach, onto El Muelle's boards beside them, or over the side for a swim.
+- **Cenote Ka'an is walked down into** (theme `cenote.walk`; `mexican.ts` `cenoteWalk`). The town's west edge is open
+  where the sacbé leaves it behind the mirador; one walks out along the sacbé (the pair that chatted on it now stands
+  beside it), up three new steps onto the deck, along it between its rails and down its steps into the water, and
+  swims: the same code as the sea's (a pool: `water.ts` POOLS, with the steps as its sloping floor, FLOORS). In the
+  middle it is deep enough for a dive: the limestone bowl, stones, roots hanging in from the rim, two small schools
+  of fish. The rim's stones and the cliff close the water in all round but at the deck; the taquilla, the sign's
+  posts and the palms are solid; the clearing has its own edges (the selva and the scrub beyond are looked at, not
+  walked into). The way-finding ends at the town's edge: out there one walks with the keys or the stick ("Take me
+  there" and a tap on the ground reach as far as the mirador), and the minimap shows grass.
+- **The conversations are unchanged**: s62 and s69 still send the learner to "a cenote" twenty minutes off by
+  colectivo; Cenote Ka'an at the end of avenida Juárez is somewhere to swim, with no conversation of its own.
+- **Left for later**: the archaeological zone (the ruins on the point past the beach's west end) is still scenery and
+  only spoken of (s69); a watersports palapa with a surf or paddle game is planned after this round; a conversation
+  at the cenote's taquilla (the entrance, a life vest) would suit it.
 
 ## The tasks (in order)
 

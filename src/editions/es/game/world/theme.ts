@@ -199,7 +199,8 @@ export const THEME: TownTheme = {
   malecon: { kiosk: [-37, -64.6], kioskSign: "Tours a los cenotes", plaque: "Malecón" },
   palapas: [[-90, -69], [-80, -69.2], [-64, -68.9], [-55, -69.1], [-6, -69], [3, -69.2], [31, -69], [42, -69.2], [52, -68.9], [76, -69], [90, -69.2], [100, -69]],
   lanchas: {
-    afloat: [[-46, -77, 0.3, "#e4007c"], [-14, -80, -0.4, "#f6a800"], [14, -87, 0.8, "#1f6fd1"], [40, -82, 2.6, "#7ac143"]],
+    // (the one that lay off the beach east of El Muelle, [-14, -80], is the lancha one can take out: world/rides.ts)
+    afloat: [[-46, -77, 0.3, "#e4007c"], [14, -87, 0.8, "#1f6fd1"], [40, -82, 2.6, "#7ac143"]],
     beached: [[16, -70, 1.9, "#1f6fd1"], [23.5, -70.4, 1.2, "#e4007c"], [64, -70.2, 2.0, "#00a6a6"]],
   },
   mexican: { roof: "#b5533c" },
@@ -265,7 +266,9 @@ export const THEME: TownTheme = {
   // beyond the town's edge (TOWN.md task 8): a cenote across the meadow at the west end of avenida Juárez (s69: not on
   // foot, twenty minutes by colectivo: the town's edge is as far as the learner walks), and small Mayan ruins on the
   // rocky point past the beach's west end (s69: half an hour on foot)
-  cenote: { x: -136, z: -6, sign: "Cenote Ka'an" },
+  // (14 Nov: one walks out to it along the sacbé now, down the deck's steps into the water, and swims there; the
+  // conversations still take a colectivo to "a cenote" further off: s62, s69)
+  cenote: { x: -136, z: -6, sign: "Cenote Ka'an", walk: true },
   ruins: { x: -124, z: -74 },
 
   // Graphics, round 1 (docs/es/TOWN.md "Graphics, round 1"): the Caribbean's colors, the Saturday tianguis, rooms
@@ -361,7 +364,8 @@ export const THEME: TownTheme = {
     // (graphics round 5) a pair on the sand between the palapas at the west end
     [-72.6, -67.5, -71.5, -67.2],
     // (graphics round 6) a pair on the sacbé out to the cenote (beyond the town's edge: far versions from Juárez)
-    [-122.4, -6.9, -121.5, -5.9],
+    // (14 Nov: beside it, now that one walks out along it to the water)
+    [-122.4, -4.3, -121.4, -3.8],
     // (world-v2) people on the empty meadows: two on the grass north of the sacbé, two on the path to the ruins' gateway, two by
     // the park's pond, two out east watching the planes come in
     [-118.6, -14.6, -117.7, -14.0], [-113.5, -65.3, -112.7, -64.7], [95.6, -36.2, 96.6, -35.8], [137.2, 43.6, 138.2, 44.1]],

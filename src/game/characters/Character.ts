@@ -230,6 +230,10 @@ const SEATED_HANDS: Record<string, [number, number, number, number, number, numb
   lap: [-0.3, 0.3, -0.95, -0.3, -0.3, -0.95], wipe: [-0.3, 0.3, -0.95, -0.3, -0.3, -0.95],
   cup: [-0.3, 0.3, -0.95, -0.5, -0.1, -CUP_ELBOW], type: [-0.5, 0.12, -0.8, -0.5, -0.12, -0.8],
   paper: [-0.62, 0.3, -0.8, -0.62, -0.3, -0.8],
+  // at a car's wheel (both hands on it) and a boat's tiller (the right hand back on it); lounging in a convertible,
+  // one arm lying along the top of the door (src/game/rides)
+  wheel: [-0.98, 0.16, -0.5, -0.98, -0.16, -0.5], tiller: [-0.3, 0.3, -0.95, 0.5, -0.5, -0.35],
+  doorL: [0.12, -1.02, -1.3, -0.3, -0.3, -0.95], doorR: [-0.3, 0.3, -0.95, 0.12, 1.02, -1.3],
 };
 
 let blobGeo: THREE.PlaneGeometry | null = null, blobMat: THREE.MeshBasicMaterial | null = null;
@@ -337,7 +341,15 @@ export class Character {
   fidgets = true;
   /** What their hands are busy with while they wait: wiping a counter, typing (a till, a keyboard), a cup at a café
    *  table, a newspaper. */
-  busy: "wipe" | "type" | "cup" | "paper" | null = null;
+  busy: "wipe" | "type" | "cup" | "paper" | "wheel" | "tiller" | "doorL" | "doorR" | null = null;
+  /** At a wheel: how far it is turned (−1…1, left negative): the hands go round with it. */
+  steer = 0;
+  /** Swimming (0–1: how far into the stroke's pose; src/game/water.ts SWIM): the body lies along the water, turned
+   *  about the chest, the head up, a calm breaststroke at the pace of `moveSpeed`; `dive` (0–1): under water, the
+   *  head down between the arms. */
+  swim = 0;
+  dive = 0;
+  private swimPhase = 0;
   private moment: { kind: Moment; t: number; dur: number; s: number; w: number } | null = null;
   private momentT = 1 + Math.random() * 5;
   private legLook!: { h: number; b: number; shin: THREE.ColorRepresentation; shoes: string; skin: THREE.ColorRepresentation; flipflops: boolean };
@@ -1165,6 +1177,9 @@ export class Character {
       this.stance *= 1 - Math.min(1, dt * 5);
     } else if (seated) {
       [lx, lz, lf, rx, rz, rf] = SEATED_HANDS[this.busy ?? "lap"];
+      // (the wheel goes round: one hand up over it, the other down)
+      if (this.busy === "wheel") { lx += this.steer * 0.3; rx -= this.steer * 0.3; lf -= this.steer * 0.25; rf += this.steer * 0.25; }
+      if (this.busy === "tiller") rz -= this.steer * 0.35;
       headTurn = Math.sin(t * this.swayRate) * 0.06;
       bob = breath * 0.004;
       // a reader looks down at the paper
@@ -1443,6 +1458,22 @@ export class Character {
       this.blob.scale.setScalar(0.95 * b * (1 - 0.45 * Math.min(1, this.lift / 0.6)));
       this.hopShown = this.lift > 0 || this.tuck > 0 || this.squash !== 0 || this.flip !== 0;
     }
+    // swimming: a breaststroke (the arms reach ahead together, sweep out and back, come forward again bent; the legs
+    // draw up and kick as the arms reach), eased in over the walking pose
+    const sw = seated ? 0 : this.swim;
+    if (sw > 0) {
+      this.swimPhase += dt * (2.6 + Math.min(4, this.moveSpeed) * 0.75);
+      const ph = this.swimPhase, pull = Math.max(0, Math.sin(ph)), back = Math.max(0, -Math.sin(ph)), still = this.moveSpeed < 0.3 ? 0.35 : 1;
+      const ax = -2.55 - 0.45 * Math.cos(ph) * still, out = 0.18 + 1.05 * pull * still, bend = -0.15 - 1.15 * back * still;
+      lx += (ax - lx) * sw; rx += (ax - rx) * sw;
+      lz += (-out - lz) * sw; rz += (out - rz) * sw;
+      lf += (bend - lf) * sw; rf += (bend - rf) * sw;
+      lfy *= 1 - sw; rfy *= 1 - sw; lfz *= 1 - sw; rfz *= 1 - sw;
+      const kick = Math.max(0, Math.sin(ph + 2.2)) * still, thigh = 0.12 - 0.5 * kick, knee = 0.25 + 1.15 * kick;
+      this.legL.rotation.x += (thigh - this.legL.rotation.x) * sw; this.legR.rotation.x += (thigh - this.legR.rotation.x) * sw;
+      this.legL.rotation.z += (-0.12 - 0.3 * kick - this.legL.rotation.z) * sw; this.legR.rotation.z += (0.12 + 0.3 * kick - this.legR.rotation.z) * sw;
+      this.shinL.rotation.x += (knee - this.shinL.rotation.x) * sw; this.shinR.rotation.x += (knee - this.shinR.rotation.x) * sw;
+    }
     this.armL.rotation.set(lx, 0, lz);
     this.armR.rotation.set(rx, 0, rz);
     this.foreL.rotation.set(lf, lfy, lfz);
@@ -1456,6 +1487,16 @@ export class Character {
       this.body.rotation.x += this.flip;
       this.body.position.y += c * (1 - Math.cos(this.flip));
       this.body.position.z -= c * Math.sin(this.flip);
+    }
+    if (sw > 0) {
+      // lying along the water, turned about the chest (which stays where it is: the legs come up behind), the head
+      // held up out of it; in a dive the head goes down between the arms
+      const a = (1.3 + 0.2 * this.dive) * sw, c = 1.2 * h;
+      this.body.rotation.x += a;
+      this.body.position.y += c * (1 - Math.cos(a)) + Math.sin(this.swimPhase + 0.6) * 0.03 * sw;
+      this.body.position.z -= c * Math.sin(a);
+      headNod += (-1.05 + 1.0 * this.dive) * sw;
+      this.blob.visible = false;
     }
     this.head.rotation.x = headNod;
     this.head.rotation.y = headTurn;

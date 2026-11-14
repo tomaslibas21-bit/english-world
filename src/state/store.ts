@@ -134,7 +134,10 @@ export interface HudState {
   zoneName: string;
   zoneBanner: { title: string; sub?: string } | null;
   /** What E / the tap does here; `lt` is a second line (a door's place in Lithuanian and what its name means). */
-  prompt: { label: string; lt?: string; kind: "talk" | "enter" | "exit" | "taxi" } | null;
+  prompt: { label: string; lt?: string; kind: "talk" | "enter" | "exit" | "taxi" | "drive" | "boat" | "out" | "climb" } | null;
+  /** What the player does instead of walking (game/rides, water.ts SWIM): at a car's wheel, at a boat's helm,
+   *  swimming, or under water on a dive. */
+  ride: null | "car" | "boat" | "swim" | "dive";
   /** The player is on the move (the task card folds away on a phone meanwhile). */
   walking: boolean;
   objective: { sitId: string; title: string; goal: string; where: string; dist: number | null; angle: number | null; inside: boolean } | null;
@@ -193,7 +196,7 @@ export const useStore = create<Store>((set, get) => ({
   progress: initial,
   conv: EMPTY_CONV,
   hud: {
-    zoneName: "", zoneBanner: null, prompt: null, walking: false, objective: null, minimap: { px: 0, pz: 0, heading: 0, zone: "town" }, fade: 0, panel: null,
+    zoneName: "", zoneBanner: null, prompt: null, ride: null, walking: false, objective: null, minimap: { px: 0, pz: 0, heading: 0, zone: "town" }, fade: 0, panel: null,
     showTouch: typeof window !== "undefined" && (("ontouchstart" in window) || navigator.maxTouchPoints > 1),
     coach: null,
   },

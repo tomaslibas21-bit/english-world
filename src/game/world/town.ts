@@ -8,7 +8,7 @@ import { THEME, type TianguisGoods } from "./theme";
 import * as MX from "./mexican";
 import { LOCATIONS } from "../../content/locations";
 import { STYLED, IS_REAL, grade } from "../style";
-import { SHORE, DECKS, sandY, SAND_GLSL, SHORE_GLSL, SWELL_GLSL } from "../water";
+import { SHORE, DECKS, POOLS, FLOORS, sandY, SAND_GLSL, SHORE_GLSL, SWELL_GLSL } from "../water";
 import { GROUND_BLOCKS, groundPalette, groundExtras, groundMaterial, seaMaterial, trunkGeometry, canopyGeometry, canopyMaterial, bushGeometry, bushMaterial, outlineInstanced, cloudMaterial, cloudPuff } from "./styled";
 
 export interface Door { loc: string; bid: string; x: number; z: number; face: "n" | "s" | "e" | "w"; name: string; outX: number; outZ: number; rot: number }
@@ -66,6 +66,8 @@ export function buildTown(): Town {
   const r = rand(7);
   sprays.length = 0; // a new game builds a new town
   DECKS.length = 0;
+  POOLS.length = 0;
+  FLOORS.length = 0;
   seats.length = 0;
   details.length = 0;
   displays.length = 0;
@@ -179,9 +181,18 @@ export function buildTown(): Town {
   addMaggiesCar(M, colliders, group);
 
   // world bounds
-  colliders.addBox((WORLD.minX + WORLD.maxX) / 2, WORLD.minZ - 1, WORLD.maxX - WORLD.minX + 4, 2);
+  // (the north one lies out in the sea: like the sea itself, it stops everyone but the player, who swims on out to the
+  // bay's own edge, water.ts BAY)
+  colliders.addBox((WORLD.minX + WORLD.maxX) / 2, WORLD.minZ - 1, WORLD.maxX - WORLD.minX + 4, 2, "sea");
   colliders.addBox((WORLD.minX + WORLD.maxX) / 2, WORLD.maxZ + 1, WORLD.maxX - WORLD.minX + 4, 2);
-  colliders.addBox(WORLD.minX - 1, 0, 2, 220);
+  // (theme.ts `cenote.walk`: the west edge is open where the sacbé leaves the town for the cenote; the clearing out
+  // there has its own edges, mexican.ts cenoteWalk)
+  if (THEME.cenote?.walk) {
+    const cz = THEME.cenote.z, g0 = cz - 3.6, g1 = cz + 2.6;
+    colliders.addBox(WORLD.minX - 1, (g0 - 110) / 2, 2, g0 + 110);
+    colliders.addBox(WORLD.minX - 1, (g1 + 110) / 2, 2, 110 - g1);
+    MX.cenoteWalk(colliders, THEME.cenote.x, cz, WORLD.minX);
+  } else colliders.addBox(WORLD.minX - 1, 0, 2, 220);
   colliders.addBox(WORLD.maxX + 1, 0, 2, 220);
   // the sea on both sides of the pier deck (x -41.3…-18.7); the deck has its own edges
   // ("sea": the passers-by and the way-finding stop at it; the player wades in to the shore's limit, Game.ts)
