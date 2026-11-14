@@ -26,6 +26,8 @@ export interface GameApi {
   setJoystick(x: number, y: number): void;
   /** A jump (Space, the phone's button); again in the air: a flip. */
   jump(): void;
+  /** The jump button held down or let go (at a wheel it is the brake). */
+  hold(on: boolean): void;
   setQuality(q: "high" | "low"): void;
   /** The name tags say the role in the Spanish just chosen (the Spanish edition's switch; compose.ts roleSaid). */
   refreshNameTags(): void;

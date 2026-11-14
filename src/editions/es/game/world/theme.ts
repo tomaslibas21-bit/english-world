@@ -199,7 +199,8 @@ export const THEME: TownTheme = {
   malecon: { kiosk: [-37, -64.6], kioskSign: "Tours a los cenotes", plaque: "Malecón" },
   palapas: [[-90, -69], [-80, -69.2], [-64, -68.9], [-55, -69.1], [-6, -69], [3, -69.2], [31, -69], [42, -69.2], [52, -68.9], [76, -69], [90, -69.2], [100, -69]],
   lanchas: {
-    afloat: [[-46, -77, 0.3, "#e4007c"], [-14, -80, -0.4, "#f6a800"], [14, -87, 0.8, "#1f6fd1"], [40, -82, 2.6, "#7ac143"]],
+    // (the one that lay off the beach east of El Muelle, [-14, -80], is the lancha one can take out: world/rides.ts)
+    afloat: [[-46, -77, 0.3, "#e4007c"], [14, -87, 0.8, "#1f6fd1"], [40, -82, 2.6, "#7ac143"]],
     beached: [[16, -70, 1.9, "#1f6fd1"], [23.5, -70.4, 1.2, "#e4007c"], [64, -70.2, 2.0, "#00a6a6"]],
   },
   mexican: { roof: "#b5533c" },
