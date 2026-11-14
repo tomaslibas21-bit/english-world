@@ -68,7 +68,7 @@ Shared by every edition of the game (the code is in `src/game/`; each town keeps
   high.
 - A floor that passes under a collider (a deck under its plain edge) keeps it a wall; it is one only when it is as low
   as what is lowest in the collider itself. A boardwalk that starts beside the end of a low wall passes under
-  nothing: the malecón's two stretches by the muelle are jumped onto like the rest of it (15 Nov).
+  nothing: the malecón's two stretches by the muelle are jumped onto like the rest of it (14 Nov, evening).
 - Way-finding, the passers-by, the camera's field and the conversation camera use the original colliders. A walk
   planned from up on something ("Nuvesk mane", a tap) first steps straight down to the nearest open spot
   (`Game.walkTo`, `Ledges.clear`). Indoors the jump (and the flip) is as it was: drawn only.
@@ -100,7 +100,7 @@ Shared by every edition of the game (the code is in `src/game/`; each town keeps
   starts the count again) the pace eases up to a jog, 6.0 m/s, over 0.9 s. Shift, or the stick at its edge: a run,
   7.4 m/s. Indoors always a walk.
 
-## The way to the objective (`src/game/guidance.ts`; 15 Nov 2026)
+## The way to the objective (`src/game/guidance.ts`; 14 Nov 2026)
 
 - The way to the current objective is marked on the ground with **small pale arrowheads** (they were bright yellow
   discs every 1.3 m): one every 2.2 m, partly seen through, each with a soft darker edge so it shows on light stone
