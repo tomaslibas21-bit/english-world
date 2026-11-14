@@ -105,7 +105,7 @@
 /* the display: a dark glass with the station, the song's place in it and the time in glowing letters; the song and
    its heart under them; a thin line that fills as the song goes */
 .rs-display {
-  position: relative; display: flex; flex-direction: column; gap: 5px; padding: 8px 6px 10px 11px; border-radius: 11px; overflow: hidden; background: var(--rs-lcd);
+  position: relative; display: flex; flex-direction: column; gap: 3px; padding: 6px 6px 10px 11px; border-radius: 11px; overflow: hidden; background: var(--rs-lcd);
   box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(0, 0, 0, 0.35), 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 .rs-display::after { /* the glass */
@@ -113,7 +113,7 @@
   background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.028) 0 1px, transparent 1px 3px), linear-gradient(180deg, rgba(255, 255, 255, 0.07), transparent 38%);
 }
 .rs-line {
-  display: flex; align-items: center; gap: 8px; min-height: 15px; padding-right: 6px; font-family: var(--ui); font-weight: 800; font-size: 0.68em; line-height: 1; letter-spacing: 0.09em;
+  display: flex; align-items: center; gap: 8px; min-height: 15px; padding-right: 6px; font-family: var(--ui); font-weight: 800; font-size: 0.68em; line-height: 1.5; letter-spacing: 0.09em;
   text-transform: uppercase; font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--rs-lcd-ink); opacity: 0.5; transition: opacity 0.6s ease;
 }
 .radio-set.on .rs-line { opacity: 1; text-shadow: 0 0 9px color-mix(in srgb, var(--rs-lcd-ink) 55%, transparent); }
