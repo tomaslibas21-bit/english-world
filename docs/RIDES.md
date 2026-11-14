@@ -60,8 +60,16 @@ the town, and a boat at the shore to go out in and swim from. Shared by every ed
   picture now, where it showed sea), the radio: unchanged. The climbing audit (`src/dev/climbAudit.ts`) still holds
   for anyone on foot: nobody walks past the wading limit; one swims past it.
 - **One draw call per person** as before (the swim's pose and the hands on the wheel are the same bones). A
-  convertible or the boat is one mesh; the three convertibles and their four or five owners are what the round adds
-  to the town's views (the numbers: the round's notes).
+  convertible or the boat is one mesh; the three convertibles and their four owners (one in the main street's car,
+  one in the east one, a pair in the quiet west one; three in the simple quality) are what the round adds to the
+  town's views.
+- **What it costs a phone** (measured 14 Nov, the game's own work per frame, the build before against this one in
+  turn): about 2 % more where no convertible is near, 4 to 7 % on the street where one stands with its owner in the
+  picture; the draw calls at the busiest spots are what they were (Main Street 220, the square 174; Puerto Colibrí's
+  zócalo 101 → 102, avenida Juárez west 115). Kept low by: owners farther than 26 m from the player hold their pose
+  (their bones are not worked out; `holdPose`), are drawn in their far version beyond 20 m from the camera, a ride
+  out of the camera's view is left out of the scene's walk, a car's shadow is drawn only within 36 m of the player,
+  and under water the town above is left out of the picture (a dive draws about 15 things, the street 150 to 300).
 
 ## The files
 
