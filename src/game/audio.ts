@@ -1535,6 +1535,144 @@ export class AudioSystem {
     src.start(now); src.stop(now + 1.85);
   }
 
+  // ---- A recorded line heard from somewhere in the world (a glyph stone in the grotto calling, src/game/cave): on
+  // the world's bus (silent in a conversation, under an open panel), as loud and as far to one side as `at()` says for
+  // as long as it plays, with a little of a cave's echo behind it. One at a time.
+  private calling: (() => void) | null = null;
+  /** Resolves when the line has been said (false: no recording of it, or it could not be played now). */
+  async callFrom(voice: string, speed: number, text: string, at: () => { gain: number; pan: number }): Promise<boolean> {
+    this.stopCall();
+    await this.init();
+    if (!this.ready) return false;
+    const key = this.recordingKey(voice, speed, text);
+    if (!this.manifest[key]) return false;
+    let buffer: AudioBuffer;
+    try { buffer = await this.recordingBuffer(key, false); } catch { return false; }
+    const ctx = this.ctx;
+    if (!ctx || ctx.state !== "running" || document.hidden || this.volume <= 0) return false;
+    this.stopCall();
+    return new Promise((done) => {
+      const src = ctx.createBufferSource(), gain = ctx.createGain(), out = this.out(ctx);
+      const pan = typeof ctx.createStereoPanner === "function" ? ctx.createStereoPanner() : null;
+      const delay = ctx.createDelay(0.5), back = ctx.createGain(), wet = ctx.createGain(), soft = ctx.createBiquadFilter();
+      src.buffer = buffer;
+      delay.delayTime.value = 0.21; back.gain.value = 0.34; wet.gain.value = 0.3; soft.type = "lowpass"; soft.frequency.value = 2200;
+      src.connect(gain);
+      const dry: AudioNode = pan ? (gain.connect(pan), pan) : gain;
+      dry.connect(out);
+      dry.connect(delay); delay.connect(soft); soft.connect(back); back.connect(delay); soft.connect(wet); wet.connect(out);
+      const set = (first: boolean) => {
+        const a = at(), now = ctx.currentTime;
+        if (first) { gain.gain.setValueAtTime(a.gain * this.volume, now); pan?.pan.setValueAtTime(a.pan, now); }
+        else { gain.gain.setTargetAtTime(a.gain * this.volume, now, 0.1); pan?.pan.setTargetAtTime(a.pan, now, 0.1); }
+      };
+      set(true);
+      const timer = setInterval(() => set(false), 90);
+      let over = false;
+      const end = (said: boolean) => {
+        if (over) return;
+        over = true;
+        clearInterval(timer);
+        src.onended = null;
+        try { src.stop(); } catch { /* not started or already over */ }
+        // (the echo's tail rings out, then everything lets go)
+        setTimeout(() => { for (const n of [src, gain, pan, delay, back, wet, soft]) n?.disconnect(); }, said ? 1600 : 0);
+        if (this.calling === stop) this.calling = null;
+        done(said);
+      };
+      const stop = () => end(false);
+      this.calling = stop;
+      src.onended = () => end(true);
+      src.start();
+    });
+  }
+  stopCall() { this.calling?.(); }
+
+  // ---- The grotto's own quiet (src/game/cave), made on the spot: water dripping somewhere with its echo, a low
+  // breath of air, a falls' hush when one is near, and now and then two soft notes as of stones chiming. Asked for
+  // about eight times a second, like `ambience`.
+  private grotto: { next: number; chime: number; hush?: { src: AudioBufferSourceNode; gain: GainNode }; air?: { o: OscillatorNode[]; gain: GainNode }; echo?: { in: GainNode; nodes: AudioNode[] } } | null = null;
+  cave(on: boolean, lv: { falls?: number; deep?: number } = {}) {
+    const ctx = this.ctx;
+    const live = on && !document.hidden && this.volume > 0 && this.soundsLevel > 0 && !!ctx && ctx.state === "running";
+    if (!live) { this.stopCave(); return; }
+    const now = ctx.currentTime, v = this.volume;
+    if (!this.grotto) {
+      this.grotto = { next: now + 0.6, chime: now + 5 + Math.random() * 6 };
+      // an echo everything of the place goes through
+      const inp = ctx.createGain(), delay = ctx.createDelay(0.6), back = ctx.createGain(), soft = ctx.createBiquadFilter(), wet = ctx.createGain();
+      delay.delayTime.value = 0.27; back.gain.value = 0.42; soft.type = "lowpass"; soft.frequency.value = 2600; wet.gain.value = 0.5;
+      inp.connect(this.out(ctx)); inp.connect(delay); delay.connect(soft); soft.connect(back); back.connect(delay); soft.connect(wet); wet.connect(this.out(ctx));
+      this.grotto.echo = { in: inp, nodes: [inp, delay, back, soft, wet] };
+      // the air: two low notes a fifth apart, breathing slowly
+      const gain = ctx.createGain(); gain.gain.value = 0;
+      gain.gain.setTargetAtTime(v * 0.016, now, 1.5);
+      const o = [98, 146.8, 196.2].map((f, i) => { const osc = ctx.createOscillator(); osc.type = "sine"; osc.frequency.value = f; const g = ctx.createGain(); g.gain.value = i === 2 ? 0.35 : 1; osc.connect(g); g.connect(gain); osc.start(); return osc; });
+      const lfo = ctx.createOscillator(), depth = ctx.createGain(); lfo.frequency.value = 0.09; depth.gain.value = v * 0.006; lfo.connect(depth); depth.connect(gain.gain); lfo.start();
+      gain.connect(inp);
+      this.grotto.air = { o: [...o, lfo], gain };
+    }
+    const G = this.grotto, out = G.echo!.in;
+    // drips: a quick falling ping, a softer one after it now and then
+    if (now > G.next) {
+      G.next = now + 0.5 + Math.random() * 2.4;
+      const f = 900 + Math.random() * 1500, at = now + 0.03;
+      const o = this.note(f, at, 0.16, "sine", v * (0.02 + Math.random() * 0.02), out, 0.004);
+      o.frequency.exponentialRampToValueAtTime(f * 0.55, at + 0.12);
+      if (Math.random() < 0.35) this.note(f * 1.5, at + 0.13, 0.1, "sine", v * 0.012, out, 0.004);
+    }
+    // two soft notes, a fifth or a fourth apart, from an old five-note scale
+    if (now > G.chime) {
+      G.chime = now + 9 + Math.random() * 14;
+      const scale = [523.3, 587.3, 659.3, 784, 880], i = Math.floor(Math.random() * scale.length), a = scale[i], b = scale[(i + 2 + Math.floor(Math.random() * 2)) % scale.length] * (Math.random() < 0.5 ? 1 : 0.5);
+      for (const [f, t] of [[a, 0.05], [b, 0.55]]) { this.note(f, now + t, 2.2, "sine", v * 0.02 * (1 + (lv.deep ?? 0)), out, 0.03); this.note(f * 2.01, now + t, 1.2, "sine", v * 0.006, out, 0.02); }
+    }
+    // a falls' hush: noise through a band, as loud as the falls are near
+    const falls = Math.max(0, Math.min(1, lv.falls ?? 0));
+    if (falls > 0.02 && !G.hush) {
+      const len = Math.round(ctx.sampleRate * 2.2), buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+      let last = 0;
+      for (let i = 0; i < len; i++) { last = last * 0.82 + (Math.random() * 2 - 1) * 0.18; d[i] = last * 2.4; }
+      // (the ends meet: no click where it comes round)
+      for (let i = 0; i < 2000; i++) { const k = i / 2000; d[i] = d[i] * k + d[len - 2000 + i] * (1 - k); }
+      const src = ctx.createBufferSource(), band = ctx.createBiquadFilter(), gain = ctx.createGain();
+      src.buffer = buf; src.loop = true; src.loopEnd = (len - 2000) / ctx.sampleRate;
+      band.type = "bandpass"; band.frequency.value = 1100; band.Q.value = 0.5; gain.gain.value = 0;
+      src.connect(band); band.connect(gain); gain.connect(this.out(ctx));
+      src.start();
+      G.hush = { src, gain };
+    }
+    G.hush?.gain.gain.setTargetAtTime(v * 0.05 * falls * falls, now, 0.3);
+  }
+  stopCave() {
+    const G = this.grotto;
+    if (!G) return;
+    this.grotto = null;
+    const ctx = this.ctx, now = ctx?.currentTime ?? 0;
+    try {
+      G.air?.gain.gain.setTargetAtTime(0, now, 0.2);
+      G.hush?.gain.gain.setTargetAtTime(0, now, 0.2);
+    } catch { /* the context is gone */ }
+    setTimeout(() => {
+      for (const o of G.air?.o ?? []) { try { o.stop(); } catch { /* already stopped */ } o.disconnect(); }
+      G.air?.gain.disconnect();
+      if (G.hush) { try { G.hush.src.stop(); } catch { /* already stopped */ } G.hush.src.disconnect(); G.hush.gain.disconnect(); }
+      for (const n of G.echo?.nodes ?? []) n.disconnect();
+    }, 900);
+  }
+  /** A stone lit, a gate opened: a few bright notes going up, ringing on (an effect: heard over everything). */
+  chime(kind: "stone" | "gate" | "heart" = "stone") {
+    const ctx = this.ac();
+    if (!ctx) return;
+    const now = ctx.currentTime, out = this.fx(ctx), v = this.volume * 0.16;
+    const notes = kind === "stone" ? [659.3, 880, 1318.5] : kind === "gate" ? [392, 523.3, 659.3, 784, 1046.5] : [392, 523.3, 659.3, 784, 1046.5, 1318.5, 1568, 2093];
+    notes.forEach((f, i) => {
+      const at = now + i * (kind === "stone" ? 0.09 : 0.12);
+      this.note(f, at, kind === "stone" ? 1.4 : 2.4, "sine", v, out, 0.01);
+      this.note(f * 2, at, 0.7, "triangle", v * 0.25, out, 0.01);
+    });
+  }
+
   sfx(name: "success" | "pop" | "door" | "cheer" | "soft" | "listen" | "coin" | "car" | "error" | "ring" | "beep" | "knock" | "tick") {
     audioDiagnostic("context.effect", { reason: name });
     const ctx = this.ac();

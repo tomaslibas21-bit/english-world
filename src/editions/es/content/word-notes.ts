@@ -29,5 +29,18 @@ export const WORD_NOTES: Record<string, string> = {
   "dengue": "dengue: a fever spread by mosquitoes, common in the tropics.",
   "pan dulce": "pan dulce: Mexican sweet bread, the classic with coffee.",
   "tres leches": "tres leches: a sponge cake soaked in three kinds of milk.",
+  // Nikté's riddles (x02-alux-nikte)
+  "adivinanza": "adivinanza: a riddle; Spanish has many old rhyming ones, often with the answer hidden in their words.",
+  "pista": "pista: a clue, a hint (also a track, a dance floor or a runway).",
+  "nikte": "Nikté: Maya for “flower”; the name of the alux of the riddles.",
+  "guacamole": "guacamole: mashed avocado with lime, onion, cilantro and chili (from Nahuatl ahuacamolli, “avocado sauce”).",
+  // the aluxes' grotto under Cenote Ka'an (x01-alux-kin)
+  "alux": "alux (plural aluxes): a small spirit of the Maya forest and cornfields, playful and mischievous.",
+  "kin": "Kin: Maya for “sun”; the name of the alux who keeps the way into the grotto.",
+  "sacbe": "sacbé: a white road the ancient Maya built (Maya for “white road”).",
+  "gruta": "gruta: a grotto, a cave.",
+  "ceiba": "ceiba: the kapok tree, sacred to the Maya: its roots reach the underworld, its branches the sky.",
+  "milpa": "milpa: a Maya field of corn, beans and squash grown together.",
+  "glifo": "glifo: a glyph, a sign of Maya writing carved in stone.",
 };
-export const WORD_NOTE_ALIASES: Record<string, string> = {"cenotes": "cenote", "cochinita pibil": "cochinita", "cochinitas": "cochinita", "marquesitas": "marquesita", "conchas": "concha", "guayaberas": "guayabera", "colectivos": "colectivo", "micheladas": "michelada", "horchatas": "horchata", "habaneros": "habanero"};
+export const WORD_NOTE_ALIASES: Record<string, string> = {"cenotes": "cenote", "cochinita pibil": "cochinita", "cochinitas": "cochinita", "marquesitas": "marquesita", "conchas": "concha", "guayaberas": "guayabera", "colectivos": "colectivo", "micheladas": "michelada", "horchatas": "horchata", "habaneros": "habanero", "adivinanzas": "adivinanza", "pistas": "pista", "aluxes": "alux", "sacbes": "sacbe", "grutas": "gruta", "ceibas": "ceiba", "milpas": "milpa", "glifos": "glifo"};

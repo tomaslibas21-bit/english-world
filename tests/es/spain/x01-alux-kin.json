@@ -1,0 +1,84 @@
+{
+"situation": "x01-alux-kin",
+"items": [
+{
+"ctx": "who",
+"say": "Me llamo Pablo",
+"intent": "name_ctx"
+},
+{
+"ctx": "who",
+"say": "Soy Lucía",
+"intent": "name_ctx"
+},
+{
+"ctx": "from",
+"say": "Soy de España",
+"intent": "from_ctx"
+},
+{
+"ctx": "from",
+"say": "Vengo de Madrid",
+"intent": "from_ctx"
+},
+{
+"ctx": "from",
+"say": "Soy español",
+"intent": "from_ctx"
+},
+{
+"ctx": "why",
+"say": "He venido a ver la gruta",
+"intent": "why_see"
+},
+{
+"ctx": "why",
+"say": "He venido a conocer la cueva",
+"intent": "why_see"
+},
+{
+"ctx": "why",
+"say": "Me he perdido",
+"intent": "why_lost"
+},
+{
+"ctx": "why",
+"say": "He venido a buscar las piedras",
+"intent": "why_stones"
+},
+{
+"ctx": "way",
+"say": "¿Por dónde se va a las piedras?",
+"intent": "ask_way"
+},
+{
+"ctx": "way",
+"say": "¿Me dices dónde están las piedras?",
+"intent": "ask_way"
+},
+{
+"ctx": "more",
+"say": "¿Vivís aquí?",
+"intent": "q_live"
+},
+{
+"ctx": "more",
+"say": "¿Sois aluxes?",
+"intent": "q_alux"
+},
+{
+"ctx": "more",
+"say": "Vale, muchas gracias",
+"intent": [
+"g_thanks",
+"yn:yes"
+],
+"note": "a yes with thanks at “¿Tienes otra pregunta?”: the step reads the thanks and lets the learner pass"
+},
+{
+"ctx": "more",
+"say": "¿Qué hago con las piedras?",
+"intent": "ask_what"
+}
+]
+}

@@ -36,6 +36,9 @@ export class CameraRig {
   yaw = Math.PI;            // camera behind the player looking north by default
   pitch = FOLLOW.pitch;
   dist = FOLLOW.dist;
+  /** The lean the follow camera goes back to once the player walks on (the town's by default; a place like the
+   *  grotto, with a roof worth seeing, sets its own). */
+  homePitch = FOLLOW.pitch;
   target = new THREE.Vector3();
   private curPos = new THREE.Vector3();
   private curLook = new THREE.Vector3();
@@ -332,7 +335,7 @@ export class CameraRig {
         this.yawVel = THREE.MathUtils.clamp(v, -2.3, 2.3);
         this.yaw = angleDiff(this.yaw + step, 0);
         // and back to the usual lean, if a drag changed it
-        if (swinging) this.pitch = ease(this.pitch, FOLLOW.pitch, 1.1, dt);
+        if (swinging) this.pitch = ease(this.pitch, this.homePitch, 1.1, dt);
       } else {
         this.yawVel *= Math.exp(-8 * dt);
         this.yaw = angleDiff(this.yaw + this.yawVel * dt, 0);

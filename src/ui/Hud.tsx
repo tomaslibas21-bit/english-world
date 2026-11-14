@@ -13,6 +13,7 @@ import { LyricStrip, RadioTool } from "./Radio";
 import { useRadio } from "../radio";
 import { L, Lx } from "./i18n";
 import { EDITION } from "../edition";
+import { CaveCard } from "./Cave";
 import { Guide } from "./Guide";
 import "./light.css";
 
@@ -78,6 +79,7 @@ export function Hud() {
         </button>
       )}
       <Guide />
+      <CaveCard />
       {/* at a wheel, at the boat's helm or in the water: what the keys do there (a computer; a phone has its buttons) */}
       {hud.ride && !hud.showTouch && !hud.panel && !hud.coach && (
         <div className="help-strip ride-strip">
@@ -136,6 +138,9 @@ function Objective() {
   const coachOn = useStore((s) => !!s.hud.coach);
   const collapsed = manual ?? (typeof window !== "undefined" && ((walking && window.innerWidth < 600) || (coachOn && (window.innerWidth < 600 || window.innerHeight <= 520))));
   const setCollapsed = (v: boolean) => setManual(v);
+  // (down in the grotto its own card stands here: the town's task waits up in the town)
+  const inCave = useStore((s) => !!s.hud.cave);
+  if (inCave) return null;
   if (!o) {
     return (
       <div className="objective-card">
@@ -312,7 +317,7 @@ function TouchControls() {
       <div className="joy" ref={ref}><div className="knob" ref={knob} /></div>
       {/* the jump stays under the right thumb; with someone to talk to or a door to go through it moves over for that button
           (a second tap while in the air is a flip: every press goes to the game, which knows where the player is) */}
-      {prompt && <button className="act-btn" onClick={() => game?.interact()}>{prompt.kind === "talk" ? L("Kalbėti") : prompt.kind === "exit" ? L("Išeiti") : prompt.kind === "drive" ? L("Vairuoti") : prompt.kind === "boat" ? L("Plaukti") : prompt.kind === "out" ? L("Išlipti") : prompt.kind === "climb" ? L("Užlipti") : L("Įeiti")}</button>}
+      {prompt && <button className="act-btn" onClick={() => game?.interact()}>{prompt.kind === "talk" ? L("Kalbėti") : prompt.kind === "exit" ? L("Išeiti") : prompt.kind === "drive" ? L("Vairuoti") : prompt.kind === "boat" ? L("Plaukti") : prompt.kind === "out" ? L("Išlipti") : prompt.kind === "climb" ? L("Užlipti") : prompt.kind === "listen" ? L("Klausyti") : L("Įeiti")}</button>}
       {/* (at a wheel the same button is the brake, for as long as it is held; in the water, a dive and the way back up) */}
       {ride === "car" || ride === "boat"
         ? <button className={"jump-btn brake-btn" + (prompt ? " beside" : "")} aria-label={L("Stabdyti")} title={L("Stabdyti")} onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); game?.hold(true); }} onPointerUp={() => game?.hold(false)} onPointerCancel={() => game?.hold(false)} onLostPointerCapture={() => game?.hold(false)}><span aria-hidden>STOP</span></button>

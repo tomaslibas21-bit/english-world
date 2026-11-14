@@ -268,7 +268,8 @@ export const THEME: TownTheme = {
   // rocky point past the beach's west end (s69: half an hour on foot)
   // (14 Nov: one walks out to it along the sacbé now, down the deck's steps into the water, and swims there; the
   // conversations still take a colectivo to "a cenote" further off: s62, s69)
-  cenote: { x: -136, z: -6, sign: "Cenote Ka'an", walk: true },
+  // (15 Nov: and through the cave's mouth at its far side into the aluxes' grotto, src/game/cave)
+  cenote: { x: -136, z: -6, sign: "Cenote Ka'an", walk: true, grotto: true },
   ruins: { x: -124, z: -74 },
 
   // Graphics, round 1 (docs/es/TOWN.md "Graphics, round 1"): the Caribbean's colors, the Saturday tianguis, rooms

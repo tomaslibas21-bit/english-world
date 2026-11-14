@@ -1,0 +1,1037 @@
+{
+"situation": "x01-alux-kin",
+"items": [
+{
+"ctx": "who",
+"say": "Soy Sam",
+"intent": "name_ctx"
+},
+{
+"ctx": "who",
+"say": "Me llamo Ana",
+"intent": "name_ctx"
+},
+{
+"ctx": "who",
+"say": "Mi nombre es Laura",
+"intent": "name_ctx"
+},
+{
+"ctx": "who",
+"say": "Hola, me llamo Tom",
+"intent": "name_ctx"
+},
+{
+"ctx": "who",
+"say": "Yo soy Mike",
+"intent": "name_ctx"
+},
+{
+"ctx": "who",
+"say": "Me llamo Jennifer, mucho gusto",
+"intent": "name_ctx"
+},
+{
+"ctx": "who",
+"say": "Soy Kate, ¿y tú?",
+"intent": "name_ctx"
+},
+{
+"ctx": "who",
+"say": "Me dicen Bob",
+"intent": "name_ctx"
+},
+{
+"ctx": "who",
+"say": "Hola, soy David",
+"intent": "name_ctx"
+},
+{
+"ctx": "who",
+"say": "Buenas, me llamo Chris",
+"intent": "name_ctx"
+},
+{
+"ctx": "who",
+"say": "Ryan",
+"intent": "bare_name_ctx"
+},
+{
+"ctx": "who",
+"say": "Emily",
+"intent": "bare_name_ctx"
+},
+{
+"ctx": "who",
+"say": "Sarah",
+"intent": "bare_name_ctx"
+},
+{
+"ctx": "who",
+"say": "¿Quién eres tú?",
+"intent": [
+"q_who"
+]
+},
+{
+"ctx": "who",
+"say": "¿Y tú quién eres?",
+"intent": [
+"q_who"
+]
+},
+{
+"ctx": "who",
+"say": "¿Quién es usted?",
+"intent": [
+"q_who"
+]
+},
+{
+"ctx": "who",
+"say": "¿Dónde estoy?",
+"intent": [
+"q_place"
+]
+},
+{
+"ctx": "who",
+"say": "¿Qué es este lugar?",
+"intent": [
+"q_place"
+]
+},
+{
+"ctx": "from",
+"say": "Soy de Canadá",
+"intent": "from_ctx"
+},
+{
+"ctx": "from",
+"say": "Vengo de Estados Unidos",
+"intent": "from_ctx"
+},
+{
+"ctx": "from",
+"say": "Soy de los Estados Unidos",
+"intent": "from_ctx"
+},
+{
+"ctx": "from",
+"say": "De Inglaterra",
+"intent": "from_ctx"
+},
+{
+"ctx": "from",
+"say": "Soy de Irlanda",
+"intent": "from_ctx"
+},
+{
+"ctx": "from",
+"say": "Soy de Australia",
+"intent": "from_ctx"
+},
+{
+"ctx": "from",
+"say": "Vengo de Nueva Zelanda",
+"intent": "from_ctx"
+},
+{
+"ctx": "from",
+"say": "Soy estadounidense",
+"intent": "from_ctx"
+},
+{
+"ctx": "from",
+"say": "Soy canadiense",
+"intent": "from_ctx"
+},
+{
+"ctx": "from",
+"say": "Soy inglés",
+"intent": "from_ctx"
+},
+{
+"ctx": "from",
+"say": "Soy de Lituania",
+"intent": "from_ctx"
+},
+{
+"ctx": "from",
+"say": "Vengo de Alemania",
+"intent": "from_ctx"
+},
+{
+"ctx": "from",
+"say": "De México",
+"intent": "from_ctx"
+},
+{
+"ctx": "from",
+"say": "Soy mexicana",
+"intent": "from_ctx"
+},
+{
+"ctx": "from",
+"say": "Soy de Texas",
+"intent": "from_ctx"
+},
+{
+"ctx": "from",
+"say": "Vengo de Toronto",
+"intent": "from_ctx"
+},
+{
+"ctx": "from",
+"say": "Soy de Escocia",
+"intent": "from_ctx"
+},
+{
+"ctx": "from",
+"say": "Vengo desde Canadá",
+"intent": "from_ctx"
+},
+{
+"ctx": "from",
+"say": "Vivo en Canadá",
+"intent": "from_ctx"
+},
+{
+"ctx": "from",
+"say": "Soy de muy lejos, de Australia",
+"intent": "from_ctx"
+},
+{
+"ctx": "from",
+"say": "No soy de Estados Unidos, soy de Canadá",
+"intent": "from_ctx",
+"slots": {
+"country": "canada"
+}
+},
+{
+"ctx": "from",
+"say": "Soy del pueblo",
+"intent": "from_town_ctx"
+},
+{
+"ctx": "from",
+"say": "Vengo del pueblo",
+"intent": "from_town_ctx"
+},
+{
+"ctx": "from",
+"say": "De Puerto Colibrí",
+"intent": "from_town_ctx"
+},
+{
+"ctx": "from",
+"say": "Vengo de Puerto Colibrí",
+"intent": "from_town_ctx"
+},
+{
+"ctx": "from",
+"say": "Vivo en el pueblo",
+"intent": "from_town_ctx"
+},
+{
+"ctx": "from",
+"say": "Vengo de arriba",
+"intent": "from_town_ctx"
+},
+{
+"ctx": "from",
+"say": "Del cenote",
+"intent": "from_town_ctx"
+},
+{
+"ctx": "from",
+"say": "Vine nadando",
+"intent": "from_town_ctx"
+},
+{
+"ctx": "from",
+"say": "Vengo nadando desde el cenote",
+"intent": "from_town_ctx"
+},
+{
+"ctx": "why",
+"say": "Quiero ver la gruta",
+"intent": "why_see"
+},
+{
+"ctx": "why",
+"say": "Vengo a ver la cueva",
+"intent": "why_see"
+},
+{
+"ctx": "why",
+"say": "Quiero conocer la gruta",
+"intent": "why_see"
+},
+{
+"ctx": "why",
+"say": "Vine a explorar la cueva",
+"intent": "why_see"
+},
+{
+"ctx": "why",
+"say": "Para ver la gruta",
+"intent": "why_see"
+},
+{
+"ctx": "why",
+"say": "Soy turista",
+"intent": "why_see"
+},
+{
+"ctx": "why",
+"say": "Quisiera visitar la gruta",
+"intent": "why_see"
+},
+{
+"ctx": "why",
+"say": "Quiero conocer este lugar",
+"intent": "why_see"
+},
+{
+"ctx": "why",
+"say": "Me gustan las cuevas",
+"intent": "why_see"
+},
+{
+"ctx": "why",
+"say": "Vengo a aprender español",
+"intent": "why_learn"
+},
+{
+"ctx": "why",
+"say": "Quiero aprender español",
+"intent": "why_learn"
+},
+{
+"ctx": "why",
+"say": "Para practicar español",
+"intent": "why_learn"
+},
+{
+"ctx": "why",
+"say": "Vine a practicar el español",
+"intent": "why_learn"
+},
+{
+"ctx": "why",
+"say": "Quiero hablar español",
+"intent": "why_learn"
+},
+{
+"ctx": "why",
+"say": "Busco las piedras que hablan",
+"intent": "why_stones"
+},
+{
+"ctx": "why",
+"say": "Estoy buscando las piedras",
+"intent": "why_stones"
+},
+{
+"ctx": "why",
+"say": "Vengo por las piedras que hablan",
+"intent": "why_stones"
+},
+{
+"ctx": "why",
+"say": "Quiero ver las piedras que hablan",
+"intent": "why_stones"
+},
+{
+"ctx": "why",
+"say": "Vine a buscar las piedras",
+"intent": "why_stones"
+},
+{
+"ctx": "why",
+"say": "Por las piedras",
+"intent": "why_stones"
+},
+{
+"ctx": "why",
+"say": "Tengo curiosidad",
+"intent": "why_curious"
+},
+{
+"ctx": "why",
+"say": "Por curiosidad",
+"intent": "why_curious"
+},
+{
+"ctx": "why",
+"say": "Nada más por curiosidad",
+"intent": "why_curious"
+},
+{
+"ctx": "why",
+"say": "Soy curiosa",
+"intent": "why_curious"
+},
+{
+"ctx": "why",
+"say": "Solo curiosidad",
+"intent": "why_curious"
+},
+{
+"ctx": "why",
+"say": "Estoy perdido",
+"intent": "why_lost"
+},
+{
+"ctx": "why",
+"say": "Estoy perdida",
+"intent": "why_lost"
+},
+{
+"ctx": "why",
+"say": "Me perdí",
+"intent": "why_lost"
+},
+{
+"ctx": "why",
+"say": "Creo que estoy perdido",
+"intent": "why_lost"
+},
+{
+"ctx": "why",
+"say": "No sé dónde estoy",
+"intent": "why_lost"
+},
+{
+"ctx": "why",
+"say": "Vine a nadar",
+"intent": "why_other_ctx"
+},
+{
+"ctx": "why",
+"say": "Quiero descansar",
+"intent": "why_other_ctx"
+},
+{
+"ctx": "why",
+"say": "Vengo a jugar",
+"intent": "why_other_ctx"
+},
+{
+"ctx": "why",
+"say": "Estaba nadando",
+"intent": "why_other_ctx"
+},
+{
+"ctx": "why",
+"say": "No sé",
+"intent": "g_dontknow"
+},
+{
+"ctx": "why",
+"say": "No lo sé",
+"intent": "g_dontknow"
+},
+{
+"ctx": "way",
+"say": "¿Dónde están las piedras?",
+"intent": "ask_way"
+},
+{
+"ctx": "way",
+"say": "¿Por dónde se va a las piedras?",
+"intent": "ask_way"
+},
+{
+"ctx": "way",
+"say": "¿Cómo llego a las piedras?",
+"intent": "ask_way"
+},
+{
+"ctx": "way",
+"say": "¿Por dónde se va?",
+"intent": "ask_way"
+},
+{
+"ctx": "way",
+"say": "¿Me dices dónde están las piedras?",
+"intent": "ask_way"
+},
+{
+"ctx": "way",
+"say": "¿Me puedes decir dónde están las piedras?",
+"intent": "ask_way"
+},
+{
+"ctx": "way",
+"say": "¿Sabes dónde están las piedras?",
+"intent": "ask_way"
+},
+{
+"ctx": "way",
+"say": "¿Cuál es el camino?",
+"intent": "ask_way"
+},
+{
+"ctx": "way",
+"say": "¿Por dónde voy?",
+"intent": "ask_way"
+},
+{
+"ctx": "way",
+"say": "¿A dónde voy?",
+"intent": "ask_way"
+},
+{
+"ctx": "way",
+"say": "¿Hacia dónde tengo que ir?",
+"intent": "ask_way"
+},
+{
+"ctx": "way",
+"say": "¿Cómo llego?",
+"intent": "ask_way"
+},
+{
+"ctx": "way",
+"say": "¿Dónde están?",
+"intent": "ask_way"
+},
+{
+"ctx": "way",
+"say": "¿Cómo encuentro las piedras?",
+"intent": "ask_way"
+},
+{
+"ctx": "way",
+"say": "Quiero saber dónde están las piedras",
+"intent": "ask_way"
+},
+{
+"ctx": "way",
+"say": "¿En dónde están las piedras?",
+"intent": "ask_way"
+},
+{
+"ctx": "way",
+"say": "¿Dónde quedan las piedras?",
+"intent": "ask_way"
+},
+{
+"ctx": "way",
+"say": "¿Dónde está la primera piedra?",
+"intent": "ask_stone"
+},
+{
+"ctx": "way",
+"say": "¿Y la primera?",
+"intent": "ask_stone"
+},
+{
+"ctx": "way",
+"say": "¿Qué hago con las piedras?",
+"intent": "ask_what"
+},
+{
+"ctx": "more",
+"say": "¿Y la segunda?",
+"intent": "ask_stone"
+},
+{
+"ctx": "more",
+"say": "¿Dónde está la segunda piedra?",
+"intent": "ask_stone"
+},
+{
+"ctx": "more",
+"say": "¿Y la tercera?",
+"intent": "ask_stone"
+},
+{
+"ctx": "more",
+"say": "¿Dónde está la tercera piedra?",
+"intent": "ask_stone"
+},
+{
+"ctx": "more",
+"say": "¿Y la última?",
+"intent": "ask_stone"
+},
+{
+"ctx": "more",
+"say": "¿Y la otra?",
+"intent": "ask_stone"
+},
+{
+"ctx": "more",
+"say": "¿Qué árbol?",
+"intent": "ask_tree"
+},
+{
+"ctx": "more",
+"say": "¿Cuál árbol?",
+"intent": "ask_tree"
+},
+{
+"ctx": "more",
+"say": "¿Dónde está el árbol?",
+"intent": "ask_tree"
+},
+{
+"ctx": "more",
+"say": "¿Qué es una ceiba?",
+"intent": "ask_tree"
+},
+{
+"ctx": "more",
+"say": "¿Está lejos?",
+"intent": "ask_far"
+},
+{
+"ctx": "more",
+"say": "¿Está cerca?",
+"intent": "ask_far"
+},
+{
+"ctx": "more",
+"say": "¿Es lejos?",
+"intent": "ask_far"
+},
+{
+"ctx": "more",
+"say": "¿Qué hago con las piedras?",
+"intent": "ask_what"
+},
+{
+"ctx": "more",
+"say": "¿Qué tengo que hacer?",
+"intent": "ask_what"
+},
+{
+"ctx": "more",
+"say": "¿Y luego qué hago?",
+"intent": "ask_what"
+},
+{
+"ctx": "more",
+"say": "¿Para qué sirven las piedras?",
+"intent": "ask_what"
+},
+{
+"ctx": "more",
+"say": "¿Qué hacen las piedras?",
+"intent": "ask_what"
+},
+{
+"ctx": "more",
+"say": "¿Y después qué?",
+"intent": "ask_what"
+},
+{
+"ctx": "more",
+"say": "¿Qué dicen las piedras?",
+"intent": "ask_what"
+},
+{
+"ctx": "more",
+"say": "No, es todo",
+"intent": "more_no_ctx"
+},
+{
+"ctx": "more",
+"say": "Es todo",
+"intent": "more_no_ctx"
+},
+{
+"ctx": "more",
+"say": "Nada más",
+"intent": "more_no_ctx"
+},
+{
+"ctx": "more",
+"say": "No tengo más preguntas",
+"intent": "more_no_ctx"
+},
+{
+"ctx": "more",
+"say": "Ninguna",
+"intent": "more_no_ctx"
+},
+{
+"ctx": "more",
+"say": "Muchas gracias",
+"intent": "g_thanks"
+},
+{
+"ctx": "more",
+"say": "¡Gracias, Kin!",
+"intent": "g_thanks"
+},
+{
+"ctx": "more",
+"say": "Gracias por todo",
+"intent": "g_thanks"
+},
+{
+"ctx": "more",
+"say": "Gracias por tu ayuda",
+"intent": "g_thanks"
+},
+{
+"ctx": "more",
+"say": "Adiós",
+"intent": "g_bye"
+},
+{
+"ctx": "more",
+"say": "¡Hasta luego!",
+"intent": "g_bye"
+},
+{
+"ctx": "more",
+"say": "Nos vemos",
+"intent": "g_bye"
+},
+{
+"ctx": "more",
+"say": "No",
+"intent": "yn:no"
+},
+{
+"ctx": "more",
+"say": "No, gracias",
+"intent": "yn:no"
+},
+{
+"ctx": "more",
+"say": "¿Puedo pasar?",
+"intent": "ask_pass"
+},
+{
+"ctx": "more",
+"say": "¿Me dejas pasar?",
+"intent": "ask_pass"
+},
+{
+"ctx": "more",
+"say": "¿Ya puedo pasar?",
+"intent": "ask_pass"
+},
+{
+"ctx": "more",
+"say": "¿Qué es un alux?",
+"intent": "q_alux"
+},
+{
+"ctx": "more",
+"say": "¿Eres un alux?",
+"intent": "q_alux"
+},
+{
+"ctx": "more",
+"say": "¿Qué eres?",
+"intent": "q_alux"
+},
+{
+"ctx": "more",
+"say": "¿Qué son los aluxes?",
+"intent": "q_alux"
+},
+{
+"ctx": "way",
+"say": "¿Qué es un alux?",
+"intent": "q_alux"
+},
+{
+"ctx": "way",
+"say": "¿Eres un alux?",
+"intent": "q_alux"
+},
+{
+"ctx": "way",
+"say": "¿Qué eres?",
+"intent": "q_alux"
+},
+{
+"ctx": "way",
+"say": "¿Qué son los aluxes?",
+"intent": "q_alux"
+},
+{
+"ctx": "more",
+"say": "¿Qué es un sacbé?",
+"intent": "q_sacbe"
+},
+{
+"ctx": "more",
+"say": "¿Qué es el camino blanco?",
+"intent": "q_sacbe"
+},
+{
+"ctx": "more",
+"say": "¿Qué significa sacbé?",
+"intent": "q_sacbe"
+},
+{
+"ctx": "more",
+"say": "¿Dónde estoy?",
+"intent": "q_place"
+},
+{
+"ctx": "more",
+"say": "¿Qué es este lugar?",
+"intent": "q_place"
+},
+{
+"ctx": "more",
+"say": "¿Cómo se llama este lugar?",
+"intent": "q_place"
+},
+{
+"ctx": "more",
+"say": "¿Dónde estamos?",
+"intent": "q_place"
+},
+{
+"ctx": "more",
+"say": "¿Cómo te llamas?",
+"intent": "q_name"
+},
+{
+"ctx": "more",
+"say": "¿Cuál es tu nombre?",
+"intent": "q_name"
+},
+{
+"ctx": "more",
+"say": "¿Cómo se llama usted?",
+"intent": "q_name"
+},
+{
+"ctx": "more",
+"say": "¿Vives aquí?",
+"intent": "q_live"
+},
+{
+"ctx": "more",
+"say": "¿Dónde vives?",
+"intent": "q_live"
+},
+{
+"ctx": "more",
+"say": "¿Esta es tu casa?",
+"intent": "q_live"
+},
+{
+"ctx": "more",
+"say": "¿Cuántos años tienes?",
+"intent": "q_age"
+},
+{
+"ctx": "more",
+"say": "¿Qué edad tienes?",
+"intent": "q_age"
+},
+{
+"ctx": "more",
+"say": "¿Eres muy viejo?",
+"intent": "q_age"
+},
+{
+"ctx": "more",
+"say": "Me gusta tu sombrero",
+"intent": "q_hat"
+},
+{
+"ctx": "more",
+"say": "¡Qué bonito tu sombrero!",
+"intent": "q_hat"
+},
+{
+"ctx": "more",
+"say": "¿Puedo tocar tu sombrero?",
+"intent": "q_hat"
+},
+{
+"ctx": "why",
+"say": "No quiero ver la gruta",
+"intent": "any",
+"not": [
+"why_see"
+]
+},
+{
+"ctx": "why",
+"say": "No tengo curiosidad",
+"intent": "any",
+"not": [
+"why_curious"
+]
+},
+{
+"ctx": "why",
+"say": "No estoy perdido",
+"intent": "any",
+"not": [
+"why_lost"
+]
+},
+{
+"ctx": "why",
+"say": "No estoy perdida",
+"intent": "any",
+"not": [
+"why_lost"
+]
+},
+{
+"ctx": "why",
+"say": "No busco las piedras",
+"intent": "any",
+"not": [
+"why_stones"
+]
+},
+{
+"ctx": "why",
+"say": "No vengo a aprender español",
+"intent": "any",
+"not": [
+"why_learn"
+]
+},
+{
+"ctx": "why",
+"say": "No vine a ver la gruta",
+"intent": "any",
+"not": [
+"why_see"
+]
+},
+{
+"ctx": "from",
+"say": "No soy de México",
+"intent": "any",
+"not": [
+"from_ctx"
+]
+},
+{
+"ctx": "from",
+"say": "No soy del pueblo",
+"intent": "any",
+"not": [
+"from_town_ctx"
+]
+},
+{
+"ctx": "from",
+"say": "No vengo de Canadá",
+"intent": "any",
+"not": [
+"from_ctx"
+]
+},
+{
+"ctx": "who",
+"say": "No sé",
+"intent": "any",
+"not": [
+"name_ctx",
+"bare_name_ctx"
+]
+},
+{
+"ctx": "who",
+"say": "No te voy a decir",
+"intent": "any",
+"not": [
+"name_ctx",
+"bare_name_ctx"
+]
+},
+{
+"ctx": "more",
+"say": "No quiero saber nada de las piedras",
+"intent": "any",
+"not": [
+"ask_what",
+"ask_way"
+]
+},
+{
+"ctx": "more",
+"say": "No, no tengo preguntas",
+"intent": "any",
+"not": [
+"ask_way",
+"ask_what"
+]
+},
+{
+"ctx": "way",
+"say": "No quiero pasar",
+"intent": "any",
+"not": [
+"ask_pass"
+]
+},
+{
+"ctx": "more",
+"say": "No puedo pasar",
+"intent": "any",
+"not": [
+"ask_pass"
+]
+},
+{
+"ctx": "more",
+"say": "No me gusta tu sombrero",
+"intent": "any",
+"not": [
+"q_hat"
+]
+},
+{
+"ctx": "more",
+"say": "No vivo aquí",
+"intent": "any",
+"not": [
+"q_live"
+]
+},
+{
+"ctx": "more",
+"say": "No toco tu sombrero",
+"intent": "any",
+"not": [
+"q_hat"
+]
+},
+{
+"ctx": "more",
+"say": "La segunda vez",
+"intent": "any",
+"not": [
+"ask_stone"
+]
+},
+{
+"ctx": "way",
+"say": "La pizza tiene queso",
+"intent": "none"
+},
+{
+"ctx": "way",
+"say": "Mi coche es azul",
+"intent": "none"
+},
+{
+"ctx": "way",
+"say": "Ya conozco el camino",
+"intent": "know_way"
+}
+]
+}

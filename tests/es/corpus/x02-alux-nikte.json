@@ -1,0 +1,785 @@
+{
+"situation": "x02-alux-nikte",
+"items": [
+{
+"ctx": "ready",
+"say": "Estoy listo",
+"intent": "ready"
+},
+{
+"ctx": "ready",
+"say": "Estoy lista",
+"intent": "ready"
+},
+{
+"ctx": "ready",
+"say": "Sí, estoy listo",
+"intent": "ready"
+},
+{
+"ctx": "ready",
+"say": "Ya estoy lista",
+"intent": "ready"
+},
+{
+"ctx": "ready",
+"say": "¡Vamos!",
+"intent": "ready"
+},
+{
+"ctx": "ready",
+"say": "Vamos a jugar",
+"intent": "ready"
+},
+{
+"ctx": "ready",
+"say": "Dale",
+"intent": "ready"
+},
+{
+"ctx": "ready",
+"say": "Sale, vamos",
+"intent": "ready"
+},
+{
+"ctx": "ready",
+"say": "Dime",
+"intent": "ready"
+},
+{
+"ctx": "ready",
+"say": "Dime la adivinanza",
+"intent": "ready"
+},
+{
+"ctx": "ready",
+"say": "Adelante",
+"intent": "ready"
+},
+{
+"ctx": "ready",
+"say": "Empieza",
+"intent": "ready"
+},
+{
+"ctx": "ready",
+"say": "Quiero jugar",
+"intent": "ready"
+},
+{
+"ctx": "ready",
+"say": "Sí, quiero pasar",
+"intent": "ready"
+},
+{
+"ctx": "ready",
+"say": "Pregúntame",
+"intent": "ready"
+},
+{
+"ctx": "ready",
+"say": "Juguemos",
+"intent": "ready"
+},
+{
+"ctx": "ready",
+"say": "Venga, vamos",
+"intent": "ready"
+},
+{
+"ctx": "ready",
+"say": "Listo",
+"intent": "ready"
+},
+{
+"ctx": "ready",
+"say": "A ver, la adivinanza",
+"intent": "ready"
+},
+{
+"ctx": "ready",
+"say": "Estoy preparada",
+"intent": "ready"
+},
+{
+"ctx": "ready",
+"say": "Todavía no",
+"intent": "not_ready",
+"not": [
+"ready"
+]
+},
+{
+"ctx": "ready",
+"say": "Aún no estoy listo",
+"intent": "not_ready",
+"not": [
+"ready"
+]
+},
+{
+"ctx": "ready",
+"say": "No estoy lista",
+"intent": "not_ready",
+"not": [
+"ready"
+]
+},
+{
+"ctx": "ready",
+"say": "Espera un momento",
+"intent": "not_ready",
+"not": [
+"ready"
+]
+},
+{
+"ctx": "ready",
+"say": "No quiero jugar ahora",
+"intent": "not_ready",
+"not": [
+"ready"
+]
+},
+{
+"ctx": "ready",
+"say": "¿Cómo te llamas?",
+"intent": "ask_name"
+},
+{
+"ctx": "ready",
+"say": "¿Cuál es tu nombre?",
+"intent": "ask_name"
+},
+{
+"ctx": "ready",
+"say": "¿Quién eres tú?",
+"intent": "ask_name"
+},
+{
+"ctx": "ready",
+"say": "¿Qué es un alux?",
+"intent": "ask_alux"
+},
+{
+"ctx": "ready",
+"say": "¿Eres un alux?",
+"intent": "ask_alux"
+},
+{
+"ctx": "ready",
+"say": "¿Qué son los aluxes?",
+"intent": "ask_alux"
+},
+{
+"ctx": "ready",
+"say": "¿Qué eres?",
+"intent": "ask_alux"
+},
+{
+"ctx": "ready",
+"say": "¿Qué es una adivinanza?",
+"intent": "ask_riddle"
+},
+{
+"ctx": "ready",
+"say": "¿Qué significa adivinanza?",
+"intent": "ask_riddle"
+},
+{
+"ctx": "ready",
+"say": "¿Cómo se juega?",
+"intent": "ask_riddle"
+},
+{
+"ctx": "ready",
+"say": "¿Vives aquí?",
+"intent": "ask_live"
+},
+{
+"ctx": "ready",
+"say": "¿Dónde vives?",
+"intent": "ask_live"
+},
+{
+"ctx": "ready",
+"say": "¿Esta es tu casa?",
+"intent": "ask_live"
+},
+{
+"ctx": "ready",
+"say": "¿Te gustan las adivinanzas?",
+"intent": "ask_like"
+},
+{
+"ctx": "ready",
+"say": "¿Te gusta jugar?",
+"intent": "ask_like"
+},
+{
+"ctx": "ready",
+"say": "¿Qué es una pista?",
+"intent": "ask_pista"
+},
+{
+"ctx": "riddle",
+"say": "¿Es el plátano?",
+"intent": "guess_ctx",
+"slots": {
+"thing": "platano"
+}
+},
+{
+"ctx": "riddle",
+"say": "Es un plátano",
+"intent": "guess_ctx",
+"slots": {
+"thing": "platano"
+}
+},
+{
+"ctx": "riddle",
+"say": "El plátano",
+"intent": "guess_ctx",
+"slots": {
+"thing": "platano"
+}
+},
+{
+"ctx": "riddle",
+"say": "plátano",
+"intent": "guess_ctx",
+"slots": {
+"thing": "platano"
+}
+},
+{
+"ctx": "riddle",
+"say": "¿Una banana?",
+"intent": "guess_ctx",
+"slots": {
+"thing": "platano"
+}
+},
+{
+"ctx": "riddle",
+"say": "Es un banano",
+"intent": "guess_ctx",
+"slots": {
+"thing": "platano"
+}
+},
+{
+"ctx": "riddle",
+"say": "Creo que es el aguacate",
+"intent": "guess_ctx",
+"slots": {
+"thing": "aguacate"
+}
+},
+{
+"ctx": "riddle",
+"say": "aguacate",
+"intent": "guess_ctx",
+"slots": {
+"thing": "aguacate"
+}
+},
+{
+"ctx": "riddle",
+"say": "¿Es una palta?",
+"intent": "guess_ctx",
+"slots": {
+"thing": "aguacate"
+}
+},
+{
+"ctx": "riddle",
+"say": "La pera",
+"intent": "guess_ctx",
+"slots": {
+"thing": "pera"
+}
+},
+{
+"ctx": "riddle",
+"say": "Es la pera",
+"intent": "guess_ctx",
+"slots": {
+"thing": "pera"
+}
+},
+{
+"ctx": "riddle",
+"say": "Yo creo que es una pera",
+"intent": "guess_ctx",
+"slots": {
+"thing": "pera"
+}
+},
+{
+"ctx": "riddle",
+"say": "¿El reloj?",
+"intent": "guess_ctx",
+"slots": {
+"thing": "reloj"
+}
+},
+{
+"ctx": "riddle",
+"say": "Es un reloj",
+"intent": "guess_ctx",
+"slots": {
+"thing": "reloj"
+}
+},
+{
+"ctx": "riddle",
+"say": "Ya sé, es el reloj",
+"intent": "guess_ctx",
+"slots": {
+"thing": "reloj"
+}
+},
+{
+"ctx": "riddle",
+"say": "¿Será el viento?",
+"intent": "guess_ctx",
+"slots": {
+"thing": "viento"
+}
+},
+{
+"ctx": "riddle",
+"say": "El aire",
+"intent": "guess_ctx",
+"slots": {
+"thing": "viento"
+}
+},
+{
+"ctx": "riddle",
+"say": "Es el viento, ¿verdad?",
+"intent": "guess_ctx",
+"slots": {
+"thing": "viento"
+}
+},
+{
+"ctx": "riddle",
+"say": "La luna",
+"intent": "guess_ctx",
+"slots": {
+"thing": "luna"
+}
+},
+{
+"ctx": "riddle",
+"say": "A lo mejor es la luna",
+"intent": "guess_ctx",
+"slots": {
+"thing": "luna"
+}
+},
+{
+"ctx": "riddle",
+"say": "Es la luna, ¿no?",
+"intent": "guess_ctx",
+"slots": {
+"thing": "luna"
+}
+},
+{
+"ctx": "riddle",
+"say": "¿Es el sol?",
+"intent": "guess_ctx",
+"slots": {
+"thing": "sol"
+}
+},
+{
+"ctx": "riddle",
+"say": "¿Es la plata?",
+"intent": "guess_ctx",
+"slots": {
+"thing": "plata"
+}
+},
+{
+"ctx": "riddle",
+"say": "El oro",
+"intent": "guess_ctx",
+"slots": {
+"thing": "oro"
+}
+},
+{
+"ctx": "riddle",
+"say": "¿Es el agua?",
+"intent": "guess_ctx",
+"slots": {
+"thing": "agua"
+}
+},
+{
+"ctx": "riddle",
+"say": "Una manzana",
+"intent": "guess_ctx",
+"slots": {
+"thing": "manzana"
+}
+},
+{
+"ctx": "riddle",
+"say": "¿Es un pájaro?",
+"intent": "guess_ctx",
+"slots": {
+"thing": "pajaro"
+}
+},
+{
+"ctx": "riddle",
+"say": "Un avión",
+"intent": "guess_ctx",
+"slots": {
+"thing": "avion"
+}
+},
+{
+"ctx": "riddle",
+"say": "La respuesta es la estrella",
+"intent": "guess_ctx",
+"slots": {
+"thing": "estrella"
+}
+},
+{
+"ctx": "riddle",
+"say": "Pienso que es una naranja",
+"intent": "guess_ctx",
+"slots": {
+"thing": "naranja"
+}
+},
+{
+"ctx": "riddle",
+"say": "¿Es una bicicleta?",
+"intent": "guess_unknown"
+},
+{
+"ctx": "riddle",
+"say": "Creo que es un perro",
+"intent": "guess_unknown"
+},
+{
+"ctx": "riddle",
+"say": "La respuesta es un barco",
+"intent": "guess_unknown"
+},
+{
+"ctx": "riddle",
+"say": "No es el plátano",
+"intent": "not_guess",
+"not": [
+"guess_ctx"
+]
+},
+{
+"ctx": "riddle",
+"say": "No creo que sea la luna",
+"intent": "not_guess",
+"not": [
+"guess_ctx"
+]
+},
+{
+"ctx": "riddle",
+"say": "No es el agua",
+"intent": "not_guess",
+"not": [
+"guess_ctx"
+]
+},
+{
+"ctx": "riddle",
+"say": "¿Me das una pista?",
+"intent": "ask_hint"
+},
+{
+"ctx": "riddle",
+"say": "Dame una pista",
+"intent": "ask_hint"
+},
+{
+"ctx": "riddle",
+"say": "¿Me puedes dar una pista?",
+"intent": "ask_hint"
+},
+{
+"ctx": "riddle",
+"say": "¿Me das otra pista?",
+"intent": "ask_hint"
+},
+{
+"ctx": "riddle",
+"say": "Una pista, por favor",
+"intent": "ask_hint"
+},
+{
+"ctx": "riddle",
+"say": "¿Me ayudas?",
+"intent": "ask_hint"
+},
+{
+"ctx": "riddle",
+"say": "Necesito ayuda",
+"intent": "ask_hint"
+},
+{
+"ctx": "riddle",
+"say": "¿Hay una pista?",
+"intent": "ask_hint"
+},
+{
+"ctx": "riddle",
+"say": "¿Me la repites?",
+"intent": "repeat_riddle"
+},
+{
+"ctx": "riddle",
+"say": "¿Me la puedes repetir?",
+"intent": "repeat_riddle"
+},
+{
+"ctx": "riddle",
+"say": "Otra vez, por favor",
+"intent": "repeat_riddle"
+},
+{
+"ctx": "riddle",
+"say": "Repite la adivinanza",
+"intent": "repeat_riddle"
+},
+{
+"ctx": "riddle",
+"say": "¿Cuál era la adivinanza?",
+"intent": "repeat_riddle"
+},
+{
+"ctx": "riddle",
+"say": "Una vez más",
+"intent": "repeat_riddle"
+},
+{
+"ctx": "riddle",
+"say": "No sé",
+"intent": "dont_know"
+},
+{
+"ctx": "riddle",
+"say": "No lo sé",
+"intent": "dont_know"
+},
+{
+"ctx": "riddle",
+"say": "Ni idea",
+"intent": "dont_know"
+},
+{
+"ctx": "riddle",
+"say": "No tengo idea",
+"intent": "dont_know"
+},
+{
+"ctx": "riddle",
+"say": "No sé qué es",
+"intent": "dont_know"
+},
+{
+"ctx": "riddle",
+"say": "Me rindo",
+"intent": "give_up"
+},
+{
+"ctx": "riddle",
+"say": "Me doy por vencido",
+"intent": "give_up"
+},
+{
+"ctx": "riddle",
+"say": "Dime la respuesta",
+"intent": "give_up"
+},
+{
+"ctx": "riddle",
+"say": "¿Cuál es la respuesta?",
+"intent": "give_up"
+},
+{
+"ctx": "riddle",
+"say": "¿Otra, por favor?",
+"intent": "another"
+},
+{
+"ctx": "riddle",
+"say": "Otra adivinanza",
+"intent": "another"
+},
+{
+"ctx": "riddle",
+"say": "Dime otra",
+"intent": "another"
+},
+{
+"ctx": "riddle",
+"say": "Quiero otra",
+"intent": "another"
+},
+{
+"ctx": "riddle",
+"say": "La siguiente",
+"intent": "another"
+},
+{
+"ctx": "riddle",
+"say": "Una diferente",
+"intent": "another"
+},
+{
+"ctx": "riddle",
+"say": "¡Qué difícil!",
+"intent": "hard"
+},
+{
+"ctx": "riddle",
+"say": "Está muy difícil",
+"intent": "hard"
+},
+{
+"ctx": "riddle",
+"say": "Es difícil",
+"intent": "hard"
+},
+{
+"ctx": "riddle",
+"say": "No es fácil",
+"intent": "hard"
+},
+{
+"ctx": "riddle",
+"say": "¡Qué complicado!",
+"intent": "hard"
+},
+{
+"ctx": "riddle",
+"say": "No es el reloj",
+"intent": "not_guess",
+"not": [
+"guess_ctx"
+]
+},
+{
+"ctx": "riddle",
+"say": "Otra vez",
+"intent": "repeat_riddle",
+"not": [
+"another"
+]
+},
+{
+"ctx": "riddle",
+"say": "Dime otra",
+"intent": "another",
+"not": [
+"ready",
+"give_up"
+]
+},
+{
+"ctx": "riddle",
+"say": "¿Qué es una pista?",
+"intent": "ask_pista",
+"not": [
+"give_up",
+"ask_hint"
+]
+},
+{
+"ctx": "riddle",
+"say": "Es la luna, ¿no?",
+"intent": "guess_ctx",
+"not": [
+"another",
+"not_guess"
+]
+},
+{
+"ctx": "riddle",
+"say": "No quiero el plátano",
+"intent": "none",
+"not": [
+"guess_ctx"
+]
+},
+{
+"ctx": "riddle",
+"say": "El plátano no",
+"intent": "not_guess",
+"not": [
+"guess_ctx"
+]
+},
+{
+"ctx": "ready",
+"say": "No estoy listo",
+"intent": "not_ready",
+"not": [
+"ready"
+]
+},
+{
+"ctx": "ready",
+"say": "Todavía no quiero jugar",
+"intent": "not_ready",
+"not": [
+"ready"
+]
+},
+{
+"ctx": "riddle",
+"say": "No sé, ¿es el sol?",
+"intent": "guess_ctx",
+"not": [
+"not_guess"
+],
+"slots": {
+"thing": "sol"
+}
+},
+{
+"ctx": "closing",
+"say": "¡Gracias!",
+"intent": "g_thanks"
+},
+{
+"ctx": "closing",
+"say": "Muchas gracias, adiós",
+"intent": "g_thanks"
+},
+{
+"ctx": "closing",
+"say": "Adiós",
+"intent": "g_bye"
+},
+{
+"ctx": "closing",
+"say": "Hasta luego",
+"intent": "g_bye"
+},
+{
+"ctx": "closing",
+"say": "Gracias por el juego",
+"intent": "thanks_game"
+}
+]
+}

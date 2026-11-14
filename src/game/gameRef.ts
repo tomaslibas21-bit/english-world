@@ -33,6 +33,8 @@ export interface GameApi {
   refreshNameTags(): void;
   readonly groundCanvas: HTMLCanvasElement | undefined;
   readonly doors: Door[];
+  /** Puerto Colibrí's grotto while the player is down there (src/game/cave/quest.ts): the glyph stone's card. */
+  readonly cave?: { say(): void; showWords(): void; pick(i: number): void; listen(): void; close(): void } | null;
 }
 
 export let game: GameApi | null = null;

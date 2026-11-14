@@ -47,6 +47,9 @@ import { roleSaid } from "../convo/compose";
 import { EDITION } from "../edition";
 import type { GameApi } from "./gameRef";
 import { THEME } from "./world/theme";
+import { getCave, caveDoor, caveLure, CAVE_ZONE } from "./cave";
+import { CaveQuest } from "./cave/quest";
+import { ROUTE } from "../content/route";
 export type { GameApi } from "./gameRef";
 
 /** A box on the screen, in pixels (a name tag, or part of the HUD the tags keep clear of). */
@@ -175,7 +178,12 @@ export class Game implements GameApi {
   private hudBoxCache: TagBox[] = [];
   private hudCheck = 0;
   private tagLayer: HTMLDivElement;
-  private nearest: { kind: "npc" | "door" | "exit" | "ride" | "out" | "climb"; id: string; label: string } | null = null;
+  private nearest: { kind: "npc" | "door" | "exit" | "ride" | "out" | "climb" | "glyph"; id: string; label: string } | null = null;
+  /** Puerto Colibrí's grotto (src/game/cave): its listening quest while the player is down there; what shows of it
+   *  from the cenote; how long the player has swum at its mouth (swimming on in goes in). */
+  cave: CaveQuest | null = null;
+  private caveLure: THREE.Group | null = null;
+  private cavePushT = 0;
   private pushDoorT = 0;
   private transitioning = false;
   private npcToSits = new Map<string, SituationDef[]>();
@@ -191,8 +199,11 @@ export class Game implements GameApi {
   private unbindAmbience: (() => void) | null = null;
   private ambienceAllowed = () => {
     const st = useStore.getState();
-    return !this.disposed && !document.hidden && !st.conv.active && !st.hud.panel;
+    return !this.disposed && !document.hidden && !st.conv.active && !st.hud.panel && !st.hud.glyph;
   };
+  /** A room (the fixed camera, a floor at 0), as against the town and a place like the grotto (Interior.wild). */
+  private get room() { return !!this.zone?.interior && !this.zone.interior.wild; }
+  private get wild() { return this.zone?.interior?.wild ?? null; }
   /** Walking under the player's own control (movement.ts): the direction pressed, the turn and the speed, a hop. */
   private steer = new Steer();
   private gait = new Gait();
@@ -331,11 +342,15 @@ export class Game implements GameApi {
     this.rides.onStuck = () => useStore.getState().toast({ kind: "info", title: L("Čia išlipti nėra kur"), body: L("Pavažiuok truputį toliau.") });
     this.undersea = new Undersea(RIDES.deep, RIDES.rocks);
     this.scene.add(this.npcLayer, this.guidance.group, this.ambient.group, this.rides.group, this.dust.group, this.splashes.group, this.undersea.group);
+    // (a place like the grotto keeps the camera inside itself: Interior.wild.space)
     this.rig.space = {
-      free: (a, b) => (this.zone?.interior ? 1 : this.field.free(a, b)),
-      inside: (q) => !this.zone?.interior && this.field.solidAt(q.x, q.y, q.z, 0.15),
+      free: (a, b) => (this.wild ? this.wild.space.free(a, b) : this.zone?.interior ? 1 : this.field.free(a, b)),
+      inside: (q) => (this.wild ? this.wild.space.inside(q) : !this.zone?.interior && this.field.solidAt(q.x, q.y, q.z, 0.15)),
       overSolid: (x, z) => !this.zone?.interior && this.field.overSolid(x, z),
     };
+    // what shows of the grotto from the cenote (a glow in the cave's mouth)
+    this.caveLure = caveLure();
+    if (this.caveLure) this.town.group.add(this.caveLure);
     const prof = st.progress.profile!;
     this.player = createCharacter(withBackpack({ ...prof.look, female: prof.look.female ?? prof.gender === "f" }));
     this.player.fidgets = false;
@@ -350,7 +365,7 @@ export class Game implements GameApi {
     });
     // start where the player left off, or in the airport on the very first visit
     const place = st.progress.place;
-    if (place && (place.zone === "town" || getInterior(place.zone))) this.enterZone(place.zone, { x: place.x, z: place.z, rot: place.rot }, true);
+    if (place && (place.zone === "town" || getInterior(place.zone) || getCave(place.zone))) this.enterZone(place.zone, { x: place.x, z: place.z, rot: place.rot }, true);
     else this.enterZone("airport", { x: -14, z: -1, rot: Math.PI }, true);
     this.bindInput();
     window.addEventListener("resize", this.onResize);
@@ -392,9 +407,12 @@ export class Game implements GameApi {
 
   private getZone(id: string): ZoneState | null {
     if (this.zones.has(id)) return this.zones.get(id)!;
-    const it = getInterior(id);
+    const it = getInterior(id) ?? getCave(id);
     if (!it) return null;
-    const nav = new NavGrid(-it.w / 2 - 1, -it.d / 2 - 1, it.w / 2 + 1, it.d / 2 + 3, 0.5, it.colliders, 0.35);
+    const wb = it.wild?.bounds;
+    const nav = wb ? new NavGrid(wb.minX, wb.minZ, wb.maxX, wb.maxZ, 0.5, it.colliders, 0.35) : new NavGrid(-it.w / 2 - 1, -it.d / 2 - 1, it.w / 2 + 1, it.d / 2 + 3, 0.5, it.colliders, 0.35);
+    // (a place with a ground plan of its own: its walls and waters are in nobody's way-finding)
+    if (it.wild) for (let i = 0; i < nav.blocked.length; i++) { const [x, z] = nav.center(i); if (!it.wild.walkable(x, z, 0.4)) nav.blocked[i] = 1; }
     const z: ZoneState = { id, group: it.group, colliders: it.colliders, nav, interior: it };
     if (id === "visitor-center" && it.group.userData.mapSpot) {
       const m = it.group.userData.mapSpot;
@@ -417,15 +435,17 @@ export class Game implements GameApi {
       if (this.zone) this.scene.remove(this.zone.group);
       this.zone = z;
       this.scene.add(z.group);
-      const indoor = !!z.interior;
+      const indoor = !!z.interior, wild = z.interior?.wild;
       this.jogT = 0;
+      this.cave?.dispose();
+      this.cave = null;
       // (out of whatever was driven, and out of the water: on foot wherever this puts them)
       this.endRide();
       this.rides.group.visible = !indoor;
       this.surface(true);
       const sp = spawn ?? (z.interior ? z.interior.spawn : { x: 0, z: 0, rot: 0 });
       // (on the sand where it slopes under the sea, if that is where they were)
-      const floor = indoor ? 0 : floorY(sp.x, sp.z);
+      const floor = wild ? wild.floor(sp.x, sp.z) : indoor ? 0 : floorY(sp.x, sp.z);
       this.player.root.position.set(sp.x, floor, sp.z);
       this.heading = sp.rot;
       this.player.root.rotation.y = sp.rot;
@@ -446,15 +466,24 @@ export class Game implements GameApi {
       // lighting & atmosphere
       this.sky.visible = !indoor;
       this.ambient.group.visible = !indoor;
-      this.scene.fog = indoor ? null : new THREE.Fog("#cfe8f5", 110, 420);
-      this.scene.background = indoor ? new THREE.Color(z.interior?.warm ? "#2b2320" : "#23282e") : null;
+      this.scene.fog = wild ? wild.fog : indoor ? null : new THREE.Fog("#cfe8f5", 110, 420);
+      this.scene.background = wild ? new THREE.Color(wild.background) : indoor ? new THREE.Color(z.interior?.warm ? "#2b2320" : "#23282e") : null;
       // outdoors a little less flat fill and a little more sun than before (deeper colours, clearer shapes)
-      this.hemi.intensity = indoor ? 1.9 : 1.4;
-      this.sun.intensity = indoor ? 1.6 : 2.75;
+      // (a place like the grotto has its own light on the people there)
+      this.hemi.intensity = wild ? wild.hemi[2] : indoor ? 1.9 : 1.4;
+      this.sun.intensity = wild ? wild.sun[1] : indoor ? 1.6 : 2.75;
+      this.hemi.color.set(wild ? wild.hemi[0] : "#e4f3ff");
+      this.hemi.groundColor.set(wild ? wild.hemi[1] : "#8fbf6a");
+      this.sun.color.set(wild ? wild.sun[0] : "#fff0d8");
       this.fx?.zone(indoor, !!z.interior?.warm);
-      this.rig.mode = indoor ? "interior" : "follow";
-      if (indoor) this.rig.interiorBounds = { w: z.interior!.w, d: z.interior!.d };
+      this.rig.mode = indoor && !wild ? "interior" : "follow";
+      if (indoor && !wild) this.rig.interiorBounds = { w: z.interior!.w, d: z.interior!.d };
       else this.rig.yaw = this.heading;
+      // (the follow camera's lean and distance: the town's, or the place's own)
+      this.rig.homePitch = wild?.camera?.pitch ?? FOLLOW.pitch;
+      if (!indoor || wild) { this.rig.pitch = this.rig.homePitch; this.rig.dist = wild?.camera?.dist ?? FOLLOW.dist; }
+      this.guidance.group.visible = !wild;
+      if (id === CAVE_ZONE) { const c = getCave(id); if (c) this.cave = new CaveQuest(c.view); }
       this.rig.target.copy(this.player.root.position);
       this.rig.snap();
       if (via) this.rig.arrive();
@@ -598,6 +627,8 @@ export class Game implements GameApi {
     const k = e.key.toLowerCase();
     if (st.conv.active) return; // the conversation panel handles its own keys
     if (st.hud.panel) { if (k === "escape") st.setHud({ panel: null }); return; }
+    // (at a glyph stone: its card has the keys; Esc puts it away)
+    if (st.hud.glyph) { if (k === "escape") this.cave?.close(); return; }
     if (["arrowup", "arrowdown", "arrowleft", "arrowright", "w", "a", "s", "d", "shift"].includes(k)) {
       this.keys.add(k); this.autoPath = null; this.autoTarget = null; e.preventDefault(); return;
     }
@@ -629,7 +660,7 @@ export class Game implements GameApi {
    *  the air is a flip (a somersault, a little more lift, once a jump). */
   jump() {
     const st = useStore.getState();
-    if (this.session?.active || st.conv.active || st.hud.panel || this.transitioning || !this.player) return;
+    if (this.session?.active || st.conv.active || st.hud.panel || st.hud.glyph || this.transitioning || !this.player) return;
     // (at a wheel the button is the brake: hold(); in the water it is a dive, and the way back up)
     if (this.rides.riding) return;
     if (this.swimming) { this.dive(); return; }
@@ -784,7 +815,7 @@ export class Game implements GameApi {
 
   private onClick(cx: number, cy: number) {
     const st = useStore.getState();
-    if (st.conv.active || st.hud.panel || this.rides.riding) return;
+    if (st.conv.active || st.hud.panel || st.hud.glyph || this.rides.riding) return;
     const rect = this.renderer.domElement.getBoundingClientRect();
     const ndc = new THREE.Vector2(((cx - rect.left) / rect.width) * 2 - 1, -((cy - rect.top) / rect.height) * 2 + 1);
     this.raycaster.setFromCamera(ndc, this.rig.cam);
@@ -820,6 +851,8 @@ export class Game implements GameApi {
     } else if (Math.hypot(p.x - this.zone.interior.exit.x, p.z - this.zone.interior.exit.z) < 1.8) {
       this.walkTo(this.zone.interior.exit.x, this.zone.interior.exit.z - 0.6, { kind: "exit" }); return;
     }
+    // (in the grotto the ground has dips and an island: the click is taken where it lands, on the floor's level)
+    if (this.wild && !this.wild.walkable(p.x, p.z, 0.3)) return;
     this.walkTo(p.x, p.z, { kind: "point" });
     this.clickMarker(p.x, p.z);
   }
@@ -878,6 +911,7 @@ export class Game implements GameApi {
     if (n.kind === "ride") { const r = this.rides.list.find((q) => q.id === n.id); if (r) this.boardRide(r); }
     else if (n.kind === "climb") this.climbOut();
     else if (n.kind === "npc") this.talkTo(n.id);
+    else if (n.kind === "glyph") this.cave?.open(n.id);
     else if (n.kind === "door") this.enterDoor(n.id);
     else if (n.kind === "exit") this.exitInterior();
   }
@@ -897,7 +931,7 @@ export class Game implements GameApi {
   }
 
   private enterDoor(loc: string) {
-    const it = getInterior(loc);
+    const it = getInterior(loc) ?? getCave(loc);
     if (!it) return;
     this.enterZone(loc, undefined, false, "in");
   }
@@ -905,6 +939,8 @@ export class Game implements GameApi {
   exitInterior() {
     if (!this.zone.interior) return;
     const loc = this.zone.id;
+    // (the grotto is left the way one came: back in the cenote's water, by the cave's mouth)
+    if (this.wild) { this.enterZone("town", this.wild.out); return; }
     const door = this.town.doors.find((d) => d.loc === loc);
     if (loc === "airport") { this.enterZone("town", AIRPORT_EXIT, false, "out"); return; }
     if (door) {
@@ -1029,15 +1065,17 @@ export class Game implements GameApi {
       const dist = Math.max(6, spread * 2.6);
       /** The camera `d` metres from the people; outdoors on their `side` (1 or -1; by default 1, or -1 if 1 is blocked). */
       const frame = (d: number, sideOf?: 1 | -1) => {
-        if (this.zone.interior) {
+        if (this.room) {
           // from the open front, a little to the person's side, so the player's head doesn't hide their face
-          const side = Math.sign(a.x - p.x) || 1, half = this.zone.interior.w / 2 - 1;
+          const side = Math.sign(a.x - p.x) || 1, half = this.zone.interior!.w / 2 - 1;
           const cx = THREE.MathUtils.clamp(mid.x + side * 1.8, -half, half);
           return { pos: new THREE.Vector3(cx, 4.2 + d * 0.07, mid.z + d + 0.2), look: new THREE.Vector3(mid.x, 1.3, mid.z) };
         }
         const side = new THREE.Vector3(dir.z, 0, -dir.x);
         let pos = mid.clone().addScaledVector(side, (sideOf ?? 1) * d).setY(3.2);
-        if (!sideOf && this.town.colliders.blocked(pos.x, pos.z, 0.5)) pos = mid.clone().addScaledVector(side, -d).setY(3.2);
+        if (!sideOf && this.zone.colliders.blocked(pos.x, pos.z, 0.5)) pos = mid.clone().addScaledVector(side, -d).setY(3.2);
+        // (in the grotto: no further than the rock lets the camera go)
+        if (this.wild) { const f = this.wild.space.free(this.tmpV.set(mid.x, 1.6, mid.z), pos); if (f < 1) pos.lerpVectors(this.tmpV, pos, Math.max(0.35, f * 0.92)); }
         pos.addScaledVector(dir, -1.2);
         return { pos, look: new THREE.Vector3(mid.x, 1.35, mid.z) };
       };
@@ -1150,6 +1188,7 @@ export class Game implements GameApi {
       const f = frame(d, side);
       const run = Math.hypot(f.pos.x - f.look.x, f.pos.z - f.look.z);
       f.pos.y = f.look.y + (this.zone.interior ? lift * d / d0 : Math.max(lift * d / d0, run * 0.5));
+      if (this.wild) f.pos.y = Math.min(f.pos.y, 6);
       return f;
     };
     // On a phone held upright the camera also looks a little higher (up to 0.4 m at the people) before it backs off:
@@ -1157,7 +1196,7 @@ export class Game implements GameApi {
     const raise = strip ? [0, 0.1, 0.2, 0.3, 0.4] : [0];
     let best: Shot | null = null;
     for (let d = d0; d <= max * 1.001; d = Math.min(d * 1.08, d < max ? max : d * 2)) {
-      for (const side of this.zone.interior ? [undefined] : [1, -1] as const) {
+      for (const side of this.room ? [undefined] : [1, -1] as const) {
         const f0 = at(d, side);
         if (!seen(f0)) continue;
         best ??= f0;
@@ -1177,6 +1216,8 @@ export class Game implements GameApi {
     if (name === "bus-ride" && data?.to) this.pendingRide = { to: data.to, by: "bus" };
     if (name === "go" && data?.zone) this.pendingRide = { to: data.zone, by: "taxi" };
     if (name === "board") this.pendingRide = { to: "airport", by: "plane" };
+    // (an alux of the grotto lets the learner pass: their gate opens, src/game/cave)
+    if (name === "alux-pass" && data?.gate) this.cave?.pass(data.gate);
     const st = useStore.getState();
     if (name === "give" && data?.item) {
       // known props, else the situation's own item (a jacket, a medicine…) in the accusative
@@ -1194,12 +1235,13 @@ export class Game implements GameApi {
     this.session = null;
     useStore.getState().setConv({ active: false });
     this.rig.talk = null;
-    this.rig.mode = this.zone.interior ? "interior" : "follow";
+    this.rig.mode = this.room ? "interior" : "follow";
     this.rig.cam.clearViewOffset();
     // the person stays turned to the player and turns back home in their own time (updateNpcs)
     this.talkNpc = null;
     if (this.pendingRide) { const r = this.pendingRide; this.pendingRide = null; this.ride(r.to, r.by); }
-    if (completed) this.advanceObjective(sit);
+    // (a conversation off the route, the grotto's aluxes, is nobody's task: the tasks stay as they were)
+    if (completed && !sit.bonus) this.advanceObjective(sit);
     this.refreshObjective();
   }
 
@@ -1262,7 +1304,7 @@ export class Game implements GameApi {
   // ------------------------------------------------------------------ objectives
 
   orderedSituations(): SituationDef[] {
-    return [...SITUATIONS].sort((a, b) => a.chapter - b.chapter || a.order - b.order || a.id.localeCompare(b.id));
+    return [...ROUTE].sort((a, b) => a.chapter - b.chapter || a.order - b.order || a.id.localeCompare(b.id));
   }
 
   setObjective(sitId: string | null) {
@@ -1362,8 +1404,8 @@ export class Game implements GameApi {
     this.t += dt;
     const st = useStore.getState();
     const talking = !!this.session?.active;
-    const blocked = talking || !!st.hud.panel || this.transitioning;
-    this.updatePlayer(dt, blocked, this.transitioning && !talking && !st.hud.panel);
+    const blocked = talking || !!st.hud.panel || !!st.hud.glyph || this.transitioning;
+    this.updatePlayer(dt, blocked, this.transitioning && !talking && !st.hud.panel && !st.hud.glyph);
     // (what one can drive: its people, the way back to its curb; at the wheel it is moved from updatePlayer)
     const riding = this.rides.riding;
     if (!riding) this.rides.update(dt, this.t, null);
@@ -1372,8 +1414,12 @@ export class Game implements GameApi {
     if (!this.zone.interior) this.ambient.update(dt, this.player.root.position, this.rig.cam.position);
     this.town.update(this.t, dt, this.rig.cam.position);
     this.zone.interior?.update?.(this.t, dt);
-    this.guidance.visible = !talking;
-    this.guidance.group.visible = !talking;
+    // (the grotto: its water, lights and sparks, and its stones calling)
+    this.wild?.frame?.(this.t, dt, this.rig.cam, this.player.root.position, this.container.clientHeight * this.renderer.getPixelRatio());
+    this.cave?.update(dt, this.player.root.position, this.rig.yaw, !this.ambienceAllowed() || this.transitioning);
+    this.caveLure?.userData.tick(this.t);
+    this.guidance.visible = !talking && !this.wild;
+    this.guidance.group.visible = !talking && !this.wild;
     this.guidance.update(dt, this.zone.interior ? undefined : floorY);
     // guidance path (throttled)
     this.pathT -= dt;
@@ -1539,15 +1585,16 @@ export class Game implements GameApi {
     let want = new THREE.Vector3();
     // the pace: a walk; outdoors a jog after a moment's steady walking one way (a turn, a stop or deep water starts the
     // count again), a run with Shift or the stick at its edge; indoors always a walk; slower the deeper one wades
-    const indoor = !!this.zone.interior;
-    if (!indoor && steer.dir !== null && this.wading.depth < 0.3 && !this.swimming && !(this.jogT > 0.4 && this.lastSpeed < 2)) {
+    // (`indoor`: not the town: a room or a place like the grotto; `room`: a room, where one only walks)
+    const indoor = !!this.zone.interior, room = this.room, wild = this.wild;
+    if (!room && steer.dir !== null && this.wading.depth < 0.3 && !this.swimming && !(this.jogT > 0.4 && this.lastSpeed < 2)) {
       if (this.jogDir === null || Math.abs(angleDiff(steer.dir, this.jogDir)) > 0.55) { this.jogDir = steer.dir; this.jogT = 0; }
       // (a long curve is still one way: the direction counted from follows slowly)
       this.jogDir += angleDiff(steer.dir, this.jogDir) * Math.min(1, dt * 0.8);
       this.jogT += dt;
     } else { this.jogT = 0; this.jogDir = null; }
     const pace = indoor ? 1 : Wading.pace(this.wading.depth);
-    let speed = (indoor ? WALK : this.keys.has("shift") || this.joyRun ? RUN : WALK + (JOG - WALK) * smoothstep(JOG_AFTER, JOG_AFTER + JOG_EASE, this.jogT)) * pace;
+    let speed = (room ? WALK : this.keys.has("shift") || this.joyRun ? RUN : WALK + (JOG - WALK) * smoothstep(JOG_AFTER, JOG_AFTER + JOG_EASE, this.jogT)) * pace;
     // (in deep water: a calm stroke, quicker with Shift or the stick at its edge; slower under water)
     if (this.swimming) speed = this.diveK > 0.5 ? SWIM.speed * 0.85 : this.keys.has("shift") || this.joyRun ? SWIM.fast : SWIM.speed;
     const before = p.clone();
@@ -1577,7 +1624,7 @@ export class Game implements GameApi {
         } else {
           want.set(tx - p.x, 0, tz - p.z).normalize();
           const remaining = d + this.autoPath.slice(1).reduce((a, b, i, arr) => a + (i ? Math.hypot(b[0] - arr[i - 1][0], b[1] - arr[i - 1][1]) : 0), 0);
-          speed = (remaining > 12 && !indoor ? RUN : WALK) * pace;
+          speed = (remaining > 12 && !room ? RUN : WALK) * pace;
           // arrive next to an NPC rather than on top of them (a spot of their own to talk from, across a counter or a
           // table, is walked onto); and, held up on the way (walking but getting nowhere: someone in the way), as soon
           // as they are close enough to talk to
@@ -1614,11 +1661,16 @@ export class Game implements GameApi {
       this.stepOut = dd < 1e-3 && this.gait.speed > 1 ? 0 : Math.max(0, this.stepOut - dd);
     }
     // interior bounds / door push
-    if (this.zone.interior) {
+    if (wild) {
+      // (walking on into the water one came through: back up to the cenote)
+      const ex = this.zone.interior!.exit;
+      if (Math.hypot(p.x - ex.x, p.z - ex.z) < 1.5 && this.vel.z > 0.5 && !blocked) this.exitInterior();
+    } else if (this.zone.interior) {
       const it = this.zone.interior;
       if (p.z > it.d / 2 - 0.2 && Math.abs(p.x) < 1.2 && this.vel.z > 0.5) { this.exitInterior(); }
     } else {
       this.checkDoorPush(dt);
+      this.checkCavePush(dt);
     }
     const moved = p.distanceTo(before) / Math.max(dt, 1e-4);
     // how the player really moves (sliding along a wall, not into it), for the camera
@@ -1659,7 +1711,7 @@ export class Game implements GameApi {
     // is the sand sloping down under the water (but for a pier's or a terrace's boards over it). A jump lands on it;
     // walking off an edge is a fall.
     const on = indoor ? 0 : this.ledges?.support(p.x, p.z, this.hop.y, this.hop.air) ?? 0;
-    const ground = indoor ? 0 : on > 0 ? on : floorY(p.x, p.z);
+    const ground = wild ? wild.floor(p.x, p.z) : indoor ? 0 : on > 0 ? on : floorY(p.x, p.z);
     // the water here (the sea with its swell, a pool's), and how much of it is over what is underfoot
     const sur = indoor ? null : waterY(p.x, p.z, this.t), surface = sur ?? -99;
     const over = sur === null || on > 0 ? 0 : sur - ground;
@@ -1737,6 +1789,9 @@ export class Game implements GameApi {
         const k = Math.min(1, depth / 0.5) * Math.min(1, moved / WALK);
         audio.splash(k);
         this.splashes.burst(p.x, surface, p.z, this.vel.x / moved, this.vel.z / moved, k);
+      } else if (step && wild && ground < -0.06) {
+        // (a ford in the grotto: ankle-deep)
+        audio.splash(0.22);
       } else if (step) {
         audio.step(this.underfoot(ground > 0.05), running);
         if (fancy && running) this.dust.puff(p.x, p.z, this.vel.x / moved, this.vel.z / moved);
@@ -1756,6 +1811,15 @@ export class Game implements GameApi {
     // (the character stands on what is under them: the blob shadow and the camera with it; `lift` is the jump above it)
     p.y = this.hop.ground;
     this.player.update(dt);
+  }
+
+  /** Swimming on into the cave's mouth at the cenote's far side goes in (the grotto, src/game/cave). */
+  private checkCavePush(dt: number) {
+    const door = caveDoor(), p = this.player.root.position;
+    if (door && this.swimming && this.diveK < 0.3 && Math.hypot(door.x - p.x, door.z - p.z) < 1.1 && this.vel.x < -0.8) {
+      this.cavePushT += dt;
+      if (this.cavePushT > 0.35) { this.cavePushT = 0; this.enterDoor(CAVE_ZONE); }
+    } else this.cavePushT = 0;
   }
 
   private checkDoorPush(dt: number) {
@@ -1901,10 +1965,16 @@ export class Game implements GameApi {
           const d = Math.hypot(dd.outX - p.x, dd.outZ - p.z);
           if (d < 3 && d < bd && !this.swimming) { bd = d; best = { kind: "door", id: dd.loc, label: dd.name }; }
         }
+        // the cave's mouth at the cenote's far side, swum up to: the way into the grotto
+        const cd = caveDoor();
+        if (cd && this.diveK < 0.3 && Math.hypot(cd.x - p.x, cd.z - p.z) < 2.3) { bd = 0.5; best = { kind: "door", id: CAVE_ZONE, label: LOCATIONS[CAVE_ZONE]?.name ?? CAVE_ZONE }; }
       } else {
+        // a glyph stone that still waits, within reach
+        const stone = this.cave?.near(p);
+        if (stone && !best) { bd = 1; best = { kind: "glyph", id: stone.id, label: L("akmuo") }; }
         const ex = this.zone.interior.exit;
         const d = Math.hypot(ex.x - p.x, ex.z - p.z);
-        if (d < 1.8 && d < bd) { bd = d; best = { kind: "exit", id: "exit", label: L("Išeiti") }; }
+        if (d < (this.wild ? 2.6 : 1.8) && d < bd) { bd = d; best = { kind: "exit", id: "exit", label: L("Išeiti") }; }
       }
     }
     const changed = (best?.kind + ":" + best?.id) !== (this.nearest?.kind + ":" + this.nearest?.id);
@@ -1916,6 +1986,8 @@ export class Game implements GameApi {
         : best.kind === "ride" ? (best.label === "car" ? { label: L("Vairuoti: {name}", { name: names.car.en }), lt: names.car.lt || undefined, kind: "drive" } : { label: L("Plaukti: {name}", { name: names.boat.en }), lt: names.boat.lt || undefined, kind: "boat" })
         : best.kind === "out" ? { label: L("Išlipti"), kind: "out" }
         : best.kind === "climb" ? { label: best.label, kind: "climb" }
+        : best.kind === "glyph" ? { label: L("Klausytis: kalbantis akmuo"), kind: "listen" }
+        : best.kind === "exit" && this.wild ? { label: L("Grįžti į cenotę"), kind: "exit" }
         : { label: best.kind === "npc" ? L("Kalbėtis: {name}", { name: best.label }) : best.kind === "door" ? L("Įeiti: {place}", { place: best.label }) : L("Išeiti į lauką"), lt: best.kind === "door" ? placeLt(best.id) : undefined, kind: best.kind === "npc" ? "talk" : best.kind === "door" ? "enter" : "exit" } });
     }
     // what the player does instead of walking, for the buttons and the hints
@@ -1982,6 +2054,8 @@ export class Game implements GameApi {
     radio.shutdown();
     for (const n of this.npcs) n.tag.remove();
     this.npcs = [];
+    this.cave?.dispose();
+    this.cave = null;
     this.renderer.domElement.remove();
     this.renderer.dispose();
   }

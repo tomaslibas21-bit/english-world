@@ -31,6 +31,8 @@ export interface Progress {
   /** How the game is used, for the course's owner: openings, days, minutes in the town and in the pictures, the
    *  radio (state/playStats.ts). */
   play?: import("./playStats").PlayStats;
+  /** Puerto Colibrí's grotto (src/game/cave): the glyph stones lit, the aluxes who have let the learner pass. */
+  cave?: import("../game/cave/plan").CaveSave;
 }
 
 const KEY = `${EDITION.storage}-progress-v1`;

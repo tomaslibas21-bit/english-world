@@ -244,7 +244,9 @@ export interface TownTheme {
   cenote: { x: number; z: number; sign: string;
     /** One walks out to it along the sacbé, down its deck's steps into the water, and swims there (mexican.ts
      *  `cenoteWalk`): the town's edge is open where the sacbé crosses it. */
-    walk?: boolean } | null;
+    walk?: boolean;
+    /** Through the cave's mouth at its far side one swims into a hidden grotto (src/game/cave). */
+    grotto?: boolean } | null;
   /** Small ruins on a rocky point by the sea beyond the beach's west end (the temple's x and z). */
   ruins: { x: number; z: number } | null;
 

@@ -98,6 +98,10 @@ const LOOK: Record<string, Partial<Look>> = {
   mr_grant: { skin: "#6d4933", hair: { style: "bald", color: "#b8b2aa" }, top: "#9f4d41", acc: ["beard", "readers"] },
   // customs (s65b)
   aduana: { skin: "#d2a177", hair: { style: "bun", color: "#533423" }, top: "#374359", bottom: "#2d3b4b", acc: ["badge", "earrings"] },
+  // the aluxes of the grotto under Cenote Ka'an (src/game/cave): half a person's height, barefoot, in the forest's
+  // greens and the yellow of the ceiba's flowers
+  alux_kin: { skin: "#b9814f", hair: { style: "short", color: "#1f1a17" }, top: "#5fae5a", bottom: "#8a6a3c", shorts: true, flipflops: true, sleeves: "short", acc: ["jipi"], accColor: "#e3cf8e", height: 0.52, build: 1.2 },
+  alux_nikte: { skin: "#c08a5a", hair: { style: "braid", color: "#1f1a17" }, top: "#f2c14e", bottom: "#3f9a8c", skirt: true, flipflops: true, sleeves: "short", acc: ["flower", "embroidered", "earrings"], height: 0.5, build: 1.12 },
 };
 
 /** Who is who. Roles are neutral Spanish (a role label isn't a line: no Mexican-only words in them). */
@@ -175,6 +179,10 @@ const CAST: Record<string, Cast> = {
 const EXTRA: Record<string, [base: string, ...cast: Cast]> = {
   // customs after the baggage hall (s65b): another agency than immigration (s65a), so another officer
   aduana: ["diaz", "Agente Medina", "Aduana", "Customs"],
+  // the aluxes (small spirits of the Maya forest, friendly and full of mischief) who live in the grotto under Cenote
+  // Ka'an: Kin ("sun") keeps its way in, Nikté ("flower") asks riddles further down. They say tú to everyone.
+  alux_kin: ["tyler", "Kin", "Alux, guardián de la gruta", "Alux, keeper of the grotto", { gender: "m", informal: true, informalSpain: true }],
+  alux_nikte: ["chloe", "Nikté", "Alux de las adivinanzas", "Alux of the riddles", { gender: "f", informal: true, informalSpain: true }],
 };
 
 const hash = (s: string) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);

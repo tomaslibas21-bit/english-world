@@ -134,7 +134,7 @@ export interface HudState {
   zoneName: string;
   zoneBanner: { title: string; sub?: string } | null;
   /** What E / the tap does here; `lt` is a second line (a door's place in Lithuanian and what its name means). */
-  prompt: { label: string; lt?: string; kind: "talk" | "enter" | "exit" | "taxi" | "drive" | "boat" | "out" | "climb" } | null;
+  prompt: { label: string; lt?: string; kind: "talk" | "enter" | "exit" | "taxi" | "drive" | "boat" | "out" | "climb" | "listen" } | null;
   /** What the player does instead of walking (game/rides, water.ts SWIM): at a car's wheel, at a boat's helm,
    *  swimming, or under water on a dive. */
   ride: null | "car" | "boat" | "swim" | "dive";
@@ -147,6 +147,10 @@ export interface HudState {
   showTouch: boolean;
   /** The first-time guide's hint on show (game/coach.ts): which, its number, and `ok` for the moment it was just done. */
   coach: { step: "walk" | "run" | "jump" | "talk" | "radio" | "scenes"; n: number; of: number; ok: boolean } | null;
+  /** Puerto Colibrí's grotto (src/game/cave/quest.ts): the card that stands in for the map down there, and the card
+   *  of the glyph stone the learner is at. */
+  cave: import("../game/cave/quest").CaveCard | null;
+  glyph: import("../game/cave/quest").GlyphQuiz | null;
 }
 
 interface Store {
@@ -198,7 +202,7 @@ export const useStore = create<Store>((set, get) => ({
   hud: {
     zoneName: "", zoneBanner: null, prompt: null, ride: null, walking: false, objective: null, minimap: { px: 0, pz: 0, heading: 0, zone: "town" }, fade: 0, panel: null,
     showTouch: typeof window !== "undefined" && (("ontouchstart" in window) || navigator.maxTouchPoints > 1),
-    coach: null,
+    coach: null, cave: null, glyph: null,
   },
   toasts: [],
   loadingText: "",

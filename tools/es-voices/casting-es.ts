@@ -83,6 +83,8 @@ const MEXICO: Record<string, string> = {
   maggie: "es-419-tutor-3", kyle: "es-419-commercial-1", harbor_bot: "es-419-commercial-9", brenda: "es-419-assistant-6", vanessa: "es-419-advisor-6",
   greg: "es-419-podcaster-4", whitaker: "es-419-csagent-9", russo: "es-419-assistant-1", emily: "es-419-assistant-2", tyler: "es-419-assistant-9",
   mr_grant: "es-419-concierge-8",
+  // the aluxes of the grotto (x01, x02): the youngest bright voices
+  alux_kin: "es-419-commercial-12", alux_nikte: "es-419-csagent-7",
 };
 /** The catalog's Castilian voices (es-ES, `voices --lang=es-ES`, 12 Nov 2026). Spain's set (esp_) is voiced with these:
  *  the sample sp1 gave the Mexican casting's es-419 voices a Castilian direction, and Gemini 3.1 Pro heard 39 of 80
@@ -128,6 +130,7 @@ const SPAIN: Record<string, string> = {
   maggie: "es-es-podcaster-5", kyle: "es-es-training-9", harbor_bot: "es-es-advisor-8", brenda: "es-es-training-12", vanessa: "es-es-csagent-5",
   greg: "es-es-advisor-9", whitaker: "es-es-assistant-4", russo: "es-es-concierge-3", emily: "es-es-tutor-12", tyler: "es-es-training-9",
   mr_grant: "es-es-assistant-3",
+  alux_kin: "es-es-training-9", alux_nikte: "es-es-concierge-3",
 };
 /** Which casting: Gemini's 30 prebuilt voices ("prebuilt") or the catalog's Mexican voices ("mexico"). */
 export type Casting = "prebuilt" | "mexico";
@@ -239,6 +242,10 @@ export const CAST: Record<string, Role> = {
   emily: { voice: "Achernar", age: "late 30s", manner: "warm and a little nervous", pace: "easy" },
   tyler: { voice: "Fenrir", age: "early 30s", manner: "excitable, full of startup talk", pace: "fast" },
   mr_grant: { voice: "Zubenelgenubi", age: "about 60", manner: "friendly and very casual", pace: "relaxed" },
+  // the aluxes, small spirits of the Maya forest in the grotto under Cenote Ka'an (x01, x02): gentle, bright, a little
+  // magical, never scary
+  alux_kin: { voice: "Puck", age: "ageless, sounds like a boy", manner: "a small forest spirit, playful and mischievous, a bright boyish tenor with a twinkle in it, gentle and never scary", pace: "lively" },
+  alux_nikte: { voice: "Leda", age: "ageless, sounds like a young girl", manner: "a small forest spirit, light and sing-song, gentle and bright, teasing with her riddles, a little magical", pace: "easy" },
 };
 
 /** A conversation's setting, for everyone in it or only for some (`who`). `fx`: the sound of a phone line or a
@@ -271,6 +278,9 @@ export const SCENES: Record<string, Scene> = {
   "s35-gym": { setting: "coaching at the gym" },
   "s87-interview": { setting: "a job interview in an office" },
   "s91b-police": { setting: "at a police station desk" },
+  // the aluxes' hidden grotto (bonus conversations)
+  "x01-alux-kin": { setting: "speaking softly, close by, in a quiet hidden grotto" },
+  "x02-alux-nikte": { setting: "speaking softly, close by, in a quiet hidden grotto" },
 };
 
 /** The voice ids (src/editions/es/content/voices.ts) → who they are, and in which accent. */

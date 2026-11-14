@@ -3,7 +3,9 @@ import { useStore, type PlayMode } from "../state/store";
 import type { Look } from "../content/npcs";
 import { NPCS } from "../content/npcs";
 import { LOCATIONS, TOWN_LT } from "../content/locations";
-import { SITUATIONS, SITUATION_BY_ID } from "../content/situations";
+// (the route: the town's conversations; the ones off it, SituationDef.bonus, are not listed or counted)
+import { SITUATION_BY_ID } from "../content/situations";
+import { ROUTE as SITUATIONS } from "../content/route";
 import { sitProgress, stars } from "../state/progress";
 import { ltCount } from "./lt";
 import { Icon } from "./icons";

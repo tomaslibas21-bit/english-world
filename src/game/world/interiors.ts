@@ -26,6 +26,24 @@ export interface Interior {
   warm?: boolean;
   /** small idle animations (Wi-Fi the dog breathing at Sproutly), called every frame while the player is inside */
   update?(t: number, dt: number): void;
+  /** A place of its own that is no room (Puerto Colibrí's grotto, src/game/cave): walked and run through with the
+   *  follow camera, in its own fog and light, on a ground plan and a floor of its own, and left the way one came. */
+  wild?: {
+    fog: THREE.FogExp2 | THREE.Fog; background: string;
+    /** The light on the people there: the sky's and the ground's colours and their strength; the sun's. */
+    hemi: [string, string, number]; sun: [string, number];
+    /** What keeps the camera inside (camera.ts `space`). */
+    space: { free(a: THREE.Vector3, b: THREE.Vector3): number; inside(p: THREE.Vector3): boolean; overSolid(x: number, z: number): boolean };
+    floor(x: number, z: number): number;
+    walkable(x: number, z: number, r?: number): boolean;
+    bounds: { minX: number; maxX: number; minZ: number; maxZ: number };
+    /** Where leaving it puts one in the town. */
+    out: { x: number; z: number; rot: number };
+    /** The follow camera's lean and distance there (a roof worth seeing: lower and nearer than in the town). */
+    camera?: { pitch: number; dist: number };
+    /** Every frame while someone is there (`at`: where they are; `h`: the picture's height in pixels). */
+    frame?(t: number, dt: number, cam: THREE.PerspectiveCamera, at: THREE.Vector3, h: number): void;
+  };
 }
 
 type Builder = (ctx: Ctx) => void;

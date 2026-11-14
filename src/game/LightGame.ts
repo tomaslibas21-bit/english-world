@@ -7,7 +7,8 @@ import type { Door } from "./world/town";
 import { Session } from "./session";
 import { audio } from "./audio";
 import { givenItem } from "./given";
-import { SITUATIONS, SITUATION_BY_ID } from "../content/situations";
+import { SITUATION_BY_ID } from "../content/situations";
+import { ROUTE } from "../content/route";
 import type { SituationDef } from "../content/types";
 import { useStore } from "../state/store";
 import { sitProgress } from "../state/progress";
@@ -91,7 +92,7 @@ export class LightGame implements GameApi {
   closeConversation() { this.session?.close(); }
 
   orderedSituations(): SituationDef[] {
-    return [...SITUATIONS].sort((a, b) => a.chapter - b.chapter || a.order - b.order || a.id.localeCompare(b.id));
+    return [...ROUTE].sort((a, b) => a.chapter - b.chapter || a.order - b.order || a.id.localeCompare(b.id));
   }
 
   currentObjective(): SituationDef | null {

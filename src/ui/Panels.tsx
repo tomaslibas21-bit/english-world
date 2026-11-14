@@ -3,7 +3,9 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useStore } from "../state/store";
 import { game } from "../game/gameRef";
 import { switchPlayMode } from "./playMode";
-import { SITUATIONS, SITUATION_BY_ID } from "../content/situations";
+// (the route: the town's conversations; the ones off it, SituationDef.bonus, are not listed or counted)
+import { SITUATION_BY_ID } from "../content/situations";
+import { ROUTE as SITUATIONS } from "../content/route";
 import { LOCATIONS, TOWN_LT, placeLt } from "../content/locations";
 import { NPCS } from "../content/npcs";
 import { coachVoice } from "../content/voices";

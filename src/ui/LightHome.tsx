@@ -5,7 +5,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "../state/store";
 import { setGame, game } from "../game/gameRef";
 import { LightGame } from "../game/LightGame";
-import { SITUATIONS, SITUATION_BY_ID } from "../content/situations";
+// (the route: the town's conversations; the ones off it, SituationDef.bonus, are not listed or counted)
+import { SITUATION_BY_ID } from "../content/situations";
+import { ROUTE as SITUATIONS } from "../content/route";
 import { TOWN_LT } from "../content/locations";
 import { LOCATIONS } from "../content/locations";
 import { NPCS } from "../content/npcs";

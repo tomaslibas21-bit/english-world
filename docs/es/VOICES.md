@@ -203,6 +203,8 @@ every conversation and in both accents.
 | Elena (f, `emily`) | Tu jefa (Your manager) | — | Achernar | assistant-2 | late 30s | warm and a little nervous | easy |
 | Toño (m, `tyler`) | Fundador (Founder) | — | Fenrir | assistant-9 | early 30s | excitable, full of startup talk | fast |
 | Don Gilberto (m, `mr_grant`) | Administrador del edificio (Building manager) | — | Zubenelgenubi | concierge-8 | about 60 | friendly and very casual | relaxed |
+| Kin (m, `alux_kin`) | Alux, guardián de la gruta (Alux, keeper of the grotto) | x01 | Puck | commercial-12 | ageless, sounds like a boy | a small forest spirit, playful and mischievous, a bright boyish tenor with a twinkle in it, gentle and never scary | lively |
+| Nikté (f, `alux_nikte`) | Alux de las adivinanzas (Alux of the riddles) | x02 | Leda | csagent-7 | ageless, sounds like a young girl | a small forest spirit, light and sing-song, gentle and bright, teasing with her riddles, a little magical | easy |
 | Agente Medina (f, `aduana`) | Aduana (Customs) | s65b | Pulcherrima | concierge-5 | about 40 | polite, direct and businesslike | brisk |
 | Coach (female learner) | example answers | all | Erinome | podcaster-2 | about 30 | clear, friendly and natural, every word distinct | unhurried |
 | Coach (male learner) | example answers | all | Iapetus | podcaster-1 | about 30 | clear, friendly and natural, every word distinct | unhurried |
@@ -236,6 +238,8 @@ every conversation and in both accents.
 | s35-gym | everyone | coaching at the gym | — |
 | s87-interview | everyone | a job interview in an office | — |
 | s91b-police | everyone | at a police station desk | — |
+| x01-alux-kin | everyone | speaking softly, close by, in a quiet hidden grotto | — |
+| x02-alux-nikte | everyone | speaking softly, close by, in a quiet hidden grotto | — |
 
 61 characters on 28 voices (the prebuilt casting), each in two accents: “natural Mexican Spanish, as spoken on Mexico's Caribbean coast” (es_…) and “neutral Latin American Spanish (español neutro, as in dubbing), with no regional accent” (esn_…). No clashes: nobody shares a voice with someone in the same conversation, and the coach voices belong to no character.
 

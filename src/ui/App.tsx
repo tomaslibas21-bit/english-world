@@ -4,6 +4,7 @@ import type { Game } from "../game/Game";
 import { setGame, game } from "../game/gameRef";
 import { coach } from "../game/coach";
 import { Title } from "./Title";
+import { GlyphCard } from "./Cave";
 import { Hud } from "./Hud";
 import { Conversation } from "./Conversation";
 import { SceneBackdrop } from "./SceneBackdrop";
@@ -60,7 +61,7 @@ function Play() {
     <>
       <div className="stage" ref={stage} />
       <div className="tag-layer" ref={tags} />
-      {ready && game && <><Hud /><SceneBackdrop /><ViewSwitch /><Conversation /><Panels /></>}
+      {ready && game && <><Hud /><SceneBackdrop /><ViewSwitch /><Conversation /><Panels /><GlyphCard /></>}
       <Toasts />
       {!ready && <Loading />}
     </>

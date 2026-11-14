@@ -1,0 +1,110 @@
+{
+"situation": "x02-alux-nikte",
+"items": [
+{
+"ctx": "ready",
+"say": "Vale, estoy listo",
+"intent": "ready"
+},
+{
+"ctx": "ready",
+"say": "Venga, vamos",
+"intent": "ready"
+},
+{
+"ctx": "ready",
+"say": "Vale, dime",
+"intent": "ready"
+},
+{
+"ctx": "ready",
+"say": "Todavía no, espera",
+"intent": "not_ready",
+"not": [
+"ready"
+]
+},
+{
+"ctx": "ready",
+"say": "¿Qué sois los aluxes?",
+"intent": "ask_alux"
+},
+{
+"ctx": "ready",
+"say": "¿Cómo te llamas, guapa?",
+"intent": "ask_name"
+},
+{
+"ctx": "riddle",
+"say": "¿Es un plátano?",
+"intent": "guess_ctx",
+"slots": {
+"thing": "platano"
+}
+},
+{
+"ctx": "riddle",
+"say": "Vale, es el reloj",
+"intent": "guess_ctx",
+"slots": {
+"thing": "reloj"
+}
+},
+{
+"ctx": "riddle",
+"say": "No, creo que es el sol",
+"intent": "guess_ctx",
+"slots": {
+"thing": "sol"
+}
+},
+{
+"ctx": "riddle",
+"say": "¿Me das una pista, porfa?",
+"intent": "ask_hint"
+},
+{
+"ctx": "riddle",
+"say": "¿Me la repites?",
+"intent": "repeat_riddle"
+},
+{
+"ctx": "riddle",
+"say": "Ni idea",
+"intent": "dont_know"
+},
+{
+"ctx": "riddle",
+"say": "Me rindo",
+"intent": "give_up"
+},
+{
+"ctx": "riddle",
+"say": "Venga, otra",
+"intent": "another"
+},
+{
+"ctx": "riddle",
+"say": "¡Qué difícil!",
+"intent": "hard"
+},
+{
+"ctx": "riddle",
+"say": "No es la luna",
+"intent": "not_guess",
+"not": [
+"guess_ctx"
+]
+},
+{
+"ctx": "closing",
+"say": "Vale, gracias, adiós",
+"intent": "g_thanks"
+},
+{
+"ctx": "closing",
+"say": "Hasta luego",
+"intent": "g_bye"
+}
+]
+}
