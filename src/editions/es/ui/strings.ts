@@ -166,6 +166,7 @@ export const STRINGS: Record<string, string> = {
   "Skambutis baigtas": "Call ended",
   "Tu": "You",
   "Natūralus vertimas": "Natural translation",
+  "Pastabos": "Notes",
   "Suprasta": "Understood",
   "Daugiau frazių": "More phrases",
   "Visada naudinga: paprašyti pakartoti, lėčiau, paraidžiui…": "Always useful: asking someone to repeat, slow down, or spell it…",

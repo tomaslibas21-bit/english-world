@@ -175,3 +175,31 @@ describe("the markup", () => {
     expect(html({ s: pleasure(), lt: true, ipa: false, nat: false })).not.toContain("nat-star");
   });
 });
+
+describe("the line's word notes behind the asterisk (owner, 14 Nov 2026: on a phone the dotted underline is no help)", () => {
+  const html = (props: Parameters<typeof Interlinear>[0]) => renderToStaticMarkup(createElement(Interlinear, props));
+  const note = "cochinita pibil – lėtai kepta kiauliena su achiote.";
+  const withNote = () => compose(t("The | cochinita | is | great.", "— | cochinita | yra | puiki.", "Cochinita – puiki.", { flags: { 1: note } }), {}, { look: () => undefined });
+  const tipOf = (out: string) => out.match(/role="tooltip"[^>]*>(.*?)<\/span><\/span>/)?.[1] ?? out.match(/role="tooltip"[^>]*>(.*)$/)?.[1];
+
+  it("a line with a note gets the asterisk even when the natural sentence adds nothing or is shown under it", () => {
+    for (const nat of [true, false]) {
+      const out = html({ s: withNote(), lt: true, ipa: false, nat, natTip: true });
+      expect(out).toContain("nat-star");
+      expect(out).toContain(`<span class="nat-tipnote">${note}</span>`);
+    }
+    // the learner's examples too
+    expect(html({ s: withNote(), lt: true, ipa: false, compactNat: true })).toContain("nat-tipnote");
+  });
+
+  it("the natural sentence first, then the note, when both are new", () => {
+    const s = compose(t("My | pleasure!", "Mano | malonumas!", "Mielai!", { flags: { 1: "malonumas: a note" } }), {}, { look: () => undefined });
+    const out = html({ s, lt: true, ipa: false, nat: false, natTip: true });
+    expect(out).toMatch(/role="tooltip"[^>]*>Mielai!<span class="nat-tipnote sep">malonumas: a note<\/span>/);
+    expect(tipOf(out)).toBeTruthy();
+  });
+
+  it("no asterisk for notes with the word-by-word line off (the notes are about its words)", () => {
+    expect(html({ s: withNote(), lt: false, ipa: true, nat: false, natTip: true })).not.toContain("nat-star");
+  });
+});

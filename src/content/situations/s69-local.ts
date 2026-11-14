@@ -58,8 +58,9 @@ const CUISINES: EntityDef[] = [
 
 const COUNTRIES: EntityDef[] = [
   ent("lithuania", "Lithuania", "Lietuva/Lietuvos/Lietuvai/Lietuvą/Lietuva/Lietuvoje", "f", { forms: ["lithuanian", "vilnius", "kaunas", "klaipeda", "the baltics"] }),
+  // any other country (owner, 14 Nov 2026): Rosa's answer doesn't name it
   ent("other", "Europe", "Europa/Europos/Europai/Europą/Europa/Europoje", "f",
-    { forms: ["latvia", "estonia", "poland", "germany", "england", "the uk", "ireland", "norway", "sweden", "finland", "france", "spain", "italy", "ukraine", "canada", "latvian", "polish", "german"] }),
+    { forms: ["latvia", "estonia", "poland", "germany", "england", "the uk", "ireland", "norway", "sweden", "finland", "france", "spain", "italy", "ukraine", "canada", "latvian", "polish", "german", "the united states", "the us", "the usa", "usa", "america", "the states", "united states", "american", "canadian", "mexico", "brazil", "argentina", "colombia", "chile", "peru", "scotland", "wales", "britain", "great britain", "the netherlands", "holland", "belgium", "switzerland", "austria", "portugal", "greece", "denmark", "iceland", "czech republic", "czechia", "slovakia", "hungary", "romania", "bulgaria", "croatia", "russia", "belarus", "moldova", "georgia", "turkey", "israel", "egypt", "morocco", "south africa", "nigeria", "kenya", "india", "china", "japan", "korea", "south korea", "vietnam", "thailand", "the philippines", "indonesia", "australia", "new zealand", "british", "english", "irish", "scottish", "french", "spanish", "italian", "ukrainian", "norwegian", "swedish", "finnish", "estonian", "dutch", "russian", "japanese", "chinese"] }),
 ];
 
 // Which place Rosa recommends for which food
@@ -1085,6 +1086,9 @@ export const local: SituationDef = {
     { say: "That sounds great!", intent: "thanks_tip" },
     { say: "I'll check it out!", intent: "thanks_tip" },
     { say: "I'm from Lithuania", intent: "from_ctx", step: "from", slots: { country: "lithuania" } },
+    { say: "I'm from Japan", intent: "from_ctx", step: "from", slots: { country: "other" } },
+    { say: "I'm from the United States", intent: "from_ctx", step: "from", slots: { country: "other" } },
+    { say: "I'm Dutch", intent: "from_ctx", step: "from", slots: { country: "other" } },
     { say: "Yes, I'm hungry!", intent: "ask_food", step: "food" },
     { say: "Yes, beautiful day!", intent: "weather_ok" },
     { say: "No, that's all. Thanks for the tips!", intent: "more_no", step: "more" },
