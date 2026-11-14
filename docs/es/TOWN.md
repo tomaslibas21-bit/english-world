@@ -1144,11 +1144,11 @@ this town's own code. What the survey of this town found (`Ledges.things`, one o
   taxis standing at the airport, the four rental cars; and a car, a vocho or a taxi of the traffic while it has stopped
   for the player. The colectivos and the buses are too tall: walls, standing as moving.
 - **The malecón's wall** along the whole beach (0.78 m) and **its pillars** (1.05 m: one more jump, from the wall).
-  Since 15 Nov also its two stretches by the muelle (x −47 to −33 and −27 to −13, in front of El Muelle and the
+  Since the evening of 14 Nov also its two stretches by the muelle (x −47 to −33 and −27 to −13, in front of El Muelle and the
   tours' kiosk): the muelle's boardwalk starting beside their ends had been taken for a floor passing under them.
   Along the whole malecón the beach is now one jump away; the wading limit and the sea are as they were.
 - **The muelle**: its boards from the sand along its beach side (0.3 m) and the mooring posts there (0.85 m); its
-  boardwalk's rails are hopped over from the boards, down to the beach (15 Nov).
+  boardwalk's rails are hopped over from the boards, down to the beach (14 Nov, evening).
 - **The zócalo and avenida Juárez**: the eight bollards at the avenue (0.8 m), the stone planters round the trees
   (0.6–1.2 m), the atrio's low walls and the foot of its cross (1.0–1.4 m), the trash cans (1.0–1.1 m), the hydrants
   (0.9 m).
