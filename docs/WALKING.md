@@ -73,6 +73,21 @@ Shared by every edition of the game (the code is in `src/game/`; each town keeps
   nobody gets beyond the bounds or the wading limit, and from every place reached only by jumping a plain jump leads
   back.
 
+### What can be climbed in Maple Harbor (the survey of 14 Nov 2026: `things` of `Ledges`, one of each looked at)
+
+- **Cars**: the ten parked along Main Street, Oak Avenue and the side streets, the taxi at the airport and the four
+  rental cars (hood or trunk 0.9–1.0 m, roof 1.56–1.6 m), and any car of the traffic while it has stopped. Not Maggie's
+  convertible (she stands by it).
+- **The pier**: its boards from the sand along its beach side (0.3 m), and the eight mooring posts there (0.85 m).
+- **The fountain**: its basin (0.8 m: one stands in the water); the column in the middle is a wall.
+- **On the streets**: five hydrants and four trash cans (0.9 m), five mailboxes (1.35 m: a flip), the picket fences of
+  Oak Avenue's front yards (0.75–0.9 m), the clinic's low sign, the rack by the gym (1.1 m), the crates at Sproutly
+  (0.5–1.1 m), the bus stop's bench and bin.
+- **The party's yard**: the table (0.9 m), the speaker (1.35 m), the fence round it (1.2 m).
+- As before: every bench, the planters. **Not**: the market's stalls (their awnings), café tables and chairs, the
+  gazebo, counters and anything by someone one talks to, lamp posts, signs on poles, trees, the gas pumps (1.7 m: in
+  reach of nothing), buildings.
+
 ## The jog (`Game.updatePlayer`)
 
 - Walk 4.4 m/s. Outdoors, after 1.5 s of steady walking one way (a turn of more than about 30°, a stop or deep water
