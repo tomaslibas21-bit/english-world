@@ -102,13 +102,14 @@ try {
       await btn.waitFor({ state: "visible", timeout: 10000 });
       const box = await btn.boundingBox();
       check("the jump button is at the bottom right", box.x > 390 / 2 && box.y > 844 / 2 && box.width >= 44 && box.height >= 44, box);
+      // (once the town has faded in: a jump is not taken while it does)
+      await page.waitForFunction(() => { const g = window.__ew.game; return !g.transitioning && !g.hop.air; }, null, { timeout: 20000 });
       await btn.dispatchEvent("pointerdown");
-      await page.waitForTimeout(260);
       const one = await page.evaluate(() => { const g = window.__ew.game; return { air: g.hop.air, spin: g.hop.spin }; });
+      await page.waitForFunction(() => { const g = window.__ew.game; return g.hop.air && g.hop.y > 0.3; }, null, { timeout: 5000 });
       await btn.dispatchEvent("pointerdown");
-      await page.waitForTimeout(120);
-      const two = await page.evaluate(() => { const g = window.__ew.game; return { air: g.hop.air, spin: +g.hop.spin.toFixed(2) }; });
-      check("a tap jumps, a second tap in the air flips", one.air && one.spin === 0 && two.air && two.spin > 0.2, { one, two });
+      const two = await page.evaluate(() => { const g = window.__ew.game; return { air: g.hop.air, flipping: g.hop.flipT > 0 }; });
+      check("a tap jumps, a second tap in the air flips", one.air && one.spin === 0 && two.air && two.flipping, { one, two });
     }
     check(`no page errors (${label})`, errors.length === 0, errors.slice(0, 3));
     await ctx.close();
