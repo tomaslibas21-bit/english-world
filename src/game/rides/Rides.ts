@@ -45,6 +45,10 @@ interface Owner {
   from: THREE.Vector3; to: THREE.Vector3;
   path: [number, number][] | null;
   nod: number;
+  /** In their seat far from the player, holding their pose (their parts' matrices and their skeleton left alone:
+   *  a breath that far away costs a frame's time and shows nothing); `posed` once they have been drawn in the seat. */
+  still?: boolean;
+  posed?: boolean;
 }
 
 export interface Ride {
@@ -62,6 +66,29 @@ export interface Ride {
 }
 
 const HOP = 0.55;
+/** Beyond this (m) from the player, the people sitting in a parked convertible hold their pose. */
+const STILL = 26;
+const NOOP = () => {};
+
+/** Someone keeping their pose, or moving again: their matrices and their skeleton worked out once more, then left
+ *  alone (three.js would otherwise redo every bone's matrix and the skin's bone texture each frame for a pose that
+ *  does not change). */
+function holdPose(root: THREE.Object3D, hold: boolean) {
+  if (hold) {
+    root.updateMatrixWorld(true);
+    root.traverse((o) => {
+      o.matrixAutoUpdate = false;
+      if ((o as THREE.SkinnedMesh).isSkinnedMesh) { const sk = (o as THREE.SkinnedMesh).skeleton; sk.update(); sk.update = NOOP; }
+    });
+    root.updateMatrixWorld = NOOP;
+  } else {
+    Reflect.deleteProperty(root, "updateMatrixWorld");
+    root.traverse((o) => {
+      o.matrixAutoUpdate = true;
+      if ((o as THREE.SkinnedMesh).isSkinnedMesh) Reflect.deleteProperty((o as THREE.SkinnedMesh).skeleton, "update");
+    });
+  }
+}
 const _v = new THREE.Vector3(), _p = { x: 0, z: 0 };
 const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 const ease = (k: number) => k * k * (3 - 2 * k);
@@ -234,6 +261,7 @@ export class Rides {
       if (!taken && !col.blocked(o.to.x, o.to.z, 0.3) && Math.hypot(o.to.x - this.from.x, o.to.z - this.from.z) > 0.9) { found = true; break; }
     }
     if (!found) this.at(r, -1.85, k, o.to);
+    this.wake(o);
     o.from.copy(o.ch.root.position);
     o.state = "hop-out";
     o.t = -i * 0.14;
@@ -312,7 +340,7 @@ export class Rides {
     r.m.set(r.home.x, r.home.z, r.home.rot);
     r.awayT = 0;
     r.thanked = true;
-    for (const o of r.owners) { o.state = "in"; o.path = null; this.seatOwner(r, o); }
+    for (const o of r.owners) { this.wake(o); o.state = "in"; o.path = null; this.seatOwner(r, o); }
     this.place(r, 0, 0);
   }
 
@@ -439,11 +467,26 @@ export class Rides {
     void dt;
   }
 
+  /** Someone who held their pose moves again. */
+  private wake(o: Owner) {
+    if (o.still) { o.still = false; holdPose(o.ch.root, false); }
+    o.posed = false;
+  }
+
   private updateOwners(r: Ride, dt: number) {
     const host = this.host, pp = host.player.root.position;
+    // (in their seats far from the player they hold their pose: nothing of them is worked out)
+    let awake = false;
+    for (const o of r.owners) {
+      const p = o.ch.root.position, far = o.state === "in" && !!o.posed && r !== this.riding && (pp.x - p.x) ** 2 + (pp.z - p.z) ** 2 > STILL * STILL;
+      if (far !== !!o.still) { if (far) { o.still = true; holdPose(o.ch.root, true); } else this.wake(o); }
+      if (!o.still) awake = true;
+    }
+    if (!awake) return;
     r.chat?.update(dt);
     for (const o of r.owners) {
       const ch = o.ch, p = ch.root.position;
+      if (o.still) continue;
       if (o.state === "in") {
         this.seatOwner(r, o);
         // (the music is theirs: a nod to it now and then)
@@ -476,12 +519,10 @@ export class Rides {
         const want = Math.atan2(r.m.x - p.x, r.m.z - p.z);
         ch.root.rotation.y += wrap(want - ch.root.rotation.y) * Math.min(1, dt * 4);
       } else if (o.state === "walk") this.walk(r, o, dt);
-      // (far off and sitting still: a breath shows nothing; every fourth frame is plenty)
-      if (o.state !== "in" || Math.hypot(pp.x - p.x, pp.z - p.z) < 30 || (this.tick + r.owners.indexOf(o)) % 4 === 0) ch.update(o.state === "in" && Math.hypot(pp.x - p.x, pp.z - p.z) >= 30 ? dt * 4 : dt);
+      ch.update(dt);
+      if (o.state === "in") o.posed = true;
     }
-    this.tick++;
   }
-  private tick = 0;
 
   /** Back to the car on foot: along the way planned, then to the door on their seat's side, and in. */
   private walk(r: Ride, o: Owner, dt: number) {
