@@ -241,6 +241,27 @@ function RadioSet() {
             <span className="rs-opt-text">{L("Paveikslėliai")}</span>
           </button>
         </div>
+        {/* the lyric strip's own settings: its type size, the whole sentence's translation, the course's notes on the
+            line, the line's picture. They are the course's song player's, by its words for them */}
+        <div className={"rs-opts" + (s.lyrics ? "" : " off")} role="group" aria-label="Dainos žodžiai">
+          <button className="rs-opt rs-opt-size" onClick={() => radio.nextLyricSize()} disabled={!s.lyrics} title="Dainos žodžių dydis" aria-label={`Teksto dydis: ${s.lyricSize + 1} iš ${LYRIC_SIZES.length}`}>
+            <span className="rs-opt-sign rs-aa" aria-hidden>A<small>a</small></span>
+            <span className="rs-opt-text">Teksto dydis</span>
+            <span className="rs-steps" aria-hidden>{LYRIC_SIZES.map((_, k) => <i key={k} className={k <= s.lyricSize ? "on" : undefined} />)}</span>
+          </button>
+          <button className={"rs-opt" + (s.nat ? " on" : "")} onClick={() => radio.setNat(!s.nat)} disabled={!s.lyrics} aria-pressed={s.nat} title="Visos eilutės vertimas po žodžiais">
+            <span className="rs-opt-sign" aria-hidden><Icon name="list" size={19} /></span>
+            <span className="rs-opt-text">Sakinio vertimas</span>
+          </button>
+          <button className={"rs-opt" + (s.notes ? " on" : "")} onClick={() => radio.setNotes(!s.notes)} disabled={!s.lyrics} aria-pressed={s.notes} title="Kas eilutėje gali suklaidinti: žodžiai, posakiai, gramatika">
+            <span className="rs-opt-sign" aria-hidden><Icon name="bulb" size={19} /></span>
+            <span className="rs-opt-text">Paaiškinimai</span>
+          </button>
+          <button className={"rs-opt" + (s.pictures ? " on" : "")} onClick={() => radio.setPictures(!s.pictures)} disabled={!s.lyrics} aria-pressed={s.pictures} title="Eilutės paveikslėlis šalia žodžių">
+            <span className="rs-opt-sign" aria-hidden><Icon name="frame" size={19} /></span>
+            <span className="rs-opt-text">Paveikslėliai</span>
+          </button>
+        </div>
       </div>
       <div className="rs-stations" role="radiogroup" aria-label={L("Stotys")}>
         {offered.map((st, i) => (
