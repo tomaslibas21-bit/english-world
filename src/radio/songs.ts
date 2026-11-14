@@ -51,6 +51,8 @@ export interface SongLine {
   en?: { s: number; e: number; w?: [number, number][] };
   /** set by the radio on a row it makes for that first singing (lyrics.ts withSungTranslations) */
   part?: "translation";
+  /** the line's index in the song file's `L` (the course's notes name a line by it), set when the file is read */
+  i?: number;
 }
 
 export interface Song extends SongMeta { L: SongLine[] }
@@ -75,6 +77,12 @@ const site = (cfg: RadioConfig) => cfg.index.replace(/\/songs\/[^/]*$/, "");
 /** Where a song's words and timing are: the addresses to try, in order. */
 export function songDataUrls(cfg: RadioConfig, id: string, token?: string | null): string[] {
   const path = `/songs/data/${encodeURIComponent(id)}.json`;
+  return cfg.files ? [withToken(cfg.files + path, token), site(cfg) + path] : [site(cfg) + path];
+}
+
+/** Where the course's notes on a song's lines are ("Paaiškinimai", extras.ts): a course file like its words. */
+export function songNotesUrls(cfg: RadioConfig, id: string, token?: string | null): string[] {
+  const path = `/songs/notes/${encodeURIComponent(id)}.json`;
   return cfg.files ? [withToken(cfg.files + path, token), site(cfg) + path] : [site(cfg) + path];
 }
 
@@ -104,6 +112,6 @@ export function readSongList(data: unknown): SongMeta[] {
 export function readSongLines(data: unknown): SongLine[] {
   const lines = (data as { L?: unknown } | null)?.L;
   if (!Array.isArray(lines)) return [];
-  return lines.filter((l): l is SongLine =>
+  return lines.map((l, i) => (l && typeof l === "object" ? { ...l, i } : l)).filter((l): l is SongLine =>
     !!l && Number.isFinite(l.s) && Number.isFinite(l.e) && Array.isArray(l.u) && l.u.length > 0 && Array.isArray(l.w));
 }

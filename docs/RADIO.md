@@ -126,6 +126,46 @@ The heart in the display puts the song that plays among the course's favorite so
 - A heart given on the course's page in another tab shows in the game at once (the `storage` event).
 - Favorites FM / Favoritas FM plays the songs with a heart.
 
+## The lyric strip's settings
+
+Four settings sit in the radio set under the keys, two by two (the owner's round of 14 Nov, evening). They are the
+course's song player's own, by its words for them, and all four are remembered (`size`, `nat`, `notes`, `pictures`
+in the saved note). The three switches start off: while walking, the strip is the words and their glosses, as before.
+
+| Setting | Course's word (LT / EN) | What it does |
+| --- | --- | --- |
+| size | Teksto dydis / Text size | a press takes the strip's type up a step, then round again: 85 %, 100 %, 120 %, 145 % (`LYRIC_SIZES`); on a screen up to 900 px wide the steps go 60 % as far (91, 100, 112, 127 %) |
+| sentence | Sakinio vertimas / Sentence translation | the whole line in the learner's language under the words (the line's `lt`) |
+| notes | Paaiškinimai / Notes | the course's note on the line, on a plate of its own under the words |
+| pictures | Paveikslėliai / Pictures | the line's picture, the flashcards' own, at the left of the plate |
+
+- **One factor for the size.** The strip's `font-size` is `1em × --rl`, and every size inside it is in em: the words,
+  the glosses, the sentence, the picture, the notes, and the padding that centers a bilingual song's English row
+  (below). So the strip keeps one height through a bilingual song at every size. The game's own text size (A, A+, A++)
+  counts on top.
+- **The sentence** under a bilingual song's row in the learner's language would say the same words again: there it
+  stands unseen and only keeps its room, so the strip doesn't jump between the two rows.
+- **The notes** are the course's `/songs/notes/<id>.json`, a course file like the song's words: through the files
+  folder with the token, then the site (a free example). All three courses have them for every song. A note names its
+  line by the line's index in the song's file, so `readSongLines` records it (`i`) before leaving out lines that can't
+  be shown. A note shows with its line and stays up to 14 s after the line began or until the next note
+  (`notedLineAt` in `src/radio/extras.ts`): it takes longer to read than its line to sing. Only the note's first layer
+  shows; the course's "more" stays in the course.
+- **The pictures** are listed per song on the course's site in one of two kinds of list (`songArtUrls`, tried in this
+  order), and are files on the files host that are open to everyone (768 px, about 120 KB each):
+  - `/art/flashcards/v1/manifests/songs/<id>.json`, the flashcards' approved pictures (English Master, Spanish Master).
+    An entry is found by the hash of `songs:<id>#<the line's key>` and used only if it is approved for exactly the
+    line's text, as in the course (its `card-artwork.ts entryFor`).
+  - `/songs/art/<id>.json`, a plain list `{ version: 1, lines: { "<the line's key>": "<address or path>" } }`, for a
+    course that doesn't keep its pictures per song (Spanish Master English keeps one 4.8 MB map for the whole course,
+    too heavy to fetch from the game; its repo makes these small lists from it).
+
+  A line without a picture of its own keeps the one before it, as in the course's player. Only a picture file's
+  address is ever used (`pictureUrl`).
+- **Nothing is fetched until a switch is on**, and only while the strip shows: one small file per song for each, and
+  one picture per line that has one. With the pictures on, a song costs about as much data again as its recording.
+  That is why they start off.
+
 ## Bilingual songs
 
 The Spanish courses' bilingual songs (collection b) sing every line twice: first in the learner's language, then in
@@ -168,7 +208,7 @@ Not checked on a physical iPhone. The browser checks run the iPhone branch in Ch
 
 `ew-radio-v2` in localStorage (a note of this device's, not part of the save the course backs up): on or off, the
 station, the shuffle key and its seed, the song and the place in it, where each other station was left, whether the
-lyric strip shows, and whether the set has opened by itself yet. A visit that starts with the radio on goes on by
+lyric strip shows, its size and its three switches, and whether the set has opened by itself yet. A visit that starts with the radio on goes on by
 itself where the browser allows it, and at the first tap where it asks for one.
 
 The radio of 13 Nov kept `ew-radio-v1` (other stations, a shuffle that started on). Its on/off and lyric-strip choice
@@ -179,6 +219,8 @@ more to show the stations.
 
 - `tests/radio.test.ts`: the addresses, the lyric clocks, bilingual lines, the order and its fair mix, the stations
   (every song on exactly one, the course's order, moving on, places, the shuffle key, the mix, the favorites), the
-  heart's note, storage, the power switch, the fades and dips, every hold, the fallback address, the iPhone output.
+  heart's note, the lines' notes and pictures (both kinds of list, the addresses, fetched only while switched on), the
+  strip's size and switches, storage, the power switch, the fades and dips, every hold, the fallback address, the
+  iPhone output.
 - `tests/browser/radio.mjs`: the real game in Chrome and WebKit, on a desktop and as an iPhone, with fixture songs. Its
   header says how to run it.

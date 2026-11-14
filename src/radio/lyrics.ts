@@ -30,7 +30,7 @@ export function withSungTranslations(lines: SongLine[]): SongLine[] {
     const words = typeof line.lt === "string" ? line.lt.split(/\s+/).filter(Boolean) : [];
     if (en && Number.isFinite(en.s) && Number.isFinite(en.e) && words.length) {
       const timed = Array.isArray(en.w) && en.w.length === words.length;
-      rows.push({ s: en.s, e: en.e, src: line.lt, lt: "", u: words.map((w): [string, string, number] => [w, "", 1]), w: timed ? en.w! : [], wt: words, part: "translation" });
+      rows.push({ s: en.s, e: en.e, src: line.lt, lt: "", u: words.map((w): [string, string, number] => [w, "", 1]), w: timed ? en.w! : [], wt: words, part: "translation", i: line.i });
     }
     rows.push(line);
   }
