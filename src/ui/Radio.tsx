@@ -1,8 +1,10 @@
 // The town's radio in the HUD (src/radio/): the power button in the toolbar, the small dial plate beside it while it
-// plays, the radio set that opens from the plate, and the lyric strip. docs/RADIO.md, "Look and feel".
+// plays, the radio set that opens from the plate (the display with the heart, the keys, the stations), and the lyric
+// strip. docs/RADIO.md, "Look and feel".
 import { useEffect, useRef, useState } from "react";
 import { useStore } from "../state/store";
-import { RADIO_SKIN, STATIONS } from "../content/radio";
+import { RADIO_NAME, RADIO_SKIN, STATIONS } from "../content/radio";
+import type { Station } from "../radio/playlist";
 import { bindRadio, radio, useRadio } from "../radio";
 import { lineAt, shortGloss, unitAt } from "../radio/lyrics";
 import { Icon } from "./icons";
@@ -83,9 +85,65 @@ function Bunting() {
   );
 }
 
+/** "1:05" */
+const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
+const two = (n: number) => String(n).padStart(2, "0");
+
+/** How far into the song the radio is, while the set is open: the display's counter and the line under it. */
+function useElapsed(): number {
+  const [at, setAt] = useState(() => radio.position());
+  useEffect(() => {
+    const read = () => setAt(radio.position());
+    read();
+    const timer = setInterval(read, 500);
+    return () => clearInterval(timer);
+  }, []);
+  return at;
+}
+
+/** A station's row: what stands before its name (its number among the course's kinds of song; a sign for the mix
+ *  and for the favorites), the name, what plays there, and how many songs it has. */
+function StationRow({ station, number, count, current, playing }: { station: Station; number: number; count: number; current: boolean; playing: boolean }) {
+  const on = useRadio((s) => s.on);
+  const ref = useRef<HTMLButtonElement>(null);
+  // on a small screen the stations scroll: the one that plays is always in view
+  useEffect(() => { if (current) ref.current?.scrollIntoView?.({ block: "nearest" }); }, [current]);
+  const empty = count === 0; // only the favorites are shown without songs: they say how to get some
+  const pick = () => {
+    if (empty) return;
+    radio.setStation(station.id);
+    if (!on) radio.setOn(true);
+  };
+  return (
+    <button ref={ref} role="radio" aria-checked={current} aria-disabled={empty} className={"rs-st" + (current ? " on" : "") + (empty ? " empty" : "") + (station.kind ? ` rs-st-${station.kind}` : "")} onClick={pick}>
+      <span className="rs-st-n" aria-hidden>
+        {current && playing ? <span className="radio-eq"><i /><i /><i /></span>
+          : station.kind === "favorites" ? <Icon name="heart" size={17} strokeWidth={2.25} />
+          : station.kind === "mix" ? <Icon name="shuffle" size={17} strokeWidth={2.25} />
+          : number}
+      </span>
+      <span className="rs-st-text">
+        <b lang={TL}>{station.name}</b>
+        <small>{empty ? L("Paspausk širdelę prie dainos, kuri patinka") : L(station.lt)}</small>
+      </span>
+      {!empty && <span className="rs-st-count">{count}</span>}
+    </button>
+  );
+}
+
 function RadioSet() {
   const s = useRadio((x) => x);
   const ref = useRef<HTMLDivElement>(null);
+  const elapsed = useElapsed();
+  // what the heart just did, said for a few seconds
+  const [hearted, setHearted] = useState<"added" | "removed" | null>(null);
+  const [beat, setBeat] = useState(0);
+  useEffect(() => {
+    if (!hearted) return;
+    const t = setTimeout(() => setHearted(null), 4000);
+    return () => clearTimeout(t);
+  }, [hearted, beat]);
+  useEffect(() => { setHearted(null); }, [s.song?.id]);
   // a tap anywhere else folds it away (the game goes on under it)
   useEffect(() => {
     const away = (e: PointerEvent) => {
@@ -99,41 +157,73 @@ function RadioSet() {
     return () => { document.removeEventListener("pointerdown", away, true); window.removeEventListener("keydown", esc, true); };
   }, []);
   const station = STATIONS.find((st) => st.id === s.station) ?? STATIONS[0];
+  // the stations on offer: the course's kinds of song that it has, the mix, and the favorites (also while empty)
+  const offered = STATIONS.filter((st) => st.kind === "favorites" || !s.ready || (s.counts[st.id] ?? 0) > 0);
   const note = s.failed ? L("Radijas dabar nepasiekiamas. Pabandyk vėliau.")
     : s.on && !s.ready ? L("Kraunamas dainų sąrašas…")
     : s.needsTap ? L("Paspausk bet kur, kad radijas grotų.")
     : !s.on ? L("Radijas išjungtas.")
     : null;
+  const always = station.kind === "mix"; // this station is shuffled whatever the key says
+  const shuffleLabel = always ? L("Ši stotis visada maišo dainas") : L("Maišyti šios stoties dainas");
+  const heartLabel = s.liked ? L("Pašalinti iš mėgstamų") : L("Pridėti prie mėgstamų");
+  const length = s.song?.d ?? 0;
+  const like = () => { setHearted(s.liked ? "removed" : "added"); setBeat((n) => n + 1); radio.like(); };
   return (
-    <div className={"radio-set " + SKIN + (s.on ? " on" : "")} ref={ref} role="dialog" aria-label={L("Radijas")}>
+    <div className={"radio-set " + SKIN + (s.on ? " on" : "") + (s.playing ? " playing" : "")} ref={ref} role="dialog" aria-label={L("Radijas")}>
       {RADIO_SKIN === "colibri" && <Bunting />}
       <div className="rs-top">
         <span className="rs-lamp" aria-hidden />
-        <b className="rs-name" lang={TL}>{station.name}</b>
+        <b className="rs-name" lang={TL}>{RADIO_NAME}</b>
         <button className="rs-x" onClick={() => radio.setOpen(false)} aria-label={L("Uždaryti")} title={L("Uždaryti")}><Icon name="close" size={17} strokeWidth={2.25} /></button>
       </div>
-      <div className="rs-dial" aria-hidden>
-        {DIAL.marks.map((m) => <span key={m} style={{ left: onDial(m) }}>{m}</span>)}
-        <i className="rs-needle" style={{ left: onDial(station.freq) }} />
+      <div className="rs-main">
+        <div className="rs-dial" aria-hidden>
+          {DIAL.marks.map((m) => <span key={m} style={{ left: onDial(m) }}>{m}</span>)}
+          {offered.map((st) => <i key={st.id} className="rs-tick" style={{ left: onDial(st.freq) }} />)}
+          <i className="rs-needle" style={{ left: onDial(station.freq) }} />
+        </div>
+        {/* the display: the station and the song's place in it, the time, the song, its heart */}
+        <div className="rs-display">
+          <div className="rs-line" aria-hidden>
+            <span className="rs-spectrum"><i /><i /><i /><i /><i /><i /><i /></span>
+            <span className="rs-station" lang={TL}>{station.name}</span>
+            {s.place && <span className="rs-place">{two(s.place.n)}/{two(s.place.of)}</span>}
+            {s.song && <span className="rs-time">{clock(elapsed)}</span>}
+          </div>
+          <div className="rs-song">
+            <div className="rs-now" aria-live="polite">
+              {s.song && <b lang={TL}>{s.song.t}</b>}
+              {/* what the heart just did stands for a few seconds over the song's translation and genre, in their place: nothing under it moves */}
+              {s.song && (
+                <span className={"rs-sub" + (hearted ? " says" : "")}>
+                  <span>{[s.song.tl, s.song.g].filter(Boolean).join(" · ")}</span>
+                  {hearted && <em className="rs-hearted">{hearted === "added" ? L("Pridėta prie mėgstamų – rasi ir kurso „Dainose“.") : L("Pašalinta iš mėgstamų.")}</em>}
+                </span>
+              )}
+              {note && <em>{note}</em>}
+              {s.upNext && <em>{Lx("Toliau – šios vietos daina: {song}", { song: <i lang={TL}>{s.upNext.t}</i> })}</em>}
+            </div>
+            {s.song && (
+              <button className={"rs-heart" + (s.liked ? " on" : "")} onClick={like} aria-pressed={s.liked} aria-label={`${heartLabel}: ${s.song.t}`} title={heartLabel}>
+                <span key={beat} className={beat && s.liked ? "rs-heart-pop" : undefined}><Icon name={s.liked ? "heartFull" : "heart"} size={25} /></span>
+              </button>
+            )}
+          </div>
+          <i className="rs-progress" aria-hidden><i style={{ width: `${length > 0 ? Math.min(100, (elapsed / length) * 100) : 0}%` }} /></i>
+        </div>
+        <div className="rs-keys">
+          <button className={"rs-key" + (s.shuffle ? " on" : "")} onClick={() => radio.setShuffle(!s.shuffle)} aria-pressed={s.shuffle} aria-disabled={always} aria-label={shuffleLabel} title={shuffleLabel}><Icon name="shuffle" size={22} /></button>
+          <button className="rs-key" onClick={() => radio.previous()} disabled={!s.ready} aria-label={L("Ankstesnė daina")} title={L("Ankstesnė daina")}><Icon name="skipBack" size={22} /></button>
+          <button className="rs-key rs-knob" onClick={() => radio.toggle()} aria-pressed={s.on} aria-label={s.on ? L("Išjungti radiją") : L("Įjungti radiją")} title={s.on ? L("Išjungti radiją") : L("Įjungti radiją")}><Icon name={s.on ? "pause" : "play"} size={26} /></button>
+          <button className="rs-key" onClick={() => radio.next()} disabled={!s.ready} aria-label={L("Kita daina")} title={L("Kita daina")}><Icon name="skipNext" size={22} /></button>
+          <button className={"rs-key" + (s.lyrics ? " on" : "")} onClick={() => radio.setLyrics(!s.lyrics)} aria-pressed={s.lyrics} aria-label={L("Rodyti dainos žodžius")} title={L("Rodyti dainos žodžius")}><Icon name="lyrics" size={22} /></button>
+        </div>
       </div>
-      <div className="rs-presets" role="radiogroup" aria-label={L("Stotis")}>
-        {STATIONS.map((st) => (
-          <button key={st.id} role="radio" aria-checked={st.id === s.station} className={"rs-preset" + (st.id === s.station ? " on" : "")} onClick={() => radio.setStation(st.id)}>
-            <b lang={TL}>{st.name}</b><small>{L(st.lt)}</small>
-          </button>
+      <div className="rs-stations" role="radiogroup" aria-label={L("Stotys")}>
+        {offered.map((st, i) => (
+          <StationRow key={st.id} station={st} number={i + 1} count={s.counts[st.id] ?? 0} current={st.id === s.station} playing={s.playing} />
         ))}
-      </div>
-      <div className="rs-now" aria-live="polite">
-        {s.song && <><b lang={TL}>{s.song.t}</b><span>{[s.song.tl, s.song.g].filter(Boolean).join(" · ")}</span></>}
-        {note && <em>{note}</em>}
-        {s.upNext && <em>{Lx("Toliau – šios vietos daina: {song}", { song: <i lang={TL}>{s.upNext.t}</i> })}</em>}
-      </div>
-      <div className="rs-keys">
-        <button className={"rs-key" + (s.shuffle ? " on" : "")} onClick={() => radio.setShuffle(!s.shuffle)} aria-pressed={s.shuffle} aria-label={L("Maišyti dainas")} title={L("Maišyti dainas")}><Icon name="shuffle" size={22} /></button>
-        <button className="rs-key" onClick={() => radio.previous()} disabled={!s.ready} aria-label={L("Ankstesnė daina")} title={L("Ankstesnė daina")}><Icon name="skipBack" size={22} /></button>
-        <button className="rs-key rs-knob" onClick={() => radio.toggle()} aria-pressed={s.on} aria-label={s.on ? L("Išjungti radiją") : L("Įjungti radiją")} title={s.on ? L("Išjungti radiją") : L("Įjungti radiją")}><Icon name={s.on ? "pause" : "play"} size={26} /></button>
-        <button className="rs-key" onClick={() => radio.next()} disabled={!s.ready} aria-label={L("Kita daina")} title={L("Kita daina")}><Icon name="skipNext" size={22} /></button>
-        <button className={"rs-key" + (s.lyrics ? " on" : "")} onClick={() => radio.setLyrics(!s.lyrics)} aria-pressed={s.lyrics} aria-label={L("Rodyti dainos žodžius")} title={L("Rodyti dainos žodžius")}><Icon name="lyrics" size={22} /></button>
       </div>
     </div>
   );

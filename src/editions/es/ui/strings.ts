@@ -530,8 +530,21 @@ export const STRINGS: Record<string, string> = {
   "Kita daina": "Next song",
   "Rodyti dainos žodžius": "Show the lyrics",
   " · {r} radijas": " · {r} radio",
-  "Karibų ritmai: kumbija, bačata, salsa": "Caribbean rhythms: cumbia, bachata, salsa",
-  "visos kurso dainos": "all the course's songs",
+  "Stotys": "Stations",
+  "Maišyti šios stoties dainas": "Shuffle this station's songs",
+  "Ši stotis visada maišo dainas": "This station is always shuffled",
+  "Pridėti prie mėgstamų": "Add to favorites",
+  "Pašalinti iš mėgstamų": "Remove from favorites",
+  "Pridėta prie mėgstamų – rasi ir kurso „Dainose“.": "Added to your favorites, in the course's Songs too.",
+  "Pašalinta iš mėgstamų.": "Removed from favorites.",
+  "Paspausk širdelę prie dainos, kuri patinka": "Tap the heart on a song you love",
+  // the stations' lines (src/editions/es/content/radio.ts)
+  "Gramatika": "Grammar",
+  "Žodynas": "Vocabulary",
+  "Situacijos": "Situations",
+  "Dvikalbės: angliškai, tada ispaniškai": "In English, then in Spanish",
+  "Visos dainos, sumaišytos": "Every song, shuffled",
+  "Tavo mėgstamos dainos": "Your favorite songs",
 
   // The first-time guide of the 3D town and the tip about running (src/ui/Guide.tsx, src/game/coach.ts)
   "Vaikščiok": "Walk",

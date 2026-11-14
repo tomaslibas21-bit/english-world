@@ -6,14 +6,17 @@ import { watchMicrophone } from "../convo/audioFocus";
 import { useStore } from "../state/store";
 import { SITUATIONS, SITUATION_BY_ID } from "../content/situations";
 import { STATIONS, songOfSituation } from "../content/radio";
+import { courseFavorites, FAVORITES_KEY } from "./favorites";
 import { BufferOutput, HtmlOutput } from "./output";
 import { Radio, type RadioState } from "./radio";
 import { radioConfig } from "./songs";
 import { L } from "../ui/i18n";
 
 /** A note of this device's, not progress: like "ew-help-closed", outside the save's "english-world-" names, which the
- *  course backs up (fluent-steps src/lib/backup.ts). */
-export const RADIO_STORAGE = "ew-radio-v1";
+ *  course backs up (fluent-steps src/lib/backup.ts). "v2": the stations are the course's kinds of song; the note of
+ *  the radio before that ("v1": other stations, a shuffle that started on) is read once, for on/off and the strip. */
+export const RADIO_STORAGE = "ew-radio-v2";
+const RADIO_STORAGE_BEFORE = "ew-radio-v1";
 
 async function fetchJson(url: string): Promise<unknown> {
   const r = await fetch(url, { cache: "no-cache" });
@@ -64,6 +67,8 @@ export const radio = new Radio({
   fetchJson,
   volume: () => useStore.getState().settings.volume,
   storageKey: RADIO_STORAGE,
+  storageBefore: RADIO_STORAGE_BEFORE,
+  favorites: typeof window === "undefined" ? undefined : courseFavorites(),
   tune,
 });
 
@@ -109,6 +114,8 @@ export function bindRadio() {
   document.addEventListener("click", gesture, true);
   document.addEventListener("keydown", gesture, true);
   window.addEventListener("pagehide", () => radio.shutdown());
+  // a heart given or taken back on the course's own Songs page, open in another tab
+  window.addEventListener("storage", (e) => { if (!e.key || e.key === FAVORITES_KEY) radio.favoritesChanged(); });
   // the system's media keys and lock-screen buttons go through the radio, so they obey its holds too
   const session = typeof navigator !== "undefined" && "mediaSession" in navigator ? navigator.mediaSession : null;
   if (session) {
