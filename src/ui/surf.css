@@ -1,0 +1,59 @@
+/* The surf lesson (src/ui/Surf.tsx): her line at the top, the answers over the controls, the score in a corner. */
+.surf { position: fixed; inset: 0; pointer-events: none; z-index: 13; font-family: var(--ui); }
+.surf > * { pointer-events: auto; }
+.surf-top { position: fixed; top: calc(10px + env(safe-area-inset-top)); left: calc(10px + env(safe-area-inset-left)); right: calc(10px + env(safe-area-inset-right)); display: flex; align-items: center; gap: 8px; pointer-events: none; }
+.surf-top > * { pointer-events: auto; }
+.surf-x, .surf-slow { border: 0; border-radius: 999px; background: rgba(255, 255, 255, 0.92); color: #25323b; box-shadow: var(--shadow); min-height: 40px; min-width: 40px; display: inline-grid; place-items: center; font-weight: 800; padding: 0 12px; cursor: pointer; }
+.surf-x { padding: 0; }
+.surf-slow.on { background: #fff2cf; color: #574000; box-shadow: var(--shadow), inset 0 0 0 2px var(--gold); }
+.surf-score { margin-left: auto; display: flex; gap: 6px; background: rgba(14, 40, 52, 0.72); color: #fff; border-radius: 999px; padding: 6px 12px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.surf-score span { display: inline-flex; align-items: center; gap: 4px; }
+.surf-score i { font-style: normal; font-size: 0.95em; }
+.surf-card { position: fixed; top: calc(62px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); width: max-content; max-width: min(620px, calc(100vw - 24px)); background: rgba(255, 253, 248, 0.96); border-radius: 18px; padding: 12px 18px 12px; box-shadow: 0 6px 24px rgba(10, 40, 60, 0.28); border: 3px solid transparent; transition: border-color 0.15s ease; }
+.surf-card .il { justify-content: center; font-size: 1.7em; font-weight: 600; }
+.surf-card .nat { border-left: 0; border-top: 1px solid var(--line); padding: 7px 4px 0; margin-top: 9px; text-align: center; font-size: 1em; }
+.surf-card.asked { border-color: rgba(31, 111, 120, 0.55); }
+.surf-card.ok { border-color: #37a26b; }
+.surf-card.no { border-color: #e7a13a; }
+.surf-listen { display: flex; align-items: center; gap: 8px; border: 0; background: none; font: inherit; font-weight: 800; color: #1f6f78; font-size: 1.15em; padding: 4px 6px; cursor: pointer; }
+.surf-listen small { font-weight: 600; color: #6a7780; font-size: 0.72em; margin-left: 6px; text-decoration: underline; }
+.surf-balance { height: 7px; border-radius: 4px; background: rgba(31, 111, 120, 0.16); margin-top: 10px; overflow: hidden; }
+.surf-balance i { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, #f3b33d, #37a26b); transition: width 0.25s ease; }
+.surf-choices { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(64px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px; width: min(440px, calc(100vw - 24px)); }
+.surf.touch .surf-choices { bottom: calc(178px + env(safe-area-inset-bottom)); }
+.surf-choice { display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 10px; text-align: left; border: 2px solid #e6dcc8; background: rgba(255, 253, 248, 0.97); border-radius: 14px; padding: 10px 14px; min-height: 52px; box-shadow: 0 4px 14px rgba(10, 40, 60, 0.22); cursor: pointer; font: inherit; color: var(--ink); }
+.surf-choice:hover { border-color: var(--gold); background: #fff; }
+.surf-choice kbd { grid-row: span 2; background: #25323b; color: #fff; border-radius: 6px; padding: 2px 8px; font-weight: 800; font-size: 0.85em; }
+.surf.touch .surf-choice { grid-template-columns: 1fr; }
+.surf-choice-text { font-family: var(--en); font-size: 1.3em; font-weight: 600; line-height: 1.2; }
+.surf-choice small { color: #5b6770; font-weight: 600; font-size: 0.86em; grid-column: -2 / -1; }
+.surf-keys { bottom: 14px; }
+.surf-hint { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(176px + env(safe-area-inset-bottom)); max-width: calc(100vw - 24px); width: max-content; background: rgba(14, 40, 52, 0.66); color: #fff; border-radius: 999px; padding: 6px 14px; font-size: 0.86em; font-weight: 700; text-align: center; pointer-events: none; }
+.surf-pick { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(8, 30, 42, 0.38); z-index: 30; pointer-events: auto; padding: 14px; }
+.surf-pick-card { background: #fffdf8; border-radius: 22px; padding: 20px 20px 16px; width: min(460px, 100%); box-shadow: 0 16px 50px rgba(0, 20, 40, 0.4); text-align: center; font-family: var(--ui); max-height: calc(100vh - 28px); overflow: auto; }
+.surf-pick-card h2 { margin: 0 0 6px; font-size: 1.4em; color: #17353f; }
+.surf-pick-card p { margin: 6px 0 12px; color: #4e5963; line-height: 1.4; }
+.surf-levels { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.surf-level { border: 0; border-radius: 16px; padding: 14px 12px; background: linear-gradient(160deg, #2ec4b6, #17a2a2); color: #fff; cursor: pointer; display: grid; gap: 4px; min-height: 84px; font: inherit; box-shadow: 0 4px 12px rgba(23, 162, 162, 0.35); }
+.surf-level.adv { background: linear-gradient(160deg, #1f8fd1, #1663a3); box-shadow: 0 4px 12px rgba(22, 99, 163, 0.35); }
+.surf-level b { font-size: 1.12em; }
+.surf-level span { font-size: 0.86em; opacity: 0.95; line-height: 1.3; }
+.surf-level:hover { filter: brightness(1.06); }
+.surf-later { margin-top: 12px; border: 0; background: none; color: #1f6f78; font-weight: 800; font: inherit; font-weight: 800; padding: 8px 14px; cursor: pointer; min-height: 40px; }
+.surf-best { font-size: 0.9em; }
+.surf-result { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0 8px; }
+.surf-result div { background: #f1f7f6; border-radius: 14px; padding: 10px 6px; display: grid; gap: 2px; }
+.surf-result b { font-size: 1.6em; color: #17353f; font-variant-numeric: tabular-nums; }
+.surf-result span { font-size: 0.78em; color: #5b6770; line-height: 1.2; }
+@media (max-width: 520px) {
+  .surf-card { top: calc(58px + env(safe-area-inset-top)); padding: 10px 12px; }
+  .surf-card .il { font-size: 1.45em; }
+  .surf-levels { grid-template-columns: 1fr; }
+}
+@media (max-height: 520px) and (orientation: landscape) {
+  .surf-card { top: calc(8px + env(safe-area-inset-top)); max-width: min(520px, calc(100vw - 300px)); padding: 8px 12px; }
+  .surf-card .il { font-size: 1.3em; }
+  .surf.touch .surf-choices { bottom: calc(12px + env(safe-area-inset-bottom)); width: min(400px, calc(100vw - 380px)); }
+  .surf-hint { bottom: calc(10px + env(safe-area-inset-bottom)); max-width: calc(100vw - 380px); }
+  .surf-choice { min-height: 44px; padding: 6px 12px; }
+}

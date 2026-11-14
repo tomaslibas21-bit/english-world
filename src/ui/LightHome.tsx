@@ -166,7 +166,7 @@ function SitCard({ s }: { s: SituationDef }) {
       <span className="lh-txt">
         <b>{s.title.lt}</b>
         <i lang="en">{s.title.en}</i>
-        <span>{n?.name} · {isCall(s) ? (s.mode === "video" ? "vaizdo skambutis" : "skambutis") : LOCATIONS[s.location]?.lt} · daina {s.song}{current && <em className="lh-tag">Tavo užduotis</em>}</span>
+        <span>{n?.name} · {isCall(s) ? (s.mode === "video" ? "vaizdo skambutis" : "skambutis") : LOCATIONS[s.location]?.lt}{s.song !== "" && <> · daina {s.song}</>}{current && <em className="lh-tag">Tavo užduotis</em>}</span>
       </span>
       <Stars n={st} />
     </button>

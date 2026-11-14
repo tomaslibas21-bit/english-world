@@ -28,6 +28,12 @@ export interface GameApi {
   jump(): void;
   /** The jump button held down or let go (at a wheel it is the brake). */
   hold(on: boolean): void;
+  /** The surf lesson (game/surf): start one at this level, leave it, tap an answer (its cue), another lesson from the
+   *  score card, close the level's choice. */
+  surfStart(level: "beginner" | "advanced"): void;
+  surfStop(): void;
+  surfChoose(cue: string): void;
+  surfAgain(level?: "beginner" | "advanced"): void;
   setQuality(q: "high" | "low"): void;
   readonly groundCanvas: HTMLCanvasElement | undefined;
   readonly doors: Door[];
