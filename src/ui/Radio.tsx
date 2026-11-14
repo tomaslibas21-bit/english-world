@@ -291,7 +291,8 @@ export function LyricStrip() {
   return (
     <div className={"radio-strip " + SKIN} style={{ "--rl": LYRIC_SIZES[size] ?? 1 } as React.CSSProperties} aria-hidden>
       <div className={"radio-card" + (picture ? " pictured" : "")}>
-        {picture && <img className="radio-pic" src={picture} alt="" decoding="async" key={picture} />}
+        {/* (a picture that doesn't arrive leaves no empty frame) */}
+        {picture && <img className="radio-pic" src={picture} alt="" decoding="async" key={picture} onError={(e) => { e.currentTarget.style.display = "none"; }} />}
         <div className="radio-words">
           <div className={"radio-line" + (translation ? " translation" : "") + (glosses ? " glossed" : "")} key={at.line}>
             {line.u.map((u, k) => (

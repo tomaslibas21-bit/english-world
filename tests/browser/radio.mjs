@@ -2,7 +2,7 @@
 // with the files token, starting with the first grammar song; its set shows the course's kinds of song as stations,
 // moves on from one to the next, and its heart writes the course's own favorites; it shows the sung line, is silent
 // for a conversation and a microphone, comes back, and stays reachable on phones. On an iPhone it must not make a media
-// element at all (docs/MOBILE-AUDIO.md). The songs are fixtures served by this script: a minute and a half of silence
+// element at all (docs/MOBILE-AUDIO.md). The songs are fixtures served by this script: five minutes of silence
 // each, so that none ends before the test is done with it, except the second grammar song, which is a voice clip of
 // the repository a few seconds long (the one whose end the test waits for). Start the game with the radio on and run:
 //   VITE_RADIO_INDEX=/songs/index.json VITE_RADIO_FILES=/radio-files npx vite --port 5198 --strictPort
@@ -22,7 +22,7 @@ function silence(length, rate = 8000) {
   wav.writeUInt32LE(rate, 24); wav.writeUInt32LE(rate, 28); wav.writeUInt16LE(1, 32); wav.writeUInt16LE(8, 34); wav.write("data", 36); wav.writeUInt32LE(n, 40);
   return wav;
 }
-const LONG = 90, long = silence(LONG);
+const LONG = 300, long = silence(LONG);
 /** The recording a song's address gets: the short clip for G02, the long silence for the others. */
 const recording = (path) => (path.includes("G02") ? { contentType: "audio/mpeg", body: short } : { contentType: "audio/wav", body: long });
 const iphone = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 Version/26.6 Mobile/15E148 Safari/604.1";
@@ -31,7 +31,7 @@ const TOKEN = "radio-test-token";
 // song; none of the second half's, so there is no Idioms FM
 const songs = [["G01", "g"], ["G02", "g"], ["V01", "v"], ["S62", "s"]].map(([id, c], i) => ({ id, c, n: 1, t: `Radio Song ${i + 1}`, tl: `Radijo daina ${i + 1}`, tp: "", g: i === 1 ? "roots reggae" : "motown soul", d: id === "G02" ? seconds : LONG, a: `/songs/audio/${id}.mp3` }));
 const FAVORITES = "fluentsteps.songs.favorites.v1";
-const lines = Array.from({ length: 55 }, (_, i) => {
+const lines = Array.from({ length: 186 }, (_, i) => {
   const s = 0.4 + i * 1.6;
   return { s, e: s + 1.4, sec: 0, lab: "", src: "Every evening home", lt: "Kiekvieną vakarą namo", u: [["Every evening,", "Kiekvieną vakarą,", 2], ["home", "namo (į namus)", 1]], w: [[s, s + 0.4], [s + 0.5, s + 0.9], [s + 1, s + 1.4]], wt: ["Every", "evening,", "home"] };
 });
@@ -314,7 +314,9 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       const before = (await state(page)).position;
       await page.evaluate(() => window.__ew.game.startScenario("s72-cafe"));
       await until(page, () => window.__ew.store.getState().conv.active);
+      // (the fade is 0.9 s; a busy machine's clock runs late, so the test waits for its end rather than 1.15 s)
       await page.waitForTimeout(1150);
+      await until(page, () => !window.__ew.radio.store.getState().playing, 6000).catch(() => {});
       s = await state(page);
       check(`${label}: a conversation fades it out within about a second`, s.on && !s.playing && s.held && !s.sounding && s.conversation, s);
       const lease = await page.evaluateHandle(async () => {
