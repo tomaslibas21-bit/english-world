@@ -10,7 +10,7 @@ import { SITUATIONS } from "../../src/content/situations";
 import { learnerItems, type LearnerItem } from "../../src/editions/es/learner/walk";
 
 const out = process.argv.slice(2).find((a) => a.includes("/")) ?? path.join(os.homedir(), "puerto-colibri-lt", "work");
-const only = process.argv.slice(2).filter((a) => /^[sp]\d|^_shared$/.test(a));
+const only = process.argv.slice(2).filter((a) => /^[spx]\d|^_shared$/.test(a));
 fs.mkdirSync(out, { recursive: true });
 const ROOT = path.resolve(import.meta.dirname, "../..");
 const SRC = path.join(ROOT, "src/editions/es/content/situations");

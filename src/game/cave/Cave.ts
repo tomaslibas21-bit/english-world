@@ -334,7 +334,7 @@ export function buildCave(): CaveView {
       for (let m = 0; m < n; m++) {
         const y = top - len * (0.2 + 0.8 * (m / (n - 1))), fx = x + (r() - 0.5) * 0.12, fz = z + (r() - 0.5) * 0.12;
         sink.geo(new THREE.OctahedronGeometry(0.085, 0).scale(1, 1.35, 1).translate(fx, y, fz), "#f4efe6", 0.95);
-        flowers.push(sparks.add(2, fx, y, fz, "#000000", 0.75 + r() * 0.6, 0, r));
+        flowers.push(sparks.add(2, fx, y, fz, "#000000", 0.5 + r() * 0.4, 0, r));
       }
     }
     for (let i = 0; i < 60; i++) { const a = r() * 6.283, d = 1 + Math.sqrt(r()) * 9; sparks.add(1, t.x + Math.cos(a) * d, 0.4 + r() * 2, t.z + Math.sin(a) * d, pick(["#ffd7ee", "#fff3c4", "#bff8ff"]), 0.1 + r() * 0.1, 5 + r() * 4, r); }
@@ -720,7 +720,7 @@ export function buildCave(): CaveView {
         vec4 mv = modelViewMatrix * vec4(p, 1.0);
         vC = aColor; vA = a * fogF(-mv.z);
         gl_Position = projectionMatrix * mv;
-        gl_PointSize = min(size * uScale / max(0.5, -mv.z), 420.0);
+        gl_PointSize = min(size * uScale / max(0.5, -mv.z), 300.0);
       }`,
     fragmentShader: `varying vec3 vC; varying float vA; void main(){ float d = length(gl_PointCoord - 0.5) * 2.0; float s = max(0.0, 1.0 - d); gl_FragColor = vec4(vC * s * s * vA, 1.0); }`,
   }));

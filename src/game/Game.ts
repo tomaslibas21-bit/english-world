@@ -1417,7 +1417,7 @@ export class Game implements GameApi {
     // (the grotto: its water, lights and sparks, and its stones calling)
     this.wild?.frame?.(this.t, dt, this.rig.cam, this.player.root.position, this.container.clientHeight * this.renderer.getPixelRatio());
     this.cave?.update(dt, this.player.root.position, this.rig.yaw, !this.ambienceAllowed() || this.transitioning);
-    this.caveLure?.userData.tick(this.t);
+    if (this.caveLure && !this.zone.interior) this.caveLure.userData.tick(this.t, this.player.root.position.x, this.player.root.position.z);
     this.guidance.visible = !talking && !this.wild;
     this.guidance.group.visible = !talking && !this.wild;
     this.guidance.update(dt, this.zone.interior ? undefined : floorY);

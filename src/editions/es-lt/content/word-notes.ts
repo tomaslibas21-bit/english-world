@@ -26,5 +26,18 @@ export const WORD_NOTES: Record<string, string> = {
   "dengue": "dengue – uodų platinama karštligė (dengė), dažna tropikuose.",
   "pan dulce": "pan dulce – meksikietiški saldūs kepiniai, klasika prie kavos.",
   "tres leches": "tres leches – biskvitinis tortas, išmirkytas trijų rūšių piene.",
+  // Nikté's riddles (x02-alux-nikte)
+  "adivinanza": "adivinanza – mįslė; ispanai turi daug senų rimuotų mįslių, kurių atsakymas dažnai slepiasi pačiuose žodžiuose.",
+  "pista": "pista – užuomina (taip pat takas, šokių aikštelė ar kilimo ir tūpimo takas).",
+  "nikte": "Nikté – majų kalba „gėlė“; taip vardu mįslių aluksė.",
+  "guacamole": "guacamole – gvakamolė: avokadų tyrė su laimu, svogūnu, kalendra ir čili (iš nahuatl kalbos ahuacamolli – „avokadų padažas“).",
+  // the aluxes' grotto under Cenote Ka'an (x01-alux-kin)
+  "alux": "alux (dgs. aluxes) – aluksas: maža majų miško ir kukurūzų laukų dvasia, žaisminga ir išdykusi.",
+  "kin": "Kin – majų kalba „saulė“; taip vardu aluksas, saugantis įėjimą į grotą.",
+  "sacbe": "sacbé – baltas kelias, kurį tiesė senovės majai (majų kalba „baltas kelias“).",
+  "gruta": "gruta – grota, ola.",
+  "ceiba": "ceiba – ceiba (kapokmedis), šventasis majų medis: jo šaknys siekia požemį, o šakos – dangų.",
+  "milpa": "milpa – majų laukas, kuriame kartu auginami kukurūzai, pupelės ir moliūgai.",
+  "glifo": "glifo – glifas, akmenyje iškaltas majų rašto ženklas.",
 };
-export const WORD_NOTE_ALIASES: Record<string, string> = {"cenotes": "cenote", "cochinita pibil": "cochinita", "cochinitas": "cochinita", "marquesitas": "marquesita", "conchas": "concha", "guayaberas": "guayabera", "colectivos": "colectivo", "micheladas": "michelada", "horchatas": "horchata", "habaneros": "habanero"};
+export const WORD_NOTE_ALIASES: Record<string, string> = {"cenotes": "cenote", "cochinita pibil": "cochinita", "cochinitas": "cochinita", "marquesitas": "marquesita", "conchas": "concha", "guayaberas": "guayabera", "colectivos": "colectivo", "micheladas": "michelada", "horchatas": "horchata", "habaneros": "habanero", "adivinanzas": "adivinanza", "pistas": "pista", "aluxes": "alux", "sacbes": "sacbe", "grutas": "gruta", "ceibas": "ceiba", "milpas": "milpa", "glifos": "glifo"};

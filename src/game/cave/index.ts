@@ -68,9 +68,10 @@ export function caveLure(): THREE.Group | null {
       vec4 mv = modelViewMatrix * vec4(p, 1.0); gl_Position = projectionMatrix * mv; gl_PointSize = min(130.0 / max(1.0, -mv.z), 40.0); }`,
     fragmentShader: "varying float vA; void main(){ float d = length(gl_PointCoord - 0.5) * 2.0; float s = max(0.0, 1.0 - d); gl_FragColor = vec4(vec3(0.95, 1.0, 0.55) * s * s * vA, 1.0); }",
   }));
-  flies.frustumCulled = false;
+  // (in the picture only when the cave's mouth is: its own bounds, and nothing at all from further off than the mirador)
+  pg.boundingSphere = new THREE.Sphere(new THREE.Vector3(x + 1.5, 1, z), 4.5);
   g.add(glow, flies);
-  g.userData.tick = (t: number) => { u.uTime.value = t; };
+  g.userData.tick = (t: number, px: number, pz: number) => { u.uTime.value = t; g.visible = (px - x) ** 2 + (pz - z) ** 2 < 70 * 70; };
   // (nothing here stands in the camera's way or is jumped onto)
   g.userData.thin = true;
   return g;

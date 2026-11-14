@@ -113,7 +113,7 @@ const fold = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCa
  *  learner's unaccented "pague" still matches that one too (`sameWord`). Not a past: a word in -ió (an -er / -ir past,
  *  which never looks like a present), a future ("pagaré", "tendré"), "esté", nouns and names ("café", "carné", "José"). */
 const NOT_PAST = new Set(["cafe", "bebe", "carne", "pure", "canape", "chale", "comite", "consome", "frappe", "pate", "este",
-  "porque", "jose", "rene", "josue", "salome", "chloe", "dafne", "buro", "domino", "capo", "yoyo"]);
+  "porque", "jose", "rene", "josue", "salome", "chloe", "dafne", "nikte", "buro", "domino", "capo", "yoyo"]);
 function markPast(word: string): string {
   const last = word.slice(-1);
   if (!/[éóÉÓ]/.test(last)) return word;
