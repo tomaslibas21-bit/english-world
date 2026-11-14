@@ -58,10 +58,15 @@ export function poolBedY(p: Pool, x: number, z: number) {
   return p.y - 0.45 - (p.depth - 0.45) * k * (2 - k);
 }
 
-/** What is underfoot at (x, z) by the water: a deck's boards (as high as they lie, `y`), a pool's bed, else the sand
- *  and, out past the wading limit, the seabed. */
+/** Floors that are not level (the way down into a pool: steps up onto its deck and down into the water): inside its
+ *  rectangle, `y(x, z)` is what is underfoot. The town lists them as it builds them, like DECKS. */
+export const FLOORS: { x0: number; x1: number; z0: number; z1: number; y(x: number, z: number): number }[] = [];
+
+/** What is underfoot at (x, z) by the water: a deck's boards (as high as they lie, `y`), a pool's steps and its bed,
+ *  else the sand and, out past the wading limit, the seabed. */
 export function floorY(x: number, z: number) {
   for (const d of DECKS) if (x > d.x0 && x < d.x1 && z > d.z0 && z < d.z1) return d.y ?? 0;
+  for (const f of FLOORS) if (x > f.x0 && x < f.x1 && z > f.z0 && z < f.z1) return f.y(x, z);
   if (POOLS.length) { const p = poolAt(x, z); if (p) return poolBedY(p, x, z); }
   return z < SHORE.limit ? seaBedY(x, z) : sandY(x, z);
 }

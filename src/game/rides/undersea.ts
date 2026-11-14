@@ -123,11 +123,11 @@ export class Undersea {
       if (r() < 0.45) star(x, y, z); else if (r() < 0.6) shell(x, y, z); else grass(x, y, z);
     }
     for (const p of POOLS) this.poolBed(p, parts, r);
-    const things = new THREE.Mesh(colourMerge(parts), new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide }));
+    const things = new THREE.Mesh(colourMerge(parts), new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }));
     things.name = "seabed-things";
     things.frustumCulled = false;
     // ---- the surface from below: bright, moving
-    const under = new THREE.Mesh(new THREE.PlaneGeometry(BAY.x1 - BAY.x0 + 120, SHORE.top - BAY.z0 + 60).rotateX(Math.PI / 2), new THREE.ShaderMaterial({
+    const under = new THREE.Mesh(new THREE.PlaneGeometry(260, 260).rotateX(Math.PI / 2), new THREE.ShaderMaterial({
       uniforms: this.underU, fog: false,
       vertexShader: "varying vec3 vW; void main(){ vW = (modelMatrix * vec4(position, 1.0)).xyz; gl_Position = projectionMatrix * viewMatrix * vec4(vW, 1.0); }",
       fragmentShader: `varying vec3 vW; uniform float uTime; uniform vec3 uDeep; uniform vec3 uLight;
@@ -142,7 +142,6 @@ export class Undersea {
           #include <colorspace_fragment>
         }`,
     }));
-    under.position.set((BAY.x0 + BAY.x1) / 2, SEA_LEVEL - 0.3, (SHORE.top + BAY.z0) / 2);
     under.frustumCulled = false;
     this.under = under;
     // ---- fish: one instanced mesh, in small schools that circle near whoever dives
@@ -178,7 +177,8 @@ export class Undersea {
     }
     for (let k = 0; k < rings; k++) for (let i = 0; i < N; i++) {
       const a = k * (N + 1) + i, b = a + 1, d = a + N + 1, e = d + 1;
-      idx.push(a, b, d, b, e, d);
+      // (facing in and up: from outside the bowl it is looked through, so a camera behind a diver at its wall sees in)
+      idx.push(a, d, b, b, d, e);
     }
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
@@ -204,7 +204,7 @@ export class Undersea {
     this.bedU.uTime.value = t;
     // (a pool's surface is its own: the plane moves over the diver's water)
     const pool = POOLS.find((p) => (at.x - p.x) ** 2 + (at.z - p.z) ** 2 < (p.r + 2) ** 2);
-    this.under!.position.y = (pool ? pool.y : SEA_LEVEL) - 0.3;
+    this.under!.position.set(at.x, (pool ? pool.y : SEA_LEVEL) - 0.3, at.z);
     this.far!.position.set(at.x, -3, at.z);
     // the schools circle; one that is left far behind turns up again ahead of the diver
     const fish = this.fish!;
