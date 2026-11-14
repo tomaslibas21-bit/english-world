@@ -915,7 +915,7 @@ export const doctor: SituationDef = {
     dx_tension: [t("Parece | un | dolor | de | cabeza | por | tensión.", "It-looks like | a | pain | of | head | from | tension.", "It looks like a tension headache.")],
     dx_calm: [t("No se preocupe, | no es | nada | grave.", "Don't worry, | it isn't | anything | serious.", "Don't worry, it's nothing serious.")],
     dx_dengue: [t("No parece | dengue; | pero | si | se siente | peor, | regrese | de inmediato.", "It doesn't look like | dengue; | but | if | you-feel | worse, | come back | right away.",
-      "It doesn't look like dengue, but if you feel worse, come back right away.", { spain: t("No parece | dengue; | pero | si | se siente | peor, | vuelva | de inmediato.", "It doesn't look like | dengue; | but | if | you-feel | worse, | come back | right away.", "It doesn't look like dengue, but if you feel worse, come back right away.") })],
+      "It doesn't look like dengue, but if you feel worse, come back right away.", { flags: { 1: "dengue: a fever spread by mosquitoes, common in the tropics." }, spain: t("No parece | dengue; | pero | si | se siente | peor, | vuelva | de inmediato.", "It doesn't look like | dengue; | but | if | you-feel | worse, | come back | right away.", "It doesn't look like dengue, but if you feel worse, come back right away.", { flags: { 1: "dengue: a fever spread by mosquitoes, common in the tropics." } }) })],
     no_ab_virus: [t("Los | antibióticos | no sirven | para | un | virus.", "— | Antibiotics | don't work | for | a | virus.", "Antibiotics won't help with a virus.",
       { flags: { 0: "los: Spanish uses the article for things in general; English doesn't." } })],
     // --- the prescription

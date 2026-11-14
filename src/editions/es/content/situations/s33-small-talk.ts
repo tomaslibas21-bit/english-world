@@ -1430,7 +1430,7 @@ export const smallTalk: SituationDef = {
     intro: {
       lt: "Introduce yourself",
       items: [
-        { id: "in_nice", s: t("¡Mucho gusto, | Don Pancho! | Yo | soy | {$name}.", "Nice to meet you, | Don Pancho! | I | am | {$name}.", "Nice to meet you, Don Pancho! I'm {$name}.") },
+        { id: "in_nice", s: t("¡Mucho gusto, | Don Pancho! | Yo | soy | {$name}.", "Nice to meet you, | Don Pancho! | I | am | {$name}.", "Nice to meet you, Don Pancho! I'm {$name}.", { flags: { 1: "Don: a respectful title for an older man, used with his first name." } }) },
         { id: "in_too", s: t("¡Igualmente!", "Likewise!", "Nice to meet you too!") },
       ],
     },
@@ -1484,7 +1484,7 @@ export const smallTalk: SituationDef = {
     weekend_what: {
       lt: "Say what you did",
       items: [
-        { id: "wp_did", s: t("Fui | al | cenote.", "I-went | to the | cenote.", "I went to the cenote.") },
+        { id: "wp_did", s: t("Fui | al | cenote.", "I-went | to the | cenote.", "I went to the cenote.", { flags: { 2: "cenote: a natural pool in a limestone sinkhole, typical of the Yucatán." } }) },
         { id: "wp_did", s: t("Comí | con | mi | familia.", "I-ate | with | my | family.", "I had lunch with my family.") },
         { id: "wp_did", s: t("Hicimos | una | carne asada.", "We-made | a | cookout.", "We had a cookout.",
             { flags: { 2: F_ASADA }, neutral: t("Hicimos | una | parrillada.", "We-made | a | cookout.", "We had a cookout.") }),
@@ -1511,7 +1511,7 @@ export const smallTalk: SituationDef = {
       lt: "Ask Don Pancho back (“¿Y usted?”)",
       items: [
         { id: "b_and_you", s: t("¿Y | usted?", "And | you?", "And you?") },
-        { id: "b_how_about", s: t("¿Y | usted, | Don Pancho?", "And | you, | Don Pancho?", "How about you, Don Pancho?") },
+        { id: "b_how_about", s: t("¿Y | usted, | Don Pancho?", "And | you, | Don Pancho?", "How about you, Don Pancho?", { flags: { 2: "Don: a respectful title for an older man, used with his first name." } }) },
         { id: "b_weekend", s: t("¿Y | qué tal | su | fin de semana?", "And | how was | your | weekend?", "How was your weekend?") },
         { id: "b_plans", s: t("¿Y | usted | tiene | planes?", "And | you | you-have | plans?", "Do you have any plans?") },
         { id: "b_week", s: t("¿Y | qué tal | su | semana?", "And | how's | your | week?", "How's your week going?") },
@@ -1571,7 +1571,7 @@ export const smallTalk: SituationDef = {
       lt: "Say goodbye to Don Pancho",
       items: [
         { id: "br_you_too", s: t("¡Igualmente! | ¡Que | le | vaya | bien!", "Likewise! | (I hope) | (for) you | it-goes | well!", "You too! Have a good one!") },
-        { id: "br_see_you", s: t("¡Nos vemos, | Don Pancho!", "See you, | Don Pancho!", "See you around, Don Pancho!") },
+        { id: "br_see_you", s: t("¡Nos vemos, | Don Pancho!", "See you, | Don Pancho!", "See you around, Don Pancho!", { flags: { 1: "Don: a respectful title for an older man, used with his first name." } }) },
       ],
     },
   },

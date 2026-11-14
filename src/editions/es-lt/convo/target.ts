@@ -78,6 +78,9 @@ export function npUnits(b: NpBinding, kind: "np" | "the" | "pl" | "bare" | "head
   for (const m of pre) lt.push(...modForms(m));
   const headForms = head.map((u) => parseForms(u)[caseIndex(cs)]);
   lt.push(...headForms);
+  // the head's note, as the Spanish edition puts it (its word notes are this layer's Lithuanian ones; an entity's own
+  // note comes from the table)
+  for (const [k, v] of Object.entries(sp.flags)) if (flags[Number(k)] === undefined) flags[Number(k)] = v;
   for (const m of post) lt.push(...modForms(m));
   // natural Lithuanian: one-word modifiers before the noun, phrases after it; the entity's natural name if it has one
   const adj = mods.filter((m) => splitUnitsLt(m.lt).length === 1).flatMap(modForms);

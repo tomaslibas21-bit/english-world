@@ -911,7 +911,7 @@ export const landlord: SituationDef = {
     ],
 
     // --- Doña Lupita (the twist) -------------------------------------------------------------
-    rita_in: [t("Perdón | que | me meta, | Don | Ernesto.", "Sorry | that | I butt in, | Don | Ernesto.", "Sorry to butt in, Don Ernesto.", { spain: t("Perdone | que | me meta, | Don | Ernesto.", "Sorry | that | I butt in, | Don | Ernesto.", "Sorry to butt in, Don Ernesto.") })],
+    rita_in: [t("Perdón | que | me meta, | Don | Ernesto.", "Sorry | that | I butt in, | Don | Ernesto.", "Sorry to butt in, Don Ernesto.", { flags: { 3: "Don: a respectful title for an older man, used with his first name." }, spain: t("Perdone | que | me meta, | Don | Ernesto.", "Sorry | that | I butt in, | Don | Ernesto.", "Sorry to butt in, Don Ernesto.", { flags: { 3: "Don: a respectful title for an older man, used with his first name." } }) })],
     rita_back: [
       t("Es | cierto. | Desde | mi | casa | se oye | el | ventilador | de al lado | toda | la | noche.", "It's | true. | From | my | home | you can hear | the | fan | next door | all | the | night.",
         "It's true. From my place I can hear that fan next door all night."),
@@ -921,7 +921,7 @@ export const landlord: SituationDef = {
       t("Y | si | no, | yo | conozco | a | un | técnico | muy | bueno, | ¿eh?", "And | if | not, | I | know | — | a | repairman | very | good, | you know?",
         "And if not, I know a really good AC repairman.", { flags: { 5: F_A } }),
     ],
-    patel_rita: [t("Gracias, | Doña | Lupita. | Muy | amable.", "Thank you, | Doña | Lupita. | Very | kind.", "Thank you, Doña Lupita. Very helpful.")],
+    patel_rita: [t("Gracias, | Doña | Lupita. | Muy | amable.", "Thank you, | Doña | Lupita. | Very | kind.", "Thank you, Doña Lupita. Very helpful.", { flags: { 1: "Doña: a respectful title for an older woman, used with her first name." } })],
     rita_bye: [
       t("¡Para eso estamos, | {m:vecino!|f:vecina!} | Y | tome | mucha | agua, | ¿eh?", "That's what we're here for, | neighbor! | And | drink | lots of | water, | okay?",
         "That's what neighbors are for! And drink lots of water, okay?",
@@ -990,7 +990,7 @@ export const landlord: SituationDef = {
     blunt_last: [t("Empecemos | otra vez. | Con | calma, | ¿sí?", "Let's start | again. | With | calm, | okay?", "Let's start over. Nice and calm, okay?", { spain: t("Empecemos | otra vez. | Con | calma, | ¿vale?", "Let's start | again. | With | calm, | okay?", "Let's start over. Nice and calm, okay?") })],
     rent_threat_react: [
       t("¡Epa! | Nadie | está | hablando | de | la | renta. | Hablemos | del | aire.", "Whoa! | Nobody | is | talking | about | the | rent. | Let's talk | about the | AC.",
-        "Whoa! Nobody's talking about rent. Let's talk about the AC.", { spain: t("¡Eh! | Nadie | está | hablando | del | alquiler. | Hablemos | del | aire.", "Whoa! | Nobody | is | talking | about the | rent. | Let's talk | about the | AC.", "Whoa! Nobody's talking about rent. Let's talk about the AC.") }),
+        "Whoa! Nobody's talking about rent. Let's talk about the AC.", { neutral: t("¡Epa! | Nadie | está | hablando | del | alquiler. | Hablemos | del | aire.", "Whoa! | Nobody | is | talking | about the | rent. | Let's talk | about the | AC.", "Whoa! Nobody's talking about rent. Let's talk about the AC."), spain: t("¡Eh! | Nadie | está | hablando | del | alquiler. | Hablemos | del | aire.", "Whoa! | Nobody | is | talking | about the | rent. | Let's talk | about the | AC.", "Whoa! Nobody's talking about rent. Let's talk about the AC.") }),
     ],
 
     // --- the offer -------------------------------------------------------------------
@@ -1083,7 +1083,7 @@ export const landlord: SituationDef = {
     home_ok: [t("Muy | bien.", "Very | good.", "Great.")],
     key_rita: [
       t("¿Con | Doña | Lupita? | Buena | idea. | Ella | de todos modos | se entera | de | todo.", "With | Doña | Lupita? | Good | idea. | She | anyway | finds out | about | everything.",
-        "Doña Lupita? Good idea. She knows everything anyway."),
+        "Doña Lupita? Good idea. She knows everything anyway.", { flags: { 1: "Doña: a respectful title for an older woman, used with her first name." } }),
     ],
     gus_key: [t("No hay problema. | Chucho | tiene | llave.", "No problem. | Chucho | has | a key.", "No problem. Chucho has a key.")],
 
@@ -1133,7 +1133,7 @@ export const landlord: SituationDef = {
       t("De | eso | hablamos | después | del | sábado. | Mándeme | un | mensaje.", "About | that | we'll talk | after | — | Saturday. | Send me | a | message.", "Let's talk about that after Saturday. Send me a message.",
         { flags: { 4: F_DEL } }),
     ],
-    rent_first: [t("Primero | el | aire, | luego | la | renta.", "First | the | AC, | then | the | rent.", "The AC first, then the rent.", { spain: t("Primero | el | aire, | luego | el | alquiler.", "First | the | AC, | then | the | rent.", "The AC first, then the rent.") })],
+    rent_first: [t("Primero | el | aire, | luego | la | renta.", "First | the | AC, | then | the | rent.", "The AC first, then the rent.", { neutral: t("Primero | el | aire, | luego | el | alquiler.", "First | the | AC, | then | the | rent.", "The AC first, then the rent."), spain: t("Primero | el | aire, | luego | el | alquiler.", "First | the | AC, | then | the | rent.", "The AC first, then the rent.") })],
     discount_first: [t("Primero | el | aire, | luego | el | dinero.", "First | the | AC, | then | the | money.", "First the AC, then the money.")],
     trip_info: [
       t("Dos | semanas | en | San Cristóbal. | ¡Allá | hace | fresco | y | no hay | aparatos | que | arreglar!", "Two | weeks | in | San Cristóbal. | There | it's | cool | and | there are no | units | to | fix!",
@@ -1143,18 +1143,18 @@ export const landlord: SituationDef = {
 
     // --- the rent ----------------------------------------------------------------------
     rent_twist: [
-      t("Ah, | y | ya que | está | aquí: | ¿la | renta | de | este | mes?", "Oh, | and | since | you are | here: | the | rent | of | this | month?", "Oh, and since you're here: this month's rent?", { spain: t("Ah, | y | ya que | está | aquí: | ¿el | alquiler | de | este | mes?", "Oh, | and | since | you are | here: | the | rent | of | this | month?", "Oh, and since you're here: this month's rent?") }),
+      t("Ah, | y | ya que | está | aquí: | ¿la | renta | de | este | mes?", "Oh, | and | since | you are | here: | the | rent | of | this | month?", "Oh, and since you're here: this month's rent?", { neutral: t("Ah, | y | ya que | está | aquí: | ¿el | alquiler | de | este | mes?", "Oh, | and | since | you are | here: | the | rent | of | this | month?", "Oh, and since you're here: this month's rent?"), spain: t("Ah, | y | ya que | está | aquí: | ¿el | alquiler | de | este | mes?", "Oh, | and | since | you are | here: | the | rent | of | this | month?", "Oh, and since you're here: this month's rent?") }),
     ],
     rent_amount: [t("Son | {$rent}, | como | siempre.", "It's | {$rent}, | as | always.", "{$rent}, as always.")],
     rent_amount_again: [t("{$rent}, | lo de siempre.", "{$rent}, | the usual.", "{$rent}, same as always.")],
-    rent_reask: [t("¿Entonces... | la | renta?", "So... | the | rent?", "So… the rent?", { spain: t("¿Entonces... | el | alquiler?", "So... | the | rent?", "So… the rent?") })],
+    rent_reask: [t("¿Entonces... | la | renta?", "So... | the | rent?", "So… the rent?", { neutral: t("¿Entonces... | el | alquiler?", "So... | the | rent?", "So… the rent?"), spain: t("¿Entonces... | el | alquiler?", "So... | the | rent?", "So… the rent?") })],
     rent_thanks: [
       t("¡Gracias! | Usted | es | mi | {m:inquilino|f:inquilina} | {m:favorito.|f:favorita.}", "Thanks! | You | are | my | tenant | favorite.", "Thanks! You're my favorite tenant."),
     ],
     receipt_react: [t("¿Un | recibo? | Uy. | No confía | en | mí, | ¿verdad?", "A | receipt? | Wow. | You don't trust | in | me, | right?", "A receipt? Wow. You don't trust me, huh?")],
     receipt_write: [
       t("Bueno: | “Recibí | la | renta | de | este | mes.” | Aquí tiene.", "Okay: | “I received | the | rent | for | this | month.” | Here you go.",
-        "Fine. “Received this month's rent.” There you go.", { spain: t("Bueno: | “He recibido | el | alquiler | de | este | mes.” | Aquí tiene.", "Okay: | “I have received | the | rent | for | this | month.” | Here you go.", "Fine. “Received this month's rent.” There you go.") }),
+        "Fine. “Received this month's rent.” There you go.", { neutral: t("Bueno: | “Recibí | el | alquiler | de | este | mes.” | Aquí tiene.", "Okay: | “I received | the | rent | for | this | month.” | Here you go.", "Fine. “Received this month's rent.” There you go."), spain: t("Bueno: | “He recibido | el | alquiler | de | este | mes.” | Aquí tiene.", "Okay: | “I have received | the | rent | for | this | month.” | Here you go.", "Fine. “Received this month's rent.” There you go.") }),
     ],
     receipt_for_what: [t("¿Un | recibo? | ¿De | qué?", "A | receipt? | For | what?", "A receipt? For what?")],
     rent_later_ok: [t("No hay problema. | Me la | transfiere, | como | siempre.", "No problem. | It to me | you transfer, | as | always.", "No problem, just send it by transfer, as usual.", { spain: t("No hay problema. | Me lo | transfiere, | como | siempre.", "No problem. | It to me | you transfer, | as | always.", "No problem, just send it by transfer, as usual.") })],
@@ -1164,7 +1164,7 @@ export const landlord: SituationDef = {
     ],
     rent_is_rent: [
       t("La | renta | es | la | renta, | y | el | aire | es | el | aire.", "— | Rent | is | — | rent, | and | the | AC | is | the | AC.", "Rent is rent, and the AC is the AC.",
-        { flags: { 0: F_LA_GEN, 3: F_LA_GEN }, spain: t("El | alquiler | es | el | alquiler, | y | el | aire | es | el | aire.", "— | Rent | is | — | rent, | and | the | AC | is | the | AC.", "Rent is rent, and the AC is the AC.", { flags: { 0: "el before a noun in general (rent); English has no article.", 3: "el before a noun in general (rent); English has no article." } }) }),
+        { neutral: t("El | alquiler | es | el | alquiler, | y | el | aire | es | el | aire.", "— | Rent | is | — | rent, | and | the | AC | is | the | AC.", "Rent is rent, and the AC is the AC."), flags: { 0: F_LA_GEN, 3: F_LA_GEN }, spain: t("El | alquiler | es | el | alquiler, | y | el | aire | es | el | aire.", "— | Rent | is | — | rent, | and | the | AC | is | the | AC.", "Rent is rent, and the AC is the AC.", { flags: { 0: "el before a noun in general (rent); English has no article.", 3: "el before a noun in general (rent); English has no article." } }) }),
     ],
     walkaway_rent: [t("Bueno... | hablamos | cuando | regrese.", "Okay... | we'll talk | when | I get back.", "Okay… let's talk when I'm back.", { flags: { 3: "regrese: the subjunctive after cuando for the future." }, spain: t("Bueno... | hablamos | cuando | vuelva.", "Okay... | we'll talk | when | I get back.", "Okay… let's talk when I'm back.", { flags: { 3: "vuelva: the subjunctive after cuando for the future." } }) })],
 
@@ -1205,8 +1205,8 @@ export const landlord: SituationDef = {
       lt: "Say hello and who you are",
       items: [
         { id: "its_me", s: t("Don | Ernesto, | soy | yo, | {m:el|f:la} | de | arriba.", "Don | Ernesto, | it's | me, | the one | from | upstairs.", "Don Ernesto, it's me, from upstairs.",
-          { flags: { 2: "soy yo: Spanish says “I am me”; English says “it's me”." } }) },
-        { id: "hi_patel", s: t("¡Buenos días, | Don | Ernesto!", "Good morning, | Don | Ernesto!", "Good morning, Don Ernesto!") },
+          { flags: { 0: "Don: a respectful title for an older man, used with his first name.", 2: "soy yo: Spanish says “I am me”; English says “it's me”." } }) },
+        { id: "hi_patel", s: t("¡Buenos días, | Don | Ernesto!", "Good morning, | Don | Ernesto!", "Good morning, Don Ernesto!", { flags: { 1: "Don: a respectful title for an older man, used with his first name." } }) },
         { id: "sorry_bother", s: t("Perdón | que | lo | moleste, | pero | es | importante.", "Sorry | that | you | I bother, | but | it's | important.", "Sorry to bother you, but it's important.",
           { flags: { 2: "lo: “you” (usted) as the object.", 3: "moleste: the subjunctive after perdón que." }, spain: t("Perdone | que | le | moleste, | pero | es | importante.", "Sorry | that | you | I bother, | but | it's | important.", "Sorry to bother you, but it's important.", { flags: { 2: "le: “you” (usted) as the object; Spain often says le here.", 3: "moleste: the subjunctive after perdone que." } }) }) },
         { id: "minute", s: t("¿Tiene | un | minuto?", "Do you have | a | minute?", "Do you have a minute?") },
@@ -1253,7 +1253,7 @@ export const landlord: SituationDef = {
           note: "Me temo que…: polite but firm." },
         { id: "contract", s: t("Según | el | contrato, | las | reparaciones | le tocan | a | usted.", "According to | the | lease, | the | repairs | fall | to | you.",
           "According to the lease, repairs are your job.", { flags: { 3: "las: Spanish uses the article; English says just “repairs”." } }), note: "El contrato (de arrendamiento): the lease." },
-        { id: "heat_included", s: t("El | aire | acondicionado | está | incluido | en | la | renta.", "The | air | conditioning | is | included | in | the | rent.", "The AC is included in the rent.", { spain: t("El | aire | acondicionado | está | incluido | en | el | alquiler.", "The | air | conditioning | is | included | in | the | rent.", "The AC is included in the rent.") }) },
+        { id: "heat_included", s: t("El | aire | acondicionado | está | incluido | en | la | renta.", "The | air | conditioning | is | included | in | the | rent.", "The AC is included in the rent.", { neutral: t("El | aire | acondicionado | está | incluido | en | el | alquiler.", "The | air | conditioning | is | included | in | the | rent.", "The AC is included in the rent."), spain: t("El | aire | acondicionado | está | incluido | en | el | alquiler.", "The | air | conditioning | is | included | in | the | rent.", "The AC is included in the rent.") }) },
         { id: "been_patient", s: t("He | tenido | paciencia, | pero | la | paciencia | no me refresca.", "I've | had | patience, | but | — | patience | doesn't cool me down.",
           "I've been patient, but patience doesn't keep me cool.", { flags: { 4: F_LA_GEN } }) },
         { id: "please_fix", s: t("Usted | es | el | dueño. | Arréglelo, | por favor.", "You | are | the | owner. | Fix it, | please.", "You're the landlord. Please fix it.") },
@@ -1299,7 +1299,7 @@ export const landlord: SituationDef = {
       items: [
         { id: "ill_be_home", s: t("Sí, | voy | a | estar | en casa.", "Yes, | I'm going | to | be | at home.", "Yes, I'll be home.") },
         { id: "key_with_rita", s: t("Le | puedo | dejar | una | llave | a | Doña | Lupita.", "(With) her | I can | leave | a | key | with | Doña | Lupita.", "I can leave a key with Doña Lupita.",
-          { flags: { 0: "le points ahead to a Doña Lupita: Spanish doubles the person." } }) },
+          { flags: { 6: "Doña: a respectful title for an older woman, used with her first name.", 0: "le points ahead to a Doña Lupita: Spanish doubles the person." } }) },
         { id: "at_work", s: t("No, | voy | a | estar | en | el | trabajo.", "No, | I'm going | to | be | at | — | work.", "No, I'll be at work.", { flags: { 5: "el: Spanish uses the article; English says “at work”." } }) },
       ],
     },
@@ -1315,7 +1315,7 @@ export const landlord: SituationDef = {
       lt: "Say that's all",
       items: [
         { id: "thats_all", s: t("No, | es | todo, | gracias.", "No, | it's | all, | thanks.", "No, that's all, thanks.") },
-        { id: "good_trip", s: t("Gracias, | Don | Ernesto. | ¡Buen | viaje!", "Thanks, | Don | Ernesto. | Good | trip!", "Thanks, Don Ernesto. Have a good trip!") },
+        { id: "good_trip", s: t("Gracias, | Don | Ernesto. | ¡Buen | viaje!", "Thanks, | Don | Ernesto. | Good | trip!", "Thanks, Don Ernesto. Have a good trip!", { flags: { 1: "Don: a respectful title for an older man, used with his first name." } }) },
       ],
     },
     rent: {
@@ -1332,14 +1332,14 @@ export const landlord: SituationDef = {
     bye: {
       lt: "Thank him and say goodbye",
       items: [
-        { id: "good_trip", s: t("Gracias, | Don | Ernesto. | ¡Buen | viaje!", "Thanks, | Don | Ernesto. | Good | trip!", "Thanks, Don Ernesto. Have a good trip!") },
+        { id: "good_trip", s: t("Gracias, | Don | Ernesto. | ¡Buen | viaje!", "Thanks, | Don | Ernesto. | Good | trip!", "Thanks, Don Ernesto. Have a good trip!", { flags: { 1: "Don: a respectful title for an older man, used with his first name." } }) },
         { id: "enjoy_florida", s: t("¡Que | disfrute | San Cristóbal!", "May | you enjoy | San Cristóbal!", "Enjoy San Cristóbal!", { flags: { 0: "que + the subjunctive: a wish." } }) },
       ],
     },
     rita: {
       lt: "Thank Doña Lupita",
       items: [
-        { id: "thanks_rita", s: t("¡Gracias, | Doña | Lupita!", "Thanks, | Doña | Lupita!", "Thanks, Doña Lupita!") },
+        { id: "thanks_rita", s: t("¡Gracias, | Doña | Lupita!", "Thanks, | Doña | Lupita!", "Thanks, Doña Lupita!", { flags: { 1: "Doña: a respectful title for an older woman, used with her first name." } }) },
         { id: "tech_number_q", s: t("¿Me | pasa | el | número | del | técnico?", "(To) me | you pass | the | number | of the | repairman?", "Could you give me the repairman's number?") },
       ],
     },

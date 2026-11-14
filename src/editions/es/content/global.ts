@@ -89,7 +89,7 @@ export const GLOBAL_LINES: Record<string, SentSrc[]> = {
       { neutral: t("¡Adiós! | ¡Que | {u:tenga|t:tengas} | un | buen día!", "Bye! | (I hope) | you have | a | good day!", "Bye! Have a good day!") }),
   ],
   g_bye_afternoon: [
-    t("¡Adiós! | ¡Que | {u:tenga|t:tengas} | buena tarde!", "Bye! | (I hope) | you have | a good afternoon!", "Bye! Have a good afternoon!"),
+    t("¡Adiós! | ¡Que | {u:tenga|t:tengas} | buena tarde!", "Bye! | (I hope) | you have | a good afternoon!", "Bye! Have a good afternoon!", { neutral: t("¡Adiós! | ¡Que | {u:tenga|t:tengas} | una | buena tarde!", "Bye! | (I hope) | you have | a | good afternoon!", "Bye! Have a good afternoon!") }),
   ],
   g_bye_night: [
     t("¡Buenas noches! | ¡Que | {u:descanse|t:descanses}!", "Good night! | (I hope) | you rest!", "Good night! Sleep well!"),

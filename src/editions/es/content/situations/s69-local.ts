@@ -130,7 +130,7 @@ const TRIED: Record<string, SentSrc> = {
   cocina: t("¿Ya | fue | a | la | cocina económica?", "Already | you-went | to | the | home-style diner?", "Did you go to the little diner?", { flags: { 0: "Ya in a question: “yet”, “already”." }, spain: t("¿Ya | ha ido | a | la | cocina económica?", "Already | you've-gone | to | the | home-style diner?", "Did you go to the little diner?", {flags: {0: "Ya in a question: “yet”, “already”."}}) }),
   cafe: t("¿Ya | probó | el | café | de | La Ceiba?", "Already | you-tried | the | coffee | of | La Ceiba?", "Did you try the coffee at La Ceiba?", { flags: { 0: "Ya in a question: “yet”, “already”." }, spain: t("¿Ya | ha probado | el | café | de | La Ceiba?", "Already | you've-tried | the | coffee | of | La Ceiba?", "Did you try the coffee at La Ceiba?", {flags: {0: "Ya in a question: “yet”, “already”."}}) }),
   trattoria: t("¿Ya | fue | a | La Cocina de Lucía?", "Already | you-went | to | La Cocina de Lucía?", "Did you go to La Cocina de Lucía?", { flags: { 0: "Ya in a question: “yet”, “already”." }, spain: t("¿Ya | ha ido | a | La Cocina de Lucía?", "Already | you've-gone | to | La Cocina de Lucía?", "Did you go to La Cocina de Lucía?", {flags: {0: "Ya in a question: “yet”, “already”."}}) }),
-  marquesitas: t("¿Ya | probó | las | marquesitas?", "Already | you-tried | the | marquesitas?", "Did you try the marquesitas?", { flags: { 0: "Ya in a question: “yet”, “already”." }, spain: t("¿Ya | ha probado | las | marquesitas?", "Already | you've-tried | the | marquesitas?", "Did you try the marquesitas?", {flags: {0: "Ya in a question: “yet”, “already”."}}) }),
+  marquesitas: t("¿Ya | probó | las | marquesitas?", "Already | you-tried | the | marquesitas?", "Did you try the marquesitas?", { flags: { 3: "marquesita: a crispy rolled crêpe, a Yucatán street sweet.", 0: "Ya in a question: “yet”, “already”." }, spain: t("¿Ya | ha probado | las | marquesitas?", "Already | you've-tried | the | marquesitas?", "Did you try the marquesitas?", {flags: { 3: "marquesita: a crispy rolled crêpe, a Yucatán street sweet.", 0: "Ya in a question: “yet”, “already”."}}) }),
 };
 
 const toArr = (x: any) => (x == null ? [] : Array.isArray(x) ? x : [x]);
@@ -816,13 +816,13 @@ export const local: SituationDef = {
       t("La | cocina económica | de | la | calle | Ceiba. | Pruebe | los | panuchos | y | los | salbutes: | ¡son | de | aquí!",
         "The | home-style diner | on | the | street | Ceiba. | Try | the | panuchos | and | the | salbutes: | they're | from | here!",
         "The home-style diner on Ceiba Street. Try the panuchos and salbutes: they're a local thing!",
-        { flags: { 1: "cocina económica: a small family place with cheap home cooking.", 8: "panuchos, salbutes: small fried tortillas with toppings, from Yucatán." } }),
+        { flags: { 11: "salbutes: puffy fried tortillas topped with shredded turkey or chicken, lettuce and pickled onion (Yucatán).", 1: "cocina económica: a small family place with cheap home cooking.", 8: "panuchos, salbutes: small fried tortillas with toppings, from Yucatán." } }),
     ],
     rec_cafe: [
       t("El | Café | La Ceiba, | aquí | en | la | avenida | Juárez. | Muy | buen | café, | y | el | pan dulce | está | riquísimo. | ¡Dígale | a | Mariana | que | {m:lo|f:la} | mando | yo!",
         "The | Café | La Ceiba, | here | on | the | avenue | Juárez. | Very | good | coffee, | and | the | pan dulce | is | delicious. | Tell | — | Mariana | that | you | I-send | I!",
         "Café La Ceiba, right here on Juárez Avenue. Great coffee, and the pan dulce is delicious. Tell Mariana I sent you!",
-        { flags: { 17: A_TELL, 20: LOLA } }),
+        { flags: { 13: "pan dulce: Mexican sweet bread, the classic with coffee.", 17: A_TELL, 20: LOLA } }),
     ],
     rec_trattoria: [
       t("La Cocina de Lucía, | en | la | avenida | Juárez. | Es | comida | yucateca: | pruebe | el | poc chuc. | Es | un | poco | más | cara | que | la | cocina económica, | pero | vale la pena.",
@@ -945,7 +945,7 @@ export const local: SituationDef = {
     dir_cenote: [
       t("Tome | un | colectivo | en | la | avenida: | son | camionetas | blancas. | Dígale | al | chofer | que | {m:lo|f:la} | deje | en | el | cenote, | y | le | paga | al bajarse.",
         "Take | a | shared van | on | the | avenue: | they're | vans | white. | Tell | to the | driver | that | you | he-leaves | at | the | cenote, | and | (to) him | you-pay | when you get off.",
-        "Take a colectivo on the main road: they're white vans. Tell the driver to drop you at the cenote, and pay when you get off.", { flags: { 13: LOLA }, spain: t("Coja | un | colectivo | en | la | avenida: | son | furgonetas | blancas. | Dígale | al | conductor | que | {m:lo|f:la} | deje | en | el | cenote, | y | le | paga | al bajarse.", "Take | a | shared van | on | the | avenue: | they're | vans | white. | Tell | to the | driver | that | you | he-leaves | at | the | cenote, | and | (to) him | you-pay | when you get off.", "Take a colectivo on the main road: they're white vans. Tell the driver to drop you at the cenote, and pay when you get off.", {flags: {13: "lo / la: “you” (usted), for a man / a woman."}}) }),
+        "Take a colectivo on the main road: they're white vans. Tell the driver to drop you at the cenote, and pay when you get off.", { flags: { 17: "cenote: a natural pool in a limestone sinkhole, typical of the Yucatán.", 13: LOLA }, spain: t("Coja | un | colectivo | en | la | avenida: | son | furgonetas | blancas. | Dígale | al | conductor | que | {m:lo|f:la} | deje | en | el | cenote, | y | le | paga | al bajarse.", "Take | a | shared van | on | the | avenue: | they're | vans | white. | Tell | to the | driver | that | you | he-leaves | at | the | cenote, | and | (to) him | you-pay | when you get off.", "Take a colectivo on the main road: they're white vans. Tell the driver to drop you at the cenote, and pay when you get off.", {flags: { 17: "cenote: a natural pool in a limestone sinkhole, typical of the Yucatán.", 13: "lo / la: “you” (usted), for a man / a woman."}}) }),
     ],
     // the ruins: on the rocky point past the beach's west end (TOWN.md "Out of town")
     dir_ruinas: [t("Baje | a | la | playa | y | camine | a la izquierda, | hasta | el | final: | las | ruinas | están | en | las | rocas.", "Go down | to | the | beach | and | walk | to the left, | until | the | end: | the | ruins | are | on | the | rocks.",
@@ -976,7 +976,7 @@ export const local: SituationDef = {
     time_museo: [t("Entre semana, | en | la | mañana. | Está | muy | tranquilo.", "On weekdays, | in | the | morning. | It's | very | quiet.", "Weekday mornings. It's very quiet then.", { spain: t("Entre semana, | por | la | mañana. | Está | muy | tranquilo.", "On weekdays, | in | the | morning. | It's | very | quiet.", "Weekday mornings. It's very quiet then.") })],
     time_muelle: [t("Para | la | vista, | al | atardecer. | ¡Pero | reserve!", "For | the | view, | at the | sunset. | But | book!", "For the view, at sunset. But book a table!")],
     time_lancha: [t("En | la | mañana, | cuando | el | mar | está | más | tranquilo.", "In | the | morning, | when | the | sea | is | more | calm.", "In the morning, when the sea is calmer.", { spain: t("Por | la | mañana, | cuando | el | mar | está | más | tranquilo.", "In | the | morning, | when | the | sea | is | more | calm.", "In the morning, when the sea is calmer.") })],
-    time_taqueria: [t("¡Temprano! | La | cochinita | se acaba | antes | del | mediodía.", "Early! | The | cochinita | runs out | before | the | noon.", "Early! The cochinita runs out before noon.")],
+    time_taqueria: [t("¡Temprano! | La | cochinita | se acaba | antes | del | mediodía.", "Early! | The | cochinita | runs out | before | the | noon.", "Early! The cochinita runs out before noon.", { flags: { 2: "cochinita pibil: Yucatán's slow-roasted pork in achiote." } })],
     time_cocina: [
       t("A | la | hora | de | la | comida, | entre | la | una | y | las | tres.", "At | the | hour | of | the | lunch, | between | — | one | and | — | three.", "At lunchtime, between one and three.",
         { flags: { 5: "la comida: in Mexico, the main meal of the day, around 2 p.m.", 7: ART_TIME, 10: ART_TIME } }),
@@ -1000,7 +1000,7 @@ export const local: SituationDef = {
         "You pay | entrance, | but | it's not | much. | On | Sundays | it's | free | for | the | Mexicans | and | the | residents.",
         "There's an entrance fee, but it's not much. On Sundays it's free for Mexicans and residents.", { flags: { 5: "Los domingos: on Sundays (the article stands for “on”)." } }),
     ],
-    price_cenote: [t("Se cobra | la | entrada; | depende | del | cenote. | Lleve | efectivo.", "They charge | the | entrance; | it-depends | on the | cenote. | Bring | cash.", "There's an entrance fee; it depends on the cenote. Bring cash.")],
+    price_cenote: [t("Se cobra | la | entrada; | depende | del | cenote. | Lleve | efectivo.", "They charge | the | entrance; | it-depends | on the | cenote. | Bring | cash.", "There's an entrance fee; it depends on the cenote. Bring cash.", { flags: { 5: "cenote: a natural pool in a limestone sinkhole, typical of the Yucatán." } })],
     price_lancha: [t("No es | barato, | pero | vale la pena. | En | el | muelle | le | dan | precio.", "It's not | cheap, | but | it's worth it. | At | the | pier | (to) you | they-give | price.", "It's not cheap, but it's worth it. They'll give you a price at the pier.")],
     book_muelle: [t("Para | cenar, | sí. | Sobre todo | el | fin de semana.", "For | dinner, | yes. | Especially | on the | weekend.", "For dinner, yes. Especially on weekends.", { flags: { 4: "el fin de semana: on the weekend (the article stands for “on the”)." } })],
     // La Cocina de Lucía takes reservations, and walk-ins may wait in the evening (s73)

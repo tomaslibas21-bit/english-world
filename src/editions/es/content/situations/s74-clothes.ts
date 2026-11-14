@@ -942,7 +942,7 @@ export const clothes: SituationDef = {
     ],
     browse_nudge: [
       t("Por cierto, | la | guayabera | blanca | del | maniquí | acaba de | llegar.", "By the way, | the | guayabera | white | of the | mannequin | just | arrived.",
-        "By the way, that white guayabera on the mannequin just came in."),
+        "By the way, that white guayabera on the mannequin just came in.", { flags: { 2: "guayabera: a light men's shirt with pleats and pockets, worn untucked; typical of the Yucatán." } }),
     ],
     sale_table: [
       t("Y | todo | lo | de | esa | mesa | tiene | {$pct}% | de descuento.", "And | all | (that) | on | that | table | has | {$pct}% | off.", "And everything on that table is {$pct}% off.",
@@ -954,7 +954,7 @@ export const clothes: SituationDef = {
       t("Claro, | por aquí.", "Sure, | this way.", "Sure, right this way."),
     ],
     confirm_featured: [
-      t("Ah, | la | guayabera | del | maniquí.", "Ah, | the | guayabera | of the | mannequin.", "Oh, the guayabera on the mannequin."),
+      t("Ah, | la | guayabera | del | maniquí.", "Ah, | the | guayabera | of the | mannequin.", "Oh, the guayabera on the mannequin.", { flags: { 2: "guayabera: a light men's shirt with pleats and pockets, worn untucked; typical of the Yucatán." } }),
     ],
     // "¿Usted qué opina?" before it's tried on, and "¿Tienen bolsas?" before paying (ack_item's own words, the same clips)
     good_choice: [t("¡Buena | elección!", "Good | choice!", "Great choice!")],

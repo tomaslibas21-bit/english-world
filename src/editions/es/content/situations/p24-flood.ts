@@ -1477,7 +1477,7 @@ export const flood: SituationDef = {
       t("Ahora sí, | llámale | al | administrador. | ¡Te quiero!", "Now, | call | the | building manager. | Love you!", "Okay, go call the building manager. Love you!",
         { flags: { 2: F_AL_CALL, 3: "el administrador: the building manager (Don Gilberto); the owner is Don Ernesto." }, spain: t("Ahora sí, | llama | al | administrador. | ¡Te quiero!", "Now, | call | the | building manager. | Love you!", "Okay, go call the building manager. Love you!", { flags: { 2: F_AL_CALL, 3: "el administrador: the building manager (Don Gilberto); the owner is Don Ernesto." } }) }),
       t("Ve | a | llamarle | a | Don Gilberto. | ¡Nos vemos | en un rato!", "Go | to | call | — | Don Gilberto. | See you | in a bit!", "Go call Don Gilberto. See you in a bit!",
-        { flags: { 3: "a: Spanish puts a before the one you call; English has no word here." }, spain: t("Venga, | llama | a | Don Gilberto. | ¡Nos vemos | en un rato!", "Come on, | call | — | Don Gilberto. | See you | in a bit!", "Go call Don Gilberto. See you in a bit!", { flags: { 2: "a: Spanish puts a before the one you call; English has no word here." } }) }),
+        { flags: { 4: "Don: a respectful title for an older man, used with his first name.", 3: "a: Spanish puts a before the one you call; English has no word here." }, spain: t("Venga, | llama | a | Don Gilberto. | ¡Nos vemos | en un rato!", "Come on, | call | — | Don Gilberto. | See you | in a bit!", "Go call Don Gilberto. See you in a bit!", { flags: { 3: "Don: a respectful title for an older man, used with his first name.", 2: "a: Spanish puts a before the one you call; English has no word here." } }) }),
     ],
     l_love_too: [t("¡Yo | también | te quiero! | ¡Bye!", "I | too | love you! | Bye!", "Love you too! Bye!", { spain: t("¡Yo | también | te quiero! | ¡Chao!", "I | too | love you! | Bye!", "Love you too! Bye!") })],
     l_bye_after: [t("¡Bye! | ¡Suerte!", "Bye! | Good luck!", "Bye! Good luck!", { spain: t("¡Chao! | ¡Suerte!", "Bye! | Good luck!", "Bye! Good luck!") }), t("¡Nos vemos! | ¡Suerte!", "See you! | Good luck!", "Later! Good luck!")],
@@ -1503,7 +1503,7 @@ export const flood: SituationDef = {
         "Ha! That's what friends are for. Now go call the building manager. I'll start mopping.", { flags: { 4: F_AL_CALL, 8: "empezar a + verb: a has no English word here." }, spain: t("¡Jaja! | ¡Para eso están las amigas! | Ahora | llama | al | administrador. | Yo | empiezo | a | fregar.", "Haha! | That's what friends are for! | Now | call | the | building manager. | I | start | — | mopping.", "Ha! That's what friends are for. Now go call the building manager. I'll start mopping.", { flags: { 4: F_AL_CALL, 8: "empezar a + verb: a has no English word here." } }) }),
     ],
     // at the end of Don Gilberto's call (door twist)
-    l_shout: [t("¡Saludos cordiales, | Don Gilberto!", "Kind regards, | Don Gilberto!", "Kind regards, Don Gilberto!")],
+    l_shout: [t("¡Saludos cordiales, | Don Gilberto!", "Kind regards, | Don Gilberto!", "Kind regards, Don Gilberto!", { flags: { 1: "Don: a respectful title for an older man, used with his first name." } })],
 
     // --- Don Gilberto ----------------------------------------------------------------------------
     gr_pickup: [
@@ -1570,11 +1570,11 @@ export const flood: SituationDef = {
           neutral: t("¿Se está | filtrando | al | apartamento | de | Don Ernesto?", "Is it | leaking | into the | apartment | of | Don Ernesto?", "Is it leaking into Don Ernesto's place?",
             { flags: { 5: "Don Ernesto: the owner of the building, who lives downstairs." } }), spain: t("¿Se está | filtrando | al | piso | de | Don Ernesto?", "Is it | leaking | into the | apartment | of | Don Ernesto?", "Is it leaking into Don Ernesto's place?", { flags: { 5: "Don Ernesto: the owner of the building, who lives downstairs." } }) }),
     ],
-    gr_down_yes: [t("¡Ay, | no! | Pobre | Don Ernesto.", "Oh, | no! | Poor | Don Ernesto.", "Oh no. Poor Don Ernesto.")],
+    gr_down_yes: [t("¡Ay, | no! | Pobre | Don Ernesto.", "Oh, | no! | Poor | Don Ernesto.", "Oh no. Poor Don Ernesto.", { flags: { 3: "Don: a respectful title for an older man, used with his first name." } })],
     gr_down_no: [t("Uf. | Bueno.", "Phew. | Okay.", "Phew. Okay."), t("Qué | bueno. | Por ahora, | al menos.", "How | good. | For now, | at least.", "Good. Not yet, anyway.", { spain: t("Menos mal. | Por ahora, | al menos.", "Thank goodness. | For now, | at least.", "Good. Not yet, anyway.") })],
     gr_down_unknown: [
       t("Bueno. | Después | le | toco | la | puerta | a | Don Ernesto.", "Okay. | Later | (to) him | I'll-knock-on | the | door | — | Don Ernesto.",
-        "Okay. I'll knock on Don Ernesto's door later.", { flags: { 6: F_PERSONAL_A }, spain: t("Vale. | Luego | llamo | a | la | puerta | de | Don Ernesto.", "Okay. | Later | I'll-knock | at | the | door | of | Don Ernesto.", "Okay. I'll knock on Don Ernesto's door later.") }),
+        "Okay. I'll knock on Don Ernesto's door later.", { flags: { 7: "Don: a respectful title for an older man, used with his first name.", 6: F_PERSONAL_A }, spain: t("Vale. | Luego | llamo | a | la | puerta | de | Don Ernesto.", "Okay. | Later | I'll-knock | at | the | door | of | Don Ernesto.", "Okay. I'll knock on Don Ernesto's door later.", { flags: { 7: "Don: a respectful title for an older man, used with his first name." } }) }),
     ],
     gr_water_q: [
       t("¿Ya | bajó | el | switch | de | la | luz?", "Already | did you turn off | the | switch | of | the | power?", "Have you switched off the power?",
@@ -1627,7 +1627,7 @@ export const flood: SituationDef = {
     ],
     gr_sure_down: [
       t("¿Está | {m:seguro|f:segura}? | A | Don Ernesto | no le va a gustar.", "Are you | sure? | — | Don Ernesto | won't like it.", "Are you sure? Don Ernesto won't like that.",
-        { flags: { 2: "a: the one who (dis)likes it is marked with a; English has no word here." } }),
+        { flags: { 3: "Don: a respectful title for an older man, used with his first name.", 2: "a: the one who (dis)likes it is marked with a; English has no word here." } }),
     ],
     gr_ten_a: [
       t("¡Ay, | no, | tiene razón! | ¡Qué | pena | con | usted!", "Oh, | no, | you're right! | What | embarrassment | with | you!", "Oh no, you're right! I'm so sorry!",
@@ -1791,10 +1791,10 @@ export const flood: SituationDef = {
       items: [
         { id: "this_is_apt", s: t("Buenos días, | Don Gilberto. | Le habla | {$name} | {$surname}, | del | departamento | 1B.", "Good morning, | Don Gilberto. | This is | {$name} | {$surname}, | from the | apartment | 1B.",
           "Good morning, Don Gilberto. This is {$name} {$surname} from apartment 1B.", { say: "Buenos días, Don Gilberto. Le habla {$name} {$surname}, del departamento uno be.",
-            flags: { 2: "Le habla…: the polite way to say who is calling (literally, speaks to you).", 6: F_DEPA },
+            flags: { 1: "Don: a respectful title for an older man, used with his first name.", 2: "Le habla…: the polite way to say who is calling (literally, speaks to you).", 6: F_DEPA },
             neutral: t("Buenos días, | Don Gilberto. | Le habla | {$name} | {$surname}, | del | apartamento | 1B.", "Good morning, | Don Gilberto. | This is | {$name} | {$surname}, | from the | apartment | 1B.",
               "Good morning, Don Gilberto. This is {$name} {$surname} from apartment 1B.", { say: "Buenos días, Don Gilberto. Le habla {$name} {$surname}, del apartamento uno be.",
-                flags: { 2: "Le habla…: the polite way to say who is calling (literally, speaks to you)." } }), spain: t("Buenos días, | Don Gilberto. | Le habla | {$name} | {$surname}, | del | 1B.", "Good morning, | Don Gilberto. | This is | {$name} | {$surname}, | from | 1B.", "Good morning, Don Gilberto. This is {$name} {$surname} from apartment 1B.", { say: "Buenos días, Don Gilberto. Le habla {$name} {$surname}, del uno be.", flags: { 2: "Le habla…: the polite way to say who is calling (literally, speaks to you)." } }) }), register: "polite" },
+                flags: { 1: "Don: a respectful title for an older man, used with his first name.", 2: "Le habla…: the polite way to say who is calling (literally, speaks to you)." } }), spain: t("Buenos días, | Don Gilberto. | Le habla | {$name} | {$surname}, | del | 1B.", "Good morning, | Don Gilberto. | This is | {$name} | {$surname}, | from | 1B.", "Good morning, Don Gilberto. This is {$name} {$surname} from apartment 1B.", { say: "Buenos días, Don Gilberto. Le habla {$name} {$surname}, del uno be.", flags: { 1: "Don: a respectful title for an older man, used with his first name.", 2: "Le habla…: the polite way to say who is calling (literally, speaks to you)." } }) }), register: "polite" },
         // he manages the building for its owner (Don Ernesto), so the learner is "el inquilino del 1B", not "su inquilino"
         { id: "tenant_in", s: t("Soy | {m:el|f:la} | {m:inquilino|f:inquilina} | del | 1B.", "I-am | the | tenant | from the | 1B.", "I'm the tenant in 1B.", { say: "Soy {m:el|f:la} {m:inquilino|f:inquilina} del uno be." }), register: "polite" },
         { id: "calling_from", s: t("Le | hablo | del | departamento | 1B.", "(To) you | I'm-calling | from the | apartment | 1B.", "I'm calling from apartment 1B.",
@@ -1893,9 +1893,9 @@ export const flood: SituationDef = {
       lt: "Leave a formal voicemail",
       items: [
         { id: "this_is_apt", s: t("Buenos días, | Don Gilberto. | Le habla | {$name} | {$surname}, | del | departamento | 1B.", "Good morning, | Don Gilberto. | This is | {$name} | {$surname}, | from the | apartment | 1B.",
-          "Good morning, Don Gilberto. This is {$name} {$surname} from apartment 1B.", { say: "Buenos días, Don Gilberto. Le habla {$name} {$surname}, del departamento uno be.", flags: { 6: F_DEPA },
+          "Good morning, Don Gilberto. This is {$name} {$surname} from apartment 1B.", { say: "Buenos días, Don Gilberto. Le habla {$name} {$surname}, del departamento uno be.", flags: { 1: "Don: a respectful title for an older man, used with his first name.", 6: F_DEPA },
             neutral: t("Buenos días, | Don Gilberto. | Le habla | {$name} | {$surname}, | del | apartamento | 1B.", "Good morning, | Don Gilberto. | This is | {$name} | {$surname}, | from the | apartment | 1B.",
-              "Good morning, Don Gilberto. This is {$name} {$surname} from apartment 1B.", { say: "Buenos días, Don Gilberto. Le habla {$name} {$surname}, del apartamento uno be." }), spain: t("Buenos días, | Don Gilberto. | Le habla | {$name} | {$surname}, | del | 1B.", "Good morning, | Don Gilberto. | This is | {$name} | {$surname}, | from | 1B.", "Good morning, Don Gilberto. This is {$name} {$surname} from apartment 1B.", { say: "Buenos días, Don Gilberto. Le habla {$name} {$surname}, del uno be.", flags: { 2: "Le habla…: the polite way to say who is calling (literally, speaks to you)." } }) }), register: "polite" },
+              "Good morning, Don Gilberto. This is {$name} {$surname} from apartment 1B.", { flags: { 1: "Don: a respectful title for an older man, used with his first name." }, say: "Buenos días, Don Gilberto. Le habla {$name} {$surname}, del apartamento uno be." }), spain: t("Buenos días, | Don Gilberto. | Le habla | {$name} | {$surname}, | del | 1B.", "Good morning, | Don Gilberto. | This is | {$name} | {$surname}, | from | 1B.", "Good morning, Don Gilberto. This is {$name} {$surname} from apartment 1B.", { say: "Buenos días, Don Gilberto. Le habla {$name} {$surname}, del uno be.", flags: { 1: "Don: a respectful title for an older man, used with his first name.", 2: "Le habla…: the polite way to say who is calling (literally, speaks to you)." } }) }), register: "polite" },
         { id: "regret", s: t("Lamento | informarle | que | se inundó | el | departamento.", "I-regret | to inform you | that | got flooded | the | apartment.",
           "I regret to inform you that the apartment has flooded.", { flags: { 5: F_DEPA },
             neutral: t("Lamento | informarle | que | se inundó | el | apartamento.", "I-regret | to inform you | that | got flooded | the | apartment.",

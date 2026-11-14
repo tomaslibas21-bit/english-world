@@ -787,7 +787,7 @@ export const post: SituationDef = {
     customs_notify: [t("Sí, | le | dejamos | el | aviso | en | su | casa.", "Yes, | (for) you | we-leave | the | notice | at | your | house.", "Yes, we'll leave the notice at your place.")],
 
     bye: [
-      t("¡Que | tenga | buen | día!", "(I hope) | you have | good | day!", "Have a nice day!"),
+      t("¡Que | tenga | buen | día!", "(I hope) | you have | good | day!", "Have a nice day!", { neutral: t("¡Que | tenga | un | buen | día!", "(I hope) | you have | a | good | day!", "Have a nice day!") }),
       t("Gracias, | ¡que | le | vaya | bien!", "Thanks, | (I hope) | (for) you | it-goes | well!", "Thanks, take care!"),
     ],
   },

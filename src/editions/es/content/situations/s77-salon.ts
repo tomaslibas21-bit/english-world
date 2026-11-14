@@ -847,7 +847,7 @@ export const salon: SituationDef = {
     closing: [t("¡Gracias | por | venir!", "Thanks | for | coming!", "Thanks for coming in!"), t("¡Que | disfrute | su | corte | nuevo!", "May | you-enjoy | your | haircut | new!", "Enjoy your new look!",
         { spain: t("¡Que | disfrutes | tu | corte | nuevo!", "May | you-enjoy | your | haircut | new!", "Enjoy your new look!") })],
     bye_after: [t("¡Que | tenga | buen | fin de semana!", "May | you-have | good | weekend!", "Have a great weekend!",
-        { spain: t("¡Que | tengas | buen | fin de semana!", "May | you-have | good | weekend!", "Have a great weekend!") }), t("¡Hasta | la | próxima!", "Until | the | next (time)!", "See you next time!")],
+        { neutral: t("¡Que | tenga | un | buen | fin de semana!", "May | you-have | a | good | weekend!", "Have a great weekend!"), spain: t("¡Que | tengas | un | buen | fin de semana!", "May | you-have | a | good | weekend!", "Have a great weekend!") }), t("¡Hasta | la | próxima!", "Until | the | next (time)!", "See you next time!")],
   },
 
   domains: {

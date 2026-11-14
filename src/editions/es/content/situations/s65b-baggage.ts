@@ -907,9 +907,9 @@ export const baggage: SituationDef = {
     ],
     closing: [
       t("De nuevo, | disculpe | las | molestias.", "Again, | excuse | the | inconvenience.", "Again, I'm sorry for the trouble."),
-      t("¡Que | tenga | buena | tarde!", "May | you have | good | afternoon!", "Have a good afternoon!"),
+      t("¡Que | tenga | buena | tarde!", "May | you have | good | afternoon!", "Have a good afternoon!", { neutral: t("¡Que | tenga | una | buena | tarde!", "May | you have | a | good | afternoon!", "Have a good afternoon!") }),
     ],
-    you_welcome: [t("De nada. | ¡Que | tenga | buena | tarde!", "You're welcome. | May | you have | good | afternoon!", "You're welcome. Have a good afternoon!")],
+    you_welcome: [t("De nada. | ¡Que | tenga | buena | tarde!", "You're welcome. | May | you have | good | afternoon!", "You're welcome. Have a good afternoon!", { neutral: t("De nada. | ¡Que | tenga | una | buena | tarde!", "You're welcome. | May | you have | a | good | afternoon!", "You're welcome. Have a good afternoon!") })],
     // Answers to the learner's questions
     ans_when: [t("Normalmente | en | menos | de | 24 | horas.", "Usually | in | less | than | 24 | hours.", "Usually within 24 hours.", { say: "Normalmente en menos de veinticuatro horas." })],
     ans_when_found: [t("Mañana, | en cuanto | llegue | el | primer | vuelo.", "Tomorrow, | as soon as | arrives | the | first | flight.", "Tomorrow, as soon as the first flight gets in.")],

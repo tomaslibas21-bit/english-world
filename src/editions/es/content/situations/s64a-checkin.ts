@@ -1282,7 +1282,7 @@ export const checkin: SituationDef = {
       "Your fare includes one checked bag, so there's no charge.", { spain: t("Su | tarifa | incluye | una | maleta | facturada, | así que | no tiene | coste.", "Your | fare | includes | one | suitcase | checked, | so | it doesn't have | cost.", "Your fare includes one checked bag, so there's no charge.") })],
     bagfee_many: [t("Su | reservación | ya | incluye | sus | maletas.", "Your | reservation | already | includes | your | suitcases.", "Your reservation already includes your bags.", { spain: t("Su | reserva | ya | incluye | sus | maletas.", "Your | reservation | already | includes | your | suitcases.", "Your reservation already includes your bags.") })],
     restroom: [t("Los | baños | están | por allá, | junto | a | la | cafetería.", "The | restrooms | are | over there, | next | to | the | café.", "The restrooms are over there, next to the café.", { spain: t("Los | aseos | están | por allá, | junto | a | la | cafetería.", "The | restrooms | are | over there, | next | to | the | café.", "The restrooms are over there, next to the café.") })],
-    bye_flight: [t("¡Buen | viaje!", "Good | trip!", "Have a good trip!"), t("¡Que | tenga | buen | vuelo!", "May | you have | good | flight!", "Have a good flight!")],
+    bye_flight: [t("¡Buen | viaje!", "Good | trip!", "Have a good trip!"), t("¡Que | tenga | buen | vuelo!", "May | you have | good | flight!", "Have a good flight!", { neutral: t("¡Que | tenga | un | buen | vuelo!", "May | you have | a | good | flight!", "Have a good flight!") })],
     ack: [t("Muy | bien.", "Very | good.", "Okay."), t("Perfecto.", "Perfect.", "Great.")],
     thanks_short: [t("Gracias.", "Thank you.", "Thanks.")],
   },

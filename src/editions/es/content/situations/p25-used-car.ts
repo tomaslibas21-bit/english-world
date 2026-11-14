@@ -1701,7 +1701,7 @@ export const usedCar: SituationDef = {
     pleasure_too: [t("¡El | gusto | fue | mío!", "The | pleasure | was | mine!", "The pleasure was mine!", { spain: t("¡El | gusto | ha sido | mío!", "The | pleasure | has been | mine!", "The pleasure was mine!") })],
     know_you_will: [t("Sé | que | sí.", "I know | that | (you will).", "I know you will.")],
     you_too: [t("¡Igualmente!", "Likewise!", "You too!")],
-    see_around: [t("¡Cuídese!", "Take care!", "Take care!"), t("¡Que | tenga | buen | día!", "(I hope) | you have | a good | day!", "Have a nice day!")],
+    see_around: [t("¡Cuídese!", "Take care!", "Take care!"), t("¡Que | tenga | buen | día!", "(I hope) | you have | a good | day!", "Have a nice day!", { neutral: t("¡Que | tenga | un | buen | día!", "(I hope) | you have | a | good | day!", "Have a nice day!") })],
     ack: [t("Muy | bien.", "Very | good.", "Okay."), t("Claro.", "Sure.", "Sure.")],
   },
 

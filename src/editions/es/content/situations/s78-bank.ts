@@ -49,7 +49,7 @@ const DOCS: EntityDef[] = [
   ent("license", "licencia | de | manejo", "license | of | driving", "f", { chip: "licencia de manejo",
     forms: ["licencia", "licencia de manejo", "licencia de manejar", "licencia de conducir", "carnet de conducir", "carne de conducir", "carnet", "permiso de conducir",
       "licencia americana", "licencia de estados unidos", "licencia extranjera", "licencia canadiense"],
-    attrs: { nat: "driver's license", spain: "carné | de | conducir", spainG: "m" } }),
+    attrs: { nat: "driver's license", neutral: "licencia | de | conducir", spain: "carné | de | conducir", spainG: "m" } }),
 ];
 
 const PROOFS: EntityDef[] = [
@@ -1025,8 +1025,8 @@ export const bank: SituationDef = {
       t("Sí, | nos | sirve, | gracias.", "Yes, | (to) us | it works, | thanks.", "Yes, that works, thanks."),
       t("Perfecto.", "Perfect.", "Perfect."),
     ],
-    ask_lease: [t("No se preocupe. | ¿Tiene | contrato | de | renta?", "Don't worry. | Do you have | a contract | of | rent?", "Don't worry. Do you have a lease?", { spain: t("No se preocupe. | ¿Tiene | contrato | de | alquiler?", "Don't worry. | Do you have | a contract | of | rent?", "Don't worry. Do you have a lease?") })],
-    ask_lease_again: [t("¿Y | tiene | contrato | de | renta?", "And | do you have | a contract | of | rent?", "And do you have a lease?", { spain: t("¿Y | tiene | contrato | de | alquiler?", "And | do you have | a contract | of | rent?", "And do you have a lease?") })],
+    ask_lease: [t("No se preocupe. | ¿Tiene | contrato | de | renta?", "Don't worry. | Do you have | a contract | of | rent?", "Don't worry. Do you have a lease?", { neutral: t("No se preocupe. | ¿Tiene | contrato | de | alquiler?", "Don't worry. | Do you have | a contract | of | rent?", "Don't worry. Do you have a lease?"), spain: t("No se preocupe. | ¿Tiene | contrato | de | alquiler?", "Don't worry. | Do you have | a contract | of | rent?", "Don't worry. Do you have a lease?") })],
+    ask_lease_again: [t("¿Y | tiene | contrato | de | renta?", "And | do you have | a contract | of | rent?", "And do you have a lease?", { neutral: t("¿Y | tiene | contrato | de | alquiler?", "And | do you have | a contract | of | rent?", "And do you have a lease?"), spain: t("¿Y | tiene | contrato | de | alquiler?", "And | do you have | a contract | of | rent?", "And do you have a lease?") })],
     lease_explain: [t("Es | el | contrato | que | firmó | con | el | dueño | de | su | casa.", "It's | the | contract | that | you-signed | with | the | owner | of | your | home.",
       "It's the contract you signed with your landlord.")],
     proof_later: [t("Está bien. | Lo | puede | traer | después.", "That's fine. | It | you-can | bring | later.", "That's okay. You can bring it in later.")],
@@ -1122,7 +1122,7 @@ export const bank: SituationDef = {
         "Here's your account number and your CLABE, so your employer can deposit your pay.",
         { flags: { 8: "CLABE: the 18-digit number for transfers between Mexican banks.", 9: "para que + subjunctive (depositen): so that." },
           write: "Banco del Puerto · número de cuenta 0482 117 359 · la CLABE (18 dígitos) viene en su contrato", spell: "CLABE",
-        spain: t("Aquí | tiene | su | número | de | cuenta | y | su | CLABE, | para | que | le | ingresen | su | sueldo.", "Here | you have | your | number | of | account | and | your | CLABE, | for | that | (to) you | they-deposit | your | pay.", "Here's your account number and your CLABE, so your employer can deposit your pay.") }),
+        spain: t("Aquí | tiene | su | número | de | cuenta | y | su | CLABE, | para | que | le | ingresen | su | sueldo.", "Here | you have | your | number | of | account | and | your | CLABE, | for | that | (to) you | they-deposit | your | pay.", "Here's your account number and your CLABE, so your employer can deposit your pay.", { flags: { 8: "CLABE: the 18-digit number for transfers between Mexican banks." } }) }),
     ],
     hours: [t("De | lunes | a | viernes, | de | nueve | a | cuatro, | y | los | sábados | hasta | las | dos.", "From | Monday | to | Friday, | from | nine | to | four, | and | — | Saturdays | until | — | two.",
       "Monday to Friday from nine to four, and Saturdays until two.", { flags: { 9: "los sábados: on Saturdays; the article makes it every Saturday.", 12: "Spanish uses an article before clock times; English has no separate word." } })],
@@ -1133,7 +1133,7 @@ export const bank: SituationDef = {
     clabe_info: [
       t("La | CLABE | es | su | número | de | dieciocho | dígitos | para | transferencias; | viene | en | su | contrato.",
         "The | CLABE | is | your | number | of | eighteen | digits | for | transfers; | it comes | in | your | contract.",
-        "The CLABE is your eighteen-digit number for transfers; it's in your contract.", { spell: "CLABE" }),
+        "The CLABE is your eighteen-digit number for transfers; it's in your contract.", { flags: { 1: "CLABE: the 18-digit number for transfers between Mexican banks." }, spell: "CLABE" }),
     ],
     offer_savings: [
       t("¿Le gustaría | abrir | también | una | cuenta | de | ahorro? | No tiene | comisión.", "Would you like | to open | also | an | account | of | savings? | It doesn't have | a fee.",
@@ -1157,7 +1157,7 @@ export const bank: SituationDef = {
     ],
     anything_else_yes: [t("Claro, | dígame.", "Sure, | tell me.", "Sure, go ahead.")],
     bye: [
-      t("¡Gracias | por | su | visita! | Que | tenga | buen | día.", "Thanks | for | your | visit! | May | you-have | good | day.", "Thanks for coming in! Have a nice day."),
+      t("¡Gracias | por | su | visita! | Que | tenga | buen | día.", "Thanks | for | your | visit! | May | you-have | good | day.", "Thanks for coming in! Have a nice day.", { neutral: t("¡Gracias | por | su | visita! | Que | tenga | un | buen | día.", "Thanks | for | your | visit! | May | you-have | a | good | day.", "Thanks for coming in! Have a nice day.") }),
       t("Gracias | por | venir. | ¡Que | le | vaya | bien!", "Thanks | for | coming. | May | (to) you | it go | well!", "Thanks for coming in. Take care!"),
     ],
 
@@ -1187,7 +1187,7 @@ export const bank: SituationDef = {
       "Your | passport | and | your | card | of | resident, | a | proof | of | address, | your | CURP | and | a | deposit | of | at least | {$price}.",
       "Your passport and your residence card, proof of address, your CURP and a deposit of at least {$price}.",
       { flags: { 12: "CURP: Mexico's population registry code, which residents have too." },
-        spain: t("Su | pasaporte | y | su | tarjeta | de | residente, | un | justificante | de | domicilio, | su | CURP | y | un | ingreso | de | por lo menos | {$price}.", "Your | passport | and | your | card | of | resident, | a | proof | of | address, | your | CURP | and | a | deposit | of | at least | {$price}.", "Your passport and your residence card, proof of address, your CURP and a deposit of at least {$price}.") })],
+        spain: t("Su | pasaporte | y | su | tarjeta | de | residente, | un | justificante | de | domicilio, | su | CURP | y | un | ingreso | de | por lo menos | {$price}.", "Your | passport | and | your | card | of | resident, | a | proof | of | address, | your | CURP | and | a | deposit | of | at least | {$price}.", "Your passport and your residence card, proof of address, your CURP and a deposit of at least {$price}.", { flags: { 12: "CURP: Mexico's population registry code, which residents have too." } }) })],
     open_time: [t("Son | unos | veinte | minutos.", "It's | about | twenty | minutes.", "It takes about twenty minutes.", { flags: { 1: "unos before a number: about." } })],
 
     // transfer
@@ -1363,7 +1363,7 @@ export const bank: SituationDef = {
     ] },
     proof: { lt: "Show proof of address", items: [
       { id: "proof_bill", s: t("Aquí | está | mi | recibo | de | luz.", "Here | is | my | bill | of | electricity.", "Here's my electric bill.") },
-      { id: "proof_lease", s: t("Tengo | mi | contrato | de | renta.", "I have | my | contract | of | rent.", "I have my lease.", { spain: t("Tengo | mi | contrato | de | alquiler.", "I have | my | contract | of | rent.", "I have my lease.") }) },
+      { id: "proof_lease", s: t("Tengo | mi | contrato | de | renta.", "I have | my | contract | of | rent.", "I have my lease.", { neutral: t("Tengo | mi | contrato | de | alquiler.", "I have | my | contract | of | rent.", "I have my lease."), spain: t("Tengo | mi | contrato | de | alquiler.", "I have | my | contract | of | rent.", "I have my lease.") }) },
       { id: "proof_ok", s: t("¿Sirve | un | estado | de | cuenta?", "Does it work | a | statement | of | account?", "Will a bank statement do?") },
       { id: "proof_moved", s: t("Me acabo de | mudar.", "I just | moved.", "I just moved here."), note: "acabar de + infinitive: to have just done something." },
       { id: "proof_none", s: t("Todavía | no tengo | recibos.", "Still | I don't have | bills.", "I don't have any bills yet.") },
@@ -1372,7 +1372,7 @@ export const bank: SituationDef = {
       { id: "ssn_notyet", s: t("Todavía | no la tengo.", "Still | I don't have it.", "I don't have it yet.") },
       { id: "ssn_dunno", s: t("No sé | cuál | es.", "I don't know | which | it is.", "I don't know my CURP."), note: "No sé cuál es: I don't know it (literally, which one it is)." },
       { id: "ssn_problem", s: t("¿Es | un | problema?", "Is it | a | problem?", "Is that a problem?") },
-      { id: "ssn_what", s: t("¿Qué | es | la | CURP?", "What | is | the | CURP?", "What's a CURP?") },
+      { id: "ssn_what", s: t("¿Qué | es | la | CURP?", "What | is | the | CURP?", "What's a CURP?", { flags: { 3: "CURP: Mexico's population registry code, which residents have too." } }) },
     ] },
     form: { lt: "Fill out and sign the form", items: [
       { id: "form_done", s: t("Listo, | ya | firmé.", "Done, | already | I-signed.", "Okay, I've signed it.", { spain: t("Ya está, | ya | he | firmado.", "Done, | already | I-have | signed.", "Okay, I've signed it.") }) },

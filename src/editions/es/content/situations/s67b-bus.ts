@@ -631,7 +631,7 @@ export const bus: SituationDef = {
     ],
     where_cenote: [
       t("Para | los | cenotes | mejor | tome | un | colectivo | en | la | avenida.", "For | the | cenotes | better | take | a | shared van | on | the | avenue.",
-        "For the cenotes, you're better off taking a colectivo on the avenue.", { flags: { 6: "colectivo: a shared minivan with a fixed route; you flag it down on the street." }, spain: t("Para | los | cenotes | mejor | coja | un | colectivo | en | la | avenida.", "For | the | cenotes | better | take | a | shared van | on | the | avenue.", "For the cenotes, you're better off taking a colectivo on the avenue.", {flags: {6: "colectivo: a shared minivan with a fixed route; you flag it down on the street."}}) }),
+        "For the cenotes, you're better off taking a colectivo on the avenue.", { flags: { 2: "cenote: a natural pool in a limestone sinkhole, typical of the Yucatán.", 6: "colectivo: a shared minivan with a fixed route; you flag it down on the street." }, spain: t("Para | los | cenotes | mejor | coja | un | colectivo | en | la | avenida.", "For | the | cenotes | better | take | a | shared van | on | the | avenue.", "For the cenotes, you're better off taking a colectivo on the avenue.", {flags: { 2: "cenote: a natural pool in a limestone sinkhole, typical of the Yucatán.", 6: "colectivo: a shared minivan with a fixed route; you flag it down on the street."}}) }),
     ],
     // a place she can't place (a friend's house, a shop): the route's stops, in their order in the 3D town; also the
     // answer to "¿A dónde va este camión?" (it said "no, esta ruta no va para allá" to the bank and the church, which

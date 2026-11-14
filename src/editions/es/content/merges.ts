@@ -80,7 +80,7 @@ export const MERGES: Record<string, MergeRecord> = {
   "estados unidos": LEX("estados → states + unidos → united; one name = the United States.", "Two words of one name."),
   "nueva zelanda": LEX("nueva → new + zelanda → Zealand; one name = New Zealand.", "Two words of one name."),
   // shopping and services
-  "para llevar": LEX("para → for + llevar → to carry; takeaway = to go."),
+  "para llevar": LEX("para → for + llevar → to carry; together = to go (takeout)."),
   "para aquí": LEX("para → for + aquí → here; = for here."),
   "en efectivo": LEX("en → in + efectivo → effective; paying = in cash."),
   "a nombre de": LEX("a → to + nombre → name + de → of; = under the name of / for."),

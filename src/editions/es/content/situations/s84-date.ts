@@ -1617,7 +1617,7 @@ export const date: SituationDef = {
       t("Sí, | mis | papás | viven | aquí | cerca.", "Yes, | my | parents | live | here | near.", "Yes, my parents live nearby.", { spain: t("Sí, | mis | padres | viven | aquí | cerca.", "Yes, | my | parents | live | here | near.", "Yes, my parents live nearby.") }),
     ],
     like_here: [
-      t("¡Me encanta! | Tenemos | el | mar | y | los | cenotes.", "I love it! | We-have | the | sea | and | the | cenotes.", "I love it! We've got the sea and the cenotes."),
+      t("¡Me encanta! | Tenemos | el | mar | y | los | cenotes.", "I love it! | We-have | the | sea | and | the | cenotes.", "I love it! We've got the sea and the cenotes.", { flags: { 6: "cenote: a natural pool in a limestone sinkhole, typical of the Yucatán." } }),
     ],
     own_food: [
       t("¡El | pescado | a la talla! | Aquí | es | buenísimo.", "The | fish | split and grilled! | Here | it's | really good.", "The pescado a la talla, the grilled fish! It's amazing here.",

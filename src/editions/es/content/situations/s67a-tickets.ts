@@ -755,7 +755,7 @@ export const tickets: SituationDef = {
     discount_ans: {
       lt: "Say whether you have a discount card",
       items: [
-        { id: "im_senior", s: t("Tengo | credencial | del | INAPAM.", "I have | a card | of the | INAPAM.", "I have an INAPAM card."), note: "INAPAM: the Mexican senior card (60 and over)." },
+        { id: "im_senior", s: t("Tengo | credencial | del | INAPAM.", "I have | a card | of the | INAPAM.", "I have an INAPAM card.", { flags: { 3: "INAPAM: Mexico's national institute for older adults; its card gives seniors discounts." } }), note: "INAPAM: the Mexican senior card (60 and over)." },
         { id: "no_discount", s: t("No, | no tengo.", "No, | I don't have one.", "No, I don't.") },
         { id: "im_student", s: t("Soy | estudiante.", "I'm | a student.", "I'm a student."), note: "Students and teachers get bus discounts only during school vacations." },
       ],
@@ -764,7 +764,7 @@ export const tickets: SituationDef = {
       lt: "Show your card",
       items: [
         { id: "here_you_go", s: t("Aquí tiene.", "Here you go.", "Here you go.") },
-        { id: "here_id", s: t("Aquí | está | mi | credencial | del | INAPAM.", "Here | is | my | card | of the | INAPAM.", "Here's my INAPAM card.") },
+        { id: "here_id", s: t("Aquí | está | mi | credencial | del | INAPAM.", "Here | is | my | card | of the | INAPAM.", "Here's my INAPAM card.", { flags: { 5: "INAPAM: Mexico's national institute for older adults; its card gives seniors discounts." } }) },
         { id: "id_none", s: t("No la traigo.", "I don't have it on me.", "I don't have it with me.", { spain: t("No la llevo.", "I don't have it on me.", "I don't have it with me.") }) },
       ],
     },

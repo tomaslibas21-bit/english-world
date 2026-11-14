@@ -1641,7 +1641,7 @@ export const complaint: SituationDef = {
     kyle_understand: [t("Entiendo.", "I understand.", "I understand.")],
     kyle_bye: [
       t("Gracias | por | llamar | a | Hogar Puerto. | Que | tenga | buen | día.", "Thanks | for | calling | — | Hogar Puerto. | (I hope) | you have | a good | day.",
-        "Thank you for calling Hogar Puerto, and have a nice day.", { flags: { 3: F_A_CALL }, spain: t("Gracias | por | llamar | a | Hogar Puerto. | Que | tenga | un | buen | día.", "Thanks | for | calling | — | Hogar Puerto. | (I hope) | you have | a | good | day.", "Thank you for calling Hogar Puerto, and have a nice day.", { flags: { 3: F_A_CALL } }) }),
+        "Thank you for calling Hogar Puerto, and have a nice day.", { neutral: t("Gracias | por | llamar | a | Hogar Puerto. | Que | tenga | un | buen | día.", "Thanks | for | calling | — | Hogar Puerto. | (I hope) | you have | a | good | day.", "Thank you for calling Hogar Puerto, and have a nice day."), flags: { 3: F_A_CALL }, spain: t("Gracias | por | llamar | a | Hogar Puerto. | Que | tenga | un | buen | día.", "Thanks | for | calling | — | Hogar Puerto. | (I hope) | you have | a | good | day.", "Thank you for calling Hogar Puerto, and have a nice day.", { flags: { 3: F_A_CALL } }) }),
     ],
 
     // --- Brenda ---
@@ -1846,7 +1846,7 @@ export const complaint: SituationDef = {
     ],
     brenda_bye: [
       t("Que | tenga | excelente | día.", "(I hope) | you have | an excellent | day.", "Have a wonderful day.", { spain: t("Que | tenga | un | excelente | día.", "(I hope) | you have | an | excellent | day.", "Have a wonderful day.") }),
-      t("Cuídese | mucho, | y | que | tenga | buen | día.", "Take care of yourself | a lot, | and | (I hope) | you have | a good | day.", "Take care, and have a good day.", { spain: t("Cuídese | mucho, | y | que | tenga | un | buen | día.", "Take care of yourself | a lot, | and | (I hope) | you have | a | good | day.", "Take care, and have a good day.") }),
+      t("Cuídese | mucho, | y | que | tenga | buen | día.", "Take care of yourself | a lot, | and | (I hope) | you have | a good | day.", "Take care, and have a good day.", { neutral: t("Cuídese | mucho, | y | que | tenga | un | buen | día.", "Take care of yourself | a lot, | and | (I hope) | you have | a | good | day.", "Take care, and have a good day."), spain: t("Cuídese | mucho, | y | que | tenga | un | buen | día.", "Take care of yourself | a lot, | and | (I hope) | you have | a | good | day.", "Take care, and have a good day.") }),
     ],
     brenda_walk: [
       t("Lamento | que | hoy | no pudiéramos | resolverlo.", "I regret | that | today | we couldn't | solve it.", "I'm sorry we couldn't sort this out today.",
@@ -1912,7 +1912,7 @@ export const complaint: SituationDef = {
         { id: "not_your_fault", s: t("Sé | que | no es | su | culpa, | pero...", "I know | that | it isn't | your | fault, | but...", "I know it's not your fault, but..."),
           note: "Polite but firm: the agent isn't to blame, and you still say what you want." },
         { id: "further", s: t("Si | no, | voy a | presentar | una | queja | ante | la | Profeco.", "If | not, | I'm going to | file | a | complaint | before | the | Profeco.",
-          "Otherwise, I'll file a complaint with Profeco.", { flags: { 7: "la Profeco: Spanish uses the article with the agency's name." } }),
+          "Otherwise, I'll file a complaint with Profeco.", { flags: { 8: "PROFECO: Mexico's consumer protection agency.", 7: "la Profeco: Spanish uses the article with the agency's name." } }),
           note: "Profeco (Procuraduría Federal del Consumidor) is Mexico's federal consumer protection agency." },
       ],
     },
@@ -1939,7 +1939,7 @@ export const complaint: SituationDef = {
         { id: "day_off", s: t("Ya | falté | al | trabajo | una | vez, | y | nadie | vino.", "Already | I-missed | — | work | one | time, | and | nobody | came.",
           "I already took a day off once, and nobody came.", { flags: { 2: "al trabajo: Spanish has the article (a + el); English says missed work." } }) },
         { id: "further", s: t("Si | no, | voy a | presentar | una | queja | ante | la | Profeco.", "If | not, | I'm going to | file | a | complaint | before | the | Profeco.",
-          "Otherwise, I'll file a complaint with Profeco.", { flags: { 7: "la Profeco: Spanish uses the article with the agency's name." } }) },
+          "Otherwise, I'll file a complaint with Profeco.", { flags: { 8: "PROFECO: Mexico's consumer protection agency.", 7: "la Profeco: Spanish uses the article with the agency's name." } }) },
       ],
     },
     deadline: {

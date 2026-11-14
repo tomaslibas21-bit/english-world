@@ -825,8 +825,8 @@ export const support: SituationDef = {
     anything_else_yes: [t("Claro, | ¿qué | más | necesita?", "Sure, | what | else | do you need?", "Sure, what else can I do for you?")],
     bye: [
       t("Gracias | por | llamar | a | NetWave. | ¡Que | tenga | buena | tarde!", "Thanks | for | calling | — | NetWave. | (I hope) | you have | a good | afternoon!",
-        "Thanks for calling NetWave. Have a good afternoon!", { flags: { 3: FLAG_A_CALL } }),
-      t("Gracias | por | su | paciencia. | ¡Que | tenga | buen | día!", "Thanks | for | your | patience. | (I hope) | you have | a good | day!", "Thanks for your patience. Have a good day!"),
+        "Thanks for calling NetWave. Have a good afternoon!", { neutral: t("Gracias | por | llamar | a | NetWave. | ¡Que | tenga | una | buena | tarde!", "Thanks | for | calling | — | NetWave. | (I hope) | you have | a | good | afternoon!", "Thanks for calling NetWave. Have a good afternoon!"), flags: { 3: FLAG_A_CALL } }),
+      t("Gracias | por | su | paciencia. | ¡Que | tenga | buen | día!", "Thanks | for | your | patience. | (I hope) | you have | a good | day!", "Thanks for your patience. Have a good day!", { neutral: t("Gracias | por | su | paciencia. | ¡Que | tenga | un | buen | día!", "Thanks | for | your | patience. | (I hope) | you have | a | good | day!", "Thanks for your patience. Have a good day!") }),
     ],
   },
 

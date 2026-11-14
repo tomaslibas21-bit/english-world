@@ -1015,17 +1015,17 @@ export const neighbor: SituationDef = {
       t("Si | algo | se descompone | en | su | departamento, | avísele | a | Don | Ernesto, | el | dueño. | Y | si | es | algo | del | edificio, | a | Don | Gilberto, | el | administrador.",
         "If | something | breaks | in | your | apartment, | tell | — | Don | Ernesto, | the | owner. | And | if | it's | something | of the | building, | — | Don | Gilberto, | the | manager.",
         "If something breaks in your apartment, tell Don Ernesto, the owner. If it's the building, it's Don Gilberto, the building manager.",
-        { flags: { 5: F_DEPA, 7: A_TELL, 18: A_TELL },
+        { flags: { 19: "Don: a respectful title for an older man, used with his first name.", 8: "Don: a respectful title for an older man, used with his first name.", 5: F_DEPA, 7: A_TELL, 18: A_TELL },
           neutral: t("Si | algo | se descompone | en | su | apartamento, | avísele | a | Don | Ernesto, | el | dueño. | Y | si | es | algo | del | edificio, | a | Don | Gilberto, | el | administrador.",
             "If | something | breaks | in | your | apartment, | tell | — | Don | Ernesto, | the | owner. | And | if | it's | something | of the | building, | — | Don | Gilberto, | the | manager.",
             "If something breaks in your apartment, tell Don Ernesto, the owner. If it's the building, it's Don Gilberto, the building manager.",
-            { flags: { 7: A_TELL, 18: A_TELL } }), spain: t("Si | algo | se estropea | en | su | piso, | avísele | a | Don | Ernesto, | el | dueño. | Y | si | es | algo | del | edificio, | a | Don | Gilberto, | el | administrador.", "If | something | breaks | in | your | apartment, | tell | — | Don | Ernesto, | the | owner. | And | if | it's | something | of the | building, | — | Don | Gilberto, | the | manager.", "If something breaks in your apartment, tell Don Ernesto, the owner. If it's the building, it's Don Gilberto, the building manager.", { flags: { 7: A_TELL, 18: A_TELL } }) }),
+            { flags: { 19: "Don: a respectful title for an older man, used with his first name.", 8: "Don: a respectful title for an older man, used with his first name.", 7: A_TELL, 18: A_TELL } }), spain: t("Si | algo | se estropea | en | su | piso, | avísele | a | Don | Ernesto, | el | dueño. | Y | si | es | algo | del | edificio, | a | Don | Gilberto, | el | administrador.", "If | something | breaks | in | your | apartment, | tell | — | Don | Ernesto, | the | owner. | And | if | it's | something | of the | building, | — | Don | Gilberto, | the | manager.", "If something breaks in your apartment, tell Don Ernesto, the owner. If it's the building, it's Don Gilberto, the building manager.", { flags: { 19: "Don: a respectful title for an older man, used with his first name.", 8: "Don: a respectful title for an older man, used with his first name.", 7: A_TELL, 18: A_TELL } }) }),
     ],
     store: [
       t("Hay | una | tiendita | en | la | esquina, | y | el | mercado | no está | lejos.", "There's | a | little store | on | the | corner, | and | the | market | isn't | far.",
         "There's a little store on the corner, and the market isn't far.", { flags: { 2: TIENDITA } }),
     ],
-    unknown_q: [t("Mmm, | no sé. | Pregúntele | a | Don | Ernesto.", "Hmm, | I don't know. | Ask | — | Don | Ernesto.", "Hmm, I'm not sure. Ask Don Ernesto.", { flags: { 3: A_PERS } })],
+    unknown_q: [t("Mmm, | no sé. | Pregúntele | a | Don | Ernesto.", "Hmm, | I don't know. | Ask | — | Don | Ernesto.", "Hmm, I'm not sure. Ask Don Ernesto.", { flags: { 4: "Don: a respectful title for an older man, used with his first name.", 3: A_PERS } })],
     // places nearby (as s81 has them, from the 3D town: Las Palmas at Hidalgo × Flamboyán)
     place_beach: [
       t("¡Aquí | cerquita! | A | dos | cuadras, | derecho | por | la | calle | Flamboyán.", "Here | really close! | At | two | blocks, | straight | along | the | street | Flamboyán.",
@@ -1099,8 +1099,8 @@ export const neighbor: SituationDef = {
     ],
     borrow_no: [
       t("Ay, | fíjese | que | no tengo | {X}. | Pregúntele | a | Don | Ernesto.", "Oh, | you-see | that | I don't have | {X}. | Ask | — | Don | Ernesto.",
-        "Oh, I'm afraid I don't have {X.np}. Ask Don Ernesto.", { flags: { 1: "fíjese que: a soft way to break bad news (“I'm afraid…”).", 6: A_PERS },
-        spain: t("Ay, | pues | no tengo | {X}. | Pregúntele | a | Don | Ernesto.", "Oh, | well | I don't have | {X}. | Ask | — | Don | Ernesto.", "Oh, I'm afraid I don't have {X.np}. Ask Don Ernesto.", { flags: { 5: A_PERS } }) }),
+        "Oh, I'm afraid I don't have {X.np}. Ask Don Ernesto.", { flags: { 7: "Don: a respectful title for an older man, used with his first name.", 1: "fíjese que: a soft way to break bad news (“I'm afraid…”).", 6: A_PERS },
+        spain: t("Ay, | pues | no tengo | {X}. | Pregúntele | a | Don | Ernesto.", "Oh, | well | I don't have | {X}. | Ask | — | Don | Ernesto.", "Oh, I'm afraid I don't have {X.np}. Ask Don Ernesto.", { flags: { 6: "Don: a respectful title for an older man, used with his first name.", 5: A_PERS } }) }),
     ],
     borrow_unknown: [t("Mmm, | creo | que | no tengo, | perdón.", "Hmm, | I-think | that | I don't have (one), | sorry.", "Hmm, I don't think I have one, sorry.")],
 

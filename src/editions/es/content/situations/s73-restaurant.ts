@@ -971,14 +971,14 @@ export const restaurant: SituationDef = {
     ],
     ask_fresca_kind: [
       t("¿De | qué? | Hay | de | horchata, | de | jamaica | y | de | chaya | con | piña.", "Of | what? | There's | of | horchata, | of | hibiscus | and | of | chaya | with | pineapple.",
-        "What flavor? There's horchata, hibiscus, and chaya with pineapple.", { flags: { 9: "Chaya: a leafy green from Yucatán, blended with pineapple into a cool drink." } }),
+        "What flavor? There's horchata, hibiscus, and chaya with pineapple.", { flags: { 4: "horchata: a cold, sweet rice drink with cinnamon.", 9: "Chaya: a leafy green from Yucatán, blended with pineapple into a cool drink." } }),
     ],
     ask_coffee_kind: [
       t("¿Americano | o | de | olla?", "Americano | or | from | pot?", "Americano or café de olla?", { flags: { 3: "Café de olla: coffee brewed in a clay pot with cinnamon and piloncillo sugar." } }),
     ],
     ask_pibil_kind: [
       t("¿Cuál? | Tenemos | cochinita | pibil | y | pollo | pibil.", "Which one? | We have | pork | pibil | and | chicken | pibil.", "Which one? We have cochinita pibil and chicken pibil.",
-        { flags: { 3: "Pibil: Mayan for “cooked underground”: marinated in achiote and slow-roasted in banana leaves." } }),
+        { flags: { 6: "pibil: Mayan for “cooked underground”: marinated in achiote and slow-roasted in banana leaves.", 3: "Pibil: Mayan for “cooked underground”: marinated in achiote and slow-roasted in banana leaves." } }),
     ],
     drinks_ack: [
       t("Muy | bien, | ahorita | se lo | traigo.", "Very | good, | right away | it to you | I'll-bring.", "Great, I'll bring that right out.",
@@ -1003,7 +1003,7 @@ export const restaurant: SituationDef = {
         "Today's special is the tikin xic, made with fresh fish of the day.", { flags: { 5: "Tikin xic (Mayan): fish in achiote, grilled in a banana leaf." } }),
       t("Hoy | le | recomiendo | el | tikin xic: | el | pescado | llegó | esta | mañana.", "Today | (to) you | I-recommend | the | tikin xic: | the | fish | arrived | this | morning.",
         "Tonight I recommend the tikin xic: the fish came in this morning.",
-        { spain: t("Hoy | recomiendo | el | tikin xic: | el | pescado | ha llegado | esta | mañana.", "Today | I-recommend | the | tikin xic: | the | fish | has arrived | this | morning.", "Tonight I recommend the tikin xic: the fish came in this morning.") }),
+        { flags: { 4: "tikin xic: fish rubbed with achiote and sour orange, grilled in a banana leaf (Yucatán)." }, spain: t("Hoy | recomiendo | el | tikin xic: | el | pescado | ha llegado | esta | mañana.", "Today | I-recommend | the | tikin xic: | the | fish | has arrived | this | morning.", "Tonight I recommend the tikin xic: the fish came in this morning.", { flags: { 3: "tikin xic: fish rubbed with achiote and sour orange, grilled in a banana leaf (Yucatán)." } }) }),
     ],
     ask_ready: [
       t("¿Ya | está | {m:listo|f:lista} | para | ordenar?", "Yet | are you | ready | to | order?", "Are you ready to order?", { flags: { 0: "Ya in a question: “yet”, “already”." },
@@ -1179,23 +1179,23 @@ export const restaurant: SituationDef = {
     water_ok: [t("¡Claro! | Enseguida | le | sirvo | más | agua.", "Sure! | Right away | (to) you | I-serve | more | water.", "Sure! I'll get you more water right away.",
         { spain: t("¡Claro! | Enseguida | te | sirvo | más | agua.", "Sure! | Right away | (to) you | I-serve | more | water.", "Sure! I'll get you more water right away.") })],
     recommend: [
-      t("La | cochinita | pibil | es | la | especialidad | de | la | casa.", "The | pork | pibil | is | the | specialty | of | the | house.", "The cochinita pibil is our house specialty."),
-      t("El | tikin xic | está | muy | rico | hoy; | el | pescado | es | fresco.", "The | tikin xic | is | very | tasty | today; | the | fish | is | fresh.", "The tikin xic is really good today; the fish is fresh."),
-      t("A | todos | les encanta | nuestro | poc chuc.", "To | everyone | they love | our | poc chuc.", "Everyone loves our poc chuc."),
+      t("La | cochinita | pibil | es | la | especialidad | de | la | casa.", "The | pork | pibil | is | the | specialty | of | the | house.", "The cochinita pibil is our house specialty.", { flags: { 2: "pibil: Mayan for “cooked underground”: marinated in achiote and slow-roasted in banana leaves." } }),
+      t("El | tikin xic | está | muy | rico | hoy; | el | pescado | es | fresco.", "The | tikin xic | is | very | tasty | today; | the | fish | is | fresh.", "The tikin xic is really good today; the fish is fresh.", { flags: { 1: "tikin xic: fish rubbed with achiote and sour orange, grilled in a banana leaf (Yucatán)." } }),
+      t("A | todos | les encanta | nuestro | poc chuc.", "To | everyone | they love | our | poc chuc.", "Everyone loves our poc chuc.", { flags: { 4: "poc chuc: pork in a citrus marinade, grilled, a Yucatán classic." } }),
     ],
-    rec_cochinita: [t("La | cochinita, | sin | duda. | Es | la | especialidad | de | la | casa.", "The | cochinita, | without | doubt. | It's | the | specialty | of | the | house.", "The cochinita, no question. It's our house specialty.")],
-    rec_tikin: [t("Hoy, | el | tikin xic: | el | pescado | está | muy | fresco.", "Today, | the | tikin xic: | the | fish | is | very | fresh.", "Today, the tikin xic: the fish is really fresh.")],
+    rec_cochinita: [t("La | cochinita, | sin | duda. | Es | la | especialidad | de | la | casa.", "The | cochinita, | without | doubt. | It's | the | specialty | of | the | house.", "The cochinita, no question. It's our house specialty.", { flags: { 1: "cochinita pibil: Yucatán's slow-roasted pork in achiote." } })],
+    rec_tikin: [t("Hoy, | el | tikin xic: | el | pescado | está | muy | fresco.", "Today, | the | tikin xic: | the | fish | is | very | fresh.", "Today, the tikin xic: the fish is really fresh.", { flags: { 2: "tikin xic: fish rubbed with achiote and sour orange, grilled in a banana leaf (Yucatán)." } })],
     rec_poc: [t("El | poc chuc | está | muy | rico; | a | todos | les encanta.", "The | poc chuc | is | very | tasty; | — | everyone | they love (it).", "The poc chuc is really good; everybody loves it.",
-      { flags: { 5: "a todos les encanta: “everyone loves it”; a marks who is pleased, with no word of its own here." } })],
+      { flags: { 1: "poc chuc: pork in a citrus marinade, grilled, a Yucatán classic.", 5: "a todos les encanta: “everyone loves it”; a marks who is pleased, with no word of its own here." } })],
     rec_any: [t("Los | dos | están | muy | ricos. | Pida | el | que | se le antoje.", "The | two | are | very | tasty. | Order | the one | that | you feel like.", "They're both really good. Order whichever you're in the mood for.",
         { spain: t("Los | dos | están | muy | ricos. | Pide | el | que | te apetezca.", "The | two | are | very | tasty. | Order | the one | that | you feel like.", "They're both really good. Order whichever you're in the mood for.") })],
     recommend_dessert: [
       t("Los | caballeros pobres | son | muy | yucatecos. | ¡Pruébelos!", "The | caballeros pobres | are | very | Yucatecan. | Try them!", "The caballeros pobres are a real Yucatán classic. Try them!",
-        { spain: t("Los | caballeros pobres | son | muy | yucatecos. | ¡Pruébalos!", "The | caballeros pobres | are | very | Yucatecan. | Try them!", "The caballeros pobres are a real Yucatán classic. Try them!") }),
+        { flags: { 1: "caballeros pobres: literally “poor gentlemen”: bread fried in egg and soaked in cinnamon syrup, a Yucatán dessert." }, spain: t("Los | caballeros pobres | son | muy | yucatecos. | ¡Pruébalos!", "The | caballeros pobres | are | very | Yucatecan. | Try them!", "The caballeros pobres are a real Yucatán classic. Try them!", { flags: { 1: "caballeros pobres: literally “poor gentlemen”: bread fried in egg and soaked in cinnamon syrup, a Yucatán dessert." } }) }),
     ],
     menu_line: [
       t("Tenemos | comida | yucateca: | cochinita, | poc chuc, | pescado | y | arrachera.", "We have | food | Yucatecan: | cochinita, | poc chuc, | fish | and | flank steak.",
-        "We have Yucatecan food: cochinita, poc chuc, fish and steak."),
+        "We have Yucatecan food: cochinita, poc chuc, fish and steak.", { flags: { 4: "poc chuc: pork in a citrus marinade, grilled, a Yucatán classic.", 3: "cochinita pibil: Yucatán's slow-roasted pork in achiote." } }),
     ],
     drinks_list: [
       t("Tenemos | aguas | frescas, | limonada, | refrescos, | cerveza, | vino | y | café.", "We have | waters | fresh, | lemonade, | sodas, | beer, | wine | and | coffee.",
@@ -1203,17 +1203,17 @@ export const restaurant: SituationDef = {
     ],
     starters_list: [
       t("De | entrada | tenemos | sopa | de | lima, | panuchos, | salbutes | y | guacamole.", "As | appetizer | we have | soup | of | lime, | panuchos, | salbutes | and | guacamole.",
-        "For appetizers, we have sopa de lima, panuchos, salbutes and guacamole."),
+        "For appetizers, we have sopa de lima, panuchos, salbutes and guacamole.", { flags: { 7: "salbutes: puffy fried tortillas topped with shredded turkey or chicken, lettuce and pickled onion (Yucatán).", 6: "panuchos: small fried tortillas stuffed with black beans, topped with shredded turkey or chicken (Yucatán)." } }),
     ],
     mains_list: [
       t("De | plato fuerte | hay | cochinita | pibil, | pollo | pibil, | poc chuc, | tikin xic, | arrachera | y | papadzules.",
         "As | main course | there's | pork | pibil, | chicken | pibil, | poc chuc, | tikin xic, | flank steak | and | papadzules.",
         "For the main course there's cochinita pibil, chicken pibil, poc chuc, tikin xic, steak and papadzules.",
-        { spain: t("De | segundo | hay | cochinita | pibil, | pollo | pibil, | poc chuc, | tikin xic, | arrachera | y | papadzules.", "As | main course | there's | pork | pibil, | chicken | pibil, | poc chuc, | tikin xic, | flank steak | and | papadzules.", "For the main course there's cochinita pibil, chicken pibil, poc chuc, tikin xic, steak and papadzules.") }),
+        { flags: { 11: "papadzules: corn tortillas rolled around chopped hard-boiled egg, in a pumpkin-seed sauce (Yucatán).", 8: "tikin xic: fish rubbed with achiote and sour orange, grilled in a banana leaf (Yucatán).", 7: "poc chuc: pork in a citrus marinade, grilled, a Yucatán classic.", 6: "pibil: Mayan for “cooked underground”: marinated in achiote and slow-roasted in banana leaves.", 4: "pibil: Mayan for “cooked underground”: marinated in achiote and slow-roasted in banana leaves." }, spain: t("De | segundo | hay | cochinita | pibil, | pollo | pibil, | poc chuc, | tikin xic, | arrachera | y | papadzules.", "As | main course | there's | pork | pibil, | chicken | pibil, | poc chuc, | tikin xic, | flank steak | and | papadzules.", "For the main course there's cochinita pibil, chicken pibil, poc chuc, tikin xic, steak and papadzules.", { flags: { 11: "papadzules: corn tortillas rolled around chopped hard-boiled egg, in a pumpkin-seed sauce (Yucatán).", 8: "tikin xic: fish rubbed with achiote and sour orange, grilled in a banana leaf (Yucatán).", 7: "poc chuc: pork in a citrus marinade, grilled, a Yucatán classic.", 6: "pibil: Mayan for “cooked underground”: marinated in achiote and slow-roasted in banana leaves.", 4: "pibil: Mayan for “cooked underground”: marinated in achiote and slow-roasted in banana leaves." } }) }),
     ],
     dessert_list: [
       t("De | postre | hay | flan, | caballeros pobres, | dulce | de | papaya | y | helado | de | coco.", "For | dessert | there's | flan, | caballeros pobres, | candy | of | papaya | and | ice cream | of | coconut.",
-        "For dessert there's flan, caballeros pobres, candied papaya and coconut ice cream."),
+        "For dessert there's flan, caballeros pobres, candied papaya and coconut ice cream.", { flags: { 4: "caballeros pobres: literally “poor gentlemen”: bread fried in egg and soaked in cinnamon syrup, a Yucatán dessert." } }),
     ],
     desc_sopa: [
       t("Es | un | caldo | de | pollo | con | lima | y | tiras | de | tortilla | frita.", "It's | a | broth | of | chicken | with | lime | and | strips | of | tortilla | fried.",
@@ -1221,7 +1221,7 @@ export const restaurant: SituationDef = {
     ],
     desc_panuchos: [
       t("Son | tortillas | rellenas | de | frijol, | fritas, | con | cochinita | o | pollo | encima.", "They're | tortillas | stuffed | with | beans, | fried, | with | cochinita | or | chicken | on top.",
-        "They're fried tortillas stuffed with beans, topped with cochinita or chicken."),
+        "They're fried tortillas stuffed with beans, topped with cochinita or chicken.", { flags: { 7: "cochinita pibil: Yucatán's slow-roasted pork in achiote." } }),
     ],
     desc_salbutes: [
       t("Son | tortillas | infladas | y | fritas, | con | pollo, | lechuga, | tomate | y | cebolla | morada.", "They're | tortillas | puffed | and | fried, | with | chicken, | lettuce, | tomato | and | onion | red.",
@@ -1237,14 +1237,14 @@ export const restaurant: SituationDef = {
     ],
     desc_pollo: [
       t("Es | pollo | marinado | en | achiote, | cocido | en | hoja | de | plátano.", "It's | chicken | marinated | in | achiote, | cooked | in | leaf | of | banana.",
-        "It's chicken marinated in achiote, cooked in banana leaves."),
+        "It's chicken marinated in achiote, cooked in banana leaves.", { flags: { 4: "achiote: a red paste of annatto seeds, the base of Yucatecan cooking." } }),
     ],
     desc_poc_chuc: [
       t("Es | cerdo | asado | a | la | parrilla, | marinado | en | naranja agria.", "It's | pork | grilled | on | the | grill, | marinated | in | sour orange.",
         "It's grilled pork marinated in sour orange."),
     ],
     desc_tikin: [
-      t("Es | pescado | con | achiote, | asado | en | hoja | de | plátano.", "It's | fish | with | achiote, | grilled | in | leaf | of | banana.", "It's fish with achiote, grilled in a banana leaf."),
+      t("Es | pescado | con | achiote, | asado | en | hoja | de | plátano.", "It's | fish | with | achiote, | grilled | in | leaf | of | banana.", "It's fish with achiote, grilled in a banana leaf.", { flags: { 3: "achiote: a red paste of annatto seeds, the base of Yucatecan cooking." } }),
     ],
     desc_arrachera: [
       t("Es | carne | de | res | asada, | muy | suave.", "It's | meat | of | beef | grilled, | very | tender.", "It's grilled flank steak, very tender."),
@@ -1275,7 +1275,7 @@ export const restaurant: SituationDef = {
     ],
     desc_chaya: [
       t("Es | chaya, | una | hoja | verde | de | aquí, | licuada | con | piña.", "It's | chaya, | a | leaf | green | from | here, | blended | with | pineapple.",
-        "It's chaya, a local leafy green, blended with pineapple."),
+        "It's chaya, a local leafy green, blended with pineapple.", { flags: { 1: "chaya: a leafy green from Yucatán, blended with pineapple into a cool drink." } }),
     ],
     desc_fresca: [
       t("Es | agua | con | fruta, | flores | o | arroz, | bien | fría.", "It's | water | with | fruit, | flowers | or | rice, | nice and | cold.",
@@ -1294,13 +1294,13 @@ export const restaurant: SituationDef = {
       t("Viene | con | tortillas | hechas | a | mano | y | cebolla | morada.", "It comes | with | tortillas | made | by | hand | and | onion | red.", "It comes with handmade tortillas and pickled red onion."),
     ],
     comes_alone: [t("Así | se sirve, | sin | guarnición.", "Like that | it's served, | without | a side.", "That one comes on its own, without a side.")],
-    spicy_yes: [t("¡Sí, | esa | sí | pica | mucho! | Es | de | habanero.", "Yes, | that one | really | is spicy | a lot! | It's | of | habanero.", "Yes, that one's really hot! It's made with habanero.")],
-    spicy_no: [t("No, | no pica. | La | salsa | de | habanero | viene | aparte.", "No, | it's not spicy. | The | sauce | of | habanero | comes | separately.", "No, it isn't spicy. The habanero salsa comes on the side.")],
+    spicy_yes: [t("¡Sí, | esa | sí | pica | mucho! | Es | de | habanero.", "Yes, | that one | really | is spicy | a lot! | It's | of | habanero.", "Yes, that one's really hot! It's made with habanero.", { flags: { 7: "habanero: the very hot chili of the Yucatán peninsula." } })],
+    spicy_no: [t("No, | no pica. | La | salsa | de | habanero | viene | aparte.", "No, | it's not spicy. | The | sauce | of | habanero | comes | separately.", "No, it isn't spicy. The habanero salsa comes on the side.", { flags: { 5: "habanero: the very hot chili of the Yucatán peninsula." } })],
     spicy_which: [
       t("Casi | nada | pica. | Lo | picante | es | la | salsa | de | habanero, | y | viene | aparte.", "Almost | nothing | is spicy. | The | spicy (part) | is | the | sauce | of | habanero, | and | it comes | separately.",
-        "Almost nothing is spicy. The hot part is the habanero salsa, and it comes on the side."),
+        "Almost nothing is spicy. The hot part is the habanero salsa, and it comes on the side.", { flags: { 9: "habanero: the very hot chili of the Yucatán peninsula." } }),
     ],
-    veg_list: [t("¡Sí! | Los | papadzules | y | el | guacamole | son | vegetarianos.", "Yes! | The | papadzules | and | the | guacamole | are | vegetarian.", "Yes! The papadzules and the guacamole are vegetarian.")],
+    veg_list: [t("¡Sí! | Los | papadzules | y | el | guacamole | son | vegetarianos.", "Yes! | The | papadzules | and | the | guacamole | are | vegetarian.", "Yes! The papadzules and the guacamole are vegetarian.", { flags: { 2: "papadzules: corn tortillas rolled around chopped hard-boiled egg, in a pumpkin-seed sauce (Yucatán)." } })],
     veg_yes: [t("Sí, | no lleva | carne.", "Yes, | it doesn't have | meat.", "Yes, there's no meat in it.")],
     veg_no: [t("No, | no es | {vegetariano@X}.", "No, | it's not | vegetarian.", "No, it isn't vegetarian.")],
     veg_no_pl: [t("No, | no son | vegetarianos.", "No, | they're not | vegetarian.", "No, they aren't vegetarian.")],
@@ -1308,10 +1308,10 @@ export const restaurant: SituationDef = {
         { spain: t("Déjame | preguntar | en | la | cocina.", "Let me | ask | in | the | kitchen.", "Let me check with the kitchen.") })],
     nuts_ok: [t("No se preocupe, | no lleva | nueces.", "Don't worry, | it doesn't have | nuts.", "Good news: there are no nuts in it.",
         { spain: t("No te preocupes, | no lleva | nueces.", "Don't worry, | it doesn't have | nuts.", "Good news: there are no nuts in it.") })],
-    nuts_bad: [t("Perdón, | los | caballeros pobres | llevan | almendras.", "Sorry, | the | caballeros pobres | have | almonds.", "Sorry, the caballeros pobres have almonds.")],
+    nuts_bad: [t("Perdón, | los | caballeros pobres | llevan | almendras.", "Sorry, | the | caballeros pobres | have | almonds.", "Sorry, the caballeros pobres have almonds.", { flags: { 2: "caballeros pobres: literally “poor gentlemen”: bread fried in egg and soaked in cinnamon syrup, a Yucatán dessert." } })],
     nuts_general: [
       t("Casi | nada | lleva | nueces. | Solo | los | caballeros pobres | llevan | almendras.", "Almost | nothing | has | nuts. | Only | the | caballeros pobres | have | almonds.",
-        "Almost nothing has nuts. Only the caballeros pobres have almonds."),
+        "Almost nothing has nuts. Only the caballeros pobres have almonds.", { flags: { 6: "caballeros pobres: literally “poor gentlemen”: bread fried in egg and soaked in cinnamon syrup, a Yucatán dessert." } }),
     ],
     gluten_info: [
       t("Las | tortillas | son | de | maíz, | y | casi | todo | es | sin | gluten.", "The | tortillas | are | of | corn, | and | almost | everything | is | without | gluten.",
@@ -1527,13 +1527,13 @@ export const restaurant: SituationDef = {
     factura_no: [t("Perfecto, | sin | factura.", "Perfect, | without | invoice.", "Okay, no invoice.")],
     bye_marco: [
       t("¡Que | tenga | buena | noche!", "(I hope) | you have | good | night!", "Have a great night!",
-        { spain: t("¡Que | pases | buena | noche!", "(I hope) | you spend | good | night!", "Have a great night!") }),
+        { neutral: t("¡Que | tenga | una | buena | noche!", "(I hope) | you have | a | good | night!", "Have a great night!"), spain: t("¡Que | pases | buena | noche!", "(I hope) | you spend | good | night!", "Have a great night!") }),
       t("¡Gracias | por | venir! | ¡Vuelva | pronto!", "Thanks | for | coming! | Come back | soon!", "Thanks for coming! Come back soon!",
         { spain: t("¡Gracias | por | venir! | ¡Vuelve | pronto!", "Thanks | for | coming! | Come back | soon!", "Thanks for coming! Come back soon!") }),
     ],
     bye_marco_pl: [
       t("¡Que | tengan | buena | noche!", "(I hope) | you have | good | night!", "Have a great night!",
-        { spain: t("¡Que | paséis | buena | noche!", "(I hope) | you (all) spend | good | night!", "Have a great night!") }),
+        { neutral: t("¡Que | tengan | una | buena | noche!", "(I hope) | you have | a | good | night!", "Have a great night!"), spain: t("¡Que | paséis | buena | noche!", "(I hope) | you (all) spend | good | night!", "Have a great night!") }),
       t("¡Gracias | por | venir! | ¡Vuelvan | pronto!", "Thanks | for | coming! | Come back | soon!", "Thanks for coming! Come back soon!",
         { spain: t("¡Gracias | por | venir! | ¡Volved | pronto!", "Thanks | for | coming! | Come back (all) | soon!", "Thanks for coming! Come back soon!") }),
     ],
@@ -1704,7 +1704,7 @@ export const restaurant: SituationDef = {
         { spain: t("¿Qué | me | recomiendas?", "What | (to) me | you-recommend?", "What do you recommend?") }) },
         { id: "q_specials", s: t("¿Tienen | algún | especial | hoy?", "Do you have | some | special | today?", "Do you have any specials today?",
         { spain: t("¿Tenéis | algún | plato del día?", "Do you (all) have | some | dish of the day?", "Do you have any specials today?") }) },
-        { id: "q_what_is", s: t("¿Qué | es | el | poc chuc?", "What | is | the | poc chuc?", "What's poc chuc?") },
+        { id: "q_what_is", s: t("¿Qué | es | el | poc chuc?", "What | is | the | poc chuc?", "What's poc chuc?", { flags: { 3: "poc chuc: pork in a citrus marinade, grilled, a Yucatán classic." } }) },
         { id: "q_spicy", s: t("¿Pica?", "Is it spicy?", "Is it spicy?"), note: "What Mexicans ask: “¿Pica?” – does it sting?" },
         { id: "q_comes_with", s: t("¿Con | qué | viene?", "With | what | does it come?", "What comes with it?") },
         { id: "q_veg", s: t("¿Tienen | algo | vegetariano?", "Do you have | something | vegetarian?", "Do you have anything vegetarian?",

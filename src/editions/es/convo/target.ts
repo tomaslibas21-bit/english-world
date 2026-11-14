@@ -14,6 +14,7 @@ import type { Case } from "../../../convo/lt-morph";
 import type { EntityLookup, NpBinding } from "../../../convo/compose";
 // (compose imports this file too; `variety` is only read when a line is composed, after both have loaded)
 import { variety } from "../../../convo/compose";
+import { WORD_NOTES, WORD_NOTE_ALIASES } from "@/content/word-notes";
 
 export interface NpParts { en: string[]; lt: string[]; natLt: string[]; flags: Record<number, string> }
 
@@ -60,6 +61,15 @@ export function agreeEs(lemma: string, g: "m" | "f", plural: boolean): string {
 const vowelSound = (w: string) => /^[aeiou]/i.test(w) && !/^(uni|use|usu|uti|eu|one|once)/i.test(w) || /^(hour|honest|honor|heir)/i.test(w);
 const glossArticle = (next: string) => (vowelSound(next) ? "an" : "a");
 
+const foldW = (x: string) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z ]/g, "").replace(/\s+/g, " ").trim();
+const noteFor = (w: string) => WORD_NOTES[WORD_NOTE_ALIASES[w] ?? w];
+/** The note of a head whose gloss repeats a unit of it: the whole head's ("cochinita pibil"), else that unit's. */
+function headNote(head: string[], gloss: string[]): string | undefined {
+  const same = head.filter((w, i) => foldW(w) && foldW(w) === foldW(gloss[i] ?? ""));
+  if (!same.length) return undefined;
+  return noteFor(foldW(head.join(" "))) ?? same.map((w) => noteFor(foldW(w))).find(Boolean);
+}
+
 /** The units of a Spanish noun phrase and its English gloss. Interlinear order follows the Spanish ("un | latte |
  *  grande" – "a | latte | large"); the natural gloss is English ("a large latte"). */
 export function npUnits(b: NpBinding, kind: "np" | "the" | "pl" | "bare" | "head", _c: Case | undefined, look: EntityLookup, fem = false): NpParts {
@@ -98,6 +108,10 @@ export function npUnits(b: NpBinding, kind: "np" | "the" | "pl" | "bare" | "head
   if (art) { en.push(art); lt.push(artG); }
   for (const m of pre) { const u = modUnits(m); en.push(...u.t); lt.push(...u.gl); }
   head.forEach((w, i) => { en.push(w); lt.push(headG[i]); });
+  // a word the gloss can only repeat ("cenote" = "cenote", "cochinita | pibil" = "pork | pibil"): its note on the head's
+  // last unit, behind the asterisk (the entity's own `attrs.note`, else the word notes)
+  const note = (e.attrs?.note ?? base.attrs?.note ?? headNote(head, headG)) as string | undefined;
+  if (typeof note === "string") flags[en.length - 1] = note;
   for (const m of post) { const u = modUnits(m); en.push(...u.t); lt.push(...u.gl); }
   // natural English: one-word modifiers before the noun ("a large iced latte"), phrases after it ("… with ice")
   const adj = mods.filter((m) => splitUnits(m.lt).length === 1).map((m) => m.lt);

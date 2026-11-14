@@ -714,7 +714,7 @@ export const security: SituationDef = {
     shoes_bench_again: [t("Ahí, | en | la | banca.", "There, | on | the | bench.", "Over there, on the bench.", { spain: t("Ahí, | en | el | banco.", "There, | on | the | bench.", "Over there, on the bench.") })],
     bye: [
       t("¡Buen | viaje!", "Good | trip!", "Have a good trip!"),
-      t("¡Que | tenga | buen | vuelo!", "(I hope) | you-have | a good | flight!", "Have a good flight!"),
+      t("¡Que | tenga | buen | vuelo!", "(I hope) | you-have | a good | flight!", "Have a good flight!", { neutral: t("¡Que | tenga | un | buen | vuelo!", "(I hope) | you-have | a | good | flight!", "Have a good flight!") }),
     ],
     ack: [t("Bien.", "Good.", "Okay."), t("Gracias.", "Thanks.", "Thank you.")],
   },

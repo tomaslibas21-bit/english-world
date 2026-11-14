@@ -47,13 +47,14 @@ export const DRINKS: EntityDef[] = [
 
 export const FOODS: EntityDef[] = [
   ent("concha", "concha", "concha", "f", { pl: "conchas", forms: ["conchita", "conchas"], attrs: { kind: "pan", price: 2500, nat: "concha (sweet bun)", natPl: "conchas (sweet buns)" } }),
-  ent("croissant", "cuernito", "croissant", "m", { pl: "cuernitos", ltPl: "croissants", forms: ["croissant", "cruasan", "cruasanes", "cuerno", "cuernitos", "croissants"], attrs: { kind: "pan", price: 3000, spain: "cruasán", spainPl: "cruasanes" } }),
+  ent("croissant", "cuernito", "croissant", "m", { pl: "cuernitos", ltPl: "croissants", forms: ["croissant", "cruasan", "cruasanes", "cuerno", "cuernitos", "croissants"], attrs: { kind: "pan", price: 3000, neutral: "croissant", neutralPl: "croissants", spain: "cruasán", spainPl: "cruasanes" } }),
   ent("donut", "dona", "doughnut", "f", { pl: "donas", ltPl: "doughnuts", forms: ["donas", "donut", "donuts", "dona de chocolate", "donut de chocolate"], attrs: { kind: "pan", price: 2500, spain: "dónut", spainPl: "dónuts", spainG: "m" } }),
   ent("pan", "pan", "pastry", "m", { pl: "panes", ltPl: "pastries", forms: ["pan dulce", "panes", "panecito", "pancito", "pan de dulce"], attrs: { generic: "pan" } }),
   ent("cookie", "galleta", "cookie", "f", { pl: "galletas", ltPl: "cookies", forms: ["galletas", "galletita", "galleta de chocolate"], attrs: { price: 2000 } }),
   ent("muffin", "mantecada", "muffin", "f", { pl: "mantecadas", ltPl: "muffins", forms: ["mantecadas", "muffin", "panque", "panquecito", "magdalena", "magdalenas"], attrs: { price: 2500, spain: "magdalena" } }),
   ent("torta", "torta | de | jamón", "sandwich | of | ham", "f", { pl: "tortas | de | jamón", ltPl: "sandwiches | of | ham",
-    forms: ["torta", "tortas", "torta de jamon", "sandwich", "sandwich de jamon", "emparedado"], attrs: { price: 6500, warm: true, nat: "ham torta (sandwich)", natPl: "ham tortas (sandwiches)" } }),
+    forms: ["torta", "tortas", "torta de jamon", "sandwich", "sandwich de jamon", "emparedado"], // outside Mexico a torta is a cake: the neutral and Spain texts say sándwich (audit 14 Nov 2026)
+    attrs: { price: 6500, warm: true, nat: "ham torta (sandwich)", natPl: "ham tortas (sandwiches)", neutral: "sándwich | de | jamón", neutralPl: "sándwiches | de | jamón", neutralG: "m" } }),
 ];
 
 const SIZES: EntityDef[] = [
@@ -486,13 +487,14 @@ export const cafe: SituationDef = {
   lines: {
     food_menu: [
       t("De | comer | tenemos | conchas, | cuernitos, | donas | y | galletas.", "To | eat | we have | conchas, | croissants, | doughnuts | and | cookies.", "To eat, we have conchas, croissants, doughnuts and cookies.",
-        { spain: t("De | comer | tenemos | conchas, | cruasanes, | dónuts | y | galletas.", "To | eat | we have | conchas, | croissants, | doughnuts | and | cookies.", "To eat, we have conchas, croissants, doughnuts and cookies.") }),
-      t("Tenemos | pan dulce, | galletas | y | tortas | de | jamón.", "We have | sweet bread, | cookies | and | sandwiches | of | ham.", "We have Mexican pastries, cookies and ham tortas."),
+        { flags: { 3: "concha: a round sweet bun with a crunchy sugar topping shaped like a shell." }, neutral: t("De | comer | tenemos | conchas, | croissants, | donas | y | galletas.", "To | eat | we have | conchas, | croissants, | doughnuts | and | cookies.", "To eat, we have conchas, croissants, doughnuts and cookies.", { flags: { 3: "concha: a round sweet bun with a crunchy sugar topping shaped like a shell." } }), spain: t("De | comer | tenemos | conchas, | cruasanes, | dónuts | y | galletas.", "To | eat | we have | conchas, | croissants, | doughnuts | and | cookies.", "To eat, we have conchas, croissants, doughnuts and cookies.", { flags: { 3: "concha: a round sweet bun with a crunchy sugar topping shaped like a shell." } }) }),
+      t("Tenemos | pan dulce, | galletas | y | tortas | de | jamón.", "We have | sweet bread, | cookies | and | sandwiches | of | ham.", "We have Mexican pastries, cookies and ham tortas.",
+        { flags: { 1: "pan dulce: Mexican sweet bread, the classic with coffee." }, neutral: t("Tenemos | pan dulce, | galletas | y | sándwiches | de | jamón.", "We have | sweet bread, | cookies | and | sandwiches | of | ham.", "We have Mexican pastries, cookies and ham sandwiches.", { flags: { 1: "pan dulce: Mexican sweet bread, the classic with coffee." } }) }),
     ],
     rec_food: [
-      t("¡Las | conchas | están | recién | hechas!", "The | conchas | are | just | made!", "The conchas are freshly baked!"),
+      t("¡Las | conchas | están | recién | hechas!", "The | conchas | are | just | made!", "The conchas are freshly baked!", { flags: { 1: "concha: a round sweet bun with a crunchy sugar topping shaped like a shell." } }),
       t("Pruebe | una | concha. | Están | muy | ricas.", "Try | a | concha. | They're | very | tasty.", "Try a concha. They're really good.",
-        { spain: t("Prueba | una | concha. | Están | muy | ricas.", "Try | a | concha. | They're | very | tasty.", "Try a concha. They're really good.") }),
+        { flags: { 2: "concha: a round sweet bun with a crunchy sugar topping shaped like a shell." }, spain: t("Prueba | una | concha. | Están | muy | ricas.", "Try | a | concha. | They're | very | tasty.", "Try a concha. They're really good.", { flags: { 2: "concha: a round sweet bun with a crunchy sugar topping shaped like a shell." } }) }),
     ],
     food_pick: [
       t("¿Qué | le | gustaría?", "What | (to) you | would please?", "What would you like?", { flags: { 2: "gustaría: “would please” – le gustaría = would you like (usted)." },
@@ -562,7 +564,7 @@ export const cafe: SituationDef = {
     ask_kind_pan: [
       t("¿Qué | pan | le | doy? | Hay | conchas, | cuernitos | y | donas.", "Which | pastry | (to) you | I-give? | There are | conchas, | croissants | and | doughnuts.",
         "Which pastry would you like? There are conchas, croissants and doughnuts.",
-        { spain: t("¿Qué | bollo | te | pongo? | Hay | conchas, | cruasanes | y | dónuts.", "Which | pastry | (for) you | I-put? | There are | conchas, | croissants | and | doughnuts.", "Which pastry would you like? There are conchas, croissants and doughnuts.") }),
+        { flags: { 5: "concha: a round sweet bun with a crunchy sugar topping shaped like a shell." }, neutral: t("¿Qué | pan | le | doy? | Hay | conchas, | croissants | y | donas.", "Which | pastry | (to) you | I-give? | There are | conchas, | croissants | and | doughnuts.", "Which pastry would you like? There are conchas, croissants and doughnuts.", { flags: { 5: "concha: a round sweet bun with a crunchy sugar topping shaped like a shell." } }), spain: t("¿Qué | bollo | te | pongo? | Hay | conchas, | cruasanes | y | dónuts.", "Which | pastry | (for) you | I-put? | There are | conchas, | croissants | and | doughnuts.", "Which pastry would you like? There are conchas, croissants and doughnuts.", { flags: { 5: "concha: a round sweet bun with a crunchy sugar topping shaped like a shell." } }) }),
     ],
     ask_size: [
       t("¿De | qué | tamaño?", "Of | what | size?", "What size?"),
@@ -736,13 +738,13 @@ export const cafe: SituationDef = {
     food_list: [
       t("Tenemos | conchas, | cuernitos, | donas, | galletas | y | tortas | de | jamón.", "We have | conchas, | croissants, | doughnuts, | cookies | and | sandwiches | of | ham.",
         "We have conchas, croissants, doughnuts, cookies and ham tortas.",
-        { spain: t("Tenemos | conchas, | cruasanes, | dónuts, | galletas | y | tortas | de | jamón.", "We have | conchas, | croissants, | doughnuts, | cookies | and | sandwiches | of | ham.", "We have conchas, croissants, doughnuts, cookies and ham tortas.") }),
+        { flags: { 1: "concha: a round sweet bun with a crunchy sugar topping shaped like a shell." }, neutral: t("Tenemos | conchas, | croissants, | donas, | galletas | y | sándwiches | de | jamón.", "We have | conchas, | croissants, | doughnuts, | cookies | and | sandwiches | of | ham.", "We have conchas, croissants, doughnuts, cookies and ham sandwiches.", { flags: { 1: "concha: a round sweet bun with a crunchy sugar topping shaped like a shell." } }), spain: t("Tenemos | conchas, | cruasanes, | dónuts, | galletas | y | sándwiches | de | jamón.", "We have | conchas, | croissants, | doughnuts, | cookies | and | sandwiches | of | ham.", "We have conchas, croissants, doughnuts, cookies and ham sandwiches.", { flags: { 1: "concha: a round sweet bun with a crunchy sugar topping shaped like a shell." } }) }),
     ],
     recommend: [
       t("Nuestro | café | de | olla | es | muy | famoso.", "Our | coffee | from | pot | is | very | famous.", "Our café de olla is very popular."),
       t("¡Pruebe | la | horchata! | Es | mi | favorita.", "Try | the | horchata! | It's | my | favorite.", "Try the horchata! It's my favorite.",
-        { spain: t("¡Prueba | la | horchata! | Es | mi | favorita.", "Try | the | horchata! | It's | my | favorite.", "Try the horchata! It's my favorite.") }),
-      t("Las | conchas | están | recién | hechas.", "The | conchas | are | just | made.", "The conchas are fresh out of the oven."),
+        { flags: { 2: "horchata: a cold, sweet rice drink with cinnamon." }, spain: t("¡Prueba | la | horchata! | Es | mi | favorita.", "Try | the | horchata! | It's | my | favorite.", "Try the horchata! It's my favorite.", { flags: { 2: "horchata: a cold, sweet rice drink with cinnamon." } }) }),
+      t("Las | conchas | están | recién | hechas.", "The | conchas | are | just | made.", "The conchas are fresh out of the oven.", { flags: { 1: "concha: a round sweet bun with a crunchy sugar topping shaped like a shell." } }),
     ],
     // prices without the item's name, so the voices can say every one ({$amount}: domains)
     price_is: [
@@ -835,7 +837,9 @@ export const cafe: SituationDef = {
     ],
     ask_warm: [
       t("¿Se la | caliento?", "For you it | I-warm-up?", "Would you like it warmed up?", { flags: { 0: "se la: “it for you” – la is the torta." },
-        spain: t("¿Te la | caliento?", "For you it | I-warm-up?", "Would you like it warmed up?", { flags: { 0: "te la: “it for you” – la is the torta." } }) }),
+        // the neutral and Spain texts call it el sándwich: lo
+        neutral: t("¿Se lo | caliento?", "For you it | I-warm-up?", "Would you like it warmed up?", { flags: { 0: "se lo: “it for you” – lo is the sandwich." } }),
+        spain: t("¿Te lo | caliento?", "For you it | I-warm-up?", "Would you like it warmed up?", { flags: { 0: "te lo: “it for you” – lo is the sandwich." } }) }),
     ],
     bag: [
       t("Claro, | aquí tiene.", "Sure, | here you go.", "Sure, here you go.",
