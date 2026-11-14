@@ -105,7 +105,7 @@ Student instructions (Lithuanian): `docs/STUDENT-GUIDE-LT.md`.
 
 ## Speech input, network use and costs
 
-Recorded voices are tried regardless of the browser's `navigator.onLine` hint. Playback waits for the clip list, retries a failed recording once (using the latest course token), and starts its safety timer when sound actually begins. Up to 64 recordings are kept in memory for this visit, with the next three lines of a turn prefetched; this also lets already loaded clips play through a brief connection loss. The cache is bounded, uses recording versions, and is cleared when the page closes. A truly unavailable recording still uses the browser voice; the lightweight offline package does not download the entire voice library.
+Recorded voices are tried regardless of the browser's `navigator.onLine` hint. The town opens without waiting for the clip list; its download is given up only when it stands still for 8 s (a slow phone connection needs longer than that for the whole list), then asked for once more. Playback waits for the clip list, retries a failed recording once (using the latest course token), and starts its safety timer when sound actually begins. Up to 64 recordings are kept in memory for this visit, with the next three lines of a turn prefetched; this also lets already loaded clips play through a brief connection loss. The cache is bounded, uses recording versions, and is cleared when the page closes. A truly unavailable recording still uses the browser voice; the lightweight offline package does not download the entire voice library.
 
 The game itself makes **no paid or metered calls**. There is no AI model, no cloud TTS and no speech-to-text account behind it. What remains:
 
