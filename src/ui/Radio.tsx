@@ -141,7 +141,8 @@ function RadioSet() {
 
 /** The line being sung, at the bottom of the town: sung words lit, each unit's gloss under it (with the game's
  *  translations on). A bilingual song's line sung in the learner's language is a row of its own, its words lit the
- *  same way and nothing under them. Between lines it shows nothing; taps go through it to the ground. */
+ *  same way and nothing under them: with the glosses shown, the strip keeps their height and the line sits in its
+ *  middle (radio.css). Between lines it shows nothing; taps go through it to the ground. */
 export function LyricStrip() {
   const show = useRadio((s) => s.on && s.lyrics && s.playing);
   const timeline = useRadio((s) => s.timeline);
@@ -165,11 +166,11 @@ export function LyricStrip() {
   const translation = line.part === "translation";
   return (
     <div className={"radio-strip " + SKIN} aria-hidden>
-      <div className={"radio-line" + (translation ? " translation" : "")} key={at.line}>
+      <div className={"radio-line" + (translation ? " translation" : "") + (glosses ? " glossed" : "")} key={at.line}>
         {line.u.map((u, k) => (
           <span className={"ru" + (k < at.unit ? " sung" : k === at.unit ? " now" : "")} key={k}>
             <span className="rt" lang={translation ? EDITION.helper : TL}>{u[0]}</span>
-            {glosses && <span className="rg" lang={EDITION.helper}>{translation ? "\u00a0" : shortGloss(u[1])}</span>}
+            {glosses && !translation && <span className="rg" lang={EDITION.helper}>{shortGloss(u[1])}</span>}
           </span>
         ))}
       </div>

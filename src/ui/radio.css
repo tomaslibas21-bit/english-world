@@ -145,6 +145,9 @@
 /* a bilingual song's line sung in the learner's language: the glosses' own type, so it reads as that language */
 .radio-line.translation .rt { font-family: var(--ui); font-weight: 700; font-size: 1.12em; line-height: 1.38; }
 .radio-line.translation .ru.sung .rt, .radio-line.translation .ru.now .rt { color: #ffe9ad; }
+/* nothing under it: with the glosses shown, the gloss row's height (.rg: font-size x line-height + its 1px) is split
+   above and below the words, so the strip is as tall as for the other lines and the words sit in its middle */
+.radio-line.translation.glossed .ru { padding-block: calc(0.72em * 1.2 / 2 + 0.5px); }
 
 /* touch screens: above the joystick, the action button and the door prompt */
 .hud.has-touch .radio-strip { bottom: calc(190px + env(safe-area-inset-bottom)); }
@@ -187,6 +190,7 @@
   .radio-line { padding: 6px 10px 7px; column-gap: 0.42em; }
   .ru .rt { font-size: 1.18em; }
   .ru .rg { font-size: 0.68em; }
+  .radio-line.translation.glossed .ru { padding-block: calc(0.68em * 1.2 / 2 + 0.5px); }
   .radio-plate { height: 36px; max-width: min(190px, calc(100vw - 136px)); }
 }
 @media (prefers-reduced-motion: reduce) {
