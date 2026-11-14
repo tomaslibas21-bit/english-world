@@ -12,3 +12,7 @@ export const RIDE_BACK_LINES: { en: string; lt: string }[] = [
   { en: "Thanks for bringing it back!", lt: "Ačiū, kad parvežei!" },
   { en: "That was quick!", lt: "Greitai apsisukai!" },
 ];
+
+/** What the things are called, for the prompt ("Vairuoti: …", "Plaukti: …"): in the practised language, and what
+ *  that means in the learner's under it ("": the same word). */
+export const RIDE_NAMES = { car: { en: "Convertible", lt: "Kabrioletas" }, boat: { en: "Motorboat", lt: "Motorinė valtis" } };

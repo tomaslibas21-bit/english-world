@@ -21,9 +21,6 @@ export interface RidesPlan {
   rocks: [number, number, number][];
   /** The sea's colour seen from under it (a dive). */
   deep: string;
-  /** What the things are called, for the prompt ("Vairuoti: …", "Plaukti: …"): in the practised language, and in the
-   *  learner's under it. */
-  names: { car: { en: string; lt: string }; boat: { en: string; lt: string } };
 }
 
 export const RIDES: RidesPlan = {
@@ -42,5 +39,4 @@ export const RIDES: RidesPlan = {
   // the lighthouse's rocks
   rocks: [[104, -88, 7.5]],
   deep: "#2a93ad",
-  names: { car: { en: "Convertible", lt: "Kabrioletas" }, boat: { en: "Motorboat", lt: "Motorinė valtis" } },
 };

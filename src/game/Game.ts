@@ -16,6 +16,7 @@ import { Rides, type Ride } from "./rides/Rides";
 import { Undersea } from "./rides/undersea";
 import { controlsFrom } from "./rides/drive";
 import { RIDES } from "./world/rides";
+import { RIDE_NAMES } from "../content/rides";
 import { OcclusionField } from "./occlusion";
 import { PropFader } from "./fade";
 import { CUT, withCutout } from "./cutout";
@@ -1881,9 +1882,9 @@ export class Game implements GameApi {
     this.nearest = best;
     if (changed) {
       if (best) audio.sfx("tick");
-      const names = RIDES.names;
+      const names = RIDE_NAMES;
       st.setHud({ prompt: !best ? null
-        : best.kind === "ride" ? (best.label === "car" ? { label: `Vairuoti: ${names.car.en}`, lt: names.car.lt, kind: "drive" } : { label: `Plaukti: ${names.boat.en}`, lt: names.boat.lt, kind: "boat" })
+        : best.kind === "ride" ? (best.label === "car" ? { label: `Vairuoti: ${names.car.en}`, lt: names.car.lt || undefined, kind: "drive" } : { label: `Plaukti: ${names.boat.en}`, lt: names.boat.lt || undefined, kind: "boat" })
         : best.kind === "out" ? { label: "Išlipti", kind: "out" }
         : best.kind === "climb" ? { label: best.label, kind: "climb" }
         : { label: best.kind === "npc" ? `Kalbėtis: ${best.label}` : best.kind === "door" ? `Įeiti: ${best.label}` : "Išeiti į lauką", lt: best.kind === "door" ? placeLt(best.id) : undefined, kind: best.kind === "npc" ? "talk" : best.kind === "door" ? "enter" : "exit" } });
