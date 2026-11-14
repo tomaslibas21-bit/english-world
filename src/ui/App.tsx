@@ -16,6 +16,7 @@ import { audio } from "../game/audio";
 import { radio } from "../radio";
 import { AudioDiagnostics } from "./AudioDiagnostics";
 import { Loading } from "./Loading";
+import { startPlayStats } from "../state/playStats";
 
 export function App() {
   const screen = useStore((s) => s.screen);
@@ -24,6 +25,7 @@ export function App() {
   const [mode, setMode] = useState<PlayMode | null>(() => takeAutoStart());
   useEffect(() => { document.documentElement.style.setProperty("--scale", String(textSize)); }, [textSize]);
   useEffect(() => audio.bindGestures(), []);
+  useEffect(() => startPlayStats({ playing: () => radio.store.getState().playing, subscribe: (fn) => radio.store.subscribe(fn) }), []);
   useEffect(() => { if (!mode) useStore.getState().setScreen("title"); refreshLocalState(); }, []);
   if (!mode) return <><Title onPlay={() => setMode(useStore.getState().settings.play)} /><Toasts /><AudioDiagnostics /></>;
   return <>{mode === "light" ? <LightPlay /> : <Play />}<AudioDiagnostics /></>;
