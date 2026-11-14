@@ -7,6 +7,7 @@ import { Title } from "./Title";
 import { Hud } from "./Hud";
 import { Conversation } from "./Conversation";
 import { SceneBackdrop } from "./SceneBackdrop";
+import { ViewSwitch } from "./ViewSwitch";
 import { Panels } from "./Panels";
 import { Toasts } from "./Toasts";
 import { LightPlay } from "./LightHome";
@@ -59,7 +60,7 @@ function Play() {
     <>
       <div className="stage" ref={stage} />
       <div className="tag-layer" ref={tags} />
-      {ready && game && <><Hud /><SceneBackdrop /><Conversation /><Panels /></>}
+      {ready && game && <><Hud /><SceneBackdrop /><ViewSwitch /><Conversation /><Panels /></>}
       <Toasts />
       {!ready && <Loading />}
     </>

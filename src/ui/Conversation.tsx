@@ -89,6 +89,7 @@ export function Conversation() {
       if (k === "l") { e.preventDefault(); st.setSettings({ lt: !st.settings.lt }); return; }
       if (k === "n") { e.preventDefault(); st.setSettings({ ltNatural: !st.settings.ltNatural }); return; }
       if (k === "i") { e.preventDefault(); st.setSettings({ ipa: !st.settings.ipa }); return; }
+      if (k === "p" && st.settings.play !== "light") { e.preventDefault(); st.setSettings({ scenes: st.settings.scenes === false }); return; }
       if (k === "t") { e.preventDefault(); st.setConv({ typing: !st.conv.typing }); return; }
       if (k === "r") { e.preventDefault(); game?.activeSession?.repeatLast(false); return; }
       if ((k === " " || k === "enter") && st.conv.phase === "you") {
