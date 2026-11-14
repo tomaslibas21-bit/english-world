@@ -26,6 +26,8 @@ describe("answer chips", () => {
     const e = SITUATIONS.find((s) => s.id === "s69-local")!.entities!.cuisine?.find((x) => x.id === "yucateca") ??
       Object.values(SITUATIONS.find((s) => s.id === "s69-local")!.entities!).flat().find((x) => x.id === "yucateca")!;
     expect(chipLabel(e)).toBe("local food");
-    expect(e.lt).toBe("food | Yucatecan");
+    // "comida local", not "comida yucateca": usable anywhere (owner, 14 Nov 2026)
+    expect(e.en).toBe("comida | local");
+    expect(e.lt).toBe("food | local");
   });
 });

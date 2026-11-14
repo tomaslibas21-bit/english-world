@@ -51,8 +51,9 @@ const OWN_COUNTRIES: EntityDef[] = [
   CT("australia", "Australia", "Australia", "f", "far", ["australia"]),
   CT("nz", "Nueva Zelanda", "New Zealand", "f", "far", ["nueva zelanda", "nueva zelandia"]),
 ];
-// Any other country too (../../countries.ts, owner 14 Nov 2026): its climate, else the Americas "other", the rest "far".
-const COUNTRIES: EntityDef[] = withWorld(OWN_COUNTRIES, (e) => ({ home: (e.attrs?.climate as Home | undefined) ?? (e.attrs?.near ? "other" : "far") }));
+// Any other country too (../countries.ts, owner 14 Nov 2026): its climate, else the Americas "other", the rest "far"
+// (not Mexico: Don Pancho lives here).
+const COUNTRIES: EntityDef[] = withWorld(OWN_COUNTRIES, (e) => ({ home: (e.attrs?.climate as Home | undefined) ?? (e.attrs?.near ? "other" : "far") }), ["mexico"]);
 
 const CITIES: EntityDef[] = [
   CT("chicago", "Chicago", "Chicago", "m", "cold", ["chicago"]),
@@ -601,7 +602,7 @@ export const smallTalk: SituationDef = {
       bus: "(camion | autobus | camioncito | colectivo)",
     },
     slots: {
-      nat: { lexicon: WORLD_NATIONALITIES },
+      nat: { lexicon: WORLD_NATIONALITIES.filter((n) => n.id !== "mexico") },
       wx: { lexicon: [
         { id: "nice", forms: ["bonito", "bonita", "precioso", "preciosa", "lindo", "linda", "hermoso", "hermosa", "agradable", "soleado", "soleada", "perfecto", "perfecta", "increible", "maravilloso", "padre", "padrisimo", "genial", "buenisimo", "excelente", "despejado", "sol", "solecito", "buen tiempo", "buen clima", "rico"] },
         { id: "fresh", forms: ["fresco", "fresca", "fresquito", "fresquecito", "templado", "brisa", "airecito", "aire", "ventoso", "viento"] },

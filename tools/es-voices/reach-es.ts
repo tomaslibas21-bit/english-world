@@ -23,6 +23,22 @@ const SIT_DIR = path.join(ROOT, "src/editions/es/content/situations");
  *  conversation's code (file:line, 4–5 Nov 2026) and checked against what the runs, the sims and the probes say
  *  (check-list-es.ts). A rule on an item line gets its binding ({ X: id } or { X: { id, qty } }: idOf). */
 const RULES: Record<string, (b: Binding, sit: SituationDef) => boolean> = {
+  // the learner's country (14 Nov 2026: any country, ../countries.ts): each reaction only for the countries the code
+  // gives it. s33-small-talk.ts fromAnswer: HOME[x] picks from_cold / from_rain / from_warm / from_far / from_other
+  "s33-small-talk:from_cold": (b, sit) => homeIs(sit, b, "cold"),
+  "s33-small-talk:from_rain": (b, sit) => homeIs(sit, b, "rain"),
+  "s33-small-talk:from_warm": (b, sit) => homeIs(sit, b, "warm"),
+  "s33-small-talk:from_far": (b, sit) => homeIs(sit, b, "far"),
+  "s33-small-talk:from_other": (b, sit) => homeIs(sit, b, "other"),
+  // s69-local.ts from_ctx: Canada and Mexico have lines of their own, the Americas from_near, the rest from_far
+  "s69-local:from_near": (b, sit) => listHas(sit, "country", idOf(b.X), (e) => !!e.attrs?.near && e.id !== "canada" && e.id !== "mexico"),
+  "s69-local:from_far": (b, sit) => listHas(sit, "country", idOf(b.X), (e) => !e.attrs?.near),
+  // s63-party.ts: Marcos asks about the cold or the rain only where the country's fact says so
+  "s63-party:cold_q_named": (b, sit) => listHas(sit, "country", idOf(b.X), (e) => e.attrs?.fact === "cold"),
+  // :2046 mishear names a country's sound-alike (attrs.mishear), :1650 mishear_fix the country it was mistaken for
+  "s63-party:mishear": (b, sit) => (sit.entities?.country ?? []).some((e) => e.attrs?.mishear === idOf(b.X)),
+  "s63-party:mishear_fix": (b, sit) => listHas(sit, "country", idOf(b.X), (e) => !!e.attrs?.mishear),
+  "s63-party:rain_q_named": (b, sit) => listHas(sit, "country", idOf(b.X), (e) => e.attrs?.fact === "rain"),
   // s31-doctor.ts:1340 cash_wait is said only with nothing paid yet: the fee (FEE = 50000)
   "s31-doctor:cash_wait": (b) => b.price === 50000,
   // :2056 short, :1340/:1522/:2066 left_is: the fee less what was paid, so less than the fee
@@ -101,6 +117,8 @@ function s76Pairs(sit: SituationDef): Set<string> | null {
 const sayOf = (v: unknown) => (v && typeof v === "object" ? String((v as { say?: string }).say) : String(v));
 /** The id of an item bound to a placeholder: "latte" or { id: "latte", qty: 2 }. */
 export const idOf = (v: unknown): string | undefined => (typeof v === "string" ? v : (v as { id?: string } | null | undefined)?.id);
+/** s33: the place (a country or a city) whose `home` is `h`. */
+const homeIs = (sit: SituationDef, b: Binding, h: string) => ["country", "city"].some((l) => listHas(sit, l, idOf(b.X), (e) => e.attrs?.home === h));
 /** Is `id` in the conversation's `list`, and does it pass `test`? */
 function listHas(sit: SituationDef, list: string, id: string | undefined, test: (e: EntityDef) => boolean): boolean {
   const e = id ? sit.entities?.[list]?.find((x) => x.id === id) : undefined;
