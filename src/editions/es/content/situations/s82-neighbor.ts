@@ -29,6 +29,7 @@ import type { Ctx, EntityDef, Handler, SituationDef } from "@/content/types";
 import type { ConvCtx } from "@/convo/dialogue";
 import { ent, t } from "@/content/dsl";
 import { expectHowAreYou } from "@/content/global";
+import { WORLD_COUNTRIES, WORLD_NATIONALITIES } from "../countries";
 
 // ---------------------------------------------------------------------------
 // Flags used more than once
@@ -65,14 +66,8 @@ const THINGS: EntityDef[] = [
   ent("huevos", "huevos", "eggs", "m", { art: "", forms: ["huevo", "un par de huevos", "dos huevos", "huevitos"], attrs: { has: true, mass: true, count: true } }),
 ];
 
-const COUNTRIES: EntityDef[] = [
-  ent("usa", "Estados Unidos", "the United States", "m", { forms: ["los estados unidos", "usa", "eu", "e u", "america", "nueva york", "california", "texas", "chicago", "florida"] }),
-  ent("canada", "Canadá", "Canada", "m", { forms: ["canada", "toronto", "vancouver", "montreal", "quebec"] }),
-  ent("uk", "Inglaterra", "England", "f", { forms: ["inglaterra", "el reino unido", "reino unido", "londres", "escocia", "gales"] }),
-  ent("ireland", "Irlanda", "Ireland", "f", { forms: ["irlanda", "dublin"] }),
-  ent("australia", "Australia", "Australia", "f", { forms: ["australia", "sidney", "sydney", "melbourne"] }),
-  ent("nz", "Nueva Zelanda", "New Zealand", "f", { forms: ["nueva zelanda", "nueva zelandia"] }),
-];
+// Any country (../countries.ts, owner 14 Nov 2026): "Soy de Lituania".
+const COUNTRIES: EntityDef[] = WORLD_COUNTRIES;
 
 // ---------------------------------------------------------------------------
 // State helpers
@@ -149,13 +144,14 @@ function introduce(c: Ctx, named: boolean) {
     } });
 }
 
-const FAR = new Set(["uk", "ireland", "australia", "nz"]);
 function fromReact(c: Ctx, country: string | undefined, tags: string[]) {
   c.s.fromAsked = true;
   if (c.s.fromSaid) return;
   c.s.fromSaid = true;
   const id = country ?? ["usa", "canada", "uk", "ireland", "australia", "nz"].find((x) => tags.includes(x));
-  c.say(id === "usa" ? "from_usa" : id === "canada" ? "from_canada" : id && FAR.has(id) ? "from_far" : "from_other");
+  const e = id ? COUNTRIES.find((x) => x.id === id) : undefined;
+  // the Americas: a plain welcome; anywhere else: "all that way"
+  c.say(id === "usa" ? "from_usa" : id === "canada" ? "from_canada" : e && !e.attrs?.near ? "from_far" : "from_other");
 }
 
 function trashTold(c: Ctx) { c.s.trashTold = true; maybeComplete(c); }
@@ -497,7 +493,7 @@ export const neighbor: SituationDef = {
       // things in the apartment that break (who to call: Don Ernesto; p29's AC is his)
       broken: "(aire | aire acondicionado | clima | minisplit | regadera | boiler | calentador | refri | refrigerador | estufa | lavadora | luz | foco | excusado | bano | puerta | ventana)",
     },
-    slots: {},
+    slots: { nat: { lexicon: WORLD_NATIONALITIES } },
   },
 
   intents: {
@@ -530,7 +526,7 @@ export const neighbor: SituationDef = {
       "(naci | nacimos) en {country} [pero (vivo | vivia | vivimos) en {c2:country}]", "(soy | somos | vengo) de un (pueblo | pueblito | lugar | ciudad) [pequeno | chico | grande] (en | cerca de) {country}",
       "(soy | somos) (estadounidense | estadounidenses | americano | americana | americanos | gringo | gringa) #usa", "(soy | somos) (canadiense | canadienses) #canada",
       "(soy | somos) (ingles | inglesa | ingleses | britanico | britanica | escoces | escocesa) #uk", "(soy | somos) (irlandes | irlandesa) #ireland", "(soy | somos) (australiano | australiana) #australia",
-      "(soy | somos) (neozelandes | neozelandesa) #nz", "no (soy | vengo) de {bad:country} (soy | sino | vengo) de {country}",
+      "(soy | somos) (neozelandes | neozelandesa) #nz", "(soy | somos) [originalmente] {country:nat}", "no (soy | vengo) de {bad:country} (soy | sino | vengo) de {country}",
     ] },
     from_ans_ctx: { patterns: ["[de] {country}", "de {country} de {c2:country}"] },
     from_other_ctx: { patterns: ["(soy | vengo) de {w:any}"] },
@@ -1597,6 +1593,8 @@ export const neighbor: SituationDef = {
     { say: "Me mudé al piso de al lado", intent: "moved_in" },
     // small talk
     { say: "Soy de Canadá", intent: "from_ans", slots: { country: "canada" } },
+    { say: "Soy de Lituania", intent: "from_ans", slots: { country: "lithuania" } },
+    { say: "Soy polaca", intent: "from_ans", slots: { country: "poland" } },
     { say: "Soy estadounidense", intent: "from_ans" },
     { say: "Irlanda", intent: "from_ans_ctx", step: "from_q", slots: { country: "ireland" } },
     { say: "Irlanda", intent: "none" },

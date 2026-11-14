@@ -23,6 +23,7 @@
 import type { Ctx, Pending, SituationDef } from "@/content/types";
 import { t } from "@/content/dsl";
 import { expectHowAreYou } from "@/content/global";
+import { WORLD_COUNTRIES, WORLD_NATIONALITIES } from "../countries";
 
 // ---------------------------------------------------------------------------
 // Prices (cents of a peso)
@@ -132,7 +133,9 @@ export const salon: SituationDef = {
       inch: "(media pulgada #in05 | una pulgada #in1 | pulgada y media #in15 | una pulgada y media #in15 | dos pulgadas #in2 | tres pulgadas #in3 | {n:number} pulgadas #inN)",
       finger: "(un dedo #dedo1 | un dedito #dedo1 | dos dedos #dedo2 | dos deditos #dedo2 | tres dedos #dedo3)",
       little: "(un poco | un poquito | un poquitito | poquito | poquitito | tantito | un tantito | muy poco | poco)",
-      country: "(estados unidos | canada | inglaterra | irlanda | escocia | gales | australia | nueva zelanda | el reino unido | reino unido | londres | texas | california | florida | nueva york | toronto | vancouver | chicago | dublin | sidney | alemania | francia | holanda)",
+      // any country (../countries.ts, owner 14 Nov 2026): its names, cities and nationalities
+      country: `(${[...new Set(["estados unidos", "canada", "inglaterra", "irlanda", "escocia", "gales", "australia", "nueva zelanda", "el reino unido", "reino unido", "londres", "texas", "california", "florida", "nueva york", "toronto", "vancouver", "chicago", "dublin", "sidney", "alemania", "francia", "holanda", ...WORLD_COUNTRIES.flatMap((e) => e.forms ?? [])])].join(" | ")})`,
+      nation: `(${[...new Set(WORLD_NATIONALITIES.flatMap((n) => n.forms))].join(" | ")})`,
       place: "(oaxaca | merida | la ciudad de mexico | cdmx | bacalar | holbox | cuba | guatemala | belice | chiapas | cancun | tulum | europa | mi pais | estados unidos | canada | la playa | las piramides | puebla | guadalajara | san cristobal)",
       trip: "(oaxaca | merida | la ciudad de mexico | cdmx | bacalar | holbox | cuba | guatemala | belice | chiapas | cancun | tulum | europa | las piramides | puebla | guadalajara | san cristobal)",
       when_trip: "(en diciembre | en verano | en navidad | en semana santa | en unos meses | este ano | el proximo mes | el ano que viene | pronto)",
@@ -407,7 +410,7 @@ export const salon: SituationDef = {
     weekend_unknown: { patterns: ["[si] voy a {w:any}", "(quiero | me gustaria) ir a {w:any}", "voy a visitar a {w:any}"] },
     from_ans: { patterns: [
       "soy de estados unidos #far #h:from_us", "soy de canada #far #h:from_ca", "[soy] [de] @country #far", "(vengo de | soy originario de | soy originaria de | naci en) @country #far",
-      "soy (estadounidense | americano | americana | canadiense | ingles | inglesa | irlandes | irlandesa | escoces | escocesa | australiano | australiana | neozelandes | neozelandesa | britanico | britanica | gringo | gringa) #far",
+      "soy (estadounidense | americano | americana | canadiense | ingles | inglesa | irlandes | irlandesa | escoces | escocesa | australiano | australiana | neozelandes | neozelandesa | britanico | britanica | gringo | gringa) #far", "soy @nation #far",
       "no soy de aqui", "no soy de aqui soy de @country #far", "(me acabo de mudar | acabo de mudarme | me mudé) (aqui | a puerto colibri | al pueblo | hace poco) [de @country] #moved #h:from_moved",
       "(vivo | ya vivo) aqui [desde hace {n:number} (meses | anos)] #moved", "[soy de] @country pero vivo aqui #moved",
     ] },
@@ -1732,6 +1735,9 @@ export const salon: SituationDef = {
     { say: "¡Qué chistoso!", intent: "react_funny" },
     { say: "Voy a una fiesta el sábado.", intent: "weekend_ctx", step: "chat" },
     { say: "Soy de Estados Unidos.", intent: "from_ans" },
+    { say: "Soy de Lituania.", intent: "from_ans" },
+    { say: "Soy lituano.", intent: "from_ans" },
+    { say: "Vengo de Japón.", intent: "from_ans" },
     { say: "Acabo de mudarme aquí.", intent: "from_ans" },
     { say: "Quiero ir a Oaxaca.", intent: "vacation_ctx", step: "chat" },
     { say: "Sí, puedo esperar.", intent: "wait_ok" },

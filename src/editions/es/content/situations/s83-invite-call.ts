@@ -29,6 +29,8 @@ import type { Ctx, EntityDef, Handler, Pending, Segment, SituationDef } from "@/
 import { ent, t } from "@/content/dsl";
 import { GLOBAL_HANDLERS } from "@/content/global";
 
+const A_LO_MEJOR = "a lo mejor: maybe, perhaps; very common in speech. Literally “at the best”, but it doesn't mean “at best” (that's en el mejor de los casos).";
+
 // ---------------------------------------------------------------------------
 // Entities
 
@@ -985,8 +987,8 @@ export const inviteCall: SituationDef = {
     not_much_known: [t("¡Nada | todavía!", "Nothing | yet!", "Nothing yet!")],
     free_yep: [t("¡Sí! | Estoy | libre.", "Yes! | I-am | free.", "Yep! I'm free.")],
     maybe_free: [
-      t("¡A lo mejor! | Déjame | ver | y | te | escribo.", "Maybe! | Let me | see | and | (to) you | I'll-write.", "Maybe! Let me check and I'll text you.",
-        { flags: { 0: "a lo mejor: maybe; very common in Mexico." } }),
+      t("¡A lo mejor! | Déjame | ver | y | te | escribo.", "Maybe (lit. at the best)! | Let me | see | and | (to) you | I'll-write.", "Maybe! Let me check and I'll text you.",
+        { flags: { 0: A_LO_MEJOR } }),
     ],
     sat_busy: [
       t("El | sábado | no puedo. | Voy | a | ayudar | a | mi | mamá | con | la | mudanza. | ¿Por qué?",

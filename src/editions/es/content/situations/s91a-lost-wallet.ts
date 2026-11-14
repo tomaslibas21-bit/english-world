@@ -34,6 +34,8 @@ import type { Ctx, EntityDef, HintItem, Pending, SituationDef } from "@/content/
 import { ent, t } from "@/content/dsl";
 import { expectHowAreYou } from "@/content/global";
 
+const A_LO_MEJOR = "a lo mejor: maybe, perhaps; very common in speech. Literally “at the best”, but it doesn't mean “at best” (that's en el mejor de los casos).";
+
 // ---------------------------------------------------------------------------
 // Entities
 
@@ -561,8 +563,8 @@ export const lostWallet: SituationDef = {
           neutral: t("¡Ay, | no! | No se preocupe, | ahora | vemos | qué | hacemos.", "Oh, | no! | Don't worry, | now | we-see | what | we-do.", "Oh no! Don't worry, we'll figure out what to do.") }),
     ],
     stolen_react: [
-      t("¡Ay, | no! | ¿Está | {m:seguro|f:segura}? | A lo mejor | nada más | se le cayó.", "Oh, | no! | Are you | sure? | Maybe | just | you dropped it.",
-        "Oh no! Are you sure? Maybe you just dropped it.", { flags: { 6: "se le cayó: it fell from you (se + le: to you), the usual way to say you dropped something." }, spain: t("¡Ay, | no! | ¿Está | {m:seguro|f:segura}? | A lo mejor | solo | se le ha caído.", "Oh, | no! | Are you | sure? | Maybe | just | you've dropped it.", "Oh no! Are you sure? Maybe you just dropped it.", { flags: { 6: "se le ha caído: it has fallen from you (se + le: to you), the usual way to say you dropped something." } }) }),
+      t("¡Ay, | no! | ¿Está | {m:seguro|f:segura}? | A lo mejor | nada más | se le cayó.", "Oh, | no! | Are you | sure? | Maybe (lit. at the best) | just | you dropped it.",
+        "Oh no! Are you sure? Maybe you just dropped it.", { flags: { 4: A_LO_MEJOR, 6: "se le cayó: it fell from you (se + le: to you), the usual way to say you dropped something." }, spain: t("¡Ay, | no! | ¿Está | {m:seguro|f:segura}? | A lo mejor | solo | se le ha caído.", "Oh, | no! | Are you | sure? | Maybe (lit. at the best) | just | you've dropped it.", "Oh no! Are you sure? Maybe you just dropped it.", { flags: { 4: A_LO_MEJOR, 6: "se le ha caído: it has fallen from you (se + le: to you), the usual way to say you dropped something." } }) }),
     ],
     keys_too: [t("¿Y | las | llaves | también?", "And | the | keys | too?", "Your keys too?")],
     // the answer to "¿No ha visto una cartera negra?"
@@ -594,10 +596,10 @@ export const lostWallet: SituationDef = {
     look_here: [t("Entonces | dé | una | vuelta | por | los | puestos | y | pregunte.", "Then | take | a | walk | around | the | stalls | and | ask.", "Then walk around the stalls and ask.")],
     retrace: [t("Bueno, | piense | por | dónde | anduvo | hoy | y | regrese | a | preguntar.", "Well, | think | through | where | you-went around | today | and | go back | to | ask.",
       "Well, think about where you've been today, and go back and ask.", { flags: { 4: "andar: to go around, to be (somewhere) for a while." }, spain: t("Bueno, | piense | por | dónde | ha estado | hoy | y | vuelva | a | preguntar.", "Well, | think | through | where | you've been | today | and | go back | to | ask.", "Well, think about where you've been today, and go back and ask.") })],
-    left_home: [t("¡A lo mejor | {lo@X} | dejó | en | su | casa!", "Maybe | it | you-left | at | your | house!", "Maybe you left it at home!", { spain: t("¡A lo mejor | se | {lo@X} | ha dejado | en | casa!", "Maybe | — | it | you've left | at | home!", "Maybe you left it at home!", { flags: { 1: "se: dejarse algo = to leave something behind (by mistake); English has no word here." } }) })],
+    left_home: [t("¡A lo mejor | {lo@X} | dejó | en | su | casa!", "Maybe (lit. at the best) | it | you-left | at | your | house!", "Maybe you left it at home!", { flags: { 0: A_LO_MEJOR }, spain: t("¡A lo mejor | se | {lo@X} | ha dejado | en | casa!", "Maybe (lit. at the best) | — | it | you've left | at | home!", "Maybe you left it at home!", { flags: { 0: A_LO_MEJOR, 1: "se: dejarse algo = to leave something behind (by mistake); English has no word here." } }) })],
     maybe_found: [
-      t("A lo mejor | alguien | {lo@X} | encontró.", "Maybe | someone | it | found.", "Maybe someone found it.", { spain: t("A lo mejor | alguien | {lo@X} | ha encontrado.", "Maybe | someone | it | has found.", "Maybe someone found it.") }),
-      t("A lo mejor | sigue | en | el | mismo | lugar.", "Maybe | it's still | in | the | same | place.", "Maybe it's still in the same place."),
+      t("A lo mejor | alguien | {lo@X} | encontró.", "Maybe (lit. at the best) | someone | it | found.", "Maybe someone found it.", { flags: { 0: A_LO_MEJOR }, spain: t("A lo mejor | alguien | {lo@X} | ha encontrado.", "Maybe (lit. at the best) | someone | it | has found.", "Maybe someone found it.", { flags: { 0: A_LO_MEJOR } }) }),
+      t("A lo mejor | sigue | en | el | mismo | lugar.", "Maybe (lit. at the best) | it's still | in | the | same | place.", "Maybe it's still in the same place.", { flags: { 0: A_LO_MEJOR } }),
     ],
     // the colectivos have no stop in town: they pass along avenida Juárez and are waved down (s62, s69, TOWN.md)
     call_bus: [

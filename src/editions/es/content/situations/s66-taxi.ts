@@ -12,6 +12,7 @@
 
 import type { Ctx, EntityDef, Segment, SituationDef } from "@/content/types";
 import { ent, t } from "@/content/dsl";
+import { WORLD_COUNTRIES, WORLD_NATIONALITIES } from "../countries";
 
 // ---------------------------------------------------------------------------
 // Places: Spanish head, English gloss, gender, location id, fare (cents of a peso). `def`: the definite article when it
@@ -74,15 +75,8 @@ const FAR: EntityDef[] = [
 ];
 
 /** Where the learner may say they're from (small talk). */
-const COUNTRIES: EntityDef[] = [
-  ent("usa", "Estados Unidos", "the United States", "m", { forms: ["los estados unidos", "usa", "eu", "e u", "america"], attrs: { far: true } }),
-  ent("canada", "Canadá", "Canada", "m", { forms: ["canada"] }),
-  ent("uk", "Inglaterra", "England", "f", { forms: ["inglaterra", "el reino unido", "reino unido", "londres", "escocia", "gales"] }),
-  ent("ireland", "Irlanda", "Ireland", "f", { forms: ["irlanda"] }),
-  ent("australia", "Australia", "Australia", "f", { forms: ["australia"] }),
-  ent("nz", "Nueva Zelanda", "New Zealand", "f", { forms: ["nueva zelanda", "nueva zelandia"] }),
-  ent("lithuania", "Lituania", "Lithuania", "f", { forms: ["lituania"] }),
-];
+// any country (../countries.ts, owner 14 Nov 2026)
+const COUNTRIES: EntityDef[] = WORLD_COUNTRIES;
 /** "Soy inglesa": the nationality's tag names the country. */
 const NATIONALITY_TAGS = ["usa", "canada", "uk", "ireland", "australia", "nz", "lithuania"];
 
@@ -130,6 +124,7 @@ export const taxi: SituationDef = {
   entities: { dest: DESTS, far: FAR, country: COUNTRIES },
 
   grammar: {
+    slots: { nat: { lexicon: WORLD_NATIONALITIES } },
     macros: {
       to: "(a | al | a la | hasta | hacia)",
       take_me: "(me lleva | me puede llevar | me podria llevar | lleveme | me llevas #tip:tu_staff | llevame #tip:tu_staff | voy | quiero ir | necesito ir | quisiera ir | tengo que ir | vamos | voy para)",
@@ -207,6 +202,7 @@ export const taxi: SituationDef = {
       "(soy | yo soy | somos) (australiano | australiana | australianos) [@back] #australia",
       "(soy | yo soy | somos) (neozelandes | neozelandesa | neozelandeses) [@back] #nz",
       "(soy | yo soy | somos) (lituano | lituana | lituanos) [@back] #lithuania",
+      "(soy | yo soy | somos) {country:nat} [@back]",
       "(vivo | ya vivo | ahora vivo) aqui [pero] (soy | vengo) de {country} #lives", "(soy | vengo) de {country} [pero] (vivo | ya vivo | ahora vivo) aqui #lives",
     ] },
     // a city or a state the list doesn't have ("Soy de Chicago"), at "¿De dónde es usted?"
@@ -647,7 +643,8 @@ export const taxi: SituationDef = {
       }
       if (c.step !== "from" || c.s.first !== undefined) { c.say("g_glad"); return; }
       c.s.firstAsked = true;
-      c.say(id === "lithuania" || id === "australia" || id === "nz" ? "from_far" : "from_reply");
+      const e = id ? COUNTRIES.find((x) => x.id === id) : undefined;
+      c.say(e && !e.attrs?.near ? "from_far" : "from_reply");
     },
     // "Soy de los Estados Unidos, de Texas": one answer
     from_other_ctx(c, slots, seg) { if (!c.s.talked) taxi.handlers.from_ans(c, slots, seg); },
@@ -809,9 +806,13 @@ export const taxi: SituationDef = {
     // small talk
     { say: "Soy de Estados Unidos", intent: "from_ans", step: "from", slots: { country: "usa" } },
     { say: "De Canadá", intent: "from_ans", step: "from", slots: { country: "canada" } },
+    { say: "Soy de Lituania", intent: "from_ans", step: "from", slots: { country: "lithuania" } },
+    { say: "Soy de Polonia", intent: "from_ans", step: "from", slots: { country: "poland" } },
+    { say: "Soy holandesa", intent: "from_ans", step: "from", slots: { country: "netherlands" } },
     { say: "Soy americana", intent: "from_ans", step: "from" },
     { say: "Soy inglesa", intent: "from_ans", step: "from" },
-    { say: "Soy de Chicago", intent: "from_other_ctx", step: "from" },
+    { say: "Soy de Chicago", intent: "from_ans", step: "from", slots: { country: "usa" } },
+    { say: "Soy de Wisconsin", intent: "from_other_ctx", step: "from" },
     { say: "Sí, es mi primera vez", intent: "first_yes", step: "first" },
     { say: "No, ya vine antes", intent: "first_no", step: "first" },
     { say: "No, vivo aquí", intent: "first_no", step: "first" },

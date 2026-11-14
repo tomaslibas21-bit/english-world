@@ -31,7 +31,10 @@
 
 import type { Ctx, EntityDef, Handler, Pending, Segment, SituationDef, StepDef } from "@/content/types";
 import { ent, t } from "@/content/dsl";
+import { WORLD_NATIONALITIES, withWorld } from "../countries";
 import { expectHowAreYou } from "@/content/global";
+
+const A_LO_MEJOR = "a lo mejor: maybe, perhaps; very common in speech. Literally “at the best”, but it doesn't mean “at best” (that's en el mejor de los casos).";
 
 // ---------------------------------------------------------------------------
 // Entities: countries and cities (where are you from). `kind` picks Don Pancho's reaction.
@@ -39,7 +42,7 @@ import { expectHowAreYou } from "@/content/global";
 type Home = "cold" | "rain" | "warm" | "far" | "other";
 const CT = (id: string, es: string, en: string, g: "m" | "f", home: Home, forms: string[]) => ent(id, es, en, g, { forms, art: "", attrs: { home } });
 
-const COUNTRIES: EntityDef[] = [
+const OWN_COUNTRIES: EntityDef[] = [
   CT("usa", "Estados Unidos", "the United States", "m", "other", ["los estados unidos", "usa", "eu", "e u", "eeuu", "ee uu", "america", "norteamerica"]),
   CT("canada", "Canadá", "Canada", "m", "cold", ["canada"]),
   CT("uk", "Inglaterra", "England", "f", "rain", ["inglaterra", "el reino unido", "reino unido", "gran bretana", "gales"]),
@@ -48,6 +51,8 @@ const COUNTRIES: EntityDef[] = [
   CT("australia", "Australia", "Australia", "f", "far", ["australia"]),
   CT("nz", "Nueva Zelanda", "New Zealand", "f", "far", ["nueva zelanda", "nueva zelandia"]),
 ];
+// Any other country too (../../countries.ts, owner 14 Nov 2026): its climate, else the Americas "other", the rest "far".
+const COUNTRIES: EntityDef[] = withWorld(OWN_COUNTRIES, (e) => ({ home: (e.attrs?.climate as Home | undefined) ?? (e.attrs?.near ? "other" : "far") }));
 
 const CITIES: EntityDef[] = [
   CT("chicago", "Chicago", "Chicago", "m", "cold", ["chicago"]),
@@ -596,6 +601,7 @@ export const smallTalk: SituationDef = {
       bus: "(camion | autobus | camioncito | colectivo)",
     },
     slots: {
+      nat: { lexicon: WORLD_NATIONALITIES },
       wx: { lexicon: [
         { id: "nice", forms: ["bonito", "bonita", "precioso", "preciosa", "lindo", "linda", "hermoso", "hermosa", "agradable", "soleado", "soleada", "perfecto", "perfecta", "increible", "maravilloso", "padre", "padrisimo", "genial", "buenisimo", "excelente", "despejado", "sol", "solecito", "buen tiempo", "buen clima", "rico"] },
         { id: "fresh", forms: ["fresco", "fresca", "fresquito", "fresquecito", "templado", "brisa", "airecito", "aire", "ventoso", "viento"] },
@@ -708,6 +714,7 @@ export const smallTalk: SituationDef = {
     from_ans: { patterns: [
       "(soy | vengo | somos | venimos) de {country} [originalmente] [@ab] #h:f_from",
       "(soy | somos) (canadiense #canada | canadienses #canada | estadounidense #usa | estadounidenses #usa | americano #usa | americana #usa | gringo #usa | gringa #usa | ingles #uk | inglesa #uk | britanico #uk | britanica #uk | irlandes #ireland | irlandesa #ireland | australiano #australia | australiana #australia | escoces #scotland | escocesa #scotland | neozelandes #nz | neozelandesa #nz) [de {city}] [@ab] #h:f_nat",
+      "(soy | somos) [originalmente] {country:nat} [@ab]",
       "(soy | vengo | somos | venimos) de {city} [en {country}] [@ab] #h:f_city",
       "(naci | creci) en {country} [@ab]", "(soy | vengo) de un (pueblo | pueblito | ciudad) (en | cerca de) {country} [@ab]",
       "no (soy | vengo) de {bad:country} (soy | sino | vengo) de {country}", "no (soy | vengo) de {bad:country} sino de {country}",
@@ -1122,7 +1129,7 @@ export const smallTalk: SituationDef = {
     from_unknown: [t("¡Ah, | qué | bien! | Yo | nunca | he ido | para | allá.", "Oh, | how | nice! | I | never | have gone | toward | there.", "Oh, nice! I've never been there.")],
     from_short: [t("¡Ah, | {X}!", "Oh, | {X}!", "Oh, {X}!")],
     winter_yes_react: [t("¡Ja! | ¡Con razón | le | gusta | tanto | el | sol | de | aquí!", "Ha! | No wonder | (to) you | it-pleases | so much | the | sun | of | here!", "Ha! No wonder you like the sun here so much!")],
-    winter_no_react: [t("¿No? | ¡Pues | a lo mejor | voy | un | día | de | estos! | ¡Ja!", "No? | Well | maybe | I-go | one | day | of | these! | Ha!", "No? Well, maybe I'll visit one of these days! Ha!")],
+    winter_no_react: [t("¿No? | ¡Pues | a lo mejor | voy | un | día | de | estos! | ¡Ja!", "No? | Well | maybe (lit. at the best) | I-go | one | day | of | these! | Ha!", "No? Well, maybe I'll visit one of these days! Ha!", { flags: { 2: A_LO_MEJOR} })],
 
     // --- the week ----------------------------------------------------------------------------
     week_q: [
@@ -1966,6 +1973,10 @@ export const smallTalk: SituationDef = {
     { say: "De Toronto, en Canadá", intent: "from_ctx", step: "from_q", slots: { city: "toronto", country: "canada" } },
     { say: "Soy de Chicago", intent: "from_ans", slots: { city: "chicago" } },
     { say: "No soy de Estados Unidos, soy de Canadá", intent: "from_ans", step: "from_q", slots: { country: "canada", bad: "usa" } },
+    { say: "Soy de Lituania", intent: "from_ans", step: "from_q", slots: { country: "lithuania" } },
+    { say: "Soy lituano", intent: "from_ans", step: "from_q", slots: { country: "lithuania" } },
+    { say: "Vengo de Alemania", intent: "from_ans", step: "from_q", slots: { country: "germany" } },
+    { say: "Soy de Colombia", intent: "from_ans", step: "from_q", slots: { country: "colombia" } },
     // the week
     { say: "¡Uf, una locura!", intent: "week_busy_ctx", step: "week" },
     { say: "Sí, mucho trabajo", intent: "week_busy_ctx", step: "week" },

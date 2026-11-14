@@ -26,6 +26,8 @@ import type { Ctx, EntityDef, Handler, Segment, SituationDef } from "@/content/t
 import { ent, t } from "@/content/dsl";
 import { GLOBAL_HANDLERS, LEAVING_PATTERNS } from "@/content/global";
 
+const A_LO_MEJOR = "a lo mejor: maybe, perhaps; very common in speech. Literally “at the best”, but it doesn't mean “at best” (that's en el mejor de los casos).";
+
 // ---------------------------------------------------------------------------
 // Entities
 
@@ -1358,8 +1360,8 @@ export const date: SituationDef = {
       t("¡Sí! | Fui | a | {C} | el | verano | pasado. | ¡Me encantó!", "Yes! | I went | to | {C} | the | summer | past. | I loved it!", "Yes! I went to {C} last summer. I loved it!"),
     ],
     never_home: [
-      t("¡Todavía | no! | A lo mejor | algún | día | me | enseñas | tu | país.", "Still | not! | Maybe | some | day | (to) me | you-show | your | country.",
-        "Not yet! Maybe someday you can show me around your country."),
+      t("¡Todavía | no! | A lo mejor | algún | día | me | enseñas | tu | país.", "Still | not! | Maybe (lit. at the best) | some | day | (to) me | you-show | your | country.",
+        "Not yet! Maybe someday you can show me around your country.", { flags: { 2: A_LO_MEJOR} }),
     ],
     // music
     ask_music: [
@@ -1627,8 +1629,8 @@ export const date: SituationDef = {
     ],
     // "Soy de Canadá"
     from_react: [
-      t("¡Ah, | mira! | A lo mejor | algún | día | me | enseñas | tu | país.", "Oh, | look! | Maybe | some | day | (to) me | you-show | your | country.",
-        "Oh, nice! Maybe someday you can show me around your country.", { flags: { 1: "¡Mira!: here not “look”, just interest (oh, really?)." } }),
+      t("¡Ah, | mira! | A lo mejor | algún | día | me | enseñas | tu | país.", "Oh, | look! | Maybe (lit. at the best) | some | day | (to) me | you-show | your | country.",
+        "Oh, nice! Maybe someday you can show me around your country.", { flags: { 2: A_LO_MEJOR, 1: "¡Mira!: here not “look”, just interest (oh, really?)." } }),
     ],
   },
 

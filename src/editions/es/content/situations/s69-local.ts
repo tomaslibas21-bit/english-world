@@ -26,6 +26,8 @@ import type { Ctx, EntityDef, Handler, HintItem, SentSrc, SituationDef } from "@
 import type { ConvCtx } from "@/convo/dialogue";
 import { ent, t } from "@/content/dsl";
 import { GLOBAL_HANDLERS } from "@/content/global";
+import { EDITION } from "@/edition";
+import { WORLD_COUNTRIES, WORLD_NATIONALITIES } from "../countries";
 
 // ---------------------------------------------------------------------------
 // Places Doña Carmen knows, kinds of food, countries
@@ -54,7 +56,8 @@ const SPOTS: EntityDef[] = [
 const C = (id: string, es: string, en: string, g: "m" | "f", forms: string[], nat?: string) => ent(id, es, en, g, { forms, art: "", attrs: { nat } });
 const CUISINES: EntityDef[] = [
   C("mariscos", "mariscos", "seafood", "m", ["marisco", "pescado", "pescados", "camarones", "camaron", "ceviche", "cocteles", "coctel de camaron", "pulpo", "langosta", "algo del mar", "comida del mar", "tacos de pescado", "pescado frito", "aguachile", "pescado a la talla"]),
-  C("yucateca", "comida | yucateca", "food | Yucatecan", "f", ["yucateca", "comida tipica", "algo tipico", "lo tipico", "comida de aqui", "algo de aqui", "comida local", "algo local", "comida regional", "comida mexicana", "algo mexicano", "cochinita", "cochinita pibil", "panuchos", "panucho", "salbutes", "salbut", "sopa de lima", "poc chuc", "papadzules", "relleno negro", "comida casera", "comida corrida", "algo yucateco", "comida yucateca tipica", "tikin xic", "pescado tikin xic"], "local food"),
+  // "comida local", not "comida yucateca": a phrase the learner can use anywhere (owner, 14 Nov 2026); the id stays
+  C("yucateca", "comida | local", "food | local", "f", ["comida yucateca", "yucateca", "comida tipica", "algo tipico", "lo tipico", "comida de aqui", "algo de aqui", "comida local", "algo local", "comida regional", "comida mexicana", "algo mexicano", "cochinita", "cochinita pibil", "panuchos", "panucho", "salbutes", "salbut", "sopa de lima", "poc chuc", "papadzules", "relleno negro", "comida casera", "comida corrida", "algo yucateco", "comida yucateca tipica", "tikin xic", "pescado tikin xic"], "local food"),
   C("tacos", "tacos", "tacos", "m", ["taco", "unos tacos", "tacos al pastor", "al pastor", "antojitos", "garnachas", "comida callejera", "comida de la calle", "tortas", "quesadillas"]),
   C("italiana", "comida | italiana", "food | Italian", "f", ["italiana", "italiano", "algo italiano", "pasta", "pizza", "lasana", "una pizza", "restaurante italiano", "un restaurante italiano", "algun restaurante italiano", "un italiano", "algun italiano", "un lugar italiano", "espagueti", "spaghetti"], "Italian food"),
   C("vegetariana", "comida | vegetariana", "food | vegetarian", "f", ["vegetariana", "vegetariano", "comida vegana", "vegana", "vegano", "ensalada", "ensaladas", "algo sin carne", "algo vegetariano", "algo vegano", "comida sin carne"], "vegetarian food"),
@@ -64,14 +67,8 @@ const CUISINES: EntityDef[] = [
   C("dulce", "algo | dulce", "something | sweet", "m", ["postre", "un postre", "marquesitas", "una marquesita", "helado", "nieve", "crepas", "una crepa", "churros"], "something sweet"),
 ];
 
-const COUNTRIES: EntityDef[] = [
-  ent("usa", "Estados Unidos", "the United States", "m", { forms: ["los estados unidos", "usa", "eu", "e u", "america", "nueva york", "california", "texas", "chicago", "florida"] }),
-  ent("canada", "Canadá", "Canada", "m", { forms: ["canada", "toronto", "vancouver", "montreal", "quebec"] }),
-  ent("uk", "Inglaterra", "England", "f", { forms: ["inglaterra", "el reino unido", "reino unido", "londres", "escocia", "gales"] }),
-  ent("ireland", "Irlanda", "Ireland", "f", { forms: ["irlanda", "dublin"] }),
-  ent("australia", "Australia", "Australia", "f", { forms: ["australia", "sidney", "sydney", "melbourne"] }),
-  ent("nz", "Nueva Zelanda", "New Zealand", "f", { forms: ["nueva zelanda", "nueva zelandia"] }),
-];
+// Any country (../countries.ts): "Soy de Lituania" (owner, 14 Nov 2026).
+const COUNTRIES: EntityDef[] = WORLD_COUNTRIES;
 
 // Places that aren't tips: "¿Dónde hay un cajero?" gets the way from her bench (TOWN.md "From the zócalo's kiosco");
 // the farther ones, Información Turística and its map.
@@ -441,8 +438,12 @@ const H: Record<string, Handler> = {
   from_ctx(c, slots, seg) {
     c.s.fromDone = true;
     c.s.fromAnswered = true;
-    const id = (slots.country as string | undefined) ?? ["usa", "canada", "uk", "ireland", "australia"].find((x) => seg.tags.includes(x));
-    c.say(id === "canada" ? "from_canada" : id === "australia" || id === "nz" ? "from_far" : "from_other");
+    // she echoes the country: Canadians winter here, the Americas are close, the rest is a long way; a place she
+    // doesn't know ("Soy de Kaunas"): a plain welcome
+    const id = slots.country as string | undefined;
+    const e = id ? COUNTRIES.find((x) => x.id === id) : undefined;
+    if (!e || seg.tags.includes("unknown")) { c.say("from_other"); return; }
+    c.say(id === "canada" ? "from_canada" : id === "mexico" ? "from_mexico" : e.attrs?.near ? "from_near" : "from_far", { X: id });
   },
   ask_rosa_from(c) { c.say("local_yes"); c.s.local = true; },
   weather_ok(c, _slots, seg) { c.say(seg.tags.includes("hot") ? "weather_hot" : "weather_reply"); },
@@ -524,6 +525,7 @@ export const local: SituationDef = {
       produce: "[la | el | las | los | unas | unos | un | una | un kilo de | medio kilo de | algo de] (fruta | frutas | verdura | verduras | mango | mangos | papaya | papayas | pina | pinas | platano | platanos | aguacate | aguacates | naranja | naranjas | limon | limones | sandia | sandias | jitomate | jitomates | tomate | tomates | coco | cocos | artesania #craft | artesanias #craft | hamaca #craft | hamacas #craft | recuerdos #craft | sombrero #craft | sombreros #craft)",
       comer_: "(comer | cenar | almorzar | desayunar | comer algo | cenar algo)",
     },
+    slots: { nat: { lexicon: WORLD_NATIONALITIES } },
   },
 
   intents: {
@@ -719,8 +721,7 @@ export const local: SituationDef = {
     ] },
     from_ctx: { patterns: [
       "(soy | vengo | somos | venimos) de {country} #h:o_from", "de {country}", "{country}", "(vivo | vivimos) en {country}",
-      "(soy | somos) (estadounidense | estadounidenses | americano | americana | gringo | gringa) #usa", "(soy | somos) (canadiense | canadienses) #canada",
-      "(soy | somos) (ingles | inglesa | britanico | britanica) #uk", "(soy | somos) (irlandes | irlandesa) #ireland", "(soy | somos) (australiano | australiana) #australia",
+      "(soy | somos) {country:nat}", "(soy | vengo | somos | venimos) de {w:any} #unknown",
       "(de)? (muy)? lejos de {country}", "no soy de {bad:country} (soy | sino) de {country}", "no (soy | vengo) de {bad:country} (sino de | soy de | vengo de) {country}",
     ] },
     tried_yes_ctx: { patterns: [
@@ -1052,7 +1053,9 @@ export const local: SituationDef = {
 
     // --- small talk and twists -------------------------------------------------------
     ask_from: [t("Y | usted, | ¿de | dónde | es?", "And | you, | from | where | are-you?", "So where are you from?")],
-    from_far: [t("¡Uy, | de | muy | lejos! | Bienvenid{m:o|f:a} | a | Puerto | Colibrí.", "Wow, | from | very | far! | Welcome | to | Puerto | Colibrí.", "Wow, all that way! Welcome to Puerto Colibrí.")],
+    from_far: [t("¡Uy, | de | {X}! | ¡De | muy | lejos! | Bienvenid{m:o|f:a} | a | Puerto | Colibrí.", "Wow, | from | {X}! | From | very | far! | Welcome | to | Puerto | Colibrí.", "Wow, {X}! All that way! Welcome to Puerto Colibrí.")],
+    from_near: [t("¡Ah, | de | {X}! | Bienvenid{m:o|f:a} | a | Puerto | Colibrí.", "Oh, | from | {X}! | Welcome | to | Puerto | Colibrí.", "Oh, {X}! Welcome to Puerto Colibrí.")],
+    from_mexico: [t("¡Ah, | también | es | de | México! | Bienvenid{m:o|f:a} | a | Puerto | Colibrí.", "Oh, | also | you-are | from | Mexico! | Welcome | to | Puerto | Colibrí.", "Oh, you're from Mexico too! Welcome to Puerto Colibrí.")],
     from_canada: [t("¡De | Canadá! | Aquí | vienen | muchos | canadienses | en | el | invierno.", "From | Canada! | Here | come | many | Canadians | in | the | winter.", "Canada! Lots of Canadians come here in the winter.")],
     from_other: [
       t("¡Ay, | qué | padre! | Bienvenid{m:o|f:a} | a | Puerto | Colibrí.", "Oh, | how | cool! | Welcome | to | Puerto | Colibrí.", "Oh, how nice! Welcome to Puerto Colibrí.",
@@ -1113,7 +1116,7 @@ export const local: SituationDef = {
         { id: "f_where_good", s: t("¿Dónde | se come | bien | por | aquí?", "Where | does one eat | well | around | here?", "Where's a good place to eat around here?") },
         { id: "f_cheap", s: t("Busco | un | lugar | para | comer | que | no sea | muy | caro.", "I'm looking for | a | place | for | eating | that | isn't | very | expensive.", "I'm looking for somewhere to eat that's not too expensive.") },
         { id: "f_locals", s: t("¿Dónde | come | la | gente | de | aquí?", "Where | eats | the | people | from | here?", "Where do the locals eat?"), note: "Mexicans say “la gente de aquí” for locals." },
-        { id: "f_cuisine", s: t("¿Dónde | puedo | comer | {X}?", "Where | I-can | eat | {X}?", "Where can I get {X}?"), only: (e) => !["cafe", "desayuno"].includes(e.id) },
+        { id: "f_cuisine", s: t("¿Dónde | puedo | comer | {X}?", "Where | I-can | eat | {X}?", "Where can I get {X}?"), only: (e) => !["cafe", "desayuno", "yucateca"].includes(e.id) },
         { id: "f_cuisine_place", s: t("¿Hay | un | buen | lugar | de | {X} | por | aquí?", "Is there | a | good | place | of | {X} | around | here?", "Is there a good {X} place around here?"), only: (e) => ["mariscos", "tacos", "yucateca"].includes(e.id) },
         { id: "f_lunch", s: t("¿Qué | me | recomienda | para | cenar?", "What | (to) me | you-recommend | for | having dinner?", "What would you recommend for dinner?") },
       ],
@@ -1202,7 +1205,8 @@ export const local: SituationDef = {
       ],
     },
     from: {
-      lt: "Say where you're from", slot: "country", examples: ["usa", "canada", "uk"],
+      // a Lithuanian learner (Spanish Master) sees their own country first (owner, 14 Nov 2026)
+      lt: "Say where you're from", slot: "country", examples: EDITION.helper === "lt" ? ["lithuania", "usa", "canada"] : ["usa", "canada", "uk"],
       items: [
         { id: "o_from", s: t("Soy | de | {X}.", "I'm | from | {X}.", "I'm from {X}.") },
         { id: "o_come", s: t("Vengo | de | {X}.", "I-come | from | {X}.", "I'm from {X}.") },
@@ -1445,6 +1449,18 @@ export const local: SituationDef = {
     { say: "Eso es todo", intent: "more_no", step: "more" },
     { say: "Soy de Canadá", intent: "from_ctx", step: "from", slots: { country: "canada" } },
     { say: "Soy estadounidense", intent: "from_ctx", step: "from" },
+    { say: "Soy de Lituania", intent: "from_ctx", step: "from", slots: { country: "lithuania" } },
+    { say: "Vengo de Lituania", intent: "from_ctx", step: "from", slots: { country: "lithuania" } },
+    { say: "Soy lituana", intent: "from_ctx", step: "from", slots: { country: "lithuania" } },
+    { say: "Soy de Lithuania", intent: "from_ctx", step: "from", slots: { country: "lithuania" } },
+    { say: "Soy de Polonia", intent: "from_ctx", step: "from", slots: { country: "poland" } },
+    { say: "Soy de Alemania", intent: "from_ctx", step: "from", slots: { country: "germany" } },
+    { say: "Vengo de Brasil", intent: "from_ctx", step: "from", slots: { country: "brazil" } },
+    { say: "Soy de Guatemala", intent: "from_ctx", step: "from", slots: { country: "guatemala" } },
+    { say: "Soy de Japón", intent: "from_ctx", step: "from", slots: { country: "japan" } },
+    { say: "Soy de México", intent: "from_ctx", step: "from", slots: { country: "mexico" } },
+    { say: "Soy francesa", intent: "from_ctx", step: "from", slots: { country: "france" } },
+    { say: "Soy de Mozambique", intent: "from_ctx", step: "from" },
     { say: "Sí, tengo hambre", intent: "ask_food", step: "food" },
     { say: "Sí, ¡qué día tan bonito!", intent: "weather_ok" },
     { say: "Soy vegetariana", intent: "diet" },
@@ -1559,6 +1575,9 @@ export const local: SituationDef = {
       expect: { complete: true, state: { cheap: undefined } }, auto: AUTO, setup: (s) => { s.walkTwist = false; s.weatherOpen = false; s.triedTip = undefined; s.askFrom = false; } },
     { name: "not from here, already ate, no thanks to the walk", turns: ["No soy de aquí, ¿qué me recomienda?", "Algo que ver", "Ya comí tacos", "No quiero molestarla, gracias", "¿Está abierto hoy?", "No, eso es todo. Muchas gracias por los consejos"],
       expect: { complete: true, state: { walkAnswered: true } }, auto: AUTO, setup: (s) => { s.walkTwist = true; s.weatherOpen = false; s.triedTip = undefined; s.askFrom = false; } },
+    // 14 Nov 2026: a learner from anywhere ("Soy de Lituania"): she asks where they are from and echoes it
+    { name: "from Lithuania: she asks, and welcomes them", turns: ["¡Hola! ¿Dónde puedo comer comida local?", "Soy de Lituania", "¿Está lejos?", "¿Y qué vale la pena ver?", "¡Gracias por los consejos!"],
+      expect: { complete: true, state: { fromAnswered: true } }, auto: AUTO, setup: (s) => { s.askFrom = true; s.walkTwist = false; s.triedTip = undefined; } },
     // revision 2 Nov 2026: no Italian place (a kind "no hay", then Lucía's or, cheap, the cocina económica), meatless tips
     { name: "Italian food? there's none: La Cocina de Lucía", turns: ["¿Hay un restaurante italiano por aquí?", "¿Cómo llego?", "¿Es caro?", "¿Qué vale la pena ver aquí?", "¡Gracias por los consejos!"],
       expect: { complete: true, state: { noItalian: true, cheap: undefined, veg: undefined } }, auto: AUTO, setup: (s) => { s.walkTwist = false; s.weatherOpen = false; s.triedTip = undefined; s.askFrom = false; } },

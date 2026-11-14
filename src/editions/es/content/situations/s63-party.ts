@@ -21,6 +21,7 @@
 import type { Ctx, EntityDef, Pending, SituationDef } from "@/content/types";
 import type { SlotFn, SlotResult } from "@/convo/grammar";
 import { ent, t } from "@/content/dsl";
+import { WORLD_NATIONALITIES, withWorld } from "../countries";
 import { expectHowAreYou } from "@/content/global";
 import { nameSlot, readInt } from "@/convo/slots";
 
@@ -32,7 +33,7 @@ const fold = (x: string) => (x || "").normalize("NFD").replace(/[̀-ͯ]/g, "").t
 /** The learner's country. fact: what Marcos asks about it (cold / rain); mishear: what he hears with the music on. */
 const C = (id: string, es: string, en: string, g: "m" | "f", forms: string[] = [], attrs: Record<string, any> = {}) =>
   ent(id, es, en, g, { art: "", forms: [...new Set([fold(es), ...forms])], attrs });
-const COUNTRIES: EntityDef[] = [
+const OWN_COUNTRIES: EntityDef[] = [
   C("usa", "Estados Unidos", "the United States", "m", ["los estados unidos", "eeuu", "ee uu", "eu", "eua", "usa", "america", "norteamerica", "united states", "the states"]),
   C("canada", "Canadá", "Canada", "m", [], { fact: "cold", mishear: "granada" }),
   C("uk", "Inglaterra", "England", "f", ["el reino unido", "reino unido", "gran bretana", "england", "uk", "britain"], { fact: "rain" }),
@@ -66,9 +67,12 @@ const COUNTRIES: EntityDef[] = [
   C("india", "India", "India", "f", ["la india"]),
   C("israel", "Israel", "Israel", "m"),
 ];
+// any other country too (../countries.ts, owner 14 Nov 2026); Marcos asks about the cold or the rain where it fits
+// (not Mexico: "¡Nunca he ido!" would be odd at a party in Mexico)
+const COUNTRIES: EntityDef[] = withWorld(OWN_COUNTRIES, (e) => ({ fact: e.attrs?.climate === "cold" || e.attrs?.climate === "rain" ? e.attrs.climate : undefined }), ["mexico"]);
 
 /** Nationality words ("Soy canadiense"): a lexicon, so a bare "Soy" + adjective never becomes a country by accident. */
-const NATIONALITIES = Object.entries({
+const OWN_NATIONALITIES = Object.entries({
   usa: ["estadounidense", "estadounidenses", "americano", "americana", "americanos", "norteamericano", "norteamericana", "gringo", "gringa", "gringos"],
   canada: ["canadiense", "canadienses"], uk: ["ingles", "inglesa", "ingleses", "britanico", "britanica"], scotland: ["escoces", "escocesa"],
   wales: ["gales", "galesa"], ireland: ["irlandes", "irlandesa", "irlandeses"], australia: ["australiano", "australiana"],
@@ -79,6 +83,7 @@ const NATIONALITIES = Object.entries({
   brazil: ["brasileno", "brasilena"], argentina: ["argentino", "argentina"], colombia: ["colombiano", "colombiana"], china: ["chino", "china"],
   japan: ["japones", "japonesa"], korea: ["coreano", "coreana"], india: ["indio", "india", "hindu"], israel: ["israeli"],
 }).map(([id, forms]) => ({ id, forms }));
+const NATIONALITIES = [...OWN_NATIONALITIES, ...WORLD_NATIONALITIES.filter((n) => n.id !== "mexico" && !OWN_NATIONALITIES.some((o) => o.id === n.id))];
 
 /** Cities. known: Marcos knows where it is; otherwise he asks ("¿Y eso dónde queda?"). */
 const CI = (id: string, es: string, en: string, country: string, known: boolean, forms: string[] = []) =>
