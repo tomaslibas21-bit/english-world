@@ -16,7 +16,8 @@ Shared by every edition of the game (the code is in `src/game/`; each town keeps
   stop at them as before; `Colliders.resolve(p, r, true)` (the player outdoors) passes them. The player's feet follow
   the sand down (`Hop.ground` = `sandY`), so the opaque sea hides the legs. The water slows them (`Wading.pace`, about
   half at the limit), and the seaward part of each step fades to nothing over the last 1.5 m before `SHORE.limit`
-  (`Wading.hold`): about 0.4 m deep at rest, knee to waist with the swell. No swimming. A jog stops in the water.
+  (`Wading.hold`): about 0.4 m deep at rest, knee to waist with the swell. (Since 14 Nov, evening: past that limit the
+  seabed falls away and one swims; the wading itself is as it was: docs/RIDES.md.) A jog stops in the water.
 - Floors built out over the shore are listed as the town builds them (`DECKS`: the pier's boardwalk and deck, a
   terrace on the sand): on them one stands on the boards (`floorY` = 0), not on the sand sloping away underneath.
 - Piers, deck edges and rails keep their colliders. Boats lying within a metre of the wading limit get player-only
