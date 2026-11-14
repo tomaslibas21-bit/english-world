@@ -8,12 +8,13 @@ import { createCharacter, type GameCharacter } from "../characters";
 import { STYLED, vertexColorMaterial } from "../style";
 import { Chatter, walkerLook, type Ambient } from "../ambient";
 import { Colliders, rand } from "../world/util";
-import { ROADS, WORLD } from "../world/layout";
+import { WORLD } from "../world/layout";
 import type { NavGrid } from "../nav";
 import type { RidesPlan, CarSpot, BoatSpot } from "../world/rides";
 import { RIDE_LINES, RIDE_BACK_LINES } from "../../content/rides";
 import { BAY, DECKS, SHORE, floorY, waterY } from "../water";
-import { Drivable, Motion, CAR, BOAT, aheadIn, pushOutOfBox, type Controls, type Rect } from "./drive";
+import { Drivable, Motion, CAR, BOAT, aheadIn, pushOutOfBox, type Controls } from "./drive";
+import { townDrivable } from "./ground";
 import { convertibleGeometry, motorboatGeometry, CAR_SEATS, BOAT_SEATS } from "./shapes";
 
 export interface RideHost {
@@ -90,10 +91,7 @@ export class Rides {
 
   constructor(readonly host: RideHost, plan: RidesPlan, boats: THREE.Object3D[]) {
     this.group.name = "rides";
-    const rects: Rect[] = ROADS.map((r) => (r.z1 === r.z2
-      ? { x0: Math.min(r.x1, r.x2), x1: Math.max(r.x1, r.x2), z0: r.z1 - r.w / 2, z1: r.z1 + r.w / 2 }
-      : { x0: r.x1 - r.w / 2, x1: r.x1 + r.w / 2, z0: Math.min(r.z1, r.z2), z1: Math.max(r.z1, r.z2) }));
-    this.drivable = new Drivable([...rects, ...plan.lots], CAR.wide - 0.12);
+    this.drivable = townDrivable(plan.lots);
     const mat = STYLED ? vertexColorMaterial("prop") : new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
     plan.cars.forEach((spot, i) => this.addCar(spot, i, mat));
     plan.boats.forEach((spot, i) => this.addBoat(spot, i, mat));
