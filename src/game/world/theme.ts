@@ -241,7 +241,10 @@ export interface TownTheme {
   adoquin: { streets: [number, number, number, number][]; bins: [number, number, number][]; bolardos: [number, number, number, number][]; bolero: [number, number, number] | null } | null;
   /** A cenote in the meadow beyond the town's west edge (its water's middle and its painted sign): seen from the ends
    *  of the streets, not reached on foot. */
-  cenote: { x: number; z: number; sign: string } | null;
+  cenote: { x: number; z: number; sign: string;
+    /** One walks out to it along the sacbé, down its deck's steps into the water, and swims there (mexican.ts
+     *  `cenoteWalk`): the town's edge is open where the sacbé crosses it. */
+    walk?: boolean } | null;
   /** Small ruins on a rocky point by the sea beyond the beach's west end (the temple's x and z). */
   ruins: { x: number; z: number } | null;
 

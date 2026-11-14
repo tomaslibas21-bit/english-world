@@ -185,7 +185,14 @@ export function buildTown(): Town {
   // bay's own edge, water.ts BAY)
   colliders.addBox((WORLD.minX + WORLD.maxX) / 2, WORLD.minZ - 1, WORLD.maxX - WORLD.minX + 4, 2, "sea");
   colliders.addBox((WORLD.minX + WORLD.maxX) / 2, WORLD.maxZ + 1, WORLD.maxX - WORLD.minX + 4, 2);
-  colliders.addBox(WORLD.minX - 1, 0, 2, 220);
+  // (theme.ts `cenote.walk`: the west edge is open where the sacbé leaves the town for the cenote; the clearing out
+  // there has its own edges, mexican.ts cenoteWalk)
+  if (THEME.cenote?.walk) {
+    const cz = THEME.cenote.z, g0 = cz - 3.6, g1 = cz + 2.6;
+    colliders.addBox(WORLD.minX - 1, (g0 - 110) / 2, 2, g0 + 110);
+    colliders.addBox(WORLD.minX - 1, (g1 + 110) / 2, 2, 110 - g1);
+    MX.cenoteWalk(colliders, THEME.cenote.x, cz, WORLD.minX);
+  } else colliders.addBox(WORLD.minX - 1, 0, 2, 220);
   colliders.addBox(WORLD.maxX + 1, 0, 2, 220);
   // the sea on both sides of the pier deck (x -41.3…-18.7); the deck has its own edges
   // ("sea": the passers-by and the way-finding stop at it; the player wades in to the shore's limit, Game.ts)

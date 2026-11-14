@@ -9,6 +9,7 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { rand, roundRect, type Colliders } from "./util";
+import { POOLS, FLOORS } from "../water";
 import type { TianguisGoods } from "./theme";
 
 export type Part = [THREE.BufferGeometry, THREE.ColorRepresentation];
@@ -895,6 +896,9 @@ export function cenote(parts: Part[], atlas: SignAtlas, x: number, z: number, si
   for (let i = 0; i < 6; i++) parts.push([box(0.03, 0.125, 2.6, dx - 1.5 + i * 0.6, 0.81, z), DARK]); // the boards' joints
   for (const [px, pz] of [[1.4, 1.15], [1.4, -1.15], [-1.4, 1.15], [-1.4, -1.15]]) parts.push([box(0.14, 0.8, 0.14, dx + px, 0.4, z + pz), DARK]);
   for (let i = 0; i < 4; i++) parts.push([box(0.42, 0.08, 1.2, dx - 1.8 - i * 0.4, 0.62 - i * 0.17, z), WOOD]);
+  // (and on under the water, where one walks in: CENOTE_WALK) three steps up onto the deck from the sacbé
+  for (let i = 0; i < 3; i++) parts.push([box(0.42, 0.08, 1.2, dx - 3.4 - i * 0.4, -0.06 - i * 0.17, z), DARK]);
+  for (let i = 0; i < 3; i++) parts.push([box(0.46, 0.22 * (3 - i), 1.5, dx + 1.82 + i * 0.44, 0.11 * (3 - i), z), i % 2 ? DARK : WOOD]);
   for (const s of [-1, 1]) {
     for (const px of [-1.5, -0.5, 0.5, 1.5]) parts.push([box(0.07, 0.95, 0.07, dx + px, 1.32, z + s * 1.25), DARK]);
     parts.push([box(3.1, 0.07, 0.07, dx, 1.78, z + s * 1.25), DARK]);
@@ -937,6 +941,39 @@ export function cenote(parts: Part[], atlas: SignAtlas, x: number, z: number, si
   path(-109.6, -6.6, dx + 1.7, z, 2.2);
   path(hx + 2.8, z + 0.6, hx + 1.4, hz - 1.0, 1.4);
   for (const [jx, jz, sj] of [[x + R + 7.5, z + 9.5, 2.4], [x + 2, z + R + 3.4, 2.2], [x + 3, z - R - 3.2, 2.0], [x + R + 8, z - 7, 1.8]] as [number, number, number][]) jungle(parts, r, jx, 0, jz, sj);
+}
+
+/** The cenote one walks down into (theme.ts `cenote.walk`; the engine's swimming is the sea's own, water.ts): the
+ *  ground plan and the floors that go with `cenote`'s shapes. From the sacbé's end three steps up onto the deck, along
+ *  it between its rails, and down its steps into the water; the pool itself, round, deep in the middle; and what keeps
+ *  everyone in: the rim's stones and the cliff all round the water (but where the deck is), the taquilla, the sign's
+ *  posts, the palms, and the edge of the clearing round it (the selva and the scrub beyond are looked at, not walked
+ *  into). `edge`: the town's west edge (x), where the way out to it begins. */
+export function cenoteWalk(col: Colliders, x: number, z: number, edge: number) {
+  const R = 6.0, dx = x + R + 0.4, top = 0.86;
+  // the water: still, a hand under the deck's lowest step; over three metres deep in the middle (a dive: undersea.ts)
+  POOLS.push({ x, z, r: R - 0.1, y: 0.04, depth: 3.4 });
+  // the way in, as a floor: up the three steps (east), the deck, down the steps and on under the water to the bed
+  const x3 = dx + 3.05, x2 = dx + 1.6, x1 = dx - 1.6, x0 = dx - 4.6;
+  FLOORS.push({ x0, x1: x3, z0: z - 1.2, z1: z + 1.2, y: (px) => (px > x2 ? (top * (x3 - px)) / (x3 - x2) : px > x1 ? top : top - ((top + 0.75) * (x1 - px)) / (x1 - x0)) });
+  // the deck's rails (a wall each side of it), and the stones and the cliff round the water, open at the deck
+  for (const s of [-1, 1]) col.addBox(dx, z + s * 1.32, 3.3, 0.2);
+  const ring = R + 0.75, n = Math.round((2 * Math.PI * ring) / 1.15);
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    if (Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) < 0.3) continue;
+    col.addCircle(x + Math.cos(a) * ring, z + Math.sin(a) * ring, 0.8);
+  }
+  // the taquilla's palapa, the sign's posts, the palms on the clearing
+  col.addBox(x + R + 4.8 + 0.3, z + 4.6, 3.4, 2.8);
+  for (const s of [-1, 1]) col.addCircle(x + R + 6.2, z - 2.4 + s * 1.35, 0.15);
+  for (const [px, pz, r] of [[x + R + 7.5, z + 7.5, 0.3], [x + R + 3.2, z - 5.5, 0.3], [x + R + 8, z - 7, 1.2], [x + R + 7.5, z + 9.5, 1.5]]) col.addCircle(px, pz, r);
+  // the clearing's edge: north and south of the sacbé, and west of it either side of the water
+  const n0 = z - 10.5, s0 = z + 9.5, w0 = x + R - 0.6;
+  col.addBox((w0 + edge) / 2 - 1, n0 - 0.5, edge - w0 + 2, 1);
+  col.addBox((w0 + edge) / 2 - 1, s0 + 0.5, edge - w0 + 2, 1);
+  col.addBox(w0 - 0.5, (n0 + z - 7.4) / 2, 1, z - 7.4 - n0);
+  col.addBox(w0 - 0.5, (s0 + z + 7.4) / 2, 1, s0 - z - 7.4);
 }
 
 /** Small Mayan ruins on a rocky point by the sea west of the beach (TOWN.md task 8; graphics round 6), in Tulum's way:
