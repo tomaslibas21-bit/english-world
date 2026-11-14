@@ -78,8 +78,10 @@ interface Car {
   speed: number; max: number; hidden: number; grow: number;
   /** Full size and in the picture (not growing at its lane's start or shrinking at its end). */
   whole?: boolean;
-  /** Waiting for the player to get off or step away (s still to wait once they have). */
+  /** Waiting for the player to get off or step away (s still to wait once they have), and how long they have stood
+   *  beside it without getting on (s). */
   held?: number;
+  byT?: number;
   /** Its hood, roof and trunk as pieces with a height (ledges.ts), read from its own mesh the first time it stands
    *  still: `at` is where it stood then, `now` the same pieces where it stands at the moment. */
   decks?: { at: number; pieces: Piece[]; x: number; now: Piece[] };
@@ -381,12 +383,14 @@ export class Ambient {
     }
     let want = gap === Infinity ? c.max : Math.max(0, Math.min(c.max, (gap - 3.4) * 1.4));
     // a car that has stopped can be climbed like a parked one (carPieces), and its driver waits while the player is on
-    // it, over it or right beside it, and a moment longer
+    // it or over it, a few seconds while they stand right beside it, and a moment longer
     if (this.standing(c)) {
       const h = this.half(c), dx = Math.abs(player.x - c.x), dz = Math.abs(player.z - c.lane);
       if (dx < h.x + 6 && dz < h.z + 6) this.readDecks(c);
       const on = dx < h.x + 0.45 && dz < h.z + 0.45 && player.y > 0.3, by = dx < h.x + 1.1 && dz < h.z + 1.1;
-      if (c.decks?.pieces.length && (on || by)) c.held = 0.8;
+      // (beside it only for a few seconds: time to jump on, not a street held up by someone talking at the curb)
+      c.byT = by && !on ? (c.byT ?? 0) + dt : 0;
+      if (c.decks?.pieces.length && (on || (by && c.byT < 4))) c.held = 0.8;
       else c.held = Math.max(0, (c.held ?? 0) - dt);
       if (c.held > 0) want = 0;
     } else c.held = 0;

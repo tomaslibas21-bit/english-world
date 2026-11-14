@@ -56,8 +56,8 @@ Shared by every edition of the game (the code is in `src/game/`; each town keeps
   not up a windshield). Walking down: steps of up to 0.13 m are followed (down a windshield), more is a fall.
 - **Cars on the move** are walls, as they were (`Ambient.resolvePlayer`). A car that has stopped for the player is
   climbed like a parked one (`Ambient.carPieces`, read from its own mesh, `Ledges.dynamic`), and **its driver waits**
-  while the player is on it, over it or within a metre of it, and 0.8 s more; then it drives on. Nobody rides. A van
-  or a bus too tall to climb stays a wall standing as moving.
+  while the player is on it or over it (and up to four seconds while they stand within a metre of it), and 0.8 s
+  more; then it drives on. Nobody rides. A van or a bus too tall to climb stays a wall standing as moving.
 - **Up on something higher than a bench** nobody is talked to and no door gone through (`Game.aloft`): one hops down
   first.
 - A deck's edge the town tags `"ledge"` (the pier's beach side) is a wall for the passers-by and the way-finding and
