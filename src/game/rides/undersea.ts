@@ -206,15 +206,19 @@ export class Undersea {
     const pool = POOLS.find((p) => (at.x - p.x) ** 2 + (at.z - p.z) ** 2 < (p.r + 2) ** 2);
     this.under!.position.set(at.x, (pool ? pool.y : SEA_LEVEL) - 0.3, at.z);
     this.far!.position.set(at.x, -3, at.z);
+    // (a pool is small: its water closes in sooner, and only two little schools live in it)
+    this.fog.far = pool ? 13 : 32;
+    this.s.setScalar(pool ? 0.55 : 1);
     // the schools circle; one that is left far behind turns up again ahead of the diver
     const fish = this.fish!;
     let i = 0;
     this.schools.forEach((s, k) => {
+      if (pool && k > 1) { for (let j = 0; j < s.n; j++, i++) fish.setMatrixAt(i, this.m4.makeTranslation(0, -999, 0)); s.y = -99; return; }
       const far = Math.hypot(s.x - at.x, s.z - at.z);
       if (s.y < -50 || far > 26) {
         const a = Math.random() * Math.PI * 2, d = pool ? Math.random() * pool.r * 0.4 : 7 + Math.random() * 9;
         s.x = (pool ? pool.x : at.x) + Math.cos(a) * d; s.z = (pool ? pool.z : at.z) + Math.sin(a) * d;
-        if (pool) s.r = 1.2 + (k % 3) * 0.7;
+        s.r = pool ? 1.6 + k * 1.1 : 2.5 + (k % 3) * 1.2;
         const bedY = floorY(s.x, s.z), top = (pool ? pool.y : SEA_LEVEL) - 0.7;
         s.y = Math.min(top, bedY + 0.5 + Math.random() * Math.max(0.2, top - bedY - 0.6));
       }
