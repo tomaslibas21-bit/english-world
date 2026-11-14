@@ -152,3 +152,16 @@ come twice (same id, "grid"); a second no at paul_hear now ends with Sofía's pa
 - Found: vosotros agrees in every line to the team (oís, veis, dejadme, avisáis, os comparto/mando, mirad, cuidaos); hints to one person stay tú. "te escuchamos" answers stay (Spain says it too beside te oímos).
 - Fixed: nothing.
 - For the owner: the q_hear_me hint note still says "Escuchan: to the whole team (ustedes)" under Spain's "¿Me oís?" (notes aren't per variety).
+
+## Spain pass 3 (14 Nov 2026)
+
+- Spain's twins of "¿Me escucháis?…" said "oís" but carried the note "The ustedes form… Latin America never uses
+  vosotros" (open ×3, greet_back, hear_reask, screen_q), "déjenme" (mic_fix) and "les" (screen_share): F_VOS and
+  vosotros notes now.
+- Oír for hearing (Spain keeps escuchar for listening): heard_you, heard_but_cam, not_muted_you, camera_broken,
+  paul_silent, not_muted_resp ("no lo oigo"), and the chips h_yes (noteSpain), h_morning, h_cant ("Perdona, no te
+  oigo"), ph_yes ×2, m_cant_hear. The grammar already took oigo / oímos.
+- "Esperemos dos minutos más" (démosle dos minutitos), "eso es todo por hoy" (closing), chips q_link "el enlace"
+  (noteSpain) and q_none "No, eso es todo".
+- Notes on the wrong word: freeze_fix (ya), upd_ok_resp (ahorita), sara_cam_on (este / prendida), weekend_good;
+  neutral twins paul_leave and jump_off (junta note on reunión): flags: {}.

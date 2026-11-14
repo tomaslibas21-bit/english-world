@@ -350,7 +350,7 @@ export const post: SituationDef = {
       "[si] (unas | dos) (baterias | pilas)", "(puedo | se puede) (mandar | enviar) (baterias | pilas)",
     ] },
     take_out: { patterns: [
-      "[ah] [bueno | esta bien | ok | ni modo] (lo | la | los | las) saco #h:take_out", "[ah] [bueno | esta bien | ok | ni modo] (lo | la | los | las) (quito | dejo | dejo aqui | dejo en casa | dejo en el hotel)",
+      "[ah] [bueno | esta bien | ok | ni modo | vale] (lo | la | los | las) saco #h:take_out", "[ah] [bueno | esta bien | ok | ni modo] (lo | la | los | las) (quito | dejo | dejo aqui | dejo en casa | dejo en el hotel)",
       "[bueno | esta bien | ok | ni modo] (sin | entonces sin) (perfume | baterias | pilas | tequila | la botella | eso) [entonces]",
       "[bueno | esta bien | ok] (lo | la | los | las) (voy a sacar | saco ahorita | saco ahora)", "(ahorita | ahora) (lo | la | los | las) saco",
       "[ah] no sabia [bueno | esta bien | ok | ni modo] (lo | la | los | las) (saco | quito)",
@@ -393,7 +393,7 @@ export const post: SituationDef = {
       "[y] [el] {service} (cuanto | cuanto tiempo | en cuanto tiempo) (tarda | se tarda | llega) [en llegar]", "(cuando | en cuanto tiempo) (llega | llegaria) el {service}",
     ] },
     ask_tracking: { patterns: [
-      "(lo | la) (puedo | podre) rastrear #h:q_track", "(puedo | se puede) rastrear(lo | la)? [en linea | por internet]", "(tiene | trae | lleva | incluye) (rastreo | numero de guia | guia | seguimiento | numero de seguimiento | codigo de seguimiento)",
+      "(lo | la) (puedo | podre) rastrear #h:q_track", "(tiene | lleva) seguimiento #h:q_track", "(lo | la) puedo seguir [en linea | por internet]", "(puedo | se puede) rastrear(lo | la)? [en linea | por internet]", "(tiene | trae | lleva | incluye) (rastreo | numero de guia | guia | seguimiento | numero de seguimiento | codigo de seguimiento)",
       "(como | donde) (lo | la) rastreo", "donde (esta | viene) el numero de guia", "(me da | me dan) (un | el) numero de guia", "hay (rastreo | seguimiento)",
       "[y] [el] {service} (tiene | trae | incluye | lleva) (rastreo | numero de guia | guia | seguimiento)", "[y] el {service} se puede rastrear", "(tiene | trae | incluye | lleva) (rastreo | numero de guia | seguimiento) el {service}",
     ] },
@@ -507,7 +507,7 @@ export const post: SituationDef = {
     // --- general
     more_no: { patterns: [
       "(eso | es) (es | seria) todo [por hoy] #h:more_all", "(seria | es) todo [por hoy]", "[no] eso es todo #h:more_its", "por ahora es todo",
-      "creo que es todo", "[no] ya (es todo | estoy | quedé)", "nada mas [por hoy]",
+      "creo que es todo", "[no] ya (es todo | estoy | quedé)", "nada mas [por hoy]", "nada mas [por hoy] gracias #h:more_all",
       // "Gracias, es todo." was read as a bare thanks and "¿Algo más?" came again (audit; as s76)
       "[muchas | mil] gracias (es | eso es | eso seria | seria) todo",
     ] },
@@ -527,7 +527,7 @@ export const post: SituationDef = {
     ],
     ask_help: [
       t("¿En | qué | le | puedo | ayudar?", "In | what | (to) you | can I | help?", "How can I help you?"),
-      t("¿Qué | se le ofrece?", "What | do you need?", "What can I do for you?", { flags: { 1: "se le ofrece: the counter's polite formula, literally is offered to you." }, spain: t("¿En | qué | puedo | ayudarle?", "In | what | can I | help-you?", "What can I do for you?") }),
+      t("¿Qué | se le ofrece?", "What | do you need?", "What can I do for you?", { flags: { 1: "se le ofrece: the counter's polite formula, literally is offered to you." }, spain: t("¿En | qué | puedo | ayudarle?", "In | what | can I | help-you?", "What can I do for you?", { flags: {} }) }),
     ],
     ask_dest: [
       t("Claro. | ¿A | dónde | lo | va | a | mandar?", "Sure. | To | where | it | are you going | to | send?", "Sure. Where are you sending it?", { flags: { 3: "lo: it, the package (el paquete)." } }),
@@ -620,7 +620,8 @@ export const post: SituationDef = {
         { spain: t("Para | Estados Unidos | hay que | rellenar | una | declaración | con | el | contenido | y | el | valor, | y | necesito | su | identificación.", "For | the United States | we need to | fill out | a | declaration | with | the | contents | and | the | value, | and | I need | your | ID.", "For the United States, we need to fill out a declaration with the contents and the value, and I'll need your ID.") })],
     customs_explain: [t("Es | para | la | aduana: | dice | qué | trae | y | cuánto | vale.", "It's | for | the | customs: | it says | what | it carries | and | how much | it's worth.",
       "It's for customs: it says what's inside and what it's worth.",
-        { spain: t("Es | para | la | aduana: | dice | qué | lleva | y | cuánto | vale.", "It's | for | the | customs: | it says | what | it carries | and | how much | it's worth.", "It's for customs: it says what's inside and what it's worth.") })],
+        { spain: t("Es | para | la | aduana: | pone | qué | lleva | y | cuánto | vale.", "It's | for | the | customs: | it says | what | it carries | and | how much | it's worth.", "It's for customs: it says what's inside and what it's worth.",
+          { flags: { 4: "poner, of something written (Spain) = to say: “pone qué lleva”." } }) })],
     ask_what_inside: [
       t("¿Qué | trae | la | caja?", "What | does it carry | the | box?", "What's in the box?",
         { spain: t("¿Qué | lleva | la | caja?", "What | does it carry | the | box?", "What's in the box?") }),
@@ -635,13 +636,15 @@ export const post: SituationDef = {
     write_help: [t("Nomás | ponga | las | cosas | y | cuánto | valen, | en | pesos.", "Just | put | the | things | and | how much | they're worth, | in | pesos.",
       "Just list the items and what they're worth, in pesos.",
       { flags: { 0: "Mexican: nomás = just, only." },
-        neutral: t("Solo | ponga | las | cosas | y | cuánto | valen, | en | pesos.", "Just | put | the | things | and | how much | they're worth, | in | pesos.", "Just list the items and what they're worth, in pesos.") })],
+        neutral: t("Solo | ponga | las | cosas | y | cuánto | valen, | en | pesos.", "Just | put | the | things | and | how much | they're worth, | in | pesos.", "Just list the items and what they're worth, in pesos."),
+        spain: t("Solo | ponga | las | cosas | y | cuánto | valen, | en | pesos.", "Just | put | the | things | and | how much | they're worth, | in | pesos.", "Just list the items and what they're worth, in pesos.", { flags: {} }) })],
     ask_gift: [t("¿Es | regalo?", "Is it | a gift?", "Is it a gift?")],
     gift_mark: [t("Muy | bien, | lo | marco | como | regalo.", "Very | good, | it | I-mark | as | gift.", "Okay, I'll mark it as a gift.")],
     gift_fix: [t("Ah, | perdón, | entonces | no | lo | marco | como | regalo.", "Oh, | sorry, | then | not | it | I-mark | as | gift.", "Oh, sorry, then I won't mark it as a gift.")],
     gift_not: [t("Está bien, | no hay problema.", "That's fine, | no problem.", "Okay, no problem.")],
     sign_customs: [
-      t("Fírmeme | aquí, | por favor.", "Sign for me | here, | please.", "Just sign here, please.", { flags: { 0: "Fírmeme: firme (sign) + me (for me), a friendly way to ask." } }),
+      t("Fírmeme | aquí, | por favor.", "Sign for me | here, | please.", "Just sign here, please.", { flags: { 0: "Fírmeme: firme (sign) + me (for me), a friendly way to ask." },
+        spain: t("Firme | aquí, | por favor.", "Sign | here, | please.", "Just sign here, please.", { flags: {} }) }),
       t("¿Me | firma | aquí, | por favor?", "(For) me | you-sign | here, | please?", "Could you sign here, please?"),
     ],
     signed_thanks: [t("Gracias.", "Thank you.", "Thank you."), t("Perfecto, | gracias.", "Perfect, | thanks.", "Perfect, thanks.")],
@@ -672,11 +675,11 @@ export const post: SituationDef = {
     offer_stamps: [t("¿Va | a | querer | timbres | también?", "Are you going | to | want | stamps | too?", "Will you need any stamps too?",
       { flags: { 3: "Mexican: timbre = postage stamp; elsewhere estampilla." },
         neutral: t("¿Va | a | querer | estampillas | también?", "Are you going | to | want | stamps | too?", "Will you need any stamps too?"),
-        spain: t("¿Va | a | querer | sellos | también?", "Are you going | to | want | stamps | too?", "Will you need any stamps too?") })],
+        spain: t("¿Quiere | sellos | también?", "Do you want | stamps | too?", "Will you need any stamps too?", { flags: { 1: "sello: a postage stamp (Mexico: timbre)." } }) })],
     stamps_info: [t("Para | una | postal | al extranjero | es | un | timbre | por | postal.", "For | a | postcard | abroad | it's | one | stamp | per | postcard.", "For a postcard abroad, it's one stamp per card.",
       { flags: { 6: "Mexican: timbre = postage stamp; elsewhere estampilla." },
         neutral: t("Para | una | postal | al extranjero | es | una | estampilla | por | postal.", "For | a | postcard | abroad | it's | one | stamp | per | postcard.", "For a postcard abroad, it's one stamp per card."),
-        spain: t("Para | una | postal | al extranjero | es | un | sello | por | postal.", "For | a | postcard | abroad | it's | one | stamp | per | postcard.", "For a postcard abroad, it's one stamp per card.") })],
+        spain: t("Para | una | postal | al extranjero | es | un | sello | por | postal.", "For | a | postcard | abroad | it's | one | stamp | per | postcard.", "For a postcard abroad, it's one stamp per card.", { flags: { 6: "sello: a postage stamp (Mexico: timbre)." } }) })],
     // $15: Correos de México's 2026 rate for a postcard to the rest of the world, enough for any country (audit: was $22)
     stamps_price: [t("Cuestan | $15 | cada uno. | ¿Cuántos | quiere?", "They cost | 15 pesos | each. | How many | do you want?", "They're 15 pesos each. How many would you like?",
       { say: "Cuestan quince pesos cada uno. ¿Cuántos quiere?",
@@ -690,7 +693,7 @@ export const post: SituationDef = {
     stamp_cost: [t("Cada | timbre | cuesta | $15.", "Each | stamp | costs | 15 pesos.", "Each stamp is 15 pesos.",
       { say: "Cada timbre cuesta quince pesos.", flags: { 1: "Mexican: timbre = postage stamp; elsewhere estampilla." },
         neutral: t("Cada | estampilla | cuesta | $15.", "Each | stamp | costs | 15 pesos.", "Each stamp is 15 pesos.", { say: "Cada estampilla cuesta quince pesos." }),
-        spain: t("Cada | sello | cuesta | $15.", "Each | stamp | costs | 15 pesos.", "Each stamp is 15 pesos.", { say: "Cada sello cuesta quince pesos." }) })],
+        spain: t("Cada | sello | cuesta | $15.", "Each | stamp | costs | 15 pesos.", "Each stamp is 15 pesos.", { say: "Cada sello cuesta quince pesos.", flags: { 1: "sello: a postage stamp (Mexico: timbre)." } }) })],
     mailbox: [t("Me | las | puede | dar, | o | echarlas | ahí | en | el | buzón.", "(To) me | them | you-can | give, | or | drop-them | there | in | the | mailbox.",
       "You can give them to me, or drop them in the mailbox over there.", { flags: { 1: "las: them, the postcards (las postales)." } })],
     stamps_ok: [t("Claro, | aquí tiene.", "Sure, | here you go.", "Sure, here you go.")],
@@ -698,8 +701,9 @@ export const post: SituationDef = {
     stamps_here: [t("Y | aquí | están | sus | timbres.", "And | here | are | your | stamps.", "And here are your stamps.",
       { flags: { 4: "Mexican: timbre = postage stamp; elsewhere estampilla." },
         neutral: t("Y | aquí | están | sus | estampillas.", "And | here | are | your | stamps.", "And here are your stamps."),
-        spain: t("Y | aquí | están | sus | sellos.", "And | here | are | your | stamps.", "And here are your stamps.") })],
-    ask_more: [t("¿Algo | más?", "Something | else?", "Anything else?"), t("¿Sería todo?", "Would that be all?", "Will that be everything?")],
+        spain: t("Y | aquí | están | sus | sellos.", "And | here | are | your | stamps.", "And here are your stamps.", { flags: { 4: "sello: a postage stamp (Mexico: timbre)." } }) })],
+    ask_more: [t("¿Algo | más?", "Something | else?", "Anything else?"), t("¿Sería todo?", "Would that be all?", "Will that be everything?",
+      { spain: t("¿Eso | es | todo?", "That | is | all?", "Will that be everything?") })],
     ask_more_yes: [t("Claro, | ¿qué | más | necesita?", "Sure, | what | else | do you need?", "Sure, what else can I do for you?")],
     say_total: [t("Son | {$total}.", "It's | {$total}.", "That's {$total}."), t("Serían | {$total}.", "It would be | {$total}.", "That'll be {$total}.")],
     ask_pay: [t("¿Va | a | pagar | en efectivo | o | con | tarjeta?", "Are you going | to | pay | in cash | or | with | card?", "Will that be cash or card?")],
@@ -713,10 +717,12 @@ export const post: SituationDef = {
     cash_then: [t("No hay problema, | en efectivo | entonces.", "No problem, | in cash | then.", "No problem, cash then.")],
     no_dollars: [t("Lo siento, | solo | aceptamos | pesos. | También | puede | pagar | con | tarjeta.", "I'm sorry, | only | we-accept | pesos. | Also | you-can | pay | with | card.", "Sorry, we only take pesos. You can also pay by card.")],
     no_phone_pay: [t("Lo siento, | aquí | solo | aceptamos | efectivo | o | tarjeta.", "I'm sorry, | here | only | we-accept | cash | or | card.", "Sorry, we only take cash or card here.")],
-    cash_change: [t("Y | aquí | está | su | cambio.", "And | here | is | your | change.", "And here's your change.")],
+    cash_change: [t("Y | aquí | está | su | cambio.", "And | here | is | your | change.", "And here's your change.",
+      { spain: t("Y | aquí | tiene | la | vuelta.", "And | here | you-have | the | change.", "And here's your change.", { flags: { 4: "la vuelta: Spain's word for the change you get back (el cambio in Latin America)." } }) })],
     pay_later: [t("Claro, | ahorita | le | cobro.", "Sure, | in a moment | (from) you | I-charge.", "Sure, I'll ring you up in a moment.",
       { flags: { 1: "Mexican: ahorita = in a moment, soon." },
-        neutral: t("Claro, | en | un | momento | le | cobro.", "Sure, | in | a | moment | (from) you | I-charge.", "Sure, I'll ring you up in a moment.") })],
+        neutral: t("Claro, | en | un | momento | le | cobro.", "Sure, | in | a | moment | (from) you | I-charge.", "Sure, I'll ring you up in a moment."),
+        spain: t("Claro, | en | un | momento | le | cobro.", "Sure, | in | a | moment | (from) you | I-charge.", "Sure, I'll ring you up in a moment.", { flags: {} }) })],
     already_paid: [t("Ya | está | pagado, | gracias.", "Already | it is | paid, | thanks.", "It's already paid, thanks.")],
     receipt: [
       t("Aquí tiene | su | comprobante.", "Here you have | your | receipt.", "Here's your receipt."),
@@ -726,8 +732,9 @@ export const post: SituationDef = {
     tracking_number: [t("Su | número | de | guía | es | CP482915736MX.", "Your | number | of | waybill | is | CP482915736MX.", "Your tracking number is CP482915736MX.",
       { say: "Su número de guía es ce, pe, cuatro ocho dos, nueve uno cinco, siete tres seis, eme, equis.", write: TRACKING_WRITE,
         spell: "ce, pe, cuatro, ocho, dos, nueve, uno, cinco, siete, tres, seis, eme, equis", flags: { 3: "guía: in Mexico the tracking number is el número de guía." }, spain: t("Su | número | de | seguimiento | es | CP482915736MX.", "Your | number | of | tracking | is | CP482915736MX.", "Your tracking number is CP482915736MX.", { say: "Su número de seguimiento es ce, pe, cuatro ocho dos, nueve uno cinco, siete tres seis, eme, equis." }) })],
-    track_online: [t("Lo | puede | rastrear | en | la | página | del | correo.", "It | you-can | track | on | the | page | of the | post office.", "You can track it on the post office's website.")],
-    tracking_yes: [t("Sí, | tiene | número | de | guía | para | rastrearlo.", "Yes, | it has | number | of | waybill | to | track it.", "Yes, it comes with a tracking number.", { spain: t("Sí, | tiene | número | de | seguimiento | para | rastrearlo.", "Yes, | it has | number | of | tracking | to | track it.", "Yes, it comes with a tracking number.") })],
+    track_online: [t("Lo | puede | rastrear | en | la | página | del | correo.", "It | you-can | track | on | the | page | of the | post office.", "You can track it on the post office's website.",
+      { spain: t("Lo | puede | seguir | en | la | web | de | Correos.", "It | you-can | follow | on | the | website | of | the post office.", "You can track it on the post office's website.") })],
+    tracking_yes: [t("Sí, | tiene | número | de | guía | para | rastrearlo.", "Yes, | it has | number | of | waybill | to | track it.", "Yes, it comes with a tracking number.", { spain: t("Sí, | lleva | número | de | seguimiento.", "Yes, | it carries | number | of | tracking.", "Yes, it comes with a tracking number.") })],
     tracking_no_first: [t("El | económico | no tiene | rastreo.", "The | economy (one) | doesn't have | tracking.", "Economy doesn't come with tracking.",
         { spain: t("El | económico | no tiene | seguimiento.", "The | economy (one) | doesn't have | tracking.", "Economy doesn't come with tracking.") })],
     tracking_on_receipt: [t("Viene | en | su | comprobante, | arriba.", "It comes | on | your | receipt, | at the top.", "It's on your receipt, at the top.")],
@@ -755,13 +762,15 @@ export const post: SituationDef = {
     name_thanks: [t("Gracias. | Déjeme | revisar.", "Thanks. | Let me | check.", "Thanks. Let me check.")],
     ask_pickup_id: [
       t("¿Me | presta | una | identificación?", "(To) me | you-lend | an | ID?", "May I see some ID?", { flags: { 1: "presta: lend; in Mexico staff ask to “borrow” your ID." },
-        spain: t("¿Me | enseña | un | documento de identidad?", "(To) me | you-show | an | ID?", "May I see some ID?") }),
+        spain: t("¿Me | enseña | un | documento de identidad?", "(To) me | you-show | an | ID?", "May I see some ID?", { flags: {} }) }),
       t("También | necesito | una | identificación | con | foto.", "Also | I need | an | ID | with | photo.", "I'll also need a photo ID."),
     ],
     go_get: [t("Gracias. | Un | momento, | se lo | traigo.", "Thanks. | One | moment, | it to you | I-bring.", "Thanks. One moment, I'll go get it.")],
     here_package: [t("¡Aquí está! | ¿Me | firma | aquí, | por favor?", "Here it is! | (For) me | you-sign | here, | please?", "Here it is! Could you sign here, please?")],
     found_here: [t("Sí, | aquí | lo | tenemos.", "Yes, | here | it | we-have.", "Yes, we have it here.")],
-    sign_where: [t("Aquí, | abajo, | donde | dice | “Firma”.", "Here, | at the bottom, | where | it says | “Signature”.", "Right here, at the bottom, where it says “Signature.”")],
+    sign_where: [t("Aquí, | abajo, | donde | dice | “Firma”.", "Here, | at the bottom, | where | it says | “Signature”.", "Right here, at the bottom, where it says “Signature.”",
+      { spain: t("Aquí, | abajo, | donde | pone | “Firma”.", "Here, | at the bottom, | where | it says | “Signature”.", "Right here, at the bottom, where it says “Signature.”",
+        { flags: { 3: "poner, of something written (Spain) = to say: “donde pone…”." } }) })],
     ask_pickup_sign: [t("¿Me | firma | aquí, | por favor?", "(For) me | you-sign | here, | please?", "Could you sign here, please?")],
     pickup_done: [
       t("Listo. | ¡Aquí tiene | su | paquete!", "Done. | Here you have | your | package!", "All set. Here's your package!",
@@ -776,14 +785,15 @@ export const post: SituationDef = {
     customs_notice: [t("Cuando | la | aduana | lo | libere, | nos | llega | aquí | y | le | dejamos | un | aviso.",
       "When | the | customs | it | releases, | (to) us | it arrives | here | and | (for) you | we-leave | a | notice.", "Once customs releases it, it comes here and we'll leave you a notice.")],
     customs_track: [t("Mientras, | puede | ver | dónde | va | con | el | número | de | guía.", "Meanwhile, | you can | see | where | it goes | with | the | number | of | waybill.",
-      "In the meantime, you can follow it with the tracking number.", { spain: t("Mientras, | puede | ver | dónde | va | con | el | número | de | seguimiento.", "Meanwhile, | you can | see | where | it goes | with | the | number | of | tracking.", "In the meantime, you can follow it with the tracking number.") })],
+      "In the meantime, you can follow it with the tracking number.", { spain: t("Mientras tanto, | puede | ver | por | dónde | va | con | el | número | de | seguimiento.", "Meanwhile, | you can | see | (through) | where | it goes | with | the | number | of | tracking.", "In the meantime, you can follow it with the tracking number.") })],
     customs_time: [t("Puede | tardar | unos | días | o | unas | semanas; | depende | de | la | aduana.", "It can | take | some | days | or | some | weeks; | it depends | on | the | customs.",
       "It can take a few days or a few weeks; it depends on customs.")],
     customs_tax: [t("A veces | hay que | pagar | impuestos. | Si | es | así, | se los | cobramos | aquí | cuando | llegue.",
       "Sometimes | one has to | pay | taxes. | If | it is | so, | them from you | we-charge | here | when | it arrives.", "Sometimes there are import taxes. If so, we collect them here when it arrives.")],
     customs_why: [t("Todo | lo que | viene | del | extranjero | pasa | por | la | aduana.", "Everything | that | comes | from | abroad | goes | through | the | customs.", "Everything from abroad goes through customs.")],
     customs_what: [t("Nada, | nomás | espere | el | aviso.", "Nothing, | just | wait for | the | notice.", "Nothing, just wait for the notice.",
-      { flags: { 1: "Mexican: nomás = just, only." }, neutral: t("Nada, | solo | espere | el | aviso.", "Nothing, | just | wait for | the | notice.", "Nothing, just wait for the notice.") })],
+      { flags: { 1: "Mexican: nomás = just, only." }, neutral: t("Nada, | solo | espere | el | aviso.", "Nothing, | just | wait for | the | notice.", "Nothing, just wait for the notice."),
+        spain: t("Nada, | solo | espere | el | aviso.", "Nothing, | just | wait for | the | notice.", "Nothing, just wait for the notice.", { flags: {} }) })],
     customs_notify: [t("Sí, | le | dejamos | el | aviso | en | su | casa.", "Yes, | (for) you | we-leave | the | notice | at | your | house.", "Yes, we'll leave the notice at your place.")],
 
     bye: [
@@ -828,7 +838,8 @@ export const post: SituationDef = {
         { id: "contents_just", s: t("No, | solo | {X.np}.", "No, | only | {X.np}.", "No, just {X.np}.") },
         { id: "contents_none", s: t("No, | nada | de | eso.", "No, | nothing | of | that.", "No, nothing like that.") },
         { id: "contents_fragile", s: t("Sí, | es | frágil.", "Yes, | it's | fragile.", "Yes, it's fragile.") },
-        { id: "take_out", s: t("Ah, | bueno. | Lo | saco.", "Oh, | okay. | It | I-take-out.", "Oh, okay. I'll take it out.") },
+        { id: "take_out", s: t("Ah, | bueno. | Lo | saco.", "Oh, | okay. | It | I-take-out.", "Oh, okay. I'll take it out.",
+          { spain: t("Ah, | vale. | Lo | saco.", "Oh, | okay. | It | I-take-out.", "Oh, okay. I'll take it out.") }) },
       ],
     },
     service: {
@@ -846,7 +857,8 @@ export const post: SituationDef = {
       items: [
         { id: "q_price", s: t("¿Cuánto | cuesta?", "How much | does it cost?", "How much is it?") },
         { id: "q_long", s: t("¿Cuánto | tarda?", "How long | does it take?", "How long does it take?") },
-        { id: "q_track", s: t("¿Lo | puedo | rastrear?", "It | can I | track?", "Can I track it?") },
+        { id: "q_track", s: t("¿Lo | puedo | rastrear?", "It | can I | track?", "Can I track it?",
+          { spain: t("¿Tiene | seguimiento?", "Does it have | tracking?", "Can I track it?") }) },
         { id: "q_insured", s: t("¿Está | asegurado?", "Is it | insured?", "Is it insured?") },
         { id: "q_kilos", s: t("¿Cuánto | es | en | libras?", "How much | is it | in | pounds?", "How much is that in pounds?") },
       ],
@@ -854,7 +866,8 @@ export const post: SituationDef = {
     customs: {
       lt: "Answer the customs questions",
       items: [
-        { id: "value_about", s: t("Como | $800.", "About | 800 pesos.", "About 800 pesos.", { say: "Como ochocientos pesos." }) },
+        { id: "value_about", s: t("Como | $800.", "About | 800 pesos.", "About 800 pesos.", { say: "Como ochocientos pesos.",
+          spain: t("Más o menos | $800.", "About | 800 pesos.", "About 800 pesos.", { say: "Más o menos ochocientos pesos." }) }) },
         { id: "value_is", s: t("Vale | unos | $1,000.", "It's worth | about | 1,000 pesos.", "It's worth about 1,000 pesos.", { say: "Vale unos mil pesos.", flags: { 1: "unos before a number: about, roughly." } }) },
       ],
     },
@@ -872,7 +885,7 @@ export const post: SituationDef = {
         { id: "stamps_could", s: t("¿Me | da | timbres | para | postales?", "(To) me | you-give | stamps | for | postcards?", "Could I get some stamps for postcards?",
           { flags: { 2: "Mexican: timbre = postage stamp; elsewhere estampilla." },
             neutral: t("¿Me | da | estampillas | para | postales?", "(To) me | you-give | stamps | for | postcards?", "Could I get some stamps for postcards?"),
-        spain: t("¿Me | da | sellos | para | postales?", "(To) me | you-give | stamps | for | postcards?", "Could I get some stamps for postcards?") }) },
+        spain: t("¿Me | da | sellos | para | postales?", "(To) me | you-give | stamps | for | postcards?", "Could I get some stamps for postcards?", { flags: { 2: "sello: a postage stamp (Mexico: timbre)." } }) }) },
         { id: "stamps_need", s: t("Quiero | mandar | unas | postales.", "I want | to send | some | postcards.", "I'd like to send some postcards.") },
         { id: "stamps_qty", s: t("Cinco, | por favor.", "Five, | please.", "Five, please.") },
       ],
@@ -939,7 +952,8 @@ export const post: SituationDef = {
     },
     remove: {
       lt: "Agree to take out what can't be sent",
-      items: [{ id: "take_out", s: t("Ah, | bueno. | Lo | saco.", "Oh, | okay. | It | I-take-out.", "Oh, okay. I'll take it out.") }],
+      items: [{ id: "take_out", s: t("Ah, | bueno. | Lo | saco.", "Oh, | okay. | It | I-take-out.", "Oh, okay. I'll take it out.",
+        { spain: t("Ah, | vale. | Lo | saco.", "Oh, | okay. | It | I-take-out.", "Oh, okay. I'll take it out.") }) }],
     },
     return: {
       lt: "Add your return address",
@@ -974,7 +988,8 @@ export const post: SituationDef = {
     more: {
       lt: "Say that's all",
       items: [
-        { id: "more_all", s: t("Es | todo, | gracias.", "It's | all, | thanks.", "That's all, thank you.") },
+        { id: "more_all", s: t("Es | todo, | gracias.", "It's | all, | thanks.", "That's all, thank you.",
+          { spain: t("Nada | más, | gracias.", "Nothing | more, | thanks.", "That's all, thank you.") }) },
         { id: "more_its", s: t("No, | eso | es | todo, | gracias.", "No, | that | is | all, | thanks.", "No, that's it, thanks.") },
       ],
     },
@@ -985,6 +1000,7 @@ export const post: SituationDef = {
   },
 
   merges: {
+    "mientras tanto": { reason: "lexical_expression", split: "mientras → while + tanto → so much; = in the meantime.", minimal: "Two words." },
     "se le ofrece": { reason: "lexical_expression", split: "se → itself + le → to you + ofrece → offers misreads the service formula: what can I do for you.", minimal: "Three words; qué stays separate." },
     "al extranjero": { reason: "lexical_expression", split: "al → to the + extranjero → foreigner misreads the adverb: abroad.", minimal: "Two words." },
     "se echa a perder": { reason: "lexical_expression", split: "se → itself + echa → throws + a → to + perder → lose is one verb: goes bad.", minimal: "Four words, one verb." },

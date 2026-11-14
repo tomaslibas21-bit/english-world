@@ -153,3 +153,17 @@ Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line a
 - Register: Paty says tú in every line; hints tú (¿Me puedes cortar…?, ¿Cuánto te debo?, Esto es para ti), vosotros for the salon (¿Atendéis sin cita?). Correct.
 - Fixed ("Listo" as "done" is Latin American; a Spanish hairdresser says "¡Ya estás!"): "¡Listo! Mírate" → "¡Ya estás! Mírate"; "¡Listo! Ya te tengo apuntado/a" → "¡Perfecto! …"; "¡Listo, ya estoy libre!" → "¡Bueno, ya estoy libre!"; "¡Listo, ya me ha llegado!" and "¡Listo, ya está apuntada!" → "¡Perfecto, …!".
 - Left: "¡Con gusto!" (style_ok) is fine in Spain as an answer to a request.
+
+## Spain pass 3 (14 Nov 2026)
+
+8 twins added, 4 changed, 13 given their own flags.
+
+- **Phrases:** ¿Te ofrezco un vasito de agua o un cafecito? → ¿Te apetece un vaso de agua o un café?; un espacio →
+  un hueco; Como quince minutos → Unos quince minutos; más corto de los lados → por los lados (line and chip; grammar
+  takes por); y aquí está tu cambio → y aquí tienes la vuelta.
+- **Chips:** Un cafecito → Un café; Quedó muy bien → Ha quedado muy bien (grammar added); Quédate con el cambio → con
+  la vuelta (grammar added).
+- **Notes:** pásele, verlo/verla, lo/la (usted), ahorita, desocuparse, bien + adjective, padre, se vale, se lo/se la,
+  lacio, quedó and agendada notes were landing on Spain's tú words; each twin has the right note now (te la, te lo =
+  your hair, apuntada, mona).
+- Spain corpus: 4 items added.

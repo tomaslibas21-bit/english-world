@@ -151,3 +151,23 @@ Found and fixed: The writer's own twins said ¡Listo! (warmed_up, done_it) → �
 English of every twin checked against its Mexican line (restored where a twin had rephrased it). Spain corpus items
 added for the new forms. Gates: Mexican, neutral and Spain checks 0 errors; coverage 0 false accepts.
 
+
+## Spain pass 3 (14 Nov 2026)
+
+- **Day pass:** "la visita" (a Mexican gym's word, noted as such) → "el pase de día" in Spain: entity `day_pass` gets
+  `spain: "pase de día"`, `spainG: "m"`, and every line that names it literally has a twin (plan_offer ×2,
+  plan_which2, plan_reask ×2, plan_ok_day, plan_alt_day, price_day, included_day_classes).
+- **Sign-up fee:** inscripción → matrícula (no_fee, no_discount, the q_fee chip "¿Cobráis matrícula?" with a noteSpain;
+  grammar and PLAN_Q_RE take "matricula").
+- Mónica's register: ¡Excelente! → ¡Genial! / ¡Muy bien! / ¡Buena elección! / ¡Muy buen entrenamiento!; ¡Eso! →
+  ¡Eso es!; ¡Bueno! → ¡Vale!; ¡Ándale!/¡Vamos! → ¡Venga!; toma agua → bebe agua; ¿Qué tal tu día? → ¿Qué tal el
+  día?; mes por mes → mes a mes; "yo te cuido" (spotting) → "yo te ayudo con la barra"; vestuarios "allá atrás" → "ahí
+  detrás"; la taquilla line now says "los venden" and notes taquilla.
+- ID: the Spain twin asks for "un documento de identidad", so id_later / id_back say "lo" (were "la", for
+  identificación).
+- Chips: Quiero inscribirme → Quiero apuntarme (noteSpain), ¿Cómo me inscribo? → ¿Cómo me apunto? (grammar
+  `me apunto`), ¿Me prestas un bolígrafo? → ¿Me dejas un bolígrafo?; noteSpain for q_hours (tenéis) and was_hard
+  (duro).
+- Notes: twins that inherited Mexican notes (qué padre, regadera, alberca, pluma, platicar, ándale, échale ganas,
+  ¿Me prestas…?) get `flags: {}`.
+- Spain corpus: +4 items.

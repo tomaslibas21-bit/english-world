@@ -13,5 +13,11 @@
   {"ctx": "pay", "say": "¿Puedo pagar con tarjeta?", "intent": "pay_card"},
   {"ctx": "pay", "say": "Solo llevo un billete de quinientos", "intent": "big_bill"},
   {"ctx": "closing", "say": "Vale, gracias, hasta luego", "intent": ["g_thanks", "g_bye"]},
-  {"ctx": "more", "say": "No quiero patatas", "intent": "any", "not": ["order"]}
+  {"ctx": "more", "say": "No quiero patatas", "intent": "any", "not": ["order"]},
+  {"ctx": "order", "say": "¿Me pone un kilo de limas?", "intent": "order", "slots": {"items": {"item": {"product": "limon"}}}},
+  {"ctx": "order", "say": "Póngame medio kilo de limas, por favor", "intent": "order"},
+  {"ctx": "qty", "say": "Solo veinte pesos", "intent": "qty_ctx"},
+  {"ctx": "qty", "say": "Solo dos", "intent": "qty_ctx"},
+  {"ctx": "more", "say": "Eso es todo, gracias", "intent": "more_no"},
+  {"ctx": "order", "say": "¿A cuánto están las limas?", "intent": "ask_price", "slots": {"product": "limon"}}
 ] }

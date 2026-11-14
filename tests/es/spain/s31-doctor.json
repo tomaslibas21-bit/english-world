@@ -15,6 +15,10 @@
   {"ctx": "pay", "say": "¿Tiene datáfono?", "intent": "pay_card"},
   {"ctx": "pay", "say": "Con tarjeta, por favor", "intent": "pay_card"},
   {"ctx": "closing", "say": "Vale, muchas gracias, doctora", "intent": "g_thanks"},
+  {"ctx": "fever", "say": "Sí, tengo 38 de fiebre", "intent": ["temp_ans", "fever_yes_ctx", "symptom"]},
+  {"ctx": "problem", "say": "Tengo catarro", "intent": "symptom"},
+  {"ctx": "problem", "say": "Tengo dolor muscular", "intent": "symptom"},
+  {"ctx": "problem", "say": "Tengo gripe", "intent": "symptom"},
   {"ctx": "rx_q", "say": "No conduzco", "intent": "any", "not": ["ask_drive"]},
   {"ctx": "rx_q", "say": "¿Puedo meterme en el mar?", "intent": "ask_exercise"}
 ] }

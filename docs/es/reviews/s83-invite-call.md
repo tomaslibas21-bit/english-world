@@ -131,3 +131,14 @@ units (lo sé, he visto, te viene, cuantos más, mejor). tests/es/spain/s83-invi
 - Checked (fresh reviewer): every twin against its Mexican line (meaning, facts, prices, names), Peninsular wording, the perfect for today's events, tú/usted and vosotros by STYLE.md, glosses, spelling and ¿¡, the Spain transcripts (`--variety=spain --verbose`, untwinned lines read through their neutral fallback) and tests/es/spain.
 - Found: "¡Nada, tú solo ven!" (solo + imperative, a Latin American calque); "Perdón, se está cortando un poco. ¿Dijiste el viernes?" and "¡Ay, qué lindo, gracias!" had no twin (preterite for what was just said; lindo).
 - Fixed: "¡Nada, tú vente y ya está!"; twins "Perdona, se está cortando un poco. ¿Has dicho el viernes?" and "¡Ay, qué detalle, gracias! Pero mejor nos vemos allí.". Kept: ¿Sí? / ¿Diga?, ¡Chao!, el kiosco (the plaza's bandstand), boletos → entradas via the neutral twins.
+
+## Spain pass 3 (14 Nov 2026)
+
+- "Igual voy" means "maybe I'll go" in Spain: mystery → "Yo voy de todas formas".
+- Spain's perfect for the just-said: "¿Has dicho el viernes?" (bad_line_q), "ya te he dicho que sí" (already_yes);
+  "Hoy se lo digo" (le digo).
+- Chips: ag_va "¡Vale!" (noteSpain); notes for Spain on open_its (no "Habla…") and inv_tickets (entrada).
+- Notes on the wrong word (inherited flags): Vale (sale / va notes, 3 lines), ¿dónde está? (quedar note); neutral
+  twins Spain also shows, flags: {} (text unchanged): hey_whatsup (¿qué onda? note on ¿Qué tal?), are_you_asking,
+  accept, bbq_yes (qué padre note on bien / genial).
+- Merge: de todas formas.

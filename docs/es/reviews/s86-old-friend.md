@@ -132,3 +132,24 @@ in town. For the owner: Paola's job and the restaurant's name are invented, as h
 - Checked (fresh reviewer): every twin against its Mexican line (meaning, facts, prices, names), Peninsular wording, the perfect for today's events, tú/usted and vosotros by STYLE.md, glosses, spelling and ¿¡, the Spain transcripts (`--variety=spain --verbose`, untwinned lines read through their neutral fallback) and tests/es/spain.
 - Found: nothing to change (instituto, colegio, zumo, móvil, me ha encantado verte, la primavera pasada with the preterite, maj{o|a}).
 - Fixed: nothing.
+
+## Spain pass 3 (14 Nov 2026)
+
+The owner's trigger case: in Spain "¡Qué milagro!" mostly teases someone who rarely shows up, so Spain's text no
+longer greets with it.
+- Paola's spot[1]: ¡Qué milagro! → ¡Cuánto tiempo sin vernos! (own flag).
+- The learner's chip gr_miracle: Spain says ¡Mira quién está aquí! (no copy of gr_long_time / gr_good_to_see), with a
+  noteSpain that tells the difference; the grammar takes "(pero) mira quién está/anda (aquí/por aquí)" with the same
+  #h:gr_miracle. ¡Qué milagro! stays accepted.
+- Congratulations on news: ¡Enhorabuena! (react_married, react_job, the chip rc_congrats with a noteSpain); Spain keeps
+  ¡Felicidades! for birthdays and holidays.
+- ¿Cómo has estado? → ¿Qué tal te ha ido? (ask_been[0]; the chip bn_ask: ¿Y a ti, qué tal te ha ido?, grammar added).
+- ¡Sí eres tú! → ¡Sí que eres tú!; ¡Tú me dices! → ¡Ya me dirás!; ¡Saludos a tu familia! → ¡Recuerdos a tu familia!
+  (bye_lucy[0], chip by_say_hi; the grammar now takes "recuerdos a…"); rain_check: mi esposo → mi marido, and the
+  comer note no longer says "in Mexico" (Spain's comida is at two too).
+- Notes that landed on the wrong word through inherited flags: instituto (was the "de la escuela" note), ¿sabes qué?
+  (was ¿qué crees?), pequeño (chiquito), café / cerca (cafecito / cerquita): own flags now. Same fix on four neutral
+  twins, which Spain also showed: spot[2] (¡No inventes! note on ¡No puede ser!), react_moved (padre note on bien),
+  lucy_news2 and lucy_news2_plain (cuates note on gemelos), typing_number (¡va! / ahorita notes on ¡Muy bien!):
+  `flags: {}`, the neutral text unchanged.
+- Merges: sí que, ha ido, a ti. Corpus: 4 items (24/24, 0 false accepts).

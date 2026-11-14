@@ -139,3 +139,24 @@ Found and fixed: Sara to the team said ustedes (¿Ya me escuchan?) → vosotros:
 English of every twin checked against its Mexican line (restored where a twin had rephrased it). Spain corpus items
 added for the new forms. Gates: Mexican, neutral and Spain checks 0 errors; coverage 0 false accepts.
 
+
+## Spain pass 3 (14 Nov 2026)
+
+A deeper pass for idioms, set phrases and register.
+
+- Agenda and chairing: "Vamos empezando" → "Vamos a empezar"; "vamos cerrando, ¿algún otro asunto?" → "Bueno, para
+  terminar: ¿algún otro tema?"; "¿asuntos generales?" (a Mexican agenda) → "¿ruegos y preguntas?" (Spain's, with its
+  own note; merge added); "Es todo por hoy" → "Eso es todo por hoy".
+- "¿cómo vais con vuestros pendientes?" (a Mexican office word) → "vuestras tareas".
+- Pablo: "entiendo tu punto" (a calque) → "entiendo lo que dices".
+- Notes: the tú note on notes_ask / upd_you no longer says "a Mexican office" in Spain; "esto…" is Spain's pause word
+  (the twin had inherited "este…, the Mexican pause word"); launch_when's "os" note; twins that inherited "ahorita"
+  and "hablarle = call (Mexico)" notes get `flags: {}`.
+- Hints: "es todo / nada de mi parte" → "por mi parte es todo / nada por mi parte" (in Spain "de mi parte" means "on my
+  behalf"; grammar takes "por mi parte"), "No, es todo" → "No, eso es todo", "Entiendo tu punto…" → "Entiendo lo que
+  dices…", "Yo lo veo diferente" → "Yo lo veo de otra manera" (merge added), "¿Tal vez Pablo puede hacerlo?" → "¿Y si
+  lo hace Pablo?"; noteSpain for el acta (the chip's word) and teletrabajar.
+- The NLU test "¡Que tengáis un buen día!" (bye_all) had started to read as global g_bye after a shared-file change;
+  bye_all now lists "tengais" itself.
+- Kept: Pablo's jargon "la beta ya está arriba" (the clarify flow explains it); "Ya casi termino" (also said in Spain).
+- Spain corpus: +6 items.

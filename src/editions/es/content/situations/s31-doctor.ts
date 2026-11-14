@@ -48,7 +48,7 @@ export const SYMPTOMS: EntityDef[] = [
       "infeccion estomacal", "infeccion en el estomago", "el estomago revuelto", "agruras", "colicos", "dolor de pansa", "el estomago suelto"] }),
   ent("earache", "dolor | de | oído", "pain | of | ear", "m", { art: "", attrs: { nat: "earache" },
     forms: ["dolor de oido", "dolor de oidos", "dolor en el oido", "infeccion de oido", "infeccion en el oido", "otitis", "dolor de oreja"] }),
-  ent("runny_nose", "escurrimiento | nasal", "dripping | nasal", "m", { art: "", attrs: { nat: "runny nose" },
+  ent("runny_nose", "escurrimiento | nasal", "dripping | nasal", "m", { art: "", attrs: { nat: "runny nose", spain: "mocos", spainLt: "snot" },
     forms: ["escurrimiento", "mocos", "moqueo", "flujo nasal", "estornudos", "la nariz suelta"] }),
   ent("stuffy_nose", "congestión | nasal", "congestion | nasal", "f", { art: "", attrs: { nat: "stuffy nose" },
     forms: ["congestion nasal", "congestion", "la nariz tapada", "nariz tapada", "la nariz congestionada", "la nariz constipada"] }),
@@ -56,10 +56,10 @@ export const SYMPTOMS: EntityDef[] = [
     forms: ["dolor de espalda", "dolor en la espalda", "dolor de cintura", "lumbago", "dolor de espalda baja"] }),
   ent("dizzy", "mareo", "dizziness", "m", { art: "", forms: ["mareos", "vertigo", "vertigos"] }),
   ent("fatigue", "cansancio", "tiredness", "m", { art: "", forms: ["fatiga", "debilidad", "agotamiento", "mucho cansancio"] }),
-  ent("aches", "dolor | de | cuerpo", "pain | of | body", "m", { art: "", attrs: { nat: "body aches" },
+  ent("aches", "dolor | de | cuerpo", "pain | of | body", "m", { art: "", attrs: { nat: "body aches", spain: "dolor | muscular", spainLt: "pain | muscular" },
     forms: ["dolor de cuerpo", "dolores musculares", "dolor de huesos", "dolor muscular", "el cuerpo cortado", "cuerpo cortado"] }),
   ent("cold", "resfriado", "cold", "m", { art: "", forms: ["gripa", "gripe", "un resfriado", "catarro", "un catarro", "resfrio", "un poco de gripa", "un poco de gripe", "la gripa", "la gripe"] }),
-  ent("flu", "influenza", "flu", "f", { art: "", forms: ["la influenza", "covid", "el covid", "gripe fuerte", "gripa fuerte"] }),
+  ent("flu", "influenza", "flu", "f", { art: "", attrs: { spain: "gripe" }, forms: ["la influenza", "covid", "el covid", "gripe fuerte", "gripa fuerte"] }),
 ];
 
 const PAINFUL = new Set(["sore_throat", "headache", "stomachache", "earache", "back_pain"]);
@@ -377,6 +377,8 @@ const AUTO: Record<string, string> = {
 };
 
 const FLAG_LOLA = "lo/la: “you” (usted), for a man or a woman.";
+const F_LE_SPAIN = "le: “you” (usted); Spain usually says le here, for a man or a woman.";
+const F_TABLET = "pastilla: a pill, a tablet (Spain's everyday word).";
 const FLAG_YOUR = (es: string, en: string) => `${es}: Spanish says “the ${en}” where English says “your”.`;
 /** The learner's own body in a hint ("Me duele la garganta" = my throat hurts). */
 const FLAG_MY = (es: string, en: string) => `${es}: Spanish says “the ${en}” where English says “my”.`;
@@ -406,6 +408,8 @@ export const doctor: SituationDef = {
 
   merges: {
     "dese la vuelta": { reason: "lexical_expression", split: "dese → give yourself + la → the + vuelta → turn is Spain's set phrase: turn around.", minimal: "Three words." },
+    "como máximo": { reason: "lexical_expression", split: "como → as + máximo → maximum; = at most.", minimal: "Two words." },
+    "no le siente": { reason: "grammatical_fusion", split: "no → not + le → (to) you + siente → sits (sentar); sentar mal = to upset (the stomach).", minimal: "Negation, pronoun and verb." },
     "acaba de": { reason: "grammatical_fusion", split: "acaba → finishes + de → of is false; acabar de + infinitive = has just.", minimal: "Two words; the verb stays outside." },
     "a menudo": { reason: "lexical_expression", split: "a → to + menudo → small hides the meaning: = often (Spain's word for seguido).", minimal: "Two words." },
     "cómo de": { reason: "lexical_expression", split: "cómo → how + de → of is Spain's way to ask how much of a quality: how (strong).", minimal: "Two words." },
@@ -564,6 +568,7 @@ export const doctor: SituationDef = {
     // --- the temperature ----------------------------------------------------------------------
     temp_ans: { patterns: [
       "[si] (tengo | tuve | tenia | traigo | traia) (fiebre | temperatura | calentura) (de | como de | de como | casi de | mas de)? {temp} [@when_tail] #h:temp",
+      "[si] (tengo | tenia | he tenido) [casi | mas de]? {temp} de (fiebre | temperatura) [@when_tail] #h:temp",
       "[si] (tengo | tuve | tenia) {temp} (de fiebre | de temperatura | de calentura) [@when_tail]",
       "[si] [@when_tail] (tuve | tenia) (fiebre de)? [como | casi | mas de]? {temp} [@when_tail]",
       "[si] (me salió | me salio | marcó | me marcó | el termometro marcó | el termometro dijo | me dio) [como | casi | mas de]? {temp} [@when_tail]",
@@ -754,7 +759,9 @@ export const doctor: SituationDef = {
     // --- greeting
     greet: [
       t("Buenos días, | soy | la | doctora | Herrera. | ¿Qué | {m:lo|f:la} | trae | por aquí?", "Good morning, | I'm | — | Doctor | Herrera. | What | you | brings | here?",
-        "Good morning, I'm Dr. Herrera. What brings you in?", { flags: { 2: "la doctora: Spanish uses the article with a title; English doesn't.", 6: FLAG_LOLA } }),
+        "Good morning, I'm Dr. Herrera. What brings you in?", { flags: { 2: "la doctora: Spanish uses the article with a title; English doesn't.", 6: FLAG_LOLA },
+          spain: t("Buenos días, | soy | la | doctora | Herrera. | ¿Qué | le | trae | por aquí?", "Good morning, | I'm | — | Doctor | Herrera. | What | you | brings | here?",
+            "Good morning, I'm Dr. Herrera. What brings you in?", { flags: { 2: "la doctora: Spanish uses the article with a title; English doesn't.", 6: F_LE_SPAIN } }) }),
       t("¡Buenas tardes! | Pase, | siéntese. | Soy | la | doctora | Herrera. | ¿Qué | le | pasa?", "Good afternoon! | Come in, | sit down. | I'm | — | Doctor | Herrera. | What | (to) you | is happening?",
         "Good afternoon! Come in, have a seat. I'm Dr. Herrera. What seems to be the problem?", { flags: { 4: "la doctora: Spanish uses the article with a title; English doesn't." } }),
       t("Buenos días. | Soy | la | doctora | Herrera. | Cuénteme, | ¿cuál | es | el | motivo | de | su | consulta?",
@@ -764,7 +771,8 @@ export const doctor: SituationDef = {
     greet_back: [
       t("¡Qué | gusto | {m:verlo|f:verla} | otra vez! | ¿Qué | le | pasa | ahora?", "What | pleasure | to see you | again! | What | (to) you | is happening | now?",
         "Good to see you again! What's going on this time?", { flags: { 2: "lo/la: “you” (usted), for a man or a woman." }, spain: t("¡Me alegro | de | {m:verlo|f:verla} | otra vez! | ¿Qué | le | pasa | ahora?", "I'm glad | of | to see you | again! | What | (to) you | is happening | now?", "Good to see you again! What's going on this time?", { flags: { 2: "lo/la: “you” (usted), for a man or a woman." } }) }),
-      t("¡Hola | de nuevo! | ¿Qué | {m:lo|f:la} | trae | hoy?", "Hello | again! | What | you | brings | today?", "Hello again! What brings you in today?", { flags: { 3: FLAG_LOLA } }),
+      t("¡Hola | de nuevo! | ¿Qué | {m:lo|f:la} | trae | hoy?", "Hello | again! | What | you | brings | today?", "Hello again! What brings you in today?", { flags: { 3: FLAG_LOLA },
+        spain: t("¡Hola | de nuevo! | ¿Qué | le | trae | hoy?", "Hello | again! | What | you | brings | today?", "Hello again! What brings you in today?", { flags: { 3: F_LE_SPAIN } }) }),
     ],
     greet_feeling: [t("Buenos días, | soy | la | doctora | Herrera. | ¿Cómo | se siente | hoy?", "Good morning, | I'm | — | Doctor | Herrera. | How | do you feel | today?",
       "Good morning, I'm Dr. Herrera. How are you feeling today?", { flags: { 2: "la doctora: Spanish uses the article with a title; English doesn't." } })],
@@ -779,9 +787,10 @@ export const doctor: SituationDef = {
     dob_year: [t("¿Y | el | año?", "And | the | year?", "And the year?")],
     dob_daymonth: [t("¿Y | el | día | y | el | mes?", "And | the | day | and | the | month?", "And the day and month?")],
     dob_thanks: [t("Gracias.", "Thanks.", "Thank you."), t("Perfecto, | gracias.", "Perfect, | thanks.", "Perfect, thanks.")],
-    fine_glad: [t("¡Qué | bueno! | Entonces, | ¿qué | {m:lo|f:la} | trae | por aquí?", "How | good! | So, | what | you | brings | here?", "Good! So what brings you in today?", { flags: { 4: FLAG_LOLA }, spain: t("¡Me alegro! | Entonces, | ¿qué | {m:lo|f:la} | trae | por aquí?", "I'm glad! | So, | what | you | brings | here?", "Good! So what brings you in today?", { flags: { 3: FLAG_LOLA } }) })],
+    fine_glad: [t("¡Qué | bueno! | Entonces, | ¿qué | {m:lo|f:la} | trae | por aquí?", "How | good! | So, | what | you | brings | here?", "Good! So what brings you in today?", { flags: { 4: FLAG_LOLA }, spain: t("¡Me alegro! | Entonces, | ¿qué | le | trae | por aquí?", "I'm glad! | So, | what | you | brings | here?", "Good! So what brings you in today?", { flags: { 3: F_LE_SPAIN } }) })],
     ask_problem: [
-      t("Entonces, | ¿qué | {m:lo|f:la} | trae | por aquí?", "So, | what | you | brings | here?", "So, what brings you in today?", { flags: { 2: FLAG_LOLA } }),
+      t("Entonces, | ¿qué | {m:lo|f:la} | trae | por aquí?", "So, | what | you | brings | here?", "So, what brings you in today?", { flags: { 2: FLAG_LOLA },
+        spain: t("Entonces, | ¿qué | le | trae | por aquí?", "So, | what | you | brings | here?", "So, what brings you in today?", { flags: { 2: F_LE_SPAIN } }) }),
       t("¿Qué | le | pasa?", "What | (to) you | is happening?", "What seems to be the problem?"),
       t("Cuénteme, | ¿qué | tiene?", "Tell me, | what | do you have?", "So tell me, what's wrong?"),
     ],
@@ -821,16 +830,17 @@ export const doctor: SituationDef = {
       t("¿De | cuánto | es | la | fiebre?", "Of | how much | is | the | fever?", "How high is your fever?"),
       t("¿Y | de | cuánto | tiene | la | fiebre?", "And | of | how much | do you have | the | fever?", "And how high is your fever?"),
     ],
-    ask_temp_how: [t("¿Y | cuánto | marcó?", "And | how much | did it show?", "And how high was it?", { flags: { 2: "marcar = to show a reading (a thermometer, a scale)." } })],
+    ask_temp_how: [t("¿Y | cuánto | marcó?", "And | how much | did it show?", "And how high was it?", { flags: { 2: "marcar = to show a reading (a thermometer, a scale)." },
+      spain: t("¿Y | cuánto | marcaba?", "And | how much | was-it-showing?", "And how high was it?", { flags: { 2: "marcar = to show a reading (a thermometer, a scale)." } }) })],
     fever_none: [t("Bien.", "Good.", "Okay, good."), t("Bueno. | Sin | fiebre, | entonces.", "Good. | Without | fever, | then.", "Good. No fever, then.")],
     temp_check_later: [t("No se preocupe, | ahorita | se la | tomo.", "Don't worry, | right now | it for you | I-take.", "No problem, I'll check it in a minute.",
-      { flags: { 1: "Mexican: ahorita = in a moment / right now." }, neutral: t("No se preocupe, | en un momento | se la | tomo.", "Don't worry, | in a moment | it for you | I-take.", "No problem, I'll check it in a minute.") })],
+      { flags: { 1: "Mexican: ahorita = in a moment / right now." }, neutral: t("No se preocupe, | en un momento | se la | tomo.", "Don't worry, | in a moment | it for you | I-take.", "No problem, I'll check it in a minute.", { flags: {} }) })],
     f_echo: [t("¿{$tf} | Fahrenheit?", "{$tf} | Fahrenheit?", "{$tf} Fahrenheit?")],
     f_conv: [t("Aquí | usamos | grados | Celsius: | son | como | {$tc}.", "Here | we-use | degrees | Celsius: | it's | about | {$tc}.", "We use Celsius here: that's about {$tc} degrees.")],
     temp_normal: [t("Eso | es | normal: | no tiene | fiebre.", "That | is | normal: | you don't have | fever.", "That's normal, so no fever.")],
     temp_slight: [t("Son | unas | líneas | de | temperatura, | nada más.", "They're | some | lines | of | temperature, | just.", "That's just a little high.",
       { flags: { 2: "Mexican: unas líneas (de temperatura) = a temperature just above normal." },
-        neutral: t("Es | un poco | de | temperatura, | nada más.", "It's | a little | of | temperature, | just.", "That's just a little high."), spain: t("Son | unas | décimas, | nada más.", "They're | some | tenths (of a degree), | just.", "That's just a little high.") })],
+        neutral: t("Es | un poco | de | temperatura, | nada más.", "It's | a little | of | temperature, | just.", "That's just a little high."), spain: t("Son | unas | décimas, | nada más.", "They're | some | tenths (of a degree), | just.", "That's just a little high.", { flags: { 2: "unas décimas: a temperature just above normal (tenths of a degree)." } }) })],
     temp_fever: [t("Entonces | sí | tiene | fiebre.", "So | yes | you-have | fever.", "So you do have a fever."), t("Eso | ya | es | fiebre.", "That | already | is | fever.", "That's a fever.")],
     temp_high: [t("Es | una | fiebre | bastante | alta.", "It's | a | fever | quite | high.", "That's a pretty high fever.")],
     temp_weird: [t("Mmm, | mejor | se la | tomo | yo | en | un | momento.", "Hmm, | better | it for you | I-take | I | in | a | moment.", "Hmm, I'll check it myself in a minute.")],
@@ -844,7 +854,7 @@ export const doctor: SituationDef = {
     meds_help: [t("¿Alguna | pastilla, | como | paracetamol | o | ibuprofeno?", "Any | pill, | like | acetaminophen | or | ibuprofen?", "Any pills, like acetaminophen or ibuprofen?")],
     meds_pain_ok: [t("Está bien | por | ahora.", "It's fine | for | now.", "Okay, that's fine for now.")],
     meds_home_ok: [t("Qué | bueno. | Un | té | calientito | ayuda.", "How | good. | A | tea | nice and warm | helps.", "That's good. A nice warm tea helps.",
-      { flags: { 4: "calientito: caliente (hot) with the diminutive: nice and warm." }, spain: t("Muy | bien. | Un | té | calentito | ayuda.", "Very | good. | A | tea | nice and warm | helps.", "That's good. A nice warm tea helps.") })],
+      { flags: { 4: "calientito: caliente (hot) with the diminutive: nice and warm." }, spain: t("Muy | bien. | Un | té | calentito | ayuda.", "Very | good. | A | tea | nice and warm | helps.", "That's good. A nice warm tea helps.", { flags: { 4: "calentito: caliente (hot) with the diminutive: nice and warm." } }) })],
     meds_other_ok: [t("Muy | bien, | qué | bueno | que | me | dice.", "Very | good, | how | good | that | (to) me | you-tell.", "Okay, good to know.", { spain: t("Muy | bien, | gracias | por | decírmelo.", "Very | good, | thanks | for | telling me.", "Okay, good to know.") })],
     meds_ab: [t("Bueno. | Mejor | no tome | antibióticos | sin | receta.", "Okay. | Better | don't take | antibiotics | without | prescription.", "Okay. Better not take antibiotics without a prescription.")],
     ok_plain: [t("Muy | bien.", "Very | good.", "Okay."), t("Bien.", "Good.", "All right.")],
@@ -855,7 +865,9 @@ export const doctor: SituationDef = {
       t("Bueno, | vamos a | ver.", "Okay, | let's | see.", "Alright, let's take a look."),
     ],
     bp_start: [t("Primero | le | voy a | tomar | la | presión.", "First | (for) you | I'm going to | take | the | pressure.", "Let me check your blood pressure first.",
-      { flags: { 5: "la presión = blood pressure (la presión arterial)." } })],
+      { flags: { 5: "la presión = blood pressure (la presión arterial)." },
+        spain: t("Primero | le | voy a | tomar | la | tensión.", "First | (for) you | I'm going to | take | the | pressure.", "Let me check your blood pressure first.",
+          { flags: { 5: "la tensión = blood pressure (Spain's everyday word; la presión arterial)." } }) })],
     bp_sleeve: [
       t("Súbase | la | manga, | por favor.", "Roll up | the | sleeve, | please.", "Please roll up your sleeve.", { flags: { 1: FLAG_YOUR("la manga", "sleeve") } }),
       t("¿Me | hace | el | favor | de | subirse | la | manga?", "(For) me | you-do | the | favor | of | rolling up | the | sleeve?", "Could you roll up your sleeve for me?", { flags: { 6: FLAG_YOUR("la manga", "sleeve") } }),
@@ -893,7 +905,8 @@ export const doctor: SituationDef = {
     throat_bit_red: [t("Tiene | la | garganta | un poco | roja.", "You-have | the | throat | a little | red.", "Your throat is a little red.")],
     throat_fine: [t("La | garganta | se ve | bien.", "The | throat | looks | fine.", "Your throat looks fine.", { flags: { 0: FLAG_YOUR("la garganta", "throat") } })],
     press_neck: [t("Ahora | el | cuello.", "Now | the | neck.", "Now your neck.")],
-    press_belly: [t("Ahora | acuéstese | en | la | camilla, | por favor.", "Now | lie down | on | the | exam table, | please.", "Now please lie down on the exam table.")],
+    press_belly: [t("Ahora | acuéstese | en | la | camilla, | por favor.", "Now | lie down | on | the | exam table, | please.", "Now please lie down on the exam table.",
+      { spain: t("Ahora | túmbese | en | la | camilla, | por favor.", "Now | lie down | on | the | exam table, | please.", "Now please lie down on the exam table.") })],
     press_back: [t("Ahora | voltéese, | por favor.", "Now | turn around, | please.", "Now please turn around.",
         { spain: t("Ahora | dese la vuelta, | por favor.", "Now | turn around, | please.", "Now please turn around.") })],
     press_ear: [t("Ahora, | detrás de | la | oreja.", "Now, | behind | the | ear.", "Now behind your ear.")],
@@ -944,16 +957,23 @@ export const doctor: SituationDef = {
     allergy_unsure: [t("No se preocupe. | Le | voy a | dar | algo | muy | seguro.", "Don't worry. | (To) you | I'm going to | give | something | very | safe.", "That's okay. I'll give you something very safe.")],
     chart_fixed: [t("Ah, | muy | bien. | Lo | corrijo | en | su | expediente.", "Ah, | very | good. | It | I-correct | in | your | chart.", "Oh, okay. I'll update your chart.")],
     dose_ab: [t("Tome | una | cápsula | cada | ocho | horas.", "Take | one | capsule | every | eight | hours.", "Take one capsule every eight hours.")],
-    dose_ab_alt: [t("Tome | una | tableta | cada | doce | horas.", "Take | one | tablet | every | twelve | hours.", "Take one tablet every twelve hours.")],
+    dose_ab_alt: [t("Tome | una | tableta | cada | doce | horas.", "Take | one | tablet | every | twelve | hours.", "Take one tablet every twelve hours.",
+      { spain: t("Tome | una | pastilla | cada | doce | horas.", "Take | one | pill | every | twelve | hours.", "Take one pill every twelve hours.", { flags: { 2: F_TABLET } }) })],
     dose_sym: [t("Tome | una | tableta | de | paracetamol | cada | ocho | horas | si | tiene | fiebre | o | dolor.", "Take | one | tablet | of | acetaminophen | every | eight | hours | if | you-have | fever | or | pain.",
-      "Take one acetaminophen tablet every eight hours if you have a fever or pain.")],
+      "Take one acetaminophen tablet every eight hours if you have a fever or pain.",
+      { spain: t("Tome | una | pastilla | de | paracetamol | cada | ocho | horas | si | tiene | fiebre | o | dolor.", "Take | one | pill | of | acetaminophen | every | eight | hours | if | you-have | fever | or | pain.",
+        "Take one acetaminophen pill every eight hours if you have a fever or pain.", { flags: { 2: F_TABLET } }) })],
     dose_stomach: [t("Tome | una | tableta | cada | ocho | horas, | y | el | suero | a | traguitos.", "Take | one | tablet | every | eight | hours, | and | the | electrolyte drink | in | little sips.",
-      "Take one tablet every eight hours, and sip the electrolyte drink slowly.")],
-    dose_pain: [t("Tome | una | tableta | cada | ocho | horas, | después de | comer.", "Take | one | tablet | every | eight | hours, | after | eating.", "Take one tablet every eight hours, after meals.")],
+      "Take one tablet every eight hours, and sip the electrolyte drink slowly.",
+      { spain: t("Tome | una | pastilla | cada | ocho | horas, | y | el | suero | a | sorbitos.", "Take | one | pill | every | eight | hours, | and | the | electrolyte drink | in | little sips.",
+        "Take one pill every eight hours, and sip the electrolyte drink slowly.", { flags: { 2: F_TABLET } }) })],
+    dose_pain: [t("Tome | una | tableta | cada | ocho | horas, | después de | comer.", "Take | one | tablet | every | eight | hours, | after | eating.", "Take one tablet every eight hours, after meals.",
+      { spain: t("Tome | una | pastilla | cada | ocho | horas, | después de | comer.", "Take | one | pill | every | eight | hours, | after | eating.", "Take one pill every eight hours, after meals.", { flags: { 2: F_TABLET } }) })],
     dose_days: [t("Por | cinco | días.", "For | five | days.", "For five days.",
         { spain: t("Durante | cinco | días.", "For | five | days.", "For five days.") })],
     dose_days_sym: [t("No | más | de | cinco | días.", "Not | more | than | five | days.", "No more than five days.")],
-    dose_tension: [t("Tome | una | tableta | si | le duele, | máximo | cada | ocho | horas.", "Take | one | tablet | if | it hurts (you), | at most | every | eight | hours.", "Take one tablet when it hurts, no more than every eight hours.")],
+    dose_tension: [t("Tome | una | tableta | si | le duele, | máximo | cada | ocho | horas.", "Take | one | tablet | if | it hurts (you), | at most | every | eight | hours.", "Take one tablet when it hurts, no more than every eight hours.",
+      { spain: t("Tome | una | pastilla | si | le duele, | como máximo | cada | ocho | horas.", "Take | one | pill | if | it hurts (you), | at most | every | eight | hours.", "Take one pill when it hurts, no more than every eight hours.", { flags: { 2: F_TABLET } }) })],
     dose_days_ab: [t("Tómelas | por | cinco | días.", "Take them | for | five | days.", "Take them for five days.",
         { spain: t("Tómelas | durante | cinco | días.", "Take them | for | five | days.", "Take them for five days.") })],
     dose_finish: [t("Y | termine | todo | el | tratamiento, | aunque | se sienta | mejor.", "And | finish | all | the | treatment, | even if | you-feel | better.", "And finish all of it, even if you feel better.")],
@@ -966,11 +986,15 @@ export const doctor: SituationDef = {
         spain: t("Primero | {m:lo|f:la} | examino.", "First | you | I-examine.", "Let me examine you first.") }), t("Primero | vamos a | ver.", "First | let's | see.", "Let's see first.")],
     dose_first: [t("Primero | vemos | qué | necesita.", "First | we-see | what | you-need.", "Let's see what you need first.")],
     explain_soon: [t("Ahorita | se lo | explico.", "Right now | it to you | I-explain.", "I'll explain in a second.",
-      { flags: { 0: "Mexican: ahorita = in a moment / right now." }, neutral: t("En un momento | se lo | explico.", "In a moment | it to you | I-explain.", "I'll explain in a second.") })],
+      { flags: { 0: "Mexican: ahorita = in a moment / right now." }, neutral: t("En un momento | se lo | explico.", "In a moment | it to you | I-explain.", "I'll explain in a second.", { flags: {} }) })],
     meals_after: [t("Después de | comer, | para que | no le caiga | mal.", "After | eating, | so that | it doesn't sit | badly.", "After meals, so it doesn't upset your stomach.",
-      { flags: { 3: "caer mal (a alguien) = to not agree with someone: to upset the stomach." } })],
+      { flags: { 3: "caer mal (a alguien) = to not agree with someone: to upset the stomach." },
+        spain: t("Después de | comer, | para que | no le siente | mal.", "After | eating, | so that | it doesn't sit | badly.", "After meals, so it doesn't upset your stomach.",
+          { flags: { 3: "sentar mal (a alguien) = to not agree with someone: to upset the stomach." } }) })],
     side_ab: [t("Le | puede | caer | un poco | mal | al | estómago.", "(To) you | it-can | fall | a little | badly | to the | stomach.", "It can upset your stomach a little.",
-      { flags: { 2: "caer mal = to upset (the stomach)." } })],
+      { flags: { 2: "caer mal = to upset (the stomach)." },
+        spain: t("Le | puede | sentar | un poco | mal | al | estómago.", "(To) you | it-can | sit | a little | badly | to the | stomach.", "It can upset your stomach a little.",
+          { flags: { 2: "sentar mal = to upset (the stomach)." } }) })],
     side_rash: [t("Si | le | salen | ronchas, | deje | de | tomarlo | y | llámenos.", "If | (on) you | come out | hives, | stop | — | taking it | and | call us.", "If you get a rash, stop taking it and call us.",
       { flags: { 5: "dejar de + infinitive = to stop doing something." } })],
     side_none: [t("No | mucho. | Es | muy | suave.", "Not | much. | It's | very | gentle.", "Not really. It's very gentle.")],
@@ -1003,7 +1027,9 @@ export const doctor: SituationDef = {
     note_no_ok: [t("Muy | bien, | no hay | problema.", "Very | good, | there's no | problem.", "Okay, no problem.")],
     eat_stomach: [t("Coma | ligero: | arroz, | caldo, | plátano. | Nada | de | picante.", "Eat | light: | rice, | broth, | banana. | Nothing | of | spicy food.", "Eat light food: rice, broth, bananas. Nothing spicy.")],
     eat_any: [t("Lo que | quiera. | Un | caldito | de | pollo | le | cae | muy | bien.", "What | you-want. | A | little broth | of | chicken | (to) you | does | very | well.",
-      "Whatever you like. Chicken soup is great.", { flags: { 3: "caldito: caldo (broth) with the diminutive.", 7: "caer bien = to do you good, to agree with you." } })],
+      "Whatever you like. Chicken soup is great.", { flags: { 3: "caldito: caldo (broth) with the diminutive.", 7: "caer bien = to do you good, to agree with you." },
+        spain: t("Lo que | quiera. | Un | caldito | de | pollo | le | sienta | muy | bien.", "What | you-want. | A | little broth | of | chicken | (to) you | does | very | well.",
+          "Whatever you like. Chicken soup is great.", { flags: { 3: "caldito: caldo (broth) with the diminutive.", 7: "sentar bien = to do you good, to agree with you." } }) })],
     exercise_no: [t("Esta | semana | no. | Su | cuerpo | necesita | descansar.", "This | week | no. | Your | body | needs | to rest.", "Not this week. Your body needs rest.")],
     cost_info: [t("La | consulta | son | {$price}; | me | paga | al | final.", "The | visit | is | {$price}; | (to) me | you-pay | at the | end.", "The visit is {$price}; you can pay me at the end.",
       { flags: { 2: "son: with an amount in pesos Mexicans say “son” (son quinientos pesos)." } })],
@@ -1013,20 +1039,20 @@ export const doctor: SituationDef = {
       t("Aquí tiene | su | receta. | ¿Sabe | dónde | surtirla?", "Here's | your | prescription. | Do you know | where | to fill it?", "Here's your prescription. Do you know where to fill it?",
         { flags: { 5: F_SURTIR },
           neutral: t("Aquí tiene | su | receta. | ¿Sabe | dónde | comprar | el | medicamento?", "Here's | your | prescription. | Do you know | where | to buy | the | medicine?",
-            "Here's your prescription. Do you know where to get the medicine?") }),
+            "Here's your prescription. Do you know where to get the medicine?", { flags: {} }) }),
       t("Aquí tiene | la | receta. | ¿Tiene | alguna | farmacia | cerca?", "Here's | the | prescription. | Do you have | any | pharmacy | nearby?", "Here's the prescription. Is there a pharmacy near you?"),
     ],
     // the question again after the learner asked something else (the prescription is handed over only once)
     ask_pharmacy_again: [t("¿Sabe | dónde | surtir | la | receta?", "Do you know | where | to fill | the | prescription?", "Do you know where to fill the prescription?",
       { flags: { 2: F_SURTIR },
-        neutral: t("¿Sabe | dónde | comprar | el | medicamento?", "Do you know | where | to buy | the | medicine?", "Do you know where to get the medicine?") })],
+        neutral: t("¿Sabe | dónde | comprar | el | medicamento?", "Do you know | where | to buy | the | medicine?", "Do you know where to get the medicine?", { flags: {} }) })],
     rx_here: [t("Claro, | aquí tiene | su | receta.", "Sure, | here's | your | prescription.", "Sure, here's your prescription.")],
     med_price: [t("Depende | de | la | farmacia; | el | genérico | sale | más | barato.", "It-depends | on | the | pharmacy; | the | generic | comes out | more | cheap.",
       "It depends on the pharmacy. The generic is cheaper.", { flags: { 6: "salir = to come out; with a price, to cost (sale más barato = it costs less)." } })],
     pharmacy_harbor: [t("Perfecto. | Ahí | se la | surten | sin | problema.", "Perfect. | There | it for you | they-fill | without | problem.", "Perfect. They'll fill it there, no problem.",
       { flags: { 3: F_SURTIR },
         neutral: t("Perfecto. | Ahí | le | venden | el | medicamento | sin | problema.", "Perfect. | There | (to) you | they-sell | the | medicine | without | problem.",
-          "Perfect. They'll have the medicine there, no problem.") })],
+          "Perfect. They'll have the medicine there, no problem.", { flags: {} }) })],
     pharmacy_other: [t("Muy | bien; | se la | surten | en | cualquier | farmacia.", "Very | good; | it for you | they-fill | in | any | pharmacy.", "Sure, any pharmacy can fill it.",
       { flags: { 3: F_SURTIR },
         neutral: t("Muy | bien; | el | medicamento | lo | venden | en | cualquier | farmacia.", "Very | good; | the | medicine | it | they-sell | in | any | pharmacy.",
@@ -1148,7 +1174,8 @@ export const doctor: SituationDef = {
     fever: {
       lt: "Say your temperature (or that you didn't take it)",
       items: [
-        { id: "temp", s: t("Sí, | tengo | fiebre | de | 38.", "Yes, | I-have | fever | of | 38.", "Yes, I have a fever of 38 degrees.", { say: "Sí, tengo fiebre de treinta y ocho." }), note: "In Mexico temperatures are in Celsius: 37 is normal, 38 is a fever." },
+        { id: "temp", s: t("Sí, | tengo | fiebre | de | 38.", "Yes, | I-have | fever | of | 38.", "Yes, I have a fever of 38 degrees.", { say: "Sí, tengo fiebre de treinta y ocho.",
+          spain: t("Sí, | tengo | 38 | de | fiebre.", "Yes, | I-have | 38 | of | fever.", "Yes, I have a fever of 38 degrees.", { say: "Sí, tengo treinta y ocho de fiebre." }) }), note: "In Mexico temperatures are in Celsius: 37 is normal, 38 is a fever." },
         { id: "temp_unknown", s: t("No sé; | no me la tomé.", "I don't know; | I didn't take it.", "I don't know, I didn't take it.",
         { spain: t("No sé; | no me la he tomado.", "I don't know; | I haven't taken it.", "I don't know, I didn't take it.") }) },
         { id: "fever_yes", s: t("Sí, | tengo | un poco | de | fiebre.", "Yes, | I-have | a little | of | fever.", "Yes, I have a bit of a fever.") },
@@ -1991,7 +2018,8 @@ function haveItems(): HintItem[] {
   };
   const out: HintItem[] = Object.entries(NAT).map(([id, nat]) => ({ id: "have", s: t("Tengo | {X}.", "I-have | {X}.", nat), only: (e: EntityDef) => e.id === id }));
   out.push({ id: "have", s: t("Tengo | gripa.", "I-have | cold.", "I have a cold.", { flags: { 1: "Mexican: gripa = a cold (or the flu). Elsewhere: gripe." },
-    neutral: t("Tengo | gripe.", "I-have | cold.", "I have a cold.") }), only: (e: EntityDef) => e.id === "cold" });
+    neutral: t("Tengo | gripe.", "I-have | cold.", "I have a cold.", { flags: {} }),
+    spain: t("Tengo | catarro.", "I-have | cold.", "I have a cold.", { flags: { 1: "catarro: a cold (Spain also says resfriado; la gripe is the flu)." } }) }), only: (e: EntityDef) => e.id === "cold" });
   return out;
 }
 

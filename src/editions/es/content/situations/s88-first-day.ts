@@ -256,7 +256,7 @@ export const firstDay: SituationDef = {
       "(es | se viste) (formal | casual) [aqui]",
     ] },
     q_lunch_time: { patterns: [
-      "a que hora (comen | comemos | come la gente | es la comida | se come | es la hora de la comida | salen a comer | salimos a comer) [aqui] #h:q_lunch_time",
+      "a que hora (comen | comeis | comemos | come la gente | es la comida | se come | es la hora de la comida | salen a comer | salimos a comer) [aqui] #h:q_lunch_time",
       "a que hora (es el almuerzo | almuerzan | almorzamos | es el lunch) #tip:almuerzo", "(cuando | a que hora) (es | tenemos) (la hora de la comida | la comida | el descanso)",
       "(cuanto tiempo | cuanto) (tenemos | dura | hay) (para comer | de comida | la comida | para la comida | la hora de la comida) #long", "cuanto dura (la comida | el almuerzo | el descanso) #long",
     ] },
@@ -480,7 +480,7 @@ export const firstDay: SituationDef = {
         "Oh, and your badge isn't ready yet. Until then, I'll let you in.",
         { flags: { 3: GAFETE },
           neutral: t("Ah, | y | tu | credencial | todavía | no está | lista. | Mientras, | yo | te | abro | la | puerta.", "Oh, | and | your | badge | still | isn't | ready. | Meanwhile, | I | (for) you | I'll-open | the | door.",
-            "Oh, and your badge isn't ready yet. Until then, I'll let you in."), spain: t("Ah, | y | tu | tarjeta de acceso | todavía | no está | lista. | Mientras, | yo | te | abro | la | puerta.", "Oh, | and | your | badge | still | isn't | ready. | Meanwhile, | I | (for) you | I'll-open | the | door.", "Oh, and your badge isn't ready yet. Until then, I'll let you in.") }),
+            "Oh, and your badge isn't ready yet. Until then, I'll let you in."), spain: t("Ah, | y | tu | tarjeta de acceso | todavía | no está | lista. | Mientras, | yo | te | abro | la | puerta.", "Oh, | and | your | badge | still | isn't | ready. | Meanwhile, | I | (for) you | I'll-open | the | door.", "Oh, and your badge isn't ready yet. Until then, I'll let you in.", { flags: {} }) }),
     ],
     badge_soon: [t("Creo | que | mañana | ya | está | listo.", "I-think | that | tomorrow | already | it-is | ready.", "I think it'll be ready tomorrow.",
       { flags: { 3: "ya with a future time: “by then”." },
@@ -520,7 +520,7 @@ export const firstDay: SituationDef = {
         "The meeting room is over there, the one with the glass walls.",
         { flags: { 1: JUNTAS },
           neutral: t("La | sala de reuniones | está | allá, | la | de | las | paredes | de | vidrio.", "The | meeting room | is | over there, | the one | with | the | walls | of | glass.",
-            "The meeting room is over there, the one with the glass walls."), spain: t("La | sala de reuniones | está | allí, | la | de | las | paredes | de | cristal.", "The | meeting room | is | over there, | the one | with | the | walls | of | glass.", "The meeting room is over there, the one with the glass walls.") }),
+            "The meeting room is over there, the one with the glass walls."), spain: t("La | sala de reuniones | está | allí, | la | de | las | paredes | de | cristal.", "The | meeting room | is | over there, | the one | with | the | walls | of | glass.", "The meeting room is over there, the one with the glass walls.", { flags: {} }) }),
     ],
     tour_restrooms: [t("Y | los | baños | están | al fondo | del | pasillo, | a la izquierda.", "And | the | restrooms | are | at the end | of the | hall, | on the left.",
       "And the restrooms are down the hall, on the left.")],
@@ -542,7 +542,7 @@ export const firstDay: SituationDef = {
     a_how_coffee: [
       t("Nomás | aprietas | este | botón | y | esperas | un | minuto.", "Just | you-press | this | button | and | you-wait | a | minute.", "Just press this button and wait a minute.",
         { flags: { 0: "Mexican: nomás = just." },
-          neutral: t("Solo | aprietas | este | botón | y | esperas | un | minuto.", "Just | you-press | this | button | and | you-wait | a | minute.", "Just press this button and wait a minute.") }),
+          neutral: t("Solo | aprietas | este | botón | y | esperas | un | minuto.", "Just | you-press | this | button | and | you-wait | a | minute.", "Just press this button and wait a minute.", { flags: {} }) }),
     ],
     a_how_broken: [
       t("Normalmente | aprietas | este | botón. | Pero | hoy | no funciona, | ¡perdón!", "Usually | you-press | this | button. | But | today | it doesn't work, | sorry!",
@@ -562,7 +562,7 @@ export const firstDay: SituationDef = {
     a_water: [
       t("En | la | cocina | hay | un | garrafón | de | agua.", "In | the | kitchen | there-is | a | big jug | of | water.", "There's a big jug of drinking water in the kitchen.",
         { flags: { 5: "Mexican: garrafón = a big jug of drinking water (people don't drink the tap water)." },
-          neutral: t("En | la | cocina | hay | un | bidón | de | agua.", "In | the | kitchen | there-is | a | big jug | of | water.", "There's a big jug of drinking water in the kitchen.") }),
+          neutral: t("En | la | cocina | hay | un | bidón | de | agua.", "In | the | kitchen | there-is | a | big jug | of | water.", "There's a big jug of drinking water in the kitchen.", { flags: { 5: "bidón: a big jug of drinking water (people don't drink the tap water)." } }) }),
     ],
     a_fridge: [t("¡En | el | refrigerador! | Solo | ponle | tu | nombre.", "In | the | fridge! | Just | put on it | your | name.", "In the fridge! Just put your name on it.", { spain: t("¡En | la | nevera! | Solo | tienes | que | ponerle | tu | nombre.", "In | the | fridge! | Just | you have | to | put on it | your | name.", "In the fridge! Just put your name on it.") })],
     a_micro: [t("Sí, | en | la | cocina, | junto | al | refrigerador.", "Yes, | in | the | kitchen, | next | to the | fridge.", "Yes, in the kitchen, next to the fridge.", { spain: t("Sí, | en | la | cocina, | junto | a | la | nevera.", "Yes, | in | the | kitchen, | next | to | the | fridge.", "Yes, in the kitchen, next to the fridge.") })],
@@ -571,7 +571,9 @@ export const firstDay: SituationDef = {
     a_restroom: [t("Al fondo | del | pasillo, | a la izquierda.", "At the end | of the | hall, | on the left.", "Down the hall, on the left.")],
     a_meeting: [
       t("Es | la | de | las | paredes | de | vidrio. | La | reservas | en | el | calendario.", "It's | the one | with | the | walls | of | glass. | It | you-book | in | the | calendar.",
-        "It's the one with the glass walls. You book it in the calendar.", { flags: { 7: "La here is a pronoun: it (the room)." } }),
+        "It's the one with the glass walls. You book it in the calendar.", { flags: { 7: "La here is a pronoun: it (the room)." },
+          spain: t("Es | la | de | las | paredes | de | cristal. | La | reservas | en | el | calendario.", "It's | the one | with | the | walls | of | glass. | It | you-book | in | the | calendar.",
+            "It's the one with the glass walls. You book it in the calendar.", { flags: { 7: "La here is a pronoun: it (the room)." } }) }),
     ],
     a_dress: [
       t("Nada | muy | formal. | Y | los | viernes | son | casuales: | ¡puedes | venir | de | jeans!", "Nothing | very | formal. | And | — | Fridays | are | casual: | you-can | come | in | jeans!",
@@ -589,7 +591,9 @@ export const firstDay: SituationDef = {
     a_who: [
       t("Es | la | licenciada | Salinas, | de | Recursos Humanos. | Es | muy | amable.", "That's | — | Ms. | Salinas, | from | HR. | She's | very | nice.",
         "That's Ms. Salinas from HR. She's really nice.",
-        { flags: { 1: "The article before a title has no English word.", 2: "licenciada: a title for someone with a college degree; English says Ms." } }),
+        { flags: { 1: "The article before a title has no English word.", 2: "licenciada: a title for someone with a college degree; English says Ms." },
+          spain: t("Es | la | señora | Salinas, | de | Recursos Humanos. | Es | muy | amable.", "That's | — | Ms. | Salinas, | from | HR. | She's | very | nice.",
+            "That's Ms. Salinas from HR. She's really nice.", { flags: { 1: "The article before a title has no English word." } }) }),
     ],
     // "¿Quién es Pablo?" after "¡Esa no, es la taza de Pablo!" (Línea Clara's Pablo, s34)
     a_pablo: [t("Es | un | compañero | del | equipo. | ¡Luego | te lo | presento!", "He's | a | coworker | from the | team. | Later | him to you | I'll-introduce!",
@@ -619,7 +623,7 @@ export const firstDay: SituationDef = {
     printer_jam: [
       t("¡Ay, | no! | Se atoró | el | papel | otra vez.", "Oh, | no! | It-got-stuck | the | paper | again.", "Oh no, the paper's jammed again!",
         { flags: { 2: "Mexican: atorarse = get stuck (elsewhere: atascarse)." },
-          neutral: t("¡Ay, | no! | Se atascó | el | papel | otra vez.", "Oh, | no! | It-got-stuck | the | paper | again.", "Oh no, the paper's jammed again!"), spain: t("¡Ay, | no! | Se ha atascado | el | papel | otra vez.", "Oh, | no! | It's gotten stuck | the | paper | again.", "Oh no, the paper's jammed again!") }),
+          neutral: t("¡Ay, | no! | Se atascó | el | papel | otra vez.", "Oh, | no! | It-got-stuck | the | paper | again.", "Oh no, the paper's jammed again!"), spain: t("¡Ay, | no! | Se ha atascado | el | papel | otra vez.", "Oh, | no! | It's gotten stuck | the | paper | again.", "Oh no, the paper's jammed again!", { flags: {} }) }),
     ],
     printer_fix: [t("Abre | la | tapa | de | un | lado | y | saca | el | papel.", "Open | the | cover | of | one | side | and | take out | the | paper.", "Just open the side cover and take out the paper.")],
 
@@ -631,7 +635,7 @@ export const firstDay: SituationDef = {
         "Okay, let's get to work! We need to update the client list.",
         { flags: { 3: "Mexican, casual: la chamba = work, a job." },
           neutral: t("Bueno, | ¡a | trabajar! | Hay que | actualizar | la | lista | de | clientes.", "Okay, | to | work! | We need | to update | the | list | of | clients.",
-            "Okay, let's get to work! We need to update the client list.") }),
+            "Okay, let's get to work! We need to update the client list.", { flags: {} }) }),
     ],
     task_file: [t("Está | en | un | archivo | en | mi | computadora.", "It-is | in | a | file | on | my | computer.", "It's in a file on my computer.", { spain: t("Está | en | un | archivo | en | mi | ordenador.", "It-is | in | a | file | on | my | computer.", "It's in a file on my computer.") })],
     task_later_reply: [t("¡No hay prisa! | Te lo | mando | por | correo | para | cuando | puedas.", "No rush! | It to you | I'll-send | by | email | for | when | you-can.",
@@ -669,7 +673,7 @@ export const firstDay: SituationDef = {
     lunch_urge: [
       t("¡Ándale, | vente! | Es | un | ratito | nada más.", "Come on, | come along! | It's | a | little while | only.", "Oh, come on! It's just for a little while.",
         { flags: { 0: "Mexican: ándale = come on." },
-          neutral: t("¡Anda, | vente! | Es | un | ratito | nada más.", "Come on, | come along! | It's | a | little while | only.", "Oh, come on! It's just for a little while."), spain: t("¡Anda, | vente! | Es | solo | un | ratito.", "Come on, | come along! | It's | only | a | little while.", "Oh, come on! It's just for a little while.") }),
+          neutral: t("¡Anda, | vente! | Es | un | ratito | nada más.", "Come on, | come along! | It's | a | little while | only.", "Oh, come on! It's just for a little while."), spain: t("¡Anda, | vente! | Es | solo | un | ratito.", "Come on, | come along! | It's | only | a | little while.", "Oh, come on! It's just for a little while.", { flags: { 0: "¡anda!: come on!" } }) }),
     ],
     lunch_yes_reply: [
       t("¡Qué | bien! | Salimos | a | las | dos.", "How | great! | We-leave | at | — | two.", "Great! We leave at two.", { flags: { 4: ART_TIME } }),
@@ -705,7 +709,7 @@ export const firstDay: SituationDef = {
       "A few people from the team. That way you'll get to meet them!", { flags: { 4: "los here is a pronoun: them (your new coworkers)." } })],
     // "¿Qué es una cocina económica?", or "¿Qué es eso?" right after the invitation
     a_cocina: [t("Es | un | lugarcito | de | comida | casera, | ¡y | barato!", "It's | a | little place | of | food | homemade, | and | cheap!",
-      "It's a little place with home cooking, and it's cheap!", { flags: { 2: "lugarcito: lugar (place) + -cito, a small, friendly place." }, spain: t("Es | un | sitio | de | comida | casera, | ¡y | barato!", "It's | a | place | of | food | homemade, | and | cheap!", "It's a little place with home cooking, and it's cheap!") })],
+      "It's a little place with home cooking, and it's cheap!", { flags: { 2: "lugarcito: lugar (place) + -cito, a small, friendly place." }, spain: t("Es | un | sitio | de | comida | casera, | ¡y | barato!", "It's | a | place | of | food | homemade, | and | cheap!", "It's a little place with home cooking, and it's cheap!", { flags: {} }) })],
 
     // --- end of the day -----------------------------------------------------------------------------------
     day_ask: [
@@ -770,7 +774,7 @@ export const firstDay: SituationDef = {
         { id: "q_password", s: t("¿Cuál | es | mi | contraseña?", "What | is | my | password?", "What's my password?") },
         { id: "q_change", s: t("¿Tengo | que | cambiar | la | contraseña?", "I-have | to | change | the | password?", "Do I need to change the password?") },
         { id: "q_badge", s: t("¿Me | dan | un | gafete?", "(To) me | they-give | a | badge?", "Do I get a badge?", { flags: { 3: GAFETE },
-          neutral: t("¿Me | dan | una | credencial?", "(To) me | they-give | a | badge?", "Do I get a badge?"), spain: t("¿Me | dan | una | tarjeta de acceso?", "(To) me | they-give | a | badge?", "Do I get a badge?") }) },
+          neutral: t("¿Me | dan | una | credencial?", "(To) me | they-give | a | badge?", "Do I get a badge?"), spain: t("¿Me | dan | una | tarjeta de acceso?", "(To) me | they-give | a | badge?", "Do I get a badge?", { flags: {} }) }) },
       ],
     },
     where: {
@@ -785,8 +789,10 @@ export const firstDay: SituationDef = {
       lt: "Ask about clothes and lunch",
       items: [
         { id: "q_dress", s: t("¿Hay | código | de | vestimenta?", "Is-there | code | of | dress?", "Is there a dress code?") },
-        { id: "q_lunch_time", s: t("¿A | qué | hora | comen?", "At | what | time | do-you-all-eat?", "What time do people have lunch?"),
-          note: "In Mexico lunch, la comida, is the big meal of the day, around two." },
+        { id: "q_lunch_time", s: t("¿A | qué | hora | comen?", "At | what | time | do-you-all-eat?", "What time do people have lunch?",
+          { spain: t("¿A | qué | hora | coméis?", "At | what | time | do-you-all-eat?", "What time do people have lunch?") }),
+          note: "In Mexico lunch, la comida, is the big meal of the day, around two.",
+          noteSpain: "Coméis: “you (all) eat” (vosotros: María and the team). Lunch, la comida, is the big meal of the day, around two." },
         { id: "q_fridge", s: t("¿Dónde | pongo | mi | comida?", "Where | I-put | my | lunch?", "Where can I put my lunch?") },
       ],
     },
@@ -796,7 +802,7 @@ export const firstDay: SituationDef = {
         { id: "q_home", s: t("¿A | qué | hora | salimos?", "At | what | time | we-leave?", "What time do we finish?") },
         { id: "q_who", s: t("¿Quién | es | ella?", "Who | is | she?", "Who's that?") },
         { id: "q_meeting", s: t("¿Dónde | está | la | sala de juntas?", "Where | is | the | meeting room?", "Where's the meeting room?", { flags: { 3: JUNTAS },
-          neutral: t("¿Dónde | está | la | sala de reuniones?", "Where | is | the | meeting room?", "Where's the meeting room?") }),
+          neutral: t("¿Dónde | está | la | sala de reuniones?", "Where | is | the | meeting room?", "Where's the meeting room?", { flags: {} }) }),
           note: "Mexico says sala de juntas; elsewhere sala de reuniones." },
         { id: "q_restroom", s: t("¿Dónde | está | el | baño?", "Where | is | the | restroom?", "Where's the restroom?") },
       ],
@@ -804,7 +810,7 @@ export const firstDay: SituationDef = {
     no_more: {
       lt: "Say you have no more questions",
       items: [
-        { id: "q_none", s: t("No, | es | todo | por ahora.", "No, | it's | all | for now.", "No, that's all for now.") },
+        { id: "q_none", s: t("No, | es | todo | por ahora.", "No, | it's | all | for now.", "No, that's all for now.", { spain: t("No, | eso | es | todo | por ahora.", "No, | that | is | all | for now.", "No, that's all for now.") }) },
         { id: "q_good", s: t("Creo | que | estoy | bien, | gracias.", "I-think | that | I-am | good, | thanks.", "I think I'm good, thanks.") },
       ],
     },

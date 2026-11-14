@@ -118,6 +118,11 @@
 "ctx": "declare",
 "say": "Llevo dos mil dólares en efectivo",
 "intent": "declare_cash"
+},
+{
+"ctx": "connection",
+"say": "No, ha sido un vuelo directo",
+"intent": "no_connection"
 }
 ]
 }

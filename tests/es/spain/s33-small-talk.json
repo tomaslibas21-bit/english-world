@@ -15,5 +15,9 @@
   {"ctx": "closing", "say": "Ahí viene mi autobús", "intent": ["leave"]},
   {"ctx": "closing", "say": "Vale, hasta luego, Don Pancho", "intent": ["g_bye"]},
   {"ctx": "closing", "say": "¡Venga, hasta luego!", "intent": ["g_bye"]},
-  {"ctx": "closing", "say": "Vale, nos vemos", "intent": ["g_bye"]}
+  {"ctx": "closing", "say": "Vale, nos vemos", "intent": ["g_bye"]},
+  {"ctx": "weather", "say": "¡Y que lo diga!", "intent": ["wx_agree", "yn:yes"]},
+  {"ctx": "weather", "say": "Estamos a unos treinta grados", "intent": "wx_temp"},
+  {"ctx": "weekend_past", "say": "Hicimos una barbacoa", "intent": "wk_act_ctx"},
+  {"ctx": "closing", "say": "¡Me ha encantado hablar con usted!", "intent": ["nice_talk", "leave", "g_bye"]}
 ] }

@@ -11,5 +11,9 @@
   {"ctx": "recommend", "say": "¿Hay algo más barato?", "intent": "ask_cheaper"},
   {"ctx": "recommend", "say": "¿Necesito receta?", "intent": "ask_rx_needed"},
   {"ctx": "recommend", "say": "No, gracias, no me lo llevo", "intent": ["decline_rec", "yn:no"]},
-  {"ctx": "need", "say": "Me he quemado con el sol", "intent": ["symptom_state"]}
+  {"ctx": "need", "say": "Me he quemado con el sol", "intent": ["symptom_state"]},
+  {"ctx": "need", "say": "Me encuentro mal", "intent": "feel_sick"},
+  {"ctx": "need", "say": "No me encuentro muy bien", "intent": "feel_sick"},
+  {"ctx": "who", "say": "Es para mi mujer", "intent": "who_ans"},
+  {"ctx": "more", "say": "Eso es todo, gracias", "intent": "more_no"}
 ] }

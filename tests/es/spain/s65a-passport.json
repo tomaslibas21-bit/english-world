@@ -121,6 +121,26 @@
 "ctx": "passport",
 "say": "¿Dónde puedo coger un taxi?",
 "intent": "q_taxi"
+},
+{
+"ctx": "length",
+"say": "Una semana, más o menos",
+"intent": "length"
+},
+{
+"ctx": "stay",
+"say": "Me voy a alojar en el Hotel Mar Azul",
+"intent": "stay"
+},
+{
+"ctx": "return",
+"say": "Mi vuelo de vuelta es el sábado",
+"intent": "return_date"
+},
+{
+"ctx": "stay",
+"say": "¿Qué significa alojarse?",
+"intent": "word_meaning"
 }
 ]
 }

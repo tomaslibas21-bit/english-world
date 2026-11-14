@@ -156,3 +156,19 @@ Found and fixed: ¿Qué le damos? / ¿Qué se le ofrece? → ¿Qué necesita? / 
 English of every twin checked against its Mexican line (restored where a twin had rephrased it). Spain corpus items
 added for the new forms. Gates: Mexican, neutral and Spain checks 0 errors; coverage 0 false accepts.
 
+
+## Spain pass 3 (14 Nov 2026)
+
+17 twins added, 4 changed, 10 given their own flags.
+
+- **Phrases:** ¿Se le ofrece algo más? → ¿Desea algo más?; Mientras, → Mientras tanto,; como guste / cuando guste →
+  como quiera / cuando quiera; ¿Me permite la receta? → ¿Me da la receta? / ¿Me deja ver la receta?; a traguitos → a
+  sorbitos; en la etiqueta dice → pone; ¡Uy! → ¡Vaya!
+- **Tenses:** se me acabó → se me ha acabado; ya le di → ya le he dado.
+- **Words:** bolsita → bolsa (¿Quiere bolsa?); su cambio → la vuelta / le devuelvo…; su recibo → el ticket.
+- **Chips:** Me siento mal → Me encuentro mal (grammar: me encuentro mal, no me encuentro bien); Es para mi esposa →
+  mi mujer; Es todo → Eso es todo.
+- **Notes:** the Mexican pásele, híjole, ahorita, piquete, moscos, agruras, surtir and traer notes no longer land on
+  Spain's words (twins with their own flags; trae → lleva gets a llevar note). noteSpain: constipado = a cold in Spain;
+  "¿Me da…?" is not only Mexican.
+- Spain corpus: 4 items added.

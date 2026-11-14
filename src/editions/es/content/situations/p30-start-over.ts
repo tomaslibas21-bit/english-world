@@ -553,7 +553,8 @@ export const startOver: SituationDef = {
     forgiven: [t("Ya | te | perdoné.", "Already | you | I-forgave.", "I already forgave you.", { spain: t("Ya | te | he perdonado.", "Already | you | I've forgiven.", "I already forgave you.") })],
     // "¿Sigues enojado?": before Diego has had his say, and after it
     mad_q: [t("¿Tú | qué | crees?", "You | what | you-think?", "What do you think?", { flags: { 0: "tú before the question word: what do YOU think?" } })],
-    not_mad: [t("No. | Ya | se me pasó.", "No. | Already | it's-passed (for me).", "No. I'm over it.", { flags: { 2: "pasársele algo a alguien: get over it (anger, a cold)." } })],
+    not_mad: [t("No. | Ya | se me pasó.", "No. | Already | it's-passed (for me).", "No. I'm over it.", { flags: { 2: "pasársele algo a alguien: get over it (anger, a cold)." },
+      spain: t("No. | Ya | se me ha pasado.", "No. | Already | it's-passed (for me).", "No. I'm over it.", { flags: { 2: "pasársele algo a alguien: get over it (anger, a cold)." } }) })],
     pride_coat: [t("El | orgullo | pesa, | ¿verdad?", "— | Pride | weighs, | right?", "Pride's heavy, huh?", { flags: { 0: ART_GEN } })],
     know_that: [t("Sí. | Algo | sé | de | eso.", "Yeah. | Something | I-know | about | that.", "Yeah. I know a thing or two about that.")],
 
@@ -561,7 +562,9 @@ export const startOver: SituationDef = {
     dan_first_time: [
       t("¿Sabes? | Es | la | primera | vez | que | te | oigo | decir | “me equivoqué”.",
         "You-know? | It's | the | first | time | that | you | I-hear | say | “I was wrong.”",
-        "You know, that's the first time I've heard you say “I was wrong.”"),
+        "You know, that's the first time I've heard you say “I was wrong.”",
+        { spain: t("¿Sabes? | Es | la | primera | vez | que | te | oigo | decir | “me he equivocado”.", "You-know? | It's | the | first | time | that | you | I-hear | say | “I've been wrong.”",
+          "You know, that's the first time I've heard you say “I was wrong.”") }),
     ],
     dan_thats_new: [
       t("Vaya. | Una | disculpa. | Eso | es | nuevo.", "Huh. | An | apology. | That | is | new.", "Huh. An apology. That's new."),
@@ -569,7 +572,8 @@ export const startOver: SituationDef = {
     ],
     dan_wrong_too: [
       t("Yo | también | me equivoqué. | Fui | demasiado | orgulloso | para | levantar | el | teléfono.", "I | too | was wrong. | I-was | too | proud | to | pick up | the | phone.",
-        "I was wrong too. Too proud to pick up the phone."),
+        "I was wrong too. Too proud to pick up the phone.",
+        { spain: t("Yo | también | me equivoqué. | Fui | demasiado | orgulloso | para | coger | el | teléfono.", "I | too | was wrong. | I-was | too | proud | to | pick up | the | phone.", "I was wrong too. Too proud to pick up the phone.") }),
       t("Yo | tampoco | fui | perfecto. | Nunca | te | llamé.", "I | not … either | was | perfect. | Never | you | I-called.", "I wasn't perfect either. I never called you.",
         { flags: { 1: "tampoco: “not … either”; the negation is inside it." } }),
     ],
@@ -579,7 +583,7 @@ export const startOver: SituationDef = {
     ],
     push_react: [t("No me presiones, | ¿sí? | Hoy | no.", "Don't push me, | okay? | Today | not.", "Don't push me, okay? Not today.", { spain: t("No me presiones, | ¿vale? | Hoy | no.", "Don't push me, | okay? | Today | not.", "Don't push me, okay? Not today.") })],
     push_close: [t("Mejor | hablamos | otro | día, | ¿sí?", "Better | we-talk | another | day, | okay?", "Let's talk another time, okay?", { spain: t("Mejor | hablamos | otro | día, | ¿vale?", "Better | we-talk | another | day, | okay?", "Let's talk another time, okay?") })],
-    just_time: [t("Solo | dame | un | tiempo.", "Just | give me | a | while.", "Just give me some time.")],
+    just_time: [t("Solo | dame | un | tiempo.", "Just | give me | a | while.", "Just give me some time.", { spain: t("Solo | dame | tiempo.", "Just | give me | time.", "Just give me some time.") })],
     time_q_react: [t("Yo | te | aviso.", "I | (to) you | I'll-let-know.", "I'll let you know.")],
     time_ok: [t("Gracias. | Te lo | agradezco.", "Thanks. | (For) it, you | I-thank.", "Thanks. I appreciate that.")],
     wait_twist: [t("Oye. | Espera.", "Hey. | Wait.", "Hey. Wait.")],
@@ -608,7 +612,8 @@ export const startOver: SituationDef = {
     // --- making it up ---------------------------------------------------------------------------------
     so_what_now: [
       t("A ver. | ¿Y | ahora | qué?", "Let's see. | And | now | what?", "So. What now?"),
-      t("Bueno. | ¿Y | ahora | qué | sigue?", "Okay. | And | now | what | comes-next?", "Okay. So what happens now?"),
+      t("Bueno. | ¿Y | ahora | qué | sigue?", "Okay. | And | now | what | comes-next?", "Okay. So what happens now?",
+        { spain: t("Bueno. | ¿Y | ahora | qué | hacemos?", "Okay. | And | now | what | do-we-do?", "Okay. So what happens now?") }),
     ],
     i_do: [t("Pues | yo | sí.", "Well, | I | do.", "Well, I do.", { flags: { 2: "sí: “yes” here stands for the verb (I do know)." } })],
     make_up_dinner: [t("Una | cena. | Con | eso | me conformo.", "A | dinner. | With | that | I'll-settle.", "Dinner. That'll do.")],
@@ -652,8 +657,10 @@ export const startOver: SituationDef = {
     tell_me: [t("A ver, | dime.", "Let's see, | tell me.", "Okay, tell me.")],
     anything_else: [t("¿Algo | más | que | quieras | decir?", "Anything | else | that | you-want | to say?", "Anything else you want to say?", { flags: { 3: SUBJ } })],
     start_over_yes: [
-      t("Ya | empezamos. | Tú | y | yo.", "Already | we-started. | You | and | me.", "We just did. You and me."),
-      t("Ya | empezamos, | hace | un | minuto.", "Already | we-started, | ago | a | minute.", "We already did, a minute ago.", { flags: { 2: "hace + a time: … ago." } }),
+      t("Ya | empezamos. | Tú | y | yo.", "Already | we-started. | You | and | me.", "We just did. You and me.",
+        { spain: t("Ya | hemos empezado. | Tú | y | yo.", "Already | we've-started. | You | and | me.", "We just did. You and me.") }),
+      t("Ya | empezamos, | hace | un | minuto.", "Already | we-started, | ago | a | minute.", "We already did, a minute ago.", { flags: { 2: "hace + a time: … ago." },
+        spain: t("Ya | hemos empezado, | hace | un | minuto.", "Already | we've-started, | ago | a | minute.", "We already did, a minute ago.", { flags: { 2: "hace + a time: … ago." } }) }),
     ],
     // a yes to "¿Borrón y cuenta nueva o qué?"
     start_over_ok: [t("Pues | ya | está. | Tú | y | yo.", "Well | already | it-is. | You | and | me.", "Well, that's that. You and me.", { flags: { 1: "ya está: that's it, it's done." } })],
@@ -674,12 +681,13 @@ export const startOver: SituationDef = {
           spain: t("Cuando quieras. | Pero | no me hagas | esperar | dos | meses | la | próxima | vez.", "Anytime. | But | don't make me | wait | two | months | — | next | time.",
             "Anytime. Just don't make me wait two months next time.", { flags: { 6: "The article before próxima vez has no English word." } }) }),
     ],
-    hush: [t("¡Ay, | ya | cállate! | Entra.", "Oh, | already | shut up! | Come in.", "Oh, hush. Come inside.", { flags: { 1: "ya: here “enough”, said with a smile." } })],
+    hush: [t("¡Ay, | ya | cállate! | Entra.", "Oh, | already | shut up! | Come in.", "Oh, hush. Come inside.", { flags: { 1: "ya: here “enough”, said with a smile." },
+      spain: t("¡Anda, | calla! | Entra.", "Go on, | hush! | Come in.", "Oh, hush. Come inside.", { flags: { 0: "anda: go on, said with a smile." } }) })],
 
     // --- the endings ---------------------------------------------------------------------------------
     come_home: [
       t("Pásale. | Ya | está | el | café.", "Come in. | Already | it's-ready | the | coffee.", "Come on in. The coffee's ready.",
-        { flags: { 0: "Mexican: pásale = come in." }, neutral: t("Pasa. | Ya | está | el | café.", "Come in. | Already | it's-ready | the | coffee.", "Come on in. The coffee's ready.") }),
+        { flags: { 0: "Mexican: pásale = come in." }, neutral: t("Pasa. | Ya | está | el | café.", "Come in. | Already | it's-ready | the | coffee.", "Come on in. The coffee's ready.", { flags: {} }) }),
     ],
     // after Natalia's "Ya está el café": not the coffee again
     come_home_michi: [t("Pasa. | Michi | también | te | extrañó.", "Come in. | Michi | too | you | missed.", "Come on in. Michi missed you too.", { spain: t("Pasa. | Michi | también | te | ha echado de menos.", "Come in. | Michi | too | you | has missed.", "Come on in. Michi missed you too.") })],
@@ -732,11 +740,12 @@ export const startOver: SituationDef = {
     responsibility: {
       lt: "Take responsibility",
       items: [
-        { id: "was_wrong", s: t("Me equivoqué, | y | es | mi | culpa.", "I was wrong, | and | it's | my | fault.", "I was wrong, and that's on me.") },
+        { id: "was_wrong", s: t("Me equivoqué, | y | es | mi | culpa.", "I was wrong, | and | it's | my | fault.", "I was wrong, and that's on me.",
+          { spain: t("Me he equivocado, | y | es | culpa | mía.", "I've been wrong, | and | it's | fault | mine.", "I was wrong, and that's on me.") }) },
         { id: "no_excuse", s: t("No hay | excusa | para | lo que | dije.", "There's no | excuse | for | what | I-said.", "There's no excuse for what I said.") },
         { id: "you_right", s: t("Tenías razón, | y | fui | demasiado | {m:orgulloso|f:orgullosa} | para | llamarte.", "You were right, | and | I-was | too | proud | to | call you.",
           "You were right, and I was too proud to call.") },
-        { id: "my_fault", s: t("Fue | mi | culpa.", "It-was | my | fault.", "It was my fault.") },
+        { id: "my_fault", s: t("Fue | mi | culpa.", "It-was | my | fault.", "It was my fault.", { spain: t("Fue | culpa | mía.", "It-was | fault | mine.", "It was my fault.") }) },
         { id: "out_of_line", s: t("Me pasé. | No te merecías | eso.", "I went too far. | You didn't deserve | that.", "That was out of line. You didn't deserve that."),
           note: "Pasarse (de la raya): go too far." },
       ],
@@ -784,7 +793,7 @@ export const startOver: SituationDef = {
       items: [
         { id: "deal_ok", s: t("Trato hecho.", "Deal.", "Deal.") },
         { id: "you_got_it", s: t("¡Sale!", "You got it!", "You got it!", { flags: { 0: "Mexican: sale = okay, deal." },
-          neutral: t("¡De acuerdo!", "Agreed!", "You got it!"), spain: t("¡Vale!", "Okay!", "You got it!") }), register: "casual" },
+          neutral: t("¡De acuerdo!", "Agreed!", "You got it!"), spain: t("¡Vale!", "Okay!", "You got it!", { flags: {} }) }), register: "casual" },
         { id: "name_day", s: t("Tú | dime | cuándo.", "You | tell me | when.", "Name the day.") },
         { id: "cant_cook", s: t("¡Pero | yo | no sé | cocinar!", "But | I | don't know how | to cook!", "But I can't cook!"), note: "A joke works too." },
       ],
@@ -796,7 +805,7 @@ export const startOver: SituationDef = {
         { id: "start_over_me_you", s: t("¿Empezamos | de nuevo, | tú | y | yo?", "Shall-we-start | again, | you | and | me?", "Can we start over, you and me?") },
         { id: "friends_again", s: t("¿Podemos | volver | a | ser | amigos?", "Can-we | go back | to | being | friends?", "Can we be friends again?") },
         { id: "put_behind", s: t("¿Borrón y cuenta nueva?", "Clean slate?", "Can we put this behind us?", { flags: { 0: BORRON } }),
-          note: "A favorite in Mexico for a fresh start." },
+          note: "A favorite in Mexico for a fresh start.", noteSpain: "Borrón y cuenta nueva: a clean slate, a fresh start." },
       ],
     },
     thanks: {
@@ -833,6 +842,9 @@ export const startOver: SituationDef = {
     "hemos echado de menos": { reason: "grammatical_fusion", split: "hemos echado → we have thrown + de menos → of less: echar de menos = to miss (someone), in Spain's present perfect; one English verb.", minimal: "The verb phrase." },
     "he echado de menos": { reason: "grammatical_fusion", split: "he echado → I have thrown + de menos → of less: echar de menos = to miss (someone), in Spain's present perfect; one English verb.", minimal: "The verb phrase." },
     "ha echado de menos": { reason: "grammatical_fusion", split: "ha echado → has thrown + de menos → of less: echar de menos = to miss (someone), in Spain's present perfect; one English verb.", minimal: "The verb phrase." },
+    "se me ha pasado": { reason: "lexical_expression", split: "se → itself + me → for me + ha pasado → has passed; pasársele (algo a alguien) = to get over it, in Spain's present perfect.", minimal: "The verb phrase." },
+    "me he equivocado": { reason: "lexical_expression", split: "me → myself + he equivocado → I have mistaken; equivocarse = to be wrong, in Spain's present perfect.", minimal: "The verb phrase." },
+    "hemos empezado": { reason: "grammatical_fusion", split: "hemos → we have + empezado (participle) → started: Spain's present perfect.", minimal: "Auxiliary and participle." },
     "delante de": { reason: "lexical_expression", split: "delante → ahead + de → of: delante de = in front of.", minimal: "Two words." },
     "sin más": { reason: "lexical_expression", split: "sin → without + más → more: sin más = just like that.", minimal: "Two words." },
     "lo sé": { reason: "grammatical_fusion", split: "lo → it + sé → I know: ya lo sé = I know; English drops the object.", minimal: "Pronoun and verb." },

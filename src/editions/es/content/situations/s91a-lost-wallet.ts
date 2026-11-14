@@ -223,7 +223,7 @@ export const lostWallet: SituationDef = {
   grammar: {
     macros: {
       // "cuando pagué los mangos", "cuando saqué dinero", "cuando fui a pagar los mangos" (the intro's own moment)
-      when_paid: "cuando (pagué | le pagué | estaba pagando | compré | estaba comprando | fui a comprar | fui a pagar | iba a pagar | iba a comprar | quise pagar | estaba por pagar | saqué | pagaba | compraba) [algo | dinero | efectivo | un | una | unos | unas | mi | el | la | los | las] [{w:any}]",
+      when_paid: "cuando (pagué | le pagué | he pagado | le he pagado | he comprado | estaba pagando | compré | estaba comprando | fui a comprar | fui a pagar | iba a pagar | iba a comprar | quise pagar | estaba por pagar | saqué | pagaba | compraba) [algo | dinero | efectivo | un | una | unos | unas | mi | el | la | los | las] [{w:any}]",
       // what's inside: "mis tarjetas", "dos tarjetas", "unos quinientos pesos", "mi licencia de manejo"
       thing: "(mis tarjetas [de credito | de debito | del banco] | mi tarjeta [de credito | de debito | del banco] | (dos | tres | unas | algunas | varias) tarjetas [de credito | de debito] | una tarjeta [de credito | de debito] | tarjetas | mi licencia [de manejo | de conducir] | mi identificacion | mi credencial [de elector] | mis documentos | mi pasaporte | mis llaves | mi celular | dinero | efectivo | mi dinero | [como | unos | mas o menos | casi] {number} (pesos | dolares) | (unos | algunos) (pesos | dolares | billetes) | una foto [de mis hijos | de mi familia | de mi perro | de mis nietos] | fotos)",
       ago: "hace ((una | media) hora | un rato | un ratito | rato | ratito | poco | unos minutos | {number} (minutos | horas | minuto) | como (una | media) hora | como {number} minutos | un buen rato | una hora mas o menos | mas o menos una hora)",
@@ -560,7 +560,7 @@ export const lostWallet: SituationDef = {
       t("¡Ay, | Dios! | No se preocupe.", "Oh, | God! | Don't worry.", "Oh dear! Don't worry."),
       t("¡Ay, | no! | No se preocupe, | ahorita | vemos | qué | hacemos.", "Oh, | no! | Don't worry, | right now | we-see | what | we-do.", "Oh no! Don't worry, we'll figure out what to do.",
         { flags: { 3: "Mexican: ahorita = right now, in a moment." },
-          neutral: t("¡Ay, | no! | No se preocupe, | ahora | vemos | qué | hacemos.", "Oh, | no! | Don't worry, | now | we-see | what | we-do.", "Oh no! Don't worry, we'll figure out what to do.") }),
+          neutral: t("¡Ay, | no! | No se preocupe, | ahora | vemos | qué | hacemos.", "Oh, | no! | Don't worry, | now | we-see | what | we-do.", "Oh no! Don't worry, we'll figure out what to do.", { flags: {} }) }),
     ],
     stolen_react: [
       t("¡Ay, | no! | ¿Está | {m:seguro|f:segura}? | A lo mejor | nada más | se le cayó.", "Oh, | no! | Are you | sure? | Maybe (lit. at the best) | just | you dropped it.",
@@ -572,7 +572,7 @@ export const lostWallet: SituationDef = {
     ask_pockets: [
       t("¿Ya | revisó | bien | sus | bolsas?", "Already | did you check | well | your | pockets?", "Did you check your pockets properly?",
         { flags: { 4: "Mexican: bolsas = pockets (and bags); elsewhere bolsillos." },
-          neutral: t("¿Ya | revisó | bien | sus | bolsillos?", "Already | did you check | well | your | pockets?", "Did you check your pockets properly?"), spain: t("¿Ha | mirado | bien | en | los | bolsillos?", "Have | you looked | carefully | in | the | pockets?", "Have you checked your pockets carefully?") }),
+          neutral: t("¿Ya | revisó | bien | sus | bolsillos?", "Already | did you check | well | your | pockets?", "Did you check your pockets properly?"), spain: t("¿Ha | mirado | bien | en | los | bolsillos?", "Have | you looked | carefully | in | the | pockets?", "Have you checked your pockets carefully?", { flags: {} }) }),
     ],
     checked_ok: [t("Ah, | bueno.", "Oh, | okay.", "Oh, okay."), t("Está bien.", "That's fine.", "All right.")],
     check_again: [t("Revise | otra vez, | por si acaso.", "Check | again, | just in case.", "Check again, just in case.")],
@@ -595,7 +595,7 @@ export const lostWallet: SituationDef = {
     go_back_area: [t("Entonces | regrese | a | {X.the} | y | busque | por | ahí.", "Then | go back | to | {X.the} | and | look | around | there.", "Then go back to {X.the} and look around.", { spain: t("Entonces | vuelva | a | {X.the} | y | busque | por | ahí.", "Then | go back | to | {X.the} | and | look | around | there.", "Then go back to {X.the} and look around.") })],
     look_here: [t("Entonces | dé | una | vuelta | por | los | puestos | y | pregunte.", "Then | take | a | walk | around | the | stalls | and | ask.", "Then walk around the stalls and ask.")],
     retrace: [t("Bueno, | piense | por | dónde | anduvo | hoy | y | regrese | a | preguntar.", "Well, | think | through | where | you-went around | today | and | go back | to | ask.",
-      "Well, think about where you've been today, and go back and ask.", { flags: { 4: "andar: to go around, to be (somewhere) for a while." }, spain: t("Bueno, | piense | por | dónde | ha estado | hoy | y | vuelva | a | preguntar.", "Well, | think | through | where | you've been | today | and | go back | to | ask.", "Well, think about where you've been today, and go back and ask.") })],
+      "Well, think about where you've been today, and go back and ask.", { flags: { 4: "andar: to go around, to be (somewhere) for a while." }, spain: t("Bueno, | piense | por | dónde | ha estado | hoy | y | vuelva | a | preguntar.", "Well, | think | through | where | you've been | today | and | go back | to | ask.", "Well, think about where you've been today, and go back and ask.", { flags: {} }) })],
     left_home: [t("¡A lo mejor | {lo@X} | dejó | en | su | casa!", "Maybe (lit. at the best) | it | you-left | at | your | house!", "Maybe you left it at home!", { flags: { 0: A_LO_MEJOR }, spain: t("¡A lo mejor | se | {lo@X} | ha dejado | en | casa!", "Maybe (lit. at the best) | — | it | you've left | at | home!", "Maybe you left it at home!", { flags: { 0: A_LO_MEJOR, 1: "se: dejarse algo = to leave something behind (by mistake); English has no word here." } }) })],
     maybe_found: [
       t("A lo mejor | alguien | {lo@X} | encontró.", "Maybe (lit. at the best) | someone | it | found.", "Maybe someone found it.", { flags: { 0: A_LO_MEJOR }, spain: t("A lo mejor | alguien | {lo@X} | ha encontrado.", "Maybe (lit. at the best) | someone | it | has found.", "Maybe someone found it.", { flags: { 0: A_LO_MEJOR } }) }),
@@ -612,7 +612,7 @@ export const lostWallet: SituationDef = {
     call_taxi: [
       t("Entonces | vaya | al | sitio | de | taxis | y | pregunte.", "Then | go | to the | stand | of | taxis | and | ask.", "Then go to the taxi stand and ask.",
         { flags: { 3: "Mexican: sitio (de taxis) = taxi stand; elsewhere parada de taxis." },
-          neutral: t("Entonces | vaya | a | la | parada | de | taxis | y | pregunte.", "Then | go | to | the | stand | of | taxis | and | ask.", "Then go to the taxi stand and ask.") }),
+          neutral: t("Entonces | vaya | a | la | parada | de | taxis | y | pregunte.", "Then | go | to | the | stand | of | taxis | and | ask.", "Then go to the taxi stand and ask.", { flags: {} }) }),
     ],
     taxi_know: [t("Los | choferes | se conocen | todos.", "The | drivers | know each other | all.", "The drivers all know each other.", { spain: t("Los | taxistas | se conocen | todos.", "The | taxi drivers | know each other | all.", "The drivers all know each other.") })],
     ask_describe: [
@@ -662,7 +662,7 @@ export const lostWallet: SituationDef = {
         "It's right here, just across the square. One minute on foot.",
         { flags: { 2: "Mexican: nomás = just; elsewhere nada más." },
           neutral: t("Está | aquí | mismo, | cruzando | la | plaza. | Un | minuto | a pie.", "It's | here | right, | crossing | the | square. | One | minute | on foot.",
-            "It's right here, just across the square. One minute on foot.") }),
+            "It's right here, just across the square. One minute on foot.", { flags: {} }) }),
     ],
     police_open: [t("Siempre | hay | alguien, | {m:mijo|f:mija}.", "Always | there is | someone, | dear.", "There's always someone there, dear.", { flags: { 3: MIJA }, spain: t("Siempre | hay | alguien, | {m:hijo|f:hija}.", "Always | there is | someone, | dear.", "There's always someone there, dear.", { flags: { 3: "hijo / hija: “dear”, warm, from an older person." } }) })],
     police_english: [t("Ay, | no sé. | Pero | usted | habla | muy | bien | español.", "Oh, | I don't know. | But | you | speak | very | well | Spanish.", "Oh, I don't know. But you speak Spanish very well!")],
@@ -682,7 +682,7 @@ export const lostWallet: SituationDef = {
     what_do: [t("Primero | regrese | y | pregunte. | Si | no aparece, | vaya | a | la | policía.", "First | go back | and | ask. | If | it doesn't turn up, | go | to | the | police.",
       "First go back and ask. If it doesn't turn up, go to the police.", { spain: t("Primero | vuelva | y | pregunte. | Si | no aparece, | vaya | a | la | policía.", "First | go back | and | ask. | If | it doesn't turn up, | go | to | the | police.", "First go back and ask. If it doesn't turn up, go to the police.") })],
     ok: [
-      t("Ándele.", "Okay.", "Okay.", { flags: { 0: "Mexican: ándele = okay, go ahead." }, neutral: t("Muy | bien.", "Very | good.", "Okay.") }),
+      t("Ándele.", "Okay.", "Okay.", { flags: { 0: "Mexican: ándele = okay, go ahead." }, neutral: t("Muy | bien.", "Very | good.", "Okay.", { flags: {} }) }),
       t("Está bien.", "That's fine.", "All right."),
       t("Muy | bien.", "Very | good.", "Okay."),
     ],
@@ -707,14 +707,14 @@ export const lostWallet: SituationDef = {
     missing_some: [t("Ay, | no. | Entonces | de todos modos | vaya | a | la | policía.", "Oh, | no. | Then | anyway | go | to | the | police.", "Oh no. Then you should still go to the police.")],
     phone_broken: [t("Ay, | qué | mala | suerte. | Pero | por lo menos | ya | {lo@X} | tiene.", "Oh, | what | bad | luck. | But | at least | now | it | you-have.", "Oh, what bad luck. But at least you've got it back.")],
     missing_really: [t("Perdón, | ¿sí | le | falta | algo?", "Sorry, | really | (to) you | is missing | something?", "Sorry, so is something missing?",
-      { flags: { 1: "sí (stressed): “so … really?”, checking a yes." }, spain: t("Perdone, | ¿le | falta | algo?", "Sorry, | (to) you | is missing | something?", "Sorry, so is something missing?") })],
+      { flags: { 1: "sí (stressed): “so … really?”, checking a yes." }, spain: t("Perdone, | ¿le | falta | algo?", "Sorry, | (to) you | is missing | something?", "Sorry, so is something missing?", { flags: {} }) })],
     lost_really: [t("Perdón, | ¿sí | perdió | su | {X}?", "Sorry, | really | did you lose | your | {X}?", "Sorry, so you did lose your {X}?",
-      { flags: { 1: "sí (stressed): “so you did…”, checking a yes." }, spain: t("Perdone, | ¿ha perdido | su | {X}?", "Sorry, | have you lost | your | {X}?", "Sorry, so you did lose your {X}?") })],
+      { flags: { 1: "sí (stressed): “so you did…”, checking a yes." }, spain: t("Perdone, | ¿ha perdido | su | {X}?", "Sorry, | have you lost | your | {X}?", "Sorry, so you did lose your {X}?", { flags: {} }) })],
     not_lost_resp: [t("¡Ah, | qué bueno! | Entonces, | ¿en | qué | le | ayudo?", "Oh, | how good! | Then, | in | what | (to) you | I-help?", "Oh, good! So how can I help you?", { spain: t("¡Ah, | menos mal! | Entonces, | ¿en | qué | le | ayudo?", "Oh, | thank goodness! | Then, | in | what | (to) you | I-help?", "Oh, good! So how can I help you?") })],
     flowers_sure: [t("¡Claro que sí!", "Of course!", "Of course!")],
     flowers_thanks: [t("¡Gracias! | Están | recién | cortadas.", "Thanks! | They're | freshly | cut.", "Thank you! They're freshly cut.")],
     flowers_price: [
-      t("El | ramo | está | en | {$price}.", "The | bunch | is | at | {$price}.", "A bunch is {$price}.", { flags: { 3: "estar en + a price: the usual way to give a market price." }, spain: t("El | ramo | cuesta | {$price}.", "The | bunch | costs | {$price}.", "A bunch is {$price}.") }),
+      t("El | ramo | está | en | {$price}.", "The | bunch | is | at | {$price}.", "A bunch is {$price}.", { flags: { 3: "estar en + a price: the usual way to give a market price." }, spain: t("El | ramo | cuesta | {$price}.", "The | bunch | costs | {$price}.", "A bunch is {$price}.", { flags: {} }) }),
     ],
     but_worried: [t("Pero | se ve | {m:preocupado|f:preocupada}, | {m:mijo|f:mija}. | ¿Le | pasó | algo?", "But | you look | worried, | dear. | (To) you | happened | something?",
       "But you look worried, dear. Did something happen?", { flags: { 3: MIJA }, spain: t("Pero | se le ve | {m:preocupado|f:preocupada}, | {m:hijo|f:hija}. | ¿Le | ha pasado | algo?", "But | you look | worried, | dear. | (To) you | has happened | something?", "But you look worried, dear. Did something happen?", { flags: { 3: "hijo / hija: “dear”, warm, from an older person." } }) })],
@@ -729,7 +729,7 @@ export const lostWallet: SituationDef = {
     kind_resp: [t("Ay, | no es | nada.", "Oh, | it isn't | anything.", "Oh, it's nothing."), t("Para | eso | estamos.", "For | that | we-are.", "That's what we're here for.")],
     // (only "Mari": María is s88's coworker; the cross-cutting audit's near-clash stays mild)
     her_name: [t("Mari, | {m:mijo|f:mija}, | para servirle.", "Mari, | dear, | at your service.", "Mari, dear. At your service.",
-      { flags: { 1: MIJA, 2: "para servirle: “to serve you”, a warm, polite Mexican way to give your name or offer help." }, spain: t("Mari, | {m:hijo|f:hija}, | para servirle.", "Mari, | dear, | at your service.", "Mari, dear. At your service.", { flags: { 1: "hijo / hija: “dear”, warm, from an older person.", 2: "para servirle: “to serve you”, a warm, polite way to give your name or offer help." } }) })],
+      { flags: { 1: MIJA, 2: "para servirle: “to serve you”, a warm, polite Mexican way to give your name or offer help." }, spain: t("Mari, | {m:hijo|f:hija}, | para | lo que | necesite.", "Mari, | dear, | for | whatever | you-need.", "Mari, dear. Here for whatever you need.", { flags: { 1: "hijo / hija: “dear”, warm, from an older person." } }) })],
     closing_welcome: [t("De nada, | {m:mijo|f:mija}. | ¡Que | le | vaya | bien!", "You're welcome, | dear. | May | (to) you | it-go | well!", "You're welcome, dear. Take care!", { flags: { 1: MIJA }, spain: t("De nada, | {m:hijo|f:hija}. | ¡Que | le | vaya | bien!", "You're welcome, | dear. | May | (to) you | it-go | well!", "You're welcome, dear. Take care!", { flags: { 1: "hijo / hija: “dear”, warm, from an older person." } }) })],
     closing_bye: [t("¡Adiós, | {m:mijo|f:mija}! | ¡Que | le | vaya | bien!", "Bye, | dear! | May | (to) you | it-go | well!", "Bye, dear! Take care!", { flags: { 1: MIJA }, spain: t("¡Adiós, | {m:hijo|f:hija}! | ¡Que | le | vaya | bien!", "Bye, | dear! | May | (to) you | it-go | well!", "Bye, dear! Take care!", { flags: { 1: "hijo / hija: “dear”, warm, from an older person." } }) })],
     enjoy_day: [t("¡Cuídese | mucho! | Y | que | disfrute | el | resto | del | día.", "Take care | a lot! | And | may | you-enjoy | the | rest | of the | day.", "Take care! And enjoy the rest of your day.")],
@@ -740,7 +740,8 @@ export const lostWallet: SituationDef = {
       lt: "Ask for help and say what happened", slot: "item", examples: ["wallet"],
       items: [H_HELP, H_LOST, H_SE_ME, H_CANT_FIND,
         { id: "stolen", s: t("Creo | que | me | robaron | {X.the}.", "I think | that | (from) me | they-stole | {X.the}.", "I think someone stole my {X}.", { spain: t("Creo | que | me | han robado | {X.the}.", "I think | that | (from) me | they've stolen | {X.the}.", "I think someone stole my {X}.") }),
-          note: "Spanish uses a “they” with no subject: me robaron = someone stole (from me)." },
+          note: "Spanish uses a “they” with no subject: me robaron = someone stole (from me).",
+          noteSpain: "Spanish uses a “they” with no subject: me han robado = someone has stolen (from me)." },
       ],
     },
     lost: {
@@ -758,7 +759,8 @@ export const lostWallet: SituationDef = {
       lt: "Say where and when you last had it", slot: "place", examples: ["cafe", "bakery", "fruit_stand"],
       items: [
         H_AT_PLACE,
-        { id: "ls_paid", s: t("Cuando | pagué | mi | café.", "When | I-paid (for) | my | coffee.", "When I paid for my coffee.") },
+        { id: "ls_paid", s: t("Cuando | pagué | mi | café.", "When | I-paid (for) | my | coffee.", "When I paid for my coffee.",
+          { spain: t("Cuando | he pagado | el | café.", "When | I-paid (for) | the | coffee.", "When I paid for my coffee.") }) },
         { id: "ls_time", s: t("Hace | como | una | hora.", "Ago | about | an | hour.", "About an hour ago.", { flags: { 0: "hace + a time = … ago; it comes first in Spanish." }, spain: t("Hace | una | hora, | más o menos.", "Ago | an | hour, | more or less.", "About an hour ago.", { flags: { 0: "hace + a time = … ago; it comes first in Spanish." } }) }) },
         { id: "ls_time", only: notRide, s: t("Hoy | en | la | mañana, | en | {X.the}.", "Today | in | the | morning, | at | {X.the}.", "This morning, at {X.the}.", { spain: t("Esta | mañana, | en | {X.the}.", "This | morning, | at | {X.the}.", "This morning, at {X.the}.") }) },
         H_WAS_AT, H_NEAR, H_TOOK,
@@ -773,7 +775,7 @@ export const lostWallet: SituationDef = {
       items: [
         { id: "describe", s: t("Es | una | cartera | negra | de piel.", "It's | a | wallet | black | leather.", "It's a black leather wallet.",
           { neutral: t("Es | una | billetera | negra | de piel.", "It's | a | wallet | black | leather.", "It's a black leather wallet."), spain: t("Es | una | cartera | negra | de piel.", "It's | a | wallet | black | leather.", "It's a black leather wallet.") }),
-          note: "Colors agree: una mochila negra, un celular negro." },
+          note: "Colors agree: una mochila negra, un celular negro.", noteSpain: "Colors agree: una mochila negra, un móvil negro." },
         { id: "describe", s: t("Es | café | y | chiquita.", "It's | brown | and | small.", "It's brown and small.", { flags: { 3: "chiquita: little (chica + -ita, a friendly diminutive)." }, spain: t("Es | marrón | y | pequeñita.", "It's | brown | and | small.", "It's brown and small.", { flags: { 3: "pequeñita: little (pequeña + -ita, a friendly diminutive)." } }) }) },
         { id: "describe", s: t("Es | negra | y | tiene | una | foto | de | mis | hijos.", "It's | black | and | it-has | a | photo | of | my | children.", "It's black, and there's a photo of my kids in it.") },
         { id: "describe", s: t("Es | un | celular | negro | con | funda | azul.", "It's | a | phone | black | with | case | blue.", "It's a black phone with a blue case.", { spain: t("Es | un | móvil | negro | con | funda | azul.", "It's | a | phone | black | with | case | blue.", "It's a black phone with a blue case.") }) },
@@ -817,7 +819,7 @@ export const lostWallet: SituationDef = {
     found: {
       lt: "Say whether it's yours",
       items: [
-        { id: "its_mine", s: t("¡Sí, | es | mía!", "Yes, | it's | mine!", "Yes, that's mine!"), note: "mía for la cartera (or billetera), la bolsa, la mochila; mío for el celular." },
+        { id: "its_mine", s: t("¡Sí, | es | mía!", "Yes, | it's | mine!", "Yes, that's mine!"), note: "mía for la cartera (or billetera), la bolsa, la mochila; mío for el celular.", noteSpain: "mía for la cartera or la mochila; mío for el móvil or el bolso." },
         { id: "not_mine", s: t("No, | no es | mía.", "No, | it isn't | mine.", "No, that's not mine.") },
       ],
     },
@@ -837,6 +839,8 @@ export const lostWallet: SituationDef = {
   },
 
   merges: {
+    // Spain pass 3 (14 Nov 2026)
+    "he pagado": { reason: "grammatical_fusion", split: "he → have + pagado (participle): Spain's present perfect for what happened today; one English verb phrase.", minimal: "Auxiliary and participle." },
     // Spain's twins (12 Nov 2026)
     "se le ve": { reason: "grammatical_fusion", split: "se → one + le → (on) you + ve → sees: se le ve preocupado = you look worried; one English verb.", minimal: "Pronouns and verb." },
     "ha pasado": { reason: "grammatical_fusion", split: "ha → has + pasado → happened: Spain's present perfect for what has just happened; one English verb phrase (has happened).", minimal: "Auxiliary and participle." },

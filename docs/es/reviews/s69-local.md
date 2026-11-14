@@ -189,3 +189,12 @@ cenote?" after the tip uses the global g_meaning, as the pending global change (
 Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
 
 - Read every twin: usted kept throughout, Spain's words right (billete, tarjeta de embarque, móvil, gafas, portátil, aseos, maleta, facturar, coger, aparcamiento, coche, jersey), the perfect for what just happened, "Ya está" for "Listo", Mexican-only names kept. Meaning, glosses and spelling: no problems found. No changes.
+
+## Spain pass 3 (14 Nov 2026)
+
+- 34 Spain twins (18 added, 16 changed), 1 noteSpain. Doña Carmen keeps usted.
+- Notes: the nine {m:hijo|f:hija} twins showed the mijo/mija note; they have their own (HIJA). time_cocina's “la comida: in Mexico…” → lunch, the main meal (Spain eats it at two too). The cerquita, baratito, ándele, padre and “bien + adjective” notes are gone from Spain's twins.
+- Lines: ¿qué se le ofrece? → ¿qué necesita?; un poquito caro → un poco; cuando le dé hambre → cuando tenga hambre; música en vivo → en directo (twice); Está como a veinte minutos / media hora → a unos… / a una media hora; cerquita → muy cerca; como a las ocho / siete, hasta como las dos → sobre las…, hasta las dos o así; encontrar lugar → sitio; Como trescientos / doscientos / cuarenta y cinco pesos → Unos…; ¡Es baratito! → ¡Es muy barato!; ¡Carmen, para servirle! → ¡Carmen, encantada!; en el invierno → en invierno.
+- Chip: ¡Sí, estuvo delicioso! → ¡Sí, estaba buenísimo! (already in the corpus; the grammar takes estaba buenísimo).
+- Merges: en directo, o así.
+- Kept: hijo / hija from an older woman (Spain says it too); la gente de aquí (noteSpain in plain terms).

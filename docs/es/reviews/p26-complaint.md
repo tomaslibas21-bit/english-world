@@ -155,3 +155,12 @@ Found and fixed: the Spain twin of kyle_tuesday_ok still said "¡Listo!" (→ "�
 Kept: gerente, Profeco, días hábiles.
 Spain corpus +2 (coste).
 Gates: tsc clean; check-content Mexican, neutral and Spain 0 errors, 0 warnings; corpus 393/393 0/61; held-out 38/40 (unchanged); Spain 22/22 0/1; vitest es 178/178.
+
+## Spain pass 3 (14 Nov 2026)
+
+- "gerente" for a call-center supervisor is Latin American: Spain says "responsable" (Jorge's offer, can't refund / replace, both transfers; Brenda's intro "responsable de atención al cliente" and "Yo soy la responsable"; the learner's hint "¿Podría hablar con un responsable, por favor?"). The @mgr slot already takes responsable, supervisor, encargado.
+- "Aquí lo espero" (kyle_plug_now, kyle_try_now) → "Aquí espero" (and "revisar" → "comprobar"); "Lo más pronto que tengo" → "El primer hueco que tengo" (flagged); "eso no debió pasar" → "no debería haber pasado".
+- Hints: "Le pido de la manera más atenta que me devuelvan mi dinero" (formal Mexican) → "Le ruego que me devuelvan el dinero" (pattern added, #h:most_kind; noteSpain); "Ya falté al trabajo una vez" → "Ya he faltado…" (pattern takes he faltado / no vino nadie); noteSpain for "poner una queja".
+- The neutral twin of kyle_file2 got empty flags (it inherited "Mexican: llegó hasta").
+- Kept: Profeco (Mexico's agency, the town's).
+Spain corpus +3. Gates: Spain and Mexican 0 errors, 0 warnings; Spain corpus 25/25, 0/1.

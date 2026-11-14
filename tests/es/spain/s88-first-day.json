@@ -22,6 +22,8 @@
 { "ctx": "day", "say": "Me ha ido muy bien", "intent": "day_good" },
 { "ctx": "day", "say": "Cansada, pero contenta", "intent": "day_tired" },
 { "ctx": "closing", "say": "¡Venga, hasta mañana!", "intent": ["see_you", "g_bye"] },
-{ "ctx": "task", "say": "No lo voy a hacer", "intent": "any" }
+{ "ctx": "task", "say": "No lo voy a hacer", "intent": "any" },
+{ "ctx": "tour", "say": "¿A qué hora coméis?", "intent": "q_lunch_time" },
+{ "ctx": "tour", "say": "No, eso es todo por ahora", "intent": "no_more" }
 ]
 }

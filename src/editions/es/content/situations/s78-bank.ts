@@ -856,7 +856,7 @@ export const bank: SituationDef = {
       "[muchas] gracias [no] [eso | esto] (es | seria) todo [por hoy | por ahora]", "[no] gracias (eso | esto | ya) (es | seria) todo", "[no] (es | seria) todo muchas gracias",
     ] },
     // "Nada" / "Nada, gracias" to "¿En qué le puedo ayudar?" or "¿Algo más?"
-    nothing_ctx: { patterns: ["[no] nada [mas] [gracias | por ahora | por hoy | por el momento]", "no gracias nada"] },
+    nothing_ctx: { patterns: ["[no] nada mas gracias #h:more_all", "[no] nada [mas] [gracias | por ahora | por hoy | por el momento]", "no gracias nada"] },
     have_question: { patterns: [
       "[si] tengo (una | otra) pregunta #h:more_question", "(le puedo | puedo) (hacer una pregunta | preguntar algo)", "(una | otra) (pregunta | cosa) [mas]", "[si] una cosa mas",
     ] },
@@ -876,7 +876,7 @@ export const bank: SituationDef = {
       t("¡Buenos días! | ¿En | qué | le | puedo | ayudar?", "Good morning! | In | what | (to) you | can I | help?", "Good morning! How can I help you?"),
       t("¡Buenas tardes! | {m:Bienvenido|f:Bienvenida} | al | Banco del Puerto. | ¿Qué | se le | ofrece?", "Good afternoon! | Welcome | to the | Banco del Puerto. | What | (to) you | is offered?",
         "Good afternoon! Welcome to Banco del Puerto. What can I do for you?",
-        { flags: { 5: "¿Qué se le ofrece?: a polite Mexican way to ask what you need (literally, what is offered to you)." }, spain: t("¡Buenas tardes! | {m:Bienvenido|f:Bienvenida} | al | Banco del Puerto. | ¿En | qué | puedo | ayudarle?", "Good afternoon! | Welcome | to the | Banco del Puerto. | In | what | can I | help-you?", "Good afternoon! Welcome to Banco del Puerto. What can I do for you?") }),
+        { flags: { 5: "¿Qué se le ofrece?: a polite Mexican way to ask what you need (literally, what is offered to you)." }, spain: t("¡Buenas tardes! | {m:Bienvenido|f:Bienvenida} | al | Banco del Puerto. | ¿En | qué | puedo | ayudarle?", "Good afternoon! | Welcome | to the | Banco del Puerto. | In | what | can I | help-you?", "Good afternoon! Welcome to Banco del Puerto. What can I do for you?", { flags: {} }) }),
     ],
     greet_turn: [
       t("¿Turno | A-27? | ¡Buenos días! | Pase, | por favor. | ¿En | qué | le | puedo | servir?", "Number | A27? | Good morning! | Come in, | please. | In | what | (to) you | can I | serve?",
@@ -889,7 +889,8 @@ export const bank: SituationDef = {
     ],
     greet_hay: [
       t("¡Buenos días! | ¿Cómo | está?", "Good morning! | How | are you?", "Good morning! How are you?"),
-      t("¡Buenas tardes! | ¿Cómo | le | va?", "Good afternoon! | How | (to) you | does it go?", "Good afternoon! How's it going?"),
+      t("¡Buenas tardes! | ¿Cómo | le | va?", "Good afternoon! | How | (to) you | does it go?", "Good afternoon! How's it going?",
+        { spain: t("¡Buenas tardes! | ¿Qué tal | está?", "Good afternoon! | How | are you?", "Good afternoon! How are you?") }),
     ],
     ask_help: [
       t("Entonces, | ¿en | qué | le | puedo | ayudar?", "So, | in | what | (to) you | can I | help?", "So, how can I help you?"),
@@ -985,7 +986,7 @@ export const bank: SituationDef = {
     need_docs_open: [t("Lo siento, | para | abrir | la | cuenta | necesito | su | pasaporte | y | su | tarjeta | de | residente.",
       "I'm sorry, | to | open | the | account | I-need | your | passport | and | your | card | of | resident.",
       "I'm sorry, to open the account I need your passport and your residence card.")],
-    come_back_docs: [t("Regrese | con | los | dos | cuando | guste.", "Come back | with | the | two | when | you like.", "Come back with both whenever you like.", { spain: t("Vuelva | con | los | dos | cuando | guste.", "Come back | with | the | two | when | you like.", "Come back with both whenever you like.") })],
+    come_back_docs: [t("Regrese | con | los | dos | cuando | guste.", "Come back | with | the | two | when | you like.", "Come back with both whenever you like.", { spain: t("Vuelva | con | los | dos | cuando | quiera.", "Come back | with | the | two | when | you want.", "Come back with both whenever you like.") })],
     license_no_open: [t("Lo siento, | la | licencia | no nos sirve | como | identificación.", "I'm sorry, | the | license | doesn't work for us | as | ID.",
       "I'm sorry, we can't take a driver's license as ID.", { spain: t("Lo siento, | el | carné de conducir | no nos sirve | como | identificación.", "I'm sorry, | the | driver's license | doesn't work for us | as | ID.", "I'm sorry, we can't take a driver's license as ID.") })],
     id_thanks: [
@@ -998,7 +999,7 @@ export const bank: SituationDef = {
         "I'm sorry, | we need | an | ID | official: | your | passport | or | your | card | of | resident. | Do you have with you | any | of | the | two?",
         "I'm sorry, we need an official ID: your passport or your residence card. Do you have either one with you?",
         { flags: { 12: "traer: to bring; ¿Trae…? asks whether you have it on you." },
-        spain: t("Lo siento, | necesitamos | una | identificación | oficial: | su | pasaporte | o | su | tarjeta | de | residente. | ¿Tiene | alguno | de | los | dos?", "I'm sorry, | we need | an | ID | official: | your | passport | or | your | card | of | resident. | Do you have with you | any | of | the | two?", "I'm sorry, we need an official ID: your passport or your residence card. Do you have either one with you?") }),
+        spain: t("Lo siento, | necesitamos | una | identificación | oficial: | su | pasaporte | o | su | tarjeta | de | residente. | ¿Tiene | alguno | de | los | dos?", "I'm sorry, | we need | an | ID | official: | your | passport | or | your | card | of | resident. | Do you have with you | any | of | the | two?", "I'm sorry, we need an official ID: your passport or your residence card. Do you have either one with you?", { flags: {} }) }),
     ],
     license_no: [
       t("Lo siento, | la | licencia | no nos sirve | como | identificación. | ¿Trae | su | pasaporte | o | su | tarjeta | de | residente?",
@@ -1007,7 +1008,7 @@ export const bank: SituationDef = {
     ],
     come_back_id: [
       t("No hay problema. | Regrese | con | su | pasaporte | cuando | guste.", "No problem. | Come back | with | your | passport | when | you like.",
-        "No problem. Just come back with your passport whenever you like.", { spain: t("No hay problema. | Vuelva | con | su | pasaporte | cuando | guste.", "No problem. | Come back | with | your | passport | when | you like.", "No problem. Just come back with your passport whenever you like.") }),
+        "No problem. Just come back with your passport whenever you like.", { spain: t("No hay problema. | Vuelva | con | su | pasaporte | cuando | quiera.", "No problem. | Come back | with | your | passport | when | you want.", "No problem. Just come back with your passport whenever you like.") }),
     ],
     ask_proof: [
       t("¿Y | trae | un | comprobante | de | domicilio? | Un | recibo | de | luz | o | de | agua | nos | sirve.",
@@ -1028,7 +1029,8 @@ export const bank: SituationDef = {
     ask_lease: [t("No se preocupe. | ¿Tiene | contrato | de | renta?", "Don't worry. | Do you have | a contract | of | rent?", "Don't worry. Do you have a lease?", { neutral: t("No se preocupe. | ¿Tiene | contrato | de | alquiler?", "Don't worry. | Do you have | a contract | of | rent?", "Don't worry. Do you have a lease?"), spain: t("No se preocupe. | ¿Tiene | contrato | de | alquiler?", "Don't worry. | Do you have | a contract | of | rent?", "Don't worry. Do you have a lease?") })],
     ask_lease_again: [t("¿Y | tiene | contrato | de | renta?", "And | do you have | a contract | of | rent?", "And do you have a lease?", { neutral: t("¿Y | tiene | contrato | de | alquiler?", "And | do you have | a contract | of | rent?", "And do you have a lease?"), spain: t("¿Y | tiene | contrato | de | alquiler?", "And | do you have | a contract | of | rent?", "And do you have a lease?") })],
     lease_explain: [t("Es | el | contrato | que | firmó | con | el | dueño | de | su | casa.", "It's | the | contract | that | you-signed | with | the | owner | of | your | home.",
-      "It's the contract you signed with your landlord.")],
+      "It's the contract you signed with your landlord.",
+      { spain: t("Es | el | contrato | que | firmó | con | el | propietario | de | su | casa.", "It's | the | contract | that | you-signed | with | the | owner | of | your | home.", "It's the contract you signed with your landlord.") })],
     proof_later: [t("Está bien. | Lo | puede | traer | después.", "That's fine. | It | you-can | bring | later.", "That's okay. You can bring it in later.")],
 
     // the CURP (step "ssn")
@@ -1065,7 +1067,8 @@ export const bank: SituationDef = {
     form_wait: [t("Tómese | su | tiempo. | Me | avisa | cuando | termine.", "Take | your | time. | (To) me | you-let-know | when | you-finish.", "Take your time. Just let me know when you're done.")],
     pen: [t("Claro, | aquí | tiene | una | pluma.", "Sure, | here | you have | a | pen.", "Sure, here's a pen.",
       { flags: { 4: "Mexican: pluma = pen; bolígrafo is the neutral word." },
-        neutral: t("Claro, | aquí | tiene | un | bolígrafo.", "Sure, | here | you have | a | pen.", "Sure, here's a pen.") })],
+        neutral: t("Claro, | aquí | tiene | un | bolígrafo.", "Sure, | here | you have | a | pen.", "Sure, here's a pen."),
+        spain: t("Claro, | aquí | tiene | un | bolígrafo.", "Sure, | here | you have | a | pen.", "Sure, here's a pen.", { flags: {} }) })],
     where_sign: [t("Aquí, | en | la | línea | de | abajo.", "Here, | on | the | line | at | the bottom.", "Right here, on the line at the bottom.")],
     what_write: [t("Solo | su | nombre, | su | dirección, | su | teléfono | y | su | correo.", "Just | your | name, | your | address, | your | phone | and | your | email.",
       "Just your name, address, phone number and email.")],
@@ -1101,7 +1104,8 @@ export const bank: SituationDef = {
       t("¡Listo! | Su | cuenta | ya | está | abierta.", "Done! | Your | account | already | is | open.", "All set! Your account is open.",
         { spain: t("¡Hecho! | Su | cuenta | ya | está | abierta.", "Done! | Your | account | already | is | open.", "All set! Your account is open.") }),
       t("¡Ya | quedó! | Su | cuenta | nueva | está | abierta.", "Already | it's settled! | Your | account | new | is | open.", "All done! Your new account is open.",
-        { flags: { 1: "quedó: it's done (literally, it remained); ¡Ya quedó! is a common way to say all set." } }),
+        { flags: { 1: "quedó: it's done (literally, it remained); ¡Ya quedó! is a common way to say all set." },
+          spain: t("¡Ya está! | Su | cuenta | nueva | está | abierta.", "All done! | Your | account | new | is | open.", "All done! Your new account is open.", { flags: {} }) }),
     ],
     opened_both: [t("¡Listo! | Sus | dos | cuentas | ya | están | abiertas.", "Done! | Your | two | accounts | already | are | open.", "All set! Both your accounts are open.",
         { spain: t("¡Hecho! | Sus | dos | cuentas | ya | están | abiertas.", "Done! | Your | two | accounts | already | are | open.", "All set! Both your accounts are open.") })],
@@ -1145,7 +1149,8 @@ export const bank: SituationDef = {
     offer_app_again: [t("Entonces, | ¿le | ayudo | con | la | app?", "So, | (to) you | should I help | with | the | app?", "So, do you want help with the app?")],
     app_features: [t("Ahí | puede | consultar | su | saldo, | hacer | transferencias | y | pagar | servicios.", "There | you-can | check | your | balance, | make | transfers | and | pay | bills.",
       "There you can check your balance, make transfers and pay your bills.", { flags: { 9: "servicios: here, utility bills (light, water, phone)." },
-        spain: t("Ahí | puede | consultar | su | saldo, | hacer | transferencias | y | pagar | recibos.", "There | you-can | check | your | balance, | make | transfers | and | pay | bills.", "There you can check your balance, make transfers and pay your bills.") })],
+        spain: t("Ahí | puede | consultar | su | saldo, | hacer | transferencias | y | pagar | recibos.", "There | you-can | check | your | balance, | make | transfers | and | pay | bills.", "There you can check your balance, make transfers and pay your bills.",
+          { flags: { 9: "recibos: here, household bills (light, water, phone)." } }) })],
     app_yes: [t("¡Perfecto! | Escanee | este | código | con | su | celular.", "Perfect! | Scan | this | code | with | your | cell phone.", "Great! Just scan this code with your phone.", { spain: t("¡Perfecto! | Escanee | este | código | con | su | móvil.", "Perfect! | Scan | this | code | with | your | cell phone.", "Great! Just scan this code with your phone.") })],
     app_have: [t("¡Perfecto! | Entonces | solo | entre | con | su | cuenta | nueva.", "Perfect! | Then | just | log in | with | your | account | new.",
       "Great! Then just log in with your new account.", { flags: { 3: "entrar: to go in; here, to log in." } })],
@@ -1173,7 +1178,9 @@ export const bank: SituationDef = {
     interest_info: [t("Ahorita | da | alrededor | del | 4% | al | año.", "Right now | it gives | around | of the | 4% | per | year.", "Right now it pays around 4% a year.",
       { say: "Ahorita da alrededor del cuatro por ciento al año.", flags: { 0: "Mexican: ahorita = right now; en este momento is the neutral form." },
         neutral: t("En este momento | da | alrededor | del | 4% | al | año.", "Right now | it gives | around | of the | 4% | per | year.", "Right now it pays around 4% a year.",
-          { say: "En este momento da alrededor del cuatro por ciento al año." }) })],
+          { say: "En este momento da alrededor del cuatro por ciento al año." }),
+        spain: t("En este momento | da | alrededor | del | 4% | al | año.", "Right now | it gives | around | of the | 4% | per | year.", "Right now it pays around 4% a year.",
+          { say: "En este momento da alrededor del cuatro por ciento al año.", flags: {} }) })],
     card_abroad: [t("Sí, | la | puede | usar | en | el | extranjero; | las | compras | en | otra | moneda | tienen | una | pequeña | comisión.",
       "Yes, | it | you-can | use | in | the | abroad; | the | purchases | in | another | currency | have | a | small | fee.",
       "Yes, you can use it abroad; purchases in another currency have a small fee.", { flags: { 1: "la: it, the object pronoun for la tarjeta (not an article).", 5: "el extranjero: abroad (literally, the foreign land)." } })],
@@ -1269,7 +1276,8 @@ export const bank: SituationDef = {
     ],
     nip_explain: [t("Es | el | número | secreto | de | su | tarjeta.", "It's | the | number | secret | of | your | card.", "It's your card's secret number.")],
     pin_explain: [t("Seguramente | fue | eso. | Después de | tres | intentos, | el | cajero | retiene | la | tarjeta.", "Surely | it was | that. | After | three | tries, | the | ATM | keeps | the | card.",
-      "That's probably why. After three wrong tries, the machine keeps the card.")],
+      "That's probably why. After three wrong tries, the machine keeps the card.",
+      { spain: t("Seguramente | ha sido | eso. | Después de | tres | intentos, | el | cajero | retiene | la | tarjeta.", "Surely | it has been | that. | After | three | tries, | the | ATM | keeps | the | card.", "That's probably why. After three wrong tries, the machine keeps the card.") })],
     machine_problem: [t("Entonces | puede | ser | una | falla | del | cajero.", "Then | it may | be | a | fault | of the | ATM.", "Then it might be a problem with the machine.",
         { spain: t("Entonces | puede | ser | un | fallo | del | cajero.", "Then | it may | be | a | fault | of the | ATM.", "Then it might be a problem with the machine.") })],
     block_new: [t("Por | seguridad, | voy a | cancelar | esa | tarjeta | y | pedirle | una | nueva.", "For | security, | I'm going to | cancel | that | card | and | order (for you) | a | new one.",
@@ -1321,7 +1329,7 @@ export const bank: SituationDef = {
     // slow system (twist)
     slow: [t("Disculpe, | el | sistema | anda | un poco | lento | hoy. | ¿Me | permite | un | momento?", "Excuse me, | the | system | is going | a bit | slow | today. | (To) me | you-allow | a | moment?",
       "Sorry, our system is a little slow today. Could you bear with me for a moment?", { flags: { 3: "anda lento: is running slow (andar, to walk, for how something is going)." },
-        spain: t("Disculpe, | el | sistema | va | un poco | lento | hoy. | ¿Me | permite | un | momento?", "Excuse me, | the | system | is going | a bit | slow | today. | (To) me | you-allow | a | moment?", "Sorry, our system is a little slow today. Could you bear with me for a moment?") })],
+        spain: t("Disculpe, | el | sistema | va | un poco | lento | hoy. | ¿Me | permite | un | momento?", "Excuse me, | the | system | is going | a bit | slow | today. | (To) me | you-allow | a | moment?", "Sorry, our system is a little slow today. Could you bear with me for a moment?", { flags: { 3: "ir lento: to be running slow." } }) })],
     slow_thanks: [t("¡Gracias | por | su | paciencia! | Listo, | ya | funciona.", "Thanks | for | your | patience! | Done, | now | it works.", "Thanks for your patience! Okay, it's working again.",
         { spain: t("¡Gracias | por | su | paciencia! | Ya está, | ya | funciona.", "Thanks | for | your | patience! | Done, | now | it works.", "Thanks for your patience! Okay, it's working again.") })],
   },
@@ -1379,7 +1387,8 @@ export const bank: SituationDef = {
       { id: "form_here", s: t("Aquí tiene.", "Here you go.", "Here you go.") },
       { id: "form_where", s: t("¿Dónde | firmo?", "Where | do I sign?", "Where do I sign?") },
       { id: "form_pen", s: t("¿Me | presta | una | pluma?", "(To) me | do you lend | a | pen?", "Could I borrow a pen?",
-        { flags: { 3: "Mexican: pluma = pen; bolígrafo is the neutral word." }, neutral: t("¿Me | presta | un | bolígrafo?", "(To) me | do you lend | a | pen?", "Could I borrow a pen?") }) },
+        { flags: { 3: "Mexican: pluma = pen; bolígrafo is the neutral word." }, neutral: t("¿Me | presta | un | bolígrafo?", "(To) me | do you lend | a | pen?", "Could I borrow a pen?"),
+          spain: t("¿Me | presta | un | bolígrafo?", "(To) me | do you lend | a | pen?", "Could I borrow a pen?", { flags: {} }) }) },
       { id: "form_what", s: t("¿Qué | escribo | aquí?", "What | do I write | here?", "What should I write here?") },
     ] },
     deposit: { lt: "Say how much you'll deposit", items: [
@@ -1409,7 +1418,7 @@ export const bank: SituationDef = {
     exchange: { lt: "Change dollars into pesos", items: [
       { id: "ex_like", s: t("Quisiera | cambiar | unos | dólares | a | pesos.", "I'd like | to change | some | dollars | into | pesos.", "I'd like to change some dollars into pesos.") },
       { id: "ex_could", s: t("¿Puedo | cambiar | dólares | aquí?", "Can I | change | dollars | here?", "Can I change dollars here?") },
-      { id: "ex_rate", s: t("¿A | cuánto | está | el | dólar?", "At | how much | is | the | dollar?", "What's the exchange rate for the dollar?"), note: "The everyday Mexican way to ask the exchange rate." },
+      { id: "ex_rate", s: t("¿A | cuánto | está | el | dólar?", "At | how much | is | the | dollar?", "What's the exchange rate for the dollar?"), note: "The everyday Mexican way to ask the exchange rate.", noteSpain: "The everyday way to ask the exchange rate." },
       { id: "ex_fee", s: t("¿Cobran | comisión?", "Do you charge | a fee?", "Is there a fee?") },
     ] },
     card: { lt: "Say the ATM kept your card", items: [
@@ -1455,8 +1464,10 @@ export const bank: SituationDef = {
       { id: "np_time", s: t("No se preocupe, | tómese | su | tiempo.", "Don't worry, | take | your | time.", "No worries, take your time.") },
     ] },
     more: { lt: "Say that's all", items: [
-      { id: "more_all", s: t("No, | es | todo, | gracias.", "No, | it's | all, | thanks.", "No, that's all, thanks.") },
-      { id: "more_everything", s: t("Eso | sería | todo | por | hoy.", "That | would be | all | for | today.", "That's everything for today.") },
+      { id: "more_all", s: t("No, | es | todo, | gracias.", "No, | it's | all, | thanks.", "No, that's all, thanks.",
+        { spain: t("No, | nada | más, | gracias.", "No, | nothing | more, | thanks.", "No, that's all, thanks.") }) },
+      { id: "more_everything", s: t("Eso | sería | todo | por | hoy.", "That | would be | all | for | today.", "That's everything for today.",
+        { spain: t("Eso | es | todo | por | hoy.", "That | is | all | for | today.", "That's everything for today.") }) },
       { id: "more_question", s: t("Sí, | tengo | una | pregunta.", "Yes, | I have | a | question.", "Yes, I have a question.") },
     ] },
   },

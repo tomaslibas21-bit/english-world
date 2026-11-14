@@ -923,7 +923,8 @@ export const party: SituationDef = {
     ],
     drink_ok: [
       t("¡Va! | Aquí tienes | {X.np}. | ¡Salud!", "Okay! | Here you go: | {X.np}. | Cheers!", "Sure! Here's {X.np}. Cheers!",
-        { flags: { 0: VA }, neutral: t("¡Claro! | Aquí tienes | {X.np}. | ¡Salud!", "Sure! | Here you go: | {X.np}. | Cheers!", "Sure! Here's {X.np}. Cheers!") }),
+        { flags: { 0: VA }, neutral: t("¡Claro! | Aquí tienes | {X.np}. | ¡Salud!", "Sure! | Here you go: | {X.np}. | Cheers!", "Sure! Here's {X.np}. Cheers!"),
+        spain: t("¡Vale! | Aquí tienes | {X.np}. | ¡Salud!", "Okay! | Here you go: | {X.np}. | Cheers!", "Sure! Here's {X.np}. Cheers!", { flags: {} }) }),
       t("¡Claro! | Aquí tienes | {X.np}. | ¡Salud!", "Sure! | Here you go: | {X.np}. | Cheers!", "Of course! Here's {X.np}. Cheers!"),
     ],
     drink_pick: [
@@ -988,20 +989,23 @@ export const party: SituationDef = {
     ],
     country_react: [
       t("¡Ah, | de | {X}! | ¡Qué | padre! | Nunca | he | ido.", "Oh, | from | {X}! | How | cool! | Never | I-have | gone.", "Oh, {X}! Cool! I've never been.",
-        { flags: { 4: PADRE }, neutral: t("¡Ah, | de | {X}! | ¡Qué | bien! | Nunca | he | ido.", "Oh, | from | {X}! | How | nice! | Never | I-have | gone.", "Oh, {X}! Nice! I've never been.") }),
+        { flags: { 4: PADRE }, neutral: t("¡Ah, | de | {X}! | ¡Qué | bien! | Nunca | he | ido.", "Oh, | from | {X}! | How | nice! | Never | I-have | gone.", "Oh, {X}! Nice! I've never been."),
+        spain: t("¡Ah, | de | {X}! | ¡Qué | bien! | Nunca | he | ido.", "Oh, | from | {X}! | How | nice! | Never | I-have | gone.", "Oh, {X}! Nice! I've never been.", { flags: {} }) }),
       t("¡De | {X}! | Me encantaría | ir | algún | día.", "From | {X}! | I'd love | to-go | some | day.", "{X}! I'd love to go someday."),
     ],
     country_short: [t("¡Ah, | {X}!", "Oh, | {X}!", "Oh, {X}!")],
     cold_q: [t("Allá | hace | muchísimo | frío, | ¿no?", "There | it-makes | very much | cold, | right?", "It's really cold there, isn't it?",
-      { flags: { 1: "hacer + frío / calor: weather is “made” in Spanish (hace frío = it's cold)." } })],
-    rain_q: [t("Allá | llueve | mucho, | ¿verdad?", "There | it-rains | a lot, | right?", "It rains a lot there, right?")],
+      { flags: { 1: "hacer + frío / calor: weather is “made” in Spanish (hace frío = it's cold)." },
+        spain: t("Allí | hace | muchísimo | frío, | ¿no?", "There | it-makes | very much | cold, | right?", "It's really cold there, isn't it?") })],
+    rain_q: [t("Allá | llueve | mucho, | ¿verdad?", "There | it-rains | a lot, | right?", "It rains a lot there, right?",
+        { spain: t("Allí | llueve | mucho, | ¿verdad?", "There | it-rains | a lot, | right?", "It rains a lot there, right?") })],
     // after Marcos has said where he is from, "allá" would point at Mexico City: the country is named
     cold_q_named: [t("¿Y | en | {X} | hace | muchísimo | frío?", "And | in | {X} | it-makes | very much | cold?", "And is it really cold in {X}?",
       { flags: { 3: "hacer + frío / calor: weather is “made” in Spanish (hace frío = it's cold)." } })],
     rain_q_named: [t("¿Y | en | {X} | llueve | mucho?", "And | in | {X} | it-rains | a lot?", "And does it rain a lot in {X}?")],
     cold_yes: [t("¡Uf! | Pues | aquí | nunca | vas | a | pasar | frío.", "Phew! | Well, | here | never | you're-going | to | feel | cold.", "Wow! Well, you'll never be cold here.")],
     rain_yes: [t("¡Ja! | Aquí | también | llueve, | pero | la | lluvia | es | calientita.", "Ha! | Here | also | it-rains, | but | the | rain | is | nice and warm.",
-      "Ha! It rains here too, but the rain is warm.", { flags: { 8: "calientita: a diminutive of caliente, “nice and warm”." }, spain: t("¡Ja! | Aquí | también | llueve, | pero | la | lluvia | es | calentita.", "Ha! | Here | also | it-rains, | but | the | rain | is | nice and warm.", "Ha! It rains here too, but the rain is warm.") })],
+      "Ha! It rains here too, but the rain is warm.", { flags: { 8: "calientita: a diminutive of caliente, “nice and warm”." }, spain: t("¡Ja! | Aquí | también | llueve, | pero | la | lluvia | es | calentita.", "Ha! | Here | also | it-rains, | but | the | rain | is | nice and warm.", "Ha! It rains here too, but the rain is warm.", { flags: { 8: "calentita: a diminutive of caliente, “nice and warm”." } }) })],
     bad_geography: [t("¿Ah, | no? | ¡Yo | pensaba | que | sí!", "Oh, | no? | I | was-thinking | that | yes!", "Oh, really? I thought so!")],
     id_love_to: [t("¡Me encantaría!", "I'd love to!", "I'd love to!")],
     city_where: [t("¿Ah, | sí? | ¿Y | eso | dónde | queda?", "Oh, | yes? | And | that | where | is-it?", "Oh yeah? Where's that?",
@@ -1022,7 +1026,8 @@ export const party: SituationDef = {
     ],
     job_react: [
       t("¿Ah, | eres | {X}? | ¡Qué | bien!", "Oh, | you-are | {X}? | How | nice!", "Oh, you're {X.np}? Nice!"),
-      t("¡Ah, | {X}! | Ha | de | ser | interesante.", "Oh, | {X}! | It-has | to | be | interesting.", "Oh, {X.np}! That must be interesting."),
+      t("¡Ah, | {X}! | Ha | de | ser | interesante.", "Oh, | {X}! | It-has | to | be | interesting.", "Oh, {X.np}! That must be interesting.",
+        { spain: t("¡Ah, | {X}! | Debe de | ser | interesante.", "Oh, | {X}! | It must | be | interesting.", "Oh, {X.np}! That must be interesting.") }),
     ],
     job_chef: [t("¡No te creo! | ¡Yo | también | soy | chef!", "No way! | I | also | am | chef!", "No way! I'm a chef too!")],
     // the learner is a chef too, after Marcos has said he is one
@@ -1031,15 +1036,18 @@ export const party: SituationDef = {
     student_react: [t("¡Ah, | qué | bien! | ¡La | vida | de | estudiante!", "Oh, | how | nice! | The | life | of | student!", "Oh, nice! Student life!")],
     retired_react: [t("¡Qué | bien! | ¡A disfrutar!", "How | nice! | Time to enjoy it!", "Nice! Time to enjoy life!")],
     looking_react: [t("Seguro | que | pronto | encuentras | algo.", "Sure | that | soon | you-find | something.", "I'm sure you'll find something soon.")],
-    home_react: [t("¡Eso | es | trabajo | de | tiempo completo!", "That | is | work | of | full time!", "That's a full-time job!")],
+    home_react: [t("¡Eso | es | trabajo | de | tiempo completo!", "That | is | work | of | full time!", "That's a full-time job!",
+        { spain: t("¡Eso | es | un | trabajo | a | tiempo completo!", "That | is | a | job | — | full time!", "That's a full-time job!", { flags: { 4: "a tiempo completo: full-time (a + the length of the working day)." } }) })],
     own_react: [t("¡Qué | bien, | tu | propio | negocio!", "How | nice, | your | own | business!", "Wow, your own business! That's great.")],
     remote_react: [t("¡Qué | suerte! | Trabajar | con | vista | al | mar.", "How | lucky! | To-work | with | view | to-the | sea.", "Lucky you! Working with an ocean view.",
         { spain: t("¡Qué | suerte! | Trabajar | con | vistas | al | mar.", "How | lucky! | To-work | with | view | to-the | sea.", "Lucky you! Working with an ocean view.") })],
     mark_job: [t("Yo | soy | chef | en | un | restaurantito | del | centro.", "I | am | chef | in | a | little restaurant | of-the | downtown.", "I'm a chef at a little restaurant downtown.",
-      { flags: { 5: "-ito: a diminutive (a small, nice place)." } })],
+      { flags: { 5: "-ito: a diminutive (a small, nice place)." },
+        spain: t("Yo | soy | chef | en | un | restaurante | pequeño | del | centro.", "I | am | chef | in | a | restaurant | small | of-the | downtown.", "I'm a chef at a little restaurant downtown.", { flags: {} }) })],
     mark_chef: [
       t("Me encanta, | pero | es | mucha | chamba.", "I love it, | but | it's | a lot of | work.", "I love it, but it's a lot of work.",
-        { flags: { 4: CHAMBA }, neutral: t("Me encanta, | pero | es | mucho | trabajo.", "I love it, | but | it's | a lot of | work.", "I love it, but it's a lot of work.") }),
+        { flags: { 4: CHAMBA }, neutral: t("Me encanta, | pero | es | mucho | trabajo.", "I love it, | but | it's | a lot of | work.", "I love it, but it's a lot of work."),
+        spain: t("Me encanta, | pero | es | mucho | trabajo.", "I love it, | but | it's | a lot of | work.", "I love it, but it's a lot of work.", { flags: {} }) }),
     ],
     mark_cook: [t("Comida | mexicana… | ¡de | todo | un | poco!", "Food | Mexican… | of | everything | a | little!", "Mexican food… a little bit of everything!")],
     mark_salsa: [t("¡Sí, | la | salsa | es | mía! | Es | receta | de | mi | abuela.", "Yes, | the | salsa | is | mine! | It's | recipe | of | my | grandmother.", "Yes, the salsa's mine! It's my grandma's recipe.")],
@@ -1050,7 +1058,8 @@ export const party: SituationDef = {
     time_q: [
       t("¿Y | cuánto | tiempo | llevas | aquí?", "And | how much | time | you've-been | here?", "And how long have you been here?", { flags: { 3: LLEVAS } }),
       t("¿Y | hace | cuánto | que | vives | en | Puerto Colibrí?", "And | it-makes | how much | that | you-live | in | Puerto Colibrí?", "And how long have you lived in Puerto Colibrí?",
-        { flags: { 1: "hace cuánto que…: how long (it has been) since…" } }),
+        { flags: { 1: "hace cuánto que…: how long (it has been) since…" },
+        spain: t("¿Y | cuánto | hace | que | vives | en | Puerto Colibrí?", "And | how much | it-makes | that | you-live | in | Puerto Colibrí?", "And how long have you lived in Puerto Colibrí?", { flags: { 1: "cuánto hace que…: how long (it has been) since…" } }) }),
     ],
     time_long: [t("¡Ah, | entonces | llevas | más | tiempo | que | yo! | Yo | llegué | en | mayo.", "Oh, | so | you've-been-here | more | time | than | me! | I | arrived | in | May.", "Oh, so you've been here longer than me! I only got here in May.",
       { flags: { 2: LLEVAS } })],
@@ -1084,7 +1093,7 @@ export const party: SituationDef = {
     ],
     like_yes: [
       t("¡Qué | bueno! | A mí también | me encanta. | ¡Todos | son | muy | buena onda!", "How | good! | Me too: | I-love-it. | Everyone | is | very | nice!", "Great! I love it too. Everyone's so nice!",
-        { flags: { 7: ONDA }, neutral: t("¡Qué | bueno! | A mí también | me encanta. | ¡Todos | son | muy | amables!", "How | good! | Me too: | I-love-it. | Everyone | is | very | kind!", "Great! I love it too. Everyone's so nice!"), spain: t("¡Qué | bien! | A mí también | me encanta. | ¡Todos | son | muy | amables!", "How | good! | Me too: | I-love-it. | Everyone | is | very | kind!", "Great! I love it too. Everyone's so nice!") }),
+        { flags: { 7: ONDA }, neutral: t("¡Qué | bueno! | A mí también | me encanta. | ¡Todos | son | muy | amables!", "How | good! | Me too: | I-love-it. | Everyone | is | very | kind!", "Great! I love it too. Everyone's so nice!"), spain: t("¡Qué | bien! | A mí también | me encanta. | ¡Todos | son | muy | amables!", "How | good! | Me too: | I-love-it. | Everyone | is | very | kind!", "Great! I love it too. Everyone's so nice!", { flags: {} }) }),
     ],
     like_mixed: [t("Te | entiendo. | Yo | también | extraño | la Ciudad de México | a veces.", "(To) you | I-understand. | I | also | miss | Mexico City | sometimes.", "I get it. I miss Mexico City sometimes, too.",
         { spain: t("Te | entiendo. | Yo | también | echo de menos | Ciudad de México | a veces.", "(To) you | I-understand. | I | also | miss | Mexico City | sometimes.", "I get it. I miss Mexico City sometimes, too.") })],
@@ -1163,7 +1172,8 @@ export const party: SituationDef = {
         spain: t("¡Claro, | ahora | vuelvo!", "Sure, | now | I'm-back!", "Sure, be right back!", { flags: { 1: "ahora vuelvo: “I'll be right back”." } }) })],
     food_ok: [
       t("¡Claro! | Ahorita | te | traigo. | ¡Cuidado, | la | salsa | pica!", "Sure! | Right away | (for) you | I-bring. | Careful, | the | salsa | is-spicy!", "Sure! I'll get you some right away. Careful, the salsa's hot!",
-        { flags: { 1: AHORITA }, neutral: t("¡Claro! | Ahora | te | traigo. | ¡Cuidado, | la | salsa | pica!", "Sure! | Now | (for) you | I-bring. | Careful, | the | salsa | is-spicy!", "Sure! I'll get you some right away. Careful, the salsa's hot!") }),
+        { flags: { 1: AHORITA }, neutral: t("¡Claro! | Ahora | te | traigo. | ¡Cuidado, | la | salsa | pica!", "Sure! | Now | (for) you | I-bring. | Careful, | the | salsa | is-spicy!", "Sure! I'll get you some right away. Careful, the salsa's hot!"),
+        spain: t("¡Claro! | Ahora | te | lo | traigo. | ¡Cuidado, | la | salsa | pica!", "Sure! | Now | (for) you | it | I-bring. | Careful, | the | salsa | is-spicy!", "Sure! I'll get you some right away. Careful, the salsa's hot!", { flags: {} }) }),
     ],
     decline_ok: [t("¡Claro, | no pasa nada!", "Sure, | no problem!", "Sure, no worries!")],
     // "¿De qué son?" at "¿O un taquito?"
@@ -1176,7 +1186,8 @@ export const party: SituationDef = {
     // "¿Ya te vas?"
     mark_going: [t("Sí, | ya | me voy.", "Yes, | now | I'm-leaving.", "Yeah, I'm heading out.")],
     swap_q: [t("Oye, | ¿me | pasas | tu | número? | Hay que | vernos | pronto.", "Hey, | (to) me | you-pass | your | number? | We-should | see-each-other | soon.",
-      "Hey, can I get your number? We should get together soon.")],
+      "Hey, can I get your number? We should get together soon.",
+        { spain: t("Oye, | ¿me | pasas | tu | número? | A ver si | nos vemos | pronto.", "Hey, | (to) me | you-pass | your | number? | Let's hope | we-see-each-other | soon.", "Hey, can I get your number? We should get together soon.") })],
     swap_reask: [t("Entonces, | ¿me | pasas | tu | número?", "So, | (to) me | you-pass | your | number?", "So, can I get your number?")],
     swap_sure: [t("¡Claro! | ¡Buena | idea!", "Sure! | Good | idea!", "Sure! Good idea.")],
     ask_number: [t("¡Perfecto! | ¿Cuál | es | tu | número?", "Great! | What | is | your | number?", "Great! What's your number?")],
@@ -1206,7 +1217,7 @@ export const party: SituationDef = {
     drink: {
       lt: "Choose a drink, or say no thanks", slot: "drink", examples: ["beer", "jamaica", "soda", "lemonade"],
       items: [
-        { id: "d_can", s: t("¿Me | das | {X.np}?", "(To) me | you-give | {X.np}?", "Can I have {X.np}?"), note: "Very common in Mexico: “¿Me das…?” (to a friend)." },
+        { id: "d_can", s: t("¿Me | das | {X.np}?", "(To) me | you-give | {X.np}?", "Can I have {X.np}?"), note: "Very common in Mexico: “¿Me das…?” (to a friend).", noteSpain: "“¿Me das…?” or “¿Me pones…?”: the easy way to ask a friend." },
         { id: "d_just", s: t("{X.np}, | por favor.", "{X.np}, | please.", "{X.np}, please.") },
         { id: "d_would", s: t("{X.np} | estaría | muy | bien, | gracias.", "{X.np} | would-be | very | good, | thanks.", "{X.np} would be great, thanks.") },
         { id: "d_no", s: t("No, | gracias, | estoy | bien.", "No, | thanks, | I-am | fine.", "No, thanks, I'm fine.") },
@@ -1279,7 +1290,7 @@ export const party: SituationDef = {
     time: {
       lt: "Say how long you've been here",
       items: [
-        { id: "t_dur", s: t("Como | un | año.", "About | a | year.", "About a year.") },
+        { id: "t_dur", s: t("Como | un | año.", "About | a | year.", "About a year.", { spain: t("Más o menos | un | año.", "More or less | a | year.", "About a year.") }) },
         { id: "t_dur", s: t("Llevo | dos | meses | aquí.", "I've-been | two | months | here.", "I've been here two months.", { flags: { 0: LLEVAS } }) },
         { id: "t_since", s: t("Desde | mayo.", "Since | May.", "Since May.") },
         { id: "t_just", s: t("Acabo de | llegar.", "I just | arrived.", "I just got here.") },
@@ -1393,6 +1404,9 @@ export const party: SituationDef = {
   },
 
   merges: {
+    "debe de": { reason: "lexical_expression", split: "debe → must + de → of; before a verb, a guess = must (be).", minimal: "Two words; the verb stays outside." },
+    "a ver si": { reason: "lexical_expression", split: "a → to + ver → see + si → if; = let's hope, let's see if.", minimal: "Three words." },
+    "más o menos": { reason: "lexical_expression", split: "más → more + o → or + menos → less; = about.", minimal: "Three words." },
     "echo de menos": { reason: "lexical_expression", split: "echo → I throw + de → of + menos → less is false; Spain's echar de menos = I miss.", minimal: "Three words." },
     "ciudad de méxico": { reason: "lexical_expression", split: "ciudad → city + de → of + méxico → Mexico: one name, Mexico City.", minimal: "Three words of one name." },
     "has ido": { reason: "lexical_expression", split: "has → you have + ido → gone; ir in the perfect = have you been.", minimal: "Two words." },

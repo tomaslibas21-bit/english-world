@@ -18,6 +18,7 @@
 { "ctx": "flaw", "say": "No pasa nada, es descapotable", "intent": "flaw_ok_ctx" },
 { "ctx": "talk", "say": "Me parece un poco caro", "intent": "too_high" },
 { "ctx": "price", "say": "Pero el aire acondicionado no funciona, así que…", "intent": "use_flaw" },
+{ "ctx": "price", "say": "¿Y si lo dejamos a mitad de camino?", "intent": "halfway" },
 { "ctx": "price", "say": "Vale, trato hecho", "intent": "accept_deal" },
 { "ctx": "price", "say": "Vale", "intent": ["accept_ctx", "yn:yes"] },
 { "ctx": "pay", "say": "¿Le vale un cheque bancario?", "intent": "pay_check" },

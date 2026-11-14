@@ -119,7 +119,7 @@ const DOCS = [
 /** "¿Se refiere a…?": the topic and the step it belongs to. */
 const TOPICS = [
   L("job", ["mi trabajo", "mi profesion", "a que me dedico", "en que trabajo", "mi ocupacion", "mi chamba"], ["h:m_job"]),
-  L("stay", ["donde me voy a quedar", "donde me quedo", "donde me hospedo", "donde me voy a hospedar", "el hotel", "mi hotel", "la direccion", "mi direccion"], ["h:m_stay"]),
+  L("stay", ["donde me voy a quedar", "donde me quedo", "donde me hospedo", "donde me voy a hospedar", "donde me alojo", "donde me voy a alojar", "el hotel", "mi hotel", "la direccion", "mi direccion"], ["h:m_stay"]),
   L("length", ["cuantos dias", "cuanto tiempo", "las fechas", "cuantos dias me quedo", "cuanto tiempo me quedo", "cuantos dias me voy a quedar", "cuanto tiempo voy a estar"], ["h:m_days"]),
   L("purpose", ["el motivo", "el motivo de mi viaje", "motivo", "motivo de mi viaje", "motivo del viaje", "el motivo del viaje", "por que vine", "por que vengo", "la razon", "la razon de mi viaje", "por que estoy aqui"], ["h:m_why"]),
   L("return", ["mi boleto", "mi boleto de regreso", "mi vuelo de regreso", "cuando regreso", "cuando me voy", "el boleto de regreso"]),
@@ -131,7 +131,7 @@ const TOPIC_STEP: Record<string, string> = { job: "job", stay: "stay", length: "
 
 /** Words from the officer's questions that learners ask about. */
 const WORDS = [
-  L("purpose", ["motivo", "el motivo"]), L("stay", ["hospedar", "hospedarse", "hospeda", "hospedaje", "hospedarme"]),
+  L("purpose", ["motivo", "el motivo"]), L("stay", ["hospedar", "hospedarse", "hospeda", "hospedaje", "hospedarme", "alojar", "alojarse", "aloja", "alojamiento", "alojarme"]),
   L("job", ["dedica", "se dedica", "dedicarse"]), L("return", ["boleto de regreso", "regreso"]), L("scanner", ["lector", "el lector"]),
   L("cash", ["efectivo", "en efectivo"]), L("stamp", ["sello", "el sello"]), L("index", ["indice", "dedo indice", "el indice"]),
 ];
@@ -482,7 +482,7 @@ export const passport: SituationDef = {
     macros: {
       vengo: "(vengo | vine | venimos | vinimos | he venido | estoy aqui | estamos aqui | estoy | estamos | voy | vamos)",
       my: "(mi | mis | unos | unas | a mi | a mis | a unos | a unas)",
-      stay_verb: "(me voy a hospedar | me hospedo | me voy a quedar | me quedo | nos vamos a quedar | nos quedamos | nos hospedamos | voy a quedarme | voy a hospedarme | voy a estar | vamos a estar | estoy | me estoy quedando | me estoy hospedando | voy a dormir)",
+      stay_verb: "(me voy a hospedar | me hospedo | me voy a alojar | me alojo | nos vamos a alojar | nos alojamos | voy a alojarme | me estoy alojando | me voy a quedar | me quedo | nos vamos a quedar | nos quedamos | nos hospedamos | voy a quedarme | voy a hospedarme | voy a estar | vamos a estar | estoy | me estoy quedando | me estoy hospedando | voy a dormir)",
       sights: "(mexico | la playa | las playas | los cenotes | el cenote | las ruinas | la zona | el pueblo | puerto colibri | tulum | playa del carmen | cancun | el caribe | la costa | la selva | la peninsula)",
       unit: "(dia #u:d | dias #u:d | noche #u:d | noches #u:d | semana #u:w | semanas #u:w | mes #u:m | meses #u:m | ano #u:y | anos #u:y)",
       approx: "(como | unos | unas | mas o menos | aproximadamente | alrededor de | solo | solamente | nomas | casi | exactamente | maximo | apenas | nada mas)",
@@ -620,7 +620,7 @@ export const passport: SituationDef = {
     length: { patterns: [
       "{dur} #h:d_short", "(por | durante) {dur} #h:d_for",
       "(voy a estar | vamos a estar | estoy | estare | voy a quedarme | me voy a quedar | nos vamos a quedar | me quedo | nos quedamos | pienso quedarme | planeo quedarme | voy a pasar | me quedare | estaremos) [@in_mx] [por | durante] {dur} #h:d_staying",
-      "(son | es | seran | sera) {dur}", "{dur} (mas o menos | nada mas | nomas | maximo | como maximo | creo)",
+      "(son | es | seran | sera) {dur}", "{dur} (mas o menos | nada mas | nomas | maximo | como maximo | creo) #h:d_for",
       "(no mas de | maximo | menos de | como maximo) {dur}",
       "(necesito | quisiera | quiero | me gustaria) {dur}",
       // a correction in one breath: "Un mes no, dos semanas" (the second figure counts)
@@ -695,8 +695,8 @@ export const passport: SituationDef = {
     return_date: { patterns: [
       "[si] [el] {date} #h:r_date", "[si] el {day}",
       "[si] (regreso | me regreso | vuelvo | me voy | salgo | vuelo) [a casa | a mi pais] [el] {date} #h:r_date",
-      "[si] (mi vuelo [de regreso] | el vuelo de regreso | mi regreso) es [el] {date} #h:r_fly",
-      "[si] (regreso | me regreso | vuelvo | me voy | salgo) [el] {day}", "[si] (mi vuelo [de regreso] | mi regreso) es [el] {day} #h:r_fly",
+      "[si] (mi vuelo [de regreso | de vuelta] | el vuelo de regreso | el vuelo de vuelta | mi regreso | mi vuelta) es [el] {date} #h:r_fly",
+      "[si] (regreso | me regreso | vuelvo | me voy | salgo) [el] {day}", "[si] (mi vuelo [de regreso | de vuelta] | mi regreso | mi vuelta) es [el] {day} #h:r_fly",
       "(en | dentro de) {dur} #h:r_in", "[si] (regreso | me regreso | vuelvo | me voy) (en | dentro de) {dur}",
       "[si] (regreso | me voy) (la proxima semana | el proximo mes | el mes que viene | a fin de mes)",
     ] },
@@ -859,7 +859,7 @@ export const passport: SituationDef = {
     ],
     greet_passport: [
       t("Buenas tardes. | Su | pasaporte, | por favor.", "Good afternoon. | Your | passport, | please.", "Good afternoon. Passport, please."),
-      t("Buenas. | ¿Me | permite | su | pasaporte?", "Hello. | (To) me | you-allow | your | passport?", "Hello. May I see your passport?", { flags: { 0: "Buenas: short for buenas tardes, a common hello in Mexico." }, spain: t("Buenas. | ¿Me | deja | su | pasaporte?", "Hello. | (To) me | you-let-have | your | passport?", "Hello. May I see your passport?", {flags: {0: "Buenas: short for buenas tardes, a common hello in Mexico."}}) }),
+      t("Buenas. | ¿Me | permite | su | pasaporte?", "Hello. | (To) me | you-allow | your | passport?", "Hello. May I see your passport?", { flags: { 0: "Buenas: short for buenas tardes, a common hello in Mexico." }, spain: t("Buenas. | ¿Me | deja | su | pasaporte?", "Hello. | (To) me | you-let-have | your | passport?", "Hello. May I see your passport?", {flags: {0: "Buenas: short for buenas tardes, a common hello in Spain too."}}) }),
       t("¡Hola! | Pasaporte, | por favor.", "Hi! | Passport, | please.", "Hi! Passport, please."),
     ],
     greet_howareyou: [
@@ -909,7 +909,7 @@ export const passport: SituationDef = {
     max_180: [t("Como | turista, | el | máximo | son | 180 | días.", "As | a tourist, | the | maximum | is | 180 | days.", "As a tourist, the maximum is 180 days.", { say: "Como turista, el máximo son ciento ochenta días." })],
     // Where
     ask_where: [
-      t("¿Dónde | se va a hospedar?", "Where | are you going to stay?", "Where are you staying?"),
+      t("¿Dónde | se va a hospedar?", "Where | are you going to stay?", "Where are you staying?", { spain: t("¿Dónde | se va a alojar?", "Where | are you going to stay?", "Where are you staying?") }),
       t("¿Dónde | se va a quedar?", "Where | are you going to stay?", "Where will you be staying?"),
     ],
     ask_where_live: [t("¿Dónde | va | a | vivir?", "Where | are you going | to | live?", "Where are you going to live?")],
@@ -919,21 +919,21 @@ export const passport: SituationDef = {
       t("¿Me | da | la | dirección?", "(To) me | you-give | the | address?", "What's the address?"),
       t("¿Tiene | la | dirección?", "Do you have | the | address?", "Do you have the address?"),
     ],
-    address_show: [t("Muéstremela, | por favor.", "Show it to me, | please.", "Please show me.")],
+    address_show: [t("Muéstremela, | por favor.", "Show it to me, | please.", "Please show me.", { spain: t("Enséñemela, | por favor.", "Show it to me, | please.", "Please show me.") })],
     address_check: [t("¿La | puede | buscar | en | su | celular?", "It | can you | look for | on | your | phone?", "Could you look it up on your phone?", { flags: { 0: "la: it, the pronoun for la dirección (not the article)." }, spain: t("¿La | puede | buscar | en | su | móvil?", "It | can you | look for | on | your | phone?", "Could you look it up on your phone?", {flags: {0: "la: it, the pronoun for la dirección (not the article)."}}) })],
     address_none: [t("Bueno, | no importa.", "Well, | it doesn't matter.", "Okay, never mind.")],
     // Return ticket
     ask_return_ticket: [t("¿Trae | su | boleto | de | regreso?", "Are you carrying | your | ticket | of | return?", "Do you have your return ticket?", { spain: t("¿Lleva | su | billete | de | vuelta?", "Are you carrying | your | ticket | of | return?", "Do you have your return ticket?") })],
-    ask_fly_back: [t("¿Cuándo | regresa | a | su | país?", "When | do you return | to | your | country?", "When are you going back home?")],
+    ask_fly_back: [t("¿Cuándo | regresa | a | su | país?", "When | do you return | to | your | country?", "When are you going back home?", { spain: t("¿Cuándo | vuelve | a | su | país?", "When | do you go back | to | your | country?", "When are you going back home?") })],
     simple_return: [t("¿Tiene | boleto | de | regreso?", "Do you have | a ticket | of | return?", "Do you have a return ticket?", { spain: t("¿Tiene | billete | de | vuelta?", "Do you have | a ticket | of | return?", "Do you have a return ticket?") })],
-    show_ticket: [t("¿Me | muestra | su | boleto | de | regreso, | por favor?", "(To) me | you-show | your | ticket | of | return, | please?", "Could you show me your return ticket, please?", { spain: t("¿Me | muestra | su | billete | de | vuelta, | por favor?", "(To) me | you-show | your | ticket | of | return, | please?", "Could you show me your return ticket, please?") })],
+    show_ticket: [t("¿Me | muestra | su | boleto | de | regreso, | por favor?", "(To) me | you-show | your | ticket | of | return, | please?", "Could you show me your return ticket, please?", { spain: t("¿Me | enseña | su | billete | de | vuelta, | por favor?", "(To) me | you-show | your | ticket | of | return, | please?", "Could you show me your return ticket, please?") })],
     ticket_ok: [t("Perfecto, | gracias.", "Perfect, | thanks.", "Perfect, thank you.")],
     return_needed: [t("Necesitamos | ver | que | va | a | salir | del | país.", "We need | to see | that | you're going | to | leave | from the | country.", "We need to see that you'll be leaving the country.")],
     check_email: [t("¿Lo | puede | buscar | en | su | correo?", "It | can you | look for | in | your | email?", "Could you look for it in your email?")],
     leave_days: [t("Bueno. | Recuerde | que | tiene | que | salir | a | tiempo.", "Okay. | Remember | that | you have | to | leave | on | time.", "Okay. Remember you have to leave on time.")],
     // Extra questions
     ask_first: [t("¿Es | su | primera | vez | en | México?", "Is it | your | first | time | in | Mexico?", "Is this your first time in Mexico?")],
-    ask_before: [t("¿Ya | había | venido | a | México?", "Already | had you | come | to | Mexico?", "Have you been to Mexico before?")],
+    ask_before: [t("¿Ya | había | venido | a | México?", "Already | had you | come | to | Mexico?", "Have you been to Mexico before?", { spain: t("¿Ha estado | antes | en | México?", "Have you been | before | in | Mexico?", "Have you been to Mexico before?") })],
     first_welcome: [t("¡Pues | {m:bienvenido|f:bienvenida}!", "Well | welcome!", "Well, welcome!")],
     welcome_back: [t("¡Qué | bueno | que | regresó!", "How | good | that | you came back!", "Nice to have you back!", { spain: t("¡Qué | bien | que | haya vuelto!", "How | good | that | you came back!", "Nice to have you back!") })],
     ask_job: [t("¿A | qué | se dedica?", "To | what | do you devote yourself?", "What do you do for a living?")],
@@ -970,16 +970,16 @@ export const passport: SituationDef = {
     mean_yes: [t("Sí, | exacto.", "Yes, | exactly.", "Yes, exactly.")],
     mean_no: [t("Mmm, | no. | Le | pregunto | otra vez.", "Hmm, | no. | (To) you | I-ask | again.", "Hmm, not quite. Let me ask again.")],
     mean_purpose: [t("Motivo | es | la | razón: | ¿por qué | viene?", "“Motivo” | is | the | reason: | why | are you coming?", "“Motivo” means the reason: why are you here?")],
-    mean_stay: [t("Hospedarse | es | quedarse | a | dormir: | ¿en | qué | lugar?", "“Hospedarse” | is | to stay | to | sleep: | in | what | place?", "“Hospedarse” means where you'll sleep: what place?")],
+    mean_stay: [t("Hospedarse | es | quedarse | a | dormir: | ¿en | qué | lugar?", "“Hospedarse” | is | to stay | to | sleep: | in | what | place?", "“Hospedarse” means where you'll sleep: what place?", { spain: t("Alojarse | es | quedarse | a | dormir: | ¿en | qué | lugar?", "“Alojarse” | is | to stay | to | sleep: | in | what | place?", "“Alojarse” means where you'll sleep: what place?") })],
     mean_job: [t("Dedicarse | es | trabajar: | ¿cuál | es | su | trabajo?", "“Dedicarse” | is | to work: | what | is | your | job?", "“Dedicarse” here means work: what's your job?")],
     mean_return: [t("El | boleto | de | regreso | es | el | boleto | para | volver | a | su | país.", "The | ticket | of | return | is | the | ticket | to | go back | to | your | country.", "A return ticket is the ticket to go back home.", { spain: t("El | billete | de | vuelta | es | el | billete | para | volver | a | su | país.", "The | ticket | of | return | is | the | ticket | to | go back | to | your | country.", "A return ticket is the ticket to go back home.") })],
-    mean_scanner: [t("El | lector | es | esta | maquinita, | para | el | dedo.", "The | scanner | is | this | little machine, | for | the | finger.", "The scanner is this little machine, for your finger.")],
+    mean_scanner: [t("El | lector | es | esta | maquinita, | para | el | dedo.", "The | scanner | is | this | little machine, | for | the | finger.", "The scanner is this little machine, for your finger.", { spain: t("El | lector | es | este | aparato, | para | el | dedo.", "The | scanner | is | this | device, | for | the | finger.", "The scanner is this device, for your finger.") })],
     mean_cash: [t("Efectivo | son | billetes | y | monedas.", "Cash | is | bills | and | coins.", "Cash means bills and coins.")],
     mean_stamp: [t("El | sello | va | en | su | pasaporte, | con | sus | días.", "The | stamp | goes | in | your | passport, | with | your | days.", "The stamp goes in your passport, with your days.")],
     // Side questions
     ans_boarding: [t("No, | solo | su | pasaporte.", "No, | only | your | passport.", "No, just your passport.")],
     ans_form: [t("No, | no hay | que | llenar | nada. | Solo | le | pongo | un | sello.", "No, | there's no need | to | fill out | anything. | Just | (for) you | I-put | a | stamp.", "No, there's nothing to fill out. I'll just stamp your passport.", { spain: t("No, | no hay | que | rellenar | nada. | Solo | le | pongo | un | sello.", "No, | there's no need | to | fill out | anything. | Just | (for) you | I-put | a | stamp.", "No, there's nothing to fill out. I'll just stamp your passport.") })],
-    ans_baggage: [t("El | equipaje | está | saliendo | de | aquí, | a la derecha.", "The | baggage | is | as you leave | — | here, | on the right.", "Baggage claim is just past here, on the right.", { flags: { 3: "saliendo de aquí: right after you leave here, a common way to give directions in Mexico." } })],
+    ans_baggage: [t("El | equipaje | está | saliendo | de | aquí, | a la derecha.", "The | baggage | is | as you leave | — | here, | on the right.", "Baggage claim is just past here, on the right.", { flags: { 3: "saliendo de aquí: right after you leave here, a common way to give directions in Mexico." }, spain: t("La | recogida de equipajes | está | nada más salir, | a la derecha.", "The | baggage claim | is | just as you leave, | on the right.", "Baggage claim is just past here, on the right.", { flags: { 3: "nada más + infinitive: right after (doing it)." } }) })],
     ans_restroom: [t("Hay | baños | después de | migración.", "There are | restrooms | after | immigration.", "There are restrooms right after immigration.", { spain: t("Hay | aseos | después de | migración.", "There are | restrooms | after | immigration.", "There are restrooms right after immigration.") })],
     ans_taxi: [t("Los | taxis | están | afuera, | a la salida.", "The | taxis | are | outside, | at the exit.", "Taxis are outside, by the exit.", { spain: t("Los | taxis | están | fuera, | a la salida.", "The | taxis | are | outside, | at the exit.", "Taxis are outside, by the exit.") })],
     ans_limit: [t("Como | visitante, | hasta | 180 | días. | Yo | le | pongo | los | días | de | su | viaje.", "As | a visitor, | up to | 180 | days. | I | (for) you | I-put | the | days | of | your | trip.", "As a visitor, up to 180 days. I give you the days for your trip.", { say: "Como visitante, hasta ciento ochenta días. Yo le pongo los días de su viaje." })],
@@ -990,16 +990,16 @@ export const passport: SituationDef = {
       t("Le | doy | {$num} | días.", "(To) you | I-give | {$num} | days.", "I'm giving you {$num} days."),
       t("Le | pongo | {$num} | días.", "(For) you | I-put | {$num} | days.", "I'm putting down {$num} days."),
     ],
-    stamp_until: [t("Le | pongo | los | días | hasta | su | regreso.", "(For) you | I-put | the | days | until | your | return.", "I'm giving you the days until your return.")],
+    stamp_until: [t("Le | pongo | los | días | hasta | su | regreso.", "(For) you | I-put | the | days | until | your | return.", "I'm giving you the days until your return.", { spain: t("Le | pongo | los | días | hasta | su | vuelta.", "(For) you | I-put | the | days | until | your | return.", "I'm giving you the days until your return.") })],
     stamp_short: [t("Le | voy | a | dar | {$num} | días.", "(To) you | I'm going | to | give | {$num} | days.", "I'm going to give you {$num} days.")],
     days_remind: [t("Entonces, | ¿le | pongo | {$num} | días?", "So, | (for) you | I-put | {$num} | days?", "So, should I put down {$num} days?")],
-    days_ticket_q: [t("¿Tiene | su | boleto | de | regreso? | ¿Me | lo | muestra?", "Do you have | your | ticket | of | return? | (To) me | it | you-show?", "Do you have your return ticket? Can you show me?", { spain: t("¿Tiene | su | billete | de | vuelta? | ¿Me | lo | muestra?", "Do you have | your | ticket | of | return? | (To) me | it | you-show?", "Do you have your return ticket? Can you show me?") })],
+    days_ticket_q: [t("¿Tiene | su | boleto | de | regreso? | ¿Me | lo | muestra?", "Do you have | your | ticket | of | return? | (To) me | it | you-show?", "Do you have your return ticket? Can you show me?", { spain: t("¿Tiene | su | billete | de | vuelta? | ¿Me | lo | enseña?", "Do you have | your | ticket | of | return? | (To) me | it | you-show?", "Do you have your return ticket? Can you show me?") })],
     stamp_more: [t("Muy | bien, | entonces | le | doy | {$num} | días.", "Very | good, | then | (to) you | I-give | {$num} | days.", "All right, then I'll give you {$num} days.")],
-    stamp_more_until: [t("Muy | bien, | le | pongo | los | días | hasta | su | regreso.", "Very | good, | (for) you | I-put | the | days | until | your | return.", "All right, I'll give you the days until your return.")],
+    stamp_more_until: [t("Muy | bien, | le | pongo | los | días | hasta | su | regreso.", "Very | good, | (for) you | I-put | the | days | until | your | return.", "All right, I'll give you the days until your return.", { spain: t("Muy | bien, | le | pongo | los | días | hasta | su | vuelta.", "Very | good, | (for) you | I-put | the | days | until | your | return.", "All right, I'll give you the days until your return.") })],
     // a request above the trip: the days up to the return date on the ticket, rounded up to a usual figure as the
     // stamp always is (the lead's decision, 5 Nov 2026)
     stamp_more_return: [t("Muy | bien. | Le | doy | {$num} | días, | lo que | necesita | hasta | su | regreso.", "Very | good. | (To) you | I-give | {$num} | days, | what | you-need | until | your | return.",
-      "All right. I'll give you {$num} days, which covers you until your return.")],
+      "All right. I'll give you {$num} days, which covers you until your return.", { spain: t("Muy | bien. | Le | doy | {$num} | días, | lo que | necesita | hasta | su | vuelta.", "Very | good. | (To) you | I-give | {$num} | days, | what | you-need | until | your | return.", "All right. I'll give you {$num} days, which covers you until your return.") })],
     stamp_keep: [t("Sin | boleto | de | regreso, | le | dejo | {$num} | días.", "Without | a ticket | of | return, | (to) you | I-leave | {$num} | days.", "Without a return ticket, I'll leave it at {$num} days.", { spain: t("Sin | billete | de | vuelta, | le | dejo | {$num} | días.", "Without | a ticket | of | return, | (to) you | I-leave | {$num} | days.", "Without a return ticket, I'll leave it at {$num} days.") })],
     // Closing
     welcome: [
@@ -1019,7 +1019,7 @@ export const passport: SituationDef = {
       { id: "pp_heres", s: t("Aquí está | mi | pasaporte.", "Here is | my | passport.", "Here's my passport.") },
       { id: "pp_boarding", s: t("¿Necesita | mi | pase de abordar?", "Do you need | my | boarding pass?", "Do you need my boarding pass?",
         { flags: { 2: "Mexican: pase de abordar = boarding pass; elsewhere tarjeta de embarque." },
-          neutral: t("¿Necesita | mi | tarjeta de embarque?", "Do you need | my | boarding pass?", "Do you need my boarding pass?") }) },
+          neutral: t("¿Necesita | mi | tarjeta de embarque?", "Do you need | my | boarding pass?", "Do you need my boarding pass?"), spain: t("¿Necesita | mi | tarjeta de embarque?", "Do you need | my | boarding pass?", "Do you need my boarding pass?", { flags: {} }) }) },
       { id: "q_form", s: t("¿Tengo | que | llenar | algún | formulario?", "Do I have | to | fill out | any | form?", "Do I need to fill out a form?", { spain: t("¿Tengo | que | rellenar | algún | formulario?", "Do I have | to | fill out | any | form?", "Do I need to fill out a form?") }) },
     ] },
     purpose: { lt: "Say why you're here", items: [
@@ -1057,16 +1057,16 @@ export const passport: SituationDef = {
       { id: "d_short", s: t("Quince | días.", "Fifteen | days.", "Fifteen days.") },
       { id: "d_short", s: t("Un | mes.", "A | month.", "A month.") },
       { id: "d_staying", s: t("Voy | a | estar | diez | días.", "I'm going | to | be | ten | days.", "I'll be here ten days.") },
-      { id: "d_for", s: t("Por | una | semana.", "For | a | week.", "For a week.") },
+      { id: "d_for", s: t("Por | una | semana.", "For | a | week.", "For a week.", { spain: t("Una | semana, | más o menos.", "One | week, | more or less.", "About a week.") }) },
       { id: "d_short", s: t("Hasta | el | veinte | de | junio.", "Until | the | twentieth | of | June.", "Until June 20th.") },
     ] },
     stay: { lt: "Say where you're staying", items: [
       { id: "w_hotel", s: t("En | el | Hotel | Mar Azul.", "At | the | Hotel | Mar Azul.", "At Hotel Mar Azul.") },
-      { id: "w_staying", s: t("Me voy a hospedar | en | el | Hotel | Mar Azul.", "I'm going to stay | at | the | Hotel | Mar Azul.", "I'm staying at Hotel Mar Azul.") },
+      { id: "w_staying", s: t("Me voy a hospedar | en | el | Hotel | Mar Azul.", "I'm going to stay | at | the | Hotel | Mar Azul.", "I'm staying at Hotel Mar Azul.", { spain: t("Me voy a alojar | en | el | Hotel | Mar Azul.", "I'm going to stay | at | the | Hotel | Mar Azul.", "I'm staying at Hotel Mar Azul.") }) },
       { id: "w_family", s: t("Me quedo | con | mi | hermana.", "I'm staying | with | my | sister.", "I'm staying with my sister.") },
       { id: "w_friend", s: t("En | casa | de | unos | amigos.", "At | the house | of | some | friends.", "At some friends' place.") },
       { id: "w_airbnb", s: t("En | un | Airbnb.", "In | an | Airbnb.", "At an Airbnb.") },
-      { id: "w_apartment", s: t("Renté | un | departamento.", "I rented | an | apartment.", "I rented an apartment.", { flags: { 2: "Mexican: departamento = apartment; apartamento elsewhere." }, neutral: t("Renté | un | apartamento.", "I rented | an | apartment.", "I rented an apartment."), spain: t("He alquilado | un | piso.", "I've rented | an | apartment.", "I rented an apartment.") }) },
+      { id: "w_apartment", s: t("Renté | un | departamento.", "I rented | an | apartment.", "I rented an apartment.", { flags: { 2: "Mexican: departamento = apartment; apartamento elsewhere." }, neutral: t("Renté | un | apartamento.", "I rented | an | apartment.", "I rented an apartment."), spain: t("He alquilado | un | piso.", "I've rented | an | apartment.", "I rented an apartment.", { flags: { 2: "piso: Spain's everyday word for an apartment." } }) }) },
     ] },
     address: { lt: "Give the address (or show it on your phone)", items: [
       { id: "a_its", s: t("Calle | Flamboyán, | número | veintitrés.", "Street | Flamboyán, | number | twenty-three.", "23 Flamboyán Street.") },
@@ -1075,12 +1075,12 @@ export const passport: SituationDef = {
     ] },
     return: { lt: "Say whether you have a return ticket", items: [
       { id: "r_yes", s: t("Sí, | lo | tengo | en | mi | celular.", "Yes, | it | I-have | on | my | phone.", "Yes, I have it on my phone.", { spain: t("Sí, | lo | tengo | en | mi | móvil.", "Yes, | it | I-have | on | my | phone.", "Yes, I have it on my phone.") }) },
-      { id: "r_date", s: t("Regreso | el | veinte | de | junio.", "I return | on | the twentieth | of | June.", "I fly back on June 20th.", { flags: { 1: "el before a date: English says on." } }) },
-      { id: "r_no", s: t("Todavía | no lo compro.", "Still | I haven't bought it.", "I haven't bought it yet.", { flags: { 1: "Mexican Spanish often uses the present here: todavía no lo compro = I haven't bought it yet." }, spain: t("Todavía | no lo he comprado.", "Still | I haven't bought it.", "I haven't bought it yet.") }) },
+      { id: "r_date", s: t("Regreso | el | veinte | de | junio.", "I return | on | the twentieth | of | June.", "I fly back on June 20th.", { flags: { 1: "el before a date: English says on." }, spain: t("Vuelvo | el | veinte | de | junio.", "I go back | on | the twentieth | of | June.", "I fly back on June 20th.") }) },
+      { id: "r_no", s: t("Todavía | no lo compro.", "Still | I haven't bought it.", "I haven't bought it yet.", { flags: { 1: "Mexican Spanish often uses the present here: todavía no lo compro = I haven't bought it yet." }, spain: t("Todavía | no lo he comprado.", "Still | I haven't bought it.", "I haven't bought it yet.", { flags: { 1: "no lo he comprado: the present perfect, Spain's tense for what hasn't happened yet." } }) }) },
     ] },
     fly_back: { lt: "Say when you fly back", items: [
-      { id: "r_date", s: t("Regreso | el | veinte | de | junio.", "I return | on | the twentieth | of | June.", "I fly back on June 20th.", { flags: { 1: "el before a date: English says on." } }) },
-      { id: "r_fly", s: t("Mi | vuelo | de | regreso | es | el | sábado.", "My | flight | of | return | is | on | Saturday.", "My return flight is on Saturday.", { flags: { 5: "el before a day: English says on." } }) },
+      { id: "r_date", s: t("Regreso | el | veinte | de | junio.", "I return | on | the twentieth | of | June.", "I fly back on June 20th.", { flags: { 1: "el before a date: English says on." }, spain: t("Vuelvo | el | veinte | de | junio.", "I go back | on | the twentieth | of | June.", "I fly back on June 20th.") }) },
+      { id: "r_fly", s: t("Mi | vuelo | de | regreso | es | el | sábado.", "My | flight | of | return | is | on | Saturday.", "My return flight is on Saturday.", { flags: { 5: "el before a day: English says on." }, spain: t("Mi | vuelo | de | vuelta | es | el | sábado.", "My | flight | of | return | is | on | Saturday.", "My return flight is on Saturday.") }) },
       { id: "r_in", s: t("En | dos | semanas.", "In | two | weeks.", "In two weeks.") },
     ] },
     show: { lt: "Show it", items: [
@@ -1122,14 +1122,14 @@ export const passport: SituationDef = {
     days: { lt: "Ask politely for more days", items: [
       { id: "dy_more", s: t("¿Me | puede | dar | treinta | días, | por favor?", "(To) me | can you | give | thirty | days, | please?", "Could you give me thirty days, please?") },
       { id: "dy_more2", s: t("Disculpe, | es que | voy | a | estar | un | mes.", "Excuse me, | it's just that | I'm going | to | be | a | month.", "Excuse me, but I'll be here for a month.") },
-      { id: "r_fly", s: t("Mi | vuelo | de | regreso | es | el | veinte | de | junio.", "My | flight | of | return | is | on | the twentieth | of | June.", "My return flight is on June 20th.", { flags: { 5: "el before a date: English says on." } }) },
+      { id: "r_fly", s: t("Mi | vuelo | de | regreso | es | el | veinte | de | junio.", "My | flight | of | return | is | on | the twentieth | of | June.", "My return flight is on June 20th.", { flags: { 5: "el before a date: English says on." }, spain: t("Mi | vuelo | de | vuelta | es | el | veinte | de | junio.", "My | flight | of | return | is | on | the twentieth | of | June.", "My return flight is on June 20th.") }) },
       { id: "dy_ok", s: t("Con | quince | días | está bien.", "With | fifteen | days | it's fine.", "Fifteen days is fine.") },
     ] },
     clarify: { lt: "Check what she means", items: [
       { id: "m_job", s: t("¿Se refiere | a | mi | trabajo?", "Are you referring | to | my | job?", "Do you mean my job?") },
       { id: "m_why", s: t("¿Se refiere | al | motivo | de | mi | viaje?", "Are you referring | to the | reason | for | my | trip?", "Do you mean why I'm here?") },
       { id: "m_days", s: t("¿Se refiere | a | cuántos | días?", "Are you referring | to | how many | days?", "Do you mean how many days?") },
-      { id: "c_meaning", s: t("¿Qué | significa | hospedarse?", "What | does it mean | hospedarse?", "What does “hospedarse” mean?") },
+      { id: "c_meaning", s: t("¿Qué | significa | hospedarse?", "What | does it mean | hospedarse?", "What does “hospedarse” mean?", { spain: t("¿Qué | significa | alojarse?", "What | does it mean | alojarse?", "What does “alojarse” mean?") }) },
       { id: "q_how_long", s: t("¿Cuánto | tiempo | puedo | quedarme?", "How much | time | can I | stay?", "How long can I stay?") },
     ] },
   },
@@ -1145,6 +1145,11 @@ export const passport: SituationDef = {
     "se va a quedar": { reason: "grammatical_fusion", split: "se → himself + va → goes + a → to + quedar → remain gives a false reflexive and a motion verb; = are you going to stay.", minimal: "The pronominal periphrastic future only." },
     "se va a hospedar": { reason: "grammatical_fusion", split: "se → himself + va → goes + a → to + hospedar → lodge gives a false reflexive and a motion verb; = are you going to stay.", minimal: "The pronominal periphrastic future only." },
     "me voy a hospedar": { reason: "grammatical_fusion", split: "me → myself + voy → I go + a → to + hospedar → lodge gives a false reflexive and a motion verb; = I'm going to stay.", minimal: "The pronominal periphrastic future only." },
+    // Spain pass 3 (14 Nov 2026)
+    "se va a alojar": { reason: "grammatical_fusion", split: "se → himself + va → goes + a → to + alojar → lodge gives a false reflexive and a motion verb; = are you going to stay.", minimal: "The pronominal periphrastic future only." },
+    "me voy a alojar": { reason: "grammatical_fusion", split: "me → myself + voy → I go + a → to + alojar → lodge gives a false reflexive and a motion verb; = I'm going to stay.", minimal: "The pronominal periphrastic future only." },
+    "recogida de equipajes": { reason: "lexical_expression", split: "recogida → pickup + de → of + equipajes → luggage is Spain's compound noun for baggage claim.", minimal: "Three words, one noun." },
+    "nada más salir": { reason: "lexical_expression", split: "nada → nothing + más → more + salir → to leave misreads the time phrase: right as you leave.", minimal: "Three words." },
     "me quedo": { reason: "grammatical_fusion", split: "me → myself + quedo → I remain gives a false reflexive; quedarse = stay.", minimal: "Only the pronoun and verb." },
     "me quito": { reason: "grammatical_fusion", split: "me → myself + quito → I remove gives a false reflexive object; quitarse = take off (clothes, glasses).", minimal: "Only the pronoun and verb." },
     "más o menos": { reason: "lexical_expression", split: "más → more + o → or + menos → less is literal but reads as a comparison; = roughly.", minimal: "Three words." },

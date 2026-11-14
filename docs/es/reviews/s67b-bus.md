@@ -124,3 +124,11 @@ the mercado (the church stop only before the zócalo; the beach has no next stop
 Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
 
 - Read every twin: usted kept throughout, Spain's words right (billete, tarjeta de embarque, móvil, gafas, portátil, aseos, maleta, facturar, coger, aparcamiento, coche, jersey), the perfect for what just happened, "Ya está" for "Listo", Mexican-only names kept. Meaning, glosses and spelling: no problems found. No changes.
+
+## Spain pass 3 (14 Nov 2026)
+
+- 26 Spain twins (24 added, 2 changed), 3 noteSpain. The driver keeps usted.
+- Getting off: Spain's text no longer teaches “¡Bajan!” (what Mexican riders shout): the driver says “pulse el timbre” (cord, button, button_how) and “¡Iglesia! ¿Alguien baja?”; the learner's ¡Bajan! chip is “¿Me para aquí, por favor?” in Spain (a noteSpain), and the ¿Toco el timbre? chip is ¿Pulso el timbre?. Grammar: bajan takes “(me) para / pare aquí” with #h:bajan; button takes pulso.
+- Súbase → suba (goes_yes, goes_yes_stmt, change_later), oos_take12 → Coja el 12; ¿Para dónde va? → ¿Adónde va?; donde guste → donde quiera (have_seat, sit_anywhere, sit_where); ¿Le paro (aquí)? / Aquí le paro → ¿Paro (aquí)? / Paro aquí; Son como… → Son unas / unos…; como a las diez → sobre las diez; Ahí viene {X}, su parada → La siguiente es {X}…; del otro lado → al otro lado.
+- Notes: the pásele, camión and nomás notes no longer show on Spain's twins; the ask_bus chip has a noteSpain (locals here also say el camión); no_exact's note about traer has a Spain version.
+- Kept: “pase de día” (understood; Spain would say bono or abono, but the chip and the grammar rest on it). 2 corpus items.

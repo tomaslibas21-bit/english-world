@@ -12,5 +12,9 @@
   {"ctx": "gift", "say": "No, no es un regalo", "intent": "gift_no"},
   {"ctx": "stamps_offer", "say": "No necesito sellos, gracias", "intent": "no_stamps"},
   {"ctx": "stamps_qty", "say": "Cinco, por favor", "intent": "stamps_ctx", "slots": {"number": 5}},
-  {"ctx": "stamps_qty", "say": "Cinco sellos, por favor", "intent": ["stamps_qty", "stamps_ctx"], "slots": {"number": 5}}
+  {"ctx": "stamps_qty", "say": "Cinco sellos, por favor", "intent": ["stamps_qty", "stamps_ctx"], "slots": {"number": 5}},
+  {"ctx": "perfume", "say": "Ah, vale. Lo saco.", "intent": "take_out"},
+  {"ctx": "service", "say": "¿Tiene seguimiento?", "intent": "ask_tracking"},
+  {"ctx": "value", "say": "Más o menos ochocientos pesos", "intent": ["value_ans", "value_ctx"]},
+  {"ctx": "more", "say": "Nada más, gracias", "intent": ["more_no", "yn:no"]}
 ] }

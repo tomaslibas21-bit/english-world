@@ -22,6 +22,7 @@
 { "ctx": "found", "say": "¿Dónde la ha encontrado?", "intent": "where_found" },
 { "ctx": "problem", "say": "Ya la he encontrado", "intent": "not_lost" },
 { "ctx": "closing", "say": "Muchas gracias, es usted muy amable", "intent": "thanks_kind" },
-{ "ctx": "pockets", "say": "No he mirado", "intent": "any" }
+{ "ctx": "pockets", "say": "No he mirado", "intent": "any" },
+{ "ctx": "last_seen", "say": "Cuando he pagado el café", "intent": "last_seen" }
 ]
 }

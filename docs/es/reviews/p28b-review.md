@@ -112,3 +112,11 @@ Decided: "retroalimentación" → "feedback" in the Spain text, everywhere (what
 Also fixed: "¿Por qué crees que salió tan bien?" (→ ha salido); team_react (→ ha ayudado / lo has mantenido todo); "Le damos seguimiento" in the line and the hint (→ "Hacemos un seguimiento", grammar reads it); "como dijiste" ×3 (→ como has dicho); the hint "afecta mi sueldo" (→ "afecta a mi sueldo", grammar reads it).
 Spain corpus +3.
 Gates: tsc clean; check-content Mexican, neutral and Spain 0 errors, 0 warnings; corpus 297/297 0/25; held-out 36/37 (unchanged); Spain 24/24 0/1; vitest es 178/178.
+
+## Spain pass 3 (14 Nov 2026)
+
+- Emily's present perfect for this year's work: "Ese fue un gran logro" → "ha sido"; "¿Qué hizo que funcionara?" → "¿Qué ha hecho que funcione?"; "lo que yo también vi" → "he visto"; "le enseñaste" → "le has enseñado".
+- "Debí darme cuenta" → "Debería haberme dado cuenta"; "lo vas a lograr" → "lo vas a conseguir".
+- Neutral twins of fb_give, goal_present.1, rev_tip_shorter_meetings and sum_speak got empty flags (they inherited "Mexican: junta").
+- Kept: the hints' preterites about finished projects ("Fue trabajo en equipo", "Escuché a los usuarios"): a project done months ago is finished time.
+Gates: Spain and Mexican 0 errors, 0 warnings; Spain corpus 24/24, 0/1.

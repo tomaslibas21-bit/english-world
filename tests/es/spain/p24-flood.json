@@ -55,6 +55,11 @@
 },
 {
 "ctx": "g_who",
+"say": "Buenos días, Don Gilberto. Soy Ryan Miller, del 1B",
+"intent": "intro"
+},
+{
+"ctx": "g_who",
 "say": "Le llamo del 1B",
 "intent": [
 "intro",

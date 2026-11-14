@@ -228,3 +228,25 @@ Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line a
 - Fixed ("Listo" as "done" is Latin American): "¡Listo, ya está tu mesa!" → "¡Perfecto, ya está tu mesa!"; "Listo, ya lo he cambiado" → "Hecho, …"; "¡Muy amable! Listo, ya está" → "¡Muy amable! Pues ya está"; tip_none_ok "Ah... muy bien. Listo." gets a twin "Ah... muy bien. Pues ya está.".
 - Justified warnings: "frijoles" in the sides (frijoles refritos, a Mexican dish).
 - Owner question: Lucía (host) keeps tú, see the hand-back.
+
+## Spain pass 3 (14 Nov 2026)
+
+Idioms, set phrases, tenses and notes, line by line through what the Spain set says (16 twins added, 9 changed, 12 twins
+given their own flags).
+
+- **Set phrases:** ¡provecho! (serve, its_yours) → ¡que aproveche!; Se acostumbra (tip) → Se suele dejar; Serían como →
+  más o menos; ¡Que pases buena noche! → una buena noche; un cafecito (ask_dessert) → un café; en línea → por internet.
+- **El cambio → la vuelta** (Spain's change you get back): confirm_keep, cash_ok, change_back and the chip "Quédate con
+  la vuelta" (grammar: quédate/quédese con la vuelta, ¿me das la vuelta?).
+- **Chips:** Nada más yo / Nada más la cuenta → Solo yo / Solo la cuenta; Separado → Por separado; ¡Felicidades a la
+  cocinera! → ¡Enhorabuena a la cocinera! (Spain: felicidades is for birthdays); ¿Dónde está el baño? → ¿Dónde están los
+  servicios?; Reservamos → Hemos reservado (grammar takes he/hemos reservado).
+- **Food words:** desc_guacamole limón → lima (limón is a lemon in Spain); desc_arrachera carne de res, muy suave →
+  carne de ternera, muy tierna; desc_mineral now says "Aquí, la natural es sin gas…" with a note that it is the Mexican
+  menu's usage.
+- **Notes:** Mexican notes (ahorita, ¿Gusta…?, ¿Se le ofrece…?, cafecito, verlo/verla) were landing by unit index on
+  Spain's enseguida / ahora mismo / ¿Quieres / ¿Te / verte: those twins have their own flags now. noteSpain for "Voy a
+  tomar…", "¿Me traes…?", "¿Pica?".
+- Kept: frijoles (refried beans, a Mexican dish; the 4 checker warnings), the Mexican tip habits (facts about the town).
+- Spain corpus: 8 items added (la vuelta, hemos reservado, solo yo, enhorabuena, los servicios, solo la cuenta, por
+  separado).

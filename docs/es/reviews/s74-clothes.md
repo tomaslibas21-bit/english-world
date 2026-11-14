@@ -143,3 +143,24 @@ Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line a
 - Register: Valeria says tú in every line; hints tú, vosotros for the shop (¿Tenéis…?, ¿Aceptáis…?). Correct.
 - Fixed: "Tranquilamente, mira lo que quieras" (odd fronted adverb) → "Mira tranquilamente, sin prisa."; "¡Me avisas cómo te queda(n)!" → "¡Ya me dices qué tal te queda(n)!"; "Solo guarda tu ticket" (calque) → "Solo tienes que guardar el ticket"; "juntas puntos" (Latin American) → "acumulas puntos"; "¡Listo! Solo escanea este código en tu casa" → "¡Ya está! … en casa"; untwinned "Listo." (size_ok) → "Vale.", "Listo, gracias." (paid) → "Ya está, gracias.".
 - Corpus: +3 items (Me está un poco grande, ¿Me lo puedo probar?, Me lo llevo).
+
+## Spain pass 3 (14 Nov 2026)
+
+About 30 twins added and 25 changed or given their own flags.
+
+- **Prices:** "Está en 650" → "Vale 650"; every "tiene 20% de descuento" → Spain's "tiene un 20 % de descuento" (lines
+  and their spoken forms); "está al 30 %" (Mexican sale signs) → "lleva un 30 % de descuento"; ya traen IVA → ya llevan
+  el IVA; chip ¿Ya incluye IVA? → ¿Lleva el IVA incluido? (grammar added), with a noteSpain.
+- **Words:** la última pieza → la última que queda; nada más (one_size, ret_browse) → solo; tarjeta de cliente
+  frecuente → tarjeta de cliente; bolsita → bolsa; el cambio → la vuelta (change_back, dollars).
+- **tú to Valeria in the chips:** ¿Tiene esta … en mediana? → ¿Tienes…?; ¿Me lo puede cambiar…? → ¿Me lo puedes
+  cambiar…? (hp() takes a Spain pair now).
+- **Chips:** Me queda chico/chica → pequeño/pequeña; Se destiñó → Se ha desteñido (grammar added); Estoy bien, gracias
+  (a calque) → Gracias, solo estoy echando un vistazo (grammar added); recibo → ticket in the receipt chips; ¿Me das un
+  ticket de regalo? is now credited (me das / me puedes dar in the grammar).
+- **Notes:** FLAG_TICKET said "Mexican: el ticket"; Spain says ticket too, so it now reads "el ticket = the receipt
+  (Mexico and Spain; elsewhere: el recibo)" in every text. Mexican notes (pásele, andar + -ando, con confianza, ¿gusta…?,
+  usted lo/la, la terminal, una disculpa) no longer land on Spain's words. gift_receipt noteSpain says "¿Te lo envuelvo…?".
+- Kept: Mexican shoe numbers (veinticinco: the town's shoe sizes), saldo a favor (Spain would often say "un vale", but
+  "vale" would clash with the learner's "vale" = okay).
+- Spain corpus: 11 items added.

@@ -121,3 +121,14 @@ N/EN-FIXES-LEADS.md.
 - Checked (fresh reviewer): every twin against its Mexican line (meaning, facts, prices, names), Peninsular wording, the perfect for today's events, tú/usted and vosotros by STYLE.md, glosses, spelling and ¿¡, the Spain transcripts (`--variety=spain --verbose`, untwinned lines read through their neutral fallback) and tests/es/spain.
 - Found: menú del día (for comida corrida) and tarjeta de acceso (for gafete) are right for Spain; cocina económica stays (a Mexican place). "¡En la nevera! Solo ponle tu nombre." (solo + imperative).
 - Fixed: "¡En la nevera! Solo tienes que ponerle tu nombre.".
+
+## Spain pass 3 (14 Nov 2026)
+
+- Vosotros: the chip q_lunch_time "¿A qué hora coméis?" (María and the team, tú-people; noteSpain), grammar takes
+  coméis.
+- "paredes de cristal" in a_meeting too (tour_rooms already said it); a_who "la señora Salinas"; the chip q_none
+  "No, eso es todo por ahora".
+- Notes on the wrong word (inherited flags): tarjeta de acceso (gafete, 2), sala de reuniones (sala de juntas, 2),
+  Solo (nomás), bidón (now its own note), se ha atascado (atorarse), a trabajar (chamba), ¡Anda! (ándale), sitio
+  (lugarcito).
+- Corpus: 2 items.

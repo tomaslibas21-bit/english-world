@@ -110,3 +110,21 @@ Found and fixed: ¿Qué le damos? / ¿Qué se le ofrece? → ¿Qué le pongo? (D
 English of every twin checked against its Mexican line (restored where a twin had rephrased it). Spain corpus items
 added for the new forms. Gates: Mexican, neutral and Spain checks 0 errors; coverage 0 false accepts.
 
+
+## Spain pass 3 (14 Nov 2026)
+
+A deeper pass for idioms, set phrases and register (owner: everything said in Spain mode must sound Peninsular).
+
+- **Limón → lima** (Spain noun, `spain: "lima", spainPl, spainG: "f"`; the `P()` helper passes them): in Spain a
+  limón is a yellow lemon, so a Spain learner shouldn't learn "limón = lime". Overrides the 11 Nov call to keep it.
+- **"joven" as the form of address** (a Mexican vendor's habit) dropped from the Spain twins: ¡Hola, buenas! ¿Qué le
+  pongo? / ¡Buenas! ¿Qué va a llevar? / Pues son… / ¡Ay, muchas gracias! ¡Qué amable! / Lo siento, aquí no doy
+  ticket / Más barato no puedo, de verdad / ¡Muchas gracias! ¡Hasta la próxima! / Dólares no, lo siento.
+- ¿Cuánto(s) le doy? → ¿Cuánto(s) quiere? / ¿Cuánto le pongo?; ándale → Vale; hasta ahora van → De momento van;
+  ¿No trae más chico? → ¿No tiene algo más pequeño?; está dulcecita → está muy dulce; bolsita → bolsa; ya está en buen
+  precio → ya está muy bien de precio.
+- Notes: twins that inherited a Mexican note (ándale, jitomate, nomás, más chico, pilón) now carry `flags: {}`.
+- Hints: ¿Me da…? → ¿Me pone…? (with a noteSpain), Deme → Póngame, "Veinte pesos, nada más" → "Solo veinte pesos",
+  "Dos, nada más" → "Solo dos", "Es todo" → "Eso es todo". Grammar: `me pone #h:me_da`, `pongame #h:deme`,
+  `solo {money} #h:qty_money`, `solo {count} #h:qty_pcs`. New merges: de momento, de precio, de verdad.
+- Spain corpus: +6 items (limas, ¿Me pone…?, Póngame…, Solo veinte pesos, Solo dos, Eso es todo).

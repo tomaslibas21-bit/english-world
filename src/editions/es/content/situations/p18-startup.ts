@@ -65,6 +65,8 @@ const F_ONDA = "Mexican: agarrarle la onda = to get the hang of it.";
 const F_ONDA_N = "agarrarle el ritmo = to get the hang of it.";
 const F_GANAS = "Mexican: echarle ganas = to give it your all.";
 const F_GANAS_N = "dar con todo = to give it your all.";
+const F_GANAS_S = "Spain: ir a por todas = to go all out, to give it your all.";
+const F_LO = "lo doubles todo (everything); English needs no word.";
 const F_CHAMBA = "Mexican: la chamba = work, a job (informal).";
 const F_CHINO = "estar en chino = to be impossible to understand (English says “Greek to me”).";
 const F_CHINO_N = "sonar a chino = to be impossible to understand (English says “Greek to me”).";
@@ -154,7 +156,7 @@ const IDIOM_WORDS: [RegExp, string][] = [
   [/\bmanos\b|\bobra\b/, "manos"], [/\bcaja\b/, "caja"], [/\bcuello\b/, "cuello"], [/\bpagina\b/, "pagina"],
   [/\bparejo\b|\bde (tu|su|nuestra) parte\b/, "parejo"], [/\baventon\b|\ba la carrera\b/, "aventon"], [/\bceros?\b/, "cero"],
   [/\bcancha\b|\btejado\b|\bpelota\b/, "cancha"], [/\baparte\b/, "aparte"], [/\bpor hoy\b/, "por_hoy"], [/\bpilas\b/, "pilas"],
-  [/\bganas\b|\bdale con todo\b|\bdar con todo\b/, "ganas"], [/\bchamba\b/, "chamba"],
+  [/\bganas\b|\bdale con todo\b|\bdar con todo\b|\bpor todas\b/, "ganas"], [/\bchamba\b/, "chamba"],
 ];
 function idiomFromWords(w: unknown): string | undefined {
   const s = fold(String(w ?? ""));
@@ -297,7 +299,7 @@ export const startup: SituationDef = {
         { id: "aparte", forms: ["lo vemos aparte", "verlo aparte", "aparte"] },
         { id: "por_hoy", forms: ["dejarlo por hoy", "dejemoslo por hoy", "lo dejas por hoy", "por hoy"] },
         { id: "pilas", forms: ["ponerse las pilas", "ponerte las pilas", "ponte las pilas", "las pilas", "pilas"] },
-        { id: "ganas", forms: ["echarle ganas", "echale ganas", "ganas", "dale con todo", "dar con todo"] },
+        { id: "ganas", forms: ["echarle ganas", "echale ganas", "ganas", "dale con todo", "dar con todo", "a por todas", "ir a por todas", "por todas"] },
         { id: "chamba", forms: ["chamba", "la chamba", "mucha chamba"] },
       ] },
       // a bare echo ("¿Manos a la obra?"): only the idioms a learner wouldn't say as an answer of their own
@@ -314,7 +316,7 @@ export const startup: SituationDef = {
         { id: "aparte", forms: ["aparte", "lo vemos aparte"] },
         { id: "por_hoy", forms: ["dejarlo por hoy"] },
         { id: "pilas", forms: ["ponerse las pilas", "las pilas"] },
-        { id: "ganas", forms: ["echarle ganas", "echale ganas", "dale con todo", "dar con todo"] },
+        { id: "ganas", forms: ["echarle ganas", "echale ganas", "dale con todo", "dar con todo", "a por todas", "ir a por todas"] },
         { id: "crack", forms: ["un crack", "crack"] },
         { id: "chamba", forms: ["chamba"] },
         { id: "onda", forms: ["la onda", "agarrarle la onda", "el ritmo", "agarrarle el ritmo", "cogerle el ritmo"] },
@@ -588,7 +590,7 @@ export const startup: SituationDef = {
       "que hacemos [ahora | entonces]",
     ] },
     crash_who: { patterns: [
-      "quien (lo hizo | hizo el codigo | hizo la actualizacion) (al aventon | a la carrera) #h:who_cut",
+      "quien (lo hizo | lo ha hecho | hizo el codigo | ha hecho el codigo | hizo la actualizacion | ha hecho la actualizacion) (al aventon | a la carrera) #h:who_cut",
       "de quien (es | fue) la culpa",
       "quien (lo hizo | rompio | subio) (eso | esto | el codigo | la actualizacion)",
       "quien fue",
@@ -753,8 +755,10 @@ export const startup: SituationDef = {
   lines: {
     // --- hello ---------------------------------------------------------------------------------
     greet: [
-      t("¡Hey! | ¿Hacemos | un | check-in | rápido?", "Hey! | Should-we-do | a | check-in | quick?", "Hey! Quick check-in?", { flags: { 3: F_CHECK } }),
-      t("¡Hey, | tú! | ¿Tienes | un | segundo? | Hagamos | un | check-in.", "Hey, | you! | Do-you-have | a | second? | Let's-do | a | check-in.", "Hey, you! Got a sec? Let's touch base.", { flags: { 7: F_CHECK } }),
+      t("¡Hey! | ¿Hacemos | un | check-in | rápido?", "Hey! | Should-we-do | a | check-in | quick?", "Hey! Quick check-in?", { flags: { 3: F_CHECK },
+        spain: t("¡Oye! | ¿Hacemos | un | check-in | rápido?", "Hey! | Should-we-do | a | check-in | quick?", "Hey! Quick check-in?", { flags: { 3: F_CHECK } }) }),
+      t("¡Hey, | tú! | ¿Tienes | un | segundo? | Hagamos | un | check-in.", "Hey, | you! | Do-you-have | a | second? | Let's-do | a | check-in.", "Hey, you! Got a sec? Let's touch base.", { flags: { 7: F_CHECK },
+        spain: t("¡Hola! | ¿Tienes | un | segundo? | Hagamos | un | check-in.", "Hi! | Do-you-have | a | second? | Let's-do | a | check-in.", "Hi! Got a sec? Let's touch base.", { flags: { 6: F_CHECK } }) }),
     ],
     hello_q: [
       t("¿Cómo | vas | con | tu | primera | semana? | Al principio | todo | está | en chino, | ¿no?", "How | are-you-doing | with | your | first | week? | At first | everything | is | in Chinese, | right?",
@@ -770,7 +774,8 @@ export const startup: SituationDef = {
       t("¿Y? | ¿Cómo | va | tu | primera | semana?", "So? | How | is-going | your | first | week?", "So? How's week one?"),
       t("¿Cómo | vas | hasta ahora?", "How | are-you-doing | so far?", "So, how's it going so far?"),
     ],
-    hello_hi: [t("¡Hey! | ¿Y | cómo | vas | con | tu | primera | semana?", "Hey! | And | how | are-you-doing | with | your | first | week?", "Hey! So, how's week one?")],
+    hello_hi: [t("¡Hey! | ¿Y | cómo | vas | con | tu | primera | semana?", "Hey! | And | how | are-you-doing | with | your | first | week?", "Hey! So, how's week one?",
+      { spain: t("¡Hola! | ¿Y | cómo | vas | con | tu | primera | semana?", "Hi! | And | how | are-you-doing | with | your | first | week?", "Hi! So, how's week one?") })],
     yep_idiom: [t("¡Sí! | Perdón.", "Yes! | Sorry.", "Yep! Sorry."), t("¡Culpable!", "Guilty!", "Guilty!")],
     hello_learn: [
       t("¡Me encanta! | Eres | un | crack.", "I love it! | You-are | a | star.", "Love it! You're crushing it.", { flags: { 3: F_CRACK } }),
@@ -784,10 +789,13 @@ export const startup: SituationDef = {
       t("Es | normal. | La | primera | semana | siempre | es | una | locura. | ¡Échale ganas!", "It's | normal. | The | first | week | always | is | a | madness. | Give it your all!",
         "Totally normal. Week one is always wild. Hang in there!", { flags: { 9: F_GANAS },
           neutral: t("Es | normal. | La | primera | semana | siempre | es | una | locura. | ¡Dale con todo!", "It's | normal. | The | first | week | always | is | a | madness. | Give it your all!",
-            "Totally normal. Week one is always wild. Hang in there!", { flags: { 9: F_GANAS_N } }) }),
+            "Totally normal. Week one is always wild. Hang in there!", { flags: { 9: F_GANAS_N } }),
+          spain: t("Es | normal. | La | primera | semana | siempre | es | una | locura. | ¡A por todas!", "It's | normal. | The | first | week | always | is | a | madness. | Go all out!",
+            "Totally normal. Week one is always wild. Go for it!", { flags: { 9: F_GANAS_S } }) }),
       t("{m:Tranquilo|f:Tranquila}, | ya | vas | a | ver. | ¡Échale ganas!", "Relax, | soon | you're-going | to | see. | Give it your all!", "Don't worry, you'll get there. Hang in there!",
         { flags: { 5: F_GANAS },
-          neutral: t("{m:Tranquilo|f:Tranquila}, | ya | vas | a | ver. | ¡Dale con todo!", "Relax, | soon | you're-going | to | see. | Give it your all!", "Don't worry, you'll get there. Hang in there!", { flags: { 5: F_GANAS_N } }) }),
+          neutral: t("{m:Tranquilo|f:Tranquila}, | ya | vas | a | ver. | ¡Dale con todo!", "Relax, | soon | you're-going | to | see. | Give it your all!", "Don't worry, you'll get there. Hang in there!", { flags: { 5: F_GANAS_N } }),
+          spain: t("{m:Tranquilo|f:Tranquila}, | ya | verás. | ¡A por todas!", "Relax, | soon | you'll-see. | Go all out!", "Don't worry, you'll see. Go for it!", { flags: { 3: F_GANAS_S } }) }),
     ],
     hello_no: [t("¿No? | ¡Talento | natural! | Me encanta.", "No? | Talent | natural! | I love it.", "No? Natural talent! Love it.")],
     hello_over: [
@@ -823,7 +831,8 @@ export const startup: SituationDef = {
       t("¿Y? | Presentación, | fiesta, | foto. | ¿Puedes | con | todo?", "So? | Deck, | party, | photo. | Can-you | with | everything?", "So? Deck, party, photo. Can you take them all on?", { flags: { 5: F_CON } }),
       t("Entonces, | ¿puedes | con | las | tres | cosas?", "So, | can-you | with | the | three | things?", "So, can you handle all three?", { flags: { 2: F_CON } }),
     ],
-    pile_know: [t("Ya sé, | ya sé. | Estás | hasta el cuello.", "I know, | I know. | You're | up to your neck.", "I know, I know. You're up to your ears.")],
+    pile_know: [t("Ya sé, | ya sé. | Estás | hasta el cuello.", "I know, | I know. | You're | up to your neck.", "I know, I know. You're up to your ears.",
+      { spain: t("Ya lo sé, | ya lo sé. | Estás | hasta el cuello.", "I know, | I know. | You're | up to your neck.", "I know, I know. You're up to your ears.") })],
     pile_yes: [t("¡Eso!", "That's it!", "Awesome!"), t("¡Me encanta!", "I love it!", "Love it!")],
     too_much_q: [
       t("Espera, | todavía | tienes | los | reportes | de | errores | y | los | correos | de | clientes, | ¿verdad? | ¿Es | demasiado?",
@@ -955,7 +964,8 @@ export const startup: SituationDef = {
         "Okay, deep breath. Fix the bug first, then tell the customers?", { flags: { 8: "les doubles “a los clientes”; English needs no word.", 10: F_A } }),
     ],
     crash_ok_reask: [t("¿Y? | ¿Lo | arreglamos | y | luego | les | avisamos?", "So? | It | we-fix | and | then | them | we-tell?", "So? Fix it, then tell them?")],
-    crash_fix: [t("Primero | arreglarlo. | ¡Sí! | Le | llamo | a | Lalo | ahora mismo.", "First | fix-it. | Yes! | — | I'll-call | — | Lalo | right now.", "Fix it first. Yes! I'm calling Lalo right now.", { flags: { 3: F_LE, 5: F_A } })],
+    crash_fix: [t("Primero | arreglarlo. | ¡Sí! | Le | llamo | a | Lalo | ahora mismo.", "First | fix-it. | Yes! | — | I'll-call | — | Lalo | right now.", "Fix it first. Yes! I'm calling Lalo right now.", { flags: { 3: F_LE, 5: F_A },
+      spain: t("Primero | arreglarlo. | ¡Sí! | Llamo | a | Lalo | ahora mismo.", "First | fix-it. | Yes! | I'll-call | — | Lalo | right now.", "Fix it first. Yes! I'm calling Lalo right now.", { flags: { 4: F_A } }) })],
     crash_tell: [t("Avisarles | a | los | clientes. | Con | honestidad | y | rápido. | Me encanta.", "Tell-them | — | the | customers. | With | honesty | and | fast. | I love it.", "Tell the customers. Honest and fast. Love it.", { flags: { 1: F_A } })],
     crash_ben: [t("¡Lalo! | Claro. | Lalo | arregla | lo que sea | con | suficiente | café.", "Lalo! | Of course. | Lalo | fixes | anything | with | enough | coffee.", "Lalo! Of course. Lalo can fix anything with enough coffee.")],
     crash_later: [t("Lanzar | la próxima semana. | Duele, | pero | es | lo | más | inteligente.", "Launch | next week. | It-hurts, | but | it's | the | most | smart.", "Launch next week. Painful, but smart.")],
@@ -968,10 +978,12 @@ export const startup: SituationDef = {
         { flags: { 6: F_AVENTON }, neutral: t("Gracias. | Y | nadie | vuelve a | hacer | nada | a la carrera.", "Thanks. | And | nobody | again | does | anything | in a rush.",
           "Thank you. And nobody cuts corners ever again.", { flags: { 6: F_AVENTON_N } }) }),
     ],
-    crash_who: [t("¿La verdad? | Yo. | Subí | la | actualización | a | las dos | de la mañana.", "Honestly? | Me. | I-pushed | the | update | at | two | in the morning.", "Honestly? Me. I pushed the update at two a.m.")],
+    crash_who: [t("¿La verdad? | Yo. | Subí | la | actualización | a | las dos | de la mañana.", "Honestly? | Me. | I-pushed | the | update | at | two | in the morning.", "Honestly? Me. I pushed the update at two a.m.",
+      { spain: t("¿La verdad? | Yo. | He subido | la | actualización | a | las dos | de la mañana.", "Honestly? | Me. | I-have-pushed | the | update | at | two | in the morning.", "Honestly? Me. I pushed the update at two a.m.") })],
     ball_back_react: [t("¡Ja! | No, | no. | La pelota está en tu cancha.", "Ha! | No, | no. | The ball is in your court.", "Ha! Nope. The ball is in your court.",
       { spain: t("¡Ja! | No, | no. | La pelota está en tu tejado.", "Ha! | No, | no. | The ball is in your court.", "Ha! Nope. The ball is in your court.", { flags: { 3: F_TEJADO } }) })],
-    crash_skip: [t("Bueno. | Le | llamo | a | Lalo. | Primero | arreglamos, | luego | hablamos.", "Okay. | — | I'll-call | — | Lalo. | First | we-fix, | then | we-talk.", "Okay. I'll call Lalo. Fix first, talk later.", { flags: { 1: F_LE, 3: F_A } })],
+    crash_skip: [t("Bueno. | Le | llamo | a | Lalo. | Primero | arreglamos, | luego | hablamos.", "Okay. | — | I'll-call | — | Lalo. | First | we-fix, | then | we-talk.", "Okay. I'll call Lalo. Fix first, talk later.", { flags: { 1: F_LE, 3: F_A },
+      spain: t("Bueno. | Llamo | a | Lalo. | Primero | arreglamos, | luego | hablamos.", "Okay. | I'll-call | — | Lalo. | First | we-fix, | then | we-talk.", "Okay. I'll call Lalo. Fix first, talk later.", { flags: { 2: F_A } }) })],
 
     // --- who owns what -------------------------------------------------------------------------
     owner_ask: [
@@ -986,7 +998,8 @@ export const startup: SituationDef = {
     ],
     owner_budget: [t("Raquel, | de | ventas. | Ella | maneja | el | presupuesto. | Yo | nada más | lo | gasto.", "Raquel, | from | sales. | She | manages | the | budget. | I | just | it | spend.",
       "Raquel in sales. She owns the budget. I just spend it.", { spain: t("Raquel, | de | ventas. | Ella | lleva | el | presupuesto. | Yo | solo | lo | gasto.", "Raquel, | from | sales. | She | manages | the | budget. | I | just | it | spend.", "Raquel in sales. She owns the budget. I just spend it.") })],
-    owner_payroll: [t("Raquel. | Ventas, | nómina, | el | café… | Raquel | hace | todo.", "Raquel. | Sales, | payroll, | the | coffee… | Raquel | does | everything.", "Raquel. Sales, payroll, coffee... Raquel does everything.")],
+    owner_payroll: [t("Raquel. | Ventas, | nómina, | el | café… | Raquel | hace | todo.", "Raquel. | Sales, | payroll, | the | coffee… | Raquel | does | everything.", "Raquel. Sales, payroll, coffee... Raquel does everything.",
+      { spain: t("Raquel. | Ventas, | nómina, | el | café… | Raquel | lo | hace | todo.", "Raquel. | Sales, | payroll, | the | coffee… | Raquel | — | does | everything.", "Raquel. Sales, payroll, coffee... Raquel does everything.", { flags: { 6: F_LO } }) })],
     owner_party: [t("Beto, | de | marketing. | Ya | está | pidiendo | un | pastel | en forma de | cactus.", "Beto, | from | marketing. | Already | he's | ordering | a | cake | shaped like | cactus.",
       "Beto in marketing. He's already ordering a cactus cake.", { spain: t("Beto, | de | marketing. | Ya | está | pidiendo | una | tarta | en forma de | cactus.", "Beto, | from | marketing. | Already | he's | ordering | a | cake | shaped like | cactus.", "Beto in marketing. He's already ordering a cactus cake.") })],
     owner_newsletter: [t("Beto. | Nada más | mándale | la | foto.", "Beto. | Just | send-him | the | photo.", "Beto. Just send him the photo.", { spain: t("Beto. | Tú solo | mándale | la | foto.", "Beto. | You just | send-him | the | photo.", "Beto. Just send him the photo.") })],
@@ -994,7 +1007,8 @@ export const startup: SituationDef = {
     owner_slides_you: [t("¡Tú! | Y | yo. | Sobre todo | tú.", "You! | And | me. | Mostly | you.", "You! And me. Mostly you.")],
     owner_code: [t("Lalo, | nuestro | desarrollador. | Es | el | de | los | tres | monitores.", "Lalo, | our | developer. | He's | the-one | with | the | three | monitors.", "Lalo, our developer. He's the guy with three monitors.")],
     owner_emails: [t("Esos | son | tuyos, | la verdad. | ¡{m:Bienvenido|f:Bienvenida} | al | equipo!", "Those | are | yours, | actually. | Welcome | to-the | team!", "That's you, actually. Welcome to the team!")],
-    owner_general: [t("¿La verdad? | Pregúntale | a | Raquel. | Raquel | sabe | todo.", "Honestly? | Ask-her | — | Raquel. | Raquel | knows | everything.", "Honestly? Ask Raquel. Raquel knows everything.", { flags: { 2: F_A } })],
+    owner_general: [t("¿La verdad? | Pregúntale | a | Raquel. | Raquel | sabe | todo.", "Honestly? | Ask-her | — | Raquel. | Raquel | knows | everything.", "Honestly? Ask Raquel. Raquel knows everything.", { flags: { 2: F_A },
+      spain: t("¿La verdad? | Pregúntale | a | Raquel. | Raquel | lo | sabe | todo.", "Honestly? | Ask-her | — | Raquel. | Raquel | — | knows | everything.", "Honestly? Ask Raquel. Raquel knows everything.", { flags: { 2: F_A, 5: F_LO } }) })],
     who_raquel: [t("Raquel | lleva | las | ventas. | Y | básicamente | todo | lo demás.", "Raquel | runs | — | sales. | And | basically | all | the rest.", "Raquel runs sales. And basically everything else.", { flags: { 2: F_ART } })],
     who_beto: [t("Beto | hace | el | marketing. | Cree | que | la | app | es | para | perros.", "Beto | does | — | marketing. | He-thinks | that | the | app | is | for | dogs.", "Beto does marketing. He thinks the app is for dogs.", { flags: { 2: F_ART } })],
     who_rodrigo: [
@@ -1025,7 +1039,8 @@ export const startup: SituationDef = {
     mid_yes: [t("¡Eres | un | crack! | Y | sí, | las | horas extra | se pagan. | Si no, | Raquel | me | mata.", "You're | a | star! | And | yes, | the | overtime-hours | are-paid. | Otherwise, | Raquel | me | kills.",
       "Rock star! And yes, overtime is paid. Otherwise Raquel would kill me.", { flags: { 2: F_CRACK } })],
     mid_cant: [
-      t("Bueno, | bueno. | Es | justo. | Vete | a | tu | casa | a | las seis.", "Okay, | okay. | It's | fair. | Go | to | your | home | at | six.", "Okay, okay. Fair. Go home at six."),
+      t("Bueno, | bueno. | Es | justo. | Vete | a | tu | casa | a | las seis.", "Okay, | okay. | It's | fair. | Go | to | your | home | at | six.", "Okay, okay. Fair. Go home at six.",
+        { spain: t("Bueno, | bueno. | Es | justo. | Vete | a casa | a | las seis.", "Okay, | okay. | It's | fair. | Go | home | at | six.", "Okay, okay. Fair. Go home at six.") }),
       t("Me parece | justo. | Vete | a casa. | Mañana | empezamos | con todo.", "It-seems | fair. | Go | home. | Tomorrow | we-start | full force.", "Fair enough. Go home. We'll start fresh tomorrow."),
     ],
     // Mexico's Ley Federal del Trabajo, art. 67: overtime pays double (the 2026 reform keeps it); six to nine is three hours
@@ -1043,7 +1058,8 @@ export const startup: SituationDef = {
     mid_when_reask: [t("¿Y? | ¿Hasta | qué | hora?", "So? | Until | what | time?", "So? Until when?")],
     mid_deal_yes: [t("Trato hecho. | Gracias | por | el | apoyo.", "Deal. | Thanks | for | the | support.", "Deal. Thanks for stepping up.")],
     mid_when: [t("Bueno. | ¿A qué hora | te funciona?", "Okay. | What time | works for you?", "Okay. What works for you?", { spain: t("Vale. | ¿A qué hora | te viene bien?", "Okay. | What time | suits you?", "Okay. What works for you?") })],
-    mid_giveup: [t("Bueno, | ya. | Todos | se van | a | su | casa | a | las ocho.", "Okay, | fine. | Everyone | goes | to | their | home | at | eight.", "Okay, fine. Everybody goes home at eight.")],
+    mid_giveup: [t("Bueno, | ya. | Todos | se van | a | su | casa | a | las ocho.", "Okay, | fine. | Everyone | goes | to | their | home | at | eight.", "Okay, fine. Everybody goes home at eight.",
+      { spain: t("Bueno, | vale. | Todos | a casa | a | las ocho.", "Okay, | fine. | Everyone | home | at | eight.", "Okay, fine. Everybody home at eight.") })],
 
     // --- tomorrow ------------------------------------------------------------------------------
     close_q: [
@@ -1078,7 +1094,8 @@ export const startup: SituationDef = {
     not_yet: [t("¡Ja! | Todavía no. | Buen | intento.", "Ha! | Not yet. | Good | try.", "Ha! Not yet. Nice try, though.")],
     close_good: [
       t("¡Muy bien! | Buen | trabajo | hoy. | ¡Dejémoslo por hoy!", "Very good! | Good | work | today. | Let's call it a day!", "Nice! Great work today. Let's call it a day!"),
-      t("¿Sabes qué? | Buen | día. | ¡Dejémoslo por hoy!", "You know what? | Good | day. | Let's call it a day!", "You know what? Good day. Let's call it a day!"),
+      t("¿Sabes qué? | Buen | día. | ¡Dejémoslo por hoy!", "You know what? | Good | day. | Let's call it a day!", "You know what? Good day. Let's call it a day!",
+        { spain: t("¿Sabes qué? | Ha sido | un | buen | día. | ¡Dejémoslo por hoy!", "You know what? | It's-been | a | good | day. | Let's call it a day!", "You know what? It's been a good day. Let's call it a day!") }),
     ],
     close_partial: [t("Bueno… | mañana | hacemos | check-in | y | lo | resolvemos.", "Okay… | tomorrow | we-do | check-in | and | it | we-figure-out.", "Okay... let's touch base tomorrow and figure it out.", { flags: { 3: F_CHECK } })],
     bye_tyler: [
@@ -1129,11 +1146,13 @@ export const startup: SituationDef = {
     ],
     mean_crack: [
       t("¡Es | un | cumplido! | Un | crack | es | alguien | muy, | muy | bueno.", "It's | a | compliment! | A | crack | is | someone | very, | very | good.", "It's a compliment! A crack is someone who's really, really good.", { flags: { 4: F_CRACK } }),
-      t("Quiere decir | que | lo | haces | increíble. | Como | un | futbolista | estrella.", "It-means | that | it | you-do | amazing. | Like | a | soccer-player | star.", "It means you're doing great. Like a star soccer player."),
+      t("Quiere decir | que | lo | haces | increíble. | Como | un | futbolista | estrella.", "It-means | that | it | you-do | amazing. | Like | a | soccer-player | star.", "It means you're doing great. Like a star soccer player.",
+        { spain: t("Quiere decir | que | lo | haces | genial. | Como | un | futbolista | estrella.", "It-means | that | it | you-do | great. | Like | a | soccer-player | star.", "It means you're doing great. Like a star soccer player.") }),
     ],
     mean_manos: [
       t("Quiere decir: | “¡Empecemos!” | A | trabajar.", "It-means: | “Let's start!” | To | work.", "It just means “let's start.” Get to work!"),
-      t("Es | como | decir: | “Ya, | a | trabajar.” | Las | manos | van | a | la | obra.", "It's | like | saying: | “Okay, | to | work.” | The | hands | go | to | the | job.", "It's like saying “Okay, let's get to work.” Your hands go to the job."),
+      t("Es | como | decir: | “Ya, | a | trabajar.” | Las | manos | van | a | la | obra.", "It's | like | saying: | “Okay, | to | work.” | The | hands | go | to | the | job.", "It's like saying “Okay, let's get to work.” Your hands go to the job.",
+        { spain: t("Es | como | decir: | “Venga, | a | trabajar.” | Las | manos | van | a | la | obra.", "It's | like | saying: | “Come on, | to | work.” | The | hands | go | to | the | job.", "It's like saying “Come on, let's get to work.” Your hands go to the job.") }),
     ],
     mean_caja: [
       t("Quiere decir: | sé | {m:creativo|f:creativa}. | Prueba | una | idea | nueva, | no | la | de siempre.", "It-means: | be | creative. | Try | an | idea | new, | not | the-one | as-usual.",
@@ -1188,7 +1207,8 @@ export const startup: SituationDef = {
     ],
     mean_ganas: [
       t("Echarle ganas | es | esforzarte | mucho. | ¡Tú | puedes!", "Giving it your all | is | to-try-hard | a lot. | You | can!", "Echarle ganas means trying really hard. You've got this!",
-        { flags: { 0: F_GANAS }, neutral: t("Dar con todo | es | esforzarte | mucho. | ¡Tú | puedes!", "Giving it your all | is | to-try-hard | a lot. | You | can!", "Dar con todo means trying really hard. You've got this!", { flags: { 0: F_GANAS_N } }) }),
+        { flags: { 0: F_GANAS }, neutral: t("Dar con todo | es | esforzarte | mucho. | ¡Tú | puedes!", "Giving it your all | is | to-try-hard | a lot. | You | can!", "Dar con todo means trying really hard. You've got this!", { flags: { 0: F_GANAS_N } }),
+          spain: t("Ir a por todas | es | esforzarte | mucho. | ¡Tú | puedes!", "Going all out | is | to-try-hard | a lot. | You | can!", "Ir a por todas means trying really hard. You've got this!", { flags: { 0: F_GANAS_S } }) }),
       t("Quiere decir: | pon | todo | tu | esfuerzo. | Lo | decimos | mucho | aquí.", "It-means: | put | all | your | effort. | It | we-say | a lot | here.", "It means: give it everything you've got. We say it a lot around here."),
     ],
     mean_chamba: [
@@ -1208,7 +1228,8 @@ export const startup: SituationDef = {
           { neutral: t("Sí, | todo | me | suena a chino.", "Yes, | everything | to-me | sounds like Chinese.", "Yeah, it's all Greek to me.") }),
           note: "estar en chino (elsewhere: sonar a chino): too hard to understand (English says “Greek to me”).", noteSpain: "Sonar a chino: too hard to understand (English says “Greek to me”; Mexico: estar en chino)." },
         { id: "lot_learn", s: t("Hay | mucho | que aprender.", "There's | a lot | to learn.", "There's a lot to learn.") },
-        { id: "great", s: t("Está | increíble, | pero | es | mucho.", "It's | amazing, | but | it's | a lot.", "It's great, but it's a lot.") },
+        { id: "great", s: t("Está | increíble, | pero | es | mucho.", "It's | amazing, | but | it's | a lot.", "It's great, but it's a lot.",
+          { spain: t("Es | genial, | pero | es | mucho.", "It's | great, | but | it's | a lot.", "It's great, but it's a lot.") }) },
         { id: "love", s: t("¡Me encanta | estar | aquí!", "I love | being | here!", "I love it here!") },
         { id: "lost", s: t("La verdad, | estoy | un poco | {m:perdido|f:perdida}.", "Honestly, | I'm | a little | lost.", "Honestly, I'm a little lost.") },
       ],
@@ -1224,7 +1245,7 @@ export const startup: SituationDef = {
         { id: "saturado", s: t("Estoy | muy | {m:saturado|f:saturada} | esta | semana.", "I'm | very | swamped | this | week.", "I'm swamped this week.") },
         { id: "aventon", s: t("No quiero | hacer | las | cosas | al aventón.", "I don't want | to-do | — | things | sloppily.", "I don't want to cut corners.", { flags: { 2: F_ART, 4: F_AVENTON },
           neutral: t("No quiero | hacer | las | cosas | a la carrera.", "I don't want | to-do | — | things | in a rush.", "I don't want to cut corners.", { flags: { 2: F_ART, 4: F_AVENTON_N } }) }),
-          note: "Mexican: al aventón = sloppily, in a rush (elsewhere: a la carrera)." },
+          note: "Mexican: al aventón = sloppily, in a rush (elsewhere: a la carrera).", noteSpain: "a la carrera = in a rush, without care (to cut corners)." },
       ],
     },
     priority: {
@@ -1256,7 +1277,7 @@ export const startup: SituationDef = {
         // the neutral text never says "jalar parejo" (Toño says "poner de nuestra parte"): its twin asks about that
         { id: "mean_by", s: t("¿Cómo que | “jalar parejo”?", "What do you mean | “pull your weight”?", "What do you mean, “jalar parejo”?",
           { neutral: t("¿Cómo que | “poner de su parte”?", "What do you mean | “do your part”?", "What do you mean, “poner de su parte”?") }),
-          note: "¿Cómo que…? = What do you mean…? Very common in Mexico." },
+          note: "¿Cómo que…? = What do you mean…? Very common in Mexico.", noteSpain: "¿Cómo que…? = What do you mean…? Very common in everyday Spanish." },
         { id: "idiom", s: t("¿Es | una | expresión?", "Is-it | an | expression?", "Is that an idiom?") },
         { id: "plain", s: t("¿Puedes | decirlo | con | otras | palabras?", "Can-you | say-it | with | other | words?", "Can you say that another way?") },
         { id: "what_base", s: t("¿Cuál | caja?", "What | box?", "What box?", { spain: t("¿Qué | caja?", "What | box?", "What box?") }) },
@@ -1280,7 +1301,8 @@ export const startup: SituationDef = {
         { id: "launch_later", s: t("Hay que | lanzar | la próxima semana.", "We-have-to | launch | next week.", "Let's launch next week.") },
         { id: "what_exactly", s: t("¿Qué | quieres | que | haga | exactamente?", "What | do-you-want | that | I-do | exactly?", "What exactly do you want me to do?") },
         { id: "who_cut", s: t("¿Quién | lo | hizo | al aventón?", "Who | it | did | sloppily?", "Who cut corners?", { flags: { 3: F_AVENTON },
-          neutral: t("¿Quién | lo | hizo | a la carrera?", "Who | it | did | in a rush?", "Who cut corners?", { flags: { 3: F_AVENTON_N } }) }) },
+          neutral: t("¿Quién | lo | hizo | a la carrera?", "Who | it | did | in a rush?", "Who cut corners?", { flags: { 3: F_AVENTON_N } }),
+          spain: t("¿Quién | lo | ha hecho | a la carrera?", "Who | it | has-done | in a rush?", "Who cut corners?", { flags: { 3: F_AVENTON_N } }) }) },
       ],
     },
     midnight: {
@@ -1334,6 +1356,11 @@ export const startup: SituationDef = {
     "la verdad": { reason: "lexical_expression", split: "la → the + verdad → truth; as an opener = honestly.", minimal: "Two words." },
     "qué bien": { reason: "lexical_expression", split: "qué → what + bien → well; the exclamation = how great.", minimal: "Two words." },
     "échale ganas": { reason: "lexical_expression", split: "échale → throw at it + ganas → desire is false; the Mexican idiom = give it your all.", minimal: "The idiom." },
+    "a por todas": { reason: "lexical_expression", split: "a → to + por → for + todas → all; Spain's idiom (ir) a por todas = to go all out.", minimal: "The idiom." },
+    "ir a por todas": { reason: "lexical_expression", split: "ir → go + a por → for + todas → all; Spain's idiom = to go all out.", minimal: "The idiom." },
+    "ya lo sé": { reason: "lexical_expression", split: "ya → already + lo → it + sé → I know; = I know.", minimal: "Three words." },
+    "he subido": { reason: "grammatical_fusion", split: "he → I have + subido (participle): Spain's present perfect for what happened today; one English verb phrase.", minimal: "Auxiliary and participle." },
+    "ha sido": { reason: "grammatical_fusion", split: "ha → has + sido (participle) → been; Spain's present perfect for today.", minimal: "Auxiliary and participle." },
     "dale con todo": { reason: "lexical_expression", split: "dale → give it + con → with + todo → everything; the idiom = give it your all.", minimal: "The idiom." },
     "no me odies": { reason: "grammatical_fusion", split: "no → not + me → me + odies → you-hate; English puts don't inside: don't hate me.", minimal: "Three words." },
     "no te preocupes": { reason: "grammatical_fusion", split: "no → not + te → yourself + preocupes → you-worry; = don't worry.", minimal: "Three words." },

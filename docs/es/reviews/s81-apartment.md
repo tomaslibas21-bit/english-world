@@ -162,3 +162,20 @@ Found and fixed: chico → pequeño (perros, balcón, quedar pequeño; hints); �
 English of every twin checked against its Mexican line (restored where a twin had rephrased it). Spain corpus items
 added for the new forms. Gates: Mexican, neutral and Spain checks 0 errors; coverage 0 false accepts.
 
+
+## Spain pass 3 (14 Nov 2026)
+
+- Spain's dates: "desde el día uno del mes" (movein_info) and the chip movein_first "El día uno, si puede ser" (Mexico:
+  el primero del mes); grammar takes "(el / desde el) día uno…".
+- The no-guarantor option as Spain names it: poliza_offer now says "un seguro de impago" (as aval_options already
+  did), and the chip poliza_q "¿Qué es un seguro de impago?" (grammar added); poliza_info / poliza_reask keep "la
+  póliza" (Spain says it of an insurance policy too).
+- Spain's paperwork: "extractos bancarios" (estados de cuenta), the chip job_letter "Tengo mi contrato de trabajo";
+  grammar takes nóminas / extractos / contrato de trabajo.
+- Ernesto: "Déjeme mirarlo y le digo algo" (revisar y le aviso); util_gas "un depósito en la azotea" (tanque).
+- Chips: that_all "Creo que eso es todo", no_more_q "No, nada más, gracias"; q_util2 gets a noteSpain (la luz is
+  Spain's everyday word too); utilities_all's la luz note and the semiamueblado note no longer say "in Mexico".
+- Notes that landed on the wrong word (inherited flags): piso (departamento note, 4 lines), habitación (recámara note,
+  3 lines incl. the app_ac and q_see neutral twins), plaza de aparcamiento (cajón), autobús (camión), la primera planta
+  (own note now), tienda (tiendita), avíseme (nomás), grifo (llave), seguro de impago (póliza jurídica).
+- Merges: extractos bancarios, puede ser. Corpus: 6 items.

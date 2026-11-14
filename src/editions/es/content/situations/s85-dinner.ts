@@ -40,6 +40,7 @@ const PIBIL = "cochinita pibil: pork marinated in achiote and sour-orange juice,
 const HABANERO = "habanero: the very hot chili of the Yucatán peninsula.";
 const AGRIA = "naranja agria: sour (Seville) orange, the Yucatán's everyday souring juice.";
 const SOBREMESA = "sobremesa: the long chat at the table after a meal; Mexican hosts love it.";
+const SOBREMESA_ES = "sobremesa: the long chat at the table after a meal.";
 const AL_CONTRARIO = "al contrario: the usual reply to “thanks for inviting me”.";
 
 // ---------------------------------------------------------------------------
@@ -763,7 +764,7 @@ export const dinner: SituationDef = {
     door_dan: [
       t("¡Hola! | ¡Qué | bueno | que | viniste! | ¡Pásale!", "Hi! | How | good | that | you-came! | Come in!", "Hi! So glad you made it! Come on in!",
         { flags: { 5: "Mexican: pásale = come in." },
-          neutral: t("¡Hola! | ¡Qué | bueno | que | viniste! | ¡Pasa!", "Hi! | How | good | that | you-came! | Come in!", "Hi! So glad you made it! Come on in!"), spain: t("¡Hola! | ¡Qué | bien | que | hayas venido! | ¡Pasa!", "Hi! | How | good | that | you've come! | Come in!", "Hi! So glad you made it! Come on in!") }),
+          neutral: t("¡Hola! | ¡Qué | bueno | que | viniste! | ¡Pasa!", "Hi! | How | good | that | you-came! | Come in!", "Hi! So glad you made it! Come on in!"), spain: t("¡Hola! | ¡Qué | bien | que | hayas venido! | ¡Pasa!", "Hi! | How | good | that | you've come! | Come in!", "Hi! So glad you made it! Come on in!", { flags: {} }) }),
       t("¡Hola! | ¡Qué | gusto | verte! | ¡Pasa, | pasa!", "Hi! | What | pleasure | to-see-you! | Come in, | come in!", "Hi! Great to see you! Come on in!", { spain: t("¡Hola! | ¡Qué | alegría | verte! | ¡Pasa, | pasa!", "Hi! | What | a joy | to see you! | Come in, | come in!", "Hi! Great to see you! Come on in!") }),
     ],
     door_nora: [
@@ -772,9 +773,11 @@ export const dinner: SituationDef = {
     ],
     coat: [
       t("Siéntate, | siéntate. | Estás en tu casa.", "Sit down, | sit down. | Make yourself at home.", "Have a seat! Make yourself at home.",
-        { flags: { 2: "estás en tu casa: “you're in your own home”, the Mexican welcome." } }),
+        { flags: { 2: "estás en tu casa: “you're in your own home”, the Mexican welcome." },
+          spain: t("Siéntate, | siéntate. | Estás en tu casa.", "Sit down, | sit down. | Make yourself at home.", "Have a seat! Make yourself at home.", { flags: { 2: "estás en tu casa: “you're in your own home”, the usual welcome." } }) }),
       t("Ponte | cómod{m:o|f:a}, | ¿eh? | Estás en tu casa.", "Get | comfortable, | okay? | Make yourself at home.", "Get comfortable, okay? Make yourself at home.",
-        { flags: { 3: "estás en tu casa: “you're in your own home”, the Mexican welcome." } }),
+        { flags: { 3: "estás en tu casa: “you're in your own home”, the Mexican welcome." },
+          spain: t("Ponte | cómod{m:o|f:a}, | ¿eh? | Estás en tu casa.", "Get | comfortable, | okay? | Make yourself at home.", "Get comfortable, okay? Make yourself at home.", { flags: { 3: "estás en tu casa: “you're in your own home”, the usual welcome." } }) }),
     ],
     our_pleasure: [
       t("¡Al contrario! | ¡Qué gusto | tenerte | aquí!", "On the contrary! | What a pleasure | to have you | here!", "Oh, please! It's so nice to have you here!", { flags: { 0: AL_CONTRARIO }, spain: t("¡Al contrario! | ¡Qué alegría | tenerte | aquí!", "On the contrary! | What a pleasure | to have you | here!", "Oh, please! It's so nice to have you here!") }),
@@ -786,18 +789,21 @@ export const dinner: SituationDef = {
     ],
     gift_flowers: [
       t("¡Ay, | no te hubieras molestado! | ¡Están | preciosas!", "Oh, | you shouldn't have! | They're | beautiful!", "Oh, you shouldn't have! They're beautiful!",
-        { flags: { 1: "no te hubieras molestado: “you shouldn't have bothered”, the polite reply to a gift." }, spain: t("¡Ay, | no tenías que haberte molestado! | ¡Están | preciosas!", "Oh, | you shouldn't have bothered! | They're | gorgeous!", "Oh, you shouldn't have! They're beautiful!") }),
+        { flags: { 1: "no te hubieras molestado: “you shouldn't have bothered”, the polite reply to a gift." }, spain: t("¡Ay, | no tenías que haberte molestado! | ¡Están | preciosas!", "Oh, | you shouldn't have bothered! | They're | gorgeous!", "Oh, you shouldn't have! They're beautiful!", { flags: { 1: "no tenías que haberte molestado: “you shouldn't have bothered”, the polite reply to a gift." } }) }),
     ],
     gift_wine: [
       t("¡Órale, | qué | rico! | Lo | abrimos | con | la | cena.", "Wow, | how | nice! | It | we'll-open | with | — | dinner.", "Ooh, nice! We'll open it with dinner.",
         { flags: { 0: "Mexican: órale = wow, all right.", 6: ART_GEN },
-          neutral: t("¡Ay, | qué | rico! | Lo | abrimos | con | la | cena.", "Oh, | how | nice! | It | we'll-open | with | — | dinner.", "Ooh, nice! We'll open it with dinner.", { flags: { 6: ART_GEN } }) }),
+          neutral: t("¡Ay, | qué | rico! | Lo | abrimos | con | la | cena.", "Oh, | how | nice! | It | we'll-open | with | — | dinner.", "Ooh, nice! We'll open it with dinner.", { flags: { 6: ART_GEN } }),
+          spain: t("¡Ay, | qué | detalle! | Lo | abrimos | con | la | cena.", "Oh, | what | a nice touch! | It | we'll-open | with | — | dinner.", "Ooh, how thoughtful! We'll open it with dinner.", { flags: { 6: ART_GEN } }) }),
     ],
     gift_mezcal: [
       t("¡Órale! | Ese | lo | probamos | en | la | sobremesa.", "Wow! | That one | it | we'll-try | in | the | after-dinner chat.", "Wow! We'll try that one after dinner, at the table.",
         { flags: { 0: "Mexican: órale = wow, all right.", 1: "ese … lo: the object comes first, and lo repeats it.", 6: SOBREMESA },
           neutral: t("¡Qué | bien! | Ese | lo | probamos | en | la | sobremesa.", "How | great! | That one | it | we'll-try | in | the | after-dinner chat.",
-            "Great! We'll try that one after dinner, at the table.", { flags: { 2: "ese … lo: the object comes first, and lo repeats it.", 7: SOBREMESA } }) }),
+            "Great! We'll try that one after dinner, at the table.", { flags: { 2: "ese … lo: the object comes first, and lo repeats it.", 7: SOBREMESA } }),
+          spain: t("¡Qué | bien! | Ese | lo | probamos | en | la | sobremesa.", "How | great! | That one | it | we'll-try | in | the | after-dinner chat.",
+            "Great! We'll try that one after dinner, at the table.", { flags: { 2: "ese … lo: the object comes first, and lo repeats it.", 7: SOBREMESA_ES } }) }),
     ],
     gift_chocolates: [
       t("¡Chocolates! | ¡Qué | rico, | gracias!", "Chocolates! | How | yummy, | thanks!", "Chocolates! Yum, thank you!"),
@@ -827,7 +833,7 @@ export const dinner: SituationDef = {
     ],
     ask_diet: [
       t("Oye, | se me olvidó | preguntarte: | ¿hay | algo | que | no comas?", "Hey, | I forgot | to ask you: | is-there | something | that | you-don't-eat?",
-        "Hey, I forgot to ask: is there anything you don't eat?", { flags: { 1: "se me olvidó: “it slipped my mind”, the everyday way to say I forgot." }, spain: t("Oye, | se me ha olvidado | preguntarte: | ¿hay | algo | que | no comas?", "Hey, | I've forgotten | to ask you: | is there | anything | that | you don't eat?", "Hey, I forgot to ask: is there anything you don't eat?") }),
+        "Hey, I forgot to ask: is there anything you don't eat?", { flags: { 1: "se me olvidó: “it slipped my mind”, the everyday way to say I forgot." }, spain: t("Oye, | se me ha olvidado | preguntarte: | ¿hay | algo | que | no comas?", "Hey, | I've forgotten | to ask you: | is there | anything | that | you don't eat?", "Hey, I forgot to ask: is there anything you don't eat?", { flags: { 1: "se me ha olvidado: “it slipped my mind”, the everyday way to say I forgot." } }) }),
     ],
     diet_reask: [
       t("Entonces, | ¿algo | que | no comas?", "So, | something | that | you-don't-eat?", "So, anything you don't eat?"),
@@ -847,9 +853,9 @@ export const dinner: SituationDef = {
       t("¿Qué | te | ofrezco | de | tomar? | Hay | cerveza, | vino, | agua de jamaica | o | refresco.",
         "What | (to) you | I-offer | — | to drink? | There's | beer, | wine, | hibiscus water | or | soda.",
         "What can I get you to drink? There's beer, wine, agua de jamaica or soda.",
-        { flags: { 3: "de tomar: “to drink” (tomar is the everyday verb for drinking); de has no English word.", 8: JAMAICA }, spain: t("¿Qué | te | pongo | de | beber? | Hay | cerveza, | vino, | agua de jamaica | o | refresco.", "What | (to) you | do I get | to | drink? | There's | beer, | wine, | hibiscus water | or | soda.", "What can I get you to drink? There's beer, wine, agua de jamaica or soda.") }),
+        { flags: { 3: "de tomar: “to drink” (tomar is the everyday verb for drinking); de has no English word.", 8: JAMAICA }, spain: t("¿Qué | te | pongo | de | beber? | Hay | cerveza, | vino, | agua de jamaica | o | refresco.", "What | (to) you | do I get | to | drink? | There's | beer, | wine, | hibiscus water | or | soda.", "What can I get you to drink? There's beer, wine, agua de jamaica or soda.", { flags: { 3: "de beber: “to drink”; de has no English word.", 8: "agua de jamaica: a cold drink of hibiscus flowers, water and sugar." } }) }),
       t("¿Qué | te | sirvo | de | tomar?", "What | (to) you | I-serve | — | to drink?", "What can I get you to drink?",
-        { flags: { 3: "de tomar: “to drink”; de has no English word." }, spain: t("¿Qué | te | pongo | de | beber?", "What | (to) you | do I get | to | drink?", "What can I get you to drink?") }),
+        { flags: { 3: "de tomar: “to drink”; de has no English word." }, spain: t("¿Qué | te | pongo | de | beber?", "What | (to) you | do I get | to | drink?", "What can I get you to drink?", { flags: { 3: "de beber: “to drink”; de has no English word." } }) }),
     ],
     what_can_i_get: [
       t("Entonces, | ¿qué | te | sirvo?", "So, | what | (to) you | I-serve?", "So, what can I get you?", { spain: t("Entonces, | ¿qué | te | pongo?", "So, | what | (to) you | do I get?", "So, what can I get you?") }),
@@ -864,12 +870,12 @@ export const dinner: SituationDef = {
     ],
     drink_ok: [
       t("¡Claro! | Ahorita | te | sirvo.", "Sure! | Right now | (to) you | I-serve.", "Sure! Coming right up.",
-        { flags: { 1: AHORITA }, neutral: t("¡Claro! | Enseguida | te | sirvo.", "Sure! | Right away | (to) you | I-serve.", "Sure! Coming right up.") }),
+        { flags: { 1: AHORITA }, neutral: t("¡Claro! | Enseguida | te | sirvo.", "Sure! | Right away | (to) you | I-serve.", "Sure! Coming right up.", { flags: {} }) }),
       t("¡Con gusto!", "With pleasure!", "You got it!", { spain: t("¡Claro!", "Sure!", "You got it!") }),
     ],
     just_say: [
       t("¡Bueno! | Si | se te antoja | algo, | me | dices.", "Okay! | If | you-feel-like | something, | (to) me | you-tell.", "Okay! If you want anything, just let me know.",
-        { flags: { 2: "antojarse: to feel like having something." }, spain: t("¡Vale! | Si | te apetece | algo, | me | dices.", "Okay! | If | you feel like | something, | (to) me | you-tell.", "Okay! If you want anything, just let me know.") }),
+        { flags: { 2: "antojarse: to feel like having something." }, spain: t("¡Vale! | Si | te apetece | algo, | me | dices.", "Okay! | If | you feel like | something, | (to) me | you-tell.", "Okay! If you want anything, just let me know.", { flags: { 2: "apetecer: to feel like (te apetece = you feel like)." } }) }),
     ],
     cat_intro: [
       t("Ah, | y | ella | es | Michi. | ¿Eres | {m:alérgico|f:alérgica} | a | los | gatos?", "Oh, | and | she | is | Michi. | Are-you | allergic | to | — | cats?",
@@ -913,7 +919,8 @@ export const dinner: SituationDef = {
       t("¿Me | ayudas | con | el | agua?", "Me | you-help | with | the | water?", "Could you help me with the water?"),
     ],
     star: [
-      t("¡Gracias! | Eres | un | amor.", "Thanks! | You-are | a | love.", "Thanks! You're a sweetheart."),
+      t("¡Gracias! | Eres | un | amor.", "Thanks! | You-are | a | love.", "Thanks! You're a sweetheart.",
+        { spain: t("¡Gracias! | Eres | un | sol.", "Thanks! | You-are | a | sun.", "Thanks! You're a sweetheart.", { flags: { 3: "un sol: “a sweetheart” (literally: a sun), warm praise in Spain." } }) }),
     ],
     smell_dish: [
       t("¡Gracias! | Es | cochinita pibil, | la | receta | de | la | mamá | de | Natalia.", "Thanks! | It's | cochinita pibil, | the | recipe | of | the | mom | of | Natalia.",
@@ -938,7 +945,7 @@ export const dinner: SituationDef = {
     dinner_ready: [
       t("¡A | la | mesa! | La | cena | está | lista.", "To | the | table! | — | Dinner | is | ready.", "Come to the table! Dinner's ready.", { flags: { 3: ART_GEN } }),
       t("¡Listo! | ¡A cenar! | ¡Buen provecho!", "Ready! | Dinner time! | Enjoy your meal!", "Okay, dinner time! Enjoy!",
-        { flags: { 2: "buen provecho: said to people about to eat (enjoy your meal)." }, spain: t("¡Ya está! | ¡A cenar! | ¡Que aproveche!", "All set! | Dinner's on! | Enjoy your meal!", "Okay, dinner time! Enjoy!") }),
+        { flags: { 2: "buen provecho: said to people about to eat (enjoy your meal)." }, spain: t("¡Ya está! | ¡A cenar! | ¡Que aproveche!", "All set! | Dinner's on! | Enjoy your meal!", "Okay, dinner time! Enjoy!", { flags: { 2: "¡que aproveche!: said to people about to eat (enjoy your meal)." } }) }),
     ],
     cheers_back: [
       t("¡Salud!", "Cheers!", "Cheers!"),
@@ -973,7 +980,7 @@ export const dinner: SituationDef = {
     ],
     sorry_salty: [
       t("¡Ay, | perdón! | Se me pasó | la | sal.", "Oh, | sorry! | I-overdid | the | salt.", "Oh, sorry! I went overboard with the salt.",
-        { flags: { 2: "se me pasó: “it got away from me”, said of too much of something." }, spain: t("¡Ay, | perdón! | Se me ha ido la mano | con | la | sal.", "Oh, | sorry! | I've overdone it | with | the | salt.", "Oh, sorry! I went overboard with the salt.") }),
+        { flags: { 2: "se me pasó: “it got away from me”, said of too much of something." }, spain: t("¡Ay, | perdón! | Se me ha ido la mano | con | la | sal.", "Oh, | sorry! | I've overdone it | with | the | salt.", "Oh, sorry! I went overboard with the salt.", { flags: { 2: "se me ha ido la mano: “my hand slipped”, said of too much of something." } }) }),
     ],
     i_did: [
       t("¡Sí, | yo! | Bueno, | el | flan | lo | hizo | Natalia.", "Yes, | me! | Well, | the | flan | it | made | Natalia.", "Yep, me! Well, Natalia made the flan.",
@@ -1030,18 +1037,19 @@ export const dinner: SituationDef = {
     ],
     burnt: [
       t("¡Ay, | no! | ¡Se me quemó | el | arroz!", "Oh, | no! | I burned | the | rice!", "Oh no! I burned the rice!",
-        { flags: { 2: "se me quemó: “it got burned on me”, an accident." }, spain: t("¡Ay, | no! | ¡Se me ha quemado | el | arroz!", "Oh, | no! | I've burned | the | rice!", "Oh no! I burned the rice!") }),
+        { flags: { 2: "se me quemó: “it got burned on me”, an accident." }, spain: t("¡Ay, | no! | ¡Se me ha quemado | el | arroz!", "Oh, | no! | I've burned | the | rice!", "Oh no! I burned the rice!", { flags: { 2: "se me ha quemado: “it got burned on me”, an accident." } }) }),
     ],
     youre_sweet: [
       t("¡Ay, | qué | {m:lindo|f:linda}! | Gracias.", "Aw, | how | sweet! | Thanks.", "Aw, that's sweet of you. Thanks.", { spain: t("¡Ay, | qué | {m:majo|f:maja}! | Gracias.", "Aw, | how | sweet! | Thanks.", "Aw, that's sweet of you. Thanks.") }),
     ],
     ask_seconds: [
-      t("¿Te | sirvo | otro | poquito?", "(To) you | I-serve | another | little bit?", "Can I get you a little more?", { flags: { 3: "poquito: poco with the diminutive, a softer “a bit”." } }),
+      t("¿Te | sirvo | otro | poquito?", "(To) you | I-serve | another | little bit?", "Can I get you a little more?", { flags: { 3: "poquito: poco with the diminutive, a softer “a bit”." },
+        spain: t("¿Te | pongo | un | poco | más?", "(To) you | I-put | a | little | more?", "Can I get you a little more?", { flags: { 1: "poner: to serve, to give (food or a drink)." } }) }),
       t("¡Hay | mucha! | ¿Quieres | más?", "There's | lots! | Do-you-want | more?", "There's plenty! Want some more?"),
     ],
     here_more: [
       t("¡Ándale! | Aquí tienes.", "That's it! | Here you go.", "That's the spirit! Here you go.",
-        { flags: { 0: "Mexican: ándale = that's it, go on." }, neutral: t("¡Muy | bien! | Aquí tienes.", "Very | good! | Here you go.", "That's the spirit! Here you go.") }),
+        { flags: { 0: "Mexican: ándale = that's it, go on." }, neutral: t("¡Muy | bien! | Aquí tienes.", "Very | good! | Here you go.", "That's the spirit! Here you go.", { flags: {} }) }),
     ],
     just_a_little: [
       t("Un | poquito, | entonces. | Aquí tienes.", "A | little bit, | then. | Here you go.", "Just a little, then. Here you go."),
@@ -1063,7 +1071,7 @@ export const dinner: SituationDef = {
     ],
     changed_mind: [
       t("¡Ándale! | Ahí | va | un | poquito.", "That's it! | There | it-goes | a | little bit.", "That's the spirit! Here's a little.",
-        { flags: { 0: "Mexican: ándale = that's it, go on." }, neutral: t("¡Muy | bien! | Ahí | va | un | poquito.", "Very | good! | There | it-goes | a | little bit.", "That's the spirit! Here's a little.") }),
+        { flags: { 0: "Mexican: ándale = that's it, go on." }, neutral: t("¡Muy | bien! | Ahí | va | un | poquito.", "Very | good! | There | it-goes | a | little bit.", "That's the spirit! Here's a little.", { flags: {} }) }),
     ],
     small_piece: [
       t("Un | pedacito, | ¡ahí | va!", "A | little piece, | there | it-goes!", "A small piece, coming right up!", { spain: t("Un | trocito, | ¡ahí | va!", "A | little piece, | there | it-goes!", "A small piece, coming right up!") }),
@@ -1083,12 +1091,12 @@ export const dinner: SituationDef = {
     ],
     anything_else: [
       t("¿Te | sirvo | algo | más? | ¿Un | cafecito?", "(To) you | I-serve | something | more? | A | little coffee?", "Can I get you anything else? A coffee?",
-        { flags: { 5: "cafecito: café with the diminutive, friendly." }, spain: t("¿Te | pongo | algo | más? | ¿Un | café?", "(To) you | do I get | something | more? | A | coffee?", "Can I get you anything else? A coffee?") }),
+        { flags: { 5: "cafecito: café with the diminutive, friendly." }, spain: t("¿Te | pongo | algo | más? | ¿Un | café?", "(To) you | do I get | something | more? | A | coffee?", "Can I get you anything else? A coffee?", { flags: {} }) }),
       t("¿Quieres | un | cafecito?", "Do-you-want | a | little coffee?", "Would you like a coffee?", { spain: t("¿Quieres | un | café?", "Do you want | a | coffee?", "Would you like a coffee?") }),
     ],
     chat_then: [
       t("¡Bueno! | Entonces | seguimos | con | la | sobremesa.", "Okay! | Then | we-continue | with | the | after-dinner chat.", "Okay! Then let's just keep chatting.",
-        { flags: { 5: SOBREMESA }, spain: t("¡Vale! | Entonces | seguimos | con | la | sobremesa.", "Okay! | Then | we-continue | with | the | after-dinner chat.", "Okay! Then let's just keep chatting.") }),
+        { flags: { 5: SOBREMESA }, spain: t("¡Vale! | Entonces | seguimos | con | la | sobremesa.", "Okay! | Then | we-continue | with | the | after-dinner chat.", "Okay! Then let's just keep chatting.", { flags: { 5: SOBREMESA_ES } }) }),
     ],
     // after the sobremesa coffee
     more_coffee: [
@@ -1096,14 +1104,16 @@ export const dinner: SituationDef = {
     ],
     stay_longer: [
       t("¿Ya | te vas? | ¡Quédate | otro | ratito, | estamos | en | la | sobremesa!", "Already | you're-leaving? | Stay | another | little while, | we-are | in | the | after-dinner chat!",
-        "Leaving already? Stay a little longer, we're just getting to the good part!", { flags: { 8: SOBREMESA } }),
+        "Leaving already? Stay a little longer, we're just getting to the good part!", { flags: { 8: SOBREMESA },
+          spain: t("¿Ya | te vas? | ¡Quédate | otro | ratito, | estamos | en | la | sobremesa!", "Already | you're-leaving? | Stay | another | little while, | we-are | in | the | after-dinner chat!",
+            "Leaving already? Stay a little longer, we're just getting to the good part!", { flags: { 8: SOBREMESA_ES } }) }),
     ],
     stay_reask: [
       t("Entonces, | ¿te quedas | otro | ratito?", "So, | are-you-staying | another | little while?", "So, will you stay a bit longer?"),
     ],
     yay_stay: [
       t("¡Qué | bueno! | La | sobremesa | es | lo | mejor.", "How | great! | The | after-dinner chat | is | the | best (part).", "Yay! The after-dinner chat is the best part.",
-        { flags: { 3: SOBREMESA, 5: "lo + adjective: “the … part”." }, spain: t("¡Qué | bien! | La | sobremesa | es | lo | mejor.", "How | great! | The | after-dinner chat | is | the | best (part).", "Yay! The after-dinner chat is the best part.") }),
+        { flags: { 3: SOBREMESA, 5: "lo + adjective: “the … part”." }, spain: t("¡Qué | bien! | La | sobremesa | es | lo | mejor.", "How | great! | The | after-dinner chat | is | the | best (part).", "Yay! The after-dinner chat is the best part.", { flags: { 3: SOBREMESA_ES, 5: "lo + adjective: “the … part”." } }) }),
     ],
     but_dinner: [
       t("¿Ya | te vas? | ¡Pero | la | cena | ya | casi | está | lista!", "Already | you're-leaving? | But | — | dinner | now | almost | is | ready!", "Leaving already? But dinner's almost ready!",
@@ -1130,7 +1140,9 @@ export const dinner: SituationDef = {
     ],
     anytime_come_again: [
       t("¡Cuando | quieras! | Aquí | tienes | tu | casa.", "Whenever | you-want! | Here | you-have | your | home.", "Anytime! You're always welcome here.",
-        { flags: { 2: "aquí tienes tu casa: the Mexican “my home is your home”." } }),
+        { flags: { 2: "aquí tienes tu casa: the Mexican “my home is your home”." },
+          spain: t("¡Cuando | quieras! | Aquí | tienes | tu | casa.", "Whenever | you-want! | Here | you-have | your | home.", "Anytime! You're always welcome here.",
+            { flags: { 2: "aquí tienes tu casa: “my home is your home”." } }) }),
     ],
     get_home_safe: [
       t("¡Que | descanses! | Avísanos | cuando | llegues.", "— | May-you-rest! | Let us know | when | you-arrive.", "Sleep well! Text us when you get home.",
@@ -1198,7 +1210,7 @@ export const dinner: SituationDef = {
     compliments: {
       lt: "Compliment the home or the food",
       items: [
-        { id: "cm_smells", s: t("¡Qué | rico | huele!", "How | nice | it-smells!", "Something smells amazing!") },
+        { id: "cm_smells", s: t("¡Qué | rico | huele!", "How | nice | it-smells!", "Something smells amazing!", { spain: t("¡Qué | bien | huele!", "How | good | it-smells!", "Something smells amazing!") }) },
         { id: "cm_home", s: t("¡Qué | bonita | casa!", "What | pretty | house!", "What a lovely home!") },
         { id: "cm_made", s: t("¿Tú | cocinaste?", "You | cooked?", "Did you cook all this?", { spain: t("¿Has cocinado | tú?", "Have you cooked | you?", "Did you cook all this?") }) },
         { id: "cm_recipe", s: t("¿Me | das | la | receta?", "(To) me | you-give | the | recipe?", "Can I have the recipe?") },
@@ -1286,7 +1298,7 @@ export const dinner: SituationDef = {
       items: [
         { id: "lv_late", s: t("Ya | me voy, | que | es | tarde.", "Now | I'm-going, | since | it's | late.", "I should get going, it's late.", { flags: { 2: "que here: “since”, “because”." } }) },
         { id: "lv_should", s: t("Ya | me tengo que ir.", "Now | I have to go.", "I have to go now.") },
-        { id: "lv_yendo", s: t("Ya | me voy yendo.", "Now | I'll-get-going.", "I'd better get going."), note: "Very Mexican: a soft way to start leaving." },
+        { id: "lv_yendo", s: t("Ya | me voy yendo.", "Now | I'll-get-going.", "I'd better get going."), note: "Very Mexican: a soft way to start leaving.", noteSpain: "A soft way to start leaving." },
         { id: "lv_work_tmrw", s: t("Mañana | trabajo | temprano.", "Tomorrow | I-work | early.", "I have work early tomorrow.") },
       ],
     },
@@ -1296,7 +1308,7 @@ export const dinner: SituationDef = {
         { id: "gb_everything", s: t("¡Gracias | por | todo!", "Thanks | for | everything!", "Thanks for everything!") },
         { id: "gb_dinner", s: t("Gracias | por | la | cena, | ¡estuvo | deliciosa!", "Thanks | for | — | dinner, | it-was | delicious!", "Thanks for dinner, it was delicious!", { flags: { 2: ART_GEN }, spain: t("Gracias | por | la | cena, | ¡estaba | buenísima!", "Thanks | for | the | dinner, | it was | delicious!", "Thanks for dinner, it was delicious!") }) },
         { id: "gb_great", s: t("¡La pasé | muy | bien!", "I-had-a-time | very | good!", "I had a great time!", { spain: t("¡Me lo he pasado | muy | bien!", "I-had-a-time | very | good!", "I had a great time!") }) },
-        { id: "gb_text", s: t("Les | aviso | cuando | llegue.", "(To) you all | I'll-let-know | when | I-arrive.", "I'll text you when I get home.", { spain: t("Os | aviso | cuando | llegue.", "(To) you (all) | I'll let know | when | I arrive.", "I'll text you when I get home.") }), note: "Mexican hosts like to know you got home safe." },
+        { id: "gb_text", s: t("Les | aviso | cuando | llegue.", "(To) you all | I'll-let-know | when | I-arrive.", "I'll text you when I get home.", { spain: t("Os | aviso | cuando | llegue.", "(To) you (all) | I'll let know | when | I arrive.", "I'll text you when I get home.") }), note: "Mexican hosts like to know you got home safe.", noteSpain: "Hosts like to know you got home safe." },
         { id: "gb_night", s: t("¡Buenas noches!", "Good night!", "Good night!") },
       ],
     },
