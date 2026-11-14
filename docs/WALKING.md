@@ -62,7 +62,13 @@ Shared by every edition of the game (the code is in `src/game/`; each town keeps
   first.
 - A deck's edge the town tags `"ledge"` (the pier's beach side) is a wall for the passers-by and the way-finding and
   a ledge for the player: one jumps up onto the boards from the sand and hops along the mooring posts. A deck's
-  boards have a height (`DECKS[].y`, water.ts): one stands on the pier's boards, not ankle-deep in them.
+  boards have a height (`DECKS[].y`, water.ts): one stands on the pier's boards, not ankle-deep in them. The
+  boardwalk's rails are ledges too (but for their last stretch, under the restaurant's awning): a jump from the
+  boards gets onto a rail (1.3 m, 1 m over the boards) and down to the beach beside the pier; from the sand it is too
+  high.
+- A floor that passes under a collider (a deck under its plain edge) keeps it a wall; it is one only when it is as low
+  as what is lowest in the collider itself. A boardwalk that starts beside the end of a low wall passes under
+  nothing: the malecón's two stretches by the muelle are jumped onto like the rest of it (15 Nov).
 - Way-finding, the passers-by, the camera's field and the conversation camera use the original colliders. A walk
   planned from up on something ("Nuvesk mane", a tap) first steps straight down to the nearest open spot
   (`Game.walkTo`, `Ledges.clear`). Indoors the jump (and the flip) is as it was: drawn only.
@@ -93,6 +99,18 @@ Shared by every edition of the game (the code is in `src/game/`; each town keeps
 - Walk 4.4 m/s. Outdoors, after 1.5 s of steady walking one way (a turn of more than about 30°, a stop or deep water
   starts the count again) the pace eases up to a jog, 6.0 m/s, over 0.9 s. Shift, or the stick at its edge: a run,
   7.4 m/s. Indoors always a walk.
+
+## The way to the objective (`src/game/guidance.ts`; 15 Nov 2026)
+
+- The way to the current objective is marked on the ground with **small pale arrowheads** (they were bright yellow
+  discs every 1.3 m): one every 2.2 m, partly seen through, each with a soft darker edge so it shows on light stone
+  as on asphalt, cobbles, grass and sand. One instanced mesh, one draw call, at most 32 marks.
+- They **lie still** (counted back from the destination, so walking doesn't slide them), **fade in** over the first
+  metres before the player (from 1.8 to 4.5 m) and **out with distance** (from 24 to 38 m along the way): only the
+  next stretch is marked. A gentle brightening travels along them towards the destination (a crest every 13 m, at
+  4.5 m/s). They lie on a pier's boards, not under them.
+- The beacon over the destination (the beam, the gem, the ring) is as it was.
+- `wayMarks()` is the arithmetic, tested in `tests/guidance.test.ts`.
 
 ## The first-time guide and the tip (`src/game/coach.ts`, `src/ui/Guide.tsx`)
 
