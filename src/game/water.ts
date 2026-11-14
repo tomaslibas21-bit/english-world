@@ -30,10 +30,47 @@ export function sandY(x: number, z: number) {
  *  sand that slopes away under them. The town lists them as it builds them (town.ts). */
 export const DECKS: { x0: number; x1: number; z0: number; z1: number; y?: number }[] = [];
 
-/** What is underfoot at (x, z) by the sea: a deck's boards (as high as they lie, `y`), else the sand. */
+/** Beyond the wading limit the bed falls away to swimming depth (what the sea's shader draws stays `sandY`: the
+ *  foam and the shallows look as they did; this is what a swimmer's feet and the seabed under a diver follow): `drop` m
+ *  more over the first `run` m, then gently on down to `floor`. */
+export const DEEP = { run: 7, drop: 2.2, slope: 0.03, floor: -4.4 };
+/** The seabed at (x, z): the sand as far as one wades, then down into deep water. */
+export function seaBedY(x: number, z: number) {
+  const s = sandY(x, z), d = SHORE.limit - z;
+  if (d <= 0) return s;
+  const t = Math.min(1, d / DEEP.run);
+  return Math.max(DEEP.floor, s - DEEP.drop * t * t * (3 - 2 * t) - DEEP.slope * d);
+}
+
+/** Water away from the sea that one can swim in (a cenote): round, `r` across at the surface `y`, its bed going down
+ *  from the rim to `depth` m in the middle; `ramp`: where one walks in (a point on its rim: the bed there is a ramp of
+ *  steps `rampW` wide). The town lists them as it builds them, like DECKS. */
+export interface Pool { x: number; z: number; r: number; y: number; depth: number; ramp?: { x: number; z: number; w: number } }
+export const POOLS: Pool[] = [];
+/** The pool at (x, z), if any. */
+export function poolAt(x: number, z: number): Pool | null {
+  for (const p of POOLS) if ((x - p.x) ** 2 + (z - p.z) ** 2 < p.r * p.r) return p;
+  return null;
+}
+/** A pool's bed at (x, z) inside it: a step down at the rim, then a bowl. */
+export function poolBedY(p: Pool, x: number, z: number) {
+  const t = Math.min(1, Math.hypot(x - p.x, z - p.z) / p.r), k = 1 - t * t;
+  return p.y - 0.45 - (p.depth - 0.45) * k * (2 - k);
+}
+
+/** What is underfoot at (x, z) by the water: a deck's boards (as high as they lie, `y`), a pool's bed, else the sand
+ *  and, out past the wading limit, the seabed. */
 export function floorY(x: number, z: number) {
   for (const d of DECKS) if (x > d.x0 && x < d.x1 && z > d.z0 && z < d.z1) return d.y ?? 0;
-  return sandY(x, z);
+  if (POOLS.length) { const p = poolAt(x, z); if (p) return poolBedY(p, x, z); }
+  return z < SHORE.limit ? seaBedY(x, z) : sandY(x, z);
+}
+
+/** The water's surface over (x, z) at time `t`, or null where there is none (dry land, a deck's boards count as the
+ *  sea under them): the sea with its swell, a pool's still water. */
+export function waterY(x: number, z: number, t: number): number | null {
+  if (POOLS.length) { const p = poolAt(x, z); if (p) return p.y; }
+  return z < SHORE.top + 1.5 ? SEA_LEVEL + swell(x, z, t) : null;
 }
 
 /** The same in the sea's shaders: `float sandY(vec2 p)` (p = world x, z). */
@@ -64,14 +101,29 @@ export const SHORE_GLSL = (foam = "vec3(0.985, 0.99, 0.975)", wet = "vec3(0.78, 
       c = mix(c, ${foam}, clamp(line * 0.97 + wash * 0.8 + far * 0.36, 0.0, 0.97));
     }`;
 
+/** Swimming. With more than `depth` m of water over the bed one floats (back on one's feet under `out`), the chest
+ *  `float` m (times one's height) over the feet at the surface; a calm stroke at `speed` m/s, `fast` with Shift or the
+ *  stick at its edge; a dive takes one `dive` m under for at most `breath` s. */
+export const SWIM = { depth: 0.95, out: 0.8, float: 1.2, speed: 2.5, fast: 3.6, dive: 1.9, breath: 10 };
+/** How far out one swims or takes a boat: the bay (m; set from the town's bounds by the town as it is built). */
+export const BAY = { x0: -106, x1: 176, z0: SEA_Z - 74 };
+/** The bay's soft edge: the part of a step `d` (along one axis, from `v`) that goes out past `lim` fades to nothing
+ *  over the last `band` m before it (`out`: −1 when the limit is a lower bound, +1 an upper one). No wall, no bounce. */
+export function bayHold(v: number, d: number, lim: number, out: 1 | -1, band = 4) {
+  if (d * out <= 0) return d;
+  const k = THREE.MathUtils.clamp(((lim - v) * out) / band, 0, 1);
+  return d * k * (2 - k);
+}
+
 /** The player in the shallows: how deep the water is at their feet, how much it slows them, and where it stops them. */
 export class Wading {
   /** The water over the sand at the player's feet now (m; 0 on dry sand). */
   depth = 0;
   /** How much of their pace is left at this depth (1 on dry sand; about half at the limit). */
   static pace(depth: number) { return 1 - 0.5 * THREE.MathUtils.smoothstep(depth, 0.08, SHORE.deep); }
-  /** The soft limit: the seaward part of a step fades away over the last metre and a half, and nothing gets past
-   *  `SHORE.limit`. `dz`: the step along z about to be taken (negative: out to sea). */
+  /** The soft limit for those who don't swim (the audit's walker): the seaward part of a step fades away over the last
+   *  metre and a half, and nothing gets past `SHORE.limit`. `dz`: the step along z about to be taken (negative: out to
+   *  sea). The player wades on from there into deep water and swims (SWIM). */
   static hold(z: number, dz: number) {
     if (dz >= 0) return dz;
     const k = THREE.MathUtils.clamp((z - SHORE.limit) / 1.5, 0, 1);

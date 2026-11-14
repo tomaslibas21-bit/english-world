@@ -26,6 +26,8 @@ export interface GameApi {
   setJoystick(x: number, y: number): void;
   /** A jump (Space, the phone's button); again in the air: a flip. */
   jump(): void;
+  /** The jump button held down or let go (at a wheel it is the brake). */
+  hold(on: boolean): void;
   setQuality(q: "high" | "low"): void;
   readonly groundCanvas: HTMLCanvasElement | undefined;
   readonly doors: Door[];

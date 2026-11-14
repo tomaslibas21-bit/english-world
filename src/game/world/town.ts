@@ -145,7 +145,9 @@ export function buildTown(): Town {
   addMaggiesCar(M, colliders, group);
 
   // world bounds
-  colliders.addBox((WORLD.minX + WORLD.maxX) / 2, WORLD.minZ - 1, WORLD.maxX - WORLD.minX + 4, 2);
+  // (the north one lies out in the sea: like the sea itself, it stops everyone but the player, who swims on out to the
+  // bay's own edge, water.ts BAY)
+  colliders.addBox((WORLD.minX + WORLD.maxX) / 2, WORLD.minZ - 1, WORLD.maxX - WORLD.minX + 4, 2, "sea");
   colliders.addBox((WORLD.minX + WORLD.maxX) / 2, WORLD.maxZ + 1, WORLD.maxX - WORLD.minX + 4, 2);
   colliders.addBox(WORLD.minX - 1, 0, 2, 220);
   colliders.addBox(WORLD.maxX + 1, 0, 2, 220);

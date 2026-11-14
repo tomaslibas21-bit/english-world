@@ -7,11 +7,15 @@ import { OUTDOOR_NPCS, AIRPORT_EXIT, WORLD, BUILDINGS, ROADS, DROPOFF, SEA_Z, BE
 import { createCharacter, setBlobShadows, withBackpack, type GameCharacter } from "./characters";
 import { moodOf } from "./characters/mood";
 import { styleRenderer, createStyleFx, type StyleFx } from "./styleScene";
-import { CameraRig } from "./camera";
+import { CameraRig, FOLLOW } from "./camera";
 import { Steer, Gait, Hop, angleDiff, smoothstep } from "./movement";
 import { Ledges, LAND } from "./ledges";
 import { coach } from "./coach";
-import { Wading, Splashes, floorY, swell, SEA_LEVEL, SHORE } from "./water";
+import { Wading, Splashes, floorY, waterY, bayHold, SEA_LEVEL, SHORE, SWIM, BAY } from "./water";
+import { Rides, type Ride } from "./rides/Rides";
+import { Undersea } from "./rides/undersea";
+import { controlsFrom } from "./rides/drive";
+import { RIDES } from "./world/rides";
 import { OcclusionField } from "./occlusion";
 import { PropFader } from "./fade";
 import { CUT, withCutout } from "./cutout";
@@ -160,7 +164,7 @@ export class Game implements GameApi {
   private hudBoxCache: TagBox[] = [];
   private hudCheck = 0;
   private tagLayer: HTMLDivElement;
-  private nearest: { kind: "npc" | "door" | "exit"; id: string; label: string } | null = null;
+  private nearest: { kind: "npc" | "door" | "exit" | "ride" | "out" | "climb"; id: string; label: string } | null = null;
   private pushDoorT = 0;
   private transitioning = false;
   private npcToSits = new Map<string, SituationDef[]>();
@@ -193,6 +197,22 @@ export class Game implements GameApi {
   private splashes = new Splashes();
   private wet = false;
   private washT = 0;
+  /** What one can drive (rides/Rides.ts): the convertibles and the boat; the jump button held (a brake at the wheel). */
+  rides!: Rides;
+  private brake = false;
+  private bumpT = 0;
+  /** Swimming (water.ts SWIM): in deep water now; how far into the stroke's pose (0–1); a dive: how long it still
+   *  lasts (s) and how far under (0–1); the stroke's last splash. */
+  private swimming = false;
+  private swimK = 0;
+  private diveT = 0;
+  private diveK = 0;
+  private strokeT = 0;
+  private swimTip = false;
+  /** What a dive shows (rides/undersea.ts), and the air's own fog and the camera's lean to go back to after it. */
+  private undersea!: Undersea;
+  private airFog: THREE.Fog | null = null;
+  private airCam: { pitch: number; dist: number } | null = null;
   /** Stepping out of a door by itself (m still to go), so the street shows ahead. */
   private stepOut = 0;
   /** The foot that came down last (the legs' swing, Character.stepPhase), for the footsteps. */
@@ -256,7 +276,8 @@ export class Game implements GameApi {
     const hull = new THREE.Box3();
     for (const o of this.town.group.children) if (o.userData.boat) {
       hull.setFromObject(o);
-      if (hull.max.z > SHORE.limit - 1) this.ledges.add({ minX: hull.min.x, maxX: hull.max.x, minZ: hull.min.z, maxZ: hull.max.z, top: Infinity });
+      // (all of them: one swims out among them now)
+      this.ledges.add({ minX: hull.min.x, maxX: hull.max.x, minZ: hull.min.z, maxZ: hull.max.z, top: Infinity });
     }
     withCutout(this.town.group);
     const nav = new NavGrid(WORLD.minX, WORLD.minZ, WORLD.maxX, WORLD.maxZ, 1, this.town.colliders);
@@ -285,7 +306,18 @@ export class Game implements GameApi {
     const places: [number, number][] = this.town.doors.filter((d) => d.loc !== "airport").map((d) => [d.outX, d.outZ]);
     places.push([22, -20], [40, -46], [16, -36], [-12, -62], [30, -63], [-30, -61], [96, -30], [-6, 46], [62, 44], [-42, 44], [118, 2]);
     this.ambient = new Ambient(nav, places, st.settings.quality, this.town.seats, this.town.colliders);
-    this.scene.add(this.npcLayer, this.guidance.group, this.ambient.group, this.dust.group, this.splashes.group);
+    // what one can drive: the convertibles at the curb with their people in them, the boat at the pier
+    this.rides = new Rides({
+      cam: this.rig.cam, colliders: this.town.colliders, nav, ambient: this.ambient, player: null as unknown as GameCharacter, quality: st.settings.quality,
+      people: () => (this.zone.interior ? [] : this.npcs.map((n) => n.home)),
+      say: (line, female, ch) => this.saysAloud(line, female, ch),
+      splash: (x, y, z, dx, dz, k) => this.splashes.burst(x, y, z, dx, dz, k),
+      outdoors: () => !this.zone.interior && !this.covered,
+    }, RIDES, this.town.group.children.filter((o) => o.userData.boat));
+    this.rides.onLeft = (x, y, z, rot) => this.leftRide(x, y, z, rot);
+    this.rides.onStuck = () => useStore.getState().toast({ kind: "info", title: "Čia išlipti nėra kur", body: "Pavažiuok truputį toliau." });
+    this.undersea = new Undersea(RIDES.deep, RIDES.rocks);
+    this.scene.add(this.npcLayer, this.guidance.group, this.ambient.group, this.rides.group, this.dust.group, this.splashes.group, this.undersea.group);
     this.rig.space = {
       free: (a, b) => (this.zone?.interior ? 1 : this.field.free(a, b)),
       inside: (q) => !this.zone?.interior && this.field.solidAt(q.x, q.y, q.z, 0.15),
@@ -294,6 +326,7 @@ export class Game implements GameApi {
     const prof = st.progress.profile!;
     this.player = createCharacter(withBackpack({ ...prof.look, female: prof.look.female ?? prof.gender === "f" }));
     this.player.fidgets = false;
+    this.rides.host.player = this.player;
     this.scene.add(this.player.root);
     // (the clip list loads meanwhile: the town doesn't wait for it, a conversation's first line does, audio.play)
     void audio.init();
@@ -373,6 +406,10 @@ export class Game implements GameApi {
       this.scene.add(z.group);
       const indoor = !!z.interior;
       this.jogT = 0;
+      // (out of whatever was driven, and out of the water: on foot wherever this puts them)
+      this.endRide();
+      this.rides.group.visible = !indoor;
+      this.surface(true);
       const sp = spawn ?? (z.interior ? z.interior.spawn : { x: 0, z: 0, rot: 0 });
       // (on the sand where it slopes under the sea, if that is where they were)
       const floor = indoor ? 0 : floorY(sp.x, sp.z);
@@ -553,8 +590,10 @@ export class Game implements GameApi {
     if (["arrowup", "arrowdown", "arrowleft", "arrowright", "w", "a", "s", "d", "shift"].includes(k)) {
       this.keys.add(k); this.autoPath = null; this.autoTarget = null; e.preventDefault(); return;
     }
-    // Space: talk or go in, as E, when there is someone or a door to; else a jump (in the air: a flip)
-    if (k === " ") { if (this.nearest && !this.hop.air) this.interact(); else if (!e.repeat) this.jump(); e.preventDefault(); return; }
+    // Space: talk or go in, as E, when there is someone or a door to; else a jump (in the air: a flip). At a wheel it
+    // is the brake, for as long as it is held; swimming, a dive
+    if (k === " " && this.rides.riding) { this.keys.add(" "); e.preventDefault(); return; }
+    if (k === " ") { if (this.nearest && !this.hop.air && !this.swimming) this.interact(); else if (!e.repeat) this.jump(); e.preventDefault(); return; }
     if (k === "e" || k === "enter") { this.interact(); e.preventDefault(); return; }
     if (k === "m") st.setHud({ panel: "map" });
     if (k === "j") st.setHud({ panel: "journal" });
@@ -580,8 +619,115 @@ export class Game implements GameApi {
   jump() {
     const st = useStore.getState();
     if (this.session?.active || st.conv.active || st.hud.panel || this.transitioning || !this.player) return;
+    // (at a wheel the button is the brake: hold(); in the water it is a dive, and the way back up)
+    if (this.rides.riding) return;
+    if (this.swimming) { this.dive(); return; }
     if (this.hop.air) { if (this.hop.flip()) { audio.jump(1.4); coach.did("jump"); } return; }
     if (this.hop.start()) { audio.jump(); coach.did("jump"); }
+  }
+
+  /** The jump button held down or let go: at a wheel it is the brake. */
+  hold(on: boolean) { this.brake = on; }
+
+  /** Under the water for a few breaths (and back up at once on a second press): only where it is deep enough for the
+   *  camera to follow. */
+  private dive() {
+    if (this.diveT > 0) { this.diveT = 0; return; }
+    const p = this.player.root.position, sur = waterY(p.x, p.z, this.t);
+    if (sur === null || sur - floorY(p.x, p.z) < SWIM.dive + 0.9) { audio.splash(0.5); this.splashes.burst(p.x, sur ?? SEA_LEVEL, p.z, 0, 0, 0.8); return; }
+    this.diveT = SWIM.breath;
+    this.undersea.build();
+    audio.splash(0.9);
+    this.splashes.burst(p.x, sur, p.z, 0, 0, 1);
+  }
+
+  /** Out of the water's own state at once (a door, a ride, a teleport), or (`all` false) only up from a dive. */
+  private surface(all: boolean) {
+    this.diveT = 0;
+    if (!all) return;
+    this.swimming = false; this.swimK = 0; this.diveK = 0;
+    if (this.player) { this.player.swim = 0; this.player.dive = 0; }
+    this.underWater(false);
+  }
+
+  /** The picture under water or in the air again: the fog, the sky, the camera's lean. */
+  private underWater(on: boolean) {
+    if (on === !!this.airFog) return;
+    if (on) {
+      this.airFog = (this.scene.fog as THREE.Fog | null) ?? new THREE.Fog("#cfe8f5", 110, 420);
+      this.scene.fog = this.undersea.fog;
+      this.scene.background = this.undersea.fog.color;
+      this.sky.visible = false;
+    } else {
+      this.scene.fog = this.zone?.interior ? null : this.airFog;
+      this.scene.background = this.zone?.interior ? this.scene.background : null;
+      this.sky.visible = !this.zone?.interior;
+      this.airFog = null;
+    }
+  }
+
+  /** A passer-by's kind of line said by someone in the town: a bubble with its meaning, their mouth moving, and their
+   *  voice where the passers-by's voices have the line recorded. */
+  private saysAloud(line: { en: string; lt: string }, female: boolean, ch: GameCharacter) {
+    const voice = ambientVoice(female ? "f" : "m");
+    let secs = 1.1 + line.en.length * 0.045;
+    if (audio.hasClip(voice, 1, line.en)) {
+      void audio.play(voice, 1, line.en, { male: !female });
+      secs = audio.clipDuration(voice, 1, line.en) ?? secs;
+      ch.talk(secs, () => audio.level(), () => audio.vowel());
+    } else ch.talk(secs);
+    useStore.getState().toast({ kind: "info", title: `„${line.en}“`, body: line.lt, ms: 3200 });
+  }
+
+  /** Into a convertible or the boat: whatever the player was doing on foot stops there. */
+  private boardRide(r: Ride) {
+    const st = useStore.getState();
+    if (this.session?.active || st.hud.panel || this.transitioning || this.rides.riding) return;
+    this.autoPath = null; this.autoTarget = null;
+    this.steer.reset(); this.gaitOn = false; this.stepOut = 0; this.jogT = 0;
+    this.vel.set(0, 0, 0);
+    this.hop.land(this.player.root.position.y); this.applyHop();
+    this.surface(true);
+    this.player.bank = 0;
+    if (!this.rides.board(r)) return;
+    this.ambient.riding = r.kind === "car";
+    this.nearest = null;
+    this.brake = false;
+    st.setHud({ prompt: null });
+    audio.sfx("pop");
+    if (r.kind === "boat") { const p = this.player.root.position; this.splashes.burst(r.m.x, waterY(p.x, p.z, this.t) ?? SEA_LEVEL, r.m.z, 0, 0, 0.5); }
+  }
+
+  /** On foot again (Rides.onLeft): where the player stands now, facing away from what they got out of. */
+  private leftRide(x: number, y: number, z: number, rot: number) {
+    const p = this.player.root.position;
+    p.set(x, y, z);
+    this.heading = rot;
+    this.player.root.rotation.set(0, rot, 0);
+    this.afterRide();
+    const sur = waterY(x, z, this.t);
+    if (sur !== null && sur - y > 0.3) { audio.splash(Math.min(1, 0.4 + (sur - y) * 0.4)); this.splashes.burst(x, sur, z, 0, 0, 1); }
+    else audio.land(this.underfoot(y > 0.05), 0.5);
+  }
+
+  /** What getting out of a ride leaves behind, however it ended. */
+  private afterRide() {
+    const p = this.player.root.position;
+    this.hop.land(p.y); this.applyHop();
+    this.vel.set(0, 0, 0); this.moveVel.set(0, 0, 0);
+    this.gait.sync(this.heading, 0); this.gaitOn = false; this.steer.reset();
+    this.keys.delete(" "); this.brake = false;
+    this.ambient.riding = false;
+    this.nearest = null;
+    audio.motor(null);
+    useStore.getState().setHud({ prompt: null, ride: null });
+  }
+
+  /** Out of a ride at once, with no hop (a door's zone change, a taxi, a conversation picked from the list). */
+  private endRide() {
+    if (!this.rides?.riding) return;
+    this.rides.abandon();
+    this.afterRide();
   }
 
   /** Up on something higher than a bench (a car, a low wall): nobody is talked to and no door gone through from there. */
@@ -594,7 +740,7 @@ export class Game implements GameApi {
     const on = this.rig.mode === "follow" && !this.zone.interior;
     const cam = this.rig.cam, focal = this.container.clientHeight / 2 / Math.tan(THREE.MathUtils.degToRad(cam.fov / 2));
     const far2 = (2 * focal / 8) ** 2;
-    for (const g of [this.ambient.group, this.npcLayer]) for (const o of g.children) {
+    for (const g of [this.ambient.group, this.npcLayer, this.rides.group]) for (const o of g.children) {
       // (not a dog's lead: a line drawn in the world's own coordinates, its place the world's middle)
       if ((o as THREE.Line).isLine) continue;
       const far = on && o.position.distanceToSquared(cam.position) > far2;
@@ -618,7 +764,7 @@ export class Game implements GameApi {
 
   private onClick(cx: number, cy: number) {
     const st = useStore.getState();
-    if (st.conv.active || st.hud.panel) return;
+    if (st.conv.active || st.hud.panel || this.rides.riding) return;
     const rect = this.renderer.domElement.getBoundingClientRect();
     const ndc = new THREE.Vector2(((cx - rect.left) / rect.width) * 2 - 1, -((cy - rect.top) / rect.height) * 2 + 1);
     this.raycaster.setFromCamera(ndc, this.rig.cam);
@@ -696,6 +842,8 @@ export class Game implements GameApi {
   }
 
   autoWalkToObjective() {
+    // (at a wheel one drives there oneself: the marks on the ground lead the way)
+    if (this.rides.riding) { useStore.getState().toast({ kind: "info", title: "Pirmiausia išlipk", body: "Arba važiuok pats – rodyklės ant žemės rodo kelią." }); return; }
     const tgt = this.objectiveTarget();
     if (!tgt) { useStore.getState().toast({ kind: "info", title: "Ši užduotis atliekama telefonu", body: "Atidaryk telefoną (P) ir paskambink." }); return; }
     this.walkTo(tgt.x, tgt.z, tgt.kind === "npc" ? { kind: "npc", id: tgt.id } : tgt.kind === "door" ? { kind: "door", id: tgt.id } : { kind: "exit" });
@@ -704,11 +852,28 @@ export class Game implements GameApi {
   // ------------------------------------------------------------------ interaction
 
   interact() {
+    if (this.rides.riding) { if (!this.session?.active && !useStore.getState().hud.panel) this.rides.leave(); return; }
     const n = this.nearest;
     if (!n) return;
-    if (n.kind === "npc") this.talkTo(n.id);
+    if (n.kind === "ride") { const r = this.rides.list.find((q) => q.id === n.id); if (r) this.boardRide(r); }
+    else if (n.kind === "climb") this.climbOut();
+    else if (n.kind === "npc") this.talkTo(n.id);
     else if (n.kind === "door") this.enterDoor(n.id);
     else if (n.kind === "exit") this.exitInterior();
+  }
+
+  /** Out of the water onto a pier's boards (a swimmer beside them). */
+  private climbOut() {
+    const p = this.player.root.position, to = this.rides.climbOut(p.x, p.z);
+    if (!to) return;
+    const rot = Math.atan2(to.x - p.x, to.z - p.z);
+    this.surface(true);
+    p.copy(to);
+    this.heading = rot;
+    this.player.root.rotation.set(0, rot, 0);
+    this.afterRide();
+    audio.splash(0.6);
+    audio.land(this.underfoot(true), 0.6);
   }
 
   private enterDoor(loc: string) {
@@ -1177,6 +1342,10 @@ export class Game implements GameApi {
     const talking = !!this.session?.active;
     const blocked = talking || !!st.hud.panel || this.transitioning;
     this.updatePlayer(dt, blocked, this.transitioning && !talking && !st.hud.panel);
+    // (what one can drive: its people, the way back to its curb; at the wheel it is moved from updatePlayer)
+    const riding = this.rides.riding;
+    if (!riding) this.rides.update(dt, this.t, null);
+    audio.motor(riding && this.rides.phase === "on" && !this.zone.interior ? riding.kind : null, this.rides.revs);
     this.updateNpcs(dt, talking);
     if (!this.zone.interior) this.ambient.update(dt, this.player.root.position);
     this.town.update(this.t, dt);
@@ -1196,14 +1365,22 @@ export class Game implements GameApi {
     }
     // camera: where the player is heading and how fast (it swings in behind them after a moment, camera.ts)
     const speed = Math.hypot(this.moveVel.x, this.moveVel.z);
-    this.rig.motion.dir = speed > 0.3 ? Math.atan2(this.moveVel.x, this.moveVel.z) : this.heading;
+    // (at a wheel the camera stays behind the car, backing up too)
+    this.rig.motion.dir = riding ? this.heading : speed > 0.3 ? Math.atan2(this.moveVel.x, this.moveVel.z) : this.heading;
     this.rig.motion.speed = speed;
     // (where they will be in a moment, walking on as now, out of the walls: the camera makes room before it is needed)
     this.rig.motion.next.copy(this.player.root.position).addScaledVector(this.moveVel, 0.3).setY(0);
     if (speed > 0.3) this.zone.colliders.resolve(this.rig.motion.next, 0.38, !this.zone.interior);
     this.rig.dragging = this.pointer.down && this.pointer.moved > 6;
     this.rig.target.lerp(this.player.root.position, Math.min(1, dt * 10));
-    this.rig.update(dt, this.heading, speed > 0.7, true, st.settings.cameraFollow && !this.pointer.down);
+    this.rig.update(dt, this.heading, speed > 0.7, true, (st.settings.cameraFollow || !!riding) && !this.pointer.down);
+    // under the water (a dive: the camera below the surface): the seabed, the fish, the water's own light
+    {
+      const cp = this.rig.cam.position, pp1 = this.player.root.position, sur = this.zone.interior ? null : waterY(pp1.x, pp1.z, this.t);
+      const under = sur !== null && this.diveK > 0.2 && cp.y < sur - 0.1;
+      if (this.swimming || this.undersea.on) this.undersea.update(dt, this.t, under, this.tmpV.set(pp1.x + Math.sin(this.heading) * 0.4, pp1.y + 1.2, pp1.z + Math.cos(this.heading) * 0.4), speed / SWIM.speed);
+      this.underWater(this.undersea.on);
+    }
     // the lens (camera.ts fovFor): wider while walking, a touch more at a run (a sense of speed), the conversation's
     // 50° exactly
     {
@@ -1245,7 +1422,7 @@ export class Game implements GameApi {
     this.fx?.frame(pp, !!this.zone.interior);
     this.sky.position.copy(this.rig.cam.position);
     // an illustrated scene covers the view during the conversation: save the phone's battery
-    const covered = talking && st.settings.scenes !== false && !!sceneFor(st.conv.sitId, st.conv.hostId);
+    const covered = this.covered = talking && st.settings.scenes !== false && !!sceneFor(st.conv.sitId, st.conv.hostId);
     if (!covered) {
       this.renderer.render(this.scene, this.rig.cam);
       this.updateTags();
@@ -1277,8 +1454,40 @@ export class Game implements GameApi {
     if (walking !== st.hud.walking) st.setHud({ walking });
   };
 
+  /** An illustrated scene covers the town (a conversation in pictures). */
+  private covered = false;
+
+  /** At a car's wheel or a boat's helm: the keys or the stick drive it (rides/drive.ts), the player sits in it. */
+  private updateRide(dt: number, blocked: boolean) {
+    const r = this.rides.riding!, m = r.m;
+    let x = 0, y = 0;
+    if (!blocked) {
+      if (this.keys.has("arrowup") || this.keys.has("w")) y += 1;
+      if (this.keys.has("arrowdown") || this.keys.has("s")) y -= 1;
+      if (this.keys.has("arrowleft") || this.keys.has("a")) x -= 1;
+      if (this.keys.has("arrowright") || this.keys.has("d")) x += 1;
+      if (this.joy.x !== 0 || this.joy.y !== 0) { x = this.joy.x; y = this.joy.y; }
+    }
+    this.rides.update(dt, this.t, blocked ? null : controlsFrom(x, y, this.keys.has(" ") || this.brake));
+    // (getting out ends the ride inside update: the player is on foot again, leftRide has set them down)
+    if (this.rides.riding !== r) return;
+    const on = this.rides.phase === "on", v = on ? m.speed : 0;
+    this.heading = on ? m.heading : this.player.root.rotation.y;
+    this.vel.set(m.fx * v, 0, m.fz * v);
+    this.moveVel.lerp(this.vel, Math.min(1, dt * 15));
+    this.lastSpeed = Math.abs(v);
+    this.player.moveSpeed = 0;
+    this.player.update(dt);
+    this.bumpT -= dt;
+    if (m.bump > 0.3 && this.bumpT <= 0) { audio.bump(m.bump); this.bumpT = 0.45; }
+    this.splashes.update(dt, this.t, null, 0);
+    this.dust.update(dt);
+    coach.stroll(dt, true, useStore.getState().hud.showTouch);
+  }
+
   /** `through`: a door's fade is under way: the player holds still, and a walk under way carries on on the other side. */
   private updatePlayer(dt: number, blocked: boolean, through = false) {
+    if (this.rides.riding) { this.updateRide(dt, blocked); return; }
     const p = this.player.root.position;
     let ix = 0, iz = 0;
     if (!blocked || through) {
@@ -1301,7 +1510,7 @@ export class Game implements GameApi {
     // the pace: a walk; outdoors a jog after a moment's steady walking one way (a turn, a stop or deep water starts the
     // count again), a run with Shift or the stick at its edge; indoors always a walk; slower the deeper one wades
     const indoor = !!this.zone.interior;
-    if (!indoor && steer.dir !== null && this.wading.depth < 0.3 && !(this.jogT > 0.4 && this.lastSpeed < 2)) {
+    if (!indoor && steer.dir !== null && this.wading.depth < 0.3 && !this.swimming && !(this.jogT > 0.4 && this.lastSpeed < 2)) {
       if (this.jogDir === null || Math.abs(angleDiff(steer.dir, this.jogDir)) > 0.55) { this.jogDir = steer.dir; this.jogT = 0; }
       // (a long curve is still one way: the direction counted from follows slowly)
       this.jogDir += angleDiff(steer.dir, this.jogDir) * Math.min(1, dt * 0.8);
@@ -1309,6 +1518,8 @@ export class Game implements GameApi {
     } else { this.jogT = 0; this.jogDir = null; }
     const pace = indoor ? 1 : Wading.pace(this.wading.depth);
     let speed = (indoor ? WALK : this.keys.has("shift") || this.joyRun ? RUN : WALK + (JOG - WALK) * smoothstep(JOG_AFTER, JOG_AFTER + JOG_EASE, this.jogT)) * pace;
+    // (in deep water: a calm stroke, quicker with Shift or the stick at its edge; slower under water)
+    if (this.swimming) speed = this.diveK > 0.5 ? SWIM.speed * 0.85 : this.keys.has("shift") || this.joyRun ? SWIM.fast : SWIM.speed;
     const before = p.clone();
     if (through) {
       // (through a door: nothing moves until the other side)
@@ -1352,16 +1563,19 @@ export class Game implements GameApi {
       if (this.vel.lengthSq() < 0.0004) this.vel.set(0, 0, 0);
     }
     if (!through) {
-      p.x += this.vel.x * dt;
-      // (out in the shallows the seaward part of a step fades to nothing at the wading limit: no wall, no bounce)
-      p.z += indoor ? this.vel.z * dt : Wading.hold(p.z, this.vel.z * dt);
+      // (past the wading limit one swims; a step out of the bay fades to nothing at its edge: no wall, no bounce)
+      const sea = !indoor && p.z < SHORE.limit;
+      p.x += sea ? bayHold(p.x, bayHold(p.x, this.vel.x * dt, BAY.x0, -1), BAY.x1, 1) : this.vel.x * dt;
+      p.z += sea ? bayHold(p.z, this.vel.z * dt, BAY.z0, -1) : this.vel.z * dt;
       // outdoors the player's own ground plan: what is low enough to jump onto has its height (ledges.ts), and the
       // sea's edge is open as far as one can wade
       this.zone.colliders.resolve(p, 0.38, !indoor);
       if (!indoor) {
         this.ledges?.resolve(p, 0.38, this.hop.y, this.hop.air);
-        if (p.z < SHORE.limit) p.z = SHORE.limit;
         this.ambient.resolvePlayer(p, 0.38); this.ambient.resolvePeople(p, 0.38, true);
+        // (the convertibles and their people standing about; swimming, the rocks and the boats at anchor)
+        this.rides.resolvePlayer(p, 0.38, this.swimming);
+        if (p.z < BAY.z0) p.z = BAY.z0;
       }
     }
     if (this.stepOut > 0) {
@@ -1396,7 +1610,7 @@ export class Game implements GameApi {
     }
     const running = moved > 5.5 || (through && this.gaitOn && this.gait.speed > 5.5);
     const going = through && this.gaitOn ? this.gait.speed : moved;
-    this.player.setAnim(running ? "run" : going > 0.4 ? "walk" : "idle");
+    this.player.setAnim(this.swimK > 0.5 ? "idle" : running ? "run" : going > 0.4 ? "walk" : "idle");
     this.player.moveSpeed = going;
     // the guide's hints about walking and running tick themselves off; later, a long stretch at a walk brings the tip
     // about running, once
@@ -1416,13 +1630,51 @@ export class Game implements GameApi {
     // walking off an edge is a fall.
     const on = indoor ? 0 : this.ledges?.support(p.x, p.z, this.hop.y, this.hop.air) ?? 0;
     const ground = indoor ? 0 : on > 0 ? on : floorY(p.x, p.z);
-    const landed = this.hop.update(dt, ground);
+    // the water here (the sea with its swell, a pool's), and how much of it is over what is underfoot
+    const sur = indoor ? null : waterY(p.x, p.z, this.t), surface = sur ?? -99;
+    const over = sur === null || on > 0 ? 0 : sur - ground;
+    // deep enough, and in it (someone who jumps off the pier swims once their feet are under): they float and swim
+    const wasSwimming = this.swimming;
+    this.swimming = !through && over > (wasSwimming ? SWIM.out : SWIM.depth) && this.hop.y < surface - 0.3;
+    let landed = 0;
+    if (this.swimming) {
+      // the chest at the surface, the body along it (Character.swim); on a dive, under, but clear of the bed
+      const tall = this.player.height / 1.75, float = surface - SWIM.float * tall;
+      if (this.diveT > 0 && (this.diveT -= dt) <= 0) this.diveT = 0;
+      if (over < SWIM.dive + 0.7) this.diveT = 0;
+      this.diveK = Math.max(0, Math.min(1, this.diveK + (this.diveT > 0 ? dt * 1.6 : -dt * 2.2)));
+      const k = this.diveK * this.diveK * (3 - 2 * this.diveK);
+      const want = Math.max(ground - 0.75, float - k * SWIM.dive);
+      if (!wasSwimming && this.hop.air) { audio.splash(1); this.splashes.burst(p.x, surface, p.z, 0, 0, 1); }
+      this.hop.land(this.hop.y + (want - this.hop.y) * Math.min(1, dt * (wasSwimming ? 6 : 3)));
+      if (!this.swimTip && !blocked) {
+        this.swimTip = true;
+        this.undersea.build();
+        const touch = useStore.getState().hud.showTouch;
+        useStore.getState().toast({ kind: "tip", title: "Plauki!", body: touch ? "Mygtukas su rodykle žemyn – panerti." : "Tarpas – panerti, Shift – plaukti greičiau.", ms: 5000 });
+      }
+    } else {
+      this.diveT = 0; this.diveK = Math.max(0, this.diveK - dt * 3);
+      landed = this.hop.update(dt, ground);
+    }
+    this.swimK = Math.max(0, Math.min(1, this.swimK + (this.swimming ? dt / 0.4 : -dt / 0.3)));
+    this.player.swim = this.swimK * this.swimK * (3 - 2 * this.swimK);
+    this.player.dive = this.diveK;
+    // (the camera goes under with a diver: level behind them, close; and back to where it was)
+    if (this.diveK > 0 && !this.airCam) this.airCam = { pitch: this.rig.pitch, dist: this.rig.dist };
+    if (this.airCam) {
+      const k = this.diveK * this.diveK * (3 - 2 * this.diveK);
+      // (a phone held upright sees less to the sides: from further back there, and lower, to stay under the surface)
+      const upright = this.container.clientHeight > this.container.clientWidth * 1.15;
+      this.rig.pitch = this.airCam.pitch + ((upright ? 0.15 : 0.24) - this.airCam.pitch) * k;
+      this.rig.dist = this.airCam.dist + ((upright ? 7.4 : 4.6) - this.airCam.dist) * k;
+      if (this.diveK <= 0) this.airCam = null;
+    }
     this.applyHop();
     // the water at their feet: deep enough to wade in, it slows them, splashes at each step and rings their legs
-    const surface = indoor ? 0 : SEA_LEVEL + swell(p.x, p.z, this.t);
     const depth = indoor ? 0 : Math.max(0, surface - this.hop.y);
-    this.wading.depth = indoor ? 0 : Math.max(0, surface - ground);
-    const wet = depth > 0.05;
+    this.wading.depth = indoor || this.swimming ? 0 : Math.max(0, over);
+    const wet = depth > 0.05 && this.diveK < 0.5;
     this.washT -= dt;
     if (wet && !this.wet && this.washT <= 0 && moved > 1) { audio.wash(); this.washT = 6; }
     this.wet = wet;
@@ -1431,7 +1683,16 @@ export class Game implements GameApi {
     // outdoors at a run, dust at the heels; a puff when stopping short or landing
     const fancy = useStore.getState().settings.quality === "high" && !this.zone.interior && !wet && ground < 0.2;
     const phase = this.player.stepPhase;
-    if (moved > 0.4 && !this.hop.air) {
+    if (this.swimming) {
+      // a stroke's small splash, in time with the arms
+      this.stepN = null; this.stepDist = 0.6;
+      this.strokeT -= moved > 0.3 ? dt : 0;
+      if (this.strokeT <= 0 && moved > 0.3 && this.diveK < 0.3) {
+        this.strokeT = 1.35;
+        audio.splash(0.22);
+        this.splashes.burst(p.x + Math.sin(this.heading) * 0.7, surface, p.z + Math.cos(this.heading) * 0.7, Math.sin(this.heading), Math.cos(this.heading), 0.2);
+      }
+    } else if (moved > 0.4 && !this.hop.air) {
       let step = false;
       if (phase !== undefined) {
         const n = Math.floor((phase - Math.PI / 2) / Math.PI);
@@ -1590,15 +1851,25 @@ export class Game implements GameApi {
     // nearest interactable
     let best: Game["nearest"] = null;
     let bd = Infinity;
-    if (!this.session?.active && !this.aloft) {
+    const riding = this.rides.riding;
+    if (riding) {
+      // at the wheel: only the way out (nobody is talked to, no door gone through)
+      if (this.rides.phase === "on" && !this.session?.active) best = { kind: "out", id: riding.id, label: "Išlipti" };
+    } else if (!this.session?.active && !this.aloft) {
       for (const n of this.npcs) {
         const d = talkDist(n, p);
         if (d < TALK_RANGE && d < bd) { bd = d; best = { kind: "npc", id: n.id, label: NPCS[n.id]?.name ?? n.id }; }
       }
+      // a convertible or the boat within a step (a boat from the water too), a pier's boards beside a swimmer
+      if (!this.zone.interior && !this.hop.air && this.diveK < 0.3) {
+        const r = this.rides.near(p.x, p.z);
+        if (r && (r.kind === "boat" || !this.swimming) && 1 < bd) { bd = 1; best = { kind: "ride", id: r.id, label: r.kind }; }
+        else if (this.swimming && !best && this.rides.climbOut(p.x, p.z)) { bd = 1; best = { kind: "climb", id: "pier", label: "Užlipti ant prieplaukos" }; }
+      }
       if (!this.zone.interior) {
         for (const dd of this.town.doors) {
           const d = Math.hypot(dd.outX - p.x, dd.outZ - p.z);
-          if (d < 3 && d < bd) { bd = d; best = { kind: "door", id: dd.loc, label: dd.name }; }
+          if (d < 3 && d < bd && !this.swimming) { bd = d; best = { kind: "door", id: dd.loc, label: dd.name }; }
         }
       } else {
         const ex = this.zone.interior.exit;
@@ -1610,8 +1881,16 @@ export class Game implements GameApi {
     this.nearest = best;
     if (changed) {
       if (best) audio.sfx("tick");
-      st.setHud({ prompt: best ? { label: best.kind === "npc" ? `Kalbėtis: ${best.label}` : best.kind === "door" ? `Įeiti: ${best.label}` : "Išeiti į lauką", lt: best.kind === "door" ? placeLt(best.id) : undefined, kind: best.kind === "npc" ? "talk" : best.kind === "door" ? "enter" : "exit" } : null });
+      const names = RIDES.names;
+      st.setHud({ prompt: !best ? null
+        : best.kind === "ride" ? (best.label === "car" ? { label: `Vairuoti: ${names.car.en}`, lt: names.car.lt, kind: "drive" } : { label: `Plaukti: ${names.boat.en}`, lt: names.boat.lt, kind: "boat" })
+        : best.kind === "out" ? { label: "Išlipti", kind: "out" }
+        : best.kind === "climb" ? { label: best.label, kind: "climb" }
+        : { label: best.kind === "npc" ? `Kalbėtis: ${best.label}` : best.kind === "door" ? `Įeiti: ${best.label}` : "Išeiti į lauką", lt: best.kind === "door" ? placeLt(best.id) : undefined, kind: best.kind === "npc" ? "talk" : best.kind === "door" ? "enter" : "exit" } });
     }
+    // what the player does instead of walking, for the buttons and the hints
+    const ride = riding ? riding.kind : this.swimming ? (this.diveK > 0.5 ? "dive" : "swim") : null;
+    if (st.hud.ride !== ride) st.setHud({ ride });
     // objective distance & minimap
     const tgt = this.objectiveTarget();
     const o = st.hud.objective;
@@ -1659,6 +1938,7 @@ export class Game implements GameApi {
     this.unbindAmbience?.();
     this.unbindAmbience = null;
     audio.stopAmbience();
+    audio.motor(null);
     audio.stop();
     radio.shutdown();
     for (const n of this.npcs) n.tag.remove();

@@ -1,0 +1,46 @@
+// What one can drive in this town, and where it stands (src/game/rides/): convertibles parked at the curb with their
+// owners in them, a small boat at the pier. Maple Harbor's; the Spanish edition has its own file of this name for
+// Puerto Colibrí. Headings as everywhere: 0 faces +Z (south), π/2 east, π north (the sea), −π/2 west.
+import type { Rect } from "../rides/drive";
+
+export interface CarSpot {
+  id: string; x: number; z: number; rot: number;
+  /** The body's colour and the seats'. */
+  paint: string; inside?: string;
+  /** Who sits in it (one or two; one in the simple quality). */
+  people: 1 | 2;
+}
+export interface BoatSpot { id: string; x: number; z: number; rot: number; stripe: string; hull?: string }
+
+export interface RidesPlan {
+  cars: CarSpot[];
+  boats: BoatSpot[];
+  /** Where a car may go beside the streets themselves (layout.ts ROADS): forecourts and lots. */
+  lots: Rect[];
+  /** Rocks in the bay (x, z, radius): a boat and a swimmer go round them. */
+  rocks: [number, number, number][];
+  /** The sea's colour seen from under it (a dive). */
+  deep: string;
+  /** What the things are called, for the prompt ("Vairuoti: …", "Plaukti: …"): in the practised language, and in the
+   *  learner's under it. */
+  names: { car: { en: string; lt: string }; boat: { en: string; lt: string } };
+}
+
+export const RIDES: RidesPlan = {
+  cars: [
+    // Main Street's north curb by the park, the first thing one sees walking out of the airport
+    { id: "park", x: 106, z: -11.8, rot: -Math.PI / 2, paint: "#22b8b0", people: 2 },
+    // East Street's last block, looking out over Harbor Road to the sea
+    { id: "east", x: 72.8, z: -42, rot: Math.PI, paint: "#f4b63a", inside: "#fbf3e1", people: 1 },
+    // West Street beside the market, facing the sea
+    { id: "west", x: -67.2, z: -41, rot: Math.PI, paint: "#ff7a59", people: 2 },
+  ],
+  // moored along the pier's east side, its bow out to sea
+  boats: [{ id: "pier", x: -17.15, z: -81, rot: Math.PI, stripe: "#2f6db5" }],
+  // the airport's forecourt at the end of Main Street, Sproutly's at the end of Harbor Road
+  lots: [{ x0: 126, x1: 134, z0: -30, z1: 14 }, { x0: 126, x1: 137, z0: -59.5, z1: -50.5 }],
+  // the lighthouse's rocks
+  rocks: [[104, -88, 7.5]],
+  deep: "#2a93ad",
+  names: { car: { en: "Convertible", lt: "Kabrioletas" }, boat: { en: "Motorboat", lt: "Motorinė valtis" } },
+};

@@ -47,7 +47,12 @@ export interface GameCharacter {
    *  close by, or talking with them), `fidgets` false means none at all (the player), `busy` is what their hands do. */
   attentive?: boolean;
   fidgets?: boolean;
-  busy?: "wipe" | "type" | "cup" | "paper" | null;
+  busy?: "wipe" | "type" | "cup" | "paper" | "wheel" | "tiller" | "doorL" | "doorR" | null;
+  /** At a car's wheel or a boat's tiller: how far it is turned (−1…1; the original Character). */
+  steer?: number;
+  /** Swimming (0–1) and, under water, diving (0–1): src/game/water.ts SWIM (the original Character). */
+  swim?: number;
+  dive?: number;
   holdMoment?(kind: Moment): void;
   /** Drawn as its far version (the original Character, once one is attached: Character.far, attachFar). */
   setFar?(on: boolean): void;
