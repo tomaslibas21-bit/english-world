@@ -576,7 +576,7 @@ describe("the radio", () => {
     expect(saved().on).toBe(false);
   });
 
-  it("remembers on, station, the song and the place in it, and the lyric strip", async () => {
+  it("remembers the station, the song and the place in it, and the lyric strip; the next visit starts off and goes on from there at the first press", async () => {
     let radio = new Radio(deps());
     radio.setOn(true); await settle();
     radio.next(); await settle();
@@ -584,11 +584,16 @@ describe("the radio", () => {
     out.at = 61.7;
     await vi.advanceTimersByTimeAsync(5000);
     expect(saved()).toMatchObject({ on: true, station: "all", song: "B", at: 61, lyrics: false });
-    // the next visit: the song list arrives, and the radio goes on from there
+    // the next visit: the song list arrives and the radio stays off, silent, at the remembered song
     out = new FakeOutput();
     radio = new Radio(deps());
     expect(radio.store.getState().lyrics).toBe(false);
     await radio.init(); await settle();
+    expect(out.sounding).toBe(false);
+    expect(radio.store.getState()).toMatchObject({ on: false, playing: false, station: "all" });
+    expect(radio.store.getState().song?.id).toBe("B");
+    // the first press goes on from the place it was left, not from the first song
+    radio.power(); await settle();
     expect(out.last).toBe("play B.mp3@61");
     expect(radio.store.getState()).toMatchObject({ on: true, playing: true });
   });
@@ -605,8 +610,10 @@ describe("the radio", () => {
   it("waits for a tap when the browser asks for one, and starts at the next tap", async () => {
     store["radio-test"] = JSON.stringify({ on: true, station: "all", song: "B", at: 10 });
     const radio = new Radio(deps());
-    out.next = "tap";
     await radio.init(); await settle();
+    expect(radio.store.getState()).toMatchObject({ on: false, playing: false }); // a visit starts off
+    out.next = "tap";
+    radio.setOn(true); await settle();
     expect(radio.store.getState()).toMatchObject({ on: true, playing: false, needsTap: true, failed: false });
     out.next = "ok";
     radio.gesture(); await settle();
@@ -885,6 +892,8 @@ describe("the stations: the course's songs, kind by kind", () => {
     store["radio-test"] = JSON.stringify({ on: true, station: "favorites", song: "V2", at: 30 });
     const radio = new Radio(deps());
     await radio.init(); await settle();
+    expect(radio.store.getState()).toMatchObject({ station: "grammar", on: false });
+    radio.setOn(true); await settle();
     expect(now(radio)).toEqual(["grammar", "G1"]);
     expect(out.last).toBe("play G1.mp3@0");
   });

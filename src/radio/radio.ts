@@ -141,8 +141,9 @@ export class Radio {
 
   // ---------------------------------------------------------------- the list
 
-  /** Fetch the song list (once; a failed try is made again at the next call) and, if the radio was on when the
-   *  learner left, turn it on again. */
+  /** Fetch the song list (once; a failed try is made again at the next call). A visit starts with the radio off, even
+   *  if it was playing when the learner left (owner, 14 Nov 2026): the station, the song and the place in it are
+   *  remembered, and the first press goes on from there, not from the first song. */
   init(): Promise<void> {
     const cfg = this.deps.config;
     if (!cfg || !this.state.available || this.state.ready) return Promise.resolve();
@@ -160,8 +161,7 @@ export class Radio {
         this.cursor = kept && this.order.includes(kept) ? kept : null;
         this.resumeAt = this.cursor && this.cursor === this.saved.song ? this.saved.at : 0;
         this.set({ ready: true, failed: false, song: this.cursor ? this.byId.get(this.cursor)! : null });
-        if (this.saved.on && !this.state.on) this.set({ on: true });
-        if (this.state.on) this.start(FADE_IN_MS);
+        if (this.state.on) this.start(FADE_IN_MS); // pressed while the list was on its way
       } catch {
         if (this.state.on) this.set({ failed: true });
       } finally {
