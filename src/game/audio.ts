@@ -1393,11 +1393,12 @@ export class AudioSystem {
   }
 
   /** Taking off: a short, springy note that rises, as a hop sounded in an old video game, played softly, with a
-   *  breath of air under it. Made here from two plain waves, after no game's or show's sound. */
-  jump() {
+   *  breath of air under it. Made here from two plain waves, after no game's or show's sound. `pitch`: higher for the
+   *  flip in the air. */
+  jump(pitch = 1) {
     const ctx = this.ac();
     if (!ctx || this.volume <= 0) return;
-    const now = ctx.currentTime, v = this.volume * 0.042, base = 300 * (0.97 + Math.random() * 0.06);
+    const now = ctx.currentTime, v = this.volume * 0.042, base = 300 * pitch * (0.97 + Math.random() * 0.06);
     const soft = ctx.createBiquadFilter(); soft.type = "lowpass"; soft.frequency.value = 2600; soft.Q.value = 0.3;
     soft.connect(this.out(ctx));
     for (const [mult, type, level] of [[1, "triangle", 1], [2, "sine", 0.2]] as const) {

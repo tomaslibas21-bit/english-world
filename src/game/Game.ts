@@ -9,7 +9,7 @@ import { moodOf } from "./characters/mood";
 import { styleRenderer, createStyleFx, type StyleFx } from "./styleScene";
 import { CameraRig } from "./camera";
 import { Steer, Gait, Hop, angleDiff, smoothstep } from "./movement";
-import { Ledges } from "./ledges";
+import { Ledges, LAND } from "./ledges";
 import { coach } from "./coach";
 import { Wading, Splashes, floorY, swell, SEA_LEVEL, SHORE } from "./water";
 import { OcclusionField } from "./occlusion";
@@ -256,9 +256,13 @@ export class Game implements GameApi {
     this.fader = new PropFader(this.town.group, moves, 1.3, THEME.fade);
     // what is low enough to jump onto (benches, planters, low walls), read from the meshes a few milliseconds at a
     // time once the town is up; never a café table's chairs, nor what the camera's field holds solid (a gazebo)
+    // (what is thin and looked through, a stall's awning, is no top, but nobody stands on the stall's table under it)
     this.ledges = Ledges.build(this.town.group, this.town.colliders, {
-      skip: moves, keep: this.town.seats.filter((s) => s.table).map((s) => [s.x, s.z]), tall: (x, z) => this.field.overSolid(x, z),
+      skip: (o) => o.userData?.v !== undefined || !!o.userData?.gull || !!o.userData?.boat, thin: (o) => !!o.userData?.thin, keep: this.town.seats.filter((s) => s.table).map((s) => [s.x, s.z]), tall: (x, z) => this.field.overSolid(x, z),
+      beside: OUTDOOR_NPCS.flatMap((n) => (n.ax !== undefined && n.az !== undefined ? [[n.x, n.z], [n.ax, n.az]] : [[n.x, n.z]]) as [number, number][]),
     }, (next) => setTimeout(next, 16));
+    // (a car that has stopped is climbed like a parked one: its pieces come and go with it)
+    this.ledges.dynamic = (x, z) => this.ambient.carPieces(x, z);
     // the boats lying in the shallows are in a wader's way
     const hull = new THREE.Box3();
     for (const o of this.town.group.children) if (o.userData.boat) {
@@ -558,8 +562,8 @@ export class Game implements GameApi {
     if (["arrowup", "arrowdown", "arrowleft", "arrowright", "w", "a", "s", "d", "shift"].includes(k)) {
       this.keys.add(k); this.autoPath = null; this.autoTarget = null; e.preventDefault(); return;
     }
-    // Space: talk or go in, as E, when there is someone or a door to; else a hop
-    if (k === " ") { if (this.nearest) this.interact(); else if (!e.repeat) this.jump(); e.preventDefault(); return; }
+    // Space: talk or go in, as E, when there is someone or a door to; else a jump (in the air: a flip)
+    if (k === " ") { if (this.nearest && !this.hop.air) this.interact(); else if (!e.repeat) this.jump(); e.preventDefault(); return; }
     if (k === "e" || k === "enter") { this.interact(); e.preventDefault(); return; }
     if (k === "m") st.setHud({ panel: "map" });
     if (k === "j") st.setHud({ panel: "journal" });
@@ -580,12 +584,17 @@ export class Game implements GameApi {
     return surfaceAt({ indoor: !!this.zone.interior, warm: !!this.zone.interior?.warm, raised, x: p.x, z: p.z, beachZ: BEACH_Z, park: PARK });
   }
 
-  /** A jump (Space, or the phone's button): not in a conversation, over a panel or through a door. */
+  /** A jump (Space, or the phone's button): not in a conversation, over a panel or through a door. A second press in
+   *  the air is a flip (a somersault, a little more lift, once a jump). */
   jump() {
     const st = useStore.getState();
     if (this.session?.active || st.conv.active || st.hud.panel || this.transitioning || !this.player) return;
+    if (this.hop.air) { if (this.hop.flip()) { audio.jump(1.4); coach.did("jump"); } return; }
     if (this.hop.start()) { audio.jump(); coach.did("jump"); }
   }
+
+  /** Up on something higher than a bench (a car, a low wall): nobody is talked to and no door gone through from there. */
+  private get aloft() { return !this.zone.interior && this.hop.ground > LAND + 0.1; }
 
   /** Outdoors, walking: the passers-by, their dogs, the cars and the town's people (not the player) that would stand
    *  under about 8 px tall in the picture are left out of it (layer 0 off; back on as they come nearer, and always in a
@@ -613,6 +622,7 @@ export class Game implements GameApi {
     this.player.lift = this.hop.lift;
     this.player.tuck = this.hop.tuck;
     this.player.squash = this.hop.squash;
+    this.player.flip = this.hop.spin;
   }
 
   private onClick(cx: number, cy: number) {
@@ -1456,7 +1466,7 @@ export class Game implements GameApi {
         audio.splash(k);
         this.splashes.burst(p.x, surface, p.z, this.vel.x / moved, this.vel.z / moved, k);
       } else if (step) {
-        audio.step(this.underfoot(on > 0), running);
+        audio.step(this.underfoot(ground > 0.05), running);
         if (fancy && running) this.dust.puff(p.x, p.z, this.vel.x / moved, this.vel.z / moved);
       }
     } else { this.stepDist = 0.6; this.stepN = null; }
@@ -1464,7 +1474,7 @@ export class Game implements GameApi {
       audio.splash(Math.min(1, 0.5 + landed));
       this.splashes.burst(p.x, surface, p.z, 0, 0, 1);
     } else if (landed > 0) {
-      audio.land(this.underfoot(on > 0), landed);
+      audio.land(this.underfoot(ground > 0.05), landed);
       if (fancy) this.dust.puff(p.x, p.z, Math.sin(this.heading), Math.cos(this.heading), 0.9);
     }
     if (fancy && this.lastSpeed > 6 && moved < 2.5) this.dust.puff(p.x, p.z, Math.sin(this.heading), Math.cos(this.heading), 1.3);
@@ -1479,7 +1489,7 @@ export class Game implements GameApi {
   private checkDoorPush(dt: number) {
     const p = this.player.root.position;
     const d = this.town.doors.find((dd) => Math.hypot(dd.x - p.x, dd.z - p.z) < 1.3);
-    if (d && this.vel.lengthSq() > 1) {
+    if (d && this.vel.lengthSq() > 1 && !this.aloft) {
       this.pushDoorT += dt;
       if (this.pushDoorT > 0.25) { this.pushDoorT = 0; this.enterDoor(d.loc); }
     } else this.pushDoorT = 0;
@@ -1599,7 +1609,7 @@ export class Game implements GameApi {
     // nearest interactable
     let best: Game["nearest"] = null;
     let bd = Infinity;
-    if (!this.session?.active) {
+    if (!this.session?.active && !this.aloft) {
       for (const n of this.npcs) {
         const d = talkDist(n, p);
         if (d < TALK_RANGE && d < bd) { bd = d; best = { kind: "npc", id: n.id, label: NPCS[n.id]?.name ?? n.id }; }

@@ -413,6 +413,8 @@ export class Character {
   lift = 0;
   tuck = 0;
   squash = 0;
+  /** A somersault in the air (radians, 0…2π forwards; 0: upright): the whole body turns about its middle. */
+  flip = 0;
   private hopShown = false;
   private walkPhase = 0;
   /** Where the legs are in their swing (radians, growing as they walk): a foot comes down at every π/2 + kπ. */
@@ -1413,7 +1415,7 @@ export class Character {
       if (this.skirt) this.skirt.scale.y = 1;
     }
     // a hop: the body up (the shadow stays on the ground, smaller), the legs tucked, the arms out, a squash on landing
-    if (this.lift > 0 || this.tuck > 0 || this.squash !== 0 || this.hopShown) {
+    if (this.lift > 0 || this.tuck > 0 || this.squash !== 0 || this.flip !== 0 || this.hopShown) {
       const k = this.tuck;
       if (!seated) {
         this.body.position.y += this.lift;
@@ -1424,11 +1426,22 @@ export class Character {
         lx += (-0.5 - lx) * k; rx += (-0.5 - rx) * k;
         lf += (-0.5 - lf) * k; rf += (-0.5 - rf) * k;
         lz -= 0.55 * k; rz += 0.55 * k;
+        if (this.flip) {
+          // a somersault: the knees drawn up to the chest and the arms round them, tightest half-way round
+          const f = Math.sin(this.flip / 2);
+          this.legL.rotation.x += (-1.5 - this.legL.rotation.x) * f;
+          this.legR.rotation.x += (-1.4 - this.legR.rotation.x) * f;
+          this.shinL.rotation.x += (2.0 - this.shinL.rotation.x) * f;
+          this.shinR.rotation.x += (1.9 - this.shinR.rotation.x) * f;
+          lx += (-1.15 - lx) * f; rx += (-1.15 - rx) * f;
+          lf += (-0.9 - lf) * f; rf += (-0.9 - rf) * f;
+          lz += (-0.12 - lz) * f; rz += (0.12 - rz) * f;
+        }
       }
       const q = this.squash * 0.2;
       this.body.scale.set(1 + q * 0.5, 1 - q, 1 + q * 0.5);
       this.blob.scale.setScalar(0.95 * b * (1 - 0.45 * Math.min(1, this.lift / 0.6)));
-      this.hopShown = this.lift > 0 || this.tuck > 0 || this.squash !== 0;
+      this.hopShown = this.lift > 0 || this.tuck > 0 || this.squash !== 0 || this.flip !== 0;
     }
     this.armL.rotation.set(lx, 0, lz);
     this.armR.rotation.set(rx, 0, rz);
@@ -1437,6 +1450,13 @@ export class Character {
     this.armL.position.y = this.armR.position.y = 1.2 * h + breath * 0.004 + shrug * 0.03;
     this.body.rotation.x = lean;
     this.body.rotation.z = this.bank + hip;
+    if (this.flip && !seated) {
+      // head over heels about the body's middle
+      const c = 0.85 * h;
+      this.body.rotation.x += this.flip;
+      this.body.position.y += c * (1 - Math.cos(this.flip));
+      this.body.position.z -= c * Math.sin(this.flip);
+    }
     this.head.rotation.x = headNod;
     this.head.rotation.y = headTurn;
     this.head.rotation.z = tilt;
