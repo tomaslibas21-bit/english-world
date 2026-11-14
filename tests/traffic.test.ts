@@ -54,4 +54,50 @@ describe("traffic", () => {
       expect(worst).toBeGreaterThan(0.5);
     });
   }
+
+  it("a car that has stopped for the player is climbed like a parked one, waits while they are on it, and drives on", () => {
+    const amb = new Ambient(nav, [[0, 0]], "high");
+    const cars = (amb as any).cars as { x: number; lane: number; dir: 1 | -1; hidden: number; speed: number; mesh: THREE.Mesh }[];
+    const car = cars.find((c) => c.dir === 1)!;
+    const player = new THREE.Vector3(0, 0, -200);
+    const run = (s: number) => { for (let i = 0; i < s / 0.05; i++) amb.update(0.05, player); };
+    run(2);
+    // on the move it is a wall, and has no pieces to stand on
+    expect(car.speed).toBeGreaterThan(3);
+    expect(amb.carPieces(car.x, car.lane).length).toBe(0);
+    const inIt = new THREE.Vector3(car.x + 0.5, 0, car.lane);
+    amb.resolvePlayer(inIt, 0.38);
+    expect(Math.abs(inIt.z - car.lane)).toBeGreaterThan(1.3);
+    // the player stands in its lane: it stops short of them
+    player.set(car.x + 9, 0, car.lane);
+    run(6);
+    expect(car.speed).toBeLessThan(0.02);
+    expect(player.x - car.x).toBeGreaterThan(3);
+    // now it has its hood, its roof and its trunk, and is no wall
+    const pieces = amb.carPieces(player.x, player.z);
+    const top = (dx: number) => Math.max(0, ...pieces.filter((q) => car.x + dx > q.minX && car.x + dx < q.maxX && car.lane > q.minZ && car.lane < q.maxZ).map((q) => q.top));
+    expect(top(1.6)).toBeGreaterThan(0.84);  // the hood (it faces the way it drives)
+    expect(top(1.6)).toBeLessThan(1);
+    expect(top(-0.2)).toBeCloseTo(1.56, 1);  // the roof
+    expect(top(-1.7)).toBeGreaterThan(0.88); // the trunk
+    const at = new THREE.Vector3(car.x + 0.5, 0, car.lane);
+    amb.resolvePlayer(at, 0.38);
+    expect(at.z).toBe(car.lane);
+    // up on its roof, out of its way: it waits, as long as they like
+    const x0 = car.x;
+    player.set(car.x - 0.2, 1.56, car.lane);
+    run(12);
+    expect(car.x).toBeCloseTo(x0, 2);
+    expect(car.speed).toBe(0);
+    // standing beside it (not on it, not ahead of it) it waits a few seconds, then drives on
+    player.set(car.x, 0, car.lane + 1.6);
+    run(2);
+    expect(car.x).toBeCloseTo(x0, 2);
+    run(6);
+    expect(car.x).toBeGreaterThan(x0 + 3);
+    // and well away from it, it is a wall on the move again
+    player.set(0, 0, -200);
+    run(1);
+    expect(amb.carPieces(car.x, car.lane).length).toBe(0);
+  });
 });
