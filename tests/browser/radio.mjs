@@ -282,8 +282,10 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
         sizes.push({ step: (await savedNote()).size, rt: m.rt / usual.rt, rg: m.rg / usual.rg, fits: fits(m), steps: await page.locator(".rs-steps i.on").count() });
       }
       const near = (a, b) => Math.abs(a - b) < 0.02;
+      // (a narrow screen takes the steps 60 % as far: radio.css)
+      const step = (f) => (phone ? 1 + (f - 1) * 0.6 : f);
       check(`${label}: the size key takes the strip's type up a step each press and round again: words and glosses together, remembered, shown on the key`,
-        sizes.map((x) => x.step).join() === "2,3,0,1" && [1.2, 1.45, 0.85, 1].every((f, i) => near(sizes[i].rt, f) && near(sizes[i].rg, f)) && sizes.map((x) => x.steps).join() === "3,4,1,2", sizes);
+        sizes.map((x) => x.step).join() === "2,3,0,1" && [1.2, 1.45, 0.85, 1].every((f, i) => near(sizes[i].rt, step(f)) && near(sizes[i].rg, step(f))) && sizes.map((x) => x.steps).join() === "3,4,1,2", sizes);
       check(`${label}: at every size the strip is on screen, clear of the controls, and lets taps through`, sizes.every((x) => x.fits), sizes);
       await press("Sakinio vertimas");
       await page.waitForTimeout(80);
@@ -303,7 +305,7 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
         m.pic > 0 && m.picSide >= 56 && asked.slice(before3).join("|") === "/art/flashcards/v1/manifests/songs/G01.json|/songs/art/G01.json|/radio-files/art/flashcards/v1/line.png"
         && !asked.slice(0, before3).some((u) => u.includes("/art/")) && (await savedNote()).pictures === true, { m, asked: asked.slice(before3) });
       check(`${label}: with all of it on, at the biggest size too, the strip is on screen, clear of the controls, and lets taps through`, fits(m)
-        && await (async () => { await press("Teksto dydis"); await press("Teksto dydis"); await page.waitForTimeout(120); const big = await measure(); await press("Teksto dydis"); await press("Teksto dydis"); return fits(big) && near(big.rt / usual.rt, 1.45); })(), m);
+        && await (async () => { await press("Teksto dydis"); await press("Teksto dydis"); await page.waitForTimeout(120); const big = await measure(); await press("Teksto dydis"); await press("Teksto dydis"); return fits(big) && near(big.rt / usual.rt, step(1.45)); })(), m);
       for (const name of ["Sakinio vertimas", "Paaiškinimai", "Paveikslėliai"]) await press(name);
       await page.waitForTimeout(120);
       m = await measure();

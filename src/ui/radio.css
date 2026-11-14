@@ -315,7 +315,9 @@
   .rs-st-mix { margin-top: 0; }
 }
 @media (max-width: 900px) {
-  .radio-strip { left: 8px; right: 66px; transform: none; width: auto; max-width: none; }
+  /* a narrow screen has less room to grow into: the size key's steps go 60 % as far there (91, 100, 112, 127 %) */
+  .radio-strip { left: 8px; right: 66px; transform: none; width: auto; max-width: none; font-size: calc(1em * (1 + (var(--rl, 1) - 1) * 0.6)); }
+  .radio-notes { font-size: 0.76em; }
   .radio-card { padding: 6px 10px 7px; gap: 0.6em; }
   .radio-card.pictured { padding-left: 7px; }
   .radio-pic { width: 3.9em; height: 3.9em; }

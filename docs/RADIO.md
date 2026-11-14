@@ -134,7 +134,7 @@ in the saved note). The three switches start off: while walking, the strip is th
 
 | Setting | Course's word (LT / EN) | What it does |
 | --- | --- | --- |
-| size | Teksto dydis / Text size | a press takes the strip's type up a step, then round again: 85 %, 100 %, 120 %, 145 % (`LYRIC_SIZES`) |
+| size | Teksto dydis / Text size | a press takes the strip's type up a step, then round again: 85 %, 100 %, 120 %, 145 % (`LYRIC_SIZES`); on a screen up to 900 px wide the steps go 60 % as far (91, 100, 112, 127 %) |
 | sentence | Sakinio vertimas / Sentence translation | the whole line in the learner's language under the words (the line's `lt`) |
 | notes | Paaiškinimai / Notes | the course's note on the line, on a plate of its own under the words |
 | pictures | Paveikslėliai / Pictures | the line's picture, the flashcards' own, at the left of the plate |
