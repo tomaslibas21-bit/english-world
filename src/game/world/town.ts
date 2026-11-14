@@ -8,7 +8,7 @@ import { THEME, type TianguisGoods } from "./theme";
 import * as MX from "./mexican";
 import { LOCATIONS } from "../../content/locations";
 import { STYLED, IS_REAL, grade } from "../style";
-import { SHORE, DECKS, sandY, SAND_GLSL, SHORE_GLSL, SWELL_GLSL } from "../water";
+import { SHORE, DECKS, POOLS, FLOORS, sandY, SAND_GLSL, SHORE_GLSL, SWELL_GLSL } from "../water";
 import { GROUND_BLOCKS, groundPalette, groundExtras, groundMaterial, seaMaterial, trunkGeometry, canopyGeometry, canopyMaterial, bushGeometry, bushMaterial, outlineInstanced, cloudMaterial, cloudPuff } from "./styled";
 
 export interface Door { loc: string; bid: string; x: number; z: number; face: "n" | "s" | "e" | "w"; name: string; outX: number; outZ: number; rot: number }
@@ -66,6 +66,8 @@ export function buildTown(): Town {
   const r = rand(7);
   sprays.length = 0; // a new game builds a new town
   DECKS.length = 0;
+  POOLS.length = 0;
+  FLOORS.length = 0;
   seats.length = 0;
   details.length = 0;
   displays.length = 0;

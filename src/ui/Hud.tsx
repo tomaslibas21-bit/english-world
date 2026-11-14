@@ -234,6 +234,8 @@ function Minimap() {
     const sx = (mm.px - WORLD.minX) * PPM - (view / 2) * PPM;
     const sz = (mm.pz - (SEA_Z - 2)) * PPM - (view / 2) * PPM;
     x.fillStyle = "#3f8fb5"; x.fillRect(0, 0, S, S);
+    // (beyond the town's own picture: the sea to the north, grass everywhere else)
+    { const shore = ((SEA_Z + 1 - mm.pz) / view + 0.5) * S; if (shore < S) { x.fillStyle = "#86b866"; x.fillRect(0, Math.max(0, shore), S, S); } }
     x.drawImage(g, sx, sz, view * PPM, view * PPM, 0, 0, S, S);
     // target
     if (mm.targetX !== undefined && mm.targetZ !== undefined) {
