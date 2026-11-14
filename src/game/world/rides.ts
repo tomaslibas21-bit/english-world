@@ -26,7 +26,8 @@ export interface RidesPlan {
 export const RIDES: RidesPlan = {
   cars: [
     // Main Street's north curb by the park, down the street from the airport's door, the road ahead of it clear
-    { id: "park", x: 80.5, z: -11.8, rot: -Math.PI / 2, paint: "#22b8b0", people: 2 },
+    // (one person in it: the street is among the town's busiest views; the pair sits in the quiet west one)
+    { id: "park", x: 80.5, z: -11.8, rot: -Math.PI / 2, paint: "#22b8b0", people: 1 },
     // East Street's last block, looking out over Harbor Road to the sea
     { id: "east", x: 72.8, z: -42, rot: Math.PI, paint: "#f4b63a", inside: "#fbf3e1", people: 1 },
     // West Street beside the market, facing the sea

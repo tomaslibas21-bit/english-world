@@ -4,7 +4,7 @@
 // and once nobody is looking it is back at its curb with them in it. Nobody is ever pulled out, pushed or run over:
 // people step out of a car's way, and it stops by itself short of anyone ahead (drive.ts).
 import * as THREE from "three";
-import { createCharacter, type GameCharacter } from "../characters";
+import { createCharacter, addFarVersion, type GameCharacter } from "../characters";
 import { STYLED, vertexColorMaterial } from "../style";
 import { Chatter, walkerLook, type Ambient } from "../ambient";
 import { Colliders, rand } from "../world/util";
@@ -68,6 +68,8 @@ export interface Ride {
 const HOP = 0.55;
 /** Beyond this (m) from the player, the people sitting in a parked convertible hold their pose. */
 const STILL = 26;
+/** Beyond this (m) from the camera they are drawn in their far version (fewer triangles, the same bones). */
+const FAR = 20;
 const NOOP = () => {};
 
 /** Someone keeping their pose, or moving again: their matrices and their skeleton worked out once more, then left
@@ -151,7 +153,7 @@ export class Rides {
       const female = (i + k) % 2 === 0, look = walkerLook(female, r);
       // sunglasses on everyone who lounges in a convertible; no hat that the wind would take
       const acc = [...(look.acc ?? []).filter((a) => a !== "glasses" && a !== "cap"), "sunglasses"] as typeof look.acc;
-      const ch = createCharacter({ ...look, acc });
+      const mine = { ...look, acc }, ch = createCharacter(mine);
       ch.root.traverse((o) => { o.castShadow = false; });
       ch.watch = this.learner;
       ch.noticeWithin = 5;
@@ -159,6 +161,8 @@ export class Rides {
       const o: Owner = { ch, female, seat: k === 0 ? CAR_SEATS.driver : CAR_SEATS.passenger, arm: k === 0 ? "doorL" : "doorR", state: "in", t: 0, from: new THREE.Vector3(), to: new THREE.Vector3(), path: null, nod: 1 + r() * 4 };
       ride.owners.push(o);
       this.seatOwner(ride, o);
+      // (far from the camera, the same person in fewer triangles)
+      addFarVersion(ch, mine);
     }
     if (ride.owners.length === 2) ride.chat = new Chatter(ride.owners[0].ch, ride.owners[1].ch, r);
     this.list.push(ride);
@@ -277,7 +281,7 @@ export class Rides {
     const spot = r.kind === "car" ? this.carExit(r) : this.boatExit(r);
     if (!spot) { this.onStuck?.(); return false; }
     this.wantOut = false;
-    r.m.speed = 0;
+    r.m.speed = 0; r.m.bump = 0; r.m.steer = 0;
     this.phase = "out";
     this.phaseT = 0;
     this.from.copy(this.host.player.root.position);
@@ -454,7 +458,10 @@ export class Rides {
   private place(r: Ride, dt: number, t: number) {
     const m = r.m, mesh = r.mesh;
     // (its shadow only where the player is near enough to see it: a car down the street is not drawn again for the sun)
-    mesh.castShadow = (m.x - this.learner.x) ** 2 + (m.z - this.learner.z) ** 2 < 36 * 36;
+    const d2 = (m.x - this.learner.x) ** 2 + (m.z - this.learner.z) ** 2;
+    mesh.castShadow = d2 < 36 * 36;
+    // (a parked car stays where it was put; a boat nobody is near enough to see rock is left as it lies)
+    if (r !== this.riding && dt > 0 && (r.kind === "car" ? m.x === mesh.position.x && m.z === mesh.position.z && m.bump === 0 : d2 > 110 * 110)) return;
     if (r.kind === "car") {
       const lean = THREE.MathUtils.clamp(m.steer * m.speed * 0.006, -0.05, 0.05), nod = m.bump * 0.035;
       mesh.position.set(m.x, 0, m.z);
@@ -477,8 +484,11 @@ export class Rides {
     const host = this.host, pp = host.player.root.position;
     // (in their seats far from the player they hold their pose: nothing of them is worked out)
     let awake = false;
+    const cam = host.cam.position;
     for (const o of r.owners) {
-      const p = o.ch.root.position, far = o.state === "in" && !!o.posed && r !== this.riding && (pp.x - p.x) ** 2 + (pp.z - p.z) ** 2 > STILL * STILL;
+      const p = o.ch.root.position;
+      o.ch.setFar?.(o.state === "in" && (cam.x - p.x) ** 2 + (cam.z - p.z) ** 2 > FAR * FAR);
+      const far = o.state === "in" && !!o.posed && r !== this.riding && (pp.x - p.x) ** 2 + (pp.z - p.z) ** 2 > STILL * STILL;
       if (far !== !!o.still) { if (far) { o.still = true; holdPose(o.ch.root, true); } else this.wake(o); }
       if (!o.still) awake = true;
     }
