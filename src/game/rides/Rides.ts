@@ -92,6 +92,7 @@ function holdPose(root: THREE.Object3D, hold: boolean) {
   }
 }
 const _v = new THREE.Vector3(), _p = { x: 0, z: 0 };
+const _frustum = new THREE.Frustum(), _pv = new THREE.Matrix4(), _ball = new THREE.Sphere();
 const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 const ease = (k: number) => k * k * (3 - 2 * k);
 
@@ -360,8 +361,16 @@ export class Rides {
       if (r.kind === "car") this.driveCar(r, dt, hands); else this.driveBoat(r, dt, hands);
       if (this.wantOut && Math.abs(r.m.speed) < 0.6) { if (!this.leave()) this.wantOut = false; }
     }
+    // what is out of the picture is left out of the scene's walk altogether (a person is some thirty parts to step
+    // through each frame, seen or not): a ride and the people in it by one test against the camera's view (as it was a
+    // frame ago: generously), but near the player, where its shadow may fall into the picture
+    const cam = host.cam;
+    _frustum.setFromProjectionMatrix(_pv.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
     for (let i = 0; i < this.list.length; i++) {
       const q = this.list[i];
+      const seen = q === r || (q.m.x - pp.x) ** 2 + (q.m.z - pp.z) ** 2 < 40 * 40 || _frustum.intersectsSphere(_ball.set(_v.set(q.m.x, 1, q.m.z), 8));
+      q.mesh.visible = seen;
+      for (const o of q.owners) o.ch.root.visible = seen || o.state !== "in";
       this.place(q, dt, t);
       this.updateOwners(q, dt);
       if (q !== r) this.rest(q, dt);
