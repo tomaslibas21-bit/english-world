@@ -185,6 +185,7 @@ export class Game implements GameApi {
   private caveLure: THREE.Group | null = null;
   private cavePushT = 0;
   private caveHinted = false;
+  private townCam: { pitch: number; dist: number } | null = null;
   private pushDoorT = 0;
   private transitioning = false;
   private npcToSits = new Map<string, SituationDef[]>();
@@ -481,8 +482,10 @@ export class Game implements GameApi {
       if (indoor && !wild) this.rig.interiorBounds = { w: z.interior!.w, d: z.interior!.d };
       else this.rig.yaw = this.heading;
       // (the follow camera's lean and distance: the town's, or the place's own)
+      // (the town's, as the player left it with the wheel, is kept for when they come back up)
       this.rig.homePitch = wild?.camera?.pitch ?? FOLLOW.pitch;
-      if (!indoor || wild) { this.rig.pitch = this.rig.homePitch; this.rig.dist = wild?.camera?.dist ?? FOLLOW.dist; }
+      if (wild?.camera && !this.townCam) { this.townCam = { pitch: this.rig.pitch, dist: this.rig.dist }; this.rig.pitch = wild.camera.pitch; this.rig.dist = wild.camera.dist; }
+      else if (!wild && this.townCam) { this.rig.pitch = this.townCam.pitch; this.rig.dist = this.townCam.dist; this.townCam = null; }
       this.guidance.group.visible = !wild;
       if (id === CAVE_ZONE) { const c = getCave(id); if (c) this.cave = new CaveQuest(c.view); }
       this.rig.target.copy(this.player.root.position);

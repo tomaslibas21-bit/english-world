@@ -52,11 +52,14 @@ export function caveLure(): THREE.Group | null {
     vertexShader: "varying vec3 vP; void main(){ vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
     fragmentShader: `varying vec3 vP; uniform float uTime; void main(){
       float d = length(vec2((vP.z - (${z.toFixed(2)})) / 1.9, vP.y / 1.6));
-      float a = smoothstep(1.0, 0.1, d) * (0.5 + 0.18 * sin(uTime * 1.3 + vP.y * 3.0));
-      gl_FragColor = vec4(vec3(0.2, 0.95, 0.85) * a, 1.0); }`,
+      float a = smoothstep(1.0, 0.05, d) * (0.95 + 0.25 * sin(uTime * 1.3 + vP.y * 3.0));
+      // (brightest low, where the water inside shows; rays of it reach up the dark)
+      float ray = 0.5 + 0.5 * sin((vP.z - (${z.toFixed(2)})) * 9.0 + sin(uTime * 0.7) * 1.5);
+      a *= 0.75 + 0.5 * ray * smoothstep(1.6, 0.0, vP.y);
+      gl_FragColor = vec4(vec3(0.25, 1.0, 0.9) * a, 1.0); }`,
   }));
-  const N = 14, pos = new Float32Array(N * 3), seed = new Float32Array(N);
-  for (let i = 0; i < N; i++) { pos[i * 3] = x + 0.4 + Math.random() * 2.6; pos[i * 3 + 1] = 0.4 + Math.random() * 1.5; pos[i * 3 + 2] = z + (Math.random() - 0.5) * 3; seed[i] = Math.random() * 6.28; }
+  const N = 26, pos = new Float32Array(N * 3), seed = new Float32Array(N);
+  for (let i = 0; i < N; i++) { pos[i * 3] = x + 0.4 + Math.random() * 3.4; pos[i * 3 + 1] = 0.3 + Math.random() * 1.7; pos[i * 3 + 2] = z + (Math.random() - 0.5) * 3.6; seed[i] = Math.random() * 6.28; }
   const pg = new THREE.BufferGeometry();
   pg.setAttribute("position", new THREE.BufferAttribute(pos, 3));
   pg.setAttribute("aSeed", new THREE.BufferAttribute(seed, 1));
@@ -65,7 +68,7 @@ export function caveLure(): THREE.Group | null {
     vertexShader: `attribute float aSeed; uniform float uTime; varying float vA; void main(){ float t = uTime * 0.7 + aSeed;
       vec3 p = position + vec3(sin(t) * 0.6, sin(t * 1.3 + 1.0) * 0.3, cos(t * 0.8) * 0.6);
       vA = 0.5 + 0.5 * sin(t * 2.3 + aSeed * 4.0); vA *= vA;
-      vec4 mv = modelViewMatrix * vec4(p, 1.0); gl_Position = projectionMatrix * mv; gl_PointSize = min(130.0 / max(1.0, -mv.z), 40.0); }`,
+      vec4 mv = modelViewMatrix * vec4(p, 1.0); gl_Position = projectionMatrix * mv; gl_PointSize = min(210.0 / max(1.0, -mv.z), 48.0); }`,
     fragmentShader: "varying float vA; void main(){ float d = length(gl_PointCoord - 0.5) * 2.0; float s = max(0.0, 1.0 - d); gl_FragColor = vec4(vec3(0.95, 1.0, 0.55) * s * s * vA, 1.0); }",
   }));
   // (in the picture only when the cave's mouth is: its own bounds, and nothing at all from further off than the mirador)
