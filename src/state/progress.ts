@@ -27,6 +27,9 @@ export interface Progress {
   started: number;
   /** The 3D town's first-time guide: `done` once finished or skipped; `run`: the tip about running was shown. */
   coach?: { done?: boolean; run?: boolean };
+  /** How the game is used, for the course's owner: openings, days, minutes in the town and in the pictures, the
+   *  radio (state/playStats.ts). */
+  play?: import("./playStats").PlayStats;
 }
 
 const KEY = "english-world-progress-v1";
