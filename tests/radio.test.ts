@@ -6,7 +6,8 @@ import { STATIONS, songOfSituation } from "../src/content/radio";
 import { SITUATIONS } from "../src/content/situations";
 import { buildTimeline, lineAt, shortGloss, unitAt, withSungTranslations, wordsBegun } from "../src/radio/lyrics";
 import { BufferOutput, NeedsTap, type RadioOutput } from "../src/radio/output";
-import { readSaved, stationOrder, step, type Station } from "../src/radio/playlist";
+import { likedSongs, readFavorites, withToggled, type FavoriteStore } from "../src/radio/favorites";
+import { loadSaved, nextStation, readSaved, stationOrder, stationSongs, step, type Station } from "../src/radio/playlist";
 import { FADE_IN_MS, FADE_OUT_MS, MUSIC_LEVEL, RESUME_AFTER_MS, SKIP_OUT_MS, VOICE_FADE_MS, Radio, type RadioDeps } from "../src/radio/radio";
 import { radioConfig, readSongLines, readSongList, songAudioUrls, songDataUrls, type SongLine, type SongMeta } from "../src/radio/songs";
 
@@ -147,7 +148,7 @@ describe("the lyric clocks", () => {
 
 describe("the playing order", () => {
   const songs = ["A", "B", "C", "D", "E", "F"].map((id) => song(id));
-  const all: Station = { id: "all", name: "All", freq: 90, lt: "", shuffle: true, has: () => true };
+  const all: Station = { id: "all", name: "All", freq: 90, lt: "", has: () => true };
 
   it("keeps the list's own order, or one shuffle per seed", () => {
     expect(stationOrder(songs, all, false, 7)).toEqual(["A", "B", "C", "D", "E", "F"]);
@@ -158,7 +159,7 @@ describe("the playing order", () => {
   });
 
   it("a shuffle is a fair mix of the course's kinds of song: each kind spread evenly, never bunched at the start", () => {
-    // Radio Colibrí as the Spanish course fills it: 32 vocabulary, 18 situation, 12 grammar and 8 bilingual songs
+    // a mix of four kinds of very different sizes: 32 vocabulary, 18 situation, 12 grammar and 8 bilingual songs
     const mix: SongMeta[] = [];
     for (const [c, n] of [["v", 32], ["s", 18], ["g", 12], ["b", 8]] as const) for (let i = 0; i < n; i++) mix.push({ ...song(`${c}${i}`), c });
     for (let seed = 1; seed <= 300; seed++) {
@@ -180,22 +181,53 @@ describe("the playing order", () => {
 
   it("goes forth and back, around the ends", () => {
     const order = ["A", "B", "C"];
-    expect(step(order, "A", 1)).toEqual({ id: "B", wrapped: false });
-    expect(step(order, "C", 1)).toEqual({ id: "A", wrapped: true });
-    expect(step(order, "A", -1)).toEqual({ id: "C", wrapped: false });
-    expect(step(order, "gone", 1)).toEqual({ id: "A", wrapped: false });
-    expect(step(order, null, 1)).toEqual({ id: "A", wrapped: false });
-    expect(step([], "A", 1)).toEqual({ id: null, wrapped: false });
+    expect(step(order, "A", 1)).toEqual({ id: "B", wrapped: false, before: false });
+    expect(step(order, "C", 1)).toEqual({ id: "A", wrapped: true, before: false });
+    expect(step(order, "A", -1)).toEqual({ id: "C", wrapped: false, before: true });
+    expect(step(order, "gone", 1)).toEqual({ id: "A", wrapped: false, before: false });
+    expect(step(order, null, 1)).toEqual({ id: "A", wrapped: false, before: false });
+    expect(step([], "A", 1)).toEqual({ id: null, wrapped: false, before: false });
   });
 
-  it("Maple Harbor's stations find their songs in the course's genre text", () => {
-    const [town, soul, sunny] = STATIONS;
-    expect(town.has(song("X", "anything"))).toBe(true);
-    expect(soul.has(song("X", "motown-flavored soul-funk"))).toBe(true);
-    expect(soul.has(song("X", "80s synthwave road-trip pop"))).toBe(false);
-    expect(sunny.has(song("X", "bossa nova / MPB"))).toBe(true);
-    expect(sunny.has(song("X", "roots reggae"))).toBe(true);
-    expect(sunny.has(song("X", "stomping indie folk-rock"))).toBe(false);
+  // English Master's song list as its /songs/index.json has it: the collections in this order, each in the course's
+  const course: SongMeta[] = [];
+  for (const [c, letter, numbers] of [["g", "G", 31], ["v", "V", 64], ["s", "S", 35], ["p", "P", 30]] as const) {
+    for (let n = 1; n <= numbers; n++) course.push({ ...song(`${letter}${String(c === "s" ? n + 61 : n).padStart(2, "0")}`), c, n });
+  }
+
+  it("Maple Harbor's stations are the course's kinds of song: every song on exactly one, in the course's order", () => {
+    const kinds = STATIONS.filter((s) => !s.kind);
+    expect(kinds.map((s) => s.name)).toEqual(["Grammar FM", "Vocab FM", "Situations FM", "Idioms FM"]);
+    for (const s of course) expect(kinds.filter((k) => k.has(s)).map((k) => k.id), s.id).toHaveLength(1);
+    const ids = (id: string) => stationSongs(course, STATIONS.find((s) => s.id === id)!).map((s) => s.id);
+    // the course's second half ("Pažengusiems") is on the station of each part's kind, after the first half's songs
+    expect(ids("grammar")).toEqual([...course.filter((s) => s.c === "g").map((s) => s.id), ...Array.from({ length: 12 }, (_, i) => `P${String(i + 1).padStart(2, "0")}`)]);
+    expect(ids("grammar")[0]).toBe("G01"); // where a new listener starts
+    expect(ids("vocab")).toHaveLength(64);
+    expect(ids("situations").slice(-7)).toEqual(["S96", "P25", "P26", "P27", "P28", "P29", "P30"]);
+    expect(ids("idioms")).toEqual(Array.from({ length: 12 }, (_, i) => `P${i + 13}`));
+    expect(STATIONS[0].id).toBe("grammar");
+  });
+
+  it("has a mix of every song and the learner's favorites beside them, each with its own place on the dial", () => {
+    const mix = STATIONS.find((s) => s.kind === "mix")!, favorites = STATIONS.find((s) => s.kind === "favorites")!;
+    expect([mix.name, favorites.name]).toEqual(["Random FM", "Favorites FM"]);
+    expect(stationSongs(course, mix)).toHaveLength(course.length);
+    expect(stationSongs(course, favorites)).toEqual([]);
+    expect(stationSongs(course, favorites, new Set(["V05", "G02"])).map((s) => s.id)).toEqual(["G02", "V05"]); // the hearts, in the course's order
+    const places = STATIONS.map((s) => s.freq);
+    expect(places.every((f, i) => f >= 88.5 && f <= 107.5 && (i === 0 || f - places[i - 1] >= 3))).toBe(true);
+    expect(new Set(STATIONS.map((s) => s.id)).size).toBe(STATIONS.length);
+  });
+
+  it("moves on from a station to the next of the course's kinds that has songs, round and round", () => {
+    const counts = { grammar: 43, vocab: 64, situations: 41, idioms: 0, random: 160, favorites: 3 };
+    const next = (from: string, dir: 1 | -1 = 1) => nextStation(STATIONS, counts, from, dir)?.id ?? null;
+    expect([next("grammar"), next("vocab"), next("situations")]).toEqual(["vocab", "situations", "grammar"]); // none on Idioms FM: skipped
+    expect([next("grammar", -1), next("vocab", -1)]).toEqual(["situations", "grammar"]);
+    expect(next("favorites")).toBe("grammar"); // from outside the round: its first station
+    expect(nextStation(STATIONS, { grammar: 5 }, "grammar")).toBeNull(); // alone in the round: it starts over
+    expect(nextStation(STATIONS, {}, "grammar")).toBeNull();
   });
 
   it("knows the course song of every conversation", () => {
@@ -209,7 +241,37 @@ describe("the playing order", () => {
   it("starts fresh from anything unreadable in storage", () => {
     expect(readSaved(null).on).toBe(false);
     expect(readSaved("{oops").lyrics).toBe(true);
-    expect(readSaved(JSON.stringify({ on: true, station: 5, at: -3, lyrics: false, seed: "x" }))).toEqual({ on: true, station: "", shuffle: null, seed: 1, song: null, at: 0, lyrics: false, introduced: false });
+    expect(readSaved(JSON.stringify({ on: true, station: 5, at: -3, lyrics: false, seed: "x", shuffle: "yes", places: { grammar: "G07", vocab: 3 } })))
+      .toEqual({ on: true, station: "", shuffle: false, seed: 1, song: null, at: 0, places: { grammar: "G07" }, lyrics: false, introduced: false });
+  });
+
+  it("a visit after the first radio keeps only on/off and the strip: the stations and the order start anew", () => {
+    const store: Record<string, string> = { "ew-radio-v1": JSON.stringify({ on: true, station: "soul", shuffle: true, seed: 9, song: "S70", at: 44, lyrics: false, introduced: true }) };
+    vi.stubGlobal("localStorage", { getItem: (k: string) => store[k] ?? null, setItem: (k: string, v: string) => { store[k] = v; } });
+    try {
+      expect(loadSaved("ew-radio-v2", "ew-radio-v1")).toEqual({ on: true, station: "", shuffle: false, seed: 1, song: null, at: 0, places: {}, lyrics: false, introduced: false });
+      store["ew-radio-v2"] = JSON.stringify({ on: false, station: "vocab", song: "V40", at: 12 });
+      expect(loadSaved("ew-radio-v2", "ew-radio-v1")).toMatchObject({ on: false, station: "vocab", song: "V40", at: 12 }); // its own note, once it has one
+    } finally { vi.unstubAllGlobals(); }
+  });
+});
+
+describe("the heart: the course's favorite songs", () => {
+  it("reads the course's note as the course does", () => {
+    const raw = JSON.stringify({ G01: { liked: true, at: 5 }, SV12: { liked: false, at: 9 }, S100: { liked: true, at: 7 }, "bad id": { liked: true, at: 1 }, G02: { liked: "yes", at: 1 }, G03: { liked: true }, G04: null });
+    expect(readFavorites(raw)).toEqual({ G01: { liked: true, at: 5 }, SV12: { liked: false, at: 9 }, S100: { liked: true, at: 7 } });
+    expect(likedSongs(readFavorites(raw))).toEqual(["G01", "S100"]);
+    for (const broken of [null, "", "{oops", "[]", "5"]) expect(readFavorites(broken)).toEqual({});
+  });
+
+  it("gives a heart and takes it back as a dated entry, always later than the one before (the account's merge goes by it)", () => {
+    const given = withToggled({}, "G05", 1000)!;
+    expect(given).toEqual({ G05: { liked: true, at: 1000 } });
+    const taken = withToggled(given, "G05", 2000)!;
+    expect(taken).toEqual({ G05: { liked: false, at: 2000 } }); // kept, not removed: an older copy can't bring the heart back
+    expect(withToggled(taken, "G05", 1500)!.G05).toEqual({ liked: true, at: 2001 }); // a clock that went back still moves on
+    expect(withToggled({ SB01: { liked: true, at: 3 } }, "G05", 10)).toEqual({ SB01: { liked: true, at: 3 }, G05: { liked: true, at: 10 } }); // the others untouched
+    expect(withToggled({}, "not a song", 10)).toBeNull();
   });
 });
 
@@ -250,15 +312,21 @@ class FakeOutput implements RadioOutput {
 }
 
 describe("the radio", () => {
-  const songs = ["A", "B", "C", "D"].map((id) => song(id, id === "C" ? "roots reggae" : "pop"));
+  const songs = ["A", "B", "C", "D"].map((id) => song(id));
+  // one station with every song, and the learner's favorites (song C has a heart) as a second one to turn to
   const stations: Station[] = [
-    { id: "all", name: "All songs", freq: 98.7, lt: "visos", shuffle: false, has: () => true },
-    { id: "reggae", name: "Reggae", freq: 104.3, lt: "regis", shuffle: false, has: (s) => /reggae/.test(s.g) },
+    { id: "all", name: "All songs", freq: 98.7, lt: "visos", has: () => true },
+    { id: "hearts", name: "Hearts", freq: 104.3, lt: "mėgstamos", kind: "favorites", has: () => false },
   ];
+  /** the course's favorites, as a list the test can read */
+  const hearts = (liked: string[]): FavoriteStore & { liked: string[] } => {
+    const store = { liked, list: () => [...store.liked], toggle: (id: string) => { const had = store.liked.includes(id); store.liked = had ? store.liked.filter((x) => x !== id) : [...store.liked, id]; return !had; } };
+    return store;
+  };
   let out: FakeOutput, store: Record<string, string>, fetched: string[], token: string | null;
   const deps = (over: Partial<RadioDeps> = {}): RadioDeps => ({
     config: { index: "/songs/index.json", files: "https://files.example/course", recordings: null },
-    stations, output: out, token: () => token, volume: () => 0.5, storageKey: "radio-test", random: () => 0.5,
+    stations, output: out, token: () => token, volume: () => 0.5, storageKey: "radio-test", random: () => 0.5, favorites: hearts(["C"]),
     fetchJson: async (url) => {
       fetched.push(url);
       if (url === "/songs/index.json") return { songs };
@@ -363,13 +431,13 @@ describe("the radio", () => {
     const tune = vi.fn();
     const radio = new Radio(deps({ tune }));
     await radio.init();
-    radio.setStation("reggae");
+    radio.setStation("hearts");
     expect(tune).not.toHaveBeenCalled(); // off: the needle moves in silence
     radio.setOn(true); await settle();
     radio.setStation("all"); await settle();
     expect(tune).toHaveBeenCalledOnce();
     radio.hold("conversation");
-    radio.setStation("reggae");
+    radio.setStation("hearts");
     expect(tune).toHaveBeenCalledOnce(); // never over a conversation
   });
 
@@ -392,24 +460,11 @@ describe("the radio", () => {
   it("changes station and plays only that station's songs", async () => {
     const radio = new Radio(deps());
     radio.setOn(true); await settle();
-    radio.setStation("reggae"); await settle();
+    radio.setStation("hearts"); await settle();
     expect(radio.store.getState().song?.id).toBe("C");
     radio.next(); await settle();
     expect(radio.store.getState().song?.id).toBe("C");
-    expect(saved().station).toBe("reggae");
-  });
-
-  it("a station starts shuffled or not as it likes, until the learner chooses", async () => {
-    const mixed: Station[] = [stations[0], { ...stations[1], id: "mix", shuffle: true, has: () => true }];
-    const radio = new Radio(deps({ stations: mixed }));
-    await radio.init();
-    expect(radio.store.getState().shuffle).toBe(false);
-    radio.setStation("mix");
-    expect(radio.store.getState().shuffle).toBe(true);
-    radio.setShuffle(false);
-    radio.setStation("all"); radio.setStation("mix");
-    expect(radio.store.getState().shuffle).toBe(false); // the learner's choice goes along
-    expect(saved().shuffle).toBe(false);
+    expect(saved().station).toBe("hearts");
   });
 
   it("a shuffle plays every song once before any comes again", async () => {
@@ -480,7 +535,7 @@ describe("the radio", () => {
     radio.hold("conversation");
     radio.setOn(true); await settle();
     radio.next(); await settle();
-    radio.setStation("reggae"); await settle();
+    radio.setStation("hearts"); await settle();
     radio.gesture(); await settle();
     radio.volumeChanged();
     expect(out.log.filter((l) => l.startsWith("play"))).toEqual([]);
@@ -638,6 +693,200 @@ describe("the radio", () => {
     expect(out.volume).toBeCloseTo(MUSIC_LEVEL);
     volume = 0; radio.volumeChanged();
     expect(out.volume).toBe(0);
+  });
+});
+
+describe("the stations: the course's songs, kind by kind", () => {
+  // a small course: three grammar songs, two vocabulary songs, one situation song, in the list's order
+  const kind = (id: string, c: string): SongMeta => ({ ...song(id), c });
+  const songs = [kind("G1", "g"), kind("G2", "g"), kind("G3", "g"), kind("V1", "v"), kind("V2", "v"), kind("S1", "s")];
+  const stations: Station[] = [
+    { id: "grammar", name: "Grammar FM", freq: 90, lt: "", has: (s) => s.c === "g" },
+    { id: "vocab", name: "Vocab FM", freq: 94, lt: "", has: (s) => s.c === "v" },
+    { id: "situations", name: "Situations FM", freq: 98, lt: "", has: (s) => s.c === "s" },
+    { id: "bilingual", name: "Bilingüe FM", freq: 100, lt: "", has: (s) => s.c === "b" }, // a kind this course doesn't have
+    { id: "random", name: "Random FM", freq: 102, lt: "", kind: "mix", has: () => true },
+    { id: "favorites", name: "Favorites FM", freq: 106, lt: "", kind: "favorites", has: () => false },
+  ];
+  let out: FakeOutput, store: Record<string, string>, liked: string[];
+  const favorites: FavoriteStore = {
+    list: () => [...liked],
+    toggle: (id) => { const had = liked.includes(id); liked = had ? liked.filter((x) => x !== id) : [...liked, id]; return !had; },
+  };
+  const deps = (over: Partial<RadioDeps> = {}): RadioDeps => ({
+    config: { index: "/songs/index.json", files: null, recordings: null },
+    stations, output: out, token: () => null, volume: () => 0.5, storageKey: "radio-test", favorites,
+    fetchJson: async (url) => (url === "/songs/index.json" ? { songs } : { L: [] }),
+    ...over,
+  });
+  const settle = () => vi.advanceTimersByTimeAsync(SKIP_OUT_MS);
+  const saved = () => JSON.parse(store["radio-test"] ?? "null");
+  const now = (radio: Radio) => { const s = radio.store.getState(); return [s.station, s.song?.id ?? null]; };
+  const on = async (over: Partial<RadioDeps> = {}) => { const radio = new Radio(deps(over)); radio.setOn(true); await settle(); return radio; };
+  /** press next until the radio has been at `count` songs; what it played, station by station */
+  const walk = async (radio: Radio, count: number) => {
+    const heard = [now(radio).join(":")];
+    while (heard.length < count) { radio.next(); await settle(); heard.push(now(radio).join(":")); }
+    return heard;
+  };
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    out = new FakeOutput(); store = {}; liked = [];
+    vi.stubGlobal("localStorage", { getItem: (k: string) => store[k] ?? null, setItem: (k: string, v: string) => { store[k] = v; } });
+    vi.stubGlobal("navigator", {});
+  });
+  afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
+
+  it("starts with the first grammar song, in the course's order, and says where the song is in its station", async () => {
+    const radio = await on();
+    expect(radio.store.getState()).toMatchObject({ station: "grammar", shuffle: false, playing: true, place: { n: 1, of: 3 } });
+    expect(radio.store.getState().song?.id).toBe("G1");
+    out.onEnded!(); await settle();
+    expect(radio.store.getState()).toMatchObject({ station: "grammar", place: { n: 2, of: 3 } });
+    expect(radio.store.getState().song?.id).toBe("G2");
+  });
+
+  it("counts each station's songs; a kind the course doesn't have can't be tuned to", async () => {
+    const radio = await on();
+    expect(radio.store.getState().counts).toEqual({ grammar: 3, vocab: 2, situations: 1, bilingual: 0, random: 6, favorites: 0 });
+    radio.setStation("bilingual"); radio.setStation("favorites"); await settle();
+    expect(now(radio)).toEqual(["grammar", "G1"]);
+  });
+
+  it("starts with the first grammar song even where a place's own song waits: that one comes after it", async () => {
+    const radio = new Radio(deps());
+    await radio.init();
+    radio.suggest(["V2"]); // the learner stands in a place whose conversation is built on V2
+    radio.setOn(true); await settle();
+    expect(now(radio)).toEqual(["grammar", "G1"]);
+    expect(radio.store.getState().upNext?.id).toBe("V2");
+    out.onEnded!(); await settle();
+    expect(radio.store.getState()).toMatchObject({ station: "grammar", place: null }); // out of turn: Grammar FM keeps its place
+    expect(radio.store.getState().song?.id).toBe("V2");
+    out.onEnded!(); await settle();
+    expect(now(radio)).toEqual(["grammar", "G2"]);
+  });
+
+  it("when a station has played to its end the radio moves on to the next one, and after the last to the first", async () => {
+    const radio = await on();
+    expect(await walk(radio, 8)).toEqual(["grammar:G1", "grammar:G2", "grammar:G3", "vocab:V1", "vocab:V2", "situations:S1", "grammar:G1", "grammar:G2"]);
+    // by itself too, at a song's own end, with no dip and no tuning sound
+    const tune = vi.fn();
+    out = new FakeOutput(); store = {};
+    const second = await on({ tune });
+    for (let i = 0; i < 3; i++) { out.onEnded!(); await settle(); }
+    expect(now(second)).toEqual(["vocab", "V1"]);
+    expect(second.store.getState()).toMatchObject({ playing: true, place: { n: 1, of: 2 } });
+    expect(out.fades.at(-1)).toEqual([0.5 * MUSIC_LEVEL, 0]);
+    expect(tune).not.toHaveBeenCalled();
+    expect(saved()).toMatchObject({ station: "vocab", song: "V1" });
+  });
+
+  it("a step back from a station's first song goes to the last song of the station before", async () => {
+    const radio = await on();
+    radio.previous(); await settle();
+    expect(now(radio)).toEqual(["situations", "S1"]);
+    radio.previous(); await settle();
+    expect(now(radio)).toEqual(["vocab", "V2"]);
+    radio.previous(); await settle();
+    expect(now(radio)).toEqual(["vocab", "V1"]);
+  });
+
+  it("a station goes on from where it was left, also on the next visit; one played to its end starts anew", async () => {
+    let radio = await on();
+    radio.next(); await settle(); // Grammar FM at G2
+    radio.setStation("vocab"); await settle();
+    expect(now(radio)).toEqual(["vocab", "V1"]);
+    radio.next(); await settle(); // Vocab FM at V2
+    radio.setStation("grammar"); await settle();
+    expect(now(radio)).toEqual(["grammar", "G2"]);
+    expect(out.last).toBe("play G2.mp3@0"); // from that song's beginning
+    expect(saved()).toMatchObject({ station: "grammar", song: "G2", places: { vocab: "V2" } });
+    out = new FakeOutput();
+    radio = new Radio(deps());
+    await radio.init(); await settle();
+    expect(now(radio)).toEqual(["grammar", "G2"]);
+    radio.next(); await settle(); radio.next(); await settle(); // G3, then Grammar FM is through: on to Vocab FM, where it was left
+    expect(now(radio)).toEqual(["vocab", "V2"]);
+    radio.setStation("grammar"); await settle();
+    expect(now(radio)).toEqual(["grammar", "G1"]); // it was played to its end: from its first song again
+  });
+
+  it("the shuffle key shuffles within the station: every song of it once, then on to the next station, shuffled too", async () => {
+    const radio = await on({ random: () => 0.37 });
+    radio.setShuffle(true);
+    expect(radio.store.getState()).toMatchObject({ shuffle: true, place: { n: 1, of: 3 } }); // it goes on from the song that is playing
+    const heard = await walk(radio, 6);
+    expect(heard.slice(0, 3).map((x) => x.split(":")[0])).toEqual(["grammar", "grammar", "grammar"]);
+    expect(heard.slice(0, 3).map((x) => x.split(":")[1]).sort()).toEqual(["G1", "G2", "G3"]);
+    expect(heard.slice(3, 5).map((x) => x.split(":")[1]).sort()).toEqual(["V1", "V2"]);
+    expect(heard[5]).toBe("situations:S1");
+    expect(saved().shuffle).toBe(true);
+    radio.setShuffle(false);
+    expect(radio.store.getState().shuffle).toBe(false);
+  });
+
+  it("Random FM is a shuffle across all the stations: every song once, round after round, whatever the shuffle key says", async () => {
+    const radio = await on();
+    radio.setStation("random"); await settle();
+    expect(radio.store.getState()).toMatchObject({ station: "random", shuffle: true });
+    const heard = (await walk(radio, 12)).map((x) => x.split(":"));
+    expect(heard.every(([station]) => station === "random")).toBe(true); // it never moves on
+    expect(heard.slice(0, 6).map((x) => x[1]).sort()).toEqual(["G1", "G2", "G3", "S1", "V1", "V2"]);
+    expect(heard.slice(6).map((x) => x[1]).sort()).toEqual(["G1", "G2", "G3", "S1", "V1", "V2"]);
+    expect(heard[6][1]).not.toBe(heard[5][1]);
+    radio.setShuffle(false); // the key is the other stations'
+    expect(radio.store.getState().shuffle).toBe(true);
+    radio.setStation("grammar"); await settle();
+    expect(radio.store.getState().shuffle).toBe(false); // and there the course's order stands
+    expect(now(radio)).toEqual(["grammar", "G1"]);
+  });
+
+  it("the heart puts the song among the course's favorites and takes it out again", async () => {
+    const radio = await on();
+    expect(radio.store.getState().liked).toBe(false);
+    radio.like();
+    expect(liked).toEqual(["G1"]);
+    expect(radio.store.getState()).toMatchObject({ liked: true, counts: { favorites: 1 } });
+    radio.next(); await settle();
+    expect(radio.store.getState().liked).toBe(false); // each song has its own
+    radio.previous(); await settle();
+    expect(radio.store.getState().liked).toBe(true);
+    radio.like();
+    expect(liked).toEqual([]);
+    expect(radio.store.getState()).toMatchObject({ liked: false, counts: { favorites: 0 } });
+    expect(out.sounding).toBe(true); // the music never notices
+  });
+
+  it("hears a heart given on the course's own page", async () => {
+    const radio = await on();
+    liked = ["G1", "V2"]; // the Songs page, in another tab
+    radio.favoritesChanged();
+    expect(radio.store.getState()).toMatchObject({ liked: true, counts: { favorites: 2 } });
+  });
+
+  it("Favorites FM plays the songs with a heart, round and round; with the last heart gone the radio goes back to the course", async () => {
+    liked = ["V2", "G2"];
+    const radio = await on();
+    radio.setStation("favorites"); await settle();
+    expect(await walk(radio, 3)).toEqual(["favorites:G2", "favorites:V2", "favorites:G2"]); // in the course's order, and over again
+    expect(radio.store.getState().place).toEqual({ n: 1, of: 2 });
+    radio.like(); // G2 loses its heart while it plays: it plays on
+    expect(radio.store.getState()).toMatchObject({ station: "favorites", liked: false, counts: { favorites: 1 }, playing: true });
+    radio.next(); await settle();
+    expect(now(radio)).toEqual(["favorites", "V2"]);
+    radio.like();
+    radio.next(); await settle();
+    expect(now(radio)).toEqual(["grammar", "G1"]);
+  });
+
+  it("a remembered station that has no songs any more gives way to the first that has", async () => {
+    store["radio-test"] = JSON.stringify({ on: true, station: "favorites", song: "V2", at: 30 });
+    const radio = new Radio(deps());
+    await radio.init(); await settle();
+    expect(now(radio)).toEqual(["grammar", "G1"]);
+    expect(out.last).toBe("play G1.mp3@0");
   });
 });
 

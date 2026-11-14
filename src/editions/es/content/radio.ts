@@ -1,22 +1,29 @@
-// Puerto Colibrí's radio (src/radio/): the stations, and which course song each place's conversation is built on.
-// Replaces src/content/radio.ts in this edition. The songs are the Spanish course's own (its /songs/index.json:
-// Spanish Master English's 186 with the bilingual ones, Spanish Master's 130); a station picks among them by the
-// list's genre.
+// Puerto Colibrí's radio (src/radio/): its name, the stations, and which course song each place's conversation is
+// built on. Replaces src/content/radio.ts in this edition. The songs are the Spanish course's own (its
+// /songs/index.json: Spanish Master English's 186 with the bilingual ones, Spanish Master's 130), every one of them:
+// the radio is the course's songs, as its Songs page has them.
 import type { Station } from "../../../radio/playlist";
 import type { SituationDef } from "../../../content/types";
-
-/** The sounds of the Caribbean coast the town is on, and their close kin. Not reggaetón: "reggae" as a whole word. */
-const CARIBBEAN = /cumbia|bachata|bolero|salsa|guaracha|vallenato|merengue|\bson\b|mambo|champeta|plena|\breggae\b|bossa|cha-cha|guajira|boogaloo/i;
 
 /** The radio set's look (src/ui/radio.css): Puerto Colibrí's is a hand-painted teal set under papel picado. */
 export const RADIO_SKIN: "maple" | "colibri" = "colibri";
 
-/** The first one is where a new listener starts. The names are Spanish and stay as they are in every learner
- *  language, like the town's signs; `lt` says what plays, in Lithuanian like every interface string, and is shown
- *  through L() (src/editions/es/ui/strings.ts has its English). `freq` is the station's place on the set's dial. */
+/** The player's name, on the set. Spanish, like the stations' names and the town's signs, in every learner language. */
+export const RADIO_NAME = "Radio Puerto Colibrí";
+
+/** The course's kinds of song, one station each, in the course's order; then the mix and the learner's favorites.
+ *  The first one is where a new listener starts: the first grammar song. Every song is on exactly one of the first
+ *  four (tests/es/radio.test.ts), and when one has played to its end the radio moves on to the next. Spanish Master
+ *  (Lithuanian learners) has no bilingual songs: a station with no songs isn't offered. The names are Spanish and
+ *  stay as they are in every learner language; `lt` says what plays, in Lithuanian like every interface string, and
+ *  is shown through L() (src/editions/es/ui/strings.ts has its English). `freq` is the station's place on the dial. */
 export const STATIONS: Station[] = [
-  { id: "colibri", name: "Radio Colibrí", freq: 96.5, lt: "Karibų ritmai: kumbija, bačata, salsa", shuffle: true, has: (song) => CARIBBEAN.test(song.g) },
-  { id: "todas", name: "Todas las canciones", freq: 103.1, lt: "visos kurso dainos", shuffle: false, has: () => true },
+  { id: "grammar", name: "Gramática FM", freq: 89.5, lt: "Gramatika", has: (song) => song.c === "g" },
+  { id: "vocab", name: "Vocabulario FM", freq: 93.1, lt: "Žodynas", has: (song) => song.c === "v" },
+  { id: "situations", name: "Situaciones FM", freq: 96.7, lt: "Situacijos", has: (song) => song.c === "s" },
+  { id: "bilingual", name: "Bilingüe FM", freq: 100.3, lt: "Dvikalbės: angliškai, tada ispaniškai", has: (song) => song.c === "b" },
+  { id: "random", name: "Al Azar FM", freq: 103.9, lt: "Visos dainos, sumaišytos", kind: "mix", has: () => true },
+  { id: "favorites", name: "Favoritas FM", freq: 106.9, lt: "Tavo mėgstamos dainos", kind: "favorites", has: () => false },
 ];
 
 /** The course's song a conversation is built on. The game's song numbers are English Master's; its situation songs

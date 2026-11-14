@@ -1134,6 +1134,31 @@ one view +5 (the zócalo, and the avenue's west end with its ceiba and the pair 
 
 Checks: `tests/es/town.test.ts` "world-v2: street palms, ceibas and people on the meadows".
 
+## Climbing (14 Nov 2026)
+
+The shared work (`docs/WALKING.md`, "Jumping and climbing": the heights of what is not knee-high, the jump of about a
+metre, the flip on the second press, a stopped car climbed and its driver waiting) merged from main; nothing in it is
+this town's own code. What the survey of this town found (`Ledges.things`, one of each looked at):
+
+- **Cars**: the ten parked ones (five vochos: hood and trunk 0.9 m, roof 1.47 m; five sedans, roof 1.56 m), the two
+  taxis standing at the airport, the four rental cars; and a car, a vocho or a taxi of the traffic while it has stopped
+  for the player. The colectivos and the buses are too tall: walls, standing as moving.
+- **The malecón's wall** along the whole beach (0.78 m) and **its pillars** (1.05 m: one more jump, from the wall).
+- **The muelle**: its boards from the sand along its beach side (0.3 m) and the mooring posts there (0.85 m).
+- **The zócalo and avenida Juárez**: the eight bollards at the avenue (0.8 m), the stone planters round the trees
+  (0.6–1.2 m), the atrio's low walls and the foot of its cross (1.0–1.4 m), the trash cans (1.0–1.1 m), the hydrants
+  (0.9 m).
+- **The side streets**: the garden walls with their railings (1.1–1.6 m: a flip), the mailboxes (1.35 m), the wall
+  with the water bottles (0.5–1.2 m), the party's table, speaker and fence, the crates.
+- As before: the bancas and benches, the letters' plinth, the palapas' loungers, the lanchas on the sand.
+- **Not**: the tianguis' stalls (nobody stands on a stall's table under its lona; the lonas are read as roofs though
+  the camera looks through them: `thin`), the kiosko, café tables, the elote cart and anything by someone one talks
+  to, palms, ceibas, lamp posts, buildings.
+
+`src/dev/climbAudit.ts` on this town: the highest one can stand is 1.65 m, nobody gets beyond
+the bounds or the wading limit, and there is no ground reached only by jumping. Everything that could be jumped onto
+before still can (the 50 boxes and 12 circles split before are all split now, with as many low pieces or more).
+
 ## The tasks (in order)
 
 Each task is one area; each ends with before/after screenshots at phone size and the draw-call numbers.

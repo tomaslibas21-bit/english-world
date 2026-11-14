@@ -2467,14 +2467,23 @@ function addHarbor(M: Merger, col: Colliders, group: THREE.Group, r: () => numbe
   const wood = mat("#b8895a");
   M.add("pier", wood, boxGeo(4.4, 0.3, 14, -30, 0.15, -69));
   M.add("pier", wood, boxGeo(22, 0.3, 16, -30, 0.15, -80));
-  for (let i = -10; i <= 10; i += 2.5) for (const zz of [-72, -88]) M.add("pier-post", mat("#7a5a3a"), cylGeo(0.2, 0.2, 2, -30 + i, -0.6, zz, 6));
+  // the posts: the row along the beach side stands up over the boards like mooring posts (one hops from post to post:
+  // ledges.ts), the far row is cut off at the deck
+  for (let i = -10; i <= 10; i += 2.5) {
+    M.add("pier-post", mat("#7a5a3a"), cylGeo(0.2, 0.2, 2, -30 + i, -0.6, -88, 6));
+    // (not the one in the middle of the boardwalk)
+    if (i === 0) M.add("pier-post", mat("#7a5a3a"), cylGeo(0.2, 0.2, 2, -30, -0.72, -72, 6));
+    else M.add("pier-post", mat("#7a5a3a"), cylGeo(0.22, 0.22, 2.4, -30 + i, -0.35, -72, 8));
+  }
   for (const s of [-1, 1]) M.add("pier-rail", mat("#f4f1ea"), boxGeo(0.1, 1, 14, -30 + s * 2.15, 0.8, -69));
   col.addBox(-32.3, -69, 0.2, 14); col.addBox(-27.7, -69, 0.2, 14);
   // (one walks on the boards, not on the sand sloping away under them: water.ts)
-  DECKS.push({ x0: -32.3, x1: -27.7, z0: -76.1, z1: -62 }, { x0: -41.3, x1: -18.7, z0: -88.4, z1: -72 });
+  DECKS.push({ x0: -32.3, x1: -27.7, z0: -76.1, z1: -62, y: 0.3 }, { x0: -41.3, x1: -18.7, z0: -88.4, z1: -72, y: 0.3 });
   // pier deck area is walkable: remove the sea collider there by leaving a gap (see buildTown); add deck edges
   col.addBox(-41.2, -80, 0.3, 16); col.addBox(-18.8, -80, 0.3, 16); col.addBox(-30, -88.2, 22, 0.3);
-  col.addBox(-37.5, -72.2, 7.6, 0.3); col.addBox(-22.5, -72.2, 7.6, 0.3);
+  // (the beach side's edge is a wall for the passers-by and the way-finding, a ledge with its posts for the player:
+  // one jumps up onto the boards from the sand and hops along the posts, ledges.ts)
+  col.addBox(-37.5, -72.2, 7.6, 0.3, "ledge"); col.addBox(-22.5, -72.2, 7.6, 0.3, "ledge");
   // lighthouse on rocks
   const { x, z } = LIGHTHOUSE;
   for (let i = 0; i < 9; i++) {

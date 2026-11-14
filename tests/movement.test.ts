@@ -8,7 +8,8 @@ import { OcclusionField } from "../src/game/occlusion";
 import { wantFade } from "../src/game/fade";
 import { CameraRig } from "../src/game/camera";
 import { Colliders } from "../src/game/world/util";
-import { Ledges } from "../src/game/ledges";
+import { Ledges, CLIMB, LAND, TOE } from "../src/game/ledges";
+import { carGeometry } from "../src/game/world/car";
 import { Wading, sandY, floorY, DECKS, SHORE, SEA_LEVEL } from "../src/game/water";
 
 const PI = Math.PI;
@@ -120,18 +121,24 @@ describe("Gait: the turn and the speed", () => {
 });
 
 describe("Hop: a jump that lands on what is under it", () => {
-  it("goes up about three quarters of a metre and lands in a little over half a second, softly", () => {
+  it("goes up about a metre and lands in a little over half a second, softly, on long frames as on short ones", () => {
     const h = new Hop();
     expect(h.start()).toBe(true);
     let peak = 0, t = 0, landed = 0;
     while (h.air && t < 2) { landed = h.update(1 / 60); peak = Math.max(peak, h.y); t += 1 / 60; }
     expect(peak).toBeLessThanOrEqual(Hop.PEAK + 1e-6);
-    expect(peak).toBeGreaterThan(0.65);
-    expect(Hop.PEAK).toBeLessThan(0.85);
+    expect(peak).toBeGreaterThan(0.97);
+    expect(Hop.PEAK).toBeLessThan(1.1);
     expect(t).toBeLessThan(0.65);
     expect(landed).toBeGreaterThan(0);
     expect(h.y).toBe(0);
     expect(h.squash).toBeGreaterThan(0); // the landing's squash
+    // a slow phone's frames (20 a second): as high, to a hand's width
+    const slow = new Hop();
+    slow.start();
+    let low = 0;
+    while (slow.air) { slow.update(1 / 20); low = Math.max(low, slow.y); }
+    expect(low).toBeGreaterThan(Hop.PEAK - 0.05);
   });
 
   it("no second jump in the air or the instant it lands; land() puts them down at once", () => {
@@ -145,6 +152,59 @@ describe("Hop: a jump that lands on what is under it", () => {
     expect(h.start()).toBe(true);
   });
 
+  it("a second press in the air is a flip, once a jump, with a little more lift", () => {
+    const h = new Hop();
+    expect(h.flip()).toBe(false); // not from the ground
+    h.start();
+    let peak = 0, t = 0, turned = 0, asked = false;
+    while (h.air && t < 3) {
+      // (at the top of the jump)
+      if (!asked && h.vy <= 0.2) { asked = true; expect(h.flip()).toBe(true); expect(h.flip()).toBe(false); }
+      h.update(1 / 60);
+      peak = Math.max(peak, h.y);
+      turned = Math.max(turned, h.spin);
+      t += 1 / 60;
+    }
+    // about a third of a metre more, and one whole turn, over before or just after the landing
+    expect(peak).toBeGreaterThan(Hop.PEAK + 0.25);
+    expect(peak).toBeLessThanOrEqual(Hop.PEAK + Hop.FLIP_LIFT + 1e-6);
+    expect(turned).toBeGreaterThan(Math.PI * 1.9);
+    for (let i = 0; i < 12; i++) h.update(1 / 60);
+    expect(h.spin).toBe(0);
+    expect(h.tuck).toBe(0);
+    // pressed early, while still rising fast, it adds nothing to the height (but still turns)
+    const e = new Hop();
+    e.start();
+    e.update(1 / 60);
+    expect(e.flip()).toBe(true);
+    let early = 0;
+    while (e.air) { e.update(1 / 60); early = Math.max(early, e.y); }
+    expect(early).toBeLessThanOrEqual(Hop.PEAK + 1e-6);
+    // the next jump has its own flip; falling off an edge counts as being in the air
+    for (let i = 0; i < 12; i++) e.update(1 / 60);
+    e.start();
+    e.update(1 / 60);
+    expect(e.flip()).toBe(true);
+    const f = new Hop();
+    f.land(0.9);
+    f.update(1 / 60, 0);
+    expect(f.air).toBe(true);
+    expect(f.flip()).toBe(true);
+    // the most a jump can gain, a flip at its top and a toe's reach, is under a car's roof (the roof is reached from
+    // the hood or the trunk)
+    expect(Hop.PEAK + Hop.FLIP_LIFT + TOE).toBeLessThan(1.5);
+  });
+
+  it("a slope's small steps down are followed, not fallen", () => {
+    const h = new Hop();
+    h.land(1.5);
+    let fell = false;
+    for (let g = 1.5; g > 0.9; g -= 0.1) for (let i = 0; i < 3; i++) { h.update(1 / 60, g); fell ||= h.air; }
+    expect(fell).toBe(false);
+    for (let i = 0; i < 20; i++) h.update(1 / 60, 0.9);
+    expect(h.y).toBeCloseTo(0.9, 2);
+  });
+
   it("lands on a seat that comes under it, stands there, and falls when it walks off the edge", () => {
     const h = new Hop();
     h.start();
@@ -154,7 +214,7 @@ describe("Hop: a jump that lands on what is under it", () => {
     expect(h.y).toBeCloseTo(0.55, 5);
     expect(h.lift).toBe(0);
     expect(landed).toBeGreaterThan(0);
-    expect(landed).toBeLessThan(0.6); // a short drop onto it: a softer landing than onto the street
+    expect(landed).toBeLessThan(0.8); // a shorter drop onto it: a softer landing than onto the street
     // standing on it
     for (let i = 0; i < 30; i++) h.update(1 / 60, 0.55);
     expect(h.air).toBe(false);
@@ -247,9 +307,12 @@ describe("Ledges: what can be jumped onto, from the place's own geometry", () =>
 
   it("the bench and the planter are split into pieces with a height; nothing else is touched", () => {
     expect(led.ready).toBe(true);
+    // (the fence, the counter and the car have a height too now: more than a jump from a standstill reaches)
     const split = col.boxes.filter((b) => b.split).map((b) => Math.round((b.minX + b.maxX) / 2));
-    expect(split).toEqual([0, 6]);
+    expect(split).toEqual([0, 6, 12, 18, 24]);
     expect(col.circles.some((c) => c.split)).toBe(false);
+    expect(led.support(12, 0, 1.1, true)).toBeCloseTo(1, 2);
+    expect(led.support(24, 0, 1.1, true)).toBeCloseTo(1, 2);
     // the seat is the whole seat, wider than its collider; the back stays a wall
     expect(led.support(0, 0.1, 0.6, true)).toBeCloseTo(0.55, 2);
     expect(led.pieces.some((q) => q.top === Infinity && q.minZ < -0.2 && q.maxX > 0.5 && q.minX < -0.5 && q.maxX < 2)).toBe(true);
@@ -259,10 +322,12 @@ describe("Ledges: what can be jumped onto, from the place's own geometry", () =>
     const stopped = walk(0, 2, -1, null);
     expect(stopped.y).toBe(0);
     expect(stopped.z).toBeGreaterThan(0.25 + 0.38 - 0.13);
-    const on = walk(0, 2, -1, 14);
-    expect(on.y).toBeCloseTo(0.55, 2);
-    expect(on.z).toBeGreaterThan(-0.3 + 0.38 - 0.13); // held by the back, standing on the seat
-    expect(on.z).toBeLessThan(0.3);
+    for (const j of [8, 14, 20]) {
+      const on = walk(0, 2, -1, j);
+      expect(on.y, `jump at ${j}`).toBeCloseTo(0.55, 2);
+      expect(on.z).toBeGreaterThan(-0.3 + 0.38 - 0.13); // held by the back, standing on the seat
+      expect(on.z).toBeLessThan(0.3);
+    }
   });
 
   it("a jump clears a planter; without one it is in the way", () => {
@@ -272,17 +337,185 @@ describe("Ledges: what can be jumped onto, from the place's own geometry", () =>
     expect(over.y).toBe(0);
   });
 
-  it("no jump gets onto or over a fence, a counter, a car, a café table or its chair, a pier's edge or a person", () => {
-    for (const [x, edge] of [[12, 3], [18, 0.35], [24, 2.2], [30, 0.9], [30.8, 0.4], [44.9, 4], [50, 0.45]] as const) {
+  it("a jump gets onto a fence, a counter and a car's body a metre high; walking doesn't", () => {
+    for (const [x, edge] of [[12, 3], [18, 0.35], [24, 2.2]] as const) {
+      const z0 = edge + 2.6;
+      const stopped = walk(x, z0, -1, null);
+      expect(stopped.on).toBe(0);
+      expect(stopped.z, `x ${x}`).toBeGreaterThan(edge);
+      // (taken so that the top of the jump is at the edge)
+      const best = Math.max(...[14, 18, 22, 26].map((j) => walk(x, z0, -1, j, 60).on));
+      expect(best, `x ${x}`).toBeCloseTo(1, 1);
+    }
+  });
+
+  it("no jump gets onto or over a café table or its chair, a pier's edge or a person", () => {
+    for (const [x, edge] of [[30, 0.9], [30.8, 0.4], [44.9, 4], [50, 0.45]] as const) {
       for (const jumpAt of [null, 4, 10, 16, 22, 28]) {
         const z0 = edge + 2.6;
         const r = walk(x, z0, -1, jumpAt);
         // never on it or over it (a round thing met off its middle is walked round, on the ground)
         expect(r.on, `x ${x}, jump at ${jumpAt}`).toBe(0);
         expect(r.y).toBe(0);
-        if (x !== 30.8 && x !== 50 && x !== 30) expect(r.z, `x ${x}, jump at ${jumpAt}`).toBeGreaterThan(Math.min(edge, 0.3));
+        if (x === 44.9) expect(r.z, `x ${x}, jump at ${jumpAt}`).toBeGreaterThan(Math.min(edge, 0.3));
       }
     }
+  });
+});
+
+describe("Ledges: climbing higher, a step at a time", () => {
+  /** A real car (car.ts), facing +z, at (0, 0); a thing 1.9 m high beside its roof; a table under a canopy; a
+   *  column with a sloping foot in a basin; and a counter with its clerk behind it. */
+  const g = new THREE.Group();
+  const add = (geo: THREE.BufferGeometry) => g.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial()));
+  const col = new Colliders();
+  add(carGeometry("#e45b4f"));
+  col.addBox(0, 0, 2, 4.3, "car");
+  add(new THREE.BoxGeometry(1, 1.9, 1).translate(1.7, 0.95, -0.2));
+  col.addBox(1.7, -0.2, 1, 1);
+  add(new THREE.BoxGeometry(2, 0.9, 1).translate(10, 0.45, 0));
+  add(new THREE.BoxGeometry(3, 0.1, 2).translate(10, 2.75, 0));
+  col.addBox(10, 0, 2, 1);
+  add(new THREE.CylinderGeometry(2, 2, 0.8, 24).translate(20, 0.4, 0));
+  add(new THREE.CylinderGeometry(0.4, 0.6, 2.2, 12).translate(20, 1.5, 0));
+  col.addCircle(20, 0, 2.1);
+  add(new THREE.BoxGeometry(3, 1, 0.7).translate(30, 0.5, 0));
+  col.addBox(30, 0, 3, 0.7);
+  // a deck 0.3 m thick with a post at its edge: an edge the town calls a ledge
+  add(new THREE.BoxGeometry(10, 0.3, 8).translate(45, 0.15, 0));
+  add(new THREE.CylinderGeometry(0.22, 0.22, 0.85, 8).translate(40.1, 0.425, 0));
+  col.addBox(40.15, 0, 0.3, 8, "ledge");
+  const led = Ledges.build(g, col, { beside: [[30, -1]] });
+  /** Runs or walks from (x, z0) along z, jumping (and flipping) when asked; where they end up and how high. */
+  const go = (x: number, z0: number, dz: number, speed: number, jumps: number[], flips: number[] = [], steps = 160, y0 = 0) => {
+    const p = new THREE.Vector3(x, y0, z0), hop = new Hop();
+    hop.land(y0);
+    /** The highest they stood (not what they passed over in the air). */
+    let top = 0;
+    for (let i = 0; i < steps; i++) {
+      if (jumps.includes(i)) hop.start();
+      if (flips.includes(i)) hop.flip();
+      p.z += dz * speed / 60;
+      col.resolve(p, 0.38, true);
+      led.resolve(p, 0.38, hop.y, hop.air);
+      hop.update(1 / 60, led.support(p.x, p.z, hop.y, hop.air));
+      if (!hop.air) top = Math.max(top, hop.y);
+    }
+    return { z: p.z, y: hop.y, top };
+  };
+
+  it("a car is read as it is built: bumpers, a sloping hood, the windshield, the roof, the trunk", () => {
+    expect(col.boxes[0].split).toBe(true);
+    expect(led.support(0, 1.6, 2, true)).toBeGreaterThan(0.84);   // the hood
+    expect(led.support(0, 1.6, 2, true)).toBeLessThan(0.95);
+    expect(led.support(0, -0.2, 2, true)).toBeCloseTo(1.56, 1);    // the roof
+    expect(led.support(0, -1.7, 2, true)).toBeGreaterThan(0.88);  // the trunk
+    expect(led.support(0, -1.7, 2, true)).toBeLessThan(0.98);
+    // the windshield slopes between them, each cell its own height
+    const mid = led.support(0, 0.75, 2, true);
+    expect(mid).toBeGreaterThan(1.05);
+    expect(mid).toBeLessThan(1.4);
+  });
+
+  it("a plain jump gets onto the hood or the trunk; the roof is reached from there, not from the street", () => {
+    // walking at the car stops at it
+    expect(go(0, 5, -1, 4.4, []).top).toBe(0);
+    // from the front, whenever the jump is taken within a stride of the bumper
+    const hood = go(0, 5, -1, 4.4, [24], [], 70);
+    expect(hood.y).toBeGreaterThan(0.84);
+    expect(hood.y).toBeLessThan(0.98);
+    for (const j of [20, 23, 26, 29]) expect(go(0, 5, -1, 4.4, [j], [], 70).top, `jump at ${j}`).toBeGreaterThan(0.8);
+    // from the side
+    const p = new THREE.Vector3(3, 0, 1.6), hop = new Hop();
+    let stood = 0;
+    for (let i = 0; i < 50; i++) {
+      if (i === 14) hop.start();
+      p.x -= 4.4 / 60;
+      led.resolve(p, 0.38, hop.y, hop.air);
+      hop.update(1 / 60, led.support(p.x, p.z, hop.y, hop.air));
+      if (!hop.air) stood = Math.max(stood, hop.y);
+    }
+    expect(stood).toBeGreaterThan(0.84);
+    expect(stood).toBeLessThan(1);
+    // and onto the trunk from behind
+    const trunk = go(0, -5, 1, 4.4, [24], [], 70);
+    expect(trunk.y).toBeGreaterThan(0.88);
+    expect(trunk.y).toBeLessThan(1);
+    // standing on the hood: walking at the windshield goes nowhere (no walking up it), a jump lands on it or the roof,
+    // and one more is the roof
+    expect(go(0, 1.7, -1, 4.4, [], [], 60, hood.y).top).toBeLessThan(1);
+    expect(go(0, 1.7, -1, 4.4, [2, 34], [], 70, hood.y).top).toBeCloseTo(1.56, 1);
+    expect(go(0, -1.7, 1, 4.4, [2, 34], [], 70, trunk.y).top).toBeCloseTo(1.56, 1);
+    // straight from the street, at a walk or at a run, with or without a flip at any moment: never the roof
+    for (const speed of [4.4, 7.4]) for (const dir of [1, -1]) for (let j = 6; j < 44; j += 2) {
+      expect(go(0, -7 * dir, dir, speed, [j]).top).toBeLessThan(1.3);
+      for (let f = j + 2; f < j + 34; f += 2) expect(go(0, -7 * dir, dir, speed, [j], [f]).top).toBeLessThan(1.52);
+    }
+  });
+
+  it("walking off the roof down the windshield is a walk down, and off the hood a fall", () => {
+    const p = new THREE.Vector3(0, 1.56, -0.2), hop = new Hop();
+    hop.land(1.56);
+    let fellOnGlass = false, fell = false;
+    for (let i = 0; i < 80; i++) {
+      p.z += 4.4 / 60;
+      led.resolve(p, 0.38, hop.y, hop.air);
+      hop.update(1 / 60, led.support(p.x, p.z, hop.y, hop.air));
+      if (hop.air && p.z < 1.1) fellOnGlass = true;
+      if (hop.air) fell = true;
+    }
+    expect(fellOnGlass).toBe(false);
+    expect(fell).toBe(true);
+    expect(hop.y).toBe(0);
+  });
+
+  it("nothing above CLIMB is ever stood on, whatever one jumps from", () => {
+    expect(CLIMB).toBeLessThan(1.8);
+    // the 1.9 m thing beside the roof: a wall from the roof too
+    for (const top of [1.56, 2.2, 3]) expect(led.support(1.7, -0.2, top, true)).toBe(0);
+    const p = new THREE.Vector3(1.3, 2.6, -0.2);
+    col.resolve(p, 0.38, true);
+    led.resolve(p, 0.38, 2.6, true);
+    expect(p.x).toBeLessThan(1.2 - 0.38 + 1e-6);
+    expect(led.pieces.every((q) => q.top === Infinity || q.top <= CLIMB)).toBe(true);
+  });
+
+  it("no standing where there is no room overhead, nor on the flank of a column; the basin round it can be stood in", () => {
+    expect(col.boxes[2].split).toBeFalsy(); // the table under the canopy
+    expect(col.circles[0].split).toBe(true);
+    expect(led.support(21.3, 0, 1, true)).toBeCloseTo(0.8, 2);
+    for (const x of [20, 20.2, 20.35]) expect(led.support(x, 0, 1.7, true)).toBe(0);
+    const p = { x: 20.2, z: 0 };
+    led.resolve(p, 0.38, 1.7, true);
+    expect(Math.hypot(p.x - 20, p.z)).toBeGreaterThan(0.6);
+  });
+
+  it("by someone one talks to, nothing higher than a bench is stood on", () => {
+    expect(col.boxes[3].split).toBeFalsy();
+    expect(led.things.find((t) => Math.round(t.x) === 30)!.cap).toBe(LAND);
+  });
+
+  it("a deck's edge the town calls a ledge: a wall to a walker, jumped onto, its post a step more", () => {
+    const edge = col.boxes[4];
+    expect(edge.split).toBe(true);
+    expect(led.support(40.5, 2, 0.4, true)).toBeCloseTo(0.3, 2);
+    expect(led.support(40.1, 0, 1, true)).toBeCloseTo(0.85, 2);
+    const p = { x: 39.7, z: 2 };
+    for (let i = 0; i < 30; i++) { p.x += 0.07; led.resolve(p, 0.38, 0, false); }
+    expect(p.x).toBeLessThan(40 - 0.38 + 0.13);
+  });
+
+  it("pieces that come and go (a car that has stopped) count like the others", () => {
+    const l = new Ledges();
+    const hood = { minX: -1, maxX: 1, minZ: 1, maxZ: 2, top: 0.9 };
+    let there = false;
+    l.dynamic = () => (there ? [hood] : []);
+    expect(l.support(0, 1.5, 1, true)).toBe(0);
+    there = true;
+    expect(l.support(0, 1.5, 1, true)).toBe(0.9);
+    const p = { x: 0, z: 2.2 };
+    l.resolve(p, 0.38, 0, false);
+    expect(p.z).toBeCloseTo(2.38, 5);
   });
 });
 

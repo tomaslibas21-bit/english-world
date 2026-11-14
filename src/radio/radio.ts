@@ -9,7 +9,8 @@
 import { createStore, type StoreApi } from "zustand/vanilla";
 import { buildTimeline, withSungTranslations, type Timeline } from "./lyrics";
 import { NeedsTap, type RadioOutput } from "./output";
-import { loadSaved, stationOrder, step, storeSaved, type RadioSaved, type Station } from "./playlist";
+import type { FavoriteStore } from "./favorites";
+import { loadSaved, nextStation, shuffled, stationOrder, stationSongs, step, storeSaved, type RadioSaved, type Station } from "./playlist";
 import { readSongLines, readSongList, songAudioUrls, songDataUrls, type RadioConfig, type SongMeta } from "./songs";
 
 /** What stops the music: a conversation is open, a voice is loading or speaking, a microphone is listening. */
@@ -31,7 +32,14 @@ export interface RadioState {
   /** nothing could be played (no connection, or the course's files didn't open) */
   failed: boolean;
   station: string;
+  /** the station's songs are in a shuffled order: the learner's shuffle key, or a station that always is (the mix) */
   shuffle: boolean;
+  /** how many songs each station has (by station id); one with none is not offered */
+  counts: Record<string, number>;
+  /** where the song is in its station's order ("3 of 31"); null for a song played out of turn */
+  place: { n: number; of: number } | null;
+  /** the song has the learner's heart (it is among the course's favorite songs) */
+  liked: boolean;
   /** the lyric strip is shown */
   lyrics: boolean;
   /** the radio card is open */
@@ -53,6 +61,10 @@ export interface RadioDeps {
   /** the game's volume setting, 0–1 */
   volume(): number;
   storageKey: string;
+  /** the note of the radio before the stations became the course's kinds of song (playlist.ts loadSaved) */
+  storageBefore?: string;
+  /** the course's favorite songs (favorites.ts); without them the radio has no heart */
+  favorites?: FavoriteStore;
   random?: () => number;
   /** a soft tuning sweep, when the learner changes station (never needed for the music itself) */
   tune?: () => void;
@@ -85,6 +97,7 @@ export class Radio {
   /** where the station is in its order; the song playing differs only for one played out of turn */
   private cursor: string | null = null;
   private queued: string | null = null;
+  private hearts: ReadonlySet<string> = new Set();
   private suggested = new Set<string>();
   private resumeAt = 0;
   private holds = new Set<Hold>();
@@ -98,13 +111,13 @@ export class Radio {
   private saveTimer: ReturnType<typeof setInterval> | undefined;
 
   constructor(private deps: RadioDeps) {
-    this.saved = loadSaved(deps.storageKey);
+    this.saved = loadSaved(deps.storageKey, deps.storageBefore);
     if (!this.saved.station) this.newSeed(); // a first visit: its own shuffle
     const station = this.stationOf(this.saved.station);
     this.store = createStore<RadioState>(() => ({
       available: !!deps.config && deps.stations.length > 0,
       ready: false, on: false, playing: false, held: false, needsTap: false, failed: false,
-      station: station?.id ?? "", shuffle: this.saved.shuffle ?? station?.shuffle ?? false,
+      station: station?.id ?? "", shuffle: shuffled(station, this.saved.shuffle), counts: {}, place: null, liked: false,
       lyrics: this.saved.lyrics, open: false, song: null, timeline: null, upNext: null,
     }));
     deps.output.onEnded = () => this.go(1, true);
@@ -112,8 +125,18 @@ export class Radio {
   }
 
   private get state() { return this.store.getState(); }
-  private set(patch: Partial<RadioState>) { this.store.setState(patch); }
+  private set(patch: Partial<RadioState>) {
+    this.store.setState(patch);
+    if ("song" in patch || "station" in patch) this.mark();
+  }
   private stationOf(id: string): Station | undefined { return this.deps.stations.find((s) => s.id === id) ?? this.deps.stations[0]; }
+  /** The station to play: `id`'s, or the first one that has songs when that one has none (a course without that
+   *  kind of song, the favorites with no heart left). */
+  private stationWithSongs(id: string): Station | undefined {
+    const has = (s: Station) => (this.state.counts[s.id] ?? 0) > 0;
+    const station = this.stationOf(id);
+    return station && has(station) ? station : this.deps.stations.find(has) ?? station;
+  }
   private level() { return Math.max(0, Math.min(1, this.deps.volume() * MUSIC_LEVEL)); }
 
   // ---------------------------------------------------------------- the list
@@ -128,9 +151,14 @@ export class Radio {
         this.songs = readSongList(await this.deps.fetchJson(cfg.index));
         if (!this.songs.length) throw new Error("no songs");
         this.byId = new Map(this.songs.map((s) => [s.id, s]));
+        this.hearts = new Set(this.deps.favorites?.list() ?? []);
+        this.recount();
+        const station = this.stationWithSongs(this.state.station);
+        if (station && station.id !== this.state.station) this.set({ station: station.id, shuffle: shuffled(station, this.saved.shuffle) });
         this.reorder();
-        this.cursor = this.saved.song && this.order.includes(this.saved.song) ? this.saved.song : null;
-        this.resumeAt = this.cursor ? this.saved.at : 0;
+        const kept = this.saved.song ?? this.saved.places[this.state.station] ?? null;
+        this.cursor = kept && this.order.includes(kept) ? kept : null;
+        this.resumeAt = this.cursor && this.cursor === this.saved.song ? this.saved.at : 0;
         this.set({ ready: true, failed: false, song: this.cursor ? this.byId.get(this.cursor)! : null });
         if (this.saved.on && !this.state.on) this.set({ on: true });
         if (this.state.on) this.start(FADE_IN_MS);
@@ -145,7 +173,21 @@ export class Radio {
 
   private reorder() {
     const station = this.stationOf(this.state.station);
-    this.order = station ? stationOrder(this.songs, station, this.state.shuffle, this.saved.seed) : [];
+    this.order = station ? stationOrder(this.songs, station, this.state.shuffle, this.saved.seed, this.hearts) : [];
+    this.mark();
+  }
+
+  private recount() {
+    this.set({ counts: Object.fromEntries(this.deps.stations.map((s) => [s.id, stationSongs(this.songs, s, this.hearts).length])) });
+  }
+
+  /** What the set shows about the song: its place in the station's order, and its heart. */
+  private mark() {
+    const s = this.state, id = s.song?.id ?? null;
+    const i = id && id === this.cursor ? this.order.indexOf(id) : -1;
+    const place = i >= 0 ? { n: i + 1, of: this.order.length } : null;
+    const liked = !!id && this.hearts.has(id);
+    if (place?.n !== s.place?.n || place?.of !== s.place?.of || liked !== s.liked) this.store.setState({ place, liked });
   }
 
   private newSeed() { this.saved.seed = Math.floor((this.deps.random ?? Math.random)() * 0xffffffff) >>> 0; }
@@ -199,28 +241,68 @@ export class Radio {
   next() { this.go(1); }
   previous() { this.go(-1); }
 
+  /** The learner picks a station. It goes on from where it was left (from that song's beginning), or starts at its
+   *  first song. A station with no songs can't be picked. */
   setStation(id: string) {
     const station = this.deps.stations.find((s) => s.id === id);
     if (!station || station.id === this.state.station) return;
-    // the learner's own choice of shuffle stays; without one the station starts as it likes
-    this.set({ station: station.id, shuffle: this.saved.shuffle ?? station.shuffle });
-    this.newSeed();
-    this.reorder();
-    this.cursor = null;
+    if (this.state.ready && !(this.state.counts[station.id] > 0)) return;
+    this.tuneTo(station);
     if (this.state.on && !this.holds.size) this.deps.tune?.();
-    if (this.order.length) this.playSong(this.order[0], 0);
+    if (this.cursor) this.playSong(this.cursor, 0);
     else this.save();
   }
 
+  /** Move to `station`: its order, and its place in it (where it was left, else its first song; `at` "last": its
+   *  last song, for a step back from the first song of the station after it). The station being left keeps its
+   *  place. */
+  private tuneTo(station: Station, at?: "last") {
+    if (this.cursor) this.saved.places[this.state.station] = this.cursor;
+    const shuffle = shuffled(station, this.saved.shuffle);
+    this.set({ station: station.id, shuffle });
+    if (shuffle) this.newSeed();
+    this.reorder();
+    const kept = at ? undefined : this.saved.places[station.id];
+    if (kept && this.order.includes(kept)) {
+      // a new shuffle goes on from the song the station was left at
+      if (shuffle) this.order = [kept, ...this.order.filter((id) => id !== kept)];
+      this.cursor = kept;
+    } else this.cursor = (at ? this.order[this.order.length - 1] : this.order[0]) ?? null;
+    delete this.saved.places[station.id];
+    this.mark();
+  }
+
+  /** The shuffle key: the station's songs in a shuffled order, or in the course's again. The mix is always shuffled;
+   *  the key changes nothing there, and is kept for the other stations. */
   setShuffle(shuffle: boolean) {
-    if (shuffle === this.state.shuffle) return;
+    const station = this.stationOf(this.state.station);
+    if (station?.kind === "mix" || shuffle === this.saved.shuffle) return;
     this.saved.shuffle = shuffle;
     this.set({ shuffle });
     if (shuffle) this.newSeed();
     this.reorder();
-    // a new shuffle goes on from the song that is playing; the list's own order continues from it too
-    if (shuffle && this.cursor) this.order = [this.cursor, ...this.order.filter((id) => id !== this.cursor)];
+    // a new shuffle goes on from the song that is playing; the course's own order continues from it too
+    if (shuffle && this.cursor) { this.order = [this.cursor, ...this.order.filter((id) => id !== this.cursor)]; this.mark(); }
     this.save();
+  }
+
+  /** The heart: the song that is playing joins the course's favorite songs, or leaves them. */
+  like() {
+    const song = this.state.song;
+    if (!song || !this.deps.favorites) return;
+    this.deps.favorites.toggle(song.id);
+    this.favoritesChanged();
+  }
+
+  /** The course's favorites changed (the heart here, or the course's own page in another tab). */
+  favoritesChanged() {
+    if (!this.deps.favorites) return;
+    this.hearts = new Set(this.deps.favorites.list());
+    if (!this.state.ready) return;
+    this.recount();
+    // the favorites' own station plays on in its new order, from the song it is at
+    if (this.stationOf(this.state.station)?.kind === "favorites") this.reorder();
+    else this.mark();
   }
 
   setLyrics(lyrics: boolean) { this.set({ lyrics }); this.save(); }
@@ -305,11 +387,12 @@ export class Radio {
     if (!this.state.on || !this.state.ready || this.holds.size || this.sounding()) return;
     let song = this.state.song;
     if (!song) {
-      // the first song of this visit: one waiting out of turn, else where the station was, else its first
-      const id = this.queued ?? this.cursor ?? this.order[0];
+      // the first song of this visit: where the station was, else its first. (A song waiting out of turn, the one
+      // of the place the learner stands in, comes after it: the radio starts where the course's songs start.)
+      const id = this.cursor ?? this.order[0];
       song = (id && this.byId.get(id)) || null;
       if (!song) { this.set({ failed: true }); return; }
-      if (id === this.queued) { this.queued = null; this.set({ upNext: null }); } else this.cursor = id;
+      this.cursor = id;
       this.resumeAt = id === this.saved.song ? this.saved.at : 0;
     }
     this.sound(song, this.resumeAt, fade);
@@ -331,13 +414,28 @@ export class Radio {
     } else {
       const moved = step(this.order, this.cursor, dir);
       id = moved.id;
-      if (moved.wrapped && this.state.shuffle && this.order.length > 1) {
+      // the station has played to its end (or the learner stepped back from its first song, or it has no songs
+      // left): on to the next of the course's kinds of song, or back to the last song of the one before
+      const onward = moved.wrapped || moved.before || !this.order.length;
+      const station = this.stationOf(this.state.station);
+      const next = onward && station?.kind !== "mix" && !(station?.kind === "favorites" && this.order.length)
+        ? nextStation(this.deps.stations, this.state.counts, this.state.station, dir) : null;
+      if (next) {
+        delete this.saved.places[this.state.station]; // it starts from its beginning the next time
+        this.cursor = null;
+        this.tuneTo(next, moved.before ? "last" : undefined);
+        id = this.cursor;
+      } else if (moved.wrapped && this.state.shuffle && this.order.length > 1) {
+        // nowhere to move on to (the mix, the favorites): a new shuffle; the song just heard, if it comes out
+        // first, goes to the round's end instead
         const last = this.cursor;
         this.newSeed();
         this.reorder();
-        id = this.order[0] === last ? this.order[1] : this.order[0];
+        if (this.order[0] === last) this.order = [...this.order.slice(1), last!];
+        id = this.order[0];
       }
       this.cursor = id;
+      this.mark();
     }
     if (id) this.playSong(id, 0, turn, !auto);
   }
@@ -413,8 +511,22 @@ export class Radio {
     this.songFailed();
   }
 
+  /** The song that will follow, when it is known already (to have its recording ready): not across a new shuffle. */
   private peekNext(): SongMeta | null {
-    const id = this.queued ?? step(this.order, this.cursor, 1).id;
+    let id = this.queued;
+    if (!id) {
+      const ahead = step(this.order, this.cursor, 1);
+      id = ahead.id;
+      if (ahead.wrapped) {
+        const station = this.stationOf(this.state.station);
+        const next = station?.kind ? null : nextStation(this.deps.stations, this.state.counts, this.state.station);
+        if (next ? shuffled(next, this.saved.shuffle) : this.state.shuffle) id = null;
+        else if (next) {
+          const songs = stationSongs(this.songs, next, this.hearts), kept = this.saved.places[next.id];
+          id = (kept && songs.some((x) => x.id === kept) ? kept : songs[0]?.id) ?? null;
+        }
+      }
+    }
     return (id && id !== this.state.song?.id && this.byId.get(id)) || null;
   }
 

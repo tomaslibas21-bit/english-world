@@ -28,11 +28,11 @@ export function sandY(x: number, z: number) {
 
 /** Floors built out over the shore (a pier's boardwalk and deck, a terrace on the sand): one walks on them, not on the
  *  sand that slopes away under them. The town lists them as it builds them (town.ts). */
-export const DECKS: { x0: number; x1: number; z0: number; z1: number }[] = [];
+export const DECKS: { x0: number; x1: number; z0: number; z1: number; y?: number }[] = [];
 
-/** What is underfoot at (x, z) by the sea: a deck's boards (0), else the sand. */
+/** What is underfoot at (x, z) by the sea: a deck's boards (as high as they lie, `y`), else the sand. */
 export function floorY(x: number, z: number) {
-  for (const d of DECKS) if (x > d.x0 && x < d.x1 && z > d.z0 && z < d.z1) return 0;
+  for (const d of DECKS) if (x > d.x0 && x < d.x1 && z > d.z0 && z < d.z1) return d.y ?? 0;
   return sandY(x, z);
 }
 

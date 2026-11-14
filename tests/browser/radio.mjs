@@ -1,8 +1,10 @@
 // The town's radio in real browsers: one tap turns it on and the next off, with a fade; it plays the course's songs
-// with the files token, shows the sung line, is silent for a conversation and a microphone, comes back, and stays
-// reachable on phones. On an iPhone it must not make a media
-// element at all (docs/MOBILE-AUDIO.md). The songs are fixtures served by this script; the "song" is a voice clip of
-// the repository. Start the game with the radio on and run:
+// with the files token, starting with the first grammar song; its set shows the course's kinds of song as stations,
+// moves on from one to the next, and its heart writes the course's own favorites; it shows the sung line, is silent
+// for a conversation and a microphone, comes back, and stays reachable on phones. On an iPhone it must not make a media
+// element at all (docs/MOBILE-AUDIO.md). The songs are fixtures served by this script: a minute and a half of silence
+// each, so that none ends before the test is done with it, except the second grammar song, which is a voice clip of
+// the repository a few seconds long (the one whose end the test waits for). Start the game with the radio on and run:
 //   VITE_RADIO_INDEX=/songs/index.json VITE_RADIO_FILES=/radio-files npx vite --port 5198 --strictPort
 //   WORLD_TEST_URL=http://127.0.0.1:5198 WORLD_PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node tests/browser/radio.mjs
 // Desktop WebKit is not an iPhone: this shows the lifecycle, not how a phone's speaker sounds.
@@ -11,12 +13,25 @@ import { readFile } from "node:fs/promises";
 const { chromium, webkit } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:5198";
 const manifest = JSON.parse(await readFile("public/audio/manifest.json", "utf8"));
-const [clip, seconds] = Object.entries(manifest).find(([, n]) => n > 8 && n < 11);
-const bytes = await readFile(`public/audio/${clip}.mp3`);
+const [clip, seconds] = Object.entries(manifest).find(([, n]) => n > 9 && n < 12);
+const short = await readFile(`public/audio/${clip}.mp3`);
+/** A silent recording of `length` seconds (8-bit mono PCM in a WAV file: every browser plays and decodes it). */
+function silence(length, rate = 8000) {
+  const n = length * rate, wav = Buffer.alloc(44 + n, 128);
+  wav.write("RIFF", 0); wav.writeUInt32LE(36 + n, 4); wav.write("WAVEfmt ", 8); wav.writeUInt32LE(16, 16); wav.writeUInt16LE(1, 20); wav.writeUInt16LE(1, 22);
+  wav.writeUInt32LE(rate, 24); wav.writeUInt32LE(rate, 28); wav.writeUInt16LE(1, 32); wav.writeUInt16LE(8, 34); wav.write("data", 36); wav.writeUInt32LE(n, 40);
+  return wav;
+}
+const LONG = 90, long = silence(LONG);
+/** The recording a song's address gets: the short clip for G02, the long silence for the others. */
+const recording = (path) => (path.includes("G02") ? { contentType: "audio/mpeg", body: short } : { contentType: "audio/wav", body: long });
 const iphone = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 Version/26.6 Mobile/15E148 Safari/604.1";
 const TOKEN = "radio-test-token";
-const songs = ["R1", "R2", "R3"].map((id, i) => ({ id, c: "g", n: i + 1, t: `Radio Song ${i + 1}`, tl: `Radijo daina ${i + 1}`, tp: "", g: i === 1 ? "roots reggae" : "motown soul", d: seconds, a: `/songs/audio/${id}.mp3` }));
-const lines = Array.from({ length: 5 }, (_, i) => {
+// a small course: two grammar songs, a vocabulary song (a free example: only on the course's site) and a situation
+// song; none of the second half's, so there is no Idioms FM
+const songs = [["G01", "g"], ["G02", "g"], ["V01", "v"], ["S62", "s"]].map(([id, c], i) => ({ id, c, n: 1, t: `Radio Song ${i + 1}`, tl: `Radijo daina ${i + 1}`, tp: "", g: i === 1 ? "roots reggae" : "motown soul", d: id === "G02" ? seconds : LONG, a: `/songs/audio/${id}.mp3` }));
+const FAVORITES = "fluentsteps.songs.favorites.v1";
+const lines = Array.from({ length: 55 }, (_, i) => {
   const s = 0.4 + i * 1.6;
   return { s, e: s + 1.4, sec: 0, lab: "", src: "Every evening home", lt: "Kiekvieną vakarą namo", u: [["Every evening,", "Kiekvieną vakarą,", 2], ["home", "namo (į namus)", 1]], w: [[s, s + 0.4], [s + 0.5, s + 0.9], [s + 1, s + 1.4]], wt: ["Every", "evening,", "home"] };
 });
@@ -34,7 +49,8 @@ function init(token) {
   }
   localStorage.setItem("fs-files-token", JSON.stringify({ token, exp: Math.floor(Date.now() / 1000) + 3600 }));
   sessionStorage.setItem("ew-play-now", "1");
-  // what makes sound: media elements, and Web Audio sources as long as a song
+  // what makes sound: media elements, and Web Audio sources as long as a song (not the town's own looped sounds, the
+  // sea and a market's murmur: src/game/audio.ts)
   const probe = (window.radioProbe = { audios: [], sources: [] });
   const NativeAudio = window.Audio;
   probe.volumes = [];
@@ -49,7 +65,7 @@ function init(token) {
     const create = Native.prototype.createBufferSource;
     Native.prototype.createBufferSource = function () {
       const s = create.call(this), start = s.start.bind(s), stop = s.stop.bind(s);
-      s.start = (...a) => { if (s.buffer && s.buffer.duration > 5) probe.sources.push({ rate: s.buffer.sampleRate, offset: a[1] || 0, on: true, s }); return start(...a); };
+      s.start = (...a) => { if (s.buffer && s.buffer.duration > 5 && !s.loop) probe.sources.push({ rate: s.buffer.sampleRate, offset: a[1] || 0, on: true, s }); return start(...a); };
       s.stop = (...a) => { const p = probe.sources.find((x) => x.s === s); if (p) p.on = false; return stop(...a); };
       return s;
     };
@@ -59,7 +75,7 @@ function init(token) {
 const state = (page) => page.evaluate(() => {
   const ew = window.__ew, r = ew.radio.store.getState(), probe = window.radioProbe;
   return {
-    on: r.on, playing: r.playing, held: r.held, needsTap: r.needsTap, failed: r.failed, song: r.song?.id ?? null, station: r.station,
+    on: r.on, playing: r.playing, held: r.held, needsTap: r.needsTap, failed: r.failed, song: r.song?.id ?? null, station: r.station, place: r.place, liked: r.liked, shuffle: r.shuffle, counts: r.counts,
     position: ew.radio.position(), conversation: ew.store.getState().conv.active, voice: ew.voice?.(),
     // a media element that is not paused, or a long Web Audio source that was started and not stopped
     sounding: probe.audios.some((el) => !el.paused && !el.ended && !el.src.startsWith("data:")) || probe.sources.some((x) => x.on),
@@ -83,20 +99,20 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       const page = await context.newPage(), errors = [], asked = [];
       page.on("pageerror", (e) => errors.push(e.message));
       await page.route("**/songs/index.json", (route) => route.fulfill({ json: { lang: "en", songs } }));
-      // the course's files folder: only with the token; R3 is a free example, which the folder doesn't have
+      // the course's files folder: only with the token; V01 is a free example, which the folder doesn't have
       await page.route("**/radio-files/songs/**", (route) => {
         const url = new URL(route.request().url());
         asked.push(url.pathname + url.search);
         if (url.searchParams.get("t") !== TOKEN) return route.fulfill({ status: 401, json: { error: "sign-in" } });
-        if (url.pathname.includes("R3")) return route.fulfill({ status: 404, json: { error: "not found" } });
-        return url.pathname.endsWith(".mp3") ? route.fulfill({ contentType: "audio/mpeg", body: bytes }) : route.fulfill({ json: { L: lines } });
+        if (url.pathname.includes("V01")) return route.fulfill({ status: 404, json: { error: "not found" } });
+        return url.pathname.endsWith(".mp3") ? route.fulfill(recording(url.pathname)) : route.fulfill({ json: { L: lines } });
       });
-      await page.route(/\/songs\/(audio|data)\/R\d\.(mp3|json)/, (route) => {
+      await page.route(/\/songs\/(audio|data)\/[GVS]\d\d\.(mp3|json)/, (route) => {
         const url = new URL(route.request().url());
         if (url.pathname.startsWith("/radio-files/")) return route.fallback();
         asked.push(url.pathname + url.search);
-        if (!url.pathname.includes("R3")) return route.fulfill({ status: 404, body: "" });
-        return url.pathname.endsWith(".mp3") ? route.fulfill({ contentType: "audio/mpeg", body: bytes }) : route.fulfill({ json: { L: lines } });
+        if (!url.pathname.includes("V01")) return route.fulfill({ status: 404, body: "" });
+        return url.pathname.endsWith(".mp3") ? route.fulfill(recording(url.pathname)) : route.fulfill({ json: { L: lines } });
       });
       await page.goto(base, { waitUntil: "domcontentloaded" });
       await until(page, () => window.__ew?.store.getState().screen === "play", 90000);
@@ -119,7 +135,7 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       await playing(page);
       await page.waitForTimeout(1300);
       s = await state(page);
-      check(`${label}: a tap turns it on and a song sounds`, s.on && s.playing && s.sounding && s.song, s);
+      check(`${label}: a tap turns it on and the first grammar song sounds, on Grammar FM, in the course's order`, s.on && s.playing && s.sounding && s.song === "G01" && s.station === "grammar" && !s.shuffle && s.place?.n === 1 && s.place?.of === 2, s);
       if (!phone) {
         // every step of the fade as the media element saw it: many small rises from silence, not one jump
         const steps = await page.evaluate(() => [...new Set(window.radioProbe.volumes)]);
@@ -127,20 +143,51 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       }
       check(`${label}: the recording and its words were asked for with the course's token`, asked.some((u) => u.endsWith(`.mp3?t=${TOKEN}`)) && asked.some((u) => u.endsWith(`.json?t=${TOKEN}`)), asked);
       check(`${label}: ${phone ? "no media element (the game's Web Audio, decoded at 32 kHz)" : "one media element"}`, phone ? s.audios === 0 && s.rates.join() === "32000" : s.rates.length === 0 && s.audios >= 1, s);
-      // the very first time, the radio set opens by itself: Maple FM on the dial, three stations, five keys
+      // the very first time, the radio set opens by itself: the radio's name, the dial, the display, five keys, and the
+      // stations: the course's kinds of song that it has (no Idioms FM here), the mix, and the favorites
       const card = await page.locator(".radio-set").boundingBox();
-      check(`${label}: the radio set is on screen with Maple FM, three stations and five keys`, card && card.x >= 0 && card.y >= 0 && card.x + card.width <= layout.w && card.y + card.height <= layout.h
-        && (await page.locator(".rs-name").textContent()) === "Maple FM" && await page.locator(".rs-preset").count() === 3 && await page.locator(".rs-key").count() === 5, card);
-      const keys = await page.locator(".rs-key, .rs-preset").evaluateAll((els) => els.map((el) => { const r = el.getBoundingClientRect(); return Math.min(r.width, r.height); }));
-      check(`${label}: every key and station of the set is at least 44 px`, keys.every((k) => k >= 44), keys);
+      const rows = await page.locator(".rs-st").evaluateAll((els) => els.map((el) => ({ name: el.querySelector("b").textContent, count: el.querySelector(".rs-st-count")?.textContent ?? null, on: el.getAttribute("aria-checked") === "true", empty: el.getAttribute("aria-disabled") === "true" })));
+      check(`${label}: the radio set is on screen with its name, five keys and the stations`, card && card.x >= 0 && card.y >= 0 && card.x + card.width <= layout.w && card.y + card.height <= layout.h
+        && (await page.locator(".rs-name").textContent()) === "Maple Harbor Radio" && await page.locator(".rs-key").count() === 5, card);
+      check(`${label}: the stations are the course's kinds of song with their counts, then the mix and the favorites; Grammar FM plays`,
+        rows.map((r) => `${r.name} ${r.count}`).join("|") === "Grammar FM 2|Vocab FM 1|Situations FM 1|Random FM 4|Favorites FM null" && rows.map((r) => r.on).join() === "true,false,false,false,false" && rows[4].empty && !rows[0].empty, rows);
+      const keys = await page.locator(".rs-key, .rs-st, .rs-heart").evaluateAll((els) => els.map((el) => { const r = el.getBoundingClientRect(); return Math.min(r.width, r.height); }));
+      check(`${label}: every key, every station and the heart is at least 44 px`, keys.length === 11 && keys.every((k) => k >= 44), keys);
       const dial = await page.evaluate(() => {
         const d = document.querySelector(".rs-dial").getBoundingClientRect(), n = document.querySelector(".rs-needle").getBoundingClientRect();
         const marks = [...document.querySelectorAll(".rs-dial span")].map((el) => el.getBoundingClientRect());
-        return { needle: (n.left + n.width / 2 - d.left) / d.width, marksInside: marks.every((m) => m.left >= d.left && m.right <= d.right) };
+        return { needle: (n.left + n.width / 2 - d.left) / d.width, marksInside: marks.every((m) => m.left >= d.left && m.right <= d.right), ticks: document.querySelectorAll(".rs-tick").length };
       });
-      check(`${label}: the needle stands at 98.7 on a dial whose numbers all fit`, Math.abs(dial.needle - (0.06 + ((98.7 - 88) / 20) * 0.88)) < 0.02 && dial.marksInside, dial);
+      check(`${label}: the needle stands at Grammar FM's 89.5 on a dial whose numbers all fit, with a dot for each station`, Math.abs(dial.needle - (0.06 + ((89.5 - 88) / 20) * 0.88)) < 0.02 && dial.marksInside && dial.ticks === 5, dial);
       const header = await page.evaluate(() => { const n = document.querySelector(".rs-name"), top = document.querySelector(".rs-top"); return { name: [n.scrollWidth, n.clientWidth], right: n.getBoundingClientRect().right, x: document.querySelector(".rs-x").getBoundingClientRect().left, text: top.textContent.trim() }; });
-      check(`${label}: the station's name shows in full, alone in the header (no frequency beside it)`, header.name[0] <= header.name[1] + 1 && header.right <= header.x + 1 && header.text === "Maple FM", header);
+      check(`${label}: the radio's name shows in full, alone in the header`, header.name[0] <= header.name[1] + 1 && header.right <= header.x + 1 && header.text === "Maple Harbor Radio", header);
+      const display = await page.evaluate(() => ({ station: document.querySelector(".rs-station").textContent, place: document.querySelector(".rs-place")?.textContent, time: document.querySelector(".rs-time")?.textContent, song: document.querySelector(".rs-now b")?.textContent }));
+      check(`${label}: the display names the station, the song's place in it, the time and the song`, display.station === "Grammar FM" && display.place === "01/02" && /^0:0\d$/.test(display.time) && display.song === "Radio Song 1", display);
+
+      // ---- the heart: the song joins the course's favorite songs (the note its Songs page reads and its account keeps)
+      const heart = page.locator(".rs-heart");
+      const top = await page.locator(".rs-keys").boundingBox();
+      await (phone ? heart.tap() : heart.click());
+      let note = await page.evaluate((key) => JSON.parse(localStorage.getItem(key) ?? "null"), FAVORITES);
+      s = await state(page);
+      check(`${label}: the heart writes the song into the course's favorites, as the course writes them`, note && Object.keys(note).join() === "G01" && note.G01.liked === true && Math.abs(note.G01.at - Date.now()) < 60000 && s.liked && s.counts.favorites === 1
+        && await heart.getAttribute("aria-pressed") === "true" && s.playing && s.sounding, { note, s });
+      const after = await page.locator(".rs-keys").boundingBox();
+      check(`${label}: it says so, nothing under it moves, and Favorites FM has a song`, (await page.locator(".rs-hearted").textContent()).startsWith("Pridėta prie mėgstamų") && Math.abs(after.y - top.y) <= 1
+        && await page.locator(".rs-st-favorites .rs-st-count").textContent() === "1" && await page.locator(".rs-st-favorites").getAttribute("aria-disabled") === "false", { top, after });
+      const first = note.G01.at;
+      await (phone ? heart.tap() : heart.click());
+      note = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), FAVORITES);
+      check(`${label}: taken back, the heart stays in the note as a later "not liked" (the account's merge goes by it)`, note.G01.liked === false && note.G01.at > first && !(await state(page)).liked && await page.locator(".rs-st-favorites").getAttribute("aria-disabled") === "true", note);
+      // a heart given on the course's own Songs page, in another tab
+      await page.evaluate((key) => {
+        const value = JSON.stringify({ ...JSON.parse(localStorage.getItem(key)), G01: { liked: true, at: Date.now() + 5 }, S62: { liked: true, at: Date.now() } });
+        localStorage.setItem(key, value);
+        window.dispatchEvent(new StorageEvent("storage", { key, newValue: value, storageArea: localStorage }));
+      }, FAVORITES);
+      await page.waitForTimeout(100);
+      s = await state(page);
+      check(`${label}: a heart given on the course's own page shows here too`, s.liked && s.counts.favorites === 2 && await heart.getAttribute("aria-pressed") === "true", s);
       await page.locator(".rs-x").click();
 
       // ---- folded away: the lit button and the station's plate; a tap on the button is off, the next is on
@@ -152,7 +199,7 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
           set: !!document.querySelector(".radio-set"), tools: [...document.querySelectorAll(".toolbar .icon-btn")].map((el) => { const r = el.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom }; }), w: innerWidth };
       });
       check(`${label}: while it plays, the button is lit and a plate beside it names the station or the song`, folded.lit && !folded.set && folded.plate && folded.plate.l >= 0 && folded.plate.r <= folded.w
-        && folded.plate.b - folded.plate.t >= 36 && folded.tools.every((t) => apart(t, folded.plate)) && ["Maple FM", s.song && `Radio Song ${s.song.slice(1)}`].includes(folded.text), folded);
+        && folded.plate.b - folded.plate.t >= 36 && folded.tools.every((t) => apart(t, folded.plate)) && ["Grammar FM", "Radio Song 1"].includes(folded.text), folded);
       await (phone ? button.tap() : button.click());
       s = await state(page);
       check(`${label}: one tap turns it off: the button goes dark and the plate leaves at once`, !s.on && await page.locator(".radio-plate").count() === 0 && !(await button.evaluate((el) => el.classList.contains("on"))), s);
@@ -192,10 +239,6 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       await page.evaluate(() => window.__ew.store.getState().setSettings({ lt: true }));
 
       // ---- a conversation: silent, and silent for a microphone after it
-      // (a fresh song first: the fixture "songs" are only a few seconds long)
-      await page.evaluate(() => window.__ew.radio.next());
-      await playing(page);
-      await page.waitForTimeout(400);
       const before = (await state(page)).position;
       await page.evaluate(() => window.__ew.game.startScenario("s72-cafe"));
       await until(page, () => window.__ew.store.getState().conv.active);
@@ -233,22 +276,50 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       check(`${label}: a microphone lease silences it in the same instant`, !cut.sounding && !cut.playing, cut);
       await playing(page);
 
-      // ---- back and forth, a station, a free example from the course's site, the next song by itself
-      const first = (await state(page)).song;
-      await page.evaluate(() => { window.__ew.radio.setShuffle(false); window.__ew.radio.setStation("soul"); });
+      // ---- the stations: a tap tunes, a station goes on from where it was left, a free example comes from the
+      // course's site, and at a station's end the radio moves on to the next one
+      // (the second grammar song is the short one: each step below leaves it well before its end)
+      await page.evaluate(() => { window.__ew.radio.next(); window.__ew.radio.setOpen(true); });
       await playing(page);
       s = await state(page);
-      check(`${label}: a station starts with its own first song, in the list's order with the shuffle off`, s.station === "soul" && s.song === "R1", s);
+      check(`${label}: next goes to Grammar FM's second song`, s.station === "grammar" && s.song === "G02" && s.place?.n === 2, s);
+      const row = (name) => page.locator(".rs-st", { hasText: name });
+      await (phone ? row("Vocab FM").tap() : row("Vocab FM").click());
+      await playing(page);
+      await page.waitForTimeout(900);
+      s = await state(page);
+      const tuned = await page.evaluate(() => { const d = document.querySelector(".rs-dial")?.getBoundingClientRect(), n = document.querySelector(".rs-needle")?.getBoundingClientRect(); return { needle: d && d.width ? (n.left + n.width / 2 - d.left) / d.width : null, on: document.querySelector(".rs-st.on b").textContent, station: document.querySelector(".rs-station").textContent }; });
+      check(`${label}: a tap on Vocab FM tunes to it: its first song, a free example found on the course's site without the token`, s.station === "vocab" && s.song === "V01" && s.sounding && asked.includes("/songs/audio/V01.mp3") && !asked.some((u) => u.startsWith("/songs/") && u.includes("t=")), { s, asked: asked.slice(-6) });
+      check(`${label}: the needle has moved to 93.1, and the row and the display say Vocab FM`, (tuned.needle === null || Math.abs(tuned.needle - (0.06 + ((93.1 - 88) / 20) * 0.88)) < 0.02) && tuned.on === "Vocab FM" && tuned.station === "Vocab FM", tuned);
+      await (phone ? row("Grammar FM").tap() : row("Grammar FM").click());
+      await playing(page);
+      s = await state(page);
+      check(`${label}: back on Grammar FM, it goes on from the song it was left at`, s.station === "grammar" && s.song === "G02", s);
+      // the shuffle key is the station's own; Random FM is always shuffled, whatever the key says
+      await (phone ? row("Random FM").tap() : row("Random FM").click());
+      await playing(page);
+      const shuffleKey = page.locator(".rs-key").first();
+      s = await state(page);
+      check(`${label}: Random FM plays all the course's songs shuffled, its shuffle key lit and fixed`, s.station === "random" && s.shuffle && s.place?.of === 4 && await shuffleKey.getAttribute("aria-pressed") === "true" && await shuffleKey.getAttribute("aria-disabled") === "true", s);
+      await (phone ? shuffleKey.tap({ force: true }) : shuffleKey.click({ force: true }));
+      check(`${label}: a tap on it changes nothing there`, (await state(page)).shuffle, null);
+      await (phone ? row("Grammar FM").tap() : row("Grammar FM").click());
+      await playing(page);
+      s = await state(page);
+      check(`${label}: and Grammar FM is in the course's order still, at its song`, s.station === "grammar" && !s.shuffle && s.song === "G02" && await shuffleKey.getAttribute("aria-pressed") === "false", s);
+      await page.locator(".rs-x").click();
       await page.evaluate(() => window.__ew.radio.next());
       await playing(page);
       await page.waitForTimeout(300);
       s = await state(page);
-      check(`${label}: next goes to the station's next song, a free example found on the course's site without the token`, s.song === "R3" && s.sounding && asked.includes("/songs/audio/R3.mp3") && !asked.some((u) => u.startsWith("/songs/") && u.includes("t=")), { s, asked: asked.slice(-6) });
+      check(`${label}: next from a station's last song moves on to the next station's first`, s.station === "vocab" && s.song === "V01" && s.sounding, s);
       await page.evaluate(() => window.__ew.radio.previous());
       await playing(page);
-      check(`${label}: previous goes back`, (await state(page)).song === "R1", first);
-      await until(page, () => window.__ew.radio.store.getState().song?.id === "R3" && window.__ew.radio.store.getState().playing, (seconds + 6) * 1000);
-      check(`${label}: at a song's end the next one starts by itself`, (await state(page)).sounding, null);
+      s = await state(page);
+      check(`${label}: previous goes back to the last song of the station before`, s.station === "grammar" && s.song === "G02", s);
+      await until(page, () => window.__ew.radio.store.getState().song?.id === "V01" && window.__ew.radio.store.getState().playing, (seconds + 6) * 1000);
+      s = await state(page);
+      check(`${label}: when Grammar FM has played to its end, the radio moves on to Vocab FM by itself`, s.sounding && s.station === "vocab" && s.place?.n === 1, s);
 
       // ---- remembered: the next visit goes on (after the tap a browser may ask for)
       await page.evaluate(() => window.__ew.radio.setLyrics(false));
@@ -258,7 +329,7 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       await until(page, () => window.__ew.radio.store.getState().ready);
       await page.waitForTimeout(600);
       s = await state(page);
-      check(`${label}: the radio is remembered as on, at its station and song, and silent until the browser lets it`, s.on && s.station === "soul" && s.song === "R3" && (s.playing || s.needsTap) && (s.playing || !s.sounding), s);
+      check(`${label}: the radio is remembered as on, at its station and song, and silent until the browser lets it`, s.on && s.station === "vocab" && s.song === "V01" && s.liked === false && s.counts.favorites === 2 && (s.playing || s.needsTap) && (s.playing || !s.sounding), s);
       // any tap in the game will do; this one changes nothing else
       await (phone ? page.locator(".objective-card .collapse-btn").tap() : page.locator(".objective-card .collapse-btn").click());
       await playing(page);
@@ -282,7 +353,7 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       await context.addInitScript(init, TOKEN);
       const page = await context.newPage();
       await page.route("**/songs/index.json", (route) => route.fulfill({ json: { lang: "en", songs } }));
-      await page.route("**/radio-files/songs/**", (route) => route.request().url().endsWith(".mp3") || route.request().url().includes(".mp3?") ? route.fulfill({ contentType: "audio/mpeg", body: bytes }) : route.fulfill({ json: { L: lines } }));
+      await page.route("**/radio-files/songs/**", (route) => route.request().url().endsWith(".mp3") || route.request().url().includes(".mp3?") ? route.fulfill(recording(route.request().url())) : route.fulfill({ json: { L: lines } }));
       await page.goto(base, { waitUntil: "domcontentloaded" });
       await until(page, () => window.__ew?.store.getState().screen === "play", 90000);
       await page.evaluate((touch) => window.__ew.store.getState().setHud({ panel: null, ...(touch ? { showTouch: true } : {}) }), width < 1000);
@@ -297,14 +368,20 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       check(`${name} ${width}×${height}: every tool, the radio and the light-mode button are on screen and apart`, boxes.tools.every(inside) && boxes.tools.every((a, i) => boxes.tools.every((b, j) => i === j || apart(a, b))), boxes);
       check(`${name} ${width}×${height}: the tools stay clear of the movement controls`, boxes.tools.every((t) => apart(t, boxes.jump) && apart(t, boxes.joy)), boxes);
       check(`${name} ${width}×${height}: the open radio set fits the screen`, inside(boxes.card), boxes);
-      // the largest text size (Nustatymai: A++): every station's name still shows in full, and the set still fits
+      // the largest text size (Nustatymai: A++): the radio's name and every station's name show in full, the set still
+      // fits, and the station that plays is in view (on the smallest screens the stations scroll)
       await page.evaluate(() => window.__ew.store.getState().setSettings({ textSize: 1.3 }));
-      for (const id of ["town", "soul", "sunny"]) {
+      for (const id of ["grammar", "situations", "random"]) {
         await page.evaluate((station) => window.__ew.radio.setStation(station), id);
         await until(page, () => document.querySelector(".radio-set").getAnimations().every((a) => a.playState === "finished"), 15000);
-        await page.waitForTimeout(120);
-        const big = await page.evaluate(() => { const n = document.querySelector(".rs-name"), r = document.querySelector(".radio-set").getBoundingClientRect(); return { text: n.textContent, full: n.scrollWidth <= n.clientWidth + 1, l: r.left, t: r.top, r: r.right, b: r.bottom, w: innerWidth, h: innerHeight }; });
-        check(`${name} ${width}×${height}: at the largest text “${big.text}” shows in full and the set fits`, big.full && big.l >= 0 && big.t >= 0 && big.r <= big.w && big.b <= big.h, big);
+        await page.waitForTimeout(160);
+        const big = await page.evaluate(() => {
+          const n = document.querySelector(".rs-name"), r = document.querySelector(".radio-set").getBoundingClientRect(), list = document.querySelector(".rs-stations").getBoundingClientRect(), on = document.querySelector(".rs-st.on").getBoundingClientRect();
+          return { on: document.querySelector(".rs-st.on b").textContent, full: n.scrollWidth <= n.clientWidth + 1, names: [...document.querySelectorAll(".rs-st b")].every((b) => b.scrollWidth <= b.clientWidth + 1),
+            inView: on.top >= list.top - 1 && on.bottom <= list.bottom + 1, keys: [...document.querySelectorAll(".rs-key, .rs-st")].every((el) => { const k = el.getBoundingClientRect(); return Math.min(k.width, k.height) >= 44; }),
+            l: r.left, t: r.top, r: r.right, b: r.bottom, w: innerWidth, h: innerHeight };
+        });
+        check(`${name} ${width}×${height}: at the largest text every name shows in full, the set fits, and “${big.on}” is in view`, big.full && big.names && big.inView && big.keys && big.l >= 0 && big.t >= 0 && big.r <= big.w && big.b <= big.h, big);
       }
       await context.close();
     }
