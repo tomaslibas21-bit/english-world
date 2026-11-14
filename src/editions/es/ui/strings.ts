@@ -543,6 +543,16 @@ export const STRINGS: Record<string, string> = {
   "Pridėta prie mėgstamų – rasi ir kurso „Dainose“.": "Added to your favorites, in the course's Songs too.",
   "Pašalinta iš mėgstamų.": "Removed from favorites.",
   "Paspausk širdelę prie dainos, kuri patinka": "Tap the heart on a song you love",
+  // the lyric strip's settings, by the course's song player's words for them
+  "Dainos žodžiai": "Lyrics",
+  "Dainos žodžių dydis": "Lyric size",
+  "Teksto dydis: {n} iš {of}": "Text size: {n} of {of}",
+  "Sakinio vertimas": "Sentence translation",
+  "Visos eilutės vertimas po žodžiais": "The whole line's translation under the words",
+  "Paaiškinimai": "Notes",
+  "Kas eilutėje gali suklaidinti: žodžiai, posakiai, gramatika": "What may trip you up in the line: words, sayings, grammar",
+  "Paveikslėliai": "Pictures",
+  "Eilutės paveikslėlis šalia žodžių": "The line's picture beside the words",
   // the stations' lines (src/editions/es/content/radio.ts)
   "Gramatika": "Grammar",
   "Žodynas": "Vocabulary",

@@ -60,7 +60,7 @@
   /* beside the tools, level with their top: clear of the lyric strip and the "E" prompt at the bottom. Its width
      follows the text size (Nustatymai: A, A+, A++), so the set keeps its proportions and the names their room. It is
      never taller than the screen: the stations scroll when it would be */
-  position: fixed; z-index: 13; right: calc(max(14px, env(safe-area-inset-right)) + 64px); top: clamp(14px, calc(100dvh - 39em), 150px); width: min(17.5em, calc(100vw - 20px));
+  position: fixed; z-index: 13; right: calc(max(14px, env(safe-area-inset-right)) + 64px); top: clamp(14px, calc(100dvh - 44em), 150px); width: min(17.5em, calc(100vw - 20px));
   max-height: calc(100dvh - 28px);
   display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); grid-template-areas: "top" "main" "stations";
   gap: 10px; padding: 12px 13px 13px; color: var(--rs-ink); text-align: left;
@@ -169,6 +169,30 @@
 }
 .rs-key.rs-knob:hover:not(:disabled) { background: var(--rs-knob); color: var(--rs-knob-ink); filter: brightness(1.07); }
 
+/* the lyric strip's settings, two by two under the keys: the type size (a tap takes the next size), and three
+   switches. Dimmed while the strip itself is switched off */
+.rs-opts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 5px; transition: opacity 0.2s; }
+.rs-opts.off { opacity: 0.45; }
+.rs-opt {
+  display: flex; align-items: center; gap: 7px; min-height: 44px; min-width: 0; padding: 3px 8px 3px 6px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.14); background: var(--rs-key); color: var(--rs-ink-soft);
+  text-align: left; font-size: 0.72em; font-weight: 700; line-height: 1.12; transition: background-color 0.15s, color 0.15s, border-color 0.15s, transform 0.15s;
+}
+.rs-opt:hover:not(:disabled) { color: var(--rs-ink); background: var(--rs-key-on); }
+.rs-opt:active:not(:disabled) { transform: translateY(1px); }
+.rs-opt:disabled { cursor: default; }
+.rs-opt.on { color: var(--rs-ink); background: var(--rs-key-on); border-color: rgba(255, 255, 255, 0.26); }
+.rs-opt-sign { flex: none; width: 24px; height: 24px; display: grid; place-items: center; color: var(--rs-ink-soft); }
+.rs-opt.on .rs-opt-sign, .rs-opt-size .rs-opt-sign { color: var(--rs-trim); }
+.rs-opt-text { flex: 1 1 auto; min-width: 0; overflow-wrap: break-word; }
+.rs-aa { display: block; font-family: var(--en); font-weight: 600; font-size: 1.75em; line-height: 24px; letter-spacing: -0.02em; white-space: nowrap; text-align: center; }
+.rs-aa small { font-size: 0.72em; }
+.rs-opt-size { color: var(--rs-ink); }
+/* which of the sizes it is at */
+.rs-steps { flex: none; display: flex; align-items: flex-end; gap: 2px; height: 12px; }
+.rs-steps i { width: 3px; border-radius: 1.5px; background: currentColor; opacity: 0.28; }
+.rs-steps i:nth-child(1) { height: 5px; } .rs-steps i:nth-child(2) { height: 7px; } .rs-steps i:nth-child(3) { height: 9.5px; } .rs-steps i:nth-child(4) { height: 12px; }
+.rs-steps i.on { opacity: 1; background: var(--rs-trim); }
+
 /* the stations: one row each, the course's kinds of song by number, then the mix and the favorites. The one that
    plays is the lit cream row */
 .rs-stations { grid-area: stations; display: flex; flex-direction: column; gap: 4px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin: 0 -4px -4px; padding: 0 4px 4px; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.3) transparent; }
@@ -199,12 +223,20 @@
 
 /* ---------- the lyric strip: above the "E" prompt (and above the first-visit help while that is open) ---------- */
 .hud > .radio-strip { pointer-events: none; }
-.radio-strip { position: absolute; left: 50%; transform: translateX(-50%); bottom: 96px; width: max-content; max-width: min(760px, calc(100vw - 190px)); }
+/* Its type is one factor (--rl, the set's size key) on the strip: every size in it is a share of that, so the words,
+   their glosses, the sentence under them, the picture and the notes grow together */
+.radio-strip { position: absolute; left: 50%; transform: translateX(-50%); bottom: 96px; width: max-content; max-width: min(760px, calc(100vw - 190px)); display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: calc(1em * var(--rl, 1)); }
 .hud:has(.help-strip) .radio-strip { bottom: 190px; }
-.radio-line {
-  display: flex; flex-wrap: wrap; justify-content: center; column-gap: 0.5em; row-gap: 0.2em; padding: 7px 16px 8px; border-radius: 16px;
-  background: var(--rs-strip, rgba(24, 32, 40, 0.78)); box-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.45); animation: radio-line 0.3s ease;
+/* the plate: the line's picture, if it shows, and beside it the words with the sentence under them */
+.radio-card {
+  display: flex; align-items: center; gap: 0.75em; max-width: 100%; padding: 7px 16px 8px; border-radius: 16px;
+  background: var(--rs-strip, rgba(24, 32, 40, 0.78)); box-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.45);
 }
+.radio-card.pictured { padding-left: 8px; }
+.radio-pic { flex: none; width: 4.4em; height: 4.4em; border-radius: 0.6em; object-fit: cover; background: rgba(255, 255, 255, 0.08); box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.22), 0 4px 10px -4px rgba(0, 0, 0, 0.5); animation: radio-pic 0.45s ease; }
+@keyframes radio-pic { from { opacity: 0; transform: scale(0.94); } }
+.radio-words { min-width: 0; display: flex; flex-direction: column; align-items: center; }
+.radio-line { display: flex; flex-wrap: wrap; justify-content: center; column-gap: 0.5em; row-gap: 0.2em; animation: radio-line 0.3s ease; }
 @keyframes radio-line { from { opacity: 0; transform: translateY(5px); } }
 .ru { display: inline-flex; flex-direction: column; align-items: center; text-align: center; }
 .ru .rt { font-family: var(--en); font-size: 1.36em; line-height: 1.15; color: rgba(255, 255, 255, 0.82); transition: color 0.12s linear; }
@@ -212,6 +244,15 @@
 .ru.sung .rt, .ru.now .rt { color: #ffd66b; }
 .ru.sung .rg, .ru.now .rg { color: #ffe9ad; }
 .ru.now .rt { text-shadow: 0 0 12px rgba(255, 214, 107, 0.5); }
+/* the whole sentence in the learner's language, under the words ("Sakinio vertimas"). Under a bilingual song's row in
+   that language the same words stand unseen: the strip keeps one height through the song */
+.radio-nat { max-width: 100%; margin-top: 0.3em; padding-top: 0.28em; border-top: 1px solid rgba(255, 255, 255, 0.16); font-family: var(--ui); font-size: 0.86em; font-weight: 600; line-height: 1.25; text-align: center; text-wrap: balance; color: rgba(255, 255, 255, 0.86); animation: radio-line 0.3s ease; }
+.radio-nat.unseen { visibility: hidden; }
+/* the course's notes on the line ("Paaiškinimai"), on a plate of their own under the words */
+.radio-notes { max-width: min(34em, 100%); padding: 0.4em 0.9em 0.45em; border-radius: 13px; background: var(--rs-strip, rgba(24, 32, 40, 0.78)); box-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.45); font-family: var(--ui); font-size: 0.8em; font-weight: 600; line-height: 1.32; color: rgba(255, 255, 255, 0.9); animation: radio-line 0.35s ease; }
+.radio-notes p { margin: 0; }
+.radio-notes p + p { margin-top: 0.3em; padding-top: 0.3em; border-top: 1px solid rgba(255, 255, 255, 0.14); }
+.radio-notes b { font-family: var(--en); font-weight: 600; font-size: 1.14em; color: #ffd66b; margin-right: 0.5em; }
 /* a bilingual song's line sung in the learner's language: the glosses' own type, so it reads as that language */
 .radio-line.translation .rt { font-family: var(--ui); font-weight: 700; font-size: 1.12em; line-height: 1.38; }
 .radio-line.translation .ru.sung .rt, .radio-line.translation .ru.now .rt { color: #ffe9ad; }
@@ -274,8 +315,13 @@
   .rs-st-mix { margin-top: 0; }
 }
 @media (max-width: 900px) {
-  .radio-strip { left: 8px; right: 66px; transform: none; width: auto; max-width: none; display: flex; justify-content: center; }
-  .radio-line { padding: 6px 10px 7px; column-gap: 0.42em; }
+  /* a narrow screen has less room to grow into: the size key's steps go 60 % as far there (91, 100, 112, 127 %) */
+  .radio-strip { left: 8px; right: 66px; transform: none; width: auto; max-width: none; font-size: calc(1em * (1 + (var(--rl, 1) - 1) * 0.6)); }
+  .radio-notes { font-size: 0.76em; }
+  .radio-card { padding: 6px 10px 7px; gap: 0.6em; }
+  .radio-card.pictured { padding-left: 7px; }
+  .radio-pic { width: 3.9em; height: 3.9em; }
+  .radio-line { column-gap: 0.42em; }
   .ru .rt { font-size: 1.18em; }
   .ru .rg { font-size: 0.68em; }
   .radio-line.translation.glossed .ru { padding-block: calc((1.18em * 1.15 + 0.68em * 1.2 - 1.12em * 1.38) / 2 + 0.5px); }
@@ -283,7 +329,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .radio-eq i, .radio-plate.playing .radio-eq i, .rs-st.on .radio-eq i, .radio-set.playing .rs-spectrum i, .radio-set, .radio-line, .radio-plate, .radio-plate-text,
-  .rs-heart-pop, .rs-heart-pop::after, .rs-now em.rs-hearted { animation: none; }
+  .rs-heart-pop, .rs-heart-pop::after, .rs-now em.rs-hearted, .radio-pic, .radio-nat, .radio-notes { animation: none; }
   .radio-set.playing .rs-spectrum i:nth-child(odd) { transform: scaleY(0.7); }
   .radio-set.playing .rs-spectrum i:nth-child(even) { transform: scaleY(0.45); }
   .rs-needle, .rs-dial, .rs-lamp, .radio-lamp, .rs-progress i { transition: none; }
