@@ -762,6 +762,15 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 @keyframes scene-breathe { from { transform: scale(1); } to { transform: scale(1.03); } }
 @media (prefers-reduced-motion: reduce) { .scene-backdrop img { animation: none; } }
 body.scene-on .tag-layer { display: none; }
+/* the picture / 3D switch in a conversation (ViewSwitch.tsx): the top-left corner of the picture (or of the 3D view) */
+.view-switch { position: fixed; z-index: 16; top: calc(12px + env(safe-area-inset-top)); left: calc(12px + env(safe-area-inset-left));
+  display: flex; gap: 2px; padding: 3px; border-radius: 14px; background: rgba(255, 255, 255, 0.88); backdrop-filter: blur(6px);
+  box-shadow: 0 2px 10px -3px rgba(12, 32, 40, 0.35); }
+.view-switch button { min-width: 44px; min-height: 40px; padding: 0 12px; border: 0; border-radius: 11px; background: transparent;
+  font: 700 0.92rem var(--ui, system-ui), sans-serif; color: var(--ink, #1f2a33); cursor: pointer; }
+.view-switch button:hover { background: rgba(31, 42, 51, 0.07); }
+.view-switch button.on { background: var(--accent); color: #fff; box-shadow: 0 1px 2px rgba(12, 52, 57, 0.3); }
+.view-switch button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 /* Phones share one image boundary with the panel; the desktop portrait is unchanged. */
 @media (max-width: 900px) {
   .scene-backdrop img { bottom: auto; height: calc(var(--conversation-image-height) + 18px); }
