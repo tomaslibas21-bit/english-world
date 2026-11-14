@@ -51,6 +51,7 @@ import T_s89_video_call from "./s89-video-call.json";
 import T_s90_running_late from "./s90-running-late.json";
 import T_s91a_lost_wallet from "./s91a-lost-wallet.json";
 import T_s91b_police from "./s91b-police.json";
+import T_x01_surf from "./x01-surf.json";
 
 export const TABLES: Record<string, LearnerTable> = {
   "_shared": T__shared as LearnerTable,
@@ -104,4 +105,5 @@ export const TABLES: Record<string, LearnerTable> = {
   "s90-running-late": T_s90_running_late as LearnerTable,
   "s91a-lost-wallet": T_s91a_lost_wallet as LearnerTable,
   "s91b-police": T_s91b_police as LearnerTable,
+  "x01-surf": T_x01_surf as LearnerTable,
 };

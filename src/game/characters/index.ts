@@ -53,6 +53,8 @@ export interface GameCharacter {
   /** Swimming (0–1) and, under water, diving (0–1): src/game/water.ts SWIM (the original Character). */
   swim?: number;
   dive?: number;
+  /** On a surfboard (src/game/surf/; the original Character): lying on it and paddling, standing side-on, astride. */
+  surf?: { prone: number; stance: number; crouch: number; pitch: number; stroke: number; wobble: number; straddle: number };
   holdMoment?(kind: Moment): void;
   /** Drawn as its far version (the original Character, once one is attached: Character.far, attachFar). */
   setFar?(on: boolean): void;

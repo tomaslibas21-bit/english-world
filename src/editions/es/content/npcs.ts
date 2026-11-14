@@ -97,6 +97,8 @@ const LOOK: Record<string, Partial<Look>> = {
   tyler: { skin: "#c89367", hair: { style: "wavy", color: "#2a211c" }, top: "#5d5c43", acc: ["beard", "cardigan"], accColor: "#e9cab0" },
   mr_grant: { skin: "#6d4933", hair: { style: "bald", color: "#b8b2aa" }, top: "#9f4d41", acc: ["beard", "readers"] },
   // customs (s65b)
+  // a coral rash guard and board shorts, barefoot in flip-flops (no portrait yet: docs/es/PICTURES.md "x01-surf")
+  surf: { skin: "#a8734b", hair: { style: "braid", color: "#3a2a1f" }, top: "#ff6a3d", bottom: "#17708a", shoes: "#3a2a1f", shorts: true, sleeves: "short", flipflops: true, acc: ["earrings"], build: 0.96 },
   aduana: { skin: "#d2a177", hair: { style: "bun", color: "#533423" }, top: "#374359", bottom: "#2d3b4b", acc: ["badge", "earrings"] },
 };
 
@@ -175,6 +177,10 @@ const CAST: Record<string, Cast> = {
 const EXTRA: Record<string, [base: string, ...cast: Cast]> = {
   // customs after the baggage hall (s65b): another agency than immigration (s65a), so another officer
   aduana: ["diaz", "Agente Medina", "Aduana", "Customs"],
+  // the watersports palapa on the beach west of El Muelle (x01-surf, and the surf game: src/game/surf/): a surfer from
+  // Puerto Escondido on the Pacific coast, who teaches beginners on the Caribbean's small waves; tú to everyone
+  surf: ["jordan", "Nayeli", "Instructora de surf", "Surf instructor", { informal: true, informalSpain: true,
+    bio: "Grew up surfing in Puerto Escondido, on the Pacific. Here she teaches beginners on the Caribbean's gentle waves." }],
 };
 
 const hash = (s: string) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);

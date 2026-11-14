@@ -83,6 +83,9 @@ const MEXICO: Record<string, string> = {
   maggie: "es-419-tutor-3", kyle: "es-419-commercial-1", harbor_bot: "es-419-commercial-9", brenda: "es-419-assistant-6", vanessa: "es-419-advisor-6",
   greg: "es-419-podcaster-4", whitaker: "es-419-csagent-9", russo: "es-419-assistant-1", emily: "es-419-assistant-2", tyler: "es-419-assistant-9",
   mr_grant: "es-419-concierge-8",
+  // x01-surf (15 Nov 2026): bright, breezy, youthful at 31; not a woman's voice of the harbor (El Muelle: Camila
+  // assistant-1, Fátima assistant-1; the passer-by assistant-1) nor of Mónica, the trainer she is built on (commercial-9)
+  surf: "es-419-csagent-7",
 };
 /** The catalog's Castilian voices (es-ES, `voices --lang=es-ES`, 12 Nov 2026). Spain's set (esp_) is voiced with these:
  *  the sample sp1 gave the Mexican casting's es-419 voices a Castilian direction, and Gemini 3.1 Pro heard 39 of 80
@@ -128,6 +131,9 @@ const SPAIN: Record<string, string> = {
   maggie: "es-es-podcaster-5", kyle: "es-es-training-9", harbor_bot: "es-es-advisor-8", brenda: "es-es-training-12", vanessa: "es-es-csagent-5",
   greg: "es-es-advisor-9", whitaker: "es-es-assistant-4", russo: "es-es-concierge-3", emily: "es-es-tutor-12", tyler: "es-es-training-9",
   mr_grant: "es-es-assistant-3",
+  // x01-surf: an influencer's voice at 30; not the harbor's women (Camila csagent-5, Fátima and the passer-by
+  // concierge-3) nor Mónica's (techagent-5)
+  surf: "es-es-commercial-3",
 };
 /** Which casting: Gemini's 30 prebuilt voices ("prebuilt") or the catalog's Mexican voices ("mexico"). */
 export type Casting = "prebuilt" | "mexico";
@@ -239,6 +245,8 @@ export const CAST: Record<string, Role> = {
   emily: { voice: "Achernar", age: "late 30s", manner: "warm and a little nervous", pace: "easy" },
   tyler: { voice: "Fenrir", age: "early 30s", manner: "excitable, full of startup talk", pace: "fast" },
   mr_grant: { voice: "Zubenelgenubi", age: "about 60", manner: "friendly and very casual", pace: "relaxed" },
+  // the beach (x01-surf and the surf game's commands): a surf instructor from Puerto Escondido, about 28
+  surf: { voice: "Aoede", age: "about 28", manner: "warm, sporty and lively, a surf instructor who loves the sea", pace: "lively" },
 };
 
 /** A conversation's setting, for everyone in it or only for some (`who`). `fx`: the sound of a phone line or a
@@ -271,6 +279,18 @@ export const SCENES: Record<string, Scene> = {
   "s35-gym": { setting: "coaching at the gym" },
   "s87-interview": { setting: "a job interview in an office" },
   "s91b-police": { setting: "at a police station desk" },
+  // x01-surf: relaxed at the palapa; the surf game's commands (the sg_ lines, LINE_SCENES) called out over the water
+  "x01-surf": { setting: "relaxed and friendly, chatting at her surf school's palapa on the beach" },
+  "x01-surf:sg_": { setting: "calling out over the waves to a learner on a surfboard: energetic, clear and encouraging, every command short and easy to hear" },
+};
+
+/** Parts of a conversation with a setting of their own: a line whose id starts with one of these prefixes is listed
+ *  (lines-es.ts) as said in "<conversation>:<prefix>" instead of the conversation, and takes that SCENES entry. A
+ *  text said in both parts gets neither setting (styleFor: the settings must agree). */
+export const LINE_SCENES: Record<string, string[]> = { "x01-surf": ["sg_"] };
+export const sceneSit = (sit: string, lineId: string): string => {
+  const p = LINE_SCENES[sit]?.find((x) => lineId.startsWith(x));
+  return p ? `${sit}:${p}` : sit;
 };
 
 /** The voice ids (src/editions/es/content/voices.ts) → who they are, and in which accent. */

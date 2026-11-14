@@ -44,6 +44,8 @@ export const LOCATIONS: Record<string, LocationDef> = Object.fromEntries([
   L("gym", "Gimnasio Colibrí", "The gym", "residential", "interior", "🏋️"),
   L("cedar-lane", "Calle de los Cedros", "Cedar Street", "residential", "outdoor", "🚗"),
   L("sproutly", "Brotecito", "The startup “Brotecito”", "harbor", "interior", "🌱"),
+  // the watersports palapa on the beach west of El Muelle (x01-surf; the surf game starts here)
+  L("surf-palapa", "Escuela de Surf La Ola", "Surf school and gear rental", "harbor", "outdoor", "🏄"),
   L("phone", "Llamada", "Phone call", "phone", "phone", "📱"),
 ].map((l) => [l.id, l]));
 
@@ -76,6 +78,7 @@ export const NAME_MEANING: Record<string, string> = {
   gym: "Hummingbird gym",
   "cedar-lane": "street of the cedars",
   sproutly: "little sprout",
+  "surf-palapa": "The Wave surf school",
 };
 
 /** A place in English, with what its Spanish name means: "Café “La Ceiba” – literally “the ceiba (…)”". */

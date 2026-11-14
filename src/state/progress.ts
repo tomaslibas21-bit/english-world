@@ -31,6 +31,9 @@ export interface Progress {
   /** How the game is used, for the course's owner: openings, days, minutes in the town and in the pictures, the
    *  radio (state/playStats.ts). */
   play?: import("./playStats").PlayStats;
+  /** The surf lesson (game/surf): waves ridden and seconds on them, commands followed of those asked, lessons taken,
+   *  and how often each of the instructor's lines has been heard (their help fades with it). */
+  surf?: { waves: number; seconds: number; followed: number; asked: number; lessons: number; heard: Record<string, number> };
 }
 
 const KEY = `${EDITION.storage}-progress-v1`;

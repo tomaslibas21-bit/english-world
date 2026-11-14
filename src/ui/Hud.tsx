@@ -1,6 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useStore } from "../state/store";
 import { SectionHelpButton } from "./sectionHelp";
+import { useSurf } from "../game/surf/store";
+import { SurfOverlay, SurfPicker } from "./Surf";
 import { game } from "../game/gameRef";
 import { WORLD, SEA_Z } from "../game/world/layout";
 import { LOCATIONS } from "../content/locations";
@@ -43,7 +45,16 @@ export function Hud() {
   const due = useDueCards();
   const hasRadio = useRadio((s) => s.available);
   const [helpOpen, setHelpOpen] = useState(() => { try { return localStorage.getItem("ew-help-closed") !== "1"; } catch { return true; } });
+  const surfing = useSurf((s) => s.active);
   if (conv.active) return <Fade />;
+  // the surf lesson has the screen to itself: her line, the answers, the score, and the phone's controls
+  if (surfing) return (
+    <div className={"hud" + (hud.showTouch ? " has-touch" : "")}>
+      <SurfOverlay />
+      {hud.showTouch && <TouchControls />}
+      <Fade />
+    </div>
+  );
   const banner = hud.zoneBanner ? splitLead(hud.zoneBanner.title) : null;
   return (
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")}>
@@ -104,6 +115,7 @@ export function Hud() {
         </div>
       )}
       {hud.showTouch && <TouchControls />}
+      <SurfPicker />
       <Fade />
     </div>
   );
@@ -312,12 +324,14 @@ function TouchControls() {
       <div className="joy" ref={ref}><div className="knob" ref={knob} /></div>
       {/* the jump stays under the right thumb; with someone to talk to or a door to go through it moves over for that button
           (a second tap while in the air is a flip: every press goes to the game, which knows where the player is) */}
-      {prompt && <button className="act-btn" onClick={() => game?.interact()}>{prompt.kind === "talk" ? L("Kalbėti") : prompt.kind === "exit" ? L("Išeiti") : prompt.kind === "drive" ? L("Vairuoti") : prompt.kind === "boat" ? L("Plaukti") : prompt.kind === "out" ? L("Išlipti") : prompt.kind === "climb" ? L("Užlipti") : L("Įeiti")}</button>}
+      {prompt && <button className="act-btn" onClick={() => game?.interact()}>{prompt.kind === "talk" ? L("Kalbėti") : prompt.kind === "exit" ? L("Išeiti") : prompt.kind === "drive" ? L("Vairuoti") : prompt.kind === "boat" ? L("Plaukti") : prompt.kind === "out" ? L("Išlipti") : prompt.kind === "climb" ? L("Užlipti") : prompt.kind === "surf" ? L("Banglentė") : prompt.kind === "paddle" ? L("Irkluoti") : L("Įeiti")}</button>}
       {/* (at a wheel the same button is the brake, for as long as it is held; in the water, a dive and the way back up) */}
       {ride === "car" || ride === "boat"
         ? <button className={"jump-btn brake-btn" + (prompt ? " beside" : "")} aria-label={L("Stabdyti")} title={L("Stabdyti")} onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); game?.hold(true); }} onPointerUp={() => game?.hold(false)} onPointerCancel={() => game?.hold(false)} onLostPointerCapture={() => game?.hold(false)}><span aria-hidden>STOP</span></button>
         : ride === "swim" || ride === "dive"
           ? <button className={"jump-btn" + (prompt ? " beside" : "")} aria-label={ride === "dive" ? L("Išnirti") : L("Panerti")} title={ride === "dive" ? L("Išnirti") : L("Panerti")} onPointerDown={(e) => { e.preventDefault(); game?.jump(); }}><Icon name={ride === "dive" ? "chevronUp" : "chevronDown"} size={34} strokeWidth={2.5} /></button>
+          : ride === "surf"
+            ? <button className={"jump-btn" + (prompt ? " beside" : "")} aria-label={L("Atsistoti")} title={L("Atsistoti")} onPointerDown={(e) => { e.preventDefault(); game?.jump(); }}><Icon name="chevronUp" size={34} strokeWidth={2.5} /></button>
           : <button className={"jump-btn" + (prompt ? " beside" : "")} aria-label={L("Pašokti")} title={L("Pašokti")} onPointerDown={(e) => { e.preventDefault(); game?.jump(); }}><Icon name="chevronUp" size={34} strokeWidth={2.5} /></button>}
     </>
   );

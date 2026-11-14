@@ -123,7 +123,10 @@ export const THEME: TownTheme = {
   },
   // s71b: in Mexico an attendant fills the tank, so Doña Chela stands at the pump by the learner's car (beside pump 2,
   // the car facing the street), not in the shop; the learner talks to her from behind the car
-  outdoorNpcs: [{ npc: "dot", x: 111.35, z: 6.1, rot: 0.11, ax: 111.6, az: 8.3 }],
+  outdoorNpcs: [{ npc: "dot", x: 111.35, z: 6.1, rot: 0.11, ax: 111.6, az: 8.3 },
+    // x01-surf: Nayeli behind the counter of her palapa on the sand east of the steps down from the malecón (x −48),
+    // looking west along the beach; the learner stands on the sand before the counter
+    { npc: "surf", x: -45.45, z: -68.15, rot: -Math.PI / 2, ax: -47.55, az: -68.15 }],
   spotCars: [[113, 4.6, Math.PI]],
   // --- the town outdoors ---
   centrepiece: "kiosco",
@@ -199,8 +202,9 @@ export const THEME: TownTheme = {
   malecon: { kiosk: [-37, -64.6], kioskSign: "Tours a los cenotes", plaque: "Malecón" },
   palapas: [[-90, -69], [-80, -69.2], [-64, -68.9], [-55, -69.1], [-6, -69], [3, -69.2], [31, -69], [42, -69.2], [52, -68.9], [76, -69], [90, -69.2], [100, -69]],
   lanchas: {
-    // (the one that lay off the beach east of El Muelle, [-14, -80], is the lancha one can take out: world/rides.ts)
-    afloat: [[-46, -77, 0.3, "#e4007c"], [14, -87, 0.8, "#1f6fd1"], [40, -82, 2.6, "#7ac143"]],
+    // (the one that lay off the beach east of El Muelle, [-14, -80], is the lancha one can take out: world/rides.ts;
+    // the one west of the pier lies further west, [-86, -78.5], clear of the surf school's waves: world/surf.ts)
+    afloat: [[-86, -78.5, 0.3, "#e4007c"], [14, -87, 0.8, "#1f6fd1"], [40, -82, 2.6, "#7ac143"]],
     beached: [[16, -70, 1.9, "#1f6fd1"], [23.5, -70.4, 1.2, "#e4007c"], [64, -70.2, 2.0, "#00a6a6"]],
   },
   mexican: { roof: "#b5533c" },
@@ -439,6 +443,14 @@ export const THEME: TownTheme = {
   beach: {
     towels: [[-85, -70.6, 0.1, "#ff5a36"], [-58.4, -70.5, 0.3, "#e4007c"], [-1.0, -70.8, -0.2, "#00a6a6"], [36.5, -70.7, 0.15, "#f6a800"], [82.5, -70.6, -0.25, "#1f6fd1"]],
     cocos: [-14, -63.6, 0, "Cocos fríos"],
+  },
+  // La Ola, the surf school's palapa on the sand between the malecón's steps and El Muelle's terrace, its counter to
+  // the west (the steps, the beach), the sea on its right; the kayak on the sand before it, by the water
+  surfShack: {
+    x: -44.3, z: -68.15, rot: -Math.PI / 2, name: "LA OLA", sub: "Renta · Escuela de surf",
+    report: ["HOY", "Olas: 1 m", "Marea baja", "Viento suave"],
+    prices: ["RENTA POR HORA", "Tabla de surf $200", "Paddle $250 · Kayak $250", "Snorkel $150", "Clase de surf $600"],
+    kayak: [-49.6, -69.75, Math.PI / 2 - 0.12],
   },
   // the atrial cross before the church's door, by the palm at the square's corner
   atrialCross: [50.0, -44.6], // (graphics round 4: inside the atrium's wall)
