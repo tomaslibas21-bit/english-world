@@ -15,7 +15,7 @@ function words(step: CoachStep, touch: boolean): [string, string] {
   switch (step) {
     case "walk": return [L("Vaikščiok"), touch ? L("Vesk vairalazdę kairėje. Pirštu tempk vaizdą – apsidairysi.") : L("Rodyklės arba W A S D. Tempk pele – apsidairysi.")];
     case "run": return [L("Bėk"), touch ? L("Eidamas tiesiai pats pradedi bėgti risčia. Patrauk vairalazdę iki krašto – bėgsi greičiau.") : L("Eidamas tiesiai pats pradedi bėgti risčia. Laikyk Shift – bėgsi greičiau.")];
-    case "jump": return [L("Pašok"), touch ? L("Mygtukas dešinėje – pašokti. Užšok ant suoliuko, įbrisk į jūrą.") : L("Tarpas – pašokti. Užšok ant suoliuko, įbrisk į jūrą.")];
+    case "jump": return [L("Pašok"), touch ? L("Mygtukas dešinėje – pašokti, dar kartą ore – salto. Užšok ant suoliuko.") : L("Tarpas – pašokti, dar kartą ore – salto. Užšok ant suoliuko.")];
     case "talk": return [L("Kalbėkis"), touch ? L("Prieik prie žmogaus ir bakstelėk „Kalbėti“. Užduoties kortelė rodo, pas ką eiti, o „Nuvesk mane“ nuveda.") : L("Prieik prie žmogaus ir spausk E. Užduoties kortelė rodo, pas ką eiti, o „Nuvesk mane“ nuveda.")];
     case "radio": return [L("Radijas"), touch ? L("Radijo mygtukas dešinėje: kurso dainos, kol vaikštai.") : L("R arba radijo mygtukas dešinėje: kurso dainos, kol vaikštai.")];
     case "scenes": return [L("Pokalbių vaizdas"), L("Pokalbio metu rodomas piešinys. Išjungus pokalbis vyksta 3D mieste, o žmogaus lūpos juda pagal balsą.")];

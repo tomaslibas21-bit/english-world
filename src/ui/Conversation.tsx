@@ -433,13 +433,16 @@ function Guide({ sit, formal, gender }: { sit: SituationDef; formal: boolean; ge
         <div className="guide-examples">
           {examples.map((ex, i) => (
             <div className="gx" key={i}>
-              <button className="play" onClick={() => { game?.activeSession?.stopListening(); audio.play(coachVoice(useStore.getState().progress.profile?.gender), 1, ex.say); }} title={L("Klausyti")} aria-label={L("Klausyti")}><Icon name="speaker" size={19} /></button>
+              {/* listen, and under it listen-and-repeat: one narrow column, so the phrase has the rest of the row */}
+              <div className="gx-btns">
+                <button className="play" onClick={() => { game?.activeSession?.stopListening(); audio.play(coachVoice(useStore.getState().progress.profile?.gender), 1, ex.say); }} title={L("Klausyti")} aria-label={L("Klausyti")}><Icon name="speaker" size={19} /></button>
+                <RepeatButton ex={ex} />
+              </div>
               <div className="gx-text" tabIndex={0} role="region" aria-label={L("Atsakymo pavyzdys {n}", { n: i + 1 })}>
                 {/* Keep the glosses; differing natural wording is available on tap or hover. */}
                 <Interlinear s={ex} lt={settings.sayLt} ipa={settings.sayIpa} compactNat />
                 <RepeatResult en={ex.en} />
               </div>
-              <RepeatButton ex={ex} />
             </div>
           ))}
         </div>
@@ -640,7 +643,8 @@ function DidYouMean({ guess, lt }: { guess: Guess; lt: boolean }) {
   );
 }
 
-/** "Pakartok": plays the example, then listens once (practice only). While busy it stops or cancels. */
+/** "Pakartok": plays the example, then listens once (practice only). While busy it stops or cancels. A round button
+ *  under the speaker's, the microphone alone: its name is for the screen reader and the tooltip. */
 function RepeatButton({ ex }: { ex: Sentence }) {
   const p = useStore((s) => s.conv.practice);
   if (!speechSupported()) return null;
@@ -648,9 +652,9 @@ function RepeatButton({ ex }: { ex: Sentence }) {
   const label = state === "listening" ? L("Baigti") : state === "playing" ? L("Atšaukti") : L("Pakartok");
   return (
     <button className={"rp-btn" + (state ? " " + state : "")} aria-pressed={!!state} aria-label={label}
-      title={state ? label : L("Paklausyk ir pakartok garsiai")}
+      title={state ? label : L("Pakartok: paklausyk ir pakartok garsiai")}
       onClick={() => { const s = game?.activeSession; if (!s) return; if (state) s.stopPractice(); else s.practice(ex.en, ex.say); }}>
-      <Icon name={state === "listening" ? "stop" : "mic"} size={18} /><span className="rp-label">{label}</span>
+      <Icon name={state === "listening" ? "stop" : "mic"} size={18} />
     </button>
   );
 }
