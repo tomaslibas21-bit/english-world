@@ -14,7 +14,7 @@ function words(step: CoachStep, touch: boolean): [string, string] {
   switch (step) {
     case "walk": return ["Vaikščiok", touch ? "Vesk vairalazdę kairėje. Pirštu tempk vaizdą – apsidairysi." : "Rodyklės arba W A S D. Tempk pele – apsidairysi."];
     case "run": return ["Bėk", touch ? "Eidamas tiesiai pats pradedi bėgti risčia. Patrauk vairalazdę iki krašto – bėgsi greičiau." : "Eidamas tiesiai pats pradedi bėgti risčia. Laikyk Shift – bėgsi greičiau."];
-    case "jump": return ["Pašok", touch ? "Mygtukas dešinėje – pašokti. Užšok ant suoliuko, įbrisk į jūrą." : "Tarpas – pašokti. Užšok ant suoliuko, įbrisk į jūrą."];
+    case "jump": return ["Pašok", touch ? "Mygtukas dešinėje – pašokti, dar kartą ore – salto. Užšok ant suoliuko." : "Tarpas – pašokti, dar kartą ore – salto. Užšok ant suoliuko."];
     case "talk": return ["Kalbėkis", touch ? "Prieik prie žmogaus ir bakstelėk „Kalbėti“. Užduoties kortelė rodo, pas ką eiti, o „Nuvesk mane“ nuveda." : "Prieik prie žmogaus ir spausk E. Užduoties kortelė rodo, pas ką eiti, o „Nuvesk mane“ nuveda."];
     case "radio": return ["Radijas", touch ? "Radijo mygtukas dešinėje: kurso dainos, kol vaikštai." : "R arba radijo mygtukas dešinėje: kurso dainos, kol vaikštai."];
     case "scenes": return ["Pokalbių vaizdas", "Pokalbio metu rodomas piešinys. Išjungus pokalbis vyksta 3D mieste, o žmogaus lūpos juda pagal balsą."];

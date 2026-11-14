@@ -33,6 +33,8 @@ export interface GameCharacter {
   lift?: number;
   tuck?: number;
   squash?: number;
+  /** A somersault in the air (radians, 0…2π forwards; the original Character). */
+  flip?: number;
   /** Where the legs are in their swing (radians; a foot comes down at every π/2 + kπ), for the footsteps (the original
    *  Character). */
   readonly stepPhase?: number;

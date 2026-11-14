@@ -7,6 +7,8 @@ import { createCharacter, type GameCharacter } from "./characters";
 import { STYLED, IS_TOON, vertexColorMaterial, makeOutline, outlineColorFor } from "./style";
 import { carGeometry as styledCarGeometry } from "./world/styled";
 import { carGeometry } from "./world/car";
+import { Ledges, type Piece } from "./ledges";
+import { Colliders as GroundPlan } from "./world/util";
 import type { NavGrid } from "./nav";
 import type { HairStyle, Look } from "../content/npcs";
 import { rand, type Colliders } from "./world/util";
@@ -74,6 +76,13 @@ export class Chatter {
 interface Car {
   mesh: THREE.Mesh; lane: number; dir: 1 | -1; x: number; from: number; to: number;
   speed: number; max: number; hidden: number; grow: number;
+  /** Full size and in the picture (not growing at its lane's start or shrinking at its end). */
+  whole?: boolean;
+  /** Waiting for the player to get off or step away (s still to wait once they have). */
+  held?: number;
+  /** Its hood, roof and trunk as pieces with a height (ledges.ts), read from its own mesh the first time it stands
+   *  still: `at` is where it stood then, `now` the same pieces where it stands at the moment. */
+  decks?: { at: number; pieces: Piece[]; x: number; now: Piece[] };
 }
 
 const SKINS = ["#f2d3bd", "#f6dcc8", "#d9a47e", "#c68e63", "#a0694a", "#6e4630", "#4f3223"];
@@ -370,13 +379,24 @@ export class Ambient {
       const a = (o.x - c.x) * c.dir;
       if (a > 0 && a < 16) gap = Math.min(gap, a - CAR.length + 0.7);
     }
-    const want = gap === Infinity ? c.max : Math.max(0, Math.min(c.max, (gap - 3.4) * 1.4));
+    let want = gap === Infinity ? c.max : Math.max(0, Math.min(c.max, (gap - 3.4) * 1.4));
+    // a car that has stopped can be climbed like a parked one (carPieces), and its driver waits while the player is on
+    // it, over it or right beside it, and a moment longer
+    if (this.standing(c)) {
+      const h = this.half(c), dx = Math.abs(player.x - c.x), dz = Math.abs(player.z - c.lane);
+      if (dx < h.x + 6 && dz < h.z + 6) this.readDecks(c);
+      const on = dx < h.x + 0.45 && dz < h.z + 0.45 && player.y > 0.3, by = dx < h.x + 1.1 && dz < h.z + 1.1;
+      if (c.decks?.pieces.length && (on || by)) c.held = 0.8;
+      else c.held = Math.max(0, (c.held ?? 0) - dt);
+      if (c.held > 0) want = 0;
+    } else c.held = 0;
     c.speed += Math.max(-9 * dt, Math.min(3 * dt, want - c.speed));
     c.x += c.speed * c.dir * dt;
     c.grow = Math.min(1, c.grow + dt * 1.6);
     const end = c.dir > 0 ? c.to : c.from;
     const toEnd = (end - c.x) * c.dir;
     const s = Math.min(c.grow, Math.max(0, Math.min(1, toEnd / 3)));
+    c.whole = s >= 1;
     c.mesh.scale.setScalar(Math.max(0.001, s));
     c.mesh.position.set(c.x, 0, c.lane);
     if (toEnd <= 0) { c.mesh.visible = false; c.hidden = 2 + this.r() * 6; }
@@ -431,11 +451,40 @@ export class Ambient {
     }
   }
 
-  /** Keep the player out of the cars. */
+  /** Half a driving car's ground plan (along its lane, across it). */
+  private half(_c: Car) { return CAR_HALF; }
+
+  /** A car standing still at its full size. */
+  private standing(c: Car) { return c.hidden <= 0 && !!c.whole && c.speed < 0.05; }
+
+  /** A car's hood, roof and trunk as pieces with a height, read once from its own mesh where it stands (none for what
+   *  is too tall to climb: that stays a wall). */
+  private readDecks(c: Car) {
+    if (c.decks) return;
+    const plan = new GroundPlan(), h = this.half(c);
+    plan.addBox(c.x, c.lane, h.x * 2, h.z * 2, "car");
+    const pieces = Ledges.build(c.mesh, plan).pieces;
+    c.decks = { at: c.x, pieces, x: c.x, now: pieces };
+  }
+
+  /** The hoods, roofs and trunks of the cars standing still near (x, z), as pieces with a height (ledges.ts): a car
+   *  that has stopped for the player is climbed like a parked one. A car on the move is a wall (resolvePlayer). */
+  carPieces(x: number, z: number): Piece[] {
+    let out: Piece[] = NO_PIECES;
+    for (const c of this.cars) {
+      const d = c.decks;
+      if (!d?.pieces.length || !this.standing(c) || Math.abs(c.x - x) > 8 || Math.abs(c.lane - z) > 7 || !this.group.visible) continue;
+      if (d.x !== c.x) { const dx = c.x - d.at; d.now = d.pieces.map((q) => ({ minX: q.minX + dx, maxX: q.maxX + dx, minZ: q.minZ, maxZ: q.maxZ, top: q.top })); d.x = c.x; }
+      out = out.length ? out.concat(d.now) : d.now;
+    }
+    return out;
+  }
+
+  /** Keep the player out of the cars on the move (one standing still is climbed, not walked into: carPieces). */
   resolvePlayer(p: THREE.Vector3, r: number) {
     for (const c of this.cars) {
-      if (c.hidden > 0 || c.mesh.scale.x < 0.5) continue;
-      const hx = 2.15, hz = 1.0;
+      if (c.hidden > 0 || c.mesh.scale.x < 0.5 || (this.standing(c) && c.decks?.pieces.length)) continue;
+      const { x: hx, z: hz } = this.half(c);
       const cx = Math.max(c.x - hx, Math.min(p.x, c.x + hx)), cz = Math.max(c.lane - hz, Math.min(p.z, c.lane + hz));
       const dx = p.x - cx, dz = p.z - cz, d2 = dx * dx + dz * dz;
       if (d2 < r * r) {
@@ -446,3 +495,5 @@ export class Ambient {
   }
 }
 
+const CAR_HALF = { x: 2.15, z: 1.0 };
+const NO_PIECES: Piece[] = [];
