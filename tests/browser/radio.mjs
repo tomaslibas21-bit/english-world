@@ -321,7 +321,7 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       s = await state(page);
       check(`${label}: when Grammar FM has played to its end, the radio moves on to Vocab FM by itself`, s.sounding && s.station === "vocab" && s.place?.n === 1, s);
 
-      // ---- remembered: the next visit goes on (after the tap a browser may ask for)
+      // ---- remembered: the next visit starts with the radio off, at its station and song; the first press goes on from there
       await page.evaluate(() => window.__ew.radio.setLyrics(false));
       await page.reload({ waitUntil: "domcontentloaded" });
       await until(page, () => window.__ew?.store.getState().screen === "play", 90000);
@@ -329,12 +329,18 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       await until(page, () => window.__ew.radio.store.getState().ready);
       await page.waitForTimeout(600);
       s = await state(page);
-      check(`${label}: the radio is remembered as on, at its station and song, and silent until the browser lets it`, s.on && s.station === "vocab" && s.song === "V01" && s.liked === false && s.counts.favorites === 2 && (s.playing || s.needsTap) && (s.playing || !s.sounding), s);
-      // any tap in the game will do; this one changes nothing else
+      check(`${label}: the next visit starts with the radio off and silent, at the station and song it was left at`, !s.on && !s.playing && !s.sounding && s.station === "vocab" && s.song === "V01" && s.liked === false && s.counts.favorites === 2, s);
+      // a tap elsewhere in the game does not start it
       await (phone ? page.locator(".objective-card .collapse-btn").tap() : page.locator(".objective-card .collapse-btn").click());
+      await page.waitForTimeout(1200);
+      s = await state(page);
+      check(`${label}: a tap elsewhere leaves it off`, !s.on && !s.sounding, s);
+      // the power button goes on with the same song
+      await (phone ? page.locator(".radio-btn").tap() : page.locator(".radio-btn").click());
       await playing(page);
       await page.waitForTimeout(1200);
-      check(`${label}: it plays again after a tap, with the strip still hidden`, (await state(page)).sounding && await page.locator(".radio-strip").count() === 0, await state(page));
+      s = await state(page);
+      check(`${label}: the power button goes on with the remembered song, with the strip still hidden`, s.sounding && s.station === "vocab" && s.song === "V01" && await page.locator(".radio-strip").count() === 0, s);
       // pause, and nothing brings it back
       await page.evaluate(() => window.__ew.radio.setOn(false));
       await page.evaluate(() => window.__ew.game.startScenario("s72-cafe"));
