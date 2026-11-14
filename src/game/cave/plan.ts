@@ -171,7 +171,8 @@ export function walkable(x: number, z: number, r = 0.38) {
 // ------------------------------------------------------------------------------------------------- the rules
 
 /** What the learner has done down here (saved with their progress). */
-export interface CaveSave { lit: string[]; passed: string[]; /** Seen the way in's first message; found the heart. */ seen?: boolean; heart?: boolean }
+export interface CaveSave { lit: string[]; passed: string[]; /** Seen the way in's first message; found the heart. */ seen?: boolean; heart?: boolean;
+  /** How many chambers the town's conversations had opened when the learner was last told. */ told?: number }
 export const emptyCave = (): CaveSave => ({ lit: [], passed: [] });
 
 /** How many chambers `done` finished conversations open (1–5): the first for everyone, one more per ten. */

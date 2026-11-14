@@ -184,6 +184,7 @@ export class Game implements GameApi {
   cave: CaveQuest | null = null;
   private caveLure: THREE.Group | null = null;
   private cavePushT = 0;
+  private caveHinted = false;
   private pushDoorT = 0;
   private transitioning = false;
   private npcToSits = new Map<string, SituationDef[]>();
@@ -1242,6 +1243,13 @@ export class Game implements GameApi {
     if (this.pendingRide) { const r = this.pendingRide; this.pendingRide = null; this.ride(r.to, r.by); }
     // (a conversation off the route, the grotto's aluxes, is nobody's task: the tasks stay as they were)
     if (completed && !sit.bonus) this.advanceObjective(sit);
+    // (someone who has found the grotto hears when the town's conversations have woken another of its chambers)
+    if (completed && !sit.bonus && caveDoor()) {
+      const pr = useStore.getState().progress, n = ROUTE.filter((q) => sitProgress(pr, q.id).completions > 0).length;
+      // (and someone who has not, a rumor, once: after their tenth conversation)
+      if (!pr.cave?.seen && n === 10 && sitProgress(pr, sit.id).completions === 1) setTimeout(() => useStore.getState().toast({ kind: "tip", title: L("Sako, kad Ka'an cenotės oloje kažkas švyti…"), body: L("Cenotė – miestelio vakaruose, už apžvalgos aikštelės. Nuplauk pažiūrėti."), ms: 9000 }), 4200);
+      if (pr.cave?.seen && n > 0 && n % 10 === 0 && n <= 40 && sitProgress(pr, sit.id).completions === 1) setTimeout(() => useStore.getState().toast({ kind: "tip", title: L("Aluksų grotoje pabudo nauja salė!"), body: L("Užbaigei {n} pokalbių. Grįžk į cenotę ir pažiūrėk, kas atsivėrė.", { n }), ms: 8000 }), 4200);
+    }
     this.refreshObjective();
   }
 
@@ -1816,6 +1824,11 @@ export class Game implements GameApi {
   /** Swimming on into the cave's mouth at the cenote's far side goes in (the grotto, src/game/cave). */
   private checkCavePush(dt: number) {
     const door = caveDoor(), p = this.player.root.position;
+    // (the first time someone swims in the cenote: a word about the glow in the cave's mouth)
+    if (door && this.swimming && !this.caveHinted && Math.hypot(door.x - p.x, door.z - p.z) < 9) {
+      this.caveHinted = true;
+      if (!useStore.getState().progress.cave?.seen) useStore.getState().toast({ kind: "tip", title: L("Olos angoje kažkas švyti…"), body: L("Nuplauk prie jos, kitame cenotės krašte."), ms: 8000 });
+    }
     if (door && this.swimming && this.diveK < 0.3 && Math.hypot(door.x - p.x, door.z - p.z) < 1.1 && this.vel.x < -0.8) {
       this.cavePushT += dt;
       if (this.cavePushT > 0.35) { this.cavePushT = 0; this.enterDoor(CAVE_ZONE); }

@@ -70,6 +70,10 @@ export class CaveQuest {
     view.setHeart(!!s.heart, true);
     void audio.init().then(() => { if (this.alive) this.assign(); });
     this.card(0);
+    // (more of the town's conversations finished since the last time down here: a chamber more is theirs to open)
+    const open = P.chambersOpen(n, SEE_ALL);
+    if (s.seen && !SEE_ALL && open > (s.told ?? 1)) setTimeout(() => { if (this.alive) st.toast({ kind: "success", title: L("Grotoje pabudo nauja salė!"), body: L("„{name}“ laukia: uždek prieš ją esančios salės akmenis, ir vartai atsivers.", { name: P.CHAMBERS[open - 1].name }), ms: 8000 }); }, 2200);
+    if (open !== (s.told ?? 1)) st.updateProgress((p) => { p.cave = { ...(p.cave ?? P.emptyCave()), told: open }; });
     if (!s.seen) {
       useStore.getState().updateProgress((p) => { p.cave = { ...(p.cave ?? P.emptyCave()), seen: true }; });
       setTimeout(() => { if (this.alive) useStore.getState().toast({ kind: "tip", title: L("Radai Aluksų grotą!"), body: L("Čia gyvena aluksai – mažos majų miško dvasios. Pasikalbėk su Kinu: jis saugo kelią."), ms: 9000 }); }, 1800);

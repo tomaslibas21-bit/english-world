@@ -643,4 +643,12 @@ export const STRINGS: Record<string, string> = {
   "akmuo": "stone",
   "Klausytis: kalbantis akmuo": "Listen: a speaking stone",
   "Grįžti į cenotę": "Back up to the cenote",
+  "Olos angoje kažkas švyti…": "Something glows in the cave's mouth…",
+  "Nuplauk prie jos, kitame cenotės krašte.": "Swim over to it, at the cenote's far side.",
+  "Grotoje pabudo nauja salė!": "A new chamber has woken in the grotto!",
+  "„{name}“ laukia: uždek prieš ją esančios salės akmenis, ir vartai atsivers.": "“{name}” is waiting: light the stones of the chamber before it, and the gate will open.",
+  "Aluksų grotoje pabudo nauja salė!": "A new chamber has woken in the aluxes' grotto!",
+  "Užbaigei {n} pokalbių. Grįžk į cenotę ir pažiūrėk, kas atsivėrė.": "You have finished {n} conversations. Go back to the cenote and see what has opened.",
+  "Sako, kad Ka'an cenotės oloje kažkas švyti…": "They say something glows in the cave at Cenote Ka'an…",
+  "Cenotė – miestelio vakaruose, už apžvalgos aikštelės. Nuplauk pažiūrėti.": "The cenote is at the town's west end, past the mirador. Swim over and see.",
 };

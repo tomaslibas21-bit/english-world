@@ -407,6 +407,35 @@ export function buildCave(): CaveView {
     else for (let k = 0; k < 5; k++) sink.geo(new THREE.ConeGeometry(0.09, 0.7 + r() * 0.5, 3).translate(0, 0.35, 0).rotateZ(0.5 + r() * 0.5).rotateY((k / 5) * 6.28 + r()).translate(x, 0, z), pick(MOSS), 0.15);
   }
 
+  // water lilies on the still pools: a pad or two, a flower that glows a little
+  for (const q of P.POOLS) {
+    if (q.deck || q.rx < 2.5) continue;
+    const n = Math.round(3 + q.rx * 0.7);
+    for (let i = 0; i < n; i++) {
+      const a = r() * Math.PI * 2, k = 0.25 + r() * 0.62, x = q.x + Math.cos(a) * q.rx * k, z = q.z + Math.sin(a) * q.rz * k;
+      // (not where one wades across, nor under the bridge, nor on the island)
+      if (q.ford && (nearPath(x, z) < 2.4 || Math.hypot(x - P.ISLAND.x, z - P.ISLAND.z) < P.ISLAND.r + 2.2 || Math.abs(x - q.x) < 1.6)) continue;
+      const s2 = 0.32 + r() * 0.22;
+      sink.geo(new THREE.CircleGeometry(s2, 7, 0.5, Math.PI * 2 - 0.9).rotateX(-Math.PI / 2).rotateY(r() * 6.28).translate(x, -0.03, z), pick(["#3f9a62", "#4fae6a", "#2f8a58"]), 0.35);
+      if (i % 2 === 0) {
+        const colour = pick(["#ffd7ee", "#fff3c4", "#ffffff", "#ffc2dd"]);
+        sink.geo(new THREE.ConeGeometry(0.11, 0.16, 6).rotateX(Math.PI).translate(x + 0.1, 0.06, z), colour, 1);
+        sparks.add(2, x + 0.1, 0.12, z, colour, 0.9, 0, r);
+      }
+    }
+  }
+  // blue butterflies in the eye's light, round the ceiba (sparks that wander like the fireflies, bigger and blue)
+  for (let i = 0; i < 16; i++) { const a = r() * 6.283, d = 1.5 + r() * 5; sparks.add(0, P.EYE.x + 1 + Math.cos(a) * d, 1 + r() * 4.5, P.EYE.z + 0.6 + Math.sin(a) * d, pick(["#6fc8ff", "#8fe0ff", "#5aa8ff"]), 0.34, 1.2 + r(), r); }
+  // lianas in an arch over the bridge of roots, a few flowers on them
+  for (let i = 0; i < 9; i++) {
+    const t = i / 8, x = P.BRIDGE.x0 - 0.3 + (P.BRIDGE.x1 - P.BRIDGE.x0 + 0.6) * (i % 2), z = P.BRIDGE.z1 - (P.BRIDGE.z1 - P.BRIDGE.z0) * t;
+    const top = P.roofY(x, z), len = top - 2.3 - 1.6 * Math.sin(t * Math.PI);
+    sink.geo(new THREE.CylinderGeometry(0.03, 0.045, len, 4).translate(x, top - len / 2, z), pick(WOOD), 0.05);
+    for (let m = 0; m < 3; m++) { const y = top - len * (0.45 + m * 0.25); sink.geo(new THREE.OctahedronGeometry(0.13, 0).scale(1.5, 0.6, 1).translate(x + (r() - 0.5) * 0.2, y, z + (r() - 0.5) * 0.2), pick(MOSS), 0.25); }
+    sparks.add(2, x, top - len + 0.1, z, pick(GLOWS), 1.4, 0, r);
+    sink.geo(new THREE.OctahedronGeometry(0.1, 0).translate(x, top - len, z), "#ffe9f4", 1);
+  }
+
   // ---- the chamber of the stars: crystals, the wall of old glyphs
   const crystal = (x: number, z: number, s: number, colour: string) => {
     const n = 3 + Math.floor(r() * 3);
