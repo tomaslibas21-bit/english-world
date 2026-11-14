@@ -1,5 +1,6 @@
 import { useStore } from "../state/store";
 import { sceneFor } from "./scenes";
+import { L } from "./i18n";
 
 /** In a conversation in the 3D town, where the place has a picture: talk in front of the picture or with the person
  *  in 3D (their lips follow the voice). The same setting as „Iliustruotos scenos“ in Nustatymai, here in the corner
@@ -15,9 +16,9 @@ export function ViewSwitch() {
   if (!active || light || panel || !sceneFor(sitId, hostId)) return null;
   const set = (scenes: boolean) => { if (scenes !== pictures) useStore.getState().setSettings({ scenes }); };
   return (
-    <div className="view-switch" role="group" aria-label="Pokalbio vaizdas">
-      <button type="button" className={pictures ? "on" : ""} aria-pressed={pictures} onClick={() => set(true)} title="Pokalbis prie piešinio (P)">Piešinys</button>
-      <button type="button" className={pictures ? "" : "on"} aria-pressed={!pictures} onClick={() => set(false)} title="Kalbėtis su žmogumi 3D mieste – lūpos juda pagal balsą (P)">3D</button>
+    <div className="view-switch" role="group" aria-label={L("Pokalbio vaizdas")}>
+      <button type="button" className={pictures ? "on" : ""} aria-pressed={pictures} onClick={() => set(true)} title={L("Pokalbis prie piešinio (P)")}>{L("Piešinys")}</button>
+      <button type="button" className={pictures ? "" : "on"} aria-pressed={!pictures} onClick={() => set(false)} title={L("Kalbėtis su žmogumi 3D mieste – lūpos juda pagal balsą (P)")}>3D</button>
     </div>
   );
 }
