@@ -74,7 +74,7 @@ export function Hud() {
       )}
       <Guide />
       {/* at a wheel, at the boat's helm or in the water: what the keys do there (a computer; a phone has its buttons) */}
-      {hud.ride && !hud.showTouch && !hud.panel && (
+      {hud.ride && !hud.showTouch && !hud.panel && !hud.coach && (
         <div className="help-strip ride-strip">
           {hud.ride === "car" || hud.ride === "boat" ? <>
             {hud.ride === "car" ? "Vairuok" : "Plauk"} <kbd><Icon name="arrowUp" size="1em" strokeWidth={2.25} label="aukštyn" /></kbd><kbd><Icon name="arrowDown" size="1em" strokeWidth={2.25} label="žemyn" /></kbd><kbd><Icon name="arrowLeft" size="1em" strokeWidth={2.25} label="kairėn" /></kbd><kbd><Icon name="arrowRight" size="1em" strokeWidth={2.25} label="dešinėn" /></kbd> arba <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> · stabdyti <kbd>Tarpas</kbd> · išlipti <kbd>E</kbd>
