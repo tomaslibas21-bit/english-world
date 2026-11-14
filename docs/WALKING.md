@@ -1,4 +1,4 @@
-# Walking about the town: the shore, jumping, the jog, the first-time guide (13 Nov 2026)
+# Walking about the town: the shore, jumping and climbing, the jog, the first-time guide (13–14 Nov 2026)
 
 Shared by every edition of the game (the code is in `src/game/`; each town keeps its own colours and things).
 
@@ -25,25 +25,68 @@ Shared by every edition of the game (the code is in `src/game/`; each town keeps
   (`Splashes`: one quad and one set of points, in the picture only while wading), and walking in is met by a small
   wave's wash (`audio.wash`, at most every six seconds).
 
-## Jumping onto and over low things (`src/game/ledges.ts`, `movement.ts` Hop)
+## Jumping and climbing (`src/game/ledges.ts`, `movement.ts` Hop; 14 Nov 2026)
 
 - The colliders are a ground plan with no heights. Once the town is built, `Ledges.build` reads the heights from the
-  town's own meshes, a few milliseconds at a time (5 ms slices; nothing can be climbed until it is done, a second or two after the town appears): for every
-  small collider, the top of what stands in it and within half a metre of it, in 12.5 cm cells (triangles that start
-  above 1.3 m are over the thing, not part of it; undersides don't count).
-- A collider that is mostly low (tops up to `LAND` = 0.62 m) is marked `split` and replaced, **for the player only**, by
-  pieces with a height: the low ones can be landed on (`support`) and walked off (a fall), the rest (a bench's back)
-  stays a wall (`resolve`). Left exactly as they were: buildings and anything tall, counters, tables, cars (tagged
-  `"car"`, and mostly high anyway), a pier's deck under its invisible edge (a low top that runs on a metre past the
-  collider is a floor, not a thing), café tables and their chairs (`keep`: the seats with a table), what the camera's
-  field holds solid over 3.5 m (`tall`: a gazebo, a kiosco), and every person (their colliders have nothing built in
-  them; the people sitting on a bench keep the player off themselves, `Ambient.resolvePeople(p, r, true)`).
-- `Hop` is now a real jump: `y` the feet's height, `ground` what is under them. A jump goes about 0.78 m up; it lands on
-  what is under it when it comes down. Stepping up without a jump: only 0.12 m (`STEP`).
+  town's own meshes, a few milliseconds at a time (5 ms slices; nothing can be climbed until it is done, a second or
+  two after the town appears): for every small collider, the top of what stands in it and within half a metre of it,
+  in 12.5 cm cells, each cell its own height (a hood slopes, a windshield more). What starts above 1.3 m counts only
+  where it sits on the thing or close over it (a car's roof over its body); what is well over it is a roof (an awning
+  over a stall's table, a shelter over its bench).
+- **Knee-high things are as they were** (13 Nov): a collider that is mostly low (tops up to `LAND` = 0.62 m: a bench,
+  a planter, a lounger) is replaced, for the player only, by pieces with a height: the low ones can be landed on
+  (`support`) and walked off (a fall), the rest (a bench's back) stays a wall (`resolve`).
+- **Higher things have their heights too.** A collider that is not mostly knee-high, but mostly no higher than `CLIMB`
+  (1.75 m: a car's roof), is split into pieces with their own heights: a car (hood, windshield, roof, trunk), a low
+  wall and the posts on it, a fence, a trash can, a hydrant, a mailbox, a table, a crate, a fountain's basin. What in
+  it is higher than `CLIMB` is a wall, whatever one jumps from; so is a top with less than 2.3 m of room over it (a
+  market stall's table under its awning) and the flank of something that goes on up (a fountain's column).
+- **By someone one talks to nothing changes**: a collider within 1.6 m of a person of a conversation (or of the spot
+  one talks to them from) keeps the old limit, so nobody stands on a counter in front of its clerk or on the car its
+  owner is selling. Café tables and their chairs (`keep`), what the camera's field holds solid over 3.5 m (`tall`: a
+  gazebo, a kiosco) and every person are left out as before; buildings (`"building"`), the invisible bounds and the
+  sea are never candidates.
+- **The jump** (`Hop`): about a metre up (`PEAK` 1.02 m, 0.58 s; the same on a slow phone's long frames), and it
+  lands on what is under it when it comes down: a bench, a car's hood or trunk, a low wall, a fence a metre high. A
+  top up to 5 cm above the feet is still landed on (`TOE`). **A second press in the air is a flip**: a somersault
+  (`Character.flip`) and a little more lift (`FLIP_LIFT`, a third of a metre at the top of the jump), once a jump;
+  with it one reaches about 1.4 m (a mailbox, a tall fence). **A car's roof (1.56 m) is reached only from its hood or
+  its trunk**: the street's best jump comes up short of it (a test).
+- Walking up without a jump: 0.12 m from the ground (`STEP`: a kerb), 0.07 m up on something (`SLOPE`: along a hood,
+  not up a windshield). Walking down: steps of up to 0.13 m are followed (down a windshield), more is a fall.
+- **Cars on the move** are walls, as they were (`Ambient.resolvePlayer`). A car that has stopped for the player is
+  climbed like a parked one (`Ambient.carPieces`, read from its own mesh, `Ledges.dynamic`), and **its driver waits**
+  while the player is on it or over it (and up to four seconds while they stand within a metre of it), and 0.8 s
+  more; then it drives on. Nobody rides. A van or a bus too tall to climb stays a wall standing as moving.
+- **Up on something higher than a bench** nobody is talked to and no door gone through (`Game.aloft`): one hops down
+  first.
+- A deck's edge the town tags `"ledge"` (the pier's beach side) is a wall for the passers-by and the way-finding and
+  a ledge for the player: one jumps up onto the boards from the sand and hops along the mooring posts. A deck's
+  boards have a height (`DECKS[].y`, water.ts): one stands on the pier's boards, not ankle-deep in them.
 - Way-finding, the passers-by, the camera's field and the conversation camera use the original colliders. A walk
-  planned from a bench ("Nuvesk mane", a tap) first steps straight down to the nearest open spot the bench's back is
-  not in the way of (`Game.walkTo`, `Ledges.clear`). Indoors the jump is as it was (drawn only).
-- On a phone the jump button stays on screen: bottom right, and beside the talk / enter button when that shows.
+  planned from up on something ("Nuvesk mane", a tap) first steps straight down to the nearest open spot
+  (`Game.walkTo`, `Ledges.clear`). Indoors the jump (and the flip) is as it was: drawn only.
+- On a phone the jump button stays on screen: bottom right, and beside the talk / enter button when that shows. A
+  second tap while in the air is the flip.
+- **What must stay true** is checked for the whole town by `src/dev/climbAudit.ts` (dev only; in
+  `tests/browser/climb.mjs`): flooding the town with every move taken generously, nobody stands higher than `CLIMB`,
+  nobody gets beyond the bounds or the wading limit, and from every place reached only by jumping a plain jump leads
+  back.
+
+### What can be climbed in Maple Harbor (the survey of 14 Nov 2026: `things` of `Ledges`, one of each looked at)
+
+- **Cars**: the ten parked along Main Street, Oak Avenue and the side streets, the taxi at the airport and the four
+  rental cars (hood or trunk 0.9–1.0 m, roof 1.56–1.6 m), and any car of the traffic while it has stopped. Not Maggie's
+  convertible (she stands by it).
+- **The pier**: its boards from the sand along its beach side (0.3 m), and the eight mooring posts there (0.85 m).
+- **The fountain**: its basin (0.8 m: one stands in the water); the column in the middle is a wall.
+- **On the streets**: five hydrants and four trash cans (0.9 m), five mailboxes (1.35 m: a flip), the picket fences of
+  Oak Avenue's front yards (0.75–0.9 m), the clinic's low sign, the rack by the gym (1.1 m), the crates at Sproutly
+  (0.5–1.1 m), the bus stop's bench and bin.
+- **The party's yard**: the table (0.9 m), the speaker (1.35 m), the fence round it (1.2 m).
+- As before: every bench, the planters. **Not**: the market's stalls (their awnings), café tables and chairs, the
+  gazebo, counters and anything by someone one talks to, lamp posts, signs on poles, trees, the gas pumps (1.7 m: in
+  reach of nothing), buildings.
 
 ## The jog (`Game.updatePlayer`)
 
@@ -68,5 +111,6 @@ Shared by every edition of the game (the code is in `src/game/`; each town keeps
 
 ## Tests
 
-`tests/movement.test.ts` (the jump, what it can land on, the shore and wading), `tests/coach.test.ts` (the guide and
-the tip).
+`tests/movement.test.ts` (the jump and the flip, what they can land on, a car in steps, the shore and wading),
+`tests/coach.test.ts` (the guide and the tip), `tests/browser/climb.mjs` (in the real game: a parked car in steps, the
+flip, the phone's button, and the town-wide audit).

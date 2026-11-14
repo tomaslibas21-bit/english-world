@@ -284,7 +284,8 @@ function TouchControls() {
   return (
     <>
       <div className="joy" ref={ref}><div className="knob" ref={knob} /></div>
-      {/* the jump stays under the right thumb; with someone to talk to or a door to go through it moves over for that button */}
+      {/* the jump stays under the right thumb; with someone to talk to or a door to go through it moves over for that button
+          (a second tap while in the air is a flip: every press goes to the game, which knows where the player is) */}
       {prompt && <button className="act-btn" onClick={() => game?.interact()}>{prompt.kind === "talk" ? "Kalbėti" : prompt.kind === "exit" ? "Išeiti" : "Įeiti"}</button>}
       <button className={"jump-btn" + (prompt ? " beside" : "")} aria-label="Pašokti" title="Pašokti" onPointerDown={(e) => { e.preventDefault(); game?.jump(); }}><Icon name="chevronUp" size={34} strokeWidth={2.5} /></button>
     </>
