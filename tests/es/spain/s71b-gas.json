@@ -73,6 +73,24 @@
 "ctx": "trouble_help",
 "say": "¿Me puede pasar corriente?",
 "intent": "call_help"
+},
+{
+"ctx": "order",
+"say": "Póngame quinientos, por favor",
+"intent": "prepay",
+"slots": {
+"price": 50000
+}
+},
+{
+"ctx": "anything",
+"say": "¿A cuánto está la magna?",
+"intent": "gas_price_q"
+},
+{
+"ctx": "pay",
+"say": "¿Me da el ticket, por favor?",
+"intent": "receipt_ask"
 }
 ]
 }

@@ -125,3 +125,22 @@ Found and fixed: Don Pancho's own g_* lines had no twin: no le he entendido, me 
 English of every twin checked against its Mexican line (restored where a twin had rephrased it). Spain corpus items
 added for the new forms. Gates: Mexican, neutral and Spain checks 0 errors; coverage 0 false accepts.
 Also: g_meaning (Don Pancho's own) → “Deje que se lo enseñe” (the same twin now in global.ts, {u:Deje que|t:Deja que}).
+
+## Spain pass 3 (14 Nov 2026)
+
+A deeper pass for idioms, set phrases, tenses and register in Don Pancho's Spain text.
+
+- Set phrases: ¿Cómo le va? → ¿Qué tal?; ¡Ni me diga! → ¡Y que lo diga! (line and chip; merge added); para servirle →
+  encantado (intro, name); con razón → por eso; nunca he ido para allá → nunca he estado allí; ¿Qué hizo de bueno? →
+  ¿Hizo algo especial?; nos divertimos mucho → lo pasamos muy bien (twice); ¡Que pase buen fin de semana! → …un buen…;
+  véngase → póngase aquí, que cabemos los dos; así platicamos/conversamos más → así charlamos un rato más.
+- Words: este clima (weather) → este tiempo; airecito → este fresquito; ni un pescadito → ni un pez; chiquita →
+  pequeña; mi esposa → mi mujer; va a estar soleado → va a hacer sol; "como X grados" → "unos X grados" (Pancho's
+  lines and the w_temp chips "Estamos a unos X grados"); se siente más → parece que hace más; el autobús viene tarde →
+  llega tarde; hicimos/vamos a hacer una parrillada → una barbacoa (+ noteSpain).
+- Notes: the twins that inherited Mexican notes (chamba, ándele, camión, platicar) get `flags: {}` (week_q, umbrella,
+  bus lines, frank_bus_here, the by_better chip).
+- Chips: by_nice → "¡Me ha encantado hablar con usted!" (grammar: `me ha (encantado | gustado) … con usted #h:by_nice`).
+- Kept: "lancha" (also Spanish for a small motorboat; the boat story's grammar is built on it); "¡Excelente, gracias
+  por preguntar!" in g_howareyou (shared answer, left).
+- Spain corpus: +4 items.

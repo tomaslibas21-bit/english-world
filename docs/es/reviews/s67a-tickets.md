@@ -137,3 +137,11 @@ Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line a
 
 - Read every twin: usted kept throughout, Spain's words right (billete, tarjeta de embarque, móvil, gafas, portátil, aseos, maleta, facturar, coger, aparcamiento, coche, jersey), the perfect for what just happened, "Ya está" for "Listo", Mexican-only names kept. Meaning, glosses and spelling: no problems found. No changes.
 - Left: "¿Me deja su credencial?" (the INAPAM card is a Mexican thing; its name stays).
+
+## Spain pass 3 (14 Nov 2026)
+
+- 18 Spain twins (15 added, 3 changed), 1 noteSpain, and Spain's clock times in code.
+- Clock times: `clock()` builds the spoken time itself; in Spain it now counts down after the half (“las once menos veinte”, “las seis menos cuarto”, “las dos menos veinticinco”), imported `variety` from compose like target.ts. Mexico and neutral unchanged. The written form (“las 10:40”) is the same in all three. The esp_ voice clips for these times need re-voicing.
+- Lines: ¡Adelante! ¿Para dónde va? → ¡Siguiente! ¿A dónde va? (no pásele note); ¿En qué le puedo servir? → ayudar; ¿Para dónde quiere su billete? → ¿Adónde quiere el billete?; Aquí estamos cuando guste → Vale… cuando quiera; ¡Híjole! twin → ¡Vaya, lo siento!; Hasta ahora va a tiempo → De momento va puntual; Como media hora / una hora y media / dos horas y media / cinco horas → Una media hora / …, más o menos / Unas… / Unas…; Llega como a las… → Llega sobre las…; los adultos mayores → las personas mayores.
+- Chips: Todavía no sé → Todavía no lo sé; ¿Tienen descuento para adultos mayores? → para jubilados; ¿Con cuánto tiempo antes…? → ¿Cuánto tiempo antes…?; ¿Sale a tiempo? → ¿Sale puntual?. The redondo/sencillo note has a Spain version (ida y vuelta / solo ida). The tiendita and abajo de notes are gone from Spain's twins.
+- Merges: personas mayores, más o menos, de momento. 4 corpus items.

@@ -199,3 +199,13 @@ read digit by digit). EN-FIXES-LEADS: the same no-number "we'll call you" and th
 - Checked (fresh reviewer): every twin against its Mexican line (meaning, facts, prices, names), Peninsular wording, the perfect for today's events, tú/usted and vosotros by STYLE.md, glosses, spelling and ¿¡, the Spain transcripts (`--variety=spain --verbose`, untwinned lines read through their neutral fallback) and tests/es/spain.
 - Found: two hint twins had lost their amount ("y unos | | en efectivo", "Unos | ."): $500 missing from the Spain text.
 - Fixed: "Mis tarjetas, el carné de conducir y unos $500 en efectivo." and "Unos $500.". Kept as the writer chose: el reporte vs la denuncia (the scene's point), el 911, la banca (bench; banco is the bank in the same list).
+
+## Spain pass 3 (14 Nov 2026)
+
+- Chips: rep_theft / rep_item "Quiero denunciar…" (reportar is Mexican; noteSpain), rep_denuncia gets a noteSpain
+  (poner una denuncia), thats_all "No, eso es todo, gracias", describe's note says móvil.
+- Today's theft in Spain's perfect: "¿Dónde ha sido?", "¿Cuándo ha sido esto?", "ya lo he apuntado".
+- Kept: "el reporte" (the police record) vs "la denuncia" at the Ministerio Público is the story's Mexican procedure.
+- Notes on the wrong word: the pen chip (pluma note on bolígrafo); neutral twins pen, mp_send2, mp_bring_ans (folio
+  note): flags: {}.
+- Merge: he apuntado. Corpus: 2 items.

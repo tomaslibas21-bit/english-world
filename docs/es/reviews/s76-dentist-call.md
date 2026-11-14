@@ -158,3 +158,19 @@ Found and fixed: Listo → Ya está / Hecho; espacio / lugar / aparto / agendo �
 English of every twin checked against its Mexican line (restored where a twin had rephrased it). Spain corpus items
 added for the new forms. Gates: Mexican, neutral and Spain checks 0 errors; coverage 0 false accepts.
 
+
+## Spain pass 3 (14 Nov 2026)
+
+10 twins added, 9 given their own flags; one timing rule.
+
+- **Time of day:** Lorena said "el jueves a las siete de la noche"; in Spain the tarde runs to about nine, so the slot
+  values say "de la tarde" up to 21:00 in Spain (eveningFrom() in clockVal and the "la de la tarde" pick); the grammar
+  also takes "por la noche".
+- **Phrases:** ¿Le sirve? (very Mexican) → ¿Le va bien? (offer, only_offer, only_next); Permítame revisar… un momentito
+  / Ahorita reviso → Déjeme mirar… un momento / Ahora mismo miro; es rapidito → Es solo un momento; más despacito →
+  más despacio; con un día de anticipación → de antelación; Con Lorena, para servirle → Habla con Lorena; a una calle del
+  zócalo → a una manzana del zócalo.
+- **Chips:** No, es todo → No, eso es todo.
+- **Notes:** ¿Qué se le ofrece?, había venido, ¿Bueno?/ahora sí and the estacionarse note no longer land on Spain's
+  words; noteSpain for the letter names (uve, uve doble) and the (Mexican) phone number.
+- Spain corpus: 2 items added.

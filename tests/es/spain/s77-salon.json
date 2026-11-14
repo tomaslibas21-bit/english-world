@@ -161,6 +161,26 @@
     "shorter_than",
     "short_amb_ctx"
    ]
+  },
+  {
+   "ctx": "drink",
+   "say": "Un café, gracias",
+   "intent": "drink_ans"
+  },
+  {
+   "ctx": "length",
+   "say": "Más corto por los lados",
+   "intent": "length"
+  },
+  {
+   "ctx": "reveal",
+   "say": "Ha quedado muy bien, gracias",
+   "intent": "love_it"
+  },
+  {
+   "ctx": "pay",
+   "say": "Quédate con la vuelta",
+   "intent": "keep_change"
   }
  ]
 }

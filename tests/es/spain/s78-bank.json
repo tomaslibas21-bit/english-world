@@ -14,5 +14,7 @@
   {"ctx": "slow", "say": "Vale, no pasa nada", "intent": ["no_problem", "yn:yes", "g_ok"]},
   {"ctx": "form", "say": "¿Dónde firmo?", "intent": "where_sign"},
   {"ctx": "deposit", "say": "Quisiera ingresar mil pesos", "intent": "deposit_ans"},
-  {"ctx": "help_card", "say": "El cajero se ha tragado mi tarjeta", "intent": "card_kept"}
+  {"ctx": "help_card", "say": "El cajero se ha tragado mi tarjeta", "intent": "card_kept"},
+  {"ctx": "more", "say": "No, nada más, gracias", "intent": ["more_no", "nothing_ctx", "yn:no"]},
+  {"ctx": "more", "say": "Eso es todo por hoy", "intent": "more_no"}
 ] }

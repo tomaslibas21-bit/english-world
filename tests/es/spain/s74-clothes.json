@@ -28,5 +28,16 @@
   {"ctx": "r_receipt", "say": "No llevo el ticket", "intent": "receipt_none"},
   {"ctx": "r_receipt", "say": "Lo he perdido", "intent": "receipt_none"},
   {"ctx": "r_reason", "say": "He cambiado de opinión", "intent": "problem"},
-  {"ctx": "r_choice", "say": "¿Me puedes devolver el dinero?", "intent": "want_refund"}
+  {"ctx": "r_choice", "say": "¿Me puedes devolver el dinero?", "intent": "want_refund"},
+  {"ctx": "item", "say": "Gracias, solo estoy echando un vistazo", "intent": "just_looking"},
+  {"ctx": "item", "say": "¿Tienes esta guayabera en mediana?", "intent": ["ask_have_size", "looking_for"]},
+  {"ctx": "fit", "say": "Me quedan pequeños", "intent": "fit_bad"},
+  {"ctx": "decide", "say": "¿Lleva el IVA incluido?", "intent": "ask_tax"},
+  {"ctx": "receipt", "say": "No necesito el ticket, gracias", "intent": "no_receipt"},
+  {"ctx": "receipt", "say": "¿Me das un ticket de regalo?", "intent": "gift_receipt"},
+  {"ctx": "return_q", "say": "No, solo estoy mirando, gracias", "intent": ["just_looking", "yn:no"]},
+  {"ctx": "return_q", "say": "¿Me la puedes cambiar por una talla más grande?", "intent": "exchange"},
+  {"ctx": "r_receipt", "say": "Sí, aquí está el ticket", "intent": "receipt_yes"},
+  {"ctx": "r_reason", "say": "Se ha desteñido en la lavadora", "intent": "problem"},
+  {"ctx": "r_reason", "say": "Se han desteñido en la lavadora", "intent": "problem"}
 ] }

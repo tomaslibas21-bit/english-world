@@ -116,3 +116,9 @@ entrance and a "Baños" sign at the back (the lines point there).
 Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
 
 - Read every twin: usted kept throughout, Spain's words right (billete, tarjeta de embarque, móvil, gafas, portátil, aseos, maleta, facturar, coger, aparcamiento, coche, jersey), the perfect for what just happened, "Ya está" for "Listo", Mexican-only names kept. Meaning, glosses and spelling: no problems found. No changes.
+
+## Spain pass 3 (14 Nov 2026)
+
+- 18 Spain twins (12 added, 6 changed), 1 noteSpain. The ticket desk keeps usted.
+- Lines: ¿Cuántas entradas va a querer? → quiere; ¿Va a querer audioguía? / ¿La va a querer? → ¿Quiere…? / ¿La quiere?; Como guste → Como quiera; muestra / muestran → enseña / enseñan (student ID, residence card); viene incluida en su entrada → está incluida en la entrada; Muy poquito → Muy poco.
+- Notes: the credencial note on Spain's carné → CARNE; la terminal → el datáfono; the paquetería note no longer shows on Spain's guardarropa (bag_rule, coat_check, bag_check, bag_again, restroom); tk_me_da has Spain's ¿Me da…? note. No chip text changed; no corpus change.

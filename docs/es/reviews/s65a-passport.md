@@ -175,3 +175,11 @@ poco de los dos" accepts the renamed intent (purpose or both_ctx).
 Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
 
 - Read every twin: usted kept throughout, Spain's words right (billete, tarjeta de embarque, móvil, gafas, portátil, aseos, maleta, facturar, coger, aparcamiento, coche, jersey), the perfect for what just happened, "Ya está" for "Listo", Mexican-only names kept. Meaning, glosses and spelling: no problems found. No changes.
+
+## Spain pass 3 (14 Nov 2026)
+
+- 23 Spain twins (18 added, 5 changed). Third pass for idioms, tenses and notes; Oficial Ramírez keeps usted.
+- Lines: ¿Dónde se va a hospedar? → alojar (and mean_stay, the learner's c_meaning chip); ¿Ya había venido a México? → ¿Ha estado antes en México?; ¿Cuándo regresa…? → vuelve; hasta su regreso → hasta su vuelta (stamp_until, stamp_more_until, stamp_more_return); muestra / Muéstremela → enseña / Enséñemela; esta maquinita → este aparato; El equipaje está saliendo de aquí → La recogida de equipajes está nada más salir (the base flag called it a Mexican way to give directions).
+- Chips: Me voy a hospedar → Me voy a alojar; Regreso el veinte de junio → Vuelvo…; Mi vuelo de regreso → de vuelta (twice); Por una semana → Una semana, más o menos (Spain doesn't say “por” for a length of stay).
+- Notes: “Buenas … a common hello in Mexico” → “in Spain too”; the pase de abordar note no longer shows on Spain's tarjeta de embarque; piso and no lo he comprado have their own notes (the old ones named departamento and Mexico's present).
+- Grammar: @stay_verb takes alojarse; r_fly takes vuelo de vuelta / mi vuelta; the “{dur} más o menos” pattern credits d_for; the word lists take alojar(se). Merges: se va a alojar, me voy a alojar, recogida de equipajes, nada más salir. 4 corpus items.

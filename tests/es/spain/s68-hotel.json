@@ -90,6 +90,21 @@
 "ctx": "room_return",
 "say": "Hola, ya he vuelto",
 "intent": "return_ready_ctx"
+},
+{
+"ctx": "walk_offer",
+"say": "Es demasiado caro",
+"intent": "too_expensive_ctx"
+},
+{
+"ctx": "arrive",
+"say": "Necesito una habitación para dos noches",
+"intent": "walkin"
+},
+{
+"ctx": "taxi_time",
+"say": "Ahora mismo, por favor",
+"intent": "taxi_time_ctx"
 }
 ]
 }

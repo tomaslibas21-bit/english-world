@@ -321,3 +321,12 @@ questions, refusals with a reason, side questions), and the offer probe in both 
 Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
 
 - Read every twin: usted kept throughout, Spain's words right (billete, tarjeta de embarque, móvil, gafas, portátil, aseos, maleta, facturar, coger, aparcamiento, coche, jersey), the perfect for what just happened, "Ya está" for "Listo", Mexican-only names kept. Meaning, glosses and spelling: no problems found. No changes.
+
+## Spain pass 3 (14 Nov 2026)
+
+- 13 Spain twins (11 added, 2 changed). The hotel keeps usted.
+- Lines: Déjeme revisar → Déjeme mirar; ¿Por cuántas noches se queda? → ¿Cuántas noches se va a quedar?; ¿sí la quiere? (emphatic sí, Mexican) → ¿se la queda?; Saliendo, a la izquierda → Al salir, …; Ahora debe funcionar → debería; ¿Me deja su pasaporte? keeps a note of its own (the old one named ¿Me presta…?).
+- Notes: the alberca, ¿Gusta…?, ahorita and regadera notes no longer show on Spain's twins.
+- Chips: Está demasiado caro → Es demasiado caro; una habitación por dos noches → para dos noches (grammar: para); Ahora, por favor → Ahora mismo, por favor (grammar: “ahora mismo” credits tt_now). 3 corpus items.
+- Merges: se va a quedar, al salir.
+- Kept: “impuesto de hospedaje”, the state's tax by its Mexican name.

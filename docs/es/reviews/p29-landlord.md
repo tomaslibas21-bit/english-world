@@ -148,3 +148,9 @@ Fresh reviewer, all Spain twins and the untwinned lines as Spain hears them (NPC
 Checked: Don Ernesto and Doña Lupita usted both ways, the AC facts, Chucho's days, the rent.
 Found and fixed: "Listo: “Chucho, …”" ×3 (→ "Ya está:", spoken forms too); "¡Ya le mandé el mensaje!" (→ he mandado); "como le prometí" (→ he prometido); "La mitad del costo" (→ coste); "ya entendí" ×2 (→ "ya lo entiendo"); Lupita's "tome mucha agua" (→ beba).
 Gates: tsc clean; check-content Mexican, neutral and Spain 0 errors, 0 warnings; corpus 315/315 0/77; held-out 37/37; Spain 20/20 0/1; vitest es 178/178.
+
+## Spain pass 3 (14 Nov 2026)
+
+- Don Ernesto: "Ya sé, ya sé" (patience_react, i_know, resp_lease) → "Ya lo sé"; "el aparato ya está viejito" (dodge_old, dodge_after_rita) → "ya tiene sus años"; Doña Lupita's "arregla todo" → "lo arregla todo".
+- dodge_sweater's Spain twin gets empty flags (it showed the "baño" note on "ducha"); neutral twins of tech_number, writing_react and the minisplit hint got empty flags (Mexican ahorita / minisplit notes).
+Gates: Spain and Mexican 0 errors, 0 warnings; Spain corpus 20/20, 0/1.

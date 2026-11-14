@@ -361,7 +361,7 @@ export const interview: SituationDef = {
       bc: "[porque | creo que | pienso que | porque creo que | la verdad]",
       money: "[unos | unas | alrededor de | como | mas o menos | aproximadamente | por lo menos | al menos | minimo] {sal} [pesos] [al mes | mensuales | mensual | por mes | a la quincena] [netos | brutos | libres | mas prestaciones]",
       sal_pre: "[(busco | espero | estoy buscando | pienso en | quisiera | me gustaria | aspiro a | pretendo | quiero | necesito) [ganar] | mis (pretensiones | expectativas) (son | serian) [de] | mi expectativa es [de] | creo que]",
-      wk_pre: "[mi (mayor | principal | unica | peor) (debilidad | defecto) (es | seria) [que] | mi [principal | mayor] area de oportunidad (es | seria) [que] | (creo | diria | pienso) que | la verdad [es que] | (siendo | para ser) (honesto | honesta | sincero | sincera)]",
+      wk_pre: "[mi (mayor | principal | unica | peor) (debilidad | defecto) (es | seria) [que] | mi [mayor | principal | unico | peor] punto debil (es | seria) [que] | mi [principal | mayor] area de oportunidad (es | seria) [que] | (creo | diria | pienso) que | la verdad [es que] | (siendo | para ser) (honesto | honesta | sincero | sincera)]",
       hobby: "(leer | nadar | bucear | cocinar | correr | viajar | la musica | el deporte | el futbol | caminar | pintar | la fotografia | el yoga | bailar | la playa | el surf | hacer ejercicio)",
       lang_spoken: "(hablo | se | domino | tambien hablo | ademas hablo | hablo un poco de | se un poco de)",
       soon: "(de inmediato | inmediatamente | ya | ya mismo | ahora mismo | manana mismo | hoy mismo | desde hoy | desde manana | cuando ustedes quieran | cuando usted quiera | lo antes posible | cuanto antes | manana | hoy | desde ya | luego luego)",
@@ -570,7 +570,7 @@ export const interview: SituationDef = {
       "[porque | pero] soy @very {strength} [y {strength}] [y {strength}] #h:s_very",
       "(yo diria que | diria que | creo que) soy @very {strength} [y {strength}] #h:s_say",
       "(la gente | mis companeros | mis amigos | mi jefe | mi jefa) (dice | dicen) que soy @very {strength} [y {strength}] #h:s_people",
-      "mi (mayor | principal | mejor) (fortaleza | virtud | cualidad) es [que soy | ser] [la] {strength} [y {strength}]", "mis fortalezas son [que soy | la | el] {strength} [y [la | el] {strength}]",
+      "mi (mayor | principal | mejor) (fortaleza | virtud | cualidad) es [que soy | ser] [la] {strength} [y {strength}]", "mis fortalezas son [que soy | la | el] {strength} [y [la | el] {strength}]", "mi (mayor | principal | mejor) punto fuerte es [que soy | ser] [la] {strength} [y {strength}]", "mis puntos fuertes son [que soy | la | el] {strength} [y [la | el] {strength}]",
       "[porque | pero] aprendo (rapido | muy rapido | rapidamente) #fast_learner #h:learn_fast",
       "[porque] soy (bueno | buena) (con | para) (la gente | las personas | los clientes | los numeros | las computadoras | los ninos | las ventas) #good_with #h:good_people",
       "[porque] (trabajo bien | se trabajar) en equipo #team #h:team_well", "me gusta trabajar en equipo #team",
@@ -608,6 +608,7 @@ export const interview: SituationDef = {
       "@wk_pre me (preocupo | estreso) (demasiado | mucho) [por (los detalles | todo)]",
       "@wk_pre [a veces] llego tarde", "@wk_pre hablo (mucho | demasiado)", "@wk_pre no se decir que no", "@wk_pre no me gusta (delegar | pedir ayuda | hablar en publico)",
       "mi [principal | mayor] area de oportunidad es (la | el | mi) (paciencia | puntualidad | organizacion | espanol | ingles | perfeccionismo | tiempo) #h:wk_area",
+      "mi [principal | mayor] (debilidad | punto debil) es (la | el | mi) (paciencia | puntualidad | organizacion | espanol | ingles | perfeccionismo | tiempo) #h:wk_area",
       "@wk_pre (la impaciencia | el perfeccionismo | la puntualidad | mi espanol | la timidez | el estres)",
     ] },
     working_on_it: { patterns: [
@@ -923,18 +924,18 @@ export const interview: SituationDef = {
         { flags: { 3: "algo de tomar: de links algo to the verb; = something to drink." }, spain: t("¿Le | apetece | algo | de | beber? | ¿Agua? | ¿Café?", "(To) you | does it appeal | something | — | to drink? | Water? | Coffee?", "Can I get you something to drink? Water? Coffee?", { flags: { 3: "algo de beber: de links algo to the verb; = something to drink." } }) }),
       t("¿Gusta | un | vaso | de | agua | o | un | café?", "Would you like | a | glass | of | water | or | a | coffee?", "Would you like some water or coffee?", {
         flags: { 0: "Mexican: ¿Gusta…? = would you like…? (very polite)." },
-        neutral: t("¿Quiere | un | vaso | de | agua | o | un | café?", "Do you want | a | glass | of | water | or | a | coffee?", "Would you like some water or coffee?") }),
+        neutral: t("¿Quiere | un | vaso | de | agua | o | un | café?", "Do you want | a | glass | of | water | or | a | coffee?", "Would you like some water or coffee?", { flags: {} }) }),
     ],
     here_water: [t("Aquí tiene.", "Here you go.", "Here you go."), t("Claro, | aquí tiene.", "Sure, | here you go.", "Sure, here you go.")],
     here_coffee: [t("¡Claro! | Aquí está | su | café.", "Sure! | Here is | your | coffee.", "Sure! Here's your coffee.")],
-    no_drink_ok: [t("Está bien, | como | guste.", "That's fine, | as | you-like.", "Okay, sure.")],
+    no_drink_ok: [t("Está bien, | como | guste.", "That's fine, | as | you-like.", "Okay, sure.", { spain: t("Está bien, | como | quiera.", "That's fine, | as | you-like.", "Okay, sure.") })],
     // About you
     ask_about: [
       t("Bueno, | cuénteme | un | poco | de | usted.", "Well, | tell me | a | little | about | yourself.", "So, tell me a little about yourself."),
       t("Hábleme | de | usted.", "Tell me | about | yourself.", "Tell me about yourself."),
       t("Para | empezar, | platíqueme | un | poco | de | usted.", "To | start, | tell me | a | little | about | yourself.", "First, could you tell me a little about yourself?", {
         flags: { 2: "Mexican: platicar = to chat, to tell." },
-        neutral: t("Para | empezar, | cuénteme | un | poco | de | usted.", "To | start, | tell me | a | little | about | yourself.", "First, could you tell me a little about yourself?") }),
+        neutral: t("Para | empezar, | cuénteme | un | poco | de | usted.", "To | start, | tell me | a | little | about | yourself.", "First, could you tell me a little about yourself?", { flags: {} }) }),
     ],
     ask_about_again: [
       t("Cuénteme | un | poco | de | usted.", "Tell me | a | little | about | yourself.", "Tell me a little about yourself."),
@@ -950,13 +951,15 @@ export const interview: SituationDef = {
     ask_start_when: [t("No hay problema. | Entonces, | ¿cuándo | podría | empezar?", "No problem. | Then, | when | could you | start?", "No problem. When could you start, then?")],
     a_restroom: [t("Está | al fondo | del | pasillo, | a la izquierda.", "It's | at the end | of the | hall, | on the left.", "It's down the hall, on the left.")],
     brooks_name: [t("Soy | la | licenciada | Salinas, | para servirle.", "I'm | — | Licenciada | Salinas, | at your service.", "I'm Ms. Salinas, at your service.", {
-      flags: { 1: "Spanish puts la before a title.", 2: "Licenciada: the title of a university graduate, used a lot in Mexican offices." } })],
+      flags: { 1: "Spanish puts la before a title.", 2: "Licenciada: the title of a university graduate, used a lot in Mexican offices." },
+      spain: t("Soy | la | señora | Salinas, | encantada.", "I'm | — | Mrs. | Salinas, | nice to meet you.", "I'm Ms. Salinas, nice to meet you.",
+        { flags: { 1: "Spanish puts la before a title (la señora Salinas)." } }) })],
     ask_studied: [t("¿Y | qué | estudió?", "And | what | did you study?", "And what did you study?")],
     ask_job_before: [t("¿Y | qué | hacía | antes?", "And | what | did you do | before?", "And what did you do before?")],
     ask_years_job: [
       t("¿Cuánto | tiempo | tiene | trabajando | como | {X}?", "How much | time | do you have | working | as | {X}?", "How long have you worked as {X.np}?", {
         flags: { 2: "Mexican: tiene … trabajando = have you been working." },
-        neutral: t("¿Cuánto | tiempo | lleva | trabajando | como | {X}?", "How much | time | have you spent | working | as | {X}?", "How long have you worked as {X.np}?") }),
+        neutral: t("¿Cuánto | tiempo | lleva | trabajando | como | {X}?", "How much | time | have you spent | working | as | {X}?", "How long have you worked as {X.np}?", { flags: { 2: "llevar + a time + -ando: how long you've been doing something." } }) }),
       t("¿Y | cuántos | años | de | experiencia | tiene | como | {X}?", "And | how many | years | of | experience | do you have | as | {X}?", "And how many years of experience do you have as {X.np}?"),
     ],
     ask_years_field: [t("¿Y | cuánto | tiempo | lleva | en | {X}?", "And | how much | time | have you spent | in | {X}?", "And how long have you worked in {X}?")],
@@ -972,7 +975,7 @@ export const interview: SituationDef = {
       { flags: { 5: "la gente: Spanish uses the article for people in general." }, spain: t("No se preocupe. | Aquí | damos | formación | a | la | gente | nueva.", "Don't worry. | Here | we-give | training | to | the | people | new.", "That's okay. We train new people here.", { flags: { 5: "la gente: Spanish uses the article for people in general." } }) })],
     from_lt: [t("¡Qué | bien! | {m:Bienvenido|f:Bienvenida} | a | Puerto Colibrí.", "How | nice! | Welcome | to | Puerto Colibrí.", "Oh, nice! Welcome to Puerto Colibrí!")],
     nice: [
-      t("¡Qué | padre!", "How | cool!", "Oh, nice!", { flags: { 1: "Mexican: padre = cool, great." }, neutral: t("¡Qué | bien!", "How | nice!", "Oh, nice!") }),
+      t("¡Qué | padre!", "How | cool!", "Oh, nice!", { flags: { 1: "Mexican: padre = cool, great." }, neutral: t("¡Qué | bien!", "How | nice!", "Oh, nice!", { flags: {} }) }),
       t("¡Ah, | qué | bonito!", "Oh, | how | lovely!", "Oh, that's lovely."),
     ],
     moved_ack: [t("¡Ah, | {m:bienvenido|f:bienvenida}!", "Oh, | welcome!", "Oh, welcome!")],
@@ -992,12 +995,14 @@ export const interview: SituationDef = {
     why_ack: [
       t("¡Qué | gusto | oír | eso!", "What | pleasure | to hear | that!", "That's great to hear."),
       t("Entiendo, | gracias.", "I understand, | thanks.", "I see. Thank you."),
-      t("Me alegra | escuchar | eso.", "It makes me glad | to hear | that.", "I'm glad to hear that."),
+      t("Me alegra | escuchar | eso.", "It makes me glad | to hear | that.", "I'm glad to hear that.", { spain: t("Me alegra | oír | eso.", "It makes me glad | to hear | that.", "I'm glad to hear that.") }),
     ],
     // Strengths
     ask_strengths: [
-      t("¿Cuáles | son | sus | principales | fortalezas?", "What | are | your | main | strengths?", "What are your greatest strengths?"),
-      t("Bueno, | ¿y | cuáles | son | sus | fortalezas?", "Well, | and | what | are | your | strengths?", "So, what are your strengths?"),
+      t("¿Cuáles | son | sus | principales | fortalezas?", "What | are | your | main | strengths?", "What are your greatest strengths?",
+        { spain: t("¿Cuáles | son | sus | principales | puntos fuertes?", "What | are | your | main | strengths?", "What are your greatest strengths?", { flags: { 4: "puntos fuertes: strengths (Spain's usual word in interviews)." } }) }),
+      t("Bueno, | ¿y | cuáles | son | sus | fortalezas?", "Well, | and | what | are | your | strengths?", "So, what are your strengths?",
+        { spain: t("Bueno, | ¿y | cuáles | son | sus | puntos fuertes?", "Well, | and | what | are | your | strengths?", "So, what are your strengths?", { flags: { 5: "puntos fuertes: strengths (Spain's usual word in interviews)." } }) }),
     ],
     // one quality named ("Soy trabajador") never gets the plural "Son muy buenas cualidades"
     strength_ack: [
@@ -1014,12 +1019,14 @@ export const interview: SituationDef = {
     not_strength_ack: [t("Muy | bien. | ¿Y | en | qué | es | {m:bueno|f:buena}?", "Very | good. | And | at | what | are you | good?", "Okay. And what are you good at?")],
     // Weaknesses
     ask_weakness: [
-      t("¿Y | sus | debilidades?", "And | your | weaknesses?", "And your weaknesses?"),
+      t("¿Y | sus | debilidades?", "And | your | weaknesses?", "And your weaknesses?", { spain: t("¿Y | sus | puntos débiles?", "And | your | weaknesses?", "And your weaknesses?") }),
       t("¿Y | cuál | diría | que | es | su | mayor | debilidad?", "And | which | would you say | — | is | your | greatest | weakness?", "And what would you say is your greatest weakness?",
-        { flags: { 3: "que: that, which English can leave out." } }),
+        { flags: { 3: "que: that, which English can leave out." },
+          spain: t("¿Y | cuál | diría | que | es | su | principal | punto débil?", "And | which | would you say | — | is | your | main | weakness?", "And what would you say is your greatest weakness?", { flags: { 3: "que: that, which English can leave out." } }) }),
       t("¿Y | cuáles | son | sus | áreas | de | oportunidad?", "And | what | are | your | areas | of | opportunity?", "And what are your areas for improvement?", {
         flags: { 4: "Mexican office Spanish: área de oportunidad = something you can improve, a polite word for weakness." },
-        neutral: t("¿Y | cuáles | son | sus | debilidades?", "And | what | are | your | weaknesses?", "And what are your weaknesses?") }),
+        neutral: t("¿Y | cuáles | son | sus | debilidades?", "And | what | are | your | weaknesses?", "And what are your weaknesses?", { flags: {} }),
+        spain: t("¿Y | cuáles | son | sus | puntos débiles?", "And | what | are | your | weaknesses?", "And what are your weaknesses?", { flags: {} }) }),
     ],
     weakness_ack: [
       t("Gracias | por | su | honestidad.", "Thanks | for | your | honesty.", "Thank you for being honest."),
@@ -1110,12 +1117,14 @@ export const interview: SituationDef = {
     a_lunch: [t("Y | tiene | una | hora | para | comer.", "And | you have | an | hour | to | eat.", "And you get an hour for lunch.")],
     a_lunch_time: [t("Tiene | una | hora | para | comer, | de | dos | a | tres.", "You have | an | hour | to | eat, | from | two | to | three.", "You get an hour for lunch, from two to three.")],
     a_training: [t("¡Sí! | Tiene | dos | semanas | de | capacitación | con | un | compañero.", "Yes! | You have | two | weeks | of | training | with | a | colleague.", "Yes! You'll have two weeks of training with a colleague.", { spain: t("¡Sí! | Tiene | dos | semanas | de | formación | con | un | compañero.", "Yes! | You have | two | weeks | of | training | with | a | colleague.", "Yes! You'll have two weeks of training with a colleague.") })],
-    a_start: [t("Probablemente | el | primero | del | próximo | mes.", "Probably | the | first | of the | next | month.", "Probably on the first of next month.")],
+    a_start: [t("Probablemente | el | primero | del | próximo | mes.", "Probably | the | first | of the | next | month.", "Probably on the first of next month.",
+      { spain: t("Probablemente | el | día | uno | del | próximo | mes.", "Probably | the | day | one | of the | next | month.", "Probably on the first of next month.",
+        { flags: { 2: "el día uno: the first (of the month); Spain says uno for the first day, Mexico primero." } }) })],
     a_team: [t("En | el | equipo | somos | ocho | personas.", "In | the | team | we-are | eight | people.", "There are eight people on the team.")],
     a_team2: [t("Trabajaría | con | María | y | otros | compañeros.", "You would work | with | María | and | other | colleagues.", "You'd work with María and a few others.")],
     a_remote: [t("Puede | hacer | home office | dos | días | a la semana.", "You can | do | home office | two | days | a week.", "You can work from home two days a week.", {
       flags: { 2: "Mexican: home office, from English, is what Mexican offices say for working from home." },
-      neutral: t("Puede | trabajar | desde | casa | dos | días | a la semana.", "You can | work | from | home | two | days | a week.", "You can work from home two days a week.") })],
+      neutral: t("Puede | trabajar | desde | casa | dos | días | a la semana.", "You can | work | from | home | two | days | a week.", "You can work from home two days a week.", { flags: {} }) })],
     a_benefits: [t("Tiene | todas | las | prestaciones | de ley: | seguro social, | aguinaldo | y | vacaciones.", "You have | all | the | benefits | by law: | social security, | Christmas bonus | and | vacation.",
       "You get all the benefits the law requires: social security, a Christmas bonus and paid vacation.", { flags: { 6: "aguinaldo: the yearly bonus Mexican law requires, paid in December." }, spain: t("Tiene | todo | lo que | marca | la | ley: | Seguridad Social, | paga extra | de | Navidad | y | vacaciones.", "You have | everything | that | sets | the | law: | social security, | extra paycheck | at | Christmas | and | vacation.", "You get everything the law requires: social security, a Christmas bonus and paid vacation.", { flags: { 4: "la ley: Spanish uses the article here; English says the law too.", 7: "paga extra: an extra month's pay; here the one Mexico's law gives in December (the aguinaldo)." } }) })],
     a_day: [t("Contestaría | correos | y | llamadas | de | clientes, | y | ayudaría | al | equipo | con | los | proyectos.",
@@ -1130,7 +1139,8 @@ export const interview: SituationDef = {
     a_mood: [t("Muy | bueno, | la verdad. | Es | un | equipo | muy | unido.", "Very | good, | honestly. | It's | a | team | very | close-knit.", "Really good, honestly. It's a very close-knit team.")],
     a_company: [t("Somos | una | empresa | de | servicios: | atendemos | a | clientes | de | toda | la | zona.", "We-are | a | company | of | services: | we-serve | — | clients | from | all | the | area.",
       "We're a services company: we work with clients all over the area.", { flags: { 6: "Personal a: Spanish marks people as the object; English needs no word." } })],
-    a_unknown: [t("¡Buena | pregunta! | Lo | reviso | y | le | aviso.", "Good | question! | It | I'll-check | and | you | I'll-let-know.", "Good question! I'll check and let you know.")],
+    a_unknown: [t("¡Buena | pregunta! | Lo | reviso | y | le | aviso.", "Good | question! | It | I'll-check | and | you | I'll-let-know.", "Good question! I'll check and let you know.",
+      { spain: t("¡Buena | pregunta! | Lo | compruebo | y | le | digo | algo.", "Good | question! | It | I'll-check | and | (to) you | I'll-tell | something.", "Good question! I'll check and let you know.") })],
     a_grow: [t("¡Claro! | Aquí | buscamos | que | la | gente | crezca | con | nosotros.", "Of course! | Here | we-try | that | the | people | grow | with | us.",
       "Of course! We want our people to grow with us.", { flags: { 3: "buscar que + a verb: to try to make something happen.", 4: "la gente: Spanish uses the article for people in general." } })],
     a_training_who: [t("Un | compañero | del | equipo, | durante | las | primeras | dos | semanas.", "A | colleague | from the | team, | during | the | first | two | weeks.",
@@ -1140,7 +1150,8 @@ export const interview: SituationDef = {
     a_weekend: [t("No, | solo | de | lunes | a | viernes, | de | nueve | a | seis.", "No, | only | from | Monday | to | Friday, | from | nine | to | six.", "No, just Monday to Friday, nine to six.")],
     a_overtime: [t("Casi | nunca, | la verdad.", "Almost | never, | honestly.", "Hardly ever, to be honest.")],
     a_boss: [t("Su | jefe | sería | el | ingeniero | Montes.", "Your | boss | would be | — | Ingeniero | Montes.", "Your boss would be Mr. Montes.", {
-      flags: { 3: "Spanish puts el before a title.", 4: "Ingeniero: an engineering graduate's title, used to address him in Mexican offices." } })],
+      flags: { 3: "Spanish puts el before a title.", 4: "Ingeniero: an engineering graduate's title, used to address him in Mexican offices." },
+      spain: t("Su | jefe | sería | el | señor | Montes.", "Your | boss | would be | — | Mr. | Montes.", "Your boss would be Mr. Montes.", { flags: { 3: "Spanish puts el before a title (el señor Montes)." } }) })],
     a_parking_free: [t("Es | sin | costo. | Está | atrás | del | edificio.", "It's | without | cost. | It's | behind | the | building.", "It's free. It's behind the building.", { spain: t("Es | gratis. | Está | detrás | del | edificio.", "It's | free. | It's | behind | the | building.", "It's free. It's behind the building.") })],
     a_vacation: [t("Las | que | marca | la | ley. | Todo | viene | en | el | contrato.", "The ones | that | sets | the | law. | Everything | comes | in | the | contract.",
       "Whatever the law requires. It's all in the contract.")],
@@ -1180,7 +1191,7 @@ export const interview: SituationDef = {
       "Oh, I'm so sorry, I need to take this call. I'll be right back.", {
         flags: { 7: "Mexican: ahorita = in a moment." },
         neutral: t("Ay, | perdóneme, | tengo | que | contestar | esta | llamada. | Enseguida | regreso.", "Oh, | forgive me, | I have | to | answer | this | call. | Right away | I'm-back.",
-          "Oh, I'm so sorry, I need to take this call. I'll be right back."), spain: t("Ay, | perdóneme, | tengo | que | contestar | esta | llamada. | Enseguida | vuelvo.", "Oh, | forgive me, | I have | to | answer | this | call. | In a moment | I'm-back.", "Oh, I'm so sorry, I need to take this call. I'll be right back.") })],
+          "Oh, I'm so sorry, I need to take this call. I'll be right back."), spain: t("Ay, | perdóneme, | tengo | que | contestar | esta | llamada. | Enseguida | vuelvo.", "Oh, | forgive me, | I have | to | answer | this | call. | In a moment | I'm-back.", "Oh, I'm so sorry, I need to take this call. I'll be right back.", { flags: {} }) })],
     phone_back: [
       t("Gracias | por | esperar. | ¡Perdón | por | la | interrupción!", "Thanks | for | waiting. | Sorry | for | the | interruption!", "Thank you for waiting. Sorry about that!"),
       t("¡Perdón! | ¿En | qué | íbamos?", "Sorry! | In | what | were we going?", "Sorry about that! Where were we?"),
@@ -1201,7 +1212,9 @@ export const interview: SituationDef = {
         { flags: { 5: "a las nueve: Spanish says the hour with la / las." } }) },
       { id: "here_for", s: t("Vengo | a | una | entrevista | de | trabajo.", "I'm coming | to | an | interview | for | work.", "I'm here for a job interview.") },
       { id: "here_see", s: t("Vengo | a | ver | a | la | licenciada | Salinas.", "I'm coming | to | see | — | — | Licenciada | Salinas.", "I'm here to see Ms. Salinas.",
-        { flags: { 3: "Personal a: Spanish marks a person as the object.", 4: "Spanish puts la before a title.", 5: "Licenciada: the title of a university graduate." } }) },
+        { flags: { 3: "Personal a: Spanish marks a person as the object.", 4: "Spanish puts la before a title.", 5: "Licenciada: the title of a university graduate." },
+          spain: t("Vengo | a | ver | a | la | señora | Salinas.", "I'm coming | to | see | — | — | Mrs. | Salinas.", "I'm here to see Ms. Salinas.",
+            { flags: { 3: "Personal a: Spanish marks a person as the object.", 4: "Spanish puts la before a title (la señora Salinas)." } }) }) },
       { id: "intro_full", s: t("Mucho gusto, | soy | {$name} | {$surname}.", "Nice to meet you, | I'm | {$name} | {$surname}.", "Nice to meet you, I'm {$name} {$surname}.") },
       { id: "my_name", s: t("Me llamo | {$name}.", "My name is | {$name}.", "My name is {$name}.") },
     ] },
@@ -1224,7 +1237,8 @@ export const interview: SituationDef = {
     years: { lt: "Say how long you've worked", items: [
       { id: "years_about", s: t("Como | diez | años.", "About | ten | years.", "About ten years.", { spain: t("Unos | diez | años.", "About | ten | years.", "About ten years.", { flags: { 0: "unos before a number: about." } }) }) },
       { id: "years_for", s: t("Desde hace | cinco | años.", "For | five | years.", "For five years.") },
-      { id: "years_since", s: t("Desde | el | 2015.", "Since | — | 2015.", "Since 2015.", { say: "Desde el dos mil quince.", flags: { 1: "Mexicans often say a year with el: desde el 2015." } }) },
+      { id: "years_since", s: t("Desde | el | 2015.", "Since | — | 2015.", "Since 2015.", { say: "Desde el dos mil quince.", flags: { 1: "Mexicans often say a year with el: desde el 2015." },
+        spain: t("Desde | 2015.", "Since | 2015.", "Since 2015.", { say: "Desde dos mil quince.", flags: {} }) }), noteSpain: "Spain usually says a year without el: desde 2015." },
     ] },
     studied: { lt: "Say what you studied", items: [
       { id: "studied", s: t("Estudié | mercadotecnia.", "I studied | marketing.", "I studied marketing.", { spain: t("Estudié | marketing.", "I studied | marketing.", "I studied marketing.") }) },
@@ -1246,7 +1260,7 @@ export const interview: SituationDef = {
     ] },
     no_q: { lt: "Say you have no more questions", items: [
       { id: "q_none", s: t("No, | todo | está | muy | claro.", "No, | everything | is | very | clear.", "No, everything's very clear.") },
-      { id: "q_none_all", s: t("No, | es | todo. | Gracias.", "No, | it's | all. | Thanks.", "No, that's all. Thank you.") },
+      { id: "q_none_all", s: t("No, | es | todo. | Gracias.", "No, | it's | all. | Thanks.", "No, that's all. Thank you.", { spain: t("No, | eso | es | todo. | Gracias.", "No, | that | is | all. | Thanks.", "No, that's all. Thank you.") }) },
     ] },
     about_job: {
       lt: "Say what you do", slot: "job", examples: ["contador", "enfermero", "maestro_ingles", "ingeniero", "chofer"],
@@ -1256,7 +1270,7 @@ export const interview: SituationDef = {
         { id: "job_im", s: t("Soy | {X} | con | diez | años | de | experiencia.", "I'm | {X} | with | ten | years | of | experience.", "I'm {X.np} with ten years of experience.") },
         { id: "job_been", s: t("Tengo | cinco | años | trabajando | como | {X}.", "I-have | five | years | working | as | {X}.", "I've been working as {X.np} for five years.", {
           flags: { 0: "Mexican: tengo cinco años trabajando = I've been working for five years." },
-          neutral: t("Llevo | cinco | años | trabajando | como | {X}.", "I've-spent | five | years | working | as | {X}.", "I've been working as {X.np} for five years.") }) },
+          neutral: t("Llevo | cinco | años | trabajando | como | {X}.", "I've-spent | five | years | working | as | {X}.", "I've been working as {X.np} for five years.", { flags: { 0: "llevar + a time + -ando: how long you've been doing something." } }) }) },
         { id: "job_was", s: t("Antes | trabajaba | como | {X}.", "Before | I-worked | as | {X}.", "I used to work as {X.np}.") },
       ],
     },
@@ -1306,7 +1320,7 @@ export const interview: SituationDef = {
       { id: "pressure", s: t("Mantengo | la | calma | bajo | presión.", "I-keep | — | calm | under | pressure.", "I stay calm under pressure.", { flags: { 1: "Spanish says la calma (the calm)." } }) },
       { id: "s_ganas", s: t("Le | echo | muchas | ganas.", "(To) it | I-throw | lots of | eagerness.", "I always give it my all.", {
         flags: { 1: "Mexican: echarle ganas = to put your heart into it (le goes with it)." },
-        neutral: t("Trabajo | con | muchas | ganas.", "I-work | with | lots of | eagerness.", "I always give it my all.") }) },
+        neutral: t("Trabajo | con | muchas | ganas.", "I-work | with | lots of | eagerness.", "I always give it my all.", { flags: {} }) }) },
       { id: "not_afraid", s: t("No tengo | miedo | de | preguntar.", "I don't have | fear | of | asking.", "I'm not afraid to ask.") },
       { id: "langs", s: t("Hablo | tres | idiomas.", "I-speak | three | languages.", "I speak three languages.") },
     ] },
@@ -1319,7 +1333,8 @@ export const interview: SituationDef = {
       { id: "wk_public", s: t("Me cuesta | hablar | en | público.", "It's hard for me | to speak | in | public.", "Public speaking isn't easy for me.") },
       { id: "wk_area", s: t("Mi | área | de | oportunidad | es | la | paciencia.", "My | area | of | opportunity | is | — | patience.", "Patience is something I'm working on.", {
         flags: { 1: "Mexican office Spanish: área de oportunidad = something you can improve.", 5: "Spanish uses the article with qualities: la paciencia." },
-        neutral: t("Mi | debilidad | es | la | paciencia.", "My | weakness | is | — | patience.", "Patience is my weakness.", { flags: { 3: "Spanish uses the article with qualities: la paciencia." } }) }) },
+        neutral: t("Mi | debilidad | es | la | paciencia.", "My | weakness | is | — | patience.", "Patience is my weakness.", { flags: { 3: "Spanish uses the article with qualities: la paciencia." } }),
+        spain: t("Mi | punto débil | es | la | paciencia.", "My | weak point | is | — | patience.", "Patience is my weakness.", { flags: { 3: "Spanish uses the article with qualities: la paciencia." } }) }) },
       { id: "wk_better", s: t("Pero | estoy | mejorando.", "But | I'm | improving.", "But I'm getting better.") },
     ] },
     future: { lt: "Say where you see yourself in five years", items: [
@@ -1378,7 +1393,7 @@ export const interview: SituationDef = {
       { id: "q_team", s: t("¿De | cuántas | personas | es | el | equipo?", "Of | how many | people | is | the | team?", "How big is the team?") },
       { id: "q_remote", s: t("¿Se puede | hacer | home office?", "Can one | do | home office?", "Can I work from home?", {
         flags: { 2: "Mexican: home office, from English, = working from home." },
-        neutral: t("¿Se puede | trabajar | desde | casa?", "Can one | work | from | home?", "Can I work from home?") }) },
+        neutral: t("¿Se puede | trabajar | desde | casa?", "Can one | work | from | home?", "Can I work from home?", { flags: {} }) }) },
       { id: "q_benefits", s: t("¿Qué | prestaciones | tiene | el | puesto?", "What | benefits | does it have | the | position?", "What are the benefits?", { spain: t("¿Qué | condiciones | tiene | el | puesto?", "What | conditions | does it have | the | position?", "What are the terms of the job?") }), note: "Prestaciones: the benefits that come with a job in Mexico (social security, aguinaldo, vacation…).", noteSpain: "Las condiciones: what comes with a job (Mexico: las prestaciones: social security, aguinaldo, vacation…)." },
     ] },
     ask_them3: { lt: "Ask about a typical day and the next steps", items: [
@@ -1410,6 +1425,10 @@ export const interview: SituationDef = {
     neg_money: { key: "neg_money", lt: "Understood! A tip: in an interview, put growth before money: “Quiero crecer profesionalmente”.", better: "Quiero crecer profesionalmente." },
   },
   merges: {
+    // Spain pass 3 (14 Nov 2026)
+    "puntos fuertes": { reason: "lexical_expression", split: "puntos → points + fuertes → strong: = strengths (Spain's usual interview word).", minimal: "Two words." },
+    "puntos débiles": { reason: "lexical_expression", split: "puntos → points + débiles → weak: = weaknesses.", minimal: "Two words." },
+    "punto débil": { reason: "lexical_expression", split: "punto → point + débil → weak: = weakness, weak point.", minimal: "Two words." },
     // Spain's twins (12 Nov 2026)
     "ha encontrado": { reason: "grammatical_fusion", split: "ha → have + encontrado (participle): Spain's present perfect for what has just happened; one English verb phrase.", minimal: "Auxiliary and participle." },
     "ha sido": { reason: "grammatical_fusion", split: "ha → has + sido (participle): Spain's present perfect for today's events; one English verb phrase (it's been).", minimal: "Auxiliary and participle." },

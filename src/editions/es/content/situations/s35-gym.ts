@@ -36,9 +36,9 @@ const PLANS: EntityDef[] = [
       "plan mensual", "el plan mensual", "cuota mensual", "abono mensual", "el abono", "suscripcion mensual", "el mes", "un mes", "todo el mes", "pago mensual", "inscripcion mensual"],
     chip: "mensualidad", attrs: { price: MONTHLY } }),
   ent("day_pass", "visita", "day pass", "f", {
-    forms: ["visita", "la visita", "una visita", "visita de un dia", "pase de un dia", "un pase de un dia", "pase de dia", "pase diario", "pase por dia", "el pase de un dia",
+    forms: ["visita", "la visita", "una visita", "visita de un dia", "pase de un dia", "un pase de un dia", "pase de dia", "el pase de dia", "un pase de dia", "pase diario", "pase por dia", "el pase de un dia",
       "un dia", "un solo dia", "solo un dia", "el dia", "entrada de un dia", "una entrada", "visita sencilla", "pase del dia"],
-    chip: "visita", attrs: { price: VISIT } }),
+    chip: "visita", attrs: { price: VISIT, spain: "pase de día", spainPl: "pases de día", spainG: "m" } }),
 ];
 
 const CARDIO: EntityDef[] = [
@@ -87,7 +87,7 @@ const handedMethod = (c: Ctx): string | undefined => {
 /** The two prices said as amounts ("¿Seiscientos?", "¿Cien pesos por un día?"). */
 const AMOUNT_RE = /\b(cien|seiscientos|100|600)\b/;
 /** A question about a plan ("La mensualidad, ¿qué incluye?", "¿La mensualidad tiene contrato?"): never a choice. */
-const PLAN_Q_RE = /\b(incluye|incluyen|incluid[oa]s?|cobran|cobras|inscripcion(?! mensual)|contrato|cancelar|permanencia|plazo|horarios?|descuentos?|promocion(es)?)\b/;
+const PLAN_Q_RE = /\b(incluye|incluyen|incluid[oa]s?|cobran|cobras|cobrais|inscripcion(?! mensual)|matricula|contrato|cancelar|permanencia|plazo|horarios?|descuentos?|promocion(es)?)\b/;
 /** "¿Puedo pagar con tarjeta o en efectivo?", "¿Aceptas tarjeta o solo efectivo?": a question about two ways. */
 const METHODS = [/\b(tarjeta|debito|credito)\b/, /\befectivo\b/, /\b(celular|telefono|movil|transferencia|apple pay|google pay)\b/];
 const bothMethods = (c: Ctx) => { const h = heard(c); return /\bo\b/.test(h) && !/\bno\b/.test(h) && METHODS.filter((r) => r.test(h)).length >= 2; };
@@ -127,6 +127,9 @@ export const gym: SituationDef = {
   entities: { plan: PLANS, cardio: CARDIO, exercise: EXERCISES, weekday: WEEKDAYS, prop: PROPS },
 
   merges: {
+    "pase de día": { reason: "lexical_expression", split: "pase → pass + de → of + día → day; one noun = a day pass.", minimal: "Three words of one noun." },
+    "eso es": { reason: "lexical_expression", split: "eso → that + es → is; the cheer = that's it!", minimal: "Two words." },
+    "me apunto": { reason: "grammatical_fusion", split: "me → myself + apunto → I note down; apuntarse = to sign up.", minimal: "Two words." },
     "a menudo": { reason: "lexical_expression", split: "a → to + menudo → small hides the meaning: = often (Spain's word for seguido).", minimal: "Two words." },
     "máquina de remo": { reason: "lexical_expression", split: "máquina → machine + de → of + remo → rowing: one noun, a rowing machine.", minimal: "Three words." },
     "aun así": { reason: "lexical_expression", split: "aun → even + así → so: one adverb, still / even so.", minimal: "Two words." },
@@ -211,7 +214,7 @@ export const gym: SituationDef = {
     want_join: { patterns: [
       "(quiero | necesito | vengo a) @inscr [aqui | hoy] #h:join", "(quisiera | me gustaria) @inscr [aqui | hoy]", "me (quiero | quisiera) (hacer socio | hacer socia | hacer miembro | apuntar | registrar | dar de alta) [aqui | hoy]", "como me (apunto | registro | hago miembro)", "me (quiero | quisiera | gustaria) inscribir [al gimnasio | aqui | hoy]",
       "(quiero | quisiera | me gustaria) (hacerme | ser) (socio | socia | miembro) [del gimnasio] #h:become_member",
-      "como (me inscribo | me puedo inscribir | me registro | me hago socio | me hago socia | le hago para inscribirme | puedo inscribirme) #h:how_join",
+      "como (me inscribo | me puedo inscribir | me registro | me hago socio | me hago socia | le hago para inscribirme | puedo inscribirme | me apunto | me puedo apuntar | puedo apuntarme) #h:how_join",
       "(puedo | me puedo | se puede) (inscribir | inscribirme | inscribirse) [hoy | aqui]", "(donde | en donde) me inscribo",
       "(quiero | quisiera | me gustaria | me das | me da) informacion [del gimnasio | de las membresias | de los precios]",
       "me interesa (inscribirme | el gimnasio | hacerme socio | hacerme socia)",
@@ -305,7 +308,7 @@ export const gym: SituationDef = {
       "cuanto (cuesta | cuestan | sale) entrenar contigo", "(las demas | las otras | las siguientes | la segunda) (sesiones | sesion) (cuestan | cuesta | se pagan | se paga | tienen costo | tiene costo)",
     ] },
     ask_fee: { patterns: [
-      "(hay que | tengo que) pagar [la] inscripcion", "(cobran | cobras | cobrais) [la] inscripcion #h:q_fee", "(hay | tiene costo | cuanto es | cuanto cuesta | cuanto sale) [la] inscripcion",
+      "(hay que | tengo que) pagar [la] (inscripcion | matricula)", "(cobran | cobras | cobrais) [la] (inscripcion | matricula) #h:q_fee", "(hay | tiene costo | cuanto es | cuanto cuesta | cuanto sale) [la] (inscripcion | matricula)",
       "(hay | tienen) (algun | otro) (costo | cargo | pago) [extra | adicional | aparte]", "(tengo que | hay que) pagar (algo | otra cosa) (mas | aparte | extra)",
       "es todo o hay que pagar algo mas", "cuanto (cuesta | es | sale) (inscribirse | inscribirme | la inscripcion)",
     ] },
@@ -682,7 +685,7 @@ export const gym: SituationDef = {
     ],
     greet_hay: [
       t("¡Hola! | ¿Cómo | estás?", "Hi! | How | are you?", "Hi! How are you?"),
-      t("¡Hola! | ¿Qué tal | tu | día?", "Hi! | How's | your | day?", "Hi! How's your day going?"),
+      t("¡Hola! | ¿Qué tal | tu | día?", "Hi! | How's | your | day?", "Hi! How's your day going?", { spain: t("¡Hola! | ¿Qué tal | el | día?", "Hi! | How's | the | day?", "Hi! How's your day going?") }),
     ],
     ask_help: [
       t("Bueno, | ¿en | qué | te | ayudo?", "Well, | in | what | (to) you | I-help?", "So, how can I help you?"),
@@ -696,7 +699,8 @@ export const gym: SituationDef = {
         "Awesome! I'm Mónica, one of the trainers here.",
         { flags: { 1: "Mexican: qué padre = how cool, great." },
           neutral: t("¡Qué | bien! | Soy | Mónica, | una | de | las | entrenadoras.", "How | nice! | I am | Mónica, | one | of | the | trainers.",
-            "Great! I'm Mónica, one of the trainers here.") }),
+            "Great! I'm Mónica, one of the trainers here."),
+          spain: t("¡Qué | bien! | Soy | Mónica, | una | de | las | entrenadoras.", "How | nice! | I am | Mónica, | one | of | the | trainers.", "Great! I'm Mónica, one of the trainers here.", { flags: {} }) }),
       t("¡Perfecto! | Yo | soy | Mónica | y | voy | a | ser | tu | entrenadora.", "Perfect! | I | am | Mónica | and | I'm going | to | be | your | trainer.", "Great! I'm Mónica, and I'll be your trainer."),
     ],
     nice_meet: [t("¡Igualmente!", "Likewise!", "Nice to meet you too!"), t("¡Mucho gusto!", "Nice to meet you!", "Nice to meet you!")],
@@ -706,9 +710,14 @@ export const gym: SituationDef = {
       t("Tenemos | dos | opciones: | la | mensualidad, | de | {$price}, | o | la | visita, | de | {$amount}, | por | un | solo | día.",
         "We have | two | options: | the | monthly membership, | — | {$price}, | or | the | visit, | — | {$amount}, | for | one | single | day.",
         "We have two options: the monthly membership for {$price}, or a single visit for {$amount}, just for the day.",
-        { flags: { 5: F_DE_AMOUNT, 9: F_VISITA, 10: F_DE_AMOUNT } }),
+        { flags: { 5: F_DE_AMOUNT, 9: F_VISITA, 10: F_DE_AMOUNT },
+          spain: t("Tenemos | dos | opciones: | la | mensualidad, | de | {$price}, | o | el | pase de día, | de | {$amount}.",
+            "We have | two | options: | the | monthly membership, | — | {$price}, | or | the | day pass, | — | {$amount}.",
+            "We have two options: the monthly membership for {$price}, or a single visit for {$amount}, just for the day.", { flags: { 5: F_DE_AMOUNT, 10: F_DE_AMOUNT } }) }),
       t("Hay | dos | opciones: | mensualidad, | {$price} | al mes, | o | visita, | {$amount} | el | día.", "There are | two | options: | monthly membership, | {$price} | a month, | or | visit, | {$amount} | a | day.",
-        "There are two options: monthly, {$price} a month, or a single visit, {$amount} for the day.", { flags: { 7: F_VISITA } }),
+        "There are two options: monthly, {$price} a month, or a single visit, {$amount} for the day.", { flags: { 7: F_VISITA },
+          spain: t("Hay | dos | opciones: | mensualidad, | {$price} | al mes, | o | pase de día, | {$amount} | el | día.", "There are | two | options: | monthly membership, | {$price} | a month, | or | day pass, | {$amount} | a | day.",
+            "There are two options: monthly, {$price} a month, or a single visit, {$amount} for the day.", { flags: {} }) }),
     ],
     plan_trainer_note: [
       t("Y | con | cualquiera | de | las | dos, | tu | primera | sesión | conmigo | es | gratis.", "And | with | either | of | the | two, | your | first | session | with me | is | free.",
@@ -718,27 +727,30 @@ export const gym: SituationDef = {
       t("¿Cuál | quieres?", "Which | do you want?", "Which one would you like?"),
       t("¿Cuál | prefieres?", "Which | do you prefer?", "Which one sounds good?"),
     ],
-    plan_which2: [t("¡Claro! | ¿La | mensualidad | o | una | visita?", "Sure! | The | monthly membership | or | a | visit?", "Sure! The monthly membership or a single visit?")],
+    plan_which2: [t("¡Claro! | ¿La | mensualidad | o | una | visita?", "Sure! | The | monthly membership | or | a | visit?", "Sure! The monthly membership or a single visit?",
+      { spain: t("¡Claro! | ¿La | mensualidad | o | un | pase de día?", "Sure! | The | monthly membership | or | a | day pass?", "Sure! The monthly membership or a single visit?") })],
     // asked again after a side question: a bare "¿Cuál quieres?" right after the showers or the classes read as "which
     // shower / which class?" (audit, 5 Nov)
     plan_reask: [
       t("Entonces, | ¿la | mensualidad | o | la | visita?", "So, | the | monthly membership | or | the | visit?", "So, the monthly membership or a single visit?",
-        { flags: { 5: F_VISITA } }),
+        { flags: { 5: F_VISITA }, spain: t("Entonces, | ¿la | mensualidad | o | el | pase de día?", "So, | the | monthly membership | or | the | day pass?", "So, the monthly membership or a single visit?", { flags: {} }) }),
       t("¿Y | cuál | prefieres: | la | mensualidad | o | la | visita?", "And | which | do you prefer: | the | monthly membership | or | the | visit?",
-        "So which would you like: the monthly membership or a single visit?", { flags: { 7: F_VISITA } }),
+        "So which would you like: the monthly membership or a single visit?", { flags: { 7: F_VISITA },
+        spain: t("¿Y | cuál | prefieres: | la | mensualidad | o | el | pase de día?", "And | which | do you prefer: | the | monthly membership | or | the | day pass?", "So which would you like: the monthly membership or a single visit?", { flags: {} }) }),
     ],
     plan_recommend: [
       t("Si | vas | a | venir | seguido, | te | conviene | la | mensualidad.", "If | you're going | to | come | often, | (for) you | is the better deal | the | monthly membership.",
         "If you're going to come often, the monthly membership is the better deal.",
         { spain: t("Si | vas | a | venir | a menudo, | te | conviene | la | mensualidad.", "If | you're going | to | come | often, | (for) you | is the better deal | the | monthly membership.", "If you're going to come often, the monthly membership is the better deal.") }),
     ],
-    plan_ok_monthly: [t("¡Excelente | elección!", "Excellent | choice!", "Great choice!"), t("¡Muy | bien, | la | mensualidad!", "Very | good, | the | monthly membership!", "Awesome, the monthly membership!")],
-    plan_ok_day: [t("Claro, | una | visita.", "Sure, | a | visit.", "Sure, a single visit."), t("Perfecto, | solo | por | hoy.", "Perfect, | just | for | today.", "Perfect, just for today.")],
+    plan_ok_monthly: [t("¡Excelente | elección!", "Excellent | choice!", "Great choice!", { spain: t("¡Buena | elección!", "Good | choice!", "Great choice!") }), t("¡Muy | bien, | la | mensualidad!", "Very | good, | the | monthly membership!", "Awesome, the monthly membership!")],
+    plan_ok_day: [t("Claro, | una | visita.", "Sure, | a | visit.", "Sure, a single visit.", { spain: t("Claro, | un | pase de día.", "Sure, | a | day pass.", "Sure, a single visit.") }), t("Perfecto, | solo | por | hoy.", "Perfect, | just | for | today.", "Perfect, just for today.")],
     free_session: [t("¡Y | tu | primera | sesión | conmigo | es | gratis!", "And | your | first | session | with me | is | free!", "And your first session with me is free!")],
     trial_info: [t("¡Tu | primera | sesión | con | una | entrenadora | es | gratis!", "Your | first | session | with | a | trainer | is | free!", "Your first session with a trainer is free!")],
     plan_alt_day: [
       t("¡No hay problema! | ¿Qué tal | una | visita? | Son | solo | {$amount}.", "No problem! | How about | a | visit? | It's | just | {$amount}.",
-        "No problem! How about a single visit? It's just {$amount}."),
+        "No problem! How about a single visit? It's just {$amount}.",
+        { spain: t("¡No hay problema! | ¿Qué tal | un | pase de día? | Son | solo | {$amount}.", "No problem! | How about | a | day pass? | It's | just | {$amount}.", "No problem! How about a single visit? It's just {$amount}.") }),
     ],
     plan_alt_monthly: [t("Bueno. | Entonces, | ¿qué tal | la | mensualidad?", "Okay. | Then, | how about | the | monthly membership?", "Okay! Then how about the monthly membership?")],
     both_no: [t("¡No hay problema! | Si | cambias de opinión, | me | avisas.", "No problem! | If | you change your mind, | (to) me | you let know.", "No problem! If you change your mind, just let me know.")],
@@ -753,7 +765,8 @@ export const gym: SituationDef = {
     price_fair: [t("Para | la | zona, | es | un | buen | precio.", "For | the | area, | it's | a | good | price.", "It's a good price for the area.")],
     // "Está bien, gracias" to "¿Qué tal una visita?": a yes or a polite no, so she asks
     alt_reask: [t("Entonces, | ¿quieres | {X.the}?", "So, | do you want | {X.the}?", "So, would you like {X.the}?")],
-    price_day: [t("La | visita | cuesta | {$price}.", "The | visit | costs | {$price}.", "A single visit is {$price}.", { flags: { 1: F_VISITA } })],
+    price_day: [t("La | visita | cuesta | {$price}.", "The | visit | costs | {$price}.", "A single visit is {$price}.", { flags: { 1: F_VISITA },
+      spain: t("El | pase de día | cuesta | {$price}.", "The | day pass | costs | {$price}.", "A single visit is {$price}.", { flags: {} }) })],
     included_monthly: [
       t("Incluye | todas | las | máquinas, | las | clases | y | una | sesión | gratis | conmigo.", "It includes | all | the | machines, | the | classes | and | a | session | free | with me.",
         "It includes all the machines, the classes, and a free session with me."),
@@ -761,15 +774,18 @@ export const gym: SituationDef = {
     included_day: [t("Puedes | usar | todas | las | máquinas | todo | el | día.", "You can | use | all | the | machines | all | the | day.", "You can use all the machines for the whole day.")],
     // "¿La visita incluye las clases?" (the classes are free for members: classes_info)
     included_day_classes: [t("Con | la | visita, | solo | las | máquinas. | Las | clases | son | para | los | socios.", "With | the | visit, | only | the | machines. | The | classes | are | for | the | members.",
-      "A single visit is just the machines. The classes are for members.", { flags: { 2: F_VISITA } })],
+      "A single visit is just the machines. The classes are for members.", { flags: { 2: F_VISITA },
+      spain: t("Con | el | pase de día, | solo | las | máquinas. | Las | clases | son | para | los | socios.", "With | the | day pass, | only | the | machines. | The | classes | are | for | the | members.", "A single visit is just the machines. The classes are for members.", { flags: {} }) })],
     // "¿Seiscientos?" / "¿Cien pesos?" once a plan is chosen: the price on file, yes or no (rule 20)
     price_yes: [t("Sí, | son | {$price}.", "Yes, | it's | {$price}.", "Yes, it's {$price}.")],
     price_not: [t("No, | son | {$price}.", "No, | it's | {$price}.", "No, it's {$price}.")],
     no_fee: [t("¡Este | mes | no cobramos | inscripción!", "This | month | we don't charge | a sign-up fee!", "No sign-up fee this month!",
-      { flags: { 3: "inscripción: the one-time sign-up fee most Mexican gyms charge." } })],
+      { flags: { 3: "inscripción: the one-time sign-up fee most Mexican gyms charge." },
+        spain: t("¡Este | mes | no cobramos | matrícula!", "This | month | we don't charge | a sign-up fee!", "No sign-up fee this month!", { flags: { 3: "matrícula: the one-time sign-up fee most gyms in Spain charge." } }) })],
     cancel_info: [
       t("No hay | contrato. | Pagas | mes | por | mes | y | dejas de | pagar | cuando | quieras.", "There's no | contract. | You pay | month | by | month | and | you stop | paying | when | you want.",
-        "There's no contract. You pay month to month and can stop whenever you want."),
+        "There's no contract. You pay month to month and can stop whenever you want.",
+        { spain: t("No hay | contrato. | Pagas | mes | a | mes | y | dejas de | pagar | cuando | quieras.", "There's no | contract. | You pay | month | to | month | and | you stop | paying | when | you want.", "There's no contract. You pay month to month and can stop whenever you want.") }),
     ],
     hours_info: [
       t("Abrimos | de | lunes | a | sábado, | de | seis | de la mañana | a | diez | de la noche. | El | domingo, | solo | en | la | mañana.",
@@ -782,19 +798,22 @@ export const gym: SituationDef = {
         "There aren't any deals right now, but there's no sign-up fee this month.",
         { flags: { 0: "Mexican: ahorita = right now." },
           neutral: t("Ahora | no hay | promociones, | pero | este | mes | no cobramos | inscripción.", "Now | there are no | deals, | but | this | month | we don't charge | a sign-up fee.",
-            "There aren't any deals right now, but there's no sign-up fee this month.") }),
+            "There aren't any deals right now, but there's no sign-up fee this month."),
+          spain: t("Ahora | no hay | promociones, | pero | este | mes | no cobramos | matrícula.", "Now | there are no | deals, | but | this | month | we don't charge | a sign-up fee.",
+            "There aren't any deals right now, but there's no sign-up fee this month.", { flags: {} }) }),
     ],
     have_no: [t("Perdón, | eso | no lo tenemos.", "Sorry, | that | we don't have it.", "Sorry, we don't have that.")],
     showers_info: [
       t("¡Sí! | Hay | regaderas | en | los | vestidores.", "Yes! | There are | showers | in | the | locker rooms.", "Yes! There are showers in the locker rooms.",
         { flags: { 2: "Mexican: regadera = shower; ducha is more widely used.", 5: "vestidores: the locker rooms (changing rooms)." },
-          neutral: t("¡Sí! | Hay | duchas | en | los | vestidores.", "Yes! | There are | showers | in | the | locker rooms.", "Yes! There are showers in the locker rooms."), spain: t("¡Sí! | Hay | duchas | en | los | vestuarios.", "Yes! | There are | showers | in | the | locker rooms.", "Yes! There are showers in the locker rooms.") }),
+          neutral: t("¡Sí! | Hay | duchas | en | los | vestidores.", "Yes! | There are | showers | in | the | locker rooms.", "Yes! There are showers in the locker rooms."), spain: t("¡Sí! | Hay | duchas | en | los | vestuarios.", "Yes! | There are | showers | in | the | locker rooms.", "Yes! There are showers in the locker rooms.", { flags: {} }) }),
     ],
     sauna_info: [t("No, | no tenemos | sauna, | perdón.", "No, | we don't have | a sauna, | sorry.", "No, we don't have a sauna, sorry.")],
     pool_info: [
       t("No tenemos | alberca, | ¡pero | la | playa | está | muy | cerca!", "We don't have | a pool, | but | the | beach | is | very | close!", "We don't have a pool, but the beach is really close!",
         { flags: { 1: "Mexican: alberca = swimming pool; piscina is more widely used." },
-          neutral: t("No tenemos | piscina, | ¡pero | la | playa | está | muy | cerca!", "We don't have | a pool, | but | the | beach | is | very | close!", "We don't have a pool, but the beach is really close!") }),
+          neutral: t("No tenemos | piscina, | ¡pero | la | playa | está | muy | cerca!", "We don't have | a pool, | but | the | beach | is | very | close!", "We don't have a pool, but the beach is really close!"),
+          spain: t("No tenemos | piscina, | ¡pero | la | playa | está | muy | cerca!", "We don't have | a pool, | but | the | beach | is | very | close!", "We don't have a pool, but the beach is really close!", { flags: {} }) }),
     ],
     towels_info: [
       t("Hay que | traer | toalla | para | las | máquinas. | Si | no traes, | en | la | recepción | te | prestan | una.",
@@ -829,16 +848,17 @@ export const gym: SituationDef = {
     form_reask: [t("Firma | abajo | cuando | estés | {m:listo|f:lista}.", "Sign | at the bottom | when | you're | ready.", "Just sign at the bottom when you're ready.")],
     ask_id: [t("Y | ¿me | prestas | una | identificación?", "And | (to) me | you lend | an | ID?", "And could I see your ID?",
       { flags: { 2: "¿Me prestas…?: a polite request to see it briefly; she gives it back." },
-        spain: t("Y | ¿me | enseñas | un | documento de identidad?", "And | (to) me | you show | an | ID?", "And could I see your ID?") })],
+        spain: t("Y | ¿me | enseñas | un | documento de identidad?", "And | (to) me | you show | an | ID?", "And could I see your ID?", { flags: {} }) })],
     sign_where: [t("Aquí, | abajo.", "Here, | at the bottom.", "Right here, at the bottom.")],
     // answers to "¿me prestas una identificación?" (audit: "No traigo identificación", "¿Sirve mi pasaporte?" were not
     // understood)
     id_later: [t("No te preocupes, | me | la | enseñas | la | próxima | vez.", "Don't worry, | (to) me | it | you show | the | next | time.",
-      "Don't worry, you can show it to me next time.", { flags: { 2: "la: it (la identificación)." } })],
+      "Don't worry, you can show it to me next time.", { flags: { 2: "la: it (la identificación)." },
+      spain: t("No te preocupes, | me | lo | enseñas | la | próxima | vez.", "Don't worry, | (to) me | it | you show | the | next | time.", "Don't worry, you can show it to me next time.", { flags: { 2: "lo: it (el documento)." } }) })],
     passport_ok: [t("¡Claro! | El | pasaporte | sirve.", "Sure! | The | passport | works.", "Sure, your passport is fine.")],
     pen_here: [
       t("Claro, | aquí tienes | una | pluma.", "Sure, | here's | a | pen.", "Sure, here's a pen.",
-        { flags: { 3: "Mexican: pluma = pen; bolígrafo is more widely used." }, neutral: t("Claro, | aquí tienes | un | bolígrafo.", "Sure, | here's | a | pen.", "Sure, here's a pen.") }),
+        { flags: { 3: "Mexican: pluma = pen; bolígrafo is more widely used." }, neutral: t("Claro, | aquí tienes | un | bolígrafo.", "Sure, | here's | a | pen.", "Sure, here's a pen."), spain: t("Claro, | aquí tienes | un | bolígrafo.", "Sure, | here's | a | pen.", "Sure, here's a pen.", { flags: {} }) }),
     ],
     form_is: [t("Es | la | ficha | de | inscripción: | tus | datos | y | tu | firma.", "It's | the | form | for | signing up: | your | details | and | your | signature.", "It's the sign-up form: your details and your signature.")],
     form_ok: [t("¡Perfecto, | gracias!", "Perfect, | thanks!", "Perfect, thanks!"), t("Listo, | ¡gracias!", "Done, | thanks!", "All set, thanks!",
@@ -879,7 +899,7 @@ export const gym: SituationDef = {
     receipt_later: [t("Claro, | al | pagar | te | doy | tu | recibo.", "Sure, | on | paying | (to) you | I give | your | receipt.", "Sure, I'll give you a receipt when you pay.")],
     // the ID handed over at the total (asked for at the form): it goes back, nothing is paid
     id_back: [t("Gracias. | Aquí | te | la | regreso.", "Thanks. | Here | (to) you | it | I give back.", "Thanks. Here's your ID back.",
-      { flags: { 3: "la: it (la identificación)." }, spain: t("Gracias. | Aquí | te | la | devuelvo.", "Thanks. | Here | (to) you | it | I give back.", "Thanks. Here's your ID back.", { flags: { 3: "la: it (la identificación)." } }) })],
+      { flags: { 3: "la: it (la identificación)." }, spain: t("Gracias. | Aquí | te | lo | devuelvo.", "Thanks. | Here | (to) you | it | I give back.", "Thanks. Here's your ID back.", { flags: { 3: "lo: it (el documento)." } }) })],
     paid: [t("¡Gracias!", "Thanks!", "Thank you!"), t("¡Perfecto, | gracias!", "Perfect, | thanks!", "Perfect, thanks!")],
     member_card: [
       t("Aquí está | tu | credencial. | La | pasas | por | el | lector | en | la | entrada.", "Here's | your | membership card. | It | you swipe | through | the | reader | at | the | entrance.",
@@ -899,7 +919,7 @@ export const gym: SituationDef = {
     // two variants follow each other, so both say the same place (the second said "a la izquierda" before the audit)
     lockers_info: [
       t("Los | vestidores | están | al fondo, | a la derecha.", "The | locker rooms | are | at the back, | on the right.", "The locker rooms are at the back, on the right.", { spain: t("Los | vestuarios | están | al fondo, | a la derecha.", "The | locker rooms | are | at the back, | on the right.", "The locker rooms are at the back, on the right.") }),
-      t("Los | vestidores | están | allá | atrás, | a la derecha.", "The | locker rooms | are | over there | in the back, | on the right.", "The locker rooms are back there, on the right.", { spain: t("Los | vestuarios | están | allá | atrás, | a la derecha.", "The | locker rooms | are | over there | in the back, | on the right.", "The locker rooms are back there, on the right.") }),
+      t("Los | vestidores | están | allá | atrás, | a la derecha.", "The | locker rooms | are | over there | in the back, | on the right.", "The locker rooms are back there, on the right.", { spain: t("Los | vestuarios | están | ahí | detrás, | a la derecha.", "The | locker rooms | are | there | in the back, | on the right.", "The locker rooms are back there, on the right.") }),
     ],
     bring_lock: [t("¿Trajiste | candado?", "Did you bring | a lock?", "Did you bring a lock?", { spain: t("¿Has | traído | candado?", "Have-you | brought | a lock?", "Did you bring a lock?") })],
     lock_yes: [t("¡Perfecto!", "Perfect!", "Perfect!")],
@@ -908,7 +928,7 @@ export const gym: SituationDef = {
       t("Sí, | para | los | lockers. | En | la | recepción | venden.", "Yes, | for | the | lockers. | At | the | front desk | they sell (them).", "Yes, for the lockers. You can buy one at the front desk.",
         { flags: { 3: "Mexican: lockers (from English); casilleros is more widely used." },
           neutral: t("Sí, | para | los | casilleros. | En | la | recepción | venden.", "Yes, | for | the | lockers. | At | the | front desk | they sell (them).", "Yes, for the lockers. You can buy one at the front desk.",
-        { spain: t("Sí, | para | las | taquillas. | En | la | recepción | venden.", "Yes, | for | the | lockers. | At | the | front desk | they sell (them).", "Yes, for the lockers. You can buy one at the front desk.") }) }),
+        { spain: t("Sí, | para | las | taquillas. | En | la | recepción | los | venden.", "Yes, | for | the | lockers. | At | the | front desk | them | they sell.", "Yes, for the lockers. You can buy one at the front desk.", { flags: { 3: "taquilla: a gym locker (Spain).", 7: "los before a verb is a pronoun: them (the locks)." } }) }) }),
     ],
     // "¿Me prestas un candado?", "¿Dónde compro uno?", "¿Cuánto cuesta el candado?" (lock prices stay vague): a "¡Claro!"
     // answered none of them
@@ -946,7 +966,8 @@ export const gym: SituationDef = {
     warm_how_fast: [
       t("Con calma. | Tienes | que | poder | platicar.", "Nice and easy. | You have | to | be able | to chat.", "Nice and easy. You should be able to talk.",
         { flags: { 4: "Mexican: platicar = to chat; hablar is more widely used." },
-          neutral: t("Con calma. | Tienes | que | poder | hablar.", "Nice and easy. | You have | to | be able | to talk.", "Nice and easy. You should be able to talk.") }),
+          neutral: t("Con calma. | Tienes | que | poder | hablar.", "Nice and easy. | You have | to | be able | to talk.", "Nice and easy. You should be able to talk."),
+          spain: t("Con calma. | Tienes | que | poder | hablar.", "Nice and easy. | You have | to | be able | to talk.", "Nice and easy. You should be able to talk.", { flags: {} }) }),
     ],
     warm_why: [t("Prepara | los | músculos.", "It prepares | the | muscles.", "It gets your muscles ready.")],
     warmed_up: [
@@ -957,7 +978,7 @@ export const gym: SituationDef = {
       t("¿Cómo | te sientes?", "How | do you feel?", "How do you feel?"),
       t("¿Qué tal? | ¿Cómo | vas?", "How's it going? | How | are you doing?", "How are you feeling?"),
     ],
-    feel_good_reply: [t("¡Eso! | Vas | muy | bien.", "That's it! | You're going | very | well.", "Awesome! You're doing great."), t("¡Excelente!", "Excellent!", "Great!")],
+    feel_good_reply: [t("¡Eso! | Vas | muy | bien.", "That's it! | You're going | very | well.", "Awesome! You're doing great."), t("¡Excelente!", "Excellent!", "Great!", { spain: t("¡Genial!", "Great!", "Great!") })],
     feel_tired_reply: [t("Es | normal. | ¡Vas | muy | bien!", "It's | normal. | You're going | very | well!", "That's normal. You're doing great!")],
 
     // --- the machine -----------------------------------------------------------------------------
@@ -1021,14 +1042,15 @@ export const gym: SituationDef = {
       t("Y | ahora, | ¡la | última | serie! | Ocho, | nueve… | ¡Una | más!", "And | now, | the | last | set! | Eight, | nine… | One | more!", "And now the last set! Eight, nine… One more rep!"),
       t("¡Empuja! | Ocho, | nueve… | ¡Una | más! | ¡Tú | puedes!", "Push! | Eight, | nine… | One | more! | You | can!", "Push! Eight, nine… One more rep! You can do it!"),
       t("¡Ándale! | Ocho, | nueve… | ¡Una | más!", "Come on! | Eight, | nine… | One | more!", "Come on! Eight, nine… One more rep!",
-        { flags: { 0: "Mexican: ¡ándale! = come on, go!" }, neutral: t("¡Vamos! | Ocho, | nueve… | ¡Una | más!", "Come on! | Eight, | nine… | One | more!", "Come on! Eight, nine… One more rep!") }),
+        { flags: { 0: "Mexican: ¡ándale! = come on, go!" }, neutral: t("¡Vamos! | Ocho, | nueve… | ¡Una | más!", "Come on! | Eight, | nine… | One | more!", "Come on! Eight, nine… One more rep!"),
+          spain: t("¡Venga! | Ocho, | nueve… | ¡Una | más!", "Come on! | Eight, | nine… | One | more!", "Come on! Eight, nine… One more rep!", { flags: {} }) }),
     ],
     one_more_again: [
       t("¡Vamos! | ¡Una | más!", "Come on! | One | more!", "Come on! One more rep!"),
       t("¡Échale ganas! | ¡Una | más!", "Give it your all! | One | more!", "You've got this! One more rep!",
-        { flags: { 0: "Mexican: échale ganas = give it your all." }, neutral: t("¡Ánimo! | ¡Una | más!", "Come on! | One | more!", "You've got this! One more rep!") }),
+        { flags: { 0: "Mexican: échale ganas = give it your all." }, neutral: t("¡Ánimo! | ¡Una | más!", "Come on! | One | more!", "You've got this! One more rep!"), spain: t("¡Ánimo! | ¡Una | más!", "Come on! | One | more!", "You've got this! One more rep!", { flags: {} }) }),
     ],
-    good_job: [t("¡Muy | bien! | ¡Tres | series!", "Very | good! | Three | sets!", "Good job! That's three sets!"), t("¡Eso! | ¡Excelente!", "That's it! | Excellent!", "Yes! Nice work!")],
+    good_job: [t("¡Muy | bien! | ¡Tres | series!", "Very | good! | Three | sets!", "Good job! That's three sets!"), t("¡Eso! | ¡Excelente!", "That's it! | Excellent!", "Yes! Nice work!", { spain: t("¡Eso es! | ¡Genial!", "That's it! | Great!", "Yes! Nice work!") })],
     cant_reply: [t("¡Sí | puedes! | ¡Empuja! | ¡Eso! | ¡Muy | bien!", "Yes | you can! | Push! | That's it! | Very | good!", "Yes, you can! Push! Yes! Good job!")],
     cant_general: [t("¡Claro que | puedes! | Aquí | estoy.", "Of course | you can! | Here | I am.", "Sure you can! I'm right here.")],
 
@@ -1065,13 +1087,16 @@ export const gym: SituationDef = {
     spot_ready: [t("¿{m:Listo|f:Lista}?", "Ready?", "Ready?")],
     spot_yes: [
       t("¡Claro! | Aquí | me quedo.", "Of course! | Here | I'll stay.", "Of course! I'll stay right here."),
-      t("¡Claro! | Yo | te | cuido.", "Sure! | I | you | will watch.", "Sure thing! I'll spot you.", { flags: { 3: "cuidar (to look after) = to spot someone in the gym." } }),
+      t("¡Claro! | Yo | te | cuido.", "Sure! | I | you | will watch.", "Sure thing! I'll spot you.", { flags: { 3: "cuidar (to look after) = to spot someone in the gym." },
+        spain: t("¡Claro! | Yo | te | ayudo | con | la | barra.", "Sure! | I | you | will help | with | the | bar.", "Sure thing! I'll spot you.", { flags: {} }) }),
     ],
     spot_offer: [t("No te preocupes, | yo | te | cuido. | Aquí | estoy.", "Don't worry, | I | you | will watch. | Here | I am.", "Don't worry, I'll spot you. I'm right here.",
-      { flags: { 3: "cuidar (to look after) = to spot someone in the gym." } })],
+      { flags: { 3: "cuidar (to look after) = to spot someone in the gym." },
+      spain: t("No te preocupes, | yo | te | ayudo | con | la | barra. | Aquí | estoy.", "Don't worry, | I | you | will help | with | the | bar. | Here | I am.", "Don't worry, I'll spot you. I'm right here.", { flags: {} }) })],
     bench_go: [
       t("Baja | la | barra | despacio… | ¡y | empuja! | ¡Muy | bien!", "Lower | the | bar | slowly… | and | push! | Very | good!", "Lower the bar slowly… and push! Good job!"),
-      t("¡Empuja! | ¡Empuja! | ¡Una | más! | ¡Eso! | ¡Excelente!", "Push! | Push! | One | more! | That's it! | Excellent!", "Push! Push! One more rep! Yes! Great job!"),
+      t("¡Empuja! | ¡Empuja! | ¡Una | más! | ¡Eso! | ¡Excelente!", "Push! | Push! | One | more! | That's it! | Excellent!", "Push! Push! One more rep! Yes! Great job!",
+        { spain: t("¡Empuja! | ¡Empuja! | ¡Una | más! | ¡Eso es! | ¡Muy | bien!", "Push! | Push! | One | more! | That's it! | Very | good!", "Push! Push! One more rep! Yes! Great job!") }),
     ],
     no_spot_reply: [t("Bueno, | pero | me quedo | cerca, | por si acaso.", "Okay, | but | I'll stay | close, | just in case.", "Okay, but I'll stay close, just in case.")],
 
@@ -1090,7 +1115,7 @@ export const gym: SituationDef = {
         { spain: t("¡Es | normal! | Descansa | y | bebe | agua.", "It's | normal! | Rest | and | drink | water.", "That's normal! Take a break and grab some water.") }),
     ],
     earned_it: [t("¡Te lo | ganaste!", "It (for yourself) | you earned!", "You earned it!", { spain: t("¡Te lo | has | ganado!", "It (for yourself) | you-have | earned!", "You earned it!") })],
-    ok_water: [t("¡Bien! | Toma | agua.", "Good! | Drink | water.", "Good! Grab some water.")],
+    ok_water: [t("¡Bien! | Toma | agua.", "Good! | Drink | water.", "Good! Grab some water.", { spain: t("¡Bien! | Bebe | agua.", "Good! | Drink | water.", "Good! Grab some water.") })],
     great_shape: [
       t("¡Uy, | estás | en | muy | buena | forma! | Igual, | toma | agua.", "Wow, | you're | in | very | good | shape! | Still, | drink | water.", "Wow, you're in great shape! Still, grab some water.",
         { spain: t("¡Uy, | estás | en | muy | buena | forma! | Aun así, | bebe | agua.", "Wow, | you're | in | very | good | shape! | Still, | drink | water.", "Wow, you're in great shape! Still, grab some water.") }),
@@ -1102,11 +1127,12 @@ export const gym: SituationDef = {
       t("¡Lo | hiciste | muy | bien! | ¿Mañana | a | la | misma | hora?", "It | you did | very | well! | Tomorrow | at | the | same | time?", "You did great! Same time tomorrow?", { spain: t("¡Lo | has | hecho | muy | bien! | ¿Mañana | a | la | misma | hora?", "It | you-have | done | very | well! | Tomorrow | at | the | same | time?", "You did great! Same time tomorrow?") }),
     ],
     same_time_short: [t("¿Mañana | a | la | misma | hora?", "Tomorrow | at | the | same | time?", "Same time tomorrow?")],
-    great_workout: [t("¡Excelente | entrenamiento!", "Excellent | workout!", "Great workout!")],
+    great_workout: [t("¡Excelente | entrenamiento!", "Excellent | workout!", "Great workout!", { spain: t("¡Muy | buen | entrenamiento!", "Very | good | workout!", "Great workout!") })],
     when_short: [t("Y | ¿cuándo | quieres | regresar?", "And | when | do you want | to come back?", "So, when do you want to come back?", { spain: t("Y | ¿cuándo | quieres | volver?", "And | when | do you want | to come back?", "So, when do you want to come back?") })],
     see_tomorrow: [
       t("¡Perfecto! | ¡Nos vemos | mañana!", "Perfect! | See you | tomorrow!", "Awesome! See you tomorrow!"),
-      t("¡Excelente! | Mañana, | a | la | misma | hora.", "Excellent! | Tomorrow, | at | the | same | time.", "Perfect! See you tomorrow, same time!"),
+      t("¡Excelente! | Mañana, | a | la | misma | hora.", "Excellent! | Tomorrow, | at | the | same | time.", "Perfect! See you tomorrow, same time!",
+        { spain: t("¡Genial! | Mañana, | a | la | misma | hora.", "Great! | Tomorrow, | at | the | same | time.", "Perfect! See you tomorrow, same time!") }),
     ],
     see_tomorrow_plain: [t("¡Perfecto! | ¡Nos vemos | mañana!", "Perfect! | See you | tomorrow!", "Awesome! See you tomorrow!")],
     see_day: [t("¿El | {X}? | ¡Claro! | ¡Nos vemos | el | {X}!", "On | {X}? | Sure! | See you | on | {X}!", "{X}? Sure! See you {X}!", { flags: { 0: F_EL_DAY, 4: F_EL_DAY } })],
@@ -1127,7 +1153,7 @@ export const gym: SituationDef = {
     ],
 
     // --- general ---------------------------------------------------------------------------------
-    ack: [t("¡Bueno!", "Okay!", "Okay!"), t("Entendido.", "Got it.", "Got it."), t("¡Perfecto!", "Perfect!", "Sounds good.")],
+    ack: [t("¡Bueno!", "Okay!", "Okay!", { spain: t("¡Vale!", "Okay!", "Okay!") }), t("Entendido.", "Got it.", "Got it."), t("¡Perfecto!", "Perfect!", "Sounds good.")],
     no_problem: [t("No hay problema.", "No problem.", "No problem.")],
     // the closing goodbye in tú (global g_bye has an usted variant)
     bye_tu: [
@@ -1148,9 +1174,10 @@ export const gym: SituationDef = {
       items: [
         { id: "new_here", s: t("¡Hola, | soy | {m:nuevo|f:nueva} | aquí!", "Hi, | I am | new | here!", "Hi, I'm new here!") },
         { id: "first_time", s: t("Es | mi | primera | vez | aquí.", "It's | my | first | time | here.", "It's my first time here.") },
-        { id: "join", s: t("Quiero | inscribirme.", "I want | to sign up.", "I'd like to sign up."), note: "With a trainer, tú is normal: Mexican gyms are casual." },
+        { id: "join", s: t("Quiero | inscribirme.", "I want | to sign up.", "I'd like to sign up.", { spain: t("Quiero | apuntarme.", "I want | to sign up.", "I'd like to sign up.") }), note: "With a trainer, tú is normal: Mexican gyms are casual.",
+          noteSpain: "Apuntarse: Spain's everyday “sign up”. With a trainer, tú is normal." },
         { id: "become_member", s: t("Quisiera | hacerme | {m:socio|f:socia}.", "I'd like | to become | a member.", "I'd like to become a member.") },
-        { id: "how_join", s: t("¿Cómo | me inscribo?", "How | do I sign up?", "How do I sign up?") },
+        { id: "how_join", s: t("¿Cómo | me inscribo?", "How | do I sign up?", "How do I sign up?", { spain: t("¿Cómo | me apunto?", "How | do I sign up?", "How do I sign up?") }) },
       ],
     },
     plan: {
@@ -1168,15 +1195,16 @@ export const gym: SituationDef = {
         { id: "q_price", s: t("¿Cuánto | cuesta | la | mensualidad?", "How much | costs | the | monthly membership?", "How much is the monthly membership?") },
         { id: "q_included", s: t("¿Qué | incluye?", "What | does it include?", "What's included?") },
         { id: "q_fee", s: t("¿Cobran | inscripción?", "Do you charge | a sign-up fee?", "Is there a sign-up fee?",
-        { spain: t("¿Cobráis | inscripción?", "Do you (all) charge | a sign-up fee?", "Is there a sign-up fee?") }), note: "La inscripción: a one-time fee most Mexican gyms charge." },
+        { spain: t("¿Cobráis | matrícula?", "Do you (all) charge | a sign-up fee?", "Is there a sign-up fee?") }), note: "La inscripción: a one-time fee most Mexican gyms charge.",
+          noteSpain: "La matrícula: the one-time sign-up fee most gyms in Spain charge." },
         { id: "q_cancel", s: t("¿Puedo | cancelar | cuando | quiera?", "Can I | cancel | when | I want?", "Can I cancel anytime?") },
         { id: "q_hours", s: t("¿Qué | horario | tienen?", "What | hours | do you have?", "What are your hours?",
-        { spain: t("¿Qué | horario | tenéis?", "What | hours | do you (all) have?", "What are your hours?") }), note: "Tienen (ustedes): you're asking about the whole gym." },
+        { spain: t("¿Qué | horario | tenéis?", "What | hours | do you (all) have?", "What are your hours?") }), note: "Tienen (ustedes): you're asking about the whole gym.", noteSpain: "Tenéis (vosotros): you're asking about the whole gym." },
         { id: "q_have", s: t("¿Tienen | clases?", "Do you have | classes?", "Do you have classes?",
         { spain: t("¿Tenéis | clases?", "Do you (all) have | classes?", "Do you have classes?") }) },
         { id: "q_have", s: t("¿Tienen | regaderas?", "Do you have | showers?", "Do you have showers?",
           { flags: { 1: "Mexican: regadera = shower; ducha is more widely used." }, neutral: t("¿Tienen | duchas?", "Do you have | showers?", "Do you have showers?"),
-        spain: t("¿Tenéis | duchas?", "Do you (all) have | showers?", "Do you have showers?") }) },
+        spain: t("¿Tenéis | duchas?", "Do you (all) have | showers?", "Do you have showers?", { flags: {} }) }) },
       ],
     },
     form: {
@@ -1187,7 +1215,8 @@ export const gym: SituationDef = {
         { spain: t("¡Hecho! | Ya está.", "Done! | That's it.", "Okay, all done.") }) },
         { id: "q_sign", s: t("¿Dónde | firmo?", "Where | do I sign?", "Where do I sign?") },
         { id: "q_pen", s: t("¿Me | prestas | una | pluma?", "(To) me | you lend | a | pen?", "Can I borrow a pen?",
-          { flags: { 3: "Mexican: pluma = pen; bolígrafo is more widely used." }, neutral: t("¿Me | prestas | un | bolígrafo?", "(To) me | you lend | a | pen?", "Can I borrow a pen?") }) },
+          { flags: { 3: "Mexican: pluma = pen; bolígrafo is more widely used." }, neutral: t("¿Me | prestas | un | bolígrafo?", "(To) me | you lend | a | pen?", "Can I borrow a pen?"),
+          spain: t("¿Me | dejas | un | bolígrafo?", "(To) me | you lend | a | pen?", "Can I borrow a pen?", { flags: { 1: "dejar: here, to lend (Spain says “¿me dejas…?” for a quick loan)." } }) }) },
         { id: "q_form", s: t("¿Para | qué | es | esta | hoja?", "For | what | is | this | sheet?", "What's this form for?") },
       ],
     },
@@ -1275,7 +1304,7 @@ export const gym: SituationDef = {
         { id: "one_more", s: t("¡Bueno, | una | más!", "Okay, | one | more!", "Okay, one more!") },
         { id: "done_it", s: t("¡Listo! | ¡Lo | logré!", "Done! | It | I managed!", "Done! I did it!", { spain: t("¡Ya está! | ¡Lo | he | conseguido!", "Done! | It | I-have | managed!", "Done! I did it!") }) },
         { id: "was_hard", s: t("¡Uf! | ¡Estuvo | pesado!", "Phew! | It was | heavy!", "Phew! That was hard!",
-        { spain: t("¡Uf! | ¡Ha sido | duro!", "Phew! | It has been | hard!", "Phew! That was hard!") }), note: "Pesado (heavy) also means hard, tough." },
+        { spain: t("¡Uf! | ¡Ha sido | duro!", "Phew! | It has been | hard!", "Phew! That was hard!") }), note: "Pesado (heavy) also means hard, tough.", noteSpain: "Duro (hard) also means tough, tiring." },
       ],
     },
     pain: {

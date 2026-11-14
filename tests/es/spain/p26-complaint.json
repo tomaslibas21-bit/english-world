@@ -23,6 +23,9 @@
 { "ctx": "closing", "say": "Que tenga un buen día", "intent": ["have_nice_day", "g_bye"] },
 { "ctx": "history", "say": "¿La visita tiene algún coste?", "intent": "visit_cost", "not": ["accept_offer", "agree"] },
 { "ctx": "history", "say": "¿Tiene algún coste?", "intent": "cost_ctx" },
+{ "ctx": "history", "say": "¿Podría hablar con un responsable, por favor?", "intent": "ask_manager" },
+{ "ctx": "offer", "say": "Le ruego que me devuelvan el dinero", "intent": "ask_refund" },
+{ "ctx": "offer", "say": "Ya he faltado al trabajo una vez, y nadie vino", "intent": "no_show" },
 { "ctx": "offer", "say": "No quiero un cupón", "intent": "any" }
 ]
 }

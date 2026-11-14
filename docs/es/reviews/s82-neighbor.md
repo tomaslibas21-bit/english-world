@@ -137,3 +137,15 @@ Found and fixed: Doña Lupita: me he confundido; ¿qué se le ofrece? / lo que s
 English of every twin checked against its Mexican line (restored where a twin had rephrased it). Spain corpus items
 added for the new forms. Gates: Mexican, neutral and Spain checks 0 errors; coverage 0 false accepts.
 
+
+## Spain pass 3 (14 Nov 2026)
+
+- Doña Lupita: "para servirle" → "para lo que necesite"; "¿Cómo le va?" → "¿Qué tal está?"; "cafecito" → "café"
+  (coffee_invite ×2, coffee_reask); "a mi esposo" → "a mi marido"; "Como a la medianoche" → "Sobre la medianoche";
+  "los señores de la basura" → "los basureros"; "la tiendita" → "la tienda" (water, store).
+- Leísmo where Spain says it to usted: "¿Y qué le trae por aquí?", "disculpe que le moleste" (Mexico: lo / la).
+- Chips: borrow "¿Me deja…?" with a noteSpain (¿Me presta…? also fine); star "¡Es usted un sol!" (grammar and the
+  thanks reaction take un sol / un cielo).
+- Notes: complain_again's Spain twin said "en la noche" over "por la noche" (fixed); needs_nudge (nomás note on
+  solo), water (garrafón / tiendita notes on the wrong words), turn_down chip (bajarle notes): own flags.
+- Corpus: 2 items.

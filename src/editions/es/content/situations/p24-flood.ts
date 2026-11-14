@@ -1401,11 +1401,12 @@ export const flood: SituationDef = {
   lines: {
     // --- Andrea ------------------------------------------------------------------------------
     l_hello: [
-      t("¡Hola! | Ya | voy | en camino | al | desayuno. | ¿Y | tú?", "Hi! | Already | I'm-going | on the way | to the | breakfast. | And | you?", "Hey! I'm on my way to breakfast. You?"),
+      t("¡Hola! | Ya | voy | en camino | al | desayuno. | ¿Y | tú?", "Hi! | Already | I'm-going | on the way | to the | breakfast. | And | you?", "Hey! I'm on my way to breakfast. You?",
+        { spain: t("¡Hola! | Ya | voy | de camino | al | desayuno. | ¿Y | tú?", "Hi! | Already | I'm-going | on the way | to the | breakfast. | And | you?", "Hey! I'm on my way to breakfast. You?") }),
       t("¡Hola! | Justo | voy | saliendo | para | el | desayuno. | ¿Qué onda?", "Hi! | Just | I'm-going | leaving | for | the | breakfast. | What's up?",
         "Hey! I'm just heading out to breakfast. What's up?",
         { flags: { 7: "Mexican: ¿Qué onda? = what's up?" },
-          neutral: t("¡Hola! | Justo | voy | saliendo | para | el | desayuno. | ¿Qué tal?", "Hi! | Just | I'm-going | leaving | for | the | breakfast. | How's it going?", "Hey! I'm just heading out to breakfast. What's up?"), spain: t("¡Hola! | Justo | estoy | saliendo | para | el | desayuno. | ¿Qué tal?", "Hi! | Just | I'm | leaving | for | the | breakfast. | How's it going?", "Hey! I'm just heading out to breakfast. What's up?") }),
+          neutral: t("¡Hola! | Justo | voy | saliendo | para | el | desayuno. | ¿Qué tal?", "Hi! | Just | I'm-going | leaving | for | the | breakfast. | How's it going?", "Hey! I'm just heading out to breakfast. What's up?"), spain: t("¡Hola! | Justo | estoy | saliendo | para | el | desayuno. | ¿Qué tal?", "Hi! | Just | I'm | leaving | for | the | breakfast. | How's it going?", "Hey! I'm just heading out to breakfast. What's up?", { flags: {} }) }),
     ],
     l_what: [
       t("Espera, | ¿qué? | ¿Qué | pasó?", "Wait, | what? | What | happened?", "Wait, what? What happened?", { spain: t("Espera, | ¿qué? | ¿Qué | ha pasado?", "Wait, | what? | What | has happened?", "Wait, what? What happened?") }),
@@ -1422,7 +1423,8 @@ export const flood: SituationDef = {
         { flags: { 3: "el techo: the ceiling (and the roof): Spanish has one word for both." } }),
       t("Espera, | ¿goteras? | ¿Como | regadera?", "Wait, | leaks? | Like | a shower?", "Wait, leaks?! Like, a shower?",
         { flags: { 3: "Mexican: la regadera = the shower; elsewhere la ducha." },
-          neutral: t("Espera, | ¿goteras? | ¿Como | ducha?", "Wait, | leaks? | Like | a shower?", "Wait, leaks?! Like, a shower?") }),
+          neutral: t("Espera, | ¿goteras? | ¿Como | ducha?", "Wait, | leaks? | Like | a shower?", "Wait, leaks?! Like, a shower?"),
+          spain: t("Espera, | ¿goteras? | ¿Como | una | ducha?", "Wait, | leaks? | Like | a | shower?", "Wait, leaks?! Like, a shower?", { flags: {} }) }),
     ],
     l_react_water: [
       t("¡No puede ser! | ¿Agua | de | verdad?", "It can't be! | Water | for | real?", "No way! Like, actual water?"),
@@ -1518,7 +1520,7 @@ export const flood: SituationDef = {
     gr_its_me: [
       t("Jaja, | ¿pero | quién | es | «yo»? | Administro | doce | departamentos.", "Haha, | but | who | is | “me”? | I-manage | twelve | apartments.", "Ha! “Me” who? I manage twelve apartments.",
         { flags: { 7: F_DEPA },
-          neutral: t("Jaja, | ¿pero | quién | es | «yo»? | Administro | doce | apartamentos.", "Haha, | but | who | is | “me”? | I-manage | twelve | apartments.", "Ha! “Me” who? I manage twelve apartments."), spain: t("Jaja, | ¿pero | quién | es | «yo»? | Administro | doce | pisos.", "Haha, | but | who | is | “me”? | I-manage | twelve | apartments.", "Ha! “Me” who? I manage twelve apartments.") }),
+          neutral: t("Jaja, | ¿pero | quién | es | «yo»? | Administro | doce | apartamentos.", "Haha, | but | who | is | “me”? | I-manage | twelve | apartments.", "Ha! “Me” who? I manage twelve apartments."), spain: t("Jaja, | ¿pero | quién | es | «yo»? | Administro | doce | pisos.", "Haha, | but | who | is | “me”? | I-manage | twelve | apartments.", "Ha! “Me” who? I manage twelve apartments.", { flags: { 7: "el piso: Spain's word for an apartment." } }) }),
     ],
     gr_guess_who: [
       t("¡Ah, | espere, | es | el | 1B! | Tengo | su | número | guardado.", "Oh, | wait, | it's | — | 1B! | I-have | your | number | saved.", "Oh, wait, it's 1B! I've got your number saved.",
@@ -1545,7 +1547,8 @@ export const flood: SituationDef = {
     gr_flood_react: [
       t("¡Ay, | no! | No, | no, | no.", "Oh, | no! | No, | no, | no.", "Oh no. Oh no, no, no."),
       t("¡Híjole! | ¡Otra vez | esa | tubería!", "Oh boy! | Again | that | plumbing!", "Oh boy. That plumbing again!",
-        { flags: { 0: "Mexican: ¡híjole! = oh boy, oh no." }, neutral: t("¡Caramba! | ¡Otra vez | esa | tubería!", "Oh boy! | Again | that | plumbing!", "Oh boy. That plumbing again!") }),
+        { flags: { 0: "Mexican: ¡híjole! = oh boy, oh no." }, neutral: t("¡Caramba! | ¡Otra vez | esa | tubería!", "Oh boy! | Again | that | plumbing!", "Oh boy. That plumbing again!"),
+          spain: t("¡Vaya! | ¡Otra vez | esa | tubería!", "Oh boy! | Again | that | plumbing!", "Oh boy. That plumbing again!", { flags: {} }) }),
     ],
     gr_so_sorry: [t("¡Ay, | no! | ¡Lo siento | mucho!", "Oh, | no! | I'm sorry | a lot!", "Oh no! I'm so sorry!")],
     gr_since_q: [t("¿Desde | cuándo | entra | el | agua?", "Since | when | is it-coming-in | the | water?", "When did it start?")],
@@ -1563,7 +1566,7 @@ export const flood: SituationDef = {
     gr_down_q: [
       t("¿Ya | pasó | el | agua | al | departamento | de abajo?", "Already | did it get | the | water | to the | apartment | downstairs?", "Has the water reached the apartment downstairs?",
         { flags: { 5: F_DEPA },
-          neutral: t("¿Ya | pasó | el | agua | al | apartamento | de abajo?", "Already | did it get | the | water | to the | apartment | downstairs?", "Has the water reached the apartment downstairs?"), spain: t("¿Ya | ha pasado | el | agua | al | piso | de abajo?", "Already | has it got | the | water | to the | apartment | downstairs?", "Has the water reached the apartment downstairs?") }),
+          neutral: t("¿Ya | pasó | el | agua | al | apartamento | de abajo?", "Already | did it get | the | water | to the | apartment | downstairs?", "Has the water reached the apartment downstairs?"), spain: t("¿Ya | ha pasado | el | agua | al | piso | de abajo?", "Already | has it got | the | water | to the | apartment | downstairs?", "Has the water reached the apartment downstairs?", { flags: {} }) }),
       // Don Ernesto lives downstairs (the English "Is it leaking into Mr. Okoye's place downstairs?")
       t("¿Se está | filtrando | al | departamento | de | Don Ernesto?", "Is it | leaking | into the | apartment | of | Don Ernesto?", "Is it leaking into Don Ernesto's place?",
         { flags: { 3: F_DEPA, 5: "Don Ernesto: the owner of the building, who lives downstairs." },
@@ -1579,7 +1582,7 @@ export const flood: SituationDef = {
     gr_water_q: [
       t("¿Ya | bajó | el | switch | de | la | luz?", "Already | did you turn off | the | switch | of | the | power?", "Have you switched off the power?",
         { flags: { 3: F_SWITCH },
-          neutral: t("¿Ya | bajó | el | interruptor | de | la | luz?", "Already | did you turn off | the | switch | of | the | power?", "Have you switched off the power?"), spain: t("¿Ya | ha bajado | el | interruptor | de | la | luz?", "Already | have you turned off | the | switch | of | the | power?", "Have you switched off the power?") }),
+          neutral: t("¿Ya | bajó | el | interruptor | de | la | luz?", "Already | did you turn off | the | switch | of | the | power?", "Have you switched off the power?"), spain: t("¿Ya | ha bajado | el | interruptor | de | la | luz?", "Already | have you turned off | the | switch | of | the | power?", "Have you switched off the power?", { flags: {} }) }),
     ],
     gr_water_good: [
       t("Muy | bien. | Con | agua | en | el | piso, | es | lo | primero.", "Very | good. | With | water | on | the | floor, | it's | the | first (thing).", "Good. With water on the floor, that comes first.", { spain: t("Muy | bien. | Con | agua | en | el | suelo, | es | lo | primero.", "Very | good. | With | water | on | the | floor, | it's | the | first (thing).", "Good. With water on the floor, that comes first.") }),
@@ -1596,7 +1599,7 @@ export const flood: SituationDef = {
     // "No hay luz.": switched off all the same (gr_valve follows at his question)
     gr_no_power: [
       t("Igual, | por si | regresa | la | luz.", "Even so, | in case | comes back | the | power.", "Still, in case the power comes back.",
-        { flags: { 0: "igual: here, all the same (do it anyway)." }, spain: t("Aun así, | por si | vuelve | la | luz.", "Even so, | in case | comes back | the | power.", "Still, in case the power comes back.") }),
+        { flags: { 0: "igual: here, all the same (do it anyway)." }, spain: t("Aun así, | por si | vuelve | la | luz.", "Even so, | in case | comes back | the | power.", "Still, in case the power comes back.", { flags: { 0: "aun así: all the same (do it anyway)." } }) }),
     ],
     // "¿Qué hago mientras tanto?" once the power is off
     gr_meanwhile: [
@@ -1631,7 +1634,7 @@ export const flood: SituationDef = {
     ],
     gr_ten_a: [
       t("¡Ay, | no, | tiene razón! | ¡Qué | pena | con | usted!", "Oh, | no, | you're right! | What | embarrassment | with | you!", "Oh no, you're right! I'm so sorry!",
-        { flags: { 4: "In Mexico ¡qué pena! = I'm so sorry (and embarrassed)." }, spain: t("¡Ay, | no, | tiene razón! | ¡Lo siento | muchísimo!", "Oh, | no, | you're right! | I'm sorry | very much!", "Oh no, you're right! I'm so sorry!") }),
+        { flags: { 4: "In Mexico ¡qué pena! = I'm so sorry (and embarrassed)." }, spain: t("¡Ay, | no, | tiene razón! | ¡Lo siento | muchísimo!", "Oh, | no, | you're right! | I'm sorry | very much!", "Oh no, you're right! I'm so sorry!", { flags: {} }) }),
       t("¡Ay, | no! | ¡Perdón, | perdón!", "Oh, | no! | Sorry, | sorry!", "Oh no! So sorry!"),
     ],
     gr_ten_b: [
@@ -1643,7 +1646,8 @@ export const flood: SituationDef = {
         "And I'll get my plumber to squeeze you in today, I promise.", { flags: { 3: F_PERSONAL_A, 7: F_QUE_SUBJ }, spain: t("Y | le | pido | a | mi | fontanero | que | pase | hoy, | se lo | prometo.", "And | (him) | I'll-ask | — | my | plumber | that | he-come-by | today, | it to you | I-promise.", "And I'll get my plumber to squeeze you in today, I promise.", { flags: { 3: F_PERSONAL_A, 7: F_QUE_SUBJ } }) }),
     ],
     gr_texting: [t("Permítame, | le | escribo | al | plomero... | ¡Listo!", "Allow me, | (to) him | I-write | to the | plumber... | Done!", "Hang on, I'm texting the plumber... Okay!", { spain: t("Un momento, | le | escribo | al | fontanero... | ¡Ya está!", "One moment, | (to) him | I-write | to the | plumber... | Done!", "Hang on, I'm texting the plumber... Okay!") })],
-    gr_already_today: [t("No, | no, | es | hoy. | Ya | quedamos.", "No, | no, | it's | today. | Already | we-agreed.", "No, no, it's today. That's settled.")],
+    gr_already_today: [t("No, | no, | es | hoy. | Ya | quedamos.", "No, | no, | it's | today. | Already | we-agreed.", "No, no, it's today. That's settled.",
+      { spain: t("No, | no, | es | hoy. | Ya | hemos quedado.", "No, | no, | it's | today. | Already | we've-agreed.", "No, no, it's today. That's settled.") })],
     gr_no_risk: [t("Mmm. | Mejor | no arriesgarnos.", "Hmm. | Better | not to take the risk.", "Hmm. Better safe than sorry.")],
     gr_tomorrow_final: [
       t("¡Bueno! | Mi | plomero | pasa | mañana | a las nueve.", "Okay! | My | plumber | comes by | tomorrow | at nine.", "Okay! My plumber will be there tomorrow at nine.",
@@ -1690,7 +1694,8 @@ export const flood: SituationDef = {
     gr_bye: [
       t("¡Nos vemos | en | diez | minutos!", "See you | in | ten | minutes!", "See you in ten! Bye now!"),
       t("Ánimo. | ¡Ahorita | nos vemos!", "Courage. | Right away | we'll-see-each-other!", "Hang in there. See you soon!",
-        { flags: { 1: F_AHORITA }, neutral: t("Ánimo. | ¡Nos vemos | en un rato!", "Courage. | See you | in a bit!", "Hang in there. See you soon!") }),
+        { flags: { 1: F_AHORITA }, neutral: t("Ánimo. | ¡Nos vemos | en un rato!", "Courage. | See you | in a bit!", "Hang in there. See you soon!"),
+          spain: t("Ánimo. | ¡Hasta ahora!", "Courage. | See you in a bit!", "Hang in there. See you soon!", { flags: { 1: "Spain: ¡hasta ahora! = see you in a moment (when you'll meet very soon)." } }) }),
     ],
     gr_bye_tomorrow: [t("¡Hasta | mañana! | ¡Que | le | vaya | bien!", "Until | tomorrow! | (I hope) | (to) you | it-goes | well!", "See you tomorrow! Take care!")],
     gr_wait_stay: [t("¡Espere, | espere! | ¿Qué | necesita?", "Wait, | wait! | What | do you need?", "Wait, wait! What do you need?")],
@@ -1728,7 +1733,7 @@ export const flood: SituationDef = {
           note: "No llego (I won't make it): short and casual, the way friends say it." },
         { id: "flooded", s: t("¡Se me inundó | el | depa!", "Flooded on me | the | apartment!", "My apartment flooded!", { flags: { 0: "se me + verb: it happened to me, not on purpose.", 2: "Mexican, casual: el depa = el departamento (apartment)." },
           neutral: t("¡Se me inundó | el | apartamento!", "Flooded on me | the | apartment!", "My apartment flooded!"), spain: t("¡Se me ha inundado | el | piso!", "Has flooded on me | the | apartment!", "My apartment flooded!", { flags: { 0: "se me + verb: it happened to me, not on purpose." } }) }), register: "casual",
-          note: "Among close friends Mexicans may add güey (dude). Use it only with people who use it with you." },
+          note: "Among close friends Mexicans may add güey (dude). Use it only with people who use it with you.", noteSpain: "El piso: Spain's word for an apartment." },
         { id: "water_everywhere", s: t("Hay | agua | por todos lados.", "There is | water | everywhere.", "There's water everywhere."), register: "casual" },
         { id: "river", s: t("Hay | un | río | en | la | cocina.", "There is | a | river | in | the | kitchen.", "There's a river in the kitchen."), register: "casual" },
         { id: "pipe", s: t("Se reventó | un | tubo | en | el | 2B.", "Burst | a | pipe | in | the | 2B.", "A pipe burst in 2B.",
@@ -1736,7 +1741,7 @@ export const flood: SituationDef = {
           note: "2B is the apartment upstairs." },
         { id: "gonna_while", s: t("Esto | va para largo.", "This | is going to take a while.", "This is gonna be a while."), register: "casual" },
         { id: "cat_fridge", s: t("El | gato | está | arriba | del | refri.", "The | cat | is | on top | of the | fridge.", "The cat's on top of the fridge.",
-          { flags: { 5: "Mexican, casual: el refri = el refrigerador." }, neutral: t("El | gato | está | encima | del | refrigerador.", "The | cat | is | on top | of the | fridge.", "The cat's on top of the fridge."), spain: t("El | gato | está | encima | de | la | nevera.", "The | cat | is | on top | of | the | fridge.", "The cat's on top of the fridge.") }), register: "casual" },
+          { flags: { 5: "Mexican, casual: el refri = el refrigerador." }, neutral: t("El | gato | está | encima | del | refrigerador.", "The | cat | is | on top | of the | fridge.", "The cat's on top of the fridge."), spain: t("El | gato | está | encima | de | la | nevera.", "The | cat | is | on top | of | the | fridge.", "The cat's on top of the fridge.", { flags: {} }) }), register: "casual" },
         { id: "rain_check", s: t("¿Lo | dejamos | para | otro | día?", "It | do we leave | for | another | day?", "Rain check?"), register: "casual" },
       ],
     },
@@ -1794,7 +1799,7 @@ export const flood: SituationDef = {
             flags: { 1: "Don: a respectful title for an older man, used with his first name.", 2: "Le habla…: the polite way to say who is calling (literally, speaks to you).", 6: F_DEPA },
             neutral: t("Buenos días, | Don Gilberto. | Le habla | {$name} | {$surname}, | del | apartamento | 1B.", "Good morning, | Don Gilberto. | This is | {$name} | {$surname}, | from the | apartment | 1B.",
               "Good morning, Don Gilberto. This is {$name} {$surname} from apartment 1B.", { say: "Buenos días, Don Gilberto. Le habla {$name} {$surname}, del apartamento uno be.",
-                flags: { 1: "Don: a respectful title for an older man, used with his first name.", 2: "Le habla…: the polite way to say who is calling (literally, speaks to you)." } }), spain: t("Buenos días, | Don Gilberto. | Le habla | {$name} | {$surname}, | del | 1B.", "Good morning, | Don Gilberto. | This is | {$name} | {$surname}, | from | 1B.", "Good morning, Don Gilberto. This is {$name} {$surname} from apartment 1B.", { say: "Buenos días, Don Gilberto. Le habla {$name} {$surname}, del uno be.", flags: { 1: "Don: a respectful title for an older man, used with his first name.", 2: "Le habla…: the polite way to say who is calling (literally, speaks to you)." } }) }), register: "polite" },
+                flags: { 1: "Don: a respectful title for an older man, used with his first name.", 2: "Le habla…: the polite way to say who is calling (literally, speaks to you)." } }), spain: t("Buenos días, | Don Gilberto. | Soy | {$name} | {$surname}, | del | 1B.", "Good morning, | Don Gilberto. | This is | {$name} | {$surname}, | from | 1B.", "Good morning, Don Gilberto. This is {$name} {$surname} from apartment 1B.", { say: "Buenos días, Don Gilberto. Soy {$name} {$surname}, del uno be.", flags: { 1: "Don: a respectful title for an older man, used with his first name.", 2: "Soy…: on the phone in Spain, “it's …” (literally, I am)." } }) }), register: "polite" },
         // he manages the building for its owner (Don Ernesto), so the learner is "el inquilino del 1B", not "su inquilino"
         { id: "tenant_in", s: t("Soy | {m:el|f:la} | {m:inquilino|f:inquilina} | del | 1B.", "I-am | the | tenant | from the | 1B.", "I'm the tenant in 1B.", { say: "Soy {m:el|f:la} {m:inquilino|f:inquilina} del uno be." }), register: "polite" },
         { id: "calling_from", s: t("Le | hablo | del | departamento | 1B.", "(To) you | I'm-calling | from the | apartment | 1B.", "I'm calling from apartment 1B.",
@@ -1809,7 +1814,7 @@ export const flood: SituationDef = {
         { id: "regret", s: t("Lamento | informarle | que | se inundó | el | departamento.", "I-regret | to inform you | that | got flooded | the | apartment.",
           "I regret to inform you that the apartment has flooded.", { flags: { 5: F_DEPA },
             neutral: t("Lamento | informarle | que | se inundó | el | apartamento.", "I-regret | to inform you | that | got flooded | the | apartment.",
-              "I regret to inform you that the apartment has flooded."), spain: t("Lamento | informarle | de que | se ha inundado | el | piso.", "I-regret | to inform you | that | has flooded | the | apartment.", "I regret to inform you that the apartment has flooded.") }), register: "polite", note: "Very formal, like a letter: the song's style." },
+              "I regret to inform you that the apartment has flooded."), spain: t("Lamento | informarle | de que | se ha inundado | el | piso.", "I-regret | to inform you | that | has flooded | the | apartment.", "I regret to inform you that the apartment has flooded.", { flags: {} }) }), register: "polite", note: "Very formal, like a letter: the song's style." },
         { id: "inform", s: t("Le | llamo | para | informarle | que | entró | agua | por | el | techo.", "(To) you | I-call | to | inform you | that | came in | water | through | the | ceiling.",
           "I'm calling to let you know that water came in through the ceiling.", { flags: { 9: "el techo: the ceiling (and the roof): Spanish has one word for both." },
             spain: t("Le | llamo | para | informarle | de que | ha entrado | agua | por | el | techo.", "(To) you | I-call | to | inform you | that | has come in | water | through | the | ceiling.",
@@ -1822,7 +1827,7 @@ export const flood: SituationDef = {
         { id: "last_night", s: t("Empezó | anoche, | en | la | madrugada.", "It-started | last night, | in | the | early morning.", "It started last night, in the early hours.",
           { flags: { 4: "la madrugada: the small hours, after midnight." }, spain: t("Empezó | anoche, | de | madrugada.", "It-started | last night, | in | the early hours.", "It started last night, in the early hours.", { flags: { 3: "de madrugada: in the small hours, after midnight." } }) }), register: "polite" },
         { id: "power_off", s: t("Ya | bajé | el | switch | de | la | luz.", "Already | I-turned-off | the | switch | of | the | power.", "I've switched off the power.",
-          { flags: { 3: F_SWITCH }, neutral: t("Ya | bajé | el | interruptor | de | la | luz.", "Already | I-turned-off | the | switch | of | the | power.", "I've switched off the power."), spain: t("Ya | he bajado | el | interruptor | de | la | luz.", "Already | I've-turned-off | the | switch | of | the | power.", "I've switched off the power.") }), register: "polite" },
+          { flags: { 3: F_SWITCH }, neutral: t("Ya | bajé | el | interruptor | de | la | luz.", "Already | I-turned-off | the | switch | of | the | power.", "I've switched off the power."), spain: t("Ya | he bajado | el | interruptor | de | la | luz.", "Already | I've-turned-off | the | switch | of | the | power.", "I've switched off the power.", { flags: {} }) }), register: "polite" },
         { id: "towels", s: t("Ya | puse | toallas | en | el | piso.", "Already | I-put | towels | on | the | floor.", "I've put towels down on the floor.", { spain: t("Ya | he puesto | toallas | en | el | suelo.", "Already | I've-put | towels | on | the | floor.", "I've put towels down on the floor.") }) },
       ],
     },
@@ -1833,11 +1838,12 @@ export const flood: SituationDef = {
         { id: "downstairs", s: t("Me temo | que | ya | está pasando | al | departamento | de abajo.", "I'm afraid | that | already | it's going through | to the | apartment | downstairs.",
           "I'm afraid it's reaching the apartment downstairs.", { flags: { 5: F_DEPA },
             neutral: t("Me temo | que | ya | está pasando | al | apartamento | de abajo.", "I'm afraid | that | already | it's going through | to the | apartment | downstairs.",
-              "I'm afraid it's reaching the apartment downstairs."), spain: t("Me temo | que | ya | está pasando | al | piso | de abajo.", "I'm afraid | that | already | it's going through | to the | apartment | downstairs.", "I'm afraid it's reaching the apartment downstairs.") }), register: "polite" },
+              "I'm afraid it's reaching the apartment downstairs."), spain: t("Me temo | que | ya | está pasando | al | piso | de abajo.", "I'm afraid | that | already | it's going through | to the | apartment | downstairs.", "I'm afraid it's reaching the apartment downstairs.", { flags: {} }) }), register: "polite" },
         { id: "power_off", s: t("Ya | bajé | el | switch | de | la | luz.", "Already | I-turned-off | the | switch | of | the | power.", "I've switched off the power.",
-          { flags: { 3: F_SWITCH }, neutral: t("Ya | bajé | el | interruptor | de | la | luz.", "Already | I-turned-off | the | switch | of | the | power.", "I've switched off the power."), spain: t("Ya | he bajado | el | interruptor | de | la | luz.", "Already | I've-turned-off | the | switch | of | the | power.", "I've switched off the power.") }), register: "polite" },
+          { flags: { 3: F_SWITCH }, neutral: t("Ya | bajé | el | interruptor | de | la | luz.", "Already | I-turned-off | the | switch | of | the | power.", "I've switched off the power."), spain: t("Ya | he bajado | el | interruptor | de | la | luz.", "Already | I've-turned-off | the | switch | of | the | power.", "I've switched off the power.", { flags: {} }) }), register: "polite" },
         { id: "dont_know_switch", s: t("No sé | dónde | está | el | switch.", "I don't know | where | is | the | switch.", "I don't know where the breaker is.",
-          { flags: { 4: F_SWITCH }, neutral: t("No sé | dónde | está | el | interruptor.", "I don't know | where | is | the | switch.", "I don't know where the breaker is.") }) },
+          { flags: { 4: F_SWITCH }, neutral: t("No sé | dónde | está | el | interruptor.", "I don't know | where | is | the | switch.", "I don't know where the breaker is."),
+            spain: t("No sé | dónde | está | el | interruptor.", "I don't know | where | is | the | switch.", "I don't know where the breaker is.", { flags: {} }) }) },
         { id: "last_night", s: t("Empezó | anoche, | en | la | madrugada.", "It-started | last night, | in | the | early morning.", "It started last night, in the early hours.",
           { flags: { 4: "la madrugada: the small hours, after midnight." }, spain: t("Empezó | anoche, | de | madrugada.", "It-started | last night, | in | the early hours.", "It started last night, in the early hours.", { flags: { 3: "de madrugada: in the small hours, after midnight." } }) }), register: "polite" },
       ],
@@ -1861,7 +1867,7 @@ export const flood: SituationDef = {
         { id: "downstairs", s: t("Me temo | que | ya | está pasando | al | departamento | de abajo.", "I'm afraid | that | already | it's going through | to the | apartment | downstairs.",
           "I'm afraid it's reaching the apartment downstairs.", { flags: { 5: F_DEPA },
             neutral: t("Me temo | que | ya | está pasando | al | apartamento | de abajo.", "I'm afraid | that | already | it's going through | to the | apartment | downstairs.",
-              "I'm afraid it's reaching the apartment downstairs."), spain: t("Me temo | que | ya | está pasando | al | piso | de abajo.", "I'm afraid | that | already | it's going through | to the | apartment | downstairs.", "I'm afraid it's reaching the apartment downstairs.") }), register: "polite" },
+              "I'm afraid it's reaching the apartment downstairs."), spain: t("Me temo | que | ya | está pasando | al | piso | de abajo.", "I'm afraid | that | already | it's going through | to the | apartment | downstairs.", "I'm afraid it's reaching the apartment downstairs.", { flags: {} }) }), register: "polite" },
         { id: "really_today", s: t("Tiene | que | ser | hoy.", "It-has | to | be | today.", "It really needs to be today.") },
         { id: "appreciate_today", s: t("Le | agradecería | que | viniera | alguien | hoy.", "(To) you | I'd-be-grateful | that | came | someone | today.", "I'd really appreciate it if someone could come today.",
           { flags: { 3: "viniera: the past subjunctive after le agradecería que." } }), register: "polite" },
@@ -1895,11 +1901,11 @@ export const flood: SituationDef = {
         { id: "this_is_apt", s: t("Buenos días, | Don Gilberto. | Le habla | {$name} | {$surname}, | del | departamento | 1B.", "Good morning, | Don Gilberto. | This is | {$name} | {$surname}, | from the | apartment | 1B.",
           "Good morning, Don Gilberto. This is {$name} {$surname} from apartment 1B.", { say: "Buenos días, Don Gilberto. Le habla {$name} {$surname}, del departamento uno be.", flags: { 1: "Don: a respectful title for an older man, used with his first name.", 6: F_DEPA },
             neutral: t("Buenos días, | Don Gilberto. | Le habla | {$name} | {$surname}, | del | apartamento | 1B.", "Good morning, | Don Gilberto. | This is | {$name} | {$surname}, | from the | apartment | 1B.",
-              "Good morning, Don Gilberto. This is {$name} {$surname} from apartment 1B.", { flags: { 1: "Don: a respectful title for an older man, used with his first name." }, say: "Buenos días, Don Gilberto. Le habla {$name} {$surname}, del apartamento uno be." }), spain: t("Buenos días, | Don Gilberto. | Le habla | {$name} | {$surname}, | del | 1B.", "Good morning, | Don Gilberto. | This is | {$name} | {$surname}, | from | 1B.", "Good morning, Don Gilberto. This is {$name} {$surname} from apartment 1B.", { say: "Buenos días, Don Gilberto. Le habla {$name} {$surname}, del uno be.", flags: { 1: "Don: a respectful title for an older man, used with his first name.", 2: "Le habla…: the polite way to say who is calling (literally, speaks to you)." } }) }), register: "polite" },
+              "Good morning, Don Gilberto. This is {$name} {$surname} from apartment 1B.", { flags: { 1: "Don: a respectful title for an older man, used with his first name." }, say: "Buenos días, Don Gilberto. Le habla {$name} {$surname}, del apartamento uno be." }), spain: t("Buenos días, | Don Gilberto. | Soy | {$name} | {$surname}, | del | 1B.", "Good morning, | Don Gilberto. | This is | {$name} | {$surname}, | from | 1B.", "Good morning, Don Gilberto. This is {$name} {$surname} from apartment 1B.", { say: "Buenos días, Don Gilberto. Soy {$name} {$surname}, del uno be.", flags: { 1: "Don: a respectful title for an older man, used with his first name.", 2: "Soy…: on the phone in Spain, “it's …” (literally, I am)." } }) }), register: "polite" },
         { id: "regret", s: t("Lamento | informarle | que | se inundó | el | departamento.", "I-regret | to inform you | that | got flooded | the | apartment.",
           "I regret to inform you that the apartment has flooded.", { flags: { 5: F_DEPA },
             neutral: t("Lamento | informarle | que | se inundó | el | apartamento.", "I-regret | to inform you | that | got flooded | the | apartment.",
-              "I regret to inform you that the apartment has flooded."), spain: t("Lamento | informarle | de que | se ha inundado | el | piso.", "I-regret | to inform you | that | has flooded | the | apartment.", "I regret to inform you that the apartment has flooded.") }), register: "polite" },
+              "I regret to inform you that the apartment has flooded."), spain: t("Lamento | informarle | de que | se ha inundado | el | piso.", "I-regret | to inform you | that | has flooded | the | apartment.", "I regret to inform you that the apartment has flooded.", { flags: {} }) }), register: "polite" },
         { id: "grateful_today", s: t("Le | agradecería | mucho | que | mandara | a | alguien | hoy.", "(To) you | I'd-be-grateful | very much | that | you-sent | — | someone | today.",
           "I'd be very grateful if you could send someone today.", { flags: { 5: F_PERSONAL_A } }), register: "polite" },
         { id: "vm_call_back", s: t("Por favor, | devuélvame | la | llamada | en cuanto | pueda.", "Please, | return to me | the | call | as soon as | you-can.", "Please call me back as soon as you can."), register: "polite" },
@@ -1972,6 +1978,8 @@ export const flood: SituationDef = {
     "no le va a gustar": { reason: "grammatical_fusion", split: "no → not + le → to her + va a → is going to + gustar → please: = she won't like it.", minimal: "Negation, pronoun and the future." },
     "tiene razón": { reason: "lexical_expression", split: "tiene → you have + razón → reason is false; = you're right.", minimal: "Two words." },
     "se lo": { reason: "grammatical_fusion", split: "se → to you + lo → it: two object pronouns glossed together.", minimal: "Two words." },
+    "hemos quedado": { reason: "grammatical_fusion", split: "hemos → we have + quedado (participle of quedar, to arrange); Spain's present perfect = we've agreed (it's settled).", minimal: "Auxiliary and participle." },
+    "hasta ahora": { reason: "lexical_expression", split: "hasta → until + ahora → now; Spain's goodbye when you'll meet again very soon = see you in a bit.", minimal: "Two words." },
     "ya quedamos": { reason: "lexical_expression", split: "ya → already + quedamos → we stayed is false; = it's settled.", minimal: "Two words." },
     "no arriesgarnos": { reason: "grammatical_fusion", split: "no → not + arriesgarnos → to risk ourselves: = not to take the risk.", minimal: "Two words." },
     "a las nueve": { reason: "lexical_expression", split: "a → at + las → the + nueve → nine: the clock time = at nine.", minimal: "S-TIME." },

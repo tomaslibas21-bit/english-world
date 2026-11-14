@@ -27,6 +27,7 @@ import type { ConvCtx } from "@/convo/dialogue";
 import { ent, t } from "@/content/dsl";
 import { GLOBAL_HANDLERS } from "@/content/global";
 import { readInt } from "@/convo/slots";
+import { variety } from "@/convo/compose";
 
 // ---------------------------------------------------------------------------
 // Entities
@@ -48,6 +49,8 @@ const REASONS: EntityDef[] = [
 // Appointment offers. A value carries the day and the time as Lorena says them: "el jueves a las 4:30 de la tarde".
 
 interface Offer { d: string; h: number; m: number }
+/** The hour "de la noche" starts: Spain's tarde runs to about nine ("las siete de la tarde"), Mexico's to seven. */
+const eveningFrom = () => (variety() === "spain" ? 21 : 19);
 const DAY_ES: Record<string, [string, string]> = {
   tomorrow: ["mañana", "tomorrow"], day_after_tomorrow: ["pasado mañana", "the day after tomorrow"],
   monday: ["el lunes", "Monday"], tuesday: ["el martes", "Tuesday"], wednesday: ["el miércoles", "Wednesday"],
@@ -58,7 +61,7 @@ const HOURS = ["doce", "una", "dos", "tres", "cuatro", "cinco", "seis", "siete",
 const MINS: Record<number, string> = { 0: "", 15: " y cuarto", 30: " y media" };
 function clockVal(h: number, m: number): { en: string; lt: string; say: string } {
   const h12 = h % 12 === 0 ? 12 : h % 12, art = h12 === 1 ? "la" : "las";
-  const part = h < 12 ? "de la mañana" : h < 19 ? "de la tarde" : "de la noche";
+  const part = h < 12 ? "de la mañana" : h < eveningFrom() ? "de la tarde" : "de la noche";
   const ap = h < 12 ? "AM" : "PM";
   const mm = String(m).padStart(2, "0");
   return { en: `${art} ${h12}:${mm} ${part}`, lt: m ? `${h12}:${mm} ${ap}` : `${h12} ${ap}`, say: `${art} ${HOURS[h % 12]}${MINS[m] ?? ` ${m}`} ${part}` };
@@ -208,7 +211,7 @@ function choiceHits(c: Ctx, slots: any, seg?: { tags: string[] }): string[] {
     const o = OFFERS[k];
     if (d && !onDay(k, d, nx)) return false;
     if (tm && !(o.h % 12 === tm.h % 12 && o.m === tm.m && !(tm.ampm === "am" && o.h >= 12) && !(tm.ampm === "pm" && o.h < 12))) return false;
-    if (tarde && !(o.h >= 12 && o.h < 19)) return false;
+    if (tarde && !(o.h >= 12 && o.h < eveningFrom())) return false;
     if (noche && o.h < 19) return false;
     return fitsPart(k, part);
   });
@@ -405,7 +408,7 @@ export const dentist: SituationDef = {
       dent: "(el dentista | la dentista | un dentista | una dentista | el doctor | la doctora | el odontologo | la odontologa | un odontologo | dentista | odontologo)",
       todent: "(al dentista | a la dentista | a un dentista | a una dentista | al doctor | a la doctora | al odontologo | con el dentista | con la dentista | con la doctora | con el doctor | con un dentista)",
       soon: "(lo antes posible | lo mas pronto posible | cuanto antes | lo mas rapido posible | hoy mismo | urgente | urgentemente)",
-      dpart: "[en la manana #am | en la tarde #pm | por la manana #am | por la tarde #pm | en la noche #pm | temprano #am]",
+      dpart: "[en la manana #am | en la tarde #pm | por la manana #am | por la tarde #pm | en la noche #pm | por la noche #pm | temprano #am]",
       hurt: "(me duele | me duelen | me esta doliendo | me estan doliendo)",
       dur: "[como | casi | mas de | unos | ya | mas o menos] ({number} (dias | dia | semanas | semana) | unos dias | un par de dias | dos o tres dias | una semana | dos semanas | mucho tiempo | un rato | {number} o {number} dias)",
       staff: "(puede | podria | me puede | me podria | puedes #tip:tu_staff | me puedes #tip:tu_staff)",
@@ -780,7 +783,7 @@ export const dentist: SituationDef = {
     ask_help: [
       t("¿En | qué | le | puedo | ayudar?", "In | what | (to) you | can I | help?", "How can I help you?"),
       t("Dígame, | ¿qué | se le ofrece?", "Tell me, | what | do you need?", "Yes, what can I do for you?", { flags: { 2: "¿Qué se le ofrece?: a polite Mexican “What can I do for you?”" },
-        spain: t("Dígame, | ¿qué | desea?", "Tell me, | what | would you like?", "Yes, what can I do for you?") }),
+        spain: t("Dígame, | ¿qué | desea?", "Tell me, | what | would you like?", "Yes, what can I do for you?", { flags: {} }) }),
     ],
     ask_reason: [
       t("Claro. | ¿Es | para | una | revisión, | o | tiene | alguna | molestia?", "Sure. | Is it | for | a | checkup, | or | do you have | some | discomfort?",
@@ -814,7 +817,7 @@ export const dentist: SituationDef = {
     ask_before: [
       t("¿Ya | había venido | antes | con | nosotros?", "Already | had you come | before | with | us?", "Have you been to see us before?",
         { flags: { 1: "había venido: the past perfect, a polite and common way to ask this in Mexico." },
-        spain: t("¿Ya | ha venido | antes | con | nosotros?", "Already | have you come | before | with | us?", "Have you been to see us before?") }),
+        spain: t("¿Ya | ha venido | antes | con | nosotros?", "Already | have you come | before | with | us?", "Have you been to see us before?", { flags: {} }) }),
     ],
     new_welcome: [
       t("Perfecto, | {m:bienvenido|f:bienvenida}.", "Perfect, | welcome.", "Great, welcome!"),
@@ -834,7 +837,8 @@ export const dentist: SituationDef = {
     ],
     spell_again: [
       t("Perdón, | ¿me | lo | deletrea | otra vez, | más | despacito?", "Sorry, | (to) me | it | you-spell | again, | more | slowly?",
-        "Sorry, could you spell it again, a little more slowly?", { flags: { 6: "despacito: the diminutive of despacio; it sounds softer." } }),
+        "Sorry, could you spell it again, a little more slowly?", { flags: { 6: "despacito: the diminutive of despacio; it sounds softer." },
+          spain: t("Perdón, | ¿me | lo | deletrea | otra vez, | más | despacio?", "Sorry, | (to) me | it | you-spell | again, | more | slowly?", "Sorry, could you spell it again, a little more slowly?", { flags: {} }) }),
     ],
     // the spelling asked again after another answer (same words as ask_spell, so the same recording)
     ask_spell_again: [t("¿Me | lo | deletrea, | por favor?", "(To) me | it | you-spell, | please?", "Could you spell that for me, please?")],
@@ -872,7 +876,7 @@ export const dentist: SituationDef = {
         { spain: t("¡Perdón! | ¿Así | me | oye | mejor?", "Sorry! | Like this | me | do you hear | better?", "Sorry! Can you hear me better now?") }),
       t("¿Bueno? | ¿Ahora sí | me | escucha?", "Hello? | Now | me | do you hear?", "Hello? Can you hear me now?",
         { flags: { 0: "Mexican: ¿Bueno? is how Mexicans say hello on the phone and check the line.", 1: "ahora sí: “now (at last)”; sí adds emphasis, not yes." },
-          neutral: t("¿Hola? | ¿Ahora sí | me | escucha?", "Hello? | Now | me | do you hear?", "Hello? Can you hear me now?", { flags: { 1: "ahora sí: “now (at last)”; sí adds emphasis, not yes." } }), spain: t("¿Oiga? | ¿Me | oye | ahora?", "Hello? | Me | do you hear | now?", "Hello? Can you hear me now?") }),
+          neutral: t("¿Hola? | ¿Ahora sí | me | escucha?", "Hello? | Now | me | do you hear?", "Hello? Can you hear me now?", { flags: { 1: "ahora sí: “now (at last)”; sí adds emphasis, not yes." } }), spain: t("¿Oiga? | ¿Me | oye | ahora?", "Hello? | Me | do you hear | now?", "Hello? Can you hear me now?", { flags: { 0: "¿Oiga?: Spain's way to check the line on the phone (Mexico: ¿Bueno?)." } }) }),
     ],
     hear_you: [
       t("Sí, | {m:lo|f:la} | escucho | bien.", "Yes, | you | I-hear | well.", "Yes, I can hear you fine.", { flags: { 1: "lo / la: “you” (usted), lo for a man and la for a woman." },
@@ -896,20 +900,24 @@ export const dentist: SituationDef = {
     insurance_card: [t("Muy | bien. | Traiga | los | datos | de | su | seguro, | por favor.", "Very | good. | Bring | the | details | of | your | insurance, | please.", "Great. Please bring your insurance information.")],
     hold_q: [
       t("Permítame | revisar | la | agenda. | ¿Me | espera | un | momentito?", "Allow me | to check | the | schedule. | (For) me | will you wait | a | little moment?",
-        "Let me check the schedule. Can you hold for a moment?", { flags: { 7: "momentito: the diminutive of momento; it sounds friendlier." } }),
+        "Let me check the schedule. Can you hold for a moment?", { flags: { 7: "momentito: the diminutive of momento; it sounds friendlier." },
+          spain: t("Déjeme | mirar | la | agenda. | ¿Me | espera | un | momento?", "Let me | look at | the | schedule. | (For) me | will you wait | a | moment?", "Let me check the schedule. Can you hold for a moment?", { flags: {} }) }),
       t("Ahorita | reviso | la | agenda. | ¿Me | espera | un | momentito?", "Right now | I-check | the | schedule. | (For) me | will you wait | a | little moment?",
         "I'll check the schedule right now. Can you hold for a moment?", { flags: { 0: "Mexican: ahorita means right now here.", 7: "momentito: the diminutive of momento; it sounds friendlier." },
           neutral: t("Enseguida | reviso | la | agenda. | ¿Me | espera | un | momentito?", "Right away | I-check | the | schedule. | (For) me | will you wait | a | little moment?",
-            "I'll check the schedule right away. Can you hold for a moment?", { flags: { 7: "momentito: the diminutive of momento; it sounds friendlier." } }) }),
+            "I'll check the schedule right away. Can you hold for a moment?", { flags: { 7: "momentito: the diminutive of momento; it sounds friendlier." } }),
+          spain: t("Ahora mismo | miro | la | agenda. | ¿Me | espera | un | momento?", "Right away | I-look at | the | schedule. | (For) me | will you wait | a | moment?", "I'll check the schedule right away. Can you hold for a moment?", { flags: {} }) }),
     ],
     hold_thanks: [t("Gracias | por | esperar.", "Thank you | for | waiting.", "Thanks for holding.")],
-    hold_quick: [t("Bueno, | es | rapidito.", "Okay, | it's | very quick.", "Okay, I'll be quick.", { flags: { 2: "rapidito: the diminutive of rápido, “real quick”." } })],
+    hold_quick: [t("Bueno, | es | rapidito.", "Okay, | it's | very quick.", "Okay, I'll be quick.", { flags: { 2: "rapidito: the diminutive of rápido, “real quick”." },
+      spain: t("Es | solo | un | momento.", "It's | just | a | moment.", "It'll only take a moment.", { flags: {} }) })],
     offer: [
       t("¿Qué tal | {$slot}?", "How about | {$slot}?", "How about {$slot}?"),
       t("Tengo | un | espacio | {$slot}. | ¿Le | queda | bien?", "I have | an | opening | {$slot}. | (For) you | does it suit | well?", "I have an opening {$slot}. Does that work for you?",
         { spain: t("Tengo | un | hueco | {$slot}. | ¿Le | viene | bien?", "I have | an | opening | {$slot}. | (For) you | does it come | well?", "I have an opening {$slot}. Does that work for you?") }),
       t("Le | puedo | dar | {$slot}. | ¿Le | sirve?", "(To) you | I can | give | {$slot}. | (To) you | does it work?", "I can give you {$slot}. Does that work?",
-        { flags: { 5: "¿Le sirve?: “does it work for you?”, very common in Mexico." } }),
+        { flags: { 5: "¿Le sirve?: “does it work for you?”, very common in Mexico." },
+          spain: t("Le | puedo | dar | {$slot}. | ¿Le | va | bien?", "(To) you | I can | give | {$slot}. | (To) you | does it go | well?", "I can give you {$slot}. Does that work?", { flags: {} }) }),
     ],
     offer_again: [t("Entonces, | ¿le | aparto | {$slot}?", "So, | (for) you | should I hold | {$slot}?", "So, should I put you down for {$slot}?",
         { spain: t("Entonces, | ¿le | reservo | {$slot}?", "So, | (for) you | should I book | {$slot}?", "So, should I put you down for {$slot}?") })],
@@ -960,7 +968,7 @@ export const dentist: SituationDef = {
     anything_else: [
       t("¿Algo | más | en | que | le | pueda | ayudar?", "Anything | else | in | which | (to) you | I can | help?", "Is there anything else I can help you with?"),
       t("¿Se le ofrece | algo | más?", "Do you need | anything | else?", "Anything else I can do for you?", { flags: { 0: "¿Se le ofrece…?: very polite and common in Mexico: is there anything you need?" },
-        spain: t("¿Desea | algo | más?", "Would you like | anything | else?", "Anything else I can do for you?") }),
+        spain: t("¿Desea | algo | más?", "Would you like | anything | else?", "Anything else I can do for you?", { flags: {} }) }),
     ],
     anything_else_yes: [t("Claro, | dígame.", "Sure, | tell me.", "Sure, what can I do for you?")],
     see_you: [
@@ -977,7 +985,7 @@ export const dentist: SituationDef = {
       t("Estamos | en | la | calle | Hidalgo | número | 12, | a | una | cuadra | del | zócalo.", "We are | on | — | street | Hidalgo | number | 12, | at | one | block | from the | main square.",
         "We're at 12 Hidalgo Street, a block from the main square.",
         { say: "Estamos en la calle Hidalgo número doce, a una cuadra del zócalo.", write: "Clínica Dental Coral · calle Hidalgo 12", spell: "Hidalgo",
-          flags: { 2: "Spanish puts la before calle; English has no word here." }, spain: t("Estamos | en | la | calle | Hidalgo | número | 12, | a | una | calle | del | zócalo.", "We are | on | — | street | Hidalgo | number | 12, | at | one | street | from the | main square.", "We're at 12 Hidalgo Street, a block from the main square.", { flags: { 2: "Spanish puts la before calle; English has no word here." }, say: "Estamos en la calle Hidalgo número doce, a una calle del zócalo." }) }),
+          flags: { 2: "Spanish puts la before calle; English has no word here." }, spain: t("Estamos | en | la | calle | Hidalgo | número | 12, | a | una | manzana | del | zócalo.", "We are | on | — | street | Hidalgo | number | 12, | at | one | block | from the | main square.", "We're at 12 Hidalgo Street, a block from the main square.", { flags: { 2: "Spanish puts la before calle; English has no word here.", 9: "manzana: a city block in Spain (also an apple); Mexico says cuadra." }, say: "Estamos en la calle Hidalgo número doce, a una manzana del zócalo." }) }),
     ],
     parking: [t("Puede | estacionarse | en | la | calle, | enfrente | del | consultorio.", "You can | park | on | the | street, | in front | of the | office.", "You can park on the street, right in front of the office.", { spain: t("Puede | aparcar | en | la | calle, | delante | de | la | clínica.", "You can | park | on | the | street, | in front | of | the | clinic.", "You can park on the street, right in front of the office.") })],
     duration: [t("Más o menos | una | hora, | por | ser | primera | vez.", "More or less | an | hour, | for | being | first | time.", "About an hour, since it's your first visit.")],
@@ -988,7 +996,8 @@ export const dentist: SituationDef = {
     ],
     cancel_policy: [
       t("Si | no puede | venir, | avísenos | con | un | día | de | anticipación, | por favor.", "If | you can't | come, | let us know | with | one | day | of | notice, | please.",
-        "If you can't make it, please let us know a day ahead."),
+        "If you can't make it, please let us know a day ahead.",
+        { spain: t("Si | no puede | venir, | avísenos | con | un | día | de | antelación, | por favor.", "If | you can't | come, | let us know | with | one | day | of | notice, | please.", "If you can't make it, please let us know a day ahead.") }),
     ],
     forms: [t("Sí, | una | historia clínica. | Llegue | diez | minutos | antes, | por favor.", "Yes, | a | medical history. | Arrive | ten | minutes | early, | please.", "Yes, a medical history form. Please arrive ten minutes early.")],
     doctor: [
@@ -1012,7 +1021,8 @@ export const dentist: SituationDef = {
     ],
     english: [t("Sí, | la | doctora | habla | inglés, | por si | lo | necesita.", "Yes, | the | doctor | speaks | English, | in case | it | you need.", "Yes, the dentist speaks English, in case you need it.")],
     her_name: [t("Con | Lorena, | para servirle.", "With | Lorena, | at your service.", "This is Lorena, at your service.",
-      { flags: { 2: "para servirle: “at your service”, a courteous set phrase on the phone." } })],
+      { flags: { 2: "para servirle: “at your service”, a courteous set phrase on the phone." },
+        spain: t("Habla | con | Lorena.", "You're speaking | with | Lorena.", "This is Lorena speaking.", { flags: {} }) })],
     hours: [
       t("Abrimos | de | lunes | a | viernes, | de | 9 | a | 2 | y | de | 4 | a | 8, | y | los | sábados | de | 9 | a | 2.",
         "We're open | from | Monday | to | Friday, | from | 9 | to | 2 | and | from | 4 | to | 8, | and | on | Saturdays | from | 9 | to | 2.",
@@ -1043,13 +1053,17 @@ export const dentist: SituationDef = {
       t("Esta | semana | tenemos | la | agenda | muy | llena. | Lo | único | que | me | queda | es | {$slot}. | ¿Le | sirve?",
         "This | week | we have | the | schedule | very | full. | The | only thing | that | (to) me | remains | is | {$slot}. | (To) you | does it work?",
         "We're very booked this week. The only opening I have left is {$slot}. Does that work for you?",
-        { flags: { 7: "lo único: “the only thing”; lo turns único into a noun." } }),
+        { flags: { 7: "lo único: “the only thing”; lo turns único into a noun." },
+          spain: t("Esta | semana | tenemos | la | agenda | muy | llena. | Lo | único | que | me | queda | es | {$slot}. | ¿Le | va | bien?",
+            "This | week | we have | the | schedule | very | full. | The | only thing | that | (to) me | remains | is | {$slot}. | (To) you | does it go | well?",
+            "We're very booked this week. The only opening I have left is {$slot}. Does that work for you?", { flags: { 7: "lo único: “the only thing”; lo turns único into a noun." } }) }),
     ],
     only_one: [t("Lo siento, | es | lo | único | que | tengo | esta | semana.", "I'm sorry, | it's | the | only thing | that | I have | this | week.", "I'm sorry, that's the only opening I have this week.")],
     week_full: [t("Lo siento, | esta | semana | ya | no tengo | nada | más.", "I'm sorry, | this | week | already | I don't have | anything | more.", "I'm sorry, I don't have anything else this week.")],
     only_next: [
       t("Entonces, | lo | siguiente | que | tengo | es | {$slot}. | ¿Le | sirve?", "Then, | the | next thing | that | I have | is | {$slot}. | (To) you | does it work?",
-        "Then the next opening I have is {$slot}. Does that work?"),
+        "Then the next opening I have is {$slot}. Does that work?",
+        { spain: t("Entonces, | lo | siguiente | que | tengo | es | {$slot}. | ¿Le | va | bien?", "Then, | the | next thing | that | I have | is | {$slot}. | (To) you | does it go | well?", "Then the next opening I have is {$slot}. Does that work?") }),
     ],
   },
 
@@ -1151,7 +1165,8 @@ export const dentist: SituationDef = {
       lt: "Spell your last name",
       items: [
         { id: "spell_it", s: t("Se escribe | {$letters}.", "It's spelled | {$letters}.", "It's spelled {$letters}."),
-          note: "Spanish letter names: a, be, ce, de, e, efe, ge, hache, i, jota, ka, ele, eme, ene, eñe, o, pe, cu, erre, ese, te, u, ve, doble ve, equis, i griega, zeta. Mexicans say “be grande” for B, “ve chica” for V, and “doble ele” for LL." },
+          note: "Spanish letter names: a, be, ce, de, e, efe, ge, hache, i, jota, ka, ele, eme, ene, eñe, o, pe, cu, erre, ese, te, u, ve, doble ve, equis, i griega, zeta. Mexicans say “be grande” for B, “ve chica” for V, and “doble ele” for LL.",
+          noteSpain: "Spanish letter names: a, be, ce, de, e, efe, ge, hache, i, jota, ka, ele, eme, ene, eñe, o, pe, cu, erre, ese, te, u, uve, uve doble, equis, i griega, zeta. Spain says “uve” for V and “uve doble” for W; LL is “doble ele”." },
       ],
     },
     dob: {
@@ -1168,7 +1183,8 @@ export const dentist: SituationDef = {
       lt: "Give your phone number",
       items: [
         { id: "phone_is", s: t("Mi | número | es | 984 | 123 | 4567.", "My | number | is | 984 | 123 | 4567.", "My number is 984 123 4567.",
-          { say: "Mi número es nueve ocho cuatro, uno veintitrés, cuarenta y cinco, sesenta y siete." }), note: "Mexicans read phone numbers in pairs: cuarenta y cinco, sesenta y siete. Digit by digit is fine too." },
+          { say: "Mi número es nueve ocho cuatro, uno veintitrés, cuarenta y cinco, sesenta y siete." }), note: "Mexicans read phone numbers in pairs: cuarenta y cinco, sesenta y siete. Digit by digit is fine too.",
+          noteSpain: "A Mexican number, read here the Mexican way, in pairs: cuarenta y cinco, sesenta y siete. Digit by digit is fine too." },
         { id: "phone_this", s: t("Puede | llamarme | a | este | número.", "You can | call me | at | this | number.", "You can call me at this number.") },
       ],
     },
@@ -1211,7 +1227,7 @@ export const dentist: SituationDef = {
       lt: "Ask about the appointment",
       items: [
         { id: "q_address", s: t("¿Cuál | es | la | dirección?", "What | is | the | address?", "What's the address?") },
-        { id: "q_park", s: t("¿Dónde | me | puedo | estacionar?", "Where | myself | can I | park?", "Where can I park?", { flags: { 1: "me: estacionarse is said with a reflexive pronoun." }, spain: t("¿Dónde | puedo | aparcar?", "Where | can I | park?", "Where can I park?") }) },
+        { id: "q_park", s: t("¿Dónde | me | puedo | estacionar?", "Where | myself | can I | park?", "Where can I park?", { flags: { 1: "me: estacionarse is said with a reflexive pronoun." }, spain: t("¿Dónde | puedo | aparcar?", "Where | can I | park?", "Where can I park?", { flags: {} }) }) },
         { id: "q_long", s: t("¿Cuánto | dura | la | consulta?", "How long | lasts | the | appointment?", "How long does the appointment take?") },
         { id: "q_bring", s: t("¿Qué | tengo que | llevar?", "What | do I have to | bring?", "What should I bring?") },
         { id: "q_pay", s: t("¿Aceptan | tarjeta?", "Do you accept | card?", "Do you take cards?") },
@@ -1231,7 +1247,8 @@ export const dentist: SituationDef = {
     more: {
       lt: "Say thank you and goodbye",
       items: [
-        { id: "more_all", s: t("No, | es | todo. | ¡Gracias!", "No, | it's | all. | Thanks!", "No, that's all. Thank you!") },
+        { id: "more_all", s: t("No, | es | todo. | ¡Gracias!", "No, | it's | all. | Thanks!", "No, that's all. Thank you!",
+          { spain: t("No, | eso | es | todo. | ¡Gracias!", "No, | that | is | all. | Thanks!", "No, that's all. Thank you!") }) },
         { id: "see_you", s: t("¡Hasta | el | jueves!", "Until | — | Thursday!", "See you Thursday!", { flags: { 1: "el before a weekday; English has no word here." } }) },
       ],
     },

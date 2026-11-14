@@ -118,7 +118,7 @@ export const GLOBAL_LINES: Record<string, SentSrc[]> = {
     t("Muy | bien, | gracias | por | preguntar.", "Very | well, | thanks | for | asking.", "Very well, thanks for asking!"),
     t("Bien, | gracias.", "Good, | thanks.", "Good, thanks!"),
     t("Pues | aquí | andamos, | gracias.", "Well | here | we-go-on, | thanks.", "Hanging in there, thanks!", { flags: { 2: "Mexican: “aquí andamos” = getting by, fine." },
-      spain: t("Pues | ahí | vamos, | gracias.", "Well | there | we-go, | thanks.", "Hanging in there, thanks!", { flags: { 2: "“Ahí vamos” = getting by, fine." } }) }),
+      spain: t("Pues | tirando, | gracias.", "Well | getting-by, | thanks.", "Hanging in there, thanks!", { flags: { 1: "“Tirando” = getting by, so-so (tirar: to pull along)." } }) }),
   ],
   g_sorry_to_hear: [
     t("¡Ay, | lo siento!", "Oh, | I'm sorry!", "Oh no, I'm sorry to hear that."),
@@ -253,7 +253,7 @@ export const GLOBAL_INTENTS: Record<string, { patterns: string[] }> = {
     "@greet (como esta | como estas | que tal) [usted | tu]",
   ] },
   g_howareyou_answer: { patterns: [
-    "[estoy] (bien #h:h_good | muy bien #h:h_fine | super bien | excelente #h:h_great | todo bien | bastante bien #h:h_pretty | no me quejo #h:h_notbad | aqui andamos | pues bien | de maravilla) [gracias | muchas gracias] [(y usted | y tu | y a usted | y a ti | usted como esta | y usted como esta | y tu como estas | y usted que tal | y tu que tal)]",
+    "[estoy] (bien #h:h_good | muy bien #h:h_fine | super bien | (excelente | genial | estupendo | estupendamente) #h:h_great | tirando | aqui estamos | todo bien | bastante bien #h:h_pretty | no me quejo #h:h_notbad | aqui andamos | pues bien | de maravilla) [gracias | muchas gracias] [(y usted | y tu | y a usted | y a ti | usted como esta | y usted como esta | y tu como estas | y usted que tal | y tu que tal)]",
     "[estoy] (bien | muy bien | excelente) gracias por preguntar",
   ] },
   g_howareyou_bad: { patterns: [
@@ -559,7 +559,8 @@ export const GLOBAL_HINTS: Record<string, HintGroup> = {
       { id: "h_fine", s: t("Muy | bien, | gracias. | ¿Y | {u:usted|t:tú}?", "Very | well, | thanks. | And | you?", "Very well, thanks. And you?") },
       { id: "h_pretty", s: t("Bastante | bien, | gracias.", "Pretty | well, | thanks.", "Pretty good, thanks!") },
       { id: "h_notbad", s: t("No me quejo. | ¿Y | {u:usted|t:tú}?", "I can't complain. | And | you?", "Can't complain. And you?") },
-      { id: "h_great", s: t("¡Excelente, | gracias | por | preguntar!", "Excellent, | thanks | for | asking!", "Great, thanks for asking!") },
+      { id: "h_great", s: t("¡Excelente, | gracias | por | preguntar!", "Excellent, | thanks | for | asking!", "Great, thanks for asking!",
+        { spain: t("¡Genial, | gracias | por | preguntar!", "Great, | thanks | for | asking!", "Great, thanks for asking!") }) },
     ],
   },
 };

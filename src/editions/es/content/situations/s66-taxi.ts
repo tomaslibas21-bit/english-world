@@ -304,7 +304,7 @@ export const taxi: SituationDef = {
       t("¡Buenas! | ¿A | dónde | {m:lo|f:la} | llevo?", "Hi! | To | where | you | I-take?", "Hi! Where can I take you?",
         { flags: { 3: "lo / la: “you” (usted) – lo for a man, la for a woman." } }),
       t("¡Buenas | tardes! | ¿A | dónde | vamos?", "Good | afternoon! | To | where | we-go?", "Good afternoon! Where to?"),
-      t("¡Súbase! | ¿A | dónde | va?", "Get in! | To | where | you-go?", "Hop in! Where are you going?"),
+      t("¡Súbase! | ¿A | dónde | va?", "Get in! | To | where | you-go?", "Hop in! Where are you going?", { spain: t("¡Suba! | ¿A | dónde | va?", "Get in! | To | where | you-go?", "Hop in! Where are you going?") }),
     ],
     which_place: [
       t("¿A | qué | parte | {m:lo|f:la} | llevo?", "To | what | place | you | I-take?", "So where to?", { flags: { 3: "lo / la: “you” (usted), for a man / a woman." } }),
@@ -320,27 +320,27 @@ export const taxi: SituationDef = {
     /** The price again, once it's been said (after asking for less, during the ride). */
     fare_again: [t("Son | {$fare}.", "That's | {$fare}.", "That's {$fare}.")],
     fare_fixed: [
-      t("Es | tarifa | fija, | {m:joven|f:joven}.", "It's | fare | fixed, | {m:young man|f:young lady}.", "It's a fixed fare, I'm afraid."),
+      t("Es | tarifa | fija, | {m:joven|f:joven}.", "It's | fare | fixed, | {m:young man|f:young lady}.", "It's a fixed fare, I'm afraid.", { spain: t("Es | tarifa | fija, | lo siento.", "It's | fare | fixed, | I'm sorry.", "It's a fixed fare, I'm afraid.") }),
     ],
     fare_lower: [
       t("Ándele | pues, | se lo | dejo | en | {$fare}.", "Go on | then, | it to you | I-leave | at | {$fare}.", "Oh, all right, {$fare}.",
-        { flags: { 0: "Mexican: ándele pues = oh, all right then." }, neutral: t("Bueno, | se lo | dejo | en | {$fare}.", "Okay, | it to you | I-leave | at | {$fare}.", "Okay then, {$fare}.") }),
+        { flags: { 0: "Mexican: ándele pues = oh, all right then." }, neutral: t("Bueno, | se lo | dejo | en | {$fare}.", "Okay, | it to you | I-leave | at | {$fare}.", "Okay then, {$fare}."), spain: t("Bueno, | se lo | dejo | en | {$fare}.", "Okay, | it to you | I-leave | at | {$fare}.", "Okay then, {$fare}.", { flags: {} }) }),
     ],
     /** Asked for less a second time. */
-    haggle_again: [t("Más | barato | no se puede, | {m:joven|f:joven}.", "More | cheap | it can't be done, | {m:young man|f:young lady}.", "I can't go any lower, I'm afraid.")],
+    haggle_again: [t("Más | barato | no se puede, | {m:joven|f:joven}.", "More | cheap | it can't be done, | {m:young man|f:young lady}.", "I can't go any lower, I'm afraid.", { spain: t("Más | barato | no puedo, | lo siento.", "More | cheap | I can't, | I'm sorry.", "I can't go any lower, I'm afraid.") })],
     lets_go: [
       t("¡Vámonos!", "Let's go!", "Let's go!"),
-      t("Perfecto. | Súbase.", "Perfect. | Get in.", "Perfect. Hop in."),
+      t("Perfecto. | Súbase.", "Perfect. | Get in.", "Perfect. Hop in.", { spain: t("Perfecto. | Suba.", "Perfect. | Get in.", "Perfect. Hop in.") }),
     ],
     refused: [t("Como | guste.", "As | you-like.", "As you like.")],
-    far_no: [t("Hasta | allá | no voy, | {m:joven|f:joven}.", "Up to | there | I don't go, | {m:young man|f:young lady}.", "I don't go that far, I'm afraid.")],
+    far_no: [t("Hasta | allá | no voy, | {m:joven|f:joven}.", "Up to | there | I don't go, | {m:young man|f:young lady}.", "I don't go that far, I'm afraid.", { spain: t("Hasta | allí | no voy, | lo siento.", "Up to | there | I don't go, | I'm sorry.", "I don't go that far, I'm afraid.") })],
     far_bus: [t("¿{m:Lo|f:La} | llevo | a | la | terminal?", "You | I-take | to | the | bus station?", "Want me to take you to the bus station?",
       { flags: { 0: "lo / la: “you” (usted), for a man / a woman." } })],
     far_colectivo: [t("Mejor | tome | un | colectivo.", "Better | take | a | colectivo.", "You'd better take a colectivo.",
       { flags: { 3: "colectivo: a shared van that runs along the highway." }, spain: t("Mejor | coja | un | colectivo.", "Better | take | a | colectivo.", "You'd better take a colectivo.", {flags: {3: "colectivo: a shared van that runs along the highway."}}) })],
     ruins_walk: [t("A | las | ruinas | se llega | caminando | por | la | playa.", "To | the | ruins | you get there | walking | along | the | beach.", "You get to the ruins on foot, along the beach.", { spain: t("A | las | ruinas | se llega | andando | por | la | playa.", "To | the | ruins | you get there | walking | along | the | beach.", "You get to the ruins on foot, along the beach.") })],
     /** The sitio stands next to the airport. */
-    airport_here: [t("El | aeropuerto | está | aquí | al lado, | {m:joven|f:joven}.", "The | airport | is | here | next door, | {m:young man|f:young lady}.", "The airport's right next door.")],
+    airport_here: [t("El | aeropuerto | está | aquí | al lado, | {m:joven|f:joven}.", "The | airport | is | here | next door, | {m:young man|f:young lady}.", "The airport's right next door.", { spain: t("El | aeropuerto | está | aquí | al lado.", "The | airport | is | here | next door.", "The airport's right next door.") })],
     ask_from: [
       t("¿Y | de | dónde | es | usted?", "And | from | where | are | you?", "So where are you from?"),
     ],
@@ -357,11 +357,11 @@ export const taxi: SituationDef = {
       t("¡Bienvenid{m:o|f:a}! | Le | va | a | encantar.", "Welcome! | (To) you | it's going | to | delight.", "Welcome! You're going to love it."),
     ],
     again_reply: [
-      t("¡Qué | gusto! | Ya | conoce | el | pueblo | entonces.", "How | nice! | Already | you-know | the | town | then.", "Great! So you know the town already."),
+      t("¡Qué | gusto! | Ya | conoce | el | pueblo | entonces.", "How | nice! | Already | you-know | the | town | then.", "Great! So you know the town already.", { spain: t("¡Qué | bien! | Entonces | ya | conoce | el | pueblo.", "How | nice! | Then | already | you-know | the | town.", "Great! So you know the town already.") }),
     ],
     ask_ac: [
       t("¿Le | prendo | el | aire?", "(For) you | I-turn-on | the | AC?", "Want me to turn on the AC?",
-        { flags: { 1: "Mexican: prender = turn on. Elsewhere: encender." }, neutral: t("¿Le | enciendo | el | aire?", "(For) you | I-turn-on | the | AC?", "Want me to turn on the AC?"), spain: t("¿Le | pongo | el | aire?", "(For) you | I-put-on | the | AC?", "Want me to turn on the AC?") }),
+        { flags: { 1: "Mexican: prender = turn on. Elsewhere: encender." }, neutral: t("¿Le | enciendo | el | aire?", "(For) you | I-turn-on | the | AC?", "Want me to turn on the AC?"), spain: t("¿Le | pongo | el | aire?", "(For) you | I-put-on | the | AC?", "Want me to turn on the AC?", { flags: {} }) }),
     ],
     ac_done: [t("Listo.", "Done.", "There you go.", { spain: t("Ya está.", "Done.", "There you go.") })],
     window_ok: [t("Sí, | claro.", "Yes, | sure.", "Sure.")],
@@ -371,15 +371,15 @@ export const taxi: SituationDef = {
     /** On the way. */
     far_ride: [
       t("Está | cerca, | ahorita | llegamos.", "It's | close, | in a moment | we-arrive.", "It's close, we'll be there in a minute.",
-        { flags: { 2: "Mexican: ahorita = in a moment." }, neutral: t("Está | cerca, | ya | casi | llegamos.", "It's | close, | now | almost | we-arrive.", "It's close, we're almost there.") }),
+        { flags: { 2: "Mexican: ahorita = in a moment." }, neutral: t("Está | cerca, | ya | casi | llegamos.", "It's | close, | now | almost | we-arrive.", "It's close, we're almost there."), spain: t("Está | cerca, | ya | casi | llegamos.", "It's | close, | now | almost | we-arrive.", "It's close, we're almost there.", { flags: {} }) }),
     ],
     arrived: [
       t("Ya | llegamos. | ¿Dónde | {m:lo|f:la} | dejo?", "Already | we-arrived. | Where | you | I-leave?", "Here we are. Where should I drop you off?", { flags: { 3: "lo / la: “you” (usted), for a man / a woman." }, spain: t("Ya | hemos llegado. | ¿Dónde | {m:lo|f:la} | dejo?", "Already | we've arrived. | Where | you | I-leave?", "Here we are. Where should I drop you off?", {flags: {3: "lo / la: “you” (usted), for a man / a woman."}}) }),
-      t("Aquí | es. | ¿Le | paro | aquí?", "Here | it-is. | (For) you | I-stop | here?", "This is it. Should I stop here?"),
+      t("Aquí | es. | ¿Le | paro | aquí?", "Here | it-is. | (For) you | I-stop | here?", "This is it. Should I stop here?", { spain: t("Es | aquí. | ¿Paro | aquí?", "It's | here. | Do I stop | here?", "This is it. Should I stop here?") }),
     ],
     /** "No" to stopping here. */
     where_stop: [t("¿Dónde | {m:lo|f:la} | dejo, | entonces?", "Where | you | I-leave, | then?", "Where should I drop you off, then?", { flags: { 1: "lo / la: “you” (usted), for a man / a woman." } })],
-    stopping: [t("Muy | bien.", "Very | good.", "Okay."), t("Perfecto, | aquí | le | paro.", "Perfect, | here | (for) you | I-stop.", "Sure, I'll stop here.")],
+    stopping: [t("Muy | bien.", "Very | good.", "Okay."), t("Perfecto, | aquí | le | paro.", "Perfect, | here | (for) you | I-stop.", "Sure, I'll stop here.", { spain: t("Perfecto, | paro | aquí.", "Perfect, | I-stop | here.", "Sure, I'll stop here.") })],
     say_fare: [
       t("Son | {$fare}, | por favor.", "That's | {$fare}, | please.", "That's {$fare}, please."),
       t("Serían | {$fare}.", "That would be | {$fare}.", "That'll be {$fare}."),
@@ -388,9 +388,9 @@ export const taxi: SituationDef = {
     pay_later: [t("Me | paga | al | llegar.", "(To) me | you-pay | upon | arriving.", "You can pay me when we get there.")],
     cash_only: [
       t("Perdón, | nomás | efectivo.", "Sorry, | only | cash.", "Sorry, cash only.",
-        { flags: { 1: "Mexican: nomás = only." }, neutral: t("Perdón, | solo | efectivo.", "Sorry, | only | cash.", "Sorry, cash only.") }),
+        { flags: { 1: "Mexican: nomás = only." }, neutral: t("Perdón, | solo | efectivo.", "Sorry, | only | cash.", "Sorry, cash only."), spain: t("Lo siento, | solo | efectivo.", "I'm sorry, | only | cash.", "Sorry, cash only.", { flags: {} }) }),
     ],
-    dollars_no: [t("Dólares | no, | {m:joven|f:joven}. | Solo | pesos.", "Dollars | no, | {m:young man|f:young lady}. | Only | pesos.", "No dollars, I'm afraid. Pesos only.")],
+    dollars_no: [t("Dólares | no, | {m:joven|f:joven}. | Solo | pesos.", "Dollars | no, | {m:young man|f:young lady}. | Only | pesos.", "No dollars, I'm afraid. Pesos only.", { spain: t("Dólares | no, | lo siento. | Solo | pesos.", "Dollars | no, | I'm sorry. | Only | pesos.", "No dollars, I'm afraid. Pesos only.") })],
     no_cash: [t("Aquí | cerca | hay | un | cajero; | {m:lo|f:la} | espero.", "Here | near | there's | an | ATM; | you | I-wait.", "There's an ATM near here. I'll wait for you.",
       { flags: { 5: "lo / la: “you” (usted), for a man / a woman." } })],
     change_yes: [t("Sí, | traigo | cambio.", "Yes, | I-carry | change.", "Yes, I've got change.", { spain: t("Sí, | tengo | cambio.", "Yes, | I-have | change.", "Yes, I've got change.") })],
@@ -400,7 +400,7 @@ export const taxi: SituationDef = {
     receipt: [t("Claro, | aquí | tiene | su | recibo.", "Sure, | here | you-have | your | receipt.", "Sure, here's your receipt.")],
     bag_ok: [t("Claro, | yo | le | ayudo.", "Sure, | I | (to) you | I-help.", "Sure, I'll give you a hand.")],
     hurry_ok: [t("No se preocupe, | llegamos | rápido.", "Don't worry, | we-arrive | fast.", "Don't worry, we'll get there fast.")],
-    recommend: [t("El | centro | está | muy | bonito, | y | la | playa | también.", "The | center | is | very | pretty, | and | the | beach | too.", "The town center is really nice, and so is the beach.")],
+    recommend: [t("El | centro | está | muy | bonito, | y | la | playa | también.", "The | center | is | very | pretty, | and | the | beach | too.", "The town center is really nice, and so is the beach.", { spain: t("El | centro | es | muy | bonito, | y | la | playa | también.", "The | center | is | very | pretty, | and | the | beach | too.", "The town center is really nice, and so is the beach.") })],
     bye: [t("¡Que | le | vaya | bien!", "(I hope) | (for) you | it-goes | well!", "Take care!")],
     bye_enjoy: [t("¡Disfrute | Puerto | Colibrí!", "Enjoy | Puerto | Colibrí!", "Enjoy Puerto Colibrí!")],
     unknown_place: [t("Mmm, | no conozco | ese | lugar. | ¿Me | dice | otro?", "Hmm, | I don't know | that | place. | (To) me | you-tell | another?", "Hmm, I don't know that place. Somewhere else?")],
@@ -456,9 +456,9 @@ export const taxi: SituationDef = {
         { id: "st_before", s: t("No, | ya | vine | antes.", "No, | already | I-came | before.", "No, I've been here before.", { spain: t("No, | ya | he venido | antes.", "No, | already | I've come | before.", "No, I've been here before.") }) },
         { id: "e_far", s: t("¿Está | lejos?", "Is it | far?", "Is it far?") },
         { id: "e_long", s: t("¿Cuánto | se hace?", "How much | does it take?", "How long does it take?",
-          { flags: { 1: "Mexican: hacerse = take (time). Elsewhere: tardar." }, neutral: t("¿Cuánto | se tarda?", "How much | does it take?", "How long does it take?") }) },
+          { flags: { 1: "Mexican: hacerse = take (time). Elsewhere: tardar." }, neutral: t("¿Cuánto | se tarda?", "How much | does it take?", "How long does it take?"), spain: t("¿Cuánto | se tarda?", "How much | does it take?", "How long does it take?", { flags: {} }) }) },
         { id: "c_ac", s: t("¿Puede | prender | el | aire?", "Can you | turn on | the | AC?", "Could you turn on the AC?",
-          { flags: { 1: "Mexican: prender = turn on. Elsewhere: encender." }, neutral: t("¿Puede | encender | el | aire?", "Can you | turn on | the | AC?", "Could you turn on the AC?"), spain: t("¿Puede | poner | el | aire?", "Can you | put on | the | AC?", "Could you turn on the AC?") }) },
+          { flags: { 1: "Mexican: prender = turn on. Elsewhere: encender." }, neutral: t("¿Puede | encender | el | aire?", "Can you | turn on | the | AC?", "Could you turn on the AC?"), spain: t("¿Puede | poner | el | aire?", "Can you | put on | the | AC?", "Could you turn on the AC?", { flags: {} }) }) },
         { id: "c_window", s: t("¿Puedo | abrir | la | ventana?", "Can I | open | the | window?", "Can I open the window?") },
       ],
     },

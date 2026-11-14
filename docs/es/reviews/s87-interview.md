@@ -146,3 +146,18 @@ mexicano", "No sé, no en dólares"); "¡Qué buena noticia!" is now a trap for 
 - Checked (fresh reviewer): every twin against its Mexican line (meaning, facts, prices, names), Peninsular wording, the perfect for today's events, tú/usted and vosotros by STYLE.md, glosses, spelling and ¿¡, the Spain transcripts (`--variety=spain --verbose`, untwinned lines read through their neutral fallback) and tests/es/spain.
 - Found: "Seguridad Social, pagas extra y vacaciones": the plural pagas extra are Spain's two extra paychecks, while the job's fact is one December bonus (aguinaldo). "Solo cuénteme un poco de usted…" (solo + imperative) and "¿Me puede contar de alguna vez que trabajó en equipo?" (contar de) had no twin. q_benefits didn't take a Spaniard's ¿Hay pagas extra? / ¿Me dan de alta en la Seguridad Social?
 - Fixed: "…Seguridad Social, paga extra de Navidad y vacaciones" (English: a Christmas bonus, as the Mexican line; merge paga extra); twins "Simplemente cuénteme…" and "¿Me puede hablar de alguna vez en que trabajó en equipo?"; q_benefits takes seguridad social, paga(s) extra, paga de Navidad, de alta en la Seguridad Social, ¿Cuántas pagas…?; Spain corpus +3. Kept: Licenciada, usted both ways, formación, jornada completa, aparcamiento.
+
+## Spain pass 3 (14 Nov 2026)
+
+- Titles: Spain doesn't address people as licenciada / ingeniero. Spain's text says "la señora Salinas" (brooks_name,
+  "Soy la señora Salinas, encantada" for "…, para servirle"; the chip here_see; s88's a_who) and "el señor Montes"
+  (a_boss). The grammar already took "la señora Salinas". The NPC name tags in npcs.ts still read "Licenciada
+  Salinas" / "Ingeniero Montes" (shared file: for the lead).
+- Interview words: "puntos fuertes / puntos débiles / su principal punto débil" (fortalezas / debilidades, all five
+  questions); the chip wk_area "Mi punto débil es la paciencia" (grammar: punto débil, puntos fuertes).
+- "como quiera" (como guste), "Me alegra oír eso" (escuchar), "Lo compruebo y le digo algo" (lo reviso y le aviso),
+  "el día uno del próximo mes" (el primero). Chips: years_since "Desde 2015" (noteSpain), q_none_all "No, eso es todo".
+- Notes on the wrong word: phone (ahorita note on Enseguida). Neutral twins Spain shows, flags: {} or a fitting
+  note: offer_drink[1] (¿Gusta?), ask_about[2] (platicar), ask_years_job / job_been (now: llevar + -ando), nice,
+  ask_weakness[2] (área de oportunidad), a_remote / q_remote (home office), s_ganas (echarle ganas).
+- Merges: puntos fuertes, puntos débiles, punto débil.

@@ -53,6 +53,7 @@ const taskVar = (id: string) => ({ id, qty: byTask(id).attrs?.plural ? 2 : 1 });
 // Helpers
 
 const F_USTEDES = "The ustedes form: talking to the whole team (Latin America never uses vosotros).";
+const F_VOS = "The vosotros form: Spain's plural of tú, talking to the whole team.";
 const F_SUBJ = "tengas: the subjunctive after ¿crees que…?; English says you'll have.";
 const F_EL_DAY = "el + day: Spanish says el viernes where English says (on) Friday.";
 const F_ART_WEEK = "la (próxima semana): Spanish uses the article; English has none.";
@@ -873,16 +874,16 @@ export const videoCall: SituationDef = {
 
   lines: {
     open: [
-      t("¡Hola | a todos! | ¿Me | escuchan | bien?", "Hi | everyone! | Me | do you hear | well?", "Hi, everyone! Can you all hear me okay?", { flags: { 3: F_USTEDES }, spain: t("¡Hola | a todos! | ¿Me | oís | bien?", "Hi | everyone! | Me | do you (all) hear | well?", "Hi, everyone! Can you all hear me okay?") }),
+      t("¡Hola | a todos! | ¿Me | escuchan | bien?", "Hi | everyone! | Me | do you hear | well?", "Hi, everyone! Can you all hear me okay?", { flags: { 3: F_USTEDES }, spain: t("¡Hola | a todos! | ¿Me | oís | bien?", "Hi | everyone! | Me | do you (all) hear | well?", "Hi, everyone! Can you all hear me okay?", { flags: { 3: F_VOS } }) }),
       t("¡Buenos días, | equipo! | ¿Todos | me | escuchan?", "Good morning, | team! | All of you | me | hear?", "Morning, team! Can everyone hear me?",
-        { flags: { 4: "escuchan: plural, agreeing with todos (all of you)." }, spain: t("¡Buenos días, | equipo! | ¿Me | oís | todos?", "Good morning, | team! | Me | do you (all) hear | everyone?", "Morning, team! Can everyone hear me?") }),
-      t("¡Hola! | ¿Me | escuchan? | ¿Me | ven?", "Hi! | Me | do you hear? | Me | do you see?", "Hi! Can you hear me? Can you see me?", { flags: { 2: F_USTEDES }, spain: t("¡Hola! | ¿Me | oís? | ¿Me | veis?", "Hi! | Me | do you (all) hear? | Me | do you (all) see?", "Hi! Can you hear me? Can you see me?") }),
+        { flags: { 4: "escuchan: plural, agreeing with todos (all of you)." }, spain: t("¡Buenos días, | equipo! | ¿Me | oís | todos?", "Good morning, | team! | Me | do you (all) hear | everyone?", "Morning, team! Can everyone hear me?", { flags: { 3: F_VOS } }) }),
+      t("¡Hola! | ¿Me | escuchan? | ¿Me | ven?", "Hi! | Me | do you hear? | Me | do you see?", "Hi! Can you hear me? Can you see me?", { flags: { 2: F_USTEDES }, spain: t("¡Hola! | ¿Me | oís? | ¿Me | veis?", "Hi! | Me | do you (all) hear? | Me | do you (all) see?", "Hi! Can you hear me? Can you see me?", { flags: { 2: F_VOS } }) }),
     ],
     greet_back: [
-      t("¡Hola! | ¿Me | escuchan | bien?", "Hi! | Me | do you hear | well?", "Hi! Can you all hear me okay?", { flags: { 2: F_USTEDES }, spain: t("¡Hola! | ¿Me | oís | bien?", "Hi! | Me | do you (all) hear | well?", "Hi! Can you all hear me okay?") }),
+      t("¡Hola! | ¿Me | escuchan | bien?", "Hi! | Me | do you hear | well?", "Hi! Can you all hear me okay?", { flags: { 2: F_USTEDES }, spain: t("¡Hola! | ¿Me | oís | bien?", "Hi! | Me | do you (all) hear | well?", "Hi! Can you all hear me okay?", { flags: { 2: F_VOS } }) }),
     ],
     hear_reask: [
-      t("¿Me | escuchan | ahora?", "Me | do you hear | now?", "Can you hear me now?", { flags: { 1: F_USTEDES }, spain: t("¿Me | oís | ahora?", "Me | do you (all) hear | now?", "Can you hear me now?") }),
+      t("¿Me | escuchan | ahora?", "Me | do you hear | now?", "Can you hear me now?", { flags: { 1: F_USTEDES }, spain: t("¿Me | oís | ahora?", "Me | do you (all) hear | now?", "Can you hear me now?", { flags: { 1: F_VOS } }) }),
     ],
     hear_ok: [
       t("¡Perfecto!", "Perfect!", "Great!"),
@@ -890,16 +891,17 @@ export const videoCall: SituationDef = {
     ],
     mic_fix: [
       t("Mmm, | déjenme | revisar | el | micrófono. | ¿Y | ahora?", "Hmm, | let me | check | the | microphone. | And | now?", "Hmm, let me check my mic. How about now?",
-        { flags: { 1: "déjenme: let me, said to all of you (ustedes)." }, spain: t("Mmm, | dejadme | mirar | el | micrófono. | ¿Y | ahora?", "Hmm, | let me (you all) | check | the | microphone. | And | now?", "Hmm, let me check my mic. How about now?") }),
+        { flags: { 1: "déjenme: let me, said to all of you (ustedes)." }, spain: t("Mmm, | dejadme | mirar | el | micrófono. | ¿Y | ahora?", "Hmm, | let me (you all) | check | the | microphone. | And | now?", "Hmm, let me check my mic. How about now?", { flags: { 1: "dejadme: let me, said to all of you (vosotros)." } }) }),
     ],
     quiet_fix: [
       t("¡Ay, | perdón! | ¿Así | está | mejor?", "Oh, | sorry! | Like this | is it | better?", "Oh, sorry! Is this better?"),
     ],
     heard_you: [
-      t("¡Sí, | te | escuchamos!", "Yes, | you | we-hear!", "Yes, we can hear you!"),
+      t("¡Sí, | te | escuchamos!", "Yes, | you | we-hear!", "Yes, we can hear you!", { spain: t("¡Sí, | te | oímos!", "Yes, | you | we-hear!", "Yes, we can hear you!") }),
     ],
     heard_but_cam: [
-      t("Sí, | te | escuchamos, | pero | tienes | la | cámara | apagada.", "Yes, | you | we-hear, | but | you-have | the | camera | off.", "Yes, we can hear you, but your camera's off."),
+      t("Sí, | te | escuchamos, | pero | tienes | la | cámara | apagada.", "Yes, | you | we-hear, | but | you-have | the | camera | off.", "Yes, we can hear you, but your camera's off.",
+        { spain: t("Sí, | te | oímos, | pero | tienes | la | cámara | apagada.", "Yes, | you | we-hear, | but | you-have | the | camera | off.", "Yes, we can hear you, but your camera's off.") }),
     ],
     // "¿Me ven?" (the camera is on)
     seen_you: [
@@ -907,7 +909,7 @@ export const videoCall: SituationDef = {
     ],
     // "¿Estoy en silencio?"
     not_muted_you: [
-      t("No, | te | escuchamos | bien.", "No, | you | we-hear | fine.", "No, we can hear you fine."),
+      t("No, | te | escuchamos | bien.", "No, | you | we-hear | fine.", "No, we can hear you fine.", { spain: t("No, | te | oímos | bien.", "No, | you | we-hear | fine.", "No, we can hear you fine.") }),
     ],
     // after a second "no" about the sound: she carries on instead of asking again
     go_on: [
@@ -916,7 +918,9 @@ export const videoCall: SituationDef = {
     ],
     two_minutes: [
       t("Démosle | dos | minutitos | más. | Todavía | hay | gente | conectándose.", "Let's give it | two | little minutes | more. | Still | there are | people | connecting.",
-        "Let's give it two more minutes. A few people are still joining.", { flags: { 2: "minutitos: minutos with the diminutive -itos, friendly and short." } }),
+        "Let's give it two more minutes. A few people are still joining.", { flags: { 2: "minutitos: minutos with the diminutive -itos, friendly and short." },
+          spain: t("Esperemos | dos | minutos | más. | Todavía | hay | gente | conectándose.", "Let's wait | two | minutes | more. | Still | there are | people | connecting.",
+            "Let's give it two more minutes. A few people are still joining.", { flags: {} }) }),
     ],
     weekend_q: [
       t("Oye, | ¿qué tal | tu | fin de semana?", "Hey, | how was | your | weekend?", "So, how was your weekend?"),
@@ -925,7 +929,7 @@ export const videoCall: SituationDef = {
     weekend_good: [
       t("¡Ay, | qué | bien!", "Oh, | how | good!", "Oh, nice!"),
       t("¡Qué | padre!", "How | cool!", "That sounds great!", { flags: { 1: "Mexican: padre = cool, great (elsewhere genial)." },
-        neutral: t("¡Qué | genial!", "How | great!", "That sounds great!"), spain: t("¡Genial!", "Great!", "Awesome!") }),
+        neutral: t("¡Qué | genial!", "How | great!", "That sounds great!"), spain: t("¡Genial!", "Great!", "Awesome!", { flags: {} }) }),
     ],
     weekend_bad: [
       t("¡Ay, | qué | mal! | Bueno, | empieza | una | semana | nueva.", "Oh, | how | bad! | Well, | starts | a | week | new.", "Oh, that's too bad! Well, it's a new week!"),
@@ -947,21 +951,25 @@ export const videoCall: SituationDef = {
       t("¡Sí! | ¡Ya | te | vemos!", "Yes! | Now | you | we-see!", "Yes! There you are!", { flags: { 1: F_YA } }),
     ],
     camera_broken: [
-      t("No te preocupes, | te | escuchamos | bien.", "Don't worry, | you | we-hear | fine.", "No worries, we can hear you."),
+      t("No te preocupes, | te | escuchamos | bien.", "Don't worry, | you | we-hear | fine.", "No worries, we can hear you.", { spain: t("No te preocupes, | te | oímos | bien.", "Don't worry, | you | we-hear | fine.", "No worries, we can hear you.") }),
     ],
     paul_join: [
       t("¡Ah, | aquí | está | Pablo! | ¡Hola, | Pablo!", "Oh, | here | is | Pablo! | Hi, | Pablo!", "Oh, here's Pablo! Hi, Pablo!"),
     ],
     paul_silent: [
       t("¿Pablo? | Pablo... | no te escuchamos | nada.", "Pablo? | Pablo... | we can't hear you | at all.", "Pablo? Pablo... we can't hear you at all.",
-        { flags: { 3: "nada: nothing; after no it means at all (Spanish doubles the negative)." } }),
+        { flags: { 3: "nada: nothing; after no it means at all (Spanish doubles the negative)." },
+          spain: t("¿Pablo? | Pablo... | no te oímos | nada.", "Pablo? | Pablo... | we can't hear you | at all.", "Pablo? Pablo... we can't hear you at all.",
+            { flags: { 3: "nada: nothing; after no it means at all (Spanish doubles the negative)." } }) }),
       // the second time she asks (the variants take turns, so never the same line twice in a row)
       t("Pablo, | ¿estás | ahí? | No se oye | nada.", "Pablo, | are you | there? | It isn't heard | anything.", "Pablo, are you there? We can't hear anything.",
         { flags: { 3: "no se oye: impersonal se, nothing can be heard.", 4: "nada: nothing; after no it means anything (Spanish doubles the negative)." } }),
     ],
     not_muted_resp: [
       t("Mmm, | yo | no lo escucho. | Su | micrófono | está | en | rojo.", "Hmm, | I | don't hear him. | His | microphone | is | in | red.", "Hmm, I can't hear him. His mic is red.",
-        { flags: { 7: "en rojo: red, the muted-mic icon." } }),
+        { flags: { 7: "en rojo: red, the muted-mic icon." },
+          spain: t("Mmm, | yo | no lo oigo. | Su | micrófono | está | en | rojo.", "Hmm, | I | don't hear him. | His | microphone | is | in | red.", "Hmm, I can't hear him. His mic is red.",
+            { flags: { 7: "en rojo: red, the muted-mic icon." } }) }),
     ],
     mute_amb: [
       t("Perdón, | ¿Pablo | está | en silencio | o | no?", "Sorry, | Pablo | is | on mute | or | not?", "Sorry, is Pablo on mute or not?"),
@@ -992,10 +1000,10 @@ export const videoCall: SituationDef = {
     ],
     screen_share: [
       t("Bueno, | empecemos. | Les | comparto | mi | pantalla.", "Okay, | let's start. | (With) you | I-share | my | screen.", "Okay, let's get started. I'm going to share my screen.",
-        { flags: { 2: "les: (with) you all (ustedes)." }, spain: t("Bueno, | empezamos. | Os | comparto | mi | pantalla.", "Well, | let's start. | (To) you (all) | I share | my | screen.", "Okay, let's get started. I'm going to share my screen.") }),
+        { flags: { 2: "les: (with) you all (ustedes)." }, spain: t("Bueno, | empezamos. | Os | comparto | mi | pantalla.", "Well, | let's start. | (To) you (all) | I share | my | screen.", "Okay, let's get started. I'm going to share my screen.", { flags: { 2: "os: (with) you all (vosotros)." } }) }),
     ],
     screen_q: [
-      t("¿Todos | ven | mi | pantalla?", "All of you | see | my | screen?", "Can everyone see my screen?", { flags: { 1: F_USTEDES }, spain: t("¿Veis | todos | mi | pantalla?", "Do you see | everyone | my | screen?", "Can everyone see my screen?") }),
+      t("¿Todos | ven | mi | pantalla?", "All of you | see | my | screen?", "Can everyone see my screen?", { flags: { 1: F_USTEDES }, spain: t("¿Veis | todos | mi | pantalla?", "Do you see | everyone | my | screen?", "Can everyone see my screen?", { flags: { 0: F_VOS } }) }),
       t("¿Ya | la | ven?", "Now | it | do you see?", "Can you all see it?", { flags: { 1: "la: it, la pantalla (the screen)." }, spain: t("¿Ya | la | veis?", "Now | it | do you (all) see?", "Can you all see it?", { flags: { 1: "la: it, la pantalla (the screen)." } }) }),
     ],
     screen_retry: [
@@ -1030,7 +1038,7 @@ export const videoCall: SituationDef = {
     ],
     freeze_fix: [
       t("¡Perdón! | Hoy | el | internet | está | horrible. | ¿Ya | me | escuchan?", "Sorry! | Today | the | internet | is | terrible. | Now | me | do you hear?",
-        "Sorry about that! My Wi-Fi is terrible today. Can you hear me now?", { flags: { 6: F_YA }, spain: t("¡Perdón! | Hoy | internet | va | fatal. | ¿Ya | me | oís?", "Sorry! | Today | the internet | is going | terribly. | Now | me | do you (all) hear?", "Sorry about that! My Wi-Fi is terrible today. Can you hear me now?") }),
+        "Sorry about that! My Wi-Fi is terrible today. Can you hear me now?", { flags: { 6: F_YA }, spain: t("¡Perdón! | Hoy | internet | va | fatal. | ¿Ya | me | oís?", "Sorry! | Today | the internet | is going | terribly. | Now | me | do you (all) hear?", "Sorry about that! My Wi-Fi is terrible today. Can you hear me now?", { flags: { 5: F_YA } }) }),
     ],
     freeze_missed: [
       t("¡Perdón, | me congelé! | ¿Qué | me | decías?", "Sorry, | I froze! | What | (to) me | were you saying?", "Sorry, I froze! What were you saying?",
@@ -1109,7 +1117,7 @@ export const videoCall: SituationDef = {
     upd_ok_resp: [
       t("¡Qué | bueno! | ¿Y | en qué | estás | trabajando | ahorita?", "How | good! | And | on what | are you | working | right now?", "Good to hear! What are you working on right now?",
         { flags: { 6: F_AHORITA },
-          neutral: t("¡Qué | bueno! | ¿Y | en qué | estás | trabajando | ahora?", "How | good! | And | on what | are you | working | now?", "Good to hear! What are you working on right now?"), spain: t("¡Qué | bien! | ¿Y | en qué | estás | trabajando | ahora?", "How | great! | And | on what | are you | working | now?", "Good to hear! What are you working on right now?") }),
+          neutral: t("¡Qué | bueno! | ¿Y | en qué | estás | trabajando | ahora?", "How | good! | And | on what | are you | working | now?", "Good to hear! What are you working on right now?"), spain: t("¡Qué | bien! | ¿Y | en qué | estás | trabajando | ahora?", "How | great! | And | on what | are you | working | now?", "Good to hear! What are you working on right now?", { flags: {} }) }),
     ],
     // a status without the task: Sofía asks what it is (the same words as in s34, the same team in person)
     upd_problem_resp: [
@@ -1164,7 +1172,7 @@ export const videoCall: SituationDef = {
         "Sorry, guys, I have to jump off. I have another meeting at eleven.",
         { flags: { 5: F_JUNTA },
           neutral: t("Perdón, | chicos, | me tengo que ir. | Tengo | otra | reunión | a las once.", "Sorry, | guys, | I have to go. | I-have | another | meeting | at eleven.",
-            "Sorry, guys, I have to jump off. I have another meeting at eleven.") }),
+            "Sorry, guys, I have to jump off. I have another meeting at eleven.", { flags: {} }) }),
     ],
     bye_paul_kate: [
       t("¡Adiós, | Pablo!", "Bye, | Pablo!", "Bye, Pablo!"),
@@ -1222,7 +1230,10 @@ export const videoCall: SituationDef = {
     closing: [
       t("Bueno, | es | todo | por hoy. | ¡Gracias | a todos! | ¿Nos vemos | a | la | misma | hora | la | próxima | semana?",
         "Okay, | it's | all | for today. | Thanks | everyone! | We'll see each other | at | the | same | time | — | next | week?",
-        "Okay, that's all for today. Thanks, everyone! Same time next week?", { flags: { 11: F_ART_WEEK } }),
+        "Okay, that's all for today. Thanks, everyone! Same time next week?", { flags: { 11: F_ART_WEEK },
+          spain: t("Bueno, | eso | es | todo | por hoy. | ¡Gracias | a todos! | ¿Nos vemos | a | la | misma | hora | la | próxima | semana?",
+            "Okay, | that | is | all | for today. | Thanks | everyone! | We'll see each other | at | the | same | time | — | next | week?",
+            "Okay, that's all for today. Thanks, everyone! Same time next week?", { flags: { 12: F_ART_WEEK } }) }),
     ],
     vacation_ok: [
       t("¡Ah, | no hay problema! | Te | mando | las | notas.", "Oh, | no problem! | (To) you | I-send | the | notes.", "Oh, no problem! I'll send you the notes."),
@@ -1256,7 +1267,7 @@ export const videoCall: SituationDef = {
       t("Este... | ¡sigues | con | la | cámara | prendida!", "Um... | you're still | with | the | camera | on!", "Um... your camera's still on!",
         { flags: { 0: "este: a filler, like um.", 5: "Mexican: prendida = on (prender = to turn on); elsewhere encendida." },
           neutral: t("Este... | ¡sigues | con | la | cámara | encendida!", "Um... | you're still | with | the | camera | on!", "Um... your camera's still on!",
-            { flags: { 0: "este: a filler, like um." } }), spain: t("Eh... | ¡sigues | con | la | cámara | encendida!", "Um... | you're still | with | the | camera | on!", "Um... your camera's still on!") }),
+            { flags: { 0: "este: a filler, like um." } }), spain: t("Eh... | ¡sigues | con | la | cámara | encendida!", "Um... | you're still | with | the | camera | on!", "Um... your camera's still on!", { flags: {} }) }),
     ],
     sara_laugh: [
       t("¡Jaja! | No te preocupes. | ¡Adiós!", "Ha ha! | Don't worry. | Bye!", "Ha! No worries. Bye!"),
@@ -1274,19 +1285,22 @@ export const videoCall: SituationDef = {
     hear: {
       lt: "Say whether you can hear Sofía",
       items: [
-        { id: "h_yes", s: t("Sí, | te | escucho | bien.", "Yes, | you | I-hear | well.", "Yes, I can hear you fine.") },
+        { id: "h_yes", s: t("Sí, | te | escucho | bien.", "Yes, | you | I-hear | well.", "Yes, I can hear you fine.", { spain: t("Sí, | te | oigo | bien.", "Yes, | you | I-hear | well.", "Yes, I can hear you fine.") }),
+          noteSpain: "Oír: to hear (te oigo); Spain keeps escuchar for listening on purpose." },
         { id: "h_loud", s: t("¡Sí, | fuerte y claro!", "Yes, | loud and clear!", "Yes, loud and clear!") },
-        { id: "h_morning", s: t("¡Buenos días, | Sofía! | Sí, | te | escuchamos.", "Good morning, | Sofía! | Yes, | you | we-hear.", "Morning, Sofía! Yes, we can hear you.") },
+        { id: "h_morning", s: t("¡Buenos días, | Sofía! | Sí, | te | escuchamos.", "Good morning, | Sofía! | Yes, | you | we-hear.", "Morning, Sofía! Yes, we can hear you.",
+          { spain: t("¡Buenos días, | Sofía! | Sí, | te | oímos.", "Good morning, | Sofía! | Yes, | you | we-hear.", "Morning, Sofía! Yes, we can hear you.") }) },
         { id: "h_quiet", s: t("Perdón, | se escucha | muy | bajito.", "Sorry, | it sounds | very | quiet.", "Sorry, you sound really quiet.", { spain: t("Perdón, | se oye | muy | bajito.", "Sorry, | it sounds | very | quiet.", "Sorry, you sound really quiet.") }),
           note: "Bajito: quiet, low (bajo with the friendly -ito)." },
-        { id: "h_cant", s: t("Perdón, | no te escucho.", "Sorry, | I can't hear you.", "Sorry, I can't hear you.") },
+        { id: "h_cant", s: t("Perdón, | no te escucho.", "Sorry, | I can't hear you.", "Sorry, I can't hear you.", { spain: t("Perdona, | no te oigo.", "Sorry, | I can't hear you.", "Sorry, I can't hear you.") }) },
         { id: "q_hear_me", s: t("¿Me | escuchan?", "Me | do you hear?", "Can you hear me?", { spain: t("¿Me | oís?", "Me | do you (all) hear?", "Can you hear me?") }), note: "Escuchan: to the whole team (ustedes).", noteSpain: "Oís: to the whole team (vosotros)." },
       ],
     },
     hear_now: {
       lt: "Say whether you can hear now",
       items: [
-        { id: "ph_yes", s: t("Sí, | ya | te | escucho.", "Yes, | now | you | I-hear.", "Yes, I can hear you now.", { flags: { 1: F_YA } }) },
+        { id: "ph_yes", s: t("Sí, | ya | te | escucho.", "Yes, | now | you | I-hear.", "Yes, I can hear you now.", { flags: { 1: F_YA },
+          spain: t("Sí, | ya | te | oigo.", "Yes, | now | you | I-hear.", "Yes, I can hear you now.", { flags: { 1: F_YA } }) }) },
         { id: "h_loud", s: t("¡Sí, | fuerte y claro!", "Yes, | loud and clear!", "Yes, loud and clear!") },
         { id: "h_better", s: t("Sí, | mucho | mejor.", "Yes, | much | better.", "Yes, much better.") },
       ],
@@ -1303,7 +1317,7 @@ export const videoCall: SituationDef = {
       lt: "Tell Pablo he's on mute",
       items: [
         { id: "m_on_mute", s: t("¡Pablo, | estás | en silencio!", "Pablo, | you're | on mute!", "Pablo, you're on mute!") },
-        { id: "m_cant_hear", s: t("Pablo, | no te escuchamos.", "Pablo, | we can't hear you.", "Pablo, we can't hear you.") },
+        { id: "m_cant_hear", s: t("Pablo, | no te escuchamos.", "Pablo, | we can't hear you.", "Pablo, we can't hear you.", { spain: t("Pablo, | no te oímos.", "Pablo, | we can't hear you.", "Pablo, we can't hear you.") }) },
         { id: "m_click", s: t("¡Dale | clic | al | micrófono!", "Give it | a click | on the | microphone!", "Click the microphone button!", { spain: t("¡Dale | al | micrófono!", "Hit | on the | microphone!", "Click the mic!") }),
           note: "Mexicans also say “Pícale al micrófono”." },
         { id: "m_think", s: t("Creo | que | estás | en silencio.", "I-think | that | you're | on mute.", "I think you're muted.") },
@@ -1314,7 +1328,8 @@ export const videoCall: SituationDef = {
     paul_hear: {
       lt: "Tell Pablo whether you can hear him now",
       items: [
-        { id: "ph_yes", s: t("¡Sí, | ya | te | escuchamos!", "Yes, | now | you | we-hear!", "Yes, we can hear you now!", { flags: { 1: F_YA } }) },
+        { id: "ph_yes", s: t("¡Sí, | ya | te | escuchamos!", "Yes, | now | you | we-hear!", "Yes, we can hear you now!", { flags: { 1: F_YA },
+          spain: t("¡Sí, | ya | te | oímos!", "Yes, | now | you | we-hear!", "Yes, we can hear you now!", { flags: { 1: F_YA } }) }) },
         { id: "h_loud", s: t("¡Sí, | fuerte y claro!", "Yes, | loud and clear!", "Yes, loud and clear!") },
         { id: "ph_no", s: t("No, | todavía | nada.", "No, | still | nothing.", "No, still nothing.") },
       ],
@@ -1404,7 +1419,8 @@ export const videoCall: SituationDef = {
       lt: "Ask something, or say you have no questions",
       items: [
         { id: "q_slides", s: t("¿Nos | puedes | mandar | las | diapositivas?", "(To) us | can you | send | the | slides?", "Could you send us the slides?") },
-        { id: "q_link", s: t("¿Puedes | compartir | el | link?", "Can you | share | the | link?", "Could you share the link?"), note: "El enlace is the neutral word; el link is what offices say." },
+        { id: "q_link", s: t("¿Puedes | compartir | el | link?", "Can you | share | the | link?", "Could you share the link?", { spain: t("¿Puedes | compartir | el | enlace?", "Can you | share | the | link?", "Could you share the link?") }),
+          note: "El enlace is the neutral word; el link is what offices say.", noteSpain: "El enlace: the link (offices also say el link)." },
         { id: "q_deadline", s: t("¿Cuál | es | la | fecha límite?", "Which | is | the | deadline?", "When's the deadline?") },
         { id: "q_back", s: t("¿Puedes | regresar | a | la | diapositiva | anterior?", "Can you | go back | to | the | slide | previous?", "Could you go back to the last slide?", { spain: t("¿Puedes | volver | a | la | diapositiva | anterior?", "Can you | go back | to | the | slide | previous?", "Could you go back to the last slide?") }) },
         { id: "q_none", s: t("Ninguna | pregunta | de mi parte.", "No | question | from me.", "No questions from me.") },
@@ -1413,7 +1429,7 @@ export const videoCall: SituationDef = {
     no_more: {
       lt: "Say you have no more questions",
       items: [
-        { id: "q_none", s: t("No, | es | todo.", "No, | it's | all.", "No, that's all.") },
+        { id: "q_none", s: t("No, | es | todo.", "No, | it's | all.", "No, that's all.", { spain: t("No, | eso | es | todo.", "No, | that | is | all.", "No, that's all.") }) },
         { id: "no_thanks", s: t("No, | gracias.", "No, | thanks.", "No, thanks.") },
         { id: "q_none", s: t("Ninguna | pregunta | de mi parte.", "No | question | from me.", "No questions from me.") },
       ],
@@ -1425,7 +1441,7 @@ export const videoCall: SituationDef = {
           "Sorry, I have to jump off. I have another meeting at eleven.",
           { flags: { 5: F_JUNTA },
             neutral: t("Perdón, | me tengo que | desconectar. | Tengo | otra | reunión | a las once.", "Sorry, | I have to | disconnect. | I-have | another | meeting | at eleven.",
-              "Sorry, I have to jump off. I have another meeting at eleven.") }) },
+              "Sorry, I have to jump off. I have another meeting at eleven.", { flags: {} }) }) },
         { id: "need_leave", s: t("Perdón, | me tengo que ir.", "Sorry, | I have to go.", "Sorry, I need to leave.") },
       ],
     },

@@ -182,3 +182,16 @@ type_which, ack_not_type, and the entity: attrs.neutral "cuenta | corriente" wit
 checking", which the composer now reads: src/editions/es/convo/target.ts `neutralNoun`). México keeps cuenta de débito; the
 debit card stays tarjeta de débito everywhere. "Corriente" / "cuenta corriente" understood in every set; "Una cuenta
 corriente (de débito) y una de ahorro" at the type question is now both (it recorded savings). NLU tests +7, Spain corpus +2.
+
+## Spain pass 3 (14 Nov 2026)
+
+8 twins added, 4 changed, 5 given their own flags.
+
+- **Phrases:** ¿Cómo le va? → ¿Qué tal está?; cuando guste → cuando quiera; ¡Ya quedó! → ¡Ya está!; Seguramente fue eso
+  → ha sido eso (it just happened); el dueño de su casa → el propietario.
+- **Chips:** No, es todo → No, nada más, gracias (grammar credits it); Eso sería todo por hoy → Eso es todo por hoy;
+  ¿Me presta un bolígrafo? keeps its words but loses the "pluma" note.
+- **Notes:** ¿Qué se le ofrece?, traer, pluma, ahorita, servicios and "anda lento" notes no longer land on Spain's
+  words; ex_rate noteSpain (not only Mexican).
+- Kept: ¿Me permite…? (formal and usual at a Spanish bank counter too), the NIP notes (marked Mexican), CURP, CLABE.
+- Spain corpus: 2 items added.

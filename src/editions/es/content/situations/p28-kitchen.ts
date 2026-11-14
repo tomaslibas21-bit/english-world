@@ -403,6 +403,7 @@ export const kitchen: SituationDef = {
       "no lo (habia | había) pensado [@fa] #h:hadnt_that", "no (habia | había) pensado en (eso | la tortilla | el habanero | @cruj)",
       "(buena | muy buena | gran | excelente | interesante) idea [@chef | @fa] [lo voy a probar | la voy a probar | lo pruebo | la pruebo] #h:good_idea",
       "(buen | muy buen | gran) punto [@fa] [lo voy a probar | lo pruebo] #h:good_point",
+      "tienes razon [@fa] (lo voy a probar | lo pruebo) #h:good_point",
       "que (buena | gran | interesante) idea",
       "(lo | la) (pruebo | voy a probar | intento | voy a intentar) de las dos (maneras | formas) #h:try_both",
       "(lo | la) (voy a probar | pruebo | intento) [con @cruj] [hoy | esta noche]",
@@ -507,7 +508,7 @@ export const kitchen: SituationDef = {
       "todo (esta | va a estar | va a salir) bien",
       "no (seas | te pongas) tan dura contigo [misma]",
       "(huele | se ve) [muy | super]? (delicioso | rico | bien | increible | buenisimo) #h:smells_great",
-      "que (rico | bien) huele", "no (tienes que | hay por que) (preocuparte | disculparte | pedir perdon)",
+      "que (rico | bien) huele #h:smells_great", "no (tienes que | hay por que) (preocuparte | disculparte | pedir perdon)",
       "nadie te va a (gritar | reganar)", "vas a estar bien", "no pidas perdon",
       "seguro que (esta | quedó | quedo) (rico | bueno | bien | delicioso)", "(que | tiene) (buena | muy buena) pinta", "no pasa nada",
       "no digas eso [seguro (que)? (esta | quedó | quedo) (rico | bueno | bien | delicioso)]",
@@ -653,7 +654,7 @@ export const kitchen: SituationDef = {
       "muy poquito", "(pruebalo | prueba | ve probando) mientras (le pones | le echas | lo haces) #gradual",
     ] },
     encourage: { patterns: [
-      "(ya lo vas a lograr | ya te va a salir | lo vas a lograr | lo vas a hacer muy bien) [@fa] #h:get_there",
+      "(ya lo vas a lograr | ya te va a salir | lo vas a lograr | lo vas a hacer muy bien | ya lo conseguiras | lo conseguiras | ya te saldra) [@fa] #h:get_there",
       "[no te preocupes | no se preocupe | no pasa nada | tranquila | no te agobies] (es | apenas es) (tu | su) primera semana #h:first_week",
       // "Es que… no quiero quedar mal con el chef." – "No vas a quedar mal."
       "no vas a quedar mal [con (el chef | nadie)]", "(al chef | el chef | a el) le va a (gustar | encantar)", "le va a (gustar | encantar) al chef",
@@ -671,7 +672,7 @@ export const kitchen: SituationDef = {
       "(es | eso es) normal [@first]", "(el sabor | la calidad) importa mas que la (rapidez | velocidad)",
       "no te compares [con (los demas | nadie)]", "todos empezamos (asi | de cero)",
       "vas bien", "(animo | mucho animo)",
-      "(no te preocupes | no pasa nada | tranquila) [@fa] (vas [muy | super] bien | lo estas haciendo [muy | super] bien | ya lo vas a lograr | vas a mejorar)",
+      "(no te preocupes | no pasa nada | tranquila) [@fa] (vas [muy | super] bien | lo estas haciendo [muy | super] bien | ya lo vas a lograr | ya lo conseguiras | vas a mejorar)",
       "[pero] [con (el tiempo | la practica)] vas a (mejorar | ser mas rapida) [con (el tiempo | la practica)]", "todos (fuimos | hemos sido) (nuevos | nuevas | principiantes)", "(poco a poco | paso a paso) vas a (mejorar | ser mas rapida)",
     ] },
     rush: { patterns: [
@@ -702,18 +703,20 @@ export const kitchen: SituationDef = {
   lines: {
     // --- the chef: the chowder -------------------------------------------------------------
     greet: [
-      t("Ahí | estás. | A ver, | ¿qué | traes?", "There | you-are. | Let's see, | what | are-you-bringing?", "There you are. So, what have you got?"),
+      t("Ahí | estás. | A ver, | ¿qué | traes?", "There | you-are. | Let's see, | what | are-you-bringing?", "There you are. So, what have you got?",
+        { spain: t("Ahí | estás. | A ver, | ¿qué | me | traes?", "There | you-are. | Let's see, | what | (to) me | are-you-bringing?", "There you are. So, what have you got?") }),
       t("Bueno, | a ver | qué | tienes.", "Okay, | let's see | what | you-have.", "Okay, let's see what you've got."),
     ],
     greet_back: [
-      t("¿Otra vez | por | más | comentarios? | A ver, | ¿qué | traes?", "Again | for | more | feedback? | Let's see, | what | are-you-bringing?", "Back for more feedback? So, what have you got?"),
+      t("¿Otra vez | por | más | comentarios? | A ver, | ¿qué | traes?", "Again | for | more | feedback? | Let's see, | what | are-you-bringing?", "Back for more feedback? So, what have you got?",
+        { spain: t("¿Otra vez | por | más | comentarios? | A ver, | ¿qué | me | traes?", "Again | for | more | feedback? | Let's see, | what | (to) me | are-you-bringing?", "Back for more feedback? So, what have you got?") }),
     ],
     serve_again: [
       t("¿Y? | ¿Me | vas | a | dejar | probarlo, | o | nomás | lo | vas | a | admirar?", "So? | Me | you're-going | to | let | taste it, | or | just | it | you're-going | to | admire?",
         "So? Are you going to let me taste it, or just admire it?",
         { flags: { 7: "Mexican: nomás = just." },
           neutral: t("¿Y? | ¿Me | vas | a | dejar | probarlo, | o | solo | lo | vas | a | admirar?", "So? | Me | you're-going | to | let | taste it, | or | just | it | you're-going | to | admire?",
-            "So? Are you going to let me taste it, or just admire it?") }),
+            "So? Are you going to let me taste it, or just admire it?", { flags: {} }) }),
     ],
     serve_take: [t("Ay, | a ver, | dámelo.", "Oh, | let's see, | give it to me.", "Oh, just hand it over.")],
     dish_react: [
@@ -759,7 +762,7 @@ export const kitchen: SituationDef = {
         "You don't have to agree. Just tell me what you think.",
         { flags: { 4: "Mexican: nomás = just." },
           neutral: t("No tienes | que | estar | de acuerdo. | Solo | dime | qué | piensas.", "You don't have | to | be | in agreement. | Just | tell me | what | you-think.",
-            "You don't have to agree. Just tell me what you think.") }),
+            "You don't have to agree. Just tell me what you think.", { flags: {} }) }),
     ],
     defensive_family: [
       t("Seguro | la | receta | de | tu | abuela | es | perfecta. | Pero | hoy | en | la | noche | se lo | van | a | comer | desconocidos.",
@@ -812,7 +815,7 @@ export const kitchen: SituationDef = {
     again_prompt: [
       t("Ándale, | ajústalo. | Aquí | te | espero.", "Go on, | adjust it. | Here | you | I'll-wait-for.", "Go ahead, adjust it. I'll wait.",
         { flags: { 0: "Mexican: ándale = go on." },
-          neutral: t("Anda, | ajústalo. | Aquí | te | espero.", "Go on, | adjust it. | Here | you | I'll-wait-for.", "Go ahead, adjust it. I'll wait.") }),
+          neutral: t("Anda, | ajústalo. | Aquí | te | espero.", "Go on, | adjust it. | Here | you | I'll-wait-for.", "Go ahead, adjust it. I'll wait.", { flags: {} }) }),
     ],
     again_auto: [t("A ver, | déjame | probarlo | otra vez.", "Let's see, | let me | taste it | again.", "Here, let me taste it again.")],
     // "¿Cuánto le pongo?" / "¿Limón o vino blanco?" after the example: a short reminder, then he waits
@@ -871,7 +874,7 @@ export const kitchen: SituationDef = {
     handoff_yes: [
       t("Gracias. | ¡Fátima! | Ven | tantito.", "Thanks. | Fátima! | Come | a little bit.", "Thanks. Fátima! Come here a sec.",
         { flags: { 3: "Mexican: tantito = a little bit (here: a moment)." },
-          neutral: t("Gracias. | ¡Fátima! | Ven | un | momento.", "Thanks. | Fátima! | Come | a | moment.", "Thanks. Fátima! Come here a sec.") }),
+          neutral: t("Gracias. | ¡Fátima! | Ven | un | momento.", "Thanks. | Fátima! | Come | a | moment.", "Thanks. Fátima! Come here a sec.", { flags: {} }) }),
     ],
     handoff_anyway: [t("Ya | es | tarde. | ¡Fátima! | Ven | un | momento.", "Already | it's | late. | Fátima! | Come | a | moment.", "Too late. Fátima! Come here a sec.")],
     handoff_no: [
@@ -905,16 +908,18 @@ export const kitchen: SituationDef = {
       t("Buen | trabajo, | {m:los dos|f:las dos}. | En | una | hora | empieza | el | servicio. | Prueben | todo | otra vez | antes.",
         "Good | work, | both of you. | In | an | hour | starts | the | service. | Taste | everything | again | before (then).",
         "Good work, both of you. Service starts in an hour. Taste everything again before then.",
-        { flags: { 2: "los dos: a man and a woman (las dos: two women).", 9: "Prueben: ustedes, to both of you." }, spain: t("Buen | trabajo, | {m:los dos|f:las dos}. | En | una | hora | empieza | el | servicio. | Probad | todo | otra vez | antes.", "Good | work, | both of you. | In | an | hour | starts | the | service. | Taste (you all) | everything | again | before (then).", "Good work, both of you. Service starts in an hour. Taste everything again before then.") }),
+        { flags: { 2: "los dos: a man and a woman (las dos: two women).", 9: "Prueben: ustedes, to both of you." }, spain: t("Buen | trabajo, | {m:los dos|f:las dos}. | En | una | hora | empieza | el | servicio. | Probadlo | todo | otra vez | antes.", "Good | work, | both of you. | In | an | hour | starts | the | service. | Taste-it (you all) | all | again | before (then).", "Good work, both of you. Service starts in an hour. Taste everything again before then.",
+          { flags: { 2: "los dos: a man and a woman (las dos: two women).", 9: "Probadlo: vosotros, to both of you; lo … todo = everything." } }) }),
     ],
     closing_partial: [
       t("No está | mal | para | una | tarde. | Mañana | probamos | todo | otra vez.", "It's not | bad | for | an | afternoon. | Tomorrow | we-taste | everything | again.",
-        "Not bad for one afternoon. Tomorrow we taste it all again."),
+        "Not bad for one afternoon. Tomorrow we taste it all again.",
+        { spain: t("No está | mal | para | una | tarde. | Mañana | lo | probamos | todo | otra vez.", "It's not | bad | for | an | afternoon. | Tomorrow | it | we-taste | all | again.", "Not bad for one afternoon. Tomorrow we taste it all again.") }),
     ],
     closing_reply: [
       t("Ándale. | Y | apunta | ese | chowder | en | el | pizarrón.", "Go on. | And | write down | that | chowder | on | the | board.", "Go on. And put that chowder on the specials board.",
         { flags: { 0: "Mexican: ándale = go on.", 7: "Mexican: pizarrón = board (elsewhere: pizarra)." },
-          neutral: t("Anda. | Y | apunta | ese | chowder | en | la | pizarra.", "Go on. | And | write down | that | chowder | on | the | board.", "Go on. And put that chowder on the specials board.") }),
+          neutral: t("Anda. | Y | apunta | ese | chowder | en | la | pizarra.", "Go on. | And | write down | that | chowder | on | the | board.", "Go on. And put that chowder on the specials board.", { flags: {} }) }),
     ],
     bye_early: [
       t("¿Ya | te vas? | El | chowder | no se va | a | arreglar | solo.", "Already | you're-leaving? | The | chowder | isn't going | to | fix itself | alone.",
@@ -925,7 +930,7 @@ export const kitchen: SituationDef = {
     mia_hi: [
       t("Hola. | Este... | el | chef | dijo | que | ibas | a | probar | mi | ceviche. | Perdón. | Seguro | está | horrible.",
         "Hi. | Um... | The | chef | said | that | you-were-going | to | taste | my | ceviche. | Sorry. | Surely | it's | terrible.",
-        "Hi. Um… Chef said you'd taste my ceviche. Sorry. It's probably terrible.", { flags: { 1: "este…: “um”, a filler while you think." }, spain: t("Hola. | Eh... | el | chef | ha dicho | que | ibas | a | probar | mi | ceviche. | Perdón. | Seguro que | está | horrible.", "Hi. | Um... | The | chef | has said | that | you-were-going | to | taste | my | ceviche. | Sorry. | Surely | it's | terrible.", "Hi. Um… Chef said you'd taste my ceviche. Sorry. It's probably terrible.") }),
+        "Hi. Um… Chef said you'd taste my ceviche. Sorry. It's probably terrible.", { flags: { 1: "este…: “um”, a filler while you think." }, spain: t("Hola. | Eh... | el | chef | ha dicho | que | ibas | a | probar | mi | ceviche. | Perdón. | Seguro que | está | horrible.", "Hi. | Um... | The | chef | has said | that | you-were-going | to | taste | my | ceviche. | Sorry. | Surely | it's | terrible.", "Hi. Um… Chef said you'd taste my ceviche. Sorry. It's probably terrible.", { flags: { 1: "eh…: “um”, a filler while you think." } }) }),
     ],
     mia_hi_nice: [
       t("Hola. | Bueno, | este... | aquí | está | mi | ceviche. | Porfa, | no seas | dur{m:o|f:a} | conmigo.",
@@ -1175,7 +1180,7 @@ export const kitchen: SituationDef = {
       lt: "Calm Fátima down",
       items: [
         { id: "dont_worry", s: t("No te preocupes, | seguro | está | rico.", "Don't worry, | surely | it's | tasty.", "Don't worry, I'm sure it's good.", { flags: { 3: F_RICO }, spain: t("No te preocupes, | seguro que | está | rico.", "Don't worry, | surely | it's | tasty.", "Don't worry, I'm sure it's good.", { flags: { 3: F_RICO } }) }) },
-        { id: "smells_great", s: t("¡Huele | delicioso!", "It-smells | delicious!", "It smells great!") },
+        { id: "smells_great", s: t("¡Huele | delicioso!", "It-smells | delicious!", "It smells great!", { spain: t("¡Qué | bien | huele!", "How | well | it-smells!", "It smells great!") }) },
         { id: "no_stress", s: t("Tranquila. | Es | solo | un | ceviche.", "Relax. | It's | only | a | ceviche.", "Relax. It's just ceviche.") },
       ],
     },
@@ -1212,15 +1217,17 @@ export const kitchen: SituationDef = {
       items: [
         { id: "just_little", s: t("Nada más | un | poquito.", "Just | a | little.", "Just a little.", { spain: t("Solo | un | poquito.", "Just | a | little.", "Just a little.") }) },
         { id: "just_pinch", s: t("Una | pizca, | nada más.", "A | pinch, | just.", "Just a pinch.") },
-        { id: "start_little", s: t("Empieza | con | poquito | y | vuelve | a | probar.", "Start | with | a little | and | go-back | to | taste.", "Start with a little, then taste it again.") },
+        { id: "start_little", s: t("Empieza | con | poquito | y | vuelve | a | probar.", "Start | with | a little | and | go-back | to | taste.", "Start with a little, then taste it again.",
+          { spain: t("Empieza | con | poco | y | vuelve | a | probar.", "Start | with | a little | and | go-back | to | taste.", "Start with a little, then taste it again.") }) },
         { id: "little_at_time", s: t("Poco a poco.", "Little by little.", "A little at a time.") },
       ],
     },
     mia_encourage: {
       lt: "Encourage Fátima",
       items: [
-        { id: "get_there", s: t("Ya | lo | vas | a | lograr.", "Soon | it | you're-going | to | manage.", "You'll get there.", { flags: { 0: "ya with a future: you'll see." } }),
-          note: "From the song. In Mexico you'll also hear “¡Échale ganas!”: keep at it." },
+        { id: "get_there", s: t("Ya | lo | vas | a | lograr.", "Soon | it | you're-going | to | manage.", "You'll get there.", { flags: { 0: "ya with a future: you'll see." },
+          spain: t("Ya | lo | conseguirás.", "Soon | it | you'll-manage.", "You'll get there.", { flags: { 0: "ya with a future: you'll see." } }) }),
+          note: "From the song. In Mexico you'll also hear “¡Échale ganas!”: keep at it.", noteSpain: "From the song. You'll also hear “¡Ánimo!”: keep at it." },
         { id: "first_week", s: t("No te preocupes, | es | tu | primera | semana.", "Don't worry, | it's | your | first | week.", "Don't worry, it's your first week.") },
         { id: "slow_too", s: t("Yo | también | era | {m:lento|f:lenta} | al principio.", "I | also | was | slow | at first.", "I was slow at first too.") },
         { id: "doing_great", s: t("Lo | estás | haciendo | muy | bien.", "It | you're | doing | very | well.", "You're doing great.") },
@@ -1231,7 +1238,8 @@ export const kitchen: SituationDef = {
       lt: "Take Fátima's feedback",
       items: [
         { id: "thanks_mia", s: t("Gracias, | Fátima. | Me | sirve | mucho.", "Thanks, | Fátima. | (To) me | it-helps | a lot.", "Thanks, Fátima. That's really helpful.") },
-        { id: "good_point", s: t("Buen | punto. | Lo | voy | a | probar.", "Good | point. | It | I'm-going | to | try.", "Good point. I'll try it.") },
+        { id: "good_point", s: t("Buen | punto. | Lo | voy | a | probar.", "Good | point. | It | I'm-going | to | try.", "Good point. I'll try it.",
+          { spain: t("Tienes razón. | Lo | voy | a | probar.", "You're right. | It | I'm-going | to | try.", "You're right. I'll try it.") }) },
         { id: "hadnt_that", s: t("No lo había | pensado.", "I hadn't | thought (of it).", "I hadn't thought of that.") },
       ],
     },
@@ -1268,6 +1276,7 @@ export const kitchen: SituationDef = {
     "has dicho": { reason: "grammatical_fusion", split: "has + dicho: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
     "he puesto": { reason: "grammatical_fusion", split: "he + puesto: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
     "ha pedido": { reason: "grammatical_fusion", split: "ha + pedido: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "tienes razón": { reason: "lexical_expression", split: "tienes → you have + razón → reason is false; = you're right.", minimal: "Two words." },
     "seguro que": { reason: "lexical_expression", split: "seguro → sure + que → that: seguro que = surely, I'm sure (Spain puts que after it).", minimal: "Two words." },
     "por encima": { reason: "lexical_expression", split: "por → by + encima → above: por encima = on top.", minimal: "Two words." },
     "el qué": { reason: "lexical_expression", split: "el → the + qué → what: ¿el qué? = what? (what thing), Spain's everyday question.", minimal: "Two words." },

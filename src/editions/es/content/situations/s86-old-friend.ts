@@ -31,6 +31,7 @@ import { GLOBAL_HANDLERS, LEAVING_PATTERNS } from "@/content/global";
 
 const ART_TIME = "The article before a clock time has no English word.";
 const COMER = "comer: in Mexico, to have lunch (la comida, the main meal, around two).";
+const COMER_SPAIN = "comer: to have lunch (la comida, the main meal, around two).";
 const QUE_CUENTAS = "¿Qué cuentas?: “what's new?” (contar = to tell).";
 const PADRE = "Mexican, casual: padre = cool, great.";
 const DE_EL = "acordarse de: to remember; de has no English word here.";
@@ -576,7 +577,7 @@ export const oldFriend: SituationDef = {
   intents: {
     voc: { patterns: ["(paola | pao)"] },
     greet: { patterns: [
-      "@v cuanto tiempo [sin verte | sin vernos] [@v] #h:gr_long_time", "@v (que | vaya) (sorpresa | sorpresota | casualidad) [verte | verte aqui | encontrarte] [@v] #h:gr_surprise", "@v que milagro [@v] #h:gr_miracle",
+      "@v cuanto tiempo [sin verte | sin vernos] [@v] #h:gr_long_time", "@v (que | vaya) (sorpresa | sorpresota | casualidad) [verte | verte aqui | encontrarte] [@v] #h:gr_surprise", "@v que milagro [@v] #h:gr_miracle", "@v [pero] mira quien (esta | anda) [aqui | por aqui] [@v] #h:gr_miracle",
       "@omg [@v] [eres tu] [@v]", "[si] soy yo [@v] #itsme #h:gr_its_me", "[si] (soy yo | si soy yo) {name} #itsme",
       "@v que (gusto | alegria | bueno | padre) [verte | de verte | encontrarte | volver a verte] [otra vez | de nuevo] [@v] #h:gr_good_to_see",
       "cuantos anos [sin verte | sin vernos] [@v] #h:gr_forever", "hace (anos | muchos anos | mucho | muchisimo | siglos | un monton | mil anos | mucho tiempo) [que no nos vemos | sin vernos | que no te veo] [@v]",
@@ -619,7 +620,7 @@ export const oldFriend: SituationDef = {
       "@bad_word (perdí mi trabajo | me quedé sin trabajo | estuve enfermo | estuve enferma | me divorcié | me separé) [@ab] #bad",
     ] },
     ask_been: { patterns: [
-      "[y] [tu] como has estado [@v] #h:bn_ask", "(como estas | como te va | como te ha ido | que tal te va | que tal te ha ido | como va todo | que tal todo | que tal la vida | que onda como estas) [@v]",
+      "[y] [tu] como has estado [@v] #h:bn_ask", "[y] [a ti | tu] (que tal | como) te ha ido [@v] #h:bn_ask", "(como estas | como te va | como te ha ido | que tal te va | que tal te ha ido | como va todo | que tal todo | que tal la vida | que onda como estas) [@v]",
       "(y)? (tu)? como (te va | estas) [estos dias | ahora]", "(como esta usted | como ha estado) #tip:usted_friend",
     ] },
     news: { patterns: [
@@ -822,7 +823,7 @@ export const oldFriend: SituationDef = {
       "(que gusto | que bueno | que padre) me dio (verte | encontrarte) [@v] #h:by_nice", "me dio (mucho)? gusto [verte | encontrarte]", "(fue | ha sido) un (gusto | placer) [verte]", "que bueno que nos (encontramos | vimos)", "(me ha encantado | me ha gustado mucho) (verte | encontrarte)", "(que alegria | que ilusion) (verte | encontrarte)", "que bien que nos hayamos (encontrado | visto)",
     ] },
     say_hi_to: { patterns: [
-      "(saludos | muchos saludos | mis saludos) a (memo | tu esposo | tu familia | los cuates | los gemelos | todos | tu hermano | tus papas) [de mi parte] #h:by_say_hi",
+      "(saludos | muchos saludos | mis saludos | recuerdos | muchos recuerdos) a (memo | tu esposo | tu familia | los cuates | los gemelos | todos | tu hermano | tus papas) [de mi parte] #h:by_say_hi",
       "(dale | mandale | dales | mandales) (saludos | mis saludos | un saludo | recuerdos | muchos recuerdos) a (memo | tu esposo | tu familia | los cuates | los gemelos | todos | tu hermano | tus papas) [de mi parte]",
       "(saluda | saludame) a (memo | tu esposo | tu familia | los cuates | todos)", "dile a memo que lo saludo",
     ] },
@@ -850,17 +851,18 @@ export const oldFriend: SituationDef = {
     spot: [
       t("¡No puede | ser! | ¿Eres | tú? | ¡Cuánto tiempo!", "It can't | be! | Are-you | you? | Long time no see!", "No way! Is that you? Long time no see!"),
       t("Espérate… | ¡yo | te | conozco! | ¡Qué | milagro!", "Wait… | I | you | I-know! | What | a miracle!", "Wait… I know you! Long time no see!",
-        { flags: { 5: "¡Qué milagro!: what a surprise to see you (literally: what a miracle)." }, spain: t("Espera… | ¡yo | te | conozco! | ¡Qué | milagro!", "Wait… | I | you | know! | What | a miracle!", "Wait… I know you! Long time no see!") }),
+        { flags: { 5: "¡Qué milagro!: what a surprise to see you (literally: what a miracle)." }, spain: t("Espera… | ¡yo | te | conozco! | ¡Cuánto tiempo | sin | vernos!", "Wait… | I | you | know! | So long | without | seeing each other!", "Wait… I know you! It's been so long!", { flags: { 4: "¡Cuánto tiempo sin vernos!: Spain's warm “long time no see”." } }) }),
       t("¡No inventes! | ¿De veras | eres | tú?", "No way! | Really | are-you | you?", "No way! Is that really you?",
         { flags: { 0: "Mexican, casual: ¡No inventes! = no way! (literally: don't make it up)." },
-          neutral: t("¡No puede | ser! | ¿De verdad | eres | tú?", "It can't | be! | Really | are-you | you?", "No way! Is that really you?") }),
+          neutral: t("¡No puede | ser! | ¿De verdad | eres | tú?", "It can't | be! | Really | are-you | you?", "No way! Is that really you?", { flags: {} }) }),
     ],
     who_again: [t("¡Oye, | soy | yo!", "Hey, | it's | me!", "Hey, it's me!")],
     its_me_lucy: [
       t("¡Soy | yo, | Paola! | ¡De | la | escuela! | ¡La | mexicana | del | intercambio!", "It's | me, | Paola! | From | — | school! | The | Mexican girl | from the | exchange!",
-        "It's me, Paola! From school! The Mexican exchange student!", { flags: { 4: "de la escuela: Spanish says “the school”." }, spain: t("¡Soy | yo, | Paola! | ¡Del | instituto! | ¡La | mexicana | del | intercambio!", "It's | me, | Paola! | From the | high school! | The | Mexican girl | from the | exchange!", "It's me, Paola! From school! The Mexican exchange student!") }),
+        "It's me, Paola! From school! The Mexican exchange student!", { flags: { 4: "de la escuela: Spanish says “the school”." }, spain: t("¡Soy | yo, | Paola! | ¡Del | instituto! | ¡La | mexicana | del | intercambio!", "It's | me, | Paola! | From the | high school! | The | Mexican girl | from the | exchange!", "It's me, Paola! From school! The Mexican exchange student!", { flags: { 4: "instituto: high school in Spain." } }) }),
     ],
-    it_is_you: [t("¡Sí | eres | tú!", "Really | are-you | you!", "It really is you!", { flags: { 0: "sí before a verb: “really, indeed”." } })],
+    it_is_you: [t("¡Sí | eres | tú!", "Really | are-you | you!", "It really is you!", { flags: { 0: "sí before a verb: “really, indeed”." },
+      spain: t("¡Sí que | eres | tú!", "Really | are-you | you!", "It really is you!", { flags: { 0: "sí que before a verb: “really, indeed” (emphasis)." } }) })],
     changed: [
       t("¡No has cambiado | nada!", "You haven't changed | at all!", "You haven't changed a bit!"),
       t("¡Ay, | no has cambiado | nada! | ¡Estás | igualit{m:o|f:a}!", "Oh, | you haven't changed | at all! | You-are | just the same!", "Oh, you haven't changed a bit! You look exactly the same!",
@@ -874,7 +876,8 @@ export const oldFriend: SituationDef = {
     insist: [t("¡Te lo | digo | en serio!", "It to you | I-say | seriously!", "I mean it!")],
     aw_thanks: [t("¡Ay, | gracias!", "Aw, | thanks!", "Aw, thanks!")],
     ask_been: [
-      t("Y | cuéntame, | ¿cómo | has estado?", "And | tell me, | how | have-you-been?", "So tell me, how have you been?"),
+      t("Y | cuéntame, | ¿cómo | has estado?", "And | tell me, | how | have-you-been?", "So tell me, how have you been?",
+        { spain: t("Y | cuéntame, | ¿qué tal | te | ha ido?", "And | tell me, | how | (for) you | has-it-gone?", "So tell me, how have you been?", { flags: { 3: "¿Qué tal te ha ido?: how have things gone for you (te = for you)." } }) }),
       t("¿Y | qué tal? | ¿Cómo | estás?", "And | how's it going? | How | are-you?", "So how's it going? How are you?"),
     ],
     ask_back: [t("¿Y | tú?", "And | you?", "And you?")],
@@ -892,13 +895,15 @@ export const oldFriend: SituationDef = {
     ],
     enough_about_me: [t("¡Pero | ya | hablé | mucho | de | mí! | ¿Y | tú?", "But | already | I-talked | a lot | about | me! | And | you?", "But enough about me! What about you?", { spain: t("¡Pero | ya | he hablado | mucho | de | mí! | ¿Y | tú?", "But | already | I've talked | a lot | about | me! | And | you?", "But enough about me! What about you?") })],
     so_much_news: [t("¡Uy! | ¡Cuántas | noticias!", "Wow! | How much | news!", "Wow! So much news!")],
-    react_married: [t("¡No me digas! | ¡Felicidades!", "No way! | Congratulations!", "No way! Congratulations!")],
+    react_married: [t("¡No me digas! | ¡Felicidades!", "No way! | Congratulations!", "No way! Congratulations!",
+      { spain: t("¡No me digas! | ¡Enhorabuena!", "No way! | Congratulations!", "No way! Congratulations!", { flags: { 1: "¡Enhorabuena!: Spain's congratulations on news (¡Felicidades! is for birthdays and holidays)." } }) })],
     react_kids: [t("¡Ay, | qué | bonito!", "Aw, | how | lovely!", "Aw, that's wonderful!")],
     react_moved: [
       t("¿En serio? | ¿Ahora | vives | aquí? | ¡Qué | padre!", "Really? | Now | you-live | here? | How | cool!", "Really? You live here now? That's awesome!",
-        { flags: { 5: PADRE }, neutral: t("¿En serio? | ¿Ahora | vives | aquí? | ¡Qué | bien!", "Really? | Now | you-live | here? | How | great!", "Really? You live here now? That's great!") }),
+        { flags: { 5: PADRE }, neutral: t("¿En serio? | ¿Ahora | vives | aquí? | ¡Qué | bien!", "Really? | Now | you-live | here? | How | great!", "Really? You live here now? That's great!", { flags: {} }) }),
     ],
-    react_job: [t("¡Felicidades! | ¡Qué | buena | noticia!", "Congratulations! | What | good | news!", "Congratulations! That's great news!")],
+    react_job: [t("¡Felicidades! | ¡Qué | buena | noticia!", "Congratulations! | What | good | news!", "Congratulations! That's great news!",
+      { spain: t("¡Enhorabuena! | ¡Qué | buena | noticia!", "Congratulations! | What | good | news!", "Congratulations! That's great news!", { flags: { 0: "¡Enhorabuena!: Spain's congratulations on news (¡Felicidades! is for birthdays and holidays)." } }) })],
     react_work: [t("¡Ah, | qué | interesante!", "Oh, | how | interesting!", "Oh, how interesting!")],
     react_retired: [t("¡Qué | envidia! | ¡Disfrútalo | mucho!", "What | envy! | Enjoy it | a lot!", "Lucky you! Enjoy every minute!")],
     react_vacation: [t("¡Qué | bien! | Escogiste | el | mejor | lugar.", "How | nice! | You-chose | the | best | place.", "How nice! You picked the best place.", { spain: t("¡Qué | bien! | Has elegido | el | mejor | sitio.", "How | great! | You've chosen | the | best | place.", "How nice! You picked the best place.") })],
@@ -912,7 +917,7 @@ export const oldFriend: SituationDef = {
       t("Pues | yo | regresé | a | Puerto Colibrí | la primavera pasada. | Y | ¿qué | crees? | ¡Me casé!",
         "Well | I | came back | to | Puerto Colibrí | last spring. | And | what | you-think? | I got married!",
         "Well, I moved back to Puerto Colibrí last spring. And guess what? I got married!",
-        { flags: { 7: "¿Qué crees?: “guess what?” (literally: what do you think?), very common in Mexico." }, spain: t("Pues | yo | volví | a | Puerto Colibrí | la primavera pasada. | Y | ¿sabes | qué? | ¡Me casé!", "Well, | I | came back | to | Puerto Colibrí | last spring. | And | do you know | what? | I got married!", "Well, I moved back to Puerto Colibrí last spring. And guess what? I got married!") }),
+        { flags: { 7: "¿Qué crees?: “guess what?” (literally: what do you think?), very common in Mexico." }, spain: t("Pues | yo | volví | a | Puerto Colibrí | la primavera pasada. | Y | ¿sabes | qué? | ¡Me casé!", "Well, | I | came back | to | Puerto Colibrí | last spring. | And | do you know | what? | I got married!", "Well, I moved back to Puerto Colibrí last spring. And guess what? I got married!", { flags: { 7: "¿Sabes qué?: “guess what?”" } }) }),
     ],
     lucy_news1_too: [
       t("¡Yo | también! | Regresé | a | Puerto Colibrí | la primavera pasada, | y | ¡me casé!", "Me | too! | I-came-back | to | Puerto Colibrí | last spring, | and | I got married!",
@@ -921,12 +926,12 @@ export const oldFriend: SituationDef = {
     lucy_news2: [
       t("¡Gracias! | Y… | ¡tenemos | cuates!", "Thanks! | And… | we-have | twins!", "Thanks! And… we have twins!",
         { flags: { 3: "Mexican: cuates = twins (elsewhere: gemelos)." },
-          neutral: t("¡Gracias! | Y… | ¡tenemos | gemelos!", "Thanks! | And… | we-have | twins!", "Thanks! And… we have twins!") }),
+          neutral: t("¡Gracias! | Y… | ¡tenemos | gemelos!", "Thanks! | And… | we-have | twins!", "Thanks! And… we have twins!", { flags: {} }) }),
     ],
     lucy_news2_plain: [
       t("Y… | ¡tenemos | cuates!", "And… | we-have | twins!", "And… we have twins!",
         { flags: { 2: "Mexican: cuates = twins (elsewhere: gemelos)." },
-          neutral: t("Y… | ¡tenemos | gemelos!", "And… | we-have | twins!", "And… we have twins!") }),
+          neutral: t("Y… | ¡tenemos | gemelos!", "And… | we-have | twins!", "And… we have twins!", { flags: {} }) }),
     ],
     ans_who: [t("Se llama | Daniel. | ¡Te | va | a | caer | muy | bien!", "His name is | Daniel. | (To) you | he's-going | to | fall | very | well!", "His name's Daniel. You're going to love him!",
       { flags: { 5: "caer bien: to be liked (te va a caer muy bien = you'll really like him)." } })],
@@ -985,13 +990,14 @@ export const oldFriend: SituationDef = {
     coffee_later: [t("¡Perfecto! | Te | escribo | y | nos ponemos de acuerdo.", "Perfect! | (To) you | I'll-write | and | we'll set it up.", "Perfect! I'll text you and we'll set something up.")],
     no_whats_ok: [t("¡No pasa nada! | Te | mando | un | mensaje | normal. | ¿Cuál | es | tu | número?", "No problem! | (To) you | I'll-send | a | message | normal. | What | is | your | number?", "No problem! I'll send you a regular text. What's your number?")],
     ans_invite: [t("¡Ay, | perdón! | Fue | algo | muy | chiquito, | nada más | la | familia.", "Oh, | sorry! | It-was | something | very | small, | only | the | family.", "Oh, sorry! It was a tiny wedding, just family.",
-      { flags: { 5: "chiquito: chico + -ito, “tiny”." }, spain: t("¡Ay, | perdón! | Fue | algo | muy | pequeño, | solo | la | familia.", "Oh, | sorry! | It was | something | very | small, | only | the | family.", "Oh, sorry! It was a tiny wedding, just family.") })],
-    you_tell_me: [t("¡Tú | me | dices!", "You | (to) me | tell!", "Just let me know!")],
+      { flags: { 5: "chiquito: chico + -ito, “tiny”." }, spain: t("¡Ay, | perdón! | Fue | algo | muy | pequeño, | solo | la | familia.", "Oh, | sorry! | It was | something | very | small, | only | the | family.", "Oh, sorry! It was a tiny wedding, just family.", { flags: {} }) })],
+    you_tell_me: [t("¡Tú | me | dices!", "You | (to) me | tell!", "Just let me know!",
+      { spain: t("¡Ya | me | dirás!", "Just | (to) me | you'll-tell!", "Just let me know!", { flags: { 0: "¡Ya me dirás!: “let me know” (ya + the future: when you know)." } }) })],
     ill_ask_him: [t("¡Perfecto! | Yo | le | pregunto.", "Perfect! | I | him | I'll-ask.", "Great! I'll ask him.")],
     ask_coffee: [
       t("Oye, | ¿tienes | tiempo | para | un | café?", "Hey, | do you have | time | for | a | coffee?", "Hey, do you have time for a coffee?"),
       t("¿Tienes | tiempo | para | un | cafecito? | La Ceiba | está | aquí | cerquita, | en | la | avenida | Juárez.", "Do you have | time | for | a | little coffee? | La Ceiba | is | here | very close, | on | the | avenue | Juárez.",
-        "Do you have time for a coffee? La Ceiba is right nearby, on Juárez Avenue.", { flags: { 4: "cafecito: café + -ito, a friendly “cup of coffee”.", 8: "cerquita: cerca + -ita, “really close”." }, spain: t("¿Tienes | tiempo | para | un | café? | La Ceiba | está | aquí | cerca, | en | la | avenida | Juárez.", "Do you have | time | for | a | coffee? | La Ceiba | is | here | close by, | on | the | avenue | Juárez.", "Do you have time for a coffee? La Ceiba is right nearby, on Juárez Avenue.") }),
+        "Do you have time for a coffee? La Ceiba is right nearby, on Juárez Avenue.", { flags: { 4: "cafecito: café + -ito, a friendly “cup of coffee”.", 8: "cerquita: cerca + -ita, “really close”." }, spain: t("¿Tienes | tiempo | para | un | café? | La Ceiba | está | aquí | cerca, | en | la | avenida | Juárez.", "Do you have | time | for | a | coffee? | La Ceiba | is | here | close by, | on | the | avenue | Juárez.", "Do you have time for a coffee? La Ceiba is right nearby, on Juárez Avenue.", { flags: {} }) }),
     ],
     lets_sit: [t("¡Qué | bien! | Vamos | a | La Ceiba, | aquí | en | la | avenida | Juárez.", "How | nice! | Let's go | to | La Ceiba, | here | on | the | avenue | Juárez.", "Great! Let's go to La Ceiba, right here on Juárez Avenue.")],
     alt_ok: [t("¡Claro, | lo que | quieras! | Vamos | a | La Ceiba, | aquí | en | la | avenida | Juárez.", "Sure, | whatever | you-want! | Let's go | to | La Ceiba, | here | on | the | avenue | Juárez.", "Sure, whatever you like! Let's go to La Ceiba, right here on Juárez Avenue.")],
@@ -1000,7 +1006,10 @@ export const oldFriend: SituationDef = {
     rain_check: [
       t("Me encantaría, | pero | voy | a | comer | con | mi | esposo | a | las | dos. | ¡Otro | día, | sin falta!",
         "I'd love to, | but | I'm-going | to | have lunch | with | my | husband | at | — | two. | Another | day, | for sure!",
-        "I'd love to, but I'm having lunch with my husband at two. Another time, for sure!", { flags: { 4: COMER, 9: ART_TIME } }),
+        "I'd love to, but I'm having lunch with my husband at two. Another time, for sure!", { flags: { 4: COMER, 9: ART_TIME },
+          spain: t("Me encantaría, | pero | voy | a | comer | con | mi | marido | a | las | dos. | ¡Otro | día, | sin falta!",
+            "I'd love to, | but | I'm-going | to | have lunch | with | my | husband | at | — | two. | Another | day, | for sure!",
+            "I'd love to, but I'm having lunch with my husband at two. Another time, for sure!", { flags: { 4: COMER_SPAIN, 9: ART_TIME } }) }),
     ],
     next_time: [t("¡No te preocupes! | Otro | día.", "Don't worry! | Another | day.", "No worries! Another time.")],
     we_are: [t("¡Ja, | ya | vamos!", "Ha, | already | we're-going!", "Ha, that's where we're going!")],
@@ -1032,7 +1041,7 @@ export const oldFriend: SituationDef = {
     typing_number: [
       t("¡Va! | Ahorita | te | mando | un | mensaje.", "Okay! | Right now | (to) you | I'll-send | a | message.", "Great! I'll text you right now.",
         { flags: { 0: "Mexican: ¡va! = okay, deal.", 1: "Mexican: ahorita = right now (or in a little while)." },
-          neutral: t("¡Muy | bien! | Ahora | te | mando | un | mensaje.", "Very | good! | Now | (to) you | I'll-send | a | message.", "Great! I'll text you right now.") }),
+          neutral: t("¡Muy | bien! | Ahora | te | mando | un | mensaje.", "Very | good! | Now | (to) you | I'll-send | a | message.", "Great! I'll text you right now.", { flags: {} }) }),
     ],
     typed_number: [t("¡Listo! | Ya | te | guardé | mi | número.", "Done! | Already | (for) you | I-saved | my | number.", "There! I saved my number for you.", { spain: t("¡Ya está! | Ya | te | he guardado | mi | número.", "Done! | Already | (for) you | I've saved | my | number.", "There! I saved my number for you.") })],
     no_phone_ok: [t("¡No pasa nada! | Te | doy | el | mío | y | me | escribes.", "No problem! | (To) you | I-give | — | mine | and | (to) me | you-write.", "No problem! I'll give you mine and you text me.",
@@ -1049,7 +1058,8 @@ export const oldFriend: SituationDef = {
     you_too_lucy: [t("¡Igualmente!", "Likewise!", "You too!")],
     i_will: [t("¡De tu parte!", "From you!", "Will do!", { flags: { 0: "De tu parte: “(I'll say hi) for you”, the usual reply." } })],
     bye_lucy: [
-      t("¡Saludos | a | tu | familia! | ¡Adiós!", "Greetings | to | your | family! | Bye!", "Say hi to your family! Bye!"),
+      t("¡Saludos | a | tu | familia! | ¡Adiós!", "Greetings | to | your | family! | Bye!", "Say hi to your family! Bye!",
+        { spain: t("¡Recuerdos | a | tu | familia! | ¡Adiós!", "Regards | to | your | family! | Bye!", "Say hi to your family! Bye!") }),
       t("¡Nos vemos! | ¡Me | escribes, | eh!", "See you! | (To) me | you-write, | okay!", "See you! Text me, okay?"),
       t("¡Cuídate | mucho! | ¡Nos vemos | pronto!", "Take care | a lot! | See you | soon!", "Take care! See you soon!"),
     ],
@@ -1067,7 +1077,9 @@ export const oldFriend: SituationDef = {
       items: [
         { id: "gr_long_time", s: t("¡Paola! | ¡Cuánto tiempo!", "Paola! | Long time no see!", "Paola! Long time no see!") },
         { id: "gr_surprise", s: t("¡Qué | sorpresa!", "What | a surprise!", "What a surprise!") },
-        { id: "gr_miracle", s: t("¡Qué | milagro!", "What | a miracle!", "Long time no see!"), note: "Mexicans say it when they run into someone they haven't seen in ages." },
+        { id: "gr_miracle", s: t("¡Qué | milagro!", "What | a miracle!", "Long time no see!", { spain: t("¡Mira | quién | está | aquí!", "Look | who | is | here!", "Look who's here!") }),
+          note: "Mexicans say it when they run into someone they haven't seen in ages.",
+          noteSpain: "A warm surprise when you run into someone. (Mexico says ¡Qué milagro!; in Spain that mostly teases someone who rarely shows up.)" },
         { id: "gr_good_to_see", s: t("¡Qué | gusto | verte!", "What | joy | to see you!", "It's so good to see you!", { spain: t("¡Qué | alegría | verte!", "What | a joy | to see you!", "It's so good to see you!") }) },
         { id: "gr_forever", s: t("¡Cuántos | años!", "How many | years!", "It's been so many years!") },
         { id: "gr_its_me", s: t("¡Sí, | soy | yo!", "Yes, | it's | me!", "Yes, it's me!") },
@@ -1087,7 +1099,8 @@ export const oldFriend: SituationDef = {
         { id: "bn_good", s: t("Muy | bien, | gracias. | ¿Y | tú?", "Very | well, | thanks. | And | you?", "Really good, thanks! And you?") },
         { id: "bn_not_bad", s: t("No me quejo. | ¿Y | tú?", "I can't complain. | And | you?", "Can't complain! How about you?") },
         { id: "bn_busy", s: t("Con | mucho | trabajo, | pero | bien.", "With | a lot of | work, | but | good.", "Busy, but good!") },
-        { id: "bn_ask", s: t("¿Y | tú, | cómo | has estado?", "And | you, | how | have-you-been?", "And how have you been?") },
+        { id: "bn_ask", s: t("¿Y | tú, | cómo | has estado?", "And | you, | how | have-you-been?", "And how have you been?",
+          { spain: t("¿Y | a ti, | qué tal | te | ha ido?", "And | for you, | how | (for) you | has-it-gone?", "And how about you, how have you been?", { flags: { 3: "te: “for you”; ¿qué tal te ha ido? = how have things gone for you." } }) }) },
       ],
     },
     news: {
@@ -1105,7 +1118,8 @@ export const oldFriend: SituationDef = {
     react: {
       lt: "React to her news",
       items: [
-        { id: "rc_congrats", s: t("¡Felicidades!", "Congratulations!", "Congratulations!") },
+        { id: "rc_congrats", s: t("¡Felicidades!", "Congratulations!", "Congratulations!", { spain: t("¡Enhorabuena!", "Congratulations!", "Congratulations!") }),
+          noteSpain: "¡Enhorabuena!: congratulations on news (a wedding, a job, a baby); ¡Felicidades! is for birthdays and holidays." },
         { id: "rc_great", s: t("¡Qué | buena | noticia!", "What | good | news!", "That's great news!") },
         { id: "rc_happy", s: t("¡Me da | mucho | gusto | por | ti!", "It-gives-me | a lot of | joy | for | you!", "I'm so happy for you!", { spain: t("¡Me alegro | mucho | por | ti!", "I'm glad | very much | for | you!", "I'm so happy for you!") }) },
       ],
@@ -1114,7 +1128,7 @@ export const oldFriend: SituationDef = {
       lt: "Tell her about your family",
       items: [
         { id: "fm_great", s: t("Todos | bien, | gracias.", "Everyone | well, | thanks.", "They're all great, thanks!") },
-        { id: "fm_parents", s: t("Mis | papás | están | bien.", "My | parents | are | well.", "My parents are fine.", { spain: t("Mis | padres | están | bien.", "My | parents | are | well.", "My parents are fine.") }), note: "Mexicans say “mis papás” for “my parents”." },
+        { id: "fm_parents", s: t("Mis | papás | están | bien.", "My | parents | are | well.", "My parents are fine.", { spain: t("Mis | padres | están | bien.", "My | parents | are | well.", "My parents are fine.") }), note: "Mexicans say “mis papás” for “my parents”.", noteSpain: "padres: parents (Mexicans often say “mis papás”)." },
         { id: "ab_yours", s: t("¿Y | la | tuya?", "And | — | yours?", "And yours?", { flags: { 1: "la tuya: yours (your family; la agrees with familia)." } }) },
       ],
     },
@@ -1167,7 +1181,7 @@ export const oldFriend: SituationDef = {
         { id: "by_you_too", s: t("¡Igualmente! | ¡Adiós!", "Likewise! | Bye!", "You too! Bye!") },
         { id: "by_bye", s: t("¡Nos vemos | pronto!", "See you | soon!", "See you soon!") },
         { id: "by_nice", s: t("¡Qué | gusto | me dio | verte!", "What | joy | it gave me | to see you!", "It was so good to see you!", { spain: t("¡Qué | alegría | verte!", "What | a joy | to see you!", "It was so good to see you!") }) },
-        { id: "by_say_hi", s: t("¡Saludos | a | tu | familia!", "Greetings | to | your | family!", "Say hi to your family for me!") },
+        { id: "by_say_hi", s: t("¡Saludos | a | tu | familia!", "Greetings | to | your | family!", "Say hi to your family for me!", { spain: t("¡Recuerdos | a | tu | familia!", "Regards | to | your | family!", "Say hi to your family for me!") }) },
       ],
     },
     ask_back: {
@@ -1185,6 +1199,10 @@ export const oldFriend: SituationDef = {
 
   merges: {
     // Spain's twins (12 Nov 2026)
+    // Spain pass 3 (14 Nov 2026)
+    "sí que": { reason: "lexical_expression", split: "sí → yes + que → that: sí que before a verb = really, indeed (emphasis).", minimal: "Two words." },
+    "ha ido": { reason: "grammatical_fusion", split: "ha → has + ido → gone: Spain's present perfect; one English verb phrase.", minimal: "Auxiliary and participle." },
+    "a ti": { reason: "grammatical_fusion", split: "a → to/for + ti → you: the stressed form of te; one English word.", minimal: "Two words." },
     "he hablado": { reason: "grammatical_fusion", split: "he → have + hablado (participle): Spain's present perfect for what has just happened; one English verb phrase.", minimal: "Auxiliary and participle." },
     "has elegido": { reason: "grammatical_fusion", split: "has → you have + elegido (participle): Spain's present perfect; one English verb phrase.", minimal: "Auxiliary and participle." },
     "se me ha hecho tarde": { reason: "lexical_expression", split: "se → itself + me → on me + ha hecho → has become + tarde → late: = I'm running late (Spain's present perfect).", minimal: "The phrase." },

@@ -15,5 +15,9 @@
   {"ctx": "pay", "say": "No llevo efectivo", "intent": "no_cash"},
   {"ctx": "pay", "say": "No quiero pagar con el móvil", "intent": "any", "not": ["pay_phone"]},
   {"ctx": "plan", "say": "¿Cobráis inscripción?", "intent": "ask_fee"},
-  {"ctx": "lockers", "say": "¿Puedo beber agua?", "intent": "water_q"}
+  {"ctx": "lockers", "say": "¿Puedo beber agua?", "intent": "water_q"},
+  {"ctx": "new", "say": "¿Cómo me apunto?", "intent": "want_join"},
+  {"ctx": "plan", "say": "¿Cobráis matrícula?", "intent": "ask_fee"},
+  {"ctx": "plan", "say": "Un pase de día, por favor", "intent": "choose_plan"},
+  {"ctx": "form", "say": "¿Me dejas un bolígrafo?", "intent": "pen_q"}
 ] }

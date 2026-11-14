@@ -23,6 +23,10 @@
 { "ctx": "mia_back", "say": "Gracias, Fátima. Me viene muy bien", "intent": "thanks_helpful" },
 { "ctx": "closing", "say": "¡Oído, chef!", "intent": ["yes_chef_ctx", "g_ok"] },
 { "ctx": "mia_worked", "say": "¿Qué le has puesto?", "intent": "ask_recipe" },
+{ "ctx": "mia_open", "say": "¡Qué bien huele!", "intent": "reassure" },
+{ "ctx": "mia_howmuch", "say": "Empieza con poco y vuelve a probar", "intent": "howmuch_ans" },
+{ "ctx": "mia_encourage", "say": "Ya lo conseguirás", "intent": "encourage" },
+{ "ctx": "mia_back", "say": "Tienes razón. Lo voy a probar", "intent": "accept_idea" },
 { "ctx": "mia_try", "say": "No le falta sal", "intent": "any" }
 ]
 }

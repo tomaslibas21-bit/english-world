@@ -80,6 +80,26 @@
 "ctx": "dest",
 "say": "Quiero un billete de ida y vuelta a Cancún",
 "intent": "buy"
+},
+{
+"ctx": "ret",
+"say": "Todavía no lo sé",
+"intent": "ret_ctx"
+},
+{
+"ctx": "info",
+"say": "¿Sale puntual?",
+"intent": "ask_ontime"
+},
+{
+"ctx": "info",
+"say": "¿Cuánto tiempo antes tengo que llegar?",
+"intent": "ask_early"
+},
+{
+"ctx": "discount",
+"say": "¿Tienen descuento para jubilados?",
+"intent": "discount_ask"
 }
 ]
 }

@@ -17,15 +17,15 @@ import { expectHowAreYou } from "@/content/global";
 // with: `domains.price`).
 
 const P = (id: string, es: string, en: string, g: "m" | "f", unit: "kg" | "pza" | "manojo", price: number, pc: number,
-  extra: { pl?: string; ltPl?: string; forms?: string[]; ripe?: boolean; nat?: string; natPl?: string; chip?: string; neutral?: string; spain?: string; art?: "" } = {}) =>
+  extra: { pl?: string; ltPl?: string; forms?: string[]; ripe?: boolean; nat?: string; natPl?: string; chip?: string; neutral?: string; spain?: string; spainPl?: string; spainG?: "m" | "f"; art?: "" } = {}) =>
   ent(id, es, en, g, { pl: extra.pl, ltPl: extra.ltPl, forms: extra.forms, chip: extra.chip, art: extra.art,
-    attrs: { unit, price, pc, ripe: !!extra.ripe, nat: extra.nat, natPl: extra.natPl, neutral: extra.neutral, spain: extra.spain } });
+    attrs: { unit, price, pc, ripe: !!extra.ripe, nat: extra.nat, natPl: extra.natPl, neutral: extra.neutral, spain: extra.spain, spainPl: extra.spainPl, spainG: extra.spainG } });
 
 export const PRODUCTS: EntityDef[] = [
   P("aguacate", "aguacate", "avocado", "m", "kg", 6000, 250, { pl: "aguacates", ltPl: "avocados", forms: ["aguacates", "aguacatito", "palta", "paltas"], ripe: true }),
   // Mexican "jitomate" (a red tomato; "tomate" is the green tomatillo there): understood as "tomate" too
   P("jitomate", "jitomate", "tomato", "m", "kg", 4000, 150, { pl: "jitomates", ltPl: "tomatoes", forms: ["jitomates", "tomate", "tomates", "tomate rojo", "tomates rojos"], neutral: "tomate" }),
-  P("limon", "limón", "lime", "m", "kg", 4000, 50, { pl: "limones", ltPl: "limes", forms: ["limones", "limoncito", "limon verde", "lima", "limas"] }),
+  P("limon", "limón", "lime", "m", "kg", 4000, 50, { pl: "limones", ltPl: "limes", forms: ["limones", "limoncito", "limon verde", "lima", "limas"], spain: "lima", spainPl: "limas", spainG: "f" }),
   P("platano", "plátano", "banana", "m", "kg", 2000, 150, { pl: "plátanos", ltPl: "bananas", forms: ["platanos", "banana", "bananas", "banano", "bananos"] }),
   P("mango", "mango", "mango", "m", "pza", 1500, 350, { pl: "mangos", ltPl: "mangoes", forms: ["mangos", "manguito"], ripe: true }),
   P("papaya", "papaya", "papaya", "f", "kg", 4000, 1500, { pl: "papayas", forms: ["papayas"], ripe: true }),
@@ -164,7 +164,7 @@ export const mercado: SituationDef = {
   grammar: {
     macros: {
       order_prefix: [
-        "me da #h:me_da", "deme #h:deme", "me pone", "pongame", "me despacha", "me vende", "vendame", "me puede dar #h:me_da", "me regala",
+        "me da #h:me_da", "deme #h:deme", "me pone #h:me_da", "pongame #h:deme", "me despacha", "me vende", "vendame", "me puede dar #h:me_da", "me regala",
         "quiero #h:quiero", "quisiera #h:quisiera", "voy a llevar #h:llevo", "me llevo #h:llevo", "llevo #h:llevo", "voy a querer",
         "me das #tip:tu_staff", "dame #tip:tu_staff", "necesito", "tambien (me da | quiero | quisiera)", "y (tambien)? (me da | deme)",
       ],
@@ -191,7 +191,7 @@ export const mercado: SituationDef = {
   intents: {
     order: { patterns: ["@order_prefix {items}", "{items}", "@order_prefix @amount de {product} y @amount de {product}", "mejor [@order_prefix] {items}"] },
     // "¿Cuánto le doy?" – "Un kilo." / "Medio." / "Tres." / "Veinte pesos." / "Como un kilo."
-    qty_ctx: { patterns: ["@amount #h:qty_kilo", "{count:number} [por favor] #h:qty_pcs", "{count:number} nada mas #h:qty_pcs", "(solo | nomas | nada mas) {count:number}",
+    qty_ctx: { patterns: ["@amount #h:qty_kilo", "{count:number} [por favor] #h:qty_pcs", "{count:number} nada mas #h:qty_pcs", "(solo | nomas | nada mas) {count:number} #h:qty_pcs", "solo {money:price} #h:qty_money",
       "(un | una) #one", "(uno | una) nada mas #one", "{money:price} [nada mas] #h:qty_money", "@order_prefix @amount", "@order_prefix {count:number}",
       "(como | unos | unas) {count:number}", "@amount (esta bien | nada mas)", "{count:number} manojos", "(entonces | bueno | ok) @amount"] },
     // an amount without a product, anywhere: "Deme medio kilo", "Me llevo uno", "Mejor dos kilos" (for the thing being
@@ -266,13 +266,14 @@ export const mercado: SituationDef = {
       t("¡Pásele, | {m:joven|f:joven}! | ¿Qué | le | damos?", "Come in, | {m:young man|f:young lady}! | What | (to) you | we-give?", "Come on in! What can I get you?",
         { flags: { 0: "Mexican markets: “pásele” = come on in, have a look." },
           neutral: t("¡Adelante, | {m:joven|f:joven}! | ¿Qué | le | damos?", "Come in, | {m:young man|f:young lady}! | What | (to) you | we-give?", "Come on in! What can I get you?"),
-        spain: t("¡Dígame, | {m:joven|f:joven}! | ¿Qué | le | pongo?", "Tell me, | {m:young man|f:young lady}! | What | (for) you | I-put?", "Come on in! What can I get you?", { flags: { 4: "poner (in a shop or a bar, Spain): to give you, to serve you." } }) }),
+        spain: t("¡Hola, | buenas! | ¿Qué | le | pongo?", "Hello, | (good) day! | What | (for) you | I-put?", "Come on in! What can I get you?", { flags: { 4: "poner (in a shop or a bar, Spain): to give you, to serve you." } }) }),
       t("¡Buenos días! | ¿Qué | se | le | ofrece?", "Good morning! | What | (itself) | (to) you | offers?", "Good morning! What can I do for you?",
         { flags: { 2: "se le ofrece: “is offered to you” – a set, polite shop question." },
         spain: t("¡Buenos días! | ¿Qué | le | pongo?", "Good morning! | What | (for) you | I-put?", "Good morning! What can I do for you?", { flags: { 3: "poner (in a shop or a bar, Spain): to give you, to serve you." } }) }),
       t("¡Buenas, | {m:marchante|f:marchanta}! | ¿Qué | va | a | llevar?", "Hi, | customer! | What | are you going | to | take?", "Hi there! What are you getting today?",
         { flags: { 1: "Mexican markets: marchante / marchanta = a regular customer, said warmly." },
-          neutral: t("¡Buenas, | {m:joven|f:joven}! | ¿Qué | va | a | llevar?", "Hi, | {m:young man|f:young lady}! | What | are you going | to | take?", "Hi there! What are you getting today?") }),
+          neutral: t("¡Buenas, | {m:joven|f:joven}! | ¿Qué | va | a | llevar?", "Hi, | {m:young man|f:young lady}! | What | are you going | to | take?", "Hi there! What are you getting today?"),
+          spain: t("¡Buenas! | ¿Qué | va | a | llevar?", "Hi! | What | are you going | to | take?", "Hi there! What are you getting today?", { flags: {} }) }),
     ],
     greet_howareyou: [
       t("¡Buenos días! | ¿Cómo | está?", "Good morning! | How | are you?", "Good morning! How are you?"),
@@ -283,16 +284,19 @@ export const mercado: SituationDef = {
       t("¿Qué | va | a | llevar?", "What | are you going | to | take?", "What are you getting?"),
     ],
     ask_qty: [
-      t("¿Cuánto | le | doy?", "How much | (to) you | I-give?", "How much would you like?"),
+      t("¿Cuánto | le | doy?", "How much | (to) you | I-give?", "How much would you like?",
+        { spain: t("¿Cuánto | quiere?", "How much | do you want?", "How much would you like?") }),
       t("¿Cuánto | le | pongo?", "How much | (for) you | I-put?", "How much should I put in?"),
     ],
     // things sold by the piece: "¿Cuántos le doy?" (mangos), "¿Cuántas le doy?" (piñas)
     ask_qty_pcs: [
-      t("¿{cuánto@X:pl} | le | doy?", "How many | (to) you | I-give?", "How many would you like?"),
+      t("¿{cuánto@X:pl} | le | doy?", "How many | (to) you | I-give?", "How many would you like?",
+        { spain: t("¿{cuánto@X:pl} | quiere?", "How many | do you want?", "How many would you like?") }),
       t("¿{cuánto@X:pl} | le | pongo?", "How many | (for) you | I-put?", "How many should I put in?"),
     ],
     ask_qty_kg: [
-      t("¿Cuánto | le | doy? | ¿Un | kilo, | medio | kilo?", "How much | (to) you | I-give? | A | kilo, | half | kilo?", "How much would you like? A kilo, half a kilo?"),
+      t("¿Cuánto | le | doy? | ¿Un | kilo, | medio | kilo?", "How much | (to) you | I-give? | A | kilo, | half | kilo?", "How much would you like? A kilo, half a kilo?",
+        { spain: t("¿Cuánto | le | pongo? | ¿Un | kilo, | medio | kilo?", "How much | (for) you | I-put? | A | kilo, | half | kilo?", "How much would you like? A kilo, half a kilo?") }),
     ],
     ask_ripe: [
       t("¿{lo@X:pl} | quiere | para | hoy | o | para | mañana?", "Them | you-want | for | today | or | for | tomorrow?", "Do you want them ripe for today, or for tomorrow?",
@@ -342,7 +346,7 @@ export const mercado: SituationDef = {
       t("¿Algo | más?", "Anything | else?", "Anything else?"),
       t("¿Qué | más | va | a | llevar?", "What | else | are you going | to | take?", "What else are you getting?"),
     ],
-    ack: [t("Muy | bien.", "Very | good.", "Okay."), t("Ándale.", "Okay then.", "Okay!", { flags: { 0: "Mexican: ándale = okay, there you go." }, neutral: t("Muy | bien.", "Very | good.", "Okay.") })],
+    ack: [t("Muy | bien.", "Very | good.", "Okay."), t("Ándale.", "Okay then.", "Okay!", { flags: { 0: "Mexican: ándale = okay, there you go." }, neutral: t("Muy | bien.", "Very | good.", "Okay."), spain: t("Vale.", "Okay.", "Okay.", { flags: {} }) })],
     have_yes: [t("¡Sí, | claro! | Están | muy | {bueno@X:pl}.", "Yes, | sure! | They're | very | good.", "Yes, of course! They're very good today.")],
     // cilantro, sold by the bunch
     have_yes_sg: [t("¡Sí, | claro! | Está | muy | fresco.", "Yes, | sure! | It's | very | fresh.", "Yes, of course! It's nice and fresh.")],
@@ -351,9 +355,12 @@ export const mercado: SituationDef = {
       "I've got a bit of everything: avocados, tomatoes, limes, mangoes, papayas, pineapples…",
       { flags: { 4: "Mexican: jitomate = a (red) tomato; neutral Spanish says tomate." },
         neutral: t("Hay | de | todo: | aguacate, | tomate, | limón, | mango, | papaya, | piña...", "There is | of | everything: | avocado, | tomato, | lime, | mango, | papaya, | pineapple...",
-          "I've got a bit of everything: avocados, tomatoes, limes, mangoes, papayas, pineapples…") })],
+          "I've got a bit of everything: avocados, tomatoes, limes, mangoes, papayas, pineapples…"),
+        spain: t("Hay | de | todo: | aguacate, | tomate, | lima, | mango, | papaya, | piña...", "There is | of | everything: | avocado, | tomato, | lime, | mango, | papaya, | pineapple...",
+          "I've got a bit of everything: avocados, tomatoes, limes, mangoes, papayas, pineapples…", { flags: {} }) })],
     recommend_mango: [t("Los | mangos | están | buenísimos | hoy.", "The | mangoes | are | really good | today.", "The mangoes are wonderful today.")],
-    recommend_papaya: [t("Llévese | una | papaya, | está | dulcecita.", "Take | a | papaya, | it's | nice and sweet.", "Take a papaya, it's nice and sweet.", { flags: { 4: "-ita: a fond diminutive, “nice and sweet”." } })],
+    recommend_papaya: [t("Llévese | una | papaya, | está | dulcecita.", "Take | a | papaya, | it's | nice and sweet.", "Take a papaya, it's nice and sweet.", { flags: { 4: "-ita: a fond diminutive, “nice and sweet”." },
+      spain: t("Llévese | una | papaya, | está | muy | dulce.", "Take | a | papaya, | it's | very | sweet.", "Take a papaya, it's nice and sweet.", { flags: {} }) })],
     removed: [t("Muy | bien, | sin | {X.pl}.", "Very | good, | without | {X.pl}.", "Okay, no {X.pl}.")],
     ask_bag: [
       t("¿Trae | bolsa?", "Do you bring | bag?", "Did you bring a bag?",
@@ -362,28 +369,34 @@ export const mercado: SituationDef = {
         { spain: t("¿Lleva | su | bolsa?", "Do you carry | your | bag?", "Have you got your bag?") }),
     ],
     bag_ok: [t("Muy | bien, | aquí | se | lo | pongo.", "Very | good, | here | for you | it | I-put.", "Great, I'll put it in here.")],
-    bag_give: [t("Aquí | le | pongo | una | bolsita.", "Here | (for) you | I-put | a | little bag.", "Here, I'll put it in a bag for you.")],
+    bag_give: [t("Aquí | le | pongo | una | bolsita.", "Here | (for) you | I-put | a | little bag.", "Here, I'll put it in a bag for you.",
+      { spain: t("Aquí | le | pongo | una | bolsa.", "Here | (for) you | I-put | a | bag.", "Here, I'll put it in a bag for you.") })],
     say_total: [
       t("Son | {$price}.", "That's | {$price}.", "That's {$price}."),
-      t("Serían | {$price}, | {m:joven|f:joven}.", "That would be | {$price}, | {m:young man|f:young lady}.", "That'll be {$price}."),
+      t("Serían | {$price}, | {m:joven|f:joven}.", "That would be | {$price}, | {m:young man|f:young lady}.", "That'll be {$price}.",
+        { spain: t("Pues | son | {$price}.", "Well, | that's | {$price}.", "That'll be {$price}.") }),
       t("Todo | junto | son | {$price}.", "All | together | are | {$price}.", "All together, that's {$price}."),
     ],
     sum_so_far: [t("Hasta | ahorita | van | {$price}.", "Until | now | they-go | {$price}.", "So far it's {$price}.",
-      { flags: { 1: "Mexican: ahorita = (right) now; hasta ahorita = so far." }, neutral: t("Hasta | ahora | van | {$price}.", "Until | now | they-go | {$price}.", "So far it's {$price}.") })],
+      { flags: { 1: "Mexican: ahorita = (right) now; hasta ahorita = so far." }, neutral: t("Hasta | ahora | van | {$price}.", "Until | now | they-go | {$price}.", "So far it's {$price}."),
+        spain: t("De momento | van | {$price}.", "For now | they-go | {$price}.", "So far it's {$price}.", { flags: {} }) })],
     // she takes cash or a bank transfer, not cards
     cash_only: [
       t("Tarjeta | no, | {m:joven|f:joven}. | Nomás | efectivo | o | transferencia.", "Card | no, | {m:young man|f:young lady}. | Only | cash | or | transfer.", "No cards, I'm afraid. Just cash or a bank transfer.",
         { flags: { 3: "Mexican: nomás = only, just." },
-          neutral: t("Tarjeta | no, | {m:joven|f:joven}. | Solo | efectivo | o | transferencia.", "Card | no, | {m:young man|f:young lady}. | Only | cash | or | transfer.", "No cards, I'm afraid. Just cash or a bank transfer.") }),
+          neutral: t("Tarjeta | no, | {m:joven|f:joven}. | Solo | efectivo | o | transferencia.", "Card | no, | {m:young man|f:young lady}. | Only | cash | or | transfer.", "No cards, I'm afraid. Just cash or a bank transfer."),
+          spain: t("Con | tarjeta | no, | lo siento. | Solo | efectivo | o | transferencia.", "With | card | no, | I'm sorry. | Only | cash | or | transfer.", "No cards, I'm afraid. Just cash or a bank transfer.", { flags: {} }) }),
     ],
     transfer_ok: [t("Sí, | también | por | transferencia.", "Yes, | also | by | transfer.", "Yes, a bank transfer is fine too.")],
     // "No traigo efectivo"
     transfer_offer: [t("Me | puede | pagar | por | transferencia, | si | quiere.", "(To) me | you-can | pay | by | transfer, | if | you-want.", "You can pay me by bank transfer, if you want.")],
     // "¿Acepta dólares?"
-    dollars_no: [t("Dólares | no, | {m:joven|f:joven}. | Solo | pesos.", "Dollars | no, | {m:young man|f:young lady}. | Only | pesos.", "No dollars, I'm afraid. Pesos only.")],
+    dollars_no: [t("Dólares | no, | {m:joven|f:joven}. | Solo | pesos.", "Dollars | no, | {m:young man|f:young lady}. | Only | pesos.", "No dollars, I'm afraid. Pesos only.",
+      { spain: t("Dólares | no, | lo siento. | Solo | pesos.", "Dollars | no, | I'm sorry. | Only | pesos.", "No dollars, I'm afraid. Pesos only.") })],
     no_change: [
       t("¿No trae | más | chico?", "Don't you have | more | small?", "Don't you have a smaller bill?",
-        { flags: { 2: "Mexican: más chico = a smaller bill." }, neutral: t("¿No tiene | un | billete | más | pequeño?", "Don't you have | a | bill | more | small?", "Don't you have a smaller bill?") }),
+        { flags: { 2: "Mexican: más chico = a smaller bill." }, neutral: t("¿No tiene | un | billete | más | pequeño?", "Don't you have | a | bill | more | small?", "Don't you have a smaller bill?"),
+          spain: t("¿No tiene | algo | más | pequeño?", "Don't you have | something | more | small?", "Don't you have a smaller bill?", { flags: {} }) }),
     ],
     change_ok: [t("Déjeme | ver... | sí, | aquí | está | su | cambio.", "Let me | see... | yes, | here | is | your | change.", "Let me see… yes, here's your change.")],
     change_back: [
@@ -392,24 +405,29 @@ export const mercado: SituationDef = {
     ],
     paid_exact: [t("¡Exacto! | Gracias.", "Exact! | Thanks.", "Exactly right! Thank you.")],
     // "Quédese con el cambio"
-    thanks_tip: [t("¡Ay, | muchas | gracias, | {m:joven|f:joven}!", "Oh, | many | thanks, | {m:young man|f:young lady}!", "Oh, thank you so much!")],
+    thanks_tip: [t("¡Ay, | muchas | gracias, | {m:joven|f:joven}!", "Oh, | many | thanks, | {m:young man|f:young lady}!", "Oh, thank you so much!",
+      { spain: t("¡Ay, | muchas | gracias! | ¡Qué | amable!", "Oh, | many | thanks! | How | kind!", "Oh, thank you so much! How kind!") })],
     // "¿Me da un recibo?"
-    no_receipt: [t("Aquí | no doy | recibo, | {m:joven|f:joven}.", "Here | I don't give | receipt, | {m:young man|f:young lady}.", "I don't do receipts here, I'm afraid.")],
+    no_receipt: [t("Aquí | no doy | recibo, | {m:joven|f:joven}.", "Here | I don't give | receipt, | {m:young man|f:young lady}.", "I don't do receipts here, I'm afraid.",
+      { spain: t("Lo siento, | aquí | no doy | ticket.", "I'm sorry, | here | I don't give | receipt.", "I don't do receipts here, I'm afraid.") })],
     haggle_no: [
       t("Ya | está | en | buen | precio, | pero | le | pongo | un | pilón.", "Already | it's | at | good | price, | but | (for) you | I-put | a | little extra.", "It's already a good price, but I'll throw in a little extra.",
         { flags: { 9: "Mexican: el pilón = a little extra the seller adds for free." },
-          neutral: t("Ya | está | en | buen | precio, | pero | le | pongo | algo | de | regalo.", "Already | it's | at | good | price, | but | (for) you | I-put | something | as | a gift.", "It's already a good price, but I'll throw in a little extra.") }),
+          neutral: t("Ya | está | en | buen | precio, | pero | le | pongo | algo | de | regalo.", "Already | it's | at | good | price, | but | (for) you | I-put | something | as | a gift.", "It's already a good price, but I'll throw in a little extra."),
+          spain: t("Ya | está | muy | bien | de precio, | pero | le | pongo | algo | de | regalo.", "Already | it's | very | good | price-wise, | but | (for) you | I-put | something | as | a gift.", "It's already a good price, but I'll throw in a little extra.", { flags: {} }) }),
     ],
     // a second "¿Me hace descuento?"
-    haggle_again: [t("Más | barato | no se puede, | {m:joven|f:joven}.", "More | cheap | it can't be done, | {m:young man|f:young lady}.", "I can't go any lower, I'm afraid.")],
+    haggle_again: [t("Más | barato | no se puede, | {m:joven|f:joven}.", "More | cheap | it can't be done, | {m:young man|f:young lady}.", "I can't go any lower, I'm afraid.",
+      { spain: t("Más | barato | no puedo, | de verdad.", "More | cheap | I can't, | really.", "I can't go any lower, I'm afraid.") })],
     pilon: [
       t("Le | puse | un | pilón | de | cilantro.", "(For) you | I-put | a | little extra | of | cilantro.", "I put in some cilantro for you, on the house.",
         { flags: { 3: "Mexican: el pilón = a little extra the seller adds for free." },
-          spain: t("Le | he puesto | un | poco | de | cilantro | de | regalo.", "(For) you | I-have-put | a | little | of | cilantro | as | a gift.", "I put in some cilantro for you, on the house."),
+          spain: t("Le | he puesto | un | poco | de | cilantro | de | regalo.", "(For) you | I-have-put | a | little | of | cilantro | as | a gift.", "I put in some cilantro for you, on the house.", { flags: {} }),
           neutral: t("Le | puse | un | poco | de | cilantro | de | regalo.", "(For) you | I-put | a | little | of | cilantro | as | a gift.", "I put in some cilantro for you, on the house.") }),
     ],
     closing: [
-      t("¡Gracias, | {m:joven|f:joven}! | ¡Vuelva | pronto!", "Thanks, | {m:young man|f:young lady}! | Come back | soon!", "Thank you! Come back soon!"),
+      t("¡Gracias, | {m:joven|f:joven}! | ¡Vuelva | pronto!", "Thanks, | {m:young man|f:young lady}! | Come back | soon!", "Thank you! Come back soon!",
+        { spain: t("¡Muchas | gracias! | ¡Hasta | la | próxima!", "Many | thanks! | Until | the | next (time)!", "Thank you! Come back soon!") }),
       t("¡Que | le | vaya | bien!", "(I hope) | (for) you | it-goes | well!", "All the best!"),
     ],
     unknown: [t("Mmm, | eso | no lo vendo | aquí.", "Hmm, | that | I don't sell it | here.", "Hmm, I don't sell that here.")],
@@ -429,8 +447,11 @@ export const mercado: SituationDef = {
     order: {
       lt: "Ask for fruit or vegetables", slot: "product", examples: ["aguacate", "jitomate", "limon", "mango"],
       items: [
-        { id: "me_da", s: t("¿Me | da | un | kilo | de | {X.pl}?", "(To) me | you-give | a | kilo | of | {X.pl}?", "Can I have a kilo of {X.pl}?"), only: (e) => e.attrs?.unit === "kg" },
-        { id: "deme", s: t("Deme | medio | kilo | de | {X.pl}, | por favor.", "Give me | half | kilo | of | {X.pl}, | please.", "Half a kilo of {X.pl}, please."), only: (e) => e.attrs?.unit === "kg" },
+        { id: "me_da", s: t("¿Me | da | un | kilo | de | {X.pl}?", "(To) me | you-give | a | kilo | of | {X.pl}?", "Can I have a kilo of {X.pl}?",
+          { spain: t("¿Me | pone | un | kilo | de | {X.pl}?", "(To) me | you-put | a | kilo | of | {X.pl}?", "Can I have a kilo of {X.pl}?") }),
+          noteSpain: "In a shop or a bar in Spain, “¿Me pone…?” (“will you put me…?”) is the usual way to ask for something.", only: (e) => e.attrs?.unit === "kg" },
+        { id: "deme", s: t("Deme | medio | kilo | de | {X.pl}, | por favor.", "Give me | half | kilo | of | {X.pl}, | please.", "Half a kilo of {X.pl}, please.",
+          { spain: t("Póngame | medio | kilo | de | {X.pl}, | por favor.", "Put me | half | kilo | of | {X.pl}, | please.", "Half a kilo of {X.pl}, please.") }), only: (e) => e.attrs?.unit === "kg" },
         { id: "quiero", s: t("Quiero | tres | {X.pl}.", "I want | three | {X.pl}.", "I'd like three {X.pl}."), only: (e) => e.attrs?.unit === "pza" },
         { id: "llevo", s: t("Me llevo | {X.np}.", "I'll take | {X.np}.", "I'll take {X.np}."), only: (e) => e.attrs?.unit !== "kg" },
         { id: "quisiera", s: t("Quisiera | {X.pl}, | por favor.", "I'd like | {X.pl}, | please.", "I'd like some {X.pl}, please.") },
@@ -452,7 +473,8 @@ export const mercado: SituationDef = {
         { id: "qty_kilo", s: t("Medio | kilo.", "Half | kilo.", "Half a kilo.") },
         { id: "qty_kilo", s: t("Kilo | y | medio.", "Kilo | and | half.", "A kilo and a half.") },
         { id: "qty_kilo", s: t("Un | cuarto.", "A | quarter.", "A quarter kilo.") },
-        { id: "qty_money", s: t("Veinte | pesos, | nada más.", "Twenty | pesos, | just that.", "Just twenty pesos' worth.") },
+        { id: "qty_money", s: t("Veinte | pesos, | nada más.", "Twenty | pesos, | just that.", "Just twenty pesos' worth.",
+          { spain: t("Solo | veinte | pesos.", "Only | twenty | pesos.", "Just twenty pesos' worth.") }) },
       ],
     },
     // things sold by the piece or the bunch
@@ -460,7 +482,7 @@ export const mercado: SituationDef = {
       lt: "Say how many",
       items: [
         { id: "qty_pcs", s: t("Tres, | por favor.", "Three, | please.", "Three, please.") },
-        { id: "qty_pcs", s: t("Dos, | nada más.", "Two, | just that.", "Just two.") },
+        { id: "qty_pcs", s: t("Dos, | nada más.", "Two, | just that.", "Just two.", { spain: t("Solo | dos.", "Only | two.", "Just two.") }) },
       ],
     },
     ripe: {
@@ -473,7 +495,7 @@ export const mercado: SituationDef = {
     more: {
       lt: "Say that's all",
       items: [
-        { id: "more_all", s: t("Es | todo, | gracias.", "It's | all, | thanks.", "That's all, thanks.") },
+        { id: "more_all", s: t("Es | todo, | gracias.", "It's | all, | thanks.", "That's all, thanks.", { spain: t("Eso | es | todo, | gracias.", "That | is | all, | thanks.", "That's all, thanks.") }) },
         { id: "more_nothing", s: t("Nada más.", "That's all.", "Nothing else.") },
       ],
     },
@@ -498,6 +520,13 @@ export const mercado: SituationDef = {
 
   tips: {
     tu_staff: { key: "tu_staff", lt: "Understood! With a stallholder, usted is more polite: “¿Me da…?”, “Deme…” (me das / dame is for friends).", better: "¿Me da un kilo de aguacate?" },
+  },
+
+  // the Spain twins' set phrases
+  merges: {
+    "de momento": { reason: "lexical_expression", split: "de → of + momento → moment is false; = for now, so far.", minimal: "Two words." },
+    "de precio": { reason: "lexical_expression", split: "de → of + precio → price; after bien / mal = price-wise.", minimal: "Two words." },
+    "de verdad": { reason: "lexical_expression", split: "de → of + verdad → truth is false; = really, honestly.", minimal: "Two words." },
   },
 
   // -------------------------------------------------------------------------

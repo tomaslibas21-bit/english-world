@@ -15,5 +15,6 @@
   {"ctx": "drink", "say": "No bebo alcohol", "intent": ["drink_no"]},
   {"ctx": "name", "say": "¡Hola! ¿Qué tal estáis?", "intent": ["g_howareyou"]},
   {"ctx": "drink", "say": "Vengo conduciendo, no puedo beber", "intent": "drink_no", "not": ["drink_ans"]},
-  {"ctx": "cafe", "say": "Sí, ya he ido", "intent": "cafe_ans_yes"}
+  {"ctx": "cafe", "say": "Sí, ya he ido", "intent": "cafe_ans_yes"},
+  {"ctx": "time", "say": "Más o menos un año", "intent": "time_ans"}
 ] }

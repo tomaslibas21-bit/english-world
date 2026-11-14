@@ -916,7 +916,8 @@ export const landlord: SituationDef = {
       t("Es | cierto. | Desde | mi | casa | se oye | el | ventilador | de al lado | toda | la | noche.", "It's | true. | From | my | home | you can hear | the | fan | next door | all | the | night.",
         "It's true. From my place I can hear that fan next door all night."),
     ],
-    rita_irony: [t("¡Y | como | usted | siempre | arregla | todo | tan | rápido!", "And | since | you | always | fix | everything | so | fast!", "And you always fix everything so fast!")],
+    rita_irony: [t("¡Y | como | usted | siempre | arregla | todo | tan | rápido!", "And | since | you | always | fix | everything | so | fast!", "And you always fix everything so fast!",
+      { spain: t("¡Y | como | usted | siempre | lo | arregla | todo | tan | rápido!", "And | since | you | always | — | fix | everything | so | fast!", "And you always fix everything so fast!", { flags: { 4: "lo doubles todo (everything); English needs no word." } }) })],
     rita_tech: [
       t("Y | si | no, | yo | conozco | a | un | técnico | muy | bueno, | ¿eh?", "And | if | not, | I | know | — | a | repairman | very | good, | you know?",
         "And if not, I know a really good AC repairman.", { flags: { 5: F_A } }),
@@ -930,7 +931,7 @@ export const landlord: SituationDef = {
     ],
     tech_number: [
       t("¡Claro! | Ahorita | se lo | paso | por | mensaje.", "Sure! | Right now | it to you | I'll pass | by | message.", "Of course! I'll text it to you right now.",
-        { flags: { 1: F_AHORITA }, neutral: t("¡Claro! | Ahora mismo | se lo | paso | por | mensaje.", "Sure! | Right now | it to you | I'll pass | by | message.", "Of course! I'll text it to you right now.") }),
+        { flags: { 1: F_AHORITA }, neutral: t("¡Claro! | Ahora mismo | se lo | paso | por | mensaje.", "Sure! | Right now | it to you | I'll pass | by | message.", "Of course! I'll text it to you right now.", { flags: {} }) }),
     ],
     tech_again: [t("Sí, | sí, | se lo | paso.", "Yes, | yes, | it to you | I'll pass.", "Yes, yes, I'll send it to you.")],
     // Don Ernesto, asked for Chucho's number (the audit, 5 Nov 2026)
@@ -939,31 +940,38 @@ export const landlord: SituationDef = {
     // --- the dodge -------------------------------------------------------------------
     dodge_old: [
       t("Mire, | el | aparato | ya | está | viejito. | Son | cosas | que | pasan.", "Look, | the | unit | already | is | a bit old. | They're | things | that | happen.",
-        "Look, the unit's getting old. These things happen.", { flags: { 5: F_VIEJITO } }),
+        "Look, the unit's getting old. These things happen.", { flags: { 5: F_VIEJITO },
+          spain: t("Mire, | el | aparato | ya | tiene | sus | años. | Son | cosas | que | pasan.", "Look, | the | unit | already | has | its | years. | They're | things | that | happen.", "Look, the unit's getting old. These things happen.",
+            { flags: { 4: "tener sus años: to be getting old (literally, to have its years)." } }) }),
     ],
     dodge_sweater: [
       t("¿Ya | probó | con | un | baño | de | agua | fría?", "Already | did you try | with | a | shower | of | water | cold?", "Have you tried a cold shower?",
-        { flags: { 4: "baño: a bath or a shower; also the bathroom." }, spain: t("¿Ya | ha probado | con | una | ducha | de | agua | fría?", "Already | have you tried | with | a | shower | of | water | cold?", "Have you tried a cold shower?") }),
+        { flags: { 4: "baño: a bath or a shower; also the bathroom." }, spain: t("¿Ya | ha probado | con | una | ducha | de | agua | fría?", "Already | have you tried | with | a | shower | of | water | cold?", "Have you tried a cold shower?", { flags: {} }) }),
     ],
     kidding: [t("Es broma, | es broma.", "Just kidding, | just kidding.", "I'm kidding, I'm kidding.")],
     sorry_joke: [t("Perdón, | perdón. | Mal | chiste.", "Sorry, | sorry. | Bad | joke.", "Sorry, sorry. Bad joke.")],
     dodge_after_rita: [
       t("Bueno, | bueno. | El | aparato | ya | está | viejito, | pero... | está bien.", "Okay, | okay. | The | unit | already | is | a bit old, | but... | fine.",
-        "Okay, okay. The unit's getting old, but… fine.", { flags: { 6: F_VIEJITO } }),
+        "Okay, okay. The unit's getting old, but… fine.", { flags: { 6: F_VIEJITO },
+          spain: t("Bueno, | bueno. | El | aparato | ya | tiene | sus | años, | pero... | está bien.", "Okay, | okay. | The | unit | already | has | its | years, | but... | fine.", "Okay, okay. The unit's getting old, but… fine.",
+            { flags: { 5: "tener sus años: to be getting old (literally, to have its years)." } }) }),
     ],
     dodge_q: [
       t("¿Y | qué | quiere | que | haga?", "And | what | do you want | that | I do?", "So what do you want me to do?", { flags: { 4: "haga: the subjunctive after querer que." } }),
       t("¿Entonces? | ¿Qué | quiere | de | mí?", "So? | What | do you want | from | me?", "So? What do you want from me?"),
     ],
-    patience_react: [t("Ya sé, | ya sé, | y | se lo | agradezco.", "I know, | I know, | and | it to you | I appreciate.", "I know, I know, and I appreciate it.")],
-    i_know: [t("Ya sé, | ya sé.", "I know, | I know.", "I know, I know.")],
+    patience_react: [t("Ya sé, | ya sé, | y | se lo | agradezco.", "I know, | I know, | and | it to you | I appreciate.", "I know, I know, and I appreciate it.",
+      { spain: t("Ya lo sé, | ya lo sé, | y | se lo | agradezco.", "I know, | I know, | and | it to you | I appreciate.", "I know, I know, and I appreciate it.") })],
+    i_know: [t("Ya sé, | ya sé.", "I know, | I know.", "I know, I know.", { spain: t("Ya lo sé, | ya lo sé.", "I know, | I know.", "I know, I know.") })],
     resp_react: [
       t("Bueno, | bueno. | Ya | leyó | el | contrato. | Eso | lo | respeto.", "Okay, | okay. | Already | you read | the | lease. | That | it | I respect.",
         "Okay, okay. You've read the lease. I respect that.", { flags: { 7: "lo repeats eso (that): Spanish doubles a fronted object." }, spain: t("Bueno, | bueno. | Ya | se ha leído | el | contrato. | Eso | lo | respeto.", "Okay, | okay. | Already | you've read | the | lease. | That | it | I respect.", "Okay, okay. You've read the lease. I respect that.", { flags: { 7: "lo repeats eso (that): Spanish doubles a fronted object." } }) }),
     ],
     resp_lease: [
       t("La | cláusula | de | las | reparaciones, | ya sé. | Me la | sé | de memoria.", "The | clause | about | the | repairs, | I know. | It | I know | by heart.",
-        "The repairs clause, I know. I know it by heart.", { flags: { 6: "me la: la is the clause; me marks knowing it for oneself (saberse algo)." } }),
+        "The repairs clause, I know. I know it by heart.", { flags: { 6: "me la: la is the clause; me marks knowing it for oneself (saberse algo)." },
+          spain: t("La | cláusula | de | las | reparaciones, | ya lo sé. | Me la | sé | de memoria.", "The | clause | about | the | repairs, | I know. | It | I know | by heart.",
+            "The repairs clause, I know. I know it by heart.", { flags: { 6: "me la: la is the clause; me marks knowing it for oneself (saberse algo)." } }) }),
     ],
     resp_heat: [
       t("Sí, | sí, | el | aire | viene | incluido. | Conozco | mi | propio | contrato.", "Yes, | yes, | the | AC | comes | included. | I know | my | own | lease.",
@@ -1094,7 +1102,7 @@ export const landlord: SituationDef = {
     ],
     writing_react: [
       t("¿Por escrito? | Claro, | ahorita | le | mando | un | mensaje.", "In writing? | Sure, | right now | (to) you | I'll send | a | message.", "In writing? Sure, I'll text you right now.",
-        { flags: { 2: F_AHORITA }, neutral: t("¿Por escrito? | Claro, | ahora mismo | le | mando | un | mensaje.", "In writing? | Sure, | right now | (to) you | I'll send | a | message.", "In writing? Sure, I'll text you right now.") }),
+        { flags: { 2: F_AHORITA }, neutral: t("¿Por escrito? | Claro, | ahora mismo | le | mando | un | mensaje.", "In writing? | Sure, | right now | (to) you | I'll send | a | message.", "In writing? Sure, I'll text you right now.", { flags: {} }) }),
     ],
     writing_lease: [
       t("De veras | leyó | el | contrato. | Bueno, | le | mando | un | mensaje.", "Really | you read | the | lease. | Okay, | (to) you | I'll send | a | message.", "You really did read the lease. Okay, I'll text you.", { spain: t("De verdad | se ha leído | el | contrato. | Bueno, | le | mando | un | mensaje.", "Really | you've read | the | lease. | Okay, | (to) you | I'll send | a | message.", "You really did read the lease. Okay, I'll text you.") }),
@@ -1219,7 +1227,7 @@ export const landlord: SituationDef = {
           { flags: { 3: "desde hace + a length of time, with the present: it started then and still goes on." } }) },
         { id: "heat_not_working", s: t("El | aire | acondicionado | no funciona.", "The | air | conditioning | doesn't work.", "The AC isn't working.") },
         { id: "radiator_cold", s: t("El | minisplit | solo | echa | aire | caliente.", "The | minisplit | only | blows | air | hot.", "The AC only blows warm air.",
-          { flags: { 1: F_MINISPLIT }, neutral: t("El | aire | acondicionado | solo | echa | aire | caliente.", "The | air | conditioning | only | blows | air | hot.", "The AC only blows warm air.") }) },
+          { flags: { 1: F_MINISPLIT }, neutral: t("El | aire | acondicionado | solo | echa | aire | caliente.", "The | air | conditioning | only | blows | air | hot.", "The AC only blows warm air.", { flags: {} }) }) },
         { id: "cold_apt", s: t("Hace | un | calor | horrible | en | mi | casa.", "It makes | a | heat | horrible | in | my | home.", "It's horribly hot in my place.",
           { flags: { 0: "hace + a weather noun: it's (hot, cold)." } }) },
         { id: "kitchen_colder", s: t("Hace | más | calor | adentro | que | afuera.", "It makes | more | heat | inside | than | outside.", "It's hotter inside than outside.", { spain: t("Hace | más | calor | dentro | que | fuera.", "It makes | more | heat | inside | than | outside.", "It's hotter inside than outside.") }) },
@@ -1374,6 +1382,7 @@ export const landlord: SituationDef = {
     "para eso estamos": { reason: "lexical_expression", split: "para → for + eso → that + estamos → we are is a word-for-word reading of a set reply: that's what we're here for.", minimal: "The whole formula." },
     "ahora mismo": { reason: "lexical_expression", split: "ahora → now + mismo → same misreads the adverb: right now.", minimal: "Two words." },
     "es broma": { reason: "lexical_expression", split: "es → it is + broma → joke; the set reply = just kidding.", minimal: "Two words." },
+    "ya lo sé": { reason: "lexical_expression", split: "ya → already + lo → it + sé → I know; the reply = I know.", minimal: "Three words." },
     "ya sé": { reason: "lexical_expression", split: "ya → already + sé → I know; the reply = I know (I'm aware).", minimal: "Two words." },
     "me la": { reason: "grammatical_fusion", split: "Two object pronouns before the verb are glossed together.", minimal: "Two words." },
     "de memoria": { reason: "lexical_expression", split: "de → of + memoria → memory; = by heart.", minimal: "Two words." },

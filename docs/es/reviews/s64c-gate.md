@@ -125,3 +125,15 @@ No Mexican line's text changed. New lines: `no_bag`, `offer_optional`, `id_passp
 Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
 
 - Read every twin: usted kept throughout, Spain's words right (billete, tarjeta de embarque, móvil, gafas, portátil, aseos, maleta, facturar, coger, aparcamiento, coche, jersey), the perfect for what just happened, "Ya está" for "Listo", Mexican-only names kept. Meaning, glosses and spelling: no problems found. No changes.
+
+## Spain pass 3 (14 Nov 2026)
+
+- On time / late: "vamos a tiempo" → "vamos en hora" / "salimos puntuales"; "no viene retrasado" → "no lleva retraso";
+  "como a {time}" → "sobre {time}" (boarding_late, departure_late); chips q_ontime "¿El vuelo va en hora?", q_delayed
+  "¿El vuelo va con retraso?", q_why "¿Por qué va con retraso?" (grammar; merges en hora, con retraso).
+- Bag tag: "Aquí está su comprobante" → "Aquí tiene su resguardo"; vamos para allá → para allí.
+- Notes: twins that inherited sala, pase de abordar, se le ofrece, fíjese que, ahorita, contacto, documéntela and
+  "todavía no empieza" notes get `flags: {}` or their own (greet, gate7_yes, gate_changed, heading_there, see_bp,
+  flight_help, ontime_no, coffee, coffee_time, restroom, charge, seat_changed, gate7_dir, boarding_not_started,
+  scan_ask ×2, chips q_gate / q_right / bd_bp ×3 / of_yes); noteSpain for q_gate and q_group.
+- Spain corpus: +3 items.

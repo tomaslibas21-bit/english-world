@@ -143,3 +143,13 @@ could warn about a line with two entity placeholders, which the voice list never
 Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
 
 - Read every twin: usted kept throughout, Spain's words right (billete, tarjeta de embarque, móvil, gafas, portátil, aseos, maleta, facturar, coger, aparcamiento, coche, jersey), the perfect for what just happened, "Ya está" for "Listo", Mexican-only names kept. Meaning, glosses and spelling: no problems found. No changes.
+
+## Spain pass 3 (14 Nov 2026)
+
+- On time: "a tiempo" → "puntual" / "en hora" (delayed_no, ontime_yes; chip q_ontime "¿El vuelo sale puntual?",
+  grammar `(sale | va | llega) (puntual | en hora) #h:q_ontime`; merges en hora, de momento).
+- ¿Cómo le va? → ¿Qué tal?; ¡Con gusto! → ¡Por supuesto!; "se levanta más fácil" → "es más fácil levantarse"; el
+  comprobante (bag tag) → el resguardo (×3); "Es todo" chip → "Eso es todo".
+- Notes: twins that inherited documentar, prestar, pase de abordar, filtro and sala notes get `flags: {}` (greet_checkin,
+  ask_passport, bp_updated, ask_bags, bp_give ×2, security_dir, the q_gate chip); noteSpain on "¿Me da…?".
+- Spain corpus: +2 items.

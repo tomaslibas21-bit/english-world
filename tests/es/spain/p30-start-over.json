@@ -21,6 +21,7 @@
 { "ctx": "start_over", "say": "¿Borrón y cuenta nueva?", "intent": "start_over" },
 { "ctx": "start_over", "say": "Gracias, tío", "intent": ["thanks_mate", "g_thanks"] },
 { "ctx": "closing", "say": "Yo también te he echado de menos", "intent": "missed_you" },
+{ "ctx": "responsibility", "say": "Fue culpa mía", "intent": "own_it" },
 { "ctx": "make_up", "say": "No te voy a invitar a cenar", "intent": "any" }
 ]
 }
