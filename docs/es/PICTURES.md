@@ -667,8 +667,15 @@ for lots of amazing pictures"; `STOP_USD` went from $75 to $80). Manifests: `ref
 - **Checked**: every picture looked at on sheets (faces, hands, the place, no letters; `review_text.py` reads only the
   glyph stones as "O:"); `scene-walk.ts x01 x02 x03` (0 errors); in the real game on a phone and a computer (the
   picture on, the 3D chip, each line's picture in turn).
-- **The surf lesson's cues** (`x01-surf-game`, 17 pictures planned for the mini-game's `sg_` lines: the boards,
-  lying down, paddling, ducking under, the line-up, "this one", up, left, right, knees, eyes, speed, crest, drop, a
-  jump): for its cards; their web versions go to `<work>/x-new3/surf-game/web/`, not `public/`: nothing shows them yet.
+- **The surf lesson's cues** (`x01-surf-game`, 17 pictures for the mini-game's `sg_` lines, seen from the learner's
+  own board: the boards, lying down, paddling, ducking under, the tumble, the line-up, "too small", "this one", up,
+  left, right, knees, eyes, speed, crest, drop, a jump): for its cards; `lines` in the manifest says which cues each
+  shows. Their web versions are in `<work>/x-new3/surf-game/web/`, not `public/`: nothing shows them yet. `right` is
+  `left` mirrored (the edit leaned the wrong way).
 - **Cards** (`cards.py`, `card-probe-es.ts`: brought in from the `es-card-art` branch): the probe takes `--only`, and
-  `cards.py map PROBE --only …` merges new conversations into the map; 19 phrase groups (x01 9, x02 6, x03 4).
+  `cards.py map PROBE --only …` merges new conversations into the map; 19 phrase groups (x01 9, x02 6, x03 4), each
+  with its picture (two redone: a stranger drawn where the game picture has nobody; banknotes that looked like
+  dollars). `<work>/cards/card-art.json` now lists 53 conversations, 864 group pictures, 496 scene crops.
+- **Cost** (the ledger): $8.85 for x01–x03 in all: the 7 references $0.43, 113 scene pictures and one fix $7.35 (104
+  through the regular API before the credits ran out at $7.03 of balance, 10 in batches after the owner's top-up),
+  the 17 cue pictures (19 requests) $0.83, the 21 card pictures $0.24. Spent in all: $60.96.

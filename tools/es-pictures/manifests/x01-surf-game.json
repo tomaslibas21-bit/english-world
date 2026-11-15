@@ -278,10 +278,10 @@
     "sg_up_face"
    ],
    "refs": [
-    "edit:x01-surf-game/up",
+    "setting:place/la-ola",
     "person:cast/surf"
    ],
-   "prompt": "Change only this: her board climbs up the green face of the wave to its foaming top, its nose pointing up toward the crest, her arms out for balance.",
+   "prompt": "Seen from the side, from the learner's board on the same wave: the green face of a small wave rises as a slope from the lower left to its white, foaming crest at the upper right. Nayeli rides UP the slope on her white surfboard with a coral stripe, the board's nose pointing up toward the crest and almost touching the foam, her knees bent, arms out.",
    "out": "{work}/x-new3/surf-game/web/crest.webp",
    "frame": "water"
   },
@@ -293,10 +293,10 @@
     "sg_down_face"
    ],
    "refs": [
-    "edit:x01-surf-game/up",
+    "setting:place/la-ola",
     "person:cast/surf"
    ],
-   "prompt": "Change only this: her board drops down the green face of the wave toward the flat water at its foot, its nose pointing down, her knees bent deep, arms out.",
+   "prompt": "Seen from the side, from the learner's board on the same wave: the green face of a small wave falls as a slope from its white, foaming crest at the upper left down to flat water at the lower right. Nayeli rides DOWN the slope on her white surfboard with a coral stripe, the board's nose pointing down toward the flat water, her knees bent deep, arms out.",
    "out": "{work}/x-new3/surf-game/web/drop.webp",
    "frame": "water"
   },
