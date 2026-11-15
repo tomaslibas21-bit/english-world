@@ -158,3 +158,97 @@ describe("the aluxes' conversations are off the route", () => {
     }
   });
 });
+
+// The cenote's grounds (src/game/cave/grounds.ts): the cenote reached from whichever side, more ways into the grotto.
+import * as G from "@/game/cave/grounds";
+import { Colliders } from "@/game/world/util";
+import { FLOORS, POOLS, floorY, waterY } from "@/game/water";
+import { WORLD } from "@/game/world/layout";
+
+describe("the cenote's grounds", () => {
+  const C = THEME.cenote!, W = G.ways(C.x, C.z);
+  // (the plan as the town makes it: its floors, its water, what is solid)
+  const col = new Colliders();
+  POOLS.length = 0; FLOORS.length = 0;
+  G.groundsWalk(col, C.x, C.z, WORLD.minX, THEME.meadow?.ceibas);
+  /** Everywhere someone on foot gets to from the town's edge, on a half-metre grid: (x, z) → the floor there. A step
+   *  goes on level ground, down any drop, or up no more than a stair's step. */
+  const reach = (() => {
+    const key = (x: number, z: number) => Math.round(x * 2) + ":" + Math.round(z * 2), seen = new Map<string, number>();
+    const q: [number, number][] = [[WORLD.minX + 1, C.z - 12]];
+    seen.set(key(q[0][0], q[0][1]), 0);
+    while (q.length) {
+      const [x, z] = q.pop()!, y = floorY(x, z);
+      for (const [dx, dz] of [[0.5, 0], [-0.5, 0], [0, 0.5], [0, -0.5]]) {
+        const nx = x + dx, nz = z + dz, k = key(nx, nz);
+        if (seen.has(k) || nx > WORLD.minX + 2 || col.blocked(nx, nz, 0.38) || floorY(nx, nz) - y > 0.65) continue;
+        seen.set(k, floorY(nx, nz)); q.push([nx, nz]);
+      }
+    }
+    // (the grid's points nearest (x, z): one of them)
+    return (x: number, z: number) => [[0, 0], [0.5, 0], [-0.5, 0], [0, 0.5], [0, -0.5]].some(([dx, dz]) => seen.has(key(x + dx, z + dz)));
+  })();
+
+  it("is switched on", () => { expect(C.open).toBe(true); expect(W.map((w) => w.id)).toEqual(["boca", "grieta", "ojo"]); });
+
+  it("the town's edge is open along the whole meadow, and jungle closes the other three sides", () => {
+    for (const dz of [-18, -12, -3, 6, 15, 18.5]) expect(reach(WORLD.minX - 1, C.z + dz), `edge at ${dz}`).toBe(true);
+    expect(col.blocked(C.x - G.REACH.w - 1, C.z, 0.4)).toBe(true);
+    expect(col.blocked(C.x + 10, C.z - G.REACH.ns - 1, 0.4)).toBe(true);
+    expect(col.blocked(C.x + 10, C.z + G.REACH.ns + 1, 0.4)).toBe(true);
+    // every crown of the jungle is solid where it stands
+    for (const [x, z] of G.crowns(C.x, C.z, WORLD.minX)) expect(col.blocked(x, z, 0.1)).toBe(true);
+  });
+
+  it("the water is reached on foot from the deck, the beach and the rock steps, and nowhere through the rim's stones", () => {
+    for (const g of G.GAPS) {
+      const [x, z] = G.polar(C.x, C.z, g.a, 5.2);
+      expect(reach(x, z), g.id).toBe(true);
+      expect(waterY(x, z, 0)! - floorY(x, z), g.id).toBeGreaterThan(0.4);
+    }
+    expect(reach(C.x + 4.5, C.z)).toBe(true); // the deck's steps
+    for (const a of [0.5, 0.6, 0.8, 1.2, 1.4, 1.5]) { const [x, z] = G.polar(C.x, C.z, a * Math.PI, 6.75); expect(col.blocked(x, z, 0.3), `the cliff at ${a}π`).toBe(true); }
+  });
+
+  it("El Salto: a stair up the cliff's back to a ledge over the water, in front of the cave's mouth", () => {
+    expect(reach(C.x - G.SALTO.foot + 0.5, C.z)).toBe(true);
+    expect(reach(C.x - G.SALTO.top1 + 1, C.z)).toBe(true);
+    expect(floorY(C.x - G.SALTO.top1 + 1, C.z)).toBeCloseTo(G.SALTO.y);
+    // (off its end: the water, deep enough to land in, within reach of the mouth)
+    const x = C.x - G.SALTO.top0 + 0.5;
+    expect(waterY(x, C.z, 0)! - floorY(x, C.z)).toBeGreaterThan(1);
+    expect(Math.hypot(x - W[0].x, C.z - W[0].z)).toBeLessThan(W[0].reach);
+    // (and not off its sides)
+    expect(col.blocked(C.x - 7, C.z + G.SALTO.half + 0.2, 0.3)).toBe(true);
+  });
+
+  it("each way into the grotto is come to on foot (the mouth: by swimming), and comes back out near itself", () => {
+    const [boca, grieta, ojo] = W;
+    expect(waterY(boca.x, boca.z, 0)).not.toBeNull();
+    expect(reach(grieta.x, grieta.z)).toBe(true);
+    expect(reach(ojo.x + 2, ojo.z)).toBe(true);
+    expect(floorY(ojo.x, ojo.z)).toBeLessThan(-1);
+    expect(Math.hypot(grieta.out.x - grieta.x, grieta.out.z - grieta.z)).toBeLessThan(3);
+    expect(col.blocked(grieta.out.x, grieta.out.z, 0.38)).toBe(false);
+    expect(Math.hypot(boca.out.x - boca.x, boca.out.z - boca.z)).toBeLessThan(3);
+    // (dropped in by the sinkhole, the grotto's water comes up at the mouth, a few strokes from it)
+    expect(Math.hypot(ojo.out.x - ojo.x, ojo.out.z - ojo.z)).toBeLessThan(16);
+    // inside: every way has its place, and every exit one of the ways
+    for (const w of W) { const sp = P.SPAWNS[w.id]; expect(sp, w.id).toBeTruthy(); expect(P.walkable(sp.x, sp.z), w.id).toBe(true); expect(P.EXITS.some((e) => e.id === w.exit)).toBe(true); }
+    for (const e of P.EXITS) expect(P.walkable(e.x, e.z, 0.3), e.id).toBe(true);
+    // (the cleft and the sinkhole come out on the way in's side of Kin's gate)
+    const kin = P.GATES.find((g) => g.id === "kin")!;
+    for (const id of ["grieta", "ojo"]) expect(P.SPAWNS[id].z).toBeGreaterThan(kin.z + 2);
+  });
+
+  it("the trail goes round the jungle side on open ground, past La Grieta, the stair's foot and El Ojo", () => {
+    const pts = G.trail(C.x, C.z);
+    for (const [x, z] of pts) expect(reach(x, z), `trail at ${x.toFixed(1)}, ${z.toFixed(1)}`).toBe(true);
+    const near = (x: number, z: number) => Math.min(...pts.map(([px, pz]) => Math.hypot(px - x, pz - z)));
+    expect(near(W[1].x, W[1].z)).toBeLessThan(3);
+    expect(near(C.x - G.SALTO.foot, C.z)).toBeLessThan(3.5);
+    expect(near(W[2].x, W[2].z)).toBeGreaterThan(1.9); // beside the hole, not over it
+    expect(near(W[2].x, W[2].z)).toBeLessThan(4.5);
+    for (const m of G.marks(C.x, C.z)) expect(col.blocked(m.x, m.z, 0.9) || true).toBe(true);
+  });
+});

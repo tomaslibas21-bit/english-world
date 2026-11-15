@@ -247,7 +247,10 @@ export interface TownTheme {
      *  `cenoteWalk`): the town's edge is open where the sacbé crosses it. */
     walk?: boolean;
     /** Through the cave's mouth at its far side one swims into a hidden grotto (src/game/cave). */
-    grotto?: boolean } | null;
+    grotto?: boolean;
+    /** Its grounds are open to explore (src/game/cave/grounds.ts): the meadow's whole edge, more ways down to the
+     *  water, a trail round its jungle side, and more ways into the grotto. */
+    open?: boolean } | null;
   /** Small ruins on a rocky point by the sea beyond the beach's west end (the temple's x and z). */
   ruins: { x: number; z: number } | null;
 

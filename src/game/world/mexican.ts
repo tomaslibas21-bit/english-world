@@ -7,6 +7,7 @@
 // Everything solid is pushed as [geometry, colour] into one list that town.ts merges into a single vertex-coloured
 // mesh, and every new sign is a cell of one texture (SignAtlas): the whole restyle costs a few draw calls.
 import * as THREE from "three";
+import * as GROUNDS from "../cave/grounds";
 import { surfboardParts } from "../surf/shapes";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { rand, roundRect, type Colliders } from "./util";
@@ -861,7 +862,7 @@ function farPalm(parts: Part[], r: () => number, x: number, z: number, h: number
  *  taquilla's palapa with its painted sign facing the town; a sacbé (a white limestone path with an edge of stones) out
  *  across the meadow from the mirador to the deck. One part of the town's merged meshes (the one that casts no shadow:
  *  it is seen from afar, beyond the town's edge); nothing to walk on. */
-export function cenote(parts: Part[], atlas: SignAtlas, x: number, z: number, sign: string) {
+export function cenote(parts: Part[], atlas: SignAtlas, x: number, z: number, sign: string, open = false) {
   const r = rand(808);
   const R = 6.0;
   // the water: dark at the edge, turquoise, light over the white sand in the middle
@@ -875,12 +876,16 @@ export function cenote(parts: Part[], atlas: SignAtlas, x: number, z: number, si
     const k = Math.sin((i / 18) * Math.PI), T = top(k);
     for (const [rr, f, sz] of [[R + 1.0, 0.12, 2.3], [R + 1.4, 0.4, 2.2], [R + 0.9, 0.66, 1.9], [R + 0.25, 0.9, 1.7]] as [number, number, number][]) {
       // (the bottom row wet and dark, moss here and there higher up)
+      // (grounds.ts El Salto: where its ledge lies on the cliff's top, the top row is left out; the stone is still
+      // drawn from the random numbers, so the rest of the cliff is as it was)
+      const before = parts.length;
       stone(parts, r, x + Math.cos(a) * rr, T * f, z + Math.sin(a) * rr, sz + r() * 0.7, 0.85, f < 0.2 ? ["#9a9179", "#8e8670"][i % 2] : (i * 7 + f * 10) % 5 < 1 ? "#93a06a" : undefined);
+      if (open && f > 0.6 && GROUNDS.atLedge(a, 0.3)) parts.length = before;
     }
-    if (i % 2 === 0) jungle(parts, r, x + Math.cos(a) * (R + 2.4), T + 0.2, z + Math.sin(a) * (R + 2.4), 1.7 + r());
+    if (i % 2 === 0) { const before = parts.length; jungle(parts, r, x + Math.cos(a) * (R + 2.4), T + 0.2, z + Math.sin(a) * (R + 2.4), 1.7 + r()); if (open && (GROUNDS.atLedge(a, 0.75) || Math.abs(a - 0.68 * Math.PI) < 0.2)) parts.length = before; }
     // the hanging roots and vines in bunches under the lip where the cliff is high: a few down to the water, most
     // ending on the way, a vine with its leaves among them
-    if (k > 0.3 && i % 2 === 1) {
+    if (k > 0.3 && i % 2 === 1 && !(open && GROUNDS.atLedge(a, 0.4))) {
       const a0 = a + (r() - 0.5) * 0.1, n = 3 + Math.floor(r() * 3);
       for (let m = 0; m < n; m++) {
         const aa = a0 + (m - n / 2) * 0.035, rr = R - 0.25 - r() * 0.45, y1 = T * 0.9, y0 = m === 0 ? 0.12 : y1 * (0.25 + r() * 0.6);
@@ -898,8 +903,11 @@ export function cenote(parts: Part[], atlas: SignAtlas, x: number, z: number, si
   for (let i = 0; i < 15; i++) {
     const a = -Math.PI * 0.58 + (i / 14) * Math.PI * 1.16;
     if (Math.abs(a) < 0.26) continue; // the deck
+    // (grounds.ts: the beach and the rock steps go down between the stones)
+    const before = parts.length;
     stone(parts, r, x + Math.cos(a) * (R + 0.7), 0.3, z + Math.sin(a) * (R + 0.7), 1.4 + r() * 0.6, 0.55);
     if (i % 3 === 0) jungle(parts, r, x + Math.cos(a) * (R + 1.9), 0, z + Math.sin(a) * (R + 1.9), 0.9 + r() * 0.4);
+    if (open && GROUNDS.inGap(a)) parts.length = before;
   }
   // the deck over the rim, its rail, the steps down into the water
   const WOOD = "#8a6a4a", DARK = "#6b4f36", dx = x + R + 0.4;
@@ -951,7 +959,12 @@ export function cenote(parts: Part[], atlas: SignAtlas, x: number, z: number, si
   };
   path(-109.6, -6.6, dx + 1.7, z, 2.2);
   path(hx + 2.8, z + 0.6, hx + 1.4, hz - 1.0, 1.4);
-  for (const [jx, jz, sj] of [[x + R + 7.5, z + 9.5, 2.4], [x + 2, z + R + 3.4, 2.2], [x + 3, z - R - 3.2, 2.0], [x + R + 8, z - 7, 1.8]] as [number, number, number][]) jungle(parts, r, jx, 0, jz, sj);
+  for (const [jx, jz, sj] of [[x + R + 7.5, z + 9.5, 2.4], [x + 2, z + R + 3.4, 2.2], [x + 3, z - R - 3.2, 2.0], [x + R + 8, z - 7, 1.8]] as [number, number, number][]) {
+    // (grounds.ts: no clump where the beach's and the rock steps' ways down begin)
+    if (open && GROUNDS.inGap(Math.atan2(jz - z, jx - x)) && Math.hypot(jx - x, jz - z) < R + 5) continue;
+    jungle(parts, r, jx, 0, jz, sj);
+  }
+  if (open) GROUNDS.groundsShapes(parts, x, z);
 }
 
 /** The cenote one walks down into (theme.ts `cenote.walk`; the engine's swimming is the sea's own, water.ts): the

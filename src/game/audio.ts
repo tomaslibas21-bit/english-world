@@ -1592,7 +1592,7 @@ export class AudioSystem {
   // breath of air, a falls' hush when one is near, and now and then two soft notes as of stones chiming. Asked for
   // about eight times a second, like `ambience`.
   private grotto: { next: number; chime: number; hush?: { src: AudioBufferSourceNode; gain: GainNode }; air?: { o: OscillatorNode[]; gain: GainNode }; echo?: { in: GainNode; nodes: AudioNode[] } } | null = null;
-  cave(on: boolean, lv: { falls?: number; deep?: number } = {}) {
+  cave(on: boolean, lv: { falls?: number; deep?: number; level?: number } = {}) {
     const ctx = this.ctx;
     const live = on && !document.hidden && this.volume > 0 && this.soundsLevel > 0 && !!ctx && ctx.state === "running";
     if (!live) { this.stopCave(); return; }
@@ -1613,6 +1613,8 @@ export class AudioSystem {
       this.grotto.air = { o: [...o, lfo], gain };
     }
     const G = this.grotto, out = G.echo!.in;
+    // (`level`: all of it softer, as heard from outside at one of the grotto's ways in)
+    out.gain.setTargetAtTime(Math.max(0, Math.min(1, lv.level ?? 1)), now, 0.4);
     // drips: a quick falling ping, a softer one after it now and then
     if (now > G.next) {
       G.next = now + 0.5 + Math.random() * 2.4;

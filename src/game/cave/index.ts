@@ -6,6 +6,7 @@ import type { Interior } from "../world/interiors";
 import { THEME } from "../world/theme";
 import { buildCave, type CaveView } from "./Cave";
 import * as P from "./plan";
+import { groundsGlow, ways, type Way } from "./grounds";
 
 export const CAVE_ZONE = "gruta";
 export type CaveZone = Interior & { view: CaveView };
@@ -13,15 +14,16 @@ let cave: CaveZone | null = null;
 
 /** The cenote's water, its radius and the cave's mouth at its far (west) side, in the town's coordinates. */
 const R = 6;
-/** Where one swims up to the cave's mouth (the prompt, and swimming on into it), and where one is back in the water. */
-export function caveDoor(): { x: number; z: number; out: { x: number; z: number; rot: number } } | null {
+/** The ways into the grotto from the town: the cave's mouth, swum up to (and on into); with the cenote's grounds open
+ *  (theme `cenote.open`, grounds.ts) also La Grieta, walked into, and El Ojo, which drops one in. */
+export function caveWays(): Way[] {
   const c = THEME.cenote;
-  if (!c?.grotto) return null;
-  return { x: c.x - R + 1.25, z: c.z, out: { x: c.x - R + 2.9, z: c.z, rot: Math.PI / 2 } };
+  if (!c?.grotto) return [];
+  return c.open ? ways(c.x, c.z) : [{ id: "boca", x: c.x - R + 1.25, z: c.z, reach: 2.3, swim: true, out: { x: c.x - R + 2.9, z: c.z, rot: Math.PI / 2 }, exit: "agua" }];
 }
 
 export function getCave(id: string): CaveZone | null {
-  if (id !== CAVE_ZONE || !caveDoor()) return null;
+  if (id !== CAVE_ZONE || !caveWays().length) return null;
   if (cave) return cave;
   const view = buildCave();
   cave = {
@@ -31,7 +33,9 @@ export function getCave(id: string): CaveZone | null {
     npcs: P.ALUXES.map((a) => ({ npc: a.npc, x: a.x, z: a.z, rot: a.rot, ax: a.ax, az: a.az, ...(a.sit ? { sit: true, seat: a.seat } : {}) })),
     wild: {
       fog: view.fog, background: "#05232c", hemi: ["#a8eef2", "#1d5560", 1.55], sun: ["#fff1d0", 1.25],
-      space: view.space, floor: P.floorY, walkable: P.walkable, bounds: P.BOUNDS, out: caveDoor()!.out,
+      space: view.space, floor: P.floorY, walkable: P.walkable, bounds: P.BOUNDS,
+      // (the cleft's way out only where its other end is: the cenote's grounds open)
+      exits: THEME.cenote?.open ? P.EXITS : P.EXITS.slice(0, 1), spawns: P.SPAWNS,
       camera: { pitch: 0.3, dist: 9.5 },
       frame: (t, dt, cam, at, h) => view.update(t, dt, cam, at, h),
     },
@@ -42,8 +46,8 @@ export function getCave(id: string): CaveZone | null {
 /** What shows of it from the cenote: a glow in the cave's dark mouth and a few fireflies drifting out over the water
  *  (two small meshes in the town's group). */
 export function caveLure(): THREE.Group | null {
-  const door = caveDoor();
-  if (!door) return null;
+  if (!caveWays().length) return null;
+  if (THEME.cenote!.open) return groundsGlow(THEME.cenote!.x, THEME.cenote!.z);
   const g = new THREE.Group(), x = THEME.cenote!.x - R + 0.56, z = THEME.cenote!.z;
   g.name = "gruta-lure";
   const u = { uTime: { value: 0 } };

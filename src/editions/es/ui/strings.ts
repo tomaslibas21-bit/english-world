@@ -680,4 +680,11 @@ export const STRINGS: Record<string, string> = {
   "Svirtis į šoną – pasukti lentą": "Stick sideways: turn the board",
   "„Irkluoti“ – yriai · ↑ – atsistoti": "Paddle: strokes · ↑: stand up",
   "Svirtis – svirti ir tūpti · ↑ – triukas": "Stick: lean and crouch · ↑: trick",
+  // the cenote's grounds: more ways into the grotto (src/game/cave/grounds.ts)
+  "Išlįsti pro plyšį": "Out through the cleft",
+  "Šokti žemyn: {place}": "Jump down: {place}",
+  "Uolos plyšyje kažkas švyti…": "Something glows in a cleft in the rock…",
+  "Prieik arčiau – pro jį galima įlįsti.": "Come closer: one can squeeze in through it.",
+  "Iš duobės tarp šaknų kyla šviesa…": "Light rises from a hole among the roots…",
+  "Tai El Ojo – „akis“. Įšok, jei drįsti: apačioje vanduo.": "That is El Ojo, “the eye”. Jump in if you dare: there is water below.",
 };

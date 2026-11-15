@@ -51,7 +51,7 @@ import { roleSaid } from "../convo/compose";
 import { EDITION } from "../edition";
 import type { GameApi } from "./gameRef";
 import { THEME } from "./world/theme";
-import { getCave, caveDoor, caveLure, CAVE_ZONE } from "./cave";
+import { getCave, caveWays, caveLure, CAVE_ZONE } from "./cave";
 import { CaveQuest } from "./cave/quest";
 import { ROUTE } from "../content/route";
 export type { GameApi } from "./gameRef";
@@ -188,7 +188,12 @@ export class Game implements GameApi {
   cave: CaveQuest | null = null;
   private caveLure: THREE.Group | null = null;
   private cavePushT = 0;
-  private caveHinted = false;
+  /** The grotto's ways in (cave/grounds.ts): the ones a word has been said about; the one within reach now; the one
+   *  gone in by (coming out of the grotto's water or its cleft comes up there). */
+  private caveHinted = new Set<string>();
+  private nearWay: string | null = null;
+  private caveVia: string | null = null;
+  private dropIn = 0;
   private townCam: { pitch: number; dist: number } | null = null;
   private pushDoorT = 0;
   private transitioning = false;
@@ -293,7 +298,9 @@ export class Game implements GameApi {
     // (nor what is thin and looked through, userData.thin: the overhead lines a town may have, the gas station's
     // canopy, the tianguis' lonas)
     const moves = (o: THREE.Object3D) => o.userData?.v !== undefined || !!o.userData?.gull || !!o.userData?.boat || !!o.userData?.thin;
-    this.field = OcclusionField.fromObject(this.town.group, { minX: WORLD.minX - 24, maxX: WORLD.maxX + 24, minZ: WORLD.minZ - 24, maxZ: WORLD.maxZ + 24 }, { skip: moves });
+    // (the cenote's grounds open to explore, cave/grounds.ts: they reach further west than the town's own edge)
+    const west = THEME.cenote?.open ? 50 : 0;
+    this.field = OcclusionField.fromObject(this.town.group, { minX: WORLD.minX - 24 - west / 2, maxX: WORLD.maxX + 24, minZ: WORLD.minZ - 24, maxZ: WORLD.maxZ + 24 }, { skip: moves });
     this.field.fillFootprints(this.town.colliders.boxes, this.town.colliders.circles);
     this.fader = new PropFader(this.town.group, moves, 1.3, THEME.fade);
     // what is low enough to jump onto (benches, planters, low walls), read from the meshes a few milliseconds at a
@@ -313,7 +320,7 @@ export class Game implements GameApi {
       this.ledges.add({ minX: hull.min.x, maxX: hull.max.x, minZ: hull.min.z, maxZ: hull.max.z, top: Infinity });
     }
     withCutout(this.town.group);
-    const nav = new NavGrid(WORLD.minX, WORLD.minZ, WORLD.maxX, WORLD.maxZ, 1, this.town.colliders);
+    const nav = new NavGrid(WORLD.minX - west, WORLD.minZ, WORLD.maxX, WORLD.maxZ, 1, this.town.colliders);
     // pedestrians prefer sidewalks: roads cost more, crosswalks are cheap
     for (const r of ROADS) {
       const h = r.z1 === r.z2;
@@ -328,6 +335,8 @@ export class Game implements GameApi {
       nav.setCost(v.x1 + v.w / 2 - 0.2, h.z1 - h.w / 2, v.x1 + v.w / 2 + 1.8, h.z1 + h.w / 2, 1.2);
     }
     for (const cx of [-50, 22, 100]) nav.setCost(cx - 1.5, -13, cx + 1.5, -3, 1.2);
+    // (a walk by a tap goes round the sinkhole among the roots, cave/grounds.ts, unless it is where the tap was)
+    for (const w of caveWays()) if (w.drop) nav.setCost(w.x - 2, w.z - 2, w.x + 2, w.z + 2, 40);
     this.zones.set("town", { id: "town", group: this.town.group, colliders: this.town.colliders, nav });
     // pigeons round the fountain (in the town's group, so they are hidden indoors); their wings when they take off
     this.pigeons = new Pigeons(FOUNTAIN.x, FOUNTAIN.z, 4.6, 9.5);
@@ -478,7 +487,9 @@ export class Game implements GameApi {
       this.gait.sync(sp.rot, this.steer.held ? this.gait.speed : 0);
       this.gaitOn = this.steer.held;
       this.stepOut = via === "out" && !this.steer.held && this.town.walkableAt(sp.x + Math.sin(sp.rot) * 1.4, sp.z + Math.cos(sp.rot) * 1.4) ? 1.2 : 0;
-      this.hop.land(floor);
+      // (dropped in through a hole in the roof: they fall from up there, into the water)
+      this.hop.land(floor + this.dropIn);
+      this.dropIn = 0;
       this.fader.reset();
       CUT.r.value = 0;
       this.moveVel.set(0, 0, 0);
@@ -948,7 +959,7 @@ export class Game implements GameApi {
     else if (n.kind === "npc") this.talkTo(n.id);
     else if (n.kind === "glyph") this.cave?.open(n.id);
     else if (n.kind === "door") this.enterDoor(n.id);
-    else if (n.kind === "exit") this.exitInterior();
+    else if (n.kind === "exit") this.exitInterior(this.wild ? n.id : undefined);
   }
 
   /** Out of the water onto a pier's boards (a swimmer beside them). */
@@ -968,14 +979,32 @@ export class Game implements GameApi {
   private enterDoor(loc: string) {
     const it = getInterior(loc) ?? getCave(loc);
     if (!it) return;
+    // (the grotto: in by the way that is within reach, cave/grounds.ts)
+    if (it.wild) { this.enterCave(this.nearWay ?? "boca"); return; }
     this.enterZone(loc, undefined, false, "in");
   }
 
-  exitInterior() {
+  /** Into the grotto by one of its ways (cave/grounds.ts): where that way comes out inside, dropped from above if it is
+   *  the sinkhole. */
+  private enterCave(wayId: string) {
+    const cave = getCave(CAVE_ZONE), sp = cave?.wild?.spawns[wayId] ?? cave?.wild?.spawns.boca;
+    if (!cave || !sp || this.transitioning) return;
+    this.caveVia = wayId;
+    this.dropIn = sp.drop ?? 0;
+    this.enterZone(CAVE_ZONE, { x: sp.x, z: sp.z, rot: sp.rot }, false, "in");
+  }
+
+  exitInterior(exitId?: string) {
     if (!this.zone.interior) return;
     const loc = this.zone.id;
-    // (the grotto is left the way one came: back in the cenote's water, by the cave's mouth)
-    if (this.wild) { this.enterZone("town", this.wild.out); return; }
+    // (the grotto is left where one went in: its water comes up at the cave's mouth, its cleft at La Grieta; gone in
+    // by the sinkhole, the water brings one up beside it, in the cenote)
+    if (this.wild) {
+      const id = exitId ?? this.wild.exits[0].id, W = caveWays();
+      const way = W.find((w) => w.id === this.caveVia && w.exit === id) ?? W.find((w) => w.exit === id) ?? W[0];
+      this.enterZone("town", way.out);
+      return;
+    }
     const door = this.town.doors.find((d) => d.loc === loc);
     if (loc === "airport") { this.enterZone("town", AIRPORT_EXIT, false, "out"); return; }
     if (door) {
@@ -1283,7 +1312,7 @@ export class Game implements GameApi {
     // (a conversation off the route, the grotto's aluxes, is nobody's task: the tasks stay as they were)
     if (completed && !sit.bonus) this.advanceObjective(sit);
     // (someone who has found the grotto hears when the town's conversations have woken another of its chambers)
-    if (completed && !sit.bonus && caveDoor()) {
+    if (completed && !sit.bonus && caveWays().length) {
       const pr = useStore.getState().progress, n = ROUTE.filter((q) => sitProgress(pr, q.id).completions > 0).length;
       // (and someone who has not, a rumor, once: after their tenth conversation)
       if (!pr.cave?.seen && n === 10 && sitProgress(pr, sit.id).completions === 1) setTimeout(() => useStore.getState().toast({ kind: "tip", title: L("Sako, kad Ka'an cenotės oloje kažkas švyti…"), body: L("Cenotė – miestelio vakaruose, už apžvalgos aikštelės. Nuplauk pažiūrėti."), ms: 9000 }), 4200);
@@ -1564,6 +1593,12 @@ export class Game implements GameApi {
       });
       // the edition's own town sounds (theme.ts: Puerto Colibrí's church bell, street vendors and trucks; none in
       // Maple Harbor): how near the church, the square and the streets of houses are
+      // near one of the grotto's ways in (cave/grounds.ts), its own quiet is heard: drips, a breath of air, two notes
+      if (out) {
+        let nearWay = 0;
+        for (const w of caveWays()) nearWay = Math.max(nearWay, 1 - Math.hypot(w.x - px, w.z - pz) / 14);
+        if (nearWay > 0.04) audio.cave(this.ambienceAllowed(), { level: nearWay * 0.85 }); else audio.stopCave();
+      }
       const sn = THEME.sounds;
       if (sn) audio.townSounds(out && this.ambienceAllowed(), {
         bell: out ? THREE.MathUtils.clamp(1 - Math.hypot(px - sn.bell[0], pz - sn.bell[1]) / 150, 0, 1) : 0,
@@ -1766,9 +1801,8 @@ export class Game implements GameApi {
     }
     // interior bounds / door push
     if (wild) {
-      // (walking on into the water one came through: back up to the cenote)
-      const ex = this.zone.interior!.exit;
-      if (Math.hypot(p.x - ex.x, p.z - ex.z) < 1.5 && this.vel.z > 0.5 && !blocked) this.exitInterior();
+      // (walking on into the water one came through, or out through the cleft's slit of daylight: back up to the town)
+      for (const ex of wild.exits) if (Math.hypot(p.x - ex.x, p.z - ex.z) < ex.push && this.vel.x * ex.dir[0] + this.vel.z * ex.dir[1] > 0.5 && !blocked && !this.hop.air) { this.exitInterior(ex.id); break; }
     } else if (this.zone.interior) {
       const it = this.zone.interior;
       if (p.z > it.d / 2 - 0.2 && Math.abs(p.x) < 1.2 && this.vel.z > 0.5) { this.exitInterior(); }
@@ -1904,6 +1938,9 @@ export class Game implements GameApi {
     if (landed > 0 && wet) {
       audio.splash(Math.min(1, 0.5 + landed));
       this.splashes.burst(p.x, surface, p.z, 0, 0, 1);
+    } else if (landed > 0 && wild && ground < -0.06) {
+      // (into the grotto's water: dropped in through the sinkhole, or a jump in a ford)
+      audio.splash(Math.min(1, 0.4 + landed));
     } else if (landed > 0) {
       audio.land(this.underfoot(ground > 0.05), landed);
       if (fancy) this.dust.puff(p.x, p.z, Math.sin(this.heading), Math.cos(this.heading), 0.9);
@@ -1917,17 +1954,27 @@ export class Game implements GameApi {
     this.player.update(dt);
   }
 
-  /** Swimming on into the cave's mouth at the cenote's far side goes in (the grotto, src/game/cave). */
+  /** The grotto's ways in from the town (cave/grounds.ts): swimming on into the cave's mouth goes in; stepping into
+   *  the sinkhole drops one in; and a word, once, about each of them one comes near before ever having been down. */
   private checkCavePush(dt: number) {
-    const door = caveDoor(), p = this.player.root.position;
-    // (the first time someone swims in the cenote: a word about the glow in the cave's mouth)
-    if (door && this.swimming && !this.caveHinted && Math.hypot(door.x - p.x, door.z - p.z) < 9) {
-      this.caveHinted = true;
-      if (!useStore.getState().progress.cave?.seen) useStore.getState().toast({ kind: "tip", title: L("Olos angoje kažkas švyti…"), body: L("Nuplauk prie jos, kitame cenotės krašte."), ms: 8000 });
+    const W = caveWays(), p = this.player.root.position;
+    if (!W.length) return;
+    let pushing = false;
+    for (const w of W) {
+      const d = Math.hypot(w.x - p.x, w.z - p.z);
+      if (d < (w.swim ? 9 : 7) && (w.swim ? this.swimming : !this.swimming) && !this.caveHinted.has(w.id)) {
+        this.caveHinted.add(w.id);
+        if (!useStore.getState().progress.cave?.seen) useStore.getState().toast({ kind: "tip", ms: 8000, ...(w.id === "boca" ? { title: L("Olos angoje kažkas švyti…"), body: L("Nuplauk prie jos, kitame cenotės krašte.") }
+          : w.id === "grieta" ? { title: L("Uolos plyšyje kažkas švyti…"), body: L("Prieik arčiau – pro jį galima įlįsti.") }
+          : { title: L("Iš duobės tarp šaknų kyla šviesa…"), body: L("Tai El Ojo – „akis“. Įšok, jei drįsti: apačioje vanduo.") }) });
+      }
+      if (w.swim && this.swimming && this.diveK < 0.3 && d < 1.1 && this.vel.x < -0.8) pushing = true;
+      // (the sinkhole: over its edge and down)
+      if (w.drop && d < 1.05 && !this.transitioning) { this.enterCave(w.id); return; }
     }
-    if (door && this.swimming && this.diveK < 0.3 && Math.hypot(door.x - p.x, door.z - p.z) < 1.1 && this.vel.x < -0.8) {
+    if (pushing) {
       this.cavePushT += dt;
-      if (this.cavePushT > 0.35) { this.cavePushT = 0; this.enterDoor(CAVE_ZONE); }
+      if (this.cavePushT > 0.35) { this.cavePushT = 0; this.enterCave("boca"); }
     } else this.cavePushT = 0;
   }
 
@@ -2079,16 +2126,23 @@ export class Game implements GameApi {
           const d = Math.hypot(dd.outX - p.x, dd.outZ - p.z);
           if (d < 3 && d < bd && !this.swimming) { bd = d; best = { kind: "door", id: dd.loc, label: dd.name }; }
         }
-        // the cave's mouth at the cenote's far side, swum up to: the way into the grotto
-        const cd = caveDoor();
-        if (cd && this.diveK < 0.3 && Math.hypot(cd.x - p.x, cd.z - p.z) < 2.3) { bd = 0.5; best = { kind: "door", id: CAVE_ZONE, label: LOCATIONS[CAVE_ZONE]?.name ?? CAVE_ZONE }; }
+        // a way into the grotto (cave/grounds.ts): the cave's mouth swum up to, the cleft walked up to, the sinkhole
+        this.nearWay = null;
+        for (const w of caveWays()) {
+          if (Math.hypot(w.x - p.x, w.z - p.z) > w.reach || this.diveK > 0.3 || (w.swim ? !this.swimming && this.wading.depth < 0.2 : this.swimming)) continue;
+          bd = 0.5; best = { kind: "door", id: CAVE_ZONE, label: LOCATIONS[CAVE_ZONE]?.name ?? CAVE_ZONE };
+          this.nearWay = w.id;
+          break;
+        }
       } else {
         // a glyph stone that still waits, within reach
         const stone = this.cave?.near(p);
         if (stone && !best) { bd = 1; best = { kind: "glyph", id: stone.id, label: L("akmuo") }; }
         const ex = this.zone.interior.exit;
         const d = Math.hypot(ex.x - p.x, ex.z - p.z);
-        if (d < (this.wild ? 2.6 : 1.8) && d < bd) { bd = d; best = { kind: "exit", id: "exit", label: L("Išeiti") }; }
+        if (!this.wild && d < 1.8 && d < bd) { bd = d; best = { kind: "exit", id: "exit", label: L("Išeiti") }; }
+        // (the grotto's ways out: its water, its cleft)
+        for (const e of this.wild?.exits ?? []) { const de = Math.hypot(e.x - p.x, e.z - p.z); if (de < e.reach && de < bd) { bd = de; best = { kind: "exit", id: e.id, label: L("Išeiti") }; } }
       }
     }
     const changed = (best?.kind + ":" + best?.id) !== (this.nearest?.kind + ":" + this.nearest?.id);
@@ -2101,7 +2155,8 @@ export class Game implements GameApi {
         : best.kind === "out" ? { label: L("Išlipti"), kind: "out" }
         : best.kind === "climb" ? { label: best.label, kind: "climb" }
         : best.kind === "glyph" ? { label: L("Klausytis: kalbantis akmuo"), kind: "listen" }
-        : best.kind === "exit" && this.wild ? { label: L("Grįžti į cenotę"), kind: "exit" }
+        : best.kind === "exit" && this.wild ? { label: best.id === "grieta" ? L("Išlįsti pro plyšį") : L("Grįžti į cenotę"), kind: "exit" }
+        : best.kind === "door" && this.nearWay === "ojo" ? { label: L("Šokti žemyn: {place}", { place: best.label }), lt: placeLt(best.id), kind: "enter" }
         : best.kind === "surf" ? { label: best.label, lt: this.surf?.npc?.name, kind: "surf" }
         : { label: best.kind === "npc" ? L("Kalbėtis: {name}", { name: best.label }) : best.kind === "door" ? L("Įeiti: {place}", { place: best.label }) : L("Išeiti į lauką"), lt: best.kind === "door" ? placeLt(best.id) : undefined, kind: best.kind === "npc" ? "talk" : best.kind === "door" ? "enter" : "exit" } });
     }

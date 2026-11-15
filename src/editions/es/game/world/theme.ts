@@ -275,7 +275,8 @@ export const THEME: TownTheme = {
   // (14 Nov: one walks out to it along the sacbé now, down the deck's steps into the water, and swims there; the
   // conversations still take a colectivo to "a cenote" further off: s62, s69)
   // (15 Nov: and through the cave's mouth at its far side into the aluxes' grotto, src/game/cave)
-  cenote: { x: -136, z: -6, sign: "Cenote Ka'an", walk: true, grotto: true },
+  // (15 Nov, later: its grounds open to explore from every side, src/game/cave/grounds.ts)
+  cenote: { x: -136, z: -6, sign: "Cenote Ka'an", walk: true, grotto: true, open: true },
   ruins: { x: -124, z: -74 },
 
   // Graphics, round 1 (docs/es/TOWN.md "Graphics, round 1"): the Caribbean's colors, the Saturday tianguis, rooms
@@ -480,7 +481,7 @@ export const THEME: TownTheme = {
   poleFade: [6, 8],
   // the meadow out to the cenote as the Yucatán's scrub (clear of the cenote and its palapa, the mirador and the end of
   // avenida Juárez), two ceibas standing over the selva behind it
-  meadow: { x0: -152, x1: -113, z0: -36, z1: 26, clear: [[-136, -6, 13], [-127.6, -1.6, 4], [-107, -7.5, 5], [-112, -8, 6], [-116.5, -6.4, 2], [-120.5, -6.3, 2], [-123.5, -6.2, 2]], ceibas: [[-150, -16], [-147, 9]] },
+  meadow: { x0: -152, x1: -113, z0: -36, z1: 26, clear: [[-136, -6, 17.5], [-127.6, -1.6, 4], [-107, -7.5, 5], [-112, -8, 6], [-116.5, -6.4, 2], [-120.5, -6.3, 2], [-123.5, -6.2, 2]], ceibas: [[-150, -16], [-147, 9]] },
   // Graphics, round 5 (docs/es/TOWN.md "Graphics, round 5"): adoquín on avenida Juárez through the centro (calle
   // Flamboyán to calle Itzamná) and on the streets round the zócalo (Ceiba, Itzamná, avenida del Puerto along the
   // square), curb to curb; green bins on the sidewalks, iron bolardos at the square's corners on Juárez, a bolero's

@@ -37,8 +37,11 @@ export interface Interior {
     floor(x: number, z: number): number;
     walkable(x: number, z: number, r?: number): boolean;
     bounds: { minX: number; maxX: number; minZ: number; maxZ: number };
-    /** Where leaving it puts one in the town. */
-    out: { x: number; z: number; rot: number };
+    /** Its ways out (the first is the room's own `exit`): from how near each is offered, and within what walking on
+     *  into it (towards `dir`) goes out. Where each comes up in the town is the game's to say. */
+    exits: { id: string; x: number; z: number; reach: number; push: number; dir: [number, number] }[];
+    /** Where each way in puts one (`drop`: from how high one falls in, m). */
+    spawns: Record<string, { x: number; z: number; rot: number; drop?: number }>;
     /** The follow camera's lean and distance there (a roof worth seeing: lower and nearer than in the town). */
     camera?: { pitch: number; dist: number };
     /** Every frame while someone is there (`at`: where they are; `h`: the picture's height in pixels). */
