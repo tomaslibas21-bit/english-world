@@ -15,9 +15,12 @@ export const RIDES: RidesPlan = {
     // calle Flamboyán beside the mercado, facing the sea
     { id: "west", x: -67.2, z: -41, rot: Math.PI, paint: "#f6b21b", inside: "#fff4e3", people: 2 },
   ],
-  // afloat just past where one wades, off the beach east of El Muelle, its bow out to sea (where a lancha of the
-  // theme's `lanchas.afloat` lay)
-  boats: [{ id: "muelle", x: -13.5, z: -79.7, rot: Math.PI - 0.25, stripe: "#f6a800" }],
+  // two lanchas lie in the shallows off the beach, each straight down a flight of the malecón's steps (x −12, by El
+  // Muelle, and x 12) and a few steps from the dry sand, their bows out to sea: walked up to and taken
+  boats: [
+    { id: "muelle", x: -11.5, z: -74.3, rot: Math.PI - 0.25, stripe: "#f6a800" },
+    { id: "playa", x: 11.5, z: -74.5, rot: Math.PI + 0.3, stripe: "#e4007c" },
+  ],
   // the airport's forecourt at the end of avenida Juárez, Brotecito's at the end of avenida del Puerto
   lots: [{ x0: 126, x1: 134, z0: -30, z1: 14 }, { x0: 126, x1: 137, z0: -59.5, z1: -50.5 }],
   // the lighthouse's rocks

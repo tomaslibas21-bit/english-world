@@ -30,15 +30,18 @@ describe("Puerto Colibrí's convertibles and lancha", () => {
       for (const l of TRAFFIC_LANES) if (c.x > l.from - 3 && c.x < l.to + 3) expect(Math.abs(c.z - l.z), `${c.id}, the lane at ${l.z}`).toBeGreaterThan(ez + 1.15);
     }
   });
-  it("the lancha floats off the beach by El Muelle, within a step of where one wades to, and none of the theme's lies on it", () => {
-    expect(RIDES.boats.length).toBe(1);
-    const b = RIDES.boats[0], fz = Math.cos(b.rot);
-    expect(b.z + BOAT.half * Math.abs(fz)).toBeLessThanOrEqual(SHORE.limit + 0.3);
-    expect(b.z + BOAT.half * Math.abs(fz)).toBeGreaterThan(SHORE.limit - 2.2);
-    expect(b.x > BAY.x0 && b.x < BAY.x1).toBe(true);
-    for (const [x, z] of THEME.lanchas?.afloat ?? []) expect(Math.hypot(b.x - x, b.z - z)).toBeGreaterThan(8);
-    // east of the pier's deck (x −41.3 … −18.7), not under it
-    expect(b.x).toBeGreaterThan(-18.7 + 2);
+  it("two lanchas lie in the shallows, each down a flight of the malecón's steps and a few steps off the dry sand; none of the theme's lies on them", () => {
+    expect(RIDES.boats.length).toBe(2);
+    for (const b of RIDES.boats) {
+      // the stern within reach of the dry sand's edge; east of the pier's deck (x −41.3 … −18.7)
+      expect(b.z + BOAT.half * Math.abs(Math.cos(b.rot)), b.id).toBeGreaterThan(SHORE.top - BOAT.reach);
+      expect(b.x, b.id).toBeGreaterThan(-18.7 + 4);
+      expect(b.x > BAY.x0 && b.x < BAY.x1).toBe(true);
+      // the steps down from the malecón at x −12 and x 12
+      expect(Math.min(Math.abs(b.x + 12), Math.abs(b.x - 12)), b.id).toBeLessThan(1.5);
+      for (const [x, z] of [...(THEME.lanchas?.afloat ?? []), ...(THEME.lanchas?.beached ?? [])]) expect(Math.hypot(b.x - x, b.z - z), b.id).toBeGreaterThan(6);
+    }
+    expect(Math.hypot(RIDES.boats[0].x - RIDES.boats[1].x, RIDES.boats[0].z - RIDES.boats[1].z)).toBeGreaterThan(6);
   });
   it("everyone in a convertible has their own voice and lines, in Spanish that every country says, with their meaning", () => {
     const voices = new Set<string>(), said = new Set<string>();
