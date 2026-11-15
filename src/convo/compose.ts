@@ -4,6 +4,7 @@
 
 import type { SentSrc } from "../content/types";
 import { genderChoice, type Case, type Gender } from "./lt-morph";
+import { learnerNote } from "../content/notes-lt";
 import { PH_AGREE, PH_AGREE_TARGET, PH_LT, agreeGloss, agreeTarget, entityForPlayer, joinText, joinUnits, npUnits, resolveTarget, splitUnits, valueDisplay } from "./target";
 
 // the practised language's noun phrases and values (./target.ts), also used from here
@@ -105,7 +106,7 @@ export function compose(src0: SentSrc, vars: Vars, opts: ComposeOpts): Sentence 
         units.push({
           en: (first ? pre : "") + (first && newSentence ? capFirst(w) : w) + (last ? post : ""),
           lt: (first ? ltPre : "") + (first && newSentence && !ltPre ? capFirst(np.lt[k]) : np.lt[k]) + (last ? ltPost : ""),
-          flag: np.flags[k],
+          flag: learnerNote(np.flags[k]),
         });
       });
       sayParts.push(pre + (newSentence ? capFirst(np.en.join(" ")) : np.en.join(" ")) + post);
@@ -113,7 +114,7 @@ export function compose(src0: SentSrc, vars: Vars, opts: ComposeOpts): Sentence 
     }
     const enV = valuesIn(agreeEn(en), "en");
     const ltV = valuesIn(agreeIn(lt), "lt");
-    units.push({ en: enV, lt: ltV, flag: src.flags?.[i] });
+    units.push({ en: enV, lt: ltV, flag: learnerNote(src.flags?.[i]) });
     sayParts.push(valuesIn(agreeEn(en), "say"));
   }
 

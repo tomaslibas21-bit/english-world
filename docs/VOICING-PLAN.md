@@ -46,7 +46,7 @@ A fast talker (Chuck, Tyler) is fast through the style; the game's speed in the 
 | Start the batches | `send` | yes |
 | Their state | `status` | yes |
 | Download and make the clips | `fetch` | yes |
-| Whisper listens to every new clip | `check` | no |
+| Whisper listens to every new clip, then each is heard again piece by piece for repeats (see "Repeats") | `check` | no |
 | Clips that failed the check go back into the next `prepare` | `redo` | no |
 | A page to listen to the casting sample | `sheet` | no |
 | Clips to R2 | `upload` | no (wrangler) |
@@ -72,6 +72,56 @@ so when a character is recast, `prepare` asks for their lines again. A line is t
 - **Gemini's slips:** 819 of 33,682 lines (about 1 in 40) needed another take: most said the line twice or a piece of it again ("All done? All done?"), now and then a different line altogether ("Hi!" came out as "Bye."); Whisper's check and the length rule find them. It refused one line as `PROHIBITED_CONTENT` (a false alarm on the shop name in "I'm looking for Threads."): `SAY_AS` sends the name in quotes. A line with no letters (a hint's empty blank, ".") gets no clip: Gemini made up words for it.
 - **Whisper's slips:** in the 10-second window it sometimes repeats what it heard; it writes numbers its own way ("$17.97", "-4", "20s", "June 4th") and drops a laugh ("Ha!"), which the comparison allows for; Lithuanian place names come back as anything.
 - **Pace:** Whisper checks about 140–200 clips a minute on this Mac when nothing else runs, about 60 while uploads run; keep the Mac on the charger.
+
+## Repeats: the piece-by-piece check (15 Nov 2026)
+
+**What happened.** The owner heard the clerk at Threads say "Would you like your… would you like your receipt printed
+or emailed?" (clip `ff05ec900eb7`, 3.87 s). Whisper had written that clip as the line, once, and scored it 1.0: a
+recognizer that hears a whole clip tends to smooth a restart away, and the length rule only caught clips more than
+twice their usual length. Heard piece by piece the same clip says "Would you like your | Would you like your receipt? |
+Printed or emailed?". It was far from the only one: of the 80 Maple Harbor clips that ran longest for their line,
+about half were restarts.
+
+**The check now** (`tools/voice-pieces.ts`, `tools/voice-pieces.py`; `check` runs it on every new clip, and `redo`
+sends a flagged clip back like any other):
+
+1. **Pieces.** The clip is cut in the middle of each inner pause (80 ms or more at −38 dB under its loud level;
+   pieces under 250 ms join a neighbour), and each piece is recognized on its own, as well as the whole clip. The
+   recognizer is Parakeet (`parakeet-tdt-0.6b-v3` through sherpa-onnx), which writes what it hears word for word, in
+   English and Spanish. What the top of `tools/voice-pieces.py` says it needs must be installed; `VOICE_PIECES=whisper`
+   uses Whisper instead, which writes a short piece's words twice now and then, so its echoes inside one piece are
+   folded and a one-word repeat can hide.
+2. **Words heard again.** The words heard (whole clip, and pieces in a row) are counted against the line's: a run of
+   words heard more often than the line says it ("would you like your"), a word twice in a row ("sure sure"), a line
+   begun again after a word cut short ("They're 34 na… They're 3499"), a word begun twice ("reg- regular"). A line
+   that repeats words itself ("No, no", "seven thousand … seven thousand") is counted with its own repeats.
+3. **The sound against itself.** Without any recognizer, the clip's cepstra are compared with themselves at every
+   lag: a phrase said twice is a stripe beside the diagonal of the self-similarity matrix. A stripe of 450 "moving"
+   ms or more (frames counted by how much the sound changes in them, so a held vowel counts little) flags the clip,
+   unless the line repeats a word itself. This also works as a fast first screen (`--engine=none`: about 30 clips a
+   second) to choose what the recognizer hears first.
+
+**Repairs** (`npx tsx tools/voice-batch.ts …`; the Spanish tool has the same commands):
+
+| Step | Command | Key? |
+|---|---|---|
+| The check over clips already made (changes nothing) | `repeats --clips=<folder> [--keys=<file>] [--engine=none]` | no |
+| Cut the restart out; keep the cuts that hold | `cut --keys=<file> --clips=<folder> --to=<folder>` | no |
+| New takes right away, each heard back before it is kept | `retake --keys=<file> --to=<folder>` | yes |
+| The new lengths and repair versions into the clip lists | `adopt --from=<folder>` | no |
+
+- **Cut** (`tools/voice-cut.py`). A restart begins where speech begins, so the cut is looked for among the clip's
+  onsets: two onsets whose following sound is alike. Everything from the first up to the second goes (the first
+  attempt and the pause after it), with 5 ms fades; the complete attempt stays. No recognizer chooses the cut, but
+  every cut clip is heard again and kept only when nothing is heard again, the sound no longer comes twice, the clip
+  is as like its line as before, no word heard before is missing (whole clip and pieces), and it isn't too short for
+  its line. A cut that doesn't hold is tried at the next-best pair of onsets, three in all. About one clip in four
+  whose sound suggests a cut has a real restart; the hearing afterwards is what sorts them. The cut clips are 64 kbps
+  CBR (the source is an MP3 already).
+- **Retake.** What a cut can't mend (a restart without a pause, a wrong word in the take) is recorded again with
+  single requests, and each new take is heard back whole and piece by piece before it is kept, up to 4 tries.
+- **Versions.** A clip replaced at its key needs a repair version (`adopt` writes it): the Worker's edge keeps an
+  unversioned clip for an hour and browsers for a day.
 
 ## Casting (`npx tsx tools/voice-casting.ts`)
 
