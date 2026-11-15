@@ -32,6 +32,11 @@ interface Walker {
   still?: boolean; posed?: boolean;
   /** Their look (for their far version, theme.ts `farPeople`), and whether that is drawn now. */
   look?: Look; far?: boolean;
+  /** Startled by a car going by close and fast (rides/Rides.ts): how long until they can be startled again (s), how
+   *  far through their jump aside they are (0–1), and which way it takes them. */
+  scare?: number;
+  hop?: number;
+  dodge?: [number, number];
 }
 
 /** Two people talking in turns: one talks for a couple of seconds while the other listens (eyes on them, a nod
@@ -423,6 +428,8 @@ export class Ambient {
     // their pose, their parts' matrices frozen: a breath or a blink that far away costs a frame's time and shows nothing)
     const R2 = THEME.stillBeyond === null ? Infinity : THEME.stillBeyond ** 2;
     for (const w of this.walkers) {
+      if (w.scare) w.scare = Math.max(0, w.scare - dt);
+      if (w.hop !== undefined) this.hopAside(w, dt);
       if (w.kind === "walk") this.updateWalker(w, dt, player);
       else if (R2 === Infinity) w.ch.update(dt);
       else {
@@ -617,14 +624,56 @@ export class Ambient {
     }
   }
 
-  /** How far ahead of a car at (x, z) going along (fx, fz) the nearest passer-by or dog is, in the strip `half` m to
-   *  each side of its way and within `reach` m (Infinity: nobody): it stops short of them (rides/drive.ts). */
+  /** A car goes by close and fast (at (x, z), along (fx, fz), `speed` m/s; `hl`, `hw`: half its length and width):
+   *  whoever on foot is beside its way or just ahead of it starts: someone walking or standing jumps (a walker also a
+   *  good step aside, away from its line), someone sitting looks up, puzzled. Each of them only once in a while.
+   *  Returns one of those who jumped just now (they may call after it), or null. Nobody is touched: the car stops
+   *  short of anyone in its way (personAhead), and this clears its way. */
+  startle(x: number, z: number, fx: number, fz: number, speed: number, hl: number, hw: number): Walker | null {
+    let who: Walker | null = null;
+    for (const w of this.walkers) {
+      if (w.scare || w.hop !== undefined) continue;
+      const p = w.ch.root.position, dx = p.x - x, dz = p.z - z;
+      if (Math.abs(dx) > 14 || Math.abs(dz) > 14) continue;
+      const along = dx * fx + dz * fz, lat = dx * fz - dz * fx;
+      if (along < -hl - 0.4 || along > hl + 1.2 + speed * 0.5 || Math.abs(lat) > hw + 1.8) continue;
+      w.scare = 9 + this.r() * 7;
+      if (w.kind === "sit") { w.ch.react?.("puzzled"); continue; }
+      w.hop = 0;
+      w.chat?.hold(2.5);
+      if (w.kind === "walk") {
+        const side = lat >= 0 ? 1 : -1;
+        w.dodge = [fz * side, -fx * side];
+        w.wait = Math.max(w.wait, 1.5);
+        // (they turn to look after it)
+        w.heading = Math.atan2(x - p.x, z - p.z);
+      }
+      who ??= w;
+    }
+    return who;
+  }
+
+  /** Someone startled jumps: up and down again in under half a second, a walker a good step aside with it. */
+  private hopAside(w: Walker, dt: number) {
+    const k = Math.min(1, (w.hop! += dt / 0.44)), ch = w.ch, p = ch.root.position;
+    ch.lift = Math.sin(Math.PI * k) * 0.4;
+    ch.tuck = Math.sin(Math.PI * k) * 0.45;
+    if (w.dodge) {
+      const step = (1.15 / 0.44) * dt, nx = p.x + w.dodge[0] * step, nz = p.z + w.dodge[1] * step;
+      if (!this.colliders?.blocked(nx, nz, 0.25)) { p.x = nx; p.z = nz; }
+      ch.root.rotation.y = w.heading;
+    }
+    if (k >= 1) { w.hop = undefined; w.dodge = undefined; ch.lift = 0; ch.tuck = 0; }
+  }
+
+  /** How far ahead of a car at (x, z) going along (fx, fz) the nearest person on foot or dog is, in the strip `half` m
+   *  to each side of its way and within `reach` m (Infinity: nobody): it stops short of them (rides/drive.ts). */
   personAhead(x: number, z: number, fx: number, fz: number, reach: number, half: number) {
     let gap = Infinity;
     for (const w of this.walkers) {
-      if (w.kind !== "walk") continue;
       const p = w.ch.root.position;
       gap = Math.min(gap, aheadIn(x, z, fx, fz, p.x, p.z, reach, half));
+      if (w.kind !== "walk") continue;
       // (and where they will be in a moment, walking on: someone about to step into its way is seen in time)
       if (w.wait <= 0 && w.path?.length) gap = Math.min(gap, aheadIn(x, z, fx, fz, p.x + Math.sin(w.heading) * w.speed * 1.3, p.z + Math.cos(w.heading) * w.speed * 1.3, reach, half));
       if (w.dog) gap = Math.min(gap, aheadIn(x, z, fx, fz, w.dog.root.position.x, w.dog.root.position.z, reach, half));

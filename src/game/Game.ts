@@ -343,7 +343,20 @@ export class Game implements GameApi {
     this.rides = new Rides({
       cam: this.rig.cam, colliders: this.town.colliders, nav, ambient: this.ambient, player: null as unknown as GameCharacter, quality: st.settings.quality,
       people: () => (this.zone.interior ? [] : this.npcs.map((n) => n.home)),
-      say: (line, female, ch) => this.saysAloud(line, female, ch),
+      say: (line, voice, female, ch) => this.saysAloud(line, female, ch, voice),
+      thud: (k) => { if (this.bumpT <= 0) { audio.bump(Math.min(1, 0.35 + k * 0.65)); this.bumpT = 0.12; } },
+      rescue: (put) => {
+        const hud = useStore.getState();
+        hud.setHud({ fade: 1 });
+        setTimeout(() => {
+          put();
+          const car = this.rides.riding;
+          if (car) { this.rig.yaw = car.m.heading; this.rig.target.set(car.m.x, 0, car.m.z); this.rig.snap(); }
+          useStore.getState().setHud({ fade: 0 });
+          useStore.getState().toast({ kind: "info", title: L("Mašina vėl gatvėje"), ms: 2600 });
+        }, 280);
+      },
+      stuck: () => useStore.getState().toast({ kind: "tip", title: L("Užstrigai?"), body: useStore.getState().hud.showTouch ? L("Patrauk vairalazdę žemyn – važiuosi atbulas.") : L("Rodyklė žemyn – važiuosi atbulas."), ms: 5000 }),
       splash: (x, y, z, dx, dz, k) => this.splashes.burst(x, y, z, dx, dz, k),
       outdoors: () => !this.zone.interior && !this.covered,
     }, RIDES, this.town.group.children.filter((o) => o.userData.boat));
@@ -747,8 +760,9 @@ export class Game implements GameApi {
 
   /** A passer-by's kind of line said by someone in the town: a bubble with its meaning, their mouth moving, and their
    *  voice where the passers-by's voices have the line recorded. */
-  private saysAloud(line: { en: string; lt: string }, female: boolean, ch: GameCharacter) {
-    const voice = ambientVoice(female ? "f" : "m");
+  private saysAloud(line: { en: string; lt: string }, female: boolean, ch: GameCharacter, own: string | null = null) {
+    // (their own voice, if they have one and it has this line; else a passer-by's)
+    const voice = own && audio.hasClip(own, 1, line.en) ? own : ambientVoice(female ? "f" : "m");
     let secs = 1.1 + line.en.length * 0.045;
     if (audio.hasClip(voice, 1, line.en)) {
       void audio.play(voice, 1, line.en, { male: !female });
@@ -1606,6 +1620,8 @@ export class Game implements GameApi {
     if (m.bump > 0.3 && this.bumpT <= 0) { audio.bump(m.bump); this.bumpT = 0.45; }
     this.splashes.update(dt, this.t, null, 0);
     this.dust.update(dt);
+    // (the pigeons on the square take off before a car as before anyone running)
+    if (r.kind === "car" && !this.zone.interior) this.pigeons.update(dt, this.player.root.position, Math.abs(v));
     coach.stroll(dt, true, useStore.getState().hud.showTouch);
   }
 

@@ -1,5 +1,7 @@
-// The town's drivable ground: its streets (layout.ts ROADS) and the lots the town's plan adds (world/rides.ts).
-import { ROADS } from "../world/layout";
+// The town's ground for a car: its asphalt (layout.ts ROADS and the lots the town's plan adds, world/rides.ts) and
+// everything else open and dry.
+import { ROADS, WORLD } from "../world/layout";
+import { SHORE } from "../water";
 import { Drivable, CAR, type Rect } from "./drive";
 
 /** The streets as rectangles. */
@@ -7,6 +9,10 @@ export const roadRects = (): Rect[] => ROADS.map((r) => (r.z1 === r.z2
   ? { x0: Math.min(r.x1, r.x2), x1: Math.max(r.x1, r.x2), z0: r.z1 - r.w / 2, z1: r.z1 + r.w / 2 }
   : { x0: r.x1 - r.w / 2, x1: r.x1 + r.w / 2, z0: Math.min(r.z1, r.z2), z1: Math.max(r.z1, r.z2) }));
 
-/** Where a car's middle line may be: the streets and `lots`, drawn in by almost half a car's width (its wheels stay
- *  on the asphalt, a tire's breadth of the kerb to spare). */
-export const townDrivable = (lots: Rect[]) => new Drivable([...roadRects(), ...lots], CAR.wide - 0.12);
+/** The asphalt: the streets and `lots`. A car may pick up speed on it; where it ends is a kerb. */
+export const townAsphalt = (lots: Rect[]) => new Drivable([...roadRects(), ...lots]);
+
+/** Where a car may be at all (since 15 Nov 2026: anywhere in the town that is open and dry; what stands there, the
+ *  ground plan keeps it out of): the town's own ground, a car's half width in from its edges, and no nearer the sea
+ *  than the dry sand. */
+export const townGround = () => new Drivable([{ x0: WORLD.minX + CAR.wide + 0.4, x1: WORLD.maxX - CAR.wide - 0.4, z0: SHORE.top + CAR.wide + 0.5, z1: WORLD.maxZ - CAR.wide - 0.4 }]);

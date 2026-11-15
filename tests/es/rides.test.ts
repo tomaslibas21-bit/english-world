@@ -2,10 +2,11 @@
 // cenoteWalk): the checks that need no browser. The engine's own are tests/rides.test.ts; the real game,
 // tests/browser/rides.mjs. Runs in the vitest project "es".
 import { describe, expect, it } from "vitest";
-import { townDrivable } from "../../src/game/rides/ground";
+import { townAsphalt } from "../../src/game/rides/ground";
 import { CAR, BOAT } from "../../src/game/rides/drive";
 import { RIDES } from "../../src/game/world/rides";
-import { RIDE_LINES, RIDE_BACK_LINES, RIDE_NAMES } from "../../src/content/rides";
+import { RIDE_OWNERS, RIDE_SHOUTS, RIDE_NAMES } from "../../src/content/rides";
+import { rideVoice } from "../../src/content/voices";
 import { PARKED_CARS, TAXI, TRAFFIC_LANES, OUTDOOR_NPCS, CHAT_SPOTS, WORLD } from "../../src/game/world/layout";
 import { THEME } from "../../src/game/world/theme";
 import { cenoteWalk } from "../../src/game/world/mexican";
@@ -13,7 +14,7 @@ import { Colliders } from "../../src/game/world/util";
 import { SHORE, SWIM, BAY, POOLS, FLOORS, floorY, waterY } from "../../src/game/water";
 
 describe("Puerto Colibrí's convertibles and lancha", () => {
-  const ground = townDrivable(RIDES.lots);
+  const ground = townAsphalt(RIDES.lots);
   it("three convertibles at the curb, clear of the parked cars, the topes, the traffic and everyone's spot", () => {
     expect(RIDES.cars.length).toBeGreaterThanOrEqual(2);
     expect(RIDES.cars.length).toBeLessThanOrEqual(3);
@@ -38,9 +39,36 @@ describe("Puerto Colibrí's convertibles and lancha", () => {
     // east of the pier's deck (x −41.3 … −18.7), not under it
     expect(b.x).toBeGreaterThan(-18.7 + 2);
   });
-  it("its people's words are Spanish with their meaning, and the things have their names", () => {
-    for (const l of [...RIDE_LINES, ...RIDE_BACK_LINES]) { expect(l.en).toMatch(/[¡¿áéíóúñ]/); expect(l.lt.length).toBeGreaterThan(3); }
+  it("everyone in a convertible has their own voice and lines, in Spanish that every country says, with their meaning", () => {
+    const voices = new Set<string>(), said = new Set<string>();
+    for (const c of RIDES.cars) {
+      const who = RIDE_OWNERS[c.id];
+      expect(who?.length, c.id).toBeGreaterThanOrEqual(c.people);
+      for (const o of who) {
+        const v = rideVoice(o.id, o.female);
+        expect(v).toMatch(/^es[np]?_ride_/);
+        expect(voices.has(v), v).toBe(false);
+        voices.add(v);
+        expect(o.take.length).toBeGreaterThanOrEqual(4);
+        expect(o.back.length).toBeGreaterThanOrEqual(2);
+        for (const l of [...o.take, ...o.back]) {
+          expect(l.en, l.en).toMatch(/[¡¿áéíóúñ]|\b(te|las|un|una|todo|sin|con)\b/i);
+          expect(l.lt.length).toBeGreaterThan(3);
+          // (no word that belongs to one country only: the three sets share the text)
+          expect(l.en, l.en).not.toMatch(/\b(carro|coche|auto|manej|conduc|vale|órale|chido|padre|guay|vosotros|aguas)\b/i);
+          expect(said.has(l.en), l.en).toBe(false);
+          said.add(l.en);
+        }
+      }
+    }
+    expect(RIDE_SHOUTS.length).toBeGreaterThanOrEqual(5);
+    for (const l of RIDE_SHOUTS) { expect(l.en).toMatch(/^¡.*!$/); expect(l.lt.length).toBeGreaterThan(3); }
     expect(RIDE_NAMES.boat.en).toBe("Lancha");
+  });
+  it("the topes are the car's speed bumps, each across a street", () => {
+    expect(RIDES.bumps.length).toBe(THEME.topes?.at.length ?? 0);
+    expect(RIDES.bumps.length).toBeGreaterThanOrEqual(3);
+    for (const [x1, z1, x2, z2] of RIDES.bumps) { expect(ground.has((x1 + x2) / 2, (z1 + z2) / 2)).toBe(true); expect(Math.hypot(x2 - x1, z2 - z1)).toBeGreaterThan(6); }
   });
 });
 

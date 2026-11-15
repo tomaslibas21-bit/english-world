@@ -11,10 +11,11 @@ import { Colliders, rand } from "../world/util";
 import { WORLD } from "../world/layout";
 import type { NavGrid } from "../nav";
 import type { RidesPlan, CarSpot, BoatSpot } from "../world/rides";
-import { RIDE_LINES, RIDE_BACK_LINES } from "../../content/rides";
+import { RIDE_OWNERS, RIDE_SHOUTS, type RideOwner, type RideLine } from "../../content/rides";
+import { rideVoice } from "../../content/voices";
 import { BAY, DECKS, SHORE, floorY, waterY } from "../water";
 import { Drivable, Motion, CAR, BOAT, aheadIn, pushOutOfBox, type Controls } from "./drive";
-import { townDrivable } from "./ground";
+import { townAsphalt, townGround } from "./ground";
 import { convertibleGeometry, motorboatGeometry, CAR_SEATS, BOAT_SEATS } from "./shapes";
 
 export interface RideHost {
@@ -27,8 +28,15 @@ export interface RideHost {
   quality: "high" | "low";
   /** Where the people one talks to stand (a car stops short of them like of anyone). */
   people(): { x: number; z: number }[];
-  /** Someone says a line: a bubble with its meaning, their mouth moving, their voice if it is recorded. */
-  say(line: { en: string; lt: string }, female: boolean, ch: GameCharacter): void;
+  /** Someone says a line: a bubble with its meaning, their mouth moving, and their voice if it is recorded (`voice`:
+   *  their own; null: a passer-by's, a woman's or a man's). */
+  say(line: RideLine, voice: string | null, female: boolean, ch: GameCharacter): void;
+  /** A wheel over a kerb or a speed bump (`k` 0–1: how hard). */
+  thud(k: number): void;
+  /** The car has pushed at something for a while and gets nowhere: a word about backing up. */
+  stuck(): void;
+  /** It still gets nowhere: the picture fades for a moment while `put` sets it back on the street. */
+  rescue(put: () => void): void;
   /** Drops thrown up from the water at (x, z). */
   splash(x: number, y: number, z: number, dx: number, dz: number, k: number): void;
   /** In the town and in sight (not in a room, not behind a conversation's picture). */
@@ -37,6 +45,8 @@ export interface RideHost {
 
 interface Owner {
   ch: GameCharacter; female: boolean;
+  /** Who they are: their voice and their lines (content/rides.ts), and the line they said last. */
+  who: RideOwner; said: number;
   /** Their seat in the car (its own coordinates), and which arm lies on the door. */
   seat: [number, number]; arm: "doorL" | "doorR";
   /** In the car, hopping out or in, standing by, or walking back to it. */
@@ -63,6 +73,9 @@ export interface Ride {
   thanked: boolean;
   /** The boat's rocking. */
   phase: number;
+  /** A car's springs: how far the body is up and how its nose is tipped, and how fast both change; for each axle
+   *  (front, back) whether it stands on asphalt and which side of each speed bump it is on. */
+  sus: { y: number; vy: number; p: number; vp: number; road: boolean[]; side: number[][] };
 }
 
 const HOP = 0.55;
@@ -99,7 +112,17 @@ const ease = (k: number) => k * k * (3 - 2 * k);
 export class Rides {
   group = new THREE.Group();
   readonly list: Ride[] = [];
+  /** Where a car may be (anywhere in the town that is open and dry) and where the asphalt is (the streets, the lots). */
   readonly drivable: Drivable;
+  readonly asphalt: Drivable;
+  private bumps: [number, number, number, number][];
+  private shoutT = 2;
+  private stuckT = 0;
+  private stuckTold = false;
+  /** Getting nowhere: how long it has pushed (forwards or back) without leaving the spot `pushAt`. */
+  private pushT = 0;
+  private pushAt = { x: 0, z: 0 };
+  private rescuing = false;
   /** What a boat keeps clear of: the pier's decks, the boats at anchor, the rocks. */
   readonly sea = new Colliders();
   /** The one the player is in, and how far along getting in or out they are. */
@@ -121,7 +144,9 @@ export class Rides {
 
   constructor(readonly host: RideHost, plan: RidesPlan, boats: THREE.Object3D[]) {
     this.group.name = "rides";
-    this.drivable = townDrivable(plan.lots);
+    this.drivable = townGround();
+    this.asphalt = townAsphalt(plan.lots);
+    this.bumps = plan.bumps;
     const mat = STYLED ? vertexColorMaterial("prop") : new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
     plan.cars.forEach((spot, i) => this.addCar(spot, i, mat));
     plan.boats.forEach((spot, i) => this.addBoat(spot, i, mat));
@@ -148,10 +173,10 @@ export class Rides {
     this.group.add(mesh);
     const m = new Motion(CAR, "car");
     m.set(spot.x, spot.z, spot.rot);
-    const ride: Ride = { id: spot.id, kind: "car", home: { x: spot.x, z: spot.z, rot: spot.rot }, mesh, m, owners: [], chat: null, awayT: 0, thanked: true, phase: 0 };
-    const n = this.host.quality === "low" ? 1 : spot.people, r = rand(9100 + i * 7);
+    const ride: Ride = { id: spot.id, kind: "car", home: { x: spot.x, z: spot.z, rot: spot.rot }, mesh, m, owners: [], chat: null, awayT: 0, thanked: true, phase: 0, sus: this.springs() };
+    const cast = RIDE_OWNERS[spot.id] ?? [], n = Math.min(cast.length, this.host.quality === "low" ? 1 : spot.people), r = rand(9100 + i * 7);
     for (let k = 0; k < n; k++) {
-      const female = (i + k) % 2 === 0, look = walkerLook(female, r);
+      const who = cast[k], female = who.female, look = walkerLook(female, r);
       // sunglasses on everyone who lounges in a convertible; no hat that the wind would take
       const acc = [...(look.acc ?? []).filter((a) => a !== "glasses" && a !== "cap"), "sunglasses"] as typeof look.acc;
       const mine = { ...look, acc }, ch = createCharacter(mine);
@@ -159,7 +184,7 @@ export class Rides {
       ch.watch = this.learner;
       ch.noticeWithin = 5;
       this.group.add(ch.root);
-      const o: Owner = { ch, female, seat: k === 0 ? CAR_SEATS.driver : CAR_SEATS.passenger, arm: k === 0 ? "doorL" : "doorR", state: "in", t: 0, from: new THREE.Vector3(), to: new THREE.Vector3(), path: null, nod: 1 + r() * 4 };
+      const o: Owner = { ch, female, who, said: -1, seat: k === 0 ? CAR_SEATS.driver : CAR_SEATS.passenger, arm: k === 0 ? "doorL" : "doorR", state: "in", t: 0, from: new THREE.Vector3(), to: new THREE.Vector3(), path: null, nod: 1 + r() * 4 };
       ride.owners.push(o);
       this.seatOwner(ride, o);
       // (far from the camera, the same person in fewer triangles)
@@ -185,10 +210,20 @@ export class Rides {
     this.group.add(mesh);
     const m = new Motion(BOAT, "boat");
     m.set(spot.x, spot.z, spot.rot);
-    this.list.push({ id: spot.id, kind: "boat", home: { x: spot.x, z: spot.z, rot: spot.rot }, mesh, m, owners: [], chat: null, awayT: 0, thanked: true, phase: i * 2.1 + 0.7 });
+    this.list.push({ id: spot.id, kind: "boat", home: { x: spot.x, z: spot.z, rot: spot.rot }, mesh, m, owners: [], chat: null, awayT: 0, thanked: true, phase: i * 2.1 + 0.7, sus: this.springs() });
   }
 
   // ---------------------------------------------------------------------------------------------- places
+
+  private springs(): Ride["sus"] { return { y: 0, vy: 0, p: 0, vp: 0, road: [true, true], side: [[], []] }; }
+
+  /** One of an owner's lines, in their own voice: not the one they said last. */
+  private speak(o: Owner, lines: RideLine[]) {
+    let i = Math.floor(Math.random() * lines.length);
+    if (lines.length > 1 && i === o.said) i = (i + 1) % lines.length;
+    o.said = i;
+    this.host.say(lines[i], rideVoice(o.who.id, o.female), o.female, o.ch);
+  }
 
   /** A point of a ride's own (x to its left, z forward) on the ground plan. */
   private at(r: Ride, x: number, z: number, out: THREE.Vector3, y = 0) {
@@ -241,6 +276,7 @@ export class Rides {
     this.phase = "in";
     this.phaseT = 0;
     this.wantOut = false;
+    this.stuckT = 0; this.stuckTold = false;
     this.from.copy(p);
     this.fromRot = this.host.player.root.rotation.y;
     r.awayT = 0;
@@ -250,7 +286,8 @@ export class Rides {
     r.owners.forEach((o, i) => {
       if (o.state === "in") {
         this.hopOut(r, o, i);
-        if (!said) { said = true; this.host.say(RIDE_LINES[Math.floor(Math.random() * RIDE_LINES.length)], o.female, o.ch); }
+        // (one of them has a word for it: whoever's turn it is, and never the line they said last)
+        if (!said && (i === r.owners.length - 1 || Math.random() < 0.5)) { said = true; this.speak(o, o.who.take); }
       } else if (o.state === "walk") { o.state = "out"; o.path = null; o.ch.setAnim("wave"); const ch = o.ch; setTimeout(() => { if (ch.anim === "wave") ch.setAnim("idle"); }, 1200); }
     });
     return true;
@@ -422,13 +459,14 @@ export class Rides {
     const m = r.m, host = this.host;
     // who is in the way, the way it is going: the passers-by and their dogs, the people one talks to, its own people
     const dir = m.speed < -0.15 || (m.speed < 0.15 && c.throttle < 0) ? -1 : 1, fx = m.fx * dir, fz = m.fz * dir;
-    let gap = host.ambient.personAhead(m.x, m.z, fx, fz, 26, 1.5);
-    for (const q of host.people()) gap = Math.min(gap, aheadIn(m.x, m.z, fx, fz, q.x, q.z, 26, 1.35));
-    for (const o of this.list) for (const w of o.owners) if (w.state !== "in") gap = Math.min(gap, aheadIn(m.x, m.z, fx, fz, w.ch.root.position.x, w.ch.root.position.z, 26, 1.35));
-    m.step(dt, c, gap);
+    let gap = host.ambient.personAhead(m.x, m.z, fx, fz, 34, 1.5);
+    for (const q of host.people()) gap = Math.min(gap, aheadIn(m.x, m.z, fx, fz, q.x, q.z, 34, 1.35));
+    for (const o of this.list) for (const w of o.owners) if (w.state !== "in") gap = Math.min(gap, aheadIn(m.x, m.z, fx, fz, w.ch.root.position.x, w.ch.root.position.z, 34, 1.35));
+    const was = m.speed;
+    m.step(dt, c, gap, this.asphalt.has(m.x, m.z));
     m.settle((p, rad) => {
-      // on the streets; out of the town's walls, trees and parked cars; out of the other convertibles, the traffic and
-      // anyone standing
+      // on the town's dry ground; out of its walls, trees, benches and parked cars; out of the other convertibles, the
+      // traffic and anyone standing
       this.drivable.nearest(p.x, p.z, p);
       host.colliders.resolve(_v.set(p.x, 0, p.z), rad);
       p.x = _v.x; p.z = _v.z;
@@ -439,6 +477,88 @@ export class Rides {
         if (d < min && d > 1e-4) { p.x = q.x + (dx / d) * min; p.z = q.z + (dz / d) * min; }
       }
     });
+    this.ride(r, dt);
+    // going by close and fast: those on foot jump aside, and now and then one of them calls after it
+    this.shoutT -= dt;
+    if (Math.abs(m.speed) > 4.5) {
+      const w = host.ambient.startle(m.x, m.z, m.fx * dir, m.fz * dir, Math.abs(m.speed), CAR.half, CAR.wide);
+      if (w && this.shoutT <= 0) { this.shoutT = 5 + Math.random() * 4; host.say(RIDE_SHOUTS[Math.floor(Math.random() * RIDE_SHOUTS.length)], null, w.female, w.ch); }
+    }
+    // pushing at something and getting nowhere: a word about backing up, once a ride
+    const pushing = Math.abs(c.throttle) > 0.5 && Math.abs(m.speed) < 0.7 && Math.abs(was) < 0.7 && gap > CAR.half + CAR.clear + 1;
+    this.stuckT = pushing ? this.stuckT + dt : 0;
+    if (this.stuckT > 1.8 && !this.stuckTold) { this.stuckTold = true; host.stuck(); }
+    // and if, backing and turning, it still has not left the spot after a good while of trying: back onto the street
+    // by itself (nobody is ever left boxed in between a wall and a bench)
+    if (Math.hypot(m.x - this.pushAt.x, m.z - this.pushAt.z) > 2.2) { this.pushAt.x = m.x; this.pushAt.z = m.z; this.pushT = 0; }
+    else if (Math.abs(c.throttle) > 0.5 && !c.brake && gap > CAR.half + CAR.clear + 1) this.pushT += dt;
+    if (this.pushT > 7 && !this.rescuing) {
+      const to = this.streetSpot(r);
+      if (to) { this.rescuing = true; host.rescue(() => { r.m.set(to.x, to.z, to.rot); r.sus = this.springs(); this.pushT = 0; this.stuckT = 0; this.rescuing = false; this.place(r, 0, 0); }); }
+      else this.pushT = 0;
+    }
+  }
+
+  /** A free place on the asphalt near a car, along the street and on its right-hand side: where it is set down when it
+   *  has got itself boxed in. */
+  private streetSpot(r: Ride): { x: number; z: number; rot: number } | null {
+    const col = this.host.colliders, m = r.m;
+    let best: { x: number; z: number; rot: number } | null = null, bd = Infinity;
+    for (const q of this.asphalt.rects) {
+      const ew = q.x1 - q.x0 > q.z1 - q.z0, cx = (q.x0 + q.x1) / 2, cz = (q.z0 + q.z1) / 2;
+      // (along its middle line's right-hand lane, tried every few metres either way from the nearest point)
+      for (const side of [1, -1]) for (let k = 0; k < 9; k++) for (const sgn of k ? [1, -1] : [1]) {
+        const lane = Math.min(2.2, (ew ? q.z1 - q.z0 : q.x1 - q.x0) / 4);
+        const x = ew ? Math.max(q.x0 + 3, Math.min(m.x + sgn * k * 5, q.x1 - 3)) : cx + side * lane, z = ew ? cz + side * lane : Math.max(q.z0 + 3, Math.min(m.z + sgn * k * 5, q.z1 - 3));
+        const rot = ew ? (side > 0 ? Math.PI / 2 : -Math.PI / 2) : side > 0 ? Math.PI : 0;
+        const d = Math.hypot(x - m.x, z - m.z) + (side > 0 ? 0 : 0.01);
+        if (d >= bd) continue;
+        const fx = Math.sin(rot), fz = Math.cos(rot);
+        let free = true;
+        for (const o of [-1.3, 0, 1.3]) {
+          const px = x + fx * o, pz = z + fz * o;
+          if (col.blocked(px, pz, CAR.wide + 0.1) || this.list.some((c) => c !== r && c.kind === "car" && this.reach(c, px, pz) < CAR.wide + 0.3)) { free = false; break; }
+          _p.x = px; _p.z = pz;
+          const before = _p.x + _p.z;
+          this.host.ambient.pushOutOfCars(_p, CAR.wide + 0.5);
+          if (_p.x + _p.z !== before) { free = false; break; }
+        }
+        if (free) { bd = d; best = { x, z, rot }; }
+      }
+    }
+    return best;
+  }
+
+  /** The car's springs: a wheel that comes onto the asphalt or off it (a kerb), or crosses a speed bump, kicks the
+   *  body up and tips its nose (the front axle up, then the back one), with a thud; a speed bump taken fast also takes
+   *  a good part of the speed, a kerb a little. */
+  private ride(r: Ride, dt: number) {
+    const m = r.m, s = r.sus, v = Math.abs(m.speed), fwd = m.speed >= 0 ? 1 : -1;
+    for (let i = 0; i < 2; i++) {
+      const off = i === 0 ? 1.34 : -1.34, x = m.x + m.fx * off, z = m.z + m.fz * off;
+      let hit = 0;
+      const road = this.asphalt.has(x, z);
+      if (road !== s.road[i]) { s.road[i] = road; hit = 0.5; }
+      for (let k = 0; k < this.bumps.length; k++) {
+        const [x1, z1, x2, z2] = this.bumps[k], dx = x2 - x1, dz = z2 - z1, t = ((x - x1) * dx + (z - z1) * dz) / (dx * dx + dz * dz);
+        const side = t > -0.08 && t < 1.08 ? Math.sign((x - x1) * dz - (z - z1) * dx) || 1 : 0;
+        if (side && s.side[i][k] && side !== s.side[i][k]) hit = 1;
+        s.side[i][k] = side;
+      }
+      if (!hit || v < 0.6) continue;
+      const k = hit * Math.min(1, 0.25 + v / 8), lead = (i === 0) === (fwd > 0);
+      s.vy += 1.5 * k;
+      s.vp += (i === 0 ? -1 : 1) * 1.9 * k;
+      if (lead) {
+        if (hit === 1 && v > 4) m.speed *= 0.7; else if (hit < 1 && v > 6) m.speed *= 0.92;
+        m.hold = Math.min(m.hold, CAR.holdFrom);
+      }
+      this.host.thud(k);
+    }
+    // (springs, well damped: one bounce and a half)
+    s.vy += (-s.y * 190 - s.vy * 15) * dt; s.y = THREE.MathUtils.clamp(s.y + s.vy * dt, -0.06, 0.24);
+    s.vp += (-s.p * 170 - s.vp * 13) * dt; s.p = THREE.MathUtils.clamp(s.p + s.vp * dt, -0.13, 0.13);
+    if (Math.abs(s.y) < 1e-4 && Math.abs(s.vy) < 1e-3 && Math.abs(s.p) < 1e-4 && Math.abs(s.vp) < 1e-3) { s.y = s.vy = s.p = s.vp = 0; }
   }
 
   private driveBoat(r: Ride, dt: number, c: Controls) {
@@ -470,11 +590,13 @@ export class Rides {
     const d2 = (m.x - this.learner.x) ** 2 + (m.z - this.learner.z) ** 2;
     mesh.castShadow = d2 < 36 * 36;
     // (a parked car stays where it was put; a boat nobody is near enough to see rock is left as it lies)
-    if (r !== this.riding && dt > 0 && (r.kind === "car" ? m.x === mesh.position.x && m.z === mesh.position.z && m.bump === 0 : d2 > 110 * 110)) return;
+    if (r !== this.riding && dt > 0 && (r.kind === "car" ? m.x === mesh.position.x && m.z === mesh.position.z && m.bump === 0 && r.sus.y === 0 && r.sus.vy === 0 : d2 > 110 * 110)) return;
     if (r.kind === "car") {
-      const lean = THREE.MathUtils.clamp(m.steer * m.speed * 0.006, -0.05, 0.05), nod = m.bump * 0.035;
-      mesh.position.set(m.x, 0, m.z);
-      mesh.rotation.set(nod, m.heading, lean);
+      // (left standing, its springs settle)
+      if (r !== this.riding && dt > 0) this.ride(r, dt);
+      const lean = THREE.MathUtils.clamp(m.steer * m.speed * 0.006, -0.06, 0.06), nod = m.bump * 0.035;
+      mesh.position.set(m.x, r.sus.y, m.z);
+      mesh.rotation.set(nod + r.sus.p, m.heading, lean);
     } else {
       const sur = waterY(m.x, m.z, t) ?? -0.25, k = Math.min(1, Math.abs(m.speed) / BOAT.max);
       mesh.position.set(m.x, sur - BOAT_SEATS.water + Math.sin(t * 1.3 + r.phase) * 0.04 + k * 0.08, m.z);
@@ -523,7 +645,7 @@ export class Rides {
             this.seatOwner(r, o);
             if (r.owners.every((q) => q.state === "in") && !r.thanked) {
               r.thanked = true;
-              if (Math.hypot(pp.x - p.x, pp.z - p.z) < 14 && host.outdoors()) host.say(RIDE_BACK_LINES[Math.floor(Math.random() * RIDE_BACK_LINES.length)], o.female, ch);
+              if (Math.hypot(pp.x - p.x, pp.z - p.z) < 14 && host.outdoors()) this.speak(o, o.who.back);
             }
           } else {
             // out: a wave after the car, then they stand by and watch it go

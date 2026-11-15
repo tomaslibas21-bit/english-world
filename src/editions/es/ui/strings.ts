@@ -680,4 +680,8 @@ export const STRINGS: Record<string, string> = {
   "Svirtis į šoną – pasukti lentą": "Stick sideways: turn the board",
   "„Irkluoti“ – yriai · ↑ – atsistoti": "Paddle: strokes · ↑: stand up",
   "Svirtis – svirti ir tūpti · ↑ – triukas": "Stick: lean and crouch · ↑: trick",
+  "Užstrigai?": "Stuck?",
+  "Patrauk vairalazdę žemyn – važiuosi atbulas.": "Pull the stick down to back up.",
+  "Rodyklė žemyn – važiuosi atbulas.": "Arrow down backs up.",
+  "Mašina vėl gatvėje": "The car is back on the street",
 };

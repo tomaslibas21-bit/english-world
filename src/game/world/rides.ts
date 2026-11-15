@@ -15,12 +15,15 @@ export interface BoatSpot { id: string; x: number; z: number; rot: number; strip
 export interface RidesPlan {
   cars: CarSpot[];
   boats: BoatSpot[];
-  /** Where a car may go beside the streets themselves (layout.ts ROADS): forecourts and lots. */
+  /** Asphalt beside the streets themselves (layout.ts ROADS): forecourts and lots (a car goes anywhere open and dry;
+   *  on asphalt it may pick up speed, and where asphalt ends is a kerb it feels). */
   lots: Rect[];
   /** Rocks in the bay (x, z, radius): a boat and a swimmer go round them. */
   rocks: [number, number, number][];
   /** The sea's colour seen from under it (a dive). */
   deep: string;
+  /** Speed bumps across the streets (each from x1, z1 to x2, z2): a car pitches and bounces over them and slows. */
+  bumps: [number, number, number, number][];
 }
 
 export const RIDES: RidesPlan = {
@@ -40,4 +43,6 @@ export const RIDES: RidesPlan = {
   // the lighthouse's rocks
   rocks: [[104, -88, 7.5]],
   deep: "#2a93ad",
+  // (Maple Harbor has none in its streets; the kerbs are felt everywhere)
+  bumps: [],
 };

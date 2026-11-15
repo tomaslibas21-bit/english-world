@@ -29,3 +29,6 @@ export const coachVoices = (_v2 = VOICES_V2): string[] => [`${set()}_coach_f`, `
 
 /** Passers-by in the town. */
 export const ambientVoice = (g: "f" | "m", _v2 = VOICES_V2): string => `${set()}_amb_${g}`;
+
+/** Someone who sits in a convertible (content/rides.ts RIDE_OWNERS: `id`): a voice of their own, in the Spanish chosen. */
+export const rideVoice = (id: string, _female?: boolean, _v2 = VOICES_V2): string => `${set()}_ride_${id}`;

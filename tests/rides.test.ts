@@ -3,10 +3,11 @@
 // wading limit (water.ts). In the real game: tests/browser/rides.mjs.
 import { describe, expect, it } from "vitest";
 import { Drivable, Motion, CAR, BOAT, controlsFrom, pushOutOfBox, aheadIn } from "../src/game/rides/drive";
-import { townDrivable } from "../src/game/rides/ground";
+import { townAsphalt, townGround } from "../src/game/rides/ground";
 import { convertibleGeometry, motorboatGeometry, CAR_SIZE, BOAT_SIZE } from "../src/game/rides/shapes";
 import { RIDES } from "../src/game/world/rides";
-import { RIDE_LINES, RIDE_BACK_LINES, RIDE_NAMES } from "../src/content/rides";
+import { RIDE_OWNERS, RIDE_SHOUTS, RIDE_NAMES } from "../src/content/rides";
+import { rideVoice } from "../src/content/voices";
 import { PARKED_CARS, TAXI, TRAFFIC_LANES, WORLD, OUTDOOR_NPCS } from "../src/game/world/layout";
 import { SHORE, SEA_LEVEL, SWIM, BAY, DEEP, DECKS, POOLS, FLOORS, sandY, seaBedY, floorY, waterY, bayHold, poolBedY } from "../src/game/water";
 
@@ -26,16 +27,43 @@ describe("the hands on the wheel", () => {
 });
 
 describe("the car", () => {
-  it("picks up to its top speed and no more, and the brake stops it within a few metres", () => {
+  it("gets to its town pace at once, picks up to its top speed on a held course and no more; the brake stops it in a few metres", () => {
     const m = new Motion(CAR, "car");
-    run(m, 6);
-    expect(m.speed).toBeGreaterThan(CAR.max * 0.9);
+    run(m, 2.2);
+    expect(m.speed).toBeGreaterThan(CAR.town * 0.8);
+    expect(m.speed).toBeLessThanOrEqual(CAR.town + 0.6);
+    run(m, 7);
+    expect(m.speed).toBeGreaterThan(CAR.max * 0.92);
     expect(m.speed).toBeLessThanOrEqual(CAR.max + 1e-6);
-    expect(m.z).toBeGreaterThan(40); // heading 0 is +Z
+    expect(m.z).toBeGreaterThan(60); // heading 0 is +Z
     const z0 = m.z;
     run(m, 1.5, { throttle: 0, steer: 0, brake: true });
     expect(m.speed).toBe(0);
-    expect(m.z - z0).toBeLessThan(8);
+    expect(m.z - z0).toBeLessThan(10);
+  });
+  it("a sharp turn or the brake brings it back to its town pace; off the asphalt it goes gently", () => {
+    const m = new Motion(CAR, "car");
+    run(m, 9);
+    expect(m.top).toBeCloseTo(CAR.max, 3);
+    run(m, 1.2, { throttle: 1, steer: 1, brake: false });
+    expect(m.top).toBeLessThan(CAR.town + 0.5);
+    expect(m.speed).toBeLessThan(CAR.town + 2.5);
+    // a gentle bend keeps it
+    const b = new Motion(CAR, "car");
+    run(b, 9); run(b, 1.5, { throttle: 1, steer: 0.25, brake: false });
+    expect(b.top).toBeCloseTo(CAR.max, 3);
+    // off the asphalt (a sidewalk, a square, grass, sand)
+    const o = new Motion(CAR, "car");
+    for (let i = 0; i < 600; i++) o.step(1 / 60, go, Infinity, false);
+    expect(o.speed).toBeGreaterThan(CAR.rough * 0.9);
+    expect(o.speed).toBeLessThanOrEqual(CAR.rough + 1e-6);
+    // and coming off it at speed, it is eased down, not stopped
+    const q = new Motion(CAR, "car");
+    run(q, 9);
+    q.step(1 / 60, go, Infinity, false);
+    expect(q.speed).toBeGreaterThan(CAR.max - 1);
+    for (let i = 0; i < 180; i++) q.step(1 / 60, go, Infinity, false);
+    expect(q.speed).toBeLessThanOrEqual(CAR.rough + 0.1);
   });
   it("turns right with the wheel to the right (a smaller heading), in a circle a street has room for", () => {
     const m = new Motion(CAR, "car");
@@ -69,13 +97,13 @@ describe("the car", () => {
       let hardest = 0, last = 0;
       for (let i = 0; i < 900; i++) {
         const gap = person - m.z;
-        m.step(1 / 60, go, gap > 0 && gap < 26 ? gap : Infinity);
+        m.step(1 / 60, go, gap > 0 && gap < 34 ? gap : Infinity);
         if (last > 1.5) hardest = Math.max(hardest, (last - m.speed) * 60);
         last = m.speed;
         expect(person - m.z - CAR.half, `from ${d} m`).toBeGreaterThan(1);
       }
       expect(m.speed).toBeLessThan(0.05);
-      // (seen from 26 m at any speed: no harder than the yield's own braking, with a little to spare)
+      // (seen from 34 m at any speed: no harder than the yield's own braking, with a little to spare)
       if (d >= 30) expect(hardest).toBeLessThan(CAR.yield * 1.7);
     }
   });
@@ -131,7 +159,7 @@ describe("boxes and strips", () => {
 });
 
 describe("this town's convertibles and boat", () => {
-  const ground = townDrivable(RIDES.lots);
+  const ground = townAsphalt(RIDES.lots);
   it("two or three convertibles, each at a curb on the street, along it, with one or two people", () => {
     expect(RIDES.cars.length).toBeGreaterThanOrEqual(2);
     expect(RIDES.cars.length).toBeLessThanOrEqual(3);
@@ -184,10 +212,44 @@ describe("this town's convertibles and boat", () => {
     expect(boat.attributes.position.count / 3).toBeLessThan(1200);
     expect(CAR.half * 2).toBeCloseTo(CAR_SIZE.length, 0);
   });
-  it("its people have something friendly to say, with its meaning", () => {
-    for (const l of [...RIDE_LINES, ...RIDE_BACK_LINES]) { expect(l.en.length).toBeGreaterThan(3); expect(l.lt.length).toBeGreaterThan(3); expect(l.en.length).toBeLessThan(40); }
-    expect(RIDE_LINES.length).toBeGreaterThanOrEqual(3);
+  it("every seat has someone of their own in it: a voice and a few lines nobody else says", () => {
+    const voices = new Set<string>(), said = new Set<string>();
+    for (const c of RIDES.cars) {
+      const who = RIDE_OWNERS[c.id];
+      expect(who?.length, c.id).toBeGreaterThanOrEqual(c.people);
+      for (const o of who) {
+        const v = rideVoice(o.id, o.female);
+        expect(voices.has(v), v).toBe(false);
+        voices.add(v);
+        expect(o.take.length, o.id).toBeGreaterThanOrEqual(4);
+        expect(o.back.length, o.id).toBeGreaterThanOrEqual(2);
+        for (const l of [...o.take, ...o.back]) {
+          expect(l.en.length).toBeGreaterThan(3); expect(l.lt.length).toBeGreaterThan(3); expect(l.en.length).toBeLessThan(48);
+          expect(said.has(l.en), l.en).toBe(false);
+          said.add(l.en);
+        }
+      }
+    }
     expect(RIDE_NAMES.car.en && RIDE_NAMES.boat.en).toBeTruthy();
+  });
+  it("passers-by have a few things to call after a car, none of them unkind", () => {
+    expect(RIDE_SHOUTS.length).toBeGreaterThanOrEqual(5);
+    for (const l of RIDE_SHOUTS) { expect(l.en.length).toBeLessThan(32); expect(l.lt.length).toBeGreaterThan(3); expect(l.en).not.toMatch(/idiot|stupid|crazy|damn|hell/i); }
+  });
+  it("a car goes anywhere in the town that is open and dry: the square, a sidewalk, the grass; never into the sea", () => {
+    const all = townGround();
+    expect(all.has(28, -30)).toBe(true);   // the square
+    expect(all.has(0, -14)).toBe(true);    // a sidewalk on Main Street
+    expect(all.has(100, -30)).toBe(true);  // the park
+    expect(all.has(0, SHORE.top + 3)).toBe(true); // dry sand
+    expect(all.has(0, SHORE.top)).toBe(false);
+    expect(all.has(0, SHORE.limit)).toBe(false);
+    expect(all.has(WORLD.minX - 1, 0)).toBe(false);
+    expect(all.has(WORLD.maxX, 0)).toBe(false);
+    // the asphalt: where it may pick up speed
+    expect(ground.has(0, -8)).toBe(true);
+    expect(ground.has(28, -30)).toBe(false);
+    for (const [x1, z1, x2, z2] of RIDES.bumps) { expect(ground.has((x1 + x2) / 2, (z1 + z2) / 2)).toBe(true); expect(Math.hypot(x2 - x1, z2 - z1)).toBeGreaterThan(5); }
   });
 });
 

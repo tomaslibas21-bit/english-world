@@ -2,6 +2,7 @@
 // src/game/rides/): three convertibles at the curb with their owners in them, a lancha afloat off the beach by El
 // Muelle. Headings as everywhere: 0 faces +Z (south), π/2 east, π north (the sea), −π/2 west.
 import type { RidesPlan } from "@/game/world/rides";
+import { THEME } from "@/game/world/theme";
 export type { CarSpot, BoatSpot, RidesPlan } from "@/game/world/rides";
 
 export const RIDES: RidesPlan = {
@@ -22,4 +23,6 @@ export const RIDES: RidesPlan = {
   // the lighthouse's rocks
   rocks: [[104, -88, 7.5]],
   deep: "#1fb3c6",
+  // the topes across avenida Juárez at the zócalo's ends and across avenida del Puerto (theme.ts `topes`)
+  bumps: (THEME.topes?.at ?? []).map(([x1, z1, x2, z2]) => [x1, z1, x2, z2]),
 };
