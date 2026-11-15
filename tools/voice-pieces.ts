@@ -108,13 +108,26 @@ export function wordsLost(said: string, heard: string, spoken: Spoken): number {
 /** wordsLost on the line as spoken (numbers as digits) plus on its plain words: "Six. Oh." must not pass for "60". */
 export const lostEitherWay = (said: string, heard: string, spoken: Spoken) => wordsLost(said, heard, spoken) + wordsLost(said, heard, (x) => x.toLowerCase());
 
-/** A word begun and begun again ("ha- their house had", "sau- saulė"): a heard word of two letters or more that the
- *  line doesn't have there, and that the next heard word starts with. */
+/** One of the line's words heard once more than the line says it, anywhere ("Good, thank you. Good.", "No, nothing.
+ *  No."): a word of three letters or more, or the last word heard, that is pure extra: without it what was heard is
+ *  one word nearer the line. */
+export function wordAgain(said: string[], heard: string[]): string | undefined {
+  const base = wordDistance(heard, said), count = (ws: string[], w: string) => ws.filter((x) => x === w).length;
+  for (let i = 0; i < heard.length; i++) {
+    const w = heard[i];
+    if ((w.length >= 3 || i === heard.length - 1) && count(heard, w) > count(said, w) && count(said, w) > 0 && wordDistance([...heard.slice(0, i), ...heard.slice(i + 1)], said) === base - 1) return `${w} (once more)`;
+  }
+  return undefined;
+}
+
+/** A word begun and begun again ("reg- regular", "Fry, fries please"): a heard word of two letters or more that the
+ *  line doesn't have, right before a word of the line that begins the same way (two letters), and pure extra. */
 export function falseStart(said: string[], heard: string[]): string | undefined {
-  const have = new Set(said);
+  const have = new Set(said), base = wordDistance(heard, said);
   for (let i = 0; i + 1 < heard.length; i++) {
     const a = heard[i], b = heard[i + 1];
-    if (a.length >= 2 && b.length > a.length && b.startsWith(a) && !have.has(a) && have.has(b)) return `${a}- ${b}`;
+    if (a.length >= 2 && b.length >= a.length && a !== b && b.slice(0, 2) === a.slice(0, 2) && !have.has(a) && have.has(b)
+      && wordDistance([...heard.slice(0, i), ...heard.slice(i + 1)], said) === base - 1) return `${a}- ${b}`;
   }
   return undefined;
 }
@@ -155,7 +168,7 @@ export function judgePieces(said: string, h: Heard, spoken: Spoken): Verdict {
   const want = f(wordsOf(said, spoken));
   const whole = f(wordsOf(h.whole, spoken));
   const pieces = h.pieces.flatMap((p) => f(wordsOf(p[2], spoken)));
-  const any = (ws: string[]) => heardAgain(want, ws) ?? startedAgain(want, ws) ?? falseStart(want, ws);
+  const any = (ws: string[]) => heardAgain(want, ws) ?? startedAgain(want, ws) ?? wordAgain(want, ws) ?? falseStart(want, ws);
   const a = any(whole), b = any(pieces);
   const len = (ws: string[]) => ws.join("").length;
   const v: Verdict = { extra: Math.max(len(whole), len(pieces)) - len(want), heard: h.pieces.map((p) => p[2]).join(" | ") };

@@ -93,13 +93,20 @@ sends a flagged clip back like any other):
    folded and a one-word repeat can hide.
 2. **Words heard again.** The words heard (whole clip, and pieces in a row) are counted against the line's: a run of
    words heard more often than the line says it ("would you like your"), a word twice in a row ("sure sure"), a line
-   begun again after a word cut short ("They're 34 na… They're 3499"), a word begun twice ("reg- regular"). A line
-   that repeats words itself ("No, no", "seven thousand … seven thousand") is counted with its own repeats.
+   begun again after a word cut short ("They're 34 na… They're 3499"), one of the line's words once more ("Good, thank
+   you. Good."), a word begun twice ("reg- regular", "Fry, fries please"). A line that repeats words itself ("No, no",
+   "seven thousand … seven thousand") is counted with its own repeats.
 3. **The sound against itself.** Without any recognizer, the clip's cepstra are compared with themselves at every
    lag: a phrase said twice is a stripe beside the diagonal of the self-similarity matrix. A stripe of 450 "moving"
    ms or more (frames counted by how much the sound changes in them, so a held vowel counts little) flags the clip,
    unless the line repeats a word itself. This also works as a fast first screen (`--engine=none`: about 30 clips a
    second) to choose what the recognizer hears first.
+
+**How much it finds.** Measured on the 873 takes the first run rejected (`voicing/rejected/`, kept by `redo`): 397
+of them run much longer than the take that replaced them (0.6 s and 35 % or more); the check flags 367 of those. The
+other 30 were read one by one and cut on trial: slow takes with long pauses, a filler ("Uh"), a wrong word or a
+Lithuanian place name, and no repeat in either hearing, but for one "See you!" that may hide a false start. The check
+also flags 56 rejected takes that are not much longer (a word said twice quickly).
 
 **Repairs** (`npx tsx tools/voice-batch.ts …`; the Spanish tool has the same commands):
 
