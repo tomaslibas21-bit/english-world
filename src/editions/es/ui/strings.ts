@@ -579,7 +579,7 @@ export const STRINGS: Record<string, string> = {
   "Radijo mygtukas dešinėje: kurso dainos, kol vaikštai.": "The radio button on the right: the course's songs while you walk.",
   "R arba radijo mygtukas dešinėje: kurso dainos, kol vaikštai.": "R or the radio button on the right: the course's songs while you walk.",
   "Pokalbių vaizdas": "Conversation view",
-  "Pokalbio metu rodomas piešinys. Išjungus pokalbis vyksta 3D mieste, o žmogaus lūpos juda pagal balsą. Per pokalbį vaizdą perjungsi mažu paveikslėliu vaizdo kampe.": "A picture is shown during a conversation. Switched off, the conversation plays in the 3D town, the person's lips moving with the voice. While you talk, the small picture in the corner of the view switches between the two.",
+  "Kalbiesi su žmogumi 3D mieste, jo lūpos juda pagal balsą. Įjungus iliustruotas scenas, pokalbio metu rodomas vietos piešinys. Per pokalbį vaizdą perjungsi mažu paveikslėliu vaizdo kampe.": "You talk with the person in the 3D town; their lips move with the voice. With illustrated scenes on, you see a picture of the place instead. While you talk, the small picture in the corner switches between the two.",
   "Toliau": "Next",
   "Patrauk vairalazdę iki krašto – bėgsi.": "Push the stick to the edge to run.",
   "Laikyk Shift – bėgsi.": "Hold Shift to run.",

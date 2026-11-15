@@ -1,7 +1,9 @@
 // The picture / 3D chip of a conversation (src/ui/ViewSwitch.tsx) in the real game, at a computer, a tablet and a
-// phone: with the person in 3D a small preview of the place's picture sits in the corner of the scene, clear of the
+// phone. A learner who never chose (and one whose saved settings say "pictures on" from before that was a choice)
+// starts with the person in 3D; a small preview of the place's picture sits in the corner of the scene, clear of the
 // panel and big enough for a finger; the first time a hint beside it says what it is for, and never again; a tap (or P)
-// puts the conversation in front of the picture, where the chip is a preview of the town and leads back; an open
+// puts the conversation in front of the picture, where the chip is a preview of the town and leads back; the picture,
+// once picked, is there in the next conversation too; an open
 // panel, the end of the conversation and a place without a picture (WORLD_NO_PICTURE, if the town has one) show none.
 // Time is stepped by hand. Against a dev server or a built game:
 // WORLD_TEST_URL=http://127.0.0.1:8096 WORLD_STORAGE=english-world WORLD_PLAYWRIGHT_MODULE=/path/to/playwright-core/index.mjs node tests/browser/view-switch.mjs
@@ -17,7 +19,8 @@ const check = (name, value, detail) => {
 const progress = {
   version: 1,
   profile: { name: "Test", surname: "Tester", gender: "f", lookId: "f1", look: { skin: "#f2d3bd", hair: { style: "short", color: "#5a3a25" }, top: "#2a9d8f", bottom: "#264653" } },
-  settings: { v: 5, play: "town", quality: "low", scenes: false, volume: 0, cameraFollow: true },
+  // (saved before settings v6, when "pictures on" was the default written with any setting: not a choice)
+  settings: { v: 5, play: "town", quality: "low", scenes: true, volume: 0, cameraFollow: true },
   sits: {}, phrases: {}, seenIntro: {}, started: 1,
   coach: { done: true, run: true },
 };
@@ -71,7 +74,7 @@ try {
       await page.locator(".view-chip button").click();
       await page.mouse.move(40, 40);
     };
-    const pictures = () => page.evaluate(() => window.__ew.store.getState().settings.scenes !== false);
+    const pictures = () => page.evaluate(() => { const s = window.__ew.store.getState().settings; return s.scenes ?? s.play === "light"; });
     /** The chip as the learner meets it: where it is, what it says, and what it shares the screen with. */
     const chip = () => page.evaluate(() => {
       const box = (e) => { const r = e.getBoundingClientRect(); return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height), r: Math.round(r.right), b: Math.round(r.bottom) }; };
@@ -93,7 +96,8 @@ try {
 
     // ---- with the person in 3D: the place's picture in the corner, and the hint the first time
     await talk(SIT);
-    check(`${label}: the conversation is in the 3D town`, !(await pictures()) && await page.locator(".scene-backdrop").count() === 0);
+    check(`${label}: nobody chose yet: no picture setting is kept`, await page.evaluate(() => window.__ew.store.getState().settings.scenes === undefined));
+    check(`${label}: the conversation starts with the person in the 3D town`, !(await pictures()) && await page.locator(".scene-backdrop").count() === 0);
     await real(1500); await step(6); await real(350);
     let c = await chip();
     check(`${label}: the chip is the place's picture, with its name on it`, c?.to === "picture" && c.loaded && !!c.label && !!c.name, c);
@@ -110,7 +114,7 @@ try {
     await settle(600);
     await real(1500); await step(6); await real(300);
     c = await chip();
-    check(`${label}: a tap puts the conversation in front of the picture`, await pictures() && await page.locator(".scene-backdrop img.on").count() === 1);
+    check(`${label}: a tap puts the conversation in front of the picture, and that choice is saved`, await pictures() && await page.evaluate((k) => JSON.parse(localStorage.getItem(k)).settings.scenes === true, `${storage}-progress-v1`) && await page.locator(".scene-backdrop img.on").count() === 1);
     check(`${label}: the chip is now the town, in the same corner`, c?.to === "town" && c.label === "3D" && c.inView && c.clear && c.onTop && c.at.w >= 44 && c.at.h >= 44 && !c.hint, c);
     const town = await page.evaluate(async () => {
       const img = document.querySelector(".view-chip img");
@@ -158,6 +162,18 @@ try {
     await real(1500); await step(6); await real(350);
     c = await chip();
     check(`${label}: the next conversation has its own picture on the chip, and no hint a second time`, c?.to === "picture" && c.loaded && !c.hint && !c.tipSeen, c && { to: c.to, hint: c.hint, src: c.src });
+    // ---- the picture, once picked, is there in the next conversation too; and 3D again once that is picked
+    await press();
+    await settle(500);
+    await leave();
+    await talk(SIT);
+    c = await chip();
+    check(`${label}: whoever picked the picture starts the next conversation in front of it`, await pictures() && await page.locator(".scene-backdrop img.on").count() === 1 && c?.to === "town", c && { to: c.to });
+    await press();
+    await settle(500);
+    await leave();
+    await talk(SIT2);
+    check(`${label}: and whoever went back to 3D starts the next one with the person`, !(await pictures()) && await page.locator(".scene-backdrop").count() === 0 && (await chip())?.to === "picture");
     await leave();
 
     // ---- a place without a picture has no chip to press in vain
