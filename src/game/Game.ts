@@ -193,6 +193,8 @@ export class Game implements GameApi {
   private caveHinted = new Set<string>();
   private nearWay: string | null = null;
   private caveVia: string | null = null;
+  /** The titles of the tips about the ways in that were shown (taken down on going in: the grotto has its own card). */
+  private caveHints: string[] = [];
   private dropIn = 0;
   private townCam: { pitch: number; dist: number } | null = null;
   private pushDoorT = 0;
@@ -991,6 +993,9 @@ export class Game implements GameApi {
     if (!cave || !sp || this.transitioning) return;
     this.caveVia = wayId;
     this.dropIn = sp.drop ?? 0;
+    const st = useStore.getState();
+    for (const t of st.toasts) if (this.caveHints.includes(t.title)) st.dismissToast(t.id);
+    this.caveHints = [];
     this.enterZone(CAVE_ZONE, { x: sp.x, z: sp.z, rot: sp.rot }, false, "in");
   }
 
@@ -1964,9 +1969,13 @@ export class Game implements GameApi {
       const d = Math.hypot(w.x - p.x, w.z - p.z);
       if (d < (w.swim ? 9 : 7) && (w.swim ? this.swimming : !this.swimming) && !this.caveHinted.has(w.id)) {
         this.caveHinted.add(w.id);
-        if (!useStore.getState().progress.cave?.seen) useStore.getState().toast({ kind: "tip", ms: 8000, ...(w.id === "boca" ? { title: L("Olos angoje kažkas švyti…"), body: L("Nuplauk prie jos, kitame cenotės krašte.") }
-          : w.id === "grieta" ? { title: L("Uolos plyšyje kažkas švyti…"), body: L("Prieik arčiau – pro jį galima įlįsti.") }
-          : { title: L("Iš duobės tarp šaknų kyla šviesa…"), body: L("Tai El Ojo – „akis“. Įšok, jei drįsti: apačioje vanduo.") }) });
+        if (!useStore.getState().progress.cave?.seen) {
+          const hint = w.id === "boca" ? { title: L("Olos angoje kažkas švyti…"), body: L("Nuplauk prie jos, kitame cenotės krašte.") }
+            : w.id === "grieta" ? { title: L("Uolos plyšyje kažkas švyti…"), body: L("Prieik arčiau – pro jį galima įlįsti.") }
+            : { title: L("Iš duobės tarp šaknų kyla šviesa…"), body: L("Tai El Ojo – „akis“. Įšok, jei drįsti: apačioje vanduo.") };
+          this.caveHints.push(hint.title);
+          useStore.getState().toast({ kind: "tip", ms: 8000, ...hint });
+        }
       }
       if (w.swim && this.swimming && this.diveK < 0.3 && d < 1.1 && this.vel.x < -0.8) pushing = true;
       // (the sinkhole: over its edge and down)

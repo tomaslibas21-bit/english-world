@@ -101,6 +101,52 @@ Their people: `alux_kin`, `alux_nikte` (`src/editions/es/content/npcs.ts`: half 
 straw hat is not to be touched), the place `gruta`. Voices: `tools/es-voices/casting-es.ts` (gentle, bright, a
 little magical; three sets).
 
+## The cenote from whichever side (15 Nov 2026, afternoon)
+
+The owner: "when you're trying to enter near the cenote, maybe we could make it easier to enter through whichever
+direction … it's just like explore something." The grounds are `src/game/cave/grounds.ts` (theme `cenote.open`; the
+older single way is still `mexican.ts` `cenoteWalk` for a town without it).
+
+**Into the cenote.** The meadow's whole west edge is open (not only where the sacbé leaves the town), and the jungle
+closes the grounds at the north, the south and the west: what looks open is open, what stops one is a crown of jungle
+or a rock. Down to the water:
+
+| Way | Where | How |
+|---|---|---|
+| the deck | town side (east) | as before: the sacbé, the deck, its steps into the water |
+| **La Playita** | north-east | a fan of sand through a gap in the rim's stones; one wades in |
+| **Los Escalones** | south-east | four flat rocks down through the other gap |
+| **El Salto** | the cliff's top, west | a stair of ten stones up the cliff's back from the jungle side, a ledge 4.6 m over the water with two posts and a rope; one walks or jumps off and lands swimming |
+
+A trail of pale stepping stones leaves the sacbé by the taquilla and goes round the jungle side past all of them.
+
+**Into the grotto**, three ways (`grounds.ts` `ways()`; `Game.enterCave`):
+
+| Way | Found by | Going in | Coming out |
+|---|---|---|---|
+| **the cave's mouth** | swimming | swim into the dark under the cliff (as before) | by the water: up in the cenote at the mouth |
+| **La Grieta** (the cleft) | walking: on the trail, south-west of the water | a slit in the cliff's back; E / the phone's button; one comes in beside the first hall | back out through the cleft ("Squeeze out through the cleft"), onto the trail |
+| **El Ojo** (the eye) | walking: on the trail, north-west, among roots | a sinkhole; walk into it or "Jump down"; one falls 6 m into the first hall's water through a skylight | by the water (at the mouth), or the cleft |
+
+Leaving by the water after coming in through the cleft or the eye brings one up at the mouth: the water goes there,
+and the cleft is the dry way back. The grotto has two exits now (`plan.ts` `EXITS`, the zone's `exits`) and three
+places to arrive (`SPAWNS`); a reload down there comes back where one stood, as before.
+
+**How the ways are shown** (`groundsGlow`, the group "gruta-lure": three small meshes, drawn within 80 m): a glow in
+each way in, fireflies round it (at El Ojo a column of them rising out of the hole), and a small standing stone
+with a glowing glyph beside each, the same glyphs as the stones below. The first time one comes near each, a tip says
+what it is (the mouth's as before; "Something glows in a cleft in the rock…"; "Light rises from a hole among the
+roots…"): only until the grotto has been seen once. Within 14 m of a way in one hears the grotto's own quiet (drips,
+the low breath of air), louder the nearer. The first-time card down there is the same whichever way one came.
+
+**Engine pieces.** FLOORS for the gaps, the stair and ledge and the pit (the ground mesh is flat and opaque: what
+goes below it is not seen, so the sand and steps are drawn at the ground's level and the floor drops to the pool's
+bed under the water); the way-finding's grid and the camera's field reach 50 m west of the town's edge when the
+grounds are open, so a tap on the ground walks there (around El Ojo the grid costs more: the tap-walk goes round it
+unless one taps into it); `Interior.wild` has `exits[]` and `spawns{}`; `Game.dropIn` (arriving from above);
+`audio.cave(…, { level })`; `climbAudit(…, more)` (the climbing check's "nobody gets out of the town" counts the
+grounds as in, and covers them).
+
 ## Tests
 
 - `tests/es/cave.test.ts`: the plan (everything stands where one can walk; one can walk from the way in to the heart;
@@ -111,6 +157,14 @@ little magical; three sets).
   until his conversation is talked through (really talked: five typed answers); a stone's card, a wrong meaning, the
   right one; the second chamber's gate shut with three stones lit and nothing finished in town, open with ten; out by
   the water; a reload down there.
+- `tests/es/cave.test.ts` "the cenote's grounds": from the town's edge one reaches the water by the deck and both
+  gaps, the ledge by its stair, the cleft and the eye on foot; the edge is open all along; the trail's stones stand on
+  open ground; the grotto's exits and arriving places are inside its plan.
+- `tests/browser/cenote-ways.mjs`: the real game, a computer and a phone, **walked from the end of avenida Juárez with
+  taps on the ground, no teleport**: across the meadow north of the sacbé, down La Playita, swum to the mouth, in, out
+  by the water; across the meadow at the south, along the trail to La Grieta, in, out through the cleft; round the
+  north to the stair, up to El Salto, off the ledge into the water, out by Los Escalones, to El Ojo, dropped in.
+  `--shots=<dir>` keeps a picture of each step.
 
 ## Left for later
 

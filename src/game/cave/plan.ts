@@ -119,7 +119,9 @@ export const EXITS: { id: "agua" | "grieta"; x: number; z: number; reach: number
  *  dropped through El Ojo into the water (`drop`: from how high, m). */
 export const SPAWNS: Record<string, { x: number; z: number; rot: number; drop?: number }> = {
   boca: ENTRY,
-  grieta: { x: 5.6, z: -1.25, rot: -Math.PI / 2 - 0.2 },
+  // (out of the cleft's inner end and turned towards Kin: the camera has the way in's length behind them, as from the
+  // water; in the cleft itself it was boxed in and came round to their face)
+  grieta: { x: 1.2, z: -0.7, rot: Math.PI },
   ojo: { x: 0, z: 9.0, rot: Math.PI, drop: 6.2 },
 };
 /** The sinkhole seen from below: a small eye in the roof over the water one comes up through. */
