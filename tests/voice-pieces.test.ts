@@ -2,7 +2,7 @@
 // found in the pieces, and a line that repeats words itself must not be taken for one.
 import { describe, expect, it } from "vitest";
 import { asHeard } from "../tools/voice-batch";
-import { falseStart, heardAgain, judgePieces, onceInARow, repeatsItself, startedAgain, wordAgain, wordsLost, wordsOf, SOUNDS_TWICE, type Heard } from "../tools/voice-pieces";
+import { falseStart, heardAgain, judgePieces, numberAgain, onceInARow, repeatsItself, startedAgain, unsplit, wordAgain, wordsLost, wordsOf, SOUNDS_TWICE, type Heard } from "../tools/voice-pieces";
 
 const words = (s: string) => wordsOf(s, asHeard);
 const heard = (whole: string, pieces: string[], more: Partial<Heard> = {}): Heard => ({
@@ -34,6 +34,15 @@ describe("words heard again", () => {
   });
   it("still counts one time more than the line says it", () => {
     expect(heardAgain(words("No, no, I'm fine."), words("No, no, no, I'm fine."))).toBe("no no");
+  });
+  it("takes a number said in pieces as one, and hears a piece of it twice", () => {
+    const flag = (said: string, whole: string, pieces: string[]) => judgePieces(said, heard(whole, pieces), asHeard).again;
+    expect(flag("That'll be ninety-eight ninety-eight.", "That'll be $98.98.", ["That'll be ninety eight ninety eight."])).toBeUndefined();
+    expect(flag("Regular is ninety-eight ninety-eight a gallon.", "Regular is 98. 98 a gallon.", ["Regular is 98.", "98 a gallon."])).toBeUndefined();
+    expect(flag("That'll be forty forty-nine.", "That'll be forty forty nine.", ["That'll be forty.", "Forty-9."])).toBeUndefined();
+    expect(flag("Your total is thirty-five forty-seven.", "Your total is thirty five thirty five forty seven.", ["Your total is 35.", "35, 47."])).toBe("3547 as 353547");
+    expect(flag("Okay, that's one hundred one forty-nine.", "Okay, that's one hundred one forty nine.", ["Okay, that's", "One hundred.", "149"])).toBeUndefined();
+    expect(numberAgain(["its", "110"], ["its", "110"])).toBeUndefined();
   });
   it("does not mind how a number is written", () => {
     const said = "That'll be fifty-nine ninety-nine.";
@@ -68,6 +77,18 @@ describe("words heard again", () => {
     expect(heardAgain(words("Their house had four walls."), words("Their house ha their house had four walls."))).toBe("their house");
     expect(falseStart(words("Regular is fine."), words("Reg regular is fine."))).toBe("reg- regular");
     expect(falseStart(words("I am in an inn."), words("I am in an inn."))).toBeUndefined();
+  });
+});
+
+describe("a word split by a stop's closure", () => {
+  const split = (pause: number): Heard => ({ key: "k", sec: 2.5, whole: "That'll be ninety six twenty five.", words: [], engine: "parakeet",
+    pauses: [[1200 - pause / 2, 1200 + pause / 2]], pieces: [[0, 1200, "That'll be ninety six."], [1200, 2500, "Six twenty five."]] });
+  it("is heard once when the pause is a closure, twice when it is a pause", () => {
+    expect(unsplit(split(90))).toEqual(["That'll be ninety six.", "twenty five."]);
+    expect(judgePieces("That'll be ninety-six twenty-five.", split(90), asHeard).again).toBeUndefined();
+    expect(unsplit(split(300))[1]).toBe("Six twenty five.");
+    const big: Heard = { key: "k", sec: 3, whole: "Someone just brought in a big yellow backpack.", words: [], engine: "parakeet", pauses: [[1500, 1900]], pieces: [[0, 1700, "Someone just brought in a big"], [1700, 3000, "Big yellow backpack."]] };
+    expect(judgePieces("Someone just brought in a big yellow backpack.", big, asHeard).again).toBe("big big");
   });
 });
 
