@@ -2,7 +2,7 @@
 // streets a car stays on, the plan of this town's convertibles and boat (world/rides.ts), and the water past the
 // wading limit (water.ts). In the real game: tests/browser/rides.mjs.
 import { describe, expect, it } from "vitest";
-import { Drivable, Motion, CAR, BOAT, BAY_EDGE, bayTurn, shoreSpeed, controlsFrom, pushOutOfBox, aheadIn } from "../src/game/rides/drive";
+import { Drivable, Motion, CAR, BOAT, BAY_EDGE, bayTurn, shoreSpeed, controlsFrom, pushOutOfBox, aheadIn, aheadOnArc } from "../src/game/rides/drive";
 import { townAsphalt, townGround } from "../src/game/rides/ground";
 import { convertibleGeometry, motorboatGeometry, buoysGeometry, CAR_SIZE, BOAT_SIZE } from "../src/game/rides/shapes";
 import { RIDES } from "../src/game/world/rides";
@@ -204,6 +204,37 @@ describe("boxes and strips", () => {
     expect(aheadIn(0, 0, 0, 1, 2, 10, 20, 1.5)).toBe(Infinity);
     expect(aheadIn(0, 0, 0, 1, 0, -3, 20, 1.5)).toBe(Infinity);
     expect(aheadIn(0, 0, 0, 1, 0, 25, 20, 1.5)).toBe(Infinity);
+  });
+  it("who is on its way with the wheel turned: along the arc, not straight ahead", () => {
+    // straight: the strip
+    expect(aheadOnArc(0, 0, 0, 1, 0, 0.5, 10, 20, 1.5)).toBeCloseTo(10);
+    // a turn to the right of radius 5 (facing +Z, the right is −X): someone straight ahead at 6 m is off it…
+    expect(aheadOnArc(0, 0, 0, 1, 1 / 5, 0, 6, 20, 1.2)).toBe(Infinity);
+    // …someone a quarter turn round is on it, a quarter of the circle away
+    expect(aheadOnArc(0, 0, 0, 1, 1 / 5, -5, 5, 20, 1.2)).toBeCloseTo((PI / 2) * 5, 1);
+    // the same to the left; behind is never ahead
+    expect(aheadOnArc(0, 0, 0, 1, -1 / 5, 5, 5, 20, 1.2)).toBeCloseTo((PI / 2) * 5, 1);
+    expect(aheadOnArc(0, 0, 0, 1, 1 / 5, -0.3, -2, 20, 1.2)).toBe(Infinity);
+    // right in front of the bumper it still counts, turned wheel or not
+    expect(aheadOnArc(0, 0, 0, 1, 1 / 5, 0, 2.5, 20, 1.5)).toBeLessThan(3);
+    // a car's wheel: straight at a standstill is no curve; turned right, to the right; backing up, the other way
+    const m = new Motion(CAR, "car");
+    expect(m.curve()).toBe(0);
+    m.steer = 1;
+    expect(m.curve()).toBeGreaterThan(0.2);
+    expect(m.curve(-1)).toBeCloseTo(-m.curve());
+    m.speed = CAR.max;
+    expect(m.curve()).toBeLessThan(0.08);
+  });
+  it("past someone straight ahead whom its wheel takes it round: at a careful pace, not a stop", () => {
+    const m = new Motion(CAR, "car");
+    m.speed = 9;
+    for (let i = 0; i < 90; i++) m.step(1 / 60, { throttle: 1, steer: 0, brake: false }, Infinity, true, 4);
+    expect(m.speed).toBeGreaterThan(CAR.careful - 0.3);
+    expect(m.speed).toBeLessThan(CAR.careful + 0.6);
+    // someone on its way: a stop
+    for (let i = 0; i < 90; i++) m.step(1 / 60, { throttle: 1, steer: 0, brake: false }, 3, true, 3);
+    expect(Math.abs(m.speed)).toBeLessThan(0.3);
   });
 });
 

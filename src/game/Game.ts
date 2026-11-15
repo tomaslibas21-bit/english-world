@@ -358,7 +358,7 @@ export class Game implements GameApi {
           useStore.getState().toast({ kind: "info", title: L("Mašina vėl gatvėje"), ms: 2600 });
         }, 280);
       },
-      waiting: () => useStore.getState().toast({ kind: "tip", title: L("Priekyje žmogus"), body: L("Mašina sustoja pati. Apvažiuok arba pavažiuok atbulas."), ms: 5000 }),
+      waiting: () => useStore.getState().toast({ kind: "tip", title: L("Kelias užimtas"), body: L("Mašina sustoja pati. Pasuk į šoną ir apvažiuok arba pavažiuok atbulas."), ms: 5000 }),
       stuck: () => useStore.getState().toast({ kind: "tip", title: L("Užstrigai?"), body: useStore.getState().hud.showTouch ? L("Patrauk vairalazdę žemyn – važiuosi atbulas.") : L("Rodyklė žemyn – važiuosi atbulas."), ms: 5000 }),
       aground: () => useStore.getState().toast({ kind: "tip", title: L("Čia per sekli vieta"), body: useStore.getState().hud.showTouch ? L("Patrauk vairalazdę žemyn – valtis atsitrauks nuo kranto.") : L("Rodyklė žemyn – valtis atsitrauks nuo kranto."), ms: 5000 }),
       splash: (x, y, z, dx, dz, k) => this.splashes.burst(x, y, z, dx, dz, k),
