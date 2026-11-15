@@ -49,6 +49,27 @@ export function wordsOf(s: string, spoken: Spoken): string[] {
   return spoken(s).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/['’]/g, "").split(/[^a-z0-9]+/).filter(Boolean);
 }
 
+/** A number said in pieces is one word: "98. 98" and "35, 47" are 9898 and 3547, as the line's own "ninety-eight
+ *  ninety-eight" is. */
+export function digitRuns(words: string[]): string[] {
+  return words.reduce<string[]>((out, w) => { if (/^\d+$/.test(w) && out.length && /^\d+$/.test(out[out.length - 1])) out[out.length - 1] += w; else out.push(w); return out; }, []);
+}
+
+/** A number heard with a piece of it twice ("thirty-five thirty-five forty-seven" for 3547 is 353547): one of the
+ *  line's numbers with a run of its digits repeated. Returns "3547 as 353547". */
+export function numberAgain(said: string[], heard: string[]): string | undefined {
+  const numbers = said.filter((w) => /^\d+$/.test(w)), have = new Set(said);
+  for (const e of heard) {
+    if (!/^\d+$/.test(e) || have.has(e)) continue;
+    for (const d of numbers) {
+      if (e.length <= d.length || e.length > 2 * d.length) continue;
+      // two digits or more: one digit more is how a number is grouped ("one hundred | one forty-nine" is 100 149)
+      for (let i = 2; i <= d.length; i++) for (let j = 0; j <= i - 2; j++) if (d.slice(0, i) + d.slice(j, i) + d.slice(i) === e) return `${d} as ${e}`;
+    }
+  }
+  return undefined;
+}
+
 function counts(words: string[], n: number): Map<string, number> {
   const m = new Map<string, number>();
   for (let i = 0; i + n <= words.length; i++) { const g = words.slice(i, i + n).join(" "); m.set(g, (m.get(g) ?? 0) + 1); }
@@ -94,8 +115,7 @@ export function startedAgain(said: string[], heard: string[]): string | undefine
  *  "35, 47" is 3547). A cut must not raise this: "I can come down to eight. It hurts" has lost "thousand", though
  *  letter by letter it is still 0.9 like its line. */
 export function wordsLost(said: string, heard: string, spoken: Spoken): number {
-  const runs = (ws: string[]) => ws.reduce<string[]>((out, w) => { if (/^\d+$/.test(w) && out.length && /^\d+$/.test(out[out.length - 1])) out[out.length - 1] += w; else out.push(w); return out; }, []);
-  const a = runs(wordsOf(said, spoken)), b = runs(wordsOf(heard, spoken));
+  const a = digitRuns(wordsOf(said, spoken)), b = digitRuns(wordsOf(heard, spoken));
   let row = new Array<number>(b.length + 1).fill(0);
   for (let i = 1; i <= a.length; i++) {
     const next = [0];
@@ -145,8 +165,27 @@ export function onceInARow(words: string[]): string[] {
   return w;
 }
 
+/** A pause shorter than this may be a stop's closure inside a word ("si-x", "bi-g"). */
+export const SPLIT_PAUSE = 180;
+/** The pieces' transcripts, with a word that a stop's closure split in two heard once: when two pieces are parted by
+ *  less than SPLIT_PAUSE ms and the first ends with the word the second begins with ("That'll be ninety six. | Six
+ *  twenty five."), the second loses it. A word said twice has a real pause between its two times, or is heard twice
+ *  in the whole clip too. */
+export function unsplit(h: Heard): string[] {
+  const plain = (w: string) => w.toLowerCase().normalize("NFD").replace(/[^a-z0-9]/g, "");
+  const texts = h.pieces.map((p) => p[2]);
+  for (let i = 0; i + 1 < texts.length; i++) {
+    const at = h.pieces[i + 1][0], pause = h.pauses.find(([a, b]) => a <= at && at <= b);
+    if (pause && pause[1] - pause[0] >= SPLIT_PAUSE) continue;
+    const last = texts[i].trim().split(/\s+/).pop() ?? "", rest = texts[i + 1].trim().split(/\s+/);
+    if (plain(last) && plain(last) === plain(rest[0] ?? "")) texts[i + 1] = rest.slice(1).join(" ");
+  }
+  return texts;
+}
+
 /** A stripe this long (moving ms) is a phrase said twice: clean clips whose line repeats nothing stay under it but
- *  for about 1 in 100 (measured on Maple Harbor's 33,682 clips, 15 Nov 2026). */
+ *  for 1 or 2 in 100 (measured on Maple Harbor's 39,325 clips, 15 Nov 2026). Spanish, with its open syllables, sounds
+ *  more like itself: Puerto Colibrí's 141,331 clips reach 450 one time in 20, so its edition sets 560 (1 in 100). */
 export const SOUNDS_TWICE = 450;
 
 /** The line says something twice itself ("seven thousand … seven thousand", "thirty-five point five", "7788"): its
@@ -162,18 +201,18 @@ export function repeatsItself(said: string): boolean {
 
 /** The verdict on one clip: is a piece of the line heard again, in the whole clip's transcript or in its pieces', or
  *  does its sound come twice? Whisper's hearing is folded (see onceInARow). */
-export function judgePieces(said: string, h: Heard, spoken: Spoken): Verdict {
+export function judgePieces(said: string, h: Heard, spoken: Spoken, soundsTwice = SOUNDS_TWICE): Verdict {
   const fold = h.engine === "whisper";
   const f = (ws: string[]) => (fold ? onceInARow(ws) : ws);
-  const want = f(wordsOf(said, spoken));
-  const whole = f(wordsOf(h.whole, spoken));
-  const pieces = h.pieces.flatMap((p) => f(wordsOf(p[2], spoken)));
-  const any = (ws: string[]) => heardAgain(want, ws) ?? startedAgain(want, ws) ?? wordAgain(want, ws) ?? falseStart(want, ws);
+  const want = digitRuns(f(wordsOf(said, spoken)));
+  const whole = digitRuns(f(wordsOf(h.whole, spoken)));
+  const pieces = digitRuns(unsplit(h).flatMap((text) => f(wordsOf(text, spoken))));
+  const any = (ws: string[]) => heardAgain(want, ws) ?? startedAgain(want, ws) ?? wordAgain(want, ws) ?? numberAgain(want, ws) ?? falseStart(want, ws);
   const a = any(whole), b = any(pieces);
   const len = (ws: string[]) => ws.join("").length;
   const v: Verdict = { extra: Math.max(len(whole), len(pieces)) - len(want), heard: h.pieces.map((p) => p[2]).join(" | ") };
   if (h.engine !== "none" && (a || b)) { v.again = a ?? b; v.where = a && b ? "both" : a ? "whole" : "pieces"; }
-  if ((h.stripe?.moving ?? 0) >= SOUNDS_TWICE && !repeatsItself(said)) v.twice = true;
+  if ((h.stripe?.moving ?? 0) >= soundsTwice && !repeatsItself(said)) v.twice = true;
   return v;
 }
 
@@ -210,7 +249,7 @@ export function readHeard(file: string): Map<string, Heard> {
 // ---------------------------------------------------------------- repeats in clips already made, and cutting them
 /** How an edition writes and compares its lines: its language, the spoken form, and how alike a line and a
  *  transcript are (0…1). */
-export interface Edition { lang: "en" | "es"; spoken: Spoken; alike: (said: string, heard: string) => number }
+export interface Edition { lang: "en" | "es"; spoken: Spoken; alike: (said: string, heard: string) => number; soundsTwice?: number }
 export interface Clip { key: string; path: string; said: string }
 export interface Found extends Verdict { key: string; said: string; sec: number; whole: string; stripe?: Heard["stripe"]; alike: number; lost: number; lostInPieces: number }
 
@@ -219,7 +258,7 @@ export interface Found extends Verdict { key: string; said: string; sec: number;
 export async function findRepeats(clips: Clip[], ed: Edition, opts: Parameters<typeof hearPieces>[1] = {}): Promise<{ found: Found[]; all: Map<string, Found> }> {
   const heard = await hearPieces(clips, { lang: ed.lang, ...opts });
   const all = new Map<string, Found>();
-  for (const c of clips) { const h = heard.get(c.key)!; all.set(c.key, { key: c.key, said: c.said, sec: h.sec, whole: h.whole, stripe: h.stripe, alike: +ed.alike(c.said, h.whole).toFixed(3), lost: lostEitherWay(c.said, h.whole, ed.spoken), lostInPieces: lostEitherWay(c.said, h.pieces.map((x) => x[2]).join(" "), ed.spoken), ...judgePieces(c.said, h, ed.spoken) }); }
+  for (const c of clips) { const h = heard.get(c.key)!; all.set(c.key, { key: c.key, said: c.said, sec: h.sec, whole: h.whole, stripe: h.stripe, alike: +ed.alike(c.said, h.whole).toFixed(3), lost: lostEitherWay(c.said, h.whole, ed.spoken), lostInPieces: lostEitherWay(c.said, h.pieces.map((x) => x[2]).join(" "), ed.spoken), ...judgePieces(c.said, h, ed.spoken, ed.soundsTwice) }); }
   return { found: [...all.values()].filter((f) => f.again || f.twice), all };
 }
 

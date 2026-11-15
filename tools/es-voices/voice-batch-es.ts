@@ -917,9 +917,11 @@ const madeFrom = (r: Recorded) => r.text + "|" + r.sec + (r.tries > 1 ? "|" + r.
 interface Checked { heard: string; score: number; text: string; full?: boolean; odd?: "long" | "short" | "again"; pieces?: string; again?: string }
 /** The recognizer of the piece-by-piece check: Parakeet (VOICE_PIECES=whisper where it isn't installed). */
 const PIECES_ENGINE = (process.env.VOICE_PIECES as "parakeet" | "whisper" | undefined) ?? "parakeet";
-const EDITION_ES: Edition = { lang: "es", spoken: asHeardEs, alike: (said, heard) => likenessEs(said, heard) };
+/** Spanish sounds more like itself than English: the stripe that flags a clip is longer here (tools/voice-pieces.ts). */
+const SOUNDS_TWICE_ES = 560;
+const EDITION_ES: Edition = { lang: "es", spoken: asHeardEs, alike: (said, heard) => likenessEs(said, heard), soundsTwice: SOUNDS_TWICE_ES };
 function piecesOf(said: string, h: Heard): { pieces: string; again?: string } {
-  const v = judgePieces(said, h, asHeardEs);
+  const v = judgePieces(said, h, asHeardEs, SOUNDS_TWICE_ES);
   const again = v.again ?? (v.twice ? `the sound comes twice (${h.stripe!.at.map((t) => (t / 1000).toFixed(2)).join(" s and ")} s)` : undefined);
   return { pieces: v.heard, ...(again ? { again } : {}) };
 }

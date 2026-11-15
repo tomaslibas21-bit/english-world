@@ -94,7 +94,8 @@ sends a flagged clip back like any other):
 2. **Words heard again.** The words heard (whole clip, and pieces in a row) are counted against the line's: a run of
    words heard more often than the line says it ("would you like your"), a word twice in a row ("sure sure"), a line
    begun again after a word cut short ("They're 34 na… They're 3499"), one of the line's words once more ("Good, thank
-   you. Good."), a word begun twice ("reg- regular", "Fry, fries please"). A line that repeats words itself ("No, no",
+   you. Good."), a piece of a number twice ("thirty-five thirty-five forty-seven"), a word begun twice ("reg- regular",
+   "Fry, fries please"). A line that repeats words itself ("No, no",
    "seven thousand … seven thousand") is counted with its own repeats.
 3. **The sound against itself.** Without any recognizer, the clip's cepstra are compared with themselves at every
    lag: a phrase said twice is a stripe beside the diagonal of the self-similarity matrix. A stripe of 450 "moving"
@@ -103,10 +104,17 @@ sends a flagged clip back like any other):
    second) to choose what the recognizer hears first.
 
 **How much it finds.** Measured on the 873 takes the first run rejected (`voicing/rejected/`, kept by `redo`): 397
-of them run much longer than the take that replaced them (0.6 s and 35 % or more); the check flags 367 of those. The
-other 30 were read one by one and cut on trial: slow takes with long pauses, a filler ("Uh"), a wrong word or a
+of them run much longer than the take that replaced them (0.6 s and 35 % or more); the check flags 364 of those. The
+other 33 were read one by one and cut on trial: slow takes with long pauses, a filler ("Uh"), a wrong word or a
 Lithuanian place name, and no repeat in either hearing, but for one "See you!" that may hide a false start. The check
-also flags 56 rejected takes that are not much longer (a word said twice quickly).
+also flags 55 rejected takes that are not much longer (a word said twice quickly).
+
+**Two traps in the pieces.** A stop's closure inside a word can be as long as a short pause, so the cut falls inside
+"six" and both pieces are heard to say it ("That'll be ninety six. | Six twenty five."): a word doubled across a
+pause under 180 ms counts once, unless the whole clip's transcript doubles it too. And a number said in pieces is one
+number: "98. | 98 a gallon" is the line's "ninety-eight ninety-eight", "one hundred | one forty-nine" its "one
+hundred one forty-nine"; a number counts as heard again only when two or more of its digits come twice (3547 as
+353547). Whisper, asked for a second opinion on the same pieces, writes "96 | X-25" there.
 
 **Repairs** (`npx tsx tools/voice-batch.ts …`; the Spanish tool has the same commands):
 
