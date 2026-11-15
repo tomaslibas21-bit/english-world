@@ -46,6 +46,13 @@ try {
       return { id: r.id, x: r.m.x, z: r.m.z, owners: r.owners.length, cars: g.rides.list.filter((q) => q.kind === "car").length };
     });
     check(`${label}: two or three convertibles, people in them`, car.cars >= 2 && car.cars <= 3 && car.owners >= 1, car);
+    // (what is said and what the wheels feel, counted from here on)
+    await page.evaluate(() => {
+      const h = window.__ew.game.rides.host, say = h.say, thud = h.thud;
+      window.__said = []; window.__thuds = 0;
+      h.say = (l, v, f, c) => { window.__said.push(v); say(l, v, f, c); };
+      h.thud = (k) => { window.__thuds++; thud(k); };
+    });
     await page.waitForFunction(() => window.__ew.store.getState().hud.prompt?.kind === "drive", null, { timeout: 5000 });
     if (phone) check("phone: the round button says what it does", (await page.locator(".act-btn").innerText()).length > 3, await page.locator(".act-btn").innerText());
     await press();
@@ -53,6 +60,8 @@ try {
     let s = await state();
     const owners = await page.evaluate(() => window.__ew.game.rides.riding.owners.map((o) => ({ state: o.state, d: +window.__ew.game.rides.reach(window.__ew.game.rides.riding, o.ch.root.position.x, o.ch.root.position.z).toFixed(2) })));
     check(`${label}: its people hopped out and stand beside it, the player is at the wheel`, s.ride === car.id && owners.every((o) => o.state !== "in" && o.d > 0.3), { s, owners });
+    const said = await page.evaluate(() => window.__said);
+    check(`${label}: one of them says something, in a voice of their own`, said.length === 1 && /_ride_/.test(said[0]), said);
     await page.waitForFunction(() => window.__ew.store.getState().hud.prompt?.kind === "out", null, { timeout: 3000 });
     check(`${label}: from the wheel only the way out is offered`, (await state()).hud === "car");
     if (phone) check("phone: the jump button is the brake", await page.locator(".brake-btn").count() === 1);
@@ -66,6 +75,21 @@ try {
     else { await page.keyboard.down("Space"); await page.waitForTimeout(900); await page.keyboard.up("Space"); }
     s = await state();
     check(`${label}: the brake stops it`, Math.abs(s.v) < 0.3, s);
+    // over a kerb: set down on a quiet street facing its sidewalk, it drives up onto it with a thud (a few places
+    // tried: someone walking by may hold it up at one)
+    let kerb = null;
+    for (const z of [20, 56, 62, -30]) {
+      await page.evaluate((z) => { const g = window.__ew.game, r = g.rides.riding; window.__thuds = 0; r.m.set(-70, z, -Math.PI / 2); }, z);
+      await go(true);
+      await page.waitForTimeout(1500);
+      await go(false);
+      kerb = await page.evaluate(() => { const g = window.__ew.game, r = g.rides.riding; return { x: +r.m.x.toFixed(2), z: +r.m.z.toFixed(2), thuds: window.__thuds, dry: g.rides.drivable.has(r.m.x, r.m.z) }; });
+      await page.waitForTimeout(500);
+      if (kerb.thuds >= 1 && kerb.x < -72.6) break;
+    }
+    check(`${label}: over the kerb onto the sidewalk, with a thud`, kerb.thuds >= 1 && kerb.x < -72.6 && kerb.dry, kerb);
+    if (phone) { await page.evaluate(() => window.__ew.game.hold(true)); await page.waitForTimeout(700); await page.evaluate(() => window.__ew.game.hold(false)); }
+    else { await page.keyboard.down("Space"); await page.waitForTimeout(700); await page.keyboard.up("Space"); }
     await press();
     await page.waitForFunction(() => !window.__ew.game.rides.riding, null, { timeout: 5000 });
     s = await state();
@@ -92,6 +116,7 @@ try {
     await go(false);
     s = await state();
     check(`${label}: the boat goes out on the water`, s.v > 2 && Math.hypot(s.x - boat.x, s.z - boat.z) > 5 && s.z < LIMIT, s);
+    check(`${label}: from the water the bay's buoys are in the picture`, await page.evaluate(() => window.__ew.game.rides.buoys.visible));
     await page.waitForTimeout(1500);
     await press();
     await page.waitForFunction(() => !window.__ew.game.rides.riding && window.__ew.game.swimming, null, { timeout: 8000 });
@@ -99,7 +124,8 @@ try {
     s = await state();
     check(`${label}: over the side: swimming, the head above the water`, s.swim && s.hud === "swim" && s.y < -0.9 && s.y > -1.9, s);
     if (phone) await page.locator(".jump-btn").tap(); else await page.keyboard.press("Space");
-    await page.waitForFunction(() => window.__ew.game.diveK > 0.95 && window.__ew.game.undersea.on, null, { timeout: 6000 });
+    // (and the camera has followed the diver down: it eases after them)
+    await page.waitForFunction(() => window.__ew.game.diveK > 0.95 && window.__ew.game.undersea.on && window.__ew.game.rig.cam.position.y < -0.45, null, { timeout: 6000 });
     s = await state();
     const under = await page.evaluate(() => { const g = window.__ew.game; return { cam: +g.rig.cam.position.y.toFixed(2), seabed: g.undersea.group.visible, sky: g.sky.visible }; });
     check(`${label}: a dive: the camera under the water, the seabed in the picture`, s.hud === "dive" && under.cam < -0.4 && under.seabed && !under.sky, { s, under });
@@ -116,6 +142,7 @@ try {
     await page.evaluate(() => { const g = window.__ew.game; g.enterZone("town", { x: 28, z: -14.6, rot: Math.PI }, true); });
     s = await state();
     const home = await page.evaluate((id) => { const g = window.__ew.game, r = g.rides.list.find((q) => q.id === id); return Math.hypot(r.m.x - r.home.x, r.m.z - r.home.z); }, boat.id);
+    check(`${label}: from the town the buoys are not drawn`, await page.evaluate(() => !window.__ew.game.rides.buoys.visible));
     check(`${label}: put down elsewhere: on foot, the boat back at its place`, s.ride === null && s.hud === null && home < 0.1, { s, home });
     check(`${label}: no page errors`, errors.length === 0, errors.slice(0, 5));
     await ctx.close();
