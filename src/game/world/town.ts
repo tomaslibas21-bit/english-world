@@ -29,6 +29,18 @@ const GW = WORLD.maxX - WORLD.minX, GD = WORLD.maxZ - SEA_Z + 2;
 const G0Z = SEA_Z - 2;
 /** Open grass between the town's west edge and the foot of the hills beyond it (m). */
 const WEST_MEADOW = 40;
+/** The letters' colour on a building's printed sign: its trim, or a dark one when the trim is too pale to read on the
+ *  cream board (Maple Street Apartments' cream trim; Correos, Departamentos Las Palmas). */
+function signInk(b: BuildingDef) {
+  const ink = b.trim ?? "#333";
+  const c = new THREE.Color(ink);
+  return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b > 0.6 ? b.awning ?? "#3a2f2a" : ink;
+}
+/** The museum's frieze over its columns (they reach 7.1 m), which carries its name: centre height, height, and how far
+ *  its front stands out of the facade (m). */
+const MUSEUM_FRIEZE = { y: 7.85, h: 1.7, out: 3.4 };
+/** The top of the airport's canopy (m); the terminal's name goes above it. */
+const TERMINAL_CANOPY_TOP = 5.6;
 /** The follow camera can stand 22 m behind a player at any boundary. Keep the backdrop beyond that arm,
  *  including south of Station Road and behind the airport, where a 6 m gap looked like a green wall. */
 export const HILL_MARGIN = 40;
@@ -726,13 +738,21 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   }
 
   // sign
+  // (its size, for what stands in front of the facade: nothing may cover its words, docs/SIGNS.md)
+  let signW = 0, signH = 0, signY = 0;
   if (b.sign) {
-    const tex = textTexture(b.sign, { bg: "#fffaf0", fg: b.trim ?? "#333", border: b.trim, w: 768, h: 160 });
+    const tex = textTexture(b.sign, { bg: "#fffaf0", fg: signInk(b), border: b.trim, w: 768, h: 160 });
     const sw = Math.min(halfWidth * 2 - 1.5, Math.max(5, b.sign.length * 0.55));
     const sign = new THREE.Mesh(new THREE.PlaneGeometry(sw, sw * 160 / 768), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
-    const sy = b.style === "house" ? 0 : b.style === "hotel" || b.style === "office" || b.style === "apartments" ? Math.min(b.h - 1.5, 8.2) : Math.min(b.h - 1.1, 4.8);
-    // centred on the facade (the same place as the door, unless the door is off-centre)
-    sign.position.set(dx - t[0] * doorOff + n[0] * 0.2, sy, dz - t[1] * doorOff + n[1] * 0.2);
+    let sy = b.style === "house" ? 0 : b.style === "hotel" || b.style === "office" || b.style === "apartments" ? Math.min(b.h - 1.5, 8.2) : Math.min(b.h - 1.1, 4.8);
+    // the terminal's name above its canopy (under it, the canopy hid it from the street)
+    if (b.style === "terminal") sy = Math.min(b.h - 0.4 - sw * 80 / 768, TERMINAL_CANOPY_TOP + 0.25 + sw * 80 / 768);
+    signW = sw; signH = sw * 160 / 768; signY = sy;
+    // centred on the facade (the same place as the door, unless the door is off-centre); the museum's on the frieze
+    // over its columns (behind them, the columns cut its words)
+    const out = b.style === "museum" ? MUSEUM_FRIEZE.out + 0.03 : 0.2;
+    if (b.style === "museum") sign.position.set(dx + n[0] * out, MUSEUM_FRIEZE.y, dz + n[1] * out);
+    else sign.position.set(dx - t[0] * doorOff + n[0] * out, sy, dz - t[1] * doorOff + n[1] * out);
     sign.rotation.y = rotY;
     if (b.style !== "house") { group.add(sign); signs.push(sign); }
   }
@@ -746,7 +766,8 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     }
     M.add("steps", mat("#e3ddd0"), boxGeo(16, 0.3, 3.4, 0, 0.15, 0).rotateY(rotY).translate(dx + n[0] * 1.7, 0, dz + n[1] * 1.7));
     M.add("steps", mat("#e3ddd0"), boxGeo(16, 0.3, 2.4, 0, 0.45, 0).rotateY(rotY).translate(dx + n[0] * 1.2, 0, dz + n[1] * 1.2));
-    M.add("pediment", mat("#f7f3ea"), boxGeo(16, 0.8, 3.6, 0, 7.4, 0).rotateY(rotY).translate(dx + n[0] * 1.6, 0, dz + n[1] * 1.6));
+    // the frieze over the columns, tall enough to carry the museum's name (was 0.8 m, its name behind the columns)
+    M.add("pediment", mat("#f7f3ea"), boxGeo(16, MUSEUM_FRIEZE.h, 3.6, 0, MUSEUM_FRIEZE.y, 0).rotateY(rotY).translate(dx + n[0] * 1.6, 0, dz + n[1] * 1.6));
     // (the words a line each down the banner, big enough to read from the street: one line across it was too small)
     const banner = textTexture("The Colors of the Night", { bg: "#2b2d6e", fg: "#ffd166", w: 256, h: 512, lines: 4 });
     for (const s of [-1, 1]) {
@@ -777,7 +798,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     M.add("canopy", mat("#7a2e2e"), boxGeo(12, 0.3, 3.2, 0, 3.5, 0).rotateY(rotY).translate(dx + n[0] * 1.6, 0, dz + n[1] * 1.6));
   }
   if (b.style === "terminal") {
-    M.add("terminal-canopy", mat("#f4f6f8"), boxGeo(8, 0.4, 20, dx - 4, 5.4, dz));
+    M.add("terminal-canopy", mat("#f4f6f8"), boxGeo(8, 0.4, 20, dx - 4, TERMINAL_CANOPY_TOP - 0.2, dz));
     for (const oz of [-9, -3, 3, 9]) { M.add("canopy-post", mat("#b8c2cc"), cylGeo(0.15, 0.15, 5.4, dx - 7.5, 2.7, dz + oz, 8)); col.addCircle(dx - 7.5, dz + oz, 0.2); }
     // control tower
     M.add("tower", mat("#dde6ee"), cylGeo(1.6, 2, 24, b.x + 12, 12, b.z + 16, 12));
@@ -789,6 +810,8 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   }
   if (b.style === "apartments") {
     for (let f = 1; f < 5; f++) for (const o of [-7, 0, 7]) {
+      // (none across the building's name: the balconies and their rails covered its words)
+      if (signW && Math.abs(o) - 1.6 < signW / 2 && f * 3.2 + 0.5 < signY + signH / 2 && f * 3.2 + 1.6 > signY - signH / 2) continue;
       M.add("balcony", mat("#f3e9dc"), boxGeo(3.2, 0.2, 1.2, b.x + o, f * 3.2 + 0.6, b.z - b.d / 2 - 0.55));
       M.add("balcony-rail", mat("#3b3b3b"), boxGeo(3.2, 0.9, 0.06, b.x + o, f * 3.2 + 1.1, b.z - b.d / 2 - 1.12));
     }
@@ -834,12 +857,13 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     col.addBox(dx + t[0] * 1.8 + n[0] * 1.6, dz + t[1] * 1.8 + n[1] * 1.6, Math.abs(t[0]) * 0.9 + Math.abs(n[0]) * 0.45, Math.abs(t[1]) * 0.9 + Math.abs(n[1]) * 0.45);
   }
   if (b.id === "bank") {
-    // ATM next to the door
-    M.add("atm", mat("#34495e"), boxGeo(1, 2, 0.5, 0, 1, 0).rotateY(rotY).translate(dx + t[0] * 4 + n[0] * 0.3, 0, dz + t[1] * 4 + n[1] * 0.3));
-    M.add("atm-screen", glassMat, boxGeo(0.6, 0.45, 0.04, 0, 1.5, 0).rotateY(rotY).translate(dx + t[0] * 4 + n[0] * 0.57, 0, dz + t[1] * 4 + n[1] * 0.57));
-    col.addBox(dx + t[0] * 4 + n[0] * 0.3, dz + t[1] * 4 + n[1] * 0.3, Math.abs(t[0]) * 1.05 + Math.abs(n[0]) * 0.6, Math.abs(t[1]) * 1.05 + Math.abs(n[1]) * 0.6);
-    M.add("columns", mat("#f7f3ea"), cylGeo(0.35, 0.4, 5, dx + t[0] * -2.2 + n[0] * 0.6, 2.5, dz + t[1] * -2.2 + n[1] * 0.6, 10));
-    M.add("columns", mat("#f7f3ea"), cylGeo(0.35, 0.4, 5, dx + t[0] * 2.2 + n[0] * 0.6, 2.5, dz + t[1] * 2.2 + n[1] * 0.6, 10));
+    // the columns either side of the door, outside the bank's name (at 2.2 m they stood in front of its first and last
+    // letters); the ATM next to the door, beyond them
+    const cu = Math.max(2.2, signW / 2 + 0.75), au = Math.max(4, cu + 1.25);
+    M.add("atm", mat("#34495e"), boxGeo(1, 2, 0.5, 0, 1, 0).rotateY(rotY).translate(dx + t[0] * au + n[0] * 0.3, 0, dz + t[1] * au + n[1] * 0.3));
+    M.add("atm-screen", glassMat, boxGeo(0.6, 0.45, 0.04, 0, 1.5, 0).rotateY(rotY).translate(dx + t[0] * au + n[0] * 0.57, 0, dz + t[1] * au + n[1] * 0.57));
+    col.addBox(dx + t[0] * au + n[0] * 0.3, dz + t[1] * au + n[1] * 0.3, Math.abs(t[0]) * 1.05 + Math.abs(n[0]) * 0.6, Math.abs(t[1]) * 1.05 + Math.abs(n[1]) * 0.6);
+    for (const s of [-1, 1]) M.add("columns", mat("#f7f3ea"), cylGeo(0.35, 0.4, 5, dx + t[0] * s * cu + n[0] * 0.6, 2.5, dz + t[1] * s * cu + n[1] * 0.6, 10));
   }
   if (b.id === "post") {
     M.add("mailbox-blue", mat("#1f4e9c"), boxGeo(0.8, 1.2, 0.7, dx + t[0] * 4 + n[0] * 1.6, 0.8, dz + t[1] * 4 + n[1] * 1.6));
@@ -1364,7 +1388,10 @@ function addTrees(group: THREE.Group, col: Colliders, r: () => number) {
   for (let x = -96; x < 120; x += 14) {
     if (!nearIntersection(x, 44.5) && !nearDoor(x, 46)) {
       // (the same random draws as before, so every other tree keeps its place, size and colour)
-      const tx = x + r() * 2, tz = 44.8 + r() * 0.4;
+      let tx = x + r() * 2;
+      const tz = 44.8 + r() * 0.4;
+      // (none at the bus stop: it stood in front of the BUS sign and, from the street, of Harbor Fitness's name)
+      if (Math.abs(tx - BUS_STOP.x) < 4.5) tx = BUS_STOP.x + 4.6;
       // the one in Maggie's drive moves to the west of it, out of the conversation camera's view (it frames from the east)
       add(inDrive(tx, tz, 1.6) ? CEDAR_DRIVE.x1 - 3.2 : tx, tz, 0.9);
     }
@@ -1674,9 +1701,10 @@ function addTransport(M: Merger, col: Colliders, group: THREE.Group, r: () => nu
   }
   col.addBox(x, z, 4.4, 2.1, "car");
   const taxiSign = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.5), new THREE.MeshBasicMaterial({ map: textTexture("TAXI", { bg: "#f5c518", fg: "#222", w: 256, h: 96 }) }));
-  taxiSign.position.set(126.5, 2.4, 1.2); taxiSign.rotation.y = Math.PI;
-  M.add("sign-pole", mat("#9aa5ad"), cylGeo(0.05, 0.05, 2.5, 126.5, 1.25, 1.25, 6));
-  col.addCircle(126.5, 1.25, 0.1);
+  // (on the street side of the airport canopy's last post: behind it, the post stood in front of its word)
+  taxiSign.position.set(126.5, 2.4, 0.55); taxiSign.rotation.y = Math.PI;
+  M.add("sign-pole", mat("#9aa5ad"), cylGeo(0.05, 0.05, 2.5, 126.5, 1.25, 0.6, 6));
+  col.addCircle(126.5, 0.6, 0.1);
   group.add(taxiSign);
   // bus stop shelter
   const b = BUS_STOP;
@@ -1689,9 +1717,14 @@ function addTransport(M: Merger, col: Colliders, group: THREE.Group, r: () => nu
   col.addBox(b.x, b.z + 0.55, 2.4, 0.18);
   col.addBox(b.x, b.z + 0.75, 3.6, 0.2);
   const busSign = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.8), new THREE.MeshBasicMaterial({ map: textTexture("BUS", { bg: "#1f6f78", fg: "#fff", w: 128, h: 128 }) }));
-  busSign.position.set(b.x - 2.2, 2.6, b.z - 0.2);
-  M.add("sign-pole", mat("#9aa5ad"), cylGeo(0.05, 0.05, 3, b.x - 2.2, 1.5, b.z - 0.25, 6));
-  col.addCircle(b.x - 2.2, b.z - 0.25, 0.1);
+  // (clear of the shelter's roof, which cut its corner)
+  busSign.position.set(b.x - 2.6, 2.6, b.z - 0.19);
+  // read from the street too, a face either side of the pole (a plane shows one face: the street saw its back)
+  const busBack = busSign.clone();
+  busBack.position.z = b.z - 0.31; busBack.rotation.y = Math.PI;
+  group.add(busBack);
+  M.add("sign-pole", mat("#9aa5ad"), cylGeo(0.05, 0.05, 3, b.x - 2.6, 1.5, b.z - 0.25, 6));
+  col.addCircle(b.x - 2.6, b.z - 0.25, 0.1);
   group.add(busSign);
   // rail tracks and a waiting train south of the station
   for (let tx = -104; tx < 126; tx += 1.2) M.add("sleeper", mat("#6b4f3a"), boxGeo(0.25, 0.12, 2.6, tx, 0.06, 86), false);
@@ -1765,6 +1798,8 @@ function addMaggiesCar(M: Merger, col: Colliders, group: THREE.Group) {
   const off = new THREE.Vector3(0.2, 1.2, 0.645).applyAxisAngle(new THREE.Vector3(0, 1, 0), rot);
   sign.position.set(x + off.x, off.y, z + off.z);
   sign.rotation.y = rot;
+  // (it leans on the dashboard behind the glass: held, for the sign check)
+  sign.userData.held = true;
   group.add(sign);
 }
 

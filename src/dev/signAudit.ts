@@ -16,7 +16,7 @@ import type { Town } from "../game/world/town";
 
 export interface SignView { kind: "eye" | "cam"; d: number; angle: number; hidden: number; pos: [number, number, number] }
 export interface SignReport {
-  /** The mesh's name, else the board's words (util.ts textTexture names its texture after them). */
+  /** The board's words (util.ts textTexture names its texture after them), else the mesh's name. */
   name: string;
   center: [number, number, number];
   /** Which way it faces (unit, level). */
@@ -25,8 +25,10 @@ export interface SignReport {
   height: number;
   /** Viewpoints that were open street, each with the share of the lettering hidden from it (0–1). */
   views: SignView[];
-  /** The median share hidden over the viewpoints straight on and up to 25° aside (the one that matters). */
+  /** The median share hidden from the follow camera's places straight on and up to 25° aside (the one that matters). */
   front: number;
+  /** The same at eye height in the street (for the record). */
+  eye: number;
   /** The worst viewpoint of all. */
   worst: number;
   /** What hides it most (the hit object's name, or its material's colour). */
@@ -88,7 +90,7 @@ export function signAudit(town: Town, opts: { root?: THREE.Object3D; skip?: (o: 
   const skip = opts.skip ?? ((o: THREE.Object3D) => /cloud|gull|bird|pigeon|boat-moving|traffic/i.test(o.name));
   // the boards: a mesh each (a building's sign), and the quads of a merged sign atlas (userData.signQuads: the
   // edition's town draws its painted signs, street names and stands into one mesh, mexican.ts SignAtlas)
-  interface Board { name: string; self: THREE.Object3D | null; C: THREE.Vector3; ax: THREE.Vector3; ay: THREE.Vector3; nz: THREE.Vector3; W: number; H: number; double: boolean }
+  interface Board { held?: boolean; name: string; self: THREE.Object3D | null; C: THREE.Vector3; ax: THREE.Vector3; ay: THREE.Vector3; nz: THREE.Vector3; W: number; H: number; double: boolean }
   const boards: Board[] = [];
   root.traverse((o) => {
     if (!visibleChain(o)) return;
@@ -107,12 +109,13 @@ export function signAudit(town: Town, opts: { root?: THREE.Object3D; skip?: (o: 
     const q = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().extractRotation(s.matrixWorld));
     const mat = (Array.isArray(s.material) ? s.material[0] : s.material) as THREE.MeshBasicMaterial;
     boards.push({
-      name: s.name || (mat.map?.name ?? "") || (s.userData.text as string) || "", self: s,
+      name: (mat.map?.name ?? "") || s.name || (s.userData.text as string) || "", self: s,
       C: new THREE.Vector3().setFromMatrixPosition(s.matrixWorld), ax: new THREE.Vector3(1, 0, 0).applyQuaternion(q), ay: new THREE.Vector3(0, 1, 0).applyQuaternion(q), nz: new THREE.Vector3(0, 0, 1).applyQuaternion(q),
-      W: g.parameters.width * sc.x, H: g.parameters.height * sc.y, double: mat.side === THREE.DoubleSide,
+      W: g.parameters.width * sc.x, H: g.parameters.height * sc.y, double: mat.side === THREE.DoubleSide, held: !!s.userData.held,
     });
   });
   const solid = blockers(root, skip);
+  const walls = solid.filter((o) => !(o as THREE.InstancedMesh).isInstancedMesh);
   const ray = new THREE.Raycaster();
   const reports: SignReport[] = [];
   const col = town.colliders;
@@ -146,26 +149,38 @@ export function signAudit(town: Town, opts: { root?: THREE.Object3D; skip?: (o: 
         if (!town.walkableAt(stand.x, stand.z) || inside(stand.x, stand.z, 0.3)) return;
         // the camera itself must not be inside something (it keeps clear of walls and roofs)
         if (kind === "cam" && inside(P.x, P.z, 0) && P.y < 8) return;
+        // …and the arm from the player's chest to it is clear (camera.ts leans or shortens it where a wall, a roof or an
+        // awning would come between; the trees fade instead, so they don't count)
+        if (kind === "cam") {
+          const chest = new THREE.Vector3(stand.x, 1.3, stand.z), arm = P.clone().sub(chest), len = arm.length();
+          ray.set(chest, arm.divideScalar(len)); ray.far = len;
+          if (ray.intersectObjects(walls, false).length) return;
+        }
+        // (the trees and palms between the camera and the player fade out of the way, fade.ts: they don't hide it)
+        const arm = kind === "cam" ? Math.hypot(P.x - stand.x, P.y - 1.3, P.z - stand.z) : 0;
         let hid = 0;
         for (const p of pts) {
           const to = p.clone().sub(P), dist = to.length();
           ray.set(P, to.divideScalar(dist));
           ray.far = dist - 0.04;
-          const hit = ray.intersectObjects(solid, false).find((x) => x.object !== s);
+          const hit = ray.intersectObjects(solid, false).find((x) => x.object !== s && !((x.object as THREE.InstancedMesh).isInstancedMesh && x.distance < arm));
           if (hit) { hid++; const k = label(hit.object); byCount.set(k, (byCount.get(k) ?? 0) + 1); }
         }
         views.push({ kind, d, angle, hidden: hid / pts.length, pos: [+P.x.toFixed(2), +P.y.toFixed(2), +P.z.toFixed(2)] });
       };
       for (const d of EYE.d) for (const a of EYE.angles) look("eye", d, a, EYE.y);
       for (const d of CAM.d) for (const a of CAM.angles) look("cam", d, a, CAM.y);
-      const near = views.filter((v) => Math.abs(v.angle) <= 25).map((v) => v.hidden).sort((a, b) => a - b);
-      const front = near.length ? near[Math.floor((near.length - 1) / 2)] : 1;
+      // what the player sees is the follow camera's picture: the median over its places up to 25° aside (the eye-height
+      // ones only where the camera has none: close under an awning one can't see the sign above it, as in life)
+      const median = (k: "eye" | "cam") => { const h = views.filter((v) => v.kind === k && Math.abs(v.angle) <= 25).map((v) => v.hidden).sort((a, b) => a - b); return h.length ? h[Math.floor((h.length - 1) / 2)] : -1; };
+      const cam = median("cam"), eye = median("eye");
+      const front = cam >= 0 ? cam : eye >= 0 ? eye : 0;
       const r: SignReport = {
         name: bd.name,
         center: [+C.x.toFixed(2), +C.y.toFixed(2), +C.z.toFixed(2)],
         normal: [+n.x.toFixed(2), +n.z.toFixed(2)],
         width: +W.toFixed(2), height: +H.toFixed(2),
-        views, front, worst: views.reduce((m, v) => Math.max(m, v.hidden), 0),
+        views, front, eye: Math.max(0, eye), worst: views.reduce((m, v) => Math.max(m, v.hidden), 0),
         by: [...byCount.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, c]) => `${k}×${c}`),
         flags: views.length ? [] : ["no-view"],
       };
@@ -185,16 +200,23 @@ export function signAudit(town: Town, opts: { root?: THREE.Object3D; skip?: (o: 
     }
     // (counted already as hidden from the front; flagged when most of the lettering is under a surface right on it)
     if (inWall / pts.length > 0.5 && r.front > 0.5) r.flags.push("in-wall");
-    // held: something right behind it (a wall, a board, a pole), or under its bottom edge (a pole, a post, a stand),
-    // tried at a few places across it and a little behind its face (a pole stands behind the board, not in its plane)
-    const hits = (from: THREE.Vector3, dir: THREE.Vector3, far: number) => { ray.set(from, dir); ray.far = far; return ray.intersectObjects(solid, false).some((x) => x.object !== s); };
-    const down = new THREE.Vector3(0, -1, 0), back = n3.clone().negate();
-    let behind = false, below = false;
+    // held: something within half a metre behind it (a wall, a board, a pole), under its bottom edge (a pole, a post, a
+    // stand) or over its top (a stall's roof it hangs from). Rays come in from outside towards points on its edges and
+    // face (a ray that starts inside a thin pole would never meet it).
+    const hits = (from: THREE.Vector3, to: THREE.Vector3) => { const d = to.clone().sub(from), l = d.length(); ray.set(from, d.divideScalar(l)); ray.far = l - 0.005; return ray.intersectObjects(solid, false).some((x) => x.object !== s); };
+    let held = false;
     for (const u of [-0.4, -0.2, 0, 0.2, 0.4]) {
-      for (const v of [-0.3, 0, 0.3]) if (!behind && hits(C.clone().addScaledVector(ax, u * W).addScaledVector(ay, v * H).addScaledVector(n3, -0.01), back, 0.8)) behind = true;
-      for (const o of [0, -0.05, -0.1, -0.2]) if (!below && hits(C.clone().addScaledVector(ax, u * W).addScaledVector(ay, -H / 2 - 0.01).addScaledVector(n3, o), down, 1.2)) below = true;
+      if (held) break;
+      const bottom = C.clone().addScaledVector(ax, u * W).addScaledVector(ay, -H / 2), top = C.clone().addScaledVector(ax, u * W).addScaledVector(ay, H / 2);
+      held = hits(bottom.clone().addScaledVector(ay, -0.5).addScaledVector(n3, -0.25), bottom)
+        || hits(top.clone().addScaledVector(ay, 0.5).addScaledVector(n3, -0.25), top)
+        || [-0.3, 0, 0.3].some((v) => {
+          const q = C.clone().addScaledVector(ax, u * W).addScaledVector(ay, v * H);
+          // (from behind towards it for a pole, from it backwards for a wall: a ray that starts inside a wall misses it)
+          return hits(q.clone().addScaledVector(n3, -0.6), q.clone().addScaledVector(n3, -0.005)) || hits(q.clone().addScaledVector(n3, -0.005), q.clone().addScaledVector(n3, -0.8));
+        });
     }
-    if (!behind && !below && C.y - H / 2 > 0.4) r.flags.push("floats");
+    if (!held && !bd.held && C.y - H / 2 > 0.4) r.flags.push("floats");
     reports.push(r);
   }
   return reports;

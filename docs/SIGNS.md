@@ -22,12 +22,16 @@ where a player sees it, and counts the points where the ray meets anything else 
   the lens is narrower), so what hides a sign on a computer hides it on a phone.
 
 A viewpoint is left out where it is not open street (the player could not stand there: inside something, off the
-town's ground). **front** is the median hidden share over the viewpoints up to 25° aside; a sign over the limit
-(5%) is a fault. **worst** is the worst single viewpoint (a lamp post can hide a sliver from far to one side; that is
+town's ground), and a camera place where the arm from the player's chest to it is blocked (camera.ts leans or shortens
+the arm there). **front** is the median hidden share from the follow camera's places up to 25° aside (what the player
+sees; **eye** is the same at eye height, for the record: close under an awning one can't see the sign above it, as in
+life); a sign over the limit (5%) is a fault, unless the same words read whole on a board within 15 m (Gas & Go's
+wall sign under the canopy, whose front carries the name). **worst** is the worst single viewpoint (a lamp post can hide a sliver from far to one side; that is
 not a fault). The report also names what hides it most.
 
 The other way round, each sign is flagged when it **faces a wall** (its front is right against something solid),
-its lettering is **in a wall**, it **floats** (nothing behind it within 0.8 m and nothing under it within 0.6 m), or
+its lettering is **in a wall**, it **floats** (nothing within half a metre behind it, under it or over it: a wall, a
+pole, a stall's roof it hangs from), or
 there is **no view** of it at all from open street.
 
 ## Running it
@@ -36,7 +40,8 @@ there is **no view** of it at all from open street.
 WORLD_PLAYWRIGHT_MODULE=/path/to/playwright-core/index.mjs node tests/browser/signs.mjs --out=../signs-out
 ```
 
-On `spanish-edition` add `WORLD_STORAGE=puerto-colibri`. It starts its own dev server from the checkout
+On `spanish-edition`, for Puerto Colibrí, add `VITE_EDITION=es WORLD_STORAGE=puerto-colibri`. It needs Google
+Chrome (`WORLD_BROWSER_CHANNEL`, `chrome` by default): the bundled Chromium's tab crashed building the town on this Mac. It starts its own dev server from the checkout
 (`--port=5291` by default), prints the signs over the limit (`--all`: every sign), writes `signs.json`, and takes a
 picture of each sign over the limit or flagged (and of any named with `--show=Name,Name`) from the follow camera's
 place at computer (1280 × 800) and phone (390 × 844) size. `--strict` fails when any sign is over the limit.
