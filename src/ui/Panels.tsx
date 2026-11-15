@@ -413,7 +413,7 @@ function Settings({ close }: { close: () => void }) {
           <div className="seg">{([["light", L("Lengvas")], ["town", L("3D miestas")]] as const).map(([v, n]) => <button key={v} className={s.play === v ? "on" : ""} onClick={() => { if (s.play !== v) switchPlayMode(v); }}>{n}</button>)}</div>
         </div>
         {s.play !== "light" && <Toggle on={s.cameraFollow} onChange={(v) => set({ cameraFollow: v })} label={L("Kamera seka personažą")} />}
-        <Toggle on={s.scenes} onChange={(v) => set({ scenes: v })} label={L("Iliustruotos scenos")} sub={L("Pokalbio metu vietoje 3D vaizdo rodomas piešinys, kuris keičiasi pagal pokalbio etapą.")} />
+        <Toggle on={s.scenes} onChange={(v) => set({ scenes: v })} label={L("Iliustruotos scenos")} sub={s.play === "light" ? L("Pokalbio metu vietoje 3D vaizdo rodomas piešinys, kuris keičiasi pagal pokalbio etapą.") : L("Pokalbio metu vietoje 3D vaizdo rodomas piešinys, kuris keičiasi pagal pokalbio etapą. Per pokalbį perjungsi mažu paveikslėliu vaizdo kampe arba klavišu P.")} />
         <div className="set-row">
           <div className="txt"><b>{L("Teksto dydis")}</b></div>
           <div className="seg">{[1, 1.15, 1.3].map((z, i) => <button key={z} className={s.textSize === z ? "on" : ""} onClick={() => set({ textSize: z })}>{["A", "A+", "A++"][i]}</button>)}</div>
