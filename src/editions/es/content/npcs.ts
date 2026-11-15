@@ -97,7 +97,7 @@ const LOOK: Record<string, Partial<Look>> = {
   tyler: { skin: "#c89367", hair: { style: "wavy", color: "#2a211c" }, top: "#5d5c43", acc: ["beard", "cardigan"], accColor: "#e9cab0" },
   mr_grant: { skin: "#6d4933", hair: { style: "bald", color: "#b8b2aa" }, top: "#9f4d41", acc: ["beard", "readers"] },
   // customs (s65b)
-  // a coral rash guard and board shorts, barefoot in flip-flops (no portrait yet: docs/es/PICTURES.md "x01-surf")
+  // a coral rash guard and board shorts, barefoot in flip-flops (her portrait: public/scenes-es/ref/cast/surf.webp, 15 Nov 2026)
   surf: { skin: "#a8734b", hair: { style: "braid", color: "#3a2a1f" }, top: "#ff6a3d", bottom: "#17708a", shoes: "#3a2a1f", shorts: true, sleeves: "short", flipflops: true, acc: ["earrings"], build: 0.96 },
   aduana: { skin: "#d2a177", hair: { style: "bun", color: "#533423" }, top: "#374359", bottom: "#2d3b4b", acc: ["badge", "earrings"] },
   // the aluxes of the grotto under Cenote Ka'an (src/game/cave): half a person's height, barefoot, in the forest's

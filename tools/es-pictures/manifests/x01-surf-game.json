@@ -1,0 +1,320 @@
+{
+ "_about": "Pictures for the cues of the surf lesson (the mini-game after x01-surf, src/game/surf; the cues are x01's sg_ lines): made 15 Nov 2026 for its cards, not wired into the game yet. \"lines\" says which cues each one shows. The web versions are in the work folder (<work>/x-new3/surf-game/web/), not in public/.",
+ "defaults": {
+  "model": "gpt-image-2.5-sunburst",
+  "quality": "high",
+  "kind": "scene",
+  "size": "2048x1152",
+  "web_size": [
+   1600,
+   900
+  ]
+ },
+ "items": [
+  {
+   "id": "x01-surf-game/boards",
+   "situation": "x01-surf",
+   "moment": "board_ask",
+   "lines": [
+    "sg_board_ask",
+    "sg_board_take_long",
+    "sg_board_take_short",
+    "sg_board_no",
+    "sg_board_yes",
+    "sg_b_long",
+    "sg_b_short",
+    "sg_b_sup"
+   ],
+   "refs": [
+    "setting:place/la-ola",
+    "person:cast/surf"
+   ],
+   "prompt": "On the sand by the water: three boards stand planted upright in the sand in a row: a long, thick blue soft-foam board, a short pointed white board, and a wide paddleboard with a paddle leaning on it. Nayeli stands at their left, about one third from the left edge, one open hand toward the boards and her eyebrows raised: which one?",
+   "out": "{work}/x-new3/surf-game/web/boards.webp",
+   "frame": "beach"
+  },
+  {
+   "id": "x01-surf-game/lie",
+   "situation": "x01-surf",
+   "moment": "lie",
+   "lines": [
+    "sg_lie",
+    "sg_go_in"
+   ],
+   "refs": [
+    "setting:place/la-ola",
+    "person:cast/surf"
+   ],
+   "prompt": "In calm waist-deep water near the shore: Nayeli lies face down along her white surfboard with a coral stripe, chest lifted, looking over at the learner with an encouraging smile and patting her board's deck with one hand: lie down like this. Small broken waves of white foam ahead of them.",
+   "out": "{work}/x-new3/surf-game/web/lie.webp",
+   "frame": "water"
+  },
+  {
+   "id": "x01-surf-game/paddle",
+   "situation": "x01-surf",
+   "moment": "paddle",
+   "lines": [
+    "sg_paddle",
+    "sg_paddle_hard",
+    "sg_paddle_more",
+    "sg_paddle_long",
+    "sg_paddle_now",
+    "sg_almost"
+   ],
+   "refs": [
+    "edit:x01-surf-game/lie",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose: lying on her board, she paddles hard, one arm reaching far forward into the water and the other pulling back with a splash, her face turned forward, determined.",
+   "out": "{work}/x-new3/surf-game/web/paddle.webp",
+   "frame": "water"
+  },
+  {
+   "id": "x01-surf-game/duck",
+   "situation": "x01-surf",
+   "moment": "wave_duck",
+   "lines": [
+    "sg_wave_duck",
+    "sg_duck_ok"
+   ],
+   "refs": [
+    "edit:x01-surf-game/lie",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only this: a waist-high wall of foaming white water rolls toward them from ahead; lying on her board, Nayeli pushes its nose down under the foam with straight arms and ducks her head, about to pass under the wave.",
+   "out": "{work}/x-new3/surf-game/web/duck.webp",
+   "frame": "water"
+  },
+  {
+   "id": "x01-surf-game/tumble",
+   "situation": "x01-surf",
+   "moment": "duck_miss",
+   "lines": [
+    "sg_duck_miss",
+    "sg_wipeout",
+    "sg_missed",
+    "sg_you_ok",
+    "sg_what_happened",
+    "sg_nothing",
+    "sg_learn"
+   ],
+   "refs": [
+    "edit:x01-surf-game/lie",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only this: foam has just washed over them. Nayeli sits up astride her board, laughing kindly, pushing wet hair from her face with one hand and holding the other out toward the learner: you okay? The nose of the learner's blue board at the bottom edge is awash with foam.",
+   "out": "{work}/x-new3/surf-game/web/tumble.webp",
+   "frame": "water"
+  },
+  {
+   "id": "x01-surf-game/lineup",
+   "situation": "x01-surf",
+   "moment": "arrive",
+   "lines": [
+    "sg_arrive",
+    "sg_wait",
+    "sg_look_horizon",
+    "sg_q_go",
+    "sg_prev_mine",
+    "sg_prev_yours"
+   ],
+   "refs": [
+    "setting:place/la-ola",
+    "person:cast/surf"
+   ],
+   "prompt": "Out beyond the breaking waves, on calm deep-turquoise water, looking out to the open sea: Nayeli sits upright astride her white surfboard with a coral stripe, relaxed, and points with a straight arm to the horizon, where a few darker lines of swell are coming in. She looks back at the learner.",
+   "out": "{work}/x-new3/surf-game/web/lineup.webp",
+   "frame": "water"
+  },
+  {
+   "id": "x01-surf-game/small",
+   "situation": "x01-surf",
+   "moment": "not_this",
+   "lines": [
+    "sg_not_this",
+    "sg_too_small",
+    "sg_let_pass",
+    "sg_not_that"
+   ],
+   "refs": [
+    "edit:x01-surf-game/lineup",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only this: a small, low swell is passing under them; sitting on her board, she shakes her head and holds one flat hand low over the water: too small, let it go.",
+   "out": "{work}/x-new3/surf-game/web/small.webp",
+   "frame": "water"
+  },
+  {
+   "id": "x01-surf-game/this_one",
+   "situation": "x01-surf",
+   "moment": "this_one",
+   "lines": [
+    "sg_this_one",
+    "sg_coming",
+    "sg_turn",
+    "sg_turn_shore"
+   ],
+   "refs": [
+    "edit:x01-surf-game/lineup",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only this: behind her a clean green wave is rising, clearly taller than the rest; sitting on her board, she points at it over her shoulder with one thumb, eyes wide, grinning, and swings her other arm round toward the beach: this one, turn around.",
+   "out": "{work}/x-new3/surf-game/web/this_one.webp",
+   "frame": "water"
+  },
+  {
+   "id": "x01-surf-game/up",
+   "situation": "x01-surf",
+   "moment": "now_up",
+   "lines": [
+    "sg_now_up",
+    "sg_up_ok",
+    "sg_hold",
+    "sg_first_wave",
+    "sg_shore",
+    "sg_slang1",
+    "sg_slang2",
+    "sg_slang3",
+    "sg_slang4"
+   ],
+   "refs": [
+    "setting:place/la-ola",
+    "person:cast/surf"
+   ],
+   "prompt": "Riding a small green wave toward the beach, seen from the learner's board just behind her: Nayeli, seen from behind, stands on her white surfboard with a coral stripe in a low surfer's stance, one fist raised in a cheer, looking back over her shoulder at the learner with a huge grin. The beach, its palms and La Ola's palapa are small in the distance ahead.",
+   "out": "{work}/x-new3/surf-game/web/up.webp",
+   "frame": "water"
+  },
+  {
+   "id": "x01-surf-game/left",
+   "situation": "x01-surf",
+   "moment": "lean_left",
+   "lines": [
+    "sg_lean_left",
+    "sg_left_short",
+    "sg_turn_left"
+   ],
+   "refs": [
+    "edit:x01-surf-game/up",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose: still seen from behind, she leans her whole body toward the LEFT side of the picture, her left arm stretched out to the left, her board tilting and curving to the left with a fan of spray on its right.",
+   "out": "{work}/x-new3/surf-game/web/left.webp",
+   "frame": "water"
+  },
+  {
+   "id": "x01-surf-game/right",
+   "situation": "x01-surf",
+   "moment": "lean_right",
+   "lines": [
+    "sg_lean_right",
+    "sg_right_short",
+    "sg_turn_right"
+   ],
+   "refs": [
+    "edit:x01-surf-game/up",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose: still seen from behind, she leans her whole body toward the RIGHT side of the picture, her right arm stretched out to the right, her board tilting and curving to the right with a fan of spray on its left.",
+   "out": "{work}/x-new3/surf-game/web/right.webp",
+   "frame": "water"
+  },
+  {
+   "id": "x01-surf-game/knees",
+   "situation": "x01-surf",
+   "moment": "knees",
+   "lines": [
+    "sg_knees",
+    "sg_lower",
+    "sg_tip_knees"
+   ],
+   "refs": [
+    "edit:x01-surf-game/up",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose: she crouches very low on her board, knees deeply bent, back straight, one hand almost brushing the water, looking forward.",
+   "out": "{work}/x-new3/surf-game/web/knees.webp",
+   "frame": "water"
+  },
+  {
+   "id": "x01-surf-game/eyes",
+   "situation": "x01-surf",
+   "moment": "look_front",
+   "lines": [
+    "sg_look_front",
+    "sg_not_feet",
+    "sg_tip_feet"
+   ],
+   "refs": [
+    "edit:x01-surf-game/up",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose: riding in her low stance, she looks back at the learner and points two fingers at her own eyes, her other arm pointing straight ahead toward the beach: look where you are going, not at your feet.",
+   "out": "{work}/x-new3/surf-game/web/eyes.webp",
+   "frame": "water"
+  },
+  {
+   "id": "x01-surf-game/speed",
+   "situation": "x01-surf",
+   "moment": "weight_fwd",
+   "lines": [
+    "sg_weight_fwd",
+    "sg_speed",
+    "sg_tip_back"
+   ],
+   "refs": [
+    "edit:x01-surf-game/up",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose: she shifts her weight onto her front foot, front knee bent over the front half of the board, body leaning forward, and the board races ahead with a long white trail of spray behind it.",
+   "out": "{work}/x-new3/surf-game/web/speed.webp",
+   "frame": "water"
+  },
+  {
+   "id": "x01-surf-game/crest",
+   "situation": "x01-surf",
+   "moment": "up_face",
+   "lines": [
+    "sg_up_face"
+   ],
+   "refs": [
+    "edit:x01-surf-game/up",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only this: her board climbs up the green face of the wave to its foaming top, its nose pointing up toward the crest, her arms out for balance.",
+   "out": "{work}/x-new3/surf-game/web/crest.webp",
+   "frame": "water"
+  },
+  {
+   "id": "x01-surf-game/drop",
+   "situation": "x01-surf",
+   "moment": "down_face",
+   "lines": [
+    "sg_down_face"
+   ],
+   "refs": [
+    "edit:x01-surf-game/up",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only this: her board drops down the green face of the wave toward the flat water at its foot, its nose pointing down, her knees bent deep, arms out.",
+   "out": "{work}/x-new3/surf-game/web/drop.webp",
+   "frame": "water"
+  },
+  {
+   "id": "x01-surf-game/trick",
+   "situation": "x01-surf",
+   "moment": "trick",
+   "lines": [
+    "sg_trick",
+    "sg_tip_trick"
+   ],
+   "refs": [
+    "edit:x01-surf-game/up",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only this: a little jump: she and her board are in the air a hand's width above the wave, knees tucked, arms out, a few drops flying, laughing.",
+   "out": "{work}/x-new3/surf-game/web/trick.webp",
+   "frame": "water"
+  }
+ ]
+}

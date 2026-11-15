@@ -514,13 +514,18 @@ situations, `scenes` (per scene: `npc` label, `focus`, `start`, `done`, `sticky`
 | `moment` | The step, pending-question or twist id the picture illustrates |
 | `scene`, `phases` | Situations: the scene file it belongs to (`s84-date@sam` for a per-person scene) and the ids that show it |
 | `prompt` | Only this picture's own part; the shared pieces are added by `espics.build_prompt` |
-| `refs` | References in order, each `role:id`: roles `style`, `person`, `place`, `edit`; ids `en/<scene>/<name>` (an English picture), `cast/<npc>`, `place/<place>`, `<situation>/<name>` (a Spanish picture), `file:<path>` |
+| `refs` | References in order, each `role:id`: roles `style`, `person`, `place`, `edit`; ids `en/<scene>/<name>` (an English picture), `cast/<npc>`, `place/<place>`, `<situation>/<name>` (a Spanish picture), `file:<path>` or `file:<path>#<what it shows>` (the words the prompt gives it: a 3D screenshot "for its layout only") |
 | `model`, `size`, `quality`, `n` | The request (`size` WIDTHxHEIGHT, multiples of 16) |
 | `out` | The web version's path in the repository (or `{work}/…` for the work folder) |
 | `focus` | Optional [x%, y%]: where to crop when an original isn't 16:9 |
 | `skip` | A reason not to make it (the three non-people in the cast) |
 | `name`, `nametag` | Cast entries only: the game's name, and the name tag (`{"text": "Ramírez", "kind": "plate"}`) where the person wears one |
 | `note` | Free text: what was redone and why |
+| `lines` | Situations: the ids of the person's lines that show this picture while they are said (section 8, point 6) |
+| `setting` | A place that is not the town: a key of `settings` in prompt-parts.json (`gruta`), whose text replaces the town's |
+| `frame` | A framing of its own: a key of `frames` in prompt-parts.json (`alux`, `alux_view`, `alux_cast`, `beach`, `view`, `water`), instead of the kind's |
+| `people` | `false` leaves out the shared "people" paragraph (the aluxes are no grown-ups of the town) |
+| `web_size` | The web version's size, when not 2048 × 1152 (`[1600, 900]` for x01–x03, which have many pictures each) |
 
 The originals are `<work>/originals/<id>.png` with a sidecar `<id>.json` (the final prompt, the references and
 their SHA-256, the usage, the price, the request id). A redo keeps the old ones as `<id>~1.png`.
@@ -617,6 +622,13 @@ files, same checks):
    references are inputs for making pictures, not game assets).
 5. **The interface** needs nothing new: Settings → illustrated scenes, the crossfade and the call screen work from
    the scene files.
+6. **A line's own picture** (15 Nov 2026, for x01–x03). A scene file may have `lines`: line id → picture. As the person
+   starts saying that line its picture shows, before the moment's (`phases`); the next line without one goes back to the
+   moment's picture; the last one said stays while the learner answers. So an answer to a side question (Kin's age, his
+   hat), each of his three directions, each of Nikté's riddles, clues and answers has its picture, in a conversation
+   with only two to five steps. `conv.lineKey` (store.ts) is set by `session.ts` as each line is said;
+   `SceneBackdrop.tsx` reads it; `scene_file.py` writes `lines` from the manifest; `scene-walk.ts` checks the ids and
+   follows them. The pictures that are not on screen load with low priority. Maple Harbor's scene files have none.
 
 ## 9. For the owner
 
@@ -633,26 +645,30 @@ files, same checks):
   77% of the original's grain against 82%. 1600 px wide would save more (scene-walk accepts 1600–2048).
 - To compare the spending with OpenAI's own count: the dashboard's Usage page, against `python3 tools/es-pictures/ledger.py`.
 
-## 10. x01-surf: pictures wanted (15 Nov 2026)
+## 10. x01–x03: Nayeli, Kin and Nikté (15 Nov 2026)
 
-The 51st conversation (La Ola, the surf school: docs/es/TOWN.md "La Ola") has no pictures: it plays in 3D, and the
-Piešinys | 3D switch does not show for it. When pictures are made for it (the same style, the same pipeline):
+The three conversations that exist only in Puerto Colibrí got their pictures on 15 Nov 2026 (the owner: "use them all
+for lots of amazing pictures"; `STOP_USD` went from $75 to $80). Manifests: `refs-x`, `x01-surf`, `x02-alux-kin`,
+`x03-alux-nikte`, and `x01-surf-game` (below). They are written by one script, kept in the work folder:
+`<work>/x-new3/build_manifests.py <repository>` (edit a prompt there, run it, then `generate.py`).
 
-- **Nayeli's portrait** for the cast references (`ref/cast/surf.webp`): about 28, from Oaxaca's coast, a long dark
-  braid, a coral rash guard, teal board shorts, barefoot; warm, sporty. Her 3D look (`npcs.ts` LOOK `surf`) was made
-  without one and should then follow it.
-- **The place reference**: the palapa on the sand with the sea behind, as the 3D town has it: thatch, the painted
-  counter "LA OLA", the board rack, two paddleboards, the kayak, masks and fins, the chalkboard.
-- **Scenes** (the conversation's steps):
-  1. The palapa from the learner's side of the counter: Nayeli behind it, the boards, the chalkboard "Olas: 1 m ·
-     Marea baja · Viento suave".
-  2. Nayeli handing over a board and its leash, El Muelle's pier behind.
-  3. The gear on the counter: a mask, a snorkel, fins, a life jacket; the kayak and the paddleboards beyond.
-  4. The learner lying on a soft board on the sand, Nayeli pointing at its nose, tail and fins.
-  5. The pop-up on the sand: hands by the chest, feet side-on, knees bent.
-  6. A kayak and a paddleboard by the buoys, the lighthouse on its rocks in the distance (the reef's way).
-  7. Nayeli's Puerto Escondido: a big Pacific wave at Zicatela, surfers on it.
-  8. The card terminal with no signal; the learner back from the ATM with pesos (the twist).
-  9. "¿Probamos una ola?": the two of them at the water's edge with their boards.
-- **Phrase-card pictures** for the surf lesson's commands (paddling, ducking under a wave, the pop-up, leaning, knees
-  bent, a wipeout): the course's card art, after the export.
+- **References** (`refs-x`): portraits `cast/surf` (Nayeli), `cast/alux_kin`, `cast/alux_nikte` (the aluxes whole,
+  head to bare feet: frame `alux_cast`); places `place/la-ola`, `place/gruta-entrada` (Kin's post on the white path),
+  `place/gruta-sala` (La Sala del Agua with its three stones where the 3D grotto has them), `place/gruta-rio` (the
+  bridge of roots). The grotto's places take a cleaned screenshot of the 3D grotto as a layout reference
+  (`<work>/look/x-3d/`, from the cenote session's frames with the interface blurred out), so picture and 3D match.
+- **An alux** is drawn as a tiny grown-up (the `alux` frames say so: never a child, a doll or a garden gnome); the
+  setting `gruta` replaces the town's paragraph; no "people" paragraph.
+- **Many pictures a conversation, by line** (section 8, point 6): x01-surf 42 (the counter: `greet` and its edits; the
+  lesson on the sand: `board` and its edits; Puerto Escondido in three views; the reef, the turtle), x02-alux-kin 35
+  (his post: `halt` and its edits; his directions as edits of `place/gruta-sala`; what he tells about: the milpa, a
+  sacbé), x03-alux-nikte 36 (each riddle: its words acted out, never its answer; its clue; its answer). Web versions
+  are 1600 × 900 (`web_size`): 3.5–4.2 MB a conversation.
+- **Checked**: every picture looked at on sheets (faces, hands, the place, no letters; `review_text.py` reads only the
+  glyph stones as "O:"); `scene-walk.ts x01 x02 x03` (0 errors); in the real game on a phone and a computer (the
+  picture on, the 3D chip, each line's picture in turn).
+- **The surf lesson's cues** (`x01-surf-game`, 17 pictures planned for the mini-game's `sg_` lines: the boards,
+  lying down, paddling, ducking under, the line-up, "this one", up, left, right, knees, eyes, speed, crest, drop, a
+  jump): for its cards; their web versions go to `<work>/x-new3/surf-game/web/`, not `public/`: nothing shows them yet.
+- **Cards** (`cards.py`, `card-probe-es.ts`: brought in from the `es-card-art` branch): the probe takes `--only`, and
+  `cards.py map PROBE --only …` merges new conversations into the map; 19 phrase groups (x01 9, x02 6, x03 4).

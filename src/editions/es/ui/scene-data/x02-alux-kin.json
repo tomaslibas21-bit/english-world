@@ -1,0 +1,8 @@
+{
+  "npc": "Kin, alux, keeper of the grotto",
+  "images": ["halt", "name_ok", "from", "from_far", "welcome", "from_town", "why", "why_see", "why_learn", "why_stones", "why_curious", "why_lost", "way", "nudge", "not_yet", "dir_path", "stones", "dir_first", "dir_rest", "dir_second", "dir_third", "open", "dir_tree", "dir_far", "what_do", "i_am", "my_name", "q_alux", "q_sacbe", "q_place", "q_live", "q_age", "q_hat", "more", "pass"],
+  "start": "halt",
+  "phases": {"who": "halt", "howareyou": "halt", "from": "from", "why": "why", "way": "way", "more": "more"},
+  "lines": {"name_ok": "name_ok", "from_far": "from_far", "from_near": "welcome", "from_mexico": "welcome", "from_other": "welcome", "from_town": "from_town", "why_see": "why_see", "why_learn": "why_learn", "why_stones": "why_stones", "why_curious": "why_curious", "why_lost": "why_lost", "stones_intro": "way", "way_again": "nudge", "way_nudge": "nudge", "way_hint": "nudge", "not_yet": "not_yet", "dir_path": "dir_path", "dir_recap": "stones", "dir_first": "dir_first", "dir_rest": "dir_rest", "dir_second": "dir_second", "dir_third": "dir_third", "what_do_2": "open", "dir_tree": "dir_tree", "dir_far": "dir_far", "what_do": "what_do", "what_tip": "what_do", "i_am": "i_am", "my_name": "my_name", "q_alux": "q_alux", "q_sacbe": "q_sacbe", "q_place": "q_place", "q_live": "q_live", "q_age": "q_age", "q_hat": "q_hat", "pass": "pass"},
+  "focus": [35, 60]
+}

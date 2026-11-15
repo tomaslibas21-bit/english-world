@@ -1,0 +1,567 @@
+{
+ "_about": "x02-alux-kin: Kin, the alux at the grotto's way in (15 Nov 2026). The pictures follow the 3D grotto (docs/es/GRUTA.md): his post on the white path (halt and its edits), La Sala del Agua for his directions (edits of place/gruta-sala: the first stone left of the tree, the second on the right near the water, the third by the waterfall), and what he tells about. \"lines\": a line's own picture, shown while it is said.",
+ "scenes": {
+  "x02-alux-kin": {
+   "npc": "Kin, alux, keeper of the grotto",
+   "focus": [
+    35,
+    60
+   ],
+   "start": "halt"
+  }
+ },
+ "defaults": {
+  "model": "gpt-image-2.5-sunburst",
+  "quality": "high",
+  "kind": "scene",
+  "size": "2048x1152",
+  "web_size": [
+   1600,
+   900
+  ],
+  "setting": "gruta",
+  "frame": "alux",
+  "people": false
+ },
+ "items": [
+  {
+   "id": "x02-alux-kin/halt",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "who",
+   "phases": [
+    "who",
+    "howareyou"
+   ],
+   "refs": [
+    "place:place/gruta-entrada",
+    "person:cast/alux_kin"
+   ],
+   "prompt": "Kin, the little alux who keeps the way into the grotto, stands in the middle of the white stone path about one third from the left, bare feet planted apart, both hands on his hips, chin up under his straw hat: he blocks the way with a stern look that can't quite hide a twinkle (\"¡Alto ahí! ¿Quién eres?\"). His tiny thatched hut stands beside the path at the left; behind him the passage opens onto the great hall, the ceiba in its shaft of light and the glow of water.",
+   "out": "public/scenes-es/x02-alux-kin/halt.webp"
+  },
+  {
+   "id": "x02-alux-kin/name_ok",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "name_ok",
+   "lines": [
+    "name_ok"
+   ],
+   "refs": [
+    "edit:x02-alux-kin/halt",
+    "person:cast/alux_kin"
+   ],
+   "prompt": "Change only his pose and expression: he breaks into a big delighted grin and makes a little bow of greeting, one hand pressed flat to his chest, the other still on his hip.",
+   "out": "public/scenes-es/x02-alux-kin/name_ok.webp"
+  },
+  {
+   "id": "x02-alux-kin/from",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "from",
+   "phases": [
+    "from"
+   ],
+   "refs": [
+    "edit:x02-alux-kin/halt",
+    "person:cast/alux_kin"
+   ],
+   "prompt": "Change only his pose and expression: he leans forward and shades his eyes with one hand under his hat brim, as if peering at something far away, mouth pursed with curiosity.",
+   "out": "public/scenes-es/x02-alux-kin/from.webp"
+  },
+  {
+   "id": "x02-alux-kin/from_far",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "from_far",
+   "lines": [
+    "from_far"
+   ],
+   "refs": [
+    "edit:x02-alux-kin/halt",
+    "person:cast/alux_kin"
+   ],
+   "prompt": "Change only his pose and expression: he throws both arms wide open, eyes round and mouth open in a delighted \"uy!\": from so far away!",
+   "out": "public/scenes-es/x02-alux-kin/from_far.webp"
+  },
+  {
+   "id": "x02-alux-kin/welcome",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "from_near",
+   "lines": [
+    "from_near",
+    "from_mexico",
+    "from_other"
+   ],
+   "refs": [
+    "edit:x02-alux-kin/halt",
+    "person:cast/alux_kin"
+   ],
+   "prompt": "Change only his pose and expression: he opens both arms in welcome, palms up, with a warm host's smile, presenting his grotto behind him.",
+   "out": "public/scenes-es/x02-alux-kin/welcome.webp"
+  },
+  {
+   "id": "x02-alux-kin/from_town",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "from_town",
+   "lines": [
+    "from_town"
+   ],
+   "refs": [
+    "edit:x02-alux-kin/halt",
+    "person:cast/alux_kin"
+   ],
+   "prompt": "Change only his pose and expression: he points straight up at the cave's roof with one finger and presses his other hand over one ear, with a comic grimace: the town up there is so noisy.",
+   "out": "public/scenes-es/x02-alux-kin/from_town.webp"
+  },
+  {
+   "id": "x02-alux-kin/why",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "why",
+   "phases": [
+    "why"
+   ],
+   "refs": [
+    "edit:x02-alux-kin/halt",
+    "person:cast/alux_kin"
+   ],
+   "prompt": "Change only his pose and expression: he tilts his head and strokes his chin with one hand, one eyebrow raised, the other arm folded across his chest: studying the visitor.",
+   "out": "public/scenes-es/x02-alux-kin/why.webp"
+  },
+  {
+   "id": "x02-alux-kin/why_see",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "why_see",
+   "lines": [
+    "why_see"
+   ],
+   "refs": [
+    "edit:x02-alux-kin/halt",
+    "person:cast/alux_kin"
+   ],
+   "prompt": "Change only his pose and expression: half turned, he sweeps one arm proudly toward the great hall behind him, the ceiba in its light and the glowing water, beaming with pride, chest out.",
+   "out": "public/scenes-es/x02-alux-kin/why_see.webp"
+  },
+  {
+   "id": "x02-alux-kin/why_learn",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "why_learn",
+   "lines": [
+    "why_learn"
+   ],
+   "refs": [
+    "edit:x02-alux-kin/halt",
+    "person:cast/alux_kin"
+   ],
+   "prompt": "Change only his pose and expression: he has stepped to the standing stone by the passage wall and pats its top like an old friend's shoulder, grinning at the learner; the stone's carved glyph glows a brighter pale blue.",
+   "out": "public/scenes-es/x02-alux-kin/why_learn.webp"
+  },
+  {
+   "id": "x02-alux-kin/why_stones",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "why_stones",
+   "lines": [
+    "why_stones"
+   ],
+   "refs": [
+    "edit:x02-alux-kin/halt",
+    "person:cast/alux_kin"
+   ],
+   "prompt": "Change only his pose and expression: he holds one finger to his lips and cups his other hand beside his mouth, eyes darting sideways: shh, a secret.",
+   "out": "public/scenes-es/x02-alux-kin/why_stones.webp"
+  },
+  {
+   "id": "x02-alux-kin/why_curious",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "why_curious",
+   "lines": [
+    "why_curious"
+   ],
+   "refs": [
+    "edit:x02-alux-kin/halt",
+    "person:cast/alux_kin"
+   ],
+   "prompt": "Change only his pose and expression: he giggles into one hand, shoulders hunched up, eyes squeezed into merry slits, the other hand on his belly.",
+   "out": "public/scenes-es/x02-alux-kin/why_curious.webp"
+  },
+  {
+   "id": "x02-alux-kin/why_lost",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "why_lost",
+   "lines": [
+    "why_lost"
+   ],
+   "refs": [
+    "edit:x02-alux-kin/halt",
+    "person:cast/alux_kin"
+   ],
+   "prompt": "Change only his pose and expression: he chuckles and shrugs with both palms turned up, shaking his head kindly, eyebrows high.",
+   "out": "public/scenes-es/x02-alux-kin/why_lost.webp"
+  },
+  {
+   "id": "x02-alux-kin/way",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "way",
+   "phases": [
+    "way"
+   ],
+   "lines": [
+    "stones_intro"
+   ],
+   "refs": [
+    "edit:x02-alux-kin/halt",
+    "person:cast/alux_kin"
+   ],
+   "prompt": "Change only his pose and expression: he holds up one hand showing three fingers (the index, middle and ring fingers up; the thumb holding down the little finger), his other hand on his hip, eyebrows raised: three stones to find.",
+   "out": "public/scenes-es/x02-alux-kin/way.webp"
+  },
+  {
+   "id": "x02-alux-kin/nudge",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "way_again",
+   "lines": [
+    "way_again",
+    "way_nudge",
+    "way_hint"
+   ],
+   "refs": [
+    "edit:x02-alux-kin/halt",
+    "person:cast/alux_kin"
+   ],
+   "prompt": "Change only his pose and expression: he taps his own chest proudly with a thumb and beckons with the fingers of his other hand, an impatient grin, one bare foot lifted mid-tap: come on, ask me.",
+   "out": "public/scenes-es/x02-alux-kin/nudge.webp"
+  },
+  {
+   "id": "x02-alux-kin/not_yet",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "not_yet",
+   "lines": [
+    "not_yet"
+   ],
+   "refs": [
+    "edit:x02-alux-kin/halt",
+    "person:cast/alux_kin"
+   ],
+   "prompt": "Change only his pose and expression: he holds one palm straight out toward the viewer like a stop sign and wags the index finger of his other hand, shaking his head with a small smile.",
+   "out": "public/scenes-es/x02-alux-kin/not_yet.webp"
+  },
+  {
+   "id": "x02-alux-kin/dir_path",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "dir_path",
+   "lines": [
+    "dir_path"
+   ],
+   "refs": [
+    "edit:x02-alux-kin/halt",
+    "person:cast/alux_kin"
+   ],
+   "prompt": "Change only his pose and expression: he points down with one hand at the white stone slabs under his bare feet and with the other arm along the path into the hall behind him, looking at the learner.",
+   "out": "public/scenes-es/x02-alux-kin/dir_path.webp"
+  },
+  {
+   "id": "x02-alux-kin/stones",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "dir_recap",
+   "lines": [
+    "dir_recap"
+   ],
+   "refs": [
+    "edit:place/gruta-sala"
+   ],
+   "prompt": "Change only the three standing stones: the glyph of each one now shines bright and clear, with a soft halo and a few fireflies around it, so that all three stand out at a glance: the one left of the ceiba, the one on the right by the lagoon, the one at the far end beside the waterfall.",
+   "out": "public/scenes-es/x02-alux-kin/stones.webp",
+   "frame": "alux_view"
+  },
+  {
+   "id": "x02-alux-kin/dir_first",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "dir_first",
+   "lines": [
+    "dir_first"
+   ],
+   "refs": [
+    "edit:place/gruta-sala"
+   ],
+   "prompt": "Change only the standing stones: the glyph of the stone just to the LEFT of the ceiba's trunk now shines bright, with a soft halo and a ring of fireflies around it; the other two stones stay dim and gray.",
+   "out": "public/scenes-es/x02-alux-kin/dir_first.webp",
+   "frame": "alux_view"
+  },
+  {
+   "id": "x02-alux-kin/dir_rest",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "dir_rest",
+   "lines": [
+    "dir_rest"
+   ],
+   "refs": [
+    "edit:place/gruta-sala"
+   ],
+   "prompt": "Change only the standing stones: the stone on the RIGHT at the edge of the lagoon and the stone at the far end beside the waterfall now shine bright, each with a soft halo and fireflies; the stone left of the ceiba stays dim and gray.",
+   "out": "public/scenes-es/x02-alux-kin/dir_rest.webp",
+   "frame": "alux_view"
+  },
+  {
+   "id": "x02-alux-kin/dir_second",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "dir_second",
+   "lines": [
+    "dir_second"
+   ],
+   "refs": [
+    "setting:place/gruta-sala"
+   ],
+   "prompt": "A closer view of the right side of the hall: the edge of the lagoon of glowing turquoise water, lily pads on it, and right at the water's edge, in the left half of the picture, a waist-high standing stone whose single carved glyph shines bright pale blue with a soft halo; its light is mirrored in the water. A few fireflies. Nobody is in the picture.",
+   "out": "public/scenes-es/x02-alux-kin/dir_second.webp",
+   "frame": "alux_view"
+  },
+  {
+   "id": "x02-alux-kin/dir_third",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "dir_third",
+   "lines": [
+    "dir_third"
+   ],
+   "refs": [
+    "setting:place/gruta-sala",
+    "ref:file:~/puerto-colibri-pictures/look/x-3d/3c-the-falls.png#a screenshot of this place in the 3D game, for its layout only (where the path, the tree, the water, the stones, the bridge and the hut are): redraw all of it in the illustration style, with smooth natural rock instead of the faceted polygons, and leave out the blocky figures and the blurred patches"
+   ],
+   "prompt": "A closer view of the far end of the hall: a slender waterfall drops down the rock into a small round pool of glowing turquoise water, mist at its foot; right beside the waterfall, in the left half of the picture, a waist-high standing stone whose single carved glyph shines bright pale blue with a soft halo. Glowing mushrooms, fireflies. Nobody is in the picture.",
+   "out": "public/scenes-es/x02-alux-kin/dir_third.webp",
+   "frame": "alux_view"
+  },
+  {
+   "id": "x02-alux-kin/open",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "what_do_2",
+   "lines": [
+    "what_do_2"
+   ],
+   "refs": [
+    "edit:place/gruta-sala"
+   ],
+   "prompt": "Change only this: the glyphs of all three standing stones have turned warm gold and shine, and at the far end of the hall, beside the waterfall, a veil of mist parts around a bright archway of golden light: the way on has opened.",
+   "out": "public/scenes-es/x02-alux-kin/open.webp",
+   "frame": "alux_view"
+  },
+  {
+   "id": "x02-alux-kin/dir_tree",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "dir_tree",
+   "lines": [
+    "dir_tree"
+   ],
+   "refs": [
+    "setting:place/gruta-sala"
+   ],
+   "prompt": "The great ceiba in the middle of the hall, seen from near its foot looking up: its wide buttress roots, its tall pale trunk rising into a broad shaft of warm daylight that pours down from a round opening in the cave's roof, hanging roots around the opening, motes of light drifting in the beam. The tree fills the left half of the picture. Nobody is in the picture.",
+   "out": "public/scenes-es/x02-alux-kin/dir_tree.webp",
+   "frame": "alux_view"
+  },
+  {
+   "id": "x02-alux-kin/dir_far",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "dir_far",
+   "lines": [
+    "dir_far"
+   ],
+   "refs": [
+    "edit:x02-alux-kin/halt",
+    "person:cast/alux_kin"
+   ],
+   "prompt": "Change only his pose and expression: he holds one flat hand level with the top of his own hat, measuring how small he is, and with the other hand shows a tiny gap between thumb and forefinger, grinning: small, like me.",
+   "out": "public/scenes-es/x02-alux-kin/dir_far.webp"
+  },
+  {
+   "id": "x02-alux-kin/what_do",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "what_do",
+   "lines": [
+    "what_do",
+    "what_tip"
+   ],
+   "refs": [
+    "edit:x02-alux-kin/halt",
+    "person:cast/alux_kin"
+   ],
+   "prompt": "Change only his pose and expression: he has stepped to the standing stone by the passage wall and cups one hand behind his ear, leaning toward it, eyes wide, one finger of the other hand raised: listen. The stone's carved glyph glows a brighter pale blue.",
+   "out": "public/scenes-es/x02-alux-kin/what_do.webp"
+  },
+  {
+   "id": "x02-alux-kin/i_am",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "i_am",
+   "lines": [
+    "i_am"
+   ],
+   "refs": [
+    "edit:x02-alux-kin/halt",
+    "person:cast/alux_kin"
+   ],
+   "prompt": "Change only his pose and expression: he thumps his chest with one fist, chin up and chest out, the other hand planted on his hip: the proud guardian.",
+   "out": "public/scenes-es/x02-alux-kin/i_am.webp"
+  },
+  {
+   "id": "x02-alux-kin/my_name",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "my_name",
+   "lines": [
+    "my_name"
+   ],
+   "refs": [
+    "edit:x02-alux-kin/halt",
+    "person:cast/alux_kin"
+   ],
+   "prompt": "Change only his pose and expression: a thin ray of warm golden sunlight now falls from a crack in the roof onto his hat and shoulders; he points up into it with one finger and smiles up at the light.",
+   "out": "public/scenes-es/x02-alux-kin/my_name.webp"
+  },
+  {
+   "id": "x02-alux-kin/q_alux",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "q_alux",
+   "lines": [
+    "q_alux"
+   ],
+   "refs": [
+    "person:cast/alux_kin",
+    "style:x02-alux-kin/halt"
+   ],
+   "prompt": "What Kin is talking about, outside in the daylight: Kin stands guard at the edge of a milpa, a small Maya field where tall corn, climbing beans and squash with yellow flowers grow together, with the green jungle behind it. He stands about one third from the left, a little stick over his shoulder like a watchman, chest out, alert and proud.",
+   "out": "public/scenes-es/x02-alux-kin/q_alux.webp",
+   "setting": "",
+   "no_town": true
+  },
+  {
+   "id": "x02-alux-kin/q_sacbe",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "q_sacbe",
+   "lines": [
+    "q_sacbe"
+   ],
+   "refs": [
+    "style:x02-alux-kin/halt"
+   ],
+   "prompt": "What Kin is talking about, outside in the daylight: an ancient Maya sacbé, a raised, straight road of white limestone running away through the green jungle toward a small weathered stone temple in the distance, dappled sunlight on the white stones, a blue morpho butterfly. Nobody is in the picture.",
+   "out": "public/scenes-es/x02-alux-kin/q_sacbe.webp",
+   "setting": "",
+   "no_town": true,
+   "frame": "view"
+  },
+  {
+   "id": "x02-alux-kin/q_place",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "q_place",
+   "lines": [
+    "q_place"
+   ],
+   "refs": [
+    "setting:place/gruta-entrada"
+   ],
+   "prompt": "Looking back the way the learner came: from inside the dark rock of the grotto, the cave's mouth, a wide low arch, and through it the bright turquoise water of the cenote and the daylight outside, with jungle leaves and hanging roots around the opening and ripples of light on the cave's roof. The white stone path begins at the water's edge. Nobody is in the picture.",
+   "out": "public/scenes-es/x02-alux-kin/q_place.webp",
+   "frame": "alux_view"
+  },
+  {
+   "id": "x02-alux-kin/q_live",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "q_live",
+   "lines": [
+    "q_live"
+   ],
+   "refs": [
+    "edit:x02-alux-kin/halt",
+    "person:cast/alux_kin"
+   ],
+   "prompt": "Change only his pose and expression: he now stands in the little doorway of his tiny thatched hut beside the path, one hand on the doorpost, the other waving the learner to look inside, where a tiny hammock and a clay pot can be seen: home.",
+   "out": "public/scenes-es/x02-alux-kin/q_live.webp"
+  },
+  {
+   "id": "x02-alux-kin/q_age",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "q_age",
+   "lines": [
+    "q_age"
+   ],
+   "refs": [
+    "edit:x02-alux-kin/halt",
+    "person:cast/alux_kin"
+   ],
+   "prompt": "Change only his pose and expression: he counts on the raised fingers of one hand and scratches his head under the hat brim with the other, eyes rolled upward, puzzled, the tip of his tongue at the corner of his mouth.",
+   "out": "public/scenes-es/x02-alux-kin/q_age.webp"
+  },
+  {
+   "id": "x02-alux-kin/q_hat",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "q_hat",
+   "lines": [
+    "q_hat"
+   ],
+   "refs": [
+    "edit:x02-alux-kin/halt",
+    "person:cast/alux_kin"
+   ],
+   "prompt": "Change only his pose and expression: both his hands clamp the brim of his straw hat down onto his head, elbows out, eyes narrowed in mock warning: nobody touches the hat.",
+   "out": "public/scenes-es/x02-alux-kin/q_hat.webp"
+  },
+  {
+   "id": "x02-alux-kin/more",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "more",
+   "phases": [
+    "more"
+   ],
+   "refs": [
+    "edit:x02-alux-kin/halt",
+    "person:cast/alux_kin"
+   ],
+   "prompt": "Change only his pose and expression: relaxed now, he clasps his hands behind his back and rocks on his heels, head tilted, with a friendly, expectant smile: anything else?",
+   "out": "public/scenes-es/x02-alux-kin/more.webp"
+  },
+  {
+   "id": "x02-alux-kin/pass",
+   "scene": "x02-alux-kin",
+   "situation": "x02-alux-kin",
+   "moment": "pass",
+   "lines": [
+    "pass"
+   ],
+   "refs": [
+    "edit:x02-alux-kin/halt",
+    "person:cast/alux_kin"
+   ],
+   "prompt": "Change only his pose and expression: he has stepped off the path to the left and makes a little bow, one arm sweeping toward the great hall to show the way, the other hand holding his hat on; the white path lies open ahead.",
+   "out": "public/scenes-es/x02-alux-kin/pass.webp"
+  }
+ ]
+}

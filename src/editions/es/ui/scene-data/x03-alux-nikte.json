@@ -1,0 +1,8 @@
+{
+  "npc": "Nikté, alux of the riddles",
+  "images": ["greet", "rule", "not_ready", "riddle", "r_platano", "r_aguacate", "r_pera", "r_reloj", "r_viento", "r_luna", "hint_offer", "hint_platano", "hint_aguacate", "hint_pera", "hint_reloj", "hint_viento", "hint_luna", "ans_platano", "ans_aguacate", "ans_pera", "ans_reloj", "ans_viento", "ans_luna", "right", "wrong", "think"],
+  "start": "greet",
+  "phases": {"howareyou": "greet", "ready": "rule", "riddle": "riddle", "hint_offer": "hint_offer"},
+  "lines": {"greet": "greet", "rule": "rule", "ask_ready": "rule", "ask_ready2": "rule", "not_ready": "not_ready", "intro_first": "riddle", "intro_next": "riddle", "r_platano": "r_platano", "r_aguacate": "r_aguacate", "r_pera": "r_pera", "r_reloj": "r_reloj", "r_viento": "r_viento", "r_luna": "r_luna", "hard_offer": "hint_offer", "pista_intro": "hint_offer", "hint_again": "hint_offer", "what_pista": "hint_offer", "hint_platano": "hint_platano", "hint_aguacate": "hint_aguacate", "hint_pera": "hint_pera", "hint_reloj": "hint_reloj", "hint_viento": "hint_viento", "hint_luna": "hint_luna", "ans_platano": "ans_platano", "ans_aguacate": "ans_aguacate", "ans_pera": "ans_pera", "ans_reloj": "ans_reloj", "ans_viento": "ans_viento", "ans_luna": "ans_luna", "right": "right", "wrong": "wrong", "think": "think"},
+  "focus": [33, 62]
+}

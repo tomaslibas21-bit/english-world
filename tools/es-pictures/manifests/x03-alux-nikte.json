@@ -1,0 +1,587 @@
+{
+ "_about": "x03-alux-nikte: Nikté, the alux of the riddles, on her bridge of roots in El Río Escondido (15 Nov 2026). Each riddle has three pictures: its words acted out (never its answer), its clue, its answer. \"lines\": a line's own picture, shown while it is said.",
+ "scenes": {
+  "x03-alux-nikte": {
+   "npc": "Nikté, alux of the riddles",
+   "focus": [
+    33,
+    62
+   ],
+   "start": "greet",
+   "done": "pass"
+  }
+ },
+ "defaults": {
+  "model": "gpt-image-2.5-sunburst",
+  "quality": "high",
+  "kind": "scene",
+  "size": "2048x1152",
+  "web_size": [
+   1600,
+   900
+  ],
+  "setting": "gruta",
+  "frame": "alux",
+  "people": false
+ },
+ "items": [
+  {
+   "id": "x03-alux-nikte/greet",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "howareyou",
+   "phases": [
+    "howareyou"
+   ],
+   "lines": [
+    "greet"
+   ],
+   "refs": [
+    "place:place/gruta-rio",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Nikté, the little alux of the riddles, sits in the middle of the bridge of roots, about one third from the left, on its low root rail, her bare feet dangling above the glowing river, both hands holding the rail beside her. She leans forward with a bright, teasing smile at whoever is stepping onto her bridge.",
+   "out": "public/scenes-es/x03-alux-nikte/greet.webp"
+  },
+  {
+   "id": "x03-alux-nikte/rule",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "ready",
+   "phases": [
+    "ready"
+   ],
+   "lines": [
+    "rule",
+    "ask_ready",
+    "ask_ready2"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only her pose and expression: she holds up one hand showing two fingers in a V, her other hand patting the bridge beside her, a bright dare in her smile: two riddles, and you cross.",
+   "out": "public/scenes-es/x03-alux-nikte/rule.webp"
+  },
+  {
+   "id": "x03-alux-nikte/not_ready",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "not_ready",
+   "lines": [
+    "not_ready"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only her pose and expression: she leans back against the bridge's root rail with her hands clasped behind her head and her ankles crossed, eyes closed, perfectly at ease: no hurry at all.",
+   "out": "public/scenes-es/x03-alux-nikte/not_ready.webp"
+  },
+  {
+   "id": "x03-alux-nikte/riddle",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "riddle",
+   "phases": [
+    "riddle"
+   ],
+   "lines": [
+    "intro_first",
+    "intro_next"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only her pose and expression: she leans forward with one finger raised beside her face and her eyes sparkling, lips parted: about to tell a riddle.",
+   "out": "public/scenes-es/x03-alux-nikte/riddle.webp"
+  },
+  {
+   "id": "x03-alux-nikte/r_platano",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "r_platano",
+   "lines": [
+    "r_platano"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only her pose and what she holds: she holds up a shiny gold coin in one hand and a silver coin in the other, looking from one to the other with a sly smile. Plain coins with no markings.",
+   "out": "public/scenes-es/x03-alux-nikte/r_platano.webp"
+  },
+  {
+   "id": "x03-alux-nikte/r_aguacate",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "r_aguacate",
+   "lines": [
+    "r_aguacate"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only her pose and expression: she points down with one hand at the water flowing under her bridge and presses her other hand to her heart, with a mysterious smile.",
+   "out": "public/scenes-es/x03-alux-nikte/r_aguacate.webp"
+  },
+  {
+   "id": "x03-alux-nikte/r_pera",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "r_pera",
+   "lines": [
+    "r_pera"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only her pose and expression: she hides one hand behind her back and holds the other up flat toward the viewer in a clear \"wait\" sign, winking.",
+   "out": "public/scenes-es/x03-alux-nikte/r_pera.webp"
+  },
+  {
+   "id": "x03-alux-nikte/r_reloj",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "r_reloj",
+   "lines": [
+    "r_reloj"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only her pose and what she holds: she holds up a big sewing needle threaded with a long red thread in one hand and shrugs with the other hand open and her shoulders up, as if she had no idea how to sew.",
+   "out": "public/scenes-es/x03-alux-nikte/r_reloj.webp"
+  },
+  {
+   "id": "x03-alux-nikte/r_viento",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "r_viento",
+   "lines": [
+    "r_viento"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only her pose and expression: she spreads both arms out like wings and purses her lips in a whistle, her eyes merry.",
+   "out": "public/scenes-es/x03-alux-nikte/r_viento.webp"
+  },
+  {
+   "id": "x03-alux-nikte/r_luna",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "r_luna",
+   "lines": [
+    "r_luna"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only her pose and expression: she stands on tiptoe on the bridge and draws a big circle in the air with both arms raised above her head, looking up, as if reaching for something round and far away.",
+   "out": "public/scenes-es/x03-alux-nikte/r_luna.webp"
+  },
+  {
+   "id": "x03-alux-nikte/hint_offer",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "hint_offer",
+   "phases": [
+    "hint_offer"
+   ],
+   "lines": [
+    "hard_offer",
+    "pista_intro",
+    "hint_again",
+    "what_pista"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only her pose and what she holds: she holds a single glowing firefly cupped in both hands and offers it toward the learner like a tiny lantern, eyebrows raised with a kind smile: a clue?",
+   "out": "public/scenes-es/x03-alux-nikte/hint_offer.webp"
+  },
+  {
+   "id": "x03-alux-nikte/hint_platano",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "hint_platano",
+   "lines": [
+    "hint_platano"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only her pose and expression: she pinches the sleeve of her mango-yellow blouse and holds it out to show its color, and with her other hand mimes taking a bite of a fruit, cheeks puffed.",
+   "out": "public/scenes-es/x03-alux-nikte/hint_platano.webp"
+  },
+  {
+   "id": "x03-alux-nikte/hint_aguacate",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "hint_aguacate",
+   "lines": [
+    "hint_aguacate"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only her pose and what she holds: she holds a small gray stone mortar (a molcajete) full of green guacamole on her lap and dips a tortilla chip into it, glancing up with a hinting look.",
+   "out": "public/scenes-es/x03-alux-nikte/hint_aguacate.webp"
+  },
+  {
+   "id": "x03-alux-nikte/hint_pera",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "hint_pera",
+   "lines": [
+    "hint_pera"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only her pose and expression: she cups one hand behind her ear and points to that ear with a finger of the other hand, head tilted: listen closely.",
+   "out": "public/scenes-es/x03-alux-nikte/hint_pera.webp"
+  },
+  {
+   "id": "x03-alux-nikte/hint_reloj",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "hint_reloj",
+   "lines": [
+    "hint_reloj"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only her pose and expression: she taps her own bare wrist with two fingers of the other hand, right where a watch would be, eyebrows raised.",
+   "out": "public/scenes-es/x03-alux-nikte/hint_reloj.webp"
+  },
+  {
+   "id": "x03-alux-nikte/hint_viento",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "hint_viento",
+   "lines": [
+    "hint_viento"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only this: a breeze moves through the chamber. The hanging vines and their little lights all swing to one side, her braid and her skirt blow the same way, a few leaves fly past, and she holds the flower behind her ear in place with one hand, laughing. No lines drawn for the wind itself.",
+   "out": "public/scenes-es/x03-alux-nikte/hint_viento.webp"
+  },
+  {
+   "id": "x03-alux-nikte/hint_luna",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "hint_luna",
+   "lines": [
+    "hint_luna"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only this: she points straight up with one arm, and above her a round opening in the cave's roof shows a patch of deep-blue night sky with a few stars and no moon; she looks at the learner with a hinting smile.",
+   "out": "public/scenes-es/x03-alux-nikte/hint_luna.webp"
+  },
+  {
+   "id": "x03-alux-nikte/ans_platano",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "ans_platano",
+   "lines": [
+    "ans_platano"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only her pose and what she holds: she holds up a ripe yellow banana, half peeled, in one raised hand like a trophy, with a triumphant grin.",
+   "out": "public/scenes-es/x03-alux-nikte/ans_platano.webp"
+  },
+  {
+   "id": "x03-alux-nikte/ans_aguacate",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "ans_aguacate",
+   "lines": [
+    "ans_aguacate"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only her pose and what she holds: she holds up the two halves of a cut avocado, one in each hand, showing the green flesh and the round brown seed, with a triumphant grin.",
+   "out": "public/scenes-es/x03-alux-nikte/ans_aguacate.webp"
+  },
+  {
+   "id": "x03-alux-nikte/ans_pera",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "ans_pera",
+   "lines": [
+    "ans_pera"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only her pose and what she holds: she holds up a green pear by its stem with a bite taken out of it, so that the white flesh shows inside the green skin, with a triumphant grin.",
+   "out": "public/scenes-es/x03-alux-nikte/ans_pera.webp"
+  },
+  {
+   "id": "x03-alux-nikte/ans_reloj",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "ans_reloj",
+   "lines": [
+    "ans_reloj"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only her pose and what she holds: she holds up a round alarm clock in both hands, its white face toward the viewer with two dark hands and twelve plain dots around the edge instead of numerals, with a triumphant grin.",
+   "out": "public/scenes-es/x03-alux-nikte/ans_reloj.webp"
+  },
+  {
+   "id": "x03-alux-nikte/ans_viento",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "ans_viento",
+   "lines": [
+    "ans_viento"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only this: a playful gust spirals around her, carrying leaves and white flower petals in a ring, the vines swinging, her braid flying; she spreads her arms into it, laughing. The wind shows only in what it carries.",
+   "out": "public/scenes-es/x03-alux-nikte/ans_viento.webp"
+  },
+  {
+   "id": "x03-alux-nikte/ans_luna",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "ans_luna",
+   "lines": [
+    "ans_luna"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only this: a round opening in the cave's roof above her shows the night sky with a big, full white moon, whose reflection lies as a white disc on the river below; she points up at it with one arm, delighted.",
+   "out": "public/scenes-es/x03-alux-nikte/ans_luna.webp"
+  },
+  {
+   "id": "x03-alux-nikte/right",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "right",
+   "lines": [
+    "right"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only her pose and expression: she claps her hands together above her head, eyes shut with delight, and a burst of fireflies rises around her like sparks.",
+   "out": "public/scenes-es/x03-alux-nikte/right.webp"
+  },
+  {
+   "id": "x03-alux-nikte/wrong",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "wrong",
+   "lines": [
+    "wrong"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only her pose and expression: she shakes her head with a big grin and wags one index finger from side to side, her other hand on the rail.",
+   "out": "public/scenes-es/x03-alux-nikte/wrong.webp"
+  },
+  {
+   "id": "x03-alux-nikte/think",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "think",
+   "lines": [
+    "think"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only her pose and expression: she taps her temple with one finger, eyes narrowed playfully, lips pressed in a little smile: think.",
+   "out": "public/scenes-es/x03-alux-nikte/think.webp"
+  },
+  {
+   "id": "x03-alux-nikte/skip_ok",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "skip_ok",
+   "lines": [
+    "skip_ok"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only her pose and expression: she flicks one hand over her shoulder as if tossing the riddle away, eyes rolled up kindly, already smiling again.",
+   "out": "public/scenes-es/x03-alux-nikte/skip_ok.webp"
+  },
+  {
+   "id": "x03-alux-nikte/pass",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "pass",
+   "lines": [
+    "pass"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only her pose and expression: she has hopped to her feet and stands aside at the bridge's left rail, one arm sweeping toward the far bank, where the path goes on and the three standing stones glow; the middle of the bridge is free.",
+   "out": "public/scenes-es/x03-alux-nikte/pass.webp"
+  },
+  {
+   "id": "x03-alux-nikte/pass_anyway",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "pass_anyway",
+   "lines": [
+    "pass_anyway"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/pass",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only her pose and expression: standing aside at the rail, she shrugs with both hands open and gives a big wink: oh, go on then.",
+   "out": "public/scenes-es/x03-alux-nikte/pass_anyway.webp"
+  },
+  {
+   "id": "x03-alux-nikte/name",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "name",
+   "lines": [
+    "name"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only her pose and expression: she touches the white flower behind her ear with her fingertips and tilts her head to show it, smiling.",
+   "out": "public/scenes-es/x03-alux-nikte/name.webp"
+  },
+  {
+   "id": "x03-alux-nikte/what_riddle",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "what_riddle",
+   "lines": [
+    "what_riddle"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only her pose and expression: she points to her own lips with one finger and holds her other hand out, palm up, toward the learner, eyebrows raised: I say something, and you guess.",
+   "out": "public/scenes-es/x03-alux-nikte/what_riddle.webp"
+  },
+  {
+   "id": "x03-alux-nikte/alux",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "alux",
+   "lines": [
+    "alux"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only her pose and expression: she peeks out from behind a thick hanging root at the left end of the bridge, half hidden, one hand over her giggle, eyes shining with mischief.",
+   "out": "public/scenes-es/x03-alux-nikte/alux.webp"
+  },
+  {
+   "id": "x03-alux-nikte/live",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "live",
+   "lines": [
+    "live"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only her pose and expression: she spreads both arms wide with her face lifted, presenting the whole glowing chamber around her: this is home.",
+   "out": "public/scenes-es/x03-alux-nikte/live.webp"
+  },
+  {
+   "id": "x03-alux-nikte/like",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "like",
+   "lines": [
+    "like"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/greet",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only her pose and expression: she hugs herself with both arms, shoulders up, eyes squeezed shut in delight.",
+   "out": "public/scenes-es/x03-alux-nikte/like.webp"
+  },
+  {
+   "id": "x03-alux-nikte/welcome",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "welcome",
+   "lines": [
+    "welcome"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/pass",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only her pose and expression: standing at the bridge's left rail, she waves goodbye with one arm high, her other hand on her hip, a warm smile.",
+   "out": "public/scenes-es/x03-alux-nikte/welcome.webp"
+  },
+  {
+   "id": "x03-alux-nikte/bye",
+   "scene": "x03-alux-nikte",
+   "situation": "x03-alux-nikte",
+   "moment": "bye",
+   "lines": [
+    "bye"
+   ],
+   "refs": [
+    "edit:x03-alux-nikte/pass",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Change only her pose and expression: standing at the bridge's left rail, she points down at the river with a wagging finger and a playful look of warning, her other hand raised in goodbye.",
+   "out": "public/scenes-es/x03-alux-nikte/bye.webp"
+  }
+ ]
+}

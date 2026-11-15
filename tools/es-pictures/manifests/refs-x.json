@@ -1,0 +1,135 @@
+{
+ "_about": "References for the three conversations that exist only in Puerto Colibrí (15 Nov 2026): Nayeli of La Ola (x01-surf) and the grotto's aluxes Kin (x02) and Nikté (x03), and their places. The grotto's places follow the 3D grotto (src/game/cave): each takes a cleaned screenshot of it as a layout reference.",
+ "defaults": {
+  "model": "gpt-image-2.5-sunburst",
+  "quality": "high"
+ },
+ "items": [
+  {
+   "id": "cast/surf",
+   "kind": "cast",
+   "npc": "surf",
+   "name": "Nayeli",
+   "label": "Nayeli (Surf instructor)",
+   "situation": [
+    "x01-surf"
+   ],
+   "moment": null,
+   "size": "1024x1536",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/surf.webp",
+   "prompt": "Nayeli, the surf instructor at La Ola, the little surf school on the beach: an athletic woman of about 28 from Oaxaca's Pacific coast, with warm brown skin tanned by the sun, a long dark-brown braid over one shoulder whose ends the sun has lightened, and small shell earrings. A coral-orange short-sleeved rash guard and deep teal board shorts. Warm, sporty and easygoing: a wide, relaxed smile."
+  },
+  {
+   "id": "cast/alux_kin",
+   "kind": "cast",
+   "npc": "alux_kin",
+   "name": "Kin",
+   "label": "Kin (the alux who keeps the grotto)",
+   "situation": [
+    "x02-alux-kin"
+   ],
+   "moment": null,
+   "size": "1024x1536",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "frame": "alux_cast",
+   "out": "public/scenes-es/ref/cast/alux_kin.webp",
+   "prompt": "Kin, an alux: the little guardian spirit who keeps the way into a hidden grotto. Warm brown skin, short black hair, thick eyebrows, bright dark eyes, round cheeks with laugh lines and a sly, good-humored grin. He wears a pale straw hat with a round crown, a dark band and a wide brim (his pride), a leaf-green short-sleeved cotton shirt and earth-brown knee-length shorts, and he is barefoot. He stands with both hands on his hips, feet apart, chin up."
+  },
+  {
+   "id": "cast/alux_nikte",
+   "kind": "cast",
+   "npc": "alux_nikte",
+   "name": "Nikté",
+   "label": "Nikté (the alux of the riddles)",
+   "situation": [
+    "x03-alux-nikte"
+   ],
+   "moment": null,
+   "size": "1024x1536",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "frame": "alux_cast",
+   "out": "public/scenes-es/ref/cast/alux_nikte.webp",
+   "prompt": "Nikté, an alux: the little spirit of the riddles, who lives in a hidden grotto. Warm light-brown skin, round cheeks with laugh lines, lively dark eyes and a playful, knowing smile. A long black braid over one shoulder, a white plumeria flower with a yellow heart tucked behind one ear, small gold earrings. She wears a mango-yellow cotton blouse with a band of small embroidered flowers at the neckline and a teal-green skirt to mid-calf, and she is barefoot. She stands with her hands clasped in front of her, head a little tilted."
+  },
+  {
+   "id": "place/la-ola",
+   "kind": "place",
+   "label": "La Ola, the surf school's palapa on the beach",
+   "situation": [
+    "x01-surf"
+   ],
+   "moment": null,
+   "size": "2048x1152",
+   "refs": [
+    "style:en/s69-local/greet",
+    "setting:place/malecon"
+   ],
+   "out": "public/scenes-es/ref/place/la-ola.webp",
+   "prompt": "La Ola, a small surf school on the white sand of the town's beach, late morning: an open hut under a round thatched palapa roof on wooden posts, seen from the learner's side of its counter. The counter is of painted wood, teal with a cream top, with a hand-painted emblem on its front: a curling wave and a red hibiscus flower (no lettering). Behind the counter, a wooden rack of surfboards standing upright (coral, teal, yellow, pink, white), diving masks, snorkels and fins hanging from a beam, a few orange life jackets on hooks. At the left end of the counter, a chalkboard on an easel with only simple chalk drawings (a wave, a sun, a swirl of wind). To the left of the hut on the sand, two wide paddleboards leaning on a rail and a yellow kayak. Beyond the hut, the calm turquoise Caribbean with small gentle waves, a line of orange buoys, and in the distance to the left a wooden pier with a thatched seaside restaurant. The right third: sand, calm sea and sky."
+  },
+  {
+   "id": "place/gruta-entrada",
+   "kind": "place",
+   "label": "The way into the grotto: Kin's post on the white path",
+   "situation": [
+    "x02-alux-kin"
+   ],
+   "moment": null,
+   "size": "2048x1152",
+   "setting": "gruta",
+   "frame": "alux_view",
+   "people": false,
+   "refs": [
+    "style:en/s69-local/greet",
+    "ref:file:~/puerto-colibri-pictures/look/x-3d/2a-kin-keeps-the-way.png#a screenshot of this place in the 3D game, for its layout only (where the path, the tree, the water, the stones, the bridge and the hut are): redraw all of it in the illustration style, with smooth natural rock instead of the faceted polygons, and leave out the blocky figures and the blurred patches"
+   ],
+   "out": "public/scenes-es/ref/place/gruta-entrada.webp",
+   "prompt": "The way into the grotto: a passage of rock, seen from the white stone path that runs straight ahead down its middle, with round stepping stones along its edges. Ahead, the passage opens like a tall doorway onto a great hall beyond: a huge ceiba tree stands there in a shaft of warm daylight, and turquoise water glows behind it. Beside the path at the left, a tiny hut with a cone-shaped thatched roof, no taller than a child's playhouse (an alux lives in it). Near it, at the passage wall, one standing stone with a single carved glyph that glows pale blue. A few fireflies. The path one third from the left is empty: the alux will stand there."
+  },
+  {
+   "id": "place/gruta-sala",
+   "kind": "place",
+   "label": "La Sala del Agua, the grotto's first hall",
+   "situation": [
+    "x02-alux-kin"
+   ],
+   "moment": null,
+   "size": "2048x1152",
+   "setting": "gruta",
+   "frame": "alux_view",
+   "people": false,
+   "refs": [
+    "style:en/s69-local/greet",
+    "ref:file:~/puerto-colibri-pictures/look/x-3d/3b-the-ceiba-and-the-lagoon.png#a screenshot of this place in the 3D game, for its layout only (where the path, the tree, the water, the stones, the bridge and the hut are): redraw all of it in the illustration style, with smooth natural rock instead of the faceted polygons, and leave out the blocky figures and the blurred patches"
+   ],
+   "out": "public/scenes-es/ref/place/gruta-sala.webp",
+   "prompt": "La Sala del Agua, the grotto's first great hall, seen from where the white stone path enters it. In the middle of the hall, a little left of the picture's center, stands a great ceiba tree with wide buttress roots, in a broad shaft of warm daylight that falls from a round opening in the roof. The white path runs toward it. On the right side of the hall lies a lagoon of glowing turquoise water with a few lily pads. At the far end of the hall, in the distance behind the tree, a slender waterfall drops into a small pool. Three old standing stones, each waist-high with one carved glyph that glows faintly pale blue: the first stands just to the LEFT of the ceiba's trunk; the second on the RIGHT, at the edge of the lagoon; the third at the far end, right beside the waterfall. Nobody is in the picture."
+  },
+  {
+   "id": "place/gruta-rio",
+   "kind": "place",
+   "label": "El Río Escondido: the bridge of roots",
+   "situation": [
+    "x03-alux-nikte"
+   ],
+   "moment": null,
+   "size": "2048x1152",
+   "setting": "gruta",
+   "frame": "alux_view",
+   "people": false,
+   "refs": [
+    "style:en/s69-local/greet",
+    "ref:file:~/puerto-colibri-pictures/look/x-3d/3e-el-rio-escondido-nikte.png#a screenshot of this place in the 3D game, for its layout only (where the path, the tree, the water, the stones, the bridge and the hut are): redraw all of it in the illustration style, with smooth natural rock instead of the faceted polygons, and leave out the blocky figures and the blurred patches"
+   ],
+   "out": "public/scenes-es/ref/place/gruta-rio.webp",
+   "prompt": "El Río Escondido, the grotto's third chamber: a river of glowing turquoise water crosses it from wall to wall. The white stone path leads to a small bridge of dark, living tree roots woven together, with a low rail of roots on each side, seen from the near end of the bridge, a little from its left so that the bridge runs away toward the far bank. Above the bridge, long vines hang from the roof with small glowing drops of light at their tips. On the far bank the path goes on, and three standing stones wait there, each with one carved glyph glowing pale blue. Glowing mushrooms and spiky plants along the banks, fireflies. The middle of the bridge, one third from the left, is empty: the alux will sit there."
+  }
+ ]
+}

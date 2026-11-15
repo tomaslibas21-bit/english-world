@@ -17,6 +17,9 @@ export interface SceneFile {
   images: string[];
   /** Step or pending-question id → picture. Unlisted ids keep the current picture. */
   phases: Record<string, string>;
+  /** Line id → picture (optional): shown as the person starts saying that line, before the phase's picture: an
+   *  answer to a side question, each of a riddle's clues. The next line without one goes back to the phase's. */
+  lines?: Record<string, string>;
   /** The first picture. */
   start: string;
   /** The picture once the task is complete, for moments without their own picture (optional). */
@@ -42,6 +45,7 @@ function resolve(key: string, f: SceneFile): SceneArt {
   return {
     images: f.images.map(s),
     phases: Object.fromEntries(Object.entries(f.phases).map(([k, v]) => [k, s(v)])),
+    lines: f.lines && Object.fromEntries(Object.entries(f.lines).map(([k, v]) => [k, s(v)])),
     start: s(f.start),
     done: f.done ? s(f.done) : undefined,
     sticky: f.sticky?.map(s),

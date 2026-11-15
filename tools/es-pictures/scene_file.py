@@ -5,6 +5,7 @@ from a scene manifest, so the pictures and the file that maps them can't drift a
   python3 tools/es-pictures/scene_file.py <manifest> [SCENE …]           print the scene file(s)
   python3 tools/es-pictures/scene_file.py <manifest> [SCENE …] --write   write them (only scenes whose pictures exist)
   python3 tools/es-pictures/scene_file.py <manifest> --out <dir>          planning: write them to <dir> anyway
+  python3 tools/es-pictures/scene_file.py <manifest> --write --partial   with the pictures made so far
 
 The manifest's "scenes" gives each scene's npc label, focus, start, done and sticky pictures; each item with a
 "scene" gives its picture name (the last part of its id) and the "phases" (step and pending-question ids) that show
@@ -25,22 +26,33 @@ DATA = E.REPO / "src" / "editions" / "es" / "ui" / "scene-data"
 PICS = E.REPO / "public" / "scenes-es"
 
 
-def build(man: dict, key: str) -> tuple[dict, list[str]]:
-    meta = man.get("scenes", {}).get(key, {})
+def build(man: dict, key: str, partial: bool = False) -> tuple[dict, list[str]]:
+    meta = dict(man.get("scenes", {}).get(key, {}))
     items = [e for e in man["items"] if e.get("scene") == key and not e.get("skip")]
+    if partial:  # only the pictures made so far: the others' moments and lines keep the picture on screen
+        items = [e for e in items if (PICS / key.replace("@", "-") / f"{e['id'].split('/')[-1]}.webp").exists()]
+        if meta.get("done") not in [e["id"].split("/")[-1] for e in items]:
+            meta.pop("done", None)
     names = [e["id"].split("/")[-1] for e in items]
     phases: dict[str, str] = {}
+    lines: dict[str, str] = {}
     problems = []
     for e, name in zip(items, names):
         for pid in e.get("phases", []):
             if pid in phases and phases[pid] != name:
                 problems.append(f"phase {pid} is mapped to both {phases[pid]} and {name}")
             phases[pid] = name
+        for lid in e.get("lines", []):
+            if lid in lines and lines[lid] != name:
+                problems.append(f"line {lid} is mapped to both {lines[lid]} and {name}")
+            lines[lid] = name
         pic = PICS / key.replace("@", "-") / f"{name}.webp"
         if not pic.exists():
             problems.append(f"missing {pic.relative_to(E.REPO)}")
     f = {"npc": meta.get("npc", ""), "images": names, "start": meta.get("start", names[0] if names else ""),
          "phases": phases, "focus": meta.get("focus", [34, 30])}
+    if lines:
+        f["lines"] = lines
     if meta.get("done"):
         f["done"] = meta["done"]
     if meta.get("sticky"):
@@ -56,7 +68,7 @@ def build(man: dict, key: str) -> tuple[dict, list[str]]:
 
 def dumps(f: dict) -> str:
     """The English scene files' layout: one line per field."""
-    order = ["npc", "images", "start", "done", "sticky", "phases", "focus"]
+    order = ["npc", "images", "start", "done", "sticky", "phases", "lines", "focus"]
     lines = [f"  {json.dumps(k)}: {json.dumps(f[k], ensure_ascii=False, separators=(', ', ': '))}"
              for k in order if k in f]
     return "{\n" + ",\n".join(lines) + "\n}\n"
@@ -67,13 +79,15 @@ def main():
     ap.add_argument("manifest")
     ap.add_argument("scenes", nargs="*")
     ap.add_argument("--write", action="store_true")
+    ap.add_argument("--partial", action="store_true", help="leave out the pictures not made yet (their moments and lines keep the "
+                                                          "picture on screen); run again without it once they exist")
     ap.add_argument("--out", help="planning: write the scene file(s) into this folder even before the pictures exist "
                                   "(then: scene-walk.ts --data=<folder> --pictures-optional)")
     a = ap.parse_args()
     man = E.load_manifest(a.manifest)
     keys = a.scenes or sorted({e["scene"] for e in man["items"] if e.get("scene")})
     for key in keys:
-        f, problems = build(man, key)
+        f, problems = build(man, key, a.partial)
         text = dumps(f)
         if a.out:
             out = Path(a.out)

@@ -52,15 +52,17 @@ function webpSize(file: string): [number, number] | null {
   return null;
 }
 
-function walk(sit: SituationDef, f: SceneFile, onTurn: (stepId: string | null, pic: string, sim: string, seed: number) => void) {
+function walk(sit: SituationDef, f: SceneFile, onTurn: (stepId: string | null, pic: string, sim: string, seed: number) => void, onLine?: (lineId: string, pic: string) => void) {
   for (const sim of sit.sims || []) for (let seed = 1; seed <= seeds; seed++) {
     let kept: string | undefined;
     playSim(sit, sim, seed, {
-      onTurn: (conv) => {
+      onTurn: (conv, _t, out) => {
         const stepId = conv.ended ? "closing" : conv.pending?.id ?? conv.effectiveStep()?.id ?? null;
-        const pic = (kept && f.sticky?.includes(kept) && kept) || (stepId && f.phases[stepId]) || (conv.completed && f.done) || kept || f.start;
-        kept = pic;
-        onTurn(stepId, pic, sim.name, seed);
+        // as SceneBackdrop: each line said shows its own picture, or else the moment's
+        const at = (lineId?: string) => (kept && f.sticky?.includes(kept) && kept) || (lineId && f.lines?.[lineId]) || (stepId && f.phases[stepId]) || (conv.completed && f.done) || kept || f.start;
+        if (!out.lines.length) kept = at(undefined);
+        for (const l of out.lines) { kept = at(l.lineId); if (f.lines?.[l.lineId]) onLine?.(l.lineId, kept); }
+        onTurn(stepId, kept!, sim.name, seed);
       },
     });
   }
@@ -107,6 +109,10 @@ for (const key of files.sort()) {
   if (f.done && !images.has(f.done)) err(`done "${f.done}" is not in images`);
   for (const n of f.sticky ?? []) if (!images.has(n)) err(`sticky "${n}" is not in images`);
   for (const [id, n] of Object.entries(f.phases ?? {})) if (!images.has(n)) err(`phase "${id}" → "${n}" is not in images`);
+  for (const [id, n] of Object.entries(f.lines ?? {})) {
+    if (!images.has(n)) err(`line "${id}" → "${n}" is not in images`);
+    if (!sit.lines[id]) err(`line "${id}" is not one of the situation's lines`);
+  }
   if (!Array.isArray(f.focus) || f.focus.length !== 2 || f.focus.some((v) => typeof v !== "number" || v < 0 || v > 100)) err("focus must be [x%, y%]");
 
   // the simulated conversations
@@ -114,6 +120,7 @@ for (const key of files.sort()) {
   const seen = new Set<string>();
   const unmapped = new Map<string, Set<string>>();
   const seqs = new Map<string, string[]>();
+  const saidLines = new Set<string>();
   walk(sit, f, (stepId, pic, sim, seed) => {
     shown.set(pic, (shown.get(pic) ?? 0) + 1);
     if (stepId) {
@@ -121,7 +128,7 @@ for (const key of files.sort()) {
       if (!f.phases[stepId]) { if (!unmapped.has(stepId)) unmapped.set(stepId, new Set()); unmapped.get(stepId)!.add(pic); }
     }
     if (seed === 1) { if (!seqs.has(sim)) seqs.set(sim, []); seqs.get(sim)!.push(`${stepId ?? "–"}→${pic}`); }
-  });
+  }, (lineId, pic) => { shown.set(pic, (shown.get(pic) ?? 0) + 1); saidLines.add(lineId); });
   if (!quiet) for (const [sim, seq] of seqs) console.log(`  · ${sim}: ${seq.join("  ")}`);
   const never = [...images].filter((n) => !shown.has(n));
   console.log(`  pictures shown (turns, ${seeds} seeds): ${[...images].map((n) => `${n} ${shown.get(n) ?? 0}`).join(", ")}`);

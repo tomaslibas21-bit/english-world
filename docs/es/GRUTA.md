@@ -101,6 +101,11 @@ Their people: `alux_kin`, `alux_nikte` (`src/editions/es/content/npcs.ts`: half 
 straw hat is not to be touched), the place `gruta`. Voices: `tools/es-voices/casting-es.ts` (gentle, bright, a
 little magical; three sets).
 
+**Their pictures** (15 Nov 2026; docs/es/PICTURES.md section 10): Kin's 35 and Nikté's 36, drawn from the 3D grotto (his
+post on the white path, La Sala del Agua with the stones where the plan has them, her bridge of roots), most of them
+shown by line: each of his directions and answers, each riddle, clue and answer. So the picture / 3D chip and the
+pictures-only mode work down here too.
+
 ## The cenote from whichever side (15 Nov 2026, afternoon)
 
 The owner: "when you're trying to enter near the cenote, maybe we could make it easier to enter through whichever

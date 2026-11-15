@@ -1,0 +1,770 @@
+{
+ "_about": "x01-surf \"¿Probamos una ola?\": Nayeli at La Ola (15 Nov 2026). Two set-ups: the palapa's counter (greet and its edits) and the lesson on the sand (board and its edits); three views of Puerto Escondido, the reef, the turtle. \"lines\": a line's own picture, shown while it is said (src/ui/scenes.ts).",
+ "scenes": {
+  "x01-surf": {
+   "npc": "Nayeli, surf instructor",
+   "focus": [
+    34,
+    34
+   ],
+   "start": "greet",
+   "done": "go"
+  }
+ },
+ "defaults": {
+  "model": "gpt-image-2.5-sunburst",
+  "quality": "high",
+  "kind": "scene",
+  "size": "2048x1152",
+  "web_size": [
+   1600,
+   900
+  ]
+ },
+ "items": [
+  {
+   "id": "x01-surf/greet",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "what",
+   "phases": [
+    "what",
+    "howareyou"
+   ],
+   "refs": [
+    "place:place/la-ola",
+    "person:cast/surf"
+   ],
+   "prompt": "Nayeli, the surf instructor, stands behind the palapa's painted counter about one third from the left, one hand raised in a relaxed wave, the other resting on the counter, a wide easy smile (\"¡Hola! Bienvenido a La Ola.\").",
+   "out": "public/scenes-es/x01-surf/greet.webp"
+  },
+  {
+   "id": "x01-surf/gear",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "gear",
+   "phases": [
+    "gear"
+   ],
+   "lines": [
+    "gear_ask",
+    "gear_which"
+   ],
+   "refs": [
+    "edit:x01-surf/greet",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose and what she holds: half turned, she sweeps one open hand toward the rack of surfboards behind her and points with the other toward the paddleboards and the kayak on the sand, eyebrows raised: which one?",
+   "out": "public/scenes-es/x01-surf/gear.webp"
+  },
+  {
+   "id": "x01-surf/chalk",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "looking_ok",
+   "lines": [
+    "looking_ok",
+    "price_hour",
+    "price_list",
+    "waves_today"
+   ],
+   "refs": [
+    "edit:x01-surf/greet",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose and what she holds: she has stepped to the chalkboard at the left end of the counter and points at it with a piece of chalk, looking back at the learner with a smile. The chalkboard shows only simple chalk drawings in a column, a surfboard, a paddle, a kayak and a diving mask, each with a few plain tally strokes beside it, and a small wave at the top: no letters or digits.",
+   "out": "public/scenes-es/x01-surf/chalk.webp"
+  },
+  {
+   "id": "x01-surf/hours",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "hours",
+   "phases": [
+    "hours"
+   ],
+   "lines": [
+    "hours_ask",
+    "hours_reask",
+    "hours_whole",
+    "hours_max",
+    "hours_help",
+    "open_hours",
+    "late"
+   ],
+   "refs": [
+    "edit:x01-surf/greet",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose and what she holds: she points up with one finger at a plain round clock that now hangs on the palapa's wooden post beside her (a white face with two hands and plain tick marks, no numerals), her head tilted with a questioning smile: for how long?",
+   "out": "public/scenes-es/x01-surf/hours.webp"
+  },
+  {
+   "id": "x01-surf/deposit",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "deposit",
+   "phases": [
+    "deposit"
+   ],
+   "lines": [
+    "deposit_ask",
+    "deposit_id_only",
+    "deposit_one",
+    "deposit_which",
+    "deposit_info",
+    "id_instead"
+   ],
+   "refs": [
+    "edit:x01-surf/greet",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose and what she holds: she holds out one open palm across the counter, asking for something, and in her other hand holds up, as an example, a blank plastic ID card: a plain card with a simple gray head-and-shoulders silhouette and a few blank bars, no text.",
+   "out": "public/scenes-es/x01-surf/deposit.webp"
+  },
+  {
+   "id": "x01-surf/deposit_cash",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "deposit_offer",
+   "phases": [
+    "deposit_offer"
+   ],
+   "lines": [
+    "no_id_deposit",
+    "deposit_ok",
+    "dep_confirm",
+    "dep_back",
+    "total_dep"
+   ],
+   "refs": [
+    "edit:x01-surf/greet",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose and what she holds: a small metal cash box stands open on the counter; she holds up a single plain banknote between two fingers (a simple colored bill with no numbers and no portrait) and nods reassuringly: a deposit will do.",
+   "out": "public/scenes-es/x01-surf/deposit_cash.webp"
+  },
+  {
+   "id": "x01-surf/id_ok",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "id_ok",
+   "lines": [
+    "id_ok"
+   ],
+   "refs": [
+    "edit:x01-surf/greet",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose and what she holds: the learner's hand and forearm come in from the bottom edge, holding out a blank plastic ID card (a plain card with a gray silhouette, no text) over the counter; she takes it with a thankful nod.",
+   "out": "public/scenes-es/x01-surf/id_ok.webp"
+  },
+  {
+   "id": "x01-surf/no_deal",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "no_deal",
+   "lines": [
+    "no_deal"
+   ],
+   "refs": [
+    "edit:x01-surf/greet",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose: she shrugs with both palms turned up, lips pressed together, head tilted to one side: sorry, she can't.",
+   "out": "public/scenes-es/x01-surf/no_deal.webp"
+  },
+  {
+   "id": "x01-surf/pay",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "rent_pay",
+   "phases": [
+    "rent_pay",
+    "lesson_pay"
+   ],
+   "lines": [
+    "pay_how",
+    "pay_again",
+    "pay_confirm"
+   ],
+   "refs": [
+    "edit:x01-surf/greet",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose and what she holds: she holds a small black card terminal with a blank screen in one hand and two plain banknotes (no numbers, no portraits) fanned in the other, weighing them with raised eyebrows: cash or card?",
+   "out": "public/scenes-es/x01-surf/pay.webp"
+  },
+  {
+   "id": "x01-surf/no_signal",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "no_signal",
+   "lines": [
+    "no_signal",
+    "no_signal_again"
+   ],
+   "refs": [
+    "edit:x01-surf/greet",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose and what she holds: she holds the small black card terminal up toward the sky at arm's length, squinting at its screen, which shows only a crossed-out signal icon (four empty bars with a diagonal line through them); an apologetic grimace.",
+   "out": "public/scenes-es/x01-surf/no_signal.webp"
+  },
+  {
+   "id": "x01-surf/atm",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "atm",
+   "lines": [
+    "atm",
+    "wait_here"
+   ],
+   "refs": [
+    "edit:x01-surf/greet",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose: she leans over the counter and points with her whole arm away from the sea, inland, past the palms toward the town, her other hand flat on the counter: giving directions.",
+   "out": "public/scenes-es/x01-surf/atm.webp"
+  },
+  {
+   "id": "x01-surf/cash",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "cash_ok",
+   "lines": [
+    "cash_ok",
+    "change",
+    "welcome_back",
+    "short"
+   ],
+   "refs": [
+    "edit:x01-surf/greet",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose and what she holds: the learner's hand and forearm come in from the bottom edge, holding out a few plain banknotes (no numbers, no portraits) over the counter; she reaches for them with a smile, a small open cash box in front of her.",
+   "out": "public/scenes-es/x01-surf/cash.webp"
+  },
+  {
+   "id": "x01-surf/card_ok",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "card_ok",
+   "lines": [
+    "card_ok"
+   ],
+   "refs": [
+    "edit:x01-surf/greet",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose and what she holds: she holds the small black card terminal toward the learner, its screen showing one simple green check mark, and gives a thumbs-up with her other hand.",
+   "out": "public/scenes-es/x01-surf/card_ok.webp"
+  },
+  {
+   "id": "x01-surf/hand_board",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "hand_board",
+   "lines": [
+    "hand_board",
+    "inc_board"
+   ],
+   "refs": [
+    "edit:x01-surf/greet",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose and what she holds: she stands a surfboard upright beside her at the counter with one arm (white with a coral stripe) and holds out its coiled black leash toward the learner in her other hand.",
+   "out": "public/scenes-es/x01-surf/hand_board.webp"
+  },
+  {
+   "id": "x01-surf/hand_paddle",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "hand_paddle",
+   "lines": [
+    "hand_paddle",
+    "inc_paddle"
+   ],
+   "refs": [
+    "edit:x01-surf/greet",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose and what she holds: she stands a long paddle upright on the counter with one hand and holds out an orange life jacket toward the learner with the other; a wide paddleboard leans against the counter beside her.",
+   "out": "public/scenes-es/x01-surf/hand_paddle.webp"
+  },
+  {
+   "id": "x01-surf/hand_kayak",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "hand_kayak2",
+   "lines": [
+    "hand_kayak2",
+    "two_double"
+   ],
+   "refs": [
+    "edit:x01-surf/greet",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose and what she holds: she has come round the end of the counter and crouches on the sand at the left beside a yellow kayak with two seats, two paddles laid across it and an orange life jacket on each seat, patting its side and smiling up at the learner.",
+   "out": "public/scenes-es/x01-surf/hand_kayak.webp"
+  },
+  {
+   "id": "x01-surf/hand_snorkel",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "hand_snorkel",
+   "lines": [
+    "hand_snorkel",
+    "inc_snorkel"
+   ],
+   "refs": [
+    "edit:x01-surf/greet",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose and what she holds: on the counter in front of her she has laid out a diving mask, a snorkel and a pair of teal fins, and presents them with both open hands.",
+   "out": "public/scenes-es/x01-surf/hand_snorkel.webp"
+  },
+  {
+   "id": "x01-surf/vest",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "vest",
+   "lines": [
+    "vest",
+    "swim",
+    "inc_general"
+   ],
+   "refs": [
+    "edit:x01-surf/greet",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose and what she holds: she holds up an orange life jacket by its shoulders with both hands, showing it to the learner with an encouraging nod.",
+   "out": "public/scenes-es/x01-surf/vest.webp"
+  },
+  {
+   "id": "x01-surf/buoys",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "safety_word",
+   "lines": [
+    "safety_word",
+    "current",
+    "safe_here"
+   ],
+   "refs": [
+    "edit:x01-surf/greet",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose: half turned toward the sea, she points with a straight arm at the line of orange buoys floating on the calm water, her other hand raised flat in a friendly \"no farther than that\" sign, looking back at the learner.",
+   "out": "public/scenes-es/x01-surf/buoys.webp"
+  },
+  {
+   "id": "x01-surf/reef",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "reef",
+   "lines": [
+    "reef"
+   ],
+   "refs": [
+    "setting:place/la-ola",
+    "person:cast/surf"
+   ],
+   "prompt": "On the sand at the water's edge, looking east along the beach: Nayeli stands about one third from the left and points with a straight arm along the shore to a white lighthouse on dark rocks a little way out to sea at the beach's far end; between here and the lighthouse, darker blue-green patches of reef show under the clear turquoise water. She looks back at the learner, explaining.",
+   "out": "public/scenes-es/x01-surf/reef.webp",
+   "frame": "beach"
+  },
+  {
+   "id": "x01-surf/experience",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "experience",
+   "phases": [
+    "experience"
+   ],
+   "lines": [
+    "exp_ask"
+   ],
+   "refs": [
+    "edit:x01-surf/greet",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose: leaning on the counter with her elbows, she tilts her head with a curious smile and rides one flat hand over the other like a little board on a wave: ever surfed?",
+   "out": "public/scenes-es/x01-surf/experience.webp"
+  },
+  {
+   "id": "x01-surf/small_waves",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "exp_none",
+   "lines": [
+    "exp_none",
+    "exp_some",
+    "small_here",
+    "adv_honest",
+    "adv_no_lesson"
+   ],
+   "refs": [
+    "edit:x01-surf/greet",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose: she holds one flat hand out level with her waist to show how small the waves are, with a frank, friendly half-smile; behind her, small gentle waves roll in on the turquoise sea.",
+   "out": "public/scenes-es/x01-surf/small_waves.webp"
+  },
+  {
+   "id": "x01-surf/lesson_offer",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "lesson_offer",
+   "phases": [
+    "lesson_offer"
+   ],
+   "lines": [
+    "lesson_info",
+    "lesson_price_again",
+    "inc_lesson",
+    "lesson_q",
+    "lesson_board_too"
+   ],
+   "refs": [
+    "edit:x01-surf/greet",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose and what she holds: a thick blue soft-foam beginner surfboard lies across the counter in front of her, and she holds up a folded coral-orange rash guard in one hand, smiling: the lesson's kit.",
+   "out": "public/scenes-es/x01-surf/lesson_offer.webp"
+  },
+  {
+   "id": "x01-surf/lesson_paid",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "lesson_paid",
+   "lines": [
+    "lesson_paid"
+   ],
+   "refs": [
+    "edit:x01-surf/greet",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose and what she holds: she holds out a coral-orange rash guard toward the learner with one hand and points with the thumb of the other toward the water's edge, already half on her way: let's go.",
+   "out": "public/scenes-es/x01-surf/lesson_paid.webp"
+  },
+  {
+   "id": "x01-surf/zicatela",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "pe_been",
+   "phases": [
+    "pe_been"
+   ],
+   "lines": [
+    "adv_pacific",
+    "nayeli_from",
+    "pe_been_yes",
+    "pe_been_no",
+    "pe_where",
+    "pe_when",
+    "pe_safe"
+   ],
+   "refs": [
+    "style:x01-surf/greet"
+   ],
+   "prompt": "What Nayeli is talking about, far from here: Zicatela beach at Puerto Escondido, on Mexico's Pacific coast. A huge, powerful green-blue wave curls into a hollow tube close to a long golden beach, spray blowing back off its lip, and two tiny expert surfers ride it. Deep blue ocean, a wide sky, dry golden-green hills and palms behind the beach: a wilder coast than the calm Caribbean.",
+   "out": "public/scenes-es/x01-surf/zicatela.webp",
+   "frame": "view",
+   "no_town": true
+  },
+  {
+   "id": "x01-surf/la_punta",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "pe_stay",
+   "lines": [
+    "pe_stay"
+   ],
+   "refs": [
+    "style:x01-surf/greet"
+   ],
+   "prompt": "What Nayeli is talking about, far from here: La Punta at Puerto Escondido, on Mexico's Pacific coast, late afternoon. A rocky point where smaller, friendly waves peel along the shore, three or four small surfers on them; on the sand under the palms, a row of simple wooden beach cabins and hostels with palm-thatch roofs and hammocks. Warm golden light.",
+   "out": "public/scenes-es/x01-surf/la_punta.webp",
+   "frame": "view",
+   "no_town": true
+  },
+  {
+   "id": "x01-surf/pe_road",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "pe_how",
+   "lines": [
+    "pe_how"
+   ],
+   "refs": [
+    "style:x01-surf/greet"
+   ],
+   "prompt": "What Nayeli is talking about, far from here: a new highway winding down through green mountains toward the wide blue Pacific and a small town on its shore, a bus and a car small on the road, and high above, a small passenger plane crossing the sky. No signs.",
+   "out": "public/scenes-es/x01-surf/pe_road.webp",
+   "frame": "view",
+   "no_town": true
+  },
+  {
+   "id": "x01-surf/board",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "board",
+   "phases": [
+    "board"
+   ],
+   "lines": [
+    "board_1",
+    "board_q"
+   ],
+   "refs": [
+    "setting:place/la-ola",
+    "person:cast/surf"
+   ],
+   "prompt": "The lesson, on the sand near the water's edge, with La Ola's palapa behind at the left. Nayeli kneels on one knee about one third from the left beside a thick blue soft-foam surfboard that lies on the sand, tipped up a little on a mound of sand so that three small fins show under its tail. She touches the board's rounded nose with one hand and points to its tail with the other, looking up at the learner as she explains.",
+   "out": "public/scenes-es/x01-surf/board.webp",
+   "frame": "beach"
+  },
+  {
+   "id": "x01-surf/leash",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "board_2",
+   "lines": [
+    "board_2"
+   ],
+   "refs": [
+    "edit:x01-surf/board",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose: she sits on the sand beside the board and fastens the cuff of the board's black leash around her own ankle, the cord running to the board's tail, looking up at the learner with a smile.",
+   "out": "public/scenes-es/x01-surf/leash.webp",
+   "frame": "beach"
+  },
+  {
+   "id": "x01-surf/paddle",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "paddle_1",
+   "lines": [
+    "paddle_1"
+   ],
+   "refs": [
+    "edit:x01-surf/board",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose: she lies face down along the board on the sand, chest lifted and head up, looking forward, one arm reaching far ahead and the other pulling back beside the board, as if paddling.",
+   "out": "public/scenes-es/x01-surf/paddle.webp",
+   "frame": "beach"
+  },
+  {
+   "id": "x01-surf/popup",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "stand_1",
+   "lines": [
+    "stand_1"
+   ],
+   "refs": [
+    "edit:x01-surf/board",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose: she is halfway through standing up on the board on the sand: both hands flat on the board beside her chest, arms pushing up, hips lifted, one foot swinging forward under her.",
+   "out": "public/scenes-es/x01-surf/popup.webp",
+   "frame": "beach"
+  },
+  {
+   "id": "x01-surf/stance",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "moves",
+   "phases": [
+    "moves"
+   ],
+   "lines": [
+    "stand_2",
+    "moves_q"
+   ],
+   "refs": [
+    "edit:x01-surf/board",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose: she stands on the board on the sand in a surfer's stance: feet apart, sideways across the board, knees bent low, arms out for balance, her eyes looking forward along the board and not at her feet.",
+   "out": "public/scenes-es/x01-surf/stance.webp",
+   "frame": "beach"
+  },
+  {
+   "id": "x01-surf/fall_safe",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "safety_1",
+   "lines": [
+    "safety_1"
+   ],
+   "refs": [
+    "edit:x01-surf/board",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose: standing beside the board, she shows how to fall safely: knees a little bent, both arms wrapped over her head to protect it, peeking out between her elbows with a smile.",
+   "out": "public/scenes-es/x01-surf/fall_safe.webp",
+   "frame": "beach"
+  },
+  {
+   "id": "x01-surf/hold_board",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "safety_2",
+   "lines": [
+    "safety_2"
+   ],
+   "refs": [
+    "edit:x01-surf/board",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose: she stands hugging the blue board upright against her body with both arms, chin on its edge, and nods toward the water, where two small swimmers and a paddleboarder can be seen far off.",
+   "out": "public/scenes-es/x01-surf/hold_board.webp",
+   "frame": "beach"
+  },
+  {
+   "id": "x01-surf/questions",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "safety",
+   "phases": [
+    "safety"
+   ],
+   "lines": [
+    "safety_q",
+    "safety_more",
+    "tell_me",
+    "simple_again"
+   ],
+   "refs": [
+    "edit:x01-surf/board",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose: she stands relaxed with the blue board planted upright in the sand beside her, one arm draped over it, the other hand open toward the learner, eyebrows raised: any questions?",
+   "out": "public/scenes-es/x01-surf/questions.webp",
+   "frame": "beach"
+  },
+  {
+   "id": "x01-surf/hard",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "hard",
+   "lines": [
+    "hard"
+   ],
+   "refs": [
+    "edit:x01-surf/board",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose: standing beside the board, she flexes one arm like a strongman with a playful grin and gives a thumbs-up with the other hand: tough at first, but you'll get there.",
+   "out": "public/scenes-es/x01-surf/hard.webp",
+   "frame": "beach"
+  },
+  {
+   "id": "x01-surf/deep",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "deep",
+   "lines": [
+    "deep"
+   ],
+   "refs": [
+    "setting:place/la-ola",
+    "person:cast/surf"
+   ],
+   "prompt": "Nayeli stands in the calm, clear turquoise water close to the shore, about one third from the left, the water just up to her waist, both hands resting on the surface, smiling back at the learner on the sand: it is only this deep. Small gentle waves behind her.",
+   "out": "public/scenes-es/x01-surf/deep.webp",
+   "frame": "beach"
+  },
+  {
+   "id": "x01-surf/fall",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "fall",
+   "lines": [
+    "fall"
+   ],
+   "refs": [
+    "edit:x01-surf/board",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only this: Nayeli stands beside the board laughing kindly, one thumb up; behind her in the shallow water, small and far off, a beginner in a blue rash guard tumbles off a soft board with a big splash, arms in the air, laughing too.",
+   "out": "public/scenes-es/x01-surf/fall.webp",
+   "frame": "beach"
+  },
+  {
+   "id": "x01-surf/sharks",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "sharks",
+   "lines": [
+    "sharks"
+   ],
+   "refs": [
+    "style:x01-surf/greet"
+   ],
+   "prompt": "In the clear, shallow turquoise water just off the beach, seen from above the surface: a green sea turtle glides over the white sand with a small school of yellow-striped fish beside it. Sunlight ripples on the sand. Nobody is in the picture.",
+   "out": "public/scenes-es/x01-surf/sharks.webp",
+   "frame": "view"
+  },
+  {
+   "id": "x01-surf/invite",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "invite",
+   "phases": [
+    "invite"
+   ],
+   "lines": [
+    "invite",
+    "invite_again",
+    "invite_adv"
+   ],
+   "refs": [
+    "setting:place/la-ola",
+    "person:cast/surf"
+   ],
+   "prompt": "At the water's edge: Nayeli stands about one third from the left in ankle-deep water with a surfboard under one arm, half turned toward the sea, where a small clean wave is rolling in, and beckons the learner with her free hand and a big grin. A blue soft-foam board stands planted in the wet sand near the bottom edge, waiting for the learner.",
+   "out": "public/scenes-es/x01-surf/invite.webp",
+   "frame": "beach"
+  },
+  {
+   "id": "x01-surf/go",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "go",
+   "lines": [
+    "go"
+   ],
+   "refs": [
+    "edit:x01-surf/invite",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose: she runs into the shallow water with her board under her arm, water splashing around her legs, looking back over her shoulder and waving the learner on.",
+   "out": "public/scenes-es/x01-surf/go.webp",
+   "frame": "beach"
+  },
+  {
+   "id": "x01-surf/bye",
+   "scene": "x01-surf",
+   "situation": "x01-surf",
+   "moment": "closing",
+   "phases": [
+    "closing"
+   ],
+   "lines": [
+    "bye",
+    "another_day"
+   ],
+   "refs": [
+    "edit:x01-surf/greet",
+    "person:cast/surf"
+   ],
+   "prompt": "Change only her pose: she waves goodbye with one arm high and a big smile, her other hand making the surfers' \"hang loose\" sign (thumb and little finger out, the three middle fingers folded).",
+   "out": "public/scenes-es/x01-surf/bye.webp"
+  }
+ ]
+}

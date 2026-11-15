@@ -91,7 +91,7 @@ export class Session {
       active: true, sitId: this.sit.id, npcId, hostId: npcId, mode: this.sit.mode ?? "talk", transcript: [], phase: "npc",
       suggest: [], hints: [], chosen: {}, openHint: null, mic: { status: speechSupported() ? "off" : "unsupported", heard: "" },
       failures: 0, misses: 0, slowMode: this.conv.slow, lastHeard: "", prefix: false, completed: false, speaking: null, reveal: {}, note: null, typing: !speechSupported(), newExpressions: [],
-      checklist: [], focus: 0, stepId: null, guess: null, practice: null, speechChoices:undefined, run: st.conv.run + 1, guideHidden: false,
+      checklist: [], focus: 0, stepId: null, lineKey: null, guess: null, practice: null, speechChoices:undefined, run: st.conv.run + 1, guideHidden: false,
       introOpen: !!this.sit.intro,
     });
     const out = this.conv.start();
@@ -137,7 +137,7 @@ export class Session {
       const npc = NPCS[l.npc];
       const id = this.pushLine({ who: "npc", npc: l.npc, sentence: l.sentence, slow: l.slow });
       const slow = !!l.slow || useStore.getState().settings.slowVoice;
-      useStore.getState().setConv({ speaking: id, npcId: l.npc });
+      useStore.getState().setConv({ speaking: id, npcId: l.npc, lineKey: l.lineId });
       const dur = audio.clipDuration(npcVoice(npc), npc?.speed ?? 1, l.sentence.say) ?? Math.max(1.2, l.sentence.say.length * 0.06);
       this.hooks.npcTalk(l.npc, dur / (slow ? 0.82 : 1), l.sentence.say);
       if (!await audio.play(npcVoice(npc), npc?.speed ?? 1, l.sentence.say, { slow, male: npc?.gender === "m" })) return;

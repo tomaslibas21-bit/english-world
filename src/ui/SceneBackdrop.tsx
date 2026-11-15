@@ -11,6 +11,7 @@ export function SceneBackdrop() {
   // any conversation with a scene file, calls included (a call shows the person at their end of the line)
   const art = on && conv.active ? sceneFor(conv.sitId, conv.hostId) : undefined;
 
+  // a line with its own picture shows it while it is said (and after, until a line without one or the next moment);
   // a moment with its own picture shows it; after the task, other moments show the "done" picture;
   // a side question (or any other moment without a picture) keeps the current one; a sticky picture
   // stays until the end. A new conversation starts fresh, even in the same situation.
@@ -18,7 +19,7 @@ export function SceneBackdrop() {
   let stem: string | undefined;
   if (art) {
     const kept = last.current?.run === conv.run ? last.current.stem : undefined;
-    stem = (kept && art.sticky?.includes(kept) && kept) || (conv.stepId && art.phases[conv.stepId]) || (conv.completed && art.done) || kept || art.start;
+    stem = (kept && art.sticky?.includes(kept) && kept) || (conv.lineKey && art.lines?.[conv.lineKey]) || (conv.stepId && art.phases[conv.stepId]) || (conv.completed && art.done) || kept || art.start;
     last.current = { run: conv.run, stem };
   }
 
@@ -32,7 +33,7 @@ export function SceneBackdrop() {
   return (
     <div className="scene-backdrop" aria-hidden="true">
       {art.images.map((k) => (
-        <img key={k} src={sceneUrl(k)} alt="" draggable={false} className={stem === k ? "on" : ""}
+        <img key={k} src={sceneUrl(k)} alt="" draggable={false} className={stem === k ? "on" : ""} {...(stem === k ? {} : { fetchpriority: "low" })}
           style={{ objectPosition: pos, transformOrigin: pos }} />
       ))}
     </div>

@@ -45,7 +45,8 @@ LOCK = WORK / "generator.lock"               # one generator (or batch submit/fe
 ENV_FILE = Path(os.environ.get("ES_PICTURES_ENV_FILE", str(Path.home() / "english-world" / ".env.local")))
 
 API = os.environ.get("ES_PICTURES_API", "https://api.openai.com/v1")  # another base only for a local mock test
-STOP_USD = 75.0          # hard stop for new requests (the owner approved $82 in all)
+STOP_USD = 80.0          # hard stop for new requests (the owner approved $82 in all; $75 until 15 Nov 2026, when the
+                         # owner asked for the rest to go into x01–x03's pictures: $2 stay back)
 APPROVED_USD = 82.0
 
 # ── prices (read 4 Nov 2026 from https://developers.openai.com/api/docs/pricing and the image generation guide) ──
@@ -414,8 +415,10 @@ def resolve_ref(ref: str, index: dict[str, dict]) -> tuple[str, Path, str]:
     if ref.startswith("file:"):
         role, rid = "ref", ref
     label = rid
-    if rid.startswith("file:"):
-        path = Path(rid[5:])
+    if rid.startswith("file:"):  # "file:<path>" or "file:<path>#<what it shows>" (the label the prompt gives it)
+        fp, _, what = rid[5:].partition("#")
+        label = what or label
+        path = Path(os.path.expanduser(fp))
         path = path if path.is_absolute() else REPO / path
     elif rid.startswith("en/"):
         path = REPO / "public" / "scenes" / f"{rid[3:]}.webp"
@@ -537,17 +540,24 @@ def build_prompt(entry: dict, roles_labels: list[tuple[str, str]], parts: dict |
         pieces.append(ref_intro(roles_labels, parts))
     if kind.get("style", True):
         pieces.append(parts["style"])
-    if kind.get("town", True) and not entry.get("no_town"):
+    # "setting": a place that is not the town (the grotto), from prompt-parts.json "settings"
+    setting = parts.get("settings", {}).get(entry.get("setting") or "")
+    if setting:
+        pieces.append(setting)
+    elif kind.get("town", True) and not entry.get("no_town"):
         pieces.append(parts["town"])
     pieces.append(entry["prompt"].strip())
     pieces += tags
     # a scene with no named person in it (an empty room, a phone on a table) gets a framing without a person
     nobody = entry.get("kind", "scene") == "scene" and people is not None and not people and kind.get("frame_nobody")
-    if nobody:
+    own = parts.get("frames", {}).get(entry.get("frame") or "")  # "frame": a framing of its own (the aluxes are small)
+    if own:
+        pieces.append(own)
+    elif nobody:
         pieces.append(kind["frame_nobody"])
     elif kind.get("frame"):
         pieces.append(kind["frame"])
-    if kind.get("people", True) and not nobody:
+    if kind.get("people", True) and not nobody and entry.get("people", True):
         pieces.append(parts["people"])
     pieces.append(parts["rules_with_tags"] if tags else parts["rules"])
     return "\n\n".join(p.strip() for p in pieces if p and p.strip())
