@@ -1462,6 +1462,7 @@ function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: ()
   M.add("fountain-water", mat("#6cc3dc", { emissive: "#0f3b48" }), cylGeo(3.0, 3.0, 0.1, x, 0.76, z, 24), false);
   M.add("fountain", mat("#d8d2c4"), cylGeo(0.4, 0.6, 2.2, x, 1.5, z, 12));
   M.add("fountain", mat("#d8d2c4"), cylGeo(1.2, 0.8, 0.3, x, 2.6, z, 16));
+  col.addRoof(x, z, 2.5, 2.5); // (the top bowl's rim: from the basin, the second jump)
   M.add("fountain-water", mat("#9fe0ef", { emissive: "#174a57" }), new THREE.SphereGeometry(0.7, 12, 8).scale(1, 0.6, 1).translate(x, 2.9, z), false);
   col.addCircle(x, z, 3.7);
   if (!STYLED) group.add(makeSpray(x, z));
@@ -1473,6 +1474,7 @@ function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: ()
     // world's origin and hung about 3 m above the stall)
     const roof = boxGeo(4.4, 0.12, 2.2, 0, 0, 0).rotateX(0.08).translate(s.x, 2.6, s.z);
     M.add("stall-roof-" + s.color, mat(s.color), roof);
+    col.addRoof(s.x, s.z, 4.4, 2.2); // (boards, not cloth: the second jump lands on it)
     const goodsCol = s.goods === "flowers" ? ["#e84a5f", "#ffd166", "#b56576", "#f7a072"] : s.goods === "fruit" ? ["#e63946", "#f4a261", "#ffbe0b"] : s.goods === "veg" ? ["#2a9d8f", "#e76f51", "#8ab17d"] : ["#d4a373", "#e9c46a"];
     for (let i = 0; i < 14; i++) {
       const g = new THREE.SphereGeometry(0.16 + r() * 0.08, 6, 5).translate(s.x - 1.6 + (i % 7) * 0.53, 1.02, s.z - 0.35 + Math.floor(i / 7) * 0.5);
@@ -1709,6 +1711,8 @@ function addTransport(M: Merger, col: Colliders, group: THREE.Group, r: () => nu
   // bus stop shelter
   const b = BUS_STOP;
   M.add("bus-shelter", mat("#2f3a40"), boxGeo(3.6, 0.12, 1.6, b.x, 2.6, b.z));
+  // (a roof to stand on: the second jump reaches it, from the street or up through it from the bench: ledges.ts)
+  col.addRoof(b.x, b.z, 3.6, 1.6);
   // the roof rests on two posts at the ends of the back glass (inside its collider, so the sidewalk stays open)
   for (const s of [-1, 1]) M.add("bus-shelter", mat("#2f3a40"), boxGeo(0.1, 2.55, 0.1, b.x + s * 1.75, 1.275, b.z + 0.75));
   M.add("bus-glass", mat("#bfe3f2", { transparent: 0.45 }), boxGeo(3.6, 2.2, 0.06, b.x, 1.4, b.z + 0.75), false);

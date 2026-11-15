@@ -57,6 +57,9 @@ export class CameraRig {
   manualTurn = 0;
   /** A finger or the mouse is dragging the view. */
   dragging = false;
+  /** The player is in the air (a jump): the arm stays as it is until they are down. Jumping up through a shelter's
+   *  roof must not bring the camera in on them for the moment the roof is in between (the cut-out shows them). */
+  hold = false;
   private yawVel = 0;
   private movingT = 0;
   private lastDir = 0;
@@ -223,7 +226,7 @@ export class CameraRig {
     const m = this.motion, moving = Math.abs(this.yawVel) > 0.15 || m.speed > 0.8;
     const key = moving || snap ? "" : [t.x, t.z, this.yaw, this.pitch, this.dist].map((v) => v.toFixed(3)).join();
     let best: { p: number; l: number };
-    if (key && key === this.lastKey && this.lastBest) best = { ...this.lastBest };
+    if (this.lastBest && ((key && key === this.lastKey) || (this.hold && !snap))) best = { ...this.lastBest };
     else {
       best = this.bestArm(this.yaw);
       // no longer than will be clear a moment on, the swing and the walk carried on: the arm starts coming in before
@@ -256,7 +259,7 @@ export class CameraRig {
     // plane); at once if it is deeper in
     const pos = this.dirAt(this.armP, new THREE.Vector3()).multiplyScalar(this.armL).add(this.chest);
     this.intrude = 0;
-    if (this.space?.inside(pos)) {
+    if (!this.hold && this.space?.inside(pos)) {
       const clear = this.freeLen(this.armP, this.armL);
       this.intrude = this.armL - clear;
       this.wantL = Math.min(this.wantL, clear);
