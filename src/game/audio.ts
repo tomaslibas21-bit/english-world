@@ -1369,6 +1369,52 @@ export class AudioSystem {
     src.start(now, Math.random()); src.stop(now + len + 0.03);
   }
 
+  /** A held sound made of noise, for as long as it is given a level: a sliding car's tires ("squeal": a high, narrow
+   *  screech), the air at speed ("wind": low and wide). `level` 0–1 (0: it fades out and stops), `tone` 0–1: higher. */
+  private held = new Map<string, { ctx: AudioContext; src: AudioBufferSourceNode; f: BiquadFilterNode; gain: GainNode }>();
+  rush(name: "squeal" | "wind", level: number, tone = 0.5) {
+    let h = this.held.get(name);
+    const ctx = this.ctx;
+    if (h && (h.ctx !== ctx || h.ctx.state === "closed" || level <= 0.01 || this.volume <= 0)) {
+      const old = h, at = old.ctx.currentTime;
+      this.held.delete(name); h = undefined;
+      try {
+        old.gain.gain.cancelScheduledValues(at); old.gain.gain.setTargetAtTime(0, at, 0.06);
+        old.src.stop(at + 0.35);
+        old.src.onended = () => { for (const n of [old.src, old.f, old.gain]) n.disconnect(); };
+      } catch { /* the context is gone */ }
+    }
+    if (level <= 0.01 || this.volume <= 0 || !ctx || ctx.state !== "running") return;
+    const squeal = name === "squeal";
+    if (!h) {
+      const src = ctx.createBufferSource(), f = ctx.createBiquadFilter(), gain = ctx.createGain();
+      src.buffer = this.hiss(ctx); src.loop = true;
+      f.type = squeal ? "bandpass" : "lowpass"; f.Q.value = squeal ? 7 : 0.5;
+      gain.gain.value = 0;
+      src.connect(f); f.connect(gain); gain.connect(this.out(ctx));
+      src.start(0, Math.random());
+      this.held.set(name, (h = { ctx, src, f, gain }));
+    }
+    const at = ctx.currentTime, k = Math.max(0, Math.min(1, level)), tn = Math.max(0, Math.min(1, tone));
+    h.f.frequency.setTargetAtTime(squeal ? 1250 + 900 * tn : 260 + 900 * tn, at, 0.07);
+    h.src.playbackRate.setTargetAtTime(squeal ? 0.9 + 0.3 * tn : 1, at, 0.1);
+    h.gain.gain.setTargetAtTime(this.volume * (squeal ? 0.05 : 0.035) * k * (0.55 + 0.45 * this.underMusic), at, 0.06);
+  }
+
+  /** A short rush of air: the kick out of a slide. */
+  whoosh() {
+    const ctx = this.ac();
+    if (!ctx || this.volume <= 0) return;
+    const now = ctx.currentTime;
+    const src = ctx.createBufferSource(); src.buffer = this.hiss(ctx);
+    const f = ctx.createBiquadFilter(); f.type = "bandpass"; f.Q.value = 1.1;
+    f.frequency.setValueAtTime(420, now); f.frequency.exponentialRampToValueAtTime(1900, now + 0.38);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(this.volume * 0.06, now + 0.1); g.gain.exponentialRampToValueAtTime(0.0001, now + 0.55);
+    src.connect(f); f.connect(g); g.connect(this.out(ctx));
+    src.start(now, Math.random()); src.stop(now + 0.6);
+  }
+
   /** A second and a half of even noise (water). */
   private hissBuffer: AudioBuffer | null = null;
   private hiss(ctx: AudioContext) {

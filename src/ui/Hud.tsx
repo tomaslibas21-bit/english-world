@@ -276,6 +276,7 @@ function TouchControls() {
   const knob = useRef<HTMLDivElement>(null);
   const prompt = useStore((s) => s.hud.prompt);
   const ride = useStore((s) => s.hud.ride);
+  const fast = useStore((s) => s.hud.fast);
   useEffect(() => {
     const el = ref.current!;
     let id: number | null = null;
@@ -318,7 +319,7 @@ function TouchControls() {
       {prompt && <button className="act-btn" onClick={() => game?.interact()}>{prompt.kind === "talk" ? "Kalbėti" : prompt.kind === "exit" ? "Išeiti" : prompt.kind === "drive" ? "Vairuoti" : prompt.kind === "boat" ? "Plaukti" : prompt.kind === "out" ? "Išlipti" : prompt.kind === "climb" ? "Užlipti" : prompt.kind === "surf" ? "Banglentė" : prompt.kind === "paddle" ? "Irkluoti" : "Įeiti"}</button>}
       {/* (at a wheel the same button is the brake, for as long as it is held; in the water, a dive and the way back up) */}
       {ride === "car" || ride === "boat"
-        ? <button className={"jump-btn brake-btn" + (prompt ? " beside" : "")} aria-label="Stabdyti" title="Stabdyti" onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); game?.hold(true); }} onPointerUp={() => game?.hold(false)} onPointerCancel={() => game?.hold(false)} onLostPointerCapture={() => game?.hold(false)}><span aria-hidden>STOP</span></button>
+        ? <button className={"jump-btn brake-btn" + (prompt ? " beside" : "")} aria-label="Stabdyti" title="Stabdyti" onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); game?.hold(true); }} onPointerUp={() => game?.hold(false)} onPointerCancel={() => game?.hold(false)} onLostPointerCapture={() => game?.hold(false)}><span aria-hidden>{fast ? "DRIFT" : "STOP"}</span></button>
         : ride === "swim" || ride === "dive"
           ? <button className={"jump-btn" + (prompt ? " beside" : "")} aria-label={ride === "dive" ? "Išnirti" : "Panerti"} title={ride === "dive" ? "Išnirti" : "Panerti"} onPointerDown={(e) => { e.preventDefault(); game?.jump(); }}><Icon name={ride === "dive" ? "chevronUp" : "chevronDown"} size={34} strokeWidth={2.5} /></button>
           : ride === "surf"
