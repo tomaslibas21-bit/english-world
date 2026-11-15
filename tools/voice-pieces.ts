@@ -184,7 +184,8 @@ export function unsplit(h: Heard): string[] {
 }
 
 /** A stripe this long (moving ms) is a phrase said twice: clean clips whose line repeats nothing stay under it but
- *  for about 1 in 100 (measured on Maple Harbor's 33,682 clips, 15 Nov 2026). */
+ *  for 1 or 2 in 100 (measured on Maple Harbor's 39,325 clips, 15 Nov 2026). Spanish, with its open syllables, sounds
+ *  more like itself: Puerto Colibrí's 141,331 clips reach 450 one time in 20, so its edition sets 560 (1 in 100). */
 export const SOUNDS_TWICE = 450;
 
 /** The line says something twice itself ("seven thousand … seven thousand", "thirty-five point five", "7788"): its
@@ -200,7 +201,7 @@ export function repeatsItself(said: string): boolean {
 
 /** The verdict on one clip: is a piece of the line heard again, in the whole clip's transcript or in its pieces', or
  *  does its sound come twice? Whisper's hearing is folded (see onceInARow). */
-export function judgePieces(said: string, h: Heard, spoken: Spoken): Verdict {
+export function judgePieces(said: string, h: Heard, spoken: Spoken, soundsTwice = SOUNDS_TWICE): Verdict {
   const fold = h.engine === "whisper";
   const f = (ws: string[]) => (fold ? onceInARow(ws) : ws);
   const want = digitRuns(f(wordsOf(said, spoken)));
@@ -211,7 +212,7 @@ export function judgePieces(said: string, h: Heard, spoken: Spoken): Verdict {
   const len = (ws: string[]) => ws.join("").length;
   const v: Verdict = { extra: Math.max(len(whole), len(pieces)) - len(want), heard: h.pieces.map((p) => p[2]).join(" | ") };
   if (h.engine !== "none" && (a || b)) { v.again = a ?? b; v.where = a && b ? "both" : a ? "whole" : "pieces"; }
-  if ((h.stripe?.moving ?? 0) >= SOUNDS_TWICE && !repeatsItself(said)) v.twice = true;
+  if ((h.stripe?.moving ?? 0) >= soundsTwice && !repeatsItself(said)) v.twice = true;
   return v;
 }
 
@@ -248,7 +249,7 @@ export function readHeard(file: string): Map<string, Heard> {
 // ---------------------------------------------------------------- repeats in clips already made, and cutting them
 /** How an edition writes and compares its lines: its language, the spoken form, and how alike a line and a
  *  transcript are (0…1). */
-export interface Edition { lang: "en" | "es"; spoken: Spoken; alike: (said: string, heard: string) => number }
+export interface Edition { lang: "en" | "es"; spoken: Spoken; alike: (said: string, heard: string) => number; soundsTwice?: number }
 export interface Clip { key: string; path: string; said: string }
 export interface Found extends Verdict { key: string; said: string; sec: number; whole: string; stripe?: Heard["stripe"]; alike: number; lost: number; lostInPieces: number }
 
@@ -257,7 +258,7 @@ export interface Found extends Verdict { key: string; said: string; sec: number;
 export async function findRepeats(clips: Clip[], ed: Edition, opts: Parameters<typeof hearPieces>[1] = {}): Promise<{ found: Found[]; all: Map<string, Found> }> {
   const heard = await hearPieces(clips, { lang: ed.lang, ...opts });
   const all = new Map<string, Found>();
-  for (const c of clips) { const h = heard.get(c.key)!; all.set(c.key, { key: c.key, said: c.said, sec: h.sec, whole: h.whole, stripe: h.stripe, alike: +ed.alike(c.said, h.whole).toFixed(3), lost: lostEitherWay(c.said, h.whole, ed.spoken), lostInPieces: lostEitherWay(c.said, h.pieces.map((x) => x[2]).join(" "), ed.spoken), ...judgePieces(c.said, h, ed.spoken) }); }
+  for (const c of clips) { const h = heard.get(c.key)!; all.set(c.key, { key: c.key, said: c.said, sec: h.sec, whole: h.whole, stripe: h.stripe, alike: +ed.alike(c.said, h.whole).toFixed(3), lost: lostEitherWay(c.said, h.whole, ed.spoken), lostInPieces: lostEitherWay(c.said, h.pieces.map((x) => x[2]).join(" "), ed.spoken), ...judgePieces(c.said, h, ed.spoken, ed.soundsTwice) }); }
   return { found: [...all.values()].filter((f) => f.again || f.twice), all };
 }
 

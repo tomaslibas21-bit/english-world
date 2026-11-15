@@ -132,6 +132,11 @@ describe("the sound comes twice", () => {
     expect(repeatsItself("I am on it, as it is.")).toBe(false); // short words don't count
     expect(repeatsItself("My number is 555-0142.")).toBe(true);
   });
+  it("takes the edition's own length for a stripe", () => {
+    const said = "Would you like your receipt printed or emailed?";
+    expect(judgePieces(said, heard(said, [said], { stripe: stripe(500) }), asHeard, 560).twice).toBeUndefined();
+    expect(judgePieces(said, heard(said, [said], { stripe: stripe(600) }), asHeard, 560).twice).toBe(true);
+  });
   it("hears nothing again without a recognizer, only the stripe", () => {
     const v = judgePieces("Hello there.", heard("", [""], { engine: "none", stripe: stripe(900) }), asHeard);
     expect(v.again).toBeUndefined();
