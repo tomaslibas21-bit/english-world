@@ -28,7 +28,7 @@ export function getCave(id: string): CaveZone | null {
     id, view, group: view.group, colliders: view.colliders,
     w: P.BOUNDS.maxX - P.BOUNDS.minX, d: P.BOUNDS.maxZ - P.BOUNDS.minZ,
     exit: P.EXIT, spawn: P.ENTRY,
-    npcs: P.ALUXES.map((a) => ({ npc: a.npc, x: a.x, z: a.z, rot: a.rot, ax: a.ax, az: a.az })),
+    npcs: P.ALUXES.map((a) => ({ npc: a.npc, x: a.x, z: a.z, rot: a.rot, ax: a.ax, az: a.az, ...(a.sit ? { sit: true, seat: a.seat } : {}) })),
     wild: {
       fog: view.fog, background: "#05232c", hemi: ["#a8eef2", "#1d5560", 1.55], sun: ["#fff1d0", 1.25],
       space: view.space, floor: P.floorY, walkable: P.walkable, bounds: P.BOUNDS, out: caveDoor()!.out,

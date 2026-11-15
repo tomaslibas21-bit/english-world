@@ -68,9 +68,10 @@ export const GATES: Gate[] = [
 ];
 
 /** Where the aluxes stand (their conversations: x01, x02): beside the way they keep, and where one stands to talk. */
-export const ALUXES = [
+export const ALUXES: { npc: string; gate: string; x: number; z: number; rot: number; ax: number; az: number; sit?: boolean; seat?: number }[] = [
   { npc: "alux_kin", gate: "kin", x: 1.9, z: -4.3, rot: -0.5, ax: 0.3, az: -2.5 },
-  { npc: "alux_nikte", gate: "nikte", x: -6, z: -100.2, rot: 0, ax: -6, az: -97.6 },
+  // (Nikté sits on her bridge's rail, half way over: there is room to walk past her once she lets one cross)
+  { npc: "alux_nikte", gate: "nikte", x: -4.62, z: -100.3, rot: -Math.PI / 2, ax: -6.3, az: -99.5, sit: true, seat: 0.74 },
 ];
 
 /** Water that glows: the lagoon of the first hall, pools, the river (a chain of pools: its bridge is its ford), the

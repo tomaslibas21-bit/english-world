@@ -542,16 +542,17 @@ export function buildCave(): CaveView {
     group.add(veil);
     const rings: { x: number; z: number; r: number }[] = [];
     for (let o = -half + 0.35; o <= half - 0.35 + 1e-6; o += 0.7) rings.push({ x: g.x + cx * o, z: g.z - sx * o, r: 0.5 });
-    col.circles.push(...rings);
+    // (its rings are put in the ground plan when it is shut, setGate: not here, so the way-finding, made once from
+    // this plan, goes through every gate, and someone walking by a tap is simply held at a shut one)
     gates.set(g.id, { g, veil, open, want: 0, rings });
   }
   // the bridge of roots over the river: a deck of woven roots, low rails
   {
     const { x0, x1, z0, z1 } = P.BRIDGE, mx = (x0 + x1) / 2;
-    for (let z = z1; z > z0; z -= 0.42) sink.geo(new THREE.CylinderGeometry(0.11, 0.13, x1 - x0 + r() * 0.3, 5).rotateZ(Math.PI / 2).translate(mx + (r() - 0.5) * 0.1, 0.0, z), pick(WOOD));
+    for (let z = z1; z > z0; z -= 0.42) sink.geo(new THREE.CylinderGeometry(0.11, 0.13, x1 - x0 + r() * 0.3, 5).rotateZ(Math.PI / 2).translate(mx + (r() - 0.5) * 0.1, 0.0, z), pick(["#8a6c50", "#7a5e45", "#977a5c"]), 0.16);
     for (const s of [-1, 1]) {
-      sink.geo(new THREE.CylinderGeometry(0.09, 0.09, z1 - z0, 5).rotateX(Math.PI / 2).translate(mx + s * (x1 - x0) / 2, 0.75, (z0 + z1) / 2), WOOD[0]);
-      for (let z = z1; z >= z0; z -= 1.6) sink.geo(new THREE.CylinderGeometry(0.07, 0.09, 0.8, 5).translate(mx + s * (x1 - x0) / 2, 0.38, z), WOOD[1]);
+      sink.geo(new THREE.CylinderGeometry(0.09, 0.09, z1 - z0, 5).rotateX(Math.PI / 2).translate(mx + s * (x1 - x0) / 2, 0.75, (z0 + z1) / 2), "#8a6c50", 0.16);
+      for (let z = z1; z >= z0; z -= 1.6) sink.geo(new THREE.CylinderGeometry(0.07, 0.09, 0.8, 5).translate(mx + s * (x1 - x0) / 2, 0.38, z), "#7a5e45", 0.16);
       for (let k = 0; k < 4; k++) mush(mx + s * (x1 - x0) / 2, z1 - 0.8 - k * 1.5, 0.5, pick(GLOWS), 0.72);
     }
   }
