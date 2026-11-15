@@ -29,7 +29,8 @@ import { SITUATIONS } from "../../src/content/situations";
 import { GLOBAL } from "../../src/content/global";
 import { NPCS, type NpcDef } from "../../src/content/npcs";
 import { AMBIENT_LINES } from "../../src/content/ambient";
-import { ambientVoice, coachVoice, npcVoice } from "../../src/content/voices";
+import { RIDE_OWNERS, RIDE_SHOUTS } from "../../src/content/rides";
+import { ambientVoice, coachVoice, npcVoice, rideVoice, shoutVoice } from "../../src/content/voices";
 import { withoutAddressedNames } from "../../src/audio-key";
 import { addressInformal, compose, placeholders, setVariety, type Sentence } from "../../src/convo/compose";
 import { soundKey } from "../../src/convo/soundalike";
@@ -310,6 +311,12 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
     }
     // passers-by in the town
     if (!opts.only?.length && (!opts.part || opts.part[0] === 0)) for (const l of AMBIENT_LINES) for (const g of GENDERS) add(ambientVoice(g), 1, { say: l.en, en: l.en } as Sentence, "ambient", undefined, "ambient");
+    // the convertibles' owners, each in a voice of their own, and what passers-by call after a car that went by too
+    // close, in two voices a gender (`--only=rides` lists these alone)
+    if ((!opts.only?.length || opts.only.includes("rides")) && (!opts.part || opts.part[0] === 0)) {
+      for (const cast of Object.values(RIDE_OWNERS)) for (const o of cast) for (const l of [...o.take, ...o.back]) add(rideVoice(o.id, o.female), 1, { say: l.en, en: l.en } as Sentence, "rides", "rides", "rides");
+      for (const l of RIDE_SHOUTS) for (const female of [true, false]) for (const n of [0, 1]) add(shoutVoice(female, n), 1, { say: l.en, en: l.en } as Sentence, "rides:shout", "rides:shout", "rides");
+    }
   }
   setVariety("default");
   return { utts: [...out.values()], errors, warnings: [...new Set(warnings)], stats };

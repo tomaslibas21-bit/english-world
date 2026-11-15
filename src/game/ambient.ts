@@ -37,6 +37,8 @@ interface Walker {
   scare?: number;
   hop?: number;
   dodge?: [number, number];
+  /** Which of the passers-by's calling voices is theirs (content/voices.ts shoutVoice): the same one every time. */
+  tone?: number;
 }
 
 /** Two people talking in turns: one talks for a couple of seconds while the other listens (eyes on them, a nod
@@ -638,6 +640,7 @@ export class Ambient {
       const along = dx * fx + dz * fz, lat = dx * fz - dz * fx;
       if (along < -hl - 0.4 || along > hl + 1.2 + speed * 0.5 || Math.abs(lat) > hw + 1.8) continue;
       w.scare = 9 + this.r() * 7;
+      w.tone ??= this.walkers.indexOf(w) % 2;
       if (w.kind === "sit") { w.ch.react?.("puzzled"); continue; }
       w.hop = 0;
       w.chat?.hold(2.5);

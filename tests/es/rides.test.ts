@@ -6,7 +6,8 @@ import { townAsphalt } from "../../src/game/rides/ground";
 import { CAR, BOAT } from "../../src/game/rides/drive";
 import { RIDES } from "../../src/game/world/rides";
 import { RIDE_OWNERS, RIDE_SHOUTS, RIDE_NAMES } from "../../src/content/rides";
-import { rideVoice } from "../../src/content/voices";
+import { rideVoice, shoutVoice } from "../../src/content/voices";
+import { RIDERS, SCENES, castingProblems, roleOf, styleFor, voiceFor, whoOf } from "../../tools/es-voices/casting-es";
 import { PARKED_CARS, TAXI, TRAFFIC_LANES, OUTDOOR_NPCS, CHAT_SPOTS, WORLD } from "../../src/game/world/layout";
 import { THEME } from "../../src/game/world/theme";
 import { cenoteWalk } from "../../src/game/world/mexican";
@@ -96,5 +97,19 @@ describe("Cenote Ka'an, walked down into", () => {
       // nobody stands on the way (the pair that chatted on the sacbé stands beside it)
       for (const [ax, az, bx, bz] of CHAT_SPOTS) for (const [x, z] of [[ax, az], [bx, bz]]) if (x < WORLD.minX) expect(Math.abs(z - (c.z - 0.3)), `a pair at ${x}, ${z}`).toBeGreaterThan(1.6);
     } finally { POOLS.length = 0; FLOORS.length = 0; }
+  });
+  it("the owners and the passers-by who call after a car are cast in all three Spanishes, with their settings", () => {
+    expect(castingProblems()).toEqual([]);
+    const ids = new Set<string>();
+    for (const who of Object.values(RIDE_OWNERS)) for (const o of who) ids.add(whoOf(rideVoice(o.id, o.female))!);
+    for (const female of [true, false]) for (const n of [0, 1]) ids.add(whoOf(shoutVoice(female, n))!);
+    expect(ids.size).toBe(8);
+    for (const id of ids) {
+      expect(RIDERS[id], id).toBeTruthy();
+      expect(roleOf(id)?.voice, id).toMatch(/^es-419-/);
+      expect(voiceFor(id, "spain"), id).toMatch(/^es-ES-|^es-es-/);
+      const sit = id.startsWith("shout") ? "rides:shout" : "rides";
+      expect(styleFor(id, [sit]).scene).toBe(SCENES[sit].setting);
+    }
   });
 });

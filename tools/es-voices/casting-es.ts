@@ -88,6 +88,10 @@ const MEXICO: Record<string, string> = {
   // x01-surf (15 Nov 2026): bright, breezy, youthful at 31; not a woman's voice of the harbor (El Muelle: Camila
   // assistant-1, Fátima assistant-1; the passer-by assistant-1) nor of Mónica, the trainer she is built on (commercial-9)
   surf: "es-419-csagent-7",
+  // the convertibles' owners (RIDERS): Valeria bright and breezy at 32, Don Rafa textured and soothing at 57, Marisol
+  // at 47, Beto crisp and eager at 28; and the passers-by who call after a car: a younger and an older voice a gender
+  ride_park: "es-419-training-8", ride_east: "es-419-csagent-9", ride_west1: "es-419-assistant-6", ride_west2: "es-419-assistant-9",
+  shout_f0: "es-419-commercial-8", shout_f1: "es-419-tutor-3", shout_m0: "es-419-tutor-5", shout_m1: "es-419-concierge-7",
 };
 /** The catalog's Castilian voices (es-ES, `voices --lang=es-ES`, 12 Nov 2026). Spain's set (esp_) is voiced with these:
  *  the sample sp1 gave the Mexican casting's es-419 voices a Castilian direction, and Gemini 3.1 Pro heard 39 of 80
@@ -137,6 +141,9 @@ const SPAIN: Record<string, string> = {
   // x01-surf: an influencer's voice at 30; not the harbor's women (Camila csagent-5, Fátima and the passer-by
   // concierge-3) nor Mónica's (techagent-5)
   surf: "es-es-commercial-3",
+  // the convertibles' owners and the passers-by who call after a car, by gender and age as in the Mexican set
+  ride_park: "es-es-techagent-5", ride_east: "es-es-assistant-3", ride_west1: "es-es-training-12", ride_west2: "es-es-training-11",
+  shout_f0: "es-es-concierge-3", shout_f1: "es-es-podcaster-5", shout_m0: "es-es-training-9", shout_m1: "es-es-assistant-4",
 };
 /** Which casting: Gemini's 30 prebuilt voices ("prebuilt") or the catalog's Mexican voices ("mexico"). */
 export type Casting = "prebuilt" | "mexico";
@@ -256,6 +263,20 @@ export const CAST: Record<string, Role> = {
   surf: { voice: "Aoede", age: "about 28", manner: "warm, sporty and lively, a surf instructor who loves the sea", pace: "lively" },
 };
 
+/** The convertibles' owners (es_ride_<id>: content/rides.ts RIDE_OWNERS) and the passers-by who call after a car that
+ *  went by too close (es_shout_f0 … es_shout_m1: two voices a gender, a younger and an older one). They are in no
+ *  conversation (so not in CAST), and may share a voice with anyone. Their settings: SCENES "rides", "rides:shout". */
+export const RIDERS: Record<string, Role & { g: "f" | "m" }> = {
+  ride_park: { g: "f", voice: "Aoede", age: "about 27", manner: "sunny and carefree, quick to laugh, happy to lend her car", pace: "lively" },
+  ride_east: { g: "m", voice: "Umbriel", age: "about 60", manner: "kind and good-humored, with all the time in the world", pace: "unhurried" },
+  ride_west1: { g: "f", voice: "Pulcherrima", age: "about 45", manner: "dry and teasing, playfully strict about her car", pace: "easy" },
+  ride_west2: { g: "m", voice: "Puck", age: "about 30", manner: "eager and enthusiastic, proud of the car and glad to share it", pace: "lively" },
+  shout_f0: { g: "f", voice: "Laomedeia", age: "about 25", manner: "startled and a little indignant, never angry", pace: "quick" },
+  shout_f1: { g: "f", voice: "Gacrux", age: "about 55", manner: "startled and a little indignant, never angry", pace: "quick" },
+  shout_m0: { g: "m", voice: "Achird", age: "about 30", manner: "startled and a little indignant, never angry", pace: "quick" },
+  shout_m1: { g: "m", voice: "Algenib", age: "about 58", manner: "startled and a little indignant, never angry", pace: "quick" },
+};
+
 /** A conversation's setting, for everyone in it or only for some (`who`). `fx`: the sound of a phone line or a
  *  video call, made on the clip after it is recorded (a band-pass; the clean take stays in the work folder). */
 export interface Scene { setting: string; who?: string[]; fx?: "phone" | "video" }
@@ -291,6 +312,10 @@ export const SCENES: Record<string, Scene> = {
   "x03-alux-nikte": { setting: "speaking softly, close by, in a quiet hidden grotto" },
   // x01-surf: relaxed at the palapa; the surf game's commands (the sg_ lines, LINE_SCENES) called out over the water
   "x01-surf": { setting: "relaxed and friendly, chatting at her surf school's palapa on the beach" },
+  // the convertibles (no conversation: the owners' lines when their car is taken or brought back, and what passers-by
+  // call after a car that went by too close)
+  "rides": { setting: "calling over from a convertible parked at the curb to someone borrowing the car, relaxed, in a holiday mood" },
+  "rides:shout": { setting: "shouting after a car that has just passed far too close in the street: loud and sharp, a warning called out across the street" },
   "x01-surf:sg_": { setting: "calling out over the waves to a learner on a surfboard: energetic, clear and encouraging, every command short and easy to hear" },
 };
 
@@ -311,7 +336,7 @@ export const accentOf = (voiceId: string): Accent => (voiceId.startsWith("esn_")
 
 /** The role behind a voice id: a character, a coach or a passer-by, with the voice of the casting in use. */
 export function roleOf(who: string, casting: Casting = CASTING): Role | null {
-  const r = who === "coach_f" || who === "coach_m" ? COACH[who.slice(-1) as "f" | "m"] : who === "amb_f" || who === "amb_m" ? AMBIENT[who.slice(-1) as "f" | "m"] : CAST[who];
+  const r = who === "coach_f" || who === "coach_m" ? COACH[who.slice(-1) as "f" | "m"] : who === "amb_f" || who === "amb_m" ? AMBIENT[who.slice(-1) as "f" | "m"] : CAST[who] ?? RIDERS[who];
   return r ? { ...r, voice: voiceIn(casting, who, r) } : null;
 }
 
@@ -337,7 +362,7 @@ export function styleFor(who: string, sits: string[], o: StyleOpts = STYLE_DEFAU
   const r = roleOf(who);
   if (!r) throw new Error(`no casting for ${who}`);
   // the coaches and the passers-by are never on the phone (the example answers are the learner's own voice)
-  const scenes = CAST[who] ? sits.map((s) => sceneFor(who, s)) : [];
+  const scenes = CAST[who] || RIDERS[who] ? sits.map((s) => sceneFor(who, s)) : [];
   // a line said in two settings (a greeting both in the room and on the video call) gets none
   const one = scenes.length && scenes.every((s) => s && s.setting === scenes[0]!.setting) ? scenes[0] : null;
   const parts = [r.manner, `${r.pace} pace`];
@@ -387,6 +412,14 @@ export function castingProblems(casting: Casting = CASTING): string[] {
     if (v.g !== n.gender && v.g !== "n") out.push(`Spain's set: ${n.id} (${n.name}, ${n.gender}) has ${voice} (${v.g})`);
     if (spCoach.has(voice)) out.push(`Spain's set: ${n.id} has a coach's voice (${voice})`);
     for (const p of partners(n.id)) if (SPAIN[p] === voice && n.id < p) out.push(`Spain's set: ${n.id} and ${p} meet in one conversation and share ${voice}`);
+  }
+  // the convertibles' owners and the calling passers-by: a voice of their gender in each set
+  for (const [id, r] of Object.entries(RIDERS)) {
+    const v = list.find((x) => x.name === voiceOf(id)), sp = ES_VOICES.find((x) => x.name === SPAIN[id]);
+    if (!v) out.push(`${id}: unknown voice ${voiceOf(id)}`);
+    else if (v.g !== r.g && v.g !== "n") out.push(`${id} (${r.g}) has ${v.name} (${v.g})`);
+    if (!sp) out.push(`${id} has no Castilian voice for Spain's set`);
+    else if (sp.g !== r.g && sp.g !== "n") out.push(`Spain's set: ${id} (${r.g}) has ${sp.name} (${sp.g})`);
   }
   return out;
 }

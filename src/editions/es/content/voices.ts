@@ -32,3 +32,7 @@ export const ambientVoice = (g: "f" | "m", _v2 = VOICES_V2): string => `${set()}
 
 /** Someone who sits in a convertible (content/rides.ts RIDE_OWNERS: `id`): a voice of their own, in the Spanish chosen. */
 export const rideVoice = (id: string, _female?: boolean, _v2 = VOICES_V2): string => `${set()}_ride_${id}`;
+
+/** A passer-by calling after a car that went by too close (content/rides.ts RIDE_SHOUTS): two women's and two men's
+ *  voices, `n` 0 or 1, in the Spanish chosen. */
+export const shoutVoice = (female: boolean, n: number, _v2 = VOICES_V2): string => `${set()}_shout_${female ? "f" : "m"}${n % 2}`;

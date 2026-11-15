@@ -9,7 +9,8 @@ import { SITUATIONS } from "../src/content/situations";
 import { GLOBAL } from "../src/content/global";
 import { NPCS } from "../src/content/npcs";
 import { AMBIENT_LINES } from "../src/content/ambient";
-import { ambientVoice, coachVoices, npcVoice } from "../src/content/voices";
+import { RIDE_OWNERS, RIDE_SHOUTS } from "../src/content/rides";
+import { VOICES_V2, ambientVoice, coachVoices, npcVoice, rideVoice, shoutVoice } from "../src/content/voices";
 import { withoutAddressedNames } from "../src/audio-key";
 import { Conversation, type SpokenLine } from "../src/convo/dialogue";
 import { compose, placeholders, type Sentence } from "../src/convo/compose";
@@ -192,6 +193,12 @@ function finishEnumeration(out: Map<string, Utt>, errors: string[], allNpcIds: S
   }
   // passers-by in the town
   if (!opts.only?.length && !opts.sits) for (const l of AMBIENT_LINES) for (const g of ["f", "m"] as const) add(ambientVoice(g, opts.v2), 1, { say: l.en, en: l.en } as Sentence, "ambient");
+  // the convertibles' owners, each in a voice of their own, and what passers-by call after a car (the Gemini voices
+  // only: with the first voices they speak as the passers-by do, and those lines were never made for them)
+  if ((opts.v2 ?? VOICES_V2) && !opts.only?.length && !opts.sits) {
+    for (const cast of Object.values(RIDE_OWNERS)) for (const o of cast) for (const l of [...o.take, ...o.back]) add(rideVoice(o.id, o.female, true), 1, { say: l.en, en: l.en } as Sentence, "rides");
+    for (const l of RIDE_SHOUTS) for (const female of [true, false]) for (const n of [0, 1]) add(shoutVoice(female, n, true), 1, { say: l.en, en: l.en } as Sentence, "rides:shout");
+  }
   return { utts: [...out.values()], errors };
 }
 
