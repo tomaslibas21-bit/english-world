@@ -137,10 +137,30 @@ too short to be written), about 40 Maple Harbor clips flagged by the split-word 
 new takes pass the check), and 12 Puerto Colibrí clips that said other words altogether and had been kept after four
 tries (one "¡Ah, Quebec!" was a 24-second made-up monologue). Gemini: 552 single requests, $0.40.
 
-Not covered: the recognizer heard the suspects, not every clip, so a quick one-word repeat in a clip of usual length
-and without a stripe can still be there (the old Whisper transcripts catch those it wrote down). A full pass is
-`repeats` over the whole clip folder: about 2 clips a second on this Mac, so some 5 hours for Maple Harbor and a day
-for Puerto Colibrí. And 5,410 Maple Harbor clips (PR #14 of 7 Nov, slot-filled variants) have no line in the
+**The full pass over Maple Harbor (15 Nov 2026, evening).** The recognizer had heard the suspects, not every clip,
+so a quick one-word repeat in a clip of usual length and without a stripe could still be there. Parakeet then heard
+every other Maple Harbor clip that has a line: 29,239 clips in 68 minutes (7 clips a second on a quiet Mac, 3
+processes). 140 had something heard again, 10 of them already repaired. Of the other 130:
+
+- **51 mended by a cut** that Parakeet and Whisper both hear clean afterwards: 25 by the usual cut (two onsets that
+  sound alike) and 26 by taking out a whole run of sound between two pauses, each candidate heard back. Most are a
+  false start at the very beginning ("Would you | Would you like to see the dessert menu?", "Is | Is anyone sitting
+  here?") or a noise before, inside or after the line that a recognizer writes as a word ("Okay. | Can I get a
+  receipt?", "…on pump three. | Okay. | Come back in for your change.").
+- **78 left for a new take.** Whisper hears a repeat in only 6 of them. The rest are mostly a noise written as a word
+  where no cut holds, or Parakeet finishing a piece that ends on a drawn-out word ("…along the lines of | eight and a
+  half" written as "of the wrong"). A cut is never accepted when the doubled word still stands on both sides of the
+  seam, since the split-word rule would then hide it.
+- **1 not a repeat** ("doctor" split by its closure).
+
+Two more were false alarms of the word rule, now fixed: a word of the line written as two ("Halfway?" as "Half
+way?", "Anytime." as "Any time.") counted as "half" once more beside the line's own "eight and a half". `asWritten`
+joins them, which takes the 142 flags of the first count down to these 140.
+
+With the full pass, Maple Harbor stands at 275 cuts and 162 new takes.
+
+Not covered: Puerto Colibrí has had its suspects heard but no full pass yet (about 135,000 more clips, 5 to 6 hours
+at that speed). And 5,410 Maple Harbor clips (PR #14 of 7 Nov, slot-filled variants) have no line in the
 enumeration: by sound alone none of the 1,490 heard has a restart a cut can mend.
 
 **Repairs** (`npx tsx tools/voice-batch.ts …`; the Spanish tool has the same commands):

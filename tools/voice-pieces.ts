@@ -49,6 +49,18 @@ export function wordsOf(s: string, spoken: Spoken): string[] {
   return spoken(s).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/['’]/g, "").split(/[^a-z0-9]+/).filter(Boolean);
 }
 
+/** A word of the line that the recognizer wrote as two ("Halfway?" as "Half way?", "Anytime." as "Any time.") is that
+ *  one word: otherwise its half counts as one more "half" beside the line's own "eight and a half". */
+export function asWritten(said: string[], heard: string[]): string[] {
+  const have = new Set(said), pair = new Set(said.slice(1).map((w, i) => `${said[i]} ${w}`));
+  const out: string[] = [];
+  for (let i = 0; i < heard.length; i++) {
+    const a = heard[i], b = heard[i + 1];
+    if (b !== undefined && have.has(a + b) && !pair.has(`${a} ${b}`)) { out.push(a + b); i++; } else out.push(a);
+  }
+  return out;
+}
+
 /** A number said in pieces is one word: "98. 98" and "35, 47" are 9898 and 3547, as the line's own "ninety-eight
  *  ninety-eight" is. */
 export function digitRuns(words: string[]): string[] {
@@ -213,8 +225,8 @@ export function judgePieces(said: string, h: Heard, spoken: Spoken, soundsTwice 
   const fold = h.engine === "whisper";
   const f = (ws: string[]) => (fold ? onceInARow(ws) : ws);
   const want = digitRuns(f(wordsOf(said, spoken)));
-  const whole = digitRuns(f(wordsOf(h.whole, spoken)));
-  const pieces = digitRuns(unsplit(h).flatMap((text) => f(wordsOf(text, spoken))));
+  const whole = asWritten(want, digitRuns(f(wordsOf(h.whole, spoken))));
+  const pieces = asWritten(want, digitRuns(unsplit(h).flatMap((text) => f(wordsOf(text, spoken)))));
   const any = (ws: string[]) => heardAgain(want, ws) ?? startedAgain(want, ws) ?? wordAgain(want, ws) ?? numberAgain(want, ws) ?? falseStart(want, ws);
   const a = any(whole), b = any(pieces);
   const len = (ws: string[]) => ws.join("").length;

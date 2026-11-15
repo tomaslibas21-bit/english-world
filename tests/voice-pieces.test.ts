@@ -101,6 +101,15 @@ describe("noises a recognizer writes as words", () => {
   });
 });
 
+describe("a word of the line written as two", () => {
+  it("is not one of its halves said again", () => {
+    const said = "Halfway? That's eight and a half.";
+    expect(judgePieces(said, heard("Half way? That's eight and a half.", ["Half way?", "That's eight and a half."]), asHeard).again).toBeUndefined();
+    expect(judgePieces("Anytime. Just don't make me wait two months next time.", heard("Any time. Don't make me wait two months next time.", ["Any time.", "Don't make me wait two months next time."]), asHeard).again).toBeUndefined();
+    expect(judgePieces(said, heard("Halfway? That's eight and a half. A half.", ["Halfway?", "That's eight and a half.", "A half."]), asHeard).again).toBeDefined();
+  });
+});
+
 describe("words lost by a cut", () => {
   it("counts the line's words that are no longer heard", () => {
     expect(wordsLost("I can come down to eight thousand. It hurts, but okay.", "I can come down to eight It hurts, but okay.", asHeard)).toBe(1);
