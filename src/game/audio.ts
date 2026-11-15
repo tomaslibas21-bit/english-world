@@ -1355,6 +1355,20 @@ export class AudioSystem {
     this.burst(ctx, ctx.currentTime, 420, 0.8, 0.006, 0.09, this.volume * 0.03 * (0.4 + 0.6 * strength), 0.8);
   }
 
+  /** Tires on a hard stop: a short hiss that falls, quiet (`strength` 0–1). */
+  skid(strength = 0.6) {
+    const ctx = this.ac();
+    if (!ctx || this.volume <= 0) return;
+    const now = ctx.currentTime, len = 0.22 + 0.25 * strength;
+    const src = ctx.createBufferSource(); src.buffer = this.hiss(ctx); src.playbackRate.value = 1.1;
+    const f = ctx.createBiquadFilter(); f.type = "bandpass"; f.Q.value = 2.2;
+    f.frequency.setValueAtTime(1500, now); f.frequency.exponentialRampToValueAtTime(820, now + len);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(this.volume * 0.035 * (0.5 + 0.5 * strength), now + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, now + len);
+    src.connect(f); f.connect(g); g.connect(this.out(ctx));
+    src.start(now, Math.random()); src.stop(now + len + 0.03);
+  }
+
   /** A second and a half of even noise (water). */
   private hissBuffer: AudioBuffer | null = null;
   private hiss(ctx: AudioContext) {

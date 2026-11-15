@@ -65,7 +65,8 @@ export const CAR = {
 };
 
 export const BOAT = {
-  max: 8.5, back: 2.4, accel: 3.2, brake: 5, coast: 0.55,
+  /** `town`: what it gets up to at once; `max`: once it has held a course for a moment, as the car does. */
+  max: 11.5, town: 8, back: 2.4, accel: 3.2, brake: 5, coast: 0.55,
   /** How fast it turns at speed (rad/s), and a little even when barely moving (so it can be pointed away from a dock). */
   turn: 1.05, turnIdle: 0.35, wheel: 3,
   half: 2.2, wide: 0.85,
@@ -99,11 +100,11 @@ export class Motion {
     // a car's top speed: its town pace; more once it has held a course on the asphalt for a moment (a sharp turn, the
     // brake or leaving the asphalt take that away again); gently off the asphalt
     let top = S.max;
-    if (car) {
-      const steady = road && !c.brake && t > 0.6 && Math.abs(this.steer) < 0.42 && v > CAR.town * 0.55 && this.bump < 0.2;
+    {
+      const steady = road && !c.brake && t > 0.6 && Math.abs(this.steer) < 0.42 && v > S.town * 0.55 && this.bump < 0.2;
       this.hold = steady ? Math.min(CAR.holdTo, this.hold + dt) : Math.max(0, this.hold - dt * (Math.abs(this.steer) > 0.75 || c.brake || !road ? 6 : 2.5));
       const k = Math.min(1, Math.max(0, (this.hold - CAR.holdFrom) / (CAR.holdTo - CAR.holdFrom)));
-      top = road ? CAR.town + (CAR.max - CAR.town) * k * k * (3 - 2 * k) : CAR.rough;
+      top = road || !car ? S.town + (S.max - S.town) * k * k * (3 - 2 * k) : CAR.rough;
       this.top = top;
     }
     if (c.brake) v = toward(v, 0, S.brake * dt);

@@ -194,8 +194,9 @@ export class Splashes {
     }
   }
 
-  /** `at`: where the wader's legs meet the water (null: nobody in it); `move` 0–1: how fast they wade. */
-  update(dt: number, t: number, at: { x: number; y: number; z: number } | null, move: number) {
+  /** `at`: where the wader's legs meet the water (null: nobody in it); `move` 0–1: how fast they wade; `size`: how
+   *  wide the rings spread (1: a person's; a boat's wake is wider). */
+  update(dt: number, t: number, at: { x: number; y: number; z: number } | null, move: number, size = 1) {
     let alive = false;
     for (let j = 0; j < Splashes.N; j++) {
       if (this.life[j] <= 0) continue;
@@ -209,6 +210,8 @@ export class Splashes {
     this.ring.visible = !!at;
     if (at) {
       this.ring.position.set(at.x, at.y + 0.02, at.z);
+      // (`size`: a boat's wake is the same rings, wider)
+      this.ring.scale.setScalar(size);
       this.ringU.uT.value = t;
       this.ringU.uMove.value += (move - this.ringU.uMove.value) * Math.min(1, dt * 6);
     }
