@@ -144,8 +144,9 @@ goes below it is not seen, so the sand and steps are drawn at the ground's level
 bed under the water); the way-finding's grid and the camera's field reach 50 m west of the town's edge when the
 grounds are open, so a tap on the ground walks there (around El Ojo the grid costs more: the tap-walk goes round it
 unless one taps into it); `Interior.wild` has `exits[]` and `spawns{}`; `Game.dropIn` (arriving from above);
-`audio.cave(…, { level })`; `climbAudit(…, more)` (the climbing check's "nobody gets out of the town" counts the
-grounds as in, and covers them).
+`audio.cave(…, { level })`; the climbing check (`climbAudit(…, open)`, `tests/browser/climb.mjs`) is given the grounds'
+rectangle (`groundsBounds`): "nobody gets out of the town" counts the grounds as in and covers them; their three
+edge boxes are tagged `"edge"` (never jumped onto, however low the jungle on them).
 
 ## Tests
 
