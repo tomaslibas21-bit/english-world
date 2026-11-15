@@ -261,9 +261,8 @@ describe("this town's convertibles and boat", () => {
       for (const l of TRAFFIC_LANES) if (c.x > l.from - 3 && c.x < l.to + 3) expect(Math.abs(c.z - l.z), `${c.id}, the lane at ${l.z}`).toBeGreaterThan(ez + 1.15);
     }
   });
-  it("the boats float in the bay or in its shallows, clear of the rocks, and each is taken on foot: from the boards or from the sand", () => {
+  it("the boats float in the bay's shallows, clear of the rocks, and each is walked up to and taken from the sand", () => {
     expect(RIDES.boats.length).toBeGreaterThanOrEqual(2);
-    let fromSand = 0, fromBoards = 0;
     for (const b of RIDES.boats) {
       const fx = Math.sin(b.rot), fz = Math.cos(b.rot);
       for (const k of [-(BOAT.half - BOAT.wide), 0, BOAT.half - BOAT.wide]) {
@@ -273,15 +272,11 @@ describe("this town's convertibles and boat", () => {
         expect(x > BAY.x0 && x < BAY.x1 && z > BAY.z0, b.id).toBe(true);
         for (const [rx, rz, r] of RIDES.rocks) expect(Math.hypot(x - rx, z - rz)).toBeGreaterThan(r + 1);
       }
-      // within reach of where one walks: the pier's boards beside it, or the dry sand at the water's edge
-      const deck = b.x > -18.7 && b.x < -18.7 + BOAT.wide + BOAT.reach - 0.6 && b.z < -72 && b.z > -88.4;
-      const sand = b.z + BOAT.half * Math.abs(fz) > SHORE.top - BOAT.reach;
-      expect(deck || sand, `${b.id} can be walked up to`).toBe(true);
-      if (deck) fromBoards++; else fromSand++;
+      // within reach of where one walks: the dry sand at the water's edge (the pier is filled by its restaurant)
+      expect(b.z + BOAT.half * Math.abs(fz), `${b.id} can be walked up to`).toBeGreaterThan(SHORE.top - BOAT.reach);
+      // and not under the pier's deck (x −41.3 … −18.7)
+      expect(b.x - BOAT.wide, b.id).toBeGreaterThan(-18.7);
     }
-    // one of each in every town: whoever comes along the beach finds one, and whoever walks out on the pier
-    expect(fromSand).toBeGreaterThanOrEqual(1);
-    expect(fromBoards).toBeGreaterThanOrEqual(1);
     expect(BAY.x0).toBeGreaterThan(WORLD.minX);
     expect(BAY.x1).toBeLessThan(WORLD.maxX);
   });
