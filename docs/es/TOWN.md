@@ -1245,6 +1245,12 @@ The engine's part is in docs/RIDES.md "Round 2"; here is what is Puerto Colibrí
   lists the 144 clips.
 - **The lancha and the bay**: the buoys mark how far out one goes; the lancha comes round before them by itself and
   rests on the shallows when run in to the beach.
+- **Two lanchas, walked up to** (round 3, the same day): they lie in the shallows straight down the malecón's steps
+  at x −12 (by El Muelle, yellow stripe) and x 12 (pink stripe), their sterns about 2 m off the dry sand. The prompt
+  "Take out: Lancha" shows from the sand; a yellow gem turns over each. The pier has no boards to take a boat from
+  (El Muelle and its railed walk fill it).
+- **The slide and the tight places** are the engine's (docs/RIDES.md "Round 3"); on a tope a slide is cut short
+  (the bump takes a third of the pace).
 
 ## La Ola, the surf school (15 Nov 2026)
 
