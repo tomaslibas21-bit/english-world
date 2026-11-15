@@ -260,6 +260,11 @@ export class Motion {
         if (into > 3) { this.drift = false; this.charge = 0; this.boost = 0; }
       }
     }
+    // (running along what it met, its nose comes round to the way it is now going: it does not grind on at an angle)
+    if (this.kind === "car" && !this.drift && Vx * this.fx + Vz * this.fz > 2) {
+      const course = Math.atan2(Vx, Vz);
+      this.heading = wrap(this.heading + wrap(course - this.heading) * 0.3);
+    }
     // (and a little to the scrape itself)
     const rub = 1 - Math.min(0.12, moved * 0.35);
     const gx = this.fx, gz = this.fz;
