@@ -125,7 +125,7 @@ A trail of pale stepping stones leaves the sacbé by the taquilla and goes round
 | Way | Found by | Going in | Coming out |
 |---|---|---|---|
 | **the cave's mouth** | swimming | swim into the dark under the cliff (as before) | by the water: up in the cenote at the mouth |
-| **La Grieta** (the cleft) | walking: on the trail, south-west of the water | a slit in the cliff's back; E / the phone's button; one comes in beside the first hall | back out through the cleft ("Squeeze out through the cleft"), onto the trail |
+| **La Grieta** (the cleft) | walking: on the trail, south-west of the water | a slit in the cliff's back; E / the phone's button; one comes out where its passage meets the way in, facing Kin | back out through the cleft ("Out through the cleft"), onto the trail |
 | **El Ojo** (the eye) | walking: on the trail, north-west, among roots | a sinkhole; walk into it or "Jump down"; one falls 6 m into the first hall's water through a skylight | by the water (at the mouth), or the cleft |
 
 Leaving by the water after coming in through the cleft or the eye brings one up at the mouth: the water goes there,

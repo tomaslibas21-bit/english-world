@@ -129,7 +129,7 @@ try {
     check(`${label}: with ten finished it is open: on into the garden of roots`, s.z < -49 && s.card.open === 2, s);
 
     // ---- back out the way one came
-    await place("gruta", 0, 3.4, 0);
+    await place("gruta", 0, 4.2, 0);   // (within the way out's reach: 2.6 m of the water one came through)
     await page.waitForFunction(() => window.__ew.store.getState().hud.prompt?.kind === "exit", null, { timeout: 15000 });
     await go(true);
     await page.waitForFunction(() => window.__ew.game.zoneId === "town", null, { timeout: 20000 });
