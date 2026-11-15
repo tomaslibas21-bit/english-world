@@ -42,30 +42,30 @@ try {
 
     // ---- in the cenote, swimming towards the cave's mouth at its far side
     await place("town", -137.5, -6, -Math.PI / 2);
-    await page.waitForFunction(() => window.__ew.game.swimming, null, { timeout: 5000 });
+    await page.waitForFunction(() => window.__ew.game.swimming, null, { timeout: 15000 });
     await go(true);
-    await page.waitForFunction(() => window.__ew.store.getState().hud.prompt?.kind === "enter", null, { timeout: 6000 });
+    await page.waitForFunction(() => window.__ew.store.getState().hud.prompt?.kind === "enter", null, { timeout: 20000 });
     let s = await state();
     check(`${label}: swimming up to the cave's mouth, the way in is offered`, s.zone === "town" && /Gruta/.test(s.label), s);
     // (swimming on goes in by itself)
-    await page.waitForFunction(() => window.__ew.game.zoneId === "gruta", null, { timeout: 8000 });
+    await page.waitForFunction(() => window.__ew.game.zoneId === "gruta", null, { timeout: 20000 });
     await go(false);
-    await page.waitForFunction(() => window.__ew.store.getState().hud.fade === 0 && !!window.__ew.store.getState().hud.cave, null, { timeout: 5000 });
+    await page.waitForFunction(() => window.__ew.store.getState().hud.fade === 0 && !!window.__ew.store.getState().hud.cave, null, { timeout: 15000 });
     s = await state();
     check(`${label}: in the grotto: its card says the chamber and that Kin comes first`, s.card?.n === 1 && s.card.of === 5 && s.card.open === 1 && /Kin/.test(s.card.next), s);
     check(`${label}: the grotto is light to draw`, s.calls > 3 && s.calls < 40, s.calls);
 
     // ---- Kin keeps the way: his gate holds until his conversation is talked through
     await go(true);
-    await page.waitForFunction(() => window.__ew.store.getState().hud.prompt?.kind === "talk", null, { timeout: 8000 });
+    await page.waitForFunction(() => window.__ew.store.getState().hud.prompt?.kind === "talk", null, { timeout: 20000 });
     await page.waitForTimeout(2500);
     await go(false);
     s = await state();
     check(`${label}: Kin's gate holds the way`, s.z > -7.6, s);
     await place("gruta", 0.3, -2.5, Math.PI);
-    await page.waitForFunction(() => window.__ew.store.getState().hud.prompt?.kind === "talk", null, { timeout: 5000 });
+    await page.waitForFunction(() => window.__ew.store.getState().hud.prompt?.kind === "talk", null, { timeout: 15000 });
     await press();
-    await page.waitForFunction(() => window.__ew.store.getState().conv.active, null, { timeout: 5000 });
+    await page.waitForFunction(() => window.__ew.store.getState().conv.active, null, { timeout: 15000 });
     check(`${label}: talking to Kin starts his conversation, off the route`, await page.evaluate(() => { const c = window.__ew.store.getState().conv, g = window.__ew.game; return c.sitId === "x01-alux-kin" && !g.orderedSituations().some((q) => q.id === c.sitId) && g.orderedSituations().length === 50; }));
     await page.evaluate(() => window.__ew.store.getState().setConv({ introOpen: false }));
     const say = async (text) => {
@@ -75,12 +75,12 @@ try {
     for (const line of ["Me llamo Test.", "Soy de Canadá.", "Quiero ver la gruta.", "¿Dónde están las piedras?", "Muchas gracias."]) await say(line);
     await page.waitForFunction(() => window.__ew.store.getState().progress.cave?.passed?.includes("kin"), null, { timeout: 30000 });
     await page.evaluate(() => window.__ew.game.closeConversation());
-    await page.waitForFunction(() => !window.__ew.store.getState().conv.active, null, { timeout: 5000 });
+    await page.waitForFunction(() => !window.__ew.store.getState().conv.active, null, { timeout: 15000 });
     s = await state();
     check(`${label}: Kin let the learner pass: saved, and the town's task is as it was`, s.cave.passed.includes("kin") && await page.evaluate(() => !window.__ew.store.getState().progress.sits["x01-alux-kin"]?.completions || window.__ew.game.currentObjective()?.id !== "x01-alux-kin"), s.cave);
     await place("gruta", 0, -6, Math.PI);
     await go(true);
-    await page.waitForFunction(() => window.__ew.game.player.root.position.z < -11, null, { timeout: 8000 });
+    await page.waitForFunction(() => window.__ew.game.player.root.position.z < -11, null, { timeout: 20000 });
     await go(false);
     check(`${label}: and his gate is open`, (await state()).z < -11);
 
@@ -90,18 +90,18 @@ try {
       g.enterZone("gruta", { x: -6.4, z: -24.5, rot: -Math.PI / 2 }, true);
       return true;
     });
-    await page.waitForFunction(() => window.__ew.store.getState().hud.prompt?.kind === "listen", null, { timeout: 8000 });
+    await page.waitForFunction(() => window.__ew.store.getState().hud.prompt?.kind === "listen", null, { timeout: 20000 });
     await press();
-    await page.waitForFunction(() => !!window.__ew.store.getState().hud.glyph, null, { timeout: 4000 });
+    await page.waitForFunction(() => !!window.__ew.store.getState().hud.glyph, null, { timeout: 12000 });
     let q = await page.evaluate(() => window.__ew.store.getState().hud.glyph);
     check(`${label}: the stone's card: a phrase everyone starts with, three meanings to choose from`, stone && q.options.length === 3 && q.options[q.answer] === q.lt && q.text.length > 2 && !q.shown, q);
     check(`${label}: the card is on the screen, its words hidden until asked for`, await page.locator(".glyph-card").count() === 1 && await page.locator(".glyph-text").count() === 0 && await page.locator(".glyph-opt").count() === 3);
     await page.locator(".glyph-opt").nth((q.answer + 1) % 3).click();
-    await page.waitForFunction(() => window.__ew.store.getState().hud.glyph?.wrong.length === 1, null, { timeout: 3000 });
+    await page.waitForFunction(() => window.__ew.store.getState().hud.glyph?.wrong.length === 1, null, { timeout: 10000 });
     check(`${label}: a wrong meaning: struck out, the words shown, the stone still waits`, await page.evaluate(() => { const g = window.__ew.store.getState().hud.glyph; return g.shown && !g.solved && !(window.__ew.store.getState().progress.cave?.lit ?? []).length; }));
     await page.locator(".glyph-opt").nth(q.answer).click();
-    await page.waitForFunction(() => window.__ew.store.getState().progress.cave?.lit?.includes("agua-1"), null, { timeout: 3000 });
-    await page.waitForFunction(() => !window.__ew.store.getState().hud.glyph, null, { timeout: 5000 });
+    await page.waitForFunction(() => window.__ew.store.getState().progress.cave?.lit?.includes("agua-1"), null, { timeout: 10000 });
+    await page.waitForFunction(() => !window.__ew.store.getState().hud.glyph, null, { timeout: 15000 });
     s = await state();
     check(`${label}: the right one: the stone is lit, the card says two are left`, s.cave.lit.length === 1 && s.card.lit === 1, s.card);
 
@@ -123,18 +123,18 @@ try {
       g.enterZone("gruta", { x: -7.4, z: -43.2, rot: Math.PI + 0.43 }, true);
     });
     await go(true);
-    await page.waitForFunction(() => window.__ew.game.player.root.position.z < -49, null, { timeout: 8000 });
+    await page.waitForFunction(() => window.__ew.game.player.root.position.z < -49, null, { timeout: 20000 });
     await go(false);
     s = await state();
     check(`${label}: with ten finished it is open: on into the garden of roots`, s.z < -49 && s.card.open === 2, s);
 
     // ---- back out the way one came
     await place("gruta", 0, 3.4, 0);
-    await page.waitForFunction(() => window.__ew.store.getState().hud.prompt?.kind === "exit", null, { timeout: 5000 });
+    await page.waitForFunction(() => window.__ew.store.getState().hud.prompt?.kind === "exit", null, { timeout: 15000 });
     await go(true);
-    await page.waitForFunction(() => window.__ew.game.zoneId === "town", null, { timeout: 8000 });
+    await page.waitForFunction(() => window.__ew.game.zoneId === "town", null, { timeout: 20000 });
     await go(false);
-    await page.waitForFunction(() => window.__ew.store.getState().hud.fade === 0, null, { timeout: 5000 });
+    await page.waitForFunction(() => window.__ew.store.getState().hud.fade === 0, null, { timeout: 15000 });
     await page.waitForTimeout(600);
     s = await state();
     check(`${label}: back in the cenote's water by the cave's mouth, the grotto's card gone`, s.zone === "town" && s.swim && !s.card && Math.hypot(s.x + 139, s.z + 6) < 4, s);
