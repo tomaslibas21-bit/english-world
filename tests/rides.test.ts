@@ -128,7 +128,9 @@ describe("the car", () => {
 describe("the boat", () => {
   it("is slower than the car, glides on when let go, and turns even when barely moving", () => {
     const m = new Motion(BOAT, "boat");
-    run(m, 8);
+    run(m, 2.6);
+    expect(m.speed).toBeLessThanOrEqual(BOAT.town + 0.5);
+    run(m, 12);
     expect(m.speed).toBeGreaterThan(BOAT.max * 0.9);
     expect(m.speed).toBeLessThanOrEqual(BOAT.max + 1e-6);
     run(m, 2, { throttle: 0, steer: 0, brake: false });

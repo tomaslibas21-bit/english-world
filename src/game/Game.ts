@@ -232,6 +232,8 @@ export class Game implements GameApi {
   private pendingSurf: "beginner" | "advanced" | null = null;
   private brake = false;
   private bumpT = 0;
+  private braked = false;
+  private dustT = 0;
   /** Swimming (water.ts SWIM): in deep water now; how far into the stroke's pose (0–1); a dive: how long it still
    *  lasts (s) and how far under (0–1); the stroke's last splash. */
   private swimming = false;
@@ -1619,7 +1621,22 @@ export class Game implements GameApi {
     this.player.update(dt);
     this.bumpT -= dt;
     if (m.bump > 0.3 && this.bumpT <= 0) { audio.bump(m.bump); this.bumpT = 0.45; }
-    this.splashes.update(dt, this.t, null, 0);
+    // a boat's wake: the water's rings round its hull, wider and brighter the faster it goes; a car's dust at its back
+    // wheels when it goes fast or over open ground, a short skid when it is braked hard
+    const av = Math.abs(v);
+    if (r.kind === "boat" && on) this.splashes.update(dt, this.t, { x: m.x - m.fx * 0.6, y: (waterY(m.x, m.z, this.t) ?? SEA_LEVEL) + 0.02, z: m.z - m.fz * 0.6 }, Math.min(1, av / 6), 2.6);
+    else this.splashes.update(dt, this.t, null, 0);
+    if (r.kind === "car" && on) {
+      const braking = !blocked && (this.keys.has(" ") || this.brake || y < -0.35) && v > 0;
+      if (braking && !this.braked && av > 8.5) audio.skid(Math.min(1, av / 15));
+      this.braked = braking;
+      this.dustT -= dt;
+      if (this.dustT <= 0 && useStore.getState().settings.quality === "high" && (av > 9 || (av > 3 && !this.rides.asphalt.has(m.x, m.z)) || (braking && av > 5))) {
+        this.dustT = 0.11;
+        const s = Math.sign(v) || 1;
+        for (const side of [-0.8, 0.8]) this.dust.puff(m.x - m.fx * 1.5 * s + m.fz * side, m.z - m.fz * 1.5 * s - m.fx * side, -m.fx * s, -m.fz * s, 0.8 + av / 15);
+      }
+    }
     this.dust.update(dt);
     // (the pigeons on the square take off before a car as before anyone running)
     if (r.kind === "car" && !this.zone.interior) this.pigeons.update(dt, this.player.root.position, Math.abs(v));
