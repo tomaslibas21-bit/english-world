@@ -175,6 +175,10 @@ export class Colliders {
     this.boxes.push({ minX: cx - w / 2, maxX: cx + w / 2, minZ: cz - d / 2, maxZ: cz + d / 2, tag });
   }
   addCircle(x: number, z: number, r: number) { this.circles.push({ x, z, r }); }
+  /** Roofs low and solid enough to stand on (a bus shelter's, a market stall's), as the town lists them: where
+   *  ledges.ts reads a roof's own height for someone who can jump up there. No wall to anyone. */
+  roofs: { minX: number; minZ: number; maxX: number; maxZ: number }[] = [];
+  addRoof(cx: number, cz: number, w: number, d: number) { this.roofs.push({ minX: cx - w / 2, maxX: cx + w / 2, minZ: cz - d / 2, maxZ: cz + d / 2 }); }
   /** Push a circle of radius r at (x,z) out of all colliders (`jumper`, the player outdoors: but those split into
    *  pieces with a height, which ledges.ts then settles for someone who can jump, and the sea, whose shallows they
    *  wade into: water.ts). */
