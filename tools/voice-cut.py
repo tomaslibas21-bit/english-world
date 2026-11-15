@@ -10,6 +10,8 @@ the clip is heard again afterwards (tools/voice-pieces.py) and kept only when th
   python3 tools/voice-cut.py JOBS.jsonl OUT_DIR [--kbps=64] [--procs=4] [--pick=1]
 
 --pick=2 takes the second-best pair of onsets (3: the third), for a clip whose first cut didn't hold when heard.
+--min-alike=80 lets a shorter first attempt count ("It's… It's sixty-six dollars"): for clips a recognizer has
+already heard a repeat in (the default, 180 moving ms, is for clips nobody has heard yet).
 
 JOBS rows: {"key", "path"} (the MP3; "mp3" names it when "path" is a WAV copy). For each clip with a cut: OUT_DIR/<key>.mp3 (CBR, mono, 24 kHz; 64 kbps by default,
 because the source is an MP3 already) and a row in OUT_DIR/cuts.jsonl:
@@ -162,7 +164,8 @@ def encode(y, mp3, kbps):
 
 
 def one(args):
-    job, out_dir, kbps, pick = args
+    global MIN_ALIKE_MS
+    job, out_dir, kbps, pick, MIN_ALIKE_MS = args
     try:
         y, cuts, alike, before = cut_clip(job.get("mp3") or job["path"], pick=pick)
         if cuts:
@@ -179,6 +182,8 @@ def main():
     out_dir = sys.argv[2]
     opt = dict(a[2:].split("=", 1) for a in sys.argv[3:] if a.startswith("--") and "=" in a)
     kbps, procs, pick = int(opt.get("kbps", 64)), int(opt.get("procs", 4)), int(opt.get("pick", 1))
+    global MIN_ALIKE_MS
+    MIN_ALIKE_MS = int(opt.get("min-alike", MIN_ALIKE_MS))
     os.makedirs(out_dir, exist_ok=True)
     log_path = os.path.join(out_dir, "cuts.jsonl")
     seen = set()
@@ -188,7 +193,7 @@ def main():
     made = 0
     import multiprocessing as mp
     with mp.get_context("spawn").Pool(procs) as pool, open(log_path, "a") as log:
-        for i, row in enumerate(pool.imap_unordered(one, [(j, out_dir, kbps, pick) for j in todo], chunksize=8)):
+        for i, row in enumerate(pool.imap_unordered(one, [(j, out_dir, kbps, pick, MIN_ALIKE_MS) for j in todo], chunksize=8)):
             made += bool(row["cuts"])
             log.write(json.dumps(row) + "\n")
             if i % 200 == 0:

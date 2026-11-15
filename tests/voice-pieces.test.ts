@@ -2,7 +2,7 @@
 // found in the pieces, and a line that repeats words itself must not be taken for one.
 import { describe, expect, it } from "vitest";
 import { asHeard } from "../tools/voice-batch";
-import { falseStart, heardAgain, judgePieces, onceInARow, repeatsItself, startedAgain, wordsLost, wordsOf, SOUNDS_TWICE, type Heard } from "../tools/voice-pieces";
+import { falseStart, heardAgain, judgePieces, onceInARow, repeatsItself, startedAgain, wordAgain, wordsLost, wordsOf, SOUNDS_TWICE, type Heard } from "../tools/voice-pieces";
 
 const words = (s: string) => wordsOf(s, asHeard);
 const heard = (whole: string, pieces: string[], more: Partial<Heard> = {}): Heard => ({
@@ -54,7 +54,16 @@ describe("words heard again", () => {
     expect(again("The sugar is on the counter by the window.", "The sugar is in the counter by the window.")).toBeUndefined();
     expect(judgePieces("Your total is forty-seven forty-nine.", heard("Your t Your total is forty seven forty nine.", ["Yoot.", "Your total?", "Is forty seven forty nine."]), asHeard).again).toBe("your … your");
   });
+  it("finds a word of the line said once more", () => {
+    expect(wordAgain(words("Good, thank you!"), words("Good, thank you. Good."))).toBe("good (once more)");
+    expect(wordAgain(words("No, nothing."), words("No, nothing. No."))).toBe("no (once more)");
+    // a recognizer's slip is not an extra word, nor is a word the line doesn't have
+    expect(wordAgain(words("I see the sea."), words("I see the see."))).toBeUndefined();
+    expect(wordAgain(words("So, a backpack."), words("So a backpack. Hmm."))).toBeUndefined();
+    expect(wordAgain(words("I have a cat and a dog."), words("I have a cat and a dog."))).toBeUndefined();
+  });
   it("finds a word begun and begun again", () => {
+    expect(falseStart(words("Fries, please."), words("Fry, fries please."))).toBe("fry- fries");
     expect(falseStart(words("Their house had four walls."), words("Their house ha their house had four walls."))).toBeUndefined(); // heardAgain's case
     expect(heardAgain(words("Their house had four walls."), words("Their house ha their house had four walls."))).toBe("their house");
     expect(falseStart(words("Regular is fine."), words("Reg regular is fine."))).toBe("reg- regular");
