@@ -293,6 +293,7 @@ function TouchControls() {
   const knob = useRef<HTMLDivElement>(null);
   const prompt = useStore((s) => s.hud.prompt);
   const ride = useStore((s) => s.hud.ride);
+  const fast = useStore((s) => s.hud.fast);
   useEffect(() => {
     const el = ref.current!;
     let id: number | null = null;
@@ -335,7 +336,7 @@ function TouchControls() {
       {prompt && <button className="act-btn" onClick={() => game?.interact()}>{prompt.kind === "talk" ? L("Kalbėti") : prompt.kind === "exit" ? L("Išeiti") : prompt.kind === "drive" ? L("Vairuoti") : prompt.kind === "boat" ? L("Plaukti") : prompt.kind === "out" ? L("Išlipti") : prompt.kind === "climb" ? L("Užlipti") : prompt.kind === "listen" ? L("Klausyti") : prompt.kind === "surf" ? L("Banglentė") : prompt.kind === "paddle" ? L("Irkluoti") : L("Įeiti")}</button>}
       {/* (at a wheel the same button is the brake, for as long as it is held; in the water, a dive and the way back up) */}
       {ride === "car" || ride === "boat"
-        ? <button className={"jump-btn brake-btn" + (prompt ? " beside" : "")} aria-label={L("Stabdyti")} title={L("Stabdyti")} onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); game?.hold(true); }} onPointerUp={() => game?.hold(false)} onPointerCancel={() => game?.hold(false)} onLostPointerCapture={() => game?.hold(false)}><span aria-hidden>STOP</span></button>
+        ? <button className={"jump-btn brake-btn" + (prompt ? " beside" : "")} aria-label={L("Stabdyti")} title={L("Stabdyti")} onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); game?.hold(true); }} onPointerUp={() => game?.hold(false)} onPointerCancel={() => game?.hold(false)} onLostPointerCapture={() => game?.hold(false)}><span aria-hidden>{fast ? "DRIFT" : "STOP"}</span></button>
         : ride === "swim" || ride === "dive"
           ? <button className={"jump-btn" + (prompt ? " beside" : "")} aria-label={ride === "dive" ? L("Išnirti") : L("Panerti")} title={ride === "dive" ? L("Išnirti") : L("Panerti")} onPointerDown={(e) => { e.preventDefault(); game?.jump(); }}><Icon name={ride === "dive" ? "chevronUp" : "chevronDown"} size={34} strokeWidth={2.5} /></button>
           : ride === "surf"

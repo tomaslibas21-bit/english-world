@@ -37,6 +37,8 @@ interface Walker {
   scare?: number;
   hop?: number;
   dodge?: [number, number];
+  /** How long a car one can drive has stood in their way (s). */
+  boxT?: number;
   /** Which of the passers-by's calling voices is theirs (content/voices.ts shoutVoice): the same one every time. */
   tone?: number;
 }
@@ -457,10 +459,24 @@ export class Ambient {
     const p = w.ch.root.position;
     w.greetT -= dt;
     // a car one can drive is never where someone on foot is: they step out of its way, standing or walking
+    let held = false;
     for (const b of this.rideBoxes) if (Math.abs(b.x - p.x) < 4 && Math.abs(b.z - p.z) < 4) {
       _side.x = p.x; _side.z = p.z;
-      if (pushOutOfBox(_side, 0.32, b.x, b.z, b.heading, b.hl, b.hw)) { p.x = _side.x; p.z = _side.z; }
+      if (pushOutOfBox(_side, 0.32, b.x, b.z, b.heading, b.hl, b.hw)) {
+        p.x = _side.x; p.z = _side.z; held = true;
+        // someone walking who cannot get past it (it stands across their way) does not wait at its side: after a
+        // moment they turn back a few steps and go somewhere else (no crowd gathers round a car left on a sidewalk)
+        if (w.kind === "walk" && (w.boxT = (w.boxT ?? 0) + dt) > 1.1) {
+          w.boxT = 0;
+          const dx = p.x - b.x, dz = p.z - b.z, d = Math.hypot(dx, dz) || 1;
+          const back = this.nav.path(p.x, p.z, p.x + (dx / d) * 6, p.z + (dz / d) * 6);
+          w.path = back && back.length > 1 ? back.slice(1) : null;
+          w.wait = 0.3 + this.r() * 0.6;
+          w.lastTarget = -1;
+        }
+      }
     }
+    if (!held && w.boxT) w.boxT = Math.max(0, w.boxT - dt * 0.5);
     // the player has right of way: a walker within arm's length steps aside (back and to one side), also while
     // standing, so the player's walk is never held up by someone waiting for them to pass
     if (!this.riding) {
@@ -682,6 +698,23 @@ export class Ambient {
       if (w.wait <= 0 && w.path?.length) gap = Math.min(gap, aheadOnArc(x, z, fx, fz, curv, p.x + Math.sin(w.heading) * w.speed * 1.3, p.z + Math.cos(w.heading) * w.speed * 1.3, reach, half));
       if (w.dog) gap = Math.min(gap, aheadOnArc(x, z, fx, fz, curv, w.dog.root.position.x, w.dog.root.position.z, reach, half));
     }
+    return gap;
+  }
+
+  /** How near the nearest person sitting (at a café table, on a bench) is to a car's body lying at (x, z) along
+   *  `heading`, `hl` by `hw` half (m; 0: touching it). A driven car makes no move that brings it closer than a hand's
+   *  breadth (rides/Rides.ts). */
+  gapToBox(x: number, z: number, heading: number, hl: number, hw: number) {
+    const s = Math.sin(heading), c = Math.cos(heading);
+    let gap = Infinity;
+    const at = (px: number, pz: number) => {
+      const dx = px - x, dz = pz - z;
+      if (Math.abs(dx) > hl + 4 || Math.abs(dz) > hl + 4) return;
+      const u = Math.abs(dx * s + dz * c) - hl, w = Math.abs(dx * c - dz * s) - hw;
+      gap = Math.min(gap, Math.hypot(Math.max(0, u), Math.max(0, w)));
+    };
+    // (those who sit: whoever walks or stands steps out of a car's way by themselves, update below)
+    for (const w of this.walkers) if (w.kind === "sit") { const p = w.ch.root.position; at(p.x, p.z); }
     return gap;
   }
 

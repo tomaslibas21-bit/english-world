@@ -2,7 +2,7 @@
 // streets a car stays on, the plan of this town's convertibles and boat (world/rides.ts), and the water past the
 // wading limit (water.ts). In the real game: tests/browser/rides.mjs.
 import { describe, expect, it } from "vitest";
-import { Drivable, Motion, CAR, BOAT, BAY_EDGE, bayTurn, shoreSpeed, controlsFrom, pushOutOfBox, aheadIn, aheadOnArc } from "../src/game/rides/drive";
+import { Drivable, Motion, CAR, BOAT, BAY_EDGE, CAR_DRIFT, BOAT_DRIFT, bayTurn, shoreSpeed, controlsFrom, pushOutOfBox, aheadIn, aheadOnArc } from "../src/game/rides/drive";
 import { townAsphalt, townGround } from "../src/game/rides/ground";
 import { convertibleGeometry, motorboatGeometry, buoysGeometry, CAR_SIZE, BOAT_SIZE } from "../src/game/rides/shapes";
 import { RIDES } from "../src/game/world/rides";
@@ -124,6 +124,119 @@ describe("the car", () => {
     expect(m.speed).toBeLessThan(1);
     for (let i = 0; i < 200; i++) { m.step(1 / 60, { throttle: -1, steer: 0, brake: false }); m.settle(wall); }
     expect(m.z).toBeLessThan(10);
+  });
+});
+
+describe("the slide (the brake held in a turn at speed), and getting out of tight places", () => {
+  const fast = () => { const m = new Motion(CAR, "car"); run(m, 6); return m; };
+  it("the brake with the wheel straight is the brake; with the wheel turned at speed, a slide", () => {
+    const m = fast();
+    expect(m.speed).toBeGreaterThan(CAR.max * 0.95);
+    run(m, 1.4, { throttle: 0, steer: 0, brake: true });
+    expect(m.drift).toBe(false);
+    expect(m.speed).toBeLessThan(0.5);
+    const d = fast();
+    run(d, 0.7, { throttle: 1, steer: 1, brake: true });
+    expect(d.drift).toBe(true);
+    // (its nose well round its course, and most of its pace kept: it slides, it does not brake)
+    expect(Math.abs(d.drifted)).toBeGreaterThan(0.45);
+    expect(d.pace).toBeGreaterThan(CAR.max * 0.75);
+    expect(d.sliding).toBe(true);
+    // slow, the same hands only brake
+    const slow = new Motion(CAR, "car");
+    run(slow, 0.5);
+    run(slow, 0.3, { throttle: 1, steer: 1, brake: true });
+    expect(slow.drift).toBe(false);
+  });
+  it("a slide is held, not spun: the nose never further than the slide's angle off its course, and it goes round the bend", () => {
+    const m = fast(), h0 = m.heading;
+    let most = 0;
+    run(m, 1.6, { throttle: 1, steer: 1, brake: true }, () => { most = Math.max(most, Math.abs(m.drifted)); });
+    expect(most).toBeLessThanOrEqual(CAR_DRIFT.angle + 0.02);
+    // (to the right is a smaller heading: more than a quarter turn in that time)
+    const turned = Math.atan2(Math.sin(h0 - m.heading), Math.cos(h0 - m.heading));
+    expect(turned).toBeGreaterThan(1.6);
+    expect(m.pace).toBeGreaterThan(6);
+    // counter-steer brings the nose back
+    const a = Math.abs(m.drifted);
+    run(m, 0.4, { throttle: 1, steer: -1, brake: true });
+    expect(Math.abs(m.drifted)).toBeLessThan(a);
+  });
+  it("let go after a moment, the wheels catch and it gets a kick; a short flick gives none", () => {
+    const m = fast();
+    run(m, 1.1, { throttle: 1, steer: 1, brake: true });
+    expect(m.charge).toBeGreaterThanOrEqual(CAR_DRIFT.chargeMin);
+    run(m, 0.1, { throttle: 1, steer: 0, brake: false });
+    expect(m.boost).toBeGreaterThan(0.5);
+    expect(m.top).toBeGreaterThan(CAR.town + CAR_DRIFT.kick - 0.5);
+    run(m, 0.8, { throttle: 1, steer: 0, brake: false });
+    expect(Math.abs(m.drifted)).toBeLessThan(0.1);
+    expect(m.speed).toBeGreaterThan(CAR.town);
+    const f = fast();
+    run(f, 0.3, { throttle: 1, steer: 1, brake: true });
+    run(f, 0.1, { throttle: 1, steer: 0, brake: false });
+    expect(f.boost).toBe(0);
+  });
+  it("gripping, its course follows its nose: a few degrees off in the hardest turn at speed, none going straight", () => {
+    const m = fast();
+    let most = 0;
+    run(m, 2, { throttle: 1, steer: 1, brake: false }, () => { most = Math.max(most, Math.abs(m.drifted)); });
+    expect(most).toBeLessThan(CAR_DRIFT.catch);
+    expect(m.drift).toBe(false);
+    const st = fast();
+    expect(Math.abs(st.slip)).toBeLessThan(1e-6);
+  });
+  it("nearly stopped it comes round on the spot under power: right round in under three seconds, in a few metres", () => {
+    const m = new Motion(CAR, "car");
+    let far = 0, t = 0;
+    for (; t < 4 && Math.abs(Math.atan2(Math.sin(m.heading), Math.cos(m.heading))) < 3.0; t += 1 / 60) {
+      // (a light foot, as one drives in a tight place)
+      m.step(1 / 60, { throttle: 0.4, steer: 1, brake: false });
+      far = Math.max(far, Math.hypot(m.x, m.z));
+    }
+    expect(t).toBeLessThan(3);
+    expect(far).toBeLessThan(7);
+    // and at a standstill, in the first half second, it has already swung a good way round without going anywhere
+    const p = new Motion(CAR, "car");
+    run(p, 0.5, { throttle: 0.4, steer: 1, brake: false });
+    expect(-p.heading).toBeGreaterThan(0.5);
+    expect(Math.hypot(p.x, p.z)).toBeLessThan(1);
+    // backing up it turns the other way, as a car's tail does
+    const b = new Motion(CAR, "car");
+    run(b, 0.6, { throttle: -1, steer: 1, brake: false });
+    expect(b.heading).toBeGreaterThan(0.3);
+    // the turning circle at a walk is tight
+    expect(CAR.base / Math.tan(CAR.lockSlow)).toBeLessThan(3);
+  });
+  it("it backs up briskly", () => {
+    const m = new Motion(CAR, "car");
+    run(m, 1.5, { throttle: -1, steer: 0, brake: false });
+    expect(m.speed).toBeLessThan(-5.5);
+    expect(m.speed).toBeGreaterThanOrEqual(-CAR.back - 1e-6);
+  });
+  it("against a wall it loses what went into the wall and keeps the rest: it slides along it", () => {
+    const m = fast();
+    m.heading = 0.5; // going 29° into a wall along z, on its right-hand side… as the game's headings turn: towards +X
+    const v0 = m.speed;
+    // a wall: nothing may be at x > 1
+    for (let i = 0; i < 60; i++) { m.step(1 / 60, go); m.settle((p, r) => { if (p.x > 1 - r) p.x = 1 - r; }); }
+    expect(m.pace).toBeGreaterThan(v0 * 0.6);
+    expect(Math.abs(Math.sin(m.heading))).toBeLessThan(0.2);
+    // head on, it stops
+    const h = fast();
+    h.heading = PI / 2;
+    for (let i = 0; i < 20; i++) { h.step(1 / 60, { throttle: 0, steer: 0, brake: false }); h.settle((p, r) => { if (p.x > 1 - r) p.x = 1 - r; }); }
+    expect(h.pace).toBeLessThan(1);
+  });
+  it("the boat slides too: the helm hard over with the brake throws its stern out", () => {
+    const calm = new Motion(BOAT, "boat"), wild = new Motion(BOAT, "boat");
+    run(calm, 8); run(wild, 8);
+    run(calm, 1, { throttle: 1, steer: 1, brake: false });
+    run(wild, 1, { throttle: 1, steer: 1, brake: true });
+    expect(wild.drift).toBe(true);
+    expect(Math.abs(wild.drifted)).toBeGreaterThan(Math.abs(calm.drifted) * 1.8);
+    expect(Math.abs(wild.drifted)).toBeLessThanOrEqual(BOAT_DRIFT.angle + 0.02);
+    expect(wild.pace).toBeGreaterThan(BOAT.town * 0.6);
   });
 });
 
