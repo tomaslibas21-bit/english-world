@@ -36,8 +36,12 @@ export const RIDES: RidesPlan = {
     // West Street beside the market, facing the sea
     { id: "west", x: -67.2, z: -41, rot: Math.PI, paint: "#ff7a59", people: 2 },
   ],
-  // moored along the pier's east side, its bow out to sea
-  boats: [{ id: "pier", x: -17.15, z: -81, rot: Math.PI, stripe: "#2f6db5" }],
+  // one moored along the pier's east side, its bow out to sea (taken from the boards); one lying in the shallows off
+  // the beach east of the pier, a few steps from the dry sand (walked up to and taken)
+  boats: [
+    { id: "pier", x: -17.15, z: -81, rot: Math.PI, stripe: "#2f6db5" },
+    { id: "beach", x: -6.5, z: -74.3, rot: Math.PI - 0.3, stripe: "#e2483d" },
+  ],
   // the airport's forecourt at the end of Main Street, Sproutly's at the end of Harbor Road
   lots: [{ x0: 126, x1: 134, z0: -30, z1: 14 }, { x0: 126, x1: 137, z0: -59.5, z1: -50.5 }],
   // the lighthouse's rocks

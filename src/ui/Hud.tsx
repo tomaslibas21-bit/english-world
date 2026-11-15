@@ -9,6 +9,7 @@ import { LOCATIONS } from "../content/locations";
 import { SITUATION_BY_ID } from "../content/situations";
 import { sitProgress, stars } from "../state/progress";
 import { Icon, InlineIcon, Stars, iconForEmoji, splitLead, type IconName } from "./icons";
+import { drawRideMarks } from "./mapMarks";
 import { switchPlayMode } from "./playMode";
 import { useCards, dueCards } from "../state/cards";
 import { LyricStrip, RadioTool } from "./Radio";
@@ -245,6 +246,8 @@ function Minimap() {
       x.fillStyle = "#ffb703"; x.strokeStyle = "#fff"; x.lineWidth = 3;
       x.beginPath(); x.arc(cx, cz, inside ? 9 : 7, 0, Math.PI * 2); x.fill(); x.stroke();
     }
+    // what one can take: the boats and the convertibles, where they are now
+    if (game?.rideMarks) drawRideMarks(x, game.rideMarks(), mm.px, mm.pz, view, S);
     // player arrow
     x.save(); x.translate(S / 2, S / 2); x.rotate(Math.PI - mm.heading);
     x.fillStyle = "#e63946"; x.strokeStyle = "#fff"; x.lineWidth = 3;

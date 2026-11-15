@@ -6,6 +6,7 @@ import { Drivable, Motion, CAR, BOAT, BAY_EDGE, bayTurn, shoreSpeed, controlsFro
 import { townAsphalt, townGround } from "../src/game/rides/ground";
 import { convertibleGeometry, motorboatGeometry, buoysGeometry, CAR_SIZE, BOAT_SIZE } from "../src/game/rides/shapes";
 import { RIDES } from "../src/game/world/rides";
+import { SHALLOWS } from "../src/game/rides/Rides";
 import { RIDE_OWNERS, RIDE_SHOUTS, RIDE_NAMES } from "../src/content/rides";
 import { rideVoice, shoutVoice } from "../src/content/voices";
 import { roleFor, VOICES } from "../tools/casting";
@@ -260,21 +261,27 @@ describe("this town's convertibles and boat", () => {
       for (const l of TRAFFIC_LANES) if (c.x > l.from - 3 && c.x < l.to + 3) expect(Math.abs(c.z - l.z), `${c.id}, the lane at ${l.z}`).toBeGreaterThan(ez + 1.15);
     }
   });
-  it("the boat floats past the wading limit, in the bay, clear of the pier's boards and the rocks", () => {
-    expect(RIDES.boats.length).toBeGreaterThanOrEqual(1);
+  it("the boats float in the bay or in its shallows, clear of the rocks, and each is taken on foot: from the boards or from the sand", () => {
+    expect(RIDES.boats.length).toBeGreaterThanOrEqual(2);
+    let fromSand = 0, fromBoards = 0;
     for (const b of RIDES.boats) {
       const fx = Math.sin(b.rot), fz = Math.cos(b.rot);
-      for (const k of [-BOAT.half, 0, BOAT.half]) {
+      for (const k of [-(BOAT.half - BOAT.wide), 0, BOAT.half - BOAT.wide]) {
         const x = b.x + fx * k, z = b.z + fz * k;
-        expect(z, b.id).toBeLessThanOrEqual(SHORE.limit + 0.3);
+        // (afloat: no further in than the shallows a boat may lie in)
+        expect(z, b.id).toBeLessThanOrEqual(SHALLOWS + 1e-6);
         expect(x > BAY.x0 && x < BAY.x1 && z > BAY.z0, b.id).toBe(true);
         for (const [rx, rz, r] of RIDES.rocks) expect(Math.hypot(x - rx, z - rz)).toBeGreaterThan(r + 1);
       }
-      // within a step of where one stands: the pier's boards or the wading limit
-      const fromDeck = b.x > -18.7 && b.x < -18.7 + 2.4 && b.z < -72 && b.z > -88.4;
-      const fromShallows = Math.abs(b.z - BOAT.half * Math.abs(fz) - SHORE.limit) < 2.3 || b.z + BOAT.half * Math.abs(fz) > SHORE.limit - 2.3;
-      expect(fromDeck || fromShallows, `${b.id} can be reached`).toBe(true);
+      // within reach of where one walks: the pier's boards beside it, or the dry sand at the water's edge
+      const deck = b.x > -18.7 && b.x < -18.7 + BOAT.wide + BOAT.reach - 0.6 && b.z < -72 && b.z > -88.4;
+      const sand = b.z + BOAT.half * Math.abs(fz) > SHORE.top - BOAT.reach;
+      expect(deck || sand, `${b.id} can be walked up to`).toBe(true);
+      if (deck) fromBoards++; else fromSand++;
     }
+    // one of each in every town: whoever comes along the beach finds one, and whoever walks out on the pier
+    expect(fromSand).toBeGreaterThanOrEqual(1);
+    expect(fromBoards).toBeGreaterThanOrEqual(1);
     expect(BAY.x0).toBeGreaterThan(WORLD.minX);
     expect(BAY.x1).toBeLessThan(WORLD.maxX);
   });

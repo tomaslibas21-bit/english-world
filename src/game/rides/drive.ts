@@ -72,7 +72,11 @@ export const BOAT = {
   /** How fast it turns at speed (rad/s), and a little even when barely moving (so it can be pointed away from a dock). */
   turn: 1.05, turnIdle: 0.35, wheel: 3,
   half: 2.2, wide: 0.85,
+  /** From how far off its hull it is taken (m): a step or two from the sand, the shallows, a pier's boards or the
+   *  water, so one walks up to it and takes it (a car: `CAR_REACH`). */
+  reach: 3.2,
 };
+export const CAR_REACH = 1.7;
 
 /** A vehicle on the ground plan: where its middle is, where it points, how fast it goes along that (negative: back). */
 export class Motion {
