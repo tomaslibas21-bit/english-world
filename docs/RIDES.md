@@ -15,10 +15,11 @@ the town, and a boat at the shore to go out in and swim from. Shared by every ed
 - **Driving**: the arrows or W A S D (up: go, down: brake and then reverse, the sides steer), Space the brake, E out.
   On a phone the stick drives (held to one side it still rolls on), the jump button is the brake ("STOP", for as long
   as it is held) and the round button gets out; pressed while rolling, it brakes first. The camera stays behind the
-  car, backing up too, whatever the camera setting. About 45 km/h at most, 15 km/h backwards.
-- **Where a car goes**: on the streets and two forecourts (`Drivable`: `layout.ts` ROADS and the plan's `lots`, drawn
-  in by half a car's width, so the wheels stay on the asphalt). It slides along a kerb, a wall, a parked car or the
-  traffic instead of stopping dead (`Motion.settle`), and cannot leave the town.
+  car, backing up too, whatever the camera setting. About 35 km/h in town, 55 once it has held a course; 15 km/h
+  backwards.
+- **Where a car goes** (since 15 Nov, below): anywhere open and dry: the streets, the sidewalks, the squares, the
+  grass (`ground.ts` `townGround`); it stays out of buildings, solid things and the water, slides along a wall or a
+  parked car instead of stopping dead (`Motion.settle`), and cannot leave the town.
 - **People are never run over.** The car's speed is held to what stops 1.6 m short of the nearest person ahead, the
   way it is going: the passers-by and their dogs (also where they will be in a moment, walking on), the people one
   talks to, its own owners (`Motion.step`'s `gap`; `Ambient.personAhead`). Seen in time it brakes softly (10 m/s²).
@@ -52,6 +53,56 @@ the town, and a boat at the shore to go out in and swim from. Shared by every ed
   pitch following the speed, on the world's bus (silent in a conversation, under a voice, with a panel open) and
   lower under the radio, which plays on in the car as anywhere; a soft bump against a kerb; splashes for the strokes.
 
+## Round 2 (15 Nov 2026): the owner's drive
+
+The owner drove it and wrote: the owners should say their lines aloud, each their own; people should jump aside and
+call out when one goes by fast; "I got stuck here. I can't even go over the sidewalk"; faster after holding a course,
+"just like walking"; and the speed bumps should be felt. Then: check the car and the boat for anything else.
+
+- **Over kerbs, sidewalks and squares.** The car is no longer held to the asphalt. The asphalt (`townAsphalt`: the
+  streets and the plan's `lots`) still matters for two things: its edge is a **kerb** the springs feel, and only on
+  it does the speed build up. Off it the car rolls at 24 km/h (`CAR.rough`).
+- **Speed that builds.** 35 km/h (`CAR.town`) at once; held on a course for a second (`Motion.hold`: throttle on,
+  the wheel near straight, on the asphalt) it climbs to 55 (`CAR.max`). A sharp turn, the brake, a bump or leaving
+  the asphalt take it back to town pace. The boat does the same (`BOAT.town` → `BOAT.max`).
+- **Springs** (`Rides.ride`, `Ride.sus`): each axle feels a kerb (where `asphalt.has` flips) and a **speed bump**
+  (`plan.bumps`, a segment across the street: Puerto Colibrí's topes from `THEME.topes`; Maple Harbor's streets have
+  none). The body lifts and pitches, the front first and then the back; a thud (`host.thud`); over a bump at speed
+  the car loses about a third of its pace, over a kerb a little.
+- **People jump aside and call out.** Going by faster than 16 km/h, whoever is beside its way or just ahead starts
+  (`Ambient.startle`): a walker hops a good step aside and turns to look, someone standing hops, someone sitting looks
+  up. Now and then (every 5 to 9 s at most) one of them calls after the car (`RIDE_SHOUTS`: "Hey, watch out!",
+  "¡Oye, cuidado!"…), in one of two women's or two men's voices (`shoutVoice`; each passer-by keeps theirs). Nobody is
+  touched: the car still stops by itself for anyone on its way.
+- **On its way means along the wheel's arc** (`aheadOnArc`, `Motion.curve`): the car stops for whoever is on the way
+  its turned wheel takes it, not for someone straight ahead it is steering away from; past those it goes at a
+  careful pace (`CAR.careful`, 15 km/h). So a stopped car can be steered round someone who stays put.
+- **Behind the traffic** (`Ambient.carAhead`): it eases in behind a car going its way at that car's pace instead of
+  running into its back, passes when steered round it, and brakes for one coming the other way. One that stands
+  it noses up to and slides round (two cars never wait for each other).
+- **Never left boxed in.** Pushing at something and getting nowhere: a word about backing up (`host.stuck`); held up
+  by someone or by a standing car: a word about going round (`host.waiting`); and after 7 s of trying in one spot
+  the picture fades and the car is back on the nearest free piece of street (`streetSpot`, `host.rescue`). A random
+  driver (full throttle, random wheel, six minutes, twice per town) touched nobody and was never left standing.
+- **Each owner speaks**, in a voice of their own: four lines when their car is taken, two when it is brought back,
+  never the same twice running (`RIDE_OWNERS`, `rideVoice`; `Game.saysAloud` plays the clip when the voice has the
+  line, else a bubble only). Maple Harbor: Jess, Walt, Carol and Pete; Puerto Colibrí: Valeria, Don Rafa, Marisol
+  and Beto, in the three Spanishes.
+- **Dust, skid, wake.** Dust behind the rear wheels off the asphalt or going fast, a skid's sound on a hard stop;
+  the boat's wake is a ring round its hull as well as spray at the stern.
+- **The bay's edge** is a line of **buoys** (`buoysGeometry`, one mesh, drawn only for someone in the boat or
+  swimming). Making for them the boat's bow comes round by itself and runs along them (`bayTurn`, `BAY_EDGE`): no
+  wall out at sea. Running in to the beach it eases off (`shoreSpeed`) and rests on the shallows; under power it
+  turns even at a standstill; driven on at the beach for a while, a word about backing off (`host.aground`).
+
+### Voices
+
+The lines are in the list both tools read. Maple Harbor: `tools/casting.ts` RIDERS (Gemini's prebuilt voices: Jess
+Aoede, Walt Umbriel, Carol Pulcherrima, Pete Puck; calling Laomedeia, Gacrux, Achird, Algenib), `tools/enumerate.ts`
+(48 clips, voice ids `g_ride_<id>`, `g_shout_f0…m1`). Puerto Colibrí: `tools/es-voices/casting-es.ts` RIDERS with
+MEXICO and SPAIN picks and the settings `SCENES["rides"]` / `["rides:shout"]`, `lines-es.ts` (`--only=rides`: 144
+clips, `es_` / `esn_` / `esp_` + `ride_<id>`, `shout_f0…m1`).
+
 ## What stays as it was
 
 - At a wheel or a helm **nobody is talked to and no door gone through**: the only prompt is the way out. "Nuvesk
@@ -83,16 +134,17 @@ the town, and a boat at the shore to go out in and swim from. Shared by every ed
 | `src/game/world/rides.ts`, `src/content/rides.ts` | this town's plan; its people's lines and the things' names |
 | `src/game/water.ts` | `seaBedY`, SWIM, BAY, `bayHold`, POOLS, FLOORS, `waterY` |
 | `src/game/Game.ts` | `updateRide`, the swimming in `updatePlayer`, the prompts, `boardRide` / `leftRide` |
-| `src/game/ambient.ts` | `rideBoxes`, `personAhead`, `pushOutOfCars` |
+| `src/game/ambient.ts` | `rideBoxes`, `personAhead`, `carAhead`, `startle`, `pushOutOfCars` |
 | `src/game/characters/Character.ts` | `busy` "wheel", "tiller", "doorL", "doorR"; `steer`; `swim`, `dive` |
 
 ## Tests
 
 `tests/rides.test.ts` (the arithmetic, the plan, the water), `tests/browser/rides.mjs` (the real game, a computer and
-a phone: a convertible taken, driven, braked and left; the boat, the swim, the dive, back into the boat).
+a phone: a convertible taken, its owner's voice, driven, braked, over a kerb, left; the boat, the buoys, the swim,
+the dive, back into the boat). The random driver and helmsman used for the round-2 audit are in the shared notes
+(`rides/tools/audit2.js`, `audit-boat.js`).
 
 ## Left for later
 
-- The owners' lines are bubbles: no clips are recorded for them (`audio.hasClip` decides; the passers-by's voices).
 - A car left in a traffic lane holds the traffic behind it until its owners have it back at its curb.
 - The trial world styles (`StyledCharacter`) have no swimming pose: the character floats upright there.
