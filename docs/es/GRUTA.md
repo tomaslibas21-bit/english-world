@@ -148,6 +148,34 @@ unless one taps into it); `Interior.wild` has `exits[]` and `spawns{}`; `Game.dr
 rectangle (`groundsBounds`): "nobody gets out of the town" counts the grounds as in and covers them; their three
 edge boxes are tagged `"edge"` (never jumped onto, however low the jungle on them).
 
+## The conversation's camera down there (15 Nov 2026, evening)
+
+The owner, on his iPhone: Kin's conversation showed "some weird color instead of … the 3d person": a dark teal
+surface. It was rock seen from inside. On an upright phone the 3D picture is only a strip above the conversation
+(`talkPictureHeight`), and its field of view sideways is about 24°: from the side, two people need the camera five or
+six metres off. Kin stands in the way in, a passage five metres wide, where the rock lets the camera two metres to the
+side. The town's search (`fitTalk`) then backs off and rises until everyone fits; the cave's clamp kept "at least 35%
+of the asked distance", so at 30 m asked the camera stood ten metres through the wall and above the roof. A computer's
+picture is wide enough that the first framing fitted, so it only showed on phones; Nikté's hall is wide, so only Kin.
+
+`Game.fitTalkWild` (any `Interior.wild` place): the camera is only put where the place's own `space` says it is in the
+open (`inside`: walls, roof, pillars), the way to each face is clear (`free`), and the player does not stand in front
+of whom they speak with. It tries, in this order: from the side (as in the town), then round towards the player's
+shoulder (70°, 52°, 36°, 24° from straight behind them, either side: in a passage that is back along it), last a
+little past side-on; at each angle the usual distance, then further (to 13 m), then nearer; three heights (lower under
+a low roof). The first place where everyone's head and chest fall in the picture wins. If none shows both, the same
+search for the person spoken with alone, looked at themselves; if the rock leaves nowhere, as near the usual place as
+it lets the camera go.
+
+No picture/3D chip shows in these conversations: the chip is only where a conversation has illustrated scenes
+(x01–x03 have none yet).
+
+**Light mode** has no 3D picture. Behind a conversation with no illustrated scene (La Ola's x01-surf; the aluxes are
+not reached in light mode: off the route, met only down there) its call screen showed an initial in a circle; it now
+shows the person's head and shoulders, drawn once from their 3D figure (`src/game/portrait.ts`: one 360 px frame on a
+renderer of its own, then let go; loaded with the figures' code only when such a conversation starts; the initial
+stays until it is there and where it cannot be drawn).
+
 ## Tests
 
 - `tests/es/cave.test.ts`: the plan (everything stands where one can walk; one can walk from the way in to the heart;
@@ -158,6 +186,10 @@ edge boxes are tagged `"edge"` (never jumped onto, however low the jungle on the
   until his conversation is talked through (really talked: five typed answers); a stone's card, a wrong meaning, the
   right one; the second chamber's gate shut with three stones lit and nothing finished in town, open with ten; out by
   the water; a reload down there.
+- `tests/browser/cave-talk.mjs`: the real game at 375×812, 375×667 and 1280×800: Kin spoken to from the water, from
+  the cleft's side, across the passage and from past his gate, Nikté from the bridge's end and from beside her: the
+  camera in the open, the way to their face clear, their head and chest inside the part of the screen the
+  conversation leaves free. And light mode on a phone: La Ola's conversation shows Nayeli's drawn face.
 - `tests/es/cave.test.ts` "the cenote's grounds": from the town's edge one reaches the water by the deck and both
   gaps, the ledge by its stair, the cleft and the eye on foot; the edge is open all along; the trail's stones stand on
   open ground; the grotto's exits and arriving places are inside its plan.
