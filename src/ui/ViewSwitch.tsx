@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from "react";
-import { useStore } from "../state/store";
+import { picturesOn, useStore } from "../state/store";
 import { game } from "../game/gameRef";
 import type { Game } from "../game/Game";
 import { sceneFor, sceneUrl } from "./scenes";
@@ -10,7 +10,8 @@ import { Icon } from "./icons";
  *  ("talk in front of the picture instead"); in front of the picture it is the town as the conversation's camera
  *  sees it (the way back to the person, whose lips follow the voice). One tap switches; so does P. It is the same
  *  setting as „Iliustruotos scenos“ in Nustatymai, here in the game's own picture where the learner looks for it
- *  (owner, 15 Nov 2026: after a conversation in 3D he could not find the pictures again). The first time someone
+ *  (owner, 15 Nov 2026: after a conversation in 3D he could not find the pictures again). A conversation starts
+ *  with the person in 3D unless the learner picked the picture (store.ts `picturesOn`). The first time someone
  *  talks in 3D at a place with a picture, a short hint beside it says what it is for. A place without a picture has
  *  no chip, and the pictures-only mode has no 3D town, so it has none either. */
 export function ViewSwitch() {
@@ -19,7 +20,7 @@ export function ViewSwitch() {
   const hostId = useStore((s) => s.conv.hostId);
   const run = useStore((s) => s.conv.run);
   const light = useStore((s) => s.settings.play === "light");
-  const pictures = useStore((s) => s.settings.scenes !== false);
+  const pictures = useStore((s) => picturesOn(s.settings));
   const panel = useStore((s) => s.hud.panel);
   const touch = useStore((s) => s.hud.showTouch);
   const art = active && !light ? sceneFor(sitId, hostId) : undefined;

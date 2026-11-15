@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useStore } from "../state/store";
+import { picturesOn, useStore } from "../state/store";
 import { sceneFor, sceneUrl } from "./scenes";
 
 /** The illustrated place behind the conversation panel: one picture per phase of the conversation
@@ -7,7 +7,7 @@ import { sceneFor, sceneUrl } from "./scenes";
  *  is complete. All pictures of the scene stay loaded, so each change is an instant crossfade. */
 export function SceneBackdrop() {
   const conv = useStore((s) => s.conv);
-  const on = useStore((s) => s.settings.scenes !== false);
+  const on = useStore((s) => picturesOn(s.settings));
   // any conversation with a scene file, calls included (a call shows the person at their end of the line)
   const art = on && conv.active ? sceneFor(conv.sitId, conv.hostId) : undefined;
 

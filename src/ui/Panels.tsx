@@ -1,6 +1,6 @@
 import { useKeyboardHints } from "./keyboardHints";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { useStore } from "../state/store";
+import { picturesOn, useStore } from "../state/store";
 import { game } from "../game/gameRef";
 import { switchPlayMode } from "./playMode";
 import { SITUATIONS, SITUATION_BY_ID } from "../content/situations";
@@ -389,7 +389,7 @@ function Settings({ close }: { close: () => void }) {
           <div className="seg">{([["light", "Lengvas"], ["town", "3D miestas"]] as const).map(([v, n]) => <button key={v} className={s.play === v ? "on" : ""} onClick={() => { if (s.play !== v) switchPlayMode(v); }}>{n}</button>)}</div>
         </div>
         {s.play !== "light" && <Toggle on={s.cameraFollow} onChange={(v) => set({ cameraFollow: v })} label="Kamera seka personažą" />}
-        <Toggle on={s.scenes} onChange={(v) => set({ scenes: v })} label="Iliustruotos scenos" sub={s.play === "light" ? "Pokalbio metu vietoje 3D vaizdo rodomas piešinys, kuris keičiasi pagal pokalbio etapą." : "Pokalbio metu vietoje 3D vaizdo rodomas piešinys, kuris keičiasi pagal pokalbio etapą. Per pokalbį perjungsi mažu paveikslėliu vaizdo kampe arba klavišu P."} />
+        <Toggle on={picturesOn(s)} onChange={(v) => set({ scenes: v })} label="Iliustruotos scenos" sub={s.play === "light" ? "Pokalbio metu vietoje 3D vaizdo rodomas piešinys, kuris keičiasi pagal pokalbio etapą." : "Pokalbio metu vietoje 3D vaizdo rodomas piešinys, kuris keičiasi pagal pokalbio etapą. Per pokalbį perjungsi mažu paveikslėliu vaizdo kampe arba klavišu P."} />
         <div className="set-row">
           <div className="txt"><b>Teksto dydis</b></div>
           <div className="seg">{[1, 1.15, 1.3].map((z, i) => <button key={z} className={s.textSize === z ? "on" : ""} onClick={() => set({ textSize: z })}>{["A", "A+", "A++"][i]}</button>)}</div>

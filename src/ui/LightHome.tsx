@@ -2,7 +2,7 @@
 // at once. Face-to-face conversations show their illustrated pictures (SceneBackdrop); calls, and
 // conversations without a picture, a calm call screen (CallBackdrop).
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useStore } from "../state/store";
+import { picturesOn, useStore } from "../state/store";
 import { setGame, game } from "../game/gameRef";
 import { LightGame } from "../game/LightGame";
 import { SITUATIONS, SITUATION_BY_ID } from "../content/situations";
@@ -176,7 +176,7 @@ function SitCard({ s }: { s: SituationDef }) {
 /** Behind phone and video calls (and conversations without a picture): a calm call screen. */
 function CallBackdrop() {
   const conv = useStore((s) => s.conv);
-  const scenes = useStore((s) => s.settings.scenes !== false);
+  const scenes = useStore((s) => picturesOn(s.settings));
   if (!conv.active || (scenes && sceneFor(conv.sitId, conv.hostId))) return null;
   const npc = NPCS[conv.hostId];
   const sit = SITUATION_BY_ID[conv.sitId];

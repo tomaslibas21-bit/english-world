@@ -27,8 +27,9 @@ export interface Settings {
    *  lt / ipa above are for what the other person says. */
   sayLt: boolean;
   sayIpa: boolean;
-  /** Illustrated scenes behind conversations (where a place has art). */
-  scenes: boolean;
+  /** Illustrated scenes behind conversations (where a place has art): the learner's own choice, by the chip in the
+   *  conversation's picture, P, or „Iliustruotos scenos“. Never chosen: `picturesOn` decides by the mode. */
+  scenes?: boolean;
   /** Look of the 3D world (trial styles; "blocks" = the original). */
   worldStyle: WorldStyle;
   /** The 3D town, or the light mode: the situation list and the conversations with their pictures, no 3D. */
@@ -50,9 +51,14 @@ export const DEFAULT_SETTINGS: Settings = {
   lt: true, ltNatural: false, ipa: false, suggestions: false, hintsOpen: false,
   confirmSpeech:false, slowVoice: false, volume: 0.9, sounds: 0.8,
   textSize: typeof window === "undefined" || window.innerWidth > 900 ? 1.15 : 1,
-  quality: "high", cameraFollow: true, onDevice: false, sayLt: true, sayIpa: true, scenes: true, worldStyle: "blocks",
+  quality: "high", cameraFollow: true, onDevice: false, sayLt: true, sayIpa: true, worldStyle: "blocks",
   play: defaultPlayMode(),
 };
+
+/** Is a conversation held in front of its picture? The learner's choice if they made one. Without one, the 3D
+ *  town talks with the person in 3D and the picture comes when asked for (owner, 15 Nov 2026: "when you get to the
+ *  person, you immediately see the images, not the other way around"); the pictures-only mode shows its pictures. */
+export const picturesOn = (s: Pick<Settings, "scenes" | "play">): boolean => s.scenes ?? s.play === "light";
 
 export interface TranscriptLine {
   id: number;
@@ -176,7 +182,11 @@ const initial = loadProgress();
  *  they had no suggestions); it hides the guide for one conversation (ConvUI.guideHidden).
  *  v4 (27 Oct 2026): speech is recognised by the browser's server recogniser, as in the course's flashcards: it
  *  hears accents much better. Recognition on the device became an opt-in (it used to be on whenever installed).
- *  v5: each learner turn starts listening automatically; the former manual-only preference is retired. */
+ *  v5: each learner turn starts listening automatically; the former manual-only preference is retired.
+ *  v6 (15 Nov 2026): conversations in the 3D town start with the person in 3D. Pictures used to be on unless
+ *  switched off, and that "on" was saved with any other setting, so a saved "on" from before says nothing about
+ *  what the learner chose: it is forgotten (`picturesOn` then decides by the mode). From v6 on, "on" is saved only
+ *  when the learner picks the picture, and it is kept. */
 export function migrateSettings(saved?: Record<string, any>): Settings {
   const s = { ...DEFAULT_SETTINGS, ...(saved || {}) } as Settings & { v?: number; guide?: boolean; autoListen?: unknown };
   if ((s.v ?? 1) < 2) { s.ltNatural = false; s.suggestions = false; s.v = 2; }
@@ -184,6 +194,7 @@ export function migrateSettings(saved?: Record<string, any>): Settings {
   if ((s.v ?? 1) < 4) { s.onDevice = false; s.v = 4; }
   delete s.autoListen;
   if ((s.v ?? 1) < 5) s.v = 5;
+  if ((s.v ?? 1) < 6) { if (s.scenes !== false) delete s.scenes; s.v = 6; }
   return s;
 }
 
