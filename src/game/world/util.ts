@@ -136,6 +136,8 @@ export function textTexture(text: string, opts: { bg?: string; fg?: string; font
   rows.forEach((r, i) => x.fillText(r, w / 2, h / 2 + (i - (rows.length - 1) / 2) * size * 1.06 + size * 0.04));
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
+  // (its words, for the dev tools: src/dev/signAudit.ts)
+  t.name = text;
   // sharp at an angle too (three.js keeps it to what the graphics card can do)
   t.anisotropy = 16;
   return t;
