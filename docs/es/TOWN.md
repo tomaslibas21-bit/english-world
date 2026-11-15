@@ -1194,6 +1194,34 @@ Puerto Colibrí has it. The town's plan is `src/editions/es/game/world/rides.ts`
   only spoken of (s69); a watersports palapa with a surf or paddle game is planned after this round; a conversation
   at the cenote's taquilla (the entrance, a life vest) would suit it.
 
+### The convertibles' round 2 (15 Nov 2026)
+
+The engine's part is in docs/RIDES.md "Round 2"; here is what is Puerto Colibrí's own.
+
+- **Who sits in them, and what they say** (`src/editions/es/content/rides.ts`; Lithuanian meanings in
+  `src/editions/es-lt/content/rides.ts`): **Valeria** in the pink one by the park, sunny, quick to laugh ("¡Claro,
+  date una vuelta!", "¡Oye, cuídamelo!"); **Don Rafa** in the turquoise one on calle Itzamná, with all the time in
+  the world ("Las llaves están puestas. ¡Disfrútalo!", "Sin prisa. Tengo todo el día."); **Marisol** and **Beto** in
+  the yellow one on calle Flamboyán: she dry and teasing ("Bueno, ¡pero lo quiero de vuelta antes del atardecer!",
+  "No te preocupes, tiene seguro."), he proud of the car ("¡Te va a encantar!", "¡Ve por el malecón, es precioso!").
+  Four lines each when the car is taken, two when it comes back. One text for the three Spanishes (said the same
+  everywhere); the voices differ.
+- **What passers-by call after a car** that goes by too close: "¡Oye, cuidado!", "¡Eh, más despacio!", "¡Cuidado!",
+  "¡Con calma!", "¡Mira por dónde vas!", "¡Despacio, por favor!", in two women's and two men's voices.
+- **The topes are felt**: the three on the streets (avenida Juárez at x 12 and 46, avenida del Puerto at x 28:
+  `THEME.topes`) are the plan's `bumps`. The car pitches and bounces over one and loses about a third of its pace.
+- **Over the kerbs**: onto the zócalo, the malecón's walk, the sidewalks; the corner of avenida Juárez and calle
+  Flamboyán by Café La Ceiba, where the owner's car stood stuck, is driven over. The café's tables on the sidewalk
+  are solid, and the car stops for the people at them.
+- **The voices** (`tools/es-voices/casting-es.ts` RIDERS): Valeria `es-419-training-8` / `es-es-techagent-5`, Don
+  Rafa `es-419-csagent-9` / `es-es-assistant-3`, Marisol `es-419-assistant-6` / `es-es-training-12`, Beto
+  `es-419-assistant-9` / `es-es-training-11`; calling: `es-419-commercial-8`, `tutor-3`, `tutor-5`, `concierge-7` /
+  `es-es-concierge-3`, `podcaster-5`, `training-9`, `assistant-4`. Settings: "calling over from a convertible parked
+  at the curb…", "shouting after a car that has just passed far too close…". `voice-batch-es.ts plan --only=rides`
+  lists the 144 clips.
+- **The lancha and the bay**: the buoys mark how far out one goes; the lancha comes round before them by itself and
+  rests on the shallows when run in to the beach.
+
 ## La Ola, the surf school (15 Nov 2026)
 
 A new place and the 51st conversation, the first with no song of its own yet: **x01-surf**, "¿Probamos una ola?"
