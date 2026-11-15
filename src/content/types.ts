@@ -13,7 +13,8 @@ export interface SentSrc {
   nat: string;
   /** Spoken form for the recording when it differs from the text (numbers, abbreviations). */
   say?: string;
-  /** Unit index → decision note for a flagged unit (shown as a dotted underline with a tooltip). */
+  /** Unit index → decision note for a flagged unit (shown as a dotted underline with a tooltip, and behind the line's
+   *  "*"). Written in English; the learner reads it in Lithuanian: every note needs its line in notes-lt.ts (a test). */
   flags?: Record<number, string>;
   /** A word the NPC can spell out if asked "How do you spell that?". */
   spell?: string;

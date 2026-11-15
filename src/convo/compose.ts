@@ -4,6 +4,7 @@
 
 import type { EntityDef, SentSrc } from "../content/types";
 import { agree, genderChoice, parseForms, caseIndex, type Case, type Gender } from "./lt-morph";
+import { learnerNote } from "../content/notes-lt";
 
 export interface Unit { en: string; lt: string; flag?: string }
 export interface Sentence { units: Unit[]; en: string; nat: string; say: string }
@@ -190,7 +191,7 @@ export function compose(src: SentSrc, vars: Vars, opts: ComposeOpts): Sentence {
         units.push({
           en: (first ? pre : "") + (first && newSentence ? capFirst(w) : w) + (last ? post : ""),
           lt: (first ? ltPre : "") + (first && newSentence && !ltPre ? capFirst(np.lt[k]) : np.lt[k]) + (last ? ltPost : ""),
-          flag: np.flags[k],
+          flag: learnerNote(np.flags[k]),
         });
       });
       sayParts.push(pre + (newSentence ? capFirst(np.en.join(" ")) : np.en.join(" ")) + post);
@@ -198,7 +199,7 @@ export function compose(src: SentSrc, vars: Vars, opts: ComposeOpts): Sentence {
     }
     const enV = valuesIn(en, "en");
     const ltV = valuesIn(agreeIn(lt), "lt");
-    units.push({ en: enV, lt: ltV, flag: src.flags?.[i] });
+    units.push({ en: enV, lt: ltV, flag: learnerNote(src.flags?.[i]) });
     sayParts.push(valuesIn(en, "say"));
   }
 
