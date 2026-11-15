@@ -451,8 +451,8 @@ export function buildCave(): CaveView {
     const c = P.CHAMBERS[3];
     for (let i = 0; i < 16; i++) {
       const a = (i / 16) * Math.PI * 2 + r() * 0.2, k = i % 3 === 0 ? 0.45 + r() * 0.2 : 0.86, x = c.x + Math.cos(a) * c.rx * k, z = c.z + Math.sin(a) * c.rz * k;
-      if (!P.walkable(x, z, 0.4) || nearPath(x, z) < 2.2) continue;
-      crystal(x, z, 0.9 + r() * 1.1, pick(["#b58cff", "#7ad7ff", "#ff9be0", "#9affd9"]));
+      if (!P.walkable(x, z, 0.4) || nearPath(x, z) < 3.4) continue;
+      crystal(x, z, 0.7 + r() * 0.8, pick(["#b58cff", "#7ad7ff", "#f3a6e6", "#9affd9"]));
       col.addCircle(x, z, 0.5);
     }
     for (let i = 0; i < 90; i++) {
