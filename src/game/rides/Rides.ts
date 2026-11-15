@@ -35,6 +35,8 @@ export interface RideHost {
   thud(k: number): void;
   /** The car has pushed at something for a while and gets nowhere: a word about backing up. */
   stuck(): void;
+  /** It has stood a while behind someone who is not going anywhere: a word about going round them. */
+  waiting(): void;
   /** It still gets nowhere: the picture fades for a moment while `put` sets it back on the street. */
   rescue(put: () => void): void;
   /** Drops thrown up from the water at (x, z). */
@@ -119,6 +121,8 @@ export class Rides {
   private shoutT = 2;
   private stuckT = 0;
   private stuckTold = false;
+  private yieldT = 0;
+  private yieldTold = false;
   /** Getting nowhere: how long it has pushed (forwards or back) without leaving the spot `pushAt`. */
   private pushT = 0;
   private pushAt = { x: 0, z: 0 };
@@ -276,7 +280,7 @@ export class Rides {
     this.phase = "in";
     this.phaseT = 0;
     this.wantOut = false;
-    this.stuckT = 0; this.stuckTold = false;
+    this.stuckT = 0; this.stuckTold = false; this.yieldT = 0; this.yieldTold = false; this.pushT = 0;
     this.from.copy(p);
     this.fromRot = this.host.player.root.rotation.y;
     r.awayT = 0;
@@ -488,6 +492,10 @@ export class Rides {
     const pushing = Math.abs(c.throttle) > 0.5 && Math.abs(m.speed) < 0.7 && Math.abs(was) < 0.7 && gap > CAR.half + CAR.clear + 1;
     this.stuckT = pushing ? this.stuckT + dt : 0;
     if (this.stuckT > 1.8 && !this.stuckTold) { this.stuckTold = true; host.stuck(); }
+    // held up by someone who stays where they are (on a bench, at a stall): a word about going round, once a ride
+    const held = Math.abs(c.throttle) > 0.5 && !c.brake && Math.abs(m.speed) < 0.3 && gap <= CAR.half + CAR.clear + 1;
+    this.yieldT = held ? this.yieldT + dt : 0;
+    if (this.yieldT > 2.2 && !this.yieldTold) { this.yieldTold = true; host.waiting(); }
     // and if, backing and turning, it still has not left the spot after a good while of trying: back onto the street
     // by itself (nobody is ever left boxed in between a wall and a bench)
     if (Math.hypot(m.x - this.pushAt.x, m.z - this.pushAt.z) > 2.2) { this.pushAt.x = m.x; this.pushAt.z = m.z; this.pushT = 0; }
@@ -546,18 +554,19 @@ export class Rides {
         s.side[i][k] = side;
       }
       if (!hit || v < 0.6) continue;
-      const k = hit * Math.min(1, 0.25 + v / 8), lead = (i === 0) === (fwd > 0);
-      s.vy += 1.5 * k;
-      s.vp += (i === 0 ? -1 : 1) * 1.9 * k;
+      // (a speed bump throws it well up and tips it; a kerb is a smaller knock)
+      const k = Math.min(1, 0.3 + v / 8), lead = (i === 0) === (fwd > 0), bump = hit === 1;
+      s.vy += (bump ? 3.1 : 1.5) * k;
+      s.vp += (i === 0 ? -1 : 1) * (bump ? 3.6 : 1.7) * k;
       if (lead) {
         if (hit === 1 && v > 4) m.speed *= 0.7; else if (hit < 1 && v > 6) m.speed *= 0.92;
         m.hold = Math.min(m.hold, CAR.holdFrom);
       }
-      this.host.thud(k);
+      this.host.thud(bump ? k : k * 0.55);
     }
     // (springs, well damped: one bounce and a half)
-    s.vy += (-s.y * 190 - s.vy * 15) * dt; s.y = THREE.MathUtils.clamp(s.y + s.vy * dt, -0.06, 0.24);
-    s.vp += (-s.p * 170 - s.vp * 13) * dt; s.p = THREE.MathUtils.clamp(s.p + s.vp * dt, -0.13, 0.13);
+    s.vy += (-s.y * 190 - s.vy * 14) * dt; s.y = THREE.MathUtils.clamp(s.y + s.vy * dt, -0.07, 0.26);
+    s.vp += (-s.p * 170 - s.vp * 12) * dt; s.p = THREE.MathUtils.clamp(s.p + s.vp * dt, -0.17, 0.17);
     if (Math.abs(s.y) < 1e-4 && Math.abs(s.vy) < 1e-3 && Math.abs(s.p) < 1e-4 && Math.abs(s.vp) < 1e-3) { s.y = s.vy = s.p = s.vp = 0; }
   }
 
