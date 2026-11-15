@@ -1666,11 +1666,15 @@ const taking = (c: Ctx) => view(c) && c.s.decision === "take";
 function homeNo(c: Ctx) {
   c.s.visitAnswered = true;
   c.say("home_no"); c.say("key_ok_q");
-  c.expect({ id: "key_ok", expects: ["use_key", "time_pref"], hints: ["repair"],
+  c.expect({ id: "key_ok", expects: ["use_key", "time_pref", "time_ok", "home_yes"], hints: ["repair"],
     suggest: [{ lt: "Sutikti, kad įleistų meistrą", hint: "key_ok" }],
     on: {
       use_key: (cc) => { cc.say("key_done"); cc.s.visitOk = true; },
       time_pref: (cc) => { cc.say("time_noted"); cc.s.visitOk = true; },
+      // "Sure, that works." is a yes to the key (it got "He'll be there at ten" and the question again)
+      time_ok: (cc) => { cc.say("key_done"); cc.s.visitOk = true; },
+      // "Yes, I'll be home after all."
+      home_yes: (cc) => { cc.say("home_yes_ok"); cc.s.visitOk = true; },
     },
     yes: (cc) => { cc.say("key_done"); cc.s.visitOk = true; },
     no: (cc) => { askOtherTime(cc); },

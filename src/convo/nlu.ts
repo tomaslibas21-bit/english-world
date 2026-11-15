@@ -46,6 +46,8 @@ const TAILS: [string, string][] = [
 /** Generic ways of addressing someone; the situation adds its NPCs' names (see setVocatives). */
 const VOCATIVES = "sir | madam | miss | officer | doctor | buddy | man | dude | my friend | guys | mister | folks | everyone";
 /** Short yes/no interjections that may lead into another intent ("No, to go"). */
+/** A half-heard "What?" right before a yes or a no ("What? Yes."). */
+const HUH = "what | huh | eh | pardon | sorry what | what what | oh what";
 const YES_LEAD = "that is fine | that is okay | that sounds good | sounds good | no problem | no worries | yes | yeah | yep | yup | sure | okay | ok | of course | definitely | absolutely | yes please | yeah please | sure thing | exactly | yes exactly | that is right | yes that is right | you are right | correct | why not | yes i am | yes i do | yes i have | yes i can | yes i would | yes it is | yes we are | yes we do";
 const NO_LEAD = "no | nope | nah | no thanks | no thank you | not really | not now | not yet | not exactly | i do not think so | no sorry | sorry no | not today | not right now | unfortunately not | i am afraid not | maybe later | no i am not | no i do not | no i have not | no i can not | no it is not | no we do not | no i would not";
 const YES = "yes go ahead | i would like to | yes i would like to | yes it is correct | yes it is right | yeah it is correct | it is correct | [yes | yeah | sure | oh] [that | it] (would be | sounds | is) [very | really | so] (nice | great | good | perfect | wonderful | lovely | helpful | kind | amazing) | i think so | i guess so | yes i think so | probably | yes do | yes it does | yes there is | yes i have | yes i did | yes i will | yes we are | yes we have | yes we did | that is fine | that is okay | that is good | that works for me | works for me | that sounds good | okay sure | sure okay | yeah sure | yes okay | okay yes | no problem | sure no problem | of course yes | yes yes | yeah yeah | deal | let us do (it | that) | yes sir | yes madam | yes please thank you | yes thank you | yeah thanks | sure thanks | okay thanks | okay thank you | why not | yes | yeah | yep | yup | sure | of course | definitely | absolutely | okay | ok | yes please | yeah please | sure thing | why not | that would be great | that would be nice | sounds good | that is right | that is correct | correct | right | exactly | yes it is | yes i do | yes i am | yes i would | yes i can | yes we do | i do | i would | i would love to | i would like that | yes definitely | uh huh | [yes | sure | yeah] (that is | that would be | that will be) (fine | okay | great | perfect | good | lovely) | that works | fine | fine by me | sounds great | perfect | yes sure | sure why not | go ahead | yes of course | yes that works | [yes | yeah | yep] that is (right | correct) | yes correct | yes exactly | yes right | yes indeed | yes it is | yes that is me | that is me";
@@ -143,12 +145,15 @@ function noIsDeterminer(r: { caps: { name: string; from: number }[] }, toks: Tok
 }
 
 /** "Again", "What?", "Sorry?" asking to repeat only mean that on their own, not inside a longer
- *  sentence ("The train is late again"). */
-function strayRepeat(r: { caps: { name: string; value: unknown; from: number; to: number }[] }): boolean {
+ *  sentence ("The train is late again"), and not before a yes or a no ("What? Yes."): that is the answer. */
+function strayRepeat(r: { caps: { name: string; value: unknown; from: number; to: number }[] }, toks: Tokens): boolean {
   const segs = r.caps.filter((c) => c.name === "__intent");
-  if (segs.length < 2) return false;
-  return segs.some((c) => (c.value as any)?.__id === "g_repeat" && c.to - c.from <= 2);
+  const short = segs.filter((c) => (c.value as any)?.__id === "g_repeat" && c.to - c.from <= 2);
+  if (!short.length) return false;
+  if (segs.length >= 2) return true;
+  return short.some((c) => toks.slice(c.to).some((w) => YES_NO_WORDS.has(w)));
 }
+const YES_NO_WORDS = new Set(["yes", "yeah", "yep", "yup", "no", "nope", "nah"]);
 
 /** "I have to go" (a goodbye tagged #leaving) is one only as the last thing said, or before thanks or another
  *  goodbye: "I have to go | to the airport" and "I need to leave | at seven" are not goodbyes. */
@@ -211,7 +216,7 @@ export class Nlu {
   private globalIds = new Set<string>();
   /** Sentence grammars by the set of context-only intents the current question allows. */
   private tops = new Map<string, GNode>();
-  private shared: { lead: GNode; tail: GNode; yn: GNode; ynLead: GNode; ynConn: GNode; ynTwice: GNode; conn: GNode; voc: GNode } | null = null;
+  private shared: { lead: GNode; tail: GNode; yn: GNode; ynLead: GNode; ynConn: GNode; ynTwice: GNode; conn: GNode; voc: GNode; huh: GNode } | null = null;
   private catchAll = new Set<string>();
   /** Intents only accepted when the current step/pending question expects them (e.g. a bare name). */
   private contextual = new Set<string>();
@@ -283,7 +288,10 @@ export class Nlu {
       S([parsePattern(NO_LEAD, false), parsePattern(NO, false), mk.tag(["yn:no", "yn:twice"])]),
     ]);
     const conn = mk.opt(parsePattern("and | and also | also | plus | but | oh and | and then | then | so | or | actually | maybe", false));
-    return { lead, tail, yn, ynLead, ynConn, ynTwice, conn, voc };
+    // "What? Yes!", "Huh? No.": a half-heard question answered at once is the answer, not a request to repeat
+    // (owner, 15 Nov 2026: "What… Yes" to "Are you free?" got "Sure!" and the question again)
+    const huh = S([parsePattern(HUH, false), mk.tag(["lead:huh"])]);
+    return { lead, tail, yn, ynLead, ynConn, ynTwice, conn, voc, huh };
   }
 
   /** The sentence grammar for a turn. Context-only intents (`_ctx`: a bare name, a bare number) are
@@ -294,12 +302,12 @@ export class Nlu {
     const hit = this.tops.get(key);
     if (hit) return hit;
     if (!this.shared) this.shared = this.buildShared();
-    const { lead, tail, yn, ynLead, ynConn, ynTwice, conn, voc } = this.shared;
+    const { lead, tail, yn, ynLead, ynConn, ynTwice, conn, voc, huh } = this.shared;
     const S = (items: GNode[]) => mk.seq(items, true);
     const intent = mk.alt([...this.intents.entries()].filter(([id]) => !this.contextual.has(id) || allowed.includes(id)).map(([, n]) => n));
     // the person's name may also come between two pieces: "Thank you, Brenda, but you can keep the mug"
     const intents = S([intent, mk.rep(S([mk.opt(voc), conn, intent]), 0, 2)]);
-    const body = mk.alt([S([mk.opt(S([ynLead, ynConn])), intents]), yn, ynTwice]);
+    const body = mk.alt([S([mk.opt(S([ynLead, ynConn])), intents]), yn, ynTwice, S([huh, ynLead, ynConn, intents]), S([huh, yn]), S([huh, ynTwice])]);
     const top = S([mk.rep(lead, 0, 3), body, mk.rep(tail, 0, 3)]);
     this.tops.set(key, top);
     return top;
@@ -316,7 +324,7 @@ export class Nlu {
     const readAll = (vars: Tokens[], into: Parse[]) => {
       for (const toks of vars) {
         if (!toks.length) continue;
-        const res = this.g.match(top, toks, false).filter((r) => r.end === toks.length && !r.partial && !negationCutOff(r, toks) && !strayRepeat(r) && !splitNames(r, toks) && !leavingCutOff(r, toks));
+        const res = this.g.match(top, toks, false).filter((r) => r.end === toks.length && !r.partial && !negationCutOff(r, toks) && !strayRepeat(r, toks) && !splitNames(r, toks) && !leavingCutOff(r, toks));
         for (const r of res) {
           const p = this.toParse(r, toks, please, expected, primary);
           if (p.segments.some((sg) => this.contextual.has(sg.intent) && !expected.includes(sg.intent))) continue;
