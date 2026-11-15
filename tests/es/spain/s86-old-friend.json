@@ -21,6 +21,10 @@
 { "ctx": "closing", "say": "¡Me ha encantado verte!", "intent": "nice_to_see" },
 { "ctx": "closing", "say": "Dale recuerdos a Memo", "intent": "say_hi_to" },
 { "ctx": "number_sure", "say": "Vale, apunta: 984 123 4567", "intent": "number_ctx" },
-{ "ctx": "upto", "say": "No me he casado", "intent": "any" }
+{ "ctx": "upto", "say": "No me he casado", "intent": "any" },
+{ "ctx": "recognize", "say": "¡Mira quién está aquí!", "intent": "greet" },
+{ "ctx": "recognize", "say": "¡Paola! ¡Cuánto tiempo sin vernos!", "intent": "greet" },
+{ "ctx": "changed", "say": "¿Y a ti, qué tal te ha ido?", "intent": "ask_been" },
+{ "ctx": "closing", "say": "¡Recuerdos a tu familia!", "intent": "say_hi_to" }
 ]
 }

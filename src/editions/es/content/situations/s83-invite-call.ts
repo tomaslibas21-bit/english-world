@@ -954,7 +954,7 @@ export const inviteCall: SituationDef = {
     how_are_you_again: [t("Bueno, | ¿y | cómo | estás?", "Well, | and | how | are you?", "So, how are you?")],
     hey_whatsup: [
       t("¡Hola! | ¿Qué onda?", "Hi! | What's up?", "Hey! What's up?", { flags: { 1: MEX + "a friendly “what's up?”." },
-        neutral: t("¡Hola! | ¿Qué tal?", "Hi! | How's it going?", "Hey! How's it going?") }),
+        neutral: t("¡Hola! | ¿Qué tal?", "Hi! | How's it going?", "Hey! How's it going?", { flags: {} }) }),
       t("¡Hola, | tú! | ¿Qué | me | cuentas?", "Hi, | you! | What | (to) me | do you tell?", "Hey, you! What's new?"),
     ],
     i_know: [
@@ -1011,7 +1011,7 @@ export const inviteCall: SituationDef = {
     are_you_asking: [
       t("¡Ay, | qué padre! | ¿Me | estás invitando?", "Oh, | how cool! | Me | are you inviting?", "Ooh, cool! Are you inviting me?",
         { flags: { 1: MEX + "qué padre = how cool." },
-          neutral: t("¡Ay, | qué | bien! | ¿Me | estás invitando?", "Oh, | how | nice! | Me | are you inviting?", "Ooh, nice! Are you inviting me?") }),
+          neutral: t("¡Ay, | qué | bien! | ¿Me | estás invitando?", "Oh, | how | nice! | Me | are you inviting?", "Ooh, nice! Are you inviting me?", { flags: {} }) }),
       t("Espera, | ¿me | estás invitando?", "Wait, | me | are you inviting?", "Wait, are you inviting me?"),
     ],
     is_that_invitation: [t("Entonces... | ¿es | una | invitación?", "So... | is it | an | invitation?", "So... is that an invitation?")],
@@ -1021,12 +1021,14 @@ export const inviteCall: SituationDef = {
       t("¿En serio? | ¡Me encantaría!", "Really? | I'd love to!", "Are you kidding? I'd love to!"),
       t("¡Ay, | sí! | ¡Me encantaría!", "Oh, | yes! | I'd love to!", "Oh my gosh, yes! I'd love to!"),
       t("¡Qué padre! | ¡Cuenta conmigo!", "How cool! | Count me in!", "Cool! Count me in!", { flags: { 0: MEX + "qué padre = how cool." },
-        neutral: t("¡Qué | bien! | ¡Cuenta conmigo!", "How | nice! | Count me in!", "Great! Count me in!") }),
+        neutral: t("¡Qué | bien! | ¡Cuenta conmigo!", "How | nice! | Count me in!", "Great! Count me in!", { flags: {} }) }),
       t("¡Sí! | ¡Claro que sí! | ¡Gracias!", "Yes! | Of course! | Thanks!", "Yes! Of course! Thank you!"),
     ],
     already_yes: [
       t("¡Sí, | ya | te | dije | que | sí! | Estoy | emocionadísima.", "Yes, | already | (to) you | I-told | that | yes! | I-am | super excited.",
-        "Yes, I already said yes! I'm so excited.", { flags: { 7: "-ísima: very, super (a woman speaking)." } }),
+        "Yes, I already said yes! I'm so excited.", { flags: { 7: "-ísima: very, super (a woman speaking)." },
+          spain: t("¡Sí, | ya | te | he dicho | que | sí! | Estoy | emocionadísima.", "Yes, | already | (to) you | I've-told | that | yes! | I-am | super excited.",
+            "Yes, I already said yes! I'm so excited.", { flags: { 7: "-ísima: very, super (a woman speaking)." } }) }),
     ],
     love_genre: [
       t("¡Me encanta | {G.the}!", "I love | {G}!", "I love {G}!", { flags: { 1: "Spanish uses the article for a kind of music in general; English has none." } }),
@@ -1042,7 +1044,8 @@ export const inviteCall: SituationDef = {
         "Sorry, you're breaking up a little. Did you say Friday?", { flags: { 5: "el before a weekday; English needs no word here." }, spain: t("Perdona, | se está cortando | un | poco. | ¿Has dicho | el | viernes?", "Sorry, | it's breaking up | a | little. | Did you say | — | Friday?", "Sorry, you're breaking up a little. Did you say Friday?", { flags: { 5: "el before a weekday; English needs no word here." } }) }),
     ],
     bad_line_q: [
-      t("Perdón, | ¿dijiste | el | viernes?", "Sorry, | did you say | — | Friday?", "Sorry, did you say Friday?", { flags: { 2: "el before a weekday; English needs no word here." } }),
+      t("Perdón, | ¿dijiste | el | viernes?", "Sorry, | did you say | — | Friday?", "Sorry, did you say Friday?", { flags: { 2: "el before a weekday; English needs no word here." },
+        spain: t("Perdona, | ¿has dicho | el | viernes?", "Sorry, | did you say | — | Friday?", "Sorry, did you say Friday?", { flags: { 2: "el before a weekday; English needs no word here." } }) }),
     ],
     ask_day: [
       t("¡Genial! | ¿Y | cuándo | es?", "Great! | And | when | is it?", "Cool! When is it?"),
@@ -1057,7 +1060,8 @@ export const inviteCall: SituationDef = {
       t("¡Qué | bien!", "How | nice!", "Nice!"),
     ],
     never_heard: [t("Nunca | los | he oído, | ¡pero | voy!", "Never | them | I've heard, | but | I'm-going!", "Never heard of them, but I'm in!", { flags: { 1: "los: them (an object pronoun here, not the article)." } })],
-    mystery: [t("¡Ja, | un | grupo | misterioso! | Igual | voy.", "Ha, | a | band | mysterious! | Anyway | I'm-going.", "Ha, a mystery band! I'm in anyway.")],
+    mystery: [t("¡Ja, | un | grupo | misterioso! | Igual | voy.", "Ha, | a | band | mysterious! | Anyway | I'm-going.", "Ha, a mystery band! I'm in anyway.",
+      { spain: t("¡Ja, | un | grupo | misterioso! | Yo | voy | de todas formas.", "Ha, | a | band | mysterious! | I | I'm-going | anyway.", "Ha, a mystery band! I'm in anyway.") })],
     ask_start: [
       t("¿A | qué | hora | empieza?", "At | what | time | does it start?", "What time does it start?"),
       t("¿Y | a | qué | hora | es?", "And | at | what | time | is it?", "And what time is it at?"),
@@ -1074,7 +1078,7 @@ export const inviteCall: SituationDef = {
     ack_place: [
       t("¡Me parece | bien!", "It seems to me | good!", "Sounds good!"),
       t("Sale, | muy | bien.", "Okay, | very | good.", "Okay, great.", { flags: { 0: MEX + "sale = okay, deal." },
-        neutral: t("Bueno, | muy | bien.", "Okay, | very | good.", "Okay, great."), spain: t("Vale, | muy | bien.", "Okay, | very | good.", "Okay, great.") }),
+        neutral: t("Bueno, | muy | bien.", "Okay, | very | good.", "Okay, great."), spain: t("Vale, | muy | bien.", "Okay, | very | good.", "Okay, great.", { flags: {} }) }),
     ],
     ask_meet_time: [
       t("¿Y | a | qué | hora?", "And | at | what | time?", "And what time?"),
@@ -1083,7 +1087,7 @@ export const inviteCall: SituationDef = {
     ack: [
       t("Perfecto.", "Perfect.", "Perfect."),
       t("Muy | bien.", "Very | good.", "Great."),
-      t("Va.", "Okay.", "Okay.", { flags: { 0: MEX + "va = okay." }, neutral: t("Bueno.", "Okay.", "Okay."), spain: t("Vale.", "Okay.", "Okay.") }),
+      t("Va.", "Okay.", "Okay.", { flags: { 0: MEX + "va = okay." }, neutral: t("Bueno.", "Okay.", "Okay."), spain: t("Vale.", "Okay.", "Okay.", { flags: { 0: "vale: okay, Spain's everyday yes." } }) }),
     ],
     suggest_place: [
       t("¿Qué tal | en | el | kiosco?", "How about | at | the | bandstand?", "How about at the bandstand?",
@@ -1096,7 +1100,7 @@ export const inviteCall: SituationDef = {
     suggest_time_again: [t("¿Entonces | a | {$time}?", "Then | at | {$time}?", "{$time}, then?")],
     when_then: [t("Bueno, | ¿entonces | a | qué | hora?", "Okay, | then | at | what | time?", "Okay, what time then?")],
     where_is_that: [
-      t("Mmm, | ¿dónde | queda | eso?", "Hmm, | where | is | that?", "Hmm, where's that?", { flags: { 2: "quedar: to be (located); ¿dónde queda? = where is it?" }, spain: t("Mmm, | ¿dónde | está | eso?", "Hmm, | where | is | that?", "Hmm, where's that?") }),
+      t("Mmm, | ¿dónde | queda | eso?", "Hmm, | where | is | that?", "Hmm, where's that?", { flags: { 2: "quedar: to be (located); ¿dónde queda? = where is it?" }, spain: t("Mmm, | ¿dónde | está | eso?", "Hmm, | where | is | that?", "Hmm, where's that?", { flags: {} }) }),
     ],
     pickup: [
       t("¡Ay, | qué | lindo, | gracias! | Pero | mejor | nos vemos | allá.", "Aw, | how | sweet, | thanks! | But | better | we meet | there.",
@@ -1150,7 +1154,8 @@ export const inviteCall: SituationDef = {
     ],
     sister_yes: [
       t("¡Ay, | gracias! | ¡Va | a | estar | feliz!", "Aw, | thanks! | She's going | to | be | happy!", "Yay! Thanks! She'll be so happy!", { spain: t("¡Ay, | gracias! | ¡Le | va | a | hacer | mucha | ilusión!", "Aw, | thanks! | (To) her | it's going | to | make | much | excitement!", "Yay! Thanks! She'll be so excited!") }),
-      t("¡Genial! | Hoy | le | digo.", "Great! | Today | (to) her | I-tell.", "Awesome! I'll tell her today."),
+      t("¡Genial! | Hoy | le | digo.", "Great! | Today | (to) her | I-tell.", "Awesome! I'll tell her today.",
+        { spain: t("¡Genial! | Hoy | se lo | digo.", "Great! | Today | it to her | I-tell.", "Awesome! I'll tell her today.") }),
     ],
     sister_no: [
       t("¡Ah, | no te preocupes! | Entonces | nada más | tú | y | yo.", "Oh, | don't worry! | Then | only | you | and | me.", "Oh, that's okay! Just us, then.", { spain: t("¡Ah, | no te preocupes! | Entonces | solo | tú | y | yo.", "Oh, | don't worry! | Then | only | you | and | me.", "Oh, that's okay! Just us, then.") }),
@@ -1187,7 +1192,7 @@ export const inviteCall: SituationDef = {
     ],
     will_text_ok: [
       t("¡Perfecto, | gracias!", "Perfect, | thanks!", "Perfect, thanks!"),
-      t("¡Va!", "Okay!", "Sounds good!", { flags: { 0: MEX + "va = okay." }, neutral: t("¡Muy | bien!", "Very | good!", "Sounds good!"), spain: t("¡Vale!", "Okay!", "Sounds good!") }),
+      t("¡Va!", "Okay!", "Sounds good!", { flags: { 0: MEX + "va = okay." }, neutral: t("¡Muy | bien!", "Very | good!", "Sounds good!"), spain: t("¡Vale!", "Okay!", "Sounds good!", { flags: { 0: "vale: okay, Spain's everyday yes." } }) }),
     ],
     me_too: [t("¡Yo | también!", "Me | too!", "Me too!")],
     yay: [t("¡Qué | bien!", "How | nice!", "Yay!")],
@@ -1203,7 +1208,7 @@ export const inviteCall: SituationDef = {
     bbq_yes: [
       t("¡Qué padre! | Luego | te | paso | la | dirección.", "How cool! | Later | (to) you | I-pass | the | address.", "Awesome! I'll send you the address later.",
         { flags: { 0: MEX + "qué padre = how cool." },
-          neutral: t("¡Genial! | Luego | te | paso | la | dirección.", "Great! | Later | (to) you | I-pass | the | address.", "Great! I'll send you the address later.") }),
+          neutral: t("¡Genial! | Luego | te | paso | la | dirección.", "Great! | Later | (to) you | I-pass | the | address.", "Great! I'll send you the address later.", { flags: {} }) }),
     ],
     bbq_maybe: [t("Bueno, | luego | me | dices.", "Okay, | later | (to) me | you-tell.", "Okay, just let me know.")],
     bbq_no: [t("¡No te preocupes! | Para | la | próxima.", "Don't worry! | For | the | next one.", "No worries! Maybe next time.")],
@@ -1229,7 +1234,7 @@ export const inviteCall: SituationDef = {
     opening: {
       lt: "Say hello and who's calling",
       items: [
-        { id: "open_its", s: t("¡Hola, | Andrea! | Soy | {$name}.", "Hi, | Andrea! | I'm | {$name}.", "Hi, Andrea! It's {$name}."), note: "On the phone, “Soy …” or “Habla …” (it's …)." },
+        { id: "open_its", s: t("¡Hola, | Andrea! | Soy | {$name}.", "Hi, | Andrea! | I'm | {$name}.", "Hi, Andrea! It's {$name}."), note: "On the phone, “Soy …” or “Habla …” (it's …).", noteSpain: "On the phone, “Soy …” (it's …)." },
         { id: "s_hello", s: t("¡Hola, | Andrea! | ¿Cómo | estás?", "Hi, | Andrea! | How | are you?", "Hi, Andrea! How are you?") },
         { id: "open_good_time", s: t("¿Puedes | hablar?", "Can you | talk?", "Is this a good time?") },
         { id: "open_minute", s: t("¿Tienes | un | minuto?", "Do you have | a | minute?", "Do you have a minute?") },
@@ -1251,7 +1256,8 @@ export const inviteCall: SituationDef = {
           "I've got two tickets for a {X} concert on Friday.", { flags: { 8: ON },
             neutral: t("Tengo | dos | entradas | para | un | concierto | de | {X} | el | viernes.", "I-have | two | tickets | for | a | concert | of | {X} | on | Friday.",
               "I've got two tickets for a {X} concert on Friday.", { flags: { 8: ON } }) }),
-          note: "A ticket: boleto in Mexico, entrada for a show in much of Latin America; both are understood." },
+          note: "A ticket: boleto in Mexico, entrada for a show in much of Latin America; both are understood.",
+          noteSpain: "entrada: a ticket for a show or a concert (Mexico: boleto)." },
         { id: "inv_how_about", s: t("¿Qué tal si | vamos | a | un | concierto | de | {X}?", "How about if | we-go | to | a | concert | of | {X}?", "How about going to a {X} concert?"), register: "casual" },
         { id: "inv_lets", s: t("¿Vamos | a | un | concierto | de | {X} | el | viernes?", "Shall we go | to | a | concert | of | {X} | on | Friday?", "Want to go to a {X} concert on Friday?", { flags: { 6: ON } }), register: "casual" },
         { id: "inv_feel_like", s: t("¿Tienes | ganas | de | ir | a | un | concierto?", "Do you have | desire | of | to go | to | a | concert?", "Do you feel like going to a concert?") },
@@ -1354,8 +1360,9 @@ export const inviteCall: SituationDef = {
         { id: "ag_sounds_good", s: t("¡Me parece | bien!", "It seems to me | good!", "Sounds good!") },
         { id: "ag_perfect", s: t("¡Perfecto!", "Perfect!", "Perfect!") },
         { id: "ag_sure", s: t("¡Claro!", "Sure!", "Sure!") },
-        { id: "ag_va", s: t("¡Va!", "Okay!", "Okay!", { neutral: t("¡De acuerdo!", "Okay!", "Okay!") }),
-          note: "“¡De acuerdo!” anywhere; in Mexico, among friends, also “¡Va!” or “¡Sale!” (okay, deal)." },
+        { id: "ag_va", s: t("¡Va!", "Okay!", "Okay!", { neutral: t("¡De acuerdo!", "Okay!", "Okay!"), spain: t("¡Vale!", "Okay!", "Okay!") }),
+          note: "“¡De acuerdo!” anywhere; in Mexico, among friends, also “¡Va!” or “¡Sale!” (okay, deal).",
+          noteSpain: "¡Vale!: okay, Spain's everyday yes (¡De acuerdo! works anywhere)." },
       ],
     },
     confirm: {
@@ -1384,6 +1391,8 @@ export const inviteCall: SituationDef = {
   },
 
   merges: {
+    // Spain pass 3 (14 Nov 2026)
+    "de todas formas": { reason: "lexical_expression", split: "de → of + todas → all + formas → ways: = anyway.", minimal: "Three words." },
     // Spain's twins (12 Nov 2026)
     "lo sé": { reason: "grammatical_fusion", split: "lo → it + sé → I know: ya lo sé = I know; English drops the object.", minimal: "Pronoun and verb." },
     "he visto": { reason: "grammatical_fusion", split: "he → have + visto (participle): haber + participle, Spain's present perfect for what has just happened; one English verb phrase.", minimal: "Auxiliary and participle." },

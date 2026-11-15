@@ -113,3 +113,10 @@ grammar, a held-out set of 66 learner sentences was written blind (`tests/es/hel
 Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
 
 - Read every twin: usted kept throughout, Spain's words right (billete, tarjeta de embarque, móvil, gafas, portátil, aseos, maleta, facturar, coger, aparcamiento, coche, jersey), the perfect for what just happened, "Ya está" for "Listo", Mexican-only names kept. Meaning, glosses and spelling: no problems found. No changes.
+
+## Spain pass 3 (14 Nov 2026)
+
+- 17 Spain twins (15 added, 2 changed). Don Rigo keeps usted.
+- “joven” as Don Rigo's way to address the learner (fare_fixed, haggle_again, far_no, airport_here, dollars_no) → lo siento, or nothing. The 11 Nov twins kept it (“also said in Spain”); on a third listening it is the Mexican driver's habit, rare and old-fashioned from a Spanish driver. Owner's call if it should come back.
+- ¡Súbase! → ¡Suba!; ¡Qué gusto! → ¡Qué bien!; ¿Le paro aquí? / aquí le paro → ¿Paro aquí? / paro aquí; El centro está muy bonito → es muy bonito; Perdón, solo efectivo → Lo siento, solo efectivo.
+- Notes: the ándele, prender, ahorita, nomás and hacerse notes no longer show on Spain's twins (they named words the twin doesn't say). No chip text changed; no corpus change.

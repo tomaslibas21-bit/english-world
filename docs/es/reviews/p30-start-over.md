@@ -113,3 +113,9 @@ Fresh reviewer, all Spain twins and the untwinned lines as Spain hears them (NPC
 Checked: Diego tú, Natalia and Diego together (vosotros: "Os he echado de menos"; "Te hemos echado de menos"), the two-month past (preterite right for the barbecue).
 Found and fixed: "Solo no me hagas esperar…" (→ "Pero no me hagas esperar…").
 Gates: tsc clean; check-content Mexican, neutral and Spain 0 errors, 0 warnings; corpus 403/403 0/77; held-out 39/39; Spain 19/19 0/2; vitest es 178/178.
+
+## Spain pass 3 (14 Nov 2026)
+
+- Diego: "Ya se me pasó" → "Ya se me ha pasado"; "te oigo decir “me equivoqué”" → "“me he equivocado”"; "levantar el teléfono" → "coger el teléfono"; "Solo dame un tiempo" → "Solo dame tiempo"; "¿Y ahora qué sigue?" → "¿Y ahora qué hacemos?"; "Ya empezamos" ×2 → "Ya hemos empezado"; "¡Ay, ya cállate!" → "¡Anda, calla!".
+- Hints: "Me equivoqué, y es mi culpa" → "Me he equivocado, y es culpa mía"; "Fue mi culpa" → "Fue culpa mía" (patterns already took both); noteSpain on "¿Borrón y cuenta nueva?" (not only Mexican); "¡Vale!" twin and come_home's neutral twin get empty flags (Mexican sale / pásale notes).
+Spain corpus +1. Gates: Spain and Mexican 0 errors, 0 warnings; Spain corpus 20/20, 0/2.

@@ -25,6 +25,7 @@ import type { SlotFn } from "@/convo/grammar";
 import { ent, t } from "@/content/dsl";
 import { expectHowAreYou } from "@/content/global";
 import { numberSlot } from "@/convo/slots";
+import { variety } from "@/convo/compose";
 
 /** A number of 10 or more really said as a number (an age: "tengo 67 años"). */
 const bigNumber: SlotFn = (toks, pos, prefix) => numberSlot(toks, pos, prefix).filter((r) => !r.cost && typeof r.value === "number" && r.value >= 10);
@@ -61,12 +62,15 @@ const addMin = (t: Clock, min: number): Clock => ({ h: t.h + Math.floor((t.m + m
 /** A clock time as Don Raúl says it, with its article and the part of the day: "las 5:15 de la tarde". */
 const HOURS = ["doce", "una", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve", "diez", "once"];
 const MINS: Record<number, string> = { 5: "y cinco", 10: "y diez", 15: "y cuarto", 30: "y media", 35: "treinta y cinco", 40: "cuarenta" };
+const MENOS: Record<number, string> = { 5: "cinco", 10: "diez", 15: "cuarto", 20: "veinte", 25: "veinticinco" };
 function clock(t: Clock): { en: string; lt: string; say: string } {
   const h12 = t.h % 12, hh = h12 === 0 ? 12 : h12, art = h12 === 1 ? "la" : "las";
   const part = t.h < 12 ? "de la mañana" : t.h < 19 ? "de la tarde" : "de la noche";
   const mm = String(t.m).padStart(2, "0");
   let say: string;
   if (t.m === 0) say = `${art} ${HOURS[h12]}`;
+  // Spain counts down to the next hour after the half: "las once menos veinte", "las seis menos cuarto" (STYLE.md)
+  else if (t.m > 30 && variety() === "spain") { const n = (h12 + 1) % 12; say = `${n === 1 ? "la" : "las"} ${HOURS[n]} menos ${MENOS[60 - t.m] ?? String(60 - t.m)}`; }
   else if (t.m === 45) { const n = (h12 + 1) % 12; say = `cuarto para ${n === 1 ? "la" : "las"} ${HOURS[n]}`; }
   else say = `${art} ${HOURS[h12]} ${MINS[t.m] ?? String(t.m)}`;
   return { en: `${art} ${hh}:${mm} ${part}`, lt: `${hh}:${mm} ${t.h < 12 ? "AM" : "PM"}`, say: `${say} ${part}` };
@@ -450,13 +454,13 @@ export const tickets: SituationDef = {
       t("¡Buenos días! | ¿A | dónde | va?", "Good morning! | To | where | are you going?", "Good morning! Where are you headed?"),
       t("¡Pásele! | ¿Para | dónde | va?", "Come on up! | For | where | are you going?", "Next, please! Where are you headed?",
         { flags: { 0: "Mexican: ¡pásele! = come on in / step up, a friendly invitation." },
-          neutral: t("¡Adelante! | ¿Para | dónde | va?", "Go ahead! | For | where | are you going?", "Next, please! Where are you headed?") }),
-      t("Buenos días. | ¿En | qué | le | puedo | servir?", "Good morning. | In | what | (to) you | can I | serve?", "Good morning. How can I help you?"),
+          neutral: t("¡Adelante! | ¿Para | dónde | va?", "Go ahead! | For | where | are you going?", "Next, please! Where are you headed?"), spain: t("¡Siguiente! | ¿A | dónde | va?", "Next! | To | where | are you going?", "Next, please! Where are you headed?", { flags: {} }) }),
+      t("Buenos días. | ¿En | qué | le | puedo | servir?", "Good morning. | In | what | (to) you | can I | serve?", "Good morning. How can I help you?", { spain: t("Buenos días. | ¿En | qué | le | puedo | ayudar?", "Good morning. | In | what | (to) you | can I | help?", "Good morning. How can I help you?") }),
     ],
     greet_hay: [t("¡Buenos días! | ¿Cómo | está?", "Good morning! | How | are you?", "Good morning! How are you?")],
     ask_dest: [
       t("¿A | dónde | va?", "To | where | are you going?", "Where are you headed?"),
-      t("¿Para | dónde | quiere | su | boleto?", "For | where | do you want | your | ticket?", "Where would you like your ticket to?", { spain: t("¿Para | dónde | quiere | su | billete?", "For | where | do you want | your | ticket?", "Where would you like your ticket to?") }),
+      t("¿Para | dónde | quiere | su | boleto?", "For | where | do you want | your | ticket?", "Where would you like your ticket to?", { spain: t("¿Adónde | quiere | el | billete?", "To where | do you want | the | ticket?", "Where would you like your ticket to?") }),
     ],
     dest_list: [t("Tenemos | salidas | a | Tulum, | Playa del Carmen, | Cancún | y | Mérida.", "We have | departures | to | Tulum, | Playa del Carmen, | Cancún | and | Mérida.", "We have buses to Tulum, Playa del Carmen, Cancún, and Mérida.")],
     ask_playa: [t("¿A | Playa del Carmen?", "To | Playa del Carmen?", "To Playa del Carmen?")],
@@ -507,7 +511,7 @@ export const tickets: SituationDef = {
       { flags: { 0: "Mexican: ¡híjole! = oh no / oh man, for surprise or bad news." },
         neutral: t("¡Ay, | lo siento! | El | de | {$at} | ya | está | lleno. | El | siguiente | sale | a | {$late}. | ¿Se lo | doy?",
           "Oh, | I'm sorry! | The one | at | {$at} | already | is | full. | The | next one | leaves | at | {$late}. | It to you | should I give?",
-          "Oh, I'm sorry! The {$at} bus is already full. The next one leaves at {$late}. Should I give you that one?") })],
+          "Oh, I'm sorry! The {$at} bus is already full. The next one leaves at {$late}. Should I give you that one?"), spain: t("¡Vaya, | lo siento! | El | de | {$at} | ya | está | lleno. | El | siguiente | sale | a | {$late}. | ¿Se lo | doy?", "Oh, | I'm sorry! | The one | at | {$at} | already | is | full. | The | next one | leaves | at | {$late}. | It to you | should I give?", "Oh no! The {$at} bus is already full. The next one leaves at {$late}. Should I give you that one?", { flags: { 0: "¡Vaya!: oh dear, for a small surprise or bad news." } }) })],
     later_one: [t("Sí, | el | de | {$late}.", "Yes, | the one | at | {$late}.", "Yes, the {$late} one.")],
     next_at: [t("El | siguiente | sale | a | {$late}.", "The | next one | leaves | at | {$late}.", "The next one leaves at {$late}.")],
     first_one: [t("No, | el | primero | es | el | de | {$at}.", "No, | the | first one | is | the one | at | {$at}.", "No, the first one is the {$at} bus.")],
@@ -521,7 +525,7 @@ export const tickets: SituationDef = {
       "Today | anymore | there isn't | another. | Tomorrow | leaves | one | at | {$at}. | It to you | should I give | for | tomorrow?",
       "There's nothing else today. Tomorrow there's one at {$at}. Should I give you that one?")],
     tomorrow_ok: [t("Listo, | para | mañana | a | {$at}.", "Done, | for | tomorrow | at | {$at}.", "All set, tomorrow at {$at}.", { spain: t("Perfecto, | para | mañana | a | {$at}.", "Perfect, | for | tomorrow | at | {$at}.", "All set, tomorrow at {$at}.") })],
-    walk_off: [t("Está bien. | Aquí | estamos | cuando | guste.", "That's fine. | Here | we are | whenever | you like.", "That's fine. We're here whenever you need us.")],
+    walk_off: [t("Está bien. | Aquí | estamos | cuando | guste.", "That's fine. | Here | we are | whenever | you like.", "That's fine. We're here whenever you need us.", { spain: t("Vale. | Aquí | estamos | cuando | quiera.", "Okay. | Here | we are | whenever | you want.", "That's fine. We're here whenever you need us.") })],
     ask_seat: [
       t("¿Ventanilla | o | pasillo?", "Window | or | aisle?", "Window or aisle?"),
       t("Aquí | están | los | lugares | libres. | ¿Ventanilla | o | pasillo?", "Here | are | the | seats | free. | Window | or | aisle?", "Here are the open seats. Window or aisle?", { spain: t("Aquí | están | los | asientos | libres. | ¿Ventanilla | o | pasillo?", "Here | are | the | seats | free. | Window | or | aisle?", "Here are the open seats. Window or aisle?") }),
@@ -551,7 +555,7 @@ export const tickets: SituationDef = {
     ask_discount: [t("¿Tiene | credencial | del | INAPAM?", "Do you have | a card | of the | INAPAM?",
       "Do you have an INAPAM senior card?", { flags: { 3: "INAPAM: Mexico's national institute for older adults; its card gives seniors discounts." } })],
     discount_info: [t("Sí. | Con | credencial | del | INAPAM, | los | adultos mayores | pagan | la mitad.", "Yes. | With | a card | of the | INAPAM, | the | seniors | pay | half.",
-      "Yes. Seniors with an INAPAM card pay half.", { flags: { 4: "INAPAM: Mexico's national institute for older adults; its card gives seniors discounts." } })],
+      "Yes. Seniors with an INAPAM card pay half.", { flags: { 4: "INAPAM: Mexico's national institute for older adults; its card gives seniors discounts." }, spain: t("Sí. | Con | credencial | del | INAPAM, | las | personas mayores | pagan | la mitad.", "Yes. | With | a card | of the | INAPAM, | the | seniors | pay | half.", "Yes. Seniors with an INAPAM card pay half.") })],
     child_disc: [t("Los | niños | también | tienen | descuento, | según | la | edad.", "The | children | also | have | a discount, | depending on | the | age.", "Kids get a discount too, depending on their age.")],
     student_disc: [t("Los | estudiantes | solo | tienen | descuento | en | vacaciones.", "The | students | only | have | a discount | in | vacations.", "Students only get a discount during school vacations.")],
     teacher_disc: [t("Los | maestros | solo | tienen | descuento | en | vacaciones.", "The | teachers | only | have | a discount | in | vacations.", "Teachers only get a discount during school vacations.", { spain: t("Los | profesores | solo | tienen | descuento | en | vacaciones.", "The | teachers | only | have | a discount | in | vacations.", "Teachers only get a discount during school vacations.") })],
@@ -599,18 +603,18 @@ export const tickets: SituationDef = {
     stops_tulum: [t("Nada más | hace | parada | en | Tulum.", "Only | it-makes | a stop | in | Tulum.", "It just stops in Tulum.", { spain: t("Solo | hace | parada | en | Tulum.", "Only | it-makes | a stop | in | Tulum.", "It just stops in Tulum.") })],
     stops_playa: [t("Nada más | hace | parada | en | Tulum | y | en | Playa del Carmen.", "Only | it-makes | a stop | in | Tulum | and | in | Playa del Carmen.", "It just stops in Tulum and Playa del Carmen.", { spain: t("Solo | hace | parada | en | Tulum | y | en | Playa del Carmen.", "Only | it-makes | a stop | in | Tulum | and | in | Playa del Carmen.", "It just stops in Tulum and Playa del Carmen.") })],
     stops_valladolid: [t("Nada más | hace | parada | en | Tulum | y | en | Valladolid.", "Only | it-makes | a stop | in | Tulum | and | in | Valladolid.", "It just stops in Tulum and Valladolid.", { spain: t("Solo | hace | parada | en | Tulum | y | en | Valladolid.", "Only | it-makes | a stop | in | Tulum | and | in | Valladolid.", "It just stops in Tulum and Valladolid.") })],
-    dur_tulum: [t("Como | media hora.", "About | half an hour.", "About half an hour.")],
-    dur_playa: [t("Como | una | hora | y | media.", "About | an | hour | and | a half.", "About an hour and a half.")],
-    dur_cancun: [t("Como | dos | horas | y | media.", "About | two | hours | and | a half.", "About two and a half hours.")],
-    dur_merida: [t("Como | cinco | horas.", "About | five | hours.", "About five hours.")],
-    arrives: [t("Llega | como | a | {$at}.", "It arrives | around | at | {$at}.", "It gets in around {$at}.")],
+    dur_tulum: [t("Como | media hora.", "About | half an hour.", "About half an hour.", { spain: t("Una | media hora.", "About | half an hour.", "About half an hour.", { flags: { 0: "una media hora: about half an hour (una adds “about”)." } }) })],
+    dur_playa: [t("Como | una | hora | y | media.", "About | an | hour | and | a half.", "About an hour and a half.", { spain: t("Una | hora | y | media, | más o menos.", "One | hour | and | a half, | more or less.", "About an hour and a half.") })],
+    dur_cancun: [t("Como | dos | horas | y | media.", "About | two | hours | and | a half.", "About two and a half hours.", { spain: t("Unas | dos | horas | y | media.", "About | two | hours | and | a half.", "About two and a half hours.", { flags: { 0: "unas before a number: about." } }) })],
+    dur_merida: [t("Como | cinco | horas.", "About | five | hours.", "About five hours.", { spain: t("Unas | cinco | horas.", "About | five | hours.", "About five hours.", { flags: { 0: "unas before a number: about." } }) })],
+    arrives: [t("Llega | como | a | {$at}.", "It arrives | around | at | {$at}.", "It gets in around {$at}.", { spain: t("Llega | sobre | {$at}.", "It arrives | around | {$at}.", "It gets in around {$at}.") })],
     price_one: [t("El | sencillo | cuesta | {$price}.", "The | one-way | costs | {$price}.", "One-way is {$price}.", { spain: t("La | ida | cuesta | {$price}.", "The | one-way | costs | {$price}.", "One-way is {$price}.") })],
     price_round: [t("Y | el | redondo, | {$price}.", "And | the | round-trip, | {$price}.", "And round-trip is {$price}.", { spain: t("Y | la | ida y vuelta, | {$price}.", "And | the | round-trip, | {$price}.", "And round-trip is {$price}.") })],
     ontime: [t("Hasta | ahorita | va | a tiempo.", "Until | right now | it's going | on time.", "So far it's on time.",
-      { flags: { 1: "Mexican: ahorita = right now." }, neutral: t("Hasta | ahora | va | a tiempo.", "Until | now | it's going | on time.", "So far it's on time.") })],
+      { flags: { 1: "Mexican: ahorita = right now." }, neutral: t("Hasta | ahora | va | a tiempo.", "Until | now | it's going | on time.", "So far it's on time."), spain: t("De momento | va | puntual.", "For now | it's going | on time.", "So far it's on time.", { flags: {} }) })],
     waiting: [t("La | sala de espera | está | ahí | enfrente.", "The | waiting room | is | there | in front.", "The waiting room is right over there.")],
     shop: [t("Hay | una | tiendita | junto | a | la | entrada.", "There's | a | little store | next | to | the | entrance.", "There's a little shop by the entrance.",
-      { flags: { 2: "tiendita: a small corner store; the -ita ending makes it little and friendly." }, spain: t("Hay | una | tienda | junto | a | la | entrada.", "There's | a | store | next | to | the | entrance.", "There's a little shop by the entrance.") })],
+      { flags: { 2: "tiendita: a small corner store; the -ita ending makes it little and friendly." }, spain: t("Hay | una | tienda | junto | a | la | entrada.", "There's | a | store | next | to | the | entrance.", "There's a little shop by the entrance.", { flags: {} }) })],
     no_food: [t("En | el | autobús | no venden | nada. | Mejor | compre | algo | aquí | antes | de | subir.", "On | the | bus | they don't sell | anything. | Better | buy | something | here | before | — | getting on.",
       "They don't sell anything on the bus. Better buy something here before you get on.", { flags: { 10: "de links antes to the infinitive; English before needs no extra word." } })],
     bus_extras: [t("Tiene | aire acondicionado | y | baño. | El | wifi | a veces | funciona | y | a veces | no.", "It has | air conditioning | and | a restroom. | The | Wi-Fi | sometimes | works | and | sometimes | not.",
@@ -619,7 +623,7 @@ export const tickets: SituationDef = {
     restroom: [t("Los | baños | están | al fondo, | a la derecha.", "The | restrooms | are | at the back, | on the right.", "The restrooms are at the back, on the right.", { spain: t("Los | aseos | están | al fondo, | a la derecha.", "The | restrooms | are | at the back, | on the right.", "The restrooms are at the back, on the right.") })],
     luggage: [t("Claro. | Su | maleta | va | abajo | del | autobús, | y | le | dan | un | comprobante | para | recogerla.",
       "Sure. | Your | suitcase | goes | under | the | bus, | and | (to) you | they-give | a | claim tag | to | pick it up.",
-      "Sure. Your suitcase goes under the bus, and they give you a claim tag to pick it up.", { flags: { 5: "del = de + el; abajo de means under." }, spain: t("Claro. | Su | maleta | va | en el maletero | del | autobús, | y | le | dan | un | comprobante | para | recogerla.", "Sure. | Your | suitcase | goes | in the luggage hold | of the | bus, | and | (to) you | they-give | a | claim tag | to | pick it up.", "Sure. Your suitcase goes under the bus, and they give you a claim tag to pick it up.", {flags: {5: "del = de + el; abajo de means under."}}) })],
+      "Sure. Your suitcase goes under the bus, and they give you a claim tag to pick it up.", { flags: { 5: "del = de + el; abajo de means under." }, spain: t("Claro. | Su | maleta | va | en el maletero | del | autobús, | y | le | dan | un | comprobante | para | recogerla.", "Sure. | Your | suitcase | goes | in the luggage hold | of the | bus, | and | (to) you | they-give | a | claim tag | to | pick it up.", "Sure. Your suitcase goes under the bus, and they give you a claim tag to pick it up.", {flags: {5: "del = de + el."}}) })],
     // "¿Cuántas maletas puedo llevar?": the coach lines' free allowance, 25 kilos a passenger (rule 11: not "Claro…")
     luggage_limit: [t("Puede | llevar | hasta | 25 | kilos | sin costo.", "You can | take | up to | 25 | kilos | free of charge.", "You can bring up to 25 kilos free.",
       { say: "Puede llevar hasta veinticinco kilos sin costo.", spain: t("Puede | llevar | hasta | 25 | kilos | sin coste.", "You can | take | up to | 25 | kilos | free of charge.", "You can bring up to 25 kilos free.", {say: "Puede llevar hasta veinticinco kilos sin coste."}) })],
@@ -681,7 +685,7 @@ export const tickets: SituationDef = {
     trip: {
       lt: "Say one-way or round-trip",
       items: [
-        { id: "t_short", s: t("Redondo, | por favor.", "Round-trip, | please.", "Round-trip, please.", { spain: t("Ida y vuelta, | por favor.", "Round-trip, | please.", "Round-trip, please.") }), note: "Redondo = round-trip; sencillo = one-way." },
+        { id: "t_short", s: t("Redondo, | por favor.", "Round-trip, | please.", "Round-trip, please.", { spain: t("Ida y vuelta, | por favor.", "Round-trip, | please.", "Round-trip, please.") }), note: "Redondo = round-trip; sencillo = one-way.", noteSpain: "Ida y vuelta = round-trip; solo ida = one-way." },
         { id: "t_short", s: t("Sencillo, | por favor.", "One-way, | please.", "One-way, please.", { spain: t("Solo ida, | por favor.", "One-way, | please.", "One-way, please.") }) },
         { id: "t_ida", s: t("Solo | de | ida.", "Only | — | going.", "Just one-way.", { flags: { 1: "de ida: the way there; de has no English word here." } }) },
         { id: "ret_coming", s: t("Regreso | el | domingo.", "I come back | on | Sunday.", "I'm coming back on Sunday.", { flags: { 1: "el before a weekday = on." }, spain: t("Vuelvo | el | domingo.", "I come back | on | Sunday.", "I'm coming back on Sunday.", {flags: {1: "el before a weekday = on."}}) }) },
@@ -693,7 +697,7 @@ export const tickets: SituationDef = {
         { id: "r_day", s: t("El | domingo.", "On | Sunday.", "On Sunday.", { flags: { 0: "el before a weekday = on." } }) },
         { id: "r_coming", s: t("Regreso | el | viernes.", "I come back | on | Friday.", "I'm coming back on Friday.", { flags: { 1: "el before a weekday = on." }, spain: t("Vuelvo | el | viernes.", "I come back | on | Friday.", "I'm coming back on Friday.", {flags: {1: "el before a weekday = on."}}) }) },
         { id: "r_day", s: t("Mañana | en la tarde.", "Tomorrow | in the afternoon.", "Tomorrow afternoon.", { spain: t("Mañana | por la tarde.", "Tomorrow | in the afternoon.", "Tomorrow afternoon.") }) },
-        { id: "r_not_sure", s: t("Todavía | no sé.", "Still | I don't know.", "I don't know yet.") },
+        { id: "r_not_sure", s: t("Todavía | no sé.", "Still | I don't know.", "I don't know yet.", { spain: t("Todavía | no lo sé.", "Still | I don't know.", "I don't know yet.") }) },
       ],
     },
     count: {
@@ -749,7 +753,7 @@ export const tickets: SituationDef = {
       lt: "Ask about discounts",
       items: [
         { id: "q_student", s: t("¿Hay | descuento | para | estudiantes?", "Is there | a discount | for | students?", "Is there a student discount?") },
-        { id: "q_senior", s: t("¿Tienen | descuento | para | adultos mayores?", "Do you have | a discount | for | seniors?", "Do you have a senior discount?") },
+        { id: "q_senior", s: t("¿Tienen | descuento | para | adultos mayores?", "Do you have | a discount | for | seniors?", "Do you have a senior discount?", { spain: t("¿Tienen | descuento | para | jubilados?", "Do you have | a discount | for | retirees?", "Do you have a senior discount?") }) },
       ],
     },
     discount_ans: {
@@ -793,8 +797,8 @@ export const tickets: SituationDef = {
         { id: "q_long", s: t("¿Cuánto | tiempo | tarda?", "How much | time | does it take?", "How long does it take?") },
         { id: "q_arrive", s: t("¿A | qué | hora | llega?", "At | what | time | does it arrive?", "What time does it get in?") },
         { id: "q_luggage", s: t("¿Puedo | llevar | mi | maleta?", "Can I | take | my | suitcase?", "Can I bring my suitcase?") },
-        { id: "q_early", s: t("¿Con | cuánto | tiempo | antes | tengo | que | llegar?", "With | how much | time | before | I have | to | arrive?", "How early should I get here?") },
-        { id: "q_ontime", s: t("¿Sale | a tiempo?", "Does it leave | on time?", "Is it leaving on time?") },
+        { id: "q_early", s: t("¿Con | cuánto | tiempo | antes | tengo | que | llegar?", "With | how much | time | before | I have | to | arrive?", "How early should I get here?", { spain: t("¿Cuánto | tiempo | antes | tengo | que | llegar?", "How much | time | before | I have | to | arrive?", "How early should I get here?") }) },
+        { id: "q_ontime", s: t("¿Sale | a tiempo?", "Does it leave | on time?", "Is it leaving on time?", { spain: t("¿Sale | puntual?", "Does it leave | on time?", "Is it leaving on time?") }) },
         { id: "q_wait", s: t("¿Dónde | puedo | esperar?", "Where | can I | wait?", "Where can I wait?") },
         { id: "q_price", s: t("¿Cuánto | cuesta | el | boleto?", "How much | costs | the | ticket?", "How much is the ticket?", { spain: t("¿Cuánto | cuesta | el | billete?", "How much | costs | the | ticket?", "How much is the ticket?") }) },
       ],
@@ -812,6 +816,10 @@ export const tickets: SituationDef = {
 
   merges: {
     // Spain's twins (11 Nov 2026)
+    // Spain pass 3 (14 Nov 2026)
+    "personas mayores": { reason: "lexical_expression", split: "personas → people + mayores → older/bigger misreads the set phrase: seniors.", minimal: "Two words." },
+    "más o menos": { reason: "lexical_expression", split: "más → more + o → or + menos → less is literal but reads as a comparison; = roughly.", minimal: "Three words." },
+    "de momento": { reason: "lexical_expression", split: "de → of + momento → moment misreads the time phrase: for now.", minimal: "Two words." },
     "solo ida": { reason: "lexical_expression", split: "solo → only + ida → going: = a one-way ticket (Spain).", minimal: "Two words." },
     "ida y vuelta": { reason: "lexical_expression", split: "ida → going + y → and + vuelta → return: = a round trip.", minimal: "Three words." },
     "he anotado": { reason: "grammatical_fusion", split: "he → have/has + anotado (participle): haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },

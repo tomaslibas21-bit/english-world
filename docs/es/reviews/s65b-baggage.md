@@ -250,3 +250,10 @@ brief says the conversation teaches "reclamo de equipaje": only the hall's sign 
 Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
 
 - Read every twin: usted kept throughout, Spain's words right (billete, tarjeta de embarque, móvil, gafas, portátil, aseos, maleta, facturar, coger, aparcamiento, coche, jersey), the perfect for what just happened, "Ya está" for "Listo", Mexican-only names kept. Meaning, glosses and spelling: no problems found. No changes.
+
+## Spain pass 3 (14 Nov 2026)
+
+- 18 Spain twins (13 added, 5 changed), 2 noteSpain. Itzel and customs keep usted.
+- Lines: ¿Qué se le ofrece? → ¿Qué desea?; Lamento escuchar eso (a calque) → Siento mucho oír eso; Está bien → Vale; ¿Tuvo alguna conexión? → ¿Ha tenido…?; Déjeme revisar en el sistema → mirar; ¿Dónde se está hospedando? / ¿se hospeda? → alojando / se aloja; ¿Algo más en que le pueda ayudar? → en lo que; 10,000 → 10.000 (Spain's thousands point, as in the other cash lines).
+- Notes: the pase de abordar / playera / listón notes no longer show on Spain's tarjeta de embarque, camiseta, cinta (the twin's flag sat on the wrong word or named a Mexican word); the dog's twins say se ha sentado / ha marcado in their notes; size and dc_none have a noteSpain (pequeña, no llevo nada).
+- Chips: No, fue un vuelo directo → No, ha sido un vuelo directo (today's flight); the grammar takes “ha sido”. Lleva una cinta amarilla en el asa: a note on el asa. 1 corpus item.

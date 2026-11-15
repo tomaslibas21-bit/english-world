@@ -135,3 +135,13 @@ Found and fixed: Writer's twin said “Su tarta … está buenísimo” → buen
 English of every twin checked against its Mexican line (restored where a twin had rephrased it). Spain corpus items
 added for the new forms. Gates: Mexican, neutral and Spain checks 0 errors; coverage 0 false accepts.
 
+
+## Spain pass 3 (14 Nov 2026)
+
+- Ha de ser interesante (Mexican haber de) → Debe de ser interesante; hace cuánto que → cuánto hace que; Hay que vernos
+  pronto → A ver si nos vemos pronto; trabajo de tiempo completo → un trabajo a tiempo completo; restaurantito →
+  restaurante pequeño; Ahora te traigo → Ahora te lo traigo; ¡Va!/¡Claro! → ¡Vale!; Allá hace/llueve → Allí.
+- Notes: rain_yes says "calentita" (the twin kept the Mexican "calientita" note); twins that inherited the qué padre,
+  chamba, buena onda and ahorita notes get `flags: {}`.
+- Chips: t_dur "Como un año" → "Más o menos un año"; noteSpain on d_can.
+- Spain corpus: +1 item.

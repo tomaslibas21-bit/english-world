@@ -144,3 +144,10 @@ Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line a
 - Fixed: "Listo" as "done" is Latin American in Spain's ear (batch 2 already said "Ya está"): pre_total "Listo." gets a twin "Ya está."; the change line "Listo, ya lo he cambiado" → "Hecho, ya lo he cambiado". "¿Qué pan te pongo?" (for croissants and doughnuts) → "¿Qué bollo te pongo?".
 - global.ts (shared lines) checked too: the perfect for what was just said (no te he entendido, ¿has dicho…?, me he equivocado, no he oído bien), "Vale, no hay problema", "¡A usted/ti!" and "¡Faltaría más!" after thanks, "¡Cuánto me alegro!", "Pues ahí vamos", "no llevo reloj": all natural, nothing changed.
 - Left: "Serían $40" (heard in Spain too).
+
+## Spain pass 3 (14 Nov 2026)
+
+- 8 Spain twins (2 added, 6 changed), 2 noteSpain. Mariana keeps tú.
+- Notes: Spain's twins no longer show the verlo/verla, ¿Gusta…?, “all over Latin America”, ticket-is-Mexican, ahorita and pizarrón notes; verte, ¿Eso es todo? and ticket have notes of their own. voy_a_querer and deme have Spain notes (Voy a tomar…, Ponme).
+- Line: what_torta “un sándwich mexicano” → “un bocadillo mexicano”.
+- Kept: ¿Dónde está el baño? (natural in a Spanish café), pan dulce, conchas, café de olla (the café's own things).

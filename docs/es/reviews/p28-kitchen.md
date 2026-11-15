@@ -144,3 +144,11 @@ Fresh reviewer, all Spain twins and the untwinned lines as Spain hears them (NPC
 Checked: the chef's tú, the learner's usted to the chef, Fátima tú both ways, closing_chef's "Probad" with {m:los dos|f:las dos} (agrees), the pictures' food words (chowder, tortilla strips, habanero kept).
 Found and fixed: "Eso lo va a recordar por años" (→ "durante años"); "Olvida lo que dije" just said (→ "lo que he dicho", Perdona); "Ya sabía" (→ "Ya lo sabía", Vale, Perdona).
 Gates: tsc clean; check-content Mexican, neutral and Spain 0 errors, 0 warnings; corpus 436/436 0/69; held-out 39/40 (unchanged); Spain 22/22 0/1; vitest es 178/178.
+
+## Spain pass 3 (14 Nov 2026)
+
+- The chef: "¿qué traes?" → "¿qué me traes?" (greet, greet_back); "Probad todo" → "Probadlo todo"; "Mañana probamos todo" → "Mañana lo probamos todo"; Fátima's "Eh..." twin gets its own flag (it showed the "este…" note).
+- Hints: "¡Huele delicioso!" → "¡Qué bien huele!" (pattern tagged #h:smells_great); "Empieza con poquito" → "Empieza con poco"; "Ya lo vas a lograr" → "Ya lo conseguirás" (patterns take it; noteSpain instead of "¡Échale ganas!"); "Buen punto. Lo voy a probar" → "Tienes razón. Lo voy a probar" (pattern added, #h:good_point).
+- Neutral twins of serve_again, receive_help, again_prompt, handoff_yes and closing_reply got empty flags (they inherited the Mexican nomás / ándale / tantito / pizarrón notes).
+- Kept: "In Mexico limón is the small green lime" (true of the town's limes).
+Spain corpus +4. Gates: Spain and Mexican 0 errors, 0 warnings; Spain corpus 26/26, 0/1.

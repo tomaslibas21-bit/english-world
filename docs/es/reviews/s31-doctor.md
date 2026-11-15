@@ -172,3 +172,12 @@ Found and fixed: Recent past in the perfect (¿Se ha tomado la temperatura?, aca
 English of every twin checked against its Mexican line (restored where a twin had rephrased it). Spain corpus items
 added for the new forms. Gates: Mexican, neutral and Spain checks 0 errors; coverage 0 false accepts.
 
+
+## Spain pass 3 (14 Nov 2026)
+
+- The doctor: "¿Qué lo/la trae…?" (greet, greet_back, fine_glad, ask_problem) → "¿Qué le trae…?" (F_LE_SPAIN); "tomar la presión" → "la tensión"; "acuéstese" → "túmbese"; "¿cuánto marcó?" → "¿cuánto marcaba?"; "tableta" → "pastilla" (five dose lines; "a traguitos" → "a sorbitos"; "máximo" → "como máximo"); "caer mal/bien" → "sentar mal/bien" (meals_after, side_ab, eat_any).
+- Notes: temp_slight's "unas décimas" and the "calentito" lines get their own flags (they showed the Mexican "líneas" / "calientito" notes); neutral twins of temp_check_later, explain_soon, ask_pharmacy, ask_pharmacy_again, pharmacy_harbor and the gripe hint got empty flags.
+- Symptoms in Spain: runny_nose "mocos" (escurrimiento nasal), aches "dolor muscular" (dolor de cuerpo), flu "gripe" (influenza); the cold hint "Tengo gripa/gripe" → "Tengo catarro". A Spain learner's "gripe" is still read as the cold entity (both lead to the same care).
+- Hint "Sí, tengo fiebre de 38" → "Sí, tengo 38 de fiebre" (temp_ans pattern added, #h:temp).
+- Kept: the tip on "estoy constipado" (it says Mexico reads it as constipated; true in this town) — see the report.
+Spain corpus +4. Gates: Spain and Mexican 0 errors, 0 warnings; Spain corpus 21/21, 0/1.

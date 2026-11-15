@@ -23,6 +23,8 @@
 { "ctx": "anything_else", "say": "¿Lo puedo hacer por internet?", "intent": "mp_online" },
 { "ctx": "anything_else", "say": "Ha sido usted muy amable, gracias", "intent": ["thanks_officer", "g_thanks"] },
 { "ctx": "anything_else", "say": "Vale, voy para allá", "intent": ["thats_all", "g_thanks", "yn:yes", "mp_ok"] },
-{ "ctx": "happened", "say": "Nadie se ha chocado conmigo", "intent": "any" }
+{ "ctx": "happened", "say": "Nadie se ha chocado conmigo", "intent": "any" },
+{ "ctx": "report", "say": "Buenas tardes, quiero denunciar un robo", "intent": "report" },
+{ "ctx": "anything_else", "say": "No, eso es todo, gracias", "intent": "thats_all" }
 ]
 }

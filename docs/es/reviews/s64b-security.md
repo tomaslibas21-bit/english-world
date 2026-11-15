@@ -125,3 +125,14 @@ s91a/s91b too.
 Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
 
 - Read every twin: usted kept throughout, Spain's words right (billete, tarjeta de embarque, móvil, gafas, portátil, aseos, maleta, facturar, coger, aparcamiento, coche, jersey), the perfect for what just happened, "Ya está" for "Listo", Mexican-only names kept. Meaning, glosses and spelling: no problems found. No changes.
+
+## Spain pass 3 (14 Nov 2026)
+
+Mostly notes: many twins (and neutral twins Spain falls back on) carried Mexican notes by unit index (pase de abordar,
+"e" before i, chamarra, charola, sala, momentito, traer, se me olvidó). They now have their own `flags` (`{}` or the
+Spain note): greet_docs ×2, docs_need_bp, divest2, divest_ask, phone_where, bins_here, bag_no_tray, gate_dir,
+item_tray, put_it_bin, ask_belt_watch, the div_no_laptop / div_bins / bt_forgot / gate_dir chips.
+
+- Text: un momentito → un momento; puede tomársela → bebérsela (×2); sale del otro lado → por el otro lado; Es todo.
+  Puede continuar → Ya está. Puede continuar; por allá (gates) → por allí.
+- Chip bt_drink: "Me la tomo aquí" → "Me la bebo aquí" (grammar tag `#h:bt_drink` on the beber forms).

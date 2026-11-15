@@ -23,6 +23,9 @@
 { "ctx": "again", "say": "Vale, ¿a qué hora?", "intent": "agree_again" },
 { "ctx": "closing", "say": "¡Vale, te escribo! ¡Buenas noches!", "intent": ["text_reply", "g_bye"] },
 { "ctx": "nice", "say": "No me lo he pasado bien", "intent": "any" },
-{ "ctx": "drinks", "say": "Ayer me compré un coche nuevo", "intent": "none" }
+{ "ctx": "drinks", "say": "Ayer me compré un coche nuevo", "intent": "none" },
+{ "ctx": "greet_late", "say": "¡Hola! Encantada", "intent": "greet_back" },
+{ "ctx": "greet_meet", "say": "¡Qué ilusión conocerte por fin!", "intent": "greet_back" },
+{ "ctx": "again", "say": "Lo siento, creo que no", "intent": ["decline_again", "yn:no"], "not": ["agree_again"] }
 ]
 }

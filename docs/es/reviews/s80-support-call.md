@@ -141,3 +141,18 @@ Found and fixed: {lo} comunico con → le paso con (atención al cliente, servic
 English of every twin checked against its Mexican line (restored where a twin had rephrased it). Spain corpus items
 added for the new forms. Gates: Mexican, neutral and Spain checks 0 errors; coverage 0 false accepts.
 
+
+## Spain pass 3 (14 Nov 2026)
+
+- Call-center Spanish as Spain says it: "En breve le atenderá uno de nuestros agentes" (for "espere al siguiente asesor
+  disponible"), agentes (asesores) in bot_wait_long, "Hola, soy Karla, de NetWave" (habla Karla), "¿Con quién hablo,
+  por favor?" (¿Con quién tengo el gusto?, flagged Mexican), "¿Me facilita su número de cuenta?" (proporciona),
+  "Disculpe las molestias" (the calque "Lamento escuchar eso"), "Normalmente, más o menos una hora" (como una hora).
+- The learner's chips: Un operador, por favor (noteSpain: operador / agente), No me funciona internet, Tengo problemas
+  con la conexión, Mi mujer puede estar en casa (both groups), No, gracias, eso es todo; acct_is gets a noteSpain
+  without "as Mexicans say them". Grammar: "no me funciona/va + internet…", "problemas con la conexión / el router".
+- Notes on the wrong word through inherited flags: acct_where (recibo note on "su"), ask_restart[0] (now: probar a +
+  verb), ask_restart[1] (módem note on router): own flags. Neutral twins Spain also showed, flags: {} (text
+  unchanged): bot_menu_sales (recarga note on "diga"), ask_lights[0] and prob_router (módem note on router),
+  text_it (ahorita note on ahora mismo), lights_none (prender note on enciende).
+- Merges: en breve, más o menos. Corpus: 5 items (22/22).

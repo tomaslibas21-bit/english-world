@@ -30,5 +30,13 @@
   {"ctx": "split", "say": "Pagamos a medias", "intent": "split_ans"},
   {"ctx": "pay", "say": "¿Aceptáis tarjeta?", "intent": "pay_card"},
   {"ctx": "tip", "say": "Ponle el diez por ciento", "intent": "tip_ctx"},
-  {"ctx": "change", "say": "Quédate con el cambio", "intent": "keep_change"}
+  {"ctx": "change", "say": "Quédate con el cambio", "intent": "keep_change"},
+  {"ctx": "change", "say": "Quédate con la vuelta", "intent": "keep_change"},
+  {"ctx": "change", "say": "¿Me das la vuelta, por favor?", "intent": "want_change", "not": ["keep_change"]},
+  {"ctx": "resv", "say": "Hemos reservado una mesa para las ocho", "intent": "resv_yes"},
+  {"ctx": "party", "say": "Solo yo", "intent": ["table_for", "party_ctx"]},
+  {"ctx": "checkback", "say": "¡Enhorabuena a la cocinera!", "intent": ["all_good", "all_good_ctx"]},
+  {"ctx": "checkback", "say": "¿Dónde están los servicios?", "intent": "ask_restroom"},
+  {"ctx": "check", "say": "Solo la cuenta, gracias", "intent": "check_ask"},
+  {"ctx": "split", "say": "Por separado, por favor", "intent": "split_ans"}
 ] }

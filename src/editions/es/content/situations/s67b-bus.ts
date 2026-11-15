@@ -549,7 +549,7 @@ export const bus: SituationDef = {
     ] },
     // a yes/no question gets "Sí, toque el timbre…"; "¿Cómo…?" / "¿Qué hago…?" the how; "¿Dónde está?" the where
     ask_button: { patterns: [
-      "(toco | aprieto | presiono | uso) el timbre #h:button", "hay [un] timbre", "(grito | digo) bajan",
+      "(toco | aprieto | presiono | pulso | uso) el timbre #h:button", "hay [un] timbre", "(grito | digo) bajan",
       "(donde | en donde) esta [el] timbre #where",
       "como (le pido | le digo) (que pare | que se pare | la parada) #how", "como (pido | hago) la parada #how",
       "que hago (para bajarme | cuando me quiera bajar | para que pare) #how", "como (le hago | hago | le pido) para (bajarme | bajar | que pare | que se pare) #how",
@@ -560,7 +560,7 @@ export const bus: SituationDef = {
       "(ya)? llegamos", "[ya] hemos llegado [a {dest}]", "ya (casi | mero) (llegamos | estamos)", "la (siguiente | que sigue | proxima) es (la mia | {dest})", "es la (mia | siguiente | proxima)", "ya es la mia", "(es | ya es) (esta | este)",
     ] },
     bajan: { patterns: [
-      "bajan #h:bajan", "(bajan | baja) [aqui | en la esquina]",
+      "bajan #h:bajan", "[me] (para | pare) (aqui | ahi) [por favor] #h:bajan", "(bajan | baja) [aqui | en la esquina]",
       "(en | a) la esquina [por favor]", "(aqui | ahi) (me deja | me baja | me bajo | bajo | por favor)",
       "(pare | pareme | parele | se puede parar) [aqui | ahi | en la esquina]", "(me puede | puede | me podria | podria) (bajar | parar) (aqui | ahi | en la esquina)", "me baja (aqui | ahi | en la esquina)",
     ] },
@@ -585,18 +585,18 @@ export const bus: SituationDef = {
     greet: [
       t("¡Buenas!", "Hi!", "Hi there!"),
       t("¡Buenos días!", "Good morning!", "Morning!"),
-      t("¡Pásele!", "Come in!", "Come on in!", { flags: { 0: "Mexican: pásele = come in, go ahead." }, neutral: t("¡Adelante!", "Come in!", "Come on in!") }),
+      t("¡Pásele!", "Come in!", "Come on in!", { flags: { 0: "Mexican: pásele = come in, go ahead." }, neutral: t("¡Adelante!", "Come in!", "Come on in!"), spain: t("¡Adelante!", "Come in!", "Come on in!", { flags: {} }) }),
     ],
     greet_howareyou: [
       t("¡Buenas! | ¿Cómo | está?", "Hi! | How | are you?", "Hi! How are you doing?"),
     ],
     ask_dest: [
       t("¿A | dónde | va?", "To | where | you-go?", "Where are you headed?"),
-      t("¿Para | dónde | va?", "To | where | you-go?", "Where are you going?"),
+      t("¿Para | dónde | va?", "To | where | you-go?", "Where are you going?", { spain: t("¿Adónde | va?", "To where | you-go?", "Where are you going?") }),
     ],
     goes_yes: [
       t("Sí, | sí | va.", "Yes, | it does | go.", "Yep, it goes there."),
-      t("Sí, | pasamos | por | ahí. | Súbase.", "Yes, | we-pass | by | there. | Get on.", "Yes, we go by there. Hop on."),
+      t("Sí, | pasamos | por | ahí. | Súbase.", "Yes, | we-pass | by | there. | Get on.", "Yes, we go by there. Hop on.", { spain: t("Sí, | pasamos | por | ahí. | Suba.", "Yes, | we-pass | by | there. | Get on.", "Yes, we go by there. Hop on.") }),
       t("Claro, | va | para allá.", "Sure, | it-goes | that way.", "Sure, it goes there."),
     ],
     goes_yes_is: [
@@ -607,7 +607,7 @@ export const bus: SituationDef = {
       t("Así es, | por | ahí | pasamos.", "That's right, | by | there | we-pass.", "That's right, we go by there."),
     ],
     goes_yes_stmt: [
-      t("Muy | bien, | súbase.", "Very | good, | get on.", "Okay, hop on."),
+      t("Muy | bien, | súbase.", "Very | good, | get on.", "Okay, hop on.", { spain: t("Muy | bien, | suba.", "Very | good, | get on.", "Okay, hop on.") }),
       t("Perfecto, | por | ahí | pasamos.", "Perfect, | by | there | we-pass.", "Perfect, we go right by there."),
     ],
     goes_by: [
@@ -621,7 +621,7 @@ export const bus: SituationDef = {
     ],
     goes_no_plain: [
       t("Este | camión | no va | a | {X.the}.", "This | bus | doesn't go | to | {X.the}.", "This bus doesn't go to the {X}.",
-        { flags: { 1: "Mexican: camión = city bus. Elsewhere: autobús." }, neutral: t("Este | autobús | no va | a | {X.the}.", "This | bus | doesn't go | to | {X.the}.", "This bus doesn't go to the {X}.") }),
+        { flags: { 1: "Mexican: camión = city bus. Elsewhere: autobús." }, neutral: t("Este | autobús | no va | a | {X.the}.", "This | bus | doesn't go | to | {X.the}.", "This bus doesn't go to the {X}."), spain: t("Este | autobús | no va | a | {X.the}.", "This | bus | doesn't go | to | {X.the}.", "This bus doesn't go to the {X}.", { flags: {} }) }),
     ],
     // the airport closes avenida Juárez's east end and is reached by taxi (s62, TOWN.md); the terminal's board has no
     // airport bus (it said "salen autobuses de la terminal")
@@ -683,7 +683,7 @@ export const bus: SituationDef = {
     ],
     card_no: [
       t("No, | perdón, | nomás | efectivo.", "No, | sorry, | only | cash.", "Sorry, cash only.",
-        { flags: { 2: "Mexican: nomás = only." }, neutral: t("No, | perdón, | solo | efectivo.", "No, | sorry, | only | cash.", "Sorry, cash only.") }),
+        { flags: { 2: "Mexican: nomás = only." }, neutral: t("No, | perdón, | solo | efectivo.", "No, | sorry, | only | cash.", "Sorry, cash only."), spain: t("No, | perdone, | solo | efectivo.", "No, | sorry, | only | cash.", "Sorry, cash only.", { flags: {} }) }),
       t("Aquí | no se aceptan | tarjetas, | solo | efectivo.", "Here | aren't accepted | cards, | only | cash.", "We don't take cards here, cash only."),
     ],
     nocash: [
@@ -741,7 +741,7 @@ export const bus: SituationDef = {
       t("¿No trae | algo | más | chico?", "Don't you have | something | more | small?", "Don't you have anything smaller?", { spain: t("¿No tiene | algo | más | pequeño?", "Don't you have | something | more | small?", "Don't you have anything smaller?") }),
     ],
     change_later: [
-      t("Bueno, | súbase. | En el camino | le | doy | su | cambio.", "Okay, | get on. | On the way | (to) you | I-give | your | change.", "Okay, hop on. I'll give you your change on the way."),
+      t("Bueno, | súbase. | En el camino | le | doy | su | cambio.", "Okay, | get on. | On the way | (to) you | I-give | your | change.", "Okay, hop on. I'll give you your change on the way.", { spain: t("Vale, | suba. | Por | el | camino | le | doy | su | cambio.", "Okay, | get on. | On | the | way | (to) you | I-give | your | change.", "Okay, hop on. I'll give you your change on the way.") }),
     ],
     change_later_give: [
       t("Ah, | y | aquí tiene | su | cambio: | {$amount}.", "Oh, | and | here's | your | change: | {$amount}.", "Oh, and here's your change: {$amount}."),
@@ -782,10 +782,10 @@ export const bus: SituationDef = {
       t("Vaya | tranquil{m:o|f:a}.", "Go | relaxed.", "Just sit back and relax.", { flags: { 1: "tranquilo / tranquila: agrees with you, a man / a woman." } }),
     ],
     stops_count: [
-      t("Son | como | {$num} | paradas.", "It's | about | {$num} | stops.", "It's about {$num} stops."),
+      t("Son | como | {$num} | paradas.", "It's | about | {$num} | stops.", "It's about {$num} stops.", { spain: t("Son | unas | {$num} | paradas.", "It's | about | {$num} | stops.", "It's about {$num} stops.", { flags: { 1: "unas before a number: about." } }) }),
     ],
     ride_time: [
-      t("Son | como | {$num} | minutos.", "It's | about | {$num} | minutes.", "About {$num} minutes."),
+      t("Son | como | {$num} | minutos.", "It's | about | {$num} | minutes.", "About {$num} minutes.", { spain: t("Son | unos | {$num} | minutos.", "It's | about | {$num} | minutes.", "About {$num} minutes.", { flags: { 1: "unos before a number: about." } }) }),
       t("Se hace | como | {$num} | minutos.", "It takes | about | {$num} | minutes.", "It takes about {$num} minutes.", { spain: t("Se tarda | unos | {$num} | minutos.", "It takes | about | {$num} | minutes.", "It takes about {$num} minutes.", {flags: {1: "unos before a number: about."}}) }),
     ],
     stop_name: [
@@ -796,7 +796,7 @@ export const bus: SituationDef = {
     ],
     cord: [
       t("Cuando | quiera | bajarse, | toque | el | timbre | o | diga | “¡Bajan!”.", "When | you-want | to get off, | press | the | buzzer | or | say | “Getting off!”.",
-        "When you want to get off, press the buzzer or call out “¡Bajan!”.", { flags: { 8: "¡Bajan!: “(people) getting off!”, what you call out to the driver in Mexico." } }),
+        "When you want to get off, press the buzzer or call out “¡Bajan!”.", { flags: { 8: "¡Bajan!: “(people) getting off!”, what you call out to the driver in Mexico." }, spain: t("Cuando | quiera | bajarse, | pulse | el | timbre.", "When | you-want | to get off, | press | the | buzzer.", "When you want to get off, press the buzzer.", { flags: {} }) }),
     ],
     ask_known: [
       t("¿Sabe | dónde | bajarse?", "You-know | where | to get off?", "Do you know where to get off?"),
@@ -807,11 +807,11 @@ export const bus: SituationDef = {
       t("Perfecto.", "Perfect.", "Perfect."),
     ],
     have_seat: [
-      t("Siéntese | donde | guste.", "Sit down | where | you-like.", "Have a seat wherever you like."),
+      t("Siéntese | donde | guste.", "Sit down | where | you-like.", "Have a seat wherever you like.", { spain: t("Siéntese | donde | quiera.", "Sit down | where | you-want.", "Have a seat wherever you like.") }),
       t("Pase, | siéntese.", "Come in, | sit down.", "Go ahead and have a seat."),
     ],
     mid_stop: [
-      t("¡Iglesia! | ¿Bajan?", "Church! | Getting off?", "The church! Anyone getting off?", { flags: { 1: "¿Bajan?: “anyone getting off?”, the driver's call at a stop." } }),
+      t("¡Iglesia! | ¿Bajan?", "Church! | Getting off?", "The church! Anyone getting off?", { flags: { 1: "¿Bajan?: “anyone getting off?”, the driver's call at a stop." }, spain: t("¡Iglesia! | ¿Alguien | baja?", "Church! | Anyone | getting off?", "The church! Anyone getting off?", { flags: {} }) }),
     ],
     not_yet_next: [
       t("Todavía no. | Su | parada | es | la que sigue.", "Not yet. | Your | stop | is | the next one.", "Not yet. Yours is the next one."),
@@ -820,13 +820,13 @@ export const bus: SituationDef = {
       t("Todavía no. | Yo | le | aviso.", "Not yet. | I | (to) you | I-let-know.", "Not yet. I'll let you know."),
     ],
     next_yours: [
-      t("Ahí | viene | {X.the}, | su | parada.", "There | comes | {X.the}, | your | stop.", "Here comes the {X}, your stop."),
+      t("Ahí | viene | {X.the}, | su | parada.", "There | comes | {X.the}, | your | stop.", "Here comes the {X}, your stop.", { spain: t("La | siguiente | es | {X.the}, | su | parada.", "The | next one | is | {X.the}, | your | stop.", "Next is the {X}, your stop.") }),
     ],
     next_now: [
       t("Ahora | sí, | ya | llegamos.", "Now | yes, | already | we-arrived.", "Okay, now we're here.", { spain: t("Ahora | sí, | ya | hemos llegado.", "Now | yes, | already | we've arrived.", "Okay, now we're here.") }),
     ],
     le_paro: [
-      t("¿Le | paro?", "(For) you | I-stop?", "Want me to stop?"),
+      t("¿Le | paro?", "(For) you | I-stop?", "Want me to stop?", { spain: t("¿Paro?", "Should I stop?", "Want me to stop?") }),
     ],
     // at the beach, the last stop: "No, la siguiente"
     end_of_line: [
@@ -839,14 +839,14 @@ export const bus: SituationDef = {
       t("Yo | le | aviso.", "I | (to) you | I-let-know.", "I'll let you know."),
     ],
     next_again: [
-      t("¿Le | paro | aquí?", "(For) you | I-stop | here?", "Want me to stop here?"),
+      t("¿Le | paro | aquí?", "(For) you | I-stop | here?", "Want me to stop here?", { spain: t("¿Paro | aquí?", "Should I stop | here?", "Want me to stop here?") }),
     ],
     next_no: [
       t("Bueno, | me | avisa.", "Okay, | (to) me | you-let-know.", "Okay, just let me know."),
     ],
     arrive: [
       t("Listo, | aquí | es.", "Ready, | here | it-is.", "Okay, here you are.", { spain: t("Muy bien, | aquí | es.", "All right, | here | it-is.", "Okay, here you are.") }),
-      t("Aquí | le | paro.", "Here | (for) you | I-stop.", "I'll stop right here."),
+      t("Aquí | le | paro.", "Here | (for) you | I-stop.", "I'll stop right here.", { spain: t("Paro | aquí.", "I-stop | here.", "I'll stop right here.") }),
     ],
     my_stop_yes: [
       t("Sí, | aquí | es.", "Yes, | here | it-is.", "Yes, this is it."),
@@ -855,26 +855,26 @@ export const bus: SituationDef = {
       t("Pasa | cada | quince | minutos, | más o menos.", "It-comes | every | fifteen | minutes, | more or less.", "It comes every fifteen minutes or so."),
     ],
     last_bus: [
-      t("El | último | pasa | como | a las diez | de la noche.", "The | last one | comes | around | at ten | at night.", "The last one comes around ten at night."),
+      t("El | último | pasa | como | a las diez | de la noche.", "The | last one | comes | around | at ten | at night.", "The last one comes around ten at night.", { spain: t("El | último | pasa | sobre | las | diez | de la noche.", "The | last one | comes | around | — | ten | at night.", "The last one comes around ten at night.", { flags: { 4: "The article before a clock time has no English word." } }) }),
     ],
     bus_back: [
       t("Para | regresar, | tómelo | enfrente, | del | otro | lado | de | la | calle.", "To | come back, | take it | across, | on the | other | side | of | the | street.",
-        "To come back, catch it across the street, on the other side.", { spain: t("Para | volver, | cójalo | enfrente, | del | otro | lado | de | la | calle.", "To | come back, | take it | across, | on the | other | side | of | the | street.", "To come back, catch it across the street, on the other side.") }),
+        "To come back, catch it across the street, on the other side.", { spain: t("Para | volver, | cójalo | enfrente, | al | otro | lado | de | la | calle.", "To | come back, | take it | across, | on the | other | side | of | the | street.", "To come back, catch it across the street, on the other side.") }),
     ],
     button: [
-      t("Sí, | toque | el | timbre | o | diga | “¡Bajan!”.", "Yes, | press | the | buzzer | or | say | “Getting off!”.", "Yes, press the buzzer or call out “¡Bajan!”."),
+      t("Sí, | toque | el | timbre | o | diga | “¡Bajan!”.", "Yes, | press | the | buzzer | or | say | “Getting off!”.", "Yes, press the buzzer or call out “¡Bajan!”.", { spain: t("Sí, | pulse | el | timbre.", "Yes, | press | the | buzzer.", "Yes, press the buzzer.") }),
     ],
     button_how: [
-      t("Toque | el | timbre | o | diga | “¡Bajan!”.", "Press | the | buzzer | or | say | “Getting off!”.", "Press the buzzer or call out “¡Bajan!”."),
+      t("Toque | el | timbre | o | diga | “¡Bajan!”.", "Press | the | buzzer | or | say | “Getting off!”.", "Press the buzzer or call out “¡Bajan!”.", { spain: t("Pulse | el | timbre.", "Press | the | buzzer.", "Press the buzzer.") }),
     ],
     button_where: [
       t("Está | junto a | la | puerta | de atrás.", "It's | next to | the | door | at the back.", "It's by the back door."),
     ],
     sit_anywhere: [
-      t("Sí, | donde | guste.", "Yes, | where | you-like.", "Sure, wherever you like."),
+      t("Sí, | donde | guste.", "Yes, | where | you-like.", "Sure, wherever you like.", { spain: t("Sí, | donde | quiera.", "Yes, | where | you-want.", "Sure, wherever you like.") }),
     ],
     sit_where: [
-      t("Donde | guste.", "Where | you-like.", "Wherever you like."),
+      t("Donde | guste.", "Where | you-like.", "Wherever you like.", { spain: t("Donde | quiera.", "Where | you-want.", "Wherever you like.") }),
     ],
     sit_free: [
       t("No, | está | libre.", "No, | it's | free.", "No, it's free."),
@@ -894,7 +894,7 @@ export const bus: SituationDef = {
       t("Es | la | 7, | pero | voy | fuera de servicio.", "It's | the | 7, | but | I'm going | out of service.", "It's the 7, but I'm out of service.", { say: "Es la siete, pero voy fuera de servicio." }),
     ],
     oos_take12: [
-      t("Súbase | al | 12, | viene | atrás de | mí.", "Get on | the | 12, | it's coming | behind | me.", "Take the 12, it's right behind me.", { say: "Súbase al doce, viene atrás de mí.", spain: t("Súbase | al | 12, | viene | detrás de | mí.", "Get on | the | 12, | it's coming | behind | me.", "Take the 12, it's right behind me.", {say: "Súbase al doce, viene detrás de mí."}) }),
+      t("Súbase | al | 12, | viene | atrás de | mí.", "Get on | the | 12, | it's coming | behind | me.", "Take the 12, it's right behind me.", { say: "Súbase al doce, viene atrás de mí.", spain: t("Coja | el | 12, | viene | detrás de | mí.", "Take | the | 12, | it's coming | behind | me.", "Take the 12, it's right behind me.", { say: "Coja el doce, viene detrás de mí." }) }),
     ],
     // "¿Por qué?"
     oos_why: [
@@ -946,8 +946,8 @@ export const bus: SituationDef = {
       lt: "Ask if the bus goes where you need", slot: "dest", examples: ["centro", "mercado", "playa", "clinica"],
       items: [
         { id: "goes", only: inTown, s: t("¿Este | camión | va | a | {X.the}?", "This | bus | goes | to | {X.the}?", "Does this bus go to the {X}?",
-          { flags: { 1: "Mexican: camión = city bus. Elsewhere: autobús." }, neutral: t("¿Este | autobús | va | a | {X.the}?", "This | bus | goes | to | {X.the}?", "Does this bus go to the {X}?") }),
-          note: "In Mexico a city bus is el camión." },
+          { flags: { 1: "Mexican: camión = city bus. Elsewhere: autobús." }, neutral: t("¿Este | autobús | va | a | {X.the}?", "This | bus | goes | to | {X.the}?", "Does this bus go to the {X}?"), spain: t("¿Este | autobús | va | a | {X.the}?", "This | bus | goes | to | {X.the}?", "Does this bus go to the {X}?", { flags: {} }) }),
+          note: "In Mexico a city bus is el camión.", noteSpain: "Autobús: the bus. (Locals here also call a city bus el camión.)" },
         { id: "passes", only: inTown, s: t("¿Pasa | por | {X.the}?", "Does it pass | by | {X.the}?", "Does it go past the {X}?") },
         { id: "is_this", only: inTown, s: t("¿Este | es | el | que | va | a | {X.the}?", "This | is | the one | that | goes | to | {X.the}?", "Is this the one that goes to the {X}?") },
         { id: "going_to", only: inTown, s: t("Voy | a | {X.the}.", "I'm going | to | {X.the}.", "I'm going to the {X}.") },
@@ -962,7 +962,7 @@ export const bus: SituationDef = {
         { id: "pay_card", s: t("¿Acepta | tarjeta?", "Do you accept | card?", "Do you take cards?") },
         { id: "only_big", s: t("Solo | traigo | un | billete | de | quinientos.", "Only | I-carry | a | bill | of | five hundred.", "I only have a 500-peso bill.", { spain: t("Solo | llevo | un | billete | de | quinientos.", "Only | I-carry | a | bill | of | five hundred.", "I only have a 500-peso bill.") }),
           note: "Drivers can't change big bills: carry coins and small bills." },
-        { id: "no_exact", s: t("No traigo | cambio.", "I don't have | change.", "I don't have any change.", { spain: t("No tengo | cambio.", "I don't have | change.", "I don't have any change.") }), note: "traer (to carry) is how Mexicans say what they have on them." },
+        { id: "no_exact", s: t("No traigo | cambio.", "I don't have | change.", "I don't have any change.", { spain: t("No tengo | cambio.", "I don't have | change.", "I don't have any change.") }), note: "traer (to carry) is how Mexicans say what they have on them.", noteSpain: "Cambio here is small money: coins and small bills." },
       ],
     },
     fare_q: {
@@ -1010,8 +1010,8 @@ export const bus: SituationDef = {
       items: [
         { id: "my_stop2", s: t("¿Aquí | me bajo?", "Here | I get off?", "Is this my stop?") },
         { id: "my_stop", s: t("¿Ya | es | mi | parada?", "Already | is it | my | stop?", "Is this my stop yet?") },
-        { id: "button", s: t("¿Toco | el | timbre?", "I-press | the | buzzer?", "Should I press the buzzer?") },
-        { id: "bajan", s: t("¡Bajan!", "Getting off!", "Getting off, please!"), note: "What Mexicans call out so the driver stops: literally “(people) are getting off!”." },
+        { id: "button", s: t("¿Toco | el | timbre?", "I-press | the | buzzer?", "Should I press the buzzer?", { spain: t("¿Pulso | el | timbre?", "I-press | the | buzzer?", "Should I press the buzzer?") }) },
+        { id: "bajan", s: t("¡Bajan!", "Getting off!", "Getting off, please!", { spain: t("¿Me | para | aquí, | por favor?", "(For) me | you-stop | here, | please?", "Could you stop here, please?") }), note: "What Mexicans call out so the driver stops: literally “(people) are getting off!”.", noteSpain: "Ask the driver politely to stop, with usted." },
       ],
     },
     more: {

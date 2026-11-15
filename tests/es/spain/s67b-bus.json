@@ -68,6 +68,16 @@
 "ctx": "oos_dest",
 "say": "¿El 12 va al mercado?",
 "intent": "ask_goes"
+},
+{
+"ctx": "next",
+"say": "¿Me para aquí, por favor?",
+"intent": "bajan"
+},
+{
+"ctx": "seated",
+"say": "¿Pulso el timbre?",
+"intent": "ask_button"
 }
 ]
 }

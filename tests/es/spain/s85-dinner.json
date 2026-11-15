@@ -25,6 +25,8 @@
 {"ctx": "closing", "say": "Os aviso cuando llegue", "intent": "will_text"},
 {"ctx": "closing", "say": "Gracias a vosotros", "intent": ["thanks_end", "thanks_back_ctx"]},
 {"ctx": "closing", "say": "Me lo he pasado muy bien, gracias por todo", "intent": "thanks_end"},
-{"ctx": "coat", "say": "No me gusta vuestra casa", "intent": "any"}
+{"ctx": "coat", "say": "No me gusta vuestra casa", "intent": "any"},
+{"ctx": "ready_soon", "say": "¡Qué bien huele!", "intent": "praise_smell"},
+{"ctx": "ready_soon", "say": "Aquí no huele nada bien", "intent": "any", "not": ["praise_smell"]}
 ]
 }

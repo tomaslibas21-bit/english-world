@@ -134,3 +134,16 @@ Found and fixed: timbres/estampillas → sellos (masculine like the Mexican line
 English of every twin checked against its Mexican line (restored where a twin had rephrased it). Spain corpus items
 added for the new forms. Gates: Mexican, neutral and Spain checks 0 errors; coverage 0 false accepts.
 
+
+## Spain pass 3 (14 Nov 2026)
+
+10 twins added, 4 changed, 9 given their own flags.
+
+- **Phrases:** ¿Va a querer sellos? → ¿Quiere sellos también?; Fírmeme aquí → Firme aquí; dice qué lleva / donde dice
+  “Firma” → pone; ¿Sería todo? → ¿Eso es todo?; su cambio → la vuelta; Mientras → Mientras tanto, por dónde va;
+  rastrear → seguir / lleva número de seguimiento (Correos).
+- **Chips:** ¿Lo puedo rastrear? → ¿Tiene seguimiento?; Ah, bueno. Lo saco → Ah, vale; Como $800 → Más o menos $800;
+  Es todo → Nada más, gracias (grammar credits all four).
+- **Notes:** the timbre notes said "elsewhere estampilla", wrong for Spain: Spain's twins say "sello: a postage stamp
+  (Mexico: timbre)". se le ofrece, nomás, ahorita and presta notes no longer land on Spain's words.
+- Spain corpus: 4 items added.

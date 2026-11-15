@@ -14,5 +14,11 @@
   {"ctx": "questions", "say": "¿Hay una parada de autobús cerca?", "intent": "ask_bus"},
   {"ctx": "questions", "say": "No, eso es todo, gracias", "intent": ["no_more", "yn:no"]},
   {"ctx": "questions", "say": "¿Necesito avalista?", "intent": "ask_aval"},
-  {"ctx": "problem", "say": "El grifo de la cocina gotea", "intent": "report_problem"}
+  {"ctx": "problem", "say": "El grifo de la cocina gotea", "intent": "report_problem"},
+  {"ctx": "movein_q", "say": "El día uno, si puede ser", "intent": "movein_ans_ctx"},
+  {"ctx": "questions", "say": "No, nada más, gracias", "intent": ["no_more", "yn:no"]},
+  {"ctx": "questions", "say": "Creo que eso es todo", "intent": "no_more"},
+  {"ctx": "docs", "say": "Tengo mi contrato de trabajo", "intent": "have_job"},
+  {"ctx": "docs", "say": "Le puedo enseñar mis nóminas", "intent": "have_job"},
+  {"ctx": "poliza", "say": "¿Qué es un seguro de impago?", "intent": "ask_poliza"}
 ] }

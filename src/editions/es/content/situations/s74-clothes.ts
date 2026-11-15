@@ -372,10 +372,12 @@ function reactReason(c: Ctx, reason: string) {
 // las llevo"). `es` is written for the singular; the plural variant is given whole (verbs change too).
 
 const MANY = (e: EntityDef) => !!e.attrs?.many;
-function hp(id: string, es: string, gl: string, nat: string, esPl: string, glPl: string, natPl: string, extra: Partial<SentSrc> = {}, more: Partial<HintItem> = {}, f: (e: EntityDef) => boolean = () => true): HintItem[] {
+function hp(id: string, es: string, gl: string, nat: string, esPl: string, glPl: string, natPl: string, extra: Partial<SentSrc> = {}, more: Partial<HintItem> = {}, f: (e: EntityDef) => boolean = () => true,
+  sp?: [string, string, string, string, string, string], spExtra: Partial<SentSrc> = {}): HintItem[] {
+  // sp: Spain's twin of the singular and the plural item (docs/es/STYLE.md "Spain Spanish")
   return [
-    { id, s: t(es, gl, nat, extra), only: (e) => f(e) && !MANY(e), ...more },
-    { id, s: t(esPl, glPl, natPl, extra), only: (e) => f(e) && MANY(e), ...more },
+    { id, s: t(es, gl, nat, sp ? { ...extra, spain: t(sp[0], sp[1], sp[2], spExtra) } : extra), only: (e) => f(e) && !MANY(e), ...more },
+    { id, s: t(esPl, glPl, natPl, sp ? { ...extra, spain: t(sp[3], sp[4], sp[5], spExtra) } : extra), only: (e) => f(e) && MANY(e), ...more },
   ];
 }
 
@@ -389,7 +391,7 @@ function ordered(...entries: (HintItem | HintItem[])[]): HintItem[] {
 /** The position of each item's expression in its group (per-garment copies list them in this order). */
 const ENTRY = new WeakMap<HintItem, number>();
 
-const FLAG_TICKET = "Mexican: el ticket = the receipt.";
+const FLAG_TICKET = "el ticket = the receipt (Mexico and Spain; elsewhere: el recibo).";
 
 // Automatic answers for the simulation when Valeria asks an optional question.
 const AUTO: Record<string, string> = {
@@ -492,6 +494,7 @@ export const clothes: SituationDef = {
       "(nada mas | solo | solamente | nomas) (estoy | ando) (viendo | mirando) #h:browse_just",
       "(estoy | ando) (nada mas | solo | solamente | nomas) (viendo | mirando)",
       "[estoy] bien gracias (nada mas | solo | solamente | nomas) (estoy viendo | estoy mirando | ando viendo | veo | viendo) #h:browse_fine",
+      "gracias (solo | nada mas) (estoy echando un vistazo | estoy echando un ojo | estoy mirando) #h:browse_fine",
       "(nada mas | solo | solamente | nomas) (viendo | mirando | veo | quiero ver | queria ver | vengo a ver)",
       "(nada | no busco nada | no ando buscando nada) en (especial | particular) [nada mas | solo] [(estoy | ando) viendo]",
       "(solo | nada mas | nomas) (quiero | queria) (ver | echar un vistazo | echar un ojo)",
@@ -699,7 +702,7 @@ export const clothes: SituationDef = {
       "(cobrame | me cobras) #tip:tu_staff",
     ] },
     ask_tax: { patterns: [
-      "(ya)? (incluye | trae | tiene | lleva) [el] iva #h:q_tax", "(el precio | los precios) (ya)? (incluye | incluyen | trae | traen) [el] iva", "(es | son) (mas | sin) iva",
+      "(ya)? (incluye | trae | tiene | lleva) [el] iva #h:q_tax", "(ya)? (lleva | tiene) [el] iva incluido #h:q_tax", "(esta | va) [el] iva incluido", "(el precio | los precios) (ya)? (incluye | incluyen | trae | traen) [el] iva", "(es | son) (mas | sin) iva",
       "(con | sin) iva", "(hay que | tengo que) pagar (iva | impuestos)", "(ya)? (incluye | estan incluidos) [los] impuestos", "(el iva | los impuestos) (esta | estan) incluidos", "iva incluido",
     ] },
     ask_return_policy: { patterns: [
@@ -796,7 +799,7 @@ export const clothes: SituationDef = {
       // "¿Tienen bolsas?" asks for one (it is never "I have my bag")
       "(tiene | tienen | hay) (bolsa | bolsas | bolsita | bolsitas) [de papel]"] },
     gift_receipt: { patterns: [
-      "(me da | me puede dar | me regala) (un)? (ticket | recibo) de regalo #h:gift_receipt", "(un)? (ticket | recibo) de regalo",
+      "(me da | me puede dar | me regala | me das | me puedes dar) (un)? (ticket | recibo) [de] regalo #h:gift_receipt", "(un)? (ticket | recibo) de regalo",
       "es (para)? (un)? regalo", "es para regalo", "@take_pron (envuelve | puede envolver) [para regalo]", "(lo | la | los | las) puede envolver [para regalo]",
     ] },
     receipt_bag: { patterns: ["(impreso | impresa) #h:rc_print", "[si] (quiero | deme | me da) (el | mi) (ticket | recibo) [impreso]", "en papel", "(deme | me da) el (ticket | recibo) [impreso]", "[si] el (ticket | recibo) impreso"] },
@@ -853,7 +856,8 @@ export const clothes: SituationDef = {
       "(el | mi) (ticket | recibo) no (lo | la)? (traigo | tengo | encontré | encuentro)",
     ] },
     problem: { patterns: [
-      "se (destino | despintó | deslavó | decoloró) [en la (lavadora | lavada) | al lavarlo | al lavarla] #ran #h:ret_ran", "(perdió | se le fue) el color #ran", "se (destineron | despintaron) #ran",
+      "se (destino | despintó | deslavó | decoloró) [en la (lavadora | lavada) | al lavarlo | al lavarla] #ran #h:ret_ran",
+      "se (ha | han) (destenido | despintado | decolorado) [en la (lavadora | lavada) | al lavarlo | al lavarla] #ran #h:ret_ran", "(perdió | se le fue) el color #ran", "se (destineron | despintaron) #ran",
       "se (encogió | encogio) [en la (lavadora | secadora | lavada)] #shrank", "(quedó | se hizo) mas (chico | chica) [despues de lavarlo | despues de lavarla] #shrank",
       "tiene un (hoyo | agujero | hoyito) #hole", "(salió | venia) con un (hoyo | agujero) #hole",
       "el (cierre | zipper) (no sirve | esta roto | se rompió | se atora | no cierra) #zipper", "se (rompió | descompuso) el (cierre | zipper) #zipper", "la cremallera (no funciona | esta rota | se rompió) #zipper",
@@ -907,7 +911,7 @@ export const clothes: SituationDef = {
         { spain: t("¡Hola, | buenos días!", "Hi, | good morning!", "Hi, good morning!") }),
       t("¡Hola! | ¡Pásele!", "Hello! | Come in!", "Hi! Come on in!", { flags: { 1: "Mexican: pásele = come in, have a look." },
         neutral: t("¡Hola! | ¡Adelante!", "Hello! | Come in!", "Hi! Come on in!"),
-        spain: t("¡Hola! | ¡Pasa, pasa!", "Hi! | Come in, come in!", "Hi! Come on in!") }),
+        spain: t("¡Hola! | ¡Pasa, pasa!", "Hi! | Come in, come in!", "Hi! Come on in!", { flags: {} }) }),
     ],
     greet_back: [
       t("¡Ah, | qué | gusto | {m:verlo|f:verla} | otra vez!", "Oh, | what a | pleasure | to see you | again!", "Oh, nice to see you again!",
@@ -925,7 +929,7 @@ export const clothes: SituationDef = {
         { spain: t("¿Buscas | algo | en especial?", "Are you looking for | something | in particular?", "Are you looking for anything in particular?") }),
       t("¿Qué | anda | buscando?", "What | are you going around | looking for?", "What are you looking for today?",
         { flags: { 1: "andar + -ando: “to be (doing)”, casual and friendly." },
-        spain: t("¿Qué | estás | buscando?", "What | are you | looking for?", "What are you looking for today?") }),
+        spain: t("¿Qué | estás | buscando?", "What | are you | looking for?", "What are you looking for today?", { flags: {} }) }),
     ],
     ask_item_else: [
       t("¿Qué | más | le | puedo | enseñar?", "What | else | (to) you | can I | show?", "What else can I show you?",
@@ -936,7 +940,7 @@ export const clothes: SituationDef = {
         { spain: t("¡Claro! | Si | necesitas | algo, | me | avisas.", "Sure! | If | you-need | something, | me | you-let-know.", "Sure! If you need anything, just let me know.") }),
       t("Con | confianza, | está | en | su | casa.", "With | confidence, | you-are | in | your | house.", "Feel free, make yourself at home.",
         { flags: { 0: "con confianza: “feel free”, a warm Mexican welcome." },
-        spain: t("Mira | tranquilamente, | sin prisa.", "Look | at your leisure, | no rush.", "Take your time, look around all you like.") }),
+        spain: t("Mira | tranquilamente, | sin prisa.", "Look | at your leisure, | no rush.", "Take your time, look around all you like.", { flags: {} }) }),
       t("Muy | bien. | Aquí | estoy | por si | necesita | algo.", "Very | good. | Here | I-am | in case | you-need | something.", "Okay. I'm right here if you need anything.",
         { spain: t("Muy | bien. | Aquí | estoy | por si | necesitas | algo.", "Very | good. | Here | I-am | in case | you-need | something.", "Okay. I'm right here if you need anything.") }),
     ],
@@ -946,7 +950,9 @@ export const clothes: SituationDef = {
     ],
     sale_table: [
       t("Y | todo | lo | de | esa | mesa | tiene | {$pct}% | de descuento.", "And | all | (that) | on | that | table | has | {$pct}% | off.", "And everything on that table is {$pct}% off.",
-        { say: "Y todo lo de esa mesa tiene {$pct} por ciento de descuento." }),
+        { say: "Y todo lo de esa mesa tiene {$pct} por ciento de descuento.",
+          spain: t("Y | todo | lo | de | esa | mesa | tiene | un | {$pct}% | de descuento.", "And | all | (that) | on | that | table | has | a | {$pct}% | off.", "And everything on that table is {$pct}% off.",
+            { say: "Y todo lo de esa mesa tiene un {$pct} por ciento de descuento." }) }),
     ],
     ack_item: [
       t("¡Claro!", "Sure!", "Sure!"),
@@ -1023,7 +1029,8 @@ export const clothes: SituationDef = {
     ],
     one_size: [
       t("Es | talla única.", "It's | one size.", "It's one size fits all."),
-      t("Nada más | hay | una | talla.", "Only | there-is | one | size.", "It only comes in one size."),
+      t("Nada más | hay | una | talla.", "Only | there-is | one | size.", "It only comes in one size.",
+        { spain: t("Solo | hay | una | talla.", "Only | there-is | one | size.", "It only comes in one size.") }),
     ],
     shoe_sizes_numbers: [
       t("Las | sandalias | y | los | tenis | van | por | número. | ¿Qué | número | calza?", "The | sandals | and | the | sneakers | go | by | number. | What | number | do you wear?",
@@ -1064,7 +1071,8 @@ export const clothes: SituationDef = {
       t("Aquí | tiene, | del | {$num} | y medio.", "Here | you-have, | of the | {$num} | and a half.", "Here you go, a size {$num} and a half.", { flags: { 2: "del 25 = (the one) of size 25." },
         spain: t("Aquí | tienes, | del | {$num} | y medio.", "Here | you-have, | of the | {$num} | and a half.", "Here you go, a size {$num} and a half.") }),
     ],
-    last_one: [t("¡Qué | suerte! | Es | la | última | pieza | en | esa | talla.", "What | luck! | It's | the | last | piece | in | that | size.", "You're lucky: that's the last one in that size!")],
+    last_one: [t("¡Qué | suerte! | Es | la | última | pieza | en | esa | talla.", "What | luck! | It's | the | last | piece | in | that | size.", "You're lucky: that's the last one in that size!",
+      { spain: t("¡Qué | suerte! | Es | la | última | que | queda | en | esa | talla.", "What | luck! | It's | the | last one | that | is left | in | that | size.", "You're lucky: that's the last one in that size!") })],
     size_ok: [t("Muy | bien.", "Very | good.", "Great."), t("Perfecto.", "Perfect.", "Perfect."), t("Listo.", "Ready.", "Got it.", { spain: t("Vale.", "Okay.", "Got it.") })],
     size_guess: [t("No se preocupe. | Probemos | una | mediana | y | vemos.", "Don't worry. | Let's try | a | medium | and | we-see.", "Don't worry. Let's try a medium and see.",
         { spain: t("No te preocupes. | Probemos | una | mediana | y | vemos.", "Don't worry. | Let's try | a | medium | and | we-see.", "Don't worry. Let's try a medium and see.") })],
@@ -1125,18 +1133,20 @@ export const clothes: SituationDef = {
     offer_try: [
       t("¿Se | {lo@X} | quiere | probar?", "(Yourself) | it | do you want | to try on?", "Would you like to try it on?",
         { flags: { 0: "probarse: to try on (on yourself); se lo quiere probar = would you like to try it on." },
-        spain: t("¿Te | {lo@X} | quieres | probar?", "(Yourself) | it | do you want | to try on?", "Would you like to try it on?") }),
+        spain: t("¿Te | {lo@X} | quieres | probar?", "(Yourself) | it | do you want | to try on?", "Would you like to try it on?",
+          { flags: { 0: "probarse: to try on (on yourself); te lo quieres probar = would you like to try it on." } }) }),
       t("¿Gusta | probárse{lo@X}?", "Would you like | to try it on?", "Would you like to try it on?",
         { flags: { 0: "Mexican: ¿gusta…? = would you like…? (very polite)." }, neutral: t("¿Quiere | probárse{lo@X}?", "Do you want | to try it on?", "Would you like to try it on?"),
-        spain: t("¿Quieres | probárte{lo@X}?", "Would you like | to try it on?", "Would you like to try it on?") }),
+        spain: t("¿Quieres | probárte{lo@X}?", "Would you like | to try it on?", "Would you like to try it on?", { flags: {} }) }),
     ],
     offer_try_pl: [
       t("¿Se | {lo@X:pl} | quiere | probar?", "(Yourself) | them | do you want | to try on?", "Would you like to try them on?",
         { flags: { 0: "probarse: to try on (on yourself); se los quiere probar = would you like to try them on." },
-        spain: t("¿Te | {lo@X:pl} | quieres | probar?", "(Yourself) | them | do you want | to try on?", "Would you like to try them on?") }),
+        spain: t("¿Te | {lo@X:pl} | quieres | probar?", "(Yourself) | them | do you want | to try on?", "Would you like to try them on?",
+          { flags: { 0: "probarse: to try on (on yourself); te los quieres probar = would you like to try them on." } }) }),
       t("¿Gusta | probárse{lo@X:pl}?", "Would you like | to try them on?", "Would you like to try them on?",
         { flags: { 0: "Mexican: ¿gusta…? = would you like…? (very polite)." }, neutral: t("¿Quiere | probárse{lo@X:pl}?", "Do you want | to try them on?", "Would you like to try them on?"),
-        spain: t("¿Quieres | probárte{lo@X:pl}?", "Would you like | to try them on?", "Would you like to try them on?") }),
+        spain: t("¿Quieres | probárte{lo@X:pl}?", "Would you like | to try them on?", "Would you like to try them on?", { flags: {} }) }),
     ],
     fitting_rooms: [
       t("Los | probadores | están | al fondo.", "The | fitting rooms | are | at the back.", "The fitting rooms are at the back."),
@@ -1207,37 +1217,53 @@ export const clothes: SituationDef = {
         { spain: t("¡Faltaría más!", "Not at all!", "My pleasure!") })],
 
     // --- price, sale, tax ----------------------------------------------------------------------
-    price_is: [t("Cuesta | {$price}.", "It-costs | {$price}.", "It's {$price}."), t("Está | en | {$price}.", "It's | at | {$price}.", "It's {$price}.")],
-    price_is_pl: [t("Cuestan | {$price}.", "They-cost | {$price}.", "They're {$price}."), t("Están | en | {$price}.", "They're | at | {$price}.", "They're {$price}.")],
+    price_is: [t("Cuesta | {$price}.", "It-costs | {$price}.", "It's {$price}."), t("Está | en | {$price}.", "It's | at | {$price}.", "It's {$price}.",
+      { spain: t("Vale | {$price}.", "It-costs | {$price}.", "It's {$price}.", { flags: { 0: "valer = to cost: “Vale 650 pesos”." } }) })],
+    price_is_pl: [t("Cuestan | {$price}.", "They-cost | {$price}.", "They're {$price}."), t("Están | en | {$price}.", "They're | at | {$price}.", "They're {$price}.",
+      { spain: t("Valen | {$price}.", "They-cost | {$price}.", "They're {$price}.", { flags: { 0: "valer = to cost: “Valen 950 pesos”." } }) })],
     price_sale: [
       t("Cuesta | {$price}, | pero | hoy | tiene | {$pct}% | de descuento: | o sea, | {$amount}.", "It-costs | {$price}, | but | today | it-has | {$pct}% | off: | that is, | {$amount}.",
-        "It's {$price}, but it's {$pct}% off today, so {$amount}.", { say: "Cuesta {$price}, pero hoy tiene {$pct} por ciento de descuento: o sea, {$amount}." }),
+        "It's {$price}, but it's {$pct}% off today, so {$amount}.", { say: "Cuesta {$price}, pero hoy tiene {$pct} por ciento de descuento: o sea, {$amount}.",
+          spain: t("Cuesta | {$price}, | pero | hoy | tiene | un | {$pct}% | de descuento: | o sea, | {$amount}.", "It-costs | {$price}, | but | today | it-has | a | {$pct}% | off: | that is, | {$amount}.",
+            "It's {$price}, but it's {$pct}% off today, so {$amount}.", { say: "Cuesta {$price}, pero hoy tiene un {$pct} por ciento de descuento: o sea, {$amount}." }) }),
     ],
     price_sale_pl: [
       t("Cuestan | {$price}, | pero | hoy | tienen | {$pct}% | de descuento: | o sea, | {$amount}.", "They-cost | {$price}, | but | today | they-have | {$pct}% | off: | that is, | {$amount}.",
-        "They're {$price}, but they're {$pct}% off today, so {$amount}.", { say: "Cuestan {$price}, pero hoy tienen {$pct} por ciento de descuento: o sea, {$amount}." }),
+        "They're {$price}, but they're {$pct}% off today, so {$amount}.", { say: "Cuestan {$price}, pero hoy tienen {$pct} por ciento de descuento: o sea, {$amount}.",
+          spain: t("Cuestan | {$price}, | pero | hoy | tienen | un | {$pct}% | de descuento: | o sea, | {$amount}.", "They-cost | {$price}, | but | today | they-have | a | {$pct}% | off: | that is, | {$amount}.",
+            "They're {$price}, but they're {$pct}% off today, so {$amount}.", { say: "Cuestan {$price}, pero hoy tienen un {$pct} por ciento de descuento: o sea, {$amount}." }) }),
     ],
     sale_yes: [
-      t("¡Sí! | Hoy | tiene | {$pct}% | de descuento.", "Yes! | Today | it-has | {$pct}% | off.", "Yes! It's {$pct}% off today.", { say: "¡Sí! Hoy tiene {$pct} por ciento de descuento." }),
-      t("Sí, | está | al | {$pct}%.", "Yes, | it's | at | {$pct}% (off).", "Yep, {$pct}% off.", { say: "Sí, está al {$pct} por ciento.", flags: { 2: "al 30% = 30% off, as on Mexican sale signs." } }),
+      t("¡Sí! | Hoy | tiene | {$pct}% | de descuento.", "Yes! | Today | it-has | {$pct}% | off.", "Yes! It's {$pct}% off today.", { say: "¡Sí! Hoy tiene {$pct} por ciento de descuento.",
+        spain: t("¡Sí! | Hoy | tiene | un | {$pct}% | de descuento.", "Yes! | Today | it-has | a | {$pct}% | off.", "Yes! It's {$pct}% off today.", { say: "¡Sí! Hoy tiene un {$pct} por ciento de descuento." }) }),
+      t("Sí, | está | al | {$pct}%.", "Yes, | it's | at | {$pct}% (off).", "Yep, {$pct}% off.", { say: "Sí, está al {$pct} por ciento.", flags: { 2: "al 30% = 30% off, as on Mexican sale signs." },
+        spain: t("Sí, | lleva | un | {$pct}% | de descuento.", "Yes, | it-has | a | {$pct}% | off.", "Yep, {$pct}% off.", { say: "Sí, lleva un {$pct} por ciento de descuento.", flags: {} }) }),
     ],
     sale_yes_pl: [
-      t("¡Sí! | Hoy | tienen | {$pct}% | de descuento.", "Yes! | Today | they-have | {$pct}% | off.", "Yes! They're {$pct}% off today.", { say: "¡Sí! Hoy tienen {$pct} por ciento de descuento." }),
-      t("Sí, | están | al | {$pct}%.", "Yes, | they're | at | {$pct}% (off).", "Yep, {$pct}% off.", { say: "Sí, están al {$pct} por ciento.", flags: { 2: "al 30% = 30% off, as on Mexican sale signs." } }),
+      t("¡Sí! | Hoy | tienen | {$pct}% | de descuento.", "Yes! | Today | they-have | {$pct}% | off.", "Yes! They're {$pct}% off today.", { say: "¡Sí! Hoy tienen {$pct} por ciento de descuento.",
+        spain: t("¡Sí! | Hoy | tienen | un | {$pct}% | de descuento.", "Yes! | Today | they-have | a | {$pct}% | off.", "Yes! They're {$pct}% off today.", { say: "¡Sí! Hoy tienen un {$pct} por ciento de descuento." }) }),
+      t("Sí, | están | al | {$pct}%.", "Yes, | they're | at | {$pct}% (off).", "Yep, {$pct}% off.", { say: "Sí, están al {$pct} por ciento.", flags: { 2: "al 30% = 30% off, as on Mexican sale signs." },
+        spain: t("Sí, | llevan | un | {$pct}% | de descuento.", "Yes, | they-have | a | {$pct}% | off.", "Yep, {$pct}% off.", { say: "Sí, llevan un {$pct} por ciento de descuento.", flags: {} }) }),
     ],
     sale_news: [
       t("¡Buenas | noticias: | hoy | tiene | {$pct}% | de descuento!", "Good | news: | today | it-has | {$pct}% | off!", "Good news: it's {$pct}% off today!",
-        { say: "¡Buenas noticias: hoy tiene {$pct} por ciento de descuento!" }),
+        { say: "¡Buenas noticias: hoy tiene {$pct} por ciento de descuento!",
+          spain: t("¡Buenas | noticias: | hoy | tiene | un | {$pct}% | de descuento!", "Good | news: | today | it-has | a | {$pct}% | off!", "Good news: it's {$pct}% off today!",
+            { say: "¡Buenas noticias: hoy tiene un {$pct} por ciento de descuento!" }) }),
     ],
     sale_news_pl: [
       t("¡Buenas | noticias: | hoy | tienen | {$pct}% | de descuento!", "Good | news: | today | they-have | {$pct}% | off!", "Good news: they're {$pct}% off today!",
-        { say: "¡Buenas noticias: hoy tienen {$pct} por ciento de descuento!" }),
+        { say: "¡Buenas noticias: hoy tienen {$pct} por ciento de descuento!",
+          spain: t("¡Buenas | noticias: | hoy | tienen | un | {$pct}% | de descuento!", "Good | news: | today | they-have | a | {$pct}% | off!", "Good news: they're {$pct}% off today!",
+            { say: "¡Buenas noticias: hoy tienen un {$pct} por ciento de descuento!" }) }),
     ],
     sale_no: [t("Perdón, | {este@X} | no tiene | descuento.", "Sorry, | this one | doesn't have | discount.", "Sorry, this one isn't on sale.")],
     sale_no_pl: [t("Perdón, | {este@X:pl} | no tienen | descuento.", "Sorry, | these | don't have | discount.", "Sorry, these aren't on sale.")],
     sale_general: [
       t("Pero | lo | de | la | mesa | de | la | entrada | está | al | {$pct}%.", "But | the stuff | on | the | table | by | the | entrance | is | at | {$pct}% (off).",
-        "But everything on the front table is {$pct}% off.", { say: "Pero lo de la mesa de la entrada está al {$pct} por ciento." }),
+        "But everything on the front table is {$pct}% off.", { say: "Pero lo de la mesa de la entrada está al {$pct} por ciento.",
+          spain: t("Pero | lo | de | la | mesa | de | la | entrada | tiene | un | {$pct}% | de descuento.", "But | the stuff | on | the | table | by | the | entrance | has | a | {$pct}% | off.",
+            "But everything on the front table is {$pct}% off.", { say: "Pero lo de la mesa de la entrada tiene un {$pct} por ciento de descuento." }) }),
     ],
     // "¿Hasta cuándo es la oferta?"
     sale_until: [t("Hasta | agotar existencias.", "Until | (we) sell out.", "While supplies last.")],
@@ -1245,20 +1271,25 @@ export const clothes: SituationDef = {
       t("Sí, | el | precio | ya | incluye | IVA.", "Yes, | the | price | already | includes | VAT.", "Yes, the price already includes tax.",
         { flags: { 5: "IVA: Mexico's sales tax (VAT). Price tags in Mexico normally include it." } }),
       t("Sí, | todos | los | precios | ya | traen | IVA.", "Yes, | all | the | prices | already | bring | VAT.", "Yes, all our prices include tax.",
-        { flags: { 6: "IVA: Mexico's sales tax (VAT). Price tags in Mexico normally include it." } }),
+        { flags: { 6: "IVA: Mexico's sales tax (VAT). Price tags in Mexico normally include it." },
+          spain: t("Sí, | todos | los | precios | ya | llevan | el | IVA.", "Yes, | all | the | prices | already | carry | the | VAT.", "Yes, all our prices include tax.",
+            { flags: { 7: "IVA: the sales tax (VAT), as in Spain. Price tags in Mexico normally include it." } }) }),
     ],
     return_policy: [
       t("Tiene | treinta | días | para | hacer | cambios. | Nada más | guarde | su | ticket.", "You-have | thirty | days | to | make | exchanges. | Just | keep | your | receipt.",
         "You have thirty days to exchange it. Just keep your receipt.", { flags: { 9: FLAG_TICKET },
           neutral: t("Tiene | treinta | días | para | hacer | cambios. | Nada más | guarde | su | recibo.", "You-have | thirty | days | to | make | exchanges. | Just | keep | your | receipt.",
             "You have thirty days to exchange it. Just keep your receipt."),
-        spain: t("Tienes | treinta | días | para | hacer | cambios. | Solo | tienes | que | guardar | el | ticket.", "You-have | thirty | days | to | make | exchanges. | Just | you-have | to | keep | the | receipt.", "You have thirty days to exchange it. Just keep your receipt.") }),
+        spain: t("Tienes | treinta | días | para | hacer | cambios. | Solo | tienes | que | guardar | el | ticket.", "You-have | thirty | days | to | make | exchanges. | Just | you-have | to | keep | the | receipt.", "You have thirty days to exchange it. Just keep your receipt.",
+          { flags: { 11: FLAG_TICKET } }) }),
     ],
     expensive_sale: [
-      t("Bueno, | hoy | tiene | {$pct}% | de descuento.", "Well, | today | it-has | {$pct}% | off.", "Well, it's actually {$pct}% off today!", { say: "Bueno, hoy tiene {$pct} por ciento de descuento." }),
+      t("Bueno, | hoy | tiene | {$pct}% | de descuento.", "Well, | today | it-has | {$pct}% | off.", "Well, it's actually {$pct}% off today!", { say: "Bueno, hoy tiene {$pct} por ciento de descuento.",
+        spain: t("Bueno, | hoy | tiene | un | {$pct}% | de descuento.", "Well, | today | it-has | a | {$pct}% | off.", "Well, it's actually {$pct}% off today!", { say: "Bueno, hoy tiene un {$pct} por ciento de descuento." }) }),
     ],
     expensive_sale_pl: [
-      t("Bueno, | hoy | tienen | {$pct}% | de descuento.", "Well, | today | they-have | {$pct}% | off.", "Well, they're actually {$pct}% off today!", { say: "Bueno, hoy tienen {$pct} por ciento de descuento." }),
+      t("Bueno, | hoy | tienen | {$pct}% | de descuento.", "Well, | today | they-have | {$pct}% | off.", "Well, they're actually {$pct}% off today!", { say: "Bueno, hoy tienen {$pct} por ciento de descuento.",
+        spain: t("Bueno, | hoy | tienen | un | {$pct}% | de descuento.", "Well, | today | they-have | a | {$pct}% | off.", "Well, they're actually {$pct}% off today!", { say: "Bueno, hoy tienen un {$pct} por ciento de descuento." }) }),
     ],
     expensive_ok: [
       t("Lo | entiendo. | Pero | la | tela | es | muy | buena.", "It | I-understand. | But | the | fabric | is | very | good.", "I understand. But the fabric is really good quality."),
@@ -1280,14 +1311,14 @@ export const clothes: SituationDef = {
     take_ok: [
       t("¡Perfecto! | Pásele | a | la | caja.", "Perfect! | Go on | to | the | register.", "Great! Come on over to the register.",
         { flags: { 1: "Mexican: pásele = go ahead, come in." }, neutral: t("¡Perfecto! | Pase | a | la | caja.", "Perfect! | Go | to | the | register.", "Great! Come on over to the register."),
-        spain: t("¡Perfecto! | Pasa | a | la | caja.", "Perfect! | Go on | to | the | register.", "Great! Come on over to the register.") }),
+        spain: t("¡Perfecto! | Pasa | a | la | caja.", "Perfect! | Go on | to | the | register.", "Great! Come on over to the register.", { flags: {} }) }),
       t("¡Muy | bien! | Se | {lo@X} | llevo | a | la | caja.", "Very | good! | (For) you | it | I-take | to | the | register.", "Great! I'll take it to the register for you.",
         { spain: t("¡Muy | bien! | Te | {lo@X} | llevo | a | la | caja.", "Very | good! | (For) you | it | I-take | to | the | register.", "Great! I'll take it to the register for you.") }),
     ],
     take_ok_pl: [
       t("¡Perfecto! | Pásele | a | la | caja.", "Perfect! | Go on | to | the | register.", "Great! Come on over to the register.",
         { flags: { 1: "Mexican: pásele = go ahead, come in." }, neutral: t("¡Perfecto! | Pase | a | la | caja.", "Perfect! | Go | to | the | register.", "Great! Come on over to the register."),
-        spain: t("¡Perfecto! | Pasa | a | la | caja.", "Perfect! | Go on | to | the | register.", "Great! Come on over to the register.") }),
+        spain: t("¡Perfecto! | Pasa | a | la | caja.", "Perfect! | Go on | to | the | register.", "Great! Come on over to the register.", { flags: {} }) }),
       t("¡Muy | bien! | Se | {lo@X:pl} | llevo | a | la | caja.", "Very | good! | (For) you | them | I-take | to | the | register.", "Great! I'll take them to the register for you.",
         { spain: t("¡Muy | bien! | Te | {lo@X:pl} | llevo | a | la | caja.", "Very | good! | (For) you | them | I-take | to | the | register.", "Great! I'll take them to the register for you.") }),
     ],
@@ -1309,22 +1340,22 @@ export const clothes: SituationDef = {
     // --- paying ------------------------------------------------------------------------------
     rewards_q: [
       t("¿Tiene | tarjeta | de | cliente | frecuente?", "Do you have | card | of | customer | frequent?", "Do you have a loyalty card with us?",
-        { spain: t("¿Tienes | tarjeta | de | cliente | frecuente?", "Do you have | card | of | customer | frequent?", "Do you have a loyalty card with us?") }),
+        { spain: t("¿Tienes | tarjeta | de | cliente?", "Do you have | card | of | customer?", "Do you have a loyalty card with us?") }),
     ],
     rewards_again: [t("¿Y | tiene | tarjeta | de | cliente | frecuente?", "And | do you have | card | of | customer | frequent?", "And do you have a loyalty card?",
-        { spain: t("¿Y | tienes | tarjeta | de | cliente | frecuente?", "And | do you have | card | of | customer | frequent?", "And do you have a loyalty card?") })],
+        { spain: t("¿Y | tienes | tarjeta | de | cliente?", "And | do you have | card | of | customer?", "And do you have a loyalty card?") })],
     rewards_offer: [
       t("¿Quiere | registrarse? | Es | gratis | y | junta | puntos.", "Do you want | to sign up? | It's | free | and | you-collect | points.", "Would you like to sign up? It's free, and you earn points.",
         { spain: t("¿Quieres | registrarte? | Es | gratis | y | acumulas | puntos.", "Do you want | to sign up? | It's | free | and | you-earn | points.", "Would you like to sign up? It's free, and you earn points.") }),
     ],
     rewards_free: [t("No cuesta | nada. | ¿{m:Lo|f:La} | registro?", "It doesn't cost | anything. | You | I-sign up?", "It doesn't cost anything. Should I sign you up?",
       { flags: { 2: "lo / la: “you” (usted), as an object; it follows your gender." },
-        spain: t("No cuesta | nada. | ¿Te | registro?", "It doesn't cost | anything. | You | I-sign up?", "It doesn't cost anything. Should I sign you up?") })],
+        spain: t("No cuesta | nada. | ¿Te | registro?", "It doesn't cost | anything. | You | I-sign up?", "It doesn't cost anything. Should I sign you up?", { flags: {} }) })],
     rewards_no: [t("¡Sin | problema!", "Without | problem!", "No problem!"), t("Está | bien.", "It's | fine.", "That's fine.")],
     rewards_yes: [t("¡Listo! | Nada más | escanee | este | código | en | su | casa.", "Ready! | Just | scan | this | code | in | your | house.", "All set! Just scan this code at home.",
         { spain: t("¡Ya está! | Solo | escanea | este | código | en | casa.", "Done! | Just | scan | this | code | at | home.", "All set! Just scan this code at home.") })],
     rewards_member: [t("Perfecto, | ya | {m:lo|f:la} | encontré.", "Perfect, | already | you | I-found.", "Perfect, I found you.", { flags: { 2: "lo / la: “you” (usted), as an object; it follows your gender." },
-        spain: t("Perfecto, | ya | te | he encontrado.", "Perfect, | already | you | I-found.", "Perfect, I found you.") })],
+        spain: t("Perfecto, | ya | te | he encontrado.", "Perfect, | already | you | I-found.", "Perfect, I found you.", { flags: {} }) })],
     total: [
       t("Son | {$total}.", "It's | {$total}.", "That's {$total}."),
       t("Serían | {$total}.", "That would be | {$total}.", "That'll be {$total}."),
@@ -1338,7 +1369,7 @@ export const clothes: SituationDef = {
         { spain: t("Claro. | Acerca | o | mete | tu | tarjeta, | por favor.", "Sure. | Bring close | or | insert | your | card, | please.", "Sure. Tap or insert your card, please.") }),
       t("Claro. | Aquí | está | la | terminal.", "Sure. | Here | is | the | card reader.", "Sure. Here's the card reader.",
         { flags: { 4: "la terminal: the card reader (the machine)." },
-        spain: t("Claro. | Aquí | está | el | datáfono.", "Sure. | Here | is | the | card reader.", "Sure. Here's the card reader.") }),
+        spain: t("Claro. | Aquí | está | el | datáfono.", "Sure. | Here | is | the | card reader.", "Sure. Here's the card reader.", { flags: { 4: "el datáfono: Spain's word for the card machine." } }) }),
     ],
     card_later: [t("Claro, | con | tarjeta | sí.", "Sure, | with | card | yes.", "Sure, card is fine.")],
     phone_later: [t("Claro, | con | el | celular | también | se puede.", "Sure, | with | the | cell phone | also | you can.", "Sure, you can pay with your phone too.",
@@ -1347,7 +1378,8 @@ export const clothes: SituationDef = {
         { spain: t("¡Claro! | Acerca | el | móvil | al | datáfono.", "Sure! | Bring close | the | phone | to the | card reader.", "Sure! Hold your phone to the card reader.") })],
     cash_ok: [t("Claro, | en | efectivo | está | bien.", "Sure, | in | cash | is | fine.", "Sure, cash is fine.")],
     dollars: [t("Sí, | pero | el | cambio | se lo | doy | en | pesos.", "Yes, | but | the | change | it to you | I-give | in | pesos.", "Yes, but I'll give you the change in pesos.",
-        { spain: t("Sí, | pero | el | cambio | te lo | doy | en | pesos.", "Yes, | but | the | change | it to you | I-give | in | pesos.", "Yes, but I'll give you the change in pesos.") })],
+        { spain: t("Sí, | pero | la | vuelta | te la | doy | en | pesos.", "Yes, | but | the | change | it to you | I-give | in | pesos.", "Yes, but I'll give you the change in pesos.",
+          { flags: { 3: "la vuelta: Spain's word for the change you get back (el cambio in Latin America)." } }) })],
     hold_ok: [t("Claro, | se | {lo@X} | aparto | hasta | mañana.", "Sure, | (for) you | it | I-set aside | until | tomorrow.", "Sure, I'll hold it for you until tomorrow.",
         { spain: t("Claro, | te | {lo@X} | guardo | hasta | mañana.", "Sure, | (for) you | it | I-keep | until | tomorrow.", "Sure, I'll hold it for you until tomorrow.") })],
     hold_ok_pl: [t("Claro, | se | {lo@X:pl} | aparto | hasta | mañana.", "Sure, | (for) you | them | I-set aside | until | tomorrow.", "Sure, I'll hold them for you until tomorrow.",
@@ -1355,8 +1387,8 @@ export const clothes: SituationDef = {
     transfer_no: [t("Perdón, | aquí | nada más | tarjeta | o | efectivo.", "Sorry, | here | only | card | or | cash.", "Sorry, we only take card or cash here.",
         { spain: t("Perdona, | aquí | solo | tarjeta | o | efectivo.", "Sorry, | here | only | card | or | cash.", "Sorry, we only take card or cash here.") })],
     change_back: [t("Aquí | tiene | su | cambio.", "Here | you-have | your | change.", "Here's your change.",
-        { spain: t("Aquí | tienes | tu | cambio.", "Here | you-have | your | change.", "Here's your change.") }), t("Y | su | cambio.", "And | your | change.", "And your change.",
-        { spain: t("Y | tu | cambio.", "And | your | change.", "And your change.") })],
+        { spain: t("Aquí | tienes | la | vuelta.", "Here | you-have | the | change.", "Here's your change.", { flags: { 3: "la vuelta: Spain's word for the change you get back (el cambio in Latin America)." } }) }), t("Y | su | cambio.", "And | your | change.", "And your change.",
+        { spain: t("Y | la | vuelta.", "And | the | change.", "And your change.") })],
     paid: [t("¡Gracias!", "Thanks!", "Thank you!"), t("Listo, | gracias.", "Ready, | thanks.", "All set, thanks!", { spain: t("Ya está, | gracias.", "Done, | thanks.", "All set, thanks!") })],
     thanks_tip: [t("¡Ay, | muchas | gracias!", "Oh, | many | thanks!", "Oh, thank you so much!")],
     no_problem: [t("Sin | problema.", "Without | problem.", "No problem."), t("No hay | problema.", "There's no | problem.", "No problem.")],
@@ -1367,7 +1399,7 @@ export const clothes: SituationDef = {
       t("¿Gusta | una | bolsita?", "Would you like | a | little bag?", "Would you like a bag?",
         { flags: { 0: "Mexican: ¿gusta…? = would you like…? (very polite).", 2: "-ita: a friendly diminutive, not a small bag." },
           neutral: t("¿Quiere | una | bolsita?", "Do you want | a | little bag?", "Would you like a bag?", { flags: { 2: "-ita: a friendly diminutive, not a small bag." } }),
-        spain: t("¿Quieres | una | bolsita?", "Would you like | a | little bag?", "Would you like a bag?") }),
+        spain: t("¿Quieres | una | bolsa?", "Would you like | a | bag?", "Would you like a bag?", { flags: {} }) }),
     ],
     bag_here: [
       t("Aquí | tiene.", "Here | you-have.", "Here you go.",
@@ -1492,7 +1524,7 @@ export const clothes: SituationDef = {
     ret_sorry: [t("¡Ay, | qué | pena! | Una disculpa.", "Oh, | what a | shame! | I'm sorry.", "Oh no, I'm so sorry about that!",
       { flags: { 3: "Mexican: una disculpa (literally, an apology) = I'm sorry." },
         neutral: t("¡Ay, | qué | pena! | Disculpe.", "Oh, | what a | shame! | I'm sorry.", "Oh no, I'm so sorry about that!"),
-        spain: t("¡Ay, | qué | pena! | Lo siento.", "Oh, | what | a pity! | I'm sorry.", "Oh, I'm so sorry about that!") })],
+        spain: t("¡Ay, | qué | pena! | Lo siento.", "Oh, | what | a pity! | I'm sorry.", "Oh, I'm so sorry about that!", { flags: {} }) })],
     ret_size_happens: [t("Ah, | eso | pasa | mucho.", "Ah, | that | happens | a lot.", "Oh, that happens a lot!")],
     ret_fine: [t("Está | bien, | no hay | problema.", "It's | fine, | there's no | problem.", "That's totally fine.")],
     ret_choice_q: [
@@ -1513,7 +1545,8 @@ export const clothes: SituationDef = {
         { spain: t("¿Prefieres | un | cambio | o | saldo a favor?", "Do you prefer | an | exchange | or | store credit?", "Would you like an exchange or store credit?") })],
     ret_no_refund_receipt: [
       t("Perdón, | sin | ticket | no hacemos | reembolsos.", "Sorry, | without | receipt | we don't do | refunds.", "Sorry, we can't do refunds without a receipt.", { flags: { 2: FLAG_TICKET },
-        neutral: t("Perdón, | sin | recibo | no hacemos | reembolsos.", "Sorry, | without | receipt | we don't do | refunds.", "Sorry, we can't do refunds without a receipt.") }),
+        neutral: t("Perdón, | sin | recibo | no hacemos | reembolsos.", "Sorry, | without | receipt | we don't do | refunds.", "Sorry, we can't do refunds without a receipt."),
+        spain: t("Perdona, | sin | ticket | no devolvemos | el | dinero.", "Sorry, | without | receipt | we don't give back | the | money.", "Sorry, we can't do refunds without a receipt.") }),
     ],
     ret_refund_done: [
       t("Muy | bien. | Le | devuelvo | el | dinero | a | su | tarjeta.", "Very | good. | (To) you | I-return | the | money | to | your | card.", "All right. I'll put the money back on your card.",
@@ -1571,7 +1604,7 @@ export const clothes: SituationDef = {
         { id: "browse_just", s: t("Nada más | estoy | viendo, | gracias.", "Just | I-am | looking, | thanks.", "I'm just looking, thanks.",
         { spain: t("Solo | estoy | mirando, | gracias.", "Just | I-am | looking, | thanks.", "I'm just looking, thanks.") }) },
         { id: "browse_fine", s: t("Estoy | bien, | gracias. | Solo | estoy | viendo.", "I-am | fine, | thanks. | Only | I-am | looking.", "I'm fine, thanks. Just browsing.",
-        { spain: t("Estoy | bien, | gracias. | Solo | estoy | mirando.", "I-am | fine, | thanks. | Only | I-am | looking.", "I'm fine, thanks. Just browsing.") }) },
+        { spain: t("Gracias, | solo | estoy | echando | un | vistazo.", "Thanks, | only | I-am | taking | a | look.", "Thanks, I'm just browsing.") }) },
         { id: "browse_not_now", s: t("Por ahora | no, | gracias.", "For now | no, | thanks.", "Not right now, thanks.") },
       ],
     },
@@ -1590,7 +1623,9 @@ export const clothes: SituationDef = {
         { id: "q_where", s: t("¿Dónde | están | {el@X:pl} | {X.pl}?", "Where | are | the | {X.pl}?", "Where are the {X.pl}?") },
         hp("i_like", "Me gusta | {este@X} | {X}.", "I like | this | {X}.", "I like this {X}.", "Me gustan | {este@X:pl} | {X.pl}.", "I like | these | {X.pl}.", "I like these {X.pl}."),
         hp("have_this_size", "¿Tiene | {este@X} | {X} | en | mediana?", "Do you have | this | {X} | in | medium?", "Do you have this {X} in a medium?",
-          "¿Tiene | {este@X:pl} | {X.pl} | en | mediana?", "Do you have | these | {X.pl} | in | medium?", "Do you have these {X.pl} in a medium?", {}, {}, (e) => !e.attrs?.shoe && !e.attrs?.oneSize),
+          "¿Tiene | {este@X:pl} | {X.pl} | en | mediana?", "Do you have | these | {X.pl} | in | medium?", "Do you have these {X.pl} in a medium?", {}, {}, (e) => !e.attrs?.shoe && !e.attrs?.oneSize,
+          ["¿Tienes | {este@X} | {X} | en | mediana?", "Do you have | this | {X} | in | medium?", "Do you have this {X} in a medium?",
+            "¿Tienes | {este@X:pl} | {X.pl} | en | mediana?", "Do you have | these | {X.pl} | in | medium?", "Do you have these {X.pl} in a medium?"]),
       ),
     },
     size: {
@@ -1656,7 +1691,9 @@ export const clothes: SituationDef = {
       items: ordered(
         hp("fit_perfect", "Me | queda | muy | bien.", "(On) me | it-fits | very | well.", "It fits really well.", "Me | quedan | muy | bien.", "(On) me | they-fit | very | well.", "They fit really well."),
         hp("fit_small", "Me | queda | {chico@X}.", "(On) me | it-fits | small.", "It's too small.", "Me | quedan | {chico@X:pl}.", "(On) me | they-fit | small.", "They're too small.",
-          { flags: { 2: "me queda chico/chica: it's (too) small on me." } }),
+          { flags: { 2: "me queda chico/chica: it's (too) small on me." } }, {}, undefined,
+          ["Me | queda | {pequeño@X}.", "(On) me | it-fits | small.", "It's too small.", "Me | quedan | {pequeño@X:pl}.", "(On) me | they-fit | small.", "They're too small."],
+          { flags: { 2: "me queda pequeño/pequeña: it's (too) small on me." } }),
         hp("fit_big", "Me | queda | grande.", "(On) me | it-fits | big.", "It's too big.", "Me | quedan | grandes.", "(On) me | they-fit | big.", "They're too big."),
         hp("fit_tight", "Me | queda | un poco | {apretado@X}.", "(On) me | it-fits | a bit | tight.", "It's a little tight.", "Me | quedan | un poco | {apretado@X:pl}.", "(On) me | they-fit | a bit | tight.", "They're a little tight."),
         hp("fit_long", "Me | queda | {largo@X}.", "(On) me | it-fits | long.", "It's too long.", "Me | quedan | {largo@X:pl}.", "(On) me | they-fit | long.", "They're too long."),
@@ -1670,7 +1707,8 @@ export const clothes: SituationDef = {
     fit_which: {
       lt: "Say whether it's too big or too small", slot: "clothing", examples: ["guayabera", "vestido", "pantalon", "camisa"],
       items: ordered(
-        hp("fit_small", "Me | queda | {chico@X}.", "(On) me | it-fits | small.", "It's too small.", "Me | quedan | {chico@X:pl}.", "(On) me | they-fit | small.", "They're too small."),
+        hp("fit_small", "Me | queda | {chico@X}.", "(On) me | it-fits | small.", "It's too small.", "Me | quedan | {chico@X:pl}.", "(On) me | they-fit | small.", "They're too small.", {}, {}, undefined,
+          ["Me | queda | {pequeño@X}.", "(On) me | it-fits | small.", "It's too small.", "Me | quedan | {pequeño@X:pl}.", "(On) me | they-fit | small.", "They're too small."]),
         hp("fit_big", "Me | queda | grande.", "(On) me | it-fits | big.", "It's too big.", "Me | quedan | grandes.", "(On) me | they-fit | big.", "They're too big."),
         hp("fit_tight", "Me | queda | un poco | {apretado@X}.", "(On) me | it-fits | a bit | tight.", "It's a little tight.", "Me | quedan | un poco | {apretado@X:pl}.", "(On) me | they-fit | a bit | tight.", "They're a little tight."),
         hp("fit_long", "Me | queda | {largo@X}.", "(On) me | it-fits | long.", "It's too long.", "Me | quedan | {largo@X:pl}.", "(On) me | they-fit | long.", "They're too long."),
@@ -1699,7 +1737,9 @@ export const clothes: SituationDef = {
       items: ordered(
         hp("q_price", "¿Cuánto | cuesta?", "How much | does it cost?", "How much is it?", "¿Cuánto | cuestan?", "How much | do they cost?", "How much are they?"),
         hp("q_sale", "¿Tiene | descuento?", "Does it have | discount?", "Is it on sale?", "¿Tienen | descuento?", "Do they have | discount?", "Are they on sale?"),
-        { id: "q_tax", s: t("¿Ya | incluye | IVA?", "Already | does it include | VAT?", "Does that include tax?"), note: "IVA is Mexico's sales tax; price tags normally include it." },
+        { id: "q_tax", s: t("¿Ya | incluye | IVA?", "Already | does it include | VAT?", "Does that include tax?",
+          { spain: t("¿Lleva | el | IVA | incluido?", "Does it carry | the | VAT | included?", "Does that include tax?") }), note: "IVA is Mexico's sales tax; price tags normally include it.",
+          noteSpain: "IVA is the sales tax (VAT), as in Spain; Mexican price tags normally include it." },
         hp("q_return", "¿Puedo | cambiar{lo@X} | si | no me queda?", "Can I | exchange it | if | it doesn't fit me?", "Can I exchange it if it doesn't fit?",
           "¿Puedo | cambiar{lo@X:pl} | si | no me quedan?", "Can I | exchange them | if | they don't fit me?", "Can I exchange them if they don't fit?"),
       ),
@@ -1731,7 +1771,7 @@ export const clothes: SituationDef = {
         { id: "bag_no", s: t("No, | gracias, | no necesito | bolsa.", "No, | thanks, | I don't need | bag.", "No, thanks, I don't need a bag.") },
         hp("wear_it", "Me | {lo@X} | llevo | {puesto@X}.", "(For) me | it | I-take | on (wearing).", "I'll wear it out.", "Me | {lo@X:pl} | llevo | {puesto@X:pl}.", "(For) me | them | I-take | on (wearing).", "I'll wear them out.",
           {}, { note: "“Me lo llevo puesto” = I'll wear it out of the store." }),
-        { id: "gift_receipt", s: t("Es | para | regalo.", "It's | for | gift.", "It's a gift."), note: "Stores often offer to gift-wrap it: “¿Se lo envuelvo para regalo?”" },
+        { id: "gift_receipt", s: t("Es | para | regalo.", "It's | for | gift.", "It's a gift."), note: "Stores often offer to gift-wrap it: “¿Se lo envuelvo para regalo?”", noteSpain: "Stores often offer to gift-wrap it: “¿Te lo envuelvo para regalo?”" },
       ),
     },
     receipt: {
@@ -1740,7 +1780,8 @@ export const clothes: SituationDef = {
         { id: "rc_print", s: t("Impreso, | por favor.", "Printed, | please.", "Printed, please.") },
         { id: "rc_email", s: t("Por | correo, | por favor.", "By | email, | please.", "By email, please.") },
         { id: "rc_none", s: t("No necesito | ticket, | gracias.", "I don't need | receipt, | thanks.", "I don't need a receipt, thanks.", { flags: { 1: FLAG_TICKET },
-          neutral: t("No necesito | recibo, | gracias.", "I don't need | receipt, | thanks.", "I don't need a receipt, thanks.") }) },
+          neutral: t("No necesito | recibo, | gracias.", "I don't need | receipt, | thanks.", "I don't need a receipt, thanks."),
+          spain: t("No necesito | el | ticket, | gracias.", "I don't need | the | receipt, | thanks.", "I don't need a receipt, thanks.", { flags: { 2: FLAG_TICKET } }) }) },
         { id: "gift_receipt", s: t("¿Me | da | un | ticket | de | regalo?", "(To) me | you-give | a | receipt | of | gift?", "Could I get a gift receipt?", { flags: { 3: FLAG_TICKET },
           neutral: t("¿Me | da | un | recibo | de | regalo?", "(To) me | you-give | a | receipt | of | gift?", "Could I get a gift receipt?"),
         spain: t("¿Me | das | un | ticket | de | regalo?", "(To) me | you-give | a | receipt | of | gift?", "Could I get a gift receipt?") }) },
@@ -1754,15 +1795,19 @@ export const clothes: SituationDef = {
           "Quisiera | devolver | {este@X:pl} | {X.pl}.", "I'd like | to return | these | {X.pl}.", "I'd like to return these {X.pl}."),
         hp("ret_exchange", "¿Me | {lo@X} | puede | cambiar | por | una | talla | más | grande?", "(For) me | it | can you | exchange | for | a | size | more | big?", "Can I exchange it for a bigger size?",
           "¿Me | {lo@X:pl} | puede | cambiar | por | una | talla | más | grande?", "(For) me | them | can you | exchange | for | a | size | more | big?", "Can I exchange them for a bigger size?",
-          {}, {}, (e) => !e.attrs?.oneSize && !e.attrs?.shoe),
-        { id: "ret_browse", s: t("No, | nada más | estoy | viendo, | gracias.", "No, | just | I-am | looking, | thanks.", "No, I'm just looking, thanks.") },
+          {}, {}, (e) => !e.attrs?.oneSize && !e.attrs?.shoe,
+          ["¿Me | {lo@X} | puedes | cambiar | por | una | talla | más | grande?", "(For) me | it | can you | exchange | for | a | size | more | big?", "Can I exchange it for a bigger size?",
+            "¿Me | {lo@X:pl} | puedes | cambiar | por | una | talla | más | grande?", "(For) me | them | can you | exchange | for | a | size | more | big?", "Can I exchange them for a bigger size?"]),
+        { id: "ret_browse", s: t("No, | nada más | estoy | viendo, | gracias.", "No, | just | I-am | looking, | thanks.", "No, I'm just looking, thanks.",
+          { spain: t("No, | solo | estoy | mirando, | gracias.", "No, | just | I-am | looking, | thanks.", "No, I'm just looking, thanks.") }) },
       ),
     },
     ret_receipt: {
       lt: "Say whether you have the receipt",
       items: [
         { id: "ret_receipt_here", s: t("Sí, | aquí | está | el | ticket.", "Yes, | here | is | the | receipt.", "Yes, here's the receipt.", { flags: { 4: FLAG_TICKET },
-          neutral: t("Sí, | aquí | está | el | recibo.", "Yes, | here | is | the | receipt.", "Yes, here's the receipt.") }) },
+          neutral: t("Sí, | aquí | está | el | recibo.", "Yes, | here | is | the | receipt.", "Yes, here's the receipt."),
+          spain: t("Sí, | aquí | está | el | ticket.", "Yes, | here | is | the | receipt.", "Yes, here's the receipt.") }) },
         { id: "ret_no_receipt", s: t("No traigo | el | ticket.", "I don't have (with me) | the | receipt.", "I don't have the receipt.", { flags: { 2: FLAG_TICKET },
           neutral: t("No traigo | el | recibo.", "I don't have (with me) | the | receipt.", "I don't have the receipt."),
         spain: t("No llevo | el | ticket.", "I don't have (with me) | the | receipt.", "I don't have the receipt.") }) },
@@ -1775,7 +1820,9 @@ export const clothes: SituationDef = {
       items: ordered(
         hp("ret_nofit", "No me queda.", "It doesn't fit me.", "It doesn't fit.", "No me quedan.", "They don't fit me.", "They don't fit."),
         hp("ret_ran", "Se | destiñó | en | la | lavadora.", "(Itself) | it-faded | in | the | washing machine.", "The color ran in the wash.",
-          "Se | destiñeron | en | la | lavadora.", "(Themselves) | they-faded | in | the | washing machine.", "The color ran in the wash."),
+          "Se | destiñeron | en | la | lavadora.", "(Themselves) | they-faded | in | the | washing machine.", "The color ran in the wash.", {}, {}, undefined,
+          ["Se ha desteñido | en | la | lavadora.", "It has faded | in | the | washing machine.", "The color ran in the wash.",
+            "Se han desteñido | en | la | lavadora.", "They have faded | in | the | washing machine.", "The color ran in the wash."]),
         { id: "ret_mind", s: t("Cambié | de | opinión.", "I-changed | of | opinion.", "I changed my mind.",
         { spain: t("He cambiado | de | opinión.", "I-changed | of | opinion.", "I changed my mind.") }) },
       ),
@@ -1797,9 +1844,12 @@ export const clothes: SituationDef = {
           "Quisiera | devolver | {este@X:pl} | {X.pl}.", "I'd like | to return | these | {X.pl}.", "I'd like to return these {X.pl}."),
         hp("ret_exchange", "¿Me | {lo@X} | puede | cambiar | por | una | talla | más | grande?", "(For) me | it | can you | exchange | for | a | size | more | big?", "Can I exchange it for a bigger size?",
           "¿Me | {lo@X:pl} | puede | cambiar | por | una | talla | más | grande?", "(For) me | them | can you | exchange | for | a | size | more | big?", "Can I exchange them for a bigger size?",
-          {}, {}, (e) => !e.attrs?.oneSize && !e.attrs?.shoe),
+          {}, {}, (e) => !e.attrs?.oneSize && !e.attrs?.shoe,
+          ["¿Me | {lo@X} | puedes | cambiar | por | una | talla | más | grande?", "(For) me | it | can you | exchange | for | a | size | more | big?", "Can I exchange it for a bigger size?",
+            "¿Me | {lo@X:pl} | puedes | cambiar | por | una | talla | más | grande?", "(For) me | them | can you | exchange | for | a | size | more | big?", "Can I exchange them for a bigger size?"]),
         { id: "ret_receipt_here", s: t("Aquí | está | el | ticket.", "Here | is | the | receipt.", "Here's the receipt.", { flags: { 3: FLAG_TICKET },
-          neutral: t("Aquí | está | el | recibo.", "Here | is | the | receipt.", "Here's the receipt.") }) },
+          neutral: t("Aquí | está | el | recibo.", "Here | is | the | receipt.", "Here's the receipt."),
+          spain: t("Aquí | está | el | ticket.", "Here | is | the | receipt.", "Here's the receipt.") }) },
         { id: "ret_no_receipt", s: t("No traigo | el | ticket.", "I don't have (with me) | the | receipt.", "I don't have the receipt.", { flags: { 2: FLAG_TICKET },
           neutral: t("No traigo | el | recibo.", "I don't have (with me) | the | receipt.", "I don't have the receipt."),
         spain: t("No llevo | el | ticket.", "I don't have (with me) | the | receipt.", "I don't have the receipt.") }) },

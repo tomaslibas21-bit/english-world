@@ -35,6 +35,7 @@ import { WORLD_COUNTRIES, WORLD_NATIONALITIES } from "../countries";
 // Flags used more than once
 
 const LOLA = "lo / la: “you” (usted), for a man / a woman.";
+const LE_SPAIN = "le: “you” (usted); Spain usually says le here, for a man or a woman.";
 const EL_DAY = "el + a day: “on” (the article stands for “on”).";
 const ART_TIME = "The article before a clock time has no English word.";
 const A_PERS = "a marks the person you ask; English needs no word for it.";
@@ -225,7 +226,7 @@ function expectPkg(c: Ctx) {
   c.expect({ id: "pkg", optional: true, expects: ["g_thanks", "thanks_kind", "pkg_what_ctx", "pkg_when_ctx"], hints: ["thanks"],
     suggest: [{ lt: "Thank your neighbor", hint: "thanks" }],
     on: {
-      g_thanks: (cc) => { cc.s.pkgThanked = true; if (once(cc, "pkg_thanks")) cc.say(/amable|un amor/.test(heard(cc)) ? "kind_react" : "star_react"); },
+      g_thanks: (cc) => { cc.s.pkgThanked = true; if (once(cc, "pkg_thanks")) cc.say(/amable|un amor|un sol/.test(heard(cc)) ? "kind_react" : "star_react"); },
       thanks_kind: (cc) => { cc.s.pkgThanked = true; if (once(cc, "pkg_thanks")) cc.say(/esperando|llego|salvo/.test(heard(cc)) ? "star_react" : "kind_react"); },
       // (a trailing "¡Gracias!" is dropped by the engine's tolerance: "¿Para mí? ¡Gracias!" thanks her too)
       pkg_what_ctx: (cc) => { react(cc, "pkg_what"); if (/\bgracias\b/.test(heard(cc))) cc.s.pkgThanked = true; else expectPkg(cc); },
@@ -430,7 +431,7 @@ const H: Record<string, Handler> = {
   // --- thanks and goodbye ---
   nice_meet(c) { c.say("you_too"); },
   // "Gracias, ¡qué amable!": one reply, the warm one
-  g_thanks(c) { react(c, /amable|un amor|un angel|lo maximo/.test(heard(c)) ? "kind_react" : "g_welcome"); },
+  g_thanks(c) { react(c, /amable|un amor|un sol|un cielo|un angel|lo maximo/.test(heard(c)) ? "kind_react" : "g_welcome"); },
   thanks_kind(c) { react(c, /esperando|llego|salvo/.test(heard(c)) ? "star_react" : "kind_react"); },
   see_around(c) { c.say("see_around"); c.end(); },
 
@@ -799,7 +800,7 @@ export const neighbor: SituationDef = {
       "(me dio | que) gusto conocerla",
     ] },
     thanks_kind: { patterns: [
-      "(es usted | usted es | eres #tip:tu_older) (un amor | un angel | lo maximo | la mejor | una santa) #h:star", "me (salvó | salvo) [la vida]",
+      "(es usted | usted es | eres #tip:tu_older) (un amor | un angel | lo maximo | la mejor | una santa | un sol | un cielo) #h:star", "me (salvó | salvo) [la vida]",
       "(lo | la) estaba esperando", "por fin llegó [mi paquete]",
     ] },
     see_around: { patterns: ["nos vemos (pronto | luego | al rato | entonces | el {day}) #h:see_you", "hasta (el {day} | entonces)"] },
@@ -843,7 +844,9 @@ export const neighbor: SituationDef = {
       t("¡Mucho gusto! | Yo | soy | Guadalupe, | pero | todos | me | dicen | Doña | Lupita.", "Nice to meet you! | I | am | Guadalupe, | but | everyone | me | they-call | Doña | Lupita.",
         "Nice to meet you! I'm Guadalupe, but everyone calls me Doña Lupita.", { flags: { 8: DONA } }),
       t("¡Mucho gusto! | Yo | soy | Doña | Lupita, | para servirle.", "Nice to meet you! | I | am | Doña | Lupita, | at your service.",
-        "Nice to meet you! I'm Doña Lupita, at your service.", { flags: { 3: DONA } }),
+        "Nice to meet you! I'm Doña Lupita, at your service.", { flags: { 3: DONA },
+          spain: t("¡Mucho gusto! | Yo | soy | Doña | Lupita, | para | lo que | necesite.", "Nice to meet you! | I | am | Doña | Lupita, | for | whatever | you-need.",
+            "Nice to meet you! I'm Doña Lupita, here for whatever you need.", { flags: { 3: DONA } }) }),
     ],
     rita_welcome: [t("¡Bienvenid{m:o|f:a} | al | edificio!", "Welcome | to the | building!", "Welcome to the building!")],
     rita_whats_name: [
@@ -888,7 +891,8 @@ export const neighbor: SituationDef = {
       t("¿Necesita | algo, | {m:vecino|f:vecina}? | Pregúnteme | con confianza.", "You-need | something, | neighbor? | Ask me | freely.", "Do you need anything, neighbor? Don't be shy, just ask."),
     ],
     needs_first_known: [
-      t("¿Y | qué | {m:lo|f:la} | trae | por | aquí?", "And | what | you | brings | around | here?", "So, what brings you by?", { flags: { 2: LOLA } }),
+      t("¿Y | qué | {m:lo|f:la} | trae | por | aquí?", "And | what | you | brings | around | here?", "So, what brings you by?", { flags: { 2: LOLA },
+        spain: t("¿Y | qué | le | trae | por | aquí?", "And | what | you | brings | around | here?", "So, what brings you by?", { flags: { 2: LE_SPAIN } }) }),
       t("Dígame, | {m:vecino|f:vecina}, | ¿qué | se le ofrece?", "Tell me, | neighbor, | what | can I do for you?", "Tell me, neighbor, what can I do for you?",
         { spain: t("Dígame, | {m:vecino|f:vecina}, | ¿qué | necesita?", "Tell me, | neighbor, | what | do you need?", "Tell me, neighbor, what can I do for you?") }),
     ],
@@ -903,7 +907,7 @@ export const neighbor: SituationDef = {
         { flags: { 5: "Mexican: nomás = just, only." },
           neutral: t("Bueno, | si | algún día | necesita | algo, | solo | toque | mi | puerta.", "Well, | if | someday | you-need | something, | just | knock (on) | my | door.",
             "Well, if you ever need anything, just knock on my door."),
-        spain: t("Bueno, | si | algún día | necesita | algo, | solo | llame | a | mi | puerta.", "Well, | if | someday | you-need | something, | just | knock | on | my | door.", "Well, if you ever need anything, just knock on my door.") }),
+        spain: t("Bueno, | si | algún día | necesita | algo, | solo | llame | a | mi | puerta.", "Well, | if | someday | you-need | something, | just | knock | on | my | door.", "Well, if you ever need anything, just knock on my door.", { flags: {} }) }),
     ],
     needs_nudge2: [
       t("Le | puedo | regar | las | plantas | o | recibirle | sus | paquetes.", "(For) you | I-can | water | the | plants | or | take in for you | your | packages.",
@@ -925,7 +929,10 @@ export const neighbor: SituationDef = {
     recycling: [
       t("Las | botellas | y | las | latas, | en | otra | bolsa, | aparte. | Los | señores | de | la | basura | las | separan.",
         "The | bottles | and | the | cans, | in | another | bag, | separately. | The | men | of | the | trash | them | they-sort.",
-        "Bottles and cans go in a separate bag. The garbage men sort them.", { flags: { 14: "las here is a pronoun: them (the bottles and cans)." } }),
+        "Bottles and cans go in a separate bag. The garbage men sort them.", { flags: { 14: "las here is a pronoun: them (the bottles and cans)." },
+          spain: t("Las | botellas | y | las | latas, | en | otra | bolsa, | aparte. | Los | basureros | las | separan.",
+            "The | bottles | and | the | cans, | in | another | bag, | separately. | The | garbage men | them | they-sort.",
+            "Bottles and cans go in a separate bag. The garbage men sort them.", { flags: { 11: "las here is a pronoun: them (the bottles and cans)." } }) }),
     ],
     boxes: [
       t("Y | las | cajas | de | la | mudanza, | déjelas | dobladas | junto | a | la | basura.", "And | the | boxes | of | the | move, | leave-them | folded | next | to | the | trash.",
@@ -962,7 +969,8 @@ export const neighbor: SituationDef = {
         "The | water | from | the | tap | isn't for drinking. | Buy | water jugs | at | the | little store | on | the | corner.",
         "Don't drink the tap water. Buy the big water jugs at the corner store.",
         { flags: { 7: "garrafón: a 20-liter jug of drinking water.", 10: TIENDITA },
-        spain: t("El | agua | del | grifo | no se bebe. | Compre | garrafones | en | la | tiendita | de | la | esquina.", "The | water | from the | tap | isn't for drinking. | Buy | water jugs | at | the | little store | on | the | corner.", "Don't drink the tap water. Buy the big water jugs at the corner store.") }),
+        spain: t("El | agua | del | grifo | no se bebe. | Compre | garrafones | en | la | tienda | de | la | esquina.", "The | water | from the | tap | isn't for drinking. | Buy | water jugs | at | the | store | on | the | corner.", "Don't drink the tap water. Buy the big water jugs at the corner store.",
+          { flags: { 6: "garrafón: a 20-liter jug of drinking water." } }) }),
     ],
     laundry: [
       t("Hay | lavadero | en | la | azotea. | Y | si no, | la | lavandería | de | la | esquina | lava | por | kilo.",
@@ -1023,7 +1031,9 @@ export const neighbor: SituationDef = {
     ],
     store: [
       t("Hay | una | tiendita | en | la | esquina, | y | el | mercado | no está | lejos.", "There's | a | little store | on | the | corner, | and | the | market | isn't | far.",
-        "There's a little store on the corner, and the market isn't far.", { flags: { 2: TIENDITA } }),
+        "There's a little store on the corner, and the market isn't far.", { flags: { 2: TIENDITA },
+          spain: t("Hay | una | tienda | en | la | esquina, | y | el | mercado | no está | lejos.", "There's | a | store | on | the | corner, | and | the | market | isn't | far.",
+            "There's a little store on the corner, and the market isn't far.", { flags: {} }) }),
     ],
     unknown_q: [t("Mmm, | no sé. | Pregúntele | a | Don | Ernesto.", "Hmm, | I don't know. | Ask | — | Don | Ernesto.", "Hmm, I'm not sure. Ask Don Ernesto.", { flags: { 4: "Don: a respectful title for an older man, used with his first name.", 3: A_PERS } })],
     // places nearby (as s81 has them, from the 3D town: Las Palmas at Hidalgo × Flamboyán)
@@ -1121,7 +1131,9 @@ export const neighbor: SituationDef = {
     noise_sorry_rita: [t("¡Ay, | perdóneme!", "Oh, | forgive me!", "Oh, I'm so sorry!")],
     noise_didnt_realize: [
       t("Es que | a | mi | esposo | le gusta | la | música | fuerte.", "It's that | — | my | husband | likes | the | music | loud.", "My husband likes his music loud, you see.",
-        { flags: { 1: "a marks who likes it (a mi esposo le gusta); English needs no word." } }),
+        { flags: { 1: "a marks who likes it (a mi esposo le gusta); English needs no word." },
+          spain: t("Es que | a | mi | marido | le gusta | la | música | fuerte.", "It's that | — | my | husband | likes | the | music | loud.", "My husband likes his music loud, you see.",
+            { flags: { 1: "a marks who likes it (a mi marido le gusta); English needs no word." } }) }),
     ],
     noise_turn_down: [
       t("Ahorita | le | bajo.", "Right now | (to) it | I-turn-down.", "I'll turn it down right now.",
@@ -1131,7 +1143,7 @@ export const neighbor: SituationDef = {
     ],
     complain1: [
       t("Oiga, | {m:vecino|f:vecina}, | disculpe | que | {m:lo|f:la} | moleste.", "Listen, | neighbor, | excuse (me) | that | you | I-bother.", "Excuse me, neighbor, sorry to bother you.",
-        { flags: { 4: LOLA } }),
+        { flags: { 4: LOLA }, spain: t("Oiga, | {m:vecino|f:vecina}, | disculpe | que | le | moleste.", "Listen, | neighbor, | excuse (me) | that | you | I-bother.", "Excuse me, neighbor, sorry to bother you.", { flags: { 4: LE_SPAIN } }) }),
     ],
     complain2: [t("Anoche | la | música | estaba | muy | fuerte.", "Last night | the | music | was | very | loud.", "The music was really loud last night.")],
     complain3: [
@@ -1143,10 +1155,11 @@ export const neighbor: SituationDef = {
     // the learner asked her to turn her music down, but she meant the learner's music
     complain_yours: [t("¡Ay, | no! | Le | hablo | de | su | música, | la | de | anoche.", "Oh, | no! | (To) you | I-speak | about | your | music, | the one | from | last night.", "Oh, no! I mean your music last night!")],
     complain_which: [t("Su | música, | la | de | anoche.", "Your | music, | the one | from | last night.", "Your music, last night!")],
-    complain_when: [t("Como | a | la | medianoche.", "Around | at | — | midnight.", "Around midnight.", { flags: { 2: "a la medianoche: at midnight; the article has no English word." } })],
+    complain_when: [t("Como | a | la | medianoche.", "Around | at | — | midnight.", "Around midnight.", { flags: { 2: "a la medianoche: at midnight; the article has no English word." },
+      spain: t("Sobre | la | medianoche.", "Around | — | midnight.", "Around midnight.", { flags: { 1: "la medianoche: midnight; the article has no English word." } }) })],
     complain_again: [
       t("Y | lo | de | la | música, | ¿eh? | Un | poquito | más | bajo | en | la | noche.", "And | the thing | about | the | music, | okay? | A | little bit | more | low | at | — | night.",
-        "And about the music, okay? Just a little quieter at night.", { flags: { 11: "en la noche: at night; the article has no English word." }, spain: t("Y | lo | de | la | música, | ¿eh? | Un | poquito | más | bajo | por | la | noche.", "And | the thing | about | the | music, | okay? | A | little bit | more | low | at | — | night.", "And about the music, okay? Just a little quieter at night.", { flags: { 11: "en la noche: at night; the article has no English word." } }) }),
+        "And about the music, okay? Just a little quieter at night.", { flags: { 11: "en la noche: at night; the article has no English word." }, spain: t("Y | lo | de | la | música, | ¿eh? | Un | poquito | más | bajo | por | la | noche.", "And | the thing | about | the | music, | okay? | A | little bit | more | low | at | — | night.", "And about the music, okay? Just a little quieter at night.", { flags: { 11: "por la noche: at night; the article has no English word." } }) }),
     ],
     deny_react: [
       t("¿Ah, | no? | ¡Perdone! | Entonces | fueron | los | de | arriba.", "Oh, | no? | Forgive me! | Then | it-was | the ones | from | upstairs.",
@@ -1157,7 +1170,8 @@ export const neighbor: SituationDef = {
 
     // --- returning players -------------------------------------------------------------
     greet_known: [
-      t("¡Hola, | {m:vecino|f:vecina}! | ¿Cómo | le | va?", "Hi, | neighbor! | How | (for) you | it-goes?", "Hi, neighbor! How's it going?"),
+      t("¡Hola, | {m:vecino|f:vecina}! | ¿Cómo | le | va?", "Hi, | neighbor! | How | (for) you | it-goes?", "Hi, neighbor! How's it going?",
+        { spain: t("¡Hola, | {m:vecino|f:vecina}! | ¿Qué tal | está?", "Hi, | neighbor! | How | are-you?", "Hi, neighbor! How are you?") }),
       t("¡Ay, | {m:vecino|f:vecina}, | qué | gusto! | ¿Cómo | está?", "Oh, | neighbor, | what | a pleasure! | How | are-you?", "Oh, neighbor, how nice to see you! How are you?", { spain: t("¡Ay, | {m:vecino|f:vecina}, | qué | alegría! | ¿Cómo | está?", "Oh, | neighbor, | what | a joy! | How | are-you?", "Oh, neighbor, how nice to see you! How are you?") }),
     ],
     hi_known: [t("¡Hola, | {m:vecino|f:vecina}!", "Hi, | neighbor!", "Hi, neighbor!")],
@@ -1173,9 +1187,13 @@ export const neighbor: SituationDef = {
     // --- coffee ------------------------------------------------------------------------
     coffee_invite: [
       t("Oiga, | ¿por qué | no pasa | el | domingo | a | tomar | un | cafecito?", "Say, | why | don't you come by | on | Sunday | to | have | a | little coffee?",
-        "Say, why don't you come by on Sunday for a cup of coffee?", { flags: { 3: EL_DAY, 8: CAFECITO } }),
+        "Say, why don't you come by on Sunday for a cup of coffee?", { flags: { 3: EL_DAY, 8: CAFECITO },
+          spain: t("Oiga, | ¿por qué | no pasa | el | domingo | a | tomar | un | café?", "Say, | why | don't you come by | on | Sunday | to | have | a | coffee?",
+            "Say, why don't you come by on Sunday for a cup of coffee?", { flags: { 3: EL_DAY } }) }),
       t("¿Le gustaría | venir | a | tomar | un | cafecito | el | domingo?", "Would you like | to come | to | have | a | little coffee | on | Sunday?",
-        "Would you like to come over for coffee on Sunday?", { flags: { 5: CAFECITO, 6: EL_DAY } }),
+        "Would you like to come over for coffee on Sunday?", { flags: { 5: CAFECITO, 6: EL_DAY },
+          spain: t("¿Le gustaría | venir | a | tomar | un | café | el | domingo?", "Would you like | to come | to | have | a | coffee | on | Sunday?",
+            "Would you like to come over for coffee on Sunday?", { flags: { 6: EL_DAY } }) }),
     ],
     coffee_time: [
       t("¡Qué | bueno! | ¿Le parece | a | las | cinco?", "How | nice! | Does it suit you | at | — | five?", "Great! Is five o'clock okay?", { flags: { 4: ART_TIME }, spain: t("¡Qué | bien! | ¿Le parece | a | las | cinco?", "How | nice! | Does it suit you | at | — | five?", "Great! Is five o'clock okay?", { flags: { 4: ART_TIME } }) }),
@@ -1190,7 +1208,8 @@ export const neighbor: SituationDef = {
     ],
     // "Sí, ¿llevo algo?", answered once the time is agreed
     coffee_bring: [t("¡Perfecto! | No traiga | nada, | nada más | venga.", "Perfect! | Don't bring | anything, | just | come.", "Perfect! Don't bring a thing, just come.", { spain: t("¡Perfecto! | No traiga | nada, | solo | venga.", "Perfect! | Don't bring | anything, | just | come.", "Perfect! Don't bring a thing, just come.") })],
-    coffee_reask: [t("Entonces, | ¿un | cafecito | el | domingo?", "So, | a | little coffee | on | Sunday?", "So, coffee on Sunday?", { flags: { 3: EL_DAY } })],
+    coffee_reask: [t("Entonces, | ¿un | cafecito | el | domingo?", "So, | a | little coffee | on | Sunday?", "So, coffee on Sunday?", { flags: { 3: EL_DAY },
+      spain: t("Entonces, | ¿un | café | el | domingo?", "So, | a | coffee | on | Sunday?", "So, coffee on Sunday?", { flags: { 3: EL_DAY } }) })],
     coffee_other_day: [t("¡Claro, | así | también | me queda | bien!", "Sure, | that way | also | suits me | well!", "Sure, that works for me too!",
         { spain: t("¡Claro, | así | también | me viene | bien!", "Sure, | that way | also | suits me | well!", "Sure, that works for me too!") })],
     coffee_decline_ok: [t("¡No se preocupe! | Será | otro | día.", "Don't worry! | It'll-be | another | day.", "Don't worry! Another time, then.")],
@@ -1308,8 +1327,10 @@ export const neighbor: SituationDef = {
     borrow: {
       lt: "Borrow something", slot: "thing", examples: ["escalera", "taladro", "aspiradora", "azucar"],
       items: [
-        { id: "borrow", s: t("¿Me | presta | {X.the}?", "(To) me | you-lend | {X.the}?", "Could I borrow your {X}?"), only: (e) => !e.attrs?.mass,
-          note: "Mexicans say “¿Me presta…?” (will you lend me…?) to borrow something." },
+        { id: "borrow", s: t("¿Me | presta | {X.the}?", "(To) me | you-lend | {X.the}?", "Could I borrow your {X}?",
+          { spain: t("¿Me | deja | {X.the}?", "(To) me | you-lend | {X.the}?", "Could I borrow your {X}?") }), only: (e) => !e.attrs?.mass,
+          note: "Mexicans say “¿Me presta…?” (will you lend me…?) to borrow something.",
+          noteSpain: "In Spain, “¿Me deja…?” (literally: will you let me have…?) is the usual way to borrow something; “¿Me presta…?” works too." },
         { id: "borrow_some", s: t("¿Me | podría | dar | un | poco | de | {X}?", "(To) me | could-you | give | a | little | of | {X}?", "Could you spare a little {X}?"),
           only: (e) => !!e.attrs?.mass && !e.attrs?.count },
         // eggs are counted: "dos huevos" (the hint said "un poco de huevos")
@@ -1330,7 +1351,7 @@ export const neighbor: SituationDef = {
         { id: "my_birthday", s: t("Fue | mi | cumpleaños.", "It-was | my | birthday.", "It was my birthday.") },
         { id: "turn_down", s: t("¿Le | podría | bajar | un | poquito | a | la | música?", "(To) it | could-you | turn down | a | little bit | — | the | music?",
           "Could you turn the music down a little?", { flags: { 0: "le … a la música: Spanish names the music twice (bajarle a la música).", 5: "a has no English word here." },
-        spain: t("¿Podría | bajar | un | poquito | la | música?", "Could-you | turn down | a | little bit | the | music?", "Could you turn the music down a little?") }) },
+        spain: t("¿Podría | bajar | un | poquito | la | música?", "Could-you | turn down | a | little bit | the | music?", "Could you turn the music down a little?", { flags: {} }) }) },
       ],
     },
     coffee: {
@@ -1366,7 +1387,8 @@ export const neighbor: SituationDef = {
       items: [
         { id: "s_thanks", s: t("¡Muchas | gracias!", "Many | thanks!", "Thank you so much!") },
         { id: "so_kind", s: t("¡Qué | amable!", "How | kind!", "That's so kind of you!") },
-        { id: "star", s: t("¡Es | usted | un | amor!", "Are | you | a | love!", "You're a sweetheart!", { flags: { 3: "un amor: “a sweetheart”, warm praise." } }) },
+        { id: "star", s: t("¡Es | usted | un | amor!", "Are | you | a | love!", "You're a sweetheart!", { flags: { 3: "un amor: “a sweetheart”, warm praise." },
+          spain: t("¡Es | usted | un | sol!", "Are | you | a | sun!", "You're a sweetheart!", { flags: { 3: "un sol: “a sweetheart” (literally: a sun), warm praise in Spain." } }) }) },
       ],
     },
     bye: {

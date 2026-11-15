@@ -152,3 +152,12 @@ Found and fixed: the report hint "Lamento informarle que se inundó el apartamen
 Kept: "Le habla…" (also Spain's formal phone formula), "Quedo atento a su llamada", chilaquiles.
 Spain corpus +2 (informarle de que, rasqueta).
 Gates: tsc clean; check-content Mexican, neutral and Spain 0 errors, 0 warnings; corpus 372/372 0/88; held-out 35/37 (unchanged); Spain 29/29 0/1; vitest es 178/178.
+
+## Spain pass 3 (14 Nov 2026)
+
+- Notes that said "Mexican: …" on Spain twins without flags of their own (switch, refri, departamento, ¡qué pena!, ¿qué onda?, ahorita): the twins now carry their own flags (or none); "Aun así" gets its own flag.
+- Andrea: "voy en camino" → "voy de camino"; "¿Como regadera/ducha?" → "¿Como una ducha?".
+- Don Gilberto: "¡Caramba!" → "¡Vaya!"; "Ánimo. ¡Nos vemos en un rato!" → "Ánimo. ¡Hasta ahora!" (flagged); "Ya quedamos" → "Ya hemos quedado".
+- The learner's phone intro (hint this_is_apt, two groups): "Le habla X, del 1B" → "Soy X, del 1B" (how Spain says who's calling; the who pattern already takes it).
+- noteSpain on the güey note (news.flooded): "El piso: Spain's word for an apartment."
+Spain corpus +1. Gates: Spain and Mexican 0 errors, 0 warnings; Spain corpus 30/30, 0/1.

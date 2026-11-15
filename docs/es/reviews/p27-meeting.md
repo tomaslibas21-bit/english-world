@@ -115,3 +115,10 @@ Checked: the group lines (vosotros: "Calma, vosotros dos", "guardad las palomita
 Found and fixed: "Pero aquí está el punto:" (→ "Pero la cuestión es esta:"); "¿Cuál problema?" (→ "¿Qué problema?"); the hint "Perdón que te interrumpa" (→ "Perdona que te interrumpa").
 Spain corpus +1.
 Gates: tsc clean; check-content Mexican, neutral and Spain 0 errors, 0 warnings; corpus 224/224 0/43; held-out 34/35 (unchanged); Spain 21/21 0/1; vitest es 178/178.
+
+## Spain pass 3 (14 Nov 2026)
+
+- Vanessa's "Bueno, trato hecho" (v_deal.1) → "Vale, trato hecho"; neutral twin of v_stubborn got empty flags (it inherited "Mexican: de un jalón").
+- Hints: "Es un punto válido" → "Es un argumento válido"; "Buen punto. La página vieja es lenta" → "Es verdad. …" (pattern added, #h:good_point); "¿Me permites un segundo?" → "¿Me dejas un segundo?" (pattern already took it).
+- noteSpain on four notes that described Mexican usage: ya + simple past (q_tested, consider_trial), "¿Me permites?", "Cada quien con su opinión" (→ "Cada uno con su opinión").
+Spain corpus +3. Gates: Spain and Mexican 0 errors, 0 warnings; Spain corpus 24/24, 0/1.

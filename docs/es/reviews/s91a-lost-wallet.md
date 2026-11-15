@@ -129,3 +129,13 @@ value is the roses' $150 (a module constant).
 - Checked (fresh reviewer): every twin against its Mexican line (meaning, facts, prices, names), Peninsular wording, the perfect for today's events, tú/usted and vosotros by STYLE.md, glosses, spelling and ¿¡, the Spain transcripts (`--variety=spain --verbose`, untwinned lines read through their neutral fallback) and tests/es/spain.
 - Found: "Pasan por la avenida a cada rato" (a cada rato is Latin American); "Solo cruce la plaza…" and "Solo levante la mano" (solo + imperative).
 - Fixed: "…cada poco" (merge swapped), "Solo tiene que cruzar la plaza y ahí está.", "…Solo tiene que levantar la mano." (flag moved to la). Kept: hijo/hija with usted from Mari, el 911, los colectivos, el kiosco.
+
+## Spain pass 3 (14 Nov 2026)
+
+- Mari's name line: "para servirle" → "para lo que necesite" (her Spain twin kept it).
+- Chips: ls_paid "Cuando he pagado el café" (today: Spain's perfect; grammar takes he pagado / he comprado);
+  noteSpain for stolen (me han robado), describe (un móvil negro), its_mine (mío for el móvil or el bolso).
+- Notes on the wrong word (inherited flags): bolsillos (bolsas note), ha estado (andar), ¿le falta…? / ¿ha
+  perdido…? (the sí note), cuesta (estar en). Neutral twins Spain shows, flags: {}: lost_react[2] (ahorita),
+  call_taxi (sitio), far (nomás), ok[0] (ándele).
+- Merge: he pagado. Corpus: 1 item.

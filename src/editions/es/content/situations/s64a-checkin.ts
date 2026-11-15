@@ -846,7 +846,7 @@ export const checkin: SituationDef = {
       "[no] (solo | nada mas | nomas | solamente) [tengo] (una | otra) (pregunta | duda) [mas]", "(todavia | aun) tengo (una | otra) (pregunta | duda)", "[si] tengo otra (pregunta | duda)"] },
     ask_ontime: { patterns: [
       "[el vuelo | mi vuelo] (sale | va | esta | llega) a tiempo #h:q_ontime", "(sale | va) a tiempo [el vuelo | mi vuelo]", "(el vuelo | mi vuelo) (sale | va) a la hora",
-      "(sale | va) puntual [el vuelo]", "(va | esta) en horario [el vuelo]",
+      "(sale | va) puntual [el vuelo]", "(va | esta) en horario [el vuelo]", "[el vuelo | mi vuelo] (sale | va | llega) (puntual | en hora) #h:q_ontime",
     ] },
     ask_delayed: { patterns: [
       "(hay | tiene) (retraso | algun retraso | demora | alguna demora)", "(el vuelo | mi vuelo) (viene | esta | va) (retrasado | atrasado | demorado | con retraso)",
@@ -935,12 +935,13 @@ export const checkin: SituationDef = {
     ],
     greet_howareyou: [
       t("¡Buenos días! | ¿Cómo | está?", "Good morning! | How | are you?", "Good morning! How are you?"),
-      t("¡Hola! | ¿Cómo | le | va?", "Hi! | How | (for) you | it-goes?", "Hi! How's it going?"),
+      t("¡Hola! | ¿Cómo | le | va?", "Hi! | How | (for) you | it-goes?", "Hi! How's it going?",
+        { spain: t("¡Hola! | ¿Qué tal?", "Hi! | How are you?", "Hi! How's it going?") }),
     ],
     greet_checkin: [
       t("¡Buenos días! | ¿Viene | a | hacer | su | check-in?", "Good morning! | Are you coming | to | do | your | check-in?", "Good morning! Checking in?"),
       t("¡Hola! | ¿Va | a | documentar?", "Hi! | Are you going | to | check in?", "Hi! Are you checking in?",
-        { flags: { 3: "documentar: to check in (and check your bags) at the airline counter." }, spain: t("¡Hola! | ¿Va | a | facturar?", "Hi! | Are you going | to | check in?", "Hi! Are you checking in?") }),
+        { flags: { 3: "documentar: to check in (and check your bags) at the airline counter." }, spain: t("¡Hola! | ¿Va | a | facturar?", "Hi! | Are you going | to | check in?", "Hi! Are you checking in?", { flags: {} }) }),
     ],
     ask_checkin: [
       t("¿Va | a | hacer | su | check-in?", "Are you going | to | do | your | check-in?", "Are you checking in?"),
@@ -948,11 +949,14 @@ export const checkin: SituationDef = {
     yes_right_here: [t("Sí, | aquí | es.", "Yes, | here | it is.", "Yes, right here!")],
     weigh_first: [t("Primero | vamos | a | pesar | su | maleta.", "First | we're going | to | weigh | your | suitcase.", "Let's weigh your bag first.")],
     delayed_no: [
-      t("No, | hoy | sale | a tiempo.", "No, | today | it leaves | on time.", "No, it's on time today."),
-      t("No, | por ahora | va | a tiempo.", "No, | for now | it's going | on time.", "No, right now it's on time."),
+      t("No, | hoy | sale | a tiempo.", "No, | today | it leaves | on time.", "No, it's on time today.",
+        { spain: t("No, | hoy | sale | puntual.", "No, | today | it leaves | on time.", "No, it's on time today.") }),
+      t("No, | por ahora | va | a tiempo.", "No, | for now | it's going | on time.", "No, right now it's on time.",
+        { spain: t("No, | de momento | va | en hora.", "No, | for now | it's going | on time.", "No, right now it's on time.") }),
     ],
     hello_great: [t("¡Perfecto!", "Perfect!", "Great!"), t("¡Muy | bien!", "Very | good!", "Great!")],
-    checkin_ack: [t("¡Claro!", "Sure!", "Sure!"), t("¡Con gusto!", "With pleasure!", "Of course!"), t("¡Perfecto!", "Perfect!", "Great!")],
+    checkin_ack: [t("¡Claro!", "Sure!", "Sure!"), t("¡Con gusto!", "With pleasure!", "Of course!",
+        { spain: t("¡Por supuesto!", "Of course!", "Of course!") }), t("¡Perfecto!", "Perfect!", "Great!")],
     no_help: [t("Muy | bien. | Aquí | estoy | si | me | necesita.", "Very | good. | Here | I am | if | me | you-need.", "No problem. I'm here if you need me.")],
     ask_dest: [
       t("¿A | dónde | viaja | hoy?", "To | where | are you traveling | today?", "Where are you flying today?"),
@@ -1004,7 +1008,7 @@ export const checkin: SituationDef = {
       t("¿Me | permite | su | pasaporte, | por favor?", "(To) me | you-allow | your | passport, | please?", "May I see your passport, please?", { spain: t("¿Me | deja | su | pasaporte, | por favor?", "(To) me | you-let-have | your | passport, | please?", "May I see your passport, please?") }),
       t("¿Me | da | su | pasaporte, | por favor?", "(To) me | you-give | your | passport, | please?", "Can I have your passport, please?"),
       t("¿Me | presta | su | pasaporte | o | su | tarjeta | de | residente?", "(To) me | you-lend | your | passport | or | your | card | of | resident?",
-        "Could I see your passport or your resident card?", { flags: { 1: "prestar: to lend; Mexicans use it for handing something over for a moment." }, spain: t("¿Me | deja | su | pasaporte | o | su | tarjeta | de | residente?", "(To) me | you-let-have | your | passport | or | your | card | of | resident?", "Could I see your passport or your resident card?") }),
+        "Could I see your passport or your resident card?", { flags: { 1: "prestar: to lend; Mexicans use it for handing something over for a moment." }, spain: t("¿Me | deja | su | pasaporte | o | su | tarjeta | de | residente?", "(To) me | you-let-have | your | passport | or | your | card | of | resident?", "Could I see your passport or your resident card?", { flags: {} }) }),
     ],
     pp_thanks: [t("Gracias.", "Thank you.", "Thank you."), t("Muchas | gracias.", "Many | thanks.", "Thanks a lot."), t("Perfecto, | gracias.", "Perfect, | thanks.", "Perfect, thanks.")],
     found_booking: [
@@ -1030,13 +1034,13 @@ export const checkin: SituationDef = {
     bp_updated: [
       t("Ya | le | cambié | el | pase de abordar.", "Already | (for) you | I-changed | the | boarding pass.", "I've updated your boarding pass.",
         { flags: { 4: "Mexican: pase de abordar = boarding pass; elsewhere tarjeta de embarque." },
-          neutral: t("Ya | le | cambié | la | tarjeta de embarque.", "Already | (for) you | I-changed | the | boarding pass.", "I've updated your boarding pass."), spain: t("Ya | le | he | cambiado | la | tarjeta de embarque.", "Already | (for) you | I-have | changed | the | boarding pass.", "I've updated your boarding pass.") }),
+          neutral: t("Ya | le | cambié | la | tarjeta de embarque.", "Already | (for) you | I-changed | the | boarding pass.", "I've updated your boarding pass."), spain: t("Ya | le | he | cambiado | la | tarjeta de embarque.", "Already | (for) you | I-have | changed | the | boarding pass.", "I've updated your boarding pass.", { flags: {} }) }),
     ],
     pp_have: [t("Ya | lo | tengo, | gracias.", "Already | it | I-have, | thanks.", "I already have it, thanks.", { flags: { 1: "lo: it, the passport (el pasaporte)." } })],
     find_first: [t("Primero | déjeme | encontrar | su | reservación.", "First | let me | find | your | reservation.", "Let me find your reservation first.", { spain: t("Primero | déjeme | encontrar | su | reserva.", "First | let me | find | your | reservation.", "Let me find your reservation first.") })],
     ask_bags: [
       t("¿Documenta | equipaje?", "Are you checking | luggage?", "Are you checking any bags?",
-        { flags: { 0: "documentar: to check (a bag) at the airline counter; the Mexican word." }, spain: t("¿Factura | equipaje?", "Are you checking | luggage?", "Are you checking any bags?") }),
+        { flags: { 0: "documentar: to check (a bag) at the airline counter; the Mexican word." }, spain: t("¿Factura | equipaje?", "Are you checking | luggage?", "Are you checking any bags?", { flags: {} }) }),
       t("¿Trae | maletas | para | documentar?", "Do you have | suitcases | to | check?", "Do you have any bags to check?", { spain: t("¿Lleva | maletas | para | facturar?", "Do you have | suitcases | to | check?", "Do you have any bags to check?") }),
     ],
     ask_bags_n: [t("¿Cuántas | maletas | va | a | documentar?", "How many | suitcases | are you going | to | check?", "How many bags are you checking?", { spain: t("¿Cuántas | maletas | va | a | facturar?", "How many | suitcases | are you going | to | check?", "How many bags are you checking?") })],
@@ -1167,7 +1171,8 @@ export const checkin: SituationDef = {
     ],
     seat_help: [
       t("En | la | ventana | tiene | la | vista, | y | en | el | pasillo | se levanta | más | fácil.", "At | the | window | you have | the | view, | and | on | the | aisle | you get up | more | easily.",
-        "A window seat has the view, and an aisle seat is easier if you want to get up."),
+        "A window seat has the view, and an aisle seat is easier if you want to get up.",
+        { spain: t("En | la | ventana | tiene | la | vista, | y | en | el | pasillo | es | más | fácil | levantarse.", "At | the | window | you have | the | view, | and | on | the | aisle | it's | more | easy | to get up.", "A window seat has the view, and an aisle seat is easier if you want to get up.") }),
     ],
     seat_window: [
       t("Muy | bien, | asiento | 12A, | en | la | ventana.", "Very | good, | seat | 12A, | at | the | window.", "Okay, seat 12A, by the window.", { say: "Muy bien, asiento doce a, en la ventana." }),
@@ -1203,10 +1208,12 @@ export const checkin: SituationDef = {
     bp_give: [
       t("Aquí tiene | su | pase de abordar.", "Here's | your | boarding pass.", "Here's your boarding pass.",
         { flags: { 2: "Mexican: pase de abordar = boarding pass; elsewhere tarjeta de embarque." },
-          neutral: t("Aquí tiene | su | tarjeta de embarque.", "Here's | your | boarding pass.", "Here's your boarding pass.") }),
+          neutral: t("Aquí tiene | su | tarjeta de embarque.", "Here's | your | boarding pass.", "Here's your boarding pass."),
+        spain: t("Aquí tiene | su | tarjeta de embarque.", "Here's | your | boarding pass.", "Here's your boarding pass.", { flags: {} }) }),
       t("Y | aquí está | su | pase de abordar.", "And | here is | your | boarding pass.", "And here's your boarding pass.",
         { flags: { 3: "Mexican: pase de abordar = boarding pass; elsewhere tarjeta de embarque." },
-          neutral: t("Y | aquí está | su | tarjeta de embarque.", "And | here is | your | boarding pass.", "And here's your boarding pass.") }),
+          neutral: t("Y | aquí está | su | tarjeta de embarque.", "And | here is | your | boarding pass.", "And here's your boarding pass."),
+        spain: t("Y | aquí está | su | tarjeta de embarque.", "And | here is | your | boarding pass.", "And here's your boarding pass.", { flags: {} }) }),
     ],
     bp_info: [
       t("El | abordaje | empieza | a | las | 7:30 | en | la | sala | 4.", "The | boarding | starts | at | — | 7:30 | at | the | gate | 4.", "Boarding starts at 7:30 at gate 4.",
@@ -1221,16 +1228,21 @@ export const checkin: SituationDef = {
             { say: "Su puerta es la cuatro y abordamos a las siete y media.", flags: { 3: "la (puerta): Spanish puts an article before the number.", 8: "las: Spanish puts an article before clock times." } }), spain: t("Su | puerta | es | la | 4 | y | embarcamos | a | las | 7:30.", "Your | gate | is | — | 4 | and | we-board | at | — | 7:30.", "Your gate is 4, and boarding starts at 7:30.", {flags: {3: "la (puerta): Spanish puts an article before the number.",8: "las: Spanish puts an article before clock times."},say: "Su puerta es la cuatro y embarcamos a las siete y media."}) }),
     ],
     bag_tag: [
-      t("Y | este | es | el | comprobante | de | su | maleta.", "And | this | is | the | claim tag | of | your | suitcase.", "And here's your bag tag."),
-      t("Aquí está | el | comprobante | de | su | equipaje.", "Here is | the | claim tag | of | your | luggage.", "Here's your baggage claim tag."),
+      t("Y | este | es | el | comprobante | de | su | maleta.", "And | this | is | the | claim tag | of | your | suitcase.", "And here's your bag tag.",
+        { spain: t("Y | este | es | el | resguardo | de | su | maleta.", "And | this | is | the | claim tag | of | your | suitcase.", "And here's your bag tag.") }),
+      t("Aquí está | el | comprobante | de | su | equipaje.", "Here is | the | claim tag | of | your | luggage.", "Here's your baggage claim tag.",
+        { spain: t("Aquí está | el | resguardo | de | su | equipaje.", "Here is | the | claim tag | of | your | luggage.", "Here's your baggage claim tag.") }),
     ],
-    bag_tag_many: [t("Y | estos | son | los | comprobantes | de | sus | maletas.", "And | these | are | the | claim tags | of | your | suitcases.", "And here are your bag tags.")],
+    bag_tag_many: [t("Y | estos | son | los | comprobantes | de | sus | maletas.", "And | these | are | the | claim tags | of | your | suitcases.", "And here are your bag tags.",
+        { spain: t("Y | estos | son | los | resguardos | de | sus | maletas.", "And | these | are | the | claim tags | of | your | suitcases.", "And here are your bag tags.") })],
     ask_questions: [t("¿Tiene | alguna | pregunta?", "Do you have | any | question?", "Do you have any questions?"), t("¿Alguna | duda?", "Any | question?", "Any questions?")],
     ask_more: [t("¿Algo | más?", "Something | else?", "Anything else?"), t("¿Alguna | otra | pregunta?", "Any | other | question?", "Any other questions?")],
     what_q: [t("Claro, | dígame.", "Sure, | tell me.", "Sure, go ahead.")],
     ontime_yes: [
-      t("Sí, | por ahora | va | a tiempo.", "Yes, | for now | it's going | on time.", "Yes, right now it's on time."),
-      t("Sí, | hoy | sale | a tiempo.", "Yes, | today | it leaves | on time.", "Yes, it's on time today."),
+      t("Sí, | por ahora | va | a tiempo.", "Yes, | for now | it's going | on time.", "Yes, right now it's on time.",
+        { spain: t("Sí, | de momento | va | en hora.", "Yes, | for now | it's going | on time.", "Yes, right now it's on time.") }),
+      t("Sí, | hoy | sale | a tiempo.", "Yes, | today | it leaves | on time.", "Yes, it's on time today.",
+        { spain: t("Sí, | hoy | sale | puntual.", "Yes, | today | it leaves | on time.", "Yes, it's on time today.") }),
     ],
     gate_is: [
       t("Es | la | sala | 4.", "It's | — | gate | 4.", "It's gate 4.",
@@ -1247,7 +1259,8 @@ export const checkin: SituationDef = {
       // the 3D hall: the scanner is east of the counter, on the learner's right (Emilio's left) as they face him
       t("El | filtro de seguridad | está | por allá, | a | su | derecha.", "The | security checkpoint | is | over there, | on | your | right.", "Security is over there, on your right.",
         { flags: { 1: "Mexican: el filtro de seguridad = the security checkpoint; elsewhere el control de seguridad." },
-          neutral: t("El | control de seguridad | está | por allá, | a | su | derecha.", "The | security checkpoint | is | over there, | on | your | right.", "Security is over there, on your right.") }),
+          neutral: t("El | control de seguridad | está | por allá, | a | su | derecha.", "The | security checkpoint | is | over there, | on | your | right.", "Security is over there, on your right."),
+        spain: t("El | control de seguridad | está | por allí, | a | su | derecha.", "The | security checkpoint | is | over there, | on | your | right.", "Security is over there, on your right.", { flags: {} }) }),
       // the same way as the first (asked twice, the rotation says both); no café is built in the hall
       t("Seguridad | está | a | su | derecha, | por allá.", "Security | is | on | your | right, | over there.", "Security is to your right, over there."),
     ],
@@ -1417,7 +1430,7 @@ export const checkin: SituationDef = {
         { id: "seat_id_like", s: t("Quisiera | un | asiento | de | {X}.", "I'd like | a | seat | of | {X}.", "I'd like a {X} seat.") },
         { id: "seat_prefer", s: t("Prefiero | {X}.", "I prefer | {X}.", "I'd prefer the {X}.") },
         { id: "seat_can_i", s: t("¿Me | da | {X}, | por favor?", "(To) me | you-give | {X}, | please?", "Can I have the {X}, please?"), only: (e) => e.id !== "middle",
-          note: "Very common in Mexico: “¿Me da…?” for asking for something." },
+          note: "Very common in Mexico: “¿Me da…?” for asking for something.", noteSpain: "“¿Me da…?”: a short, polite way to ask for something." },
         { id: "seat_either", s: t("Me | da | igual.", "(To) me | it's | the same.", "I don't mind.") },
         { id: "seat_either2", s: t("Cualquiera | está bien.", "Any | is fine.", "Either is fine.") },
       ],
@@ -1425,9 +1438,10 @@ export const checkin: SituationDef = {
     questions: {
       lt: "Ask about your flight",
       items: [
-        { id: "q_ontime", s: t("¿El | vuelo | sale | a tiempo?", "The | flight | leaves | on time?", "Is the flight on time?") },
+        { id: "q_ontime", s: t("¿El | vuelo | sale | a tiempo?", "The | flight | leaves | on time?", "Is the flight on time?", { spain: t("¿El | vuelo | sale | puntual?", "The | flight | leaves | on time?", "Is the flight on time?") }) },
         { id: "q_gate", s: t("¿Cuál | es | mi | sala?", "What | is | my | gate?", "What's my gate?",
-          { flags: { 3: "Mexican: la sala = the gate; elsewhere la puerta." }, neutral: t("¿Cuál | es | mi | puerta?", "What | is | my | gate?", "What's my gate?") }) },
+          { flags: { 3: "Mexican: la sala = the gate; elsewhere la puerta." }, neutral: t("¿Cuál | es | mi | puerta?", "What | is | my | gate?", "What's my gate?"),
+            spain: t("¿Cuál | es | mi | puerta?", "What | is | my | gate?", "What's my gate?", { flags: {} }) }) },
         { id: "q_boarding", s: t("¿A | qué | hora | empieza | el | abordaje?", "At | what | time | starts | the | boarding?", "What time does boarding start?", { spain: t("¿A | qué | hora | empieza | el | embarque?", "At | what | time | starts | the | boarding?", "What time does boarding start?") }) },
         { id: "q_security", s: t("¿Por | dónde | paso | a | seguridad?", "Through | where | do I go | to | security?", "Which way to security?") },
         { id: "q_carryon", s: t("¿Puedo | llevar | esta | mochila | conmigo?", "Can I | take | this | backpack | with me?", "Can I take this backpack on board?") },
@@ -1438,7 +1452,7 @@ export const checkin: SituationDef = {
     more: {
       lt: "Say you have no more questions",
       items: [
-        { id: "more_all", s: t("Es | todo, | gracias.", "It's | all, | thanks.", "That's all, thanks.") },
+        { id: "more_all", s: t("Es | todo, | gracias.", "It's | all, | thanks.", "That's all, thanks.", { spain: t("Eso | es | todo, | gracias.", "That | is | all, | thanks.", "That's all, thanks.") }) },
         { id: "more_good", s: t("Todo | claro, | gracias.", "All | clear, | thanks.", "Everything's clear, thanks.") },
       ],
     },
@@ -1449,6 +1463,9 @@ export const checkin: SituationDef = {
   },
 
   merges: {
+    "por allí": { reason: "lexical_expression", split: "por → through + allí → there; = over there.", minimal: "Two words." },
+    "de momento": { reason: "lexical_expression", split: "de → of + momento → moment is false; = for now.", minimal: "Two words." },
+    "en hora": { reason: "lexical_expression", split: "en → in + hora → hour is false; of a flight or a train (Spain) = on time.", minimal: "Two words." },
     "check-in": { reason: "lexical_expression", split: "One hyphenated loanword from English, used as is in Mexico: check-in.", minimal: "One word." },
     "ciudad de méxico": { reason: "lexical_expression", split: "ciudad → city + de → of + méxico → Mexico is the city's proper name: Mexico City.", minimal: "The three-word name." },
     "equipaje de mano": { reason: "lexical_expression", split: "equipaje → luggage + de → of + mano → hand would hide the compound noun: carry-on.", minimal: "Three words, one noun." },

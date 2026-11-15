@@ -693,13 +693,13 @@ export const runningLate: SituationDef = {
     hello: [
       t("¿Bueno? | Buenos días.", "Hello? | Good morning.", "Hello? Good morning.",
         { flags: { 0: F_BUENO }, neutral: t("¿Hola? | Buenos días.", "Hello? | Good morning.", "Hello? Good morning."), spain: t("¿Sí? | Buenos días.", "Hello? | Good morning.", "Hello? Good morning.", { flags: { 0: "Spain: ¿Sí? or ¿Diga? is how people answer the phone." } }) }),
-      t("Buenos días, | habla | Montes.", "Good morning, | speaking | Montes.", "Good morning, Montes speaking.", { flags: { 1: "habla + name: on the phone, “… speaking”." }, spain: t("Buenos días, | soy | Montes.", "Good morning, | it's | Montes.", "Good morning, Montes speaking.") }),
+      t("Buenos días, | habla | Montes.", "Good morning, | speaking | Montes.", "Good morning, Montes speaking.", { flags: { 1: "habla + name: on the phone, “… speaking”." }, spain: t("Buenos días, | soy | Montes.", "Good morning, | it's | Montes.", "Good morning, Montes speaking.", { flags: {} }) }),
       t("Montes, | buenos días.", "Montes, | good morning.", "Montes here, good morning."),
     ],
     hello_id: [
       t("¡Buenos días! | ¿Todo | bien?", "Good morning! | All | good?", "Good morning! Everything okay?"),
       t("¿Qué | pasó? | Buenos días. | ¿Todo | bien?", "What | happened? | Good morning. | All | good?", "Hey, good morning. Everything okay?",
-        { flags: { 0: "¿Qué pasó?: in Mexico also a friendly “what's up?” on the phone." }, spain: t("¿Qué | tal? | Buenos días. | ¿Todo | bien?", "How | are things? | Good morning. | All | good?", "Hi, good morning. Everything okay?") }),
+        { flags: { 0: "¿Qué pasó?: in Mexico also a friendly “what's up?” on the phone." }, spain: t("¿Qué | tal? | Buenos días. | ¿Todo | bien?", "How | are things? | Good morning. | All | good?", "Hi, good morning. Everything okay?", { flags: {} }) }),
     ],
     hello_again: [
       t("¿Bueno? | ¿Quién | habla?", "Hello? | Who | is speaking?", "Hello? Who's calling?",
@@ -718,7 +718,8 @@ export const runningLate: SituationDef = {
       t("¿Con | quién | hablo?", "With | whom | am I speaking?", "Who am I speaking with?"),
     ],
     who_again: [
-      t("Perdón, | no escuché | su | nombre.", "Sorry, | I didn't hear | your | name.", "Sorry, I didn't catch your name."),
+      t("Perdón, | no escuché | su | nombre.", "Sorry, | I didn't hear | your | name.", "Sorry, I didn't catch your name.",
+        { spain: t("Perdone, | no he oído | su | nombre.", "Sorry, | I didn't hear | your | name.", "Sorry, I didn't catch your name.") }),
     ],
     name_ack: [
       t("¡Ah, | hola!", "Ah, | hi!", "Oh, hi!"),
@@ -727,7 +728,7 @@ export const runningLate: SituationDef = {
     ask_late: [
       t("Dígame.", "Tell me.", "Go ahead."),
       t("Sí, | dígame, | ¿qué | pasó?", "Yes, | tell me, | what | happened?", "Yes, go ahead. What's up?", { spain: t("Sí, | dígame, | ¿qué | ha pasado?", "Yes, | tell me, | what | has happened?", "Yes, go ahead. What's up?") }),
-      t("¿Qué | se le ofrece?", "What | do you need?", "What can I do for you?", { flags: { 1: "¿Qué se le ofrece?: a polite Mexican “What can I do for you?”" }, spain: t("¿En | qué | le | puedo | ayudar?", "With | what | you | can I | help?", "What can I do for you?") }),
+      t("¿Qué | se le ofrece?", "What | do you need?", "What can I do for you?", { flags: { 1: "¿Qué se le ofrece?: a polite Mexican “What can I do for you?”" }, spain: t("¿En | qué | le | puedo | ayudar?", "With | what | you | can I | help?", "What can I do for you?", { flags: {} }) }),
     ],
     ask_late_wrong: [
       t("¡Uy! | ¿Qué | pasó?", "Uh-oh! | What | happened?", "Uh-oh. What happened?", { spain: t("¡Uy! | ¿Qué | ha pasado?", "Uh-oh! | What | has happened?", "Uh-oh. What happened?") }),
@@ -743,7 +744,7 @@ export const runningLate: SituationDef = {
     react_bus: [
       t("Uy, | esos | camiones | nunca | pasan | a tiempo.", "Ugh, | those | buses | never | come by | on time.", "Ugh, those buses are never on time.",
         { flags: { 2: "Mexican: camión = city bus. Elsewhere: autobús." },
-          neutral: t("Uy, | esos | autobuses | nunca | pasan | a tiempo.", "Ugh, | those | buses | never | come by | on time.", "Ugh, those buses are never on time.") }),
+          neutral: t("Uy, | esos | autobuses | nunca | pasan | a tiempo.", "Ugh, | those | buses | never | come by | on time.", "Ugh, those buses are never on time.", { flags: {} }) }),
       t("¡Qué | mala | suerte!", "What | bad | luck!", "That's bad luck!"),
     ],
     react_traffic: [
@@ -802,21 +803,21 @@ export const runningLate: SituationDef = {
     ],
     // "¿Como a qué hora…?" (a bare "Diez." = ten o'clock) and "¿Como en cuánto tiempo…?" (a bare "Diez." = ten minutes)
     ask_eta: [
-      t("¿Como | a | qué | hora | llega?", "About | at | what | time | do you arrive?", "Around what time will you get here?", { flags: { 0: F_COMO }, spain: t("¿Más o menos | a | qué | hora | llega?", "Roughly | at | what | time | do you arrive?", "Around what time will you get here?") }),
+      t("¿Como | a | qué | hora | llega?", "About | at | what | time | do you arrive?", "Around what time will you get here?", { flags: { 0: F_COMO }, spain: t("¿Más o menos | a | qué | hora | llega?", "Roughly | at | what | time | do you arrive?", "Around what time will you get here?", { flags: { 0: "más o menos: about, roughly." } }) }),
       t("¿A | qué | hora | cree | que | llega?", "At | what | time | do you think | that | you arrive?", "What time do you think you'll get here?"),
     ],
     ask_eta_long: [
-      t("¿Como | en | cuánto | tiempo | llega?", "About | in | how much | time | do you arrive?", "About how long until you get here?", { flags: { 0: F_COMO }, spain: t("¿Más o menos | en | cuánto | tiempo | llega?", "Roughly | in | how much | time | do you arrive?", "About how long until you get here?") }),
+      t("¿Como | en | cuánto | tiempo | llega?", "About | in | how much | time | do you arrive?", "About how long until you get here?", { flags: { 0: F_COMO }, spain: t("¿Más o menos | en | cuánto | tiempo | llega?", "Roughly | in | how much | time | do you arrive?", "About how long until you get here?", { flags: { 0: "más o menos: about, roughly." } }) }),
     ],
     ask_eta_vague: [
-      t("Bueno. | ¿Como | en | cuánto | tiempo?", "Okay. | About | in | how much | time?", "Okay. About how long?", { flags: { 1: F_COMO }, spain: t("Vale. | ¿Más o menos | en | cuánto | tiempo?", "Okay. | Roughly | in | how much | time?", "Okay. About how long?") }),
+      t("Bueno. | ¿Como | en | cuánto | tiempo?", "Okay. | About | in | how much | time?", "Okay. About how long?", { flags: { 1: F_COMO }, spain: t("Vale. | ¿Más o menos | en | cuánto | tiempo?", "Okay. | Roughly | in | how much | time?", "Okay. About how long?", { flags: { 1: "más o menos: about, roughly." } }) }),
     ],
     ahorita_q: [
       t("¿Ahorita | cuánto | es? | ¿Cinco | minutos | o | media | hora?", "Right now | how much | is it? | Five | minutes | or | half an | hour?",
         "And how long is “ahorita”? Five minutes or half an hour?",
         { flags: { 0: "Mexican: ahorita can mean right now or in a while; Mexicans joke about it." },
           neutral: t("¿En | cuánto | tiempo, | más o menos? | ¿Cinco | minutos | o | media | hora?", "In | how much | time, | more or less? | Five | minutes | or | half an | hour?",
-            "How long, roughly? Five minutes or half an hour?") }),
+            "How long, roughly? Five minutes or half an hour?", { flags: {} }) }),
     ],
     eta_ok: [
       t("Bueno, | está bien.", "Okay, | that's fine.", "Okay, that's fine.", { spain: t("Vale, | está bien.", "Okay, | that's fine.", "Okay, that's fine.") }),
@@ -902,7 +903,7 @@ export const runningLate: SituationDef = {
     ok_link: [
       t("Claro, | ahorita | le | mando | la | liga.", "Sure, | right now | (to) you | I send | the | link.", "Sure, I'll send you the link right now.",
         { flags: { 1: "Mexican: ahorita means right now here.", 5: "Mexican: la liga = a web link. Elsewhere: el enlace." },
-          neutral: t("Claro, | ahora | le | mando | el | enlace.", "Sure, | now | (to) you | I send | the | link.", "Sure, I'll send you the link now.") }),
+          neutral: t("Claro, | ahora | le | mando | el | enlace.", "Sure, | now | (to) you | I send | the | link.", "Sure, I'll send you the link now.", { flags: {} }) }),
     ],
     ok_call: [
       t("Perfecto.", "Perfect.", "Sounds good."),
@@ -934,7 +935,8 @@ export const runningLate: SituationDef = {
       t("Claro, | no pasa nada.", "Of course, | it's fine.", "Of course, it's no big deal."),
     ],
     is_harris: [
-      t("Sí, | él | habla.", "Yes, | he | speaks.", "Yes, speaking.", { flags: { 1: "Sí, él habla: “yes, he's speaking”, the Mexican way to say “Speaking.”" } }),
+      t("Sí, | él | habla.", "Yes, | he | speaks.", "Yes, speaking.", { flags: { 1: "Sí, él habla: “yes, he's speaking”, the Mexican way to say “Speaking.”" },
+        spain: t("Sí, | soy | yo.", "Yes, | it's | me.", "Yes, speaking.", { flags: {} }) }),
     ],
     not_late_resp: [
       t("¡Ah, | qué | bueno! | Entonces | nos vemos | a | las | nueve.", "Ah, | how | good! | Then | see you | at | — | nine.", "Oh, good! See you at nine, then.",
@@ -982,7 +984,7 @@ export const runningLate: SituationDef = {
     bye: [
       t("Hasta luego.", "See you later.", "Bye!"),
       t("Ándele, | hasta luego.", "All right, | see you later.", "All right, bye!",
-        { flags: { 0: "Mexican: ándele = all right then, closing a talk." }, neutral: t("Bueno, | hasta luego.", "Okay, | see you later.", "All right, bye!") }),
+        { flags: { 0: "Mexican: ándele = all right then, closing a talk." }, neutral: t("Bueno, | hasta luego.", "Okay, | see you later.", "All right, bye!", { flags: {} }) }),
     ],
   },
 
@@ -992,7 +994,7 @@ export const runningLate: SituationDef = {
       items: [
         { id: "id_habla", s: t("Buenos días, | ingeniero, | habla | {$name}.", "Good morning, | ingeniero, | speaking | {$name}.", "Good morning, it's {$name}.",
           { flags: { 1: "Ingeniero: a title for an engineer; in Mexico you address your boss by it.", 2: "habla + name: on the phone, “it's …”." }, spain: t("Buenos días, | señor | Montes, | soy | {$name}.", "Good morning, | Mr. | Montes, | it's | {$name}.", "Good morning, it's {$name}.", { flags: { 1: "señor + surname: how you address your boss politely in Spain (Mexico: ingeniero)." } }) }),
-          note: "On the phone, say “Habla…” or “Soy…”, not “Me llamo…”." },
+          note: "On the phone, say “Habla…” or “Soy…”, not “Me llamo…”.", noteSpain: "On the phone, say “Soy…”, not “Me llamo…”." },
         { id: "id_habla", s: t("Ingeniero, | soy | {$name}.", "Ingeniero, | I'm | {$name}.", "Hi, it's {$name}.",
           { spain: t("Señor | Montes, | soy | {$name}.", "Mr. | Montes, | I'm | {$name}.", "Hi, it's {$name}.", { flags: { 0: "señor + surname: how you address your boss politely in Spain (Mexico: ingeniero)." } }) }) },
       ],
@@ -1002,7 +1004,7 @@ export const runningLate: SituationDef = {
       items: [
         { id: "running_late", s: t("Voy | tarde.", "I'm going | late.", "I'm running late.", { flags: { 0: "voy tarde: “I'm going late”, the everyday way to say you're running late." } }) },
         { id: "running_late", s: t("Voy | un poco | tarde.", "I'm going | a little | late.", "I'm running a little late.") },
-        { id: "got_late", s: t("Se me hizo | tarde.", "It got (on me) | late.", "I'm running late.", { flags: { 0: "se me hizo tarde: “it got late on me”, very common in Mexico." }, spain: t("Se me ha hecho | tarde.", "It's gotten (on me) | late.", "I'm running late.") }) },
+        { id: "got_late", s: t("Se me hizo | tarde.", "It got (on me) | late.", "I'm running late.", { flags: { 0: "se me hizo tarde: “it got late on me”, very common in Mexico." }, spain: t("Se me ha hecho | tarde.", "It's gotten (on me) | late.", "I'm running late.", { flags: { 0: "se me ha hecho tarde: “it has gotten late on me”, the usual way to say you're running late." } }) }) },
         { id: "late_mins", s: t("Voy | a | llegar | como | 20 | minutos | tarde.", "I'm going | to | arrive | about | 20 | minutes | late.", "I'll be about 20 minutes late.",
           { say: "Voy a llegar como veinte minutos tarde.", flags: { 3: F_COMO }, spain: t("Voy | a | llegar | unos | 20 | minutos | tarde.", "I'm going | to | arrive | about | 20 | minutes | late.", "I'll be about 20 minutes late.", { flags: { 3: "unos before a number: about." }, say: "Voy a llegar unos veinte minutos tarde." }) }) },
         { id: "not_on_time", s: t("No voy | a | llegar | a tiempo.", "I'm not going | to | arrive | on time.", "I won't make it on time.") },
@@ -1017,17 +1019,17 @@ export const runningLate: SituationDef = {
       items: [
         { id: "r_bus", s: t("Se me fue | el | camión.", "Left on me | the | bus.", "I missed the bus.",
           { flags: { 0: "se me fue: “it left on me”; Spanish puts accidents this way.", 2: "Mexican: camión = city bus. Elsewhere: autobús." },
-            neutral: t("Se me fue | el | autobús.", "Left on me | the | bus.", "I missed the bus.", { flags: { 0: "se me fue: “it left on me”; Spanish puts accidents this way." } }), spain: t("He perdido | el | autobús.", "I've missed | the | bus.", "I missed the bus.") }) },
+            neutral: t("Se me fue | el | autobús.", "Left on me | the | bus.", "I missed the bus.", { flags: { 0: "se me fue: “it left on me”; Spanish puts accidents this way." } }), spain: t("He perdido | el | autobús.", "I've missed | the | bus.", "I missed the bus.", { flags: {} }) }) },
         { id: "r_traffic", s: t("Estoy | {m:atorado|f:atorada} | en | el | tráfico.", "I'm | stuck | in | the | traffic.", "I'm stuck in traffic.",
           { flags: { 1: "Mexican: atorado = stuck. Elsewhere: atrapado." },
-            neutral: t("Estoy | {m:atrapado|f:atrapada} | en | el | tráfico.", "I'm | stuck | in | the | traffic.", "I'm stuck in traffic."), spain: t("Estoy | en | un | atasco.", "I'm | in | a | traffic jam.", "I'm stuck in traffic.") }) },
+            neutral: t("Estoy | {m:atrapado|f:atrapada} | en | el | tráfico.", "I'm | stuck | in | the | traffic.", "I'm stuck in traffic."), spain: t("Estoy | en | un | atasco.", "I'm | in | a | traffic jam.", "I'm stuck in traffic.", { flags: { 3: "atasco: a traffic jam." } }) }) },
         { id: "r_alarm", s: t("No sonó | mi | despertador.", "Didn't ring | my | alarm clock.", "My alarm didn't go off.", { spain: t("No | me | ha sonado | el | despertador.", "Not | (for) me | has rung | the | alarm clock.", "My alarm didn't go off.") }) },
         { id: "r_overslept", s: t("Me quedé | {m:dormido|f:dormida}.", "I stayed | asleep.", "I overslept.", { spain: t("Me he quedado | {m:dormido|f:dormida}.", "I've stayed | asleep.", "I overslept.") }) },
         { id: "r_rain", s: t("Está | lloviendo | muchísimo.", "It's | raining | very much.", "It's pouring.") },
         { id: "r_train", s: t("El | colectivo | no ha pasado.", "The | shared van | hasn't come by.", "The colectivo hasn't come yet.",
           { flags: { 1: "colectivo: the shared van that runs along the coast road." } }) },
         { id: "r_car", s: t("Se me descompuso | el | carro.", "Broke down on me | the | car.", "My car broke down.",
-          { flags: { 2: "Mexican: carro = car; auto is the neutral word." }, neutral: t("Se me descompuso | el | auto.", "Broke down on me | the | car.", "My car broke down."), spain: t("Se me ha averiado | el | coche.", "Has broken down on me | the | car.", "My car broke down.") }) },
+          { flags: { 2: "Mexican: carro = car; auto is the neutral word." }, neutral: t("Se me descompuso | el | auto.", "Broke down on me | the | car.", "My car broke down."), spain: t("Se me ha averiado | el | coche.", "Has broken down on me | the | car.", "My car broke down.", { flags: {} }) }) },
         { id: "r_keys", s: t("No encontraba | mis | llaves.", "I couldn't find | my | keys.", "I couldn't find my keys.") },
         { id: "r_kid", s: t("Tuve que | llevar | a | mi | hijo | al | doctor.", "I had to | take | — | my | son | to the | doctor.", "I had to take my son to the doctor.",
           { flags: { 2: "Personal a: Spanish marks a person after the verb; English has no word here." }, spain: t("He tenido que | llevar | a | mi | hijo | al | médico.", "I've had to | take | — | my | son | to the | doctor.", "I had to take my son to the doctor.", { flags: { 2: "Personal a: Spanish marks a person after the verb; English has no word here." } }) }) },

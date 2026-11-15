@@ -15,5 +15,10 @@
   {"ctx": "more", "say": "¿Me da un número de incidencia?", "intent": "reference_q"},
   {"ctx": "more", "say": "¿Me lo puede mandar por mensaje?", "intent": "text_me"},
   {"ctx": "account", "say": "Perdone, le tengo que colgar, es que voy conduciendo", "intent": ["g_bye"]},
-  {"ctx": "problem", "say": "Lo siento, tengo que colgar, estoy conduciendo", "intent": ["g_bye"]}
+  {"ctx": "problem", "say": "Lo siento, tengo que colgar, estoy conduciendo", "intent": ["g_bye"]},
+  {"ctx": "menu", "say": "Un operador, por favor", "intent": "menu_agent"},
+  {"ctx": "problem", "say": "No me funciona internet", "intent": "internet_down"},
+  {"ctx": "problem", "say": "Tengo problemas con la conexión", "intent": "internet_down"},
+  {"ctx": "someone", "say": "Sí, mi mujer puede estar en casa", "intent": "someone_yes"},
+  {"ctx": "more", "say": "No, gracias, eso es todo", "intent": "more_no"}
 ] }

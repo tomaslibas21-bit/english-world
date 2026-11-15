@@ -124,3 +124,12 @@ time-question order, "wait a few minutes" and plan-question bugs (EN-FIXES-LEADS
 Spain: the learner's "ingeniero" → "señor Montes" in the hints (identify.id_habla ×2, late.running_late: "Buenos días, señor
 Montes, soy…", "Señor Montes, soy…", "Perdón, señor Montes, pero voy tarde."). México and neutral keep ingeniero. "Señor" and
 "señor Montes" are understood in every set (@mh), alone as a greeting too. NLU tests +6, Spain corpus +2.
+
+## Spain pass 3 (14 Nov 2026)
+
+- is_harris: "Sí, soy yo" (Mexico: "Sí, él habla"); who_again "Perdone, no he oído su nombre"; the id_habla chips get
+  a noteSpain without "Habla…".
+- Notes on the wrong word (inherited flags): soy (habla), ¿Qué tal? (¿Qué pasó?), ¿En qué le puedo ayudar? (¿Qué se
+  le ofrece?), más o menos ×3 (the Mexican "como" note; now "más o menos: about"), Se me ha hecho tarde, He perdido
+  el autobús (se me fue / camión), atasco, coche (carro). Neutral twins Spain shows, flags: {}: react_bus (camión),
+  ahorita_q, ok_link (ahorita / liga), bye[1] (ándele).

@@ -219,3 +219,22 @@ Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line a
 - Left: "como a las ocho" (colloquial in Spain too).
 - Merges: "a menudo", "cada poco" registered.
 - Gates: the three neutral-twin article warnings were there before this review.
+
+## Spain pass 3 (14 Nov 2026)
+
+- Directions: "del otro lado de la avenida" → "al otro lado" (10 route lines + the k_so_i chip); "aquí atrás" → "aquí
+  detrás"; "una cuadra" (downtown, still leaking) → "una manzana"; "Como tres manzanas" → "Unas tres"; "dos minutos
+  caminando" → "unos dos minutos andando" (¡Para nada! → ¡Qué va!); "está de este lado" → "en este lado"; "¡No tiene
+  pierde!" → "¡No tiene pérdida!" (×2).
+- Places: "la estética" (a Mexican hair salon; in Spain a beauty salon) → "la peluquería" (r_salon, r_salon_slow).
+- Register: ¡Pásele/Adelante! ¿Qué se le ofrece? → ¡Pase, pase! ¿Qué desea?; ¿Qué se le ofrece hoy? → ¿En qué le
+  puedo ayudar hoy?; ¡Ah, bueno! → ¡Ah, vale!; ¡Qué bueno! → ¡Qué bien!; ¡Excelente! → ¡Estupendo!; el sol pega duro
+  → pega fuerte; música en vivo → en directo; encontrar lugar → sitio; como a las ocho → sobre las ocho; en el verano
+  → en verano; localito/mesitas afuera → local pequeño, mesas fuera; techito → tejadillo; allá → allí.
+- Notes: twins that inherited Mexican notes (pásele, andar + -ando, tianguis, camión, banqueta, derecho) get
+  `flags: {}` or their own.
+- Chips: ¿Entendí bien? → ¿Lo he entendido bien?; ¿Dónde está el baño? → ¿Dónde están los aseos?; caminar → pasear de
+  noche; noteSpain on "¿Me da…?". Grammar: `#h:k_did_i` and `#h:i_restroom` on the Spain forms.
+- Kept: "hablo como perico" (understood in Spain; the word-explainer is built on perico), "derechito / cuadra" word
+  explainers (they explain the Mexican words when asked).
+- Spain corpus: +3 items.

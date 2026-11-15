@@ -293,7 +293,7 @@ export const support: SituationDef = {
     // --- the problem
     // #since: the answer to "¿Desde cuándo no tiene servicio?" is already in the sentence
     internet_down: { patterns: [
-      "[y | tambien | ademas | y ademas] @net @notw [@since_tail] [en (mi casa | la casa)] #h:prob_down",
+      "[y | tambien | ademas | y ademas] @net @notw [@since_tail] [en (mi casa | la casa)] #h:prob_down", "[y | tambien | ademas] no me (funciona | va) @net [@since_tail] [en (mi casa | la casa)] #h:prob_down",
       "[y | tambien | ademas] @notw @net [@since_tail]", "@since_tail @net @notw", "@since_tail no tengo (internet | wifi | servicio)",
       "[y | ademas] no tengo (internet | wifi | servicio | senal | conexion | linea) [ni (telefono | linea | television | tele | cable)] [@since_tail] [en (mi casa | la casa)] #h:prob_none",
       "(quiero | necesito | vengo a | llamo para) reportar que (no tengo (internet | servicio) | no hay internet | @net @notw)",
@@ -304,7 +304,7 @@ export const support: SituationDef = {
       "(llamo | le llamo | hablo) (por | porque) (mi internet | el internet) [no (funciona | sirve)]",
       "(mi | el) (modem | router) (parpadea | esta parpadeando | tiene una luz) [en] (rojo | roja) #h:prob_router",
       "(mi | el) (internet | wifi) dejó de funcionar (ayer | anoche | esta manana | hoy (en | por) la manana | el {day}) #h:prob_stopped #since",
-      "(tengo | estoy teniendo) (problemas | un problema | fallas | una falla) con (mi | el) (internet | wifi | wi fi | conexion | servicio | modem) #h:prob_trouble",
+      "(tengo | estoy teniendo) (problemas | un problema | fallas | una falla) con [mi | el | la] (internet | wifi | wi fi | conexion | servicio | modem | router) #h:prob_trouble",
       "(hay | tengo) (una falla | un problema | problemas | fallas) (con | en) (mi | el) (internet | wifi | servicio | conexion)",
       "nada funciona", "no funciona nada", "(sin | estoy sin | me quedé sin | nos quedamos sin) (internet | servicio | wifi) [@since_tail]",
       "(necesito | ocupo) ayuda con (mi | el) (internet | wifi | modem)", "no hay (internet | servicio | senal | conexion) [@since_tail]",
@@ -536,7 +536,7 @@ export const support: SituationDef = {
         "To sign up or top up your credit, say “ventas” or press 3.",
         { say: "Para contratar o hacer una recarga, diga ventas, o marque tres.", flags: { 5: "Mexican: una recarga = a prepaid top-up; elsewhere recargar saldo." },
           neutral: t("Para | contratar | o | recargar | saldo, | diga | «ventas» | o | marque | 3.", "For | signing up | or | topping up | credit, | say | “ventas” | or | press | 3.",
-            "To sign up or top up your credit, say “ventas” or press 3.", { say: "Para contratar o recargar saldo, diga ventas, o marque tres." }) }),
+            "To sign up or top up your credit, say “ventas” or press 3.", { say: "Para contratar o recargar saldo, diga ventas, o marque tres.", flags: {} }) }),
     ],
     bot_didnt_get: [t("Lo siento, | no le entendí.", "I'm sorry, | I didn't understand you.", "Sorry, I didn't get that.",
         { spain: t("Lo siento, | no le he entendido.", "I'm sorry, | I didn't understand you.", "Sorry, I didn't get that.") })],
@@ -562,7 +562,9 @@ export const support: SituationDef = {
     ],
     bot_connect_agent: [
       t("Por favor, | espere | al | siguiente | asesor | disponible.", "Please, | wait | for the | next | agent | available.", "Please hold for the next available agent.",
-        { flags: { 4: "asesor: what Mexican companies call their phone agents." } }),
+        { flags: { 4: "asesor: what Mexican companies call their phone agents." },
+          spain: t("En breve | le | atenderá | uno | de | nuestros | agentes.", "Shortly | (to) you | will-attend | one | of | our | agents.", "One of our agents will be with you shortly.",
+            { flags: { 2: "atender: to attend to, to serve (the call-center word)." } }) }),
     ],
     bot_important: [t("Su | llamada | es | muy | importante | para | nosotros.", "Your | call | is | very | important | for | us.", "Your call is very important to us.")],
     bot_wait: [
@@ -573,7 +575,11 @@ export const support: SituationDef = {
       t("Todos | nuestros | asesores | están | ocupados. | El | tiempo | de | espera | aproximado | es | de | 20 | minutos.",
         "All | our | agents | are | busy. | The | time | of | wait | approximate | is | — | 20 | minutes.",
         "All of our agents are busy. The current wait time is about 20 minutes.",
-        { say: "Todos nuestros asesores están ocupados. El tiempo de espera aproximado es de veinte minutos.", flags: { 11: "de: Spanish puts de before an amount here; English has no word." } }),
+        { say: "Todos nuestros asesores están ocupados. El tiempo de espera aproximado es de veinte minutos.", flags: { 11: "de: Spanish puts de before an amount here; English has no word." },
+          spain: t("Todos | nuestros | agentes | están | ocupados. | El | tiempo | de | espera | aproximado | es | de | 20 | minutos.",
+            "All | our | agents | are | busy. | The | time | of | wait | approximate | is | — | 20 | minutes.",
+            "All of our agents are busy. The current wait time is about 20 minutes.",
+            { say: "Todos nuestros agentes están ocupados. El tiempo de espera aproximado es de veinte minutos.", flags: { 11: "de: Spanish puts de before an amount here; English has no word." } }) }),
     ],
 
     // Karla
@@ -583,7 +589,8 @@ export const support: SituationDef = {
       t("Buenas tardes, | gracias | por | llamar | a | NetWave. | Le atiende | Karla.", "Good afternoon, | thanks | for | calling | — | NetWave. | You're speaking with | Karla.",
         "Good afternoon, thanks for calling NetWave. This is Karla.", { flags: { 4: FLAG_A_CALL } }),
       t("Hola, | habla | Karla, | de | NetWave.", "Hello, | speaking | Karla, | from | NetWave.", "Hello, this is Karla at NetWave.",
-        { flags: { 1: "habla: on the phone, this is…, literally speaks." } }),
+        { flags: { 1: "habla: on the phone, this is…, literally speaks." },
+          spain: t("Hola, | soy | Karla, | de | NetWave.", "Hello, | I'm | Karla, | from | NetWave.", "Hello, this is Karla at NetWave.", { flags: {} }) }),
     ],
     thanks_patience: [
       t("¡Gracias | por | su | paciencia! | Le atiende | Karla.", "Thanks | for | your | patience! | You're speaking with | Karla.", "Thank you for your patience! This is Karla.",
@@ -594,13 +601,16 @@ export const support: SituationDef = {
     ],
     ask_name: [
       t("¿Con | quién | tengo | el | gusto?", "With | whom | do I have | the | pleasure?", "Who am I speaking with?",
-        { flags: { 0: "A polite Mexican way to ask your name on the phone." } }),
+        { flags: { 0: "A polite Mexican way to ask your name on the phone." },
+          spain: t("¿Con | quién | hablo, | por favor?", "With | whom | am-I-speaking, | please?", "Who am I speaking with, please?", { flags: {} }) }),
       t("¿Me | da | su | nombre | completo, | por favor?", "(To) me | you-give | your | name | full, | please?", "Can I have your full name, please?"),
     ],
     name_thanks: [t("Gracias.", "Thank you.", "Thank you."), t("Muy | bien, | gracias.", "Very | good, | thanks.", "Great, thank you.")],
     go_ahead: [t("Claro, | dígame.", "Sure, | tell me.", "Sure, go ahead."), t("Sí, | adelante.", "Yes, | go ahead.", "Yes, go ahead.")],
     ask_account: [
-      t("¿Me | proporciona | su | número | de | cuenta?", "(To) me | you-provide | your | number | of | account?", "Could I have your account number?"),
+      t("¿Me | proporciona | su | número | de | cuenta?", "(To) me | you-provide | your | number | of | account?", "Could I have your account number?",
+        { spain: t("¿Me | facilita | su | número | de | cuenta?", "(To) me | you-provide | your | number | of | account?", "Could I have your account number?",
+          { flags: { 1: "facilitar: to provide; Spain's call-center word for “give”." } }) }),
       t("¿Y | cuál | es | su | número | de | cuenta?", "And | which | is | your | number | of | account?", "And what's your account number?"),
     ],
     account_found: [
@@ -620,7 +630,7 @@ export const support: SituationDef = {
     acct_where: [
       t("Viene | hasta arriba | de | su | recibo.", "It comes | at the very top | of | your | bill.", "It's at the top of your bill.",
         { flags: { 4: "recibo: in Mexico also the monthly bill (el recibo de luz, de teléfono)." },
-        spain: t("Viene | arriba del todo | en | su | factura.", "It comes | at the very top | on | your | bill.", "It's at the top of your bill.") }),
+        spain: t("Viene | arriba del todo | en | su | factura.", "It comes | at the very top | on | your | bill.", "It's at the top of your bill.", { flags: {} }) }),
     ],
     ask_problem: [
       t("¿En | qué | le | puedo | ayudar | hoy?", "In | what | (to) you | can I | help | today?", "How can I help you today?"),
@@ -630,7 +640,8 @@ export const support: SituationDef = {
     ask_problem_again: [t("Entonces, | ¿en | qué | le | puedo | ayudar?", "So, | in | what | (to) you | can I | help?", "So, how can I help?")],
     sorry_problem: [
       t("Ay, | lo siento | mucho.", "Oh, | I'm sorry | a lot.", "Oh no, I'm so sorry."),
-      t("Lamento | escuchar | eso.", "I regret | to hear | that.", "I'm sorry to hear that."),
+      t("Lamento | escuchar | eso.", "I regret | to hear | that.", "I'm sorry to hear that.",
+        { spain: t("Disculpe | las | molestias.", "Excuse | the | trouble.", "I'm sorry for the trouble.") }),
     ],
     ask_since: [t("¿Desde | cuándo | no tiene | servicio?", "Since | when | you don't have | service?", "How long has it been out?")],
     // asked a second time after another answer: a short reminder
@@ -642,7 +653,7 @@ export const support: SituationDef = {
         "What color is the internet light on your modem?",
         { flags: { 10: FLAG_MODEM },
           neutral: t("¿De | qué | color | está | la | luz | de | internet | en | su | router?", "Of | what | color | is | the | light | of | internet | on | your | router?",
-            "What color is the internet light on your router?") }),
+            "What color is the internet light on your router?", { flags: {} }) }),
       t("¿Qué | luces | ve | en | el | aparato?", "What | lights | do you see | on | the | device?", "What lights do you see on the box?"),
     ],
     lights_meaning: [
@@ -656,10 +667,11 @@ export const support: SituationDef = {
     ask_restart: [
       t("¿Ya | intentó | desconectarlo | y | volverlo a conectar?", "Already | did you try | to unplug it | and | to plug it back in?",
         "Have you tried unplugging it and plugging it back in?", { flags: { 0: "Ya in a question: already, as in English have you … yet." },
-        spain: t("¿Ha probado | a | desconectarlo | y | volverlo a conectar?", "Have you tried | — | to unplug it | and | to plug it back in?", "Have you tried unplugging it and plugging it back in?") }),
+        spain: t("¿Ha probado | a | desconectarlo | y | volverlo a conectar?", "Have you tried | — | to unplug it | and | to plug it back in?", "Have you tried unplugging it and plugging it back in?",
+          { flags: { 1: "probar a + verb: to try doing it; a has no English word." } }) }),
       t("¿Ya | reinició | el | módem?", "Already | did you restart | the | modem?", "Have you tried restarting the modem?",
         { flags: { 3: FLAG_MODEM }, neutral: t("¿Ya | reinició | el | router?", "Already | did you restart | the | router?", "Have you tried restarting the router?"),
-        spain: t("¿Ha reiniciado | ya | el | router?", "Have you restarted | already | the | router?", "Have you tried restarting the router?") }),
+        spain: t("¿Ha reiniciado | ya | el | router?", "Have you restarted | already | the | router?", "Have you tried restarting the router?", { flags: {} }) }),
     ],
     restart_ok: [t("Gracias | por | intentarlo.", "Thanks | for | trying it.", "Thanks for trying that.")],
     restart_now: [
@@ -754,14 +766,15 @@ export const support: SituationDef = {
     text_it: [
       t("Claro, | ahorita | se lo | mando | por | mensaje.", "Sure, | right now | it to you | I-send | by | message.", "Sure, I'll text it to you right now.",
         { flags: { 1: "Mexican: ahorita = right now (or in a little while)." },
-          neutral: t("Claro, | ahora mismo | se lo | mando | por | mensaje.", "Sure, | right now | it to you | I-send | by | message.", "Sure, I'll text it to you right now.") }),
+          neutral: t("Claro, | ahora mismo | se lo | mando | por | mensaje.", "Sure, | right now | it to you | I-send | by | message.", "Sure, I'll text it to you right now.", { flags: {} }) }),
     ],
     tech_free: [
       t("No tiene | ningún | costo, | porque | la | falla | es | de | nuestro | lado.", "It doesn't have | any | cost, | because | the | fault | is | on | our | side.",
         "There's no charge, since the problem is on our end.",
         { spain: t("No tiene | ningún | coste, | porque | la | avería | es | cosa | nuestra.", "It doesn't have | any | cost, | because | the | fault | is | thing | ours.", "There's no charge, since the problem is on our end.") }),
     ],
-    tech_takes: [t("Normalmente | como | una | hora.", "Usually | about | an | hour.", "Usually about an hour.")],
+    tech_takes: [t("Normalmente | como | una | hora.", "Usually | about | an | hour.", "Usually about an hour.",
+      { spain: t("Normalmente, | más o menos | una | hora.", "Usually, | more or less | an | hour.", "Usually about an hour.") })],
     // "¿Tengo que estar en casa?"
     home_needed: [t("Sí, | usted | o | alguien | mayor de edad.", "Yes, | you | or | someone | adult.", "Yes, you or another adult.")],
 
@@ -845,8 +858,9 @@ export const support: SituationDef = {
         { id: "menu_two", s: t("Dos.", "Two.", "Two (the second option)."), note: "Or just say the number: “dos”." },
         { id: "menu_tech", s: t("Soporte | técnico, | por favor.", "Support | technical, | please.", "Technical support, please.") },
         { id: "menu_billing", s: t("Pagos.", "Payments.", "Billing.") },
-        { id: "menu_agent", s: t("Un | asesor, | por favor.", "An | agent, | please.", "An agent, please."),
-          note: "If the menu doesn't understand you, “asesor” or “operador” usually gets you a person." },
+        { id: "menu_agent", s: t("Un | asesor, | por favor.", "An | agent, | please.", "An agent, please.", { spain: t("Un | operador, | por favor.", "An | operator, | please.", "An operator, please.") }),
+          note: "If the menu doesn't understand you, “asesor” or “operador” usually gets you a person.",
+          noteSpain: "If the menu doesn't understand you, “operador” or “agente” usually gets you a person." },
       ],
     },
     name: {
@@ -858,22 +872,24 @@ export const support: SituationDef = {
       lt: "Give your account number",
       items: [
         { id: "acct_is", s: t("Mi | número | de | cuenta | es | 742-9133.", "My | number | of | account | is | 742-9133.", "My account number is 742-9133.",
-          { say: "Mi número de cuenta es siete cuatro dos, noventa y uno, treinta y tres." }), note: "Digit by digit or in pairs, as Mexicans often say them: both work." },
+          { say: "Mi número de cuenta es siete cuatro dos, noventa y uno, treinta y tres." }), note: "Digit by digit or in pairs, as Mexicans often say them: both work.", noteSpain: "Digit by digit or in pairs: both work." },
         { id: "acct_unknown", s: t("Perdón, | no sé | mi | número | de | cuenta.", "Sorry, | I don't know | my | number | of | account.", "Sorry, I don't know my account number.") },
       ],
     },
     problem: {
       lt: "Say what isn't working",
       items: [
-        { id: "prob_down", s: t("Mi | internet | no funciona.", "My | internet | doesn't work.", "My internet isn't working.") },
+        { id: "prob_down", s: t("Mi | internet | no funciona.", "My | internet | doesn't work.", "My internet isn't working.",
+          { spain: t("No me funciona | internet.", "Isn't working for me | the internet.", "My internet isn't working.") }) },
         { id: "prob_none", s: t("No tengo | internet | desde | ayer.", "I don't have | internet | since | yesterday.", "I haven't had internet since yesterday.") },
         { id: "prob_stopped", s: t("Mi | internet | dejó | de | funcionar | ayer.", "My | internet | stopped | — | working | yesterday.", "My internet stopped working yesterday.",
           { flags: { 3: "dejar de + verb: to stop doing it; de has no word in English." } }) },
         { id: "prob_wifi", s: t("El | wifi | no sirve.", "The | Wi-Fi | doesn't work.", "The Wi-Fi isn't working.", { spain: t("El | wifi | no funciona.", "The | Wi-Fi | doesn't work.", "The Wi-Fi isn't working.") }), note: "No sirve: very common in Mexico for doesn't work.", noteSpain: "No funciona: doesn't work (Mexico: no sirve)." },
         { id: "prob_connect", s: t("No me puedo | conectar | a | internet.", "I can't | connect | to | the internet.", "I can't connect to the internet.") },
         { id: "prob_router", s: t("Mi | módem | parpadea | en | rojo.", "My | modem | is blinking | in | red.", "My modem is blinking red.",
-          { flags: { 1: FLAG_MODEM }, neutral: t("Mi | router | parpadea | en | rojo.", "My | router | is blinking | in | red.", "My router is blinking red.") }) },
-        { id: "prob_trouble", s: t("Tengo | problemas | con | mi | internet.", "I have | problems | with | my | internet.", "I'm having trouble with my internet.") },
+          { flags: { 1: FLAG_MODEM }, neutral: t("Mi | router | parpadea | en | rojo.", "My | router | is blinking | in | red.", "My router is blinking red.", { flags: {} }) }) },
+        { id: "prob_trouble", s: t("Tengo | problemas | con | mi | internet.", "I have | problems | with | my | internet.", "I'm having trouble with my internet.",
+          { spain: t("Tengo | problemas | con | la | conexión.", "I have | problems | with | the | connection.", "I'm having trouble with my connection.") }) },
         { id: "lights_red", s: t("La | luz | parpadea | en | rojo.", "The | light | is blinking | in | red.", "The light is blinking red.") },
         { id: "since_y", s: t("Desde | ayer.", "Since | yesterday.", "Since yesterday.") },
       ],
@@ -905,7 +921,7 @@ export const support: SituationDef = {
         { id: "tech_weekend", s: t("¿Tiene | algo | el | sábado?", "Do you have | something | on | Saturday?", "Do you have anything on Saturday?", { flags: { 2: FLAG_EL_DAY } }) },
         { id: "tech_afternoon", s: t("¿Hay | algo | en la tarde?", "Is there | something | in the afternoon?", "Is there anything in the afternoon?", { spain: t("¿Hay | algo | por la tarde?", "Is there | something | in the afternoon?", "Is there anything in the afternoon?") }),
           note: "Mexico says en la tarde; por la tarde works too.", noteSpain: "Por la tarde: in the afternoon (Mexico: en la tarde)." },
-        { id: "someone_yes", s: t("Mi | esposa | puede | estar | en casa.", "My | wife | can | be | at home.", "My wife can be home.") },
+        { id: "someone_yes", s: t("Mi | esposa | puede | estar | en casa.", "My | wife | can | be | at home.", "My wife can be home.", { spain: t("Mi | mujer | puede | estar | en casa.", "My | wife | can | be | at home.", "My wife can be home.") }) },
         { id: "someone_no", s: t("No, | vivo | {m:solo|f:sola}.", "No, | I-live | alone.", "No, I live alone.") },
       ],
     },
@@ -943,7 +959,7 @@ export const support: SituationDef = {
         { id: "lights_there", s: t("Hay | una | luz | roja.", "There is | a | light | red.", "There's a red light.") },
         { id: "lights_none", s: t("No prende | ninguna | luz.", "Doesn't come on | any | light.", "None of the lights are on.",
           { flags: { 0: "Mexican: prender = to turn on, to come on; elsewhere encender." },
-            neutral: t("No enciende | ninguna | luz.", "Doesn't come on | any | light.", "None of the lights are on.") }) },
+            neutral: t("No enciende | ninguna | luz.", "Doesn't come on | any | light.", "None of the lights are on.", { flags: {} }) }) },
       ],
     },
     done: {
@@ -967,7 +983,7 @@ export const support: SituationDef = {
     someone: {
       lt: "Say whether someone else can be home",
       items: [
-        { id: "someone_yes", s: t("Mi | esposa | puede | estar | en casa.", "My | wife | can | be | at home.", "My wife can be home.") },
+        { id: "someone_yes", s: t("Mi | esposa | puede | estar | en casa.", "My | wife | can | be | at home.", "My wife can be home.", { spain: t("Mi | mujer | puede | estar | en casa.", "My | wife | can | be | at home.", "My wife can be home.") }) },
         { id: "someone_no", s: t("No, | vivo | {m:solo|f:sola}.", "No, | I-live | alone.", "No, I live alone.") },
       ],
     },
@@ -982,7 +998,7 @@ export const support: SituationDef = {
     },
     more: {
       lt: "Say that's all",
-      items: [{ id: "more_all", s: t("No, | gracias, | es | todo.", "No, | thanks, | it's | all.", "No, thanks, that's everything.") }],
+      items: [{ id: "more_all", s: t("No, | gracias, | es | todo.", "No, | thanks, | it's | all.", "No, thanks, that's everything.", { spain: t("No, | gracias, | eso | es | todo.", "No, | thanks, | that | is | all.", "No, thanks, that's everything.") }) }],
     },
   },
 
@@ -991,6 +1007,9 @@ export const support: SituationDef = {
   },
 
   merges: {
+    // Spain pass 3 (14 Nov 2026)
+    "en breve": { reason: "lexical_expression", split: "en → in + breve → brief: = shortly.", minimal: "Two words." },
+    "más o menos": { reason: "lexical_expression", split: "más → more + o → or + menos → less: = about, roughly.", minimal: "Three words." },
     "atención al cliente": { reason: "lexical_expression", split: "atención → attention + al → to the + cliente → customer: one name, customer service.", minimal: "Three words." },
     "arriba del todo": { reason: "lexical_expression", split: "arriba → up + del → of the + todo → all: = at the very top.", minimal: "Three words." },
     "le viene": { reason: "lexical_expression", split: "le → (to) you + viene → comes: venir bien = to suit (Spain, for times and plans).", minimal: "Two words." },

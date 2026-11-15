@@ -119,3 +119,11 @@ the device voice unless the owner wants every whole peso voiced (~1,500 values �
 Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
 
 - Read every twin: usted kept throughout, Spain's words right (billete, tarjeta de embarque, móvil, gafas, portátil, aseos, maleta, facturar, coger, aparcamiento, coche, jersey), the perfect for what just happened, "Ya está" for "Listo", Mexican-only names kept. Meaning, glosses and spelling: no problems found. No changes.
+
+## Spain pass 3 (14 Nov 2026)
+
+- 31 Spain twins (16 added, 15 changed), 1 noteSpain.
+- Notes: the cargar, ahorita, checar, NIP, alcanzar, ticket, carro, vulcanizadora, la bomba and ponchada notes no longer show on Spain's twins (each named a word the twin doesn't say). Spain says ticket for a till receipt too, so ask_receipt / receipt_here / the receipt chip say ticket in Spain, with a note.
+- Lines: Lo que usted guste → quiera; cerquita → muy cerca; ¿Se le ofrece algo más? → ¿Desea algo más?; en que → en lo que; Allá atrás → Ahí detrás; Saliendo → Al salir; ya saliendo del pueblo → a la salida del pueblo (three lines).
+- Chips: Póngale quinientos → Póngame quinientos (noteSpain); ¿A cómo está la magna? → ¿A cuánto…? (grammar: a cuánto); ¿Dónde está el baño? → ¿Dónde están los aseos? (grammar: the plural). Merges: al salir, a la salida, a cuánto. 3 corpus items.
+- Kept: magna / premium, the green pump, factura (Mexican things).

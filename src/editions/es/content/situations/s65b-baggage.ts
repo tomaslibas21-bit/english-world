@@ -420,7 +420,7 @@ export const baggage: SituationDef = {
     flight_num_ctx: { patterns: ["{fnum}", "[el] numero es {fnum}", "es el {fnum}", "el {fnum}"] },
     city_ctx: { patterns: ["{city}", "creo que (de | desde) {city}", "{city} [en] @country", "creo que {city}"] },
     no_connection: { patterns: [
-      "[no] (fue | era) (un vuelo directo | directo | sin escalas) #h:cn_direct", "[no] (directo | vuelo directo | sin escalas | sin escala | ninguna escala | ninguna conexion)",
+      "[no] (fue | era | ha sido) (un vuelo directo | directo | sin escalas) #h:cn_direct", "[no] (directo | vuelo directo | sin escalas | sin escala | ninguna escala | ninguna conexion)",
       "no (hice | tuve | hicimos) (escala | escalas | conexion | ninguna escala | ninguna conexion) [en {city}]", "[no] (volé | vine | volamos) directo [desde {city}]",
       "[no] (solo | nada mas) un vuelo", "no cambié de avion", "[no] (ninguna | ninguna escala | ninguna conexion | ni una)",
     ] },
@@ -716,7 +716,7 @@ export const baggage: SituationDef = {
   lines: {
     greet: [
       t("¡Buenas tardes! | ¿En | qué | le | puedo | ayudar?", "Good afternoon! | In | what | (to) you | can I | help?", "Good afternoon! How can I help you?"),
-      t("¡Hola! | ¿Qué | se le ofrece?", "Hi! | What | do you need?", "Hi! What can I do for you?", { flags: { 2: "se le ofrece: the polite formula of shop and service staff, literally is offered to you." } }),
+      t("¡Hola! | ¿Qué | se le ofrece?", "Hi! | What | do you need?", "Hi! What can I do for you?", { flags: { 2: "se le ofrece: the polite formula of shop and service staff, literally is offered to you." }, spain: t("¡Hola! | ¿Qué | desea?", "Hi! | What | do you wish?", "Hi! What can I do for you?", { flags: { 2: "¿Qué desea?: the polite question of shop and service staff in Spain." } }) }),
       t("¡Siguiente, | por favor! | ¿En | qué | le | ayudo?", "Next, | please! | In | what | (to) you | I-help?", "Next, please! How can I help?"),
     ],
     ask_help: [t("¿En | qué | le | puedo | ayudar?", "In | what | (to) you | can I | help?", "How can I help you?")],
@@ -724,7 +724,7 @@ export const baggage: SituationDef = {
     what_happened: [t("Claro. | ¿Qué | pasó?", "Sure. | What | happened?", "Of course. What happened?", { spain: t("Claro. | ¿Qué | ha | pasado?", "Sure. | What | has | happened?", "Of course. What happened?") })],
     sorry_bag: [
       t("Ay, | lo siento | mucho.", "Oh, | I'm sorry | very much.", "Oh, I'm so sorry."),
-      t("Lamento | escuchar | eso. | Vamos | a | ver | qué | podemos | hacer.", "I regret | to hear | that. | We're going | to | see | what | we can | do.", "I'm sorry to hear that. Let's see what we can do."),
+      t("Lamento | escuchar | eso. | Vamos | a | ver | qué | podemos | hacer.", "I regret | to hear | that. | We're going | to | see | what | we can | do.", "I'm sorry to hear that. Let's see what we can do.", { spain: t("Siento | mucho | oír | eso. | Vamos | a | ver | qué | podemos | hacer.", "I'm sorry | very much | to hear | that. | We're going | to | see | what | we can | do.", "I'm sorry to hear that. Let's see what we can do.") }),
       t("¡Ay, | no! | No se preocupe, | lo | vamos | a | resolver.", "Oh, | no! | Don't worry, | it | we're going | to | sort out.", "Oh no! Don't worry, we'll sort it out.",
         { flags: { 3: "lo: it, the problem in general." } }),
     ],
@@ -737,11 +737,11 @@ export const baggage: SituationDef = {
     ],
     flight_help: [t("Viene | en | su | pase de abordar.", "It comes | on | your | boarding pass.", "It's on your boarding pass.",
       { flags: { 3: "Mexican: pase de abordar = boarding pass; elsewhere tarjeta de embarque." },
-        neutral: t("Viene | en | su | tarjeta de embarque.", "It comes | on | your | boarding pass.", "It's on your boarding pass.") })],
-    ask_from: [t("Está bien. | ¿De | qué | ciudad | venía?", "That's fine. | From | what | city | were you coming?", "That's okay. Which city did you fly in from?")],
+        neutral: t("Viene | en | su | tarjeta de embarque.", "It comes | on | your | boarding pass.", "It's on your boarding pass."), spain: t("Viene | en | su | tarjeta de embarque.", "It comes | on | your | boarding pass.", "It's on your boarding pass.", { flags: {} }) })],
+    ask_from: [t("Está bien. | ¿De | qué | ciudad | venía?", "That's fine. | From | what | city | were you coming?", "That's okay. Which city did you fly in from?", { spain: t("Vale. | ¿De | qué | ciudad | venía?", "Okay. | From | what | city | were you coming?", "Okay. Which city did you fly in from?") })],
     ask_connection: [
       t("¿Hizo | escala?", "Did you make | a stopover?", "Did you have a connection?", { flags: { 1: "hacer escala: to stop over; Spanish needs no article here." }, spain: t("¿Ha | hecho | escala?", "Have you | made | a stopover?", "Did you have a connection?", {flags: {2: "hacer escala: to stop over; Spanish needs no article here."}}) }),
-      t("¿Tuvo | alguna | conexión?", "Did you have | any | connection?", "Did you have a connecting flight?"),
+      t("¿Tuvo | alguna | conexión?", "Did you have | any | connection?", "Did you have a connecting flight?", { spain: t("¿Ha | tenido | alguna | conexión?", "Have you | had | any | connection?", "Did you have a connecting flight?") }),
     ],
     ask_tag: [
       t("¿Tiene | el | comprobante | de | su | equipaje?", "Do you have | the | claim tag | of | your | luggage?", "Do you have your baggage claim tag?"),
@@ -749,13 +749,13 @@ export const baggage: SituationDef = {
         "Can I see your baggage claim tag? It's usually stuck to your boarding pass.",
         { flags: { 11: "Mexican: pase de abordar = boarding pass; elsewhere tarjeta de embarque." },
           neutral: t("¿Me | permite | su | comprobante | de | equipaje? | Normalmente | viene | pegado | en | su | tarjeta de embarque.", "(To) me | you-allow | your | claim tag | of | luggage? | Usually | it comes | stuck | on | your | boarding pass.",
-            "Can I see your baggage claim tag? It's usually stuck to your boarding pass."), spain: t("¿Me | deja | su | comprobante | de | equipaje? | Normalmente | viene | pegado | en | su | tarjeta de embarque.", "(To) me | you-let-have | your | claim tag | of | luggage? | Usually | it comes | stuck | on | your | boarding pass.", "Can I see your baggage claim tag? It's usually stuck to your boarding pass.") }),
+            "Can I see your baggage claim tag? It's usually stuck to your boarding pass."), spain: t("¿Me | deja | su | comprobante | de | equipaje? | Normalmente | viene | pegado | en | su | tarjeta de embarque.", "(To) me | you-let-have | your | claim tag | of | luggage? | Usually | it comes | stuck | on | your | boarding pass.", "Can I see your baggage claim tag? It's usually stuck to your boarding pass.", { flags: {} }) }),
     ],
     tag_thanks: [t("Perfecto, | gracias.", "Perfect, | thanks.", "Perfect, thank you.")],
     tag_none: [t("No hay problema. | Puedo | buscarla | con | su | nombre | y | su | vuelo.", "No problem. | I can | look for it | with | your | name | and | your | flight.", "No problem. I can find it with your name and flight.",
       { flags: { 2: "buscarla: la is the bag (la maleta)." } })],
     checking: [
-      t("Déjeme | revisar | en | el | sistema.", "Let me | check | in | the | system.", "Let me check the system."),
+      t("Déjeme | revisar | en | el | sistema.", "Let me | check | in | the | system.", "Let me check the system.", { spain: t("Déjeme | mirar | en | el | sistema.", "Let me | look | in | the | system.", "Let me check the system.") }),
       t("Un | momento, | déjeme | ver.", "One | moment, | let me | see.", "One moment, let me look."),
     ],
     not_in_system: [
@@ -845,8 +845,8 @@ export const baggage: SituationDef = {
     delivery_ok_found: [t("Perfecto. | Se la | llevamos | en cuanto | llegue.", "Perfect. | It to you | we-take | as soon as | it arrives.", "Great. We'll bring it to you as soon as it gets here.")],
     pickup_ok: [t("Muy | bien, | puede | recogerla | aquí, | en | este | mostrador.", "Very | good, | you can | pick it up | here, | at | this | counter.", "Okay, you can pick it up here, at this desk.")],
     ask_hotel: [
-      t("¿Dónde | se está | hospedando?", "Where | are you | staying?", "Where are you staying?"),
-      t("¿Y | dónde | se hospeda?", "And | where | are you staying?", "And where are you staying?"),
+      t("¿Dónde | se está | hospedando?", "Where | are you | staying?", "Where are you staying?", { spain: t("¿Dónde | se está | alojando?", "Where | are you | staying?", "Where are you staying?") }),
+      t("¿Y | dónde | se hospeda?", "And | where | are you staying?", "And where are you staying?", { spain: t("¿Y | dónde | se aloja?", "And | where | are you staying?", "And where are you staying?") }),
     ],
     ask_deliver_where: [t("¿A | qué | dirección | se la | llevamos?", "To | what | address | it to you | do we take?", "What address should we deliver it to?")],
     // "No sé la dirección" when the bag is to be delivered
@@ -869,7 +869,7 @@ export const baggage: SituationDef = {
         { flags: { 13: "Mexican: playera = T-shirt; elsewhere camiseta." },
           neutral: t("¿Le | doy | un | kit | de | cortesía? | Tiene | cepillo | de | dientes, | pasta | y | una | camiseta.",
             "(To) you | I-give | a | kit | of | courtesy? | It has | brush | of | teeth, | toothpaste | and | a | T-shirt.",
-            "Would you like a free overnight kit? It has a toothbrush, toothpaste, and a T-shirt.") }),
+            "Would you like a free overnight kit? It has a toothbrush, toothpaste, and a T-shirt."), spain: t("¿Le | doy | un | kit | de | cortesía? | Tiene | cepillo | de | dientes, | pasta | y | una | camiseta.", "(To) you | I-give | a | kit | of | courtesy? | It has | brush | of | teeth, | toothpaste | and | a | T-shirt.", "Would you like a free overnight kit? It has a toothbrush, toothpaste, and a T-shirt.", { flags: {} }) }),
     ],
     kit_here: [t("Aquí tiene.", "Here you go.", "Here you go."), t("Tenga.", "Take it.", "Here you are.")],
     // "¿Cuánto cuesta?" while the kit is offered; then the offer again, in short
@@ -903,7 +903,7 @@ export const baggage: SituationDef = {
     // Closing
     anything_else: [
       t("¿Le | puedo | ayudar | en | algo | más?", "(To) you | can I | help | in | something | else?", "Can I help you with anything else?"),
-      t("¿Algo | más | en | que | le | pueda | ayudar?", "Something | else | in | which | (to) you | I can | help?", "Is there anything else I can do for you?"),
+      t("¿Algo | más | en | que | le | pueda | ayudar?", "Something | else | in | which | (to) you | I can | help?", "Is there anything else I can do for you?", { spain: t("¿Algo | más | en | lo que | le | pueda | ayudar?", "Something | else | in | which | (to) you | I can | help?", "Is there anything else I can do for you?") }),
     ],
     closing: [
       t("De nuevo, | disculpe | las | molestias.", "Again, | excuse | the | inconvenience.", "Again, I'm sorry for the trouble."),
@@ -954,9 +954,9 @@ export const baggage: SituationDef = {
     stays_here: [t("Así que | {ese@X} | {X} | se queda | aquí.", "So | that | {X} | stays | here.", "So that {X} has to stay here.")],
     dog_sat: [
       t("Un | momento. | El | perro | se sentó | junto | a | su | mochila.", "One | moment. | The | dog | sat down | next | to | your | backpack.", "Just a moment. The dog sat down next to your backpack.",
-        { flags: { 4: "se sentó: sentarse = to sit down. A sniffer dog sits by a bag when it smells food." }, spain: t("Un | momento. | El | perro | se ha sentado | junto | a | su | mochila.", "One | moment. | The | dog | has sat down | next | to | your | backpack.", "Just a moment. The dog sat down next to your backpack.") }),
+        { flags: { 4: "se sentó: sentarse = to sit down. A sniffer dog sits by a bag when it smells food." }, spain: t("Un | momento. | El | perro | se ha sentado | junto | a | su | mochila.", "One | moment. | The | dog | has sat down | next | to | your | backpack.", "Just a moment. The dog sat down next to your backpack.", { flags: { 4: "se ha sentado: sentarse = to sit down. A sniffer dog sits by a bag when it smells food." } }) }),
       t("Espere, | por favor. | El | perro | marcó | su | mochila.", "Wait, | please. | The | dog | marked | your | backpack.", "Wait, please. The dog has picked out your backpack.",
-        { flags: { 4: "marcar: what Mexico's agriculture inspectors say when a sniffer dog points out a bag." }, spain: t("Espere, | por favor. | El | perro | ha | marcado | su | mochila.", "Wait, | please. | The | dog | has | marked | your | backpack.", "Wait, please. The dog has picked out your backpack.") }),
+        { flags: { 4: "marcar: what Mexico's agriculture inspectors say when a sniffer dog points out a bag." }, spain: t("Espere, | por favor. | El | perro | ha | marcado | su | mochila.", "Wait, | please. | The | dog | has | marked | your | backpack.", "Wait, please. The dog has picked out your backpack.", { flags: { 5: "marcar: what inspectors say when a sniffer dog points out a bag." } }) }),
     ],
     dog_q: [
       t("¿Trae | alguna | fruta | o | algo | de comer | del | avión?", "Do you bring | any | fruit | or | something | to eat | from the | plane?", "Do you have any fruit or something to eat from the plane?", { spain: t("¿Lleva | alguna | fruta | o | algo | de comer | del | avión?", "Do you bring | any | fruit | or | something | to eat | from the | plane?", "Do you have any fruit or something to eat from the plane?") }),
@@ -998,7 +998,7 @@ export const baggage: SituationDef = {
     // "¿Qué tengo que declarar?": the three things this conversation teaches (SENASICA's food, ANAM's allowance and cash line)
     ans_what_declare: [t("Comida, | mercancía | de | más | de | 500 | dólares | y | efectivo | de | más | de | 10,000 | dólares.",
       "Food, | goods | of | more | than | 500 | dollars | and | cash | of | more | than | 10,000 | dollars.", "Food, goods worth more than 500 dollars, and more than 10,000 dollars in cash.",
-      { say: "Comida, mercancía de más de quinientos dólares y efectivo de más de diez mil dólares." })],
+      { say: "Comida, mercancía de más de quinientos dólares y efectivo de más de diez mil dólares.", spain: t("Comida, | mercancía | de | más | de | 500 | dólares | y | efectivo | de | más | de | 10.000 | dólares.", "Food, | goods | of | more | than | 500 | dollars | and | cash | of | more | than | 10,000 | dollars.", "Food, goods worth more than 500 dollars, and more than 10,000 dollars in cash.", { say: "Comida, mercancía de más de quinientos dólares y efectivo de más de diez mil dólares." }) })],
     check_senasica: [t("Eso | lo | revisa | SENASICA. | Pase | por | aquí, | por favor.", "That | it | checks | SENASICA. | Go | through | here, | please.",
       "The agriculture inspectors will check that. This way, please.", { flags: { 3: "SENASICA: Mexico's agricultural health service; its inspectors check food at the airport." } })],
     stays_here_all: [t("Así que | eso | se queda | aquí.", "So | that | stays | here.", "So all of that has to stay here.")],
@@ -1067,7 +1067,7 @@ export const baggage: SituationDef = {
       lt: "Say whether you had a connection", slot: "city", examples: ["cancun", "cdmx", "houston", "monterrey"],
       items: [
         { id: "cn_in", s: t("Sí, | en | {X}.", "Yes, | in | {X}.", "Yes, in {X}.") },
-        { id: "cn_direct", s: t("No, | fue | un | vuelo | directo.", "No, | it was | a | flight | direct.", "No, it was a direct flight.") },
+        { id: "cn_direct", s: t("No, | fue | un | vuelo | directo.", "No, | it was | a | flight | direct.", "No, it was a direct flight.", { spain: t("No, | ha sido | un | vuelo | directo.", "No, | it was | a | flight | direct.", "No, it was a direct flight.") }) },
         { id: "f_conn", s: t("Hice | escala | en | {X}.", "I made | a stopover | in | {X}.", "I had a connection in {X}.", { spain: t("He hecho | escala | en | {X}.", "I've made | a stopover | in | {X}.", "I had a connection in {X}.") }) },
       ],
     },
@@ -1076,7 +1076,7 @@ export const baggage: SituationDef = {
       items: [
         { id: "t_here", s: t("Aquí está.", "Here it is.", "Here it is.") },
         { id: "t_on_bp", s: t("Está | en | mi | pase de abordar.", "It's | on | my | boarding pass.", "It's on my boarding pass.",
-          { flags: { 3: "Mexican: pase de abordar = boarding pass; elsewhere tarjeta de embarque." }, neutral: t("Está | en | mi | tarjeta de embarque.", "It's | on | my | boarding pass.", "It's on my boarding pass.") }) },
+          { flags: { 3: "Mexican: pase de abordar = boarding pass; elsewhere tarjeta de embarque." }, neutral: t("Está | en | mi | tarjeta de embarque.", "It's | on | my | boarding pass.", "It's on my boarding pass."), spain: t("Está | en | mi | tarjeta de embarque.", "It's | on | my | boarding pass.", "It's on my boarding pass.", { flags: {} }) }) },
         { id: "t_heres", s: t("Aquí | tiene | mi | comprobante.", "Here | you have | my | claim tag.", "Here's my claim tag.") },
         { id: "t_lost", s: t("Creo | que | lo | perdí.", "I think | that | it | I-lost.", "I think I lost it.", { flags: { 2: "lo: it, el comprobante." }, spain: t("Creo | que | lo | he perdido.", "I think | that | it | I've lost.", "I think I lost it.", {flags: {2: "lo: it, el comprobante."}}) }) },
       ],
@@ -1090,7 +1090,7 @@ export const baggage: SituationDef = {
         { id: "d_its", s: t("Es | una | mochila | {X}.", "It's | a | backpack | {X}.", "It's a {X} backpack.") },
         { id: "d_has", s: t("Tiene | una | franja | roja | a | un | lado.", "It has | a | stripe | red | on | one | side.", "It has a red stripe on the side.") },
         { id: "d_there", s: t("Lleva | un | listón | amarillo | en | la | manija.", "It carries | a | ribbon | yellow | on | the | handle.", "There's a yellow ribbon on the handle.",
-          { flags: { 2: "Mexican: listón = ribbon; elsewhere cinta." }, neutral: t("Lleva | una | cinta | amarilla | en | la | manija.", "It carries | a | ribbon | yellow | on | the | handle.", "There's a yellow ribbon on the handle."), spain: t("Lleva | una | cinta | amarilla | en | el | asa.", "It carries | a | ribbon | yellow | on | the | handle.", "There's a yellow ribbon on the handle.") }) },
+          { flags: { 2: "Mexican: listón = ribbon; elsewhere cinta." }, neutral: t("Lleva | una | cinta | amarilla | en | la | manija.", "It carries | a | ribbon | yellow | on | the | handle.", "There's a yellow ribbon on the handle."), spain: t("Lleva | una | cinta | amarilla | en | el | asa.", "It carries | a | ribbon | yellow | on | the | handle.", "There's a yellow ribbon on the handle.", { flags: { 6: "el asa: asa is feminine (un asa amarilla), but it takes el before a stressed a-." } }) }) },
       ],
     },
     // "¿De qué color es?"
@@ -1112,7 +1112,7 @@ export const baggage: SituationDef = {
       lt: "Say the size", slot: "size", examples: ["large", "medium", "small"],
       items: [
         { id: "sz_its", s: t("Es | {X}.", "It's | {X}.", "It's {X}.") },
-        { id: "sz_short", s: t("{X}.", "{X}.", "{X}."), note: "One word is enough: “Grande.” Chica, mediana and grande agree with la maleta." },
+        { id: "sz_short", s: t("{X}.", "{X}.", "{X}."), note: "One word is enough: “Grande.” Chica, mediana and grande agree with la maleta.", noteSpain: "One word is enough: “Grande.” Pequeña, mediana and grande agree with la maleta." },
       ],
     },
     material: {
@@ -1127,7 +1127,7 @@ export const baggage: SituationDef = {
       items: [
         { id: "d_has", s: t("Tiene | una | etiqueta | con | mi | nombre.", "It has | a | tag | with | my | name.", "It has a name tag.") },
         { id: "d_there", s: t("Lleva | un | listón | amarillo | en | la | manija.", "It carries | a | ribbon | yellow | on | the | handle.", "There's a yellow ribbon on the handle.",
-          { flags: { 2: "Mexican: listón = ribbon; elsewhere cinta." }, neutral: t("Lleva | una | cinta | amarilla | en | la | manija.", "It carries | a | ribbon | yellow | on | the | handle.", "There's a yellow ribbon on the handle."), spain: t("Lleva | una | cinta | amarilla | en | el | asa.", "It carries | a | ribbon | yellow | on | the | handle.", "There's a yellow ribbon on the handle.") }) },
+          { flags: { 2: "Mexican: listón = ribbon; elsewhere cinta." }, neutral: t("Lleva | una | cinta | amarilla | en | la | manija.", "It carries | a | ribbon | yellow | on | the | handle.", "There's a yellow ribbon on the handle."), spain: t("Lleva | una | cinta | amarilla | en | el | asa.", "It carries | a | ribbon | yellow | on | the | handle.", "There's a yellow ribbon on the handle.", { flags: { 6: "el asa: asa is feminine (un asa amarilla), but it takes el before a stressed a-." } }) }) },
         { id: "m_none", s: t("No, | nada | especial.", "No, | nothing | special.", "No, nothing special.") },
       ],
     },
@@ -1219,7 +1219,7 @@ export const baggage: SituationDef = {
       lt: "Say what you're bringing (or that it's nothing)", slot: "good", examples: ["chocolate", "cheese", "cookies", "gifts"],
       items: [
         { id: "dc_nothing", s: t("No, | nada | que declarar.", "No, | nothing | to declare.", "No, nothing to declare.") },
-        { id: "dc_none", s: t("No, | no traigo | nada.", "No, | I don't bring | anything.", "No, I don't have anything.", { spain: t("No, | no llevo | nada.", "No, | I don't bring | anything.", "No, I don't have anything.") }), note: "Spanish says “nada” after a negative verb: no traigo nada." },
+        { id: "dc_none", s: t("No, | no traigo | nada.", "No, | I don't bring | anything.", "No, I don't have anything.", { spain: t("No, | no llevo | nada.", "No, | I don't bring | anything.", "No, I don't have anything.") }), note: "Spanish says “nada” after a negative verb: no traigo nada.", noteSpain: "Spanish says “nada” after a negative verb: no llevo nada." },
         { id: "dc_personal", s: t("Solo | ropa | y | cosas | personales.", "Only | clothes | and | things | personal.", "Just clothes and personal things.") },
         { id: "dc_no_food", s: t("No traigo | comida.", "I don't bring | food.", "I don't have any food.", { spain: t("No llevo | comida.", "I don't bring | food.", "I don't have any food.") }) },
         { id: "dc_have", s: t("Traigo | {X.np}.", "I bring | {X.np}.", "I have {X.np}.", { spain: t("Llevo | {X.np}.", "I bring | {X.np}.", "I have {X.np}.") }), only: (e) => !e.attrs?.bad && !e.attrs?.generic },

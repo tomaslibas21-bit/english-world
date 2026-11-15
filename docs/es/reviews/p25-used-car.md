@@ -165,3 +165,13 @@ Found and fixed: "se ve más joven" (→ "parece más joven"); "Funciona perfect
 Note: the topic "Regatear por un carro usado" has no twin field (types.ts topic is plain).
 Spain corpus +3.
 Gates: tsc clean; check-content Mexican, neutral and Spain 0 errors, 0 warnings; corpus 350/350 0/99; held-out 39/39; Spain 25/25 0/1; vitest es 178/178.
+
+## Spain pass 3 (14 Nov 2026)
+
+- "Es modelo 2008" (present1, a_year) → "Es del 2008" (flagged: how Spain gives a car's year); "160,000" → "160.000".
+- "vio mi anuncio" → "ha visto mi anuncio"; "un rasguñito" → "un arañazo"; "Es viejito" → "Ya tiene sus años"; "La verdad, no sé" → "no lo sé"; "¡Vamos, deme un número!" → "¡Venga, …!".
+- The halfway hint "¿Y si nos quedamos a la mitad?" (in Spain "quedarse a la mitad" is to stop halfway) → "¿Y si lo dejamos a mitad de camino?" (pattern added, #h:halfway).
+- noteSpain on "¿Me lo deja en…?", "¿Cuál es su último precio?" and "¿Cuánto es lo menos?" (not only Mexican).
+- Twins whose inherited notes were Mexican (carro, nomás, cajuela, estándar, ¿cómo le hacemos?) get empty flags; the neutral twins of a_problems_ok, a_gearbox, gear_no/yes and pay_reask too (their Mexican notes leaked there as well).
+- Kept: factura, tarjeta de circulación, refrendo, REPUVE, pesos with "$2,500" (the town's paperwork and money).
+Spain corpus +1. Gates: Spain and Mexican 0 errors, 0 warnings; Spain corpus 26/26, 0/1.

@@ -134,3 +134,15 @@ voices instead of the ones heard (the sims cover it here). **Owner:** the bill (
 - Checked (fresh reviewer): every twin against its Mexican line (meaning, facts, prices, names), Peninsular wording, the perfect for today's events, tú/usted and vosotros by STYLE.md, glosses, spelling and ¿¡, the Spain transcripts (`--variety=spain --verbose`, untwinned lines read through their neutral fallback) and tests/es/spain.
 - Found: nothing to change (perfect for tonight, aparcar, a medias, jersey, majo/maja, ¿qué día te viene bien? all right; the 10–15 % tip stays, it is Mexico's custom).
 - Fixed: nothing.
+
+## Spain pass 3 (14 Nov 2026)
+
+- Introductions as Spain says them: the partner's "¡Por fin! Encantado/Encantada" (open_meet[1]); the chips
+  gr_nice_too "¡Hola! Encantado/Encantada" (both groups, noteSpain) and gr_nice "¡Qué ilusión conocerte!"; the
+  "¡Igualmente!" note mentions Encantado. Grammar: "(hola) encantado/a (de conocerte)" and "qué ilusión conocerte"
+  now credit their chips.
+- ag_no "Lo siento, creo que no" (Mexico: no creo); notes: ag_works says "Me viene bien" (the twin's words, not me
+  queda bien), ck_let_me drops "In Mexico".
+- nice_time's twin "Me lo he pasado…" had the "pasarla bien" note: own note (pasárselo bien). Neutral twins Spain
+  shows, flags: {}: job_react (padre note), same_job / same_hobby (¡no manches! note on ¡No puede ser!).
+- Corpus: 3 items.

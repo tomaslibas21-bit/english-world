@@ -139,3 +139,14 @@ Gates: tsc clean; check-content Mexican, neutral and Spain 0 errors, 0 warnings;
   un juego: yo te lanzo la pelota a tu tejado."; flag F_TEJADO). Neutral keeps cancha.
 - Every form is understood in every set: the idiom and echo forms, IDIOM_WORDS (tejado), the finding pattern ("me suena a
   chino"), ball_back ("en tu tejado"). NLU tests +8, Spain corpus +4.
+
+## Spain pass 3 (14 Nov 2026)
+
+Deeper pass on idioms, tenses and register (owner: everything said in Spain mode must sound natural to someone from Spain).
+- "¡Hey!" / "¡Hey, tú!" (greet, hello_hi) → "¡Oye!" / "¡Hola!"; "¡Dale con todo!" (hello_hard ×2, mean_ganas) → Spain's "¡A por todas!" / "Ir a por todas" (F_GANAS_S; idiom and echo forms and IDIOM_WORDS take "a por todas"); "ya vas a ver" → "ya verás".
+- "Ya sé, ya sé" → "Ya lo sé, ya lo sé"; "Le llamo a Lalo" (crash_fix, crash_skip) → "Llamo a Lalo"; "Raquel hace / sabe todo" → "lo hace / lo sabe todo" (F_LO).
+- Today's past in the present perfect: crash_who "Subí la actualización" → "He subido"; the hint who_cut "¿Quién lo hizo a la carrera?" → "¿Quién lo ha hecho…?" (crash_who pattern takes "lo ha hecho"); close_good.1 "Buen día" → "Ha sido un buen día".
+- "Vete a tu casa" → "Vete a casa"; "Todos se van a su casa" → "Todos a casa"; "lo haces increíble" → "lo haces genial"; "Ya, a trabajar" → "Venga, a trabajar"; hint "Está increíble, pero es mucho" → "Es genial, pero es mucho".
+- noteSpain on the hints aventon (a la carrera) and mean_by ("¿Cómo que…?" is not only Mexican).
+- Kept: "estar en la misma página" and "pensar fuera de la caja" (startup calques Spain's offices use too; each has its meaning line); chamba and "Así le decimos en México" (Toño explains a Mexican word).
+Spain corpus +3. Gates: check-content Spain and Mexican 0 errors, 0 warnings; Spain corpus 28/28, 0/1.

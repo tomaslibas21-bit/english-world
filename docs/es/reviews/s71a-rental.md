@@ -179,3 +179,10 @@ Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line a
 - Fixed: "agregar" (Latin American for add) → "añadir" in the 5 insurance twins (¿Se la añado?, ¿Le añado…?, ¿Quiere añadir…?) and new twins for the 5 untwinned lines that said it (total_day "Con lo que ha añadido", tpl_required_again, the second tpl reminder, extra_quote, extra_quote_both).
 - Corpus: +2 items (Sí, añádamela; Añádame la cobertura a todo riesgo).
 - Grammar: ins_full and ins_yes_ctx take the añadir forms (añádame…, sí, añádamela/añádala).
+
+## Spain pass 3 (14 Nov 2026)
+
+- 22 Spain twins (11 added, 11 changed). The counter keeps usted.
+- Notes: the carro, estándar, camioneta, licencia de manejo, amplia and tómele notes no longer land on Spain's coche, manual, todoterreno, carné, a todo riesgo and hágale (a todo riesgo has its own note); “Le comento: a polite Mexican way…” → a polite way.
+- Lines: un compacto por tres días → para tres días; ¿Y por cuántos días? → para; Gracias por entender → por su comprensión; sobre la avenida → en la avenida; ¿Va a necesitar GPS…? → ¿Necesita…?; allá → allí; una hora de tolerancia → de cortesía; ¿Algo más en que…? → en lo que.
+- Chips: Por tres días / Por una semana → Para… (the grammar already took para). 1 corpus item.

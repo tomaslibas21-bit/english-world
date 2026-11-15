@@ -146,7 +146,7 @@ export const gas: SituationDef = {
       "(es | mi @car es | es un @car) rentado [que le pongo | cual le pongo]",
     ] },
     gas_price_q: { patterns: [
-      "a como (esta | anda | se vende) (la {grade} | la gasolina | el litro [de {grade}]) #h:q_price", "cuanto (cuesta | vale | esta | sale | es) (el litro [de {grade}] | la gasolina | la {grade} | el litro de gasolina)",
+      "a (como | cuanto) (esta | anda | se vende) (la {grade} | la gasolina | el litro [de {grade}]) #h:q_price", "cuanto (cuesta | vale | esta | sale | es) (el litro [de {grade}] | la gasolina | la {grade} | el litro de gasolina)",
       "cuanto (cuesta | vale | esta | sale) el galon #galon", "a como (esta | anda) el galon #galon", "[@pon] {number} galones [de ({grade} | @gas)] #galon",
       "(cuanto (cuesta | vale | esta | sale) | a como (esta | anda | se vende)) [el litro de] {grade}",
       "cuanto (cuesta | sale | es | seria) (llenarlo | llenar el tanque | el tanque lleno | un tanque lleno | llenar) #fillq", "(que | cual es el) precio (tiene)? (la gasolina | el litro | la {grade})",
@@ -203,7 +203,7 @@ export const gas: SituationDef = {
       "(donde | en donde) (esta | queda | hay) (la | una) tienda #store", "(hay | tienen) [una] tienda [aqui] #store",
     ] },
     restroom: { patterns: [
-      "(donde | en donde) (esta | queda | hay) [el | un] (bano | sanitario | servicio | servicios | aseo | lavabo) #h:q_restroom", "(tienen | hay) (bano | banos | sanitarios | servicio) [aqui]",
+      "(donde | en donde) (esta | queda | hay) [el | un] (bano | sanitario | servicio | servicios | aseo | lavabo) #h:q_restroom", "(donde | en donde) (estan | quedan) (los | unos) (banos | servicios | aseos | lavabos) #h:q_restroom", "(tienen | hay) (bano | banos | sanitarios | servicio) [aqui]",
       "(puedo | me deja) (usar | pasar a) el (bano | sanitario)", "(necesito | quiero) (ir al bano | usar el bano)", "(el | un) bano",
     ] },
     directions: { patterns: [
@@ -287,7 +287,7 @@ export const gas: SituationDef = {
       t("¡Buenas | tardes! | ¿Cuánto | le | pongo?", "Good | afternoon! | How much | (for) you | I-put?", "Good afternoon! How much should I put in?",
         { flags: { 3: "le: “for you” (usted)." } }),
       t("¡Buenas! | ¿Cuánto | le | cargo?", "Hi! | How much | (for) you | I-load?", "Hi! How much do you want?",
-        { flags: { 3: "cargar gasolina = to fill up (literally “to load”)." }, spain: t("¡Buenas! | ¿Cuánto | le | pongo?", "Hi! | How much | (for) you | I-put?", "Hi! How much do you want?") }),
+        { flags: { 3: "cargar gasolina = to fill up (literally “to load”)." }, spain: t("¡Buenas! | ¿Cuánto | le | pongo?", "Hi! | How much | (for) you | I-put?", "Hi! How much do you want?", { flags: { 3: "le: “for you” (usted)." } }) }),
       t("¡Buenos días! | ¿Qué | le | ponemos?", "Good morning! | What | (for) you | we-put?", "Morning! What can I get you?"),
     ],
     greet_fill: [
@@ -331,14 +331,14 @@ export const gas: SituationDef = {
     how_much_then: [t("Bueno, | ¿cuánto | le | pongo?", "Okay, | how much | (for) you | I-put?", "Okay, how much should I put in?")],
     say_total: [t("Son | {$price}.", "That's | {$price}.", "That's {$price}.")],
     free_service: [t("No cuesta | nada; | es | parte | del | servicio.", "It doesn't cost | anything; | it's | part | of the | service.", "It's free, it's part of the service.")],
-    tip_q: [t("Lo que | usted | guste.", "Whatever | you | like.", "Whatever you like.")],
+    tip_q: [t("Lo que | usted | guste.", "Whatever | you | like.", "Whatever you like.", { spain: t("Lo que | usted | quiera.", "Whatever | you | want.", "Whatever you like.") })],
     no_change_ok: [t("No se preocupe, | sí | tengo | cambio.", "Don't worry, | yes | I-have | change.", "Don't worry, I've got change.")],
     // "¿Está lejos?" and "¿Está cerca?" both: no sí or no in the answer (rule 11)
     // the tire shop and the mechanic are off the map, on calle Itzamná where it leaves town (TOWN.md "Named in the
     // conversations, not built"): the gas station is avenida Juárez's last building, so nothing is "sobre esta misma calle"
-    far_shop: [t("Está | cerquita; | en | un | minuto | llega.", "It's | very close; | in | a | minute | you-get-there.", "It's really close; you'll be there in a minute.")],
+    far_shop: [t("Está | cerquita; | en | un | minuto | llega.", "It's | very close; | in | a | minute | you-get-there.", "It's really close; you'll be there in a minute.", { spain: t("Está | muy | cerca; | en | un | minuto | llega.", "It's | very | close; | in | a | minute | you-get-there.", "It's really close; you'll be there in a minute.") })],
     far_mech: [t("A | unos | cinco | minutos, | nada más.", "At | about | five | minutes, | just.", "Just about five minutes away.", { flags: { 1: "unos + a number = about." } })],
-    far_road: [t("Está | cerquita.", "It's | very close.", "It's really close.", { flags: { 1: "cerquita: cerca (close) with the diminutive, “really close”." } })],
+    far_road: [t("Está | cerquita.", "It's | very close.", "It's really close.", { flags: { 1: "cerquita: cerca (close) with the diminutive, “really close”." }, spain: t("Está | muy | cerca.", "It's | very | close.", "It's really close.", { flags: {} }) })],
     amount_changed: [t("Muy | bien, | entonces | {$price}.", "Very | good, | then | {$price}.", "Okay, {$price} then.")],
     fill_changed: [t("Muy | bien, | entonces | se lo | lleno.", "Very | good, | then | it for you | I-fill.", "Okay, I'll fill it up then.")],
     already_done: [t("Ya | le | cargué, | ¿eh?", "Already | (for) you | I-loaded, | eh?", "It's already done, though.", { spain: t("Ya | le | he puesto, | ¿eh?", "Already | (for) you | I've-put, | eh?", "It's already done, though.") })],
@@ -352,7 +352,7 @@ export const gas: SituationDef = {
     ],
     fill_start: [
       t("Ahorita | se lo | lleno.", "Right now | it for you | I-fill.", "I'll fill it up for you now.",
-        { flags: { 0: "Mexican: ahorita = right now, in a moment." }, neutral: t("Ahora | se lo | lleno.", "Now | it for you | I-fill.", "I'll fill it up for you now.") }),
+        { flags: { 0: "Mexican: ahorita = right now, in a moment." }, neutral: t("Ahora | se lo | lleno.", "Now | it for you | I-fill.", "I'll fill it up for you now."), spain: t("Ahora | se lo | lleno.", "Now | it for you | I-fill.", "I'll fill it up for you now.", { flags: {} }) }),
       t("Se lo | lleno | enseguida.", "It for you | I-fill | right away.", "I'll fill it right up."),
     ],
     amount_start: [t("Le | pongo | sus | {$price}.", "(For) you | I-put | your | {$price}.", "Putting in your {$price}.")],
@@ -369,7 +369,7 @@ export const gas: SituationDef = {
     zeros_q_fix: [
       t("¡Ay, | no! | Marca | {$price} | de | la | venta | anterior. | Perdón, | ya | la | puse | en | ceros.",
         "Oh, | no! | It-shows | {$price} | from | the | sale | previous. | Sorry, | now | it | I-put | at | zero.",
-        "Oh, no! It shows {$price} from the last sale. Sorry, I've reset it now.", { flags: { 10: "la: “it” (la bomba), an object pronoun, not an article." }, spain: t("¡Ay, | no! | Marca | {$price} | de | la | venta | anterior. | Perdón, | ya | lo | he puesto | a | cero.", "Oh, | no! | It-shows | {$price} | from | the | sale | previous. | Sorry, | now | it | I've-put | at | zero.", "Oh, no! It shows {$price} from the last sale. Sorry, I've reset it now.") }),
+        "Oh, no! It shows {$price} from the last sale. Sorry, I've reset it now.", { flags: { 10: "la: “it” (la bomba), an object pronoun, not an article." }, spain: t("¡Ay, | no! | Marca | {$price} | de | la | venta | anterior. | Perdón, | ya | lo | he puesto | a | cero.", "Oh, | no! | It-shows | {$price} | from | the | sale | previous. | Sorry, | now | it | I've-put | at | zero.", "Oh, no! It shows {$price} from the last sale. Sorry, I've reset it now.", { flags: { 10: "lo: “it” (el surtidor, the pump), an object pronoun." } }) }),
     ],
     zeros_look: [
       t("Sí, | mire: | en | ceros.", "Yes, | look: | at | zero.", "Yes, look: zero.", { spain: t("Sí, | mire: | a | cero.", "Yes, | look: | at | zero.", "Yes, look: zero.") }),
@@ -379,7 +379,7 @@ export const gas: SituationDef = {
     ask_check: [
       t("¿Le | reviso | el | aceite | y | las | llantas?", "(For) you | I-check | the | oil | and | the | tires?", "Should I check the oil and the tires?", { spain: t("¿Le | reviso | el | aceite | y | las | ruedas?", "(For) you | I-check | the | oil | and | the | tires?", "Should I check the oil and the tires?") }),
       t("¿Le | checo | el | aceite | y | las | llantas?", "(For) you | I-check | the | oil | and | the | tires?", "Want me to check the oil and the tires?",
-        { flags: { 1: "Mexican: checar = to check. Elsewhere: revisar." }, neutral: t("¿Le | reviso | el | aceite | y | las | llantas?", "(For) you | I-check | the | oil | and | the | tires?", "Want me to check the oil and the tires?"), spain: t("¿Le | reviso | el | aceite | y | las | ruedas?", "(For) you | I-check | the | oil | and | the | tires?", "Want me to check the oil and the tires?") }),
+        { flags: { 1: "Mexican: checar = to check. Elsewhere: revisar." }, neutral: t("¿Le | reviso | el | aceite | y | las | llantas?", "(For) you | I-check | the | oil | and | the | tires?", "Want me to check the oil and the tires?"), spain: t("¿Le | reviso | el | aceite | y | las | ruedas?", "(For) you | I-check | the | oil | and | the | tires?", "Want me to check the oil and the tires?", { flags: {} }) }),
     ],
     ask_glass: [t("¿Le | limpio | el | parabrisas?", "(For) you | I-clean | the | windshield?", "Want me to clean your windshield?")],
     extras_again: [
@@ -408,7 +408,7 @@ export const gas: SituationDef = {
     cash_yes: [t("Sí, | claro.", "Yes, | sure.", "Sure.")],
     terminal: [
       t("Claro, | ahorita | le | traigo | la | terminal.", "Sure, | right now | (to) you | I-bring | the | card machine.", "Sure, I'll bring you the card machine.",
-        { flags: { 1: "Mexican: ahorita = right now, in a moment." }, neutral: t("Claro, | enseguida | le | traigo | la | terminal.", "Sure, | right away | (to) you | I-bring | the | card machine.", "Sure, I'll bring you the card machine."), spain: t("Claro, | enseguida | le | traigo | el | datáfono.", "Sure, | right away | (to) you | I-bring | the | card machine.", "Sure, I'll bring you the card machine.") }),
+        { flags: { 1: "Mexican: ahorita = right now, in a moment." }, neutral: t("Claro, | enseguida | le | traigo | la | terminal.", "Sure, | right away | (to) you | I-bring | the | card machine.", "Sure, I'll bring you the card machine."), spain: t("Claro, | enseguida | le | traigo | el | datáfono.", "Sure, | right away | (to) you | I-bring | the | card machine.", "Sure, I'll bring you the card machine.", { flags: { 5: "el datáfono: the card machine." } }) }),
       t("Claro, | aquí | está | la | terminal.", "Sure, | here | is | the | card machine.", "Sure, here's the card machine.", { spain: t("Claro, | aquí | está | el | datáfono.", "Sure, | here | is | the | card machine.", "Sure, here's the card machine.") }),
     ],
     card_through: [t("Acerque | su | tarjeta… | Listo, | ya | pasó.", "Bring close | your | card… | Done, | already | it-went-through.", "Tap your card… Done, it went through.", { spain: t("Acerque | su | tarjeta… | Ya está, | ya | ha pasado.", "Bring close | your | card… | Done, | already | it's-gone-through.", "Tap your card… Done, it went through.") })],
@@ -419,10 +419,10 @@ export const gas: SituationDef = {
       "Tap your card and enter your PIN… Done, it went through.",
       { flags: { 6: "Mexican: NIP = PIN (número de identificación personal); PIN is understood everywhere." },
         neutral: t("Acerque | su | tarjeta | y | marque | su | PIN… | Listo, | ya | pasó.", "Bring close | your | card | and | dial | your | PIN… | Done, | already | it-went-through.",
-          "Tap your card and enter your PIN… Done, it went through."), spain: t("Acerque | su | tarjeta | y | marque | su | PIN… | Ya está, | ya | ha pasado.", "Bring close | your | card | and | dial | your | PIN… | Done, | already | it's-gone-through.", "Tap your card and enter your PIN… Done, it went through.") })],
+          "Tap your card and enter your PIN… Done, it went through."), spain: t("Acerque | su | tarjeta | y | marque | su | PIN… | Ya está, | ya | ha pasado.", "Bring close | your | card | and | dial | your | PIN… | Done, | already | it's-gone-through.", "Tap your card and enter your PIN… Done, it went through.", { flags: {} }) })],
     cash_thanks: [t("Gracias.", "Thanks.", "Thank you."), t("Muchas | gracias.", "Many | thanks.", "Thank you very much.")],
     // a bill that doesn't cover it: then she says the total again (say_total)
-    short: [t("Perdón, | no alcanza.", "Sorry, | it's not enough.", "Sorry, that's not enough.", { flags: { 1: "alcanzar = to be enough (literally “to reach”)." }, spain: t("Perdón, | no llega.", "Sorry, | it's not enough.", "Sorry, that's not enough.") })],
+    short: [t("Perdón, | no alcanza.", "Sorry, | it's not enough.", "Sorry, that's not enough.", { flags: { 1: "alcanzar = to be enough (literally “to reach”)." }, spain: t("Perdón, | no llega.", "Sorry, | it's not enough.", "Sorry, that's not enough.", { flags: { 1: "no llega: it isn't enough (llegar = to reach)." } }) })],
     short_again: [t("Todavía | no alcanza.", "Still | it's not enough.", "That's still not enough.", { spain: t("Todavía | no llega.", "Still | it's not enough.", "That's still not enough.") })],
     change_is: [t("Aquí tiene | su | cambio: | {$amount}.", "Here's | your | change: | {$amount}.", "Here's your change: {$amount}.")],
     change_back: [t("Gracias, | aquí tiene | su | cambio.", "Thanks, | here's | your | change.", "Thanks, here's your change.")],
@@ -441,12 +441,12 @@ export const gas: SituationDef = {
     // --- the receipt
     ask_receipt: [
       t("¿Le | doy | su | ticket?", "(To) you | I-give | your | receipt?", "Do you want your receipt?",
-        { flags: { 3: "Mexican: a receipt is a ticket. Elsewhere: recibo." }, neutral: t("¿Le | doy | su | recibo?", "(To) you | I-give | your | receipt?", "Do you want your receipt?") }),
+        { flags: { 3: "Mexican: a receipt is a ticket. Elsewhere: recibo." }, neutral: t("¿Le | doy | su | recibo?", "(To) you | I-give | your | receipt?", "Do you want your receipt?"), spain: t("¿Le | doy | su | ticket?", "(To) you | I-give | your | receipt?", "Do you want your receipt?", { flags: { 3: "ticket: the receipt, as Spain (and Mexico) call it." } }) }),
       t("¿Quiere | su | ticket?", "Do you want | your | receipt?", "Would you like a receipt?",
-        { flags: { 2: "Mexican: a receipt is a ticket. Elsewhere: recibo." }, neutral: t("¿Quiere | su | recibo?", "Do you want | your | receipt?", "Would you like a receipt?") }),
+        { flags: { 2: "Mexican: a receipt is a ticket. Elsewhere: recibo." }, neutral: t("¿Quiere | su | recibo?", "Do you want | your | receipt?", "Would you like a receipt?"), spain: t("¿Quiere | su | ticket?", "Do you want | your | receipt?", "Would you like a receipt?", { flags: { 2: "ticket: the receipt, as Spain (and Mexico) call it." } }) }),
     ],
     receipt_here: [t("Aquí tiene | su | ticket.", "Here's | your | receipt.", "Here's your receipt.",
-      { flags: { 2: "Mexican: a receipt is a ticket. Elsewhere: recibo." }, neutral: t("Aquí tiene | su | recibo.", "Here's | your | receipt.", "Here's your receipt.") })],
+      { flags: { 2: "Mexican: a receipt is a ticket. Elsewhere: recibo." }, neutral: t("Aquí tiene | su | recibo.", "Here's | your | receipt.", "Here's your receipt."), spain: t("Aquí tiene | su | ticket.", "Here's | your | receipt.", "Here's your receipt.", { flags: { 2: "ticket: the receipt, as Spain (and Mexico) call it." } }) })],
     factura: [
       t("Claro. | Con | el | ticket | la | puede | sacar | en línea; | ahí | viene | la | página.",
         "Sure. | With | the | receipt | it | you-can | get | online; | there | comes | the | website.",
@@ -461,25 +461,25 @@ export const gas: SituationDef = {
     ],
     // --- questions
     anything_else: [
-      t("¿Se le ofrece | algo | más?", "Do you need | something | more?", "Anything else I can do for you?"),
-      t("¿Algo | más | en | que | le | pueda | ayudar?", "Something | more | in | which | (to) you | I-can | help?", "Anything else I can help you with?"),
+      t("¿Se le ofrece | algo | más?", "Do you need | something | more?", "Anything else I can do for you?", { spain: t("¿Desea | algo | más?", "Do you want | something | more?", "Anything else I can do for you?") }),
+      t("¿Algo | más | en | que | le | pueda | ayudar?", "Something | more | in | which | (to) you | I-can | help?", "Anything else I can help you with?", { spain: t("¿Algo | más | en | lo que | le | pueda | ayudar?", "Something | more | in | which | (to) you | I-can | help?", "Anything else I can help you with?") }),
     ],
     anything_short: [t("¿Algo | más?", "Something | more?", "Anything else?")],
     what_need: [t("Dígame.", "Tell me.", "Sure, go ahead.")],
-    restroom: [t("Allá | atrás, | junto | a | la | tienda.", "Over there | at the back, | next | to | the | store.", "Around the back, next to the store.")],
+    restroom: [t("Allá | atrás, | junto | a | la | tienda.", "Over there | at the back, | next | to | the | store.", "Around the back, next to the store.", { spain: t("Ahí | detrás, | junto | a | la | tienda.", "There | at the back, | next | to | the | store.", "Around the back, next to the store.") })],
     // the 3D town (TOWN.md "Getting around"): the station is avenida Juárez's last building, the airport past it to the
     // right; calle Itzamná, past the car rental to the left, runs inland out of town (no traffic lights in town)
     directions: [
       t("Saliendo, | a la izquierda, | y | en | la | calle | Itzamná, | otra vez | a la izquierda: | esa | calle | sale | a | la | carretera.",
         "Leaving, | to the left, | and | at | the | street | Itzamná, | again | to the left: | that | street | goes out | to | the | highway.",
-        "Turn left as you leave, then left again at Itzamná Street: it takes you out to the highway."),
+        "Turn left as you leave, then left again at Itzamná Street: it takes you out to the highway.", { spain: t("Al salir, | a la izquierda, | y | en | la | calle | Itzamná, | otra vez | a la izquierda: | esa | calle | sale | a | la | carretera.", "Leaving, | to the left, | and | at | the | street | Itzamná, | again | to the left: | that | street | goes out | to | the | highway.", "Turn left as you leave, then left again at Itzamná Street: it takes you out to the highway.") }),
     ],
     air_line: [t("Claro, | yo | le | pongo | aire | a | las | llantas.", "Sure, | I | (for) you | put | air | in | the | tires.", "Sure, I'll put some air in your tires for you.", { spain: t("Claro, | yo | le | pongo | aire | a | las | ruedas.", "Sure, | I | (for) you | put | air | in | the | tires.", "Sure, I'll put some air in your tires for you.") })],
     atm: [t("Hay | uno | adentro | de | la | tienda.", "There's | one | inside | of | the | store.", "There's one inside the store.", { spain: t("Hay | uno | dentro | de | la | tienda.", "There's | one | inside | of | the | store.", "There's one inside the store.") })],
     coffee: [t("En | la | tienda | hay | café | y | algo | de | comer.", "In | the | store | there's | coffee | and | something | to | eat.", "The store has coffee and snacks.")],
     // the shop is behind the pumps (the restroom line's "allá atrás, junto a la tienda")
     store: [t("Allá | atrás, | mire. | Ahí | hay | café | y | algo | de | comer.", "Over there | at the back, | look. | There | there's | coffee | and | something | to | eat.",
-      "Around the back, see? They have coffee and snacks.")],
+      "Around the back, see? They have coffee and snacks.", { spain: t("Ahí | detrás, | mire. | Ahí | hay | café | y | algo | de | comer.", "There | at the back, | look. | There | there's | coffee | and | something | to | eat.", "Around the back, see? They have coffee and snacks.") })],
     gas_price: [
       t("La | magna | anda | en | unos | veinticuatro | pesos | el | litro, | y | la | premium | un poco | más.",
         "The | regular | goes | at | about | twenty-four | pesos | the | liter, | and | the | premium | a little | more.",
@@ -496,7 +496,7 @@ export const gas: SituationDef = {
     ],
     grade_info: [
       t("Para | casi | todos | los | carros, | la | magna | está | bien.", "For | almost | all | the | cars, | the | regular | is | fine.", "Regular's fine for almost any car.",
-        { flags: { 4: "Mexican: carro = car. Elsewhere: auto, coche." }, neutral: t("Para | casi | todos | los | autos, | la | magna | está | bien.", "For | almost | all | the | cars, | the | regular | is | fine.", "Regular's fine for almost any car."), spain: t("Para | casi | todos | los | coches, | la | magna | está | bien.", "For | almost | all | the | cars, | the | regular | is | fine.", "Regular's fine for almost any car.") }),
+        { flags: { 4: "Mexican: carro = car. Elsewhere: auto, coche." }, neutral: t("Para | casi | todos | los | autos, | la | magna | está | bien.", "For | almost | all | the | cars, | the | regular | is | fine.", "Regular's fine for almost any car."), spain: t("Para | casi | todos | los | coches, | la | magna | está | bien.", "For | almost | all | the | cars, | the | regular | is | fine.", "Regular's fine for almost any car.", { flags: {} }) }),
     ],
     grade_diff: [t("La | premium | cuesta | un poco | más, | pero | para | casi | todos | los | carros | la | magna | está | bien.",
       "The | premium | costs | a little | more, | but | for | almost | all | the | cars | the | regular | is | fine.",
@@ -504,7 +504,7 @@ export const gas: SituationDef = {
       { flags: { 10: "Mexican: carro = car. Elsewhere: auto, coche." },
         neutral: t("La | premium | cuesta | un poco | más, | pero | para | casi | todos | los | autos | la | magna | está | bien.",
           "The | premium | costs | a little | more, | but | for | almost | all | the | cars | the | regular | is | fine.",
-          "Premium costs a bit more, but regular's fine for almost any car."), spain: t("La | premium | cuesta | un poco | más, | pero | para | casi | todos | los | coches | la | magna | está | bien.", "The | premium | costs | a little | more, | but | for | almost | all | the | cars | the | regular | is | fine.", "Premium costs a bit more, but regular's fine for almost any car.") })],
+          "Premium costs a bit more, but regular's fine for almost any car."), spain: t("La | premium | cuesta | un poco | más, | pero | para | casi | todos | los | coches | la | magna | está | bien.", "The | premium | costs | a little | more, | but | for | almost | all | the | cars | the | regular | is | fine.", "Premium costs a bit more, but regular's fine for almost any car.", { flags: {} }) })],
     grade_colors: [t("La | verde | es | la | magna, | y | la | roja, | la | premium.", "The | green | is | the | regular, | and | the | red, | the | premium.", "The green one's regular, and the red one's premium.")],
     diesel_yes: [t("Sí, | también | tenemos | diésel.", "Yes, | also | we-have | diesel.", "Yes, we have diesel too.")],
     pay_here: [t("Aquí | conmigo; | no tiene | que | entrar.", "Here | with me; | you don't have | to | go in.", "Right here with me, you don't need to go inside.")],
@@ -526,7 +526,7 @@ export const gas: SituationDef = {
         { flags: { 8: "Mexican: vulcanizadora = tire repair shop." },
           neutral: t("¡Ay, | no! | Sobre | la | calle | Itzamná | hay | un | taller | de | llantas. | Si | quiere, | primero | le | pongo | aire | para | que | llegue.",
             "Oh, | no! | On | the | street | Itzamná | there's | a | shop | of | tires. | If | you-want, | first | (for) you | I-put | air | so | that | you-get-there.",
-            "Oh no! There's a tire repair shop on Itzamná Street. If you like, I'll put some air in first so you can make it there."), spain: t("¡Ay, | no! | En | la | calle | Itzamná | hay | un | taller | de | neumáticos. | Si | quiere, | primero | le | pongo | aire | para | que | llegue.", "Oh, | no! | On | the | street | Itzamná | there's | a | shop | of | tires. | If | you-want, | first | (for) you | I-put | air | so | that | you-get-there.", "Oh no! There's a tire repair shop on Itzamná Street. If you like, I'll put some air in first so you can make it there.") }),
+            "Oh no! There's a tire repair shop on Itzamná Street. If you like, I'll put some air in first so you can make it there."), spain: t("¡Ay, | no! | En | la | calle | Itzamná | hay | un | taller | de | neumáticos. | Si | quiere, | primero | le | pongo | aire | para | que | llegue.", "Oh, | no! | On | the | street | Itzamná | there's | a | shop | for | tires. | If | you-want, | first | (for) you | I-put | air | so | that | you-get-there.", "Oh no! There's a tire repair shop on Itzamná Street. If you like, I'll put some air in first so you can make it there.", { flags: {} }) }),
     ],
     battery_reply: [
       t("¡Ay! | Si | quiere, | le | pasamos corriente; | tengo | cables.", "Oh! | If | you-want, | (for) you | we-jump-start; | I-have | cables.", "Oh no! If you like, we can give you a jump; I've got cables.", { spain: t("¡Ay! | Si | quiere, | le | pasamos corriente; | tengo | unas | pinzas.", "Oh! | If | you-want, | (for) you | we-jump-start; | I-have | some | jumper cables.", "Oh no! If you like, we can give you a jump; I've got cables.") }),
@@ -534,7 +534,7 @@ export const gas: SituationDef = {
     other_reply: [
       t("Uy, | mejor | que | se lo | revisen. | Hay | un | taller | mecánico | sobre | la | calle | Itzamná, | ya | saliendo | del | pueblo.",
         "Oh, | better | that | it for you | they-check. | There's | a | shop | mechanic | on | the | street | Itzamná, | just | leaving | from the | town.",
-        "Oh, you'd better get it checked. There's a mechanic on Itzamná Street, right where you leave town.", { spain: t("Uy, | mejor | que | se lo | revisen. | Hay | un | taller | mecánico | en | la | calle | Itzamná, | ya | saliendo | del | pueblo.", "Oh, | better | that | it for you | they-check. | There's | a | shop | mechanic | on | the | street | Itzamná, | just | leaving | from the | town.", "Oh, you'd better get it checked. There's a mechanic on Itzamná Street, right where you leave town.") }),
+        "Oh, you'd better get it checked. There's a mechanic on Itzamná Street, right where you leave town.", { spain: t("Uy, | mejor | que | se lo | revisen. | Hay | un | taller | mecánico | en | la | calle | Itzamná, | a la salida | del | pueblo.", "Oh, | better | that | it for you | they-check. | There's | a | shop | mechanic | on | the | street | Itzamná, | at the way out | of the | town.", "Oh, you'd better get it checked. There's a mechanic on Itzamná Street, right where you leave town.") }),
     ],
     // her offer again after a side question (once; then "¿Algo más…?")
     jump_again: [t("¿Entonces, | le | pasamos corriente?", "So, | (for) you | we-jump-start?", "So, should we give you a jump?")],
@@ -546,9 +546,9 @@ export const gas: SituationDef = {
     tow: [t("Claro, | le | llamo | a | la | grúa. | A veces | tarda | un | rato.", "Sure, | (for) you | I-call | to | the | tow truck. | Sometimes | it-takes | a | while.", "Sure, I'll call the tow truck. It can take a while.")],
     inflate: [t("Claro, | se la | inflo | para | que | llegue | al | taller.", "Sure, | it for you | I-inflate | so | that | you-get | to the | shop.", "Sure, I'll pump it up so you can get to the shop.")],
     mechanic: [t("Hay | un | taller | mecánico | sobre | la | calle | Itzamná, | ya | saliendo | del | pueblo.", "There's | a | shop | mechanic | on | the | street | Itzamná, | just | leaving | from the | town.",
-      "There's a mechanic on Itzamná Street, right where you leave town.", { spain: t("Hay | un | taller | mecánico | en | la | calle | Itzamná, | ya | saliendo | del | pueblo.", "There's | a | shop | mechanic | on | the | street | Itzamná, | just | leaving | from the | town.", "There's a mechanic on Itzamná Street, right where you leave town.") })],
+      "There's a mechanic on Itzamná Street, right where you leave town.", { spain: t("Hay | un | taller | mecánico | en | la | calle | Itzamná, | a la salida | del | pueblo.", "There's | a | shop | mechanic | on | the | street | Itzamná, | at the way out | of the | town.", "There's a mechanic on Itzamná Street, right where you leave town.") })],
     tire_shop: [t("Sobre | la | calle | Itzamná, | ya | saliendo | del | pueblo. | Se la | arreglan | rápido.", "On | the | street | Itzamná, | just | leaving | from the | town. | It for you | they-fix | fast.",
-      "On Itzamná Street, right where you leave town. They'll fix it fast.", { spain: t("En | la | calle | Itzamná, | ya | saliendo | del | pueblo. | Se la | arreglan | rápido.", "On | the | street | Itzamná, | just | leaving | from the | town. | It for you | they-fix | fast.", "On Itzamná Street, right where you leave town. They'll fix it fast.") })],
+      "On Itzamná Street, right where you leave town. They'll fix it fast.", { spain: t("En | la | calle | Itzamná, | a la salida | del | pueblo. | Se la | arreglan | rápido.", "On | the | street | Itzamná, | at the way out | of the | town. | It for you | they-fix | fast.", "On Itzamná Street, right where you leave town. They'll fix it fast.") })],
     all_good: [t("¡Qué | bueno!", "How | good!", "Good to hear!", { spain: t("¡Qué | bien!", "How | good!", "Good to hear!") })],
     bye: [
       t("¡Buen | viaje!", "Good | trip!", "Have a good trip!"),
@@ -576,7 +576,7 @@ export const gas: SituationDef = {
         { id: "fill_grade", s: t("Lleno | de | magna, | por favor.", "Full | of | regular, | please.", "Fill it up with regular, please.") },
         { id: "prepay", s: t("Quinientos | pesos | de | magna, | por favor.", "Five hundred | pesos | of | regular, | please.", "Five hundred pesos of regular, please."),
           note: "Say the amount in pesos and the fuel: magna (regular) or premium." },
-        { id: "put", s: t("Póngale | quinientos, | por favor.", "Put in | five hundred, | please.", "Put in five hundred, please."), note: "Very Mexican: póngale = put (it) in." },
+        { id: "put", s: t("Póngale | quinientos, | por favor.", "Put in | five hundred, | please.", "Put in five hundred, please.", { spain: t("Póngame | quinientos, | por favor.", "Put (for me) | five hundred, | please.", "Put in five hundred, please.") }), note: "Very Mexican: póngale = put (it) in.", noteSpain: "Póngame: put (it) in for me, the usual way to ask for an amount." },
         { id: "fill_ask", s: t("¿Me lo | llena, | por favor?", "It for me | you-fill, | please?", "Could you fill it up, please?") },
         { id: "want_gas", s: t("Necesito | gasolina.", "I-need | gas.", "I need gas.") },
       ],
@@ -593,7 +593,7 @@ export const gas: SituationDef = {
       lt: "Check the pump starts at zero",
       items: [
         { id: "zeros_no", s: t("Espere, | no está | en | ceros.", "Wait, | it isn't | at | zero.", "Wait, it isn't at zero.", { spain: t("Espere, | no está | a | cero.", "Wait, | it isn't | at | zero.", "Wait, it isn't at zero.") }), note: "A classic trick: the last sale left on the pump. Always look before they start." },
-        { id: "zeros_reset", s: t("¿La | puede | poner | en | ceros?", "It | can you | put | at | zero?", "Could you reset it to zero?", { flags: { 0: "la: “it” (la bomba, the pump), an object pronoun." }, spain: t("¿Lo | puede | poner | a | cero?", "It | can you | put | at | zero?", "Could you reset it to zero?") }) },
+        { id: "zeros_reset", s: t("¿La | puede | poner | en | ceros?", "It | can you | put | at | zero?", "Could you reset it to zero?", { flags: { 0: "la: “it” (la bomba, the pump), an object pronoun." }, spain: t("¿Lo | puede | poner | a | cero?", "It | can you | put | at | zero?", "Could you reset it to zero?", { flags: { 0: "lo: “it” (el surtidor, the pump), an object pronoun." } }) }) },
         { id: "q_zeros", s: t("¿Está | en | ceros?", "Is it | at | zero?", "Is it at zero?", { spain: t("¿Está | a | cero?", "Is it | at | zero?", "Is it at zero?") }) },
       ],
     },
@@ -637,17 +637,17 @@ export const gas: SituationDef = {
       lt: "Ask for a receipt",
       items: [
         { id: "receipt", s: t("¿Me | da | el | ticket, | por favor?", "(To) me | you-give | the | receipt, | please?", "Could I have the receipt, please?",
-          { flags: { 3: "Mexican: ticket = receipt. Elsewhere: recibo." }, neutral: t("¿Me | da | el | recibo, | por favor?", "(To) me | you-give | the | receipt, | please?", "Could I have the receipt, please?") }) },
+          { flags: { 3: "Mexican: ticket = receipt. Elsewhere: recibo." }, neutral: t("¿Me | da | el | recibo, | por favor?", "(To) me | you-give | the | receipt, | please?", "Could I have the receipt, please?"), spain: t("¿Me | da | el | ticket, | por favor?", "(To) me | you-give | the | receipt, | please?", "Could I have the receipt, please?", { flags: { 3: "ticket: the receipt, as Spain (and Mexico) call it." } }) }) },
         { id: "factura", s: t("¿Me | puede | dar | factura?", "(To) me | can you | give | invoice?", "Could I get an invoice?"), note: "A factura is the tax invoice a business needs." },
       ],
     },
     ask: {
       lt: "Ask something (restroom, road, air)",
       items: [
-        { id: "q_restroom", s: t("¿Dónde | está | el | baño?", "Where | is | the | restroom?", "Where's the restroom?") },
+        { id: "q_restroom", s: t("¿Dónde | está | el | baño?", "Where | is | the | restroom?", "Where's the restroom?", { spain: t("¿Dónde | están | los | aseos?", "Where | are | the | restrooms?", "Where's the restroom?") }) },
         { id: "q_road", s: t("¿Cómo | llego | a | la | carretera?", "How | I-get | to | the | highway?", "How do I get to the highway?") },
         { id: "q_air", s: t("¿Dónde | pongo | aire?", "Where | I-put | air?", "Where can I put air in my tires?") },
-        { id: "q_price", s: t("¿A cómo | está | la | magna?", "How much | is | the | regular?", "How much is regular?") },
+        { id: "q_price", s: t("¿A cómo | está | la | magna?", "How much | is | the | regular?", "How much is regular?", { spain: t("¿A cuánto | está | la | magna?", "How much | is | the | regular?", "How much is regular?") }) },
         { id: "q_where_pay", s: t("¿Dónde | pago?", "Where | I-pay?", "Where do I pay?") },
         { id: "q_atm", s: t("¿Hay | un | cajero | por | aquí?", "Is there | an | ATM | around | here?", "Is there an ATM around here?") },
       ],
@@ -662,9 +662,9 @@ export const gas: SituationDef = {
       lt: "Explain the problem",
       items: [
         { id: "car_wont_start", s: t("Mi | carro | no arranca.", "My | car | won't start.", "My car won't start.",
-          { flags: { 1: "Mexican: carro = car. Elsewhere: auto, coche." }, neutral: t("Mi | auto | no arranca.", "My | car | won't start.", "My car won't start."), spain: t("Mi | coche | no arranca.", "My | car | won't start.", "My car won't start.") }) },
+          { flags: { 1: "Mexican: carro = car. Elsewhere: auto, coche." }, neutral: t("Mi | auto | no arranca.", "My | car | won't start.", "My car won't start."), spain: t("Mi | coche | no arranca.", "My | car | won't start.", "My car won't start.", { flags: {} }) }) },
         { id: "flat_tire", s: t("Tengo | una | llanta | ponchada.", "I-have | a | tire | punctured.", "I have a flat tire.",
-          { flags: { 3: "Mexican: ponchada = flat (punctured). Elsewhere: pinchada." }, neutral: t("Tengo | una | llanta | pinchada.", "I-have | a | tire | punctured.", "I have a flat tire."), spain: t("Tengo | una | rueda | pinchada.", "I-have | a | tire | punctured.", "I have a flat tire.") }) },
+          { flags: { 3: "Mexican: ponchada = flat (punctured). Elsewhere: pinchada." }, neutral: t("Tengo | una | llanta | pinchada.", "I-have | a | tire | punctured.", "I have a flat tire."), spain: t("Tengo | una | rueda | pinchada.", "I-have | a | tire | punctured.", "I have a flat tire.", { flags: {} }) }) },
       ],
     },
     help: {
@@ -681,6 +681,10 @@ export const gas: SituationDef = {
 
   merges: {
     // Spain's twins (11 Nov 2026)
+    // Spain pass 3 (14 Nov 2026)
+    "al salir": { reason: "lexical_expression", split: "al → to the + salir → leave misreads al + infinitive: as you leave.", minimal: "Two words." },
+    "a la salida": { reason: "lexical_expression", split: "a → to + la → the + salida → exit misreads the location: at the way out.", minimal: "Three words." },
+    "a cuánto": { reason: "lexical_expression", split: "a → at + cuánto → how much; = how much (per liter), Spain's way to ask a price.", minimal: "Two words." },
     "he puesto": { reason: "grammatical_fusion", split: "he → have/has + puesto (participle): haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
     "se había quedado": { reason: "grammatical_fusion", split: "se → itself + había → had + quedado → stayed: = it had been left on.", minimal: "Pronoun, auxiliary and participle." },
     "no lo he puesto": { reason: "grammatical_fusion", split: "he → have/has + puesto (participle): haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle, with no and the pronoun." },

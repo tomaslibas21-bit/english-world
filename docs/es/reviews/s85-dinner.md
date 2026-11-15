@@ -159,3 +159,16 @@ Te pongo un trozo de flan para llevar." (like for_the_road's "¡Espera!").
 - Found: vosotros/os agree everywhere the learner speaks to both hosts (veros, para vosotros, os he traído, ¿os ayudo?, os aviso); the hosts' own lines are tú to the guest and nos/-mos for themselves. "Bueno, el flan lo hizo Natalia" (two lines) had no twin: Spain says the perfect for a dish on today's table.
 - Fixed: twins "…el flan lo ha hecho Natalia" (both lines). Spain corpus +2 (¿Lo habéis hecho vosotros?, ¡Qué casa más bonita tenéis!); made_yourself takes "lo habéis hecho vosotros".
 - For the owner: the hint notes and the intro are English and not per variety, so Spain shows "Ustedes: you're speaking to both hosts" under "Esto es para vosotros" (also gr_glad, hp_can_i) and the intro says "use ustedes".
+
+## Spain pass 3 (14 Nov 2026)
+
+- Notes that called common Spanish customs Mexican: sobremesa (Spain's own word: SOBREMESA_ES on gift_mezcal,
+  chat_then, stay_longer, yay_stay), "Estás en tu casa" (coat ×2), "Aquí tienes tu casa", the lv_yendo and gb_text
+  notes (noteSpain).
+- Words: gift_wine "¡Ay, qué detalle!" (qué rico, for a bottle), star "Eres un sol", ask_seconds "¿Te pongo un poco
+  más?" (otro poquito), the chip cm_smells "¡Qué bien huele!".
+- Notes on the wrong word (inherited flags): ¡Pasa! (pásale), no tenías que haberte molestado, se me ha olvidado,
+  de beber (de tomar ×2), te apetece (antojarse), ¡Que aproveche! (buen provecho), se me ha ido la mano, se me ha
+  quemado, café (cafecito). Neutral twins Spain shows, flags: {}: drink_ok (ahorita), here_more / changed_mind
+  (ándale).
+- Corpus: 2 items.
