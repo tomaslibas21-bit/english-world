@@ -1163,6 +1163,29 @@ this town's own code. What the survey of this town found (`Ledges.things`, one o
 the bounds or the wading limit, and there is no ground reached only by jumping. Everything that could be jumped onto
 before still can (the 50 boxes and 12 circles split before are all split now, with as many low pieces or more).
 
+## The second jump and the higher places (15 Nov 2026)
+
+The shared work again (`docs/WALKING.md`: the second press in the air is a second jump, 2.8 m in all, twice head over
+heels; tops up to 2.8 m can be stood on; roofs the town lists). In this town:
+
+- **With the second jump**: the bus shelter's roof (2.66 m; the one listed roof here: the tianguis' lonas are cloth and
+  the kiosko's roof is over three metres), the party yard's walls (1.9–2.0 m), the two pillars of the atrio's gate
+  (2.0–2.6 m), the taxis' roofs with their signs (1.78 m), the rails of the cenote's deck (1.82 m, a metre over the
+  boards) and the two big clumps of scrub in its clearing (about 2 m); the colectivo's roof (2.06 m) while it has
+  stopped for the player (its hood first, or the second jump from the street). From the street now also what took a
+  hood or a wall under one's feet before: a car's roof, the garden walls with their railings, the mailboxes.
+- **Not**: the stop signs' poles, the posts of signs, La Ola's price board, a palapa's or an umbrella's tip (a top
+  above a car's roof must be a place to stand: half a metre across and 0.2 m² at least), the buses (walls).
+- **The cenote's clearing had two ways out, both closed** (`cenoteWalk`, mexican.ts; there since the clearing was
+  made on 14 Nov, found by the audit once it was told the clearing is inside): the scrub on its north edge was low
+  enough to be jumped onto (0.5–1.4 m) and walked off into the selva; and its west edge ended a metre and a half
+  short of the ring of stones, a gap one walked through without a jump. The clearing's four edges are tagged
+  `"edge"` (never jumped onto) and the west ones run as far as the stones.
+- `src/dev/climbAudit.ts` on this town, the clearing given as open: the highest one can stand is 2.66 m, nobody gets
+  beyond the bounds, the clearing or the wading limit, and there is no ground reached only by jumping. Everything
+  that could be jumped onto before still can, with as many low pieces (104 boxes and 61 circles then, 105 and 63
+  now; the two that are no longer split are the clearing's edges).
+
 ## Convertibles, the lancha, Cenote Ka'an (14 Nov 2026, evening)
 
 The engine's round (docs/RIDES.md: convertibles one takes from their owners and drives, a boat, swimming, a dive) as
