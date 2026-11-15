@@ -147,7 +147,7 @@ export class Splashes {
   private vel: Float32Array;
   private life: Float32Array;
   private next = 0;
-  private static readonly N = 28;
+  private static readonly N = 420;
 
   constructor() {
     const mat = new THREE.ShaderMaterial({
@@ -190,6 +190,19 @@ export class Splashes {
       const a = Math.random() * Math.PI * 2, s = 0.5 + Math.random() * 1.1;
       this.pos[j * 3] = x + Math.cos(a) * 0.12; this.pos[j * 3 + 1] = y + 0.03; this.pos[j * 3 + 2] = z + Math.sin(a) * 0.12;
       this.vel[j * 3] = Math.cos(a) * s + dx * 1.2; this.vel[j * 3 + 1] = (1.6 + Math.random() * 1.9) * (0.6 + 0.6 * k); this.vel[j * 3 + 2] = Math.sin(a) * s + dz * 1.2;
+      this.life[j] = 1;
+    }
+  }
+
+  /** A sheet of spray thrown out sideways along (dx, dz) from (x, z): a boat's side in a slide, its bow slapping
+   *  down (`k` 0–1: how much, how far). */
+  fan(x: number, y: number, z: number, dx: number, dz: number, k = 0.6) {
+    const n = Math.round(5 + k * 9);
+    for (let i = 0; i < n; i++) {
+      const j = this.next; this.next = (this.next + 1) % Splashes.N;
+      const out = (2.2 + Math.random() * 3.6) * (0.6 + 0.6 * k), along = (Math.random() - 0.5) * 1.6;
+      this.pos[j * 3] = x - dz * along * 0.4; this.pos[j * 3 + 1] = y + 0.05; this.pos[j * 3 + 2] = z + dx * along * 0.4;
+      this.vel[j * 3] = dx * out - dz * along; this.vel[j * 3 + 1] = (1.8 + Math.random() * 2.6) * (0.6 + 0.6 * k); this.vel[j * 3 + 2] = dz * out + dx * along;
       this.life[j] = 1;
     }
   }

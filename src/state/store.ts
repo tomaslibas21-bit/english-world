@@ -144,6 +144,8 @@ export interface HudState {
   /** What the player does instead of walking (game/rides, water.ts SWIM): at a car's wheel, at a boat's helm,
    *  swimming, under water on a dive, or on a surfboard in the surf lesson (game/surf). */
   ride: null | "car" | "boat" | "swim" | "dive" | "surf";
+  /** At a wheel or a helm, going fast enough for a slide (the phone's brake button says so). */
+  fast: boolean;
   /** The player is on the move (the task card folds away on a phone meanwhile). */
   walking: boolean;
   objective: { sitId: string; title: string; goal: string; where: string; dist: number | null; angle: number | null; inside: boolean } | null;
@@ -207,7 +209,7 @@ export const useStore = create<Store>((set, get) => ({
   progress: initial,
   conv: EMPTY_CONV,
   hud: {
-    zoneName: "", zoneBanner: null, prompt: null, ride: null, walking: false, objective: null, minimap: { px: 0, pz: 0, heading: 0, zone: "town" }, fade: 0, panel: null,
+    zoneName: "", zoneBanner: null, prompt: null, ride: null, fast: false, walking: false, objective: null, minimap: { px: 0, pz: 0, heading: 0, zone: "town" }, fade: 0, panel: null,
     showTouch: typeof window !== "undefined" && (("ontouchstart" in window) || navigator.maxTouchPoints > 1),
     coach: null,
   },

@@ -14,7 +14,7 @@ import { coach } from "./coach";
 import { Wading, Splashes, floorY, waterY, bayHold, SEA_LEVEL, SHORE, SWIM, BAY } from "./water";
 import { Rides, type Ride } from "./rides/Rides";
 import { Undersea } from "./rides/undersea";
-import { controlsFrom } from "./rides/drive";
+import { CAR_DRIFT, BOAT_DRIFT, controlsFrom } from "./rides/drive";
 import { RIDES } from "./world/rides";
 import { RIDE_NAMES } from "../content/rides";
 import { SURF_SPOT } from "./world/surf";
@@ -211,6 +211,13 @@ export class Game implements GameApi {
   private bumpT = 0;
   private braked = false;
   private dustT = 0;
+  /** At a wheel: the way the camera looks along (the car's course: in a slide it is seen side on), how far it has
+   *  pulled back for the speed, the lens's widening, whether the kick out of a slide has been heard, the tip given. */
+  private rideCourse = 0;
+  private rideBack = 0;
+  private rideFov = 0;
+  private kicked = false;
+  private slideTold = false;
   /** Swimming (water.ts SWIM): in deep water now; how far into the stroke's pose (0–1); a dive: how long it still
    *  lasts (s) and how far under (0–1); the stroke's last splash. */
   private swimming = false;
@@ -335,9 +342,11 @@ export class Game implements GameApi {
         }, 280);
       },
       waiting: () => useStore.getState().toast({ kind: "tip", title: "Kelias užimtas", body: "Mašina sustoja pati. Pasuk į šoną ir apvažiuok arba pavažiuok atbulas.", ms: 5000 }),
+      freed: () => useStore.getState().toast({ kind: "info", title: "Mašina išlaisvinta", body: "Ji pati pasitraukė ten, kur laisva.", ms: 2600 }),
       stuck: () => useStore.getState().toast({ kind: "tip", title: "Užstrigai?", body: useStore.getState().hud.showTouch ? "Patrauk vairalazdę žemyn – važiuosi atbulas." : "Rodyklė žemyn – važiuosi atbulas.", ms: 5000 }),
       aground: () => useStore.getState().toast({ kind: "tip", title: "Čia per sekli vieta", body: useStore.getState().hud.showTouch ? "Patrauk vairalazdę žemyn – valtis atsitrauks nuo kranto." : "Rodyklė žemyn – valtis atsitrauks nuo kranto.", ms: 5000 }),
       splash: (x, y, z, dx, dz, k) => this.splashes.burst(x, y, z, dx, dz, k),
+      fan: (x, y, z, dx, dz, k) => this.splashes.fan(x, y, z, dx, dz, k),
       outdoors: () => !this.zone.interior && !this.covered,
     }, RIDES, this.town.group.children.filter((o) => o.userData.boat));
     this.rides.onLeft = (x, y, z, rot) => this.leftRide(x, y, z, rot);
@@ -773,7 +782,10 @@ export class Game implements GameApi {
     this.ambient.riding = false;
     this.nearest = null;
     audio.motor(null);
-    useStore.getState().setHud({ prompt: null, ride: null });
+    audio.rush("squeal", 0); audio.rush("wind", 0);
+    // (the camera comes back to where the player had it)
+    this.rig.dist /= 1 + this.rideBack; this.rideBack = 0; this.rideFov = 0;
+    useStore.getState().setHud({ prompt: null, ride: null, fast: false });
   }
 
   /** Out of a ride at once, with no hop (a door's zone change, a taxi, a conversation picked from the list). */
@@ -1432,7 +1444,7 @@ export class Game implements GameApi {
     // camera: where the player is heading and how fast (it swings in behind them after a moment, camera.ts)
     const speed = Math.hypot(this.moveVel.x, this.moveVel.z);
     // (at a wheel the camera stays behind the car, backing up too)
-    this.rig.motion.dir = riding || surfing ? this.heading : speed > 0.3 ? Math.atan2(this.moveVel.x, this.moveVel.z) : this.heading;
+    this.rig.motion.dir = riding ? this.rideCourse : surfing ? this.heading : speed > 0.3 ? Math.atan2(this.moveVel.x, this.moveVel.z) : this.heading;
     this.rig.motion.speed = speed;
     // (where they will be in a moment, walking on as now, out of the walls: the camera makes room before it is needed)
     this.rig.motion.next.copy(this.player.root.position).addScaledVector(this.moveVel, 0.3).setY(0);
@@ -1452,7 +1464,7 @@ export class Game implements GameApi {
     // the lens (camera.ts fovFor): wider while walking, a touch more at a run (a sense of speed), the conversation's
     // 50° exactly
     {
-      const fov = this.rig.fovFor(this.container.clientWidth, this.container.clientHeight, this.rig.mode === "follow" && this.vel.lengthSq() > 30);
+      const fov = this.rig.fovFor(this.container.clientWidth, this.container.clientHeight, this.rig.mode === "follow" && this.vel.lengthSq() > 30) + (this.rig.mode === "follow" ? this.rideFov : 0);
       const d = fov - this.rig.cam.fov;
       if (d !== 0) {
         this.rig.cam.fov = Math.abs(d) < 0.05 ? fov : this.rig.cam.fov + d * Math.min(1, dt * (this.rig.mode === "talk" ? 4.5 : 3));
@@ -1539,29 +1551,66 @@ export class Game implements GameApi {
     this.rides.update(dt, this.t, blocked ? null : controlsFrom(x, y, this.keys.has(" ") || this.brake));
     // (getting out ends the ride inside update: the player is on foot again, leftRide has set them down)
     if (this.rides.riding !== r) return;
-    const on = this.rides.phase === "on", v = on ? m.speed : 0;
+    const on = this.rides.phase === "on", v = on ? m.speed : 0, pace = on ? m.pace : 0, car = r.kind === "car";
     this.heading = on ? m.heading : this.player.root.rotation.y;
-    this.vel.set(m.fx * v, 0, m.fz * v);
+    this.vel.set(on ? m.vx : 0, 0, on ? m.vz : 0);
     this.moveVel.lerp(this.vel, Math.min(1, dt * 15));
-    this.lastSpeed = Math.abs(v);
+    this.lastSpeed = pace;
+    // the camera looks along the way it is going: in a slide that is not where it points, and the car is seen side on
+    {
+      const want = on && pace > 2.5 && v > 0 && Math.abs(m.slip) > 1 ? Math.atan2(m.vx, m.vz) : this.heading;
+      const d = Math.atan2(Math.sin(want - this.rideCourse), Math.cos(want - this.rideCourse));
+      this.rideCourse += d * Math.min(1, dt * (Math.abs(d) > 2 ? 30 : 7));
+    }
+    // a sense of speed: at its open-road pace the camera drops back a little and the lens widens; more for the kick
+    {
+      const k = on ? Math.max(0, Math.min(1.2, (pace - m.spec.town * 0.8) / (m.spec.max - m.spec.town * 0.8))) : 0, kick = on && m.boost > 0 ? 1 : 0;
+      const back = k * (car ? 0.13 : 0.1) + kick * 0.05;
+      // (the wheel's own zoom stays the player's: only what was added is taken off again)
+      const base = this.rig.dist / (1 + this.rideBack);
+      this.rideBack += (back - this.rideBack) * Math.min(1, dt * 2.2);
+      this.rig.dist = base * (1 + this.rideBack);
+      this.rideFov += (k * (car ? 9 : 6) + kick * 5 - this.rideFov) * Math.min(1, dt * 3);
+    }
+    // the sounds of it: the tires in a slide (or the hull's rush), the air at speed, a rush at the kick
+    {
+      const slide = on ? Math.min(1, Math.max(0, (Math.abs(m.slip) - 1.2) / 4.5)) : 0;
+      audio.rush("squeal", car && slide > 0 && pace > 2.5 && this.rides.asphalt.has(m.x, m.z) ? 0.35 + 0.65 * slide : 0, Math.min(1, pace / 14));
+      audio.rush("wind", on ? Math.max(0, (pace - 6) / (m.spec.max - 3)) * (car ? 1 : 0.8) + (!car ? slide * 0.5 : 0) : 0, Math.min(1, pace / 16));
+      if (on && m.boost > 0 && !this.kicked) { this.kicked = true; audio.kickRush(); }
+      if (!on || m.boost <= 0) this.kicked = false;
+      // (the first time it goes fast: a word about the slide)
+      if (on && !this.slideTold && pace > m.spec.town * 0.92 && Math.abs(m.steer) < 0.3) {
+        this.slideTold = true;
+        const touch = useStore.getState().hud.showTouch;
+        useStore.getState().toast({ kind: "tip", title: car ? "Paslysk posūkyje!" : "Paslysk bangomis!", body: touch ? "Sukdamas laikyk STOP – šonu per posūkį. Paleidęs gausi pagreitį." : "Sukdamas laikyk Tarpą – šonu per posūkį. Paleidęs gausi pagreitį.", ms: 6000 });
+      }
+    }
+    {
+      const fast = on && pace > (car ? CAR_DRIFT.from : BOAT_DRIFT.from);
+      const hud = useStore.getState();
+      if (hud.hud.fast !== fast) hud.setHud({ fast });
+    }
     this.player.moveSpeed = 0;
     this.player.update(dt);
     this.bumpT -= dt;
     if (m.bump > 0.3 && this.bumpT <= 0) { audio.bump(m.bump); this.bumpT = 0.45; }
     // a boat's wake: the water's rings round its hull, wider and brighter the faster it goes; a car's dust at its back
     // wheels when it goes fast or over open ground, a short skid when it is braked hard
-    const av = Math.abs(v);
-    if (r.kind === "boat" && on) this.splashes.update(dt, this.t, { x: m.x - m.fx * 0.6, y: (waterY(m.x, m.z, this.t) ?? SEA_LEVEL) + 0.02, z: m.z - m.fz * 0.6 }, Math.min(1, av / 6), 2.6);
+    const av = pace;
+    if (r.kind === "boat" && on) this.splashes.update(dt, this.t, { x: m.x - m.fx * 0.6, y: (waterY(m.x, m.z, this.t) ?? SEA_LEVEL) + 0.02, z: m.z - m.fz * 0.6 }, Math.min(1, av / 6), 2.6 + Math.min(1.4, Math.abs(m.slip) * 0.3));
     else this.splashes.update(dt, this.t, null, 0);
     if (r.kind === "car" && on) {
-      const braking = !blocked && (this.keys.has(" ") || this.brake || y < -0.35) && v > 0;
+      const braking = !blocked && !m.drift && (this.keys.has(" ") || this.brake || y < -0.35) && v > 0;
       if (braking && !this.braked && av > 8.5) audio.skid(Math.min(1, av / 15));
       this.braked = braking;
       this.dustT -= dt;
-      if (this.dustT <= 0 && useStore.getState().settings.quality === "high" && (av > 9 || (av > 3 && !this.rides.asphalt.has(m.x, m.z)) || (braking && av > 5))) {
-        this.dustT = 0.11;
-        const s = Math.sign(v) || 1;
-        for (const side of [-0.8, 0.8]) this.dust.puff(m.x - m.fx * 1.5 * s + m.fz * side, m.z - m.fz * 1.5 * s - m.fx * side, -m.fx * s, -m.fz * s, 0.8 + av / 15);
+      // (smoke off the back wheels in a slide, thick and fast; dust at speed, over open ground, braked hard)
+      const sliding = m.sliding && av > 3;
+      if (this.dustT <= 0 && (sliding || useStore.getState().settings.quality === "high") && (sliding || av > 9 || (av > 3 && !this.rides.asphalt.has(m.x, m.z)) || (braking && av > 5))) {
+        this.dustT = sliding ? 0.05 : 0.11;
+        const s = Math.sign(v) || 1, cx = av > 0.5 ? -m.vx / av : -m.fx * s, cz = av > 0.5 ? -m.vz / av : -m.fz * s;
+        for (const side of sliding && useStore.getState().settings.quality !== "high" ? [Math.random() < 0.5 ? -0.8 : 0.8] : [-0.8, 0.8]) this.dust.puff(m.x - m.fx * 1.4 * s + m.fz * side, m.z - m.fz * 1.4 * s - m.fx * side, cx, cz, (sliding ? 1.25 : 0.8) + av / 15);
       }
     }
     this.dust.update(dt);
