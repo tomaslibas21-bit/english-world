@@ -494,15 +494,17 @@ export class Rides {
       gap = Math.min(gap, aheadOnArc(m.x, m.z, fx, fz, curv, q.x, q.z, 34, 1.35)); care = Math.min(care, aheadIn(m.x, m.z, fx, fz, q.x, q.z, 34, 1.35));
     }
     // a car of the traffic on its way: it eases in behind it at its pace (no running into its back; steered round
-    // it, the way is free), and brakes for one that comes the other way. One that stands (it waits for the
-    // convertible as often as not) it noses up to and slides round: two cars never wait for each other
+    // it, the way is free), brakes for one that comes the other way, and waits behind one that stands. With the wheel
+    // turned it noses up to a standing one and slides round it (that car waits for the convertible as often as not:
+    // two cars never wait for each other)
     const lead = host.ambient.carAhead(m.x, m.z, fx, fz, 30, CAR.wide + 0.2, curv, _lead);
-    const behind = lead.gap - CAR.half - 1, moving = Math.abs(lead.speed) > 0.3;
+    const behind = lead.gap - CAR.half - 1, moving = Math.abs(lead.speed) > 0.3, round = !moving && Math.abs(m.steer) > 0.3;
     if (lead.gap !== Infinity) {
-      const most = Math.max(moving ? 0 : 1.6, Math.max(0, lead.speed) + Math.sqrt(2 * 9 * Math.max(0, behind)));
+      const most = Math.max(round ? 1.6 : 0, Math.max(0, lead.speed) + Math.sqrt(2 * 9 * Math.max(0, behind)));
       if (Math.abs(m.speed) > most) m.speed = Math.sign(m.speed) * Math.max(most, Math.abs(m.speed) - 20 * dt);
     }
-    const queued = lead.gap !== Infinity && behind < 2.5 && lead.speed > 0.3;
+    // (following one that moves, or waiting behind one that stands: not stuck)
+    const queued = lead.gap !== Infinity && ((behind < 2.5 && lead.speed > 0.3) || (behind < 1.5 && !moving && !round));
     const was = m.speed;
     m.step(dt, c, gap, this.asphalt.has(m.x, m.z), care);
     m.settle((p, rad) => {
