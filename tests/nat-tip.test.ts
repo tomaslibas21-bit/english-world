@@ -139,8 +139,10 @@ describe("the markup", () => {
     expect(star).toContain('type="button"');
     expect(star).toContain('aria-label="Natūralus vertimas"');
     expect(star).toContain('aria-expanded="false"');
-    // the last unit and the asterisk together, nothing between them
-    expect(out).toMatch(/<span class="nat-last"><span class="u tap" data-i="1"><span class="en">pleasure!<\/span>.*?<\/span><button/);
+    // right after the last word's last letter, inside its English row on a zero-width pin: tight against the word
+    // whatever the gloss or IPA under it, and no room taken in the line (owner, 15 Nov 2026)
+    expect(out).toMatch(/<span class="u tap" data-i="1"><span class="en">pleasure!<span class="nat-pin"><button[^>]*class="nat-star"/);
+    expect(out).not.toContain("nat-last");
     // linked to a tooltip that holds the natural sentence (hidden until opened)
     const id = star!.match(/aria-describedby="([^"]+)"/)?.[1];
     const tip = out.match(/<span[^>]*role="tooltip"[^>]*>([^<]*)<\/span>/);
@@ -155,6 +157,13 @@ describe("the markup", () => {
 
   it("also with IPA on", () => {
     expect(starOf(html({ s: pleasure(), lt: true, ipa: true, nat: false, natTip: true }))).toBeTruthy();
+  });
+
+  it("only on the last word, right after a multi-word unit's last letter", () => {
+    const s = sent("That | works | for me.", "Tai | tinka | man.", "Man tinka.");
+    const out = html({ s, lt: true, ipa: true, compactNat: true });
+    expect(out.match(/nat-star/g)).toHaveLength(1);
+    expect(out).toMatch(/<span class="en">for me\.<span class="nat-pin"><button/);
   });
 
   it("“Business or pleasure?”: no asterisk (the glosses already say it)", () => {
