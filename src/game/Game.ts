@@ -671,7 +671,7 @@ export class Game implements GameApi {
     if (["arrowup", "arrowdown", "arrowleft", "arrowright", "w", "a", "s", "d", "shift"].includes(k)) {
       this.keys.add(k); this.autoPath = null; this.autoTarget = null; e.preventDefault(); return;
     }
-    // Space: talk or go in, as E, when there is someone or a door to; else a jump (in the air: a flip). At a wheel it
+    // Space: talk or go in, as E, when there is someone or a door to; else a jump (in the air: the second jump). At a wheel it
     // is the brake, for as long as it is held; swimming, a dive
     if (k === " " && this.rides.riding) { this.keys.add(" "); e.preventDefault(); return; }
     if (k === " ") { if (this.nearest && !this.hop.air && !this.swimming) this.interact(); else if (!e.repeat) this.jump(); e.preventDefault(); return; }
@@ -696,7 +696,7 @@ export class Game implements GameApi {
   }
 
   /** A jump (Space, or the phone's button): not in a conversation, over a panel or through a door. A second press in
-   *  the air is a flip (a somersault, a little more lift, once a jump). */
+   *  the air is the second jump (higher, with two somersaults, once a jump). */
   jump() {
     const st = useStore.getState();
     if (this.session?.active || st.conv.active || st.hud.panel || st.hud.glyph || this.transitioning || !this.player) return;
@@ -705,7 +705,7 @@ export class Game implements GameApi {
     // (at a wheel the button is the brake: hold(); in the water it is a dive, and the way back up)
     if (this.rides.riding) return;
     if (this.swimming) { this.dive(); return; }
-    if (this.hop.air) { if (this.hop.flip()) { audio.jump(1.4); coach.did("jump"); } return; }
+    if (this.hop.air) { if (this.hop.flip()) { audio.jump(1.3); audio.whoosh(); coach.did("jump"); } return; }
     if (this.hop.start()) { audio.jump(); coach.did("jump"); }
   }
 
@@ -1522,7 +1522,9 @@ export class Game implements GameApi {
     this.rig.motion.next.copy(this.player.root.position).addScaledVector(this.moveVel, 0.3).setY(0);
     if (speed > 0.3) this.zone.colliders.resolve(this.rig.motion.next, 0.38, !this.zone.interior);
     this.rig.dragging = this.pointer.down && this.pointer.moved > 6;
-    this.rig.target.lerp(this.player.root.position, Math.min(1, dt * 10));
+    this.rig.hold = this.hop.air && !this.zone.interior;
+    // (up with a jump by half its height: the second jump's top stays in the picture)
+    this.rig.target.lerp(this.tmpV.copy(this.player.root.position).setY(this.player.root.position.y + this.hop.lift * 0.5), Math.min(1, dt * 10));
     this.rig.update(dt, this.heading, speed > 0.7, true, (st.settings.cameraFollow || !!riding) && !this.pointer.down);
     // under the water (a dive: the camera below the surface): the seabed, the fish, the water's own light
     {
@@ -1949,6 +1951,8 @@ export class Game implements GameApi {
     } else if (landed > 0) {
       audio.land(this.underfoot(ground > 0.05), landed);
       if (fancy) this.dust.puff(p.x, p.z, Math.sin(this.heading), Math.cos(this.heading), 0.9);
+      // (down from the second jump: dust all round)
+      if (fancy && this.hop.flipped) for (let i = 0; i < 6; i++) this.dust.puff(p.x, p.z, Math.sin(i * 1.047), Math.cos(i * 1.047), 1.25);
     }
     if (fancy && this.lastSpeed > 6 && moved < 2.5) this.dust.puff(p.x, p.z, Math.sin(this.heading), Math.cos(this.heading), 1.3);
     this.lastSpeed = moved;

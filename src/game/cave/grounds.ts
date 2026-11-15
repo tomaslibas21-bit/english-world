@@ -132,9 +132,10 @@ export function groundsWalk(col: Colliders, x: number, z: number, edge: number, 
   // the low jungle: each crown, and the grounds' edge behind them
   for (const [px, pz, size] of crowns(x, z, edge)) col.addCircle(px, pz, size * 0.72);
   const n0 = z - REACH.ns, s0 = z + REACH.ns, w0 = x - REACH.w;
-  col.addBox((w0 + edge) / 2 - 1, n0 - 0.8, edge - w0 + 2, 1.6);
-  col.addBox((w0 + edge) / 2 - 1, s0 + 0.8, edge - w0 + 2, 1.6);
-  col.addBox(w0 - 0.8, (n0 + s0) / 2, 1.6, s0 - n0 + 3);
+  // (`edge`: never something to jump onto, however low the jungle on it: ledges.ts)
+  col.addBox((w0 + edge) / 2 - 1, n0 - 0.8, edge - w0 + 2, 1.6, "edge");
+  col.addBox((w0 + edge) / 2 - 1, s0 + 0.8, edge - w0 + 2, 1.6, "edge");
+  col.addBox(w0 - 0.8, (n0 + s0) / 2, 1.6, s0 - n0 + 3, "edge");
 }
 
 // ------------------------------------------------------------------------------------------------- what is seen

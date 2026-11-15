@@ -1,6 +1,7 @@
-// Climbing in the real game: a parked car in steps (hood or trunk, then the roof), a flip on the second press, the
-// phone's jump button tapped twice, and what must stay true of the whole town (nobody stands higher than a car's roof,
-// nobody gets out of the town). Against a dev server (the last part needs src/dev/climbAudit.ts) or a built game.
+// Climbing in the real game: a parked car in steps (hood or trunk, then the roof), the second jump on the second press
+// (higher, twice head over heels) and the bus shelter's roof it reaches, the phone's jump button tapped twice, and
+// what must stay true of the whole town (nobody stands higher than the second jump's tier, nobody gets out of the
+// town). Against a dev server (the last part needs src/dev/climbAudit.ts) or a built game.
 // WORLD_TEST_URL=http://127.0.0.1:5188 WORLD_STORAGE=english-world WORLD_PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node tests/browser/climb.mjs
 import assert from "node:assert/strict";
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
@@ -71,36 +72,67 @@ try {
       const prompt = await page.evaluate(() => { const g = window.__ew.game; g.updateHud(); return { aloft: g.aloft, nearest: g.nearest }; });
       check("up there nobody is talked to and no door gone through", prompt.aloft === true && prompt.nearest === null, prompt);
 
-      // a flip: the second press in the air, once a jump
+      // the second jump: the second press in the air, once a jump: well over two metres up, twice head over heels
       await page.evaluate(() => { const g = window.__ew.game; g.keys.clear(); g.enterZone("town", { x: 28, z: -14.6, rot: Math.PI }, true); });
-      await page.waitForTimeout(300);
+      await page.waitForFunction(() => { const g = window.__ew.game; return !g.transitioning && !g.hop.air; }, null, { timeout: 20000 });
       await page.keyboard.press("Space");
-      await page.waitForTimeout(260);
+      await page.waitForFunction(() => { const g = window.__ew.game; return g.hop.air && g.hop.y > 0.5; }, null, { timeout: 5000 });
       const before = await state();
+      // (how high it goes and how far round, watched frame by frame until they land)
+      const flight = page.evaluate(() => new Promise((done) => {
+        const g = window.__ew.game;
+        let top = 0, turn = 0;
+        const tick = () => { top = Math.max(top, g.hop.y); turn = Math.max(turn, g.hop.spin); if (g.hop.air) requestAnimationFrame(tick); else done({ top: +top.toFixed(2), turn: +turn.toFixed(2), spin: g.hop.spin }); };
+        tick();
+      }));
       await page.keyboard.press("Space");
-      await page.waitForTimeout(120);
-      const mid = await state();
-      check("a second press in the air is a flip", before.air && before.spin === 0 && mid.air && mid.spin > 0.2, { before, mid });
+      const more = await page.evaluate(() => window.__ew.game.hop.flip());
+      const f = await flight;
+      check("a second press in the air is a second jump, higher, twice head over heels", before.air && before.spin === 0 && more === false && f.top > 2.6 && f.top < 2.9 && f.turn > 11.5, { before, f });
       await page.waitForFunction(() => { const g = window.__ew.game; return !g.hop.air && g.hop.spin === 0 && g.player.flip === 0; }, null, { timeout: 5000 });
       check("and they land on their feet", true);
+
+      // the bus shelter's roof: from under it, up through it by the second jump, and on it; then a walk off its edge
+      const roof = await page.evaluate(() => {
+        const r = (window.__ew.game.town.colliders.roofs ?? []).find((q) => Math.abs(q.maxX - q.minX - 3.6) < 0.01 && Math.abs(q.maxZ - q.minZ - 1.6) < 0.01);
+        return r ? { x: (r.minX + r.maxX) / 2, z: r.minZ + 0.3, minZ: r.minZ } : null;
+      });
+      check("the town lists the bus shelter's roof", !!roof, roof);
+      await page.evaluate((r) => { const g = window.__ew.game; g.keys.clear(); g.enterZone("town", { x: r.x, z: r.z, rot: Math.PI }, true); g.rig.yaw = Math.PI; g.rig.snap(); }, roof);
+      await page.waitForFunction(() => { const g = window.__ew.game; return !g.transitioning && !g.hop.air; }, null, { timeout: 20000 });
+      const under = await state();
+      // (the jump itself, as the phone's button gives it: beside whoever waits for the bus, Space on the ground talks)
+      await page.evaluate(() => window.__ew.game.jump());
+      await page.waitForFunction(() => { const g = window.__ew.game; return g.hop.air && g.hop.y > 0.6; }, null, { timeout: 5000 });
+      await page.evaluate(() => window.__ew.game.jump());
+      await page.waitForFunction(() => !window.__ew.game.hop.air, null, { timeout: 5000 });
+      s = await state();
+      check("the second jump lands on the bus shelter's roof", under.y < 0.7 && s.y > 2.3 && s.y <= 2.8, { under, s });
+      await page.keyboard.down("w");
+      await page.waitForFunction(() => { const g = window.__ew.game; return !g.hop.air && g.hop.y < 0.7; }, null, { timeout: 6000 });
+      await page.keyboard.up("w");
+      s = await state();
+      check("and a walk off its edge is a fall to the street", s.y < 0.7 && s.z < roof.minZ, s);
 
       // the whole town (a dev server only): nobody stands higher than a car's roof, gets out, or is stuck
       const audit = await page.evaluate(async () => {
         try {
           const m = await import("/src/dev/climbAudit.ts"), W = (await import("/src/game/world/layout.ts")).WORLD, g = window.__ew.game;
-          // Puerto Colibrí's cenote lies west of the town's edge and is walked into from every side: its grounds count
-          const cen = (await import("/src/game/world/theme.ts")).THEME.cenote;
-          const more = cen?.open ? [(await import("/src/game/cave/grounds.ts")).groundsBounds(cen.x, cen.z, W.minX)] : [];
-          return m.climbAudit(g.town.colliders, g.ledges, W, [28, -14.6], 0.25, more);
+          // (Puerto Colibrí's cenote lies beyond the town's west edge: its grounds, walked into from every side
+          // (cave/grounds.ts), or the clearing round it where only the sacbé's way is open)
+          const c = (await import("/src/game/world/theme.ts")).THEME.cenote;
+          const open = c?.open ? [(await import("/src/game/cave/grounds.ts")).groundsBounds(c.x, c.z, W.minX)]
+            : c?.walk ? [{ minX: c.x - 8, maxX: W.minX, minZ: c.z - 10.5, maxZ: c.z + 9.5 }] : [];
+          return m.climbAudit(g.town.colliders, g.ledges, W, [28, -14.6], 0.25, open);
         } catch { return null; }
       });
       if (audit) {
-        check("the highest one can stand is a car's roof", audit.maxHeight <= 1.75 && audit.maxHeight > 1.4, audit.maxHeight);
-        check("no way out of the town or past the wading limit", audit.outside === 0, audit.outside);
+        check("the highest one can stand is a shelter's or a stall's roof", audit.maxHeight <= 2.8 && audit.maxHeight > 2.3, audit.maxHeight);
+        check("no way out of the town or past the wading limit", audit.outside === 0, { cells: audit.outside, first: audit.outsideAt });
         check("nowhere to be stuck", audit.fresh.every((f) => f.out !== "stuck"), audit.fresh);
       } else console.log("skipped: the town-wide audit (not a dev server)");
     } else {
-      // the phone's button: a tap is a jump, a second tap in the air a flip
+      // the phone's button: a tap is a jump, a second tap in the air the second jump
       const btn = page.locator(".jump-btn");
       await btn.waitFor({ state: "visible", timeout: 10000 });
       const box = await btn.boundingBox();
@@ -111,8 +143,9 @@ try {
       const one = await page.evaluate(() => { const g = window.__ew.game; return { air: g.hop.air, spin: g.hop.spin }; });
       await page.waitForFunction(() => { const g = window.__ew.game; return g.hop.air && g.hop.y > 0.3; }, null, { timeout: 5000 });
       await btn.dispatchEvent("pointerdown");
-      const two = await page.evaluate(() => { const g = window.__ew.game; return { air: g.hop.air, flipping: g.hop.flipT > 0 }; });
-      check("a tap jumps, a second tap in the air flips", one.air && one.spin === 0 && two.air && two.flipping, { one, two });
+      const two = await page.evaluate(() => { const g = window.__ew.game; return { air: g.hop.air, again: g.hop.flipped }; });
+      const high = await page.waitForFunction(() => { const g = window.__ew.game; return g.hop.air && g.hop.y > 2.2 && g.hop.spin > 0; }, null, { timeout: 5000 }).then(() => true, () => false);
+      check("a tap jumps, a second tap in the air is the second jump", one.air && one.spin === 0 && two.air && two.again && high, { one, two, high });
     }
     check(`no page errors (${label})`, errors.length === 0, errors.slice(0, 3));
     await ctx.close();

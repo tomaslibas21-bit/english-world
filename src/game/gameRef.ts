@@ -24,7 +24,7 @@ export interface GameApi {
   autoWalkToObjective(): void;
   teleportTo(loc: string): void;
   setJoystick(x: number, y: number): void;
-  /** A jump (Space, the phone's button); again in the air: a flip. */
+  /** A jump (Space, the phone's button); again in the air: the second jump, higher, twice head over heels. */
   jump(): void;
   /** The jump button held down or let go (at a wheel it is the brake). */
   hold(on: boolean): void;

@@ -994,10 +994,13 @@ export function cenoteWalk(col: Colliders, x: number, z: number, edge: number) {
   for (const [px, pz, r] of [[x + R + 7.5, z + 7.5, 0.3], [x + R + 3.2, z - 5.5, 0.3], [x + R + 8, z - 7, 1.2], [x + R + 7.5, z + 9.5, 1.5]]) col.addCircle(px, pz, r);
   // the clearing's edge: north and south of the sacbé, and west of it either side of the water
   const n0 = z - 10.5, s0 = z + 9.5, w0 = x + R - 0.6;
-  col.addBox((w0 + edge) / 2 - 1, n0 - 0.5, edge - w0 + 2, 1);
-  col.addBox((w0 + edge) / 2 - 1, s0 + 0.5, edge - w0 + 2, 1);
-  col.addBox(w0 - 0.5, (n0 + z - 7.4) / 2, 1, z - 7.4 - n0);
-  col.addBox(w0 - 0.5, (s0 + z + 7.4) / 2, 1, s0 - z - 7.4);
+  // (`edge`: never something to jump onto, however low the scrub on it: ledges.ts)
+  col.addBox((w0 + edge) / 2 - 1, n0 - 0.5, edge - w0 + 2, 1, "edge");
+  col.addBox((w0 + edge) / 2 - 1, s0 + 0.5, edge - w0 + 2, 1, "edge");
+  // (as far as the ring of stones itself, which crosses this line 4.6 m either side of the middle: ending at 7.4 m
+  // left a gap of a metre and a half to walk out through, west into the selva)
+  col.addBox(w0 - 0.5, (n0 + z - 5.4) / 2, 1, z - 5.4 - n0, "edge");
+  col.addBox(w0 - 0.5, (s0 + z + 5.4) / 2, 1, s0 - z - 5.4, "edge");
 }
 
 /** Small Mayan ruins on a rocky point by the sea west of the beach (TOWN.md task 8; graphics round 6), in Tulum's way:
