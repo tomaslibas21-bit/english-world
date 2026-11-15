@@ -89,10 +89,11 @@ two soft notes now and then), `chime` (a stone lit, a gate opened, the heart).
 
 ## The aluxes' conversations
 
-`src/editions/es/content/situations/x02-alux-kin.ts`, `x03-alux-nikte.ts`: conversations like the other fifty (three
+`src/editions/es/content/situations/x02-alux-kin.ts`, `x03-alux-nikte.ts`: conversations like the town's own (three
 Spanishes, the English and the Lithuanian layers, glosses, notes, phrase cards, sims, corpora), but **off the route**:
 `SituationDef.bonus`. `src/content/route.ts` `ROUTE` is what the interface lists and counts and what the tasks go
-through (fifty); `SITUATIONS` is every conversation (the tools, the checks, the voices). Files `xNN-….ts`
+through (the town's own: fifty-one with the surf school's x01); `SITUATIONS` is every conversation (the tools, the
+checks, the voices). Files `xNN-….ts`
 (`tools/gen-index.ts`). When an alux lets the learner pass, the conversation fires `alux-pass` with its gate
 (`{ gate: "kin" }`), which `Game.onSessionEvent` hands to the quest. Finishing one never moves the town's task.
 
@@ -105,7 +106,7 @@ little magical; three sets).
 - `tests/es/cave.test.ts`: the plan (everything stands where one can walk; one can walk from the way in to the heart;
   the river is crossed only by the bridge; Kin's directions are true), the rules (which chambers open when; a gate's
   state; what the card says), the stones' phrases, the three meanings, saying it back, how a stone is heard; the
-  aluxes' conversations are off the route and the route is fifty.
+  aluxes' conversations are off the route.
 - `tests/browser/cave.mjs`: the real game, a computer and a phone: swimming into the cave's mouth; Kin's gate holds
   until his conversation is talked through (really talked: five typed answers); a stone's card, a wrong meaning, the
   right one; the second chamber's gate shut with three stones lit and nothing finished in town, open with ten; out by
@@ -114,6 +115,6 @@ little magical; three sets).
 ## Left for later
 
 - The stones' card has no pictures; a phrase's card picture (the course's phrase cards) could show once it is lit.
-- Nothing to do at the heart after it flowers but look; a later round could hide a sixth thing for all fifty.
+- Nothing to do at the heart after it flowers but look; a later round could hide a sixth thing for every conversation finished.
 - The aluxes stand where they are; they could walk a few steps, or hide and peek.
 - Real phones' graphics cards were not measured (the halos are additive sprites: kept few and capped in size).
