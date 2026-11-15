@@ -1172,10 +1172,8 @@ Puerto Colibrí has it. The town's plan is `src/editions/es/game/world/rides.ts`
 - **Three convertibles** at the curb, their owners in them: a pink one on avenida Juárez's north side by the park
   (the first thing one sees walking out of the airport), a turquoise one in calle Itzamná's last block and a yellow
   one on calle Flamboyán beside the mercado, both looking out to the sea. The prompt is "Drive: Convertible"
-  ("Vairuoti: Convertible", with "Kabrioletas" under it, for Lithuanians). The owners' lines are Spanish that is said
-  the same in every country ("¡Oye, cuídamelo!", "¡Luego me lo devuelves!", "¡Todo tuyo! ¡Diviértete!", "¡Anda, date
-  una vuelta!"; back in it: "¡Gracias por traerlo de vuelta!", "¡Qué rápido!"), as bubbles with their meaning: no
-  clips are recorded for them.
+  ("Vairuoti: Convertible", with "Kabrioletas" under it, for Lithuanians). Who sits in them and what they say:
+  round 2, below (each owner has lines and a voice of their own since 15 Nov).
 - **The lancha** one takes out is the one that lay off the beach east of El Muelle (it left the theme's
   `lanchas.afloat`): afloat a step past where one wades to, its bow out to sea. "Take out: Lancha". One gets out of
   it into the shallows by the beach, onto El Muelle's boards beside them, or over the side for a swim.
