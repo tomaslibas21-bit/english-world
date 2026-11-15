@@ -12,7 +12,7 @@ import { WORLD } from "../world/layout";
 import type { NavGrid } from "../nav";
 import type { RidesPlan, CarSpot, BoatSpot } from "../world/rides";
 import { RIDE_OWNERS, RIDE_SHOUTS, type RideOwner, type RideLine } from "../../content/rides";
-import { rideVoice } from "../../content/voices";
+import { rideVoice, shoutVoice } from "../../content/voices";
 import { BAY, DECKS, SHORE, floorY, waterY } from "../water";
 import { Drivable, Motion, CAR, BOAT, aheadIn, pushOutOfBox, type Controls } from "./drive";
 import { townAsphalt, townGround } from "./ground";
@@ -486,7 +486,7 @@ export class Rides {
     this.shoutT -= dt;
     if (Math.abs(m.speed) > 4.5) {
       const w = host.ambient.startle(m.x, m.z, m.fx * dir, m.fz * dir, Math.abs(m.speed), CAR.half, CAR.wide);
-      if (w && this.shoutT <= 0) { this.shoutT = 5 + Math.random() * 4; host.say(RIDE_SHOUTS[Math.floor(Math.random() * RIDE_SHOUTS.length)], null, w.female, w.ch); }
+      if (w && this.shoutT <= 0) { this.shoutT = 5 + Math.random() * 4; host.say(RIDE_SHOUTS[Math.floor(Math.random() * RIDE_SHOUTS.length)], shoutVoice(w.female, w.tone ?? 0), w.female, w.ch); }
     }
     // pushing at something and getting nowhere: a word about backing up, once a ride
     const pushing = Math.abs(c.throttle) > 0.5 && Math.abs(m.speed) < 0.7 && Math.abs(was) < 0.7 && gap > CAR.half + CAR.clear + 1;

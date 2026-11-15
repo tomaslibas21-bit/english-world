@@ -7,7 +7,8 @@ import { townAsphalt, townGround } from "../src/game/rides/ground";
 import { convertibleGeometry, motorboatGeometry, CAR_SIZE, BOAT_SIZE } from "../src/game/rides/shapes";
 import { RIDES } from "../src/game/world/rides";
 import { RIDE_OWNERS, RIDE_SHOUTS, RIDE_NAMES } from "../src/content/rides";
-import { rideVoice } from "../src/content/voices";
+import { rideVoice, shoutVoice } from "../src/content/voices";
+import { roleFor, VOICES } from "../tools/casting";
 import { PARKED_CARS, TAXI, TRAFFIC_LANES, WORLD, OUTDOOR_NPCS } from "../src/game/world/layout";
 import { SHORE, SEA_LEVEL, SWIM, BAY, DEEP, DECKS, POOLS, FLOORS, sandY, seaBedY, floorY, waterY, bayHold, poolBedY } from "../src/game/water";
 
@@ -233,6 +234,25 @@ describe("this town's convertibles and boat", () => {
       }
     }
     expect(RIDE_NAMES.car.en && RIDE_NAMES.boat.en).toBeTruthy();
+  });
+  it("the owners and the passers-by who call after a car are cast: a voice of the right gender, a manner", () => {
+    const g = (voice: string) => VOICES.find((v) => v.name === voice)?.g;
+    for (const who of Object.values(RIDE_OWNERS)) for (const o of who) {
+      const r = roleFor(rideVoice(o.id, o.female, true));
+      expect(r, o.id).toBeTruthy();
+      expect(g(r!.voice), o.id).toBe(o.female ? "f" : "m");
+      expect(r!.style.length).toBeGreaterThan(10);
+    }
+    const calling = new Set<string>();
+    for (const female of [true, false]) for (const n of [0, 1, 2, 3]) {
+      const id = shoutVoice(female, n, true), r = roleFor(id);
+      expect(r, id).toBeTruthy();
+      expect(g(r!.voice), id).toBe(female ? "f" : "m");
+      calling.add(id);
+    }
+    // (two voices a gender; with the first voices, the passers-by's own)
+    expect(calling.size).toBe(4);
+    expect(shoutVoice(true, 0, false)).not.toMatch(/^g_/);
   });
   it("passers-by have a few things to call after a car, none of them unkind", () => {
     expect(RIDE_SHOUTS.length).toBeGreaterThanOrEqual(5);

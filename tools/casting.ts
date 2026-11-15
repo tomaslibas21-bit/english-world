@@ -36,6 +36,20 @@ export const AMBIENT: Record<"f" | "m", Role> = {
   m: { voice: "Achird", style: "friendly and casual", note: "a passer-by" },
 };
 
+/** The convertibles' owners (g_ride_<id>: src/content/rides.ts RIDE_OWNERS) and the passers-by who call after a car
+ *  that went by too close (g_shout_f0 … g_shout_m1: two voices a gender, a younger and an older one). They are in no
+ *  conversation, so they may share a voice with anyone. */
+export const RIDERS: Record<string, Role> = {
+  ride_park: { voice: "Aoede", style: "sunny and carefree, calling over from her convertible at the curb", note: "Jess, about 27: happy to lend her car" },
+  ride_east: { voice: "Umbriel", style: "laid-back and good-humored, in no hurry at all, calling over from his convertible at the curb", note: "Walt, about 60: all the time in the world" },
+  ride_west1: { voice: "Pulcherrima", style: "dry and teasing, playfully strict about her car", note: "Carol, about 45: it is a classic, and she wants it back" },
+  ride_west2: { voice: "Puck", style: "eager and enthusiastic, proud of the car and glad to share it", note: "Pete, about 30: loves the car more than anyone" },
+  shout_f0: { voice: "Laomedeia", style: "calling out loudly after a car that passed too close: startled, a little indignant, never angry", note: "a passer-by, younger" },
+  shout_f1: { voice: "Gacrux", style: "calling out loudly after a car that passed too close: startled, a little indignant, never angry", note: "a passer-by, older" },
+  shout_m0: { voice: "Achird", style: "calling out loudly after a car that passed too close: startled, a little indignant, never angry", note: "a passer-by, younger" },
+  shout_m1: { voice: "Algenib", style: "calling out loudly after a car that passed too close: startled, a little indignant, never angry", note: "a passer-by, older" },
+};
+
 /** Hand-picked voices where the character calls for it (age, manner); the rest is drawn from the role. */
 const PICKS: Record<string, { voice: string; note: string }> = {
   maggie: { voice: "Gacrux", note: "about 60, a retired drama teacher: warm, theatrical, enjoys a good haggle" },
@@ -111,6 +125,7 @@ export function roleFor(voiceId: string): (Role & { who: string }) | null {
   const id = voiceId.slice(2);
   if (id === "coach_f" || id === "coach_m") return { ...COACH[id.slice(-1) as "f" | "m"], who: id };
   if (id === "amb_f" || id === "amb_m") return { ...AMBIENT[id.slice(-1) as "f" | "m"], who: id };
+  if (RIDERS[id]) return { ...RIDERS[id], who: id };
   return CAST[id] ? { ...CAST[id], who: id } : null;
 }
 
