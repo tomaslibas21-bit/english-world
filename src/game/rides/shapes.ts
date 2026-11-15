@@ -116,6 +116,22 @@ export function motorboatGeometry(stripe: string, hull = "#f4f6f8") {
   return colourMerge(parts);
 }
 
+/** The buoys along the bay's edge, all in one geometry (the water's surface at y = 0): an orange float with a white
+ *  band, a short mast and a ball on top, each turned and tipped a little its own way. */
+export function buoysGeometry(spots: [number, number][]) {
+  const parts: Part[] = [];
+  spots.forEach(([x, z], i) => {
+    const tip = new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(Math.sin(i * 2.3) * 0.09, i * 1.7, Math.cos(i * 3.1) * 0.09)).setPosition(x, 0, z);
+    const add = (g: THREE.BufferGeometry, c: THREE.ColorRepresentation) => parts.push([g.applyMatrix4(tip), c]);
+    add(new THREE.CylinderGeometry(0.5, 0.62, 0.5, 7, 1, true).translate(0, 0.05, 0), "#f0642c");
+    add(new THREE.CylinderGeometry(0.42, 0.5, 0.16, 7, 1, true).translate(0, 0.38, 0), "#f6f3ea");
+    add(new THREE.CylinderGeometry(0.2, 0.42, 0.42, 7).translate(0, 0.67, 0), "#f0642c");
+    add(new THREE.CylinderGeometry(0.035, 0.035, 0.6, 4, 1, true).translate(0, 1.15, 0), "#dfe4e8");
+    add(new THREE.OctahedronGeometry(0.14).translate(0, 1.5, 0), "#f6f3ea");
+  });
+  return colourMerge(parts);
+}
+
 /** Music over a parked convertible: two notes that drift up and fade (drawn on a small canvas once). */
 export function noteTexture() {
   const c = document.createElement("canvas");

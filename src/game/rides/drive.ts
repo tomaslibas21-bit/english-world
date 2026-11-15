@@ -82,9 +82,11 @@ export class Motion {
   /** A car: how long it has held its course on the asphalt (s), and its top speed just now. */
   hold = 0;
   top = 0;
+  /** A boat coming round at the bay's edge: which way (it keeps to it until it is clear; 0: not turning). */
+  veer = 0;
   constructor(readonly spec: typeof CAR | typeof BOAT, readonly kind: "car" | "boat") {}
 
-  set(x: number, z: number, heading: number) { this.x = x; this.z = z; this.heading = heading; this.speed = 0; this.steer = 0; this.bump = 0; this.hold = 0; }
+  set(x: number, z: number, heading: number) { this.x = x; this.z = z; this.heading = heading; this.speed = 0; this.steer = 0; this.bump = 0; this.hold = 0; this.veer = 0; }
 
   get fx() { return Math.sin(this.heading); }
   get fz() { return Math.cos(this.heading); }
@@ -123,7 +125,9 @@ export class Motion {
       // (to the right is a smaller heading: the game's headings turn towards +X, which is on one's left facing +Z)
       this.heading -= (v / CAR.base) * Math.tan(this.steer * lock) * dt;
     } else {
-      const k = Math.min(1, Math.abs(v) / 3);
+      // (an outboard turns the boat by its thrust: under power it comes round even while it is barely moving, as when
+      // its bow lies on the shallows)
+      const k = Math.min(1, Math.max(Math.abs(v) / 3, Math.abs(t) * 0.5));
       this.heading -= this.steer * (BOAT.turnIdle + (BOAT.turn - BOAT.turnIdle) * k) * (v < -0.1 ? -1 : 1) * dt;
     }
     this.heading = wrap(this.heading);
@@ -161,6 +165,37 @@ export class Motion {
 
 function toward(v: number, to: number, by: number) { return v > to ? Math.max(to, v - by) : Math.min(to, v + by); }
 function wrap(a: number) { return Math.atan2(Math.sin(a), Math.cos(a)); }
+
+/** A boat and the bay's edge (the line of buoys): how far before it the bow starts to come round (m), how far inside
+ *  the edge the boat's middle stays (its bow reaches further), and how far before the shallows it eases off. */
+export const BAY_EDGE = { band: 18, inset: 2.8, fade: 6, shore: 14 };
+
+/** A boat making for the bay's edge comes round by itself to run along it: how fast its heading turns for that
+ *  (rad/s; 0 away from the edges, or when it is not heading out). `left`: metres from its middle to each edge it could
+ *  cross, with the way out across it. The nearer way round is taken; dead on, the helm's, else to starboard. */
+export function bayTurn(m: Motion, edges: { left: number; nx: number; nz: number }[]): number {
+  const dir = Math.sign(m.speed) || 1;
+  let turn = 0, most = 0, way = 0;
+  for (const e of edges) {
+    const out = (m.fx * e.nx + m.fz * e.nz) * dir;
+    if (e.left >= BAY_EDGE.band || out <= 0.04) continue;
+    const k = 1 - Math.max(0, e.left) / BAY_EDGE.band, cross = (m.fx * e.nz - m.fz * e.nx) * dir;
+    // (to the right is a smaller heading; the turn takes the course away from the way out)
+    const side = Math.abs(cross) > 0.06 ? Math.sign(cross) : m.steer ? -Math.sign(m.steer) * dir : -1;
+    const w = k * k * (0.35 + out) * 2.4;
+    turn += w;
+    // (in a corner of the bay both edges turn it the same way round, the nearer one's: against each other they
+    // would hold it there)
+    if (w > most) { most = w; way = side; }
+  }
+  // (the way round it has begun, it keeps: at a corner the two edges would else take turns and hold it there)
+  m.veer = turn ? m.veer || way : 0;
+  return m.veer * turn * Math.min(1, 0.3 + Math.abs(m.speed) / 3);
+}
+
+/** A boat running in to the beach eases off as the water gets thin: the most it makes towards the shore with `left`
+ *  m of water still ahead of its bow (m/s). It comes to rest on the shallows without a bump. */
+export const shoreSpeed = (left: number) => 0.5 + Math.max(0, left) * (BOAT.max / BAY_EDGE.shore);
 
 /** A point pushed out of a box lying along `heading` at (cx, cz), `hl` long and `hw` wide (halves), keeping `r` clear
  *  of it. Returns true if it was moved. */
