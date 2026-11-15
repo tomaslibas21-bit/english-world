@@ -104,8 +104,8 @@ sends a flagged clip back like any other):
    second) to choose what the recognizer hears first.
 
 **How much it finds.** Measured on the 873 takes the first run rejected (`voicing/rejected/`, kept by `redo`): 397
-of them run much longer than the take that replaced them (0.6 s and 35 % or more); the check flags 364 of those. The
-other 33 were read one by one and cut on trial: slow takes with long pauses, a filler ("Uh"), a wrong word or a
+of them run much longer than the take that replaced them (0.6 s and 35 % or more); the check flags 363 of those. The
+other 33 (34 with the final rules) were read one by one and cut on trial: slow takes with long pauses, a filler ("Uh"), a wrong word or a
 Lithuanian place name, and no repeat in either hearing, but for one "See you!" that may hide a false start. The check
 also flags 55 rejected takes that are not much longer (a word said twice quickly).
 
@@ -115,6 +115,33 @@ pause under 180 ms counts once, unless the whole clip's transcript doubles it to
 number: "98. | 98 a gallon" is the line's "ninety-eight ninety-eight", "one hundred | one forty-nine" its "one
 hundred one forty-nine"; a number counts as heard again only when two or more of its digits come twice (3547 as
 353547). Whisper, asked for a second opinion on the same pieces, writes "96 | X-25" there.
+
+A third trap is the recognizer's own: Parakeet writes a breath or a noise as a word ("Yeah. | Yeah.", in a Spanish
+clip "Ha ha"), so a repeat counts only when it repeats words of the line. And Spanish sounds more like itself than
+English: its stripe threshold is 560 moving ms.
+
+**What the pass of 15 Nov 2026 found and repaired.**
+
+| | Maple Harbor | Puerto Colibrí |
+|---|---|---|
+| Clips screened by sound and length | 39,325 | 141,331 |
+| Suspects heard piece by piece (long for the line, or striped) | 4,676 with a line (+ 1,490 without) | 5,888 |
+| A piece of the line heard again | 305 | 165 |
+| Repaired by a cut | 224 | 203 |
+| Repaired by a new take | 162 | 141 |
+
+The repairs are more than the flags of the last row but one because some came from other evidence: the old
+whole-clip Whisper transcripts judged with the new word rules (24 Maple Harbor lines, stutters such as "P-P-Pretty
+good"; 79 in Puerto Colibrí, "No, no hay problema"), cuts that held on clips no recognizer had flagged (a false start
+too short to be written), about 40 Maple Harbor clips flagged by the split-word trap before it was understood (their
+new takes pass the check), and 12 Puerto Colibrí clips that said other words altogether and had been kept after four
+tries (one "¡Ah, Quebec!" was a 24-second made-up monologue). Gemini: 552 single requests, $0.40.
+
+Not covered: the recognizer heard the suspects, not every clip, so a quick one-word repeat in a clip of usual length
+and without a stripe can still be there (the old Whisper transcripts catch those it wrote down). A full pass is
+`repeats` over the whole clip folder: about 2 clips a second on this Mac, so some 5 hours for Maple Harbor and a day
+for Puerto Colibrí. And 5,410 Maple Harbor clips (PR #14 of 7 Nov, slot-filled variants) have no line in the
+enumeration: by sound alone none of the 1,490 heard has a restart a cut can mend.
 
 **Repairs** (`npx tsx tools/voice-batch.ts …`; the Spanish tool has the same commands):
 

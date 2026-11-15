@@ -92,6 +92,15 @@ describe("a word split by a stop's closure", () => {
   });
 });
 
+describe("noises a recognizer writes as words", () => {
+  it("are not the line said twice", () => {
+    const said = "Thanks! Here's your change.";
+    expect(judgePieces(said, heard("Thanks. Here's your change.", ["Thanks.", "Yeah.", "Yeah.", "Here's your change."]), asHeard).again).toBeUndefined();
+    expect(heardAgain(words(said), words("Uh uh thanks here's your change"))).toBeUndefined();
+    expect(heardAgain(words(said), words("Thanks thanks here's your change"))).toBe("thanks thanks");
+  });
+});
+
 describe("words lost by a cut", () => {
   it("counts the line's words that are no longer heard", () => {
     expect(wordsLost("I can come down to eight thousand. It hurts, but okay.", "I can come down to eight It hurts, but okay.", asHeard)).toBe(1);
