@@ -1959,6 +1959,8 @@ function addTownMx(M: Merger, col: Colliders) {
   if (THEME.terrace.length) MX.terrace(mx, col, THEME.terrace);
   // (graphics round 5) the centro's sidewalks: bins, bolardos, a shoeshine stand (the cobbles: withGrain)
   if (THEME.adoquin) MX.sidewalkProps(mxFlat, col, THEME.adoquin);
+  // the watersports palapa on the sand (the surf school: x01-surf, src/game/surf/)
+  if (THEME.surfShack) MX.surfShack(mx, mxRoofs, col, a, THEME.surfShack);
   if (THEME.beach) {
     MX.towels(mxFlat, THEME.beach.towels);
     if (THEME.beach.cocos) MX.cocoCart(mx, col, a, ...THEME.beach.cocos);

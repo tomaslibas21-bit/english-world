@@ -46,6 +46,8 @@ export const LOCATIONS: Record<string, LocationDef> = Object.fromEntries([
   L("sproutly", "Brotecito", "The startup “Brotecito”", "harbor", "interior", "🌱"),
   // under Cenote Ka'an, through the cave's mouth at its far side (src/game/cave): the aluxes' conversations (x02, x03)
   L("gruta", "Gruta de los Aluxes", "The aluxes' grotto", "harbor", "interior", "✨"),
+  // the watersports palapa on the beach west of El Muelle (x01-surf; the surf game starts here)
+  L("surf-palapa", "Escuela de Surf La Ola", "Surf school and gear rental", "harbor", "outdoor", "🏄"),
   L("phone", "Llamada", "Phone call", "phone", "phone", "📱"),
 ].map((l) => [l.id, l]));
 
@@ -78,6 +80,7 @@ export const NAME_MEANING: Record<string, string> = {
   gym: "Hummingbird gym",
   "cedar-lane": "street of the cedars",
   sproutly: "little sprout",
+  "surf-palapa": "The Wave surf school",
 };
 
 /** A place in English, with what its Spanish name means: "Café “La Ceiba” – literally “the ceiba (…)”". */

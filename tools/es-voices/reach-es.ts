@@ -97,7 +97,35 @@ const RULES: Record<string, (b: Binding, sit: SituationDef) => boolean> = {
   "s80-support-call:tech_offer": (b, sit) => s80Windows(sit)?.has(`${sayOf(b.weekday)}|${sayOf(b.win)}`) ?? true,
   "s80-support-call:tech_offer_alt": (b, sit) => s80Windows(sit)?.has(`${sayOf(b.weekday)}|${sayOf(b.win)}`) ?? true,
   "s80-support-call:tech_booked": (b, sit) => s80Windows(sit)?.has(`${sayOf(b.weekday)}|${sayOf(b.win)}`) ?? true,
+  // x01-surf.ts:98–99 rentSub is the gear's hourly PRICE × the hours (HOURS: 1–3), rentTotal that plus the DEPOSIT when
+  // one was left; :1231 total_one / total_two / total_three say rentSub for 1, 2, 3 hours, :1232 total_dep rentTotal with
+  // the deposit (pay_again and short, :1239, :1269, keep the whole list: rentTotal either way, or the LESSON)
+  "x01-surf:total_one": (b, sit) => x01Rent(sit, [1])?.has(b.total as number) ?? true,
+  "x01-surf:total_two": (b, sit) => x01Rent(sit, [2])?.has(b.total as number) ?? true,
+  "x01-surf:total_three": (b, sit) => x01Rent(sit, [3])?.has(b.total as number) ?? true,
+  "x01-surf:total_dep": (b, sit) => x01Rent(sit, [1, 2, 3], true)?.has(b.total as number) ?? true,
+  // :970 two_double only for the double kayak (chooseGear(c, "kayak2", true) → :1212 PRICE.kayak2)
+  "x01-surf:two_double": (b, sit) => { const p = x01Consts(sit)?.PRICE as Record<string, number> | undefined; return p ? b.price === p.kayak2 : true; },
+  // :780, :787, :1014 price_list: the board's, the paddleboard's and the snorkel gear's own prices
+  "x01-surf:price_list": (b, sit) => {
+    const p = x01Consts(sit)?.PRICE as Record<string, number> | undefined;
+    return p ? b.price === p.board && b.amount === p.paddle && b.fare === p.snorkel : true;
+  },
 };
+/** x01-surf.ts's PRICE, DEPOSIT and HOURS as written (null when they can't be read: then every value stays). */
+function x01Consts(sit: SituationDef): Record<string, unknown> | null {
+  const f = fileOf(sit.id);
+  if (!f) return null;
+  const o = { PRICE: literal(f.consts.get("PRICE")), DEPOSIT: literal(f.consts.get("DEPOSIT")), HOURS: literal(f.consts.get("HOURS")) };
+  return o.PRICE && typeof o.DEPOSIT === "number" && Array.isArray(o.HOURS) ? o : null;
+}
+/** The rental's totals for those hours: each gear's PRICE × the hours, plus the DEPOSIT with `deposit`. */
+function x01Rent(sit: SituationDef, hours: number[], deposit = false): Set<number> | null {
+  const c = x01Consts(sit);
+  if (!c) return null;
+  const prices = Object.values(c.PRICE as Record<string, number>);
+  return new Set(prices.flatMap((p) => hours.map((h) => p * h + (deposit ? (c.DEPOSIT as number) : 0))));
+}
 /** s76's pairs of openings, as the slot values say them (null when OFFERS can't be read: then every pair stays). */
 const s76Cache = new Map<string, Set<string> | null>();
 function s76Pairs(sit: SituationDef): Set<string> | null {
@@ -139,6 +167,12 @@ function maxOneItem(sit: SituationDef): number {
   return price + milk + 1000 + 1500;
 }
 
+/** Lines a conversation holds only to show them, never to play them: no clip. x01-surf's surf game
+ *  (src/editions/es/content/surf-lines.ts, src/game/surf/): sg_a_… are the learner's own answers, sg_b_… the boards'
+ *  names on its buttons; Nayeli's commands (every other sg_ line) are played by key and are voiced. */
+export const UNSPOKEN: Record<string, RegExp> = { "x01-surf": /^sg_[ab]_/ };
+export const unspoken = (sit: string, lineId: string) => !!UNSPOKEN[sit]?.test(lineId);
+
 /** Item lists an item line is said with, read in its code, for a line the runs hear with fewer (the line list adds the
  *  lists heard). */
 export const LISTS: Record<string, string[]> = {
@@ -150,6 +184,11 @@ export const LISTS: Record<string, string[]> = {
  *  really have, read in the conversation's code. A line like that with no entry here is voiced only as the runs, sims
  *  and probes say it, and lines-es.ts warns about it. */
 export const BINDINGS: Record<string, (sit: SituationDef) => Binding[]> = {
+  // x01-surf.ts:1212 chooseGear says price_hour with the gear and its own hourly PRICE ({ X: g, price: PRICE[g] })
+  "x01-surf:price_hour": (sit) => {
+    const p = x01Consts(sit)?.PRICE as Record<string, number> | undefined;
+    return p ? Object.entries(p).map(([X, price]) => ({ X, price })) : [];
+  },
   // s66-taxi.ts:90–91 fareOf is c.s.price ?? the place's own fare, and every fare_is call (:502, :552, :578, :590, :621)
   // comes before any lower price (c.s.price unset, or reset with the new place): a place and its own fare. The airport
   // (here) is never a ride.

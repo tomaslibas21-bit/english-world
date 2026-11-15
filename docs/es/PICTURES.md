@@ -632,3 +632,27 @@ files, same checks):
   3×): no visible difference; measured, PSNR against the original 36.5 → 34.9 dB on average, and flat areas keep
   77% of the original's grain against 82%. 1600 px wide would save more (scene-walk accepts 1600–2048).
 - To compare the spending with OpenAI's own count: the dashboard's Usage page, against `python3 tools/es-pictures/ledger.py`.
+
+## 10. x01-surf: pictures wanted (15 Nov 2026)
+
+The 51st conversation (La Ola, the surf school: docs/es/TOWN.md "La Ola") has no pictures: it plays in 3D, and the
+Piešinys | 3D switch does not show for it. When pictures are made for it (the same style, the same pipeline):
+
+- **Nayeli's portrait** for the cast references (`ref/cast/surf.webp`): about 28, from Oaxaca's coast, a long dark
+  braid, a coral rash guard, teal board shorts, barefoot; warm, sporty. Her 3D look (`npcs.ts` LOOK `surf`) was made
+  without one and should then follow it.
+- **The place reference**: the palapa on the sand with the sea behind, as the 3D town has it: thatch, the painted
+  counter "LA OLA", the board rack, two paddleboards, the kayak, masks and fins, the chalkboard.
+- **Scenes** (the conversation's steps):
+  1. The palapa from the learner's side of the counter: Nayeli behind it, the boards, the chalkboard "Olas: 1 m ·
+     Marea baja · Viento suave".
+  2. Nayeli handing over a board and its leash, El Muelle's pier behind.
+  3. The gear on the counter: a mask, a snorkel, fins, a life jacket; the kayak and the paddleboards beyond.
+  4. The learner lying on a soft board on the sand, Nayeli pointing at its nose, tail and fins.
+  5. The pop-up on the sand: hands by the chest, feet side-on, knees bent.
+  6. A kayak and a paddleboard by the buoys, the lighthouse on its rocks in the distance (the reef's way).
+  7. Nayeli's Puerto Escondido: a big Pacific wave at Zicatela, surfers on it.
+  8. The card terminal with no signal; the learner back from the ATM with pesos (the twist).
+  9. "¿Probamos una ola?": the two of them at the water's edge with their boards.
+- **Phrase-card pictures** for the surf lesson's commands (paddling, ducking under a wave, the pop-up, leaning, knees
+  bent, a wipeout): the course's card art, after the export.

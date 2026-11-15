@@ -13,7 +13,7 @@
 import * as THREE from "three";
 import { angleDiff, smoothstep, springStep } from "./movement";
 
-export type CamMode = "follow" | "interior" | "talk";
+export type CamMode = "follow" | "interior" | "talk" | "stage";
 
 /** The follow camera's lean (radians above level, from the player's chest) and distance (m) by default (before 5 Nov
  *  2026: 0.42 from a point 1.3 m up, 10 m). */
@@ -45,6 +45,9 @@ export class CameraRig {
   private manualT = 0;
   interiorBounds = { w: 16, d: 12 };
   talk: { pos: THREE.Vector3; look: THREE.Vector3 } | null = null;
+  /** "stage": the camera goes where it is put, eased (the surf lesson: src/game/surf/): where it stands, what it looks
+   *  at, and how fast it gets there (1/s). */
+  stage: { pos: THREE.Vector3; look: THREE.Vector3; rate: number } | null = null;
   /** What the follow camera keeps clear of (Game: the town's OcclusionField; nothing indoors): how far along a line
    *  one gets before something solid (0–1), whether a spot is inside something, whether it is over something one can't
    *  walk into (a building, a gazebo, a stall, a car: the camera stands over open ground). */
@@ -115,6 +118,9 @@ export class CameraRig {
     this.blendT = 0;
     this.lastMode = this.mode;
   }
+
+  /** In "stage" mode: there at once (the first frame, after a fade). */
+  stageSnap() { if (this.stage) { this.curPos.copy(this.stage.pos); this.curLook.copy(this.stage.look); } }
 
   /** Coming through a door, after snap(): outdoors the camera starts up over the player's head (as far as is clear),
    *  looking out where they face, and settles down and back behind them as they walk out; indoors it starts a little
@@ -274,6 +280,7 @@ export class CameraRig {
    *  show the room. */
   fovFor(w: number, h: number, running: boolean) {
     if (this.mode === "talk") return 50;
+    if (this.mode === "stage") return w / Math.max(1, h) < 0.87 ? 62 : 55;
     const aspect = w / Math.max(1, h);
     if (this.mode === "interior") return aspect < 0.87 ? THREE.MathUtils.clamp(THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(15)) / aspect)), 50, 66) : 50;
     if (aspect < 0.87) return running ? 54 : 50;
@@ -363,6 +370,10 @@ export class CameraRig {
         this.curPos.copy(pos);
         this.curLook.copy(this.look);
       }
+    } else if (this.mode === "stage" && this.stage) {
+      const k = 1 - Math.exp(-this.stage.rate * dt);
+      this.curPos.lerp(this.stage.pos, k);
+      this.curLook.lerp(this.stage.look, k);
     } else {
       const k = this.mode === "talk" ? 3.5 : this.blendT > 0 ? 4 : 7;
       const pos = this.desiredPos(), look = this.desiredLook();

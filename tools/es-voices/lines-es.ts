@@ -37,7 +37,8 @@ import { EDITION } from "../../src/edition";
 import type { EntityDef, SituationDef } from "../../src/content/types";
 import { hintBinding } from "../../src/convo/target";
 import { lookFor, observe, usesPartner, type Heard, type ObserveStats } from "./runs-es";
-import { BINDINGS, LISTS, codeSpeakers, idOf, reachFilter, reachOf } from "./reach-es";
+import { BINDINGS, LISTS, codeSpeakers, idOf, reachFilter, reachOf, unspoken } from "./reach-es";
+import { sceneSit } from "./casting-es";
 
 /** The learner the tools play: lines that address them by name are voiced without the name (as the game does). */
 const NAMES = [EDITION.simPlayer.name, EDITION.simPlayer.surname];
@@ -126,11 +127,14 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
       const own = n.id === h.line.npc;
       // the sentence the conversation made, and (for the other date) the same line, vars and learner in their voice
       const opts = { look, addressee: h.gender, speaker: n.gender ?? "f", formal: !addressInformal(n) };
-      if (own) add(npcVoice(n), n.speed ?? 1, h.line.sentence, where, sit.id, "heard");
-      else if (src) { try { add(npcVoice(n), n.speed ?? 1, compose(src, h.line.vars, opts), where, sit.id, "heard"); } catch { /* skip */ } }
+      // a part of the conversation with a setting of its own (casting-es.ts LINE_SCENES: x01-surf's surf commands)
+      const at = sceneSit(sit.id, h.line.lineId);
+      if (unspoken(sit.id, h.line.lineId)) return;
+      if (own) add(npcVoice(n), n.speed ?? 1, h.line.sentence, where, at, "heard");
+      else if (src) { try { add(npcVoice(n), n.speed ?? 1, compose(src, h.line.vars, opts), where, at, "heard"); } catch { /* skip */ } }
       if (src) for (const v of ["neutral", "spain"] as const) {
         setVariety(v);
-        try { add(npcVoice(n), n.speed ?? 1, compose(src, h.line.vars, { ...opts, formal: !addressInformal(n) }), where, sit.id, "heard"); }
+        try { add(npcVoice(n), n.speed ?? 1, compose(src, h.line.vars, { ...opts, formal: !addressInformal(n) }), where, at, "heard"); }
         catch { /* the twin doesn't take these vars */ }
         finally { setVariety("default"); }
       }
@@ -175,6 +179,7 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
     // 1. every line variant, with what the runs showed: its speakers, item lists, quantities and values
     const plan: { lid: string; i: number; binds: { b: Record<string, unknown>; why: string }[]; speakers: NpcDef[]; who: string; tag: Map<string, string> }[] = [];
     for (const [lid, variants] of Object.entries(sit.lines)) {
+      if (unspoken(sit.id, lid)) continue; // shown, never played (reach-es.ts UNSPOKEN)
       const s = said.get(lid);
       // everyone heard saying it, and everyone the code makes say it (reach-es.ts codeSpeakers); else a guess
       const known = new Set([...(s?.by ?? []), ...(code.get(lid) ?? [])]);
@@ -249,7 +254,7 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
       for (const { lid, i, binds, speakers, who, tag } of plan) {
         const src = sit.lines[lid][i];
         for (const { b, why } of binds) for (const n of speakers) for (const g of GENDERS) {
-          try { add(npcVoice(n), n.speed ?? 1, compose(src, b, { look, addressee: g, speaker: n.gender, formal: !addressInformal(n) }), `${sit.id}:${lid}[${i}]`, sit.id, [why, who, tag.get(n.id)].filter(Boolean).join(" ")); }
+          try { add(npcVoice(n), n.speed ?? 1, compose(src, b, { look, addressee: g, speaker: n.gender, formal: !addressInformal(n) }), `${sit.id}:${lid}[${i}]`, sceneSit(sit.id, lid), [why, who, tag.get(n.id)].filter(Boolean).join(" ")); }
           catch { /* this entity doesn't fit this line */ }
         }
       }

@@ -1194,6 +1194,33 @@ Puerto Colibrí has it. The town's plan is `src/editions/es/game/world/rides.ts`
   only spoken of (s69); a watersports palapa with a surf or paddle game is planned after this round; a conversation
   at the cenote's taquilla (the entrance, a life vest) would suit it.
 
+## La Ola, the surf school (15 Nov 2026)
+
+A new place and the 51st conversation, the first with no song of its own yet: **x01-surf**, "¿Probamos una ola?"
+(gear rental and a surf lesson), and the game's first mini-game, the surf lesson (docs/SURF.md).
+
+- **The palapa** (theme `surfShack`; `mexican.ts` `surfShack`): on the sand between the malecón's steps at x −48 and
+  El Muelle's terrace, its counter to the west (whoever comes down the steps), the sea on its right. A thatched hip
+  roof on four posts over a plank floor (no leaf fringe over the counter: it hung in front of the faces of the two who
+  talk across it); its name "LA OLA · Renta · Escuela de surf" on the counter's front and on boards on the roof's
+  edge towards the beach and towards the malecón; six surfboards standing in a rack along its seaward side, two
+  paddleboards with their paddles against the back, life jackets on the back posts, masks, snorkels and fins on the
+  counter and on pegs, a kayak on the sand by the water. The day's report on a chalkboard beside the counter ("HOY ·
+  Olas: 1 m · Marea baja · Viento suave") and the prices on a board behind it ("RENTA POR HORA · Tabla de surf $200 ·
+  Paddle $250 · Kayak $250 · Snorkel $150 · Clase de surf $600": the conversation's prices), both through the sign
+  atlas.
+- **Nayeli** (`surf`, on Mónica's base; no portrait yet): the instructor, from Puerto Escondido on the Pacific. Behind
+  the counter at (−45.45, −68.15), facing west; the learner stands on the sand at (−47.55, −68.15). Tú in all three
+  Spanishes. A coral rash guard, board shorts, a braid.
+- **The lesson** starts at her boards' seaward side (the prompt "Surf lesson", at (−44.6, −70.85)) or by the
+  conversation's yes to "¿Probamos una ola?". Its lane is off the beach west of El Muelle's pier (its middle at x
+  −60, between the palapas at −64 and −55): the two of them and three boards on the sand, then out to a line-up 16 m
+  (beginners) or 24 m out. The lancha that lay at anchor there lies further west now (theme `lanchas.afloat`).
+- **What the conversation says about the town**: the reef is out toward the lighthouse at the beach's east end; the
+  nearest ATM is the bank on avenida Juárez, across from the zócalo; the school opens at 8, rents until 5, closes at 6.
+- **Left for later**: scene pictures and Nayeli's portrait (docs/es/PICTURES.md "x01-surf"), its song and its story in
+  the courses, a surf school for Maple Harbor.
+
 ## The tasks (in order)
 
 Each task is one area; each ends with before/after screenshots at phone size and the draw-call numbers.

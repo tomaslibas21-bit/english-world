@@ -33,6 +33,9 @@ export interface Progress {
   play?: import("./playStats").PlayStats;
   /** Puerto Colibrí's grotto (src/game/cave): the glyph stones lit, the aluxes who have let the learner pass. */
   cave?: import("../game/cave/plan").CaveSave;
+  /** The surf lesson (game/surf): waves ridden and seconds on them, commands followed of those asked, lessons taken,
+   *  and how often each of the instructor's lines has been heard (their help fades with it). */
+  surf?: { waves: number; seconds: number; followed: number; asked: number; lessons: number; heard: Record<string, number> };
 }
 
 const KEY = `${EDITION.storage}-progress-v1`;

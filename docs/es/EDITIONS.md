@@ -32,6 +32,7 @@ never the engine:
 | `src/ui/lt.ts` | `src/editions/es/ui/lt.ts` | counts and labels; the words the asterisk after a line compares (natTip.ts: the glosses and the natural sentence are English here) |
 | `src/ui/scene-files.ts` | `src/editions/es/ui/scene-files.ts` | the illustrated scenes (none yet) |
 | `src/game/world/theme.ts` | `src/editions/es/game/world/theme.ts` | the town's look (docs/es/TOWN.md) |
+| `src/game/world/surf.ts`, `src/content/surf.ts` | same names | where one surfs and whose lines the lesson speaks (docs/SURF.md): none in Maple Harbor |
 
 The overlay is applied by `tools/edition-overlay.mjs`: the Vite plugin (`vite.config.ts`: dev server, build and the
 tests) and a Node hook for the tools (`tools/edition-hook.mjs`). An edition file that imports its own base file gets

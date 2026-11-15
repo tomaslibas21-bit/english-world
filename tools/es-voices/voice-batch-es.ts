@@ -71,7 +71,7 @@ const PRICE = {
 /** The owner's stop line for all three accent sets together, samples and redos included (4 Nov 2026: $38; 11 Nov,
  *  with Spain's set and the owner's top-up: $48; 12 Nov, to finish Spain's set, the redos and the missing clips: $54). All bulk voicing goes through the Batch API; single requests only for
  *  a few sample lines. */
-const CAP = Number(process.env.PC_CAP ?? 54);
+const CAP = Number(process.env.PC_CAP ?? 60); // (15 Nov 2026: the owner raised it from $54 to $60 for x01-surf's voices)
 const MAX_TRIES = 4;
 
 const args = process.argv.slice(2);

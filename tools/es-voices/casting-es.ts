@@ -85,6 +85,9 @@ const MEXICO: Record<string, string> = {
   mr_grant: "es-419-concierge-8",
   // the aluxes of the grotto (x02, x03): the youngest bright voices
   alux_kin: "es-419-commercial-12", alux_nikte: "es-419-csagent-7",
+  // x01-surf (15 Nov 2026): bright, breezy, youthful at 31; not a woman's voice of the harbor (El Muelle: Camila
+  // assistant-1, Fátima assistant-1; the passer-by assistant-1) nor of Mónica, the trainer she is built on (commercial-9)
+  surf: "es-419-csagent-7",
 };
 /** The catalog's Castilian voices (es-ES, `voices --lang=es-ES`, 12 Nov 2026). Spain's set (esp_) is voiced with these:
  *  the sample sp1 gave the Mexican casting's es-419 voices a Castilian direction, and Gemini 3.1 Pro heard 39 of 80
@@ -131,6 +134,9 @@ const SPAIN: Record<string, string> = {
   greg: "es-es-advisor-9", whitaker: "es-es-assistant-4", russo: "es-es-concierge-3", emily: "es-es-tutor-12", tyler: "es-es-training-9",
   mr_grant: "es-es-assistant-3",
   alux_kin: "es-es-training-9", alux_nikte: "es-es-concierge-3",
+  // x01-surf: an influencer's voice at 30; not the harbor's women (Camila csagent-5, Fátima and the passer-by
+  // concierge-3) nor Mónica's (techagent-5)
+  surf: "es-es-commercial-3",
 };
 /** Which casting: Gemini's 30 prebuilt voices ("prebuilt") or the catalog's Mexican voices ("mexico"). */
 export type Casting = "prebuilt" | "mexico";
@@ -246,6 +252,8 @@ export const CAST: Record<string, Role> = {
   // magical, never scary
   alux_kin: { voice: "Puck", age: "ageless, sounds like a boy", manner: "a small forest spirit, playful and mischievous, a bright boyish tenor with a twinkle in it, gentle and never scary", pace: "lively" },
   alux_nikte: { voice: "Leda", age: "ageless, sounds like a young girl", manner: "a small forest spirit, light and sing-song, gentle and bright, teasing with her riddles, a little magical", pace: "easy" },
+  // the beach (x01-surf and the surf game's commands): a surf instructor from Puerto Escondido, about 28
+  surf: { voice: "Aoede", age: "about 28", manner: "warm, sporty and lively, a surf instructor who loves the sea", pace: "lively" },
 };
 
 /** A conversation's setting, for everyone in it or only for some (`who`). `fx`: the sound of a phone line or a
@@ -281,6 +289,18 @@ export const SCENES: Record<string, Scene> = {
   // the aluxes' hidden grotto (bonus conversations)
   "x02-alux-kin": { setting: "speaking softly, close by, in a quiet hidden grotto" },
   "x03-alux-nikte": { setting: "speaking softly, close by, in a quiet hidden grotto" },
+  // x01-surf: relaxed at the palapa; the surf game's commands (the sg_ lines, LINE_SCENES) called out over the water
+  "x01-surf": { setting: "relaxed and friendly, chatting at her surf school's palapa on the beach" },
+  "x01-surf:sg_": { setting: "calling out over the waves to a learner on a surfboard: energetic, clear and encouraging, every command short and easy to hear" },
+};
+
+/** Parts of a conversation with a setting of their own: a line whose id starts with one of these prefixes is listed
+ *  (lines-es.ts) as said in "<conversation>:<prefix>" instead of the conversation, and takes that SCENES entry. A
+ *  text said in both parts gets neither setting (styleFor: the settings must agree). */
+export const LINE_SCENES: Record<string, string[]> = { "x01-surf": ["sg_"] };
+export const sceneSit = (sit: string, lineId: string): string => {
+  const p = LINE_SCENES[sit]?.find((x) => lineId.startsWith(x));
+  return p ? `${sit}:${p}` : sit;
 };
 
 /** The voice ids (src/editions/es/content/voices.ts) → who they are, and in which accent. */

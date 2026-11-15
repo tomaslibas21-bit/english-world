@@ -7,6 +7,7 @@
 // Everything solid is pushed as [geometry, colour] into one list that town.ts merges into a single vertex-coloured
 // mesh, and every new sign is a cell of one texture (SignAtlas): the whole restyle costs a few draw calls.
 import * as THREE from "three";
+import { surfboardParts } from "../surf/shapes";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { rand, roundRect, type Colliders } from "./util";
 import { POOLS, FLOORS } from "../water";
@@ -2012,5 +2013,165 @@ export function meadow(parts: Part[], x0: number, x1: number, z0: number, z1: nu
     }
     for (const s of [-1, 1]) parts.push([new THREE.CylinderGeometry(0.12, 0.22, 3.2, 6, 1, true).rotateZ(s * 0.8).translate(x + s * 1.1, 10.6, z), "#9a958a"]);
     parts.push([flamboyanCrown().scale(2.1, 1.5, 2.1).translate(x, 6.2, z), "#3f7d3a"]);
+  }
+}
+
+// ------------------------------------------------------------------------------------------------ the surf palapa
+
+/** A chalkboard: dark slate in a wooden frame, a title and a few lines in chalk, read from the walkway. */
+const drawChalk = (title: string, lines: string[]): Draw => (x, w, h) => {
+  x.fillStyle = "#8a6a4a"; roundRect(x, 0, 0, w, h, 10); x.fill();
+  const b = Math.min(w, h) * 0.05;
+  x.fillStyle = "#26302c"; x.fillRect(b, b, w - 2 * b, h - 2 * b);
+  // (chalk dust: a few lighter smears)
+  x.fillStyle = "rgba(255,255,255,0.045)";
+  for (let i = 0; i < 6; i++) x.fillRect(b + ((i * 137) % 60) / 100 * w, b + ((i * 71) % 80) / 100 * h, w * 0.3, h * 0.035);
+  x.textAlign = "center"; x.textBaseline = "middle";
+  const rows = lines.length + (title ? 1.25 : 0), rowH = (h - 2 * b - h * 0.06) / rows;
+  let y = b + h * 0.03;
+  if (title) {
+    const s = fit(x, title, rowH * 0.86, w - 2 * b - 16, FONT, "900");
+    x.font = `900 ${s}px ${FONT}`; x.fillStyle = "#ffd166"; x.fillText(title, w / 2, y + rowH * 0.62);
+    x.fillStyle = "#ffd166"; x.fillRect(w * 0.2, y + rowH * 1.16, w * 0.6, Math.max(2, h * 0.008));
+    y += rowH * 1.25;
+  }
+  const size = Math.min(...lines.map((l) => fit(x, l, rowH * 0.74, w - 2 * b - 18, FONT, "800")));
+  lines.forEach((l, i) => {
+    x.font = `800 ${size}px ${FONT}`; x.fillStyle = i % 2 ? "#f4f1ea" : "#fdfcf7";
+    x.fillText(l, w / 2, y + rowH * (i + 0.52));
+  });
+};
+
+/** What the surf school's palapa needs to know (theme.ts `surfShack`): where it stands and which way its counter
+ *  faces (heading: 0 to +z), its name and the line under it, the report on the chalkboard, the prices on the board
+ *  behind the counter, and where the kayak lies on the sand (x, z, heading). */
+export interface SurfShack {
+  x: number; z: number; rot: number;
+  name: string; sub: string;
+  report: [title: string, ...lines: string[]];
+  prices: [title: string, ...lines: string[]];
+  kayak: [number, number, number];
+}
+
+/** The watersports palapa on the beach (theme.ts `surfShack`): a thatched roof on four posts over a plank floor, a
+ *  painted counter with its name, the day's surf report on a chalkboard beside it and the prices on a board behind
+ *  it, surfboards standing in a rack along its seaward side, two paddleboards with their paddles against the back,
+ *  masks, snorkels and fins on the counter and on pegs, and a kayak on the sand. Its front is local +z. */
+export function surfShack(parts: Part[], roofs: Part[], col: Colliders, atlas: SignAtlas, s: SurfShack) {
+  const { x, z, rot } = s;
+  const add = (g: THREE.BufferGeometry, c: THREE.ColorRepresentation, to: Part[] = parts) => to.push([place(g, x, z, rot), c]);
+  /** A point of the palapa's own plan in the town. */
+  const at = (lx: number, lz: number): [number, number] => [x + lx * Math.cos(rot) + lz * Math.sin(rot), z - lx * Math.sin(rot) + lz * Math.cos(rot)];
+  const HW = 1.35, HD = 2.1, POST = 2.55;
+  // the plank floor, the posts, the beams round their tops
+  add(box(HW * 2 + 0.2, 0.1, HD * 2 + 0.2, 0, 0.05, 0), "#b8895a");
+  for (let k = -4; k <= 4; k++) add(box(HW * 2 + 0.2, 0.012, 0.03, 0, 0.106, k * 0.47), "#94683c");
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(cyl(0.085, 0.1, POST, sx * HW, POST / 2, sz * HD, 7), WOOD);
+  for (const sx of [-1, 1]) add(box(0.12, 0.12, HD * 2 + 0.5, sx * HW, POST - 0.06, 0), "#7a5a3c");
+  for (const sz of [-1, 1]) add(box(HW * 2 + 0.5, 0.12, 0.12, 0, POST - 0.06, sz * HD), "#7a5a3c");
+  // the thatch: a hip roof well out over the posts, a darker skirt and crown, a ragged fringe of leaf ends
+  const k = 1 / Math.SQRT1_2, rw = HW + 0.85, rd = HD + 0.85, RH = 1.55;
+  add(new THREE.ConeGeometry(1, RH, 4).rotateY(Math.PI / 4).scale(rw / k, 1, rd / k).translate(0, POST + RH / 2 - 0.05, 0), THATCH, roofs);
+  add(new THREE.ConeGeometry(1, 0.75, 4, 1, true).rotateY(Math.PI / 4).scale((rw * 0.62) / k, 1, (rd * 0.62) / k).translate(0, POST + RH * 0.62, 0), THATCH_DARK, roofs);
+  add(new THREE.ConeGeometry(1, 0.42, 4).rotateY(Math.PI / 4).scale((rw * 0.24) / k, 1, (rd * 0.24) / k).translate(0, POST + RH - 0.02, 0), THATCH_DARK, roofs);
+  add(new THREE.CylinderGeometry(1, 1.02, 0.26, 4, 1, true).rotateY(Math.PI / 4).scale(rw / k, 1, rd / k).translate(0, POST - 0.16, 0), THATCH_DARK, roofs);
+  for (let i = 0; i < 30; i++) {
+    const side = i % 4, t = (Math.floor(i / 4) + 0.5 + (side % 2) * 0.3) / 7.5 - 0.5;
+    const [fx, fz] = side === 0 ? [t * 2 * rw, rd] : side === 1 ? [rw, t * 2 * rd] : side === 2 ? [t * 2 * rw, -rd] : [-rw, t * 2 * rd];
+    // (none over the counter and the two who talk across it: the leaf ends hung in front of their faces there)
+    if (side === 0 || fz > 0.4) continue;
+    add(new THREE.ConeGeometry(0.14, 0.26 + (i % 3) * 0.07, 4).rotateX(Math.PI).translate(fx, POST - 0.3 - (i % 3) * 0.03, fz), i % 2 ? THATCH : THATCH_DARK, roofs);
+  }
+  // the counter across the front, painted, a wooden top; its name on its front, and on a board on the roof's edge
+  // over the heads of whoever stands at it, towards the front and towards the walkway (local +x)
+  const CZ = HD - 0.25;
+  add(box(HW * 2 - 0.24, 0.98, 0.5, 0, 0.59, CZ), "#17a2a2");
+  add(box(HW * 2 - 0.24, 0.1, 0.52, 0, 0.15, CZ), "#0f6f73");
+  add(box(HW * 2 - 0.1, 0.06, 0.66, 0, 1.11, CZ), "#c08a52");
+  const sign = drawBoard(s.name, s.sub, "#fdf3d7", "#e4572e", "#0f4c5c");
+  const [nx, nz] = at(0, CZ + 0.262);
+  atlas.add("surf:" + s.name, 512, 190, sign, 2.2, 0.82, nx, 0.6, nz, rot);
+  add(box(2.5, 0.92, 0.06, 0, POST + 0.5, HD + 0.72), "#0f4c5c");
+  const [rx1, rz1] = at(0, HD + 0.76);
+  atlas.add("surf:" + s.name, 512, 190, sign, 2.42, 0.86, rx1, POST + 0.5, rz1, rot);
+  add(box(0.06, 0.92, 2.5, HW + 0.72, POST + 0.5, 0), "#0f4c5c");
+  const [rx2, rz2] = at(HW + 0.76, 0);
+  atlas.add("surf:" + s.name, 512, 190, sign, 2.42, 0.86, rx2, POST + 0.5, rz2, rot + Math.PI / 2);
+  // the prices on a board hung behind the counter, under the back beam, towards the front
+  add(box(2.36, 1.3, 0.05, 0, 1.72, -HD + 0.1), "#6a4a30");
+  const [px, pz] = at(0, -HD + 0.135);
+  atlas.add("surf-prices", 640, 352, drawChalk(s.prices[0], s.prices.slice(1)), 2.28, 1.24, px, 1.72, pz, rot);
+  // the day's report on an A-frame chalkboard beside the counter (local +x: the walkway's side), turned a little
+  // to whoever comes down to the sand
+  {
+    const bx = HW + 0.95, bz = HD + 0.55, a = 0.5;
+    // (its face upright, a leg leaning out behind it)
+    const turn = (g: THREE.BufferGeometry) => g.rotateY(a).translate(bx, 0, bz);
+    add(turn(box(1.12, 1.42, 0.05, 0, 0.78, 0)), "#7a5a3c");
+    add(turn(box(1.0, 1.4, 0.04, 0, 0.7, 0).rotateX(0.3).translate(0, 0, -0.03)), "#6a4a30");
+    for (const sx of [-1, 1]) add(turn(box(0.06, 0.1, 0.06, sx * 0.48, 0.05, 0)), "#6a4a30");
+    const o = new THREE.Vector3(0, 0, 0.032).applyAxisAngle(new THREE.Vector3(0, 1, 0), a);
+    const [cx, cz] = at(bx + o.x, bz + o.z);
+    atlas.add("surf-report", 448, 560, drawChalk(s.report[0], s.report.slice(1)), 1.04, 1.3, cx, 0.8, cz, rot + a);
+    const [fx, fz] = at(bx, bz);
+    col.addCircle(fx, fz, 0.62);
+  }
+  // surfboards standing in a rack along the seaward side (local −x), their noses up, leaning in against its rail
+  const BOARDS: [string, string, number][] = [["#ffd23f", "#e4572e", 2.75], ["#ff6b6b", "#fff7e6", 2.3], ["#2ec4b6", "#fff7e6", 2.6], ["#fdfcf7", "#1f6fd1", 1.95], ["#f78fb3", "#3d348b", 2.45], ["#7ac143", "#fff7e6", 2.2]];
+  add(box(0.07, 0.07, HD * 2 - 0.3, -HW - 0.32, 1.25, -0.1), "#7a5a3c");
+  add(box(0.07, 0.07, HD * 2 - 0.3, -HW - 0.32, 0.12, -0.1), "#7a5a3c");
+  for (const sz of [-1, 1]) add(cyl(0.05, 0.05, 1.3, -HW - 0.32, 0.65, -0.1 + sz * (HD - 0.2), 6), WOOD);
+  BOARDS.forEach(([deck, stripe, len], i) => {
+    for (const [g, c] of surfboardParts(len, 0.54, deck, stripe)) {
+      // stood on its tail, its deck out to the sea, leaning in a little
+      g.translate(0, 0, len / 2).rotateX(-Math.PI / 2).rotateZ(-0.1).rotateY(Math.PI / 2 + ((i % 3) - 1) * 0.05).translate(-HW - 0.5, 0.1, -HD + 0.55 + i * 0.62);
+      add(g, c);
+    }
+  });
+  // two paddleboards (longer, wider) against the back with their paddles, and a life jacket or two on the back posts
+  for (const [i, deck, stripe] of [[0, "#fdfcf7", "#17a2a2"], [1, "#ffb703", "#fdfcf7"]] as [number, string, string][]) {
+    for (const [g, c] of surfboardParts(3.15, 0.8, deck, stripe, 0.11)) {
+      g.translate(0, 0, 1.575).rotateX(-Math.PI / 2).rotateX(0.1).rotateY(Math.PI).translate(-0.48 + i * 0.96, 0.1, -HD - 0.36);
+      add(g, c);
+    }
+    const pxl = -1.12 + i * 2.2;
+    add(cyl(0.02, 0.02, 2.0, pxl, 1.1, -HD - 0.3, 5), "#3a3a3a");
+    add(box(0.19, 0.44, 0.03, pxl, 0.32, -HD - 0.3), i ? "#17a2a2" : "#e4572e");
+    add(box(0.1, 0.03, 0.03, pxl, 2.1, -HD - 0.3), "#3a3a3a");
+  }
+  for (const [sx, c] of [[-1, "#ff7b00"], [1, "#ffd23f"]] as [number, string][]) {
+    add(box(0.4, 0.5, 0.14, sx * (HW - 0.34), 1.5, -HD + 0.24), c);
+    add(box(0.12, 0.5, 0.15, sx * (HW - 0.34), 1.5, -HD + 0.245), "#26302c");
+    add(box(0.42, 0.05, 0.16, sx * (HW - 0.34), 1.36, -HD + 0.24), "#f4f1ea");
+  }
+  // snorkel gear: masks with their snorkels on the counter, fins in pairs on pegs under the side beam and in a crate
+  for (const [i, c] of ["#1f6fd1", "#e4007c", "#ffd23f"].entries()) {
+    const mx0 = -0.85 + i * 0.36;
+    add(box(0.2, 0.1, 0.09, mx0, 1.2, CZ + 0.12), c);
+    add(box(0.16, 0.065, 0.02, mx0, 1.2, CZ + 0.17), "#1b2a33");
+    add(cyl(0.014, 0.014, 0.3, mx0 + 0.12, 1.3, CZ + 0.1, 5), c);
+  }
+  add(box(0.5, 0.3, 0.38, 0.72, 1.29, CZ), "#b07a46");
+  for (const [i, c] of ["#ff6b6b", "#2ec4b6", "#ffd23f", "#1f6fd1"].entries()) add(box(0.085, 0.4, 0.2, 0.55 + i * 0.11, 1.4, CZ + (i % 2) * 0.04), c);
+  for (const [i, c] of ["#2ec4b6", "#ff6b6b", "#ffd23f", "#1f6fd1", "#f78fb3"].entries()) {
+    const fz = -1.3 + i * 0.6;
+    for (const d of [-0.07, 0.07]) {
+      add(box(0.03, 0.26, 0.11, HW + 0.02, POST - 0.36, fz + d), c);
+      add(box(0.03, 0.3, 0.17, HW + 0.02, POST - 0.62, fz + d), c);
+    }
+  }
+  // nobody walks in under it: the counter, the floor behind it, the rack, the boards against the back
+  blockRect(col, x, z, rot, -HW - 0.75, HW + 0.1, -HD - 0.55, HD + 0.1);
+  // the kayak on the sand: a sit-on-top in mango, its paddle across it
+  {
+    const [kx, kz, kr] = s.kayak;
+    const put = (g: THREE.BufferGeometry, c: THREE.ColorRepresentation) => parts.push([place(g, kx, kz, kr), c]);
+    put(new THREE.SphereGeometry(1, 10, 6).scale(0.36, 0.2, 1.75).translate(0, 0.2, 0), "#ffb703");
+    put(new THREE.SphereGeometry(1, 8, 4).scale(0.3, 0.07, 1.5).translate(0, 0.37, 0), "#f48c06");
+    put(box(0.4, 0.05, 0.62, 0, 0.4, -0.2), "#3a3a3a");
+    put(box(0.36, 0.22, 0.05, 0, 0.5, -0.5), "#3a3a3a");
+    put(cyl(0.02, 0.02, 2.1, 0, 0, 0, 5).rotateZ(Math.PI / 2).rotateY(0.5).translate(0, 0.45, 0.45), "#3a3a3a");
+    for (const sd of [-1, 1]) put(box(0.34, 0.03, 0.16, sd * 1.05, 0, 0).rotateY(0.5).translate(0, 0.45, 0.45), "#17a2a2");
+    for (const d of [-1.1, 0, 1.1]) col.addCircle(kx + Math.sin(kr) * d, kz + Math.cos(kr) * d, 0.5);
   }
 }

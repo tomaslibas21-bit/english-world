@@ -377,6 +377,8 @@ export interface TownTheme {
   beach: { towels: [number, number, number, string][]; cocos: [number, number, number, string] | null } | null;
   /** The atrial cross before the church (x, z; null: none). */
   atrialCross: [number, number] | null;
+  /** The watersports palapa on the beach (mexican.ts surfShack): where, its name, its chalkboards, its kayak. */
+  surfShack: import("./mexican").SurfShack | null;
   /** A mirador at the meadow's edge, looking out to the cenote (x, z, heading: its view to +z turned by it; the sign). */
   mirador: { x: number; z: number; rot: number; sign: string } | null;
   /** More taxis waiting at the stand (x, z, heading), in the stand's taxi's colours (theme `taxi`). */
@@ -496,6 +498,7 @@ export const THEME: TownTheme = {
   terrace: [],
   beach: null,
   atrialCross: null,
+  surfShack: null,
   mirador: null,
   taxis: [],
   roomWallH: null,

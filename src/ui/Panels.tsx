@@ -149,7 +149,7 @@ function SitCard({ s, onClick, open }: { s: SituationDef; onClick: () => void; o
       <span className="ico"><Icon name={locIcon(s.location)} size={24} /></span>
       <span className="txt">
         <b>{s.title.lt}</b>
-        <span><i style={{ fontFamily: "var(--en)", fontSize: "1.1em" }}>{s.title.en}</i> · {loc?.lt} · {L("daina {song}", { song: s.song })}</span>
+        <span><i style={{ fontFamily: "var(--en)", fontSize: "1.1em" }}>{s.title.en}</i> · {loc?.lt}{s.song !== "" && <> · {L("daina {song}", { song: s.song })}</>}</span>
       </span>
       <Stars n={stars(sp)} />
     </button>
@@ -224,7 +224,7 @@ function ScenarioCard({ s, close }: { s: SituationDef; close: () => void }) {
       <span className="txt">
         <b>{s.title.lt}</b>
         <i>{s.title.en}</i>
-        <span>{n?.name} · {isPhone(s) ? (s.mode === "video" ? L("vaizdo skambutis") : L("skambutis")) : loc?.lt} · {L("daina {song}", { song: s.song })}</span>
+        <span>{n?.name} · {isPhone(s) ? (s.mode === "video" ? L("vaizdo skambutis") : L("skambutis")) : loc?.lt}{s.song !== "" && <> · {L("daina {song}", { song: s.song })}</>}</span>
       </span>
       <Stars n={st} />
     </button>
