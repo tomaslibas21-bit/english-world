@@ -82,7 +82,8 @@ try {
     await go(true);
     await page.waitForFunction(() => window.__ew.game.player.root.position.z < -11, null, { timeout: 20000 });
     await go(false);
-    check(`${label}: and his gate is open`, (await state()).z < -11);
+    // (the state's place is rounded to a tenth: -11.0 is through)
+    check(`${label}: and his gate is open`, (await state()).z <= -11);
 
     // ---- a glyph stone: its card, a wrong meaning, the right one
     const stone = await page.evaluate(() => {

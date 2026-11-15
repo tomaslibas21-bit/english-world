@@ -1176,7 +1176,7 @@ export class Game implements GameApi {
         let pos = mid.clone().addScaledVector(side, (sideOf ?? 1) * d).setY(3.2);
         if (!sideOf && this.zone.colliders.blocked(pos.x, pos.z, 0.5)) pos = mid.clone().addScaledVector(side, -d).setY(3.2);
         // (in the grotto: no further than the rock lets the camera go)
-        if (this.wild) { const f = this.wild.space.free(this.tmpV.set(mid.x, 1.6, mid.z), pos); if (f < 1) pos.lerpVectors(this.tmpV, pos, Math.max(0.35, f * 0.92)); }
+        if (this.wild) { const f = this.wild.space.free(this.tmpV.set(mid.x, 1.6, mid.z), pos); if (f < 1) pos.lerpVectors(this.tmpV, pos, Math.max(0.1, f * 0.92)); }
         pos.addScaledVector(dir, -1.2);
         return { pos, look: new THREE.Vector3(mid.x, 1.35, mid.z) };
       };
@@ -1202,6 +1202,57 @@ export class Game implements GameApi {
     });
     this.session = session;
     this.session.begin();
+  }
+
+  /** The conversation's camera in a place like the grotto (Interior.wild), where rock is all round and overhead: only
+   *  from where the place's own space says the camera is in the open and the way to each face is clear (`space.inside`,
+   *  `space.free`: its walls, its roof, its pillars), and the player does not stand in front of whom they speak with.
+   *  From the side if both fit the picture from there (as in the town); in a narrow passage, where the rock lets the
+   *  camera only a step or two to the side, round towards the player's shoulder and back along the passage, as far as
+   *  it takes. If nothing shows both, the person spoken with alone; if the rock leaves nowhere at all, close in front
+   *  of them. (Before: the town's search, which backs off and rises until everyone fits: on a phone's strip of a
+   *  picture nobody fitted from 2 m, and it went 10 m through the wall and above the roof: a picture of rock.) */
+  private fitTalkWild(first: { pos: THREE.Vector3; look: THREE.Vector3 }, d0: number, who: { ch: GameCharacter; sit?: boolean }[], fits: (f: { pos: THREE.Vector3; look: THREE.Vector3 }, loose?: boolean) => boolean, strip: boolean) {
+    const sp = this.wild!.space, p = who[0].ch.root.position, a = who[1].ch.root.position;
+    const look = first.look, back = new THREE.Vector3(p.x - a.x, 0, p.z - a.z);
+    if (back.lengthSq() < 0.01) back.set(0, 0, 1);
+    back.normalize();
+    const side = new THREE.Vector3(-back.z, 0, back.x);
+    const faces = who.map(({ ch, sit }) => new THREE.Vector3(ch.root.position.x, ch.root.position.y + (sit ? 0.72 : 0.9) * ch.height, ch.root.position.z));
+    const top = p.y + who[0].ch.height + 0.15;
+    /** Does the player stand between the camera and someone's face? (their own width, up to the top of their head) */
+    const behindPlayer = (pos: THREE.Vector3) => faces.slice(1).some((f) => {
+      const dx = f.x - pos.x, dz = f.z - pos.z, t = THREE.MathUtils.clamp(((p.x - pos.x) * dx + (p.z - pos.z) * dz) / (dx * dx + dz * dz || 1), 0, 1);
+      return t < 0.98 && Math.hypot(pos.x + dx * t - p.x, pos.z + dz * t - p.z) < 0.5 && pos.y + (f.y - pos.y) * t < top;
+    });
+    const clear = (pos: THREE.Vector3, loose: boolean) => !sp.inside(pos) && faces.every((f, i) => (loose && i === 0) || sp.free(pos, f) >= 0.999) && !behindPlayer(pos);
+    // (round from side-on towards the player's shoulder, either side; last, a little past side-on towards the other's)
+    const ANGLES = [90, 70, 52, 36, 24, 110].flatMap((d) => [d, -d]).map((d) => THREE.MathUtils.degToRad(d));
+    const raise = strip ? [0, 0.15, 0.3] : [0];
+    // (the usual distance, then further, then nearer; for one person alone, from near)
+    const FAR = [1, 1.14, 1.3, 1.48, 1.69, 1.93, 2.2, 0.85, 0.7, 0.58, 0.48, 0.4].map((k) => d0 * k).filter((d) => d <= 13);
+    const NEAR = [0.4, 0.48, 0.58, 0.7, 0.85, 1, 1.2, 1.45].map((k) => d0 * k);
+    for (const loose of [false, true]) {
+      for (const ang of ANGLES) {
+        const u = back.clone().multiplyScalar(Math.cos(ang)).addScaledVector(side, Math.sin(ang));
+        for (const d of loose ? NEAR : FAR) {
+          // (looking down a little, less under a low roof)
+          for (const k of [0.3, 0.2, 0.12]) {
+            const pos = look.clone().addScaledVector(u, d).setY(look.y + Math.max(0.35, d * k));
+            if (!clear(pos, loose)) continue;
+            for (const r of raise) {
+              const f = { pos, look: r ? look.clone().setY(look.y + r) : look };
+              // (alone in the picture, the person spoken with is looked at themselves)
+              if (loose) f.look = faces[1].clone().setY(faces[1].y - 0.25 + r);
+              if (fits(f, loose)) return f;
+            }
+          }
+        }
+      }
+    }
+    // nowhere shows them whole: from as near the usual place as the rock lets the camera go
+    const from = new THREE.Vector3(look.x, 1.6, look.z), f = sp.free(from, first.pos);
+    return { pos: f < 1 ? from.clone().lerp(first.pos, Math.max(0.1, f * 0.9)) : first.pos, look };
   }
 
   /** The conversation's camera that keeps everyone taking part in the picture (theme.ts talkCamera). The framing at
@@ -1244,7 +1295,9 @@ export class Game implements GameApi {
     // picture's top edge, 10 px in: the head and chest points alone passed with the top of a head cut off by the
     // strip's top edge (s65a's officer, s79's clerk…).
     const tops = who.map(({ ch }) => headTop(ch));
-    const fits = (f: Shot) => points(f, (q, i) => {
+    const fits = (f: Shot, loose = false) => points(f, (q, i) => {
+      // (`loose`: the people spoken with only; the player may stand out of the picture)
+      if (loose && i === 0) return true;
       q.project(cam);
       const px = (q.x + 1) / 2 * w - sx, py = (1 - q.y) / 2 * h - sy;
       if (!(q.z <= 1 && px >= x0 && px <= x1 && py >= y0 && py <= y1)) return false;
@@ -1283,6 +1336,7 @@ export class Game implements GameApi {
       });
     };
     const first = frame(d0);
+    if (this.wild) return this.fitTalkWild(first, d0, who, fits, strip > 0);
     if (seen(first) && fits(first)) return first;
     const lift = first.pos.y - first.look.y;
     const at = (d: number, side?: 1 | -1) => {
