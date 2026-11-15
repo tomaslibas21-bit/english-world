@@ -1,5 +1,5 @@
 // Puerto Colibrí's grotto under Cenote Ka'an, in the real game: swum into through the cave's mouth; Kin keeps the way
-// until his conversation (x01) is talked through; a glyph stone's card is answered and the stone lights; three lit
+// until his conversation (x02) is talked through; a glyph stone's card is answered and the stone lights; three lit
 // stones leave the gate shut until ten of the town's conversations are finished, and open it then; the way back out
 // is the water one came through. A computer and a phone. Against a dev server or a built game of the Spanish edition:
 // WORLD_TEST_URL=http://127.0.0.1:8176 WORLD_PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node tests/browser/cave.mjs
@@ -66,7 +66,7 @@ try {
     await page.waitForFunction(() => window.__ew.store.getState().hud.prompt?.kind === "talk", null, { timeout: 15000 });
     await press();
     await page.waitForFunction(() => window.__ew.store.getState().conv.active, null, { timeout: 15000 });
-    check(`${label}: talking to Kin starts his conversation, off the route`, await page.evaluate(() => { const c = window.__ew.store.getState().conv, g = window.__ew.game; return c.sitId === "x01-alux-kin" && !g.orderedSituations().some((q) => q.id === c.sitId) && g.orderedSituations().length === 50; }));
+    check(`${label}: talking to Kin starts his conversation, off the route`, await page.evaluate(() => { const c = window.__ew.store.getState().conv, g = window.__ew.game; return c.sitId === "x02-alux-kin" && !g.orderedSituations().some((q) => q.id === c.sitId) && g.orderedSituations().length >= 50; }));
     await page.evaluate(() => window.__ew.store.getState().setConv({ introOpen: false }));
     const say = async (text) => {
       await page.waitForFunction(() => window.__ew.store.getState().conv.phase === "you", null, { timeout: 30000 });
@@ -77,7 +77,7 @@ try {
     await page.evaluate(() => window.__ew.game.closeConversation());
     await page.waitForFunction(() => !window.__ew.store.getState().conv.active, null, { timeout: 15000 });
     s = await state();
-    check(`${label}: Kin let the learner pass: saved, and the town's task is as it was`, s.cave.passed.includes("kin") && await page.evaluate(() => !window.__ew.store.getState().progress.sits["x01-alux-kin"]?.completions || window.__ew.game.currentObjective()?.id !== "x01-alux-kin"), s.cave);
+    check(`${label}: Kin let the learner pass: saved, and the town's task is as it was`, s.cave.passed.includes("kin") && await page.evaluate(() => !window.__ew.store.getState().progress.sits["x02-alux-kin"]?.completions || window.__ew.game.currentObjective()?.id !== "x02-alux-kin"), s.cave);
     await place("gruta", 0, -6, Math.PI);
     await go(true);
     await page.waitForFunction(() => window.__ew.game.player.root.position.z < -11, null, { timeout: 20000 });

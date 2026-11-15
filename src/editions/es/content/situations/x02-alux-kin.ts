@@ -74,10 +74,10 @@ function reason(c: Ctx, line: string) {
 }
 
 export const aluxKin: SituationDef = {
-  id: "x01-alux-kin",
+  id: "x02-alux-kin",
   bonus: true,
   // no course song: a string that names none (src/editions/es/content/radio.ts songOfSituation → null)
-  song: "X01",
+  song: "X02",
   songTitle: "Kin, el alux",
   title: { en: "Kin, el alux", lt: "The keeper of the grotto" },
   topic: { en: "En la gruta", lt: "In the grotto" },

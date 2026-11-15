@@ -44,7 +44,7 @@ export const LOCATIONS: Record<string, LocationDef> = Object.fromEntries([
   L("gym", "Gimnasio Colibrí", "The gym", "residential", "interior", "🏋️"),
   L("cedar-lane", "Calle de los Cedros", "Cedar Street", "residential", "outdoor", "🚗"),
   L("sproutly", "Brotecito", "The startup “Brotecito”", "harbor", "interior", "🌱"),
-  // under Cenote Ka'an, through the cave's mouth at its far side (src/game/cave): the aluxes' conversations (x01, x02)
+  // under Cenote Ka'an, through the cave's mouth at its far side (src/game/cave): the aluxes' conversations (x02, x03)
   L("gruta", "Gruta de los Aluxes", "The aluxes' grotto", "harbor", "interior", "✨"),
   L("phone", "Llamada", "Phone call", "phone", "phone", "📱"),
 ].map((l) => [l.id, l]));

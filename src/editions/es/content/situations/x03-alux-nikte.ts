@@ -6,7 +6,7 @@
 // a clue, a second one the answer and the next riddle, and after three riddles not guessed she lets the learner through
 // anyway, with a wink. Crossing: c.event("alux-pass", { gate: "nikte" }); the task is complete when the learner thanks
 // her (or says goodbye) once she has let them cross.
-// No song: `song` is a string ("X02"), as the advanced conversations' are, so the radio finds none (songOfSituation).
+// No song: `song` is a string ("X03"), as the advanced conversations' are, so the radio finds none (songOfSituation).
 // Nikté says tú (npcs.ts: informal, informalSpain). No Mexican-only words, so no neutral twins; Spain's twins where
 // Spain says it with the perfect ("¡Lo has adivinado!", "Ya te he dado una pista").
 
@@ -69,9 +69,9 @@ const NIKTE_AUTO: Record<string, string> = { hint_offer: "Sí, por favor" };
 // ---------------------------------------------------------------------------
 
 export const aluxNikte: SituationDef = {
-  id: "x02-alux-nikte",
+  id: "x03-alux-nikte",
   bonus: true,
-  song: "X02",
+  song: "X03",
   songTitle: "",
   title: { en: "Nikté y las adivinanzas", lt: "The alux of the riddles" },
   topic: { en: "Las adivinanzas de Nikté", lt: "Nikté's riddles" },

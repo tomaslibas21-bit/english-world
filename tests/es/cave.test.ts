@@ -46,7 +46,7 @@ describe("the grotto's plan", () => {
     expect(P.walkable(-6, -101.4)).toBe(true);
   });
 
-  it("Kin's directions are true (x01): the first stone left of the tree, the second on the right by the water, the third at the far end by the falls", () => {
+  it("Kin's directions are true (x02): the first stone left of the tree, the second on the right by the water, the third at the far end by the falls", () => {
     const [s1, s2, s3] = P.CHAMBERS[0].stones, tree = P.TREES[0], lagoon = P.POOLS.find((p) => !p.ford && p.rx > 5 && p.z > -40)!;
     // (coming in one walks towards −z: one's left is −x)
     expect(s1.x).toBeLessThan(tree.x - 3);
@@ -149,7 +149,7 @@ describe("the aluxes' conversations are off the route", () => {
     const bonus = SITUATIONS.filter((s) => s.bonus);
     expect(bonus.map((s) => s.id).sort()).toEqual(P.ALUXES.map((a) => SITUATIONS.find((s) => s.npc === a.npc)?.id).sort());
     expect(ROUTE).toHaveLength(SITUATIONS.length - bonus.length);
-    expect(ROUTE).toHaveLength(50);
+    expect(ROUTE.some((q) => q.bonus)).toBe(false);
     for (const s of bonus) {
       expect(s.location).toBe("gruta");
       expect(LOCATIONS[s.location]?.kind).toBe("interior");

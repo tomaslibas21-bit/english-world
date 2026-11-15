@@ -51,8 +51,8 @@ import T_s89_video_call from "./s89-video-call.json";
 import T_s90_running_late from "./s90-running-late.json";
 import T_s91a_lost_wallet from "./s91a-lost-wallet.json";
 import T_s91b_police from "./s91b-police.json";
-import T_x01_alux_kin from "./x01-alux-kin.json";
-import T_x02_alux_nikte from "./x02-alux-nikte.json";
+import T_x02_alux_kin from "./x02-alux-kin.json";
+import T_x03_alux_nikte from "./x03-alux-nikte.json";
 
 export const TABLES: Record<string, LearnerTable> = {
   "_shared": T__shared as LearnerTable,
@@ -106,6 +106,6 @@ export const TABLES: Record<string, LearnerTable> = {
   "s90-running-late": T_s90_running_late as LearnerTable,
   "s91a-lost-wallet": T_s91a_lost_wallet as LearnerTable,
   "s91b-police": T_s91b_police as LearnerTable,
-  "x01-alux-kin": T_x01_alux_kin as LearnerTable,
-  "x02-alux-nikte": T_x02_alux_nikte as LearnerTable,
+  "x02-alux-kin": T_x02_alux_kin as LearnerTable,
+  "x03-alux-nikte": T_x03_alux_nikte as LearnerTable,
 };

@@ -1,7 +1,7 @@
 // The grotto under Cenote Ka'an (Puerto Colibrí): its plan and its rules, with no three.js in it (tested alone,
 // tests/es/cave.test.ts). A hidden Maya world one swims into through the cave's mouth at the cenote's far side: five
 // chambers along an old sacbé, each with three glyph stones that speak a phrase the learner already knows (found by
-// ear: quest.ts), two aluxes one talks with to get through (the conversations x01 and x02), and a gate to the next
+// ear: quest.ts), two aluxes one talks with to get through (the conversations x02 and x03), and a gate to the next
 // chamber that opens once the chamber's stones are lit and the learner has finished enough of the town's
 // conversations: the first chamber is open to everyone, one more for every ten conversations finished.
 //
@@ -31,7 +31,7 @@ const S = (id: string, x: number, z: number, rot: number): Stone => ({ id, x, z,
 
 export const CHAMBERS: Chamber[] = [
   // the hall under the cenote's eye: the ceiba in the light, the lagoon on the right, the falls at the far end
-  // (Kin's directions, x01: "a la izquierda del árbol", "a la derecha, cerca del agua", "al fondo, junto a la cascada")
+  // (Kin's directions, x02: "a la izquierda del árbol", "a la derecha, cerca del agua", "al fondo, junto a la cascada")
   { id: "agua", n: 1, name: "La Sala del Agua", lt: "Vandens salė", x: 0, z: -25, rx: 17, rz: 17.5, ceil: 15, need: 0,
     stones: [S("agua-1", -8.2, -24.5, Math.PI / 2), S("agua-2", 7.2, -31.6, -0.5), S("agua-3", 1.6, -39.4, 0.25)] },
   // hanging roots as thick as trees, mushrooms that glow, fireflies everywhere
@@ -67,7 +67,7 @@ export const GATES: Gate[] = [
   { id: "g5", x: 10.5, z: -155, rot: 0.34, w: 5.4, stones: 3, to: 4 },
 ];
 
-/** Where the aluxes stand (their conversations: x01, x02): beside the way they keep, and where one stands to talk. */
+/** Where the aluxes stand (their conversations: x02, x03): beside the way they keep, and where one stands to talk. */
 export const ALUXES: { npc: string; gate: string; x: number; z: number; rot: number; ax: number; az: number; sit?: boolean; seat?: number }[] = [
   { npc: "alux_kin", gate: "kin", x: 1.9, z: -4.3, rot: -0.5, ax: 0.3, az: -2.5 },
   // (Nikté sits on her bridge's rail, half way over: there is room to walk past her once she lets one cross)

@@ -6,9 +6,9 @@ small falls, and at the end the Yaxché, the tree that holds up the world, which
 a reward and a place to wonder at, and it teaches Spanish three ways, together:
 
 1. **Aluxes** (small spirits of the Maya forest, friendly and full of mischief) keep its ways, and one talks with them
-   to get through, in the game's own conversations: **Kin** at the way in (x01: who are you, where from, why did you
+   to get through, in the game's own conversations: **Kin** at the way in (x02: who are you, where from, why did you
    come; one asks him the way to the stones and he gives true directions), **Nikté** on the bridge of roots in the
-   third chamber (x02: two riddles to cross).
+   third chamber (x03: two riddles to cross).
 2. **A listening quest.** Every chamber has three glyph stones. Each says, in the learner's own coach voice, a phrase
    the learner already knows: their phrasebook's (the newest first), and before they have any, the greetings every
    conversation shares. The stones call one at a time from where they stand: louder as one gets near, to the left or
@@ -34,7 +34,7 @@ To look round all of it at once (the owner, a tester): add `gruta=all` to the pa
 | 4 | La Sala de las Estrellas | 30 | crystals, a wall of old glyphs, glow-worms and their beaded threads hanging from the roof |
 | 5 | El Corazón de Ka'an | 40 | a round lake one wades through, an island, the Yaxché with strands of flowers hanging over the water; lit, its three stones make it flower |
 
-Kin's directions (x01) are tested against the plan: the first stone is to the left of the tree, the second on the
+Kin's directions (x02) are tested against the plan: the first stone is to the left of the tree, the second on the
 right near the water, the third at the far end beside the falls (`tests/es/cave.test.ts`).
 
 ## How it is built (`src/game/cave/`)
@@ -89,7 +89,7 @@ two soft notes now and then), `chime` (a stone lit, a gate opened, the heart).
 
 ## The aluxes' conversations
 
-`src/editions/es/content/situations/x01-alux-kin.ts`, `x02-alux-nikte.ts`: conversations like the other fifty (three
+`src/editions/es/content/situations/x02-alux-kin.ts`, `x03-alux-nikte.ts`: conversations like the other fifty (three
 Spanishes, the English and the Lithuanian layers, glosses, notes, phrase cards, sims, corpora), but **off the route**:
 `SituationDef.bonus`. `src/content/route.ts` `ROUTE` is what the interface lists and counts and what the tasks go
 through (fifty); `SITUATIONS` is every conversation (the tools, the checks, the voices). Files `xNN-….ts`

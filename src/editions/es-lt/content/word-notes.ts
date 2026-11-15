@@ -26,12 +26,12 @@ export const WORD_NOTES: Record<string, string> = {
   "dengue": "dengue – uodų platinama karštligė (dengė), dažna tropikuose.",
   "pan dulce": "pan dulce – meksikietiški saldūs kepiniai, klasika prie kavos.",
   "tres leches": "tres leches – biskvitinis tortas, išmirkytas trijų rūšių piene.",
-  // Nikté's riddles (x02-alux-nikte)
+  // Nikté's riddles (x03-alux-nikte)
   "adivinanza": "adivinanza – mįslė; ispanai turi daug senų rimuotų mįslių, kurių atsakymas dažnai slepiasi pačiuose žodžiuose.",
   "pista": "pista – užuomina (taip pat takas, šokių aikštelė ar kilimo ir tūpimo takas).",
   "nikte": "Nikté – majų kalba „gėlė“; taip vardu mįslių aluksė.",
   "guacamole": "guacamole – gvakamolė: avokadų tyrė su laimu, svogūnu, kalendra ir čili (iš nahuatl kalbos ahuacamolli – „avokadų padažas“).",
-  // the aluxes' grotto under Cenote Ka'an (x01-alux-kin)
+  // the aluxes' grotto under Cenote Ka'an (x02-alux-kin)
   "alux": "alux (dgs. aluxes) – aluksas: maža majų miško ir kukurūzų laukų dvasia, žaisminga ir išdykusi.",
   "kin": "Kin – majų kalba „saulė“; taip vardu aluksas, saugantis įėjimą į grotą.",
   "sacbe": "sacbé – baltas kelias, kurį tiesė senovės majai (majų kalba „baltas kelias“).",
