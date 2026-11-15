@@ -115,6 +115,17 @@ Below 0.8, or a clip that says more than its line (Gemini sometimes says a line 
 too long or cut short, goes back for another take; a line keeps its last take after 4 tries; rejected takes are
 kept in `~/puerto-colibri-voicing/rejected/`.
 
+**Piece by piece (15 Nov 2026).** Whisper hears a whole clip and tends to write a restart once ("¿Quiere su… ¿quiere
+su recibo impreso?" scores 1.0), so `check` now also hears every new clip cut at its inner pauses, each piece on its
+own (Parakeet, which knows Spanish), counts the words heard against the line's, and compares the clip's sound with
+itself; a clip where a piece of the line comes again is `odd: "again"` and `redo` sends it back. The method, what it
+needs installed and the numbers are in docs/VOICING-PLAN.md ("Repeats"); the code is shared with Maple Harbor
+(`tools/voice-pieces.ts`, `tools/voice-pieces.py`, `tools/voice-cut.py`). The same commands exist here:
+`repeats` (the check over clips already made), `cut --keys=… --to=…` (cuts a restart out and keeps the cuts that then
+say their line once), `retake --keys=… --to=…` (new takes right away, each heard back before it is kept; its own
+ledger and `--cap` in that folder, the work folder is only read) and `adopt --from=…` (the new lengths and repair
+versions into `public/audio-es/`).
+
 ### Installing, the manifest and repair versions
 
 `install` copies the clips into `public/audio-es/` with `manifest.json` (`{ key: seconds }`) and

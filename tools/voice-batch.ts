@@ -8,7 +8,16 @@
 //   npx tsx tools/voice-batch.ts send                         uploads the prepared files and starts a batch for each
 //   npx tsx tools/voice-batch.ts status                       each batch's state
 //   npx tsx tools/voice-batch.ts fetch                        downloads finished batches and makes the clips
-//   npx tsx tools/voice-batch.ts check                        Whisper listens to new clips (no key) → voicing/check.json
+//   npx tsx tools/voice-batch.ts check                        Whisper listens to new clips, then each is heard again piece
+//                                                             by piece for repeats (no key) → voicing/check.json
+//   npx tsx tools/voice-batch.ts repeats --clips=<folder> [--keys=<file>] [--engine=parakeet|whisper|none] [--out=<file>]
+//                                                             the piece-by-piece check over clips already made (all of
+//                                                             the manifest's, or the listed keys): no key, nothing changed
+//   npx tsx tools/voice-batch.ts cut --keys=<file> --clips=<folder> --to=<folder>     cuts the restart out of the listed clips;
+//                                                             keeps the cuts that then say their line once (no key)
+//   npx tsx tools/voice-batch.ts retake --keys=<file> --to=<folder>   new takes of the listed lines right away, each heard
+//                                                             back before it is kept (key)
+//   npx tsx tools/voice-batch.ts adopt --from=<folder>        a repair folder's lengths and repair versions into public/audio-v2/
 //   npx tsx tools/voice-batch.ts redo [--below=0.8]           clips that failed the check go back to the next prepare
 //   npx tsx tools/voice-batch.ts sheet                        a page to listen to the casting sample: voicing/sample/
 //   npx tsx tools/voice-batch.ts upload [--parallel=4]        clips not on R2 yet → fluent-steps/game/audio-v2/
@@ -30,6 +39,7 @@ import { levenshtein } from "../src/convo/normalize";
 import { enumerateAll, type Utt } from "./enumerate";
 import { roleFor, where } from "./casting";
 import { decodeAudio, encodeClip, geminiText, trimAndNormalize } from "./audio-util";
+import { cutRepeats, findRepeats, hearPieces, judgePieces, type Clip, type Edition, type Heard } from "./voice-pieces";
 
 const ROOT = path.resolve(import.meta.dirname, "..");
 const WORK = path.join(ROOT, "voicing");
@@ -460,7 +470,8 @@ const spoken = (s: string) => s.toLowerCase().replace(/&/g, " and ")
   .replace(/\bya\b/g, "you")
   .replace(/\b(ha|hah|haha)\b/g, " ");
 /** Letters and digits only, numbers as digits, without the money words a voice and Whisper write differently. */
-const letters = (s: string) => numbersToDigits(spoken(s)).replace(/\b(dollars?|bucks|cents?|percent)\b/g, "").replace(/[^a-z0-9]/g, "").replace(/([a-z])\1{2,}/g, "$1$1");
+export const asHeard = (s: string) => numbersToDigits(spoken(s)).replace(/\b(dollars?|bucks|cents?|percent)\b/g, "");
+const letters = (s: string) => asHeard(s).replace(/[^a-z0-9]/g, "").replace(/([a-z])\1{2,}/g, "$1$1");
 /** Whisper sometimes repeats a sentence it heard once ("Take one. Take one. Take one."): a sentence that comes again
  *  right after itself counts once, on both sides. */
 const onceEach = (s: string) => s.split(/(?<=[.!?])\s+/).filter((x, i, all) => i === 0 || letters(x) !== letters(all[i - 1])).join(" ");
@@ -521,12 +532,25 @@ export function paces(keys: string[], sec: Record<string, number>, said: Map<str
  *  new take can come out exactly as long as the old one). */
 const madeFrom = (r: Recorded) => r.text + "|" + r.sec + (r.tries > 1 ? "|" + r.tries : "");
 
+/** One clip's check: what Whisper heard and how alike it is to the line; `pieces`: what was heard piece by piece
+ *  (tools/voice-pieces.ts) and, when a piece of the line comes again, `again` says which words (or that the sound
+ *  comes twice). `odd`: why `redo` sends it back. */
+interface Checked { heard: string; score: number; text: string; full?: boolean; odd?: "long" | "again"; pieces?: string; again?: string }
+/** The recognizer of the piece-by-piece check: Parakeet (VOICE_PIECES=whisper where it isn't installed). */
+const PIECES_ENGINE = (process.env.VOICE_PIECES as "parakeet" | "whisper" | undefined) ?? "parakeet";
+/** What goes into check.json from the piece-by-piece hearing. */
+function piecesOf(said: string, h: Heard): { pieces: string; again?: string } {
+  const v = judgePieces(said, h, asHeard);
+  const again = v.again ?? (v.twice ? `the sound comes twice (${h.stripe!.at.map((t) => (t / 1000).toFixed(2)).join(" s and ")} s)` : undefined);
+  return { pieces: v.heard, ...(again ? { again } : {}) };
+}
+
 async function check() {
   const model = process.env.WHISPER_MODEL ?? path.join(WORK, "models/ggml-large-v3-turbo-q5_0.bin");
   if (!fs.existsSync(model)) { console.error(`no Whisper model at ${model} (set WHISPER_MODEL)`); process.exit(1); }
   const manifest: Record<string, number> = readJson(MANIFEST, {});
   const recorded: Record<string, Recorded> = readJson(RECORDED, {});
-  const results: Record<string, { heard: string; score: number; text: string; full?: boolean; odd?: "long" }> = readJson(CHECK, {});
+  const results: Record<string, Checked> = readJson(CHECK, {});
   const todo = Object.keys(manifest).filter((k) => recorded[k]?.ok && fs.existsSync(path.join(WAV, k + ".wav")) && results[k]?.text !== madeFrom(recorded[k]));
   console.log(`${todo.length} clips to check`);
   const run = promisify(execFile);
@@ -556,17 +580,30 @@ async function check() {
   await listen(todo.filter((k) => manifest[k] <= 9.5), false);
   await listen(todo.filter((k) => manifest[k] > 9.5), true);
   await listen(Object.keys(results).filter((k) => manifest[k] && recorded[k]?.ok && said.has(k) && !results[k].full && (results[k].score < 0.85 || heardMore(said.get(k)!, results[k].heard))), true);
+  // Piece by piece: Whisper writes a restart once more often than not ("Would you like your… would you like your
+  // receipt printed or emailed?" scored 1), so every clip is heard again cut at its pauses, and its sound is compared
+  // with itself (tools/voice-pieces.ts). A take is heard once; a new take of the line is heard again.
+  const unheard = Object.keys(results).filter((k) => manifest[k] && recorded[k]?.ok && results[k].text === madeFrom(recorded[k]) && results[k].pieces === undefined && fs.existsSync(path.join(WAV, k + ".wav")));
+  if (unheard.length) {
+    console.log(`\n${unheard.length} clips to hear piece by piece`);
+    const heard = await hearPieces(unheard.map((k) => ({ key: k, path: path.join(WAV, k + ".wav") })), { engine: PIECES_ENGINE, lang: "en", log: (t) => process.stdout.write(t) });
+    for (const k of unheard) Object.assign(results[k], piecesOf(said.get(k) ?? recorded[k].text, heard.get(k)!));
+    writeJson(CHECK, results);
+  }
   // A line said twice scores well (a repeated sentence counts once), so the clip's length decides (see saysMore).
   const pace = paces(Object.keys(results), manifest, said, whose);
   for (const [k, r] of Object.entries(results)) {
-    if (manifest[k] && said.has(k) && tooLong(said.get(k)!, r.heard, manifest[k], pace.get(whose.get(k) ?? "?") ?? 0.2)) r.odd = "long";
+    if (manifest[k] && r.again) r.odd = "again";
+    else if (manifest[k] && said.has(k) && tooLong(said.get(k)!, r.heard, manifest[k], pace.get(whose.get(k) ?? "?") ?? 0.2)) r.odd = "long";
     else delete r.odd;
   }
   writeJson(CHECK, results);
   process.stdout.write("\n");
   const low = Object.entries(results).filter(([k, r]) => manifest[k] && r.score < 0.85).sort((a, b) => a[1].score - b[1].score);
   const odd = Object.entries(results).filter(([k, r]) => manifest[k] && r.odd);
-  console.log(`${odd.length} clips that say more than the line (twice, or a piece of it again) or are far too long`);
+  const again = odd.filter(([, r]) => r.odd === "again");
+  console.log(`${odd.length} clips that say more than the line (twice, or a piece of it again) or are far too long; ${again.length} of them heard piece by piece:`);
+  for (const [k, r] of again.slice(0, 40)) console.log(`  ${k} ${r.again}\n       said:  ${said.get(k) ?? recorded[k]?.text}\n       heard: ${r.pieces}`);
   console.log(`${low.length} clips where Whisper heard something different (below 0.85):`);
   for (const [k, r] of low.slice(0, 40)) console.log(`  ${r.score.toFixed(2)} ${k}\n       said:  ${said.get(k) ?? recorded[k]?.text}\n       heard: ${r.heard}`);
 }
@@ -590,6 +627,142 @@ function redo() {
   writeJson(MANIFEST, manifest);
   console.log(`${n} clips taken out (kept in voicing/rejected/); the next prepare asks for them again`);
   if (kept) console.log(`${kept} flagged clips kept: their lines have had ${MAX_TRIES} tries (voicing/check.json)`);
+}
+
+// ---------------------------------------------------------------- repeats in clips already made
+const EDITION_EN: Edition = { lang: "en", spoken: asHeard, alike: likeness };
+const REPAIRS = path.join(OUT, "repair-versions.json");
+
+/** The clips of a folder with their lines: the manifest's (or --keys=<file>: a JSON list, or an object's keys) that
+ *  have a file there. A clip whose line isn't in today's list of lines has no text to compare and is counted apart. */
+function clipsIn(folder: string): { clips: Clip[]; noLine: string[] } {
+  const manifest: Record<string, number> = readJson(MANIFEST, {});
+  const keysFile = flag("keys");
+  const listed = keysFile ? JSON.parse(fs.readFileSync(keysFile, "utf8")) : undefined;
+  const keys: string[] = listed ? (Array.isArray(listed) ? listed : Object.keys(listed)) : Object.keys(manifest);
+  const say = new Map(allLines().map((l) => [l.key, l.say]));
+  const clips: Clip[] = [], noLine: string[] = [];
+  for (const k of keys) {
+    const file = path.join(folder, k + ".mp3");
+    if (!fs.existsSync(file)) continue;
+    if (say.has(k)) clips.push({ key: k, path: file, said: say.get(k)! }); else noLine.push(k);
+  }
+  return { clips, noLine };
+}
+
+/** `repeats`: the piece-by-piece check over clips already made. Changes nothing; writes what it found to --out
+ *  (default voicing/repeats.json) and keeps what it heard in <out>.heard.jsonl, so a stopped run goes on. */
+async function repeats() {
+  const folder = path.resolve(flag("clips") ?? OUT);
+  const out = path.resolve(flag("out") ?? path.join(WORK, "repeats.json"));
+  const { clips, noLine } = clipsIn(folder);
+  console.log(`${clips.length} clips in ${folder}${noLine.length ? ` (${noLine.length} more have no line in today's list)` : ""}`);
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  const { found } = await findRepeats(clips, EDITION_EN, { engine: (flag("engine") as "parakeet" | "whisper" | "none" | undefined) ?? PIECES_ENGINE, cache: out + ".heard.jsonl", log: (t) => process.stdout.write(t) });
+  writeJson(out, Object.fromEntries(found.map((f) => [f.key, f])));
+  console.log(`${found.length} clips where a piece of the line comes again → ${out}`);
+  for (const f of found.slice(0, 40)) console.log(`  ${f.key} ${f.again ?? "the sound comes twice"}\n       said:  ${f.said}\n       heard: ${f.heard}`);
+}
+
+/** `cut --keys=<file> --clips=<folder> --to=<folder>`: cuts the restart out of each listed clip and keeps the cuts
+ *  that then say their line once (heard again piece by piece). Into --to: the new clips, delta-manifest.json
+ *  (key → seconds) and cut-report.json; the lines whose cut didn't hold are in it with the reason: record those
+ *  again. Nothing else is touched (`adopt` takes the new lengths and repair versions into public/audio-v2/). */
+async function cut() {
+  const folder = path.resolve(flag("clips") ?? OUT), to = flag("to");
+  if (!flag("keys") || !to) { console.error("cut needs --keys=<file> and --to=<folder>"); process.exit(1); }
+  const { clips } = clipsIn(folder);
+  // each line's usual length in its voice: a clip far shorter after the cut has lost more than a restart
+  const every = allLines(), manifest: Record<string, number> = readJson(MANIFEST, {});
+  const whose = new Map(every.map((l) => [l.key, l.who]));
+  const pace = paces(Object.keys(manifest), manifest, new Map(every.map((l) => [l.key, l.say])), whose);
+  const results = await cutRepeats(clips.map((c) => ({ ...c, usual: CLIP_BASE + PAUSE * pauses(c.said) + (pace.get(whose.get(c.key) ?? "?") ?? 0.2) * syllables(c.said) })), EDITION_EN, path.resolve(to), { engine: PIECES_ENGINE === "whisper" ? "whisper" : "parakeet", log: (t) => process.stdout.write(t) });
+  const ok = results.filter((r) => r.ok);
+  writeJson(path.join(to, "delta-manifest.json"), Object.fromEntries(ok.map((r) => [r.key, r.sec])));
+  writeJson(path.join(to, "cut-report.json"), results);
+  console.log(`${ok.length} of ${clips.length} clips cut and heard clean → ${to}; ${results.length - ok.length} need a new take (cut-report.json)`);
+}
+
+/** `retake --keys=<file> --to=<folder> [--tries=4]`: new takes of the listed lines right away (single requests, twice
+ *  the batch price: meant for a few hundred lines), each heard back before it is kept: whole and piece by piece
+ *  (tools/voice-pieces.ts), against the line and its usual length. A take that slips is recorded again, up to --tries
+ *  times; what still fails is listed in retake-report.json and gets no clip. Into --to: the clips, wav16/ (what the
+ *  check heard), rejected/ (the takes that slipped), delta-manifest.json, retake-report.json, ledger.jsonl. */
+async function retake() {
+  const to = flag("to");
+  if (!flag("keys") || !to) { console.error("retake needs --keys=<file> and --to=<folder>"); process.exit(1); }
+  const dir = path.resolve(to), tries = Number(flag("tries") ?? MAX_TRIES);
+  const listed = JSON.parse(fs.readFileSync(flag("keys")!, "utf8"));
+  const keys = new Set<string>(Array.isArray(listed) ? listed : Object.keys(listed));
+  const every = allLines();
+  const lines = every.filter((l) => keys.has(l.key));
+  if (lines.length < keys.size) console.log(`${keys.size - lines.length} listed keys have no line in today's list: no new take for them`);
+  const manifest: Record<string, number> = readJson(MANIFEST, {});
+  const pace = paces(Object.keys(manifest), manifest, new Map(every.map((l) => [l.key, l.say])), new Map(every.map((l) => [l.key, l.who])));
+  for (const d of ["wav16", "rejected"]) fs.mkdirSync(path.join(dir, d), { recursive: true });
+  const report: Record<string, { ok: boolean; tries: number; sec?: number; heard?: string; why?: string }> = readJson(path.join(dir, "retake-report.json"), {});
+  const delta: Record<string, number> = readJson(path.join(dir, "delta-manifest.json"), {});
+  let left = lines.filter((l) => !report[l.key]?.ok), audioTokens = 0, textTokens = 0, requests = 0;
+  console.log(`${left.length} lines to record again (${lines.length - left.length} already have a good new take in ${dir})`);
+  for (let round = 1; round <= tries && left.length; round++) {
+    const made = new Map<string, number>();
+    await pool(left, Number(flag("parallel") ?? 4), async (l) => {
+      try {
+        const r = await api(`/v1beta/models/${MODEL}:generateContent`, { method: "POST", body: JSON.stringify(request(l.text, l.gv, l.style)) });
+        requests++;
+        audioTokens += r.usageMetadata?.candidatesTokenCount ?? 0;
+        textTokens += r.usageMetadata?.promptTokenCount ?? 0;
+        const parts = (r.candidates?.[0]?.content?.parts ?? []).filter((p: any) => p.inlineData?.data);
+        if (!parts.length) { report[l.key] = { ok: false, tries: round, why: `no audio (${r.candidates?.[0]?.finishReason ?? "no answer"})` }; return; }
+        const chunks = parts.map((p: any) => decodeAudio(Buffer.from(p.inlineData.data, "base64"), p.inlineData.mimeType));
+        const all = new Float32Array(chunks.reduce((a: number, c: { samples: Float32Array }) => a + c.samples.length, 0));
+        let at = 0;
+        for (const c of chunks) { all.set(c.samples, at); at += c.samples.length; }
+        const clip = trimAndNormalize(all, chunks[0].rate);
+        await encodeClip(clip, chunks[0].rate, path.join(dir, l.key + ".mp3"), path.join(dir, "wav16", l.key + ".wav"));
+        made.set(l.key, +(clip.length / chunks[0].rate).toFixed(2));
+      } catch (e: any) { report[l.key] = { ok: false, tries: round, why: String(e.message).slice(0, 200) }; }
+    });
+    const { all } = await findRepeats(left.filter((l) => made.has(l.key)).map((l) => ({ key: l.key, path: path.join(dir, "wav16", l.key + ".wav"), said: l.say })), EDITION_EN, { engine: PIECES_ENGINE });
+    const again: Line[] = [];
+    for (const l of left) {
+      const f = all.get(l.key), sec = made.get(l.key);
+      if (!f || sec === undefined) { again.push(l); continue; }
+      const why = f.again ? `heard again: ${f.again}` : f.twice ? "the sound comes twice" : f.alike < 0.85 ? `heard "${f.whole}" (${f.alike})` : sec < 0.25 ? "silent" : tooLong(l.say, f.whole, sec, pace.get(l.who) ?? 0.2) ? `too long (${sec} s)` : undefined;
+      report[l.key] = { ok: !why, tries: round, sec, heard: f.heard, ...(why ? { why } : {}) };
+      if (why) { fs.renameSync(path.join(dir, l.key + ".mp3"), path.join(dir, "rejected", `${l.key}.${round}.mp3`)); again.push(l); } else delta[l.key] = sec;
+    }
+    writeJson(path.join(dir, "retake-report.json"), report);
+    writeJson(path.join(dir, "delta-manifest.json"), delta);
+    console.log(`round ${round}: ${left.length - again.length} good takes, ${again.length} to record again`);
+    left = again;
+  }
+  const price = (audioTokens * PRICE.batch * 2 + textTokens * 0.5) / 1e6;
+  fs.appendFileSync(path.join(dir, "ledger.jsonl"), JSON.stringify({ at: new Date().toISOString(), kind: "single", what: "retakes of lines that repeated", model: MODEL, requests, textTokens, audioTokens, price: +price.toFixed(6) }) + "\n");
+  console.log(`${Object.keys(delta).length} new takes in ${dir}; ${left.length} lines still fail (retake-report.json); ${requests} requests, about $${price.toFixed(3)}`);
+}
+
+/** `adopt --from=<folder>`: the new clips of a repair folder (its delta-manifest.json) into the lists the game reads:
+ *  each one's length in public/audio-v2/manifest.json and a repair version (a hash of the new file) in
+ *  repair-versions.json, so no browser or edge plays its cached old take. The clips themselves go to R2 by hand. */
+function adopt() {
+  const from = flag("from");
+  if (!from) { console.error("adopt needs --from=<folder with delta-manifest.json>"); process.exit(1); }
+  const delta: Record<string, number> = readJson(path.join(from, "delta-manifest.json"), {});
+  const manifest: Record<string, number> = readJson(MANIFEST, {});
+  const repairs: Record<string, string> = readJson(REPAIRS, {});
+  let n = 0;
+  for (const [k, sec] of Object.entries(delta)) {
+    const file = path.join(from, k + ".mp3");
+    if (!fs.existsSync(file)) { console.log(`  no file for ${k}`); continue; }
+    const had = k in manifest;
+    manifest[k] = sec;
+    if (had) repairs[k] = createHash("sha256").update(fs.readFileSync(file)).digest("hex").slice(0, 12);
+    n++;
+  }
+  writeJson(MANIFEST, manifest);
+  fs.writeFileSync(REPAIRS, JSON.stringify(repairs));
+  console.log(`${n} clips adopted: lengths in ${path.relative(ROOT, MANIFEST)}, ${Object.keys(repairs).length} repair versions`);
 }
 
 // ---------------------------------------------------------------- the casting sample page
@@ -658,7 +831,7 @@ async function upload() {
   console.log(`\nuploaded ${n - failed}, failed ${failed}`);
 }
 
-const commands: Record<string, () => unknown> = { plan, prepare, send, status: () => status(), fetch: fetchAll, try: tryOne, check, redo, sheet, upload };
+const commands: Record<string, () => unknown> = { plan, prepare, send, status: () => status(), fetch: fetchAll, try: tryOne, check, redo, repeats, cut, retake, adopt, sheet, upload };
 if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith("voice-batch.ts")) {
   if (!commands[cmd]) { console.log("commands: " + Object.keys(commands).join(", ") + " (see the top of tools/voice-batch.ts)"); process.exit(1); }
   await commands[cmd]();
