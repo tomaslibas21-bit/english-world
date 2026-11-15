@@ -79,12 +79,15 @@ function counts(words: string[], n: number): Map<string, number> {
 /** The longest run of words (up to 5) heard more often than the line says it; one word counts only when it comes
  *  twice in a row ("up up and down"). Undefined when nothing is heard again. */
 export function heardAgain(said: string[], heard: string[]): string | undefined {
+  // A repeat repeats the line: a recognizer writes a breath or a noise as a word of its own ("Yeah. | Yeah.", "Ha
+  // ha" in a Spanish clip), and those are no part of the line said twice.
+  const have = new Set(said);
   for (let n = Math.min(5, Math.floor(heard.length / 2)); n >= 2; n--) {
     const want = counts(said, n);
-    for (const [g, c] of counts(heard, n)) if (c > (want.get(g) ?? 0) && c > 1) return g;
+    for (const [g, c] of counts(heard, n)) if (c > (want.get(g) ?? 0) && c > 1 && g.split(" ").some((w) => have.has(w))) return g;
   }
   const twice = (ws: string[], w: string) => ws.filter((x, i) => x === w && ws[i + 1] === w).length;
-  for (let i = 0; i + 1 < heard.length; i++) if (heard[i] === heard[i + 1] && twice(heard, heard[i]) > twice(said, heard[i])) return `${heard[i]} ${heard[i]}`;
+  for (let i = 0; i + 1 < heard.length; i++) if (heard[i] === heard[i + 1] && have.has(heard[i]) && twice(heard, heard[i]) > twice(said, heard[i])) return `${heard[i]} ${heard[i]}`;
   return undefined;
 }
 
@@ -107,7 +110,7 @@ export function startedAgain(said: string[], heard: string[]): string | undefine
   const base = wordDistance(heard, said);
   for (let p = 0; p < heard.length; p++)
     for (let q = p + 1; q <= Math.min(heard.length - 1, p + 5); q++)
-      if (heard[p] === heard[q] && base - wordDistance([...heard.slice(0, p), ...heard.slice(q)], said) === q - p) return `${heard[p]} … ${heard[q]}`;
+      if (heard[p] === heard[q] && said.includes(heard[p]) && base - wordDistance([...heard.slice(0, p), ...heard.slice(q)], said) === q - p) return `${heard[p]} … ${heard[q]}`;
   return undefined;
 }
 
@@ -169,16 +172,21 @@ export function onceInARow(words: string[]): string[] {
 export const SPLIT_PAUSE = 180;
 /** The pieces' transcripts, with a word that a stop's closure split in two heard once: when two pieces are parted by
  *  less than SPLIT_PAUSE ms and the first ends with the word the second begins with ("That'll be ninety six. | Six
- *  twenty five."), the second loses it. A word said twice has a real pause between its two times, or is heard twice
- *  in the whole clip too. */
+ *  twenty five."), the second loses it; when the first ends with only the beginning of that word ("Muy bien, en |
+ *  Entonces…"), the first loses it. A word said twice has a real pause between its two times, or is heard twice in
+ *  the whole clip too. */
 export function unsplit(h: Heard): string[] {
   const plain = (w: string) => w.toLowerCase().normalize("NFD").replace(/[^a-z0-9]/g, "");
   const texts = h.pieces.map((p) => p[2]);
   for (let i = 0; i + 1 < texts.length; i++) {
     const at = h.pieces[i + 1][0], pause = h.pauses.find(([a, b]) => a <= at && at <= b);
     if (pause && pause[1] - pause[0] >= SPLIT_PAUSE) continue;
-    const last = texts[i].trim().split(/\s+/).pop() ?? "", rest = texts[i + 1].trim().split(/\s+/);
-    if (plain(last) && plain(last) === plain(rest[0] ?? "")) texts[i + 1] = rest.slice(1).join(" ");
+    const first = texts[i].trim().split(/\s+/), rest = texts[i + 1].trim().split(/\s+/);
+    const a = plain(first[first.length - 1] ?? ""), b = plain(rest[0] ?? "");
+    if (!a || !b) continue;
+    if (a === b) texts[i + 1] = rest.slice(1).join(" ");
+    // "Muy bien, en | Entonces quinientos pesos.": the piece before the closure holds only the word's beginning
+    else if (a.length >= 2 && b.length > a.length && b.slice(0, 2) === a.slice(0, 2)) texts[i] = first.slice(0, -1).join(" ");
   }
   return texts;
 }

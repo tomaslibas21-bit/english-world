@@ -29,6 +29,14 @@ describe("Spanish lines heard again", () => {
     const words = (s: string) => wordsOf(s, asHeardEs);
     expect(startedAgain(words("Su total es de doscientos pesos."), words("Su to su total es de 200 pesos."))).toBe("su … su");
   });
+  it("does not take a breath written in English for a repeat, nor a word split by a closure", () => {
+    const said = "Muy bien, entonces quinientos pesos.";
+    expect(judgePieces(said, heard(said, ["Ha ha.", "Muy bien, entonces", "Yeah.", "Yeah.", "quinientos pesos."]), asHeardEs).again).toBeUndefined();
+    const split: Heard = { key: "k", sec: 3, whole: said, words: [], engine: "parakeet", pauses: [[900, 1000]], pieces: [[0, 950, "Muy bien, en"], [950, 3000, "Entonces quinientos pesos."]] };
+    expect(judgePieces(said, split, asHeardEs).again).toBeUndefined();
+    const real: Heard = { ...split, pauses: [[800, 1200]], pieces: [[0, 1000, "Muy bien, en"], [1000, 3000, "Entonces quinientos pesos."]] };
+    expect(judgePieces(said, real, asHeardEs).again).toBe("en- entonces");
+  });
   it("counts a word a cut has lost", () => {
     expect(lostEitherWay("Muy bien, entonces mil cuatrocientos sesenta y cinco pesos.", "Muy bien, entonces mil cuatrocientos pesos.", asHeardEs)).toBeGreaterThan(0);
     expect(lostEitherWay("¿Para el sábado? Es muy poco tiempo.", "Para el sábado. Es muy poco tiempo.", asHeardEs)).toBe(0);
