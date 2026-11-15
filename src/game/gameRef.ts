@@ -38,6 +38,8 @@ export interface GameApi {
   /** The name tags say the role in the Spanish just chosen (the Spanish edition's switch; compose.ts roleSaid). */
   refreshNameTags(): void;
   readonly groundCanvas: HTMLCanvasElement | undefined;
+  /** What one can take (the boats, the convertibles) and where it is, for the round map. */
+  rideMarks?(): import("../ui/mapMarks").RideMark[];
   readonly doors: Door[];
   /** Puerto Colibrí's grotto while the player is down there (src/game/cave/quest.ts): the glyph stone's card. */
   readonly cave?: { say(): void; showWords(): void; pick(i: number): void; listen(): void; close(): void } | null;
