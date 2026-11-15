@@ -14,7 +14,8 @@ import { natMatchesGloss, natSaysMore, placeTip, type TipSpot } from "./natTip";
 import { useCards, cardKey } from "../state/cards";
 import { WordPopover, inView } from "./Cards";
 
-const unitOf = (t: EventTarget | null) => (t instanceof Element ? t.closest<HTMLElement>(".u[data-i]") : null);
+/** The word a tap is on; not the asterisk, which sits inside the last word's English (it has its own tap). */
+const unitOf = (t: EventTarget | null) => (t instanceof Element && !t.closest(".nat-star") ? t.closest<HTMLElement>(".u[data-i]") : null);
 
 /** `natTip`: NPC lines with the natural sentence off. `compactNat`: player examples, with differing natural
  *  wording behind an asterisk on every screen size and no separate translation row. */
@@ -46,16 +47,17 @@ export function Interlinear({ s, lt, ipa, nat, natTip, compactNat, highlight }: 
         {s.units.map((u, i) => {
           const dash = u.lt.startsWith("—");
           const isSaved = !dash && saved.has(cardKey(u.en));
-          const unit = (
+          // the asterisk right after the last word's last letter, a superscript that takes no room in the line
+          // (a zero-width pin inside the English, so a wider gloss or IPA under the word doesn't push it away and
+          // it never wraps the word); a tap on it is not a tap on the word (unitOf)
+          const pin = star && i === s.units.length - 1 && <span className="nat-pin"><NatTip key={s.en + "|" + s.nat} text={natStar ? s.nat ?? "" : ""} notes={notes} /></span>;
+          return (
             <span className={"u tap" + (isSaved ? " saved" : "") + (open?.i === i ? " open" : "")} key={i} data-i={i}>
-              <span className="en">{u.en}{isSaved && <span className="u-dot" aria-hidden />}</span>
+              <span className="en">{u.en}{isSaved && <span className="u-dot" aria-hidden />}{pin}</span>
               {ipa && <span className="ipa">{ipaForUnit(u.en) || " "}</span>}
               {lt && <span className={"lt" + (dash ? " dash" : "") + (u.flag ? " flag" : "")} title={u.flag || undefined} lang="lt">{u.lt}</span>}
             </span>
           );
-          // the asterisk right after the last word, beside its unit rather than in it (so a tap on it is not a tap
-          // on the word), the two kept on one line
-          return star && i === s.units.length - 1 ? <span className="nat-last" key={i}>{unit}<NatTip key={s.en + "|" + s.nat} text={natStar ? s.nat ?? "" : ""} notes={notes} /></span> : unit;
         })}
       </div>
       {lt && !compactNat && nat !== false && s.nat && <div className="nat" lang="lt">{s.nat}</div>}
