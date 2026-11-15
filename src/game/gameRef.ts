@@ -36,6 +36,8 @@ export interface GameApi {
   surfAgain(level?: "beginner" | "advanced"): void;
   setQuality(q: "high" | "low"): void;
   readonly groundCanvas: HTMLCanvasElement | undefined;
+  /** What one can take (the boats, the convertibles) and where it is, for the round map. */
+  rideMarks?(): import("../ui/mapMarks").RideMark[];
   readonly doors: Door[];
 }
 

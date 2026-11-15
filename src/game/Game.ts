@@ -2065,6 +2065,8 @@ export class Game implements GameApi {
   }
 
   get groundCanvas() { return this.town?.groundCanvas; }
+  /** For the round map: the boats and the convertibles, where they are now. */
+  rideMarks() { return this.rides?.marksForMap() ?? []; }
   get doors(): Door[] { return this.town?.doors ?? []; }
   get zoneId() { return this.zone?.id; }
 

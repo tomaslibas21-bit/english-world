@@ -14,7 +14,7 @@ import type { RidesPlan, CarSpot, BoatSpot } from "../world/rides";
 import { RIDE_OWNERS, RIDE_SHOUTS, type RideOwner, type RideLine } from "../../content/rides";
 import { rideVoice, shoutVoice } from "../../content/voices";
 import { BAY, DECKS, SEA_LEVEL, SHORE, bayHold, floorY, waterY } from "../water";
-import { Drivable, Motion, CAR, BOAT, BAY_EDGE, aheadIn, aheadOnArc, bayTurn, pushOutOfBox, shoreSpeed, type Controls } from "./drive";
+import { Drivable, Motion, CAR, BOAT, BAY_EDGE, CAR_REACH, aheadIn, aheadOnArc, bayTurn, pushOutOfBox, shoreSpeed, type Controls } from "./drive";
 import { townAsphalt, townGround } from "./ground";
 import { convertibleGeometry, motorboatGeometry, buoysGeometry, CAR_SEATS, BOAT_SEATS } from "./shapes";
 
@@ -77,6 +77,8 @@ export interface Ride {
   thanked: boolean;
   /** The boat's rocking. */
   phase: number;
+  /** Its colour on the map (the body's paint, the hull's stripe). */
+  tint: string;
   /** A car's springs: how far the body is up and how its nose is tipped, and how fast both change; for each axle
    *  (front, back) whether it stands on asphalt and which side of each speed bump it is on. */
   sus: { y: number; vy: number; p: number; vp: number; road: boolean[]; side: number[][] };
@@ -108,9 +110,13 @@ function holdPose(root: THREE.Object3D, hold: boolean) {
     });
   }
 }
-const _v = new THREE.Vector3(), _p = { x: 0, z: 0 };
+const _v = new THREE.Vector3(), _w = new THREE.Vector3(), _p = { x: 0, z: 0 };
 /** The bay's three open edges for a boat (west, east, out at sea): the way out across each. */
 const _edges = [{ left: 0, nx: -1, nz: 0 }, { left: 0, nx: 1, nz: 0 }, { left: 0, nx: 0, nz: -1 }];
+/** How far in to the beach a boat floats (z of its hull's round ends): the shallows a few steps off the dry sand,
+ *  where one wades up to it and climbs in, and where it is run in to land. */
+export const SHALLOWS = SHORE.edge + 1.2;
+const _mark = new THREE.Matrix4();
 const _lead = { gap: Infinity, speed: 0 };
 const _frustum = new THREE.Frustum(), _pv = new THREE.Matrix4(), _ball = new THREE.Sphere();
 const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
@@ -178,9 +184,24 @@ export class Rides {
     this.buoys.visible = false;
     this.buoys.matrixAutoUpdate = true;
     this.group.add(this.buoys);
+    // a mark over each boat one can take, seen from the beach and the boards: a small gem that turns and bobs (one
+    // mesh for all of them; shown to someone on foot or swimming within sight of a boat)
+    const boatsN = this.list.filter((r) => r.kind === "boat").length;
+    this.marks = new THREE.InstancedMesh(new THREE.OctahedronGeometry(0.3).scale(1, 1.5, 1), new THREE.MeshBasicMaterial({ color: "#ffd23f" }), Math.max(1, boatsN));
+    this.marks.name = "boat-marks";
+    this.marks.count = 0;
+    this.marks.frustumCulled = false;
+    this.group.add(this.marks);
     host.ambient.rideBoxes = this.boxes;
   }
 
+  /** For the round map: what one can take and where it is (the one being driven is the player's own arrow). */
+  marksForMap() {
+    return this.list.map((r) => ({ kind: r.kind, x: r.m.x, z: r.m.z, heading: r.m.heading, tint: r.tint, taken: r === this.riding }));
+  }
+
+  /** The marks over the boats. */
+  private marks: THREE.InstancedMesh;
   /** The buoys along the bay's edge. */
   private buoys: THREE.Mesh;
 
@@ -195,7 +216,7 @@ export class Rides {
     this.group.add(mesh);
     const m = new Motion(CAR, "car");
     m.set(spot.x, spot.z, spot.rot);
-    const ride: Ride = { id: spot.id, kind: "car", home: { x: spot.x, z: spot.z, rot: spot.rot }, mesh, m, owners: [], chat: null, awayT: 0, thanked: true, phase: 0, sus: this.springs() };
+    const ride: Ride = { id: spot.id, kind: "car", home: { x: spot.x, z: spot.z, rot: spot.rot }, mesh, m, owners: [], chat: null, awayT: 0, thanked: true, phase: 0, sus: this.springs(), tint: spot.paint };
     const cast = RIDE_OWNERS[spot.id] ?? [], n = Math.min(cast.length, this.host.quality === "low" ? 1 : spot.people), r = rand(9100 + i * 7);
     for (let k = 0; k < n; k++) {
       const who = cast[k], female = who.female, look = walkerLook(female, r);
@@ -232,7 +253,7 @@ export class Rides {
     this.group.add(mesh);
     const m = new Motion(BOAT, "boat");
     m.set(spot.x, spot.z, spot.rot);
-    this.list.push({ id: spot.id, kind: "boat", home: { x: spot.x, z: spot.z, rot: spot.rot }, mesh, m, owners: [], chat: null, awayT: 0, thanked: true, phase: i * 2.1 + 0.7, sus: this.springs() });
+    this.list.push({ id: spot.id, kind: "boat", home: { x: spot.x, z: spot.z, rot: spot.rot }, mesh, m, owners: [], chat: null, awayT: 0, thanked: true, phase: i * 2.1 + 0.7, sus: this.springs(), tint: spot.stripe });
   }
 
   // ---------------------------------------------------------------------------------------------- places
@@ -269,7 +290,7 @@ export class Rides {
       // (not while its people are on their way out of it or back into it)
       if (r.owners.some((o) => o.state === "hop-out" || o.state === "hop-in")) continue;
       const d = this.reach(r, x, z);
-      if (d < (r.kind === "car" ? 1.7 : 2.3) && d < bd) { bd = d; best = r; }
+      if (d < (r.kind === "car" ? CAR_REACH : BOAT.reach) && d < bd) { bd = d; best = r; }
     }
     return best;
   }
@@ -366,6 +387,15 @@ export class Rides {
     return null;
   }
 
+  /** Something solid at (x, z) for someone `r` across standing in the shallows (the town's ground plan without the
+   *  sea itself, which stops the passers-by and not a wader). */
+  private solid(x: number, z: number, r: number) {
+    const col = this.host.colliders;
+    for (const b of col.boxes) if (b.tag !== "sea" && x > b.minX - r && x < b.maxX + r && z > b.minZ - r && z < b.maxZ + r) return true;
+    for (const c of col.circles) { const dx = x - c.x, dz = z - c.z; if (dx * dx + dz * dz < (r + c.r) ** 2) return true; }
+    return false;
+  }
+
   /** Out of the boat: onto a pier's boards if they are within a step, into the shallows by the beach, else over the
    *  side for a swim. */
   private boatExit(r: Ride): THREE.Vector3 {
@@ -378,9 +408,17 @@ export class Rides {
       if (dist < bd && !col.blocked(x, z, 0.4)) { bd = dist; best = _v.set(x, d.y, z); }
     }
     if (best) return best;
+    // in the shallows: over the side nearest the beach, onto one's feet in the water (or onto the sand, run right in)
+    let land: THREE.Vector3 | null = null, lz = -Infinity;
+    for (const [x, z] of [[1.75, -0.4], [-1.75, -0.4], [1.75, 0.9], [-1.75, 0.9], [0, -3.2], [0, 3.2]]) {
+      this.at(r, x, z, _w);
+      if (_w.z < SHORE.limit + 0.3 || _w.z <= lz || this.solid(_w.x, _w.z, 0.4) || this.list.some((o) => o !== r && this.reach(o, _w.x, _w.z) < 0.5)) continue;
+      lz = _w.z; land = _v.set(_w.x, floorY(_w.x, _w.z), _w.z);
+    }
+    if (land) return land;
     if (m.z > SHORE.limit - 3.6) {
       const x = m.x, z = SHORE.limit + 0.4;
-      if (!col.blocked(x, z, 0.4)) return _v.set(x, floorY(x, z), z);
+      if (!this.solid(x, z, 0.4)) return _v.set(x, floorY(x, z), z);
     }
     this.at(r, 1.75, -0.4, _v);
     return _v.setY(floorY(_v.x, _v.z));
@@ -423,6 +461,17 @@ export class Rides {
     // what is out of the picture is left out of the scene's walk altogether (a person is some thirty parts to step
     // through each frame, seen or not): a ride and the people in it by one test against the camera's view (as it was a
     // frame ago: generously), but near the player, where its shadow may fall into the picture
+    // the boats' marks: for someone not at a wheel, within 60 m of a boat that lies free
+    {
+      let n = 0;
+      if (!r && host.outdoors()) for (const q of this.list) {
+        if (q.kind !== "boat" || (q.m.x - pp.x) ** 2 + (q.m.z - pp.z) ** 2 > 60 * 60) continue;
+        _mark.makeRotationY(t * 1.6 + q.phase).setPosition(q.m.x, 2.55 + Math.sin(t * 2.2 + q.phase) * 0.13, q.m.z);
+        this.marks.setMatrixAt(n++, _mark);
+      }
+      if (n || this.marks.count) { this.marks.count = n; this.marks.instanceMatrix.needsUpdate = true; }
+      this.marks.visible = n > 0;
+    }
     // (the buoys only for someone on the water: in the boat or swimming; from the town they are not drawn)
     this.buoys.visible = pp.z < SHORE.limit + 2 && pp.y < 0.1;
     if (this.buoys.visible) this.buoys.position.y = SEA_LEVEL + Math.sin(t * 1.1) * 0.035;
@@ -619,7 +668,7 @@ export class Rides {
     const turn = bayTurn(m, _edges);
     if (turn) m.heading += turn * dt;
     // running in to the beach it eases off as the water gets thin, and comes to rest on the shallows
-    const lzs = SHORE.limit - 0.9 - (BOAT.half - BOAT.wide), land = m.fz * m.speed;
+    const lzs = SHALLOWS - (BOAT.half - BOAT.wide), land = m.fz * m.speed;
     if (land > 0) { const most = shoreSpeed(lzs - m.z - 0.4); if (land > most) m.speed *= Math.max(most / land, 1 - 9 * dt); }
     const wx = m.x, wz = m.z;
     m.step(dt, c);
@@ -637,7 +686,7 @@ export class Rides {
     m.settle((p, rad) => {
       // in the bay, off the shallows; clear of the pier, the boats at anchor and the rocks
       p.x = Math.max(BAY.x0 + 1, Math.min(p.x, BAY.x1 - 1));
-      p.z = Math.max(BAY.z0 + 1, Math.min(p.z, SHORE.limit - 0.9));
+      p.z = Math.max(BAY.z0 + 1, Math.min(p.z, SHALLOWS));
       this.sea.resolve(_v.set(p.x, 0, p.z), rad);
       p.x = _v.x; p.z = _v.z;
       for (const o of this.list) if (o !== r && o.kind === "boat") pushOutOfBox(p, rad, o.m.x, o.m.z, o.m.heading, BOAT.half, BOAT.wide);
