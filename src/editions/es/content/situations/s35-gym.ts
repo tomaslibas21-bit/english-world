@@ -927,8 +927,8 @@ export const gym: SituationDef = {
     lock_need_info: [
       t("Sí, | para | los | lockers. | En | la | recepción | venden.", "Yes, | for | the | lockers. | At | the | front desk | they sell (them).", "Yes, for the lockers. You can buy one at the front desk.",
         { flags: { 3: "Mexican: lockers (from English); casilleros is more widely used." },
-          neutral: t("Sí, | para | los | casilleros. | En | la | recepción | venden.", "Yes, | for | the | lockers. | At | the | front desk | they sell (them).", "Yes, for the lockers. You can buy one at the front desk.",
-        { spain: t("Sí, | para | las | taquillas. | En | la | recepción | los | venden.", "Yes, | for | the | lockers. | At | the | front desk | them | they sell.", "Yes, for the lockers. You can buy one at the front desk.", { flags: { 3: "taquilla: a gym locker (Spain).", 7: "los before a verb is a pronoun: them (the locks)." } }) }) }),
+          neutral: t("Sí, | para | los | casilleros. | En | la | recepción | venden.", "Yes, | for | the | lockers. | At | the | front desk | they sell (them).", "Yes, for the lockers. You can buy one at the front desk."),
+          spain: t("Sí, | para | las | taquillas. | En | la | recepción | los | venden.", "Yes, | for | the | lockers. | At | the | front desk | them | they sell.", "Yes, for the lockers. You can buy one at the front desk.", { flags: { 3: "taquilla: a gym locker (Spain).", 7: "los before a verb is a pronoun: them (the locks)." } }) }),
     ],
     // "¿Me prestas un candado?", "¿Dónde compro uno?", "¿Cuánto cuesta el candado?" (lock prices stay vague): a "¡Claro!"
     // answered none of them
