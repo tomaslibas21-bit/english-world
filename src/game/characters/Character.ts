@@ -230,6 +230,10 @@ const SEATED_HANDS: Record<string, [number, number, number, number, number, numb
   lap: [-0.3, 0.3, -0.95, -0.3, -0.3, -0.95], wipe: [-0.3, 0.3, -0.95, -0.3, -0.3, -0.95],
   cup: [-0.3, 0.3, -0.95, -0.5, -0.1, -CUP_ELBOW], type: [-0.5, 0.12, -0.8, -0.5, -0.12, -0.8],
   paper: [-0.62, 0.3, -0.8, -0.62, -0.3, -0.8],
+  // at a car's wheel (both hands on it) and a boat's tiller (the right hand back on it); lounging in a convertible,
+  // one arm lying along the top of the door (src/game/rides)
+  wheel: [-0.98, 0.16, -0.5, -0.98, -0.16, -0.5], tiller: [-0.3, 0.3, -0.95, 0.5, -0.5, -0.35],
+  doorL: [0.12, -1.02, -1.3, -0.3, -0.3, -0.95], doorR: [-0.3, 0.3, -0.95, 0.12, 1.02, -1.3],
 };
 
 let blobGeo: THREE.PlaneGeometry | null = null, blobMat: THREE.MeshBasicMaterial | null = null;
@@ -337,7 +341,21 @@ export class Character {
   fidgets = true;
   /** What their hands are busy with while they wait: wiping a counter, typing (a till, a keyboard), a cup at a café
    *  table, a newspaper. */
-  busy: "wipe" | "type" | "cup" | "paper" | null = null;
+  busy: "wipe" | "type" | "cup" | "paper" | "wheel" | "tiller" | "doorL" | "doorR" | null = null;
+  /** At a wheel: how far it is turned (−1…1, left negative): the hands go round with it. */
+  steer = 0;
+  /** Swimming (0–1: how far into the stroke's pose; src/game/water.ts SWIM): the body lies along the water, turned
+   *  about the chest, the head up, a calm breaststroke at the pace of `moveSpeed`; `dive` (0–1): under water, the
+   *  head down between the arms. */
+  swim = 0;
+  dive = 0;
+  /** On a surfboard (src/game/surf/). `prone` (0–1): lying on it, the head up, paddling with one arm after the other
+   *  (`stroke`: the strokes taken so far, eased by the game; each whole number is one arm's pull). `stance` (0–1):
+   *  standing side-on, the left foot forward, the knees bent (lower with `crouch`, 0–1), the arms out, the weight
+   *  over the front foot with `pitch` (0–1), the arms flailing with `wobble` (0–1). `straddle` (0–1, while sitting): the
+   *  legs down either side of the board. The root is the deck: under the chest lying, between the feet standing. */
+  surf = { prone: 0, stance: 0, crouch: 0, pitch: 0, stroke: 0, wobble: 0, straddle: 0 };
+  private swimPhase = 0;
   private moment: { kind: Moment; t: number; dur: number; s: number; w: number } | null = null;
   private momentT = 1 + Math.random() * 5;
   private legLook!: { h: number; b: number; shin: THREE.ColorRepresentation; shoes: string; skin: THREE.ColorRepresentation; flipflops: boolean };
@@ -1165,6 +1183,9 @@ export class Character {
       this.stance *= 1 - Math.min(1, dt * 5);
     } else if (seated) {
       [lx, lz, lf, rx, rz, rf] = SEATED_HANDS[this.busy ?? "lap"];
+      // (the wheel goes round: one hand up over it, the other down)
+      if (this.busy === "wheel") { lx += this.steer * 0.3; rx -= this.steer * 0.3; lf -= this.steer * 0.25; rf += this.steer * 0.25; }
+      if (this.busy === "tiller") rz -= this.steer * 0.35;
       headTurn = Math.sin(t * this.swayRate) * 0.06;
       bob = breath * 0.004;
       // a reader looks down at the paper
@@ -1401,6 +1422,8 @@ export class Character {
       this.legR.rotation.set(-Math.PI / 2 + SIT_DROOP + rc, 0, 0);
       this.shinL.rotation.set(shin, 0, ankles * 0.17);
       this.shinR.rotation.set(shin - Math.abs(ankles) * 0.16, 0, -ankles * 0.17);
+      // astride a surfboard: the knees out over its rails, the shins down into the water
+      if (this.surf.straddle > 0) { const k = this.surf.straddle; this.legL.rotation.z = -0.6 * k; this.legR.rotation.z = 0.6 * k; this.legL.rotation.x += 0.25 * k; this.legR.rotation.x += 0.25 * k; }
       this.body.position.set(0, this.seatY + 0.1 * b - 0.66 * h + bob + 0.66 * h * (1 - Math.cos(rc)), 0.04 + 0.66 * h * Math.sin(rc));
       lean -= rc;
       headNod += rc * 0.55;
@@ -1443,6 +1466,52 @@ export class Character {
       this.blob.scale.setScalar(0.95 * b * (1 - 0.45 * Math.min(1, this.lift / 0.6)));
       this.hopShown = this.lift > 0 || this.tuck > 0 || this.squash !== 0 || this.flip !== 0;
     }
+    // swimming: a breaststroke (the arms reach ahead together, sweep out and back, come forward again bent; the legs
+    // draw up and kick as the arms reach), eased in over the walking pose
+    const sw = seated ? 0 : this.swim;
+    if (sw > 0) {
+      this.swimPhase += dt * (2.6 + Math.min(4, this.moveSpeed) * 0.75);
+      const ph = this.swimPhase, pull = Math.max(0, Math.sin(ph)), back = Math.max(0, -Math.sin(ph)), still = this.moveSpeed < 0.3 ? 0.35 : 1;
+      const ax = -2.55 - 0.45 * Math.cos(ph) * still, out = 0.18 + 1.05 * pull * still, bend = -0.15 - 1.15 * back * still;
+      lx += (ax - lx) * sw; rx += (ax - rx) * sw;
+      lz += (-out - lz) * sw; rz += (out - rz) * sw;
+      lf += (bend - lf) * sw; rf += (bend - rf) * sw;
+      lfy *= 1 - sw; rfy *= 1 - sw; lfz *= 1 - sw; rfz *= 1 - sw;
+      const kick = Math.max(0, Math.sin(ph + 2.2)) * still, thigh = 0.12 - 0.5 * kick, knee = 0.25 + 1.15 * kick;
+      this.legL.rotation.x += (thigh - this.legL.rotation.x) * sw; this.legR.rotation.x += (thigh - this.legR.rotation.x) * sw;
+      this.legL.rotation.z += (-0.12 - 0.3 * kick - this.legL.rotation.z) * sw; this.legR.rotation.z += (0.12 + 0.3 * kick - this.legR.rotation.z) * sw;
+      this.shinL.rotation.x += (knee - this.shinL.rotation.x) * sw; this.shinR.rotation.x += (knee - this.shinR.rotation.x) * sw;
+    }
+    // on a surfboard (surf): lying on it and paddling, or standing side-on with the knees bent
+    const sf = this.surf, prone = seated ? 0 : sf.prone, stand = seated ? 0 : sf.stance;
+    if (prone > 0) {
+      // a crawl: each arm reaches ahead along the rail, pulls down and back through the water, and comes forward
+      const arm = (o: number) => { const u = 0.5 - 0.5 * Math.cos(sf.stroke * Math.PI + o), dn = Math.sin(u * Math.PI); return { x: -2.85 + 2.0 * u, out: 0.2 + 0.22 * dn, bend: -0.12 - 0.55 * (1 - dn) * u }; };
+      const L = arm(0), R = arm(Math.PI);
+      lx += (L.x - lx) * prone; rx += (R.x - rx) * prone;
+      lz += (-L.out - lz) * prone; rz += (R.out - rz) * prone;
+      lf += (L.bend - lf) * prone; rf += (R.bend - rf) * prone;
+      lfy *= 1 - prone; rfy *= 1 - prone; lfz *= 1 - prone; rfz *= 1 - prone;
+      for (const [leg, shin, sd] of [[this.legL, this.shinL, -1], [this.legR, this.shinR, 1]] as [THREE.Group, THREE.Group, number][]) {
+        leg.rotation.x += (0.05 - leg.rotation.x) * prone; leg.rotation.z += (sd * 0.07 - leg.rotation.z) * prone;
+        shin.rotation.x += (0.1 - shin.rotation.x) * prone;
+      }
+    }
+    if (stand > 0) {
+      const k = 0.4 + 0.55 * sf.crouch, wob = sf.wobble * Math.sin(t * 11);
+      for (const [leg, shin, sd] of [[this.legL, this.shinL, -1], [this.legR, this.shinR, 1]] as [THREE.Group, THREE.Group, number][]) {
+        leg.rotation.x += (-k - leg.rotation.x) * stand; leg.rotation.z += (sd * 0.42 - leg.rotation.z) * stand;
+        shin.rotation.x += (k * 1.95 - shin.rotation.x) * stand;
+      }
+      // the arms out along the board for balance (the front one a little higher), flailing when it wobbles
+      lx += (-0.12 - lx) * stand; rx += (-0.1 - rx) * stand;
+      lz += (-1.3 + 0.25 * sf.crouch - wob * 0.45 - lz) * stand; rz += (1.05 - 0.2 * sf.crouch - wob * 0.45 - rz) * stand;
+      lf += (-0.22 - lf) * stand; rf += (-0.3 - rf) * stand;
+      lfy *= 1 - stand; rfy *= 1 - stand; lfz *= 1 - stand; rfz *= 1 - stand;
+      headTurn += (1.05 - headTurn) * stand;
+      headNod *= 1 - stand;
+      this.body.position.y -= (0.66 * h * (1 - Math.cos(k)) + 0.05) * stand;
+    }
     this.armL.rotation.set(lx, 0, lz);
     this.armR.rotation.set(rx, 0, rz);
     this.foreL.rotation.set(lf, lfy, lfz);
@@ -1456,6 +1525,31 @@ export class Character {
       this.body.rotation.x += this.flip;
       this.body.position.y += c * (1 - Math.cos(this.flip));
       this.body.position.z -= c * Math.sin(this.flip);
+    }
+    if (prone > 0) {
+      // lying on the board: turned about the chest, which comes down onto the deck; the head up, looking ahead
+      const a = 1.5 * prone, c = 1.2 * h;
+      this.body.rotation.x += a;
+      this.body.position.y += c * (1 - Math.cos(a)) - (c - 0.2) * prone;
+      this.body.position.z -= c * Math.sin(a) - 0.05 * prone;
+      headNod += (-0.95 - headNod) * prone;
+      this.blob.visible = false;
+    }
+    this.body.rotation.y = stand > 0 ? -1.2 * stand : 0;
+    if (stand > 0) {
+      // side-on: the weight over the front foot or back on the tail, a sway when it wobbles
+      this.body.rotation.x += (0.2 * sf.pitch - 0.04 + sf.wobble * Math.sin(t * 7.3) * 0.12) * stand;
+      this.blob.visible = false;
+    }
+    if (sw > 0) {
+      // lying along the water, turned about the chest (which stays where it is: the legs come up behind), the head
+      // held up out of it; in a dive the head goes down between the arms
+      const a = (1.3 + 0.2 * this.dive) * sw, c = 1.2 * h;
+      this.body.rotation.x += a;
+      this.body.position.y += c * (1 - Math.cos(a)) + Math.sin(this.swimPhase + 0.6) * 0.03 * sw;
+      this.body.position.z -= c * Math.sin(a);
+      headNod += (-1.05 + 1.0 * this.dive) * sw;
+      this.blob.visible = false;
     }
     this.head.rotation.x = headNod;
     this.head.rotation.y = headTurn;

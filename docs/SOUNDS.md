@@ -18,6 +18,7 @@ Spanish edition has its own), `src/game/Game.ts` (where they are asked for).
 | Birds | among the trees, away from the sea | chirps; in Puerto Colibrí also a few seconds of `public/sfx/birds.mp3` now and then |
 | Gulls, a buoy's bell, a boat's horn | by the sea and the pier | synthesized, at random moments |
 | A cup on a saucer | in the cafés | synthesized |
+| A motor | at a convertible's wheel, at the boat's helm (docs/RIDES.md) | synthesized: a light hum or a putter, its pitch following the speed; a soft bump against a kerb |
 | A few far-off notes | on the square, not under the radio | synthesized, never a known tune (a marimba's in Puerto Colibrí) |
 
 ## The rules

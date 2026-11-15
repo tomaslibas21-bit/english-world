@@ -5,7 +5,7 @@ import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, TAXI, BUS_STOP, FOUNTAIN, LI
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
 import { carParts } from "./car";
 import { STYLED, IS_REAL, grade } from "../style";
-import { SHORE, DECKS, sandY, SAND_GLSL, SHORE_GLSL, SWELL_GLSL } from "../water";
+import { SHORE, DECKS, POOLS, FLOORS, sandY, SAND_GLSL, SHORE_GLSL, SWELL_GLSL } from "../water";
 import { GROUND_BLOCKS, groundPalette, groundExtras, groundMaterial, seaMaterial, trunkGeometry, canopyGeometry, canopyMaterial, bushGeometry, bushMaterial, outlineInstanced, cloudMaterial, cloudPuff } from "./styled";
 
 export interface Door { loc: string; bid: string; x: number; z: number; face: "n" | "s" | "e" | "w"; name: string; outX: number; outZ: number; rot: number }
@@ -55,6 +55,8 @@ export function buildTown(): Town {
   const r = rand(7);
   sprays.length = 0; // a new game builds a new town
   DECKS.length = 0;
+  POOLS.length = 0;
+  FLOORS.length = 0;
   seats.length = 0;
   details.length = 0;
   displays.length = 0;
@@ -145,7 +147,9 @@ export function buildTown(): Town {
   addMaggiesCar(M, colliders, group);
 
   // world bounds
-  colliders.addBox((WORLD.minX + WORLD.maxX) / 2, WORLD.minZ - 1, WORLD.maxX - WORLD.minX + 4, 2);
+  // (the north one lies out in the sea: like the sea itself, it stops everyone but the player, who swims on out to the
+  // bay's own edge, water.ts BAY)
+  colliders.addBox((WORLD.minX + WORLD.maxX) / 2, WORLD.minZ - 1, WORLD.maxX - WORLD.minX + 4, 2, "sea");
   colliders.addBox((WORLD.minX + WORLD.maxX) / 2, WORLD.maxZ + 1, WORLD.maxX - WORLD.minX + 4, 2);
   colliders.addBox(WORLD.minX - 1, 0, 2, 220);
   colliders.addBox(WORLD.maxX + 1, 0, 2, 220);
@@ -1613,7 +1617,10 @@ function addHarbor(M: Merger, col: Colliders, group: THREE.Group, r: () => numbe
     else M.add("pier-post", mat("#7a5a3a"), cylGeo(0.22, 0.22, 2.4, -30 + i, -0.35, -72, 8));
   }
   for (const s of [-1, 1]) M.add("pier-rail", mat("#f4f1ea"), boxGeo(0.1, 1, 14, -30 + s * 2.15, 0.8, -69));
-  col.addBox(-32.3, -69, 0.2, 14); col.addBox(-27.7, -69, 0.2, 14);
+  // (each on its rail, and a ledge for the player: the rail's height is read there, and a jump from the boards gets
+  // onto it and down to the beach beside the pier; from the sand it is too high: ledges.ts)
+  // (the last of each, by the restaurant's front and under its awning, stays the wall it was)
+  for (const rx of [-32.15, -27.85]) { col.addBox(rx, -67.5, 0.2, 11, "ledge"); col.addBox(rx, -74.5, 0.2, 3); }
   // (one walks on the boards, not on the sand sloping away under them: water.ts)
   DECKS.push({ x0: -32.3, x1: -27.7, z0: -76.1, z1: -62, y: 0.3 }, { x0: -41.3, x1: -18.7, z0: -88.4, z1: -72, y: 0.3 });
   // pier deck area is walkable: remove the sea collider there by leaving a gap (see buildTown); add deck edges

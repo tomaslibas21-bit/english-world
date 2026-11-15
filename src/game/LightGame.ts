@@ -108,7 +108,12 @@ export class LightGame implements GameApi {
   interact() { /* no world to interact with */ }
   setJoystick(_x: number, _y: number) { /* no walking */ }
   jump() { /* no walking */ }
+  hold(_on: boolean) { /* no walking */ }
   setQuality(_q: "high" | "low") { /* nothing is rendered in 3D */ }
+  surfStart() { /* the surf lesson is the town's */ }
+  surfStop() { /* the surf lesson is the town's */ }
+  surfChoose() { /* the surf lesson is the town's */ }
+  surfAgain() { /* the surf lesson is the town's */ }
   /** "Nuvesk mane" (the journal): there is nowhere to walk, so the task's conversation starts. */
   autoWalkToObjective() {
     const o = this.currentObjective();

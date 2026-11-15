@@ -1306,6 +1306,55 @@ export class AudioSystem {
     air.start(now, Math.random()); air.stop(now + 0.2);
   }
 
+  // ---- What one drives (src/game/rides): a car's light hum, a boat's putter. One small set of nodes on the world's
+  // bus (so it is silent in a conversation, under a voice, with a panel open), made when one gets in, its pitch and
+  // level following the speed, gone a moment after one gets out. Lower under the radio's music.
+  private motorSet: { kind: "car" | "boat"; ctx: AudioContext; o1: OscillatorNode; o2: OscillatorNode; lfo: OscillatorNode; lp: BiquadFilterNode; gain: GainNode } | null = null;
+  /** `kind`: what is driven now (null: nothing, the motor stops); `revs` 0–1: how fast it goes. */
+  motor(kind: "car" | "boat" | null, revs = 0) {
+    let m = this.motorSet;
+    if (m && (m.kind !== kind || m.ctx !== this.ctx || m.ctx.state === "closed")) {
+      const old = m, at = old.ctx.currentTime;
+      this.motorSet = m = null;
+      try {
+        old.gain.gain.cancelScheduledValues(at); old.gain.gain.setTargetAtTime(0, at, 0.08);
+        for (const o of [old.o1, old.o2, old.lfo]) o.stop(at + 0.4);
+        old.o1.onended = () => { for (const n of [old.o1, old.o2, old.lfo, old.lp, old.gain]) n.disconnect(); };
+      } catch { /* the context is gone */ }
+    }
+    if (!kind || this.volume <= 0) return;
+    const ctx = this.ctx;
+    if (!ctx || ctx.state !== "running") return;
+    if (!m) {
+      const o1 = ctx.createOscillator(), o2 = ctx.createOscillator(), lfo = ctx.createOscillator(), lp = ctx.createBiquadFilter(), gain = ctx.createGain(), am = ctx.createGain(), depth = ctx.createGain();
+      o1.type = "sawtooth"; o2.type = "triangle"; lfo.type = "sine";
+      lp.type = "lowpass"; lp.Q.value = 0.6;
+      gain.gain.value = 0;
+      // (the putter: the level wobbles with the slow wave, deeper for a boat's two-stroke than for a car)
+      am.gain.value = 1; depth.gain.value = kind === "boat" ? 0.55 : 0.12;
+      lfo.connect(depth); depth.connect(am.gain);
+      const half = ctx.createGain(); half.gain.value = 0.35;
+      o1.connect(lp); o2.connect(half); half.connect(lp); lp.connect(am); am.connect(gain); gain.connect(this.out(ctx));
+      o1.start(); o2.start(); lfo.start();
+      this.motorSet = m = { kind, ctx, o1, o2, lfo, lp, gain };
+    }
+    const at = ctx.currentTime, k = Math.max(0, Math.min(1, revs)), car = kind === "car";
+    const f = car ? 52 + 62 * k : 34 + 26 * k;
+    m.o1.frequency.setTargetAtTime(f, at, 0.08);
+    m.o2.frequency.setTargetAtTime(f * 2.01, at, 0.08);
+    m.lfo.frequency.setTargetAtTime(car ? f / 2 : 7 + 13 * k, at, 0.1);
+    m.lp.frequency.setTargetAtTime(car ? 260 + 620 * k : 220 + 420 * k, at, 0.1);
+    m.gain.gain.setTargetAtTime(this.volume * (car ? 0.016 + 0.02 * k : 0.02 + 0.022 * k) * (0.55 + 0.45 * this.underMusic), at, 0.1);
+  }
+
+  /** A soft bump: a car's tire against a kerb, a boat's side against the pier (`strength` 0–1). */
+  bump(strength = 0.6) {
+    const ctx = this.ac();
+    if (!ctx || this.volume <= 0) return;
+    this.thump(ctx, ctx.currentTime, 95, 0.12, this.volume * 0.05 * (0.4 + 0.6 * strength));
+    this.burst(ctx, ctx.currentTime, 420, 0.8, 0.006, 0.09, this.volume * 0.03 * (0.4 + 0.6 * strength), 0.8);
+  }
+
   /** A second and a half of even noise (water). */
   private hissBuffer: AudioBuffer | null = null;
   private hiss(ctx: AudioContext) {

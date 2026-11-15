@@ -106,11 +106,22 @@ export interface RadioSaved {
   places: Record<string, string>;
   /** the lyric strip is shown */
   lyrics: boolean;
+  /** the strip's type, a step of LYRIC_SIZES */
+  size: number;
+  /** under the line in the strip: the whole sentence's translation, the course's notes on it; beside it: its picture */
+  nat: boolean;
+  notes: boolean;
+  pictures: boolean;
   /** the radio set has opened by itself once, the first time the radio was turned on */
   introduced: boolean;
 }
 
-export const RADIO_DEFAULTS: RadioSaved = { on: false, station: "", shuffle: false, seed: 1, song: null, at: 0, places: {}, lyrics: true, introduced: false };
+/** The lyric strip's type sizes, as a share of its usual size (the game's own text size, A to A++, counts on top);
+ *  LYRIC_SIZE is the step it starts at. */
+export const LYRIC_SIZES = [0.85, 1, 1.2, 1.45] as const;
+export const LYRIC_SIZE = 1;
+
+export const RADIO_DEFAULTS: RadioSaved = { on: false, station: "", shuffle: false, seed: 1, song: null, at: 0, places: {}, lyrics: true, size: LYRIC_SIZE, nat: false, notes: false, pictures: false, introduced: false };
 
 export function readSaved(raw: string | null): RadioSaved {
   try {
@@ -129,6 +140,10 @@ export function readSaved(raw: string | null): RadioSaved {
       at: Number.isFinite(v.at) && Number(v.at) > 0 ? Number(v.at) : 0,
       places,
       lyrics: v.lyrics !== false,
+      size: Number.isInteger(v.size) && Number(v.size) >= 0 && Number(v.size) < LYRIC_SIZES.length ? Number(v.size) : LYRIC_SIZE,
+      nat: v.nat === true,
+      notes: v.notes === true,
+      pictures: v.pictures === true,
       introduced: v.introduced === true,
     };
   } catch { return { ...RADIO_DEFAULTS, places: {} }; }
