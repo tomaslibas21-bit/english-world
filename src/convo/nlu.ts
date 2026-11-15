@@ -39,6 +39,8 @@ const YES_LEAD = LANG.yesLead;
 const NO_LEAD = LANG.noLead;
 const YES = LANG.yes;
 const NO = LANG.no;
+/** A half-heard "What?" right before a yes or a no ("What? Yes.", "¿Qué? Sí."). */
+const HUH = LANG.huh;
 
 const NUMBER_WORDS = LANG.numberWords;
 
@@ -108,12 +110,15 @@ function noIsDeterminer(r: { caps: { name: string; from: number }[] }, toks: Tok
 }
 
 /** "Again", "What?", "Sorry?" asking to repeat only mean that on their own, not inside a longer
- *  sentence ("The train is late again"). */
-function strayRepeat(r: { caps: { name: string; value: unknown; from: number; to: number }[] }): boolean {
+ *  sentence ("The train is late again"), and not before a yes or a no ("What? Yes."): that is the answer. */
+function strayRepeat(r: { caps: { name: string; value: unknown; from: number; to: number }[] }, toks: Tokens): boolean {
   const segs = r.caps.filter((c) => c.name === "__intent");
-  if (segs.length < 2) return false;
-  return segs.some((c) => (c.value as any)?.__id === "g_repeat" && c.to - c.from <= 2);
+  const short = segs.filter((c) => (c.value as any)?.__id === "g_repeat" && c.to - c.from <= 2);
+  if (!short.length) return false;
+  if (segs.length >= 2) return true;
+  return short.some((c) => toks.slice(c.to).some((w) => YES_NO_WORDS.has(w)));
 }
+const YES_NO_WORDS = new Set(LANG.yesNoWords);
 
 /** "I have to go" (a goodbye tagged #leaving) is one only as the last thing said, or before thanks or another
  *  goodbye: "I have to go | to the airport" and "I need to leave | at seven" are not goodbyes. */
@@ -176,7 +181,7 @@ export class Nlu {
   private globalIds = new Set<string>();
   /** Sentence grammars by the set of context-only intents the current question allows. */
   private tops = new Map<string, GNode>();
-  private shared: { lead: GNode; tail: GNode; yn: GNode; ynLead: GNode; ynConn: GNode; ynTwice: GNode; conn: GNode; voc: GNode } | null = null;
+  private shared: { lead: GNode; tail: GNode; yn: GNode; ynLead: GNode; ynConn: GNode; ynTwice: GNode; conn: GNode; voc: GNode; huh: GNode } | null = null;
   private catchAll = new Set<string>();
   /** Intents only accepted when the current step/pending question expects them (e.g. a bare name). */
   private contextual = new Set<string>();
@@ -243,7 +248,10 @@ export class Nlu {
       S([parsePattern(NO_LEAD, false), parsePattern(NO, false), mk.tag(["yn:no", "yn:twice"])]),
     ]);
     const conn = mk.opt(parsePattern(LANG.connectors, false));
-    return { lead, tail, yn, ynLead, ynConn, ynTwice, conn, voc };
+    // "What? Yes!", "Huh? No.": a half-heard question answered at once is the answer, not a request to repeat
+    // (owner, 15 Nov 2026: "What… Yes" to "Are you free?" got "Sure!" and the question again)
+    const huh = S([parsePattern(HUH, false), mk.tag(["lead:huh"])]);
+    return { lead, tail, yn, ynLead, ynConn, ynTwice, conn, voc, huh };
   }
 
   /** The sentence grammar for a turn. Context-only intents (`_ctx`: a bare name, a bare number) are
@@ -254,12 +262,12 @@ export class Nlu {
     const hit = this.tops.get(key);
     if (hit) return hit;
     if (!this.shared) this.shared = this.buildShared();
-    const { lead, tail, yn, ynLead, ynConn, ynTwice, conn, voc } = this.shared;
+    const { lead, tail, yn, ynLead, ynConn, ynTwice, conn, voc, huh } = this.shared;
     const S = (items: GNode[]) => mk.seq(items, true);
     const intent = mk.alt([...this.intents.entries()].filter(([id]) => !this.contextual.has(id) || allowed.includes(id)).map(([, n]) => n));
     // the person's name may also come between two pieces: "Thank you, Brenda, but you can keep the mug"
     const intents = S([intent, mk.rep(S([mk.opt(voc), conn, intent]), 0, 2)]);
-    const body = mk.alt([S([mk.opt(S([ynLead, ynConn])), intents]), yn, ynTwice]);
+    const body = mk.alt([S([mk.opt(S([ynLead, ynConn])), intents]), yn, ynTwice, S([huh, ynLead, ynConn, intents]), S([huh, yn]), S([huh, ynTwice])]);
     const top = S([mk.rep(lead, 0, 3), body, mk.rep(tail, 0, 3)]);
     this.tops.set(key, top);
     return top;
@@ -276,7 +284,7 @@ export class Nlu {
     const readAll = (vars: Tokens[], into: Parse[]) => {
       for (const toks of vars) {
         if (!toks.length) continue;
-        const res = this.g.match(top, toks, false).filter((r) => r.end === toks.length && !r.partial && !negationCutOff(r, toks) && !strayRepeat(r) && !splitNames(r, toks) && !leavingCutOff(r, toks));
+        const res = this.g.match(top, toks, false).filter((r) => r.end === toks.length && !r.partial && !negationCutOff(r, toks) && !strayRepeat(r, toks) && !splitNames(r, toks) && !leavingCutOff(r, toks));
         for (const r of res) {
           const p = this.toParse(r, toks, please, expected, primary);
           if (p.segments.some((sg) => this.contextual.has(sg.intent) && !expected.includes(sg.intent))) continue;

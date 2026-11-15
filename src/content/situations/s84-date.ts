@@ -398,8 +398,10 @@ const H: Record<string, Handler> = {
   },
   agree_again(c, slots) {
     hi(c);
-    if (c.step === "again" || c.s.partnerAsked) {
-      if (!c.s.againOk) { c.s.againOk = true; if (once(c, "agree")) c.say("yay_great"); }
+    // The yes to "Can I see you again?". Once that is agreed, a yes ("Sure, that works", "Yes, I'm free") answers
+    // "How about Saturday? Are you free?" (owner, 15 Nov 2026: it only got the day question again).
+    if (!c.s.againOk && (c.step === "again" || c.s.partnerAsked)) {
+      c.s.againOk = true; if (once(c, "agree")) c.say("yay_great");
       proposeDay(c, slots);
       return;
     }
