@@ -684,4 +684,6 @@ export const STRINGS: Record<string, string> = {
   "Patrauk vairalazdę žemyn – važiuosi atbulas.": "Pull the stick down to back up.",
   "Rodyklė žemyn – važiuosi atbulas.": "Arrow down backs up.",
   "Mašina vėl gatvėje": "The car is back on the street",
+  "Priekyje žmogus": "Someone is in the way",
+  "Mašina sustoja pati. Apvažiuok arba pavažiuok atbulas.": "The car stops by itself. Go round them, or back up.",
 };
