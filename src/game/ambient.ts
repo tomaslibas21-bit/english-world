@@ -15,7 +15,7 @@ import { rand, type Colliders } from "./world/util";
 import { CAR, TRAFFIC_LANES, CHAT_SPOTS } from "./world/layout";
 import type { Seat } from "./world/town";
 import { Dog } from "./dog";
-import { aheadIn, pushOutOfBox } from "./rides/drive";
+import { aheadOnArc, pushOutOfBox } from "./rides/drive";
 
 /** A townsperson: one who strolls between places ("walk"), sits at a café table or on a bench ("sit"), or stands
  *  chatting with someone ("stand"). */
@@ -524,18 +524,36 @@ export class Ambient {
   }
 
   /** How far ahead of a car at (x, z) going along (fx, fz) the nearest person on foot or dog is, in the strip `half` m
-   *  to each side of its way and within `reach` m (Infinity: nobody): it stops short of them (rides/drive.ts). */
-  personAhead(x: number, z: number, fx: number, fz: number, reach: number, half: number) {
+   *  to each side of its way and within `reach` m (Infinity: nobody): it stops short of them (rides/drive.ts). `curv`:
+   *  its way's curvature with the wheel as it is (0: straight ahead). */
+  personAhead(x: number, z: number, fx: number, fz: number, reach: number, half: number, curv = 0) {
     let gap = Infinity;
     for (const w of this.walkers) {
       const p = w.ch.root.position;
-      gap = Math.min(gap, aheadIn(x, z, fx, fz, p.x, p.z, reach, half));
+      gap = Math.min(gap, aheadOnArc(x, z, fx, fz, curv, p.x, p.z, reach, half));
       if (w.kind !== "walk") continue;
       // (and where they will be in a moment, walking on: someone about to step into its way is seen in time)
-      if (w.wait <= 0 && w.path?.length) gap = Math.min(gap, aheadIn(x, z, fx, fz, p.x + Math.sin(w.heading) * w.speed * 1.3, p.z + Math.cos(w.heading) * w.speed * 1.3, reach, half));
-      if (w.dog) gap = Math.min(gap, aheadIn(x, z, fx, fz, w.dog.root.position.x, w.dog.root.position.z, reach, half));
+      if (w.wait <= 0 && w.path?.length) gap = Math.min(gap, aheadOnArc(x, z, fx, fz, curv, p.x + Math.sin(w.heading) * w.speed * 1.3, p.z + Math.cos(w.heading) * w.speed * 1.3, reach, half));
+      if (w.dog) gap = Math.min(gap, aheadOnArc(x, z, fx, fz, curv, w.dog.root.position.x, w.dog.root.position.z, reach, half));
     }
     return gap;
+  }
+
+  /** The nearest car of the traffic on a driven car's way (as personAhead, along its wheel's arc): how far its body is
+   *  (m, from the driven car's middle; Infinity: none) and how fast it goes the same way (m/s; 0 or less: standing, or
+   *  coming the other way). The driven car eases in behind it instead of running into it (rides/Rides.ts). */
+  carAhead(x: number, z: number, fx: number, fz: number, reach: number, half: number, curv = 0, out = { gap: Infinity, speed: 0 }) {
+    out.gap = Infinity; out.speed = 0;
+    for (const c of this.cars) {
+      if (c.hidden > 0 || c.mesh.scale.x < 0.5 || Math.abs(c.x - x) > reach + 4 || Math.abs(c.lane - z) > reach + 4) continue;
+      const h = this.half(c);
+      // (its body as three points along its length; its own half width is added to the strip)
+      for (const k of [-0.8, 0, 0.8]) {
+        const gap = aheadOnArc(x, z, fx, fz, curv, c.x + k * h.x, c.lane, reach, half + h.z) - 0.2 * h.x;
+        if (gap < out.gap) { out.gap = gap; out.speed = c.speed * c.dir * fx; }
+      }
+    }
+    return out;
   }
 
   /** A point (a driven car's front, middle or back, `r` across) pushed out of the traffic's cars. */

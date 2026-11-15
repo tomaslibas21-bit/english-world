@@ -14,7 +14,7 @@ import type { RidesPlan, CarSpot, BoatSpot } from "../world/rides";
 import { RIDE_OWNERS, RIDE_SHOUTS, type RideOwner, type RideLine } from "../../content/rides";
 import { rideVoice, shoutVoice } from "../../content/voices";
 import { BAY, DECKS, SEA_LEVEL, SHORE, bayHold, floorY, waterY } from "../water";
-import { Drivable, Motion, CAR, BOAT, BAY_EDGE, aheadIn, bayTurn, pushOutOfBox, shoreSpeed, type Controls } from "./drive";
+import { Drivable, Motion, CAR, BOAT, BAY_EDGE, aheadIn, aheadOnArc, bayTurn, pushOutOfBox, shoreSpeed, type Controls } from "./drive";
 import { townAsphalt, townGround } from "./ground";
 import { convertibleGeometry, motorboatGeometry, buoysGeometry, CAR_SEATS, BOAT_SEATS } from "./shapes";
 
@@ -111,6 +111,7 @@ function holdPose(root: THREE.Object3D, hold: boolean) {
 const _v = new THREE.Vector3(), _p = { x: 0, z: 0 };
 /** The bay's three open edges for a boat (west, east, out at sea): the way out across each. */
 const _edges = [{ left: 0, nx: -1, nz: 0 }, { left: 0, nx: 1, nz: 0 }, { left: 0, nx: 0, nz: -1 }];
+const _lead = { gap: Infinity, speed: 0 };
 const _frustum = new THREE.Frustum(), _pv = new THREE.Matrix4(), _ball = new THREE.Sphere();
 const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 const ease = (k: number) => k * k * (3 - 2 * k);
@@ -483,11 +484,27 @@ export class Rides {
     const m = r.m, host = this.host;
     // who is in the way, the way it is going: the passers-by and their dogs, the people one talks to, its own people
     const dir = m.speed < -0.15 || (m.speed < 0.15 && c.throttle < 0) ? -1 : 1, fx = m.fx * dir, fz = m.fz * dir;
-    let gap = host.ambient.personAhead(m.x, m.z, fx, fz, 34, 1.5);
-    for (const q of host.people()) gap = Math.min(gap, aheadIn(m.x, m.z, fx, fz, q.x, q.z, 34, 1.35));
-    for (const o of this.list) for (const w of o.owners) if (w.state !== "in") gap = Math.min(gap, aheadIn(m.x, m.z, fx, fz, w.ch.root.position.x, w.ch.root.position.z, 34, 1.35));
+    // (on the way its wheel takes it: turning away from someone, it need not stop for them; whoever is straight ahead
+    // all the same, it goes by at a careful pace)
+    const curv = m.curve(dir);
+    let gap = host.ambient.personAhead(m.x, m.z, fx, fz, 34, 1.5, curv), care = curv ? host.ambient.personAhead(m.x, m.z, fx, fz, 34, 1.5) : Infinity;
+    for (const q of host.people()) { gap = Math.min(gap, aheadOnArc(m.x, m.z, fx, fz, curv, q.x, q.z, 34, 1.35)); care = Math.min(care, aheadIn(m.x, m.z, fx, fz, q.x, q.z, 34, 1.35)); }
+    for (const o of this.list) for (const w of o.owners) if (w.state !== "in") {
+      const q = w.ch.root.position;
+      gap = Math.min(gap, aheadOnArc(m.x, m.z, fx, fz, curv, q.x, q.z, 34, 1.35)); care = Math.min(care, aheadIn(m.x, m.z, fx, fz, q.x, q.z, 34, 1.35));
+    }
+    // a car of the traffic on its way: it eases in behind it at its pace (no running into its back; steered round
+    // it, the way is free), and brakes for one that comes the other way. One that stands (it waits for the
+    // convertible as often as not) it noses up to and slides round: two cars never wait for each other
+    const lead = host.ambient.carAhead(m.x, m.z, fx, fz, 30, CAR.wide + 0.2, curv, _lead);
+    const behind = lead.gap - CAR.half - 1, moving = Math.abs(lead.speed) > 0.3;
+    if (lead.gap !== Infinity) {
+      const most = Math.max(moving ? 0 : 1.6, Math.max(0, lead.speed) + Math.sqrt(2 * 9 * Math.max(0, behind)));
+      if (Math.abs(m.speed) > most) m.speed = Math.sign(m.speed) * Math.max(most, Math.abs(m.speed) - 20 * dt);
+    }
+    const queued = lead.gap !== Infinity && behind < 2.5 && lead.speed > 0.3;
     const was = m.speed;
-    m.step(dt, c, gap, this.asphalt.has(m.x, m.z));
+    m.step(dt, c, gap, this.asphalt.has(m.x, m.z), care);
     m.settle((p, rad) => {
       // on the town's dry ground; out of its walls, trees, benches and parked cars; out of the other convertibles, the
       // traffic and anyone standing
@@ -509,17 +526,19 @@ export class Rides {
       if (w && this.shoutT <= 0) { this.shoutT = 5 + Math.random() * 4; host.say(RIDE_SHOUTS[Math.floor(Math.random() * RIDE_SHOUTS.length)], shoutVoice(w.female, w.tone ?? 0), w.female, w.ch); }
     }
     // pushing at something and getting nowhere: a word about backing up, once a ride
-    const pushing = Math.abs(c.throttle) > 0.5 && Math.abs(m.speed) < 0.7 && Math.abs(was) < 0.7 && gap > CAR.half + CAR.clear + 1;
+    // (behind a car of the traffic it is waiting, not stuck)
+    const pushing = Math.abs(c.throttle) > 0.5 && Math.abs(m.speed) < 0.7 && Math.abs(was) < 0.7 && gap > CAR.half + CAR.clear + 1 && !queued;
     this.stuckT = pushing ? this.stuckT + dt : 0;
     if (this.stuckT > 1.8 && !this.stuckTold) { this.stuckTold = true; host.stuck(); }
     // held up by someone who stays where they are (on a bench, at a stall): a word about going round, once a ride
-    const held = Math.abs(c.throttle) > 0.5 && !c.brake && Math.abs(m.speed) < 0.3 && gap <= CAR.half + CAR.clear + 1;
+    // (or by a car of the traffic that stands in its way)
+    const held = Math.abs(c.throttle) > 0.5 && !c.brake && Math.abs(m.speed) < 0.3 && (gap <= CAR.half + CAR.clear + 1 || (lead.gap !== Infinity && behind < 1.5 && !moving));
     this.yieldT = held ? this.yieldT + dt : 0;
     if (this.yieldT > 2.2 && !this.yieldTold) { this.yieldTold = true; host.waiting(); }
     // and if, backing and turning, it still has not left the spot after a good while of trying: back onto the street
     // by itself (nobody is ever left boxed in between a wall and a bench)
     if (Math.hypot(m.x - this.pushAt.x, m.z - this.pushAt.z) > 2.2) { this.pushAt.x = m.x; this.pushAt.z = m.z; this.pushT = 0; }
-    else if (Math.abs(c.throttle) > 0.5 && !c.brake && gap > CAR.half + CAR.clear + 1) this.pushT += dt;
+    else if (Math.abs(c.throttle) > 0.5 && !c.brake && gap > CAR.half + CAR.clear + 1 && !queued) this.pushT += dt;
     if (this.pushT > 7 && !this.rescuing) {
       const to = this.streetSpot(r);
       if (to) { this.rescuing = true; host.rescue(() => { r.m.set(to.x, to.z, to.rot); r.sus = this.springs(); this.pushT = 0; this.stuckT = 0; this.rescuing = false; this.place(r, 0, 0); }); }

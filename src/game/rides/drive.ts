@@ -62,6 +62,8 @@ export const CAR = {
   half: 2.15, wide: 0.95,
   /** How hard it brakes by itself for someone ahead (m/s²), and how far short of them it stops (m, bumper to person). */
   yield: 10, clear: 1.6,
+  /** The pace it keeps to going past someone who is straight ahead while its wheel takes it round them (m/s). */
+  careful: 4.2,
 };
 
 export const BOAT = {
@@ -88,13 +90,21 @@ export class Motion {
 
   set(x: number, z: number, heading: number) { this.x = x; this.z = z; this.heading = heading; this.speed = 0; this.steer = 0; this.bump = 0; this.hold = 0; this.veer = 0; }
 
+  /** A car's way with its wheel as it is: the curvature of its path (1/m; positive to the right of the way it goes,
+   *  `dir` −1 backing up). */
+  curve(dir = 1) {
+    const k = Math.min(1, Math.abs(this.speed) / CAR.max), lock = CAR.lockSlow + (CAR.lockFast - CAR.lockSlow) * k * (2 - k);
+    return (Math.tan(this.steer * lock) / CAR.base) * dir;
+  }
+
   get fx() { return Math.sin(this.heading); }
   get fz() { return Math.cos(this.heading); }
 
   /** One step. `gap`: how far ahead, the way it is going, the nearest person on foot is (from its middle; Infinity:
-   *  nobody): the speed is held to what stops `clear` short of them. Moves along its heading; what is in the way is
-   *  settled afterwards by `settle`. */
-  step(dt: number, c: Controls, gap = Infinity, road = true) {
+   *  nobody): the speed is held to what stops `clear` short of them. `care`: the same for someone straight ahead whom
+   *  its turned wheel takes it round: it does not stop for them, but goes by no faster than `careful`. Moves along its
+   *  heading; what is in the way is settled afterwards by `settle`. */
+  step(dt: number, c: Controls, gap = Infinity, road = true, care = Infinity) {
     const S = this.spec, car = this.kind === "car";
     this.steer += (c.steer - this.steer) * Math.min(1, dt * S.wheel);
     let v = this.speed;
@@ -117,6 +127,11 @@ export class Motion {
     if (gap !== Infinity && car) {
       const room = gap - CAR.half - CAR.clear, top = room > 0 ? Math.sqrt(2 * CAR.yield * room) : 0;
       if (Math.abs(v) > top) v = Math.sign(v) * Math.max(top, Math.abs(v) - (room > 0 ? 16 : 40) * dt);
+    }
+    // someone straight ahead but off the way its wheel takes it (`care`: how far): past them, but at a careful pace
+    if (care !== Infinity && car) {
+      const room = care - CAR.half - CAR.clear, top = Math.max(CAR.careful, room > 0 ? Math.sqrt(2 * CAR.yield * room) : 0);
+      if (Math.abs(v) > top) v = Math.sign(v) * Math.max(top, Math.abs(v) - 16 * dt);
     }
     this.speed = v;
     if (car) {
@@ -219,4 +234,19 @@ export function aheadIn(x: number, z: number, fx: number, fz: number, px: number
   const dx = px - x, dz = pz - z, along = dx * fx + dz * fz;
   if (along <= 0 || along > reach) return Infinity;
   return Math.abs(dx * fz - dz * fx) <= half ? along : Infinity;
+}
+
+/** As aheadIn, along the way a car really takes with its wheel turned: an arc of curvature `curv` (1/m, to the right
+ *  of its way when positive; near 0, the straight strip). The gap is the way along the arc; who is more than `half`
+ *  off it (a little more on a tight turn: the body's corners swing wide), behind, or beyond `reach` is not in it. */
+export function aheadOnArc(x: number, z: number, fx: number, fz: number, curv: number, px: number, pz: number, reach: number, half: number) {
+  if (Math.abs(curv) < 0.015) return aheadIn(x, z, fx, fz, px, pz, reach, half);
+  // (lat: to the left of its way; the turn's middle lies 1/curv to the right)
+  const dx = px - x, dz = pz - z, along = dx * fx + dz * fz, lat = dx * fz - dz * fx;
+  const c = -1 / curv, R = Math.abs(c), u = (c - lat) * Math.sign(c);
+  if (Math.abs(Math.hypot(u, along) - R) > half + Math.min(0.5, 2 / R)) return Infinity;
+  const th = Math.atan2(along, u);
+  if (th <= 0) return Infinity;
+  const gap = th * R;
+  return gap <= reach ? gap : Infinity;
 }
