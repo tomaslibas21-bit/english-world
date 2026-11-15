@@ -26,7 +26,7 @@ const storage = process.env.WORLD_STORAGE || (await import("node:fs")).readFileS
 
 const progress = {
   version: 1,
-  profile: { name: "Test", gender: "m", lookId: "m1", look: { skin: "#f2d3bd", hair: { style: "short", color: "#5a3a25" }, top: "#2a9d8f", bottom: "#264653" } },
+  profile: { name: "Test", surname: "Tester", gender: "m", lookId: "m1", look: { skin: "#f2d3bd", hair: { style: "short", color: "#5a3a25" }, top: "#2a9d8f", bottom: "#264653" } },
   settings: { v: 5, play: "town", quality: "low", scenes: false, volume: 0, cameraFollow: true },
   sits: {}, phrases: {}, seenIntro: {}, started: 1, place: { zone: "town", x: 28, z: -14.6, rot: Math.PI },
   coach: { done: true, run: true },
@@ -46,7 +46,7 @@ try {
     const st = await page.evaluate(() => ({ screen: window.__ew?.store?.getState().screen, town: !!window.__ew?.game?.town }));
     if (st.screen === "play" && st.town) break;
     if (i % 6 === 0) console.log("waiting for the town…", JSON.stringify(st));
-    if (i > 60) throw new Error("the town never appeared: " + JSON.stringify(st));
+    if (i > 60) { await page.screenshot({ path: resolve(out, "stuck.png") }); throw new Error("the town never appeared: " + JSON.stringify(st) + " (stuck.png)"); }
     await page.waitForTimeout(5000);
   }
   await page.waitForTimeout(1500);
@@ -58,11 +58,14 @@ try {
   console.log(`${reports.length} signs, audited in ${((Date.now() - t0) / 1000).toFixed(1)} s`);
   writeFileSync(resolve(out, "signs.json"), JSON.stringify(reports, null, 1));
   const pct = (v) => `${Math.round(v * 100)}%`.padStart(4);
-  const bad = reports.filter((r) => r.front > limit || r.flags.length);
-  for (const r of all ? reports : bad) console.log(`${r.front > limit ? "HIDDEN" : r.flags.length ? "FLAG  " : "ok    "} front ${pct(r.front)} worst ${pct(r.worst)} views ${String(r.views.length).padStart(2)}  ${r.name.slice(0, 40).padEnd(40)} @ ${r.center.join(",")}  ${r.flags.join(" ")}  ${r.by.join(" ")}`);
-  console.log(`${bad.filter((r) => r.front > limit).length} over ${pct(limit)} from the front; ${bad.filter((r) => r.flags.length).length} flagged`);
+  // a name hidden here but read whole on another board close by (Gas & Go's sign on the wall under the canopy, whose
+  // front carries the same name) is not a fault
+  for (const r of reports) if (r.front > limit) r.elsewhere = reports.some((o) => o !== r && o.name === r.name && o.front <= limit && Math.hypot(o.center[0] - r.center[0], o.center[2] - r.center[2]) < 15);
+  const bad = reports.filter((r) => (r.front > limit && !r.elsewhere) || r.flags.length);
+  for (const r of all ? reports : bad) console.log(`${r.front > limit ? (r.elsewhere ? "DUP   " : "HIDDEN") : r.flags.length ? "FLAG  " : "ok    "} front ${pct(r.front)} eye ${pct(r.eye)} worst ${pct(r.worst)} views ${String(r.views.length).padStart(2)}  ${r.name.slice(0, 40).padEnd(40)} @ ${r.center.join(",")}  ${r.flags.join(" ")}  ${r.by.join(" ")}`);
+  console.log(`${bad.filter((r) => r.front > limit).length} over ${pct(limit)} from the front (${reports.filter((r) => r.elsewhere).length} more read on a board close by); ${bad.filter((r) => r.flags.length).length} flagged`);
   // pictures: from the follow camera's place, computer (16:10) and phone (390×844) lens
-  const pics = reports.filter((r) => r.front > limit || r.flags.length || show.some((s) => r.name.includes(s)));
+  const pics = reports.filter((r) => bad.includes(r) || show.some((s) => r.name.includes(s)));
   for (const r of pics) {
     for (const [tag, w, h] of [["computer", 1280, 800], ["phone", 390, 844]]) {
       const url = await page.evaluate(async ({ r, w, h }) => {
@@ -76,6 +79,7 @@ try {
   }
   console.log(`pictures in ${out}`);
   failed = bad.filter((r) => r.front > limit).length;
+  writeFileSync(resolve(out, "summary.json"), JSON.stringify({ signs: reports.length, hidden: failed, flagged: bad.filter((r) => r.flags.length).map((r) => [r.name, r.flags]), limit }, null, 1));
 } finally {
   await browser.close();
   await server.close();
