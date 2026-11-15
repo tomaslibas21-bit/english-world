@@ -166,21 +166,23 @@ export class Gait {
 /** A jump: up about a metre and down again in a little over half a second, a squash on landing. `y` is how high the
  *  feet are; `ground` what they stand on or are over (0: the street; a bench's seat, a car's hood: ledges.ts; below 0
  *  in the shallows). A jump lands on whatever is under it when it comes down, and walking off an edge is a fall. A
- *  second press in the air is a flip: a somersault, with a little more lift (once a jump). So what can be reached is
- *  the jump's own arithmetic: anything up to about a metre with a plain jump (a bench, a car's hood or trunk, a low
- *  fence), up to about 1.4 m with a flip (a mailbox, a tall fence), and a car's roof only from its hood or its trunk.
- *  Walls, people and everything above ledges.ts's CLIMB stay on the ground plan: no jump gets over those, onto a roof
- *  or out of the town. */
+ *  second press in the air is a second jump: a moment's gathering, then up 1.8 m more with two somersaults (once a
+ *  jump). So what can be reached is the jump's own arithmetic: anything up to about a metre with a plain jump (a
+ *  bench, a car's hood or trunk, a low wall), and up to about 2.8 m with the second taken at the top of the first (a
+ *  car's roof from the street, a van's, a bus shelter's or a market stall's roof). Walls, people and everything above
+ *  ledges.ts's CLIMB stay on the ground plan: no jump gets over those, onto a building's roof or out of the town. */
 export class Hop {
   static readonly V0 = 7;
-  /** The least a flip leaves them rising at. */
-  static readonly V_FLIP = 4;
+  /** The second jump's own speed up (whatever they were doing: rising, at the top, or falling). */
+  static readonly V_DOUBLE = 9.3;
   static readonly G = 24;
-  /** The highest a jump goes above where it started (m), and what a flip at the top of one adds. */
+  /** The highest a jump goes above where it started (m), and what the second jump adds from where it is taken. */
   static readonly PEAK = (Hop.V0 * Hop.V0) / (2 * Hop.G);
-  static readonly FLIP_LIFT = (Hop.V_FLIP * Hop.V_FLIP) / (2 * Hop.G);
-  /** How long the somersault takes (s). */
-  static readonly FLIP_TIME = 0.46;
+  static readonly DOUBLE_LIFT = (Hop.V_DOUBLE * Hop.V_DOUBLE) / (2 * Hop.G);
+  /** How long the two somersaults take (s: done a moment after the top of the second jump, so one lands on a roof on
+   *  one's feet), and how long they gather themselves before it (s, hanging where they are). */
+  static readonly FLIP_TIME = 0.52;
+  static readonly WIND = 0.07;
   y = 0;
   ground = 0;
   vy = 0;
@@ -189,9 +191,11 @@ export class Hop {
   squash = 0;
   private squashVel = 0;
   private wait = 0;
-  /** The somersault: how far round it is (0–1; 0 when there is none), and whether this jump has had its flip. */
+  /** The somersaults: how far through they are (0–1; 0 when there are none); whether this jump has had its second
+   *  jump; and the gathering before it (s left). */
   flipT = 0;
-  private flipped = false;
+  flipped = false;
+  private wind = 0;
 
   /** Starts a jump (false while in the air or just landed). */
   start(): boolean {
@@ -204,20 +208,19 @@ export class Hop {
     return true;
   }
 
-  /** A flip, in the air only and once a jump (false otherwise): a somersault and a little more lift. Falling off an
-   *  edge counts as being in the air. */
+  /** The second jump, in the air only and once a jump (false otherwise): they gather themselves for a moment, then go
+   *  up again, higher, turning head over heels twice. Falling off an edge counts as being in the air. */
   flip(): boolean {
-    if (!this.air || this.flipped || this.flipT > 0) return false;
+    if (!this.air || this.flipped) return false;
     this.flipped = true;
-    this.flipT = 1e-4;
-    this.vy = Math.max(this.vy, Hop.V_FLIP);
-    this.squash = -0.2;
+    this.wind = Hop.WIND;
+    this.squash = 0.4; // gathered up
     this.squashVel = 0;
     return true;
   }
 
   /** Standing at once on what is under them (a conversation starts, a door, a ride). */
-  land(ground = 0) { this.y = this.ground = ground; this.vy = 0; this.air = false; this.squash = 0; this.squashVel = 0; this.wait = 0; this.flipT = 0; this.flipped = false; }
+  land(ground = 0) { this.y = this.ground = ground; this.vy = 0; this.air = false; this.squash = 0; this.squashVel = 0; this.wait = 0; this.flipT = 0; this.flipped = false; this.wind = 0; }
 
   /** `ground`: how high what is under them stands now. Returns how hard they just landed (0: they didn't). */
   update(dt: number, ground = 0): number {
@@ -232,7 +235,13 @@ export class Hop {
       else if (ground < this.y) this.y = Math.max(ground, this.y - Math.max(4 * dt, (this.y - ground) * Math.min(1, dt * 30)));
       else this.y = ground > this.y ? Math.min(ground, this.y + Math.max(0.6 * dt, (ground - this.y) * Math.min(1, dt * 18))) : ground;
     }
-    if (this.air) {
+    if (this.air && this.wind > 0) {
+      // gathering for the second jump: they hang where they are, then off (the rest of this step is the jump's)
+      this.wind -= dt;
+      // (pressed on the way up, what was left of the first jump is not lost: two quick presses go as high as two
+      // well-timed ones)
+      if (this.wind <= 0) { this.wind = 0; this.vy = Math.hypot(Hop.V_DOUBLE, Math.max(0, this.vy)); this.flipT = 1e-4; this.squash = -0.5; this.squashVel = 0; }
+    } else if (this.air) {
       // (the fall's own arithmetic, so a jump goes as high on a slow phone's long frames as on a fast one's short ones)
       this.y += this.vy * dt - 0.5 * Hop.G * dt * dt;
       this.vy -= Hop.G * dt;
@@ -243,7 +252,7 @@ export class Hop {
         this.squashVel = 0;
       }
     }
-    // the somersault turns on at its own pace, and is over a moment after a landing that came early
+    // the somersaults turn on at their own pace, and are over a moment after a landing that came early
     if (this.flipT > 0) {
       this.flipT += (dt / Hop.FLIP_TIME) * (this.air ? 1 : 2.5);
       if (this.flipT >= 1) this.flipT = 0;
@@ -256,15 +265,17 @@ export class Hop {
   /** How high the feet are above what is under them. */
   get lift() { return Math.max(0, this.y - this.ground); }
 
-  /** How far the legs tuck (0–1): up in the middle of the jump, and tight through a somersault. */
+  /** How far the legs tuck (0–1): up in the middle of the jump, tight while gathering and through the somersaults. */
   get tuck() {
     const hop = this.air ? Math.min(1, this.lift / (Hop.PEAK * 0.6)) : 0;
-    return this.flipT > 0 ? Math.max(hop, Math.sin(Math.PI * Math.min(1, this.flipT))) : hop;
+    if (this.wind > 0) return 1;
+    // (tight until they open out for the landing, over the last third of the turning)
+    return this.flipT > 0 ? Math.max(hop, 1 - smoothstep(0.66, 1, this.flipT)) : hop;
   }
 
-  /** How far round the somersault is (radians, 0…2π, eased at both ends; 0: none). */
+  /** How far round the somersaults are (radians, 0…4π: twice round, eased at both ends; 0: none). */
   get spin() {
     const t = Math.min(1, this.flipT);
-    return this.flipT > 0 ? Math.PI * 2 * (t * t * (3 - 2 * t)) : 0;
+    return this.flipT > 0 ? Math.PI * 4 * (t * t * (3 - 2 * t)) : 0;
   }
 }

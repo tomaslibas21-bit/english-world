@@ -17,16 +17,22 @@ export interface ClimbReport {
   raised: number;
   /** The highest place one can stand (m). */
   maxHeight: number;
-  /** Cells reached beyond the bounds or past the wading limit (must be 0). */
+  /** Cells reached beyond the bounds or past the wading limit (must be 0), and the box they lie in. */
   outside: number;
+  outsideBox?: { x0: number; z0: number; x1: number; z1: number };
+  /** Where one first gets out (the first such cell the flood came to). */
+  outsideAt?: [number, number];
   /** Ground reached only by jumping (a fenced yard, a fountain's basin): where, how big, and how one gets back out. */
   fresh: FreshGround[];
   /** The raised places by height (m, to 0.1): square metres of each. */
   heights: Record<string, number>;
 }
 
-export function climbAudit(col: Colliders, led: Ledges, bounds: { minX: number; maxX: number; minZ: number; maxZ: number }, start: [number, number], c = 0.25): ClimbReport {
-  const pad = 8, x0 = bounds.minX - pad, z0 = bounds.minZ - pad;
+type Area = { minX: number; maxX: number; minZ: number; maxZ: number };
+/** `open`: what the town opens beyond its bounds (Puerto Colibrí's clearing round the cenote): inside as well. */
+export function climbAudit(col: Colliders, led: Ledges, bounds: Area, start: [number, number], c = 0.25, open: Area[] = []): ClimbReport {
+  const pad = Math.max(8, ...open.map((o) => Math.max(bounds.minX - o.minX, o.maxX - bounds.maxX, bounds.minZ - o.minZ, o.maxZ - bounds.maxZ) + 8));
+  const x0 = bounds.minX - pad, z0 = bounds.minZ - pad;
   const nx = Math.ceil((bounds.maxX + pad - x0) / c), nz = Math.ceil((bounds.maxZ + pad - z0) / c), N = nx * nz;
   const WALL = 1e9;
   // each cell: how high one stands there (the ground, a deck, a piece's top), or a wall
@@ -49,9 +55,14 @@ export function climbAudit(col: Colliders, led: Ledges, bounds: { minX: number; 
   });
   for (const o of col.circles) if (!o.split) each(o.x - o.r - r, o.z - o.r - r, o.x + o.r + r, o.z + o.r + r, (j, x, z) => { if ((x - o.x) ** 2 + (z - o.z) ** 2 < (o.r + r) ** 2) h[j] = WALL; });
   // the pieces: their tops (a cell's highest), or walls
-  for (const p of led.pieces) each(p.minX, p.minZ, p.maxX, p.maxZ, (j, x, z) => {
-    if (x < p.minX || x > p.maxX || z < p.minZ || z > p.maxZ || h[j] === WALL) return;
-    if (p.top === Infinity) { h[j] = WALL; return; }
+  // (a roof one can stand on counts as that height: the way under it is left out, which only makes the walk smaller;
+  // a wall under such a roof is under it)
+  const sorted = [...led.pieces].sort((a, b) => Number(!!a.deck) - Number(!!b.deck));
+  for (const p of sorted) each(p.minX, p.minZ, p.maxX, p.maxZ, (j, x, z) => {
+    if (x < p.minX || x > p.maxX || z < p.minZ || z > p.maxZ) return;
+    if (p.deck) { h[j] = p.top; onPiece[j] = 1; return; }
+    if (h[j] === WALL) return;
+    if (p.wall || p.top === Infinity) { h[j] = WALL; return; }
     if (!onPiece[j] || p.top > h[j]) h[j] = p.top;
     onPiece[j] = 1;
   });
@@ -68,7 +79,7 @@ export function climbAudit(col: Colliders, led: Ledges, bounds: { minX: number; 
     let stamp = 0;
     while (head < tail) {
       const a = queue[head++], ha = h[a];
-      if (stop?.[a]) return { seen, hit: true };
+      if (stop?.[a]) return { seen, hit: true, queue, tail };
       const walk = ha < 0.2 ? STEP : SLOPE;
       for (const d of NB) {
         const b = a + d;
@@ -95,13 +106,14 @@ export function climbAudit(col: Colliders, led: Ledges, bounds: { minX: number; 
         }
       }
     }
-    return { seen, hit: false };
+    return { seen, hit: false, queue, tail };
   };
 
   const s = at(start[0], start[1]);
-  const best = Hop.PEAK + Hop.FLIP_LIFT + TOE;
+  const best = Hop.PEAK + Hop.DOUBLE_LIFT + TOE;
   // with every move, and with none (walking only: the pieces are in the way)
-  const all = flood(s, best, 6).seen;
+  const whole = flood(s, best, 6), all = whole.seen;
+  const out = (x: number, z: number) => (x < bounds.minX || x > bounds.maxX || z < bounds.minZ || z > bounds.maxZ || z < SHORE.limit) && !open.some((o) => x >= o.minX && x <= o.maxX && z >= o.minZ && z <= o.maxZ);
   const plain = (() => {
     const seen = new Uint8Array(N), queue = new Int32Array(N);
     let head = 0, tail = 0;
@@ -123,7 +135,11 @@ export function climbAudit(col: Colliders, led: Ledges, bounds: { minX: number; 
     if (!all[j]) continue;
     const i = j % nx, k = (j - i) / nx, x = x0 + (i + 0.5) * c, z = z0 + (k + 0.5) * c;
     rep.reached += c * c;
-    if (x < bounds.minX || x > bounds.maxX || z < bounds.minZ || z > bounds.maxZ || z < SHORE.limit) rep.outside++;
+    if (out(x, z)) {
+      rep.outside++;
+      const b = (rep.outsideBox ??= { x0: x, z0: z, x1: x, z1: z });
+      b.x0 = Math.min(b.x0, x); b.x1 = Math.max(b.x1, x); b.z0 = Math.min(b.z0, z); b.z1 = Math.max(b.z1, z);
+    }
     if (onPiece[j]) {
       rep.raised += c * c;
       rep.maxHeight = Math.max(rep.maxHeight, h[j]);
@@ -145,8 +161,12 @@ export function climbAudit(col: Colliders, led: Ledges, bounds: { minX: number; 
       for (const d of NB) { const b = a + d; if (b >= 0 && b < N && freshCell[b] && !done[b] && Math.abs((b % nx) - i) <= 1) { done[b] = 1; stack.push(b); } }
     }
     if (f.area < 0.5) continue;
-    f.out = flood(j, Hop.PEAK - 0.05, 2, plain).hit ? "jump" : flood(j, Hop.PEAK + Hop.FLIP_LIFT - 0.05, 2.5, plain).hit ? "flip" : "stuck";
+    f.out = flood(j, Hop.PEAK - 0.05, 2, plain).hit ? "jump" : flood(j, Hop.PEAK + Hop.DOUBLE_LIFT - 0.1, 3, plain).hit ? "flip" : "stuck";
     rep.fresh.push(f);
+  }
+  for (let n = 0; n < whole.tail && rep.outside; n++) {
+    const j = whole.queue[n], i = j % nx, x = x0 + (i + 0.5) * c, z = z0 + ((j - i) / nx + 0.5) * c;
+    if (out(x, z)) { rep.outsideAt = [x, z]; break; }
   }
   rep.maxHeight = Math.round(rep.maxHeight * 100) / 100;
   if (rep.maxHeight > CLIMB) console.warn("climbAudit: someone can stand above CLIMB", rep.maxHeight);

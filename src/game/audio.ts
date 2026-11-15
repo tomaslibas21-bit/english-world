@@ -1392,9 +1392,29 @@ export class AudioSystem {
     if (s.grain) this.burst(ctx, now + 0.02, s.grain.f, 0.7, 0.03, 0.16, this.volume * s.grain.vol * 1.4, 1.5);
   }
 
+  /** The second jump's rush of air: a breath that sweeps up and away as they spin. Made here from filtered noise. */
+  whoosh() {
+    const ctx = this.ac();
+    if (!ctx || this.volume <= 0) return;
+    const now = ctx.currentTime + 0.05, v = this.volume * 0.05;
+    const air = ctx.createBufferSource(); air.buffer = this.hiss(ctx); air.playbackRate.value = 0.8;
+    const band = ctx.createBiquadFilter(); band.type = "bandpass"; band.Q.value = 1.1;
+    band.frequency.setValueAtTime(380, now);
+    band.frequency.exponentialRampToValueAtTime(2400, now + 0.26);
+    band.frequency.exponentialRampToValueAtTime(900, now + 0.5);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, now);
+    g.gain.linearRampToValueAtTime(v, now + 0.1);
+    g.gain.exponentialRampToValueAtTime(v * 0.5, now + 0.3);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.55);
+    air.connect(band); band.connect(g); g.connect(this.out(ctx));
+    air.onended = () => g.disconnect();
+    air.start(now, Math.random()); air.stop(now + 0.6);
+  }
+
   /** Taking off: a short, springy note that rises, as a hop sounded in an old video game, played softly, with a
    *  breath of air under it. Made here from two plain waves, after no game's or show's sound. `pitch`: higher for the
-   *  flip in the air. */
+   *  second jump in the air. */
   jump(pitch = 1) {
     const ctx = this.ac();
     if (!ctx || this.volume <= 0) return;
