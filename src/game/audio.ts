@@ -1402,7 +1402,7 @@ export class AudioSystem {
   }
 
   /** A short rush of air: the kick out of a slide. */
-  whoosh() {
+  kickRush() {
     const ctx = this.ac();
     if (!ctx || this.volume <= 0) return;
     const now = ctx.currentTime;

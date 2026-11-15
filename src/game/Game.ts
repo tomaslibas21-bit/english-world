@@ -1575,7 +1575,7 @@ export class Game implements GameApi {
       const slide = on ? Math.min(1, Math.max(0, (Math.abs(m.slip) - 1.2) / 4.5)) : 0;
       audio.rush("squeal", car && slide > 0 && pace > 2.5 && this.rides.asphalt.has(m.x, m.z) ? 0.35 + 0.65 * slide : 0, Math.min(1, pace / 14));
       audio.rush("wind", on ? Math.max(0, (pace - 6) / (m.spec.max - 3)) * (car ? 1 : 0.8) + (!car ? slide * 0.5 : 0) : 0, Math.min(1, pace / 16));
-      if (on && m.boost > 0 && !this.kicked) { this.kicked = true; audio.whoosh(); }
+      if (on && m.boost > 0 && !this.kicked) { this.kicked = true; audio.kickRush(); }
       if (!on || m.boost <= 0) this.kicked = false;
       // (the first time it goes fast: a word about the slide)
       if (on && !this.slideTold && pace > m.spec.town * 0.92 && Math.abs(m.steer) < 0.3) {
