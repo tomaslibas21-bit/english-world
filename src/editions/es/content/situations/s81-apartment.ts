@@ -2194,13 +2194,15 @@ function homeNo(c: Ctx) {
   c.s.visitAnswered = true;
   c.s.visitQ = c.heard;
   c.say("home_no"); c.say("key_ok_q");
-  c.expect({ id: "key_ok", expects: ["use_key", "time_pref", "time_ctx", "time_bad"], hints: ["g_yesno", "key_ok"],
+  c.expect({ id: "key_ok", expects: ["use_key", "time_pref", "time_ctx", "time_bad", "home_yes"], hints: ["g_yesno", "key_ok"],
     suggest: [{ lt: "Agree to let him in", hint: "key_ok" }],
     on: {
       use_key: (cc) => { cc.say("key_done"); cc.s.visitOk = true; },
       time_pref: (cc, sl) => { timeNoted(cc, sl); cc.s.visitOk = true; },
       time_ctx: (cc, sl) => { if (refusedTime(cc, sl)) return false; timeNoted(cc, sl); cc.s.visitOk = true; },
       time_bad: (cc) => { if (timeOffered(cc)) return false; askOtherTime(cc); },
+      // "Sí, estoy en casa / estoy libre" after all (it got "Llega a las diez" and the question again)
+      home_yes: (cc) => { cc.say("home_yes_ok"); cc.s.visitOk = true; },
     },
     yes: (cc) => { cc.say("key_done"); cc.s.visitOk = true; },
     no: (cc) => { askOtherTime(cc); },

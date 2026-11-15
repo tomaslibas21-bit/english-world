@@ -1142,7 +1142,7 @@ export const date: SituationDef = {
     ] },
     agree_again: { patterns: [
       "me encantaria [volver a verte] #h:ag_id_love", "si me (gustaria | encantaria) [mucho] [@when_d] #h:ag_yes", "claro que si", "(si | claro) por supuesto",
-      "[si | claro] me (queda | viene) bien #h:dy_works", "[si] estoy libre [ese dia] #h:dy_free", "(si | claro) (me encantaria | quiero) volver a verte",
+      "[si | claro] me (queda | viene) bien #h:dy_works", "[si | claro | vale] (me va bien | me parece bien | me funciona | me late) [ese dia]", "[si] estoy libre [ese dia] #h:dy_free", "(si | claro) (me encantaria | quiero) volver a verte",
       "seria (genial | padre | increible | lindo)", "yo te iba a preguntar lo mismo", "[si | claro] a que hora [nos vemos | quedamos] #time", "[si | claro] cuando [estas libre | tienes tiempo]",
       "claro que quiero", "[vale] {day} me (queda | va | viene) bien a que hora", "[yo] te iba a preguntar [lo mismo | eso]",
       "[si] me (gustaria | encantaria) [mucho] pero no se cuando", "[si] [claro] cuando quieras",
