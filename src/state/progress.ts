@@ -25,8 +25,9 @@ export interface Progress {
   place: { zone: string; x: number; z: number; rot: number } | null;
   seenIntro: Record<string, boolean>;
   started: number;
-  /** The 3D town's first-time guide: `done` once finished or skipped; `run`: the tip about running was shown. */
-  coach?: { done?: boolean; run?: boolean };
+  /** The 3D town's first-time guide: `done` once finished or skipped; `run`: the tip about running was shown;
+   *  `view`: the hint beside a conversation's picture / 3D chip was shown (ui/ViewSwitch.tsx). */
+  coach?: { done?: boolean; run?: boolean; view?: boolean };
   /** How the game is used, for the course's owner: openings, days, minutes in the town and in the pictures, the
    *  radio (state/playStats.ts). */
   play?: import("./playStats").PlayStats;

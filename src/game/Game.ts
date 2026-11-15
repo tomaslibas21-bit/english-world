@@ -41,7 +41,7 @@ import { NPCS, type Look } from "../content/npcs";
 import { LOCATIONS, placeLt } from "../content/locations";
 import { SITUATIONS, SITUATION_BY_ID } from "../content/situations";
 import type { SituationDef } from "../content/types";
-import { useStore } from "../state/store";
+import { picturesOn, useStore } from "../state/store";
 import { sceneFor } from "../ui/scenes";
 import { sitProgress } from "../state/progress";
 import { textTexture, rand } from "./world/util";
@@ -1488,7 +1488,7 @@ export class Game implements GameApi {
     this.fx?.frame(pp, !!this.zone.interior);
     this.sky.position.copy(this.rig.cam.position);
     // an illustrated scene covers the view during the conversation: save the phone's battery
-    const covered = this.covered = talking && st.settings.scenes !== false && !!sceneFor(st.conv.sitId, st.conv.hostId);
+    const covered = this.covered = talking && picturesOn(st.settings) && !!sceneFor(st.conv.sitId, st.conv.hostId);
     if (!covered) {
       this.renderer.render(this.scene, this.rig.cam);
       this.updateTags();
