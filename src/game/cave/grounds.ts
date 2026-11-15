@@ -25,6 +25,8 @@ type Part = [THREE.BufferGeometry, THREE.ColorRepresentation];
 export const R = 6;
 /** How far the grounds reach from the cenote's middle (m): north and south, and west; east they reach the town. */
 export const REACH = { ns: 19.5, w: 20.5 };
+/** The grounds' rectangle west of the town's edge (where one may walk: the dev audits ask). */
+export const groundsBounds = (x: number, z: number, edge: number) => ({ minX: x - REACH.w, maxX: edge, minZ: z - REACH.ns, maxZ: z + REACH.ns });
 /** The gaps in the rim of stones on the town's side (the angle of each from the cenote's middle, 0: east, and its half
  *  width, radians): the beach at the north-east, the rock steps at the south-east. */
 export const GAPS = [{ id: "playa", a: -0.27 * Math.PI, half: 0.46 }, { id: "escalones", a: 0.27 * Math.PI, half: 0.46 }] as const;

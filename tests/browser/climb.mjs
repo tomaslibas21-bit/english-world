@@ -88,7 +88,10 @@ try {
       const audit = await page.evaluate(async () => {
         try {
           const m = await import("/src/dev/climbAudit.ts"), W = (await import("/src/game/world/layout.ts")).WORLD, g = window.__ew.game;
-          return m.climbAudit(g.town.colliders, g.ledges, W, [28, -14.6]);
+          // Puerto Colibrí's cenote lies west of the town's edge and is walked into from every side: its grounds count
+          const cen = (await import("/src/game/world/theme.ts")).THEME.cenote;
+          const more = cen?.open ? [(await import("/src/game/cave/grounds.ts")).groundsBounds(cen.x, cen.z, W.minX)] : [];
+          return m.climbAudit(g.town.colliders, g.ledges, W, [28, -14.6], 0.25, more);
         } catch { return null; }
       });
       if (audit) {

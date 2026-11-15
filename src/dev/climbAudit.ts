@@ -25,9 +25,16 @@ export interface ClimbReport {
   heights: Record<string, number>;
 }
 
-export function climbAudit(col: Colliders, led: Ledges, bounds: { minX: number; maxX: number; minZ: number; maxZ: number }, start: [number, number], c = 0.25): ClimbReport {
-  const pad = 8, x0 = bounds.minX - pad, z0 = bounds.minZ - pad;
-  const nx = Math.ceil((bounds.maxX + pad - x0) / c), nz = Math.ceil((bounds.maxZ + pad - z0) / c), N = nx * nz;
+type Rect = { minX: number; maxX: number; minZ: number; maxZ: number };
+
+/** `more`: grounds outside the town's own bounds where one may also walk (Puerto Colibrí's cenote); the audit covers
+ *  them too, and "outside" is outside the town and all of them. */
+export function climbAudit(col: Colliders, led: Ledges, bounds: Rect, start: [number, number], c = 0.25, more: Rect[] = []): ClimbReport {
+  const all4 = [bounds, ...more], pad = 8;
+  const x0 = Math.min(...all4.map((b) => b.minX)) - pad, z0 = Math.min(...all4.map((b) => b.minZ)) - pad;
+  const x1 = Math.max(...all4.map((b) => b.maxX)) + pad, z1 = Math.max(...all4.map((b) => b.maxZ)) + pad;
+  const nx = Math.ceil((x1 - x0) / c), nz = Math.ceil((z1 - z0) / c), N = nx * nz;
+  const within = (x: number, z: number) => all4.some((b) => x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ);
   const WALL = 1e9;
   // each cell: how high one stands there (the ground, a deck, a piece's top), or a wall
   const h = new Float32Array(N), onPiece = new Uint8Array(N);
@@ -123,7 +130,7 @@ export function climbAudit(col: Colliders, led: Ledges, bounds: { minX: number; 
     if (!all[j]) continue;
     const i = j % nx, k = (j - i) / nx, x = x0 + (i + 0.5) * c, z = z0 + (k + 0.5) * c;
     rep.reached += c * c;
-    if (x < bounds.minX || x > bounds.maxX || z < bounds.minZ || z > bounds.maxZ || z < SHORE.limit) rep.outside++;
+    if (!within(x, z) || z < SHORE.limit) rep.outside++;
     if (onPiece[j]) {
       rep.raised += c * c;
       rep.maxHeight = Math.max(rep.maxHeight, h[j]);
