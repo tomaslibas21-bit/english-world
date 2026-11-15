@@ -26,3 +26,7 @@ export const coachVoices = (v2 = VOICES_V2): string[] => (v2 ? ["g_coach_f", "g_
 
 /** Passers-by in the town. */
 export const ambientVoice = (g: "f" | "m", v2 = VOICES_V2): string => (v2 ? `g_amb_${g}` : AMBIENT_VOICES[g]);
+
+/** Someone who sits in a convertible (content/rides.ts RIDE_OWNERS: `id`): a voice of their own (v2 only; with the
+ *  first voices they speak as the passers-by do). */
+export const rideVoice = (id: string, female: boolean, v2 = VOICES_V2): string => (v2 ? `g_ride_${id}` : AMBIENT_VOICES[female ? "f" : "m"]);

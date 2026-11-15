@@ -2,8 +2,10 @@
 // game's own (0 = towards +Z, π/2 = towards +X); "forward" is (sin h, cos h).
 //
 // The car: the stick or the keys give a throttle (up: go, down: brake, then back up) and a steer (left, right). It
-// stays on the town's drivable ground (the streets and a few lots: `Drivable`), is pushed out of whatever stands on it,
-// and never reaches anyone on foot: its speed is held to what stops short of the nearest person ahead (`gap`).
+// goes wherever the town's ground is open and dry (`Drivable`: since 15 Nov the whole town, over kerbs, sidewalks and
+// squares, not only the asphalt), is pushed out of whatever stands on it, and never reaches anyone on foot: its speed
+// is held to what stops short of the nearest person ahead (`gap`). On the asphalt, holding a course for a moment lets
+// it pick up from its town pace to its open-road one, as a walk becomes a jog; off the asphalt it goes gently.
 // The boat: the same hands, on water: slower to pick up and to turn, it glides on when let go.
 
 export interface Rect { x0: number; x1: number; z0: number; z1: number }
@@ -47,8 +49,12 @@ export function controlsFrom(x: number, y: number, brake = false): Controls {
 }
 
 export const CAR = {
-  /** Top speed, forwards and back (m/s): about 45 km/h, quick in a town 240 m long. */
-  max: 12.5, back: 4.2,
+  /** Speeds (m/s). `town`: what it gets up to at once (about 35 km/h); `max`: after holding a course on the asphalt
+   *  for a moment (about 56 km/h, quick in a town 240 m long); `rough`: off the asphalt (sidewalks, squares, grass,
+   *  sand); `back`: backwards. */
+  max: 15.5, town: 9.8, rough: 6.6, back: 4.4,
+  /** How long a course is held before it picks up, and until it is at `max` (s). */
+  holdFrom: 1.1, holdTo: 3.4,
   accel: 6.5, brake: 15, coast: 1.6,
   /** The axles' distance (m), the wheel's full lock slow and at speed (rad), how quickly the wheel follows the hand. */
   base: 2.6, lockSlow: 0.6, lockFast: 0.17, wheel: 5.5,
@@ -72,9 +78,12 @@ export class Motion {
   steer = 0;
   /** How much of the last step was taken away by something in the way (0–1), for a bump's sound and the body's nod. */
   bump = 0;
+  /** A car: how long it has held its course on the asphalt (s), and its top speed just now. */
+  hold = 0;
+  top = 0;
   constructor(readonly spec: typeof CAR | typeof BOAT, readonly kind: "car" | "boat") {}
 
-  set(x: number, z: number, heading: number) { this.x = x; this.z = z; this.heading = heading; this.speed = 0; this.steer = 0; this.bump = 0; }
+  set(x: number, z: number, heading: number) { this.x = x; this.z = z; this.heading = heading; this.speed = 0; this.steer = 0; this.bump = 0; this.hold = 0; }
 
   get fx() { return Math.sin(this.heading); }
   get fz() { return Math.cos(this.heading); }
@@ -82,13 +91,23 @@ export class Motion {
   /** One step. `gap`: how far ahead, the way it is going, the nearest person on foot is (from its middle; Infinity:
    *  nobody): the speed is held to what stops `clear` short of them. Moves along its heading; what is in the way is
    *  settled afterwards by `settle`. */
-  step(dt: number, c: Controls, gap = Infinity) {
+  step(dt: number, c: Controls, gap = Infinity, road = true) {
     const S = this.spec, car = this.kind === "car";
     this.steer += (c.steer - this.steer) * Math.min(1, dt * S.wheel);
     let v = this.speed;
     const t = c.brake ? 0 : c.throttle;
+    // a car's top speed: its town pace; more once it has held a course on the asphalt for a moment (a sharp turn, the
+    // brake or leaving the asphalt take that away again); gently off the asphalt
+    let top = S.max;
+    if (car) {
+      const steady = road && !c.brake && t > 0.6 && Math.abs(this.steer) < 0.42 && v > CAR.town * 0.55 && this.bump < 0.2;
+      this.hold = steady ? Math.min(CAR.holdTo, this.hold + dt) : Math.max(0, this.hold - dt * (Math.abs(this.steer) > 0.75 || c.brake || !road ? 6 : 2.5));
+      const k = Math.min(1, Math.max(0, (this.hold - CAR.holdFrom) / (CAR.holdTo - CAR.holdFrom)));
+      top = road ? CAR.town + (CAR.max - CAR.town) * k * k * (3 - 2 * k) : CAR.rough;
+      this.top = top;
+    }
     if (c.brake) v = toward(v, 0, S.brake * dt);
-    else if (t > 0) v = v < -0.2 ? toward(v, 0, S.brake * dt) : Math.min(S.max * Math.max(0.35, t), v + S.accel * t * dt * (1 - 0.55 * Math.max(0, v) / S.max));
+    else if (t > 0) v = v < -0.2 ? toward(v, 0, S.brake * dt) : v > top * Math.max(0.35, t) ? Math.max(top * Math.max(0.35, t), v - (car ? 7 : 3) * dt) : Math.min(top * Math.max(0.35, t), v + S.accel * t * dt * (1 - 0.5 * Math.max(0, v) / S.max));
     else if (t < 0) v = v > 0.3 ? toward(v, 0, S.brake * -t * dt) : Math.max(-S.back, v + S.accel * 0.7 * t * dt);
     else v = toward(v * Math.exp(-(car ? 0.35 : 0.5) * dt), 0, S.coast * dt);
     // never into someone on foot: no faster than what stops short of them (forwards or backing up)
