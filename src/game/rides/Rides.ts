@@ -697,6 +697,11 @@ export class Rides {
         // (room to drive off: two car lengths ahead are clear too)
         const fx = Math.sin(rot), fz = Math.cos(rot);
         if (!this.fits(r, x + fx * 3, z + fz * 3, rot, 0.15) || !this.fits(r, x + fx * 6, z + fz * 6, rot, 0.1)) continue;
+        // (and nobody stands in the way there: the glide itself passes no closer to anyone than half a metre)
+        let clear = true;
+        const dh = Math.atan2(Math.sin(rot - m.heading), Math.cos(rot - m.heading));
+        for (let k = 1; k < 6 && clear; k++) { const e = k / 6; if (this.peopleGap(m.x + (x - m.x) * e, m.z + (z - m.z) * e, m.heading + dh * e) < 0.5) clear = false; }
+        if (!clear) continue;
         bs = score; best = { x, z, rot };
       }
     }
