@@ -13,10 +13,10 @@ import type { NavGrid } from "../nav";
 import type { RidesPlan, CarSpot, BoatSpot } from "../world/rides";
 import { RIDE_OWNERS, RIDE_SHOUTS, type RideOwner, type RideLine } from "../../content/rides";
 import { rideVoice, shoutVoice } from "../../content/voices";
-import { BAY, DECKS, SHORE, floorY, waterY } from "../water";
-import { Drivable, Motion, CAR, BOAT, aheadIn, pushOutOfBox, type Controls } from "./drive";
+import { BAY, DECKS, SEA_LEVEL, SHORE, bayHold, floorY, waterY } from "../water";
+import { Drivable, Motion, CAR, BOAT, BAY_EDGE, aheadIn, bayTurn, pushOutOfBox, shoreSpeed, type Controls } from "./drive";
 import { townAsphalt, townGround } from "./ground";
-import { convertibleGeometry, motorboatGeometry, CAR_SEATS, BOAT_SEATS } from "./shapes";
+import { convertibleGeometry, motorboatGeometry, buoysGeometry, CAR_SEATS, BOAT_SEATS } from "./shapes";
 
 export interface RideHost {
   cam: THREE.PerspectiveCamera;
@@ -35,6 +35,8 @@ export interface RideHost {
   thud(k: number): void;
   /** The car has pushed at something for a while and gets nowhere: a word about backing up. */
   stuck(): void;
+  /** The boat lies with its bow on the shallows and is still being driven at the beach: a word about backing off. */
+  aground(): void;
   /** It has stood a while behind someone who is not going anywhere: a word about going round them. */
   waiting(): void;
   /** It still gets nowhere: the picture fades for a moment while `put` sets it back on the street. */
@@ -107,6 +109,8 @@ function holdPose(root: THREE.Object3D, hold: boolean) {
   }
 }
 const _v = new THREE.Vector3(), _p = { x: 0, z: 0 };
+/** The bay's three open edges for a boat (west, east, out at sea): the way out across each. */
+const _edges = [{ left: 0, nx: -1, nz: 0 }, { left: 0, nx: 1, nz: 0 }, { left: 0, nx: 0, nz: -1 }];
 const _frustum = new THREE.Frustum(), _pv = new THREE.Matrix4(), _ball = new THREE.Sphere();
 const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 const ease = (k: number) => k * k * (3 - 2 * k);
@@ -163,8 +167,21 @@ export class Rides {
       for (const k of [-1.6, 0, 1.6]) this.sea.addCircle(cx + Math.sin(rot) * k, cz + Math.cos(rot) * k, 1.25);
     }
     for (const [x, z, r] of plan.rocks) this.sea.addCircle(x, z, r);
+    // the bay's edge, marked: a line of buoys out at sea and down both sides (one mesh, shown only from the water)
+    const spots: [number, number][] = [];
+    const nx = Math.round((BAY.x1 - BAY.x0) / 15), nz = Math.max(1, Math.round((SHORE.limit - 14 - BAY.z0) / 15));
+    for (let i = 0; i <= nx; i++) spots.push([BAY.x0 + ((BAY.x1 - BAY.x0) * i) / nx, BAY.z0]);
+    for (let i = 1; i <= nz; i++) for (const x of [BAY.x0, BAY.x1]) spots.push([x, BAY.z0 + ((SHORE.limit - 14 - BAY.z0) * i) / nz]);
+    this.buoys = new THREE.Mesh(buoysGeometry(spots), mat);
+    this.buoys.name = "bay-buoys";
+    this.buoys.visible = false;
+    this.buoys.matrixAutoUpdate = true;
+    this.group.add(this.buoys);
     host.ambient.rideBoxes = this.boxes;
   }
+
+  /** The buoys along the bay's edge. */
+  private buoys: THREE.Mesh;
 
   /** The cars' ground plans as they stand now (the passers-by step round them, the traffic stops behind them). */
   readonly boxes: { x: number; z: number; heading: number; hl: number; hw: number }[] = [];
@@ -405,6 +422,9 @@ export class Rides {
     // what is out of the picture is left out of the scene's walk altogether (a person is some thirty parts to step
     // through each frame, seen or not): a ride and the people in it by one test against the camera's view (as it was a
     // frame ago: generously), but near the player, where its shadow may fall into the picture
+    // (the buoys only for someone on the water: in the boat or swimming; from the town they are not drawn)
+    this.buoys.visible = pp.z < SHORE.limit + 2 && pp.y < 0.1;
+    if (this.buoys.visible) this.buoys.position.y = SEA_LEVEL + Math.sin(t * 1.1) * 0.035;
     const cam = host.cam;
     _frustum.setFromProjectionMatrix(_pv.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
     for (let i = 0; i < this.list.length; i++) {
@@ -571,8 +591,28 @@ export class Rides {
   }
 
   private driveBoat(r: Ride, dt: number, c: Controls) {
-    const m = r.m;
+    const m = r.m, E = BAY_EDGE, lx0 = BAY.x0 + E.inset, lx1 = BAY.x1 - E.inset, lz0 = BAY.z0 + E.inset;
+    // the bay's edge is soft for a boat as for a swimmer: making for the buoys, its bow comes round by itself to run
+    // along them, and what is left of its way out fades over the last metres (no wall out at sea, no bump)
+    _edges[0].left = m.x - lx0; _edges[1].left = lx1 - m.x; _edges[2].left = m.z - lz0;
+    const turn = bayTurn(m, _edges);
+    if (turn) m.heading += turn * dt;
+    // running in to the beach it eases off as the water gets thin, and comes to rest on the shallows
+    const lzs = SHORE.limit - 0.9 - (BOAT.half - BOAT.wide), land = m.fz * m.speed;
+    if (land > 0) { const most = shoreSpeed(lzs - m.z - 0.4); if (land > most) m.speed *= Math.max(most / land, 1 - 9 * dt); }
+    const wx = m.x, wz = m.z;
     m.step(dt, c);
+    m.x = wx + bayHold(wx, bayHold(wx, m.x - wx, lx0, -1, E.fade), lx1, 1, E.fade);
+    const gx = m.x - wx, gz = m.z - wz;
+    m.x = wx + bayHold(wx, bayHold(wx, gx, lx0, -1, E.fade), lx1, 1, E.fade);
+    m.z = wz + bayHold(wz, bayHold(wz, gz, lz0, -1, E.fade), lzs, 1, 1.2);
+    // (the way it did not make comes off its speed: it noses up to the buoys, it does not churn against them)
+    const went = Math.hypot(m.x - wx, m.z - wz), meant = Math.hypot(gx, gz);
+    if (meant > 1e-6 && went < meant) m.speed *= 1 - (1 - went / meant) * Math.min(1, dt * 5);
+    // its bow on the shallows and still driven at the beach: a word about backing off, once a ride
+    const aground = c.throttle > 0.5 && Math.abs(m.speed) < 0.6 && lzs - m.z < 1.5 && m.fz > 0.2;
+    this.stuckT = aground ? this.stuckT + dt : 0;
+    if (this.stuckT > 2.5 && !this.stuckTold) { this.stuckTold = true; this.host.aground(); }
     m.settle((p, rad) => {
       // in the bay, off the shallows; clear of the pier, the boats at anchor and the rocks
       p.x = Math.max(BAY.x0 + 1, Math.min(p.x, BAY.x1 - 1));

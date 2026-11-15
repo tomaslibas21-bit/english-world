@@ -2,9 +2,9 @@
 // streets a car stays on, the plan of this town's convertibles and boat (world/rides.ts), and the water past the
 // wading limit (water.ts). In the real game: tests/browser/rides.mjs.
 import { describe, expect, it } from "vitest";
-import { Drivable, Motion, CAR, BOAT, controlsFrom, pushOutOfBox, aheadIn } from "../src/game/rides/drive";
+import { Drivable, Motion, CAR, BOAT, BAY_EDGE, bayTurn, shoreSpeed, controlsFrom, pushOutOfBox, aheadIn } from "../src/game/rides/drive";
 import { townAsphalt, townGround } from "../src/game/rides/ground";
-import { convertibleGeometry, motorboatGeometry, CAR_SIZE, BOAT_SIZE } from "../src/game/rides/shapes";
+import { convertibleGeometry, motorboatGeometry, buoysGeometry, CAR_SIZE, BOAT_SIZE } from "../src/game/rides/shapes";
 import { RIDES } from "../src/game/world/rides";
 import { RIDE_OWNERS, RIDE_SHOUTS, RIDE_NAMES } from "../src/content/rides";
 import { rideVoice, shoutVoice } from "../src/content/voices";
@@ -139,6 +139,52 @@ describe("the boat", () => {
     const t = new Motion(BOAT, "boat");
     run(t, 2, { throttle: 0, steer: 1, brake: false });
     expect(t.heading).toBeLessThan(-0.4);
+    // (under power it comes round faster than adrift, even at a standstill: its bow on the shallows)
+    const a = new Motion(BOAT, "boat"), d = new Motion(BOAT, "boat");
+    a.step(1 / 60, { throttle: 1, steer: 1, brake: false }); a.speed = 0;
+    for (let i = 0; i < 60; i++) { a.step(1 / 60, { throttle: 1, steer: 1, brake: false }); a.speed = 0; d.step(1 / 60, { throttle: 0, steer: 1, brake: false }); }
+    expect(-a.heading).toBeGreaterThan(-d.heading * 1.5);
+  });
+  it("making for the bay's edge its bow comes round by itself; away from it, or heading in, it is left alone", () => {
+    const north = { left: 6, nx: 0, nz: -1 }, east = { left: 6, nx: 1, nz: 0 };
+    const m = new Motion(BOAT, "boat");
+    // out to sea a little east of north: round by the east (a smaller heading from north is… towards the east)
+    m.set(0, 0, PI - 0.3); m.speed = 9;
+    const t = bayTurn(m, [north]);
+    expect(Math.abs(t)).toBeGreaterThan(0.3);
+    expect(Math.sign(t)).toBe(-1);
+    // heading back in, or far from the edge: nothing
+    m.set(0, 0, 0.2); m.speed = 9;
+    expect(bayTurn(m, [north])).toBe(0);
+    m.set(0, 0, PI); m.speed = 9;
+    expect(bayTurn(m, [{ ...north, left: BAY_EDGE.band + 1 }])).toBe(0);
+    // dead on: it still comes round (to starboard), and keeps to that way
+    m.set(0, 0, PI); m.speed = 9;
+    expect(bayTurn(m, [north])).toBeLessThan(0);
+    // in a corner the two edges turn it one way round, not against each other: it gets out
+    m.set(0, 0, (3 * PI) / 4); m.speed = 9;
+    let h = m.heading;
+    for (let i = 0; i < 240; i++) { h += bayTurn(m, [north, east]) / 60; m.heading = h; }
+    const outN = -Math.cos(m.heading), outE = Math.sin(m.heading);
+    expect(Math.max(outN, outE)).toBeLessThan(0.75);
+    expect(Math.min(outN, outE)).toBeLessThan(0.06);
+    // backing out over the edge: the stern comes round too
+    m.set(0, 0, 0.3); m.speed = -2;
+    expect(bayTurn(m, [north])).not.toBe(0);
+  });
+  it("running in to the beach it eases off: full speed with water ahead, a crawl on the shallows", () => {
+    expect(shoreSpeed(BAY_EDGE.shore)).toBeGreaterThanOrEqual(BOAT.max);
+    expect(shoreSpeed(0)).toBeLessThan(1);
+    expect(shoreSpeed(-2)).toBe(shoreSpeed(0));
+    for (let d = 0; d < 14; d += 0.5) expect(shoreSpeed(d + 0.5)).toBeGreaterThan(shoreSpeed(d));
+  });
+  it("the bay's edge is a line of buoys in one mesh", () => {
+    const g = buoysGeometry([[0, 0], [15, 0], [30, 0]]);
+    g.computeBoundingBox();
+    expect(g.boundingBox!.max.x - g.boundingBox!.min.x).toBeGreaterThan(30);
+    expect(g.boundingBox!.max.y).toBeGreaterThan(1.3);
+    expect(g.attributes.position.count / 3 / 3).toBeLessThan(90);
+    expect(g.attributes.color).toBeTruthy();
   });
 });
 
