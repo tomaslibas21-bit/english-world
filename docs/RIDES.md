@@ -30,9 +30,8 @@ the town, and a boat at the shore to go out in and swim from. Shared by every ed
   away from its curb for a while and neither it, its curb nor its people are in the picture, it is **back at its curb**
   with them in it (`Rides.rest`); at once behind a door. A door, a taxi or a conversation picked from the list puts the
   player on foot and the car home (`Rides.abandon`).
-- **The boat**: a small open motorboat (Maple Harbor: moored along the pier's east side; Puerto Colibrí: a lancha
-  afloat off the beach by El Muelle, a step past where one wades to). In from the pier's boards or from the water
-  beside it; the same keys; slower than the car, it glides on when let go and throws up spray. It stays in the bay
+- **The boat**: a small open motorboat (two per town since round 3, lying in the shallows a few steps off the dry
+  sand: walked up to and taken; from the water beside it too). The same keys; slower than the car, it glides on when let go and throws up spray. It stays in the bay
   (`water.ts` BAY), off the shallows, clear of the pier, the boats at anchor and the lighthouse's rocks. **Out**:
   onto a pier's boards if they are within a step, into the shallows by the beach, else over the side for a swim.
 - **Swimming** (`water.ts` SWIM, `Game.updatePlayer`): the wading is as it was as far as the wading limit; past it the
@@ -95,6 +94,42 @@ call out when one goes by fast; "I got stuck here. I can't even go over the side
   wall out at sea. Running in to the beach it eases off (`shoreSpeed`) and rests on the shallows; under power it
   turns even at a standstill; driven on at the beach for a while, a word about backing off (`host.aground`).
 
+## Round 3 (15 Nov 2026, the same day): take a boat on foot, slides, tight places
+
+The owner again: "I want to be able to just grab a boat, walk up to a boat and grab it, and that's that"; "make the
+car and boat drift or something… now it's like very old school and boring, not GTA-like at all"; and he gets boxed in:
+turning round is so awkward that "you don't really want to drive at all".
+
+- **Boats are walked up to.** Two per town, lying in the shallows with their sterns about 2 m off the dry sand
+  (`SHALLOWS`: how far in a boat floats). Taken from 3.2 m off the hull (`BOAT.reach`): the sand, the shallows, the
+  water. A yellow gem turns over each free boat (`Rides.marks`, one mesh), and the round map shows the boats and the
+  convertibles (`ui/mapMarks.ts`, `Game.rideMarks`). Run in to the beach, a boat rests on the shallows and one steps
+  out on the beach's side onto one's feet (`boatExit`). Neither town has boards to take a boat from: the pier is
+  filled by its restaurant and its railed walk.
+- **The slide** (`CAR_DRIFT`, `BOAT_DRIFT`, `Motion.drift`): the brake (Space; the phone's STOP, which reads DRIFT
+  once it is fast enough) held while turning at speed is the handbrake. The wheel then turns the car directly, its
+  course comes round after its nose only slowly, and the two are held no further than 49° apart: a slide, not a spin.
+  Its pace is kept (the course is turned, not braked). Let go, the wheels catch; a slide held 0.7 s ends in a
+  **kick**: 13 km/h more for up to 1.7 s. With the wheel straight the brake is the brake as before.
+- **What a slide looks and sounds like**: the car side on to its way (the camera follows the course, not the nose:
+  `Game.rideCourse`), skid marks from the back wheels (`rides/skids.ts`: one mesh, a ring of 520 quads, fading after
+  14 s), smoke off the back wheels, the body leaning out and squatting under power (`Motion.yaw`, `Motion.surge`),
+  the tires' squeal and the air's rush (`audio.rush`), a rush of air at the kick. At its open-road pace the camera
+  drops back about a tenth and the lens widens by 9°.
+- **The boat slides too**: its stern steps out, a fan of spray is thrown up along its side (`Splashes.fan`), it heels
+  hard over. At speed it slaps over a wave every few metres and over its own wake where it crosses the way it came:
+  thrown up to 40 cm, spray to both sides as it lands.
+- **Tight places.** Full lock up to 16 km/h (`CAR.lockHold`; a 2.6 m turning circle), and nearly stopped under power
+  it comes round on the spot (`CAR.pivot`); it backs up at 22 km/h; against a wall it loses only what went into the
+  wall and its nose comes round to run along it. Wedged for 2.4 s it is **set free gently**: it glides half a second
+  to the nearest clear place with two car lengths of room ahead (`clearSpot`, `host.freed`); only if there is none
+  does the picture fade and the street take it back. Measured by a simple driver at 80 places per town and in each
+  town's narrow places (the squares, the forecourts, the street ends, the malecón's walk): right round in about 2 s,
+  nowhere more than 5.
+- **Nobody is touched, however it moves**: a move that would bring the body within 0.4 m of someone sitting or
+  standing where they are, and nearer than it was, is not made (`peopleGap`); those who walk step out of its way, and
+  if it stands across their way they turn back after a second instead of gathering round it (`Walker.boxT`).
+
 ### Voices
 
 The lines are in the list both tools read. Maple Harbor: `tools/casting.ts` RIDERS (Gemini's prebuilt voices: Jess
@@ -131,6 +166,8 @@ clips, `es_` / `esn_` / `esp_` + `ride_<id>`, `shout_f0…m1`).
 | `src/game/rides/shapes.ts` | the convertible and the motorboat, one vertex-coloured geometry each |
 | `src/game/rides/undersea.ts` | what a dive shows |
 | `src/game/rides/ground.ts` | the town's drivable ground |
+| `src/game/rides/skids.ts` | the marks a slide leaves |
+| `src/ui/mapMarks.ts` | the boats and the convertibles on the round map |
 | `src/game/world/rides.ts`, `src/content/rides.ts` | this town's plan; its people's lines and the things' names |
 | `src/game/water.ts` | `seaBedY`, SWIM, BAY, `bayHold`, POOLS, FLOORS, `waterY` |
 | `src/game/Game.ts` | `updateRide`, the swimming in `updatePlayer`, the prompts, `boardRide` / `leftRide` |
