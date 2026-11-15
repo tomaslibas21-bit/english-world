@@ -152,35 +152,63 @@ describe("Hop: a jump that lands on what is under it", () => {
     expect(h.start()).toBe(true);
   });
 
-  it("a second press in the air is a flip, once a jump, with a little more lift", () => {
+  it("a second press in the air is a second jump: a moment's gathering, then higher, twice head over heels, once a jump", () => {
     const h = new Hop();
     expect(h.flip()).toBe(false); // not from the ground
     h.start();
-    let peak = 0, t = 0, turned = 0, asked = false;
+    let peak = 0, t = 0, turned = 0, asked = false, hung = 0, at = 0;
     while (h.air && t < 3) {
       // (at the top of the jump)
-      if (!asked && h.vy <= 0.2) { asked = true; expect(h.flip()).toBe(true); expect(h.flip()).toBe(false); }
+      if (!asked && h.vy <= 0.2) { asked = true; at = h.y; expect(h.flip()).toBe(true); expect(h.flip()).toBe(false); }
+      const y0 = h.y;
       h.update(1 / 60);
+      if (asked && h.spin === 0 && h.y === y0) hung++;
       peak = Math.max(peak, h.y);
       turned = Math.max(turned, h.spin);
       t += 1 / 60;
     }
-    // about a third of a metre more, and one whole turn, over before or just after the landing
-    expect(peak).toBeGreaterThan(Hop.PEAK + 0.25);
-    expect(peak).toBeLessThanOrEqual(Hop.PEAK + Hop.FLIP_LIFT + 1e-6);
-    expect(turned).toBeGreaterThan(Math.PI * 1.9);
+    // they hang where they are for a moment (gathered up), then go up 1.8 m more, turning twice, and are upright
+    // again a moment after the top
+    expect(hung).toBeGreaterThanOrEqual(3);
+    expect(hung).toBeLessThanOrEqual(6);
+    expect(peak).toBeGreaterThan(at + Hop.DOUBLE_LIFT - 0.02);
+    expect(peak).toBeLessThanOrEqual(Hop.PEAK + Hop.DOUBLE_LIFT + 1e-6);
+    expect(Hop.DOUBLE_LIFT).toBeGreaterThan(1.6);
+    expect(Hop.PEAK + Hop.DOUBLE_LIFT).toBeGreaterThan(2.7);
+    expect(Hop.PEAK + Hop.DOUBLE_LIFT).toBeLessThan(3);
+    expect(turned).toBeGreaterThan(Math.PI * 3.9);
+    expect(turned).toBeLessThanOrEqual(Math.PI * 4 + 1e-6);
+    expect(Hop.FLIP_TIME).toBeLessThan(Hop.V_DOUBLE / Hop.G + 0.2);
     for (let i = 0; i < 12; i++) h.update(1 / 60);
     expect(h.spin).toBe(0);
     expect(h.tuck).toBe(0);
-    // pressed early, while still rising fast, it adds nothing to the height (but still turns)
+    // pressed on the way up, what was left of the first jump is not lost: two quick presses go as high as two
+    // well-timed ones (to a hand's width: the frames), and never higher than the two jumps together
+    for (const frames of [1, 4, 9]) {
+      const e = new Hop();
+      e.start();
+      for (let i = 0; i < frames; i++) e.update(1 / 60);
+      expect(e.flip()).toBe(true);
+      let early = 0;
+      while (e.air) { e.update(1 / 60); early = Math.max(early, e.y); }
+      expect(early).toBeGreaterThan(Hop.PEAK + Hop.DOUBLE_LIFT - 0.06);
+      expect(early).toBeLessThanOrEqual(Hop.PEAK + Hop.DOUBLE_LIFT + 1e-6);
+    }
     const e = new Hop();
     e.start();
     e.update(1 / 60);
-    expect(e.flip()).toBe(true);
-    let early = 0;
-    while (e.air) { e.update(1 / 60); early = Math.max(early, e.y); }
-    expect(early).toBeLessThanOrEqual(Hop.PEAK + 1e-6);
-    // the next jump has its own flip; falling off an edge counts as being in the air
+    e.flip();
+    while (e.air) e.update(1 / 60);
+    // falling, it stops the fall and goes up again
+    const d = new Hop();
+    d.start();
+    while (d.vy > -3) d.update(1 / 60);
+    const low = d.y;
+    expect(d.flip()).toBe(true);
+    let again = 0;
+    while (d.air) { d.update(1 / 60); again = Math.max(again, d.y); }
+    expect(again).toBeGreaterThan(low + Hop.DOUBLE_LIFT - 0.02);
+    // the next jump has its own second jump; falling off an edge counts as being in the air
     for (let i = 0; i < 12; i++) e.update(1 / 60);
     e.start();
     e.update(1 / 60);
@@ -190,9 +218,12 @@ describe("Hop: a jump that lands on what is under it", () => {
     f.update(1 / 60, 0);
     expect(f.air).toBe(true);
     expect(f.flip()).toBe(true);
-    // the most a jump can gain, a flip at its top and a toe's reach, is under a car's roof (the roof is reached from
-    // the hood or the trunk)
-    expect(Hop.PEAK + Hop.FLIP_LIFT + TOE).toBeLessThan(1.5);
+    // a slow phone's long frames: as high, to a hand's width (the gathering may run a frame over)
+    const slow = new Hop();
+    slow.start();
+    let sp = 0, pressed = false;
+    while (slow.air) { if (!pressed && slow.vy <= 0.6) { pressed = true; slow.flip(); } slow.update(1 / 20); sp = Math.max(sp, slow.y); }
+    expect(sp).toBeGreaterThan(Hop.PEAK + Hop.DOUBLE_LIFT - 0.25);
   });
 
   it("a slope's small steps down are followed, not fallen", () => {
@@ -364,14 +395,15 @@ describe("Ledges: what can be jumped onto, from the place's own geometry", () =>
 });
 
 describe("Ledges: climbing higher, a step at a time", () => {
-  /** A real car (car.ts), facing +z, at (0, 0); a thing 1.9 m high beside its roof; a table under a canopy; a
-   *  column with a sloping foot in a basin; and a counter with its clerk behind it. */
+  /** A real car (car.ts), facing +z, at (0, 0); a thing 3.2 m high beside its roof; a table under a canopy; a
+   *  column with a sloping foot in a basin; a counter with its clerk behind it; a van-high box; and a bus shelter (a
+   *  bench, a back wall, a roof the town lists as one to stand on). */
   const g = new THREE.Group();
   const add = (geo: THREE.BufferGeometry) => g.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial()));
   const col = new Colliders();
   add(carGeometry("#e45b4f"));
   col.addBox(0, 0, 2, 4.3, "car");
-  add(new THREE.BoxGeometry(1, 1.9, 1).translate(1.7, 0.95, -0.2));
+  add(new THREE.BoxGeometry(1, 3.2, 1).translate(1.7, 1.6, -0.2));
   col.addBox(1.7, -0.2, 1, 1);
   add(new THREE.BoxGeometry(2, 0.9, 1).translate(10, 0.45, 0));
   add(new THREE.BoxGeometry(3, 0.1, 2).translate(10, 2.75, 0));
@@ -385,7 +417,17 @@ describe("Ledges: climbing higher, a step at a time", () => {
   add(new THREE.BoxGeometry(10, 0.3, 8).translate(45, 0.15, 0));
   add(new THREE.CylinderGeometry(0.22, 0.22, 0.85, 8).translate(40.1, 0.425, 0));
   col.addBox(40.15, 0, 0.3, 8, "ledge");
-  const led = Ledges.build(g, col, { beside: [[30, -1]] });
+  // a box as high as a van (2.2 m), 2 × 4 m
+  add(new THREE.BoxGeometry(2, 2.2, 4).translate(60, 1.1, 0));
+  col.addBox(60, 0, 2, 4);
+  // the shelter at (70, 0): a bench 0.55 m up, a back wall 2.3 m high behind it, a roof slab from 2.54 to 2.66 m
+  add(new THREE.BoxGeometry(2.4, 0.1, 0.45).translate(70, 0.5, 0.4));
+  add(new THREE.BoxGeometry(3.6, 2.3, 0.1).translate(70, 1.15, 0.75));
+  add(new THREE.BoxGeometry(3.6, 0.12, 1.6).translate(70, 2.6, 0));
+  col.addBox(70, 0.55, 2.4, 0.18);
+  col.addBox(70, 0.75, 3.6, 0.2);
+  col.addRoof(70, 0, 3.6, 1.6);
+  const led = Ledges.build(g, col, { beside: [[30, -1], [70, -0.4]] });
   /** Runs or walks from (x, z0) along z, jumping (and flipping) when asked; where they end up and how high. */
   const go = (x: number, z0: number, dz: number, speed: number, jumps: number[], flips: number[] = [], steps = 160, y0 = 0) => {
     const p = new THREE.Vector3(x, y0, z0), hop = new Hop();
@@ -417,7 +459,7 @@ describe("Ledges: climbing higher, a step at a time", () => {
     expect(mid).toBeLessThan(1.4);
   });
 
-  it("a plain jump gets onto the hood or the trunk; the roof is reached from there, not from the street", () => {
+  it("a plain jump gets onto the hood or the trunk; the roof is reached from there, or from the street with the second jump", () => {
     // walking at the car stops at it
     expect(go(0, 5, -1, 4.4, []).top).toBe(0);
     // from the front, whenever the jump is taken within a stride of the bumper
@@ -446,11 +488,81 @@ describe("Ledges: climbing higher, a step at a time", () => {
     expect(go(0, 1.7, -1, 4.4, [], [], 60, hood.y).top).toBeLessThan(1);
     expect(go(0, 1.7, -1, 4.4, [2, 34], [], 70, hood.y).top).toBeCloseTo(1.56, 1);
     expect(go(0, -1.7, 1, 4.4, [2, 34], [], 70, trunk.y).top).toBeCloseTo(1.56, 1);
-    // straight from the street, at a walk or at a run, with or without a flip at any moment: never the roof
-    for (const speed of [4.4, 7.4]) for (const dir of [1, -1]) for (let j = 6; j < 44; j += 2) {
-      expect(go(0, -7 * dir, dir, speed, [j]).top).toBeLessThan(1.3);
-      for (let f = j + 2; f < j + 34; f += 2) expect(go(0, -7 * dir, dir, speed, [j], [f]).top).toBeLessThan(1.52);
+    // straight from the street a plain jump never reaches the roof, at a walk or at a run
+    for (const speed of [4.4, 7.4]) for (const dir of [1, -1]) for (let j = 6; j < 44; j += 2) expect(go(0, -7 * dir, dir, speed, [j]).top).toBeLessThan(1.3);
+    // the second jump does: taken at the top of the first, a stride before the car, and no further than the roof
+    const q = new THREE.Vector3(0, 0, 4.2), up = new Hop();
+    for (let i = 0; i < 120; i++) {
+      if (i === 8) up.start();
+      if (i === 25) up.flip();
+      if (q.z > -0.2) q.z -= 4.4 / 60;
+      led.resolve(q, 0.38, up.y, up.air);
+      up.update(1 / 60, led.support(q.x, q.z, up.y, up.air));
     }
+    expect(up.air).toBe(false);
+    expect(up.y).toBeCloseTo(1.56, 1);
+  });
+
+  it("what is as high as a van takes the second jump; a plain jump stops at it", () => {
+    expect(col.boxes[5].split).toBe(true);
+    expect(led.support(60, 0, 2.3, true)).toBeCloseTo(2.2, 2);
+    for (const j of [10, 16, 22, 28]) expect(go(60, 5, -1, 4.4, [j], [], 80).top).toBe(0);
+    const q = new THREE.Vector3(60, 0, 4.4), up = new Hop();
+    for (let i = 0; i < 120; i++) {
+      if (i === 8) up.start();
+      if (i === 25) up.flip();
+      if (q.z > 0.5) q.z -= 4.4 / 60;
+      led.resolve(q, 0.38, up.y, up.air);
+      up.update(1 / 60, led.support(q.x, q.z, up.y, up.air));
+    }
+    expect(up.air).toBe(false);
+    expect(up.y).toBeCloseTo(2.2, 2);
+  });
+
+  it("a roof the town lists is stood on: walked under, jumped up through, landed on from above; the wall under it is no wall up there", () => {
+    const roofTop = 2.66;
+    expect(led.pieces.some((q) => q.deck && Math.abs(q.top - roofTop) < 0.01)).toBe(true);
+    // on the ground under it nothing is in the way and nothing is underfoot; the bench is as it was (its talker beside it or not)
+    const under = { x: 70, z: -0.4 };
+    led.resolve(under, 0.38, 0, false);
+    expect(under).toEqual({ x: 70, z: -0.4 });
+    expect(led.support(70, -0.4, 0, false)).toBe(0);
+    expect(led.support(70, 0.4, 0.6, true)).toBeCloseTo(0.55, 2);
+    // from above it is a floor, all over the roof, and the back wall under it (2.3 m) no longer pushes
+    for (const [x, z] of [[70, 0], [68.4, -0.7], [71.7, 0.7], [70, 0.75]]) expect(led.support(x, z, roofTop + 0.3, true), `${x}, ${z}`).toBeCloseTo(roofTop, 2);
+    const onRoof = { x: 70, z: 0.7 };
+    led.resolve(onRoof, 0.38, roofTop, false);
+    expect(onRoof).toEqual({ x: 70, z: 0.7 });
+    // down on the ground that wall still stops them
+    const p = new THREE.Vector3(70, 0, 0.2);
+    for (let i = 0; i < 30; i++) { p.z += 0.05; col.resolve(p, 0.38, true); led.resolve(p, 0.38, 0, false); }
+    expect(p.z).toBeLessThan(0.65 - 0.38 + 0.13);
+    // from the street: walk up, jump, the second jump at the top: up through the roof's edge and down onto it
+    const q = new THREE.Vector3(70, 0, -3.6), up = new Hop();
+    for (let i = 0; i < 120; i++) {
+      if (i === 8) up.start();
+      if (i === 25) up.flip();
+      if (q.z < -0.1) q.z += 4.4 / 60;
+      col.resolve(q, 0.38, true);
+      led.resolve(q, 0.38, up.y, up.air);
+      up.update(1 / 60, led.support(q.x, q.z, up.y, up.air));
+    }
+    expect(up.air).toBe(false);
+    expect(up.y).toBeCloseTo(roofTop, 2);
+    // and from the bench, straight up through the roof
+    const h = new Hop();
+    h.land(0.55);
+    h.start();
+    let stood = 0;
+    for (let i = 0; i < 120; i++) {
+      if (i === 17) h.flip();
+      h.update(1 / 60, led.support(70, 0.4, h.y, h.air));
+      if (!h.air) stood = Math.max(stood, h.y);
+    }
+    expect(stood).toBeCloseTo(roofTop, 2);
+    // a roof the town does not list (the canopy over the table) is no floor
+    expect(led.support(10, 0, 3.2, true)).toBe(0);
+    expect(led.pieces.some((q) => q.deck && q.minX < 12 && q.maxX > 8)).toBe(false);
   });
 
   it("walking off the roof down the windshield is a walk down, and off the hood a fall", () => {
@@ -470,14 +582,14 @@ describe("Ledges: climbing higher, a step at a time", () => {
   });
 
   it("nothing above CLIMB is ever stood on, whatever one jumps from", () => {
-    expect(CLIMB).toBeLessThan(1.8);
-    // the 1.9 m thing beside the roof: a wall from the roof too
-    for (const top of [1.56, 2.2, 3]) expect(led.support(1.7, -0.2, top, true)).toBe(0);
-    const p = new THREE.Vector3(1.3, 2.6, -0.2);
+    expect(CLIMB).toBeLessThan(3);
+    // the 3.2 m thing beside the car's roof: a wall from the roof, and from as high as a jump from there goes
+    for (const top of [1.56, 2.8, 4.4]) expect(led.support(1.7, -0.2, top, true)).toBe(0);
+    const p = new THREE.Vector3(1.3, 4.4, -0.2);
     col.resolve(p, 0.38, true);
-    led.resolve(p, 0.38, 2.6, true);
+    led.resolve(p, 0.38, 4.4, true);
     expect(p.x).toBeLessThan(1.2 - 0.38 + 1e-6);
-    expect(led.pieces.every((q) => q.top === Infinity || q.top <= CLIMB)).toBe(true);
+    expect(led.pieces.every((q) => q.wall || q.top === Infinity || q.top <= CLIMB)).toBe(true);
   });
 
   it("no standing where there is no room overhead, nor on the flank of a column; the basin round it can be stood in", () => {
@@ -488,6 +600,9 @@ describe("Ledges: climbing higher, a step at a time", () => {
     const p = { x: 20.2, z: 0 };
     led.resolve(p, 0.38, 1.7, true);
     expect(Math.hypot(p.x - 20, p.z)).toBeGreaterThan(0.6);
+    // (the column's own top, 2.6 m, is a top; its sloping flank never is, from however high)
+    expect(led.support(20, 0, 2.7, true)).toBeCloseTo(2.6, 2);
+    for (const y of [1.2, 2, 2.5]) expect(led.support(20.75, 0, y, true)).toBeLessThanOrEqual(0.81);
   });
 
   it("by someone one talks to, nothing higher than a bench is stood on", () => {

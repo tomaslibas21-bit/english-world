@@ -38,10 +38,22 @@ Shared by every edition of the game (the code is in `src/game/`; each town keeps
   a planter, a lounger) is replaced, for the player only, by pieces with a height: the low ones can be landed on
   (`support`) and walked off (a fall), the rest (a bench's back) stays a wall (`resolve`).
 - **Higher things have their heights too.** A collider that is not mostly knee-high, but mostly no higher than `CLIMB`
-  (1.75 m: a car's roof), is split into pieces with their own heights: a car (hood, windshield, roof, trunk), a low
-  wall and the posts on it, a fence, a trash can, a hydrant, a mailbox, a table, a crate, a fountain's basin. What in
-  it is higher than `CLIMB` is a wall, whatever one jumps from; so is a top with less than 2.3 m of room over it (a
-  market stall's table under its awning) and the flank of something that goes on up (a fountain's column).
+  (2.8 m since 15 Nov: what the second jump reaches; it was 1.75 m, a car's roof), is split into pieces with their own
+  heights: a car (hood, windshield, roof, trunk), a low wall and the posts on it, a fence, a trash can, a hydrant, a
+  mailbox, a table, a crate, a fountain's basin, a van's roof, a tall garden wall. What in it is higher than `CLIMB` is
+  a wall, whatever one jumps from; so is a top with less than 2.3 m of room over it (a market stall's table under its
+  awning) and the flank of something that goes on up higher than a car's roof (a fountain's column, a van's side: a
+  wall as high as the thing, so to someone up on it, no wall).
+- **Up to a car's roof (`FIRST`, 1.75 m) every top is read exactly as before the second jump.** Above it a top must
+  be a place to stand: level, half a metre across one way at least (`SPAN`) and 0.2 m² in all (`PLACE`): a wall's
+  top, a gate's pillar, a roof; not a pole's end, a beach umbrella's tip or the edge of a price board (those stay
+  walls).
+- **Roofs to stand on are listed by the town** (`Colliders.addRoof`: the bus shelter's, Maple Harbor's four market
+  stalls', the fountain's top bowl). A listed roof is a floor from above only (a `deck` piece): one walks under it as
+  before, jumps up through it and lands on it; what stands under it (the shelter's glass, a stall's table) is a wall
+  only as high as the room under the roof. A roof that is not listed is no floor (an awning, a canopy, a palapa).
+- A collider the town tags `"edge"` is the edge of where one walks and never a thing to jump onto, however low the
+  scrub on it (the clearing round Puerto Colibrí's cenote).
 - **By someone one talks to nothing changes**: a collider within 1.6 m of a person of a conversation (or of the spot
   one talks to them from) keeps the old limit, so nobody stands on a counter in front of its clerk or on the car its
   owner is selling. Café tables and their chairs (`keep`), what the camera's field holds solid over 3.5 m (`tall`: a
@@ -49,16 +61,23 @@ Shared by every edition of the game (the code is in `src/game/`; each town keeps
   sea are never candidates.
 - **The jump** (`Hop`): about a metre up (`PEAK` 1.02 m, 0.58 s; the same on a slow phone's long frames), and it
   lands on what is under it when it comes down: a bench, a car's hood or trunk, a low wall, a fence a metre high. A
-  top up to 5 cm above the feet is still landed on (`TOE`). **A second press in the air is a flip**: a somersault
-  (`Character.flip`) and a little more lift (`FLIP_LIFT`, a third of a metre at the top of the jump), once a jump;
-  with it one reaches about 1.4 m (a mailbox, a tall fence). **A car's roof (1.56 m) is reached only from its hood or
-  its trunk**: the street's best jump comes up short of it (a test).
+  top up to 5 cm above the feet is still landed on (`TOE`). **A second press in the air is a second jump** (15 Nov;
+  it was a flip with a third of a metre of lift): they gather themselves for a moment (`WIND`, 0.07 s, hanging where
+  they are), then go up again 1.8 m (`DOUBLE_LIFT`) turning head over heels twice (`Hop.spin` to 4π in `FLIP_TIME`,
+  `Character.flip`), once a jump. Pressed on the way up, what was left of the first jump is not lost: two quick
+  presses go as high as two well-timed ones, **2.8 m from where the jump began**; pressed while falling it adds its
+  1.8 m from where they are. A whoosh (`audio.whoosh`), and on landing a ring of dust and the squash. **A plain jump
+  still reaches every first step** (a hood, a low wall: about a metre) **and never a car's roof (1.56 m)**: that
+  takes the hood or the trunk first, or the second jump from the street (tests).
+- The camera stays where it is while they are in the air (`CameraRig.hold`): going up through a shelter's roof does
+  not pull it in; its target follows half the jump's height, so the higher places stay in view.
 - Walking up without a jump: 0.12 m from the ground (`STEP`: a kerb), 0.07 m up on something (`SLOPE`: along a hood,
   not up a windshield). Walking down: steps of up to 0.13 m are followed (down a windshield), more is a fall.
 - **Cars on the move** are walls, as they were (`Ambient.resolvePlayer`). A car that has stopped for the player is
   climbed like a parked one (`Ambient.carPieces`, read from its own mesh, `Ledges.dynamic`), and **its driver waits**
   while the player is on it or over it (and up to four seconds while they stand within a metre of it), and 0.8 s
-  more; then it drives on. Nobody rides. A van or a bus too tall to climb stays a wall standing as moving.
+  more; then it drives on. Nobody rides. Puerto Colibrí's colectivo (roof 2.06 m) is climbed like a car since the
+  second jump; a bus is too tall and stays a wall standing as moving.
 - **Up on something higher than a bench** nobody is talked to and no door gone through (`Game.aloft`): one hops down
   first.
 - A deck's edge the town tags `"ledge"` (the pier's beach side) is a wall for the passers-by and the way-finding and
@@ -74,26 +93,34 @@ Shared by every edition of the game (the code is in `src/game/`; each town keeps
   planned from up on something ("Nuvesk mane", a tap) first steps straight down to the nearest open spot
   (`Game.walkTo`, `Ledges.clear`). Indoors the jump (and the flip) is as it was: drawn only.
 - On a phone the jump button stays on screen: bottom right, and beside the talk / enter button when that shows. A
-  second tap while in the air is the flip.
+  second tap while in the air is the second jump. On a computer Space talks when someone is in reach and one stands
+  on the ground (the bus stop): the jump at a shelter's roof starts a few steps away, and in the air Space is always
+  the second jump.
 - **What must stay true** is checked for the whole town by `src/dev/climbAudit.ts` (dev only; in
   `tests/browser/climb.mjs`): flooding the town with every move taken generously, nobody stands higher than `CLIMB`,
-  nobody gets beyond the bounds or the wading limit, and from every place reached only by jumping a plain jump leads
-  back.
+  nobody gets beyond the bounds or the wading limit (but for what the town opens beyond them, given as `open`: the
+  cenote's clearing; `outsideAt` says where one first gets out), and from every place reached only by jumping a
+  plain jump leads back. 15 Nov: Maple Harbor 2.75 m, 0 cells outside; Puerto Colibrí 2.66 m, 0.
 
-### What can be climbed in Maple Harbor (the survey of 14 Nov 2026: `things` of `Ledges`, one of each looked at)
+### What can be climbed in Maple Harbor (the surveys of 14 and 15 Nov 2026: `things` of `Ledges`, one of each looked at)
+
+- **With the second jump** (15 Nov): the bus shelter's roof (2.66 m), the four market stalls' roofs (2.6–2.75 m: the
+  boards over the cloth), the fountain's top bowl (2.75 m), the airport taxi's roof with its sign (1.8 m); and from
+  the street what took a car or a wall under one's feet before: a car's roof, a mailbox, the party's speaker, the gas
+  pumps (1.7 m).
 
 - **Cars**: the ten parked along Main Street, Oak Avenue and the side streets, the taxi at the airport and the four
   rental cars (hood or trunk 0.9–1.0 m, roof 1.56–1.6 m), and any car of the traffic while it has stopped. Not Maggie's
   convertible (she stands by it).
 - **The pier**: its boards from the sand along its beach side (0.3 m), and the eight mooring posts there (0.85 m).
 - **The fountain**: its basin (0.8 m: one stands in the water); the column in the middle is a wall.
-- **On the streets**: five hydrants and four trash cans (0.9 m), five mailboxes (1.35 m: a flip), the picket fences of
+- **On the streets**: five hydrants and four trash cans (0.9 m), five mailboxes (1.35 m), the picket fences of
   Oak Avenue's front yards (0.75–0.9 m), the clinic's low sign, the rack by the gym (1.1 m), the crates at Sproutly
   (0.5–1.1 m), the bus stop's bench and bin.
 - **The party's yard**: the table (0.9 m), the speaker (1.35 m), the fence round it (1.2 m).
-- As before: every bench, the planters. **Not**: the market's stalls (their awnings), café tables and chairs, the
-  gazebo, counters and anything by someone one talks to, lamp posts, signs on poles, trees, the gas pumps (1.7 m: in
-  reach of nothing), buildings.
+- As before: every bench, the planters. **Not**: the market stalls' tables (under their roofs), café tables and
+  chairs, the gazebo, counters and anything by someone one talks to, lamp posts, signs on poles, beach umbrellas,
+  trees, buildings.
 
 ## The jog (`Game.updatePlayer`)
 
@@ -130,6 +157,6 @@ Shared by every edition of the game (the code is in `src/game/`; each town keeps
 
 ## Tests
 
-`tests/movement.test.ts` (the jump and the flip, what they can land on, a car in steps, the shore and wading),
-`tests/coach.test.ts` (the guide and the tip), `tests/browser/climb.mjs` (in the real game: a parked car in steps, the
-flip, the phone's button, and the town-wide audit).
+`tests/movement.test.ts` (the jump and the second jump, what they can land on, a car in steps, a roof to stand on,
+the shore and wading), `tests/coach.test.ts` (the guide and the tip), `tests/browser/climb.mjs` (in the real game: a
+parked car in steps, the second jump, the bus shelter's roof, the phone's button, and the town-wide audit).
