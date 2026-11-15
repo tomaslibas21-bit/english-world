@@ -431,7 +431,8 @@ export class Character {
   lift = 0;
   tuck = 0;
   squash = 0;
-  /** A somersault in the air (radians, 0…2π forwards; 0: upright): the whole body turns about its middle. */
+  /** Somersaults in the air (radians forwards, 0…4π for two; 0: upright): the whole body turns about its middle, the
+   *  knees drawn up as far as `tuck` says. */
   flip = 0;
   private hopShown = false;
   private walkPhase = 0;
@@ -1450,8 +1451,8 @@ export class Character {
         lf += (-0.5 - lf) * k; rf += (-0.5 - rf) * k;
         lz -= 0.55 * k; rz += 0.55 * k;
         if (this.flip) {
-          // a somersault: the knees drawn up to the chest and the arms round them, tightest half-way round
-          const f = Math.sin(this.flip / 2);
+          // a somersault: the knees drawn up to the chest and the arms round them, as tight as the tuck
+          const f = k;
           this.legL.rotation.x += (-1.5 - this.legL.rotation.x) * f;
           this.legR.rotation.x += (-1.4 - this.legR.rotation.x) * f;
           this.shinL.rotation.x += (2.0 - this.shinL.rotation.x) * f;
