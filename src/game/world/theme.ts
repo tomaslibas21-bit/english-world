@@ -131,8 +131,9 @@ export interface TownTheme {
   locationSigns: boolean;
   /** The square's market stalls' signs, by their goods. */
   stallSigns: Record<string, string>;
-  /** Strings of papel picado over the square, from the centrepiece to these points (x, z, height). */
-  papelPicado: [number, number, number][];
+  /** Strings of papel picado over the square, from the centrepiece to these points (x, z, height; and how much it sags,
+   *  0.9 m when left out). */
+  papelPicado: [number, number, number, number?][];
   /** Palm trees (x, z). */
   palms: [number, number][];
   /** The market hall inside: Maple Harbor's supermarket, or a Mexican mercado's stalls. */

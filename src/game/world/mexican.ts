@@ -86,6 +86,8 @@ export class SignAtlas {
     const mesh = new THREE.Mesh(mergeGeometries(geos, false)!, new THREE.MeshBasicMaterial({ map: tex, alphaTest: 0.5, toneMapped: false }));
     for (const g of geos) g.dispose();
     mesh.name = "town-signs";
+    // each board's place and size, for the dev tools (src/dev/signAudit.ts: is anything in front of its words?)
+    mesh.userData.signQuads = this.quads.map(({ key, w, h, m }) => ({ key, w, h, m: m.toArray() }));
     return mesh;
   }
 }
@@ -426,8 +428,9 @@ export function houseFront(parts: Part[], P: (u: number, v: number) => [number, 
  *  branches out, the leaves as clumps flattened against the wall, close enough to overlap into one mass that fans out
  *  towards the top, the magenta bracts in clusters over its outside, and a crown along the top of the wall, thickest
  *  over the trunk and thinner towards its ends, that spills over the top. `P(u, v)` as for houseFront; `u0` where it
- *  grows, `span` how far the crown reaches each way, `top` the wall's height. */
-export function bougainvillea(parts: Part[], P: (u: number, v: number) => [number, number], u0: number, span: number, top: number, seed: number) {
+ *  grows, `span` how far the crown reaches each way, `top` the wall's height; `keep` the wall's sign (u and height
+ *  ranges): no leaves in front of its words, the ones that would be go beside it, on the plant's side (docs/SIGNS.md). */
+export function bougainvillea(parts: Part[], P: (u: number, v: number) => [number, number], u0: number, span: number, top: number, seed: number, keep?: { u0: number; u1: number; y0: number; y1: number }) {
   const r = rand(seed);
   const LEAVES = ["#3f7d3a", "#2f6b34", "#4a8a3c"], PINKS = ["#f2369a", "#e62e8a", "#ff4fa8", "#d81b7a", "#c2187f"];
   // the wall's frame: x along it, y up, z out of it (P's v), for shapes flattened against it
@@ -435,7 +438,12 @@ export function bougainvillea(parts: Part[], P: (u: number, v: number) => [numbe
   const out = new THREE.Vector3(nx - ox, 0, nz - oz).normalize(), up = new THREE.Vector3(0, 1, 0);
   const frame = new THREE.Matrix4().makeBasis(new THREE.Vector3().crossVectors(up, out), up, out);
   const at = (g: THREE.BufferGeometry, u: number, y: number, v: number, c: string) => { const [x, z] = P(u, v); parts.push([g.applyMatrix4(frame).translate(x, y, z), c]); };
-  const clump = (u: number, y: number, v: number, s: number, c: string, wide: number, flat: number) => at(new THREE.IcosahedronGeometry(s, 0).rotateZ(r() * Math.PI).scale(wide, 0.78 + r() * 0.18, flat), u, y, v, c);
+  const clump = (u: number, y: number, v: number, s: number, c: string, wide: number, flat: number) => {
+    const g = new THREE.IcosahedronGeometry(s, 0).rotateZ(r() * Math.PI).scale(wide, 0.78 + r() * 0.18, flat);
+    const half = s * wide + 0.05;
+    if (keep && y + s > keep.y0 && y - s < keep.y1 && u + half > keep.u0 && u - half < keep.u1) u = u0 > (keep.u0 + keep.u1) / 2 ? keep.u1 + half : keep.u0 - half;
+    at(g, u, y, v, c);
+  };
   const leaves = (u: number, y: number, s: number, v = 0.2) => clump(u, y, v, s, LEAVES[Math.floor(r() * LEAVES.length)], 1.35, 0.42);
   const bracts = (u: number, y: number, s: number, v = 0.36) => clump(u, y, v, s, PINKS[Math.floor(r() * PINKS.length)], 1.2, 0.55);
   // the trunk, leaning a little, and two branches from it towards the sides of the mass
@@ -652,6 +660,8 @@ export function paintedSignTexture(text: string, bg: string, fg: string, edge: s
   drawPainted(text, sub, bg, fg, edge)(cv.getContext("2d")!, cv.width, cv.height);
   const t = new THREE.CanvasTexture(cv);
   t.colorSpace = THREE.SRGBColorSpace;
+  // (its words, for the dev tools: src/dev/signAudit.ts)
+  t.name = text;
   t.anisotropy = 16;
   return t;
 }
@@ -2105,10 +2115,11 @@ export function surfShack(parts: Part[], roofs: Part[], col: Colliders, atlas: S
   // to whoever comes down to the sand
   {
     const bx = HW + 0.95, bz = HD + 0.55, a = 0.5;
-    // (its face upright, a leg leaning out behind it)
+    // (its face upright, a leg leaning out behind it: its top just behind the face, its foot 0.45 m further back; it
+    // turns about its foot, so at -0.03 its top stood 0.4 m in front of the chalk, across the report, docs/SIGNS.md)
     const turn = (g: THREE.BufferGeometry) => g.rotateY(a).translate(bx, 0, bz);
     add(turn(box(1.12, 1.42, 0.05, 0, 0.78, 0)), "#7a5a3c");
-    add(turn(box(1.0, 1.4, 0.04, 0, 0.7, 0).rotateX(0.3).translate(0, 0, -0.03)), "#6a4a30");
+    add(turn(box(1.0, 1.4, 0.04, 0, 0.7, 0).rotateX(0.3).translate(0, 0, -0.47)), "#6a4a30");
     for (const sx of [-1, 1]) add(turn(box(0.06, 0.1, 0.06, sx * 0.48, 0.05, 0)), "#6a4a30");
     const o = new THREE.Vector3(0, 0, 0.032).applyAxisAngle(new THREE.Vector3(0, 1, 0), a);
     const [cx, cz] = at(bx + o.x, bz + o.z);

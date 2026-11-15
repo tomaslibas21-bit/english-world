@@ -171,7 +171,9 @@ export const THEME: TownTheme = {
   locationSigns: true,
   stallSigns: { flowers: "Flores", fruit: "Frutas", veg: "Verduras", bread: "Pan dulce" },
   // from the kiosco's roof to the square's edges: the lamp posts and the corners
-  papelPicado: [[12, -18, 4.6], [48, -18, 4.6], [10, -44, 4.6], [50, -44, 4.6], [30, -16, 4.8], [52, -30, 4.6], [8, -30, 4.6], [30, -47, 4.6]],
+  // (the south-east one ends at 50, -38: to 50, -44 its flags hung in front of the Sombreros and Verduras stalls'
+  // boards from the street, docs/SIGNS.md)
+  papelPicado: [[12, -18, 4.6], [48, -18, 4.6], [10, -44, 4.6], [50, -38, 4.6], [30, -16, 4.8], [52, -30, 4.6], [8, -30, 4.6], [30, -47, 4.6]],
   palms: [[8.6, -17.4], [47.6, -17.6], [8.4, -47.2], [49, -47.4], [20.5, -16.6], [39.5, -16.6], [6.8, -32], [51.4, -26],
     // (graphics round 2) along avenida Juárez up to the airport, and in the terminal's forecourt either side of its canopy
     [104, -15], [110, -15], [116, -15], [104, -1.3], [110, -1.3], [116, -1.3], [130.5, -22.5], [130.5, -27], [130.5, 6.5], [130.5, 11],
@@ -351,7 +353,8 @@ export const THEME: TownTheme = {
   zocalo: {
     laureles: [[13.5, -25.5], [44.5, -21.5], [15.5, -31.5], [45.5, -28.5]],
     bancas: [[24.5, -17.4, Math.PI], [37, -17.4, Math.PI], [17, -27.5, Math.PI / 2], [43.5, -25, -Math.PI / 2]],
-    lamps: [[22.2, -22.2], [37.8, -22.2], [22.2, -37.8], [37.8, -37.8]],
+    // (the south-east one between the Barro and Verduras stalls: at 37.8, -37.8 it stood in front of the Verduras board)
+    lamps: [[22.2, -22.2], [37.8, -22.2], [22.2, -37.8], [35.2, -39.4]],
   },
   // the townspeople of a Caribbean town (none dressed as the player can be: ui/Title.tsx LOOKS): mostly dark hair and
   // warm skins, light summer clothes, a straw hat now and then, shorts and sandals on some (the tourists among them)

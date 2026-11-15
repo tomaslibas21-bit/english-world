@@ -1130,7 +1130,12 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   }
   if (THEME.bougainvillea.includes(b.id)) {
     const side = dr() < 0.5 ? -1 : 1;
-    MX.bougainvillea(mxFlat, front, side * (halfWidth - 1.3), 2.6, Math.min(b.h, 7.2) + (b.roof === "flat" && THEME.mexican ? 0.9 : 0.2), 400 + b.id.length * 37 + b.x);
+    // (nothing in front of the building's name: Estética Tijeras had its "Es" under the leaves, docs/SIGNS.md; on a
+    // wall too narrow for the plant beside the sign, it grows at the corner and its leaves keep to the sign's side)
+    const shown = signW > 0 && b.style !== "house";
+    const keep = shown ? { u0: -signW / 2 - 0.1, u1: signW / 2 + 0.1, y0: signY - signH / 2 - 0.1, y1: signY + signH / 2 + 0.1 } : undefined;
+    const u0 = shown ? Math.max(halfWidth - 1.3, Math.min(halfWidth - 0.6, signW / 2 + 0.2)) : halfWidth - 1.3;
+    MX.bougainvillea(mxFlat, front, side * u0, 2.6, Math.min(b.h, 7.2) + (b.roof === "flat" && THEME.mexican ? 0.9 : 0.2), 400 + b.id.length * 37 + b.x, keep);
   }
 }
 
@@ -2040,21 +2045,21 @@ function makePapelPicado(): THREE.Mesh {
   const COLORS = ["#e4007c", "#f6a800", "#00a6a6", "#7ac143", "#ff5a36", "#6d2e9e", "#1f6fd1"];
   const parts: [THREE.BufferGeometry, THREE.ColorRepresentation][] = [];
   const strings: [THREE.BufferGeometry, THREE.ColorRepresentation][] = [];
-  THEME.papelPicado.forEach(([tx, tz, ty], k) => {
+  THEME.papelPicado.forEach(([tx, tz, ty, sag = 0.9], k) => {
     const a = Math.atan2(tz - cz, tx - cx);
     const sx = cx + Math.cos(a) * 4.2, sz = cz + Math.sin(a) * 4.2, sy = 4.75;
     const len = Math.hypot(tx - sx, tz - sz);
     const n = Math.floor(len / 0.62);
     for (let i = 1; i < n; i++) {
       const f = i / n;
-      const y = sy + (ty - sy) * f - Math.sin(f * Math.PI) * 0.9;
+      const y = sy + (ty - sy) * f - Math.sin(f * Math.PI) * sag;
       const g = new THREE.PlaneGeometry(0.42, 0.52).translate(0, -0.29, 0).rotateY(-a).translate(sx + (tx - sx) * f, y, sz + (tz - sz) * f);
       parts.push([g, COLORS[(i + k * 3) % COLORS.length]]);
     }
     // the string itself
     for (let i = 0; i < n; i++) {
       const f0 = i / n, f1 = (i + 1) / n;
-      const y0 = sy + (ty - sy) * f0 - Math.sin(f0 * Math.PI) * 0.9, y1 = sy + (ty - sy) * f1 - Math.sin(f1 * Math.PI) * 0.9;
+      const y0 = sy + (ty - sy) * f0 - Math.sin(f0 * Math.PI) * sag, y1 = sy + (ty - sy) * f1 - Math.sin(f1 * Math.PI) * sag;
       const seg = new THREE.BoxGeometry(0.02, 0.02, len / n + 0.02);
       seg.lookAt(new THREE.Vector3((tx - sx) / n, y1 - y0, (tz - sz) / n));
       seg.translate(sx + (tx - sx) * (f0 + f1) / 2, (y0 + y1) / 2, sz + (tz - sz) * (f0 + f1) / 2);
