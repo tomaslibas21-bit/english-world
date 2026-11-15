@@ -691,4 +691,11 @@ export const STRINGS: Record<string, string> = {
   "Mašina vėl gatvėje": "The car is back on the street",
   "Kelias užimtas": "The way is blocked",
   "Mašina sustoja pati. Pasuk į šoną ir apvažiuok arba pavažiuok atbulas.": "The car stops by itself. Steer to one side and go round, or back up.",
+  // the cenote's grounds: more ways into the grotto (src/game/cave/grounds.ts)
+  "Išlįsti pro plyšį": "Out through the cleft",
+  "Šokti žemyn: {place}": "Jump down: {place}",
+  "Uolos plyšyje kažkas švyti…": "Something glows in a cleft in the rock…",
+  "Prieik arčiau – pro jį galima įlįsti.": "Come closer: one can squeeze in through it.",
+  "Iš duobės tarp šaknų kyla šviesa…": "Light rises from a hole among the roots…",
+  "Tai El Ojo – „akis“. Įšok, jei drįsti: apačioje vanduo.": "That is El Ojo, “the eye”. Jump in if you dare: there is water below.",
 };

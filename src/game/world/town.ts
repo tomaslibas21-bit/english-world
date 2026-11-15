@@ -1,5 +1,6 @@
 // Builds the outdoor town of Maple Harbor from layout.ts: ground, sea, buildings, props, colliders, doors.
 import * as THREE from "three";
+import * as GROUNDS from "../cave/grounds";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, TAXI, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, type BuildingDef } from "./layout";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
@@ -200,10 +201,12 @@ export function buildTown(): Town {
   // (theme.ts `cenote.walk`: the west edge is open where the sacbé leaves the town for the cenote; the clearing out
   // there has its own edges, mexican.ts cenoteWalk)
   if (THEME.cenote?.walk) {
-    const cz = THEME.cenote.z, g0 = cz - 3.6, g1 = cz + 2.6;
+    // (`cenote.open`, cave/grounds.ts: the meadow's whole edge is open, as far north and south as its grounds reach)
+    const cz = THEME.cenote.z, open = !!THEME.cenote.open, g0 = cz - (open ? GROUNDS.REACH.ns : 3.6), g1 = cz + (open ? GROUNDS.REACH.ns : 2.6);
     colliders.addBox(WORLD.minX - 1, (g0 - 110) / 2, 2, g0 + 110);
     colliders.addBox(WORLD.minX - 1, (g1 + 110) / 2, 2, 110 - g1);
-    MX.cenoteWalk(colliders, THEME.cenote.x, cz, WORLD.minX);
+    if (open) GROUNDS.groundsWalk(colliders, THEME.cenote.x, cz, WORLD.minX, THEME.meadow?.ceibas);
+    else MX.cenoteWalk(colliders, THEME.cenote.x, cz, WORLD.minX);
   } else colliders.addBox(WORLD.minX - 1, 0, 2, 220);
   colliders.addBox(WORLD.maxX + 1, 0, 2, 220);
   // the sea on both sides of the pier deck (x -41.3…-18.7); the deck has its own edges
@@ -1959,7 +1962,7 @@ function addTownMx(M: Merger, col: Colliders) {
   if (f) MX.foodCart(mx, col, a, f.x, f.z, f.rot, f.sign);
   // beyond the town's edge: the cenote across the west meadow, the ruins on the point past the beach (TOWN.md task 8)
   // (in the mesh that casts no shadow: they stand beyond the town's edge, seen from afar)
-  if (THEME.cenote) MX.cenote(THEME.regions ? mxFar : mxFlat, a, THEME.cenote.x, THEME.cenote.z, THEME.cenote.sign);
+  if (THEME.cenote) MX.cenote(THEME.regions ? mxFar : mxFlat, a, THEME.cenote.x, THEME.cenote.z, THEME.cenote.sign, !!THEME.cenote.open);
   // (graphics round 4) the scrub on the meadow round it, ceibas over the selva behind it
   const md = THEME.meadow;
   if (md) MX.meadow(THEME.regions ? mxFar : mxFlat, md.x0, md.x1, md.z0, md.z1, md.clear, md.ceibas);
@@ -2238,8 +2241,11 @@ function makeSelva(): THREE.InstancedMesh {
     const { x, z } = THEME.cenote;
     for (let i = 0; i < 18; i++) {
       const a = Math.PI * 0.35 + (i / 17) * Math.PI * 1.3, d = 12.5 + r() * 4; // round its far side (west), not the town's
-      spots.push([x + Math.cos(a) * d, z + Math.sin(a) * d, 2.6 + r() * 1.6, 0.75 + r() * 0.3]);
+      const spot: [number, number, number, number] = [x + Math.cos(a) * d, z + Math.sin(a) * d, 2.6 + r() * 1.6, 0.75 + r() * 0.3];
+      // (its grounds open to explore, cave/grounds.ts: the crowns stand where the plan puts them, clear of its trail)
+      if (!THEME.cenote.open) spots.push(spot);
     }
+    if (THEME.cenote.open) spots.push(...GROUNDS.crowns(x, z, WORLD.minX));
   }
   // a round crown: an icosahedron with a sphere's normals (soft), its top lighter than its underside
   const geo = new THREE.IcosahedronGeometry(1, 0);

@@ -55,6 +55,7 @@ export const PASSAGES: Passage[] = [
   { ax: -14, az: -75, bx: -9, bz: -89, w: 5.2 },       // 2 → 3
   { ax: 0, az: -113, bx: 9, bz: -126, w: 5.2 },        // 3 → 4
   { ax: 13, az: -148, bx: 8, bz: -162, w: 5.4 },       // 4 → 5
+  { ax: 2.4, az: -0.4, bx: 9.8, bz: -2.3, w: 3.3 },    // the cleft off the way in: out to La Grieta (grounds.ts)
 ];
 
 export const GATES: Gate[] = [
@@ -108,6 +109,23 @@ export const SACBE: [number, number][] = [
 /** Where one comes in, and where the way back out is (the turquoise water of the cave's mouth). */
 export const ENTRY = { x: 0, z: 2.2, rot: Math.PI };
 export const EXIT = { x: 0, z: 6.4 };
+/** The ways out (grounds.ts has where each comes up in the town): the water one came through, the cleft's slit of
+ *  daylight. `reach`: from how near it is offered; `push`: walking on into it within this goes out (towards `dir`). */
+export const EXITS: { id: "agua" | "grieta"; x: number; z: number; reach: number; push: number; dir: [number, number] }[] = [
+  { id: "agua", x: EXIT.x, z: EXIT.z, reach: 2.6, push: 1.5, dir: [0, 1] },
+  { id: "grieta", x: 9.2, z: -2.2, reach: 2.4, push: 1.0, dir: [1, -0.25] },
+];
+/** Where each way in puts one (grounds.ts `ways`): swum in by the cave's mouth, walked in through La Grieta's cleft,
+ *  dropped through El Ojo into the water (`drop`: from how high, m). */
+export const SPAWNS: Record<string, { x: number; z: number; rot: number; drop?: number }> = {
+  boca: ENTRY,
+  // (out of the cleft's inner end and turned towards Kin: the camera has the way in's length behind them, as from the
+  // water; in the cleft itself it was boxed in and came round to their face)
+  grieta: { x: 1.2, z: -0.7, rot: Math.PI },
+  ojo: { x: 0, z: 9.0, rot: Math.PI, drop: 6.2 },
+};
+/** The sinkhole seen from below: a small eye in the roof over the water one comes up through. */
+export const EYE2 = { x: 0, z: 9.2, r: 1.8 };
 export const BOUNDS = { minX: -34, maxX: 34, minZ: -198, maxZ: 16 };
 
 // ------------------------------------------------------------------------------------------------- the ground plan

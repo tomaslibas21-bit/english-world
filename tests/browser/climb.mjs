@@ -118,9 +118,11 @@ try {
       const audit = await page.evaluate(async () => {
         try {
           const m = await import("/src/dev/climbAudit.ts"), W = (await import("/src/game/world/layout.ts")).WORLD, g = window.__ew.game;
-          // (Puerto Colibrí's clearing round the cenote lies beyond the town's west edge: the way out to it is open)
+          // (Puerto Colibrí's cenote lies beyond the town's west edge: its grounds, walked into from every side
+          // (cave/grounds.ts), or the clearing round it where only the sacbé's way is open)
           const c = (await import("/src/game/world/theme.ts")).THEME.cenote;
-          const open = c?.walk ? [{ minX: c.x - 8, maxX: W.minX, minZ: c.z - 10.5, maxZ: c.z + 9.5 }] : [];
+          const open = c?.open ? [(await import("/src/game/cave/grounds.ts")).groundsBounds(c.x, c.z, W.minX)]
+            : c?.walk ? [{ minX: c.x - 8, maxX: W.minX, minZ: c.z - 10.5, maxZ: c.z + 9.5 }] : [];
           return m.climbAudit(g.town.colliders, g.ledges, W, [28, -14.6], 0.25, open);
         } catch { return null; }
       });

@@ -178,6 +178,8 @@ export function buildCave(): CaveView {
   const lamp = (x: number, y: number, z: number, c: string, reach: number, power: number) => sink.lamps.push({ x, y, z, c: C(c), reach, power });
   lamp(P.EYE.x + 1, 9, P.EYE.z + 0.6, "#fff1cf", 19, 2.3);         // the day through the cenote's eye
   lamp(P.EYE.x + 1.6, 1.5, P.EYE.z + 1, "#ffe6ac", 11, 1.5);
+  lamp(P.EYE2.x, 6.5, P.EYE2.z, "#fff1cf", 11, 1.5);              // El Ojo, the sinkhole, over the water one came through
+  lamp(P.EXITS[1].x + 0.9, 1.7, P.EXITS[1].z - 0.2, "#fff4d8", 6.5, 1.6); // the cleft's slit of daylight
   for (const q of P.POOLS) lamp(q.x, 0.4, q.z, "#6fe6e2", Math.max(q.rx, q.rz) * 2.2 + 5, 1.05);
   for (const f of P.FALLS) lamp(f.x, 3, f.z + (f.rot ? 0 : 1.2), "#bff6ff", 11, 0.9);
   lamp(P.TREES[1].x, 6, P.TREES[1].z, "#ffd2c0", 20, 0.85);        // the Yaxché's own light
@@ -259,6 +261,8 @@ export function buildCave(): CaveView {
     if (P.inside(cx, cz) < -2.2 || inEye(cx, cz)) continue;
     const a = roofAt(x, z), b = roofAt(x + R, z), e = roofAt(x + R, z + R), f = roofAt(x, z + R), down: V3 = [cx, 0, cz];
     const c = C(pick(ROCK)).offsetHSL(0, 0, -0.05 + (r() - 0.5) * 0.08), c2 = c.clone().offsetHSL(0, 0, (r() - 0.5) * 0.05);
+    // (El Ojo's hole: left open, the colours drawn all the same, so everything after is where it was)
+    if (Math.hypot(cx - P.EYE2.x, cz - P.EYE2.z) < P.EYE2.r) continue;
     sink.tri(a, b, f, c, 0, down); sink.tri(b, e, f, c2, 0, down);
   }
   for (let i = 0; i < 520; i++) {
@@ -661,6 +665,8 @@ export function buildCave(): CaveView {
     shaft(P.EYE.x, P.EYE.z, ey, P.EYE.r * 0.5, P.EYE.r * 0.9, [1.6, 1.0], 0.3);
     for (let i = 0; i < 6; i++) { const a = r() * 6.28, d = 1 + r() * 2.4; shaft(P.EYE.x + Math.cos(a) * d, P.EYE.z + Math.sin(a) * d, ey, 0.25, 0.5 + r() * 0.5, [1.6 + Math.cos(a) * 1.5, 1 + Math.sin(a) * 1.5], 0.42); }
     for (const [x, z] of [[-13, -99], [2, -105], [-2, -96], [8, -172], [3, -184], [11, -181], [6, -176], [-17, -62], [15, -139]] as [number, number][]) shaft(x, z, P.roofY(x, z) + 0.6, 0.18, 0.5 + r() * 0.4, [0.8 + r(), 0.5], 0.4);
+    // El Ojo's own light, down onto the water one comes up through
+    shaft(P.EYE2.x, P.EYE2.z, P.roofY(P.EYE2.x, P.EYE2.z) + 3, P.EYE2.r * 0.8, P.EYE2.r * 1.5, [0.4, -0.5], 0.36);
     // motes drifting in the great shaft
     for (let i = 0; i < 90; i++) { const a = r() * 6.28, d = Math.sqrt(r()) * 4.5; sparks.add(1, P.EYE.x + 1 + Math.cos(a) * d, 0.3 + r() * 2, P.EYE.z + 0.6 + Math.sin(a) * d, "#fff6d8", 0.09 + r() * 0.08, 9 + r() * 4, r); }
     const g = new THREE.BufferGeometry();
@@ -689,6 +695,28 @@ export function buildCave(): CaveView {
     const x = c.x + Math.cos(a) * c.rx * k, z = c.z + Math.sin(a) * c.rz * k;
     if (P.inside(x, z) < 1) continue;
     sparks.add(0, x, 0.5 + r() * 3.2, z, pick(["#f6ff8a", "#d9ff7a", "#fff0a0", "#a8ffd0"]), 0.26 + r() * 0.16, 0.7 + r() * 1.1, r);
+  }
+  // ---- the two other ways in and out (grounds.ts), drawn from numbers of their own
+  {
+    const q = rand(9041);
+    // El Ojo from below: its chimney of rock up to the day, roots down through it
+    const { x, z, r: er } = P.EYE2, y0 = P.roofY(x, z) - 0.5, N = 10;
+    for (let i = 0; i < N; i++) {
+      const a0 = (i / N) * Math.PI * 2, a1 = ((i + 1) / N) * Math.PI * 2;
+      const A: V3 = [x + Math.cos(a0) * (er + 0.4), y0, z + Math.sin(a0) * (er + 0.4)], B: V3 = [x + Math.cos(a1) * (er + 0.4), y0, z + Math.sin(a1) * (er + 0.4)];
+      const D: V3 = [x + Math.cos(a0) * (er - 0.3), y0 + 4.2, z + Math.sin(a0) * (er - 0.3)], E: V3 = [x + Math.cos(a1) * (er - 0.3), y0 + 4.2, z + Math.sin(a1) * (er - 0.3)];
+      const c = C(ROCK[Math.floor(q() * ROCK.length)]).offsetHSL(0, 0.04, 0.1);
+      sink.tri(A, B, E, c, 0.3, [x, y0 + 2, z]); sink.tri(A, E, D, c, 0.3, [x, y0 + 2, z]);
+    }
+    sink.geo(new THREE.CircleGeometry(er + 0.6, 14).rotateX(Math.PI / 2).translate(x, y0 + 4.3, z), "#f2fdff", 1);
+    for (let i = 0; i < 9; i++) { const a = q() * 6.283, len = 1.5 + q() * 3.4; sink.geo(new THREE.CylinderGeometry(0.02, 0.035, len, 4).translate(x + Math.cos(a) * (er - 0.25), y0 + 3.6 - len / 2, z + Math.sin(a) * (er - 0.25)), WOOD[i % 3]); }
+    for (let i = 0; i < 26; i++) { const a = q() * 6.283, d = Math.sqrt(q()) * 2; sparks.add(1, x + Math.cos(a) * d, 0.2 + q() * 1.5, z + Math.sin(a) * d, "#fff6d8", 0.08 + q() * 0.07, 4 + q() * 1.5, q); }
+    // the cleft's end: a slit of daylight between two leaning slabs, ferns in its light
+    const e = P.EXITS[1], ex = e.x + 1.15, ez = e.z - 0.25;
+    sink.geo(new THREE.BoxGeometry(0.06, 3.3, 0.62).rotateY(-0.25).translate(ex, 1.65, ez), "#f6fff4", 1);
+    for (const sgn of [-1, 1]) sink.geo(new THREE.BoxGeometry(1.0, 4.4, 0.9).rotateX(sgn * 0.2).rotateY(-0.25).translate(ex + 0.25, 2.1, ez + sgn * 0.75), ROCK[sgn > 0 ? 1 : 3]);
+    for (let i = 0; i < 4; i++) for (let k = 0; k < 4; k++) sink.geo(new THREE.ConeGeometry(0.08, 0.6 + q() * 0.3, 3).translate(0, 0.3, 0).rotateZ(0.6).rotateY(k * 1.6 + i).translate(e.x - 0.6 + i * 0.5, 0, e.z + (i % 2 ? 0.75 : -0.85)), MOSS[k % 3], 0.2);
+    sparks.add(2, ex - 0.3, 1.6, ez, "#fff6d8", 3.4, 0, q);
   }
   const BURST = 40, burstAt = sparks.size.length;
   for (let i = 0; i < BURST; i++) sparks.add(5, 0, -99, 0, "#ffffff", 0.3, 0, r);

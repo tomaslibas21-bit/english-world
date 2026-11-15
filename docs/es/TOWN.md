@@ -1209,6 +1209,9 @@ Puerto Colibrí has it. The town's plan is `src/editions/es/game/world/rides.ts`
   posts and the palms are solid; the clearing has its own edges (the selva and the scrub beyond are looked at, not
   walked into). The way-finding ends at the town's edge: out there one walks with the keys or the stick ("Take me
   there" and a tap on the ground reach as far as the mirador), and the minimap shows grass.
+- **Since 15 Nov the cenote is walked into from every side** and the grotto under it has three ways in (the cave's
+  mouth, La Grieta, El Ojo): `docs/es/GRUTA.md`, "The cenote from whichever side". The meadow's whole west edge is
+  open, and a tap on the ground walks out there too.
 - **The conversations are unchanged**: s62 and s69 still send the learner to "a cenote" twenty minutes off by
   colectivo; Cenote Ka'an at the end of avenida Juárez is somewhere to swim, with no conversation of its own.
 - **Left for later**: the archaeological zone (the ruins on the point past the beach's west end) is still scenery and
