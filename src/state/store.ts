@@ -160,7 +160,7 @@ export interface HudState {
   cave: import("../game/cave/quest").CaveCard | null;
   glyph: import("../game/cave/quest").GlyphQuiz | null;
   /** The town guide's hint on show (game/coach.ts): which, and `ok` for the moment it was just done. */
-  coach: { step: "walk" | "run" | "jump" | "talk" | "car" | "boat" | "water" | "radio"; ok: boolean } | null;
+  coach: { step: "walk" | "run" | "jump" | "talk" | "car" | "boat" | "water" | "surf" | "radio"; ok: boolean } | null;
   /** The first visit's look at the town from the air is on (game/flyover.ts): the screen is its own meanwhile. */
   flight: boolean;
 }

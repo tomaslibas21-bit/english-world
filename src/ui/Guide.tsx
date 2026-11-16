@@ -9,7 +9,7 @@ import { useRadio } from "../radio";
 import { Icon, type IconName } from "./icons";
 import { L } from "./i18n";
 
-export const COACH_ICON: Record<CoachStep, IconName> = { walk: "walk", run: "next", jump: "chevronUp", talk: "mic", car: "car", boat: "sunset", water: "drop", radio: "radio" };
+export const COACH_ICON: Record<CoachStep, IconName> = { walk: "walk", run: "next", jump: "chevronUp", talk: "mic", car: "car", boat: "sunset", water: "drop", surf: "star", radio: "radio" };
 
 /** A hint's title and what it says, with the keys on a computer or the on-screen controls on a phone. */
 export function coachWords(step: CoachStep, touch: boolean): [string, string] {
@@ -21,6 +21,7 @@ export function coachWords(step: CoachStep, touch: boolean): [string, string] {
     case "car": return [L("Važiuok"), touch ? L("Prieik prie kabrioleto ir bakstelėk mygtuką – sėsi prie vairo. Vairalazdė vairuoja, STOP stabdo.") : L("Prieik prie kabrioleto ir spausk E – sėsi prie vairo. Rodyklės vairuoja, Tarpas stabdo, E – išlipti.")];
     case "boat": return [L("Plauk valtimi"), touch ? L("Prieik prie valties ir bakstelėk mygtuką – įlipsi. Vairalazdė vairuoja.") : L("Prieik prie valties ir spausk E – įlipsi. Rodyklės vairuoja, E – išlipti.")];
     case "water": return [L("Jūra"), touch ? L("Bristi galima tol, kol gilu, – toliau plauksi. Mygtukas su rodykle žemyn – panerti.") : L("Bristi galima tol, kol gilu, – toliau plauksi. Tarpas – panerti, Shift – plaukti greičiau.")];
+    case "surf": return [L("Banglenčių pamoka"), touch ? L("Prie La Ola lentų paplūdimyje bakstelėk „Banglentė“ – Nayeli išmokys pagauti bangą. Ji siūlys ir pokalbio pabaigoje.") : L("Prie La Ola lentų paplūdimyje spausk E – Nayeli išmokys pagauti bangą. Ji siūlys ir pokalbio pabaigoje.")];
     case "radio": return [L("Radijas"), touch ? L("Radijo mygtukas dešinėje: kurso dainos, kol vaikštai.") : L("R arba radijo mygtukas dešinėje: kurso dainos, kol vaikštai.")];
   }
 }

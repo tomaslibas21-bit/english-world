@@ -254,6 +254,8 @@ export class Game implements GameApi {
   /** The surf lesson (surf/play.ts), where the town has a surf school (world/surf.ts); the one its conversation asked for. */
   surf: SurfPlay | null = null;
   private pendingSurf: "beginner" | "advanced" | null = null;
+  /** The end card's "Surf lesson" was tapped without a yes in the conversation: the level's choice, once it closes. */
+  private pendingSurfPick = false;
   private brake = false;
   private bumpT = 0;
   private braked = false;
@@ -413,7 +415,7 @@ export class Game implements GameApi {
         left: (x, z, rot) => this.offSurf(x, z, rot),
         portrait: () => this.container.clientHeight > this.container.clientWidth * 1.15,
       });
-      this.scene.add(this.surf.group);
+      this.scene.add(this.surf.group, this.surf.marker);
     }
     this.scene.add(this.npcLayer, this.guidance.group, this.ambient.group, this.rides.group, this.dust.group, this.splashes.group, this.undersea.group);
     // (a place like the grotto keeps the camera inside itself: Interior.wild.space)
@@ -1561,7 +1563,13 @@ export class Game implements GameApi {
     // the person stays turned to the player and turns back home in their own time (updateNpcs)
     this.talkNpc = null;
     if (this.pendingRide) { const r = this.pendingRide; this.pendingRide = null; this.ride(r.to, r.by); }
-    if (this.pendingSurf) { const l = this.pendingSurf; this.pendingSurf = null; if (completed) this.surf?.start(l); }
+    // (the conversation's yes starts the lesson at its level as it closes, however it is closed but by picking another
+    // conversation (cancelRide); the end card's "Surf lesson" too, or the level's choice without a yes)
+    if (this.pendingSurf || this.pendingSurfPick) {
+      const l = this.pendingSurf, asked = this.pendingSurfPick;
+      this.pendingSurf = null; this.pendingSurfPick = false;
+      if (l) this.surf?.start(l); else if (asked) this.surf?.open();
+    }
     // (a conversation off the route, the grotto's aluxes, is nobody's task: the tasks stay as they were)
     if (completed && !sit.bonus) this.advanceObjective(sit);
     // (someone who has found the grotto hears when the town's conversations have woken another of its chambers)
@@ -1575,6 +1583,16 @@ export class Game implements GameApi {
   }
 
   closeConversation() { this.session?.close(); }
+  /** The end card's "Surf lesson" (Conversation.tsx): shown after the surf school's conversation in a town with a
+   *  lesson. */
+  surfAfter(sitId: string) { return !!this.surf && this.surf.situation === sitId; }
+  /** It was tapped: the conversation closes and the lesson starts (at the level its yes asked for, else the level's
+   *  choice). */
+  surfFromConversation() {
+    if (!this.surf) return;
+    this.pendingSurfPick = true;
+    if (this.session?.active) this.session.close(); else { const l = this.pendingSurf; this.pendingSurf = null; this.pendingSurfPick = false; if (l) this.surf.start(l); else this.surf.open(); }
+  }
   get activeSession() { return this.session; }
 
   /** Taxi or bus: fade, travel, arrive in front of the destination. After boarding a plane the
@@ -1605,6 +1623,8 @@ export class Game implements GameApi {
    *  (lift its fade and banner; the player stays where the conversation puts them). */
   private cancelRide() {
     this.pendingRide = null;
+    // (and a surf lesson the conversation asked for: another conversation was picked instead)
+    this.pendingSurf = null; this.pendingSurfPick = false;
     if (this.rideTimer === undefined) return;
     clearTimeout(this.rideTimer);
     this.rideTimer = undefined;
@@ -1754,6 +1774,7 @@ export class Game implements GameApi {
     this.wild?.frame?.(this.t, dt, this.rig.cam, this.player.root.position, this.container.clientHeight * this.renderer.getPixelRatio());
     this.cave?.update(dt, this.player.root.position, this.rig.yaw, !this.ambienceAllowed() || this.transitioning);
     if (this.caveLure && !this.zone.interior) this.caveLure.userData.tick(this.t, this.player.root.position.x, this.player.root.position.z);
+    this.surf?.tick(dt, !this.zone.interior && !talking && !this.wild && !this.flight);
     this.guidance.visible = !talking && !this.wild && !surfing && !this.flight;
     this.guidance.group.visible = !talking && !this.wild && !surfing && !this.flight;
     this.guidance.update(dt, this.zone.interior ? undefined : floorY);
@@ -2438,6 +2459,8 @@ export class Game implements GameApi {
         else if (this.swimming && !best && this.rides.climbOut(p.x, p.z)) { bd = 1; best = { kind: "climb", id: "pier", label: L("Užlipti ant prieplaukos") }; }
         // the surf school's boards at the water's edge: a lesson
         if (this.surf && !this.swimming && best?.kind !== "ride") { const d = this.surf.reach(p.x, p.z); if (d < bd) { bd = d; best = { kind: "surf", id: "surf", label: L("Banglenčių pamoka") }; } }
+        // the first time one comes near the school: one hint that the lesson is there (coach.ts)
+        if (this.surf && this.surf.distance(p.x, p.z) < (SURF_SPOT?.hintWithin ?? 15)) coach.cue("surf");
       }
       if (!this.zone.interior) {
         for (const dd of this.town.doors) {

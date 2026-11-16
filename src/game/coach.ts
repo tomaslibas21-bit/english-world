@@ -1,6 +1,6 @@
 // The 3D town's guide: a hint when the thing it is about first matters, one at a time, in a small card that never gets
 // in the way (Guide.tsx draws it). How to walk as the town opens; how to talk the first time one stands by somebody;
-// the car, the boat and the sea the first time one comes up to them; running, jumping and the radio after a stretch on
+// the car, the boat and the sea the first time one comes up to them; the surf lesson as one first comes near its school; running, jumping and the radio after a stretch on
 // foot. A hint goes when the learner does what it says, with "Gerai", or by itself after a while, and never comes
 // back; "Daugiau nerodyti" ends them all. Everything they say stays under "Kaip žaisti?" (Panels.tsx Help).
 // It waits while a conversation or a panel is open. What was shown is remembered with the progress.
@@ -9,7 +9,7 @@ import { radio } from "../radio";
 
 export type CoachStep = NonNullable<HudState["coach"]>["step"];
 /** Every hint, in the order "Kaip žaisti?" lists them. */
-export const COACH_STEPS: CoachStep[] = ["walk", "run", "jump", "talk", "car", "boat", "water", "radio"];
+export const COACH_STEPS: CoachStep[] = ["walk", "run", "jump", "talk", "car", "boat", "water", "surf", "radio"];
 /** How much of a hint's own doing ticks it off: metres walked, seconds at a run; once for the others. */
 const ENOUGH: Partial<Record<CoachStep, number>> = { walk: 7, run: 1.2 };
 /** A long stretch on foot without a run (s): the hint about running. */
@@ -53,13 +53,14 @@ class Coach {
     this.watching = true;
     useStore.subscribe((s, prev) => {
       if (s.hud.prompt?.kind !== prev.hud.prompt?.kind) this.near(s.hud.prompt?.kind);
-      if (s.hud.ride !== prev.hud.ride && s.hud.ride) this.did(s.hud.ride === "car" ? "car" : s.hud.ride === "boat" ? "boat" : "water");
+      if (s.hud.ride !== prev.hud.ride && s.hud.ride) this.did(s.hud.ride === "car" ? "car" : s.hud.ride === "boat" ? "boat" : s.hud.ride === "surf" ? "surf" : "water");
     });
   }
   private near(kind: NonNullable<HudState["prompt"]>["kind"] | undefined) {
     if (kind === "talk") this.cue("talk");
     else if (kind === "drive") this.cue("car");
-    else if (kind === "boat" || kind === "paddle") this.cue("boat");
+    else if (kind === "boat") this.cue("boat");
+    else if (kind === "surf") this.cue("surf");
   }
 
   /** `step` matters now: its hint, if it was never shown and no other is up. */

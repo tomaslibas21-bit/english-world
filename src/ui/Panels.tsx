@@ -28,6 +28,7 @@ import { courseGuideUrl, setSectionHelp, useSectionHelp } from "./sectionHelp";
 import { COACH_STEPS, coach } from "../game/coach";
 import { COACH_ICON, coachWords } from "./Guide";
 import { useRadio } from "../radio";
+import { SURF } from "../content/surf";
 
 export const CHAPTERS: Record<number, string> = { 1: L("Atvykimas"), 2: L("Pirmosios dienos mieste"), 3: L("Įsikūrimas"), 4: L("Darbas"), 5: L("Žmonės"), 6: L("Kelionės"), 7: L("Pagalba"), 8: L("Pažengusiems"), 9: L("Gyva kalba") };
 
@@ -188,13 +189,15 @@ function TownHelp({ open }: { open?: boolean }) {
   const light = useStore((st) => st.settings.play === "light");
   const touch = useStore((st) => st.hud.showTouch);
   const hasRadio = useRadio((s) => s.available);
+  // (the surf lesson's hint only where the town has a surf school)
+  const hasSurf = !!SURF;
   const [again, setAgain] = useState(false);
   if (light) return null;
   return (
     <details className="howto town-help" open={open}>
       <summary><Icon name="walk" size={21} className="howto-ico" /> {L("Kaip judėti mieste?")}<Icon name="chevronDown" size={18} className="chev" /></summary>
       <ul>
-        {COACH_STEPS.filter((s) => s !== "radio" || hasRadio).map((s) => {
+        {COACH_STEPS.filter((s) => (s !== "radio" || hasRadio) && (s !== "surf" || hasSurf)).map((s) => {
           const [title, body] = coachWords(s, touch);
           return <li key={s}><Icon name={COACH_ICON[s]} size={19} strokeWidth={2} /><span><b>{title}.</b> {body}</span></li>;
         })}

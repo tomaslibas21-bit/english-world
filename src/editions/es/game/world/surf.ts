@@ -7,6 +7,10 @@ export type { SurfSpot } from "@/game/world/surf";
 
 export const SURF_SPOT: SurfSpot | null = {
   x: -60, z: -72.2,
-  start: { x: -44.6, z: -70.85, rot: Math.PI, r: 1.7 },
+  start: { x: -44.6, z: -70.85, rot: Math.PI, r: 2.6 },
+  // (16 Nov 2026, the owner: "no notification when I'm at the board": he stood on the yellow kayak) the rack along the
+  // palapa's seaward side, the paddleboards behind it, the kayak on the sand (theme.ts surfShack), each with room
+  boards: [[-44.3, -70.2, 2.8], [-41.7, -68.2, 2.4], [-49.6, -69.75, 2.6]],
+  hintWithin: 15,
   face: "#9af2e4", deep: "#3fc9c6",
 };
