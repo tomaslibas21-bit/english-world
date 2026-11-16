@@ -1073,6 +1073,18 @@ async function retake() {
   const keys: string[] = Array.isArray(listed) ? listed : Object.keys(listed);
   const known = knownLines();
   const lines = keys.filter((k) => known.has(k)).map((k) => known.get(k)!);
+  // A line made in another work folder (the grotto's aluxes, a coach's riddle answer) can be given with its text:
+  // {"<key>": {"voice", "speed", "say"}}. It is taken only when that text is the clip's own (its audioKey is the
+  // key), and it is recorded with the voice, style and setting of its first take (recorded.json).
+  if (!Array.isArray(listed)) {
+    const recorded: Record<string, Recorded> = readJson(RECORDED, {});
+    for (const [k, g] of Object.entries<{ voice?: string; speed?: number; say?: string; where?: string }>(listed)) {
+      if (known.has(k) || !g?.say || !g.voice) continue;
+      const first = recorded[k];
+      if (audioKey(g.voice, g.speed ?? 1, g.say) !== k || !first?.gv) { console.log(`  ${k}: the given text is not this clip's, or its first take is unknown: skipped`); continue; }
+      lines.push({ key: k, voice: g.voice, who: whoOf(g.voice) ?? g.voice, accent: accentOf(g.voice), speed: g.speed ?? 1, say: g.say, shown: g.say, text: first.text, gv: first.gv, style: first.style, ...(first.fx ? { fx: first.fx as Line["fx"] } : {}), where: g.where ?? "given", sits: [] } as Line);
+    }
+  }
   if (lines.length < keys.length) console.log(`${keys.length - lines.length} listed keys have no line in ${WORK}/requests: no new take for them`);
   const manifest: Record<string, number> = readJson(MANIFEST, {});
   const pace = paces(Object.keys(manifest), manifest, new Map([...known].map(([k, l]) => [k, l.say])), new Map([...known].map(([k, l]) => [k, l.who])));

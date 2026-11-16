@@ -214,8 +214,24 @@ take, the first one too: the recognizer's doing, and its clip stays. Gemini: 260
 
 With that, Maple Harbor stands at 275 cuts and 232 new takes, Puerto Colibrí at 222 cuts and 302 new takes.
 
-Not covered: 5,410 Maple Harbor clips (PR #14 of 7 Nov, slot-filled
-variants) have no line in the enumeration: by sound alone none of the 1,490 heard has a restart a cut can mend.
+**The 5,410 clips the line list doesn't reach (16 Nov 2026).** PR #14 of 7 Nov added 5,364 recordings of slot-filled
+lines (Mrs Lee and Reyes describing a lost thing, Lizzie's invitation summaries, café prices, the dentist's and the
+technician's times…), and a commit the same day 100 café greetings. Their texts come from enumerations made for that
+work, not from `allLines()`: its fuzz run fills only some slot values. The scripts behind them were rebuilt from the
+Codex session's patches (`voice-coverage-finite.ts`, `voice-coverage-descriptions.ts`, the café plan), run on the
+code of that day, and every text was taken only where it gives its clip's key: all 5,410 are now known. Parakeet
+heard them piece by piece (52 minutes): 137 flagged, 20 of them by more than the pieces. Mostly Reyes's "Are you sure?
+You said it was a black wallet," with a syllable after the line (written "said"), and an extra "Okay" in Lizzie's
+and Mrs Lee's lines. The other 117 are Parakeet's own: Mrs Lee's drawn-out "found a… big gray bag" written "found a
+little bit of a | big gray bag", a noise written "Okay" that Whisper writes "Come". No cut holds on the 20, so they
+need new takes. `retake` takes such a line when the keys file gives its text (`{"<key>": {"voice", "speed",
+"say"}}`), and only when that text gives the clip's key.
+
+Three Maple Harbor and four Puerto Colibrí lines of the list for new takes had been left out for the same reason
+(a slot value or another work folder). Their texts give their keys too: "Potatoes? The— That's not in my chowder.",
+"…on the— online ads.", and "Creo que | que es la casa." in the coaches' and an alux's voices are heard again by
+both recognizers or across a real pause, and go to new takes; "And the support, too…" and the long directions
+("derecha" for "derecho") are heard clean by Whisper and stay.
 
 **Repairs** (`npx tsx tools/voice-batch.ts …`; the Spanish tool has the same commands):
 
