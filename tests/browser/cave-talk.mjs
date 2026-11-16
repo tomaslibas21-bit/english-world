@@ -82,16 +82,29 @@ try {
     await page.addInitScript(([k, v]) => { try { sessionStorage.setItem("ew-play-now", "1"); } catch {} localStorage.setItem(k, v); }, [`${storage}-progress-v1`, JSON.stringify(save("light"))]);
     await page.goto(base, { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => window.__ew?.store?.getState().screen === "play", null, { timeout: 180000 });
-    const card = page.locator('.lh-card[data-sit="x01-surf"]');
+    // a conversation of the route with no illustrated scene (x01–x03 have theirs since 15 Nov; La Ola's was the
+    // first one checked here), from its card on the light home
+    const sit = await page.evaluate(async () => {
+      const { sceneFor } = await import("/src/ui/scenes.ts"), { ROUTE } = await import("/src/content/route.ts");
+      const q = ROUTE.find((x) => !sceneFor(x.id, x.npc) && document.querySelector(`.lh-card[data-sit="${x.id}"]`));
+      return q ? { id: q.id, npc: q.npc } : null;
+    });
+    if (!sit) {
+      console.log("skipped: light mode's face (every conversation of the route has its illustrated scene now)");
+      await ctx.close();
+      console.log("cave-talk: all checks passed");
+      process.exit(0);
+    }
+    const card = page.locator(`.lh-card[data-sit="${sit.id}"]`);
     await card.scrollIntoViewIfNeeded();
     await card.click();
     await page.waitForFunction(() => window.__ew.store.getState().conv.active, null, { timeout: 15000 });
     const face = await page.waitForFunction(() => { const i = document.querySelector(".lc-avatar.lc-face img"); return i && i.complete && i.naturalWidth > 100 ? { w: i.naturalWidth, shown: i.getBoundingClientRect().width } : null; }, null, { timeout: 30000 }).then((h) => h.jsonValue(), () => null);
-    check("light mode, a phone: La Ola's conversation (no illustrated scene) shows Nayeli's own face", !!face && face.shown >= 90, face);
-    // (a drawn face, not an empty picture: it has her colours in it)
+    check(`light mode, a phone: ${sit.id} (no illustrated scene) shows the person's own face`, !!face && face.shown >= 90, face);
+    // (a drawn face, not an empty picture: it has their colours in it)
     const drawn = await page.evaluate(() => { const i = document.querySelector(".lc-avatar.lc-face img"), c = document.createElement("canvas"); c.width = c.height = 64; const x = c.getContext("2d"); x.drawImage(i, 0, 0, 64, 64); const d = x.getImageData(0, 0, 64, 64).data; let n = 0; for (let k = 3; k < d.length; k += 4) if (d[k] > 200) n++; return n; });
     check("the face is drawn (not an empty picture)", drawn > 64 * 64 * 0.25, drawn);
-    if (shots) await page.screenshot({ path: path.join(shots, "light-surf-phone.png") });
+    if (shots) await page.screenshot({ path: path.join(shots, `light-${sit.id}-phone.png`) });
     check("light mode: no page errors", errors.length === 0, errors);
     await ctx.close();
   }
