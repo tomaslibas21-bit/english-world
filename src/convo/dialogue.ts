@@ -128,6 +128,8 @@ export class Conversation {
   failures = 0;
   lastTurn: SpokenLine[] = [];
   history: { who: "npc" | "you"; text: string }[] = [];
+  /** The learner's words by slot, the last of each this conversation (e.g. the last name they gave): suggest.playerVars. */
+  said: Record<string, unknown> = {};
   private rng: () => number;
   private out!: TurnOut;
   private held = false;
@@ -291,6 +293,7 @@ export class Conversation {
     if (checkOpen && p.segments.some((sg) => !this.opt.global.handlers[sg.intent])) this.soundCheck = null;
     this.history.push({ who: "you", text });
     this.collectTags(p);
+    for (const sg of p.segments) for (const [k, v] of Object.entries(sg.slots)) if (!k.startsWith("__") && typeof v === "string") this.said[k] = v;
     const c = this.ctx(text);
 
     // "Yes, perfect." / "No, sorry.": a yes/no plus only soft words still answers the question

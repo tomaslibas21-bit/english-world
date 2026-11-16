@@ -317,7 +317,7 @@ export class Session {
       const groups = ids.map((id) => ({ g: this.sit.hints[id] ?? GLOBAL.hints[id], chosen: c.chosen[id] })).filter((x) => !!x.g);
       const lastNpc = [...c.transcript].reverse().find((l) => l.who === "npc" && l.npc)?.npc ?? c.npcId;
       const prof = st.progress.profile;
-      const opts = { formal: !NPCS[c.npcId]?.informal, gender: prof?.gender ?? "m", npcGender: NPCS[lastNpc]?.gender ?? "f", vars: playerVars(prof) } as const;
+      const opts = { formal: !NPCS[c.npcId]?.informal, gender: prof?.gender ?? "m", npcGender: NPCS[lastNpc]?.gender ?? "f", vars: playerVars(prof, this.conv.said) } as const;
       const heardAll = [heard, ...alts.slice(0, 3)];
       const cands = answerCandidates(this.sit, groups, opts, heardAll);
       const ranked = rankAnswers(heardAll, cands);

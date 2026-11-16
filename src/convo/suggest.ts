@@ -29,8 +29,22 @@ export interface AnswerOpts {
 }
 
 /** The learner's name for model answers ("My name is Tomas."). */
-export function playerVars(prof?: { name?: string; surname?: string } | null): Record<string, string | undefined> {
-  return { name: prof?.name || "Tomas", surname: prof?.surname || undefined, letters: prof?.surname || undefined };
+export function playerVars(prof?: { name?: string; surname?: string } | null, said?: Record<string, unknown>): Record<string, string | undefined> {
+  return { name: prof?.name || "Tomas", surname: prof?.surname || saidSurname(prof?.name, said), letters: prof?.surname || saidSurname(prof?.name, said) };
+}
+
+/** A last name the learner already said in this conversation (Conversation.said: "My last name is Livas", or spelled),
+ *  for a profile without one: the next step's model answer then spells "Livas" instead of having nothing to show. */
+function saidSurname(own: string | undefined, said?: Record<string, unknown>): string | undefined {
+  const me = (own ?? "").trim().toLowerCase();
+  for (const k of ["surname", "name", "letters"]) {
+    const v = said?.[k];
+    if (typeof v !== "string") continue;
+    const w = v.trim();
+    if (w.length < 2 || w.toLowerCase() === me || /^(guest|de|a|en|por|para)$/i.test(w)) continue;
+    return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+  }
+  return undefined;
 }
 
 export function entityLookup(sit: SituationDef): EntityLookup {
@@ -45,10 +59,11 @@ function exampleFor(i: number, pool: EntityDef[], exIds: string[]): string | und
   return exIds.find((x, k) => pool.some((e) => e.id === x) && k === i % exIds.length) ?? pool.find((e) => exIds.includes(e.id))?.id ?? pool[0]?.id;
 }
 
-function composeFull(g: HintGroup, i: number, X: string | undefined, o: AnswerOpts, look: EntityLookup): Sentence | null {
+function composeFull(g: HintGroup, i: number, X: string | undefined, o: AnswerOpts, look: EntityLookup, gaps = false): Sentence | null {
   try {
     const s = compose(g.items[i].s, { ...o.vars, X }, { look, addressee: o.gender, speaker: o.npcGender, formal: o.formal });
-    return s.en.includes("…") ? null : s;
+    // ("…" left by a value the learner hasn't given; one written in the line itself, "so…", is the line)
+    return !gaps && s.en.includes("…") && !JSON.stringify(g.items[i].s).includes("…") ? null : s;
   } catch { return null; } // this pattern doesn't fit
 }
 
@@ -64,6 +79,25 @@ export function modelAnswers(sit: SituationDef, g: HintGroup, chosen: string | u
     if (g.slot && chosen && !pool.some((e) => e.id === chosen)) continue;
     const s = composeFull(g, i, chosen ?? exampleFor(i, pool, exIds), o, look);
     if (s) out.push(s);
+  }
+  return out;
+}
+
+/** When no complete answer can be made (it needs what only the learner knows, such as their last name): the group's
+ *  sentence frames, "…" where their own words go, each with its note (how to spell, say…), at most `n`. */
+export function answerFrames(sit: SituationDef, g: HintGroup, chosen: string | undefined, o: AnswerOpts, n: number): { s: Sentence; note?: string }[] {
+  const look = entityLookup(sit);
+  const ents = g.slot ? sit.entities?.[g.slot] ?? [] : [];
+  const exIds = g.examples?.length ? g.examples : ents.slice(0, 4).map((e) => e.id);
+  const out: { s: Sentence; note?: string }[] = [];
+  for (let i = 0; i < g.items.length && out.length < n; i++) {
+    const it = g.items[i];
+    const pool = ents.filter((e) => !it.only || it.only(e));
+    if (g.slot && chosen && !pool.some((e) => e.id === chosen)) continue;
+    const s = composeFull(g, i, chosen ?? exampleFor(i, pool, exIds), o, look, true);
+    // ("My last name is …", not "….": the gap ends the sentence)
+    const f = s && (JSON.parse(JSON.stringify(s).split("….").join("…")) as Sentence);
+    if (f && !out.some((x) => x.s.en === f.en)) out.push({ s: f, note: it.note });
   }
   return out;
 }
