@@ -10,6 +10,7 @@
 // Not checked against the recordings word by word: tests/es/ipa.test.ts.
 import { variety } from "../../../convo/compose";
 import { numberWords, timeSay } from "./target";
+import { hasDigit, spokenNumbers } from "../../../convo/sayAlign";
 
 const VOWELS = "aeiouáéíóúü";
 const ACCENTED: Record<string, string> = { á: "a", é: "e", í: "i", ó: "o", ú: "u", ü: "u" };
@@ -149,9 +150,23 @@ const LETTERS: Record<string, string> = {
   Y: "i griega", Z: "zeta",
 };
 
-/** Spanish spoken words for the numbers, prices and times written in a unit ("$85" → ochenta y cinco pesos). */
-function spoken(tok: string): string[] {
-  const t = tok.replace(/[.,!?;:¿¡"“”)(]+$/g, "").replace(/^[¿¡"“(]+/, "");
+const DIGIT = ["cero", "uno", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve"];
+const digitByDigit = (d: string) => [...d].map((c) => DIGIT[Number(c)]);
+const strip = (t: string) => t.replace(/[.,!?;:¿¡"“”)(]+$/g, "").replace(/^[¿¡"“(]+/, "");
+/** A group of a phone, account or tracking number: +52, 0142, 58213, 742-9133, or digits next to another group. */
+function phoneLike(t: string, prev?: string, next?: string): boolean {
+  if (/^\+\d+$/.test(t) || /^0\d+$/.test(t) || /^\d{5,}$/.test(t) || /^\d+(-\d+)+$/.test(t)) return true;
+  if (!/^\d+$/.test(t)) return false;
+  const p = prev && !/[.,;:!?]$/.test(prev) ? strip(prev) : "";
+  const n = next && !/[.,;:!?]$/.test(t) ? strip(next) : "";
+  return /^\+?\d+$/.test(p) || /^\+?\d+$/.test(n);
+}
+
+/** Spanish spoken words for the numbers, prices and times written in a unit ("$85" → ochenta y cinco pesos), when the
+ *  line has no spoken form to go by (ipaForSentence): a phone number or a code digit by digit. */
+function spoken(tok: string, prev?: string, next?: string): string[] {
+  const t = strip(tok);
+  if (phoneLike(t, prev, next)) return [...(t.startsWith("+") ? ["más"] : []), ...t.replace(/^\+/, "").split("-").flatMap(digitByDigit)];
   const pct = /^(\d[\d.,]*)%$/.exec(t);
   if (pct) return [...spoken(pct[1]), "por", "ciento"];
   if (/^\+\d+$/.test(t)) return ["más", ...spoken(t.slice(1))];
@@ -167,20 +182,37 @@ function spoken(tok: string): string[] {
     const [i, f] = t.replace(/,/g, "").split(".");
     return [...numberWords(Number(i)).split(/\s+/), ...(f ? ["punto", ...numberWords(Number(f)).split(/\s+/)] : [])];
   }
-  // a code such as HP-4471: its digits as numbers, its letters by name (hache pe)
-  if (/\d/.test(t)) return t.split(/[-/]/).flatMap((p) => (/^\d+$/.test(p) ? numberWords(Number(p)).split(/\s+/) : /^[A-ZÑ]+$/.test(p) ? [...p].flatMap((c) => LETTERS[c].split(" ")) : [p]));
+  // a code such as HP-4471: its digits one by one, its letters by name (hache, pe, cuatro, cuatro, siete, uno); a seat
+  // or a spot (12A, B2): the number and the letter (doce a, be dos)
+  const seat = /^(\d{1,3})([A-Z])$/.exec(t) ?? /^([A-Z]{1,2})(\d{1,2})$/.exec(t);
+  if (seat) return [seat[1], seat[2]].flatMap((p) => (/^\d+$/.test(p) ? numberWords(Number(p)).split(/\s+/) : [...p].flatMap((c) => LETTERS[c].split(" "))));
+  if (/\d/.test(t)) return (t.match(/\d+|[A-ZÑ]+|\p{L}+/gu) ?? []).flatMap((p) => (/^\d+$/.test(p) ? digitByDigit(p) : /^[A-ZÑ]+$/.test(p) ? [...p].flatMap((c) => LETTERS[c].split(" ")) : [p]));
   return [t];
 }
 
-export function ipaForUnit(text: string): string {
+const ipaOf = (words: string[], spain: boolean) => words
+  .map((w) => w.replace(/^[^\p{L}0-9]+|[^\p{L}0-9]+$/gu, ""))
+  .filter(Boolean)
+  .map((w) => ipaWord(w, spain))
+  .filter(Boolean)
+  .join(" ");
+
+/** IPA for each unit of a sentence; a number as the line's spoken form (`say`, the clip's text) says it (owner, 16 Nov
+ *  2026: "742-9133" said "siete cuatro dos, noventa y uno, treinta y tres" reads so, not as one big number). */
+export function ipaForSentence(units: string[], say?: string): string[] {
   const spain = variety() === "spain";
-  const words = text.split(/\s+/).filter(Boolean).flatMap((tok) => (/\d/.test(tok) ? spoken(tok) : [tok]));
-  return words
-    .map((w) => w.replace(/^[^\p{L}0-9]+|[^\p{L}0-9]+$/gu, ""))
-    .filter(Boolean)
-    .map((w) => ipaWord(w, spain))
-    .filter(Boolean)
-    .join(" ");
+  const toks = units.map((u) => u.split(/\s+/).filter(Boolean));
+  const flat = toks.flat();
+  const said = spokenNumbers(flat, say);
+  let k = 0;
+  return toks.map((ws) => ipaOf(ws.flatMap((w) => {
+    const i = k++;
+    return hasDigit(w) ? said[i] ?? spoken(w, flat[i - 1], flat[i + 1]) : [w];
+  }), spain));
+}
+
+export function ipaForUnit(text: string): string {
+  return ipaForSentence([text])[0];
 }
 
 export const hasIpa = () => true;

@@ -42,6 +42,13 @@ export function spokenNumbers(words: string[], say: string | undefined): (string
     const groups: number[][] = [[]];
     for (const k of span) { groups[groups.length - 1].push(k); if (commaAfter[k]) groups.push([]); }
     const g = groups.filter((x) => x.length);
+    // the last group read in pairs ("984 123 4567" said "…, cuarenta y cinco, sesenta y siete"; "0142" said "cero
+    // uno, cuarenta y dos"): the spoken groups past the written ones belong to the last written group
+    const lastDigits = (words[idx[idx.length - 1]].match(/\d/g) ?? []).length;
+    const extra = g.length - idx.length;
+    if (extra > 0 && lastDigits >= 4 && extra <= lastDigits / 2 - 1 && idx.every((wi) => /^\+?\d+[.,;:!?]*$/.test(words[wi]))) {
+      g.splice(idx.length - 1, extra + 1, g.slice(idx.length - 1).flat());
+    }
     if (g.length === idx.length) { idx.forEach((wi, n) => { out[wi] = g[n].map(text); }); return; }
     // otherwise one spoken word per digit, if that is what it is ("five five five oh one four two")
     const digits = idx.map((wi) => (words[wi].match(/\d/g) ?? []).length);
