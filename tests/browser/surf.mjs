@@ -2,7 +2,9 @@
 // level's choice, a whole lesson played with the keys or the phone's buttons by a learner who does what the
 // instructor says (the wrong board first), a second one who stands up too early and answers her question, the score
 // card, back on the sand with the score and the cards kept; the lesson started by the conversation's own event; and
-// the way out at any moment. Time is stepped by hand, so a lesson takes seconds. Against a dev server or a built game
+// the way out at any moment; and, where the edition has them, the picture of what each command asks for (beside her
+// words, clear of the board, gone when only her voice is left, still with reduced motion). Time is stepped by hand, so
+// a lesson takes seconds. Playwright's own Chromium only (never the owner's Chrome). Against a dev server or a built game
 // of a town with a surf school (Puerto Colibrí):
 // WORLD_TEST_URL=http://127.0.0.1:8096 WORLD_STORAGE=puerto-colibri WORLD_PLAYWRIGHT_MODULE=/path/to/playwright-core/index.mjs node tests/browser/surf.mjs
 import assert from "node:assert/strict";
@@ -88,6 +90,19 @@ try {
 
     // ---- a lesson, played by the keys or the phone's buttons. `how`: "good" does what she says (the wrong board
     // first); "early" stands up before the call once
+    // the pictures of what her commands ask for (an edition may have none: Maple Harbor's engine has no lesson yet)
+    const hasPics = await page.evaluate(() => !!window.__ew.game.surf.content.pictures);
+    const seenPics = new Map();
+    /** The card's picture now: its name, whether it has loaded, and how far the card's lower edge is above the
+     *  learner's board on the screen (px; null without a picture). */
+    const picNow = () => page.evaluate(() => {
+      const g = window.__ew.game, img = document.querySelector(".surf-pic img.new"), card = document.querySelector(".surf-card");
+      if (!img || !card) return null;
+      const p = g.player.root.position.clone().project(g.rig.cam), y = ((1 - p.y) / 2) * innerHeight, x = ((p.x + 1) / 2) * innerWidth;
+      const r = card.getBoundingClientRect(), f = document.querySelector(".surf-pic").getBoundingClientRect();
+      const cue = window.__ew.game.surf.logic?.saying;
+      return { name: img.getAttribute("src").split("/").pop().replace(".webp", ""), loaded: img.complete && img.naturalWidth > 0, clear: Math.round(y - r.bottom), over: x > r.left && x < r.right && y > r.top && y < r.bottom, w: Math.round(f.width), h: Math.round(f.height), inView: r.left >= 0 && r.right <= innerWidth + 0.5 && r.top >= 0, cue, phase: g.surf.logic?.phase };
+    });
     const play = async (how, level) => {
       let wrongBoard = how === "good", early = how === "early", frames = 0, strokeT = 0, upT = 0, askT = 0, last = { x: 0, y: 0 };
       const said = new Set();
@@ -95,6 +110,7 @@ try {
         s = await L();
         if (!s) break;
         if (s.saying) said.add(s.saying);
+        if (hasPics && s.saying && frames % 3 === 0) { const pn = await picNow(); if (pn?.cue === s.saying) { const o = seenPics.get(pn.cue) ?? { ...pn, clear: Infinity }; seenPics.set(pn.cue, { ...pn, clear: Math.min(o.clear, pn.clear), over: o.over || pn.over, inView: o.inView !== false && pn.inView }); } }
         if (s.phase === "over") break;
         let x = 0, y = 0;
         if (s.choice && ++askT > 20) {
@@ -132,6 +148,19 @@ try {
     check(`${label}: the wrong board got a word, the wave its call`, ["board_no", "now_up", "up_ok", "shore"].every((c) => s.heard.includes(c)), s.heard.length);
     await step(20);
     check(`${label}: the score card is on show`, await page.locator(".surf-result").count() === 1);
+    if (hasPics) {
+      const of = await page.evaluate(() => window.__ew.game.surf.content.pictures.of);
+      const rows = [...seenPics.entries()];
+      await new Promise((r) => setTimeout(r, 300));
+      check(`${label}: her commands came with their pictures, each the right one`, rows.length >= 8 && rows.every(([cue, v]) => (of[cue] ? v.name === of[cue] : ["good1", "good2", "good3", "r_exact"].includes(cue))), rows.map(([cue, v]) => `${cue}:${v.name}`).join(" "));
+      // (the cards' pictures were fetched ahead as the lesson began)
+      const ready = await page.evaluate(() => window.__ew.game.surf.loaded.every((i) => i.complete && i.naturalWidth > 0) && window.__ew.game.surf.loaded.length);
+      check(`${label}: all the lesson's pictures are loaded ahead`, ready >= 17, ready);
+      const afloat = rows.filter(([, v]) => ["out", "wait", "catch", "ride"].includes(v.phase));
+      check(`${label}: the picture's card is whole in the picture, and never over the learner or their board`, afloat.length >= 5 && afloat.every(([, v]) => v.inView && !v.over && v.clear > 40), afloat.map(([cue, v]) => `${cue}:${v.clear}`).join(" "));
+      check(`${label}: the picture is big enough to read the move`, rows.every(([, v]) => v.w >= (phone ? 250 : 220) && v.h >= 110), rows[0]?.[1]);
+      check(`${label}: praise keeps the command's picture; a line with none shows her words alone`, !of.good1 && !of.again_q && await page.evaluate(() => { const l = window.__ew.game.surf.logic; return l.heard.includes("again_q"); }));
+    }
     // ---- another lesson from the card, further out: stand up too early once, answer her, ride the next
     await page.locator(".surf-level.adv").click();
     await fade();
@@ -165,6 +194,27 @@ try {
       s = await L();
       check(`${label}: the conversation's event starts the lesson (the learner said they surf: advanced)`, s?.level === "advanced", s);
       await step(60);
+      if (hasPics) {
+        // her first line there has no picture; the board question has one: with glosses, and with the Spanish alone
+        for (let i = 0; i < 900 && !(await L())?.choice; i++) await step(4);
+        await new Promise((r) => setTimeout(r, 350));
+        const withHelp = await page.evaluate(() => ({ pic: !!document.querySelector(".surf-card.has-pic .surf-pic img.new"), gloss: !!document.querySelector(".surf-card .u .lt") }));
+        check(`${label}: a new line comes with its picture and its glosses`, withHelp.pic && withHelp.gloss, withHelp);
+        // heard often: the words lose their translation, the picture stays; heard more: only her voice, no picture
+        const stage = async (support) => { await page.evaluate((n) => window.__ew.surf?.setState?.({ support: n }), support); await step(2); return page.evaluate(() => ({ pic: !!document.querySelector(".surf-pic"), gloss: !!document.querySelector(".surf-card .u .lt"), listen: !!document.querySelector(".surf-listen") })); };
+        if (await page.evaluate(() => !!window.__ew.surf)) {
+          const one = await stage(1), two = await stage(2);
+          check(`${label}: the Spanish alone still has its picture; voice only has none until asked for`, one.pic && !one.gloss && !two.pic && two.listen, { one, two });
+          await page.locator(".surf-listen").click();
+          await step(2);
+          check(`${label}: a tap brings her words and the picture back`, await page.locator(".surf-pic").count() === 1);
+          await stage(0);
+        }
+        await page.emulateMedia({ reducedMotion: "reduce" });
+        const still = await page.evaluate(() => [getComputedStyle(document.querySelector(".surf-pic")).animationName, getComputedStyle(document.querySelector(".surf-pic img.new")).animationName]);
+        check(`${label}: with reduced motion the picture does not slide`, still.every((n) => n === "none"), still);
+        await page.emulateMedia({ reducedMotion: "no-preference" });
+      }
       if (phone) await page.locator(".surf-x").tap(); else await page.keyboard.press("Escape");
       await fade();
       check(`${label}: out of it at once, on foot`, !(await L()) && (await hud()).ride === null);

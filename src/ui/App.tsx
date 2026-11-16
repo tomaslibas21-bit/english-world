@@ -18,6 +18,7 @@ import { radio } from "../radio";
 import { AudioDiagnostics } from "./AudioDiagnostics";
 import { Loading } from "./Loading";
 import { startPlayStats } from "../state/playStats";
+import { useSurf } from "../game/surf/store";
 
 export function App() {
   const screen = useStore((s) => s.screen);
@@ -50,7 +51,7 @@ function Play() {
         if (sit) g!.startScenario(sit);
       };
       g.init();
-      (window as any).__ew = { game: g, store: useStore, radio, voice: audio.getState, audio, coach };
+      (window as any).__ew = { game: g, store: useStore, radio, voice: audio.getState, audio, coach, surf: useSurf };
     });
     return () => { gone = true; g?.dispose(); setGame(null); };
   }, []);
