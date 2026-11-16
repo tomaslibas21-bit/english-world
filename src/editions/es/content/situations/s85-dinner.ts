@@ -923,17 +923,17 @@ export const dinner: SituationDef = {
         { spain: t("¡Gracias! | Eres | un | sol.", "Thanks! | You-are | a | sun.", "Thanks! You're a sweetheart.", { flags: { 3: "un sol: “a sweetheart” (literally: a sun), warm praise in Spain." } }) }),
     ],
     smell_dish: [
-      t("¡Gracias! | Es | cochinita pibil, | la | receta | de | la | mamá | de | Natalia.", "Thanks! | It's | cochinita pibil, | the | recipe | of | the | mom | of | Natalia.",
-        "Thanks! It's cochinita pibil, Natalia's mom's recipe.", { flags: { 2: PIBIL }, spain: t("¡Gracias! | Es | cochinita pibil, | la | receta | de | la | madre | de | Natalia.", "Thanks! | It's | cochinita pibil, | the | recipe | of | the | mom | of | Natalia.", "Thanks! It's cochinita pibil, Natalia's mom's recipe.", { flags: { 2: "cochinita pibil: Yucatán's slow-roasted pork in achiote." } }) }),
+      t("¡Gracias! | Es | cochinita pibil, | la | receta | de | la | mamá | de | Natalia.", "Thanks! | It's | pit-roasted pork, | the | recipe | of | the | mom | of | Natalia.",
+        "Thanks! It's pit-roasted pork, Natalia's mom's recipe.", { flags: { 2: PIBIL }, spain: t("¡Gracias! | Es | cochinita pibil, | la | receta | de | la | madre | de | Natalia.", "Thanks! | It's | pit-roasted pork, | the | recipe | of | the | mom | of | Natalia.", "Thanks! It's pit-roasted pork, Natalia's mom's recipe.", { flags: { 2: "cochinita pibil: Yucatán's slow-roasted pork in achiote." } }) }),
     ],
     dish_is: [
-      t("Es | cochinita pibil, | la | receta | de | la | mamá | de | Natalia.", "It's | cochinita pibil, | the | recipe | of | the | mom | of | Natalia.",
-        "It's cochinita pibil, Natalia's mom's recipe.", { flags: { 1: PIBIL }, spain: t("Es | cochinita pibil, | la | receta | de | la | madre | de | Natalia.", "It's | cochinita pibil, | the | recipe | of | the | mom | of | Natalia.", "It's cochinita pibil, Natalia's mom's recipe.", { flags: { 1: "cochinita pibil: Yucatán's slow-roasted pork in achiote." } }) }),
+      t("Es | cochinita pibil, | la | receta | de | la | mamá | de | Natalia.", "It's | pit-roasted pork, | the | recipe | of | the | mom | of | Natalia.",
+        "It's pit-roasted pork, Natalia's mom's recipe.", { flags: { 1: PIBIL }, spain: t("Es | cochinita pibil, | la | receta | de | la | madre | de | Natalia.", "It's | pit-roasted pork, | the | recipe | of | the | mom | of | Natalia.", "It's pit-roasted pork, Natalia's mom's recipe.", { flags: { 1: "cochinita pibil: Yucatán's slow-roasted pork in achiote." } }) }),
     ],
     dish_again: [
-      t("¡Cochinita pibil! | Ahorita | la | pruebas.", "Cochinita pibil! | In a moment | it | you-try.", "Cochinita pibil! You'll taste it in a minute.",
+      t("¡Cochinita pibil! | Ahorita | la | pruebas.", "Pit-roasted pork! | In a moment | it | you-try.", "Pit-roasted pork! You'll taste it in a minute.",
         { flags: { 0: "cochinita pibil: Yucatán's slow-roasted pork in achiote.", 1: AHORITA, 2: "la here is a pronoun: it (la cochinita)." },
-          neutral: t("¡Cochinita pibil! | Enseguida | la | pruebas.", "Cochinita pibil! | In a moment | it | you-try.", "Cochinita pibil! You'll taste it in a minute.", { flags: { 0: "cochinita pibil: Yucatán's slow-roasted pork in achiote.", 2: "la here is a pronoun: it (la cochinita)." } }) }),
+          neutral: t("¡Cochinita pibil! | Enseguida | la | pruebas.", "Pit-roasted pork! | In a moment | it | you-try.", "Pit-roasted pork! You'll taste it in a minute.", { flags: { 0: "cochinita pibil: Yucatán's slow-roasted pork in achiote.", 2: "la here is a pronoun: it (la cochinita)." } }) }),
     ],
     home_thanks: [
       t("¡Ay, | gracias! | La | acabamos de | pintar.", "Aw, | thanks! | It | we-just | painted.", "Aw, thanks! We just painted it.",
@@ -957,7 +957,7 @@ export const dinner: SituationDef = {
       t("¡Igualmente!", "Likewise!", "You too!"),
     ],
     how_is_it: [
-      t("¿Qué tal | la | cochinita?", "How's | the | cochinita?", "So, how's the cochinita?", { flags: { 2: "cochinita pibil: Yucatán's slow-roasted pork in achiote." } }),
+      t("¿Qué tal | la | cochinita?", "How's | the | pit-roasted pork?", "So, how's the pit-roasted pork?", { flags: { 2: "cochinita pibil: Yucatán's slow-roasted pork in achiote." } }),
       t("¿Y? | ¿Te gusta?", "And? | Do-you-like-it?", "So? Do you like it?"),
     ],
     glad_you_like: [
@@ -969,11 +969,11 @@ export const dinner: SituationDef = {
         "Oh, sorry! That's the habanero. Have some water.", { flags: { 4: HABANERO } }),
     ],
     spicy_answer: [
-      t("La | cochinita | no, | pero | la | salsa | de | habanero | sí | pica | mucho.", "The | cochinita | no, | but | the | salsa | of | habanero | yes | it-burns | a lot.",
-        "The cochinita isn't, but the habanero salsa is really hot.", { flags: { 1: "cochinita pibil: Yucatán's slow-roasted pork in achiote.", 7: HABANERO, 8: "sí here stresses the contrast: “it does”." } }),
+      t("La | cochinita | no, | pero | la | salsa | de | habanero | sí | pica | mucho.", "The | pit-roasted pork | no, | but | the | salsa | of | habanero | yes | it-burns | a lot.",
+        "The pit-roasted pork isn't, but the habanero salsa is really hot.", { flags: { 1: "cochinita pibil: Yucatán's slow-roasted pork in achiote.", 7: HABANERO, 8: "sí here stresses the contrast: “it does”." } }),
     ],
     no_spicy_ok: [
-      t("¡Entonces | sin | salsa! | La | cochinita | sola | no pica.", "Then | without | salsa! | The | cochinita | alone | doesn't burn.", "Then skip the salsa! The cochinita on its own isn't spicy.", { flags: { 4: "cochinita pibil: Yucatán's slow-roasted pork in achiote." } }),
+      t("¡Entonces | sin | salsa! | La | cochinita | sola | no pica.", "Then | without | salsa! | The | pit-roasted pork | alone | doesn't burn.", "Then skip the salsa! The pit-roasted pork on its own isn't spicy.", { flags: { 4: "cochinita pibil: Yucatán's slow-roasted pork in achiote." } }),
     ],
     sorry_bad: [
       t("¿No? | ¡Ay, | perdón! | También | hay | arroz | y | frijoles.", "No? | Oh, | sorry! | Also | there's | rice | and | beans.", "No? Oh, sorry! There's rice and beans too.", { spain: t("¿No? | ¡Ay, | perdón! | También | hay | arroz | y | judías.", "No? | Oh, | sorry! | Also | there's | rice | and | beans.", "No? Oh, sorry! There's rice and beans too.") }),
@@ -1004,12 +1004,12 @@ export const dinner: SituationDef = {
     // "¿Qué lleva?", "¿Qué es la cochinita?", "¿Cómo la preparas?"
     recipe_what: [
       t("Es | puerco | adobado | con | achiote | y | naranja agria, | cocido | en | hoja de plátano.",
-        "It's | pork | marinated | with | achiote | and | sour orange, | cooked | in | banana leaf.",
-        "It's pork marinated in achiote and sour orange, cooked in banana leaves.",
+        "It's | pork | marinated | with | annatto | and | sour orange, | cooked | in | banana leaf.",
+        "It's pork marinated in annatto and sour orange, cooked in banana leaves.",
         { flags: { 4: "achiote: a red paste of annatto seeds, the base of Yucatecan cooking.", 6: AGRIA },
           neutral: t("Es | cerdo | adobado | con | achiote | y | naranja agria, | cocido | en | hoja de plátano.",
-            "It's | pork | marinated | with | achiote | and | sour orange, | cooked | in | banana leaf.",
-            "It's pork marinated in achiote and sour orange, cooked in banana leaves.",
+            "It's | pork | marinated | with | annatto | and | sour orange, | cooked | in | banana leaf.",
+            "It's pork marinated in annatto and sour orange, cooked in banana leaves.",
             { flags: { 4: "achiote: a red paste of annatto seeds, the base of Yucatecan cooking.", 6: AGRIA } }) }),
     ],
     // "¿Qué lleva la salsa?"
@@ -1129,7 +1129,7 @@ export const dinner: SituationDef = {
       t("Bueno, | ¡nos | dio | mucho | gusto | verte!", "Well, | (to) us | it-gave | much | pleasure | to-see-you!", "Well, it was so good to see you!", { spain: t("Bueno, | ¡nos | ha encantado | verte!", "Well, | (to) us | it has delighted | to see you!", "Well, it was so good to see you!") }),
     ],
     for_the_road: [
-      t("¡Espérate! | Te | pongo | un | poco | de | cochinita | para llevar.", "Wait! | (For) you | I-put | a | little | of | cochinita | to go.", "Wait! Let me pack you some cochinita to take home.", { flags: { 6: "cochinita pibil: Yucatán's slow-roasted pork in achiote." }, spain: t("¡Espera! | Te | pongo | un | poco | de | cochinita | para llevar.", "Wait! | (To) you | I'll put | a | bit | of | cochinita | to take away.", "Wait! Let me pack you some cochinita to take home.", { flags: { 6: "cochinita pibil: Yucatán's slow-roasted pork in achiote." } }) }),
+      t("¡Espérate! | Te | pongo | un | poco | de | cochinita | para llevar.", "Wait! | (For) you | I-put | a | little | of | pit-roasted pork | to go.", "Wait! Let me pack you some pit-roasted pork to take home.", { flags: { 6: "cochinita pibil: Yucatán's slow-roasted pork in achiote." }, spain: t("¡Espera! | Te | pongo | un | poco | de | cochinita | para llevar.", "Wait! | (To) you | I'll put | a | bit | of | pit-roasted pork | to take away.", "Wait! Let me pack you some pit-roasted pork to take home.", { flags: { 6: "cochinita pibil: Yucatán's slow-roasted pork in achiote." } }) }),
     ],
     // a guest who eats no meat takes flan home
     for_the_road_flan: [

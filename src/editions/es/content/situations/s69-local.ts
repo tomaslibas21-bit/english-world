@@ -42,7 +42,7 @@ const SPOTS: EntityDef[] = [
   P("cocina", "cocina económica", "home-style diner", "f", "food", ["la cocina economica", "cocina economica", "la fonda", "fonda", "las fondas", "la comida corrida"]),
   P("cafe", "Café | La Ceiba", "Café | La Ceiba", "m", "food", ["cafe la ceiba", "el cafe la ceiba", "la ceiba", "la cafeteria", "el cafe de mariana"], { name: true, nat: "Café La Ceiba" }),
   P("trattoria", "La Cocina de Lucía", "La Cocina de Lucía", "f", "food", ["la cocina de lucia", "cocina de lucia", "el restaurante de lucia", "restaurante de lucia", "el restaurante de dona lucia", "lo de lucia", "lo de dona lucia", "lucia", "el restaurante yucateco", "un restaurante yucateco", "restaurante yucateco", "el yucateco"], { name: true, nat: "La Cocina de Lucía" }),
-  P("marquesitas", "marquesitas", "marquesitas", "f", "food", ["las marquesitas", "marquesita", "una marquesita", "el carrito de marquesitas"], { pl: true }),
+  P("marquesitas", "marquesitas", "crêpe rolls", "f", "food", ["las marquesitas", "marquesita", "una marquesita", "el carrito de marquesitas"], { pl: true }),
   P("cenote", "cenote", "cenote", "m", "sight", ["el cenote", "un cenote", "los cenotes", "cenotes"]),
   P("playa", "playa", "beach", "f", "sight", ["la playa", "la playa publica", "playa publica", "las playas"]),
   P("ruinas", "ruinas", "ruins", "f", "sight", ["las ruinas", "ruinas mayas", "las ruinas mayas", "la zona arqueologica", "zona arqueologica", "las piramides", "la piramide"], { pl: true }),
@@ -131,7 +131,7 @@ const TRIED: Record<string, SentSrc> = {
   cocina: t("¿Ya | fue | a | la | cocina económica?", "Already | you-went | to | the | home-style diner?", "Did you go to the little diner?", { flags: { 0: "Ya in a question: “yet”, “already”." }, spain: t("¿Ya | ha ido | a | la | cocina económica?", "Already | you've-gone | to | the | home-style diner?", "Did you go to the little diner?", {flags: {0: "Ya in a question: “yet”, “already”."}}) }),
   cafe: t("¿Ya | probó | el | café | de | La Ceiba?", "Already | you-tried | the | coffee | of | La Ceiba?", "Did you try the coffee at La Ceiba?", { flags: { 0: "Ya in a question: “yet”, “already”." }, spain: t("¿Ya | ha probado | el | café | de | La Ceiba?", "Already | you've-tried | the | coffee | of | La Ceiba?", "Did you try the coffee at La Ceiba?", {flags: {0: "Ya in a question: “yet”, “already”."}}) }),
   trattoria: t("¿Ya | fue | a | La Cocina de Lucía?", "Already | you-went | to | La Cocina de Lucía?", "Did you go to La Cocina de Lucía?", { flags: { 0: "Ya in a question: “yet”, “already”." }, spain: t("¿Ya | ha ido | a | La Cocina de Lucía?", "Already | you've-gone | to | La Cocina de Lucía?", "Did you go to La Cocina de Lucía?", {flags: {0: "Ya in a question: “yet”, “already”."}}) }),
-  marquesitas: t("¿Ya | probó | las | marquesitas?", "Already | you-tried | the | marquesitas?", "Did you try the marquesitas?", { flags: { 3: "marquesita: a crispy rolled crêpe, a Yucatán street sweet.", 0: "Ya in a question: “yet”, “already”." }, spain: t("¿Ya | ha probado | las | marquesitas?", "Already | you've-tried | the | marquesitas?", "Did you try the marquesitas?", {flags: { 3: "marquesita: a crispy rolled crêpe, a Yucatán street sweet.", 0: "Ya in a question: “yet”, “already”."}}) }),
+  marquesitas: t("¿Ya | probó | las | marquesitas?", "Already | you-tried | the | crêpe rolls?", "Did you try the crêpe rolls?", { flags: { 3: "marquesita: a crispy rolled crêpe, a Yucatán street sweet.", 0: "Ya in a question: “yet”, “already”." }, spain: t("¿Ya | ha probado | las | marquesitas?", "Already | you've-tried | the | crêpe rolls?", "Did you try the crêpe rolls?", {flags: { 3: "marquesita: a crispy rolled crêpe, a Yucatán street sweet.", 0: "Ya in a question: “yet”, “already”."}}) }),
 };
 
 const toArr = (x: any) => (x == null ? [] : Array.isArray(x) ? x : [x]);
@@ -800,9 +800,9 @@ export const local: SituationDef = {
     ],
     rec_taqueria: [
       t("Vaya | a | la | taquería | junto | al | mercado. | En | la | mañana | hay | tacos | de | cochinita, | ¡y | es | barato!",
-        "Go | to | the | taco place | next | to the | market. | In | the | morning | there are | tacos | of | cochinita, | and | it's | cheap!",
-        "Go to the taco place next to the market. In the morning they have cochinita tacos, and it's cheap!",
-        { flags: { 13: "cochinita pibil: Yucatán's slow-roasted pork in achiote." }, spain: t("Vaya | a | la | taquería | junto | al | mercado. | Por | la | mañana | hay | tacos | de | cochinita, | ¡y | es | barato!", "Go | to | the | taco place | next | to the | market. | In | the | morning | there are | tacos | of | cochinita, | and | it's | cheap!", "Go to the taco place next to the market. In the morning they have cochinita tacos, and it's cheap!", {flags: {13: "cochinita pibil: Yucatán's slow-roasted pork in achiote."}}) }),
+        "Go | to | the | taco place | next | to the | market. | In | the | morning | there are | tacos | of | pit-roasted pork, | and | it's | cheap!",
+        "Go to the taco place next to the market. In the morning they have pit-roasted pork tacos, and it's cheap!",
+        { flags: { 13: "cochinita pibil: Yucatán's slow-roasted pork in achiote." }, spain: t("Vaya | a | la | taquería | junto | al | mercado. | Por | la | mañana | hay | tacos | de | cochinita, | ¡y | es | barato!", "Go | to | the | taco place | next | to the | market. | In | the | morning | there are | tacos | of | pit-roasted pork, | and | it's | cheap!", "Go to the taco place next to the market. In the morning they have pit-roasted pork tacos, and it's cheap!", {flags: {13: "cochinita pibil: Yucatán's slow-roasted pork in achiote."}}) }),
     ],
     rec_taqueria_fish: [
       t("Vaya | a | la | taquería | junto | al | mercado. | Al | mediodía | hay | tacos | de | pescado, | ¡y | son | baratos!",
@@ -811,12 +811,12 @@ export const local: SituationDef = {
     ],
     rec_cocina: [
       t("Vaya | a | la | cocina económica | de | la | calle | Ceiba. | Hay | comida corrida, | y | la | cochinita | es | buenísima.",
-        "Go | to | the | home-style diner | on | the | street | Ceiba. | There's | set lunch, | and | the | cochinita | is | excellent.",
-        "Try the little home-style diner on Ceiba Street. They do a set lunch, and the cochinita is excellent.",
-        { flags: { 3: "cocina económica: a small family place with cheap home cooking.", 9: "comida corrida: soup, rice, a main dish and a drink for one price.", 12: "cochinita pibil: Yucatán's slow-roasted pork in achiote." }, spain: t("Vaya | a | la | cocina económica | de | la | calle | Ceiba. | Hay | menú del día, | y | la | cochinita | es | buenísima.", "Go | to | the | home-style diner | on | the | street | Ceiba. | There's | set lunch, | and | the | cochinita | is | excellent.", "Try the little home-style diner on Ceiba Street. They do a set lunch, and the cochinita is excellent.", {flags: {3: "cocina económica: a small family place with cheap home cooking.",12: "cochinita pibil: Yucatán's slow-roasted pork in achiote."}}) }),
+        "Go | to | the | home-style diner | on | the | street | Ceiba. | There's | set lunch, | and | the | pit-roasted pork | is | excellent.",
+        "Try the little home-style diner on Ceiba Street. They do a set lunch, and the pit-roasted pork is excellent.",
+        { flags: { 3: "cocina económica: a small family place with cheap home cooking.", 9: "comida corrida: soup, rice, a main dish and a drink for one price.", 12: "cochinita pibil: Yucatán's slow-roasted pork in achiote." }, spain: t("Vaya | a | la | cocina económica | de | la | calle | Ceiba. | Hay | menú del día, | y | la | cochinita | es | buenísima.", "Go | to | the | home-style diner | on | the | street | Ceiba. | There's | set lunch, | and | the | pit-roasted pork | is | excellent.", "Try the little home-style diner on Ceiba Street. They do a set lunch, and the pit-roasted pork is excellent.", {flags: {3: "cocina económica: a small family place with cheap home cooking.",12: "cochinita pibil: Yucatán's slow-roasted pork in achiote."}}) }),
       t("La | cocina económica | de | la | calle | Ceiba. | Pruebe | los | panuchos | y | los | salbutes: | ¡son | de | aquí!",
-        "The | home-style diner | on | the | street | Ceiba. | Try | the | panuchos | and | the | salbutes: | they're | from | here!",
-        "The home-style diner on Ceiba Street. Try the panuchos and salbutes: they're a local thing!",
+        "The | home-style diner | on | the | street | Ceiba. | Try | the | stuffed tortillas | and | the | puffy tortillas: | they're | from | here!",
+        "The home-style diner on Ceiba Street. Try the stuffed tortillas and puffy tortillas: they're a local thing!",
         { flags: { 11: "salbutes: puffy fried tortillas topped with shredded turkey or chicken, lettuce and pickled onion (Yucatán).", 1: "cocina económica: a small family place with cheap home cooking.", 8: "panuchos, salbutes: small fried tortillas with toppings, from Yucatán." } }),
     ],
     rec_cafe: [
@@ -827,8 +827,8 @@ export const local: SituationDef = {
     ],
     rec_trattoria: [
       t("La Cocina de Lucía, | en | la | avenida | Juárez. | Es | comida | yucateca: | pruebe | el | poc chuc. | Es | un | poco | más | cara | que | la | cocina económica, | pero | vale la pena.",
-        "La Cocina de Lucía, | on | the | avenue | Juárez. | It's | food | Yucatecan: | try | the | poc chuc. | It's | a | little | more | expensive | than | the | home-style diner, | but | it's worth it.",
-        "La Cocina de Lucía, on Juárez Avenue. It's Yucatán food: try the poc chuc. It's a bit pricier than the little diner, but it's worth it.",
+        "La Cocina de Lucía, | on | the | avenue | Juárez. | It's | food | Yucatecan: | try | the | grilled pork. | It's | a | little | more | expensive | than | the | home-style diner, | but | it's worth it.",
+        "La Cocina de Lucía, on Juárez Avenue. It's Yucatán food: try the grilled pork. It's a bit pricier than the little diner, but it's worth it.",
         { flags: { 10: POC_CHUC, 18: COCINA_EC } }),
       t("Vaya | a | La Cocina de Lucía, | a | una | cuadra | de | aquí. | Es | un | restaurante | yucateco, | un | poco | más | caro | que | la | cocina económica. | Pida | la | sopa | de | lima.",
         "Go | to | La Cocina de Lucía, | at | one | block | from | here. | It's | a | restaurant | Yucatecan, | a | little | more | expensive | than | the | home-style diner. | Order | the | soup | of | lime.",
@@ -837,8 +837,8 @@ export const local: SituationDef = {
     ],
     rec_trattoria_veg: [
       t("Vaya | a | La Cocina de Lucía | y | pida | los | papadzules: | son | de | huevo, | con | salsa | de | pepita, | y | no llevan | carne.",
-        "Go | to | La Cocina de Lucía | and | order | the | papadzules: | they're | of | egg, | with | sauce | of | pumpkin seed, | and | they don't have | meat.",
-        "Go to La Cocina de Lucía and order the papadzules: egg in a pumpkin-seed sauce, and no meat.",
+        "Go | to | La Cocina de Lucía | and | order | the | egg enchiladas: | they're | of | egg, | with | sauce | of | pumpkin seed, | and | they don't have | meat.",
+        "Go to La Cocina de Lucía and order the egg enchiladas: egg in a pumpkin-seed sauce, and no meat.",
         { flags: { 6: "papadzules: corn tortillas rolled around chopped hard-boiled egg, in a pumpkin-seed sauce (Yucatán)." } }),
     ],
     rec_cocina_veg: [
@@ -861,9 +861,9 @@ export const local: SituationDef = {
     ],
     rec_marquesitas: [
       t("¡Las | marquesitas! | Las | venden | en | la | noche, | aquí | en | la | plaza. | Pídala | con | queso de bola: | suena | raro, | ¡pero | es | lo | típico!",
-        "The | marquesitas! | Them | they-sell | in | the | evening, | here | in | the | square. | Order-it | with | Edam cheese: | it-sounds | strange, | but | it's | the | classic!",
-        "Marquesitas! They sell them in the evening, right here in the square. Get one with Edam cheese: sounds strange, but that's the classic!",
-        { flags: { 1: "marquesita: a crispy rolled crêpe, a Yucatán street sweet.", 2: "Las here is a pronoun: them (the marquesitas).", 11: "Pídala: order it (la = una marquesita)." }, spain: t("¡Las | marquesitas! | Las | venden | por | la | noche, | aquí | en | la | plaza. | Pídala | con | queso de bola: | suena | raro, | ¡pero | es | lo | típico!", "The | marquesitas! | Them | they-sell | in | the | evening, | here | in | the | square. | Order-it | with | Edam cheese: | it-sounds | strange, | but | it's | the | classic!", "Marquesitas! They sell them in the evening, right here in the square. Get one with Edam cheese: sounds strange, but that's the classic!", {flags: {1: "marquesita: a crispy rolled crêpe, a Yucatán street sweet.",2: "Las here is a pronoun: them (the marquesitas).",11: "Pídala: order it (la = una marquesita)."}}) }),
+        "The | crêpe rolls! | Them | they-sell | in | the | evening, | here | in | the | square. | Order-it | with | Edam cheese: | it-sounds | strange, | but | it's | the | classic!",
+        "Crêpe rolls! They sell them in the evening, right here in the square. Get one with Edam cheese: sounds strange, but that's the classic!",
+        { flags: { 1: "marquesita: a crispy rolled crêpe, a Yucatán street sweet.", 2: "Las here is a pronoun: them (the marquesitas).", 11: "Pídala: order it (la = una marquesita)." }, spain: t("¡Las | marquesitas! | Las | venden | por | la | noche, | aquí | en | la | plaza. | Pídala | con | queso de bola: | suena | raro, | ¡pero | es | lo | típico!", "The | crêpe rolls! | Them | they-sell | in | the | evening, | here | in | the | square. | Order-it | with | Edam cheese: | it-sounds | strange, | but | it's | the | classic!", "Crêpe rolls! They sell them in the evening, right here in the square. Get one with Edam cheese: sounds strange, but that's the classic!", {flags: {1: "marquesita: a crispy rolled crêpe, a Yucatán street sweet.",2: "Las here is a pronoun: them (the marquesitas).",11: "Pídala: order it (la = una marquesita)."}}) }),
     ],
     then_try: [t("Entonces, | mire:", "Then, | look:", "Then how about this:")],
     cheaper: [t("¿Algo | más | barato? | Claro.", "Something | more | cheap? | Sure.", "Something cheaper? Sure.")],
@@ -930,8 +930,8 @@ export const local: SituationDef = {
         "There's live music right here at the bandstand on Fridays, at eight.", { flags: { 0: "Los viernes: on Fridays (the article stands for “on”).", 10: ART_TIME }, spain: t("Los | viernes | hay | música | en directo | aquí | en | el | kiosco, | a | las | ocho.", "On | Fridays | there's | music | live | here | at | the | bandstand, | at | — | eight.", "There's live music right here at the bandstand on Fridays, at eight.") }),
     ],
     night_marq: [
-      t("Y | en | la | noche | venden | marquesitas | aquí | en | la | plaza. | ¡Pruébelas!", "And | in | the | evening | they-sell | marquesitas | here | in | the | square. | Try them!",
-        "And in the evenings they sell marquesitas here in the square. Try them!", { flags: { 5: "marquesita: a crispy rolled crêpe, a Yucatán street sweet." }, spain: t("Y | por | la | noche | venden | marquesitas | aquí | en | la | plaza. | ¡Pruébelas!", "And | in | the | evening | they-sell | marquesitas | here | in | the | square. | Try them!", "And in the evenings they sell marquesitas here in the square. Try them!", {flags: {5: "marquesita: a crispy rolled crêpe, a Yucatán street sweet."}}) }),
+      t("Y | en | la | noche | venden | marquesitas | aquí | en | la | plaza. | ¡Pruébelas!", "And | in | the | evening | they-sell | crêpe rolls | here | in | the | square. | Try them!",
+        "And in the evenings they sell crêpe rolls here in the square. Try them!", { flags: { 5: "marquesita: a crispy rolled crêpe, a Yucatán street sweet." }, spain: t("Y | por | la | noche | venden | marquesitas | aquí | en | la | plaza. | ¡Pruébelas!", "And | in | the | evening | they-sell | crêpe rolls | here | in | the | square. | Try them!", "And in the evenings they sell crêpe rolls here in the square. Try them!", {flags: {5: "marquesita: a crispy rolled crêpe, a Yucatán street sweet."}}) }),
     ],
     no_crowds: [t("Entonces | el | malecón, | temprano. | Siempre | está | tranquilo.", "Then | the | waterfront, | early. | Always | it's | quiet.", "Then the waterfront, early in the day. It's always quiet.")],
 
@@ -977,7 +977,7 @@ export const local: SituationDef = {
     time_museo: [t("Entre semana, | en | la | mañana. | Está | muy | tranquilo.", "On weekdays, | in | the | morning. | It's | very | quiet.", "Weekday mornings. It's very quiet then.", { spain: t("Entre semana, | por | la | mañana. | Está | muy | tranquilo.", "On weekdays, | in | the | morning. | It's | very | quiet.", "Weekday mornings. It's very quiet then.") })],
     time_muelle: [t("Para | la | vista, | al | atardecer. | ¡Pero | reserve!", "For | the | view, | at the | sunset. | But | book!", "For the view, at sunset. But book a table!")],
     time_lancha: [t("En | la | mañana, | cuando | el | mar | está | más | tranquilo.", "In | the | morning, | when | the | sea | is | more | calm.", "In the morning, when the sea is calmer.", { spain: t("Por | la | mañana, | cuando | el | mar | está | más | tranquilo.", "In | the | morning, | when | the | sea | is | more | calm.", "In the morning, when the sea is calmer.") })],
-    time_taqueria: [t("¡Temprano! | La | cochinita | se acaba | antes | del | mediodía.", "Early! | The | cochinita | runs out | before | the | noon.", "Early! The cochinita runs out before noon.", { flags: { 2: "cochinita pibil: Yucatán's slow-roasted pork in achiote." } })],
+    time_taqueria: [t("¡Temprano! | La | cochinita | se acaba | antes | del | mediodía.", "Early! | The | pit-roasted pork | runs out | before | the | noon.", "Early! The pit-roasted pork runs out before noon.", { flags: { 2: "cochinita pibil: Yucatán's slow-roasted pork in achiote." } })],
     time_cocina: [
       t("A | la | hora | de | la | comida, | entre | la | una | y | las | tres.", "At | the | hour | of | the | lunch, | between | — | one | and | — | three.", "At lunchtime, between one and three.",
         { flags: { 5: "la comida: in Mexico, the main meal of the day, around 2 p.m.", 7: ART_TIME, 10: ART_TIME }, spain: t("A | la | hora | de | la | comida, | entre | la | una | y | las | tres.", "At | the | hour | of | the | lunch, | between | — | one | and | — | three.", "At lunchtime, between one and three.", { flags: { 5: "la comida: lunch, the main meal of the day, around 2 p.m.", 7: ART_TIME, 10: ART_TIME } }) }),

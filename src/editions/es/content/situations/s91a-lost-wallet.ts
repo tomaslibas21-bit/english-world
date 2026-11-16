@@ -80,7 +80,7 @@ export const PLACES: EntityDef[] = [
   P("bench", "banca", "bench", "f", "near", ["la banca", "una banca", "la banca de la plaza", "una banquita"]),
   P("kiosco", "kiosco", "bandstand", "m", "near", ["el kiosco", "quiosco"]),
   P("station", "terminal", "bus station", "f", "shop", ["la terminal", "terminal de autobuses", "la central", "la estacion de autobuses"]),
-  P("bus", "colectivo", "colectivo", "m", "bus", ["la combi", "combi", "camion", "el camion", "autobus", "el autobus", "la van", "una van"]),
+  P("bus", "colectivo", "shared van", "m", "bus", ["la combi", "combi", "camion", "el camion", "autobus", "el autobus", "la van", "una van"]),
   P("taxi", "taxi", "taxi", "m", "taxi", ["un taxi"]),
 ];
 
@@ -604,9 +604,9 @@ export const lostWallet: SituationDef = {
     // the colectivos have no stop in town: they pass along avenida Juárez and are waved down (s62, s69, TOWN.md)
     call_bus: [
       t("Entonces | pregúnteles | a | los | choferes | de | los | colectivos. | Pasan | por | la | avenida | cada rato.",
-        "Then | ask (them) | — | the | drivers | of | the | colectivos. | They-pass | along | the | avenue | every few minutes.",
-        "Then ask the colectivo drivers. They come along the main road every few minutes.",
-        { flags: { 2: "a: the personal a before people; English has no word here.", 7: "colectivo: the shared van that runs along the coast." }, spain: t("Entonces | pregúnteles | a | los | conductores | de | los | colectivos. | Pasan | por | la | avenida | cada poco.", "Then | ask (them) | — | the | drivers | of | the | colectivos. | They-pass | along | the | avenue | every few minutes.", "Then ask the colectivo drivers. They come along the main road every few minutes.", { flags: { 2: "a: the personal a before people; English has no word here.", 7: "colectivo: the shared van that runs along the coast road." } }) }),
+        "Then | ask (them) | — | the | drivers | of | the | shared vans. | They-pass | along | the | avenue | every few minutes.",
+        "Then ask the shared van drivers. They come along the main road every few minutes.",
+        { flags: { 2: "a: the personal a before people; English has no word here.", 7: "colectivo: the shared van that runs along the coast." }, spain: t("Entonces | pregúnteles | a | los | conductores | de | los | colectivos. | Pasan | por | la | avenida | cada poco.", "Then | ask (them) | — | the | drivers | of | the | shared vans. | They-pass | along | the | avenue | every few minutes.", "Then ask the shared van drivers. They come along the main road every few minutes.", { flags: { 2: "a: the personal a before people; English has no word here.", 7: "colectivo: the shared van that runs along the coast road." } }) }),
     ],
     bus_keep: [t("A veces | guardan | las | cosas | que | encuentran.", "Sometimes | they-keep | the | things | that | they-find.", "Sometimes they keep things people leave behind.")],
     call_taxi: [

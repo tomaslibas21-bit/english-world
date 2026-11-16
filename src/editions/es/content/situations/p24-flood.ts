@@ -1439,7 +1439,7 @@ export const flood: SituationDef = {
     l_i_know: [t("¡Jaja, | ya sé! | Vi | tu | nombre.", "Haha, | I know! | I-saw | your | name.", "Ha, I know! I saw your name.", { spain: t("¡Jaja, | ya lo sé! | He visto | tu | nombre.", "Haha, | I know! | I've seen | your | name.", "Ha, I know! I saw your name.") })],
     l_brunch_ok: [
       t("No pasa nada. | El | desayuno | puede | esperar.", "No problem. | The | breakfast | can | wait.", "Totally fine. Breakfast can wait."),
-      t("No te preocupes. | Me como | tus | chilaquiles.", "Don't worry. | I'll eat | your | chilaquiles.", "Don't worry. I'll eat your chilaquiles.",
+      t("No te preocupes. | Me como | tus | chilaquiles.", "Don't worry. | I'll eat | your | tortilla chips in salsa.", "Don't worry. I'll eat your tortilla chips in salsa.",
         { flags: { 3: "chilaquiles: fried tortilla chips in salsa, a classic Mexican breakfast." } }),
     ],
     l_cat: [t("¡Jaja! | Pobre | gatito. | Pero | qué | listo.", "Haha! | Poor | kitty. | But | how | smart.", "Ha! Poor kitty. Smart cat, though.")],

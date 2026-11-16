@@ -205,6 +205,35 @@ The rules are the English edition's (AUTHORING.md §3) turned around. In short:
 | juice | el jugo | — |
 | restroom | el baño | — |
 
+### Mexican words (owner, 16 Nov 2026)
+A Mexican food or thing with no ordinary English (or Lithuanian) name is glossed in plain words; its Mexican name lives
+in the word note behind the asterisk (`@/content/word-notes`; `PLAIN_GLOSSED` in `src/editions/es/convo/target.ts`
+keeps the note on such an entity). The trigger: Spanish Master glossed "una concha" as „končą“.
+
+| Spanish | English gloss | Lithuanian |
+|---|---|---|
+| concha | sweet bun | saldi bandelė |
+| horchata | rice drink | ryžių gėrimas |
+| agua de chaya | tree spinach (and pineapple) drink | medžio špinatų gėrimas |
+| michelada | spicy beer | aštrus alus |
+| cochinita pibil / pollo pibil | pit-roasted pork / chicken | duobėje kepta kiauliena / vištiena |
+| poc chuc | (citrus) grilled pork | ant grotelių kepta kiauliena |
+| pescado tikin xic | leaf-grilled fish | lapuose kepta žuvis |
+| papadzules | egg enchiladas | tortilijos su kiaušiniu |
+| panuchos / salbutes | stuffed / puffy tortillas | įdarytos / pūstos tortilijos |
+| caballeros pobres | bread puddings | duonos pudingai |
+| marquesitas | crêpe rolls | traškūs blynų vyniotiniai |
+| achiote | annatto | anato pasta |
+| colectivo | shared van | maršrutinis mikroautobusas |
+| guayabera | pleated shirt | marškiniai su klostėmis |
+| trova | (romantic) ballads | baladės |
+| chilaquiles | tortilla chips in salsa | tortilijų traškučiai su padažu |
+
+Kept, because Americans and Lithuanians use them: taco, tortilla, burrito, guacamole, quesadilla, salsa, tequila,
+mezcal, flan, tostada, tres leches, habanero, cenote, americano/latte/espresso. Kept as names with a note: alux, ceiba,
+and sacbé in the lines that explain it. A line that explains the word itself ("¿Qué es un sacbé?", "Un colectivo es
+una camioneta…") keeps it.
+
 ## Names and places
 
 - The cast (`src/editions/es/content/npcs.ts`): the ids are the town's role slots, shared with Maple Harbor; each has a

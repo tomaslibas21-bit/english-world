@@ -1052,13 +1052,13 @@ export const neighbor: SituationDef = {
     ],
     place_bus: [
       t("Los | colectivos | pasan | por | la | avenida | Juárez, | aquí | a | una | cuadra. | Y | la | parada | del | camión | está | enfrente | del | gimnasio.",
-        "The | colectivos | go | along | the | avenue | Juárez, | here | at | one | block. | And | the | stop | of the | bus | is | in front | of the | gym.",
-        "The colectivos go along Avenida Juárez, a block from here. And the bus stop is in front of the gym.",
+        "The | shared vans | go | along | the | avenue | Juárez, | here | at | one | block. | And | the | stop | of the | bus | is | in front | of the | gym.",
+        "The shared vans go along Avenida Juárez, a block from here. And the bus stop is in front of the gym.",
         { flags: { 1: "colectivo: a shared van on a fixed route; you wave it down.", 15: "Mexican: camión = bus." },
           neutral: t("Los | colectivos | pasan | por | la | avenida | Juárez, | aquí | a | una | cuadra. | Y | la | parada | del | autobús | está | enfrente | del | gimnasio.",
-            "The | colectivos | go | along | the | avenue | Juárez, | here | at | one | block. | And | the | stop | of the | bus | is | in front | of the | gym.",
-            "The colectivos go along Avenida Juárez, a block from here. And the bus stop is in front of the gym.",
-            { flags: { 1: "colectivo: a shared van on a fixed route; you wave it down." } }), spain: t("Los | colectivos | pasan | por | la | avenida | Juárez, | aquí | a | una | calle. | Y | la | parada | del | autobús | está | enfrente | del | gimnasio.", "The | colectivos | go | along | the | avenue | Juárez, | here | at | one | street. | And | the | stop | of the | bus | is | in front | of the | gym.", "The colectivos go along Avenida Juárez, a block from here. And the bus stop is in front of the gym.", { flags: { 1: "colectivo: a shared van on a fixed route; you wave it down." } }) }),
+            "The | shared vans | go | along | the | avenue | Juárez, | here | at | one | block. | And | the | stop | of the | bus | is | in front | of the | gym.",
+            "The shared vans go along Avenida Juárez, a block from here. And the bus stop is in front of the gym.",
+            { flags: { 1: "colectivo: a shared van on a fixed route; you wave it down." } }), spain: t("Los | colectivos | pasan | por | la | avenida | Juárez, | aquí | a | una | calle. | Y | la | parada | del | autobús | está | enfrente | del | gimnasio.", "The | shared vans | go | along | the | avenue | Juárez, | here | at | one | street. | And | the | stop | of the | bus | is | in front | of the | gym.", "The shared vans go along Avenida Juárez, a block from here. And the bus stop is in front of the gym.", { flags: { 1: "colectivo: a shared van on a fixed route; you wave it down." } }) }),
     ],
     knock: [t("Ya | sabe | dónde | estoy, | ¿eh?", "Already | you-know | where | I-am, | eh?", "You know where to find me!")],
 

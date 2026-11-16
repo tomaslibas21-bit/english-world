@@ -40,7 +40,7 @@ const GENRES: EntityDef[] = [
   ent("salsa", "salsa", "salsa", "f", { art: "" }),
   ent("cumbia", "cumbia", "cumbia", "f", { art: "" }),
   ent("reggae", "reggae", "reggae", "m", { art: "", forms: ["regue", "regae", "reggae"] }),
-  ent("trova", "trova", "trova", "f", { art: "", forms: ["trova yucateca", "boleros", "bolero"] }),
+  ent("trova", "trova", "ballads", "f", { art: "", forms: ["trova yucateca", "boleros", "bolero"] }),
   ent("mariachi", "mariachi", "mariachi", "m", { art: "", forms: ["mariachis"] }),
   ent("pop", "pop", "pop", "m", { art: "" }),
   ent("electronica", "electrónica", "electronic music", "f", { art: "", forms: ["electronica", "musica electronica", "electro"] }),

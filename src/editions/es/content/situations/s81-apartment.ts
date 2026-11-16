@@ -761,11 +761,11 @@ export const apartment: SituationDef = {
     // avenida Juárez, a block up Flamboyán (no stop of their own); the city bus stop is a block east on Hidalgo, in front
     // of the gym; the zócalo and the beach five minutes away; Farmacia del Puerto on Juárez at the top of Flamboyán
     bus: [
-      t("Los | colectivos | pasan | por | la | avenida | Juárez, | aquí | a | una | cuadra: | nomás | levante | la | mano.", "The | colectivos | go | along | the | avenue | Juárez, | here | at | one | block: | just | raise | your | hand.", "The colectivos go along Avenida Juárez, a block from here: just wave one down.",
+      t("Los | colectivos | pasan | por | la | avenida | Juárez, | aquí | a | una | cuadra: | nomás | levante | la | mano.", "The | shared vans | go | along | the | avenue | Juárez, | here | at | one | block: | just | raise | your | hand.", "The shared vans go along Avenida Juárez, a block from here: just wave one down.",
         { flags: { 1: F_COLECTIVO, 11: F_NOMAS, 13: F_LA_MANO },
-          neutral: t("Los | colectivos | pasan | por | la | avenida | Juárez, | aquí | a | una | cuadra: | solo | levante | la | mano.", "The | colectivos | go | along | the | avenue | Juárez, | here | at | one | block: | just | raise | your | hand.", "The colectivos go along Avenida Juárez, a block from here: just wave one down.", { flags: { 1: F_COLECTIVO, 13: F_LA_MANO } }), spain: t("Los | colectivos | pasan | por | la | avenida | Juárez, | aquí | a | una | calle: | solo | levante | la | mano.", "The | colectivos | go | along | the | avenue | Juárez, | here | at | one | street: | just | raise | your | hand.", "The colectivos go along Avenida Juárez, a block from here: just wave one down.", { flags: { 1: F_COLECTIVO, 13: F_LA_MANO } }) }),
-      t("En | la | avenida | Juárez, | a | una | cuadra, | pasan | colectivos | cada rato.", "On | the | avenue | Juárez, | at | one | block, | come by | colectivos | all the time.", "Colectivos come by all the time on Avenida Juárez, a block away.",
-        { flags: { 8: F_COLECTIVO }, spain: t("En | la | avenida | Juárez, | a | una | calle, | pasan | colectivos | muy a menudo.", "On | the | avenue | Juárez, | at | one | street, | come by | colectivos | all the time.", "Colectivos come by all the time on Avenida Juárez, a block away.", { flags: { 8: F_COLECTIVO } }) }),
+          neutral: t("Los | colectivos | pasan | por | la | avenida | Juárez, | aquí | a | una | cuadra: | solo | levante | la | mano.", "The | shared vans | go | along | the | avenue | Juárez, | here | at | one | block: | just | raise | your | hand.", "The shared vans go along Avenida Juárez, a block from here: just wave one down.", { flags: { 1: F_COLECTIVO, 13: F_LA_MANO } }), spain: t("Los | colectivos | pasan | por | la | avenida | Juárez, | aquí | a | una | calle: | solo | levante | la | mano.", "The | shared vans | go | along | the | avenue | Juárez, | here | at | one | street: | just | raise | your | hand.", "The shared vans go along Avenida Juárez, a block from here: just wave one down.", { flags: { 1: F_COLECTIVO, 13: F_LA_MANO } }) }),
+      t("En | la | avenida | Juárez, | a | una | cuadra, | pasan | colectivos | cada rato.", "On | the | avenue | Juárez, | at | one | block, | come by | shared vans | all the time.", "Shared vans come by all the time on Avenida Juárez, a block away.",
+        { flags: { 8: F_COLECTIVO }, spain: t("En | la | avenida | Juárez, | a | una | calle, | pasan | colectivos | muy a menudo.", "On | the | avenue | Juárez, | at | one | street, | come by | shared vans | all the time.", "Shared vans come by all the time on Avenida Juárez, a block away.", { flags: { 8: F_COLECTIVO } }) }),
     ],
     // "¿Hay una parada de camión cerca?": the city bus
     bus_city: [t("La | parada | del | camión | está | aquí | a | una | cuadra, | enfrente | del | gimnasio.", "The | stop | of the | bus | is | here | at | one | block, | in front | of the | gym.", "The bus stop is a block from here, in front of the gym.",
@@ -967,7 +967,7 @@ export const apartment: SituationDef = {
       { id: "q_parking", s: t("¿Hay | estacionamiento?", "Is there | parking?", "Is there parking?", { spain: t("¿Hay | aparcamiento?", "Is there | parking?", "Is there parking?") }) },
       { id: "q_laundry", s: t("¿Dónde | puedo | lavar | la | ropa?", "Where | can I | wash | the | clothes?", "Where can I do laundry?") },
       { id: "q_quiet", s: t("¿Es | un | edificio | tranquilo?", "Is it | a | building | quiet?", "Is it a quiet building?") },
-      { id: "q_bus", s: t("¿Hay | una | parada | de | colectivo | cerca?", "Is there | a | stop | of | colectivo | nearby?", "Is there a colectivo stop nearby?", { flags: { 4: "colectivo: a shared van on a fixed route; you wave it down." } }), note: "A colectivo is a shared van on a fixed route." },
+      { id: "q_bus", s: t("¿Hay | una | parada | de | colectivo | cerca?", "Is there | a | stop | of | shared van | nearby?", "Is there a shared van stop nearby?", { flags: { 4: "colectivo: a shared van on a fixed route; you wave it down." } }), note: "A colectivo is a shared van on a fixed route." },
       { id: "q_floor", s: t("¿En | qué | piso | está?", "On | what | floor | is it?", "What floor is it on?") },
       { id: "q_elevator", s: t("¿Hay | elevador?", "Is there | an elevator?", "Is there an elevator?", { spain: t("¿Hay | ascensor?", "Is there | an elevator?", "Is there an elevator?") }) },
       { id: "q_see", s: t("¿Puedo | ver | la | recámara?", "Can I | see | the | bedroom?", "Can I see the bedroom?", { flags: { 3: F_RECAMARA }, neutral: t("¿Puedo | ver | la | habitación?", "Can I | see | the | bedroom?", "Can I see the bedroom?", { flags: {} }) }) },
@@ -1191,7 +1191,7 @@ export const apartment: SituationDef = {
         "no_more", "take", "think", "decline", "have_questions"],
       suggest: [
         { lt: "Ask about the rent, utilities, deposit or lease", hint: "ask_terms" },
-        { lt: "Ask about the floor, the colectivo or the neighbors", hint: "ask_more" },
+        { lt: "Ask about the floor, the shared van or the neighbors", hint: "ask_more" },
         { lt: "Say you have no more questions", hint: "done_asking" },
       ],
       yes: (c) => { c.say("go_ahead"); c.hold(); },

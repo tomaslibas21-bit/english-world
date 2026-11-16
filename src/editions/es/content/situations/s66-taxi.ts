@@ -336,8 +336,8 @@ export const taxi: SituationDef = {
     far_no: [t("Hasta | allá | no voy, | {m:joven|f:joven}.", "Up to | there | I don't go, | {m:young man|f:young lady}.", "I don't go that far, I'm afraid.", { spain: t("Hasta | allí | no voy, | lo siento.", "Up to | there | I don't go, | I'm sorry.", "I don't go that far, I'm afraid.") })],
     far_bus: [t("¿{m:Lo|f:La} | llevo | a | la | terminal?", "You | I-take | to | the | bus station?", "Want me to take you to the bus station?",
       { flags: { 0: "lo / la: “you” (usted), for a man / a woman." } })],
-    far_colectivo: [t("Mejor | tome | un | colectivo.", "Better | take | a | colectivo.", "You'd better take a colectivo.",
-      { flags: { 3: "colectivo: a shared van that runs along the highway." }, spain: t("Mejor | coja | un | colectivo.", "Better | take | a | colectivo.", "You'd better take a colectivo.", {flags: {3: "colectivo: a shared van that runs along the highway."}}) })],
+    far_colectivo: [t("Mejor | tome | un | colectivo.", "Better | take | a | shared van.", "You'd better take a shared van.",
+      { flags: { 3: "colectivo: a shared van that runs along the highway." }, spain: t("Mejor | coja | un | colectivo.", "Better | take | a | shared van.", "You'd better take a shared van.", {flags: {3: "colectivo: a shared van that runs along the highway."}}) })],
     ruins_walk: [t("A | las | ruinas | se llega | caminando | por | la | playa.", "To | the | ruins | you get there | walking | along | the | beach.", "You get to the ruins on foot, along the beach.", { spain: t("A | las | ruinas | se llega | andando | por | la | playa.", "To | the | ruins | you get there | walking | along | the | beach.", "You get to the ruins on foot, along the beach.") })],
     /** The sitio stands next to the airport. */
     airport_here: [t("El | aeropuerto | está | aquí | al lado, | {m:joven|f:joven}.", "The | airport | is | here | next door, | {m:young man|f:young lady}.", "The airport's right next door.", { spain: t("El | aeropuerto | está | aquí | al lado.", "The | airport | is | here | next door.", "The airport's right next door.") })],

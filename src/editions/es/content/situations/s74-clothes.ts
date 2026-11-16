@@ -29,8 +29,8 @@ const G = (id: string, es: string, en: string, g: "m" | "f", price: number, colo
     attrs: { price, colors, many: !!extra.many, shoe: !!extra.shoe, oneSize: !!extra.oneSize, nat: extra.nat, natPl: extra.natPl, neutral: extra.neutral, spain: extra.spain, spainPl: extra.spainPl, spainG: extra.spainG } });
 
 export const CLOTHING: EntityDef[] = [
-  G("guayabera", "guayabera", "guayabera", "f", 95000, ["blanco", "azul", "beige"], { forms: ["guayaberas", "guayabera de lino", "camisa guayabera", "guallabera"],
-    nat: "guayabera shirt", natPl: "guayabera shirts" }),
+  G("guayabera", "guayabera", "pleated shirt", "f", 95000, ["blanco", "azul", "beige"], { forms: ["guayaberas", "guayabera de lino", "camisa guayabera", "guallabera"],
+    nat: "pleated shirt", natPl: "pleated shirts" }),
   G("camisa", "camisa", "shirt", "f", 65000, ["blanco", "azul", "rosa"], { forms: ["camisas", "camisa de manga larga", "camisa de manga corta", "camisita"] }),
   G("blusa", "blusa", "blouse", "f", 55000, ["blanco", "amarillo", "verde"], { forms: ["blusas", "blusita", "blusa de tirantes"] }),
   // Mexican: playera = T-shirt; the neutral text says camiseta (as s65b's courtesy kit)
@@ -945,8 +945,8 @@ export const clothes: SituationDef = {
         { spain: t("Muy | bien. | Aquí | estoy | por si | necesitas | algo.", "Very | good. | Here | I-am | in case | you-need | something.", "Okay. I'm right here if you need anything.") }),
     ],
     browse_nudge: [
-      t("Por cierto, | la | guayabera | blanca | del | maniquí | acaba de | llegar.", "By the way, | the | guayabera | white | of the | mannequin | just | arrived.",
-        "By the way, that white guayabera on the mannequin just came in.", { flags: { 2: "guayabera: a light men's shirt with pleats and pockets, worn untucked; typical of the Yucatán." } }),
+      t("Por cierto, | la | guayabera | blanca | del | maniquí | acaba de | llegar.", "By the way, | the | pleated shirt | white | of the | mannequin | just | arrived.",
+        "By the way, that white pleated shirt on the mannequin just came in.", { flags: { 2: "guayabera: a light men's shirt with pleats and pockets, worn untucked; typical of the Yucatán." } }),
     ],
     sale_table: [
       t("Y | todo | lo | de | esa | mesa | tiene | {$pct}% | de descuento.", "And | all | (that) | on | that | table | has | {$pct}% | off.", "And everything on that table is {$pct}% off.",
@@ -960,7 +960,7 @@ export const clothes: SituationDef = {
       t("Claro, | por aquí.", "Sure, | this way.", "Sure, right this way."),
     ],
     confirm_featured: [
-      t("Ah, | la | guayabera | del | maniquí.", "Ah, | the | guayabera | of the | mannequin.", "Oh, the guayabera on the mannequin.", { flags: { 2: "guayabera: a light men's shirt with pleats and pockets, worn untucked; typical of the Yucatán." } }),
+      t("Ah, | la | guayabera | del | maniquí.", "Ah, | the | pleated shirt | of the | mannequin.", "Oh, the pleated shirt on the mannequin.", { flags: { 2: "guayabera: a light men's shirt with pleats and pockets, worn untucked; typical of the Yucatán." } }),
     ],
     // "¿Usted qué opina?" before it's tried on, and "¿Tienen bolsas?" before paying (ack_item's own words, the same clips)
     good_choice: [t("¡Buena | elección!", "Good | choice!", "Great choice!")],

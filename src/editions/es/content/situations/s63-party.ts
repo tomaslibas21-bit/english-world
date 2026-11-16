@@ -266,12 +266,12 @@ const DRINKS: EntityDef[] = [
   ent("water", "agua", "water", "f", { art: "un", def: "el", forms: ["agua natural", "agua simple", "un vaso de agua", "vaso de agua", "agua de garrafon"] }),
   ent("sparkling", "agua | mineral", "water | sparkling", "f", { art: "un", def: "el", forms: ["agua mineral", "agua con gas", "mineral", "agua gasificada"], attrs: { nat: "sparkling water" } }),
   ent("jamaica", "agua | de | jamaica", "water | of | hibiscus", "f", { art: "un", def: "el", forms: ["jamaica", "agua de flor de jamaica", "agua fresca de jamaica"], attrs: { nat: "hibiscus water" } }),
-  ent("horchata", "horchata", "horchata", "f", { forms: ["agua de horchata", "orchata"] }),
+  ent("horchata", "horchata", "rice drink", "f", { forms: ["agua de horchata", "orchata"] }),
   ent("lemonade", "limonada", "lemonade", "f", { forms: ["agua de limon", "limonada mineral", "limonada natural"] }),
   ent("juice", "jugo", "juice", "m", { forms: ["jugo de naranja", "jugo natural", "jugos"], attrs: { spain: "zumo" } }),
   ent("soda", "refresco", "soda", "m", { forms: ["refrescos", "coca", "coca cola", "una coca", "soda", "gaseosa", "sprite", "refresco de toronja", "refresco de cola"] }),
   ent("beer", "cerveza", "beer", "f", { forms: ["chela", "chelas", "chelita", "cervecita", "cheve", "birra", "cervezas"], attrs: { alc: true } }),
-  ent("michelada", "michelada", "michelada", "f", { forms: ["chelada", "michela"], attrs: { alc: true } }),
+  ent("michelada", "michelada", "spicy beer", "f", { forms: ["chelada", "michela"], attrs: { alc: true } }),
   ent("tequila", "tequila", "tequila", "m", { forms: ["tequilita", "un caballito", "caballito de tequila", "shot de tequila"], attrs: { alc: true } }),
   ent("mezcal", "mezcal", "mezcal", "m", { forms: ["mezcalito"], attrs: { alc: true } }),
   ent("wine", "vino", "wine", "m", { forms: ["vino tinto", "vino blanco", "una copa de vino", "copa de vino", "vinito"], attrs: { alc: true } }),
@@ -1051,8 +1051,8 @@ export const party: SituationDef = {
     ],
     mark_cook: [t("Comida | mexicana… | ¡de | todo | un | poco!", "Food | Mexican… | of | everything | a | little!", "Mexican food… a little bit of everything!")],
     mark_salsa: [t("¡Sí, | la | salsa | es | mía! | Es | receta | de | mi | abuela.", "Yes, | the | salsa | is | mine! | It's | recipe | of | my | grandmother.", "Yes, the salsa's mine! It's my grandma's recipe.")],
-    mark_fav: [t("¡La | cochinita pibil! | Es | de | aquí, | de | la | península.", "The | cochinita pibil! | It's | from | here, | from | the | peninsula.",
-      "Cochinita pibil! It's from here, from the Yucatán.", { flags: { 1: "cochinita pibil: slow-roasted pork in achiote, a Yucatán dish." } })],
+    mark_fav: [t("¡La | cochinita pibil! | Es | de | aquí, | de | la | península.", "The | pit-roasted pork! | It's | from | here, | from | the | peninsula.",
+      "Pit-roasted pork! It's from here, from the Yucatán.", { flags: { 1: "cochinita pibil: slow-roasted pork in achiote, a Yucatán dish." } })],
 
     // --- how long, why -------------------------------------------------------------------------------------
     time_q: [

@@ -63,9 +63,17 @@ const glossArticle = (next: string) => (vowelSound(next) ? "an" : "a");
 
 const foldW = (x: string) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z ]/g, "").replace(/\s+/g, " ").trim();
 const noteFor = (w: string) => WORD_NOTES[WORD_NOTE_ALIASES[w] ?? w];
+/** Mexican words whose gloss says what they are (docs/es/STYLE.md, "Mexican words"): their note keeps the name. */
+const PLAIN_GLOSSED = new Set(["concha", "conchas", "horchata", "horchatas", "chaya", "michelada", "micheladas", "cochinita", "pibil",
+  "poc chuc", "tikin xic", "papadzules", "panuchos", "salbutes", "caballeros pobres", "marquesitas", "marquesita", "achiote",
+  "colectivo", "colectivos", "guayabera", "guayaberas", "trova", "chilaquiles"]);
 /** The note of a head whose gloss repeats a unit of it: the whole head's ("cochinita pibil"), else that unit's. */
 function headNote(head: string[], gloss: string[]): string | undefined {
   const same = head.filter((w, i) => foldW(w) && foldW(w) === foldW(gloss[i] ?? ""));
+  // a Mexican word glossed in plain words ("concha" – "sweet bun") still gets its note with the Mexican name
+  // (owner, 16 Nov 2026: „končą“ is no translation)
+  const plain = head.filter((w, i) => PLAIN_GLOSSED.has(foldW(w)) && foldW(w) !== foldW(gloss[i] ?? ""));
+  if (plain.length) return noteFor(foldW(head.join(" "))) ?? plain.map((w) => noteFor(foldW(w))).find(Boolean);
   if (!same.length) return undefined;
   return noteFor(foldW(head.join(" "))) ?? same.map((w) => noteFor(foldW(w))).find(Boolean);
 }

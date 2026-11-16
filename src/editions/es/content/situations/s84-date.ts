@@ -40,8 +40,8 @@ const DRINKS: EntityDef[] = [
     forms: ["vino tinto", "tinto", "vino rojo", "copa de tinto", "merlot", "cabernet", "malbec"], chip: "vino tinto", attrs: { glass: true, nat: "red wine" } }),
   ent("beer", "cerveza", "beer", "f", { pl: "cervezas", ltPl: "beers",
     forms: ["cervezas", "chela", "chelas", "cervecita", "una cerveza fria", "birra", "cana", "una cana", "cerveza clara", "cerveza oscura", "cerveza de barril", "cerveza artesanal"], chip: "cerveza" }),
-  ent("michelada", "michelada", "michelada", "f", { pl: "micheladas", forms: ["micheladas", "chelada", "una chelada"], chip: "michelada",
-    attrs: { nat: "michelada (beer with lime and chili)" } }),
+  ent("michelada", "michelada", "spicy beer", "f", { pl: "micheladas", forms: ["micheladas", "chelada", "una chelada"], chip: "michelada",
+    attrs: { nat: "beer with lime and chili" } }),
   ent("cocktail", "coctel", "cocktail", "m", { pl: "cocteles", ltPl: "cocktails",
     forms: ["cocteles", "coctel", "un trago", "trago", "mojito", "un mojito", "pina colada", "una pina colada", "mezcal", "un mezcal", "tequila", "un tequila", "paloma", "una paloma", "un cuba", "cuba libre"], chip: "coctel" }),
   ent("sparkling_water", "agua | mineral", "water | sparkling", "f", { art: "un", def: "el", forms: ["agua mineral", "mineral", "una mineral", "agua con gas", "agua gasificada"], chip: "agua mineral",
@@ -102,7 +102,7 @@ const GENRES: EntityDef[] = [
   ent("hiphop", "hip-hop", "hip-hop", "m", { forms: ["hip hop", "el hip hop", "rap", "el rap"], chip: "hip-hop" }),
   ent("blues", "blues", "blues", "m", { forms: ["el blues"], chip: "blues" }),
   ent("country", "country", "country", "m", { forms: ["musica country", "el country"], chip: "country" }),
-  ent("trova", "trova", "trova", "f", { forms: ["la trova", "boleros", "los boleros", "bolero"], chip: "trova", attrs: { nat: "trova (Latin ballads)" } }),
+  ent("trova", "trova", "ballads", "f", { forms: ["la trova", "boleros", "los boleros", "bolero"], chip: "trova", attrs: { nat: "romantic ballads" } }),
 ];
 
 // Where the partner went last summer (one per visit), and the learner's own country for the learner's questions.
