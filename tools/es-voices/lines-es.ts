@@ -30,6 +30,7 @@ import { GLOBAL } from "../../src/content/global";
 import { NPCS, type NpcDef } from "../../src/content/npcs";
 import { AMBIENT_LINES } from "../../src/content/ambient";
 import { RIDE_OWNERS, RIDE_SHOUTS } from "../../src/content/rides";
+import { STONE_LINES } from "../../src/game/cave/stones";
 import { ambientVoice, coachVoice, npcVoice, rideVoice, shoutVoice } from "../../src/content/voices";
 import { withoutAddressedNames } from "../../src/audio-key";
 import { addressInformal, compose, placeholders, setVariety, type Sentence } from "../../src/convo/compose";
@@ -311,6 +312,8 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
     }
     // passers-by in the town
     if (!opts.only?.length && (!opts.part || opts.part[0] === 0)) for (const l of AMBIENT_LINES) for (const g of GENDERS) add(ambientVoice(g), 1, { say: l.en, en: l.en } as Sentence, "ambient", undefined, "ambient");
+    // the grotto's glyph stones (src/game/cave/stones.ts): each says its line in the learner's coach voice
+    if (!opts.only?.length && (!opts.part || opts.part[0] === 0)) for (const l of STONE_LINES) for (const g of GENDERS) add(coachVoice(g), 1, { say: l.es, en: l.es } as Sentence, `cave:stone:${l.stone}`, undefined, "cave");
     // the convertibles' owners, each in a voice of their own, and what passers-by call after a car that went by too
     // close, in two voices a gender (`--only=rides` lists these alone)
     if ((!opts.only?.length || opts.only.includes("rides")) && (!opts.part || opts.part[0] === 0)) {

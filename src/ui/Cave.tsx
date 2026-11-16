@@ -62,7 +62,10 @@ export function GlyphCard() {
         <div className="glyph-say">
           <button className="glyph-play" onClick={() => cave.say()} title={L("Klausyti dar kartą")} aria-label={L("Klausyti dar kartą")}><Icon name="speaker" size={26} /></button>
           {g.shown
-            ? <div className="glyph-text" lang={TL}>{g.text}{g.solved && lt && <small lang={EDITION.helper}>{g.lt}</small>}</div>
+            ? <div className="glyph-text" lang={TL}>{g.solved && lt && g.gloss && glossOk(g.text, g.gloss)
+              // (lit: the words with their meanings under them, as in the conversations)
+              ? <span className="glyph-words">{g.text.split(/\s+/).map((w, i) => <span key={i} className="glyph-w"><b>{w}</b><i lang={EDITION.helper}>{g.gloss!.split(" | ")[i]}</i></span>)}</span>
+              : g.text}{g.solved && lt && <small lang={EDITION.helper}>{g.lt}</small>}</div>
             : <button className="glyph-show" onClick={() => cave.showWords()}><span aria-hidden>· · ·</span> {L("Rodyti žodžius")}</button>}
         </div>
         {!g.solved && (
@@ -91,3 +94,6 @@ export function GlyphCard() {
     </div>
   );
 }
+
+/** A gloss with one unit per word of the line. */
+const glossOk = (text: string, gloss: string) => text.split(/\s+/).length === gloss.split(" | ").length;

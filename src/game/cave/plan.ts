@@ -229,7 +229,9 @@ export function nextStep(chamber: number, save: CaveSave, all = false):
 
 // ------------------------------------------------------------------------------------------------- the stones' phrases
 
-export interface Phrase { en: string; lt: string }
+/** `en`: what is said (Spanish here: the field keeps the town's phrasebook's name); `lt`: its meaning in the learner's
+ *  language; `gloss`: word by word (the stones' own lines, stones.ts). */
+export interface Phrase { en: string; lt: string; gloss?: string }
 
 /** The phrases the stones speak: the learner's own (their phrasebook, the ones said last and most first), then the
  *  greetings everyone starts with, each once, only those that have a recording (`has`), and none too long to say back.

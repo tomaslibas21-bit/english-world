@@ -9,12 +9,16 @@ a reward and a place to wonder at, and it teaches Spanish three ways, together:
    to get through, in the game's own conversations: **Kin** at the way in (x02: who are you, where from, why did you
    come; one asks him the way to the stones and he gives true directions), **Nikté** on the bridge of roots in the
    third chamber (x03: two riddles to cross).
-2. **A listening quest.** Every chamber has three glyph stones. Each says, in the learner's own coach voice, a phrase
-   the learner already knows: their phrasebook's (the newest first), and before they have any, the greetings every
-   conversation shares. The stones call one at a time from where they stand: louder as one gets near, to the left or
-   the right as they lie. At a stone (E, or the phone's button) its card opens: the stone says its phrase; the learner
-   picks what it means out of three, or says it back into the microphone; the glyph turns from pale blue to gold.
-   It uses the clips that exist: no new voices.
+2. **A listening quest.** Every chamber has three glyph stones. Each says, in the learner's own coach voice, a line
+   of its own about the place (`src/game/cave/stones.ts`, since 17 Nov 2026; the owner: "more vibe of the magical
+   cenote, not about a latte"): "El agua guarda la memoria.", "Sigue la luz de las luciérnagas.", "El río conoce el
+   camino.", "Los mayas leían el cielo.", "El árbol sagrado sostiene el mundo."… Short (A1–A2), the same words in the
+   three Spanishes, each with its meaning and a word-by-word gloss in English and Lithuanian. The stones call one at
+   a time from where they stand: louder as one gets near, to the left or the right as they lie. At a stone (E, or the
+   phone's button) its card opens: the stone says its line; the learner picks what it means out of three (the other
+   stones' meanings) or says it back into the microphone; the glyph turns from pale blue to gold, and the line shows
+   with its gloss under each word. A stone whose clip is not there yet (before the upload) says one of the learner's
+   own phrases instead, as the stones did until then: no stone stands silent.
 3. **Each room's puzzle opens the next.** The first chamber is open to everyone. A chamber's gate opens the moment
    its three stones are lit (with a chime, a burst of light and "The way is open"). Nothing from the town is asked
    for. (Until 16 Nov 2026 the gates also waited for 10/20/30/40 of the town's conversations; the owner lit all three

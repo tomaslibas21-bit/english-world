@@ -2,7 +2,8 @@
 // stones call out, one at a time, a phrase the learner already knows, heard from where the stone stands (louder as one
 // gets near, to the left or the right as it lies); at a stone, the learner picks what the phrase means or says it back,
 // and the glyph lights; a chamber's three lit stones open the gate
-// to the next. Reuses the recordings of the learner's own phrases: no new voices.
+// to the next. Each stone says a line of its own about the grotto (stones.ts), in the learner's coach voice; one
+// whose clip is not there yet says one of the learner's own phrases instead, as before (16 Nov 2026).
 import type * as THREE from "three";
 import { audio } from "../audio";
 import { useStore } from "../../state/store";
@@ -15,12 +16,14 @@ import { rand } from "../world/util";
 import { L } from "../../ui/i18n";
 import type { CaveView } from "./Cave";
 import * as P from "./plan";
+import { STONE_LINE } from "./stones";
+import { EDITION } from "../../edition";
 
 /** What the learner sees at a stone (store hud.glyph; src/ui/Cave.tsx). */
 export interface GlyphQuiz {
   id: string;
-  /** What the stone says and what it means. */
-  text: string; lt: string;
+  /** What the stone says and what it means; word by word, units split by " | " (the stones' own lines). */
+  text: string; lt: string; gloss?: string;
   options: string[]; answer: number;
   /** The meanings already tried and wrong; the words shown (after a miss, or asked for); solved. */
   wrong: number[]; shown: boolean; solved: boolean;
@@ -73,15 +76,28 @@ export class CaveQuest {
     }
   }
 
-  /** The stones' phrases: the learner's own first (the newest in the first chamber), the greetings after. */
+  /** The stones' phrases: each stone its own line about the grotto (stones.ts), its meaning in the learner's language.
+   *  A stone whose line has no recording yet (the clips not uploaded) says one of the learner's own phrases, the newest
+   *  first, then the greetings, as before: a stone never stands silent. */
   private assign() {
     const st = useStore.getState(), ready = audio.ready;
     const has = (en: string) => !ready || audio.hasClip(this.voice, 1, en);
     const stones = P.CHAMBERS.flatMap((c) => c.stones);
-    this.all = P.pickPhrases(Object.values(st.progress.phrases), starters(), stones.length + 6, has);
+    const lt = EDITION.helper === "lt";
+    const own = (id: string): P.Phrase | null => {
+      const l = STONE_LINE.get(id);
+      return l && has(l.es) ? { en: l.es, lt: lt ? l.lt : l.en, gloss: lt ? l.ltGloss : l.enGloss } : null;
+    };
+    const missing = stones.filter((s) => !own(s.id)).length;
+    const spare = missing ? P.pickPhrases(Object.values(st.progress.phrases), starters(), missing + 6, has) : [];
     this.phrases.clear();
-    if (!this.all.length) return;
-    stones.forEach((s, i) => this.phrases.set(s.id, this.all[i % this.all.length]));
+    let k = 0;
+    for (const s of stones) {
+      const p = own(s.id) ?? (spare.length ? spare[k++ % spare.length] : null);
+      if (p) this.phrases.set(s.id, p);
+    }
+    // (the meanings to choose from: the other stones')
+    this.all = [...new Map([...this.phrases.values()].map((p) => [p.en, p])).values()];
   }
 
   dispose() {
@@ -166,7 +182,7 @@ export class CaveQuest {
     audio.stopCall(); this.callingId = null; this.view.setCalling(null);
     const seed = [...id].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) >>> 0, 7) + save().lit.length * 977;
     const { options, answer } = P.meaningChoices(phrase, this.all.filter((q) => q.en !== phrase.en), rand(seed));
-    useStore.getState().setHud({ prompt: null, glyph: { id, text: phrase.en, lt: phrase.lt, options, answer, wrong: [], shown: false, solved: false, mic: speechSupported() ? "off" : "unsupported", heard: "" } });
+    useStore.getState().setHud({ prompt: null, glyph: { id, text: phrase.en, lt: phrase.lt, gloss: phrase.gloss, options, answer, wrong: [], shown: false, solved: false, mic: speechSupported() ? "off" : "unsupported", heard: "" } });
     this.say();
   }
   private patch(p: Partial<GlyphQuiz>) { const g = useStore.getState().hud.glyph; if (g) useStore.getState().setHud({ glyph: { ...g, ...p } }); }

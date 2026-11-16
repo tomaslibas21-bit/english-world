@@ -277,3 +277,36 @@ describe("the cenote's grounds", () => {
     for (const m of G.marks(C.x, C.z)) expect(col.blocked(m.x, m.z, 0.9) || true).toBe(true);
   });
 });
+
+describe("the stones' own lines (stones.ts)", () => {
+  it("every stone has a line about the grotto, short enough to say back, its meaning in English and Lithuanian, glossed word by word", async () => {
+    const { STONE_LINES, STONE_LINE } = await import("@/game/cave/stones");
+    const stones = P.CHAMBERS.flatMap((c) => c.stones.map((s) => s.id));
+    expect(STONE_LINES.map((l) => l.stone).sort()).toEqual([...stones].sort());
+    expect(new Set(STONE_LINES.map((l) => l.es)).size).toBe(STONE_LINES.length);
+    for (const l of STONE_LINES) {
+      const words = l.es.split(/\s+/);
+      expect(words.length, l.es).toBeLessThanOrEqual(9);
+      expect(l.es.length, l.es).toBeLessThanOrEqual(60);
+      expect(l.es, l.es).not.toMatch(/[{}|]/);
+      expect(l.enGloss.split(" | "), l.es).toHaveLength(words.length);
+      expect(l.ltGloss.split(" | "), l.es).toHaveLength(words.length);
+      expect(l.en.trim() && l.lt.trim()).toBeTruthy();
+      // none of the town's café talk: the place's own words
+      expect(l.es.toLowerCase()).not.toMatch(/\b(latte|café|cafe|la cuenta|precio|pesos)\b/);
+    }
+    // the meanings differ, so the three to choose from never repeat
+    expect(new Set(STONE_LINES.map((l) => l.en)).size).toBe(STONE_LINES.length);
+    expect(new Set(STONE_LINES.map((l) => l.lt)).size).toBe(STONE_LINES.length);
+    expect(STONE_LINE.get("agua-1")?.es).toBe("El agua guarda la memoria.");
+  });
+
+  it("the meanings offered at a stone are its own and two other stones'", async () => {
+    const { STONE_LINES } = await import("@/game/cave/stones");
+    const all = STONE_LINES.map((l) => ({ en: l.es, lt: l.en }));
+    const { options, answer } = P.meaningChoices(all[0], all.slice(1), () => 0.3);
+    expect(options).toHaveLength(3);
+    expect(options[answer]).toBe(all[0].lt);
+    expect(options.every((o) => all.some((p) => p.lt === o))).toBe(true);
+  });
+});
