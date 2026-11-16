@@ -741,7 +741,7 @@ export const tickets: SituationDef = {
       expects: ["buy", "dest_ctx", "ask_next"],
       suggest: [
         { lt: "Paprašyti bilieto į norimą miestą", hint: "buy", options: "dest" },
-        { lt: "Paklausti, kada kitas traukinys", hint: "next_train" },
+        { lt: "Paklausti, kada kitas traukinys", hint: "next_train", options: "dest" },
       ],
       help: (c) => { c.say("dest_list"); } },
     { id: "count", when: (c) => !!c.s.dest && c.s.askCount && c.s.count === undefined, done: (c) => c.s.count !== undefined,
