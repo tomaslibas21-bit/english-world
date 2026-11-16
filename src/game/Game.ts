@@ -1577,7 +1577,6 @@ export class Game implements GameApi {
       const pr = useStore.getState().progress, n = ROUTE.filter((q) => sitProgress(pr, q.id).completions > 0).length;
       // (and someone who has not, a rumor, once: after their tenth conversation)
       if (!pr.cave?.seen && n === 10 && sitProgress(pr, sit.id).completions === 1) setTimeout(() => useStore.getState().toast({ kind: "tip", title: L("Sako, kad Ka'an cenotės oloje kažkas švyti…"), body: L("Cenotė – miestelio vakaruose, už apžvalgos aikštelės. Nuplauk pažiūrėti."), ms: 9000 }), 4200);
-      if (pr.cave?.seen && n > 0 && n % 10 === 0 && n <= 40 && sitProgress(pr, sit.id).completions === 1) setTimeout(() => useStore.getState().toast({ kind: "tip", title: L("Aluksų grotoje pabudo nauja salė!"), body: L("Užbaigei {n} pokalbių. Grįžk į cenotę ir pažiūrėk, kas atsivėrė.", { n }), ms: 8000 }), 4200);
     }
     this.refreshObjective();
   }

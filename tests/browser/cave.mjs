@@ -1,6 +1,6 @@
 // Puerto Colibrí's grotto under Cenote Ka'an, in the real game: swum into through the cave's mouth; Kin keeps the way
 // until his conversation (x02) is talked through; a glyph stone's card is answered and the stone lights; three lit
-// stones leave the gate shut until ten of the town's conversations are finished, and open it then; the way back out
+// stones open the gate to the next chamber (two are not enough; nothing from the town is asked for); the way back out
 // is the water one came through. A computer and a phone. Against a dev server or a built game of the Spanish edition:
 // WORLD_TEST_URL=http://127.0.0.1:8176 WORLD_PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node tests/browser/cave.mjs
 import assert from "node:assert/strict";
@@ -106,28 +106,37 @@ try {
     s = await state();
     check(`${label}: the right one: the stone is lit, the card says two are left`, s.cave.lit.length === 1 && s.card.lit === 1, s.card);
 
-    // ---- the gate to the second chamber: all three stones, and ten of the town's conversations
-    const gate = await page.evaluate(() => {
+    // ---- the gate to the second chamber: the chamber's own three stones are its key (nothing from the town: this
+    // learner has finished no conversation there)
+    await page.evaluate(() => {
       const { store, game: g } = window.__ew;
-      store.getState().updateProgress((p) => { p.cave.lit = ["agua-1", "agua-2", "agua-3"]; });
+      store.getState().updateProgress((p) => { p.cave.lit = ["agua-1", "agua-2"]; });
       g.enterZone("gruta", { x: -7.4, z: -43.2, rot: Math.PI }, true);
-      return true;
     });
     await go(true);
     await page.waitForTimeout(2500);
     await go(false);
     s = await state();
-    check(`${label}: three stones lit but nothing finished in town: the gate stays shut, and the card says why`, gate && s.z > -48.5 && /10/.test(s.card.next) && s.card.open === 1, s);
-    await page.evaluate(() => {
-      const { store, game: g } = window.__ew;
-      store.getState().updateProgress((p) => { for (const q of g.orderedSituations().slice(0, 10)) p.sits[q.id] = { visits: 1, completions: 1, used: [], twists: [], memory: {} }; });
-      g.enterZone("gruta", { x: -7.4, z: -43.2, rot: Math.PI + 0.43 }, true);
-    });
+    check(`${label}: two of the three stones lit: the gate stays shut, and the card says one stone is left`, s.z > -48.5 && s.card.lit === 2 && /1/.test(s.card.next) && s.card.open === 1, s);
+    // the third stone, answered on its card as before: in front of it, by the falls
+    await page.evaluate(() => window.__ew.game.enterZone("gruta", { x: 2.05, z: -37.6, rot: Math.PI + 0.25 }, true));
+    await page.waitForFunction(() => window.__ew.store.getState().hud.prompt?.kind === "listen", null, { timeout: 20000 });
+    await press();
+    await page.waitForFunction(() => !!window.__ew.store.getState().hud.glyph, null, { timeout: 12000 });
+    q = await page.evaluate(() => window.__ew.store.getState().hud.glyph);
+    await page.locator(".glyph-opt").nth(q.answer).click();
+    await page.waitForFunction(() => window.__ew.store.getState().progress.cave?.lit?.includes("agua-3"), null, { timeout: 10000 });
+    await page.waitForFunction(() => window.__ew.store.getState().toasts.some((t) => /open|atviras/i.test(t.body ?? "")), null, { timeout: 15000 });
+    // (the card catches up once the stone's card has gone)
+    await page.waitForFunction(() => window.__ew.store.getState().hud.cave?.open === 2, null, { timeout: 15000 });
+    s = await state();
+    check(`${label}: the third stone lit: the way is open at once, with nothing of the town's route finished (Kin's own conversation is off it)`, s.cave.lit.length === 3 && s.card.open === 2 && await page.evaluate(() => { const sits = window.__ew.store.getState().progress.sits; return !window.__ew.game.orderedSituations().some((q) => sits[q.id]?.completions); }), s.card);
+    await page.evaluate(() => window.__ew.game.enterZone("gruta", { x: -7.4, z: -43.2, rot: Math.PI + 0.43 }, true));
     await go(true);
     await page.waitForFunction(() => window.__ew.game.player.root.position.z < -49, null, { timeout: 20000 });
     await go(false);
     s = await state();
-    check(`${label}: with ten finished it is open: on into the garden of roots`, s.z < -49 && s.card.open === 2, s);
+    check(`${label}: and through it: on into the garden of roots`, s.z < -49 && s.card.open === 2, s);
 
     // ---- back out the way one came
     await place("gruta", 0, 4.2, 0);   // (within the way out's reach: 2.6 m of the water one came through)

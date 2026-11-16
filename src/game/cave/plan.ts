@@ -16,12 +16,11 @@ export interface Chamber {
   x: number; z: number; rx: number; rz: number;
   /** How high its roof is in the middle (m). */
   ceil: number;
-  /** The town's conversations one must have finished to be let in. */
-  need: number;
   stones: Stone[];
 }
 /** A way through that is shut until its condition holds: `alux`: the alux there has let the learner pass (their
- *  conversation's "alux-pass" event); `stones`: that chamber's stones are all lit, and the next one's `need` is met. */
+ *  conversation's "alux-pass" event); `stones`: that chamber's three stones are all lit (the chamber's own puzzle is
+ *  its key: nothing from the town is asked for). */
 export interface Gate { id: string; x: number; z: number; rot: number; w: number; alux?: string; stones?: number; to?: number }
 export interface Passage { ax: number; az: number; bx: number; bz: number; w: number }
 export interface Pool { x: number; z: number; rx: number; rz: number; /** One wades through it (a ford); else its rim keeps one out. */ ford?: boolean;
@@ -32,19 +31,19 @@ const S = (id: string, x: number, z: number, rot: number): Stone => ({ id, x, z,
 export const CHAMBERS: Chamber[] = [
   // the hall under the cenote's eye: the ceiba in the light, the lagoon on the right, the falls at the far end
   // (Kin's directions, x02: "a la izquierda del árbol", "a la derecha, cerca del agua", "al fondo, junto a la cascada")
-  { id: "agua", n: 1, name: "La Sala del Agua", lt: "Vandens salė", x: 0, z: -25, rx: 17, rz: 17.5, ceil: 15, need: 0,
+  { id: "agua", n: 1, name: "La Sala del Agua", lt: "Vandens salė", x: 0, z: -25, rx: 17, rz: 17.5, ceil: 15,
     stones: [S("agua-1", -8.2, -24.5, Math.PI / 2), S("agua-2", 7.2, -31.6, -0.5), S("agua-3", 1.6, -39.4, 0.25)] },
   // hanging roots as thick as trees, mushrooms that glow, fireflies everywhere
-  { id: "raices", n: 2, name: "El Jardín de Raíces", lt: "Šaknų sodas", x: -15, z: -64, rx: 13.5, rz: 13, ceil: 11, need: 10,
+  { id: "raices", n: 2, name: "El Jardín de Raíces", lt: "Šaknų sodas", x: -15, z: -64, rx: 13.5, rz: 13, ceil: 11,
     stones: [S("raices-1", -24.2, -60.5, 1.2), S("raices-2", -8.4, -70.6, -0.9), S("raices-3", -19.5, -73.2, 0.6)] },
   // an underground river with a bridge of roots over it, where Nikté asks her riddles
-  { id: "rio", n: 3, name: "El Río Escondido", lt: "Paslėpta upė", x: -6, z: -101, rx: 15, rz: 14, ceil: 12, need: 20,
+  { id: "rio", n: 3, name: "El Río Escondido", lt: "Paslėpta upė", x: -6, z: -101, rx: 15, rz: 14, ceil: 12,
     stones: [S("rio-1", -15.6, -106.4, 1.1), S("rio-2", 3.6, -108.2, -0.8), S("rio-3", -6.8, -112.2, 0)] },
   // crystals, a wall of old glyphs, glow-worms on the roof like a night sky
-  { id: "estrellas", n: 4, name: "La Sala de las Estrellas", lt: "Žvaigždžių salė", x: 14, z: -137, rx: 13.5, rz: 12.5, ceil: 13, need: 30,
+  { id: "estrellas", n: 4, name: "La Sala de las Estrellas", lt: "Žvaigždžių salė", x: 14, z: -137, rx: 13.5, rz: 12.5, ceil: 13,
     stones: [S("estrellas-1", 5.4, -131.6, 1.0), S("estrellas-2", 22.6, -135.4, -1.3), S("estrellas-3", 13.2, -146.4, 0.1)] },
   // the heart: a still round lake, an island, and the Yaxché, the tree that holds up the world, in flower
-  { id: "corazon", n: 5, name: "El Corazón de Ka'an", lt: "Ka'an širdis", x: 6, z: -177, rx: 17, rz: 16, ceil: 17, need: 40,
+  { id: "corazon", n: 5, name: "El Corazón de Ka'an", lt: "Ka'an širdis", x: 6, z: -177, rx: 17, rz: 16, ceil: 17,
     stones: [S("corazon-1", -6.6, -172.4, 1.25), S("corazon-2", 18.4, -173.6, -1.2), S("corazon-3", 6.2, -191.2, 0)] },
 ];
 
@@ -191,38 +190,40 @@ export function walkable(x: number, z: number, r = 0.38) {
 
 /** What the learner has done down here (saved with their progress). */
 export interface CaveSave { lit: string[]; passed: string[]; /** Seen the way in's first message; found the heart. */ seen?: boolean; heart?: boolean;
-  /** How many chambers the town's conversations had opened when the learner was last told. */ told?: number }
+  /** (Until 16 Nov 2026: how many chambers the town's conversations had opened when last told. Kept in old saves,
+   *  read by nothing.) */ told?: number }
 export const emptyCave = (): CaveSave => ({ lit: [], passed: [] });
 
-/** How many chambers `done` finished conversations open (1–5): the first for everyone, one more per ten. */
-export function chambersOpen(done: number, all = false) {
-  if (all) return CHAMBERS.length;
-  return CHAMBERS.filter((c) => done >= c.need).length;
-}
 export const stonesLit = (save: CaveSave, chamber: number) => CHAMBERS[chamber].stones.filter((s) => save.lit.includes(s.id)).length;
 
-/** Is this gate open? And if not, why: "alux" (talk to them), "stones" (light this chamber's stones first), or
- *  "town" (finish more conversations: `need`). */
-export function gateState(g: Gate, save: CaveSave, done: number, all = false): { open: boolean; why?: "alux" | "stones" | "town"; need?: number } {
+/** How many chambers are open (1–5): the first for everyone, and each next one once every stone of the chamber before
+ *  it is lit. (Until 16 Nov 2026 a chamber also waited for 10/20/30/40 of the town's conversations: a learner who had
+ *  done everything in the room found the way shut. The owner: the room's own puzzle should open it.) */
+export function chambersOpen(save: CaveSave, all = false) {
+  if (all) return CHAMBERS.length;
+  let n = 1;
+  while (n < CHAMBERS.length && stonesLit(save, n - 1) >= CHAMBERS[n - 1].stones.length) n++;
+  return n;
+}
+
+/** Is this gate open? And if not, why: "alux" (talk to them) or "stones" (light this chamber's stones first). */
+export function gateState(g: Gate, save: CaveSave, all = false): { open: boolean; why?: "alux" | "stones" } {
   if (g.alux) return save.passed.includes(g.alux) || all ? { open: true } : { open: false, why: "alux" };
   const ch = g.stones!;
-  if (stonesLit(save, ch) < CHAMBERS[ch].stones.length && !all) return { open: false, why: "stones" };
-  const need = CHAMBERS[g.to!].need;
-  return done >= need || all ? { open: true } : { open: false, why: "town", need };
+  return stonesLit(save, ch) >= CHAMBERS[ch].stones.length || all ? { open: true } : { open: false, why: "stones" };
 }
 
 /** What comes next, for the little card that stands in for the map down here. */
-export function nextStep(chamber: number, save: CaveSave, done: number, all = false):
-  { kind: "alux"; npc: string } | { kind: "stones"; left: number } | { kind: "town"; need: number; have: number; name: string } | { kind: "on"; name: string } | { kind: "heart" } | { kind: "done" } {
+export function nextStep(chamber: number, save: CaveSave, all = false):
+  { kind: "alux"; npc: string } | { kind: "stones"; left: number } | { kind: "on"; name: string } | { kind: "heart" } | { kind: "done" } {
   for (const a of ALUXES) {
     const g = GATES.find((q) => q.alux === a.gate)!;
-    if (chamberAt(g.x, g.z) === chamber && !gateState(g, save, done, all).open) return { kind: "alux", npc: a.npc };
+    if (chamberAt(g.x, g.z) === chamber && !gateState(g, save, all).open) return { kind: "alux", npc: a.npc };
   }
   const left = CHAMBERS[chamber].stones.length - stonesLit(save, chamber);
   if (left > 0) return { kind: "stones", left };
   const next = CHAMBERS[chamber + 1];
   if (!next) return save.heart ? { kind: "done" } : { kind: "heart" };
-  if (done < next.need && !all) return { kind: "town", need: next.need, have: done, name: next.name };
   return { kind: "on", name: next.name };
 }
 

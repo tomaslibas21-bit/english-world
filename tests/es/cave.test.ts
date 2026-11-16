@@ -64,36 +64,61 @@ describe("the grotto's plan", () => {
 });
 
 describe("the grotto's rules", () => {
-  it("the first chamber is open to everyone, one more for every ten conversations finished", () => {
-    expect(P.CHAMBERS.map((c) => c.need)).toEqual([0, 10, 20, 30, 40]);
-    expect([0, 9, 10, 19, 20, 35, 40, 50].map((n) => P.chambersOpen(n))).toEqual([1, 1, 2, 2, 3, 4, 5, 5]);
-    expect(Math.max(...P.CHAMBERS.map((c) => c.need))).toBeLessThanOrEqual(ROUTE.length);
+  it("the first chamber is open to everyone; each next one once the chamber before it has all its stones lit", () => {
+    const upTo = (k: number) => ({ lit: P.CHAMBERS.slice(0, k).flatMap((c) => c.stones.map((s) => s.id)), passed: ["kin", "nikte"] });
+    expect([0, 1, 2, 3, 4, 5].map((k) => P.chambersOpen(upTo(k)))).toEqual([1, 2, 3, 4, 5, 5]);
+    // two of a chamber's three stones are not enough
+    expect(P.chambersOpen({ lit: P.CHAMBERS[0].stones.slice(0, 2).map((s) => s.id), passed: ["kin"] })).toBe(1);
+    // nothing from the town is asked for (owner, 16 Nov 2026: a learner who had done everything in the room was shut out)
+    expect(P.CHAMBERS.every((c) => !("need" in c))).toBe(true);
+    expect(P.chambersOpen(P.emptyCave(), true)).toBe(5);
   });
 
-  it("a gate opens for its alux's pass, or for its chamber's three stones and enough of the town", () => {
+  it("a gate opens for its alux's pass, or for its chamber's three stones", () => {
     const kin = P.GATES.find((g) => g.id === "kin")!, g2 = P.GATES.find((g) => g.id === "g2")!;
     const fresh = P.emptyCave();
-    expect(P.gateState(kin, fresh, 50)).toEqual({ open: false, why: "alux" });
-    expect(P.gateState(kin, { lit: [], passed: ["kin"] }, 0).open).toBe(true);
-    expect(P.gateState(g2, fresh, 50)).toEqual({ open: false, why: "stones" });
+    expect(P.gateState(kin, fresh)).toEqual({ open: false, why: "alux" });
+    expect(P.gateState(kin, { lit: [], passed: ["kin"] }).open).toBe(true);
+    expect(P.gateState(g2, fresh)).toEqual({ open: false, why: "stones" });
+    expect(P.gateState(g2, { lit: ["agua-1", "agua-2"], passed: ["kin"] })).toEqual({ open: false, why: "stones" });
     const lit = { lit: P.CHAMBERS[0].stones.map((s) => s.id), passed: ["kin"] };
-    expect(P.gateState(g2, lit, 3)).toEqual({ open: false, why: "town", need: 10 });
-    expect(P.gateState(g2, lit, 10).open).toBe(true);
+    expect(P.gateState(g2, lit).open).toBe(true);
     // (to look round: everything open)
-    for (const g of P.GATES) expect(P.gateState(g, fresh, 0, true).open).toBe(true);
+    for (const g of P.GATES) expect(P.gateState(g, fresh, true).open).toBe(true);
   });
 
   it("the card says what comes next", () => {
     const fresh = P.emptyCave();
-    expect(P.nextStep(0, fresh, 0)).toEqual({ kind: "alux", npc: "alux_kin" });
-    expect(P.nextStep(0, { lit: ["agua-1"], passed: ["kin"] }, 0)).toEqual({ kind: "stones", left: 2 });
+    expect(P.nextStep(0, fresh)).toEqual({ kind: "alux", npc: "alux_kin" });
+    expect(P.nextStep(0, { lit: ["agua-1"], passed: ["kin"] })).toEqual({ kind: "stones", left: 2 });
     const lit = { lit: P.CHAMBERS[0].stones.map((s) => s.id), passed: ["kin"] };
-    expect(P.nextStep(0, lit, 4)).toEqual({ kind: "town", need: 10, have: 4, name: "El Jardín de Raíces" });
-    expect(P.nextStep(0, lit, 12)).toEqual({ kind: "on", name: "El Jardín de Raíces" });
-    expect(P.nextStep(2, { lit: [], passed: ["kin"] }, 30)).toEqual({ kind: "alux", npc: "alux_nikte" });
+    expect(P.nextStep(0, lit)).toEqual({ kind: "on", name: "El Jardín de Raíces" });
+    expect(P.nextStep(2, { lit: [], passed: ["kin"] })).toEqual({ kind: "alux", npc: "alux_nikte" });
     const all = { lit: P.CHAMBERS.flatMap((c) => c.stones.map((s) => s.id)), passed: ["kin", "nikte"] };
-    expect(P.nextStep(4, all, 50)).toEqual({ kind: "heart" });
-    expect(P.nextStep(4, { ...all, heart: true }, 50)).toEqual({ kind: "done" });
+    expect(P.nextStep(4, all)).toEqual({ kind: "heart" });
+    expect(P.nextStep(4, { ...all, heart: true })).toEqual({ kind: "done" });
+  });
+
+  it("a first-time visitor who has finished nothing in the town reaches the heart: each gate opens as its room is solved", () => {
+    const save: P.CaveSave = P.emptyCave();
+    const order: string[] = [];
+    for (let ch = 0; ch < P.CHAMBERS.length; ch++) {
+      // the alux of this chamber first (Kin in the first, Nikté on the third's bridge), then its stones one by one
+      for (let guard = 0; guard < 10; guard++) {
+        const step = P.nextStep(ch, save);
+        order.push(step.kind);
+        if (step.kind === "alux") save.passed.push(step.npc.replace("alux_", ""));
+        else if (step.kind === "stones") save.lit.push(P.CHAMBERS[ch].stones.find((s) => !save.lit.includes(s.id))!.id);
+        else break;
+      }
+      const gate = P.GATES.find((g) => g.stones === ch);
+      if (gate) expect(P.gateState(gate, save).open).toBe(true);
+      expect(P.chambersOpen(save)).toBe(Math.min(ch + 2, P.CHAMBERS.length));
+    }
+    expect(order.filter((k) => k === "alux")).toHaveLength(2);
+    expect(order.filter((k) => k === "stones")).toHaveLength(15);
+    expect(order.at(-1)).toBe("heart");
+    for (const g of P.GATES) expect(P.gateState(g, save).open).toBe(true);
   });
 
   it("the stones speak the learner's own phrases first, the newest first, then the greetings; only what has a recording", () => {

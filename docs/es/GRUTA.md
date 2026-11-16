@@ -15,24 +15,26 @@ a reward and a place to wonder at, and it teaches Spanish three ways, together:
    the right as they lie. At a stone (E, or the phone's button) its card opens: the stone says its phrase; the learner
    picks what it means out of three, or says it back into the microphone; the glyph turns from pale blue to gold.
    It uses the clips that exist: no new voices.
-3. **A reward for the town's conversations.** The first chamber is open to everyone. A chamber's gate opens once its
-   three stones are lit **and** the learner has finished enough of the town's conversations: 10 for the second
-   chamber, 20, 30, 40 for the fifth. The card at the top left says which chamber one is in, how many stones are lit,
-   how many chambers are open, and what comes next ("“El Jardín de Raíces” opens after 10 conversations in town (so
-   far: 4)"); a shut gate one walks up to says why.
+3. **Each room's puzzle opens the next.** The first chamber is open to everyone. A chamber's gate opens the moment
+   its three stones are lit (with a chime, a burst of light and "The way is open"). Nothing from the town is asked
+   for. (Until 16 Nov 2026 the gates also waited for 10/20/30/40 of the town's conversations; the owner lit all three
+   stones of the first hall and found the way shut: "I can't pass after talking to all 3". The count is gone, and so
+   are its toasts in the town and down here.) The card at the top left says which chamber one is in, how many stones
+   are lit, how many chambers are open, and what comes next ("Find the stones by their voices: 1 to go", "The way is
+   open: “El Jardín de Raíces”"); a shut gate one walks up to says why.
 
 To look round all of it at once (the owner, a tester): add `gruta=all` to the page's address (`?gruta=all`, or
 `&gruta=all` after a `?t=…`, or `#gruta=all`): every gate is open, whatever is done.
 
 ## The chambers
 
-| | Chamber | Opens after | What is there |
+| | Chamber | Opens when | What is there |
 |---|---|---|---|
-| 1 | La Sala del Agua | 0 | the way in from the water; Kin and his little hut; the ceiba under the cenote's eye and its shaft of light; the lagoon on the right; the falls at the far end |
-| 2 | El Jardín de Raíces | 10 | pillars of roots, mushrooms that glow, the most fireflies, a small pool and falls |
-| 3 | El Río Escondido | 20 | a river wall to wall; Nikté on its bridge of roots; the stones are on the far bank |
-| 4 | La Sala de las Estrellas | 30 | crystals, a wall of old glyphs, glow-worms and their beaded threads hanging from the roof |
-| 5 | El Corazón de Ka'an | 40 | a round lake one wades through, an island, the Yaxché with strands of flowers hanging over the water; lit, its three stones make it flower |
+| 1 | La Sala del Agua | always (Kin's gate: his conversation) | the way in from the water; Kin and his little hut; the ceiba under the cenote's eye and its shaft of light; the lagoon on the right; the falls at the far end |
+| 2 | El Jardín de Raíces | the first hall's three stones are lit | pillars of roots, mushrooms that glow, the most fireflies, a small pool and falls |
+| 3 | El Río Escondido | the garden's three stones (Nikté's bridge: her riddles) | a river wall to wall; Nikté on its bridge of roots; the stones are on the far bank |
+| 4 | La Sala de las Estrellas | the river's three stones | crystals, a wall of old glyphs, glow-worms and their beaded threads hanging from the roof |
+| 5 | El Corazón de Ka'an | the hall of stars' three stones | a round lake one wades through, an island, the Yaxché with strands of flowers hanging over the water; lit, its three stones make it flower |
 
 Kin's directions (x02) are tested against the plan: the first stone is to the left of the tree, the second on the
 right near the water, the third at the far end beside the falls (`tests/es/cave.test.ts`).
@@ -181,6 +183,17 @@ shows the person's head and shoulders, drawn once from their 3D figure (`src/gam
 renderer of its own, then let go; loaded with the figures' code only when such a conversation starts; the initial
 stays until it is there and where it cannot be drawn).
 
+## Round 4 (16 Nov 2026): the owner's play-through
+
+- **Kin's "¿De dónde vienes?"**: a Lithuanian learner (es-lt) sees Lithuania first, among the country chips and in the
+  example answers ("Soy de Lituania."), as in the town's s69; English speakers (SME) keep their own first (the USA,
+  Canada, the UK).
+- **Answers that fit the question.** At Kin's "¿Tienes otra pregunta?" / "¿Algo más?" the first suggestions are now
+  "No, gracias." / "Está bien, gracias." / "No, eso es todo." / "Sí: ¿qué hago con las piedras?" (each understood:
+  the no's let the learner through, the yes asks), then what to do with the stones and other questions. Nikté's
+  "¿Jugamos?" offers "¡Sí, vamos!" first. Her "¿Quieres una pista?" already offered yes and no.
+- **The gates**: the stones only (above).
+
 ## Tests
 
 - `tests/es/cave.test.ts`: the plan (everything stands where one can walk; one can walk from the way in to the heart;
@@ -189,8 +202,8 @@ stays until it is there and where it cannot be drawn).
   aluxes' conversations are off the route.
 - `tests/browser/cave.mjs`: the real game, a computer and a phone: swimming into the cave's mouth; Kin's gate holds
   until his conversation is talked through (really talked: five typed answers); a stone's card, a wrong meaning, the
-  right one; the second chamber's gate shut with three stones lit and nothing finished in town, open with ten; out by
-  the water; a reload down there.
+  right one; the second chamber's gate shut with two stones lit, and open the moment the third is answered on its
+  card, with nothing of the town's route finished; through it; out by the water; a reload down there.
 - `tests/browser/cave-talk.mjs`: the real game at 375×812, 375×667 and 1280×800: Kin spoken to from the water, from
   the cleft's side, across the passage and from past his gate, Nikté from the bridge's end and from beside her: the
   camera in the open, the way to their face clear, their head and chest inside the part of the screen the

@@ -1,13 +1,11 @@
 // The grotto's listening quest while someone is down there (plan.ts has its rules, Cave.ts its picture): the glyph
 // stones call out, one at a time, a phrase the learner already knows, heard from where the stone stands (louder as one
 // gets near, to the left or the right as it lies); at a stone, the learner picks what the phrase means or says it back,
-// and the glyph lights; a chamber's three lit stones (and enough of the town's conversations finished) open the gate
+// and the glyph lights; a chamber's three lit stones open the gate
 // to the next. Reuses the recordings of the learner's own phrases: no new voices.
 import type * as THREE from "three";
 import { audio } from "../audio";
 import { useStore } from "../../state/store";
-import { sitProgress } from "../../state/progress";
-import { ROUTE } from "../../content/route";
 import { GLOBAL } from "../../content/global";
 import { NPCS } from "../../content/npcs";
 import { coachVoice } from "../../content/voices";
@@ -36,7 +34,6 @@ export interface CaveCard { n: number; of: number; name: string; lt: string; lit
 const SEE_ALL = (() => { try { return /[?&#]gruta=all\b/.test(location.search + location.hash); } catch { return false; } })();
 
 const save = () => useStore.getState().progress.cave ?? P.emptyCave();
-const done = () => { const pr = useStore.getState().progress; return ROUTE.filter((s) => sitProgress(pr, s.id).completions > 0).length; };
 
 /** The greetings everyone starts with (the town-wide phrases every conversation has), as the stones say them. */
 function starters(): P.Phrase[] {
@@ -63,17 +60,13 @@ export class CaveQuest {
   private ear = { x: 0, z: 0, yaw: 0 };
 
   constructor(private view: CaveView) {
-    const st = useStore.getState(), s = save(), n = done();
+    const st = useStore.getState(), s = save();
     this.voice = coachVoice(st.progress.profile?.gender);
-    for (const g of P.GATES) view.setGate(g.id, P.gateState(g, s, n, SEE_ALL).open, true);
+    for (const g of P.GATES) view.setGate(g.id, P.gateState(g, s, SEE_ALL).open, true);
     for (const c of P.CHAMBERS) for (const q of c.stones) view.setStone(q.id, s.lit.includes(q.id));
     view.setHeart(!!s.heart, true);
     void audio.init().then(() => { if (this.alive) this.assign(); });
     this.card(0);
-    // (more of the town's conversations finished since the last time down here: a chamber more is theirs to open)
-    const open = P.chambersOpen(n, SEE_ALL);
-    if (s.seen && !SEE_ALL && open > (s.told ?? 1)) setTimeout(() => { if (this.alive) st.toast({ kind: "success", title: L("Grotoje pabudo nauja salė!"), body: L("„{name}“ laukia: uždek prieš ją esančios salės akmenis, ir vartai atsivers.", { name: P.CHAMBERS[open - 1].name }), ms: 8000 }); }, 2200);
-    if (open !== (s.told ?? 1)) st.updateProgress((p) => { p.cave = { ...(p.cave ?? P.emptyCave()), told: open }; });
     if (!s.seen) {
       useStore.getState().updateProgress((p) => { p.cave = { ...(p.cave ?? P.emptyCave()), seen: true }; });
       setTimeout(() => { if (this.alive) useStore.getState().toast({ kind: "tip", title: L("Radai Aluksų grotą!"), body: L("Čia gyvena aluksai – mažos majų miško dvasios. Pasikalbėk su Kinu: jis saugo kelią."), ms: 9000 }); }, 1800);
@@ -114,7 +107,7 @@ export class CaveQuest {
   /** Every frame down here. `quiet`: a conversation, a panel or a stone's card is open (nothing calls). */
   update(dt: number, p: THREE.Vector3, yaw: number, quiet: boolean) {
     this.ear.x = p.x; this.ear.z = p.z; this.ear.yaw = yaw;
-    const s = save(), n = done(), here = P.chamberAt(p.x, p.z);
+    const s = save(), here = P.chamberAt(p.x, p.z);
     // the place's own sounds: the falls as near as they are, deeper in a little more of the chimes
     let falls = 0;
     for (const f of P.FALLS) falls = Math.max(falls, 1 - Math.hypot(f.x - p.x, f.z - p.z) / 26);
@@ -123,15 +116,14 @@ export class CaveQuest {
     else if (!this.callingId && (this.nextCall -= dt) <= 0) this.call(s, here);
     // a shut gate one walks up to says why
     for (const g of P.GATES) {
-      const d = Math.hypot(g.x - p.x, g.z - p.z), state = P.gateState(g, s, n, SEE_ALL);
+      const d = Math.hypot(g.x - p.x, g.z - p.z), state = P.gateState(g, s, SEE_ALL);
       if (state.open || d > 3.4 || quiet) continue;
       const last = this.warned.get(g.id) ?? -99, now = performance.now() / 1000;
       if (now - last < 10) continue;
       this.warned.set(g.id, now);
       const st = useStore.getState();
       if (state.why === "alux") st.toast({ kind: "info", title: L("Kelias uždarytas"), body: L("Pirmiausia pasikalbėk su {name}.", { name: NPCS["alux_" + g.alux]?.name ?? "" }) });
-      else if (state.why === "stones") st.toast({ kind: "info", title: L("Vartai dar uždaryti"), body: L("Jie atsivers, kai užsidegs visi trys šios salės akmenys. Klausyk, kur jie kalba.") });
-      else st.toast({ kind: "info", title: L("Ši salė dar miega"), body: L("Ji atsivers, kai miestelyje užbaigsi {need} pokalbių (dabar: {have}).", { need: state.need!, have: n }), ms: 7000 });
+      else st.toast({ kind: "info", title: L("Vartai dar uždaryti"), body: L("Jie atsivers, kai užsidegs visi trys šios salės akmenys. Klausyk, kur jie kalba.") });
     }
     if ((this.cardT -= dt) <= 0) { this.cardT = 0.4; this.card(here); }
   }
@@ -140,7 +132,7 @@ export class CaveQuest {
   private call(s: P.CaveSave, here: number) {
     // (nothing calls before Kin has said what the stones are)
     const waiting = s.passed.includes("kin") || SEE_ALL ? P.CHAMBERS[here].stones.filter((q) => !s.lit.includes(q.id) && this.phrases.has(q.id)) : [];
-    if (here + 1 > P.chambersOpen(done(), SEE_ALL) || !waiting.length) { this.nextCall = 1.5; return; }
+    if (here + 1 > P.chambersOpen(s, SEE_ALL) || !waiting.length) { this.nextCall = 1.5; return; }
     const stone = waiting[this.turn++ % waiting.length], phrase = this.phrases.get(stone.id)!;
     this.callingId = stone.id;
     this.view.setCalling(stone.id);
@@ -155,13 +147,12 @@ export class CaveQuest {
   }
 
   private card(here: number) {
-    const s = save(), n = done(), c = P.CHAMBERS[here], step = P.nextStep(here, s, n, SEE_ALL);
+    const s = save(), c = P.CHAMBERS[here], step = P.nextStep(here, s, SEE_ALL);
     const next = step.kind === "alux" ? L("Pasikalbėk su {name}", { name: NPCS[step.npc]?.name ?? "" })
       : step.kind === "stones" ? L("Surask akmenis pagal balsą: liko {n}", { n: step.left })
-      : step.kind === "town" ? L("„{name}“ atsivers po {need} pokalbių miestelyje (dabar: {have})", { name: step.name, need: step.need, have: step.have })
       : step.kind === "on" ? L("Kelias atviras: „{name}“", { name: step.name })
       : step.kind === "heart" ? L("Uždek paskutinius akmenis") : L("Radai Ka'an širdį!");
-    const card: CaveCard = { n: c.n, of: P.CHAMBERS.length, name: c.name, lt: L(c.lt), lit: P.stonesLit(s, here), stones: c.stones.length, next, open: P.chambersOpen(n, SEE_ALL) };
+    const card: CaveCard = { n: c.n, of: P.CHAMBERS.length, name: c.name, lt: L(c.lt), lit: P.stonesLit(s, here), stones: c.stones.length, next, open: P.chambersOpen(s, SEE_ALL) };
     const old = useStore.getState().hud.cave;
     if (!old || old.n !== card.n || old.lit !== card.lit || old.next !== card.next || old.open !== card.open) useStore.getState().setHud({ cave: card });
   }
@@ -250,7 +241,7 @@ export class CaveQuest {
 
   /** After a stone lit in chamber `ci`: its gate, or the heart. */
   private after(ci: number) {
-    const s = save(), n = done(), st = useStore.getState(), left = P.CHAMBERS[ci].stones.length - P.stonesLit(s, ci);
+    const s = save(), st = useStore.getState(), left = P.CHAMBERS[ci].stones.length - P.stonesLit(s, ci);
     if (left > 0) { st.toast({ kind: "success", title: L("Akmuo užsidegė!"), body: L("Šioje salėje liko: {n}.", { n: left }), ms: 3200 }); return; }
     const gate = P.GATES.find((g) => g.stones === ci);
     if (!gate) {
@@ -265,13 +256,11 @@ export class CaveQuest {
       }
       return;
     }
-    const state = P.gateState(gate, s, n, SEE_ALL), next = P.CHAMBERS[gate.to!];
-    if (state.open) {
-      this.view.setGate(gate.id, true);
-      this.view.burst(gate.x, 2.2, gate.z, "#7ff5ea");
-      audio.chime("gate");
-      st.toast({ kind: "success", title: L("Visi trys akmenys dega!"), body: L("Kelias atviras: „{name}“.", { name: next.name }), ms: 5200 });
-    } else st.toast({ kind: "info", title: L("Visi trys akmenys dega!"), body: L("„{name}“ atsivers, kai miestelyje užbaigsi {need} pokalbių (dabar: {have}).", { name: next.name, need: state.need!, have: n }), ms: 8000 });
+    const next = P.CHAMBERS[gate.to!];
+    this.view.setGate(gate.id, true);
+    this.view.burst(gate.x, 2.2, gate.z, "#7ff5ea");
+    audio.chime("gate");
+    st.toast({ kind: "success", title: L("Visi trys akmenys dega!"), body: L("Kelias atviras: „{name}“.", { name: next.name }), ms: 5200 });
   }
 
   /** An alux has let the learner pass (their conversation's "alux-pass" event). */
@@ -284,6 +273,5 @@ export class CaveQuest {
     if (!was) { this.view.burst(g.x, 2, g.z, "#7ff5ea"); audio.chime("gate"); }
     this.nextCall = 4;
   }
-  /** Finishing a conversation in the town may have opened a chamber: the gates as they now stand (on coming in). */
   get seeAll() { return SEE_ALL; }
 }

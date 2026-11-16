@@ -13,6 +13,7 @@
 
 import type { Ctx, SituationDef } from "@/content/types";
 import { t } from "@/content/dsl";
+import { EDITION } from "@/edition";
 import { WORLD_COUNTRIES, WORLD_NATIONALITIES } from "../countries";
 
 const ALUX = "alux (plural aluxes): a small spirit of the Maya forest and cornfields, playful and mischievous.";
@@ -22,6 +23,10 @@ const MILPA = "milpa: a Maya field of corn, beans and squash grown together.";
 const CENOTE = "cenote: a natural pool in a limestone sinkhole, typical of the Yucatán.";
 const GRUTA = "gruta: a grotto, a cave.";
 const MONTE = "el monte: the wild bush or forest around a village.";
+
+/** The countries offered as chips at "¿De dónde vienes?": a Lithuanian learner's own first (es-lt), else the list as it
+ *  is (the English speakers' own come first in it). */
+const COUNTRIES = EDITION.helper === "lt" ? [...WORLD_COUNTRIES.filter((e) => e.id === "lithuania"), ...WORLD_COUNTRIES.filter((e) => e.id !== "lithuania")] : WORLD_COUNTRIES;
 
 const AUTO: Record<string, string> = {
   who: "Me llamo Sam", from: "Soy de Canadá", why: "Quiero ver la gruta",
@@ -88,7 +93,7 @@ export const aluxKin: SituationDef = {
   mode: "talk",
   goal: "Tell the little alux who you are, where you're from and why you came, then ask him the way to the talking stones.",
   intro: "You swam through the cave's mouth at Cenote Ka'an and came up in a hidden grotto. On the white path stands a small figure in a straw hat, hands on his hips: an alux, a little Maya forest spirit. He doesn't look like he'll let you pass just like that.",
-  entities: { country: WORLD_COUNTRIES },
+  entities: { country: COUNTRIES },
 
   grammar: {
     macros: {
@@ -166,7 +171,9 @@ export const aluxKin: SituationDef = {
     q_hat: { patterns: ["(me gusta | que bonito | que lindo | que padre) [es] tu sombrero", "(puedo tocar | puedo ver | me prestas) tu sombrero", "por que (llevas | tienes | usas) sombrero"] },
     ask_pass: { patterns: ["(puedo | me dejas | me deja | podemos) (pasar | entrar | seguir)", "(dejame | deja) (pasar | entrar)", "ya puedo pasar"] },
     // "No, es todo" at "¿Algo más?"
-    more_no_ctx: { patterns: ["(es todo | eso es todo | nada mas | ninguna | ninguna mas | ya es todo)", "no (tengo | hay) (mas | otra | otras) (preguntas | pregunta)", "ya no (tengo preguntas)?"] },
+    more_no_ctx: { patterns: ["(es todo | eso es todo | nada mas | ninguna | ninguna mas | ya es todo) #h:m_todo", "no (tengo | hay) (mas | otra | otras) (preguntas | pregunta)", "ya no (tengo preguntas)?"] },
+    // "Está bien, gracias" / "Estoy bien" at "¿Algo más?": nothing more
+    more_ok_ctx: { patterns: ["(esta | todo esta) bien [gracias] #h:m_ok", "(estoy | todo) bien [gracias]", "(asi | asi esta) bien [gracias]", "(muy)? bien gracias"] },
   },
 
   lines: {
@@ -282,7 +289,9 @@ export const aluxKin: SituationDef = {
       ],
     },
     from: {
-      lt: "Say where you're from", slot: "country", examples: ["usa", "canada", "uk"],
+      lt: "Say where you're from", slot: "country",
+      // (Lithuanian learners see their own country first, as in the town: s69; English speakers, theirs)
+      examples: EDITION.helper === "lt" ? ["lithuania", "usa", "canada"] : ["usa", "canada", "uk"],
       items: [
         { id: "f_soy", s: t("Soy | de | {X}.", "I'm | from | {X}.", "I'm from {X}.") },
         { id: "f_soy", s: t("Vengo | de | {X}.", "I-come | from | {X}.", "I'm from {X}.") },
@@ -308,6 +317,16 @@ export const aluxKin: SituationDef = {
         { id: "a_second", s: t("¿Y | la | segunda?", "And | the | second?", "And the second one?") },
         { id: "a_third", s: t("¿Dónde | está | la | tercera | piedra?", "Where | is | the | third | stone?", "Where's the third stone?") },
         { id: "a_first", s: t("¿Y | la | primera?", "And | the | first?", "And the first one?") },
+      ],
+    },
+    // his "¿Tienes otra pregunta?" / "¿Algo más?": a no, or a yes and the question itself
+    more: {
+      lt: "Answer Kin",
+      items: [
+        { id: "m_no", s: t("No, | gracias.", "No, | thanks.", "No, thanks.") },
+        { id: "m_ok", s: t("Está bien, | gracias.", "It's fine, | thanks.", "I'm fine, thanks.") },
+        { id: "m_todo", s: t("No, | eso | es | todo.", "No, | that | is | all.", "No, that's all.") },
+        { id: "m_si", s: t("Sí: | ¿qué | hago | con | las | piedras?", "Yes: | what | I-do | with | the | stones?", "Yes: what do I do with the stones?") },
       ],
     },
     what: {
@@ -365,8 +384,9 @@ export const aluxKin: SituationDef = {
       no: (c) => { nudge(c); c.hold(); } },
     { id: "more", done: (c) => !!c.s.passed,
       ask: (c) => c.say("ask_more"),
-      expects: ["more_no_ctx", "ask_what", "ask_stone"],
-      suggest: [{ lt: "Ask what to do with the stones", hint: "what" }, { lt: "Say thank you", hint: "g_social" }, { lt: "Ask Kin a question", hint: "ask" }],
+      expects: ["more_no_ctx", "more_ok_ctx", "ask_what", "ask_stone"],
+      // what answers his question first: "No, gracias", or "Sí" and the question
+      suggest: [{ lt: "Answer Kin", hint: "more" }, { lt: "Ask what to do with the stones", hint: "what" }, { lt: "Ask Kin a question", hint: "ask" }],
       hints: ["g_social"],
       // "Vale, gracias" / "Bueno, gracias" closes; a bare "Sí" asks for the question
       yes: (c) => { if (/gracias/i.test(c.heard)) { c.say("g_welcome"); pass(c); return; } c.say("more_yes"); c.hold(); },
@@ -423,6 +443,7 @@ export const aluxKin: SituationDef = {
     q_hat(c) { c.say("q_hat"); },
     ask_pass(c) { if (ready(c)) pass(c); else { notYet(c); } },
     more_no_ctx(c) { pass(c); },
+    more_ok_ctx(c) { c.say("g_welcome"); pass(c); },
     // thanks and goodbye: he lets the learner through once all is said; before that, what is missing
     g_thanks(c) {
       if (ready(c)) { c.say("g_welcome"); pass(c); return; }
@@ -503,6 +524,10 @@ export const aluxKin: SituationDef = {
     { say: "No estoy perdido", intent: "none", not: ["why_lost"], step: "why" },
     { say: "No sé dónde estoy", intent: "why_lost", not: ["q_place"] },
     { say: "No tengo más preguntas", intent: "more_no_ctx", step: "more", not: ["ask_what"] },
+    // the answers suggested to "¿Tienes otra pregunta?"
+    { say: "No, eso es todo", intent: "more_no_ctx", step: "more" },
+    { say: "Está bien, gracias", intent: "more_ok_ctx", step: "more", not: ["ask_what"] },
+    { say: "Sí: ¿qué hago con las piedras?", intent: "ask_what", step: "more" },
     // not understood
     { say: "La pizza tiene queso", intent: "none" },
     { say: "Mi coche es azul", intent: "none" },
@@ -519,6 +544,14 @@ export const aluxKin: SituationDef = {
       expect: { complete: true, state: { whyDone: true, passed: true } }, auto: AUTO },
     { name: "too early: thanks and asking to pass before the way", turns: ["Soy Laura", "De México", "Tengo curiosidad", "¡Gracias!", "¿Puedo pasar?", "Vale", "¿Dónde están las piedras?", "¡Adiós!"],
       expect: { complete: true, state: { passed: true } }, auto: AUTO },
+    { name: "the suggested answers to “¿Tienes otra pregunta?”: no, thanks", turns: ["Soy Sam", "Soy de Lituania", "Quiero ver la gruta", "¿Dónde están las piedras?", "No, gracias."],
+      expect: { complete: true, state: { passed: true } }, auto: AUTO },
+    { name: "… it's fine, thanks", turns: ["Soy Sam", "Soy de Lituania", "Quiero ver la gruta", "¿Dónde están las piedras?", "Está bien, gracias."],
+      expect: { complete: true, state: { passed: true } }, auto: AUTO },
+    { name: "… that's all", turns: ["Soy Sam", "Soy de Lituania", "Quiero ver la gruta", "¿Dónde están las piedras?", "No, eso es todo."],
+      expect: { complete: true, state: { passed: true } }, auto: AUTO },
+    { name: "… yes, and the question; then no", turns: ["Soy Sam", "Soy de Lituania", "Quiero ver la gruta", "¿Dónde están las piedras?", "Sí: ¿qué hago con las piedras?", "No, gracias."],
+      expect: { complete: true, state: { whatAsked: true, passed: true } }, auto: AUTO },
     { name: "Spain's Spanish, lost", turns: ["Me llamo Pablo", "Soy de España", "Me he perdido", "¿Vivís aquí?", "¿Cómo llego a las piedras?", "¿Está lejos?", "Vale, muchas gracias"],
       expect: { complete: true }, auto: AUTO },
   ],

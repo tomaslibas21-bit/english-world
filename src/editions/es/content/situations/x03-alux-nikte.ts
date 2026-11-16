@@ -94,7 +94,7 @@ export const aluxNikte: SituationDef = {
   intents: {
     ready: { patterns: [
       "estoy (listo | lista | preparado | preparada) #h:ready_listo", "[si] (ya | bueno | claro) (estoy | ando) (listo | lista)",
-      "[si] (vamos | va | dale | sale | venga) [a jugar] #h:ready_vamos", "(si | bueno | claro) vamos",
+      "[si] (vamos | va | dale | sale | venga) [a jugar] #h:ready_vamos", "(si | bueno | claro) vamos #h:ready_si",
       "dime [la adivinanza | la primera] #h:ready_dime", "(adelante | empieza | empecemos | juguemos | preguntame | pregunta)",
       "[si] (quiero | queremos) (jugar | pasar | adivinar)", "vamos a (jugar | empezar)", "[a ver] dimela", "listo", "lista",
       "(cual es | dime) la (adivinanza | primera)", "(a ver | ok) la adivinanza",
@@ -244,6 +244,8 @@ export const aluxNikte: SituationDef = {
     ready: {
       lt: "Say you're ready",
       items: [
+        // (her question is "¿Jugamos?": a yes first)
+        { id: "ready_si", s: t("¡Sí, | vamos!", "Yes, | let's go!", "Yes, let's play!") },
         { id: "ready_listo", s: t("Estoy | {m:listo|f:lista}.", "I'm | ready.", "I'm ready.") },
         { id: "ready_vamos", s: t("¡Vamos!", "Let's go!", "Let's do it!") },
         { id: "ready_dime", s: t("Dime.", "Tell me.", "Go ahead."), note: "Dime: “tell me”, to someone you say tú to." },
