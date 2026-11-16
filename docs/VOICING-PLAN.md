@@ -182,21 +182,29 @@ judged again to see that they cost nothing (of the 873 known-bad takes 406 are f
 That leaves 198 flags in Puerto Colibrí (and 135 of Maple Harbor's 140). 102 of the 198 are heard again in the whole
 clip too, by Whisper too, or by sound; the other 96 only in Parakeet's pieces.
 
-- **50 mended by a cut** that both recognizers hear clean: 16 by the usual cut, 34 by taking out a run of sound
-  between two pauses ("Entonces | Entonces quedamos.", "Que bo. | ¡Qué bonita casa!", a noise before or after the
-  line).
-- **148 left for a new take**, 72 of them among the 102. No cut holds there, or the repeat has no pause to cut at
+- **22 mended by a cut** that both recognizers hear clean: 16 by the usual cut, 6 by taking out a run of sound
+  between two pauses ("Entonces | Entonces quedamos.", "Que bo. | ¡Qué bonita casa!").
+- **10 are riddles**, not repeats: the line plays on a word's sound ("¡Era la pera! “Espera”... ¡es pera!").
+- **166 left for a new take**, 70 of them among the 102. No cut is sure there, or the repeat has no pause to cut at
   ("Bueno, bueno, igual lo lo voy a anotar.").
 
+**A run between pauses is taken out only between real pauses, and only for a repeat that is sure.** 34 such cuts held
+by hearing, and 28 were set aside all the same. A stop's closure splits a word's beginning off as a run of its own:
+"Está en India." is heard "Is | Ta? | In India.", and without the first run the clip says "tá en India", which both
+recognizers still write as "Está en India". So the pauses beside the run must be 180 ms or more. And where only
+Parakeet's pieces flag a clip, no repeat is sure and nothing is cut. Maple Harbor's 27 cuts of this kind were read
+again against this: they take out a noise after a finished word, a blip before the line, or the extra syllables
+before a number.
+
 **A cut must leave the line's interjections.** An interjection is no word for the check: "¡Ja! Ya ha aprendido."
-without its laugh still says every word, is as like its line and has nothing heard again. Six of this night's cuts
+without its laugh still says every word, is as like its line and has nothing heard again. Five of this night's cuts
 that held were of that kind, and so were three of the day before ("Mmm, no sé…", "¡Ay, espérese!…", "¡Jaja!
 ¡Saludos cordiales…"): those three clips went back to their first recordings, which say the line once. `cut` now
 refuses such a cut (`interjectionLost`): where the line opens or ends with an interjection and the cut touches the
 clip's first or last 400 ms, a sound that is no word of the line must still be heard there, and with an interjection
 inside the line one must be left somewhere. Every cut made so far in both towns was checked again with it.
 
-With the full pass, Puerto Colibrí stands at 250 cuts and 141 new takes. Maple Harbor's list for new takes is 73
+With the full pass, Puerto Colibrí stands at 222 cuts and 141 new takes. Maple Harbor's list for new takes is 73
 (five of the 78 were endings of the recognizer's making).
 
 Not covered: the two lists for new takes wait for a key. And 5,410 Maple Harbor clips (PR #14 of 7 Nov, slot-filled
