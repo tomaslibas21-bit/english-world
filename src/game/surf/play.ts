@@ -8,6 +8,7 @@ import { SITUATION_BY_ID } from "../../content/situations";
 import { npcVoice } from "../../content/voices";
 import { compose, type Sentence } from "../../convo/compose";
 import { useStore } from "../../state/store";
+import { countPlay } from "../../state/playStats";
 import { sentenceInput, useCards } from "../../state/cards";
 import type { SurfContent } from "../../content/surf";
 import type { SurfSpot } from "../world/surf";
@@ -131,6 +132,7 @@ export class SurfPlay {
     this.lastChoice = null;
     this.lastPic = undefined;
     this.preload();
+    countPlay("games", "surf");
     this.logic = new SurfLogic({ say: (cue) => this.say(cue), fx: (name) => this.fx(name), rnd: Math.random }, { level, rides: s.waves, slow: !!st.settings.slowVoice });
     this.game.entered();
     this.game.hideNpc(this.content.npc, true);

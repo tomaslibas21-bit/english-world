@@ -1,6 +1,7 @@
 // How the learner uses the game, for the course's owner (who decides how much more to build of the 3D town): how
 // often the game is opened and on how many days, the active minutes in the 3D town and in the picture scenes (the
-// light mode), the conversations started and finished in each, and the minutes the radio played.
+// light mode), the conversations started and finished in each, the minutes the radio played, the town's picture/3D
+// choices, the rides taken and the lessons and mini-games played.
 //
 // Kept in the save (Progress.play), so a course that syncs the save carries it to the learner's account, where the
 // owner's per-learner page reads it; the courses add the counters up across devices (their lib/sync/merge.ts). The
@@ -8,7 +9,7 @@
 //
 // Only active time counts: the tab is on screen and the learner did something in the last two minutes (a tap, a key,
 // the mouse, a voice speaking or an answer heard). An open tab left alone stops counting; a hidden tab never counts.
-import { useStore, type PlayMode } from "./store";
+import { picturesOn, useStore, type PlayMode } from "./store";
 import type { Progress } from "./progress";
 import { sendStat } from "./stats";
 
@@ -36,7 +37,23 @@ export interface PlayStats {
   light: ModeStats;
   /** seconds the radio played while the learner was there */
   radio: number;
+  /** the 3D town's conversations: the picture/3D choice (the view chip, the guide's switch, the settings, the P key) */
+  view: ViewStats;
+  /** rides taken, by kind ("car": the convertibles, "boat") */
+  rides: Record<string, number>;
+  /** lessons and mini-games begun, by name ("surf": La Ola's surf lesson) */
+  games: Record<string, number>;
 }
+
+export interface ViewStats {
+  /** times the learner turned to the pictures, and back to the 3D view */
+  pictures: number;
+  threeD: number;
+  /** conversations begun in the 3D town with the pictures shown */
+  talks: number;
+}
+
+export type Counted = "rides" | "games";
 
 /** Without input for this long, the learner has stepped away: the clock stops. */
 export const IDLE_MS = 120_000;
@@ -54,13 +71,25 @@ export const DAYS_KEPT = 400;
 const emptyMode = (): ModeStats => ({ sec: 0, talk: 0, opens: 0, started: 0, finished: 0 });
 
 export function emptyPlayStats(): PlayStats {
-  return { opens: 0, days: [], first: 0, last: 0, town: emptyMode(), light: emptyMode(), radio: 0 };
+  return { opens: 0, days: [], first: 0, last: 0, town: emptyMode(), light: emptyMode(), radio: 0, view: { pictures: 0, threeD: 0, talks: 0 }, rides: {}, games: {} };
 }
 
 const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : 0);
 const modeOf = (v: unknown): ModeStats => {
   const o = (v && typeof v === "object" ? v : {}) as Record<string, unknown>;
   return { sec: num(o.sec), talk: num(o.talk), opens: num(o.opens), started: num(o.started), finished: num(o.finished) };
+};
+
+const viewOf = (v: unknown): ViewStats => {
+  const o = (v && typeof v === "object" ? v : {}) as Record<string, unknown>;
+  return { pictures: num(o.pictures), threeD: num(o.threeD), talks: num(o.talks) };
+};
+/** A count per name ("car", "surf"); names other than short plain words are dropped. */
+const countsOf = (v: unknown): Record<string, number> => {
+  const out: Record<string, number> = {};
+  if (v && typeof v === "object" && !Array.isArray(v))
+    for (const [k, n] of Object.entries(v)) if (/^[a-z0-9_-]{1,24}$/.test(k) && num(n) > 0) out[k] = num(n);
+  return out;
 };
 
 /** The save's counts, whatever it holds (an older save has none; a damaged one counts from zero). */
@@ -70,6 +99,7 @@ export function readPlayStats(p: Pick<Progress, "play">): PlayStats {
   return {
     opens: num(o.opens), days, first: num(o.first), last: num(o.last),
     town: modeOf(o.town), light: modeOf(o.light), radio: num(o.radio),
+    view: viewOf(o.view), rides: countsOf(o.rides), games: countsOf(o.games),
   };
 }
 
@@ -164,6 +194,20 @@ export function addOpen(s: PlayStats, t: number, mode: PlayMode | null, whole: b
   return s;
 }
 
+/** One more ride taken or lesson begun (`name`: "car", "boat", "surf"). */
+export function addCount(s: PlayStats, kind: Counted, name: string, t: number): PlayStats {
+  s[kind][name] = (s[kind][name] ?? 0) + 1;
+  s.last = t;
+  markDay(s, t);
+  return s;
+}
+
+/** The town's picture/3D choice: the learner turned to the pictures (true) or back to 3D (false). */
+export function addView(s: PlayStats, pictures: boolean): PlayStats {
+  if (pictures) s.view.pictures++; else s.view.threeD++;
+  return s;
+}
+
 // ------------------------------------------------------------------ the page
 
 const OPEN_KEY = "ew-play-open";
@@ -203,6 +247,14 @@ function send() {
   if (radio > 0) sendStat("game:radio", { n: radio });
 }
 
+/** A ride taken (`rides`: "car", "boat") or a lesson or mini-game begun (`games`: "surf"): into the save, and to the
+ *  anonymous counts as game:ride / game:mini. */
+export function countPlay(kind: Counted, name: string) {
+  const t = Date.now();
+  useStore.getState().updateProgress((pr) => { pr.play = addCount(readPlayStats(pr), kind, name, t); });
+  sendStat(kind === "rides" ? "game:ride" : "game:mini", { section: name });
+}
+
 /** Starts counting for this page (once; App calls it). `radio`: whether the radio is sounding, and its changes. */
 export function startPlayStats(radio?: { playing(): boolean; subscribe(fn: () => void): () => void }) {
   if (started || typeof window === "undefined") return;
@@ -212,6 +264,7 @@ export function startPlayStats(radio?: { playing(): boolean; subscribe(fn: () =>
   if (newOpening("page", t0)) useStore.getState().updateProgress((pr) => { pr.play = addOpen(readPlayStats(pr), t0, null, true); });
 
   let run = useStore.getState().conv.run, completed = false, transcript = 0;
+  let pics = picturesOn(useStore.getState().settings);
   useStore.subscribe((st) => {
     // the mode is fixed for the page (a switch reloads it): it counts from the moment the learner is in it
     if (st.screen === "play" && !m.mode) {
@@ -223,6 +276,15 @@ export function startPlayStats(radio?: { playing(): boolean; subscribe(fn: () =>
         sendStat("game:open", { section: m.mode });
       }
     }
+    // the town's picture/3D choice (in the light mode the pictures are all there is)
+    const p = picturesOn(st.settings);
+    if (p !== pics) {
+      pics = p;
+      if (m.mode === "town" && st.settings.play === "town" && st.screen === "play") {
+        useStore.getState().updateProgress((pr) => { pr.play = addView(readPlayStats(pr), p); });
+        sendStat("game:view", { section: p ? "pictures" : "3d" });
+      }
+    }
     const c = st.conv;
     m.talking = c.active;
     if (c.active && c.run !== run) {
@@ -230,7 +292,8 @@ export function startPlayStats(radio?: { playing(): boolean; subscribe(fn: () =>
       if (m.mode) {
         const mode = m.mode;
         m.tick(); save();
-        useStore.getState().updateProgress((pr) => { const s = readPlayStats(pr); s[mode].started++; pr.play = s; });
+        const shown = mode === "town" && pics;
+        useStore.getState().updateProgress((pr) => { const s = readPlayStats(pr); s[mode].started++; if (shown) s.view.talks++; pr.play = s; });
         sendStat("game:conv", { section: mode });
       }
     }
