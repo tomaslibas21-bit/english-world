@@ -173,21 +173,40 @@ function SitCard({ s }: { s: SituationDef }) {
   );
 }
 
-/** Behind phone and video calls (and conversations without a picture): a calm call screen. */
+/** The person's own face for the call screen: drawn once from their 3D figure (game/portrait.ts, loaded when first
+ *  wanted); until it is there, and where it cannot be drawn, null (their initial is shown). */
+function usePortrait(npcId: string | null | undefined): string | null {
+  const [face, setFace] = useState<{ id: string; url: string | null } | null>(null);
+  useEffect(() => {
+    if (!npcId) return;
+    let on = true;
+    import("../game/portrait").then((m) => { if (on) setFace({ id: npcId, url: m.portrait(npcId) }); }, () => {});
+    return () => { on = false; };
+  }, [npcId]);
+  return face && face.id === npcId ? face.url : null;
+}
+
+/** Behind phone and video calls (and conversations without a picture): a calm call screen with the person's face. */
 function CallBackdrop() {
   const conv = useStore((s) => s.conv);
   const scenes = useStore((s) => picturesOn(s.settings));
-  if (!conv.active || (scenes && sceneFor(conv.sitId, conv.hostId))) return null;
+  const shown = conv.active && !(scenes && sceneFor(conv.sitId, conv.hostId));
+  return shown ? <CallCard /> : null;
+}
+
+function CallCard() {
+  const conv = useStore((s) => s.conv);
   const npc = NPCS[conv.hostId];
   const sit = SITUATION_BY_ID[conv.sitId];
   const call = conv.mode !== "talk";
   const talking = conv.speaking !== null && conv.transcript.find((l) => l.id === conv.speaking)?.npc === conv.hostId;
+  const face = usePortrait(conv.hostId);
   return (
     <div className="lc" aria-hidden="true">
       <Skyline className="lc-sky" />
       <div className="lc-center">
-        <div className={"lc-avatar" + (talking ? " talking" : "")} style={{ background: avatarColor(conv.hostId) }}>
-          {(npc?.name ?? "?").replace(/^(Mr\.|Ms\.|Mrs\.|Officer) /, "").charAt(0)}
+        <div className={"lc-avatar" + (face ? " lc-face" : "") + (talking ? " talking" : "")} style={{ background: avatarColor(conv.hostId) }}>
+          {face ? <img src={face} alt="" draggable={false} /> : (npc?.name ?? "?").replace(/^(Mr\.|Ms\.|Mrs\.|Officer) /, "").charAt(0)}
         </div>
         <div className="lc-name">{npc?.name}</div>
         <div className="lc-sub">

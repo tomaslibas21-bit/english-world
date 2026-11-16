@@ -2,7 +2,7 @@
 // the time in conversations and the radio's; openings and days go into the save, which an older save lacks.
 import { describe, expect, it } from "vitest";
 import {
-  IDLE_MS, RADIO_IDLE_MS, TICK_MS, PlayMeter, addOpen, addTime, emptyPlayStats, localDay, readPlayStats,
+  IDLE_MS, RADIO_IDLE_MS, TICK_MS, PlayMeter, addCount, addOpen, addTime, addView, emptyPlayStats, localDay, readPlayStats,
 } from "../src/state/playStats";
 import { endpoint } from "../src/state/stats";
 
@@ -101,5 +101,34 @@ describe("the save's counts", () => {
 describe("the anonymous counts", () => {
   it("go nowhere without the course's address (the game's own dev server, tests)", () => {
     expect(endpoint()).toBeNull();
+  });
+});
+
+describe("the picture/3D choices, rides and lessons", () => {
+  it("an older save has none, and a damaged one keeps only plain names and counts", () => {
+    const s = readPlayStats({ play: { opens: 2 } as never });
+    expect(s.view).toEqual({ pictures: 0, threeD: 0, talks: 0 });
+    expect(s.rides).toEqual({});
+    expect(s.games).toEqual({});
+    const d = readPlayStats({ play: { rides: { car: 3, "<b>": 1, boat: -2, x: "7" }, games: [1], view: { pictures: 2, threeD: "a" } } as never });
+    expect(d.rides).toEqual({ car: 3 });
+    expect(d.games).toEqual({});
+    expect(d.view).toEqual({ pictures: 2, threeD: 0, talks: 0 });
+  });
+
+  it("counts each ride, lesson and choice, and the day it happened", () => {
+    const t = Date.UTC(2026, 10, 16, 12);
+    let s = emptyPlayStats();
+    s = addCount(s, "rides", "car", t);
+    s = addCount(s, "rides", "car", t);
+    s = addCount(s, "rides", "boat", t);
+    s = addCount(s, "games", "surf", t);
+    s = addView(addView(s, true), false);
+    const back = readPlayStats({ play: JSON.parse(JSON.stringify(s)) });
+    expect(back.rides).toEqual({ car: 2, boat: 1 });
+    expect(back.games).toEqual({ surf: 1 });
+    expect(back.view).toEqual({ pictures: 1, threeD: 1, talks: 0 });
+    expect(back.days).toEqual([localDay(t)]);
+    expect(back.last).toBe(t);
   });
 });

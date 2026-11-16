@@ -11,6 +11,7 @@ import { Colliders, rand } from "../world/util";
 import { WORLD } from "../world/layout";
 import type { NavGrid } from "../nav";
 import type { RidesPlan, CarSpot, BoatSpot } from "../world/rides";
+import { countPlay } from "../../state/playStats";
 import { RIDE_OWNERS, RIDE_SHOUTS, type RideOwner, type RideLine } from "../../content/rides";
 import { rideVoice, shoutVoice } from "../../content/voices";
 import { BAY, DECKS, SEA_LEVEL, SHORE, bayHold, floorY, waterY } from "../water";
@@ -336,6 +337,7 @@ export class Rides {
     if (this.riding) return false;
     const p = this.host.player.root.position;
     this.riding = r;
+    countPlay("rides", r.kind);
     this.phase = "in";
     this.phaseT = 0;
     this.wantOut = false;
