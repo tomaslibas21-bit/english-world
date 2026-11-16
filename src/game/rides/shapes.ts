@@ -90,8 +90,9 @@ export function motorboatGeometry(stripe: string, hull = "#f4f6f8") {
   const add = (g: THREE.BufferGeometry, c: THREE.ColorRepresentation) => parts.push([g, c]);
   const outline = (inset: number) => {
     const s = new THREE.Shape(), w = 0.87 - inset, bow = 2.75 - inset * 1.6, st = -2.3 + inset;
-    s.moveTo(-w, st); s.lineTo(w, st); s.lineTo(w, 0.7); s.quadraticCurveTo(w * 0.95, 1.9, 0, bow);
-    s.quadraticCurveTo(-w * 0.95, 1.9, -w, 0.7); s.lineTo(-w, st);
+    // (drawn with the bow at -y: standing the outline up along y turns the shape's -y into +z, the bow's side)
+    s.moveTo(-w, -st); s.lineTo(w, -st); s.lineTo(w, -0.7); s.quadraticCurveTo(w * 0.95, -1.9, 0, -bow);
+    s.quadraticCurveTo(-w * 0.95, -1.9, -w, -0.7); s.lineTo(-w, -st);
     return s;
   };
   // (an outline seen from above, stood up along y)

@@ -407,6 +407,18 @@ describe("this town's convertibles and boat", () => {
     expect(boat.attributes.position.count / 3).toBeLessThan(1200);
     expect(CAR.half * 2).toBeCloseTo(CAR_SIZE.length, 0);
   });
+  it("the boat's pointed bow is in front (+z, where its locker and light are), its flat stern by the outboard", () => {
+    // (the owner, 16 Nov: the player sat facing the flat end, the hull having been stood up back to front)
+    const pos = motorboatGeometry("#2f6db5").attributes.position;
+    let front = -Infinity, back = Infinity;
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+      if (y > 0.15 || Math.abs(x) < 0.6) continue; // the hull's bottom, away from its middle line
+      front = Math.max(front, z); back = Math.min(back, z);
+    }
+    expect(back).toBeLessThan(-2.1); // full width right to the stern's flat end
+    expect(front).toBeLessThan(2.0); // narrowing well before the bow's point
+  });
   it("every seat has someone of their own in it: a voice and a few lines nobody else says", () => {
     const voices = new Set<string>(), said = new Set<string>();
     for (const c of RIDES.cars) {
