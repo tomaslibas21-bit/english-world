@@ -20,7 +20,7 @@ import { triOverlapsRect } from "./occlusion";
 /** About knee or bench height (m): what a jump from a standstill lands on with room to spare, and the most that can
  *  be stood on beside someone one talks to. */
 export const LAND = 0.62;
-/** The highest top anyone can stand on (m): a bus shelter's or a market stall's roof, what the second jump reaches
+/** The highest top anyone can stand on (m): a bus shelter's or a market stall's roof, what the high jump (the third press) reaches
  *  (movement.ts Hop). Whatever is taller is a wall, however one got up beside it. */
 export const CLIMB = 2.8;
 /** A rise this small is walked up from the ground without a jump (m): a kerb, a terrace's boards. */
@@ -41,8 +41,8 @@ const LOW = 1.3, FLOOR = 0.1, SIT = 0.2, GAP = 0.9;
  *  under its awning (what is knee-high is as it always was, under a shelter's roof too); and how level a top must be
  *  (the normal's upward part: steeper than about 60° is a face, not a top). */
 const HEAD = 2.3, STEEP = 0.5;
-/** A car's roof (m): what jump after jump reaches without the second jump in the air. Up to here every top is read as
- *  it was before the second jump; above it a top must be a place to stand: level, SPAN across one way at least and
+/** A car's roof (m): what jump after jump reaches without the high jump. Up to here every top is read as
+ *  it was before there was a high jump; above it a top must be a place to stand: level, SPAN across one way at least and
  *  PLACE m² in all (a wall's top, a gate's pillar, a van's roof), not a pole's end, an umbrella's tip or the edge of a
  *  price board. */
 const FIRST = 1.75, SPAN = 0.5, PLACE = 0.2;

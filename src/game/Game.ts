@@ -639,7 +639,7 @@ export class Game implements GameApi {
   }
 
   /** A jump (Space, or the phone's button): not in a conversation, over a panel or through a door. A second press in
-   *  the air is the second jump (higher, with two somersaults, once a jump). */
+   *  the air is a flip, a third the high jump (much higher, two somersaults in all). */
   jump() {
     const st = useStore.getState();
     if (this.session?.active || st.conv.active || st.hud.panel || this.transitioning || !this.player) return;
@@ -648,7 +648,7 @@ export class Game implements GameApi {
     // (at a wheel the button is the brake: hold(); in the water it is a dive, and the way back up)
     if (this.rides.riding) return;
     if (this.swimming) { this.dive(); return; }
-    if (this.hop.air) { if (this.hop.flip()) { audio.jump(1.3); audio.whoosh(); coach.did("jump"); } return; }
+    if (this.hop.air) { if (this.hop.flip()) { audio.jump(this.hop.doubled ? 1.5 : 1.3); if (this.hop.doubled) audio.whoosh(); coach.did("jump"); } return; }
     if (this.hop.start()) { audio.jump(); coach.did("jump"); }
   }
 
@@ -1824,8 +1824,8 @@ export class Game implements GameApi {
     } else if (landed > 0) {
       audio.land(this.underfoot(ground > 0.05), landed);
       if (fancy) this.dust.puff(p.x, p.z, Math.sin(this.heading), Math.cos(this.heading), 0.9);
-      // (down from the second jump: dust all round)
-      if (fancy && this.hop.flipped) for (let i = 0; i < 6; i++) this.dust.puff(p.x, p.z, Math.sin(i * 1.047), Math.cos(i * 1.047), 1.25);
+      // (down from the high jump: dust all round)
+      if (fancy && this.hop.doubled) for (let i = 0; i < 6; i++) this.dust.puff(p.x, p.z, Math.sin(i * 1.047), Math.cos(i * 1.047), 1.25);
     }
     if (fancy && this.lastSpeed > 6 && moved < 2.5) this.dust.puff(p.x, p.z, Math.sin(this.heading), Math.cos(this.heading), 1.3);
     this.lastSpeed = moved;
