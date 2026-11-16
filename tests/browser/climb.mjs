@@ -1,7 +1,7 @@
-// Climbing in the real game: a parked car in steps (hood or trunk, then the roof), the second jump on the second press
-// (higher, twice head over heels) and the bus shelter's roof it reaches, the phone's jump button tapped twice, and
-// what must stay true of the whole town (nobody stands higher than the second jump's tier, nobody gets out of the
-// town). Against a dev server (the last part needs src/dev/climbAudit.ts) or a built game.
+// Climbing in the real game: a parked car in steps (hood or trunk, then the roof), the three presses (a jump; a flip,
+// once round and a little higher; the high jump, twice round) with a car's roof straight from the street and the bus
+// shelter's roof, the phone's jump button tapped three times, and what must stay true of the whole town (nobody
+// stands higher than the high jump's tier, nobody gets out of the town). Against a dev server (the last part needs src/dev/climbAudit.ts) or a built game.
 // WORLD_TEST_URL=http://127.0.0.1:5188 WORLD_STORAGE=english-world WORLD_PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node tests/browser/climb.mjs
 import assert from "node:assert/strict";
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
@@ -72,42 +72,87 @@ try {
       const prompt = await page.evaluate(() => { const g = window.__ew.game; g.updateHud(); return { aloft: g.aloft, nearest: g.nearest }; });
       check("up there nobody is talked to and no door gone through", prompt.aloft === true && prompt.nearest === null, prompt);
 
-      // the second jump: the second press in the air, once a jump: well over two metres up, twice head over heels
-      await page.evaluate(() => { const g = window.__ew.game; g.keys.clear(); g.enterZone("town", { x: 28, z: -14.6, rot: Math.PI }, true); });
-      await page.waitForFunction(() => { const g = window.__ew.game; return !g.transitioning && !g.hop.air; }, null, { timeout: 20000 });
-      await page.keyboard.press("Space");
-      await page.waitForFunction(() => { const g = window.__ew.game; return g.hop.air && g.hop.y > 0.5; }, null, { timeout: 5000 });
-      const before = await state();
-      // (how high it goes and how far round, watched frame by frame until they land)
-      const flight = page.evaluate(() => new Promise((done) => {
+      // the three presses. Two: a flip, once head over heels, a little higher than the jump. Three: the high jump, well
+      // over two metres up, twice head over heels. (How high and how far round, watched frame by frame.)
+      const watch = () => page.evaluate(() => new Promise((done) => {
         const g = window.__ew.game;
         let top = 0, turn = 0;
         const tick = () => { top = Math.max(top, g.hop.y); turn = Math.max(turn, g.hop.spin); if (g.hop.air) requestAnimationFrame(tick); else done({ top: +top.toFixed(2), turn: +turn.toFixed(2), spin: g.hop.spin }); };
         tick();
       }));
+      const settle = () => page.waitForFunction(() => { const g = window.__ew.game; return !g.transitioning && !g.hop.air && g.hop.spin === 0 && g.player.flip === 0; }, null, { timeout: 20000 });
+      await page.evaluate(() => { const g = window.__ew.game; g.keys.clear(); g.enterZone("town", { x: 28, z: -14.6, rot: Math.PI }, true); });
+      await settle();
+      await page.keyboard.press("Space");
+      await page.waitForFunction(() => window.__ew.game.hop.air, null, { timeout: 5000 });
+      let flight = watch();
+      await page.keyboard.press("Space");
+      let f = await flight;
+      check("two presses are a flip: once round, a little higher than the jump", f.top > 1.2 && f.top < 1.45 && f.turn > 5.9 && f.turn < 6.4, f);
+      await settle();
+      await page.waitForTimeout(200);
+      await page.keyboard.press("Space");
+      await page.waitForFunction(() => window.__ew.game.hop.air, null, { timeout: 5000 });
+      flight = watch();
+      await page.keyboard.press("Space");
       await page.keyboard.press("Space");
       const more = await page.evaluate(() => window.__ew.game.hop.flip());
-      const f = await flight;
-      check("a second press in the air is a second jump, higher, twice head over heels", before.air && before.spin === 0 && more === false && f.top > 2.6 && f.top < 2.9 && f.turn > 11.5, { before, f });
-      await page.waitForFunction(() => { const g = window.__ew.game; return !g.hop.air && g.hop.spin === 0 && g.player.flip === 0; }, null, { timeout: 5000 });
+      f = await flight;
+      check("three presses are the high jump: twice round, well over two metres", more === false && f.top > 2.6 && f.top < 2.9 && f.turn > 11.5, f);
+      await settle();
       check("and they land on their feet", true);
 
-      // the bus shelter's roof: from under it, up through it by the second jump, and on it; then a walk off its edge
+      // a car's roof straight from the street: beside its door, the three presses, a step in at the top
+      const beside = await page.evaluate((c) => {
+        const g = window.__ew.game, b = g.town.colliders.boxes.find((q) => q.tag === "car" && q.split && Math.abs((q.minX + q.maxX) / 2 - c.cx) < 0.1 && Math.abs((q.minZ + q.maxZ) / 2 - c.cz) < 0.1);
+        const alongX = b.maxX - b.minX > b.maxZ - b.minZ;
+        // (the side away from the curb's things: whichever is free)
+        for (const s of [1, -1]) {
+          const x = alongX ? c.cx : c.cx + s * ((b.maxX - b.minX) / 2 + 0.8), z = alongX ? c.cz + s * ((b.maxZ - b.minZ) / 2 + 0.8) : c.cz;
+          if (!g.town.colliders.boxes.some((o) => o !== b && x > o.minX - 0.5 && x < o.maxX + 0.5 && z > o.minZ - 0.5 && z < o.maxZ + 0.5)) return { x, z, rot: alongX ? (s > 0 ? Math.PI : 0) : s > 0 ? -Math.PI / 2 : Math.PI / 2 };
+        }
+        return null;
+      }, car);
+      check("there is room beside the car", !!beside, beside);
+      await page.evaluate((c) => { const g = window.__ew.game; g.keys.clear(); g.enterZone("town", { x: c.x, z: c.z, rot: c.rot }, true); g.rig.yaw = c.rot; g.rig.snap(); }, beside);
+      await settle();
+      const street = await state();
+      await page.keyboard.press("Space");
+      await page.waitForFunction(() => window.__ew.game.hop.air, null, { timeout: 5000 });
+      await page.keyboard.press("Space");
+      await page.keyboard.press("Space");
+      await page.waitForFunction(() => window.__ew.game.hop.y > 1.9, null, { timeout: 5000 });
+      await page.keyboard.down("w");
+      await page.waitForFunction(() => !window.__ew.game.hop.air, null, { timeout: 5000 });
+      await page.keyboard.up("w");
+      s = await state();
+      check("three presses from the street land on the car's roof, with no hood or trunk first", street.y === 0 && s.y > 1.4 && s.y < 1.85, { street, s });
+
+      // the bus shelter's roof: from under it, up through it by the high jump, and on it; then a walk off its edge
       const roof = await page.evaluate(() => {
         const r = (window.__ew.game.town.colliders.roofs ?? []).find((q) => Math.abs(q.maxX - q.minX - 3.6) < 0.01 && Math.abs(q.maxZ - q.minZ - 1.6) < 0.01);
-        return r ? { x: (r.minX + r.maxX) / 2, z: r.minZ + 0.3, minZ: r.minZ } : null;
+        return r ? { x: (r.minX + r.maxX) / 2, minZ: r.minZ } : null;
       });
       check("the town lists the bus shelter's roof", !!roof, roof);
-      await page.evaluate((r) => { const g = window.__ew.game; g.keys.clear(); g.enterZone("town", { x: r.x, z: r.z, rot: Math.PI }, true); g.rig.yaw = Math.PI; g.rig.snap(); }, roof);
-      await page.waitForFunction(() => { const g = window.__ew.game; return !g.transitioning && !g.hop.air; }, null, { timeout: 20000 });
+      // (a spot under it where nobody stands and nothing is in the way: where one stays put)
+      let spot = null;
+      for (const [dx, dz] of [[0, 0.3], [-1.3, 0.3], [1.3, 0.3], [-0.7, 0.3], [0.7, 0.3], [-1.5, 0.8], [1.5, 0.8]]) {
+        const at = { x: roof.x + dx, z: roof.minZ + dz };
+        await page.evaluate((r) => { const g = window.__ew.game; g.keys.clear(); g.enterZone("town", { x: r.x, z: r.z, rot: Math.PI }, true); g.rig.yaw = Math.PI; g.rig.snap(); }, at);
+        await page.waitForFunction(() => { const g = window.__ew.game; return !g.transitioning && !g.hop.air; }, null, { timeout: 20000 });
+        await page.waitForTimeout(700);
+        const now = await state();
+        if (Math.hypot(now.x - at.x, now.z - at.z) < 0.05 && now.y < 0.1) { spot = at; break; }
+      }
+      check("there is a free spot under it", !!spot, spot);
       const under = await state();
       // (the jump itself, as the phone's button gives it: beside whoever waits for the bus, Space on the ground talks)
       await page.evaluate(() => window.__ew.game.jump());
       await page.waitForFunction(() => { const g = window.__ew.game; return g.hop.air && g.hop.y > 0.6; }, null, { timeout: 5000 });
-      await page.evaluate(() => window.__ew.game.jump());
+      await page.evaluate(() => { window.__ew.game.jump(); window.__ew.game.jump(); });
       await page.waitForFunction(() => !window.__ew.game.hop.air, null, { timeout: 5000 });
       s = await state();
-      check("the second jump lands on the bus shelter's roof", under.y < 0.7 && s.y > 2.3 && s.y <= 2.8, { under, s });
+      check("the high jump lands on the bus shelter's roof", under.y < 0.7 && s.y > 2.3 && s.y <= 2.8, { under, s });
       await page.keyboard.down("w");
       await page.waitForFunction(() => { const g = window.__ew.game; return !g.hop.air && g.hop.y < 0.7; }, null, { timeout: 6000 });
       await page.keyboard.up("w");
@@ -132,7 +177,7 @@ try {
         check("nowhere to be stuck", audit.fresh.every((f) => f.out !== "stuck"), audit.fresh);
       } else console.log("skipped: the town-wide audit (not a dev server)");
     } else {
-      // the phone's button: a tap is a jump, a second tap in the air the second jump
+      // the phone's button: a tap is a jump, a second tap in the air the flip, a third the high jump
       const btn = page.locator(".jump-btn");
       await btn.waitFor({ state: "visible", timeout: 10000 });
       const box = await btn.boundingBox();
@@ -143,9 +188,11 @@ try {
       const one = await page.evaluate(() => { const g = window.__ew.game; return { air: g.hop.air, spin: g.hop.spin }; });
       await page.waitForFunction(() => { const g = window.__ew.game; return g.hop.air && g.hop.y > 0.3; }, null, { timeout: 5000 });
       await btn.dispatchEvent("pointerdown");
-      const two = await page.evaluate(() => { const g = window.__ew.game; return { air: g.hop.air, again: g.hop.flipped }; });
+      const two = await page.evaluate(() => { const g = window.__ew.game; return { air: g.hop.air, flip: g.hop.flipped, high: g.hop.doubled }; });
+      await btn.dispatchEvent("pointerdown");
+      const three = await page.evaluate(() => { const g = window.__ew.game; return { air: g.hop.air, high: g.hop.doubled }; });
       const high = await page.waitForFunction(() => { const g = window.__ew.game; return g.hop.air && g.hop.y > 2.2 && g.hop.spin > 0; }, null, { timeout: 5000 }).then(() => true, () => false);
-      check("a tap jumps, a second tap in the air is the second jump", one.air && one.spin === 0 && two.air && two.again && high, { one, two, high });
+      check("a tap jumps, a second tap in the air flips, a third is the high jump", one.air && one.spin === 0 && two.air && two.flip && !two.high && three.high && high, { one, two, three, high });
     }
     check(`no page errors (${label})`, errors.length === 0, errors.slice(0, 3));
     await ctx.close();

@@ -1163,16 +1163,17 @@ this town's own code. What the survey of this town found (`Ledges.things`, one o
 the bounds or the wading limit, and there is no ground reached only by jumping. Everything that could be jumped onto
 before still can (the 50 boxes and 12 circles split before are all split now, with as many low pieces or more).
 
-## The second jump and the higher places (15 Nov 2026)
+## The high jump and the higher places (15–16 Nov 2026)
 
-The shared work again (`docs/WALKING.md`: the second press in the air is a second jump, 2.8 m in all, twice head over
+The shared work again (`docs/WALKING.md`; since 16 Nov three presses, three steps: the jump, a flip on the second press,
+the high jump on the third; on 15 Nov the second press alone was the high jump: 2.8 m in all, twice head over
 heels; tops up to 2.8 m can be stood on; roofs the town lists). In this town:
 
-- **With the second jump**: the bus shelter's roof (2.66 m; the one listed roof here: the tianguis' lonas are cloth and
+- **With the high jump** (the three presses): the bus shelter's roof (2.66 m; the one listed roof here: the tianguis' lonas are cloth and
   the kiosko's roof is over three metres), the party yard's walls (1.9–2.0 m), the two pillars of the atrio's gate
   (2.0–2.6 m), the taxis' roofs with their signs (1.78 m), the rails of the cenote's deck (1.82 m, a metre over the
   boards) and the two big clumps of scrub in its clearing (about 2 m); the colectivo's roof (2.06 m) while it has
-  stopped for the player (its hood first, or the second jump from the street). From the street now also what took a
+  stopped for the player (its hood first, or the three presses from the street). From the street now also what took a
   hood or a wall under one's feet before: a car's roof, the garden walls with their railings, the mailboxes.
 - **Not**: the stop signs' poles, the posts of signs, La Ola's price board, a palapa's or an umbrella's tip (a top
   above a car's roof must be a place to stand: half a metre across and 0.2 m² at least), the buses (walls).
