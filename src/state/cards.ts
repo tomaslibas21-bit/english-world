@@ -5,7 +5,7 @@
 // `now`, so it is unit-tested (tests/cards.test.ts); `useCards` is the small store the UI uses.
 import { create } from "zustand";
 import type { Sentence } from "../convo/compose";
-import { ipaForUnit } from "../convo/ipa";
+import { ipaForSentence } from "../convo/ipa";
 import { EDITION } from "../edition";
 
 export interface Card {
@@ -83,10 +83,11 @@ export function cardId(en: string, taken?: Set<string>): string {
   return `${base}-${n}`;
 }
 
-/** IPA for a word or phrase, only if the lexicon knows every word (no silent gaps). */
-export function ipaFor(en: string): string | undefined {
+/** IPA for a word or phrase, only if the lexicon knows every word (no silent gaps). `say`: the sentence's spoken
+ *  form, so its numbers read as the voice says them. */
+export function ipaFor(en: string, say?: string): string | undefined {
   const words = en.split(/\s+/).filter(Boolean);
-  const parts = words.map((w) => ipaForUnit(w));
+  const parts = ipaForSentence(words, say);
   return parts.length && parts.every(Boolean) ? parts.join(" ") : undefined;
 }
 
@@ -104,7 +105,7 @@ function sourceOf(s: Sentence): CardInput["sentence"] {
 /** The card for the whole sentence (its natural Lithuanian as the front). */
 export function sentenceInput(s: Sentence, situationId: string): CardInput {
   const sentence = sourceOf(s);
-  return { en: sentence.en, lt: sentence.lt, ipa: ipaFor(sentence.en), sentence, situationId };
+  return { en: sentence.en, lt: sentence.lt, ipa: ipaFor(sentence.en, s.say), sentence, situationId };
 }
 
 /** The card for one tapped unit of a sentence, or null when it has no Lithuanian of its own
@@ -122,7 +123,9 @@ export function unitInput(s: Sentence, index: number, situationId: string, keepC
     en = lowerFirst(en);
     if (/^\p{Lu}\p{Ll}/u.test(lt)) lt = lowerFirst(lt);
   }
-  return { en, lt, ipa: ipaFor(en), sentence: sourceOf(s), situationId };
+  // a number on its own reads as it does in its sentence ("612" of a phone number: six one two)
+  const inLine = /\d/.test(en) ? ipaForSentence(s.units.map((x) => x.en), s.say)[index] : "";
+  return { en, lt, ipa: inLine || ipaFor(en), sentence: sourceOf(s), situationId };
 }
 
 // ---------------------------------------------------------------------------------------------
