@@ -2,7 +2,7 @@
 // Lithuanian, from the town-wide table (src/editions/es-lt/tables/_shared.json).
 import { AMBIENT_LINES } from "@/content/ambient";
 import { applyLearner } from "../../es/learner/walk";
-import { TABLES } from "../tables/tables.gen";
+import { SHARED } from "../tables/loaded";
 
-if (TABLES._shared) applyLearner({ ambient: AMBIENT_LINES }, TABLES._shared);
+applyLearner({ ambient: AMBIENT_LINES }, SHARED);
 export * from "@/content/ambient";

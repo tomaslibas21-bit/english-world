@@ -8,7 +8,7 @@ import { agree, caseIndex, parseForms, type Case, type Gender } from "@/convo/lt
 import type { EntityLookup, NpBinding } from "@/convo/compose";
 import { ltCount } from "@/ui/lt-lithuanian";
 import * as ES from "@/convo/target";
-import { TABLES } from "../tables/tables.gen";
+import { getValueText } from "../tables/loaded";
 
 // everything else is the Spanish edition's (its own names too: pluralEs, agreeEs, neutralNoun); the declarations
 // below take precedence over these
@@ -106,15 +106,10 @@ export function priceLt(cents: number, c: Case = "nom"): string {
 }
 
 /** Every Lithuanian text the tables have, by its English (a value a handler builds at run time: s80's weekday
- *  {en: "el jueves", lt: "Thursday"}); the conversations' own first, then the town-wide one. */
-let VALUE_TEXT: Map<string, string> | null = null;
+ *  {en: "el jueves", lt: "Thursday"}); the conversations' own first, then the town-wide one (tables/loaded.ts). */
 function valueText(en: string): string | undefined {
-  if (!VALUE_TEXT) {
-    VALUE_TEXT = new Map();
-    for (const [id, t] of Object.entries(TABLES)) if (id !== "_shared") for (const [k, v] of Object.entries(t.text)) if (!VALUE_TEXT.has(k)) VALUE_TEXT.set(k, v);
-    for (const [k, v] of Object.entries(TABLES._shared?.text ?? {})) if (!VALUE_TEXT.has(k)) VALUE_TEXT.set(k, v);
-  }
-  return VALUE_TEXT.get(en);
+  // (tables/loaded.ts: loaded with the first conversation; all at once in the tools)
+  return getValueText()?.get(en);
 }
 
 /** Days as a handler's English names them, said when (the accusative of a weekday: "antradienį"). */

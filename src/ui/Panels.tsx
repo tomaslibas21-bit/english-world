@@ -4,7 +4,7 @@ import { picturesOn, useStore } from "../state/store";
 import { game } from "../game/gameRef";
 import { switchPlayMode } from "./playMode";
 // (the route: the town's conversations; the ones off it, SituationDef.bonus, are not listed or counted)
-import { SITUATION_BY_ID } from "../content/situations";
+import { SITUATION_BY_ID } from "../content/situations/catalog";
 import { ROUTE as SITUATIONS } from "../content/route";
 import { LOCATIONS, TOWN_LT, placeLt } from "../content/locations";
 import { NPCS } from "../content/npcs";
@@ -17,7 +17,7 @@ import { speechSupported, localAvailability, installLocal, refreshLocalState, ty
 import { avatarColor } from "./Conversation";
 import { locIcon } from "./Hud";
 import { Icon, InlineIcon, Stars, type IconName } from "./icons";
-import type { SituationDef } from "../content/types";
+import type { SituationMeta } from "../content/types";
 import { useCards, cardKey, dueCards, ipaFor, type CardInput } from "../state/cards";
 import { MyCards, Glyph } from "./Cards";
 import { showToast } from "./Toasts";
@@ -29,18 +29,18 @@ import { courseGuideUrl, setSectionHelp, useSectionHelp } from "./sectionHelp";
 export const CHAPTERS: Record<number, string> = { 1: L("Atvykimas"), 2: L("Pirmosios dienos mieste"), 3: L("Įsikūrimas"), 4: L("Darbas"), 5: L("Žmonės"), 6: L("Kelionės"), 7: L("Pagalba"), 8: L("Pažengusiems"), 9: L("Gyva kalba") };
 
 /** The icon of a situation: the phone or camera for calls, else its place. */
-function sitIcon(s: SituationDef): IconName {
+function sitIcon(s: SituationMeta): IconName {
   return isPhone(s) ? (s.mode === "video" ? "video" : "phoneCall") : locIcon(s.location);
 }
 
 /** The NPC shown for a situation (the date is with the partner the player chose). */
-function mainNpc(s: SituationDef) {
+function mainNpc(s: SituationMeta) {
   if (s.npc !== "sam" && s.npc !== "emma") return NPCS[s.npc];
   const p = useStore.getState().progress.profile;
   return NPCS[p?.datePartner ?? (p?.gender === "f" ? "sam" : "emma")];
 }
 
-function isPhone(s: SituationDef) { return s.mode === "phone" || s.mode === "video" || s.location === "phone"; }
+function isPhone(s: SituationMeta) { return s.mode === "phone" || s.mode === "video" || s.location === "phone"; }
 
 /** The Spanish edition: Mexican Spanish (the default), neutral Latin American Spanish or Spain's Spanish
  *  (docs/es/STYLE.md). Its words are English: it is only shown in that edition. */
@@ -120,7 +120,7 @@ function SheetHead({ icon, title, close }: { icon: IconName; title: ReactNode; c
   );
 }
 
-function SitActions({ s, close }: { s: SituationDef; close: () => void }) {
+function SitActions({ s, close }: { s: SituationMeta; close: () => void }) {
   const progress = useStore((st) => st.progress);
   const light = useStore((st) => st.settings.play === "light");
   const current = progress.objective === s.id;
@@ -140,12 +140,12 @@ function SitActions({ s, close }: { s: SituationDef; close: () => void }) {
   );
 }
 
-function SitCard({ s, onClick, open }: { s: SituationDef; onClick: () => void; open: boolean }) {
+function SitCard({ s, onClick, open }: { s: SituationMeta; onClick: () => void; open: boolean }) {
   const progress = useStore((st) => st.progress);
   const sp = sitProgress(progress, s.id);
   const loc = LOCATIONS[s.location];
   return (
-    <button className={"sit-card" + (progress.objective === s.id ? " current" : "")} onClick={onClick} aria-expanded={open}>
+    <button className={"sit-card" + (progress.objective === s.id ? " current" : "")} data-sit={s.id} onClick={onClick} aria-expanded={open}>
       <span className="ico"><Icon name={locIcon(s.location)} size={24} /></span>
       <span className="txt">
         <b>{s.title.lt}</b>
@@ -182,7 +182,7 @@ function HowToPlay({ open }: { open?: boolean }) {
 function Scenarios({ close }: { close: () => void }) {
   const progress = useStore((st) => st.progress);
   const byCh = useMemo(() => {
-    const m = new Map<number, SituationDef[]>();
+    const m = new Map<number, SituationMeta[]>();
     for (const s of [...SITUATIONS].sort((a, b) => a.chapter - b.chapter || a.order - b.order)) {
       const l = m.get(s.chapter) ?? []; l.push(s); m.set(s.chapter, l);
     }
@@ -213,13 +213,13 @@ function Scenarios({ close }: { close: () => void }) {
   );
 }
 
-function ScenarioCard({ s, close }: { s: SituationDef; close: () => void }) {
+function ScenarioCard({ s, close }: { s: SituationMeta; close: () => void }) {
   const progress = useStore((st) => st.progress);
   const loc = LOCATIONS[s.location];
   const n = mainNpc(s);
   const st = stars(sitProgress(progress, s.id));
   return (
-    <button className={"scn-card" + (st ? " done" : "")} onClick={() => { close(); game?.startScenario(s.id); }}>
+    <button className={"scn-card" + (st ? " done" : "")} data-sit={s.id} onClick={() => { close(); game?.startScenario(s.id); }}>
       <span className="ico"><Icon name={sitIcon(s)} size={24} /></span>
       <span className="txt">
         <b>{s.title.lt}</b>
@@ -234,7 +234,7 @@ function ScenarioCard({ s, close }: { s: SituationDef; close: () => void }) {
 function Journal({ close }: { close: () => void }) {
   const [open, setOpen] = useState<string | null>(useStore.getState().progress.objective);
   const byCh = useMemo(() => {
-    const m = new Map<number, SituationDef[]>();
+    const m = new Map<number, SituationMeta[]>();
     for (const s of [...SITUATIONS].sort((a, b) => a.chapter - b.chapter || a.order - b.order)) {
       const l = m.get(s.chapter) ?? []; l.push(s); m.set(s.chapter, l);
     }

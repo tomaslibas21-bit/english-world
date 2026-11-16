@@ -7,7 +7,7 @@ import { polarityChoices, bestReading } from "../convo/readings";
 import { GLOBAL } from "../content/global";
 import { NPCS } from "../content/npcs";
 import { coachVoice, npcVoice } from "../content/voices";
-import { SITUATION_BY_ID } from "../content/situations";
+import { getSituation } from "../content/situations/catalog";
 import type { SituationDef } from "../content/types";
 import { useStore, type TranscriptLine } from "../state/store";
 import { sitProgress, stars } from "../state/progress";
@@ -55,8 +55,9 @@ export class Session {
   private practiceRun = 0;
 
   constructor(sitId: string, hooks: SessionHooks) {
-    const sit = SITUATION_BY_ID[sitId];
-    if (!sit) throw new Error("Unknown situation " + sitId);
+    // (loaded before a session starts: Game / LightGame, src/game/prefetch.ts whenLoaded)
+    const sit = getSituation(sitId);
+    if (!sit) throw new Error("Situation not loaded " + sitId);
     this.sit = sit;
     this.hooks = hooks;
     const st = useStore.getState();

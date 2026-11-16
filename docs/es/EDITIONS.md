@@ -59,6 +59,8 @@ EDITION=es npx tsx --import ./tools/edition-hook.mjs tools/check-content.ts     
 EDITION=es npx tsx --import ./tools/edition-hook.mjs tools/check-content.ts s72 --verbose
 EDITION=es npx tsx --import ./tools/edition-hook.mjs tools/review.ts s72-cafe --seed=3   # read the sims
 EDITION=es npx tsx --import ./tools/edition-hook.mjs tools/gen-index.ts                # after adding a file
+EDITION=es npx tsx --import ./tools/edition-hook.mjs tools/gen-meta.ts                 # then the light catalogue (catalog.ts)
+EDITION=es LEARNER=lt npx tsx --import ./tools/edition-hook.mjs tools/gen-meta.ts       # … and its Lithuanian layer's (after tables change too)
 EDITION=es npx tsx --import ./tools/edition-hook.mjs tools/build-vocab.ts              # after content changes
 
 # the English edition, as always (no EDITION)

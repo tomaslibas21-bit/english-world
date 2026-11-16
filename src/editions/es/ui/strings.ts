@@ -435,6 +435,11 @@ export const STRINGS: Record<string, string> = {
   // The light game (src/game/LightGame.ts)
   "Ruošiami balsai…": "Getting the voices ready…",
 
+  // A conversation's own file, loaded when it opens (src/game/prefetch.ts, src/content/situations/catalog.ts)
+  "Kraunamas pokalbis…": "Loading the conversation…",
+  "Nepavyko atsisiųsti pokalbio": "The conversation couldn't be loaded",
+  "Patikrink interneto ryšį ir pabandyk dar kartą.": "Check your internet connection and try again.",
+
   // Conversation events (src/game/convEvents.ts)
   "Skambini: {name}": "Calling {name}",
   "Skambina {name}": "{name} is calling",

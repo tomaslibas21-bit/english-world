@@ -5,7 +5,7 @@ import { picturesOn, useStore, type TranscriptLine } from "../state/store";
 import { Interlinear } from "./Interlinear";
 import { NPCS } from "../content/npcs";
 import { coachVoice, npcVoice } from "../content/voices";
-import { SITUATION_BY_ID } from "../content/situations";
+import { getSituation } from "../content/situations/catalog";
 import { GLOBAL } from "../content/global";
 import { placeLtNamed } from "../content/locations";
 import { addressInformal, compose, roleSaid, variety, type Sentence } from "../convo/compose";
@@ -50,7 +50,7 @@ export function Conversation() {
   const settings = useStore((s) => s.settings);
   const setSettings = useStore((s) => s.setSettings);
   const setConv = useStore((s) => s.setConv);
-  const sit = SITUATION_BY_ID[conv.sitId];
+  const sit = getSituation(conv.sitId);
   const npc = NPCS[conv.npcId];
   const scrollRef = useRef<HTMLDivElement>(null);
   const [typed, setTyped] = useState("");

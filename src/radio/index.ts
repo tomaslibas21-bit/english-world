@@ -5,7 +5,7 @@ import { audio, filesToken, usesBufferRecordings } from "../game/audio";
 import { watchMicrophone } from "../convo/audioFocus";
 import { useStore } from "../state/store";
 // (the route: the town's conversations; the ones off it, SituationDef.bonus, are not listed or counted)
-import { SITUATION_BY_ID } from "../content/situations";
+import { SITUATION_BY_ID } from "../content/situations/catalog";
 import { ROUTE as SITUATIONS } from "../content/route";
 import { STATIONS, songOfSituation } from "../content/radio";
 import { courseFavorites, FAVORITES_KEY } from "./favorites";

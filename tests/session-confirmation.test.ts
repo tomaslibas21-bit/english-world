@@ -1,5 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { Session } from "../src/game/session";
+import { loadSituation } from "../src/content/situations/catalog";
 import { audio } from "../src/game/audio";
 import { DEFAULT_SETTINGS, useStore } from "../src/state/store";
 import { emptyProgress } from "../src/state/progress";
@@ -14,6 +15,8 @@ vi.mock("../src/convo/speech", async (importOriginal) => ({
 }));
 
 let session: Session;
+// (a conversation's file is loaded before its session starts: src/content/situations/catalog.ts)
+beforeAll(async () => { for (const id of ["s35-gym"]) await loadSituation(id); });
 beforeEach(async () => {
   vi.useFakeTimers();
   vi.stubGlobal("document", Object.assign(new EventTarget(), { visibilityState: "visible" }));

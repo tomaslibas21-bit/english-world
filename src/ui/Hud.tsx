@@ -6,7 +6,7 @@ import { SurfOverlay, SurfPicker } from "./Surf";
 import { game } from "../game/gameRef";
 import { WORLD, SEA_Z } from "../game/world/layout";
 import { LOCATIONS } from "../content/locations";
-import { SITUATION_BY_ID } from "../content/situations";
+import { SITUATION_BY_ID } from "../content/situations/catalog";
 import { sitProgress, stars } from "../state/progress";
 import { Icon, InlineIcon, Stars, iconForEmoji, splitLead, type IconName } from "./icons";
 import { drawRideMarks } from "./mapMarks";

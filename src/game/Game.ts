@@ -39,8 +39,9 @@ import { Dust } from "./dust";
 import { Pigeons } from "./pigeons";
 import { NPCS, type Look } from "../content/npcs";
 import { LOCATIONS, placeLt } from "../content/locations";
-import { SITUATIONS, SITUATION_BY_ID } from "../content/situations";
-import type { SituationDef } from "../content/types";
+import { SITUATIONS, SITUATION_BY_ID, prefetchSituations } from "../content/situations/catalog";
+import { whenLoaded } from "./prefetch";
+import type { SituationDef, SituationMeta } from "../content/types";
 import { picturesOn, useStore } from "../state/store";
 import { sceneFor } from "../ui/scenes";
 import { sitProgress } from "../state/progress";
@@ -66,7 +67,7 @@ const WALK = 4.4, JOG = 6.0, RUN = 7.4;
 /** How long one walks steadily one way before the jog (s), and how long it takes to come on. */
 const JOG_AFTER = 1.5, JOG_EASE = 0.9;
 
-const isCall = (s: SituationDef) => s.mode === "phone" || s.mode === "video" || s.location === "phone";
+const isCall = (s: SituationMeta) => s.mode === "phone" || s.mode === "video" || s.location === "phone";
 /** A point `d` metres in front of someone facing `rot` (0 = +Z), turned towards them. */
 /** A person's name tag: their name, their role in the practised language (in the Spanish chosen: roleSaid) and in the
  *  learner's language under it (unless it is the same word, like "Barista"). */
@@ -199,8 +200,8 @@ export class Game implements GameApi {
   private townCam: { pitch: number; dist: number } | null = null;
   private pushDoorT = 0;
   private transitioning = false;
-  private npcToSits = new Map<string, SituationDef[]>();
-  private secondary = new Map<string, SituationDef>();
+  private npcToSits = new Map<string, SituationMeta[]>();
+  private secondary = new Map<string, SituationMeta>();
   private mapPanel: THREE.Mesh | null = null;
   private pointer = { down: false, id: -1, x: 0, y: 0, moved: 0, button: 0 };
   private raycaster = new THREE.Raycaster();
@@ -1050,11 +1051,11 @@ export class Game implements GameApi {
     } else this.enterZone("town");
   }
 
-  sitsForNpc(npc: string): SituationDef[] { return this.npcToSits.get(npc) ?? []; }
+  sitsForNpc(npc: string): SituationMeta[] { return this.npcToSits.get(npc) ?? []; }
 
   /** Which situation to start with this NPC face to face: the objective, else the first not yet completed, else
    *  the first. Calls never start this way (Kate calls you on video, and also leads the team meeting in the office). */
-  pickSituation(npc: string): SituationDef | null {
+  pickSituation(npc: string): SituationMeta | null {
     const list = this.sitsForNpc(npc).filter((s) => !isCall(s));
     if (!list.length) return null;
     const pr = useStore.getState().progress;
@@ -1076,7 +1077,7 @@ export class Game implements GameApi {
       return;
     }
     const actor = this.npcs.find((n) => n.id === npc) ?? null;
-    this.startSession(sit, actor);
+    whenLoaded(sit.id, (def) => this.startSession(def, actor), () => !this.session?.active);
   }
 
   /** Situation picker: go straight into a conversation (no walking). The player appears in front of
@@ -1089,6 +1090,7 @@ export class Game implements GameApi {
     // (a conversation picked from the list in the middle of a surf lesson: the lesson is over)
     this.surf?.stop(true);
     this.lastScenario = sitId;
+    prefetchSituations([sitId]);
     const go = () => {
       if (isCall(sit)) { this.call(sitId); return; }
       const npc = sit.npc === "sam" || sit.npc === "emma" ? this.chosenDatePartner() : sit.npc;
@@ -1134,7 +1136,7 @@ export class Game implements GameApi {
     const sit = SITUATION_BY_ID[sitId];
     if (!sit) return;
     useStore.getState().setHud({ panel: null });
-    this.startSession(sit, null);
+    whenLoaded(sitId, (def) => this.startSession(def, null), () => !this.session?.active);
   }
 
   private startSession(sit: SituationDef, actor: NpcActor | null) {
@@ -1468,7 +1470,7 @@ export class Game implements GameApi {
 
   // ------------------------------------------------------------------ objectives
 
-  orderedSituations(): SituationDef[] {
+  orderedSituations(): SituationMeta[] {
     return [...ROUTE].sort((a, b) => a.chapter - b.chapter || a.order - b.order || a.id.localeCompare(b.id));
   }
 
@@ -1486,7 +1488,7 @@ export class Game implements GameApi {
     if (next && !this.lastScenario) setTimeout(() => useStore.getState().toast({ kind: "info", title: L("Kita užduotis"), body: `${next.title.lt} — ${LOCATIONS[next.location]?.lt ?? ""}` }), 2500);
   }
 
-  currentObjective(): SituationDef | null {
+  currentObjective(): SituationMeta | null {
     const pr = useStore.getState().progress;
     if (pr.objective && SITUATION_BY_ID[pr.objective]) return SITUATION_BY_ID[pr.objective];
     const first = this.orderedSituations().find((s) => !sitProgress(pr, s.id).completions) ?? null;
@@ -2343,6 +2345,18 @@ export class Game implements GameApi {
   rideMarks() { return this.rides?.marksForMap() ?? []; }
   get doors(): Door[] { return this.town?.doors ?? []; }
   get zoneId() { return this.zone?.id; }
+  /** The conversations of the people within `r` m of the player (indoors: everyone in the room), for prefetch.ts. */
+  nearSituations(r = 25): string[] {
+    const p = this.player?.root.position, out: string[] = [];
+    if (!p) return out;
+    for (const n of this.npcs) {
+      if (this.zone?.id === "town" && n.ch.root.position.distanceTo(p) > r) continue;
+      for (const s of this.sitsForNpc(n.id)) out.push(s.id);
+      const main = this.secondary.get(n.id);
+      if (main) out.push(main.id);
+    }
+    return out;
+  }
 
   refreshNameTags() {
     for (const n of this.npcs) {

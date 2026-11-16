@@ -2,9 +2,9 @@
 // and meanings (src/editions/es-lt/tables/_shared.json), and the place lines written the Lithuanian way.
 import { LOCATIONS, NAME_MEANING, TOWN_LT as TOWN_ES } from "@/content/locations";
 import { applyLearner } from "../../es/learner/walk";
-import { TABLES } from "../tables/tables.gen";
+import { SHARED } from "../tables/loaded";
 
-const T = TABLES._shared;
+const T = SHARED;
 if (T) {
   applyLearner({ locations: LOCATIONS }, T);
   for (const [id, m] of Object.entries(NAME_MEANING)) NAME_MEANING[id] = T.text[m] ?? m;

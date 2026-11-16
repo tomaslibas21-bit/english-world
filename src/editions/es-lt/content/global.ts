@@ -2,7 +2,7 @@
 // Lithuanian, from the town-wide table (src/editions/es-lt/tables/_shared.json).
 import { GLOBAL_HINTS, GLOBAL_LINES, GLOBAL_TIPS } from "@/content/global";
 import { applyLearner } from "../../es/learner/walk";
-import { TABLES } from "../tables/tables.gen";
+import { SHARED } from "../tables/loaded";
 
-if (TABLES._shared) applyLearner({ lines: GLOBAL_LINES, hints: GLOBAL_HINTS, tips: GLOBAL_TIPS }, TABLES._shared);
+applyLearner({ lines: GLOBAL_LINES, hints: GLOBAL_HINTS, tips: GLOBAL_TIPS }, SHARED);
 export * from "@/content/global";

@@ -1,8 +1,9 @@
 // The game the UI talks to: the 3D town (Game.ts) or the light mode without 3D (LightGame.ts).
 // Kept apart from Game.ts so the light mode never loads three.js: Game.ts is imported only for the town.
 import type { Session } from "./session";
-import type { SituationDef } from "../content/types";
+import type { SituationMeta } from "../content/types";
 import type { Door } from "./world/town";
+import { watchSituations } from "./prefetch";
 
 /** What the UI uses from the game: the 3D town (Game), or the light mode without 3D (LightGame, whose
  *  world members are no-ops). A new call from the UI goes here and into both classes. */
@@ -16,8 +17,8 @@ export interface GameApi {
   nextScenarioId(after?: string): string | null;
   call(sitId: string): void;
   closeConversation(): void;
-  orderedSituations(): SituationDef[];
-  currentObjective(): SituationDef | null;
+  orderedSituations(): SituationMeta[];
+  currentObjective(): SituationMeta | null;
   setObjective(sitId: string | null): void;
   // the 3D world
   interact(): void;
@@ -43,7 +44,10 @@ export interface GameApi {
   readonly doors: Door[];
   /** Puerto Colibrí's grotto while the player is down there (src/game/cave/quest.ts): the glyph stone's card. */
   readonly cave?: { say(): void; showWords(): void; pick(i: number): void; listen(): void; close(): void } | null;
+  /** The conversations of the people near the player and of the room they are in (src/game/prefetch.ts fetches their
+   *  files before they are needed); none in the light mode. */
+  nearSituations?(): string[];
 }
 
 export let game: GameApi | null = null;
-export function setGame(g: GameApi | null) { game = g; }
+export function setGame(g: GameApi | null) { game = g; watchSituations(g); }

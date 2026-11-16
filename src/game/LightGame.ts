@@ -7,9 +7,9 @@ import type { Door } from "./world/town";
 import { Session } from "./session";
 import { audio } from "./audio";
 import { givenItem } from "./given";
-import { SITUATION_BY_ID } from "../content/situations";
+import { SITUATION_BY_ID, getSituation, loadSituation } from "../content/situations/catalog";
 import { ROUTE } from "../content/route";
-import type { SituationDef } from "../content/types";
+import type { SituationDef, SituationMeta } from "../content/types";
 import { useStore } from "../state/store";
 import { sitProgress } from "../state/progress";
 import { L } from "../ui/i18n";
@@ -64,10 +64,15 @@ export class LightGame implements GameApi {
     this.lastScenario = sitId;
     this.session?.close();
     const ticket = ++this.pending;
-    const go = () => { if (ticket === this.pending && !this.disposed && !this.session?.active) this.begin(sit); };
-    if (this.loaded || !this.loading) { go(); return; }
-    const slow = setTimeout(() => useStore.getState().toast({ kind: "info", title: L("Ruošiami balsai…"), ms: 2500 }), 500);
-    this.loading.then(() => { clearTimeout(slow); go(); });
+    const go = (def: SituationDef | null) => { if (def && ticket === this.pending && !this.disposed && !this.session?.active) this.begin(def); };
+    // the voices (the first time) and the conversation's own file (src/content/situations/catalog.ts)
+    const def = getSituation(sitId);
+    if (def && (this.loaded || !this.loading)) { go(def); return; }
+    const slow = setTimeout(() => useStore.getState().toast({ kind: "info", title: L(def ? "Ruošiami balsai…" : "Kraunamas pokalbis…"), ms: 2500 }), 500);
+    Promise.all([loadSituation(sitId), this.loaded ? null : this.loading]).then(
+      ([d]) => { clearTimeout(slow); go(d); },
+      () => { clearTimeout(slow); useStore.getState().toast({ kind: "info", title: L("Nepavyko atsisiųsti pokalbio"), body: L("Patikrink interneto ryšį ir pabandyk dar kartą.") }); },
+    );
   }
 
   /** The same situation again, from the start. */
@@ -91,11 +96,11 @@ export class LightGame implements GameApi {
 
   closeConversation() { this.session?.close(); }
 
-  orderedSituations(): SituationDef[] {
+  orderedSituations(): SituationMeta[] {
     return [...ROUTE].sort((a, b) => a.chapter - b.chapter || a.order - b.order || a.id.localeCompare(b.id));
   }
 
-  currentObjective(): SituationDef | null {
+  currentObjective(): SituationMeta | null {
     const pr = useStore.getState().progress;
     if (pr.objective && SITUATION_BY_ID[pr.objective]) return SITUATION_BY_ID[pr.objective];
     return this.orderedSituations().find((s) => !sitProgress(pr, s.id).completions) ?? null;

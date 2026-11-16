@@ -1,5 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { Session } from "../src/game/session";
+import { loadSituation } from "../src/content/situations/catalog";
 import { audio } from "../src/game/audio";
 import { DEFAULT_SETTINGS, EMPTY_CONV, migrateSettings, useStore } from "../src/state/store";
 import { emptyProgress } from "../src/state/progress";
@@ -19,6 +20,8 @@ vi.mock("../src/convo/audioDiagnostics", () => ({ audioDiagnosticsPaused: vi.fn(
 let session: Session;
 let doc: EventTarget & { visibilityState: string };
 const attempts: { options: speech.SpeechOptions; start: ReturnType<typeof vi.fn>; finish: ReturnType<typeof vi.fn>; dispose: ReturnType<typeof vi.fn> }[] = [];
+// (a conversation's file is loaded before its session starts: src/content/situations/catalog.ts)
+beforeAll(async () => { for (const id of ["s35-gym"]) await loadSituation(id); });
 beforeEach(() => {
   vi.useFakeTimers();
   vi.clearAllMocks();

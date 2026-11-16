@@ -257,6 +257,11 @@ export interface SituationDef {
   sims?: SimTest[];
 }
 
+/** What the town, its lists, the map, the radio and the title screen know of a conversation before its own file is
+ *  loaded: src/content/situations/catalog.ts (the values: meta.gen.ts, written by tools/gen-meta.ts). */
+export const SITUATION_META_FIELDS = ["id", "song", "songTitle", "title", "topic", "chapter", "order", "location", "npc", "npcs", "mode", "goal", "intro", "bonus"] as const;
+export type SituationMeta = Pick<SituationDef, (typeof SITUATION_META_FIELDS)[number]>;
+
 export interface NluTest {
   say: string;
   /** Expected first intent (or "none" for not understood). */
