@@ -184,7 +184,8 @@ export function buildTown(): Town {
     goods.name = "shop-windows";
     group.add(goods, new THREE.Mesh(mergeGeometries(displayGlass, false)!, displayGlassMaterial()));
   }
-  M.build(group);
+  // (the pier's own meshes stay as they are: under water the town is put away but for them, Game.ts)
+  M.build(group, { name: "town-solid", cell: 100, keep: /^(pier|gas-canopy)/ });
   // the gas station's canopy: looked through by the camera (cutout.ts) rather than a roof it must stay under, or under
   // it, at the store's door, the camera has nowhere to go but behind the player's head (Game.ts's field skips it)
   for (const o of group.children) if (/^gas-canopy/.test(o.name)) o.userData.thin = true;

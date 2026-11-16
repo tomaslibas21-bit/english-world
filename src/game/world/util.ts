@@ -25,9 +25,31 @@ export class Merger {
     if (STYLED && g.mat.userData.uvScale) boxProjectUV(ng, g.mat.userData.uvScale);
     g.geos.push(ng);
   }
-  build(parent: THREE.Object3D) {
+  /** `bake` (the original look only): every shape in a plain colour (an opaque, one-sided Lambert material with no
+   *  texture: nearly all of a town's or a room's props) is drawn in a few meshes that carry the colours in their
+   *  vertices (`bakedMaterial`), one per `cell` m of ground and shadow setting, instead of one mesh per colour, which
+   *  were each as wide as the town and so drawn in every frame, twice (the picture and the sun's shadow map). The
+   *  picture is the same; a street's draw calls halve. `keep`: keys that stay meshes of their own, by their name. */
+  build(parent: THREE.Object3D, bake?: { name: string; cell?: number; keep?: RegExp }) {
+    const chunks = new Map<string, { geos: THREE.BufferGeometry[]; cast: boolean; receive: boolean }>();
     for (const [name, g] of this.groups) {
       if (!g.geos.length) continue;
+      if (bake && !STYLED && !bake.keep?.test(name) && plainLambert(g.mat)) {
+        const m = g.mat as THREE.MeshLambertMaterial, cell = bake.cell ?? Infinity;
+        for (const geo of g.geos) {
+          const b = bakeColours(geo, m);
+          let k = `${+g.cast}${+g.receive}`;
+          if (cell !== Infinity) {
+            b.computeBoundingBox();
+            const c = b.boundingBox!;
+            k += `|${Math.floor((c.min.x + c.max.x) / 2 / cell)},${Math.floor((c.min.z + c.max.z) / 2 / cell)}`;
+          }
+          let ch = chunks.get(k);
+          if (!ch) chunks.set(k, ch = { geos: [], cast: g.cast, receive: g.receive });
+          ch.geos.push(b);
+        }
+        continue;
+      }
       const merged = mergeGeometries(g.geos.map(normalizeAttrs), false);
       if (!merged) continue;
       const key = g.key;
@@ -44,8 +66,59 @@ export class Merger {
         mesh.add(makeOutline(mesh, outlineColorFor(c), /-walls$|^roof-/.test(key) ? 0.05 : 0.028));
       }
     }
+    let n = 0;
+    for (const ch of chunks.values()) {
+      const merged = mergeGeometries(ch.geos, false);
+      for (const g of ch.geos) g.dispose();
+      if (!merged) continue;
+      const mesh = new THREE.Mesh(merged, bakedMaterial());
+      mesh.name = `${bake!.name}-${n++}`;
+      mesh.castShadow = ch.cast;
+      mesh.receiveShadow = ch.receive;
+      mesh.matrixAutoUpdate = false;
+      mesh.updateMatrix();
+      parent.add(mesh);
+    }
     this.groups.clear();
   }
+}
+
+/** A material whose shapes `Merger.build`'s `bake` can draw from their vertices' colours: Lambert, one colour (and a
+ *  glow), opaque, one-sided, no texture and no shader of its own (`userData`: the windows' `reflective` glass; the
+ *  camera's cutout, which the baked material learns itself, doesn't count). */
+function plainLambert(m: THREE.Material) {
+  const l = m as THREE.MeshLambertMaterial;
+  return l.isMeshLambertMaterial && !l.map && !l.emissiveMap && !l.alphaMap && !l.vertexColors && !l.transparent && l.opacity === 1 && l.side === THREE.FrontSide
+    && !l.alphaTest && l.depthWrite && l.depthTest && !l.wireframe && !Object.keys(l.userData).length;
+}
+/** The shape with its material's colour and glow in its vertices (and flat faces where the material shaded flat). */
+function bakeColours(g0: THREE.BufferGeometry, m: THREE.MeshLambertMaterial) {
+  const g = g0.index ? g0.toNonIndexed() : g0;
+  for (const k of Object.keys(g.attributes)) if (k !== "position" && k !== "normal") g.deleteAttribute(k);
+  if (m.flatShading) g.deleteAttribute("normal");
+  if (!g.attributes.normal) g.computeVertexNormals();
+  const n = g.attributes.position.count, col = new Float32Array(n * 3), emi = new Float32Array(n * 3);
+  const c = m.color, e = m.emissive, ei = m.emissiveIntensity;
+  for (let i = 0; i < n; i++) {
+    col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
+    emi[i * 3] = e.r * ei; emi[i * 3 + 1] = e.g * ei; emi[i * 3 + 2] = e.b * ei;
+  }
+  g.setAttribute("color", new THREE.BufferAttribute(col, 3));
+  g.setAttribute("emi", new THREE.BufferAttribute(emi, 3));
+  return g;
+}
+let baked: THREE.MeshLambertMaterial | null = null;
+/** The one material of the baked meshes: the vertices' colours, plus their own glow (`emi`: lamps, lit windows). */
+export function bakedMaterial() {
+  if (baked) return baked;
+  baked = new THREE.MeshLambertMaterial({ vertexColors: true });
+  baked.onBeforeCompile = (sh) => {
+    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nattribute vec3 emi;\nvarying vec3 vEmi;")
+      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvEmi = emi;");
+    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying vec3 vEmi;")
+      .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\ntotalEmissiveRadiance += vEmi;");
+  };
+  return baked;
 }
 
 /** How a material looks (its kind, colours, shading, transparency, side, texture): two materials that look alike can

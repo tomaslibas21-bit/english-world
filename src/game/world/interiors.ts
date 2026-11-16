@@ -138,7 +138,7 @@ function room(id: string, w: number, d: number, floor: string, wall: string, bui
   g.add(wallShade(w, d));
   const anim: Ctx["anim"] = [];
   build({ M, col, g, w, d, r, anim });
-  M.build(g);
+  M.build(g, { name: "room-solid" });
   const update = anim.length ? (t: number, dt: number) => { for (const f of anim) f(t, dt); } : undefined;
   // someone the edition has stand elsewhere in the room (theme.ts `roomSpots`: a conversation's other speaker within
   // its picture) stands there
