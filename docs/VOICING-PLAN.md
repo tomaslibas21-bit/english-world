@@ -233,6 +233,11 @@ Three Maple Harbor and four Puerto Colibrí lines of the list for new takes had 
 both recognizers or across a real pause, and go to new takes; "And the support, too…" and the long directions
 ("derecha" for "derecho") are heard clean by Whisper and stay.
 
+All 26 got a new take the same evening (key …idNw, $0.03), each heard back by both recognizers; two Puerto Colibrí
+takes were recorded once more after reading what was heard. Maple Harbor stands at 275 cuts and 254 new takes,
+Puerto Colibrí at 222 cuts and 306 new takes, and every clip of both towns has now been heard piece by piece against
+its line.
+
 **Repairs** (`npx tsx tools/voice-batch.ts …`; the Spanish tool has the same commands):
 
 | Step | Command | Key? |
