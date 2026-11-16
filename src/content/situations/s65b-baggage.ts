@@ -790,7 +790,7 @@ export const baggage: SituationDef = {
       items: [
         { id: "ph_mine", s: t("My | number | is | +370 | 612 | 34567.", "Mano | numeris | yra | +370 | 612 | 34567.", "Mano numeris +370 612 34567.",
           { say: "My number is plus three seven zero, six one two, three four five six seven." }) },
-        { id: "ph_its", s: t("It's | 555 | 0142.", "Tai yra | 555 | 0142.", "Numeris 555 0142.", { say: "It's five five five, oh one four two." }) },
+        { id: "ph_its", s: t("It's | 555-0142.", "Tai yra | 555-0142.", "Numeris 555-0142.", { say: "It's five five five, oh one four two." }) },
         { id: "ph_none", s: t("I | don't have | a | US | number.", "Aš | neturiu | — | JAV | numerio.", "Neturiu JAV telefono numerio.") },
       ],
     },
