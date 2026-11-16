@@ -6,6 +6,8 @@ import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, c
 import { carParts } from "./car";
 import { STYLED, IS_REAL, grade } from "../style";
 import { SHORE, DECKS, POOLS, FLOORS, sandY, SAND_GLSL, SHORE_GLSL, SWELL_GLSL } from "../water";
+import { addMapleDecor, FALL } from "./maple";
+import { THEME } from "./theme";
 import { GROUND_BLOCKS, groundPalette, groundExtras, groundMaterial, seaMaterial, trunkGeometry, canopyGeometry, canopyMaterial, bushGeometry, bushMaterial, outlineInstanced, cloudMaterial, cloudPuff } from "./styled";
 
 export interface Door { loc: string; bid: string; x: number; z: number; face: "n" | "s" | "e" | "w"; name: string; outX: number; outZ: number; rot: number }
@@ -71,6 +73,8 @@ export function buildTown(): Town {
   FLOORS.length = 0;
   seats.length = 0;
   details.length = 0;
+  lamps.length = 0;
+  treeSpots.length = 0;
   displays.length = 0;
   displayGlass.length = 0;
 
@@ -116,7 +120,7 @@ export function buildTown(): Town {
 
   // --- sea ------------------------------------------------------------------
   const seaMat = STYLED ? seaMaterial() : new THREE.ShaderMaterial({
-    uniforms: { uTime: { value: 0 }, uFog: { value: new THREE.Color("#cfe8f5") } },
+    uniforms: { uTime: { value: 0 }, uFog: { value: new THREE.Color(THEME.light.haze) } },
     vertexShader: `varying vec2 vUv; varying vec3 vW; uniform float uTime;
       void main(){ vUv = uv; vec4 w = modelMatrix * vec4(position,1.0);
         w.y += ${SWELL_GLSL}; vW = w.xyz;
@@ -157,6 +161,8 @@ export function buildTown(): Town {
   addTransport(M, colliders, group, r);
   addBackyard(M, colliders, group);
   addMaggiesCar(M, colliders, group);
+  // the fall: leaves, bunting, baskets and banners, pumpkins, the truck, the lighthouse's lantern, the harbor's gear
+  const fall = addMapleDecor({ M, col: colliders, group, lamps, trees: treeSpots, wind });
 
   // world bounds
   // (the north one lies out in the sea: like the sea itself, it stops everyone but the player, who swims on out to the
@@ -200,6 +206,7 @@ export function buildTown(): Town {
       seaMat.uniforms.uTime.value = t;
       wind.value = t;
       for (const s of sprays) s(t);
+      fall(t, dt);
       for (const c of clouds) {
         c.position.x += dt * c.userData.v;
         if (c.position.x > 260) c.position.x = -200;
@@ -401,13 +408,13 @@ function addMarkings(group: THREE.Group) {
   for (let gx = SQUARE.x1; gx <= SQUARE.x2; gx += 2) quad("plaza", gx, (SQUARE.z1 + SQUARE.z2) / 2, 0.06, SQUARE.z2 - SQUARE.z1);
   for (let gz = SQUARE.z1; gz <= SQUARE.z2; gz += 2) quad("plaza", (SQUARE.x1 + SQUARE.x2) / 2, gz, SQUARE.x2 - SQUARE.x1, 0.06);
   const colors: Record<string, THREE.ColorRepresentation> = { center: P.centerLine, white: "#f4f4f0", plaza: plazaLine, curb: "#cbc5b8" };
-  for (const [key, geos] of Object.entries(parts)) {
-    if (!geos.length) continue;
-    // drawn over the ground (no fighting with it far away), lit and shadowed like it
-    const m = new THREE.MeshLambertMaterial({ color: colors[key], polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
-    const mesh = new THREE.Mesh(mergeGeometries(geos, false)!, m);
-    for (const g of geos) g.dispose();
-    mesh.name = "markings-" + key;
+  // drawn over the ground (no fighting with it far away), lit and shadowed like it; all four colours in one mesh
+  const all: [THREE.BufferGeometry, THREE.ColorRepresentation][] = [];
+  for (const [key, geos] of Object.entries(parts)) for (const g of geos) all.push([g, colors[key]]);
+  if (all.length) {
+    const m = new THREE.MeshLambertMaterial({ vertexColors: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    const mesh = new THREE.Mesh(colourMerge(all), m);
+    mesh.name = "markings";
     mesh.receiveShadow = true;
     mesh.matrixAutoUpdate = false;
     mesh.updateMatrix();
@@ -1305,6 +1312,7 @@ function addStreetProps(M: Merger, col: Colliders, group: THREE.Group, r: () => 
     M.add("lamp-glass", lampGlass, new THREE.SphereGeometry(0.28, 8, 6).translate(x, 4.55, z), false);
     col.addCircle(x, z, 0.18);
   };
+  const lampAt = (x: number, z: number, horiz: boolean) => { addLamp(x, z); lamps.push([x, z, horiz]); };
   for (const rd of ROADS) {
     const horiz = rd.z1 === rd.z2;
     const len = horiz ? rd.x2 - rd.x1 : rd.z2 - rd.z1;
@@ -1314,7 +1322,7 @@ function addStreetProps(M: Merger, col: Colliders, group: THREE.Group, r: () => 
         const x = horiz ? rd.x1 + d : rd.x1 + s * off;
         const z = horiz ? rd.z1 + s * off : rd.z1 + d;
         if (nearIntersection(x, z) || nearDoor(x, z) || inDrive(x, z, 1)) continue;
-        addLamp(x, z);
+        lampAt(x, z, horiz);
       }
     }
   }
@@ -1416,10 +1424,13 @@ function addTrees(group: THREE.Group, col: Colliders, r: () => number) {
     new THREE.IcosahedronGeometry(1.6, 1).translate(0, 3.3, 0),
     new THREE.IcosahedronGeometry(1.05, 1).translate(0.35, 4.45, -0.2),
     new THREE.IcosahedronGeometry(0.9, 0).translate(-0.85, 3.7, 0.55),
-  ], false)!;
+    // (a maple's crown is broad: one more bough low on the other side)
+    new THREE.IcosahedronGeometry(0.95, 0).translate(1.0, 3.25, 0.5),
+  ].map((g) => g.toNonIndexed()), false)!;
   const trunks = new THREE.InstancedMesh(trunkGeo, mat("#7a5236"), n);
   const leaves = new THREE.InstancedMesh(leafGeo, STYLED ? canopyMaterial() : swaying(new THREE.MeshLambertMaterial({ flatShading: true })), n);
-  const palette = ["#d9542b", "#e8833a", "#f2b440", "#c8402f", "#7fae4a", "#5f9e46", "#e0692c", "#b8d05a"];
+  // maples in their fall colours (one in eight has not turned yet)
+  const palette = STYLED ? ["#d9542b", "#e8833a", "#f2b440", "#c8402f", "#7fae4a", "#5f9e46", "#e0692c", "#b8d05a"] : FALL;
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), s = new THREE.Vector3();
   spots.forEach(([x, z, sc], i) => {
     q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), r() * Math.PI);
@@ -1428,6 +1439,7 @@ function addTrees(group: THREE.Group, col: Colliders, r: () => number) {
     leaves.setMatrixAt(i, m4);
     const leafCol = palette[Math.floor(r() * palette.length)];
     leaves.setColorAt(i, STYLED ? grade(leafCol) : new THREE.Color(leafCol));
+    treeSpots.push({ x, z, s: sc, color: leafCol });
     col.addCircle(x, z, 0.35 * sc);
   });
   trunks.castShadow = leaves.castShadow = true;
@@ -1562,6 +1574,9 @@ function makeBoats() {
 const sprays: ((t: number) => void)[] = [];
 /** The places to sit, gathered while the town is built (Town.seats). */
 const seats: Seat[] = [];
+/** The street lamps (x, z, on an east–west street?) and the trees, gathered for the fall decor (maple.ts). */
+const lamps: [number, number, boolean][] = [];
+const treeSpots: { x: number; z: number; s: number; color: string }[] = [];
 /** Small details in their own colours (flower boxes, bikes), merged into one mesh at the end. */
 const details: [THREE.BufferGeometry, THREE.ColorRepresentation][] = [];
 function makeSpray(x: number, z: number) {

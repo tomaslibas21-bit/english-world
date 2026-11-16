@@ -398,9 +398,9 @@ export class Game implements GameApi {
   }
 
   private setupLights() {
-    this.hemi = new THREE.HemisphereLight("#e4f3ff", "#8fbf6a", 1.4);
+    this.hemi = new THREE.HemisphereLight(THEME.light.sky, THEME.light.ground, THEME.light.fill);
     this.scene.add(this.hemi);
-    this.sun = new THREE.DirectionalLight("#fff0d8", 2.75);
+    this.sun = new THREE.DirectionalLight(THEME.light.sun, THEME.light.sunPower);
     this.sun.position.set(-40, 70, 30);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(2048, 2048);
@@ -413,7 +413,7 @@ export class Game implements GameApi {
     // sky dome
     const skyMat = new THREE.ShaderMaterial({
       side: THREE.BackSide, depthWrite: false,
-      uniforms: { top: { value: new THREE.Color("#5fb0e8") }, mid: { value: new THREE.Color("#a9d8f5") }, bottom: { value: new THREE.Color("#fdf0d8") } },
+      uniforms: { top: { value: new THREE.Color(THEME.light.dome[0]) }, mid: { value: new THREE.Color(THEME.light.dome[1]) }, bottom: { value: new THREE.Color(THEME.light.dome[2]) } },
       vertexShader: "varying vec3 vP; void main(){ vP = (modelMatrix*vec4(position,1.)).xyz; gl_Position = projectionMatrix*viewMatrix*modelMatrix*vec4(position,1.); }",
       fragmentShader: "uniform vec3 top; uniform vec3 mid; uniform vec3 bottom; varying vec3 vP; void main(){ float h = normalize(vP - cameraPosition).y; vec3 c = h > 0.15 ? mix(mid, top, smoothstep(0.15, 0.7, h)) : mix(bottom, mid, smoothstep(-0.05, 0.15, h)); gl_FragColor = vec4(c,1.); }",
     });
@@ -480,11 +480,11 @@ export class Game implements GameApi {
       // lighting & atmosphere
       this.sky.visible = !indoor;
       this.ambient.group.visible = !indoor;
-      this.scene.fog = indoor ? null : new THREE.Fog("#cfe8f5", 110, 420);
+      this.scene.fog = indoor ? null : new THREE.Fog(THEME.light.haze, 110, 420);
       this.scene.background = indoor ? new THREE.Color(z.interior?.warm ? "#2b2320" : "#23282e") : null;
       // outdoors a little less flat fill and a little more sun than before (deeper colours, clearer shapes)
-      this.hemi.intensity = indoor ? 1.9 : 1.4;
-      this.sun.intensity = indoor ? 1.6 : 2.75;
+      this.hemi.intensity = indoor ? 1.9 : THEME.light.fill;
+      this.sun.intensity = indoor ? 1.6 : THEME.light.sunPower;
       this.fx?.zone(indoor, !!z.interior?.warm);
       this.rig.mode = indoor ? "interior" : "follow";
       if (indoor) this.rig.interiorBounds = { w: z.interior!.w, d: z.interior!.d };
@@ -706,7 +706,7 @@ export class Game implements GameApi {
   private underWater(on: boolean) {
     if (on === !!this.airFog) return;
     if (on) {
-      this.airFog = (this.scene.fog as THREE.Fog | null) ?? new THREE.Fog("#cfe8f5", 110, 420);
+      this.airFog = (this.scene.fog as THREE.Fog | null) ?? new THREE.Fog(THEME.light.haze, 110, 420);
       this.scene.fog = this.undersea.fog;
       this.scene.background = this.undersea.fog.color;
       this.sky.visible = false;

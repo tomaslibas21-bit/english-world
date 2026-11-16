@@ -14,6 +14,10 @@ export interface TownTheme {
   /** Where people stand in the rooms instead of where interiors.ts puts them, by room id and character (`ax`/`az`:
    *  where the player stands to talk to them): a conversation's other speaker near enough to share its picture. */
   roomSpots: Record<string, Record<string, { x: number; z: number; rot: number; ax?: number; az?: number }>>;
+  /** The daylight (Game.setupLights and the town's haze; the rooms keep their own strengths): the sky's fill from
+   *  above (`sky`) and what the ground throws back (`ground`) with their strength outdoors, the sun and its strength
+   *  outdoors, the sky dome from the zenith down to the horizon, and the haze far things fade into. */
+  light: { sky: string; ground: string; fill: number; sun: string; sunPower: number; dome: [string, string, string]; haze: string };
 }
 
 export const THEME: TownTheme = {
@@ -30,4 +34,8 @@ export const THEME: TownTheme = {
     museum: { harold: { x: -4.5, z: 0.3, rot: -0.53 } },
     apartments: { patel: { x: -1.2, z: 2.4, rot: 0.25 }, rita: { x: -4.4, z: 0.9, rot: 0.1, ax: -4.2, az: 3.1 } },
   },
+  // an October afternoon (16 Nov 2026): a warmer sun and a little more of it, the fill from above no longer blue, the
+  // ground's bounce the colour of dry leaves and not of a lawn, a cream horizon, a warm haze. (Before: sky #e4f3ff,
+  // ground #8fbf6a, fill 1.4, sun #fff0d8 at 2.75, dome #5fb0e8 / #a9d8f5 / #fdf0d8, haze #cfe8f5.)
+  light: { sky: "#eef1ee", ground: "#a9ac84", fill: 1.38, sun: "#ffe7c2", sunPower: 2.9, dome: ["#5aa7e3", "#b2d8f2", "#ffebcc"], haze: "#dde8ea" },
 };

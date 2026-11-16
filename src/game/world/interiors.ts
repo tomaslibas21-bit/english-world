@@ -5,6 +5,7 @@ import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, c
 import { STYLED } from "../style";
 import { carParts } from "./car";
 import { THEME } from "./theme";
+import { leafShape } from "./maple";
 import { floorMaterial, floorColor } from "./styled";
 
 /** `ax/az`: where the player stands to talk (the walk to them, the guidance trail and the situation picker all end
@@ -459,6 +460,81 @@ function benchS(c: Ctx, S: Smalls, x: number, z: number, rot: number, len: numbe
     S.add(P(boxGeo(0.05, 0.5, 0.05, s * (len / 2 - 0.2), 0.7, -0.27)), metal);
   }
   c.col.addBox(x, z, Math.abs(Math.cos(rot)) * len + Math.abs(Math.sin(rot)) * 0.6, Math.abs(Math.sin(rot)) * len + Math.abs(Math.cos(rot)) * 0.6);
+}
+/** A row of `n` airport seats on a steel beam; `rot` is the way people sitting on it face (0: south). */
+function seatRowS(c: Ctx, S: Smalls, x: number, z: number, rot: number, n: number, color = "#2b5d8a") {
+  const P = (g: THREE.BufferGeometry) => g.rotateY(rot).translate(x, 0, z), len = n * 0.56;
+  S.add(P(boxGeo(len, 0.06, 0.08, 0, 0.32, 0)), "#8a939b");
+  for (const s of [-1, 1]) S.add(P(boxGeo(0.06, 0.32, 0.5, s * (len / 2 - 0.3), 0.16, 0)), "#8a939b");
+  for (let i = 0; i < n; i++) {
+    const u = (i - (n - 1) / 2) * 0.56;
+    S.add(P(boxGeo(0.5, 0.07, 0.48, u, 0.42, 0.02)), color);
+    S.add(P(boxGeo(0.5, 0.5, 0.06, u, 0.7, -0.22)), color);
+  }
+  for (let i = 0; i <= n; i++) S.add(P(boxGeo(0.04, 0.05, 0.4, (i - n / 2) * 0.56, 0.6, 0.02)), "#8a939b");
+  c.col.addBox(x, z, Math.abs(Math.cos(rot)) * len + Math.abs(Math.sin(rot)) * 0.6, Math.abs(Math.sin(rot)) * len + Math.abs(Math.cos(rot)) * 0.6);
+}
+/** A queue barrier: two posts and the belt between them, along z from z0 to z1 (at x), or along x (`alongX`: from x0
+ *  to x1 at z = `x`'s place). */
+function stanchionS(c: Ctx, S: Smalls, x: number, z0: number, z1: number, belt = "#1d3f73") {
+  for (const z of [z0, z1]) { S.add(cylGeo(0.035, 0.035, 0.95, x, 0.475, z, 8), "#c9cfd4"); S.add(cylGeo(0.16, 0.17, 0.04, x, 0.02, z, 12), "#8a939b"); }
+  S.add(boxGeo(0.03, 0.07, Math.abs(z1 - z0), x, 0.88, (z0 + z1) / 2), belt);
+  c.col.addBox(x, (z0 + z1) / 2, 0.14, Math.abs(z1 - z0) + 0.2);
+}
+/** A luggage cart (its handle towards -z before turning), with bags piled on it. */
+function cartS(S: Smalls, x: number, z: number, rot: number, bags: string[] = []) {
+  const P = (g: THREE.BufferGeometry) => g.rotateY(rot).translate(x, 0, z);
+  S.add(P(boxGeo(0.6, 0.05, 0.9, 0, 0.22, 0)), "#aab2ba");
+  S.add(P(boxGeo(0.6, 0.5, 0.04, 0, 0.5, -0.43)), "#aab2ba");
+  for (const s of [-1, 1]) S.add(P(boxGeo(0.03, 0.75, 0.03, s * 0.28, 0.6, -0.47)), "#8a939b");
+  S.add(P(boxGeo(0.62, 0.045, 0.045, 0, 0.97, -0.5)), "#e05a47");
+  for (const [wx, wz] of [[-0.25, -0.35], [0.25, -0.35], [0, 0.38]]) S.add(P(cylGeo(0.07, 0.07, 0.05, wx, 0.07, wz, 8)), "#2b2f33");
+  bags.forEach((b, i) => S.add(P(boxGeo(0.5 - i * 0.04, 0.3, 0.72 - i * 0.08, 0, 0.4 + i * 0.31, 0.02, i * 0.12)), b));
+}
+/** A suitcase standing on its wheels, its handle up. */
+function suitcaseS(S: Smalls, x: number, z: number, rot: number, color: string, h = 0.62) {
+  const P = (g: THREE.BufferGeometry) => g.rotateY(rot).translate(x, 0, z);
+  S.add(P(boxGeo(0.42, h, 0.26, 0, h / 2 + 0.04, 0)), color);
+  for (const s of [-1, 1]) S.add(P(boxGeo(0.02, 0.3, 0.02, s * 0.1, h + 0.19, 0)), "#3a3d42");
+  S.add(P(boxGeo(0.24, 0.03, 0.04, 0, h + 0.34, 0)), "#3a3d42");
+}
+/** A long planter box with a row of bushes. */
+function planterS(c: Ctx, S: Smalls, x: number, z: number, w: number, d: number, box = "#e6e9ee") {
+  S.add(boxGeo(w, 0.55, d, x, 0.275, z), box);
+  S.add(boxGeo(w - 0.12, 0.05, d - 0.12, x, 0.56, z), "#5a4636");
+  const n = Math.max(1, Math.round(w / 0.8));
+  for (let i = 0; i < n; i++) S.add(new THREE.IcosahedronGeometry(0.38, 0).scale(1, 0.9, 1).translate(x - w / 2 + (i + 0.5) * (w / n), 0.86, z), i % 2 ? "#5fa24b" : "#4c8c3c");
+  c.col.addBox(x, z, w, d);
+}
+/** The airport's welcome on its west wall: the harbor at the end of the day, the lighthouse, maple leaves. */
+function welcomeMural() {
+  return canvasTex(1024, 320, (x) => {
+    const sky = x.createLinearGradient(0, 0, 0, 200);
+    sky.addColorStop(0, "#7fc0ea"); sky.addColorStop(1, "#ffe7c4");
+    x.fillStyle = sky; x.fillRect(0, 0, 1024, 320);
+    x.fillStyle = "#8fb873"; x.beginPath(); x.moveTo(0, 210); x.quadraticCurveTo(180, 120, 380, 205); x.quadraticCurveTo(560, 150, 760, 212); x.lineTo(1024, 190); x.lineTo(1024, 320); x.lineTo(0, 320); x.fill();
+    x.fillStyle = "#2f8fb0"; x.fillRect(0, 222, 1024, 98);
+    x.fillStyle = "rgba(255,255,255,0.35)"; for (let i = 0; i < 26; i++) x.fillRect((i * 97) % 1024, 232 + (i * 37) % 80, 34, 3);
+    // the lighthouse on its rocks
+    x.fillStyle = "#8d8f93"; x.beginPath(); x.ellipse(860, 236, 86, 22, 0, 0, Math.PI * 2); x.fill();
+    x.fillStyle = "#f5f5f0"; x.beginPath(); x.moveTo(836, 232); x.lineTo(846, 82); x.lineTo(874, 82); x.lineTo(884, 232); x.fill();
+    x.fillStyle = "#c8392f"; x.fillRect(840, 170, 40, 22); x.fillRect(843, 112, 34, 20); x.beginPath(); x.moveTo(840, 62); x.lineTo(860, 40); x.lineTo(880, 62); x.fill();
+    x.fillStyle = "#fff2b0"; x.fillRect(848, 62, 24, 20);
+    // houses along the shore, a boat
+    ["#e9d8c4", "#ffd9a8", "#b8d8d8", "#f2d492", "#d7c0e0"].forEach((c, i) => { x.fillStyle = c; x.fillRect(430 + i * 62, 180 - (i % 2) * 10, 50, 44 + (i % 2) * 10); x.fillStyle = "#7a4b3a"; x.beginPath(); x.moveTo(424 + i * 62, 180 - (i % 2) * 10); x.lineTo(455 + i * 62, 156 - (i % 2) * 10); x.lineTo(486 + i * 62, 180 - (i % 2) * 10); x.fill(); });
+    x.fillStyle = "#f4f1ea"; x.beginPath(); x.moveTo(690, 262); x.lineTo(790, 262); x.lineTo(772, 284); x.lineTo(704, 284); x.fill(); x.fillStyle = "#b5382c"; x.fillRect(690, 259, 100, 5); x.fillStyle = "#f4f1ea"; x.fillRect(742, 238, 30, 22);
+    // maple leaves coming down on the left, the words
+    const leaf = (cx: number, cy: number, s: number, a: number, col: string) => {
+      x.save(); x.translate(cx, cy); x.rotate(a); x.scale(s, -s); x.fillStyle = col; x.beginPath();
+      const h: [number, number][] = [[0.03, -0.5], [0.04, -0.3], [0.3, -0.38], [0.24, -0.18], [0.52, -0.06], [0.4, 0.05], [0.48, 0.28], [0.27, 0.2], [0.2, 0.4], [0.09, 0.3], [0, 0.56]];
+      h.forEach(([px, py], i) => (i ? x.lineTo(px, py) : x.moveTo(px, py)));
+      for (let i = h.length - 2; i >= 0; i--) x.lineTo(-h[i][0], h[i][1]);
+      x.fill(); x.restore();
+    };
+    [[70, 60, 62, 0.4, "#c8392f"], [200, 36, 40, -0.5, "#e8833a"], [318, 92, 34, 0.9, "#f2b440"], [40, 180, 36, -0.2, "#e8833a"], [960, 50, 44, 0.6, "#c8392f"], [985, 150, 30, -0.7, "#f2b440"]].forEach(([cx, cy, sc, a, col]) => leaf(cx as number, cy as number, sc as number, a as number, col as string));
+    x.fillStyle = "#1d3f73"; x.textAlign = "center"; x.font = "800 64px Nunito, Arial"; x.fillText("Welcome to Maple Harbor", 400, 96);
+    x.strokeStyle = "#1d3f73"; x.lineWidth = 10; x.strokeRect(5, 5, 1014, 310);
+  });
 }
 /** An office desk in the smalls: its top and legs, a monitor (the screen towards the chair), a keyboard and the chair.
  *  `rot` turns it (0: the person sits on the south side, facing north). */
@@ -981,6 +1057,47 @@ const B: Record<string, () => Interior> = {
     c.M.add("rope", mat("#8a1f2a"), boxGeo(12.6, 0.06, 0.06, -2.7, 0.9, -c.d / 2 + 1.6), false);
     c.col.addBox(-2.7, -c.d / 2 + 1.6, 12.6, 0.3);
     lamp(c, -6, -6); lamp(c, 0, -6); lamp(c, 6, 3);
+    // (16 Nov 2026) benches in front of the paintings, a carpet under the statue and one at the door, sculptures on
+    // plinths in the new exhibition, a ship model from the harbor's past, postcards at the gift shop, plants, two
+    // more paintings on the east wall
+    const S = smalls(c);
+    rugS(S, -2, -2, 4.6, 4.6, "#7d2a35", "#c9a227", 0.16);
+    rugS(S, 0, 7.4, 3.2, 3.6, "#2b2d6e", "#c9a227", 0.14);
+    rugS(S, 9.6, 6.1, 3.4, 3.6, "#e8dcb4", "#2b2d6e", 0.12);
+    for (const bx of [-9, 1.3]) {
+      S.add(boxGeo(2.2, 0.14, 0.6, bx, 0.43, -5.3), "#3a3d42");
+      for (const s of [-1, 1]) S.add(boxGeo(0.08, 0.36, 0.5, bx + s * 0.9, 0.18, -5.3), "#9c8f7a");
+      c.col.addBox(bx, -5.3, 2.2, 0.6);
+    }
+    S.add(boxGeo(0.9, 1.0, 0.9, 9.6, 0.5, -6.3), "#e7e1d6"); c.col.addBox(9.6, -6.3, 1.0, 1.0);
+    S.add(new THREE.TorusGeometry(0.4, 0.12, 6, 14).translate(9.6, 1.5, -6.3), "#c9a227");
+    S.add(new THREE.SphereGeometry(0.17, 10, 8).translate(9.6, 1.5, -6.3), "#2b2d6e");
+    S.add(boxGeo(0.9, 1.0, 0.9, 11.2, 0.5, -2.2), "#e7e1d6"); c.col.addBox(11.2, -2.2, 1.0, 1.0);
+    S.add(cylGeo(0.13, 0.26, 0.55, 11.2, 1.28, -2.2, 12), "#2b2d6e"); S.add(cylGeo(0.18, 0.1, 0.2, 11.2, 1.65, -2.2, 12), "#2b2d6e");
+    S.add(cylGeo(0.27, 0.27, 0.05, 11.2, 1.2, -2.2, 12), "#ffd166");
+    {
+      // the schooner on its table by the west wall
+      const tx = -11.2, tz = 7.4;
+      S.add(boxGeo(1.0, 0.86, 2.0, tx, 0.43, tz), "#9c8f7a"); S.add(boxGeo(1.08, 0.05, 2.08, tx, 0.88, tz), "#5a4636");
+      S.add(boxGeo(0.26, 0.16, 1.2, tx, 1.02, tz), "#3b2a20"); S.add(boxGeo(0.2, 0.04, 1.3, tx, 1.11, tz), "#c9a27a");
+      for (const [mz, mh] of [[-0.3, 0.95], [0.25, 0.8]] as [number, number][]) {
+        S.add(cylGeo(0.012, 0.012, mh, tx, 1.12 + mh / 2, tz + mz, 4), "#5a4636");
+        S.add(boxGeo(0.02, mh * 0.72, 0.42, tx, 1.2 + mh / 2, tz + mz + 0.16), "#f6ecd9");
+      }
+      c.col.addBox(tx, tz, 1.1, 2.1);
+    }
+    {
+      // a spinner of postcards
+      const px = 8.3, pz = 6.9;
+      S.add(cylGeo(0.22, 0.24, 0.05, px, 0.025, pz, 12), "#3a3d42"); S.add(cylGeo(0.025, 0.025, 1.6, px, 0.8, pz, 6), "#3a3d42");
+      for (let t = 0; t < 3; t++) for (let k = 0; k < 6; k++) { const a = (k / 6) * Math.PI * 2 + t * 0.4; S.add(boxGeo(0.02, 0.2, 0.15, 0.2, 0, 0).rotateY(a).translate(px, 0.75 + t * 0.3, pz), ["#ffd166", "#e45b4f", "#4a7bb7", "#6fbf73", "#f6ecd9", "#2b2d6e"][(k + t) % 6]); }
+      c.col.addCircle(px, pz, 0.34);
+    }
+    S.done();
+    plant(c, -12, 9, 1.1); plant(c, 12.1, 9.1, 1.1);
+    framedArt(c, 14, c.w / 2 - 0.2, 2.2, -5.2, 2.0, 1.5, -Math.PI / 2);
+    framedArt(c, 16, c.w / 2 - 0.2, 2.2, -1.6, 1.6, 1.3, -Math.PI / 2);
+    lamp(c, 9.6, -4.2);
   }, [{ npc: "ben", x: -7, z: 2.5, rot: 0, ax: -7, az: 4.6 }, { npc: "harold", x: 2.5, z: -6.5, rot: 0.4 }], { floorKind: "stone", accent: "#9c8f7a" }),
 
   station: () => room("station", 26, 18, "#c8b8a0", "#efe3d0", (c) => {
@@ -1094,6 +1211,55 @@ const B: Record<string, () => Interior> = {
     sign(c, "← Arrivals · Departures →", 1, 2.6, 6.2, 3.4, "#ffd166", "#1d3f73", 0);
     plant(c, -20.5, 11, 1.2); plant(c, 20.5, 11, 1.2); plant(c, -1, -11.5, 1);
     for (let i = 0; i < 6; i++) lamp(c, -18 + i * 7, -2, 3.6);
+    // (16 Nov 2026) the hall furnished, where it was a tiled box: carpets where people queue and wait, a paved
+    // concourse from the door with the town's leaf inlaid, queue barriers at passport control and check-in (the ways
+    // to Diaz, Priya, Kevin, Grant and Nina stay open), rows of seats, luggage carts, a coffee stand with two tables,
+    // planters at the door, the flag, a welcome on the west wall. All but the mural and the stand's name in one mesh.
+    const S = smalls(c);
+    rugS(S, -14, -4.6, 9.6, 4.4, "#31527a", "#8fa9c4", 0.18);
+    rugS(S, -14, 2.5, 11, 5.4, "#c3cad2", "#98a4b0", 0.16);
+    rugS(S, 6, -5.5, 6.6, 3.4, "#23406b", "#8fa9c4", 0.18);
+    rugS(S, 18.6, 2.4, 6.4, 7.6, "#2f6f86", "#9cc4d0", 0.18);
+    rugS(S, 0, 9.3, 30, 2.4, "#cdd5dc", "#a7b2bd", 0.12);
+    // (the town's leaf in gold on harbor blue; a red one on white would be Canada's)
+    S.add(cylGeo(1.7, 1.7, 0.012, 0, 0.018, 9.3, 28), "#c9a227");
+    S.add(cylGeo(1.5, 1.5, 0.012, 0, 0.022, 9.3, 28), "#1d3f73");
+    S.add(leafShape().scale(2.2, 2.2, 2.2).rotateX(-Math.PI / 2).translate(0, 0.031, 9.3), "#f2b440");
+    for (const sx of [-17.3, -15.1, -12.9, -10.7]) stanchionS(c, S, sx, -6.1, -3.3);
+    for (const lx of [-16.2, -14, -11.8]) S.add(boxGeo(1.9, 0.012, 0.14, lx, 0.027, -6.2), "#f2c14e");
+    stanchionS(c, S, 4.7, -6.5, -3.9); stanchionS(c, S, 8.4, -6.5, -3.9);
+    till(S, 4.6, 1.08, -8.3); till(S, 7.4, 1.08, -8.3); till(S, -4.9, 1.08, -8.3);
+    S.add(boxGeo(7.4, 0.3, 0.24, -14, 0.87, 2.5), "#8a939b"); // the carousel's spine
+    // arrivals: two rows of seats back to back, carts by the wall and one loaded, bags waiting
+    seatRowS(c, S, -14, 6.55, Math.PI, 5); seatRowS(c, S, -14, 7.25, 0, 5);
+    seatRowS(c, S, -8.6, 6.55, Math.PI, 5); seatRowS(c, S, -8.6, 7.25, 0, 5);
+    for (let i = 0; i < 3; i++) cartS(S, -20.6 + i * 0.42, 6.4, Math.PI / 2);
+    c.col.addBox(-20.2, 6.4, 1.8, 0.8);
+    cartS(S, -6.6, 4.3, 0.5, ["#3d3d46", "#e45b4f", "#f2c14e"]); c.col.addCircle(-6.6, 4.3, 0.5);
+    suitcaseS(S, -11.4, 7.75, 0.3, "#6fbf73"); suitcaseS(S, -16.3, 5.95, -0.2, "#4a7bb7", 0.5); suitcaseS(S, 21.0, -0.6, 0.4, "#e45b4f");
+    // the door: planters each side of the way in
+    planterS(c, S, -4.4, 11.9, 3.0, 0.7); planterS(c, S, 4.4, 11.9, 3.0, 0.7);
+    // departures: the coffee stand by the gate's seats (its counter to the south, where the concourse is)
+    {
+      const kx = 17.8, kz = 9.9;
+      S.add(boxGeo(3.2, 1.0, 0.85, kx, 0.5, kz), "#1f6f78"); S.add(boxGeo(3.36, 0.06, 1.0, kx, 1.03, kz), "#c9a27a");
+      S.add(boxGeo(3.22, 0.16, 0.87, kx, 0.08, kz), "#17555c");
+      S.add(boxGeo(0.62, 0.44, 0.42, kx - 1.0, 1.28, kz - 0.12), "#c9cfd4"); S.add(boxGeo(0.5, 0.1, 0.3, kx - 1.0, 1.55, kz - 0.12), "#3a3d42");
+      for (let i = 0; i < 3; i++) S.add(cylGeo(0.045, 0.035, 0.12 + i * 0.03, kx - 0.4 + i * 0.13, 1.12 + i * 0.015, kz + 0.2, 8), "#ffffff");
+      S.add(boxGeo(0.95, 0.34, 0.5, kx + 0.8, 1.23, kz), "#dff3fb");
+      for (let i = 0; i < 4; i++) S.add(boxGeo(0.16, 0.08, 0.2, kx + 0.47 + i * 0.22, 1.12, kz + 0.02), ["#d9a066", "#b8763a", "#e8c07a", "#8a4b3a"][i]);
+      for (const s of [-1, 1]) S.add(cylGeo(0.035, 0.035, 2.9, kx + s * 1.5, 1.45, kz - 0.55, 6), "#3a3d42");
+      c.col.addBox(kx, kz - 0.1, 3.3, 1.2);
+      sign(c, "Harbor Coffee", kx, 2.62, kz - 0.5, 2.9, "#1f6f78", "#fff8e8");
+    }
+    table(c, 12.6, 9.5, { round: true, chairs: 2, cloth: "#f2efe8", chairColor: "#2b5d8a", from: 0 });
+    table(c, 9.2, 10.0, { round: true, chairs: 2, cloth: "#f2efe8", chairColor: "#2b5d8a", from: 0 });
+    // the flag by passport control
+    S.add(cylGeo(0.03, 0.03, 2.9, -20.7, 1.45, -11.9, 6), "#c9a227"); S.add(cylGeo(0.14, 0.16, 0.06, -20.7, 0.03, -11.9, 10), "#c9a227");
+    for (let i = 0; i < 7; i++) S.add(boxGeo(1.1, 0.09, 0.02, -20.12, 2.76 - i * 0.09, -11.9), i % 2 ? "#ffffff" : "#b22234");
+    S.add(boxGeo(0.46, 0.36, 0.03, -20.44, 2.625, -11.9), "#3c3b6e");
+    S.done();
+    wallPanel(c, welcomeMural(), -c.w / 2 + 0.02, 2.35, 5.2, 9, 2.8, Math.PI / 2);
   }, [
     { npc: "diaz", x: -14, z: -8.7, rot: 0 },
     { npc: "priya", x: -4, z: -9.3, rot: 0, ax: -4, az: -7.1 },
@@ -1229,6 +1395,29 @@ const B: Record<string, () => Interior> = {
     c.M.add("boxes", mat("#c8a27a"), boxGeo(0.8, 0.6, 0.6, 1, 0.3, 4.5)); c.col.addBox(1, 4.5, 0.8, 0.6);
     rug(c, 5, 1, 4, 3, "#c9785b");
     wallPanel(c, textTexture("FOR RENT · 2B", { bg: "#ffffff", fg: "#c9785b", w: 512, h: 128 }), 5, 3.5, -c.d / 2 + 0.2, 2.6, 0.65);
+    // (16 Nov 2026) the hallway a hallway (a runner, the mailboxes, a bench, the doors' mats) and the kitchen the one
+    // Mr. Patel describes ("a fridge, a stove and a dishwasher"; the apartment itself stays unfurnished, as he says):
+    // the stove, the dishwasher's front, a sink; a painter's ladder and cans, the last tenant's boxes
+    const S = smalls(c);
+    rugS(S, -6.6, 1.2, 2.0, 9.6, "#7a3b3b", "#c9a227", 0.12);
+    S.add(boxGeo(1.2, 0.02, 0.6, -7, 0.03, -6.45), "#5a4636"); S.add(boxGeo(0.6, 0.02, 1.2, -3.7, 0.03, 2.6), "#5a4636");
+    S.add(boxGeo(0.12, 0.95, 1.7, -9.92, 1.55, 3.4), "#b8a05a");
+    for (let i = 0; i < 3; i++) for (let k = 0; k < 2; k++) S.add(boxGeo(0.02, 0.36, 0.46, -9.85, 1.32 + k * 0.45, 2.85 + i * 0.55), "#8a7638");
+    benchS(c, S, -9.5, -3.4, Math.PI / 2, 1.7);
+    S.add(boxGeo(0.8, 0.02, 0.62, 3.5, 1.012, -6.6), "#2b2b2b");
+    for (const [bx, bz] of [[-0.2, -0.15], [0.2, -0.15], [-0.2, 0.15], [0.2, 0.15]]) S.add(cylGeo(0.09, 0.09, 0.012, 3.5 + bx, 1.03, -6.6 + bz, 10), "#55595e");
+    S.add(boxGeo(0.72, 0.56, 0.02, 3.5, 0.5, -6.24), "#3a3d42"); S.add(boxGeo(0.56, 0.03, 0.04, 3.5, 0.84, -6.22), "#c9cfd4");
+    S.add(boxGeo(0.72, 0.72, 0.02, 4.4, 0.52, -6.24), "#c9cfd4"); S.add(boxGeo(0.56, 0.03, 0.04, 4.4, 0.84, -6.22), "#8a939b");
+    S.add(boxGeo(0.8, 0.02, 0.48, 5.9, 1.012, -6.62), "#aab2ba"); S.add(boxGeo(0.04, 0.26, 0.04, 5.9, 1.14, -6.86), "#c9cfd4"); S.add(boxGeo(0.04, 0.04, 0.2, 5.9, 1.27, -6.78), "#c9cfd4");
+    for (const s of [-1, 1]) S.add(boxGeo(0.5, 1.5, 0.05, 0, 0.75, 0).rotateX(s * 0.2).translate(8.6, 0, 3.6 + s * 0.3), "#c9a27a");
+    S.add(boxGeo(0.5, 0.04, 0.3, 8.6, 1.42, 3.6), "#c9a27a");
+    S.add(cylGeo(0.13, 0.13, 0.24, 7.85, 0.12, 4.0, 10), "#f4f4f4"); S.add(cylGeo(0.13, 0.13, 0.24, 7.6, 0.12, 3.5, 10), "#c9785b");
+    S.add(boxGeo(0.4, 0.05, 0.3, 7.8, 0.03, 3.0, 0.3), "#8a939b");
+    c.col.addBox(8.6, 3.6, 0.7, 0.9);
+    S.add(boxGeo(0.6, 0.45, 0.5, 1.85, 0.225, 4.7, 0.2), "#b8926a"); S.add(boxGeo(0.5, 0.4, 0.45, 1.2, 0.8, 4.5, -0.15), "#c8a27a");
+    c.col.addBox(1.85, 4.7, 0.7, 0.6);
+    S.done();
+    lamp(c, 5, 0.5); lamp(c, -6.6, 1);
   }, [{ npc: "rita", x: -7, z: -5.2, rot: 0 }, { npc: "patel", x: 3, z: -2.6, rot: Math.PI / 4 }], { floorKind: "wood", accent: "#8a5a44" }),
 
   "dans-house": () => room("dans-house", 16, 12, "#a67c52", "#f7ecdc", (c) => {
@@ -1246,6 +1435,34 @@ const B: Record<string, () => Interior> = {
     lamp(c, 1.5, -1.5, 3.1);
     plant(c, -7.2, -5.2, 1);
     c.M.add("coat-rack", mat("#5a3a2a"), cylGeo(0.05, 0.08, 1.8, -2.5, 0.9, 5, 6));
+    // (16 Nov 2026) a home: a rug under the dinner table, books, the TV across from the sofa with a low table between,
+    // an armchair and a reading lamp, the fridge and the cupboards over the counter, a sideboard with photographs, an
+    // evening window
+    const S = smalls(c);
+    rugS(S, 1.5, -1.5, 4.6, 3.4, "#8a4b3a", "#e8c07a", 0.16);
+    shelf(c, -2.1, -5.72, 1.7, 1.9, "#8a6a4a", ["#b5452f", "#2f6b4f", "#e8c07a", "#34495e", "#c9785b"]);
+    S.add(boxGeo(1.9, 0.5, 0.45, -5, 0.25, -5.7), "#6b4a3a"); S.add(boxGeo(1.5, 0.86, 0.06, -5, 1.0, -5.72), "#1d1d1d"); S.add(boxGeo(1.4, 0.76, 0.01, -5, 1.0, -5.685), "#31455c");
+    c.col.addBox(-5, -5.7, 1.9, 0.5);
+    coffeeTable(c, S, -5, 0.9);
+    {
+      const P = (g: THREE.BufferGeometry) => g.rotateY(Math.PI / 2).translate(-7.1, 0, -1.6);
+      S.add(P(boxGeo(0.9, 0.4, 0.8, 0, 0.3, 0)), "#3f6e8c"); S.add(P(boxGeo(0.9, 0.6, 0.18, 0, 0.75, -0.36)), "#3f6e8c");
+      for (const s of [-1, 1]) S.add(P(boxGeo(0.16, 0.3, 0.8, s * 0.42, 0.6, 0)), "#345d77");
+      c.col.addBox(-7.1, -1.6, 0.85, 0.95);
+      S.add(cylGeo(0.16, 0.18, 0.04, -7.4, 0.02, -0.4, 10), "#3a3d42"); S.add(cylGeo(0.02, 0.02, 1.6, -7.4, 0.8, -0.4, 6), "#3a3d42");
+      S.add(new THREE.ConeGeometry(0.26, 0.3, 10, 1, true).translate(-7.4, 1.7, -0.4), "#f2d08a");
+      c.col.addCircle(-7.4, -0.4, 0.2);
+    }
+    S.add(boxGeo(0.85, 1.9, 0.7, 7.5, 0.95, -5.5), "#e6e9ee"); S.add(boxGeo(0.03, 0.5, 0.04, 7.2, 1.2, -5.13), "#8a939b"); S.add(boxGeo(0.86, 0.02, 0.02, 7.5, 1.35, -5.14), "#aab2ba");
+    c.col.addBox(7.5, -5.5, 0.85, 0.7);
+    S.add(boxGeo(3.2, 0.7, 0.36, 5.0, 2.6, -5.8), "#f4f4f4");
+    for (let i = 0; i < 4; i++) S.add(boxGeo(0.03, 0.2, 0.03, 3.8 + i * 0.8, 2.4, -5.6), "#8a939b");
+    S.add(boxGeo(0.7, 0.02, 0.44, 6.1, 1.012, -5.3), "#aab2ba"); S.add(boxGeo(0.04, 0.24, 0.04, 6.1, 1.13, -5.5), "#c9cfd4");
+    S.add(boxGeo(0.5, 0.9, 1.9, 7.7, 0.45, 1.6), "#8a6a4a"); S.add(boxGeo(0.56, 0.04, 1.96, 7.7, 0.92, 1.6), "#5a4636");
+    for (const [pz, pc] of [[1.0, "#e8c07a"], [1.5, "#b8d8d8"], [2.2, "#f7a072"]] as [number, string][]) { S.add(boxGeo(0.03, 0.26, 0.2, 7.82, 1.08, pz), "#3b2a20"); S.add(boxGeo(0.01, 0.2, 0.15, 7.8, 1.08, pz), pc); }
+    c.col.addBox(7.7, 1.6, 0.56, 1.96);
+    S.done();
+    windowBack(c, 1.6, 1.5, 1.3, 2.35, "#f6cf9c");
   }, [{ npc: "dan", x: -1, z: 2.8, rot: Math.PI * 0.85 }, { npc: "nora", x: 4.2, z: -4.3, rot: 0.3 }], { floorKind: "wood", accent: "#6b4a3a", warm: true }),
 
   office: () => room("office", 22, 16, "#b9c2cc", "#eef3f7", (c) => {

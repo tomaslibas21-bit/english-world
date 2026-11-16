@@ -70,5 +70,12 @@ export const ROOM_PEOPLE: Record<string, RoomPerson[]> = {
   museum: [{ x: -4.8, z: -7.3, rot: P }, { x: -0.6, z: -7.3, rot: P + 0.2 }, { x: -11.3, z: -1, rot: -P / 2 }],
   // passengers queuing at check-in and one waiting at the baggage desk, a step back and to the side: clear of where the
   // player stands at each counter to talk (Kevin's and Priya's ax/az in interiors.ts) and of the way there from the door
-  airport: [{ x: 7, z: -5.7, rot: P, carry: "bag" }, { x: 7.3, z: -4.5, rot: P, carry: "bag" }, { x: -2.3, z: -6.7, rot: P }],
+  // (16 Nov 2026) and people waiting: two on the arrivals seats (0.46 m high), two at the gate (its seats 0.68 m), the
+  // coffee stand's barista behind her counter
+  airport: [
+    { x: 7, z: -5.7, rot: P, carry: "bag" }, { x: 7.3, z: -4.5, rot: P, carry: "bag" }, { x: -2.3, z: -6.7, rot: P },
+    { x: -14.56, z: 7.27, rot: 0, sit: 0.46, phone: true }, { x: -8.6, z: 6.53, rot: P, sit: 0.46, carry: "paper" },
+    { x: 17.6, z: 1.02, rot: 0, sit: 0.68, phone: true }, { x: 20.2, z: 4.02, rot: 0, sit: 0.68, carry: "paper" },
+    { x: 17.8, z: 8.85, rot: 0 },
+  ],
 };
