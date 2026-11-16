@@ -110,7 +110,7 @@ export function climbAudit(col: Colliders, led: Ledges, bounds: Area, start: [nu
   };
 
   const s = at(start[0], start[1]);
-  const best = Hop.PEAK + Hop.DOUBLE_LIFT + TOE;
+  const best = Hop.TOP + TOE;
   // with every move, and with none (walking only: the pieces are in the way)
   const whole = flood(s, best, 6), all = whole.seen;
   const out = (x: number, z: number) => (x < bounds.minX || x > bounds.maxX || z < bounds.minZ || z > bounds.maxZ || z < SHORE.limit) && !open.some((o) => x >= o.minX && x <= o.maxX && z >= o.minZ && z <= o.maxZ);
@@ -161,7 +161,7 @@ export function climbAudit(col: Colliders, led: Ledges, bounds: Area, start: [nu
       for (const d of NB) { const b = a + d; if (b >= 0 && b < N && freshCell[b] && !done[b] && Math.abs((b % nx) - i) <= 1) { done[b] = 1; stack.push(b); } }
     }
     if (f.area < 0.5) continue;
-    f.out = flood(j, Hop.PEAK - 0.05, 2, plain).hit ? "jump" : flood(j, Hop.PEAK + Hop.DOUBLE_LIFT - 0.1, 3, plain).hit ? "flip" : "stuck";
+    f.out = flood(j, Hop.PEAK - 0.05, 2, plain).hit ? "jump" : flood(j, Hop.TOP - 0.1, 3, plain).hit ? "flip" : "stuck";
     rep.fresh.push(f);
   }
   for (let n = 0; n < whole.tail && rep.outside; n++) {

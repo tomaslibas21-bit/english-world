@@ -141,7 +141,7 @@ describe("Hop: a jump that lands on what is under it", () => {
     expect(low).toBeGreaterThan(Hop.PEAK - 0.05);
   });
 
-  it("no second jump in the air or the instant it lands; land() puts them down at once", () => {
+  it("no new jump in the air or the instant it lands; land() puts them down at once", () => {
     const h = new Hop();
     h.start();
     h.update(1 / 60);
@@ -152,78 +152,104 @@ describe("Hop: a jump that lands on what is under it", () => {
     expect(h.start()).toBe(true);
   });
 
-  it("a second press in the air is a second jump: a moment's gathering, then higher, twice head over heels, once a jump", () => {
-    const h = new Hop();
-    expect(h.flip()).toBe(false); // not from the ground
-    h.start();
-    let peak = 0, t = 0, turned = 0, asked = false, hung = 0, at = 0;
-    while (h.air && t < 3) {
-      // (at the top of the jump)
-      if (!asked && h.vy <= 0.2) { asked = true; at = h.y; expect(h.flip()).toBe(true); expect(h.flip()).toBe(false); }
-      const y0 = h.y;
-      h.update(1 / 60);
-      if (asked && h.spin === 0 && h.y === y0) hung++;
-      peak = Math.max(peak, h.y);
-      turned = Math.max(turned, h.spin);
-      t += 1 / 60;
+  it("three presses, three steps: the jump; a flip, once round and a little higher; the high jump, a moment's gathering, then much higher, twice round", () => {
+    const run = (press: (h: Hop, frame: number) => void, dt = 1 / 60) => {
+      const h = new Hop();
+      h.start();
+      let peak = 0, turned = 0, n = 0;
+      while (h.air && n < 400) { press(h, n); h.update(dt); peak = Math.max(peak, h.y); turned = Math.max(turned, h.spin); n++; }
+      return { h, peak, turned, frames: n };
+    };
+    const g = new Hop();
+    expect(g.flip()).toBe(false); // not from the ground
+    // one press: the jump, as it always was, and no turning
+    const plain = run(() => {});
+    expect(plain.peak).toBeGreaterThan(Hop.PEAK - 0.01);
+    expect(plain.peak).toBeLessThanOrEqual(Hop.PEAK + 1e-6);
+    expect(plain.turned).toBe(0);
+    // two: the flip. Once head over heels, a third of a metre higher than the jump, whenever on the way up it is pressed
+    expect(Hop.FLIP_LIFT).toBeGreaterThan(0.25);
+    expect(Hop.FLIP_LIFT).toBeLessThan(0.45);
+    for (const at of [0, 1, 4, 9, 16]) {
+      const f = run((h, i) => { if (i === at) expect(h.flip()).toBe(true); });
+      expect(f.peak, `the flip pressed at frame ${at}`).toBeGreaterThan(Hop.PEAK + Hop.FLIP_LIFT - 0.03);
+      expect(f.peak).toBeLessThanOrEqual(Hop.PEAK + Hop.FLIP_LIFT + 1e-6);
+      expect(f.turned).toBeGreaterThan(Math.PI * 1.9);
+      expect(f.turned).toBeLessThanOrEqual(Math.PI * 2 + 1e-6);
+      expect(f.h.flipped).toBe(true);
+      expect(f.h.doubled).toBe(false);
+      // upright again a moment after the landing at the latest
+      for (let i = 0; i < 12; i++) f.h.update(1 / 60);
+      expect(f.h.spin).toBe(0);
+      expect(f.h.tuck).toBe(0);
     }
-    // they hang where they are for a moment (gathered up), then go up 1.8 m more, turning twice, and are upright
-    // again a moment after the top
-    expect(hung).toBeGreaterThanOrEqual(3);
-    expect(hung).toBeLessThanOrEqual(6);
-    expect(peak).toBeGreaterThan(at + Hop.DOUBLE_LIFT - 0.02);
-    expect(peak).toBeLessThanOrEqual(Hop.PEAK + Hop.DOUBLE_LIFT + 1e-6);
-    expect(Hop.DOUBLE_LIFT).toBeGreaterThan(1.6);
-    expect(Hop.PEAK + Hop.DOUBLE_LIFT).toBeGreaterThan(2.7);
-    expect(Hop.PEAK + Hop.DOUBLE_LIFT).toBeLessThan(3);
-    expect(turned).toBeGreaterThan(Math.PI * 3.9);
-    expect(turned).toBeLessThanOrEqual(Math.PI * 4 + 1e-6);
-    expect(Hop.FLIP_TIME).toBeLessThan(Hop.V_DOUBLE / Hop.G + 0.2);
-    for (let i = 0; i < 12; i++) h.update(1 / 60);
-    expect(h.spin).toBe(0);
-    expect(h.tuck).toBe(0);
-    // pressed on the way up, what was left of the first jump is not lost: two quick presses go as high as two
-    // well-timed ones (to a hand's width: the frames), and never higher than the two jumps together
-    for (const frames of [1, 4, 9]) {
-      const e = new Hop();
-      e.start();
-      for (let i = 0; i < frames; i++) e.update(1 / 60);
-      expect(e.flip()).toBe(true);
-      let early = 0;
-      while (e.air) { e.update(1 / 60); early = Math.max(early, e.y); }
-      expect(early).toBeGreaterThan(Hop.PEAK + Hop.DOUBLE_LIFT - 0.06);
-      expect(early).toBeLessThanOrEqual(Hop.PEAK + Hop.DOUBLE_LIFT + 1e-6);
+    // (the flip is done before the landing when it is pressed by the top of the jump)
+    expect(Hop.FLIP_ONE).toBeLessThan(0.5);
+    // three: the high jump. They hang where they are for a moment (gathered up), then go up much higher, twice round
+    // in all, and are upright again a moment after the top. Three quick presses go as high as three well-timed ones.
+    expect(Hop.TOP).toBeGreaterThan(2.7);
+    expect(Hop.TOP).toBeLessThan(3);
+    expect(Hop.HIGH_LIFT).toBeGreaterThan(1.3);
+    for (const [second, third] of [[0, 1], [1, 2], [2, 6], [6, 9], [12, 16], [14, 17]]) {
+      let hung = 0, last = -1;
+      const t = run((h, i) => {
+        if (i === second) expect(h.flip()).toBe(true);
+        if (i === third) { expect(h.flip()).toBe(true); expect(h.flip()).toBe(false); }
+        if (i > third && h.y === last && h.doubled) hung++;
+        last = h.y;
+      });
+      expect(t.peak, `pressed at frames ${second} and ${third}`).toBeGreaterThan(Hop.TOP - 0.08);
+      expect(t.peak).toBeLessThanOrEqual(Hop.TOP + 1e-6);
+      expect(hung).toBeGreaterThanOrEqual(3);
+      expect(hung).toBeLessThanOrEqual(6);
+      // twice round in all: the flip's turn goes on into the two
+      expect(t.turned).toBeGreaterThan(Math.PI * 3.9);
+      expect(t.turned).toBeLessThanOrEqual(Math.PI * 4 + 1e-6);
+      expect(t.h.doubled).toBe(true);
+      for (let i = 0; i < 12; i++) t.h.update(1 / 60);
+      expect(t.h.spin).toBe(0);
+      expect(t.h.tuck).toBe(0);
     }
-    const e = new Hop();
-    e.start();
-    e.update(1 / 60);
-    e.flip();
-    while (e.air) e.update(1 / 60);
-    // falling, it stops the fall and goes up again
+    expect(Hop.FLIP_TIME).toBeLessThan(Hop.V_HIGH / Hop.G + 0.25);
+    // the turning never goes backwards
+    let before = 0, back = false;
+    run((h, i) => { if (i === 3 || i === 12) h.flip(); if (h.spin > 0 && h.spin < before - 1e-9) back = true; before = h.spin > 0 ? h.spin : before; });
+    expect(back).toBe(false);
+    // pressed while falling, each adds its own from where they are: the fall stops and they go up again
     const d = new Hop();
     d.start();
     while (d.vy > -3) d.update(1 / 60);
     const low = d.y;
     expect(d.flip()).toBe(true);
     let again = 0;
+    while (d.air && d.vy >= 0) { d.update(1 / 60); again = Math.max(again, d.y); }
+    expect(again).toBeGreaterThan(low + Hop.FLIP_LIFT - 0.03);
+    while (d.vy > -3) d.update(1 / 60);
+    const lower = d.y;
+    expect(d.flip()).toBe(true);
+    again = 0;
     while (d.air) { d.update(1 / 60); again = Math.max(again, d.y); }
-    expect(again).toBeGreaterThan(low + Hop.DOUBLE_LIFT - 0.02);
-    // the next jump has its own second jump; falling off an edge counts as being in the air
-    for (let i = 0; i < 12; i++) e.update(1 / 60);
-    e.start();
-    e.update(1 / 60);
-    expect(e.flip()).toBe(true);
+    expect(again).toBeGreaterThan(lower + Hop.HIGH_LIFT - 0.03);
+    // the next jump has its own; falling off an edge counts as being in the air
+    for (let i = 0; i < 12; i++) d.update(1 / 60);
+    expect(d.start()).toBe(true);
+    d.update(1 / 60);
+    expect(d.flip()).toBe(true);
+    expect(d.doubled).toBe(false);
     const f = new Hop();
     f.land(0.9);
     f.update(1 / 60, 0);
     expect(f.air).toBe(true);
     expect(f.flip()).toBe(true);
+    expect(f.flip()).toBe(true);
+    expect(f.flip()).toBe(false);
     // a slow phone's long frames: as high, to a hand's width (the gathering may run a frame over)
-    const slow = new Hop();
-    slow.start();
-    let sp = 0, pressed = false;
-    while (slow.air) { if (!pressed && slow.vy <= 0.6) { pressed = true; slow.flip(); } slow.update(1 / 20); sp = Math.max(sp, slow.y); }
-    expect(sp).toBeGreaterThan(Hop.PEAK + Hop.DOUBLE_LIFT - 0.25);
+    for (const dt of [1 / 30, 1 / 20]) {
+      const slow = run((h, i) => { if (i === 1 || i === 2) h.flip(); }, dt);
+      expect(slow.peak, `at ${Math.round(1 / dt)} frames a second`).toBeGreaterThan(Hop.TOP - 0.25);
+      expect(slow.peak).toBeLessThanOrEqual(Hop.TOP + 1e-6);
+      expect(run((h, i) => { if (i === 1) h.flip(); }, dt).peak).toBeGreaterThan(Hop.PEAK + Hop.FLIP_LIFT - 0.1);
+    }
   });
 
   it("a slope's small steps down are followed, not fallen", () => {
@@ -459,7 +485,7 @@ describe("Ledges: climbing higher, a step at a time", () => {
     expect(mid).toBeLessThan(1.4);
   });
 
-  it("a plain jump gets onto the hood or the trunk; the roof is reached from there, or from the street with the second jump", () => {
+  it("a plain jump gets onto the hood or the trunk; the roof is reached from there, or straight from the street with the three presses", () => {
     // walking at the car stops at it
     expect(go(0, 5, -1, 4.4, []).top).toBe(0);
     // from the front, whenever the jump is taken within a stride of the bumper
@@ -490,27 +516,43 @@ describe("Ledges: climbing higher, a step at a time", () => {
     expect(go(0, -1.7, 1, 4.4, [2, 34], [], 70, trunk.y).top).toBeCloseTo(1.56, 1);
     // straight from the street a plain jump never reaches the roof, at a walk or at a run
     for (const speed of [4.4, 7.4]) for (const dir of [1, -1]) for (let j = 6; j < 44; j += 2) expect(go(0, -7 * dir, dir, speed, [j]).top).toBeLessThan(1.3);
-    // the second jump does: taken at the top of the first, a stride before the car, and no further than the roof
-    const q = new THREE.Vector3(0, 0, 4.2), up = new Hop();
-    for (let i = 0; i < 120; i++) {
-      if (i === 8) up.start();
-      if (i === 25) up.flip();
-      if (q.z > -0.2) q.z -= 4.4 / 60;
-      led.resolve(q, 0.38, up.y, up.air);
-      up.update(1 / 60, led.support(q.x, q.z, up.y, up.air));
+    // nor does the jump with the flip (it may come down on the windshield, never on the roof)
+    for (const speed of [4.4, 7.4]) for (const dir of [1, -1]) for (let j = 6; j < 44; j += 2) for (const after of [1, 6, 14]) expect(go(0, -7 * dir, dir, speed, [j], [j + after]).top, `${speed} m/s, jump at ${j}, flip ${after} later`).toBeLessThan(1.5);
+    // the three presses do: straight onto the roof, the very top, from the ground beside the car: timed (the flip
+    // near the top of the jump, the high jump after it) or all three at once, a stride before the car
+    for (const [second, third] of [[22, 25], [9, 10], [10, 14]]) {
+      const q = new THREE.Vector3(0, 0, 4.2), up = new Hop();
+      for (let i = 0; i < 140; i++) {
+        if (i === 8) up.start();
+        if (i === second || i === third) up.flip();
+        if (q.z > -0.2) q.z -= 4.4 / 60;
+        led.resolve(q, 0.38, up.y, up.air);
+        up.update(1 / 60, led.support(q.x, q.z, up.y, up.air));
+      }
+      expect(up.air).toBe(false);
+      expect(up.y, `pressed at ${second} and ${third}`).toBeCloseTo(1.56, 1);
     }
-    expect(up.air).toBe(false);
-    expect(up.y).toBeCloseTo(1.56, 1);
+    // and from its side, standing still beside it and stepping in at the top
+    const side = new THREE.Vector3(1.5, 0, 0), sh = new Hop();
+    for (let i = 0; i < 140; i++) {
+      if (i === 2) sh.start();
+      if (i === 3 || i === 4) sh.flip();
+      if (sh.y > 1.7 && side.x > 0.1) side.x -= 4.4 / 60;
+      led.resolve(side, 0.38, sh.y, sh.air);
+      sh.update(1 / 60, led.support(side.x, side.z, sh.y, sh.air));
+    }
+    expect(sh.air).toBe(false);
+    expect(sh.y).toBeCloseTo(1.56, 1);
   });
 
-  it("what is as high as a van takes the second jump; a plain jump stops at it", () => {
+  it("what is as high as a van takes the three presses; a plain jump or a flip stops at it", () => {
     expect(col.boxes[5].split).toBe(true);
     expect(led.support(60, 0, 2.3, true)).toBeCloseTo(2.2, 2);
-    for (const j of [10, 16, 22, 28]) expect(go(60, 5, -1, 4.4, [j], [], 80).top).toBe(0);
+    for (const j of [10, 16, 22, 28]) { expect(go(60, 5, -1, 4.4, [j], [], 80).top).toBe(0); expect(go(60, 5, -1, 4.4, [j], [j + 4], 80).top).toBe(0); }
     const q = new THREE.Vector3(60, 0, 4.4), up = new Hop();
     for (let i = 0; i < 120; i++) {
       if (i === 8) up.start();
-      if (i === 25) up.flip();
+      if (i === 22 || i === 25) up.flip();
       if (q.z > 0.5) q.z -= 4.4 / 60;
       led.resolve(q, 0.38, up.y, up.air);
       up.update(1 / 60, led.support(q.x, q.z, up.y, up.air));
@@ -537,11 +579,11 @@ describe("Ledges: climbing higher, a step at a time", () => {
     const p = new THREE.Vector3(70, 0, 0.2);
     for (let i = 0; i < 30; i++) { p.z += 0.05; col.resolve(p, 0.38, true); led.resolve(p, 0.38, 0, false); }
     expect(p.z).toBeLessThan(0.65 - 0.38 + 0.13);
-    // from the street: walk up, jump, the second jump at the top: up through the roof's edge and down onto it
+    // from the street: walk up, jump, the flip, the high jump at the top: up through the roof's edge and down onto it
     const q = new THREE.Vector3(70, 0, -3.6), up = new Hop();
     for (let i = 0; i < 120; i++) {
       if (i === 8) up.start();
-      if (i === 25) up.flip();
+      if (i === 22 || i === 25) up.flip();
       if (q.z < -0.1) q.z += 4.4 / 60;
       col.resolve(q, 0.38, true);
       led.resolve(q, 0.38, up.y, up.air);
@@ -555,7 +597,7 @@ describe("Ledges: climbing higher, a step at a time", () => {
     h.start();
     let stood = 0;
     for (let i = 0; i < 120; i++) {
-      if (i === 17) h.flip();
+      if (i === 14 || i === 17) h.flip();
       h.update(1 / 60, led.support(70, 0.4, h.y, h.air));
       if (!h.air) stood = Math.max(stood, h.y);
     }
