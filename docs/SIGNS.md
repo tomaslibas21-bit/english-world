@@ -56,3 +56,22 @@ From the browser console of a running game:
 
 Move what covers the words (beside or below the sign, keeping the street's look: greenery is moved, not removed),
 or trim it, or nudge the sign; then run the check again.
+
+## Boards that flicker (z-fighting)
+
+Two faces turned the same way in the same plane, overlapping, are drawn in turn as the camera moves: the picture
+shimmers between them (16 Nov 2026: the visitor center's welcome sign and the town map beside it, both hung 0.2 m off
+the back wall, overlapped by 20 cm). `src/dev/zfightAudit.ts` finds every such pair in a group (each triangle's plane,
+same-facing triangles within 4 mm of one plane, the area they share); by default only pairs where one face shows a
+picture (a sign, a board, a poster, the map), since the merged rooms have many coincident faces nobody sees.
+
+```bash
+WORLD_PLAYWRIGHT_MODULE=/path/to/playwright-core/index.mjs node tests/browser/zfight.mjs --out=../zfight-out
+```
+
+runs it on every room of the town (`--only=room,room`, `--town` for the streets too, `--strict` to fail on any). On
+`spanish-edition` add `VITE_EDITION=es WORLD_STORAGE=puerto-colibri` as for the sign check.
+
+Rules it led to (interiors.ts `wallPanel`): a board stands 1 cm further off its wall than its caller says
+(`PANEL_OFF`), so it never shares a plane with a band, a frame or tile faces at the same depth; its rounded corners are
+cut out (`alphaTest`), not drawn black; two boards side by side keep apart.
