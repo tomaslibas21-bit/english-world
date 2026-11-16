@@ -2,7 +2,7 @@
 // found in the pieces, and a line that repeats words itself must not be taken for one.
 import { describe, expect, it } from "vitest";
 import { asHeard } from "../tools/voice-batch";
-import { falseStart, heardAgain, judgePieces, numberAgain, onceInARow, repeatsItself, startedAgain, unsplit, wordAgain, wordsLost, wordsOf, SOUNDS_TWICE, type Heard } from "../tools/voice-pieces";
+import { falseStart, heardAgain, interjectionLost, judgePieces, numberAgain, onceInARow, repeatsItself, startedAgain, unsplit, wordAgain, wordsLost, wordsOf, SOUNDS_TWICE, type Heard } from "../tools/voice-pieces";
 
 const words = (s: string) => wordsOf(s, asHeard);
 const heard = (whole: string, pieces: string[], more: Partial<Heard> = {}): Heard => ({
@@ -107,6 +107,40 @@ describe("a word of the line written as two", () => {
     expect(judgePieces(said, heard("Half way? That's eight and a half.", ["Half way?", "That's eight and a half."]), asHeard).again).toBeUndefined();
     expect(judgePieces("Anytime. Just don't make me wait two months next time.", heard("Any time. Don't make me wait two months next time.", ["Any time.", "Don't make me wait two months next time."]), asHeard).again).toBeUndefined();
     expect(judgePieces(said, heard("Halfway? That's eight and a half. A half.", ["Halfway?", "That's eight and a half.", "A half."]), asHeard).again).toBeDefined();
+  });
+});
+
+describe("what a recognizer writes of its own", () => {
+  const at = (pause: number, first: string, second: string, whole: string): Heard => ({ key: "k", sec: 3, whole, words: [], engine: "parakeet",
+    pauses: [[2200 - pause / 2, 2200 + pause / 2]], pieces: [[0, 2200, first], [2200, 3000, second]] });
+  it("a run the line says twice, misheard both times, is not said once more", () => {
+    const said = "Chest press? Sure! See you chest press!";
+    expect(judgePieces(said, heard("Chess press? Sure. See you chess press.", ["Chess press?", "Sure.", "See you Chess Press."]), asHeard).again).toBeUndefined();
+    expect(heardAgain(words("Turn left at the bank, then right at the school."), words("Turn left at a bank, then right at a school."))).toBeUndefined();
+    expect(heardAgain(words("Turn left at the bank."), words("Turn left at the, at the bank."))).toBe("at the");
+  });
+  it("an ending of its own on a piece cut at a closure is no restart, but a real pause is", () => {
+    const said = "I worked as a construction worker in Lithuania.";
+    expect(judgePieces(said, at(90, "I worked as a construction worker in the", "In Lithuania", said), asHeard).again).toBeUndefined();
+    expect(judgePieces(said, at(300, "I worked as a construction worker in the", "In Lithuania", said), asHeard).again).toBe("in … in");
+    // a line begun again goes on the same way both times, and one word twice in a row needs no such proof
+    expect(judgePieces("I'm looking for a dress.", at(90, "I'm look", "I'm looking for a dress.", "I'm looking for a dress."), asHeard).again).toBeDefined();
+    expect(judgePieces("Okay, that's twenty-one seventy-eight.", at(90, "Okay, that's twenty one seventy eight.", "Okay.", "Okay, that's twenty one seventy eight."), asHeard).again).toBe("okay (once more)");
+  });
+});
+
+describe("a line's interjection", () => {
+  it("must be left by a cut, though it is no word", () => {
+    const said = "Hmm, let me check the schedule.";
+    // heard before as "Mm. | Let me check the schedule."; a cut from the start that leaves only the words has lost it
+    expect(interjectionLost(said, [[35, 785]], 3200, ["Let me check the schedule."], asHeard)).toBe("hmm");
+    expect(interjectionLost(said, [[35, 785]], 3200, ["Mm.", "Let me check the schedule."], asHeard)).toBeUndefined();
+    expect(interjectionLost(said, [[35, 785]], 3200, ["", "Let me check the schedule."], asHeard)).toBeUndefined();
+    expect(interjectionLost(said, [[1500, 2100]], 3200, ["Let me check the schedule."], asHeard)).toBeUndefined();
+    expect(interjectionLost("Oh, the total is twelve eighty-six.", [[35, 455]], 3000, ["Oh.", "The total is twelve eighty six."], asHeard)).toBeUndefined();
+    expect(interjectionLost("That's all we have, huh?", [[2500, 3000]], 3000, ["That's all we have."], asHeard)).toBe("huh");
+    expect(interjectionLost("Cold? Ha! It's boiling.", [[900, 1500]], 3000, ["Cold?", "It's boiling."], asHeard)).toBe("ha");
+    expect(interjectionLost("Let me check the schedule.", [[35, 785]], 3200, ["Let me check the schedule."], asHeard)).toBeUndefined();
   });
 });
 
