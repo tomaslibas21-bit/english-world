@@ -197,9 +197,14 @@ function plant(c: Ctx, x: number, z: number, s = 1) {
   c.M.add("leaves", mat("#5fa24b", { flat: true }), new THREE.IcosahedronGeometry(0.35 * s, 0).translate(x + 0.15, 1.2 * s, z - 0.1));
   c.col.addCircle(x, z, 0.35 * s);
 }
+/** How much further off its wall a panel stands than its caller says (m). */
+const PANEL_OFF = 0.01;
 function wallPanel(c: Ctx, tex: THREE.Texture, x: number, y: number, z: number, w: number, h: number, rotY = 0) {
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
-  m.position.set(x, y, z); m.rotation.y = rotY;
+  // (a board's rounded corners are cut out, not drawn black; and it stands a centimetre further off what it hangs on
+  // than asked, PANEL_OFF, so it never shares a plane with a band, a frame or a tile face there: the two flickered in
+  // turn as the camera moved, src/dev/zfightAudit.ts)
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false, alphaTest: 0.5 }));
+  m.position.set(x + Math.sin(rotY) * PANEL_OFF, y, z + Math.cos(rotY) * PANEL_OFF); m.rotation.y = rotY;
   c.g.add(m);
   return m;
 }
@@ -966,7 +971,8 @@ const B: Record<string, () => Interior> = {
     for (const bx of [-5.5, -4]) shelf(c, bx, -1, 1.2, 1.8, "#9c6b43", ["#e45b4f", "#4a7bb7", "#f2c14e", "#6fbf73"], Math.PI / 2, 0.5);
     sign(c, "Welcome to Maple Harbor!", 0, 3.4, -c.d / 2 + 0.2, 5, "#2f6b4f", "#fff8e8");
     // big town map on the back wall is set by the game (uses the ground texture)
-    c.g.userData.mapSpot = { x: 4.2, y: 2.2, z: -c.d / 2 + 0.2, w: 3.8, h: 2.6 };
+    // (clear of the welcome sign's right end, which it overlapped in the same plane: the two flickered, docs/SIGNS.md)
+    c.g.userData.mapSpot = { x: 4.5, y: 2.2, z: -c.d / 2 + 0.2, w: 3.8, h: 2.6 };
     wallPanel(c, textTexture("Jazz Night · Friday 8 PM", { bg: "#2b2d6e", fg: "#ffd166", w: 512, h: 160 }), -4.5, 2.6, -c.d / 2 + 0.2, 2.6, 0.8);
     plant(c, 6, 5, 0.9); plant(c, -6, 5, 0.9);
     // a model of the town on a table over a red rug, a wall rack of brochures, a shelf of souvenirs, a postcard stand,
@@ -1616,7 +1622,8 @@ const B: Record<string, () => Interior> = {
     c.M.add("bp-screen", mat("#bfe8d8", { emissive: "#2c5a48" }), boxGeo(0.24, 0.14, 0.02, -1.95, 1.68, -c.d / 2 + 0.12), false);
     desk(c, 4.8, -5.1);
     wallPanel(c, eyeChart(), c.w / 2 - 0.05, 2.1, -2.2, 0.8, 1.2, -Math.PI / 2);
-    wallPanel(c, lungsPoster(), 2.3, 2.35, -c.d / 2 + 0.2, 0.9, 1.12);
+    // (its top a few cm under the clinic's sign: they shared a strip of the same plane)
+    wallPanel(c, lungsPoster(), 2.3, 2.32, -c.d / 2 + 0.2, 0.9, 1.12);
     sign(c, "Harbor Family Clinic", -0.1, 3.45, -c.d / 2 + 0.2, 4.4, "#3a86b0", "#ffffff");
     // waiting corner: seats along the west wall, magazines, water cooler, check-in desk
     c.M.add("seats", mat("#3a86b0"), boxGeo(0.6, 0.45, 2.8, -7.35, 0.45, 0.3));
