@@ -4,7 +4,7 @@
 // asks it "is a lesson on?" and hands it the frame.
 import { audio } from "../audio";
 import { NPCS } from "../../content/npcs";
-import { SITUATION_BY_ID } from "../../content/situations";
+import { getSituation, loadSituation, prefetchSituations } from "../../content/situations/catalog";
 import { npcVoice } from "../../content/voices";
 import { compose, type Sentence } from "../../convo/compose";
 import { useStore } from "../../state/store";
@@ -68,7 +68,12 @@ export class SurfPlay {
   get active() { return !!this.logic; }
   get heading() { return this.scene.heading; }
   /** Near enough to the school's boards for its prompt. */
-  near(x: number, z: number) { return this.reach(x, z) < Infinity; }
+  near(x: number, z: number) {
+    const near = this.reach(x, z) < Infinity;
+    // (the lesson's lines are its conversation's: fetched when the school is near, src/content/situations/catalog.ts)
+    if (near && this.content.situation) prefetchSituations([this.content.situation]);
+    return near;
+  }
   /** How far the school's boards are (m), Infinity beyond their prompt's reach. */
   reach(x: number, z: number) { const d = Math.hypot(x - this.spot.start.x, z - this.spot.start.z); return d < this.spot.start.r ? d : Infinity; }
   get npc() { return NPCS[this.content.npc]; }
@@ -76,7 +81,7 @@ export class SurfPlay {
   /** A cue's line in the Spanish chosen now, as the instructor says it to this learner (the answers: as the learner
    *  says them); null where the edition has none. */
   line(cue: string): Sentence | null {
-    const src = SITUATION_BY_ID[this.content.situation]?.lines["sg_" + cue]?.[0] ?? this.content.lines?.["sg_" + cue]?.[0];
+    const src = getSituation(this.content.situation)?.lines["sg_" + cue]?.[0] ?? this.content.lines?.["sg_" + cue]?.[0];
     if (!src) return null;
     const npc = this.npc, me = useStore.getState().progress.profile?.gender ?? "f", her = npc?.gender ?? "f";
     const mine = cue.startsWith("a_");
@@ -119,7 +124,10 @@ export class SurfPlay {
   start(level: Level) {
     if (this.active) return;
     useSurf.getState().set({ picking: false });
-    this.game.fade(() => this.launch(level));
+    // (its lines in the learner's language are its conversation's: here already when the school was near)
+    const id = this.content.situation;
+    if (!id || getSituation(id)) { this.game.fade(() => this.launch(level)); return; }
+    loadSituation(id).catch(() => null).then(() => { if (!this.active) this.game.fade(() => this.launch(level)); });
   }
 
   private launch(level: Level) {

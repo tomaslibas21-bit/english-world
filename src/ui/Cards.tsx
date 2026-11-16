@@ -8,7 +8,7 @@ import { useStore } from "../state/store";
 import { useCards, unitInput, sentenceInput, cardKey, cleanText, isDashGloss, dueCards, daysUntil, nextDue, exportCardsJSON, type Card } from "../state/cards";
 import { NPCS } from "../content/npcs";
 import { coachVoice } from "../content/voices";
-import { SITUATION_BY_ID } from "../content/situations";
+import { SITUATION_BY_ID } from "../content/situations/catalog";
 import { audio } from "../game/audio";
 import { Icon } from "./icons";
 import { ltCount } from "./lt";

@@ -2,7 +2,7 @@
 // then starts straight in the other mode (no title screen in between). A link to one situation starts
 // straight in it.
 import { useStore, type PlayMode } from "../state/store";
-import { SITUATION_BY_ID } from "../content/situations";
+import { SITUATION_BY_ID, prefetchSituations } from "../content/situations/catalog";
 
 const KEY = "ew-play-now";
 
@@ -30,7 +30,10 @@ let linked: string | null = (() => {
     if (id === null) return null;
     url.searchParams.delete("sit");
     history.replaceState(history.state, "", url.pathname + url.search + url.hash);
-    return SITUATION_BY_ID[id] ? id : null;
+    if (!SITUATION_BY_ID[id]) return null;
+    // (its file, at once: it opens as soon as the game is ready, src/content/situations/catalog.ts)
+    prefetchSituations([id]);
+    return id;
   } catch { return null; }
 })();
 

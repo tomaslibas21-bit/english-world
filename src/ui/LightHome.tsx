@@ -5,11 +5,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { picturesOn, useStore } from "../state/store";
 import { setGame, game } from "../game/gameRef";
 import { LightGame } from "../game/LightGame";
-import { SITUATIONS, SITUATION_BY_ID } from "../content/situations";
+import { SITUATIONS, SITUATION_BY_ID } from "../content/situations/catalog";
 import { TOWN_LT } from "../content/locations";
 import { LOCATIONS } from "../content/locations";
 import { NPCS } from "../content/npcs";
-import type { SituationDef } from "../content/types";
+import type { SituationMeta } from "../content/types";
 import { sitProgress, stars } from "../state/progress";
 import { Conversation, avatarColor } from "./Conversation";
 import { SceneBackdrop } from "./SceneBackdrop";
@@ -25,10 +25,10 @@ import { Loading } from "./Loading";
 
 /** The same short, varied set to start with as in the situation picker (Panels). */
 
-const isCall = (s: SituationDef) => s.mode === "phone" || s.mode === "video" || s.location === "phone";
-const sitIcon = (s: SituationDef): IconName => isCall(s) ? (s.mode === "video" ? "video" : "phoneCall") : iconForEmoji(LOCATIONS[s.location]?.icon) ?? "pin";
+const isCall = (s: SituationMeta) => s.mode === "phone" || s.mode === "video" || s.location === "phone";
+const sitIcon = (s: SituationMeta): IconName => isCall(s) ? (s.mode === "video" ? "video" : "phoneCall") : iconForEmoji(LOCATIONS[s.location]?.icon) ?? "pin";
 /** Who the situation is with (the date is with the partner the learner chose). */
-function mainNpc(s: SituationDef) {
+function mainNpc(s: SituationMeta) {
   if (s.npc !== "sam" && s.npc !== "emma") return NPCS[s.npc];
   const p = useStore.getState().progress.profile;
   return NPCS[p?.datePartner ?? (p?.gender === "f" ? "sam" : "emma")];
@@ -88,13 +88,13 @@ function LightHome() {
   const progress = useStore((s) => s.progress);
   const covered = useStore((s) => s.conv.active || !!s.hud.panel);
   const byCh = useMemo(() => {
-    const m = new Map<number, SituationDef[]>();
+    const m = new Map<number, SituationMeta[]>();
     for (const s of [...SITUATIONS].sort((a, b) => a.chapter - b.chapter || a.order - b.order)) {
       const l = m.get(s.chapter) ?? []; l.push(s); m.set(s.chapter, l);
     }
     return [...m.entries()];
   }, []);
-  const isDone = (s: SituationDef) => sitProgress(progress, s.id).completions > 0;
+  const isDone = (s: SituationMeta) => sitProgress(progress, s.id).completions > 0;
   const done = SITUATIONS.filter(isDone).length;
   const totalStars = SITUATIONS.reduce((a, s) => a + stars(sitProgress(progress, s.id)), 0);
   const open = (panel: "phrasebook" | "journal" | "settings") => useStore.getState().setHud({ panel });
@@ -155,7 +155,7 @@ function LightHome() {
   );
 }
 
-function SitCard({ s }: { s: SituationDef }) {
+function SitCard({ s }: { s: SituationMeta }) {
   const progress = useStore((st) => st.progress);
   const st = stars(sitProgress(progress, s.id));
   const n = mainNpc(s);

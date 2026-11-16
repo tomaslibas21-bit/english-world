@@ -80,7 +80,7 @@ Student instructions (Lithuanian): `docs/STUDENT-GUIDE-LT.md`.
 | `src/ui/` | React overlay: conversation panel, HUD, map, journal, phone, settings, phrasebook |
 | `tools/` | Content validator, simulator, IPA builder, audio builder, index generator |
 
-**Adding or changing a situation:** read `AUTHORING.md` (the authoring guide) and `SITUATIONS-SPEC.md`. Create `src/content/situations/sNN-name.ts`, run `npx tsx tools/gen-index.ts`, then `npx tsx tools/check-content.ts sNN` until it passes, then `npm run ipa` and `npm run audio -- sNN`. Lines without a pre-generated clip still work: the game falls back to the browser's built-in speech synthesis for them.
+**Adding or changing a situation:** read `AUTHORING.md` (the authoring guide) and `SITUATIONS-SPEC.md`. Create `src/content/situations/sNN-name.ts`, run `npx tsx tools/gen-index.ts` and `npx tsx tools/gen-meta.ts` (the light catalogue the game loads at start; each conversation's file is its own chunk, fetched when it opens or nears: `src/content/situations/catalog.ts`), then `npx tsx tools/check-content.ts sNN` until it passes, then `npm run ipa` and `npm run audio -- sNN`. Lines without a pre-generated clip still work: the game falls back to the browser's built-in speech synthesis for them.
 
 ## Looks
 

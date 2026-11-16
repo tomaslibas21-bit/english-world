@@ -4,7 +4,7 @@ import { useStore as useZustand } from "zustand";
 import { audio, filesToken, usesBufferRecordings } from "../game/audio";
 import { watchMicrophone } from "../convo/audioFocus";
 import { useStore } from "../state/store";
-import { SITUATIONS, SITUATION_BY_ID } from "../content/situations";
+import { SITUATIONS, SITUATION_BY_ID } from "../content/situations/catalog";
 import { STATIONS, songOfSituation } from "../content/radio";
 import { courseFavorites, FAVORITES_KEY } from "./favorites";
 import { BufferOutput, HtmlOutput } from "./output";
