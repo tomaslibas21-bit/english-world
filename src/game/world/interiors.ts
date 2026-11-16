@@ -1213,7 +1213,9 @@ const B: Record<string, () => Interior> = {
     S.add(cylGeo(0.008, 0.008, 0.16, 0, 0, 0, 5).rotateZ(Math.PI / 2).rotateY(0.7).translate(-0.3, 1.12, -2.98), "#1d1d1d");
     for (let i = 0; i < 5; i++) S.add(boxGeo(0.16, 0.01, 0.24, 1.0 + i * 0.12, 1.087 + i * 0.002, -3.0 - (i % 2) * 0.05, -0.3 + i * 0.15), pal[i]);
     S.add(new THREE.SphereGeometry(0.06, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2).translate(1.9, 1.08, -3.15), "#c9a227");
-    sign(c, "Information", 0, 0.62, -2.79, 1.6, "#ffffff", "#2f6b4f");
+    // (none where the edition's talavera covers the counter's front, infoMx: behind the tiles, 2 mm off them, it
+    // flickered through them)
+    if (!THEME.roomExtras.roomsMx) sign(c, "Information", 0, 0.62, -2.79, 1.6, "#ffffff", "#2f6b4f");
     plant(c, -6.3, -5.2, 1.1); plant(c, 2.2, 4.9, 0.8);
     lamp(c, -2.0, 1.5, 3.3); lamp(c, 3.4, 0.4, 3.4);
     if (THEME.roomExtras.roomsMx) infoMx(c, S, sx, sz);
