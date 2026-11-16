@@ -222,8 +222,12 @@ export function Conversation() {
             <>
               {/* in the town: walk on (the next task shows as usual), or straight into the next conversation, the
                   two the same size (owner, 29 Oct 2026); the light mode above has no town, so it leads with the next */}
+              {/* after the surf school's conversation: the lesson first, the most prominent (owner, 16 Nov 2026) */}
+              {game?.surfAfter(sit.id) && (
+                <button className="btn surf-cta" onClick={() => game?.surfFromConversation()}><Icon name="star" size={19} /> Banglenčių pamoka</button>
+              )}
               <div className="ended-main">
-                <button className="btn" onClick={() => game?.closeConversation()}><Icon name="walk" size={18} /> Tęsti</button>
+                <button className={"btn" + (game?.surfAfter(sit.id) ? " soft" : "")} onClick={() => game?.closeConversation()}><Icon name="walk" size={18} /> Tęsti</button>
                 <button className="btn soft" onClick={startNext}><Icon name="arrowRight" size={18} /> Kita situacija</button>
               </div>
               <div className="sit-actions" style={{ justifyContent: "center" }}>

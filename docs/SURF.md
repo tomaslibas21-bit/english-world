@@ -6,6 +6,16 @@ what they understand. The owner's design (13 Nov 2026); built for Puerto Colibr�
 
 ## What the learner does
 
+**Finding it** (16 Nov 2026, the owner: "not seeing a probamos una ola at the end of convo nor any notification when
+I'm at the board"): every board at the school gives the prompt "Banglenčių pamoka" / "Surf lesson" (the rack, the
+paddleboards, the kayak on the sand: `world/surf.ts` `boards`, with room; standing on one, it wins over the
+instructor's talk prompt a step away), a pulsing ring marks the start on the sand (`play.ts` `marker`), the first time
+one comes near the school the guide's hint "surf" says the lesson is there (`coach.ts`; `hintWithin`), and the end
+card of the school's conversation leads with a wide "Surf lesson" button (`Game.surfAfter`, `surfFromConversation`):
+after the conversation's yes it starts the lesson at its level, without one it opens the level's choice. The yes
+starts it however the conversation closes ("Tęsti", ✕), but for picking another conversation. Test:
+`tests/browser/surf-find.mjs`.
+
 1. **Starts it**: by saying yes to "¿Probamos una ola?" at the end of the conversation at the school (its event
    `c.event("surf", { level })`), or at the school's boards by the water (the prompt "Banglenčių pamoka", then a
    choice of level).

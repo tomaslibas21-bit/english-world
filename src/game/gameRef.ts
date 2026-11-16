@@ -37,6 +37,10 @@ export interface GameApi {
   surfStop(): void;
   surfChoose(cue: string): void;
   surfAgain(level?: "beginner" | "advanced"): void;
+  /** The end card of a conversation: true for the surf school's (its first button then starts the lesson). */
+  surfAfter(sitId: string): boolean;
+  /** That button: the conversation closes and the lesson starts. */
+  surfFromConversation(): void;
   setQuality(q: "high" | "low"): void;
   readonly groundCanvas: HTMLCanvasElement | undefined;
   /** What one can take (the boats, the convertibles) and where it is, for the round map. */

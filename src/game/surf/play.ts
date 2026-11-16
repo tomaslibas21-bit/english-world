@@ -2,6 +2,8 @@
 // the instructor's lines said in her voice and shown on the card (src/ui/Surf.tsx), the learner's keys and buttons
 // handed to the rules (logic.ts), the score and what was heard kept (progress.surf, the phrase cards). Game.ts only
 // asks it "is a lesson on?" and hands it the frame.
+import * as THREE from "three";
+import { floorY } from "../water";
 import { audio } from "../audio";
 import { NPCS } from "../../content/npcs";
 import { getSituation, loadSituation, prefetchSituations } from "../../content/situations/catalog";
@@ -60,8 +62,30 @@ export class SurfPlay {
   private lastPic: string | undefined;
   private loaded: HTMLImageElement[] = [];
 
+  /** Where the lesson starts: a ring on the sand, as at a counter's talk spot, pulsing gently (Game adds it to the
+   *  scene and calls tick). */
+  marker = new THREE.Group();
+  private ringT = 0;
+
   constructor(private spot: SurfSpot, private content: SurfContent, private game: SurfGame) {
     this.scene = new Surf(spot, { get player() { return game.player(); }, splash: game.splash, portrait: game.portrait });
+    const mat = new THREE.MeshBasicMaterial({ color: "#ffd166", transparent: true, opacity: 0.85, depthWrite: false });
+    const ring = new THREE.Mesh(new THREE.RingGeometry(0.62, 0.84, 36).rotateX(-Math.PI / 2), mat);
+    const halo = new THREE.Mesh(new THREE.RingGeometry(0.9, 1.0, 36).rotateX(-Math.PI / 2), mat.clone());
+    (halo.material as THREE.MeshBasicMaterial).opacity = 0.4;
+    this.marker.add(ring, halo);
+    this.marker.position.set(spot.start.x, Math.max(0, floorY(spot.start.x, spot.start.z)) + 0.05, spot.start.z);
+    this.marker.renderOrder = 1;
+  }
+
+  /** The ring at the start: shown while one walks the town (`show`), not in the lesson. */
+  tick(dt: number, show: boolean) {
+    this.marker.visible = show && !this.logic;
+    if (!this.marker.visible) return;
+    this.ringT += dt;
+    const halo = this.marker.children[1] as THREE.Mesh, k = (this.ringT * 0.7) % 1;
+    halo.scale.setScalar(1 + k * 0.6);
+    (halo.material as THREE.MeshBasicMaterial).opacity = 0.45 * (1 - k);
   }
 
   get group() { return this.scene.group; }
@@ -75,8 +99,18 @@ export class SurfPlay {
     return near;
   }
   /** How far the school's boards are (m), Infinity beyond their prompt's reach. */
-  reach(x: number, z: number) { const d = Math.hypot(x - this.spot.start.x, z - this.spot.start.z); return d < this.spot.start.r ? d : Infinity; }
+  reach(x: number, z: number) {
+    const s = this.spot.start;
+    let best = Math.hypot(x - s.x, z - s.z) < s.r ? Math.hypot(x - s.x, z - s.z) * 0.5 : Infinity;
+    // (standing on a board, its prompt wins over the instructor's talk prompt a step away: half the distance counts)
+    for (const [bx, bz, r] of this.spot.boards ?? []) { const d = Math.hypot(x - bx, z - bz); if (d < r) best = Math.min(best, d * 0.5); }
+    return best;
+  }
+  /** How far the school is (m), for the first-time hint. */
+  distance(x: number, z: number) { return Math.hypot(x - this.spot.start.x, z - this.spot.start.z); }
   get npc() { return NPCS[this.content.npc]; }
+  /** The conversation whose lines the lesson speaks (its end card offers the lesson). */
+  get situation() { return this.content.situation; }
 
   /** A cue's line in the Spanish chosen now, as the instructor says it to this learner (the answers: as the learner
    *  says them); null where the edition has none. */
