@@ -204,10 +204,17 @@ refuses such a cut (`interjectionLost`): where the line opens or ends with an in
 clip's first or last 400 ms, a sound that is no word of the line must still be heard there, and with an interjection
 inside the line one must be left somewhere. Every cut made so far in both towns was checked again with it.
 
-With the full pass, Puerto Colibrí stands at 222 cuts and 141 new takes. Maple Harbor's list for new takes is 73
-(five of the 78 were endings of the recognizer's making).
+**The new takes (16 Nov 2026).** Maple Harbor's list was 73 (five of the 78 were endings of the recognizer's
+making): 70 lines got a new take, each heard back clean, 9 of them on the second try. The other 3 keys have no line
+in today's list, so their text is not sure and they keep their clips. Puerto Colibrí's list was 166: 161 new takes,
+13 on the second try and 3 more recorded once again after reading what the check had heard ("Es. | Es mi primera
+vez…" across a short pause, in a take two seconds longer than its line usually is). 4 keys have no line in the work
+folder's requests and keep their clips. One long line of directions is heard with "derecha" for "derecho" in every
+take, the first one too: the recognizer's doing, and its clip stays. Gemini: 260 single requests, $0.23.
 
-Not covered: the two lists for new takes wait for a key. And 5,410 Maple Harbor clips (PR #14 of 7 Nov, slot-filled
+With that, Maple Harbor stands at 275 cuts and 232 new takes, Puerto Colibrí at 222 cuts and 302 new takes.
+
+Not covered: 5,410 Maple Harbor clips (PR #14 of 7 Nov, slot-filled
 variants) have no line in the enumeration: by sound alone none of the 1,490 heard has a restart a cut can mend.
 
 **Repairs** (`npx tsx tools/voice-batch.ts …`; the Spanish tool has the same commands):
