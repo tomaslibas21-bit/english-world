@@ -81,15 +81,16 @@ export const BOAT = {
 };
 export const CAR_REACH = 1.7;
 
-/** The slide (the brake held while turning at speed: the handbrake). `from`: the pace it starts at (m/s). While it
- *  lasts the wheel turns the car directly (`yaw0` rad/s, `yaw1` more at 12 m/s; a boat: `yawK` times its own turn),
- *  and its course comes round after its nose only slowly (`slide`, 1/s: the angle between the two settles at the turn
- *  divided by this), never further apart than `angle` (rad). Gripping, the course follows the nose at once (`grip`);
- *  let go, it catches again at `recover`. Sideways it scrubs a little pace off (`scrub`, 1/s broadside). Beyond `catch`
- *  (rad between nose and course) it counts as a slide; held for `chargeMin` s it ends in a kick: `kick` m/s more for
- *  `boost0` + `boostK` × the time it was held (s, up to `chargeMax`). */
-export const CAR_DRIFT = { from: 6, yaw0: 1.1, yaw1: 0.9, yawK: 1, slide: 2.6, recover: 4.5, grip: 10, angle: 0.85, scrub: 0.5, catch: 0.2, chargeMin: 0.7, chargeMax: 2.2, boost0: 0.5, boostK: 0.55, kick: 3.6 };
-export const BOAT_DRIFT = { from: 4.5, yaw0: 0, yaw1: 0, yawK: 1.7, slide: 1.3, recover: 2.4, grip: 4, angle: 1, scrub: 0.35, catch: 0.3, chargeMin: 0.8, chargeMax: 2, boost0: 0.4, boostK: 0.4, kick: 2 };
+/** How it holds the road (16 Nov 2026: the owner did not enjoy the handbrake slides of the day before, "maybe it
+ *  should be more like it was without the drifting… if you're going really fast, sometimes it drifts a little bit").
+ *  It goes where it is pointed, and the brake is the brake, in a turn too (`from`: Infinity, no slide is started by
+ *  hand; `chargeMin`: Infinity, no kick). Its course follows its nose at once (`grip`, 1/s). Only really fast
+ *  (`looseFrom` m/s) with the wheel hard over (`looseSteer`) do the back wheels let go a little (`slide`): the angle
+ *  between nose and course settles at the turn divided by `slide`, never more than `angle` (rad), and it catches
+ *  again at `recover` as soon as the wheel is eased or the pace drops. Beyond `catch` (rad) it counts as sliding (the
+ *  tires are heard, marks are left). The other fields are the handbrake slide's, kept for the arithmetic. */
+export const CAR_DRIFT = { from: Infinity, looseFrom: 12.5, looseSteer: 0.7, yaw0: 1.1, yaw1: 0.9, yawK: 1, slide: 4.4, recover: 9, grip: 22, angle: 0.3, scrub: 0.3, catch: 0.12, chargeMin: Infinity, chargeMax: 2.2, boost0: 0.5, boostK: 0.55, kick: 3.6 };
+export const BOAT_DRIFT = { from: Infinity, looseFrom: 9.5, looseSteer: 0.7, yaw0: 0, yaw1: 0, yawK: 1.7, slide: 2.2, recover: 3, grip: 4, angle: 0.5, scrub: 0.3, catch: 0.3, chargeMin: Infinity, chargeMax: 2, boost0: 0.4, boostK: 0.4, kick: 2 };
 
 /** A vehicle on the ground plan: where its middle is, where it points, how fast it goes along that (negative: back)
  *  and across it (a slide). */
@@ -148,8 +149,8 @@ export class Motion {
    *  nobody): the speed is held to what stops `clear` short of them. `care`: the same for someone straight ahead whom
    *  its turned wheel takes it round: it does not stop for them, but goes by no faster than `careful`. It moves the way
    *  it is going (along its heading, and sideways in a slide); what is in the way is settled afterwards by `settle`.
-   *  The brake held while turning at speed is the handbrake: the back steps out and it slides, turning by the wheel,
-   *  for as long as it is held; let go, the wheels catch again, and a slide held for a moment ends in a kick. */
+   *  The brake is the brake, in a turn too. Really fast with the wheel hard over, the back wheels let go a little
+   *  (CAR_DRIFT): a small slide that catches by itself. */
   step(dt: number, c: Controls, gap = Infinity, road = true, care = Infinity) {
     const S = this.spec, car = this.kind === "car", D = car ? CAR_DRIFT : BOAT_DRIFT;
     this.steer += (c.steer - this.steer) * Math.min(1, dt * S.wheel);
@@ -212,9 +213,11 @@ export class Motion {
       // (its pace is kept: the course is turned towards the nose, not braked towards it)
       const P = Math.hypot(v, sl), back = v < 0 ? -1 : 1;
       let beta = P > 1e-6 ? Math.atan2(sl, Math.abs(v)) : 0;
-      beta *= Math.exp(-(this.drift ? D.slide : Math.abs(beta) > D.catch ? D.recover : D.grip) * dt);
-      // (in a slide the nose comes no further round than `angle` off its course: it holds the slide, it does not spin)
-      if (this.drift && Math.abs(beta) > D.angle) { const over = beta - Math.sign(beta) * D.angle; this.heading = wrap(this.heading + over); beta -= over; }
+      // (really fast with the wheel hard over, the back lets go a little; else the course follows the nose at once)
+      const loose = this.drift || (v > 0 && pace0 > D.looseFrom && Math.abs(this.steer) > D.looseSteer);
+      beta *= Math.exp(-(loose ? D.slide : Math.abs(beta) > D.catch ? D.recover : D.grip) * dt);
+      // (the nose comes no further round than `angle` off its course: a small slide, never a spin)
+      if (loose && Math.abs(beta) > D.angle) { const over = beta - Math.sign(beta) * D.angle; this.heading = wrap(this.heading + over); beta -= over; }
       const rub = Math.exp(-D.scrub * Math.sin(beta) ** 2 * dt);
       v = back * P * Math.cos(beta) * rub; sl = P * Math.sin(beta) * rub;
       // a slide held for a moment ends in a kick
@@ -278,6 +281,18 @@ export class Motion {
 export function lockAt(v: number) {
   const k = Math.min(1, Math.max(0, (Math.abs(v) - CAR.lockHold) / (CAR.max - CAR.lockHold)));
   return CAR.lockSlow + (CAR.lockFast - CAR.lockSlow) * k * (2 - k);
+}
+
+/** Whether someone on foot starts at a car going by (they jump aside; one of them may call after it). `along`, `lat`:
+ *  where they are from the car's middle, along its way and across it (m); `speed` m/s; `hl`, `hw`: half its length
+ *  and width; `onStreet`: they stand on the asphalt; `carOnStreet`: so does the car. Only when it is really close and
+ *  coming at them: someone on the sidewalk while the car keeps to the street is left in peace, unless it is heading
+ *  straight at them over the kerb; nobody beside it or behind it starts. */
+export function startles(along: number, lat: number, speed: number, hl: number, hw: number, onStreet: boolean, carOnStreet: boolean) {
+  const side = Math.abs(lat);
+  if (along <= 0) return false;
+  if (carOnStreet && !onStreet) return side < hw + 0.15 && along < hl + 3.2;
+  return side < hw + 0.75 && along < hl + 1 + speed * 0.45;
 }
 
 function toward(v: number, to: number, by: number) { return v > to ? Math.max(to, v - by) : Math.min(to, v + by); }

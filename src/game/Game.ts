@@ -243,12 +243,11 @@ export class Game implements GameApi {
   private braked = false;
   private dustT = 0;
   /** At a wheel: the way the camera looks along (the car's course: in a slide it is seen side on), how far it has
-   *  pulled back for the speed, the lens's widening, whether the kick out of a slide has been heard, the tip given. */
+   *  pulled back for the speed, the lens's widening, whether the kick out of a slide has been heard. */
   private rideCourse = 0;
   private rideBack = 0;
   private rideFov = 0;
   private kicked = false;
-  private slideTold = false;
   /** Swimming (water.ts SWIM): in deep water now; how far into the stroke's pose (0–1); a dive: how long it still
    *  lasts (s) and how far under (0–1); the stroke's last splash. */
   private swimming = false;
@@ -1751,12 +1750,6 @@ export class Game implements GameApi {
       audio.rush("wind", on ? Math.max(0, (pace - 6) / (m.spec.max - 3)) * (car ? 1 : 0.8) + (!car ? slide * 0.5 : 0) : 0, Math.min(1, pace / 16));
       if (on && m.boost > 0 && !this.kicked) { this.kicked = true; audio.kickRush(); }
       if (!on || m.boost <= 0) this.kicked = false;
-      // (the first time it goes fast: a word about the slide)
-      if (on && !this.slideTold && pace > m.spec.town * 0.92 && Math.abs(m.steer) < 0.3) {
-        this.slideTold = true;
-        const touch = useStore.getState().hud.showTouch;
-        useStore.getState().toast({ kind: "tip", title: car ? L("Paslysk posūkyje!") : L("Paslysk bangomis!"), body: touch ? L("Sukdamas laikyk STOP – šonu per posūkį. Paleidęs gausi pagreitį.") : L("Sukdamas laikyk Tarpą – šonu per posūkį. Paleidęs gausi pagreitį."), ms: 6000 });
-      }
     }
     {
       const fast = on && pace > (car ? CAR_DRIFT.from : BOAT_DRIFT.from);

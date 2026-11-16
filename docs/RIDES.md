@@ -130,6 +130,28 @@ turning round is so awkward that "you don't really want to drive at all".
   standing where they are, and nearer than it was, is not made (`peopleGap`); those who walk step out of its way, and
   if it stands across their way they turn back after a second instead of gathering round it (`Walker.boxT`).
 
+## Round 4 (16 Nov 2026): back to holding the road; people shout only when it makes sense
+
+The owner, a day on: "I don't really enjoy the drifting. Maybe it should be more like it was without the drifting,
+with maybe like if you're going really fast, sometimes it drifts a little bit… And everyone keeps yelling, 'Watch out
+for me,' even though they're like on the sidewalk."
+
+- **The handbrake slide is gone.** The brake is the brake, in a turn too (`CAR_DRIFT.from` and `chargeMin` are
+  Infinity: no slide started by hand, no kick; the phone's button always reads STOP; no tip about sliding). The car
+  goes where it is pointed (`grip` 22: its course a few degrees off its nose at most).
+- **A little slide, really fast**: above 45 km/h (`looseFrom`) with the wheel hard over (`looseSteer`) the back lets
+  go a little: about 13°, never more than 17° (`angle`), caught within half a second of easing the wheel. The tires
+  are heard and leave marks then; nothing else changes. The boat the same way: its own small slide in a hard turn at
+  speed, no slide by the brake.
+- **Kept**: the speed that builds on a held course, kerbs and speed bumps in the springs, the tight circle and the
+  turn on the spot, the brisk reverse, sliding along walls, the gentle setting free, the camera's pull-back.
+- **Who starts at a car** (`drive.ts startles`, `Ambient.startle`): only someone it is really coming at: ahead of it,
+  within 0.75 m of its side, no further off than it covers in about half a second. **Someone on the sidewalk while
+  the car keeps to the street does nothing** (no jump, no shout), unless it is heading straight at them over the
+  kerb. Nobody beside or behind it starts.
+- **Fewer calls**: at least 14 to 22 s between two (it was 5 to 9), one voice at a time, and whoever has called does
+  not again for four minutes (`Ambient.called`, `Walker.quiet`).
+
 ### Voices
 
 The lines are in the list both tools read. Maple Harbor: `tools/casting.ts` RIDERS (Gemini's prebuilt voices: Jess
