@@ -15,7 +15,7 @@ import { rand, type Colliders } from "./world/util";
 import { CAR, TRAFFIC_LANES, CHAT_SPOTS } from "./world/layout";
 import type { Seat } from "./world/town";
 import { Dog } from "./dog";
-import { aheadOnArc, pushOutOfBox } from "./rides/drive";
+import { aheadOnArc, pushOutOfBox, startles } from "./rides/drive";
 
 /** A townsperson: one who strolls between places ("walk"), sits at a café table or on a bench ("sit"), or stands
  *  chatting with someone ("stand"). */
@@ -30,6 +30,8 @@ interface Walker {
   scare?: number;
   hop?: number;
   dodge?: [number, number];
+  /** After calling after a car: how long until they would again (s). */
+  quiet?: number;
   /** How long a car one can drive has stood in their way (s). */
   boxT?: number;
   /** Which of the passers-by's calling voices is theirs (content/voices.ts shoutVoice): the same one every time. */
@@ -299,6 +301,7 @@ export class Ambient {
     for (const c of this.chats) c.update(dt);
     for (const w of this.walkers) {
       if (w.scare) w.scare = Math.max(0, w.scare - dt);
+      if (w.quiet) w.quiet = Math.max(0, w.quiet - dt);
       if (w.hop !== undefined) this.hopAside(w, dt);
       if (w.kind === "walk") this.updateWalker(w, dt, player);
       else w.ch.update(dt);
@@ -496,19 +499,21 @@ export class Ambient {
     }
   }
 
-  /** A car goes by close and fast (at (x, z), along (fx, fz), `speed` m/s; `hl`, `hw`: half its length and width):
-   *  whoever on foot is beside its way or just ahead of it starts: someone walking or standing jumps (a walker also a
-   *  good step aside, away from its line), someone sitting looks up, puzzled. Each of them only once in a while.
-   *  Returns one of those who jumped just now (they may call after it), or null. Nobody is touched: the car stops
-   *  short of anyone in its way (personAhead), and this clears its way. */
-  startle(x: number, z: number, fx: number, fz: number, speed: number, hl: number, hw: number): Walker | null {
+  /** A car comes close and fast (at (x, z), along (fx, fz), `speed` m/s; `hl`, `hw`: half its length and width;
+   *  `street`: whether a place is asphalt): whoever on foot it is really coming at starts (rides/drive.ts `startles`):
+   *  someone walking or standing jumps (a walker also a good step aside, away from its line), someone sitting looks
+   *  up, puzzled. Someone on the sidewalk while the car keeps to the street does nothing. Each of them only once in a
+   *  while. Returns one of those who jumped just now and has not called after a car lately (they may call after it:
+   *  `called`), or null. Nobody is touched: the car stops short of anyone in its way (personAhead). */
+  startle(x: number, z: number, fx: number, fz: number, speed: number, hl: number, hw: number, street: (x: number, z: number) => boolean): Walker | null {
     let who: Walker | null = null;
+    const carOnStreet = street(x, z);
     for (const w of this.walkers) {
       if (w.scare || w.hop !== undefined) continue;
       const p = w.ch.root.position, dx = p.x - x, dz = p.z - z;
       if (Math.abs(dx) > 14 || Math.abs(dz) > 14) continue;
       const along = dx * fx + dz * fz, lat = dx * fz - dz * fx;
-      if (along < -hl - 0.4 || along > hl + 1.2 + speed * 0.5 || Math.abs(lat) > hw + 1.8) continue;
+      if (!startles(along, lat, speed, hl, hw, street(p.x, p.z), carOnStreet)) continue;
       w.scare = 9 + this.r() * 7;
       w.tone ??= this.walkers.indexOf(w) % 2;
       if (w.kind === "sit") { w.ch.react?.("puzzled"); continue; }
@@ -521,10 +526,13 @@ export class Ambient {
         // (they turn to look after it)
         w.heading = Math.atan2(x - p.x, z - p.z);
       }
-      who ??= w;
+      if (!w.quiet) who ??= w;
     }
     return who;
   }
+
+  /** Someone has called after a car: they do not again for a good while (nobody keeps on at the driver). */
+  called(w: Walker) { w.quiet = 240; }
 
   /** Someone startled jumps: up and down again in under half a second, a walker a good step aside with it. */
   private hopAside(w: Walker, dt: number) {

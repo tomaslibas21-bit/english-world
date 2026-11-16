@@ -75,31 +75,29 @@ try {
     else { await page.keyboard.down("Space"); await page.waitForTimeout(900); await page.keyboard.up("Space"); }
     s = await state();
     check(`${label}: the brake stops it`, Math.abs(s.v) < 0.3, s);
-    // a slide: at speed on a quiet street, the brake held with the wheel turned throws the back out; the phone's
-    // button says so; let go, it runs on
+    // the brake in a turn at speed is the brake (16 Nov: no slide started by hand): it stops, pointing where it goes;
+    // the phone's button stays STOP
     await page.evaluate(() => {
       const g = window.__ew.game, r = g.rides.riding;
       r.m.set(100, 76, -Math.PI / 2);
-      window.__drift = { most: 0, was: false, marks: false };
-      window.__driftT = setInterval(() => { const m = g.rides.riding?.m; if (!m) return; window.__drift.most = Math.max(window.__drift.most, Math.abs(m.drifted)); window.__drift.was ||= m.drift; window.__drift.marks ||= g.rides.skids.mesh.visible; }, 16);
+      window.__drift = { most: 0, was: false };
+      window.__driftT = setInterval(() => { const m = g.rides.riding?.m; if (!m) return; if (m.pace > 3) window.__drift.most = Math.max(window.__drift.most, Math.abs(m.drifted)); window.__drift.was ||= m.drift; }, 16);
     });
     await go(true);
     await page.waitForFunction(() => window.__ew.game.rides.riding.m.speed > 9, null, { timeout: 6000 });
     if (phone) {
-      check("phone: at speed the brake button offers the slide", (await page.locator(".brake-btn").innerText()).trim() === "DRIFT");
+      check("phone: at speed the brake button is still STOP", (await page.locator(".brake-btn").innerText()).trim() === "STOP");
       await page.evaluate(() => { window.__ew.game.setJoystick(-1, 1); window.__ew.game.hold(true); });
-      await page.waitForTimeout(800);
+      await page.waitForTimeout(1300);
       await page.evaluate(() => { window.__ew.game.hold(false); window.__ew.game.setJoystick(0, 0); });
     } else {
       await page.keyboard.down("a"); await page.keyboard.down("Space");
-      await page.waitForTimeout(800);
+      await page.waitForTimeout(1300);
       await page.keyboard.up("Space"); await page.keyboard.up("a");
       await go(false);
     }
     const slid = await page.evaluate(() => { clearInterval(window.__driftT); const m = window.__ew.game.rides.riding.m; return { ...window.__drift, most: +window.__drift.most.toFixed(2), pace: +m.pace.toFixed(1) }; });
-    check(`${label}: the brake in a turn at speed is a slide: the back steps out, marks on the road, it keeps going`, slid.was && slid.most > 0.3 && slid.marks && slid.pace > 3, slid);
-    if (phone) { await page.evaluate(() => window.__ew.game.hold(true)); await page.waitForTimeout(1200); await page.evaluate(() => window.__ew.game.hold(false)); }
-    else { await page.keyboard.down("Space"); await page.waitForTimeout(1200); await page.keyboard.up("Space"); }
+    check(`${label}: the brake in a turn at speed stops it: no slide, its course on its nose`, !slid.was && slid.most < 0.2 && slid.pace < 1.5, slid);
     // over a kerb: set down on a quiet street facing its sidewalk, it drives up onto it with a thud (a few places
     // tried: someone walking by may hold it up at one)
     let kerb = null;

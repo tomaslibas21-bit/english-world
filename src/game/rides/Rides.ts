@@ -136,6 +136,7 @@ export class Rides {
   readonly asphalt: Drivable;
   private bumps: [number, number, number, number][];
   private shoutT = 2;
+  private onStreet = (x: number, z: number) => this.asphalt.has(x, z);
   private stuckT = 0;
   private stuckTold = false;
   private yieldT = 0;
@@ -617,8 +618,10 @@ export class Rides {
     // going by close and fast: those on foot jump aside, and now and then one of them calls after it
     this.shoutT -= dt;
     if (m.pace > 4.5) {
-      const w = host.ambient.startle(m.x, m.z, fx, fz, m.pace, CAR.half, CAR.wide + wide);
-      if (w && this.shoutT <= 0) { this.shoutT = 5 + Math.random() * 4; host.say(RIDE_SHOUTS[Math.floor(Math.random() * RIDE_SHOUTS.length)], shoutVoice(w.female, w.tone ?? 0), w.female, w.ch); }
+      const w = host.ambient.startle(m.x, m.z, fx, fz, m.pace, CAR.half, CAR.wide + wide, this.onStreet);
+      // (one voice at a time and not often: a quarter of a minute at least between two calls, and whoever has called
+      // does not again for minutes)
+      if (w && this.shoutT <= 0) { this.shoutT = 14 + Math.random() * 8; host.ambient.called(w); host.say(RIDE_SHOUTS[Math.floor(Math.random() * RIDE_SHOUTS.length)], shoutVoice(w.female, w.tone ?? 0), w.female, w.ch); }
     }
     // pushing at something and getting nowhere: a word about backing up, once a ride
     // (behind a car of the traffic it is waiting, not stuck)
