@@ -46,7 +46,8 @@ function Play() {
       g = new Game(stage.current!, tags.current!);
       setGame(g);
       g.onReady = () => {
-        setReady(true); useStore.getState().setScreen("play"); useStore.getState().setHud({ panel: "scenarios" });
+        // (a first visit opens with the town itself, from the air: Game.beginFlight; later ones with the list)
+        setReady(true); useStore.getState().setScreen("play"); if (!useStore.getState().hud.flight) useStore.getState().setHud({ panel: "scenarios" });
         const sit = takeLinkedSituation();
         if (sit) g!.startScenario(sit);
       };

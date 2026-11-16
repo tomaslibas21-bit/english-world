@@ -146,6 +146,9 @@ Shared by every edition of the game (the code is in `src/game/`; each town keeps
 
 ## The first-time guide and the tip (`src/game/coach.ts`, `src/ui/Guide.tsx`)
 
+**Since 16 Nov 2026 the hints come one at a time, when each thing first matters, and a first visit opens with a
+flight over the town: see docs/TALK-VIEW.md. What follows describes the guide as it was before.**
+
 - Six hints, one at a time, in a small card: walk, run, jump, talk, the radio (only where there is one), and the switch
   between pictures and the 3D town for conversations („Iliustruotos scenos“, a switch in the card). Each ticks itself
   off when the learner does it (7 m walked, 1.2 s at a run, a jump, a conversation started, the radio switched on) or

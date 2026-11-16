@@ -184,6 +184,22 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .zone-banner p { margin: 2px 0 0; font-weight: 800; font-size: 1em; opacity: 0.95; }
 @keyframes fadein { from { opacity: 0; transform: translate(-50%, 8px); } }
 
+/* The first visit's flight over the town (Hud.tsx Flight): the whole screen is the way to cut it short. Its words
+   stand low, on a soft shade, clear of the town above them. */
+.flight {
+  position: absolute; inset: 0; z-index: 12; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 14px;
+  padding: 0 18px calc(34px + env(safe-area-inset-bottom)); margin: 0; border: 0; border-radius: 0; cursor: pointer; text-align: center; color: #fff; font: inherit;
+  background: linear-gradient(to top, rgba(16, 28, 38, 0.62), rgba(16, 28, 38, 0.18) 34%, rgba(16, 28, 38, 0) 56%);
+  pointer-events: auto; animation: flight-in 0.9s ease both;
+}
+.flight-words { display: flex; flex-direction: column; align-items: center; gap: 2px; max-width: 560px; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5); }
+.flight-kicker { font-weight: 900; font-size: 0.86em; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.92; }
+.flight-words b { font-family: var(--en); font-weight: 600; font-size: clamp(2.1em, 6vw, 3.1em); line-height: 1.1; }
+.flight-first { margin-top: 8px; font-weight: 800; font-size: 1.08em; line-height: 1.45; }
+.flight-skip { font-weight: 800; font-size: 0.86em; opacity: 0.8; padding: 6px 14px; border-radius: 999px; background: rgba(16, 28, 38, 0.38); }
+@keyframes flight-in { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .flight { animation: none; } }
+
 .prompt {
   position: absolute; bottom: 34px; left: 50%; transform: translateX(-50%);
   background: var(--panel); border-radius: 999px; padding: 9px 20px 9px 9px; box-shadow: var(--shadow);
@@ -590,6 +606,12 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .howto summary .howto-ico { color: var(--accent); }
 .howto summary .chev { margin-left: auto; color: var(--ink-faint); transition: transform 0.2s ease; }
 .howto[open] summary .chev { transform: rotate(180deg); }
+.town-help ul { list-style: none; margin: 0 0 10px; padding: 0 16px; display: flex; flex-direction: column; gap: 8px; color: var(--ink-soft); line-height: 1.5; }
+.town-help li { display: flex; gap: 10px; align-items: flex-start; }
+.town-help li > svg { flex: none; margin-top: 3px; color: var(--accent); }
+.town-help li b { color: var(--ink); }
+.town-help kbd { display: inline-block; min-width: 1.5em; padding: 0 5px; border-radius: 6px; border: 1px solid var(--ink-faint); font: inherit; font-weight: 800; font-size: 0.86em; text-align: center; }
+.town-help > .btn { margin: 0 16px 12px; }
 .howto ol { margin: 0 0 12px; padding: 0 16px 0 42px; display: flex; flex-direction: column; gap: 6px; color: var(--ink-soft); line-height: 1.5; }
 .scn-foot { display: flex; justify-content: center; margin-top: 20px; }
 .sit-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
@@ -942,13 +964,9 @@ body.scene-on .tag-layer { display: none; }
 .coach-text b { display: block; font-size: 1.02em; line-height: 1.25; color: var(--ink); }
 .coach-text p { margin: 2px 0 0; font-size: 0.9em; line-height: 1.4; color: var(--ink-soft); }
 .coach-row { flex-basis: 100%; display: flex; align-items: center; gap: 8px; margin-top: 6px; }
-.coach-dots { display: inline-flex; gap: 5px; margin-right: auto; }
-.coach-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-faint); opacity: 0.4; }
-.coach-dots i.on { background: var(--accent); opacity: 1; }
-.coach-skip { background: none; border: 0; color: var(--ink-soft); font-weight: 800; font-size: 0.88em; min-height: 44px; padding: 0 10px; border-radius: 10px; }
+.coach-skip { margin-left: auto; background: none; border: 0; color: var(--ink-soft); font-weight: 800; font-size: 0.88em; min-height: 44px; padding: 0 10px; border-radius: 10px; }
 .coach-skip:hover { background: var(--g-hover, rgba(31, 42, 51, 0.06)); }
 .coach-next { min-height: 44px; min-width: 84px; }
-.coach-switch { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-weight: 800; font-size: 0.9em; color: var(--ink); }
 /* on a phone held upright: under the task card (folded while the guide is up, Hud.tsx) and beside the buttons, clear
    of the middle of the picture, where the player walks */
 @media (max-width: 600px) {
@@ -962,8 +980,6 @@ body.scene-on .tag-layer { display: none; }
   .coach-icon { width: 36px; height: 36px; border-radius: 12px; }
   .coach-text p { font-size: 0.86em; line-height: 1.35; }
   .coach-row { margin-top: 2px; gap: 6px; }
-  .coach-dots { gap: 4px; }
-  .coach-dots i { width: 6px; height: 6px; }
   .coach-skip { padding: 0 6px; }
   .coach-next { min-width: 76px; }
 }
@@ -972,9 +988,7 @@ body.scene-on .tag-layer { display: none; }
   .coach, .hud.has-touch .coach { padding: 8px 11px 5px; }
   .coach-icon { display: none; }
   .coach-text p { font-size: 0.82em; line-height: 1.27; margin-top: 1px; }
-  .coach-switch { font-size: 0.84em; gap: 8px; margin-top: 4px; }
   .coach-row { margin-top: 0; }
-  .coach-dots { display: none; }
   .coach-row { justify-content: flex-end; }
   /* (at a door or by someone, the prompt needs the room: the hint keeps its title and its buttons) */
   .hud:has(.prompt) .coach .coach-text p { display: none; }

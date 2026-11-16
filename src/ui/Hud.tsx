@@ -40,9 +40,10 @@ export function Hud() {
   const conv = useStore((s) => s.conv);
   const due = useDueCards();
   const hasRadio = useRadio((s) => s.available);
-  const [helpOpen, setHelpOpen] = useState(() => { try { return localStorage.getItem("ew-help-closed") !== "1"; } catch { return true; } });
   const surfing = useSurf((s) => s.active);
   if (conv.active) return <Fade />;
+  // the first visit's flight over the town has the screen to itself too: where one is, and what to do first
+  if (hud.flight) return <div className="hud"><Flight /><Fade /></div>;
   // the surf lesson has the screen to itself: her line, the answers, the score, and the phone's controls
   if (surfing) return (
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")}>
@@ -95,18 +96,26 @@ export function Hud() {
           </>}
         </div>
       )}
-      {helpOpen && !hud.showTouch && !hud.coach && !hud.ride && (
-        <div className="help-strip">
-          Vaikščiok <kbd><Icon name="arrowUp" size="1em" strokeWidth={2.25} label="aukštyn" /></kbd><kbd><Icon name="arrowDown" size="1em" strokeWidth={2.25} label="žemyn" /></kbd><kbd><Icon name="arrowLeft" size="1em" strokeWidth={2.25} label="kairėn" /></kbd><kbd><Icon name="arrowRight" size="1em" strokeWidth={2.25} label="dešinėn" /></kbd> arba <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> · bėgti <kbd>Shift</kbd> · pašokti <kbd>Tarpas</kbd><br />
-          Spustelėk žemę – nueisi ten · tempk pele – apsidairyk · <kbd>E</kbd> – kalbėtis / įeiti<br />
-          <kbd>G</kbd> – nueiti iki užduoties · <kbd>M</kbd> žemėlapis · <kbd>J</kbd> užduotys · <kbd>P</kbd> telefonas{hasRadio && <> · <kbd>R</kbd> radijas</>}
-          <button onClick={() => { setHelpOpen(false); try { localStorage.setItem("ew-help-closed", "1"); } catch { /* ignore */ } }}>Supratau <Icon name="close" size={15} strokeWidth={2.25} /></button>
-        </div>
-      )}
       {hud.showTouch && <TouchControls />}
       <SurfPicker />
       <Fade />
     </div>
+  );
+}
+
+/** The first visit's flight over the town (game/flyover.ts): the town's name, one sentence of what to do first, and
+ *  the way to cut it short: any key (Game.onKeyDown), or a tap anywhere. */
+function Flight() {
+  const touch = useStore((s) => s.hud.showTouch);
+  return (
+    <button className="flight" onClick={() => game?.endFlight?.()} aria-label="Praleisti">
+      <span className="flight-words">
+        <span className="flight-kicker">Sveiki atvykę!</span>
+        <b>Maple Harbor</b>
+        <span className="flight-first">Tavo lėktuvas ką tik nusileido. Pirmiausia – pasų kontrolė: prieik ir pasikalbėk angliškai.</span>
+      </span>
+      <span className="flight-skip">{touch ? "Bakstelėk – praleisti" : "Bet kuris klavišas – praleisti"}</span>
+    </button>
   );
 }
 

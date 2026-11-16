@@ -1,93 +1,140 @@
-// The first-time guide of the 3D town (game/coach.ts): its hints in order, each done by doing it or by "Toliau",
-// skipped with "Praleisti", remembered so it never comes back; and the one-time tip about running.
+// The town's guide (game/coach.ts): a hint when its thing first matters, one at a time, each shown once and
+// remembered; done by doing it, by "Gerai" or by itself after a while; "Daugiau nerodyti" ends them all.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { coach } from "../src/game/coach";
+import { coach, COACH_STEPS } from "../src/game/coach";
 import { useStore } from "../src/state/store";
 import { radio } from "../src/radio";
 
 const hud = () => useStore.getState().hud.coach;
+const prompt = (kind: "talk" | "drive" | "boat" | "enter" | null) => useStore.getState().setHud({ prompt: kind ? { label: "x", kind } : null });
 const fresh = () => {
   useStore.getState().updateProgress((p) => { delete p.coach; });
   useStore.setState({ toasts: [] });
-  useStore.getState().setHud({ coach: null });
+  useStore.getState().setHud({ coach: null, prompt: null, ride: null });
 };
 
-describe("the first-time guide", () => {
+describe("the town's guide", () => {
   beforeEach(() => { vi.useFakeTimers(); fresh(); radio.store.setState({ available: false }); });
 
-  it("shows walk, run, jump, talk and the pictures' switch in order, the radio's hint only where there is a radio", () => {
+  it("opens with how to walk, and nothing else until something matters", () => {
     coach.begin();
-    const seen: string[] = [];
-    while (hud()) { seen.push(hud()!.step); expect(hud()!.of).toBe(5); coach.next(); }
-    expect(seen).toEqual(["walk", "run", "jump", "talk", "scenes"]);
-    expect(useStore.getState().progress.coach?.done).toBe(true);
-    fresh();
-    radio.store.setState({ available: true });
+    expect(hud()).toMatchObject({ step: "walk", ok: false });
+    coach.next();
+    expect(hud()).toBeNull();
+    // the next visit: not again
     coach.begin();
-    const withRadio: string[] = [];
-    while (hud()) { withRadio.push(hud()!.step); coach.next(); }
-    expect(withRadio).toEqual(["walk", "run", "jump", "talk", "radio", "scenes"]);
+    expect(hud()).toBeNull();
+    expect(useStore.getState().progress.coach?.seen).toEqual({ walk: true });
+    expect(useStore.getState().progress.coach?.done).toBeUndefined();
   });
 
   it("a hint ticks itself off when the learner does it, and only its own doing counts", () => {
     coach.begin();
-    coach.did("jump"); coach.did("run", 5);
+    coach.did("run", 5);
     expect(hud()).toMatchObject({ step: "walk", ok: false });
     coach.did("walk", 3);
     expect(hud()!.ok).toBe(false);
     coach.did("walk", 5);
     expect(hud()).toMatchObject({ step: "walk", ok: true });
     vi.advanceTimersByTime(1200);
-    expect(hud()).toMatchObject({ step: "run", n: 2, ok: false });
-    coach.did("run", 0.5); coach.did("run", 0.8);
-    vi.advanceTimersByTime(1200);
-    expect(hud()!.step).toBe("jump");
-    coach.did("jump");
-    vi.advanceTimersByTime(1200);
-    expect(hud()!.step).toBe("talk");
-    coach.did("talk");
-    vi.advanceTimersByTime(1200);
-    expect(hud()!.step).toBe("scenes");
-    coach.finish();
     expect(hud()).toBeNull();
   });
 
-  it("skipped or finished, it is remembered and never comes back", () => {
+  it("standing by somebody, by a car, by a boat: each one's hint, once, and one at a time", () => {
     coach.begin();
+    prompt("talk"); // (how to walk is still up: not yet)
     expect(hud()!.step).toBe("walk");
+    coach.next(); // "Gerai": what matters right now comes up
+    expect(hud()!.step).toBe("talk");
+    coach.did("talk");
+    vi.advanceTimersByTime(1200);
+    expect(hud()).toBeNull();
+    prompt(null); prompt("talk");
+    expect(hud()).toBeNull();
+    prompt("enter");
+    expect(hud()).toBeNull();
+    prompt("drive");
+    expect(hud()!.step).toBe("car");
+    useStore.getState().setHud({ ride: "car" }); // they take the wheel
+    expect(hud()).toMatchObject({ step: "car", ok: true });
+    vi.advanceTimersByTime(1200);
+    useStore.getState().setHud({ ride: null });
+    prompt("boat");
+    expect(hud()!.step).toBe("boat");
+    // nothing done about it: it goes by itself
+    vi.advanceTimersByTime(26000);
+    expect(hud()).toBeNull();
+    prompt(null); prompt("boat");
+    expect(hud()).toBeNull();
+  });
+
+  it("the sea's hint at the water's edge; none for what the learner already did by themselves", () => {
+    coach.begin(); coach.next();
+    useStore.getState().setHud({ ride: "swim" }); // swam before the hint ever came up
+    expect(coach.cue("water")).toBe(false);
+    coach.did("jump");
+    coach.did("walk", 30);
+    expect(hud()).toBeNull();
+    fresh();
+    coach.begin(); coach.next();
+    expect(coach.cue("water")).toBe(true);
+    expect(hud()!.step).toBe("water");
+  });
+
+  it("after a stretch on foot: jumping, and later the radio where there is one", () => {
+    radio.store.setState({ available: true });
+    coach.begin(); coach.next();
+    coach.did("walk", 20);
+    expect(hud()).toBeNull();
+    coach.did("walk", 6);
+    expect(hud()!.step).toBe("jump");
+    coach.did("jump");
+    vi.advanceTimersByTime(1200);
+    coach.did("walk", 60);
+    expect(hud()).toBeNull();
+    coach.did("walk", 40);
+    expect(hud()!.step).toBe("radio");
+    coach.did("radio");
+    vi.advanceTimersByTime(1200);
+    expect(hud()).toBeNull();
+    // without a radio, no hint about it
+    fresh();
+    radio.store.setState({ available: false });
+    coach.begin(); coach.next();
+    coach.did("walk", 26); coach.next();
+    coach.did("walk", 200);
+    expect(hud()).toBeNull();
+  });
+
+  it("the hint about running: once, after a long stretch at a walk, never while another hint is up", () => {
+    coach.begin();
+    for (let i = 0; i < 1000; i++) coach.stroll(1 / 60, false);
+    expect(hud()!.step).toBe("walk");
+    coach.next();
+    for (let i = 0; i < 300; i++) coach.stroll(1 / 60, false);
+    expect(hud()).toBeNull();
+    coach.stroll(1 / 60, true); // they stopped: the count starts again
+    for (let i = 0; i < 300; i++) coach.stroll(1 / 60, false);
+    expect(hud()).toBeNull();
+    for (let i = 0; i < 80; i++) coach.stroll(1 / 60, false);
+    expect(hud()!.step).toBe("run");
+    coach.did("run", 2);
+    vi.advanceTimersByTime(1200);
+    for (let i = 0; i < 2000; i++) coach.stroll(1 / 60, false);
+    expect(hud()).toBeNull();
+    expect(useStore.getState().progress.coach?.run).toBe(true);
+  });
+
+  it("\"Daugiau nerodyti\" ends them all, as a guide finished before this one does", () => {
+    coach.begin();
     coach.finish();
     expect(hud()).toBeNull();
     expect(useStore.getState().progress.coach?.done).toBe(true);
     coach.begin();
+    prompt("talk"); prompt("drive");
+    coach.did("walk", 300);
+    for (let i = 0; i < 1000; i++) coach.stroll(1 / 60, false);
     expect(hud()).toBeNull();
-  });
-
-  it("the tip about running: once, after a long stretch at a walk, not during the guide and not after its own hint about running", () => {
-    const tips = () => useStore.getState().toasts.map((t) => t.title);
-    // skipped at the first hint: the tip is still to come
-    coach.begin();
-    coach.finish();
-    for (let i = 0; i < 300; i++) coach.stroll(1 / 60, false, false);
-    expect(tips()).toEqual([]);
-    coach.stroll(1 / 60, true, false); // they stopped: the count starts again
-    for (let i = 0; i < 300; i++) coach.stroll(1 / 60, false, false);
-    expect(tips()).toEqual([]);
-    for (let i = 0; i < 80; i++) coach.stroll(1 / 60, false, false);
-    expect(tips()).toEqual(["Laikyk Shift – bėgsi."]);
-    for (let i = 0; i < 2000; i++) coach.stroll(1 / 60, false, false);
-    expect(tips().length).toBe(1);
-    // on a phone, the stick's own words
-    fresh();
-    coach.begin(); coach.finish();
-    for (let i = 0; i < 400; i++) coach.stroll(1 / 60, false, true);
-    expect(tips()).toEqual(["Patrauk vairalazdę iki krašto – bėgsi."]);
-    // the guide got as far as running: no tip afterwards; nor while the guide is up
-    fresh();
-    coach.begin();
-    for (let i = 0; i < 1000; i++) coach.stroll(1 / 60, false, false);
-    expect(tips()).toEqual([]);
-    coach.next(); coach.finish();
-    for (let i = 0; i < 1000; i++) coach.stroll(1 / 60, false, false);
-    expect(tips()).toEqual([]);
+    for (const s of COACH_STEPS) expect(coach.cue(s)).toBe(false);
   });
 });
