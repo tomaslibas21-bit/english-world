@@ -42,6 +42,8 @@ const CARDS = new Set([
 ]);
 /** How often a line has been heard before its help fades: its glosses and meaning, then the Spanish alone, then only
  *  the voice. */
+/** Short praise keeps the picture of the command it praises (the card doesn't change shape between two commands). */
+const KEEPS_PICTURE = new Set(["good1", "good2", "good3", "r_exact"]);
 const supportFor = (heard: number): 0 | 1 | 2 => (heard < 3 ? 0 : heard < 7 ? 1 : 2);
 
 export class SurfPlay {
@@ -54,6 +56,8 @@ export class SurfPlay {
   private heard: Record<string, number> = {};
   private answered: string[] = [];
   private overShown = false;
+  private lastPic: string | undefined;
+  private loaded: HTMLImageElement[] = [];
 
   constructor(private spot: SurfSpot, private content: SurfContent, private game: SurfGame) {
     this.scene = new Surf(spot, { get player() { return game.player(); }, splash: game.splash, portrait: game.portrait });
@@ -76,6 +80,28 @@ export class SurfPlay {
     const npc = this.npc, me = useStore.getState().progress.profile?.gender ?? "f", her = npc?.gender ?? "f";
     const mine = cue.startsWith("a_");
     return compose(src, {}, { look: () => undefined, addressee: mine ? her : me, speaker: mine ? me : her, formal: !npc?.informal });
+  }
+
+  /** The picture of what a cue asks for (its URL), where the edition has one. */
+  picture(cue: string): string | undefined {
+    const P = this.content.pictures, name = P?.of[cue];
+    return P && name ? `${import.meta.env.BASE_URL}${P.dir}/${name}.webp` : undefined;
+  }
+
+  /** The lesson's pictures fetched ahead, the first ones needed first: each is there as she calls its command. */
+  private preload() {
+    const P = this.content.pictures;
+    if (!P || this.loaded.length || typeof Image === "undefined") return;
+    const seen = new Set<string>();
+    for (const cue of ["board_ask", "lie", "paddle", "wave_duck", "arrive", "not_this", "this_one", "now_up", ...Object.keys(P.of)]) {
+      const url = this.picture(cue);
+      if (!url || seen.has(url)) continue;
+      seen.add(url);
+      const img = new Image();
+      img.decoding = "async";
+      img.src = url;
+      this.loaded.push(img);
+    }
   }
 
   private saved() { return useStore.getState().progress.surf ?? { waves: 0, seconds: 0, followed: 0, asked: 0, lessons: 0, heard: {} }; }
@@ -103,6 +129,8 @@ export class SurfPlay {
     this.in.stroke = this.in.up = false;
     this.overShown = false;
     this.lastChoice = null;
+    this.lastPic = undefined;
+    this.preload();
     this.logic = new SurfLogic({ say: (cue) => this.say(cue), fx: (name) => this.fx(name), rnd: Math.random }, { level, rides: s.waves, slow: !!st.settings.slowVoice });
     this.game.entered();
     this.game.hideNpc(this.content.npc, true);
@@ -198,7 +226,9 @@ export class SurfPlay {
     this.scene.coach?.talk(secs, () => audio.level(), () => audio.vowel());
     const n = this.heard[cue] ?? 0;
     this.heard[cue] = n + 1;
-    useSurf.getState().set({ line: { cue, s }, support: supportFor(n) });
+    const pic = this.picture(cue) ?? (KEEPS_PICTURE.has(cue) ? this.lastPic : undefined);
+    this.lastPic = pic;
+    useSurf.getState().set({ line: { cue, s, pic }, support: supportFor(n) });
     return secs;
   }
 

@@ -1,7 +1,7 @@
 // Builds the Spanish edition (Puerto Colibrí) for Spanish Master English (the spanish-master-english site) and copies
 // it into that repository's public/game/ folder, where the site serves it at /game/ (its docs/GAME.md: the page, the
 // door, the lock). Maple Harbor and its English Master export (tools/export-fluent-steps.ts) are untouched by it.
-// - the code, the scene pictures (scenes-es/) and the clip list (audio-es/manifest.json, repair-versions.json) go into
+// - the code, the scene pictures (scenes-es/, with the surf lesson's cue pictures in scenes-es/x01-surf-game/) and the clip list (audio-es/manifest.json, repair-versions.json) go into
 //   the folder; Maple Harbor's clips and their lists (audio/, audio-v2/) are left out, as is every MP3 a local
 //   `install` put into public/audio-es/;
 // - the voice clips stay on Cloudflare R2: bucket fluent-steps-audio, folder spanish-master-en/game/audio-es/, served
@@ -73,6 +73,18 @@ execFileSync("npx", ["vite", "build", "--outDir", out, "--emptyOutDir"], {
 const html = readFileSync(path.join(out, "index.html"), "utf8");
 if (!html.includes("Puerto Colibrí")) { console.error("the build is not the Spanish edition (no Puerto Colibrí in its index.html)"); process.exit(1); }
 
+// the surf lesson's pictures (public/scenes-es/x01-surf-game/, src/editions/es/content/surf.ts) go along with the
+// conversations' pictures: every one must be in the build, at the path the lesson asks for
+const CUE_PICS = "scenes-es/x01-surf-game";
+let cuePics = 0;
+if (existsSync(path.join(ROOT, "public", CUE_PICS))) {
+  for (const f of readdirSync(path.join(ROOT, "public", CUE_PICS))) {
+    if (!f.endsWith(".webp")) continue;
+    if (!existsSync(path.join(out, CUE_PICS, f))) { console.error(`the build has no ${CUE_PICS}/${f} (the surf lesson's picture)`); process.exit(1); }
+    cuePics++;
+  }
+}
+
 // Maple Harbor's clips and lists never go along; of the Spanish clips only their list (the clips live on R2)
 for (const d of ["audio/", "audio-v2/"]) rmSync(path.join(out, d), { recursive: true, force: true });
 const clipDir = path.join(out, DIR);
@@ -115,4 +127,5 @@ if (theme) writeFileSync(themeFile, theme);
 let files = 0, bytes = 0;
 const walk = (d: string) => { for (const f of readdirSync(d)) { const p = path.join(d, f); const s = statSync(p); if (s.isDirectory()) walk(p); else { files++; bytes += s.size; } } };
 walk(dest);
+if (cuePics) console.log(`the surf lesson's pictures: ${cuePics} in ${CUE_PICS}/`);
 console.log(`copied into ${dest}: ${files} files, ${(bytes / 1048576).toFixed(1)} MB; ${clips} clips listed${sets ? ` (es_ ${sets.es}, esn_ ${sets.esn}, esp_ ${sets.esp}${sets.other ? `, ${sets.other} of no set known` : ""})` : ""} (they go to R2 separately); starts in ${DEFAULT_VARIETY} Spanish`);

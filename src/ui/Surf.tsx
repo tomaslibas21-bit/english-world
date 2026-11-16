@@ -1,8 +1,9 @@
 // The surf lesson on the screen (src/game/surf/): what the instructor says, shown with as much help as the learner
-// still needs for that line (its glosses and its meaning at first, then the Spanish alone, then only her voice); the
+// still needs for that line (its glosses and its meaning at first, then the Spanish alone, then only her voice), and
+// beside it a picture of what it asks for, where the edition has pictures (it goes when only her voice is left); the
 // answers to tap when she asks something; the balance in a ride; the score; the level's choice at the start and the
 // score card at the end. What the keys and the buttons do is said in the learner's language; what she asks for never.
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useStore } from "../state/store";
 import { useSurf, type SurfLine } from "../game/surf/store";
 import { game } from "../game/gameRef";
@@ -18,6 +19,27 @@ function Line({ line, support }: { line: SurfLine; support: 0 | 1 | 2 }) {
   const bare = (t: string) => t.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
   const same = bare(line.s.units.map((u) => u.lt).join(" ")) === bare(line.s.nat ?? "");
   return <Interlinear s={line.s} lt={support === 0} ipa={false} nat={support === 0 && !same} />;
+}
+
+/** The picture of what her line asks for, in a small frame: the new one slides in over the one before it (no blank
+ *  between two commands); still, with reduced motion (surf.css). Her words say the same, so it is hidden from a
+ *  screen reader. */
+function Picture({ src }: { src: string }) {
+  const last = useRef(src);
+  const [under, setUnder] = useState<string | null>(null);
+  useEffect(() => {
+    if (last.current === src) return;
+    setUnder(last.current);
+    last.current = src;
+    const t = setTimeout(() => setUnder(null), 320);
+    return () => clearTimeout(t);
+  }, [src]);
+  return (
+    <div className="surf-pic" aria-hidden>
+      {under && under !== src && <img src={under} alt="" draggable={false} />}
+      <img key={src} className="new" src={src} alt="" draggable={false} />
+    </div>
+  );
 }
 
 /** The level's choice, as the lesson is started at the school's boards. */
@@ -58,6 +80,9 @@ export function SurfOverlay() {
   const sc = s.score;
   const hidden = s.support === 2 && !shown;
   const riding = s.phase === "ride";
+  // the picture is help too: it stays while the words lose their translation, and goes when only her voice is left
+  // (a tap brings the words and the picture back)
+  const pic = hidden ? undefined : s.line?.pic;
   return (
     <div className={"surf" + (touch ? " touch" : "")}>
       <div className="surf-top">
@@ -70,11 +95,14 @@ export function SurfOverlay() {
         </div>
       </div>
       {s.line && !s.over && (
-        <div className={"surf-card" + (s.mark ? " " + s.mark : "") + (s.asked ? " asked" : "")} lang={TL}>
-          {hidden
-            ? <button className="surf-listen" onClick={() => setShown(true)} lang={EDITION.helper}><Icon name="speaker" size={22} /> <span>{L("Klausyk")}</span><small>{L("Rodyti tekstą")}</small></button>
-            : <Line line={s.line} support={s.support === 2 ? 1 : s.support} />}
-          {riding && <div className="surf-balance" role="meter" aria-label={L("Pusiausvyra")} aria-valuemin={0} aria-valuemax={1} aria-valuenow={s.balance}><i style={{ width: `${Math.round(s.balance * 100)}%` }} /></div>}
+        <div className={"surf-card" + (pic ? " has-pic" : "") + (s.mark ? " " + s.mark : "") + (s.asked ? " asked" : "")} lang={TL}>
+          {pic && <Picture src={pic} />}
+          <div className="surf-words">
+            {hidden
+              ? <button className="surf-listen" onClick={() => setShown(true)} lang={EDITION.helper}><Icon name="speaker" size={22} /> <span>{L("Klausyk")}</span><small>{L("Rodyti tekstą")}</small></button>
+              : <Line line={s.line} support={s.support === 2 ? 1 : s.support} />}
+            {riding && <div className="surf-balance" role="meter" aria-label={L("Pusiausvyra")} aria-valuemin={0} aria-valuemax={1} aria-valuenow={s.balance}><i style={{ width: `${Math.round(s.balance * 100)}%` }} /></div>}
+          </div>
         </div>
       )}
       {s.choice && !s.over && (

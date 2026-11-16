@@ -33,6 +33,17 @@ Spanish alone, then only her voice (a tap shows the text). "Lėčiau" slows her 
 What the keys and buttons do is said in the learner's language; what she asks for never is. The commands one acts on,
 the questions and the rewards become phrase cards when the lesson ends.
 
+**A picture of what she asks for** (where the edition has them; 16 Nov 2026): beside her words, a small framed
+picture of the instructor doing it ("¡Rema!": paddling; "Inclínate a la izquierda": leaning left; "¡Ola! ¡Pasa por
+debajo!": ducking under the foam). It slides in as she calls the command and gives way to the next one; short praise
+keeps the command's picture, a line with no picture of its own shows her words alone. On a computer it sits left of
+the words in the card at the top; on a phone held upright across the card's top, the words under it; sideways, small
+beside them. The card always ends well above the learner's board and the waves (the browser test measures it). The
+picture is help like the glosses: it stays when the words lose their translation and goes when only her voice is
+left (the tap that shows the words shows it too). With reduced motion it does not slide. All of a lesson's pictures
+are fetched as it begins. The card and the lesson's other panels are painted with the game's theme variables, so
+they follow a course's dark themes.
+
 **Two levels**: beginner (whitewater, the long foam board, wide windows, three misses to a fall) and advanced (green
 waves further out, the short board, turns and the trick, taking turns in the line-up, two misses).
 
@@ -46,7 +57,7 @@ waves further out, the short board, turns and the trick, taking turns in the lin
 | `src/game/surf/shapes.ts` | the surfboards |
 | `src/game/surf/store.ts`, `src/ui/Surf.tsx`, `surf.css` | what is on the screen: her line, the answers, the balance, the score, the level's choice, the score card |
 | `src/game/world/surf.ts` | where this town's lesson is (null: none). Puerto Colibrí's: `src/editions/es/game/world/surf.ts` |
-| `src/content/surf.ts` | which conversation holds her lines, and who she is (null: none). Puerto Colibrí's: `src/editions/es/content/surf.ts` |
+| `src/content/surf.ts` | which conversation holds her lines, who she is, and (optional) `pictures`: a folder under `public/` and a picture per cue (null: no lesson). Puerto Colibrí's: `src/editions/es/content/surf.ts`, its 17 pictures in `public/scenes-es/x01-surf-game/` |
 | `src/game/Game.ts` | `updateSurf`, `onSurf` / `offSurf`, the prompt at the boards, the conversation's event |
 | `src/game/characters/Character.ts` | `surf`: lying on the board and paddling, standing side-on, astride it |
 | `src/game/camera.ts` | the "stage" mode: the camera goes where the lesson puts it |
@@ -56,7 +67,7 @@ waves further out, the short board, turns and the trick, taking turns in the lin
 Every cue is a key `sg_<cue>` in the `lines` of the school's conversation (Puerto Colibrí: `x01-surf`, from
 `src/editions/es/content/surf-lines.ts`). So the three Spanishes, the voices (recorded with the conversation's, in
 her voice), the Lithuanian layer's table and the cards treat them as any line. An edition without a cue stays silent
-there. A new edition's surf school needs: the spot (`world/surf.ts`), the content pointer (`content/surf.ts`), the
+there. The pictures are optional: an edition without `pictures` shows her words alone. A new edition's surf school needs: the spot (`world/surf.ts`), the content pointer (`content/surf.ts`), the
 lines, and a conversation that raises `c.event("surf", { level: "beginner" | "advanced" })`.
 
 ## Tests

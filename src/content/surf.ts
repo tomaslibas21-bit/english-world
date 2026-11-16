@@ -7,6 +7,9 @@ export interface SurfContent {
   npc: string;
   /** The same lines by themselves (the conversation's own are used where it has them: a learner layer's text). */
   lines?: Record<string, import("./types").SentSrc[]>;
+  /** A picture of what a cue asks for, where the edition has them (the lesson shows it beside her line): the folder
+   *  under public/ and, per cue, the picture's file name without ".webp". An edition without pictures leaves it out. */
+  pictures?: { dir: string; of: Record<string, string> };
 }
 
 export const SURF: SurfContent | null = null;

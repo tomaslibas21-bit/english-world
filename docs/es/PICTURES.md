@@ -670,7 +670,10 @@ for lots of amazing pictures"; `STOP_USD` went from $75 to $80). Manifests: `ref
 - **The surf lesson's cues** (`x01-surf-game`, 17 pictures for the mini-game's `sg_` lines, seen from the learner's
   own board: the boards, lying down, paddling, ducking under, the tumble, the line-up, "too small", "this one", up,
   left, right, knees, eyes, speed, crest, drop, a jump): for its cards; `lines` in the manifest says which cues each
-  shows. Their web versions are in `<work>/x-new3/surf-game/web/`, not `public/`: nothing shows them yet. `right` is
+  shows. Their web versions are in `<work>/x-new3/surf-game/web/` (1600 px); since 16 Nov 2026 the lesson shows them
+  beside her words (docs/SURF.md "A picture of what she asks for"): 960 px copies in
+  `public/scenes-es/x01-surf-game/`, each picture's cues in `src/editions/es/content/surf.ts` `SURF_PICTURES` (the
+  same lists as the manifest's `lines`), checked by `tests/es/surf.test.ts`; the export carries the folder with the scene pictures. `right` is
   `left` mirrored (the edit leaned the wrong way).
 - **Cards** (`cards.py`, `card-probe-es.ts`: brought in from the `es-card-art` branch): the probe takes `--only`, and
   `cards.py map PROBE --only …` merges new conversations into the map; 19 phrase groups (x01 9, x02 6, x03 4), each

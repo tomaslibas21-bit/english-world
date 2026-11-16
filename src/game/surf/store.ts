@@ -3,7 +3,8 @@ import { create } from "zustand";
 import type { Sentence } from "../../convo/compose";
 import type { Level, Phase, Score } from "./logic";
 
-export interface SurfLine { cue: string; s: Sentence }
+/** One of her lines (or an answer), and the picture of what it asks for where the edition has one (its URL). */
+export interface SurfLine { cue: string; s: Sentence; pic?: string }
 export interface SurfUi {
   active: boolean;
   /** The level is being chosen (the lesson was started from the palapa, not from the conversation). */

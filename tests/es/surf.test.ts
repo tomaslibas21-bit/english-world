@@ -6,6 +6,9 @@ import { readFileSync } from "node:fs";
 import { CFG, CUES } from "../../src/game/surf/logic";
 import { SURF_SPOT } from "../../src/game/world/surf";
 import { SURF } from "../../src/content/surf";
+import { SURF_PICTURES } from "../../src/editions/es/content/surf";
+import { COMMANDS } from "../../src/game/surf/logic";
+import { existsSync, readdirSync, statSync } from "node:fs";
 import { RIDES } from "../../src/game/world/rides";
 import { THEME } from "../../src/game/world/theme";
 import { OUTDOOR_NPCS, CHAT_SPOTS } from "../../src/game/world/layout";
@@ -115,5 +118,36 @@ describe("La Ola, the surf school", () => {
     expect(src).toMatch(/c\.event\("surf", \{ level: level\(c\) \}\)/);
     expect(src).toMatch(/"advanced" : "beginner"/);
     expect(SITUATION_BY_ID["x01-surf"].sims?.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it("every command has a picture of what it asks for: 17 pictures, each one's file in the game, each cue a real one", () => {
+    const P = SURF!.pictures!;
+    expect(P.dir).toBe("scenes-es/x01-surf-game");
+    const dir = new URL(`../../public/${P.dir}/`, import.meta.url);
+    const names = Object.keys(SURF_PICTURES);
+    expect(names.length).toBe(17);
+    // the folder holds exactly these (nothing forgotten, nothing left over), each a picture the card can load fast
+    expect(readdirSync(dir).filter((f) => !f.startsWith(".")).sort()).toEqual(names.map((n) => n + ".webp").sort());
+    for (const n of names) {
+      const file = new URL(n + ".webp", dir);
+      expect(existsSync(file), n).toBe(true);
+      const size = statSync(file).size;
+      expect(size, n).toBeGreaterThan(20_000);
+      expect(size, n).toBeLessThan(140_000);
+    }
+    // a cue has one picture; every cue named is one the lesson says
+    const seen = new Set<string>();
+    for (const [n, cues] of Object.entries(SURF_PICTURES)) for (const c of cues) {
+      expect(CUES, `${n}: ${c}`).toContain(c);
+      expect(seen.has(c), `${c} twice`).toBe(false);
+      seen.add(c);
+      expect(P.of[c]).toBe(n);
+    }
+    // what one must act on is shown: every correction of the ride, and the calls before it
+    for (const c of [...COMMANDS.map((x) => x.cue), "board_ask", "lie", "paddle", "paddle_hard", "wave_duck", "not_this", "this_one", "turn", "paddle_now", "now_up", "wipeout", "what_happened"]) expect(P.of[c], c).toBeTruthy();
+    // left is left: the two leans have their own pictures
+    expect(P.of.lean_left).toBe("left");
+    expect(P.of.lean_right).toBe("right");
+    expect(P.of.lean_left).not.toBe(P.of.lean_right);
   });
 });
