@@ -21,6 +21,8 @@ export const STRINGS: Record<string, string> = {
   "Pokalbyje paspausk anglišką žodį – pamatysi jo vertimą ir galėsi išsaugoti jį ar visą sakinį. Frazes iš knygelės pridėsi mygtuku {plus}.": "Pokalbyje paspausk ispanišką žodį – pamatysi jo vertimą ir galėsi išsaugoti jį ar visą sakinį. Frazes iš knygelės pridėsi mygtuku {plus}.",
   "Spausk {mic} (arba tarpo klavišą) ir kalbėk angliškai. Galima ir rašyti {keyboard}.": "Spausk {mic} (arba tarpo klavišą) ir kalbėk ispaniškai. Galima ir rašyti {keyboard}.",
   "Spausk {mic} ir kalbėk angliškai. Galima ir rašyti {keyboard}.": "Spausk {mic} ir kalbėk ispaniškai. Galima ir rašyti {keyboard}.",
+  // the polite address to one person takes a capital (owner, 16 Nov 2026); the key stays the original L() text
+  "Sveiki! Ką jums paduoti?": "Sveiki! Ką Jums paduoti?",
   "Vaikščiok po Maple Harbor ir kalbėkis su sutiktais žmonėmis. Geriausia – kompiuteryje.": "Vaikščiok po Puerto Colibrí ir kalbėkis su sutiktais žmonėmis. Geriausia – kompiuteryje.",
   "english-world-korteles.json": "puerto-colibri-korteles.json",
   "Įdiegti anglų kalbą": "Įdiegti ispanų kalbą",
