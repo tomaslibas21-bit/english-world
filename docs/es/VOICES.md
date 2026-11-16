@@ -124,7 +124,8 @@ needs installed and the numbers are in docs/VOICING-PLAN.md ("Repeats"); the cod
 `repeats` (the check over clips already made), `cut --keys=… --to=…` (cuts a restart out and keeps the cuts that then
 say their line once), `retake --keys=… --to=…` (new takes right away, each heard back before it is kept; its own
 ledger and `--cap` in that folder, the work folder is only read) and `adopt --from=…` (the new lengths and repair
-versions into `public/audio-es/`).
+versions into `public/audio-es/`). A cut is refused when it would take out an interjection of the line ("¡Ja!",
+"Mmm,", "¡Ay,"): those are no words for the check, so only their place tells.
 
 ### Installing, the manifest and repair versions
 

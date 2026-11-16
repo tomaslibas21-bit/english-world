@@ -159,9 +159,48 @@ joins them, which takes the 142 flags of the first count down to these 140.
 
 With the full pass, Maple Harbor stands at 275 cuts and 162 new takes.
 
-Not covered: Puerto Colibrí has had its suspects heard but no full pass yet (about 135,000 more clips, 5 to 6 hours
-at that speed). And 5,410 Maple Harbor clips (PR #14 of 7 Nov, slot-filled variants) have no line in the
-enumeration: by sound alone none of the 1,490 heard has a restart a cut can mend.
+**The full pass over Puerto Colibrí (night of 15 to 16 Nov 2026).** Parakeet heard the other 135,373 clips in 8 h
+48 min (4.3 clips a second, with other work on the Mac). With the rules as they stood 330 had something heard again,
+and reading them showed that most were the recognizer's doing, not the voice's: the flagged clips were no longer than
+their lines usually are. Four more rules came of it, each with tests, and every stored hearing of both towns was
+judged again to see that they cost nothing (of the 873 known-bad takes 406 are flagged, 405 before):
+
+- **A run heard twice must be pure extra.** "¿Chile abanero? Mi ceviche no lleva chile abanero." for a line that says
+  "chile habanero" twice, "a la una… a la cinco" for "a la una… a las cinco", "de la tarde, de la andén" for "de la
+  tarde, del andén": without one of its two times the hearing is no nearer the line, so nothing was said twice.
+- **A number written in words counts in words.** The line's spoken form has its numbers and times as digits. Where
+  the recognizer wrote one in words ("Ocho mil dosciententa y seis pesos. | Y su comprobante.", "a las cinco y |
+  Cuarto de la tarde."), its "y" and "cuarto" are no repeat of the line's other "y" and "cuarto": a run is then
+  heard again only when it is heard more often than the line in words has it.
+- **A piece cut at a closure ends as the recognizer likes.** A number's end is heard as a number of its own ("Todo
+  junto son 170. | 70 pesos." is "ciento seten | ta pesos"), and a piece is finished with words of the recognizer's
+  making ("Usted dijo que no. | que era una mochila negra.", "I worked as a construction worker in the | In
+  Lithuania"). Across a pause under 180 ms neither is a repeat; a line begun again goes on the same way both times
+  ("I'm look | I'm looking for a dress") and stays one.
+- **A laugh is not the line's "ha".** "¡Ja! Ya ha aprendido." is heard as "Ha ha. | Ya ha aprendido.".
+
+That leaves 198 flags in Puerto Colibrí (and 135 of Maple Harbor's 140). 102 of the 198 are heard again in the whole
+clip too, by Whisper too, or by sound; the other 96 only in Parakeet's pieces.
+
+- **50 mended by a cut** that both recognizers hear clean: 16 by the usual cut, 34 by taking out a run of sound
+  between two pauses ("Entonces | Entonces quedamos.", "Que bo. | ¡Qué bonita casa!", a noise before or after the
+  line).
+- **148 left for a new take**, 72 of them among the 102. No cut holds there, or the repeat has no pause to cut at
+  ("Bueno, bueno, igual lo lo voy a anotar.").
+
+**A cut must leave the line's interjections.** An interjection is no word for the check: "¡Ja! Ya ha aprendido."
+without its laugh still says every word, is as like its line and has nothing heard again. Six of this night's cuts
+that held were of that kind, and so were three of the day before ("Mmm, no sé…", "¡Ay, espérese!…", "¡Jaja!
+¡Saludos cordiales…"): those three clips went back to their first recordings, which say the line once. `cut` now
+refuses such a cut (`interjectionLost`): where the line opens or ends with an interjection and the cut touches the
+clip's first or last 400 ms, a sound that is no word of the line must still be heard there, and with an interjection
+inside the line one must be left somewhere. Every cut made so far in both towns was checked again with it.
+
+With the full pass, Puerto Colibrí stands at 250 cuts and 141 new takes. Maple Harbor's list for new takes is 73
+(five of the 78 were endings of the recognizer's making).
+
+Not covered: the two lists for new takes wait for a key. And 5,410 Maple Harbor clips (PR #14 of 7 Nov, slot-filled
+variants) have no line in the enumeration: by sound alone none of the 1,490 heard has a restart a cut can mend.
 
 **Repairs** (`npx tsx tools/voice-batch.ts …`; the Spanish tool has the same commands):
 

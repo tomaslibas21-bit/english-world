@@ -90,16 +90,24 @@ function counts(words: string[], n: number): Map<string, number> {
 
 /** The longest run of words (up to 5) heard more often than the line says it; one word counts only when it comes
  *  twice in a row ("up up and down"). Undefined when nothing is heard again. */
-export function heardAgain(said: string[], heard: string[]): string | undefined {
+export function heardAgain(said: string[], heard: string[], also: string[] = []): string | undefined {
   // A repeat repeats the line: a recognizer writes a breath or a noise as a word of its own ("Yeah. | Yeah.", "Ha
-  // ha" in a Spanish clip), and those are no part of the line said twice.
-  const have = new Set(said);
+  // ha" in a Spanish clip), and those are no part of the line said twice. And it is pure extra: without one of its
+  // two times what was heard is that many words nearer the line. "¿Chile abanero? Mi ceviche no lleva chile
+  // abanero." for a line that says "chile habanero" twice is no repeat, nor is "a la una… a la cinco" for "a la
+  // una… a las cinco" or "de la tarde, de la andén" for "de la tarde, del andén". (One word twice in a row needs no
+  // such proof, and can't always give it: where a piece went unheard the second "okay" stands in for a lost word.)
+  const have = new Set(said), base = wordDistance(heard, said);
+  const extra = (i: number, n: number) => wordDistance([...heard.slice(0, i), ...heard.slice(i + n)], said) === base - n;
   for (let n = Math.min(5, Math.floor(heard.length / 2)); n >= 2; n--) {
-    const want = counts(said, n);
-    for (const [g, c] of counts(heard, n)) if (c > (want.get(g) ?? 0) && c > 1 && g.split(" ").some((w) => have.has(w))) return g;
+    const want = counts(said, n), too = counts(also, n), got = counts(heard, n);
+    for (let i = 0; i + n <= heard.length; i++) {
+      const run = heard.slice(i, i + n), g = run.join(" "), c = got.get(g)!;
+      if (c > 1 && c > (want.get(g) ?? 0) && c > (too.get(g) ?? 0) && run.some((w) => have.has(w)) && extra(i, n)) return g;
+    }
   }
   const twice = (ws: string[], w: string) => ws.filter((x, i) => x === w && ws[i + 1] === w).length;
-  for (let i = 0; i + 1 < heard.length; i++) if (heard[i] === heard[i + 1] && have.has(heard[i]) && twice(heard, heard[i]) > twice(said, heard[i])) return `${heard[i]} ${heard[i]}`;
+  for (let i = 0; i + 1 < heard.length; i++) if (heard[i] === heard[i + 1] && have.has(heard[i]) && twice(heard, heard[i]) > Math.max(twice(said, heard[i]), twice(also, heard[i]))) return `${heard[i]} ${heard[i]}`;
   return undefined;
 }
 
@@ -118,11 +126,11 @@ function wordDistance(a: string[], b: string[]): number {
  *  They're 3499", "I'm look… I'm looking for a dress", "A big… a bagel as well"): a word comes again within five
  *  words, and the words from its first time up to its second are all extra: without them what was heard is as many
  *  words nearer the line. Returns "word … word". */
-export function startedAgain(said: string[], heard: string[]): string | undefined {
-  const base = wordDistance(heard, said);
+export function startedAgain(said: string[], heard: string[], also: string[] = []): string | undefined {
+  const base = wordDistance(heard, said), count = (ws: string[], w: string) => ws.filter((x) => x === w).length;
   for (let p = 0; p < heard.length; p++)
     for (let q = p + 1; q <= Math.min(heard.length - 1, p + 5); q++)
-      if (heard[p] === heard[q] && said.includes(heard[p]) && base - wordDistance([...heard.slice(0, p), ...heard.slice(q)], said) === q - p) return `${heard[p]} … ${heard[q]}`;
+      if (heard[p] === heard[q] && said.includes(heard[p]) && count(heard, heard[p]) > count(also, heard[p]) && base - wordDistance([...heard.slice(0, p), ...heard.slice(q)], said) === q - p) return `${heard[p]} … ${heard[q]}`;
   return undefined;
 }
 
@@ -146,11 +154,11 @@ export const lostEitherWay = (said: string, heard: string, spoken: Spoken) => wo
 /** One of the line's words heard once more than the line says it, anywhere ("Good, thank you. Good.", "No, nothing.
  *  No."): a word of three letters or more, or the last word heard, that is pure extra: without it what was heard is
  *  one word nearer the line. */
-export function wordAgain(said: string[], heard: string[]): string | undefined {
+export function wordAgain(said: string[], heard: string[], also: string[] = []): string | undefined {
   const base = wordDistance(heard, said), count = (ws: string[], w: string) => ws.filter((x) => x === w).length;
   for (let i = 0; i < heard.length; i++) {
     const w = heard[i];
-    if ((w.length >= 3 || i === heard.length - 1) && count(heard, w) > count(said, w) && count(said, w) > 0 && wordDistance([...heard.slice(0, i), ...heard.slice(i + 1)], said) === base - 1) return `${w} (once more)`;
+    if ((w.length >= 3 || i === heard.length - 1) && count(heard, w) > Math.max(count(said, w), count(also, w)) && count(said, w) > 0 && wordDistance([...heard.slice(0, i), ...heard.slice(i + 1)], said) === base - 1) return `${w} (once more)`;
   }
   return undefined;
 }
@@ -203,6 +211,60 @@ export function unsplit(h: Heard): string[] {
   return texts;
 }
 
+/** The same closures, on the pieces' words: a piece cut at a stop's closure is cut inside a word, and the recognizer
+ *  finishes each side as it can. Two more things it writes there are no repeat. A number's end, heard again as a
+ *  number of its own: "Todo junto son 170. | 70 pesos." is "ciento seten | ta pesos". And an ending of its own
+ *  making: "Usted dijo que no. | que era una mochila negra." is "Usted dijo qu | e era una mochila negra": the first
+ *  piece then ends with the word the second begins with and goes on with words that are neither the line's nor the
+ *  second piece's. A line begun again goes on the same way both times ("I'm look | I'm looking for a dress"), and
+ *  stays. */
+export function closures(h: Heard, pieces: string[][], said: string[]): string[][] {
+  const out = pieces.map((p) => [...p]), have = new Set(said);
+  for (let i = 0; i + 1 < out.length && i + 1 < h.pieces.length; i++) {
+    const at = h.pieces[i + 1][0], pause = h.pauses.find(([a, b]) => a <= at && at <= b);
+    if (pause && pause[1] - pause[0] >= SPLIT_PAUSE) continue;
+    const first = out[i], rest = out[i + 1];
+    if (!first.length || !rest.length) continue;
+    const a = first[first.length - 1], b = rest[0];
+    if (/^\d+$/.test(a) && /^\d+$/.test(b) && a.length > b.length && a.endsWith(b)) { rest.shift(); continue; }
+    const p = first.lastIndexOf(b);
+    if (p < 0 || p === first.length - 1 || first.length - p > 4) continue;
+    const alike = (x: string, y: string | undefined) => y !== undefined && x.slice(0, 2) === y.slice(0, 2);
+    if (!first.slice(p + 1).some((w, k) => have.has(w) || alike(w, rest[k + 1]))) out[i] = first.slice(0, p);
+  }
+  return out;
+}
+
+/** Sounds that are no words ("¡Ja!", "Mmm,", "Ah,", "Oh,"): a recognizer leaves them out or writes them as it likes
+ *  ("Ha ha.", "Mm.", "Uh", "Yeah."). "Ha" is one where the edition's spoken form leaves it out (an English laugh; in
+ *  Spanish "ha dicho" is a verb), and an "oh" that the spoken form makes a digit is a zero. */
+export const INTERJECTION = /^(a+h+|a+y+|e+h+|o+h+|u+y+|u+h+|u+m+|h?m+|(ja)+|je+|ejem|huh|ugh|aw+|ooh|phew|psst|sh+)$/;
+const LAUGH = /^(ha+h?|(ha)+)$/;
+const plainWords = (s: string) => wordsOf(s, (x) => x.toLowerCase());
+const isInterjection = (w: string, spoken: Spoken) => (INTERJECTION.test(w) && !/\d/.test(spoken(w))) || (LAUGH.test(w) && !spoken(w).trim());
+
+/** Has a cut taken out an interjection of the line? "¡Ja! Ya ha aprendido." is heard as "Ha ha. | Ya ha aprendido.",
+ *  and without the laugh it still says every word, is as like its line and has nothing heard again: only the place
+ *  tells. Where the line opens with an interjection and a cut begins in the clip's first 400 ms, the clip must still
+ *  begin with a sound that is no word of the line (a piece without words, or "Ah", "Uh", "Yeah."); the same at the
+ *  end; and with an interjection inside the line some such sound, or an interjection written out, must be left
+ *  anywhere. `after` is the pieces'
+ *  transcripts of the cut clip. Returns the interjection that is gone. */
+export function interjectionLost(said: string, cuts: [number, number][], msBefore: number, after: string[], spoken: Spoken): string | undefined {
+  const line = plainWords(said);
+  const is = (w: string) => isInterjection(w, spoken);
+  if (!cuts.length || !line.some(is)) return undefined;
+  const words = new Set(wordsOf(said, spoken).filter((w) => !is(w)));
+  const pieces = after.map(plainWords);
+  const sound = (w: string | undefined) => w === undefined || !words.has(w);
+  const first = pieces[0] ?? [], last = pieces[pieces.length - 1] ?? [];
+  if (is(line[0]) && cuts.some(([a]) => a < 400) && !sound(first[0])) return line[0];
+  if (line.length > 1 && is(line[line.length - 1]) && cuts.some(([, b]) => b > msBefore - 400) && !sound(last[last.length - 1])) return line[line.length - 1];
+  const inside = line.slice(1, -1).find(is);
+  if (inside && !pieces.some((p) => p.every((w) => !words.has(w))) && !pieces.flat().some((w) => !words.has(w) && (INTERJECTION.test(w) || LAUGH.test(w)))) return inside;
+  return undefined;
+}
+
 /** A stripe this long (moving ms) is a phrase said twice: clean clips whose line repeats nothing stay under it but
  *  for 1 or 2 in 100 (measured on Maple Harbor's 39,325 clips, 15 Nov 2026). Spanish, with its open syllables, sounds
  *  more like itself: Puerto Colibrí's 141,331 clips reach 450 one time in 20, so its edition sets 560 (1 in 100). */
@@ -226,8 +288,21 @@ export function judgePieces(said: string, h: Heard, spoken: Spoken, soundsTwice 
   const f = (ws: string[]) => (fold ? onceInARow(ws) : ws);
   const want = digitRuns(f(wordsOf(said, spoken)));
   const whole = asWritten(want, digitRuns(f(wordsOf(h.whole, spoken))));
-  const pieces = asWritten(want, digitRuns(unsplit(h).flatMap((text) => f(wordsOf(text, spoken)))));
-  const any = (ws: string[]) => heardAgain(want, ws) ?? startedAgain(want, ws) ?? wordAgain(want, ws) ?? numberAgain(want, ws) ?? falseStart(want, ws);
+  // A laugh or a hum in a piece of its own is the line's interjection, not its "ha" said again ("¡Ja! Ya ha
+  // aprendido." heard as "Ha ha. | Ya ha aprendido."), where the spoken form leaves the interjection out of the line
+  // (an English "Oh," stays a word of its line, and "Oh. | Oh. | The total is…" is a repeat).
+  const laughs = plainWords(said).some((w) => isInterjection(w, spoken) && !want.includes(w));
+  const heardPieces = unsplit(h).map((text) => digitRuns(f(wordsOf(text, spoken)))).map((ws) => (laughs && ws.every((w) => INTERJECTION.test(w) || LAUGH.test(w)) ? [] : ws));
+  const pieces = asWritten(want, digitRuns(closures(h, heardPieces, want).flat()));
+  const rules = (ws: string[], also?: string[]) => heardAgain(want, ws, also) ?? startedAgain(want, ws, also) ?? wordAgain(want, ws, also) ?? numberAgain(want, ws) ?? falseStart(want, ws);
+  // A number or a time of the line that the recognizer wrote in words ("Aquí tiene. | Ocho mil dosciententa y seis
+  // pesos. | Y su comprobante.", "a las cinco y | Cuarto de la tarde.") brings the words of the number with it: its
+  // "y" and "cuarto" are then no repeat of the line's other "y" and "cuarto". Where what was heard has a word that
+  // only the line in words has, or lacks one of the line's numbers, a run is heard again only when it is heard more
+  // often than the line in words has it.
+  const inWords = f(wordsOf(said, (x) => x.toLowerCase())), digits = new Set(want), onlyInWords = new Set(inWords.filter((w) => !digits.has(w)));
+  const numbers = want.filter((w) => /^\d+$/.test(w));
+  const any = (ws: string[]) => rules(ws, ws.some((w) => onlyInWords.has(w)) || numbers.some((d) => !ws.includes(d)) ? inWords : undefined);
   const a = any(whole), b = any(pieces);
   const len = (ws: string[]) => ws.join("").length;
   const v: Verdict = { extra: Math.max(len(whole), len(pieces)) - len(want), heard: h.pieces.map((p) => p[2]).join(" | ") };
@@ -292,7 +367,8 @@ export const SHORT_AFTER_CUT = 0.75;
 /** Cuts the restart out of each clip (tools/voice-cut.py: the first attempt and the pause after it go, the complete
  *  attempt stays) into `outDir`, and hears every result again: a cut is kept only when the clip then says its line
  *  once (nothing heard again, the sound not twice), is as like the line as it was before, has lost none of the
- *  words heard in it before (in the whole clip's transcript and in its pieces'), and isn't too short for it. A clip whose cut doesn't hold gets the next-best cut, three in all; then its file is removed: that line needs
+ *  words heard in it before (in the whole clip's transcript and in its pieces') nor an interjection of the line
+ *  (interjectionLost), and isn't too short for it. A clip whose cut doesn't hold gets the next-best cut, three in all; then its file is removed: that line needs
  *  a new take. */
 export async function cutRepeats(clips: (Clip & { usual?: number })[], ed: Edition, outDir: string, opts: { engine?: "parakeet" | "whisper"; kbps?: number; log?: (s: string) => void } = {}): Promise<CutResult[]> {
   if (!clips.length) return [];
@@ -321,6 +397,7 @@ export async function cutRepeats(clips: (Clip & { usual?: number })[], ed: Editi
         : f!.alike < Math.max(ALIKE_AFTER_CUT, was.alike - ALIKE_LOST) ? `after the cut it says "${f!.whole}" (${f!.alike}, before ${was.alike})`
         : f!.lost > was.lost ? `the cut lost a word: "${f!.whole}"`
         : f!.lostInPieces > was.lostInPieces ? `the cut lost a word: "${f!.heard}"`
+        : interjectionLost(c.said, r.cuts, r.sec_before * 1000, f!.heard.split(" | "), ed.spoken) ? `the cut took out the line's "${interjectionLost(c.said, r.cuts, r.sec_before * 1000, f!.heard.split(" | "), ed.spoken)}": "${f!.heard}"`
         : c.usual && r.sec < SHORT_AFTER_CUT * c.usual ? `after the cut it is ${r.sec} s, short for a line of about ${c.usual.toFixed(1)} s` : undefined;
       if (why && r?.cuts.length) fs.rmSync(path.join(outDir, c.key + ".mp3"), { force: true });
       results.set(c.key, { key: c.key, ok: !why, cuts: r?.cuts ?? [], secBefore: r?.sec_before ?? was.sec, sec: r?.sec ?? was.sec, heard: f?.heard ?? was.heard, ...(why ? { why } : {}) });

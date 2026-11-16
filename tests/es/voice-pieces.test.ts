@@ -2,7 +2,7 @@
 // a restart is found whatever a whole-clip transcript says, and a line's own repeats are left alone.
 import { describe, expect, it } from "vitest";
 import { asHeardEs } from "../../tools/es-voices/voice-batch-es";
-import { judgePieces, lostEitherWay, repeatsItself, startedAgain, wordsOf, type Heard } from "../../tools/voice-pieces";
+import { interjectionLost, judgePieces, lostEitherWay, repeatsItself, startedAgain, wordsOf, type Heard } from "../../tools/voice-pieces";
 
 const heard = (whole: string, pieces: string[], more: Partial<Heard> = {}): Heard => ({
   key: "k", sec: 3, pauses: [], whole, words: [], pieces: pieces.map((p, i) => [i * 1000, (i + 1) * 1000, p]), engine: "parakeet", ...more,
@@ -36,6 +36,36 @@ describe("Spanish lines heard again", () => {
     expect(judgePieces(said, split, asHeardEs).again).toBeUndefined();
     const real: Heard = { ...split, pauses: [[800, 1200]], pieces: [[0, 1000, "Muy bien, en"], [1000, 3000, "Entonces quinientos pesos."]] };
     expect(judgePieces(said, real, asHeardEs).again).toBe("en- entonces");
+  });
+  it("does not take a number's end after a closure for the number said again", () => {
+    const said = "Todo junto son ciento setenta pesos.";
+    const split = (pause: number): Heard => ({ key: "k", sec: 3.2, whole: "Todo junto son 170 pesos.", words: [], engine: "parakeet",
+      pauses: [[2160 - pause / 2, 2160 + pause / 2]], pieces: [[0, 2160, "Todo junto son 170."], [2160, 3200, "70 pesos."]] });
+    expect(judgePieces(said, split(80), asHeardEs).again).toBeUndefined();
+    expect(judgePieces(said, split(300), asHeardEs).again).toBe("170 as 17070");
+    const ending: Heard = { key: "k", sec: 3.9, whole: "¿Está seguro? Usted dijo que era una mochila negra.", words: [], engine: "parakeet",
+      pauses: [[1130, 1680], [2310, 2390]], pieces: [[0, 1405, "¿Está seguro?"], [1405, 2350, "Usted dijo que no."], [2350, 3908, "que era una mochila negra."]] };
+    expect(judgePieces("¿Está seguro? Usted dijo que era una mochila negra.", ending, asHeardEs).again).toBeUndefined();
+  });
+  it("counts a number written in words against the line in words", () => {
+    const price = "Aquí tiene: ocho mil doscientos cincuenta y seis pesos. Y su comprobante.";
+    expect(judgePieces(price, heard("Aquí tiene. 8,256 pesos. Y su comprobante.", ["Aquí tiene.", "Ocho mil dosciententa y seis pesos.", "Y su comprobante."], { pauses: [[900, 1100], [1900, 2100]] }), asHeardEs).again).toBeUndefined();
+    const bus = "Hay uno a las diez y cuarto de la noche y otro a las cinco y cuarto de la tarde.";
+    expect(judgePieces(bus, heard(bus, ["Hay uno a las diez y", "Cuarto de la noche.", "y otro a las cinco y", "Cuarto de la tarde."], { pauses: [[900, 1100], [1900, 2100], [2900, 3100]] }), asHeardEs).again).toBeUndefined();
+    // a real repeat in such a line is still one
+    expect(judgePieces(bus, heard(bus, ["Hay uno a las diez y cuarto de la noche", "y otro a las cinco y cuarto de la, de la tarde."], { pauses: [[900, 1100]] }), asHeardEs).again).toBeDefined();
+    expect(judgePieces("Son ochenta y cinco pesos, y su cambio.", heard("Son 85 pesos y y su cambio.", ["Son 85 pesos", "y y su cambio."], { pauses: [[900, 1100]] }), asHeardEs).again).toBe("y y");
+  });
+  it("keeps a line's laugh, and does not take it for the line's own \"ha\"", () => {
+    const said = "¡Ja! Ya ha aprendido.";
+    expect(judgePieces(said, heard("Ya ha aprendido.", ["Ha ha.", "Ya ha aprendido."], { pauses: [[900, 1100]] }), asHeardEs).again).toBeUndefined();
+    expect(judgePieces("Ya ha aprendido.", heard("Ya ha ha aprendido.", ["Ya ha", "ha aprendido."], { pauses: [[900, 1100]] }), asHeardEs).again).toBe("ha ha");
+    expect(interjectionLost(said, [[0, 725]], 2400, ["Ya ha aprendido."], asHeardEs)).toBe("ja");
+    expect(interjectionLost("Mmm, no sé, no traigo reloj.", [[35, 785]], 4050, ["No sé.", "¿No traigo reloj?"], asHeardEs)).toBe("mmm");
+    expect(interjectionLost("Ah, perdón: una mochila amarilla de tela.", [[55, 1455]], 5860, ["Uh.", "Perdón.", "Una mochila amarilla de tela."], asHeardEs)).toBeUndefined();
+    expect(interjectionLost("¡Noruega! ¡Uy, allá sí hace frío en invierno! ¿Verdad?", [[1735, 2295]], 5360, ["Noruega.", "Uy, allá se hace frío en invierno, ¿verdad?"], asHeardEs)).toBeUndefined();
+    // "ha dicho" is a verb, not a laugh: a noise before the line may go
+    expect(interjectionLost("¡Me he equivocado! ¿Qué ha dicho?", [[0, 875]], 3600, ["Me he equivocado. ¿Qué ha dicho?"], asHeardEs)).toBeUndefined();
   });
   it("counts a word a cut has lost", () => {
     expect(lostEitherWay("Muy bien, entonces mil cuatrocientos sesenta y cinco pesos.", "Muy bien, entonces mil cuatrocientos pesos.", asHeardEs)).toBeGreaterThan(0);
