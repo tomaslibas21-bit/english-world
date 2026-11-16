@@ -731,6 +731,7 @@ export const STRINGS: Record<string, string> = {
   "Spustelėk žemę – nueisi ten. {g} – nueiti iki užduoties, {m} – žemėlapis, {j} – užduotys, {p} – telefonas.": "Click the ground to walk there. {g} walks to your task, {m} opens the map, {j} your tasks, {p} the phone.",
   "Patarimai vėl bus rodomi": "The tips will show again",
   "Rodyti patarimus iš naujo": "Show the tips again",
+  "Vietoje „…“ pasakyk savo žodžius.": "Say your own words where you see “…”.",
   "Prie La Ola lentų paplūdimyje bakstelėk „Banglentė“ – Nayeli išmokys pagauti bangą. Ji siūlys ir pokalbio pabaigoje.": "Tap “Surf” by La Ola's boards on the beach: Nayeli will teach you to catch a wave. She offers it at the end of your talk too.",
   "Prie La Ola lentų paplūdimyje spausk E – Nayeli išmokys pagauti bangą. Ji siūlys ir pokalbio pabaigoje.": "Press E by La Ola's boards on the beach: Nayeli will teach you to catch a wave. She offers it at the end of your talk too.",
 };

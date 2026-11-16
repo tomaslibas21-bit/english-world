@@ -479,6 +479,8 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .hint-row .tag { font-size: 0.7em; font-weight: 900; color: #fff; background: var(--ink-faint); border-radius: 8px; padding: 1px 7px; margin-left: 6px; vertical-align: middle; font-family: var(--ui); letter-spacing: 0.02em; }
 .hint-row .tag.polite { background: var(--good); }
 .hint-row .tag.casual { background: var(--warm); }
+.guide-frames .note { font-size: 0.86em; color: var(--ink-soft); margin-top: 4px; font-family: var(--ui); }
+.guide-frames .note.own { margin: 2px 7px 0; }
 .hint-row .note { font-size: 0.8em; color: var(--ink-soft); margin-top: 3px; font-family: var(--ui); }
 .hint-row.used { border-color: #bfe2dd; background: #f4fbfa; }
 

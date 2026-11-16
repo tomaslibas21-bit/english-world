@@ -20,7 +20,7 @@ import { showToast } from "./Toasts";
 import { Confetti } from "./Confetti";
 import { L, Lx, TL } from "./i18n";
 import { EDITION } from "../edition";
-import { modelAnswers, playerVars, type Guess, type HeardWord, type RepeatWord } from "../convo/suggest";
+import { answerFrames, modelAnswers, playerVars, type Guess, type HeardWord, type RepeatWord } from "../convo/suggest";
 import "./answer.css";
 import {ReportProblem} from "./ReportProblem";
 import { SectionHelpButton } from "./sectionHelp";
@@ -117,6 +117,7 @@ export function Conversation() {
     game?.activeSession?.submit(v);
   };
 
+  const turn = turnAnswers(sit, conv, formal, gender);
   return (
     <>
     <div className="convo" data-phase={conv.phase} role="dialog" aria-label={L("Pokalbis: {name}", { name: npc?.name ?? "" })}>
@@ -191,9 +192,9 @@ export function Conversation() {
             </div>
           )}
 
-          {!conv.guideHidden && <Guide sit={sit} formal={formal} gender={gender} />}
+          {!conv.guideHidden && <Guide sit={sit} formal={formal} gender={gender} turn={turn} />}
 
-          <Hints sit={sit} formal={formal} gender={gender} />
+          {!(turn.moved && !conv.guideHidden) && <Hints sit={sit} formal={formal} gender={gender} />}
           </div>
 
           <div className="yt-bottom">
@@ -403,7 +404,30 @@ function Mission() {
 }
 
 /** The corridor: what to do now (one instruction) and 2–3 model answers to listen to and say. */
-function Guide({ sit, formal, gender }: { sit: SituationDef; formal: boolean; gender: "m" | "f" }) {
+/** What the card offers to say at the learner's turn: the step's own model answers; when it has none (they need
+ *  something the game doesn't know yet), the "more phrases" groups' answers, and the button for them is hidden;
+ *  when nothing complete can be made at all, the sentence frames with "…" for the learner's own words (their last
+ *  name, a spelling) with how to say it. The card is never left with nothing but its goal. */
+export interface TurnAnswers { examples: Sentence[]; frames: { s: Sentence; note?: string }[]; moved: boolean }
+function turnAnswers(sit: SituationDef, conv: ReturnType<typeof useStore.getState>["conv"], formal: boolean, gender: "m" | "f"): TurnAnswers {
+  const none: TurnAnswers = { examples: [], frames: [], moved: false };
+  if (conv.phase !== "you" || !conv.suggest.length) return none;
+  const sg = conv.suggest[Math.min(conv.focus, conv.suggest.length - 1)];
+  const groupOf = (id: string) => sit.hints[id] ?? GLOBAL.hints[id];
+  const lastNpc = [...conv.transcript].reverse().find((l) => l.who === "npc" && l.npc)?.npc ?? conv.npcId;
+  const o = { formal, gender, npcGender: NPCS[lastNpc]?.gender ?? "f", vars: playerVars(useStore.getState().progress.profile, game?.activeSession?.conv?.said) } as const;
+  const own = sg.hint && groupOf(sg.hint) ? modelAnswers(sit, groupOf(sg.hint), conv.chosen[sg.hint], o, 3) : [];
+  if (own.length) return { ...none, examples: own };
+  const more = conv.hints.filter((id) => id !== "g_clarify" && id !== sg.hint && groupOf(id));
+  const examples: Sentence[] = [];
+  for (const id of more) for (const s of modelAnswers(sit, groupOf(id), conv.chosen[id], o, 3)) if (examples.length < 3 && !examples.some((e) => e.en === s.en)) examples.push(s);
+  if (examples.length) return { ...none, examples, moved: true };
+  const frames: TurnAnswers["frames"] = [];
+  for (const id of [sg.hint, ...more]) if (id && groupOf(id)) for (const f of answerFrames(sit, groupOf(id), conv.chosen[id], o, 3)) if (frames.length < 3 && !frames.some((x) => x.s.en === f.s.en)) frames.push(f);
+  return { ...none, frames, moved: frames.length > 0 };
+}
+
+function Guide({ sit, formal, gender, turn }: { sit: SituationDef; formal: boolean; gender: "m" | "f"; turn: TurnAnswers }) {
   const conv = useStore((s) => s.conv);
   const settings = useStore((s) => s.settings);
   const setConv = useStore((s) => s.setConv);
@@ -418,8 +442,7 @@ function Guide({ sit, formal, gender }: { sit: SituationDef; formal: boolean; ge
   const sg = conv.suggest[focus];
   const groupId = sg.hint;
   const group = groupId ? sit.hints[groupId] ?? GLOBAL.hints[groupId] : undefined;
-  const lastNpc = [...conv.transcript].reverse().find((l) => l.who === "npc" && l.npc)?.npc ?? conv.npcId;
-  const examples = group && groupId ? modelAnswers(sit, group, conv.chosen[groupId], { formal, gender, npcGender: NPCS[lastNpc]?.gender ?? "f", vars: playerVars(useStore.getState().progress.profile) }, 3) : [];
+  const examples = turn.examples;
   const opts = optionEntities(sit, sg.options);
   const shown = allChips || opts.length <= 7 ? opts : opts.slice(0, 6);
   return (
@@ -450,6 +473,19 @@ function Guide({ sit, formal, gender }: { sit: SituationDef; formal: boolean; ge
               </div>
             </div>
           ))}
+        </div>
+      )}
+      {turn.frames.length > 0 && (
+        <div className="guide-examples guide-frames">
+          {turn.frames.map((f, i) => (
+            <div className="gx" key={i}>
+              <div className="gx-text" tabIndex={0}>
+                <Interlinear s={f.s} lt={settings.sayLt} ipa={settings.sayIpa} compactNat />
+                {f.note && <div className="note">{f.note}</div>}
+              </div>
+            </div>
+          ))}
+          <div className="note own">{L("Vietoje „…“ pasakyk savo žodžius.")}</div>
         </div>
       )}
       {conv.suggest.length > 1 && (
