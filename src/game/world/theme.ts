@@ -7,6 +7,8 @@
 // are in mexican.ts), down to the last details (the fields after `sounds`: the conversation's camera, people's spots
 // in the rooms, props, the cenote).
 
+import type { FlyKey } from "../flyover";
+
 export interface BuildingLook {
   color?: string; trim?: string; awning?: string; roofColor?: string;
   /** Another roof than layout.ts's: a flat one, or a palapa (a thatched hip roof). */
@@ -186,6 +188,9 @@ export interface TownTheme {
 
   // The last details (docs/es/TOWN.md "Done: the last details"). Off in Maple Harbor, but the conversation's camera
   // and the room spots (on since 5 Nov 2026).
+  /** The first visit's flight over the town (game/flyover.ts): the points the camera glides along and what it looks at
+   *  from each, ending in front of the airport. Empty: no flight. */
+  flyover: FlyKey[];
   /** The conversation's camera (Game.startSession). Off (null), it frames the player, the main speaker and the
    *  conversation's other speakers within 7 m of them from a set distance (2.6 times how far apart they stand, at
    *  least 6 m), which a phone's narrow picture can cut. With this, the speakers within `reach` m of the main one are
@@ -442,6 +447,13 @@ export const THEME: TownTheme = {
   foodCart: null,
   traffic: [],
   sounds: null,
+  // in from the bay over the beach, along the shore with the square and its fountain below, and down to the airport
+  flyover: [
+    { pos: [-95, 62, -165], look: [-30, 0, -30] },
+    { pos: [-20, 46, -125], look: [25, 0, -30] },
+    { pos: [60, 30, -85], look: [105, 2, -15] },
+    { pos: [104, 13, -30], look: [140, 4, -8] },
+  ],
   // Every speaker in the picture, a phone's too (Mark at Sophie's party, Mrs. Lee at her flower stall, Greg and
   // Vanessa at the meeting…): the speakers within 12 m of the main one framed, the camera backing off to at most 30 m,
   // as in Puerto Colibrí

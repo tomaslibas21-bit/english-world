@@ -7,6 +7,7 @@ export const STRINGS: Record<string, string> = {
   "English World – „{title}“ ({en}) · {when}": "Puerto Colibrí – „{title}“ ({en}) · {when}",
   "Kad atpažinimas vyktų šiame įrenginyje, Chrome turi atsisiųsti anglų kalbą.": "Kad atpažinimas vyktų šiame įrenginyje, Chrome turi atsisiųsti ispanų kalbą.",
   "Kalbėk angliškai su miestelio žmonėmis – kavinėje, taksi, oro uoste ar pas gydytoją. Kiekviename pokalbyje matysi, ką daryti ir ką pasakyti.": "Kalbėk ispaniškai su miestelio žmonėmis – kavinėje, taksi, oro uoste ar pas gydytoją. Kiekviename pokalbyje matysi, ką daryti ir ką pasakyti.",
+  "Tavo lėktuvas ką tik nusileido. Pirmiausia – pasų kontrolė: prieik ir pasikalbėk angliškai.": "Tavo lėktuvas ką tik nusileido. Pirmiausia – pasų kontrolė: prieik ir pasikalbėk ispaniškai.",
   "Kuriamas Maple Harbor…": "Kuriamas Puerto Colibrí…",
   "Maple Harbor · JAV": "Majų Rivjera · Meksika",
   "Pamatysi lietuviškai – pasakyk angliškai ir pasitikrink.": "Pamatysi lietuviškai – pasakyk ispaniškai ir pasitikrink.",

@@ -8,6 +8,14 @@ import type { TownTheme } from "../../../../game/world/theme";
 export type { BuildingLook, FloorKind, OutdoorSpot, RoomLook, TianguisGoods, TownTheme } from "../../../../game/world/theme";
 
 export const THEME: TownTheme = {
+  // The first visit's flight (game/flyover.ts): in from the Caribbean over the beach and the malecón, along the shore
+  // with the zócalo and its kiosco below, and down to the airport
+  flyover: [
+    { pos: [-95, 62, -165], look: [-30, 0, -30] },
+    { pos: [-20, 46, -125], look: [25, 0, -30] },
+    { pos: [60, 30, -85], look: [105, 2, -15] },
+    { pos: [104, 13, -30], look: [140, 4, -8] },
+  ],
   // --- the rooms and the conversations' spots (docs/es/TOWN.md tasks 6 and 7, "Every conversation's spot") ---
   // Every room's English words in Spanish, as a Mexican place writes them; the facts are the conversations' (prices,
   // numbers, names). The airport's signs are Spanish over English ("\n": two lines), as Mexican airports have them.

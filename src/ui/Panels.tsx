@@ -25,6 +25,9 @@ import { L, Lx } from "./i18n";
 import { EDITION } from "../edition";
 import { chooseVariety, loadVariety } from "../state/variety";
 import { courseGuideUrl, setSectionHelp, useSectionHelp } from "./sectionHelp";
+import { COACH_STEPS, coach } from "../game/coach";
+import { COACH_ICON, coachWords } from "./Guide";
+import { useRadio } from "../radio";
 
 export const CHAPTERS: Record<number, string> = { 1: L("Atvykimas"), 2: L("Pirmosios dienos mieste"), 3: L("Įsikūrimas"), 4: L("Darbas"), 5: L("Žmonės"), 6: L("Kelionės"), 7: L("Pagalba"), 8: L("Pažengusiems"), 9: L("Gyva kalba") };
 
@@ -105,6 +108,7 @@ function Help({ close }: { close: () => void }) {
           <li>{L("Spausk „LT“, kad matytum vertimą, arba „IPA“, kad matytum tarimo užrašą. Vėžliuko ikonėlė sulėtina balsą, o „i“ prie paveikslėlio atveria informaciją apie pašnekovą ir vietą.")}</li>
         </ol>
       </details>
+      <TownHelp open />
       {courseGuideUrl() && <a className="btn soft" href={courseGuideUrl()} target="_blank" rel="noopener noreferrer">{L("Išsamus naudojimo gidas")} <Icon name="arrowRight" size={18} /></a>}
     </div>
   </div>;
@@ -178,6 +182,30 @@ function HowToPlay({ open }: { open?: boolean }) {
   );
 }
 
+/** Everything the town's hints say (game/coach.ts: each comes up once, when its thing first matters), the other keys,
+ *  and the choice between the 3D view and the pictures: here to come back to. Only in the 3D town. */
+function TownHelp({ open }: { open?: boolean }) {
+  const light = useStore((st) => st.settings.play === "light");
+  const touch = useStore((st) => st.hud.showTouch);
+  const hasRadio = useRadio((s) => s.available);
+  const [again, setAgain] = useState(false);
+  if (light) return null;
+  return (
+    <details className="howto town-help" open={open}>
+      <summary><Icon name="walk" size={21} className="howto-ico" /> {L("Kaip judėti mieste?")}<Icon name="chevronDown" size={18} className="chev" /></summary>
+      <ul>
+        {COACH_STEPS.filter((s) => s !== "radio" || hasRadio).map((s) => {
+          const [title, body] = coachWords(s, touch);
+          return <li key={s}><Icon name={COACH_ICON[s]} size={19} strokeWidth={2} /><span><b>{title}.</b> {body}</span></li>;
+        })}
+        {!touch && <li><Icon name="keyboard" size={19} strokeWidth={2} /><span><b>{L("Klavišai.")}</b> {Lx("Spustelėk žemę – nueisi ten. {g} – nueiti iki užduoties, {m} – žemėlapis, {j} – užduotys, {p} – telefonas.", { g: <kbd>G</kbd>, m: <kbd>M</kbd>, j: <kbd>J</kbd>, p: <kbd>P</kbd> })}</span></li>}
+        <li><Icon name="frame" size={19} strokeWidth={2} /><span><b>{L("Pokalbių vaizdas")}.</b> {L("Kalbiesi su žmogumi 3D mieste, jo lūpos juda pagal balsą. Įjungus iliustruotas scenas, pokalbio metu rodomas vietos piešinys. Per pokalbį vaizdą perjungsi mažu paveikslėliu vaizdo kampe.")}</span></li>
+      </ul>
+      <button className="btn ghost small" disabled={again} onClick={() => { useStore.getState().updateProgress((p) => { p.coach = { view: p.coach?.view }; }); coach.begin(); setAgain(true); }}>{again ? L("Patarimai vėl bus rodomi") : L("Rodyti patarimus iš naujo")}</button>
+    </details>
+  );
+}
+
 /** The situation picker: every conversation, one tap to start (no walking needed). */
 function Scenarios({ close }: { close: () => void }) {
   const progress = useStore((st) => st.progress);
@@ -194,7 +222,8 @@ function Scenarios({ close }: { close: () => void }) {
       <SheetHead icon="clapper" title={L("Pasirink situaciją · {done}/{total}", { done, total: SITUATIONS.length })} close={close} />
       <div className="sheet-body">
         <p className="scn-lead">{L("Paspausk situaciją – iškart atsidursi vietoje ir kalbėsi su žmogumi. Po pokalbio galėsi pakartoti arba rinktis kitą.")}</p>
-        <HowToPlay open={done === 0} />
+        <HowToPlay />
+        <TownHelp />
         <div className="chapter">
           <h3 className="start-here"><Icon name="star" size={18} /> {L("Pradėk nuo šių")}</h3>
           <div className="scn-grid">{START_WITH.map((id) => SITUATION_BY_ID[id]).filter(Boolean).map((s) => <ScenarioCard key={s.id} s={s} close={close} />)}</div>

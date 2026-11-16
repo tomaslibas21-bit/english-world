@@ -13,6 +13,8 @@ export interface GameApi {
   readonly activeSession: Session | null;
   lastScenario: string | null;
   startScenario(sitId: string): void;
+  /** Cuts the first visit's flight over the town short (the 3D town only). */
+  endFlight?(): void;
   restartScenario(): void;
   nextScenarioId(after?: string): string | null;
   call(sitId: string): void;

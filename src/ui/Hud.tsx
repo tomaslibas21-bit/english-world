@@ -46,9 +46,10 @@ export function Hud() {
   const conv = useStore((s) => s.conv);
   const due = useDueCards();
   const hasRadio = useRadio((s) => s.available);
-  const [helpOpen, setHelpOpen] = useState(() => { try { return localStorage.getItem("ew-help-closed") !== "1"; } catch { return true; } });
   const surfing = useSurf((s) => s.active);
   if (conv.active) return <Fade />;
+  // the first visit's flight over the town has the screen to itself too: where one is, and what to do first
+  if (hud.flight) return <div className="hud"><Flight /><Fade /></div>;
   // the surf lesson has the screen to itself: her line, the answers, the score, and the phone's controls
   if (surfing) return (
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")}>
@@ -104,23 +105,26 @@ export function Hud() {
                 : Lx("Plauk {arrows} · greičiau {shift} · panerti {space}", { arrows: RIDE_ARROWS(), shift: <kbd>Shift</kbd>, space: <kbd>{L("Tarpas")}</kbd> })}
         </div>
       )}
-      {helpOpen && !hud.showTouch && !hud.coach && !hud.ride && (
-        <div className="help-strip">
-          {Lx("Vaikščiok {arrows} arba {wasd} · bėgti {shift} · pašokti {space}", {
-            arrows: <><kbd><Icon name="arrowUp" size="1em" strokeWidth={2.25} label={L("aukštyn")} /></kbd><kbd><Icon name="arrowDown" size="1em" strokeWidth={2.25} label={L("žemyn")} /></kbd><kbd><Icon name="arrowLeft" size="1em" strokeWidth={2.25} label={L("kairėn")} /></kbd><kbd><Icon name="arrowRight" size="1em" strokeWidth={2.25} label={L("dešinėn")} /></kbd></>,
-            wasd: <><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></>,
-            shift: <kbd>Shift</kbd>,
-            space: <kbd>{L("Tarpas")}</kbd>,
-          })}<br />
-          {Lx("Spustelėk žemę – nueisi ten · tempk pele – apsidairyk · {e} – kalbėtis / įeiti", { e: <kbd>E</kbd> })}<br />
-          {Lx("{g} – nueiti iki užduoties · {m} žemėlapis · {j} užduotys · {p} telefonas", { g: <kbd>G</kbd>, m: <kbd>M</kbd>, j: <kbd>J</kbd>, p: <kbd>P</kbd> })}{hasRadio && Lx(" · {r} radijas", { r: <kbd>R</kbd> })}
-          <button onClick={() => { setHelpOpen(false); try { localStorage.setItem("ew-help-closed", "1"); } catch { /* ignore */ } }}>{L("Supratau")} <Icon name="close" size={15} strokeWidth={2.25} /></button>
-        </div>
-      )}
       {hud.showTouch && <TouchControls />}
       <SurfPicker />
       <Fade />
     </div>
+  );
+}
+
+/** The first visit's flight over the town (game/flyover.ts): the town's name, one sentence of what to do first, and
+ *  the way to cut it short: any key (Game.onKeyDown), or a tap anywhere. */
+function Flight() {
+  const touch = useStore((s) => s.hud.showTouch);
+  return (
+    <button className="flight" onClick={() => game?.endFlight?.()} aria-label={L("Praleisti")}>
+      <span className="flight-words">
+        <span className="flight-kicker">{L("Sveiki atvykę!")}</span>
+        <b>{EDITION.town}</b>
+        <span className="flight-first">{L("Tavo lėktuvas ką tik nusileido. Pirmiausia – pasų kontrolė: prieik ir pasikalbėk angliškai.")}</span>
+      </span>
+      <span className="flight-skip">{touch ? L("Bakstelėk – praleisti") : L("Bet kuris klavišas – praleisti")}</span>
+    </button>
   );
 }
 
