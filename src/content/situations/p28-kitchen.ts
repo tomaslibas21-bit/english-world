@@ -12,7 +12,7 @@
 // Address (spec + owner): the chef says tu to the player, the player says jūs to the chef; tu between the
 // player and Mia. NPCS.whitaker is not `informal` (so the learner's hints and the global hint groups use jūs
 // while he is the one speaking) and NPCS.russo is. So the chef's lines are written with tu explicitly, the
-// hints to him with jūs explicitly (lower case), Mia's lines and the hints to her with tu. The global NPC lines
+// hints to him with Jūs explicitly (capital: one person), Mia's lines and the hints to her with tu. The global NPC lines
 // that switch {j:…|t:…} are copied into `lines` below with tu, so the chef never says jūs to the player.
 // "Both of you" (closing) is the plural jūs.
 //
@@ -1103,14 +1103,14 @@ export const kitchen: SituationDef = {
     serve: {
       lt: "Paprašyti šefo paragauti sriubos",
       items: [
-        { id: "could_taste", s: t("Chef, | could | you | taste | this?", "Šefe, | ar galėtumėte | jūs | paragauti | šito?", "Šefe, gal galėtumėte paragauti?", { flags: { 1: F_COULD_Q } }), register: "polite" },
-        { id: "would_mind", s: t("Would | you | mind | tasting | it?", "Ar | jūs | neprieštarautumėte | paragauti | jos?", "Gal neprieštarautumėte paragauti?",
+        { id: "could_taste", s: t("Chef, | could | you | taste | this?", "Šefe, | ar galėtumėte | Jūs | paragauti | šito?", "Šefe, gal galėtumėte paragauti?", { flags: { 1: F_COULD_Q } }), register: "polite" },
+        { id: "would_mind", s: t("Would | you | mind | tasting | it?", "Ar | Jūs | neprieštarautumėte | paragauti | jos?", "Gal neprieštarautumėte paragauti?",
           { flags: { 0: "“Would” in a yes/no question = the particle ar; the conditional sits on neprieštarautumėte.", 2: "“mind” (would you mind) = neprieštarauti: Lithuanian asks whether you would not object." } }), register: "polite" },
-        { id: "love_feedback", s: t("I'd | love | your | feedback.", "Aš | labai norėčiau | jūsų | pastabų.", "Labai norėčiau išgirsti jūsų pastabas.",
+        { id: "love_feedback", s: t("I'd | love | your | feedback.", "Aš | labai norėčiau | Jūsų | pastabų.", "Labai norėčiau išgirsti Jūsų pastabas.",
           { flags: { 0: F_ID, 1: "“love” after I'd = labai norėti." } }) },
         { id: "heres_soup", s: t("Here's | my | cold | beet | soup.", "Štai | mano | šalta | burokėlių | sriuba.", "Štai mano šaltibarščiai.") },
         { id: "its_ready", s: t("It's | ready, | Chef.", "Ji yra | paruošta, | šefe.", "Paruošta, šefe.") },
-        { id: "what_think", s: t("What | do | you | think?", "Ką | — | jūs | manote?", "Ką manote?", { flags: { 1: F_WH_DO } }) },
+        { id: "what_think", s: t("What | do | you | think?", "Ką | — | Jūs | manote?", "Ką manote?", { flags: { 1: F_WH_DO } }) },
       ],
     },
     nerves: {
@@ -1138,16 +1138,16 @@ export const kitchen: SituationDef = {
         { id: "makes_sense", s: t("That | makes sense.", "Tai | suprantama.", "Suprantu.") },
         { id: "thanks_for_fb", s: t("Thanks | for | the | feedback.", "Ačiū | už | — | pastabas.", "Ačiū už pastabas.") },
         { id: "youre_right", s: t("You're | right, | it's | a bit | flat.", "Jūs esate | teisus, | ji yra | šiek tiek | blanki.", "Jūs teisus, ji kiek blankoka.") },
-        { id: "appreciate", s: t("I | appreciate | your | honesty.", "Aš | vertinu | jūsų | atvirumą.", "Vertinu jūsų atvirumą.") },
-        { id: "see_what_mean", s: t("I | see | what | you | mean.", "Aš | suprantu, | ką | jūs | turite omenyje.", "Suprantu, ką turite omenyje.", { flags: { 1: "“see” here = suprasti." } }) },
+        { id: "appreciate", s: t("I | appreciate | your | honesty.", "Aš | vertinu | Jūsų | atvirumą.", "Vertinu Jūsų atvirumą.") },
+        { id: "see_what_mean", s: t("I | see | what | you | mean.", "Aš | suprantu, | ką | Jūs | turite omenyje.", "Suprantu, ką turite omenyje.", { flags: { 1: "“see” here = suprasti." } }) },
       ],
     },
     example: {
       lt: "Paprašyti pavyzdžio",
       items: [
-        { id: "give_example", s: t("Could | you | give | me | an | example?", "Ar galėtumėte | jūs | duoti | man | — | pavyzdį?", "Gal galėtumėte duoti pavyzdį?", { flags: { 0: F_COULD_Q } }) },
-        { id: "what_add", s: t("What | would | you | add?", "Ką | — | jūs | įdėtumėte?", "Ką jūs įdėtumėte?", { flags: { 1: "“would”: the conditional įdėtumėte carries it." } }) },
-        { id: "what_mean", s: t("What | do | you | mean | by | acid?", "Ką | — | jūs | turite omenyje | sakydamas | „rūgštumas“?", "Ką turite omenyje sakydamas „rūgštumas“?",
+        { id: "give_example", s: t("Could | you | give | me | an | example?", "Ar galėtumėte | Jūs | duoti | man | — | pavyzdį?", "Gal galėtumėte duoti pavyzdį?", { flags: { 0: F_COULD_Q } }) },
+        { id: "what_add", s: t("What | would | you | add?", "Ką | — | Jūs | įdėtumėte?", "Ką Jūs įdėtumėte?", { flags: { 1: "“would”: the conditional įdėtumėte carries it." } }) },
+        { id: "what_mean", s: t("What | do | you | mean | by | acid?", "Ką | — | Jūs | turite omenyje | sakydamas | „rūgštumas“?", "Ką turite omenyje sakydamas „rūgštumas“?",
           { flags: { 1: F_WH_DO, 4: "“by (a word)” = sakydamas (when saying)." } }) },
         { id: "like_what", s: t("Like | what?", "Pavyzdžiui | ką?", "Pavyzdžiui?"), register: "casual" },
         { id: "maybe_lemon", s: t("Maybe | a little | lemon?", "Gal | truputį | citrinos?", "Gal truputį citrinos?") },
@@ -1156,7 +1156,7 @@ export const kitchen: SituationDef = {
     again: {
       lt: "Paprašyti paragauti dar kartą",
       items: [
-        { id: "taste_again", s: t("Could | you | taste | it | again?", "Ar galėtumėte | jūs | paragauti | jos | dar kartą?", "Gal galėtumėte paragauti dar kartą?", { flags: { 0: F_COULD_Q } }),
+        { id: "taste_again", s: t("Could | you | taste | it | again?", "Ar galėtumėte | Jūs | paragauti | jos | dar kartą?", "Gal galėtumėte paragauti dar kartą?", { flags: { 0: F_COULD_Q } }),
           note: "Dainos pavadinimas: „Taste It Again“." },
         { id: "better_now", s: t("Is | it | better | now?", "Ar | ji | geresnė | dabar?", "Ar dabar geriau?", { flags: { 0: "Question “Is” = the particle ar; no copula needed." } }) },
         { id: "i_added", s: t("I | added | some | lemon.", "Aš | įdėjau | — | citrinos.", "Įdėjau citrinos.", { flags: { 2: "Partitive “some”: the genitive citrinos carries it." } }) },
@@ -1168,7 +1168,7 @@ export const kitchen: SituationDef = {
         { id: "hadnt_thought", s: t("I | hadn't thought | of | it | that way.", "Aš | {m:nebuvau pagalvojęs|f:nebuvau pagalvojusi} | apie | tai | taip.", "Taip apie tai nebuvau {m:pagalvojęs|f:pagalvojusi}.") },
         { id: "good_idea", s: t("Good | idea. | I'll try | that.", "Gera | mintis. | Pabandysiu | tai.", "Gera mintis. Pabandysiu.") },
         { id: "try_both", s: t("I'll try | it | both | ways.", "Pabandysiu | — | abiem | būdais.", "Pabandysiu abiem būdais.", { flags: { 1: F_NO_OBJ } }) },
-        { id: "see_point", s: t("I | see | your | point, | but | I'd like | to keep | it | traditional.", "Aš | suprantu | jūsų | mintį, | bet | norėčiau | palikti | ją | tradicinę.",
+        { id: "see_point", s: t("I | see | your | point, | but | I'd like | to keep | it | traditional.", "Aš | suprantu | Jūsų | mintį, | bet | norėčiau | palikti | ją | tradicinę.",
           "Suprantu, ką norite pasakyti, bet norėčiau palikti ją tradicinę."), note: "Mandagiai nesutikti: pirma pripažink kito mintį, tada pasakyk savo." },
         { id: "lt_potatoes", s: t("In Lithuania, | we | serve | it | with | hot | potatoes | on the side.", "Lietuvoje, | mes | patiekiame | ją | su | karštomis | bulvėmis | atskirai.",
           "Lietuvoje ją patiekiame su karštomis bulvėmis atskirai.") },

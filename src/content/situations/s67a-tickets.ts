@@ -311,19 +311,19 @@ export const tickets: SituationDef = {
 
   lines: {
     greet: [
-      t("Good | morning! | Where | are | you | headed | today?", "Labas | rytas! | Kur | — | jūs | keliaujate | šiandien?", "Labas rytas! Kur šiandien keliaujate?",
+      t("Good | morning! | Where | are | you | headed | today?", "Labas | rytas! | Kur | — | Jūs | keliaujate | šiandien?", "Labas rytas! Kur šiandien keliaujate?",
         { flags: { 3: "“are … headed”: no separate Lithuanian word for “are”; the present of keliaujate carries it (linked to “headed”)." } }),
       t("Next | in line, | please! | Where to?", "Kitas | eilėje, | prašom! | Kur važiuojate?", "Kitas, prašom! Kur važiuojate?"),
-      t("Hi there. | What | can | I | do | for you?", "Sveiki. | Ką | galiu | aš | padaryti | jums?", "Sveiki. Kuo galiu padėti?"),
+      t("Hi there. | What | can | I | do | for you?", "Sveiki. | Ką | galiu | aš | padaryti | Jums?", "Sveiki. Kuo galiu padėti?"),
     ],
     greet_hay: [
-      t("Morning! | How | are | you | doing | today?", "Labas rytas! | Kaip | — | jums | sekasi | šiandien?", "Labas rytas! Kaip jums šiandien sekasi?",
+      t("Morning! | How | are | you | doing | today?", "Labas rytas! | Kaip | — | Jums | sekasi | šiandien?", "Labas rytas! Kaip Jums šiandien sekasi?",
         { flags: { 2: "Progressive “are” has no Lithuanian word; sekasi carries the tense (linked to “doing”)." } }),
     ],
     ask_dest: [
-      t("Where | are | you | headed?", "Kur | — | jūs | keliaujate?", "Kur keliaujate?",
+      t("Where | are | you | headed?", "Kur | — | Jūs | keliaujate?", "Kur keliaujate?",
         { flags: { 1: "“are … headed”: no separate Lithuanian word for “are”; the present of keliaujate carries it (linked to “headed”)." } }),
-      t("Where | would | you | like | to go?", "Kur | — | jūs | norėtumėte | važiuoti?", "Kur norėtumėte važiuoti?",
+      t("Where | would | you | like | to go?", "Kur | — | Jūs | norėtumėte | važiuoti?", "Kur norėtumėte važiuoti?",
         { flags: { 1: "“would”: the conditional ending of norėtumėte carries it (linked to “like”)." } }),
     ],
     dest_list: [
@@ -349,9 +349,9 @@ export const tickets: SituationDef = {
         { flags: { 0: "Question “Will” = the particle ar; the future sits on bus (linked to “be”)." } }),
     ],
     ask_return: [
-      t("And | when | are | you | coming | back?", "O | kada | — | jūs | grįšite | atgal?", "O kada grįšite?",
+      t("And | when | are | you | coming | back?", "O | kada | — | Jūs | grįšite | atgal?", "O kada grįšite?",
         { flags: { 2: "Progressive “are” has no Lithuanian word; the future grįšite carries it (linked to “coming”)." } }),
-      t("What | day | are | you | coming | back?", "Kurią | dieną | — | jūs | grįšite | atgal?", "Kurią dieną grįšite?",
+      t("What | day | are | you | coming | back?", "Kurią | dieną | — | Jūs | grįšite | atgal?", "Kurią dieną grįšite?",
         { flags: { 2: "Progressive “are” has no Lithuanian word; the future grįšite carries it (linked to “coming”)." } }),
     ],
     ret_ok_on: [t("Okay, | returning | on {X}.", "Gerai, | grįžtate | {X:acc}.", "Gerai, grįžtate {X:acc}.")],
@@ -362,32 +362,32 @@ export const tickets: SituationDef = {
         "Jokių problemų. Grįžimo bilietą galite panaudoti bet kurią šio mėnesio dieną."),
     ],
     ask_travel_day: [
-      t("Are | you | traveling | today?", "Ar | jūs | keliaujate | šiandien?", "Ar keliaujate šiandien?",
+      t("Are | you | traveling | today?", "Ar | Jūs | keliaujate | šiandien?", "Ar keliaujate šiandien?",
         { flags: { 0: "Question “Are” = the particle ar; the present of keliaujate carries the progressive (linked to “traveling”)." } }),
     ],
     ask_when_travel: [
-      t("When | would | you | like | to travel?", "Kada | — | jūs | norėtumėte | keliauti?", "Kada norėtumėte keliauti?",
+      t("When | would | you | like | to travel?", "Kada | — | Jūs | norėtumėte | keliauti?", "Kada norėtumėte keliauti?",
         { flags: { 1: "“would”: the conditional ending of norėtumėte carries it (linked to “like”)." } }),
     ],
     ask_class: [
       t("Coach | or | business | class? | Business | is | twenty | dollars | more.", "Ekonominė klasė | ar | verslo | klasė? | Verslo | yra | dvidešimt | dolerių | brangesnė.",
         "Ekonominė ar verslo klasė? Verslo klasė dvidešimčia dolerių brangesnė.",
         { say: "Coach or business class? Business is twenty dollars more." }),
-      t("Would | you | like | coach | or | business | class?", "Ar | jūs | norėtumėte | ekonominės klasės | ar | verslo | klasės?", "Norėtumėte ekonominės ar verslo klasės?",
+      t("Would | you | like | coach | or | business | class?", "Ar | Jūs | norėtumėte | ekonominės klasės | ar | verslo | klasės?", "Norėtumėte ekonominės ar verslo klasės?",
         { flags: { 0: "“Would” in a yes/no question = the particle ar; the conditional sits on norėtumėte (linked to “like”)." } }),
     ],
     business_more: [
       t("Business | is | twenty | dollars | more | each | way.", "Verslo klasė | yra | dvidešimt | dolerių | brangesnė | kiekviena | kryptimi.", "Verslo klasė kiekviena kryptimi dvidešimčia dolerių brangesnė."),
     ],
     ask_discount: [
-      t("Are | you | a | senior | or | a | student?", "Ar esate | jūs | — | {m:senjoras|f:senjorė} | ar | — | {m:studentas|f:studentė}?", "Ar esate {m:senjoras|f:senjorė} ar {m:studentas|f:studentė}?"),
+      t("Are | you | a | senior | or | a | student?", "Ar esate | Jūs | — | {m:senjoras|f:senjorė} | ar | — | {m:studentas|f:studentė}?", "Ar esate {m:senjoras|f:senjorė} ar {m:studentas|f:studentė}?"),
     ],
     discount_info: [
       t("Yes! | Seniors | get | ten | percent | off, | and | students | get | fifteen | percent | off.", "Taip! | Senjorai | gauna | dešimt | procentų | nuolaidą, | ir | studentai | gauna | penkiolika | procentų | nuolaidą.",
         "Taip! Senjorams – dešimt procentų nuolaida, studentams – penkiolika procentų."),
     ],
     ask_student_id: [
-      t("Great! | Can | I | see | your | student | ID?", "Puiku! | Ar galiu | aš | pamatyti | jūsų | studento | pažymėjimą?", "Puiku! Ar galiu pamatyti jūsų studento pažymėjimą?"),
+      t("Great! | Can | I | see | your | student | ID?", "Puiku! | Ar galiu | aš | pamatyti | Jūsų | studento | pažymėjimą?", "Puiku! Ar galiu pamatyti Jūsų studento pažymėjimą?"),
     ],
     ask_senior_id: [
       t("Sure. | Can | I | see | a | photo | ID?", "Žinoma. | Ar galiu | aš | pamatyti | — | asmens | dokumentą?", "Žinoma. Ar galiu pamatyti asmens dokumentą?"),
@@ -396,10 +396,10 @@ export const tickets: SituationDef = {
       t("Thanks! | You | get | fifteen | percent | off.", "Ačiū! | Jūs | gaunate | penkiolika | procentų | nuolaidą.", "Ačiū! Jums taikoma penkiolikos procentų nuolaida."),
     ],
     discount_ok_senior: [
-      t("Thank | you! | That's | ten | percent | off.", "Dėkoju | jums! | Tai yra | dešimt | procentų | nuolaida.", "Ačiū! Tai dešimties procentų nuolaida."),
+      t("Thank | you! | That's | ten | percent | off.", "Dėkoju | Jums! | Tai yra | dešimt | procentų | nuolaida.", "Ačiū! Tai dešimties procentų nuolaida."),
     ],
     no_id: [
-      t("That's | okay, | but | I | can't give | you | the | discount | without | it.", "Tai yra | gerai, | bet | aš | negaliu suteikti | jums | — | nuolaidos | be | jo.",
+      t("That's | okay, | but | I | can't give | you | the | discount | without | it.", "Tai yra | gerai, | bet | aš | negaliu suteikti | Jums | — | nuolaidos | be | jo.",
         "Nieko tokio, bet be jo nuolaidos suteikti negaliu."),
     ],
     say_total: [
@@ -408,7 +408,7 @@ export const tickets: SituationDef = {
         { flags: { 3: "“to” (comes to): sudaro takes the sum directly; no separate word." } }),
     ],
     ask_pay: [
-      t("How | would | you | like | to pay?", "Kaip | — | jūs | norėtumėte | sumokėti?", "Kaip norėtumėte sumokėti?",
+      t("How | would | you | like | to pay?", "Kaip | — | Jūs | norėtumėte | sumokėti?", "Kaip norėtumėte sumokėti?",
         { flags: { 1: "“would”: the conditional ending of norėtumėte carries it (linked to “like”)." } }),
       t("Cash | or | card?", "Grynaisiais | ar | kortele?", "Grynaisiais ar kortele?"),
     ],
@@ -422,17 +422,17 @@ export const tickets: SituationDef = {
       t("Sure, | card | is fine.", "Žinoma, | kortele | galima.", "Žinoma, galima ir kortele."),
     ],
     cash_ok: [
-      t("Thank | you. | And | here's | your | change.", "Dėkoju | jums. | Ir | štai | jūsų | grąža.", "Ačiū. Štai jūsų grąža."),
+      t("Thank | you. | And | here's | your | change.", "Dėkoju | Jums. | Ir | štai | Jūsų | grąža.", "Ačiū. Štai Jūsų grąža."),
     ],
     cash_later: [
       t("Sure, | cash | is | fine.", "Žinoma, | grynieji | yra | gerai.", "Žinoma, galima ir grynaisiais."),
     ],
     ticket_one: [
-      t("Here's | your | ticket.", "Štai | jūsų | bilietas.", "Štai jūsų bilietas."),
-      t("All right, | here's | your | ticket.", "Gerai, | štai | jūsų | bilietas.", "Gerai, štai jūsų bilietas."),
+      t("Here's | your | ticket.", "Štai | Jūsų | bilietas.", "Štai Jūsų bilietas."),
+      t("All right, | here's | your | ticket.", "Gerai, | štai | Jūsų | bilietas.", "Gerai, štai Jūsų bilietas."),
     ],
     ticket_many: [
-      t("Here | are | your | tickets.", "Štai | — | jūsų | bilietai.", "Štai jūsų bilietai.", { flags: { 1: "“are” (here are): no Lithuanian word; štai presents them." } }),
+      t("Here | are | your | tickets.", "Štai | — | Jūsų | bilietai.", "Štai Jūsų bilietai.", { flags: { 1: "“are” (here are): no Lithuanian word; štai presents them." } }),
     ],
     train_info: [
       t("Your | train | leaves | at | {$time} | from | Track | {$num}.", "Jūsų | traukinys | išvyksta | — | {$time} | iš | kelio | {$num}.",
@@ -451,7 +451,7 @@ export const tickets: SituationDef = {
       t("Track | {$num}. | Just | follow | the | signs.", "Kelias | {$num}. | Tiesiog | sekite | — | ženklus.", "{$num} kelias. Tiesiog sekite ženklus."),
     ],
     which_dest_first: [
-      t("Sure. | Where | are | you | going?", "Žinoma. | Kur | — | jūs | važiuojate?", "Žinoma. Kur važiuojate?",
+      t("Sure. | Where | are | you | going?", "Žinoma. | Kur | — | Jūs | važiuojate?", "Žinoma. Kur važiuojate?",
         { flags: { 2: "Progressive “are” has no Lithuanian word; the present of važiuojate carries it (linked to “going”)." } }),
     ],
     direct_yes: [
@@ -509,12 +509,12 @@ export const tickets: SituationDef = {
     schedule: [t("Sure, | here's | a | schedule.", "Žinoma, | štai | — | tvarkaraštis.", "Žinoma, štai tvarkaraštis.")],
     restroom: [t("The | restrooms | are | by | Track | 1.", "— | Tualetai | yra | prie | kelio | 1.", "Tualetai – prie pirmojo kelio.", { say: "The restrooms are by Track one." })],
     anything_else: [
-      t("Anything | else | I | can | help | you | with?", "Kuo nors | daugiau | aš | galiu | padėti | jums | —?", "Ar dar kuo nors galiu padėti?",
+      t("Anything | else | I | can | help | you | with?", "Kuo nors | daugiau | aš | galiu | padėti | Jums | —?", "Ar dar kuo nors galiu padėti?",
         { flags: { 6: "Stranded “with”: padėti takes the dative jums directly; no separate word." } }),
       t("Anything | else?", "Ką nors | daugiau?", "Dar kas nors?"),
     ],
     just_so_you_know: [
-      t("Okay! | Just | so | you | know:", "Gerai! | Tik | kad | jūs | žinotumėte:", "Gerai! Tik kad žinotumėte:"),
+      t("Okay! | Just | so | you | know:", "Gerai! | Tik | kad | Jūs | žinotumėte:", "Gerai! Tik kad žinotumėte:"),
     ],
     have_trip: [
       t("Have | a | great | trip!", "Linkiu | — | puikios | kelionės!", "Geros kelionės!"),
@@ -627,7 +627,7 @@ export const tickets: SituationDef = {
       items: [
         { id: "q_student", s: t("Is | there | a | student | discount?", "Ar yra | — | — | studentų | nuolaida?", "Ar yra nuolaida studentams?",
           { flags: { 1: "Existential “there”: no Lithuanian word; yra carries it (linked to “Is”)." } }) },
-        { id: "q_student", s: t("Do | you | have | a | senior | discount?", "Ar | jūs | turite | — | senjorų | nuolaidą?", "Ar turite nuolaidą senjorams?",
+        { id: "q_student", s: t("Do | you | have | a | senior | discount?", "Ar | Jūs | turite | — | senjorų | nuolaidą?", "Ar turite nuolaidą senjorams?",
           { flags: { 0: "Question “Do” = the particle ar." } }) },
         { id: "im_student", s: t("I'm | a | student.", "Aš esu | — | {m:studentas|f:studentė}.", "Esu {m:studentas|f:studentė}.") },
         { id: "here_id", s: t("Here's | my | student | ID.", "Štai | mano | studento | pažymėjimas.", "Štai mano studento pažymėjimas.") },

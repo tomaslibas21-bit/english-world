@@ -13,11 +13,11 @@ const t = (en: string, lt: string, nat: string, extra: Partial<SentSrc> = {}): S
 export const GLOBAL_LINES: Record<string, SentSrc[]> = {
   g_not_understood: [
     t("Sorry, | I | didn't catch | that.", "Atsiprašau, | aš | nenugirdau | to.", "Atsiprašau, nenugirdau."),
-    t("Sorry, | could | you | say | that | again?", "Atsiprašau, | ar {j:galėtumėte|t:galėtum} | {j:jūs|t:tu} | pasakyti | tai | dar kartą?", "Atsiprašau, ar {j:galėtumėte|t:galėtum} pakartoti?"),
+    t("Sorry, | could | you | say | that | again?", "Atsiprašau, | ar {j:galėtumėte|t:galėtum} | {j:Jūs|t:tu} | pasakyti | tai | dar kartą?", "Atsiprašau, ar {j:galėtumėte|t:galėtum} pakartoti?"),
     t("I'm sorry, | I | didn't understand.", "Atsiprašau, | aš | nesupratau.", "Atsiprašau, nesupratau."),
   ],
   g_yes_what: [
-    t("Sure! | What | can | I | do | for you?", "Žinoma! | Ką | galiu | aš | padaryti | {j:jums|t:tau}?", "Žinoma! Kuo galiu padėti?"),
+    t("Sure! | What | can | I | do | for you?", "Žinoma! | Ką | galiu | aš | padaryti | {j:Jums|t:tau}?", "Žinoma! Kuo galiu padėti?"),
   ],
   g_no_ok: [
     t("Okay, | no | problem.", "Gerai, | jokių | problemų.", "Gerai, jokių problemų."),
@@ -32,10 +32,10 @@ export const GLOBAL_LINES: Record<string, SentSrc[]> = {
    *  right (convo/soundalike.ts). Yes takes the name, no gets g_soundcheck_no. */
   g_soundcheck: [
     t("Sorry, | {X}?", "Atsiprašau, | {X:nom}?", "Atsiprašau, {X:nom}?"),
-    t("Sorry, | did | you | say | {X}?", "Atsiprašau, | ar | {j:jūs|t:tu} | {j:sakėte|t:sakei} | {X:nom}?", "Atsiprašau, ar {j:sakėte|t:sakei} „{X:nom}“?"),
+    t("Sorry, | did | you | say | {X}?", "Atsiprašau, | ar | {j:Jūs|t:tu} | {j:sakėte|t:sakei} | {X:nom}?", "Atsiprašau, ar {j:sakėte|t:sakei} „{X:nom}“?"),
   ],
   g_soundcheck_no: [
-    t("Oh, | sorry! | Could | you | say | it | again?", "O, | atsiprašau! | Ar {j:galėtumėte|t:galėtum} | {j:jūs|t:tu} | pasakyti | tai | dar kartą?", "O, atsiprašau! Ar {j:galėtumėte|t:galėtum} pakartoti?"),
+    t("Oh, | sorry! | Could | you | say | it | again?", "O, | atsiprašau! | Ar {j:galėtumėte|t:galėtum} | {j:Jūs|t:tu} | pasakyti | tai | dar kartą?", "O, atsiprašau! Ar {j:galėtumėte|t:galėtum} pakartoti?"),
     t("My | mistake! | What | was | it?", "Mano | klaida! | Kas | buvo | tai?", "Mano klaida! Ką {j:sakėte|t:sakei}?"),
   ],
   g_repeat_intro: [
@@ -81,9 +81,9 @@ export const GLOBAL_LINES: Record<string, SentSrc[]> = {
     t("Don't worry | about | it!", "{j:Nesijaudinkite|t:Nesijaudink} | dėl | to!", "{j:Nesijaudinkite|t:Nesijaudink}!"),
   ],
   g_howareyou_reply: [
-    t("I'm | good, | thanks! | And | you?", "Man | gerai, | ačiū! | O | {j:jums|t:tau}?", "Gerai, ačiū! O {j:jums|t:tau}?"),
-    t("Pretty | good, | thanks! | And | you?", "Visai | gerai, | ačiū! | O | {j:jums|t:tau}?", "Visai gerai, ačiū! O {j:jums|t:tau}?"),
-    t("Not bad, | thanks! | How | are | you?", "Neblogai, | ačiū! | Kaip | sekasi | {j:jums|t:tau}?", "Neblogai, ačiū! Kaip {j:jums|t:tau} sekasi?"),
+    t("I'm | good, | thanks! | And | you?", "Man | gerai, | ačiū! | O | {j:Jums|t:tau}?", "Gerai, ačiū! O {j:Jums|t:tau}?"),
+    t("Pretty | good, | thanks! | And | you?", "Visai | gerai, | ačiū! | O | {j:Jums|t:tau}?", "Visai gerai, ačiū! O {j:Jums|t:tau}?"),
+    t("Not bad, | thanks! | How | are | you?", "Neblogai, | ačiū! | Kaip | sekasi | {j:Jums|t:tau}?", "Neblogai, ačiū! Kaip {j:Jums|t:tau} sekasi?"),
   ],
   g_glad: [
     t("Glad | to hear | it!", "Smagu | girdėti | tai!", "Smagu girdėti!"),
@@ -92,7 +92,7 @@ export const GLOBAL_LINES: Record<string, SentSrc[]> = {
   ],
   g_asked_back: [
     t("I'm | great, | thanks | for | asking!", "Man | puikiai, | ačiū, | kad | {j:klausiate|t:klausi}!", "Puikiai, ačiū, kad {j:klausiate|t:klausi}!"),
-    t("Good, | thank | you!", "Gerai, | dėkoju | {j:jums|t:tau}!", "Gerai, ačiū!"),
+    t("Good, | thank | you!", "Gerai, | dėkoju | {j:Jums|t:tau}!", "Gerai, ačiū!"),
     t("Pretty | good, | thanks!", "Visai | gerai, | ačiū!", "Visai gerai, ačiū!"),
   ],
   g_sorry_to_hear: [
@@ -103,7 +103,7 @@ export const GLOBAL_LINES: Record<string, SentSrc[]> = {
     t("Hi!", "{j:Sveiki|t:Labas}!", "{j:Sveiki|t:Labas}!"),
   ],
   g_meaning: [
-    t("Good | question! | Let | me | show | you.", "Geras | klausimas! | {j:Leiskite|t:Leisk} | man | parodyti | {j:jums|t:tau}.", "Geras klausimas! Tuoj parodysiu."),
+    t("Good | question! | Let | me | show | you.", "Geras | klausimas! | {j:Leiskite|t:Leisk} | man | parodyti | {j:Jums|t:tau}.", "Geras klausimas! Tuoj parodysiu."),
     t("Here, | let | me | explain.", "Štai, | {j:leiskite|t:leisk} | man | paaiškinti.", "Tuoj paaiškinsiu."),
   ],
   g_write: [
@@ -353,14 +353,14 @@ export const GLOBAL_HINTS: Record<string, HintGroup> = {
   g_clarify: {
     lt: "Paprašyti pakartoti, kalbėti lėčiau ar paaiškinti",
     items: [
-      { id: "c_say_again", s: t("Sorry, | could | you | say | that | again?", "Atsiprašau, | ar {j:galėtumėte|t:galėtum} | {j:jūs|t:tu} | pasakyti | tai | dar kartą?", "Atsiprašau, ar {j:galėtumėte|t:galėtum} pakartoti?") },
-      { id: "c_repeat", s: t("Could | you | repeat | that, | please?", "Ar {j:galėtumėte|t:galėtum} | {j:jūs|t:tu} | pakartoti | tai, | prašau?", "Ar {j:galėtumėte|t:galėtum} pakartoti?") },
-      { id: "c_slower", s: t("Could | you | speak | more slowly, | please?", "Ar {j:galėtumėte|t:galėtum} | {j:jūs|t:tu} | kalbėti | lėčiau, | prašau?", "Ar {j:galėtumėte|t:galėtum} kalbėti lėčiau?") },
+      { id: "c_say_again", s: t("Sorry, | could | you | say | that | again?", "Atsiprašau, | ar {j:galėtumėte|t:galėtum} | {j:Jūs|t:tu} | pasakyti | tai | dar kartą?", "Atsiprašau, ar {j:galėtumėte|t:galėtum} pakartoti?") },
+      { id: "c_repeat", s: t("Could | you | repeat | that, | please?", "Ar {j:galėtumėte|t:galėtum} | {j:Jūs|t:tu} | pakartoti | tai, | prašau?", "Ar {j:galėtumėte|t:galėtum} pakartoti?") },
+      { id: "c_slower", s: t("Could | you | speak | more slowly, | please?", "Ar {j:galėtumėte|t:galėtum} | {j:Jūs|t:tu} | kalbėti | lėčiau, | prašau?", "Ar {j:galėtumėte|t:galėtum} kalbėti lėčiau?") },
       { id: "c_catch", s: t("Sorry, | I | didn't catch | that.", "Atsiprašau, | aš | nenugirdau | to.", "Atsiprašau, nenugirdau.") },
       { id: "c_dont_understand", s: t("Sorry, | I | don't understand.", "Atsiprašau, | aš | nesuprantu.", "Atsiprašau, nesuprantu.") },
-      { id: "c_spell", s: t("How | do | you | spell | that?", "Kaip | — | {j:jūs|t:tu} | {j:rašote|t:rašai} | tai?", "Kaip tai rašoma?", { flags: { 1: "Question “do” has no Lithuanian word; the tense sits on the verb (linked to “spell”)." } }) },
+      { id: "c_spell", s: t("How | do | you | spell | that?", "Kaip | — | {j:Jūs|t:tu} | {j:rašote|t:rašai} | tai?", "Kaip tai rašoma?", { flags: { 1: "Question “do” has no Lithuanian word; the tense sits on the verb (linked to “spell”)." } }) },
       { id: "c_meaning", s: t("What | does | that | mean?", "Ką | — | tai | reiškia?", "Ką tai reiškia?", { flags: { 1: "Question “does” has no Lithuanian word; the tense sits on “reiškia” (linked to “mean”)." } }) },
-      { id: "c_write", s: t("Could | you | write | it | down, | please?", "Ar {j:galėtumėte|t:galėtum} | {j:jūs|t:tu} | užrašyti | tai | —, | prašau?", "Ar {j:galėtumėte|t:galėtum} užrašyti?", { flags: { 4: "Discontinuous “write … down”: the prefix už- of užrašyti carries “down” (linked to “write”)." } }) },
+      { id: "c_write", s: t("Could | you | write | it | down, | please?", "Ar {j:galėtumėte|t:galėtum} | {j:Jūs|t:tu} | užrašyti | tai | —, | prašau?", "Ar {j:galėtumėte|t:galėtum} užrašyti?", { flags: { 4: "Discontinuous “write … down”: the prefix už- of užrašyti carries “down” (linked to “write”)." } }) },
       { id: "c_learning", s: t("I'm | still | learning | English.", "Aš | dar | mokausi | anglų kalbos.", "Aš dar mokausi anglų kalbos.", { flags: { 0: "Progressive “am” has no separate Lithuanian word; the present tense of mokausi carries it." } }) },
       { id: "c_moment", s: t("Just | a | moment, | please.", "Tik | — | akimirką, | prašau.", "Akimirką, prašau.") },
     ],
@@ -369,17 +369,17 @@ export const GLOBAL_HINTS: Record<string, HintGroup> = {
   g_social: {
     lt: "Padėkoti ir atsisveikinti",
     items: [
-      { id: "s_thanks", s: t("Thank | you | very much!", "Dėkoju | {j:jums|t:tau} | labai!", "Labai ačiū!") },
-      { id: "s_thanks_help", s: t("Thanks | for | your | help!", "Ačiū | už | {j:jūsų|t:tavo} | pagalbą!", "Ačiū už pagalbą!") },
+      { id: "s_thanks", s: t("Thank | you | very much!", "Dėkoju | {j:Jums|t:tau} | labai!", "Labai ačiū!") },
+      { id: "s_thanks_help", s: t("Thanks | for | your | help!", "Ačiū | už | {j:Jūsų|t:tavo} | pagalbą!", "Ačiū už pagalbą!") },
       { id: "s_bye", s: t("Have | a | nice | day!", "Linkiu | — | geros | dienos!", "Geros dienos!") },
       { id: "s_bye2", s: t("Goodbye!", "Viso gero!", "Viso gero!") },
-      { id: "s_hello", s: t("Hi! | How | are | you?", "{j:Sveiki|t:Labas}! | Kaip | sekasi | {j:jums|t:tau}?", "{j:Sveiki|t:Labas}! Kaip sekasi?") },
+      { id: "s_hello", s: t("Hi! | How | are | you?", "{j:Sveiki|t:Labas}! | Kaip | sekasi | {j:Jums|t:tau}?", "{j:Sveiki|t:Labas}! Kaip sekasi?") },
     ],
   },
   g_greet: {
     lt: "Pasisveikinti",
     items: [
-      { id: "s_hello", s: t("Hi! | How | are | you?", "{j:Sveiki|t:Labas}! | Kaip | sekasi | {j:jums|t:tau}?", "{j:Sveiki|t:Labas}! Kaip sekasi?") },
+      { id: "s_hello", s: t("Hi! | How | are | you?", "{j:Sveiki|t:Labas}! | Kaip | sekasi | {j:Jums|t:tau}?", "{j:Sveiki|t:Labas}! Kaip sekasi?") },
       { id: "s_good_morning", s: t("Good | morning!", "Labas | rytas!", "Labas rytas!") },
       { id: "s_hello_there", s: t("Hello!", "{j:Sveiki|t:Labas}!", "{j:Sveiki|t:Labas}!") },
     ],
@@ -397,10 +397,10 @@ export const GLOBAL_HINTS: Record<string, HintGroup> = {
   g_howareyou: {
     lt: "Atsakyti, kaip sekasi",
     items: [
-      { id: "h_good", s: t("I'm | good, | thanks. | And | you?", "Man | gerai, | ačiū. | O | {j:jums|t:tau}?", "Gerai, ačiū. O {j:jums|t:tau}?") },
-      { id: "h_fine", s: t("Fine, | thank | you. | And | you?", "Gerai, | dėkoju | {j:jums|t:tau}. | O | {j:jums|t:tau}?", "Gerai, ačiū. O {j:jums|t:tau}?") },
+      { id: "h_good", s: t("I'm | good, | thanks. | And | you?", "Man | gerai, | ačiū. | O | {j:Jums|t:tau}?", "Gerai, ačiū. O {j:Jums|t:tau}?") },
+      { id: "h_fine", s: t("Fine, | thank | you. | And | you?", "Gerai, | dėkoju | {j:Jums|t:tau}. | O | {j:Jums|t:tau}?", "Gerai, ačiū. O {j:Jums|t:tau}?") },
       { id: "h_pretty", s: t("Pretty | good, | thanks!", "Visai | gerai, | ačiū!", "Visai gerai, ačiū!") },
-      { id: "h_notbad", s: t("Not bad, | thanks. | How | are | you?", "Neblogai, | ačiū. | Kaip | sekasi | {j:jums|t:tau}?", "Neblogai, ačiū. Kaip {j:jums|t:tau} sekasi?") },
+      { id: "h_notbad", s: t("Not bad, | thanks. | How | are | you?", "Neblogai, | ačiū. | Kaip | sekasi | {j:Jums|t:tau}?", "Neblogai, ačiū. Kaip {j:Jums|t:tau} sekasi?") },
       { id: "h_great", s: t("Great, | thanks | for | asking!", "Puikiai, | ačiū, | kad | {j:klausiate|t:klausi}!", "Puikiai, ačiū, kad {j:klausiate|t:klausi}!") },
     ],
   },

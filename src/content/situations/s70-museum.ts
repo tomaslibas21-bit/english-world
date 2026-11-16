@@ -725,7 +725,7 @@ export const museum: SituationDef = {
     greet: [
       t("Hi! | Welcome | to | the | museum! | How many | tickets | today?", "Sveiki! | Sveiki atvykę | į | — | muziejų! | Kiek | bilietų | šiandien?", "Sveiki! Sveiki atvykę į muziejų! Kiek bilietų šiandien?"),
       t("Hi there! | Tickets | for today?", "Sveiki! | Bilietai | šiandienai?", "Sveiki! Bilietai šiandienai?"),
-      t("Good | morning! | How | can | I | help | you?", "Labas | rytas! | Kaip | galiu | aš | padėti | jums?", "Labas rytas! Kuo galiu padėti?"),
+      t("Good | morning! | How | can | I | help | you?", "Labas | rytas! | Kaip | galiu | aš | padėti | Jums?", "Labas rytas! Kuo galiu padėti?"),
     ],
     late: [
       t("Just so you know, | we | close | in | forty-five | minutes | today.", "Kad žinotumėte, | mes | užsidarome | po | keturiasdešimt penkių | minučių | šiandien.", "Kad žinotumėte, šiandien užsidarome po keturiasdešimt penkių minučių."),
@@ -738,7 +738,7 @@ export const museum: SituationDef = {
     // --- tickets ------------------------------------------------------------------
     ask_qty: [
       t("How many | tickets?", "Kiek | bilietų?", "Kiek bilietų?"),
-      t("How many | tickets | would | you | like?", "Kiek | bilietų | — | jūs | norėtumėte?", "Kiek bilietų norėtumėte?", { flags: { 2: "“would”: the conditional ending of norėtumėte carries it." } }),
+      t("How many | tickets | would | you | like?", "Kiek | bilietų | — | Jūs | norėtumėte?", "Kiek bilietų norėtumėte?", { flags: { 2: "“would”: the conditional ending of norėtumėte carries it." } }),
     ],
     // ten or more people (new line, 5 Nov 2026: needs a voice)
     group_book: [t("Sorry, | groups | of | ten | or | more | need | to book | ahead.", "Atsiprašau, | grupės | iš | dešimties | ar | daugiau | turi | užsisakyti | iš anksto.",
@@ -768,11 +768,11 @@ export const museum: SituationDef = {
     kids_free: [t("Yes! | Kids | under | twelve | are | free.", "Taip! | Vaikams | iki | dvylikos | yra | nemokamai.", "Taip! Vaikams iki dvylikos – nemokamai.")],
 
     // --- student ID ------------------------------------------------------------------
-    ask_id: [t("Can | I | see | your | student | ID, | please?", "Ar galiu | aš | pamatyti | jūsų | studento | pažymėjimą, | prašau?", "Ar galėčiau pamatyti jūsų studento pažymėjimą?")],
+    ask_id: [t("Can | I | see | your | student | ID, | please?", "Ar galiu | aš | pamatyti | Jūsų | studento | pažymėjimą, | prašau?", "Ar galėčiau pamatyti Jūsų studento pažymėjimą?")],
     ask_ids: [t("Can | I | see | the | student | IDs, | please?", "Ar galiu | aš | pamatyti | — | studentų | pažymėjimus, | prašau?", "Ar galėčiau pamatyti studentų pažymėjimus?")],
     id_ok: [
       t("Thanks! | That's | perfect.", "Ačiū! | Tai yra | puiku.", "Ačiū! Puiku."),
-      t("Great, | thank | you.", "Puiku, | dėkoju | jums.", "Puiku, ačiū."),
+      t("Great, | thank | you.", "Puiku, | dėkoju | Jums.", "Puiku, ačiū."),
     ],
     id_missing: [t("Sorry, | without | an | ID, | I | have | to charge | the | adult | price. | Is | that | okay?", "Atsiprašau, | be | — | pažymėjimo | aš | turiu | imti | — | suaugusiojo | kainą. | Ar | tai | tinka?", "Atsiprašau, be pažymėjimo turiu imti suaugusiojo kainą. Ar tinka?",
       { flags: { 10: "“Is” in a yes/no question = the particle ar; tinka carries the predicate." } })],
@@ -780,16 +780,16 @@ export const museum: SituationDef = {
 
     // --- audio guide ------------------------------------------------------------------
     offer_guide: [
-      t("Would | you | like | an | audio guide? | It's | five | dollars.", "Ar | jūs | norėtumėte | — | audiogido? | Jis kainuoja | penkis | dolerius.", "Ar norėtumėte audiogido? Jis kainuoja penkis dolerius.",
+      t("Would | you | like | an | audio guide? | It's | five | dollars.", "Ar | Jūs | norėtumėte | — | audiogido? | Jis kainuoja | penkis | dolerius.", "Ar norėtumėte audiogido? Jis kainuoja penkis dolerius.",
         { flags: { 0: "“Would” in a yes/no question = the particle ar; the conditional sits on norėtumėte." } }),
       t("And | an | audio guide | for | five | dollars?", "O | — | audiogidą | už | penkis | dolerius?", "O audiogidą už penkis dolerius?"),
     ],
-    guide_persuade: [t("Are | you | sure? | It's | great | for | the | new | exhibition.", "Ar | jūs | {m:tikras|f:tikra}? | Jis yra | puikus | — | — | naujai | parodai.", "Ar {m:tikras|f:tikra}? Jis labai praverčia naujoje parodoje.",
+    guide_persuade: [t("Are | you | sure? | It's | great | for | the | new | exhibition.", "Ar | Jūs | {m:tikras|f:tikra}? | Jis yra | puikus | — | — | naujai | parodai.", "Ar {m:tikras|f:tikra}? Jis labai praverčia naujoje parodoje.",
       { flags: { 0: "“Are” in a yes/no question = the particle ar; the copula has no separate word.", 5: "“for”: no separate Lithuanian word; the dative parodai carries it." } })],
     guide_price: [t("It's | five | dollars, | and | we | have | it | in | seven | languages.", "Jis kainuoja | penkis | dolerius, | ir | mes | turime | jį | — | septyniomis | kalbomis.", "Jis kainuoja penkis dolerius, ir turime jį septyniomis kalbomis.",
       { flags: { 7: "“in”: no separate Lithuanian word; the instrumental kalbomis carries it (seven intervenes)." } })],
     ask_lang: [
-      t("What | language | would | you | like?", "Kokios | kalbos | — | jūs | norėtumėte?", "Kokios kalbos norėtumėte?", { flags: { 2: "“would”: the conditional ending of norėtumėte carries it." } }),
+      t("What | language | would | you | like?", "Kokios | kalbos | — | Jūs | norėtumėte?", "Kokios kalbos norėtumėte?", { flags: { 2: "“would”: the conditional ending of norėtumėte carries it." } }),
       t("Which | language?", "Kokia | kalba?", "Kokia kalba?"),
     ],
     langs_list: [t("We | have | English, | Spanish, | French, | German, | Chinese, | Russian, | and | Polish.", "Mes | turime | anglų, | ispanų, | prancūzų, | vokiečių, | kinų, | rusų | ir | lenkų.", "Turime anglų, ispanų, prancūzų, vokiečių, kinų, rusų ir lenkų kalbomis.")],
@@ -808,11 +808,11 @@ export const museum: SituationDef = {
     card_later: [t("Sure, | card | is fine.", "Žinoma, | kortele | galima.", "Žinoma, galima ir kortele.")],
     cash_ok: [t("Sure, | cash | is fine.", "Žinoma, | grynaisiais | galima.", "Žinoma, galima ir grynaisiais.")],
     phone_ok: [t("Of course! | Just | hold | your | phone | here.", "Žinoma! | Tiesiog | prilaikykite | savo | telefoną | čia.", "Žinoma! Tiesiog prilaikykite telefoną čia.")],
-    paid: [t("Thank | you!", "Dėkoju | jums!", "Ačiū!"), t("Perfect, | thanks!", "Puiku, | ačiū!", "Puiku, ačiū!")],
-    change_back: [t("Thank | you! | And | here's | your | change.", "Dėkoju | jums! | Ir | štai | jūsų | grąža.", "Ačiū! Štai jūsų grąža.")],
-    ticket_here: [t("Here's | your | ticket.", "Štai | jūsų | bilietas.", "Štai jūsų bilietas.")],
-    tickets_here: [t("Here | are | your | tickets.", "Štai | — | jūsų | bilietai.", "Štai jūsų bilietai.", { flags: { 1: "“are”: no separate Lithuanian word; štai carries it." } })],
-    guide_here: [t("And | here's | your | audio guide, | in {X}. | Just | press | the | number | next to | each | painting.", "O | štai | jūsų | audiogidas, | {X:ins}. | Tiesiog | paspauskite | — | numerį | šalia | kiekvieno | paveikslo.", "O štai jūsų audiogidas, {X:ins}. Tiesiog paspauskite numerį šalia kiekvieno paveikslo.")],
+    paid: [t("Thank | you!", "Dėkoju | Jums!", "Ačiū!"), t("Perfect, | thanks!", "Puiku, | ačiū!", "Puiku, ačiū!")],
+    change_back: [t("Thank | you! | And | here's | your | change.", "Dėkoju | Jums! | Ir | štai | Jūsų | grąža.", "Ačiū! Štai Jūsų grąža.")],
+    ticket_here: [t("Here's | your | ticket.", "Štai | Jūsų | bilietas.", "Štai Jūsų bilietas.")],
+    tickets_here: [t("Here | are | your | tickets.", "Štai | — | Jūsų | bilietai.", "Štai Jūsų bilietai.", { flags: { 1: "“are”: no separate Lithuanian word; štai carries it." } })],
+    guide_here: [t("And | here's | your | audio guide, | in {X}. | Just | press | the | number | next to | each | painting.", "O | štai | Jūsų | audiogidas, | {X:ins}. | Tiesiog | paspauskite | — | numerį | šalia | kiekvieno | paveikslo.", "O štai Jūsų audiogidas, {X:ins}. Tiesiog paspauskite numerį šalia kiekvieno paveikslo.")],
 
     // --- the new exhibition ------------------------------------------------------------
     exhibit_where: [
@@ -820,13 +820,13 @@ export const museum: SituationDef = {
       t("It's | upstairs, | on the right. | Just | take | the | stairs | or | the | elevator.", "Ji yra | viršuje, | dešinėje. | Tiesiog | kilkite | — | laiptais | arba | — | liftu.", "Ji viršuje, dešinėje. Tiesiog kilkite laiptais arba liftu."),
     ],
     exhibit_upstairs: [t("It's | upstairs, | on the right.", "Ji yra | viršuje, | dešinėje.", "Ji viršuje, dešinėje.")],
-    already_paid: [t("Oh, | you | already | paid!", "O, | jūs | jau | sumokėjote!", "O, jūs jau sumokėjote!")],
-    exhibit_included: [t("Yes, | it's | included | in | your | ticket.", "Taip, | ji yra | įskaičiuota | į | jūsų | bilietą.", "Taip, ji įeina į bilieto kainą.")],
+    already_paid: [t("Oh, | you | already | paid!", "O, | Jūs | jau | sumokėjote!", "O, Jūs jau sumokėjote!")],
+    exhibit_included: [t("Yes, | it's | included | in | your | ticket.", "Taip, | ji yra | įskaičiuota | į | Jūsų | bilietą.", "Taip, ji įeina į bilieto kainą.")],
     exhibit_about: [t("It's | paintings | of the sea | at night. | Beautiful | blues!", "Tai yra | paveikslai | jūros | naktį. | Nuostabios | mėlynos spalvos!", "Tai naktinės jūros paveikslai. Nuostabūs mėlyni atspalviai!")],
     exhibit_mention: [t("Oh, | and | don't miss | our | new | exhibition, | “The Colors of the Night”. | It's | upstairs, | on the right.", "O, | ir | nepraleiskite | mūsų | naujos | parodos | „Nakties spalvos“. | Ji yra | viršuje, | dešinėje.", "O, ir nepraleiskite mūsų naujos parodos „Nakties spalvos“. Ji viršuje, dešinėje.")],
 
     // --- information ---------------------------------------------------------------------
-    photos: [t("Yes, | you | can | take | photos, | but | no | flash, | please.", "Taip, | jūs | galite | daryti | nuotraukas, | bet | be | blykstės, | prašau.", "Taip, fotografuoti galima, bet be blykstės.")],
+    photos: [t("Yes, | you | can | take | photos, | but | no | flash, | please.", "Taip, | Jūs | galite | daryti | nuotraukas, | bet | be | blykstės, | prašau.", "Taip, fotografuoti galima, bet be blykstės.")],
     coat_check: [t("The | coat check | is | right | there, | by | the | door. | It's | free.", "— | Rūbinė | yra | štai | ten, | prie | — | durų. | Ji yra | nemokama.", "Rūbinė – štai ten, prie durų. Ji nemokama.")],
     bag_check: [t("Big | bags | go | to | the | coat check, | right | there | by | the | door.", "Dideli | krepšiai | keliauja | į | — | rūbinę, | štai | ten | prie | — | durų.", "Didelius krepšius palikite rūbinėje – štai ten, prie durų.")],
     shop_cafe: [t("The | gift shop | and | the | café | are | on | the | first | floor, | by | the | exit.", "— | Suvenyrų parduotuvė | ir | — | kavinė | yra | — | — | pirmame | aukšte, | prie | — | išėjimo.", "Suvenyrų parduotuvė ir kavinė – pirmame aukšte, prie išėjimo.",
@@ -835,15 +835,15 @@ export const museum: SituationDef = {
     hours: [t("We're | open | ten | to | five, | and | we're | closed | on Mondays.", "Mes esame | atidaryti | nuo dešimties | iki | penkių, | ir | mes esame | uždaryti | pirmadieniais.", "Dirbame nuo dešimties iki penkių, pirmadieniais nedirbame.")],
     close_today: [t("We | close | at five | today.", "Mes | užsidarome | penktą | šiandien.", "Šiandien užsidarome penktą.")],
     floor_plan: [t("Sure! | Here's | a | floor plan.", "Žinoma! | Štai | — | aukštų planas.", "Žinoma! Štai aukštų planas.")],
-    elevator: [t("The | elevator | is | right | there, | on | your | left.", "— | Liftas | yra | štai | ten, | — | jūsų | kairėje.", "Liftas – štai ten, jūsų kairėje.", { flags: { 5: "“on”: no separate Lithuanian word; the locative kairėje carries it (your intervenes)." } })],
+    elevator: [t("The | elevator | is | right | there, | on | your | left.", "— | Liftas | yra | štai | ten, | — | Jūsų | kairėje.", "Liftas – štai ten, Jūsų kairėje.", { flags: { 5: "“on”: no separate Lithuanian word; the locative kairėje carries it (your intervenes)." } })],
     duration: [t("Most | people | spend | about | two | hours | here.", "Dauguma | žmonių | praleidžia | apie | dvi | valandas | čia.", "Dauguma žmonių čia praleidžia apie dvi valandas.")],
     tour: [t("There's | a | free | guided tour | at two.", "Yra | — | nemokama | ekskursija su gidu | antrą.", "Antrą valandą vyksta nemokama ekskursija su gidu.")],
-    start: [t("The | galleries | start | right | there, | on | your | left.", "— | Galerijos | prasideda | štai | ten, | — | jūsų | kairėje.", "Galerijos prasideda štai ten, jūsų kairėje.", { flags: { 5: "“on”: no separate Lithuanian word; the locative kairėje carries it (your intervenes)." } })],
+    start: [t("The | galleries | start | right | there, | on | your | left.", "— | Galerijos | prasideda | štai | ten, | — | Jūsų | kairėje.", "Galerijos prasideda štai ten, Jūsų kairėje.", { flags: { 5: "“on”: no separate Lithuanian word; the locative kairėje carries it (your intervenes)." } })],
 
     // --- the end --------------------------------------------------------------------------
     ask_more: [
       t("Any | questions?", "Ar yra | klausimų?", "Turite klausimų?", { flags: { 0: "“Any” in a question: ar yra + the genitive klausimų carries it." } }),
-      t("Can | I | help | you | with | anything | else?", "Ar galiu | aš | padėti | jums | — | kuo nors | daugiau?", "Ar dar kuo nors galiu padėti?",
+      t("Can | I | help | you | with | anything | else?", "Ar galiu | aš | padėti | Jums | — | kuo nors | daugiau?", "Ar dar kuo nors galiu padėti?",
         { flags: { 4: "“with”: no separate Lithuanian word; the instrumental kuo nors carries it." } }),
     ],
     enjoy: [
@@ -857,8 +857,8 @@ export const museum: SituationDef = {
     ],
     no_flash: [t("Excuse me! | No | flash, | please.", "Atsiprašau! | Jokios | blykstės, | prašau.", "Atsiprašau! Be blykstės, prašau.")],
     harold_thanks: [
-      t("Thank | you. | Enjoy | the | museum.", "Dėkoju | jums. | Mėgaukitės | — | muziejumi.", "Ačiū. Gero apsilankymo."),
-      t("Thank | you | for | understanding.", "Dėkoju | jums | už | supratimą.", "Ačiū, kad suprantate."),
+      t("Thank | you. | Enjoy | the | museum.", "Dėkoju | Jums. | Mėgaukitės | — | muziejumi.", "Ačiū. Gero apsilankymo."),
+      t("Thank | you | for | understanding.", "Dėkoju | Jums | už | supratimą.", "Ačiū, kad suprantate."),
     ],
     harold_why: [t("The | paintings | are | very | old | and | fragile.", "— | Paveikslai | yra | labai | seni | ir | trapūs.", "Paveikslai labai seni ir trapūs.")],
     harold_why_flash: [t("The | flash | can | damage | the | paintings.", "— | Blykstė | gali | pažeisti | — | paveikslus.", "Blykstė gali pažeisti paveikslus.")],
@@ -969,8 +969,8 @@ export const museum: SituationDef = {
       lt: "Pasirinkti audiogido kalbą", slot: "lang", examples: ["english", "lithuanian", "russian", "polish"],
       items: [
         { id: "l_please", s: t("In {X}, | please.", "{X:ins}, | prašau.", "{X:ins}, prašau.") },
-        { id: "l_have", s: t("Do | you | have | it | in {X}?", "Ar | jūs | turite | jį | {X:ins}?", "Ar turite jį {X:ins}?", { flags: { 0: "Question “Do” = the particle ar." } }), note: "„Do you have it in Lithuanian?“ – deja, lietuviškai nėra. Bet yra rusų, lenkų ir anglų kalbomis." },
-        { id: "l_which", s: t("What | languages | do | you | have?", "Kokiomis | kalbomis | — | jūs | turite?", "Kokiomis kalbomis turite?", { flags: { 2: "Question “do” has no Lithuanian word; the tense sits on turite." } }) },
+        { id: "l_have", s: t("Do | you | have | it | in {X}?", "Ar | Jūs | turite | jį | {X:ins}?", "Ar turite jį {X:ins}?", { flags: { 0: "Question “Do” = the particle ar." } }), note: "„Do you have it in Lithuanian?“ – deja, lietuviškai nėra. Bet yra rusų, lenkų ir anglų kalbomis." },
+        { id: "l_which", s: t("What | languages | do | you | have?", "Kokiomis | kalbomis | — | Jūs | turite?", "Kokiomis kalbomis turite?", { flags: { 2: "Question “do” has no Lithuanian word; the tense sits on turite." } }) },
       ],
     },
     exhibit: {
@@ -987,8 +987,8 @@ export const museum: SituationDef = {
         { id: "q_coat", s: t("Where | can | I | leave | my | coat?", "Kur | galiu | aš | palikti | savo | paltą?", "Kur galėčiau palikti paltą?") },
         { id: "q_shop", s: t("Where's | the | gift shop?", "Kur yra | — | suvenyrų parduotuvė?", "Kur suvenyrų parduotuvė?") },
         { id: "q_restroom", s: t("Where | are | the | restrooms?", "Kur | yra | — | tualetai?", "Kur tualetai?") },
-        { id: "q_close", s: t("What time | do | you | close?", "Kelintą | — | jūs | užsidarote?", "Kelintą užsidarote?", { flags: { 1: "Question “do” has no Lithuanian word; the tense sits on užsidarote." } }) },
-        { id: "q_map", s: t("Do | you | have | a | floor plan?", "Ar | jūs | turite | — | aukštų planą?", "Ar turite aukštų planą?", { flags: { 0: "Question “Do” = the particle ar." } }) },
+        { id: "q_close", s: t("What time | do | you | close?", "Kelintą | — | Jūs | užsidarote?", "Kelintą užsidarote?", { flags: { 1: "Question “do” has no Lithuanian word; the tense sits on užsidarote." } }) },
+        { id: "q_map", s: t("Do | you | have | a | floor plan?", "Ar | Jūs | turite | — | aukštų planą?", "Ar turite aukštų planą?", { flags: { 0: "Question “Do” = the particle ar." } }) },
       ],
     },
     pay: {

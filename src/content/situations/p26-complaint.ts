@@ -1210,16 +1210,16 @@ export const complaint: SituationDef = {
     // --- Kyle ---
     kyle_greet: [
       t("Thanks | for calling | Harbor Home, | this is | Kyle. | How | can | I | help | you | today?",
-        "Ačiū, | kad skambinate | į „Harbor Home“, | čia | Kailas. | Kuo | galiu | aš | padėti | jums | šiandien?",
+        "Ačiū, | kad skambinate | į „Harbor Home“, | čia | Kailas. | Kuo | galiu | aš | padėti | Jums | šiandien?",
         "Ačiū, kad skambinate į „Harbor Home“, čia Kailas. Kuo galiu šiandien padėti?"),
       t("Hi, | you've | reached | Harbor Home. | My | name | is | Kyle. | What | can | I | do | for you | today?",
-        "Sveiki, | jūs | paskambinote | į „Harbor Home“. | Mano | vardas | yra | Kailas. | Ką | galiu | aš | padaryti | jums | šiandien?",
-        "Sveiki, jūs paskambinote į „Harbor Home“. Mano vardas Kailas. Kuo galiu šiandien padėti?",
+        "Sveiki, | Jūs | paskambinote | į „Harbor Home“. | Mano | vardas | yra | Kailas. | Ką | galiu | aš | padaryti | Jums | šiandien?",
+        "Sveiki, Jūs paskambinote į „Harbor Home“. Mano vardas Kailas. Kuo galiu šiandien padėti?",
         { flags: { 1: "“'ve” (have): the past tense of paskambinote (under “reached”) carries it." } }),
     ],
     kyle_greet_hold: [
       t("Thanks | for holding! | This is | Kyle | at | Harbor Home. | How | can | I | help | you | today?",
-        "Ačiū, | kad palaukėte! | Čia | Kailas | iš | „Harbor Home“. | Kuo | galiu | aš | padėti | jums | šiandien?",
+        "Ačiū, | kad palaukėte! | Čia | Kailas | iš | „Harbor Home“. | Kuo | galiu | aš | padėti | Jums | šiandien?",
         "Ačiū, kad palaukėte! Čia Kailas iš „Harbor Home“. Kuo galiu šiandien padėti?"),
     ],
     kyle_ask_problem: [
@@ -1250,7 +1250,7 @@ export const complaint: SituationDef = {
     ],
     // Kyle's script goes on (half of the time)
     kyle_off_on: [
-      t("And | have | you | tried | turning | it | off | and | on | again?", "O | ar | jūs | bandėte | — | jį | išjungti | ir | įjungti | vėl?", "O ar bandėte jį išjungti ir vėl įjungti?",
+      t("And | have | you | tried | turning | it | off | and | on | again?", "O | ar | Jūs | bandėte | — | jį | išjungti | ir | įjungti | vėl?", "O ar bandėte jį išjungti ir vėl įjungti?",
         { flags: { 1: "Perfect “have” in a question = the particle ar; the past bandėte carries the tense.", 4: "“turning … off / on”: the Lithuanian verbs išjungti / įjungti (units off, on) carry turn + particle." } }),
     ],
     kyle_plugged_ok: [
@@ -1259,12 +1259,12 @@ export const complaint: SituationDef = {
     ],
     // "No, it isn't." to "Is it plugged in?" / "No." to "Have you tried turning it off and on again?"
     kyle_plug_now: [
-      t("Oh! | Could | you | plug | it | in | and | check, | please? | I'll | wait.", "O! | Ar galėtumėte | jūs | įjungti | jį | į lizdą | ir | patikrinti, | prašau? | Aš | palauksiu.",
+      t("Oh! | Could | you | plug | it | in | and | check, | please? | I'll | wait.", "O! | Ar galėtumėte | Jūs | įjungti | jį | į lizdą | ir | patikrinti, | prašau? | Aš | palauksiu.",
         "O! Ar galėtumėte jį įjungti į elektros lizdą ir patikrinti? Aš palauksiu.",
         { flags: { 3: "“plug … in” = įjungti į lizdą: the verb here, the particle (unit 5) as į lizdą.", 9: "“I'll”: the future palauksiu (under “wait”) carries “will”." } }),
     ],
     kyle_try_now: [
-      t("Okay. | Could | you | try | that, | please? | I'll | wait.", "Gerai. | Ar galėtumėte | jūs | pabandyti | tai, | prašau? | Aš | palauksiu.",
+      t("Okay. | Could | you | try | that, | please? | I'll | wait.", "Gerai. | Ar galėtumėte | Jūs | pabandyti | tai, | prašau? | Aš | palauksiu.",
         "Gerai. Ar galėtumėte tai pabandyti? Aš palauksiu.", { flags: { 6: "“I'll”: the future palauksiu (under “wait”) carries “will”." } }),
     ],
     kyle_still_nothing: [
@@ -1272,13 +1272,13 @@ export const complaint: SituationDef = {
         { flags: { 3: "“I'll”: the future pasižymėsiu (under “note”) carries “will”." } }),
     ],
     kyle_ask_name: [
-      t("Could | I | get | your | name, | please?", "Ar galėčiau | aš | sužinoti | jūsų | vardą, | prašau?", "Ar galėčiau sužinoti jūsų vardą?"),
+      t("Could | I | get | your | name, | please?", "Ar galėčiau | aš | sužinoti | Jūsų | vardą, | prašau?", "Ar galėčiau sužinoti Jūsų vardą?"),
       t("And | who | am | I | speaking | with?", "O | su kuo | — | aš | kalbu | [su kuo]?", "O su kuo kalbu?",
         { flags: { 2: "“am”: the continuous form has no separate Lithuanian word; kalbu carries it.", 5: "Stranded “with”: su kuo (under “who”) carries it." } }),
     ],
-    kyle_name_thanks: [t("Thank | you.", "Dėkoju | jums.", "Ačiū."), t("Thanks.", "Ačiū.", "Ačiū.")],
+    kyle_name_thanks: [t("Thank | you.", "Dėkoju | Jums.", "Ačiū."), t("Thanks.", "Ačiū.", "Ačiū.")],
     kyle_file1: [
-      t("Okay, | I | can | see | your | file | here.", "Gerai, | aš | — | matau | jūsų | bylą | čia.", "Gerai, matau jūsų duomenis.",
+      t("Okay, | I | can | see | your | file | here.", "Gerai, | aš | — | matau | Jūsų | bylą | čia.", "Gerai, matau Jūsų duomenis.",
         { flags: { 2: "“can” with “see” has no Lithuanian word: matau is enough." } }),
     ],
     kyle_file2: [
@@ -1292,8 +1292,8 @@ export const complaint: SituationDef = {
     ],
     kyle_new_visit: [
       t("I'm | so | sorry | about | that. | I | can | book | you | a | new | visit | for | next | Tuesday.",
-        "Aš | labai | atsiprašau | dėl | to. | Aš | galiu | užregistruoti | jus | — | naujam | vizitui | — | kitą | antradienį.",
-        "Labai atsiprašau. Galiu jus užregistruoti naujam vizitui kitą antradienį.",
+        "Aš | labai | atsiprašau | dėl | to. | Aš | galiu | užregistruoti | Jus | — | naujam | vizitui | — | kitą | antradienį.",
+        "Labai atsiprašau. Galiu Jus užregistruoti naujam vizitui kitą antradienį.",
         { flags: { 0: F_SORRY_AM, 12: "“for” + a day: the accusative antradienį carries it." } }),
     ],
     kyle_apologize: [
@@ -1318,11 +1318,11 @@ export const complaint: SituationDef = {
         { flags: { 1: "“earliest” = anksčiausias laikas: Lithuanian needs the noun.", 2: "Lithuanian adds kurį, the relative word English leaves out." } }),
     ],
     kyle_book_q: [
-      t("So, | should | I | book | you | for | next | Tuesday?", "Tai, | ar | man | užregistruoti | jus | — | kitam | antradieniui?", "Tai ar užregistruoti jus kitam antradieniui?",
+      t("So, | should | I | book | you | for | next | Tuesday?", "Tai, | ar | man | užregistruoti | Jus | — | kitam | antradieniui?", "Tai ar užregistruoti Jus kitam antradieniui?",
         { flags: { 1: "“should” in a question = the particle ar with the infinitive (ar man užregistruoti).", 2: "“I” = man: the dative goes with the infinitive question.", 5: "“for”: the dative kitam antradieniui carries it." } }),
     ],
     kyle_offer_manager: [
-      t("Would | you | like | to speak | to | my | manager?", "Ar | jūs | norėtumėte | pakalbėti | su | mano | vadove?", "Gal norėtumėte pakalbėti su mano vadove?",
+      t("Would | you | like | to speak | to | my | manager?", "Ar | Jūs | norėtumėte | pakalbėti | su | mano | vadove?", "Gal norėtumėte pakalbėti su mano vadove?",
         { flags: { 0: F_WOULD_Q, 6: "“manager” = vadovė (Brenda): the instrumental vadove after su." } }),
     ],
     kyle_manager_first: [
@@ -1330,7 +1330,7 @@ export const complaint: SituationDef = {
         { flags: { 3: "“I” = man: reikia takes the dative." } }),
     ],
     kyle_manager_file: [
-      t("Sure. | Let | me | just | check | your | file | first.", "Žinoma. | Leiskite | man | tik | patikrinti | jūsų | bylą | pirmiausia.", "Žinoma. Tik pirmiausia patikrinsiu jūsų bylą."),
+      t("Sure. | Let | me | just | check | your | file | first.", "Žinoma. | Leiskite | man | tik | patikrinti | Jūsų | bylą | pirmiausia.", "Žinoma. Tik pirmiausia patikrinsiu Jūsų bylą."),
     ],
     kyle_cant_refund: [
       t("I'm afraid | I | can't | approve | refunds. | Only | my | manager | can | do | that.",
@@ -1344,7 +1344,7 @@ export const complaint: SituationDef = {
         "Deja, aš negaliu patvirtinti šaldytuvo pakeitimo. Tai gali padaryti tik mano vadovė.",
         { flags: { 5: "“replacement” = šaldytuvo pakeitimo: the genitive after the negative verb." } }),
     ],
-    kyle_note: [t("Okay, | I'll add | that | to | your | file.", "Gerai, | įrašysiu | tai | į | jūsų | bylą.", "Gerai, įrašysiu tai į jūsų bylą.")],
+    kyle_note: [t("Okay, | I'll add | that | to | your | file.", "Gerai, | įrašysiu | tai | į | Jūsų | bylą.", "Gerai, įrašysiu tai į Jūsų bylą.")],
     kyle_writing: [t("You'll get | an | email | after | the | call.", "Gausite | — | el. laišką | po | — | skambučio.", "Po skambučio gausite el. laišką.")],
     kyle_ref: [
       t("Sure, | it's | the | same | one | as | before: | {$text}.", "Žinoma, | jis yra | — | tas pats | — | kaip | anksčiau: | {$text}.",
@@ -1352,44 +1352,44 @@ export const complaint: SituationDef = {
         { flags: { 1: "“it's” = jis yra: jis is the number (numeris).", 4: "“one” stands for “number”: tas pats (under “same”) carries it." }, spell: "HH4471", write: REF_WRITE }),
     ],
     kyle_transfer: [
-      t("Of course. | One | moment, | I'll transfer | you | to | my | manager.", "Žinoma. | Vieną | akimirką, | sujungsiu | jus | su | savo | vadove.",
-        "Žinoma. Akimirką, sujungsiu jus su savo vadove.", { flags: { 5: "“to” (transfer to) = su." } }),
-      t("Absolutely. | Let | me | get | my | manager | for you.", "Žinoma. | Leiskite | man | pakviesti | savo | vadovę | jums.", "Žinoma. Tuoj pakviesiu savo vadovę."),
+      t("Of course. | One | moment, | I'll transfer | you | to | my | manager.", "Žinoma. | Vieną | akimirką, | sujungsiu | Jus | su | savo | vadove.",
+        "Žinoma. Akimirką, sujungsiu Jus su savo vadove.", { flags: { 5: "“to” (transfer to) = su." } }),
+      t("Absolutely. | Let | me | get | my | manager | for you.", "Žinoma. | Leiskite | man | pakviesti | savo | vadovę | Jums.", "Žinoma. Tuoj pakviesiu savo vadovę."),
     ],
     kyle_can_hold: [
-      t("It | might | take | a | few | minutes. | Can | you | hold?", "Tai | gali | užtrukti | — | kelias | minutes. | Ar galite | jūs | palaukti?",
+      t("It | might | take | a | few | minutes. | Can | you | hold?", "Tai | gali | užtrukti | — | kelias | minutes. | Ar galite | Jūs | palaukti?",
         "Tai gali užtrukti kelias minutes. Ar galite palaukti?"),
     ],
     kyle_hold_ok: [t("Ha. | I | hope | it | won't take | that | long.", "Cha. | Aš | tikiuosi, kad | tai | neužtruks | taip | ilgai.", "Cha. Tikiuosi, kad tiek neužtruks.")],
-    kyle_thanks_hold: [t("Thank | you | for | your | patience.", "Dėkoju | jums | už | jūsų | kantrybę.", "Ačiū už kantrybę.")],
+    kyle_thanks_hold: [t("Thank | you | for | your | patience.", "Dėkoju | Jums | už | Jūsų | kantrybę.", "Ačiū už kantrybę.")],
     kyle_hold_no: [t("I'll be | quick, | I | promise.", "Būsiu | greitas, | aš | pažadu.", "Būsiu greitas, pažadu.")],
     kyle_rude_m: [
-      t("I | understand | you're | frustrated, | sir. | I | really | do | want | to help.", "Aš | suprantu, kad | jūs esate | susierzinęs, | pone. | Aš | tikrai | — | noriu | padėti.",
+      t("I | understand | you're | frustrated, | sir. | I | really | do | want | to help.", "Aš | suprantu, kad | Jūs esate | susierzinęs, | pone. | Aš | tikrai | — | noriu | padėti.",
         "Suprantu, kad esate susierzinęs, pone. Aš tikrai noriu padėti.", { flags: { 7: "Emphatic “do”: tikrai (under “really”) carries it." } }),
     ],
     kyle_rude_f: [
-      t("I | understand | you're | frustrated, | ma'am. | I | really | do | want | to help.", "Aš | suprantu, kad | jūs esate | susierzinusi, | ponia. | Aš | tikrai | — | noriu | padėti.",
+      t("I | understand | you're | frustrated, | ma'am. | I | really | do | want | to help.", "Aš | suprantu, kad | Jūs esate | susierzinusi, | ponia. | Aš | tikrai | — | noriu | padėti.",
         "Suprantu, kad esate susierzinusi, ponia. Aš tikrai noriu padėti.", { flags: { 7: "Emphatic “do”: tikrai (under “really”) carries it." } }),
     ],
     kyle_rude2: [
-      t("I'm | on | your | side | here, | I | promise.", "Aš esu | — | jūsų | pusėje | čia, | aš | pažadu.", "Aš čia jūsų pusėje, pažadu.",
+      t("I'm | on | your | side | here, | I | promise.", "Aš esu | — | Jūsų | pusėje | čia, | aš | pažadu.", "Aš čia Jūsų pusėje, pažadu.",
         { flags: { 1: "“on”: the locative pusėje carries it." } }),
     ],
     kyle_tuesday_ok: [
       t("Okay! | You're | all set | for | next | Tuesday.", "Gerai! | Jūs esate | {m:užregistruotas|f:užregistruota} | — | kitam | antradieniui.",
-        "Gerai! Užregistravau jus kitam antradieniui.", { flags: { 3: "“for”: the dative kitam antradieniui carries it." } }),
+        "Gerai! Užregistravau Jus kitam antradieniui.", { flags: { 3: "“for”: the dative kitam antradieniui carries it." } }),
     ],
     kyle_understand: [t("I | understand.", "Aš | suprantu.", "Suprantu.")],
     kyle_bye: [
-      t("Thank | you | for calling | Harbor Home, | and | have | a | nice | day.", "Dėkoju | jums, | kad paskambinote | į „Harbor Home“, | ir | linkiu | — | geros | dienos.",
+      t("Thank | you | for calling | Harbor Home, | and | have | a | nice | day.", "Dėkoju | Jums, | kad paskambinote | į „Harbor Home“, | ir | linkiu | — | geros | dienos.",
         "Ačiū, kad paskambinote į „Harbor Home“. Geros dienos.", { flags: { 5: F_HAVE_WISH } }),
     ],
 
     // --- Brenda ---
     brenda_hi: [
       t("Hi, | this is | Brenda, | the | customer | care | manager. | Kyle | told | me | about | your | fridge.",
-        "Sveiki, | čia | Brenda, | — | klientų | aptarnavimo | vadovė. | Kailas | papasakojo | man | apie | jūsų | šaldytuvą.",
-        "Sveiki, čia Brenda, klientų aptarnavimo vadovė. Kailas man papasakojo apie jūsų šaldytuvą.",
+        "Sveiki, | čia | Brenda, | — | klientų | aptarnavimo | vadovė. | Kailas | papasakojo | man | apie | Jūsų | šaldytuvą.",
+        "Sveiki, čia Brenda, klientų aptarnavimo vadovė. Kailas man papasakojo apie Jūsų šaldytuvą.",
         { flags: { 5: "“care” in “customer care” = aptarnavimas." } }),
     ],
     brenda_hi2: [
@@ -1397,13 +1397,13 @@ export const complaint: SituationDef = {
       t("I'm | so | sorry | for | the | trouble.", "Aš | labai | atsiprašau | dėl | — | nemalonumų.", "Labai atsiprašau dėl nemalonumų.", { flags: { 0: F_SORRY_AM } }),
     ],
     brenda_before: [
-      t("I | hear | you. | But | before | we | go there...", "Aš | suprantu | jus. | Bet | prieš tai, kai | mes | pereisime prie to...", "Suprantu jus. Bet prieš pereinant prie to…",
+      t("I | hear | you. | But | before | we | go there...", "Aš | suprantu | Jus. | Bet | prieš tai, kai | mes | pereisime prie to...", "Suprantu Jus. Bet prieš pereinant prie to…",
         { flags: { 1: "“hear” (I hear you) = suprantu." } }),
     ],
     brenda_offer_coupon: [
       t("As | a | thank you | for | your | patience, | I'd like | to offer | you | a | $50 | coupon...",
-        "Kaip | — | padėką | už | jūsų | kantrybę, | norėčiau | pasiūlyti | jums | — | 50 dolerių | kuponą...",
-        "Kaip padėką už jūsų kantrybę norėčiau jums pasiūlyti 50 dolerių kuponą…",
+        "Kaip | — | padėką | už | Jūsų | kantrybę, | norėčiau | pasiūlyti | Jums | — | 50 dolerių | kuponą...",
+        "Kaip padėką už Jūsų kantrybę norėčiau Jums pasiūlyti 50 dolerių kuponą…",
         { say: "As a thank you for your patience, I'd like to offer you a fifty-dollar coupon..." }),
     ],
     brenda_offer_mug: [
@@ -1411,8 +1411,8 @@ export const complaint: SituationDef = {
     ],
     brenda_offer_visit: [
       t("I | can | get | a | technician | out | to | you | on Wednesday, | between | 10 | and | 2.",
-        "Aš | galiu | atsiųsti | — | meistrą | — | pas | jus | trečiadienį, | tarp | 10 | ir | 14 val.",
-        "Galiu atsiųsti pas jus meistrą trečiadienį, nuo 10 iki 14 valandos.",
+        "Aš | galiu | atsiųsti | — | meistrą | — | pas | Jus | trečiadienį, | tarp | 10 | ir | 14 val.",
+        "Galiu atsiųsti pas Jus meistrą trečiadienį, nuo 10 iki 14 valandos.",
         { say: "I can get a technician out to you on Wednesday, between ten and two.", flags: { 2: "“get … out” = atsiųsti.", 5: "“out”: the particle of “get … out”, carried by atsiųsti (under “get”).", 12: F_PM2 } }),
     ],
     // 12 Nov 2026, new lines: the cost ("No charge…": Kyle or Brenda), the coupon's date (Brenda; a year is new)
@@ -1420,7 +1420,7 @@ export const complaint: SituationDef = {
       { flags: { 4: "“is under warranty”: taikoma garantija carries it.", 5: "“under warranty” = taikoma garantija." } })],
     coupon_expire: [t("It's | good | for | a | year. | The | mug | is | forever.", "Jis | galioja | — | — | metus. | — | Puodelis | yra | amžinas.", "Jis galioja metus. O puodelis – amžinas.",
       { flags: { 2: "“for” + a time: the accusative metus carries it." } })],
-    brenda_offer_q: [t("How | does | that | sound?", "Kaip | — | tai | skamba?", "Kaip jums tai atrodo?", { flags: { 1: "Question “does” has no Lithuanian word; the tense sits on skamba." } })],
+    brenda_offer_q: [t("How | does | that | sound?", "Kaip | — | tai | skamba?", "Kaip Jums tai atrodo?", { flags: { 1: "Question “does” has no Lithuanian word; the tense sits on skamba." } })],
     brenda_decline_ack: [t("Understood.", "Supratau.", "Supratau."), t("Fair enough.", "Na, gerai.", "Na, gerai.")],
     brenda_day_off: [
       t("Oh | no. | That's | not | okay, | and | I'm sorry.", "O | ne. | Tai | — | negerai, | ir | atsiprašau.", "O ne. Taip neturėtų būti – atsiprašau.",
@@ -1434,13 +1434,13 @@ export const complaint: SituationDef = {
       t("I'm | the | manager | here, | and | I | want | to fix | this.", "Aš esu | — | vadovė | čia, | ir | aš | noriu | sutvarkyti | tai.", "Vadovė čia esu aš, ir aš noriu tai sutvarkyti."),
     ],
     brenda_what_want: [
-      t("So | what | would | you | like | us | to do?", "Tai | ko | — | jūs | norėtumėte | kad mes | padarytume?", "Tai ko norėtumėte, kad padarytume?",
+      t("So | what | would | you | like | us | to do?", "Tai | ko | — | Jūs | norėtumėte | kad mes | padarytume?", "Tai ko norėtumėte, kad padarytume?",
         { flags: { 2: "“would”: the conditional norėtumėte carries it.", 5: "“us” + infinitive = kad mes + the conditional (padarytume)." } }),
-      t("What | outcome | are | you | looking for?", "Kokio | sprendimo | — | jūs | tikitės?", "Kokio sprendimo tikitės?",
+      t("What | outcome | are | you | looking for?", "Kokio | sprendimo | — | Jūs | tikitės?", "Kokio sprendimo tikitės?",
         { flags: { 2: "“are”: the continuous form has no Lithuanian word; tikitės carries it." } }),
     ],
     brenda_refund_or: [
-      t("Would | you | prefer | a | refund | or | a | replacement?", "Ar | jūs | labiau norėtumėte | — | pinigų grąžinimo | ar | — | naujo šaldytuvo?",
+      t("Would | you | prefer | a | refund | or | a | replacement?", "Ar | Jūs | labiau norėtumėte | — | pinigų grąžinimo | ar | — | naujo šaldytuvo?",
         "Ar norėtumėte, kad grąžintume pinigus, ar kad pakeistume šaldytuvą nauju?",
         { flags: { 0: F_WOULD_Q, 7: "“replacement” here = a new fridge instead of the broken one." } }),
     ],
@@ -1451,8 +1451,8 @@ export const complaint: SituationDef = {
     ],
     brenda_replace_ok: [
       t("Okay. | I | can | send | you | a | brand-new | fridge, | same | model | or | better.",
-        "Gerai. | Aš | galiu | atsiųsti | jums | — | visiškai naują | šaldytuvą, | tokį patį | modelį | arba | geresnį.",
-        "Gerai. Galiu jums atsiųsti visiškai naują šaldytuvą – tokį patį modelį ar geresnį."),
+        "Gerai. | Aš | galiu | atsiųsti | Jums | — | visiškai naują | šaldytuvą, | tokį patį | modelį | arba | geresnį.",
+        "Gerai. Galiu Jums atsiųsti visiškai naują šaldytuvą – tokį patį modelį ar geresnį."),
     ],
     brenda_pickup: [
       t("We'll | also | pick up | the | old | fridge | for free.", "Mes | taip pat | išsivešime | — | seną | šaldytuvą | nemokamai.", "Senąjį šaldytuvą taip pat išsivešime nemokamai.",
@@ -1472,7 +1472,7 @@ export const complaint: SituationDef = {
         "Pinigai paprastai grąžinami per 10–14 darbo dienų.",
         { say: "Refunds usually take ten to fourteen business days.", flags: { 3: "A range “10 to 14” = nuo 10 iki 14: Lithuanian adds nuo." } }),
     ],
-    brenda_timeline_q: [t("Does | that | timeline | work | for you?", "Ar | tas | terminas | tinka | jums?", "Ar jums tinka toks terminas?", { flags: { 0: F_DOES_Q } })],
+    brenda_timeline_q: [t("Does | that | timeline | work | for you?", "Ar | tas | terminas | tinka | Jums?", "Ar Jums tinka toks terminas?", { flags: { 0: F_DOES_Q } })],
     brenda_deadline_ok: [
       t("By | {X}? | That's | tight, | but | I | can | make | it | work.", "Iki | {X:gen}? | Tai yra | nedaug laiko, | bet | aš | galiu | — | tai | suderinti.",
         "Iki {X:gen}? Laiko nedaug, bet galiu tai suderinti.",
@@ -1488,20 +1488,20 @@ export const complaint: SituationDef = {
     ],
     brenda_lets_say: [t("Understood. | Let's say | Friday, | then.", "Supratau. | Sakykime | penktadienį, | tada.", "Supratau. Tada sakykime – penktadienį.")],
     brenda_which_day: [
-      t("What | day | did | you | have | in mind?", "Kurią | dieną | — | jūs | turėjote | omenyje?", "Kurią dieną turėjote omenyje?",
+      t("What | day | did | you | have | in mind?", "Kurią | dieną | — | Jūs | turėjote | omenyje?", "Kurią dieną turėjote omenyje?",
         { flags: { 2: "Question “did” has no Lithuanian word; the past tense sits on turėjote." } }),
     ],
     brenda_ok: [t("Great.", "Puiku.", "Puiku."), t("Wonderful.", "Nuostabu.", "Nuostabu.")],
-    brenda_confirm_q: [t("Does | that | work | for you?", "Ar | tai | tinka | jums?", "Ar jums tai tinka?", { flags: { 0: F_DOES_Q } })],
+    brenda_confirm_q: [t("Does | that | work | for you?", "Ar | tai | tinka | Jums?", "Ar Jums tai tinka?", { flags: { 0: F_DOES_Q } })],
     brenda_writing_ok: [
-      t("Absolutely. | I'll email | you | a | written | confirmation | today.", "Žinoma. | Atsiųsiu el. paštu | jums | — | rašytinį | patvirtinimą | šiandien.",
-        "Žinoma. Šiandien atsiųsiu jums rašytinį patvirtinimą el. paštu."),
+      t("Absolutely. | I'll email | you | a | written | confirmation | today.", "Žinoma. | Atsiųsiu el. paštu | Jums | — | rašytinį | patvirtinimą | šiandien.",
+        "Žinoma. Šiandien atsiųsiu Jums rašytinį patvirtinimą el. paštu."),
       t("Of course. | I'll put | it | in writing | and | sign | it | myself.", "Žinoma. | Pateiksiu | tai | raštu | ir | pasirašysiu | tai | pati.",
         "Žinoma. Pateiksiu tai raštu ir pati pasirašysiu.", { flags: { 5: "“sign”: the future of “I'll” carries over: pasirašysiu." } }),
     ],
     brenda_ref_pen: [
-      t("Let | me | give | you | a | reference | number. | Do | you | have | a | pen?", "Leiskite | man | padiktuoti | jums | — | užklausos | numerį. | Ar | jūs | turite | — | rašiklį?",
-        "Leiskite padiktuoti jums užklausos numerį. Ar turite rašiklį?",
+      t("Let | me | give | you | a | reference | number. | Do | you | have | a | pen?", "Leiskite | man | padiktuoti | Jums | — | užklausos | numerį. | Ar | Jūs | turite | — | rašiklį?",
+        "Leiskite padiktuoti Jums užklausos numerį. Ar turite rašiklį?",
         { flags: { 2: "“give” (a number on the phone) = padiktuoti.", 7: F_DO_Q } }),
     ],
     brenda_ref: [
@@ -1519,13 +1519,13 @@ export const complaint: SituationDef = {
       t("Sure, | again: | {$text}.", "Žinoma, | dar kartą: | {$text}.", "Žinoma, dar kartą: {$text}.", { spell: "HH4471", write: REF_WRITE }),
     ],
     brenda_ref_before_go: [
-      t("Before | you | go, | your | reference | number | is | {$text}.", "Prieš | jums | išeinant, | jūsų | užklausos | numeris | yra | {$text}.",
-        "Prieš baigiant pokalbį: jūsų užklausos numeris – {$text}.", { spell: "HH4471", write: REF_WRITE }),
+      t("Before | you | go, | your | reference | number | is | {$text}.", "Prieš | Jums | išeinant, | Jūsų | užklausos | numeris | yra | {$text}.",
+        "Prieš baigiant pokalbį: Jūsų užklausos numeris – {$text}.", { spell: "HH4471", write: REF_WRITE }),
     ],
     brenda_ref_correct: [t("Perfect.", "Puiku.", "Puiku."), t("Exactly.", "Būtent.", "Būtent.")],
     brenda_no_pen: [t("No worries, | it'll be | in the email | too.", "Nieko tokio, | jis bus | laiške | irgi.", "Nieko tokio, jis bus ir laiške.")],
     brenda_partial: [
-      t("Wonderful! | I'll send | the | coupon | to | your | email.", "Puiku! | Atsiųsiu | — | kuponą | — | jūsų | el. paštu.", "Puiku! Kuponą atsiųsiu jums el. paštu.",
+      t("Wonderful! | I'll send | the | coupon | to | your | email.", "Puiku! | Atsiųsiu | — | kuponą | — | Jūsų | el. paštu.", "Puiku! Kuponą atsiųsiu Jums el. paštu.",
         { flags: { 4: "“to”: the instrumental el. paštu carries it." } }),
     ],
     brenda_partial_visit: [
@@ -1533,8 +1533,8 @@ export const complaint: SituationDef = {
         "Puiku! Trečiadienį, nuo 10 iki 14 valandos. Pasirūpinsiu, kad meistrai atvyktų.",
         { say: "Wonderful! Wednesday, between ten and two. I'll make sure they show up.", flags: { 5: F_PM2 } }),
     ],
-    brenda_anything: [t("Can | I | help | you | with anything | else?", "Ar galiu | aš | padėti | jums | kuo nors | dar?", "Ar galiu dar kuo nors padėti?")],
-    brenda_thanks: [t("Thank | you | for | your | patience. | Really.", "Dėkoju | jums | už | jūsų | kantrybę. | Tikrai.", "Ačiū už kantrybę. Nuoširdžiai.")],
+    brenda_anything: [t("Can | I | help | you | with anything | else?", "Ar galiu | aš | padėti | Jums | kuo nors | dar?", "Ar galiu dar kuo nors padėti?")],
+    brenda_thanks: [t("Thank | you | for | your | patience. | Really.", "Dėkoju | Jums | už | Jūsų | kantrybę. | Tikrai.", "Ačiū už kantrybę. Nuoširdžiai.")],
     brenda_appreciate_reply: [
       t("You're welcome. | I'm sorry | again | for | all | the | trouble.", "Prašom. | Atsiprašau | dar kartą | dėl | visų | — | nemalonumų.", "Prašom. Dar kartą atsiprašau dėl visų nemalonumų.",
         { flags: { 3: "“for” (sorry for) = dėl." } }),
@@ -1552,7 +1552,7 @@ export const complaint: SituationDef = {
         { flags: { 0: F_GAILA, 5: "“out”: the particle of “sort … out”, carried by išspręsti." } }),
     ],
     brenda_rude: [
-      t("I | understand | you're | upset. | Let's see | what | I | can | do.", "Aš | suprantu, kad | jūs esate | {m:susierzinęs|f:susierzinusi}. | Pažiūrėkime | ką | aš | galiu | padaryti.",
+      t("I | understand | you're | upset. | Let's see | what | I | can | do.", "Aš | suprantu, kad | Jūs esate | {m:susierzinęs|f:susierzinusi}. | Pažiūrėkime | ką | aš | galiu | padaryti.",
         "Suprantu, kad esate {m:susierzinęs|f:susierzinusi}. Pažiūrėkime, ką galiu padaryti."),
     ],
     brenda_rude2: [
@@ -1604,10 +1604,10 @@ export const complaint: SituationDef = {
           { flags: { 5: "Lithuanian adds kai; the English perfect “'ve called” = the present skambinu (it is still going on)." } }) },
         { id: "not_good", s: t("I'm afraid | that's | not | good | enough.", "Deja | tai | — | gerai | nepakankamai.", "Deja, manęs tai netenkina.",
           { flags: { 2: "“not”: the ne- of nepakankamai (under “enough”) carries it." } }) },
-        { id: "manager", s: t("Could | I | speak | to | your | manager, | please?", "Ar galėčiau | aš | pakalbėti | su | jūsų | vadovu, | prašau?", "Ar galėčiau pakalbėti su jūsų vadovu?",
+        { id: "manager", s: t("Could | I | speak | to | your | manager, | please?", "Ar galėčiau | aš | pakalbėti | su | Jūsų | vadovu, | prašau?", "Ar galėčiau pakalbėti su Jūsų vadovu?",
           { flags: { 3: "“to” (speak to) = su." } }), register: "polite" },
         { id: "nobody_came", s: t("Nobody | came. | I | waited | all | day.", "Niekas | neatvyko. | Aš | laukiau | visą | dieną.", "Niekas neatvyko. Laukiau visą dieną.") },
-        { id: "not_your_fault", s: t("I | know | it's | not | your | fault, | but...", "Aš | žinau, | kad tai | ne | jūsų | kaltė, | bet...", "Žinau, kad tai ne jūsų kaltė, bet…",
+        { id: "not_your_fault", s: t("I | know | it's | not | your | fault, | but...", "Aš | žinau, | kad tai | ne | Jūsų | kaltė, | bet...", "Žinau, kad tai ne Jūsų kaltė, bet…",
           { flags: { 2: "“it's” = kad tai: Lithuanian adds kad and needs no copula." } }), note: "Mandagiai, bet tvirtai: pripažink, kad konsultantas nekaltas, ir vis tiek pasakyk, ko nori." },
         { id: "further", s: t("Otherwise, | I'll be taking | this | further.", "Kitaip, | perduosiu | šį reikalą | aukščiau.", "Kitaip šį reikalą perduosiu aukščiau.",
           { flags: { 2: "“this” = šį reikalą (this matter)." } }) },
@@ -1625,8 +1625,8 @@ export const complaint: SituationDef = {
       lt: "Mandagiai atsisakyti ir pasakyti, ko nori",
       items: [
         { id: "full_refund", s: t("I | expect | a | full | refund.", "Aš | tikiuosi | — | visų | pinigų grąžinimo.", "Tikiuosi, kad grąžinsite visus pinigus.") },
-        { id: "keep_mug", s: t("Thank | you, | but | you | can | keep | the | mug.", "Dėkoju | jums, | bet | jūs | galite | pasilikti | — | puodelį.", "Ačiū, bet puodelį galite pasilikti.") },
-        { id: "decline", s: t("Thank | you, | but | I'm afraid | a | coupon | isn't | enough.", "Dėkoju | jums, | bet | deja | — | kupono | — | nepakanka.", "Ačiū, bet, deja, kupono neužtenka.",
+        { id: "keep_mug", s: t("Thank | you, | but | you | can | keep | the | mug.", "Dėkoju | Jums, | bet | Jūs | galite | pasilikti | — | puodelį.", "Ačiū, bet puodelį galite pasilikti.") },
+        { id: "decline", s: t("Thank | you, | but | I'm afraid | a | coupon | isn't | enough.", "Dėkoju | Jums, | bet | deja | — | kupono | — | nepakanka.", "Ačiū, bet, deja, kupono neužtenka.",
           { flags: { 6: "“isn't”: the ne- of nepakanka (under “enough”) carries it." } }) },
         { id: "replacement", s: t("I'd like | a | replacement, | please.", "Norėčiau | — | naujo šaldytuvo, | prašau.", "Norėčiau, kad jį pakeistumėte nauju.",
           { flags: { 2: "“replacement” here = a new fridge instead of the broken one." } }) },
@@ -1655,7 +1655,7 @@ export const complaint: SituationDef = {
       items: [
         { id: "in_writing", s: t("Can | I | have | that | in writing?", "Ar galiu | aš | gauti | tai | raštu?", "Ar galiu tai gauti raštu?",
           { flags: { 2: "“have” (receive) = gauti." } }) },
-        { id: "email_confirm", s: t("Could | you | confirm | that | by email, | please?", "Ar galėtumėte | jūs | patvirtinti | tai | el. paštu, | prašau?", "Ar galėtumėte tai patvirtinti el. paštu?") },
+        { id: "email_confirm", s: t("Could | you | confirm | that | by email, | please?", "Ar galėtumėte | Jūs | patvirtinti | tai | el. paštu, | prašau?", "Ar galėtumėte tai patvirtinti el. paštu?") },
         { id: "works", s: t("Yes, | that | works | for me.", "Taip, | tai | tinka | man.", "Taip, man tinka.") },
       ],
     },
@@ -1665,15 +1665,15 @@ export const complaint: SituationDef = {
         { id: "ask_ref", s: t("Could | I | have | a | reference | number, | please?", "Ar galėčiau | aš | gauti | — | užklausos | numerį, | prašau?", "Ar galėčiau gauti užklausos numerį?") },
         { id: "go_ahead", s: t("Yes, | go ahead.", "Taip, | sakykite.", "Taip, sakykite.") },
         { id: "readback", s: t("HH-4471. | Got it.", "HH-4471. | Užsirašiau.", "HH-4471. Užsirašiau.", { say: "H, H, four, four, seven, one. Got it." }) },
-        { id: "repeat", s: t("Sorry, | could | you | repeat | that?", "Atsiprašau, | ar galėtumėte | jūs | pakartoti | tai?", "Atsiprašau, ar galėtumėte pakartoti?") },
+        { id: "repeat", s: t("Sorry, | could | you | repeat | that?", "Atsiprašau, | ar galėtumėte | Jūs | pakartoti | tai?", "Atsiprašau, ar galėtumėte pakartoti?") },
       ],
     },
     closing: {
       lt: "Padėkoti ir atsisveikinti",
       items: [
-        { id: "appreciate", s: t("I | appreciate | your | help, | I | truly | do.", "Aš | vertinu | jūsų | pagalbą, | aš | tikrai | vertinu.", "Vertinu jūsų pagalbą, tikrai vertinu.",
+        { id: "appreciate", s: t("I | appreciate | your | help, | I | truly | do.", "Aš | vertinu | Jūsų | pagalbą, | aš | tikrai | vertinu.", "Vertinu Jūsų pagalbą, tikrai vertinu.",
           { flags: { 6: "“do” repeats the verb: vertinu." } }) },
-        { id: "thats_all", s: t("No, | that's | all. | Thank | you.", "Ne, | tai yra | viskas. | Dėkoju | jums.", "Ne, tai viskas. Ačiū.") },
+        { id: "thats_all", s: t("No, | that's | all. | Thank | you.", "Ne, | tai yra | viskas. | Dėkoju | Jums.", "Ne, tai viskas. Ačiū.") },
         { id: "nice_day", s: t("Have | a | nice | day.", "Linkiu | — | geros | dienos.", "Geros dienos.", { flags: { 0: F_HAVE_WISH } }) },
       ],
     },

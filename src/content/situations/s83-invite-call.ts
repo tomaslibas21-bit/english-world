@@ -644,30 +644,30 @@ export const inviteCall: SituationDef = {
       t("Hello? | Who's | this?", "Alio? | Kas | čia?", "Alio? Kas skambina?", { flags: { 1: "“’s” (is) has no separate word: Kas čia? needs no copula." } }),
     ],
     oh_hey: [
-      t("Oh, | hey! | How | are | you?", "O, | labas! | Kaip | sekasi | {j:jums|t:tau}?", "O, labas! Kaip sekasi?"),
+      t("Oh, | hey! | How | are | you?", "O, | labas! | Kaip | sekasi | {j:Jums|t:tau}?", "O, labas! Kaip sekasi?"),
       t("Oh, | hi! | How's it going?", "O, | labas! | Kaip sekasi?", "O, labas! Kaip sekasi?"),
     ],
     hey_howareyou: [
       t("Hey, | you! | How's it going?", "Labas, | tu! | Kaip sekasi?", "O, labas! Kaip sekasi?"),
-      t("Hi! | How | are | you | doing?", "{j:Sveiki|t:Labas}! | Kaip | — | {j:jums|t:tau} | sekasi?", "{j:Sveiki|t:Labas}! Kaip {j:jums|t:tau} sekasi?",
+      t("Hi! | How | are | you | doing?", "{j:Sveiki|t:Labas}! | Kaip | — | {j:Jums|t:tau} | sekasi?", "{j:Sveiki|t:Labas}! Kaip {j:Jums|t:tau} sekasi?",
         { flags: { 2: "Progressive “are” has no Lithuanian word; sekasi carries the tense (linked to “doing”)." } }),
     ],
     how_are_you_again: [
-      t("So, | how | are | you?", "Tai | kaip | sekasi | {j:jums|t:tau}?", "Tai kaip sekasi?"),
+      t("So, | how | are | you?", "Tai | kaip | sekasi | {j:Jums|t:tau}?", "Tai kaip sekasi?"),
     ],
     hey_whatsup: [
       t("Hey! | What's up?", "Labas! | Kas naujo?", "Labas! Kas naujo?"),
       t("Oh, | hey, | you! | What's up?", "O, | labas, | tu! | Kas naujo?", "O, labas! Kas naujo?"),
     ],
     i_know: [
-      t("Ha, | I | know! | I | saw | your | name.", "Cha, | aš | žinau! | Aš | mačiau | {j:jūsų|t:tavo} | vardą.", "Cha, žinau! Mačiau {j:jūsų|t:tavo} vardą."),
+      t("Ha, | I | know! | I | saw | your | name.", "Cha, | aš | žinau! | Aš | mačiau | {j:Jūsų|t:tavo} | vardą.", "Cha, žinau! Mačiau {j:Jūsų|t:tavo} vardą."),
     ],
     so_whats_up: [
       t("So, | what's up?", "Tai | kas naujo?", "Tai kas naujo?"),
       t("So, | what's new?", "Tai | kas naujo?", "Tai kas naujo?"),
     ],
     hear_you: [
-      t("Yep, | I | can | hear | you | fine.", "Taip, | aš | galiu | girdėti | {j:jus|t:tave} | gerai.", "Taip, girdžiu {j:jus|t:tave} gerai."),
+      t("Yep, | I | can | hear | you | fine.", "Taip, | aš | galiu | girdėti | {j:Jus|t:tave} | gerai.", "Taip, girdžiu {j:Jus|t:tave} gerai."),
     ],
     good_time: [
       t("Sure, | I've got | a | minute. | What's up?", "Žinoma, | turiu | — | minutę. | Kas yra?", "Žinoma, turiu minutėlę. Kas yra?"),
@@ -698,7 +698,7 @@ export const inviteCall: SituationDef = {
       t("Yep! | I'm | free.", "Taip! | Aš esu | {sm:laisvas|sf:laisva}.", "Taip! Esu {sm:laisvas|sf:laisva}."),
     ],
     maybe_free: [
-      t("Maybe! | Let | me | check | and | I'll text | you.", "Gal! | {j:Leiskite|t:Leisk} | man | pasižiūrėti, | ir | parašysiu | {j:jums|t:tau}.", "Gal! Pasižiūrėsiu ir parašysiu {j:jums|t:tau}."),
+      t("Maybe! | Let | me | check | and | I'll text | you.", "Gal! | {j:Leiskite|t:Leisk} | man | pasižiūrėti, | ir | parašysiu | {j:Jums|t:tau}.", "Gal! Pasižiūrėsiu ir parašysiu {j:Jums|t:tau}."),
     ],
     sat_busy: [
       t("Saturday | I'm | busy. | I'm helping | my | mom | move. | Why?", "Šeštadienį | aš esu | {sm:užimtas|sf:užimta}. | Padedu | savo | mamai | persikraustyti. | Kodėl?",
@@ -720,8 +720,8 @@ export const inviteCall: SituationDef = {
       t("Wait, | which | day?", "Palauk, | kurią | dieną?", "Palauk, kurią dieną?"),
     ],
     are_you_asking: [
-      t("Ooh, | nice! | Are | you | asking | me?", "O, | šaunu! | Ar | {j:jūs|t:tu} | {j:kviečiate|t:kvieti} | mane?", "O, šaunu! Ar {j:jūs|t:tu} mane {j:kviečiate|t:kvieti}?"),
-      t("Wait, | are | you | inviting | me?", "Palauk, | ar | {j:jūs|t:tu} | {j:kviečiate|t:kvieti} | mane?", "Palauk, ar {j:jūs|t:tu} mane {j:kviečiate|t:kvieti}?"),
+      t("Ooh, | nice! | Are | you | asking | me?", "O, | šaunu! | Ar | {j:Jūs|t:tu} | {j:kviečiate|t:kvieti} | mane?", "O, šaunu! Ar {j:Jūs|t:tu} mane {j:kviečiate|t:kvieti}?"),
+      t("Wait, | are | you | inviting | me?", "Palauk, | ar | {j:Jūs|t:tu} | {j:kviečiate|t:kvieti} | mane?", "Palauk, ar {j:Jūs|t:tu} mane {j:kviečiate|t:kvieti}?"),
     ],
     is_that_invitation: [
       t("So... | is | that | an | invitation?", "Tai... | ar yra | tai | — | kvietimas?", "Tai... ar tai kvietimas?"),
@@ -733,10 +733,10 @@ export const inviteCall: SituationDef = {
       t("Oh! | Okay, | no | problem.", "O! | Gerai, | jokių | problemų.", "O! Gerai, jokių problemų."),
     ],
     accept: [
-      t("Are | you | kidding? | I'd love to!", "Ar | {j:jūs|t:tu} | {j:juokaujate|t:juokauji}? | Mielai!", "{j:Juokaujate|t:Juokauji}? Mielai!"),
+      t("Are | you | kidding? | I'd love to!", "Ar | {j:Jūs|t:tu} | {j:juokaujate|t:juokauji}? | Mielai!", "{j:Juokaujate|t:Juokauji}? Mielai!"),
       t("Oh | my | gosh, | yes! | I'd love to!", "O | mano | dieve, | taip! | Mielai!", "O Dieve, taip! Mielai!"),
       t("Ooh, | fun! | Count me in!", "O, | smagu! | Aš – už!", "O, smagu! Aš – už!"),
-      t("Yes! | I'd love to! | Thank | you!", "Taip! | Mielai! | Ačiū | {j:jums|t:tau}!", "Taip! Mielai! Ačiū {j:jums|t:tau}!"),
+      t("Yes! | I'd love to! | Thank | you!", "Taip! | Mielai! | Ačiū | {j:Jums|t:tau}!", "Taip! Mielai! Ačiū {j:Jums|t:tau}!"),
     ],
     already_yes: [
       t("Yes, | I | said | yes! | I'm | so | excited.", "Taip, | aš | pasakiau | taip! | Aš | taip | laukiu.", "Juk sutikau! Labai laukiu.",
@@ -756,11 +756,11 @@ export const inviteCall: SituationDef = {
       t("Your | favorite | band? | Awesome!", "{j:Jūsų|t:Tavo} | mėgstamiausia | grupė? | Nuostabu!", "{j:Jūsų|t:Tavo} mėgstamiausia grupė? Nuostabu!"),
     ],
     bad_line: [
-      t("Sorry, | you're breaking up | a little. | Did | you | say | Friday?", "Atsiprašau, | ryšys trūkinėja | truputį. | Ar | {j:jūs|t:tu} | {j:sakėte|t:sakei} | penktadienį?",
+      t("Sorry, | you're breaking up | a little. | Did | you | say | Friday?", "Atsiprašau, | ryšys trūkinėja | truputį. | Ar | {j:Jūs|t:tu} | {j:sakėte|t:sakei} | penktadienį?",
         "Atsiprašau, ryšys truputį trūkinėja. Ar {j:sakėte|t:sakei} penktadienį?"),
     ],
     bad_line_q: [
-      t("Sorry, | did | you | say | Friday?", "Atsiprašau, | ar | {j:jūs|t:tu} | {j:sakėte|t:sakei} | penktadienį?", "Atsiprašau, ar {j:sakėte|t:sakei} penktadienį?"),
+      t("Sorry, | did | you | say | Friday?", "Atsiprašau, | ar | {j:Jūs|t:tu} | {j:sakėte|t:sakei} | penktadienį?", "Atsiprašau, ar {j:sakėte|t:sakei} penktadienį?"),
     ],
     ask_day: [
       t("Cool! | When | is | it?", "Šaunu! | Kada | vyksta | jis?", "Šaunu! Kada jis vyksta?"),
@@ -795,7 +795,7 @@ export const inviteCall: SituationDef = {
     ],
     ask_place: [
       t("Where | should | we | meet?", "Kur | turėtume | mes | susitikti?", "Kur susitinkame?"),
-      t("And | where | do | you | want | to meet?", "O | kur | — | {j:jūs|t:tu} | {j:norite|t:nori} | susitikti?", "O kur {j:norite|t:nori} susitikti?",
+      t("And | where | do | you | want | to meet?", "O | kur | — | {j:Jūs|t:tu} | {j:norite|t:nori} | susitikti?", "O kur {j:norite|t:nori} susitikti?",
         { flags: { 2: "Question “do” has no Lithuanian word (linked to “want”)." } }),
     ],
     ack_place: [
@@ -858,15 +858,15 @@ export const inviteCall: SituationDef = {
       t("No | worries! | Next | time.", "Jokių | rūpesčių! | Kitą | kartą.", "Nieko tokio! Kitą kartą."),
     ],
     ask_pay: [
-      t("Oh, | and | what | do | I | owe | you | for | the | ticket?", "O, | ir | kiek | — | aš | {sm:skolingas|sf:skolinga} | {j:jums|t:tau} | už | — | bilietą?",
-        "O, ir kiek aš {j:jums|t:tau} {sm:skolingas|sf:skolinga} už bilietą?", { flags: { 3: "Question “do” has no Lithuanian word (linked to “owe”)." } }),
+      t("Oh, | and | what | do | I | owe | you | for | the | ticket?", "O, | ir | kiek | — | aš | {sm:skolingas|sf:skolinga} | {j:Jums|t:tau} | už | — | bilietą?",
+        "O, ir kiek aš {j:Jums|t:tau} {sm:skolingas|sf:skolinga} už bilietą?", { flags: { 3: "Question “do” has no Lithuanian word (linked to “owe”)." } }),
     ],
     on_me: [
-      t("Aw, | you're | the | best! | Thank | you!", "Oi, | {j:jūs esate|t:tu esi} | — | {m:geriausias|f:geriausia}! | Ačiū | {j:jums|t:tau}!", "Oi, {j:jūs geriausi|t:tu geriausias}! Ačiū {j:jums|t:tau}!"),
+      t("Aw, | you're | the | best! | Thank | you!", "Oi, | {j:Jūs esate|t:tu esi} | — | {m:geriausias|f:geriausia}! | Ačiū | {j:Jums|t:tau}!", "Oi, {j:Jūs geriausi|t:tu geriausias}! Ačiū {j:Jums|t:tau}!"),
       t("Really? | That's | so | sweet. | Thanks!", "Tikrai? | Tai | taip | miela. | Ačiū!", "Tikrai? Kaip miela. Ačiū!"),
     ],
     pay_back: [
-      t("Okay, | I'll give | you | the | money | on Friday.", "Gerai, | atiduosiu | {j:jums|t:tau} | — | pinigus | penktadienį.", "Gerai, pinigus atiduosiu penktadienį."),
+      t("Okay, | I'll give | you | the | money | on Friday.", "Gerai, | atiduosiu | {j:Jums|t:tau} | — | pinigus | penktadienį.", "Gerai, pinigus atiduosiu penktadienį."),
     ],
     summary: [
       t("Okay, | so | {D}, | {$time}, | at | {P.the}.", "Gerai, | taigi | {D:acc}, | {$time}, | prie | {P.the:gen}.", "Gerai, taigi {D:acc} {$time} prie {P.the:gen}."),
@@ -897,12 +897,12 @@ export const inviteCall: SituationDef = {
     ],
     bbq_invite: [
       t("Oh, | hey, | are | you | free | on Sunday? | We're having | a | barbecue | at | my | place.",
-        "O, | ei, | ar {j:esate|t:esi} | {j:jūs|t:tu} | {m:laisvas|f:laisva} | sekmadienį? | Rengiame | — | grilio vakarėlį | — | mano | namuose.",
+        "O, | ei, | ar {j:esate|t:esi} | {j:Jūs|t:tu} | {m:laisvas|f:laisva} | sekmadienį? | Rengiame | — | grilio vakarėlį | — | mano | namuose.",
         "O, ei, ar {j:esate|t:esi} {m:laisvas|f:laisva} sekmadienį? Rengiame grilio vakarėlį pas mane.",
         { flags: { 9: "“at”: the locative ending of namuose carries it (my intervenes)." } }),
     ],
     bbq_yes: [
-      t("Awesome! | I'll text | you | the | details.", "Nuostabu! | Parašysiu | {j:jums|t:tau} | — | detales.", "Nuostabu! Parašysiu {j:jums|t:tau} detales."),
+      t("Awesome! | I'll text | you | the | details.", "Nuostabu! | Parašysiu | {j:Jums|t:tau} | — | detales.", "Nuostabu! Parašysiu {j:Jums|t:tau} detales."),
     ],
     bbq_no: [
       t("No | worries! | Maybe | next | time.", "Jokių | rūpesčių! | Gal | kitą | kartą.", "Nieko tokio! Gal kitą kartą."),
@@ -927,45 +927,45 @@ export const inviteCall: SituationDef = {
       lt: "Pasisveikinti ir prisistatyti",
       items: [
         { id: "open_its", s: t("Hi, | Lizzie! | It's | {$name}.", "Labas, | Lizi! | Čia | {$name}.", "Labas, Lizi! Čia {$name}."), note: "Telefonu sakoma „It's …“, ne „I am …“." },
-        { id: "s_hello", s: t("Hey, | Lizzie! | How | are | you?", "Labas, | Lizi! | Kaip | sekasi | {j:jums|t:tau}?", "Labas, Lizi! Kaip sekasi?") },
+        { id: "s_hello", s: t("Hey, | Lizzie! | How | are | you?", "Labas, | Lizi! | Kaip | sekasi | {j:Jums|t:tau}?", "Labas, Lizi! Kaip sekasi?") },
         { id: "open_good_time", s: t("Is | this | a | good | time?", "Ar yra | dabar | — | geras | laikas?", "Ar dabar patogu kalbėti?") },
-        { id: "open_minute", s: t("Do | you | have | a | minute?", "Ar | {j:jūs|t:tu} | {j:turite|t:turi} | — | minutę?", "Ar {j:turite|t:turi} minutėlę?", { flags: { 0: "Question “Do” = the particle ar." } }) },
+        { id: "open_minute", s: t("Do | you | have | a | minute?", "Ar | {j:Jūs|t:tu} | {j:turite|t:turi} | — | minutę?", "Ar {j:turite|t:turi} minutėlę?", { flags: { 0: "Question “Do” = the particle ar." } }) },
       ],
     },
     invite: {
       lt: "Pakviesti į koncertą", slot: "genre", examples: ["jazz", "rock", "pop"],
       items: [
-        { id: "inv_want", s: t("Do | you | want | to come | to | a | concert | on Friday?", "Ar | {j:jūs|t:tu} | {j:norite|t:nori} | ateiti | į | — | koncertą | penktadienį?",
+        { id: "inv_want", s: t("Do | you | want | to come | to | a | concert | on Friday?", "Ar | {j:Jūs|t:tu} | {j:norite|t:nori} | ateiti | į | — | koncertą | penktadienį?",
           "Ar {j:norite|t:nori} ateiti į koncertą penktadienį?", { flags: { 0: "Question “Do” = the particle ar." } }) },
         { id: "inv_tickets", s: t("I've got | two | tickets | for | a | concert.", "Turiu | du | bilietus | į | — | koncertą.", "Turiu du bilietus į koncertą.") },
-        { id: "inv_would", s: t("Would | you | like | to come | with | me?", "Ar | {j:jūs|t:tu} | {j:norėtumėte|t:norėtum} | ateiti | su | manimi?", "Ar {j:norėtumėte|t:norėtum} ateiti su manimi?",
+        { id: "inv_would", s: t("Would | you | like | to come | with | me?", "Ar | {j:Jūs|t:tu} | {j:norėtumėte|t:norėtum} | ateiti | su | manimi?", "Ar {j:norėtumėte|t:norėtum} ateiti su manimi?",
           { flags: { 0: "“Would” in a yes/no question = the particle ar; the conditional sits on the verb (linked to “like”)." } }), register: "polite" },
-        { id: "inv_want", s: t("Do | you | want | to come | to | {X.np} | concert | on Friday?", "Ar | {j:jūs|t:tu} | {j:norite|t:nori} | ateiti | į | {X.np:gen} | koncertą | penktadienį?",
+        { id: "inv_want", s: t("Do | you | want | to come | to | {X.np} | concert | on Friday?", "Ar | {j:Jūs|t:tu} | {j:norite|t:nori} | ateiti | į | {X.np:gen} | koncertą | penktadienį?",
           "Ar {j:norite|t:nori} ateiti į {X.np:gen} koncertą penktadienį?", { flags: { 0: "Question “Do” = the particle ar." } }) },
-        { id: "inv_would", s: t("Would | you | like | to come | to | {X.np} | concert | with | me?", "Ar | {j:jūs|t:tu} | {j:norėtumėte|t:norėtum} | ateiti | į | {X.np:gen} | koncertą | su | manimi?",
+        { id: "inv_would", s: t("Would | you | like | to come | to | {X.np} | concert | with | me?", "Ar | {j:Jūs|t:tu} | {j:norėtumėte|t:norėtum} | ateiti | į | {X.np:gen} | koncertą | su | manimi?",
           "Ar {j:norėtumėte|t:norėtum} ateiti su manimi į {X.np:gen} koncertą?", { flags: { 0: "“Would” in a yes/no question = the particle ar; the conditional sits on the verb (linked to “like”)." } }), register: "polite" },
         { id: "inv_tickets", s: t("I've got | two | tickets | for | {X.np} | concert | on Friday.", "Turiu | du | bilietus | į | {X.np:gen} | koncertą | penktadienį.",
           "Turiu du bilietus į {X.np:gen} koncertą penktadienį.") },
         { id: "inv_how_about", s: t("How about | {X.np} | concert | on Friday?", "Gal | {X.np:gen} | koncertą | penktadienį?", "Gal einam į {X.np:gen} koncertą penktadienį?"), register: "casual" },
         { id: "inv_lets", s: t("Let's go | to | {X.np} | concert | on Friday!", "Eikime | į | {X.np:gen} | koncertą | penktadienį!", "Eikime į {X.np:gen} koncertą penktadienį!"), register: "casual" },
-        { id: "inv_feel_like", s: t("Do | you | feel like | going | to | {X.np} | concert?", "Ar | {j:jūs|t:tu} | {j:norite|t:nori} | eiti | į | {X.np:gen} | koncertą?",
+        { id: "inv_feel_like", s: t("Do | you | feel like | going | to | {X.np} | concert?", "Ar | {j:Jūs|t:tu} | {j:norite|t:nori} | eiti | į | {X.np:gen} | koncertą?",
           "Ar {j:norėtumėte|t:norėtum} nueiti į {X.np:gen} koncertą?", { flags: { 0: "Question “Do” = the particle ar." } }) },
-        { id: "inv_invite", s: t("I'd like | to invite | you | to | {X.np} | concert.", "Norėčiau | pakviesti | {j:jus|t:tave} | į | {X.np:gen} | koncertą.",
-          "Norėčiau {j:jus|t:tave} pakviesti į {X.np:gen} koncertą."), register: "polite" },
-        { id: "inv_wondering", s: t("I | was wondering | if | you'd like | to come.", "Aš | galvojau, | ar | {j:jūs norėtumėte|t:tu norėtum} | ateiti.",
+        { id: "inv_invite", s: t("I'd like | to invite | you | to | {X.np} | concert.", "Norėčiau | pakviesti | {j:Jus|t:tave} | į | {X.np:gen} | koncertą.",
+          "Norėčiau {j:Jus|t:tave} pakviesti į {X.np:gen} koncertą."), register: "polite" },
+        { id: "inv_wondering", s: t("I | was wondering | if | you'd like | to come.", "Aš | galvojau, | ar | {j:Jūs norėtumėte|t:tu norėtum} | ateiti.",
           "Galvojau, gal {j:norėtumėte|t:norėtum} ateiti."), register: "polite", note: "Labai mandagus, švelnus kvietimas." },
-        { id: "inv_want_short", s: t("Do | you | want | to come?", "Ar | {j:jūs|t:tu} | {j:norite|t:nori} | ateiti?", "Ar {j:norite|t:nori} ateiti?", { flags: { 0: "Question “Do” = the particle ar." } }), register: "casual" },
+        { id: "inv_want_short", s: t("Do | you | want | to come?", "Ar | {j:Jūs|t:tu} | {j:norite|t:nori} | ateiti?", "Ar {j:norite|t:nori} ateiti?", { flags: { 0: "Question “Do” = the particle ar." } }), register: "casual" },
       ],
     },
     free: {
       lt: "Paklausti, ar ji laisva",
       items: [
-        { id: "free_q", s: t("Are | you | free | on Friday?", "Ar {j:esate|t:esi} | {j:jūs|t:tu} | {sm:laisvas|sf:laisva} | penktadienį?", "Ar {j:turite|t:turi} laiko penktadienį?") },
-        { id: "plans_q", s: t("What | are | you | up to | this | weekend?", "Ką | — | {j:jūs|t:tu} | {j:veikiate|t:veiki} | šį | savaitgalį?", "Ką {j:veikiate|t:veiki} šį savaitgalį?",
+        { id: "free_q", s: t("Are | you | free | on Friday?", "Ar {j:esate|t:esi} | {j:Jūs|t:tu} | {sm:laisvas|sf:laisva} | penktadienį?", "Ar {j:turite|t:turi} laiko penktadienį?") },
+        { id: "plans_q", s: t("What | are | you | up to | this | weekend?", "Ką | — | {j:Jūs|t:tu} | {j:veikiate|t:veiki} | šį | savaitgalį?", "Ką {j:veikiate|t:veiki} šį savaitgalį?",
           { flags: { 1: "“are” (be up to) has no separate word; the verb (linked to “up to”) carries it." } }), register: "casual" },
-        { id: "plans_q2", s: t("Do | you | have | any | plans | for Friday?", "Ar | {j:jūs|t:tu} | {j:turite|t:turi} | kokių nors | planų | penktadieniui?",
+        { id: "plans_q2", s: t("Do | you | have | any | plans | for Friday?", "Ar | {j:Jūs|t:tu} | {j:turite|t:turi} | kokių nors | planų | penktadieniui?",
           "Ar {j:turite|t:turi} kokių nors planų penktadieniui?", { flags: { 0: "Question “Do” = the particle ar." } }) },
-        { id: "busy_q", s: t("Are | you | busy | on Friday?", "Ar {j:esate|t:esi} | {j:jūs|t:tu} | {sm:užimtas|sf:užimta} | penktadienį?", "Ar {j:esate|t:esi} {sm:užimtas|sf:užimta} penktadienį?") },
+        { id: "busy_q", s: t("Are | you | busy | on Friday?", "Ar {j:esate|t:esi} | {j:Jūs|t:tu} | {sm:užimtas|sf:užimta} | penktadienį?", "Ar {j:esate|t:esi} {sm:užimtas|sf:užimta} penktadienį?") },
       ],
     },
     when: {
@@ -1001,7 +1001,7 @@ export const inviteCall: SituationDef = {
         { id: "meet_full", s: t("Let's meet | at | {X.the} | at | 7:30.", "Susitikime | prie | {X.the:gen} | — | 7:30.", "Susitikime prie {X.the:gen} pusę aštuonių.",
           { say: "Let's meet at {X.the} at seven thirty.", flags: { 3: "Clock “at” has no separate Lithuanian word; the time itself carries it." } }) },
         { id: "meet_lets", s: t("Let's meet | outside | {X.the}.", "Susitikime | prie | {X.the:gen}.", "Susitikime prie {X.the:gen}."), only: (e) => ["station", "cafe"].includes(e.id) },
-        { id: "meet_ask", s: t("Where | do | you | want | to meet?", "Kur | — | {j:jūs|t:tu} | {j:norite|t:nori} | susitikti?", "Kur {j:norite|t:nori} susitikti?",
+        { id: "meet_ask", s: t("Where | do | you | want | to meet?", "Kur | — | {j:Jūs|t:tu} | {j:norite|t:nori} | susitikti?", "Kur {j:norite|t:nori} susitikti?",
           { flags: { 1: "Question “do” has no Lithuanian word (linked to “want”)." } }) },
       ],
     },
@@ -1011,7 +1011,7 @@ export const inviteCall: SituationDef = {
         { id: "start_short", s: t("At | 7:30.", "— | 7:30.", "Pusę aštuonių.", { say: "At seven thirty.", flags: { 0: "Clock “at” has no separate Lithuanian word; the time itself carries it." } }) },
         { id: "time_how_about", s: t("How about | 7:30?", "Gal | 7:30?", "Gal pusę aštuonių?", { say: "How about seven thirty?" }) },
         { id: "time_lets_say", s: t("Let's say | 7:30.", "Sakykime | 7:30.", "Tarkime, pusę aštuonių.", { say: "Let's say seven thirty." }) },
-        { id: "time_ask_you", s: t("What | time | works | for you?", "Koks | laikas | tinka | {j:jums|t:tau}?", "Koks laikas {j:jums|t:tau} tinka?") },
+        { id: "time_ask_you", s: t("What | time | works | for you?", "Koks | laikas | tinka | {j:Jums|t:tau}?", "Koks laikas {j:Jums|t:tau} tinka?") },
       ],
     },
     sister: {
@@ -1069,7 +1069,7 @@ export const inviteCall: SituationDef = {
       items: [
         { id: "close_see_you", s: t("See you | on Friday!", "Iki | penktadienio!", "Iki penktadienio!") },
         { id: "close_talk_soon", s: t("Talk | soon!", "Pasikalbėsim | greitai!", "Iki greito!"), register: "casual" },
-        { id: "close_text", s: t("I'll text | you | the | details.", "Parašysiu | {j:jums|t:tau} | — | detales.", "Parašysiu {j:jums|t:tau} detales.") },
+        { id: "close_text", s: t("I'll text | you | the | details.", "Parašysiu | {j:Jums|t:tau} | — | detales.", "Parašysiu {j:Jums|t:tau} detales.") },
         { id: "close_cant_wait", s: t("I | can't wait!", "Aš | nekantrauju!", "Nekantrauju!") },
       ],
     },

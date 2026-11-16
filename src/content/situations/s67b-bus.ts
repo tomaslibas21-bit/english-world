@@ -350,9 +350,9 @@ export const bus: SituationDef = {
       t("Hey, | how's it going?", "Labas, | kaip sekasi?", "Labas, kaip sekasi?"),
     ],
     ask_dest: [
-      t("Where | are | you | headed?", "Kur | — | jūs | važiuojate?", "Kur važiuojate?",
+      t("Where | are | you | headed?", "Kur | — | Jūs | važiuojate?", "Kur važiuojate?",
         { flags: { 1: "“are … headed” = važiuojate; “are” has no separate word (linked to “headed”)." } }),
-      t("Where | are | you | going?", "Kur | — | jūs | važiuojate?", "Kur važiuojate?",
+      t("Where | are | you | going?", "Kur | — | Jūs | važiuojate?", "Kur važiuojate?",
         { flags: { 1: "Progressive “are” has no Lithuanian word; važiuojate carries the tense (linked to “going”)." } }),
     ],
     goes_yes: [
@@ -393,7 +393,7 @@ export const bus: SituationDef = {
         "Jokių problemų. Šis autobusas važiuoja į centrą, į Miesto aikštę, į muziejų ir į prieplauką."),
     ],
     dest_neg_ack: [
-      t("Oh, | okay. | Where | are | you | headed, | then?", "O, | gerai. | Kur | — | jūs | važiuojate, | tada?", "O, gerai. Tai kur važiuojate?",
+      t("Oh, | okay. | Where | are | you | headed, | then?", "O, | gerai. | Kur | — | Jūs | važiuojate, | tada?", "O, gerai. Tai kur važiuojate?",
         { flags: { 3: "“are … headed” = važiuojate; “are” has no separate word (linked to “headed”)." } }),
     ],
     fare_is: [
@@ -412,7 +412,7 @@ export const bus: SituationDef = {
       t("Yep, | tap | right | here.", "Taip, | pridėkite | štai | čia.", "Taip, pridėkite štai čia."),
     ],
     phone_ok: [
-      t("Sure, | you | can | tap | your | phone | too.", "Žinoma, | jūs | galite | pridėti | savo | telefoną | irgi.", "Žinoma, galima pridėti ir telefoną."),
+      t("Sure, | you | can | tap | your | phone | too.", "Žinoma, | Jūs | galite | pridėti | savo | telefoną | irgi.", "Žinoma, galima pridėti ir telefoną."),
     ],
     cash_ok: [
       t("Sure. | Just | put | it | in | the | farebox.", "Žinoma. | Tiesiog | įmeskite | juos | į | — | aparatą.", "Žinoma, tiesiog įmeskite pinigus į aparatą.",
@@ -439,25 +439,25 @@ export const bus: SituationDef = {
         { say: "A day pass is five dollars. You can ride all day." }),
     ],
     daypass_q: [
-      t("Would | you | like | one?", "Ar | jūs | norėtumėte | vieno?", "Norėtumėte?",
+      t("Would | you | like | one?", "Ar | Jūs | norėtumėte | vieno?", "Norėtumėte?",
         { flags: { 0: "“Would” in a yes/no question = the particle ar; the conditional sits on norėtumėte (linked to “like”)." } }),
     ],
     daypass_sold: [
-      t("Here's | your | day | pass.", "Štai | jūsų | dienos | bilietas.", "Štai jūsų dienos bilietas."),
+      t("Here's | your | day | pass.", "Štai | Jūsų | dienos | bilietas.", "Štai Jūsų dienos bilietas."),
     ],
     transfer: [
       t("With | a | card, | transfers | are | free | for | two | hours.", "Su | — | kortele, | persėdimai | yra | nemokami | — | dvi | valandas.", "Su kortele persėsti galima nemokamai dvi valandas.",
         { flags: { 6: "“for” has no separate word: the accusative dvi valandas carries the duration." } }),
     ],
     stop_ok: [
-      t("Sure! | I'll let | you | know.", "Žinoma! | Pranešiu | jums | —.", "Žinoma! Pranešiu jums.",
+      t("Sure! | I'll let | you | know.", "Žinoma! | Pranešiu | Jums | —.", "Žinoma! Pranešiu Jums.",
         { flags: { 3: "“know” (let … know) = pranešti: the verb pranešiu carries it (linked to “I'll let”)." } }),
-      t("No | problem. | I'll tell | you | when | we | get | there.", "Jokių | problemų. | Pasakysiu | jums, | kai | mes | atvažiuosime | ten.", "Jokių problemų. Pasakysiu, kai atvažiuosime."),
+      t("No | problem. | I'll tell | you | when | we | get | there.", "Jokių | problemų. | Pasakysiu | Jums, | kai | mes | atvažiuosime | ten.", "Jokių problemų. Pasakysiu, kai atvažiuosime."),
     ],
     stop_ok_no: [
-      t("No | problem, | I'll let | you | know.", "Jokių | problemų, | pranešiu | jums | —.", "Jokių problemų, pranešiu jums.",
+      t("No | problem, | I'll let | you | know.", "Jokių | problemų, | pranešiu | Jums | —.", "Jokių problemų, pranešiu Jums.",
         { flags: { 4: "“know” (let … know) = pranešti: the verb pranešiu carries it (linked to “I'll let”)." } }),
-      t("That's | okay. | I'll tell | you | when | we | get | there.", "Tai | gerai. | Pasakysiu | jums, | kai | mes | atvažiuosime | ten.", "Nieko tokio. Pasakysiu, kai atvažiuosime."),
+      t("That's | okay. | I'll tell | you | when | we | get | there.", "Tai | gerai. | Pasakysiu | Jums, | kai | mes | atvažiuosime | ten.", "Nieko tokio. Pasakysiu, kai atvažiuosime."),
     ],
     stop_ok_short: [
       t("Sit | back | and | relax.", "Atsisėskite | patogiai | ir | atsipalaiduokite.", "Atsisėskite patogiai ir atsipalaiduokite.",
@@ -477,10 +477,10 @@ export const bus: SituationDef = {
     ],
     cord: [
       t("Just | pull | the | cord | when | we | get | close.", "Tiesiog | patraukite | — | virvelę, | kai | mes | būsime | arti.", "Tiesiog patraukite virvelę, kai būsime arti."),
-      t("Press | the | red | button | when | you | want | to get off.", "Paspauskite | — | raudoną | mygtuką, | kai | jūs | norėsite | išlipti.", "Paspauskite raudoną mygtuką, kai norėsite išlipti."),
+      t("Press | the | red | button | when | you | want | to get off.", "Paspauskite | — | raudoną | mygtuką, | kai | Jūs | norėsite | išlipti.", "Paspauskite raudoną mygtuką, kai norėsite išlipti."),
     ],
     ask_known: [
-      t("Do | you | know | where | to get off?", "Ar | jūs | žinote, | kur | išlipti?", "Ar žinote, kur išlipti?", { flags: { 0: "Question “Do” = the particle ar." } }),
+      t("Do | you | know | where | to get off?", "Ar | Jūs | žinote, | kur | išlipti?", "Ar žinote, kur išlipti?", { flags: { 0: "Question “Do” = the particle ar." } }),
     ],
     known_great: [
       t("Great.", "Puiku.", "Puiku."),
@@ -497,15 +497,15 @@ export const bus: SituationDef = {
       t("Not | yet. | Yours | is | the | next | stop.", "Dar | ne. | Jūsų | yra | — | kita | stotelė.", "Dar ne. Jūsų – kita stotelė."),
     ],
     not_yet_tell: [
-      t("Not | yet. | I'll let | you | know.", "Dar | ne. | Pranešiu | jums | —.", "Dar ne. Pranešiu jums.",
+      t("Not | yet. | I'll let | you | know.", "Dar | ne. | Pranešiu | Jums | —.", "Dar ne. Pranešiu Jums.",
         { flags: { 4: "“know” (let … know) = pranešti: the verb pranešiu carries it (linked to “I'll let”)." } }),
     ],
     arrive: [
-      t("Okay, | this | is | {X}! | This | is | your | stop.", "Gerai, | tai | yra | {X:nom}! | Tai | yra | jūsų | stotelė.", "Gerai, štai {X:nom}! Čia jūsų stotelė."),
-      t("{$stop}! | This | is | your | stop.", "{$stop}! | Tai | yra | jūsų | stotelė.", "{$stop}! Čia jūsų stotelė."),
+      t("Okay, | this | is | {X}! | This | is | your | stop.", "Gerai, | tai | yra | {X:nom}! | Tai | yra | Jūsų | stotelė.", "Gerai, štai {X:nom}! Čia Jūsų stotelė."),
+      t("{$stop}! | This | is | your | stop.", "{$stop}! | Tai | yra | Jūsų | stotelė.", "{$stop}! Čia Jūsų stotelė."),
     ],
     my_stop_yes: [
-      t("Yep, | this | is | your | stop!", "Taip, | tai | yra | jūsų | stotelė!", "Taip, čia jūsų stotelė!"),
+      t("Yep, | this | is | your | stop!", "Taip, | tai | yra | Jūsų | stotelė!", "Taip, čia Jūsų stotelė!"),
     ],
     frequency: [
       t("Every | 20 | minutes.", "Kas | 20 | minučių.", "Kas 20 minučių.", { say: "Every twenty minutes." }),
@@ -557,7 +557,7 @@ export const bus: SituationDef = {
       t("It's | the | same | fare, | $2.50.", "Tai yra | — | ta pati | kaina, | 2,50 $.", "Kaina ta pati – 2,50 $.", { say: "It's the same fare, two fifty." }),
     ],
     oos_ask_driver: [
-      t("Just | ask | the | driver | to tell | you | where | to get off.", "Tiesiog | paprašykite | — | vairuotojo | pasakyti | jums, | kur | išlipti.", "Tiesiog paprašykite vairuotojo pasakyti, kur išlipti."),
+      t("Just | ask | the | driver | to tell | you | where | to get off.", "Tiesiog | paprašykite | — | vairuotojo | pasakyti | Jums, | kur | išlipti.", "Tiesiog paprašykite vairuotojo pasakyti, kur išlipti."),
     ],
     oos_bye: [
       t("Better | hurry, | it's leaving | soon!", "Geriau | paskubėkite, | jis išvažiuoja | netrukus!", "Paskubėkite, jis netrukus išvažiuoja!"),
@@ -599,7 +599,7 @@ export const bus: SituationDef = {
       items: [
         { id: "fare", s: t("How much | is | the | fare?", "Kiek | kainuoja | — | bilietas?", "Kiek kainuoja bilietas?") },
         { id: "day_pass", s: t("Can | I | get | a | day | pass?", "Ar galiu | aš | gauti | — | dienos | bilietą?", "Ar galiu nusipirkti dienos bilietą?") },
-        { id: "give_change", s: t("Do | you | give | change?", "Ar | jūs | duodate | grąžą?", "Ar duodate grąžą?", { flags: { 0: "Question “Do” = the particle ar." } }) },
+        { id: "give_change", s: t("Do | you | give | change?", "Ar | Jūs | duodate | grąžą?", "Ar duodate grąžą?", { flags: { 0: "Question “Do” = the particle ar." } }) },
       ],
     },
     ask_12: {
@@ -614,10 +614,10 @@ export const bus: SituationDef = {
     stop: {
       lt: "Paprašyti pasakyti, kur išlipti", slot: "dest", examples: ["old_town", "museum", "beach"],
       items: [
-        { id: "tell_me", s: t("Could | you | tell | me | when | to get off?", "Ar galėtumėte | jūs | pasakyti | man, | kada | išlipti?", "Ar galėtumėte pasakyti, kada man išlipti?") },
-        { id: "tell_where", s: t("Could | you | tell | me | where | to get off?", "Ar galėtumėte | jūs | pasakyti | man, | kur | išlipti?", "Ar galėtumėte pasakyti, kur man išlipti?") },
+        { id: "tell_me", s: t("Could | you | tell | me | when | to get off?", "Ar galėtumėte | Jūs | pasakyti | man, | kada | išlipti?", "Ar galėtumėte pasakyti, kada man išlipti?") },
+        { id: "tell_where", s: t("Could | you | tell | me | where | to get off?", "Ar galėtumėte | Jūs | pasakyti | man, | kur | išlipti?", "Ar galėtumėte pasakyti, kur man išlipti?") },
         { id: "where_off", s: t("Where | should | I | get off?", "Kur | turėčiau | aš | išlipti?", "Kur turėčiau išlipti?") },
-        { id: "let_me_know", s: t("Could | you | let | me | know | when | we | get | to | {X}?", "Ar galėtumėte | jūs | — | man | pranešti, | kai | mes | atvažiuosime | į | {X:acc}?", "Ar galėtumėte pranešti, kai atvažiuosime į {X:acc}?",
+        { id: "let_me_know", s: t("Could | you | let | me | know | when | we | get | to | {X}?", "Ar galėtumėte | Jūs | — | man | pranešti, | kai | mes | atvažiuosime | į | {X:acc}?", "Ar galėtumėte pranešti, kai atvažiuosime į {X:acc}?",
           { flags: { 2: "“let … know” = pranešti: “let” has no separate word (linked to “know”)." } }), only: notBare },
         { id: "where_off_x", s: t("Where | should | I | get off | for | {X}?", "Kur | turėčiau | aš | išlipti | prie | {X:gen}?", "Kur turėčiau išlipti, kad patekčiau į {X:acc}?") },
       ],
@@ -635,8 +635,8 @@ export const bus: SituationDef = {
     thanks: {
       lt: "Padėkoti",
       items: [
-        { id: "s_thanks", s: t("Thank | you | very much!", "Dėkoju | jums | labai!", "Labai ačiū!") },
-        { id: "s_thanks_help", s: t("Thanks | for | your | help!", "Ačiū | už | jūsų | pagalbą!", "Ačiū už pagalbą!") },
+        { id: "s_thanks", s: t("Thank | you | very much!", "Dėkoju | Jums | labai!", "Labai ačiū!") },
+        { id: "s_thanks_help", s: t("Thanks | for | your | help!", "Ačiū | už | Jūsų | pagalbą!", "Ačiū už pagalbą!") },
       ],
     },
     ride: {

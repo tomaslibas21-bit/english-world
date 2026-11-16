@@ -534,18 +534,18 @@ export const apartment: SituationDef = {
     // --- arriving ---------------------------------------------------------------
     greet_must_be: [
       t("Hi! | You | must | be | here | about | the | apartment.", "Sveiki! | Jūs | turbūt | esate | čia | dėl | — | buto.", "Sveiki! Jūs turbūt dėl buto?"),
-      t("Good | afternoon! | Are | you | here | about | the | apartment?", "Laba | diena! | Ar | jūs | čia | dėl | — | buto?", "Laba diena! Jūs dėl buto?",
+      t("Good | afternoon! | Are | you | here | about | the | apartment?", "Laba | diena! | Ar | Jūs | čia | dėl | — | buto?", "Laba diena! Jūs dėl buto?",
         { flags: { 2: F_ARE_Q } }),
     ],
     greet_help: [
-      t("Hello! | Can | I | help | you?", "Sveiki! | Ar galiu | aš | padėti | jums?", "Sveiki! Kuo galiu padėti?"),
-      t("Hi there! | Can | I | help | you | with something?", "Sveiki! | Ar galiu | aš | padėti | jums | kuo nors?", "Sveiki! Ar galiu kuo nors padėti?"),
+      t("Hello! | Can | I | help | you?", "Sveiki! | Ar galiu | aš | padėti | Jums?", "Sveiki! Kuo galiu padėti?"),
+      t("Hi there! | Can | I | help | you | with something?", "Sveiki! | Ar galiu | aš | padėti | Jums | kuo nors?", "Sveiki! Ar galiu kuo nors padėti?"),
     ],
     purpose_again: [
-      t("Are | you | here | about | the | apartment?", "Ar | jūs | čia | dėl | — | buto?", "Jūs dėl buto?", { flags: { 0: F_ARE_Q } }),
+      t("Are | you | here | about | the | apartment?", "Ar | Jūs | čia | dėl | — | buto?", "Jūs dėl buto?", { flags: { 0: F_ARE_Q } }),
     ],
     how_help: [
-      t("Oh, | sorry! | How | can | I | help | you?", "O, | atsiprašau! | Kuo | galiu | aš | padėti | jums?", "O, atsiprašau! Kuo galiu padėti?"),
+      t("Oh, | sorry! | How | can | I | help | you?", "O, | atsiprašau! | Kuo | galiu | aš | padėti | Jums?", "O, atsiprašau! Kuo galiu padėti?"),
     ],
     come_in: [
       t("Come on in!", "Užeikite!", "Užeikite!"),
@@ -565,14 +565,14 @@ export const apartment: SituationDef = {
       t("The | kitchen | is | brand | new.", "— | Virtuvė | yra | visiškai | nauja.", "Virtuvė visiškai nauja."),
     ],
     nice_to_meet: [
-      t("Nice | to meet | you!", "Malonu | susipažinti | su jumis!", "Malonu susipažinti!"),
+      t("Nice | to meet | you!", "Malonu | susipažinti | su Jumis!", "Malonu susipažinti!"),
     ],
 
     // --- Mr. Patel's questions ----------------------------------------------------
     ask_movein_q: [
-      t("So, | when | are | you | looking | to move in?", "Tai | kada | — | jūs | planuojate | įsikelti?", "Tai kada planuojate įsikelti?",
+      t("So, | when | are | you | looking | to move in?", "Tai | kada | — | Jūs | planuojate | įsikelti?", "Tai kada planuojate įsikelti?",
         { flags: { 2: "Progressive “are”: the present tense of planuojate carries it (linked to “looking”)." } }),
-      t("When | would | you | like | to move in?", "Kada | — | jūs | norėtumėte | įsikelti?", "Kada norėtumėte įsikelti?", { flags: { 1: F_WOULD } }),
+      t("When | would | you | like | to move in?", "Kada | — | Jūs | norėtumėte | įsikelti?", "Kada norėtumėte įsikelti?", { flags: { 1: F_WOULD } }),
     ],
     movein_ack: [
       t("That | works.", "Tai | tinka.", "Tinka."),
@@ -582,8 +582,8 @@ export const apartment: SituationDef = {
       t("You | can | move in | on the first | of the month.", "Jūs | galite | įsikelti | pirmąją | mėnesio.", "Įsikelti galėsite mėnesio pirmąją."),
     ],
     ask_people: [
-      t("Will | it | be | just | you?", "Ar | tai | bus | tik | jūs?", "Gyvensite {m:vienas|f:viena}?", { flags: { 0: "“Will” in a yes/no question = the particle ar; the future sits on bus (linked to “be”)." } }),
-      t("Is | it | just | for you?", "Ar | tai | tik | jums?", "Ar butas tik jums?", { flags: { 0: F_IS_Q } }),
+      t("Will | it | be | just | you?", "Ar | tai | bus | tik | Jūs?", "Gyvensite {m:vienas|f:viena}?", { flags: { 0: "“Will” in a yes/no question = the particle ar; the future sits on bus (linked to “be”)." } }),
+      t("Is | it | just | for you?", "Ar | tai | tik | Jums?", "Ar butas tik Jums?", { flags: { 0: F_IS_Q } }),
     ],
     ask_how_many: [
       t("How many | people, | then?", "Kiek | žmonių, | tada?", "Kiek tada žmonių gyventų?"),
@@ -598,11 +598,11 @@ export const apartment: SituationDef = {
         "Hmm, tai vieno miegamojo butas, tad keturiems gali būti kiek ankšta."),
     ],
     ask_pets_q: [
-      t("Do | you | have | any | pets?", "Ar | jūs | turite | kokių nors | gyvūnų?", "Ar turite gyvūnų?", { flags: { 0: F_DO_Q } }),
+      t("Do | you | have | any | pets?", "Ar | Jūs | turite | kokių nors | gyvūnų?", "Ar turite gyvūnų?", { flags: { 0: F_DO_Q } }),
       t("Any | pets?", "Kokių nors | gyvūnų?", "Gyvūnų turite?"),
     ],
     ask_pet_which: [
-      t("Oh, | what | pet | do | you | have?", "O, | kokį | gyvūną | — | jūs | turite?", "O, kokį gyvūną turite?", { flags: { 3: F_WH_DO } }),
+      t("Oh, | what | pet | do | you | have?", "O, | kokį | gyvūną | — | Jūs | turite?", "O, kokį gyvūną turite?", { flags: { 3: F_WH_DO } }),
     ],
     pets_policy: [
       t("Cats | are | allowed, | and | small | dogs | too.", "Katės | yra | leidžiamos, | ir | maži | šunys | irgi.", "Katės leidžiamos, maži šunys – irgi."),
@@ -614,13 +614,13 @@ export const apartment: SituationDef = {
 
     // --- the learner's questions -----------------------------------------------------
     ask_questions_first: [
-      t("So, | what | would | you | like | to know?", "Tai | ką | — | jūs | norėtumėte | žinoti?", "Tai ką norėtumėte sužinoti?", { flags: { 2: F_WOULD } }),
-      t("Do | you | have | any | questions?", "Ar | jūs | turite | kokių nors | klausimų?", "Ar turite klausimų?", { flags: { 0: F_DO_Q } }),
+      t("So, | what | would | you | like | to know?", "Tai | ką | — | Jūs | norėtumėte | žinoti?", "Tai ką norėtumėte sužinoti?", { flags: { 2: F_WOULD } }),
+      t("Do | you | have | any | questions?", "Ar | Jūs | turite | kokių nors | klausimų?", "Ar turite klausimų?", { flags: { 0: F_DO_Q } }),
     ],
     ask_questions_more: [
-      t("Anything | else | you'd | like | to know?", "Ką nors | dar | jūs | norėtumėte | žinoti?", "Ar dar ką nors norėtumėte sužinoti?", { flags: { 2: F_YOUD } }),
+      t("Anything | else | you'd | like | to know?", "Ką nors | dar | Jūs | norėtumėte | žinoti?", "Ar dar ką nors norėtumėte sužinoti?", { flags: { 2: F_YOUD } }),
       t("Any | other | questions?", "Kokių nors | kitų | klausimų?", "Dar klausimų turite?"),
-      t("What | else | can | I | tell | you?", "Ką | dar | galiu | aš | pasakyti | jums?", "Ką dar galiu jums papasakoti?"),
+      t("What | else | can | I | tell | you?", "Ką | dar | galiu | aš | pasakyti | Jums?", "Ką dar galiu Jums papasakoti?"),
     ],
     go_ahead: [t("Sure, | go ahead.", "Žinoma, | klauskite.", "Žinoma, klauskite.")],
     good_q: [t("Good | question.", "Geras | klausimas.", "Geras klausimas.")],
@@ -681,11 +681,11 @@ export const apartment: SituationDef = {
         { say: "It's one month's rent, so fourteen hundred dollars." }),
     ],
     deposit_first: [
-      t("And | the | first | month's | rent | when | you | sign | the | lease.", "Ir | — | pirmojo | mėnesio | nuoma | kai | jūs | pasirašysite | — | sutartį.",
+      t("And | the | first | month's | rent | when | you | sign | the | lease.", "Ir | — | pirmojo | mėnesio | nuoma | kai | Jūs | pasirašysite | — | sutartį.",
         "Ir pirmojo mėnesio nuoma, kai pasirašysite sutartį."),
     ],
     deposit_back: [
-      t("You | get | it | back | when | you | move out.", "Jūs | gausite | jį | atgal | kai | jūs | išsikraustysite.", "Jį atgausite, kai išsikraustysite."),
+      t("You | get | it | back | when | you | move out.", "Jūs | gausite | jį | atgal | kai | Jūs | išsikraustysite.", "Jį atgausite, kai išsikraustysite."),
     ],
     furnished: [
       t("No, | it's | unfurnished, | but | the | kitchen | has | a | fridge, | a | stove | and | a | dishwasher.",
@@ -759,8 +759,8 @@ export const apartment: SituationDef = {
       t("Sure, | take your time.", "Žinoma, | neskubėkite.", "Žinoma, neskubėkite."),
     ],
     apply_info: [
-      t("I'll need | your | ID | and | a | letter | from | your | employer.", "Man reikės | jūsų | asmens dokumento | ir | — | pažymos | iš | jūsų | darbdavio.",
-        "Man reikės jūsų asmens dokumento ir pažymos iš darbdavio."),
+      t("I'll need | your | ID | and | a | letter | from | your | employer.", "Man reikės | Jūsų | asmens dokumento | ir | — | pažymos | iš | Jūsų | darbdavio.",
+        "Man reikės Jūsų asmens dokumento ir pažymos iš darbdavio."),
     ],
     landlord_here: [
       t("I | live | on | the | first | floor, | so | just | knock | on | my | door.", "Aš | gyvenu | — | — | pirmame | aukšte, | tad | tiesiog | pasibelskite | į | mano | duris.",
@@ -770,9 +770,9 @@ export const apartment: SituationDef = {
       t("Hmm, | good | question. | I'll have | to check.", "Hmm, | geras | klausimas. | Turėsiu | patikrinti.", "Hmm, geras klausimas. Turėsiu pasitikslinti."),
     ],
     like_it_ack: [
-      t("I'm | glad | you | like | it!", "Man | malonu, kad | jums | patinka | butas!", "Džiaugiuosi, kad butas jums patinka!"),
+      t("I'm | glad | you | like | it!", "Man | malonu, kad | Jums | patinka | butas!", "Džiaugiuosi, kad butas Jums patinka!"),
     ],
-    what_can_do: [t("So, | what | can | I | do | for you?", "Tai | ką | galiu | aš | padaryti | jums?", "Tai kuo galiu padėti?")],
+    what_can_do: [t("So, | what | can | I | do | for you?", "Tai | ką | galiu | aš | padaryti | Jums?", "Tai kuo galiu padėti?")],
     understand: [t("I | understand.", "Aš | suprantu.", "Suprantu.")],
     fyi: [
       t("Oh, | and | by the way:", "O, | ir | beje:", "O, beje:"),
@@ -781,22 +781,22 @@ export const apartment: SituationDef = {
 
     // --- deciding -------------------------------------------------------------------
     decision_ask: [
-      t("So, | what | do | you | think?", "Tai | ką | — | jūs | manote?", "Tai ką manote?", { flags: { 2: F_WH_DO } }),
-      t("So, | are | you | interested?", "Tai | ar | jūs | {m:suinteresuotas|f:suinteresuota}?", "Tai ar jus domina?", { flags: { 1: F_ARE_Q } }),
-      t("Well, | what | do | you | think | of | the | apartment?", "Na, | ką | — | jūs | manote | apie | — | butą?", "Na, ką manote apie butą?", { flags: { 2: F_WH_DO } }),
+      t("So, | what | do | you | think?", "Tai | ką | — | Jūs | manote?", "Tai ką manote?", { flags: { 2: F_WH_DO } }),
+      t("So, | are | you | interested?", "Tai | ar | Jūs | {m:suinteresuotas|f:suinteresuota}?", "Tai ar Jus domina?", { flags: { 1: F_ARE_Q } }),
+      t("Well, | what | do | you | think | of | the | apartment?", "Na, | ką | — | Jūs | manote | apie | — | butą?", "Na, ką manote apie butą?", { flags: { 2: F_WH_DO } }),
     ],
     take_ok: [
-      t("Wonderful! | I | think | you'll be | very | happy | here.", "Nuostabu! | Aš | manau, | jūs būsite | labai | {m:laimingas|f:laiminga} | čia.",
-        "Nuostabu! Manau, jums čia labai patiks."),
-      t("Great! | I'm | glad | you | like | it.", "Puiku! | Man | malonu, kad | jums | patinka | butas.", "Puiku! Džiaugiuosi, kad butas jums patinka."),
+      t("Wonderful! | I | think | you'll be | very | happy | here.", "Nuostabu! | Aš | manau, | Jūs būsite | labai | {m:laimingas|f:laiminga} | čia.",
+        "Nuostabu! Manau, Jums čia labai patiks."),
+      t("Great! | I'm | glad | you | like | it.", "Puiku! | Man | malonu, kad | Jums | patinka | butas.", "Puiku! Džiaugiuosi, kad butas Jums patinka."),
     ],
     docs_ask: [
-      t("I'll need | your | ID | and | a | letter | from | your | employer.", "Man reikės | jūsų | asmens dokumento | ir | — | pažymos | iš | jūsų | darbdavio.",
-        "Man reikės jūsų asmens dokumento ir pažymos iš darbdavio."),
-      t("First, | can | I | see | your | ID, | please?", "Pirmiausia, | ar galiu | aš | pamatyti | jūsų | asmens dokumentą, | prašau?", "Pirmiausia, ar galėčiau pamatyti jūsų asmens dokumentą?"),
+      t("I'll need | your | ID | and | a | letter | from | your | employer.", "Man reikės | Jūsų | asmens dokumento | ir | — | pažymos | iš | Jūsų | darbdavio.",
+        "Man reikės Jūsų asmens dokumento ir pažymos iš darbdavio."),
+      t("First, | can | I | see | your | ID, | please?", "Pirmiausia, | ar galiu | aš | pamatyti | Jūsų | asmens dokumentą, | prašau?", "Pirmiausia, ar galėčiau pamatyti Jūsų asmens dokumentą?"),
     ],
     docs_ok: [
-      t("Perfect, | thank | you.", "Puiku, | dėkoju | jums.", "Puiku, ačiū."),
+      t("Perfect, | thank | you.", "Puiku, | dėkoju | Jums.", "Puiku, ačiū."),
       t("That's | great, | thanks.", "Tai | puiku, | ačiū.", "Puiku, ačiū."),
     ],
     passport_ok: [t("A | passport | is fine.", "— | Pasas | tinka.", "Pasas tinka.")],
@@ -811,9 +811,9 @@ export const apartment: SituationDef = {
     ],
     sign_where: [t("Right | here, | at the bottom.", "Štai | čia, | apačioje.", "Štai čia, apačioje.")],
     read_ok: [t("Of course. | Take your time.", "Žinoma. | Neskubėkite.", "Žinoma. Neskubėkite.")],
-    copy_ok: [t("Of course. | I'll email | you | a | copy.", "Žinoma. | Atsiųsiu el. paštu | jums | — | kopiją.", "Žinoma. Kopiją atsiųsiu jums el. paštu.")],
+    copy_ok: [t("Of course. | I'll email | you | a | copy.", "Žinoma. | Atsiųsiu el. paštu | Jums | — | kopiją.", "Žinoma. Kopiją atsiųsiu Jums el. paštu.")],
     keys: [
-      t("And | here | are | your | keys. | Welcome | home!", "Ir | štai | — | jūsų | raktai. | Sveiki atvykę | namo!", "O štai jūsų raktai. Sveiki atvykę į naujus namus!",
+      t("And | here | are | your | keys. | Welcome | home!", "Ir | štai | — | Jūsų | raktai. | Sveiki atvykę | namo!", "O štai Jūsų raktai. Sveiki atvykę į naujus namus!",
         { flags: { 2: "“are” (here are): no Lithuanian word; štai presents the keys." } }),
     ],
     think_ok: [
@@ -826,23 +826,23 @@ export const apartment: SituationDef = {
         "Kad žinotumėte, rytoj jo apžiūrėti ateina dar vienas žmogus."),
     ],
     hurry: [
-      t("Could | you | let | me | know | by | tonight?", "Ar galėtumėte | jūs | pranešti | man | — | iki | vakaro?", "Ar galėtumėte man pranešti iki vakaro?",
+      t("Could | you | let | me | know | by | tonight?", "Ar galėtumėte | Jūs | pranešti | man | — | iki | vakaro?", "Ar galėtumėte man pranešti iki vakaro?",
         { flags: { 4: F_KNOW } }),
     ],
     wait_call: [
-      t("Great. | I'll wait | for | your | call.", "Puiku. | Lauksiu | — | jūsų | skambučio.", "Puiku. Lauksiu jūsų skambučio.",
+      t("Great. | I'll wait | for | your | call.", "Puiku. | Lauksiu | — | Jūsų | skambučio.", "Puiku. Lauksiu Jūsų skambučio.",
         { flags: { 2: "“for”: the genitive skambučio after laukti carries it." } }),
     ],
     decline_ok: [
-      t("No | problem. | Good luck | with | your | search!", "Jokių | problemų. | Sėkmės | su | jūsų | paieškomis!", "Jokių problemų. Sėkmės ieškant buto!"),
+      t("No | problem. | Good luck | with | your | search!", "Jokių | problemų. | Sėkmės | su | Jūsų | paieškomis!", "Jokių problemų. Sėkmės ieškant buto!"),
       t("I | understand. | Thanks | for | coming!", "Aš | suprantu. | Ačiū, | kad | atėjote!", "Suprantu. Ačiū, kad atėjote!"),
     ],
     bye_take: [
-      t("If | you | need | anything, | I | live | on | the | first | floor.", "Jei | jums | reikės | ko nors, | aš | gyvenu | — | — | pirmame | aukšte.",
+      t("If | you | need | anything, | I | live | on | the | first | floor.", "Jei | Jums | reikės | ko nors, | aš | gyvenu | — | — | pirmame | aukšte.",
         "Jei ko prireiks, aš gyvenu pirmame aukšte.", { flags: { 6: "Locative: the ending of pirmame aukšte carries “on” (C-CASE-DASH)." } }),
     ],
     bye_think: [
-      t("Hope | to hear | from | you | soon!", "Tikiuosi | išgirsti | iš | jūsų | greitai!", "Tikiuosi, greitai susisieksite!"),
+      t("Hope | to hear | from | you | soon!", "Tikiuosi | išgirsti | iš | Jūsų | greitai!", "Tikiuosi, greitai susisieksite!"),
     ],
     ack: [
       t("Okay.", "Gerai.", "Gerai."),
@@ -853,7 +853,7 @@ export const apartment: SituationDef = {
     howis: [
       t("Oh, | hi! | How's | everything | with | the | apartment?", "O, | sveiki! | Kaip | viskas | su | — | butu?", "O, sveiki! Kaip sekasi naujame bute?",
         { flags: { 2: "“'s” (is): Lithuanian needs no copula here." } }),
-      t("Hi there! | How | are | you | settling in?", "Sveiki! | Kaip | — | jūs | įsikuriate?", "Sveiki! Kaip įsikuriate?",
+      t("Hi there! | How | are | you | settling in?", "Sveiki! | Kaip | — | Jūs | įsikuriate?", "Sveiki! Kaip įsikuriate?",
         { flags: { 2: "Progressive “are”: the present tense of įsikuriate carries it (linked to “settling in”)." } }),
     ],
     problem_reask: [
@@ -878,16 +878,16 @@ export const apartment: SituationDef = {
     plan_someone: [t("I'll send | someone | to look | at | it.", "Atsiųsiu | ką nors | pažiūrėti | — | jo.", "Atsiųsiu ką nors jo pažiūrėti.",
       { flags: { 3: "“at” (look at): no Lithuanian word; after a verb of sending the purpose infinitive takes the genitive jo." } })],
     visit_time: [
-      t("He | can | come | tomorrow | at | ten. | Will | you | be | home?", "Jis | gali | ateiti | rytoj | — | dešimtą. | Ar | jūs | būsite | namie?",
+      t("He | can | come | tomorrow | at | ten. | Will | you | be | home?", "Jis | gali | ateiti | rytoj | — | dešimtą. | Ar | Jūs | būsite | namie?",
         "Jis gali ateiti rytoj dešimtą. Ar būsite namie?", { flags: { 4: F_AT_CLOCK, 6: "“Will” in a yes/no question = the particle ar; the future sits on būsite (linked to “be”)." } }),
-      t("He's | free | tomorrow | at | ten. | Will | you | be | home?", "Jis yra | laisvas | rytoj | — | dešimtą. | Ar | jūs | būsite | namie?",
+      t("He's | free | tomorrow | at | ten. | Will | you | be | home?", "Jis yra | laisvas | rytoj | — | dešimtą. | Ar | Jūs | būsite | namie?",
         "Rytoj dešimtą jis laisvas. Ar būsite namie?", { flags: { 3: F_AT_CLOCK, 5: "“Will” in a yes/no question = the particle ar; the future sits on būsite (linked to “be”)." } }),
     ],
     meantime_heat: [
-      t("In the meantime, | I | can | bring | you | a | space heater.", "Kol kas | aš | galiu | atnešti | jums | — | šildytuvą.", "Kol kas galiu jums atnešti šildytuvą."),
+      t("In the meantime, | I | can | bring | you | a | space heater.", "Kol kas | aš | galiu | atnešti | Jums | — | šildytuvą.", "Kol kas galiu Jums atnešti šildytuvą."),
     ],
     meantime_leak: [
-      t("In the meantime, | you | can | turn off | the | water | under | the | sink.", "Kol kas | jūs | galite | užsukti | — | vandenį | po | — | kriaukle.",
+      t("In the meantime, | you | can | turn off | the | water | under | the | sink.", "Kol kas | Jūs | galite | užsukti | — | vandenį | po | — | kriaukle.",
         "Kol kas galite užsukti vandenį po kriaukle."),
     ],
     home_yes_ok: [
@@ -897,8 +897,8 @@ export const apartment: SituationDef = {
       t("No | problem. | I | can | let | him | in | with | my | key.", "Jokių | problemų. | Aš | galiu | įleisti | jį | — | su | savo | raktu.",
         "Jokių problemų. Galiu jį įleisti su savo raktu.", { flags: { 6: "“in” (let … in): the prefix į- of įleisti carries it." } }),
     ],
-    key_ok_q: [t("Is | that | okay | with you?", "Ar | tai | gerai | jums?", "Ar jums tai tinka?", { flags: { 0: F_IS_Q } })],
-    other_time_q: [t("What | time | works | for you?", "Koks | laikas | tinka | jums?", "Koks laikas jums tinka?")],
+    key_ok_q: [t("Is | that | okay | with you?", "Ar | tai | gerai | Jums?", "Ar Jums tai tinka?", { flags: { 0: F_IS_Q } })],
+    other_time_q: [t("What | time | works | for you?", "Koks | laikas | tinka | Jums?", "Koks laikas Jums tinka?")],
     time_noted: [t("Okay, | I'll ask | him | to come | then.", "Gerai, | paprašysiu | jo | ateiti | tada.", "Gerai, paprašysiu jo tada ateiti.")],
     key_done: [t("Great. | I'll let | him | in | at | ten.", "Puiku. | Įleisiu | jį | — | — | dešimtą.", "Puiku. Dešimtą jį įleisiu.",
       { flags: { 3: "“in” (let … in): the prefix į- of įleisiu carries it.", 4: F_AT_CLOCK } })],
@@ -947,7 +947,7 @@ export const apartment: SituationDef = {
         { id: "q_elevator", s: t("Is | there | an | elevator?", "Ar yra | — | — | liftas?", "Ar yra liftas?", { flags: { 1: F_THERE } }) },
         { id: "q_see", s: t("Can | I | see | the | bedroom?", "Ar galiu | aš | pamatyti | — | miegamąjį?", "Ar galiu pamatyti miegamąjį?") },
         { id: "q_payrent", s: t("When | is | the | rent | due?", "Kada | yra | — | nuoma | mokėtina?", "Iki kada reikia sumokėti nuomą?") },
-        { id: "q_lower", s: t("Could | you | lower | the | rent | a little?", "Ar galėtumėte | jūs | sumažinti | — | nuomą | truputį?", "Ar galėtumėte truputį sumažinti nuomą?") },
+        { id: "q_lower", s: t("Could | you | lower | the | rent | a little?", "Ar galėtumėte | Jūs | sumažinti | — | nuomą | truputį?", "Ar galėtumėte truputį sumažinti nuomą?") },
       ],
     },
     done_asking: {
@@ -966,14 +966,14 @@ export const apartment: SituationDef = {
         { id: "not_for_me", s: t("I | don't think | it's | right | for me.", "Aš | nemanau, | kad jis | tinka | man.", "Nemanau, kad jis man tinka.",
           { flags: { 2: "“it's” = kad jis; the verb tinka (under “right”) takes over the copula." } }) },
         { id: "like_to_rent", s: t("I'd like | to rent | it.", "Norėčiau | išsinuomoti | jį.", "Norėčiau jį išsinuomoti.") },
-        { id: "let_know", s: t("Can | I | let | you | know | tomorrow?", "Ar galiu | aš | pranešti | jums | — | rytoj?", "Ar galėčiau jums pranešti rytoj?", { flags: { 4: F_KNOW } }) },
+        { id: "let_know", s: t("Can | I | let | you | know | tomorrow?", "Ar galiu | aš | pranešti | Jums | — | rytoj?", "Ar galėčiau Jums pranešti rytoj?", { flags: { 4: F_KNOW } }) },
         { id: "too_expensive", s: t("It's | a little | too | expensive | for me.", "Jis yra | truputį | per | brangus | man.", "Man jis kiek per brangus.") },
       ],
     },
     hurry: {
       lt: "Pažadėti atsakyti iki vakaro",
       items: [
-        { id: "call_tonight", s: t("Okay, | I'll call | you | tonight.", "Gerai, | paskambinsiu | jums | šįvakar.", "Gerai, paskambinsiu jums šįvakar.") },
+        { id: "call_tonight", s: t("Okay, | I'll call | you | tonight.", "Gerai, | paskambinsiu | Jums | šįvakar.", "Gerai, paskambinsiu Jums šįvakar.") },
         { id: "take_now", s: t("Actually, | I'll take | it!", "Tiesą sakant, | imsiu | jį!", "Tiesą sakant, imsiu!") },
       ],
     },
@@ -1028,10 +1028,10 @@ export const apartment: SituationDef = {
         { id: "not_working", s: t("The | heating | isn't working.", "— | Šildymas | neveikia.", "Neveikia šildymas.") },
         { id: "leaking", s: t("The | kitchen | faucet | is leaking.", "— | Virtuvės | čiaupas | laša.", "Laša virtuvės čiaupas."), note: "„Faucet“ – čiaupas (britai sako „tap“)." },
         { id: "no_hot", s: t("There's | no | hot | water.", "Nėra | jokio | karšto | vandens.", "Nėra karšto vandens.", { flags: { 0: F_CONCORD } }) },
-        { id: "sorry_bother", s: t("Sorry | to bother | you, | but | the | heating | isn't working.", "Atsiprašau, kad | trukdau | jums, | bet | — | šildymas | neveikia.",
+        { id: "sorry_bother", s: t("Sorry | to bother | you, | but | the | heating | isn't working.", "Atsiprašau, kad | trukdau | Jums, | bet | — | šildymas | neveikia.",
           "Atsiprašau, kad trukdau, bet neveikia šildymas.", { flags: { 1: "“to bother” = trukdau: after atsiprašau, kad the verb is finite." } }) },
         { id: "problem_with", s: t("There's | a | problem | with | the | shower.", "Yra | — | problema | su | — | dušu.", "Kažkas negerai su dušu.") },
-        { id: "fix", s: t("Could | you | send | someone | to fix | it?", "Ar galėtumėte | jūs | atsiųsti | ką nors | sutaisyti | jo?", "Ar galėtumėte ką nors atsiųsti jo sutaisyti?") },
+        { id: "fix", s: t("Could | you | send | someone | to fix | it?", "Ar galėtumėte | Jūs | atsiųsti | ką nors | sutaisyti | jo?", "Ar galėtumėte ką nors atsiųsti jo sutaisyti?") },
       ],
     },
     repair: {
@@ -1046,7 +1046,7 @@ export const apartment: SituationDef = {
       lt: "Sutikti, kad įleistų meistrą",
       items: [
         { id: "yes_fine", s: t("Yes, | that's | fine.", "Taip, | tai | tinka.", "Taip, tinka.") },
-        { id: "use_key", s: t("Sure, | you | can | use | your | key.", "Žinoma, | jūs | galite | naudoti | savo | raktą.", "Žinoma, galite įeiti su savo raktu.") },
+        { id: "use_key", s: t("Sure, | you | can | use | your | key.", "Žinoma, | Jūs | galite | naudoti | savo | raktą.", "Žinoma, galite įeiti su savo raktu.") },
         { id: "after_five", s: t("Could | he | come | after | five?", "Ar galėtų | jis | ateiti | po | penkių?", "Ar jis galėtų ateiti po penkių?") },
       ],
     },

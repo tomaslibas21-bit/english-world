@@ -324,26 +324,26 @@ export const rental: SituationDef = {
     // --- greeting and reservation
     greet: [
       t("Hi there! | Welcome | to | Harbor Car Rental. | Are | you | picking up | a | car | today?",
-        "Sveiki! | Sveiki atvykę | į | „Harbor Car Rental“. | Ar | jūs | atsiimate | — | automobilį | šiandien?",
+        "Sveiki! | Sveiki atvykę | į | „Harbor Car Rental“. | Ar | Jūs | atsiimate | — | automobilį | šiandien?",
         "Sveiki atvykę į „Harbor Car Rental“! Ar šiandien atsiimate automobilį?",
         { flags: { 4: "Question “Are” = the particle ar; the present of atsiimate carries the progressive (linked to “picking up”)." } }),
-      t("Next, | please! | Do | you | have | a | reservation | with | us?", "Kitas, | prašom! | Ar | jūs | turite | — | rezervaciją | pas | mus?",
+      t("Next, | please! | Do | you | have | a | reservation | with | us?", "Kitas, | prašom! | Ar | Jūs | turite | — | rezervaciją | pas | mus?",
         "Kitas, prašom! Ar esate {m:rezervavęs|f:rezervavusi} automobilį pas mus?", { flags: { 2: "Question “Do” = the particle ar." } }),
-      t("Good | morning! | How | can | I | help | you?", "Labas | rytas! | Kaip | galiu | aš | padėti | jums?", "Labas rytas! Kuo galiu padėti?"),
+      t("Good | morning! | How | can | I | help | you?", "Labas | rytas! | Kaip | galiu | aš | padėti | Jums?", "Labas rytas! Kuo galiu padėti?"),
     ],
     greet_hay: [
       t("Hey, | good | morning! | How's it going?", "Labas, | geras | rytas! | Kaip sekasi?", "Labas rytas! Kaip sekasi?"),
     ],
     ask_resv: [
-      t("Do | you | have | a | reservation?", "Ar | jūs | turite | — | rezervaciją?", "Ar esate {m:rezervavęs|f:rezervavusi} automobilį?", { flags: { 0: "Question “Do” = the particle ar." } }),
+      t("Do | you | have | a | reservation?", "Ar | Jūs | turite | — | rezervaciją?", "Ar esate {m:rezervavęs|f:rezervavusi} automobilį?", { flags: { 0: "Question “Do” = the particle ar." } }),
     ],
     ask_name: [
-      t("Great. | Can | I | get | your | last name?", "Puiku. | Ar galiu | aš | gauti | jūsų | pavardę?", "Puiku. Kokia jūsų pavardė?"),
+      t("Great. | Can | I | get | your | last name?", "Puiku. | Ar galiu | aš | gauti | Jūsų | pavardę?", "Puiku. Kokia Jūsų pavardė?"),
       t("Sure. | What's | the | last name | on the reservation?", "Žinoma. | Kokia yra | — | pavardė | rezervacijoje?", "Žinoma. Kokia pavardė nurodyta rezervacijoje?"),
     ],
     ask_spell: [
-      t("Could | you | spell | that | for me?", "Ar galėtumėte | jūs | pasakyti paraidžiui | tai | man?", "Ar galėtumėte man pasakyti paraidžiui?"),
-      t("And | how | do | you | spell | that?", "O | kaip | — | jūs | rašote | tai?", "O kaip rašoma?", { flags: { 3: "Question “do” has no Lithuanian word (linked to “spell”)." } }),
+      t("Could | you | spell | that | for me?", "Ar galėtumėte | Jūs | pasakyti paraidžiui | tai | man?", "Ar galėtumėte man pasakyti paraidžiui?"),
+      t("And | how | do | you | spell | that?", "O | kaip | — | Jūs | rašote | tai?", "O kaip rašoma?", { flags: { 3: "Question “do” has no Lithuanian word (linked to “spell”)." } }),
     ],
     found: [
       t("Thanks! | Here | it | is: | a | compact | car | for | three | days.", "Ačiū! | Štai | ji | —: | — | kompaktiškas | automobilis | — | trims | dienoms.",
@@ -359,7 +359,7 @@ export const rental: SituationDef = {
         { flags: { 4: "“under”: the instrumental ta pavarde carries it (C-CASE-DASH, “that” intervenes)." } }),
     ],
     found_first: [
-      t("Oh, | here | it | is! | It | was | under | your | first name.", "O, | štai | ji | —! | Ji | buvo | — | jūsų | vardu.", "O, štai ji! Rezervacija buvo jūsų vardu.",
+      t("Oh, | here | it | is! | It | was | under | your | first name.", "O, | štai | ji | —! | Ji | buvo | — | Jūsų | vardu.", "O, štai ji! Rezervacija buvo Jūsų vardu.",
         { flags: { 3: "“is” (here it is): no Lithuanian word; štai presents it.", 6: "“under”: the instrumental vardu carries it (C-CASE-DASH, “your” intervenes)." } }),
     ],
     // --- walk-in
@@ -367,7 +367,7 @@ export const rental: SituationDef = {
       t("No | problem! | We | have | cars | available.", "Jokių | problemų! | Mes | turime | automobilių | laisvų.", "Jokių problemų! Turime laisvų automobilių."),
     ],
     ask_size: [
-      t("What | size | car | are | you | looking | for?", "Kokio | dydžio | automobilio | — | jūs | ieškote | —?", "Kokio dydžio automobilio ieškote?",
+      t("What | size | car | are | you | looking | for?", "Kokio | dydžio | automobilio | — | Jūs | ieškote | —?", "Kokio dydžio automobilio ieškote?",
         { flags: { 3: "Progressive “are” has no Lithuanian word; the present of ieškote carries it (linked to “looking”).", 6: "“for” (looking for): ieškoti takes the genitive directly." } }),
     ],
     size_list: [
@@ -384,66 +384,66 @@ export const rental: SituationDef = {
     // --- documents
     ask_docs: [
       t("Can | I | see | your | driver's | license | and | the | credit | card | you'd | like | to use?",
-        "Ar galiu | aš | pamatyti | jūsų | vairuotojo | pažymėjimą | ir | — | kredito | kortelę | kuria jūs | norėtumėte | mokėti?",
-        "Ar galiu pamatyti jūsų vairuotojo pažymėjimą ir kredito kortelę, kuria norėtumėte mokėti?",
+        "Ar galiu | aš | pamatyti | Jūsų | vairuotojo | pažymėjimą | ir | — | kredito | kortelę | kuria Jūs | norėtumėte | mokėti?",
+        "Ar galiu pamatyti Jūsų vairuotojo pažymėjimą ir kredito kortelę, kuria norėtumėte mokėti?",
         { flags: { 10: "“you'd”: Lithuanian adds the relative kuria (the card you'd like to use = the card with which you'd pay); the conditional sits on norėtumėte (linked to “like”)." } }),
-      t("I'll need | your | driver's | license | and | a | credit | card.", "Man reikės | jūsų | vairuotojo | pažymėjimo | ir | — | kredito | kortelės.",
-        "Man reikės jūsų vairuotojo pažymėjimo ir kredito kortelės."),
+      t("I'll need | your | driver's | license | and | a | credit | card.", "Man reikės | Jūsų | vairuotojo | pažymėjimo | ir | — | kredito | kortelės.",
+        "Man reikės Jūsų vairuotojo pažymėjimo ir kredito kortelės."),
     ],
     docs_ok: [
-      t("Perfect, | thank | you.", "Puiku, | dėkoju | jums.", "Puiku, ačiū."),
+      t("Perfect, | thank | you.", "Puiku, | dėkoju | Jums.", "Puiku, ačiū."),
       t("Great, | thanks.", "Puiku, | ačiū.", "Puiku, ačiū."),
     ],
     license_fine: [
-      t("Yes, | your | license | is | fine.", "Taip, | jūsų | pažymėjimas | yra | tinkamas.", "Taip, jūsų pažymėjimas tinka."),
+      t("Yes, | your | license | is | fine.", "Taip, | Jūsų | pažymėjimas | yra | tinkamas.", "Taip, Jūsų pažymėjimas tinka."),
     ],
     // --- upgrade
     ask_upgrade: [
       t("Would | you | like | to upgrade | to | a | midsize | for | just | ten | dollars | more | a | day?",
-        "Ar | jūs | norėtumėte | pasikeisti | į | — | vidutinės klasės | už | tik | dešimt | dolerių | daugiau | — | per dieną?",
+        "Ar | Jūs | norėtumėte | pasikeisti | į | — | vidutinės klasės | už | tik | dešimt | dolerių | daugiau | — | per dieną?",
         "Gal norėtumėte vidutinės klasės automobilio? Tik dešimčia dolerių daugiau per dieną.",
         { flags: { 0: "“Would” in a yes/no question = the particle ar; the conditional sits on norėtumėte (linked to “like”).", 12: "“a” (a day = per day): per dieną carries it (linked to “day”)." } }),
     ],
     free_upgrade: [
       t("Good | news: | we're out of | compacts | today, | so | I'm giving | you | a | free | upgrade | to | a | midsize.",
-        "Geros | naujienos: | mums baigėsi | kompaktiški | šiandien, | todėl | aš suteikiu | jums | — | nemokamą | pakeitimą | į | — | vidutinės klasės.",
-        "Geros naujienos: šiandien baigėsi kompaktiški automobiliai, todėl nemokamai duodu jums vidutinės klasės automobilį."),
+        "Geros | naujienos: | mums baigėsi | kompaktiški | šiandien, | todėl | aš suteikiu | Jums | — | nemokamą | pakeitimą | į | — | vidutinės klasės.",
+        "Geros naujienos: šiandien baigėsi kompaktiški automobiliai, todėl nemokamai duodu Jums vidutinės klasės automobilį."),
     ],
-    upgrade_ok: [t("Great! | I'll switch | you | to | a | midsize.", "Puiku! | Pakeisiu | jums | į | — | vidutinės klasės.", "Puiku! Pakeisiu jums į vidutinės klasės automobilį.")],
+    upgrade_ok: [t("Great! | I'll switch | you | to | a | midsize.", "Puiku! | Pakeisiu | Jums | į | — | vidutinės klasės.", "Puiku! Pakeisiu Jums į vidutinės klasės automobilį.")],
     // --- insurance
     ask_insurance: [
       t("Basic | liability | is | included. | Would | you | like | to add | full | coverage | for | {$price} | a | day?",
-        "Bazinis | civilinės atsakomybės draudimas | yra | įskaičiuotas. | Ar | jūs | norėtumėte | pridėti | visišką | draudimą | už | {$price} | — | per dieną?",
+        "Bazinis | civilinės atsakomybės draudimas | yra | įskaičiuotas. | Ar | Jūs | norėtumėte | pridėti | visišką | draudimą | už | {$price} | — | per dieną?",
         "Bazinis civilinės atsakomybės draudimas įskaičiuotas. Gal norėtumėte visiško draudimo už {$price} per dieną?",
         { flags: { 4: "“Would” in a yes/no question = the particle ar; the conditional sits on norėtumėte (linked to “like”).", 12: "“a” (a day = per day): per dieną carries it (linked to “day”)." } }),
-      t("Do | you | want | full | coverage? | It's | {$price} | a | day.", "Ar | jūs | norite | visiško | draudimo? | Tai yra | {$price} | — | per dieną.",
+      t("Do | you | want | full | coverage? | It's | {$price} | a | day.", "Ar | Jūs | norite | visiško | draudimo? | Tai yra | {$price} | — | per dieną.",
         "Ar norite visiško draudimo? Jis kainuoja {$price} per dieną.",
         { flags: { 0: "Question “Do” = the particle ar.", 7: "“a” (a day = per day): per dieną carries it (linked to “day”)." } }),
     ],
     cover_info: [
       t("It | covers | any | damage | to | the | car, | and | you | won't pay | anything | extra.",
-        "Jis | apima | bet kokią | žalą | — | — | automobiliui, | ir | jūs | nemokėsite | nieko | papildomai.",
-        "Jis apima bet kokią žalą automobiliui, ir jums nieko papildomai mokėti nereikės.",
+        "Jis | apima | bet kokią | žalą | — | — | automobiliui, | ir | Jūs | nemokėsite | nieko | papildomai.",
+        "Jis apima bet kokią žalą automobiliui, ir Jums nieko papildomai mokėti nereikės.",
         { flags: { 4: "“to the car”: the dative automobiliui carries “to”." } }),
     ],
     ins_included: [
       t("Basic | liability | is | included, | but | not | damage | to | the | car.", "Bazinis | civilinės atsakomybės draudimas | yra | įskaičiuotas, | bet | ne | žala | — | — | automobiliui.",
         "Bazinis civilinės atsakomybės draudimas įskaičiuotas, bet žala automobiliui – ne.", { flags: { 7: "“to the car”: the dative automobiliui carries “to”." } }),
     ],
-    ins_full_ok: [t("Perfect, | you're | fully | covered.", "Puiku, | jūs esate | visiškai | {m:apdraustas|f:apdrausta}.", "Puiku, esate visiškai {m:apdraustas|f:apdrausta}.")],
+    ins_full_ok: [t("Perfect, | you're | fully | covered.", "Puiku, | Jūs esate | visiškai | {m:apdraustas|f:apdrausta}.", "Puiku, esate visiškai {m:apdraustas|f:apdrausta}.")],
     ins_basic_ok: [t("No | problem. | Just | the | basic.", "Jokių | problemų. | Tik | — | bazinis.", "Jokių problemų. Tik bazinis draudimas.")],
-    ins_card_ok: [t("Okay, | you're | covered | by | your | card, | then.", "Gerai, | jūs esate | {m:apdraustas|f:apdrausta} | — | savo | kortele, | vadinasi.", "Gerai, vadinasi, jus draudžia jūsų kortelė.",
+    ins_card_ok: [t("Okay, | you're | covered | by | your | card, | then.", "Gerai, | Jūs esate | {m:apdraustas|f:apdrausta} | — | savo | kortele, | vadinasi.", "Gerai, vadinasi, Jus draudžia Jūsų kortelė.",
       { flags: { 3: "“by”: the instrumental kortele carries it (C-CASE-DASH, “your” intervenes)." } })],
     // --- deposit
     deposit: [
       t("We'll put | a | {$deposit} | hold | on | your | card. | You'll get | it | back | when | you | return | the | car.",
-        "Mes užblokuosime | — | {$deposit} | užstatą | — | jūsų | kortelėje. | Jūs atgausite | jį | — | kai | jūs | grąžinsite | — | automobilį.",
+        "Mes užblokuosime | — | {$deposit} | užstatą | — | Jūsų | kortelėje. | Jūs atgausite | jį | — | kai | Jūs | grąžinsite | — | automobilį.",
         "Jūsų kortelėje užblokuosime {$deposit} užstatą. Jį atgausite, kai grąžinsite automobilį.",
         { flags: { 4: "“on”: the locative kortelėje carries it (C-CASE-DASH, “your” intervenes).", 9: "“back” (get … back): the prefix at- of atgausite carries it." } }),
     ],
     deposit_back: [
       t("It | usually | takes | three | to | five | business | days | after | you | return | the | car.",
-        "Tai | paprastai | užtrunka | nuo trijų | iki | penkių | darbo | dienų | po to, kai | jūs | grąžinate | — | automobilį.",
+        "Tai | paprastai | užtrunka | nuo trijų | iki | penkių | darbo | dienų | po to, kai | Jūs | grąžinate | — | automobilį.",
         "Paprastai tai užtrunka nuo trijų iki penkių darbo dienų po to, kai grąžinate automobilį.",
         { flags: { 3: "“three” = nuo trijų: Lithuanian adds nuo for the range." } }),
     ],
@@ -453,10 +453,10 @@ export const rental: SituationDef = {
         "Automobilis su pilnu baku. Prašom grąžinti jį su pilnu baku."),
     ],
     ask_prepay: [
-      t("Or | would | you | like | to prepay | for | the | gas?", "Ar | — | jūs | norėtumėte | iš anksto sumokėti | už | — | degalus?",
+      t("Or | would | you | like | to prepay | for | the | gas?", "Ar | — | Jūs | norėtumėte | iš anksto sumokėti | už | — | degalus?",
         "O gal norėtumėte iš anksto sumokėti už degalus?", { flags: { 1: "“would”: the question is marked by ar (“Or” is glossed as ar); the conditional sits on norėtumėte." } }),
     ],
-    prepay_ok: [t("Sure. | Then | you | can | bring | it | back | empty.", "Žinoma. | Tada | jūs | galite | grąžinti | jį | atgal | tuščią.", "Žinoma. Tada galite grąžinti jį tuščiu baku.")],
+    prepay_ok: [t("Sure. | Then | you | can | bring | it | back | empty.", "Žinoma. | Tada | Jūs | galite | grąžinti | jį | atgal | tuščią.", "Žinoma. Tada galite grąžinti jį tuščiu baku.")],
     full_ok: [t("Great, | full | to | full.", "Puiku, | pilnas | į | pilną.", "Puiku, gaunate pilną baką ir grąžinate pilną.")],
     gas_station: [
       t("There's | a | gas station | right | on | this | street.", "Yra | — | degalinė | čia pat | — | šioje | gatvėje.", "Degalinė yra čia pat, šioje gatvėje.",
@@ -466,7 +466,7 @@ export const rental: SituationDef = {
     automatic: [t("All | our | cars | are | automatics.", "Visi | mūsų | automobiliai | yra | su automatine pavarų dėže.", "Visi mūsų automobiliai – su automatine pavarų dėže.")],
     // --- extras
     ask_extras: [
-      t("Do | you | need | a | GPS | or | a | child | seat?", "Ar | jums | reikia | — | GPS navigacijos | ar | — | vaikiškos | kėdutės?", "Ar jums reikia GPS navigacijos ar vaikiškos kėdutės?",
+      t("Do | you | need | a | GPS | or | a | child | seat?", "Ar | Jums | reikia | — | GPS navigacijos | ar | — | vaikiškos | kėdutės?", "Ar Jums reikia GPS navigacijos ar vaikiškos kėdutės?",
         { flags: { 0: "Question “Do” = the particle ar." } }),
     ],
     extra_price: [t("Sure, | that's | {$price} | a | day.", "Žinoma, | tai yra | {$price} | — | per dieną.", "Žinoma, tai kainuoja {$price} per dieną.",
@@ -502,12 +502,12 @@ export const rental: SituationDef = {
     // --- signing and keys
     ask_sign: [
       t("Great. | Just | sign | here, | and | initial | here.", "Puiku. | Tiesiog | pasirašykite | čia, | ir | pasirašykite inicialais | čia.", "Puiku. Pasirašykite čia ir parašykite inicialus čia."),
-      t("Okay, | I | just | need | your | signature | here | and | here.", "Gerai, | man | tik | reikia | jūsų | parašo | čia | ir | čia.", "Gerai, man tik reikia jūsų parašo čia ir čia."),
+      t("Okay, | I | just | need | your | signature | here | and | here.", "Gerai, | man | tik | reikia | Jūsų | parašo | čia | ir | čia.", "Gerai, man tik reikia Jūsų parašo čia ir čia."),
     ],
     sign_where: [t("Right | here, | at | the | bottom.", "Štai | čia, | — | — | apačioje.", "Štai čia, apačioje.", { flags: { 2: "“at the bottom”: the locative apačioje carries “at”." } })],
     keys: [
-      t("Here | are | your | keys.", "Štai | — | jūsų | raktai.", "Štai jūsų raktai.", { flags: { 1: "“are” (here are): no Lithuanian word; štai presents them." } }),
-      t("All right, | here | are | your | keys.", "Gerai, | štai | — | jūsų | raktai.", "Gerai, štai jūsų raktai.", { flags: { 2: "“are” (here are): no Lithuanian word; štai presents them." } }),
+      t("Here | are | your | keys.", "Štai | — | Jūsų | raktai.", "Štai Jūsų raktai.", { flags: { 1: "“are” (here are): no Lithuanian word; štai presents them." } }),
+      t("All right, | here | are | your | keys.", "Gerai, | štai | — | Jūsų | raktai.", "Gerai, štai Jūsų raktai.", { flags: { 2: "“are” (here are): no Lithuanian word; štai presents them." } }),
     ],
     car_compact: [t("It's | the | silver | Toyota | Corolla | in | spot | B4.", "Tai yra | — | sidabrinė | Toyota | Corolla | — | vietoje | B4.", "Tai sidabrinė Toyota Corolla, vietoje B4.",
       { say: "It's the silver Toyota Corolla in spot B four.", flags: { 5: "“in”: the locative vietoje carries it (C-CASE-DASH)." } })],
@@ -523,14 +523,14 @@ export const rental: SituationDef = {
       { flags: { 5: "“on the left”: the locative kairėje carries “on”." } })],
     check_car: [
       t("Take a look around | the | car | before | you | go. | If | you | see | any | scratches, | just | let us know.",
-        "Apžiūrėkite | — | automobilį | prieš | jums | išvažiuojant. | Jei | jūs | pamatysite | kokių nors | įbrėžimų, | tiesiog | praneškite mums.",
+        "Apžiūrėkite | — | automobilį | prieš | Jums | išvažiuojant. | Jei | Jūs | pamatysite | kokių nors | įbrėžimų, | tiesiog | praneškite mums.",
         "Prieš išvažiuodami apžiūrėkite automobilį. Jei pamatysite įbrėžimų, tiesiog praneškite mums.",
         { flags: { 4: "“you go”: Lithuanian uses the dative + participle construction jums išvažiuojant." } }),
     ],
-    scratch_info: [t("Just | take | a | photo | and | show | us | when | you | get back.", "Tiesiog | padarykite | — | nuotrauką | ir | parodykite | mums | kai | jūs | grįšite.",
+    scratch_info: [t("Just | take | a | photo | and | show | us | when | you | get back.", "Tiesiog | padarykite | — | nuotrauką | ir | parodykite | mums | kai | Jūs | grįšite.",
       "Tiesiog nufotografuokite ir parodykite mums, kai grįšite.")],
     anything_else: [
-      t("Anything | else | I | can | do | for you?", "Ką nors | daugiau | aš | galiu | padaryti | jums?", "Ar dar kuo nors galiu padėti?"),
+      t("Anything | else | I | can | do | for you?", "Ką nors | daugiau | aš | galiu | padaryti | Jums?", "Ar dar kuo nors galiu padėti?"),
     ],
     drive_safe: [
       t("Have | a | great | trip!", "Linkiu | — | puikios | kelionės!", "Geros kelionės!"),
@@ -539,7 +539,7 @@ export const rental: SituationDef = {
     ],
     ack: [t("Okay.", "Gerai.", "Gerai."), t("Got it.", "Supratau.", "Supratau."), t("Perfect.", "Puiku.", "Puiku.")],
     no_problem: [t("No | problem.", "Jokių | problemų.", "Jokių problemų.")],
-    which_extra: [t("Sure! | What | do | you | need?", "Žinoma! | Ko | — | jums | reikia?", "Žinoma! Ko jums reikia?", { flags: { 2: "Question “do” has no Lithuanian word (linked to “need”)." } })],
+    which_extra: [t("Sure! | What | do | you | need?", "Žinoma! | Ko | — | Jums | reikia?", "Žinoma! Ko Jums reikia?", { flags: { 2: "Question “do” has no Lithuanian word (linked to “need”)." } })],
   },
 
   domains: {
@@ -566,7 +566,7 @@ export const rental: SituationDef = {
       items: [
         { id: "rent", s: t("I'd like | to rent | a | car, | please.", "Norėčiau | išsinuomoti | — | automobilį, | prašau.", "Norėčiau išsinuomoti automobilį.") },
         { id: "no_resv", s: t("I | don't have | a | reservation.", "Aš | neturiu | — | rezervacijos.", "Neturiu rezervacijos.") },
-        { id: "rent_have", s: t("Do | you | have | any | cars | available?", "Ar | jūs | turite | kokių nors | automobilių | laisvų?", "Ar turite laisvų automobilių?", { flags: { 0: "Question “Do” = the particle ar." } }) },
+        { id: "rent_have", s: t("Do | you | have | any | cars | available?", "Ar | Jūs | turite | kokių nors | automobilių | laisvų?", "Ar turite laisvų automobilių?", { flags: { 0: "Question “Do” = the particle ar." } }) },
       ],
     },
     name: {

@@ -29,7 +29,7 @@
 // sure?") ends the call not done; hanging up on him twice before a plumber is agreed ends it not done.
 //
 // Address: Lizzie and the learner say tu (NPCS.lizzie is informal); Mr. Grant and the learner say jūs both ways
-// (NPCS.mr_grant is not informal). Lines and hints are written with the right form explicitly (lower-case jūs).
+// (NPCS.mr_grant is not informal). Lines and hints are written with the right form explicitly (capital Jūs: one person, owner 16 Nov 2026).
 // {m:…|f:…} is the player's gender (the addressee in NPC lines, the speaker in hints); {sm:…|sf:…} the NPC's.
 //
 // Course report: done when items 2, 3, 4 and 5 of the mission are ticked; item 1 (cancel brunch and say why) is a
@@ -1324,7 +1324,7 @@ export const flood: SituationDef = {
       t("Ha! | 'Me' | who? | I've got | twelve | tenants.", "Cha! | „Aš“ | kas? | Turiu | dvylika | nuomininkų.", "Cha! Kas tas „aš“? Turiu dvylika nuomininkų."),
     ],
     gr_guess_who: [
-      t("Oh, | wait, | it's | 3B! | I've got | your | number | saved.", "O, | palaukite, | tai | 3B! | Turiu | jūsų | numerį | išsaugotą.", "O, palaukite – tai 3B! Turiu jūsų numerį išsisaugojęs.",
+      t("Oh, | wait, | it's | 3B! | I've got | your | number | saved.", "O, | palaukite, | tai | 3B! | Turiu | Jūsų | numerį | išsaugotą.", "O, palaukite – tai 3B! Turiu Jūsų numerį išsisaugojęs.",
         { say: "Oh, wait, it's three B! I've got your number saved.", flags: { 2: F_ITS } }),
     ],
     gr_hi_tenant: [
@@ -1332,12 +1332,12 @@ export const flood: SituationDef = {
       t("3B! | Good | morning!", "3B! | Labas | rytas!", "3B! Labas rytas!", { say: "Three B! Good morning!" }),
     ],
     gr_what_q: [
-      t("What | can | I | do | for you?", "Ką | galiu | aš | padaryti | jums?", "Kuo galiu padėti?"),
+      t("What | can | I | do | for you?", "Ką | galiu | aš | padaryti | Jums?", "Kuo galiu padėti?"),
       t("What's | going on?", "Kas | vyksta?", "Kas vyksta?", { flags: { 0: "“'s” (is): the progressive auxiliary; vyksta carries it." } }),
     ],
     gr_what_again: [
       t("So, | what's up?", "Tai | kas nutiko?", "Tai kas nutiko?"),
-      t("So | what | can | I | do | for you?", "Tai | ką | galiu | aš | padaryti | jums?", "Tai kuo galiu padėti?"),
+      t("So | what | can | I | do | for you?", "Tai | ką | galiu | aš | padaryti | Jums?", "Tai kuo galiu padėti?"),
     ],
     gr_guess_washer: [t("Is | it | that | washing machine | again?", "Ar | tai | ta | skalbimo mašina | vėl?", "Vėl ta skalbimo mašina?", { flags: { 0: "“Is” in a yes/no question = the particle ar." } })],
     gr_regret: [
@@ -1355,11 +1355,11 @@ export const flood: SituationDef = {
     gr_ok: [t("Okay, | okay.", "Gerai, | gerai.", "Gerai, gerai."), t("Got it.", "Supratau.", "Supratau."), t("Uh-huh.", "Aha.", "Aha.")],
     gr_hurt_q: [
       t("Is | anybody | hurt?", "Ar | kas nors | nukentėjo?", "Ar kas nors nukentėjo?", { flags: { 0: "“Is” in a yes/no question = ar; the past nukentėjo carries the state." } }),
-      t("You | okay? | Nobody | hurt?", "Jums | viskas gerai? | Niekas | nenukentėjo?", "Ar jums viskas gerai? Niekas nenukentėjo?", { flags: { 3: F_CONCORD } }),
+      t("You | okay? | Nobody | hurt?", "Jums | viskas gerai? | Niekas | nenukentėjo?", "Ar Jums viskas gerai? Niekas nenukentėjo?", { flags: { 3: F_CONCORD } }),
     ],
     gr_relief: [t("Thank | goodness.", "Ačiū | Dievui.", "Ačiū Dievui."), t("Phew. | Good.", "Fu. | Gerai.", "Fu. Gerai.")],
     gr_breathe: [t("Hey, | hey. | Deep | breath. | It's | just | water.", "Ei, | ei. | Giliai | įkvėpkite. | Tai | tik | vanduo.", "Ei, ei. Giliai įkvėpkite. Tai tik vanduo.", { flags: { 4: F_ITS } })],
-    gr_hurt_yes: [t("What? | Are | you | okay?", "Ką? | Ar | jums | viskas gerai?", "Ką? Ar jums viskas gerai?", { flags: { 1: "“Are” in a yes/no question = ar; the dative jums needs no copula." } })],
+    gr_hurt_yes: [t("What? | Are | you | okay?", "Ką? | Ar | Jums | viskas gerai?", "Ką? Ar Jums viskas gerai?", { flags: { 1: "“Are” in a yes/no question = ar; the dative jums needs no copula." } })],
     gr_careful: [t("Okay. | Careful, | that | floor | is | slippery.", "Gerai. | Atsargiai, | tos | grindys | yra | slidžios.", "Gerai. Atsargiai, grindys slidžios.")],
     gr_down_q: [
       t("Has | it | reached | the | apartment | downstairs?", "Ar | vanduo | pasiekė | — | butą | apačioje?", "Ar vanduo jau pasiekė butą apačioje?",
@@ -1371,7 +1371,7 @@ export const flood: SituationDef = {
     gr_down_no: [t("Phew. | Okay.", "Fu. | Gerai.", "Fu. Gerai."), t("Good. | Not | yet, | anyway.", "Gerai. | Ne | dar, | bent jau.", "Gerai. Bent jau kol kas ne.")],
     gr_down_unknown: [t("Okay. | I'll knock | on | Mr. Okoye's | door | later.", "Gerai. | Pasibelsiu | į | pono Okoye | duris | vėliau.", "Gerai. Vėliau pasibelsiu į pono Okoye duris.")],
     gr_water_q: [
-      t("Did | you | turn off | the | water?", "Ar | jūs | užsukote | — | vandenį?", "Ar užsukote vandenį?", { flags: { 0: F_DID_Q } }),
+      t("Did | you | turn off | the | water?", "Ar | Jūs | užsukote | — | vandenį?", "Ar užsukote vandenį?", { flags: { 0: F_DID_Q } }),
     ],
     gr_water_good: [t("Smart. | Good | thinking.", "Protinga. | Gera | mintis.", "Protinga. Gerai sugalvojote.")],
     gr_valve: [
@@ -1381,7 +1381,7 @@ export const flood: SituationDef = {
     gr_perfect: [t("Perfect.", "Puiku.", "Puiku.")],
     gr_valve_later: [t("No | worries. | I'll do | it | when | I | get there.", "Nieko | tokio. | Padarysiu | tai, | kai | aš | atvyksiu.", "Nieko tokio. Padarysiu tai, kai atvyksiu.")],
     gr_req_q: [
-      t("Okay. | So | what | do | you | need | from | me?", "Gerai. | Tai | ko | — | jums | reikia | iš | manęs?", "Gerai. Tai ko jums iš manęs reikia?", { flags: { 3: F_WH_DO, 4: F_DAT_REIKIA } }),
+      t("Okay. | So | what | do | you | need | from | me?", "Gerai. | Tai | ko | — | Jums | reikia | iš | manęs?", "Gerai. Tai ko Jums iš manęs reikia?", { flags: { 3: F_WH_DO, 4: F_DAT_REIKIA } }),
       t("So, | how | can | I | help?", "Tai | kaip | galiu | aš | padėti?", "Tai kuo galiu padėti?"),
     ],
     gr_send_q: [t("Want | me | to send | my | plumber?", "Norite, kad | aš | atsiųsčiau | savo | santechniką?", "Norite, kad atsiųsčiau savo santechniką?")],
@@ -1393,15 +1393,15 @@ export const flood: SituationDef = {
       t("Could | it | wait | till | tomorrow | morning?", "Ar galėtų | tai | palaukti | iki | rytojaus | ryto?", "Ar galėtų palaukti iki rytojaus ryto?"),
     ],
     gr_sure: [
-      t("Are | you | sure? | That | sounds | like | a lot of | water.", "Ar | jūs | {m:tikras|f:tikra}? | Tai | skamba | kaip | daug | vandens.", "Ar jūs {m:tikras|f:tikra}? Panašu, kad vandens daug.",
+      t("Are | you | sure? | That | sounds | like | a lot of | water.", "Ar | Jūs | {m:tikras|f:tikra}? | Tai | skamba | kaip | daug | vandens.", "Ar Jūs {m:tikras|f:tikra}? Panašu, kad vandens daug.",
         { flags: { 0: "“Are” in a yes/no question = ar; Lithuanian needs no copula here." } }),
     ],
     gr_sure_down: [
-      t("Are | you | sure? | Mr. Okoye | won't like | that.", "Ar | jūs | {m:tikras|f:tikra}? | Ponui Okoye | nepatiks | tai.", "Ar jūs {m:tikras|f:tikra}? Ponui Okoye tai nepatiks.",
+      t("Are | you | sure? | Mr. Okoye | won't like | that.", "Ar | Jūs | {m:tikras|f:tikra}? | Ponui Okoye | nepatiks | tai.", "Ar Jūs {m:tikras|f:tikra}? Ponui Okoye tai nepatiks.",
         { flags: { 0: "“Are” in a yes/no question = ar; Lithuanian needs no copula here." } }),
     ],
     gr_ten_a: [
-      t("Oh | no, | you're | right. | So | sorry!", "O | ne, | jūs | {m:teisus|f:teisi}. | Labai | atsiprašau!", "O ne, jūs {m:teisus|f:teisi}. Labai atsiprašau!", { flags: { 2: F_YOURE } }),
+      t("Oh | no, | you're | right. | So | sorry!", "O | ne, | Jūs | {m:teisus|f:teisi}. | Labai | atsiprašau!", "O ne, Jūs {m:teisus|f:teisi}. Labai atsiprašau!", { flags: { 2: F_YOURE } }),
       t("Oh | no!! | So | sorry!!", "O | ne!! | Labai | atsiprašau!!", "O ne!! Labai atsiprašau!!"),
     ],
     gr_ten_b: [
@@ -1409,19 +1409,19 @@ export const flood: SituationDef = {
       t("I'm on my way. | Ten | minutes, | tops.", "Jau važiuoju. | Dešimt | minučių, | daugiausia.", "Jau važiuoju. Daugiausia dešimt minučių."),
     ],
     gr_joe: [
-      t("I'll get | Joe | to squeeze | you | in | today, | I | promise.", "Įkalbėsiu | Džo | įsprausti | jus | — | šiandien, | aš | pažadu.", "Įkalbėsiu Džo jus įsprausti šiandien, pažadu.",
+      t("I'll get | Joe | to squeeze | you | in | today, | I | promise.", "Įkalbėsiu | Džo | įsprausti | Jus | — | šiandien, | aš | pažadu.", "Įkalbėsiu Džo Jus įsprausti šiandien, pažadu.",
         { flags: { 4: "“in”: the particle of “squeeze … in”, carried by įsprausti (under “to squeeze”)." } }),
     ],
     gr_texting: [t("Hang on, | I'm texting | Joe... | Okay!", "Palaukite, | rašau | Džo... | Gerai!", "Palaukite, rašau Džo žinutę... Gerai!")],
     gr_already_today: [t("Nah, | it's | today. | Already | decided.", "Ne, | tai | šiandien. | Jau | nuspręsta.", "Ne, šiandien. Jau nuspręsta.", { flags: { 1: F_ITS } })],
     gr_no_risk: [t("Hmm. | Better safe than sorry.", "Hmm. | Atsargumas nepakenks.", "Hmm. Geriau nerizikuoti.")],
     gr_tomorrow_final: [
-      t("Okay! | Joe | will be | there | tomorrow | at nine.", "Gerai! | Džo | bus | ten | rytoj | devintą.", "Gerai! Džo bus pas jus rytoj devintą."),
+      t("Okay! | Joe | will be | there | tomorrow | at nine.", "Gerai! | Džo | bus | ten | rytoj | devintą.", "Gerai! Džo bus pas Jus rytoj devintą."),
     ],
     gr_time_q: [
       t("Joe | can | be | there | at | eleven | or | at | one. | What | works | better | for you?",
-        "Džo | gali | būti | ten | — | vienuoliktą | arba | — | pirmą. | Kas | tinka | labiau | jums?",
-        "Džo gali atvykti vienuoliktą arba pirmą dienos. Kada jums patogiau?", { flags: { 4: F_AT_CLOCK, 7: F_AT_CLOCK } }),
+        "Džo | gali | būti | ten | — | vienuoliktą | arba | — | pirmą. | Kas | tinka | labiau | Jums?",
+        "Džo gali atvykti vienuoliktą arba pirmą dienos. Kada Jums patogiau?", { flags: { 4: F_AT_CLOCK, 7: F_AT_CLOCK } }),
     ],
     gr_time_11: [t("Okay, | eleven. | I'll tell | Joe.", "Gerai, | vienuoliktą. | Pasakysiu | Džo.", "Gerai, vienuoliktą. Pasakysiu Džo.")],
     gr_time_1: [t("Okay, | one | o'clock. | I'll tell | Joe.", "Gerai, | pirmą | valandą. | Pasakysiu | Džo.", "Gerai, pirmą valandą. Pasakysiu Džo.")],
@@ -1435,7 +1435,7 @@ export const flood: SituationDef = {
       t("Ha! | Good | question. | With | Joe, | 'eleven' | means | eleven-thirty.", "Cha! | Geras | klausimas. | Pas | Džo, | „vienuolikta“ | reiškia | pusę dvylikos.",
         "Cha! Geras klausimas. Pas Džo „vienuolikta“ reiškia pusę dvylikos."),
     ],
-    gr_text_you: [t("I'll text | you | when | he's | on his way.", "Parašysiu | jums, | kai | jis bus | pakeliui.", "Parašysiu jums, kai jis bus pakeliui.",
+    gr_text_you: [t("I'll text | you | when | he's | on his way.", "Parašysiu | Jums, | kai | jis bus | pakeliui.", "Parašysiu Jums, kai jis bus pakeliui.",
       { flags: { 3: "“he's” = jis bus: after kai Lithuanian uses the future." } })],
     gr_eta: [t("Ten | minutes, | tops.", "Dešimt | minučių, | daugiausia.", "Daugiausia dešimt minučių.")],
     gr_damage: [
@@ -1451,9 +1451,9 @@ export const flood: SituationDef = {
       t("Inconvenience? | Nah, | it's | my | washer. | My bad!", "Nepatogumų? | Nieko panašaus, | tai | mano | skalbyklė. | Mano kaltė!",
         "Kokių nepatogumų? Tai mano skalbyklė – mano kaltė!", { flags: { 2: F_ITS } }),
     ],
-    gr_regards: [t("Ha! | Kind regards | to you | too!", "Cha! | Pagarbiai | jums | taip pat!", "Cha! Ir jums pagarbiai!")],
+    gr_regards: [t("Ha! | Kind regards | to you | too!", "Cha! | Pagarbiai | Jums | taip pat!", "Cha! Ir Jums pagarbiai!")],
     gr_welcome: [t("Hey, | no | problem!", "Ei, | jokių | problemų!", "Nėra už ką!"), t("Anytime!", "Visada prašom!", "Visada prašom!")],
-    gr_love_you: [t("Uh... | love | you | too?", "Ee... | myliu | jus | irgi?", "Ee... aš jus irgi... myliu?")],
+    gr_love_you: [t("Uh... | love | you | too?", "Ee... | myliu | Jus | irgi?", "Ee... aš Jus irgi... myliu?")],
     gr_rude: [t("Whoa, | okay, | okay! | I'm on it.", "Oho, | gerai, | gerai! | Jau tvarkau.", "Oho, gerai, gerai! Jau imuosi.")],
     gr_laugh: [t("Ha! | Who's | that? | Kind regards | to her | too!", "Cha! | Kas | ten? | Pagarbiai | jai | taip pat!", "Cha! Kas ten? Ir jai pagarbiai!", { flags: { 1: "“'s” (is): Lithuanian needs no copula here." } })],
     gr_bye: [
@@ -1461,22 +1461,22 @@ export const flood: SituationDef = {
       t("Hang in there. | See you | soon!", "Laikykitės. | Iki | greito!", "Laikykitės! Iki greito!"),
     ],
     gr_bye_tomorrow: [t("See you | tomorrow! | Bye now!", "Iki | rytojaus! | Viso gero!", "Iki rytojaus! Viso gero!")],
-    gr_wait_stay: [t("Wait, | wait! | What | do | you | need?", "Palaukite, | palaukite! | Ko | — | jums | reikia?", "Palaukite, palaukite! Ko jums reikia?", { flags: { 3: F_WH_DO, 4: F_DAT_REIKIA } })],
+    gr_wait_stay: [t("Wait, | wait! | What | do | you | need?", "Palaukite, | palaukite! | Ko | — | Jums | reikia?", "Palaukite, palaukite! Ko Jums reikia?", { flags: { 3: F_WH_DO, 4: F_DAT_REIKIA } })],
     gr_bye_walk: [t("Oh. | Okay. | Bye, | then!", "O. | Gerai. | Iki, | tada!", "O. Na gerai, iki!")],
     gr_see_you: [t("Okay! | See you | in ten!", "Gerai! | Iki | po dešimties minučių!", "Gerai! Pasimatysime po dešimties minučių!", { flags: { 2: F_TEN } })],
 
     // --- the voicemail and the callback ---------------------------------------------------------------
     vm_greet: [
       t("Hi, | you've | reached | Grant. | I'm | probably | under | somebody's | sink. | Leave | a | message!",
-        "Sveiki, | jūs | paskambinote | Grantui. | Aš esu | tikriausiai | po | kažkieno | kriaukle. | Palikite | — | žinutę!",
-        "Sveiki, jūs paskambinote Grantui. Tikriausiai dabar esu po kažkieno kriaukle. Palikite žinutę!", { flags: { 1: F_VE } }),
+        "Sveiki, | Jūs | paskambinote | Grantui. | Aš esu | tikriausiai | po | kažkieno | kriaukle. | Palikite | — | žinutę!",
+        "Sveiki, Jūs paskambinote Grantui. Tikriausiai dabar esu po kažkieno kriaukle. Palikite žinutę!", { flags: { 1: F_VE } }),
     ],
     gr_callback: [
-      t("Hey, | it's | Grant! | Got | your | message.", "Sveiki, | čia | Grantas! | Gavau | jūsų | žinutę.", "Sveiki, čia Grantas! Gavau jūsų žinutę.",
+      t("Hey, | it's | Grant! | Got | your | message.", "Sveiki, | čia | Grantas! | Gavau | Jūsų | žinutę.", "Sveiki, čia Grantas! Gavau Jūsų žinutę.",
         { flags: { 1: "“it's” on the phone = čia." } }),
     ],
     gr_callback_formal: [
-      t("'I | regret | to inform | you'? | Ha! | That's | my | line!", "„Aš | apgailestauju, | {m:turėdamas|f:turėdama} pranešti | jums“? | Cha! | Tai yra | mano | frazė!",
+      t("'I | regret | to inform | you'? | Ha! | That's | my | line!", "„Aš | apgailestauju, | {m:turėdamas|f:turėdama} pranešti | Jums“? | Cha! | Tai yra | mano | frazė!",
         "„{m:Apgailestaudamas|f:Apgailestaudama} turiu pranešti“? Cha! Tai mano frazė!"),
     ],
     gr_callback_casual: [t("Short | and | sweet, | I | like | it.", "Trumpai | ir | aiškiai, | man | patinka | tai.", "Trumpai ir aiškiai – man patinka.")],
@@ -1554,7 +1554,7 @@ export const flood: SituationDef = {
       items: [
         { id: "this_is_apt", s: t("Good | morning, | Mr. Grant. | This is | {$name} | {$surname} | from | apartment | 3B.", "Labas | rytas, | pone Grantai. | Čia | {$name} | {$surname} | iš | buto | 3B.",
           "Labas rytas, pone Grantai. Čia {$name} {$surname} iš 3B buto.", { say: "Good morning, Mister Grant. This is {$name} {$surname} from apartment three B." }), register: "polite" },
-        { id: "tenant_in", s: t("I'm | your | tenant | in | 3B.", "Aš esu | jūsų | {m:nuomininkas|f:nuomininkė} | iš | 3B.", "Esu jūsų {m:nuomininkas|f:nuomininkė} iš 3B buto.",
+        { id: "tenant_in", s: t("I'm | your | tenant | in | 3B.", "Aš esu | Jūsų | {m:nuomininkas|f:nuomininkė} | iš | 3B.", "Esu Jūsų {m:nuomininkas|f:nuomininkė} iš 3B buto.",
           { say: "I'm your tenant in three B.", flags: { 3: "“in” (an apartment) = iš: Lithuanian says where the tenant is from." } }), register: "polite" },
         { id: "calling_from", s: t("I'm calling | from | apartment | 3B.", "Skambinu | iš | buto | 3B.", "Skambinu iš 3B buto.", { say: "I'm calling from apartment three B." }), register: "polite" },
       ],
@@ -1562,8 +1562,8 @@ export const flood: SituationDef = {
     report: {
       lt: "Oficialiai paaiškinti, kas nutiko",
       items: [
-        { id: "regret", s: t("I | regret | to inform | you | that | the | kitchen | is | flooded.", "Aš | apgailestauju, | {m:turėdamas|f:turėdama} pranešti | jums, | kad | — | virtuvė | yra | užlieta.",
-          "{m:Apgailestaudamas|f:Apgailestaudama} turiu jums pranešti, kad virtuvė užlieta."), register: "polite", note: "Labai oficialu – kaip laiške. Dainoje taip rašoma nuomotojui." },
+        { id: "regret", s: t("I | regret | to inform | you | that | the | kitchen | is | flooded.", "Aš | apgailestauju, | {m:turėdamas|f:turėdama} pranešti | Jums, | kad | — | virtuvė | yra | užlieta.",
+          "{m:Apgailestaudamas|f:Apgailestaudama} turiu Jums pranešti, kad virtuvė užlieta."), register: "polite", note: "Labai oficialu – kaip laiške. Dainoje taip rašoma nuomotojui." },
         { id: "report_leak", s: t("I'm calling | to report | a | leak.", "Skambinu | pranešti apie | — | nuotėkį.", "Skambinu pranešti apie vandens nuotėkį."), register: "polite" },
         { id: "afraid_flooded", s: t("I'm afraid | the | washing machine | has | flooded | the | kitchen.", "Deja, | — | skalbimo mašina | — | užliejo | — | virtuvę.",
           "Deja, skalbimo mašina užliejo virtuvę.", { flags: { 3: F_HAS_PAST } }), register: "polite" },
@@ -1589,7 +1589,7 @@ export const flood: SituationDef = {
       items: [
         { id: "grateful_today", s: t("I | would | be | grateful | if | a | plumber | could | be sent | today.", "Aš | — | būčiau | {m:dėkingas|f:dėkinga}, | jei | — | santechnikas | galėtų | būti atsiųstas | šiandien.",
           "Būčiau {m:dėkingas|f:dėkinga}, jei šiandien galėtumėte atsiųsti santechniką.", { flags: { 1: F_WOULD } }), register: "polite", note: "Dainos frazė: labai mandagu ir oficialu." },
-        { id: "could_send", s: t("Could | you | send | a | plumber | today, | please?", "Ar galėtumėte | jūs | atsiųsti | — | santechniką | šiandien, | prašau?", "Ar galėtumėte šiandien atsiųsti santechniką?"), register: "polite" },
+        { id: "could_send", s: t("Could | you | send | a | plumber | today, | please?", "Ar galėtumėte | Jūs | atsiųsti | — | santechniką | šiandien, | prašau?", "Ar galėtumėte šiandien atsiųsti santechniką?"), register: "polite" },
         { id: "any_way", s: t("Is there any way | someone | could | come | today?", "Ar įmanoma, kad | kas nors | galėtų | atvykti | šiandien?", "Ar įmanoma, kad kas nors atvyktų šiandien?"), register: "polite" },
         { id: "earliest", s: t("Could | someone | come | at your earliest convenience?", "Ar galėtų | kas nors | atvykti | kuo greičiau?", "Ar galėtų kas nors atvykti kuo greičiau?"),
           register: "polite", note: "Labai oficialu, dažniau laiškuose. Pokalbyje paprasčiau: „as soon as possible“." },
@@ -1613,7 +1613,7 @@ export const flood: SituationDef = {
         { id: "could_he", s: t("Could | he | come | at eleven?", "Ar galėtų | jis | atvykti | vienuoliktą?", "Ar jis galėtų atvykti vienuoliktą?"), register: "polite" },
         { id: "confirmed", s: t("Is | that | a | confirmed | time | or | an | estimate?", "Ar | tai | — | patvirtintas | laikas | ar | — | apytikris?", "Ar tai patvirtintas laikas, ar tik apytikris?",
           { flags: { 0: "“Is” in a yes/no question = the particle ar.", 7: "“estimate” = apytikris (laikas)." } }), register: "polite", note: "Iš istorijos ADV-024: tikslus laikas ir apytikris – ne tas pats." },
-        { id: "let_know", s: t("Could | you | let | me | know | when | he's | on his way?", "Ar galėtumėte | jūs | — | man | pranešti, | kai | jis bus | pakeliui?",
+        { id: "let_know", s: t("Could | you | let | me | know | when | he's | on his way?", "Ar galėtumėte | Jūs | — | man | pranešti, | kai | jis bus | pakeliui?",
           "Ar galėtumėte man pranešti, kai jis bus pakeliui?", { flags: { 2: "“let … know” = pranešti (under “know”).", 6: "“he's” = jis bus: after kai Lithuanian uses the future." } }), register: "polite" },
         { id: "advise", s: t("Please | advise | when | the | plumber | will arrive.", "Prašau | praneškite, | kada | — | santechnikas | atvyks.", "Prašau pranešti, kada atvyks santechnikas."),
           register: "polite", note: "Labai oficialu – kaip laiške." },
@@ -1622,9 +1622,9 @@ export const flood: SituationDef = {
     thanks_g: {
       lt: "Mandagiai padėkoti ir atsisveikinti",
       items: [
-        { id: "prompt", s: t("Thank | you | for | your | prompt | assistance.", "Dėkoju | jums | už | jūsų | operatyvią | pagalbą.", "Dėkoju už operatyvią pagalbą."), register: "polite", note: "Dainos frazė – oficiali padėka." },
+        { id: "prompt", s: t("Thank | you | for | your | prompt | assistance.", "Dėkoju | Jums | už | Jūsų | operatyvią | pagalbą.", "Dėkoju už operatyvią pagalbą."), register: "polite", note: "Dainos frazė – oficiali padėka." },
         { id: "apologize", s: t("I | apologize | for | any | inconvenience.", "Aš | atsiprašau | už | bet kokius | nepatogumus.", "Atsiprašau už galimus nepatogumus."), register: "polite" },
-        { id: "appreciate_it", s: t("Thank | you, | I | really | appreciate | it.", "Dėkoju | jums, | aš | labai | vertinu | tai.", "Labai jums dėkoju."), register: "polite" },
+        { id: "appreciate_it", s: t("Thank | you, | I | really | appreciate | it.", "Dėkoju | Jums, | aš | labai | vertinu | tai.", "Labai Jums dėkoju."), register: "polite" },
         { id: "kind_regards", s: t("Kind regards!", "Pagarbiai!", "Pagarbiai!"), note: "Laiško pabaiga. Pokalbyje skamba juokingai oficialiai – kaip dainoje." },
       ],
     },
@@ -1633,13 +1633,13 @@ export const flood: SituationDef = {
       items: [
         { id: "this_is_apt", s: t("Good | morning, | Mr. Grant. | This is | {$name} | {$surname} | from | apartment | 3B.", "Labas | rytas, | pone Grantai. | Čia | {$name} | {$surname} | iš | buto | 3B.",
           "Labas rytas, pone Grantai. Čia {$name} {$surname} iš 3B buto.", { say: "Good morning, Mister Grant. This is {$name} {$surname} from apartment three B." }), register: "polite" },
-        { id: "regret", s: t("I | regret | to inform | you | that | the | kitchen | is | flooded.", "Aš | apgailestauju, | {m:turėdamas|f:turėdama} pranešti | jums, | kad | — | virtuvė | yra | užlieta.",
-          "{m:Apgailestaudamas|f:Apgailestaudama} turiu jums pranešti, kad virtuvė užlieta."), register: "polite" },
+        { id: "regret", s: t("I | regret | to inform | you | that | the | kitchen | is | flooded.", "Aš | apgailestauju, | {m:turėdamas|f:turėdama} pranešti | Jums, | kad | — | virtuvė | yra | užlieta.",
+          "{m:Apgailestaudamas|f:Apgailestaudama} turiu Jums pranešti, kad virtuvė užlieta."), register: "polite" },
         { id: "grateful_today", s: t("I | would | be | grateful | if | a | plumber | could | be sent | today.", "Aš | — | būčiau | {m:dėkingas|f:dėkinga}, | jei | — | santechnikas | galėtų | būti atsiųstas | šiandien.",
           "Būčiau {m:dėkingas|f:dėkinga}, jei šiandien galėtumėte atsiųsti santechniką.", { flags: { 1: F_WOULD } }), register: "polite" },
-        { id: "vm_call_back", s: t("Please | call | me | back | at your earliest convenience.", "Prašau | perskambinkite | man | — | kai tik jums bus patogu.", "Prašau perskambinti, kai tik galėsite.",
+        { id: "vm_call_back", s: t("Please | call | me | back | at your earliest convenience.", "Prašau | perskambinkite | man | — | kai tik Jums bus patogu.", "Prašau perskambinti, kai tik galėsite.",
           { flags: { 3: "“back”: the prefix per- of perskambinkite carries it." } }), register: "polite" },
-        { id: "look_forward", s: t("I | look forward | to | your | call.", "Aš | lauksiu | — | jūsų | skambučio.", "Lauksiu jūsų skambučio.", { flags: { 2: "“to” has no word: lauksiu takes the genitive." } }), register: "polite" },
+        { id: "look_forward", s: t("I | look forward | to | your | call.", "Aš | lauksiu | — | Jūsų | skambučio.", "Lauksiu Jūsų skambučio.", { flags: { 2: "“to” has no word: lauksiu takes the genitive." } }), register: "polite" },
         { id: "kind_regards", s: t("Kind regards!", "Pagarbiai!", "Pagarbiai!"), note: "Laiško pabaiga – balso žinutėje skamba juokingai oficialiai (kaip dainoje)." },
       ],
     },

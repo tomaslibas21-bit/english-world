@@ -746,24 +746,24 @@ export const clothes: SituationDef = {
       t("Oh, | hi | again!", "O, | sveiki | vėl!", "O, vėl sveiki!"),
     ],
     greet_howareyou: [
-      t("Hi there! | How | are | you | doing | today?", "Sveiki! | Kaip | — | jums | sekasi | šiandien?", "Sveiki! Kaip jums šiandien sekasi?",
+      t("Hi there! | How | are | you | doing | today?", "Sveiki! | Kaip | — | Jums | sekasi | šiandien?", "Sveiki! Kaip Jums šiandien sekasi?",
         { flags: { 3: "Progressive “are” has no Lithuanian word; sekasi carries the tense (linked to “doing”)." } }),
-      t("Hi! | How | are | you | today?", "Sveiki! | Kaip | sekasi | jums | šiandien?", "Sveiki! Kaip šiandien sekasi?"),
+      t("Hi! | How | are | you | today?", "Sveiki! | Kaip | sekasi | Jums | šiandien?", "Sveiki! Kaip šiandien sekasi?"),
     ],
     ask_item: [
-      t("Can | I | help | you | find | anything?", "Ar galiu | aš | padėti | jums | rasti | ką nors?", "Gal padėti ką nors surasti?"),
-      t("Are | you | looking for | anything | in particular?", "Ar | jūs | ieškote | ko nors | konkretaus?", "Ar ieškote ko nors konkretaus?",
+      t("Can | I | help | you | find | anything?", "Ar galiu | aš | padėti | Jums | rasti | ką nors?", "Gal padėti ką nors surasti?"),
+      t("Are | you | looking for | anything | in particular?", "Ar | Jūs | ieškote | ko nors | konkretaus?", "Ar ieškote ko nors konkretaus?",
         { flags: { 0: "“Are” in a yes/no question = the particle ar; the present tense of ieškote carries the progressive (linked to “looking for”)." } }),
-      t("What | are | you | looking for | today?", "Ko | — | jūs | ieškote | šiandien?", "Ko šiandien ieškote?",
+      t("What | are | you | looking for | today?", "Ko | — | Jūs | ieškote | šiandien?", "Ko šiandien ieškote?",
         { flags: { 1: "Progressive “are” has no Lithuanian word; ieškote carries it (linked to “looking for”)." } }),
     ],
     ask_item_else: [
-      t("What | else | can | I | show | you?", "Ką | dar | galiu | aš | parodyti | jums?", "Ką dar galėčiau jums parodyti?"),
+      t("What | else | can | I | show | you?", "Ką | dar | galiu | aš | parodyti | Jums?", "Ką dar galėčiau Jums parodyti?"),
     ],
     browse_ok: [
-      t("Sure! | Let me know | if | you | need | anything.", "Žinoma! | Pasakykite, | jei | jums | reikia | ko nors.", "Žinoma! Jei ko nors prireiks, pasakykite."),
+      t("Sure! | Let me know | if | you | need | anything.", "Žinoma! | Pasakykite, | jei | Jums | reikia | ko nors.", "Žinoma! Jei ko nors prireiks, pasakykite."),
       t("No | problem! | Take your time.", "Jokių | problemų! | Neskubėkite.", "Jokių problemų! Neskubėkite."),
-      t("Of course. | I'm | right here | if | you | need | me.", "Žinoma. | Aš esu | čia pat, | jei | jums | reikia | manęs.", "Žinoma. Jei reikės, aš čia pat."),
+      t("Of course. | I'm | right here | if | you | need | me.", "Žinoma. | Aš esu | čia pat, | jei | Jums | reikia | manęs.", "Žinoma. Jei reikės, aš čia pat."),
     ],
     browse_nudge: [
       t("By the way, | that | yellow | jacket | in the window | just | came in.", "Beje, | ta | geltona | striukė | vitrinoje | ką tik | atkeliavo.", "Beje, ta geltona striukė vitrinoje ką tik atkeliavo."),
@@ -786,32 +786,32 @@ export const clothes: SituationDef = {
 
     // --- size --------------------------------------------------------------------------------
     ask_size: [
-      t("What | size | are | you?", "Kokio | dydžio | esate | jūs?", "Kokį dydį dėvite?"),
-      t("What | size | do | you | need?", "Kokio | dydžio | — | jums | reikia?", "Kokio dydžio jums reikia?", { flags: { 2: "Question “do” has no Lithuanian word (linked to “need”)." } }),
-      t("And | what | size | are | you | looking for?", "O | kokio | dydžio | — | jūs | ieškote?", "O kokio dydžio ieškote?",
+      t("What | size | are | you?", "Kokio | dydžio | esate | Jūs?", "Kokį dydį dėvite?"),
+      t("What | size | do | you | need?", "Kokio | dydžio | — | Jums | reikia?", "Kokio dydžio Jums reikia?", { flags: { 2: "Question “do” has no Lithuanian word (linked to “need”)." } }),
+      t("And | what | size | are | you | looking for?", "O | kokio | dydžio | — | Jūs | ieškote?", "O kokio dydžio ieškote?",
         { flags: { 3: "Progressive “are” has no Lithuanian word; ieškote carries it (linked to “looking for”)." } }),
     ],
     ask_shoe: [
-      t("What | size | do | you | wear?", "Kokio | dydžio | — | jūs | avite?", "Kokio dydžio batus avite?", { flags: { 2: "Question “do” has no Lithuanian word (linked to “wear”)." } }),
-      t("Sure! | And | what | size | are | you?", "Žinoma! | O | kokio | dydžio | esate | jūs?", "Žinoma! O kokį dydį avite?"),
+      t("What | size | do | you | wear?", "Kokio | dydžio | — | Jūs | avite?", "Kokio dydžio batus avite?", { flags: { 2: "Question “do” has no Lithuanian word (linked to “wear”)." } }),
+      t("Sure! | And | what | size | are | you?", "Žinoma! | O | kokio | dydžio | esate | Jūs?", "Žinoma! O kokį dydį avite?"),
     ],
     size_here: [
       t("Here's | {S.np}.", "Štai | {S.np:nom}.", "Štai {S:nom}."),
-      t("Here's | {S.np} | for you.", "Štai | {S.np:nom} | jums.", "Štai jums {S:nom}."),
+      t("Here's | {S.np} | for you.", "Štai | {S.np:nom} | Jums.", "Štai Jums {S:nom}."),
     ],
     size_check: [
       t("Let me check… | Yes, | here's | {S.np}.", "Pažiūrėsiu… | Taip, | štai | {S.np:nom}.", "Tuoj pažiūrėsiu… Taip, štai {S:nom}."),
       t("Let me check… | Here you go: | {S.np}.", "Pažiūrėsiu… | Prašom: | {S.np:nom}.", "Tuoj pažiūrėsiu… Prašom, {S:nom}."),
     ],
     size_change: [
-      t("No | problem. | Let me get | you | {S.np}.", "Jokių | problemų. | Atnešiu | jums | {S.np:acc}.", "Jokių problemų. Tuoj atnešiu {S:acc}."),
+      t("No | problem. | Let me get | you | {S.np}.", "Jokių | problemų. | Atnešiu | Jums | {S.np:acc}.", "Jokių problemų. Tuoj atnešiu {S:acc}."),
       t("Let's try | {S.np}, | then.", "Pabandykime | {S.np:acc}, | tada.", "Tada pabandykime {S:acc}."),
     ],
     size_up_get: [
-      t("No | problem. | Let me get | you | a | size | up.", "Jokių | problemų. | Atnešiu | jums | — | dydžiu | didesnius.", "Jokių problemų. Tuoj atnešiu dydžiu didesnius."),
+      t("No | problem. | Let me get | you | a | size | up.", "Jokių | problemų. | Atnešiu | Jums | — | dydžiu | didesnius.", "Jokių problemų. Tuoj atnešiu dydžiu didesnius."),
     ],
     size_down_get: [
-      t("No | problem. | Let me get | you | a | size | down.", "Jokių | problemų. | Atnešiu | jums | — | dydžiu | mažesnius.", "Jokių problemų. Tuoj atnešiu dydžiu mažesnius."),
+      t("No | problem. | Let me get | you | a | size | down.", "Jokių | problemų. | Atnešiu | Jums | — | dydžiu | mažesnius.", "Jokių problemų. Tuoj atnešiu dydžiu mažesnius."),
     ],
     no_bigger: [t("Sorry, | that's | our | biggest | size.", "Atsiprašau, | tai yra | mūsų | didžiausias | dydis.", "Atsiprašau, tai mūsų didžiausias dydis.")],
     no_smaller: [t("Sorry, | that's | our | smallest | size.", "Atsiprašau, | tai yra | mūsų | mažiausias | dydis.", "Atsiprašau, tai mūsų mažiausias dydis.")],
@@ -822,10 +822,10 @@ export const clothes: SituationDef = {
     one_size: [t("There's | only | one | size.", "Yra | tik | vienas | dydis.", "Yra tik vienas dydis."), t("It's | one | size | for | everyone.", "Tai yra | vienas | dydis | — | visiems.", "Dydis vienas visiems.",
       { flags: { 4: "“for” has no separate word: the dative visiems carries it." } })],
     shoe_sizes_numbers: [
-      t("Shoe | sizes | are | numbers | here. | What | size | do | you | wear?", "Batų | dydžiai | yra | skaičiai | čia. | Kokio | dydžio | — | jūs | avite?",
+      t("Shoe | sizes | are | numbers | here. | What | size | do | you | wear?", "Batų | dydžiai | yra | skaičiai | čia. | Kokio | dydžio | — | Jūs | avite?",
         "Čia batų dydžiai nurodomi skaičiais. Kokio dydžio batus avite?", { flags: { 7: "Question “do” has no Lithuanian word (linked to “wear”)." } }),
     ],
-    which_size_letters: [t("Hmm, | do | you | mean | small, | medium | or | large?", "Hmm, | ar | jūs | turite omenyje | S, | M | ar | L?", "Hmm, turite omenyje S, M ar L?",
+    which_size_letters: [t("Hmm, | do | you | mean | small, | medium | or | large?", "Hmm, | ar | Jūs | turite omenyje | S, | M | ar | L?", "Hmm, turite omenyje S, M ar L?",
       { flags: { 1: "Question “do” = the particle ar." } })],
     eu_size: [
       t("Is | that | a | European | size? | That's | about | a | US | {$num}.", "Ar | tai | — | Europos | dydis? | Tai yra | maždaug | — | JAV | {$num} dydis.",
@@ -843,12 +843,12 @@ export const clothes: SituationDef = {
     last_one: [t("You're lucky: | that's | the | last | one!", "Jums pasisekė: | tai yra | — | paskutinis | vienetas!", "Jums pasisekė – tai paskutinis vienetas!")],
     size_ok: [t("Great.", "Puiku.", "Puiku."), t("Perfect.", "Puiku.", "Puiku."), t("Got it.", "Supratau.", "Supratau.")],
     size_guess: [t("No | problem. | Let's try | a | medium | and | see.", "Jokių | problemų. | Pabandykime | — | M dydį | ir | pažiūrėsime.", "Jokių problemų. Pabandykime M dydį ir pažiūrėsime.")],
-    shoe_guess: [t("No | problem. | What's | your | European | size?", "Jokių | problemų. | Koks yra | jūsų | Europos | dydis?", "Jokių problemų. Koks jūsų Europos dydis?")],
+    shoe_guess: [t("No | problem. | What's | your | European | size?", "Jokių | problemų. | Koks yra | Jūsų | Europos | dydis?", "Jokių problemų. Koks Jūsų Europos dydis?")],
 
     // --- color -------------------------------------------------------------------------------
     ask_color: [
-      t("What | color | would | you | like?", "Kokios | spalvos | — | jūs | norėtumėte?", "Kokios spalvos norėtumėte?", { flags: { 2: "“would”: the conditional ending of norėtumėte carries it." } }),
-      t("Which | color | would | you | like?", "Kurios | spalvos | — | jūs | norėtumėte?", "Kurios spalvos norėtumėte?", { flags: { 2: "“would”: the conditional ending of norėtumėte carries it." } }),
+      t("What | color | would | you | like?", "Kokios | spalvos | — | Jūs | norėtumėte?", "Kokios spalvos norėtumėte?", { flags: { 2: "“would”: the conditional ending of norėtumėte carries it." } }),
+      t("Which | color | would | you | like?", "Kurios | spalvos | — | Jūs | norėtumėte?", "Kurios spalvos norėtumėte?", { flags: { 2: "“would”: the conditional ending of norėtumėte carries it." } }),
     ],
     color_list: [
       t("We | have | it | in {A}, | {B} | and | {C}.", "Mes | turime | tokių | {A:gen}, | {B:gen} | ir | {C:gen} spalvos.", "Turime {A:gen}, {B:gen} ir {C:gen} spalvos.",
@@ -873,22 +873,22 @@ export const clothes: SituationDef = {
       t("Sorry, | they | don't come | in {C}.", "Atsiprašau, | tokių | nebūna | {C:gen} spalvos.", "Atsiprašau, {C:gen} spalvos tokių nebūna.", { flags: { 1: "“they” (this model): tokių, genitive of negation." } }),
     ],
     other_color_offer: [
-      t("Would | you | like | to see | it | in | another | color?", "Ar | jūs | norėtumėte | pamatyti | {jis@X:acc} | — | kitos | spalvos?", "Gal norėtumėte pamatyti kitos spalvos?",
+      t("Would | you | like | to see | it | in | another | color?", "Ar | Jūs | norėtumėte | pamatyti | {jis@X:acc} | — | kitos | spalvos?", "Gal norėtumėte pamatyti kitos spalvos?",
         { flags: { 0: FLAG_WOULD, 5: "“in” has no separate word: the genitive kitos spalvos carries it (an adjective intervenes)." } }),
     ],
     other_color_offer_pl: [
-      t("Would | you | like | to see | them | in | another | color?", "Ar | jūs | norėtumėte | pamatyti | {jis@X:acc} | — | kitos | spalvos?", "Gal norėtumėte pamatyti kitos spalvos?",
+      t("Would | you | like | to see | them | in | another | color?", "Ar | Jūs | norėtumėte | pamatyti | {jis@X:acc} | — | kitos | spalvos?", "Gal norėtumėte pamatyti kitos spalvos?",
         { flags: { 0: FLAG_WOULD, 5: "“in” has no separate word: the genitive kitos spalvos carries it (an adjective intervenes)." } }),
     ],
 
     // --- trying on -------------------------------------------------------------------------
     offer_try: [
-      t("Would | you | like | to try | it | on?", "Ar | jūs | norėtumėte | pasimatuoti | {jis@X:acc} | —?", "Ar norėtumėte pasimatuoti?", { flags: { 0: FLAG_WOULD, 5: FLAG_TRY_ON } }),
-      t("Do | you | want | to try | it | on?", "Ar | jūs | norite | pasimatuoti | {jis@X:acc} | —?", "Norite pasimatuoti?", { flags: { 0: FLAG_DO, 5: FLAG_TRY_ON } }),
+      t("Would | you | like | to try | it | on?", "Ar | Jūs | norėtumėte | pasimatuoti | {jis@X:acc} | —?", "Ar norėtumėte pasimatuoti?", { flags: { 0: FLAG_WOULD, 5: FLAG_TRY_ON } }),
+      t("Do | you | want | to try | it | on?", "Ar | Jūs | norite | pasimatuoti | {jis@X:acc} | —?", "Norite pasimatuoti?", { flags: { 0: FLAG_DO, 5: FLAG_TRY_ON } }),
     ],
     offer_try_pl: [
-      t("Would | you | like | to try | them | on?", "Ar | jūs | norėtumėte | pasimatuoti | {jis@X:acc} | —?", "Ar norėtumėte pasimatuoti?", { flags: { 0: FLAG_WOULD, 5: FLAG_TRY_ON } }),
-      t("Do | you | want | to try | them | on?", "Ar | jūs | norite | pasimatuoti | {jis@X:acc} | —?", "Norite pasimatuoti?", { flags: { 0: FLAG_DO, 5: FLAG_TRY_ON } }),
+      t("Would | you | like | to try | them | on?", "Ar | Jūs | norėtumėte | pasimatuoti | {jis@X:acc} | —?", "Ar norėtumėte pasimatuoti?", { flags: { 0: FLAG_WOULD, 5: FLAG_TRY_ON } }),
+      t("Do | you | want | to try | them | on?", "Ar | Jūs | norite | pasimatuoti | {jis@X:acc} | —?", "Norite pasimatuoti?", { flags: { 0: FLAG_DO, 5: FLAG_TRY_ON } }),
     ],
     fitting_rooms: [
       t("The | fitting rooms | are | right | over | there.", "— | Matavimosi kabinos | yra | tiesiai | — | ten.", "Matavimosi kabinos – štai ten.", { flags: { 4: "“over” (over there): no separate Lithuanian word; ten carries the direction." } }),
@@ -911,17 +911,17 @@ export const clothes: SituationDef = {
       t("Oh | no! | Is | the | size | too | big | or | too | small?", "O | ne! | Ar | — | dydis | per | didelis | ar | per | mažas?", "O ne! Dydis per didelis ar per mažas?", { flags: { 2: "“Is” in a question = the particle ar; Lithuanian needs no copula here." } }),
     ],
     compliment: [
-      t("Oh, | it | really | suits | you!", "O, | {jis@X:nom} | tikrai | tinka | jums!", "O, jums tikrai tinka!"),
-      t("Wow, | that | color | really | suits | you!", "Oho, | ta | spalva | tikrai | tinka | jums!", "Oho, ta spalva jums tikrai tinka!"),
+      t("Oh, | it | really | suits | you!", "O, | {jis@X:nom} | tikrai | tinka | Jums!", "O, Jums tikrai tinka!"),
+      t("Wow, | that | color | really | suits | you!", "Oho, | ta | spalva | tikrai | tinka | Jums!", "Oho, ta spalva Jums tikrai tinka!"),
       t("You | look | great | in it!", "Jūs | atrodote | puikiai | {jis@X:loc}!", "Atrodote {jis@X:loc} puikiai!"),
     ],
     compliment_pl: [
-      t("Oh, | they | really | suit | you!", "O, | {jis@X:nom} | tikrai | tinka | jums!", "O, jums tikrai tinka!"),
-      t("Wow, | that | color | really | suits | you!", "Oho, | ta | spalva | tikrai | tinka | jums!", "Oho, ta spalva jums tikrai tinka!"),
+      t("Oh, | they | really | suit | you!", "O, | {jis@X:nom} | tikrai | tinka | Jums!", "O, Jums tikrai tinka!"),
+      t("Wow, | that | color | really | suits | you!", "Oho, | ta | spalva | tikrai | tinka | Jums!", "Oho, ta spalva Jums tikrai tinka!"),
       t("You | look | great | in them!", "Jūs | atrodote | puikiai | {jis@X:loc}!", "Atrodote {jis@X:loc} puikiai!"),
     ],
     fit_ok: [t("Oh, | good!", "O, | puiku!", "O, puiku!"), t("Great!", "Puiku!", "Puiku!")],
-    sweet_back: [t("Aw, | you're welcome!", "Oi, | prašom!", "Oi, prašom!"), t("Aw, | thank | you!", "Oi, | dėkoju | jums!", "Oi, ačiū!")],
+    sweet_back: [t("Aw, | you're welcome!", "Oi, | prašom!", "Oi, prašom!"), t("Aw, | thank | you!", "Oi, | dėkoju | Jums!", "Oi, ačiū!")],
 
     // --- price, sale, tax ----------------------------------------------------------------------
     price_is: [t("It's | {$price}.", "Kainuoja | {$price}.", "Kainuoja {$price}.")],
@@ -987,42 +987,42 @@ export const clothes: SituationDef = {
 
     // --- decision ------------------------------------------------------------------------------
     decide_q: [
-      t("So, | what | do | you | think?", "Tai | ką | — | jūs | manote?", "Tai ką manote?", { flags: { 2: "Question “do” has no Lithuanian word (linked to “think”)." } }),
-      t("So, | would | you | like | to get | it?", "Tai | ar | jūs | norėtumėte | įsigyti | {jis@X:acc}?", "Tai ar norėtumėte {jis@X:acc} įsigyti?", { flags: { 1: FLAG_WOULD } }),
+      t("So, | what | do | you | think?", "Tai | ką | — | Jūs | manote?", "Tai ką manote?", { flags: { 2: "Question “do” has no Lithuanian word (linked to “think”)." } }),
+      t("So, | would | you | like | to get | it?", "Tai | ar | Jūs | norėtumėte | įsigyti | {jis@X:acc}?", "Tai ar norėtumėte {jis@X:acc} įsigyti?", { flags: { 1: FLAG_WOULD } }),
     ],
     decide_q_pl: [
-      t("So, | what | do | you | think?", "Tai | ką | — | jūs | manote?", "Tai ką manote?", { flags: { 2: "Question “do” has no Lithuanian word (linked to “think”)." } }),
-      t("So, | would | you | like | to get | them?", "Tai | ar | jūs | norėtumėte | įsigyti | {jis@X:acc}?", "Tai ar norėtumėte {jis@X:acc} įsigyti?", { flags: { 1: FLAG_WOULD } }),
+      t("So, | what | do | you | think?", "Tai | ką | — | Jūs | manote?", "Tai ką manote?", { flags: { 2: "Question “do” has no Lithuanian word (linked to “think”)." } }),
+      t("So, | would | you | like | to get | them?", "Tai | ar | Jūs | norėtumėte | įsigyti | {jis@X:acc}?", "Tai ar norėtumėte {jis@X:acc} įsigyti?", { flags: { 1: FLAG_WOULD } }),
     ],
     take_ok: [
       t("Great! | Let's go | to | the | register.", "Puiku! | Eikime | prie | — | kasos.", "Puiku! Eikime prie kasos."),
-      t("Awesome! | I'll take | it | to | the | register | for you.", "Puiku! | Nunešiu | {jis@X:acc} | prie | — | kasos | jums.", "Puiku! Nunešiu {jis@X:acc} prie kasos."),
+      t("Awesome! | I'll take | it | to | the | register | for you.", "Puiku! | Nunešiu | {jis@X:acc} | prie | — | kasos | Jums.", "Puiku! Nunešiu {jis@X:acc} prie kasos."),
     ],
     take_ok_pl: [
       t("Great! | Let's go | to | the | register.", "Puiku! | Eikime | prie | — | kasos.", "Puiku! Eikime prie kasos."),
-      t("Awesome! | I'll take | them | to | the | register | for you.", "Puiku! | Nunešiu | {jis@X:acc} | prie | — | kasos | jums.", "Puiku! Nunešiu {jis@X:acc} prie kasos."),
+      t("Awesome! | I'll take | them | to | the | register | for you.", "Puiku! | Nunešiu | {jis@X:acc} | prie | — | kasos | Jums.", "Puiku! Nunešiu {jis@X:acc} prie kasos."),
     ],
     think_ok: [
       t("Of course. | Take your time!", "Žinoma. | Neskubėkite!", "Žinoma. Neskubėkite!"),
       t("No | problem! | We're | open | until | eight.", "Jokių | problemų! | Mes esame | atidaryti | iki | aštuonių.", "Jokių problemų! Dirbame iki aštuonių."),
     ],
     not_take_ok: [
-      t("No | problem. | Would | you | like | to try | something | else?", "Jokių | problemų. | Ar | jūs | norėtumėte | pasimatuoti | ką nors | kita?", "Jokių problemų. Gal norėtumėte pasimatuoti ką nors kita?", { flags: { 2: FLAG_WOULD } }),
+      t("No | problem. | Would | you | like | to try | something | else?", "Jokių | problemų. | Ar | Jūs | norėtumėte | pasimatuoti | ką nors | kita?", "Jokių problemų. Gal norėtumėte pasimatuoti ką nors kita?", { flags: { 2: FLAG_WOULD } }),
     ],
     what_else: [
-      t("Sure! | What | would | you | like | to see?", "Žinoma! | Ką | — | jūs | norėtumėte | pamatyti?", "Žinoma! Ką norėtumėte pamatyti?", { flags: { 2: "“would”: the conditional ending of norėtumėte carries it." } }),
+      t("Sure! | What | would | you | like | to see?", "Žinoma! | Ką | — | Jūs | norėtumėte | pamatyti?", "Žinoma! Ką norėtumėte pamatyti?", { flags: { 2: "“would”: the conditional ending of norėtumėte carries it." } }),
     ],
 
     // --- paying ------------------------------------------------------------------------------
     rewards_q: [
-      t("Do | you | have | a | rewards | account | with | us?", "Ar | jūs | turite | — | lojalumo | paskyrą | pas | mus?", "Ar turite mūsų lojalumo programos paskyrą?", { flags: { 0: FLAG_DO } }),
+      t("Do | you | have | a | rewards | account | with | us?", "Ar | Jūs | turite | — | lojalumo | paskyrą | pas | mus?", "Ar turite mūsų lojalumo programos paskyrą?", { flags: { 0: FLAG_DO } }),
     ],
     rewards_offer: [
-      t("Would | you | like | to join? | It's | free.", "Ar | jūs | norėtumėte | prisijungti? | Tai yra | nemokama.", "Gal norėtumėte prisijungti? Tai nemokama.", { flags: { 0: FLAG_WOULD } }),
+      t("Would | you | like | to join? | It's | free.", "Ar | Jūs | norėtumėte | prisijungti? | Tai yra | nemokama.", "Gal norėtumėte prisijungti? Tai nemokama.", { flags: { 0: FLAG_WOULD } }),
     ],
     rewards_no: [t("No | problem!", "Jokių | problemų!", "Jokių problemų!"), t("No | worries!", "Jokių | rūpesčių!", "Nieko tokio!")],
     rewards_yes: [t("Great! | Just | scan | this | code | at home.", "Puiku! | Tiesiog | nuskenuokite | šį | kodą | namuose.", "Puiku! Namuose tiesiog nuskenuokite šį kodą.")],
-    rewards_member: [t("Perfect, | I | found | you.", "Puiku, | aš | radau | jus.", "Puiku, radau jus sistemoje.")],
+    rewards_member: [t("Perfect, | I | found | you.", "Puiku, | aš | radau | Jus.", "Puiku, radau Jus sistemoje.")],
     total: [
       t("With | tax, | that | comes to | {$total}.", "Su | mokesčiais | tai | sudaro | {$total}.", "Su mokesčiais – {$total}."),
       t("Your | total | is | {$total}, | with | tax.", "Jūsų | suma | yra | {$total}, | su | mokesčiais.", "Iš viso su mokesčiais – {$total}."),
@@ -1037,29 +1037,29 @@ export const clothes: SituationDef = {
     phone_later: [t("Sure, | Apple Pay | is fine.", "Žinoma, | „Apple Pay“ | tinka.", "Žinoma, galima ir „Apple Pay“.")],
     phone_ok: [t("Of course! | Just | hold | your | phone | here.", "Žinoma! | Tiesiog | prilaikykite | savo | telefoną | čia.", "Žinoma! Tiesiog prilaikykite telefoną čia.")],
     cash_ok: [t("Sure, | cash | is fine.", "Žinoma, | grynaisiais | galima.", "Žinoma, galima ir grynaisiais.")],
-    change_back: [t("And | here's | your | change.", "Ir | štai | jūsų | grąža.", "Štai jūsų grąža."), t("Here's | your | change.", "Štai | jūsų | grąža.", "Štai jūsų grąža.")],
-    paid: [t("Thank | you!", "Dėkoju | jums!", "Ačiū!"), t("Perfect, | thanks!", "Puiku, | ačiū!", "Puiku, ačiū!")],
-    thanks_tip: [t("Oh, | thank | you | so much!", "O, | dėkoju | jums | labai!", "O, labai ačiū!")],
+    change_back: [t("And | here's | your | change.", "Ir | štai | Jūsų | grąža.", "Štai Jūsų grąža."), t("Here's | your | change.", "Štai | Jūsų | grąža.", "Štai Jūsų grąža.")],
+    paid: [t("Thank | you!", "Dėkoju | Jums!", "Ačiū!"), t("Perfect, | thanks!", "Puiku, | ačiū!", "Puiku, ačiū!")],
+    thanks_tip: [t("Oh, | thank | you | so much!", "O, | dėkoju | Jums | labai!", "O, labai ačiū!")],
     no_problem: [t("No | problem.", "Jokių | problemų.", "Jokių problemų.")],
     pay_here: [t("Right | over | here | at | the | register.", "Tiesiai | — | čia, | prie | — | kasos.", "Štai čia, prie kasos.", { flags: { 1: "“over” (over here): no separate Lithuanian word; čia carries the place." } })],
     ask_bag: [
-      t("Would | you | like | a | bag?", "Ar | jūs | norėtumėte | — | maišelio?", "Ar norėtumėte maišelio?", { flags: { 0: FLAG_WOULD } }),
-      t("Do | you | need | a | bag?", "Ar | jums | reikia | — | maišelio?", "Ar reikia maišelio?", { flags: { 0: FLAG_DO } }),
+      t("Would | you | like | a | bag?", "Ar | Jūs | norėtumėte | — | maišelio?", "Ar norėtumėte maišelio?", { flags: { 0: FLAG_WOULD } }),
+      t("Do | you | need | a | bag?", "Ar | Jums | reikia | — | maišelio?", "Ar reikia maišelio?", { flags: { 0: FLAG_DO } }),
     ],
     bag_here: [t("Here you go.", "Prašom.", "Prašom."), t("Sure, | here you go.", "Žinoma, | prašom.", "Žinoma, prašom.")],
     cut_tags: [
-      t("Sure! | I'll cut | the | tags | off | for you.", "Žinoma! | Nukirpsiu | — | etiketes | — | jums.", "Žinoma! Nukirpsiu jums etiketes.",
+      t("Sure! | I'll cut | the | tags | off | for you.", "Žinoma! | Nukirpsiu | — | etiketes | — | Jums.", "Žinoma! Nukirpsiu Jums etiketes.",
         { flags: { 4: "Discontinuous “cut … off”: the prefix nu- of nukirpsiu carries “off” (linked to “I'll cut”)." } }),
     ],
     gift_ok_nobag: [t("Of course! | Here's | a | gift | receipt.", "Žinoma! | Štai | — | dovanos | čekis.", "Žinoma! Štai čekis be kainos dovanai.")],
     gift_ok: [t("Of course! | I'll put | a | gift | receipt | in | the | bag.", "Žinoma! | Įdėsiu | — | dovanos | čekį | į | — | maišelį.", "Žinoma! Įdėsiu į maišelį čekį be kainos.")],
     ask_receipt: [
-      t("Would | you | like | your | receipt | printed | or | emailed?", "Ar | jūs | norėtumėte | savo | čekio | atspausdinto | ar | atsiųsto el. paštu?", "Čekį atspausdinti ar atsiųsti el. paštu?", { flags: { 0: FLAG_WOULD } }),
-      t("Would | you | like | the | receipt | in the bag?", "Ar | jūs | norėtumėte | — | čekio | maišelyje?", "Ar įdėti čekį į maišelį?", { flags: { 0: FLAG_WOULD } }),
+      t("Would | you | like | your | receipt | printed | or | emailed?", "Ar | Jūs | norėtumėte | savo | čekio | atspausdinto | ar | atsiųsto el. paštu?", "Čekį atspausdinti ar atsiųsti el. paštu?", { flags: { 0: FLAG_WOULD } }),
+      t("Would | you | like | the | receipt | in the bag?", "Ar | Jūs | norėtumėte | — | čekio | maišelyje?", "Ar įdėti čekį į maišelį?", { flags: { 0: FLAG_WOULD } }),
     ],
-    receipt_here: [t("Here's | your | receipt.", "Štai | jūsų | čekis.", "Štai jūsų čekis.")],
+    receipt_here: [t("Here's | your | receipt.", "Štai | Jūsų | čekis.", "Štai Jūsų čekis.")],
     receipt_email: [t("Sure, | just | type | your | email | on the screen.", "Žinoma, | tiesiog | įveskite | savo | el. paštą | ekrane.", "Žinoma, tiesiog įveskite el. paštą ekrane.")],
-    receipt_keep: [t("No | problem. | Just | remember, | you'll need | it | for returns.", "Jokių | problemų. | Tik | atminkite, | jums prireiks | jo | grąžinimui.", "Jokių problemų. Tik atminkite: grąžinant prireiks čekio.")],
+    receipt_keep: [t("No | problem. | Just | remember, | you'll need | it | for returns.", "Jokių | problemų. | Tik | atminkite, | Jums prireiks | jo | grąžinimui.", "Jokių problemų. Tik atminkite: grąžinant prireiks čekio.")],
 
     // --- closing -------------------------------------------------------------------------------
     closing_bought: [
@@ -1071,19 +1071,19 @@ export const clothes: SituationDef = {
       t("Have | a | great | day!", "Linkiu | — | puikios | dienos!", "Puikios dienos!"),
       t("Have | a | good | one!", "Linkiu | — | geros | dienos!", "Geros dienos!", { flags: { 3: "“one” (have a good one) = the day; Lithuanian names it, dienos." } }),
     ],
-    anything_else: [t("Can | I | help | you | with anything | else?", "Ar galiu | aš | padėti | jums | kuo nors | dar?", "Ar dar kuo nors galiu padėti?")],
+    anything_else: [t("Can | I | help | you | with anything | else?", "Ar galiu | aš | padėti | Jums | kuo nors | dar?", "Ar dar kuo nors galiu padėti?")],
 
     // --- returns -------------------------------------------------------------------------------
     return_q: [
-      t("Are | you | returning | something | today?", "Ar | jūs | grąžinate | ką nors | šiandien?", "Ar šiandien ką nors grąžinate?",
+      t("Are | you | returning | something | today?", "Ar | Jūs | grąžinate | ką nors | šiandien?", "Ar šiandien ką nors grąžinate?",
         { flags: { 0: "“Are” in a yes/no question = the particle ar; the present tense of grąžinate carries the progressive (linked to “returning”)." } }),
       t("Is | that | a | return?", "Ar | tai | — | grąžinimas?", "Ar grąžinate?", { flags: { 0: "“Is” in a question = the particle ar; Lithuanian needs no copula here." } }),
     ],
     ret_ask_receipt: [
-      t("Of course. | Do | you | have | the | receipt?", "Žinoma. | Ar | jūs | turite | — | čekį?", "Žinoma. Ar turite čekį?", { flags: { 1: FLAG_DO } }),
-      t("Sure, | no | problem. | Do | you | have | your | receipt?", "Žinoma, | jokių | problemų. | Ar | jūs | turite | savo | čekį?", "Žinoma, jokių problemų. Ar turite čekį?", { flags: { 3: FLAG_DO } }),
+      t("Of course. | Do | you | have | the | receipt?", "Žinoma. | Ar | Jūs | turite | — | čekį?", "Žinoma. Ar turite čekį?", { flags: { 1: FLAG_DO } }),
+      t("Sure, | no | problem. | Do | you | have | your | receipt?", "Žinoma, | jokių | problemų. | Ar | Jūs | turite | savo | čekį?", "Žinoma, jokių problemų. Ar turite čekį?", { flags: { 3: FLAG_DO } }),
     ],
-    ret_receipt_thanks: [t("Perfect, | thank | you.", "Puiku, | dėkoju | jums.", "Puiku, ačiū.")],
+    ret_receipt_thanks: [t("Perfect, | thank | you.", "Puiku, | dėkoju | Jums.", "Puiku, ačiū.")],
     ret_receipt_none: [t("That's | okay.", "Tai | gerai.", "Nieko tokio.")],
     ret_ask_reason: [
       t("Was | there | anything | wrong | with | it?", "Ar buvo | — | kas nors | negerai | su | {jis@X:ins}?", "Ar buvo kas nors negerai?",
@@ -1103,43 +1103,43 @@ export const clothes: SituationDef = {
     ret_size_happens: [t("Oh, | that | happens!", "O, | taip | būna!", "O, taip būna!")],
     ret_fine: [t("That's | totally | fine.", "Tai | visiškai | normalu.", "Visiškai normalu.")],
     ret_choice_q: [
-      t("Would | you | like | a | refund | or | an | exchange?", "Ar | jūs | norėtumėte | — | pinigų grąžinimo | ar | — | pasikeitimo?", "Norėtumėte atgauti pinigus ar pasikeisti?", { flags: { 0: FLAG_WOULD } }),
+      t("Would | you | like | a | refund | or | an | exchange?", "Ar | Jūs | norėtumėte | — | pinigų grąžinimo | ar | — | pasikeitimo?", "Norėtumėte atgauti pinigus ar pasikeisti?", { flags: { 0: FLAG_WOULD } }),
       t("Refund | or | exchange?", "Pinigų grąžinimas | ar | pasikeitimas?", "Grąžinti pinigus ar pasikeisti?"),
     ],
     ret_choice_noreceipt: [
-      t("Without | a | receipt, | I | can | offer | you | store | credit | or | an | exchange.", "Be | — | čekio | aš | galiu | pasiūlyti | jums | parduotuvės | kreditą | arba | — | pasikeitimą.",
+      t("Without | a | receipt, | I | can | offer | you | store | credit | or | an | exchange.", "Be | — | čekio | aš | galiu | pasiūlyti | Jums | parduotuvės | kreditą | arba | — | pasikeitimą.",
         "Be čekio galiu pasiūlyti tik parduotuvės kreditą arba pasikeitimą."),
     ],
     ret_no_refund_receipt: [t("Sorry, | I | can't do | a | refund | without | a | receipt.", "Atsiprašau, | aš | negaliu padaryti | — | pinigų grąžinimo | be | — | čekio.", "Atsiprašau, be čekio pinigų grąžinti negaliu.")],
     ret_refund_done: [
-      t("No | problem. | I'll put | the | money | back | on | your | card.", "Jokių | problemų. | Grąžinsiu | — | pinigus | atgal | į | jūsų | kortelę.", "Jokių problemų. Pinigus grąžinsiu į jūsų kortelę."),
+      t("No | problem. | I'll put | the | money | back | on | your | card.", "Jokių | problemų. | Grąžinsiu | — | pinigus | atgal | į | Jūsų | kortelę.", "Jokių problemų. Pinigus grąžinsiu į Jūsų kortelę."),
     ],
     ret_refund_days: [
       t("It | should | show up | in | a | few | business | days.", "Jie | turėtų | atsirasti | per | — | kelias | darbo | dienas.", "Pinigai turėtų grįžti per kelias darbo dienas.",
         { flags: { 0: "“It” = the refunded money; Lithuanian pinigai is plural, hence jie." } }),
     ],
     ret_credit_done: [
-      t("Here's | your | store | credit: | {$amount}.", "Štai | jūsų | parduotuvės | kreditas: | {$amount}.", "Štai jūsų parduotuvės kreditas – {$amount}."),
+      t("Here's | your | store | credit: | {$amount}.", "Štai | Jūsų | parduotuvės | kreditas: | {$amount}.", "Štai Jūsų parduotuvės kreditas – {$amount}."),
     ],
     ret_credit_card: [t("It's | on | this | card.", "Jis yra | — | šioje | kortelėje.", "Jis šioje kortelėje.", { flags: { 1: "“on” has no separate word: the locative kortelėje carries it (a demonstrative intervenes)." } })],
     ret_exchange_size_q: [
-      t("What | size | would | you | like | instead?", "Kokio | dydžio | — | jūs | norėtumėte | vietoj to?", "Kokio dydžio norėtumėte vietoj šio?", { flags: { 2: "“would”: the conditional ending of norėtumėte carries it." } }),
+      t("What | size | would | you | like | instead?", "Kokio | dydžio | — | Jūs | norėtumėte | vietoj to?", "Kokio dydžio norėtumėte vietoj šio?", { flags: { 2: "“would”: the conditional ending of norėtumėte carries it." } }),
     ],
     ret_exchange_color_q: [
-      t("Which | color | would | you | like | instead?", "Kurios | spalvos | — | jūs | norėtumėte | vietoj to?", "Kurios spalvos norėtumėte vietoj šios?", { flags: { 2: "“would”: the conditional ending of norėtumėte carries it." } }),
+      t("Which | color | would | you | like | instead?", "Kurios | spalvos | — | Jūs | norėtumėte | vietoj to?", "Kurios spalvos norėtumėte vietoj šios?", { flags: { 2: "“would”: the conditional ending of norėtumėte carries it." } }),
     ],
     ret_exchange_what_q: [
       t("Sure! | Same | style, | different | size | or | color?", "Žinoma! | Tas pats | modelis, | kitas | dydis | ar | spalva?", "Žinoma! Tą patį modelį, tik kito dydžio ar spalvos?"),
     ],
     ret_exchange_done: [
-      t("Here's | your | new | {X}. | Sorry | for | the | trouble!", "Štai | jūsų | {naujas@X:nom} | {X:nom}. | Atsiprašau | dėl | — | nepatogumų!", "Štai jūsų {naujas@X:nom} {X:nom}. Atsiprašome už nepatogumus!"),
+      t("Here's | your | new | {X}. | Sorry | for | the | trouble!", "Štai | Jūsų | {naujas@X:nom} | {X:nom}. | Atsiprašau | dėl | — | nepatogumų!", "Štai Jūsų {naujas@X:nom} {X:nom}. Atsiprašome už nepatogumus!"),
     ],
     ret_exchange_done_pl: [
-      t("Here are | your | new | {X}. | Sorry | for | the | trouble!", "Štai | jūsų | {naujas@X:nom} | {X:nom}. | Atsiprašau | dėl | — | nepatogumų!", "Štai jūsų {naujas@X:nom} {X:nom}. Atsiprašome už nepatogumus!"),
+      t("Here are | your | new | {X}. | Sorry | for | the | trouble!", "Štai | Jūsų | {naujas@X:nom} | {X:nom}. | Atsiprašau | dėl | — | nepatogumų!", "Štai Jūsų {naujas@X:nom} {X:nom}. Atsiprašome už nepatogumus!"),
     ],
     ret_same_new: [t("Here's | a | new | one | in | the | same | size.", "Štai | — | naujas | vienetas | — | to | paties | dydžio.", "Štai naujas, to paties dydžio.",
       { flags: { 4: "“in” has no separate word: the genitive to paties dydžio carries it.", 5: "“the same” = tas pats: the article gets its real demonstrative, to." } })],
-    ret_shop_ok: [t("Oh, | sorry! | How | can | I | help | you?", "O, | atsiprašau! | Kaip | galiu | aš | padėti | jums?", "O, atsiprašau! Kuo galiu padėti?")],
+    ret_shop_ok: [t("Oh, | sorry! | How | can | I | help | you?", "O, | atsiprašau! | Kaip | galiu | aš | padėti | Jums?", "O, atsiprašau! Kuo galiu padėti?")],
   },
 
   domains: {
@@ -1163,13 +1163,13 @@ export const clothes: SituationDef = {
       lt: "Pasakyti, ko ieškai", slot: "clothing", examples: ["jacket", "sweater", "jeans", "dress", "shoes"],
       items: ordered(
         { id: "look_for", s: t("I'm looking for | {X.np}.", "Ieškau | {X.np:gen}.", "Ieškau {X.np:gen}.") },
-        { id: "q_have_any", s: t("Do | you | have | any | {X.pl}?", "Ar | jūs | turite | — | {X.pl:gen}?", "Ar turite {X.pl:gen}?", { flags: { 0: FLAG_DO, 3: "Partitive: the genitive carries “any”." } }), only: (e) => !(e.attrs?.ltPl && !e.attrs?.enPl) },
+        { id: "q_have_any", s: t("Do | you | have | any | {X.pl}?", "Ar | Jūs | turite | — | {X.pl:gen}?", "Ar turite {X.pl:gen}?", { flags: { 0: FLAG_DO, 3: "Partitive: the genitive carries “any”." } }), only: (e) => !(e.attrs?.ltPl && !e.attrs?.enPl) },
         { id: "look_for", s: t("I'm looking for | a | pair | of {X}.", "Ieškau | — | poros | {X:gen}.", "Ieškau {X:gen}."), only: (e) => !!e.attrs?.pair,
           note: "„A pair of …“ sakoma apie daiktus iš dviejų dalių: džinsus, kelnes, batus." },
         { id: "q_where", s: t("Where | can | I | find | {X.pl}?", "Kur | galiu | aš | rasti | {X.pl:acc}?", "Kur rasti {X.pl:acc}?"), only: (e) => !(e.attrs?.ltPl && !e.attrs?.enPl) },
         { id: "can_i_see", s: t("Can | I | see | {X.the} | in the window?", "Ar galiu | aš | pamatyti | {X.the:acc} | vitrinoje?", "Ar galiu pamatyti {X:acc} iš vitrinos?") },
         hv("have_this_size", "Do | you | have | this | {X} | in a medium?", "Do | you | have | these | {X} | in a medium?",
-          "Ar | jūs | turite | {šitas@X:acc} | {X:acc} | M dydžio?", "Ar turite {šitas@X:acc} {X:acc} M dydžio?", { flags: { 0: FLAG_DO } }, {}, (e) => !e.attrs?.shoe && !e.attrs?.oneSize),
+          "Ar | Jūs | turite | {šitas@X:acc} | {X:acc} | M dydžio?", "Ar turite {šitas@X:acc} {X:acc} M dydžio?", { flags: { 0: FLAG_DO } }, {}, (e) => !e.attrs?.shoe && !e.attrs?.oneSize),
       ),
     },
     size: {
@@ -1178,13 +1178,13 @@ export const clothes: SituationDef = {
         { id: "size_short", s: t("{X}, | please.", "{X:acc}, | prašau.", "{X:acc}, prašau.") },
         { id: "size_im", s: t("I'm | {X.np}.", "Aš esu | {X.np:gen}.", "Dėviu {X:acc}.") },
         { id: "size_wear", s: t("I | usually | wear | {X.np}.", "Aš | paprastai | dėviu | {X.np:acc}.", "Paprastai dėviu {X:acc}.") },
-        { id: "have_size", s: t("Do | you | have | this | in a {X}?", "Ar | jūs | turite | tokių | {X:gen}?", "Ar turite tokių {X:gen}?",
+        { id: "have_size", s: t("Do | you | have | this | in a {X}?", "Ar | Jūs | turite | tokių | {X:gen}?", "Ar turite tokių {X:gen}?",
           { flags: { 0: FLAG_DO, 3: "“this” (this model) = tokių, partitive genitive plural: “any like this”." } }), only: (e) => e.id !== "xl" },
-        { id: "have_size", s: t("Do | you | have | this | in an {X}?", "Ar | jūs | turite | tokių | {X:gen}?", "Ar turite tokių {X:gen}?",
+        { id: "have_size", s: t("Do | you | have | this | in an {X}?", "Ar | Jūs | turite | tokių | {X:gen}?", "Ar turite tokių {X:gen}?",
           { flags: { 0: FLAG_DO, 3: "“this” (this model) = tokių, partitive genitive plural: “any like this”." } }), only: (e) => e.id === "xl" },
-        { id: "size_up", s: t("Do | you | have | a | bigger | size?", "Ar | jūs | turite | — | didesnio | dydžio?", "Ar turite didesnio dydžio?", { flags: { 0: FLAG_DO } }) },
-        { id: "size_down", s: t("Do | you | have | a | smaller | size?", "Ar | jūs | turite | — | mažesnio | dydžio?", "Ar turite mažesnio dydžio?", { flags: { 0: FLAG_DO } }) },
-        { id: "q_sizes", s: t("What | sizes | do | you | have?", "Kokių | dydžių | — | jūs | turite?", "Kokių dydžių turite?", { flags: { 2: "Question “do” has no Lithuanian word (linked to “have”)." } }) },
+        { id: "size_up", s: t("Do | you | have | a | bigger | size?", "Ar | Jūs | turite | — | didesnio | dydžio?", "Ar turite didesnio dydžio?", { flags: { 0: FLAG_DO } }) },
+        { id: "size_down", s: t("Do | you | have | a | smaller | size?", "Ar | Jūs | turite | — | mažesnio | dydžio?", "Ar turite mažesnio dydžio?", { flags: { 0: FLAG_DO } }) },
+        { id: "q_sizes", s: t("What | sizes | do | you | have?", "Kokių | dydžių | — | Jūs | turite?", "Kokių dydžių turite?", { flags: { 2: "Question “do” has no Lithuanian word (linked to “have”)." } }) },
         { id: "size_unsure", s: t("I'm | not | sure | about | my | size.", "Aš | nesu | {m:tikras|f:tikra} | dėl | savo | dydžio.", "Nesu {m:tikras|f:tikra} dėl savo dydžio.",
           { flags: { 1: "Negation: nesu = ne- + esu; the “am” of I'm sits here (linked to “I'm”)." } }) },
       ],
@@ -1204,11 +1204,11 @@ export const clothes: SituationDef = {
       lt: "Pasirinkti ar paklausti spalvos", slot: "color", examples: ["black", "blue", "navy", "red"],
       items: [
         { id: "color_short", s: t("{X}, | please.", "{X:gen} spalvos, | prašau.", "{X:gen} spalvos, prašau.") },
-        { id: "have_color", s: t("Do | you | have | this | in {X}?", "Ar | jūs | turite | tokių | {X:gen} spalvos?", "Ar turite tokių {X:gen} spalvos?",
+        { id: "have_color", s: t("Do | you | have | this | in {X}?", "Ar | Jūs | turite | tokių | {X:gen} spalvos?", "Ar turite tokių {X:gen} spalvos?",
           { flags: { 0: FLAG_DO, 3: "“this” (this model) = tokių, partitive genitive plural: “any like this”." } }) },
-        { id: "q_colors", s: t("What | colors | do | you | have?", "Kokių | spalvų | — | jūs | turite?", "Kokių spalvų turite?", { flags: { 2: "Question “do” has no Lithuanian word (linked to “have”)." } }) },
+        { id: "q_colors", s: t("What | colors | do | you | have?", "Kokių | spalvų | — | Jūs | turite?", "Kokių spalvų turite?", { flags: { 2: "Question “do” has no Lithuanian word (linked to “have”)." } }) },
         { id: "come_in", s: t("Does | this | come in | {X}?", "Ar | tokių | būna | {X:gen} spalvos?", "Ar tokių būna {X:gen} spalvos?", { flags: { 0: "Question “Does” = the particle ar." } }), register: "casual" },
-        { id: "q_other_colors", s: t("Do | you | have | other | colors?", "Ar | jūs | turite | kitų | spalvų?", "Ar turite kitų spalvų?", { flags: { 0: FLAG_DO } }) },
+        { id: "q_other_colors", s: t("Do | you | have | other | colors?", "Ar | Jūs | turite | kitų | spalvų?", "Ar turite kitų spalvų?", { flags: { 0: FLAG_DO } }) },
         { id: "not_color", s: t("I | don't like | the | color.", "Man | nepatinka | — | spalva.", "Man nepatinka spalva.") },
       ],
     },
@@ -1237,7 +1237,7 @@ export const clothes: SituationDef = {
         hg("fit_big", "It's | too | big.", "They're | too | big.", (g) => `${PRON[g]} yra | per | ${ADJ.big[g]}.`, () => "Dydis per didelis."),
         hg("fit_tight", "It's | a little | tight.", "They're | a little | tight.", (g) => `${PRON[g]} yra | truputį | ${ADJ.tight[g]}.`, () => "Truputį ankšta."),
         hg("fit_long", "It's | too | long.", "They're | too | long.", (g) => `${PRON[g]} yra | per | ${ADJ.long[g]}.`, (g) => `Per ${ADJ.long[g]}.`),
-        { id: "size_up", s: t("Do | you | have | a | bigger | size?", "Ar | jūs | turite | — | didesnio | dydžio?", "Ar turite didesnio dydžio?", { flags: { 0: FLAG_DO } }) },
+        { id: "size_up", s: t("Do | you | have | a | bigger | size?", "Ar | Jūs | turite | — | didesnio | dydžio?", "Ar turite didesnio dydžio?", { flags: { 0: FLAG_DO } }) },
       ),
     },
     // "Is the size too big or too small?"
@@ -1275,7 +1275,7 @@ export const clothes: SituationDef = {
         hv("q_sale", "Is | it | on sale?", "Are | they | on sale?", "Ar | {jis@X:nom} | su nuolaida?", "Ar su nuolaida?", { flags: { 0: "“Is/Are” in a question = the particle ar; Lithuanian needs no copula here." } }),
         { id: "q_tax", s: t("Is | tax | included?", "Ar | mokesčiai | įskaičiuoti?", "Ar mokesčiai įskaičiuoti?", { flags: { 0: "“Is” in a question = the particle ar; the participle įskaičiuoti carries the rest." } }),
           note: "JAV kainos ant etiketės dažniausiai be pardavimo mokesčio – jis pridedamas kasoje." },
-        { id: "q_return", s: t("What's | your | return | policy?", "Kokia yra | jūsų | grąžinimo | tvarka?", "Kokia jūsų grąžinimo tvarka?") },
+        { id: "q_return", s: t("What's | your | return | policy?", "Kokia yra | Jūsų | grąžinimo | tvarka?", "Kokia Jūsų grąžinimo tvarka?") },
       ),
     },
     rewards: {
@@ -1291,7 +1291,7 @@ export const clothes: SituationDef = {
         { id: "pay_card_short", s: t("Card, | please.", "Kortele, | prašau.", "Kortele, prašau.") },
         { id: "pay_card", s: t("Can | I | pay | by card?", "Ar galiu | aš | sumokėti | kortele?", "Ar galiu sumokėti kortele?") },
         { id: "pay_cash", s: t("I'll pay | in cash.", "Sumokėsiu | grynaisiais.", "Sumokėsiu grynaisiais.") },
-        { id: "apple_pay", s: t("Do | you | take | Apple Pay?", "Ar | jūs | priimate | „Apple Pay“?", "Ar priimate „Apple Pay“?", { flags: { 0: FLAG_DO } }) },
+        { id: "apple_pay", s: t("Do | you | take | Apple Pay?", "Ar | Jūs | priimate | „Apple Pay“?", "Ar priimate „Apple Pay“?", { flags: { 0: FLAG_DO } }) },
         { id: "here_you_go", s: t("Here you go.", "Prašom.", "Prašom.") },
       ],
     },

@@ -414,17 +414,17 @@ export const gate: SituationDef = {
 
   lines: {
     greet: [
-      t("Hi there! | How | can | I | help | you?", "Sveiki! | Kuo | galiu | aš | padėti | jums?", "Sveiki! Kuo galiu jums padėti?"),
-      t("Good | morning! | What | can | I | do | for you?", "Labas | rytas! | Ką | galiu | aš | padaryti | jums?", "Labas rytas! Kuo galiu padėti?"),
-      t("Hi! | Can | I | help | you?", "Sveiki! | Ar galiu | aš | padėti | jums?", "Sveiki! Ar galiu jums padėti?"),
+      t("Hi there! | How | can | I | help | you?", "Sveiki! | Kuo | galiu | aš | padėti | Jums?", "Sveiki! Kuo galiu Jums padėti?"),
+      t("Good | morning! | What | can | I | do | for you?", "Labas | rytas! | Ką | galiu | aš | padaryti | Jums?", "Labas rytas! Kuo galiu padėti?"),
+      t("Hi! | Can | I | help | you?", "Sveiki! | Ar galiu | aš | padėti | Jums?", "Sveiki! Ar galiu Jums padėti?"),
     ],
     ask_help: [
       t("How | can | I | help?", "Kuo | galiu | aš | padėti?", "Kuo galiu padėti?"),
-      t("What | can | I | do | for you?", "Ką | galiu | aš | padaryti | jums?", "Kuo galiu padėti?"),
+      t("What | can | I | do | for you?", "Ką | galiu | aš | padaryti | Jums?", "Kuo galiu padėti?"),
     ],
     gate_yes: [
       t("Yes, | this | is | flight | 223 | to | Boston.", "Taip, | tai | yra | skrydis | 223 | į | Bostoną.", "Taip, čia skrydis 223 į Bostoną.", { say: "Yes, this is flight two twenty-three to Boston." }),
-      t("Yes, | you're | in | the | right | place.", "Taip, | jūs esate | — | — | reikiamoje | vietoje.", "Taip, jūs ten, kur reikia.",
+      t("Yes, | you're | in | the | right | place.", "Taip, | Jūs esate | — | — | reikiamoje | vietoje.", "Taip, Jūs ten, kur reikia.",
         { flags: { 2: "“in” has no separate word: the locative vietoje carries it across “right”." } }),
     ],
     gate12_yes: [
@@ -444,8 +444,8 @@ export const gate: SituationDef = {
         { flags: { 1: "“over” (over there): no separate Lithuanian word; ten carries the direction." } }),
     ],
     which_flight: [
-      t("What's | your | flight | number?", "Koks yra | jūsų | skrydžio | numeris?", "Koks jūsų skrydžio numeris?"),
-      t("Which | flight | are | you | on?", "Kuriuo | skrydžiu | — | jūs | skrendate?", "Kuriuo skrydžiu skrendate?",
+      t("What's | your | flight | number?", "Koks yra | Jūsų | skrydžio | numeris?", "Koks Jūsų skrydžio numeris?"),
+      t("Which | flight | are | you | on?", "Kuriuo | skrydžiu | — | Jūs | skrendate?", "Kuriuo skrydžiu skrendate?",
         { flags: { 2: "“are … on” (be on a flight) = skrendate: “are” has no separate word (linked to “on”).", 4: "“on” (be on a flight): the verb skrendate carries it." } }),
     ],
     not_this_flight: [
@@ -453,10 +453,10 @@ export const gate: SituationDef = {
         { say: "Hmm, this gate is for flight two twenty-three to Boston." }),
     ],
     see_bp: [
-      t("Can | I | see | your | boarding | pass?", "Ar galiu | aš | pamatyti | jūsų | įlaipinimo | kortelę?", "Ar galiu pamatyti jūsų įlaipinimo kortelę?"),
+      t("Can | I | see | your | boarding | pass?", "Ar galiu | aš | pamatyti | Jūsų | įlaipinimo | kortelę?", "Ar galiu pamatyti Jūsų įlaipinimo kortelę?"),
     ],
     bp_you_are_223: [
-      t("Oh, | you're | on | flight | 223. | You're | in | the | right | place!", "O, | jūs skrendate | — | skrydžiu | 223. | Jūs esate | — | — | reikiamoje | vietoje!", "O, jūs skrendate skrydžiu 223. Jūs ten, kur reikia!",
+      t("Oh, | you're | on | flight | 223. | You're | in | the | right | place!", "O, | Jūs skrendate | — | skrydžiu | 223. | Jūs esate | — | — | reikiamoje | vietoje!", "O, Jūs skrendate skrydžiu 223. Jūs ten, kur reikia!",
         { say: "Oh, you're on flight two twenty-three. You're in the right place!", flags: { 2: "“on” (be on a flight): the instrumental skrydžiu carries it.", 6: "“in” has no separate word: the locative vietoje carries it across “right”." } }),
     ],
     bp_thanks: [
@@ -514,14 +514,14 @@ export const gate: SituationDef = {
         { say: "We should leave at about eight thirty.", flags: { 3: "Clock-time “at” has no separate Lithuanian word (linked to 8:30)." } }),
     ],
     group_info: [
-      t("You're | in group | 3. | It's | on | your | boarding | pass.", "Jūs esate | grupėje | 3. | Tai yra | — | jūsų | įlaipinimo | kortelėje.", "Jūs – 3 grupėje. Tai parašyta jūsų įlaipinimo kortelėje.",
+      t("You're | in group | 3. | It's | on | your | boarding | pass.", "Jūs esate | grupėje | 3. | Tai yra | — | Jūsų | įlaipinimo | kortelėje.", "Jūs – 3 grupėje. Tai parašyta Jūsų įlaipinimo kortelėje.",
         { say: "You're in group three. It's on your boarding pass.", flags: { 4: "“on” has no separate word: the locative kortelėje carries it across “your boarding”." } }),
     ],
     group_after: [
       t("Group | 3 | boards | right | after | group | 2.", "Grupė | 3 | įlipa | iškart | po | grupės | 2.", "Trečioji grupė įlipa iškart po antrosios.", { say: "Group three boards right after group two." }),
     ],
     carryon_ok: [
-      t("Yes, | you | can | bring | one | carry-on | and | one | personal | item.", "Taip, | jūs | galite | atsinešti | vieną | rankinį bagažą | ir | vieną | asmeninį | daiktą.", "Taip, galite atsinešti vieną rankinio bagažo krepšį ir vieną asmeninį daiktą."),
+      t("Yes, | you | can | bring | one | carry-on | and | one | personal | item.", "Taip, | Jūs | galite | atsinešti | vieną | rankinį bagažą | ir | vieną | asmeninį | daiktą.", "Taip, galite atsinešti vieną rankinio bagažo krepšį ir vieną asmeninį daiktą."),
     ],
     carryon_full: [
       t("Yes, | but | the | flight | is | full | today, | so | overhead | space | is | tight.", "Taip, | bet | — | skrydis | yra | pilnas | šiandien, | todėl | viršutinėse lentynose | vietos | yra | mažai.", "Taip, bet šiandien skrydis pilnas, todėl viršutinėse lentynose vietos mažai.",
@@ -557,14 +557,14 @@ export const gate: SituationDef = {
         { flags: { 4: "Existential “there” has no Lithuanian word: yra carries it (linked to “are”)." } }),
     ],
     seat_offer: [
-      t("Let | me | see... | I | can | move | you | to | 16A, | a | window | seat.", "Leiskite | man | pažiūrėti... | Aš | galiu | perkelti | jus | į | 16A, | — | prie lango | vietą.", "Tuoj pažiūrėsiu… Galiu jus perkelti į 16A – vietą prie lango.",
+      t("Let | me | see... | I | can | move | you | to | 16A, | a | window | seat.", "Leiskite | man | pažiūrėti... | Aš | galiu | perkelti | Jus | į | 16A, | — | prie lango | vietą.", "Tuoj pažiūrėsiu… Galiu Jus perkelti į 16A – vietą prie lango.",
         { say: "Let me see... I can move you to sixteen A, a window seat." }),
     ],
     seat_offer_q: [
-      t("Would | you | like | that?", "Ar | jūs | norėtumėte | to?", "Ar norėtumėte?", { flags: { 0: "“Would” in a yes/no question = the particle ar; the conditional sits on norėtumėte (linked to “like”)." } }),
+      t("Would | you | like | that?", "Ar | Jūs | norėtumėte | to?", "Ar norėtumėte?", { flags: { 0: "“Would” in a yes/no question = the particle ar; the conditional sits on norėtumėte (linked to “like”)." } }),
     ],
     seat_changed: [
-      t("Done! | Here's | your | new | boarding | pass.", "Padaryta! | Štai | jūsų | nauja | įlaipinimo | kortelė.", "Padaryta! Štai jūsų nauja įlaipinimo kortelė."),
+      t("Done! | Here's | your | new | boarding | pass.", "Padaryta! | Štai | Jūsų | nauja | įlaipinimo | kortelė.", "Padaryta! Štai Jūsų nauja įlaipinimo kortelė."),
     ],
     gate12_dir: [
       t("Gate | 12 | is | just | down | the | hall, | on the left.", "Vartai | 12 | yra | čia pat | — | — | koridoriumi, | kairėje.", "12-ieji vartai čia pat, koridoriumi, kairėje.",
@@ -581,11 +581,11 @@ export const gate: SituationDef = {
       t("Yes, | messaging | is | free.", "Taip, | žinutės | yra | nemokamos.", "Taip, žinutės nemokamos."),
     ],
     clarify_what: [
-      t("Sorry, | what | do | you | mean?", "Atsiprašau, | ką | — | jūs | turite omenyje?", "Atsiprašau, ką turite omenyje?",
+      t("Sorry, | what | do | you | mean?", "Atsiprašau, | ką | — | Jūs | turite omenyje?", "Atsiprašau, ką turite omenyje?",
         { flags: { 2: "Question “do” has no Lithuanian word; the tense sits on turite omenyje (linked to “mean”)." } }),
     ],
     seat_now: [
-      t("Your | seat | is | 16A | now.", "Jūsų | vieta | yra | 16A | dabar.", "Dabar jūsų vieta – 16A.", { say: "Your seat is sixteen A now." }),
+      t("Your | seat | is | 16A | now.", "Jūsų | vieta | yra | 16A | dabar.", "Dabar Jūsų vieta – 16A.", { say: "Your seat is sixteen A now." }),
     ],
     gate8_here: [
       t("This | is | gate | 8.", "Tai | yra | vartai | 8.", "Čia aštuntieji vartai.", { say: "This is gate eight." }),
@@ -599,8 +599,8 @@ export const gate: SituationDef = {
       t("Sure, | go ahead.", "Žinoma, | klauskite.", "Žinoma, klauskite."),
     ],
     have_seat: [
-      t("Okay! | Please | have a seat. | We'll call | your | group.", "Gerai! | Prašau, | prisėskite. | Pakviesime | jūsų | grupę.", "Gerai! Prašom prisėsti, jūsų grupę pakviesime."),
-      t("Great. | Have a seat, | and | we'll call | your | group | soon.", "Puiku. | Prisėskite, | ir | pakviesime | jūsų | grupę | netrukus.", "Puiku. Prisėskite, netrukus pakviesime jūsų grupę."),
+      t("Okay! | Please | have a seat. | We'll call | your | group.", "Gerai! | Prašau, | prisėskite. | Pakviesime | Jūsų | grupę.", "Gerai! Prašom prisėsti, Jūsų grupę pakviesime."),
+      t("Great. | Have a seat, | and | we'll call | your | group | soon.", "Puiku. | Prisėskite, | ir | pakviesime | Jūsų | grupę | netrukus.", "Puiku. Prisėskite, netrukus pakviesime Jūsų grupę."),
     ],
     full_offer: [
       t("Oh, | one | more | thing: | this | flight | is | full | today, | so | we're checking | carry-on | bags | for free.", "O, | dar | vienas | dalykas: | šis | skrydis | yra | pilnas | šiandien, | todėl | registruojame | rankinio bagažo | krepšius | nemokamai.", "O, dar vienas dalykas: šiandien skrydis pilnas, todėl rankinio bagažo krepšius registruojame nemokamai."),
@@ -613,11 +613,11 @@ export const gate: SituationDef = {
       t("Yes, | it's | free.", "Taip, | tai yra | nemokama.", "Taip, nemokamai."),
     ],
     full_offer_q: [
-      t("Would | you | like | to check | yours?", "Ar | jūs | norėtumėte | užregistruoti | savąjį?", "Ar norėtumėte užregistruoti savąjį?",
+      t("Would | you | like | to check | yours?", "Ar | Jūs | norėtumėte | užregistruoti | savąjį?", "Ar norėtumėte užregistruoti savąjį?",
         { flags: { 0: "“Would” in a yes/no question = the particle ar; the conditional sits on norėtumėte (linked to “like”)." } }),
     ],
     bag_tagged: [
-      t("Great! | Here's | your | tag.", "Puiku! | Štai | jūsų | žymė.", "Puiku! Štai jūsų bagažo žymė."),
+      t("Great! | Here's | your | tag.", "Puiku! | Štai | Jūsų | žymė.", "Puiku! Štai Jūsų bagažo žymė."),
     ],
     bag_back_boston: [
       t("You'll get | it | back | in Boston, | at | baggage | claim.", "Atgausite | jį | — | Bostone, | — | bagažo | atsiėmimo salėje.", "Atgausite jį Bostone, bagažo atsiėmimo salėje.",
@@ -637,7 +637,7 @@ export const gate: SituationDef = {
         { say: "Now boarding group {$grp} for flight two twenty-three to Boston." }),
     ],
     have_seat_wait: [
-      t("Please | have a seat. | We'll call | your | group.", "Prašau, | prisėskite. | Pakviesime | jūsų | grupę.", "Prašom prisėsti, jūsų grupę pakviesime."),
+      t("Please | have a seat. | We'll call | your | group.", "Prašau, | prisėskite. | Pakviesime | Jūsų | grupę.", "Prašom prisėsti, Jūsų grupę pakviesime."),
     ],
     not_yet_short: [
       t("Not | yet.", "Dar | ne.", "Dar ne."),
@@ -648,14 +648,14 @@ export const gate: SituationDef = {
     ],
     yes_board: [
       t("Yes, | go ahead!", "Taip, | prašom!", "Taip, prašom!"),
-      t("Yes, | that's | you!", "Taip, | tai yra | jūs!", "Taip, tai jūsų grupė!"),
+      t("Yes, | that's | you!", "Taip, | tai yra | Jūs!", "Taip, tai Jūsų grupė!"),
     ],
     scan_ask: [
-      t("Can | I | scan | your | boarding | pass?", "Ar galiu | aš | nuskenuoti | jūsų | įlaipinimo | kortelę?", "Ar galiu nuskenuoti jūsų įlaipinimo kortelę?"),
+      t("Can | I | scan | your | boarding | pass?", "Ar galiu | aš | nuskenuoti | Jūsų | įlaipinimo | kortelę?", "Ar galiu nuskenuoti Jūsų įlaipinimo kortelę?"),
       t("Boarding | pass, | please.", "Įlaipinimo | kortelę, | prašau.", "Įlaipinimo kortelę, prašau."),
     ],
     scanned: [
-      t("Thank | you. | Enjoy | your | flight!", "Dėkoju | jums. | Mėgaukitės | savo | skrydžiu!", "Ačiū. Malonaus skrydžio!"),
+      t("Thank | you. | Enjoy | your | flight!", "Dėkoju | Jums. | Mėgaukitės | savo | skrydžiu!", "Ačiū. Malonaus skrydžio!"),
       t("Thanks! | Have | a | great | flight!", "Ačiū! | Linkiu | — | puikaus | skrydžio!", "Ačiū! Puikaus skrydžio!"),
     ],
   },
@@ -712,14 +712,14 @@ export const gate: SituationDef = {
     thanks: {
       lt: "Padėkoti",
       items: [
-        { id: "s_thanks", s: t("Thank | you | very much!", "Dėkoju | jums | labai!", "Labai ačiū!") },
-        { id: "s_thanks_help", s: t("Thanks | for | your | help!", "Ačiū | už | jūsų | pagalbą!", "Ačiū už pagalbą!") },
+        { id: "s_thanks", s: t("Thank | you | very much!", "Dėkoju | Jums | labai!", "Labai ačiū!") },
+        { id: "s_thanks_help", s: t("Thanks | for | your | help!", "Ačiū | už | Jūsų | pagalbą!", "Ačiū už pagalbą!") },
       ],
     },
     done: {
       lt: "Pasakyti, kad klausimų nebeturi",
       items: [
-        { id: "more_all", s: t("That's | all, | thank | you.", "Tai yra | viskas, | dėkoju | jums.", "Tai viskas, ačiū.") },
+        { id: "more_all", s: t("That's | all, | thank | you.", "Tai yra | viskas, | dėkoju | Jums.", "Tai viskas, ačiū.") },
         { id: "more_good", s: t("No, | I'm | good, | thanks.", "Ne, | man | viskas gerai, | ačiū.", "Ne, viskas gerai, ačiū."), note: "„I'm good“ čia reiškia mandagų „ne, ačiū“." },
       ],
     },

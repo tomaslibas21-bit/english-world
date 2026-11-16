@@ -310,12 +310,12 @@ export const police: SituationDef = {
 
   lines: {
     greet: [
-      t("Good | afternoon. | How | can | I | help | you?", "Laba | diena. | Kaip | galiu | aš | padėti | jums?", "Laba diena. Kuo galiu padėti?"),
-      t("Hi there. | What | can | I | do | for you?", "Sveiki. | Ką | galiu | aš | padaryti | jums?", "Sveiki. Kuo galiu padėti?"),
+      t("Good | afternoon. | How | can | I | help | you?", "Laba | diena. | Kaip | galiu | aš | padėti | Jums?", "Laba diena. Kuo galiu padėti?"),
+      t("Hi there. | What | can | I | do | for you?", "Sveiki. | Ką | galiu | aš | padaryti | Jums?", "Sveiki. Kuo galiu padėti?"),
       t("Next, | please. | How | can | I | help?", "Kitas, | prašom. | Kaip | galiu | aš | padėti?", "Kitas, prašom. Kuo galiu padėti?"),
     ],
     ask_help: [
-      t("How | can | I | help | you?", "Kaip | galiu | aš | padėti | jums?", "Kuo galiu padėti?"),
+      t("How | can | I | help | you?", "Kaip | galiu | aš | padėti | Jums?", "Kuo galiu padėti?"),
     ],
     sorry_hear: [
       t("I'm | sorry | to hear | that.", "Man | gaila | girdėti | tai.", "Gaila tai girdėti."),
@@ -325,10 +325,10 @@ export const police: SituationDef = {
       t("What | was | stolen?", "Kas | buvo | pavogta?", "Kas buvo pavogta?"),
     ],
     ask_stolen_q: [
-      t("Do | you | think | someone | took | it?", "Ar | jūs | manote, kad | kas nors | paėmė | {jis@X:acc}?", "Ar manote, kad kas nors {jis@X:acc} paėmė?", { flags: { 0: F_DO_Q } }),
+      t("Do | you | think | someone | took | it?", "Ar | Jūs | manote, kad | kas nors | paėmė | {jis@X:acc}?", "Ar manote, kad kas nors {jis@X:acc} paėmė?", { flags: { 0: F_DO_Q } }),
     ],
     ask_happened: [
-      t("Can | you | tell | me | what | happened?", "Ar galite | jūs | papasakoti | man, | kas | atsitiko?", "Ar galite papasakoti, kas atsitiko?"),
+      t("Can | you | tell | me | what | happened?", "Ar galite | Jūs | papasakoti | man, | kas | atsitiko?", "Ar galite papasakoti, kas atsitiko?"),
       t("Okay. | What | happened?", "Gerai. | Kas | atsitiko?", "Gerai. Kas atsitiko?"),
     ],
     ack: [
@@ -338,14 +338,14 @@ export const police: SituationDef = {
     ],
     ask_where: [
       t("Where | did | it | happen?", "Kur | — | tai | atsitiko?", "Kur tai atsitiko?", { flags: { 1: "Wh-question “did”: no Lithuanian word; the past tense sits on atsitiko." } }),
-      t("Where | were | you | when | it | happened?", "Kur | buvote | jūs, | kai | tai | atsitiko?", "Kur buvote, kai tai atsitiko?"),
+      t("Where | were | you | when | it | happened?", "Kur | buvote | Jūs, | kai | tai | atsitiko?", "Kur buvote, kai tai atsitiko?"),
     ],
     ask_when: [
       t("And | what | time | was | that?", "O | kelintą | valandą | buvo | tai?", "O kelintą valandą tai buvo?"),
       t("When | was | this?", "Kada | buvo | tai?", "Kada tai buvo?"),
     ],
     ask_describe: [
-      t("Can | you | describe | {X.the}?", "Ar galite | jūs | apibūdinti | {X.the:acc}?", "Ar galite apibūdinti {X.the:acc}?"),
+      t("Can | you | describe | {X.the}?", "Ar galite | Jūs | apibūdinti | {X.the:acc}?", "Ar galite apibūdinti {X.the:acc}?"),
       t("What | does | it | look | like?", "Kaip | — | {jis@X:nom} | atrodo | —?", "Kaip {jis@X:nom} atrodo?",
         { flags: { 1: "Question “does”: no Lithuanian word; the tense sits on atrodo.", 4: "“like” (look like): kaip … atrodo already says it." } }),
     ],
@@ -368,11 +368,11 @@ export const police: SituationDef = {
       t("Okay, | got it.", "Gerai, | supratau.", "Gerai, supratau."),
     ],
     passport_embassy: [
-      t("Your | passport | too? | Then | you | should | also | contact | your | embassy.", "Jūsų | pasas | taip pat? | Tada | jums | reikėtų | taip pat | susisiekti su | savo | ambasada.", "Ir pasas? Tada reikėtų susisiekti ir su savo ambasada.",
+      t("Your | passport | too? | Then | you | should | also | contact | your | embassy.", "Jūsų | pasas | taip pat? | Tada | Jums | reikėtų | taip pat | susisiekti su | savo | ambasada.", "Ir pasas? Tada reikėtų susisiekti ir su savo ambasada.",
         { flags: { 4: "“you should”: the dative jums with the conditional reikėtų carries “should”." } }),
     ],
     ask_bank: [
-      t("Have | you | called | your | bank | yet?", "Ar | jūs | paskambinote į | savo | banką | jau?", "Ar jau paskambinote į banką?",
+      t("Have | you | called | your | bank | yet?", "Ar | Jūs | paskambinote į | savo | banką | jau?", "Ar jau paskambinote į banką?",
         { flags: { 0: "Perfect “Have” in a yes/no question = the particle ar; the past tense sits on paskambinote." } }),
     ],
     bank_good: [
@@ -383,52 +383,52 @@ export const police: SituationDef = {
         { flags: { 0: "“You should”: the dative jums with the conditional reikėtų carries it." } }),
     ],
     ask_id: [
-      t("Do | you | have | any | ID | with | you?", "Ar | jūs | turite | kokį nors | asmens dokumentą | su | savimi?", "Ar turite su savimi kokį nors asmens dokumentą?", { flags: { 0: F_DO_Q } }),
+      t("Do | you | have | any | ID | with | you?", "Ar | Jūs | turite | kokį nors | asmens dokumentą | su | savimi?", "Ar turite su savimi kokį nors asmens dokumentą?", { flags: { 0: F_DO_Q } }),
     ],
     id_of_course: [
       t("Right, | of course. | That's | okay.", "Tiesa, | žinoma. | Tai yra | gerai.", "Tiesa, žinoma. Nieko tokio."),
     ],
     id_thanks: [
-      t("Great, | thank | you.", "Puiku, | dėkoju | jums.", "Puiku, ačiū."),
+      t("Great, | thank | you.", "Puiku, | dėkoju | Jums.", "Puiku, ačiū."),
     ],
     details: [
       t("Okay, | I'll need | some | details | for the report.", "Gerai, | man reikės | — | duomenų | pranešimui.", "Gerai, pranešimui man reikės kelių duomenų.",
         { flags: { 2: "Partitive “some”: the genitive duomenų carries it." } }),
     ],
     ask_name: [
-      t("Can | I | get | your | name?", "Ar galiu | aš | gauti | jūsų | vardą?", "Koks jūsų vardas ir pavardė?"),
-      t("What's | your | full | name?", "Koks yra | jūsų | pilnas | vardas?", "Koks jūsų vardas ir pavardė?"),
+      t("Can | I | get | your | name?", "Ar galiu | aš | gauti | Jūsų | vardą?", "Koks Jūsų vardas ir pavardė?"),
+      t("What's | your | full | name?", "Koks yra | Jūsų | pilnas | vardas?", "Koks Jūsų vardas ir pavardė?"),
     ],
     ask_last_name: [
-      t("And | your | last name?", "O | jūsų | pavardė?", "O pavardė?"),
+      t("And | your | last name?", "O | Jūsų | pavardė?", "O pavardė?"),
     ],
     ask_spell: [
-      t("Could | you | spell | your | last name | for me?", "Ar galėtumėte | jūs | pasakyti paraidžiui | savo | pavardę | man?", "Ar galėtumėte man pasakyti pavardę paraidžiui?"),
-      t("How | do | you | spell | your | last name?", "Kaip | — | jūs | rašote | savo | pavardę?", "Kaip rašoma jūsų pavardė?", { flags: { 1: "Question “do”: no Lithuanian word; the tense sits on rašote." } }),
+      t("Could | you | spell | your | last name | for me?", "Ar galėtumėte | Jūs | pasakyti paraidžiui | savo | pavardę | man?", "Ar galėtumėte man pasakyti pavardę paraidžiui?"),
+      t("How | do | you | spell | your | last name?", "Kaip | — | Jūs | rašote | savo | pavardę?", "Kaip rašoma Jūsų pavardė?", { flags: { 1: "Question “do”: no Lithuanian word; the tense sits on rašote." } }),
     ],
     spell_ok: [
-      t("Thank | you.", "Dėkoju | jums.", "Ačiū."),
+      t("Thank | you.", "Dėkoju | Jums.", "Ačiū."),
       t("Got it, | thanks.", "Supratau, | ačiū.", "Supratau, ačiū."),
     ],
     spell_again: [
       t("Sorry, | letter | by | letter, | please.", "Atsiprašau, | raidė | po | raidės, | prašom.", "Atsiprašau, paraidžiui, prašom."),
     ],
     ask_phone: [
-      t("And | a | phone | number | where | we | can | reach | you?", "Ir | — | telefono | numeris, | kuriuo | mes | galime | susisiekti su | jumis?", "Ir telefono numeris, kuriuo galėtume su jumis susisiekti?"),
-      t("What's | the | best | number | to reach | you?", "Koks yra | — | geriausias | numeris | susisiekti su | jumis?", "Kokiu numeriu geriausia su jumis susisiekti?"),
+      t("And | a | phone | number | where | we | can | reach | you?", "Ir | — | telefono | numeris, | kuriuo | mes | galime | susisiekti su | Jumis?", "Ir telefono numeris, kuriuo galėtume su Jumis susisiekti?"),
+      t("What's | the | best | number | to reach | you?", "Koks yra | — | geriausias | numeris | susisiekti su | Jumis?", "Kokiu numeriu geriausia su Jumis susisiekti?"),
     ],
     phone_ok: [
       t("Thanks.", "Ačiū.", "Ačiū."),
     ],
     no_phone_ok: [
-      t("That's | okay. | You | can | call | us, | then.", "Tai yra | gerai. | Jūs | galite | paskambinti | mums, | tada.", "Nieko tokio. Tada jūs galite mums paskambinti."),
+      t("That's | okay. | You | can | call | us, | then.", "Tai yra | gerai. | Jūs | galite | paskambinti | mums, | tada.", "Nieko tokio. Tada Jūs galite mums paskambinti."),
     ],
     sign: [
       t("Please | check | the | report | and | sign | here.", "Prašom | patikrinti | — | pranešimą | ir | pasirašyti | čia.", "Prašom patikrinti pranešimą ir pasirašyti čia."),
       t("Please | fill out | this | form | and | sign | at the bottom.", "Prašom | užpildyti | šią | formą | ir | pasirašyti | apačioje.", "Prašom užpildyti šią formą ir pasirašyti apačioje."),
     ],
     sign_ok: [
-      t("Great, | thank | you.", "Puiku, | dėkoju | jums.", "Puiku, ačiū."),
+      t("Great, | thank | you.", "Puiku, | dėkoju | Jums.", "Puiku, ačiū."),
       t("Thanks.", "Ačiū.", "Ačiū."),
     ],
     sign_where: [
@@ -438,14 +438,14 @@ export const police: SituationDef = {
       t("Sure, | here's | a | pen.", "Žinoma, | štai | — | rašiklis.", "Žinoma, štai rašiklis."),
     ],
     form_yes: [
-      t("Yes, | but | don't worry, | I'll help | you.", "Taip, | bet | nesijaudinkite, | padėsiu | jums.", "Taip, bet nesijaudinkite, aš jums padėsiu."),
+      t("Yes, | but | don't worry, | I'll help | you.", "Taip, | bet | nesijaudinkite, | padėsiu | Jums.", "Taip, bet nesijaudinkite, aš Jums padėsiu."),
     ],
     case_number: [
-      t("Here's | your | case | number: | 4471.", "Štai | jūsų | bylos | numeris: | 4471.", "Štai jūsų bylos numeris: 4471.", { say: "Here's your case number: four, four, seven, one.", write: "Case number: 4471 · Maple Harbor Police" }),
+      t("Here's | your | case | number: | 4471.", "Štai | Jūsų | bylos | numeris: | 4471.", "Štai Jūsų bylos numeris: 4471.", { say: "Here's your case number: four, four, seven, one.", write: "Case number: 4471 · Maple Harbor Police" }),
     ],
     will_call: [
-      t("We'll call | you | if | someone | finds | it.", "Paskambinsime | jums, | jei | kas nors | ras | {jis@X:acc}.", "Paskambinsime, jei kas nors {jis@X:acc} ras."),
-      t("If | it | turns up, | we'll call | you.", "Jei | {jis@X:nom} | atsiras, | paskambinsime | jums.", "Jei {jis@X:nom} atsiras, jums paskambinsime."),
+      t("We'll call | you | if | someone | finds | it.", "Paskambinsime | Jums, | jei | kas nors | ras | {jis@X:acc}.", "Paskambinsime, jei kas nors {jis@X:acc} ras."),
+      t("If | it | turns up, | we'll call | you.", "Jei | {jis@X:nom} | atsiras, | paskambinsime | Jums.", "Jei {jis@X:nom} atsiras, Jums paskambinsime."),
     ],
     cards_yes: [
       t("Yes, | call | your | bank | right away | and | cancel | them.", "Taip, | paskambinkite į | savo | banką | iš karto | ir | užblokuokite | jas.", "Taip, iš karto paskambinkite į banką ir užblokuokite jas."),
@@ -454,7 +454,7 @@ export const police: SituationDef = {
       t("Good. | That's | the | most | important | thing.", "Puiku. | Tai yra | — | pats | svarbiausias | dalykas.", "Puiku. Tai svarbiausia."),
     ],
     what_now: [
-      t("Call | your | bank, | and | we'll call | you | if | it | turns up.", "Paskambinkite | savo | bankui, | o | mes paskambinsime | jums, | jei | {jis@X:nom} | atsiras.", "Paskambinkite į banką, o mes paskambinsime jums, jei {jis@X:nom} atsiras."),
+      t("Call | your | bank, | and | we'll call | you | if | it | turns up.", "Paskambinkite | savo | bankui, | o | mes paskambinsime | Jums, | jei | {jis@X:nom} | atsiras.", "Paskambinkite į banką, o mes paskambinsime Jums, jei {jis@X:nom} atsiras."),
     ],
     how_long: [
       t("It's | hard | to say. | Sometimes | it | takes | a | few | days.", "Yra | sunku | pasakyti. | Kartais | tai | užtrunka | — | kelias | dienas.", "Sunku pasakyti. Kartais tai užtrunka kelias dienas."),
@@ -463,22 +463,22 @@ export const police: SituationDef = {
       t("I | hope | so. | Wallets | often | turn up.", "Aš | tikiuosi | —. | Piniginės | dažnai | atsiranda.", "Tikiuosi. Piniginės dažnai atsiranda.", { flags: { 2: "“so”: no Lithuanian word; tikiuosi alone says “I hope so”." } }),
     ],
     copy: [
-      t("Of course. | Here's | a | copy | for you.", "Žinoma. | Štai | — | kopija | jums.", "Žinoma. Štai jums kopija."),
+      t("Of course. | Here's | a | copy | for you.", "Žinoma. | Štai | — | kopija | Jums.", "Žinoma. Štai Jums kopija."),
     ],
     found: [
       t("Oh, | wait | a | second. | Someone | just | brought in | {X.np}.", "O, | palaukite | — | sekundę. | Kažkas | ką tik | atnešė | {X.np:acc}.", "O, palaukite. Kažkas ką tik atnešė {X.np:acc}."),
     ],
     found_ask: [
-      t("Is | this | yours?", "Ar | tai | jūsų?", "Ar tai jūsų?", { flags: { 0: F_IS_Q } }),
+      t("Is | this | yours?", "Ar | tai | Jūsų?", "Ar tai Jūsų?", { flags: { 0: F_IS_Q } }),
     ],
     found_reask: [
-      t("So, | is | this | yours?", "Tai | ar | tai | jūsų?", "Tai ar tai jūsų?", { flags: { 1: F_IS_Q } }),
+      t("So, | is | this | yours?", "Tai | ar | tai | Jūsų?", "Tai ar tai Jūsų?", { flags: { 1: F_IS_Q } }),
     ],
     found_sure: [
-      t("Are | you | sure? | You | said | it | was | {X.np}.", "Ar | jūs | {m:tikras|f:tikra}? | Jūs | sakėte, kad | tai | buvo | {X.np:nom}.", "Ar tikrai? Sakėte, kad tai buvo {X.np:nom}.", { flags: { 0: "“Are” in a yes/no question = the particle ar." } }),
+      t("Are | you | sure? | You | said | it | was | {X.np}.", "Ar | Jūs | {m:tikras|f:tikra}? | Jūs | sakėte, kad | tai | buvo | {X.np:nom}.", "Ar tikrai? Sakėte, kad tai buvo {X.np:nom}.", { flags: { 0: "“Are” in a yes/no question = the particle ar." } }),
     ],
     found_verify: [
-      t("Great! | Can | you | tell | me | your | name? | I'll check | the | ID | inside.", "Puiku! | Ar galite | jūs | pasakyti | man | savo | vardą? | Patikrinsiu | — | dokumentą | viduje.", "Puiku! Ar galite pasakyti savo vardą? Patikrinsiu dokumentą viduje."),
+      t("Great! | Can | you | tell | me | your | name? | I'll check | the | ID | inside.", "Puiku! | Ar galite | Jūs | pasakyti | man | savo | vardą? | Patikrinsiu | — | dokumentą | viduje.", "Puiku! Ar galite pasakyti savo vardą? Patikrinsiu dokumentą viduje."),
     ],
     // 12 Nov 2026, new lines: who brought it in, and where it was found
     found_who: [t("A | young | woman. | She | didn't leave | her | name.", "— | Jauna | moteris. | Ji | nepaliko | savo | vardo.", "Jauna moteris. Savo vardo nepaliko.")],
@@ -496,7 +496,7 @@ export const police: SituationDef = {
       t("I'm | sorry. | Then | let's file | a | report | anyway.", "Man | gaila. | Tada | surašykime | — | pranešimą | vis tiek.", "Gaila. Tada vis tiek surašykime pranešimą."),
     ],
     anything_else: [
-      t("Anything | else | I | can | do | for you?", "Ką nors | dar | aš | galiu | padaryti | jums?", "Ar dar kuo nors galiu padėti?"),
+      t("Anything | else | I | can | do | for you?", "Ką nors | dar | aš | galiu | padaryti | Jums?", "Ar dar kuo nors galiu padėti?"),
     ],
     closing: [
       t("Good luck. | I | hope | we | find | it.", "Sėkmės. | Aš | tikiuosi, kad | mes | rasime | {jis@X:acc}.", "Sėkmės. Tikiuosi, kad {jis@X:acc} rasime."),
@@ -639,7 +639,7 @@ export const police: SituationDef = {
       lt: "Pasirašyti arba paklausti, kur pasirašyti",
       items: [
         { id: "sign_where", s: t("Sure. | Where | do | I | sign?", "Žinoma. | Kur | — | man | pasirašyti?", "Žinoma. Kur pasirašyti?", { flags: { 2: "Question “do”: no Lithuanian word; the dative man with the infinitive carries it." } }) },
-        { id: "pen", s: t("Okay. | Do | you | have | a | pen?", "Gerai. | Ar | jūs | turite | — | rašiklį?", "Gerai. Ar turite rašiklį?", { flags: { 1: F_DO_Q } }) },
+        { id: "pen", s: t("Okay. | Do | you | have | a | pen?", "Gerai. | Ar | Jūs | turite | — | rašiklį?", "Gerai. Ar turite rašiklį?", { flags: { 1: F_DO_Q } }) },
         { id: "signed", s: t("Here you go.", "Prašom.", "Prašom.") },
       ],
     },
@@ -670,8 +670,8 @@ export const police: SituationDef = {
     thanks: {
       lt: "Padėkoti ir atsisveikinti",
       items: [
-        { id: "thats_all", s: t("No, | that's | all. | Thank | you.", "Ne, | tai yra | viskas. | Dėkoju | jums.", "Ne, tai viskas. Ačiū.") },
-        { id: "thanks_officer", s: t("Thank | you, | officer.", "Dėkoju | jums, | pareigūne.", "Ačiū, pareigūne.") },
+        { id: "thats_all", s: t("No, | that's | all. | Thank | you.", "Ne, | tai yra | viskas. | Dėkoju | Jums.", "Ne, tai viskas. Ačiū.") },
+        { id: "thanks_officer", s: t("Thank | you, | officer.", "Dėkoju | Jums, | pareigūne.", "Ačiū, pareigūne.") },
         { id: "thats_all", s: t("No, | thanks. | Bye!", "Ne, | ačiū. | Viso gero!", "Ne, ačiū. Viso gero!") },
       ],
     },

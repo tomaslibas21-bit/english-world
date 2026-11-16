@@ -358,13 +358,13 @@ export const post: SituationDef = {
       t("Next | customer, | please!", "Kitas | klientas, | prašom!", "Kitas klientas, prašom!"),
     ],
     ask_help: [
-      t("Hi there! | What | can | I | do | for you | today?", "Laba diena! | Ką | galiu | aš | padaryti | jums | šiandien?", "Laba diena! Kuo šiandien galiu padėti?"),
-      t("How | can | I | help | you?", "Kuo | galiu | aš | padėti | jums?", "Kuo galiu padėti?"),
+      t("Hi there! | What | can | I | do | for you | today?", "Laba diena! | Ką | galiu | aš | padaryti | Jums | šiandien?", "Laba diena! Kuo šiandien galiu padėti?"),
+      t("How | can | I | help | you?", "Kuo | galiu | aš | padėti | Jums?", "Kuo galiu padėti?"),
     ],
     ask_dest: [
       t("Sure. | Where's | it | going?", "Žinoma. | Kur | jis | keliauja?", "Žinoma. Kur jis keliauja?",
         { flags: { 1: "“Where's” = where is: progressive “is” has no Lithuanian word; keliauja carries the tense (linked to “going”)." } }),
-      t("Okay! | Where | are | you | sending | it?", "Gerai! | Kur | — | jūs | siunčiate | jį?", "Gerai! Kur jį siunčiate?",
+      t("Okay! | Where | are | you | sending | it?", "Gerai! | Kur | — | Jūs | siunčiate | jį?", "Gerai! Kur jį siunčiate?",
         { flags: { 2: "Progressive “are” has no Lithuanian word; siunčiate carries the tense (linked to “sending”)." } }),
     ],
     dest_lt: [
@@ -404,7 +404,7 @@ export const post: SituationDef = {
       t("You'll need | to take | it | out.", "Jums reikės | išimti | juos | —.", "Juos reikės išimti.",
         { flags: { 3: "“out” (take … out): the prefix iš- of išimti carries it." } }),
     ],
-    perfume_thanks: [t("Thank | you.", "Dėkoju | jums.", "Ačiū.")],
+    perfume_thanks: [t("Thank | you.", "Dėkoju | Jums.", "Ačiū.")],
     perfume_rule: [t("I'm sorry, | it's | the | rule.", "Atsiprašau, | tai yra | — | taisyklė.", "Atsiprašau, tokia taisyklė.")],
     perishable_no: [
       t("Oh, | sorry, | we | can't send | perishable | food | overseas.", "O, | atsiprašau, | mes | negalime siųsti | greitai gendančio | maisto | į užsienį.",
@@ -430,9 +430,9 @@ export const post: SituationDef = {
     kilos_a: [t("That's | about | a | kilo | and | a | half.", "Tai | maždaug | — | kilogramas | ir | — | pusė.", "Tai maždaug pusantro kilogramo.")],
     kilos_b: [t("That's | about | 800 | grams.", "Tai | maždaug | 800 | gramų.", "Tai maždaug 800 gramų.", { say: "That's about eight hundred grams." })],
     ask_service: [
-      t("How | would | you | like | to send | it?", "Kaip | — | jūs | norėtumėte | išsiųsti | jį?", "Kaip norėtumėte jį išsiųsti?",
+      t("How | would | you | like | to send | it?", "Kaip | — | Jūs | norėtumėte | išsiųsti | jį?", "Kaip norėtumėte jį išsiųsti?",
         { flags: { 1: "“would”: the conditional ending of norėtumėte carries it (linked to “like”)." } }),
-      t("Okay, | so | you | have | two | options.", "Gerai, | tai | jūs | turite | du | variantus.", "Gerai, turite du variantus."),
+      t("Okay, | so | you | have | two | options.", "Gerai, | tai | Jūs | turite | du | variantus.", "Gerai, turite du variantus."),
     ],
     ask_service_again: [
       t("So, | Priority | or | Express?", "Tai | „Priority“ | ar | „Express“?", "Tai „Priority“ ar „Express“?"),
@@ -498,23 +498,23 @@ export const post: SituationDef = {
     gift_not: [t("Okay, | no | problem.", "Gerai, | jokių | problemų.", "Gerai, jokių problemų.")],
     sign_customs: [
       t("Great. | Just | sign | here, | please.", "Puiku. | Tiesiog | pasirašykite | čia, | prašom.", "Puiku. Tiesiog pasirašykite čia."),
-      t("Could | you | sign | here | for me?", "Ar galėtumėte | jūs | pasirašyti | čia | man?", "Ar galėtumėte čia pasirašyti?"),
+      t("Could | you | sign | here | for me?", "Ar galėtumėte | Jūs | pasirašyti | čia | man?", "Ar galėtumėte čia pasirašyti?"),
     ],
-    signed_thanks: [t("Thank | you.", "Dėkoju | jums.", "Ačiū."), t("Perfect, | thanks.", "Puiku, | ačiū.", "Puiku, ačiū.")],
+    signed_thanks: [t("Thank | you.", "Dėkoju | Jums.", "Ačiū."), t("Perfect, | thanks.", "Puiku, | ačiū.", "Puiku, ačiū.")],
     return_missing: [
       t("Oh, | there's | no | return | address | on | it.", "O, | nėra | jokio | atgalinio | adreso | ant | jo.", "O, ant jo nėra siuntėjo adreso.",
         { flags: { 1: "Negative concord: nėra is the negated copula; the noun takes the genitive." } }),
     ],
     return_ask: [
-      t("Could | you | add | it | here, | please?", "Ar galėtumėte | jūs | užrašyti | jį | čia, | prašau?", "Ar galėtumėte jį čia užrašyti?"),
+      t("Could | you | add | it | here, | please?", "Ar galėtumėte | Jūs | užrašyti | jį | čia, | prašau?", "Ar galėtumėte jį čia užrašyti?"),
     ],
     return_explain: [
-      t("It's | your | address, | so | they | can | send | it | back | if | needed.", "Tai yra | jūsų | adresas, | kad | jie | galėtų | išsiųsti | jį | atgal, | jei | reikės.",
-        "Tai jūsų adresas, kad prireikus siuntinį galėtų grąžinti."),
+      t("It's | your | address, | so | they | can | send | it | back | if | needed.", "Tai yra | Jūsų | adresas, | kad | jie | galėtų | išsiųsti | jį | atgal, | jei | reikės.",
+        "Tai Jūsų adresas, kad prireikus siuntinį galėtų grąžinti."),
     ],
     return_thanks: [t("Thanks! | That's | perfect.", "Ačiū! | Tai yra | puiku.", "Ačiū! Puiku.")],
     ask_insurance: [
-      t("It's | insured | up to | $200. | Would | you | like | extra | insurance?", "Jis yra | apdraustas | iki | 200 dolerių. | Ar | jūs | norėtumėte | papildomo | draudimo?",
+      t("It's | insured | up to | $200. | Would | you | like | extra | insurance?", "Jis yra | apdraustas | iki | 200 dolerių. | Ar | Jūs | norėtumėte | papildomo | draudimo?",
         "Jis apdraustas iki 200 dolerių. Ar norėtumėte papildomo draudimo?",
         { say: "It's insured up to two hundred dollars. Would you like extra insurance?", flags: { 4: "“Would” in a yes/no question = the particle ar; the conditional sits on norėtumėte." } }),
     ],
@@ -531,33 +531,33 @@ export const post: SituationDef = {
     mailbox: [t("There's | a | blue | mailbox | right | outside, | next to | the | door.", "Yra | — | mėlyna | pašto dėžutė | iškart | lauke, | prie | — | durų.",
       "Mėlyna pašto dėžutė – iškart lauke, prie durų.", { flags: { 0: "Existential “there's” = yra." } })],
     offer_stamps: [
-      t("Do | you | need | any | stamps | today?", "Ar | jums | reikia | — | pašto ženklų | šiandien?", "Ar šiandien jums reikia pašto ženklų?",
+      t("Do | you | need | any | stamps | today?", "Ar | Jums | reikia | — | pašto ženklų | šiandien?", "Ar šiandien Jums reikia pašto ženklų?",
         { flags: { 0: "Question “Do” = the particle ar.", 3: "Partitive: the genitive pašto ženklų carries “any”." } }),
     ],
     stamps_info: [
-      t("For | postcards | to | Europe, | you | need | Global Forever | stamps.", "— | Atvirukams | į | Europą | jums | reikia | „Global Forever“ | pašto ženklų.",
+      t("For | postcards | to | Europe, | you | need | Global Forever | stamps.", "— | Atvirukams | į | Europą | Jums | reikia | „Global Forever“ | pašto ženklų.",
         "Atvirukams į Europą reikia „Global Forever“ pašto ženklų.", { flags: { 0: "“For”: the dative atvirukams carries it." } }),
     ],
     stamps_price: [
-      t("They're | $1.75 | each. | How many | would | you | like?", "Jie kainuoja | 1,75 dolerio | kiekvienas. | Kiek | — | jūs | norėtumėte?",
+      t("They're | $1.75 | each. | How many | would | you | like?", "Jie kainuoja | 1,75 dolerio | kiekvienas. | Kiek | — | Jūs | norėtumėte?",
         "Vienas ženklas kainuoja 1,75 dolerio. Kiek norėtumėte?",
         { say: "They're a dollar seventy-five each. How many would you like?", flags: { 0: "“are” in a price statement = kainuoja.", 4: "“would”: the conditional ending of norėtumėte carries it." } }),
     ],
     stamps_ok: [t("Sure, | here you go.", "Žinoma, | prašom.", "Žinoma, prašom.")],
     stamps_sure: [t("Sure.", "Žinoma.", "Žinoma."), t("Okay, | no | problem.", "Gerai, | jokių | problemų.", "Gerai, jokių problemų.")],
-    stamps_here: [t("And | here are | your | stamps.", "Ir | štai | jūsų | pašto ženklai.", "Ir štai jūsų pašto ženklai.")],
+    stamps_here: [t("And | here are | your | stamps.", "Ir | štai | Jūsų | pašto ženklai.", "Ir štai Jūsų pašto ženklai.")],
     ask_more: [
-      t("Anything | else | for you | today?", "Ką nors | dar | jums | šiandien?", "Dar ko nors šiandien?"),
+      t("Anything | else | for you | today?", "Ką nors | dar | Jums | šiandien?", "Dar ko nors šiandien?"),
       t("Is | that | everything | for today?", "Ar | tai | viskas | šiandien?", "Ar šiandien tai viskas?",
         { flags: { 0: "“Is” in a question = the particle ar; Lithuanian needs no copula here." } }),
     ],
-    ask_more_yes: [t("Sure, | what | else | can | I | do | for you?", "Žinoma, | ką | dar | galiu | aš | padaryti | jums?", "Žinoma, kuo dar galiu padėti?")],
+    ask_more_yes: [t("Sure, | what | else | can | I | do | for you?", "Žinoma, | ką | dar | galiu | aš | padaryti | Jums?", "Žinoma, kuo dar galiu padėti?")],
     say_total: [
       t("Your | total | is | {$total}.", "Jūsų | suma | yra | {$total}.", "Iš viso {$total}."),
       t("That'll be | {$total}.", "Tai bus | {$total}.", "Iš viso {$total}."),
     ],
     ask_pay: [
-      t("How | would | you | like | to pay?", "Kaip | — | jūs | norėtumėte | sumokėti?", "Kaip norėtumėte sumokėti?",
+      t("How | would | you | like | to pay?", "Kaip | — | Jūs | norėtumėte | sumokėti?", "Kaip norėtumėte sumokėti?",
         { flags: { 1: "“would”: the conditional ending of norėtumėte carries it." } }),
     ],
     card_tap: [
@@ -566,11 +566,11 @@ export const post: SituationDef = {
         { flags: { 1: "“and” links “go ahead” to the verb; Lithuanian uses prašom + infinitive." } }),
     ],
     phone_ok: [t("Sure, | just | hold | your | phone | here.", "Žinoma, | tiesiog | prilaikykite | savo | telefoną | čia.", "Žinoma, tiesiog prilaikykite telefoną čia.")],
-    cash_change: [t("And | here's | your | change.", "Ir | štai | jūsų | grąža.", "Štai jūsų grąža.")],
+    cash_change: [t("And | here's | your | change.", "Ir | štai | Jūsų | grąža.", "Štai Jūsų grąža.")],
     pay_later: [t("Sure, | we'll do | that | in | a | minute.", "Žinoma, | padarysime | tai | po | — | minutės.", "Žinoma, tuoj tai padarysime.")],
     receipt: [
-      t("Here's | your | receipt.", "Štai | jūsų | kvitas.", "Štai jūsų kvitas."),
-      t("All set! | Here's | your | receipt.", "Viskas sutvarkyta! | Štai | jūsų | kvitas.", "Viskas! Štai jūsų kvitas."),
+      t("Here's | your | receipt.", "Štai | Jūsų | kvitas.", "Štai Jūsų kvitas."),
+      t("All set! | Here's | your | receipt.", "Viskas sutvarkyta! | Štai | Jūsų | kvitas.", "Viskas! Štai Jūsų kvitas."),
     ],
     tracking_number: [
       t("Your | tracking | number | is | {$text}.", "Jūsų | sekimo | numeris | yra | {$text}.", "Jūsų sekimo numeris – {$text}.",
@@ -584,7 +584,7 @@ export const post: SituationDef = {
       t("Yes, | it | comes | with | tracking.", "Taip, | jis | keliauja | su | sekimu.", "Taip, siuntą bus galima sekti."),
     ],
     tracking_on_receipt: [
-      t("It's | on | your | receipt, | at the top.", "Jis yra | ant | jūsų | kvito, | viršuje.", "Jis jūsų kvite, viršuje."),
+      t("It's | on | your | receipt, | at the top.", "Jis yra | ant | Jūsų | kvito, | viršuje.", "Jis Jūsų kvite, viršuje."),
     ],
     time_priority: [t("Priority | takes | 6–10 | business | days.", "„Priority“ | keliauja | 6–10 | darbo | dienų.", "„Priority“ siunta keliauja 6–10 darbo dienų.", { say: "Priority takes six to ten business days." })],
     time_express: [t("Express | takes | 3–5 | business | days.", "„Express“ | keliauja | 3–5 | darbo | dienas.", "„Express“ siunta keliauja 3–5 darbo dienas.", { say: "Express takes three to five business days." })],
@@ -597,16 +597,16 @@ export const post: SituationDef = {
 
     // pickup (twist)
     pickup_notice_q: [
-      t("Sure! | Do | you | have | the | notice?", "Žinoma! | Ar | jūs | turite | — | pranešimą?", "Žinoma! Ar turite pranešimą?", { flags: { 1: "Question “Do” = the particle ar." } }),
+      t("Sure! | Do | you | have | the | notice?", "Žinoma! | Ar | Jūs | turite | — | pranešimą?", "Žinoma! Ar turite pranešimą?", { flags: { 1: "Question “Do” = the particle ar." } }),
       t("Of course. | Can | I | see | the | slip?", "Žinoma. | Ar galiu | aš | pamatyti | — | pranešimą?", "Žinoma. Ar galiu pamatyti pranešimą?"),
     ],
-    notice_thanks: [t("Thank | you.", "Dėkoju | jums.", "Ačiū.")],
+    notice_thanks: [t("Thank | you.", "Dėkoju | Jums.", "Ačiū.")],
     ask_pickup_name: [
       t("That's | okay. | What's | the | name | on | the | package?", "Tai | gerai. | Koks yra | — | vardas | ant | — | siuntinio?", "Nieko tokio. Kokiu vardu siuntinys?"),
     ],
     name_thanks: [t("Thanks. | Let | me | check.", "Ačiū. | Leiskite | man | patikrinti.", "Ačiū. Tuoj patikrinsiu.")],
     ask_pickup_id: [
-      t("And | can | I | see | your | ID?", "O | ar galiu | aš | pamatyti | jūsų | asmens dokumentą?", "O ar galiu pamatyti jūsų asmens dokumentą?"),
+      t("And | can | I | see | your | ID?", "O | ar galiu | aš | pamatyti | Jūsų | asmens dokumentą?", "O ar galiu pamatyti Jūsų asmens dokumentą?"),
       t("I'll | also | need | a | photo ID.", "Man | taip pat | reikės | — | dokumento su nuotrauka.", "Man dar reikės dokumento su nuotrauka.",
         { flags: { 0: "“'ll” (will): the future ending of reikės carries it; I'm → the dative man (linked to “need”)." } }),
     ],
@@ -614,15 +614,15 @@ export const post: SituationDef = {
       t("Thanks! | One | moment, | I'll go | get | it.", "Ačiū! | Vieną | akimirką, | nueisiu | paimti | jo.", "Ačiū! Akimirką, tuoj atnešiu."),
     ],
     here_package: [
-      t("Here | it | is! | Could | you | sign | here, | please?", "Štai | jis | yra! | Ar galėtumėte | jūs | pasirašyti | čia, | prašau?", "Štai jis! Ar galėtumėte čia pasirašyti?"),
+      t("Here | it | is! | Could | you | sign | here, | please?", "Štai | jis | yra! | Ar galėtumėte | Jūs | pasirašyti | čia, | prašau?", "Štai jis! Ar galėtumėte čia pasirašyti?"),
     ],
-    ask_pickup_sign: [t("Could | you | sign | here, | please?", "Ar galėtumėte | jūs | pasirašyti | čia, | prašau?", "Ar galėtumėte čia pasirašyti?")],
+    ask_pickup_sign: [t("Could | you | sign | here, | please?", "Ar galėtumėte | Jūs | pasirašyti | čia, | prašau?", "Ar galėtumėte čia pasirašyti?")],
     pickup_done: [
-      t("Perfect. | Here's | your | package!", "Puiku. | Štai | jūsų | siuntinys!", "Puiku. Štai jūsų siuntinys!"),
-      t("Thank | you! | Enjoy!", "Dėkoju | jums! | Džiaukitės!", "Ačiū! Džiaukitės!"),
+      t("Perfect. | Here's | your | package!", "Puiku. | Štai | Jūsų | siuntinys!", "Puiku. Štai Jūsų siuntinys!"),
+      t("Thank | you! | Enjoy!", "Dėkoju | Jums! | Džiaukitės!", "Ačiū! Džiaukitės!"),
     ],
     need_id_pickup: [
-      t("I'm sorry, | I | can't give | it | to you | without | an | ID.", "Atsiprašau, | aš | negaliu atiduoti | jo | jums | be | — | asmens dokumento.",
+      t("I'm sorry, | I | can't give | it | to you | without | an | ID.", "Atsiprašau, | aš | negaliu atiduoti | jo | Jums | be | — | asmens dokumento.",
         "Atsiprašau, be asmens dokumento negaliu jo atiduoti."),
     ],
 
@@ -813,7 +813,7 @@ export const post: SituationDef = {
     more: {
       lt: "Pasakyti, kad tai viskas",
       items: [
-        { id: "more_all", s: t("That's | all, | thank | you.", "Tai yra | viskas, | dėkoju | jums.", "Tai viskas, ačiū.") },
+        { id: "more_all", s: t("That's | all, | thank | you.", "Tai yra | viskas, | dėkoju | Jums.", "Tai viskas, ačiū.") },
         { id: "more_its", s: t("No, | that's | it, | thanks.", "Ne, | tai yra | viskas, | ačiū.", "Ne, tai viskas, ačiū.") },
       ],
     },

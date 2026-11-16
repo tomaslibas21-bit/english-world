@@ -440,25 +440,25 @@ export const security: SituationDef = {
   lines: {
     greet_docs: [
       t("Next! | Boarding | pass | and | ID, | please.", "Kitas! | Įlaipinimo | kortelę | ir | asmens dokumentą, | prašau.", "Kitas! Įlaipinimo kortelę ir asmens dokumentą, prašau."),
-      t("Hi there. | Can | I | see | your | boarding | pass | and | ID?", "Sveiki. | Ar galiu | aš | pamatyti | jūsų | įlaipinimo | kortelę | ir | asmens dokumentą?", "Sveiki. Ar galiu pamatyti jūsų įlaipinimo kortelę ir asmens dokumentą?"),
+      t("Hi there. | Can | I | see | your | boarding | pass | and | ID?", "Sveiki. | Ar galiu | aš | pamatyti | Jūsų | įlaipinimo | kortelę | ir | asmens dokumentą?", "Sveiki. Ar galiu pamatyti Jūsų įlaipinimo kortelę ir asmens dokumentą?"),
       t("Good | morning. | ID | and | boarding | pass, | please.", "Labas | rytas. | Asmens dokumentą | ir | įlaipinimo | kortelę, | prašau.", "Labas rytas. Asmens dokumentą ir įlaipinimo kortelę, prašau."),
     ],
     ask_docs: [
       t("Boarding | pass | and | ID, | please.", "Įlaipinimo | kortelę | ir | asmens dokumentą, | prašau.", "Įlaipinimo kortelę ir asmens dokumentą, prašau."),
-      t("Can | I | see | your | ID | and | boarding | pass?", "Ar galiu | aš | pamatyti | jūsų | asmens dokumentą | ir | įlaipinimo | kortelę?", "Ar galiu pamatyti jūsų asmens dokumentą ir įlaipinimo kortelę?"),
+      t("Can | I | see | your | ID | and | boarding | pass?", "Ar galiu | aš | pamatyti | Jūsų | asmens dokumentą | ir | įlaipinimo | kortelę?", "Ar galiu pamatyti Jūsų asmens dokumentą ir įlaipinimo kortelę?"),
     ],
     docs_need_bp: [
-      t("And | your | boarding | pass?", "O | jūsų | įlaipinimo | kortelė?", "O jūsų įlaipinimo kortelė?"),
+      t("And | your | boarding | pass?", "O | Jūsų | įlaipinimo | kortelė?", "O Jūsų įlaipinimo kortelė?"),
     ],
     docs_need_id: [
-      t("And | your | ID?", "O | jūsų | asmens dokumentas?", "O jūsų asmens dokumentas?"),
+      t("And | your | ID?", "O | Jūsų | asmens dokumentas?", "O Jūsų asmens dokumentas?"),
     ],
     phone_scan: [
       t("Sure, | just | scan | it | here.", "Žinoma, | tiesiog | nuskenuokite | ją | čia.", "Žinoma, tiesiog nuskenuokite ją čia."),
     ],
     docs_yes: [
       t("Yes, | please.", "Taip, | prašau.", "Taip, prašau."),
-      t("Yes, | your | passport | is | perfect.", "Taip, | jūsų | pasas | yra | puikus.", "Taip, pasas puikiai tinka."),
+      t("Yes, | your | passport | is | perfect.", "Taip, | Jūsų | pasas | yra | puikus.", "Taip, pasas puikiai tinka."),
     ],
     line_yes: [
       t("Yes, | right | here.", "Taip, | štai | čia.", "Taip, čia."),
@@ -469,7 +469,7 @@ export const security: SituationDef = {
         { flags: { 4: "“for” has no separate word: the accusative akimirką carries the duration (linked to “second”)." } }),
     ],
     docs_ok: [
-      t("Thank | you. | Go ahead.", "Dėkoju | jums. | Praeikite.", "Ačiū, praeikite."),
+      t("Thank | you. | Go ahead.", "Dėkoju | Jums. | Praeikite.", "Ačiū, praeikite."),
       t("You're | good. | Go ahead.", "Jums | viskas gerai. | Praeikite.", "Viskas gerai, praeikite."),
       t("Thanks. | Have | a | good | one.", "Ačiū. | Linkiu | — | geros | dienos.", "Ačiū, geros dienos.",
         { flags: { 4: "Prop-word “one” (have a good one) = a good day: dienos." } }),
@@ -493,7 +493,7 @@ export const security: SituationDef = {
         { flags: { 1: "“let … know” = praneškite; “let” has no separate word (linked to “know”).", 5: "“you're” refers to the future here: Lithuanian uses būsite after kai." } }),
     ],
     shoes_on_ok: [
-      t("No, | your | shoes | can | stay | on.", "Ne, | jūsų | batai | gali | likti | apauti.", "Ne, batų nusiauti nereikia."),
+      t("No, | your | shoes | can | stay | on.", "Ne, | Jūsų | batai | gali | likti | apauti.", "Ne, batų nusiauti nereikia."),
       t("Nope, | shoes | stay | on | now.", "Ne, | batai | lieka | apauti | dabar.", "Ne, dabar batų nusiauti nereikia."),
     ],
     laptop_out: [
@@ -520,7 +520,7 @@ export const security: SituationDef = {
         { flags: { 0: "Existential “there” has no Lithuanian word: yra carries it (linked to “are”)." } }),
     ],
     phone_where: [
-      t("In | the | bin, | with | your | keys | and | wallet.", "Į | — | dėžę, | kartu su | jūsų | raktais | ir | pinigine.", "Į dėžę, kartu su raktais ir pinigine."),
+      t("In | the | bin, | with | your | keys | and | wallet.", "Į | — | dėžę, | kartu su | Jūsų | raktais | ir | pinigine.", "Į dėžę, kartu su raktais ir pinigine."),
     ],
     jacket_yes: [
       t("Jackets | go | in | the | bin, | too.", "Striukės | keliauja | į | — | dėžę, | irgi.", "Striukes irgi dėkite į dėžę."),
@@ -564,12 +564,12 @@ export const security: SituationDef = {
         { flags: { 1: "“and” joins “go ahead” to the next verb; Lithuanian uses the infinitive after prašom (linked to “step through”)." } }),
     ],
     scan_done: [
-      t("Perfect. | Hold still... | Okay, | you're | good.", "Puiku. | Nejudėkite... | Gerai, | jums | viskas gerai.", "Puiku. Nejudėkite… Gerai, viskas tvarkoje."),
+      t("Perfect. | Hold still... | Okay, | you're | good.", "Puiku. | Nejudėkite... | Gerai, | Jums | viskas gerai.", "Puiku. Nejudėkite… Gerai, viskas tvarkoje."),
       t("Okay, | step out. | You're | all clear.", "Gerai, | išeikite. | Jums | viskas gerai.", "Gerai, išeikite. Viskas tvarkoje."),
     ],
     walk_clear: [
-      t("All clear. | Thank | you.", "Viskas gerai. | Dėkoju | jums.", "Viskas gerai, ačiū."),
-      t("Okay, | you're | good.", "Gerai, | jums | viskas gerai.", "Gerai, viskas tvarkoje."),
+      t("All clear. | Thank | you.", "Viskas gerai. | Dėkoju | Jums.", "Viskas gerai, ačiū."),
+      t("Okay, | you're | good.", "Gerai, | Jums | viskas gerai.", "Gerai, viskas tvarkoje."),
     ],
     alarm_scanner: [
       t("Hmm, | the | scanner | found | something.", "Hmm, | — | skeneris | rado | kažką.", "Hmm, skeneris kažką aptiko."),
@@ -578,16 +578,16 @@ export const security: SituationDef = {
       t("Oops, | it | beeped.", "Oi, | jis | supypsėjo.", "Oi, supypsėjo."),
     ],
     ask_pockets: [
-      t("Do | you | have | anything | in | your | pockets?", "Ar | jūs | turite | ką nors | — | savo | kišenėse?", "Ar turite ką nors kišenėse?",
+      t("Do | you | have | anything | in | your | pockets?", "Ar | Jūs | turite | ką nors | — | savo | kišenėse?", "Ar turite ką nors kišenėse?",
         { flags: { 0: "Question “Do” = the particle ar.", 4: "“in” has no separate word: the locative kišenėse carries it across “your”." } }),
-      t("Anything | in | your | pockets?", "Ką nors | — | jūsų | kišenėse?", "Ką nors turite kišenėse?",
+      t("Anything | in | your | pockets?", "Ką nors | — | Jūsų | kišenėse?", "Ką nors turite kišenėse?",
         { flags: { 1: "“in” has no separate word: the locative kišenėse carries it across “your”." } }),
     ],
     what_is_it: [
       t("What | is | it?", "Kas | yra | tai?", "Kas tai?"),
     ],
     check_pockets: [
-      t("Could | you | check | your | pockets, | please?", "Ar galėtumėte | jūs | patikrinti | savo | kišenes, | prašau?", "Ar galėtumėte patikrinti kišenes?"),
+      t("Could | you | check | your | pockets, | please?", "Ar galėtumėte | Jūs | patikrinti | savo | kišenes, | prašau?", "Ar galėtumėte patikrinti kišenes?"),
     ],
     put_it_bin: [
       t("Okay, | put | it | in | the | bin | and | step through | again.", "Gerai, | įdėkite | jį | į | — | dėžę | ir | praeikite | dar kartą.", "Gerai, įdėkite jį į dėžę ir praeikite dar kartą."),
@@ -598,14 +598,14 @@ export const security: SituationDef = {
       t("No | problem. | Put | them | in | a | bin | and | try | again.", "Jokių | problemų. | Įdėkite | juos | į | — | dėžę | ir | bandykite | dar kartą.", "Jokių problemų. Įdėkite juos į dėžę ir pabandykite dar kartą."),
     ],
     ask_belt_watch: [
-      t("Are | you | wearing | a | belt | or | a | watch?", "Ar | jūs | dėvite | — | diržą | ar | — | laikrodį?", "Ar dėvite diržą ar laikrodį?",
+      t("Are | you | wearing | a | belt | or | a | watch?", "Ar | Jūs | dėvite | — | diržą | ar | — | laikrodį?", "Ar dėvite diržą ar laikrodį?",
         { flags: { 0: "“Are” in a yes/no question = the particle ar (C-Q); dėvite carries the progressive (linked to “wearing”)." } }),
     ],
     put_it_bin_too: [
       t("Please | put | it | in | the | bin | too, | and | step through | again.", "Prašau, | įdėkite | jį | į | — | dėžę | irgi | ir | praeikite | dar kartą.", "Prašom įdėti jį į dėžę ir praeiti dar kartą."),
     ],
     shoes_alarm: [
-      t("It | might | be | your | shoes. | Could | you | take | them | off, | please?", "Tai | gali | būti | jūsų | batai. | Ar galėtumėte | jūs | nusiauti | juos | —, | prašau?", "Galbūt tai jūsų batai. Ar galėtumėte juos nusiauti?",
+      t("It | might | be | your | shoes. | Could | you | take | them | off, | please?", "Tai | gali | būti | Jūsų | batai. | Ar galėtumėte | Jūs | nusiauti | juos | —, | prašau?", "Galbūt tai Jūsų batai. Ar galėtumėte juos nusiauti?",
         { flags: { 9: "Discontinuous “take … off”: the prefix nu- of nusiauti carries “off” (linked to “take”)." } }),
     ],
     shoes_must: [
@@ -616,8 +616,8 @@ export const security: SituationDef = {
       t("Okay, | step through | again, | please.", "Gerai, | praeikite | dar kartą, | prašau.", "Gerai, praeikite dar kartą."),
     ],
     ask_your_bag: [
-      t("Is | this | your | bag?", "Ar | tai | jūsų | krepšys?", "Ar tai jūsų krepšys?", { flags: { 0: "“Is” in a yes/no question = the particle ar; Lithuanian needs no copula here." } }),
-      t("Excuse me, | is | this | your | bag?", "Atsiprašau, | ar | tai | jūsų | krepšys?", "Atsiprašau, ar tai jūsų krepšys?", { flags: { 1: "“is” in a yes/no question = the particle ar; Lithuanian needs no copula here." } }),
+      t("Is | this | your | bag?", "Ar | tai | Jūsų | krepšys?", "Ar tai Jūsų krepšys?", { flags: { 0: "“Is” in a yes/no question = the particle ar; Lithuanian needs no copula here." } }),
+      t("Excuse me, | is | this | your | bag?", "Atsiprašau, | ar | tai | Jūsų | krepšys?", "Atsiprašau, ar tai Jūsų krepšys?", { flags: { 1: "“is” in a yes/no question = the particle ar; Lithuanian needs no copula here." } }),
     ],
     need_check: [
       t("I | need | to check | it.", "Aš | turiu | patikrinti | jį.", "Turiu jį patikrinti."),
@@ -625,9 +625,9 @@ export const security: SituationDef = {
         { flags: { 3: "“to take a look” = pažvelgti: the infinitive sits on pažvelgti (linked to “look”).", 4: "Article: no separate Lithuanian word." } }),
     ],
     found_bottle: [
-      t("There's | a | water | bottle | in | your | bag.", "Yra | — | vandens | butelis | — | jūsų | krepšyje.", "Jūsų krepšyje yra vandens butelis.",
+      t("There's | a | water | bottle | in | your | bag.", "Yra | — | vandens | butelis | — | Jūsų | krepšyje.", "Jūsų krepšyje yra vandens butelis.",
         { flags: { 4: "“in” has no separate word: the locative krepšyje carries it across “your”." } }),
-      t("You | have | a | water | bottle | in | here.", "Jūs | turite | — | vandens | butelį | — | čia.", "Čia yra jūsų vandens butelis.",
+      t("You | have | a | water | bottle | in | here.", "Jūs | turite | — | vandens | butelį | — | čia.", "Čia yra Jūsų vandens butelis.",
         { flags: { 5: "“in here” = čia (inside): “in” has no separate word (linked to “here”)." } }),
     ],
     no_worries: [
@@ -661,8 +661,8 @@ export const security: SituationDef = {
       t("Okay, | everything | else | looks | fine.", "Gerai, | visa | kita | atrodo | gerai.", "Gerai, visa kita tvarkoje."),
     ],
     bag_back: [
-      t("Sure, | here's | your | bag.", "Žinoma, | štai | jūsų | krepšys.", "Žinoma, štai jūsų krepšys."),
-      t("Here you go. | That's | your | bag.", "Prašom. | Tai yra | jūsų | krepšys.", "Prašom, štai jūsų krepšys."),
+      t("Sure, | here's | your | bag.", "Žinoma, | štai | Jūsų | krepšys.", "Žinoma, štai Jūsų krepšys."),
+      t("Here you go. | That's | your | bag.", "Prašom. | Tai yra | Jūsų | krepšys.", "Prašom, štai Jūsų krepšys."),
     ],
     all_set: [
       t("You're | all set.", "Jums | viskas sutvarkyta.", "Viskas, galite eiti."),
@@ -689,7 +689,7 @@ export const security: SituationDef = {
     ],
     ack: [
       t("Okay.", "Gerai.", "Gerai."),
-      t("Thank | you.", "Dėkoju | jums.", "Ačiū."),
+      t("Thank | you.", "Dėkoju | Jums.", "Ačiū."),
     ],
   },
 
@@ -701,7 +701,7 @@ export const security: SituationDef = {
         { id: "docs_both", s: t("Here's | my | passport | and | boarding | pass.", "Štai | mano | pasas | ir | įlaipinimo | kortelė.", "Štai mano pasas ir įlaipinimo kortelė.") },
         { id: "docs_phone", s: t("My | boarding | pass | is | on | my | phone.", "Mano | įlaipinimo | kortelė | yra | — | mano | telefone.", "Įlaipinimo kortelė – mano telefone.",
           { flags: { 4: "“on” has no separate word: the locative telefone carries it across “my”." } }) },
-        { id: "docs_q", s: t("Do | you | need | my | passport?", "Ar | jums | reikia | mano | paso?", "Ar reikia mano paso?", { flags: { 0: "Question “Do” = the particle ar." } }) },
+        { id: "docs_q", s: t("Do | you | need | my | passport?", "Ar | Jums | reikia | mano | paso?", "Ar reikia mano paso?", { flags: { 0: "Question “Do” = the particle ar." } }) },
       ],
     },
     ok_cmd: {

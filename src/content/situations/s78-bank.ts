@@ -429,38 +429,38 @@ export const bank: SituationDef = {
   lines: {
     greet: [
       t("Hi there! | Welcome | to | Harbor Bank. | How | can | I | help | you | today?",
-        "Laba diena! | Sveiki atvykę | į | „Harbor Bank“. | Kuo | galiu | aš | padėti | jums | šiandien?",
-        "Laba diena! Sveiki atvykę į „Harbor Bank“. Kuo šiandien galiu jums padėti?"),
-      t("Good | morning! | What | can | I | do | for you | today?", "Labas | rytas! | Ką | galiu | aš | padaryti | jums | šiandien?", "Labas rytas! Kuo šiandien galiu jums padėti?"),
-      t("Hi! | What | brings | you | in | today?", "Sveiki! | Kas | atvedė | jus | čia | šiandien?", "Sveiki! Kas jus šiandien atvedė?",
+        "Laba diena! | Sveiki atvykę | į | „Harbor Bank“. | Kuo | galiu | aš | padėti | Jums | šiandien?",
+        "Laba diena! Sveiki atvykę į „Harbor Bank“. Kuo šiandien galiu Jums padėti?"),
+      t("Good | morning! | What | can | I | do | for you | today?", "Labas | rytas! | Ką | galiu | aš | padaryti | Jums | šiandien?", "Labas rytas! Kuo šiandien galiu Jums padėti?"),
+      t("Hi! | What | brings | you | in | today?", "Sveiki! | Kas | atvedė | Jus | čia | šiandien?", "Sveiki! Kas Jus šiandien atvedė?",
         { flags: { 2: "“brings” is present in the English idiom; Lithuanian asks in the past (atvedė)." } }),
     ],
     greet_back: [
-      t("Hi, | welcome | back! | How | can | I | help | you | today?", "Sveiki, | sveiki | sugrįžę! | Kuo | galiu | aš | padėti | jums | šiandien?", "Sveiki sugrįžę! Kuo šiandien galiu padėti?"),
-      t("Good | to see | you | again! | What | can | I | do | for you?", "Gera | matyti | jus | vėl! | Ką | galiu | aš | padaryti | jums?", "Smagu jus vėl matyti! Kuo galiu padėti?"),
+      t("Hi, | welcome | back! | How | can | I | help | you | today?", "Sveiki, | sveiki | sugrįžę! | Kuo | galiu | aš | padėti | Jums | šiandien?", "Sveiki sugrįžę! Kuo šiandien galiu padėti?"),
+      t("Good | to see | you | again! | What | can | I | do | for you?", "Gera | matyti | Jus | vėl! | Ką | galiu | aš | padaryti | Jums?", "Smagu Jus vėl matyti! Kuo galiu padėti?"),
     ],
     greet_hay: [
-      t("Hi there! | How | are | you | doing | today?", "Sveiki! | Kaip | — | jums | sekasi | šiandien?", "Sveiki! Kaip jums šiandien sekasi?",
+      t("Hi there! | How | are | you | doing | today?", "Sveiki! | Kaip | — | Jums | sekasi | šiandien?", "Sveiki! Kaip Jums šiandien sekasi?",
         { flags: { 2: "Progressive “are” has no Lithuanian word; sekasi carries the tense (linked to “doing”)." } }),
-      t("Good | morning! | How | are | you | today?", "Labas | rytas! | Kaip | sekasi | jums | šiandien?", "Labas rytas! Kaip šiandien sekasi?"),
+      t("Good | morning! | How | are | you | today?", "Labas | rytas! | Kaip | sekasi | Jums | šiandien?", "Labas rytas! Kaip šiandien sekasi?"),
     ],
     ask_help: [
-      t("So, | how | can | I | help | you | today?", "Tai | kuo | galiu | aš | padėti | jums | šiandien?", "Tai kuo šiandien galiu jums padėti?"),
-      t("What | can | I | do | for you | today?", "Ką | galiu | aš | padaryti | jums | šiandien?", "Kuo šiandien galiu padėti?"),
+      t("So, | how | can | I | help | you | today?", "Tai | kuo | galiu | aš | padėti | Jums | šiandien?", "Tai kuo šiandien galiu Jums padėti?"),
+      t("What | can | I | do | for you | today?", "Ką | galiu | aš | padaryti | Jums | šiandien?", "Kuo šiandien galiu padėti?"),
       t("How | can | I | help?", "Kuo | galiu | aš | padėti?", "Kuo galiu padėti?"),
     ],
     services: [
       t("I | can | help | you | open | an | account, | send | money | abroad | or | exchange | currency.",
-        "Aš | galiu | padėti | jums | atsidaryti | — | sąskaitą, | nusiųsti | pinigų | į užsienį | ar | išsikeisti | valiutą.",
+        "Aš | galiu | padėti | Jums | atsidaryti | — | sąskaitą, | nusiųsti | pinigų | į užsienį | ar | išsikeisti | valiutą.",
         "Galiu padėti atsidaryti sąskaitą, nusiųsti pinigų į užsienį ar išsikeisti valiutą."),
     ],
     go_ahead: [
       t("Sure, | go ahead!", "Žinoma, | klauskite!", "Žinoma, klauskite!"),
-      t("Of course. | What's | your | question?", "Žinoma. | Koks yra | jūsų | klausimas?", "Žinoma. Koks jūsų klausimas?"),
+      t("Of course. | What's | your | question?", "Žinoma. | Koks yra | Jūsų | klausimas?", "Žinoma. Koks Jūsų klausimas?"),
     ],
     welcome_town: [
       t("Welcome | to | Maple Harbor! | Would | you | like | to open | an | account | with us?",
-        "Sveiki atvykę | į | Meipl Harborą! | Ar | jūs | norėtumėte | atsidaryti | — | sąskaitą | pas mus?",
+        "Sveiki atvykę | į | Meipl Harborą! | Ar | Jūs | norėtumėte | atsidaryti | — | sąskaitą | pas mus?",
         "Sveiki atvykę į Meipl Harborą! Gal norėtumėte atsidaryti sąskaitą pas mus?",
         { flags: { 3: "“Would” in a yes/no question = the particle ar; the conditional sits on norėtumėte (linked to “like”)." } }),
     ],
@@ -468,17 +468,17 @@ export const bank: SituationDef = {
     // account type
     ask_type: [
       t("Sure! | Would | you | like | a | checking | account | or | a | savings | account?",
-        "Žinoma! | Ar | jūs | norėtumėte | — | einamosios | sąskaitos | ar | — | taupomosios | sąskaitos?",
+        "Žinoma! | Ar | Jūs | norėtumėte | — | einamosios | sąskaitos | ar | — | taupomosios | sąskaitos?",
         "Žinoma! Norėtumėte einamosios ar taupomosios sąskaitos?",
         { flags: { 1: "“Would” in a yes/no question = the particle ar; the conditional sits on norėtumėte (linked to “like”)." } }),
-      t("Great! | Are | you | looking for | checking | or | savings?", "Puiku! | Ar | jūs | ieškote | einamosios sąskaitos | ar | taupomosios?",
+      t("Great! | Are | you | looking for | checking | or | savings?", "Puiku! | Ar | Jūs | ieškote | einamosios sąskaitos | ar | taupomosios?",
         "Puiku! Jums reikia einamosios ar taupomosios sąskaitos?",
         { flags: { 1: "Progressive “Are” in a question = the particle ar; ieškote carries the tense (linked to “looking for”)." } }),
       t("Of course. | Checking | or | savings?", "Žinoma. | Einamąją | ar | taupomąją?", "Žinoma. Einamąją ar taupomąją?"),
     ],
     ask_type_again: [
       t("So, | checking | or | savings?", "Tai | einamąją | ar | taupomąją?", "Tai einamąją ar taupomąją?"),
-      t("Which one | would | you | like?", "Kurią | — | jūs | norėtumėte?", "Kurią norėtumėte?",
+      t("Which one | would | you | like?", "Kurią | — | Jūs | norėtumėte?", "Kurią norėtumėte?",
         { flags: { 1: "“would”: the conditional ending of norėtumėte carries it (linked to “like”)." } }),
     ],
     explain_types: [
@@ -510,23 +510,23 @@ export const bank: SituationDef = {
 
     // ID and proof of address
     ask_id: [
-      t("Okay. | Can | I | see | your | ID? | A | passport | is fine.", "Gerai. | Ar galiu | aš | pamatyti | jūsų | asmens dokumentą? | — | Pasas | tinka.",
-        "Gerai. Ar galiu pamatyti jūsų asmens dokumentą? Tiks ir pasas."),
-      t("Could | I | see | your | passport, | please?", "Ar galėčiau | aš | pamatyti | jūsų | pasą, | prašau?", "Ar galėčiau pamatyti jūsų pasą?"),
+      t("Okay. | Can | I | see | your | ID? | A | passport | is fine.", "Gerai. | Ar galiu | aš | pamatyti | Jūsų | asmens dokumentą? | — | Pasas | tinka.",
+        "Gerai. Ar galiu pamatyti Jūsų asmens dokumentą? Tiks ir pasas."),
+      t("Could | I | see | your | passport, | please?", "Ar galėčiau | aš | pamatyti | Jūsų | pasą, | prašau?", "Ar galėčiau pamatyti Jūsų pasą?"),
     ],
     ask_id_proof: [
       t("I'll need | your | ID | and | proof | of address, | like | a | lease | or | a | utility | bill.",
-        "Man reikės | jūsų | asmens dokumento | ir | įrodymo | adreso, | pavyzdžiui, | — | nuomos sutarties | ar | — | komunalinių paslaugų | sąskaitos.",
-        "Man reikės jūsų asmens dokumento ir adreso įrodymo, pavyzdžiui, nuomos sutarties ar komunalinių paslaugų sąskaitos."),
+        "Man reikės | Jūsų | asmens dokumento | ir | įrodymo | adreso, | pavyzdžiui, | — | nuomos sutarties | ar | — | komunalinių paslaugų | sąskaitos.",
+        "Man reikės Jūsų asmens dokumento ir adreso įrodymo, pavyzdžiui, nuomos sutarties ar komunalinių paslaugų sąskaitos."),
     ],
     id_thanks: [
-      t("Thank | you.", "Dėkoju | jums.", "Ačiū."),
+      t("Thank | you.", "Dėkoju | Jums.", "Ačiū."),
       t("Perfect, | thanks.", "Puiku, | ačiū.", "Puiku, ačiū."),
-      t("Great, | thank | you.", "Puiku, | dėkoju | jums.", "Puiku, ačiū."),
+      t("Great, | thank | you.", "Puiku, | dėkoju | Jums.", "Puiku, ačiū."),
     ],
     need_photo_id: [
       t("I'm sorry, | we | need | a | photo ID | to open | an | account. | Do | you | have | a | driver's | license | or | an | ID | card?",
-        "Atsiprašau, | mums | reikia | — | dokumento su nuotrauka | atidaryti | — | sąskaitą. | Ar | jūs | turite | — | vairuotojo | pažymėjimą | ar | — | asmens tapatybės | kortelę?",
+        "Atsiprašau, | mums | reikia | — | dokumento su nuotrauka | atidaryti | — | sąskaitą. | Ar | Jūs | turite | — | vairuotojo | pažymėjimą | ar | — | asmens tapatybės | kortelę?",
         "Atsiprašau, sąskaitai atidaryti reikia dokumento su nuotrauka. Ar turite vairuotojo pažymėjimą ar asmens tapatybės kortelę?",
         { flags: { 8: "Question “Do” = the particle ar." } }),
     ],
@@ -536,7 +536,7 @@ export const bank: SituationDef = {
     ],
     ask_proof: [
       t("And | do | you | have | proof | of address? | A | lease | or | a | utility | bill | works.",
-        "O | ar | jūs | turite | įrodymą | adreso? | — | Nuomos sutartis | ar | — | komunalinių paslaugų | sąskaita | tinka.",
+        "O | ar | Jūs | turite | įrodymą | adreso? | — | Nuomos sutartis | ar | — | komunalinių paslaugų | sąskaita | tinka.",
         "O ar turite adreso įrodymą? Tiks nuomos sutartis arba komunalinių paslaugų sąskaita.",
         { flags: { 1: "Question “do” = the particle ar." } }),
       t("I'll | also | need | proof | of address, | like | a | lease.", "Man | taip pat | reikės | įrodymo | adreso, | pavyzdžiui, | — | nuomos sutarties.",
@@ -551,7 +551,7 @@ export const bank: SituationDef = {
       t("Perfect.", "Puiku.", "Puiku."),
     ],
     ask_lease: [
-      t("No | problem. | Do | you | have | a | lease?", "Jokių | problemų. | Ar | jūs | turite | — | nuomos sutartį?", "Jokių problemų. Ar turite nuomos sutartį?",
+      t("No | problem. | Do | you | have | a | lease?", "Jokių | problemų. | Ar | Jūs | turite | — | nuomos sutartį?", "Jokių problemų. Ar turite nuomos sutartį?",
         { flags: { 2: "Question “Do” = the particle ar." } }),
     ],
     proof_later: [
@@ -560,15 +560,15 @@ export const bank: SituationDef = {
 
     // Social Security number
     ask_ssn: [
-      t("Do | you | have | a | Social | Security | number?", "Ar | jūs | turite | — | socialinio | draudimo | numerį?", "Ar turite socialinio draudimo numerį?",
+      t("Do | you | have | a | Social | Security | number?", "Ar | Jūs | turite | — | socialinio | draudimo | numerį?", "Ar turite socialinio draudimo numerį?",
         { flags: { 0: "Question “Do” = the particle ar." } }),
-      t("And | do | you | have | a | Social | Security | number | yet?", "O | ar | jūs | turite | — | socialinio | draudimo | numerį | jau?", "O ar jau turite socialinio draudimo numerį?",
+      t("And | do | you | have | a | Social | Security | number | yet?", "O | ar | Jūs | turite | — | socialinio | draudimo | numerį | jau?", "O ar jau turite socialinio draudimo numerį?",
         { flags: { 1: "Question “do” = the particle ar." } }),
     ],
     ssn_none_ok: [
       t("That's | okay. | We | can | open | it | with | your | passport. | You | can | add | the | number | later.",
-        "Tai | gerai. | Mes | galime | atidaryti | ją | su | jūsų | pasu. | Jūs | galėsite | pridėti | — | numerį | vėliau.",
-        "Nieko tokio. Galime ją atidaryti su jūsų pasu, o numerį pridėsite vėliau."),
+        "Tai | gerai. | Mes | galime | atidaryti | ją | su | Jūsų | pasu. | Jūs | galėsite | pridėti | — | numerį | vėliau.",
+        "Nieko tokio. Galime ją atidaryti su Jūsų pasu, o numerį pridėsite vėliau."),
       t("No | problem. | You | can | add | it | later.", "Jokių | problemų. | Jūs | galėsite | pridėti | jį | vėliau.", "Jokių problemų, pridėsite jį vėliau."),
     ],
     ssn_yes_type: [
@@ -589,11 +589,11 @@ export const bank: SituationDef = {
     ask_form: [
       t("Now, | please | fill out | this | form | and | sign | here, | at the bottom.", "Dabar | prašom | užpildyti | šią | formą | ir | pasirašyti | čia, | apačioje.",
         "Dabar prašom užpildyti šią formą ir pasirašyti čia, apačioje."),
-      t("Could | you | fill out | this | form? | And | then | sign | right | here.", "Ar galėtumėte | jūs | užpildyti | šią | formą? | Ir | tada | pasirašykite | štai | čia.",
+      t("Could | you | fill out | this | form? | And | then | sign | right | here.", "Ar galėtumėte | Jūs | užpildyti | šią | formą? | Ir | tada | pasirašykite | štai | čia.",
         "Ar galėtumėte užpildyti šią formą? Tada pasirašykite štai čia."),
     ],
     form_wait: [
-      t("Take your time. | Just | let me know | when | you're | done.", "Neskubėkite. | Tiesiog | praneškite man, | kai | jūs | baigsite.",
+      t("Take your time. | Just | let me know | when | you're | done.", "Neskubėkite. | Tiesiog | praneškite man, | kai | Jūs | baigsite.",
         "Neskubėkite. Pasakykite, kai baigsite.",
         { flags: { 4: "“You're done”: Lithuanian uses the future baigsite; “'re” has no separate word (linked to “done”)." } }),
     ],
@@ -606,7 +606,7 @@ export const bank: SituationDef = {
         "Tik savo vardą, adresą, telefono numerį ir el. paštą."),
     ],
     form_thanks: [
-      t("Perfect, | thank | you.", "Puiku, | dėkoju | jums.", "Puiku, ačiū."),
+      t("Perfect, | thank | you.", "Puiku, | dėkoju | Jums.", "Puiku, ačiū."),
       t("Great, | thanks.", "Puiku, | ačiū.", "Puiku, ačiū."),
     ],
 
@@ -616,9 +616,9 @@ export const bank: SituationDef = {
         "Sąskaitai atidaryti reikia bent 25 dolerių.", { say: "You need at least twenty-five dollars to open the account." }),
     ],
     ask_deposit: [
-      t("How much | would | you | like | to deposit | today?", "Kiek | — | jūs | norėtumėte | įnešti | šiandien?", "Kiek norėtumėte šiandien įnešti?",
+      t("How much | would | you | like | to deposit | today?", "Kiek | — | Jūs | norėtumėte | įnešti | šiandien?", "Kiek norėtumėte šiandien įnešti?",
         { flags: { 1: "“would”: the conditional ending of norėtumėte carries it (linked to “like”)." } }),
-      t("How much | are | you | depositing | today?", "Kiek | — | jūs | įnešate | šiandien?", "Kiek šiandien įnešite?",
+      t("How much | are | you | depositing | today?", "Kiek | — | Jūs | įnešate | šiandien?", "Kiek šiandien įnešite?",
         { flags: { 1: "Progressive “are” has no Lithuanian word; įnešate carries the tense (linked to “depositing”)." } }),
     ],
     deposit_min: [
@@ -631,7 +631,7 @@ export const bank: SituationDef = {
 
     // opened
     opened: [
-      t("And | you're | all set! | Your | account | is | open.", "Ir | jums | viskas sutvarkyta! | Jūsų | sąskaita | yra | atidaryta.", "Ir viskas sutvarkyta! Jūsų sąskaita atidaryta."),
+      t("And | you're | all set! | Your | account | is | open.", "Ir | Jums | viskas sutvarkyta! | Jūsų | sąskaita | yra | atidaryta.", "Ir viskas sutvarkyta! Jūsų sąskaita atidaryta."),
       t("All | done! | Your | new | account | is | open.", "Viskas | padaryta! | Jūsų | nauja | sąskaita | yra | atidaryta.", "Viskas! Jūsų nauja sąskaita atidaryta."),
     ],
     card_info: [
@@ -647,13 +647,13 @@ export const bank: SituationDef = {
     ],
     routing: [
       t("Here's | your | account | number | and | our | routing | number | for | your | employer.",
-        "Štai | jūsų | sąskaitos | numeris | ir | mūsų | maršruto | numeris | — | jūsų | darbdaviui.",
-        "Štai jūsų sąskaitos numeris ir mūsų banko kodas (routing number) – jų reikės jūsų darbdaviui.",
+        "Štai | Jūsų | sąskaitos | numeris | ir | mūsų | maršruto | numeris | — | Jūsų | darbdaviui.",
+        "Štai Jūsų sąskaitos numeris ir mūsų banko kodas (routing number) – jų reikės Jūsų darbdaviui.",
         { flags: { 8: "“for”: the dative darbdaviui carries it." }, write: "Harbor Bank · account no. 4817 2203 · routing no. 021 000 356" }),
     ],
     offer_savings: [
       t("Would | you | like | a | savings | account | too? | There's | no | monthly | fee.",
-        "Ar | jūs | norėtumėte | — | taupomosios | sąskaitos | taip pat? | Nėra | jokio | mėnesinio | mokesčio.",
+        "Ar | Jūs | norėtumėte | — | taupomosios | sąskaitos | taip pat? | Nėra | jokio | mėnesinio | mokesčio.",
         "Gal norėtumėte ir taupomosios sąskaitos? Mėnesinio mokesčio nėra.",
         { flags: { 0: "“Would” in a yes/no question = the particle ar; the conditional sits on norėtumėte.", 8: "Negative concord: nėra is the negated copula; the object takes the genitive." } }),
     ],
@@ -661,12 +661,12 @@ export const bank: SituationDef = {
       t("So, | a | savings | account | too?", "Tai | — | taupomąją | sąskaitą | irgi?", "Tai gal ir taupomąją sąskaitą?"),
     ],
     offer_app_again: [
-      t("So, | would | you | like | our | app?", "Tai | ar | jūs | norėtumėte | mūsų | programėlės?", "Tai ar norėtumėte mūsų programėlės?",
+      t("So, | would | you | like | our | app?", "Tai | ar | Jūs | norėtumėte | mūsų | programėlės?", "Tai ar norėtumėte mūsų programėlės?",
         { flags: { 1: "“would” in a yes/no question = the particle ar; the conditional sits on norėtumėte." } }),
     ],
     savings_yes: [t("Great, | I'll add | that | too.", "Puiku, | pridėsiu | tai | irgi.", "Puiku, pridėsiu ir ją.")],
     offer_app: [
-      t("Would | you | like | to set up | our | mobile | app?", "Ar | jūs | norėtumėte | įsidiegti | mūsų | mobiliąją | programėlę?", "Ar norėtumėte įsidiegti mūsų mobiliąją programėlę?",
+      t("Would | you | like | to set up | our | mobile | app?", "Ar | Jūs | norėtumėte | įsidiegti | mūsų | mobiliąją | programėlę?", "Ar norėtumėte įsidiegti mūsų mobiliąją programėlę?",
         { flags: { 0: "“Would” in a yes/no question = the particle ar; the conditional sits on norėtumėte." } }),
     ],
     app_features: [
@@ -680,12 +680,12 @@ export const bank: SituationDef = {
     app_no: [t("No | problem. | You | can | download | it | later.", "Jokių | problemų. | Jūs | galėsite | atsisiųsti | ją | vėliau.", "Jokių problemų, atsisiųsite vėliau.")],
     no_problem: [t("No | problem.", "Jokių | problemų.", "Jokių problemų.")],
     anything_else: [
-      t("Anything | else | I | can | do | for you?", "Ką nors | dar | aš | galiu | padaryti | jums?", "Ar dar kuo nors galiu padėti?"),
-      t("Can | I | help | you | with anything | else?", "Ar galiu | aš | padėti | jums | kuo nors | dar?", "Ar dar kuo nors galiu jums padėti?"),
+      t("Anything | else | I | can | do | for you?", "Ką nors | dar | aš | galiu | padaryti | Jums?", "Ar dar kuo nors galiu padėti?"),
+      t("Can | I | help | you | with anything | else?", "Ar galiu | aš | padėti | Jums | kuo nors | dar?", "Ar dar kuo nors galiu Jums padėti?"),
     ],
-    anything_else_yes: [t("Sure, | what | can | I | do | for you?", "Žinoma, | ką | galiu | aš | padaryti | jums?", "Žinoma, kuo galiu padėti?")],
+    anything_else_yes: [t("Sure, | what | can | I | do | for you?", "Žinoma, | ką | galiu | aš | padaryti | Jums?", "Žinoma, kuo galiu padėti?")],
     bye: [
-      t("Thank | you | for | choosing | Harbor Bank! | Have | a | great | day.", "Dėkoju | jums, | kad | pasirinkote | „Harbor Bank“! | Linkiu | — | puikios | dienos.",
+      t("Thank | you | for | choosing | Harbor Bank! | Have | a | great | day.", "Dėkoju | Jums, | kad | pasirinkote | „Harbor Bank“! | Linkiu | — | puikios | dienos.",
         "Ačiū, kad pasirinkote „Harbor Bank“! Puikios dienos."),
       t("Thanks | for | coming | in! | Have | a | good | one.", "Ačiū, | kad | užsukote | —! | Linkiu | — | geros | dienos.", "Ačiū, kad užsukote! Geros dienos.",
         { flags: { 3: "“in” (come in): the prefix už- of užsukote carries it.", 7: "Prop-word “one” = the day: dienos." } }),
@@ -694,12 +694,12 @@ export const bank: SituationDef = {
     // questions about the account
     fee_info: [
       t("There's | a | $12 | monthly | fee, | but | we | waive | it | if | your | paycheck | goes | into | the | account.",
-        "Yra | — | 12 dolerių | mėnesinis | mokestis, | bet | mes | atsisakome | jo, | jei | jūsų | atlyginimas | patenka | į | — | sąskaitą.",
+        "Yra | — | 12 dolerių | mėnesinis | mokestis, | bet | mes | atsisakome | jo, | jei | Jūsų | atlyginimas | patenka | į | — | sąskaitą.",
         "Yra 12 dolerių mėnesinis mokestis, bet jo netaikome, jei į sąskaitą gaunate atlyginimą.",
         { say: "There's a twelve-dollar monthly fee, but we waive it if your paycheck goes into the account." }),
     ],
     fee_waive: [
-      t("Or | if | you | keep | at least | $1,500 | in the account.", "Arba | jei | jūs | laikote | bent | 1 500 dolerių | sąskaitoje.",
+      t("Or | if | you | keep | at least | $1,500 | in the account.", "Arba | jei | Jūs | laikote | bent | 1 500 dolerių | sąskaitoje.",
         "Arba jei sąskaitoje laikote bent 1 500 dolerių.", { say: "Or if you keep at least fifteen hundred dollars in the account." }),
     ],
     savings_fee: [
@@ -711,7 +711,7 @@ export const bank: SituationDef = {
         { say: "Right now it's one and a half percent a year.", flags: { 4: "Distributive “a” (a year = each year) has a real Lithuanian word here: per." } }),
     ],
     card_abroad: [
-      t("Yes, | you | can. | There's | a | 3% | fee | for | purchases | abroad.", "Taip, | jūs | galite. | Yra | — | 3 % | mokestis | už | pirkinius | užsienyje.",
+      t("Yes, | you | can. | There's | a | 3% | fee | for | purchases | abroad.", "Taip, | Jūs | galite. | Yra | — | 3 % | mokestis | už | pirkinius | užsienyje.",
         "Taip, galite. Už pirkinius užsienyje taikomas 3 % mokestis.", { say: "Yes, you can. There's a three percent fee for purchases abroad." }),
     ],
     app_info: [
@@ -727,7 +727,7 @@ export const bank: SituationDef = {
         { flags: { 4: "“for”: the dative klientams carries it." } }),
     ],
     open_need: [
-      t("Just | your | ID, | proof | of address | and | at least | $25.", "Tik | jūsų | asmens dokumento, | įrodymo | adreso | ir | bent | 25 dolerių.",
+      t("Just | your | ID, | proof | of address | and | at least | $25.", "Tik | Jūsų | asmens dokumento, | įrodymo | adreso | ir | bent | 25 dolerių.",
         "Tik asmens dokumento, adreso įrodymo ir bent 25 dolerių.", { say: "Just your ID, proof of address and at least twenty-five dollars." }),
     ],
     open_time: [
@@ -756,19 +756,19 @@ export const bank: SituationDef = {
     ],
     swift_explain: [
       t("It's | the | bank's | international | code. | The | bank | in Lithuania | can | give | it | to you.",
-        "Tai yra | — | banko | tarptautinis | kodas. | — | Bankas | Lietuvoje | gali | duoti | jį | jums.",
-        "Tai tarptautinis banko kodas. Jį jums gali pasakyti bankas Lietuvoje.", { spell: "SWIFT" }),
+        "Tai yra | — | banko | tarptautinis | kodas. | — | Bankas | Lietuvoje | gali | duoti | jį | Jums.",
+        "Tai tarptautinis banko kodas. Jį Jums gali pasakyti bankas Lietuvoje.", { spell: "SWIFT" }),
     ],
     transfer_app: [
-      t("Yes, | you | can | also | do | it | in the app.", "Taip, | jūs | galite | taip pat | padaryti | tai | programėlėje.", "Taip, tai galite padaryti ir programėlėje."),
+      t("Yes, | you | can | also | do | it | in the app.", "Taip, | Jūs | galite | taip pat | padaryti | tai | programėlėje.", "Taip, tai galite padaryti ir programėlėje."),
     ],
 
     // exchange
     ask_customer: [
-      t("Do | you | have | an | account | with us?", "Ar | jūs | turite | — | sąskaitą | pas mus?", "Ar turite pas mus sąskaitą?", { flags: { 0: "Question “Do” = the particle ar." } }),
+      t("Do | you | have | an | account | with us?", "Ar | Jūs | turite | — | sąskaitą | pas mus?", "Ar turite pas mus sąskaitą?", { flags: { 0: "Question “Do” = the particle ar." } }),
     ],
     ask_customer_again: [
-      t("So, | do | you | have | an | account | with us?", "Tai | ar | jūs | turite | — | sąskaitą | pas mus?", "Tai ar turite pas mus sąskaitą?", { flags: { 1: "Question “do” = the particle ar." } }),
+      t("So, | do | you | have | an | account | with us?", "Tai | ar | Jūs | turite | — | sąskaitą | pas mus?", "Tai ar turite pas mus sąskaitą?", { flags: { 1: "Question “do” = the particle ar." } }),
     ],
     customers_only: [
       t("I'm sorry, | we | only | exchange | currency | for | our | customers.", "Atsiprašau, | mes | tik | keičiame | valiutą | — | mūsų | klientams.",
@@ -776,15 +776,15 @@ export const bank: SituationDef = {
     ],
     need_account_wire: [
       t("You'll need | an | account | with us | to send | a | wire.", "Jums reikės | — | sąskaitos | pas mus, | kad išsiųstumėte | — | pervedimą.",
-        "Norint atlikti pervedimą, jums reikės sąskaitos mūsų banke."),
+        "Norint atlikti pervedimą, Jums reikės sąskaitos mūsų banke."),
     ],
     offer_open: [
-      t("Would | you | like | to open | one? | It | only | takes | about | 15 | minutes.", "Ar | jūs | norėtumėte | atsidaryti | ją? | Tai | tik | užtrunka | apie | 15 | minučių.",
+      t("Would | you | like | to open | one? | It | only | takes | about | 15 | minutes.", "Ar | Jūs | norėtumėte | atsidaryti | ją? | Tai | tik | užtrunka | apie | 15 | minučių.",
         "Gal norėtumėte atsidaryti? Tai užtrunka tik apie 15 minučių.",
         { say: "Would you like to open one? It only takes about fifteen minutes.", flags: { 0: "“Would” in a yes/no question = the particle ar; the conditional sits on norėtumėte.", 4: "Prop-word “one” = the account: ją." } }),
     ],
     customer_yes: [
-      t("Great, | then | you | can | do | it | in | our | app | or | here.", "Puiku, | tada | jūs | galite | padaryti | tai | — | mūsų | programėlėje | ar | čia.",
+      t("Great, | then | you | can | do | it | in | our | app | or | here.", "Puiku, | tada | Jūs | galite | padaryti | tai | — | mūsų | programėlėje | ar | čia.",
         "Puiku, tada galite tai padaryti mūsų programėlėje arba čia.", { flags: { 6: "“in”: the locative programėlėje carries it." } }),
     ],
     exchange_rate: [
@@ -792,14 +792,14 @@ export const bank: SituationDef = {
         "Šiandien už vieną eurą – 1,15 dolerio, taikomas 5 dolerių mokestis.", { say: "Today, one euro is a dollar fifteen, and there's a five-dollar fee." }),
     ],
     ask_euros: [
-      t("How many | euros | would | you | like | to exchange?", "Kiek | eurų | — | jūs | norėtumėte | išsikeisti?", "Kiek eurų norėtumėte išsikeisti?",
+      t("How many | euros | would | you | like | to exchange?", "Kiek | eurų | — | Jūs | norėtumėte | išsikeisti?", "Kiek eurų norėtumėte išsikeisti?",
         { flags: { 2: "“would”: the conditional ending of norėtumėte carries it (linked to “like”)." } }),
     ],
     exchange_done: [
-      t("Here you go: | {$amount}. | Here's | your | receipt.", "Prašom: | {$amount}. | Štai | jūsų | kvitas.", "Prašom, {$amount}. Štai jūsų kvitas."),
+      t("Here you go: | {$amount}. | Here's | your | receipt.", "Prašom: | {$amount}. | Štai | Jūsų | kvitas.", "Prašom, {$amount}. Štai Jūsų kvitas."),
     ],
     exchange_done_generic: [
-      t("Here you go. | The | rate | and | the | fee | are | on | your | receipt.", "Prašom. | — | Kursas | ir | — | mokestis | yra | — | jūsų | kvite.",
+      t("Here you go. | The | rate | and | the | fee | are | on | your | receipt.", "Prašom. | — | Kursas | ir | — | mokestis | yra | — | Jūsų | kvite.",
         "Prašom. Kursas ir mokestis nurodyti kvite.", { flags: { 7: "“on”: the locative kvite carries it." } }),
     ],
 
@@ -809,8 +809,8 @@ export const bank: SituationDef = {
       t("Oh | no! | That's | frustrating.", "O | ne! | Tai yra | nemalonu.", "O ne! Tai tikrai nemalonu."),
     ],
     ask_pin: [
-      t("Did | you | enter | the | wrong | PIN?", "Ar | jūs | įvedėte | — | neteisingą | PIN kodą?", "Ar įvedėte neteisingą PIN kodą?"),
-      t("Did | you | type | the | wrong | PIN | a | few | times?", "Ar | jūs | surinkote | — | neteisingą | PIN kodą | — | kelis | kartus?", "Ar kelis kartus surinkote neteisingą PIN kodą?"),
+      t("Did | you | enter | the | wrong | PIN?", "Ar | Jūs | įvedėte | — | neteisingą | PIN kodą?", "Ar įvedėte neteisingą PIN kodą?"),
+      t("Did | you | type | the | wrong | PIN | a | few | times?", "Ar | Jūs | surinkote | — | neteisingą | PIN kodą | — | kelis | kartus?", "Ar kelis kartus surinkote neteisingą PIN kodą?"),
     ],
     pin_explain: [
       t("That's | probably | why. | After | three | wrong | tries, | the | machine | keeps | the | card.",
@@ -822,12 +822,12 @@ export const bank: SituationDef = {
       t("Then | it | might | be | a | problem | with | the | machine.", "Tada | tai | gali | būti | — | problema | su | — | bankomatu.", "Tada gal kas nors negerai su bankomatu."),
     ],
     block_new: [
-      t("For | your | security, | I'll cancel | that | card | and | order | you | a | new one.", "Dėl | jūsų | saugumo | užblokuosiu | tą | kortelę | ir | užsakysiu | jums | — | naują.",
-        "Jūsų saugumui užblokuosiu tą kortelę ir užsakysiu jums naują."),
+      t("For | your | security, | I'll cancel | that | card | and | order | you | a | new one.", "Dėl | Jūsų | saugumo | užblokuosiu | tą | kortelę | ir | užsakysiu | Jums | — | naują.",
+        "Jūsų saugumui užblokuosiu tą kortelę ir užsakysiu Jums naują."),
     ],
     ask_id_card: [
-      t("Can | I | see | your | ID, | please?", "Ar galiu | aš | pamatyti | jūsų | asmens dokumentą, | prašau?", "Ar galiu pamatyti jūsų asmens dokumentą?"),
-      t("First, | could | I | see | your | ID?", "Pirmiausia, | ar galėčiau | aš | pamatyti | jūsų | asmens dokumentą?", "Pirmiausia, ar galėčiau pamatyti jūsų asmens dokumentą?"),
+      t("Can | I | see | your | ID, | please?", "Ar galiu | aš | pamatyti | Jūsų | asmens dokumentą, | prašau?", "Ar galiu pamatyti Jūsų asmens dokumentą?"),
+      t("First, | could | I | see | your | ID?", "Pirmiausia, | ar galėčiau | aš | pamatyti | Jūsų | asmens dokumentą?", "Pirmiausia, ar galėčiau pamatyti Jūsų asmens dokumentą?"),
     ],
     card_blocked: [
       t("Okay, | the | old | card | is | blocked.", "Gerai, | — | senoji | kortelė | yra | užblokuota.", "Gerai, senoji kortelė užblokuota."),
@@ -839,17 +839,17 @@ export const bank: SituationDef = {
     already_blocked: [t("It's | already | blocked, | don't worry.", "Ji yra | jau | užblokuota, | nesijaudinkite.", "Ji jau užblokuota, nesijaudinkite.")],
     block_first: [t("Of course. | I'll do | that | right away.", "Žinoma. | Padarysiu | tai | iš karto.", "Žinoma. Tuoj pat tai padarysiu.")],
     offer_cash: [
-      t("Do | you | need | any | cash | in the meantime?", "Ar | jums | reikia | — | grynųjų | kol kas?", "Ar kol kas jums reikia grynųjų?",
+      t("Do | you | need | any | cash | in the meantime?", "Ar | Jums | reikia | — | grynųjų | kol kas?", "Ar kol kas Jums reikia grynųjų?",
         { flags: { 0: "Question “Do” = the particle ar.", 3: "Partitive: the genitive grynųjų carries “any”." } }),
     ],
     offer_cash_counter: [
-      t("I | can | give | you | some | cash | here | at | the | counter.", "Aš | galiu | duoti | jums | — | grynųjų | čia, | prie | — | langelio.",
-        "Galiu jums išmokėti grynųjų čia, prie langelio.", { flags: { 4: "Partitive: the genitive grynųjų carries “some”." } }),
+      t("I | can | give | you | some | cash | here | at | the | counter.", "Aš | galiu | duoti | Jums | — | grynųjų | čia, | prie | — | langelio.",
+        "Galiu Jums išmokėti grynųjų čia, prie langelio.", { flags: { 4: "Partitive: the genitive grynųjų carries “some”." } }),
     ],
     ask_cash_amount: [
-      t("Sure. | How much | would | you | like | to take out?", "Žinoma. | Kiek | — | jūs | norėtumėte | išsiimti?", "Žinoma. Kiek norėtumėte išsiimti?",
+      t("Sure. | How much | would | you | like | to take out?", "Žinoma. | Kiek | — | Jūs | norėtumėte | išsiimti?", "Žinoma. Kiek norėtumėte išsiimti?",
         { flags: { 2: "“would”: the conditional ending of norėtumėte carries it." } }),
-      t("How much | would | you | like | to take out | today?", "Kiek | — | jūs | norėtumėte | išsiimti | šiandien?", "Kiek šiandien norėtumėte išsiimti?",
+      t("How much | would | you | like | to take out | today?", "Kiek | — | Jūs | norėtumėte | išsiimti | šiandien?", "Kiek šiandien norėtumėte išsiimti?",
         { flags: { 1: "“would”: the conditional ending of norėtumėte carries it." } }),
     ],
     need_account_cash: [
@@ -858,33 +858,33 @@ export const bank: SituationDef = {
     ],
     ask_bills: [
       t("Are | twenties | okay?", "Ar | dvidešimtinės | tinka?", "Ar gerai dvidešimtinėmis?", { flags: { 0: "“Are” in a question = the particle ar; the verb tinka takes over the copula (linked to “okay”)." } }),
-      t("How | would | you | like | it? | Twenties?", "Kokiomis | — | jūs | norėtumėte | kupiūromis? | Dvidešimtinėmis?", "Kokiomis kupiūromis norėtumėte? Dvidešimtinėmis?",
+      t("How | would | you | like | it? | Twenties?", "Kokiomis | — | Jūs | norėtumėte | kupiūromis? | Dvidešimtinėmis?", "Kokiomis kupiūromis norėtumėte? Dvidešimtinėmis?",
         { flags: { 0: "“How … like it” (which bills): Kokiomis … kupiūromis.", 1: "“would”: the conditional ending of norėtumėte carries it.", 4: "“it” (the cash) is expressed by kupiūromis (in which bills)." } }),
     ],
     here_cash: [
       t("Here you go.", "Prašom.", "Prašom."),
-      t("Here's | your | cash.", "Štai | jūsų | grynieji.", "Štai jūsų grynieji."),
+      t("Here's | your | cash.", "Štai | Jūsų | grynieji.", "Štai Jūsų grynieji."),
     ],
     old_card_back: [
       t("I'm sorry, | but | for | security | reasons | we | can't return | it.", "Atsiprašau, | bet | — | saugumo | sumetimais | mes | negalime grąžinti | jos.",
         "Atsiprašau, bet saugumo sumetimais negalime jos grąžinti.", { flags: { 2: "“for”: the instrumental sumetimais carries it." } }),
     ],
     account_safe: [
-      t("Yes, | your | money | is | safe. | Only | the | card | is | blocked.", "Taip, | jūsų | pinigai | yra | saugūs. | Tik | — | kortelė | yra | užblokuota.",
-        "Taip, jūsų pinigai saugūs. Užblokuota tik kortelė."),
+      t("Yes, | your | money | is | safe. | Only | the | card | is | blocked.", "Taip, | Jūsų | pinigai | yra | saugūs. | Tik | — | kortelė | yra | užblokuota.",
+        "Taip, Jūsų pinigai saugūs. Užblokuota tik kortelė."),
     ],
     new_card_yes: [
-      t("Yes, | we'll send | you | a | new one | by mail.", "Taip, | atsiųsime | jums | — | naują | paštu.", "Taip, naują atsiųsime paštu."),
+      t("Yes, | we'll send | you | a | new one | by mail.", "Taip, | atsiųsime | Jums | — | naują | paštu.", "Taip, naują atsiųsime paštu."),
     ],
 
     // slow system (twist)
     slow: [
       t("Sorry, | our | system | is | a little | slow | today. | Could | you | bear with | me | for a moment?",
-        "Atsiprašau, | mūsų | sistema | yra | truputį | lėta | šiandien. | Ar galėtumėte | jūs | palaukti | manęs | akimirką?",
+        "Atsiprašau, | mūsų | sistema | yra | truputį | lėta | šiandien. | Ar galėtumėte | Jūs | palaukti | manęs | akimirką?",
         "Atsiprašau, šiandien mūsų sistema kiek lėta. Ar galėtumėte akimirką palaukti?"),
     ],
     slow_thanks: [
-      t("Thanks | for | your | patience! | Okay, | it's working | again.", "Ačiū | už | jūsų | kantrybę! | Gerai, | ji veikia | vėl.", "Ačiū už kantrybę! Gerai, vėl veikia."),
+      t("Thanks | for | your | patience! | Okay, | it's working | again.", "Ačiū | už | Jūsų | kantrybę! | Gerai, | ji veikia | vėl.", "Ačiū už kantrybę! Gerai, vėl veikia."),
     ],
   },
 
@@ -915,7 +915,7 @@ export const bank: SituationDef = {
         { id: "type_like", s: t("I'd like | {X.np}.", "Norėčiau | {X.np:gen}.", "Norėčiau {X.np:gen}.") },
         { id: "type_both", s: t("Both, | please.", "Abi, | prašau.", "Abi, prašau.") },
         { id: "q_difference", s: t("What's | the | difference?", "Koks yra | — | skirtumas?", "Koks skirtumas?") },
-        { id: "q_recommend", s: t("Which one | do | you | recommend?", "Kurią | — | jūs | rekomenduojate?", "Kurią rekomenduojate?",
+        { id: "q_recommend", s: t("Which one | do | you | recommend?", "Kurią | — | Jūs | rekomenduojate?", "Kurią rekomenduojate?",
           { flags: { 1: "Question “do” has no Lithuanian word (linked to “recommend”)." } }) },
       ],
     },
@@ -974,7 +974,7 @@ export const bank: SituationDef = {
         { id: "q_fee", s: t("Is | there | a | monthly | fee?", "Ar yra | — | — | mėnesinis | mokestis?", "Ar yra mėnesinis mokestis?", { flags: { 1: "Existential “there” has no Lithuanian word; Ar yra carries “Is there”." } }) },
         { id: "q_card_when", s: t("When | will | I | get | my | card?", "Kada | — | aš | gausiu | savo | kortelę?", "Kada gausiu kortelę?", { flags: { 1: "“will”: the future ending of gausiu carries it (linked to “get”)." } }) },
         { id: "q_abroad", s: t("Can | I | use | the | card | in Lithuania?", "Ar galiu | aš | naudotis | — | kortele | Lietuvoje?", "Ar galiu naudotis kortele Lietuvoje?") },
-        { id: "q_app", s: t("Do | you | have | an | app?", "Ar | jūs | turite | — | programėlę?", "Ar turite programėlę?", { flags: { 0: "Question “Do” = the particle ar." } }) },
+        { id: "q_app", s: t("Do | you | have | an | app?", "Ar | Jūs | turite | — | programėlę?", "Ar turite programėlę?", { flags: { 0: "Question “Do” = the particle ar." } }) },
         { id: "q_atm", s: t("Where's | the | nearest | ATM?", "Kur yra | — | artimiausias | bankomatas?", "Kur artimiausias bankomatas?") },
         { id: "q_interest", s: t("What's | the | interest | rate?", "Kokia yra | — | palūkanų | norma?", "Kokia palūkanų norma?") },
       ],
@@ -1009,7 +1009,7 @@ export const bank: SituationDef = {
         { id: "card_ate", s: t("The | machine | ate | my | card.", "— | Bankomatas | prarijo | mano | kortelę.", "Bankomatas prarijo mano kortelę."), register: "casual",
           note: "Šnekamoji, šiek tiek juokinga frazė – bet visi supras." },
         { id: "card_pin", s: t("I | entered | the | wrong | PIN.", "Aš | įvedžiau | — | neteisingą | PIN kodą.", "Įvedžiau neteisingą PIN kodą.") },
-        { id: "card_block", s: t("Could | you | block | it, | please?", "Ar galėtumėte | jūs | užblokuoti | ją, | prašau?", "Ar galėtumėte ją užblokuoti?") },
+        { id: "card_block", s: t("Could | you | block | it, | please?", "Ar galėtumėte | Jūs | užblokuoti | ją, | prašau?", "Ar galėtumėte ją užblokuoti?") },
         { id: "card_new", s: t("Can | I | get | a | new | card?", "Ar galiu | aš | gauti | — | naują | kortelę?", "Ar galiu gauti naują kortelę?") },
       ],
     },

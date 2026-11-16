@@ -89,7 +89,7 @@ function placeHint(item: HintItem, only: (e: EntityDef) => boolean = () => true)
     { ...item, s: withThe(item.s), only: (e) => !!e.attrs?.the && only(e) },
   ];
 }
-const TRIED_ASK = t("Oh, | it's | you | again! | Did | you | try | {X}?", "O, | tai yra | jūs | vėl! | Ar | jūs | išbandėte | {X:acc}?", "O, tai vėl jūs! Ar išbandėte {X:acc}?",
+const TRIED_ASK = t("Oh, | it's | you | again! | Did | you | try | {X}?", "O, | tai yra | Jūs | vėl! | Ar | Jūs | išbandėte | {X:acc}?", "O, tai vėl Jūs! Ar išbandėte {X:acc}?",
   { flags: { 4: "“Did” in a yes/no question = the particle ar; the past tense sits on išbandėte." } });
 
 const toArr = (x: any) => (x == null ? [] : Array.isArray(x) ? x : [x]);
@@ -528,26 +528,26 @@ export const local: SituationDef = {
   lines: {
     // --- openers ----------------------------------------------------------------
     open: [
-      t("Hello there! | Can | I | help | you | with something?", "Sveiki! | Ar galiu | aš | padėti | jums | kuo nors?", "Sveiki! Ar galiu kuo nors padėti?"),
+      t("Hello there! | Can | I | help | you | with something?", "Sveiki! | Ar galiu | aš | padėti | Jums | kuo nors?", "Sveiki! Ar galiu kuo nors padėti?"),
       t("Oh, | hi! | You | look | like | you're exploring. | Can | I | help?", "O, | sveiki! | Jūs | atrodote | lyg | tyrinėjate. | Ar galiu | aš | padėti?", "O, sveiki! Atrodo, kad tyrinėjate miestą. Ar galiu padėti?"),
     ],
     open_weather: [
       t("Hi, | dear! | Beautiful | day, | isn't it?", "Sveiki, | {m:mielasis|f:mieloji}! | Graži | diena, | ar ne?", "Sveiki, {m:mielasis|f:mieloji}! Graži diena, ar ne?"),
     ],
     weather_reply: [
-      t("It | really | is! | So, | can | I | help | you | with something?", "Tai | tikrai | [graži]! | Tai | ar galiu | aš | padėti | jums | kuo nors?", "Tikrai graži! Tai gal galiu kuo nors padėti?",
+      t("It | really | is! | So, | can | I | help | you | with something?", "Tai | tikrai | [graži]! | Tai | ar galiu | aš | padėti | Jums | kuo nors?", "Tikrai graži! Tai gal galiu kuo nors padėti?",
         { flags: { 2: "Elliptical “is” (it really is [beautiful]): Lithuanian repeats the adjective." } }),
     ],
     tried_ask: [TRIED_ASK],
     tried_ask_the: [withThe(TRIED_ASK)],
-    tried_yes: [t("I | knew | you'd love | it!", "Aš | žinojau, | kad jums patiks | tai!", "Žinojau, kad jums patiks!")],
-    tried_no: [t("Oh, | you | have | to try | it!", "O, | jūs | turite | išbandyti | tai!", "O, būtinai išbandykite!")],
+    tried_yes: [t("I | knew | you'd love | it!", "Aš | žinojau, | kad Jums patiks | tai!", "Žinojau, kad Jums patiks!")],
+    tried_no: [t("Oh, | you | have | to try | it!", "O, | Jūs | turite | išbandyti | tai!", "O, būtinai išbandykite!")],
     ask_need: [
-      t("So, | what | can | I | do | for you?", "Tai, | ką | galiu | aš | padaryti | jums?", "Tai kuo galiu padėti?"),
+      t("So, | what | can | I | do | for you?", "Tai, | ką | galiu | aš | padaryti | Jums?", "Tai kuo galiu padėti?"),
       t("How | can | I | help, | dear?", "Kaip | galiu | aš | padėti, | {m:mielasis|f:mieloji}?", "Kuo galiu padėti, {m:mielasis|f:mieloji}?"),
     ],
     ask_need_again: [
-      t("Are | you | looking | for | a | place | to eat, | or | something | to see?", "Ar | jūs | ieškote | — | — | vietos | pavalgyti, | ar | ko nors | pamatyti?", "Ieškote, kur pavalgyti, ar ką pamatyti?",
+      t("Are | you | looking | for | a | place | to eat, | or | something | to see?", "Ar | Jūs | ieškote | — | — | vietos | pavalgyti, | ar | ko nors | pamatyti?", "Ieškote, kur pavalgyti, ar ką pamatyti?",
         { flags: { 0: "“Are” in a yes/no question = the particle ar; the present tense of ieškote carries the progressive.", 3: "“for”: no separate Lithuanian word; the genitive vietos carries it." } }),
     ],
     local_yes: [
@@ -563,13 +563,13 @@ export const local: SituationDef = {
 
     // --- food ---------------------------------------------------------------------
     ask_cuisine: [
-      t("Sure! | What | do | you | feel like? | Seafood? | Italian? | Something | quick?", "Žinoma! | Ko | — | jums | norisi? | Jūros gėrybių? | Itališko? | Kažko | greito?", "Žinoma! Ko norėtųsi? Jūros gėrybių? Itališko? Kažko greito?",
+      t("Sure! | What | do | you | feel like? | Seafood? | Italian? | Something | quick?", "Žinoma! | Ko | — | Jums | norisi? | Jūros gėrybių? | Itališko? | Kažko | greito?", "Žinoma! Ko norėtųsi? Jūros gėrybių? Itališko? Kažko greito?",
         { flags: { 2: "Question “do” has no Lithuanian word; the dative jums + norisi carries it." } }),
-      t("Of course! | What | kind | of food | do | you | like?", "Žinoma! | Kokį | — | maistą | — | jūs | mėgstate?", "Žinoma! Kokį maistą mėgstate?",
+      t("Of course! | What | kind | of food | do | you | like?", "Žinoma! | Kokį | — | maistą | — | Jūs | mėgstate?", "Žinoma! Kokį maistą mėgstate?",
         { flags: { 2: "“kind”: no separate word; the interrogative Kokį (what kind of) carries it.", 4: "Question “do” has no Lithuanian word; the tense sits on mėgstate." } }),
     ],
     rec_pier: [
-      t("If | you | like | seafood, | The Pier | is | the | best. | Try | the | clam | chowder! | It's | a little | pricey, | though.", "Jei | jūs | mėgstate | jūros gėrybes, | restoranas „The Pier“ | yra | — | geriausias. | Paragaukite | — | moliuskų | sriubos! | Tai yra | truputį | brangu, | tiesa.", "Jei mėgstate jūros gėrybes, geriausias – „The Pier“. Paragaukite moliuskų sriubos! Tiesa, ten truputį brangoka."),
+      t("If | you | like | seafood, | The Pier | is | the | best. | Try | the | clam | chowder! | It's | a little | pricey, | though.", "Jei | Jūs | mėgstate | jūros gėrybes, | restoranas „The Pier“ | yra | — | geriausias. | Paragaukite | — | moliuskų | sriubos! | Tai yra | truputį | brangu, | tiesa.", "Jei mėgstate jūros gėrybes, geriausias – „The Pier“. Paragaukite moliuskų sriubos! Tiesa, ten truputį brangoka."),
     ],
     rec_trucks: [
       t("Go | to | the | food | trucks | by | the | harbor. | The | fish | tacos | are | amazing, | and | they're | only | about | ten | dollars.", "Eikite | prie | — | maisto | furgonėlių | prie | — | uosto. | — | Žuvies | tako | yra | nuostabūs, | ir | jie kainuoja | tik | apie | dešimt | dolerių.", "Eikite prie maisto furgonėlių prie uosto. Žuvies tako ten nuostabūs, o kainuoja tik apie dešimt dolerių."),
@@ -578,15 +578,15 @@ export const local: SituationDef = {
       t("Lucia's! | Homemade | pasta, | and | it's | not | too | expensive. | Try | the | lasagna!", "„Lucia's“! | Naminiai | makaronai, | ir | tai yra | ne | per | brangu. | Paragaukite | — | lazanijos!", "„Lucia's“! Naminiai makaronai, ir ne per brangu. Paragaukite lazanijos!"),
     ],
     rec_sunny_cup: [
-      t("Sunny Cup, | on Oak Avenue. | Great | coffee | and | the | best | blueberry | muffins. | Tell | Mia | I | sent | you!", "„Sunny Cup“, | Oak Avenue gatvėje. | Puiki | kava | ir | — | geriausi | mėlynių | keksiukai. | Pasakykite | Mijai, | kad aš | atsiunčiau | jus!", "„Sunny Cup“ Oak Avenue gatvėje. Puiki kava ir geriausi mėlynių keksiukai. Pasakykite Mijai, kad aš jus atsiunčiau!"),
+      t("Sunny Cup, | on Oak Avenue. | Great | coffee | and | the | best | blueberry | muffins. | Tell | Mia | I | sent | you!", "„Sunny Cup“, | Oak Avenue gatvėje. | Puiki | kava | ir | — | geriausi | mėlynių | keksiukai. | Pasakykite | Mijai, | kad aš | atsiunčiau | Jus!", "„Sunny Cup“ Oak Avenue gatvėje. Puiki kava ir geriausi mėlynių keksiukai. Pasakykite Mijai, kad aš Jus atsiunčiau!"),
     ],
     then_try: [t("Then | how | about | this:", "Tada | kaip | dėl | šito:", "Tada štai ką pasiūlysiu:")],
     cheaper: [t("Something | cheaper? | Sure.", "Kažko | pigesnio? | Žinoma.", "Kažko pigesnio? Žinoma.")],
-    later_food: [t("Well, | when | you | get hungry, | remember | this | one:", "Na, | kai | jūs | išalksite, | prisiminkite | šitą | vietą:", "Na, kai išalksite, prisiminkite štai ką:")],
+    later_food: [t("Well, | when | you | get hungry, | remember | this | one:", "Na, | kai | Jūs | išalksite, | prisiminkite | šitą | vietą:", "Na, kai išalksite, prisiminkite štai ką:")],
     locals_eat: [
       t("Honestly? | The | food | trucks | by | the | harbor. | Tourists | go | to | The Pier, | but | locals | get | fish | tacos.", "Atvirai? | — | Maisto | furgonėliai | prie | — | uosto. | Turistai | eina | į | restoraną „The Pier“, | bet | vietiniai | ima | žuvies | tako.", "Atvirai? Maisto furgonėliai prie uosto. Turistai eina į „The Pier“, o vietiniai valgo žuvies tako."),
     ],
-    coffee: [t("Sunny Cup, | no question! | Tell | Mia | I | sent | you.", "„Sunny Cup“, | be jokių abejonių! | Pasakykite | Mijai, | kad aš | atsiunčiau | jus.", "„Sunny Cup“, be jokių abejonių! Pasakykite Mijai, kad aš jus atsiunčiau.")],
+    coffee: [t("Sunny Cup, | no question! | Tell | Mia | I | sent | you.", "„Sunny Cup“, | be jokių abejonių! | Pasakykite | Mijai, | kad aš | atsiunčiau | Jus.", "„Sunny Cup“, be jokių abejonių! Pasakykite Mijai, kad aš Jus atsiunčiau.")],
 
     // --- things to see --------------------------------------------------------------
     rec_lighthouse: [
@@ -597,7 +597,7 @@ export const local: SituationDef = {
       t("Take | the | boat | tour! | You | can | see | seals | in the harbor.", "Užsisakykite | — | laivo | ekskursiją! | Jūs | galite | pamatyti | ruonius | uoste.", "Užsisakykite ekskursiją laivu! Uoste galima pamatyti ruonių."),
     ],
     rec_market: [
-      t("If | you're | here | on Saturday, | don't miss | the | farmers' | market, | right | here | in the square.", "Jei | jūs esate | čia | šeštadienį, | nepraleiskite | — | ūkininkų | turgaus, | būtent | čia, | aikštėje.", "Jei būsite čia šeštadienį, nepraleiskite ūkininkų turgaus – čia pat, aikštėje."),
+      t("If | you're | here | on Saturday, | don't miss | the | farmers' | market, | right | here | in the square.", "Jei | Jūs esate | čia | šeštadienį, | nepraleiskite | — | ūkininkų | turgaus, | būtent | čia, | aikštėje.", "Jei būsite čia šeštadienį, nepraleiskite ūkininkų turgaus – čia pat, aikštėje."),
     ],
     rec_park: [
       t("Harbor | Park | is | lovely | for | a | walk | by | the | water.", "Uosto | parkas | yra | puikus | — | — | pasivaikščiojimui | prie | — | vandens.", "Uosto parkas puikiai tinka pasivaikščiojimui prie vandens.",
@@ -611,7 +611,7 @@ export const local: SituationDef = {
         { flags: { 3: "“on”: no separate Lithuanian word; the instrumental vakarais (time) carries it." } }),
     ],
     also_museum: [
-      t("And | if | you | like | art, | the | museum | is | right | there, | across | the | square.", "O | jei | jūs | mėgstate | meną, | — | muziejus | yra | štai | ten, | kitoje | — | aikštės pusėje.", "O jei mėgstate meną, muziejus – štai ten, kitoje aikštės pusėje."),
+      t("And | if | you | like | art, | the | museum | is | right | there, | across | the | square.", "O | jei | Jūs | mėgstate | meną, | — | muziejus | yra | štai | ten, | kitoje | — | aikštės pusėje.", "O jei mėgstate meną, muziejus – štai ten, kitoje aikštės pusėje."),
     ],
     favorite: [t("Oh, | the | lighthouse | at sunset. | Every | time.", "O, | — | švyturys | saulėlydžio metu. | Kiekvieną | kartą.", "O, švyturys saulėlydžio metu. Kiekvieną kartą.")],
     locals_do: [
@@ -661,7 +661,7 @@ export const local: SituationDef = {
     price_boat: [t("About | thirty-five | dollars, | I | think.", "Apie | trisdešimt penkis | dolerius, | aš | manau.", "Apie trisdešimt penkis dolerius, manau.")],
     book_pier: [t("For dinner, | yes. | Especially | on weekends.", "Vakarienei, | taip. | Ypač | savaitgaliais.", "Vakarienei – taip. Ypač savaitgaliais.")],
     book_boat: [t("Yes! | Book | the | day | before, | by phone | or | online.", "Taip! | Užsisakykite | — | dieną | prieš, | telefonu | arba | internetu.", "Taip! Užsisakykite dieną prieš – telefonu arba internetu.")],
-    book_no: [t("No, | you | can | just | go.", "Ne, | jūs | galite | tiesiog | eiti.", "Ne, galite tiesiog eiti.")],
+    book_no: [t("No, | you | can | just | go.", "Ne, | Jūs | galite | tiesiog | eiti.", "Ne, galite tiesiog eiti.")],
     open_museum: [t("It's | open | ten | to | five, | but | it's | closed | on Mondays.", "Jis yra | atidarytas | nuo dešimties | iki | penkių, | bet | jis yra | uždarytas | pirmadieniais.", "Jis dirba nuo dešimties iki penkių, bet pirmadieniais uždarytas.")],
     open_market: [t("Only | on Saturdays, | from | eight | to | one.", "Tik | šeštadieniais, | nuo | aštuonių | iki | pirmos.", "Tik šeštadieniais, nuo aštuonių iki pirmos.")],
     open_jazz: [t("Every | Friday, | at seven.", "Kiekvieną | penktadienį, | septintą.", "Kiekvieną penktadienį, septintą.")],
@@ -677,17 +677,17 @@ export const local: SituationDef = {
     what_pier: [t("It's | a | seafood | restaurant | down | by | the | harbor.", "Tai yra | — | jūros gėrybių | restoranas | ten | prie | — | uosto.", "Tai jūros gėrybių restoranas prie uosto.")],
     which_spot: [t("Which | place, | dear?", "Kuri | vieta, | {m:mielasis|f:mieloji}?", "Apie kurią vietą klausiate, {m:mielasis|f:mieloji}?")],
     no_problem: [t("Oh, | okay!", "O, | gerai!", "O, gerai!")],
-    help_sure: [t("Of course, | dear! | What | do | you | need?", "Žinoma, | {m:mielasis|f:mieloji}! | Ko | — | jums | reikia?", "Žinoma, {m:mielasis|f:mieloji}! Ko jums reikia?", { flags: { 3: "Question “do” has no Lithuanian word; the dative jums + reikia carries it." } })],
+    help_sure: [t("Of course, | dear! | What | do | you | need?", "Žinoma, | {m:mielasis|f:mieloji}! | Ko | — | Jums | reikia?", "Žinoma, {m:mielasis|f:mieloji}! Ko Jums reikia?", { flags: { 3: "Question “do” has no Lithuanian word; the dative jums + reikia carries it." } })],
 
     // --- small talk and twists -------------------------------------------------------
     ask_from: [
-      t("So, | where | are | you | from, | dear?", "Tai, | iš kur | esate | jūs | [iš kur], | {m:mielasis|f:mieloji}?", "Tai iš kur jūs, {m:mielasis|f:mieloji}?",
+      t("So, | where | are | you | from, | dear?", "Tai, | iš kur | esate | Jūs | [iš kur], | {m:mielasis|f:mieloji}?", "Tai iš kur Jūs, {m:mielasis|f:mieloji}?",
         { flags: { 4: "Stranded “from”: its Lithuanian form (iš) is carried by iš kur at the start." } }),
     ],
     from_lt: [t("Lithuania! | How | wonderful! | My | neighbor's | grandmother | was | from | Vilnius.", "Lietuva! | Kaip | nuostabu! | Mano | kaimynės | močiutė | buvo | iš | Vilniaus.", "Lietuva! Kaip nuostabu! Mano kaimynės močiutė buvo iš Vilniaus.")],
     from_other: [t("Oh, | how | nice! | Welcome | to | Maple Harbor!", "O, | kaip | malonu! | Sveiki atvykę | į | Maple Harborą!", "O, kaip malonu! Sveiki atvykę į Maple Harborą!")],
     walk_offer: [
-      t("You know what? | I'm going | that | way | myself. | Want | me | to walk | with | you?", "Žinote ką? | Einu | ta | kryptimi | pati. | Norite, | kad aš | eičiau | kartu su | jumis?", "Žinote ką? Aš pati einu ta kryptimi. Palydėti jus?"),
+      t("You know what? | I'm going | that | way | myself. | Want | me | to walk | with | you?", "Žinote ką? | Einu | ta | kryptimi | pati. | Norite, | kad aš | eičiau | kartu su | Jumis?", "Žinote ką? Aš pati einu ta kryptimi. Palydėti Jus?"),
     ],
     walk_yes: [t("Wonderful! | Let's go. | I | love | a | good | walk.", "Puiku! | Eime. | Aš | mėgstu | — | gerą | pasivaikščiojimą.", "Puiku! Eime. Mėgstu gerai pasivaikščioti.")],
     market_seller: [
@@ -705,15 +705,15 @@ export const local: SituationDef = {
 
     // --- the end ------------------------------------------------------------------------
     prompt_sight: [
-      t("And | while | you're | here, | is | there | anything | you'd like | to see?", "O | kol | jūs esate | čia, | ar yra | — | ką nors, | ką norėtumėte | pamatyti?", "O kol esate čia, gal norėtumėte ką nors pamatyti?",
+      t("And | while | you're | here, | is | there | anything | you'd like | to see?", "O | kol | Jūs esate | čia, | ar yra | — | ką nors, | ką norėtumėte | pamatyti?", "O kol esate čia, gal norėtumėte ką nors pamatyti?",
         { flags: { 5: "Existential “there” has no Lithuanian word; yra carries it." } }),
     ],
     nudge_sight: [t("Well, | don't leave | without seeing | this:", "Na, | neišvažiuokite | nepamatę | šito:", "Na, neišvažiuokite nepamatę štai ko:")],
-    prompt_food: [t("And | are | you | hungry? | I | know | all | the | good | places | to eat!", "O | ar | jūs | {m:alkanas|f:alkana}? | Aš | žinau | visas | — | geras | vietas | pavalgyti!", "O gal esate {m:alkanas|f:alkana}? Žinau visas geras vietas pavalgyti!",
+    prompt_food: [t("And | are | you | hungry? | I | know | all | the | good | places | to eat!", "O | ar | Jūs | {m:alkanas|f:alkana}? | Aš | žinau | visas | — | geras | vietas | pavalgyti!", "O gal esate {m:alkanas|f:alkana}? Žinau visas geras vietas pavalgyti!",
       { flags: { 1: "“are” in a yes/no question = the particle ar; the copula has no separate word." } })],
     ask_more: [
       t("Anything | else, | dear?", "Ko nors | dar, | {m:mielasis|f:mieloji}?", "Dar ko nors, {m:mielasis|f:mieloji}?"),
-      t("Can | I | help | you | with | anything | else?", "Ar galiu | aš | padėti | jums | — | kuo nors | daugiau?", "Ar dar kuo nors galiu padėti?",
+      t("Can | I | help | you | with | anything | else?", "Ar galiu | aš | padėti | Jums | — | kuo nors | daugiau?", "Ar dar kuo nors galiu padėti?",
         { flags: { 4: "“with”: no separate Lithuanian word; the instrumental kuo nors carries it." } }),
     ],
     thanks_reply: [
@@ -730,29 +730,29 @@ export const local: SituationDef = {
     local: {
       lt: "Užkalbinti vietinę",
       items: [
-        { id: "l_from", s: t("Excuse me, | are | you | from | around here?", "Atsiprašau, | ar esate | jūs | iš | čia?", "Atsiprašau, ar jūs vietinė?"), note: "Mandagus būdas užkalbinti nepažįstamąjį." },
-        { id: "l_live", s: t("Do | you | live | here?", "Ar | jūs | gyvenate | čia?", "Ar jūs čia gyvenate?", { flags: { 0: "Question “Do” = the particle ar." } }) },
-        { id: "l_local", s: t("Are | you | a | local?", "Ar esate | jūs | — | vietinė?", "Ar jūs vietinė?") },
+        { id: "l_from", s: t("Excuse me, | are | you | from | around here?", "Atsiprašau, | ar esate | Jūs | iš | čia?", "Atsiprašau, ar Jūs vietinė?"), note: "Mandagus būdas užkalbinti nepažįstamąjį." },
+        { id: "l_live", s: t("Do | you | live | here?", "Ar | Jūs | gyvenate | čia?", "Ar Jūs čia gyvenate?", { flags: { 0: "Question “Do” = the particle ar." } }) },
+        { id: "l_local", s: t("Are | you | a | local?", "Ar esate | Jūs | — | vietinė?", "Ar Jūs vietinė?") },
       ],
     },
     ask_general: {
       lt: "Paprašyti patarimo",
       items: [
-        { id: "r_what", s: t("What | would | you | recommend?", "Ką | — | jūs | rekomenduotumėte?", "Ką rekomenduotumėte?", { flags: { 1: "“would”: the conditional ending of rekomenduotumėte carries it." } }) },
-        { id: "r_tips", s: t("Do | you | have | any | tips?", "Ar | jūs | turite | kokių nors | patarimų?", "Gal turite patarimų?", { flags: { 0: "Question “Do” = the particle ar." } }) },
+        { id: "r_what", s: t("What | would | you | recommend?", "Ką | — | Jūs | rekomenduotumėte?", "Ką rekomenduotumėte?", { flags: { 1: "“would”: the conditional ending of rekomenduotumėte carries it." } }) },
+        { id: "r_tips", s: t("Do | you | have | any | tips?", "Ar | Jūs | turite | kokių nors | patarimų?", "Gal turite patarimų?", { flags: { 0: "Question “Do” = the particle ar." } }) },
       ],
     },
     food: {
       lt: "Paklausti, kur pavalgyti", slot: "cuisine", examples: ["seafood", "italian", "burgers"],
       items: [
-        { id: "f_recommend", s: t("Can | you | recommend | a | good | place | to eat?", "Ar galite | jūs | rekomenduoti | — | gerą | vietą | pavalgyti?", "Ar galite rekomenduoti gerą vietą pavalgyti?") },
+        { id: "f_recommend", s: t("Can | you | recommend | a | good | place | to eat?", "Ar galite | Jūs | rekomenduoti | — | gerą | vietą | pavalgyti?", "Ar galite rekomenduoti gerą vietą pavalgyti?") },
         { id: "f_where_good", s: t("Where's | a | good | place | to eat | around here?", "Kur yra | — | gera | vieta | pavalgyti | čia?", "Kur čia gera vieta pavalgyti?") },
         { id: "f_somewhere_cheap", s: t("I'm looking | for | somewhere | to eat | that's | not | too | expensive.", "Ieškau | — | kur nors | pavalgyti, | kur yra | ne | per | brangu.", "Ieškau vietos pavalgyti, kur nebūtų per brangu.", { flags: { 1: "“for”: no separate Lithuanian word; ieškau + the object carries it." } }), note: "„Not too expensive“ – mandagiai pasakyti, kad nenori brangaus restorano." },
         { id: "f_locals", s: t("Where | do | the | locals | go?", "Kur | — | — | vietiniai | eina?", "Kur eina vietiniai?", { flags: { 1: "Question “do” has no Lithuanian word; the tense sits on eina." } }) },
         { id: "f_cuisine", s: t("Where | can | I | get | good | {X}?", "Kur | galiu | aš | gauti | {geras@X:gen} | {X:gen}?", "Kur galėčiau gauti {geras@X:gen} {X:gen}?"), only: (e) => !e.attrs?.pl && e.id !== "quick" },
         { id: "f_cuisine", s: t("Where | can | I | get | good | {X}?", "Kur | galiu | aš | gauti | {geras@X:gen:pl} | {X:gen}?", "Kur galėčiau gauti {geras@X:gen:pl} {X:gen}?"), only: (e) => !!e.attrs?.pl },
         { id: "f_cuisine_place", s: t("Is | there | a | good | {X} | place | near | here?", "Ar yra | — | — | gera | {X:gen} | vieta | netoli | čia?", "Ar netoliese yra gera {X:gen} vieta?", { flags: { 1: "Existential “there” has no Lithuanian word; yra carries it." } }), only: (e) => ["seafood", "breakfast", "coffee"].includes(e.id) },
-        { id: "f_lunch", s: t("What | would | you | recommend | for lunch?", "Ką | — | jūs | rekomenduotumėte | pietums?", "Ką rekomenduotumėte pietums?", { flags: { 1: "“would”: the conditional ending of rekomenduotumėte carries it." } }) },
+        { id: "f_lunch", s: t("What | would | you | recommend | for lunch?", "Ką | — | Jūs | rekomenduotumėte | pietums?", "Ką rekomenduotumėte pietums?", { flags: { 1: "“would”: the conditional ending of rekomenduotumėte carries it." } }) },
       ],
     },
     cuisine: {
@@ -772,8 +772,8 @@ export const local: SituationDef = {
         { id: "s_should_see", s: t("What | should | I | see | while | I'm | here?", "Ką | — | man | pamatyti, | kol | aš esu | čia?", "Ką man pamatyti, kol esu čia?", { flags: { 1: "“should”: the dative man + infinitive carries the advice question." } }) },
         { id: "s_anything", s: t("Is | there | anything | interesting | to see?", "Ar yra | — | ko nors | įdomaus | pamatyti?", "Ar yra ką nors įdomaus pamatyti?", { flags: { 1: "Existential “there” has no Lithuanian word; yra carries it." } }) },
         { id: "s_best", s: t("What's | the | best | thing | to do | here?", "Koks yra | — | geriausias | dalykas | nuveikti | čia?", "Ką geriausia čia nuveikti?") },
-        { id: "s_new", s: t("What | would | you | do | if | you | were | new | here?", "Ką | — | jūs | darytumėte, | jei | jūs | būtumėte | naujokė | čia?", "Ką darytumėte, jei būtumėte čia pirmą kartą?", { flags: { 1: "“would”: the conditional ending of darytumėte carries it." } }), note: "Eilutė iš dainos." },
-        { id: "s_favorite", s: t("What's | your | favorite | place?", "Kokia yra | jūsų | mėgstamiausia | vieta?", "Kokia jūsų mėgstamiausia vieta?") },
+        { id: "s_new", s: t("What | would | you | do | if | you | were | new | here?", "Ką | — | Jūs | darytumėte, | jei | Jūs | būtumėte | naujokė | čia?", "Ką darytumėte, jei būtumėte čia pirmą kartą?", { flags: { 1: "“would”: the conditional ending of darytumėte carries it." } }), note: "Eilutė iš dainos." },
+        { id: "s_favorite", s: t("What's | your | favorite | place?", "Kokia yra | Jūsų | mėgstamiausia | vieta?", "Kokia Jūsų mėgstamiausia vieta?") },
       ],
     },
     follow: {
@@ -811,7 +811,7 @@ export const local: SituationDef = {
       items: [
         { id: "hg_hungry", s: t("Yes, | I'm | hungry!", "Taip, | aš esu | {m:alkanas|f:alkana}!", "Taip, esu {m:alkanas|f:alkana}!") },
         { id: "hg_where", s: t("Yes! | Where | should | I | eat?", "Taip! | Kur | — | man | pavalgyti?", "Taip! Kur man pavalgyti?", { flags: { 2: "“should”: the dative man + infinitive carries the advice question." } }) },
-        { id: "hg_recommend", s: t("Yes, | what | would | you | recommend?", "Taip, | ką | — | jūs | rekomenduotumėte?", "Taip, ką rekomenduotumėte?", { flags: { 2: "“would”: the conditional ending of rekomenduotumėte carries it." } }) },
+        { id: "hg_recommend", s: t("Yes, | what | would | you | recommend?", "Taip, | ką | — | Jūs | rekomenduotumėte?", "Taip, ką rekomenduotumėte?", { flags: { 2: "“would”: the conditional ending of rekomenduotumėte carries it." } }) },
       ],
     },
     weather: {
@@ -849,8 +849,8 @@ export const local: SituationDef = {
       lt: "Priimti arba mandagiai atsisakyti pasiūlymo",
       items: [
         { id: "w_yes", s: t("That | would | be | great, | thanks!", "Tai | — | būtų | puiku, | ačiū!", "Būtų puiku, ačiū!", { flags: { 1: "“would” has no separate word: the conditional būtų carries it." } }) },
-        { id: "w_kind", s: t("That's | so | kind | of you!", "Tai yra | taip | malonu | iš jūsų pusės!", "Kaip malonu iš jūsų pusės!") },
-        { id: "w_no", s: t("That's | okay, | I'll find | it. | Thank | you!", "Viskas | gerai, | rasiu | tai. | Dėkoju | jums!", "Nieko tokio, rasiu. Ačiū jums!") },
+        { id: "w_kind", s: t("That's | so | kind | of you!", "Tai yra | taip | malonu | iš Jūsų pusės!", "Kaip malonu iš Jūsų pusės!") },
+        { id: "w_no", s: t("That's | okay, | I'll find | it. | Thank | you!", "Viskas | gerai, | rasiu | tai. | Dėkoju | Jums!", "Nieko tokio, rasiu. Ačiū Jums!") },
       ],
     },
     spots: {

@@ -1347,22 +1347,22 @@ export const usedCar: SituationDef = {
     // --- arriving -----------------------------------------------------------------------------------
     greet_new: [
       t("Hi there! | You | must be | here | about | the | car.", "Sveiki! | Jūs | turbūt esate | čia | dėl | — | automobilio.", "Sveiki! Jūs turbūt dėl automobilio?"),
-      t("Hello! | Let | me | guess: | you | saw | my | ad.", "Sveiki! | Leiskite | man | atspėti: | jūs | matėte | mano | skelbimą.", "Sveiki! Leiskite atspėti – matėte mano skelbimą."),
+      t("Hello! | Let | me | guess: | you | saw | my | ad.", "Sveiki! | Leiskite | man | atspėti: | Jūs | matėte | mano | skelbimą.", "Sveiki! Leiskite atspėti – matėte mano skelbimą."),
     ],
     intro_again: [
-      t("Oh, | it's | you | again! | Back | for | another | look?", "O, | tai | jūs | vėl! | Grįžote | — | dar vienai | apžiūrai?", "O, vėl jūs! Grįžote dar kartą apžiūrėti?",
+      t("Oh, | it's | you | again! | Back | for | another | look?", "O, | tai | Jūs | vėl! | Grįžote | — | dar vienai | apžiūrai?", "O, vėl Jūs! Grįžote dar kartą apžiūrėti?",
         { flags: { 1: "“'s” (is): Lithuanian needs no copula here.", 5: "“for”: the dative apžiūrai carries it." } }),
     ],
-    ad_again: [t("Are | you | here | about | the | car?", "Ar | jūs | čia | dėl | — | automobilio?", "Jūs dėl automobilio?", { flags: { 0: F_IS_Q } })],
+    ad_again: [t("Are | you | here | about | the | car?", "Ar | Jūs | čia | dėl | — | automobilio?", "Jūs dėl automobilio?", { flags: { 0: F_IS_Q } })],
     not_ad: [
-      t("Oh! | Then | you're | just | admiring | her. | Everyone | does.", "O! | Tada | jūs | tiesiog | grožitės | ja. | Visi | grožisi.", "O! Tada jūs tiesiog ja grožitės. Visi grožisi.",
+      t("Oh! | Then | you're | just | admiring | her. | Everyone | does.", "O! | Tada | Jūs | tiesiog | grožitės | ja. | Visi | grožisi.", "O! Tada Jūs tiesiog ja grožitės. Visi grožisi.",
         { flags: { 2: "“'re” (are): the progressive is carried by grožitės.", 7: "“does” (elliptical): Lithuanian repeats the verb, grožisi." } }),
     ],
     maggie_name: [
-      t("I'm | Maggie. | And | this | beauty | is | why | you're | here.", "Aš esu | Megė. | O | ši | gražuolė | yra | priežastis, kodėl | jūs esate | čia.",
-        "Aš – Megė. O ši gražuolė – priežastis, kodėl jūs čia.", { flags: { 6: "“why” here = the reason why: priežastis, kodėl." } }),
+      t("I'm | Maggie. | And | this | beauty | is | why | you're | here.", "Aš esu | Megė. | O | ši | gražuolė | yra | priežastis, kodėl | Jūs esate | čia.",
+        "Aš – Megė. O ši gražuolė – priežastis, kodėl Jūs čia.", { flags: { 6: "“why” here = the reason why: priežastis, kodėl." } }),
     ],
-    nice_name: [t("Nice | to meet | you!", "Malonu | susipažinti | su jumis!", "Malonu susipažinti!")],
+    nice_name: [t("Nice | to meet | you!", "Malonu | susipažinti | su Jumis!", "Malonu susipažinti!")],
     present1: [
       t("She's | a | '98, | cherry-red, | and | the | top | still | goes down | like a dream.", "Ji yra | — | 1998-ųjų, | vyšninės spalvos, | ir | — | stogas | vis dar | nusileidžia | puikiai.",
         "Ji – 1998-ųjų, vyšninės spalvos, o stogas vis dar nusileidžia be priekaištų.",
@@ -1377,17 +1377,17 @@ export const usedCar: SituationDef = {
     weather_react: [t("Yes! | Perfect | convertible | weather.", "Taip! | Puikus | kabrioleto | oras.", "Taip! Kaip tik oras kabrioletui.")],
     compliment_react: [
       t("Thanks! | I | think | so | too.", "Ačiū! | Aš | manau | taip | irgi.", "Ačiū! Aš irgi taip manau."),
-      t("Aw, | thank | you!", "Oi, | dėkoju | jums!", "Oi, ačiū!"),
+      t("Aw, | thank | you!", "Oi, | dėkoju | Jums!", "Oi, ačiū!"),
     ],
 
     // --- questions about the car ----------------------------------------------------------------------
     ask_first: [
       t("Any | questions | about | her?", "Kokių nors | klausimų | apie | ją?", "Turite klausimų apie ją?"),
-      t("So, | what | would | you | like | to know?", "Tai, | ką | — | jūs | norėtumėte | žinoti?", "Tai ką norėtumėte sužinoti?", { flags: { 2: F_WOULD } }),
+      t("So, | what | would | you | like | to know?", "Tai, | ką | — | Jūs | norėtumėte | žinoti?", "Tai ką norėtumėte sužinoti?", { flags: { 2: F_WOULD } }),
     ],
-    ask_what: [t("Sure! | What | would | you | like | to know?", "Žinoma! | Ką | — | jūs | norėtumėte | žinoti?", "Žinoma! Ką norėtumėte sužinoti?", { flags: { 2: F_WOULD } })],
+    ask_what: [t("Sure! | What | would | you | like | to know?", "Žinoma! | Ką | — | Jūs | norėtumėte | žinoti?", "Žinoma! Ką norėtumėte sužinoti?", { flags: { 2: F_WOULD } })],
     ask_more: [
-      t("Anything | else | you | want | to know?", "Ką nors | dar | jūs | norite | žinoti?", "Dar ką nors norite sužinoti?"),
+      t("Anything | else | you | want | to know?", "Ką nors | dar | Jūs | norite | žinoti?", "Dar ką nors norite sužinoti?"),
       t("What | else?", "Kas | dar?", "Kas dar?"),
     ],
     a_hint: [t("Most | people | ask | about | the | mileage.", "Dauguma | žmonių | klausia | apie | — | ridą.", "Dauguma klausia apie ridą.")],
@@ -1449,7 +1449,7 @@ export const usedCar: SituationDef = {
     a_gearbox: [t("Automatic, | like | most | cars | here.", "Automatinė, | kaip | dauguma | automobilių | čia.", "Automatinė, kaip ir dauguma automobilių čia.",
       { flags: { 0: "Automatic (transmission): pavarų dėžė is feminine, hence automatinė." } })],
     a_fuel: [
-      t("About | 25 | miles | per | gallon. | Less | if | you | drive | with | a | smile.", "Apie | 25 | mylias | iš | galono. | Mažiau, | jei | jūs | važiuojate | su | — | šypsena.",
+      t("About | 25 | miles | per | gallon. | Less | if | you | drive | with | a | smile.", "Apie | 25 | mylias | iš | galono. | Mažiau, | jei | Jūs | važiuojate | su | — | šypsena.",
         "Apie 25 mylias iš galono (maždaug 9,4 l/100 km). Mažiau – jei važiuojate su šypsena.", { say: "About twenty-five miles per gallon. Less if you drive with a smile." }),
     ],
     a_trunk: [
@@ -1477,7 +1477,7 @@ export const usedCar: SituationDef = {
 
     // --- the test drive ---------------------------------------------------------------------------------
     drive_offer: [
-      t("Would | you | like | to drive | her | first?", "Ar | jūs | norėtumėte | pavairuoti | ją | pirmiausia?", "Gal pirmiausia norėtumėte ją pavairuoti?", { flags: { 0: F_WOULD_Q } }),
+      t("Would | you | like | to drive | her | first?", "Ar | Jūs | norėtumėte | pavairuoti | ją | pirmiausia?", "Gal pirmiausia norėtumėte ją pavairuoti?", { flags: { 0: F_WOULD_Q } }),
       t("How about | a | test | drive?", "O gal | — | bandomasis | važiavimas?", "O gal bandomasis važiavimas?"),
     ],
     drive_keys: [
@@ -1487,20 +1487,20 @@ export const usedCar: SituationDef = {
         "Žinoma! Štai raktai. Apsukite ratą aplink kvartalą.", { flags: { 4: "“Take her” = drive her: pasivažinėkite + the instrumental ja (under “her”)." } }),
     ],
     drive_back: [
-      t("Welcome | back! | So? | What | do | you | think?", "Sveiki | sugrįžę! | Na? | Ką | — | jūs | manote?", "Sveiki sugrįžę! Na, ką manote?", { flags: { 4: F_WH_DO } }),
-      t("Back | already? | Well? | Did | she | steal | your | heart?", "Grįžote | jau? | Na? | Ar | ji | pavogė | jūsų | širdį?", "Jau grįžote? Na? Ar ji pavogė jūsų širdį?",
+      t("Welcome | back! | So? | What | do | you | think?", "Sveiki | sugrįžę! | Na? | Ką | — | Jūs | manote?", "Sveiki sugrįžę! Na, ką manote?", { flags: { 4: F_WH_DO } }),
+      t("Back | already? | Well? | Did | she | steal | your | heart?", "Grįžote | jau? | Na? | Ar | ji | pavogė | Jūsų | širdį?", "Jau grįžote? Na? Ar ji pavogė Jūsų širdį?",
         { flags: { 3: "Question “Did” = the particle ar; the past tense sits on pavogė." } }),
     ],
     opinion_again: [t("So, | how | did | she | drive?", "Tai, | kaip | — | ji | važiavo?", "Tai kaip ji važiavo?", { flags: { 2: F_WH_DID } })],
     drive_good_react: [
-      t("I | told | you. | She | still | drives | like a dream.", "Aš | sakiau | jums. | Ji | vis dar | važiuoja | puikiai.", "Sakiau gi. Ji vis dar važiuoja puikiai."),
+      t("I | told | you. | She | still | drives | like a dream.", "Aš | sakiau | Jums. | Ji | vis dar | važiuoja | puikiai.", "Sakiau gi. Ji vis dar važiuoja puikiai."),
     ],
     drive_bad_react: [
       t("Fair enough. | She's | not | new, | but | she's | honest.", "Teisybė. | Ji | nėra | nauja, | bet | ji yra | sąžininga.", "Teisybė. Ji nenauja, bet sąžininga.",
         { flags: { 1: "“'s” (is): the negated copula nėra (under “not”) carries it." } }),
     ],
     drive_decline: [t("Brave! | Most | people | at least | kick | the | tires.", "Drąsu! | Dauguma | žmonių | bent | paspardo | — | padangas.", "Drąsu! Dauguma bent jau paspardo padangas.")],
-    drive_later: [t("Sure, | whenever | you | like.", "Žinoma, | kada tik | jūs | norėsite.", "Žinoma, kada tik norėsite.",
+    drive_later: [t("Sure, | whenever | you | like.", "Žinoma, | kada tik | Jūs | norėsite.", "Žinoma, kada tik norėsite.",
       { flags: { 3: "“like” = norėsite: after kada tik the future is used for a future time." } })],
     drive_again: [t("You've | already | driven | her!", "Jūs | jau | pavairavote | ją!", "Jūs jau ją pavairavote!",
       { flags: { 0: "“'ve” (have): the past tense of pavairavote (under “driven”) carries the perfect." } })],
@@ -1514,9 +1514,9 @@ export const usedCar: SituationDef = {
         { flags: { 1: "After prieš + the -ant form, the subject goes in the dative: mums.", 3: "“talk numbers” = kalbėti apie skaičius: apie carries the object." } }),
     ],
     flaw_sky: [t("But | it's | a | convertible. | You | have | the | whole | sky!", "Bet | tai yra | — | kabrioletas. | Jūs | turite | — | visą | dangų!", "Bet juk tai kabrioletas – turite visą dangų!")],
-    glad_attitude: [t("I | like | your | attitude.", "Man | patinka | jūsų | požiūris.", "Man patinka jūsų požiūris.",
+    glad_attitude: [t("I | like | your | attitude.", "Man | patinka | Jūsų | požiūris.", "Man patinka Jūsų požiūris.",
       { flags: { 0: "“I like” = Man patinka: the one who likes is in the dative." } })],
-    flaw_fair: [t("I | know. | Better | you | hear | it | from | me.", "Aš | žinau. | Geriau | jūs | girdite | tai | iš | manęs.", "Žinau. Geriau jau girdite tai iš manęs.")],
+    flaw_fair: [t("I | know. | Better | you | hear | it | from | me.", "Aš | žinau. | Geriau | Jūs | girdite | tai | iš | manęs.", "Žinau. Geriau jau girdite tai iš manęs.")],
     no_fault: [t("Really? | She | drove | just | fine | this | morning.", "Tikrai? | Ji | važiavo | visai | gerai | šį | rytą.", "Tikrai? Šįryt ji važiavo visai gerai.")],
 
     // --- the price talk --------------------------------------------------------------------------------
@@ -1533,15 +1533,15 @@ export const usedCar: SituationDef = {
         { say: "The price is nine thousand, like in the ad." }),
     ],
     price_now: [t("My | price | right now | is | {$p}.", "Mano | kaina | šiuo metu | yra | {$p}.", "Mano kaina šiuo metu – {$p}.")],
-    price_reask: [t("So, | {$p}. | What | do | you | say?", "Taigi, | {$p}. | Ką | — | jūs | sakote?", "Taigi, {$p}. Ką sakote?", { flags: { 3: F_WH_DO } })],
+    price_reask: [t("So, | {$p}. | What | do | you | say?", "Taigi, | {$p}. | Ką | — | Jūs | sakote?", "Taigi, {$p}. Ką sakote?", { flags: { 3: F_WH_DO } })],
     deal_price: [t("We | said | {$p}, | remember?", "Mes | sutarėme | {$p}, | pamenate?", "Sutarėme {$p}, pamenate?")],
     deal_done: [t("We | already | have | a | deal, | remember?", "Mes | jau | turime | — | susitarimą, | pamenate?", "Juk jau sutarėme, pamenate?")],
     flex_yes: [
-      t("Well… | would | you | consider | {$p}?", "Na… | ar | jūs | svarstytumėte | {$p}?", "Na… o {$p} – svarstytumėte?",
+      t("Well… | would | you | consider | {$p}?", "Na… | ar | Jūs | svarstytumėte | {$p}?", "Na… o {$p} – svarstytumėte?",
         { flags: { 1: "“would” = the particle ar; the conditional sits on svarstytumėte." } }),
     ],
     flex_what: [
-      t("What | did | you | have | in mind?", "Ką | — | jūs | turėjote | omenyje?", "O kokią kainą turėjote omenyje?",
+      t("What | did | you | have | in mind?", "Ką | — | Jūs | turėjote | omenyje?", "O kokią kainą turėjote omenyje?",
         { flags: { 1: "Question “did” has no Lithuanian word; the past tense sits on turėjote." } }),
     ],
     need_offer: [
@@ -1549,7 +1549,7 @@ export const usedCar: SituationDef = {
     ],
     confirm_full: [t("So… | {$p}, | no | haggling?", "Taigi… | {$p}, | be | derybų?", "Taigi… {$p}, be derybų?")],
     lowball: [
-      t("Ha! | For | that | price, | you | can | have | the | radio.", "Cha! | Už | tokią | kainą, | jūs | galite | gauti | — | radiją.", "Cha! Už tokią kainą galite gauti nebent radiją."),
+      t("Ha! | For | that | price, | you | can | have | the | radio.", "Cha! | Už | tokią | kainą, | Jūs | galite | gauti | — | radiją.", "Cha! Už tokią kainą galite gauti nebent radiją."),
     ],
     lowball2: [
       t("Let's try | a | number | that | won't make | me | cry.", "Pabandykime | — | skaičių, | kuris | neprivers | manęs | verkti.", "Pabandykime skaičių, nuo kurio man nesinorės verkti."),
@@ -1566,10 +1566,10 @@ export const usedCar: SituationDef = {
     ],
     better_drop: [t("You | drive a hard bargain. | Fine: | {$p}.", "Jūs | kietai deratės. | Gerai: | {$p}.", "Jūs kietai deratės. Gerai – {$p}.")],
     better_no: [
-      t("I've | already | come down. | Your | turn.", "Aš | jau | nuleidau. | Jūsų | eilė.", "Aš jau nuleidau kainą. Dabar jūsų eilė.",
+      t("I've | already | come down. | Your | turn.", "Aš | jau | nuleidau. | Jūsų | eilė.", "Aš jau nuleidau kainą. Dabar Jūsų eilė.",
         { flags: { 0: "“'ve” (have): the past tense of nuleidau (under “come down”) carries the perfect." } }),
       t("Come on, | give | me | a | number!", "Nagi, | duokite | man | — | skaičių!", "Nagi, pasakykite skaičių!"),
-      t("Your | turn | to make | an | offer.", "Jūsų | eilė | pateikti | — | pasiūlymą.", "Dabar jūsų eilė pasiūlyti kainą."),
+      t("Your | turn | to make | an | offer.", "Jūsų | eilė | pateikti | — | pasiūlymą.", "Dabar Jūsų eilė pasiūlyti kainą."),
     ],
     best_almost: [t("Almost. | For you: | {$p}.", "Beveik. | Jums: | {$p}.", "Beveik. Jums – {$p}.")],
     best_for_you: [t("For you? | {$p}.", "Jums? | {$p}.", "Jums? {$p}.")],
@@ -1621,7 +1621,7 @@ export const usedCar: SituationDef = {
       t("You | have | a | deal.", "Jūs | turite | — | susitarimą.", "Sutarta!"),
     ],
     deal_full: [
-      t("Sold | for | {$p}! | Between | us, | you | could have haggled | a little.", "Parduota | už | {$p}! | Tarp | mūsų, | jūs | galėjote pasiderėti | truputį.",
+      t("Sold | for | {$p}! | Between | us, | you | could have haggled | a little.", "Parduota | už | {$p}! | Tarp | mūsų, | Jūs | galėjote pasiderėti | truputį.",
         "Parduota už {$p}! Tarp mūsų – galėjote truputį pasiderėti."),
     ],
     firm: [
@@ -1638,24 +1638,24 @@ export const usedCar: SituationDef = {
       t("That | was | a | guy | who | wants | to see | her | at five. | With | cash.", "Tai | buvo | — | vyrukas, | kuris | nori | pamatyti | ją | penktą. | Su | grynaisiais.",
         "Rašė vyrukas, kuris nori ją pamatyti penktą. Su grynaisiais."),
     ],
-    rival3: [t("But | I'd rather | sell | her | to you.", "Bet | verčiau | parduočiau | ją | jums.", "Bet verčiau parduočiau ją jums.")],
+    rival3: [t("But | I'd rather | sell | her | to you.", "Bet | verčiau | parduočiau | ją | Jums.", "Bet verčiau parduočiau ją Jums.")],
 
     // --- sleep on it, walking away, last chance ------------------------------------------------------------
     sleep_ok: [t("Of course. | Sleep on it.", "Žinoma. | Pagalvokite per naktį.", "Žinoma. Pagalvokite per naktį.")],
     sleep_dare: [t("Don't you dare!", "Net nedrįskite!", "Net nedrįskite!")],
     sleep_dare2: [t("The | five o'clock | guy | won't wait.", "— | Penktos valandos | vyrukas | nelauks.", "Tas, kuris atvažiuos penktą, nelauks.")],
-    final_now: [t("Okay. | {$p}, | and | she's | yours | today.", "Gerai. | {$p}, | ir | ji yra | jūsų | šiandien.", "Gerai. {$p} – ir šiandien ji jūsų.")],
+    final_now: [t("Okay. | {$p}, | and | she's | yours | today.", "Gerai. | {$p}, | ir | ji yra | Jūsų | šiandien.", "Gerai. {$p} – ir šiandien ji Jūsų.")],
     wait_call: [
       t("Wait! | I | was thinking | more | along the lines of | {$p}…", "Palaukite! | Aš | galvojau | greičiau | apie | {$p}…", "Palaukite! Galvojau greičiau apie {$p}…",
         { flags: { 3: F_RATHER } }),
     ],
     if_wait: [
-      t("If | you | don't make | me | wait.", "Jei | jūs | neversite | manęs | laukti.", "…jei neversite manęs laukti.",
+      t("If | you | don't make | me | wait.", "Jei | Jūs | neversite | manęs | laukti.", "…jei neversite manęs laukti.",
         { flags: { 2: "After “if”, English uses the present for the future; Lithuanian uses the future neversite." } }),
     ],
     walk_ok: [t("I | understand. | No hard feelings.", "Aš | suprantu. | Nepykstu.", "Suprantu. Nepykstu.")],
     walk_ok2: [
-      t("If | you | change | your | mind, | you | know | where | she | lives.", "Jei | jūs | pakeisite | savo | nuomonę, | jūs | žinote, | kur | ji | gyvena.",
+      t("If | you | change | your | mind, | you | know | where | she | lives.", "Jei | Jūs | pakeisite | savo | nuomonę, | Jūs | žinote, | kur | ji | gyvena.",
         "Jei persigalvosite – žinote, kur ji gyvena.", { flags: { 2: "After “if”, the English present = the Lithuanian future pakeisite." } }),
     ],
 
@@ -1665,7 +1665,7 @@ export const usedCar: SituationDef = {
     rude_generic: [t("Well, | that's | one | way | to start | a | negotiation.", "Na, | tai | vienas | būdas | pradėti | — | derybas.", "Na, ir taip galima pradėti derybas.",
       { flags: { 1: "“'s” (is): Lithuanian needs no copula here." } })],
     rude_walk: [
-      t("Okay… | Good luck | with | your | search.", "Gerai… | Sėkmės | — | jūsų | paieškose.", "Gerai… Sėkmės ieškant.",
+      t("Okay… | Good luck | with | your | search.", "Gerai… | Sėkmės | — | Jūsų | paieškose.", "Gerai… Sėkmės ieškant.",
         { flags: { 2: "“with” has no Lithuanian word: the locative paieškose carries it." } }),
       t("Well… | okay | then.", "Na… | gerai | tada.", "Na… gerai."),
     ],
@@ -1673,10 +1673,10 @@ export const usedCar: SituationDef = {
     // --- deal, payment, goodbye ----------------------------------------------------------------------------
     shake_on_it: [t("Let's shake | on | it.", "Paspauskime rankas | dėl | to.", "Paspauskim rankas.")],
     ask_pay: [
-      t("So, | how | would | you | like | to pay?", "Tai, | kaip | — | jūs | norėtumėte | sumokėti?", "Tai kaip norėtumėte sumokėti?",
+      t("So, | how | would | you | like | to pay?", "Tai, | kaip | — | Jūs | norėtumėte | sumokėti?", "Tai kaip norėtumėte sumokėti?",
         { flags: { 2: "“would”: the conditional ending of norėtumėte carries it." } }),
     ],
-    cash_reminder: [t("Cash, | like | you | said?", "Grynaisiais, | kaip | jūs | sakėte?", "Grynaisiais, kaip sakėte?")],
+    cash_reminder: [t("Cash, | like | you | said?", "Grynaisiais, | kaip | Jūs | sakėte?", "Grynaisiais, kaip sakėte?")],
     pay_options: [t("Cash, | a | bank | transfer | or | a | cashier's check?", "Grynaisiais, | — | banko | pavedimu | ar | — | banko čekiu?", "Grynaisiais, banko pavedimu ar banko čekiu?")],
     pay_later: [t("Sure. | But | first, | let's agree | on | a | price.", "Žinoma. | Bet | pirma, | susitarkime | dėl | — | kainos.", "Žinoma. Bet pirma susitarkime dėl kainos.")],
     pay_cash_r: [
@@ -1684,8 +1684,8 @@ export const usedCar: SituationDef = {
         { flags: { 2: "“to”: the dative ausims carries it." } }),
     ],
     pay_transfer_r: [
-      t("A | bank | transfer | works | too. | I'll text | you | my | details.", "— | Banko | pavedimas | tinka | irgi. | Atsiųsiu žinute | jums | savo | duomenis.",
-        "Banko pavedimas irgi tinka. Atsiųsiu jums savo duomenis žinute."),
+      t("A | bank | transfer | works | too. | I'll text | you | my | details.", "— | Banko | pavedimas | tinka | irgi. | Atsiųsiu žinute | Jums | savo | duomenis.",
+        "Banko pavedimas irgi tinka. Atsiųsiu Jums savo duomenis žinute."),
     ],
     // "Can I write you a check?": a personal check for a car? Better a cashier's check
     pay_check_personal: [
@@ -1705,23 +1705,23 @@ export const usedCar: SituationDef = {
       t("I'm | not | a | store, | I'm afraid.", "Aš | nesu | — | parduotuvė, | deja.", "Deja, aš ne parduotuvė.",
         { flags: { 0: "“'m” (am): the negated copula nesu (under “not”) carries it." } }),
     ],
-    wait_pay: [t("Hold on, | you | haven't paid | yet!", "Palaukite, | jūs | nesumokėjote | dar!", "Palaukite, jūs dar nesumokėjote!")],
+    wait_pay: [t("Hold on, | you | haven't paid | yet!", "Palaukite, | Jūs | nesumokėjote | dar!", "Palaukite, Jūs dar nesumokėjote!")],
     title_keys: [
-      t("Here are | the | keys | and | the | title. | She's | all | yours.", "Štai | — | raktai | ir | — | nuosavybės dokumentas. | Ji yra | visiškai | jūsų.",
-        "Štai raktai ir nuosavybės dokumentas. Dabar ji jūsų.", { flags: { 5: "title = the US document that shows who owns the car." } }),
+      t("Here are | the | keys | and | the | title. | She's | all | yours.", "Štai | — | raktai | ir | — | nuosavybės dokumentas. | Ji yra | visiškai | Jūsų.",
+        "Štai raktai ir nuosavybės dokumentas. Dabar ji Jūsų.", { flags: { 5: "title = the US document that shows who owns the car." } }),
     ],
     be_good: [
       t("Be | good | to | her. | She | loves | the | coast | road.", "Būkite | {m:geras|f:gera} | su | ja. | Ji | mėgsta | — | pakrantės | kelią.",
         "Būkite jai {m:geras|f:gera}. Ji mėgsta pakrantės kelią."),
     ],
-    all_yours: [t("She's | all | yours | now!", "Ji yra | visiškai | jūsų | dabar!", "Dabar ji visa jūsų!")],
+    all_yours: [t("She's | all | yours | now!", "Ji yra | visiškai | Jūsų | dabar!", "Dabar ji visa Jūsų!")],
     bye_deal: [
-      t("It was | a | pleasure | doing business | with | you.", "Buvo | — | malonu | turėti reikalų | su | jumis.", "Buvo malonu su jumis susitarti.",
+      t("It was | a | pleasure | doing business | with | you.", "Buvo | — | malonu | turėti reikalų | su | Jumis.", "Buvo malonu su Jumis susitarti.",
         { flags: { 2: "“a pleasure” = malonu (an adverb, no noun)." } }),
       t("Enjoy | her!", "Mėgaukitės | ja!", "Mėgaukitės ja!"),
     ],
     pleasure_too: [t("The | pleasure | was | mine!", "— | Malonumas | buvo | mano!", "Man irgi buvo malonu!")],
-    know_you_will: [t("I | know | you | will.", "Aš | žinau, | jūs | prižiūrėsite.", "Žinau, kad prižiūrėsite.",
+    know_you_will: [t("I | know | you | will.", "Aš | žinau, | Jūs | prižiūrėsite.", "Žinau, kad prižiūrėsite.",
       { flags: { 3: "“will” (elliptical): Lithuanian repeats the verb, prižiūrėsite." } })],
     you_too: [t("You | too!", "Jums | irgi!", "Man irgi!")],
     see_around: [
@@ -1740,7 +1740,7 @@ export const usedCar: SituationDef = {
     arrive: {
       lt: "Pasakyti, kad atvykai dėl skelbimo",
       items: [
-        { id: "saw_ad", s: t("I | saw | your | ad | on Saturday.", "Aš | mačiau | jūsų | skelbimą | šeštadienį.", "Šeštadienį mačiau jūsų skelbimą.") },
+        { id: "saw_ad", s: t("I | saw | your | ad | on Saturday.", "Aš | mačiau | Jūsų | skelbimą | šeštadienį.", "Šeštadienį mačiau Jūsų skelbimą.") },
         { id: "about_ad", s: t("Hi! | I'm | here | about | the | car.", "Sveiki! | Aš esu | čia | dėl | — | automobilio.", "Sveiki! Aš dėl automobilio.") },
         { id: "still_for_sale", s: t("Is | the | car | still | for sale?", "Ar | — | automobilis | vis dar | parduodamas?", "Ar automobilis dar parduodamas?",
           { flags: { 0: "“Is” = the particle ar; the participle parduodamas (under “for sale”) takes over the copula." } }) },
@@ -1761,10 +1761,10 @@ export const usedCar: SituationDef = {
           { flags: { 2: "Question “does” has no Lithuanian word; the tense sits on turi.", 3: F_CAR_IT } }) },
         { id: "q_accident", s: t("Has | it | ever | been | in an accident?", "Ar | ji | kada nors | yra buvusi | avarijoje?", "Ar ji kada nors buvo patekusi į avariją?",
           { flags: { 0: "Question “Has” = the particle ar; the perfect sits on yra buvusi (under “been”).", 1: F_CAR_IT } }) },
-        { id: "q_why", s: t("Why | are | you | selling | it?", "Kodėl | — | jūs | parduodate | ją?", "Kodėl ją parduodate?",
+        { id: "q_why", s: t("Why | are | you | selling | it?", "Kodėl | — | Jūs | parduodate | ją?", "Kodėl ją parduodate?",
           { flags: { 1: "Progressive “are” has no Lithuanian word; parduodate carries it.", 4: F_CAR_IT } }) },
         { id: "q_problems", s: t("Does | it | have | any | problems?", "Ar | ji | turi | kokių nors | problemų?", "Ar ji turi kokių nors bėdų?", { flags: { 0: F_DOES_Q, 1: F_CAR_IT } }) },
-        { id: "q_service", s: t("Do | you | have | the | service | records?", "Ar | jūs | turite | — | techninės priežiūros | dokumentus?", "Ar turite techninės priežiūros dokumentus?",
+        { id: "q_service", s: t("Do | you | have | the | service | records?", "Ar | Jūs | turite | — | techninės priežiūros | dokumentus?", "Ar turite techninės priežiūros dokumentus?",
           { flags: { 0: F_DO_Q } }) },
         { id: "q_fuel", s: t("How much | gas | does | it | use?", "Kiek | degalų | — | ji | sunaudoja?", "Kiek ji sunaudoja degalų?",
           { flags: { 2: "Question “does” has no Lithuanian word; the tense sits on sunaudoja.", 3: F_CAR_IT } }) },
@@ -1797,7 +1797,7 @@ export const usedCar: SituationDef = {
           { flags: { 1: "Existential “there” has no Lithuanian word; yra (under “Is”) carries it." } }) },
         { id: "bit_much", s: t("That's | a bit | much | for me.", "Tai | šiek tiek | per daug | man.", "Man tai šiek tiek per daug.",
           { flags: { 2: "“a bit much” = slightly too much: per daug." } }) },
-        { id: "best_price", s: t("What's | your | best | price?", "Kokia yra | jūsų | geriausia | kaina?", "Kokia jūsų geriausia kaina?") },
+        { id: "best_price", s: t("What's | your | best | price?", "Kokia yra | Jūsų | geriausia | kaina?", "Kokia Jūsų geriausia kaina?") },
       ],
     },
     offer: {
@@ -1805,11 +1805,11 @@ export const usedCar: SituationDef = {
       items: [
         { id: "along_lines", s: t("I | was thinking | more | along the lines of | $7,000.", "Aš | galvojau | greičiau | apie | 7 000 dolerių.", "Galvojau greičiau apie 7 000 dolerių.",
           { say: "I was thinking more along the lines of seven.", flags: { 2: F_RATHER } }) },
-        { id: "consider", s: t("Would | you | consider | $7,500?", "Ar | jūs | svarstytumėte | 7 500 dolerių?", "Gal sutiktumėte už 7 500 dolerių?",
+        { id: "consider", s: t("Would | you | consider | $7,500?", "Ar | Jūs | svarstytumėte | 7 500 dolerių?", "Gal sutiktumėte už 7 500 dolerių?",
           { say: "Would you consider seven and a half?", flags: { 0: "“Would” = the particle ar; the conditional sits on svarstytumėte." } }) },
-        { id: "can_offer", s: t("I | can | offer | you | $7,000.", "Aš | galiu | pasiūlyti | jums | 7 000 dolerių.", "Galiu jums pasiūlyti 7 000 dolerių.", { say: "I can offer you seven thousand." }) },
+        { id: "can_offer", s: t("I | can | offer | you | $7,000.", "Aš | galiu | pasiūlyti | Jums | 7 000 dolerių.", "Galiu Jums pasiūlyti 7 000 dolerių.", { say: "I can offer you seven thousand." }) },
         { id: "cash_offer", s: t("I | can | pay | cash | today.", "Aš | galiu | sumokėti | grynaisiais | šiandien.", "Galiu šiandien sumokėti grynaisiais.") },
-        { id: "do_better_price", s: t("Can | you | do | any | better | on | the | price?", "Ar galite | jūs | pasiūlyti | kiek nors | geresnę | — | — | kainą?", "Gal galite pasiūlyti geresnę kainą?",
+        { id: "do_better_price", s: t("Can | you | do | any | better | on | the | price?", "Ar galite | Jūs | pasiūlyti | kiek nors | geresnę | — | — | kainą?", "Gal galite pasiūlyti geresnę kainą?",
           { flags: { 2: "“do (better)” about a price = pasiūlyti.", 5: "“on” has no Lithuanian word: geresnę kainą." } }) },
       ],
     },
@@ -1818,9 +1818,9 @@ export const usedCar: SituationDef = {
       items: [
         { id: "halfway", s: t("What if | we | met | halfway?", "O gal | mes | susitiktume | pusiaukelėje?", "O gal susitinkam pusiaukelėje?",
           { flags: { 2: "Past “met” after “what if” = a soft suggestion; Lithuanian uses the conditional." } }) },
-        { id: "little_from_you", s: t("A little | from | you, | a little | from | me.", "Truputį | iš | jūsų, | truputį | iš | manęs.", "Truputį nusileiskite jūs, truputį – aš.") },
-        { id: "best_offer", s: t("Is | that | your | best | offer?", "Ar | tai | jūsų | geriausias | pasiūlymas?", "Ar tai geriausias jūsų pasiūlymas?", { flags: { 0: F_IS_Q } }) },
-        { id: "do_better", s: t("Can | you | do | any | better?", "Ar galite | jūs | pasiūlyti | kiek nors | geriau?", "Gal galite pasiūlyti geriau?",
+        { id: "little_from_you", s: t("A little | from | you, | a little | from | me.", "Truputį | iš | Jūsų, | truputį | iš | manęs.", "Truputį nusileiskite Jūs, truputį – aš.") },
+        { id: "best_offer", s: t("Is | that | your | best | offer?", "Ar | tai | Jūsų | geriausias | pasiūlymas?", "Ar tai geriausias Jūsų pasiūlymas?", { flags: { 0: F_IS_Q } }) },
+        { id: "do_better", s: t("Can | you | do | any | better?", "Ar galite | Jūs | pasiūlyti | kiek nors | geriau?", "Gal galite pasiūlyti geriau?",
           { flags: { 2: "“do (better)” about a price = pasiūlyti." } }) },
         { id: "split", s: t("Let's split | the | difference.", "Pasidalykime | — | skirtumą.", "Pasidalykime skirtumą per pusę.") },
       ],
@@ -1848,7 +1848,7 @@ export const usedCar: SituationDef = {
         { id: "sleep_on_it", s: t("Let | me | sleep on it.", "Leiskite | man | pagalvoti per naktį.", "Leiskite man per naktį pagalvoti.") },
         { id: "afraid_more", s: t("I'm afraid | that's | still | more | than | I | can | spend.", "Deja, | tai | vis tiek | daugiau, | nei | aš | galiu | išleisti.",
           "Deja, tai vis tiek daugiau, nei galiu išleisti.", { flags: { 1: "“'s” (is): Lithuanian needs no copula here." } }) },
-        { id: "thanks_time", s: t("Thanks | for | your | time | anyway.", "Ačiū | už | jūsų | laiką | vis tiek.", "Vis tiek ačiū, kad skyrėte laiko.") },
+        { id: "thanks_time", s: t("Thanks | for | your | time | anyway.", "Ačiū | už | Jūsų | laiką | vis tiek.", "Vis tiek ačiū, kad skyrėte laiko.") },
       ],
     },
     shake: {
@@ -1872,11 +1872,11 @@ export const usedCar: SituationDef = {
     bye: {
       lt: "Padėkoti ir atsisveikinti",
       items: [
-        { id: "pleasure", s: t("It was | a | pleasure | doing business | with | you.", "Buvo | — | malonu | turėti reikalų | su | jumis.", "Buvo malonu su jumis susitarti.",
+        { id: "pleasure", s: t("It was | a | pleasure | doing business | with | you.", "Buvo | — | malonu | turėti reikalų | su | Jumis.", "Buvo malonu su Jumis susitarti.",
           { flags: { 2: "“a pleasure” = malonu (an adverb, no noun)." } }) },
         { id: "look_after", s: t("I | promise | to look after | her.", "Aš | pažadu | prižiūrėti | ją.", "Pažadu ją prižiūrėti.") },
-        { id: "thanks_so_much", s: t("Thank | you | so much!", "Dėkoju | jums | labai!", "Labai ačiū!") },
-        { id: "thanks_time", s: t("Thanks | for | your | time | anyway.", "Ačiū | už | jūsų | laiką | vis tiek.", "Vis tiek ačiū, kad skyrėte laiko.") },
+        { id: "thanks_so_much", s: t("Thank | you | so much!", "Dėkoju | Jums | labai!", "Labai ačiū!") },
+        { id: "thanks_time", s: t("Thanks | for | your | time | anyway.", "Ačiū | už | Jūsų | laiką | vis tiek.", "Vis tiek ačiū, kad skyrėte laiko.") },
       ],
     },
   },

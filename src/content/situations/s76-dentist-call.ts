@@ -449,20 +449,20 @@ export const dentist: SituationDef = {
 
   lines: {
     greet: [
-      t("Green Street Dental, | this is | Linda. | How | can | I | help | you?", "„Green Street Dental“, | klauso | Linda. | Kuo | galiu | aš | padėti | jums?",
+      t("Green Street Dental, | this is | Linda. | How | can | I | help | you?", "„Green Street Dental“, | klauso | Linda. | Kuo | galiu | aš | padėti | Jums?",
         "„Green Street Dental“, klauso Linda. Kuo galiu padėti?"),
-      t("Good | morning, | Green Street Dental! | Linda | speaking. | How | may | I | help | you?", "Labas | rytas, | „Green Street Dental“! | Linda | klauso. | Kuo | galėčiau | aš | padėti | jums?",
+      t("Good | morning, | Green Street Dental! | Linda | speaking. | How | may | I | help | you?", "Labas | rytas, | „Green Street Dental“! | Linda | klauso. | Kuo | galėčiau | aš | padėti | Jums?",
         "Labas rytas, „Green Street Dental“! Klauso Linda. Kuo galėčiau padėti?"),
       t("Thank | you | for calling | Green Street Dental. | This is | Linda. | How | can | I | help | you | today?",
-        "Dėkoju | jums, | kad paskambinote | į „Green Street Dental“. | Klauso | Linda. | Kuo | galiu | aš | padėti | jums | šiandien?",
+        "Dėkoju | Jums, | kad paskambinote | į „Green Street Dental“. | Klauso | Linda. | Kuo | galiu | aš | padėti | Jums | šiandien?",
         "Ačiū, kad paskambinote į „Green Street Dental“. Klauso Linda. Kuo šiandien galiu padėti?"),
     ],
     ask_help: [
-      t("How | can | I | help | you?", "Kuo | galiu | aš | padėti | jums?", "Kuo galiu padėti?"),
-      t("What | can | I | do | for you?", "Ką | galiu | aš | padaryti | jums?", "Kuo galiu padėti?"),
+      t("How | can | I | help | you?", "Kuo | galiu | aš | padėti | Jums?", "Kuo galiu padėti?"),
+      t("What | can | I | do | for you?", "Ką | galiu | aš | padaryti | Jums?", "Kuo galiu padėti?"),
     ],
     ask_reason: [
-      t("Sure! | Is | it | for a checkup, | or | is | something | bothering | you?", "Žinoma! | Ar | tai | patikrai, | ar | — | kas nors | vargina | jus?",
+      t("Sure! | Is | it | for a checkup, | or | is | something | bothering | you?", "Žinoma! | Ar | tai | patikrai, | ar | — | kas nors | vargina | Jus?",
         "Žinoma! Ar tai profilaktinė patikra, ar kas nors vargina?",
         { flags: { 1: "“Is” in a question = the particle ar; Lithuanian needs no copula here.", 5: "Progressive “is” has no Lithuanian word; vargina carries the tense (linked to “bothering”)." } }),
       t("Of course. | What's | going on?", "Žinoma. | Kas | nutiko?", "Žinoma. Kas nutiko?",
@@ -474,7 +474,7 @@ export const dentist: SituationDef = {
       t("Sure, | no | problem.", "Žinoma, | jokių | problemų.", "Žinoma, jokių problemų."),
     ],
     ask_pain_len: [
-      t("How | long | have | you | had | this | pain?", "Kaip | ilgai | — | jus | kankina | šis | skausmas?", "Kiek laiko jus kankina šis skausmas?",
+      t("How | long | have | you | had | this | pain?", "Kaip | ilgai | — | Jus | kankina | šis | skausmas?", "Kiek laiko Jus kankina šis skausmas?",
         { flags: { 2: "Perfect “have” has no Lithuanian word; the present kankina covers the ongoing pain (linked to “had”)." } }),
     ],
     noted: [
@@ -482,16 +482,16 @@ export const dentist: SituationDef = {
       t("Okay, | got it.", "Gerai, | supratau.", "Gerai, supratau."),
     ],
     pain_soon: [
-      t("Okay, | let's find | you | something | soon.", "Gerai, | raskime | jums | ką nors | greitai.", "Gerai, suraskime jums laiką kuo greičiau."),
+      t("Okay, | let's find | you | something | soon.", "Gerai, | raskime | Jums | ką nors | greitai.", "Gerai, suraskime Jums laiką kuo greičiau."),
     ],
     ask_new: [
-      t("Are | you | a | new | patient?", "Ar | jūs | — | {m:naujas|f:nauja} | {m:pacientas|f:pacientė}?", "Ar jūs {m:naujas pacientas|f:nauja pacientė}?",
+      t("Are | you | a | new | patient?", "Ar | Jūs | — | {m:naujas|f:nauja} | {m:pacientas|f:pacientė}?", "Ar Jūs {m:naujas pacientas|f:nauja pacientė}?",
         { flags: { 0: "“Are” in a question = the particle ar; Lithuanian needs no copula here." } }),
-      t("And | are | you | a | new | patient | with us?", "O | ar | jūs | — | {m:naujas|f:nauja} | {m:pacientas|f:pacientė} | pas mus?", "O ar jūs pas mus {m:naujas pacientas|f:nauja pacientė}?",
+      t("And | are | you | a | new | patient | with us?", "O | ar | Jūs | — | {m:naujas|f:nauja} | {m:pacientas|f:pacientė} | pas mus?", "O ar Jūs pas mus {m:naujas pacientas|f:nauja pacientė}?",
         { flags: { 1: "“are” in a question = the particle ar; Lithuanian needs no copula here." } }),
     ],
     ask_before: [
-      t("Have | you | been | to | our | office | before?", "Ar | jūs | buvote | — | mūsų | klinikoje | anksčiau?", "Ar anksčiau esate {m:buvęs|f:buvusi} mūsų klinikoje?",
+      t("Have | you | been | to | our | office | before?", "Ar | Jūs | buvote | — | mūsų | klinikoje | anksčiau?", "Ar anksčiau esate {m:buvęs|f:buvusi} mūsų klinikoje?",
         { flags: { 0: "Perfect “Have” in a question = the particle ar; the past buvote carries the tense.", 3: "“to”: the locative klinikoje carries it." } }),
     ],
     new_welcome: [
@@ -502,68 +502,68 @@ export const dentist: SituationDef = {
       t("Welcome | back!", "Sveiki | sugrįžę!", "Sveiki sugrįžę!"),
     ],
     ask_name: [
-      t("Can | I | have | your | first | and | last name, | please?", "Ar galiu | aš | sužinoti | jūsų | vardą | ir | pavardę, | prašau?", "Ar galėčiau sužinoti jūsų vardą ir pavardę?",
+      t("Can | I | have | your | first | and | last name, | please?", "Ar galiu | aš | sužinoti | Jūsų | vardą | ir | pavardę, | prašau?", "Ar galėčiau sužinoti Jūsų vardą ir pavardę?",
         { flags: { 4: "“first” (first name) = vardas." } }),
-      t("And | what's | your | name, | please?", "O | koks yra | jūsų | vardas, | prašau?", "O koks jūsų vardas ir pavardė?"),
+      t("And | what's | your | name, | please?", "O | koks yra | Jūsų | vardas, | prašau?", "O koks Jūsų vardas ir pavardė?"),
     ],
     ask_surname: [
-      t("And | your | last name?", "O | jūsų | pavardė?", "O jūsų pavardė?"),
+      t("And | your | last name?", "O | Jūsų | pavardė?", "O Jūsų pavardė?"),
     ],
     ask_spell: [
-      t("Could | you | spell | your | last name | for me?", "Ar galėtumėte | jūs | pasakyti paraidžiui | savo | pavardę | man?", "Ar galėtumėte man pasakyti savo pavardę paraidžiui?"),
-      t("Thank | you. | And | how | do | you | spell | that?", "Dėkoju | jums. | O | kaip | — | jūs | rašote | tai?", "Ačiū. O kaip ji rašoma?",
+      t("Could | you | spell | your | last name | for me?", "Ar galėtumėte | Jūs | pasakyti paraidžiui | savo | pavardę | man?", "Ar galėtumėte man pasakyti savo pavardę paraidžiui?"),
+      t("Thank | you. | And | how | do | you | spell | that?", "Dėkoju | Jums. | O | kaip | — | Jūs | rašote | tai?", "Ačiū. O kaip ji rašoma?",
         { flags: { 4: "Question “do” has no Lithuanian word (linked to “spell”)." } }),
     ],
     spell_again: [
-      t("Sorry, | could | you | spell | it | again, | a little | more slowly?", "Atsiprašau, | ar galėtumėte | jūs | pasakyti paraidžiui | ją | dar kartą, | truputį | lėčiau?",
+      t("Sorry, | could | you | spell | it | again, | a little | more slowly?", "Atsiprašau, | ar galėtumėte | Jūs | pasakyti paraidžiui | ją | dar kartą, | truputį | lėčiau?",
         "Atsiprašau, ar galėtumėte dar kartą paraidžiui, truputį lėčiau?"),
     ],
     // the spelling asked again after another answer (same words as ask_spell, so the same recording)
     ask_spell_again: [
-      t("Could | you | spell | your | last name | for me?", "Ar galėtumėte | jūs | pasakyti paraidžiui | savo | pavardę | man?", "Ar galėtumėte man pasakyti savo pavardę paraidžiui?"),
+      t("Could | you | spell | your | last name | for me?", "Ar galėtumėte | Jūs | pasakyti paraidžiui | savo | pavardę | man?", "Ar galėtumėte man pasakyti savo pavardę paraidžiui?"),
     ],
     go_ahead: [
       t("Okay, | go ahead.", "Gerai, | sakykite.", "Gerai, sakykite."),
       t("Sure, | go ahead.", "Žinoma, | sakykite.", "Žinoma, sakykite."),
     ],
     spell_thanks: [
-      t("Got it, | thank | you.", "Supratau, | dėkoju | jums.", "Supratau, ačiū."),
+      t("Got it, | thank | you.", "Supratau, | dėkoju | Jums.", "Supratau, ačiū."),
       t("Perfect, | thanks.", "Puiku, | ačiū.", "Puiku, ačiū."),
     ],
     ask_dob: [
-      t("And | what's | your | date of birth?", "O | kokia yra | jūsų | gimimo data?", "O kokia jūsų gimimo data?"),
-      t("Can | I | have | your | date of birth, | please?", "Ar galiu | aš | sužinoti | jūsų | gimimo datą, | prašau?", "Ar galėčiau sužinoti jūsų gimimo datą?"),
+      t("And | what's | your | date of birth?", "O | kokia yra | Jūsų | gimimo data?", "O kokia Jūsų gimimo data?"),
+      t("Can | I | have | your | date of birth, | please?", "Ar galiu | aš | sužinoti | Jūsų | gimimo datą, | prašau?", "Ar galėčiau sužinoti Jūsų gimimo datą?"),
     ],
     ask_year: [t("And | the | year?", "O | — | metai?", "O metai?")],
-    dob_thanks: [t("Thank | you.", "Dėkoju | jums.", "Ačiū."), t("Perfect.", "Puiku.", "Puiku.")],
+    dob_thanks: [t("Thank | you.", "Dėkoju | Jums.", "Ačiū."), t("Perfect.", "Puiku.", "Puiku.")],
     ask_phone: [
-      t("What's | the | best | phone | number | to reach | you?", "Koks yra | — | geriausias | telefono | numeris | susisiekti | su jumis?", "Kokiu telefono numeriu geriausia su jumis susisiekti?"),
-      t("And | a | phone | number, | please?", "O | — | telefono | numeris, | prašau?", "O jūsų telefono numeris?"),
+      t("What's | the | best | phone | number | to reach | you?", "Koks yra | — | geriausias | telefono | numeris | susisiekti | su Jumis?", "Kokiu telefono numeriu geriausia su Jumis susisiekti?"),
+      t("And | a | phone | number, | please?", "O | — | telefono | numeris, | prašau?", "O Jūsų telefono numeris?"),
     ],
-    phone_thanks: [t("Great, | thank | you.", "Puiku, | dėkoju | jums.", "Puiku, ačiū.")],
+    phone_thanks: [t("Great, | thank | you.", "Puiku, | dėkoju | Jums.", "Puiku, ačiū.")],
     breaking_up: [
-      t("Sorry, | you're breaking up | a little. | Could | you | say | that | again?", "Atsiprašau, | ryšys trūkinėja | truputį. | Ar galėtumėte | jūs | pasakyti | tai | dar kartą?",
+      t("Sorry, | you're breaking up | a little. | Could | you | say | that | again?", "Atsiprašau, | ryšys trūkinėja | truputį. | Ar galėtumėte | Jūs | pasakyti | tai | dar kartą?",
         "Atsiprašau, ryšys truputį trūkinėja. Ar galėtumėte pakartoti?"),
       t("Sorry, | I | didn't catch | that. | The | line | isn't great.", "Atsiprašau, | aš | nenugirdau | to. | — | Ryšys | nėra geras.", "Atsiprašau, nenugirdau. Ryšys prastas."),
     ],
     speak_up_ok: [
       t("Oh, | sorry! | Is | this | better?", "O, | atsiprašau! | Ar | taip | geriau?", "O, atsiprašau! Ar dabar geriau?",
         { flags: { 2: "“Is” in a question = the particle ar; Lithuanian needs no copula here." } }),
-      t("Sorry | about | that! | Can | you | hear | me | now?", "Atsiprašau | dėl | to! | Ar | jūs | girdite | mane | dabar?", "Atsiprašau! Ar dabar mane girdite?",
+      t("Sorry | about | that! | Can | you | hear | me | now?", "Atsiprašau | dėl | to! | Ar | Jūs | girdite | mane | dabar?", "Atsiprašau! Ar dabar mane girdite?",
         { flags: { 3: "“Can” with a verb of perception: Lithuanian uses the plain verb girdite; ar carries the question." } }),
     ],
     hear_you: [
-      t("Yes, | I | can | hear | you | fine.", "Taip, | aš | — | girdžiu | jus | gerai.", "Taip, girdžiu jus gerai.",
+      t("Yes, | I | can | hear | you | fine.", "Taip, | aš | — | girdžiu | Jus | gerai.", "Taip, girdžiu Jus gerai.",
         { flags: { 2: "“can” with a verb of perception: Lithuanian uses the plain verb girdžiu." } }),
       t("Yes, | loud and clear!", "Taip, | puikiai girdžiu!", "Taip, puikiai girdžiu!"),
     ],
     hear_great: [t("Great!", "Puiku!", "Puiku!")],
     ask_insurance: [
-      t("Do | you | have | dental | insurance?", "Ar | jūs | turite | odontologinį | draudimą?", "Ar turite odontologinį draudimą?", { flags: { 0: "Question “Do” = the particle ar." } }),
+      t("Do | you | have | dental | insurance?", "Ar | Jūs | turite | odontologinį | draudimą?", "Ar turite odontologinį draudimą?", { flags: { 0: "Question “Do” = the particle ar." } }),
     ],
     selfpay: [
       t("No | problem. | If | you | pay | yourself, | the | exam | and | X-rays | are | $150.",
-        "Jokių | problemų. | Jei | jūs | mokate | {m:pats|f:pati}, | — | apžiūra | ir | rentgeno nuotraukos | kainuoja | 150 dolerių.",
+        "Jokių | problemų. | Jei | Jūs | mokate | {m:pats|f:pati}, | — | apžiūra | ir | rentgeno nuotraukos | kainuoja | 150 dolerių.",
         "Jokių problemų. Jei mokate {m:pats|f:pati}, apžiūra ir rentgeno nuotraukos kainuoja 150 dolerių.",
         { say: "No problem. If you pay yourself, the exam and X-rays are a hundred and fifty dollars.", flags: { 10: "“are” in a price statement = kainuoja." } }),
     ],
@@ -576,15 +576,15 @@ export const dentist: SituationDef = {
       t("Great. | Please | bring | your | insurance | card.", "Puiku. | Prašom | atsinešti | savo | draudimo | kortelę.", "Puiku. Prašom atsinešti draudimo kortelę."),
     ],
     hold_q: [
-      t("Let | me | check | the | schedule. | Can | you | hold | for a moment?", "Leiskite | man | patikrinti | — | tvarkaraštį. | Ar galite | jūs | palaukti | akimirką?",
+      t("Let | me | check | the | schedule. | Can | you | hold | for a moment?", "Leiskite | man | patikrinti | — | tvarkaraštį. | Ar galite | Jūs | palaukti | akimirką?",
         "Tuoj patikrinsiu tvarkaraštį. Ar galite akimirką palaukti?"),
     ],
     hold_thanks: [t("Thanks | for holding!", "Ačiū, | kad palaukėte!", "Ačiū, kad palaukėte!")],
     hold_quick: [t("Okay, | I'll be | quick!", "Gerai, | būsiu | {sm:greitas|sf:greita}!", "Gerai, tuoj!")],
     offer: [
       t("How about | {D} | at {$slot}?", "Gal | {D:acc} | {$slot}?", "Gal {D:acc} {$slot}?", { say: "How about {D} at {$slot}?" }),
-      t("I | have | an | opening | {D} | at {$slot}. | Does | that | work | for you?", "Aš | turiu | — | laisvą laiką | {D:acc} | {$slot}. | Ar | tai | tinka | jums?",
-        "Turiu laisvo laiko {D:acc} {$slot}. Ar jums tinka?", { say: "I have an opening {D} at {$slot}. Does that work for you?", flags: { 6: "Question “Does” = the particle ar." } }),
+      t("I | have | an | opening | {D} | at {$slot}. | Does | that | work | for you?", "Aš | turiu | — | laisvą laiką | {D:acc} | {$slot}. | Ar | tai | tinka | Jums?",
+        "Turiu laisvo laiko {D:acc} {$slot}. Ar Jums tinka?", { say: "I have an opening {D} at {$slot}. Does that work for you?", flags: { 6: "Question “Does” = the particle ar." } }),
       t("We | have | {D} | at {$slot}. | Would | that | work?", "Mes | turime | {D:acc} | {$slot}. | Ar | tai | tiktų?", "Turime {D:acc} {$slot}. Ar tiktų?",
         { say: "We have {D} at {$slot}. Would that work?", flags: { 4: "“Would” in a question = the particle ar; the conditional sits on tiktų (linked to “work”)." } }),
     ],
@@ -613,7 +613,7 @@ export const dentist: SituationDef = {
         { say: "We have {D} at {$slot} or {E} at {$slot2}." }),
     ],
     booked: [
-      t("Perfect! | You're | all set | for | {D} | at {$slot}.", "Puiku! | Jums | viskas sutvarkyta | — | {D:acc} | {$slot}.", "Puiku! Užregistravau jus {D:acc} {$slot}.",
+      t("Perfect! | You're | all set | for | {D} | at {$slot}.", "Puiku! | Jums | viskas sutvarkyta | — | {D:acc} | {$slot}.", "Puiku! Užregistravau Jus {D:acc} {$slot}.",
         { say: "Perfect! You're all set for {D} at {$slot}.", flags: { 3: "“for”: the time phrase itself carries it." } }),
       t("Great! | So | that's | {D} | at {$slot}.", "Puiku! | Taigi | bus | {D:acc} | {$slot}.", "Puiku! Taigi {D:acc} {$slot}.",
         { say: "Great! So that's {D} at {$slot}.", flags: { 2: "“that's” = so it will be: bus (future)." } }),
@@ -631,10 +631,10 @@ export const dentist: SituationDef = {
       t("And | please | bring | a | photo ID.", "Ir | prašom | atsinešti | — | dokumentą su nuotrauka.", "Ir prašom atsinešti dokumentą su nuotrauka."),
     ],
     anything_else: [
-      t("Can | I | help | you | with anything | else?", "Ar galiu | aš | padėti | jums | kuo nors | dar?", "Ar dar kuo nors galiu padėti?"),
-      t("Anything | else | I | can | do | for you?", "Ką nors | dar | aš | galiu | padaryti | jums?", "Ar dar kuo nors galiu padėti?"),
+      t("Can | I | help | you | with anything | else?", "Ar galiu | aš | padėti | Jums | kuo nors | dar?", "Ar dar kuo nors galiu padėti?"),
+      t("Anything | else | I | can | do | for you?", "Ką nors | dar | aš | galiu | padaryti | Jums?", "Ar dar kuo nors galiu padėti?"),
     ],
-    anything_else_yes: [t("Sure, | what | can | I | do | for you?", "Žinoma, | ką | galiu | aš | padaryti | jums?", "Žinoma, kuo galiu padėti?")],
+    anything_else_yes: [t("Sure, | what | can | I | do | for you?", "Žinoma, | ką | galiu | aš | padaryti | Jums?", "Žinoma, kuo galiu padėti?")],
     see_you: [
       t("See you | {D}! | Bye!", "Iki | {D:gen}! | Viso gero!", "Iki {D:gen}! Viso gero!"),
       t("Thanks | for calling. | See you | {D}!", "Ačiū, | kad paskambinote. | Iki | {D:gen}!", "Ačiū, kad paskambinote. Iki {D:gen}!"),
@@ -652,33 +652,33 @@ export const dentist: SituationDef = {
       { flags: { 3: "“for”: the dative pacientui carries it." } })],
     duration_short: [t("About | half | an | hour.", "Apie | pusę | — | valandos.", "Maždaug pusvalandį.")],
     bring: [
-      t("Just | a | photo ID | and | a | list | of | your | medications.", "Tik | — | dokumentą su nuotrauka | ir | — | sąrašą | — | jūsų | vaistų.",
+      t("Just | a | photo ID | and | a | list | of | your | medications.", "Tik | — | dokumentą su nuotrauka | ir | — | sąrašą | — | Jūsų | vaistų.",
         "Tik dokumentą su nuotrauka ir vartojamų vaistų sąrašą.", { flags: { 6: "“of”: the genitive vaistų carries it." } }),
     ],
     cancel_policy: [
-      t("If | you | need | to cancel, | please | call | us | 24 | hours | before.", "Jei | jums | reikia | atšaukti, | prašom | paskambinti | mums | 24 | valandas | prieš.",
+      t("If | you | need | to cancel, | please | call | us | 24 | hours | before.", "Jei | Jums | reikia | atšaukti, | prašom | paskambinti | mums | 24 | valandas | prieš.",
         "Jei reikės atšaukti, prašom paskambinti bent prieš 24 valandas.", { say: "If you need to cancel, please call us twenty-four hours before." }),
     ],
     forms: [t("Yes, | just | a | few. | Please | come | ten | minutes | early.", "Taip, | tik | — | kelias. | Prašom | ateiti | dešimčia | minučių | anksčiau.",
       "Taip, kelias. Prašom atvykti dešimčia minučių anksčiau.")],
     doctor: [t("You'll see | Dr. | Moreno.", "Jus priims | gydytoja | Moreno.", "Jus priims gydytoja Moreno.", { spell: "Moreno" })],
     pain_advice: [
-      t("Until | then, | you | can | take | ibuprofen | for | the | pain.", "Iki | tol | jūs | galite | išgerti | ibuprofeno | nuo | — | skausmo.",
+      t("Until | then, | you | can | take | ibuprofen | for | the | pain.", "Iki | tol | Jūs | galite | išgerti | ibuprofeno | nuo | — | skausmo.",
         "Iki vizito nuo skausmo galite išgerti ibuprofeno."),
     ],
 
     // rescheduling (twist)
     move_ok: [
-      t("Sure, | no | problem. | Can | I | have | your | name | and | date of birth?", "Žinoma, | jokių | problemų. | Ar galiu | aš | sužinoti | jūsų | vardą | ir | gimimo datą?",
-        "Žinoma, jokių problemų. Ar galėčiau sužinoti jūsų vardą ir gimimo datą?"),
+      t("Sure, | no | problem. | Can | I | have | your | name | and | date of birth?", "Žinoma, | jokių | problemų. | Ar galiu | aš | sužinoti | Jūsų | vardą | ir | gimimo datą?",
+        "Žinoma, jokių problemų. Ar galėčiau sužinoti Jūsų vardą ir gimimo datą?"),
     ],
     found_appt: [
-      t("I | see | your | appointment | {D} | at {$slot}.", "Aš | matau | jūsų | vizitą | {D:acc} | {$slot}.", "Matau jūsų vizitą {D:acc} {$slot}.",
+      t("I | see | your | appointment | {D} | at {$slot}.", "Aš | matau | Jūsų | vizitą | {D:acc} | {$slot}.", "Matau Jūsų vizitą {D:acc} {$slot}.",
         { say: "I see your appointment {D} at {$slot}." }),
       t("I | found | it: | {D} | at {$slot}.", "Aš | radau | jį: | {D:acc} | {$slot}.", "Radau: {D:acc} {$slot}.", { say: "I found it: {D} at {$slot}." }),
     ],
     offer_reschedule: [
-      t("Would | you | like | to reschedule?", "Ar | jūs | norėtumėte | perkelti?", "Ar norėtumėte vizitą perkelti?",
+      t("Would | you | like | to reschedule?", "Ar | Jūs | norėtumėte | perkelti?", "Ar norėtumėte vizitą perkelti?",
         { flags: { 0: "“Would” in a yes/no question = the particle ar; the conditional sits on norėtumėte." } }),
     ],
     canceled: [t("Okay, | I've canceled | it.", "Gerai, | atšaukiau | jį.", "Gerai, vizitą atšaukiau.")],
@@ -700,7 +700,7 @@ export const dentist: SituationDef = {
         { id: "reason_have", s: t("I | have | a | toothache.", "Man | skauda | — | dantį.", "Man skauda dantį.") },
         { id: "book_checkup", s: t("I'd like | to book | {X.np}.", "Norėčiau | užsiregistruoti | {X.np:dat}.", "Norėčiau užsiregistruoti {X.np:dat}."), only: (e) => ["checkup", "cleaning"].includes(e.id) },
         { id: "book_need", s: t("I | need | {X.np}.", "Man | reikia | {X.np:gen}.", "Man reikia {X.np:gen}."), only: (e) => ["checkup", "cleaning"].includes(e.id) },
-        { id: "book_available", s: t("Do | you | have | anything | this | week?", "Ar | jūs | turite | ką nors | šią | savaitę?", "Ar turite laiko šią savaitę?", { flags: { 0: "Question “Do” = the particle ar." } }) },
+        { id: "book_available", s: t("Do | you | have | anything | this | week?", "Ar | Jūs | turite | ką nors | šią | savaitę?", "Ar turite laiko šią savaitę?", { flags: { 0: "Question “Do” = the particle ar." } }) },
         { id: "book_want", s: t("I | want | to make | an | appointment.", "Aš | noriu | susitarti dėl | — | vizito.", "Noriu užsiregistruoti vizitui."), register: "casual" },
       ],
     },
@@ -727,7 +727,7 @@ export const dentist: SituationDef = {
       items: [
         { id: "new_patient", s: t("Yes, | I'm | a | new | patient.", "Taip, | aš esu | — | {m:naujas|f:nauja} | {m:pacientas|f:pacientė}.", "Taip, aš {m:naujas pacientas|f:nauja pacientė}.") },
         { id: "new_first", s: t("It's | my | first | time.", "Tai yra | mano | pirmas | kartas.", "Tai pirmas kartas.") },
-        { id: "new_before", s: t("No, | I've been | there | before.", "Ne, | esu {m:buvęs|f:buvusi} | ten | anksčiau.", "Ne, jau esu {m:buvęs|f:buvusi} pas jus.") },
+        { id: "new_before", s: t("No, | I've been | there | before.", "Ne, | esu {m:buvęs|f:buvusi} | ten | anksčiau.", "Ne, jau esu {m:buvęs|f:buvusi} pas Jus.") },
       ],
     },
     name: {
@@ -761,7 +761,7 @@ export const dentist: SituationDef = {
       lt: "Atsakyti, ar dabar girdi",
       items: [
         { id: "hear_better", s: t("Yes, | that's | better.", "Taip, | taip | geriau.", "Taip, dabar geriau.", { flags: { 1: "“that's” = taip (this way): the copula has no Lithuanian word here." } }) },
-        { id: "hear_now", s: t("Yes, | I | can | hear | you | now.", "Taip, | aš | — | girdžiu | jus | dabar.", "Taip, dabar girdžiu.",
+        { id: "hear_now", s: t("Yes, | I | can | hear | you | now.", "Taip, | aš | — | girdžiu | Jus | dabar.", "Taip, dabar girdžiu.",
           { flags: { 2: "“can” with a verb of perception: Lithuanian uses the plain verb girdžiu." } }) },
       ],
     },
@@ -801,8 +801,8 @@ export const dentist: SituationDef = {
       lt: "Susitarti dėl laiko",
       items: [
         { id: "slot_ok", s: t("That | works | for me.", "Tai | tinka | man.", "Man tinka.") },
-        { id: "slot_earlier", s: t("Do | you | have | anything | earlier?", "Ar | jūs | turite | ką nors | anksčiau?", "Ar turite ką nors anksčiau?", { flags: { 0: "Question “Do” = the particle ar." } }) },
-        { id: "slot_later", s: t("Do | you | have | anything | later?", "Ar | jūs | turite | ką nors | vėliau?", "Ar turite ką nors vėliau?", { flags: { 0: "Question “Do” = the particle ar." } }) },
+        { id: "slot_earlier", s: t("Do | you | have | anything | earlier?", "Ar | Jūs | turite | ką nors | anksčiau?", "Ar turite ką nors anksčiau?", { flags: { 0: "Question “Do” = the particle ar." } }) },
+        { id: "slot_later", s: t("Do | you | have | anything | later?", "Ar | Jūs | turite | ką nors | vėliau?", "Ar turite ką nors vėliau?", { flags: { 0: "Question “Do” = the particle ar." } }) },
         { id: "slot_perfect", s: t("Tomorrow | at 8:15 | is | perfect.", "Rytoj | 8:15 | yra | puiku.", "Rytoj 8:15 – puiku.", { say: "Tomorrow at eight fifteen is perfect." }) },
         { id: "slot_day", s: t("Could | I | come | on Friday?", "Ar galėčiau | aš | ateiti | penktadienį?", "Ar galėčiau ateiti penktadienį?") },
         { id: "slot_work", s: t("I'm sorry, | I'm | at work | then.", "Atsiprašau, | aš esu | darbe | tada.", "Atsiprašau, tuo metu būsiu darbe.") },
@@ -812,18 +812,18 @@ export const dentist: SituationDef = {
     phone: {
       lt: "Susikalbėti telefonu",
       items: [
-        { id: "ph_speak_up", s: t("Sorry, | could | you | speak up?", "Atsiprašau, | ar galėtumėte | jūs | kalbėti garsiau?", "Atsiprašau, ar galėtumėte kalbėti garsiau?") },
+        { id: "ph_speak_up", s: t("Sorry, | could | you | speak up?", "Atsiprašau, | ar galėtumėte | Jūs | kalbėti garsiau?", "Atsiprašau, ar galėtumėte kalbėti garsiau?") },
         { id: "ph_breaking", s: t("Sorry, | you're breaking up.", "Atsiprašau, | ryšys trūkinėja.", "Atsiprašau, ryšys trūkinėja.") },
-        { id: "ph_hear", s: t("Can | you | hear | me | now?", "Ar | jūs | girdite | mane | dabar?", "Ar dabar mane girdite?",
+        { id: "ph_hear", s: t("Can | you | hear | me | now?", "Ar | Jūs | girdite | mane | dabar?", "Ar dabar mane girdite?",
           { flags: { 0: "“Can” with a verb of perception: Lithuanian uses the plain verb girdite; ar carries the question." } }) },
-        { id: "c_say_again", s: t("Sorry, | could | you | say | that | again?", "Atsiprašau, | ar galėtumėte | jūs | pasakyti | tai | dar kartą?", "Atsiprašau, ar galėtumėte pakartoti?") },
-        { id: "c_spell", s: t("How | do | you | spell | that?", "Kaip | — | jūs | rašote | tai?", "Kaip tai rašoma?", { flags: { 1: "Question “do” has no Lithuanian word (linked to “spell”)." } }) },
+        { id: "c_say_again", s: t("Sorry, | could | you | say | that | again?", "Atsiprašau, | ar galėtumėte | Jūs | pasakyti | tai | dar kartą?", "Atsiprašau, ar galėtumėte pakartoti?") },
+        { id: "c_spell", s: t("How | do | you | spell | that?", "Kaip | — | Jūs | rašote | tai?", "Kaip tai rašoma?", { flags: { 1: "Question “do” has no Lithuanian word (linked to “spell”)." } }) },
       ],
     },
     ask: {
       lt: "Paklausti apie vizitą",
       items: [
-        { id: "q_address", s: t("What's | your | address?", "Koks yra | jūsų | adresas?", "Koks jūsų adresas?") },
+        { id: "q_address", s: t("What's | your | address?", "Koks yra | Jūsų | adresas?", "Koks Jūsų adresas?") },
         { id: "q_park", s: t("Where | can | I | park?", "Kur | galiu | aš | pastatyti automobilį?", "Kur galiu pastatyti automobilį?") },
         { id: "q_long", s: t("How | long | will | it | take?", "Kaip | ilgai | — | tai | truks?", "Kiek laiko tai truks?", { flags: { 2: "“will”: the future ending of truks carries it (linked to “take”)." } }) },
         { id: "q_bring", s: t("What | should | I | bring?", "Ką | turėčiau | aš | atsinešti?", "Ką turėčiau atsinešti?") },
@@ -842,7 +842,7 @@ export const dentist: SituationDef = {
     more: {
       lt: "Padėkoti ir atsisveikinti",
       items: [
-        { id: "more_all", s: t("No, | that's | all. | Thank | you!", "Ne, | tai yra | viskas. | Dėkoju | jums!", "Ne, tai viskas. Ačiū!") },
+        { id: "more_all", s: t("No, | that's | all. | Thank | you!", "Ne, | tai yra | viskas. | Dėkoju | Jums!", "Ne, tai viskas. Ačiū!") },
         { id: "see_you", s: t("See you | tomorrow!", "Iki | rytojaus!", "Iki rytojaus!") },
       ],
     },

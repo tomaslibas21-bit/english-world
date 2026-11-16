@@ -333,19 +333,19 @@ export const salon: SituationDef = {
       t("Hi there, | welcome | in!", "Sveiki, | prašom | užeiti!", "Sveiki, prašom užeiti!", { flags: { 2: "“in” (welcome in): carried by the prefix už- of užeiti." } }),
     ],
     greet_back: [t("Hey, | welcome | back!", "Labas, | sveiki | sugrįžę!", "Sveiki sugrįžę!")],
-    greet_howareyou_line: [t("Hi there! | How | are | you | today?", "Sveiki! | Kaip | sekasi | jums | šiandien?", "Sveiki! Kaip jums šiandien sekasi?")],
+    greet_howareyou_line: [t("Hi there! | How | are | you | today?", "Sveiki! | Kaip | sekasi | Jums | šiandien?", "Sveiki! Kaip Jums šiandien sekasi?")],
     ask_appt: [
-      t("Do | you | have | an | appointment?", "Ar | jūs | turite | — | vizitą?", "Ar esate {m:užsiregistravęs|f:užsiregistravusi}?", { flags: { 0: FLAG_DO } }),
-      t("Are | you | my | three | o'clock?", "Ar esate | jūs | mano | trečios | valandos {m:klientas|f:klientė}?", "Ar jūs mano trečios valandos {m:klientas|f:klientė}?",
+      t("Do | you | have | an | appointment?", "Ar | Jūs | turite | — | vizitą?", "Ar esate {m:užsiregistravęs|f:užsiregistravusi}?", { flags: { 0: FLAG_DO } }),
+      t("Are | you | my | three | o'clock?", "Ar esate | Jūs | mano | trečios | valandos {m:klientas|f:klientė}?", "Ar Jūs mano trečios valandos {m:klientas|f:klientė}?",
         { flags: { 0: "“Are” in a yes/no question = the particle ar + esate.", 4: "“o'clock” stands for the booked client; Lithuanian names the noun." } }),
     ],
     ask_name: [
-      t("Great! | Can | I | get | your | name?", "Puiku! | Ar galiu | aš | gauti | jūsų | vardą?", "Puiku! Koks jūsų vardas?"),
+      t("Great! | Can | I | get | your | name?", "Puiku! | Ar galiu | aš | gauti | Jūsų | vardą?", "Puiku! Koks Jūsų vardas?"),
       t("Perfect. | And | what's | the | name?", "Puiku. | O | koks yra | — | vardas?", "Puiku. O kokiu vardu užsiregistravote?"),
     ],
     name_again: [t("Sorry, | what | was | the | name?", "Atsiprašau, | koks | buvo | — | vardas?", "Atsiprašau, koks vardas?")],
     appt_found: [
-      t("Perfect, | I've got | you | right here.", "Puiku, | turiu | jus | čia pat.", "Puiku, radau jus sąraše."),
+      t("Perfect, | I've got | you | right here.", "Puiku, | turiu | Jus | čia pat.", "Puiku, radau Jus sąraše."),
       t("Got it! | You're | all | checked in.", "Supratau! | Jūs esate | — | {m:užregistruotas|f:užregistruota}.", "Supratau! Jūs {m:užregistruotas|f:užregistruota}.",
         { flags: { 2: "“all” (all checked in) is an intensifier with no separate word here." } }),
     ],
@@ -364,7 +364,7 @@ export const salon: SituationDef = {
 
     // --- drink offer -------------------------------------------------------------------------
     offer_drink: [
-      t("Can | I | get | you | some | water | or | coffee?", "Ar galiu | aš | pasiūlyti | jums | — | vandens | ar | kavos?", "Gal pasiūlyti vandens ar kavos?",
+      t("Can | I | get | you | some | water | or | coffee?", "Ar galiu | aš | pasiūlyti | Jums | — | vandens | ar | kavos?", "Gal pasiūlyti vandens ar kavos?",
         { flags: { 4: "Partitive: the genitive vandens / kavos carries “some”." } }),
     ],
     drink_ok: [t("Coming right up!", "Tuoj bus!", "Tuoj atnešiu!"), t("Sure thing!", "Žinoma!", "Žinoma!")],
@@ -373,9 +373,9 @@ export const salon: SituationDef = {
     ask_service: [
       t("So, | what | are | we | doing | today?", "Tai, | ką | — | mes | darysime | šiandien?", "Tai ką šiandien darysime?",
         { flags: { 2: "Progressive “are” has no Lithuanian word; the future darysime carries the plan (linked to “doing”)." } }),
-      t("What | can | I | do | for you | today?", "Ką | galiu | aš | padaryti | jums | šiandien?", "Ką šiandien galėčiau jums padaryti?"),
+      t("What | can | I | do | for you | today?", "Ką | galiu | aš | padaryti | Jums | šiandien?", "Ką šiandien galėčiau Jums padaryti?"),
     ],
-    what_in_mind: [t("Sure! | What | did | you | have | in mind?", "Žinoma! | Ką | — | jūs | turėjote | omenyje?", "Žinoma! Ką turėjote omenyje?",
+    what_in_mind: [t("Sure! | What | did | you | have | in mind?", "Žinoma! | Ką | — | Jūs | turėjote | omenyje?", "Žinoma! Ką turėjote omenyje?",
       { flags: { 2: "Question “did” has no Lithuanian word; the past tense sits on turėjote." } })],
     trim_ok: [t("Sure, | just | a | trim.", "Žinoma, | tik | — | patrumpinti.", "Žinoma, tik patrumpinti."), t("Easy!", "Lengva!", "Lengva!")],
     wash_trim_ok: [t("Sure! | A | wash | and | a | trim.", "Žinoma! | — | Plovimas | ir | — | patrumpinimas.", "Žinoma! Plovimas ir patrumpinimas.")],
@@ -405,14 +405,14 @@ export const salon: SituationDef = {
     cm_small: [t("Just | a | centimeter? | So, | a | tiny | trim.", "Tik | — | centimetrą? | Vadinasi, | — | mažytis | patrumpinimas.", "Tik centimetrą? Vadinasi, visai truputį.")],
     cm_inches_note: [t("Here | we | use | inches.", "Čia | mes | naudojame | colius.", "Čia matuojame coliais.")],
     cm_confirm: [t("Is | that | okay?", "Ar | tai | tinka?", "Ar tinka?", { flags: { 0: "“Is” in a question = the particle ar; the verb tinka takes over the copula." } })],
-    ask_layers: [t("Do | you | want | to keep | your | layers?", "Ar | jūs | norite | palikti | savo | pakopas?", "Ar palikti pakopas?", { flags: { 0: FLAG_DO } })],
-    ask_bangs: [t("Should | I | trim | your | bangs | too?", "Ar | man | patrumpinti | jūsų | kirpčiukus | irgi?", "Ar patrumpinti ir kirpčiukus?",
+    ask_layers: [t("Do | you | want | to keep | your | layers?", "Ar | Jūs | norite | palikti | savo | pakopas?", "Ar palikti pakopas?", { flags: { 0: FLAG_DO } })],
+    ask_bangs: [t("Should | I | trim | your | bangs | too?", "Ar | man | patrumpinti | Jūsų | kirpčiukus | irgi?", "Ar patrumpinti ir kirpčiukus?",
       { flags: { 0: "“Should” in a question = the particle ar; Lithuanian asks with the dative man + infinitive (linked to “I”)." } })],
     ack: [t("Okay!", "Gerai!", "Gerai!"), t("Got it.", "Supratau.", "Supratau."), t("Sounds | good.", "Skamba | gerai.", "Puiku.")],
 
     // --- wash -------------------------------------------------------------------------------------
     ask_wash: [
-      t("Would | you | like | a | wash | first?", "Ar | jūs | norėtumėte | — | plovimo | pirmiausia?", "Gal pirmiausia išplauti galvą?", { flags: { 0: FLAG_WOULD } }),
+      t("Would | you | like | a | wash | first?", "Ar | Jūs | norėtumėte | — | plovimo | pirmiausia?", "Gal pirmiausia išplauti galvą?", { flags: { 0: FLAG_WOULD } }),
     ],
     wash_start: [t("Let's start | with | a | wash.", "Pradėkime | nuo | — | plovimo.", "Pradėkime nuo plovimo."), t("Great, | let's start | at | the | sink.", "Puiku, | pradėkime | prie | — | kriauklės.", "Puiku, pradėkime prie kriauklės.")],
     ask_water: [t("How's | the | water | temperature?", "Kaip | — | vandens | temperatūra?", "Kaip vandens temperatūra?"),
@@ -433,16 +433,16 @@ export const salon: SituationDef = {
     cat_anyway: [t("Anyway!", "Na, žodžiu!", "Na, žodžiu!")],
     cat_name: [t("Mochi! | She's | a | little | troublemaker.", "Mochi! | Ji yra | — | maža | išdykėlė.", "Mochi! Ji tikra išdykėlė.")],
     cat_laugh: [t("I | know, | right?", "Aš | žinau, | ar ne?", "Žinau, ar ne?")],
-    ask_pets: [t("Do | you | have | any | pets?", "Ar | jūs | turite | — | augintinių?", "Ar turite augintinių?", { flags: { 0: FLAG_DO, 3: "Partitive: the genitive augintinių carries “any”." } })],
+    ask_pets: [t("Do | you | have | any | pets?", "Ar | Jūs | turite | — | augintinių?", "Ar turite augintinių?", { flags: { 0: FLAG_DO, 3: "Partitive: the genitive augintinių carries “any”." } })],
     react_dog: [t("Aw, | I | love | dogs!", "Oi, | aš | dievinu | šunis!", "Oi, aš dievinu šunis!")],
     react_cat: [t("A | cat | person! | I | knew | it!", "— | Kačių | {m:mylėtojas|f:mylėtoja}! | Aš | žinojau | tai!", "Kačių {m:mylėtojas|f:mylėtoja}! Taip ir žinojau!",
       { flags: { 1: "“cat” used as a modifier = the genitive plural kačių." } })],
     react_nopet: [t("You | should | get | a | cat!", "Jums | reikėtų | įsigyti | — | katę!", "Jums reikėtų įsigyti katę!", { flags: { 0: "“You” → dative Jums with reikėtų (should)." } })],
     ask_weekend: [
-      t("So, | are | you | doing | anything | fun | this | weekend?", "Tai, | ar | jūs | darysite | ką nors | smagaus | šį | savaitgalį?", "Tai ar šį savaitgalį darysite ką nors smagaus?",
+      t("So, | are | you | doing | anything | fun | this | weekend?", "Tai, | ar | Jūs | darysite | ką nors | smagaus | šį | savaitgalį?", "Tai ar šį savaitgalį darysite ką nors smagaus?",
         { flags: { 1: "“are” in a yes/no question = the particle ar; the future darysite carries the plan (linked to “doing”)." } }),
     ],
-    ask_from: [t("So, | where | are | you | from?", "Tai, | iš kur | esate | jūs | —?", "Tai iš kur jūs?", { flags: { 4: "Stranded “from”: iš (in iš kur) already carries it." } })],
+    ask_from: [t("So, | where | are | you | from?", "Tai, | iš kur | esate | Jūs | —?", "Tai iš kur Jūs?", { flags: { 4: "Stranded “from”: iš (in iš kur) already carries it." } })],
     ask_vacation: [t("Any | vacation | plans | this | year?", "Kokių nors | atostogų | planų | šiais | metais?", "Ar planuojate atostogas šiais metais?")],
     react_fun: [t("Oh, | fun!", "O, | smagu!", "O, smagu!"), t("That | sounds | nice!", "Tai | skamba | puikiai!", "Skamba puikiai!"), t("Oh, | cool!", "O, | šaunu!", "O, šaunu!")],
     react_party: [t("Ooh, | fun! | Your | hair | will | look | great.", "Oho, | smagu! | Jūsų | plaukai | — | atrodys | puikiai.", "Oho, smagu! Jūsų plaukai atrodys puikiai.",
@@ -455,7 +455,7 @@ export const salon: SituationDef = {
 
     // --- blow-dry and style ------------------------------------------------------------------
     ask_blowdry: [
-      t("Do | you | want | me | to blow-dry | it?", "Ar | jūs | norite, | kad | išdžiovinčiau | juos?", "Ar išdžiovinti plaukus fenu?",
+      t("Do | you | want | me | to blow-dry | it?", "Ar | Jūs | norite, | kad | išdžiovinčiau | juos?", "Ar išdžiovinti plaukus fenu?",
         { flags: { 0: FLAG_DO, 3: "“me” is the subject of the wish: Lithuanian says kad + the first person subjunctive išdžiovinčiau.", 5: "“it” = your hair (plaukai), hence juos." } }),
       t("Should | I | blow-dry | it?", "Ar | man | išdžiovinti | juos?", "Ar išdžiovinti plaukus fenu?",
         { flags: { 0: "“Should” in a question = the particle ar; Lithuanian asks with the dative man + infinitive.", 3: "“it” = your hair (plaukai), hence juos." } }),
@@ -466,22 +466,22 @@ export const salon: SituationDef = {
 
     // --- the result ----------------------------------------------------------------------------
     reveal: [
-      t("All done! | Take a look. | What | do | you | think?", "Viskas baigta! | Pažiūrėkite. | Ką | — | jūs | manote?", "Viskas! Pažiūrėkite. Ką manote?", { flags: { 3: "Question “do” has no Lithuanian word (linked to “think”)." } }),
-      t("Okay, | take a look! | Do | you | like | it?", "Gerai, | pažiūrėkite! | Ar | jums | patinka | jis?", "Gerai, pažiūrėkite! Ar patinka?", { flags: { 2: FLAG_DO, 5: "“it” = the haircut (kirpimas), hence jis." } }),
+      t("All done! | Take a look. | What | do | you | think?", "Viskas baigta! | Pažiūrėkite. | Ką | — | Jūs | manote?", "Viskas! Pažiūrėkite. Ką manote?", { flags: { 3: "Question “do” has no Lithuanian word (linked to “think”)." } }),
+      t("Okay, | take a look! | Do | you | like | it?", "Gerai, | pažiūrėkite! | Ar | Jums | patinka | jis?", "Gerai, pažiūrėkite! Ar patinka?", { flags: { 2: FLAG_DO, 5: "“it” = the haircut (kirpimas), hence jis." } }),
     ],
     reveal_short: [
       t("Oh… | I | think | I | took off | a bit | more | than | we | said.", "O… | aš | manau, | aš | nukirpau | truputį | daugiau, | nei | mes | sutarėme.", "O… Atrodo, nukirpau truputį daugiau, nei sutarėme."),
     ],
     love_reply: [t("Yay! | I'm | so | glad!", "Valio! | Aš esu | taip | {sm:patenkintas|sf:patenkinta}!", "Valio! Labai džiaugiuosi!"),
-      t("It | really | suits | you!", "Jis | tikrai | tinka | jums!", "Jums tikrai tinka!", { flags: { 0: "“It” = the haircut (kirpimas), hence jis." } })],
+      t("It | really | suits | you!", "Jis | tikrai | tinka | Jums!", "Jums tikrai tinka!", { flags: { 0: "“It” = the haircut (kirpimas), hence jis." } })],
     more_ok: [t("Sure! | Just | a | little | more.", "Žinoma! | Tik | — | truputį | daugiau.", "Žinoma! Tik truputį daugiau.")],
     more_done: [t("How's | that?", "Kaip | dabar?", "Kaip dabar?")],
     sorry_short: [t("Oh | no, | I'm | so | sorry!", "O | ne, | aš | labai | atsiprašau!", "O ne, labai atsiprašau!", { flags: { 2: "“am” (I'm sorry) has no separate word: the verb atsiprašau carries it." } })],
     grows_fast: [t("It'll grow | back | fast, | I | promise.", "Ataugs | — | greitai, | aš | pažadu.", "Greitai ataugs, pažadu.", { flags: { 1: "“back” is carried by the prefix at- of ataugs." } })],
     discount: [t("Let me take | ten | dollars | off.", "Nuimsiu | dešimt | dolerių | —.", "Nuimsiu dešimt dolerių.", { flags: { 3: FLAG_OFF } })],
-    polite_reply: [t("Aw, | you're | so | sweet!", "Oi, | jūs esate | {m:toks|f:tokia} | {m:mielas|f:miela}!", "Oi, jūs {m:toks mielas|f:tokia miela}!"),
-      t("Thank | you | for | being | so | nice | about | it.", "Ačiū | jums, | kad | esate | {m:toks|f:tokia} | {m:malonus|f:maloni} | dėl | to.", "Ačiū, kad taip maloniai reaguojate.")],
-    dont_like_reply: [t("Oh | no! | What | would | you | like | me | to change?", "O | ne! | Ką | — | jūs | norėtumėte, | kad | pakeisčiau?", "O ne! Ką norėtumėte, kad pakeisčiau?",
+    polite_reply: [t("Aw, | you're | so | sweet!", "Oi, | Jūs esate | {m:toks|f:tokia} | {m:mielas|f:miela}!", "Oi, Jūs {m:toks mielas|f:tokia miela}!"),
+      t("Thank | you | for | being | so | nice | about | it.", "Ačiū | Jums, | kad | esate | {m:toks|f:tokia} | {m:malonus|f:maloni} | dėl | to.", "Ačiū, kad taip maloniai reaguojate.")],
+    dont_like_reply: [t("Oh | no! | What | would | you | like | me | to change?", "O | ne! | Ką | — | Jūs | norėtumėte, | kad | pakeisčiau?", "O ne! Ką norėtumėte, kad pakeisčiau?",
       { flags: { 3: "“would”: the conditional ending of norėtumėte carries it.", 6: "“me” is carried by kad + the first person subjunctive pakeisčiau." } })],
 
     // --- paying ------------------------------------------------------------------------------------
@@ -494,7 +494,7 @@ export const salon: SituationDef = {
     cut_time: [t("About | thirty | minutes.", "Maždaug | trisdešimt | minučių.", "Maždaug pusvalandį.")],
     tip_not_incl: [t("No, | it's | not | included. | Most | people | add | fifteen | to | twenty | percent.", "Ne, | jie | ne | įskaičiuoti. | Dauguma | žmonių | prideda | penkiolika | iki | dvidešimties | procentų.",
       "Ne, arbatpinigiai neįskaičiuoti. Dauguma žmonių prideda 15–20 procentų.", { flags: { 1: "“it” = the tip (arbatpinigiai, plural), hence jie." } })],
-    tip_later: [t("Sure, | you | can | add | it | when | you | pay.", "Žinoma, | jūs | galite | pridėti | juos, | kai | jūs | mokėsite.", "Žinoma, galėsite pridėti mokėdami.",
+    tip_later: [t("Sure, | you | can | add | it | when | you | pay.", "Žinoma, | Jūs | galite | pridėti | juos, | kai | Jūs | mokėsite.", "Žinoma, galėsite pridėti mokėdami.",
       { flags: { 4: "“it” = the tip (arbatpinigiai, plural), hence juos." } })],
     book_first: [t("Sure, | let's do | that | at the end.", "Žinoma, | padarykime | tai | pabaigoje.", "Žinoma, tai padarysime pabaigoje.")],
     total_full: [t("That'll be | {$price}, | with | the | wash | and | blow-dry.", "Tai bus | {$price}, | su | — | plovimu | ir | džiovinimu.", "Su plovimu ir džiovinimu – {$price}.")],
@@ -504,13 +504,13 @@ export const salon: SituationDef = {
     card_later: [t("Sure, | card | is fine.", "Žinoma, | kortele | galima.", "Žinoma, galima ir kortele.")],
     cash_ok: [t("Sure, | cash | is fine.", "Žinoma, | grynaisiais | galima.", "Žinoma, galima ir grynaisiais.")],
     phone_later: [t("Sure, | Apple Pay | is fine.", "Žinoma, | „Apple Pay“ | tinka.", "Žinoma, galima ir „Apple Pay“.")],
-    change_back: [t("And | here's | your | change.", "Ir | štai | jūsų | grąža.", "Štai jūsų grąža.")],
-    thanks_tip: [t("Aw, | thank | you | so much!", "Oi, | dėkoju | jums | labai!", "Oi, labai ačiū!"), t("Oh, | that's | so | nice | of you! | Thank | you!", "O, | tai | taip | malonu | iš jūsų! | Dėkoju | jums!", "O, kaip malonu! Ačiū!")],
-    paid: [t("Thank | you!", "Dėkoju | jums!", "Ačiū!"), t("Perfect, | thanks!", "Puiku, | ačiū!", "Puiku, ačiū!")],
+    change_back: [t("And | here's | your | change.", "Ir | štai | Jūsų | grąža.", "Štai Jūsų grąža.")],
+    thanks_tip: [t("Aw, | thank | you | so much!", "Oi, | dėkoju | Jums | labai!", "Oi, labai ačiū!"), t("Oh, | that's | so | nice | of you! | Thank | you!", "O, | tai | taip | malonu | iš Jūsų! | Dėkoju | Jums!", "O, kaip malonu! Ačiū!")],
+    paid: [t("Thank | you!", "Dėkoju | Jums!", "Ačiū!"), t("Perfect, | thanks!", "Puiku, | ačiū!", "Puiku, ačiū!")],
     no_problem: [t("No | problem.", "Jokių | problemų.", "Jokių problemų.")],
 
     // --- next appointment and goodbye -----------------------------------------------------------
-    ask_book: [t("Would | you | like | to book | your | next | appointment?", "Ar | jūs | norėtumėte | užregistruoti | jūsų | kitą | vizitą?", "Ar norėtumėte užsirašyti kitam vizitui?",
+    ask_book: [t("Would | you | like | to book | your | next | appointment?", "Ar | Jūs | norėtumėte | užregistruoti | Jūsų | kitą | vizitą?", "Ar norėtumėte užsirašyti kitam vizitui?",
       { flags: { 0: FLAG_WOULD } })],
     book_offer: [t("Great! | Same | time | in | six | weeks?", "Puiku! | Tuo pačiu | laiku | po | šešių | savaičių?", "Puiku! Tuo pačiu laiku po šešių savaičių?")],
     book_done: [t("You're all set!", "Viskas sutvarkyta!", "Viskas sutvarkyta!")],
@@ -539,7 +539,7 @@ export const salon: SituationDef = {
       items: [
         { id: "appt_at", s: t("I | have | an | appointment | at three.", "Aš | turiu | — | vizitą | trečią.", "Esu {m:užsiregistravęs|f:užsiregistravusi} trečiai valandai.") },
         { id: "no_appt", s: t("No, | I | don't have | an | appointment.", "Ne, | aš | neturiu | — | vizito.", "Ne, nesu {m:užsiregistravęs|f:užsiregistravusi}.") },
-        { id: "walkin", s: t("Do | you | take | walk-ins?", "Ar | jūs | priimate | klientus be registracijos?", "Ar priimate be registracijos?", { flags: { 0: FLAG_DO } }) },
+        { id: "walkin", s: t("Do | you | take | walk-ins?", "Ar | Jūs | priimate | klientus be registracijos?", "Ar priimate be registracijos?", { flags: { 0: FLAG_DO } }) },
       ],
     },
     name: {
@@ -563,9 +563,9 @@ export const salon: SituationDef = {
         { id: "just_trim", s: t("Just | a | trim, | please.", "Tik | — | patrumpinti, | prašau.", "Tik truputį patrumpinti, prašau.") },
         { id: "just_ends", s: t("Just | the | ends, | please.", "Tik | — | galiukus, | prašau.", "Tik galiukus, prašau.") },
         { id: "haircut", s: t("I'd like | a | haircut.", "Norėčiau | — | kirpimo.", "Norėčiau nusikirpti.") },
-        { id: "bangs_trim", s: t("Could | you | trim | my | bangs?", "Ar galėtumėte | jūs | patrumpinti | mano | kirpčiukus?", "Ar galėtumėte patrumpinti kirpčiukus?"),
+        { id: "bangs_trim", s: t("Could | you | trim | my | bangs?", "Ar galėtumėte | Jūs | patrumpinti | mano | kirpčiukus?", "Ar galėtumėte patrumpinti kirpčiukus?"),
           note: "„Bangs“ – kirpčiukai (britai sako „fringe“)." },
-        { id: "photo", s: t("Could | you | cut | it | like | this | photo?", "Ar galėtumėte | jūs | nukirpti | juos | kaip | šioje | nuotraukoje?", "Ar galėtumėte nukirpti kaip šioje nuotraukoje?",
+        { id: "photo", s: t("Could | you | cut | it | like | this | photo?", "Ar galėtumėte | Jūs | nukirpti | juos | kaip | šioje | nuotraukoje?", "Ar galėtumėte nukirpti kaip šioje nuotraukoje?",
           { flags: { 3: "“it” = my hair (plaukai), hence juos.", 6: "“photo”: Lithuanian says “as in this photo” (locative nuotraukoje)." } }) },
         { id: "not_short", s: t("Not | too | short, | please.", "Ne | per | trumpai, | prašau.", "Tik ne per trumpai, prašau.") },
       ],
@@ -576,7 +576,7 @@ export const salon: SituationDef = {
       items: [
         { id: "just_trim", s: t("Just | a | trim, | please.", "Tik | — | patrumpinti, | prašau.", "Tik truputį patrumpinti, prašau.") },
         { id: "not_short", s: t("Not | too | short, | please.", "Ne | per | trumpai, | prašau.", "Tik ne per trumpai, prašau.") },
-        { id: "photo", s: t("Could | you | cut | it | like | this | photo?", "Ar galėtumėte | jūs | nukirpti | juos | kaip | šioje | nuotraukoje?", "Ar galėtumėte nukirpti kaip šioje nuotraukoje?",
+        { id: "photo", s: t("Could | you | cut | it | like | this | photo?", "Ar galėtumėte | Jūs | nukirpti | juos | kaip | šioje | nuotraukoje?", "Ar galėtumėte nukirpti kaip šioje nuotraukoje?",
           { flags: { 3: "“it” = my hair (plaukai), hence juos.", 6: "“photo”: Lithuanian says “as in this photo” (locative nuotraukoje)." } }) },
         { id: "just_ends", s: t("Just | the | ends, | please.", "Tik | — | galiukus, | prašau.", "Tik galiukus, prašau.") },
       ],
@@ -622,7 +622,7 @@ export const salon: SituationDef = {
       items: [
         { id: "funny", s: t("That's | so | funny!", "Tai | taip | juokinga!", "Kaip juokinga!") },
         { id: "cute", s: t("That's | so | cute!", "Tai | taip | miela!", "Kaip miela!") },
-        { id: "cat_name", s: t("What's | your | cat's | name?", "Koks yra | jūsų | katės | vardas?", "Kuo vardu jūsų katė?") },
+        { id: "cat_name", s: t("What's | your | cat's | name?", "Koks yra | Jūsų | katės | vardas?", "Kuo vardu Jūsų katė?") },
       ],
     },
     // Answers to Jessie's small-talk question (one topic per visit)
@@ -661,8 +661,8 @@ export const salon: SituationDef = {
       lt: "Pasakyti, kaip patinka",
       items: [
         { id: "love_it", s: t("I | love | it!", "Man | labai patinka | jis!", "Man labai patinka!", { flags: { 0: "“I” → dative Man: Lithuanian says “to me it is liked”.", 2: "“it” = the haircut (kirpimas), hence jis." } }) },
-        { id: "looks_great", s: t("It | looks | great, | thank | you!", "Jis | atrodo | puikiai, | dėkoju | jums!", "Atrodo puikiai, ačiū!", { flags: { 0: "“It” = the haircut (kirpimas), hence jis." } }) },
-        { id: "more_off", s: t("Could | you | take | a little | more | off?", "Ar galėtumėte | jūs | nukirpti | truputį | daugiau | —?", "Ar galėtumėte nukirpti dar truputį?", { flags: { 5: FLAG_OFF } }) },
+        { id: "looks_great", s: t("It | looks | great, | thank | you!", "Jis | atrodo | puikiai, | dėkoju | Jums!", "Atrodo puikiai, ačiū!", { flags: { 0: "“It” = the haircut (kirpimas), hence jis." } }) },
+        { id: "more_off", s: t("Could | you | take | a little | more | off?", "Ar galėtumėte | Jūs | nukirpti | truputį | daugiau | —?", "Ar galėtumėte nukirpti dar truputį?", { flags: { 5: FLAG_OFF } }) },
         { id: "shorter", s: t("It's | a little | shorter | than | I | expected.", "Jis yra | truputį | trumpesnis, | nei | aš | tikėjausi.", "Truputį trumpesnis, nei tikėjausi.",
           { flags: { 0: "“It” = the haircut (kirpimas), hence jis." } }), register: "polite", note: "Mandagus būdas pasakyti, kad nukirpta per trumpai." },
         { id: "grow_back", s: t("It's | okay. | It'll grow | back.", "Tai | gerai. | Ataugs | —.", "Nieko tokio, ataugs.", { flags: { 3: "“back” is carried by the prefix at- of ataugs." } }), register: "polite" },
@@ -683,7 +683,7 @@ export const salon: SituationDef = {
     fix: {
       lt: "Pasakyti, ką pakeisti",
       items: [
-        { id: "more_off", s: t("Could | you | take | a little | more | off?", "Ar galėtumėte | jūs | nukirpti | truputį | daugiau | —?", "Ar galėtumėte nukirpti dar truputį?", { flags: { 5: FLAG_OFF } }) },
+        { id: "more_off", s: t("Could | you | take | a little | more | off?", "Ar galėtumėte | Jūs | nukirpti | truputį | daugiau | —?", "Ar galėtumėte nukirpti dar truputį?", { flags: { 5: FLAG_OFF } }) },
         { id: "grow_back", s: t("It's | okay. | It'll grow | back.", "Tai | gerai. | Ataugs | —.", "Nieko tokio, ataugs.", { flags: { 3: "“back” is carried by the prefix at- of ataugs." } }), register: "polite" },
       ],
     },
@@ -693,12 +693,12 @@ export const salon: SituationDef = {
         { id: "pay_card_short", s: t("Card, | please.", "Kortele, | prašau.", "Kortele, prašau.") },
         { id: "pay_card", s: t("Can | I | pay | by card?", "Ar galiu | aš | sumokėti | kortele?", "Ar galiu sumokėti kortele?") },
         { id: "here_you_go", s: t("Here you go.", "Prašom.", "Prašom.") },
-        { id: "owe", s: t("How much | do | I | owe | you?", "Kiek | — | aš | {m:esu skolingas|f:esu skolinga} | jums?", "Kiek esu {m:skolingas|f:skolinga}?", { flags: { 1: "Question “do” has no Lithuanian word (linked to “owe”)." } }) },
+        { id: "owe", s: t("How much | do | I | owe | you?", "Kiek | — | aš | {m:esu skolingas|f:esu skolinga} | Jums?", "Kiek esu {m:skolingas|f:skolinga}?", { flags: { 1: "Question “do” has no Lithuanian word (linked to “owe”)." } }) },
         { id: "add_tip", s: t("Can | I | add | a | tip?", "Ar galiu | aš | pridėti | — | arbatpinigių?", "Ar galiu pridėti arbatpinigių?", { flags: { 3: "Partitive: the genitive arbatpinigių carries the article's “a”." } }),
           note: "JAV kirpėjams įprasta palikti 15–20 % arbatpinigių." },
         { id: "tip_percent", s: t("I'll add | twenty | percent.", "Pridėsiu | dvidešimt | procentų.", "Pridėsiu dvidešimt procentų.") },
         { id: "keep_change", s: t("Keep | the | change!", "Pasilikite | — | grąžą!", "Grąžos nereikia!") },
-        { id: "for_you", s: t("This | is | for you.", "Tai | yra | jums.", "Tai jums.") },
+        { id: "for_you", s: t("This | is | for you.", "Tai | yra | Jums.", "Tai Jums.") },
       ],
     },
     // The card screen asks about a tip

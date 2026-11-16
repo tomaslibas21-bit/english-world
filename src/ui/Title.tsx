@@ -17,7 +17,7 @@ import "./title.css";
 type Pair = [en: string, lt: string];
 interface Slide { img: string; sit: string; focus: string; npc: Pair; you: Pair | ((name: string) => Pair) }
 const SLIDES: Slide[] = [
-  { img: "cafe", sit: "s72-cafe", focus: "36% 28%", npc: ["Hi! What can I get you?", "Sveiki! Ką jums paduoti?"], you: ["I'll have a latte.", "Imsiu latę."] },
+  { img: "cafe", sit: "s72-cafe", focus: "36% 28%", npc: ["Hi! What can I get you?", "Sveiki! Ką Jums paduoti?"], you: ["I'll have a latte.", "Imsiu latę."] },
   { img: "market", sit: "s69-local", focus: "33% 35%", npc: ["Hello there! Can I help you with something?", "Sveiki! Ar galiu kuo nors padėti?"], you: ["What would you recommend?", "Ką rekomenduotumėte?"] },
   { img: "taxi", sit: "s66-taxi", focus: "38% 30%", npc: ["Hi there! Hop in! Where to?", "Sveiki! Lipkite! Kur važiuojame?"], you: ["To the Harborview Hotel, please.", "Į „Harborview“ viešbutį, prašau."] },
   { img: "passport", sit: "s65a-passport", focus: "32% 36%", npc: ["Next! Hi there. Passport, please.", "Kitas! Sveiki. Pasą, prašau."], you: ["Here you go.", "Prašom."] },

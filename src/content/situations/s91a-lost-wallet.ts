@@ -119,7 +119,7 @@ function bye(c: Ctx, thanked = false) {
 
 // Hint items shared by several groups (the guide shows a group's first items as model answers).
 export const IN_PLACE = (e: EntityDef) => e.attrs?.prep === "i" && !["bus", "taxi"].includes(e.attrs?.kind);
-const H_HELP: HintItem = { id: "help_me", s: t("Excuse me, | can | you | help | me, | please?", "Atsiprašau, | ar galite | jūs | padėti | man, | prašau?", "Atsiprašau, ar galite man padėti?") };
+const H_HELP: HintItem = { id: "help_me", s: t("Excuse me, | can | you | help | me, | please?", "Atsiprašau, | ar galite | Jūs | padėti | man, | prašau?", "Atsiprašau, ar galite man padėti?") };
 const H_LOST: HintItem = { id: "lost_item", s: t("I've lost | my | {X}.", "Pamečiau | savo | {X:acc}.", "Pamečiau {X:acc}.") };
 const H_CANT_FIND: HintItem = { id: "cant_find", s: t("I | can't find | my | {X}.", "Aš | nerandu | savo | {X:gen}.", "Nerandu savo {X:gen}.") };
 const H_GONE: HintItem = { id: "gone", s: t("My | {X} | is gone.", "Mano | {X:nom} | dingo.", "Dingo mano {X:nom}.") };
@@ -337,12 +337,12 @@ export const lostWallet: SituationDef = {
 
   lines: {
     greet: [
-      t("Good | morning! | Can | I | help | you | with anything?", "Labas | rytas! | Ar galiu | aš | padėti | jums | kuo nors?", "Labas rytas! Ar galiu kuo nors padėti?"),
+      t("Good | morning! | Can | I | help | you | with anything?", "Labas | rytas! | Ar galiu | aš | padėti | Jums | kuo nors?", "Labas rytas! Ar galiu kuo nors padėti?"),
       t("Hello | there! | Aren't | these | tulips | lovely?", "Sveiki | —! | Ar ne | šios | tulpės | nuostabios?", "Sveiki! Ar ne nuostabios šios tulpės?",
         { flags: { 1: "“there” (hello there): part of the greeting; no separate Lithuanian word." } }),
     ],
     greet_worried: [
-      t("Hi! | Are | you | okay? | You | look | worried.", "Sveiki! | Ar | jums | viskas gerai? | Jūs | atrodote | {m:susirūpinęs|f:susirūpinusi}.", "Sveiki! Ar jums viskas gerai? Atrodote {m:susirūpinęs|f:susirūpinusi}.",
+      t("Hi! | Are | you | okay? | You | look | worried.", "Sveiki! | Ar | Jums | viskas gerai? | Jūs | atrodote | {m:susirūpinęs|f:susirūpinusi}.", "Sveiki! Ar Jums viskas gerai? Atrodote {m:susirūpinęs|f:susirūpinusi}.",
         { flags: { 1: "“Are” in a yes/no question = the particle ar; jums … viskas gerai carries “you are okay”." } }),
     ],
     ask_problem: [
@@ -360,14 +360,14 @@ export const lostWallet: SituationDef = {
         { flags: { 5: "“out” (figure … out): the prefix iš- of išsiaiškinsime carries it (linked to “we'll figure”)." } }),
     ],
     stolen_react: [
-      t("Oh | no! | Are | you | sure? | Maybe | you | just | dropped | it.", "O | ne! | Ar | jūs | {m:tikras|f:tikra}? | Galbūt | jūs | tiesiog | pametėte | {jis@X:acc}.", "O ne! Ar tikrai? Galbūt tiesiog {jis@X:acc} pametėte.",
+      t("Oh | no! | Are | you | sure? | Maybe | you | just | dropped | it.", "O | ne! | Ar | Jūs | {m:tikras|f:tikra}? | Galbūt | Jūs | tiesiog | pametėte | {jis@X:acc}.", "O ne! Ar tikrai? Galbūt tiesiog {jis@X:acc} pametėte.",
         { flags: { 3: "“Are” in a yes/no question = the particle ar; the adjective carries the rest." } }),
     ],
     keys_too: [
       t("Your | keys | too?", "Ir | raktus | taip pat?", "Ir raktus?"),
     ],
     ask_pockets: [
-      t("Did | you | check | all | your | pockets?", "Ar | jūs | patikrinote | visas | savo | kišenes?", "Ar patikrinote visas kišenes?",
+      t("Did | you | check | all | your | pockets?", "Ar | Jūs | patikrinote | visas | savo | kišenes?", "Ar patikrinote visas kišenes?",
         { flags: { 0: "Past “Did” in a yes/no question = the particle ar; the past tense sits on patikrinote." } }),
     ],
     check_again: [
@@ -375,18 +375,18 @@ export const lostWallet: SituationDef = {
         { flags: { 3: "“look” (take a look): the verb pažiūrėkite under “Take” carries it." } }),
     ],
     ask_last: [
-      t("When | did | you | last | have | it?", "Kada | — | jūs | paskutinį kartą | turėjote | {jis@X:acc}?", "Kada paskutinį kartą {jis@X:acc} turėjote?", { flags: { 1: F_DID } }),
-      t("Where | did | you | last | have | it?", "Kur | — | jūs | paskutinį kartą | turėjote | {jis@X:acc}?", "Kur paskutinį kartą {jis@X:acc} turėjote?", { flags: { 1: F_DID } }),
-      t("Okay, | let's think. | When | did | you | last | see | it?", "Gerai, | pagalvokime. | Kada | — | jūs | paskutinį kartą | matėte | {jis@X:acc}?", "Gerai, pagalvokime. Kada paskutinį kartą {jis@X:acc} matėte?", { flags: { 3: F_DID } }),
+      t("When | did | you | last | have | it?", "Kada | — | Jūs | paskutinį kartą | turėjote | {jis@X:acc}?", "Kada paskutinį kartą {jis@X:acc} turėjote?", { flags: { 1: F_DID } }),
+      t("Where | did | you | last | have | it?", "Kur | — | Jūs | paskutinį kartą | turėjote | {jis@X:acc}?", "Kur paskutinį kartą {jis@X:acc} turėjote?", { flags: { 1: F_DID } }),
+      t("Okay, | let's think. | When | did | you | last | see | it?", "Gerai, | pagalvokime. | Kada | — | Jūs | paskutinį kartą | matėte | {jis@X:acc}?", "Gerai, pagalvokime. Kada paskutinį kartą {jis@X:acc} matėte?", { flags: { 3: F_DID } }),
     ],
     where_was_that: [
       t("Oh? | Where | was | that?", "O? | Kur | tai | buvo?", "O? Kur tai buvo?"),
     ],
     ask_where_then: [
-      t("And | where | were | you | then?", "O | kur | buvote | jūs | tada?", "O kur tada buvote?"),
+      t("And | where | were | you | then?", "O | kur | buvote | Jūs | tada?", "O kur tada buvote?"),
     ],
     think_help: [
-      t("Think | for | a | moment. | Did | you | buy | anything | this | morning?", "Pagalvokite | — | — | akimirką. | Ar | jūs | pirkote | ką nors | šį | rytą?", "Pagalvokite akimirką. Ar šį rytą ką nors pirkote?",
+      t("Think | for | a | moment. | Did | you | buy | anything | this | morning?", "Pagalvokite | — | — | akimirką. | Ar | Jūs | pirkote | ką nors | šį | rytą?", "Pagalvokite akimirką. Ar šį rytą ką nors pirkote?",
         { flags: { 1: "“for”: the accusative of time akimirką carries it.", 4: "Past “Did” in a yes/no question = the particle ar." } }),
     ],
     go_back_i: [
@@ -419,14 +419,14 @@ export const lostWallet: SituationDef = {
       t("Okay, | {X.np}. | I'll remember | that.", "Gerai, | {X.np:nom}. | Įsiminsiu | tai.", "Gerai, {X.np:nom}. Įsiminsiu."),
     ],
     found_reask: [
-      t("So, | is | it | yours?", "Tai | ar | {jis@X:nom} | jūsų?", "Tai ar {jis@X:nom} jūsų?", { flags: { 1: F_IS_Q } }),
+      t("So, | is | it | yours?", "Tai | ar | {jis@X:nom} | Jūsų?", "Tai ar {jis@X:nom} Jūsų?", { flags: { 1: F_IS_Q } }),
     ],
     police_suggest: [
       t("And | if | it's | not | there, | go | to | the | police | station.", "O | jei | {jis@X:gen} | nėra | ten, | eikite | į | — | policijos | nuovadą.", "O jei {jis@X:gen} ten nėra, eikite į policijos nuovadą.",
         { flags: { 2: "“'s” (is) takes the negation in Lithuanian (nėra), and the subject goes into the genitive." } }),
     ],
     ask_know_police: [
-      t("Do | you | know | where | it | is?", "Ar | jūs | žinote, | kur | ji | yra?", "Ar žinote, kur ji?", { flags: { 0: "Question “Do” = the particle ar." } }),
+      t("Do | you | know | where | it | is?", "Ar | Jūs | žinote, | kur | ji | yra?", "Ar žinote, kur ji?", { flags: { 0: "Question “Do” = the particle ar." } }),
     ],
     directions: [
       t("It's | just | around the corner.", "Ji yra | visai | už kampo.", "Ji visai netoli, už kampo."),
@@ -442,7 +442,7 @@ export const lostWallet: SituationDef = {
         { flags: { 4: "“is”: štai ji needs no copula.", 5: "“on”: the locative telefone carries it; the possessive mano stands between." } }),
     ],
     map_mark: [
-      t("Here, | I'll mark | it | on | your | map.", "Štai, | pažymėsiu | ją | — | jūsų | žemėlapyje.", "Štai, pažymėsiu ją jūsų žemėlapyje.",
+      t("Here, | I'll mark | it | on | your | map.", "Štai, | pažymėsiu | ją | — | Jūsų | žemėlapyje.", "Štai, pažymėsiu ją Jūsų žemėlapyje.",
         { flags: { 3: "“on”: the locative žemėlapyje carries it; the possessive jūsų stands between." } }),
     ],
     far: [
@@ -465,7 +465,7 @@ export const lostWallet: SituationDef = {
         { say: "It's nine-one-one. But only for real emergencies.", flags: { 4: "“for”: the dative tikroms nelaimėms carries it; the adjective stands between." } }),
     ],
     cards: [
-      t("Yes, | I'd | call | your | bank | right away, | just in case.", "Taip, | aš | paskambinčiau į | jūsų | banką | iš karto, | dėl viso pikto.", "Taip, aš iš karto paskambinčiau į banką, dėl viso pikto.",
+      t("Yes, | I'd | call | your | bank | right away, | just in case.", "Taip, | aš | paskambinčiau į | Jūsų | banką | iš karto, | dėl viso pikto.", "Taip, aš iš karto paskambinčiau į banką, dėl viso pikto.",
         { flags: { 1: "“'d” (would): the conditional ending of paskambinčiau carries it; skambinti į banką needs į, which belongs to “call”." } }),
     ],
     what_do: [
@@ -479,7 +479,7 @@ export const lostWallet: SituationDef = {
       t("Oh, | wait! | This | little | boy | found | {X.np} | by | the | fountain!", "O, | palaukite! | Šis | mažas | berniukas | rado | {X.np:acc} | prie | — | fontano!", "O, palaukite! Šis berniukas rado {X.np:acc} prie fontano!"),
     ],
     found_ask: [
-      t("Is | it | yours?", "Ar | {jis@X:nom} | jūsų?", "Ar {jis@X:nom} jūsų?", { flags: { 0: F_IS_Q } }),
+      t("Is | it | yours?", "Ar | {jis@X:nom} | Jūsų?", "Ar {jis@X:nom} Jūsų?", { flags: { 0: F_IS_Q } }),
     ],
     found_yes: [
       t("Oh, | wonderful! | Is | everything | still | there?", "O, | nuostabu! | Ar | viskas | vis dar | vietoje?", "O, nuostabu! Ar viskas vietoje?", { flags: { 2: F_IS_Q } }),
@@ -497,14 +497,14 @@ export const lostWallet: SituationDef = {
       t("Oh, | too bad.", "O, | kaip gaila.", "O, kaip gaila."),
     ],
     missing_some: [
-      t("Oh | no. | Then | you | should | still | go | to | the | police.", "O | ne. | Tada | jums | vertėtų | vis tiek | eiti | į | — | policiją.", "O ne. Tada vis tiek verta nueiti į policiją.",
+      t("Oh | no. | Then | you | should | still | go | to | the | police.", "O | ne. | Tada | Jums | vertėtų | vis tiek | eiti | į | — | policiją.", "O ne. Tada vis tiek verta nueiti į policiją.",
         { flags: { 3: "“you should”: the dative jums with vertėtų (it would be worth) carries “should”." } }),
     ],
     not_lost_resp: [
-      t("Oh, | good! | How | can | I | help | you, | then?", "O, | puiku! | Kaip | galiu | aš | padėti | jums, | tada?", "O, puiku! Tai kuo galiu padėti?"),
+      t("Oh, | good! | How | can | I | help | you, | then?", "O, | puiku! | Kaip | galiu | aš | padėti | Jums, | tada?", "O, puiku! Tai kuo galiu padėti?"),
     ],
     flowers_first: [
-      t("Of course! | But | you | look | worried, | dear. | Is | everything | all right?", "Žinoma! | Bet | jūs | atrodote | {m:susirūpinęs|f:susirūpinusi}, | {m:mielasis|f:mieloji}. | Ar | viskas | gerai?", "Žinoma! Bet atrodote {m:susirūpinęs|f:susirūpinusi}, {m:mielasis|f:mieloji}. Ar viskas gerai?",
+      t("Of course! | But | you | look | worried, | dear. | Is | everything | all right?", "Žinoma! | Bet | Jūs | atrodote | {m:susirūpinęs|f:susirūpinusi}, | {m:mielasis|f:mieloji}. | Ar | viskas | gerai?", "Žinoma! Bet atrodote {m:susirūpinęs|f:susirūpinusi}, {m:mielasis|f:mieloji}. Ar viskas gerai?",
         { flags: { 6: F_IS_Q } }),
     ],
     // new lines (5 Nov 2026, the logic audit; they need a voice)
@@ -516,7 +516,7 @@ export const lostWallet: SituationDef = {
     flower_price: [t("Ten | dollars | a | bunch, | dear.", "Dešimt | dolerių | už | puokštę, | {m:mielasis|f:mieloji}.", "Dešimt dolerių už puokštę, {m:mielasis|f:mieloji}.",
       { say: "Ten dollars a bunch, dear.", flags: { 2: "“a” (a bunch = per bunch): už carries it." } })],
     good_luck: [
-      t("Good luck! | I | hope | you | find | it.", "Sėkmės! | Aš | tikiuosi, kad | jūs | rasite | {jis@X:acc}.", "Sėkmės! Tikiuosi, kad {jis@X:acc} rasite."),
+      t("Good luck! | I | hope | you | find | it.", "Sėkmės! | Aš | tikiuosi, kad | Jūs | rasite | {jis@X:acc}.", "Sėkmės! Tikiuosi, kad {jis@X:acc} rasite."),
       t("Good luck, | dear!", "Sėkmės, | {m:mielasis|f:mieloji}!", "Sėkmės, {m:mielasis|f:mieloji}!"),
     ],
     kind_resp: [
@@ -581,7 +581,7 @@ export const lostWallet: SituationDef = {
       lt: "Atsakyti, ar žinai, kur policija",
       items: [
         { id: "no_where", s: t("No, | where | is | it?", "Ne, | kur | yra | ji?", "Ne, o kur ji?") },
-        { id: "q_map", s: t("No. | Could | you | show | me | on the map?", "Ne. | Ar galėtumėte | jūs | parodyti | man | žemėlapyje?", "Ne. Ar galėtumėte parodyti žemėlapyje?") },
+        { id: "q_map", s: t("No. | Could | you | show | me | on the map?", "Ne. | Ar galėtumėte | Jūs | parodyti | man | žemėlapyje?", "Ne. Ar galėtumėte parodyti žemėlapyje?") },
         { id: "i_know", s: t("Yes, | I | know | where | it | is.", "Taip, | aš | žinau, | kur | ji | yra.", "Taip, žinau, kur ji.") },
       ],
     },
@@ -596,7 +596,7 @@ export const lostWallet: SituationDef = {
       lt: "Paklausti, kur policija ir kaip ten nueiti",
       items: [
         { id: "q_police", s: t("Where's | the | nearest | police | station?", "Kur yra | — | artimiausia | policijos | nuovada?", "Kur artimiausia policijos nuovada?") },
-        { id: "q_map", s: t("Could | you | show | me | on the map?", "Ar galėtumėte | jūs | parodyti | man | žemėlapyje?", "Ar galėtumėte parodyti žemėlapyje?") },
+        { id: "q_map", s: t("Could | you | show | me | on the map?", "Ar galėtumėte | Jūs | parodyti | man | žemėlapyje?", "Ar galėtumėte parodyti žemėlapyje?") },
         { id: "q_get_there", s: t("How | do | I | get | there?", "Kaip | — | man | nueiti | ten?", "Kaip ten nueiti?", { flags: { 1: "Question “do”: no Lithuanian word; the dative man + infinitive carries it." } }) },
         { id: "q_far", s: t("Is | it | far?", "Ar | tai | toli?", "Ar toli?", { flags: { 0: F_IS_Q } }) },
       ],
@@ -612,9 +612,9 @@ export const lostWallet: SituationDef = {
     thanks: {
       lt: "Padėkoti ir atsisveikinti",
       items: [
-        { id: "thanks_help", s: t("Thanks | for | your | help!", "Ačiū | už | jūsų | pagalbą!", "Ačiū už pagalbą!") },
-        { id: "kind", s: t("Thank | you | so much! | You're | very | kind.", "Dėkoju | jums | labai! | Jūs esate | labai | maloni.", "Labai ačiū! Jūs labai maloni.") },
-        { id: "thanks_bye", s: t("Thank | you! | Goodbye!", "Dėkoju | jums! | Viso gero!", "Ačiū! Viso gero!") },
+        { id: "thanks_help", s: t("Thanks | for | your | help!", "Ačiū | už | Jūsų | pagalbą!", "Ačiū už pagalbą!") },
+        { id: "kind", s: t("Thank | you | so much! | You're | very | kind.", "Dėkoju | Jums | labai! | Jūs esate | labai | maloni.", "Labai ačiū! Jūs labai maloni.") },
+        { id: "thanks_bye", s: t("Thank | you! | Goodbye!", "Dėkoju | Jums! | Viso gero!", "Ačiū! Viso gero!") },
       ],
     },
     found: {

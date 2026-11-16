@@ -200,53 +200,53 @@ export const gas: SituationDef = {
 
   lines: {
     greet: [
-      t("Hi, | hon! | What | can | I | do | for you?", "Sveiki, | {m:mielasis|f:mieloji}! | Ką | galiu | aš | padaryti | jums?", "Sveiki, {m:mielasis|f:mieloji}! Kuo galiu padėti?"),
-      t("Morning! | What | pump | are | you | on?", "Labas rytas! | Prie kurios | kolonėlės | stovite | jūs | —?", "Labas rytas! Prie kurios kolonėlės stovite?",
+      t("Hi, | hon! | What | can | I | do | for you?", "Sveiki, | {m:mielasis|f:mieloji}! | Ką | galiu | aš | padaryti | Jums?", "Sveiki, {m:mielasis|f:mieloji}! Kuo galiu padėti?"),
+      t("Morning! | What | pump | are | you | on?", "Labas rytas! | Prie kurios | kolonėlės | stovite | Jūs | —?", "Labas rytas! Prie kurios kolonėlės stovite?",
         { flags: { 1: "Stranded “on” (… are you on?): Lithuanian puts the preposition prie before the question word, so it is glossed here.", 3: "“are” (be at a pump) = stovite.", 5: "“on”: carried by prie at the front (linked to “What”)." } }),
-      t("Hi there! | How | can | I | help | you?", "Sveiki! | Kaip | galiu | aš | padėti | jums?", "Sveiki! Kuo galiu padėti?"),
+      t("Hi there! | How | can | I | help | you?", "Sveiki! | Kaip | galiu | aš | padėti | Jums?", "Sveiki! Kuo galiu padėti?"),
     ],
-    ask_what: [t("What | can | I | get | you?", "Ką | galiu | aš | duoti | jums?", "Ko jums reikia?")],
+    ask_what: [t("What | can | I | get | you?", "Ką | galiu | aš | duoti | Jums?", "Ko Jums reikia?")],
     ask_pump: [
-      t("Sure. | What | pump | are | you | on?", "Žinoma. | Prie kurios | kolonėlės | stovite | jūs | —?", "Žinoma. Prie kurios kolonėlės stovite?",
+      t("Sure. | What | pump | are | you | on?", "Žinoma. | Prie kurios | kolonėlės | stovite | Jūs | —?", "Žinoma. Prie kurios kolonėlės stovite?",
         { flags: { 1: "Stranded “on” (… are you on?): Lithuanian puts the preposition prie before the question word, so it is glossed here.", 3: "“are” (be at a pump) = stovite.", 5: "“on”: carried by prie at the front (linked to “What”)." } }),
       t("Which | pump?", "Kuri | kolonėlė?", "Kuri kolonėlė?"),
     ],
     ask_amount: [
-      t("How much | do | you | want?", "Kiek | — | jūs | norite?", "Kiek norite?", { flags: { 1: "Question “do” has no Lithuanian word (linked to “want”)." } }),
-      t("How much | would | you | like | to put | on | it?", "Kiek | — | jūs | norėtumėte | įpilti | — | —?", "Už kiek norėtumėte įpilti?",
+      t("How much | do | you | want?", "Kiek | — | Jūs | norite?", "Kiek norite?", { flags: { 1: "Question “do” has no Lithuanian word (linked to “want”)." } }),
+      t("How much | would | you | like | to put | on | it?", "Kiek | — | Jūs | norėtumėte | įpilti | — | —?", "Už kiek norėtumėte įpilti?",
         { flags: { 1: "“would”: the conditional ending of norėtumėte carries it (linked to “like”).", 5: "“on it” (put … on the pump): įpilti already covers it; no separate word.", 6: "“it” (the pump): no separate word in Lithuanian here." } }),
     ],
     out_of_order: [
       t("Oh, | sorry, | pump | {$num} | is | out of order | today. | Could | you | use | pump | five?",
-        "O, | atsiprašau, | kolonėlė | Nr. {$num} | yra | neveikianti | šiandien. | Ar galėtumėte | jūs | naudoti | kolonėlę | Nr. 5?",
+        "O, | atsiprašau, | kolonėlė | Nr. {$num} | yra | neveikianti | šiandien. | Ar galėtumėte | Jūs | naudoti | kolonėlę | Nr. 5?",
         "O, atsiprašau, kolonėlė Nr. {$num} šiandien neveikia. Ar galėtumėte naudotis kolonėle Nr. 5?"),
     ],
     // the same question again after a side question (the pump problem was already explained)
     ooo_again: [
-      t("So, | could | you | use | pump | five?", "Tai | ar galėtumėte | jūs | naudoti | kolonėlę | Nr. 5?", "Tai ar galėtumėte naudotis kolonėle Nr. 5?"),
+      t("So, | could | you | use | pump | five?", "Tai | ar galėtumėte | Jūs | naudoti | kolonėlę | Nr. 5?", "Tai ar galėtumėte naudotis kolonėle Nr. 5?"),
     ],
     fill_how_pay: [
-      t("Sure. | Are | you | paying | with | cash | or | card?", "Žinoma. | Ar | jūs | mokate | — | grynaisiais | ar | kortele?", "Žinoma. Mokėsite grynaisiais ar kortele?",
+      t("Sure. | Are | you | paying | with | cash | or | card?", "Žinoma. | Ar | Jūs | mokate | — | grynaisiais | ar | kortele?", "Žinoma. Mokėsite grynaisiais ar kortele?",
         { flags: { 1: "Question “Are” = the particle ar; the present of mokate carries the progressive (linked to “paying”).", 4: "“with”: the instrumental grynaisiais / kortele carries it." } }),
     ],
     fill_card: [
       t("Okay. | I'll put | a | hold | on | your | card, | and | you'll pay | only | for | what | you | pump.",
-        "Gerai. | Užblokuosiu | — | sumą | — | jūsų | kortelėje, | ir | jūs sumokėsite | tik | už | tiek, kiek | jūs | įsipilsite.",
-        "Gerai. Užblokuosiu sumą jūsų kortelėje, o sumokėsite tik už tiek, kiek įsipilsite.",
+        "Gerai. | Užblokuosiu | — | sumą | — | Jūsų | kortelėje, | ir | Jūs sumokėsite | tik | už | tiek, kiek | Jūs | įsipilsite.",
+        "Gerai. Užblokuosiu sumą Jūsų kortelėje, o sumokėsite tik už tiek, kiek įsipilsite.",
         { flags: { 4: "“on”: the locative kortelėje carries it (C-CASE-DASH, “your” intervenes)." } }),
     ],
     ask_leave: [
-      t("Okay, | how much | do | you | want | to leave? | I'll give | you | your | change | after.", "Gerai, | kiek | — | jūs | norite | palikti? | Duosiu | jums | jūsų | grąžą | vėliau.",
+      t("Okay, | how much | do | you | want | to leave? | I'll give | you | your | change | after.", "Gerai, | kiek | — | Jūs | norite | palikti? | Duosiu | Jums | Jūsų | grąžą | vėliau.",
         "Gerai, kiek norite palikti? Grąžą atiduosiu vėliau.", { flags: { 2: "Question “do” has no Lithuanian word (linked to “want”)." } }),
     ],
     leave_ok: [
-      t("Okay, | {$price} | on | pump | {$num}. | Come | back | in | for | your | change.", "Gerai, | {$price} | į | kolonėlę | Nr. {$num}. | Užeikite | atgal | — | — | jūsų | grąžos.",
+      t("Okay, | {$price} | on | pump | {$num}. | Come | back | in | for | your | change.", "Gerai, | {$price} | į | kolonėlę | Nr. {$num}. | Užeikite | atgal | — | — | Jūsų | grąžos.",
         "Gerai, {$price} į kolonėlę Nr. {$num}. Užeikite atsiimti grąžos.",
         { flags: { 7: "“in”: užeikite (come in) already contains it.", 8: "“for”: the genitive grąžos carries it (C-CASE-DASH, “your” intervenes)." } }),
     ],
     ask_extras: [
       t("Anything | else? | Coffee, | snacks?", "Ką nors | daugiau? | Kavos, | užkandžių?", "Dar ko nors? Kavos, užkandžių?"),
-      t("Anything | else | for you | today?", "Ką nors | daugiau | jums | šiandien?", "Ar dar ko nors šiandien?"),
+      t("Anything | else | for you | today?", "Ką nors | daugiau | Jums | šiandien?", "Ar dar ko nors šiandien?"),
     ],
     snack_ok: [
       t("Sure! | Coffee | is | right | over | there. | Help yourself.", "Žinoma! | Kava | yra | štai | — | ten. | Vaišinkitės.", "Žinoma! Kava – štai ten. Įsipilkite patys.",
@@ -264,16 +264,16 @@ export const gas: SituationDef = {
     ask_pay: [t("Cash | or | card?", "Grynaisiais | ar | kortele?", "Grynaisiais ar kortele?")],
     card_ok: [t("Go ahead | and | tap | your | card.", "Prašom | — | pridėti | savo | kortelę.", "Prašom pridėti kortelę.",
       { flags: { 1: "“and” (go ahead and …): Lithuanian joins the request directly." } })],
-    cash_ok: [t("Thanks! | And | here's | your | change.", "Ačiū! | Ir | štai | jūsų | grąža.", "Ačiū! Štai jūsų grąža.")],
+    cash_ok: [t("Thanks! | And | here's | your | change.", "Ačiū! | Ir | štai | Jūsų | grąža.", "Ačiū! Štai Jūsų grąža.")],
     cash_exact: [t("Thanks, | hon!", "Ačiū, | {m:mielasis|f:mieloji}!", "Ačiū, {m:mielasis|f:mieloji}!")],
     ask_debit: [t("Debit | or | credit?", "Debetinė | ar | kredito?", "Debetinė ar kredito kortelė?")],
     pin: [t("Okay, | go ahead | and | enter | your | PIN.", "Gerai, | prašom | — | įvesti | savo | PIN kodą.", "Gerai, įveskite PIN kodą.",
       { flags: { 2: "“and” (go ahead and …): Lithuanian joins the request directly." } })],
     ask_receipt: [
-      t("Do | you | want | a | receipt?", "Ar | jūs | norite | — | čekio?", "Ar reikia čekio?", { flags: { 0: "Question “Do” = the particle ar." } }),
+      t("Do | you | want | a | receipt?", "Ar | Jūs | norite | — | čekio?", "Ar reikia čekio?", { flags: { 0: "Question “Do” = the particle ar." } }),
       t("Receipt?", "Čekio?", "Čekio?"),
     ],
-    receipt_here: [t("Here's | your | receipt.", "Štai | jūsų | čekis.", "Štai jūsų čekis.")],
+    receipt_here: [t("Here's | your | receipt.", "Štai | Jūsų | čekis.", "Štai Jūsų čekis.")],
     pump_on: [
       t("You're all set! | Pump | {$num} | is | on.", "Viskas sutvarkyta! | Kolonėlė | Nr. {$num} | yra | įjungta.", "Viskas! Kolonėlė Nr. {$num} įjungta."),
       t("Okay, | pump | {$num} | is | ready. | Just | pick | your | grade | at the pump.", "Gerai, | kolonėlė | Nr. {$num} | yra | paruošta. | Tiesiog | pasirinkite | savo | degalų rūšį | prie kolonėlės.",
@@ -283,7 +283,7 @@ export const gas: SituationDef = {
       t("All | done? | That | came to | {$price}.", "Viskas | baigta? | Tai | kainavo | {$price}.", "Baigėte? Kainavo {$price}.",
         { flags: { 3: "“came to”: kainavo covers the whole verb (linked to “That”)." } }),
     ],
-    change_is: [t("Here's | your | change: | {$price}.", "Štai | jūsų | grąža: | {$price}.", "Štai jūsų grąža: {$price}.")],
+    change_is: [t("Here's | your | change: | {$price}.", "Štai | Jūsų | grąža: | {$price}.", "Štai Jūsų grąža: {$price}.")],
     grade_info: [
       t("Just | pick | it | at the pump. | Regular | is | the | first | button.", "Tiesiog | pasirinkite | tai | prie kolonėlės. | Paprastas | yra | — | pirmas | mygtukas.",
         "Tiesiog pasirinkite prie kolonėlės. Paprastas benzinas – pirmas mygtukas."),
@@ -332,16 +332,16 @@ export const gas: SituationDef = {
     atm: [t("The | ATM | is | right | by | the | door.", "— | Bankomatas | yra | tiesiai | prie | — | durų.", "Bankomatas – visai prie durų.")],
     // --- car trouble (twist)
     back_already: [
-      t("Hey, | you're back! | Everything | okay?", "Ei, | jūs grįžote! | Viskas | gerai?", "Ei, jūs grįžote! Viskas gerai?"),
+      t("Hey, | you're back! | Everything | okay?", "Ei, | Jūs grįžote! | Viskas | gerai?", "Ei, Jūs grįžote! Viskas gerai?"),
     ],
     trouble_reply: [
       t("Oh | no! | There's | a | mechanic | two | blocks | down, | or | I | can | call | roadside assistance | for you.",
-        "O | ne! | Yra | — | autoservisas | dviem | kvartalais | toliau, | arba | aš | galiu | iškviesti | techninę pagalbą kelyje | jums.",
-        "O ne! Už dviejų kvartalų yra autoservisas, arba galiu jums iškviesti techninę pagalbą kelyje."),
+        "O | ne! | Yra | — | autoservisas | dviem | kvartalais | toliau, | arba | aš | galiu | iškviesti | techninę pagalbą kelyje | Jums.",
+        "O ne! Už dviejų kvartalų yra autoservisas, arba galiu Jums iškviesti techninę pagalbą kelyje."),
     ],
     flat_reply: [
       t("Oh | no! | Is | it | a | rental? | Call | the | number | on | your | key | tag, | and | they'll send | someone.",
-        "O | ne! | Ar | tai | — | nuomojamas? | Skambinkite | — | numeriu | ant | jūsų | rakto | pakabuko, | ir | jie atsiųs | ką nors.",
+        "O | ne! | Ar | tai | — | nuomojamas? | Skambinkite | — | numeriu | ant | Jūsų | rakto | pakabuko, | ir | jie atsiųs | ką nors.",
         "O ne! Ar automobilis nuomotas? Skambinkite numeriu, nurodytu ant rakto pakabuko, ir jie ką nors atsiųs.",
         { flags: { 2: "“Is” in a yes/no question = the particle ar; the copula has no separate word here." } }),
     ],
@@ -355,7 +355,7 @@ export const gas: SituationDef = {
         "Žinoma, {m:mielasis|f:mieloji}, tuoj paskambinsiu. Jie paprastai atvyksta per maždaug pusvalandį."),
     ],
     all_good: [t("Great! | Drive | safe!", "Puiku! | Vairuokite | atsargiai!", "Puiku! Saugaus kelio!")],
-    anything_else: [t("Anything | else | I | can | do | for you?", "Ką nors | daugiau | aš | galiu | padaryti | jums?", "Ar dar kuo nors galiu padėti?")],
+    anything_else: [t("Anything | else | I | can | do | for you?", "Ką nors | daugiau | aš | galiu | padaryti | Jums?", "Ar dar kuo nors galiu padėti?")],
     bye: [
       t("Have | a | good | one!", "Linkiu | — | geros | dienos!", "Geros dienos!", { flags: { 3: "“one” (have a good one): a stand-in for “day”; Lithuanian names it (dienos)." } }),
       t("Drive | safe, | hon!", "Vairuokite | atsargiai, | {m:mielasis|f:mieloji}!", "Saugaus kelio, {m:mielasis|f:mieloji}!"),
@@ -434,7 +434,7 @@ export const gas: SituationDef = {
       items: [
         { id: "q_mechanic", s: t("Is | there | a | mechanic | nearby?", "Ar yra | — | — | autoservisas | netoliese?", "Ar netoliese yra autoservisas?",
           { flags: { 1: "Existential “there”: no Lithuanian word; yra carries it (linked to “Is”)." } }) },
-        { id: "call_roadside", s: t("Could | you | call | roadside assistance?", "Ar galėtumėte | jūs | iškviesti | techninę pagalbą kelyje?", "Ar galėtumėte iškviesti techninę pagalbą kelyje?") },
+        { id: "call_roadside", s: t("Could | you | call | roadside assistance?", "Ar galėtumėte | Jūs | iškviesti | techninę pagalbą kelyje?", "Ar galėtumėte iškviesti techninę pagalbą kelyje?") },
       ],
     },
     anything: {
@@ -494,7 +494,7 @@ export const gas: SituationDef = {
         { id: "flat_tire", s: t("I | have | a | flat | tire.", "Aš | turiu | — | nuleistą | padangą.", "Man nuleista padanga.") },
         { id: "q_mechanic", s: t("Is | there | a | mechanic | nearby?", "Ar yra | — | — | autoservisas | netoliese?", "Ar netoliese yra autoservisas?",
           { flags: { 1: "Existential “there”: no Lithuanian word; yra carries it (linked to “Is”)." } }) },
-        { id: "call_roadside", s: t("Could | you | call | roadside assistance?", "Ar galėtumėte | jūs | iškviesti | techninę pagalbą kelyje?", "Ar galėtumėte iškviesti techninę pagalbą kelyje?") },
+        { id: "call_roadside", s: t("Could | you | call | roadside assistance?", "Ar galėtumėte | Jūs | iškviesti | techninę pagalbą kelyje?", "Ar galėtumėte iškviesti techninę pagalbą kelyje?") },
       ],
     },
   },

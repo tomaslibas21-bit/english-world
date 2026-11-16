@@ -993,7 +993,7 @@ export const gym: SituationDef = {
         { id: "machine_free", s: t("Is | this | machine | free?", "Ar | šis | treniruoklis | laisvas?", "Ar šis treniruoklis laisvas?", { flags: { 0: FLAG_IS } }) },
         { id: "anyone_using", s: t("Is | anyone | using | this?", "Ar | kas nors | naudojasi | šiuo?", "Ar kas nors naudojasi šiuo treniruokliu?",
           { flags: { 0: "“Is” (question + progressive): the particle ar; the present naudojasi carries the progressive (linked to “using”)." } }) },
-        { id: "you_using", s: t("Excuse me, | are | you | using | this?", "Atsiprašau, | ar | jūs | naudojatės | šiuo?", "Atsiprašau, ar jūs naudojatės šiuo treniruokliu?",
+        { id: "you_using", s: t("Excuse me, | are | you | using | this?", "Atsiprašau, | ar | Jūs | naudojatės | šiuo?", "Atsiprašau, ar Jūs naudojatės šiuo treniruokliu?",
           { flags: { 1: "“are” (question + progressive): the particle ar; the present naudojatės carries the progressive (linked to “using”)." } }), note: "Taip klausiama žmogaus, kuris stovi prie treniruoklio." },
         { id: "can_use", s: t("Can | I | use | this | machine?", "Ar galiu | aš | naudotis | šiuo | treniruokliu?", "Ar galiu naudotis šiuo treniruokliu?") },
       ],

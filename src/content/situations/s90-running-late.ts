@@ -491,7 +491,7 @@ export const runningLate: SituationDef = {
       t("I'm sorry, | who | is | this?", "Atsiprašau, | kas | yra | čia?", "Atsiprašau, kas čia?"),
     ],
     who_again: [
-      t("Sorry, | I | didn't catch | your | name.", "Atsiprašau, | aš | nenugirdau | jūsų | vardo.", "Atsiprašau, nenugirdau jūsų vardo."),
+      t("Sorry, | I | didn't catch | your | name.", "Atsiprašau, | aš | nenugirdau | Jūsų | vardo.", "Atsiprašau, nenugirdau Jūsų vardo."),
     ],
     name_ack: [
       t("Hi! | Good | morning.", "Sveiki! | Labas | rytas.", "Sveiki! Labas rytas."),
@@ -499,7 +499,7 @@ export const runningLate: SituationDef = {
       t("Oh, | hello!", "O, | sveiki!", "O, sveiki!"),
     ],
     ask_late: [
-      t("What | can | I | do | for you?", "Ką | galiu | aš | padaryti | jums?", "Kuo galiu padėti?"),
+      t("What | can | I | do | for you?", "Ką | galiu | aš | padaryti | Jums?", "Kuo galiu padėti?"),
       t("What's up?", "Kas nutiko?", "Kas nutiko?"),
       t("How | can | I | help?", "Kaip | galiu | aš | padėti?", "Kuo galiu padėti?"),
     ],
@@ -527,7 +527,7 @@ export const runningLate: SituationDef = {
       t("Oh | no, | not | again!", "O | ne, | ne | vėl!", "O ne, ir vėl!"),
     ],
     react_car: [
-      t("Oh | no! | Do | you | need | any | help?", "O | ne! | Ar | jums | reikia | kokios nors | pagalbos?", "O ne! Ar jums reikia pagalbos?", { flags: { 2: F_DO_Q } }),
+      t("Oh | no! | Do | you | need | any | help?", "O | ne! | Ar | Jums | reikia | kokios nors | pagalbos?", "O ne! Ar Jums reikia pagalbos?", { flags: { 2: F_DO_Q } }),
     ],
     react_keys: [
       t("Oh | no! | I | hate | when | that | happens.", "O | ne! | Aš | nekenčiu, | kai | taip | nutinka.", "O ne! Nekenčiu, kai taip nutinka."),
@@ -548,7 +548,7 @@ export const runningLate: SituationDef = {
       t("Okay, | these | things | happen.", "Gerai, | tokie | dalykai | nutinka.", "Gerai, taip nutinka."),
     ],
     help_yes: [
-      t("Okay. | Call | me | if | you | need | anything.", "Gerai. | Skambinkite | man, | jei | jums | reikės | ko nors.", "Gerai. Skambinkite, jei ko nors reikės."),
+      t("Okay. | Call | me | if | you | need | anything.", "Gerai. | Skambinkite | man, | jei | Jums | reikės | ko nors.", "Gerai. Skambinkite, jei ko nors reikės."),
     ],
     help_no: [
       t("Okay, | good.", "Gerai, | puiku.", "Gerai, puiku."),
@@ -562,11 +562,11 @@ export const runningLate: SituationDef = {
     ],
     // "When…?" / "What time…?" (a bare "Ten." = ten o'clock) and "How long…?" (a bare "Ten." = ten minutes)
     ask_eta: [
-      t("When | do | you | think | you'll get | here?", "Kada | — | jūs | manote | atvyksite | čia?", "Kada, jūsų manymu, atvyksite?", { flags: { 1: "Question “do” has no Lithuanian word; the tense sits on manote (linked to “think”)." } }),
-      t("What | time | will | you | be | here?", "Kelintą | valandą | — | jūs | būsite | čia?", "Kelintą valandą būsite čia?", { flags: { 2: "“will”: the future ending of būsite carries it (linked to “be”)." } }),
+      t("When | do | you | think | you'll get | here?", "Kada | — | Jūs | manote | atvyksite | čia?", "Kada, Jūsų manymu, atvyksite?", { flags: { 1: "Question “do” has no Lithuanian word; the tense sits on manote (linked to “think”)." } }),
+      t("What | time | will | you | be | here?", "Kelintą | valandą | — | Jūs | būsite | čia?", "Kelintą valandą būsite čia?", { flags: { 2: "“will”: the future ending of būsite carries it (linked to “be”)." } }),
     ],
     ask_eta_long: [
-      t("How | long | do | you | think | you'll be?", "Kaip | ilgai | — | jūs | manote | užtruksite?", "Kiek, jūsų manymu, užtruksite?", { flags: { 2: "Question “do” has no Lithuanian word; the tense sits on manote (linked to “think”)." } }),
+      t("How | long | do | you | think | you'll be?", "Kaip | ilgai | — | Jūs | manote | užtruksite?", "Kiek, Jūsų manymu, užtruksite?", { flags: { 2: "Question “do” has no Lithuanian word; the tense sits on manote (linked to “think”)." } }),
     ],
     ask_eta_vague: [
       t("Okay. | About | how | long?", "Gerai. | Maždaug | kaip | ilgai?", "Gerai. Maždaug kiek laiko?"),
@@ -581,20 +581,20 @@ export const runningLate: SituationDef = {
       t("Great.", "Puiku.", "Puiku."),
     ],
     eta_long: [
-      t("Hmm, | okay. | We'll start | without | you, | then.", "Hmm, | gerai. | Pradėsime | be | jūsų, | tada.", "Hmm, gerai. Tada pradėsime be jūsų."),
+      t("Hmm, | okay. | We'll start | without | you, | then.", "Hmm, | gerai. | Pradėsime | be | Jūsų, | tada.", "Hmm, gerai. Tada pradėsime be Jūsų."),
     ],
     plan_ask: [
-      t("Should | we | start | without | you?", "Ar | mums | pradėti | be | jūsų?", "Ar pradėti be jūsų?", { flags: { 0: "“Should” in a yes/no question = the particle ar; the dative mums with the infinitive pradėti carries “should we”." } }),
-      t("Do | you | want | us | to start | without | you?", "Ar | jūs | norite, | kad mes | pradėtume | be | jūsų?", "Ar norite, kad pradėtume be jūsų?", { flags: { 0: F_DO_Q, 3: "“us … to start”: Lithuanian needs a kad-clause with the subjunctive (kad mes pradėtume)." } }),
+      t("Should | we | start | without | you?", "Ar | mums | pradėti | be | Jūsų?", "Ar pradėti be Jūsų?", { flags: { 0: "“Should” in a yes/no question = the particle ar; the dative mums with the infinitive pradėti carries “should we”." } }),
+      t("Do | you | want | us | to start | without | you?", "Ar | Jūs | norite, | kad mes | pradėtume | be | Jūsų?", "Ar norite, kad pradėtume be Jūsų?", { flags: { 0: F_DO_Q, 3: "“us … to start”: Lithuanian needs a kad-clause with the subjunctive (kad mes pradėtume)." } }),
     ],
     plan_start: [
-      t("No | problem. | We'll start | without | you.", "Jokių | problemų. | Pradėsime | be | jūsų.", "Jokių problemų. Pradėsime be jūsų."),
-      t("We'll | just | start | without | you, | then.", "Mes | tiesiog | pradėsime | be | jūsų, | tada.", "Tada tiesiog pradėsime be jūsų.",
+      t("No | problem. | We'll start | without | you.", "Jokių | problemų. | Pradėsime | be | Jūsų.", "Jokių problemų. Pradėsime be Jūsų."),
+      t("We'll | just | start | without | you, | then.", "Mes | tiesiog | pradėsime | be | Jūsų, | tada.", "Tada tiesiog pradėsime be Jūsų.",
         { flags: { 0: "“'ll” (will): the future ending of pradėsime carries it." } }),
     ],
     plan_wait: [
-      t("Don't worry, | we'll wait | for you.", "Nesijaudinkite, | palauksime | jūsų.", "Nesijaudinkite, palauksime jūsų."),
-      t("That's | okay. | We'll wait | for you.", "Tai yra | gerai. | Palauksime | jūsų.", "Nieko tokio. Palauksime jūsų."),
+      t("Don't worry, | we'll wait | for you.", "Nesijaudinkite, | palauksime | Jūsų.", "Nesijaudinkite, palauksime Jūsų."),
+      t("That's | okay. | We'll wait | for you.", "Tai yra | gerai. | Palauksime | Jūsų.", "Nieko tokio. Palauksime Jūsų."),
     ],
     thanks_letting: [
       t("Thanks | for | letting | me | know.", "Ačiū, | kad | — | man | pranešėte.", "Ačiū, kad pranešėte.", { flags: { 2: "“letting … know” = pranešti: the verb pranešėte stands under “know”." } }),
@@ -624,20 +624,20 @@ export const runningLate: SituationDef = {
       t("Same | as | usual: | room | 204.", "Tas pats | kaip | įprastai: | kabinetas | 204.", "Kaip įprastai – 204 kabinetas.", { say: "Same as usual: room two-oh-four.", write: "Room 204" }),
     ],
     ok_start: [
-      t("Sure, | we'll start | without | you.", "Žinoma, | pradėsime | be | jūsų.", "Žinoma, pradėsime be jūsų."),
+      t("Sure, | we'll start | without | you.", "Žinoma, | pradėsime | be | Jūsų.", "Žinoma, pradėsime be Jūsų."),
       t("Okay, | we'll get started, | then.", "Gerai, | pradėsime, | tada.", "Gerai, tada pradėsime."),
     ],
     ok_wait: [
       t("Sure, | we | can | wait | a | few | minutes.", "Žinoma, | mes | galime | palaukti | — | kelias | minutes.", "Žinoma, galime kelias minutes palaukti."),
     ],
     ok_seat: [
-      t("Of course. | I'll save | you | a | seat.", "Žinoma. | Paliksiu | jums | — | vietą.", "Žinoma. Paliksiu jums vietą."),
+      t("Of course. | I'll save | you | a | seat.", "Žinoma. | Paliksiu | Jums | — | vietą.", "Žinoma. Paliksiu Jums vietą."),
     ],
     ok_tell: [
       t("Sure, | I'll tell | them.", "Žinoma, | pasakysiu | jiems.", "Žinoma, pasakysiu jiems."),
     ],
     ok_link: [
-      t("Sure, | I'll send | you | the | link.", "Žinoma, | atsiųsiu | jums | — | nuorodą.", "Žinoma, atsiųsiu jums nuorodą."),
+      t("Sure, | I'll send | you | the | link.", "Žinoma, | atsiųsiu | Jums | — | nuorodą.", "Žinoma, atsiųsiu Jums nuorodą."),
     ],
     ok_call: [
       t("Sounds | good.", "Skamba | gerai.", "Gerai."),
@@ -653,14 +653,14 @@ export const runningLate: SituationDef = {
       t("Oh, | good! | Then | see you | at nine.", "O, | puiku! | Tada | iki | devintos.", "O, puiku! Tada iki devintos."),
     ],
     cant_come_q: [
-      t("Oh. | So | you | can't come | today?", "O. | Tai | jūs | negalite atvykti | šiandien?", "O. Tai šiandien negalite atvykti?"),
+      t("Oh. | So | you | can't come | today?", "O. | Tai | Jūs | negalite atvykti | šiandien?", "O. Tai šiandien negalite atvykti?"),
     ],
     cant_come_ok: [
       t("Okay, | I | understand. | Thanks | for | letting | me | know.", "Gerai, | aš | suprantu. | Ačiū, | kad | — | man | pranešėte.", "Gerai, suprantu. Ačiū, kad pranešėte.",
         { flags: { 6: "“letting … know” = pranešti: the verb pranešėte stands under “know”." } }),
     ],
     just_late: [
-      t("Oh, | okay. | So | you're | just | running | late.", "O, | gerai. | Tai | jūs | tik | — | vėluojate.", "O, gerai. Tai jūs tik vėluojate.",
+      t("Oh, | okay. | So | you're | just | running | late.", "O, | gerai. | Tai | Jūs | tik | — | vėluojate.", "O, gerai. Tai Jūs tik vėluojate.",
         { flags: { 3: "Progressive “are”: the present tense of vėluojate carries it.", 5: F_RUNNING } }),
     ],
     sorry_ok: [
@@ -733,8 +733,8 @@ export const runningLate: SituationDef = {
       items: [
         { id: "start_without", s: t("Please | start | without | me.", "Prašau, | pradėkite | be | manęs.", "Prašau, pradėkite be manęs.") },
         { id: "dont_wait", s: t("Please | don't wait | for me.", "Prašau, | nelaukite | manęs.", "Prašau, nelaukite manęs.") },
-        { id: "save_seat", s: t("Could | you | save | me | a | seat?", "Ar galėtumėte | jūs | palikti | man | — | vietą?", "Ar galėtumėte palikti man vietą?") },
-        { id: "tell_team", s: t("Could | you | tell | the | team?", "Ar galėtumėte | jūs | pasakyti | — | komandai?", "Ar galėtumėte pasakyti komandai?") },
+        { id: "save_seat", s: t("Could | you | save | me | a | seat?", "Ar galėtumėte | Jūs | palikti | man | — | vietą?", "Ar galėtumėte palikti man vietą?") },
+        { id: "tell_team", s: t("Could | you | tell | the | team?", "Ar galėtumėte | Jūs | pasakyti | — | komandai?", "Ar galėtumėte pasakyti komandai?") },
         { id: "join_online", s: t("Can | I | join | online?", "Ar galiu | aš | prisijungti | nuotoliniu būdu?", "Ar galiu prisijungti nuotoliniu būdu?") },
       ],
     },

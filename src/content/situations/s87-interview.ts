@@ -1179,34 +1179,34 @@ export const interview: SituationDef = {
   lines: {
     // --- arriving -----------------------------------------------------------------------
     greet_help: [
-      t("Good | morning! | Can | I | help | you?", "Labas | rytas! | Ar galiu | aš | padėti | jums?", "Labas rytas! Kuo galiu padėti?"),
-      t("Hi there! | How | can | I | help | you?", "Sveiki! | Kuo | galiu | aš | padėti | jums?", "Sveiki! Kuo galiu padėti?"),
+      t("Good | morning! | Can | I | help | you?", "Labas | rytas! | Ar galiu | aš | padėti | Jums?", "Labas rytas! Kuo galiu padėti?"),
+      t("Hi there! | How | can | I | help | you?", "Sveiki! | Kuo | galiu | aš | padėti | Jums?", "Sveiki! Kuo galiu padėti?"),
     ],
     greet_interview: [
-      t("Good | morning! | Are | you | here | for | the | interview?", "Labas | rytas! | Ar | jūs | čia | dėl | — | darbo pokalbio?", "Labas rytas! Jūs atvykote į darbo pokalbį?",
+      t("Good | morning! | Are | you | here | for | the | interview?", "Labas | rytas! | Ar | Jūs | čia | dėl | — | darbo pokalbio?", "Labas rytas! Jūs atvykote į darbo pokalbį?",
         { flags: { 2: F_ARE_Q } }),
       t("Hi! | You | must | be | here | for | the | 9:30 | interview.", "Sveiki! | Jūs | turbūt | esate | čia | dėl | — | 9:30 | darbo pokalbio.",
         "Sveiki! Jūs turbūt atvykote į 9:30 darbo pokalbį.", { say: "Hi! You must be here for the nine thirty interview." }),
     ],
     purpose_again: [
-      t("Are | you | here | for | an | interview?", "Ar | jūs | čia | dėl | — | darbo pokalbio?", "Ar jūs atvykote į darbo pokalbį?", { flags: { 0: F_ARE_Q } }),
+      t("Are | you | here | for | an | interview?", "Ar | Jūs | čia | dėl | — | darbo pokalbio?", "Ar Jūs atvykote į darbo pokalbį?", { flags: { 0: F_ARE_Q } }),
     ],
-    how_help: [t("Oh, | sorry! | How | can | I | help | you?", "O, | atsiprašau! | Kuo | galiu | aš | padėti | jums?", "O, atsiprašau! Kuo galiu padėti?")],
+    how_help: [t("Oh, | sorry! | How | can | I | help | you?", "O, | atsiprašau! | Kuo | galiu | aš | padėti | Jums?", "O, atsiprašau! Kuo galiu padėti?")],
     early_ok: [t("No | problem | at all!", "Jokių | problemų | visai!", "Nieko tokio!"), t("That's | fine!", "Tai | gerai!", "Nieko tokio!")],
     thats_me: [t("Yes, | that's | me!", "Taip, | tai | aš!", "Taip, tai aš!", { flags: { 1: F_THATS } })],
     other_time: [
-      t("I | have | you | down | for | 9:30, | but | that's | no | problem.", "Aš | turiu | jus | užrašytą | — | 9:30, | bet | tai | ne | problema.",
-        "Pas mane jūs {m:užrašytas|f:užrašyta} 9:30, bet tai ne problema.",
+      t("I | have | you | down | for | 9:30, | but | that's | no | problem.", "Aš | turiu | Jus | užrašytą | — | 9:30, | bet | tai | ne | problema.",
+        "Pas mane Jūs {m:užrašytas|f:užrašyta} 9:30, bet tai ne problema.",
         { say: "I have you down for nine thirty, but that's no problem.", flags: { 3: "“down” (have … down): užrašytą = written down.", 4: "“for” (a time): Lithuanian uses the time alone.", 7: F_THATS } }),
     ],
     ask_name: [
-      t("Great! | And | your | name, | please?", "Puiku! | O | jūsų | vardas, | prašau?", "Puiku! O kaip jūsų vardas?"),
-      t("Wonderful. | And | you | are...?", "Puiku. | O | jūs | esate...?", "Puiku. O jūs esate…?"),
+      t("Great! | And | your | name, | please?", "Puiku! | O | Jūsų | vardas, | prašau?", "Puiku! O kaip Jūsų vardas?"),
+      t("Wonderful. | And | you | are...?", "Puiku. | O | Jūs | esate...?", "Puiku. O Jūs esate…?"),
     ],
-    name_again: [t("Sorry, | what | was | your | name?", "Atsiprašau, | koks | buvo | jūsų | vardas?", "Atsiprašau, koks jūsų vardas?")],
+    name_again: [t("Sorry, | what | was | your | name?", "Atsiprašau, | koks | buvo | Jūsų | vardas?", "Atsiprašau, koks Jūsų vardas?")],
     welcome: [
-      t("Nice | to meet | you! | I'm | the | HR | manager | here.", "Malonu | susipažinti | su jumis! | Aš esu | — | personalo | vadovė | čia.", "Malonu susipažinti! Aš čia personalo vadovė."),
-      t("Nice | to meet | you! | Thank | you | for | coming in.", "Malonu | susipažinti | su jumis! | Dėkoju | jums, | kad | atvykote.", "Malonu susipažinti! Ačiū, kad atvykote."),
+      t("Nice | to meet | you! | I'm | the | HR | manager | here.", "Malonu | susipažinti | su Jumis! | Aš esu | — | personalo | vadovė | čia.", "Malonu susipažinti! Aš čia personalo vadovė."),
+      t("Nice | to meet | you! | Thank | you | for | coming in.", "Malonu | susipažinti | su Jumis! | Dėkoju | Jums, | kad | atvykote.", "Malonu susipažinti! Ačiū, kad atvykote."),
     ],
     sit: [
       t("Please, | have a seat.", "Prašom, | prisėskite.", "Prašom, prisėskite."),
@@ -1215,55 +1215,55 @@ export const interview: SituationDef = {
 
     // --- small talk ----------------------------------------------------------------------------
     ask_found: [
-      t("Did | you | find | us | okay?", "Ar | jūs | radote | mus | lengvai?", "Ar lengvai mus radote?", { flags: { 0: "Question “Did” = the particle ar; the past tense sits on radote." } }),
+      t("Did | you | find | us | okay?", "Ar | Jūs | radote | mus | lengvai?", "Ar lengvai mus radote?", { flags: { 0: "Question “Did” = the particle ar; the past tense sits on radote." } }),
       t("Was | it | easy | to find | us?", "Ar buvo | — | lengva | rasti | mus?", "Ar buvo lengva mus rasti?", { flags: { 1: "Dummy “it” has no Lithuanian word (C-DUMMY)." } }),
     ],
     found_good: [t("Good!", "Puiku!", "Puiku!"), t("Great.", "Puiku.", "Puiku.")],
-    found_bad: [t("Oh | no! | Well, | you're | here | now.", "O | ne! | Na, | jūs esate | čia | dabar.", "O ne! Na, dabar jūs čia.")],
+    found_bad: [t("Oh | no! | Well, | you're | here | now.", "O | ne! | Na, | Jūs esate | čia | dabar.", "O ne! Na, dabar Jūs čia.")],
     offer_drink: [
-      t("Can | I | get | you | anything? | Water? | Coffee?", "Ar galiu | aš | pasiūlyti | jums | ko nors? | Vandens? | Kavos?", "Gal ko nors norėtumėte? Vandens? Kavos?"),
-      t("Would | you | like | some | water | or | coffee?", "Ar | jūs | norėtumėte | — | vandens | ar | kavos?", "Ar norėtumėte vandens ar kavos?",
+      t("Can | I | get | you | anything? | Water? | Coffee?", "Ar galiu | aš | pasiūlyti | Jums | ko nors? | Vandens? | Kavos?", "Gal ko nors norėtumėte? Vandens? Kavos?"),
+      t("Would | you | like | some | water | or | coffee?", "Ar | Jūs | norėtumėte | — | vandens | ar | kavos?", "Ar norėtumėte vandens ar kavos?",
         { flags: { 0: "“Would” in a yes/no question = the particle ar; the conditional sits on norėtumėte.", 3: "Partitive “some”: the genitive vandens carries it." } }),
     ],
     here_water: [t("Here you go.", "Prašom.", "Prašom."), t("Sure, | here you go.", "Žinoma, | prašom.", "Žinoma, prašom.")],
-    here_coffee: [t("Sure! | Here's | your | coffee.", "Žinoma! | Štai | jūsų | kava.", "Žinoma! Štai jūsų kava.")],
+    here_coffee: [t("Sure! | Here's | your | coffee.", "Žinoma! | Štai | Jūsų | kava.", "Žinoma! Štai Jūsų kava.")],
     no_drink_ok: [t("Okay, | sure.", "Gerai, | žinoma.", "Gerai.")],
 
     // --- about you --------------------------------------------------------------------------------
     ask_about: [
       t("So, | tell | me | a little | about | yourself.", "Taigi, | papasakokite | man | truputį | apie | save.", "Taigi, papasakokite truputį apie save."),
       t("So, | tell | me | about | yourself.", "Taigi, | papasakokite | man | apie | save.", "Taigi, papasakokite apie save."),
-      t("First, | could | you | tell | me | a little | about | yourself?", "Pirmiausia, | ar galėtumėte | jūs | papasakoti | man | truputį | apie | save?",
+      t("First, | could | you | tell | me | a little | about | yourself?", "Pirmiausia, | ar galėtumėte | Jūs | papasakoti | man | truputį | apie | save?",
         "Pirmiausia, gal galėtumėte truputį papasakoti apie save?"),
     ],
     ask_about_again: [
       t("So, | tell | me | a little | about | yourself.", "Taigi, | papasakokite | man | truputį | apie | save.", "Taigi, papasakokite truputį apie save."),
-      t("Just | tell | me | a little | about | yourself: | your | work | and | your | experience.", "Tiesiog | papasakokite | man | truputį | apie | save: | jūsų | darbą | ir | jūsų | patirtį.",
+      t("Just | tell | me | a little | about | yourself: | your | work | and | your | experience.", "Tiesiog | papasakokite | man | truputį | apie | save: | Jūsų | darbą | ir | Jūsų | patirtį.",
         "Tiesiog truputį papasakokite apie save: apie savo darbą ir patirtį."),
     ],
     ask_job_more: [
-      t("And | what | do | you | do?", "O | kuo | — | jūs | dirbate?", "O kuo jūs dirbate?", { flags: { 2: F_WH_DO } }),
-      t("So, | what | do | you | do | now?", "Tai | kuo | — | jūs | dirbate | dabar?", "Tai kuo dabar dirbate?", { flags: { 2: F_WH_DO } }),
+      t("And | what | do | you | do?", "O | kuo | — | Jūs | dirbate?", "O kuo Jūs dirbate?", { flags: { 2: F_WH_DO } }),
+      t("So, | what | do | you | do | now?", "Tai | kuo | — | Jūs | dirbate | dabar?", "Tai kuo dabar dirbate?", { flags: { 2: F_WH_DO } }),
     ],
     not_job_ack: [t("Oh, | I | see.", "O, | aš | suprantu.", "O, suprantu.")],
     why_neg_ack: [t("Okay, | thanks | for | being | honest.", "Gerai, | ačiū, | kad | esate | {m:atviras|f:atvira}.", "Gerai, ačiū už atvirumą.")],
-    ask_start_when: [t("No | problem. | When | could | you | start, | then?", "Jokių | problemų. | Kada | galėtumėte | jūs | pradėti, | tada?", "Jokių problemų. Tai kada galėtumėte pradėti?")],
+    ask_start_when: [t("No | problem. | When | could | you | start, | then?", "Jokių | problemų. | Kada | galėtumėte | Jūs | pradėti, | tada?", "Jokių problemų. Tai kada galėtumėte pradėti?")],
     a_restroom: [t("It's | down the hall, | on the left.", "Jis yra | koridoriaus gale, | kairėje.", "Koridoriaus gale, kairėje.")],
     brooks_name: [t("I'm | Ms. | Brooks, | the | HR | manager.", "Aš esu | ponia | Bruks, | — | personalo | vadovė.", "Aš ponia Bruks, personalo vadovė.")],
-    ask_studied: [t("And | what | did | you | study?", "O | ką | — | jūs | studijavote?", "O ką studijavote?", { flags: { 2: F_WH_DID } })],
-    ask_job_before: [t("And | what | did | you | do | before?", "O | kuo | — | jūs | dirbote | anksčiau?", "O kuo dirbote anksčiau?", { flags: { 2: F_WH_DID } })],
+    ask_studied: [t("And | what | did | you | study?", "O | ką | — | Jūs | studijavote?", "O ką studijavote?", { flags: { 2: F_WH_DID } })],
+    ask_job_before: [t("And | what | did | you | do | before?", "O | kuo | — | Jūs | dirbote | anksčiau?", "O kuo dirbote anksčiau?", { flags: { 2: F_WH_DID } })],
     ask_years_job: [
-      t("How long | have | you | worked | as | {X.np}?", "Kiek laiko | — | jūs | dirbate | — | {X.np:ins}?", "Kiek laiko dirbate {X:ins}?", { flags: { 1: F_HAVE, 4: F_AS } }),
-      t("And | how long | have | you | been | {X.np}?", "O | kiek laiko | — | jūs | esate | {X.np:nom}?", "O kiek laiko esate {X:nom}?", { flags: { 2: F_HAVE } }),
+      t("How long | have | you | worked | as | {X.np}?", "Kiek laiko | — | Jūs | dirbate | — | {X.np:ins}?", "Kiek laiko dirbate {X:ins}?", { flags: { 1: F_HAVE, 4: F_AS } }),
+      t("And | how long | have | you | been | {X.np}?", "O | kiek laiko | — | Jūs | esate | {X.np:nom}?", "O kiek laiko esate {X:nom}?", { flags: { 2: F_HAVE } }),
     ],
     ask_years_field: [
-      t("And | how long | have | you | worked | in {X}?", "O | kiek laiko | — | jūs | dirbate | {X:loc}?", "O kiek laiko dirbate {X:loc}?", { flags: { 2: F_HAVE } }),
+      t("And | how long | have | you | worked | in {X}?", "O | kiek laiko | — | Jūs | dirbate | {X:loc}?", "O kiek laiko dirbate {X:loc}?", { flags: { 2: F_HAVE } }),
     ],
     ask_years_field2: [
-      t("And | how long | have | you | worked | in | {X}?", "O | kiek laiko | — | jūs | dirbate | — | {X:loc}?", "O kiek laiko dirbate {X:loc}?", { flags: { 2: F_HAVE, 5: F_IN } }),
+      t("And | how long | have | you | worked | in | {X}?", "O | kiek laiko | — | Jūs | dirbate | — | {X:loc}?", "O kiek laiko dirbate {X:loc}?", { flags: { 2: F_HAVE, 5: F_IN } }),
     ],
     ask_years_generic: [
-      t("And | how many | years | of | experience | do | you | have?", "O | kiek | metų | — | patirties | — | jūs | turite?", "O kiek metų patirties turite?",
+      t("And | how many | years | of | experience | do | you | have?", "O | kiek | metų | — | patirties | — | Jūs | turite?", "O kiek metų patirties turite?",
         { flags: { 3: "“of”: the genitive patirties carries it.", 5: F_WH_DO } }),
     ],
     job_echo: [
@@ -1285,21 +1285,21 @@ export const interview: SituationDef = {
     moved_ack: [t("Oh, | welcome!", "O, | sveiki atvykę!", "O, sveiki atvykę!")],
     english_good: [t("Your | English | is | very | good!", "Jūsų | anglų kalba | yra | labai | gera!", "Jūs labai gerai kalbate angliškai!")],
     what_know_help: [
-      t("Just | the | basics: | what | you | do | and | your | experience.", "Tik | — | svarbiausią: | ką | jūs | dirbate | ir | jūsų | patirtį.",
-        "Tik svarbiausią: kuo dirbate ir kokia jūsų patirtis."),
+      t("Just | the | basics: | what | you | do | and | your | experience.", "Tik | — | svarbiausią: | ką | Jūs | dirbate | ir | Jūsų | patirtį.",
+        "Tik svarbiausią: kuo dirbate ir kokia Jūsų patirtis."),
     ],
 
     // --- why a new job ------------------------------------------------------------------------------
     ask_leaving: [
-      t("So, | why | are | you | looking for | a | new | job?", "Taigi, | kodėl | — | jūs | ieškote | — | naujo | darbo?", "Taigi, kodėl ieškote naujo darbo?", { flags: { 2: F_PROG } }),
-      t("Why | did | you | leave | your | last | job?", "Kodėl | — | jūs | išėjote iš | savo | ankstesnio | darbo?", "Kodėl išėjote iš ankstesnio darbo?", { flags: { 1: F_WH_DID } }),
+      t("So, | why | are | you | looking for | a | new | job?", "Taigi, | kodėl | — | Jūs | ieškote | — | naujo | darbo?", "Taigi, kodėl ieškote naujo darbo?", { flags: { 2: F_PROG } }),
+      t("Why | did | you | leave | your | last | job?", "Kodėl | — | Jūs | išėjote iš | savo | ankstesnio | darbo?", "Kodėl išėjote iš ankstesnio darbo?", { flags: { 1: F_WH_DID } }),
     ],
     leaving_ack: [t("I | see.", "Aš | suprantu.", "Suprantu."), t("That | makes sense.", "Tai | suprantama.", "Suprantama.")],
 
     // --- why here --------------------------------------------------------------------------------------
     ask_why: [
-      t("So, | why | do | you | want | to work | here?", "Taigi, | kodėl | — | jūs | norite | dirbti | čia?", "Taigi, kodėl norite čia dirbti?", { flags: { 2: F_WH_DO } }),
-      t("Why | do | you | want | to work | at Brightline?", "Kodėl | — | jūs | norite | dirbti | „Brightline“?", "Kodėl norite dirbti „Brightline“?", { flags: { 1: F_WH_DO } }),
+      t("So, | why | do | you | want | to work | here?", "Taigi, | kodėl | — | Jūs | norite | dirbti | čia?", "Taigi, kodėl norite čia dirbti?", { flags: { 2: F_WH_DO } }),
+      t("Why | do | you | want | to work | at Brightline?", "Kodėl | — | Jūs | norite | dirbti | „Brightline“?", "Kodėl norite dirbti „Brightline“?", { flags: { 1: F_WH_DO } }),
     ],
     why_ack: [
       t("That's | great | to hear.", "Tai | puiku | girdėti.", "Malonu girdėti."),
@@ -1309,8 +1309,8 @@ export const interview: SituationDef = {
 
     // --- strengths ------------------------------------------------------------------------------------
     ask_strengths: [
-      t("What | are | your | greatest | strengths?", "Kokios | yra | jūsų | didžiausios | stiprybės?", "Kokios jūsų didžiausios stiprybės?"),
-      t("So, | what | are | your | strengths?", "Taigi, | kokios | yra | jūsų | stiprybės?", "Taigi, kokios jūsų stiprybės?"),
+      t("What | are | your | greatest | strengths?", "Kokios | yra | Jūsų | didžiausios | stiprybės?", "Kokios Jūsų didžiausios stiprybės?"),
+      t("So, | what | are | your | strengths?", "Taigi, | kokios | yra | Jūsų | stiprybės?", "Taigi, kokios Jūsų stiprybės?"),
     ],
     strength_ack: [
       t("That's | really | important | here.", "Tai | labai | svarbu | čia.", "Čia tai labai svarbu."),
@@ -1322,67 +1322,67 @@ export const interview: SituationDef = {
     s_people: [t("That's | important. | You'll work | with | a | lot | of clients.", "Tai | svarbu. | Jūs dirbsite | su | — | daugeliu | klientų.", "Tai svarbu. Dirbsite su daugeliu klientų.")],
     s_organized: [t("We | love | organized | people | here!", "Mes | labai mėgstame | organizuotus | žmones | čia!", "Čia labai mėgstame organizuotus žmones!")],
     strength_help: [
-      t("For example: | are | you | organized? | Good | with | people?", "Pavyzdžiui: | ar | jūs | {m:organizuotas|f:organizuota}? | {m:Geras|f:Gera} | su | žmonėmis?",
-        "Pavyzdžiui: ar jūs {m:organizuotas|f:organizuota}? Mokate bendrauti su žmonėmis?", { flags: { 1: F_ARE_Q } }),
+      t("For example: | are | you | organized? | Good | with | people?", "Pavyzdžiui: | ar | Jūs | {m:organizuotas|f:organizuota}? | {m:Geras|f:Gera} | su | žmonėmis?",
+        "Pavyzdžiui: ar Jūs {m:organizuotas|f:organizuota}? Mokate bendrauti su žmonėmis?", { flags: { 1: F_ARE_Q } }),
     ],
-    not_strength_ack: [t("Okay. | And | what | are | you | good | at?", "Gerai. | O | kuo | esate | jūs | {m:stiprus|f:stipri} | [kuo]?", "Gerai. O kuo jūs {m:stiprus|f:stipri}?",
+    not_strength_ack: [t("Okay. | And | what | are | you | good | at?", "Gerai. | O | kuo | esate | Jūs | {m:stiprus|f:stipri} | [kuo]?", "Gerai. O kuo Jūs {m:stiprus|f:stipri}?",
       { flags: { 6: "Stranded “at”: kuo (at the start) carries it." } })],
 
     // --- weaknesses ----------------------------------------------------------------------------------------
     ask_weakness: [
       t("And | what | about | weaknesses?", "O | kaip | dėl | silpnybių?", "O kaip dėl silpnybių?"),
-      t("And | what's | your | greatest | weakness?", "O | kokia yra | jūsų | didžiausia | silpnybė?", "O kokia jūsų didžiausia silpnybė?"),
-      t("And | your | weaknesses?", "O | jūsų | silpnybės?", "O jūsų silpnybės?"),
+      t("And | what's | your | greatest | weakness?", "O | kokia yra | Jūsų | didžiausia | silpnybė?", "O kokia Jūsų didžiausia silpnybė?"),
+      t("And | your | weaknesses?", "O | Jūsų | silpnybės?", "O Jūsų silpnybės?"),
     ],
     weakness_ack: [
-      t("Thank | you | for | being | honest.", "Dėkoju | jums, | kad | esate | {m:atviras|f:atvira}.", "Ačiū už atvirumą."),
-      t("I | appreciate | your | honesty.", "Aš | vertinu | jūsų | atvirumą.", "Vertinu jūsų atvirumą."),
-      t("Okay, | thank | you | for | sharing | that.", "Gerai, | dėkoju | jums, | kad | pasidalijote | tuo.", "Gerai, ačiū, kad pasidalijote."),
+      t("Thank | you | for | being | honest.", "Dėkoju | Jums, | kad | esate | {m:atviras|f:atvira}.", "Ačiū už atvirumą."),
+      t("I | appreciate | your | honesty.", "Aš | vertinu | Jūsų | atvirumą.", "Vertinu Jūsų atvirumą."),
+      t("Okay, | thank | you | for | sharing | that.", "Gerai, | dėkoju | Jums, | kad | pasidalijote | tuo.", "Gerai, ačiū, kad pasidalijote."),
     ],
     english_ack: [
       t("Your | English | is | very | good! | And | it'll | only | get better | here.", "Jūsų | anglų kalba | yra | labai | gera! | Ir | ji | tik | gerės | čia.",
         "Jūs labai gerai kalbate angliškai! O čia kalba tik gerės.", { flags: { 6: "“'ll” (will): the future ending of gerės carries it." } }),
     ],
     ask_improve: [
-      t("And | how | are | you | working on | that?", "O | kaip | — | jūs | stengiatės pagerinti | tai?", "O kaip stengiatės tai pagerinti?", { flags: { 2: F_PROG } }),
+      t("And | how | are | you | working on | that?", "O | kaip | — | Jūs | stengiatės pagerinti | tai?", "O kaip stengiatės tai pagerinti?", { flags: { 2: F_PROG } }),
     ],
     improve_ack: [t("That's | great.", "Tai | puiku.", "Puiku."), t("Good | idea.", "Gera | mintis.", "Gera mintis.")],
     no_weak_1: [t("Ha! | Everyone | has | at least | one.", "Cha! | Kiekvienas | turi | bent | vieną.", "Cha! Kiekvienas turi bent vieną.")],
     ask_improve_what: [
-      t("What's | something | you'd | like | to improve?", "Kas yra | tai, | ką jūs | norėtumėte | patobulinti?", "Ką norėtumėte patobulinti?", { flags: { 2: F_ID } }),
+      t("What's | something | you'd | like | to improve?", "Kas yra | tai, | ką Jūs | norėtumėte | patobulinti?", "Ką norėtumėte patobulinti?", { flags: { 2: F_ID } }),
     ],
     no_weak_2: [t("Fair enough!", "Na, gerai!", "Na, gerai!")],
 
     // --- five years --------------------------------------------------------------------------------------
     ask_future: [
-      t("Where | do | you | see | yourself | in | five | years?", "Kur | — | jūs | matote | save | po | penkerių | metų?", "Kur save matote po penkerių metų?", { flags: { 1: F_WH_DO } }),
-      t("So, | where | do | you | see | yourself | in | five | years?", "Taigi, | kur | — | jūs | matote | save | po | penkerių | metų?", "Taigi, kur save matote po penkerių metų?", { flags: { 2: F_WH_DO } }),
+      t("Where | do | you | see | yourself | in | five | years?", "Kur | — | Jūs | matote | save | po | penkerių | metų?", "Kur save matote po penkerių metų?", { flags: { 1: F_WH_DO } }),
+      t("So, | where | do | you | see | yourself | in | five | years?", "Taigi, | kur | — | Jūs | matote | save | po | penkerių | metų?", "Taigi, kur save matote po penkerių metų?", { flags: { 2: F_WH_DO } }),
     ],
     future_ack: [t("I | like | that.", "Man | patinka | tai.", "Man tai patinka."), t("That | sounds | great.", "Tai | skamba | puikiai.", "Skamba puikiai.")],
     future_away_ack: [t("Okay, | thanks | for | being | honest.", "Gerai, | ačiū, | kad | esate | {m:atviras|f:atvira}.", "Gerai, ačiū už atvirumą.")],
     future_help: [
-      t("That's | okay. | What | would | you | like | to do | here?", "Tai | gerai. | Ką | — | jūs | norėtumėte | veikti | čia?", "Nieko tokio. Ką norėtumėte čia veikti?", { flags: { 3: F_WOULD } }),
+      t("That's | okay. | What | would | you | like | to do | here?", "Tai | gerai. | Ką | — | Jūs | norėtumėte | veikti | čia?", "Nieko tokio. Ką norėtumėte čia veikti?", { flags: { 3: F_WOULD } }),
     ],
 
     // --- teamwork --------------------------------------------------------------------------------------------
     ask_teamwork: [
-      t("Can | you | tell | me | about | a | time | you | worked | on a team?", "Ar galite | jūs | papasakoti | man | apie | — | atvejį, kai | jūs | dirbote | komandoje?",
+      t("Can | you | tell | me | about | a | time | you | worked | on a team?", "Ar galite | Jūs | papasakoti | man | apie | — | atvejį, kai | Jūs | dirbote | komandoje?",
         "Ar galite papasakoti apie atvejį, kai dirbote komandoje?"),
-      t("Can | you | give | me | an | example | of teamwork?", "Ar galite | jūs | pateikti | man | — | pavyzdį | komandinio darbo?", "Ar galite pateikti komandinio darbo pavyzdį?"),
+      t("Can | you | give | me | an | example | of teamwork?", "Ar galite | Jūs | pateikti | man | — | pavyzdį | komandinio darbo?", "Ar galite pateikti komandinio darbo pavyzdį?"),
     ],
     teamwork_ack: [
       t("That's | a | great | example.", "Tai yra | — | puikus | pavyzdys.", "Tai puikus pavyzdys."),
       t("Sounds | like | a | great | team!", "Skamba | kaip | — | puiki | komanda!", "Skamba kaip puiki komanda!"),
-      t("Thank | you, | that's | really | helpful.", "Dėkoju | jums, | tai | tikrai | naudinga.", "Ačiū, tai tikrai naudinga."),
+      t("Thank | you, | that's | really | helpful.", "Dėkoju | Jums, | tai | tikrai | naudinga.", "Ačiū, tai tikrai naudinga."),
     ],
-    no_team_ack: [t("That's | okay. | Thank | you.", "Tai | gerai. | Dėkoju | jums.", "Nieko tokio. Ačiū.")],
+    no_team_ack: [t("That's | okay. | Thank | you.", "Tai | gerai. | Dėkoju | Jums.", "Nieko tokio. Ačiū.")],
     example_help: [
-      t("For example, | a | project | you | did | with | your | team.", "Pavyzdžiui, | — | projektas, kurį | jūs | atlikote | su | savo | komanda.",
+      t("For example, | a | project | you | did | with | your | team.", "Pavyzdžiui, | — | projektas, kurį | Jūs | atlikote | su | savo | komanda.",
         "Pavyzdžiui, projektas, kurį atlikote su savo komanda."),
     ],
 
     // --- languages -------------------------------------------------------------------------------------------
-    ask_languages: [t("What | languages | do | you | speak?", "Kokiomis | kalbomis | — | jūs | kalbate?", "Kokiomis kalbomis kalbate?", { flags: { 2: F_WH_DO } })],
+    ask_languages: [t("What | languages | do | you | speak?", "Kokiomis | kalbomis | — | Jūs | kalbate?", "Kokiomis kalbomis kalbate?", { flags: { 2: F_WH_DO } })],
     languages_ack: [
       t("That's | great! | That | could | be | really | useful | here.", "Tai | puiku! | Tai | galėtų | būti | labai | naudinga | čia.", "Puiku! Čia tai galėtų būti labai naudinga."),
     ],
@@ -1390,21 +1390,21 @@ export const interview: SituationDef = {
 
     // --- work authorization --------------------------------------------------------------------------------------
     ask_authorized: [
-      t("Are | you | authorized | to work | in the U.S.?", "Ar | jūs | turite teisę | dirbti | JAV?", "Ar turite teisę dirbti JAV?",
+      t("Are | you | authorized | to work | in the U.S.?", "Ar | Jūs | turite teisę | dirbti | JAV?", "Ar turite teisę dirbti JAV?",
         { flags: { 0: "“Are” in a yes/no question = the particle ar; turite teisę (under “authorized”) takes over the copula." } }),
     ],
-    auth_yes_ack: [t("Great, | thank | you.", "Puiku, | dėkoju | jums.", "Puiku, ačiū.")],
+    auth_yes_ack: [t("Great, | thank | you.", "Puiku, | dėkoju | Jums.", "Puiku, ačiū.")],
     auth_pending_ack: [t("Okay, | thanks | for | letting | me | know.", "Gerai, | ačiū, | kad | pranešėte | man | —.", "Gerai, ačiū, kad pranešėte.", { flags: { 5: F_KNOW } })],
 
     // --- salary ----------------------------------------------------------------------------------------------------
     ask_salary: [
-      t("What | are | your | salary | expectations?", "Kokie | yra | jūsų | atlyginimo | lūkesčiai?", "Kokie jūsų atlyginimo lūkesčiai?"),
-      t("And | what | salary | are | you | looking for?", "O | kokio | atlyginimo | — | jūs | tikitės?", "O kokio atlyginimo tikitės?", { flags: { 3: F_PROG } }),
+      t("What | are | your | salary | expectations?", "Kokie | yra | Jūsų | atlyginimo | lūkesčiai?", "Kokie Jūsų atlyginimo lūkesčiai?"),
+      t("And | what | salary | are | you | looking for?", "O | kokio | atlyginimo | — | Jūs | tikitės?", "O kokio atlyginimo tikitės?", { flags: { 3: F_PROG } }),
     ],
     salary_noted: [
-      t("Okay, | thank | you. | I'll note | that | down.", "Gerai, | dėkoju | jums. | Užsirašysiu | tai | —.", "Gerai, ačiū. Užsirašysiu.",
+      t("Okay, | thank | you. | I'll note | that | down.", "Gerai, | dėkoju | Jums. | Užsirašysiu | tai | —.", "Gerai, ačiū. Užsirašysiu.",
         { flags: { 5: "“down” (note … down): the prefix už- of užsirašysiu carries it." } }),
-      t("Okay, | that's | helpful. | Thank | you.", "Gerai, | tai | naudinga. | Dėkoju | jums.", "Gerai, tai naudinga. Ačiū."),
+      t("Okay, | that's | helpful. | Thank | you.", "Gerai, | tai | naudinga. | Dėkoju | Jums.", "Gerai, tai naudinga. Ačiū."),
     ],
     salary_range: [
       t("The | range | for | this | position | is | $48,000 | to | $55,000 | a | year, | depending on | experience.",
@@ -1413,41 +1413,41 @@ export const interview: SituationDef = {
         { say: "The range for this position is forty-eight to fifty-five thousand a year, depending on experience.",
           flags: { 2: "“for”: the dative šioms pareigoms carries it.", 9: F_A_PER } }),
     ],
-    range_ok_q: [t("Does | that | work | for you?", "Ar | tai | tinka | jums?", "Ar jums tai tinka?", { flags: { 0: F_DOES_Q } })],
+    range_ok_q: [t("Does | that | work | for you?", "Ar | tai | tinka | Jums?", "Ar Jums tai tinka?", { flags: { 0: F_DOES_Q } })],
     range_later: [t("Okay, | we | can | talk | about | it | later.", "Gerai, | mes | galime | pasikalbėti | apie | tai | vėliau.", "Gerai, apie tai galėsime pasikalbėti vėliau.")],
     good_to_know: [t("Okay, | good | to know.", "Gerai, | gera | žinoti.", "Gerai, gera žinoti.")],
 
     // --- start date ------------------------------------------------------------------------------------------------------
     ask_start: [
-      t("When | can | you | start?", "Kada | galite | jūs | pradėti?", "Kada galite pradėti?"),
-      t("And | if | we | offer | you | the | job, | when | could | you | start?", "O | jei | mes | pasiūlysime | jums | — | darbą, | kada | galėtumėte | jūs | pradėti?",
-        "O jei pasiūlysime jums darbą, kada galėtumėte pradėti?"),
+      t("When | can | you | start?", "Kada | galite | Jūs | pradėti?", "Kada galite pradėti?"),
+      t("And | if | we | offer | you | the | job, | when | could | you | start?", "O | jei | mes | pasiūlysime | Jums | — | darbą, | kada | galėtumėte | Jūs | pradėti?",
+        "O jei pasiūlysime Jums darbą, kada galėtumėte pradėti?"),
     ],
     start_ack: [t("Perfect.", "Puiku.", "Puiku."), t("Great, | that | works.", "Puiku, | tai | tinka.", "Puiku, tinka.")],
     notice_ack: [t("Of course, | that's | completely | normal.", "Žinoma, | tai | visiškai | normalu.", "Žinoma, tai visiškai normalu.")],
 
     // --- why hire you ------------------------------------------------------------------------------------------------------
     ask_hire: [
-      t("So, | why | should | we | hire | you?", "Taigi, | kodėl | turėtume | mes | priimti į darbą | jus?", "Taigi, kodėl turėtume priimti jus į darbą?"),
-      t("And | finally: | why | should | we | hire | you?", "Ir | galiausiai: | kodėl | turėtume | mes | priimti į darbą | jus?", "Ir galiausiai: kodėl turėtume priimti jus į darbą?"),
+      t("So, | why | should | we | hire | you?", "Taigi, | kodėl | turėtume | mes | priimti į darbą | Jus?", "Taigi, kodėl turėtume priimti Jus į darbą?"),
+      t("And | finally: | why | should | we | hire | you?", "Ir | galiausiai: | kodėl | turėtume | mes | priimti į darbą | Jus?", "Ir galiausiai: kodėl turėtume priimti Jus į darbą?"),
     ],
-    ask_hire_again: [t("So, | why | should | we | hire | you?", "Taigi, | kodėl | turėtume | mes | priimti į darbą | jus?", "Taigi, kodėl turėtume priimti jus į darbą?")],
+    ask_hire_again: [t("So, | why | should | we | hire | you?", "Taigi, | kodėl | turėtume | mes | priimti į darbą | Jus?", "Taigi, kodėl turėtume priimti Jus į darbą?")],
     hire_ack: [
-      t("Thank | you. | That's | very | clear.", "Dėkoju | jums. | Tai | labai | aišku.", "Ačiū. Labai aiškiai pasakyta."),
+      t("Thank | you. | That's | very | clear.", "Dėkoju | Jums. | Tai | labai | aišku.", "Ačiū. Labai aiškiai pasakyta."),
       t("I | like | that | answer.", "Man | patinka | tas | atsakymas.", "Man patinka šis atsakymas."),
     ],
 
     // --- the learner's questions -------------------------------------------------------------------------------------------
     ask_questions: [
-      t("Do | you | have | any | questions | for me?", "Ar | jūs | turite | kokių nors | klausimų | man?", "Ar turite man klausimų?", { flags: { 0: F_DO_Q } }),
-      t("So, | what | questions | do | you | have | for me?", "Taigi, | kokių | klausimų | — | jūs | turite | man?", "Taigi, kokių klausimų turite man?", { flags: { 3: F_WH_DO } }),
+      t("Do | you | have | any | questions | for me?", "Ar | Jūs | turite | kokių nors | klausimų | man?", "Ar turite man klausimų?", { flags: { 0: F_DO_Q } }),
+      t("So, | what | questions | do | you | have | for me?", "Taigi, | kokių | klausimų | — | Jūs | turite | man?", "Taigi, kokių klausimų turite man?", { flags: { 3: F_WH_DO } }),
     ],
     ask_questions_other: [
-      t("Do | you | have | any | other | questions | for me?", "Ar | jūs | turite | kokių nors | kitų | klausimų | man?", "Ar turite man daugiau klausimų?", { flags: { 0: F_DO_Q } }),
+      t("Do | you | have | any | other | questions | for me?", "Ar | Jūs | turite | kokių nors | kitų | klausimų | man?", "Ar turite man daugiau klausimų?", { flags: { 0: F_DO_Q } }),
     ],
     ask_more_q: [
       t("Any | other | questions?", "Kokių nors | kitų | klausimų?", "Dar klausimų turite?"),
-      t("What | else | would | you | like | to know?", "Ką | dar | — | jūs | norėtumėte | žinoti?", "Ką dar norėtumėte sužinoti?", { flags: { 2: F_WOULD } }),
+      t("What | else | would | you | like | to know?", "Ką | dar | — | Jūs | norėtumėte | žinoti?", "Ką dar norėtumėte sužinoti?", { flags: { 2: F_WOULD } }),
       t("Anything | else?", "Ką nors | daugiau?", "Dar kas nors?"),
     ],
     go_ahead: [t("Sure, | go ahead.", "Žinoma, | klauskite.", "Žinoma, klauskite."), t("Of course!", "Žinoma!", "Žinoma!")],
@@ -1455,7 +1455,7 @@ export const interview: SituationDef = {
       t("We | work | nine | to | five, | Monday | to | Friday.", "Mes | dirbame | nuo devynių | iki | penkių, | nuo pirmadienio | iki | penktadienio.",
         "Dirbame nuo devynių iki penkių, nuo pirmadienio iki penktadienio."),
     ],
-    a_lunch: [t("And | you | get | an | hour | for lunch.", "Ir | jūs | turite | — | valandą | pietums.", "Ir turite valandą pietums.")],
+    a_lunch: [t("And | you | get | an | hour | for lunch.", "Ir | Jūs | turite | — | valandą | pietums.", "Ir turite valandą pietums.")],
     a_training: [
       t("Yes! | You'll have | two | weeks | of | training | with | a | mentor.", "Taip! | Jūs turėsite | dvi | savaites | — | mokymų | su | — | mentoriumi.",
         "Taip! Turėsite dviejų savaičių mokymus su mentoriumi.", { flags: { 4: "“of”: the genitive mokymų carries it." } }),
@@ -1496,15 +1496,15 @@ export const interview: SituationDef = {
       "Kuriame svetaines ir programėles vietos verslams.", { flags: { 5: "“for”: the dative verslams carries it." } })],
     a_like: [t("The | people! | Everyone | here | is | really | friendly.", "— | Žmonės! | Visi | čia | yra | tikrai | draugiški.", "Žmonės! Visi čia labai draugiški.")],
     a_unknown: [
-      t("Good | question! | I'll check | and | let | you | know.", "Geras | klausimas! | Pasitikslinsiu | ir | pranešiu | jums | —.", "Geras klausimas! Pasitikslinsiu ir jums pranešiu.",
+      t("Good | question! | I'll check | and | let | you | know.", "Geras | klausimas! | Pasitikslinsiu | ir | pranešiu | Jums | —.", "Geras klausimas! Pasitikslinsiu ir Jums pranešiu.",
         { flags: { 6: "“know” (let … know): pranešiu (under “let”) carries it." } }),
     ],
     great_questions: [t("Great | questions!", "Puikūs | klausimai!", "Puikūs klausimai!")],
 
     // --- closing -------------------------------------------------------------------------------------------------------
     closing: [
-      t("Well, | thank | you | so much | for | coming in | today.", "Na, | dėkoju | jums | labai, | kad | atvykote | šiandien.", "Na, labai ačiū, kad šiandien atvykote."),
-      t("Thank | you | so much | for | your | time | today.", "Dėkoju | jums | labai | už | jūsų | laiką | šiandien.", "Labai ačiū, kad šiandien skyrėte laiko."),
+      t("Well, | thank | you | so much | for | coming in | today.", "Na, | dėkoju | Jums | labai, | kad | atvykote | šiandien.", "Na, labai ačiū, kad šiandien atvykote."),
+      t("Thank | you | so much | for | your | time | today.", "Dėkoju | Jums | labai | už | Jūsų | laiką | šiandien.", "Labai ačiū, kad šiandien skyrėte laiko."),
     ],
     closing_next: [
       t("We'll be in touch | soon.", "Susisieksime | netrukus.", "Netrukus susisieksime."),
@@ -1515,26 +1515,26 @@ export const interview: SituationDef = {
       t("My | pleasure. | Have | a | great | day!", "Mano | malonumas. | Linkiu | — | puikios | dienos!", "Man malonu. Puikios dienos!"),
     ],
     closing_bye: [
-      t("It was | nice | to meet | you. | Have | a | great | day!", "Buvo | malonu | susipažinti | su jumis. | Linkiu | — | puikios | dienos!", "Buvo malonu susipažinti. Puikios dienos!"),
+      t("It was | nice | to meet | you. | Have | a | great | day!", "Buvo | malonu | susipažinti | su Jumis. | Linkiu | — | puikios | dienos!", "Buvo malonu susipažinti. Puikios dienos!"),
     ],
     closing_nice: [
-      t("It was | nice | to meet | you | too. | Have | a | great | day!", "Buvo | malonu | susipažinti | su jumis | taip pat. | Linkiu | — | puikios | dienos!",
+      t("It was | nice | to meet | you | too. | Have | a | great | day!", "Buvo | malonu | susipažinti | su Jumis | taip pat. | Linkiu | — | puikios | dienos!",
         "Man taip pat buvo malonu susipažinti. Puikios dienos!"),
     ],
 
     // --- the job offer (twist) ------------------------------------------------------------------------------------------
     offer: [
-      t("Actually, | I | don't need | to wait. | We'd | like | to offer | you | the | job!", "Tiesą sakant, | man | nereikia | laukti. | Mes | norėtume | pasiūlyti | jums | — | darbą!",
-        "Tiesą sakant, man nereikia laukti. Norėtume jums pasiūlyti šį darbą!", { flags: { 4: F_ID } }),
+      t("Actually, | I | don't need | to wait. | We'd | like | to offer | you | the | job!", "Tiesą sakant, | man | nereikia | laukti. | Mes | norėtume | pasiūlyti | Jums | — | darbą!",
+        "Tiesą sakant, man nereikia laukti. Norėtume Jums pasiūlyti šį darbą!", { flags: { 4: F_ID } }),
     ],
     offer_yes: [t("Wonderful! | Welcome | to | the | team!", "Nuostabu! | Sveiki atvykę | į | — | komandą!", "Nuostabu! Sveiki prisijungę prie komandos!")],
-    offer_contract: [t("We'll send | you | the | contract | today.", "Mes atsiųsime | jums | — | sutartį | šiandien.", "Sutartį atsiųsime jums šiandien.")],
+    offer_contract: [t("We'll send | you | the | contract | today.", "Mes atsiųsime | Jums | — | sutartį | šiandien.", "Sutartį atsiųsime Jums šiandien.")],
     offer_think: [
       t("Of course. | Take your time, | and | let | us | know | by | Friday.", "Žinoma. | Neskubėkite, | ir | praneškite | mums | — | iki | penktadienio.",
         "Žinoma. Neskubėkite ir praneškite mums iki penktadienio.", { flags: { 5: F_KNOW } }),
     ],
-    offer_no: [t("Oh, | I | see. | Well, | thank | you | for | your | time.", "O, | aš | suprantu. | Na, | dėkoju | jums | už | jūsų | laiką.", "O, suprantu. Na, ačiū už jūsų laiką.")],
-    offer_again: [t("So, | what | do | you | say?", "Tai | ką | — | jūs | sakote?", "Tai ką sakote?", { flags: { 2: F_WH_DO } })],
+    offer_no: [t("Oh, | I | see. | Well, | thank | you | for | your | time.", "O, | aš | suprantu. | Na, | dėkoju | Jums | už | Jūsų | laiką.", "O, suprantu. Na, ačiū už Jūsų laiką.")],
+    offer_again: [t("So, | what | do | you | say?", "Tai | ką | — | Jūs | sakote?", "Tai ką sakote?", { flags: { 2: F_WH_DO } })],
 
     // --- phone call (twist) ------------------------------------------------------------------------------------------------
     phone: [
@@ -1542,16 +1542,16 @@ export const interview: SituationDef = {
         "O, labai atsiprašau, turiu atsiliepti į šį skambutį. Tik vieną sekundę.", { flags: { 1: "“'m” (am): atsiprašau is a verb, so the copula has no word here." } }),
     ],
     phone_back: [
-      t("Thank | you | for | waiting. | Sorry | about | that!", "Dėkoju | jums, | kad | palaukėte. | Atsiprašau | dėl | to!", "Ačiū, kad palaukėte. Atsiprašau!"),
+      t("Thank | you | for | waiting. | Sorry | about | that!", "Dėkoju | Jums, | kad | palaukėte. | Atsiprašau | dėl | to!", "Ačiū, kad palaukėte. Atsiprašau!"),
       t("Sorry | about | that! | Where | were | we?", "Atsiprašau | dėl | to! | Kur | sustojome | mes?", "Atsiprašau! Kur mes sustojome?"),
     ],
 
     // --- side moves -------------------------------------------------------------------------------------------------------------
     nervous_ok: [
-      t("Don't worry, | you're doing | great!", "Nesijaudinkite, | jums sekasi | puikiai!", "Nesijaudinkite, jums puikiai sekasi!"),
+      t("Don't worry, | you're doing | great!", "Nesijaudinkite, | Jums sekasi | puikiai!", "Nesijaudinkite, Jums puikiai sekasi!"),
       t("That's | totally | normal. | You're doing | great.", "Tai | visiškai | normalu. | Jums sekasi | puikiai.", "Tai visiškai normalu. Jums puikiai sekasi."),
     ],
-    resume_thanks: [t("Thank | you! | I | have | it | right here.", "Dėkoju | jums! | Aš | turiu | jį | čia pat.", "Ačiū! Jis jau pas mane.")],
+    resume_thanks: [t("Thank | you! | I | have | it | right here.", "Dėkoju | Jums! | Aš | turiu | jį | čia pat.", "Ačiū! Jis jau pas mane.")],
     ack: [t("Okay.", "Gerai.", "Gerai."), t("I | see.", "Aš | suprantu.", "Suprantu.")],
   },
 
@@ -1635,9 +1635,9 @@ export const interview: SituationDef = {
     no_q: {
       lt: "Pasakyti, kad klausimų nebeturi",
       items: [
-        { id: "q_none", s: t("No, | I | think | you've | covered | everything.", "Ne, | aš | manau, | jūs | aptarėte | viską.", "Ne, manau, jūs viską aptarėte.",
+        { id: "q_none", s: t("No, | I | think | you've | covered | everything.", "Ne, | aš | manau, | Jūs | aptarėte | viską.", "Ne, manau, Jūs viską aptarėte.",
           { flags: { 3: "Perfect “'ve” has no separate word: the past aptarėte carries it." } }) },
-        { id: "q_none_all", s: t("No, | that's | all. | Thank | you.", "Ne, | tai yra | viskas. | Dėkoju | jums.", "Ne, tai viskas. Ačiū.") },
+        { id: "q_none_all", s: t("No, | that's | all. | Thank | you.", "Ne, | tai yra | viskas. | Dėkoju | Jums.", "Ne, tai viskas. Ačiū.") },
       ],
     },
     about_job: aboutGroup(),
@@ -1676,7 +1676,7 @@ export const interview: SituationDef = {
     why: {
       lt: "Pasakyti, kodėl nori čia dirbti",
       items: [
-        { id: "w_like", s: t("I | really | like | your | company.", "Man | labai | patinka | jūsų | įmonė.", "Man labai patinka jūsų įmonė.") },
+        { id: "w_like", s: t("I | really | like | your | company.", "Man | labai | patinka | Jūsų | įmonė.", "Man labai patinka Jūsų įmonė.") },
         { id: "w_grow", s: t("I | want | to grow | and | learn | new | things.", "Aš | noriu | augti | ir | mokytis | naujų | dalykų.", "Noriu augti ir mokytis naujų dalykų.") },
         { id: "w_challenge", s: t("I'm | ready | for | a | new | challenge.", "Aš esu | {m:pasiruošęs|f:pasiruošusi} | — | — | naujam | iššūkiui.",
           "Esu {m:pasiruošęs|f:pasiruošusi} naujam iššūkiui.", { flags: { 2: "“for”: the dative naujam iššūkiui carries it." } }) },
@@ -1721,7 +1721,7 @@ export const interview: SituationDef = {
     future: {
       lt: "Pasakyti, kur save matai po penkerių metų",
       items: [
-        { id: "fu_here", s: t("Right | here, | with | you.", "Būtent | čia, | su | jumis.", "Būtent čia, su jumis.") },
+        { id: "fu_here", s: t("Right | here, | with | you.", "Būtent | čia, | su | Jumis.", "Būtent čia, su Jumis.") },
         { id: "fu_lead", s: t("I'd like | to lead | a | team.", "Norėčiau | vadovauti | — | komandai.", "Norėčiau vadovauti komandai.") },
         { id: "fu_grow", s: t("I | hope | to grow | with | the | company.", "Aš | tikiuosi | augti | kartu su | — | įmone.", "Tikiuosi augti kartu su įmone.") },
         { id: "fu_management", s: t("In | a | management | position.", "— | — | Vadovaujančiose | pareigose.", "Vadovaujančiose pareigose.",
@@ -1790,7 +1790,7 @@ export const interview: SituationDef = {
           "Nes esu {m:organizuotas|f:organizuota} ir greitai mokausi.") },
         { id: "h_right", s: t("I'm | the | right | person | for | this | job.", "Aš esu | — | tinkamas | žmogus | — | šiam | darbui.", "Esu tinkamas žmogus šiam darbui.",
           { flags: { 4: "“for”: the dative šiam darbui carries it." } }) },
-        { id: "h_chance", s: t("Give | me | a | chance, | and | you'll see!", "Suteikite | man | — | galimybę, | ir | jūs pamatysite!", "Suteikite man galimybę, ir pamatysite!") },
+        { id: "h_chance", s: t("Give | me | a | chance, | and | you'll see!", "Suteikite | man | — | galimybę, | ir | Jūs pamatysite!", "Suteikite man galimybę, ir pamatysite!") },
       ],
     },
     ask_them: {
@@ -1820,17 +1820,17 @@ export const interview: SituationDef = {
     closing: {
       lt: "Padėkoti ir atsisveikinti",
       items: [
-        { id: "c_thanks_time", s: t("Thank | you | for | your | time.", "Dėkoju | jums | už | jūsų | laiką.", "Ačiū, kad skyrėte laiko.") },
-        { id: "c_nice_meet", s: t("It was | nice | to meet | you.", "Buvo | malonu | susipažinti | su jumis.", "Buvo malonu susipažinti.") },
-        { id: "c_opportunity", s: t("Thank | you | for | the | opportunity.", "Dėkoju | jums | už | — | galimybę.", "Ačiū už galimybę.") },
-        { id: "c_look_forward", s: t("I | look forward | to | hearing | from | you.", "Aš | laukiu | — | žinių | iš | jūsų.", "Lauksiu žinių iš jūsų.",
+        { id: "c_thanks_time", s: t("Thank | you | for | your | time.", "Dėkoju | Jums | už | Jūsų | laiką.", "Ačiū, kad skyrėte laiko.") },
+        { id: "c_nice_meet", s: t("It was | nice | to meet | you.", "Buvo | malonu | susipažinti | su Jumis.", "Buvo malonu susipažinti.") },
+        { id: "c_opportunity", s: t("Thank | you | for | the | opportunity.", "Dėkoju | Jums | už | — | galimybę.", "Ačiū už galimybę.") },
+        { id: "c_look_forward", s: t("I | look forward | to | hearing | from | you.", "Aš | laukiu | — | žinių | iš | Jūsų.", "Lauksiu žinių iš Jūsų.",
           { flags: { 2: "“to”: laukti takes the genitive (žinių), so “to” has no word." } }) },
       ],
     },
     offer: {
       lt: "Atsakyti į darbo pasiūlymą",
       items: [
-        { id: "o_accept", s: t("Thank | you! | I | accept!", "Dėkoju | jums! | Aš | sutinku!", "Ačiū! Sutinku!") },
+        { id: "o_accept", s: t("Thank | you! | I | accept!", "Dėkoju | Jums! | Aš | sutinku!", "Ačiū! Sutinku!") },
         { id: "o_wonderful", s: t("That's | wonderful | news!", "Tai | nuostabi | žinia!", "Kokia nuostabi žinia!") },
         { id: "o_think", s: t("Can | I | think | about | it?", "Ar galiu | aš | pagalvoti | apie | tai?", "Ar galiu pagalvoti?") },
       ],
@@ -1839,7 +1839,7 @@ export const interview: SituationDef = {
       lt: "Jei jaudiniesi ar nesupratai klausimo",
       items: [
         { id: "x_nervous", s: t("Sorry, | I'm | a little | nervous.", "Atsiprašau, | aš esu | truputį | {m:susijaudinęs|f:susijaudinusi}.", "Atsiprašau, truputį jaudinuosi.") },
-        { id: "c_repeat", s: t("Could | you | repeat | the | question, | please?", "Ar galėtumėte | jūs | pakartoti | — | klausimą, | prašau?", "Ar galėtumėte pakartoti klausimą?") },
+        { id: "c_repeat", s: t("Could | you | repeat | the | question, | please?", "Ar galėtumėte | Jūs | pakartoti | — | klausimą, | prašau?", "Ar galėtumėte pakartoti klausimą?") },
         { id: "x_resume", s: t("Here's | my | résumé.", "Štai | mano | gyvenimo aprašymas.", "Štai mano gyvenimo aprašymas.") },
       ],
     },

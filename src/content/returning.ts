@@ -20,8 +20,8 @@ export const RETURNING_HINTS: Record<string, HintGroup> = {
     again(t("Is | the | car | still | for sale?", "Ar | — | automobilis | vis dar | parduodamas?", "Ar automobilis dar parduodamas?"), true),
   ]),
   return_kitchen: group("Vėl paprašyti šefo paragauti", [
-    again(t("Could | you | taste | this?", "Ar galėtumėte | jūs | paragauti | šito?", "Ar galėtumėte paragauti?")),
-    again(t("I'd love | your | feedback.", "Labai norėčiau | jūsų | pastabų.", "Labai norėčiau išgirsti jūsų pastabas."), true),
+    again(t("Could | you | taste | this?", "Ar galėtumėte | Jūs | paragauti | šito?", "Ar galėtumėte paragauti?")),
+    again(t("I'd love | your | feedback.", "Labai norėčiau | Jūsų | pastabų.", "Labai norėčiau išgirsti Jūsų pastabas."), true),
   ]),
   return_review: group("Atsakyti, kaip jautiesi prieš šį pokalbį", [
     again(t("I'm | fine, | thanks.", "Man | gerai, | ačiū.", "Man gerai, ačiū.")),
@@ -45,7 +45,7 @@ export const RETURNING_HINTS: Record<string, HintGroup> = {
   ]),
   return_visitor: group("Padėkoti ir pasakyti, ko reikia šį kartą", [
     t("Thanks! | Could | I | have | a | map, | please?", "Ačiū! | Ar galėčiau | aš | gauti | — | žemėlapį, | prašau?", "Ačiū! Ar galėčiau gauti žemėlapį?"),
-    t("Thank | you. | How | do | I | get | to | Sunny Cup?", "Dėkoju | jums. | Kaip | — | man | nueiti | į | „Sunny Cup“?", "Ačiū! Kaip nueiti į „Sunny Cup“?"),
+    t("Thank | you. | How | do | I | get | to | Sunny Cup?", "Dėkoju | Jums. | Kaip | — | man | nueiti | į | „Sunny Cup“?", "Ačiū! Kaip nueiti į „Sunny Cup“?"),
   ]),
   return_cafe: group("Pasisveikinti dar kartą ir užsisakyti", [
     again(t("I'll have | a | latte, | please.", "Užsisakysiu | — | latę, | prašau.", "Norėčiau latės.")),
@@ -70,7 +70,7 @@ export const RETURNING_HINTS: Record<string, HintGroup> = {
   ]),
   return_salon: group("Pasakyti, ar jau užsirašei į kirpyklą", [
     again(t("I | have | an | appointment | at | three.", "Aš | turiu | — | vizitą | — | trečią.", "Esu {m:užsirašęs|f:užsirašiusi} trečiai valandai.")),
-    again(t("Do | you | take | walk-ins?", "Ar | jūs | priimate | neužsirašiusius?", "Ar priimate neužsirašiusius?"), true),
+    again(t("Do | you | take | walk-ins?", "Ar | Jūs | priimate | neužsirašiusius?", "Ar priimate neužsirašiusius?"), true),
   ]),
   return_bank: group("Pasakyti, kokios banko paslaugos reikia dabar", [
     again(t("I'd like | to send | money | home.", "Norėčiau | išsiųsti | pinigų | namo.", "Norėčiau išsiųsti pinigų namo.")),
