@@ -550,8 +550,9 @@ export const bus: SituationDef = {
       t("The | 12 | doesn't go | to | {X}.", "— | 12-asis | nevažiuoja | į | {X:acc}.", "12-asis į {X:acc} nevažiuoja.", { say: "The twelve doesn't go to {X}." }),
     ],
     oos_pay: [
-      t("You | can | pay | on | the | 12.", "Jūs | galite | sumokėti | — | — | 12-ajame.", "Sumokėsite 12-ajame autobuse.",
-        { say: "You can pay on the twelve.", flags: { 3: "“on” has no separate word: the locative 12-ajame carries it." } }),
+      // "on the twelve" was read "on the twelfth" in every take (16 Nov 2026): "bus" keeps it a bus number
+      t("You | can | pay | on | bus | 12.", "Jūs | galite | sumokėti | — | autobuse | 12-ajame.", "Sumokėsite 12-ajame autobuse.",
+        { say: "You can pay on bus twelve.", flags: { 3: "“on” has no separate word: the locative 12-ajame carries it." } }),
     ],
     oos_fare: [
       t("It's | the | same | fare, | $2.50.", "Tai yra | — | ta pati | kaina, | 2,50 $.", "Kaina ta pati – 2,50 $.", { say: "It's the same fare, two fifty." }),
