@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from "react";
 import { createPortal } from "react-dom";
 import type { Sentence } from "../convo/compose";
-import { ipaForUnit } from "../convo/ipa";
+import { ipaForSentence } from "../convo/ipa";
 import { natMatchesGloss, natSaysMore, placeTip, type TipSpot } from "./natTip";
 import { useCards, cardKey } from "../state/cards";
 import { WordPopover, inView } from "./Cards";
@@ -27,6 +27,8 @@ export function Interlinear({ s, lt, ipa, nat, natTip, compactNat, highlight }: 
   const close = useCallback(() => setOpen(null), []);
   useEffect(() => { setOpen(null); }, [s.en]); // another sentence in the same place
   const saysMore = useMemo(() => natSaysMore(s), [s]);
+  // numbers as the voice says them (the line's spoken form): a phone number digit by digit
+  const ipas = useMemo(() => (ipa ? ipaForSentence(s.units.map((u) => u.en), s.say) : []), [s, ipa]);
   const matchesGloss = useMemo(() => natMatchesGloss(s), [s]);
   const natStar = lt && !!s.nat?.trim() && (compactNat ? !matchesGloss : !!natTip && nat === false && saysMore);
   /** the line's word notes, each once */
@@ -54,7 +56,7 @@ export function Interlinear({ s, lt, ipa, nat, natTip, compactNat, highlight }: 
           return (
             <span className={"u tap" + (isSaved ? " saved" : "") + (open?.i === i ? " open" : "")} key={i} data-i={i}>
               <span className="en">{u.en}{isSaved && <span className="u-dot" aria-hidden />}{pin}</span>
-              {ipa && <span className="ipa">{ipaForUnit(u.en) || " "}</span>}
+              {ipa && <span className="ipa">{ipas[i] || " "}</span>}
               {lt && <span className={"lt" + (dash ? " dash" : "") + (u.flag ? " flag" : "")} title={u.flag || undefined} lang="lt">{u.lt}</span>}
             </span>
           );
