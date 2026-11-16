@@ -25,6 +25,7 @@ export const STRINGS: Record<string, string> = {
   "Kalbėk balsu arba rašyk": "Speak out loud or type",
   "Patarimai lietuviškai": "Tips in English",
   "{n} {conversations} pagal dainas": "{n} {conversations} based on songs",
+  "{n} {conversations}, iš jų {sung} pagal dainas": "{n} {conversations}, {sung} based on songs",
   "Maple Harbor · JAV": "Riviera Maya · Mexico",
   "Tavo miestelis laukia – kavinė, stotis, parduotuvės ir {n} {conversations} su jo žmonėmis.": "Your town is waiting – a café, a station, shops, and {n} {conversations} with its people.",
   "Sveika sugrįžusi": "Welcome back",

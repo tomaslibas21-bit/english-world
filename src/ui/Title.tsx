@@ -122,11 +122,17 @@ function ModeChoice() {
 
 function Perks() {
   const n = SITUATIONS.length;
+  // Puerto Colibrí's surf lesson (x01-surf) has no song: say how many of the conversations come from songs
+  // (16 Nov 2026). Where every one does (Maple Harbor), the line stays as it was.
+  const sung = SITUATIONS.filter((s) => s.song !== "").length;
+  const conversations = ltCount(n, "pokalbis", "pokalbiai", "pokalbių");
   return (
     <ul className="ts-perks">
       <li><Icon name="mic" size={18} /> {L("Kalbėk balsu arba rašyk")}</li>
       <li><Icon name="bulb" size={18} /> {L("Patarimai lietuviškai")}</li>
-      <li><Icon name="star" size={18} /> {L("{n} {conversations} pagal dainas", { n, conversations: ltCount(n, "pokalbis", "pokalbiai", "pokalbių") })}</li>
+      <li><Icon name="star" size={18} /> {sung === n
+        ? L("{n} {conversations} pagal dainas", { n, conversations })
+        : L("{n} {conversations}, iš jų {sung} pagal dainas", { n, conversations, sung })}</li>
     </ul>
   );
 }
