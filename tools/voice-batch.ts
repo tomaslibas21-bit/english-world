@@ -683,7 +683,8 @@ async function cut() {
   console.log(`${ok.length} of ${clips.length} clips cut and heard clean → ${to}; ${results.length - ok.length} need a new take (cut-report.json)`);
 }
 
-/** `retake --keys=<file> --to=<folder> [--tries=4]`: new takes of the listed lines right away (single requests, twice
+/** `retake --keys=<file> --to=<folder> [--tries=4]`: new takes of the listed lines (a list of keys, or {key: {voice,
+ *  speed, say}} for a line today's list doesn't reach, taken when its text gives the key) right away (single requests, twice
  *  the batch price: meant for a few hundred lines), each heard back before it is kept: whole and piece by piece
  *  (tools/voice-pieces.ts), against the line and its usual length. A take that slips is recorded again, up to --tries
  *  times; what still fails is listed in retake-report.json and gets no clip. Into --to: the clips, wav16/ (what the
@@ -696,6 +697,16 @@ async function retake() {
   const keys = new Set<string>(Array.isArray(listed) ? listed : Object.keys(listed));
   const every = allLines();
   const lines = every.filter((l) => keys.has(l.key));
+  // A line the list doesn't reach (a slot value it never fills, "Potatoes? That's not in my chowder.") can be given
+  // with its text: {"<key>": {"voice", "speed", "say"}}. It is taken only when that text is the clip's own (its
+  // audioKey is the key), so a new take never says other words than the clip it replaces.
+  const reached = new Set(lines.map((l) => l.key));
+  if (!Array.isArray(listed)) for (const [k, g] of Object.entries<{ voice?: string; speed?: number; say?: string; where?: string }>(listed)) {
+    if (reached.has(k) || !g?.say || !g.voice) continue;
+    const r = roleFor(g.voice);
+    if (!r || audioKey(g.voice, g.speed ?? 1, g.say) !== k) { console.log(`  ${k}: the given text is not this clip's (its key differs): skipped`); continue; }
+    lines.push({ key: k, voice: g.voice, speed: g.speed ?? 1, say: g.say, text: geminiText(SAY_AS[g.say] ?? g.say), gv: r.voice, style: r.style, who: r.who, where: g.where ?? "given" });
+  }
   if (lines.length < keys.size) console.log(`${keys.size - lines.length} listed keys have no line in today's list: no new take for them`);
   const manifest: Record<string, number> = readJson(MANIFEST, {});
   const pace = paces(Object.keys(manifest), manifest, new Map(every.map((l) => [l.key, l.say])), new Map(every.map((l) => [l.key, l.who])));
