@@ -95,7 +95,7 @@ try {
     await press();
     await page.waitForFunction(() => !!window.__ew.store.getState().hud.glyph, null, { timeout: 12000 });
     let q = await page.evaluate(() => window.__ew.store.getState().hud.glyph);
-    check(`${label}: the stone's card: a phrase everyone starts with, three meanings to choose from`, stone && q.options.length === 3 && q.options[q.answer] === q.lt && q.text.length > 2 && !q.shown, q);
+    check(`${label}: the stone's card: its own line about the grotto (stones.ts), three meanings to choose from`, stone && q.text === "El agua guarda la memoria." && q.options.length === 3 && q.options[q.answer] === q.lt && q.text.length > 2 && !q.shown, q);
     check(`${label}: the card is on the screen, its words hidden until asked for`, await page.locator(".glyph-card").count() === 1 && await page.locator(".glyph-text").count() === 0 && await page.locator(".glyph-opt").count() === 3);
     await page.locator(".glyph-opt").nth((q.answer + 1) % 3).click();
     await page.waitForFunction(() => window.__ew.store.getState().hud.glyph?.wrong.length === 1, null, { timeout: 10000 });
