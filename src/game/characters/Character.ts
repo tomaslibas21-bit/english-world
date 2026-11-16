@@ -59,6 +59,27 @@ function trait(look: Look, salt: number) {
   return (x >>> 0) / 4294967296;
 }
 
+/** (phone memory, 16 Nov 2026) A baked mesh in fewer bytes: its normals, colours and skin weights as 16-bit integers
+ *  and its bone numbers as 8-bit ones where there are few enough bones (normalized: the graphics card reads the same
+ *  values, to 1/32767), 60 bytes a vertex down to 36. Each townsperson keeps their mesh in memory, and Puerto
+ *  Colibrí's ~70 of them made up a fifth of its memory in the town. The box (Game.ts headTop) is measured first. */
+function compact(g: THREE.BufferGeometry, bones: number): THREE.BufferGeometry {
+  g.computeBoundingBox();
+  const pack = (name: string, Arr: typeof Int16Array | typeof Uint16Array, max: number) => {
+    const a = g.getAttribute(name) as THREE.BufferAttribute | undefined;
+    if (!a || a.normalized || !(a.array instanceof Float32Array)) return;
+    const src = a.array, out = new Arr(src.length);
+    for (let i = 0; i < src.length; i++) out[i] = Math.round(Math.min(1, Math.max(Arr === Int16Array ? -1 : 0, src[i])) * max);
+    g.setAttribute(name, new THREE.BufferAttribute(out, a.itemSize, true));
+  };
+  pack("normal", Int16Array, 32767);
+  pack("color", Uint16Array, 65535);
+  pack("skinWeight", Uint16Array, 65535);
+  const si = g.getAttribute("skinIndex") as THREE.BufferAttribute | undefined;
+  if (si && bones <= 256 && !(si.array instanceof Uint8Array)) g.setAttribute("skinIndex", new THREE.BufferAttribute(Uint8Array.from(si.array as ArrayLike<number>), 4));
+  return g;
+}
+
 const _c = new THREE.Color();
 /** Simple shapes merged into one vertex-coloured mesh (one draw call). */
 class Parts {
@@ -1127,7 +1148,7 @@ export class Character {
     if (this.skin) { this.skin.removeFromParent(); this.skin.geometry.dispose(); this.skin.skeleton.dispose(); }
     // (a far version on the old skeleton no longer fits: gone, until another is attached)
     if (this.farSkin) { this.farSkin.removeFromParent(); this.farSkin.geometry.dispose(); this.farSkin = null; }
-    const skin = new THREE.SkinnedMesh(mergeGeometries(geos, false)!, charMaterial());
+    const skin = new THREE.SkinnedMesh(compact(mergeGeometries(geos, false)!, this.parts.length), charMaterial());
     for (const g of geos) g.dispose();
     skin.castShadow = castShadow;
     // a generous fixed bound, as the pose changes every frame (an arm up for a wave still fits)
