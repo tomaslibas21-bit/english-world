@@ -197,6 +197,7 @@ function TownHelp({ open }: { open?: boolean }) {
     <details className="howto town-help" open={open}>
       <summary><Icon name="walk" size={21} className="howto-ico" /> {L("Kaip judėti mieste?")}<Icon name="chevronDown" size={18} className="chev" /></summary>
       <ul>
+        {EDITION.beta && <li className="beta-line"><small className="beta-badge">Beta</small><span>{L("Žaidimą dar tobuliname.")}</span></li>}
         {COACH_STEPS.filter((s) => (s !== "radio" || hasRadio) && (s !== "surf" || hasSurf)).map((s) => {
           const [title, body] = coachWords(s, touch);
           return <li key={s}><Icon name={COACH_ICON[s]} size={19} strokeWidth={2} /><span><b>{title}.</b> {body}</span></li>;

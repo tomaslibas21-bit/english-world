@@ -29,6 +29,8 @@ export interface Edition {
   /** Where a learner's problem report goes (the conversation's "Beta" strip, src/ui/ReportProblem.tsx: POSTed with the
    *  course's files token), or null: no strip. */
   reports: string | null;
+  /** Still being improved: a Beta tag by the title, on the loading logo (its own loadingArt.ts) and a line under help. */
+  beta?: boolean;
 }
 
 export const EDITION: Edition = {
