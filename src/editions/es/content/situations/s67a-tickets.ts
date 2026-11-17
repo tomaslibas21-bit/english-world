@@ -877,7 +877,7 @@ export const tickets: SituationDef = {
       expects: ["buy", "dest_ctx", "ask_next", "ask_price"],
       suggest: [
         { lt: "Ask for a ticket to where you're going", hint: "buy", options: "dest" },
-        { lt: "Ask when the next bus leaves", hint: "next_bus" },
+        { lt: "Ask when the next bus leaves", hint: "next_bus", options: "dest" },
       ],
       help: (c) => { c.say("dest_list"); } },
     { id: "count", when: (c) => !!c.s.dest && c.s.askCount && c.s.count === undefined, done: (c) => c.s.count !== undefined,

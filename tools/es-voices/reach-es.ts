@@ -227,7 +227,10 @@ export const BINDINGS: Record<string, (sit: SituationDef) => Binding[]> = {
   },
   // :127–132 amountSay: pieces said back with their number ("Cuatro mangos..."): what is sold by the piece, or anything
   // bought by the piece ("tres aguacates": b.pcs); one, or the list's numbers
-  "s32-mercado:got_pieces": (sit) => products(sit, () => true).flatMap((e) => [1, ...nums(sit, "num")].map((qty) => ({ X: qty === 1 ? e.id : { id: e.id, qty } }))),
+  // (16 Nov 2026: the list is `pcs`, up to ten, a dozen, fifteen, twenty; other counts get "Muy bien."; never a bunch)
+  "s32-mercado:got_pieces": (sit) => products(sit, (e) => e.attrs?.unit !== "manojo").flatMap((e) => [1, ...nums(sit, "pcs")].map((qty) => ({ X: qty === 1 ? e.id : { id: e.id, qty } }))),
+  // :128–129 amountSay: money said back for the round amounts (the list: money), any product in the plural (qty 2)
+  "s32-mercado:got_money": (sit) => products(sit, () => true).flatMap((e) => nums(sit, "money").map((price) => ({ X: { id: e.id, qty: 2 }, price }))),
   // s65b-baggage.ts:251–254 sayEcho: the bag type (not the plain "bag") with its color ("azul marino" has echo_navy)
   "s65b-baggage:echo": (sit) => (sit.entities?.bagtype ?? []).filter((e) => e.id !== "bag").flatMap((t) => (sit.entities?.color ?? []).filter((c) => c.id !== "navy").map((c) => ({ X: { id: t.id, mods: [c.id] } }))),
   // s91a-lost-wallet.ts:125 itemNp: the lost item with its color and/or material, else its size, else nothing: :922 found,

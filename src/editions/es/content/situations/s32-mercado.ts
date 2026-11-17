@@ -33,10 +33,24 @@ export const PRODUCTS: EntityDef[] = [
   P("cebolla", "cebolla", "onion", "f", "kg", 4000, 250, { pl: "cebollas", ltPl: "onions", forms: ["cebollas", "cebolla blanca"] }),
   P("papa", "papa", "potato", "f", "kg", 4000, 200, { pl: "papas", ltPl: "potatoes", forms: ["papas", "patata", "patatas"], spain: "patata" }),
   P("naranja", "naranja", "orange", "f", "kg", 2000, 250, { pl: "naranjas", ltPl: "oranges", forms: ["naranjas", "naranja para jugo", "naranjas para jugo"] }),
-  P("habanero", "chile | habanero", "chili | habanero", "m", "kg", 8000, 10, { pl: "chiles | habaneros", ltPl: "chilis | habanero", forms: ["habanero", "habaneros", "chile habanero", "chiles habaneros", "chile", "chiles"], nat: "habanero peppers", natPl: "habanero peppers" }),
+  P("habanero", "chile | habanero", "chili | habanero", "m", "kg", 8000, 10, { pl: "chiles | habaneros", ltPl: "chilis | habanero", forms: ["habanero", "habaneros", "chile habanero", "chiles habaneros"], nat: "habanero peppers", natPl: "habanero peppers" }),
   // a mass noun: "un manojo de cilantro", "sin cilantro", "veinte pesos de cilantro" (never "cilantros")
   P("cilantro", "cilantro", "cilantro", "m", "manojo", 1000, 0, { pl: "cilantro", ltPl: "cilantro", art: "", forms: ["un manojo de cilantro", "cilantrito"] }),
+  // the rest of what the stall's picture shows (16 Nov 2026): the dragon fruit, the green and the red chiles, parsley,
+  // lettuce. A plain "chile" is the jalapeño, the everyday one.
+  P("pitaya", "pitaya", "dragon fruit", "f", "pza", 3000, 400, { pl: "pitayas", ltPl: "dragon fruits", forms: ["pitayas", "pitahaya", "pitahayas", "fruta del dragon", "fruta de dragon", "frutas del dragon"] }),
+  P("jalapeno", "chile | jalapeño", "chili | jalapeño", "m", "kg", 4000, 20, { pl: "chiles | jalapeños", ltPl: "chilis | jalapeño", forms: ["jalapeno", "jalapenos", "chile jalapeno", "chiles jalapenos", "chile", "chiles", "chile verde", "chiles verdes"], nat: "jalapeños", natPl: "jalapeños" }),
+  P("chile_rojo", "chile | rojo", "chili | red", "m", "kg", 6000, 10, { pl: "chiles | rojos", ltPl: "chilis | red", forms: ["chiles rojos", "chile de arbol", "chiles de arbol"], nat: "red chilies", natPl: "red chilies" }),
+  P("perejil", "perejil", "parsley", "m", "manojo", 1000, 0, { pl: "perejil", ltPl: "parsley", art: "", forms: ["un manojo de perejil", "perejilito"] }),
+  P("lechuga", "lechuga", "head of lettuce", "f", "pza", 2000, 500, { pl: "lechugas", ltPl: "heads of lettuce", forms: ["lechugas", "lechuguita", "una lechuga"] }),
 ];
+
+/** What Licha says back has a recording for these amounts (tools/es-voices/reach-es.ts binds them); anything else she
+ *  takes with a plain "Muy bien." (16 Nov 2026: "Seis mangos…" had been the browser's voice). Pieces up to ten, then a
+ *  dozen, fifteen and twenty; kilos and bunches two to five (`num`); money in round amounts. */
+export const ECHO_PCS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20];
+export const ECHO_MONEY = [1000, 2000, 3000, 5000, 10000];
+const ECHO_NUM = [2, 3, 4, 5];
 
 const byId = (id: string) => PRODUCTS.find((e) => e.id === id)!;
 const unitOf = (id: string) => byId(id).attrs!.unit as "kg" | "pza" | "manojo";
@@ -126,18 +140,26 @@ function addBuy(c: Ctx, b: Buy): Buy {
 
 /** "Medio kilo de aguacates…" as Licha says it back while she weighs. */
 function amountSay(b: Buy): { line: string; vars: Record<string, any> } {
-  if (b.money) return { line: "got_money", vars: { X: { id: b.id, qty: 2 }, price: b.money } };
+  const ok = { line: "ack", vars: {} };
+  if (b.money) return ECHO_MONEY.includes(b.money) ? { line: "got_money", vars: { X: { id: b.id, qty: 2 }, price: b.money } } : ok;
   const u = unitOf(b.id);
-  if (u === "manojo") return (b.qty ?? 1) > 1 ? { line: "got_bunches", vars: { X: { id: b.id, qty: 1 }, num: b.qty } } : { line: "got_bunch", vars: { X: { id: b.id, qty: 1 } } };
-  if (u === "pza" || b.pcs) return { line: "got_pieces", vars: { X: { id: b.id, qty: b.pcs ?? b.qty ?? 1 } } };
+  if (u === "manojo") {
+    const n = b.qty ?? 1;
+    return n <= 1 ? { line: "got_bunch", vars: { X: { id: b.id, qty: 1 } } } : ECHO_NUM.includes(n) ? { line: "got_bunches", vars: { X: { id: b.id, qty: 1 }, num: n } } : ok;
+  }
+  if (u === "pza" || b.pcs) {
+    const n = b.pcs ?? b.qty ?? 1;
+    return ECHO_PCS.includes(n) ? { line: "got_pieces", vars: { X: n === 1 ? b.id : { id: b.id, qty: n } } } : ok;
+  }
   const g = b.qty ?? 1000, X = { id: b.id, qty: 2 };
   if (g === 250) return { line: "got_quarter", vars: { X } };
   if (g === 500) return { line: "got_half", vars: { X } };
   if (g === 750) return { line: "got_3q", vars: { X } };
   if (g === 1000) return { line: "got_kilo", vars: { X } };
   if (g === 1500) return { line: "got_kilo_half", vars: { X } };
-  if (g % 1000 === 500) return { line: "got_kilos_half", vars: { X, num: Math.floor(g / 1000) } };
-  return { line: "got_kilos", vars: { X, num: Math.max(2, Math.round(g / 1000)) } };
+  if (g % 1000 === 500) return ECHO_NUM.includes(Math.floor(g / 1000)) ? { line: "got_kilos_half", vars: { X, num: Math.floor(g / 1000) } } : ok;
+  const kilos = Math.max(2, Math.round(g / 1000));
+  return g % 1000 === 0 && ECHO_NUM.includes(kilos) ? { line: "got_kilos", vars: { X, num: kilos } } : ok;
 }
 
 const MERCADO_AUTO: Record<string, string> = {
@@ -440,7 +462,11 @@ export const mercado: SituationDef = {
       for (const p of PRODUCTS) s.add(p.attrs!.price as number);
       return [...s];
     },
-    num: () => [2, 3, 4, 5],
+    num: () => ECHO_NUM,
+    // pieces said back with their number (amountSay)
+    pcs: () => ECHO_PCS.slice(1),
+    // money said back ("Veinte pesos de limones…")
+    money: () => ECHO_MONEY,
   },
 
   hints: {
@@ -732,6 +758,16 @@ export const mercado: SituationDef = {
     { say: "Me pone un kilo de plátanos", intent: "order" },
     { say: "Tres aguacates", intent: "order", slots: { items: { item: { product: "aguacate", count: 3 } } } },
     { say: "Dos manojos de cilantro", intent: "order", slots: { items: { item: { product: "cilantro", count: 2 } } } },
+    // everything the stall's picture shows (16 Nov 2026)
+    { say: "Un manojo de perejil", intent: "order", slots: { items: { item: { product: "perejil" } } } },
+    { say: "Quiero perejil", intent: "order", slots: { items: { item: { product: "perejil" } } } },
+    { say: "Dos pitayas, por favor", intent: "order", slots: { items: { item: { product: "pitaya", count: 2 } } } },
+    { say: "Medio kilo de jalapeños", intent: "order", slots: { items: { item: { product: "jalapeno" } } } },
+    { say: "Un cuarto de chiles rojos", intent: "order", slots: { items: { item: { product: "chile_rojo" } } } },
+    { say: "Me da una lechuga", intent: "order", slots: { items: { item: { product: "lechuga" } } } },
+    { say: "Deme seis mangos", intent: "order", slots: { items: { item: { product: "mango", count: 6 } } } },
+    { say: "¿A cómo está la pitaya?", intent: "ask_price", slots: { product: "pitaya" } },
+    { say: "Un kilo de chiles", intent: "order", slots: { items: { item: { product: "jalapeno" } } } },
     // the neutral words and other countries' words are understood too
     { say: "Un kilo de tomates", intent: "order", slots: { items: { item: { product: "jitomate" } } } },
     { say: "Medio kilo de bananas", intent: "order", slots: { items: { item: { product: "platano" } } } },
@@ -814,6 +850,11 @@ export const mercado: SituationDef = {
       setup: (s) => { s.bigBill = false; s.askBag = true; } },
     { name: "¿de cuál?, then a question about the fruit", turns: ["¿A cómo el kilo?", "Del aguacate", "¿Están maduros?", "Medio kilo", "Me da igual", "¿Qué tiene?", "Dos manojos de cilantro", "Es todo", "¿Tiene cambio?", "¡Gracias!"],
       expect: { complete: true, state: { buys: { 0: { id: "aguacate", qty: 500, ripe: "today" }, 1: { id: "cilantro", qty: 2 } } } }, auto: MERCADO_AUTO,
+      setup: (s) => { s.bigBill = false; s.askBag = false; } },
+    // every amount she says back has a recording: six mangos are "Seis mangos…", thirty pieces just "Muy bien."
+    { name: "the picture's things; counts said back", turns: ["Deme seis mangos", "Para hoy", "Y un manojo de perejil", "Treinta limones", "Y una pitaya", "Es todo", "Aquí tiene", "¡Gracias!"],
+      expect: { complete: true,
+        state: { buys: { 0: { id: "mango", qty: 6 }, 1: { id: "perejil", qty: 1 }, 2: { id: "limon", pcs: 30 }, 3: { id: "pitaya", qty: 1 } } } }, auto: MERCADO_AUTO,
       setup: (s) => { s.bigBill = false; s.askBag = false; } },
     { name: "a tip; no cash, so a transfer", turns: ["¿Qué me recomienda?", "Bueno, deme dos", "Para hoy", "Es todo", "¿Acepta dólares?", "¿Acepta tarjeta?", "No traigo efectivo", "Sí, por favor", "¡Gracias!"],
       expect: { complete: true }, auto: MERCADO_AUTO, setup: (s) => { s.bigBill = false; s.askBag = false; } },

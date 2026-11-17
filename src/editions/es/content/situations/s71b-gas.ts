@@ -569,12 +569,13 @@ export const gas: SituationDef = {
   },
 
   hints: {
+    // the fuel is a chip (16 Nov 2026): "Lleno de premium", "Quinientos pesos de diésel"
     order: {
-      lt: "Say how much (or a full tank)",
+      lt: "Say how much (or a full tank)", slot: "grade", examples: ["magna", "premium"],
       items: [
         { id: "fill", s: t("Lleno, | por favor.", "Full, | please.", "Fill it up, please.") },
-        { id: "fill_grade", s: t("Lleno | de | magna, | por favor.", "Full | of | regular, | please.", "Fill it up with regular, please.") },
-        { id: "prepay", s: t("Quinientos | pesos | de | magna, | por favor.", "Five hundred | pesos | of | regular, | please.", "Five hundred pesos of regular, please."),
+        { id: "fill_grade", s: t("Lleno | de | {X}, | por favor.", "Full | of | {X}, | please.", "Fill it up with {X}, please.") },
+        { id: "prepay", s: t("Quinientos | pesos | de | {X}, | por favor.", "Five hundred | pesos | of | {X}, | please.", "Five hundred pesos of {X}, please."),
           note: "Say the amount in pesos and the fuel: magna (regular) or premium." },
         { id: "put", s: t("Póngale | quinientos, | por favor.", "Put in | five hundred, | please.", "Put in five hundred, please.", { spain: t("Póngame | quinientos, | por favor.", "Put (for me) | five hundred, | please.", "Put in five hundred, please.") }), note: "Very Mexican: póngale = put (it) in.", noteSpain: "Póngame: put (it) in for me, the usual way to ask for an amount." },
         { id: "fill_ask", s: t("¿Me lo | llena, | por favor?", "It for me | you-fill, | please?", "Could you fill it up, please?") },
@@ -719,7 +720,7 @@ export const gas: SituationDef = {
         c.say("ask_what");
       },
       expects: ["prepay", "fill", "half_tank", "want_gas", "amount_ctx", "grade_ans", "amount_change_ctx", "gas_price_q", "fill_yes_ctx", "liters"],
-      suggest: [{ lt: "Say how much (or a full tank)", hint: "order" }, { lt: "Ask something", hint: "ask" }],
+      suggest: [{ lt: "Say how much (or a full tank)", hint: "order", options: "grade" }, { lt: "Ask something", hint: "ask" }],
       // "¿Se lo lleno?": yes fills it; no, she asks how much
       yes: (c) => { if (c.s.greetFill) gas.handlers.fill(c, {}, { intent: "fill", slots: {}, tags: [] }); else { c.say("ask_what"); c.hold(); } },
       no: (c) => { c.s.greetFill = false; c.say("how_much_then"); c.hold(); } },
@@ -1105,6 +1106,11 @@ export const gas: SituationDef = {
     // how much: every hint pattern and more
     { say: "Lleno, por favor", intent: "fill", step: "order" },
     { say: "Lleno de magna, por favor", intent: "fill", slots: { grade: "magna" } },
+    // the order hint with each fuel chip (16 Nov 2026)
+    { say: "Lleno de premium, por favor", intent: "fill", slots: { grade: "premium" } },
+    { say: "Lleno de diésel, por favor", intent: "fill", slots: { grade: "diesel" } },
+    { say: "Quinientos pesos de premium, por favor", intent: "prepay", slots: { grade: "premium" } },
+    { say: "Quinientos pesos de diésel, por favor", intent: "prepay", slots: { grade: "diesel" } },
     { say: "Quinientos pesos de magna, por favor", intent: "prepay", slots: { price: 50000, grade: "magna" } },
     { say: "Póngale quinientos, por favor", intent: "prepay", slots: { price: 50000 } },
     { say: "¿Me lo llena, por favor?", intent: "fill" },
