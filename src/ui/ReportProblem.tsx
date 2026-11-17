@@ -80,7 +80,7 @@ export function ReportProblem() {
   return (
     <>
       <div className="beta-strip">
-        <span>Beta · dar tobulinamas</span>
+        <span>Pastebėjai klaidą?</span>
         <button
           type="button"
           onClick={() => {
