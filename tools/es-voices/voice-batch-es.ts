@@ -1081,8 +1081,16 @@ async function retake() {
     for (const [k, g] of Object.entries<{ voice?: string; speed?: number; say?: string; where?: string }>(listed)) {
       if (known.has(k) || !g?.say || !g.voice) continue;
       const first = recorded[k];
-      if (audioKey(g.voice, g.speed ?? 1, g.say) !== k || !first?.gv) { console.log(`  ${k}: the given text is not this clip's, or its first take is unknown: skipped`); continue; }
-      lines.push({ key: k, voice: g.voice, who: whoOf(g.voice) ?? g.voice, accent: accentOf(g.voice), speed: g.speed ?? 1, say: g.say, shown: g.say, text: first.text, gv: first.gv, style: first.style, ...(first.fx ? { fx: first.fx as Line["fx"] } : {}), where: g.where ?? "given", sits: [] } as Line);
+      if (audioKey(g.voice, g.speed ?? 1, g.say) !== k) { console.log(`  ${k}: the given text is not this clip's: skipped`); continue; }
+      const who = whoOf(g.voice), accent = accentOf(g.voice), sits = g.where ? [g.where.split(":")[0]] : [];
+      if (first?.gv) {
+        lines.push({ key: k, voice: g.voice, who: who ?? g.voice, accent, speed: g.speed ?? 1, say: g.say, shown: g.say, text: first.text, gv: first.gv, style: first.style, ...(first.fx ? { fx: first.fx as Line["fx"] } : {}), where: g.where ?? "given", sits } as Line);
+        continue;
+      }
+      // a line never recorded (a new hint example): cast as the line list would (allLines)
+      if (!who || !roleOf(who) || !voiceFor(who, accent)) { console.log(`  ${k}: no casting for ${g.voice}: skipped`); continue; }
+      const st = styleFor(who, sits, { accent });
+      lines.push({ key: k, voice: g.voice, who, accent, speed: g.speed ?? 1, say: g.say, shown: g.say, text: geminiTextEs(SAY_AS[g.say] ?? g.say), gv: voiceFor(who, accent)!, style: st.style, ...(st.fx ? { fx: st.fx } : {}), where: g.where ?? "given", sits } as Line);
     }
   }
   if (lines.length < keys.length) console.log(`${keys.length - lines.length} listed keys have no line in ${WORK}/requests: no new take for them`);

@@ -81,12 +81,14 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
   const out = new Map<string, EsUtt>();
   const errors: string[] = [], warnings: string[] = [];
   const stats: Record<string, ObserveStats> = {};
-  const add = (voice: string, speed: number, s: Sentence, where: string, sit: string | undefined, why: string): EsUtt | undefined => {
+  const add = (voice: string, speed: number, s: Sentence, where: string, sit: string | undefined, why: string, example = false): EsUtt | undefined => {
     if (!s.say.trim()) return;
     if (/\s[.,!?]/.test(s.say)) return; // a value was missing ("Me llamo .")
     const alt = withoutAddressedNames(s.say, NAMES);
     const say = alt ?? s.say;
-    if (alt === null && NAMES_RE.test(say)) return; // the learner's name is part of the line: the browser voice says it
+    // the learner's name is part of the line: the browser voice says it; but a hint example's name is the fixed example
+    // learner's (src/convo/suggest.ts exampleVars, 17 Nov 2026), recorded like any other line
+    if (!example && alt === null && NAMES_RE.test(say)) return;
     const k = `${voice}|${speed}|${say}`;
     let u = out.get(k);
     if (!u) out.set(k, (u = { voice, speed, say, shown: s.en, where, sits: [], ...(voice.startsWith("esn_") ? { neutral: true } : voice.startsWith("esp_") ? { spain: true } : {}), why }));
@@ -270,7 +272,7 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
           // as the game binds the item in a hint (target.ts hintBinding: an always-plural item with two)
           const binds = pool.length ? pool.map((e) => ({ X: hintBinding(e, e.id) })) : [{}];
           for (const b of binds) for (const formal of registers) for (const learner of GENDERS) for (const sp of npcGenders) {
-            try { add(coachVoice(learner), 1, compose(it.s, { ...b, name: NAMES[0] }, { look, addressee: learner, speaker: sp, formal }), `${sit.id}:hint:${gid}.${it.id}`, sit.id, "hint"); } catch { /* skip */ }
+            try { add(coachVoice(learner), 1, compose(it.s, { ...b, name: NAMES[0], surname: NAMES[1], letters: NAMES[1] }, { look, addressee: learner, speaker: sp, formal }), `${sit.id}:hint:${gid}.${it.id}`, sit.id, "hint", true); } catch { /* skip */ }
           }
         }
       }

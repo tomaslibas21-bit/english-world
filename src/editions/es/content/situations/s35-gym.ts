@@ -2757,7 +2757,8 @@ function offerThursday(c: Ctx) {
 }
 
 // The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
-gym.hints.next_day = pickFrom(gym.hints.next.lt, [yesAgreeGroups().g_agree, ["ag_sounds_good"]], [gym.hints.next, ["how_about_day"]]);
+// "¿Qué tal el {X}?" needs the day: the group keeps next's weekday slot and examples (without them it read "¿Qué tal el")
+gym.hints.next_day = { ...pickFrom(gym.hints.next.lt, [yesAgreeGroups().g_agree, ["ag_sounds_good"]], [gym.hints.next, ["how_about_day"]]), slot: gym.hints.next.slot, examples: gym.hints.next.examples };
 
 // The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
 gym.hints.pay_ans = pick(gym.hints.pay, ["pay_card_short", "pay_cash", "here_you_go"]);
