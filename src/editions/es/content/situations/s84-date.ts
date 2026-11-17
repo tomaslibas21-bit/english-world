@@ -25,6 +25,7 @@
 import type { Ctx, EntityDef, Handler, Segment, SituationDef } from "@/content/types";
 import { ent, t } from "@/content/dsl";
 import { GLOBAL_HANDLERS, LEAVING_PATTERNS } from "@/content/global";
+import { pick, pickFrom } from "../hint-pick";
 
 const A_LO_MEJOR = "a lo mejor: maybe, perhaps; very common in speech. Literally “at the best”, but it doesn't mean “at best” (that's en el mejor de los casos).";
 
@@ -688,7 +689,7 @@ function proposeDay(c: Ctx, slots: any) {
     c.s.offerDay = undefined;
     c.say("which_day");
     c.expect({ id: "which_day", expects: ["day_ctx", "propose_day", "agree_again", "no_date_ctx", "as_you_like_ctx"], hints: ["day_answer"],
-      suggest: [{ lt: "Name a day", hint: "again", options: "activity" }], ask: (cc) => cc.say("which_day"),
+      suggest: [{ lt: "Name a day", hint: "again_day", options: "activity" }], ask: (cc) => cc.say("which_day"),
       on: {
         day_ctx: (cc, sl, sg) => H.propose_day(cc, sl, sg), propose_day: (cc, sl, sg) => H.propose_day(cc, sl, sg),
         // "Cuando quieras", "El martes no puedo", "Pensándolo bien, mejor no"
@@ -1997,7 +1998,7 @@ export const date: SituationDef = {
     { id: "again", when: (c) => !c.s.declined, done: (c) => !!c.s.againOk || !!c.s.declined,
       ask: (c) => { c.s.partnerAsked = true; c.say("can_i_see_you"); },
       expects: ["agree_again", "decline_again", "see_again", "propose_day", "day_ctx", "me_too_ctx", "hesitate", "no_date_ctx", "as_you_like_ctx"],
-      suggest: [{ lt: "Say yes to meeting again", hint: "again_answer" }, { lt: "Suggest what to do", hint: "again", options: "activity" }],
+      suggest: [{ lt: "Say yes to meeting again", hint: "again_answer" }, { lt: "Suggest what to do", hint: "again_plan", options: "activity" }],
       yes: (c) => { c.s.againOk = true; c.say("yay_great"); },
       no: (c) => declineDate(c),
       help: (c) => { if (!c.s.againOk) c.say("think_about_it"); } },
@@ -2011,7 +2012,7 @@ export const date: SituationDef = {
         c.say("are_you_free_on", { D: c.s.offerDay });
       },
       expects: ["propose_day", "agree_again", "decline_again", "day_ctx", "no_date_ctx", "as_you_like_ctx"],
-      suggest: [{ lt: "Agree on a day", hint: "day_answer" }, { lt: "Suggest another day or a plan", hint: "again", options: "activity" }],
+      suggest: [{ lt: "Agree on a day", hint: "day_answer" }, { lt: "Suggest another day or a plan", hint: "again_plan", options: "activity" }],
       yes: (c) => dayYes(c),
       // a bare "No" turns down the day offered; "No, la verdad no me interesa" turns down the date
       no: (c) => { if (datesOff(c)) { declineDate(c); return; } if (once(c, "dayno")) dayNo(c); c.hold(); } },
@@ -2363,5 +2364,9 @@ export const date: SituationDef = {
       } },
   ],
 };
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+date.hints.again_day = pick(date.hints.again, ["ag_works", "ag_activity"]);
+date.hints.again_plan = pick(date.hints.again, ["ag_activity", "ag_free"]);
 
 export default date;

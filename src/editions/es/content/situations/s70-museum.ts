@@ -231,7 +231,7 @@ function resYes(c: Ctx) {
 function resNo(c: Ctx) { c.s.resChecked = true; c.say("res_no"); }
 function resCardPending(): Pending {
   return { id: "res_card", optional: true, expects: ["have_id", "no_id", "here_you_go", "no_card_ctx"], hints: ["resident"],
-    suggest: [{ lt: "Show your residence card", hint: "resident" }, { lt: "Answer yes or no", hint: "g_yesno" }],
+    suggest: [{ lt: "Show your residence card", hint: "resident" }],
     on: { have_id: (cc) => resYes(cc), here_you_go: (cc) => resYes(cc), no_id: (cc) => resNo(cc), no_card_ctx: (cc) => resNo(cc), im_resident: (cc) => resYes(cc) },
     yes: (cc) => resYes(cc), no: (cc) => resNo(cc) };
 }
@@ -1334,7 +1334,7 @@ export const museum: SituationDef = {
     { id: "guide", when: (c) => !c.s.guideAsked && !c.s.guides, done: (c) => !!c.s.guideAsked,
       ask: (c) => { if (c.s.guideOffered) { c.s.guideAgain = !c.s.guideAgain; c.say(c.s.guideAgain ? "guide_again" : "guide_again2"); return; } c.s.guideOffered = true; c.s.guidePriceSaid = true; c.say("offer_guide", { price: GUIDE }); },
       expects: ["want_guide", "no_guide", "guide_price", "guide_n_ctx", "lang_q", "guide_no_ctx", "buy_tickets", "buy_qty"],
-      suggest: [{ lt: "Take an audio guide", hint: "guide_yes" }, { lt: "Ask about the audio guide", hint: "guide" }, { lt: "Answer yes or no", hint: "g_yesno" }],
+      suggest: [{ lt: "Take an audio guide", hint: "guide_yes" }, { lt: "Answer yes or no", hint: "g_yesno" }],
       yes: (c) => { c.s.guideAsked = true; c.s.guides = 1; if (!c.s.lang && c.s.langWanted) c.s.lang = c.s.langWanted; changed(c); },
       no: (c) => { H.no_guide(c, {}, { intent: "no_guide", slots: {}, tags: [] }); } },
     { id: "lang", when: (c) => !!c.s.guides && !c.s.lang, done: (c) => !!c.s.lang,

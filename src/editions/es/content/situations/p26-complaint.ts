@@ -32,6 +32,7 @@ import type { Ctx, EntityDef, Pending, Segment, SituationDef } from "@/content/t
 import type { ConvCtx } from "@/convo/dialogue";
 import { ent, t } from "@/content/dsl";
 import { GLOBAL_HANDLERS } from "@/content/global";
+import { pick, pickFrom } from "../hint-pick";
 
 // ---------------------------------------------------------------------------
 // Flags used more than once
@@ -283,7 +284,7 @@ function offerManager(c: Ctx) {
   K(c, "kyle_offer_manager");
   c.expect({
     id: "offer_manager", expects: ["ask_manager", "further", "agree", "accept_offer", "decline_offer", "no_manager", "visit_cost"], hints: ["g_yesno", "escalate"],
-    suggest: [{ lt: "Agree to talk to the manager", hint: "g_yesno" }, { lt: "Ask for the manager", hint: "escalate" }],
+    suggest: [{ lt: "Agree to talk to the manager", hint: "g_yes" }, { lt: "Ask for the manager", hint: "escalate" }],
     on: {
       ask_manager: (cc) => { escalateNow(cc); }, further: (cc) => { escalateNow(cc); }, agree: (cc) => { escalateNow(cc); },
       // "Acepto el martes" takes the visit; a bare "Sí, acepto." / "Acepto su oferta" answers this question: the manager
@@ -311,7 +312,7 @@ function askBookTuesday(c: Ctx) {
   K(c, "kyle_book_q");
   c.expect({
     id: "book_tuesday", expects: ["accept_offer", "agree", "decline_offer", "not_good_enough", "ask_manager", "further", "third_time", "visit_cost", "cost_ctx"], hints: ["escalate", "g_yesno"],
-    suggest: [{ lt: "Say no and ask for the manager", hint: "escalate" }, { lt: "Agree (one more visit, then)", hint: "g_yesno" }],
+    suggest: [{ lt: "Say no and ask for the manager", hint: "escalate" }, { lt: "Agree (one more visit, then)", hint: "g_yes" }],
     on: {
       accept_offer: (cc) => { tuesdayEnding(cc); }, agree: (cc) => { tuesdayEnding(cc); },
       ask_manager: (cc) => { escalateNow(cc); }, further: (cc) => { escalateNow(cc); },
@@ -539,7 +540,7 @@ function askOfferConfirm(c: Ctx) {
   B(c, c.s.offerKind === "coupon" ? "brenda_check_coupon" : "brenda_check_visit");
   c.expect({
     id: "offer_confirm", expects: ["accept_offer", "agree", "decline_offer", "ask_refund", "ask_replacement", "refund_or", "offer_q", "visit_cost", "cost_ctx"], hints: ["g_yesno", "offer"],
-    suggest: [{ lt: "Say no and ask for what you want", hint: "offer" }, { lt: "Accept the offer", hint: "g_yesno" }],
+    suggest: [{ lt: "Say no and ask for what you want", hint: "offer" }, { lt: "Accept the offer", hint: "g_yes" }],
     on: { accept_offer: (cc) => { acceptOffer(cc); }, agree: (cc) => { acceptOffer(cc); } },
     yes: (cc) => { acceptOffer(cc); },
     no: (cc) => { declineWith(cc, "brenda_decline_ack"); },
@@ -631,7 +632,7 @@ function giveRef(c: Ctx, asked = false) {
 function reExpectReadback(c: Ctx) {
   c.expect({
     id: "readback", optional: true, expects: ["ref_readback", "readback_unknown", "readback_ctx", "ask_repeat"], hints: ["reference", "g_clarify"],
-    suggest: [{ lt: "Read the number back", hint: "reference" }, { lt: "Ask her to repeat it", hint: "g_clarify" }],
+    suggest: [{ lt: "Read the number back", hint: "ref_back" }, { lt: "Ask her to repeat it", hint: "g_clarify" }],
     on: {
       ref_readback: (cc) => { if (once(cc, "b_ack")) B(cc, "brenda_ref_correct"); },
       readback_unknown: (cc, sl) => { readBack(cc, sl); }, readback_ctx: (cc, sl) => { readBack(cc, sl); },
@@ -2148,7 +2149,7 @@ export const complaint: SituationDef = {
       done: (c) => !!c.s.ref || !!c.s.over,
       ask: (c) => B(c, "brenda_ref_pen"),
       expects: ["pen_ready", "pen_ctx", "no_pen", "pen_wait", "ask_reference", "ref_readback", "readback_unknown"],
-      suggest: [{ lt: "Say you have a pen, and take down the number", hint: "reference" }, { lt: "Ask her to repeat it", hint: "g_clarify" }],
+      suggest: [{ lt: "Say you have a pen, and take down the number", hint: "ref_ready" }, { lt: "Ask her to repeat it", hint: "g_clarify" }],
       yes: (c) => { giveRef(c); },
       no: (c) => { B(c, "brenda_no_pen"); giveRef(c); } },
   ],
@@ -2487,5 +2488,9 @@ function expectClosing(c: Ctx) {
   };
   c.expect(p);
 }
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+complaint.hints.ref_back = pick(complaint.hints.reference, ["readback", "repeat_num"]);
+complaint.hints.ref_ready = pick(complaint.hints.reference, ["go_ahead"]);
 
 export default complaint;

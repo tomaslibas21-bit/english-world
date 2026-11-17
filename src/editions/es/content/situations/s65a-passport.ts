@@ -23,6 +23,8 @@
 import type { Ctx, EntityDef, Pending, Segment, SituationDef } from "@/content/types";
 import { ent, t } from "@/content/dsl";
 import { expectHowAreYou } from "@/content/global";
+import { pick, pickFrom } from "../hint-pick";
+import { yesAgreeGroups } from "../global";
 
 // ---------------------------------------------------------------------------
 // Entities: the people the learner visits or travels with.
@@ -289,7 +291,7 @@ const noCard = (c: Ctx) => /\bno (traigo|tengo|uso|cargo) (\w+ )?tarjetas?\b/.te
 function cardPending(): Pending {
   return {
     id: "cash_card", expects: ["cash_no", "cash_amount", "card_ctx", "both_ctx"], hints: ["g_yesno", "cash"],
-    suggest: [{ lt: "Say whether you have a card", hint: "g_yesno" }],
+    suggest: [{ lt: "Say whether you have a card", hint: "yes_sure" }],
     on: {
       // "No traigo tarjeta" folds like "No, traigo tarjeta": at this question it is the plain no
       cash_no: (cc) => { if (noCard(cc)) { cc.s.cash = "none"; cc.say("cash_none"); return; } cc.s.cash = "card"; ack(cc, 1); },
@@ -1283,7 +1285,7 @@ export const passport: SituationDef = {
         c.say("stamp_short", { num: c.s.short });
       },
       expects: ["more_days", "accept_days_ctx", "length", "return_date", "hand_over", "q_limit", "days_given", "length_num_ctx", "what_if_more_ctx", "why_ctx"],
-      suggest: [{ lt: "Ask politely for more days", hint: "days" }, { lt: "Accept the days", hint: "g_yesno" }],
+      suggest: [{ lt: "Ask politely for more days", hint: "days" }, { lt: "Accept the days", hint: "g_yes" }],
       yes: (c) => acceptShort(c),
       no: (c) => moreDays(c) },
   ],
@@ -1922,5 +1924,8 @@ export const passport: SituationDef = {
       setup: (s) => { quiet(s); s.shortTwist = false; } },
   ],
 };
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+passport.hints.yes_sure = pick(yesAgreeGroups().g_agree, ["ag_yes_sure"]);
 
 export default passport;

@@ -505,6 +505,41 @@ export function expectHowAreYou(c: import("../../../content/types").Ctx, then?: 
 
 // ---------------------------------------------------------------------------
 
+/** g_yes, g_no and g_agree, made anew on every call. A conversation that builds a group from them (hint-pick.ts) takes
+ *  fresh ones: conversations load after the shared groups have been put into the learner's language, so the shared
+ *  objects no longer carry the English the learner tables are keyed by. */
+export function yesAgreeGroups(): Record<"g_yes" | "g_no" | "g_agree", HintGroup> {
+  return {
+    // One side of g_yesno each (owner, 17 Nov 2026: a chip that says "Accept the offer" never shows "No, gracias", and
+    // "Say that's all" never shows "Sí, por favor"); the same items, so the same clips and the same Lithuanian.
+    g_yes: {
+      lt: "Say yes",
+      items: [
+        { id: "yn_yes_please", s: t("Sí, | por favor.", "Yes, | please.", "Yes, please.") },
+        { id: "yn_sure", s: t("¡Claro, | gracias!", "Sure, | thanks!", "Sure, thanks!") },
+        { id: "yn_great", s: t("¡Sería | genial, | gracias!", "It would be | great, | thanks!", "That would be great, thanks!") },
+      ],
+    },
+    g_no: {
+      lt: "Say no, thanks",
+      items: [
+        { id: "yn_no_thanks", s: t("No, | gracias.", "No, | thanks.", "No, thanks.") },
+        { id: "yn_im_good", s: t("No, | así | estoy | bien, | gracias.", "No, | like this | I'm | fine, | thanks.", "No, I'm good, thanks."), note: "A polite no: “I'm fine as I am.”" },
+      ],
+    },
+    // Saying yes to a request or a plan ("¿Lo puede sacar?", "¿Trato hecho?"), where "Sí, por favor" would be wrong.
+    g_agree: {
+      lt: "Agree",
+      items: [
+        { id: "ag_sure", s: t("Claro.", "Sure.", "Sure.") },
+        { id: "ag_yes_sure", s: t("Sí, | claro.", "Yes, | sure.", "Sure.") },
+        { id: "ag_sounds_good", s: t("Me | parece | bien.", "(To) me | it-seems | good.", "Sounds good.") },
+        { id: "ag_deal", s: t("¡Trato | hecho!", "Deal | done!", "Deal!") },
+      ],
+    },
+  };
+}
+
 export const GLOBAL_HINTS: Record<string, HintGroup> = {
   g_clarify: {
     lt: "Ask them to repeat, slow down or explain",
@@ -552,6 +587,7 @@ export const GLOBAL_HINTS: Record<string, HintGroup> = {
       { id: "yn_great", s: t("¡Sería | genial, | gracias!", "It would be | great, | thanks!", "That would be great, thanks!") },
     ],
   },
+  ...yesAgreeGroups(),
   g_howareyou: {
     lt: "Say how you are",
     items: [

@@ -15,6 +15,7 @@
 import type { Ctx, EntityDef, Pending, SituationDef } from "@/content/types";
 import { ent, t } from "@/content/dsl";
 import { expectHowAreYou } from "@/content/global";
+import { pick, pickFrom } from "../hint-pick";
 
 // ---------------------------------------------------------------------------
 // Where the route goes. `stops` and `mins` are what Ana says ("como 4 paradas", "como 10 minutos"); `stop` is the
@@ -1080,7 +1081,7 @@ export const bus: SituationDef = {
       },
       // route_q: "¿Es el siete?" is the route, never a price check ("No, son $12")
       expects: ["pay_cash", "give", "cash_ctx", "pay_card", "pay_dollars", "pay_phone", "no_change", "day_pass", "ask_fare", "route_q"],
-      suggest: [{ lt: "Pay (cash only)", hint: "fare" }, { lt: "Ask about change or a day pass", hint: "fare_q" }] },
+      suggest: [{ lt: "Pay (cash only)", hint: "fare" }, { lt: "Ask about change or a day pass", hint: "fare_more" }] },
     { id: "known", when: (c) => !!c.s.dest && (c.s.oos || !!c.s.paid) && !!c.s.askKnown, done: (c) => !!c.s.stopAsked,
       ask: (c) => c.say("ask_known"),
       expects: ["ask_stop", "affirm", "deny", "tell_me_ctx", "known_place_ctx"],
@@ -1501,5 +1502,8 @@ export const bus: SituationDef = {
       expect: { complete: true, state: { dest: "centro", paid: true, unserved: "aeropuerto" } }, auto: AUTO, setup: (s) => { s.oos = false; s.askKnown = true; s.midStop = false; } },
   ],
 };
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+bus.hints.fare_more = pick(bus.hints.fare_q, ["give_change", "day_pass", "dollars"]);
 
 export default bus;

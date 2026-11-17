@@ -28,6 +28,7 @@
 import type { Ctx, EntityDef, Handler, Pending, Segment, SituationDef } from "@/content/types";
 import { ent, t } from "@/content/dsl";
 import { GLOBAL_HANDLERS } from "@/content/global";
+import { pick, pickFrom } from "../hint-pick";
 
 const A_LO_MEJOR = "a lo mejor: maybe, perhaps; very common in speech. Literally “at the best”, but it doesn't mean “at best” (that's en el mejor de los casos).";
 
@@ -475,7 +476,7 @@ const H: Record<string, Handler> = {
         c.say("meet_change");
         c.expect(yn({
           id: "meet_change", expects: ["meet", "meet_not", "place_no_ctx", "where_is_ctx"], hints: ["agree", "place"],
-          suggest: [{ lt: "Agree to meet at the taco place", hint: "agree" }, { lt: "Keep the bandstand", hint: "place", options: ["kiosco"] }],
+          suggest: [{ lt: "Agree to meet at the taco place", hint: "agree" }, { lt: "Keep the bandstand", hint: "place_keep", options: ["kiosco"] }],
           yes: (cc) => { cc.s.place = "taqueria"; cc.say("ack_taqueria"); },
           no: (cc) => { cc.s.place = "kiosco"; cc.say("keep_kiosco"); },
           on: {
@@ -1812,5 +1813,8 @@ export const inviteCall: SituationDef = {
     ], setup: (s) => { s.askPay = true; s.bbq = false; s.meetChange = false; s.badLine = false; s.timeChange = false; }, expect: { complete: true, state: { askPay: false } }, auto: AUTO },
   ],
 };
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+inviteCall.hints.place_keep = pick(inviteCall.hints.place, ["meet_lets", "meet_full"]);
 
 export default inviteCall;

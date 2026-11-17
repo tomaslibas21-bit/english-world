@@ -217,7 +217,7 @@ function afterWhen(c: Ctx) {
     const yesOrNo = (cc: Ctx) => (saidNo(cc) ? declineHelp(cc) : acceptHelp(cc));
     c.expect({
       id: "help_offer", optional: true, expects: ["accept_help", "decline_help_ctx"], hints: ["g_yesno"],
-      suggest: [{ lt: "Accept the help", hint: "g_yesno" }],
+      suggest: [{ lt: "Accept the help", hint: "g_yes" }],
       yes: (cc) => acceptHelp(cc),
       no: (cc) => declineHelp(cc),
       on: {

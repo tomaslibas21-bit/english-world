@@ -1046,7 +1046,7 @@ export const lostWallet: SituationDef = {
         c.say("lost_really", { X: item(c) });
         c.expect({
           id: "lost_really", expects: ["lost", "not_lost"], hints: ["g_yesno"],
-          suggest: [{ lt: "Say yes or no", hint: "g_yesno" }],
+          suggest: [{ lt: "Say yes or no", hint: "lost" }],
           yes: (cc) => lostWallet.handlers.lost(cc, {}, { intent: "lost", slots: {}, tags: [] } as any),
           no: (cc) => { cc.say("not_lost_resp"); cc.hold(); },
           on: {

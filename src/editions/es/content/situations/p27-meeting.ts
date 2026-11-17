@@ -41,6 +41,8 @@
 import type { Ctx, Pending, Segment, SituationDef, Suggestion, Tip } from "@/content/types";
 import { t } from "@/content/dsl";
 import { GLOBAL_HANDLERS } from "@/content/global";
+import { pick, pickFrom } from "../hint-pick";
+import { yesAgreeGroups } from "../global";
 
 // ---------------------------------------------------------------------------
 // Flags used more than once
@@ -377,7 +379,7 @@ function closingTurn(c: Ctx, kind: string) {
       V(c, "v_teal2");
       c.expect({
         id: "teal2", expects: ["teal_ctx", "accept_deal"], hints: ["teal"],
-        suggest: [{ lt: "Agree on the color", hint: "teal" }],
+        suggest: [{ lt: "Agree on the color", hint: "teal_agree" }],
         yes: (cc) => closingTurn(cc, "teal"), no: (cc) => closingTurn(cc, "no"),
         on: { teal_ctx: (cc) => closingTurn(cc, "teal"), accept_deal: (cc) => closingTurn(cc, "teal") },
       });
@@ -783,7 +785,7 @@ function expectSoAgree(c: Ctx) {
   const yes = (cc: Ctx) => { if (politeClose(cc)) soAgreeAgain(cc); else gaveIn(cc); };
   c.expect({
     id: "so_agree", optional: true, expects: ["agree_to_disagree", "disagree_polite", "offer_alt", "counter_offer", "give_in", "think_ctx"], hints: ["resolve"],
-    suggest: [{ lt: "Say you still disagree, or agree to disagree", hint: "resolve" }, { lt: "Suggest another way", hint: "alt" }],
+    suggest: [{ lt: "Say you still disagree, or agree to disagree", hint: "res_disagree" }, { lt: "Suggest another way", hint: "alt" }],
     yes,
     no: (cc) => resolveTurn(cc, "no"),
     on: {
@@ -2063,7 +2065,7 @@ export const meeting: SituationDef = {
       },
       expects: RESOLVE_EX,
       suggest: (c): Suggestion[] => c.s.offer === "none"
-        ? [{ lt: "Suggest something else, or agree to disagree", hint: "resolve" }, { lt: "Suggest another way", hint: "alt" }]
+        ? [{ lt: "Suggest something else, or agree to disagree", hint: "res_disagree" }, { lt: "Suggest another way", hint: "alt" }]
         : [{ lt: "Accept the compromise, bargain, or agree to disagree", hint: "resolve" }],
       yes: (c) => resolveTurn(c, "accept"),
       // "Así está bien." to "¿Trato hecho?" (no money here): it's fine as it is, a yes; "No, …" stays a no
@@ -2524,5 +2526,9 @@ export const meeting: SituationDef = {
     ], expect: { complete: true, state: { outcome: "deal", offer: "final", dealAgain: true } }, auto: AUTO, setup: SIM(false, false, "teal") },
   ],
 };
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+meeting.hints.res_disagree = pick(meeting.hints.resolve, ["agree_disagree", "ask_greg"]);
+meeting.hints.teal_agree = pickFrom(meeting.hints.teal.lt, [yesAgreeGroups().g_agree, ["ag_sounds_good", "ag_yes_sure"]], [meeting.hints.teal, ["id_say_green"]]);
 
 export default meeting;

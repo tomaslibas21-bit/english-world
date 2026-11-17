@@ -22,6 +22,8 @@
 import type { Ctx, EntityDef, Pending, Segment, SituationDef, StepDef, Suggestion } from "@/content/types";
 import { ent, t } from "@/content/dsl";
 import { expectHowAreYou } from "@/content/global";
+import { pick, pickFrom } from "../hint-pick";
+import { yesAgreeGroups } from "../global";
 
 // ---------------------------------------------------------------------------
 // Entities
@@ -210,7 +212,7 @@ function otherIdPending(): Pending {
   const take = (cc: Ctx, doc?: string) => { if (cc.s.id) return; gotDoc(cc, doc && doc !== "license" ? doc : "passport"); afterId(cc); };
   return {
     id: "other_id", expects: ["show_doc", "doc_ctx", "here_you_go"], hints: ["g_yesno", "id"],
-    suggest: [{ lt: "Say whether you have your passport or residence card", hint: "g_yesno" }, { lt: "Show another ID", hint: "id", options: "doc" }],
+    suggest: [{ lt: "Say whether you have your passport or residence card", hint: "yes_sure" }, { lt: "Show another ID", hint: "id", options: "doc" }],
     yes: (cc) => { if (/pasaporte|residen|tarjeta|identificacion/.test(words(cc))) return; take(cc); },
     no: (cc) => { cc.say("come_back_id"); cc.end(); },
     on: {
@@ -264,7 +266,7 @@ function depositAmount(c: Ctx, cents: number | undefined) {
 function depositConfirm(cents: number): Pending {
   return {
     id: "dep_confirm", expects: ["deposit_ans", "amount_ctx", "minimum", "sure_ctx", "not_that"], hints: ["g_yesno", "deposit"],
-    suggest: [{ lt: "Say yes, or give another amount", hint: "deposit" }],
+    suggest: [{ lt: "Say yes, or give another amount", hint: "dep_yes" }],
     on: {
       sure_ctx: (cc) => { depositAmount(cc, cents); }, not_that: () => { /* the deposit step asks again */ },
       more_no: () => { /* "Es todo": a no; the deposit step asks again */ },
@@ -329,7 +331,7 @@ function exchangeDollars(c: Ctx, usd: number | "all" | undefined) {
 function exchangeConfirm(usd: number): Pending {
   return {
     id: "ex_confirm", expects: ["euro_amount", "euro_ctx", "sure_ctx", "not_that"], hints: ["g_yesno", "euros"],
-    suggest: [{ lt: "Say yes, or give another amount", hint: "euros" }],
+    suggest: [{ lt: "Say yes, or give another amount", hint: "ex_yes" }],
     on: {
       sure_ctx: (cc) => { exchangeDollars(cc, usd); }, not_that: (cc) => { cc.s.exchange = "cancelled"; cc.say("no_problem"); },
       euro_amount: (cc, sl, sg) => { bank.handlers.euro_amount(cc, sl, sg); }, euro_ctx: (cc, sl, sg) => { bank.handlers.euro_ctx(cc, sl, sg); }, // "No, mejor doscientos"
@@ -355,7 +357,7 @@ function offerOpen(c: Ctx) {
 function openOffer(): Pending {
   return {
     id: "open_offer", expects: ["open_account", "acct_type_ans", "no_open", "sure_ctx", "tourist_ctx"], hints: ["g_yesno", "open"],
-    suggest: [{ lt: "Agree to open an account", hint: "g_yesno" }, { lt: "Say which account you want", hint: "acct_type", options: "acct" }],
+    suggest: [{ lt: "Agree to open an account", hint: "g_yes" }, { lt: "Say which account you want", hint: "acct_type", options: "acct" }],
     yes: (cc: Ctx) => { startOpening(cc); },
     no: (cc: Ctx) => { cc.s.declinedOpen = true; cc.say("no_problem"); },
     on: {
@@ -396,7 +398,7 @@ function customerPending(kind: "exchange" | "transfer"): Pending {
   };
   return {
     id: "acct_q", expects: ["not_yet", "customer_ctx", "tourist_ctx", "why_ctx"], hints: ["g_yesno"],
-    suggest: [{ lt: "Say whether you have an account here", hint: "g_yesno" }],
+    suggest: [{ lt: "Say whether you have an account here", hint: "open" }],
     yes, no,
     on: {
       not_yet: no,
@@ -1829,7 +1831,7 @@ export const bank: SituationDef = {
       c.say("ask_lease"); c.s.leaseAsked = true;
       c.expect({
         id: "lease_q", expects: ["give_proof", "proof_ctx", "not_yet"], hints: ["g_yesno", "proof"],
-        suggest: [{ lt: "Say whether you have a lease", hint: "proof", options: "proof" }],
+        suggest: [{ lt: "Say whether you have a lease", hint: "proof_lease", options: "proof" }],
         yes: (cc) => { if (cc.s.proof === undefined) { cc.s.proof = "lease"; cc.say("proof_ok"); } },
         no: (cc) => { if (cc.s.proof === undefined) { cc.s.proof = "later"; cc.say("proof_later"); } },
         on: {
@@ -2370,5 +2372,12 @@ export const bank: SituationDef = {
       setup: (s) => { s.customer = false; s.cardTwist = false; s.slowTwist = false; s.hay = undefined; s.turnGreet = false; } },
   ],
 };
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+bank.hints.yes_sure = pick(yesAgreeGroups().g_agree, ["ag_yes_sure"]);
+
+bank.hints.dep_yes = pickFrom(bank.hints.deposit.lt, [yesAgreeGroups().g_agree, ["ag_yes_sure"]], [bank.hints.deposit, ["dep_cash", "dep_min"]]);
+bank.hints.ex_yes = pickFrom(bank.hints.euros.lt, [yesAgreeGroups().g_agree, ["ag_yes_sure"]], [bank.hints.euros, ["ex_amount"]]);
+bank.hints.proof_lease = pick(bank.hints.proof, ["proof_lease", "proof_bill"]);
 
 export default bank;

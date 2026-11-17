@@ -25,6 +25,7 @@
 import type { Ctx, EntityDef, Pending, SituationDef, Tip } from "@/content/types";
 import { ent, t } from "@/content/dsl";
 import { expectHowAreYou } from "@/content/global";
+import { pick, pickFrom } from "../hint-pick";
 
 // ---------------------------------------------------------------------------
 // Entities
@@ -1135,7 +1136,7 @@ export const pharmacy: SituationDef = {
       help: (c) => { c.say("ask_symptoms"); } },
     { id: "who", when: (c) => c.s.mode !== "rx" && !!c.s.symptom && c.s.askWho && !c.s.decision, done: (c) => !!c.s.forWho,
       ask: (c) => c.say("ask_who"), expects: ["who_ans"],
-      suggest: [{ lt: "Say who it's for", hint: "who" }, { lt: "Say yes or no", hint: "g_yesno" }],
+      suggest: [{ lt: "Say who it's for", hint: "who" }],
       yes: (c) => { c.s.forWho = "me"; },
       no: (c) => { askWhoFor(c); } },
     { id: "howlong", when: (c) => c.s.mode !== "rx" && !!c.s.symptom && c.s.askHowLong && !c.s.decision, done: (c) => c.s.days !== undefined,
@@ -1145,7 +1146,7 @@ export const pharmacy: SituationDef = {
       help: (c) => { c.s.days = 1; c.say("ack"); goOn(c); } },
     { id: "meds", when: (c) => c.s.mode !== "rx" && !!c.s.symptom && c.s.askMeds && !c.s.decision, done: (c) => !!c.s.meds,
       ask: (c) => c.say(c.s.forWho && c.s.forWho !== "me" ? "ask_meds_other" : "ask_meds"), expects: ["meds_ans", "meds_ctx"],
-      suggest: [{ lt: "Say whether you take other medicines", hint: "meds" }, { lt: "Say yes or no", hint: "g_yesno" }],
+      suggest: [{ lt: "Say whether you take other medicines", hint: "meds" }],
       yes: (c) => { c.say("ask_meds_which"); c.hold(); },
       no: (c) => { c.s.meds = "none"; c.say("ack"); },
       // "No sé" (or, after "¿Cuál?", "No sé cuál"): a medicine he can't check, so nothing that could mix badly
@@ -1154,7 +1155,7 @@ export const pharmacy: SituationDef = {
       when: (c) => !c.s.decision && c.s.askAllergy && (c.s.mode === "rx" ? !!c.s.rxRead : !!c.s.symptom),
       done: (c) => !!c.s.allergy,
       ask: (c) => c.say(c.s.mode === "rx" ? "rx_allergy_q" : c.s.forWho && c.s.forWho !== "me" ? "ask_allergy_other" : "ask_allergy"), expects: ["allergy_ans", "allergy_ctx"],
-      suggest: [{ lt: "Say whether you're allergic", hint: "allergy" }, { lt: "Say yes or no", hint: "g_yesno" }],
+      suggest: [{ lt: "Say whether you're allergic", hint: "allergy" }],
       // "¿Es alérgico a la penicilina?" — yes is the penicillin allergy
       yes: (c) => { if (c.s.mode === "rx") { c.s.allergy = "pen"; rxPen(c); return; } c.say("ask_allergy_which"); c.hold(); },
       no: (c) => { c.s.allergy = "none"; c.say("ack"); } },
@@ -1191,7 +1192,7 @@ export const pharmacy: SituationDef = {
     { id: "rx_paper", when: (c) => c.s.mode === "rx" && !c.s.rxRead && !c.s.decision, done: (c) => !!c.s.rxRead,
       ask: (c) => { c.s.rxAsks = (c.s.rxAsks ?? 0) + 1; c.say(c.s.rxAsks > 1 ? "rx_ask_again" : "rx_ask"); },
       expects: ["hand_over", "hand_over_ctx", "no_rx_paper"],
-      suggest: [{ lt: "Hand over the prescription", hint: "rx" }],
+      suggest: [{ lt: "Hand over the prescription", hint: "rx_give" }],
       yes: (c) => { handOver(c); },
       no: (c) => { noRxPaper(c); } },
     { id: "rx_brand", when: (c) => c.s.mode === "rx" && !!c.s.rxRead && !c.s.decision && !c.s.stamped && (!c.s.askAllergy || !!c.s.allergy), done: (c) => !!c.s.stamped,
@@ -1223,7 +1224,7 @@ export const pharmacy: SituationDef = {
       no: (c) => { if (!c.s.dosageGiven) giveDosage(c); } },
     { id: "more", when: (c) => c.s.mode !== "rx" && !!product(c) && c.s.askMore && !!c.s.dosageGiven && !c.s.decision && !c.s.genFor, done: (c) => !!c.s.moreDone,
       ask: (c) => c.say("ask_more"), expects: ["more_no", "need_product", "need_symptom", "symptom_state"],
-      suggest: [{ lt: "Say that's all (or ask for more)", hint: "more", options: "product" }, { lt: "Say yes or no", hint: "g_yesno" }],
+      suggest: [{ lt: "Say that's all (or ask for more)", hint: "more", options: "product" }],
       yes: (c) => { c.say("what_else"); c.hold(); },
       no: (c) => { c.s.moreDone = true; } },
     // Paying
@@ -2502,5 +2503,8 @@ function firstThisTurn(c: Ctx, key: string): boolean {
   return true;
 }
 const markedThisTurn = (c: Ctx, key: string) => !!TURN.get(c)?.has(key);
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+pharmacy.hints.rx_give = pick(pharmacy.hints.rx, ["here_rx"]);
 
 export default pharmacy;

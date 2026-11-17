@@ -1319,7 +1319,8 @@ export const dentist: SituationDef = {
       no: (c) => { setNew(c, c.s.npVariant === 1); } },
     { id: "name", when: (c) => (booking(c) && c.s.newPt !== undefined) || moving(c), done: (c) => !!c.s.name,
       ask: (c) => { if (moving(c) && bump(c, "move_name") === 0) return; c.say("ask_name"); }, expects: ["name_ctx"], yes: goAhead,
-      suggest: [{ lt: "Give your first and last name", hint: "name" }, { lt: "Ask her to repeat", hint: "phone" }] },
+      // (only the name's own frames, "Me llamo … …": the phone phrases aren't a name)
+      hints: ["name"], suggest: [{ lt: "Give your first and last name", hint: "name" }, { lt: "Ask her to repeat", hint: "phone" }] },
     { id: "surname", when: (c) => !!c.s.name && words(c.s.name) < 2, done: (c) => words(c.s.name) >= 2,
       ask: (c) => c.say("ask_surname"), expects: ["name_ctx", "spell_ctx"], yes: goAhead,
       suggest: [{ lt: "Give your last name", hint: "surname" }] },

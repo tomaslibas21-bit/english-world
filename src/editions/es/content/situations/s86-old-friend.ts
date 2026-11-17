@@ -25,6 +25,7 @@
 import type { Ctx, Handler, Pending, Segment, SituationDef } from "@/content/types";
 import { t } from "@/content/dsl";
 import { GLOBAL_HANDLERS, LEAVING_PATTERNS } from "@/content/global";
+import { pick, pickFrom } from "../hint-pick";
 
 // ---------------------------------------------------------------------------
 // Flags used more than once
@@ -105,7 +106,7 @@ function numberNo(c: Ctx) {
   const keep = (cc: Ctx) => { if (giving(heard(cc))) return false; numberRefused(cc); };
   c.expect({
     id: "number_sure", expects: [...SWAP, "sure_ctx", "refuse_number"], hints: ["touch"],
-    suggest: [{ lt: "Give her your number (or not)", hint: "touch" }],
+    suggest: [{ lt: "Give her your number (or not)", hint: "touch_give" }],
     yes: keep, no: keep,
     on: {
       sure_ctx: keep, refuse_number: keep, agree: keep, g_ok: keep, decline: keep, no_sorry: keep,
@@ -473,7 +474,7 @@ const H: Record<string, Handler> = {
       const letGo = (cc: Ctx) => { if (giving(heard(cc))) return false; numberRefused(cc); cc.s.byeDone = true; cc.end(); };
       c.expect({
         id: "number_bye", optional: true, expects: [...SWAP, "refuse_number", "sure_ctx"], hints: ["touch"],
-        suggest: [{ lt: "Give her your number (or not)", hint: "touch" }],
+        suggest: [{ lt: "Give her your number (or not)", hint: "touch_give" }],
         no: letGo,
         on: {
           number_ctx: thenBye(H.number_ctx), give_phone: thenBye(H.give_phone), ask_number: thenBye(H.ask_number), hand_phone_ctx: thenBye((cc, sl, sg) => H.hand_phone_ctx(cc, sl, sg)),
@@ -1305,7 +1306,7 @@ export const oldFriend: SituationDef = {
     { id: "rush", when: (c) => !!c.s.rushTwist, done: (c) => !!c.s.rushing,
       ask: (c) => { c.s.rushing = true; c.twist("in_a_hurry"); c.say("rush"); c.say("quick_numbers"); c.s.numberAsked = true; },
       expects: [...SWAP, "refuse_number"],
-      suggest: [{ lt: "Swap numbers", hint: "touch" }],
+      suggest: [{ lt: "Swap numbers", hint: "touch_give" }],
       no: (c) => { if (!c.s.contact) numberNo(c); } },
     { id: "coffee", when: (c) => !c.s.rushing && c.s.askCoffee, done: (c) => !!c.s.coffee || asked(c, "coffee") >= 2,
       ask: (c) => { bump(c, "coffee"); c.s.coffeeAsked = true; c.say(asked(c, "coffee") > 1 ? "coffee_again" : "ask_coffee"); },
@@ -1589,5 +1590,8 @@ export const oldFriend: SituationDef = {
       setup: (s) => { PLAIN(s); s.askMike = false; s.askFamily = false; s.askCoffee = true; } },
   ],
 };
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+oldFriend.hints.touch_give = pick(oldFriend.hints.touch, ["kt_number", "kt_keep"]);
 
 export default oldFriend;

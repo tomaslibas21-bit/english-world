@@ -55,6 +55,7 @@
 import type { Ctx, EntityDef, Segment, SituationDef, Tip } from "@/content/types";
 import { ent, t } from "@/content/dsl";
 import { GLOBAL_HANDLERS } from "@/content/global";
+import { pick, pickFrom } from "../hint-pick";
 
 // ---------------------------------------------------------------------------
 // Flags used more than once
@@ -2374,7 +2375,7 @@ function protectExpect(c: Ctx) {
     if (cc.s.protectDone) return; cc.s.protectDone = true; cc.s.protectHow = "emily"; cc.say("protect_yes");
   };
   c.expect({ id: "protect_offer", optional: true, expects: ["protect_idea", "agree_idea", "maybe_ctx"], hints: ["protect", "checkin"],
-    suggest: [{ lt: "Answer Elena's suggestion", hint: "checkin" }],
+    suggest: [{ lt: "Answer Elena's suggestion", hint: "ck_offer" }],
     on: {
       // "¿En la agenda?" asks her idea back; "¿Podemos poner mis partes en la agenda?" takes it
       protect_idea: (cc, _s, seg) => { if (seg.tags.includes("agenda") && echoQ(cc)) unclear(cc); else protectIdea(cc, seg.tags); },
@@ -2467,7 +2468,7 @@ function goalOfferExpect(c: Ctx) {
     goalFromOffer(cc, id);
   };
   c.expect({ id: "goal_offer", optional: true, expects: ["goal_name", "goal_ctx", "goal_what_ctx", "agree_idea", "maybe_ctx"], hints: ["goals", "checkin"],
-    suggest: [{ lt: "Answer Elena's suggestion", hint: "checkin" }, { lt: "Say what you'd like to work on next year", hint: "goals", options: "goal" }],
+    suggest: [{ lt: "Answer Elena's suggestion", hint: "ck_offer" }, { lt: "Say what you'd like to work on next year", hint: "goals", options: "goal" }],
     on: {
       goal_name: (cc, slots, seg) => { named(cc, slots.goal ?? seg.tags.find((x) => x.startsWith("g:"))?.slice(2)); },
       goal_ctx: (cc, slots) => { named(cc, slots.goal); },
@@ -2727,5 +2728,8 @@ for (const st of review.steps) {
     ask(c);
   };
 }
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+review.hints.ck_offer = pick(review.hints.checkin, ["sounds_good", "good_idea"]);
 
 export default review;

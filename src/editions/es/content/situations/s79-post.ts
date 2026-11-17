@@ -29,6 +29,7 @@ import type { Ctx, EntityDef, Pending, Segment, SituationDef, StepDef, Suggestio
 import type { ConvCtx } from "@/convo/dialogue";
 import { ent, t } from "@/content/dsl";
 import { GLOBAL_HANDLERS } from "@/content/global";
+import { pick, pickFrom } from "../hint-pick";
 
 // ---------------------------------------------------------------------------
 // Entities
@@ -1083,7 +1084,7 @@ export const post: SituationDef = {
         } else c.say(c.s.toldFirst ? "ask_service_which" : "ask_service_again");
       },
       expects: ["service_ans", "ask_cheaper", "ask_faster", "service_not", "not_dear_ctx", "ask_price", "ask_time", "ask_tracking", "ask_insured"],
-      suggest: [{ lt: "Choose how to send it", hint: "service", options: "service" }, { lt: "Ask if there's anything cheaper", hint: "service" }],
+      suggest: [{ lt: "Choose how to send it", hint: "service", options: "service" }, { lt: "Ask if there's anything cheaper", hint: "svc_cheaper" }],
       help: (c) => { c.say("opt_priority", { price: priceOf(c, "priority") }); c.say("opt_express", { price: priceOf(c, "express") }); } },
     { id: "contents_list", when: (c) => sending(c) && !!c.s.service && !c.s.items, done: (c) => !!c.s.items,
       ask: (c) => { customsIntro(c); c.say("ask_what_inside"); },
@@ -1902,5 +1903,8 @@ function pay(c: Ctx, method: string) {
   if (c.s.sending && !c.s.sent) { finishSending(c); if (c.s.stampQty) c.say("stamps_here"); }
   else { c.say("stamps_here"); c.s.served = true; }
 }
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+post.hints.svc_cheaper = pick(post.hints.service, ["q_cheaper", "svc_cheaper"]);
 
 export default post;

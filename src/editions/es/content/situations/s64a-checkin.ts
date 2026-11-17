@@ -15,6 +15,8 @@
 import type { Ctx, EntityDef, Pending, Segment, SituationDef } from "@/content/types";
 import { ent, t } from "@/content/dsl";
 import { expectHowAreYou } from "@/content/global";
+import { pick, pickFrom } from "../hint-pick";
+import { yesAgreeGroups } from "../global";
 
 // ---------------------------------------------------------------------------
 // Entities
@@ -447,7 +449,7 @@ function expectPacked(c: Ctx) {
   const ok = (cc: Ctx) => { cc.s.safetyDone = true; cc.say("packed_ok"); };
   const follow = (cc: Ctx) => {
     cc.say("packed_follow");
-    ask(cc, { id: "packed_follow", optional: true, hints: ["g_yesno"], suggest: [{ lt: "Answer yes or no", hint: "g_yesno" }],
+    ask(cc, { id: "packed_follow", optional: true, hints: ["g_yesno"], suggest: [{ lt: "Answer yes or no", hint: "yes_sure" }],
       yes: (c3) => { c3.s.safetyDone = true; c3.say("packed_follow_ok"); },
       no: (c3) => { c3.s.safetyDone = true; c3.say("packed_follow_ok"); },
       on: { g_dontknow: (c3) => { c3.s.safetyDone = true; c3.say("packed_follow_ok"); } },
@@ -467,7 +469,7 @@ function expectBattery(c: Ctx) {
   const has = (cc: Ctx, again = false) => {
     if (!again) { cc.twist("power_bank"); cc.say("battery_move"); }
     else { cc.say("battery_must"); cc.say("battery_move_q"); } // a refusal gets the reason and a short re-ask, not the whole line again
-    ask(cc, { id: "battery_move", expects: ["ack_done", "give", "give_ctx"], hints: ["g_yesno"], suggest: [{ lt: "Agree to move it", hint: "g_yesno" }],
+    ask(cc, { id: "battery_move", expects: ["ack_done", "give", "give_ctx"], hints: ["g_yesno"], suggest: [{ lt: "Agree to move it", hint: "yes_sure" }],
       yes: (c3) => { c3.s.safetyDone = true; c3.say("battery_thanks"); },
       no: (c3) => { has(c3, true); },
       on: {
@@ -2068,5 +2070,8 @@ export const checkin: SituationDef = {
       setup: (s) => { s.overweight = true; s.noWindow = false; s.askSafety = false; s.greetKind = "plain"; s.bagsQ = "yn"; } },
   ],
 };
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+checkin.hints.yes_sure = pick(yesAgreeGroups().g_agree, ["ag_yes_sure", "ag_sure"]);
 
 export default checkin;

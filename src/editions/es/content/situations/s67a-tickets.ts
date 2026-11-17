@@ -26,6 +26,7 @@ import { ent, t } from "@/content/dsl";
 import { expectHowAreYou } from "@/content/global";
 import { numberSlot } from "@/convo/slots";
 import { variety } from "@/convo/compose";
+import { pick, pickFrom } from "../hint-pick";
 
 /** A number of 10 or more really said as a number (an age: "tengo 67 años"). */
 const bigNumber: SlotFn = (toks, pos, prefix) => numberSlot(toks, pos, prefix).filter((r) => !r.cost && typeof r.value === "number" && r.value >= 10);
@@ -952,7 +953,7 @@ export const tickets: SituationDef = {
       expects: ["ask_next", "ask_track", "ask_change", "ask_duration", "more_no", "ask_ontime", "ask_luggage", "ask_early", "question_ctx"],
       suggest: [
         { lt: "Ask when and from which gate your bus leaves", hint: "info" },
-        { lt: "Say that's all", hint: "g_yesno" },
+        { lt: "Say that's all", hint: "g_no" },
       ],
       yes: (c) => { c.say("tell_me"); c.hold(); },
       no: (c) => { c.say("just_so"); tellInfo(c); } },
@@ -1125,7 +1126,7 @@ export const tickets: SituationDef = {
       if (!c.s.named && c.s.dep) {
         c.say(c.s.fullAsked ? "name_remind" : "ask_full_name"); // said again: a short reminder, not the same line (rule 8)
         c.s.fullAsked = true;
-        c.expect({ id: "full_name", expects: ["name_ctx"], hints: ["idcard"], suggest: [{ lt: "Say your full name", hint: "idcard" }],
+        c.expect({ id: "full_name", expects: ["name_ctx"], hints: ["idcard"], suggest: [{ lt: "Say your full name", hint: "id_name" }],
           on: { name_ctx: (cc) => { idDone(cc, "name_ok"); } },
           ask: (cc) => cc.say("ask_full_name") });
         return;
@@ -1803,5 +1804,8 @@ function tellInfo(c: Ctx) {
   c.s.retell = false;
   checkDone(c);
 }
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+tickets.hints.id_name = pick(tickets.hints.idcard, ["id_name"]);
 
 export default tickets;

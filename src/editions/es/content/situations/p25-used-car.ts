@@ -390,7 +390,7 @@ function tellPrice(c: Ctx) {
   if (first && !c.s.drove && !c.s.driveDeclined && !c.s.driveOffered && !c.s.finalMade) {
     c.s.driveOffered = 1;
     c.say("drive_offer");
-    c.expect({ id: "drive_q", expects: ["test_drive", "decline_drive"], suggest: [S_DRIVE, S_OFFER], hints: ["drive", "offer"],
+    c.expect({ id: "drive_q", expects: ["test_drive", "decline_drive"], suggest: [{ lt: "Say yes", hint: "g_yes" }, S_OFFER], hints: ["drive", "offer"],
       on: { test_drive: (cc) => { startDrive(cc); }, decline_drive: (cc) => { declineDrive(cc); pendPrice(cc); } },
       yes: (cc) => startDrive(cc), no: (cc) => { declineDrive(cc); pendPrice(cc); },
       ask: (cc) => cc.say("drive_offer") });

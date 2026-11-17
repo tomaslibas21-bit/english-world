@@ -20,6 +20,7 @@ import type { Ctx, EntityDef, SituationDef, StepDef, Suggestion } from "@/conten
 import type { ConvCtx } from "@/convo/dialogue";
 import { ent, t } from "@/content/dsl";
 import { GLOBAL_HANDLERS } from "@/content/global";
+import { pick, pickFrom } from "../hint-pick";
 
 // ---------------------------------------------------------------------------
 // Days and time windows for the technician
@@ -1052,10 +1053,11 @@ export const support: SituationDef = {
         if (n === 0 && c.s.menuSales) c.say("bot_menu_sales");
       },
       expects: ["menu_support", "menu_billing", "menu_sales", "menu_agent", "menu_num_ctx", "internet_down", "charged_twice", "menu_social_ctx"],
-      suggest: [S_MENU, { lt: "Ask for a real person (an agent)", hint: "menu" }] },
+      suggest: [S_MENU, { lt: "Ask for a real person (an agent)", hint: "menu_agent" }] },
     { id: "name", when: (c) => !!c.s.routed, done: (c) => !!c.s.name,
       ask: (c) => { claireOn(c); c.say("ask_name"); }, expects: ["name_ctx"], yes: goAhead,
-      suggest: [{ lt: "Give your full name", hint: "name" }, S_PHONE] },
+      // (only the name's own frames, "Me llamo … …": the phone phrases aren't a name)
+      hints: ["name"], suggest: [{ lt: "Give your full name", hint: "name" }, S_PHONE] },
     { id: "account", when: (c) => !!c.s.name, done: (c) => !!c.s.account,
       ask: (c) => { claireOn(c); c.say(c.s.lookup ? "acct_lookup" : "ask_account"); },
       expects: ["account_ans", "account_ctx", "acct_unknown", "same_number_ctx"], yes: goAhead,
@@ -1710,5 +1712,8 @@ function textIt(c: ConvCtx) {
   c.conv.addNote({ en: w });
   c.hold();
 }
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+support.hints.menu_agent = pick(support.hints.menu, ["menu_agent"]);
 
 export default support;

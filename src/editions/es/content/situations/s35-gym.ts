@@ -23,6 +23,8 @@
 import type { Ctx, EntityDef, Pending, SituationDef } from "@/content/types";
 import { ent, t } from "@/content/dsl";
 import { expectHowAreYou } from "@/content/global";
+import { pick, pickFrom } from "../hint-pick";
+import { yesAgreeGroups } from "../global";
 
 // ---------------------------------------------------------------------------
 // Entities
@@ -2653,7 +2655,7 @@ function stretchInstead(c: Ctx) {
   c.s.machineOk = true; c.s.setsDone = true; c.s.repDone = true; c.s.spotDone = true;
   c.say("stretch_instead");
   const go = () => { /* the stretches are done: "¿Cómo te sientes ahora?" follows */ };
-  c.expect({ id: "stretch", optional: true, expects: [], hints: ["g_yesno"], suggest: [{ lt: "Agree", hint: "g_yesno" }],
+  c.expect({ id: "stretch", optional: true, expects: [], hints: ["g_yesno"], suggest: [{ lt: "Agree", hint: "g_agree" }],
     on: { g_ok: go, g_thanks: go }, yes: go, no: go });
 }
 
@@ -2718,7 +2720,7 @@ function askDay(c: Ctx, day: string) {
   c.s.offeredDay = day;
   c.say("day_amb", { X: day });
   c.expect({ id: "day_amb", expects: ["next_day", "when_ctx", "day_no", "next_no", "next_later", "later_ctx", "cant", "next_same"], hints: ["next", "g_yesno"],
-    suggest: [{ lt: "Say whether that day works", hint: "next", options: "weekday" }],
+    suggest: [{ lt: "Say whether that day works", hint: "next_day", options: "weekday" }],
     on: {
       next_day: (cc, sl) => { nextDay(cc, ((sl.day ?? sl.weekday) as string | undefined) ?? day); },
       when_ctx: (cc, sl) => { if (bareBookingBlocked(cc)) return; nextDay(cc, (sl.day as string | undefined) ?? day); },
@@ -2735,7 +2737,7 @@ function offerThursday(c: Ctx) {
   c.s.offeredDay = "thursday";
   c.say("offer_thursday");
   c.expect({ id: "thursday_q", expects: ["next_day", "next_later", "later_ctx", "next_same", "when_ctx", "see_you_ctx", "cant", "day_no"], hints: ["next", "g_yesno"],
-    suggest: [{ lt: "Agree, or suggest another day", hint: "next", options: "weekday" }],
+    suggest: [{ lt: "Agree, or suggest another day", hint: "next_day", options: "weekday" }],
     on: {
       next_day: (cc, sl) => { nextDay(cc, (sl.day ?? sl.weekday) as string | undefined); },
       when_ctx: (cc, sl) => { if (bareBookingBlocked(cc)) return; nextDay(cc, (sl.day as string | undefined) ?? "thursday"); },
@@ -2752,5 +2754,8 @@ function offerThursday(c: Ctx) {
     no: (cc) => bookLater(cc),
     ask: (cc) => cc.say("offer_thursday") });
 }
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+gym.hints.next_day = pickFrom(gym.hints.next.lt, [yesAgreeGroups().g_agree, ["ag_sounds_good"]], [gym.hints.next, ["how_about_day"]]);
 
 export default gym;

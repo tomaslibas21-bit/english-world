@@ -49,6 +49,8 @@
 import type { Ctx, EntityDef, Pending, Segment, SituationDef, Tip } from "@/content/types";
 import { ent, t } from "@/content/dsl";
 import { GLOBAL_HANDLERS } from "@/content/global";
+import { pick, pickFrom } from "../hint-pick";
+import { yesAgreeGroups } from "../global";
 
 // ---------------------------------------------------------------------------
 // Flags used more than once
@@ -1565,7 +1567,7 @@ export const startup: SituationDef = {
         c.s.ownerDone = true; askNext(c);
       },
       expects: ["ask_owner", "insist", "no_more", "more_q_ctx"],
-      suggest: [{ lt: "Ask who's in charge of what", hint: "owner", options: "area" }, { lt: "Say you have no more questions", hint: "g_yesno" }],
+      suggest: [{ lt: "Ask who's in charge of what", hint: "owner", options: "area" }, { lt: "Say you have no more questions", hint: "g_no" }],
       // "¿Algo más?" – "Sí, una pregunta." / "No, es todo." ("Ok, gracias." after an answer is a no)
       yes: (c) => {
         const h = heard(c);
@@ -2273,7 +2275,7 @@ function pushPending(): Pending {
   const slidesFirst = (c: Ctx) => { if (!once(c, "push")) return; T(c, "prio_ok", { X: tv("slides") }); setPrio(c, "slides", "learner"); afterPrio(c); };
   return {
     id: "pushback", expects: ["propose", "propose_ctx", "cant_task", "ask_priority", "agree_ctx"], hints: ["propose"],
-    suggest: [{ lt: "Agree, or keep your own plan", hint: "propose", options: "task" }],
+    suggest: [{ lt: "Agree", hint: "p_agree" }, { lt: "Agree, or keep your own plan", hint: "propose", options: "task" }],
     yes: slidesFirst,
     no: (c) => { if (!once(c, "push")) return; T(c, "push_no"); setPrio(c, c.s.pushed, "learner"); afterPrio(c); },
     on: {
@@ -2291,7 +2293,7 @@ function dealPending(): Pending {
   const yes = (c: Ctx) => { if (!once(c, "dealAns")) return; T(c, "deal_yes"); setPrio(c, "slides", "deal"); afterPrio(c); };
   return {
     id: "deal", expects: ["propose", "propose_ctx", "cant_task", "ask_priority", "agree_ctx"], hints: ["propose"],
-    suggest: [{ lt: "Agree to the plan, or suggest your own", hint: "propose", options: "task" }],
+    suggest: [{ lt: "Agree", hint: "p_agree_deal" }, { lt: "Agree to the plan, or suggest your own", hint: "propose", options: "task" }],
     yes,
     no: (c) => { if (!once(c, "dealAns")) return; c.s.prioSkip = true; T(c, "deal_no"); },
     on: {
@@ -2316,7 +2318,7 @@ function crashOkPending(): Pending {
   const yes = (c: Ctx) => { if (once(c, "crashOk")) crashFixed(c, "tyler"); };
   return {
     id: "crash_ok", expects: ["plan", "agree_ctx"], hints: ["crash"],
-    suggest: [{ lt: "Agree, or suggest your own plan", hint: "crash" }],
+    suggest: [{ lt: "Agree", hint: "p_agree" }, { lt: "Agree, or suggest your own plan", hint: "crash" }],
     yes,
     no: (c) => { if (once(c, "crashOk")) { T(c, "crash_what"); c.hold(); } },
     on: {
@@ -2358,7 +2360,7 @@ function midResolve(c: Ctx, how: "limit" | "yes" | "cant" | "paid", h?: string) 
 function midDealPending(): Pending {
   return {
     id: "mid_deal", expects: ["stay_limit", "cant_stay", "cant_ctx", "stay_yes", "agree_ctx", "stay_whatif"], hints: ["midnight"],
-    suggest: [{ lt: "Agree, or suggest your own time", hint: "midnight" }],
+    suggest: [{ lt: "Agree", hint: "p_agree_deal" }, { lt: "Agree, or suggest your own time", hint: "midnight" }],
     yes: (c) => { midResolve(c, "paid"); },
     no: midWhen,
     on: {
@@ -2437,7 +2439,7 @@ function offer(c: Ctx, h: string, line: string) {
   const time = (cc: Ctx, tm: any) => { if (hourId(tm) === cc.s.offer) accept(cc); else meetAgain(cc, tm); };
   c.expect({
     id: "offer", expects: ["meet_time", "meet_time_ctx", "cant_ctx", "agree_ctx"], hints: ["closing"],
-    suggest: [{ lt: "Agree, or suggest another time", hint: "closing" }],
+    suggest: [{ lt: "Agree", hint: "p_agree" }, { lt: "Suggest a time", hint: "closing_other" }],
     yes: accept,
     no: (cc) => { if (!once(cc, "offerAns")) return; T(cc, "when_q"); cc.expect(whenPending()); },
     on: {
@@ -2450,7 +2452,7 @@ function offer(c: Ctx, h: string, line: string) {
 function whenPending(): Pending {
   return {
     id: "when", expects: ["meet_time", "meet_time_ctx"], hints: ["closing"],
-    suggest: [{ lt: "Suggest a time", hint: "closing" }],
+    suggest: [{ lt: "Suggest a time", hint: "closing_when" }],
     on: {
       meet_time: (c, s) => { meetAgain(c, s.time); },
       meet_time_ctx: (c, s) => { meetAgain(c, s.time); },
@@ -2509,5 +2511,13 @@ for (const st of startup.steps) {
     ask(c);
   };
 }
+
+// The replies follow Toño's exact question (owner, 17 Nov 2026): his proposals ("¿Trato hecho?", "¿Primero arreglamos el
+// error…?") get a plain yes, and once the learner has turned down eight, the time questions don't offer eight again
+// or his own "¿Qué tal al mediodía?" back to him.
+startup.hints.p_agree = pick(yesAgreeGroups().g_agree, ["ag_sounds_good", "ag_yes_sure", "ag_sure"]);
+startup.hints.p_agree_deal = pick(yesAgreeGroups().g_agree, ["ag_deal", "ag_sounds_good", "ag_sure"]);
+startup.hints.closing_when = pick(startup.hints.closing, ["make_it", "how_about"]);
+startup.hints.closing_other = pick(startup.hints.closing, ["make_it"]);
 
 export default startup;

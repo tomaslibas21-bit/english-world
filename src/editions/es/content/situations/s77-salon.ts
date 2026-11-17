@@ -1137,7 +1137,7 @@ export const salon: SituationDef = {
   steps: [
     { id: "appt", done: (c) => !!c.s.checkedIn || c.s.appt !== undefined,
       ask: (c) => c.say("ask_appt"), expects: ["appt_have", "appt_time_ctx", "appt_none", "walkin", "name_ctx"],
-      suggest: [{ lt: "Say whether you have an appointment", hint: "checkin" }, { lt: "Say your name", hint: "name" }, { lt: "Say yes or no", hint: "g_yesno" }],
+      suggest: [{ lt: "Say whether you have an appointment", hint: "checkin" }, { lt: "Say your name", hint: "name" }],
       yes: (c) => { c.s.appt = true; },
       no: (c) => { salon.handlers.appt_none(c, {}, { intent: "appt_none", slots: {}, tags: [] }); } },
     { id: "name", when: (c) => !!c.s.appt && !c.s.walkin, done: (c) => !!c.s.checkedIn,

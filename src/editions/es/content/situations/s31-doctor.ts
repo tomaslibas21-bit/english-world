@@ -28,6 +28,7 @@ import type { Ctx, EntityDef, HintItem, Pending, SentSrc, SituationDef, Tip } fr
 import type { SlotFn, SlotResult } from "@/convo/grammar";
 import { readInt } from "@/convo/slots";
 import { ent, t } from "@/content/dsl";
+import { pick, pickFrom } from "../hint-pick";
 
 /** "surtir una receta" is Mexico's; the neutral twins buy the medicine (the lead's decision, 5 Nov 2026, with s75). */
 const F_SURTIR = "Mexican: surtir una receta = to fill a prescription.";
@@ -1333,7 +1334,7 @@ export const doctor: SituationDef = {
     { id: "more_sym", when: (c) => !!c.s.askMore && syms(c).length === 1, done: (c) => !!c.s.moreDone,
       ask: (c) => { askMoreSym(c); },
       expects: ["symptom", "symptom_ctx", "sym_none", "sym_none_ctx", "sym_neg"],
-      suggest: [{ lt: "Name other symptoms (or say that's all)", hint: "more_sym", options: "symptom" }, { lt: "Say yes or no", hint: "g_yesno" }],
+      suggest: [{ lt: "Name other symptoms (or say that's all)", hint: "more_sym", options: "symptom" }],
       yes: (c) => { c.say("what_else_sym"); c.hold(); },
       no: (c) => { c.s.moreDone = true; c.say("sym_ack"); } },
     { id: "howlong", when: (c) => syms(c).length > 0, done: (c) => c.s.days !== undefined,
@@ -1354,7 +1355,7 @@ export const doctor: SituationDef = {
         c.s.tempQ = "took"; c.say("ask_temp_took");
       },
       expects: ["temp_ans", "temp_ctx", "fever_yes_ctx", "temp_unknown", "temp_dunno_ctx", "symptom", "symptom_ctx", "sym_neg"],
-      suggest: [{ lt: "Say your temperature (or that you didn't take it)", hint: "fever" }, { lt: "Say yes or no", hint: "g_yesno" }],
+      suggest: [{ lt: "Say your temperature (or that you didn't take it)", hint: "fever" }],
       yes: (c) => {
         if (c.s.fever !== true) { c.s.fever = true; return; }
         if (c.s.tempQ === "took") c.s.tempTook = true;
@@ -1368,7 +1369,7 @@ export const doctor: SituationDef = {
     { id: "meds", when: (c) => syms(c).length > 0, done: (c) => !!c.s.meds,
       ask: (c) => c.say("ask_meds"),
       expects: ["meds_ans", "meds_ctx"],
-      suggest: [{ lt: "Say whether you're taking anything", hint: "meds" }, { lt: "Say yes or no", hint: "g_yesno" }],
+      suggest: [{ lt: "Say whether you're taking anything", hint: "meds" }],
       yes: (c) => {
         c.say("ask_meds_what");
         c.expect({ id: "meds_what", expects: ["meds_ans", "meds_ctx"], hints: ["meds"], suggest: [{ lt: "Say what you're taking", hint: "meds" }],
@@ -1388,7 +1389,7 @@ export const doctor: SituationDef = {
           c.twist("chart");
           c.say("allergy_chart");
           c.expect({ id: "chart", expects: ["allergy_ans", "allergy_ctx", "allergy_dunno_ctx", "chart_ctx"], hints: ["chart", "allergy", "g_yesno"],
-            suggest: [{ lt: "Confirm or correct it", hint: "chart" }, { lt: "Say yes or no", hint: "g_yesno" }],
+            suggest: [{ lt: "Confirm or correct it", hint: "chart" }],
             on: { allergy_ans: (cc, _sl, sg) => { chartAnswer(cc, sg.tags); }, allergy_ctx: (cc, _sl, sg) => { chartAnswer(cc, sg.tags); }, chart_ctx: (cc, _sl, sg) => { chartAnswer(cc, sg.tags); }, allergy_dunno_ctx: (cc) => { chartAnswer(cc, ["unsure"]); } },
             yes: (cc) => { chartAnswer(cc, ["pen"]); },
             no: (cc) => { chartAnswer(cc, ["none"]); },
@@ -1401,7 +1402,7 @@ export const doctor: SituationDef = {
         c.say("ask_allergy");
       },
       expects: ["allergy_ans", "allergy_ctx", "allergy_dunno_ctx"],
-      suggest: [{ lt: "Say whether you have drug allergies", hint: "allergy" }, { lt: "Say yes or no", hint: "g_yesno" }],
+      suggest: [{ lt: "Say whether you have drug allergies", hint: "allergy" }],
       yes: (c) => {
         c.say("allergy_which");
         c.expect({ id: "allergy_which", expects: ["allergy_ans", "allergy_ctx", "allergy_dunno_ctx"], hints: ["allergy"], suggest: [{ lt: "Say what you're allergic to", hint: "allergy" }],
@@ -1414,12 +1415,12 @@ export const doctor: SituationDef = {
     { id: "rx", when: (c) => !!c.s.examDone && !!c.s.allergy, done: (c) => !!c.s.rxGiven,
       ask: (c) => { giveRx(c); },
       // after the directions (when no "¿Tiene alguna pregunta?" follows): okay, or a question
-      suggest: [{ lt: "Say okay, or ask a question", hint: "rx_ok" }, { lt: "Ask about the medicine", hint: "ask_rx" }] },
+      suggest: [{ lt: "Say okay, or ask a question", hint: "rx_clear" }, { lt: "Ask about the medicine", hint: "ask_rx" }] },
     { id: "pharmacy", when: (c) => !!c.s.rxGiven && !!c.s.askPharmacy, done: (c) => !!c.s.pharmacy,
       // the prescription is handed over once; asked again (after another question), only the question
       ask: (c) => { c.say(c.s.pharmacyAsked ? "ask_pharmacy_again" : "ask_pharmacy"); c.s.pharmacyAsked = true; },
       expects: ["pharmacy_ans", "pharmacy_dunno_ctx"],
-      suggest: [{ lt: "Say whether you know a pharmacy", hint: "pharmacy" }, { lt: "Say yes or no", hint: "g_yesno" }],
+      suggest: [{ lt: "Say whether you know a pharmacy", hint: "pharmacy" }],
       yes: (c) => { c.s.pharmacy = "other"; c.say("pharmacy_other"); pharmacyEnd(c); },
       no: (c) => { c.s.pharmacy = "harbor"; c.say("pharmacy_suggest"); pharmacyEnd(c); },
       help: (c) => { c.s.pharmacy = "harbor"; c.say("pharmacy_suggest"); pharmacyEnd(c); } },
@@ -2121,7 +2122,7 @@ function questionsPending(id: string): Pending {
   return { id, optional: true, hints: ["ask_rx", "ask_dx", "rx_ok", "g_yesno"],
     expects: ["clear_ctx", "ask_dosage", "ask_meals", "ask_duration", "ask_side", "ask_alcohol", "ask_drive", "ask_better", "ask_work", "ask_note", "ask_contagious", "ask_serious", "ask_not_better",
       "ask_what", "ask_eat", "ask_exercise", "ask_cost", "ask_med_price", "ask_where_pharmacy", "ask_rx_paper"],
-    suggest: [{ lt: "Ask about the medicine", hint: "ask_rx" }, { lt: "Ask about the illness", hint: "ask_dx" }, { lt: "Say yes or no", hint: "g_yesno" }],
+    suggest: [{ lt: "Ask about the medicine", hint: "ask_rx" }, { lt: "Ask about the illness", hint: "ask_dx" }, { lt: "Say yes or no", hint: "g_no" }],
     // "Ok, gracias" / "Está bien" parse as a yes, but they acknowledge the advice: no questions
     yes: (cc) => {
       if (/^[\s¡¿]*(ok(ay)?|vale|bueno|est[aá] bien|muy bien|perfecto|de acuerdo|sale|va)\b/i.test(cc.heard)) { cc.say(/\bgracias\b/i.test(cc.heard) ? "g_welcome" : "ok_plain"); return; }
@@ -2273,7 +2274,7 @@ function examPending(id: "sleeve" | "breath" | "ah" | "hurt", expects: string[],
   const on: Pending["on"] = {};
   for (const i of expects) on[i] = (cc: Ctx, _sl: any, _sg: any) => { done(cc, i); };
   return {
-    id, expects, hints: [EXAM_SUGGEST[id].hint, "g_yesno"], suggest: [EXAM_SUGGEST[id], { lt: "Say yes or no", hint: "g_yesno" }],
+    id, expects, hints: [EXAM_SUGGEST[id].hint, "g_yesno"], suggest: [EXAM_SUGGEST[id]],
     on, yes: (cc) => { done(cc, "yes"); }, no: (cc) => { done(cc, "no"); }, ask: again,
   };
 }
@@ -2371,5 +2372,9 @@ function hurt(c: Ctx) {
     cc.s.examDone = true;
   }, (cc) => cc.say("hurt_here")));
 }
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+// (nobody asked "¿Tiene alguna pregunta?" yet: "No, ninguna pregunta." isn't an answer here, and the step didn't take it)
+doctor.hints.rx_clear = pick(doctor.hints.rx_ok, ["clear"]);
 
 export default doctor;

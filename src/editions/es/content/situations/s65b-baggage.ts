@@ -35,6 +35,7 @@ import type { SlotFn } from "@/convo/grammar";
 import { ent, t } from "@/content/dsl";
 import { GLOBAL_HANDLERS, GLOBAL_INTENTS } from "@/content/global";
 import { lettersSlot, numberSlot } from "@/convo/slots";
+import { pick, pickFrom } from "../hint-pick";
 
 /** A number of 10 or more ("el cuatrocientos ochenta y dos"), never a bare "una" or "dos". */
 const bigNumber: SlotFn = (toks, pos, prefix) => numberSlot(toks, pos, prefix).filter((r) => !r.cost && typeof r.value === "number" && r.value >= 10);
@@ -1406,7 +1407,7 @@ export const baggage: SituationDef = {
       // "…a su hotel?", unless the learner has already said they aren't at a hotel
       ask: (c) => c.say(c.s.hotel && !inHotel(c) ? "ask_delivery_stay" : "ask_delivery"),
       expects: ["delivery", "pickup", "delivery_ctx", "not_hotel_ctx", "price_ctx"],
-      suggest: [{ lt: "Accept delivery to your hotel", hint: "g_yesno" }, { lt: "Pick it up yourself, or ask", hint: "delivery" }],
+      suggest: [{ lt: "Accept delivery to your hotel", hint: "g_yes" }, { lt: "Pick it up yourself, or ask", hint: "dl_other" }],
       yes: (c) => { c.s.delivery = "deliver"; c.s.dlTo = c.s.hotel && !inHotel(c) ? "home" : "hotel"; once(c, "dl", deliveryOk(c)); turn(c).said_when = true; },
       no: (c) => { c.s.delivery = "pickup"; c.say("pickup_ok"); } },
     // done once Itzel knows where to bring the bag: "En casa de una amiga" or "En un Airbnb" is enough for a pickup, but a
@@ -2326,5 +2327,8 @@ for (const k of DESK_ONLY) {
   const h = baggage.handlers[k];
   baggage.handlers[k] = (c, sl, sg) => { if (c.s.itzelDone) { once(c, "desk", "ask_baggage_desk"); return; } return h(c, sl, sg); };
 }
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+baggage.hints.dl_other = pick(baggage.hints.delivery, ["dl_pickup", "q_when", "q_free"]);
 
 export default baggage;

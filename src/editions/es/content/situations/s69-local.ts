@@ -1329,7 +1329,7 @@ export const local: SituationDef = {
     { id: "food", when: (c) => !!c.s.sightRec && !c.s.foodRec && !c.s.wantFood, done: (c) => !!c.s.foodRec || !!c.s.wantFood,
       ask: (c) => { c.s.foodAsks = (c.s.foodAsks || 0) + 1; if (c.s.foodAsks === 2) { c.say("food_again"); return; } if (c.s.foodAsks > 2) { c.say("later_food"); recFood(c, undefined, !!c.s.cheap, false, true); thenNext(c); return; } c.say("prompt_food"); },
       expects: ["ask_food", "food_ans", "not_hungry", "hungry_ctx"],
-      suggest: [{ lt: "Say you'd like to eat", hint: "hungry" }, { lt: "Ask where to eat", hint: "food", options: "cuisine" }, { lt: "Answer yes or no", hint: "g_yesno" }],
+      suggest: [{ lt: "Say you'd like to eat", hint: "hungry" }, { lt: "Ask where to eat", hint: "food", options: "cuisine" }],
       yes: (c) => { if (!c.s.foodRec) c.s.wantFood = true; else c.say("no_problem"); },
       no: (c) => { if (c.s.foodRec) { c.say("no_problem"); return; } c.say("later_food"); recFood(c, undefined, !!c.s.cheap); } },
     { id: "walk", when: (c) => c.s.walkTwist && !!c.s.foodRec && !!c.s.sightRec, done: (c) => !!c.s.walkDone,

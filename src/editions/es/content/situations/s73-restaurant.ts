@@ -24,6 +24,8 @@
 import type { Ctx, EntityDef, SituationDef, Tip } from "@/content/types";
 import { ent, t } from "@/content/dsl";
 import { expectHowAreYou } from "@/content/global";
+import { pick, pickFrom } from "../hint-pick";
+import { yesAgreeGroups } from "../global";
 
 // ---------------------------------------------------------------------------
 // Menu (prices in cents of a peso; a sit-down place downtown: dishes $160–320, El Muelle is about $300 in s69). Every
@@ -2017,7 +2019,7 @@ export const restaurant: SituationDef = {
       expects: ["order", "drinks_no", "ask_menu", "more_no", "reject", "correction", "ask_price", "ask_desc", "ask_allergy"],
       suggest: [
         { lt: "Order a drink", hint: "drink", options: ["lemonade", "horchata", "jamaica", "chaya", "still_water", "sparkling_water", "coke", "beer", "red_wine"] },
-        { lt: "Ask what they have to drink", hint: "drink" },
+        { lt: "Ask what they have to drink", hint: "drink_q" },
       ],
       yes: (c) => { sayP(c, "what_drink"); c.hold(); },
       no: (c) => { c.s.drinksDone = true; c.say("no_problem"); },
@@ -2096,7 +2098,7 @@ export const restaurant: SituationDef = {
       expects: ["qty_ctx"],
       suggest: [
         { lt: "Say thank you and wait", hint: "g_social" },
-        { lt: "Ask for something (tortillas, water)", hint: "meal" },
+        { lt: "Ask for something (tortillas, water)", hint: "meal_ask" },
       ] },
     // The food arrives (twist: the wrong dish)
     { id: "serve_wrong", when: (c) => c.s.wrongTwist && !!mainDish(c) && !!c.s.placed && !c.s.served, done: () => false,
@@ -2129,7 +2131,7 @@ export const restaurant: SituationDef = {
       },
       suggest: [
         { lt: "Say thank you", hint: "g_social" },
-        { lt: "Ask for more tortillas or a drink", hint: "meal" },
+        { lt: "Ask for more tortillas or a drink", hint: "meal_ask" },
       ] },
     // Checking back (twist: cold soup)
     { id: "checkback_soup", when: (c) => c.s.soupTwist && !!soupItem(c) && !!c.s.served && !c.s.cb, done: (c) => !!c.s.cb,
@@ -2146,7 +2148,7 @@ export const restaurant: SituationDef = {
       expects: ["all_good", "all_good_ctx", "complain_cold", "complain_other", "request", "more_no", "order"],
       suggest: [
         { lt: "Say everything is delicious", hint: "meal" },
-        { lt: "Ask for more tortillas or a drink", hint: "meal" },
+        { lt: "Ask for more tortillas or a drink", hint: "meal_ask" },
         { lt: "Complain if something is wrong", hint: "cold" },
       ],
       yes: (c) => { c.s.cb = "good"; },
@@ -2159,7 +2161,7 @@ export const restaurant: SituationDef = {
         else if (cb.startsWith("request:")) c.say(requestLine(cb.slice(8)));
         else c.say("all_good_reply");
       },
-      suggest: [{ lt: "Say thank you", hint: "g_social" }, { lt: "Ask for something", hint: "meal" }] },
+      suggest: [{ lt: "Say thank you", hint: "g_social" }, { lt: "Ask for something", hint: "meal_ask" }] },
     { id: "fix", when: (c) => !!c.s.fixing && (c.s.fixPhase ?? 0) < 2, done: (c) => (c.s.fixPhase ?? 0) >= 2,
       ask: (c) => {
         const x = B(c.s.fixing as string);
@@ -2749,7 +2751,7 @@ export const restaurant: SituationDef = {
         const big = { pesos: (slots.price as number) / 100 };
         c.s.bigTipChecked = true; c.say("tip_big", { amount: slots.price as number });
         const on = (intent: string) => (cc: Ctx, sl: any, sg: any) => { restaurant.handlers[intent](cc, sl, sg); };
-        c.expect({ id: "tip_big", hints: ["tip"], suggest: [{ lt: "Say yes, or give another amount", hint: "tip" }],
+        c.expect({ id: "tip_big", hints: ["tip"], suggest: [{ lt: "Say yes, or give another amount", hint: "tip_sure" }],
           yes: (cc) => { chargeTip(cc, big); },
           no: (cc) => { cc.say("tip_again"); cc.hold(); },
           on: { sure_ctx: (cc) => { chargeTip(cc, big); }, tip_ctx: on("tip_ctx"), tip_none: on("tip_none"), tip_none_ctx: on("tip_none"),
@@ -3325,5 +3327,10 @@ function choosePay(c: Ctx, method: "card" | "cash") {
   }
   c.s.payMethod = method;
 }
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+restaurant.hints.drink_q = pick(restaurant.hints.drink, ["q_drinks"]);
+restaurant.hints.meal_ask = pick(restaurant.hints.meal, ["more_tortillas", "refill"]);
+restaurant.hints.tip_sure = pickFrom(restaurant.hints.tip.lt, [yesAgreeGroups().g_agree, ["ag_yes_sure"]], [restaurant.hints.tip, ["tip_percent"]]);
 
 export default restaurant;

@@ -57,6 +57,8 @@ import type { Ctx, EntityDef, Pending, Segment, SituationDef, Tip } from "@/cont
 import type { ConvCtx } from "@/convo/dialogue";
 import { ent, t } from "@/content/dsl";
 import { GLOBAL_HANDLERS } from "@/content/global";
+import { pick, pickFrom } from "../hint-pick";
+import { yesAgreeGroups } from "../global";
 
 // ---------------------------------------------------------------------------
 // Flags used more than once
@@ -355,7 +357,7 @@ function hurtYes(c: Ctx) {
   G(c, "gr_hurt_yes");
   c.expect({
     id: "hurt_yes", optional: true, expects: ["nobody_hurt", "freaking_out", "not_ok_ctx", "hurt_ctx"], hints: ["details"],
-    suggest: [{ lt: "Say whether you're okay", hint: "details" }],
+    suggest: [{ lt: "Say whether you're okay", hint: "d_okay" }],
     on: {
       nobody_hurt: (cc) => { G(cc, "gr_careful"); },
       freaking_out: (cc) => { G(cc, "gr_breathe"); },
@@ -394,7 +396,7 @@ function waterNotOff(c: Ctx) {
 function expectValve(c: Ctx) {
   c.expect({
     id: "valve", optional: true, expects: ["water_off", "water_not_off", "valve_done_ctx", "switch_unknown_ctx", "no_power", "towels_done"], hints: ["details"],
-    suggest: [{ lt: "Say you've switched off the power", hint: "details" }],
+    suggest: [{ lt: "Say you've switched off the power", hint: "d_power" }],
     on: {
       // ("Listo, ya los bajé." is two pieces: one "Perfecto.")
       water_off: (cc) => { cc.s.waterOff = true; if (once(cc, "g_perfect")) G(cc, "gr_perfect"); },
@@ -501,7 +503,7 @@ function askSureTomorrow(c: Ctx) {
   c.expect({
     id: "sure_tomorrow", expects: ["insist_today", "insist_ctx", "wait_no_ctx", "wait_yes_ctx", "sure_ctx", "accept_tomorrow", "ask_plumber", "downstairs_yes", "flood", "no_rush_ctx", "tomorrow_ctx", "unsure_ctx"],
     hints: ["insist"],
-    suggest: [{ lt: "Ask again for someone today", hint: "insist" }, { lt: "Agree to tomorrow", hint: "insist" }],
+    suggest: [{ lt: "Ask again for someone today", hint: "i_today" }, { lt: "Agree to tomorrow", hint: "i_tomorrow" }],
     on: {
       insist_today: (cc) => { todayNow(cc); },
       insist_ctx: (cc) => { todayNow(cc); },
@@ -2052,7 +2054,7 @@ export const flood: SituationDef = {
     { id: "l_need", when: (c) => inLizzie(c) && !!c.s.explained, done: (c) => !!c.s.helpAnswered,
       ask: (c) => { bump(c, "l_need"); L(c, "l_need_q"); },
       expects: ["ask_help", "item_ctx", "need_nothing", "not_item", "come_no"],
-      suggest: [{ lt: "Ask her to bring something", hint: "need", options: CHIPS }, { lt: "Say you don't need anything", hint: "need" }],
+      suggest: [{ lt: "Ask her to bring something", hint: "n_bring", options: CHIPS }, { lt: "Say you don't need anything", hint: "n_none" }],
       yes: (c) => { L(c, "l_need_q"); c.hold(); },
       no: (c) => { needNothing(c); },
       help: (c) => { c.s.items = ["mop", "coffee"]; c.s.helpAnswered = true; if (c.s.twist !== "door") sayItems(c); } },
@@ -2079,7 +2081,7 @@ export const flood: SituationDef = {
     { id: "l_come", when: (c) => inLizzie(c) && !!c.s.helpAnswered && !!c.s.declined && c.s.twist !== "door", done: (c) => !!c.s.comeDone || asked(c, "l_come"),
       ask: (c) => { bump(c, "l_come"); L(c, "l_sure"); },
       expects: ["need_nothing", "come_no", "ask_help", "item_ctx", "sure_ctx"],
-      suggest: [{ lt: "Say yes, or say no thanks again", hint: "need" }],
+      suggest: [{ lt: "Say yes, or say no thanks again", hint: "n_come" }],
       // "Sí, por favor." / "Bueno, sí." takes up her offer; a bare "Sí" answers "¿Segura?" (she stays at breakfast)
       yes: (c) => { if (takesOffer(c)) askHelp(c, {}, COME_SEG); else sureNotComing(c); },
       no: (c) => { sureNotComing(c); } },
@@ -2099,10 +2101,10 @@ export const flood: SituationDef = {
       expects: ["vm_unknown", "intro", "vm_who_ctx", "flood", "when_happened", "water_off", "downstairs_yes", "nobody_hurt", "ask_plumber", "today_ctx", "insist_today",
         "vm_close", "kind_regards", "formal_thanks", "apologize"],
       suggest: (c) => [
-        ...(!c.s.who ? [{ lt: "Say hello and who's calling", hint: "voicemail" }] : []),
-        ...(!c.s.gFlood ? [{ lt: "Explain formally what happened", hint: "voicemail" }] : []),
-        ...(!c.s.requested ? [{ lt: "Ask for someone to come today", hint: "voicemail" }] : []),
-        { lt: "End the message (ask him to call back, kind regards)", hint: "voicemail" },
+        ...(!c.s.who ? [{ lt: "Say hello and who's calling", hint: "vm_who" }] : []),
+        ...(!c.s.gFlood ? [{ lt: "Explain formally what happened", hint: "vm_what" }] : []),
+        ...(!c.s.requested ? [{ lt: "Ask for someone to come today", hint: "vm_today" }] : []),
+        { lt: "End the message (ask him to call back, kind regards)", hint: "vm_end" },
       ],
       yes: (c) => { vmSilent(c); }, no: (c) => { vmSilent(c); } },
 
@@ -2134,27 +2136,27 @@ export const flood: SituationDef = {
     { id: "g_since", when: (c) => inGrant(c) && grantKnows(c) && !!c.s.askSince, done: sinceOk,
       ask: (c) => { bump(c, "g_since"); G(c, "gr_since_q"); },
       expects: ["when_happened", "when_ctx", "unsure_ctx"],
-      suggest: [{ lt: "Say when it started", hint: "details" }],
+      suggest: [{ lt: "Say when it started", hint: "d_since" }],
       yes: (c) => { c.s.sinceDone = true; }, no: (c) => { c.s.sinceDone = true; },
       help: (c) => { c.s.sinceDone = true; G(c, "gr_ok"); } },
     { id: "g_hurt", when: (c) => inGrant(c) && grantKnows(c), done: hurtOk,
       ask: (c) => { bump(c, "g_hurt"); G(c, "gr_hurt_q"); },
       expects: ["nobody_hurt", "freaking_out", "fine_ctx", "hurt_ctx"],
-      suggest: [{ lt: "Say whether anybody got hurt", hint: "details" }],
+      suggest: [{ lt: "Say whether anybody got hurt", hint: "d_hurt" }],
       // "Sí" (somebody hurt?): he worries and waits for "Sí, estoy bien."
       yes: (c) => { hurtYes(c); },
       no: (c) => { c.s.hurtDone = true; G(c, "gr_relief"); } },
     { id: "g_down", when: (c) => inGrant(c) && grantKnows(c), done: downOk,
       ask: (c) => { bump(c, "g_down"); G(c, "gr_down_q"); },
       expects: ["downstairs_yes", "downstairs_no", "down_yes_ctx", "down_no_ctx", "unsure_ctx"],
-      suggest: [{ lt: "Say whether it has reached the apartment downstairs", hint: "details" }],
+      suggest: [{ lt: "Say whether it has reached the apartment downstairs", hint: "d_down" }],
       yes: (c) => { downstairs(c, true); }, no: (c) => { downstairs(c, false); },
       help: (c) => { c.s.downDone = true; G(c, "gr_down_unknown"); } },
     { id: "g_water", when: (c) => inGrant(c) && grantKnows(c), done: waterOk,
       // asked and left unanswered (another answer came): he doesn't ask twice, he says where the breakers are
       ask: (c) => { if (bump(c, "g_water") >= 2) { if (once(c, "g_towels")) G(c, "gr_power_first"); waterNotOff(c); return; } G(c, "gr_water_q"); },
       expects: ["water_off", "water_not_off", "switch_unknown_ctx", "valve_done_ctx", "no_power", "towels_done", "ask_what_do"],
-      suggest: [{ lt: "Say what you've already done", hint: "details" }],
+      suggest: [{ lt: "Say what you've already done", hint: "d_power" }],
       yes: (c) => { waterOff(c); }, no: (c) => { waterNotOff(c); },
       help: (c) => { waterNotOff(c); } },
     { id: "g_request", when: (c) => inGrant(c) && grantKnows(c) && detailsDone(c), done: (c) => !!c.s.requested,
@@ -2179,7 +2181,7 @@ export const flood: SituationDef = {
         G(c, "gr_offer_again");
       },
       expects: ["insist_today", "insist_ctx", "wait_no_ctx", "wait_yes_ctx", "accept_tomorrow", "ask_plumber", "today_ctx", "downstairs_yes", "flood", "no_rush_ctx", "tomorrow_ctx", "unsure_ctx"],
-      suggest: [{ lt: "Ask for today, politely but firmly", hint: "insist" }, { lt: "Agree to tomorrow", hint: "insist" }],
+      suggest: [{ lt: "Ask for today, politely but firmly", hint: "i_today" }, { lt: "Agree to tomorrow", hint: "i_tomorrow" }],
       yes: (c) => { acceptTomorrow(c); },
       // "Así está bien" could be "it's fine (tomorrow)" or "no, leave it": he asks again (rule 17)
       no: (c) => { if (/\basi esta bien\b/.test(heard(c)) && once(c, "g_offer_amb")) { whichDay(c); return; } todayNow(c); },
@@ -2571,5 +2573,22 @@ function expectClosing(c: Ctx) {
   };
   c.expect(p);
 }
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+const H = flood.hints;
+H.d_since = pick(H.details, ["last_night"]);
+H.d_hurt = pick(H.details, ["nobody_hurt"]);
+H.d_down = pick(H.details, ["downstairs"]);
+H.d_power = pick(H.details, ["power_off", "dont_know_switch"]);
+H.d_okay = pickFrom(H.details.lt, [H.okay, ["just_wet"]], [H.details, ["nobody_hurt"]]);
+H.i_today = pick(H.insist, ["cant_wait", "really_today", "appreciate_today"]);
+H.i_tomorrow = pick(H.insist, ["tomorrow_fine"]);
+H.n_bring = pick(H.need, ["bring_x", "grab_x", "lots_coffee"]);
+H.n_none = pick(H.need, ["no_im_good", "dont_worry"]);
+H.n_come = pickFrom(H.need.lt, [yesAgreeGroups().g_yes, ["yn_yes_please"]], [H.need, ["no_im_good", "dont_worry"]]);
+H.vm_who = pick(H.voicemail, ["this_is_apt"]);
+H.vm_what = pick(H.voicemail, ["regret"]);
+H.vm_today = pick(H.voicemail, ["grateful_today"]);
+H.vm_end = pick(H.voicemail, ["vm_call_back", "look_forward", "kind_regards"]);
 
 export default flood;

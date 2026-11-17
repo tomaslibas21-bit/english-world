@@ -13,6 +13,7 @@
 import type { Ctx, EntityDef, Segment, SituationDef } from "@/content/types";
 import { ent, t } from "@/content/dsl";
 import { WORLD_COUNTRIES, WORLD_NATIONALITIES } from "../countries";
+import { pick, pickFrom } from "../hint-pick";
 
 // ---------------------------------------------------------------------------
 // Places: Spanish head, English gloss, gender, location id, fare (cents of a peso). `def`: the definite article when it
@@ -496,20 +497,20 @@ export const taxi: SituationDef = {
   steps: [
     { id: "dest", done: (c) => !!c.s.dest, ask: (c) => c.say("which_place"), expects: ["dest", "ask_fare", "dest_far", "pay_when"],
       help: (c) => c.say("recommend"),
-      suggest: [{ lt: "Say where you're going", hint: "dest", options: CHIPS }, { lt: "Ask the price", hint: "fare" }] },
+      suggest: [{ lt: "Say where you're going", hint: "dest", options: CHIPS }, { lt: "Ask the price", hint: "fare_ask" }] },
     { id: "fare", when: (c) => !!c.s.dest, done: (c) => !!c.s.agreed,
       ask: (c) => { if (!c.s.fareSaid) { c.s.fareSaid = true; c.say("fare_is", { X: c.s.dest, fare: fareOf(c) }); } c.say("fare_ok_q"); },
       // pay_when: "¿Cuándo le pago?" is one letter from "¿Cuánto le pago?"
       expects: ["accept", "accept_ctx", "price_ctx", "haggle", "refuse", "ask_fare", "dest", "pay_when"],
-      suggest: [{ lt: "Agree the price (or ask for less)", hint: "fare" }],
+      suggest: [{ lt: "Agree the price (or ask for less)", hint: "fare_agree" }],
       yes: (c) => { taxi.handlers.accept(c, {}, seg0("accept")); },
       no: (c) => { taxi.handlers.refuse(c, {}, seg0("refuse")); } },
     { id: "from", when: (c) => !!c.s.agreed && !!c.s.askTalk && !c.s.arrived, done: (c) => !!c.s.talked,
-      ask: (c) => c.say("ask_from"), expects: ["from_ans", "from_other_ctx"], suggest: [{ lt: "Say where you're from", hint: "talk", options: "country" }] },
+      ask: (c) => c.say("ask_from"), expects: ["from_ans", "from_other_ctx"], suggest: [{ lt: "Say where you're from", hint: "talk_from", options: "country" }] },
     { id: "first", when: (c) => !!c.s.agreed && !!c.s.askTalk && !!c.s.talked && c.s.first === undefined && !c.s.arrived, done: (c) => c.s.first !== undefined,
       // asked with the answer to "¿De dónde es usted?"; asked here when the learner said it before he asked
       ask: (c) => { if (!c.s.firstAsked) { c.s.firstAsked = true; c.say("first_q"); } },
-      expects: ["first_yes", "first_no"], suggest: [{ lt: "Say whether it's your first time", hint: "talk" }],
+      expects: ["first_yes", "first_no"], suggest: [{ lt: "Say whether it's your first time", hint: "talk_first" }],
       yes: (c) => { c.s.first = true; c.say("first_reply"); }, no: (c) => { c.s.first = false; c.say("again_reply"); } },
     { id: "ac", when: (c) => !!c.s.agreed && !!c.s.askAc && c.s.ac === undefined && !c.s.arrived, done: (c) => c.s.ac !== undefined,
       ask: (c) => c.say("ask_ac"), expects: ["ac_on", "ac_off", "window"], suggest: [{ lt: "Say yes or no", hint: "g_yesno" }],
@@ -621,7 +622,7 @@ export const taxi: SituationDef = {
         if (c.s.haggled || c.s.fixedSaid) c.say("haggle_again");
         else { c.s.fixedSaid = true; c.say("fare_fixed"); }
       }
-      c.expect({ id: "haggle", expects: ["accept", "accept_ctx", "price_ctx", "refuse"], hints: ["fare"], suggest: [{ lt: "Agree (or say no)", hint: "fare" }],
+      c.expect({ id: "haggle", expects: ["accept", "accept_ctx", "price_ctx", "refuse"], hints: ["fare"], suggest: [{ lt: "Agree (or say no)", hint: "fare_agree" }],
         yes: (cc) => { taxi.handlers.accept(cc, {}, seg0("accept")); }, no: (cc) => { taxi.handlers.refuse(cc, {}, seg0("refuse")); },
         on: {
           accept: (cc) => { taxi.handlers.accept(cc, {}, seg0("accept")); return true; },
@@ -896,5 +897,11 @@ function ride(c: Ctx) {
   const loc = DESTS.find((d) => d.id === c.s.dest)?.attrs?.loc;
   if (loc) c.event("taxi-ride", { to: loc });
 }
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+taxi.hints.fare_ask = pick(taxi.hints.fare, ["f_cuanto"]);
+taxi.hints.fare_agree = pick(taxi.hints.fare, ["f_ok", "f_haggle"]);
+taxi.hints.talk_from = pick(taxi.hints.talk, ["st_from"]);
+taxi.hints.talk_first = pick(taxi.hints.talk, ["st_first", "st_before"]);
 
 export default taxi;

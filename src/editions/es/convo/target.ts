@@ -95,8 +95,9 @@ export function npUnits(b: NpBinding, kind: "np" | "the" | "pl" | "bare" | "head
   const modUnits = (m: EntityDef) => {
     const t = splitUnits(m.en), gl = splitUnits(m.lt);
     if (t.length !== gl.length) throw new Error(`Entity ${m.id}: Spanish and English unit counts differ`);
-    // a one-word modifier agrees with the noun; a phrase ("con hielo") stays as it is
-    return { t: t.length === 1 ? [agreeEs(t[0], g, plural)] : t, gl };
+    // a one-word modifier agrees with the noun; a phrase ("con hielo", and one written as a single unit: "de plástico",
+    // "azul marino") stays as it is: "una cartera de plástico", never "de plástica"
+    return { t: t.length === 1 && !/\s/.test(t[0].trim()) ? [agreeEs(t[0], g, plural)] : t, gl };
   };
   const pre = mods.filter((m) => m.attrs?.pre), post = mods.filter((m) => !m.attrs?.pre);
   const en: string[] = [], lt: string[] = [];
