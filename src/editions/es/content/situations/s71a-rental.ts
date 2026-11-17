@@ -27,6 +27,7 @@ import { ent, t } from "@/content/dsl";
 /** "estándar" for a manual gearbox is Mexico's (and the Caribbean's): the neutral twins say "manual" (as p25). */
 const F_ESTANDAR = "Mexican: estándar = a car with a manual gearbox (a stick shift); manual is more widely used.";
 import { expectHowAreYou } from "@/content/global";
+import { pick, pickFrom } from "../hint-pick";
 
 // ---------------------------------------------------------------------------
 // Cars, extras, days
@@ -361,7 +362,7 @@ const setRet = (c: Ctx, n: number) => { c.s.retN = n; c.s.retDay = dayAfter(n); 
 function retDayPending(): Pending {
   return {
     id: "ret_day", expects: ["ret_day_ctx", "ret_change", "days_ctx"], hints: ["ret"],
-    suggest: [{ lt: "Say which day you'll return it", hint: "ret" }],
+    suggest: [{ lt: "Say which day you'll return it", hint: "ret_day" }],
     on: { days_ctx: (cc, sl, seg) => { const d = durFrom(sl, seg); if (typeof sl.day === "string") changeDay(cc, sl.day); else if (d.n) changeTo(cc, d.n); else retAnswer(cc); } },
     ask: (cc) => cc.say("ret_which"),
   };
@@ -1132,6 +1133,7 @@ export const rental: SituationDef = {
       { id: "q_late", s: t("¿Qué | pasa | si | llego | tarde?", "What | happens | if | I-arrive | late?", "What if I'm late?") },
       { id: "q_return", s: t("¿A | qué | hora | lo | tengo | que | devolver?", "At | what | time | it | do I have | to | return?", "What time do I need to return it?") },
       { id: "keep_until", s: t("¿Puedo | quedármelo | hasta | el | sábado?", "Can I | keep it | until | — | Saturday?", "Could I keep it until Saturday?", { flags: { 3: "el before a weekday; English says just the day here." } }) },
+      { id: "ret_saturday", s: t("Lo | devuelvo | el | sábado.", "It | I-return | — | Saturday.", "I'll bring it back on Saturday.", { flags: { 2: "el before a day of the week = “on” (or nothing in English)." } }) },
     ] },
     car: { lt: "Ask about the car", items: [
       { id: "q_where_car", s: t("¿Dónde | está | el | auto?", "Where | is | the | car?", "Where's the car?", { spain: t("¿Dónde | está | el | coche?", "Where | is | the | car?", "Where's the car?") }) },
@@ -1956,5 +1958,8 @@ export const rental: SituationDef = {
 };
 
 function ack(c: Ctx) { once(c, "ack", "ack"); }
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+rental.hints.ret_day = pick(rental.hints.ret, ["ret_saturday", "keep_until"]);
 
 export default rental;

@@ -24,6 +24,7 @@ import type { Ctx, Pending, SituationDef } from "@/content/types";
 import { t } from "@/content/dsl";
 import { expectHowAreYou } from "@/content/global";
 import { WORLD_COUNTRIES, WORLD_NATIONALITIES } from "../countries";
+import { payHint, pick, pickFrom } from "../hint-pick";
 
 // ---------------------------------------------------------------------------
 // Prices (cents of a peso)
@@ -1223,7 +1224,7 @@ export const salon: SituationDef = {
         c.s.totalSaid = true;
       },
       expects: ["pay_card", "pay_cash", "pay_phone", "here_you_go", "keep_change", "add_tip", "ask_owe", "no_card", "no_cash", "tip_howmuch", "receipt_q", "invoice_q", "pay_whatif", "already_paid"],
-      suggest: [{ lt: "Pay (and leave a tip)", hint: "pay" }] },
+      suggest: (c: Ctx) => [{ lt: "Pay (and leave a tip)", hint: payHint(c) }] },
     { id: "book", when: (c) => !!c.s.paid && (c.s.askBook || c.s.wantBook), done: (c) => c.s.booked !== undefined,
       ask: (c) => c.say("ask_book"), expects: ["book_when", "book_later"],
       suggest: [{ lt: "Book your next visit (or not)", hint: "book" }, { lt: "Say yes or no", hint: "g_yesno" }],
@@ -2160,5 +2161,9 @@ function askSmallTalk(c: Ctx) {
     no: (cc) => { cc.say(topic === "pets" ? "react_nopet" : topic === "from" ? "cat_anyway" : topic === "vacation" ? "react_unsure" : "react_relax"); },
     ask: (cc) => cc.say(line) });
 }
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+salon.hints.pay_ans = pick(salon.hints.pay, ["pay_card_short", "pay_cash", "here_you_go"]);
+salon.hints.pay_here = pick(salon.hints.pay, ["here_you_go", "pay_cash"]);
 
 export default salon;

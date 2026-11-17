@@ -29,7 +29,7 @@ import type { Ctx, EntityDef, Pending, Segment, SituationDef, StepDef, Suggestio
 import type { ConvCtx } from "@/convo/dialogue";
 import { ent, t } from "@/content/dsl";
 import { GLOBAL_HANDLERS } from "@/content/global";
-import { pick, pickFrom } from "../hint-pick";
+import { payHint, pick, pickFrom } from "../hint-pick";
 
 // ---------------------------------------------------------------------------
 // Entities
@@ -928,6 +928,7 @@ export const post: SituationDef = {
       items: [
         { id: "guia_have", s: t("Tengo | el | número | de | guía.", "I have | the | number | of | waybill.", "I have the tracking number.", { spain: t("Tengo | el | número | de | seguimiento.", "I have | the | number | of | tracking.", "I have the tracking number.") }) },
         { id: "name_its", s: t("Está | a nombre de | {$name} | {$surname}.", "It's | under the name of | {$name} | {$surname}.", "It's under {$name} {$surname}.") },
+        { id: "guia_read", s: t("Es | el | 48 29 15 73 61.", "It's | the | 48 29 15 73 61.", "It's 48 29 15 73 61.", { flags: { 1: "el before a number you read out: “it's number …”; English needs no word." } }) },
       ],
     },
     pid: {
@@ -1126,7 +1127,7 @@ export const post: SituationDef = {
         else c.say("say_total", { total: due(c) });
       },
       expects: ["pay_card", "pay_cash", "pay_phone", "here_you_go", "no_cash", "no_card_ctx", "ask_dollars"],
-      suggest: [{ lt: "Pay by card or in cash", hint: "pay" }] },
+      suggest: (c: Ctx) => [{ lt: "Pay by card or in cash", hint: payHint(c) }] },
     // anything else
     { id: "more", when: (c) => !!c.s.task, done: (c) => !!c.s.moreDone,
       ask: (c) => c.say("ask_more"), expects: ["more_no", "buy_stamps", "customs_q_ctx"],
@@ -1801,7 +1802,7 @@ function firstPending(): Pending {
 function guiaPending(): Pending {
   return {
     id: "guia", optional: true, expects: ["tracking_ctx", "name_ctx", "no_notice", "no_guia_ctx"], hints: ["pname"],
-    suggest: [{ lt: "Read out the tracking number (or give your name)", hint: "pname" }],
+    suggest: [{ lt: "Read out the tracking number (or give your name)", hint: "pname_read" }],
     on: {
       no_notice: (cc) => { cc.s.noGuia = true; },
       no_guia_ctx: (cc) => { cc.s.noGuia = true; },
@@ -1906,5 +1907,12 @@ function pay(c: Ctx, method: string) {
 
 // The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
 post.hints.svc_cheaper = pick(post.hints.service, ["q_cheaper", "svc_cheaper"]);
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+post.hints.pay_ans = pick(post.hints.pay, ["pay_card_short", "pay_cash", "here_you_go"]);
+post.hints.pay_here = pick(post.hints.pay, ["here_you_go", "pay_cash"]);
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+post.hints.pname_read = pick(post.hints.pname, ["guia_read", "name_its"]);
 
 export default post;

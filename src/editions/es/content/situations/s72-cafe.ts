@@ -11,6 +11,7 @@ import type { Ctx, EntityDef, SituationDef, Suggestion } from "@/content/types";
 import type { ConvCtx } from "@/convo/dialogue";
 import { ent, t } from "@/content/dsl";
 import { expectHowAreYou } from "@/content/global";
+import { payHint, pick, pickFrom } from "../hint-pick";
 
 // ---------------------------------------------------------------------------
 // Menu (prices in cents of a peso)
@@ -1146,7 +1147,7 @@ export const cafe: SituationDef = {
         } else c.say("say_total", { price: due(c) });
       },
       expects: ["pay_card", "pay_cash", "pay_phone", "here_you_go", "no_cash"],
-      suggest: [{ lt: "Pay by card, in cash or with your phone", hint: "pay" }] },
+      suggest: (c: Ctx) => [{ lt: "Pay by card, in cash or with your phone", hint: payHint(c) }] },
     { id: "receipt", when: (c) => c.s.askReceipt, done: (c) => c.s.receipt !== undefined,
       ask: (c) => c.say("ask_receipt"), expects: ["no_receipt", "no_receipt_ctx", "want_receipt", "receipt_yes_ctx"],
       suggest: [{ lt: "Answer yes or no", hint: "g_yesno" }],
@@ -1597,5 +1598,9 @@ export const cafe: SituationDef = {
       setup: (s) => { s.askMilk = false; s.askTemp = false; } },
   ],
 };
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+cafe.hints.pay_ans = pick(cafe.hints.pay, ["pay_card_short", "pay_cash", "here_you_go"]);
+cafe.hints.pay_here = pick(cafe.hints.pay, ["here_you_go", "pay_cash"]);
 
 export default cafe;

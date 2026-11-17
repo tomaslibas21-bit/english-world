@@ -14,6 +14,7 @@
 
 import type { Ctx, EntityDef, SituationDef, Tip } from "@/content/types";
 import { ent, t } from "@/content/dsl";
+import { payHint, pick, pickFrom } from "../hint-pick";
 
 // ---------------------------------------------------------------------------
 
@@ -780,7 +781,7 @@ export const gas: SituationDef = {
         if (c.s.method !== "cash" && c.s.method !== "dollars") c.say("ask_pay"); // cash or dollars: she waits for the money
       },
       expects: ["pay_card", "pay_cash", "here_you_go", "no_cash", "no_card", "amount_ctx", "tip", "pay_dollars", "cost_q", "no_change"],
-      suggest: [{ lt: "Pay (cash or card)", hint: "pay" }, { lt: "Give a tip", hint: "tip" }] },
+      suggest: (c: Ctx) => [{ lt: "Pay (cash or card)", hint: payHint(c) }, { lt: "Give a tip", hint: "tip" }] },
     { id: "debit", when: (c) => c.s.method === "card" && !!c.s.askDebit && !c.s.cardType && !!c.s.paid, done: (c) => !!c.s.cardType,
       ask: (c) => c.say("ask_debit"), expects: ["credit_debit"],
       suggest: [{ lt: "Say credit or debit", hint: "debit" }] },
@@ -1396,5 +1397,9 @@ function finishPay(c: Ctx, method: "card" | "cash" | "dollars", given?: number, 
   else c.say("cash_thanks");
   if (c.s.receiptWanted) giveReceipt(c);
 }
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+gas.hints.pay_ans = pick(gas.hints.pay, ["pay_card_short", "pay_cash", "here_you_go"]);
+gas.hints.pay_here = pick(gas.hints.pay, ["here_you_go", "pay_cash"]);
 
 export default gas;

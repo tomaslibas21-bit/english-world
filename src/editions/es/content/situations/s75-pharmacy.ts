@@ -25,7 +25,7 @@
 import type { Ctx, EntityDef, Pending, SituationDef, Tip } from "@/content/types";
 import { ent, t } from "@/content/dsl";
 import { expectHowAreYou } from "@/content/global";
-import { pick, pickFrom } from "../hint-pick";
+import { payHint, pick, pickFrom } from "../hint-pick";
 
 // ---------------------------------------------------------------------------
 // Entities
@@ -1241,7 +1241,7 @@ export const pharmacy: SituationDef = {
         if (c.s.payMethod !== "cash") c.say("ask_pay_method");
       },
       expects: ["pay_card", "pay_cash", "pay_phone", "here_you_go", "no_cash", "no_card", "ask_price", "ask_drowsy", "ask_food", "ask_alcohol", "ask_dosage", "ask_kids", "ask_rx_needed", "need_product"],
-      suggest: [{ lt: "Pay (cash, card or phone)", hint: "pay" }, { lt: "Ask about the medicine", hint: "ask" }] },
+      suggest: (c: Ctx) => [{ lt: "Pay (cash, card or phone)", hint: payHint(c) }, { lt: "Ask about the medicine", hint: "ask" }] },
     { id: "bag", when: (c) => !!c.s.paid && c.s.askBag, done: (c) => c.s.bag !== undefined,
       ask: (c) => c.say("ask_bag"), expects: ["no_bag", "bag_yes"],
       suggest: [{ lt: "Answer about the bag", hint: "bag" }, { lt: "Say yes or no", hint: "g_yesno" }],
@@ -2506,5 +2506,9 @@ const markedThisTurn = (c: Ctx, key: string) => !!TURN.get(c)?.has(key);
 
 // The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
 pharmacy.hints.rx_give = pick(pharmacy.hints.rx, ["here_rx"]);
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+pharmacy.hints.pay_ans = pick(pharmacy.hints.pay, ["pay_card_short", "pay_cash", "here_you_go"]);
+pharmacy.hints.pay_here = pick(pharmacy.hints.pay, ["here_you_go", "pay_cash"]);
 
 export default pharmacy;

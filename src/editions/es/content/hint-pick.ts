@@ -19,3 +19,16 @@ export function pick(g: HintGroup, ids: string[], lt: string = g.lt): HintGroup 
 export function pickFrom(lt: string, ...parts: [HintGroup, string[]][]): HintGroup {
   return { lt, items: parts.flatMap(([g, ids]) => pick(g, ids).items) };
 }
+
+/** The pay card's group when the person has just named a way to pay (owner, 17 Nov 2026): after "¿Efectivo o
+ *  tarjeta?" or "Puede pagar con tarjeta aquí" it answers that ("Con tarjeta, por favor." / "En efectivo.", the
+ *  conversation's `<base>_ans`); after "Claro, en efectivo" it hands the money over (`<base>_here`); otherwise the
+ *  usual group, where "¿Aceptan tarjeta?" leads because nobody has mentioned a card yet. */
+export function payHint(c: unknown, base = "pay"): string {
+  const conv = (c as { conv?: { saidThisTurn?: () => readonly { sentence?: { en?: string } }[]; lastLines?: readonly { sentence?: { en?: string } }[] } }).conv;
+  const lines = [...(conv?.saidThisTurn?.() ?? []), ...(conv?.lastLines ?? [])];
+  const text = lines.map((l) => l.sentence?.en ?? "").join(" ").toLowerCase();
+  if (/tarjeta/.test(text)) return base + "_ans";
+  if (/efectivo/.test(text)) return base + "_here";
+  return base;
+}

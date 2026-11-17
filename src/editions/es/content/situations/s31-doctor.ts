@@ -28,7 +28,7 @@ import type { Ctx, EntityDef, HintItem, Pending, SentSrc, SituationDef, Tip } fr
 import type { SlotFn, SlotResult } from "@/convo/grammar";
 import { readInt } from "@/convo/slots";
 import { ent, t } from "@/content/dsl";
-import { pick, pickFrom } from "../hint-pick";
+import { payHint, pick, pickFrom } from "../hint-pick";
 
 /** "surtir una receta" is Mexico's; the neutral twins buy the medicine (the lead's decision, 5 Nov 2026, with s75). */
 const F_SURTIR = "Mexican: surtir una receta = to fill a prescription.";
@@ -1448,7 +1448,7 @@ export const doctor: SituationDef = {
         else c.say("pay_method_again");
       },
       expects: ["pay_card", "pay_cash", "pay_transfer", "here_you_go", "here_you_go_ctx", "no_cash", "no_cash_ctx", "no_card", "ask_cost", "ask_receipt", "ask_dollars"],
-      suggest: [{ lt: "Pay for the visit", hint: "pay" }] },
+      suggest: (c: Ctx) => [{ lt: "Pay for the visit", hint: payHint(c) }] },
   ],
 
   init: (c) => {
@@ -2376,5 +2376,9 @@ function hurt(c: Ctx) {
 // The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
 // (nobody asked "¿Tiene alguna pregunta?" yet: "No, ninguna pregunta." isn't an answer here, and the step didn't take it)
 doctor.hints.rx_clear = pick(doctor.hints.rx_ok, ["clear"]);
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+doctor.hints.pay_ans = pick(doctor.hints.pay, ["pay_card_short", "pay_cash", "here_you_go"]);
+doctor.hints.pay_here = pick(doctor.hints.pay, ["here_you_go", "pay_cash"]);
 
 export default doctor;

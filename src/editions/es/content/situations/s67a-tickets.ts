@@ -26,7 +26,7 @@ import { ent, t } from "@/content/dsl";
 import { expectHowAreYou } from "@/content/global";
 import { numberSlot } from "@/convo/slots";
 import { variety } from "@/convo/compose";
-import { pick, pickFrom } from "../hint-pick";
+import { payHint, pick, pickFrom } from "../hint-pick";
 
 /** A number of 10 or more really said as a number (an age: "tengo 67 años"). */
 const bigNumber: SlotFn = (toks, pos, prefix) => numberSlot(toks, pos, prefix).filter((r) => !r.cost && typeof r.value === "number" && r.value >= 10);
@@ -934,7 +934,7 @@ export const tickets: SituationDef = {
         c.say("ask_pay");
       },
       expects: ["pay_card", "pay_cash", "here_you_go_ctx", "discount_ask", "ask_dollars"],
-      suggest: [{ lt: "Pay by card or in cash", hint: "pay" }, { lt: "Ask about discounts", hint: "discount" }] },
+      suggest: (c: Ctx) => [{ lt: "Pay by card or in cash", hint: payHint(c) }, { lt: "Ask about discounts", hint: "discount" }] },
     { id: "ticket", when: (c) => !!c.s.paid, done: (c) => !!c.s.ticketGiven,
       ask: (c) => {
         c.s.ticketGiven = true;
@@ -1807,5 +1807,9 @@ function tellInfo(c: Ctx) {
 
 // The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
 tickets.hints.id_name = pick(tickets.hints.idcard, ["id_name"]);
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+tickets.hints.pay_ans = pick(tickets.hints.pay, ["pay_card_short", "pay_cash", "here_you_go"]);
+tickets.hints.pay_here = pick(tickets.hints.pay, ["here_you_go", "pay_cash"]);
 
 export default tickets;

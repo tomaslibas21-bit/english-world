@@ -614,7 +614,7 @@ const H: Record<string, Handler> = {
       c.say("leaving_already");
       // "Sí, perdón." ends the evening; "¡No, no!" (or any other answer) goes on with it
       c.expect({
-        id: "leaving_q", optional: true, hints: ["g_yesno"], suggest: [{ lt: "Say whether you're leaving", hint: "g_yesno" }],
+        id: "leaving_q", optional: true, hints: ["g_yesno"], suggest: [{ lt: "Say whether you're leaving", hint: "leaving" }],
         yes: (cc) => { if (once(cc, "bye")) cc.say("good_night"); cc.end(); },
         no: () => { /* staying: the open question comes again */ },
         on: { g_bye: (cc, sl, sg) => H.g_bye(cc, sl, sg), no_sorry: () => { /* "No, no, perdón": staying */ } },
@@ -2368,5 +2368,14 @@ export const date: SituationDef = {
 // The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
 date.hints.again_day = pick(date.hints.again, ["ag_works", "ag_activity"]);
 date.hints.again_plan = pick(date.hints.again, ["ag_activity", "ag_free"]);
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+date.hints.leaving = {
+  lt: "Say whether you're leaving",
+  items: [
+    { id: "not_yet", s: t("¡No, | no, | perdón!", "No, | no, | sorry!", "No, no, sorry!") },
+    { id: "must_go", s: t("Sí, | ya | me | tengo | que | ir.", "Yes, | already | myself | I-have | to | go.", "Yes, I have to go.") },
+  ],
+};
 
 export default date;

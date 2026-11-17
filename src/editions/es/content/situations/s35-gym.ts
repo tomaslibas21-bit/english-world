@@ -23,7 +23,7 @@
 import type { Ctx, EntityDef, Pending, SituationDef } from "@/content/types";
 import { ent, t } from "@/content/dsl";
 import { expectHowAreYou } from "@/content/global";
-import { pick, pickFrom } from "../hint-pick";
+import { payHint, pick, pickFrom } from "../hint-pick";
 import { yesAgreeGroups } from "../global";
 
 // ---------------------------------------------------------------------------
@@ -1436,7 +1436,7 @@ export const gym: SituationDef = {
         if (c.s.askPayMethod && !c.s.methodAsked) { c.s.methodAsked = true; c.say("ask_pay_method"); }
       },
       expects: ["pay_card", "pay_cash", "pay_phone", "here_you_go", "no_cash", "no_card"],
-      suggest: [{ lt: "Pay", hint: "pay" }],
+      suggest: (c: Ctx) => [{ lt: "Pay", hint: payHint(c) }],
       // "Está bien, gracias" could be a yes or a polite no: never a payment (rule 17)
       yes: (c) => { if (c.s.payMethod && !politeClosing(c)) { pay(c, c.s.payMethod, true); return; } c.say(c.s.payMethod || c.s.payAltSaid ? "pay_reask" : "ask_pay_method"); c.hold(); },
       no: (c) => { c.say("ask_pay_method"); c.hold(); },
@@ -2341,7 +2341,8 @@ function otherMethod(c: Ctx, method: string) {
 function offerOther(c: Ctx, method: string) {
   c.say(method === "cash" ? "cash_then" : "card_then");
   c.expect({ id: "pay_other", expects: ["pay_card", "pay_cash", "pay_phone", "here_you_go", "no_cash", "no_card"], hints: ["pay"],
-    suggest: [{ lt: "Pay", hint: "pay" }],
+    // (she has just said which way: "Claro, entonces en efectivo." / "con tarjeta entonces")
+    suggest: [{ lt: "Pay", hint: method === "cash" ? "pay_here" : "pay_ans" }],
     on: {
       g_ok: (cc) => pay(cc, method, true),
       here_you_go: (cc, sl, sg) => { gym.handlers.here_you_go(cc, sl, sg); },
@@ -2757,5 +2758,9 @@ function offerThursday(c: Ctx) {
 
 // The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
 gym.hints.next_day = pickFrom(gym.hints.next.lt, [yesAgreeGroups().g_agree, ["ag_sounds_good"]], [gym.hints.next, ["how_about_day"]]);
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+gym.hints.pay_ans = pick(gym.hints.pay, ["pay_card_short", "pay_cash", "here_you_go"]);
+gym.hints.pay_here = pick(gym.hints.pay, ["here_you_go", "pay_cash"]);
 
 export default gym;

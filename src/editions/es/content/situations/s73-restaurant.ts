@@ -24,7 +24,7 @@
 import type { Ctx, EntityDef, SituationDef, Tip } from "@/content/types";
 import { ent, t } from "@/content/dsl";
 import { expectHowAreYou } from "@/content/global";
-import { pick, pickFrom } from "../hint-pick";
+import { payHint, pick, pickFrom } from "../hint-pick";
 import { yesAgreeGroups } from "../global";
 
 // ---------------------------------------------------------------------------
@@ -2246,8 +2246,8 @@ export const restaurant: SituationDef = {
         sayP(c, "ask_pay_method");
       },
       expects: ["pay_card", "pay_cash", "pay_phone", "here_you_go", "ask_tip", "no_cash", "factura_ask", "pay_whatif", "ask_price", "pay_amb", "change_q", "tip_cash"],
-      suggest: [
-        { lt: "Pay by card or in cash", hint: "pay" },
+      suggest: (c: Ctx) => [
+        { lt: "Pay by card or in cash", hint: payHint(c) },
         { lt: "Ask if the tip is included", hint: "tip_ask" },
       ] },
     // Twist (the brief): "¿Va a requerir factura?"
@@ -3332,5 +3332,9 @@ function choosePay(c: Ctx, method: "card" | "cash") {
 restaurant.hints.drink_q = pick(restaurant.hints.drink, ["q_drinks"]);
 restaurant.hints.meal_ask = pick(restaurant.hints.meal, ["more_tortillas", "refill"]);
 restaurant.hints.tip_sure = pickFrom(restaurant.hints.tip.lt, [yesAgreeGroups().g_agree, ["ag_yes_sure"]], [restaurant.hints.tip, ["tip_percent"]]);
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+restaurant.hints.pay_ans = pick(restaurant.hints.pay, ["pay_card_short", "pay_cash", "here_you_go"]);
+restaurant.hints.pay_here = pick(restaurant.hints.pay, ["here_you_go", "pay_cash"]);
 
 export default restaurant;

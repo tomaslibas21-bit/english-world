@@ -33,6 +33,7 @@
 import type { Ctx, EntityDef, HintItem, Pending, SituationDef } from "@/content/types";
 import { ent, t } from "@/content/dsl";
 import { expectHowAreYou } from "@/content/global";
+import { pick, pickFrom } from "../hint-pick";
 
 const A_LO_MEJOR = "a lo mejor: maybe, perhaps; very common in speech. Literally “at the best”, but it doesn't mean “at best” (that's en el mejor de los casos).";
 
@@ -1035,7 +1036,7 @@ export const lostWallet: SituationDef = {
       if (seg.tags.includes("keys")) { c.s.keys = true; c.say("keys_too"); }
       if (c.s.askPockets) { c.say("ask_pockets"); c.expect(pocketsPending()); }
       // "¿Y las llaves también?" waits for its yes or no before "¿Dónde la vio…?" (a "Sí" got "¿Ah, sí? ¿Dónde fue eso?")
-      else if (c.s.keys) c.expect({ id: "keys_q", optional: true, hints: ["g_yesno"], suggest: [{ lt: "Say yes or no", hint: "g_yesno" }], yes: () => {}, no: () => {} });
+      else if (c.s.keys) c.expect({ id: "keys_q", optional: true, hints: ["g_yesno"], suggest: [{ lt: "Say yes or no", hint: "keys_yes" }], yes: () => {}, no: () => {} });
     },
     not_lost(c, slots, seg) {
       if (!mark(c)) return;
@@ -1565,5 +1566,13 @@ function pocketsPending(again = false): Pending {
     on: { checked: done, checked_ctx: done, not_checked_ctx: notYet },
   };
 }
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+lostWallet.hints.keys_yes = {
+  lt: "Say yes or no",
+  items: [
+    { id: "keys_too_yes", s: t("Sí, | también.", "Yes, | too.", "Yes, those too.") },
+  ],
+};
 
 export default lostWallet;

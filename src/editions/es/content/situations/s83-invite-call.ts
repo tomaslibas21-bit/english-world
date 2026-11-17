@@ -196,11 +196,17 @@ function suggestTime(c: Ctx) {
   c.say("suggest_time", { time: tm });
   suggestTimeExpect(c);
 }
+/** The card's other times: never the one she just offered. */
+function otherTimeHint(tm: Time | undefined): string {
+  const k = tm ? tm.h * 60 + tm.m : 0;
+  return k === 8 * 60 ? "mt_not800" : k === 8 * 60 + 30 ? "mt_not830" : "mt_not730";
+}
 function suggestTimeExpect(c: Ctx) {
   const take = (cc: Ctx) => { meetAt(cc, cc.s.suggested as Time, false); if (!cc.s.timeAsked) cc.say("ack"); };
   c.expect(yn({
     id: "suggest_time", expects: ["time_ans", "meet", "time_shift_ctx"], hints: ["agree", "meettime"],
-    suggest: [{ lt: "Agree", hint: "agree" }, { lt: "Suggest another time", hint: "meettime" }],
+    // (another time than the one she just offered)
+    suggest: [{ lt: "Agree", hint: "agree" }, { lt: "Suggest another time", hint: otherTimeHint(c.s.suggested as Time) }],
     yes: take,
     no: (cc) => { cc.say("when_then"); cc.hold(); },
     ask: (cc) => cc.say("suggest_time", { time: cc.s.suggested }),
@@ -1320,6 +1326,8 @@ export const inviteCall: SituationDef = {
         { id: "start_short", s: t("A | las | siete | y media.", "At | — | seven | thirty.", "At seven thirty.", { flags: { 1: "Spanish uses an article before clock times; English has no separate word." } }) },
         { id: "time_how_about", s: t("¿Qué tal | a | las | siete | y media?", "How about | at | — | seven | thirty?", "How about seven thirty?", { flags: { 2: "Spanish uses an article before clock times; English has no separate word." } }) },
         { id: "time_lets_say", s: t("Digamos | a | las | siete | y media.", "Let's say | at | — | seven | thirty.", "Let's say seven thirty.", { flags: { 2: "Spanish uses an article before clock times; English has no separate word." } }) },
+        { id: "time_eight", s: t("¿Qué tal | a | las | ocho?", "How about | at | — | eight?", "How about eight?", { flags: { 2: "Spanish uses an article before clock times; English has no separate word." } }) },
+        { id: "time_eight_half", s: t("Mejor | a | las | ocho | y media.", "Better | at | — | eight | thirty.", "Eight thirty works better.", { flags: { 2: "Spanish uses an article before clock times; English has no separate word." } }) },
         { id: "time_ask_you", s: t("¿A | qué | hora | te queda | bien?", "At | what | time | it suits you | well?", "What time works for you?", { spain: t("¿A | qué | hora | te viene | bien?", "At | what | time | it suits you | well?", "What time works for you?") }) },
       ],
     },
@@ -1816,5 +1824,10 @@ export const inviteCall: SituationDef = {
 
 // The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
 inviteCall.hints.place_keep = pick(inviteCall.hints.place, ["meet_lets", "meet_full"]);
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+inviteCall.hints.mt_not730 = pick(inviteCall.hints.meettime, ["time_eight", "time_eight_half"]);
+inviteCall.hints.mt_not800 = pick(inviteCall.hints.meettime, ["time_how_about", "time_eight_half"]);
+inviteCall.hints.mt_not830 = pick(inviteCall.hints.meettime, ["time_how_about", "time_eight"]);
 
 export default inviteCall;

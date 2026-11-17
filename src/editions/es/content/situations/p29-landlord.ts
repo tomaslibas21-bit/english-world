@@ -38,6 +38,7 @@ import type { Ctx, Pending, SituationDef, Suggestion, Tip } from "@/content/type
 import type { ConvCtx } from "@/convo/dialogue";
 import { t } from "@/content/dsl";
 import { GLOBAL_HANDLERS } from "@/content/global";
+import { pick, pickFrom } from "../hint-pick";
 
 // ---------------------------------------------------------------------------
 // Flags used more than once
@@ -1300,6 +1301,7 @@ export const landlord: SituationDef = {
         { id: "friday_works", s: t("El | viernes | en la mañana | me queda | bien.", "— | Friday | in the morning | suits me | well.", "Friday morning works for me.", { flags: { 0: F_EL_DAY }, spain: t("El | viernes | por la mañana | me viene | bien.", "— | Friday | in the morning | suits me | well.", "Friday morning works for me.", { flags: { 0: F_EL_DAY } }) }) },
         { id: "works_me", s: t("Me parece | bien.", "It seems to me | good.", "That works for me.") },
         { id: "saturday_better", s: t("El | sábado | sería | mejor.", "— | Saturday | would be | better.", "Saturday would be better.", { flags: { 0: F_EL_DAY } }) },
+        { id: "wed_works", s: t("El | miércoles | me queda | bien.", "— | Wednesday | suits me | well.", "Wednesday works for me.", { flags: { 0: F_EL_DAY }, spain: t("El | miércoles | me viene | bien.", "— | Wednesday | suits me | well.", "Wednesday works for me.", { flags: { 0: F_EL_DAY } }) }) },
       ],
     },
     home: {
@@ -1461,7 +1463,7 @@ export const landlord: SituationDef = {
       suggest: (c) => c.s.level === 0
         ? [{ lt: "Ask when someone can come", hint: "date_when" }, { lt: "Ask for someone to come sooner", hint: "date_sooner" }]
         : c.s.level === 1
-          ? [{ lt: "Ask for someone to come sooner", hint: "date_sooner" }, { lt: "Agree on a day", hint: "date_ok" }]
+          ? [{ lt: "Ask for someone to come sooner", hint: "date_sooner" }, { lt: "Agree on a day", hint: "date_ok_wed" }]
           : [{ lt: "Agree on a day", hint: "date_ok" }, { lt: "Ask for it in writing", hint: "wrap" }],
       yes: (c) => { dateYes(c); },
       no: (c) => { dateNo(c); },
@@ -2132,5 +2134,9 @@ export const landlord: SituationDef = {
       setup: (s) => { s.greetAgain = false; s.twist = null; s.homeQ = false; s.thermoQ = false; } },
   ],
 };
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+// (level 1: he offered Wednesday, so the card leads with Wednesday, not Friday)
+landlord.hints.date_ok_wed = pick(landlord.hints.date_ok, ["wed_works", "works_me", "saturday_better"]);
 
 export default landlord;

@@ -20,6 +20,7 @@
 import type { Ctx, EntityDef, HintItem, Pending, SentSrc, SituationDef, Suggestion } from "@/content/types";
 import { ent, t } from "@/content/dsl";
 import { expectHowAreYou } from "@/content/global";
+import { payHint, pick, pickFrom } from "../hint-pick";
 
 // ---------------------------------------------------------------------------
 // Entities (prices in cents of a peso; IVA included, as Mexican shelf prices are)
@@ -1969,7 +1970,7 @@ export const clothes: SituationDef = {
         if (!c.s.totalSaid) { c.s.totalSaid = true; if (!c.s.payMethod && c.chance(0.35)) c.say("ask_pay_method"); }
       },
       expects: ["pay_card", "pay_cash", "pay_phone", "here_you_go", "no_cash", "no_card", "pay_transfer", "here_ctx", "pay_q", "ask_dollars", "ask_total"],
-      suggest: [{ lt: "Pay by card, in cash or by phone", hint: "pay" }] },
+      suggest: (c: Ctx) => [{ lt: "Pay by card, in cash or by phone", hint: payHint(c) }] },
     { id: "bag", when: (c) => c.s.mode !== "return" && !!c.s.paid && c.s.askBag, done: (c) => c.s.bag !== undefined,
       ask: (c) => { c.say("ask_bag"); guideFor(c, "bag", cur(c)?.id); }, expects: ["wear_it", "no_bag", "gift_receipt", "want_bag", "im_fine_ctx", "no_receipt", "bag_price"],
       suggest: [{ lt: "Say whether you need a bag", hint: "bag", options: "clothing" }],
@@ -2855,5 +2856,9 @@ function closing(c: Ctx) {
     },
     yes: (cc) => { cc.end(); }, no: (cc) => { cc.end(); } });
 }
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+clothes.hints.pay_ans = pick(clothes.hints.pay, ["pay_card_short", "pay_cash", "here_you_go"]);
+clothes.hints.pay_here = pick(clothes.hints.pay, ["here_you_go", "pay_cash"]);
 
 export default clothes;

@@ -15,7 +15,7 @@
 import type { Ctx, EntityDef, Pending, Segment, SituationDef } from "@/content/types";
 import { ent, t } from "@/content/dsl";
 import { expectHowAreYou } from "@/content/global";
-import { pick, pickFrom } from "../hint-pick";
+import { payHint, pick, pickFrom } from "../hint-pick";
 import { yesAgreeGroups } from "../global";
 
 // ---------------------------------------------------------------------------
@@ -316,7 +316,7 @@ function expectFee(c: Ctx) {
   };
   ask(c, {
     id: "fee", expects: ["give", "give_ctx", "pay_card", "pay_cash", "pay_other_ctx", "ack_done", "move_items", "move_items_ctx"], hints: ["fee"],
-    suggest: [{ lt: "Pay by card or in cash", hint: "fee" }, { lt: "Move things after all", hint: "ow_move" }],
+    suggest: [{ lt: "Pay by card or in cash", hint: payHint(c, "fee") }, { lt: "Move things after all", hint: "ow_move" }],
     on: {
       give: (cc) => { paid(cc); }, give_ctx: (cc) => { paid(cc); }, ack_done: done, g_ok: done,
       pay_fee: (cc) => { paid(cc); }, pay_fee_ctx: (cc) => { paid(cc); },
@@ -2073,5 +2073,9 @@ export const checkin: SituationDef = {
 
 // The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
 checkin.hints.yes_sure = pick(yesAgreeGroups().g_agree, ["ag_yes_sure", "ag_sure"]);
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+checkin.hints.fee_ans = pick(checkin.hints.fee, ["fee_here", "fee_cash"]);
+checkin.hints.fee_here = pick(checkin.hints.fee, ["fee_here", "fee_cash"]);
 
 export default checkin;

@@ -9,6 +9,7 @@
 import type { Ctx, EntityDef, SituationDef } from "@/content/types";
 import { ent, t } from "@/content/dsl";
 import { expectHowAreYou } from "@/content/global";
+import { pick, pickFrom } from "../hint-pick";
 
 // ---------------------------------------------------------------------------
 // The stall. price: cents of a peso per unit; unit: kg (sold by weight), pza (by the piece), manojo (by the bunch);
@@ -540,6 +541,7 @@ export const mercado: SituationDef = {
         { id: "big_bill", s: t("Solo | tengo | de | quinientos.", "Only | I-have | of | five hundred.", "I've only got a 500.") },
         { id: "q_change", s: t("¿Tiene | cambio | de | quinientos?", "Do you have | change | of | five hundred?", "Do you have change for a 500?") },
         { id: "q_card", s: t("¿Aceptan | tarjeta?", "Do you accept | card?", "Do you take cards?") },
+        { id: "transfer_yes", s: t("Sí, | le | hago | una | transferencia.", "Yes, | (to) you | I-make | a | transfer.", "Sure, I'll send you a transfer.") },
       ],
     },
   },
@@ -702,7 +704,7 @@ export const mercado: SituationDef = {
     no_cash(c) {
       if (c.s.paid) return;
       c.say("transfer_offer");
-      c.expect({ id: "transfer", expects: ["pay_transfer", "transfer_yes_ctx", "pay_cash", "big_bill"], hints: ["pay"], suggest: [{ lt: "Say you'll pay by transfer", hint: "pay" }],
+      c.expect({ id: "transfer", expects: ["pay_transfer", "transfer_yes_ctx", "pay_cash", "big_bill"], hints: ["pay"], suggest: [{ lt: "Say you'll pay by transfer", hint: "pay_transfer" }],
         yes: (cc) => { cc.say("ack"); paidTransfer(cc); },
         no: () => {},
         on: { pay_transfer: (cc) => { cc.say("ack"); paidTransfer(cc); return true; } } });
@@ -948,5 +950,8 @@ function pilon(c: Ctx) {
   c.twist("pilon");
   c.say("pilon");
 }
+
+// The replies follow what was just said (owner, 17 Nov 2026): each card shows only the answers that fit this question.
+mercado.hints.pay_transfer = pick(mercado.hints.pay, ["transfer_yes", "here_you_go"]);
 
 export default mercado;
