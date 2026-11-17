@@ -57,7 +57,7 @@ try {
         window.__ew?.game?.activeSession &&
         window.__ew.store.getState().conv.phase === "you",
     );
-    assert(await page.getByText("Beta · dar tobulinamas").isVisible());
+    assert(await page.getByText("Pastebėjai klaidą?").isVisible());
     await page.evaluate(async () => {
       await window.__ew.game.activeSession.submit(
         "I can tomorrow",

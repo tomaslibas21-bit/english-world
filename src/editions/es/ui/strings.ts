@@ -226,7 +226,7 @@ export const STRINGS: Record<string, string> = {
   "Ar teisingai išgirdo? Paspausk tekstą, kad išsiųstum, arba pataisyk.": "Did it hear you right? Tap the text to send it, or fix it.",
 
   // Reporting a problem (src/ui/ReportProblem.tsx; shown when the edition has somewhere to send it, edition.ts `reports`)
-  "Beta · dar tobulinamas": "Beta · still being improved",
+  "Pastebėjai klaidą?": "Spotted a mistake?",
   "Pranešti apie klaidą": "Report a problem",
   "Kas nepavyko?": "What went wrong?",
   "Pranešimą gaus kurso kūrėjas. Pridėsime paskutines 12 šio pokalbio žinučių ir atpažintą tekstą. Garso įrašas nesiunčiamas.": "The course's creator gets your report, with the last 12 messages of this conversation and what was heard. No audio is sent.",
@@ -734,8 +734,6 @@ export const STRINGS: Record<string, string> = {
   "Spustelėk žemę – nueisi ten. {g} – nueiti iki užduoties, {m} – žemėlapis, {j} – užduotys, {p} – telefonas.": "Click the ground to walk there. {g} walks to your task, {m} opens the map, {j} your tasks, {p} the phone.",
   "Patarimai vėl bus rodomi": "The tips will show again",
   "Rodyti patarimus iš naujo": "Show the tips again",
-  "Bandomoji versija – žaidimą dar tobuliname.": "Beta – we're still improving the game.",
-  "Žaidimą dar tobuliname.": "We're still improving the game.",
   "Vietoje „…“ pasakyk savo žodžius.": "Say your own words where you see “…”.",
   "Prie La Ola lentų paplūdimyje bakstelėk „Banglentė“ – Nayeli išmokys pagauti bangą. Ji siūlys ir pokalbio pabaigoje.": "Tap “Surf” by La Ola's boards on the beach: Nayeli will teach you to catch a wave. She offers it at the end of your talk too.",
   "Prie La Ola lentų paplūdimyje spausk E – Nayeli išmokys pagauti bangą. Ji siūlys ir pokalbio pabaigoje.": "Press E by La Ola's boards on the beach: Nayeli will teach you to catch a wave. She offers it at the end of your talk too.",

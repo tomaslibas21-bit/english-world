@@ -19,5 +19,4 @@ export const EDITION: Edition = {
   // no report strip yet: Spanish Master English's files Worker has no /_game_reports (English Master's takes only its
   // own course's token); with an address here the strip shows, its words already in English (ui/strings.ts)
   reports: null,
-  beta: true,
 };

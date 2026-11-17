@@ -81,7 +81,7 @@ export function ReportProblem() {
   return (
     <>
       <div className="beta-strip">
-        <span>{L("Beta · dar tobulinamas")}</span>
+        <span>{L("Pastebėjai klaidą?")}</span>
         <button
           type="button"
           onClick={() => {
