@@ -821,7 +821,7 @@ export const bank: SituationDef = {
     machine_error: { patterns: [
       "[no] (no lo creo | creo que no) #h:pin_no", "[no] el @pin (estaba | era) (bien | correcto)", "[no] no (puse | meti) mal [el | mi] @pin",
       "[no] no me equivoqué [de @pin]", "[no] (el cajero | la maquina) (esta | estaba) (descompuesto | fallando | mal)", "[no] (salio | aparecio | me salio) (un error | error)",
-      "[no] no se que pasó", "[no] (nomas | solo) se (la | me la) (quedó | tragó)",
+      "[no] no se que pasó", "[no] (nomas | solo) se (la | me la) (quedó | tragó)", "[no] (el cajero | la maquina) se (trabó | atoró | descompuso | colgó)",
     ] },
     block_req: { patterns: [
       "(me puede | puede | podria | me podria) (bloquear | cancelar) (la | mi) tarjeta #h:card_block", "(bloqueela | cancelela | bloqueemela)",

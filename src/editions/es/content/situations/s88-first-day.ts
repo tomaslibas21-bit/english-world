@@ -369,7 +369,7 @@ export const firstDay: SituationDef = {
       "a que hora [vamos | salen | salimos | van | nos vamos] #h:l_time #time", "cuando (vamos | salen | salimos | nos vamos) #time",
       "a que hora (regresamos | volvemos | regresan | vuelven | hay que regresar | tenemos que regresar | hay que volver | estamos de regreso) [a la oficina | al trabajo] #back",
       "(cuanto | cuanto cuesta | cuanto sale | cuanto es | que precio tiene) [la comida | la comida corrida | comer ahi] #price", "(es | esta) [muy] (caro | cara) #dear", "(es | esta) (barato | barata) #cheap",
-      "(que | que tipo de) comida (hay | tienen | venden | es | dan) #food", "que (hay | dan | sirven | venden) [de comer | hoy] #food", "(aceptan | se puede pagar con | puedo pagar con) tarjeta #card",
+      "(que | que tipo de) comida (hay | tienen | venden | es | dan) #food", "que (hay | dan | sirven | venden) [de comer | hoy] #food", "(aceptan | se puede pagar con | puedo pagar con | acepta | aceptas) tarjeta #card",
       "(hay | tienen) (comida | algo | opciones) (vegetariana | vegetariano | sin carne | vegana | vegano) #veg",
       "(es | esta) [muy] (picante | picosa | picoso) #spicy", "pica [mucho] #spicy",
       "(quien | quienes) [mas] (va | van | viene | vienen) [a ir] #who", "(vamos | van) todos [juntos] #who", "con (quien | quienes) (vamos | van | vas) #who",

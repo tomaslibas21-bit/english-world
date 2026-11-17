@@ -399,7 +399,7 @@ export const post: SituationDef = {
     ] },
     ask_insured: { patterns: ["(esta | va) asegurado #h:q_insured", "(tiene | incluye | lleva | trae) seguro [el {service}]", "hay seguro", "y si se pierde", "que pasa si se pierde",
       "[y] [el] {service} [no] (tiene | incluye | lleva | trae) seguro",
-      "(puedo | se puede | podria) asegurar(lo | la)? #can", "que cubre el seguro [basico | completo] #cover", "(cuanto | hasta cuanto | que tanto) cubre [el seguro] [basico] #cover"] },
+      "(puedo | se puede | podria) (asegurar | asegurarlo | asegurarla) #can", "que cubre el seguro [basico | completo] #cover", "(cuanto | hasta cuanto | que tanto) cubre [el seguro] [basico] #cover"] },
     ask_kilos: { patterns: ["cuanto es en libras #h:q_kilos", "(y | eso) en libras", "cuantas libras (son | es | pesa)", "cuanto pesa", "cuanto pesa en libras"] },
     ask_customs: { patterns: ["(necesito | tengo que | hay que) llenar (algo | una forma | un formulario | la declaracion | un formato)", "que es (la | una) declaracion [de aduana]", "para que es (eso | esto | la declaracion)", "por que (necesita | necesito) (eso | la declaracion)"] },
     what_write: { patterns: ["que (pongo | escribo) [aqui | ahi] [en (la declaracion | el formulario | la forma | el papel)]", "que (le | tengo que | debo) (poner | escribir) [en (la declaracion | el formulario | la forma)]", "que necesita saber"] },
@@ -447,8 +447,8 @@ export const post: SituationDef = {
     // --- paying
     pay_card: { patterns: [
       "(en)? efectivo no [sino] (con)? tarjeta", "no (en)? efectivo [sino] (con)? tarjeta",
-      "(puedo | se puede) pagar con tarjeta [de credito | de debito] #h:pay_card", "con tarjeta [de credito | de debito] #h:pay_card_short", "tarjeta", "(aceptan | acepta | toman | reciben) tarjeta [de credito | de debito]",
-      "(aceptan | acepta) (visa | mastercard | american express | amex)", "(voy a | quiero | prefiero) pagar con tarjeta", "(le pago | pago) con tarjeta", "con (visa | mastercard | debito | credito)",
+      "(puedo | se puede) pagar con tarjeta [de credito | de debito] #h:pay_card", "con tarjeta [de credito | de debito] #h:pay_card_short", "tarjeta", "(aceptan | acepta | aceptas) tarjeta #h:q_aceptan", "(aceptan | acepta | toman | reciben | aceptas) tarjeta [de credito | de debito]",
+      "(aceptan | acepta | aceptas) (visa | mastercard | american express | amex)", "(voy a | quiero | prefiero) pagar con tarjeta", "(le pago | pago) con tarjeta", "con (visa | mastercard | debito | credito)",
       // a what-if is a question: "Sí, aceptamos tarjeta.", paid on the hand-over (rule 17)
       "(y si | que tal si) (pago | le pago) con tarjeta #q",
     ] },
@@ -894,6 +894,7 @@ export const post: SituationDef = {
       lt: "Pay",
       items: [
         { id: "pay_card_short", s: t("Con | tarjeta, | por favor.", "With | card, | please.", "Card, please.") },
+        { id: "q_aceptan", s: t("¿Aceptan | tarjeta?", "Do you accept | card?", "Do you take cards?") },
         { id: "pay_card", s: t("¿Puedo | pagar | con | tarjeta?", "Can I | pay | with | card?", "Can I pay by card?") },
         { id: "pay_cash", s: t("Pago | en efectivo.", "I-pay | in cash.", "I'll pay cash.") },
         { id: "here_you_go", s: t("Aquí tiene.", "Here you go.", "Here you go.") },

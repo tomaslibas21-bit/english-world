@@ -825,10 +825,10 @@ export const museum: SituationDef = {
     // paying
     pay_card: { patterns: [
       "(en)? efectivo no [sino] (con)? tarjeta", "no (en)? efectivo [sino] (con)? tarjeta",
-      "(puedo | se puede) pagar con tarjeta [de credito | de debito] #h:pay_card", "con tarjeta [de credito | de debito]", "tarjeta", "(aceptan | acepta | toman | reciben) tarjeta [de credito | de debito]",
-      "(aceptan | acepta) (visa | mastercard | american express | amex)", "(puedo | se puede) pagar con (visa | mastercard | amex | american express | credito | debito)", "(voy a | quiero | prefiero) pagar con tarjeta", "[no] prefiero [pagar] con tarjeta", "(le pago | pago) con tarjeta", "no (tengo | traigo) [suficiente] efectivo [(pago | le pago | mejor)] con tarjeta", "con (visa | mastercard | debito | credito)",
+      "(puedo | se puede) pagar con tarjeta [de credito | de debito] #h:pay_card", "con tarjeta [de credito | de debito]", "tarjeta", "(aceptan | acepta | aceptas) tarjeta #h:q_aceptan", "(aceptan | acepta | toman | reciben | aceptas) tarjeta [de credito | de debito]",
+      "(aceptan | acepta | aceptas) (visa | mastercard | american express | amex)", "(puedo | se puede) pagar con (visa | mastercard | amex | american express | credito | debito)", "(voy a | quiero | prefiero) pagar con tarjeta", "[no] prefiero [pagar] con tarjeta", "(le pago | pago) con tarjeta", "no (tengo | traigo) [suficiente] efectivo [(pago | le pago | mejor)] con tarjeta", "con (visa | mastercard | debito | credito)",
       // Mexican: "¿Tiene terminal?" = do you take cards?
-      "(tiene | tienen | hay) terminal", "(aceptan | acepta | tienen) pago con tarjeta", "(me puede | me podria | puede) cobrar con tarjeta",
+      "(tiene | tienen | hay) terminal", "(aceptan | acepta | tienen | aceptas) pago con tarjeta", "(me puede | me podria | puede) cobrar con tarjeta",
     ] },
     // "No tengo efectivo": so it's the card (never read as "cash")
     // "No tengo tarjeta": only at paying and at the residence-card question (elsewhere it could be either card)
@@ -1241,6 +1241,7 @@ export const museum: SituationDef = {
     pay: {
       lt: "Pay",
       items: [
+        { id: "q_aceptan", s: t("¿Aceptan | tarjeta?", "Do you accept | card?", "Do you take cards?") },
         { id: "pay_card", s: t("¿Puedo | pagar | con | tarjeta?", "Can I | pay | with | card?", "Can I pay by card?") },
         { id: "pay_cash", s: t("Pago | en efectivo.", "I-pay | in cash.", "I'll pay cash.") },
         { id: "here_you_go", s: t("Aquí tiene.", "Here you go.", "Here you go.") },

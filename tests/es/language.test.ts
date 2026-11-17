@@ -318,6 +318,30 @@ describe("5. a past tense said with its accent", () => {
   });
 });
 
+describe("5b. the recognizer's accent and the asked-back 'usted' (owner, 16 Nov 2026)", () => {
+  it("a past the recognizer wrote is the plain word, except paying and taking", () => {
+    expect(tokenSimilarity("trabaj'o", "trabajo")).toBeGreaterThan(0.9);
+    expect(tokenSimilarity("pag'o", "pago")).toBe(0);
+    expect(tokenSimilarity("tom'e", "tome")).toBe(0);
+    const nlu = toy({ work: ["trabajo en (tecnologia | turismo)"], ok: ["(esta | todo) bien"] });
+    expect(read(nlu, "Trabajó en tecnología")).toEqual(["work"]);
+    expect(read(nlu, "trabajo en tecnologia")).toEqual(["work"]);
+    // without its accent "esta bien" reads as "Está bien" does
+    expect(read(nlu, "esta bien")).toEqual(read(nlu, "Está bien"));
+  });
+  it("'Bien, gracias, usted' is 'Bien, gracias, ¿y usted?'", () => {
+    const nlu = toy({ fine: ["(bien | muy bien) [gracias] [(y usted | y tu)]"], name: ["me llamo {name} [y usted]"] });
+    for (const s of ["Bien gracias usted", "Bien, gracias, ¿y usted?", "Bien, ¿usted?", "Muy bien, ¿tú?", "gracias, y usted"].slice(0, 4)) expect(read(nlu, s)).toEqual(["fine"]);
+    expect(LANG.preSurface("Bien gracias usted")).toContain("y usted");
+    // never after a verb or "a": "¿Lo sabe usted?", "Gracias a usted"
+    expect(LANG.preSurface("¿Lo sabe usted?")).toBe("¿Lo sabe usted?");
+    expect(LANG.preSurface("Muchas gracias a usted")).toBe("Muchas gracias a usted");
+  });
+  it("the spoken yes of the confirm card is Spanish, and 'yes' still counts", () => {
+    for (const s of ["Sí", "si", "Sí, eso", "Claro", "yes"]) expect(isConfirmation(s, true)).toBe(true);
+  });
+});
+
 describe("6. 'y si' is an 'if', not 'and yes'", () => {
   it("in what is said and in the patterns", () => {
     expect(toks("¿Y si cancelo?")).toEqual(["y", "s'i", "cancelo"]);

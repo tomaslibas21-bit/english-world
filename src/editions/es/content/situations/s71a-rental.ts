@@ -706,6 +706,7 @@ export const rental: SituationDef = {
       // "¿Y si llego a las seis?" / "¿Lo puedo devolver en la noche?": after five, the grace hour and the extra day
       "(y si | que pasa si | y que pasa si) (llego | lo devuelvo | lo entrego | lo traigo | lo regreso) (mas tarde | despues de las cinco | en la noche | a las (seis | siete | ocho | nueve)) #late",
       "(puedo | podria | se puede) (devolverlo | entregarlo | regresarlo | traerlo) (mas tarde | despues de las cinco | en la noche | a las (seis | siete | ocho | nueve)) #late",
+      "lo (puedo | podria) (devolver | entregar | regresar | traer) (mas tarde | despues de las cinco | en la noche | a las (seis | siete | ocho | nueve)) #late",
     ] },
     airport_yes_ctx: { patterns: ["[si] en el aeropuerto", "[si] alla"] },
     airport_no_ctx: { patterns: ["[mejor] aqui [en la oficina]", "[mejor] lo devuelvo aqui", "en el aeropuerto no"] },

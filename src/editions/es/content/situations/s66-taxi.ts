@@ -258,7 +258,7 @@ export const taxi: SituationDef = {
       "le dejo (la | una)? propina", "(dejelo | dejelo asi) [esta bien]",
     ] },
     pay_card: { patterns: [
-      "(acepta | aceptan) tarjeta #h:p_card", "(puedo pagar | pago | le pago | se puede pagar) con (tarjeta | el celular | mi celular | transferencia)", "con (tarjeta | el celular)",
+      "(acepta | aceptan | aceptas) tarjeta #h:p_card", "(puedo pagar | pago | le pago | se puede pagar) con (tarjeta | el celular | mi celular | transferencia)", "con (tarjeta | el celular)",
       "(acepta | aceptan) (transferencia | tarjeta de credito | tarjeta de debito | pago con tarjeta | apple pay | google pay)",
       "(le transfiero | le hago una transferencia | le puedo transferir)", "tiene terminal",
     ] },
@@ -475,7 +475,7 @@ export const taxi: SituationDef = {
       items: [
         { id: "p_here", s: t("Aquí tiene.", "Here you go.", "Here you go.") },
         { id: "p_keep", s: t("Quédese | con | el | cambio.", "Keep | with | the | change.", "Keep the change.") },
-        { id: "p_card", s: t("¿Acepta | tarjeta?", "Do you accept | card?", "Do you take cards?") },
+        { id: "p_card", s: t("¿Aceptan | tarjeta?", "Do you accept | card?", "Do you take cards?") },
         { id: "p_change", s: t("¿Tiene | cambio?", "Do you have | change?", "Do you have change?"), note: "Drivers often have no change for a $500 bill: ask before you pay." },
       ],
     },

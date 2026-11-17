@@ -261,7 +261,7 @@ export const mercado: SituationDef = {
     // "¿Me da un recibo?": a market stall gives none
     ask_receipt: { patterns: ["(me da | deme | me puede dar | me regala) (un | el)? (recibo | ticket | comprobante | nota | factura)", "(tiene | da | dan) (recibo | ticket | nota | factura)", "(un | el) (recibo | ticket) [por favor]"] },
     no_smaller: { patterns: ["no (tengo | traigo) (mas chico | mas pequeno | cambio | otro)", "(solo | nomas) (tengo | traigo) ese", "no perdon solo (tengo | traigo) de {bill:price}"] },
-    pay_card: { patterns: ["(acepta | aceptan) tarjeta #h:q_card", "puedo pagar con tarjeta", "con tarjeta", "le pago con tarjeta"] },
+    pay_card: { patterns: ["(acepta | aceptan | aceptas) tarjeta #h:q_card", "puedo pagar con tarjeta", "con tarjeta", "le pago con tarjeta"] },
     pay_transfer: { patterns: ["(le puedo hacer | puedo hacer | acepta | aceptan) (una)? transferencia", "por transferencia", "(se puede | puedo | le puedo) pagar (con | por) transferencia",
       "(le puedo | puedo) transferir", "le transfiero", "con transferencia", "(se la | le) hago (la | una)? transferencia"] },
     // "Sí, se la hago" while she waits for a transfer
@@ -539,7 +539,7 @@ export const mercado: SituationDef = {
         { id: "here_you_go", s: t("Aquí tiene.", "Here you go.", "Here you go.") },
         { id: "big_bill", s: t("Solo | tengo | de | quinientos.", "Only | I-have | of | five hundred.", "I've only got a 500.") },
         { id: "q_change", s: t("¿Tiene | cambio | de | quinientos?", "Do you have | change | of | five hundred?", "Do you have change for a 500?") },
-        { id: "q_card", s: t("¿Acepta | tarjeta?", "Do you accept | card?", "Do you take cards?") },
+        { id: "q_card", s: t("¿Aceptan | tarjeta?", "Do you accept | card?", "Do you take cards?") },
       ],
     },
   },

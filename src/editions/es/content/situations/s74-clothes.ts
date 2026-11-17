@@ -744,7 +744,7 @@ export const clothes: SituationDef = {
     // --- paying ------------------------------------------------------------------------------
     pay_card: { patterns: [
       "(con | en) tarjeta [de (credito | debito)] #h:pay_card_short", "(puedo | se puede) pagar con tarjeta [de (credito | debito)] #h:pay_card",
-      "(se puede | puedo) con tarjeta [de (credito | debito)]", "(acepta | aceptan | toma | toman | reciben) (tarjeta | tarjetas | visa | mastercard | american express | tarjeta de credito | tarjeta de debito)",
+      "(se puede | puedo) con tarjeta [de (credito | debito)]", "(aceptan | acepta | aceptas) tarjeta #h:q_aceptan", "(acepta | aceptan | toma | toman | reciben | aceptas) (tarjeta | tarjetas | visa | mastercard | american express | tarjeta de credito | tarjeta de debito)",
       "(le | les) pago con tarjeta", "(voy a | quiero) pagar con tarjeta", "pago con tarjeta", "con (debito | credito)", "(tarjeta | tarjeta de credito | tarjeta de debito | debito | credito)",
       "aqui (esta | tiene) mi tarjeta", "con mi tarjeta", "no (en)? efectivo [sino] con tarjeta",
       "efectivo no [sino] [mejor] con tarjeta", "no (quiero | puedo) pagar (en | con) efectivo [sino] [mejor] con tarjeta", "con (visa | mastercard | american express | amex)",
@@ -856,7 +856,7 @@ export const clothes: SituationDef = {
       "(el | mi) (ticket | recibo) no (lo | la)? (traigo | tengo | encontré | encuentro)",
     ] },
     problem: { patterns: [
-      "se (destino | despintó | deslavó | decoloró) [en la (lavadora | lavada) | al lavarlo | al lavarla] #ran #h:ret_ran",
+      "se (destiñó | destino | despintó | deslavó | decoloró) [en la (lavadora | lavada) | al lavarlo | al lavarla] #ran #h:ret_ran",
       "se (ha | han) (destenido | despintado | decolorado) [en la (lavadora | lavada) | al lavarlo | al lavarla] #ran #h:ret_ran", "(perdió | se le fue) el color #ran", "se (destineron | despintaron) #ran",
       "se (encogió | encogio) [en la (lavadora | secadora | lavada)] #shrank", "(quedó | se hizo) mas (chico | chica) [despues de lavarlo | despues de lavarla] #shrank",
       "tiene un (hoyo | agujero | hoyito) #hole", "(salió | venia) con un (hoyo | agujero) #hole",
@@ -1755,6 +1755,7 @@ export const clothes: SituationDef = {
       lt: "Pay",
       items: [
         { id: "pay_card_short", s: t("Con | tarjeta, | por favor.", "With | card, | please.", "Card, please.") },
+        { id: "q_aceptan", s: t("¿Aceptan | tarjeta?", "Do you accept | card?", "Do you take cards?") },
         { id: "pay_card", s: t("¿Puedo | pagar | con | tarjeta?", "Can I | pay | with | card?", "Can I pay by card?") },
         { id: "pay_cash", s: t("Le | pago | en | efectivo.", "(To) you | I-pay | in | cash.", "I'll pay in cash.",
         { spain: t("Te | pago | en | efectivo.", "(To) you | I-pay | in | cash.", "I'll pay in cash.") }) },

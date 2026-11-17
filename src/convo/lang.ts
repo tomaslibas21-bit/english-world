@@ -52,6 +52,8 @@ export interface LangPack {
   droppable: ReadonlyMap<string, number>;
   /** A droppable word that must stay here ("it" as an object: "[it] is my wallet" but never "take [it]"). */
   keepDroppable(tok: string, next: string | undefined): boolean;
+  /** A word that may be left out only before certain words, with its cost (Spanish "y" in "¿y usted?"). */
+  dropBefore?(tok: string, next: string | undefined, after: string | undefined): number | undefined;
   /** Extra words a learner adds that don't change the meaning, with their cost. */
   skippable: ReadonlyMap<string, number>;
   /** A pattern's own words after tokenising (an author's "driver s license" is the possessive "drivers"). */

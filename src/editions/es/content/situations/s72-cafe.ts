@@ -381,16 +381,16 @@ export const cafe: SituationDef = {
     ] },
     more_yes: { patterns: ["(si | ah si) (algo mas | otra cosa)", "otra cosa", "algo mas", "una cosa mas", "si quisiera algo mas"] },
     pay_card: { patterns: [
-      "(puedo | se puede) pagar con tarjeta #h:pay_card", "con tarjeta #h:pay_card_short", "tarjeta", "(aceptan | acepta | toman) tarjeta #h:take_cards",
+      "(puedo | se puede) pagar con tarjeta #h:pay_card", "con tarjeta #h:pay_card_short", "tarjeta", "(aceptan | acepta | aceptas) tarjeta #h:q_aceptan", "(aceptan | acepta | toman | aceptas) tarjeta #h:take_cards",
       "(pago | voy a pagar | le pago) con tarjeta", "(con)? (tarjeta)? de (credito | debito)", "(con)? (la | mi) tarjeta", "con tarjeta esta bien",
       // "¿Tiene terminal?" = may I pay by card (they have one: "Acerque la tarjeta a la terminal")
-      "(tiene | tienen | hay) terminal", "(aceptan | acepta) (pago con)? tarjeta de (credito | debito)",
+      "(tiene | tienen | hay) terminal", "(aceptan | acepta | aceptas) (pago con)? tarjeta de (credito | debito)",
     ] },
     // "No traigo efectivo": so it's the card (never read as "efectivo")
     no_cash: { patterns: ["no (tengo | traigo) [suficiente] efectivo", "sin efectivo", "no puedo pagar en efectivo"] },
     pay_cash: { patterns: ["[puedo] pagar en efectivo", "en efectivo #h:pay_cash", "efectivo", "(pago | voy a pagar | le pago) en efectivo #h:pay_cash", "con efectivo"] },
     pay_phone: { patterns: ["(puedo | se puede) pagar con (el | mi)? (celular | telefono)", "con (el | mi)? (celular | telefono)",
-      "(aceptan | acepta) (apple pay | google pay) #h:apple_pay", "apple pay", "google pay", "(puedo | se puede) pagar con (apple pay | google pay)", "(aceptan | acepta) (pago con)? [el] (celular | telefono)"] },
+      "(aceptan | acepta) (apple pay | google pay) #h:apple_pay", "apple pay", "google pay", "(puedo | se puede) pagar con (apple pay | google pay)", "(aceptan | acepta | aceptas) (pago con)? [el] (celular | telefono)"] },
     // a visitor's dollars: pesos only (nothing is paid)
     ask_dollars: { patterns: [
       "(acepta | aceptan | toma | toman | recibe | reciben) (dolares | dolar | dolares americanos)", "(puedo | se puede) pagar (en | con) dolares",
@@ -1004,6 +1004,7 @@ export const cafe: SituationDef = {
     pay: {
       lt: "Pay",
       items: [
+        { id: "q_aceptan", s: t("¿Aceptan | tarjeta?", "Do you accept | card?", "Do you take cards?") },
         { id: "pay_card", s: t("¿Puedo | pagar | con | tarjeta?", "Can I | pay | with | card?", "Can I pay by card?") },
         { id: "pay_card_short", s: t("Con | tarjeta, | por favor.", "With | card, | please.", "Card, please.") },
         { id: "pay_cash", s: t("Pago | en efectivo.", "I'll-pay | in cash.", "I'll pay in cash.") },

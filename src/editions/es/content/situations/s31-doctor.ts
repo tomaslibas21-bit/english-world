@@ -1285,7 +1285,7 @@ export const doctor: SituationDef = {
       lt: "Pay for the visit",
       items: [
         { id: "pay_card_short", s: t("Con | tarjeta, | por favor.", "With | card, | please.", "Card, please.") },
-        { id: "take_cards", s: t("¿Acepta | tarjeta?", "Do you accept | card?", "Do you take cards?") },
+        { id: "take_cards", s: t("¿Aceptan | tarjeta?", "Do you accept | card?", "Do you take cards?") },
         { id: "pay_cash", s: t("En efectivo.", "In cash.", "Cash.") },
         { id: "here_you_go", s: t("Aquí tiene.", "Here you go.", "Here you go.") },
         { id: "pay_transfer", s: t("¿Le | puedo | hacer | una | transferencia?", "(To) you | can I | make | a | transfer?", "Can I send you a bank transfer?"), note: "Bank transfers from a phone are very common in Mexico." },

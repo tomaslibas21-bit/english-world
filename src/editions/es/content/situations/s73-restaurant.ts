@@ -682,7 +682,7 @@ export const restaurant: SituationDef = {
     ] },
     pay_card: { patterns: ["no (en | con)? efectivo [mejor] con tarjeta", "(mejor | prefiero) [pagar] con tarjeta", "(es | va a ser | seria) con tarjeta",
       "[puedo | podemos] pagar con tarjeta #h:pay_card", "(con)? tarjeta [de credito | de debito] #h:pay_card_short",
-      "(aceptan | acepta | reciben | toman) tarjeta[s]? [de credito | de debito]", "(aceptan | acepta) (tarjeta | visa | mastercard | american express | amex)",
+      "(aceptan | acepta | aceptas) tarjeta #h:q_aceptan", "(aceptan | acepta | reciben | toman | aceptas) tarjeta[s]? [de credito | de debito]", "(aceptan | acepta | aceptas) (tarjeta | visa | mastercard | american express | amex)",
       "(pago | voy a pagar | le pago | vamos a pagar) con tarjeta", "con (mi | la) tarjeta", "(aqui tiene | aqui esta) mi tarjeta", "(visa | mastercard | amex)",
       "(me | nos) trae la terminal", "con la terminal",
     ] },
@@ -1799,6 +1799,7 @@ export const restaurant: SituationDef = {
       lt: "Pay",
       items: [
         { id: "pay_card_short", s: t("Con | tarjeta, | por favor.", "With | card, | please.", "Card, please.") },
+        { id: "q_aceptan", s: t("¿Aceptan | tarjeta?", "Do you accept | card?", "Do you take cards?") },
         { id: "pay_card", s: t("¿Puedo | pagar | con | tarjeta?", "Can I | pay | with | card?", "Can I pay by card?") },
         { id: "pay_cash", s: t("Pago | en efectivo.", "I'll-pay | in cash.", "I'll pay in cash.") },
         { id: "here_you_go", s: t("Aquí tiene.", "Here you go.", "Here you go.",

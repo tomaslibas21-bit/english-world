@@ -451,8 +451,8 @@ export const salon: SituationDef = {
       "(es normal | se acostumbra) dejar propina", "cuanto (se deja | se acostumbra | se acostumbra dejar | se da | le dejo | dejo) [normalmente | aqui]",
       "(la propina | el servicio) (esta | va | viene) (incluida | incluido)", "(esta | va | viene) incluida la propina"] },
     pay_card: { patterns: [
-      "(puedo | se puede) pagar con tarjeta #h:pay_card", "con tarjeta #h:pay_card_short", "tarjeta", "(acepta | aceptan | toma | toman | recibe | reciben) tarjeta",
-      "(pago | voy a pagar | le pago) con tarjeta", "(con)? tarjeta de (credito | debito)", "con (mi | la) tarjeta", "(aceptas | tomas) tarjeta #tip:tu_staff", "efectivo no [mejor] [con] tarjeta", "no (acepta | aceptan) tarjeta",
+      "(puedo | se puede) pagar con tarjeta #h:pay_card", "con tarjeta #h:pay_card_short", "tarjeta", "(aceptan | acepta) tarjeta #h:q_aceptan", "(acepta | aceptan | toma | toman | recibe | reciben) tarjeta",
+      "(pago | voy a pagar | le pago) con tarjeta", "(con)? tarjeta de (credito | debito)", "con (mi | la) tarjeta", "(aceptas | tomas) tarjeta #tip:tu_staff", "efectivo no [mejor] [con] tarjeta", "no (acepta | aceptan | aceptas) tarjeta",
       "(tiene | tienen) terminal", "(acepta | aceptan) pago con tarjeta", "(puedo | se puede) pagar con (la)? terminal",
       "no (tengo | traigo) efectivo [pero] (acepta | aceptan | toma | toman | puedo pagar con) tarjeta",
       "no (en | con)? efectivo [no] [sino | mejor] (con)? tarjeta", "en efectivo no [sino | mejor] (con)? tarjeta",
@@ -1060,6 +1060,7 @@ export const salon: SituationDef = {
       lt: "Pay (and leave a tip)",
       items: [
         { id: "pay_card_short", s: t("Con | tarjeta, | por favor.", "With | card, | please.", "Card, please.") },
+        { id: "q_aceptan", s: t("¿Aceptan | tarjeta?", "Do you accept | card?", "Do you take cards?") },
         { id: "pay_card", s: t("¿Puedo | pagar | con | tarjeta?", "Can I | pay | with | card?", "Can I pay by card?") },
         { id: "pay_cash", s: t("Le | pago | en efectivo.", "(To) you | I-pay | in cash.", "I'll pay cash.",
         { spain: t("Te | pago | en efectivo.", "(To) you | I-pay | in cash.", "I'll pay cash.") }) },

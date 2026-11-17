@@ -27,5 +27,8 @@ export const STRINGS: Record<string, string> = {
   "Vaikščiok po Maple Harbor ir kalbėkis su sutiktais žmonėmis. Geriausia – kompiuteryje.": "Vaikščiok po Puerto Colibrí ir kalbėkis su sutiktais žmonėmis. Geriausia – kompiuteryje.",
   "english-world-korteles.json": "puerto-colibri-korteles.json",
   "Įdiegti anglų kalbą": "Įdiegti ispanų kalbą",
+  // the "did you mean" card: the spoken yes is Spanish (owner, 16 Nov 2026)
+  "Paliesk sakinį arba pasakyk „yes“.": "Paliesk sakinį arba pasakyk „sí“.",
+  "Paliesk sakinį arba parašyk „yes“.": "Paliesk sakinį arba parašyk „sí“.",
   "…ir sveiki sugrįžę į Maple Harbor": "…ir sveiki sugrįžę į Puerto Colibrí",
 };

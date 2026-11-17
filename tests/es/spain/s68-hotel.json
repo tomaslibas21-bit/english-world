@@ -105,6 +105,11 @@
 "ctx": "taxi_time",
 "say": "Ahora mismo, por favor",
 "intent": "taxi_time_ctx"
+},
+{
+"ctx": "anything",
+"say": "¿En qué planta está la 518?",
+"intent": "ask_room"
 }
 ]
 }

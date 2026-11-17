@@ -1070,7 +1070,7 @@ export const date: SituationDef = {
       "[aqui] cuanto (dejamos | se deja | le dejamos | se da | damos | dejo | doy) [de] propina [aqui | en mexico]",
       "cuanto (es | seria) la propina", "(esta | viene) incluida la propina", "la propina (esta | viene) incluida", "incluye [la] propina",
     ] },
-    card_q: { patterns: ["(aceptan | reciben | toman) (tarjeta | tarjetas | tarjeta de credito)", "(se puede | puedo | podemos) pagar con tarjeta", "(hay | tienen) terminal"] },
+    card_q: { patterns: ["(aceptan | reciben | toman | acepta | aceptas) (tarjeta | tarjetas | tarjeta de credito)", "(se puede | puedo | podemos) pagar con tarjeta", "(hay | tienen) terminal"] },
     // "¿Quién paga?", "¿Cómo le hacemos con la cuenta?"
     who_pays: { patterns: [
       "quien (paga | va a pagar | invita)", "(como | que) (le hacemos | hacemos) con la cuenta", "como le hacemos", "como (la pagamos | pagamos) [la cuenta]",

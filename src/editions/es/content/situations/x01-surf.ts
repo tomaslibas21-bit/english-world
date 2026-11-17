@@ -22,7 +22,7 @@
 // Mexican-only words with a neutral twin: rentar / la renta (alquilar / el alquiler: CONTENT-14NOV), ¡qué padre!, ¡va!,
 // pizarrón. The surf game's own lines (src/editions/es/content/surf-lines.ts) are spread into `lines` and `merges`.
 
-import type { Ctx, EntityDef, Segment, SituationDef } from "@/content/types";
+import type { Ctx, EntityDef, Segment, SituationDef, Suggestion } from "@/content/types";
 import { ent, t } from "@/content/dsl";
 import { SURF_LINES, SURF_MERGES } from "../surf-lines";
 
@@ -179,7 +179,7 @@ export const surf: SituationDef = {
       "(no)? (soy | yo soy) principiante", "no se (surfear | hacer surf | nada de surf)", "(no)? (es la | seria mi) primera vez",
       "(no)? nunca (he surfeado | lo he hecho) en mi vida",
     ] },
-    surf_none_ctx: { patterns: ["(no)? nunca", "(no)? ninguna vez", "(no)? jamas", "(no)? (cero | nada)", "(no)? nunca en mi vida"] },
+    surf_none_ctx: { patterns: ["no nunca #h:ex_never", "(no)? nunca", "(no)? ninguna vez", "(no)? jamas", "(no)? (cero | nada)", "(no)? nunca en mi vida"] },
     just_looking: { patterns: ["(solo | nomas | nada mas) (estoy viendo | ando viendo | veo | estoy mirando | miro | pregunto)", "(estoy | ando) (viendo | mirando | echando un vistazo)", "(solo | nomas) (queria | quería | quiero) (ver | preguntar | saber)"] },
 
     // --- rental: hours, ID or deposit -----------------------------------------------------------
@@ -217,9 +217,9 @@ export const surf: SituationDef = {
     two_people: { patterns: ["(somos | vamos) (dos | dos personas)", "para dos (personas)?", "(es | seria) para dos", "(mi pareja | mi esposo | mi esposa | mi amigo | mi amiga | mi novio | mi novia) y yo"] },
 
     // --- paying ------------------------------------------------------------------------------
-    pay_cash: { patterns: ["(en | con)? efectivo #h:p_cash", "no (con | en) tarjeta [sino] [mejor] (en | con)? efectivo", "(en | con)? efectivo (no | y no) (con)? tarjeta", "(pago | te pago | le pago | voy a pagar | prefiero pagar) (en | con) efectivo", "(con | en) (billetes | pesos)", "(tengo | traigo) efectivo", "(en | con) efectivo mejor"] },
-    pay_card: { patterns: ["(con)? tarjeta #h:p_card", "no (en | con)? efectivo [sino] [mejor] con tarjeta", "con tarjeta (no | y no) (en)? efectivo", "(pago | te pago | le pago | voy a pagar | prefiero pagar) con tarjeta", "@hand (mi)? tarjeta", "(con | en) tarjeta mejor", "(con)? tarjeta de (credito | debito)"] },
-    ask_card: { patterns: ["(aceptas | aceptan | acepta | tomas | toman | reciben | recibes) tarjeta #h:p_askcard", "(y si | que pasa si) (pago | te pago) con tarjeta", "(puedo | se puede) pagar con tarjeta", "(hay | tienes | tienen) (terminal | datafono)", "(aceptas | aceptan) (tarjeta de credito | tarjeta de debito | pago con tarjeta | apple pay)"] },
+    pay_cash: { patterns: ["(en | con)? efectivo #h:p_cash", "mejor (en | con)? efectivo #h:pc_cash", "no (con | en) tarjeta [sino] [mejor] (en | con)? efectivo", "(en | con)? efectivo (no | y no) (con)? tarjeta", "(pago | te pago | le pago | voy a pagar | prefiero pagar) (en | con) efectivo", "(con | en) (billetes | pesos)", "(tengo | traigo) efectivo", "(en | con) efectivo mejor"] },
+    pay_card: { patterns: ["(con)? tarjeta #h:p_card", "(perfecto | muy bien | genial | bueno | vale | ok | listo) [entonces] (con)? tarjeta [entonces] #h:pc_ok", "(pago | te pago | le pago) con tarjeta entonces #h:pc_then", "@hand (la | mi) tarjeta #h:pc_here", "no (en | con)? efectivo [sino] [mejor] con tarjeta", "con tarjeta (no | y no) (en)? efectivo", "(pago | te pago | le pago | voy a pagar | prefiero pagar) con tarjeta", "@hand (mi)? tarjeta", "(con | en) tarjeta mejor", "(con)? tarjeta de (credito | debito)"] },
+    ask_card: { patterns: ["(aceptas | aceptan | acepta | tomas | toman | reciben | recibes) tarjeta #h:p_askcard", "(y si | que pasa si) (pago | te pago) con tarjeta", "(puedo | se puede) pagar con tarjeta", "(hay | tienes | tienen) (terminal | datafono)", "(aceptas | aceptan | acepta) (tarjeta de credito | tarjeta de debito | pago con tarjeta | apple pay)"] },
     hand_over: { patterns: [
       "@hand #h:p_here", "@hand [son] {price} [pesos] [exactos | justos]", "(te doy | te pago con | le doy | le pago con) {price} [pesos]", "(te doy | tengo | traigo) un billete de {price}",
       "@hand (el dinero | tu dinero | los pesos)", "listo @hand", "ya regresé @hand", "ya volvi @hand",
@@ -283,8 +283,8 @@ export const surf: SituationDef = {
 
     // --- the lesson -----------------------------------------------------------------------------
     lesson_yes_ctx: { patterns: ["(si)? (me animo | va | vamos | claro | dale | la tomo | la quiero | perfecto | orale | sale | vale | de una | por supuesto) [me animo]", "(si)? (quiero | tomo) la clase", "(si)? (me apunto | me anoto)"] },
-    brief_ok_ctx: { patterns: ["(si)? (entendido | entiendo | claro | te sigo | si te sigo | todo claro | listo | lista | perfecto | va | de acuerdo | vale | ok | entendi | ya entendi) [te sigo]", "(si)? (todo | todo bien | muy claro)"] },
-    no_more_ctx: { patterns: ["(no)? (ninguna | ninguna pregunta | nada | todo claro | todo bien | nada mas) [gracias]", "(no)? (estoy | ya estoy) (listo | lista) [vamos]", "(no)? (listo | lista) vamos", "(no)? (ya)? (vamos | al agua)"] },
+    brief_ok_ctx: { patterns: ["(si)? todo claro #h:fl_clear", "si te sigo #h:lq_ok", "(si)? (entendido | entiendo | claro | te sigo | si te sigo | todo claro | listo | lista | perfecto | va | de acuerdo | vale | ok | entendi | ya entendi) [te sigo]", "(si)? (todo | todo bien | muy claro)"] },
+    no_more_ctx: { patterns: ["(no)? ninguna [pregunta] [gracias] #h:rd_none", "(si)? vamos al agua #h:rd_go", "(no)? (ninguna | ninguna pregunta | nada | todo claro | todo bien | nada mas) [gracias]", "(no)? (estoy | ya estoy) (listo | lista) [vamos]", "(no)? (listo | lista) vamos", "(no)? (ya)? (vamos | al agua)"] },
     one_q_ctx: { patterns: ["(si)? (una | tengo una | una pregunta | tengo una pregunta | tengo una duda | una duda)"] },
 
     // --- Puerto Escondido ------------------------------------------------------------------------
@@ -308,7 +308,7 @@ export const surf: SituationDef = {
     // --- the invitation ------------------------------------------------------------------------
     invite_yes_ctx: { patterns: [
       "(vamos | si vamos | claro | me animo | si me animo | va | orale | andale | dale | vale | sale | de una | con gusto | por supuesto | listo | lista) [vamos] #h:iv_yes",
-      "(si)? (probemos | probamos | vamos a probar) [una ola]", "(si)? (vamos | vamonos) al agua", "(si)? (claro que si | obvio)",
+      "(si)? (probemos | probamos | vamos a probar) [una ola]", "si claro #h:iv_sure", "(si)? (vamos | vamonos) al agua", "(si)? (claro que si | obvio)",
     ] },
     invite_no_ctx: { patterns: [
       "(otro dia | mejor otro dia | mejor manana | manana | hoy no | ahorita no | ahora no | en otro momento | luego | despues | la proxima | otra vez sera) [mejor] [gracias] [vale] #h:iv_no",
@@ -613,6 +613,9 @@ export const surf: SituationDef = {
     // --- the invitation ----------------------------------------------------------------------------
     invite: [t("¿Probamos | una | ola?", "We-try | a | wave?", "Shall we try a wave?")],
     invite_again: [t("¿Y? | ¿Probamos | una | ola?", "So? | We-try | a | wave?", "So? Shall we try a wave?")],
+    invite_rent: [t("Antes | de | irte, | ¿probamos | una | ola? | La | primera | va | por mi cuenta.", "Before | — | you-go, | we-try | a | wave? | The | first | goes | on me.", "Before you go, shall we try a wave? The first one's on me.")],
+    go_lend: [t("¡Vamos! | Te | presto | una | tabla | blanda.", "Let's go! | (To) you | I-lend | a | board | soft.", "Let's go! I'll lend you a soft board.")],
+    boards_anytime: [t("Las | tablas | están | en | la | orilla: | vuelve | cuando | quieras.", "The | boards | are | at | the | shore: | come back | whenever | you-want.", "The boards are down by the water: come back anytime.")],
     invite_adv: [t("Pero | hoy, | ¿probamos | una | ola | aquí? | La | primera | va | por mi cuenta.", "But | today, | we-try | a | wave | here? | The | first | goes | on me.", "But today, shall we try a wave here? The first one's on me.")],
     go: [
       t("¡Vamos! | Agarra | tu | tabla | y | al | agua.", "Let's go! | Grab | your | board | and | to the | water.", "Let's go! Grab your board and into the water.",
@@ -681,10 +684,17 @@ export const surf: SituationDef = {
         { id: "l_want", s: t("Quiero | una | clase | de | surf.", "I want | a | lesson | of | surfing.", "I'd like a surf lesson.") },
         { id: "l_learn", s: t("Quiero | aprender | a | surfear.", "I want | to learn | to | surf.", "I want to learn to surf.",
           { spain: t("Quiero | aprender | a | hacer | surf.", "I want | to learn | to | do | surfing.", "I want to learn to surf.") }) },
+        { id: "s_yes", s: t("Ya | surfeo.", "Already | I-surf.", "I already surf.", { spain: t("Ya | hago | surf.", "Already | I-do | surfing.", "I already surf.") }) },
+      ],
+    },
+    // "¿Has surfeado alguna vez?": answers to her question, not a request for the lesson again
+    exp: {
+      lt: "Say whether you've surfed before",
+      items: [
         { id: "l_first", s: t("Es | mi | primera | vez.", "It's | my | first | time.", "It's my first time.") },
+        { id: "ex_never", s: t("No, | nunca.", "No, | never.", "No, never.") },
         { id: "l_some", s: t("Surfeé | un | par | de | veces.", "I-surfed | a | couple | of | times.", "I've surfed a couple of times.",
           { spain: t("He hecho | surf | un | par | de | veces.", "I've done | surfing | a | couple | of | times.", "I've surfed a couple of times.") }) },
-        { id: "s_yes", s: t("Ya | surfeo.", "Already | I-surf.", "I already surf.", { spain: t("Ya | hago | surf.", "Already | I-do | surfing.", "I already surf.") }) },
       ],
     },
     ask: {
@@ -729,15 +739,40 @@ export const surf: SituationDef = {
         { id: "p_atm", s: t("¿Dónde | hay | un | cajero?", "Where | is there | an | ATM?", "Where's an ATM?") },
       ],
     },
+    // after her "Sí, claro." to "¿Aceptas tarjeta?": the card, not the question again (owner, 16 Nov 2026)
+    paycard: {
+      lt: "Pay by card",
+      items: [
+        { id: "pc_ok", s: t("Perfecto, | con | tarjeta.", "Perfect, | with | card.", "Great, by card then.") },
+        { id: "pc_then", s: t("Pago | con | tarjeta, | entonces.", "I-pay | with | card, | then.", "I'll pay by card, then.") },
+        { id: "pc_here", s: t("Aquí tienes | la | tarjeta.", "Here you have | the | card.", "Here's my card.") },
+        { id: "pc_cash", s: t("Mejor | en efectivo.", "Better | in cash.", "Actually, cash.") },
+      ],
+    },
     lessonq: {
       lt: "Ask about the lesson",
       items: [
-        { id: "lq_ok", s: t("Sí, | te | sigo.", "Yes, | you | I-follow.", "Yes, I'm with you.") },
         { id: "lq_hard", s: t("¿Es | difícil?", "Is it | hard?", "Is it hard?") },
         { id: "lq_deep", s: t("¿Está | hondo?", "Is it | deep?", "Is it deep?", { spain: t("¿Cubre | mucho?", "Does it cover | much?", "Is it deep?") }) },
         { id: "lq_fall", s: t("¿Y si | me | caigo?", "And if | myself | I-fall?", "What if I fall?") },
         { id: "lq_sharks", s: t("¿Hay | tiburones?", "Are there | sharks?", "Are there sharks?") },
         { id: "lq_swim", s: t("No sé | nadar | muy | bien.", "I don't know | to swim | very | well.", "I'm not a very good swimmer.") },
+      ],
+    },
+    // "¿Me sigues?" / "¿Todo claro?"
+    follow: {
+      lt: "Say you're following",
+      items: [
+        { id: "lq_ok", s: t("Sí, | te | sigo.", "Yes, | you | I-follow.", "Yes, I'm with you.") },
+        { id: "fl_clear", s: t("Sí, | todo | claro.", "Yes, | everything | clear.", "Yes, got it.") },
+      ],
+    },
+    // "¿Alguna pregunta?": none, and into the water
+    ready: {
+      lt: "Say you're ready to go in",
+      items: [
+        { id: "rd_none", s: t("No, | ninguna.", "No, | none.", "No, none.") },
+        { id: "rd_go", s: t("¡Vamos | al | agua!", "Let's go | to the | water!", "Let's get in the water!") },
       ],
     },
     pe: {
@@ -754,6 +789,7 @@ export const surf: SituationDef = {
       lt: "Say yes, or not today",
       items: [
         { id: "iv_yes", s: t("¡Sí, | vamos!", "Yes, | let's go!", "Yes, let's go!") },
+        { id: "iv_sure", s: t("Sí, | claro.", "Yes, | of course.", "Sure.") },
         { id: "iv_no", s: t("Mejor | otro | día.", "Better | another | day.", "Maybe another day.") },
       ],
     },
@@ -810,12 +846,12 @@ export const surf: SituationDef = {
     { id: "rent_pay", when: (c) => !!c.s.wantRent && !!c.s.depositDone, done: (c) => !!c.s.rentPaid,
       ask: (c) => askPay(c, "rent"),
       expects: ["pay_cash", "pay_card", "ask_card", "hand_over", "no_cash", "ask_atm", "atm_go", "back_ctx", "ask_price"],
-      suggest: [{ lt: "Pay", hint: "pay" }],
+      suggest: paySuggest,
       yes: (c) => payYes(c), no: (c) => { c.say("pay_how"); c.hold(); } },
     { id: "experience", when: (c) => !!c.s.wantLesson && !c.s.advanced, done: (c) => c.s.exp !== undefined,
       ask: (c) => c.say("exp_ask"),
       expects: ["surf_none", "surf_none_ctx", "surf_some", "surf_yes"],
-      suggest: [{ lt: "Say whether you've surfed before", hint: "lesson" }],
+      suggest: [{ lt: "Say whether you've surfed before", hint: "exp" }],
       yes: (c) => { c.s.exp = "some"; c.say("exp_some"); },
       no: (c) => { c.s.exp = "none"; c.say("exp_none"); } },
     { id: "lesson_offer", when: (c) => !!c.s.wantLesson && !c.s.advanced && c.s.exp !== undefined, done: (c) => !!c.s.lessonOk,
@@ -830,18 +866,18 @@ export const surf: SituationDef = {
     { id: "lesson_pay", when: (c) => !!c.s.lessonOk, done: (c) => !!c.s.lessonPaid,
       ask: (c) => askPay(c, "lesson"),
       expects: ["pay_cash", "pay_card", "ask_card", "hand_over", "no_cash", "ask_atm", "atm_go", "back_ctx", "ask_lesson_price", "ask_price"],
-      suggest: [{ lt: "Pay", hint: "pay" }],
+      suggest: paySuggest,
       yes: (c) => payYes(c), no: (c) => { c.say("pay_how"); c.hold(); } },
     { id: "board", when: (c) => !!c.s.lessonPaid, done: (c) => !!c.s.boardDone,
       ask: (c) => { if (!c.s.boardSaid) { c.s.boardSaid = true; c.say("board_1"); c.say("board_2"); } c.say("board_q"); },
       expects: ["brief_ok_ctx", "ask_hard", "ask_deep", "ask_fall", "ask_sharks", "swim", "ask_included"],
-      suggest: [{ lt: "Say you're following", hint: "lessonq" }],
+      suggest: [{ lt: "Say you're following", hint: "follow" }, { lt: "Ask about the lesson", hint: "lessonq" }],
       yes: (c) => { c.s.boardDone = true; },
       no: (c) => { c.s.boardDone = true; c.say("simple_again"); } },
     { id: "moves", when: (c) => !!c.s.boardDone, done: (c) => !!c.s.movesDone,
       ask: (c) => { if (!c.s.movesSaid) { c.s.movesSaid = true; c.say("paddle_1"); c.say("stand_1"); c.say("stand_2"); } c.say("moves_q"); },
       expects: ["brief_ok_ctx", "ask_hard", "ask_deep", "ask_fall", "ask_sharks", "swim"],
-      suggest: [{ lt: "Say you've got it, or ask", hint: "lessonq" }],
+      suggest: [{ lt: "Say you've got it", hint: "follow" }, { lt: "Ask about the lesson", hint: "lessonq" }],
       yes: (c) => { c.s.movesDone = true; },
       no: (c) => { c.s.movesDone = true; c.say("stand_2"); } },
     { id: "safety", when: (c) => !!c.s.movesDone, done: (c) => !!c.s.safetyDone,
@@ -850,7 +886,7 @@ export const surf: SituationDef = {
         c.say("safety_more");
       },
       expects: ["no_more_ctx", "one_q_ctx", "ask_hard", "ask_deep", "ask_fall", "ask_sharks", "swim", "ask_current", "ask_waves"],
-      suggest: [{ lt: "Ask a question, or say you're ready", hint: "lessonq" }],
+      suggest: [{ lt: "Say you're ready to go in", hint: "ready" }, { lt: "Ask about the lesson", hint: "lessonq" }],
       yes: (c) => { c.say("tell_me"); c.hold(); },
       no: (c) => { c.s.safetyDone = true; } },
     { id: "pe_been", when: (c) => !!c.s.advanced && !c.s.peTalked, done: (c) => !!c.s.peTalked,
@@ -859,8 +895,14 @@ export const surf: SituationDef = {
       suggest: [{ lt: "Say whether you've been", hint: "g_yesno" }, { lt: "Ask about Puerto Escondido", hint: "pe" }],
       yes: (c) => { c.s.peTalked = true; c.say("pe_been_yes"); },
       no: (c) => { c.s.peTalked = true; c.say("pe_been_no"); } },
-    { id: "invite", when: (c) => !!((c.s.lessonPaid && c.s.safetyDone) || (c.s.advanced && c.s.peTalked && (!c.s.wantRent || c.s.rentPaid))), done: (c) => c.s.invited !== undefined,
-      ask: (c) => { if (c.s.inviteAsked) { c.say("invite_again"); return; } c.s.inviteAsked = true; c.say(c.s.advanced && !c.s.lessonPaid ? "invite_adv" : "invite"); },
+    // every way through ends at the wave: after the lesson, after the surfer's talk, and after a rental (owner, 16 Nov 2026:
+    // he talked to Nayeli and never found the lesson); not after a lesson said no to
+    { id: "invite", when: (c) => !!((c.s.lessonPaid && c.s.safetyDone) || (c.s.advanced && c.s.peTalked && (!c.s.wantRent || c.s.rentPaid)) || renterInvite(c)), done: (c) => c.s.invited !== undefined,
+      ask: (c) => {
+        if (c.s.inviteAsked) { c.say("invite_again"); return; }
+        c.s.inviteAsked = true;
+        c.say(c.s.advanced && !c.s.lessonPaid ? "invite_adv" : renterInvite(c) && c.s.gear !== "board" ? "invite_rent" : "invite");
+      },
       expects: ["invite_yes_ctx", "invite_no_ctx", "pe_when", "pe_where", "pe_stay", "pe_how", "pe_safe"],
       suggest: [{ lt: "Say yes, or not today", hint: "go" }],
       yes: (c) => { if (politeClosing(c)) { c.say("invite_again"); c.hold(); return; } goSurf(c); },
@@ -976,7 +1018,7 @@ export const surf: SituationDef = {
     ask_card(c) {
       if (c.s.noSignal) { signalTwist(c); return; }
       c.say("card_yes");
-      if (c.step === "rent_pay" || c.step === "lesson_pay") c.hold();
+      if (c.step === "rent_pay" || c.step === "lesson_pay") { c.s.cardOk = true; c.s.method = "card"; c.hold(); }
     },
     hand_over(c, slots) {
       // at the deposit: the ID in her hand
@@ -1182,20 +1224,20 @@ export const surf: SituationDef = {
   ],
 
   sims: [
-    { name: "a surfboard for two hours, passport, cash", turns: ["¡Hola! Quiero rentar una tabla de surf", "Por dos horas", "Aquí tienes mi pasaporte", "En efectivo", "¡Gracias, adiós!"],
-      expect: { complete: true, state: { gear: "board", hours: 2, rentPaid: true, doc: "passport" } }, auto: AUTO, setup: (s) => { s.noSignal = false; s.idFirst = false; } },
+    { name: "a surfboard for two hours, passport, cash", turns: ["¡Hola! Quiero rentar una tabla de surf", "Por dos horas", "Aquí tienes mi pasaporte", "En efectivo", "¡Sí, vamos!"],
+      expect: { complete: true, state: { gear: "board", hours: 2, rentPaid: true, doc: "passport", invited: true, surfing: true } }, auto: AUTO, setup: (s) => { s.noSignal = false; s.idFirst = false; } },
     { name: "a lesson with questions, then the first wave", turns: ["Buenas, ¿cuánto cuesta la clase de surf?", "Quiero una clase", "No, nunca he surfeado", "¿Es difícil?", "Sí, me animo", "Con tarjeta",
       "¿Y si me caigo?", "Sí, te sigo", "¿Está hondo?", "Todo claro", "¿Hay tiburones?", "No, ninguna", "¡Sí, vamos!"],
       expect: { complete: true, state: { lessonPaid: true, invited: true, surfing: true, exp: "none" } }, auto: AUTO, setup: (s) => { s.noSignal = false; s.idFirst = false; } },
     { name: "a surfer: the Pacific, Puerto Escondido, a wave on the house", turns: ["Hola, ya surfeo desde hace años. ¿Hay olas grandes?", "No, nunca he ido", "¿Cuál es la mejor época?", "¿Qué playa me recomiendas?", "¿Cómo llego allá?", "¿Es peligroso?", "¡Claro, vamos!"],
       expect: { complete: true, state: { advanced: true, surfer: true, invited: true, surfing: true } }, auto: AUTO, setup: (s) => { s.noSignal = false; s.idFirst = false; } },
-    { name: "twist: no signal for the card, the ATM", turns: ["Quiero rentar el kayak", "¿Qué incluye?", "Una hora", "Aquí tienes mi licencia", "Con tarjeta", "No traigo efectivo", "Ya regresé. Aquí tienes", "Gracias"],
-      expect: { complete: true, state: { gear: "kayak", rentPaid: true, paidWith: "cash" } }, auto: AUTO, setup: (s) => { s.noSignal = true; s.idFirst = false; } },
-    { name: "twist: no ID, the deposit", turns: ["¿Me rentas un equipo de snorkel?", "¿Dónde está el arrecife?", "Dos horas", "No traigo, la dejé en el hotel", "Sí, está bien", "Aquí tienes", "Adiós"],
+    { name: "twist: no signal for the card, the ATM", turns: ["Quiero rentar el kayak", "¿Qué incluye?", "Una hora", "Aquí tienes mi licencia", "Con tarjeta", "No traigo efectivo", "Ya regresé. Aquí tienes", "Hoy no, gracias", "Gracias"],
+      expect: { complete: true, state: { gear: "kayak", rentPaid: true, paidWith: "cash", invited: false } }, auto: AUTO, setup: (s) => { s.noSignal = true; s.idFirst = false; } },
+    { name: "twist: no ID, the deposit", turns: ["¿Me rentas un equipo de snorkel?", "¿Dónde está el arrecife?", "Dos horas", "No traigo, la dejé en el hotel", "Sí, está bien", "Aquí tienes", "Mejor otro día", "Adiós"],
       expect: { complete: true, state: { gear: "snorkel", deposit: true, rentPaid: true, noId: true } }, auto: AUTO, setup: (s) => { s.noSignal = false; s.idFirst = true; } },
     { name: "short answers: a lesson, not today", turns: ["Una clase", "Nunca", "Sí", "Efectivo", "Sí", "Sí", "No", "Mañana"],
       expect: { complete: true, state: { lessonPaid: true, invited: false } }, auto: AUTO, setup: (s) => { s.noSignal = false; s.idFirst = false; } },
-    { name: "questions first, rental and lesson in one visit", turns: ["¿A qué hora cierras?", "Solo estoy viendo", "¿Cuánto cuesta el paddle?", "Me llevo el paddle", "¿Es obligatorio el chaleco?", "¿Y si regreso tarde?", "Una hora", "Te dejo el depósito", "¿Aceptas tarjeta?", "Con tarjeta", "¿También das clases?", "Surfeé un par de veces", "Sí, la tomo", "Aquí tienes", "Te sigo", "Sí", "No, estoy lista", "Hoy no, gracias", "Gracias"],
+    { name: "questions first, rental and lesson in one visit", turns: ["¿A qué hora cierras?", "Solo estoy viendo", "¿Cuánto cuesta el paddle?", "Me llevo el paddle", "¿Es obligatorio el chaleco?", "¿Y si regreso tarde?", "Una hora", "Te dejo el depósito", "¿Aceptas tarjeta?", "Perfecto, con tarjeta", "¿También das clases?", "Surfeé un par de veces", "Sí, la tomo", "Aquí tienes", "Te sigo", "Sí", "No, estoy lista", "Hoy no, gracias", "Gracias"],
       expect: { complete: true, state: { gear: "paddle", rentPaid: true, lessonPaid: true, exp: "some", deposit: true } }, auto: AUTO, setup: (s) => { s.noSignal = false; s.idFirst = false; } },
   ],
 };
@@ -1233,6 +1275,14 @@ function sayTotal(c: Ctx, which: "rent" | "lesson") {
 }
 
 /** The step's question: the total once, then how to pay (or whether to charge the way already chosen). */
+/** A rental paid, no lesson taken or said no to: Nayeli still offers the first wave. */
+const renterInvite = (c: Ctx) => !!(c.s.rentPaid && !c.s.lessonOk && !c.s.lessonNo && !c.s.advanced);
+
+/** The payment's suggestions: after her "Sí, claro." to the card question, the card itself. */
+function paySuggest(c: Ctx): Suggestion[] {
+  return c.s.cardOk ? [{ lt: "Pay by card", hint: "paycard" }] : [{ lt: "Pay", hint: "pay" }];
+}
+
 function askPay(c: Ctx, which: "rent" | "lesson") {
   const said = which === "rent" ? c.s.rentTotalSaid : c.s.lessonTotalSaid;
   if (!said) { sayTotal(c, which); c.say(c.s.method ? "pay_confirm" : "pay_how"); return; }
@@ -1268,7 +1318,7 @@ function pay(c: Ctx, which: "rent" | "lesson", m: "cash" | "card", amt?: number)
   const total = which === "rent" ? rentTotal(c) : LESSON;
   if (m === "cash" && amt !== undefined && amt < total) { c.say("short", { total }); c.hold(); return; }
   // the way used is recorded; the next payment (the other half of the visit) asks again
-  c.s.method = undefined; c.s.paidWith = m;
+  c.s.method = undefined; c.s.cardOk = false; c.s.paidWith = m;
   c.event("pay", { method: m, amount: total });
   if (m === "card") c.say("card_ok"); else c.say(amt !== undefined && amt > total ? "change" : "cash_ok");
   if (which === "rent") { c.s.rentPaid = true; handOver(c); }
@@ -1283,7 +1333,8 @@ function handOver(c: Ctx) {
   else if (g === "snorkel") c.say("hand_snorkel");
   else c.say("hand_paddle", { X: g });
   c.event("give", { item: g });
-  c.say("safety_word");
+  // the wave is offered next: her "¡Disfruta! Y no pases de las boyas." comes after the answer
+  if (!renterInvite(c)) c.say("safety_word");
 }
 
 function offerDeposit(c: Ctx, again = false) {
@@ -1320,6 +1371,7 @@ function takeLesson(c: Ctx) {
 function declineLesson(c: Ctx) {
   c.s.wantLesson = false; c.s.lessonNo = true; c.s.lessonOk = false;
   c.say("lesson_declined");
+  c.say("boards_anytime");
 }
 
 /** The honest talk for a surfer: small waves here, the real ones in Puerto Escondido. */
@@ -1340,15 +1392,19 @@ function peAnswer(c: Ctx, line: string) {
 function goSurf(c: Ctx) {
   // answered already ("Mejor otro día, ¿vale?" is no yes after the no)
   if (c.s.invited !== undefined) return;
+  c.say(renterInvite(c) && c.s.gear !== "board" ? "go_lend" : "go");
   c.s.invited = true; c.s.surfing = true;
-  c.say("go");
   c.event("surf", { level: level(c) });
 }
 
 function notToday(c: Ctx) {
   if (c.s.invited !== undefined) return;
+  const renter = renterInvite(c);
   c.s.invited = false; c.s.notToday = true; c.s.inviteDone = true;
+  // a renter is going out now: no "otro día", the gear and the boards for later
+  if (renter) { c.say("lesson_declined"); c.say("boards_anytime"); c.say("safety_word"); return; }
   c.say("another_day");
+  c.say("boards_anytime");
 }
 
 export default surf;

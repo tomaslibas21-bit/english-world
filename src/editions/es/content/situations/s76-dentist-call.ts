@@ -729,7 +729,7 @@ export const dentist: SituationDef = {
     forms_q: { patterns: ["(tengo que | hay que | necesito) llenar (algo | algun formulario | papeles | un formulario | algun formato)", "(hay | tienen) (formularios | papeles) [que llenar]"] },
     doctor_q: { patterns: ["quien es (el dentista | la dentista | el doctor | la doctora)", "(con que | con cual) (doctor | doctora | dentista)", "como se llama (el doctor | la doctora | el dentista | la dentista)", "quien me va a atender"] },
     pain_q: { patterns: ["que (puedo | debo) tomar para el dolor [mientras tanto]", "(puedo | debo) tomar (algo | un analgesico | ibuprofeno | una pastilla) [para el dolor]", "que hago (mientras tanto | con el dolor)"] },
-    pay_q: { patterns: ["(aceptan | reciben) (tarjeta | tarjeta de credito | efectivo | dolares | transferencia) #h:q_pay", "como (puedo pagar | se paga)", "(se puede | puedo) pagar con (tarjeta | dolares)"] },
+    pay_q: { patterns: ["(aceptan | reciben | acepta | aceptas) (tarjeta | tarjeta de credito | efectivo | dolares | transferencia) #h:q_pay", "como (puedo pagar | se paga)", "(se puede | puedo) pagar con (tarjeta | dolares)"] },
     english_q: { patterns: ["(la doctora | el doctor | el dentista | la dentista | alguien) habla ingles #h:q_english", "hablan ingles", "(hay | tienen) alguien que hable ingles", "no hablo (bien | mucho) [el] espanol (la doctora | el doctor | el dentista | alguien) habla ingles"] },
 
     // --- rescheduling (twist)

@@ -765,7 +765,7 @@ export const checkin: SituationDef = {
     ] },
     pay_card: { patterns: [
       "[puedo] pagar con tarjeta #h:fee_card", "(pago | puedo pagar | quiero pagar) con (tarjeta | tarjeta de credito | tarjeta de debito | mi tarjeta)",
-      "con (tarjeta | tarjeta de credito | tarjeta de debito | mi tarjeta)", "tarjeta", "(aceptan | acepta | reciben) tarjeta",
+      "con (tarjeta | tarjeta de credito | tarjeta de debito | mi tarjeta)", "tarjeta", "(aceptan | acepta | aceptas) tarjeta #h:q_aceptan", "(aceptan | acepta | reciben | aceptas) tarjeta",
       "(puedo pagar | pago) con (el celular | apple pay | google pay)",
       // "¿Tiene terminal?": Mexico's way to ask whether cards are taken (s31)
       "(tiene | tienen | hay) terminal",
@@ -1418,6 +1418,7 @@ export const checkin: SituationDef = {
     fee: {
       lt: "Pay the fee",
       items: [
+        { id: "q_aceptan", s: t("¿Aceptan | tarjeta?", "Do you accept | card?", "Do you take cards?") },
         { id: "fee_card", s: t("¿Puedo | pagar | con | tarjeta?", "Can I | pay | with | card?", "Can I pay by card?") },
         { id: "fee_here", s: t("Aquí tiene | mi | tarjeta.", "Here you have | my | card.", "Here's my card.") },
         { id: "fee_cash", s: t("En efectivo, | por favor.", "In cash, | please.", "Cash, please.") },

@@ -433,7 +433,7 @@ export const pharmacy: SituationDef = {
     ] },
     // --- paying (as at the gas station) ---------------------------------------------------------------
     pay_card: { patterns: [
-      "(puedo | se puede) pagar con tarjeta #h:pay_card", "con tarjeta #h:pay_card_short", "tarjeta", "(acepta | aceptan | toman | reciben) tarjeta #h:take_cards",
+      "(puedo | se puede) pagar con tarjeta #h:pay_card", "con tarjeta #h:pay_card_short", "tarjeta", "(acepta | aceptan | toman | reciben | aceptas) tarjeta #h:take_cards",
       "(tiene | tienen | hay) terminal", "(puedo | se puede) pagar con terminal",
       "(pago | voy a pagar | le pago) con tarjeta", "con (tarjeta)? de (credito | debito)", "con (la | mi) tarjeta", "aqui (tiene | esta) mi tarjeta",
       "(visa | mastercard | american express | amex)", "(me cobra | cobrese | me puede cobrar | cobreme) con tarjeta", "(aceptais | acepteis) tarjeta",
@@ -1061,7 +1061,7 @@ export const pharmacy: SituationDef = {
       lt: "Pay",
       items: [
         { id: "pay_card_short", s: t("Con | tarjeta, | por favor.", "With | card, | please.", "Card, please.") },
-        { id: "take_cards", s: t("¿Acepta | tarjeta?", "Do you accept | card?", "Do you take cards?") },
+        { id: "take_cards", s: t("¿Aceptan | tarjeta?", "Do you accept | card?", "Do you take cards?") },
         { id: "pay_cash", s: t("En efectivo.", "In cash.", "Cash.") },
         { id: "here_you_go", s: t("Aquí tiene.", "Here you go.", "Here you go.") },
         { id: "pay_phone", s: t("¿Puedo | pagar | con | el | celular?", "Can I | pay | with | the | cell phone?", "Can I pay with my phone?", { spain: t("¿Puedo | pagar | con | el | móvil?", "Can I | pay | with | the | cell phone?", "Can I pay with my phone?") }) },

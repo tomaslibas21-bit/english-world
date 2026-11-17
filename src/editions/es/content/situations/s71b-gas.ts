@@ -243,13 +243,13 @@ export const gas: SituationDef = {
     receipt_no_ctx: { patterns: ["no (lo | la) (necesito | quiero)", "no (hace falta | es necesario)"] },
     no_receipt: { patterns: ["no (necesito | quiero) [el | un | mi] (ticket | recibo | comprobante)", "sin (ticket | recibo | comprobante | factura) [gracias]", "no (necesito | quiero) [una] factura", "no me (de | da) (el | un | mi)? (ticket | recibo)", "(ticket | recibo) no [gracias]"] },
     pay_card: { patterns: [
-      "(puedo | se puede) pagar con tarjeta #h:pay_card", "con tarjeta #h:pay_card_short", "tarjeta", "(acepta | aceptan | toman) tarjeta #h:take_cards",
+      "(puedo | se puede) pagar con tarjeta #h:pay_card", "con tarjeta #h:pay_card_short", "tarjeta", "(acepta | aceptan | toman | aceptas) tarjeta #h:take_cards",
       "(pago | voy a pagar | le pago) con tarjeta", "(pago | voy a pagar | le pago | con) [una] tarjeta de (credito #credit | debito #debit)", "con (tarjeta)? de (credito #credit | debito #debit)", "con (la | mi) tarjeta", "aqui (tiene | esta) mi tarjeta",
       "(puedo | se puede) pagar con (el | mi)? (celular | telefono)", "(pago | le pago) con (el | mi) (celular | telefono)", "con (el | mi) celular",
       "(visa | mastercard | american express | amex)", "(me cobra | cobrese | me puede cobrar | cobreme) con tarjeta", "(acepta | aceptan | puedo pagar con) (apple pay | google pay)",
     ] },
     // "No traigo efectivo": so it's the card (never read as "efectivo")
-    no_cash: { patterns: ["no (tengo | traigo | llevo) [suficiente] efectivo", "no (tengo | traigo | llevo) efectivo (acepta | aceptan | puedo pagar con) tarjeta", "sin efectivo", "no (tengo | traigo) (cash | dinero en efectivo | pesos)", "no puedo pagar en efectivo"] },
+    no_cash: { patterns: ["no (tengo | traigo | llevo) [suficiente] efectivo", "no (tengo | traigo | llevo) efectivo (acepta | aceptan | puedo pagar con | aceptas) tarjeta", "sin efectivo", "no (tengo | traigo) (cash | dinero en efectivo | pesos)", "no puedo pagar en efectivo"] },
     // "No tengo tarjeta": so it's cash (never read as "tarjeta")
     no_card: { patterns: ["no (tengo | traigo) tarjeta", "no (pago | puedo pagar | quiero pagar) con tarjeta", "sin tarjeta"] },
     pay_cash: { patterns: ["[puedo] pagar en efectivo", "en efectivo #h:pay_cash", "efectivo", "(pago | voy a pagar | le pago) en efectivo", "con efectivo", "(tarjeta | con tarjeta) no [mejor] en efectivo"] },
@@ -611,7 +611,7 @@ export const gas: SituationDef = {
       lt: "Pay",
       items: [
         { id: "pay_card_short", s: t("Con | tarjeta, | por favor.", "With | card, | please.", "Card, please.") },
-        { id: "take_cards", s: t("¿Acepta | tarjeta?", "Do you accept | card?", "Do you take cards?") },
+        { id: "take_cards", s: t("¿Aceptan | tarjeta?", "Do you accept | card?", "Do you take cards?") },
         { id: "pay_card", s: t("¿Puedo | pagar | con | tarjeta?", "Can I | pay | with | card?", "Can I pay by card?") },
         { id: "pay_cash", s: t("En efectivo.", "In cash.", "Cash.") },
         { id: "here_you_go", s: t("Aquí tiene.", "Here you go.", "Here you go.") },

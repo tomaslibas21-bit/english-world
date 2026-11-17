@@ -53,7 +53,7 @@ function VarietyToggle() {
   const OPTIONS = [["default", "México"], ["neutral", "Latinoamérica"], ["spain", "España"]] as const;
   return (
     <div className="set-row">
-      <div className="txt"><b>Which Spanish</b><span>Mexican (ahorita, el camión, ¿mande?), neutral Latin American, or Spain's (vosotros, coche, vale; tú in the café and the shops). The voices change with it. Your answers are understood in any of them.</span></div>
+      <div className="txt"><b>{L("Kokia ispanų kalba")}</b><span>{L("Meksikietiška (ahorita, el camión, ¿mande?), neutrali Lotynų Amerikos arba Ispanijos (vosotros, coche, vale; kavinėje ir parduotuvėse – tú). Kartu keičiasi ir balsai. Tavo atsakymai suprantami bet kuria iš jų.")}</span></div>
       <div className="seg seg-variety">{OPTIONS.map(([k, n]) => <button key={k} className={v === k ? "on" : ""} aria-pressed={v === k} onClick={() => { chooseVariety(k); setV(k); game?.refreshNameTags(); }}>{n}</button>)}</div>
     </div>
   );

@@ -121,6 +121,9 @@ function markPast(word: string): string {
   if (f.length < 4 || NOT_PAST.has(f) || /io$/.test(f) || /(?:ar|er|ir|dr|br|rr)e$/.test(f)) return word;
   return word.slice(0, -1) + "'" + fold(last);
 }
+/** Verbs whose past is never their present or command, however the recognizer wrote it: paying, taking, signing,
+ *  cancelling, booking, buying, handing over, leaving. */
+const PAST_KEEPS = /^(pag|tom|firm|cancel|reserv|compr|entreg|dej)/;
 /** A past tense written with its accent (see markPast): "pagu'e", "lleg'o". */
 const isPast = (w: string | undefined) => !!w && /^[a-z]{2,}'[eo]$/.test(w);
 /** Kept as one word by `expand`: a past tense ("pagu'e") and the "if" ("s'i"). */
@@ -226,13 +229,31 @@ class KeyWords extends Set<string> {
   has(w: string): boolean { return super.has(w) || isPast(w); }
 }
 
+const YOU_BACK = new Set(["usted", "ustedes", "tu", "ti", "vosotros", "vosotras", "vos"]);
+/** Words that end an answer before the asked-back "usted" ("Bien, gracias, usted"). */
+const ANSWER_END = new Set(["bien", "gracias", "mal", "regular", "igual", "genial", "excelente", "perfecto", "tirando",
+  "normal", "nada", "aqui", "tranquilo", "tranquila", "cansado", "cansada", "ocupado", "ocupada", "contento", "contenta"]);
+/** "Bien, ¿usted?", "Me llamo Ryan, usted", "Soy de Canadá usted": the "y" of "¿y usted?" put back, so the answer and
+ *  the question back are two parts as they are with it (owner, 16 Nov 2026). Only a bare usted/tú/ustedes/vosotros at
+ *  the end, after a comma or "¿", an answer word or a name; never after a verb ("¿Lo sabe usted?") or "a" ("Gracias
+ *  a usted"). */
+function backY(s: string): string {
+  const m = s.match(/^(.*?)(\p{L}+)([\s,¿¡]*)(usted|ustedes|t[uú]|vosotros|vosotras)([\s?!.…]*)$/iu);
+  if (!m) return s;
+  const [, head, prev, sep, you, tail] = m;
+  const p = prev.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  if (p === "y" || p === "e" || p === "a" || p === "de" || p === "que" || p === "como" || p === "para" || p === "con" || p === "por") return s;
+  const ok = /[,¿]/.test(sep) || ANSWER_END.has(p) || (/^\p{Lu}/u.test(prev) && head.trim() !== "");
+  return ok ? `${head}${prev}, y ${you}${tail}` : s;
+}
+
 export const LANG: LangPack = {
   // "ajá", "mhm" = yes; "a el" / "de el" are always "al" / "del"; a past tense and the "if" keep what their accent
   // says (markPast, markIf); the letter "eñe" (and "ñ") is no "ene" ({letters}); a closing "porque no" / "porque sí" is
   // the question "¿por qué no?" (a leading "porque" is only the reason's start: "Porque tengo dos boletos" is the
   // answer, "Porque no" no "No."); "yo puede" is the learner's "yo puedo" (the persons of poder differ: "Yo puedo
   // llevarla" is no "¿Pueden llevarla?")
-  preSurface: (s) => markIf(s
+  preSurface: (s) => markIf(backY(s)
     .replace(/(^|[^\p{L}])porque(\s+)(no|s[ií])(?=[\s.!?¡¿,;:"'”)…]*$)/iu, "$1por que$2$3")
     .replace(/(^|[^\p{L}])(yo\s+(?:no\s+|tambi[eé]n\s+|s[ií]\s+)?)pued(?:e|es|en)(?![\p{L}])/giu, "$1$2puedo")
     .replace(/(^|[^\p{L}])(aj[aá]m?|mjm|mhm|uh[- ]huh|mm[- ]hmm)(?![\p{L}])/giu, "$1 si ")
@@ -269,7 +290,11 @@ export const LANG: LangPack = {
     ["tuvo", "tubo"], ["vaya", "valla", "baya"], ["hora", "ora"], ["hasta", "asta"], ["halla", "haya", "aya"],
     ["ok", "okay", "oquei"], ["wifi", "wi fi", "guifi"], ["kilo", "quilo"], ["kilos", "quilos"],
   ],
-  spellingVariant: (heard, target) => heard.length >= 3 && target.length >= 3 && phon(heard) === phon(target),
+  // and a past the recognizer wrote with its accent is the plain word too ("trabajó en tecnología" for the learner's
+  // "Trabajo en tecnología": the accent is its guess; owner, 16 Nov 2026), except the verbs where it changes what
+  // happens: "Pagué todo" never pays, "Tomé" never hands over (PAST_KEEPS)
+  spellingVariant: (heard, target) => heard.length >= 3 && target.length >= 3 && (phon(heard) === phon(target) ||
+    (isPast(heard) && heard.replace("'", "") === target && !PAST_KEEPS.test(target))),
   // the learner's unaccented "pague" is the pattern's past "pagué" (the past said with its accent is not the pattern's
   // "pague" or "pago": markPast)
   sameWord: (heard, target) => isPast(target) && heard === target.replace("'", ""),
@@ -313,6 +338,10 @@ export const LANG: LangPack = {
   ]),
   // "¿Por qué no?" never shrinks to "que no" ("Claro que no" is not "Claro, ¿por qué no?")
   keepDroppable: (tok, next) => tok === "por" && next === "que",
+  // the "and you?" back: "Bien, gracias, usted" and "Bien, ¿usted?" are "¿y usted?" (owner, 16 Nov 2026); only "y"
+  // right before the person asked back, so "pan y café" never loses its "y"
+  dropBefore: (tok, next, after) =>
+    tok === "y" && (YOU_BACK.has(next as string) || (next === "a" && YOU_BACK.has(after as string))) ? 0.2 : undefined,
   // what an English speaker adds: subject pronouns above all ("yo quiero", "usted tiene"), and Mexican fillers
   skippable: new Map([
     ["yo", 0.1], ["tu", 0.15], ["usted", 0.15], ["ustedes", 0.15], ["nosotros", 0.2],

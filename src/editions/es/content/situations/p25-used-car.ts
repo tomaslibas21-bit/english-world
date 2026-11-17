@@ -1422,7 +1422,7 @@ export const usedCar: SituationDef = {
     no_cash: { patterns: ["no (tengo | traigo | cargo | llevo) (efectivo | tanto efectivo | suficiente efectivo | el efectivo) [conmigo | aqui | ahorita]", "sin efectivo", "no (puedo | podria | quiero | prefiero) pagar en efectivo", "(prefiero | mejor) no pagar en efectivo",
       "ya no (tengo | traigo) [mas]? (efectivo | dinero en efectivo)", "no (en | con) efectivo", "(en | con)? efectivo no", "efectivo no (tengo | traigo)", "(prefiero | mejor) no (en | con) efectivo"] },
     pay_card: { patterns: [
-      "(puedo | le puedo) pagar con tarjeta [de credito | de debito]", "(acepta | aceptan | recibe) (tarjeta | tarjetas) [de credito | de debito]", "(con | en) tarjeta", "tarjeta",
+      "(puedo | le puedo) pagar con tarjeta [de credito | de debito]", "(acepta | aceptan | recibe | aceptas) (tarjeta | tarjetas) [de credito | de debito]", "(con | en) tarjeta", "tarjeta",
       "(a | con) meses sin intereses", "(le pago | pago) con tarjeta",
     ] },
     // audit (5 Nov 2026): a foreign buyer's dollars, and paying in parts (both had no answer)

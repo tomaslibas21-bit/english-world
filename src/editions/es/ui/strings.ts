@@ -21,6 +21,8 @@ export const STRINGS: Record<string, string> = {
   "Vaikščiok po miestą ir kalbink žmones. Geriausia – kompiuteryje.": "Walk around town and talk to people. Best on a computer.",
   "Kaip nori žaisti?": "How do you want to play?",
   "Kokią ispanų kalbą nori girdėti?": "Which Spanish do you want to hear?",
+  "Kokia ispanų kalba": "Which Spanish",
+  "Meksikietiška (ahorita, el camión, ¿mande?), neutrali Lotynų Amerikos arba Ispanijos (vosotros, coche, vale; kavinėje ir parduotuvėse – tú). Kartu keičiasi ir balsai. Tavo atsakymai suprantami bet kuria iš jų.": "Mexican (ahorita, el camión, ¿mande?), neutral Latin American, or Spain's (vosotros, coche, vale; tú in the café and the shops). The voices change with it. Your answers are understood in any of them.",
   "Vėliau galėsi pakeisti Nustatymuose.": "You can change it later in Settings.",
   "Kalbėk balsu arba rašyk": "Speak out loud or type",
   "Patarimai lietuviškai": "Tips in English",

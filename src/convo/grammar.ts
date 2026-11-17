@@ -65,7 +65,7 @@ export const mk = {
     // how much may be left out is decided per intent (see the "__intent" wrap): at least one
     // literal word and no fewer words kept than left out
     return mk.seq(toks.map((t, i) => {
-      let drop = soft ? DROPPABLE.get(t) : undefined;
+      let drop = soft ? DROPPABLE.get(t) ?? LANG.dropBefore?.(t, toks[i + 1], toks[i + 2]) : undefined;
       if (LANG.keepDroppable(t, toks[i + 1])) drop = undefined; // the object "it" stays
       return drop !== undefined ? mk.opt(mk.lit(t), drop) : mk.lit(t);
     }), !soft);

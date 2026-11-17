@@ -45,6 +45,7 @@
   {"ctx": "howbeen", "say": "Super bien, la verdad", "intent": "been_ans"},
   {"ctx": "howbeen", "say": "No muy bien, mi mamá estuvo enferma", "intent": "been_ans"},
   {"ctx": "howbeen", "say": "Bien, y usted?", "intent": "been_ans"},
+  {"ctx": "howbeen", "say": "Bien, ¿usted?", "intent": "been_ans"},
   {"ctx": "howbeen", "say": "Cansada pero contenta", "intent": "been_ans"},
   {"ctx": "howbeen", "say": "Quiero un taco de pastor", "intent": "none"},
   {"ctx": "upto", "say": "Me mudé aquí el año pasado", "intent": "news"},
