@@ -39,6 +39,9 @@ for (const sit of SITUATIONS as any[]) {
 if (!only.length || only.includes("_shared")) {
   const { sharedContent } = await import("../../src/editions/es/learner/shared");
   const items = learnerItems(sharedContent());
+  // labels built at run time in the town-wide code ("Say how you are (and ask back)": expectHowAreYou)
+  const have = new Set(items.filter((i) => i.kind === "text").map((i) => i.en));
+  for (const s of literals(path.join(ROOT, "src/editions/es/content/global.ts"))) if (!have.has(s) && /[a-z]/i.test(s) && !/^[a-z0-9]+(_[a-z0-9]+)+$/.test(s)) { items.push({ kind: "text", en: s, where: "code" }); have.add(s); }
   fs.writeFileSync(path.join(out, "_shared.json"), JSON.stringify({ sit: "_shared", title: { en: "Puerto Colibrí", lt: "the whole town" }, items: items.map((i) => ({ ...i, lt: "" })) }, null, 1));
   total += items.length;
 }

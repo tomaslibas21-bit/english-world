@@ -31,4 +31,7 @@ export const STRINGS: Record<string, string> = {
   "Paliesk sakinį arba pasakyk „yes“.": "Paliesk sakinį arba pasakyk „sí“.",
   "Paliesk sakinį arba parašyk „yes“.": "Paliesk sakinį arba parašyk „sí“.",
   "…ir sveiki sugrįžę į Maple Harbor": "…ir sveiki sugrįžę į Puerto Colibrí",
+  // the word a recognizer drops or adds is Spanish "no" (the English layer says “no” too)
+  "Atpažinimo variantai skiriasi žodžiu „ne“. Ką norėjai pasakyti?": "Atpažinimo variantai skiriasi žodžiu „no“. Ką norėjai pasakyti?",
+  "Prieš išsiunčiant atsakymą parodyti, ką išgirdo. Galėsi pataisyti praleistą „ne“ ar kitą žodį.": "Prieš išsiunčiant atsakymą parodyti, ką išgirdo. Galėsi pataisyti praleistą „no“ ar kitą žodį.",
 };

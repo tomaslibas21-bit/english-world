@@ -488,6 +488,7 @@ export const STRINGS: Record<string, string> = {
   "vizitinę kortelę": "a business card",
   "telefono numerį": "a phone number",
   "bilietą": "a ticket",
+  "gydytojo pažymą": "a doctor's note",
   "kavos": "coffee",
   "anketą": "a form",
   // merged from main (11 Nov 2026): the automatic microphone, the help sheet, the person's info card

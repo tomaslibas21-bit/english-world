@@ -472,7 +472,7 @@ function Settings({ close }: { close: () => void }) {
         {profile && (
           <div className="set-row">
             <div className="txt"><b>{L("Pasimatymas (daina 84)")}</b><span>{L("Su kuo eini į pasimatymą.")}</span></div>
-            <div className="seg">{[["emma", "Emma"], ["sam", "Sam"]].map(([id, n]) => <button key={id} className={(profile.datePartner ?? (profile.gender === "f" ? "sam" : "emma")) === id ? "on" : ""} onClick={() => useStore.getState().updateProgress((p) => { if (p.profile) p.profile.datePartner = id; })}>{n}</button>)}</div>
+            <div className="seg">{[["emma", NPCS.emma?.name ?? "Emma"], ["sam", NPCS.sam?.name ?? "Sam"]].map(([id, n]) => <button key={id} className={(profile.datePartner ?? (profile.gender === "f" ? "sam" : "emma")) === id ? "on" : ""} onClick={() => useStore.getState().updateProgress((p) => { if (p.profile) p.profile.datePartner = id; })}>{n}</button>)}</div>
           </div>
         )}
         <div className="info-box">

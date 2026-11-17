@@ -15,6 +15,7 @@ export const GIVEN: Record<string, [string, string]> = {
   "key card": ["🔑", L("kambario kortelę")], "key-card": ["🔑", L("kambario kortelę")], laptop: ["💻", L("nešiojamąjį kompiuterį")],
   badge: ["🪪", L("darbuotojo kortelę")], "password card": ["🔐", L("kortelę su slaptažodžiu")], "business card": ["📇", L("vizitinę kortelę")],
   "phone number": ["📱", L("telefono numerį")], ticket: ["🎫", L("bilietą")], coffee: ["☕", L("kavos")], form: ["📝", L("anketą")],
+  "doctor-note": ["📄", L("gydytojo pažymą")], "bus-ticket": ["🎫", L("autobuso bilietą")],
 };
 
 /** Icon and Lithuanian name of a handed-over item: a known prop, else the situation's own item
