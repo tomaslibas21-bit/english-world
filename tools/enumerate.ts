@@ -37,13 +37,15 @@ export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: 
   const voiceOf = (n: NpcDef) => npcVoice(n, opts.v2);
   const out = new Map<string, Utt>();
   const errors: string[] = [];
-  const add = (voice: string, speed: number, s: Sentence, where: string) => {
+  const add = (voice: string, speed: number, s: Sentence, where: string, example = false) => {
     if (!s.say.trim()) return;
     if (/\s[.,!?]/.test(s.say)) return; // a value was missing (e.g. "My last name is .")
     // lines that address the (simulated) player by name are voiced without the name
     const alt = withoutAddressedNames(s.say, ["Tomas", "Mikalauskas"]);
     const say = alt ?? s.say;
-    if (alt === null && /\b(Tomas|Mikalauskas)\b/.test(say)) return; // the name is part of the content: no clip (browser voice)
+    // the name is part of the content: no clip (browser voice), but for a hint example, whose name is the fixed
+    // example learner's (src/convo/suggest.ts exampleVars, 17 Nov 2026)
+    if (!example && alt === null && /\b(Tomas|Mikalauskas)\b/.test(say)) return;
     const k = `${voice}|${speed}|${say}`;
     if (!out.has(k)) out.set(k, { voice, speed, say, en: s.en, where });
   };
@@ -103,7 +105,7 @@ export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: 
         const pool = ents.filter((e) => !it.only || it.only(e));
         const binds = pool.length ? pool.map((e) => ({ X: e.id })) : [{}];
         for (const b of binds) for (const formal of [true, false]) for (const coach of coachVoices(opts.v2)) {
-          try { add(coach, 1, compose(it.s, { ...b, name: "Tomas" }, { look, formal }), `${sit.id}:hint:${gid}.${it.id}`); } catch { /* skip */ }
+          try { add(coach, 1, compose(it.s, { ...b, name: "Tomas", surname: "Mikalauskas", letters: "Mikalauskas" }, { look, formal }), `${sit.id}:hint:${gid}.${it.id}`, true); } catch { /* skip */ }
         }
       }
     }

@@ -17,7 +17,7 @@ import { toImperative } from "./lt";
 import { Icon, InlineIcon, type IconName } from "./icons";
 import { showToast } from "./Toasts";
 import { Confetti } from "./Confetti";
-import { answerFrames, modelAnswers, playerVars, type Guess, type HeardWord, type RepeatWord } from "../convo/suggest";
+import { answerFrames, exampleVars, modelAnswers, ownNameNote, type Guess, type HeardWord, type RepeatWord } from "../convo/suggest";
 import "./answer.css";
 import {ReportProblem} from "./ReportProblem";
 import { SectionHelpButton } from "./sectionHelp";
@@ -412,7 +412,7 @@ function turnAnswers(sit: SituationDef, conv: ReturnType<typeof useStore.getStat
   const sg = conv.suggest[Math.min(conv.focus, conv.suggest.length - 1)];
   const groupOf = (id: string) => sit.hints[id] ?? GLOBAL.hints[id];
   const lastNpc = [...conv.transcript].reverse().find((l) => l.who === "npc" && l.npc)?.npc ?? conv.npcId;
-  const o = { formal, gender, npcGender: NPCS[lastNpc]?.gender ?? "f", vars: playerVars(useStore.getState().progress.profile, game?.activeSession?.conv?.said) } as const;
+  const o = { formal, gender, npcGender: NPCS[lastNpc]?.gender ?? "f", vars: exampleVars() } as const;
   const own = sg.hint && groupOf(sg.hint) ? modelAnswers(sit, groupOf(sg.hint), conv.chosen[sg.hint], o, 3) : [];
   if (own.length) return { ...none, examples: own };
   const more = conv.hints.filter((id) => id !== "g_clarify" && id !== sg.hint && groupOf(id));
@@ -611,9 +611,7 @@ function HintGroupView({ id, g, sit, formal, gender, chosen, lt, ipa, used }: { 
   const look = lookup(sit);
   const ents = g.slot ? sit.entities?.[g.slot] ?? [] : [];
   const examples = g.examples?.length ? g.examples : ents.slice(0, 4).map((e) => e.id);
-  const prof = useStore.getState().progress.profile;
-  const name = prof?.name || "Tomas";
-  const surname = prof?.surname || undefined;
+  const { name, surname } = exampleVars();
   const items = g.items.map((it, i) => {
     const pool = ents.filter((e) => !it.only || it.only(e));
     let ex: string | undefined = chosen && pool.some((e) => e.id === chosen) ? chosen : undefined;
@@ -636,7 +634,7 @@ function HintGroupView({ id, g, sit, formal, gender, chosen, lt, ipa, used }: { 
           <div className="ex">
             <Interlinear s={full} lt={lt} ipa={ipa} compactNat />
             {!hasGap && it.register && <span className={"tag " + it.register}>{it.register === "polite" ? "mandagu" : "laisviau"}</span>}
-            {it.note && <div className="note">{it.note}</div>}
+            {(it.note || ownNameNote(it.s.en)) && <div className="note">{[it.note, ownNameNote(it.s.en)].filter(Boolean).join(" ")}</div>}
           </div>
           <button className="play" onClick={() => { game?.activeSession?.stopListening(); audio.play(coachVoice(useStore.getState().progress.profile?.gender), 1, full.say); }} title="Klausyti" aria-label="Klausyti"><Icon name="speaker" size={20} /></button>
         </div>

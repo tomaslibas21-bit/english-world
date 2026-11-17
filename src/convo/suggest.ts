@@ -28,6 +28,24 @@ export interface AnswerOpts {
   vars: Record<string, string | undefined>;
 }
 
+/** The example a hint card or a model answer shows and plays where a line has the learner's own name, last name or
+ *  its spelling ({$name}, {$surname}, {$letters}): the edition's example learner, so the line has a real recording;
+ *  the card tells the learner to say their own (the owner, 17 Nov 2026). What the learner says is still heard with any
+ *  name: recognition uses playerVars. */
+export const EXAMPLE_PLAYER = { name: "Tomas", surname: "Mikalauskas" };
+export const exampleVars = (): Record<string, string> => ({ name: EXAMPLE_PLAYER.name, surname: EXAMPLE_PLAYER.surname, letters: EXAMPLE_PLAYER.surname });
+const OWN_NOTE = {
+  lt: { name: "Pasakyk savo vardą.", surname: "Pasakyk savo pavardę.", both: "Pasakyk savo vardą ir pavardę.", letters: "Pasakyk savo pavardę paraidžiui." },
+  en: { name: "Say your own name.", surname: "Say your own last name.", both: "Say your own first and last name.", letters: "Spell your own last name." },
+};
+/** The note for a line that has the learner's name in it ("Pasakyk savo vardą."), in the learner's own language. */
+export function ownNameNote(src: string): string | undefined {
+  const n = /\{\$name\b/.test(src), sn = /\{\$surname\b/.test(src), l = /\{\$letters\b/.test(src);
+  if (!n && !sn && !l) return undefined;
+  const t = OWN_NOTE["lt"];
+  return l ? t.letters : n && sn ? t.both : n ? t.name : t.surname;
+}
+
 /** The learner's name for model answers ("My name is Tomas."). */
 export function playerVars(prof?: { name?: string; surname?: string } | null, said?: Record<string, unknown>): Record<string, string | undefined> {
   return { name: prof?.name || "Tomas", surname: prof?.surname || saidSurname(prof?.name, said), letters: prof?.surname || saidSurname(prof?.name, said) };
