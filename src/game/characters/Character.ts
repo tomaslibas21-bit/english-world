@@ -1257,9 +1257,14 @@ export class Character {
       P.add(G.sphere(0.016, 8, 6).translate(R * 0.5, -0.1, 0.22), hc);
     }
     if (acc.includes("earrings")) for (const s of [-1, 1]) P.add(G.sphere(0.02, 8, 6).translate(s * R * 0.97, -0.085, 0.02), "#e2c044");
-    if (acc.includes("flower")) for (let i = 0; i < 5; i++) {
-      const a = (i / 5) * Math.PI * 2;
-      P.add(G.sphere(0.026, 8, 6).translate(-0.19 + Math.cos(a) * 0.028, 0.16 + Math.sin(a) * 0.028, 0.15), "#e84a5f");
+    if (acc.includes("flower")) {
+      // (on a woman's long hair: further out, at the temple over the swept hair, a little bigger, its middle yellow)
+      const [fx, fy, fz, k] = this.longHair ? [-0.236, 0.118, 0.158, 1.25] : [-0.19, 0.16, 0.15, 1];
+      for (let i = 0; i < 5; i++) {
+        const a = (i / 5) * Math.PI * 2;
+        P.add(G.sphere(0.026 * k, 8, 6).translate(fx + Math.cos(a) * 0.028 * k, fy + Math.sin(a) * 0.028 * k, fz), "#e84a5f");
+      }
+      if (this.longHair) P.add(G.sphere(0.02, 7, 5).translate(fx - 0.012, fy + 0.004, fz + 0.022), "#f6c445");
     }
   }
 
