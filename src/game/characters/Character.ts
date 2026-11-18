@@ -14,7 +14,7 @@
 //   gestures by the phrase while talking, more to do while sitting.
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import type { Look } from "../../content/npcs";
+import type { HairStyle, Look } from "../../content/npcs";
 
 let gradient: THREE.DataTexture | null = null;
 function gradientMap() {
@@ -92,6 +92,15 @@ class Parts {
     g.setAttribute("color", new THREE.BufferAttribute(col, 3));
     this.geos.push(g);
   }
+  /** As add, the colour running from `color` at the height y0 and above to `to` at y1 and below. */
+  grad(g: THREE.BufferGeometry, color: THREE.ColorRepresentation, to: THREE.ColorRepresentation, y0: number, y1: number) {
+    this.add(g, color);
+    const col = g.attributes.color as THREE.BufferAttribute, pos = g.attributes.position, a = new THREE.Color(color), b = new THREE.Color(to);
+    for (let i = 0; i < pos.count; i++) {
+      const t = THREE.MathUtils.clamp((y0 - pos.getY(i)) / (y0 - y1), 0, 1);
+      col.setXYZ(i, a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t);
+    }
+  }
   mesh(castShadow = true) {
     const g = this.geos.length > 1 ? mergeGeometries(this.geos, false)! : this.geos[0];
     if (this.geos.length > 1) for (const x of this.geos) x.dispose();
@@ -166,6 +175,61 @@ function placeOnFace(o: THREE.Object3D, x: number, y: number, lift = 0) {
  *  `tilt` so the forehead stays free (the back reaches down to the nape). */
 function hairCap(k: number, tilt: number, len = Math.PI / 2) {
   return G.sphere(HR * k, 24, 12, 0, Math.PI * 2, 0, len).scale(1, 1.02, 0.97).rotateX(-tilt).translate(0, 0.012, -0.012);
+}
+
+/** A woman's hair is always one of these: loose and straight, loose and wavy, long curls, a thick braid (18 Nov 2026:
+ *  long, so she is told from a man at any distance and from the front; a bun or a ponytail showed nothing from the
+ *  front and a bob read as a boy's cut). */
+export const LONG_HAIR: HairStyle[] = ["long", "wavy", "curls", "braid"];
+/** The style a look's hair is built in: its own, or for a woman whose look names a short or tied-up one the nearest
+ *  long one (a safety net: the casts and the passers-by name long ones themselves). Bald stays bald (the machines'
+ *  entries). */
+export function hairStyle(look: Look, female: boolean): HairStyle {
+  const s = look.hair.style;
+  if (!female || LONG_HAIR.includes(s) || s === "bald") return s;
+  return s === "curly" ? "curls" : s === "bun" ? "braid" : s === "short" || s === "side" || s === "buzz" ? "wavy" : "long";
+}
+
+/** One slice of a lofted shape (hair hanging down): its middle (x, y, z), its half-width, how deep it is behind the
+ *  middle and in front of it (a flat front lies against the head or the back). */
+type Ring = [x: number, y: number, z: number, rx: number, back: number, front: number];
+/** A closed shape through the rings, from the top one down, `sides` round. */
+function loft(rings: Ring[], sides = 10) {
+  const n = Q === 1 ? sides : seg(sides, sides, 5), pos: number[] = [], idx: number[] = [];
+  for (const [x, y, z, rx, zb, zf] of rings) for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2, c = Math.cos(a);
+    pos.push(x + rx * Math.sin(a), y, z + c * (c > 0 ? zf : zb));
+  }
+  for (let j = 0; j < rings.length - 1; j++) for (let i = 0; i < n; i++) {
+    const a = j * n + i, b = j * n + (i + 1) % n, c = a + n, d = b + n;
+    idx.push(a, c, b, b, c, d);
+  }
+  // the two ends, each closed by a point in its middle
+  const top = pos.length / 3, last = (rings.length - 1) * n, f = rings[0], l = rings[rings.length - 1];
+  pos.push(f[0], f[1], f[2] + (f[5] - f[4]) / 2, l[0], l[1], l[2] + (l[5] - l[4]) / 2);
+  for (let i = 0; i < n; i++) idx.push(top, i, (i + 1) % n, top + 1, last + (i + 1) % n, last + i);
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+/** More rings between the given ones (about every `step` down), so a wave can be laid over them. */
+function finer(rings: Ring[], step: number): Ring[] {
+  const out: Ring[] = [];
+  for (let j = 0; j < rings.length - 1; j++) {
+    const a = rings[j], b = rings[j + 1], k = Math.max(1, Math.round(Math.abs(a[1] - b[1]) / step));
+    for (let i = 0; i < k; i++) out.push(a.map((v, q) => v + (b[q] - v) * (i / k)) as Ring);
+  }
+  out.push(rings[rings.length - 1]);
+  return out;
+}
+/** Hair's own shading: a little lighter where the light catches it (a braid's strands, a wave's crests, the ends), a
+ *  little darker for light hair, where lighter would not show. */
+function sheen(hair: string, k = 1) {
+  const c = new THREE.Color(hair), hsl = { h: 0, s: 0, l: 0 };
+  c.getHSL(hsl, THREE.SRGBColorSpace);
+  return c.setHSL(hsl.h, hsl.s, hsl.l + (hsl.l > 0.6 ? -0.085 : 0.075) * k, THREE.SRGBColorSpace);
 }
 
 /** A shell round the head (radius HR·k) between the angles phi0…phi1 round it (0 = the left side, π/2 = the
@@ -309,6 +373,12 @@ export class Character {
   private smile!: THREE.Object3D;
   private corners!: THREE.Object3D;
   private mouth!: THREE.Object3D;
+  /** A woman's long hair below the head (its locks, its braid): a part of its own that follows the body and swings a
+   *  little, its top blended onto the head (so it stays on the shoulders as the head turns). */
+  private mane: THREE.Object3D | null = null;
+  /** The style the hair is built in (hairStyle) and whether it is a woman's long one. */
+  private hairStyle: HairStyle = "short";
+  private longHair = false;
   /** The phone in the right hand, shown while they look at it. */
   private phone: THREE.Object3D | null = null;
   /** The shins with their feet: standing, and longer ones for sitting (built when the character first sits). */
@@ -498,6 +568,7 @@ export class Character {
     this.smile = bone(this.smile); this.corners = bone(this.corners); this.mouth = bone(this.mouth);
     this.browY = this.browL.position.y;
     if (this.skirt) this.skirt = bone(this.skirt);
+    if (this.mane) this.mane = bone(this.mane);
     if (this.phone) { this.phone = bone(this.phone); vis(this.phone, false); }
     this.shins = this.shins.map(bone);
     vis(this.mouth, false);
@@ -512,6 +583,8 @@ export class Character {
     const P = new Parts();
     // a woman's or a man's figure: as the look says, else guessed from the hair, a skirt, a beard
     const female = this.female = look.female ?? ((look.skirt || ["long", "wavy", "bob", "bun", "ponytail", "braid"].includes(look.hair.style)) && !acc.includes("beard") && !acc.includes("mustache"));
+    this.hairStyle = hairStyle(look, female);
+    this.longHair = female && LONG_HAIR.includes(this.hairStyle);
     const suit = look.swim === "suit";
     // the torso: from the hips up over the waist and the chest to the shoulders, then in to the neck (its radius at
     // each height, in the old capsule's radius `tr`; a little narrower at the waist, more so for a woman, whose
@@ -631,16 +704,6 @@ export class Character {
         for (let i = 0; i < 4; i++) P.add(new THREE.BoxGeometry(0.012, 0.05, 0.012).translate(x - 0.04 + i * 0.027 + sx * 0.012, y - 0.22 * h - 0.025, z), ac);
       }
     }
-    if (look.hair.style === "braid") {
-      // the braid from behind the right ear over the shoulder and down the front: plaited lobes, a tie, the tuft
-      const pts: [number, number, number][] = [[0.17, 1.4, -0.1], [0.2, 1.31, 0.0], [0.19, 1.22, 0.1], [0.17, 1.13, 0.16], [0.16, 1.04, 0.18], [0.155, 0.96, 0.185], [0.15, 0.89, 0.185]];
-      pts.forEach(([x, y, z], i) => {
-        const r = 0.05 - i * 0.003;
-        P.add(G.sphere(r, 6, 4).scale(1, 1.25, 0.8).translate(x + (i % 2 ? 0.012 : -0.012), y * h, Math.max(z, frontAt(x, y * h) + r * 0.55)), look.hair.color);
-      });
-      P.add(G.cylinder(0.03, 0.03, 0.025, 8).translate(0.15, 0.85 * h, frontAt(0.15, 0.85 * h) + 0.03), "#e4007c");
-      P.add(G.cone(0.04, 0.09, 8).rotateX(Math.PI).translate(0.15, 0.8 * h, frontAt(0.15, 0.8 * h) + 0.03), look.hair.color);
-    }
     if (acc.includes("tie")) {
       const ty = 1.08 * h;
       P.add(new THREE.BoxGeometry(0.06, 0.3, 0.016).translate(0, ty - 0.02, front(ty) + 0.008), ac);
@@ -685,6 +748,7 @@ export class Character {
       }
     }
     rigid(this.body, P.mesh());
+    if (this.longHair) this.buildMane(look, acc, h, b, R);
 
     // legs: a thigh from the hip, a shin with the shoe from the knee (they bend for walking and sitting)
     const trunks = look.swim === "trunks";
@@ -805,15 +869,133 @@ export class Character {
     return S.mesh();
   }
 
+  // ------------------------------------------------------------------ a woman's long hair
+
+  /** A woman's long hair below the head (18 Nov 2026): loose hair down the back with a lock over each shoulder
+   *  ("long", "wavy"), long curls ("curls"), or a thick braid from the nape over one shoulder and down the front
+   *  ("braid"). One part of its own, built in the head's space (y from the head's middle) and hung on the body: it
+   *  follows the body and swings a little (update), and its top is blended onto the head, so the hair stays on the
+   *  shoulders while the head turns and nods. The hair on the head itself is the head's (buildHair). Lengths go by the
+   *  person's height, widths by their body (`R`: the torso's radius at a height), over a skirt and a backpack. */
+  private buildMane(look: Look, acc: string[], h: number, b: number, R: (y: number) => number) {
+    const s = this.hairStyle, c = look.hair.color, HY = 1.52 * h, waist = 0.86 * h, M = new Parts();
+    /** The body at a height: its radius across and how deep it is for that (a skirt's flare below the waist). */
+    const shape = (y: number): [number, number] => {
+      const yb = y + HY, rw = R(waist) + 0.014;
+      return look.skirt && yb < waist ? [rw + (0.34 * b - rw) * Math.min(1, (waist - yb) / (0.38 * h)), 0.84] : [R(yb), 0.78];
+    };
+    /** The body's front at (x, y), `off` in front of it; and its back (the backpack's, where there is one). */
+    const on = (x: number, y: number, off: number) => { const [r, d] = shape(y); return Math.sqrt(Math.max(0, r * r - x * x)) * d + off; };
+    const backAt = (y: number) => { const [r, d] = shape(y), yb = y + HY; return -r * d - (look.backpack && yb < 1.25 * h && yb > 0.78 * h ? 0.172 : 0); };
+    // the shoulders and the shoulder blades (never higher than just under the head: a small person's body is short)
+    const ySh = Math.min(-0.29, -0.29 * h), yBl = Math.min(ySh - 0.12, -0.42 * h);
+    const lit = sheen(c, 0.7);
+    if (s === "long" || s === "wavy") {
+      const wavy = s === "wavy", k = wavy ? 1.05 : 1;
+      const yEnd = Math.min(yBl - 0.15, -(wavy ? 0.55 : 0.62) * h), yMid = (yBl + yEnd) / 2;
+      // down the back: round the back of the head (its sides come forward beside the cheeks), in behind the neck, then
+      // flat against the back to its end
+      let back: Ring[] = [
+        [0, 0.11, 0, 0.255, 0.255, 0.01], [0, 0, 0.02, 0.287 * k, 0.3, 0.012], [0, -0.12, 0.02, 0.292 * k, 0.3, 0.012],
+        [0, -0.21, -0.02, 0.285 * k, 0.25, 0.012],
+        [0, ySh, backAt(ySh) - 0.005, 0.262 * k, 0.075, 0.02], [0, yBl, backAt(yBl) - 0.005, 0.24 * k, 0.068, 0.02],
+        [0, yMid, backAt(yMid) - 0.005, 0.215 * k, 0.06, 0.02], [0, yEnd, backAt(yEnd) - 0.005, 0.17 * k, 0.045, 0.02],
+        [0, yEnd - 0.035, backAt(yEnd) - 0.005, 0.09, 0.02, 0.01],
+      ];
+      if (wavy) back = finer(back, 0.055).map(([x, y, z, rx, zb, zf]) => { const w = y < -0.05 ? Math.sin(y * 34) : 0; return [x, y, z, rx * (1 + 0.05 * w), zb * (1 + 0.1 * w), zf]; });
+      M.grad(loft(back, wavy ? 10 : 12), c, lit, -0.25, yEnd);
+      // a lock from each temple down beside the cheek, over the shoulder and down the front (a shorter one where a
+      // name badge is pinned)
+      const badge = acc.includes("badge") && !acc.includes("lanyard");
+      for (const sd of [-1, 1]) {
+        const y0 = ySh + 0.035;
+        let lock: Ring[] = [
+          [sd * 0.232, 0.07, 0.1, 0.04, 0.05, 0.05], [sd * 0.262, -0.08, 0.075, 0.046, 0.06, 0.055], [sd * 0.262, -0.2, 0.05, 0.05, 0.055, 0.05],
+          [sd * 0.215, y0, Math.max(0.075, on(0.215, y0, 0.04)), 0.052, 0.04, 0.04],
+        ];
+        let end = ySh - 0.06;
+        if (sd > 0 && badge) lock.push([sd * 0.18, ySh - 0.025, on(0.18, ySh - 0.025, 0.035), 0.045, 0.032, 0.032], [sd * 0.175, end, on(0.175, end, 0.03), 0.012, 0.012, 0.012]);
+        else {
+          const y1 = end, y2 = Math.min(y1 - 0.07, -0.42 * h), y3 = Math.min(y2 - 0.07, -(wavy ? 0.48 : 0.52) * h);
+          end = y3 - 0.04;
+          lock.push([sd * 0.175, y1, on(0.175, y1, 0.035), 0.052, 0.034, 0.034], [sd * 0.16, y2, on(0.16, y2, 0.033), 0.048, 0.03, 0.03],
+            [sd * 0.155, y3, on(0.155, y3, 0.03), 0.036, 0.026, 0.026], [sd * 0.15, end, on(0.15, end, 0.026), 0.012, 0.012, 0.012]);
+        }
+        if (wavy) lock = finer(lock, 0.05).map(([x, y, z, rx, zb, zf]) => [x + sd * 0.012 * Math.sin(y * 40), y, z, rx * (1 + 0.13 * Math.sin(y * 40 + 1)), zb, zf]);
+        M.grad(loft(lock, 6), c, lit, -0.2, end);
+      }
+      // (wavy: the ends curl, a row of soft curls along the hem)
+      if (wavy) for (let i = 0; i < 5; i++) { const x = (i - 2) * 0.075; M.add(G.sphere(0.052, 6, 4).scale(1, 0.9, 0.7).translate(x, yEnd - 0.005 + Math.abs(x) * 0.25, backAt(yEnd) - 0.04), lit); }
+    } else if (s === "curls") {
+      const yEnd = Math.min(yBl - 0.08, -0.5 * h);
+      // a full shape down to the middle of the back, curls all over it: beside the face, over the shoulders, down the back
+      M.add(loft([
+        [0, 0.11, 0, 0.255, 0.255, 0.01], [0, 0, 0.02, 0.3, 0.31, 0.012], [0, -0.12, 0.02, 0.315, 0.315, 0.012], [0, -0.21, -0.02, 0.31, 0.27, 0.012],
+        [0, ySh, backAt(ySh) - 0.005, 0.29, 0.09, 0.02], [0, yBl, backAt(yBl) - 0.005, 0.27, 0.085, 0.02],
+        [0, yEnd, backAt(yEnd) - 0.005, 0.2, 0.06, 0.02], [0, yEnd - 0.03, backAt(yEnd) - 0.005, 0.1, 0.02, 0.01],
+      ], 12), c);
+      let n = 0;
+      const puff = (x: number, y: number, z: number, r = 0.07, fine = true) => M.add(G.sphere(r, fine ? 7 : 6, fine ? 5 : 4).translate(x, y, z), n++ % 3 === 1 ? lit : c);
+      for (const sd of [-1, 1]) {
+        puff(sd * 0.3, -0.03, 0.0); puff(sd * 0.318, -0.15, 0.03); puff(sd * 0.3, -0.255, 0.04, 0.066);
+        puff(sd * 0.25, ySh + 0.02, Math.max(0.085, on(0.25, ySh + 0.02, 0.04)), 0.066);
+        puff(sd * 0.2, ySh - 0.07, on(0.2, ySh - 0.07, 0.045), 0.062);
+        puff(sd * 0.17, ySh - 0.16, on(0.17, ySh - 0.16, 0.04), 0.052);
+      }
+      for (const [y, m, w, r] of [[-0.19, 4, 0.2, 0.075], [ySh + 0.01, 5, 0.25, 0.072], [(ySh + yBl) / 2, 4, 0.2, 0.07], [yBl, 5, 0.22, 0.066], [yEnd, 4, 0.15, 0.06]] as [number, number, number, number][]) {
+        for (let i = 0; i < m; i++) {
+          const x = (i / (m - 1) - 0.5) * 2 * w, zc = y > ySh + 0.03 ? -0.26 : backAt(y) - 0.07;
+          puff(x, y, zc * Math.sqrt(Math.max(0.3, 1 - (x / 0.34) ** 2)), r, false);
+        }
+      }
+    } else {
+      // the braid: from the nape over the shoulder and down the front to the waist (longer than that on a small
+      // person, whose head would hide it), two rows of strands crossing, a ribbon, the tuft
+      const sd = look.hair.side ?? 1, tie = look.hair.tie ?? "#e4007c", light = sheen(c);
+      const yTie = Math.min(-0.63 * h, -0.5);
+      // (from behind: the hair drawn down off the whole back of the head and gathered to that shoulder, where the
+      // braid begins; so it shows as long hair from behind too)
+      M.add(loft([
+        [0, 0.02, 0.01, 0.283, 0.295, 0.01], [sd * 0.02, -0.12, -0.01, 0.272, 0.275, 0.01], [sd * 0.075, -0.21, -0.07, 0.2, 0.19, 0.02],
+        [sd * 0.135, ySh + 0.05, -0.1, 0.12, 0.13, 0.04], [sd * 0.17, ySh + 0.025, -0.11, 0.05, 0.07, 0.04],
+      ], 12), c);
+      const pts = [new THREE.Vector3(sd * 0.1, -0.215, -0.235), new THREE.Vector3(sd * 0.185, ySh + 0.055, -0.13), new THREE.Vector3(sd * 0.222, ySh + 0.05, 0.03)];
+      for (let y = ySh - 0.045; ; y -= 0.07) {
+        const yy = Math.max(y, yTie), x = 0.19 - 0.04 * ((ySh - yy) / (ySh - yTie));
+        pts.push(new THREE.Vector3(sd * x, yy, on(x, yy, 0.04)));
+        if (yy === yTie) break;
+      }
+      const len: number[] = [0];
+      for (let i = 1; i < pts.length; i++) len.push(len[i - 1] + pts[i].distanceTo(pts[i - 1]));
+      const total = len[len.length - 1], step = 0.056, count = Math.round(total / step), up = new THREE.Vector3(0, -1, 0), q = new THREE.Quaternion();
+      const at = (d: number) => { let i = 1; while (i < pts.length - 1 && len[i] < d) i++; return pts[i - 1].clone().lerp(pts[i], (d - len[i - 1]) / (len[i] - len[i - 1])); };
+      for (let i = 0; i <= count; i++) {
+        const d = (i / count) * total, p = at(d), dir = at(Math.min(total, d + 0.02)).sub(at(Math.max(0, d - 0.02))).normalize();
+        const r = 0.058 - 0.014 * (i / count), o = i % 2 ? 1 : -1;
+        const g = G.sphere(r, 7, 5).scale(1, 1.3, 0.82).rotateZ(o * 0.5).applyQuaternion(q.setFromUnitVectors(up, dir));
+        M.add(g.translate(p.x + o * 0.017, p.y, p.z), i % 2 ? light : c);
+      }
+      const e = pts[pts.length - 1];
+      M.add(G.cylinder(0.034, 0.034, 0.03, 8).translate(e.x, e.y - 0.045, e.z), tie);
+      M.add(G.cone(0.044, 0.11, 8).rotateX(Math.PI).translate(e.x, e.y - 0.11, e.z), c);
+    }
+    const m = M.mesh(), pos = m.geometry.attributes.position, w = new Float32Array(pos.count);
+    for (let i = 0; i < pos.count; i++) w[i] = THREE.MathUtils.smoothstep(pos.getY(i), -0.25, -0.1);
+    m.userData.blend = { to: this.head, w };
+    m.position.y = HY;
+    this.mane = m;
+    this.body.add(m);
+  }
+
   // ------------------------------------------------------------------ head and face
 
   private buildHead(look: Look, acc: string[]) {
-    const skin = skinTone(look.skin), hair = look.hair.color, style = look.hair.style;
+    const skin = skinTone(look.skin), hair = look.hair.color, style = this.hairStyle;
     const R = HR;
     const P = new Parts();
     P.add(G.sphere(R, 24, 18).scale(1, 1.02, 0.96), skin);
-    // ears (long hair covers them)
-    const covered = style === "long" || style === "wavy" || style === "bob";
+    // ears (long hair covers them; a braid draws it back behind them)
+    const covered = this.longHair ? style !== "braid" : style === "long" || style === "wavy" || style === "bob";
     if (!covered) for (const s of [-1, 1]) P.add(G.sphere(0.05, 10, 7).scale(0.6, 1, 0.8).translate(s * R * 0.98, -0.02, -0.005), skin);
     // nose and cheeks
     P.add(onFace(G.sphere(0.027, 10, 7).scale(1.05, 0.85, 0.75), 0, -0.035, 0.006), skin.clone().multiplyScalar(0.88));
@@ -904,10 +1086,19 @@ export class Character {
 
   /** Hair styles: the face (forehead, eyes, cheeks, mouth) always stays free. */
   private buildHair(P: Parts, look: Look, acc: string[]) {
-    const s = look.hair.style, c = look.hair.color, R = HR;
+    const s = this.hairStyle, c = look.hair.color, R = HR;
     const H = (g: THREE.BufferGeometry) => P.add(g, c);
     const hatted = ["cap", "hat", "police", "pilot", "chef", "strawhat", "jipi", "bandana", "sunhat", "bucket"].some((a) => acc.includes(a));
-    if (s === "braid") {
+    if (this.longHair && s !== "curls") {
+      // a woman's long hair (its lengths: buildMane): over the head from a middle parting, swept to each side of the
+      // forehead (unless a hat covers it)
+      H(hairCap(1.07, 0.6));
+      if (!hatted) for (const sd of [-1, 1]) H(G.sphere(0.165, 10, 6).scale(1, 0.42, 0.6).rotateX(-0.5).rotateZ(-sd * 0.5).translate(sd * 0.105, 0.2, 0.14));
+      if (s === "braid") {
+        // drawn back to the nape, where the braid begins; a loose strand at each temple down to the jaw
+        for (const sd of [-1, 1]) H(loft([[sd * 0.236, 0.07, 0.09, 0.03, 0.03, 0.03], [sd * 0.262, -0.04, 0.078, 0.03, 0.03, 0.03], [sd * 0.26, -0.13, 0.072, 0.02, 0.02, 0.02], [sd * 0.255, -0.18, 0.068, 0.006, 0.006, 0.006]], 6));
+      }
+    } else if (s === "braid") {
       // drawn back from a middle parting to the nape, the braid itself on the body (buildBody)
       H(hairCap(1.06, 0.62));
       H(G.sphere(0.07, 10, 8).translate(0.12, -0.08, -0.2));
@@ -949,7 +1140,8 @@ export class Character {
         H(G.sphere(0.065, 10, 8).translate(0, 0.07, -0.28));
         H(G.capsule(0.065, 0.26, 4, 10).rotateX(0.32).translate(0, -0.13, -0.33));
       }
-    } else if (s === "curly") {
+    } else if (s === "curly" || s === "curls") {
+      // (a woman's long curls go on down from here: buildMane)
       H(hairCap(1.07, 0.5));
       // puffs over the top, the sides and the back (none on the face)
       for (const [th, n, r] of [[0.1, 4, 0.085], [0.27, 8, 0.085], [0.43, 11, 0.08], [0.58, 11, 0.072]] as [number, number, number][]) {
@@ -958,7 +1150,7 @@ export class Character {
           const st = Math.sin(th * Math.PI), x = Math.cos(ph) * st * R * 1.02, z = Math.sin(ph) * st * R * 0.98, y = Math.cos(th * Math.PI) * R * 1.02 + 0.02;
           if (z > 0.05 && y < 0.16) continue; // leave the face free
           if (y < -0.1 || (hatted && y > 0.08)) continue; // and nothing through a hat
-          H(G.sphere(r, 9, 7).translate(x, y, z - 0.01));
+          H((s === "curls" ? G.sphere(r, 7, 5) : G.sphere(r, 9, 7)).translate(x, y, z - 0.01));
         }
       }
     }
@@ -1576,6 +1768,13 @@ export class Character {
     this.head.rotation.x = headNod;
     this.head.rotation.y = headTurn;
     this.head.rotation.z = tilt;
+    if (this.mane) {
+      // long hair: it swings from side to side with the steps and lifts a little off the back; standing, the slightest
+      // sway (small enough that a lock or a braid on the chest never sinks into it)
+      const go = walking ? Math.min(1, 0.35 + this.moveSpeed / 4) : 0;
+      this.mane.rotation.z = walking ? Math.sin(this.walkPhase) * 0.045 * go : Math.sin(t * this.swayRate * 1.7 + 1.3) * 0.006;
+      this.mane.rotation.x = walking ? (0.012 + Math.abs(Math.cos(this.walkPhase)) * 0.014) * go : 0;
+    }
     // blinking: the lids shut and open again in a fifth of a second (a curved line while they are shut), now and then
     // twice; more often while talking
     this.blinkT -= dt;
