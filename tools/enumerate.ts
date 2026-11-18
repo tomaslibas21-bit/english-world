@@ -17,8 +17,12 @@ import { compose, placeholders, type Sentence } from "../src/convo/compose";
 import type { EntityDef, SentSrc, SituationDef } from "../src/content/types";
 import type { NpcDef } from "../src/content/npcs";
 import { soundKey } from "../src/convo/soundalike";
+import { itemsFor, referenced } from "./line-reach";
+import { playSim } from "./sim-play";
 
 export interface Utt { voice: string; speed: number; say: string; en: string; where: string }
+/** A line simulated play never reached (the random runs and the sims): `named` false when no code names it either. */
+export interface Unreached { sit: string; line: string; named: boolean; items?: number }
 
 function lookFor(sit: SituationDef) {
   return (id: string): EntityDef | undefined => {
@@ -33,7 +37,10 @@ function rng(seed: number) {
 }
 
 /** `v2`: the voice ids of the Gemini voices (src/content/voices.ts) instead of the ones the game plays now. */
-export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: SituationDef[]; log?: (s: string) => void; v2?: boolean } = {}): { utts: Utt[]; errors: string[] } {
+export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: SituationDef[]; log?: (s: string) => void; v2?: boolean } = {}): { utts: Utt[]; errors: string[]; unreached: Unreached[]; unfilled: string[] } {
+  const unreached: Unreached[] = [];
+  /** item lines no play said and no code could be read for: not voiced with every item list any more (18 Nov 2026) */
+  const unfilled: string[] = [];
   const voiceOf = (n: NpcDef) => npcVoice(n, opts.v2);
   const out = new Map<string, Utt>();
   const errors: string[] = [];
@@ -60,7 +67,7 @@ export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: 
     //    is really used with, so static lines aren't voiced with every list and every NPC
     const listOf = new Map<string, string>();
     for (const [ln, list] of Object.entries(sit.entities || {})) for (const e of list) listOf.set(e.id, ln);
-    const usedLists = new Map<string, Set<string>>(), usedBy = new Map<string, Set<string>>();
+    const usedLists = new Map<string, Set<string>>(), usedBy = new Map<string, Set<string>>(), usedIds = new Map<string, Set<string>>();
     const addTo = (m: Map<string, Set<string>>, k: string, v: string) => { let s = m.get(k); if (!s) m.set(k, (s = new Set())); s.add(v); };
     errors.push(...fuzzSituation(sit, look, opts.fuzzRuns ?? 120, (voice, speed, sentence, line) => {
       add(voice, speed, sentence, `${sit.id}:fuzz`);
@@ -69,13 +76,30 @@ export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: 
       for (const v of Object.values(line.vars ?? {})) {
         const id = typeof v === "string" ? v : (v as { id?: string } | null)?.id;
         const ln = id ? listOf.get(id) : undefined;
-        if (ln) addTo(usedLists, line.lineId, ln);
+        if (ln) { addTo(usedLists, line.lineId, ln); addTo(usedIds, line.lineId, id!); }
       }
     }, voiceOf));
+    // the sims too (every seed of tools/sim-play.ts's turn-taking, both genders): what simulated play reaches
+    // (not when the caller asks for no play at all: fuzzRuns 0, the tests' quick list)
+    if ((opts.fuzzRuns ?? 120) > 0) for (const sim of sit.sims ?? []) for (let seed = 1; seed <= 6; seed++) {
+      try {
+        playSim(sit, sim, seed, { gender: seed % 2 ? "m" : "f", onTurn: (_c, _t, o) => {
+          for (const l of o.lines) {
+            addTo(usedBy, l.lineId, l.npc);
+            for (const v of Object.values(l.vars ?? {})) {
+              const id = typeof v === "string" ? v : (v as { id?: string } | null)?.id;
+              const ln = id ? listOf.get(id) : undefined;
+              if (ln) { addTo(usedLists, l.lineId, ln); addTo(usedIds, l.lineId, id!); }
+            }
+          }
+        } });
+      } catch { /* a sim that throws is check-content's to report */ }
+    }
     // 1. static lines and value-domain lines
     for (const [lid, variants] of Object.entries(sit.lines)) {
       const speakers = usedBy.has(lid) ? voices.filter((n) => usedBy.get(lid)!.has(n.id)) : voices;
       const lists = usedLists.get(lid);
+      if (!usedBy.has(lid)) unreached.push({ sit: sit.id, line: lid, named: referenced(sit, lid) });
       variants.forEach((src, i) => {
         const ph = placeholders(src);
         const bindings: Record<string, any>[] = [];
@@ -90,7 +114,18 @@ export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: 
           }
           bindings.push(...combos);
         } else if (ph.entities.length === 1 && !ph.values.length) {
-          for (const [ln, list] of Object.entries(sit.entities || {})) if (!lists || lists.has(ln)) for (const e of list) bindings.push({ [ph.entities[0]]: e.id });
+          // {X} only with the line's own items (18 Nov 2026): the lists simulated play said it with, as before; for a
+          // line play never reached, the items its code says it with (line-reach.ts). Before, such a line was
+          // voiced with every item of every list (s87's ask_years_field2 ×105, said only with customer_service).
+          const pool = new Set<string>(usedIds.get(lid) ?? []);
+          const own = lists ? undefined : itemsFor(sit, lid, ph.entities[0]);
+          if (lists) for (const [ln, list] of Object.entries(sit.entities || {})) if (lists.has(ln)) for (const e of list) pool.add(e.id);
+          else if (own) for (const e of own) pool.add(e.id);
+          // read nowhere: every list, as before (its item comes from the state: c.s.win2, retDay(c)…), and reported
+          if (!pool.size) { unfilled.push(`${sit.id}:${lid}`); for (const list of Object.values(sit.entities || {})) for (const e of list) pool.add(e.id); }
+          for (const id of pool) bindings.push({ [ph.entities[0]]: id });
+          const u = unreached.find((x) => x.sit === sit.id && x.line === lid);
+          if (u) u.items = pool.size;
         }
         for (const b of bindings) for (const n of speakers) {
           try { add(voiceOf(n), n.speed ?? 1, compose(src, b, { look, addressee: "m", speaker: n.gender, formal: !n.informal }), `${sit.id}:${lid}[${i}]`); }
@@ -121,7 +156,18 @@ export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: 
       });
     }
   }
-  return finishEnumeration(out, errors, allNpcIds, opts);
+  return { ...finishEnumeration(out, errors, allNpcIds, opts), unreached, unfilled };
+}
+
+/** The reachability report: lines no simulated play reaches, item lines with no static fill. */
+export function reachReport(unreached: Unreached[], unfilled: string[]): string {
+  const dead = unreached.filter((u) => !u.named), quiet = unreached.filter((u) => u.named);
+  const lines = [
+    `${unreached.length} lines simulated play never reached: ${dead.length} no code names (never said), ${quiet.length} named but not reached (rare paths: check by hand)`,
+    `${unfilled.length} item lines read nowhere (no code read, never played), filled with every list as before: check by hand: ${unfilled.slice(0, 12).join(", ")}${unfilled.length > 12 ? " …" : ""}`,
+  ];
+  if (dead.length) lines.push(`never named: ${dead.slice(0, 20).map((u) => `${u.sit}:${u.line}`).join(", ")}${dead.length > 20 ? " …" : ""}`);
+  return lines.join("\n");
 }
 
 /** Random-order conversations built from a situation's tests, sims and hint examples. Returns
