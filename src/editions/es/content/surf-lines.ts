@@ -1,6 +1,8 @@
 // The surf mini-game's spoken lines (x01-surf; cue list in the shared notes surf/CUES.md, 15 Nov 2026). Nayeli, a surf
-// instructor from Puerto Escondido, says tú to the learner and shouts short commands; the learner acts on them. One
-// key `sg_<id>` per cue (the engine in src/game/surf/ looks them up by id); the `a_…` lines are the learner's answers.
+// instructor from Puerto Escondido, says tú to the learner and calls short commands; the learner answers her aloud
+// and acts on them (18 Nov 2026: the lesson is a conversation, one line of hers, then the learner's turn). One key
+// `sg_<id>` per cue (the engine in src/game/surf/ looks them up by id); the `a_…` and `b_…` lines are the learner's
+// own, said by them (the microphone) or for them (a tap: the voice the learner's examples have).
 // Mexico is the base text; `neutral:` only where a word is Mexican-only (mera, chido, olón, ya estuvo, ¡va!); `spain:`
 // where a Spaniard says it otherwise (coger, túmbate, pequeña, el invento, delante, the perfect for what just
 // happened, Spain's surf slang in the rewards). The situation spreads SURF_LINES into its lines and SURF_MERGES into
@@ -34,6 +36,8 @@ const F_ACCIDENTAL = "The accidental se: “it went away on you”: it happened,
 const F_ATRAS_DE = "Mexican: atrás de = behind (detrás de).";
 const F_DESTIEMPO = "a destiempo: at the wrong moment.";
 const F_A_MI = "a mí / a ti repeats the person for emphasis: it was MY (YOUR) turn.";
+const F_TRANQUI = "tranqui: short for tranquilo: relax, no stress.";
+const F_VALE = "vale: okay, Spain's everyday yes.";
 const refl = (word: string, verb: string, pron: string) => `${word} = ${verb} + ${pron}: the pronoun joins the command.`;
 
 // ---------------------------------------------------------------------------
@@ -251,7 +255,7 @@ export const SURF_LINES: Record<string, SentSrc[]> = {
   sg_tip_feet: [t("A donde | miras, | vas.", "Where | you look, | you go.", "You go where you look.")],
   sg_tip_lean: [t("Escucha | y | reacciona | rápido.", "Listen | and | react | fast.", "Listen and react fast.")],
   sg_tip_side: [t("Izquierda | es | izquierda. | ¡Tranqui!", "Left | is | left. | Relax!", "Left is left. Relax!",
-    { flags: { 3: "tranqui: short for tranquilo: relax, no stress." } })],
+    { flags: { 3: F_TRANQUI } })],
   sg_tip_trick: [t("El | truco, | solo | con | la | tabla | estable.", "The | trick, | only | with | the | board | steady.", "Only try a trick when the board is steady.")],
   sg_nothing: [t("No pasa nada. | Todos | nos caemos.", "No worries. | Everyone | we fall.", "No worries. Everybody falls.",
     { flags: { 2: "todos nos caemos: “all of us fall”: the verb says we." } })],
@@ -283,4 +287,29 @@ export const SURF_LINES: Record<string, SentSrc[]> = {
       spain: t("¡A por | otra! | Rema | de vuelta.", "Go for | another! | Paddle | back.", "Let's get another! Paddle back out.",
         { flags: { 0: "a por: Spain's “(go) for”: ¡a por otra! = let's get another!" } }) })],
   sg_bye: [t("¡Nos vemos | en | el | agua!", "See you | in | the | water!", "See you in the water!")],
+
+  // --- the talk between two moves (18 Nov 2026) ----------------------------------------------------
+  sg_not_yet: [t("¡Todavía | no! | Espera…", "Yet | not! | Wait…", "Not yet! Wait…")],
+  sg_ride_q: [t("¿Todo | bien?", "Everything | well?", "All good?")],
+  sg_easy: [t("Tranqui, | vas | bien.", "Relax, | you're going | well.", "Relax, you're doing fine.", { flags: { 0: F_TRANQUI } })],
+
+  // --- the learner's side of it: short answers that keep the talk going ----------------------------
+  sg_a_perfect: [t("¡Perfecto!", "Perfect!", "Perfect!")],
+  sg_a_ok: [t("Está | bien.", "It's | fine.", "Okay.", { spain: t("Vale.", "Okay.", "Okay.", { flags: { 0: F_VALE } }) })],
+  sg_a_understood: [t("Entendido.", "Understood.", "Got it.")],
+  sg_a_ready: [t("¡{sm:Listo|sf:Lista}!", "Ready!", "Ready!")],
+  sg_a_coming: [t("¡Ya | voy!", "Already | I'm coming!", "I'm coming!")],
+  sg_a_vamos: [t("¡Vamos!", "Let's go!", "Let's go!")],
+  sg_a_and_now: [t("¿Y | ahora?", "And | now?", "And now?")],
+  sg_a_far: [t("¡Uf! | ¡Qué | lejos!", "Phew! | How | far!", "Phew! That was far!")],
+  sg_a_this: [t("¿Esta?", "This one?", "This one?")],
+  sg_a_this2: [t("¿Y | esta?", "And | this one?", "What about this one?")],
+  sg_a_now: [t("¿Ahora?", "Now?", "Now?")],
+  sg_a_fine: [t("Estoy | bien.", "I'm | fine.", "I'm fine.")],
+  sg_a_water: [t("¡Tragué | agua!", "I swallowed | water!", "I swallowed water!",
+    { spain: t("¡He tragado | agua!", "I've swallowed | water!", "I swallowed water!") })],
+  sg_a_allgood: [t("¡Todo | bien!", "Everything | well!", "All good!")],
+  sg_a_soso: [t("Más | o | menos.", "More | or | less.", "So-so.")],
+  sg_a_thanks: [t("¡Gracias!", "Thanks!", "Thanks!")],
+  sg_a_fun: [t("¡Qué | divertido!", "How | fun!", "That was fun!")],
 };
