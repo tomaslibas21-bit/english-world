@@ -161,8 +161,8 @@ function Frame({ head, body, name }: { head: React.ReactNode; body: React.ReactN
 
 export const LOOKS: { id: string; gender: "m" | "f"; look: Look }[] = [
   { id: "f1", gender: "f", look: { skin: "#f2d3bd", hair: { style: "long", color: "#7b4a2a" }, top: "#3b8ea5", bottom: "#2d3142" } },
-  { id: "f2", gender: "f", look: { skin: "#d9a47e", hair: { style: "bun", color: "#1f1a17" }, top: "#e76f51", bottom: "#264653" } },
-  { id: "f3", gender: "f", look: { skin: "#f6dcc8", hair: { style: "bob", color: "#d9b36a" }, top: "#8e6bb0", bottom: "#3d405b", acc: ["earrings"] } },
+  { id: "f2", gender: "f", look: { skin: "#d9a47e", hair: { style: "braid", color: "#1f1a17", tie: "#f4d35e" }, top: "#e76f51", bottom: "#264653" } },
+  { id: "f3", gender: "f", look: { skin: "#f6dcc8", hair: { style: "wavy", color: "#d9b36a" }, top: "#8e6bb0", bottom: "#3d405b", acc: ["earrings"] } },
   { id: "m1", gender: "m", look: { skin: "#f2d3bd", hair: { style: "short", color: "#5a3a25" }, top: "#2a9d8f", bottom: "#264653" } },
   { id: "m2", gender: "m", look: { skin: "#c68e63", hair: { style: "side", color: "#1f1a17" }, top: "#f4a261", bottom: "#3d405b", acc: ["beard"] } },
   { id: "m3", gender: "m", look: { skin: "#f6dcc8", hair: { style: "buzz", color: "#d9b36a" }, top: "#457b9d", bottom: "#2b2d42", acc: ["glasses"] } },
