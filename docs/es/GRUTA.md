@@ -198,6 +198,32 @@ stays until it is there and where it cannot be drawn).
   "¿Jugamos?" offers "¡Sí, vamos!" first. Her "¿Quieres una pista?" already offered yes and no.
 - **The gates**: the stones only (above).
 
+## Round 5 (18 Nov 2026): the tree speaks, and the stones speak again
+
+- **The Yaxché's foot flickered** (owner's screenshot after 5/5). The cave floor's grid and the island's mossy top lay
+  in one plane (both at y 0.12 inside the island): a pale pixelated patch round the trunk. The floor now dips to
+  −0.42 under the mound, the mound's top is the whole of where one stands (a hand wider than `ISLAND.r`), and the
+  trunk, buttresses and roots start a little under the ground (`Cave.ts`).
+- **The tree speaks** (`x04-yaxche`, off the route like the aluxes' two). Once the heart is found the card says
+  "Go up to the great tree"; stepping onto its island the first time starts its conversation by itself, and later
+  the prompt "Talk: Yaxché" does. Nobody stands for the tree: the conversation has no figure, and the camera is put on
+  the trunk and its flowers (`Game.aimTree`); petals of light come down while it speaks. What it says: it was waiting;
+  the fifteen stones shine thanks to the learner; who it is; every word learned is a root, and this land is the
+  learner's home too; trees grow slowly and reach the sky; will you keep learning?; keep speaking and listening, come
+  back, the stones have more to tell. The learner answers three times (who are you? / how they feel here / that they
+  will keep going), "no" or "I'm tired" is met kindly and nobody is kept on the island. Its `tree-heard` event saves
+  `cave.tree`. Voice: `yaxche` (casting-es.ts: deep, calm, unhurried).
+- **The stones speak again** (`quest.ts`, `plan.ts nextLine`). The stones' lines live in `content/stones.ts` as five
+  hint groups of x04 (`p_agua` … `p_corazon`, 43 lines each: the 15 first ones and 200 new in the same mood), so they
+  have the Lithuanian layer, IPA, coach voices and the phrasebook like any conversation's phrases. With the heart
+  found, whenever the learner comes down every stone waits again with a line not heard yet (its own chamber's first,
+  then any chamber's), is answered as before, rests 40 s and wakes with the next. Lines understood are counted on the
+  card ("Phrases heard: 37 of 215"), saved in `cave.heard`, and become phrases of the learner's (the phrasebook, under
+  "El corazón de Ka'an"; its cards). When all are heard the round starts again (`cave.rounds`). Nothing changes the
+  first time through: each stone's first line is its chamber's own (`firstLine`), saved lit for good. A line without
+  a recording is not said (until the clips are uploaded the stones cycle through the lines that have one).
+- A lit stone's card shows its line as the conversations do (`Interlinear`: glosses, IPA by the setting).
+
 ## Tests
 
 - `tests/es/cave.test.ts`: the plan (everything stands where one can walk; one can walk from the way in to the heart;
@@ -208,6 +234,13 @@ stays until it is there and where it cannot be drawn).
   until his conversation is talked through (really talked: five typed answers); a stone's card, a wrong meaning, the
   right one; the second chamber's gate shut with two stones lit, and open the moment the third is answered on its
   card, with nothing of the town's route finished; through it; out by the water; a reload down there.
+- `tests/es/cave.test.ts` also: the stones' 215 lines (43 a chamber, short, one word to a unit, glossed, none
+  twice), each stone's first line, and the replay rule (a line not heard yet, never one another stone is saying, all
+  215 heard in 215 answers, then round again).
+- `tests/browser/cave-tree.mjs`: the real game, a computer and a phone: with the heart found, walking onto the island
+  starts the tree's conversation by itself; the camera stands in the open with the tree in the picture; talked
+  through, the stones wake; a stone answered again is counted and saved as a phrase; a lit stone rests and wakes
+  with another line.
 - `tests/browser/cave-talk.mjs`: the real game at 375×812, 375×667 and 1280×800: Kin spoken to from the water, from
   the cleft's side, across the passage and from past his gate, Nikté from the bridge's end and from beside her: the
   camera in the open, the way to their face clear, their head and chest inside the part of the screen the

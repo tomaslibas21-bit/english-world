@@ -189,6 +189,8 @@ export class Game implements GameApi {
   /** The conversation's camera leans in a little while the other person speaks: until when (game time), and where it
    *  stands otherwise. */
   private talkLean = 0;
+  /** The grotto's tree is speaking (a conversation with no figure: aimTree): the picture is shifted as for anyone. */
+  private talkTree = false;
   private talkHome: THREE.Vector3 | null = null;
   private talkNear: THREE.Vector3 | null = null;
   /** Who takes part in the conversation and stands near enough for its camera, who of them is in the picture now,
@@ -1230,8 +1232,10 @@ export class Game implements GameApi {
     dir.normalize();
     this.heading = Math.atan2(dir.x, dir.z);
     this.player.setAnim("idle");
-    const side = new THREE.Vector3(dir.z, 0, -dir.x), look = new THREE.Vector3(t.x, 3.3, t.z), head = new THREE.Vector3(p.x, p.y + 1.5, p.z);
+    // (a wide screen shows the trunk from the learner at its foot up into the low flowers; an upright phone's strip of a
+    // picture, a narrow look up the trunk into the boughs and the hanging flowers)
     const upright = this.container.clientWidth <= 900 && this.container.clientHeight > this.container.clientWidth;
+    const side = new THREE.Vector3(dir.z, 0, -dir.x), look = new THREE.Vector3(t.x, upright ? 6 : 3.6, t.z), head = new THREE.Vector3(p.x, p.y + 1.5, p.z);
     let best: THREE.Vector3 | null = null;
     // (the side the camera is on now first: the short way round)
     const now = Math.sign((this.rig.cam.position.x - p.x) * side.x + (this.rig.cam.position.z - p.z) * side.z) || 1;
@@ -1243,6 +1247,7 @@ export class Game implements GameApi {
     }
     this.rig.talk = { pos: best ?? new THREE.Vector3(p.x, p.y + 2.4, p.z).addScaledVector(dir, -3.2), look };
     this.talkHome = this.talkNear = null;
+    this.talkTree = true;
     this.rig.mode = "talk";
   }
 
@@ -1616,6 +1621,7 @@ export class Game implements GameApi {
     useStore.getState().setConv({ active: false });
     this.rig.talk = null;
     this.talkHome = this.talkNear = null;
+    this.talkTree = false;
     this.talkCast = []; this.talkIn = []; this.talkViews.clear();
     this.player.root.visible = true;
     this.rig.mode = this.room ? "interior" : "follow";
@@ -1899,7 +1905,7 @@ export class Game implements GameApi {
     // stands lower in the picture (about two thirds down), so the street ahead shows instead of the ground underfoot
     {
       const w = this.container.clientWidth, h = this.container.clientHeight;
-      if (talking && this.talkNpc) {
+      if (talking && (this.talkNpc || this.talkTree)) {
         const sideways = h <= 520 && w > h;
         const wide = w > 900 && !sideways;
         // Match the conversation's visible picture area, including scenes-off 3D conversations.

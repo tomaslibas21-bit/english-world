@@ -223,7 +223,8 @@ export class CaveQuest {
     }
     // once the stones speak again: a stone that was understood rests a while, then wakes with its next line
     for (const [id, t] of this.rearm) {
-      if (t - dt > 0 || useStore.getState().hud.glyph?.id === id) { this.rearm.set(id, Math.max(0.1, t - dt)); continue; }
+      // (not while its card is still open)
+      if (t - dt > 0 || useStore.getState().hud.glyph?.id === id) { this.rearm.set(id, t - dt > 0 ? t - dt : 0.1); continue; }
       this.rearm.delete(id);
       this.relit.delete(id);
       this.phrases.delete(id);
