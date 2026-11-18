@@ -16,8 +16,6 @@
 //   ?mood=friendly|neutral|surprised|concerned   the expression   ?gesture=palm|both|chest|explain|shrug (with anim=talk)
 //   ?watch=1.5,1.6,2   a point (x, y, z from the person's feet) they look at, their attention on it
 //   ?recline=0.8 with anim=sit: leaning back on a lounger   ?ids=beach: one of each beachwear piece (Character.ts)
-//   ?ids=women: every woman of the cast (as the game builds them), the player's three women's looks with their
-//                backpacks and twelve women passing by   ?view=body: the whole person from near (for contact sheets)
 //   ?cols=10 &cell=150 (cell width in px) &screenH=800 (game viewport height the pixel size is matched to)
 import * as THREE from "three";
 import { NPCS, type Look } from "../content/npcs";
@@ -42,14 +40,7 @@ const screenH = +(q.get("screenH") ?? 800);
 
 const people: { name: string; look: Look }[] = [];
 for (const id of (q.get("ids") ?? Object.keys(NPCS).join(",")).split(",")) {
-  // (as the game builds them: a woman's figure from the cast's gender, Game.spawnNpcs)
-  if (NPCS[id]) people.push({ name: NPCS[id].name, look: { ...NPCS[id].look, female: NPCS[id].look.female ?? NPCS[id].gender === "f" } });
-  else if (id === "women") {
-    for (const d of Object.values(NPCS)) if (d.gender === "f" && d.look.hair.style !== "bald") people.push({ name: d.name, look: { ...d.look, female: true } });
-    for (const l of LOOKS) if (l.gender === "f") people.push({ name: l.id, look: withBackpack({ ...l.look, female: true }) });
-    const r = rand(4242);
-    for (let i = 0; i < 12; i++) people.push({ name: `walker ${i}`, look: walkerLook(true, r) });
-  }
+  if (NPCS[id]) people.push({ name: NPCS[id].name, look: NPCS[id].look });
   // the player's looks as in the game (with the backpack); "player-plain" without it
   else if (id === "player" || id === "player-plain") for (const l of LOOKS) people.push({ name: l.id, look: id === "player" ? withBackpack(l.look) : l.look });
   else if (LOOKS.some((l) => l.id === id)) people.push({ name: id, look: withBackpack(LOOKS.find((l) => l.id === id)!.look) });
@@ -59,8 +50,8 @@ for (const id of (q.get("ids") ?? Object.keys(NPCS).join(",")).split(",")) {
       ["trunks, tee", { skin: "#c68e63", hair: { style: "short", color: "#1f1a17" }, top: "#f4f1ea", bottom: "#e4572e", swim: "trunks", sleeves: "short", flipflops: true, shoes: "#2b2d42", female: false }],
       ["trunks, tank, bucket", { skin: "#a0694a", hair: { style: "buzz", color: "#1f1a17" }, top: "#ffd166", bottom: "#1f6fd1", swim: "trunks", sleeves: "none", flipflops: true, shoes: "#3a2f2a", acc: ["bucket", "sunglasses"], accColor: "#f4f1ea", female: false, build: 1.1 }],
       ["suit, sarong, sun hat", { skin: "#d9a47e", hair: { style: "long", color: "#2b1d16" }, top: "#e4007c", bottom: "#00a6a6", swim: "suit", skirt: true, flipflops: true, shoes: "#f4f1ea", acc: ["sarong", "sunhat"], accColor: "#e4007c", female: true }],
-      ["suit, cover-up", { skin: "#b07a52", hair: { style: "braid", color: "#1f1a17", tie: "#f6a800" }, top: "#1f6fd1", bottom: "#1f6fd1", swim: "suit", flipflops: true, shoes: "#d8c3a0", acc: ["coverup", "shades"], accColor: "#fbf6ea", female: true }],
-      ["suit, sarong, cover-up", { skin: "#e8c09a", hair: { style: "curls", color: "#5a3a25" }, top: "#f6a800", bottom: "#ff8fab", swim: "suit", skirt: true, flipflops: true, shoes: "#f4f1ea", acc: ["sarong", "coverup", "sunhat"], accColor: "#ffffff", female: true }],
+      ["suit, cover-up", { skin: "#b07a52", hair: { style: "bun", color: "#1f1a17" }, top: "#1f6fd1", bottom: "#1f6fd1", swim: "suit", flipflops: true, shoes: "#d8c3a0", acc: ["coverup", "shades"], accColor: "#fbf6ea", female: true }],
+      ["suit, sarong, cover-up", { skin: "#e8c09a", hair: { style: "ponytail", color: "#5a3a25" }, top: "#f6a800", bottom: "#ff8fab", swim: "suit", skirt: true, flipflops: true, shoes: "#f4f1ea", acc: ["sarong", "coverup", "sunhat"], accColor: "#ffffff", female: true }],
       ["sundress, straw hat", { skin: "#8a5a3c", hair: { style: "wavy", color: "#1f1a17" }, top: "#7ac143", bottom: "#7ac143", skirt: true, sleeves: "none", flipflops: true, shoes: "#5c4b3a", acc: ["strawhat"], female: true }],
       ["shorts, open shirt", { skin: "#f2d3bd", hair: { style: "side", color: "#b8b3ac" }, top: "#9ad1d4", bottom: "#d8c3a0", shorts: true, sleeves: "short", flipflops: true, shoes: "#5c4b3a", acc: ["strawhat", "glasses"], female: false, build: 1.12 }],
     ];
@@ -114,10 +105,6 @@ function place(height: number) {
     const y = height - 0.24;
     cam.position.set(0, y + 0.05, 2.1);
     cam.lookAt(0, y - 0.03, 0);
-  } else if (view === "body") {
-    cam.fov = 24;
-    cam.position.set(0, height * 0.62 + 0.5, 4.6);
-    cam.lookAt(0, height * 0.52, 0);
   } else if (view === "talk") {
     cam.fov = gameFov(50);
     cam.position.set(0, 3.2, 6);

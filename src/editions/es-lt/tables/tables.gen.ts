@@ -54,6 +54,7 @@ import T_s91b_police from "./s91b-police.json";
 import T_x01_surf from "./x01-surf.json";
 import T_x02_alux_kin from "./x02-alux-kin.json";
 import T_x03_alux_nikte from "./x03-alux-nikte.json";
+import T_x05_tienda from "./x05-tienda.json";
 
 export const TABLES: Record<string, LearnerTable> = {
   "_shared": T__shared as LearnerTable,
@@ -110,4 +111,5 @@ export const TABLES: Record<string, LearnerTable> = {
   "x01-surf": T_x01_surf as LearnerTable,
   "x02-alux-kin": T_x02_alux_kin as LearnerTable,
   "x03-alux-nikte": T_x03_alux_nikte as LearnerTable,
+  "x05-tienda": T_x05_tienda as LearnerTable,
 };

@@ -191,6 +191,9 @@ export const BINDINGS: Record<string, (sit: SituationDef) => Binding[]> = {
     const p = x01Consts(sit)?.PRICE as Record<string, number> | undefined;
     return p ? Object.entries(p).map(([X, price]) => ({ X, price })) : [];
   },
+  // x05-tienda.ts priceOf (the "¿Cuánto cuesta…?" answer) says price_one with a thing and its own price; the coffee,
+  // which has two sizes, has lines of its own (coffee_prices)
+  "x05-tienda:price_one": (sit) => (sit.entities?.product ?? []).filter((e) => typeof e.attrs?.price === "number").map((e) => ({ X: e.id, price: e.attrs!.price as number })),
   // s66-taxi.ts:90–91 fareOf is c.s.price ?? the place's own fare, and every fare_is call (:502, :552, :578, :590, :621)
   // comes before any lower price (c.s.price unset, or reset with the new place): a place and its own fare. The airport
   // (here) is never a ride.

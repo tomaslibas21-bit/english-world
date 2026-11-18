@@ -48,6 +48,10 @@ export class Guidance {
   private beam: THREE.Mesh;
   private gem: THREE.Mesh;
   private ring: THREE.Mesh;
+  /** The talk spots marked all the time (setMarks): a slim beam over each person, a ring where one stands to talk. */
+  private marks = new THREE.Group();
+  private markBeams: THREE.Mesh[] = [];
+  private markBeam = new THREE.MeshBasicMaterial({ color: "#ffd166", transparent: true, opacity: 0.3, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending });
   private pts: [number, number][] = [];
   private t = 0;
   visible = true;
@@ -93,7 +97,27 @@ export class Guidance {
     this.ring.position.y = 0.04;
     this.beacon.add(this.beam, this.gem, this.ring);
     this.beacon.visible = false;
-    this.group.add(this.beacon);
+    this.group.add(this.beacon, this.marks);
+  }
+
+  /** Talk spots marked all the time (theme.ts `talkMarks`: the attendant at the pump, who has no door to find her by):
+   *  the beacon's beam, slimmer, over each person (seen from the street over the cars, the name tag and a canopy), and its
+   *  ring at 0.6 (as on a clerk's talk spot) where one stands to talk; the one the beacon is over shows the beacon. */
+  setMarks(list: { x: number; z: number; person?: { x: number; z: number } }[]) {
+    for (const o of [...this.marks.children]) { this.marks.remove(o); if (o.userData.own) (o as THREE.Mesh).geometry.dispose(); }
+    this.markBeams = [];
+    for (const m of list) {
+      const over = m.person ?? m;
+      const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.55, 11, 14, 1, true), this.markBeam);
+      beam.userData.own = true;
+      beam.position.set(over.x, 5.5, over.z);
+      const ring = new THREE.Mesh(this.ring.geometry, this.ring.material);
+      ring.scale.setScalar(0.6);
+      ring.position.set(m.x, 0.04, m.z);
+      beam.userData.ring = ring;
+      this.marks.add(beam, ring);
+      this.markBeams.push(beam);
+    }
   }
 
   setPath(pts: [number, number][] | null) { this.pts = pts ?? []; }
@@ -114,6 +138,12 @@ export class Guidance {
     this.gem.rotation.y += dt * 1.5;
     this.gem.position.y += Math.sin(this.t * 2.2) * 0.004;
     (this.beam.material as THREE.MeshBasicMaterial).opacity = 0.16 + Math.sin(this.t * 2) * 0.05;
+    this.markBeam.opacity = 0.27 + Math.sin(this.t * 2) * 0.07;
+    for (const b of this.markBeams) {
+      // (under the beacon: the beacon's own beam and ring are there)
+      const under = this.beacon.visible && Math.hypot(this.beacon.position.x - b.position.x, this.beacon.position.z - b.position.z) < 0.5;
+      b.visible = (b.userData.ring as THREE.Mesh).visible = !under;
+    }
     if (!this.visible || this.pts.length < 2) { this.dots.count = 0; return; }
     const marks = wayMarks(this.pts, this.t, MARKS);
     marks.forEach((k, i) => {

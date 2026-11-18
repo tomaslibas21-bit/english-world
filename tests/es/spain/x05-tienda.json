@@ -1,0 +1,190 @@
+{
+"situation": "x05-tienda",
+"items": [
+{
+"ctx": "order",
+"say": "¿Me pone un café pequeño?",
+"intent": "order"
+},
+{
+"ctx": "order",
+"say": "Ponme un café grande",
+"intent": "order"
+},
+{
+"ctx": "order",
+"say": "Una bolsa de patatas, por favor",
+"intent": "order"
+},
+{
+"ctx": "order",
+"say": "¿Tenéis hielo?",
+"intent": "ask_have"
+},
+{
+"ctx": "order",
+"say": "Quería un café con leche",
+"intent": "order"
+},
+{
+"ctx": "order",
+"say": "¿Dónde están los aseos?",
+"intent": "restroom"
+},
+{
+"ctx": "order",
+"say": "¿Hay un cajero por aquí?",
+"intent": "atm"
+},
+{
+"ctx": "order",
+"say": "¿Aquí se paga la gasolina?",
+"intent": "gas_q"
+},
+{
+"ctx": "order",
+"say": "¿Me cobra esto?",
+"intent": "any",
+"not": [
+"gas_q"
+]
+},
+{
+"ctx": "order",
+"say": "Póngame dos botellas de agua",
+"intent": "order"
+},
+{
+"ctx": "order",
+"say": "¿Cuánto vale la bolsa de hielo?",
+"intent": "ask_price"
+},
+{
+"ctx": "order",
+"say": "Un refresco, por favor",
+"intent": "order"
+},
+{
+"ctx": "size",
+"say": "Pequeño",
+"intent": "size_ctx"
+},
+{
+"ctx": "size",
+"say": "El pequeño, por favor",
+"intent": "size_ctx"
+},
+{
+"ctx": "size",
+"say": "Grande",
+"intent": "size_ctx"
+},
+{
+"ctx": "more",
+"say": "Vale, eso es todo",
+"intent": "more_no"
+},
+{
+"ctx": "more",
+"say": "Nada más, gracias",
+"intent": "more_no"
+},
+{
+"ctx": "more",
+"say": "Y unas patatas",
+"intent": "order"
+},
+{
+"ctx": "more",
+"say": "Vale",
+"intent": "yn:yes"
+},
+{
+"ctx": "more",
+"say": "No quiero las patatas",
+"intent": "any",
+"not": [
+"order"
+]
+},
+{
+"ctx": "pay",
+"say": "Con tarjeta",
+"intent": "pay_card"
+},
+{
+"ctx": "pay",
+"say": "¿Puedo pagar con el móvil?",
+"intent": "pay_card"
+},
+{
+"ctx": "pay",
+"say": "En efectivo",
+"intent": "pay_cash"
+},
+{
+"ctx": "pay",
+"say": "Aquí tiene",
+"intent": "here_you_go"
+},
+{
+"ctx": "pay",
+"say": "Vale, voy al cajero",
+"intent": "atm_go"
+},
+{
+"ctx": "pay",
+"say": "No llevo efectivo",
+"intent": "any",
+"not": [
+"pay_cash"
+]
+},
+{
+"ctx": "pay",
+"say": "Ya he pagado",
+"intent": "any",
+"not": [
+"here_you_go",
+"pay_card",
+"pay_cash"
+]
+},
+{
+"ctx": "round",
+"say": "Vale, redondee",
+"intent": "round_yes_ctx"
+},
+{
+"ctx": "round",
+"say": "No, así está bien",
+"intent": "round_no_ctx"
+},
+{
+"ctx": "round",
+"say": "¿Para qué es?",
+"intent": "round_what"
+},
+{
+"ctx": "coffee_wait",
+"say": "Vale, espero",
+"intent": "wait_yes_ctx"
+},
+{
+"ctx": "coffee_wait",
+"say": "No, tengo prisa",
+"intent": "any",
+"not": [
+"wait_yes_ctx"
+]
+},
+{
+"ctx": "coffee_wait",
+"say": "No puedo esperar",
+"intent": "any",
+"not": [
+"wait_yes_ctx"
+]
+}
+]
+}

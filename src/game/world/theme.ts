@@ -119,6 +119,12 @@ export interface TownTheme {
   };
   /** People who stand outdoors in this edition (added to layout.ts OUTDOOR_NPCS; a room that has them leaves them out). */
   outdoorNpcs: OutdoorSpot[];
+  /** People this edition adds to a room (interiors.ts `room()`), by room id: a conversation's person that Maple Harbor's
+   *  room has no place for (Tienda El Faro's cashier, where the attendant works outside). */
+  roomNpcs: Record<string, OutdoorSpot[]>;
+  /** Outdoor people whose conversation has no door to find it by (the attendant at the pump): their talk spot is
+   *  marked on the ground all the time, a ring and a small gem over them in the guidance beacon's colours. */
+  talkMarks: string[];
   /** Cars parked for a conversation (added at the end of layout.ts PARKED_CARS, so `parkedCars` below can give them a
    *  look): x, z and heading. */
   spotCars: [number, number, number][];
@@ -421,6 +427,8 @@ export const THEME: TownTheme = {
   restaurant: "trattoria",
   roomExtras: {},
   outdoorNpcs: [],
+  roomNpcs: {},
+  talkMarks: [],
   spotCars: [],
   centrepiece: "fountain",
   gazebo: true,

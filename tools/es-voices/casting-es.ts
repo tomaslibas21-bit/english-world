@@ -88,6 +88,9 @@ const MEXICO: Record<string, string> = {
   // x01-surf (15 Nov 2026): bright, breezy, youthful at 31; not a woman's voice of the harbor (El Muelle: Camila
   // assistant-1, Fátima assistant-1; the passer-by assistant-1) nor of Mónica, the trainer she is built on (commercial-9)
   surf: "es-419-csagent-7",
+  // x05-tienda (18 Nov 2026): Paco, Tienda El Faro's young cashier: the catalog's youngest man's voice (21, calm and
+  // warm), nobody else's
+  tienda: "es-419-commercial-4",
   // the convertibles' owners (RIDERS): Valeria bright and breezy at 32, Don Rafa textured and soothing at 57, Marisol
   // at 47, Beto crisp and eager at 28; and the passers-by who call after a car: a younger and an older voice a gender
   ride_park: "es-419-training-8", ride_east: "es-419-csagent-9", ride_west1: "es-419-assistant-6", ride_west2: "es-419-assistant-9",
@@ -141,6 +144,8 @@ const SPAIN: Record<string, string> = {
   // x01-surf: an influencer's voice at 30; not the harbor's women (Camila csagent-5, Fátima and the passer-by
   // concierge-3) nor Mónica's (techagent-5)
   surf: "es-es-commercial-3",
+  // x05-tienda: Paco, a young man's voice (23); nobody else speaks in his conversation
+  tienda: "es-es-training-9",
   // the convertibles' owners and the passers-by who call after a car, by gender and age as in the Mexican set
   ride_park: "es-es-techagent-5", ride_east: "es-es-assistant-3", ride_west1: "es-es-training-12", ride_west2: "es-es-training-11",
   shout_f0: "es-es-concierge-3", shout_f1: "es-es-podcaster-5", shout_m0: "es-es-training-9", shout_m1: "es-es-assistant-4",
@@ -261,6 +266,8 @@ export const CAST: Record<string, Role> = {
   alux_nikte: { voice: "Leda", age: "ageless, sounds like a young girl", manner: "a small forest spirit, light and sing-song, gentle and bright, teasing with her riddles, a little magical", pace: "easy" },
   // the beach (x01-surf and the surf game's commands): a surf instructor from Puerto Escondido, about 28
   surf: { voice: "Aoede", age: "about 28", manner: "warm, sporty and lively, a surf instructor who loves the sea", pace: "lively" },
+  // the gas station's store (x05-tienda): its cashier, about 23
+  tienda: { voice: "Zubenelgenubi", age: "about 23", manner: "friendly and easygoing, a young cashier who chats with his customers", pace: "easy" },
 };
 
 /** The convertibles' owners (es_ride_<id>: content/rides.ts RIDE_OWNERS) and the passers-by who call after a car that
@@ -312,6 +319,7 @@ export const SCENES: Record<string, Scene> = {
   "x03-alux-nikte": { setting: "speaking softly, close by, in a quiet hidden grotto" },
   // x01-surf: relaxed at the palapa; the surf game's commands (the sg_ lines, LINE_SCENES) called out over the water
   "x01-surf": { setting: "relaxed and friendly, chatting at her surf school's palapa on the beach" },
+  "x05-tienda": { setting: "at the counter of a small gas station store on the road, relaxed and friendly" },
   // the convertibles (no conversation: the owners' lines when their car is taken or brought back, and what passers-by
   // call after a car that went by too close)
   "rides": { setting: "calling over from a convertible parked at the curb to someone borrowing the car, relaxed, in a holiday mood" },

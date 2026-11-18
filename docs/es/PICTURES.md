@@ -679,6 +679,14 @@ for lots of amazing pictures"; `STOP_USD` went from $75 to $80). Manifests: `ref
   `cards.py map PROBE --only …` merges new conversations into the map; 19 phrase groups (x01 9, x02 6, x03 4), each
   with its picture (two redone: a stranger drawn where the game picture has nobody; banknotes that looked like
   dollars). `<work>/cards/card-art.json` now lists 53 conversations, 864 group pictures, 496 scene crops.
+- **x05-tienda** (Paco at Tienda El Faro, 18 Nov 2026): no scene pictures yet, so the conversation shows the 3D view
+  (the store from the counter: Paco, the "Café recién hecho" sign, the HIELO chest by the door). Wanted when pictures
+  are next made: the place (the store's counter), Paco's reference, about 12 moments (the greeting, the coffee handed
+  over, the ice chest, the empty coffee pot, the card terminal with a blank screen, the round-up, the way out to the
+  pumps). Cards: 12 phrase groups; `cards.py map PROBE --only x05-tienda` would add them; until a picture is made,
+  eight of them can take a same-goal group's picture (ask for something → s72 order_drink, ask the price → s32,
+  say the size → s72, that's all → s32, ask something → s71b ask, pay → s71b pay); wait, round up, the ATM and
+  "no, thanks" have none.
 - **Cost** (the ledger): $8.85 for x01–x03 in all: the 7 references $0.43, 113 scene pictures and one fix $7.35 (104
   through the regular API before the credits ran out at $7.03 of balance, 10 in batches after the owner's top-up),
   the 17 cue pictures (19 requests) $0.83, the 21 card pictures $0.24. Spent in all: $60.96.

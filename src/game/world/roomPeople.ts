@@ -2,7 +2,8 @@
 // Lucia's, customers in the queues and the aisles, office workers at their desks, a client in the salon chair, a
 // runner on the gym's treadmill… No name tags and no conversations of their own: they sit or stand where they are and
 // do the little things people do while waiting (characters/Character.ts). Two with the same `chat` talk in turns.
-// Game.spawnNpcs places them; their looks come from the passers-by's (walkerLook), drawn per room.
+// Game.spawnNpcs places them; their looks come from the passers-by's (walkerLook), drawn per room. Staff among them
+// with no conversation here (`says`) answer with one friendly line that points to where the talking is.
 import type { Look } from "../../content/npcs";
 import { THEME } from "./theme";
 
@@ -19,6 +20,11 @@ export interface RoomPerson {
   /** Running on a treadmill: its belt's height. */
   run?: number;
   chat?: number;
+  /** Staff with no conversation of their own: the key of their one line in the edition's STAFF_LINES
+   *  (content/ambient.ts), said when they are talked to (the talk prompt, E, or a tap on them), its meaning in a
+   *  bubble, in the passers-by's voice of their gender; `female` fixes that gender, so look and voice agree. */
+  says?: string;
+  female?: boolean;
 }
 
 const P = Math.PI;
@@ -40,9 +46,9 @@ export const ROOM_PEOPLE: Record<string, RoomPerson[]> = {
   "post-office": [{ x: -1.8, z: -1.6, rot: P, carry: "bag" }, { x: -6.3, z: -1.5, rot: -P / 2 }],
   threads: [{ x: -4, z: 0.75, rot: P, carry: "bag" }, { x: 6.9, z: -3.2, rot: P / 2 }],
   pharmacy: [{ x: 6.3, z: 4.1, rot: -P / 2, sit: 0.48 }, { x: -4.5, z: 0.6, rot: P }],
-  "gas-station": [{ x: -6, z: -3.55, rot: P, carry: "coffee" }, { x: 2, z: 1.4, rot: P, phone: true },
-    // where the attendant pumps the gas outside (theme.ts outdoorNpcs: Doña Chela), the shop has a cashier of its own
-    ...(THEME.outdoorNpcs.some((o) => o.npc === "dot") ? [{ x: -3, z: -3.8, rot: 0, busy: "type" as const }] : [])],
+  // (where the attendant pumps the gas outside, theme.ts outdoorNpcs, the shop's cashier is a character of his own with a
+  // conversation: theme.ts roomNpcs, Paco in Tienda El Faro, x05-tienda)
+  "gas-station": [{ x: -6, z: -3.55, rot: P, carry: "coffee" }, { x: 2, z: 1.4, rot: P, phone: true }],
   // a client in the chair Jessie works at, one under the dryer with a magazine, one waiting on the sofa
   salon: [
     { x: -3, z: -2.6, rot: P, sit: 0.8 },

@@ -135,6 +135,10 @@ export const THEME: TownTheme = {
     // x01-surf: Nayeli behind the counter of her palapa on the sand east of the steps down from the malecón (x −48),
     // looking west along the beach; the learner stands on the sand before the counter
     { npc: "surf", x: -45.45, z: -68.15, rot: -Math.PI / 2, ax: -47.55, az: -68.15 }],
+  // x05-tienda: the store's own cashier, Paco, behind its counter where Maple Harbor's Dot stands (she is outdoors here)
+  roomNpcs: { "gas-station": [{ npc: "tienda", x: -3, z: -3.8, rot: 0, ax: -3, az: -1.7 }] },
+  // s71b: the pump has no door to find it by, so Doña Chela's talk spot is marked all the time (the owner, 17 Nov 2026)
+  talkMarks: ["dot"],
   spotCars: [[113, 4.6, Math.PI]],
   // --- the town outdoors ---
   centrepiece: "kiosco",

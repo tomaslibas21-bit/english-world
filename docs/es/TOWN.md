@@ -366,8 +366,9 @@ corrected to the town.)
   s69, s70).
 - **Farmacia del Puerto** is on the corner of Juárez and Flamboyán, across from Hotel Mar Azul; the doctor's
   consultorio next door is through a door inside it (s75).
-- **The gas station**: the conversation happens outside at the pump, not in the shop (s71b; `locations.ts` still says
-  interior).
+- **The gas station**: the gas conversation happens outside at the pump (s71b, Doña Chela: she fills the tank and takes
+  the payment there); inside, Tienda El Faro's cashier Paco sells coffee, ice, snacks and drinks (x05-tienda) and has
+  the ATM by the entrance; the restroom is outside behind the store (both conversations say so).
 - **La Cocina de Lucía** (s73), a Yucatecan restaurant: across avenida Juárez from Información Turística, next to Café
   La Ceiba, the red awning (s62, s69); Boutique Hilos is its other neighbor. It is the Maple Harbor trattoria's building
   (location id `trattoria`); there is no Italian restaurant in town.
@@ -465,8 +466,19 @@ English rooms are built exactly as before; their views were compared pixel by pi
   draw call).
 - **Doña Chela at the pump** (s71b): `gas-station` is an outdoor place in the Spanish locations.ts; the theme puts
   `dot` beside pump 2 at the learner's car (a parked car facing the street), and the learner talks to her from behind
-  the car. A character the theme places outdoors is left out of her room (interiors.ts `room()`); the shop has its own
-  cashier (roomPeople.ts), "Tienda El Faro".
+  the car. A character the theme places outdoors is left out of her room (interiors.ts `room()`). Her spot has no
+  door to find it by, so it is marked all the time (theme.ts `talkMarks`, guidance.ts `setMarks`): the beacon's ring
+  where one stands and a slim beam over her that shows above the canopy from the street; with s71b as the task, the
+  beacon itself.
+- **Paco in Tienda El Faro** (x05-tienda, 18 Nov 2026; the owner: "the cashier is only decoration"): the store has
+  its own cashier, a character with a conversation (npc `tienda`, theme.ts `roomNpcs`, behind the counter where Maple
+  Harbor's Dot stands; the learner talks across it, 0.6 m in front). Coffee, ice from the HIELO chest by the door,
+  snacks and drinks, paid at his counter; asked about gas, he sends the learner out to Doña Chela at the pumps. An
+  outdoor place's conversation whose person stands in its room is found through the door (Game.ts `objectiveTarget`).
+- **The tianguis' vendors** (theme.ts `vendors`, four behind their stalls) answer a click with a vendor's line
+  (content/ambient.ts `VENDOR_LINES`), not a hurried passer-by's: a welcome, or that Doña Licha at the mercado is
+  still serving (s32). Staff in a room with no conversation would say one line the same way (roomPeople.ts `says`,
+  `STAFF_LINES`; Maple Harbor's airport barista does); Puerto Colibrí has none.
 - **The other places the conversations name**: the pharmacy's door to the consultorio next door, "Consultorio médico
   → · Consulta sin cita" (s75); the bank's turn machine "Turnos", the display "TURNO A-27 · VENTANILLA 2" and the
   dollar's rate, $17.20 / $18.10 (s78); stairs up along the museum's east wall to the new exhibition, "Colores de la
@@ -1103,13 +1115,6 @@ Harbor). This edition's own part is the beach:
   Character.ts; Maple Harbor wears none (tests/characters.test.ts), and tests/es/beachwear.test.ts keeps a swimsuit under
   a sarong or a shirt and swim trunks with a top.
 - The cast (the 58 with portraits) is dressed as before.
-
-**Women's hair (18 Nov 2026).** Every woman's hair is long, in both towns (the shared builder: `docs/CHARACTERS.md`,
-`Character.ts` `LONG_HAIR`): loose, wavy, long curls or a thick braid with a ribbon, whatever her portrait shows (a
-bun or a ponytail showed nothing from the front, and a short cut read as a man's). The cast's styles are in
-`src/editions/es/content/npcs.ts` (`LOOK`: `hair.side` is the shoulder a braid lies over, `hair.tie` its ribbon);
-Nikté's braid reaches her skirt's hem (a small person's head would hide one that ends at the waist) and her flower
-sits out over the hair. The portraits and the scene pictures still show the old hair.
 
 ## World v2: street palms, ceibas, people on the meadows (14 Nov 2026)
 

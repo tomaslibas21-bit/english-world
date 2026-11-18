@@ -4,8 +4,7 @@
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
 import { NPCS, type Look } from "../src/content/npcs";
-import { Character, LONG_HAIR, hairStyle, type Mood } from "../src/game/characters/Character";
-import { LOOKS } from "../src/ui/Title";
+import { Character, type Mood } from "../src/game/characters/Character";
 import { moodOf } from "../src/game/characters/mood";
 import { walkerLook } from "../src/game/ambient";
 import { rand } from "../src/game/world/util";
@@ -27,14 +26,12 @@ const BEACH: Look[] = [
 describe("a character is one mesh", () => {
   it("every one of the cast: one skinned mesh, the same bones for everyone standing, no part left out of the skeleton", () => {
     for (const [id, def] of Object.entries(NPCS)) {
-      // (as the game builds them: a woman's figure from the cast's gender)
-      const female = def.gender === "f", c = new Character({ ...def.look, female });
+      const c = new Character(def.look);
       const s = skins(c);
       expect(s.length, id).toBe(1);
       // the body, two thighs, two shins, two upper arms, two forearms, the head, the eyes, the irises, the lids, two
-      // brows, the closed mouth, its corners, the open mouth; a skirt, a phone or something carried each add one, and
-      // so does a woman's long hair
-      const extra = (def.look.skirt ? 1 : 0) + (def.look.phone ? 1 : 0) + (def.look.carry ? 1 : 0) + (female && def.look.hair.style !== "bald" ? 1 : 0);
+      // brows, the closed mouth, its corners, the open mouth; a skirt, a phone or something carried each add one
+      const extra = (def.look.skirt ? 1 : 0) + (def.look.phone ? 1 : 0) + (def.look.carry ? 1 : 0);
       expect(s[0].skeleton.bones.length, id).toBe(18 + extra);
       const idx = s[0].geometry.getAttribute("skinIndex");
       let most = 0;
@@ -77,75 +74,10 @@ describe("a character is one mesh", () => {
     }
   });
 
-  // (5,886 on average before the women's long hair of 18 Nov 2026, 6,139 with it: 5,946 a man, 6,277 a woman)
-  it("no heavier than they were: a person of the cast is under 6,200 triangles on average", () => {
+  it("no heavier than before: a person of the cast is under 6,000 triangles on average", () => {
     let sum = 0, n = 0;
-    for (const def of Object.values(NPCS)) { const c = new Character({ ...def.look, female: def.gender === "f" }); sum += skins(c)[0].geometry.index!.count / 3; n++; c.dispose(); }
-    expect(sum / n).toBeLessThan(6200);
-  });
-});
-
-describe("a woman's hair is long", () => {
-  const women = Object.entries(NPCS).filter(([, d]) => d.gender === "f" && d.look.hair.style !== "bald");
-  it("every woman of the cast, every woman the player can be and every woman passing by names a long style", () => {
-    expect(women.length).toBeGreaterThan(25);
-    for (const [id, def] of women) expect(LONG_HAIR, id).toContain(def.look.hair.style);
-    for (const l of LOOKS) if (l.gender === "f") expect(LONG_HAIR, l.id).toContain(l.look.hair.style);
-    const r = rand(4242);
-    for (let i = 0; i < 300; i++) expect(LONG_HAIR).toContain(walkerLook(true, r).hair.style);
-  });
-
-  it("a short or tied-up style given to a woman is built as the nearest long one; a man's stays his own", () => {
-    const look = (style: Look["hair"]["style"]): Look => ({ ...NPCS.mia.look, hair: { style, color: "#5a3a25" } });
-    for (const style of ["short", "side", "buzz", "bob", "bun", "ponytail", "curly"] as const) {
-      expect(LONG_HAIR, style).toContain(hairStyle(look(style), true));
-      expect(hairStyle(look(style), false)).toBe(style);
-    }
-    expect(hairStyle(look("curly"), true)).toBe("curls");
-    expect(hairStyle(look("bald"), true)).toBe("bald");
-    for (const [id, def] of Object.entries(NPCS)) if (def.gender === "m") expect(hairStyle(def.look, false), id).toBe(def.look.hair.style);
-  });
-
-  it("the hair reaches well below the shoulders (a braid the waist), on a part that follows the body", () => {
-    /** The lowest point of the hair's own part, as a share of the person's height. */
-    const lowest = (look: Look) => {
-      const c = new Character(look) as unknown as { mane: THREE.Object3D | null; parts: { bone: THREE.Object3D; geo: THREE.BufferGeometry | null }[]; height: number; dispose(): void };
-      expect(c.mane, look.hair.style).not.toBeNull();
-      const part = c.parts.find((p) => p.bone === c.mane)!;
-      part.geo!.computeBoundingBox();
-      const y = (c.mane!.position.y + part.geo!.boundingBox!.min.y) / c.height;
-      c.dispose();
-      return y;
-    };
-    for (const style of LONG_HAIR) for (const height of [0.92, 1, 1.06]) {
-      const y = lowest({ ...NPCS.mia.look, female: true, height, hair: { style, color: "#5a3a25" } });
-      // (the shoulders are at 0.73 of the height, the waist at 0.49)
-      expect(y, `${style} ${height}`).toBeLessThan(style === "braid" ? 0.5 : 0.62);
-      expect(y, `${style} ${height}`).toBeGreaterThan(0.36);
-    }
-    // a man has no such part, whatever his hair
-    for (const style of ["long", "wavy", "curly", "short"] as const) {
-      const c = new Character({ ...NPCS.ben.look, female: false, hair: { style, color: "#5a3a25" } }) as unknown as { mane: unknown; dispose(): void };
-      expect(c.mane, style).toBeNull();
-      c.dispose();
-    }
-  });
-
-  it("stays one mesh, in a hat, with a backpack, sitting and as a far version", () => {
-    for (const style of LONG_HAIR) for (const extra of [{}, { acc: ["cap"] }, { backpack: "#1d3557" }, { skirt: true, height: 0.5 }] as Partial<Look>[]) {
-      const look: Look = { ...NPCS.chloe.look, female: true, hair: { style, color: "#1f1a17", side: -1 }, ...extra };
-      const c = new Character(look), twin = Character.far(look);
-      expect(skins(c).length).toBe(1);
-      expect(c.attachFar(twin)).toBe(true);
-      c.seatY = 0.48;
-      c.setAnim("sit");
-      for (let i = 0; i < 10; i++) c.update(1 / 30);
-      c.setAnim("walk");
-      for (let i = 0; i < 30; i++) c.update(1 / 30);
-      expect(skins(c).length).toBe(1);
-      expect(finite(c)).toBe(true);
-      c.dispose();
-    }
+    for (const def of Object.values(NPCS)) { const c = new Character(def.look); sum += skins(c)[0].geometry.index!.count / 3; n++; c.dispose(); }
+    expect(sum / n).toBeLessThan(6000);
   });
 });
 

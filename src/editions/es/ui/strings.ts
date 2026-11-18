@@ -433,6 +433,7 @@ export const STRINGS: Record<string, string> = {
   "Važiuojame…": "On our way…",
   "Išeiti į lauką": "Go outside",
   "Kalbėtis: {name}": "Talk to {name}",
+  "Pasisveikinti": "Say hello",
   "Įeiti: {place}": "Enter {place}",
 
   // The light game (src/game/LightGame.ts)
