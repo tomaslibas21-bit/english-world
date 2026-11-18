@@ -1096,7 +1096,7 @@ export class Character {
       if (!hatted) for (const sd of [-1, 1]) H(G.sphere(0.165, 10, 6).scale(1, 0.42, 0.6).rotateX(-0.5).rotateZ(-sd * 0.5).translate(sd * 0.105, 0.2, 0.14));
       if (s === "braid") {
         // drawn back to the nape, where the braid begins; a loose strand at each temple down to the jaw
-        for (const sd of [-1, 1]) H(loft([[sd * 0.236, 0.07, 0.09, 0.03, 0.03, 0.03], [sd * 0.262, -0.04, 0.078, 0.03, 0.03, 0.03], [sd * 0.26, -0.13, 0.072, 0.02, 0.02, 0.02], [sd * 0.255, -0.18, 0.068, 0.006, 0.006, 0.006]], 6));
+        for (const sd of [-1, 1]) H(loft([[sd * 0.24, 0.07, 0.07, 0.03, 0.03, 0.03], [sd * 0.266, -0.03, 0.05, 0.03, 0.028, 0.028], [sd * 0.265, -0.1, 0.045, 0.02, 0.02, 0.02], [sd * 0.262, -0.15, 0.042, 0.006, 0.006, 0.006]], 6));
       }
     } else if (s === "braid") {
       // drawn back from a middle parting to the nape, the braid itself on the body (buildBody)
