@@ -166,7 +166,7 @@ export const aluxNikte: SituationDef = {
     // the riddles
     r_platano: [t("Oro | parece, | plata | no es. | ¿Qué | es?", "Gold | it-looks like, | silver | it isn't. | What | is it?", "It looks like gold, but it isn't silver. What is it?",
       { flags: { 2: "Listen closely: the answer hides in the sound of “plata no es”." } })],
-    r_aguacate: [t("Agua | pasa | por | mi | casa, | cate | de | mi | corazón. | ¿Qué | es?", "Water | passes | through | my | house, | cate | of | my | heart. | What | is it?",
+    r_aguacate: [t("Agua | pasa | por | mi | casa, | cate | de | mi | corazón. | ¿Qué | es?", "Water | passes | through | my | house, | (wordplay: a clue, not a word) | of | my | heart. | What | is it?",
       "Water runs through my house, “cate” of my heart. What is it?", { flags: { 5: "cate: no word on its own here. It's a clue: join it to a word you've just heard." } })],
     r_pera: [t("Blanca | por dentro, | verde | por fuera. | Si | quieres | que | te lo | diga, | espera.", "White | inside, | green | outside. | If | you-want | that | it to you | I-tell, | wait.",
       "White inside, green outside. If you want me to tell you, wait.", { flags: { 9: "Listen closely to this last word: say it slowly." } })],
@@ -195,7 +195,7 @@ export const aluxNikte: SituationDef = {
     // the answer, when the learner doesn't know it (the pun explained)
     ans_platano: [t("¡Era | el | plátano! | “Plata | no es”... | ¡plátano | es!", "It-was | the | banana! | “Silver | it isn't”... | banana | it-is!",
       "It was the banana! “Plata no es”… say it fast: “plátano es”!", { flags: { 5: "The pun: “plata no es” (it isn't silver) sounds just like “plátano es” (it's a banana)." } })],
-    ans_aguacate: [t("¡Era | el | aguacate! | Agua... | cate: | ¡aguacate!", "It-was | the | avocado! | Water... | cate: | avocado!",
+    ans_aguacate: [t("¡Era | el | aguacate! | Agua... | cate: | ¡aguacate!", "It-was | the | avocado! | Water... | + cate = avocado: | avocado!",
       "It was the avocado! Agua… cate: aguacate!", { flags: { 5: "The pun: “agua” (water) + “cate” make “aguacate” (avocado)." } })],
     ans_pera: [t("¡Era | la | pera! | “Espera”... | ¡es | pera!", "It-was | the | pear! | “Wait”... | it's | pear!",
       "It was the pear! “Espera”… “es pera”: it's a pear!", { flags: { 3: "The pun: “espera” (wait) sounds just like “es pera” (it's a pear)." } })],
