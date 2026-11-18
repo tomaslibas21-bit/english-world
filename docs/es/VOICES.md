@@ -1,5 +1,11 @@
 # Puerto Colibrí's voices (Gemini)
 
+**18 Nov 2026: the surf lesson's learner lines.** The lesson (x01-surf's `sg_` lines) became a conversation: the
+learner answers aloud or by a tap, and a tapped answer is said for them. So the learner's own lines there (`sg_a_…`,
+`sg_b_…`: reach-es.ts `UNSPOKEN`, never in Nayeli's voice) are now listed in the coach voices of both genders
+(lines-es.ts step 2b), with Nayeli's three new lines: 177 clips, about $0.04 in batch
+(`prepare --only=x01 --kind=surftalk`). Not recorded yet: waiting for a key.
+
 **Spain's set (11 Nov 2026):** the owner added a third text, Spain's Spanish (docs/es/STYLE.md "Spain Spanish"),
 voiced as a third set `esp_<id>` with the same Gemini voice and manner per character and a Castilian accent direction
 (casting-es.ts `ACCENTS.spain`); the samples first (`sample --accent=spain`, then `judge`), then the set after the

@@ -167,9 +167,11 @@ function maxOneItem(sit: SituationDef): number {
   return price + milk + 1000 + 1500;
 }
 
-/** Lines a conversation holds only to show them, never to play them: no clip. x01-surf's surf game
- *  (src/editions/es/content/surf-lines.ts, src/game/surf/): sg_a_… are the learner's own answers, sg_b_… the boards'
- *  names on its buttons; Nayeli's commands (every other sg_ line) are played by key and are voiced. */
+/** Lines a conversation holds that its people never say: the learner's own. x01-surf's surf lesson
+ *  (src/editions/es/content/surf-lines.ts, src/game/surf/): sg_a_… are the learner's answers and sg_b_… the boards
+ *  they ask for; Nayeli's lines (every other sg_ line) are played by key and are voiced in her voice. Since 18 Nov
+ *  2026 the learner's lines are said for them when they answer by a tap: lines-es.ts lists them in the coach voices
+ *  (the learner's example voice), never in hers. */
 export const UNSPOKEN: Record<string, RegExp> = { "x01-surf": /^sg_[ab]_/ };
 export const unspoken = (sit: string, lineId: string) => !!UNSPOKEN[sit]?.test(lineId);
 

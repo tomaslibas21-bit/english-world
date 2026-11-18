@@ -276,6 +276,17 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
           }
         }
       }
+      // 2b. the learner's own lines in a part of the conversation played by key (reach-es.ts UNSPOKEN: the surf
+      // lesson's answers): said for the learner when they answer by a tap (src/game/surf/play.ts answer), in the
+      // coach voice of their gender, as said to the people here
+      for (const [lid, variants] of Object.entries(sit.lines)) {
+        if (!unspoken(sit.id, lid)) continue;
+        variants.forEach((src, i) => {
+          for (const n of people) for (const learner of GENDERS) {
+            try { add(coachVoice(learner), 1, compose(src, {}, { look, addressee: n.gender, speaker: learner, formal: !addressInformal(n) }), `${sit.id}:${lid}[${i}]`, sit.id, "hint", true); } catch { /* skip */ }
+          }
+        });
+      }
       // 3. "Perdón, ¿un latte?" (convo/soundalike.ts) for every name a learner can say, in this conversation's voices
       const checks = GLOBAL.lines.g_soundcheck ?? [];
       for (const list of Object.values(sit.entities || {})) for (const e of list) {

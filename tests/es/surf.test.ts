@@ -3,7 +3,7 @@
 // tests/browser/surf.mjs. Runs in the vitest project "es".
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { CFG, CUES } from "../../src/game/surf/logic";
+import { ANSWERS, CFG, CUES } from "../../src/game/surf/logic";
 import { SURF_SPOT } from "../../src/game/world/surf";
 import { SURF } from "../../src/content/surf";
 import { SURF_PICTURES } from "../../src/editions/es/content/surf";
@@ -110,6 +110,24 @@ describe("La Ola, the surf school", () => {
     setVariety("default");
     expect(say("board_take_long")).toMatch(/Agarra/);
     expect(say("a_late")).toMatch(/Me levanté/);
+  });
+
+  it("the learner's own lines: a word or three, theirs in gender, Spain's in Spain's way", () => {
+    const sit = SITUATION_BY_ID[SURF!.situation];
+    const mine = (cue: string, me: "m" | "f", v: "default" | "neutral" | "spain" = "default") => {
+      setVariety(v);
+      try { return compose(sit.lines["sg_" + cue][0], {}, { look: () => undefined, addressee: "f", speaker: me, formal: false }); } finally { setVariety("default"); }
+    };
+    expect(mine("a_ready", "m").say).toBe("¡Listo!");
+    expect(mine("a_ready", "f").say).toBe("¡Lista!");
+    expect(mine("a_ok", "f").say).toBe("Está bien.");
+    expect(mine("a_ok", "f", "spain").say).toBe("Vale.");
+    expect(mine("a_water", "m", "spain").say).toMatch(/He tragado/);
+    expect(mine("a_now", "f").say).toBe("¿Ahora?");
+    // what keeps the talk going is short enough to say without reading twice
+    for (const a of ANSWERS) if (!/^a_(late|early|nopaddle|back|knees|feet|lean|side|trick|enough)$/.test(a)) {
+      for (const v of ["default", "neutral", "spain"] as const) expect(mine(a, "f", v).units.length, a).toBeLessThanOrEqual(3);
+    }
   });
 
   it("a yes to “¿Probamos una ola?” hands over to the lesson, at a level the engine knows", () => {
