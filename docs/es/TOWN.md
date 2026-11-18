@@ -1104,6 +1104,13 @@ Harbor). This edition's own part is the beach:
   a sarong or a shirt and swim trunks with a top.
 - The cast (the 58 with portraits) is dressed as before.
 
+**Women's hair (18 Nov 2026).** Every woman's hair is long, in both towns (the shared builder: `docs/CHARACTERS.md`,
+`Character.ts` `LONG_HAIR`): loose, wavy, long curls or a thick braid with a ribbon, whatever her portrait shows (a
+bun or a ponytail showed nothing from the front, and a short cut read as a man's). The cast's styles are in
+`src/editions/es/content/npcs.ts` (`LOOK`: `hair.side` is the shoulder a braid lies over, `hair.tie` its ribbon);
+Nikté's braid reaches her skirt's hem (a small person's head would hide one that ends at the waist) and her flower
+sits out over the hair. The portraits and the scene pictures still show the old hair.
+
 ## World v2: street palms, ceibas, people on the meadows (14 Nov 2026)
 
 With main's world-v2 (docs/WALKING.md: the sloping beach with foam along the waterline, wading, jumping onto low
