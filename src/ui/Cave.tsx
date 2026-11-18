@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { useStore } from "../state/store";
 import { game } from "../game/gameRef";
 import { Icon } from "./icons";
+import { Interlinear } from "./Interlinear";
 import { L, TL } from "./i18n";
 import { EDITION } from "../edition";
 
@@ -37,6 +38,7 @@ export function CaveCard() {
 export function GlyphCard() {
   const g = useStore((s) => s.hud.glyph);
   const lt = useStore((s) => s.settings.lt);
+  const ipa = useStore((s) => s.settings.ipa);
   const cave = game?.cave;
   useEffect(() => {
     if (!g) return;
@@ -62,10 +64,9 @@ export function GlyphCard() {
         <div className="glyph-say">
           <button className="glyph-play" onClick={() => cave.say()} title={L("Klausyti dar kartą")} aria-label={L("Klausyti dar kartą")}><Icon name="speaker" size={26} /></button>
           {g.shown
-            ? <div className="glyph-text" lang={TL}>{g.solved && lt && g.gloss && glossOk(g.text, g.gloss)
-              // (lit: the words with their meanings under them, as in the conversations)
-              ? <span className="glyph-words">{g.text.split(/\s+/).map((w, i) => <span key={i} className="glyph-w"><b>{w}</b><i lang={EDITION.helper}>{g.gloss!.split(" | ")[i]}</i></span>)}</span>
-              : g.text}{g.solved && lt && <small lang={EDITION.helper}>{g.lt}</small>}</div>
+            // (a stone's own line, once lit: the words with their sounds and meanings, as in the conversations)
+            ? g.solved && g.s ? <div className="glyph-text glyph-line" lang={TL}><Interlinear s={g.s} lt={lt} ipa={ipa} nat={lt} /></div>
+              : <div className="glyph-text" lang={TL}>{g.text}{g.solved && lt && <small lang={EDITION.helper}>{g.lt}</small>}</div>
             : <button className="glyph-show" onClick={() => cave.showWords()}><span aria-hidden>· · ·</span> {L("Rodyti žodžius")}</button>}
         </div>
         {!g.solved && (
@@ -95,5 +96,3 @@ export function GlyphCard() {
   );
 }
 
-/** A gloss with one unit per word of the line. */
-const glossOk = (text: string, gloss: string) => text.split(/\s+/).length === gloss.split(" | ").length;

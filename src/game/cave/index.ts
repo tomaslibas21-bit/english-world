@@ -9,6 +9,9 @@ import * as P from "./plan";
 import { groundsGlow, ways, type Way } from "./grounds";
 
 export const CAVE_ZONE = "gruta";
+/** The great tree's conversation (x04) and where the tree stands in the grotto (Game: its prompt, its camera). */
+export const CAVE_TREE = P.TREE_SIT;
+export const CAVE_TREE_AT = P.TREES[1];
 export type CaveZone = Interior & { view: CaveView };
 let cave: CaveZone | null = null;
 

@@ -8,6 +8,7 @@
 // The zone has its own coordinates (m): the way in at about (0, 2), the water one came through behind it, the chambers on towards −z (ahead of someone coming in),
 // +x to the right.
 
+import type { Sentence } from "../../convo/compose";
 export interface Stone { id: string; x: number; z: number; /** Its glyph faces this way (radians, 0: +z). */ rot: number }
 export interface Chamber {
   id: string; n: number;
@@ -190,6 +191,9 @@ export function walkable(x: number, z: number, r = 0.38) {
 
 /** What the learner has done down here (saved with their progress). */
 export interface CaveSave { lit: string[]; passed: string[]; /** Seen the way in's first message; found the heart. */ seen?: boolean; heart?: boolean;
+  /** Heard the tree out (x04: its "tree-heard"). The stones' lines understood in this round (their ids), and how many
+   *  rounds are behind (every line heard once: the stones start again). */
+  tree?: boolean; heard?: string[]; rounds?: number;
   /** (Until 16 Nov 2026: how many chambers the town's conversations had opened when last told. Kept in old saves,
    *  read by nothing.) */ told?: number }
 export const emptyCave = (): CaveSave => ({ lit: [], passed: [] });
@@ -230,8 +234,31 @@ export function nextStep(chamber: number, save: CaveSave, all = false):
 // ------------------------------------------------------------------------------------------------- the stones' phrases
 
 /** `en`: what is said (Spanish here: the field keeps the town's phrasebook's name); `lt`: its meaning in the learner's
- *  language; `gloss`: word by word (the stones' own lines, stones.ts). */
-export interface Phrase { en: string; lt: string; gloss?: string }
+ *  language. A stone's own line (x04-yaxche's hint groups, content/stones.ts) also has its `id` there, the chamber
+ *  it belongs to and the whole sentence `s` (its units, glosses and notes, for the card once the stone is lit). */
+export interface Phrase { en: string; lt: string; id?: string; chamber?: number; s?: Sentence }
+
+/** The stone's first line: the nth stone of a chamber says the nth line of that chamber's group ("agua-2" → "agua_02"). */
+export const firstLine = (stoneId: string) => stoneId.replace(/-(\d+)$/, (_, n: string) => "_" + n.padStart(2, "0"));
+/** The hint group of a chamber's stones in the tree's conversation (content/stones.ts stoneGroup). */
+export const stoneGroup = (chamberId: string) => "p_" + chamberId;
+/** The conversation that holds the tree's talk and the stones' lines. */
+export const TREE_SIT = "x04-yaxche";
+
+/** Once the heart is found the stones speak again, whenever the learner comes back: which line a stone of `chamber`
+ *  says next. One of its own chamber's lines not heard yet in this round; if there is none, another chamber's not heard
+ *  yet; and when every line has been heard, the round starts again (any of its own). Never a line another stone is
+ *  saying now (`taken`). `byChamber`: the lines that can be said (those with a recording), by chamber. */
+export function nextLine(byChamber: string[][], chamber: number, heard: readonly string[], taken: readonly string[], rnd: () => number): string | null {
+  const free = (ids: string[]) => ids.filter((id) => !taken.includes(id));
+  const fresh = (ids: string[]) => free(ids).filter((id) => !heard.includes(id));
+  const own = byChamber[chamber] ?? [];
+  const pools = [fresh(own), fresh(byChamber.flat()), free(own), free(byChamber.flat())];
+  const pool = pools.find((q) => q.length);
+  return pool ? pool[Math.floor(rnd() * pool.length) % pool.length] : null;
+}
+/** Has every line been heard (the round is over)? */
+export const allHeard = (byChamber: string[][], heard: readonly string[]) => { const all = byChamber.flat(); return all.length > 0 && all.every((id) => heard.includes(id)); };
 
 /** The phrases the stones speak: the learner's own (their phrasebook, the ones said last and most first), then the
  *  greetings everyone starts with, each once, only those that have a recording (`has`), and none too long to say back.

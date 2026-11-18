@@ -54,7 +54,7 @@ import { roleSaid } from "../convo/compose";
 import { EDITION } from "../edition";
 import type { GameApi } from "./gameRef";
 import { THEME } from "./world/theme";
-import { getCave, caveWays, caveLure, CAVE_ZONE } from "./cave";
+import { getCave, caveWays, caveLure, CAVE_ZONE, CAVE_TREE, CAVE_TREE_AT } from "./cave";
 import { CaveQuest } from "./cave/quest";
 import { ROUTE } from "../content/route";
 export type { GameApi } from "./gameRef";
@@ -199,7 +199,7 @@ export class Game implements GameApi {
   private hudBoxCache: TagBox[] = [];
   private hudCheck = 0;
   private tagLayer: HTMLDivElement;
-  private nearest: { kind: "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "glyph" | "surf"; id: string; label: string } | null = null;
+  private nearest: { kind: "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "glyph" | "tree" | "surf"; id: string; label: string } | null = null;
   /** Puerto Colibrí's grotto (src/game/cave): its listening quest while the player is down there; what shows of it
    *  from the cenote; how long the player has swum at its mouth (swimming on in goes in). */
   cave: CaveQuest | null = null;
@@ -595,7 +595,7 @@ export class Game implements GameApi {
       if (wild?.camera && !this.townCam) { this.townCam = { pitch: this.rig.pitch, dist: this.rig.dist }; this.rig.pitch = wild.camera.pitch; this.rig.dist = wild.camera.dist; }
       else if (!wild && this.townCam) { this.rig.pitch = this.townCam.pitch; this.rig.dist = this.townCam.dist; this.townCam = null; }
       this.guidance.group.visible = !wild;
-      if (id === CAVE_ZONE) { const c = getCave(id); if (c) this.cave = new CaveQuest(c.view); }
+      if (id === CAVE_ZONE) { const c = getCave(id); if (c) this.cave = new CaveQuest(c.view, { tree: () => this.talkToTree() }); }
       this.rig.target.copy(this.player.root.position);
       this.rig.snap();
       if (via) this.rig.arrive();
@@ -1062,6 +1062,7 @@ export class Game implements GameApi {
     else if (n.kind === "npc") this.talkTo(n.id);
     else if (n.kind === "staff") this.staffSays(+n.id);
     else if (n.kind === "glyph") this.cave?.open(n.id);
+    else if (n.kind === "tree") this.talkToTree();
     else if (n.kind === "door") this.enterDoor(n.id);
     else if (n.kind === "exit") this.exitInterior(this.wild ? n.id : undefined);
   }
@@ -1208,6 +1209,41 @@ export class Game implements GameApi {
     if (!sit) return;
     useStore.getState().setHud({ panel: null });
     whenLoaded(sitId, (def) => this.startSession(def, null), () => !this.session?.active);
+  }
+
+  /** The grotto's great tree speaks (x04-yaxche; cave/quest.ts says when: the heart found, the learner on its
+   *  island). Nobody stands for the tree: its conversation has no figure, and the camera is put on the tree itself. */
+  private talkToTree() {
+    if (this.session?.active || this.transitioning || !this.cave || !this.wild || useStore.getState().hud.glyph) return;
+    whenLoaded(CAVE_TREE, (def) => { this.startSession(def, null); this.aimTree(); }, () => !this.session?.active && !!this.cave && !this.transitioning);
+  }
+
+  /** The camera for the tree's conversation: from behind the learner and to one side, out over the lake, looking up
+   *  the trunk into the low boughs and their flowers; only from where the grotto's own space is open (as fitTalkWild).
+   *  The learner turns to the tree. */
+  private aimTree() {
+    const wild = this.wild;
+    if (!wild) return;
+    const t = CAVE_TREE_AT, p = this.player.root.position;
+    const dir = new THREE.Vector3(t.x - p.x, 0, t.z - p.z);
+    if (dir.lengthSq() < 0.01) dir.set(0, 0, -1);
+    dir.normalize();
+    this.heading = Math.atan2(dir.x, dir.z);
+    this.player.setAnim("idle");
+    const side = new THREE.Vector3(dir.z, 0, -dir.x), look = new THREE.Vector3(t.x, 3.3, t.z), head = new THREE.Vector3(p.x, p.y + 1.5, p.z);
+    const upright = this.container.clientWidth <= 900 && this.container.clientHeight > this.container.clientWidth;
+    let best: THREE.Vector3 | null = null;
+    // (the side the camera is on now first: the short way round)
+    const now = Math.sign((this.rig.cam.position.x - p.x) * side.x + (this.rig.cam.position.z - p.z) * side.z) || 1;
+    search: for (const back of upright ? [9.5, 8, 6.5, 5] : [7.5, 6.5, 5.5, 4.5]) for (const s of [now, -now]) for (const off of upright ? [1.3, 0.8] : [2.6, 1.8, 1.1]) {
+      const pos = new THREE.Vector3(p.x, 0, p.z).addScaledVector(dir, -back).addScaledVector(side, s * off).setY(p.y + 2.3 + back * 0.08);
+      if (wild.space.inside(pos) || wild.space.free(pos, head) < 0.999 || wild.space.free(pos, look) < 0.6) continue;
+      best = pos;
+      break search;
+    }
+    this.rig.talk = { pos: best ?? new THREE.Vector3(p.x, p.y + 2.4, p.z).addScaledVector(dir, -3.2), look };
+    this.talkHome = this.talkNear = null;
+    this.rig.mode = "talk";
   }
 
   private startSession(sit: SituationDef, actor: NpcActor | null) {
@@ -1558,6 +1594,8 @@ export class Game implements GameApi {
     if (name === "board") this.pendingRide = { to: "airport", by: "plane" };
     // (an alux of the grotto lets the learner pass: their gate opens, src/game/cave)
     if (name === "alux-pass" && data?.gate) this.cave?.pass(data.gate);
+    // (the grotto's great tree has said what it had to say: the stones speak again)
+    if (name === "tree-heard") this.cave?.treeHeard();
     // "¿Probamos una ola?": the surf lesson starts as the conversation ends
     if (name === "surf" && this.surf) this.pendingSurf = data?.level === "advanced" ? "advanced" : "beginner";
     const st = useStore.getState();
@@ -2514,6 +2552,8 @@ export class Game implements GameApi {
         // a glyph stone that still waits, within reach
         const stone = this.cave?.near(p);
         if (stone && !best) { bd = 1; best = { kind: "glyph", id: stone.id, label: L("akmuo") }; }
+        // the great tree, once the heart is found: it speaks to whoever stands on its island
+        else if (!best && this.cave?.treeNear(p)) { bd = 1; best = { kind: "tree", id: "yaxche", label: NPCS.yaxche?.name ?? "Yaxché" }; }
         const ex = this.zone.interior.exit;
         const d = Math.hypot(ex.x - p.x, ex.z - p.z);
         if (!this.wild && d < 1.8 && d < bd) { bd = d; best = { kind: "exit", id: "exit", label: L("Išeiti") }; }
@@ -2531,6 +2571,7 @@ export class Game implements GameApi {
         : best.kind === "out" ? { label: L("Išlipti"), kind: "out" }
         : best.kind === "climb" ? { label: best.label, kind: "climb" }
         : best.kind === "glyph" ? { label: L("Klausytis: kalbantis akmuo"), kind: "listen" }
+        : best.kind === "tree" ? { label: L("Kalbėtis: {name}", { name: best.label }), lt: NPCS.yaxche?.role.lt, kind: "talk" }
         : best.kind === "exit" && this.wild ? { label: best.id === "grieta" ? L("Išlįsti pro plyšį") : L("Grįžti į cenotę"), kind: "exit" }
         : best.kind === "door" && this.nearWay === "ojo" ? { label: L("Šokti žemyn: {place}", { place: best.label }), lt: placeLt(best.id), kind: "enter" }
         : best.kind === "surf" ? { label: best.label, lt: this.surf?.npc?.name, kind: "surf" }

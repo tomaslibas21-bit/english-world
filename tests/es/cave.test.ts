@@ -175,6 +175,8 @@ describe("the aluxes' conversations are off the route", () => {
     const bonus = SITUATIONS.filter((s) => s.bonus);
     const aluxes = P.ALUXES.map((a) => SITUATIONS.find((s) => s.npc === a.npc)!);
     for (const a of aluxes) expect(a?.bonus, a?.id).toBe(true);
+    // (and the tree's: x04, which also holds the stones' lines)
+    expect(SITUATION_BY_ID[P.TREE_SIT]?.bonus, P.TREE_SIT).toBe(true);
     expect(ROUTE).toHaveLength(SITUATIONS.length - bonus.length);
     expect(ROUTE.some((q) => q.bonus)).toBe(false);
     for (const s of bonus) {
@@ -282,35 +284,110 @@ describe("the cenote's grounds", () => {
   });
 });
 
-describe("the stones' own lines (stones.ts)", () => {
-  it("every stone has a line about the grotto, short enough to say back, its meaning in English and Lithuanian, glossed word by word", async () => {
-    const { STONE_LINES, STONE_LINE } = await import("@/game/cave/stones");
-    const stones = P.CHAMBERS.flatMap((c) => c.stones.map((s) => s.id));
-    expect(STONE_LINES.map((l) => l.stone).sort()).toEqual([...stones].sort());
-    expect(new Set(STONE_LINES.map((l) => l.es)).size).toBe(STONE_LINES.length);
-    for (const l of STONE_LINES) {
-      const words = l.es.split(/\s+/);
-      expect(words.length, l.es).toBeLessThanOrEqual(9);
-      expect(l.es.length, l.es).toBeLessThanOrEqual(60);
-      expect(l.es, l.es).not.toMatch(/[{}|]/);
-      expect(l.enGloss.split(" | "), l.es).toHaveLength(words.length);
-      expect(l.ltGloss.split(" | "), l.es).toHaveLength(words.length);
-      expect(l.en.trim() && l.lt.trim()).toBeTruthy();
-      // none of the town's café talk: the place's own words
-      expect(l.es.toLowerCase()).not.toMatch(/\b(latte|café|cafe|la cuenta|precio|pesos)\b/);
-    }
-    // the meanings differ, so the three to choose from never repeat
-    expect(new Set(STONE_LINES.map((l) => l.en)).size).toBe(STONE_LINES.length);
-    expect(new Set(STONE_LINES.map((l) => l.lt)).size).toBe(STONE_LINES.length);
-    expect(STONE_LINE.get("agua-1")?.es).toBe("El agua guarda la memoria.");
+describe("the stones' own lines (x04-yaxche's hint groups: content/stones.ts)", () => {
+  const groups = async () => SITUATION_BY_ID[P.TREE_SIT].hints;
+  const words = (src: { en: string }) => src.en.split(" | ");
+
+  it("every chamber's stones have 43 lines: the three first ones and forty more; 215 in all, none twice", async () => {
+    const h = await groups();
+    const all = P.CHAMBERS.flatMap((c) => h[P.stoneGroup(c.id)].items);
+    for (const c of P.CHAMBERS) expect(h[P.stoneGroup(c.id)].items, c.id).toHaveLength(43);
+    expect(all).toHaveLength(215);
+    expect(new Set(all.map((it) => it.id)).size).toBe(215);
+    expect(new Set(all.map((it) => it.s.en)).size).toBe(215);
+    // the meanings differ too, so the three to choose from never repeat
+    expect(new Set(all.map((it) => it.s.nat)).size).toBe(215);
   });
 
-  it("the meanings offered at a stone are its own and two other stones'", async () => {
-    const { STONE_LINES } = await import("@/game/cave/stones");
-    const all = STONE_LINES.map((l) => ({ en: l.es, lt: l.en }));
+  it("each is short enough to say back, one Spanish word to a unit, glossed word by word; none of the town's errands", async () => {
+    const h = await groups();
+    for (const c of P.CHAMBERS) for (const it of h[P.stoneGroup(c.id)].items) {
+      const es = words(it.s), text = es.join(" ");
+      expect(es.length, text).toBeLessThanOrEqual(9);
+      expect(text.length, text).toBeLessThanOrEqual(60);
+      expect(es.every((w) => !w.includes(" ")), text).toBe(true);
+      expect(it.s.lt.split(" | "), text).toHaveLength(es.length);
+      expect(text, text).not.toMatch(/[{}|]/);
+      expect(text.toLowerCase()).not.toMatch(/\b(latte|café|cafe|la cuenta|precio|pesos|tlatoani)\b/);
+      expect(it.id).toMatch(new RegExp(`^${c.id}_\\d\\d$`));
+    }
+  });
+
+  it("each stone's first line is its chamber's own: the lines that lit the way the first time", async () => {
+    const h = await groups();
+    const line = (stone: string) => P.CHAMBERS.flatMap((c) => h[P.stoneGroup(c.id)].items).find((it) => it.id === P.firstLine(stone))?.s.en.split(" | ").join(" ");
+    expect(P.firstLine("agua-1")).toBe("agua_01");
+    expect(line("agua-1")).toBe("El agua guarda la memoria.");
+    expect(line("raices-2")).toBe("Sigue la luz de las luciérnagas.");
+    expect(line("corazon-3")).toBe("El árbol sagrado sostiene el mundo.");
+    for (const c of P.CHAMBERS) for (const q of c.stones) expect(line(q.id), q.id).toBeTruthy();
+  });
+
+  it("the meanings offered at a stone are its own and two other lines'", async () => {
+    const h = await groups();
+    const all = P.CHAMBERS.flatMap((c) => h[P.stoneGroup(c.id)].items).map((it) => ({ en: it.s.en, lt: it.s.nat }));
     const { options, answer } = P.meaningChoices(all[0], all.slice(1), () => 0.3);
     expect(options).toHaveLength(3);
     expect(options[answer]).toBe(all[0].lt);
     expect(options.every((o) => all.some((p) => p.lt === o))).toBe(true);
+  });
+});
+
+describe("the stones speak again once the heart is found (plan.ts nextLine)", () => {
+  const by = [["a1", "a2", "a3", "a4"], ["b1", "b2"], ["c1"]];
+  const rnd = (seed = 7) => { let x = seed; return () => ((x = (x * 16807) % 2147483647) / 2147483647); };
+
+  it("a stone says a line of its own chamber that was not heard yet, and never one another stone is saying", () => {
+    for (let k = 0; k < 40; k++) {
+      const id = P.nextLine(by, 0, ["a1"], ["a2"], rnd(k + 1));
+      expect(["a3", "a4"]).toContain(id);
+    }
+  });
+
+  it("its own chamber's lines all heard: another chamber's that was not", () => {
+    for (let k = 0; k < 20; k++) expect(["b2", "c1"]).toContain(P.nextLine(by, 0, ["a1", "a2", "a3", "a4", "b1"], [], rnd(k + 1)));
+  });
+
+  it("every line is heard once before any comes again; then the round starts over", () => {
+    const heard: string[] = [], r = rnd(3), all = by.flat();
+    // three stones, one in each chamber, answered in turn
+    for (let n = 0; n < all.length; n++) {
+      const id = P.nextLine(by, n % 3, heard, [], r)!;
+      expect(heard).not.toContain(id);
+      heard.push(id);
+    }
+    expect([...heard].sort()).toEqual([...all].sort());
+    expect(P.allHeard(by, heard)).toBe(true);
+    // (the game empties the list then: the next round)
+    expect(by[1]).toContain(P.nextLine(by, 1, [], [], r));
+    expect(P.allHeard(by, ["a1"])).toBe(false);
+    expect(P.allHeard([[], []], [])).toBe(false);
+  });
+
+  it("nothing to say: no line (no recordings yet), and with every line taken, none", () => {
+    expect(P.nextLine([[], [], []], 0, [], [], rnd())).toBeNull();
+    expect(P.nextLine([["a1"]], 0, [], ["a1"], rnd())).toBeNull();
+  });
+
+  it("the whole of the stones' lines, three stones to a chamber: all 215 heard in 215 answers, none twice", () => {
+    const h = SITUATION_BY_ID[P.TREE_SIT].hints;
+    const lines = P.CHAMBERS.map((c) => h[P.stoneGroup(c.id)].items.map((it) => it.id));
+    const heard: string[] = [], r = rnd(11);
+    const on = new Map<string, string>();
+    const stones = P.CHAMBERS.flatMap((c, ci) => c.stones.map((q) => ({ id: q.id, ci })));
+    for (const q of stones) on.set(q.id, P.nextLine(lines, q.ci, heard, [...on.values()], r)!);
+    expect(new Set(on.values()).size).toBe(15);
+    // a stone is answered (any of those whose line is still to be heard), and takes its next line
+    while (heard.length < 215) {
+      const waiting = stones.filter((q) => !heard.includes(on.get(q.id)!));
+      expect(waiting.length, `after ${heard.length}`).toBeGreaterThan(0);
+      const q = waiting[Math.floor(r() * waiting.length)];
+      heard.push(on.get(q.id)!);
+      on.delete(q.id);
+      on.set(q.id, P.nextLine(lines, q.ci, heard, [...on.values()], r)!);
+      expect(on.get(q.id)).toBeTruthy();
+    }
+    expect(new Set(heard).size).toBe(215);
+    expect(P.allHeard(lines, heard)).toBe(true);
   });
 });

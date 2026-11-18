@@ -2,8 +2,12 @@
 // stones call out, one at a time, a phrase the learner already knows, heard from where the stone stands (louder as one
 // gets near, to the left or the right as it lies); at a stone, the learner picks what the phrase means or says it back,
 // and the glyph lights; a chamber's three lit stones open the gate
-// to the next. Each stone says a line of its own about the grotto (stones.ts), in the learner's coach voice; one
-// whose clip is not there yet says one of the learner's own phrases instead, as before (16 Nov 2026).
+// to the next. Each stone says a line of its own about the grotto (x04-yaxche's hint groups: content/stones.ts), in the
+// learner's coach voice; one whose clip is not there yet says one of the learner's own phrases instead.
+// Once the heart is found (18 Nov 2026): the great tree speaks when the learner walks up to it (x04, started by Game
+// through `hooks.tree`), and from then on the stones speak again whenever the learner comes back: every stone a line
+// not heard yet, re-armed a while after it is understood, until all have been heard; then round again (plan.ts
+// nextLine). The first time through nothing changes.
 import type * as THREE from "three";
 import { audio } from "../audio";
 import { useStore } from "../../state/store";
@@ -16,14 +20,15 @@ import { rand } from "../world/util";
 import { L } from "../../ui/i18n";
 import type { CaveView } from "./Cave";
 import * as P from "./plan";
-import { STONE_LINE } from "./stones";
-import { EDITION } from "../../edition";
+import type { Sentence } from "../../convo/compose";
+import { loadSituation } from "../../content/situations/catalog";
 
 /** What the learner sees at a stone (store hud.glyph; src/ui/Cave.tsx). */
 export interface GlyphQuiz {
   id: string;
-  /** What the stone says and what it means; word by word, units split by " | " (the stones' own lines). */
-  text: string; lt: string; gloss?: string;
+  /** What the stone says and what it means; the whole sentence (a stone's own line: its glosses and IPA, shown once
+   *  the stone is lit). */
+  text: string; lt: string; s?: Sentence;
   options: string[]; answer: number;
   /** The meanings already tried and wrong; the words shown (after a miss, or asked for); solved. */
   wrong: number[]; shown: boolean; solved: boolean;
@@ -32,6 +37,11 @@ export interface GlyphQuiz {
 }
 /** The little card that stands in for the map down here (store hud.cave). */
 export interface CaveCard { n: number; of: number; name: string; lt: string; lit: number; stones: number; next: string; open: number }
+
+/** How long a stone rests after it is understood, once the stones speak again (s). */
+const REARM = 40;
+/** From how near the tree is spoken with (m from its middle: on its island), and where the first time starts by itself. */
+const TREE_REACH = 4.7, TREE_AUTO = 3.6;
 
 /** Everything open, whatever has been done in the town (to look round: `?gruta=all` in the page's address). */
 const SEE_ALL = (() => { try { return /[?&#]gruta=all\b/.test(location.search + location.hash); } catch { return false; } })();
@@ -61,14 +71,25 @@ export class CaveQuest {
   private alive = true;
   /** Where the listener is, for the stone speaking now. */
   private ear = { x: 0, z: 0, yaw: 0 };
+  /** The stones' own lines (x04's hint groups), by id, once its file is in. */
+  private pool = new Map<string, P.Phrase>();
+  /** The stones speak again (the heart was found before this visit, or the tree has just been heard): which are lit
+   *  now, and when each lit one wakes with its next line (s). */
+  private replay = false;
+  private relit = new Set<string>();
+  private rearm = new Map<string, number>();
+  private treeAsked = false;
+  private petalT = 0;
 
-  constructor(private view: CaveView) {
+  constructor(private view: CaveView, private hooks: { tree?: () => void } = {}) {
     const st = useStore.getState(), s = save();
     this.voice = coachVoice(st.progress.profile?.gender);
+    this.replay = !!s.heart;
     for (const g of P.GATES) view.setGate(g.id, P.gateState(g, s, SEE_ALL).open, true);
-    for (const c of P.CHAMBERS) for (const q of c.stones) view.setStone(q.id, s.lit.includes(q.id));
+    for (const c of P.CHAMBERS) for (const q of c.stones) view.setStone(q.id, this.isLit(q.id, s));
     view.setHeart(!!s.heart, true);
     void audio.init().then(() => { if (this.alive) this.assign(); });
+    void this.loadLines();
     this.card(0);
     if (!s.seen) {
       useStore.getState().updateProgress((p) => { p.cave = { ...(p.cave ?? P.emptyCave()), seen: true }; });
@@ -76,28 +97,87 @@ export class CaveQuest {
     }
   }
 
-  /** The stones' phrases: each stone its own line about the grotto (stones.ts), its meaning in the learner's language.
-   *  A stone whose line has no recording yet (the clips not uploaded) says one of the learner's own phrases, the newest
-   *  first, then the greetings, as before: a stone never stands silent. */
+  /** Lit, as the learner sees it: saved for good the first time through; for this visit once the stones speak again. */
+  private isLit(id: string, s = save()) { return this.replay ? this.relit.has(id) : s.lit.includes(id); }
+
+  /** The stones' own lines: x04-yaxche's file (a chunk of its own), each line with its meaning in the learner's
+   *  language (the layer's table comes with the file). */
+  private async loadLines() {
+    const def = await loadSituation(P.TREE_SIT).catch(() => null);
+    if (!def || !this.alive) return;
+    P.CHAMBERS.forEach((c, ci) => {
+      for (const it of def.hints[P.stoneGroup(c.id)]?.items ?? []) {
+        try { const sent = compose(it.s, {}, { look: () => undefined, formal: false }); this.pool.set(it.id, { id: it.id, chamber: ci, en: sent.en, lt: sent.nat, s: sent }); } catch { /* never: the lines take nothing in */ }
+      }
+    });
+    this.assign();
+  }
+
+  /** The lines that can be said now (those with a recording), by chamber. */
+  private sayable(): string[][] {
+    const ready = audio.ready, has = (en: string) => !ready || audio.hasClip(this.voice, 1, en);
+    const out: string[][] = P.CHAMBERS.map(() => []);
+    for (const p of this.pool.values()) if (has(p.en)) out[p.chamber!].push(p.id!);
+    return out;
+  }
+
+  /** The stones' phrases. The first time through: each stone its own first line (plan.ts firstLine). Once the stones
+   *  speak again: each a line not heard yet (plan.ts nextLine). A stone whose line has no recording (the clips not
+   *  uploaded, the file not in yet) says one of the learner's own phrases, the newest first, then the greetings, as the
+   *  stones did at first: a stone never stands silent. */
   private assign() {
     const st = useStore.getState(), ready = audio.ready;
     const has = (en: string) => !ready || audio.hasClip(this.voice, 1, en);
-    const stones = P.CHAMBERS.flatMap((c) => c.stones);
-    const lt = EDITION.helper === "lt";
-    const own = (id: string): P.Phrase | null => {
-      const l = STONE_LINE.get(id);
-      return l && has(l.es) ? { en: l.es, lt: lt ? l.lt : l.en, gloss: lt ? l.ltGloss : l.enGloss } : null;
+    const stones = P.CHAMBERS.flatMap((c, ci) => c.stones.map((q) => ({ q, ci })));
+    const lines = this.sayable(), heard = save().heard ?? [], taken: string[] = [];
+    const own = (q: P.Stone, ci: number): P.Phrase | null => {
+      // (a lit stone keeps the line it was lit with; one that waits keeps the line it has been calling)
+      const had = this.phrases.get(q.id);
+      if (had?.id && lines[had.chamber!]?.includes(had.id) && !taken.includes(had.id) && (this.replay || had.id === P.firstLine(q.id))) return had;
+      const id = this.replay ? P.nextLine(lines, ci, heard, taken, Math.random) : P.firstLine(q.id);
+      const p = id ? this.pool.get(id) : undefined;
+      return p && has(p.en) ? p : null;
     };
-    const missing = stones.filter((s) => !own(s.id)).length;
-    const spare = missing ? P.pickPhrases(Object.values(st.progress.phrases), starters(), missing + 6, has) : [];
+    const picked = stones.map(({ q, ci }) => { const p = own(q, ci); if (p?.id) taken.push(p.id); return p; });
+    const missing = picked.filter((p) => !p).length;
+    const spare = missing ? P.pickPhrases(Object.values(st.progress.phrases).filter((v) => v.sitId !== P.TREE_SIT), starters(), missing + 6, has) : [];
     this.phrases.clear();
     let k = 0;
-    for (const s of stones) {
-      const p = own(s.id) ?? (spare.length ? spare[k++ % spare.length] : null);
-      if (p) this.phrases.set(s.id, p);
-    }
-    // (the meanings to choose from: the other stones')
-    this.all = [...new Map([...this.phrases.values()].map((p) => [p.en, p])).values()];
+    stones.forEach(({ q }, i) => { const p = picked[i] ?? (spare.length ? spare[k++ % spare.length] : null); if (p) this.phrases.set(q.id, p); });
+    // (the meanings to choose from: other lines')
+    const all = [...this.pool.values()].filter((p) => has(p.en));
+    this.all = [...new Map([...this.phrases.values(), ...all].map((p) => [p.en, p])).values()];
+  }
+
+  /** The stones wake again: all of them wait, each with a line not heard yet. */
+  private startReplay() {
+    this.replay = true;
+    this.relit.clear(); this.rearm.clear();
+    this.phrases.clear();
+    this.assign();
+    for (const c of P.CHAMBERS) for (const q of c.stones) this.view.setStone(q.id, false);
+    this.nextCall = 3;
+  }
+
+  /** How many of the stones' lines the learner has understood in this round, of how many there are to hear. */
+  private progress(): { n: number; of: number } {
+    const all = this.sayable().flat(), heard = save().heard ?? [];
+    return { n: all.filter((id) => heard.includes(id)).length, of: all.length };
+  }
+
+  // ----------------------------------------------------------------------------------------- the tree
+
+  /** Is the learner where the tree is spoken with (on its island, the heart found)? */
+  treeNear(p: THREE.Vector3): boolean {
+    const t = P.TREES[1];
+    return !!save().heart && Math.hypot(p.x - t.x, p.z - t.z) < TREE_REACH;
+  }
+  /** The tree has said what it had to say (x04's "tree-heard"): the stones speak again from now on. */
+  treeHeard() {
+    const first = !save().tree;
+    useStore.getState().updateProgress((p) => { p.cave = { ...(p.cave ?? P.emptyCave()), tree: true }; });
+    if (!this.replay) this.startReplay();
+    if (first) setTimeout(() => { if (this.alive) useStore.getState().toast({ kind: "success", title: L("Akmenys vėl prabilo"), body: L("Kiekvienas turi tau naują frazę. Klausyk, kur jie kalba."), ms: 7000 }); }, 2500);
   }
 
   dispose() {
@@ -115,7 +195,7 @@ export class CaveQuest {
     let best: P.Stone | null = null, bd = 2.7;
     for (const c of P.CHAMBERS) for (const q of c.stones) {
       const d = Math.hypot(q.x - p.x, q.z - p.z);
-      if (d < bd && !s.lit.includes(q.id) && this.phrases.has(q.id)) { bd = d; best = q; }
+      if (d < bd && !this.isLit(q.id, s) && this.phrases.has(q.id)) { bd = d; best = q; }
     }
     return best;
   }
@@ -141,13 +221,32 @@ export class CaveQuest {
       if (state.why === "alux") st.toast({ kind: "info", title: L("Kelias uždarytas"), body: L("Pirmiausia pasikalbėk su {name}.", { name: NPCS["alux_" + g.alux]?.name ?? "" }) });
       else st.toast({ kind: "info", title: L("Vartai dar uždaryti"), body: L("Jie atsivers, kai užsidegs visi trys šios salės akmenys. Klausyk, kur jie kalba.") });
     }
+    // once the stones speak again: a stone that was understood rests a while, then wakes with its next line
+    for (const [id, t] of this.rearm) {
+      if (t - dt > 0 || useStore.getState().hud.glyph?.id === id) { this.rearm.set(id, Math.max(0.1, t - dt)); continue; }
+      this.rearm.delete(id);
+      this.relit.delete(id);
+      this.phrases.delete(id);
+      this.assign();
+      this.view.setStone(id, false);
+    }
+    // the tree: the first time the learner comes up to it after the heart is found, it speaks by itself; and while it
+    // speaks, petals of light come down round it
+    const tree = P.TREES[1], td = Math.hypot(p.x - tree.x, p.z - tree.z);
+    if (s.heart && !s.tree && !this.treeAsked && !quiet && td < TREE_AUTO && !useStore.getState().hud.glyph) { this.treeAsked = true; this.hooks.tree?.(); }
+    const conv = useStore.getState().conv;
+    if (conv.active && conv.sitId === P.TREE_SIT && conv.speaking !== null && (this.petalT -= dt) <= 0) {
+      this.petalT = 1.1 + Math.random() * 0.8;
+      const a = Math.random() * 6.283, d = 2 + Math.random() * 3.5;
+      this.view.burst(tree.x + Math.cos(a) * d, 3.2 + Math.random() * 2.5, tree.z + Math.sin(a) * d, Math.random() < 0.5 ? "#ffd7ee" : "#fff3c4");
+    }
     if ((this.cardT -= dt) <= 0) { this.cardT = 0.4; this.card(here); }
   }
 
   /** The next stone of this chamber that still waits says its phrase, from where it stands. */
   private call(s: P.CaveSave, here: number) {
     // (nothing calls before Kin has said what the stones are)
-    const waiting = s.passed.includes("kin") || SEE_ALL ? P.CHAMBERS[here].stones.filter((q) => !s.lit.includes(q.id) && this.phrases.has(q.id)) : [];
+    const waiting = s.passed.includes("kin") || SEE_ALL ? P.CHAMBERS[here].stones.filter((q) => !this.isLit(q.id, s) && this.phrases.has(q.id)) : [];
     if (here + 1 > P.chambersOpen(s, SEE_ALL) || !waiting.length) { this.nextCall = 1.5; return; }
     const stone = waiting[this.turn++ % waiting.length], phrase = this.phrases.get(stone.id)!;
     this.callingId = stone.id;
@@ -167,8 +266,12 @@ export class CaveQuest {
     const next = step.kind === "alux" ? L("Pasikalbėk su {name}", { name: NPCS[step.npc]?.name ?? "" })
       : step.kind === "stones" ? L("Surask akmenis pagal balsą: liko {n}", { n: step.left })
       : step.kind === "on" ? L("Kelias atviras: „{name}“", { name: step.name })
-      : step.kind === "heart" ? L("Uždek paskutinius akmenis") : L("Radai Ka'an širdį!");
-    const card: CaveCard = { n: c.n, of: P.CHAMBERS.length, name: c.name, lt: L(c.lt), lit: P.stonesLit(s, here), stones: c.stones.length, next, open: P.chambersOpen(s, SEE_ALL) };
+      : step.kind === "heart" ? L("Uždek paskutinius akmenis")
+      // the heart found: the tree waits to be heard; then the stones' lines, counted
+      : !s.tree ? L("Prieik prie didžiojo medžio – jis nori tau kai ką pasakyti")
+      : ((g) => (g.of ? L("Akmenys vėl kalba. Išgirsta frazių: {n} iš {of}", g) : L("Radai Ka'an širdį!")))(this.progress());
+    const lit = this.replay ? c.stones.filter((q) => this.relit.has(q.id)).length : P.stonesLit(s, here);
+    const card: CaveCard = { n: c.n, of: P.CHAMBERS.length, name: c.name, lt: L(c.lt), lit, stones: c.stones.length, next, open: P.chambersOpen(s, SEE_ALL) };
     const old = useStore.getState().hud.cave;
     if (!old || old.n !== card.n || old.lit !== card.lit || old.next !== card.next || old.open !== card.open) useStore.getState().setHud({ cave: card });
   }
@@ -180,9 +283,9 @@ export class CaveQuest {
     const phrase = this.phrases.get(id);
     if (!phrase || useStore.getState().hud.glyph) return;
     audio.stopCall(); this.callingId = null; this.view.setCalling(null);
-    const seed = [...id].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) >>> 0, 7) + save().lit.length * 977;
+    const seed = [...id].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) >>> 0, 7) + save().lit.length * 977 + [...phrase.en].reduce((a, ch) => (a * 33 + ch.charCodeAt(0)) >>> 0, 5);
     const { options, answer } = P.meaningChoices(phrase, this.all.filter((q) => q.en !== phrase.en), rand(seed));
-    useStore.getState().setHud({ prompt: null, glyph: { id, text: phrase.en, lt: phrase.lt, gloss: phrase.gloss, options, answer, wrong: [], shown: false, solved: false, mic: speechSupported() ? "off" : "unsupported", heard: "" } });
+    useStore.getState().setHud({ prompt: null, glyph: { id, text: phrase.en, lt: phrase.lt, s: phrase.s, options, answer, wrong: [], shown: false, solved: false, mic: speechSupported() ? "off" : "unsupported", heard: "" } });
     this.say();
   }
   private patch(p: Partial<GlyphQuiz>) { const g = useStore.getState().hud.glyph; if (g) useStore.getState().setHud({ glyph: { ...g, ...p } }); }
@@ -244,15 +347,41 @@ export class CaveQuest {
     this.attempt?.dispose(); this.attempt = null;
     this.patch({ solved: true, shown: true, mic: speechSupported() ? "off" : "unsupported" });
     const stone = P.CHAMBERS.flatMap((c) => c.stones).find((q) => q.id === g.id)!, ci = P.CHAMBERS.findIndex((c) => c.stones.includes(stone));
-    useStore.getState().updateProgress((p) => { const c = p.cave ?? P.emptyCave(); if (!c.lit.includes(g.id)) c.lit.push(g.id); p.cave = c; });
+    const line = this.phrases.get(g.id), replay = this.replay;
+    if (replay) { this.relit.add(g.id); this.rearm.set(g.id, REARM); }
+    useStore.getState().updateProgress((p) => {
+      const c = p.cave ?? P.emptyCave();
+      if (!replay && !c.lit.includes(g.id)) c.lit.push(g.id);
+      // a stone's own line: heard in this round, and a phrase of the learner's own from now on (the phrasebook, under
+      // the tree's conversation; its cards)
+      if (line?.id) {
+        c.heard = [...new Set([...(c.heard ?? []), line.id])];
+        const key = P.TREE_SIT + ":" + line.id, prev = p.phrases[key];
+        p.phrases[key] = { en: line.en, lt: line.lt, sitId: P.TREE_SIT, count: (prev?.count ?? 0) + 1, last: Date.now() };
+      }
+      p.cave = c;
+    });
     this.view.setStone(g.id, true);
     this.view.burst(stone.x, 1.5, stone.z, "#ffd76a");
     audio.chime("stone");
     setTimeout(() => {
       if (!this.alive) return;
       if (useStore.getState().hud.glyph?.id === g.id) this.close();
-      this.after(ci);
-    }, 1700);
+      if (replay) this.afterAgain(); else this.after(ci);
+    }, line?.s ? 4200 : 1700);
+  }
+
+  /** After a stone was understood once the stones speak again: how many lines are heard; and when every one is, the
+   *  round starts again. */
+  private afterAgain() {
+    const st = useStore.getState(), lines = this.sayable(), g = this.progress();
+    if (P.allHeard(lines, save().heard ?? [])) {
+      st.updateProgress((p) => { const c = p.cave ?? P.emptyCave(); c.heard = []; c.rounds = (c.rounds ?? 0) + 1; p.cave = c; });
+      audio.chime("heart");
+      st.toast({ kind: "stamp", title: L("Išgirdai visas akmenų frazes!"), body: L("Jų buvo {of}. Akmenys pradeda iš naujo – ir tu jau daug ką supranti.", { of: g.of }), ms: 9000 });
+      return;
+    }
+    st.toast({ kind: "success", title: L("Akmuo užsidegė!"), body: L("Išgirsta frazių: {n} iš {of}.", g), ms: 3200 });
   }
 
   /** After a stone lit in chamber `ci`: its gate, or the heart. */
@@ -268,7 +397,7 @@ export class CaveQuest {
         const t = P.TREES[1];
         this.view.burst(t.x, 6, t.z, "#ffd7ee");
         audio.chime("heart");
-        st.toast({ kind: "stamp", title: L("Radai Ka'an širdį!"), body: L("Yaxché – medis, laikantis pasaulį – pražydo tau. Aluksai tavęs nepamirš."), ms: 9000 });
+        st.toast({ kind: "stamp", title: L("Radai Ka'an širdį!"), body: L("Yaxché – medis, laikantis pasaulį – pražydo tau. Prieik prie jo: jis nori tau kai ką pasakyti."), ms: 9000 });
       }
       return;
     }
