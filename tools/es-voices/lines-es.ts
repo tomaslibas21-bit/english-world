@@ -41,6 +41,8 @@ import { hintBinding } from "../../src/convo/target";
 import { lookFor, observe, usesPartner, type Heard, type ObserveStats } from "./runs-es";
 import { BINDINGS, LISTS, codeSpeakers, idOf, reachFilter, reachOf, unspoken } from "./reach-es";
 import { sceneSit } from "./casting-es";
+import { itemsFor, referenced } from "../line-reach";
+import type { Unreached } from "../enumerate";
 
 /** The learner the tools play: lines that address them by name are voiced without the name (as the game does). */
 const NAMES = [EDITION.simPlayer.name, EDITION.simPlayer.surname];
@@ -66,7 +68,7 @@ export interface EsUtt {
    *  plural; "+probe" / "+code": a speaker heard only in a probe, or only read in the code. */
   why?: string;
 }
-export interface LinesResult { utts: EsUtt[]; errors: string[]; warnings: string[]; stats: Record<string, ObserveStats> }
+export interface LinesResult { utts: EsUtt[]; errors: string[]; warnings: string[]; stats: Record<string, ObserveStats>; unreached?: Unreached[]; unfilled?: string[] }
 
 /** An item always said in the plural ("los papadzules", "los pantalones"): the conversations bind it with qty 2. */
 const pluralItem = (e: EntityDef | undefined) => !!(e?.attrs?.plural || e?.attrs?.many);
@@ -80,6 +82,8 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
   if (EDITION.id !== "es") throw new Error("the Spanish lines need the Spanish edition: EDITION=es npx tsx --import ./tools/edition-hook.mjs …");
   const out = new Map<string, EsUtt>();
   const errors: string[] = [], warnings: string[] = [];
+  // the reachability check before voicing (18 Nov 2026): lines no run, sim or probe reached; item lines left unfilled
+  const unreached: Unreached[] = [], unfilled: string[] = [];
   const stats: Record<string, ObserveStats> = {};
   const add = (voice: string, speed: number, s: Sentence, where: string, sit: string | undefined, why: string, example = false): EsUtt | undefined => {
     if (!s.say.trim()) return;
@@ -229,14 +233,21 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
           const P = ph.entities[0];
           const read = LISTS[`${sit.id}:${lid}`];
           const lists = read ? new Set([...read, ...(s?.lists.get(P) ?? [])]) : s?.lists.get(P);
+          // a line nothing heard (18 Nov 2026): the items its code says it with (../line-reach.ts), instead of every
+          // item of every list; read nowhere, every list as before, and reported (its item comes from the state:
+          // c.s.win2, retDay(c)…; "g_soundcheck" says whatever item the learner named)
+          const own = lists || lid === "g_soundcheck" ? undefined : itemsFor(sit, lid, P);
+          const ownIds = own ? new Set(own.map((e) => e.id)) : null;
+          const allowed = (e: EntityDef, ln: string) => (lists ? lists.has(ln) : ownIds ? ownIds.has(e.id) : true);
+          if (!ownIds && !lists && lid !== "g_soundcheck") unfilled.push(`${sit.id}:${lid}`);
           // a line and its "_pl" twin heard with the two kinds apart (one for the always-plural items, the other for
           // the rest: s74's sayN, s73's veg_no) keep them apart
           const kinds = (l: string) => new Set(["sg", "pl"].filter((k) => said.get(l)?.qty.has(`${P}|${k}`)));
           const mine = kinds(lid), theirs = kinds(lid.endsWith("_pl") ? lid.slice(0, -3) : `${lid}_pl`);
           const apart = mine.size > 0 && theirs.size > 0 && [...mine].every((k) => !theirs.has(k));
           for (const [ln, list] of Object.entries(sit.entities || {})) {
-            if (lists && !lists.has(ln)) continue;
             for (const e of list) {
+              if (!allowed(e, ln)) continue;
               const kind = pluralItem(e) ? "pl" : "sg";
               if (apart && !mine.has(kind)) continue;
               const qs = s?.qty.get(`${P}|${kind}`);
@@ -253,6 +264,7 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
         plan.push({ lid, i, binds, speakers, who, tag });
       });
     }
+    for (const lid of Object.keys(sit.lines)) if (!said.has(lid) && !unspoken(sit.id, lid)) unreached.push({ sit: sit.id, line: lid, named: referenced(sit, lid) });
     for (const variety of VARIETIES) {
       setVariety(variety); // the text (neutral or Spain twins) and the voice ids (es_ / esn_ / esp_) of this Spanish
       for (const { lid, i, binds, speakers, who, tag } of plan) {
@@ -337,7 +349,7 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
     }
   }
   setVariety("default");
-  return { utts: [...out.values()], errors, warnings: [...new Set(warnings)], stats };
+  return { utts: [...out.values()], errors, warnings: [...new Set(warnings)], stats, unreached, unfilled };
 }
 
 /** Two variants with the same placeholders (one warning per line). */

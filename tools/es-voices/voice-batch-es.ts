@@ -47,6 +47,7 @@ import { EDITION } from "../../src/edition";
 import { NPCS } from "../../src/content/npcs";
 import { SITUATION_BY_ID } from "../../src/content/situations";
 import { placeholders } from "../../src/convo/compose";
+import { reachReport } from "../enumerate";
 import { enumerateEs, mergeUtts, type EsUtt, type LinesResult } from "./lines-es";
 import { accentOf, castingProblems, roleOf, styleFor, voiceFor, whoOf, type Accent, type StyleOpts } from "./casting-es";
 import { decodeAudio, trimAndNormalize } from "../audio-util";
@@ -217,6 +218,10 @@ async function listed(): Promise<EsUtt[]> {
   if (probed.length) console.log(`probes where another person holds the floor: ${probed.map(([id, s]) => `${id} ${s.probes}${s.misrouted ? ` (${s.misrouted} not counted)` : ""}`).join(", ")}`);
   if (warnings.length) { console.log(`${warnings.length} lines the list can't make from their text (only as heard):`); for (const w of warnings) console.log("  ~ " + w); }
   if (errors.length) { console.log(`${errors.length} handler errors while listing lines (fix them first):`); for (const e of errors.slice(0, 10)) console.log("  ! " + e); process.exit(1); }
+  // the reachability check before any voicing (18 Nov 2026)
+  const unreached = results.flatMap((r) => r.unreached ?? []), unfilled = results.flatMap((r) => r.unfilled ?? []);
+  writeJson(path.join(WORK, only ? "reach-only.json" : "reach.json"), { unreached, unfilled }, true);
+  console.log(reachReport(unreached, unfilled) + `\n(the list: ${path.join(WORK, only ? "reach-only.json" : "reach.json")})`);
   writeJson(cache, utts, true);
   writeJson(path.join(WORK, only ? "lines-only-notes.json" : "lines-notes.json"), { warnings, stats });
   return utts;

@@ -36,7 +36,7 @@ import { audioKey } from "../src/audio-key";
 import { NPCS, COACH_VOICE } from "../src/content/npcs";
 import { AMBIENT_VOICES } from "../src/content/ambient";
 import { levenshtein } from "../src/convo/normalize";
-import { enumerateAll, type Utt } from "./enumerate";
+import { enumerateAll, reachReport, type Utt } from "./enumerate";
 import { roleFor, where } from "./casting";
 import { decodeAudio, encodeClip, geminiText, trimAndNormalize } from "./audio-util";
 import { cutRepeats, findRepeats, hearPieces, judgePieces, type Clip, type Edition, type Heard } from "./voice-pieces";
@@ -114,8 +114,11 @@ function newestSource(): number {
 function utterances(): Utt[] {
   const cache = path.join(WORK, "lines.json");
   if (!has("fresh") && fs.existsSync(cache) && fs.statSync(cache).mtimeMs > newestSource()) return readJson<Utt[]>(cache, []);
-  const { utts, errors } = enumerateAll({ v2: true, fuzzRuns: 120, log: (s) => process.stdout.write("\r" + s.padEnd(70)) });
+  const { utts, errors, unreached, unfilled } = enumerateAll({ v2: true, fuzzRuns: 120, log: (s) => process.stdout.write("\r" + s.padEnd(70)) });
   process.stdout.write("\n");
+  // the reachability check before any voicing (18 Nov 2026): lines no simulated play reaches, item lines left unfilled
+  writeJson(path.join(WORK, "reach.json"), { unreached, unfilled });
+  console.log(reachReport(unreached, unfilled) + `\n(the list: ${path.join(WORK, "reach.json")})`);
   if (errors.length) { console.log(`${errors.length} handler errors while listing lines (fix them first):`); for (const e of errors.slice(0, 10)) console.log("  ! " + e); process.exit(1); }
   writeJson(cache, utts);
   return utts;
