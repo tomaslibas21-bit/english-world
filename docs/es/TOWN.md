@@ -1292,6 +1292,42 @@ A new place and the 51st conversation, the first with no song of its own yet: **
 - **Left for later**: scene pictures and Nayeli's portrait (docs/es/PICTURES.md "x01-surf"), its song and its story in
   the courses, a surf school for Maple Harbor.
 
+## The ruins, walked into (18 Nov 2026)
+
+The owner: "mayan ruins just walkable with a few people you may chit chat with, no elder". The ruins on the point past
+the beach's west end (`theme.ts ruins`, s69's "half an hour on foot") were scenery; with `ruins.walk` one goes in.
+
+- **The way in**: where the beach ends, a gateway in the precinct's east wall (2 m wide: the way-finding grid's cell
+  is 1 m and it keeps 0.45 m off every wall, so a narrower gateway has no cell to walk through). The town's own west
+  edge is open there (`town.ts`, beside the opening for the cenote). The brown "Zona Arqueológica" board stands south of
+  it, facing the beach.
+- **The precinct** (`mexican.ts RUINS`, `ruins(…, walk)`, `ruinsSite`, `ruinsWalk`): a walled lawn on the land in
+  front of the castillo, 23 m by 11 m: east, south and west walls (edges: never climbed), a kerb of stones above the
+  shore (everything beyond it is as it was: the rocks, the castillo's tiers, the shrine on the point). On the lawn a
+  path of flagstones from the gateway to the stairs and to the stela; a low platform (0.5 m: jumped onto, like any
+  low thing); a stela with its board ("Estela 1"); the custodian's table; a painter's easel with the temple on its
+  canvas; a stone bench with a basket of thread; fallen column drums; three iguanas (one on the big stone by the
+  bench: Pepe). The two passers-by who chatted on the path to the gateway stand on the lawn now.
+- **The stairs**: 24 steps of 22 cm instead of 12 of 44, walked up (`water.ts FLOORS`, `ruinsStairY`) to the landing
+  before the temple's three doorways, 5.3 m up, with the town, the beach and the lighthouse behind one. The temple's
+  front and the landing's ends hold (edges). A board at the foot: "Suba con cuidado · Escalones altos".
+- **The people**, each with a chat of a minute off the route (`bonus`, like the aluxes): two questions of theirs, a
+  few of the learner's, thanks and goodbye. No scene pictures: the 3D view.
+  - **Don Efraín** (`custodio`, x06-custodio "El Templo del Mar"; usted), the ruins' keeper, by his table inside the
+    gateway: is it your first time here?; the entry is free, one may go up, carefully; how old the temple is (about
+    eight hundred years), its name, the iguanas ("Son las dueñas del lugar").
+  - **Citlali** (`pintora`, x07-pintora "La pintora del templo"; tú), a young painter at her easel between the stairs
+    and the west wall: do you like it?; do you paint or draw?; what she paints, whether she sells it.
+  - **Doña Rosario** (`rosario`, x08-rosario "A la sombra"; usted), weaving a hammock by the west wall: the heat;
+    do you know Pepe? (the iguana on the stone beside her: does he bite, what does he eat).
+  One text for the three Spanishes (words and tenses all of them share); the Lithuanian layer's tables
+  `x06-custodio`, `x07-pintora`, `x08-rosario` and five town-wide texts in `_shared` (the three roles, the place and
+  what its name means).
+- **Checks**: `tests/browser/ruins.mjs` (a computer and a phone: the way in from the beach's end, each chat on arrival
+  and talked through, the stairs up and down, the temple's front holding, and on a dev server nobody out of the town,
+  the cenote's grounds or the ruins: `dev/climbAudit.ts` with `ruinsBounds`); `tests/browser/climb.mjs` knows the
+  ruins' bounds too. `check-content x06 x07 x08`, and `--variety=spain` / `neutral`: 0 errors, 0 warnings.
+
 ## The tasks (in order)
 
 Each task is one area; each ends with before/after screenshots at phone size and the draw-call numbers.

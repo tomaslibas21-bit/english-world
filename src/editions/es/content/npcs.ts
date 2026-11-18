@@ -101,6 +101,11 @@ const LOOK: Record<string, Partial<Look>> = {
   surf: { skin: "#a8734b", hair: { style: "braid", color: "#3a2a1f" }, top: "#ff6a3d", bottom: "#17708a", shoes: "#3a2a1f", shorts: true, sleeves: "short", flipflops: true, acc: ["earrings"], build: 0.96 },
   // Tienda El Faro's cashier (x05-tienda): a young man in the station's red polo with its name badge
   tienda: { skin: "#b07a52", hair: { style: "short", color: "#1f1a17" }, top: "#c8352a", bottom: "#2f3e55", sleeves: "short", acc: ["badge"], build: 0.98 },
+  // the people of the ruins (x06–x08): Don Efraín in his jipi and guayabera, Citlali in her painter's apron, Doña Rosario
+  // in her hipil with a red rebozo, her grey hair in a braid
+  custodio: { skin: "#a8734b", hair: { style: "short", color: "#9a958f" }, top: "#f4efe2", bottom: "#6b5a44", acc: ["jipi", "mustache", "guayabera"], accColor: "#e3cf8e", build: 1.06 },
+  pintora: { skin: "#b9814f", hair: { style: "wavy", color: "#1f1a17" }, top: "#e9f2f7", bottom: "#3a5a78", sleeves: "short", acc: ["apron", "earrings"], accColor: "#2f7fbf", build: 0.95 },
+  rosario: { skin: "#a8734b", hair: { style: "braid", color: "#e6e0d8" }, top: "#f9f3ee", bottom: "#f6f0ea", skirt: true, acc: ["hipil", "rebozo", "earrings"], accColor: "#c8352a", height: 0.93, build: 1.08 },
   aduana: { skin: "#d2a177", hair: { style: "bun", color: "#533423" }, top: "#374359", bottom: "#2d3b4b", acc: ["badge", "earrings"] },
   // the aluxes of the grotto under Cenote Ka'an (src/game/cave): half a person's height, barefoot, in the forest's
   // greens and the yellow of the ceiba's flowers
@@ -199,6 +204,14 @@ const EXTRA: Record<string, [base: string, ...cast: Cast]> = {
   // outside, so the store has its own cashier; usted to customers, as the station's staff
   tienda: ["marcus", "Paco", "Cajero de la tienda", "Store cashier", { gender: "m", roleSpain: "Dependiente de la tienda",
     bio: "Works the counter at Tienda El Faro: fresh coffee, ice, snacks and cold drinks for the road." }],
+  // the ruins on the point past the beach (x06–x08), walked into since 18 Nov 2026: their keeper at the gateway, a
+  // young painter at her easel (tú to everyone), and a weaver in the shade of the wall with the iguana Pepe
+  custodio: ["walter", "Don Efraín", "Custodio de las ruinas", "Keeper of the ruins", { gender: "m", informal: false, informalSpain: false,
+    bio: "Has looked after the Temple of the Sea for thirty years. He knows every stone, and every iguana." }],
+  pintora: ["chloe", "Citlali", "Pintora", "Painter", { gender: "f", informal: true, informalSpain: true,
+    bio: "Studies art in Mérida and paints the temple every afternoon, for the light." }],
+  rosario: ["rosa", "Doña Rosario", "Tejedora de hamacas", "Hammock weaver", { gender: "f", informal: false, informalSpain: false,
+    bio: "Weaves hammocks in the shade of the ruins' wall, with Pepe the iguana for company." }],
   surf: ["jordan", "Nayeli", "Instructora de surf", "Surf instructor", { informal: true, informalSpain: true,
     bio: "Grew up surfing in Puerto Escondido, on the Pacific. Here she teaches beginners on the Caribbean's gentle waves." }],
 };

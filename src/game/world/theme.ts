@@ -262,8 +262,10 @@ export interface TownTheme {
     /** Its grounds are open to explore (src/game/cave/grounds.ts): the meadow's whole edge, more ways down to the
      *  water, a trail round its jungle side, and more ways into the grotto. */
     open?: boolean } | null;
-  /** Small ruins on a rocky point by the sea beyond the beach's west end (the temple's x and z). */
-  ruins: { x: number; z: number } | null;
+  /** Small ruins on a rocky point by the sea beyond the beach's west end (the temple's x and z). `walk`: one walks
+   *  in through a gateway where the beach ends, round its lawn and up the castillo's stairs (mexican.ts ruinsWalk;
+   *  needs `cenote.walk`, whose opening of the town's west edge it shares). */
+  ruins: { x: number; z: number; walk?: boolean } | null;
 
   // Graphics round 1 (5 Nov 2026; docs/es/TOWN.md "Graphics, round 1"). Off in Maple Harbor.
   /** The sea's colors (town.ts's sea shader), from the shore out: `shore` over the sand, `shallow` until

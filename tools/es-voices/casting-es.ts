@@ -90,6 +90,9 @@ const MEXICO: Record<string, string> = {
   // x01-surf (15 Nov 2026): bright, breezy, youthful at 31; not a woman's voice of the harbor (El Muelle: Camila
   // assistant-1, Fátima assistant-1; the passer-by assistant-1) nor of Mónica, the trainer she is built on (commercial-9)
   surf: "es-419-csagent-7",
+  // the ruins (x06–x08, 18 Nov 2026), each alone in their conversation: Don Efraín textured and soothing, Citlali
+  // young and bright, Doña Rosario the grandmothers' voice
+  custodio: "es-419-tutor-2", pintora: "es-419-training-8", rosario: "es-419-tutor-3",
   // x05-tienda (18 Nov 2026): Paco, Tienda El Faro's young cashier: the catalog's youngest man's voice (21, calm and
   // warm), nobody else's
   tienda: "es-419-commercial-4",
@@ -148,6 +151,8 @@ const SPAIN: Record<string, string> = {
   // x01-surf: an influencer's voice at 30; not the harbor's women (Camila csagent-5, Fátima and the passer-by
   // concierge-3) nor Mónica's (techagent-5)
   surf: "es-es-commercial-3",
+  // the ruins (x06–x08): by gender and age as in the Mexican set
+  custodio: "es-es-podcaster-7", pintora: "es-es-csagent-5", rosario: "es-es-csagent-6",
   // x05-tienda: Paco, a young man's voice (23); nobody else speaks in his conversation
   tienda: "es-es-training-9",
   // the convertibles' owners and the passers-by who call after a car, by gender and age as in the Mexican set
@@ -273,6 +278,10 @@ export const CAST: Record<string, Role> = {
   yaxche: { voice: "Gacrux", age: "ageless, sounds like a wise old woman", manner: "an ancient sacred tree speaking to someone it has waited for: deep, calm and warm, motherly, full of quiet wonder, each phrase given room, never eerie", pace: "slow" },
   // the beach (x01-surf and the surf game's commands): a surf instructor from Puerto Escondido, about 28
   surf: { voice: "Aoede", age: "about 28", manner: "warm, sporty and lively, a surf instructor who loves the sea", pace: "lively" },
+  // the ruins on the point (x06–x08): their keeper, a young painter, a grandmother weaving in the shade
+  custodio: { voice: "Algenib", age: "about 65", manner: "kind and unhurried, the keeper of old ruins who welcomes every visitor like a guest in his own house", pace: "unhurried" },
+  pintora: { voice: "Callirrhoe", age: "about 22", manner: "a young painter at her easel: soft-spoken, a little dreamy, friendly", pace: "easy" },
+  rosario: { voice: "Vindemiatrix", age: "about 72", manner: "a grandmother weaving in the shade: gentle, amused and unhurried", pace: "slow" },
   // the gas station's store (x05-tienda): its cashier, about 23
   tienda: { voice: "Zubenelgenubi", age: "about 23", manner: "friendly and easygoing, a young cashier who chats with his customers", pace: "easy" },
 };
@@ -328,6 +337,9 @@ export const SCENES: Record<string, Scene> = {
   // x01-surf: relaxed at the palapa; the surf game's commands (the sg_ lines, LINE_SCENES) called out over the water
   "x01-surf": { setting: "relaxed and friendly, chatting at her surf school's palapa on the beach" },
   "x05-tienda": { setting: "at the counter of a small gas station store on the road, relaxed and friendly" },
+  "x06-custodio": { setting: "outdoors at the gateway of small Maya ruins by the sea, on a calm afternoon" },
+  "x07-pintora": { setting: "outdoors on the lawn of small Maya ruins by the sea, painting at an easel, on a calm afternoon" },
+  "x08-rosario": { setting: "outdoors, sitting in the shade of an old stone wall by the sea, on a hot calm afternoon" },
   // the convertibles (no conversation: the owners' lines when their car is taken or brought back, and what passers-by
   // call after a car that went by too close)
   "rides": { setting: "calling over from a convertible parked at the curb to someone borrowing the car, relaxed, in a holiday mood" },

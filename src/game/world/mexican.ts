@@ -1008,8 +1008,13 @@ export function cenoteWalk(col: Colliders, x: number, z: number, edge: number) {
  *  balustrades, the temple on top with three doorways between two columns, a frieze with its niches and the red of its
  *  old stucco, and what is left of its crest; a smaller shrine on a round platform lower on the point; the walled
  *  precinct's wall along the land side, broken, with its gateway towards the beach and a brown sign by it; coconut palms
- *  among the stones; fallen stones. The castillo faces the land (+z). */
-export function ruins(parts: Part[], x: number, z: number, atlas?: SignAtlas) {
+ *  among the stones; fallen stones. The castillo faces the land (+z).
+ *  `walk` (theme.ts `ruins.walk`, 18 Nov 2026): one walks in. The precinct is then a walled lawn on the land in front
+ *  of the castillo (RUINS), its gateway in the east wall where the beach ends; the stairs are finer (a step a foot's
+ *  length: they are walked up, ruinsWalk) and lead to the landing before the temple's doorways; on the lawn a path of
+ *  flagstones, a low platform to jump onto, a stela, the custodian's table, a painter's easel, a stone bench, fallen
+ *  drums and the iguanas. The castillo itself, the shrine and the point are as they were. */
+export function ruins(parts: Part[], x: number, z: number, atlas?: SignAtlas, walk = false) {
   const r = rand(919);
   const GREY = ["#c9c1aa", "#b9b09a", "#d6cfbb", "#a9a08a"], DARK = "#3a3530", RED = "#a8553e";
   // the point: big rocks from the shore out into the sea, highest under the castillo
@@ -1025,7 +1030,10 @@ export function ruins(parts: Part[], x: number, z: number, atlas?: SignAtlas) {
     add(box(w + 0.3, 0.18, d + 0.3, 0, y + h / 2 - 0.09, zc), GREY[1]);
   }
   // the stairs up from the land, between two balustrades
-  for (let i = 0; i < 12; i++) add(box(3.4, 0.44, 0.52, 0, 0.22 + i * 0.44, 5.0 - i * 0.48), GREY[i % 2 ? 2 : 0]);
+  if (walk) {
+    const N = 24, S = RUINS.stairs, run = (S.foot - S.top) / N, rise = S.rise / N;
+    for (let i = 0; i < N; i++) add(box(3.4, 0.3, run + 0.02, 0, (i + 1) * rise - 0.15, S.foot - (i + 0.5) * run), GREY[i % 2 ? 2 : 0]);
+  } else for (let i = 0; i < 12; i++) add(box(3.4, 0.44, 0.52, 0, 0.22 + i * 0.44, 5.0 - i * 0.48), GREY[i % 2 ? 2 : 0]);
   for (const s of [-1, 1]) add(box(0.55, 0.9, 7.6, 0, 0, 0).rotateX(0.76).translate(s * 1.98, 2.95, 2.35), GREY[3]);
   // the temple on top: three doorways between two columns, a frieze with three niches, the cornices and the roof
   add(box(6.2, 2.6, 4.2, 0, 6.6, -3.9), GREY[2]);
@@ -1049,29 +1057,197 @@ export function ruins(parts: Part[], x: number, z: number, atlas?: SignAtlas) {
   // the precinct's wall along the land (east) side, broken, its gateway (a corbel arch) towards the beach
   for (let i = 0; i < 9; i++) {
     const wz = 9 - i * 2.2, gate = i === 3;
-    if (gate) {
+    if (gate && !walk) {
       for (const s of [-1, 1]) add(box(1.4, 2.3, 0.6, 10.5, 1.15, wz + s * 0.85), GREY[1]);
       for (let k = 0; k < 3; k++) add(box(1.4, 0.24, 1.9 - k * 0.45, 10.5, 2.42 + k * 0.24, wz), GREY[k % 2 ? 0 : 2]);
       continue;
     }
-    const h = 1.2 + r() * 0.8;
+    // (walked into: the gateway is further up the wall, on dry land; what was the gateway is a stretch fallen low)
+    const h = gate ? 0.9 : 1.2 + r() * 0.8;
+    if (walk && i < 3) continue;
     add(box(1.4, h, 2.25, 10.5, h / 2, wz), GREY[(i % 2) * 2]);
     add(box(1.55, 0.14, 2.3, 10.5, h + 0.05, wz), GREY[1]);
   }
-  for (let i = 0; i < 5; i++) { const h = 1.0 + r() * 0.8; add(box(2.25, h, 1.4, 9.4 - i * 2.2 - 1.1, h / 2, 10.0), GREY[(i % 2) * 2]); }
+  for (let i = 0; i < 5; i++) { const h = 1.0 + r() * 0.8; if (!walk) add(box(2.25, h, 1.4, 9.4 - i * 2.2 - 1.1, h / 2, 10.0), GREY[(i % 2) * 2]); }
+  if (walk) ruinsSite(parts, x, z, atlas);
   // fallen stones, and the jungle at the land's edge
   for (let i = 0; i < 9; i++) add(box(0.5 + r() * 0.4, 0.35, 0.4 + r() * 0.3, -4 + r() * 12, 0.3 + r() * 1.0, 2.0 + r() * 3.5).rotateY(r() * 2), GREY[i % 4]);
-  for (const [jx, jz, sj] of [[-6.5, 6.5, 2.2], [7.0, 7.5, 2.0], [-10.5, 2.5, 1.9]] as [number, number, number][]) jungle(parts, r, x + jx, 0, z + jz, sj);
+  for (const [jx, jz, sj] of (walk ? [[-16.0, 6.5, 2.2], [-15.8, 12.5, 2.0], [-10.5, 2.5, 1.9]] : [[-6.5, 6.5, 2.2], [7.0, 7.5, 2.0], [-10.5, 2.5, 1.9]]) as [number, number, number][]) jungle(parts, r, x + jx, 0, z + jz, sj);
   // coconut palms among the stones, leaning out towards the sea
-  for (const [px, pz, h, dir] of [[-6.0, 3.0, 9.5, -2.2], [6.8, 4.2, 8.5, -0.9], [8.2, -5.0, 10, -1.2], [-10.2, -3.0, 8, -2.6], [4.0, 8.2, 9, 0.2]] as [number, number, number, number][]) {
+  for (const [px, pz, h, dir] of [[-6.0, 3.0, 9.5, -2.2], [6.8, 4.2, 8.5, -0.9], [8.2, -5.0, 10, -1.2], [-10.2, -3.0, 8, -2.6], walk ? [RUINS.palm[0], RUINS.palm[1], 9, 2.4] : [4.0, 8.2, 9, 0.2]] as [number, number, number, number][]) {
     farPalm(parts, r, x + px, z + pz, h, dir, 0.18 + r() * 0.12);
   }
   // the sign by the gateway, facing the beach (east)
   if (atlas) {
-    const sx = x + 12.2, sz = z + 4.4;
+    // (walked into: south of the gateway, which is further up the wall)
+    const sx = x + 12.2, sz = z + (walk ? RUINS.gate + 2.9 : 4.4);
     for (const s of [-1, 1]) parts.push([cyl(0.06, 0.06, 2.2, sx, 1.1, sz + s * 1.0, 6), "#5a3a22"]);
     atlas.add("ruinas", 512, 192, drawBoard("Zona Arqueológica", "Ruinas mayas · Templo del Mar", "#6b4226", "#fff7e6", "#3b2414"), 2.2, 0.82, sx + 0.06, 1.75, sz, Math.PI / 2);
   }
+}
+
+/** The ruins one walks into (theme.ts `ruins.walk`): the plan, relative to the temple's x and z. The lawn inside the
+ *  walls (`w`…`e`, `n`…`s`: `n` is the kerb above the shore, the walls are 1.4 thick outside these), the gateway's z in
+ *  the east wall and half its opening (2 m in all, round a whole metre of the town's way-finding grid: nav.ts
+ *  keeps 0.45 m off every wall, and a narrower gateway has no cell to walk through), the stairs (half their width, where they start and end, how high they go), the
+ *  landing before the temple's doorways (half its width, its back: the temple's front), and what stands on the lawn. */
+export const RUINS = {
+  w: -13.0, e: 9.8, n: 5.2, s: 16.6, gate: 7.5, gateHalf: 1.0,
+  stairs: { half: 1.7, foot: 5.26, top: -0.54, rise: 5.3 },
+  landing: { half: 3.8, back: -1.8 },
+  platform: { x: 3.8, z: 13.3, w: 4.4, h: 0.5 },
+  stela: { x: -8.6, z: 13.6 }, table: { x: 8.75, z: 10.7 }, easel: { x: -5.9, z: 6.75 }, stool: { x: -6.9, z: 7.7 },
+  bench: { x: -12.68, z: 8.8 }, rock: { x: -11.2, z: 6.5 }, drums: [[-5.3, 15.3], [-4.2, 15.8]] as [number, number][],
+  palm: [-11.6, 15.3] as [number, number],
+};
+/** What the ruins open beyond the town's west edge (`edge`: the gateway's passage reaches it), for whoever checks
+ *  that nobody gets out (dev/climbAudit.ts). */
+export const ruinsBounds = (x: number, z: number, edge: number) => ({ minX: x + RUINS.w - 1.5, maxX: Math.max(edge, x + RUINS.e + 1.5), minZ: z + RUINS.landing.back - 0.2, maxZ: z + RUINS.s + 1.5 });
+/** The height underfoot on the castillo's stairs (0 at their foot, the landing's at their top). */
+export const ruinsStairY = (dz: number) => { const S = RUINS.stairs; return Math.min(S.rise, Math.max(0, ((S.foot - dz) * S.rise) / (S.foot - S.top))); };
+
+/** An iguana lying on a stone: body, head, tail, a crest (about 60 triangles), its head towards `rot` (0: +x). */
+function iguana(parts: Part[], x: number, y: number, z: number, rot: number, s = 1, colour = "#7f8f5c") {
+  const put = (g: THREE.BufferGeometry, c: string) => parts.push([g.scale(s, s, s).rotateY(-rot).translate(x, y, z), c]);
+  put(new THREE.IcosahedronGeometry(1, 0).scale(0.27, 0.075, 0.1).translate(0, 0.08, 0), colour);
+  put(new THREE.IcosahedronGeometry(1, 0).scale(0.09, 0.06, 0.07).translate(0.32, 0.12, 0), colour);
+  put(new THREE.ConeGeometry(0.055, 0.6, 5).rotateZ(Math.PI / 2).translate(-0.52, 0.06, 0), "#6c7a4d");
+  for (let i = 0; i < 4; i++) put(box(0.05, 0.05, 0.02, -0.16 + i * 0.1, 0.17, 0), "#59663f");
+  for (const [lx, lz] of [[0.16, 0.12], [0.16, -0.12], [-0.14, 0.12], [-0.14, -0.12]]) put(box(0.1, 0.035, 0.07, lx, 0.03, lz), "#6c7a4d");
+}
+
+/** What stands on the walked precinct's lawn and round it (see `ruins`): the walls with the gateway, the kerb above
+ *  the shore, the flagstones, the platform, the stela and its board, the custodian's table, the easel, the bench, the
+ *  drums, the iguanas, the jungle behind the walls. All in the far region's merged mesh; its own random draws. */
+function ruinsSite(parts: Part[], x: number, z: number, atlas?: SignAtlas) {
+  const q = rand(923), R = RUINS;
+  const GREY = ["#c9c1aa", "#b9b09a", "#d6cfbb", "#a9a08a"], DARK = "#3a3530", RED = "#a8553e", WOOD = "#7a5234";
+  const add = (g: THREE.BufferGeometry, c: string) => parts.push([g.translate(x, 0, z), c]);
+  /** A stretch of wall: `len` along z (or x), `h` high, its moulding on top. */
+  const wall = (cx: number, cz: number, len: number, h: number, alongZ: boolean, k: number) => {
+    add(box(alongZ ? 1.4 : len, h, alongZ ? len : 1.4, cx, h / 2, cz), GREY[(k % 2) * 2]);
+    add(box(alongZ ? 1.55 : len + 0.05, 0.14, alongZ ? len + 0.05 : 1.55, cx, h + 0.05, cz), GREY[1]);
+  };
+  // the east wall on the land: from the corner down to the gateway, the gateway, and on to where the old wall goes on
+  const ex = R.e + 0.7, top = R.s + 1.4, g1 = R.gate + R.gateHalf + 0.6, g0 = R.gate - R.gateHalf - 0.6;
+  for (let i = 0; i < 4; i++) { const len = (top - g1) / 4; wall(ex, top - (i + 0.5) * len, len, 1.3 + q() * 0.7, true, i); }
+  wall(ex, (g0 + 3.5) / 2, g0 - 3.5, 1.5, true, 1);
+  for (const s of [-1, 1]) add(box(1.4, 2.5, 0.6, ex, 1.25, R.gate + s * (R.gateHalf + 0.3)), GREY[1]);
+  for (let k = 0; k < 3; k++) add(box(1.4, 0.26, 3.2 - k * 0.7, ex, 2.63 + k * 0.26, R.gate), GREY[k % 2 ? 0 : 2]);
+  // the south wall and the west wall, broken here and there
+  const sx0 = R.w - 1.4, sx1 = R.e + 1.4, nS = 11;
+  for (let i = 0; i < nS; i++) { const len = (sx1 - sx0) / nS; wall(sx1 - (i + 0.5) * len, R.s + 0.7, len, i === 4 || i === 8 ? 0.75 + q() * 0.2 : 1.2 + q() * 0.8, false, i); }
+  for (let i = 0; i < 6; i++) { const len = (top - (R.n - 0.6)) / 6; wall(R.w - 0.7, top - (i + 0.5) * len, len, i === 3 ? 0.8 : 1.1 + q() * 0.8, true, i + 1); }
+  // the kerb above the shore, either side of the stairs
+  for (const [k0, k1] of [[R.w, -2.3], [2.3, R.e]]) {
+    const n = Math.round((k1 - k0) / 1.75), len = (k1 - k0) / n;
+    for (let i = 0; i < n; i++) add(box(len - 0.06, 0.36 + q() * 0.12, 0.6, k0 + (i + 0.5) * len, 0.2, R.n - 0.3), GREY[i % 4]);
+  }
+  // the flagstones: from the gateway to the foot of the stairs, and a branch to the stela
+  const flags = (ax: number, az: number, bx: number, bz: number) => {
+    const n = Math.max(1, Math.round(Math.hypot(bx - ax, bz - az) / 1.12));
+    for (let i = 0; i <= n; i++) {
+      const fx = ax + ((bx - ax) * i) / n + (q() - 0.5) * 0.25, fz = az + ((bz - az) * i) / n + (q() - 0.5) * 0.25;
+      parts.push([new THREE.BoxGeometry(0.8 + q() * 0.25, 0.05, 0.75 + q() * 0.25).rotateY((q() - 0.5) * 0.6).translate(x + fx, 0.03, z + fz), i % 3 ? "#cfc6ad" : "#c2b89e"]);
+    }
+  };
+  flags(R.e - 0.2, R.gate, 0.6, R.gate - 0.3);
+  flags(0, R.gate - 1.2, 0, R.stairs.foot + 0.5);
+  flags(-0.9, R.gate + 0.5, R.stela.x + 1.6, R.stela.z - 1.6);
+  // the platform: low enough to jump onto
+  const P = R.platform;
+  add(box(P.w - 0.2, P.h - 0.1, P.w - 0.2, P.x, (P.h - 0.1) / 2, P.z), GREY[0]);
+  add(box(P.w, 0.12, P.w, P.x, P.h - 0.06, P.z), GREY[2]);
+  add(box(0.9, 0.3, 0.9, P.x + P.w / 2 - 0.2, 0.15, P.z + P.w / 2 + 0.5).rotateY(0.02), "#8d8778");
+  // the stela: a carved slab on its base, its glyph blocks and what is left of its red, a small board beside it
+  const T = R.stela;
+  add(box(1.3, 0.3, 0.9, T.x, 0.15, T.z), GREY[1]);
+  add(box(0.86, 2.2, 0.3, T.x, 1.4, T.z), GREY[2]);
+  add(box(0.6, 0.3, 0.3, T.x, 2.62, T.z), GREY[2]);
+  for (let i = 0; i < 4; i++) for (const s of [-1, 1]) add(box(0.27, 0.27, 0.04, T.x + s * 0.19, 0.78 + i * 0.4, T.z - 0.16), i === 2 && s === 1 ? RED : "#9a917b");
+  add(box(0.5, 0.2, 0.04, T.x, 2.42, T.z - 0.16), RED);
+  if (atlas) {
+    const bx = x + T.x + 1.5, bz = z + T.z - 0.5;
+    parts.push([cyl(0.04, 0.04, 0.9, bx, 0.45, bz, 6), "#5a3a22"]);
+    atlas.add("ruinas-estela", 384, 176, drawBoard("Estela 1", "Piedra labrada", "#6b4226", "#fff7e6", "#3b2414"), 0.86, 0.4, bx, 0.98, bz - 0.03, Math.PI);
+    // by the stairs: "climb with care"
+    const cx = x + 2.9, cz = z + R.stairs.foot + 0.75;
+    parts.push([cyl(0.04, 0.04, 1.0, cx, 0.5, cz, 6), "#5a3a22"]);
+    atlas.add("ruinas-cuidado", 384, 176, drawBoard("Suba con cuidado", "Escalones altos", "#6b4226", "#fff7e6", "#3b2414"), 0.95, 0.44, cx, 1.08, cz + 0.03, 0);
+  }
+  // the custodian's table by the gateway: the visitors' book, a clay jug and its cup
+  const B = R.table;
+  add(box(1.15, 0.06, 0.62, B.x, 0.78, B.z), WOOD);
+  for (const [lx, lz] of [[-0.5, -0.25], [0.5, -0.25], [-0.5, 0.25], [0.5, 0.25]]) add(box(0.06, 0.76, 0.06, B.x + lx, 0.38, B.z + lz), "#5a3a22");
+  add(box(0.36, 0.04, 0.26, B.x - 0.25, 0.83, B.z).rotateY(0.0), "#f4efe2");
+  add(cyl(0.09, 0.12, 0.26, B.x + 0.3, 0.94, B.z - 0.05, 8), "#b5562f");
+  add(cyl(0.05, 0.04, 0.09, B.x + 0.1, 0.855, B.z + 0.15, 6), "#c4683a");
+  // the painter's easel, the temple on its canvas (it faces south-east: she paints with the castillo before her), and her stool with the paints
+  const E = R.easel;
+  for (const [lx, lz, tilt] of [[-0.3, 0.12, 0.12], [0.3, 0.12, 0.12], [0, -0.35, -0.22]] as [number, number, number][]) parts.push([box(0.045, 1.7, 0.045, 0, 0.85, 0).rotateX(tilt).translate(x + E.x + lx, 0, z + E.z + lz), WOOD]);
+  const canvas = (g: THREE.BufferGeometry, c: string) => parts.push([g.rotateX(-0.12).translate(x + E.x, 0, z + E.z + 0.2), c]);
+  canvas(box(0.78, 0.6, 0.03, 0, 1.25, 0), "#f7f3e8");
+  canvas(box(0.7, 0.2, 0.01, 0, 1.42, 0.02), "#9fd4e6");
+  canvas(box(0.7, 0.12, 0.01, 0, 1.26, 0.02), "#3fb7c0");
+  canvas(box(0.7, 0.2, 0.01, 0, 1.08, 0.02), "#9cc06a");
+  canvas(box(0.3, 0.2, 0.012, 0.02, 1.25, 0.024), "#c9c1aa");
+  canvas(box(0.16, 0.1, 0.012, 0.02, 1.39, 0.024), "#d6cfbb");
+  canvas(box(0.8, 0.04, 0.08, 0, 0.93, 0.04), WOOD);
+  add(cyl(0.2, 0.17, 0.44, R.stool.x, 0.22, R.stool.z, 8), WOOD);
+  add(box(0.3, 0.06, 0.2, R.stool.x, 0.47, R.stool.z), "#e9e2d0");
+  for (const [k, c] of ["#d8402a", "#f2c230", "#2f7fbf", "#3f8a3a"].entries()) add(box(0.05, 0.03, 0.05, R.stool.x - 0.1 + k * 0.065, 0.51, R.stool.z), c);
+  // a stone bench along the west wall, a basket of thread on it; the big stone the iguana lies on
+  add(box(0.5, 0.42, 1.7, R.bench.x, 0.21, R.bench.z), GREY[0]);
+  add(cyl(0.2, 0.15, 0.2, R.bench.x, 0.52, R.bench.z + 0.5, 8), "#c9a961");
+  for (const [k, c] of ["#e8432b", "#f2c230", "#2a9d8f"].entries()) parts.push([new THREE.IcosahedronGeometry(0.07, 0).translate(x + R.bench.x - 0.06 + k * 0.06, 0.66, z + R.bench.z + 0.5 + (k - 1) * 0.05), c]);
+  stone(parts, q, x + R.rock.x, 0.2, z + R.rock.z, 1.5, 0.62, "#a8a190");
+  iguana(parts, x + R.rock.x + 0.05, 0.62, z + R.rock.z, 0.5, 1.15);
+  iguana(parts, x + 5.4, 0.4, z + R.n - 0.3, Math.PI, 0.9, "#8a8f6a");
+  iguana(parts, x + R.platform.x - 1.6, R.platform.h, z + R.platform.z - 1.7, 2.2, 0.8, "#76865a");
+  // fallen column drums
+  parts.push([new THREE.CylinderGeometry(0.36, 0.36, 0.55, 10).rotateZ(Math.PI / 2).rotateY(0.5).translate(x + R.drums[0][0], 0.36, z + R.drums[0][1]), GREY[1]]);
+  add(cyl(0.36, 0.38, 0.46, R.drums[1][0], 0.23, R.drums[1][1], 10), GREY[2]);
+  // the selva behind the west and south walls
+  for (const [jx, jz, sj] of [[R.w - 3.4, R.s - 1.5, 2.3], [R.w - 1.0, R.s + 3.4, 2.4], [-6.0, R.s + 3.6, 2.2], [0.5, R.s + 3.9, 1.9], [6.5, R.s + 3.5, 2.1]]) jungle(parts, q, x + jx, 0, z + jz, sj);
+  farPalm(parts, q, x - 3.4, z + R.s + 3.2, 8.5, 1.3, 0.2);
+  farPalm(parts, q, x + 9.0, z + R.s + 2.9, 9.5, 0.9, 0.16);
+}
+
+/** The walked ruins' ground plan (theme.ts `ruins.walk`): the precinct's walls (the gateway in the east wall left
+ *  open: the town's own west edge is open there too, town.ts), the kerb above the shore with everything beyond it but
+ *  the stairs and the landing before the temple, and what stands on the lawn. The walls are edges ("edge": never
+ *  climbed); the platform, the bench, the drums and the iguana's stone are plain, so they are jumped onto like any low
+ *  thing (ledges.ts). The stairs and the landing are floors with a height (water.ts FLOORS). */
+export function ruinsWalk(col: Colliders, x: number, z: number) {
+  const R = RUINS, S = R.stairs, L = R.landing;
+  const edge = (x0: number, x1: number, z0: number, z1: number) => col.addBox(x + (x0 + x1) / 2, z + (z0 + z1) / 2, x1 - x0, z1 - z0, "edge");
+  const far = L.back - 3;
+  // beyond the kerb, west and east of the stairs (their balustrades with it), as far up as the landing's front
+  edge(R.w - 1.4, -S.half - 0.02, S.top, R.n);
+  edge(S.half + 0.02, R.e + 1.4, S.top, R.n);
+  for (const s of [-1, 1]) edge(s < 0 ? -2.28 : S.half + 0.02, s < 0 ? -S.half - 0.02 : 2.28, R.n, R.n + 0.3);
+  // round the landing: its two ends and the temple's front
+  edge(R.w - 1.4, -L.half, far, S.top);
+  edge(L.half, R.e + 1.4, far, S.top);
+  edge(-L.half - 0.5, L.half + 0.5, far, L.back);
+  // the walls: east (but the gateway), south, west
+  edge(R.e, R.e + 1.4, R.n, R.gate - R.gateHalf);
+  edge(R.e, R.e + 1.4, R.gate + R.gateHalf, R.s + 1.4);
+  edge(R.w - 1.4, R.e + 1.4, R.s, R.s + 1.4);
+  edge(R.w - 1.4, R.w, R.n - 0.6, R.s + 1.4);
+  // on the lawn
+  const P = R.platform;
+  col.addBox(x + P.x, z + P.z, P.w, P.w);
+  col.addBox(x + R.stela.x, z + R.stela.z, 1.3, 0.9, "edge");
+  col.addBox(x + R.table.x, z + R.table.z, 1.2, 0.68, "edge");
+  col.addCircle(x + R.easel.x, z + R.easel.z, 0.45);
+  col.addCircle(x + R.stool.x, z + R.stool.z, 0.24);
+  col.addBox(x + R.bench.x, z + R.bench.z, 0.5, 1.7);
+  col.addCircle(x + R.rock.x, z + R.rock.z, 0.72);
+  for (const [dx, dz] of R.drums) col.addCircle(x + dx, z + dz, 0.4);
+  col.addCircle(x + R.palm[0], z + R.palm[1], 0.28);
+  FLOORS.push({ x0: x - S.half - 0.05, x1: x + S.half + 0.05, z0: z + S.top, z1: z + S.foot, y: (_px, pz) => ruinsStairY(pz - z) });
+  FLOORS.push({ x0: x - L.half, x1: x + L.half, z0: z + L.back, z1: z + S.top, y: () => S.rise });
 }
 
 // ------------------------------------------------------------------------------------------------ the tianguis

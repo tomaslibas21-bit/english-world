@@ -134,7 +134,13 @@ export const THEME: TownTheme = {
   outdoorNpcs: [{ npc: "dot", x: 111.35, z: 6.1, rot: 0.11, ax: 111.6, az: 8.3 },
     // x01-surf: Nayeli behind the counter of her palapa on the sand east of the steps down from the malecón (x −48),
     // looking west along the beach; the learner stands on the sand before the counter
-    { npc: "surf", x: -45.45, z: -68.15, rot: -Math.PI / 2, ax: -47.55, az: -68.15 }],
+    { npc: "surf", x: -45.45, z: -68.15, rot: -Math.PI / 2, ax: -47.55, az: -68.15 },
+    // x06–x08, on the lawn of the ruins (mexican.ts RUINS, from the temple at −124, −74): Don Efraín by his table just
+    // inside the gateway, Citlali beside her easel between the stairs and the west wall, Doña Rosario before her bench
+    // at the west wall, the iguana's stone to her left
+    { npc: "custodio", x: -116.8, z: -63.7, rot: Math.PI, ax: -116.8, az: -65.5 },
+    { npc: "pintora", x: -129.9, z: -66.0, rot: Math.PI / 2, ax: -128.1, az: -66.0 },
+    { npc: "rosario", x: -135.7, z: -64.8, rot: Math.PI / 2, ax: -133.9, az: -64.8 }],
   // x05-tienda: the store's own cashier, Paco, behind its counter where Maple Harbor's Dot stands (she is outdoors here)
   roomNpcs: { "gas-station": [{ npc: "tienda", x: -3, z: -3.8, rot: 0, ax: -3, az: -1.7 }] },
   // s71b: the pump has no door to find it by, so Doña Chela's talk spot is marked all the time (the owner, 17 Nov 2026)
@@ -289,7 +295,9 @@ export const THEME: TownTheme = {
   // (15 Nov: and through the cave's mouth at its far side into the aluxes' grotto, src/game/cave)
   // (15 Nov, later: its grounds open to explore from every side, src/game/cave/grounds.ts)
   cenote: { x: -136, z: -6, sign: "Cenote Ka'an", walk: true, grotto: true, open: true },
-  ruins: { x: -124, z: -74 },
+  // (18 Nov: one walks in: a gateway where the beach ends, a walled lawn with a few people to chat with (x06–x08),
+  // the castillo's stairs up to the temple's doorways; mexican.ts ruins / ruinsWalk)
+  ruins: { x: -124, z: -74, walk: true },
 
   // Graphics, round 1 (docs/es/TOWN.md "Graphics, round 1"): the Caribbean's colors, the Saturday tianguis, rooms
   // that look Mexican. The sea from the shore out: the sand showing through, turquoise, aqua, then deep blue
@@ -389,7 +397,9 @@ export const THEME: TownTheme = {
     [-122.4, -4.3, -121.4, -3.8],
     // (world-v2) people on the empty meadows: two on the grass north of the sacbé, two on the path to the ruins' gateway, two by
     // the park's pond, two out east watching the planes come in
-    [-118.6, -14.6, -117.7, -14.0], [-113.5, -65.3, -112.7, -64.7], [95.6, -36.2, 96.6, -35.8], [137.2, 43.6, 138.2, 44.1]],
+    [-118.6, -14.6, -117.7, -14.0],
+    // (18 Nov: the two who stood on the path to the ruins' gateway are visitors on its lawn now, by the platform)
+    [-124.9, -59.0, -124.0, -58.5], [95.6, -36.2, 96.6, -35.8], [137.2, 43.6, 138.2, 44.1]],
   sitters: [[24.05, -17.4], [37.45, -17.4], [0.45, -65.05], [21.55, -65.05], [-39.55, -65.05],
     // (graphics round 4) two under the palapas by the letters, on their loungers (`beachLife`), and a traveller on
     // andén 2's bench (a person is ~4,000 triangles, in every view that sees them: no more, for the phones' budget)

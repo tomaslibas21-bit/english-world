@@ -203,8 +203,12 @@ export function buildTown(): Town {
   if (THEME.cenote?.walk) {
     // (`cenote.open`, cave/grounds.ts: the meadow's whole edge is open, as far north and south as its grounds reach)
     const cz = THEME.cenote.z, open = !!THEME.cenote.open, g0 = cz - (open ? GROUNDS.REACH.ns : 3.6), g1 = cz + (open ? GROUNDS.REACH.ns : 2.6);
-    colliders.addBox(WORLD.minX - 1, (g0 - 110) / 2, 2, g0 + 110);
+    // (theme.ts `ruins.walk`: and at the ruins' gateway where the beach ends; the precinct has its own walls, mexican.ts ruinsWalk)
+    const ru = THEME.ruins?.walk ? THEME.ruins : null, r0 = ru ? ru.z + MX.RUINS.gate - MX.RUINS.gateHalf : -110, r1 = ru ? ru.z + MX.RUINS.gate + MX.RUINS.gateHalf : -110;
+    colliders.addBox(WORLD.minX - 1, (r0 - 110) / 2, 2, r0 + 110);
+    colliders.addBox(WORLD.minX - 1, (g0 + r1) / 2, 2, g0 - r1);
     colliders.addBox(WORLD.minX - 1, (g1 + 110) / 2, 2, 110 - g1);
+    if (ru) MX.ruinsWalk(colliders, ru.x, ru.z);
     if (open) GROUNDS.groundsWalk(colliders, THEME.cenote.x, cz, WORLD.minX, THEME.meadow?.ceibas);
     else MX.cenoteWalk(colliders, THEME.cenote.x, cz, WORLD.minX);
   } else colliders.addBox(WORLD.minX - 1, 0, 2, 220);
@@ -1966,7 +1970,7 @@ function addTownMx(M: Merger, col: Colliders) {
   // (graphics round 4) the scrub on the meadow round it, ceibas over the selva behind it
   const md = THEME.meadow;
   if (md) MX.meadow(THEME.regions ? mxFar : mxFlat, md.x0, md.x1, md.z0, md.z1, md.clear, md.ceibas);
-  if (THEME.ruins) MX.ruins(THEME.regions ? mxFar : mxFlat, THEME.ruins.x, THEME.ruins.z, a);
+  if (THEME.ruins) MX.ruins(THEME.regions ? mxFar : mxFlat, THEME.ruins.x, THEME.ruins.z, a, !!THEME.ruins.walk);
   // (graphics round 2) the bus terminal's andenes and coaches, the airport's thatched canopy, planters and welcome sign
   const bt = THEME.busTerminal, station = BUILDINGS.find((b) => b.id === "station");
   if (bt && station) {

@@ -48,6 +48,9 @@ export const LOCATIONS: Record<string, LocationDef> = Object.fromEntries([
   L("gruta", "Gruta de los Aluxes", "The aluxes' grotto", "harbor", "interior", "✨"),
   // the watersports palapa on the beach west of El Muelle (x01-surf; the surf game starts here)
   L("surf-palapa", "Escuela de Surf La Ola", "Surf school and gear rental", "harbor", "outdoor", "🏄"),
+  // the Maya ruins on the point past the beach's west end, walked into through their gateway (x06–x08: the people
+  // one chats with on their lawn; mexican.ts ruinsWalk)
+  L("ruinas", "Zona Arqueológica · Templo del Mar", "The Maya ruins", "harbor", "outdoor", "🏛️"),
   L("phone", "Llamada", "Phone call", "phone", "phone", "📱"),
 ].map((l) => [l.id, l]));
 
@@ -81,6 +84,7 @@ export const NAME_MEANING: Record<string, string> = {
   "cedar-lane": "street of the cedars",
   sproutly: "little sprout",
   "surf-palapa": "The Wave surf school",
+  ruinas: "archaeological site · Temple of the Sea",
 };
 
 /** A place in English, with what its Spanish name means: "Café “La Ceiba” – literally “the ceiba (…)”". */

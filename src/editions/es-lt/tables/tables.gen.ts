@@ -56,6 +56,9 @@ import T_x02_alux_kin from "./x02-alux-kin.json";
 import T_x03_alux_nikte from "./x03-alux-nikte.json";
 import T_x04_yaxche from "./x04-yaxche.json";
 import T_x05_tienda from "./x05-tienda.json";
+import T_x06_custodio from "./x06-custodio.json";
+import T_x07_pintora from "./x07-pintora.json";
+import T_x08_rosario from "./x08-rosario.json";
 
 export const TABLES: Record<string, LearnerTable> = {
   "_shared": T__shared as LearnerTable,
@@ -114,4 +117,7 @@ export const TABLES: Record<string, LearnerTable> = {
   "x03-alux-nikte": T_x03_alux_nikte as LearnerTable,
   "x04-yaxche": T_x04_yaxche as LearnerTable,
   "x05-tienda": T_x05_tienda as LearnerTable,
+  "x06-custodio": T_x06_custodio as LearnerTable,
+  "x07-pintora": T_x07_pintora as LearnerTable,
+  "x08-rosario": T_x08_rosario as LearnerTable,
 };
