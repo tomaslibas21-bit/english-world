@@ -8,6 +8,8 @@ import { NPCS } from "../../src/content/npcs";
 import { BUILDINGS, CAR, CHAT_SPOTS, FOUNTAIN, OUTDOOR_NPCS, PARK, PARKED_CARS, ROADS, SIDEWALK, SQUARE, STALLS, TRAFFIC_LANES, WORLD } from "../../src/game/world/layout";
 import { THEME } from "../../src/game/world/theme";
 import { STALL_SIZE } from "../../src/game/world/mexican";
+import { ROOM_PEOPLE } from "../../src/game/world/roomPeople";
+import { STAFF_LINES, VENDOR_LINES } from "../../src/content/ambient";
 
 const isCall = (id: string) => {
   const s = SITUATION_BY_ID[id];
@@ -22,10 +24,33 @@ describe("every Spanish conversation's place", () => {
     }
   });
 
-  it("outdoors: the speaker stands in the town (layout.ts OUTDOOR_NPCS with the theme's)", () => {
+  it("outdoors: the speaker stands in the town (layout.ts OUTDOOR_NPCS with the theme's), or in the place's room (theme.ts roomNpcs)", () => {
     for (const s of SITUATIONS.filter((x) => !isCall(x.id) && LOCATIONS[x.location].kind === "outdoor")) {
-      expect(OUTDOOR_NPCS.some((n) => n.npc === s.npc), `${s.id}: ${s.npc}`).toBe(true);
+      const inRoom = THEME.roomNpcs[s.location]?.some((n) => n.npc === s.npc) ?? false;
+      expect(OUTDOOR_NPCS.some((n) => n.npc === s.npc) || inRoom, `${s.id}: ${s.npc}`).toBe(true);
     }
+  });
+
+  it("x05: Paco behind Tienda El Faro's counter, talked to across it; Doña Chela's talk spot marked at the pump", () => {
+    expect(NPCS.tienda?.name).toBe("Paco");
+    const paco = THEME.roomNpcs["gas-station"]?.find((n) => n.npc === "tienda")!;
+    expect(paco).toBeTruthy();
+    // the counter (interiors.ts "gas-station": z −2.8, 1 m deep) between him and the learner, who stands 0.6 m in front
+    expect(paco.z).toBeLessThan(-3.3);
+    expect(paco.az! - (-2.8 + 0.5)).toBeCloseTo(0.6, 2);
+    expect(paco.ax).toBe(paco.x);
+    // nobody else of the room stands at his place or the learner's (roomPeople.ts)
+    for (const q of ROOM_PEOPLE["gas-station"]) for (const [x, z] of [[paco.x, paco.z], [paco.ax!, paco.az!]]) expect(Math.hypot(q.x - x, q.z - z), `${q.x},${q.z}`).toBeGreaterThan(1);
+    // the attendant's spot has no door to find it by: marked all the time
+    expect(THEME.talkMarks).toContain("dot");
+    for (const id of THEME.talkMarks) expect(OUTDOOR_NPCS.some((n) => n.npc === id), id).toBe(true);
+  });
+
+  it("the tianguis' vendors and the rooms' staff have their own lines (content/ambient.ts)", () => {
+    expect(VENDOR_LINES.length).toBeGreaterThan(0);
+    for (const l of [...VENDOR_LINES, ...Object.values(STAFF_LINES)]) { expect(l.en).toMatch(/^[¡¿A-ZÁÉÍÓÚÑ]/); expect(l.lt).toMatch(/^[A-Z]/); }
+    for (const [room, people] of Object.entries(ROOM_PEOPLE)) for (const q of people) if (q.says) expect(STAFF_LINES[q.says], `${room}: ${q.says}`).toBeTruthy();
+    expect(VENDOR_LINES.some((l) => /Doña Licha/.test(l.en)), "a vendor points to the mercado's conversation").toBe(true);
   });
 
   it("s71b: Doña Chela fills the tank at the pump, by the learner's car, not in the shop", () => {

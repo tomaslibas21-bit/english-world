@@ -171,15 +171,19 @@ describe("the grotto's rules", () => {
 
 describe("the aluxes' conversations are off the route", () => {
   it("they are conversations like any other, but no task and not counted", () => {
+    // (every conversation off the route: the aluxes', and since 18 Nov 2026 Paco's at Tienda El Faro, x05-tienda)
     const bonus = SITUATIONS.filter((s) => s.bonus);
-    expect(bonus.map((s) => s.id).sort()).toEqual(P.ALUXES.map((a) => SITUATIONS.find((s) => s.npc === a.npc)?.id).sort());
+    const aluxes = P.ALUXES.map((a) => SITUATIONS.find((s) => s.npc === a.npc)!);
+    for (const a of aluxes) expect(a?.bonus, a?.id).toBe(true);
     expect(ROUTE).toHaveLength(SITUATIONS.length - bonus.length);
     expect(ROUTE.some((q) => q.bonus)).toBe(false);
     for (const s of bonus) {
-      expect(s.location).toBe("gruta");
-      expect(LOCATIONS[s.location]?.kind).toBe("interior");
       expect(SITUATION_BY_ID[s.id]).toBe(s);
       expect(/^x\d\d/.test(s.id)).toBe(true);
+    }
+    for (const s of aluxes) {
+      expect(s.location).toBe("gruta");
+      expect(LOCATIONS[s.location]?.kind).toBe("interior");
     }
   });
 });

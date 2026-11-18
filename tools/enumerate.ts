@@ -8,7 +8,7 @@
 import { SITUATIONS } from "../src/content/situations";
 import { GLOBAL } from "../src/content/global";
 import { NPCS } from "../src/content/npcs";
-import { AMBIENT_LINES } from "../src/content/ambient";
+import { AMBIENT_LINES, STAFF_LINES, VENDOR_LINES } from "../src/content/ambient";
 import { RIDE_OWNERS, RIDE_SHOUTS } from "../src/content/rides";
 import { VOICES_V2, ambientVoice, coachVoices, npcVoice, rideVoice, shoutVoice } from "../src/content/voices";
 import { withoutAddressedNames } from "../src/audio-key";
@@ -193,6 +193,8 @@ function finishEnumeration(out: Map<string, Utt>, errors: string[], allNpcIds: S
   }
   // passers-by in the town
   if (!opts.only?.length && !opts.sits) for (const l of AMBIENT_LINES) for (const g of ["f", "m"] as const) add(ambientVoice(g, opts.v2), 1, { say: l.en, en: l.en } as Sentence, "ambient");
+  // the market vendors and the rooms' staff with one line to say (content/ambient.ts), in the same voices
+  if (!opts.only?.length && !opts.sits) for (const l of [...VENDOR_LINES, ...Object.values(STAFF_LINES)]) for (const g of ["f", "m"] as const) add(ambientVoice(g, opts.v2), 1, { say: l.en, en: l.en } as Sentence, "ambient:staff");
   // the convertibles' owners, each in a voice of their own, and what passers-by call after a car (the Gemini voices
   // only: with the first voices they speak as the passers-by do, and those lines were never made for them)
   if ((opts.v2 ?? VOICES_V2) && !opts.only?.length && !opts.sits) {

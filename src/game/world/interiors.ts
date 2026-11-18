@@ -220,6 +220,8 @@ function room(id: string, w: number, d: number, floor: string, wall: string, bui
   // someone the edition has standing outdoors (theme.ts `outdoorNpcs`: Doña Chela at the pump) is not in the room
   const out = THEME.outdoorNpcs;
   if (out.length) npcs = npcs.filter((n) => !out.some((o) => o.npc === n.npc));
+  // and someone it adds to the room (theme.ts `roomNpcs`: Paco at Tienda El Faro's counter) is in it
+  if (THEME.roomNpcs[id]) npcs = [...npcs, ...THEME.roomNpcs[id]];
   // and someone it has stand elsewhere in the room (theme.ts `roomSpots`: a conversation's other speaker within its
   // picture) stands there
   const moved = THEME.roomSpots[id];
@@ -4391,8 +4393,10 @@ function elFaro4(c: Ctx, S: Smalls) {
   wallPanel(c, hieloSign(), ix, 0.48, iz + 0.395, 1.25, 0.44);
   c.col.addBox(ix, iz, 1.45, 0.85);
   garrafonRack(c, S, 2.0, 4.3);
-  // a tall rack of chips and snacks in their bright bags (botanas), by the aisle
-  const bx = -1.5, bz = 0.3;
+  // a tall rack of chips and snacks in their bright bags (botanas), by the aisle: on its west side, so that the aisle
+  // from the door to the counter stays open for the walk to Paco (x05-tienda; at x −1.5 the rack, the ice chest, the
+  // garrafones and the room's customer closed every way there)
+  const bx = -3.0, bz = 0.3;
   S.add(boxGeo(0.95, 1.75, 0.06, bx, 0.875, bz - 0.2), "#c8102e");
   for (const s of [-1, 1]) S.add(boxGeo(0.05, 1.8, 0.45, bx + s * 0.47, 0.9, bz), "#c8102e");
   const BAGS = ["#f6a800", "#e4007c", "#1f6fd1", "#7ac143", "#ff5a36", "#f6c000", "#6d2e9e", "#00a6a6"];

@@ -27,6 +27,8 @@ interface Walker {
   heading: number; greetT: number; lastTarget: number;
   chat?: Chatter;
   dog?: Dog;
+  /** Behind a stall (theme.ts `vendors`): a vendor's lines when clicked (content/ambient.ts VENDOR_LINES). */
+  vendor?: boolean;
   /** Holding their pose far from the player (theme.ts `stillBeyond`): their parts' matrices frozen; `posed` once they
    *  have taken it (sitting down, facing the other one). */
   still?: boolean; posed?: boolean;
@@ -120,10 +122,7 @@ const HAIRS = ["#1f1a17", "#5a3a25", "#7b4a2a", "#d9b36a", "#a8472a", "#b8b3ac",
 // (none of the player's tops, ui/Title.tsx LOOKS: no passer-by is dressed like the player)
 const TOPS = ["#c9184a", "#606c38", "#e9c46a", "#5e548e", "#b56576", "#ddb892", "#6a994e", "#bc4749", "#3d5a80", "#a44a3f", "#f2cc8f", "#81b29a"];
 const BOTTOMS = ["#264653", "#3d405b", "#2b2d42", "#5c4b3a", "#4a5a7a", "#6b705c", "#22223b"];
-// (a woman's hair is always long: loose, wavy, long curls or a thick braid; Character.ts LONG_HAIR)
-const F_HAIR: HairStyle[] = ["long", "braid", "wavy", "curls", "long", "wavy"];
-/** A braid's ribbon. */
-const TIES = ["#e4007c", "#f2b632", "#2aa7a0", "#f4f1ea", "#d94b3d"];
+const F_HAIR: HairStyle[] = ["long", "bun", "ponytail", "curly", "bob", "wavy"];
 const M_HAIR: HairStyle[] = ["short", "buzz", "side", "bald", "curly", "wavy"];
 const CAR_COLORS = ["#e45b4f", "#4a7bb7", "#f2f2f2", "#3d3d46", "#6fbf73", "#f2c14e", "#9b5de5", "#b0b7bf"];
 
@@ -209,24 +208,17 @@ export function walkerLook(female: boolean, r: () => number): Look {
   if (r() < 0.12) acc.push(female ? "earrings" : "cap");
   if (!female && r() < 0.15) acc.push("beard");
   if (r() < 0.08) acc.push("sunglasses");
-  const look: Look = braided({
+  const look: Look = {
     skin: pick(W?.skins ?? SKINS), hair: { style: pick(female ? F_HAIR : M_HAIR), color: pick(W?.hairs ?? HAIRS) },
     top: pick(W?.tops ?? TOPS), bottom: pick(W?.bottoms ?? BOTTOMS), skirt: female && r() < 0.3, acc,
     height: 0.92 + r() * 0.14, build: 0.92 + r() * 0.2, female,
-  });
+  };
   if (!W) return look;
   // a straw hat now and then (a cap becomes one), shorts and sandals in the heat
   const hat = rWear(), shorts = rWear(), sandals = rWear();
   const cap = acc.indexOf("cap");
   if (cap >= 0) acc[cap] = "strawhat"; else if (hat < W.straw) acc.push("strawhat");
   return { ...look, shorts: !look.skirt && shorts < W.shorts, flipflops: sandals < W.sandals };
-}
-/** A braid's shoulder and ribbon, drawn from the clothes' colours (not from the random stream: the looks stay as
- *  they were). */
-function braided(look: Look): Look {
-  if (look.hair.style !== "braid") return look;
-  const n = parseInt(look.top.slice(1), 16) + parseInt(look.bottom.slice(1), 16);
-  return { ...look, hair: { ...look.hair, side: n % 2 ? 1 : -1, tie: TIES[n % TIES.length] } };
 }
 
 /** What a passer-by has with them (their own random stream, so the looks above stay as they were): a shopping bag or
@@ -375,6 +367,7 @@ export class Ambient {
     for (const [x, z, rot] of spots) {
       const female = r() < 0.5;
       const w = this.person(walkerLook(female, r), female, "stand");
+      w.vendor = true;
       w.ch.root.position.set(x, 0, z);
       w.ch.root.rotation.y = w.heading = rot;
       colliders?.addCircle(x, z, 0.35);

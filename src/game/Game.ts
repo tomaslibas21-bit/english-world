@@ -31,7 +31,7 @@ import { NavGrid } from "./nav";
 import { Session } from "./session";
 import { Ambient, Chatter, walkerLook } from "./ambient";
 import { ROOM_PEOPLE } from "./world/roomPeople";
-import { AMBIENT_LINES } from "../content/ambient";
+import { AMBIENT_LINES, STAFF_LINES, VENDOR_LINES } from "../content/ambient";
 import { ambientVoice } from "../content/voices";
 import { audio } from "./audio";
 import { TOWN_SOUNDS } from "./townSounds";
@@ -153,6 +153,8 @@ export class Game implements GameApi {
   /** The room's townspeople (roomPeople.ts) and the pairs of them talking. */
   private extras: GameCharacter[] = [];
   private extraChats: Chatter[] = [];
+  /** The staff among them with one line to say (roomPeople.ts `says`). */
+  private staff: { ch: GameCharacter; says: string; female: boolean }[] = [];
   private npcLayer: THREE.Group = new THREE.Group();
   private guidance = new Guidance();
   private sun!: THREE.DirectionalLight;
@@ -197,7 +199,7 @@ export class Game implements GameApi {
   private hudBoxCache: TagBox[] = [];
   private hudCheck = 0;
   private tagLayer: HTMLDivElement;
-  private nearest: { kind: "npc" | "door" | "exit" | "ride" | "out" | "climb" | "glyph" | "surf"; id: string; label: string } | null = null;
+  private nearest: { kind: "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "glyph" | "surf"; id: string; label: string } | null = null;
   /** Puerto Colibrí's grotto (src/game/cave): its listening quest while the player is down there; what shows of it
    *  from the cenote; how long the player has swum at its mouth (swimming on in goes in). */
   cave: CaveQuest | null = null;
@@ -663,12 +665,14 @@ export class Game implements GameApi {
     for (const ch of this.extras) { ch.dispose?.(); this.npcLayer.remove(ch.root); }
     this.extras = [];
     this.extraChats = [];
+    this.staff = [];
     this.zone.colliders.circles = this.zone.colliders.circles.filter((c) => !(c as any).extra);
     const people = this.zone.interior ? ROOM_PEOPLE[this.zone.id] ?? [] : [];
     const r = rand([...this.zone.id].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) % 100000, 17));
     const talking = new Map<number, GameCharacter>();
     for (const p of people) {
-      const female = r() < 0.5;
+      // (the same draw of the dice either way, so that the room's other people keep their looks)
+      const coin = r() < 0.5, female = p.female ?? coin;
       const ch = createCharacter({ ...walkerLook(female, r), carry: p.carry, phone: p.phone ?? (!p.sit && !p.run && r() < 0.5) });
       ch.watch = this.learnerAt;
       ch.noticeWithin = 3.5;
@@ -679,6 +683,7 @@ export class Game implements GameApi {
       if (p.busy) ch.busy = p.busy;
       this.npcLayer.add(ch.root);
       this.extras.push(ch);
+      if (p.says && STAFF_LINES[p.says]) this.staff.push({ ch, says: p.says, female });
       // nobody walks through them, sitting or standing (and the way-finding goes round them)
       if (p.run === undefined) {
         const r = p.sit !== undefined ? 0.3 : 0.38;
@@ -848,6 +853,14 @@ export class Game implements GameApi {
     useStore.getState().toast({ kind: "info", title: L("„{line}“", { line: line.en }), body: line.lt, ms: 3200 });
   }
 
+  /** A member of the room's staff with no conversation here says their one line (roomPeople.ts `says`), turned to the
+   *  player. */
+  private staffSays(i: number) {
+    const s = this.staff[i], line = s && STAFF_LINES[s.says];
+    if (!line || this.session?.active) return;
+    this.saysAloud(line, s.female, s.ch);
+  }
+
   /** Into a convertible or the boat: whatever the player was doing on foot stops there. */
   private boardRide(r: Ride) {
     const st = useStore.getState();
@@ -951,13 +964,21 @@ export class Game implements GameApi {
       if (w && wh[0].distance < 40) {
         const p = this.player.root.position;
         const { female } = this.ambient.greet(w, p.x, p.z);
-        const line = AMBIENT_LINES[Math.floor(Math.random() * AMBIENT_LINES.length)];
+        // (a vendor behind a stall has lines of their own: theme.ts `vendors`)
+        const pool = w.vendor && VENDOR_LINES.length ? VENDOR_LINES : AMBIENT_LINES;
+        const line = pool[Math.floor(Math.random() * pool.length)];
         const voice = ambientVoice(female ? "f" : "m");
         audio.play(voice, 1, line.en, { male: !female });
         w.ch.talk(audio.clipDuration(voice, 1, line.en) ?? 1.2, () => audio.level(), () => audio.vowel());
         st.toast({ kind: "info", title: L("„{line}“", { line: line.en }), body: line.lt });
         return;
       }
+    }
+    // staff with a line of their own (roomPeople.ts `says`)?
+    if (this.staff.length) {
+      const sh = this.raycaster.intersectObjects(this.staff.map((x) => x.ch.root), true);
+      const i = sh.length ? this.staff.findIndex((x) => { let o: THREE.Object3D | null = sh[0].object; while (o) { if (o === x.ch.root) return true; o = o.parent; } return false; }) : -1;
+      if (i >= 0) { this.staffSays(i); return; }
     }
     // NPC hit?
     const hits = this.raycaster.intersectObjects(this.npcs.map((n) => n.ch.root), true);
@@ -1039,6 +1060,7 @@ export class Game implements GameApi {
     else if (n.kind === "climb") this.climbOut();
     else if (n.kind === "surf") this.surf?.open();
     else if (n.kind === "npc") this.talkTo(n.id);
+    else if (n.kind === "staff") this.staffSays(+n.id);
     else if (n.kind === "glyph") this.cave?.open(n.id);
     else if (n.kind === "door") this.enterDoor(n.id);
     else if (n.kind === "exit") this.exitInterior(this.wild ? n.id : undefined);
@@ -1684,11 +1706,14 @@ export class Game implements GameApi {
     const loc = LOCATIONS[sit.location];
     if (!loc || loc.kind === "phone" || sit.mode === "phone" || sit.mode === "video") return null;
     const npcSpotInterior = (it: Interior) => it.npcs.find((n) => n.npc === sit.npc) ?? it.npcs[0];
-    if (loc.kind === "outdoor") {
+    // an outdoor place's person who stands outdoors (Doña Chela at the pump); one in its room (Paco in Tienda El Faro,
+    // theme.ts roomNpcs) is found through the door, as anyone's indoors
+    const outside = loc.kind === "outdoor" ? OUTDOOR_NPCS.find((n) => n.npc === sit.npc) : undefined;
+    if (outside) {
       if (this.zone.interior) return { kind: "exit", x: this.zone.interior.exit.x, z: this.zone.interior.exit.z - 0.4, label: L("Išeiti į lauką") };
-      const o = OUTDOOR_NPCS.find((n) => n.npc === sit.npc);
-      return o ? { kind: "npc", id: sit.npc, ...talkAt(o), label: NPCS[sit.npc]?.name ?? "" } : null;
+      return { kind: "npc", id: sit.npc, ...talkAt(outside), label: NPCS[sit.npc]?.name ?? "" };
     }
+    if (loc.kind === "outdoor" && !THEME.roomNpcs[sit.location]?.some((n) => n.npc === sit.npc)) return null;
     if (this.zone.id === sit.location && this.zone.interior) {
       const s = npcSpotInterior(this.zone.interior);
       const npc = sit.npc === "sam" || sit.npc === "emma" ? this.chosenDatePartner() : sit.npc;
@@ -1702,6 +1727,8 @@ export class Game implements GameApi {
   }
 
   refreshObjective() {
+    // (the talk spots marked all the time, in the town: theme.ts `talkMarks`)
+    this.guidance.setMarks(this.zone?.interior ? [] : THEME.talkMarks.flatMap((id) => { const o = OUTDOOR_NPCS.find((n) => n.npc === id); return o ? [talkAt(o)] : []; }));
     const sit = this.currentObjective();
     const st = useStore.getState();
     if (!sit) { st.setHud({ objective: null }); this.guidance.setBeacon(null); this.guidance.setPath(null); return; }
@@ -2455,6 +2482,11 @@ export class Game implements GameApi {
         const d = talkDist(n, p);
         if (d < TALK_RANGE && d < bd) { bd = d; best = { kind: "npc", id: n.id, label: NPCS[n.id]?.name ?? n.id }; }
       }
+      // staff with one line to say (across their counter, as a clerk's talk spot is)
+      this.staff.forEach((x, i) => {
+        const q = x.ch.root.position, d = Math.hypot(q.x - p.x, q.z - p.z);
+        if (d < TALK_RANGE && d < bd) { bd = d; best = { kind: "staff", id: String(i), label: L("Pasisveikinti") }; }
+      });
       // a convertible or the boat within a step (a boat from the water too), a pier's boards beside a swimmer
       if (!this.zone.interior && !this.hop.air && this.diveK < 0.3) {
         const r = this.rides.near(p.x, p.z);
@@ -2502,6 +2534,7 @@ export class Game implements GameApi {
         : best.kind === "exit" && this.wild ? { label: best.id === "grieta" ? L("Išlįsti pro plyšį") : L("Grįžti į cenotę"), kind: "exit" }
         : best.kind === "door" && this.nearWay === "ojo" ? { label: L("Šokti žemyn: {place}", { place: best.label }), lt: placeLt(best.id), kind: "enter" }
         : best.kind === "surf" ? { label: best.label, lt: this.surf?.npc?.name, kind: "surf" }
+        : best.kind === "staff" ? { label: best.label, kind: "talk" }
         : { label: best.kind === "npc" ? L("Kalbėtis: {name}", { name: best.label }) : best.kind === "door" ? L("Įeiti: {place}", { place: best.label }) : L("Išeiti į lauką"), lt: best.kind === "door" ? placeLt(best.id) : undefined, kind: best.kind === "npc" ? "talk" : best.kind === "door" ? "enter" : "exit" } });
     }
     // what the player does instead of walking, for the buttons and the hints

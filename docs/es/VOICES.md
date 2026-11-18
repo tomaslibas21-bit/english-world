@@ -211,6 +211,7 @@ every conversation and in both accents.
 | Don Pancho (m, `frank`) | Vecino (Neighbor) | s33 | Algenib | concierge-2 | about 75 | chatty and warm | a little slow |
 | Mónica (f, `jordan`) | Entrenadora personal (Personal trainer) | s35 | Autonoe | commercial-9 | about 30 | energetic and encouraging | lively |
 | Nayeli (f, `surf`) | Instructora de surf (Surf instructor) | x01 | Aoede | csagent-7 | about 28 | warm, sporty and lively, a surf instructor who loves the sea; the surf lesson's commands (`x01-surf:sg_`) called out over the waves, energetic and clear | lively |
+| Paco (m, `tienda`) | Cajero de la tienda (Store cashier) | x05 | Zubenelgenubi | commercial-4 | about 23 | friendly and easygoing, a young cashier who chats with his customers | easy |
 | Doña Margarita (f, `maggie`) | Vende su auto (Selling her car) | — | Gacrux | tutor-3 | about 65 | warm and theatrical, enjoys a good haggle | lively |
 | Jorge (m, `kyle`) | Atención a clientes (Customer service) | — | Rasalgethi | commercial-1 | about 30 | polite, a little scripted | even |
 | Mensaje grabado (f, `harbor_bot`) | Mensaje grabado (Recorded message) | — | Despina | commercial-9 | ageless | even and polished, a recorded message | measured |

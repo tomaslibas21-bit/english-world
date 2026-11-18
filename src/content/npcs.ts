@@ -1,18 +1,11 @@
 // The people of Maple Harbor. Their 3D looks follow the illustrated pictures (public/scenes) and, for the people
 // still waiting for pictures, their descriptions in docs/PICTURES-WANTED.md. Voices are Kokoro-82M American voices (Apache-2.0), rendered
 // in advance by tools/build-audio.ts. `informal` NPCs address the player with Lithuanian "tu".
-// (18 Nov 2026, the owner's rule) Every woman's hair is long: loose, wavy, long curls or a thick braid, whatever her
-// picture shows (a bun and a ponytail showed nothing from the front, and a bob read as a boy's cut): see HairStyle.
 import type { NpcInfo } from "../convo/dialogue";
 
 export type HairStyle = "short" | "long" | "bun" | "ponytail" | "curly" | "bald" | "buzz" | "bob" | "wavy" | "side"
-  // a thick braid over one shoulder and down the front to the waist (`side`: which shoulder; `tie`: its ribbon)
-  | "braid"
-  // long curls over the shoulders and down the back
-  | "curls";
-// A woman's hair is always long (18 Nov 2026: to be told from a man's at any distance and from the front): loose and
-// straight ("long"), loose and wavy ("wavy"), long curls ("curls") or a thick braid ("braid"). Character.ts
-// (LONG_HAIR, hairStyle) builds any other style given to a woman as the nearest of them.
+  // a long braid over the right shoulder (the Spanish edition's Lucía)
+  | "braid";
 export type Accessory = "apron" | "cap" | "glasses" | "sunglasses" | "hat" | "tie" | "beard" | "mustache" | "headset" | "scarf"
   | "badge" | "police" | "vest" | "bowtie" | "earrings" | "pilot" | "chef" | "cardigan" | "lanyard" | "flower"
   // sunglasses / reading glasses pushed up on the head
@@ -32,9 +25,7 @@ export type Accessory = "apron" | "cap" | "glasses" | "sunglasses" | "hat" | "ti
 
 export interface Look {
   skin: string;
-  /** `side`: the shoulder a braid lies over (1: the person's left, as seen from the front on the right; -1: their
-   *  right); `tie`: the colour of the braid's ribbon. */
-  hair: { style: HairStyle; color: string; side?: 1 | -1; tie?: string };
+  hair: { style: HairStyle; color: string };
   top: string;
   bottom: string;
   shoes?: string;
@@ -86,20 +77,20 @@ const N = (id: string, name: string, role: [string, string], gender: "m" | "f", 
 export const NPCS: Record<string, NpcDef> = Object.fromEntries([
   // Arrival
   N("diaz", "Officer Diaz", ["Passport control", "Pasų kontrolė"], "f", "af_kore",
-    { skin: SK.olive, hair: { style: "braid", color: HAIR.black, tie: "#c9a227" }, top: "#8a9fbd", bottom: "#1f2d40", acc: ["police", "badge"] }, { bio: "Griežta, bet teisinga pareigūnė." }),
+    { skin: SK.olive, hair: { style: "bun", color: HAIR.black }, top: "#8a9fbd", bottom: "#1f2d40", acc: ["police", "badge"] }, { bio: "Griežta, bet teisinga pareigūnė." }),
   N("priya", "Priya", ["Baggage services", "Bagažo tarnyba"], "f", "af_nova",
-    { skin: SK.brown, hair: { style: "long", color: HAIR.black }, top: "#e05a47", bottom: "#2b2b3a", acc: ["lanyard", "earrings"] }),
+    { skin: SK.brown, hair: { style: "ponytail", color: HAIR.black }, top: "#e05a47", bottom: "#2b2b3a", acc: ["lanyard", "earrings"] }),
   N("vinnie", "Vinnie", ["Taxi driver", "Taksi vairuotojas"], "m", "am_puck",
     { skin: SK.light, hair: { style: "short", color: HAIR.gray }, top: "#f2c230", bottom: "#5d6648", acc: ["cap", "mustache"], build: 1.12 }, { bio: "Dainuoja kartu su radiju." }),
   N("olivia", "Olivia", ["Hotel reception", "Viešbučio registratūra"], "f", "af_sarah",
-    { skin: SK.fair, hair: { style: "wavy", color: HAIR.chestnut }, top: "#2d5d5b", bottom: "#23303a", acc: ["badge", "earrings"] }),
+    { skin: SK.fair, hair: { style: "bob", color: HAIR.chestnut }, top: "#2d5d5b", bottom: "#23303a", acc: ["badge", "earrings"] }),
   N("chuck", "Chuck", ["Visitor Center volunteer", "Lankytojų centro savanoris"], "m", "am_michael",
     { skin: SK.light, hair: { style: "bald", color: HAIR.gray }, top: "#6d8f3e", bottom: "#4a3b2c", acc: ["glasses", "vest", "mustache"], build: 1.1 }, { speed: 1.18, bio: "Kalba labai greitai – paprašyk sulėtinti!" }),
   // Downtown
   N("mia", "Mia", ["Barista", "Barista"], "f", "af_bella",
-    { skin: SK.tan, hair: { style: "braid", color: HAIR.brown, tie: "#2f7d6b" }, top: "#f4efe6", bottom: "#394150", acc: ["apron"], accColor: "#2f7d6b" }, { bio: "Piešia širdeles ant kavos putų." }),
+    { skin: SK.tan, hair: { style: "ponytail", color: HAIR.brown }, top: "#f4efe6", bottom: "#394150", acc: ["apron"], accColor: "#2f7d6b" }, { bio: "Piešia širdeles ant kavos putų." }),
   N("rosa", "Rosa", ["Local, born and raised", "Vietinė gyventoja"], "f", "af_aoede",
-    { skin: SK.olive, hair: { style: "braid", color: HAIR.white, tie: "#b5485d" }, top: "#b5485d", bottom: "#3a3550", acc: ["glasses", "cardigan", "earrings"], accColor: "#e8c07a", height: 0.93 }, { bio: "Visą gyvenimą gyvena Maple Harbore." }),
+    { skin: SK.olive, hair: { style: "bun", color: HAIR.white }, top: "#b5485d", bottom: "#3a3550", acc: ["glasses", "cardigan", "earrings"], accColor: "#e8c07a", height: 0.93 }, { bio: "Visą gyvenimą gyvena Maple Harbore." }),
   N("ben", "Ben", ["Museum tickets", "Muziejaus kasa"], "m", "am_liam",
     { skin: SK.dark, hair: { style: "buzz", color: HAIR.black }, top: "#6b4a8a", bottom: "#23232e", acc: ["lanyard"] }),
   N("harold", "Harold", ["Museum guard", "Muziejaus prižiūrėtojas"], "m", "am_onyx",
@@ -111,50 +102,50 @@ export const NPCS: Record<string, NpcDef> = Object.fromEntries([
   N("okafor", "Mr. Okafor", ["Pharmacist", "Vaistininkas"], "m", "am_fenrir",
     { skin: SK.deep, hair: { style: "buzz", color: HAIR.black }, top: "#f4f6f8", bottom: "#3a4252", acc: ["glasses", "badge"] }, { bio: "Kantrus ir labai rūpestingas." }),
   N("jessie", "Jessie", ["Hairdresser", "Kirpėja"], "f", "af_sky",
-    { skin: SK.light, hair: { style: "wavy", color: HAIR.red }, top: "#262630", bottom: "#262630", acc: ["apron", "earrings"], accColor: "#c94f7c" }, { bio: "Kerpa ir pasakoja apie savo katę." }),
+    { skin: SK.light, hair: { style: "long", color: HAIR.red }, top: "#262630", bottom: "#262630", acc: ["apron", "earrings"], accColor: "#c94f7c" }, { bio: "Kerpa ir pasakoja apie savo katę." }),
   N("aaron", "Aaron", ["Bank teller", "Banko darbuotojas"], "m", "am_liam",
     { skin: SK.tan, hair: { style: "side", color: HAIR.brown }, top: "#dfe7f2", bottom: "#2b3445", acc: ["tie", "badge"], accColor: "#1f4f8a" }),
   N("gloria", "Gloria", ["Postal clerk", "Pašto darbuotoja"], "f", "af_alloy",
-    { skin: SK.brown, hair: { style: "curls", color: HAIR.black }, top: "#4a78b0", bottom: "#27324a", acc: ["glasses", "badge", "earrings"], build: 1.08 }),
+    { skin: SK.brown, hair: { style: "curly", color: HAIR.black }, top: "#4a78b0", bottom: "#27324a", acc: ["glasses", "badge", "earrings"], build: 1.08 }),
   N("marco_host", "Lucia", ["Restaurant host", "Restorano administratorė"], "f", "af_kore",
     { skin: SK.olive, hair: { style: "long", color: HAIR.black }, top: "#8a1f2a", bottom: "#1c1c22", acc: ["earrings"] }),
   // Getting around
   N("walter", "Walter", ["Ticket office", "Bilietų kasa"], "m", "am_echo",
     { skin: SK.fair, hair: { style: "short", color: HAIR.gray }, top: "#7a2e2e", bottom: "#2d2d36", acc: ["glasses", "hat", "vest"], accColor: "#7a2e2e", height: 0.96 }),
   N("denise", "Denise", ["Bus driver", "Autobuso vairuotoja"], "f", "af_aoede",
-    { skin: SK.dark, hair: { style: "wavy", color: HAIR.black }, top: "#3d6fb5", bottom: "#2a3340", acc: ["badge"] }),
+    { skin: SK.dark, hair: { style: "bob", color: HAIR.black }, top: "#3d6fb5", bottom: "#2a3340", acc: ["badge"] }),
   N("jake", "Jake", ["Car rental agent", "Automobilių nuoma"], "m", "am_eric",
     { skin: SK.light, hair: { style: "short", color: HAIR.blonde }, top: "#1f8a70", bottom: "#2d3440", acc: ["badge"] }),
   N("dot", "Dot", ["Gas station cashier", "Degalinės kasininkė"], "f", "af_kore",
-    { skin: SK.fair, hair: { style: "curls", color: HAIR.auburn }, top: "#d94b3d", bottom: "#2e3a4a", acc: ["cap"], accColor: "#d94b3d" }),
+    { skin: SK.fair, hair: { style: "curly", color: HAIR.auburn }, top: "#d94b3d", bottom: "#2e3a4a", acc: ["cap"], accColor: "#d94b3d" }),
   N("kevin", "Kevin", ["Airline check-in", "Registracija skrydžiui"], "m", "am_fenrir",
     { skin: SK.tan, hair: { style: "side", color: HAIR.black }, top: "#1d3f73", bottom: "#1d2536", acc: ["tie", "badge"], accColor: "#c9a227" }),
   N("grant", "Officer Grant", ["Airport security", "Oro uosto apsauga"], "m", "am_onyx",
     { skin: SK.brown, hair: { style: "buzz", color: HAIR.black }, top: "#e9edf2", bottom: "#1f2633", acc: ["badge"], build: 1.12 }),
   N("nina", "Nina", ["Gate agent", "Vartų darbuotoja"], "f", "af_sarah",
-    { skin: SK.light, hair: { style: "braid", color: HAIR.blonde, tie: "#c9a227" }, top: "#1d3f73", bottom: "#1d2536", acc: ["scarf", "badge"], accColor: "#c9a227" }),
+    { skin: SK.light, hair: { style: "bun", color: HAIR.blonde }, top: "#1d3f73", bottom: "#1d2536", acc: ["scarf", "badge"], accColor: "#c9a227" }),
   // Settling in
   N("linda", "Linda", ["Dental office reception", "Odontologijos klinikos registratūra"], "f", "af_nova",
-    { skin: SK.fair, hair: { style: "long", color: HAIR.brown }, top: "#8fc1c9", bottom: "#394150", acc: ["headset", "glasses"] }),
+    { skin: SK.fair, hair: { style: "bob", color: HAIR.brown }, top: "#8fc1c9", bottom: "#394150", acc: ["headset", "glasses"] }),
   N("claire", "Claire", ["NetWave customer service", "„NetWave“ klientų aptarnavimas"], "f", "af_kore",
-    { skin: SK.tan, hair: { style: "wavy", color: HAIR.chestnut }, top: "#5b3e8f", bottom: "#2a2a35", acc: ["headset"] }),
+    { skin: SK.tan, hair: { style: "ponytail", color: HAIR.chestnut }, top: "#5b3e8f", bottom: "#2a2a35", acc: ["headset"] }),
   N("netwave_bot", "NetWave", ["Automated phone menu", "Automatinis telefono meniu"], "f", "af_river",
     { skin: SK.fair, hair: { style: "bald", color: HAIR.gray }, top: "#5b3e8f", bottom: "#2a2a35" }),
   N("patel", "Mr. Patel", ["Landlord", "Buto savininkas"], "m", "am_eric",
     { skin: SK.brown, hair: { style: "short", color: HAIR.gray }, top: "#ece3cf", bottom: "#3a352e", acc: ["glasses", "mustache", "cardigan"], accColor: "#a8814f", build: 1.08 }),
   N("rita", "Rita", ["Neighbor", "Kaimynė"], "f", "af_jessica",
-    { skin: SK.light, hair: { style: "curls", color: HAIR.red }, top: "#f0a35e", bottom: "#4a5a7a", acc: ["earrings"] }, { informal: true, bio: "Draugiška kaimynė iš gretimo buto." }),
+    { skin: SK.light, hair: { style: "curly", color: HAIR.red }, top: "#f0a35e", bottom: "#4a5a7a", acc: ["earrings"] }, { informal: true, bio: "Draugiška kaimynė iš gretimo buto." }),
   // Work
   N("brooks", "Ms. Brooks", ["HR manager, Brightline", "Personalo vadovė, „Brightline“"], "f", "af_sarah",
-    { skin: SK.dark, hair: { style: "long", color: HAIR.black }, top: "#2f3d58", bottom: "#2f3d58", acc: ["glasses", "earrings"] }),
+    { skin: SK.dark, hair: { style: "bob", color: HAIR.black }, top: "#2f3d58", bottom: "#2f3d58", acc: ["glasses", "earrings"] }),
   N("maria", "Maria", ["Coworker", "Kolegė"], "f", "af_nicole",
     { skin: SK.olive, hair: { style: "wavy", color: HAIR.brown }, top: "#e3b448", bottom: "#33394a", acc: ["lanyard"] }, { informal: true }),
   N("kate", "Kate", ["Team lead", "Komandos vadovė"], "f", "af_bella",
-    { skin: SK.fair, hair: { style: "long", color: HAIR.blonde }, top: "#4a7bb7", bottom: "#2a2f3a", acc: ["headset"] }, { informal: true }),
+    { skin: SK.fair, hair: { style: "ponytail", color: HAIR.blonde }, top: "#4a7bb7", bottom: "#2a2f3a", acc: ["headset"] }, { informal: true }),
   N("paul", "Paul", ["Colleague", "Kolega"], "m", "am_eric",
     { skin: SK.tan, hair: { style: "curly", color: HAIR.brown }, top: "#8a5a3a", bottom: "#2a2f3a", acc: ["glasses", "beard"] }, { informal: true }),
   N("sara", "Sara", ["Colleague", "Kolegė"], "f", "af_nova",
-    { skin: SK.brown, hair: { style: "curls", color: HAIR.black }, top: "#c24f6a", bottom: "#2a2f3a", acc: ["earrings"] }, { informal: true }),
+    { skin: SK.brown, hair: { style: "curly", color: HAIR.black }, top: "#c24f6a", bottom: "#2a2f3a", acc: ["earrings"] }, { informal: true }),
   N("harris", "Mr. Harris", ["Your boss", "Tavo viršininkas"], "m", "am_fenrir",
     { skin: SK.light, hair: { style: "side", color: HAIR.gray }, top: "#dfe3ea", bottom: "#2b2f3b", acc: ["tie", "glasses"], accColor: "#8a2432" }),
   // People
@@ -163,7 +154,7 @@ export const NPCS: Record<string, NpcDef> = Object.fromEntries([
   N("mark", "Mark", ["Party guest, chef", "Svečias, virėjas"], "m", "am_puck",
     { skin: SK.tan, hair: { style: "short", color: HAIR.black }, top: "#e07b39", bottom: "#394150", acc: ["beard"] }, { informal: true, bio: "Virėjas kavinėje, šokti nemoka." }),
   N("lizzie", "Lizzie", ["Your friend", "Tavo draugė"], "f", "af_sky",
-    { skin: SK.light, hair: { style: "braid", color: HAIR.red, side: -1, tie: "#f2c230" }, top: "#4f8f6a", bottom: "#3f51b5" }, { informal: true }),
+    { skin: SK.light, hair: { style: "ponytail", color: HAIR.red }, top: "#4f8f6a", bottom: "#3f51b5" }, { informal: true }),
   N("sam", "Sam", ["Your date", "Pasimatymas"], "m", "am_puck",
     { skin: SK.olive, hair: { style: "wavy", color: HAIR.brown }, top: "#3b5ba5", bottom: "#2b2f3b", acc: ["beard"] }, { informal: true }),
   N("emma", "Emma", ["Your date", "Pasimatymas"], "f", "af_nicole",
@@ -171,16 +162,16 @@ export const NPCS: Record<string, NpcDef> = Object.fromEntries([
   N("dan", "Dan", ["Your friend, dinner host", "Draugas, vakarienės šeimininkas"], "m", "am_michael",
     { skin: SK.brown, hair: { style: "short", color: HAIR.black }, top: "#6a8caf", bottom: "#3a3f4a", acc: ["glasses"] }, { informal: true }),
   N("nora", "Nora", ["Dan's wife", "Dano žmona"], "f", "af_aoede",
-    { skin: SK.light, hair: { style: "braid", color: HAIR.blonde, tie: "#4f8f6a" }, top: "#d98b5f", bottom: "#4a4a5a", skirt: true }, { informal: true }),
+    { skin: SK.light, hair: { style: "bun", color: HAIR.blonde }, top: "#d98b5f", bottom: "#4a4a5a", skirt: true }, { informal: true }),
   N("lucy", "Lucy", ["Old school friend", "Sena mokyklos draugė"], "f", "af_bella",
-    { skin: SK.fair, hair: { style: "wavy", color: HAIR.blonde }, top: "#ef8354", bottom: "#2d3142", acc: ["shades", "scarf"], accColor: "#4f5d75" }, { informal: true }),
+    { skin: SK.fair, hair: { style: "bob", color: HAIR.blonde }, top: "#ef8354", bottom: "#2d3142", acc: ["shades", "scarf"], accColor: "#4f5d75" }, { informal: true }),
   N("mrs_lee", "Mrs. Lee", ["Flower stall", "Gėlių prekystalis"], "f", "af_alloy",
-    { skin: SK.tan, hair: { style: "braid", color: HAIR.gray, side: -1, tie: "#e6aa68" }, top: "#7fb069", bottom: "#4a4a5a", acc: ["apron", "glasses"], accColor: "#e6aa68", height: 0.94 }),
+    { skin: SK.tan, hair: { style: "bob", color: HAIR.gray }, top: "#7fb069", bottom: "#4a4a5a", acc: ["apron", "glasses"], accColor: "#e6aa68", height: 0.94 }),
   N("reyes", "Officer Reyes", ["Police officer", "Policininkas"], "m", "am_onyx",
     { skin: SK.olive, hair: { style: "buzz", color: HAIR.black }, top: "#2a3f66", bottom: "#1d2940", acc: ["police", "badge"] }),
   // Songs 31–35
   N("carter", "Dr. Carter", ["Family doctor", "Šeimos gydytoja"], "f", "af_sarah",
-    { skin: SK.brown, hair: { style: "braid", color: HAIR.black, tie: "#f4f6f8" }, top: "#f4f6f8", bottom: "#2f4a6b", acc: ["glasses", "badge"] }, { bio: "Rami ir kruopšti šeimos gydytoja." }),
+    { skin: SK.brown, hair: { style: "bun", color: HAIR.black }, top: "#f4f6f8", bottom: "#2f4a6b", acc: ["glasses", "badge"] }, { bio: "Rami ir kruopšti šeimos gydytoja." }),
   N("marcus", "Marcus", ["Cashier", "Kasininkas"], "m", "am_puck",
     { skin: SK.dark, hair: { style: "buzz", color: HAIR.black }, top: "#2e8b57", bottom: "#2b2f3b", acc: ["apron", "badge"], accColor: "#1f5f3c" }),
   N("sco", "Self-checkout", ["Self-checkout machine", "Savitarnos kasa"], "f", "af_river",
@@ -188,10 +179,10 @@ export const NPCS: Record<string, NpcDef> = Object.fromEntries([
   N("frank", "Frank", ["Neighbor", "Kaimynas"], "m", "am_michael",
     { skin: SK.light, hair: { style: "short", color: HAIR.white }, top: "#6b8e5a", bottom: "#3a3f4a", acc: ["glasses", "cap"], accColor: "#5b4636", build: 1.05 }, { informal: true, bio: "Išėjęs į pensiją, mėgsta pasikalbėti apie orus." }),
   N("jordan", "Jordan", ["Personal trainer", "Asmeninė trenerė"], "f", "af_bella",
-    { skin: SK.tan, hair: { style: "braid", color: HAIR.brown, side: -1, tie: "#f0883e" }, top: "#1f8a8a", bottom: "#23232e", acc: ["badge"] }, { informal: true, bio: "Energinga trenerė, visada šypsosi." }),
+    { skin: SK.tan, hair: { style: "ponytail", color: HAIR.brown }, top: "#1f8a8a", bottom: "#23232e", acc: ["badge"] }, { informal: true, bio: "Energinga trenerė, visada šypsosi." }),
   // Advanced songs P25–P30 (chapter 8). Mr. Patel (P29), Rita, Dan and Nora (P30) are the people above.
   N("maggie", "Maggie Holt", ["Selling her car", "Parduoda savo automobilį"], "f", "af_alloy",
-    { skin: SK.light, hair: { style: "wavy", color: HAIR.gray }, top: "#5d7ea8", bottom: "#c9b48a", acc: ["shades", "earrings"], height: 0.97 },
+    { skin: SK.light, hair: { style: "bob", color: HAIR.gray }, top: "#5d7ea8", bottom: "#c9b48a", acc: ["shades", "earrings"], height: 0.97 },
     { bio: "Buvusi teatro mokytoja. Savo kabrioletą vadina „ja“ ir mėgsta pasiderėti." }),
   N("kyle", "Kyle", ["Customer service, Harbor Home", "„Harbor Home“ klientų aptarnavimas"], "m", "am_liam",
     { skin: SK.tan, hair: { style: "short", color: HAIR.brown }, top: "#e07b39", bottom: "#2b2f3b", acc: ["headset", "badge"] }),
@@ -199,20 +190,20 @@ export const NPCS: Record<string, NpcDef> = Object.fromEntries([
   N("harbor_bot", "Harbor Home", ["Recorded message", "Įrašytas pranešimas"], "f", "af_river",
     { skin: SK.fair, hair: { style: "bald", color: HAIR.gray }, top: "#2f6f8f", bottom: "#2a2a35" }),
   N("brenda", "Brenda", ["Customer care manager, Harbor Home", "„Harbor Home“ klientų aptarnavimo vadovė"], "f", "af_sarah",
-    { skin: SK.dark, hair: { style: "long", color: HAIR.black }, top: "#e3e7ee", bottom: "#2b2f3b", acc: ["headset", "glasses", "earrings", "cardigan"], accColor: "#2c3e5c" }),
+    { skin: SK.dark, hair: { style: "bob", color: HAIR.black }, top: "#e3e7ee", bottom: "#2b2f3b", acc: ["headset", "glasses", "earrings", "cardigan"], accColor: "#2c3e5c" }),
   N("vanessa", "Vanessa", ["Marketing lead, Brightline", "Rinkodaros vadovė, „Brightline“"], "f", "af_nova",
-    { skin: SK.fair, hair: { style: "curls", color: HAIR.black }, top: "#2b2f3b", bottom: "#2b2f3b", acc: ["lanyard", "earrings", "cardigan"], accColor: "#b0303a" }, { informal: true }),
+    { skin: SK.fair, hair: { style: "curly", color: HAIR.black }, top: "#2b2f3b", bottom: "#2b2f3b", acc: ["lanyard", "earrings", "cardigan"], accColor: "#b0303a" }, { informal: true }),
   N("greg", "Greg", ["Team manager, Brightline", "Komandos vadovas, „Brightline“"], "m", "am_fenrir",
     { skin: SK.light, hair: { style: "short", color: HAIR.gray }, top: "#7d8a87", bottom: "#33394a", acc: ["readers", "cardigan", "beard"], accColor: "#6f7d6c", build: 1.06 }, { informal: true }),
   N("whitaker", "Chef Whitaker", ["Head chef, The Pier", "Vyriausiasis virėjas, „The Pier“"], "m", "am_onyx",
     { skin: SK.brown, hair: { style: "short", color: HAIR.gray }, top: "#f7f5f0", bottom: "#2b2f3b", acc: ["chef", "apron", "beard"], accColor: "#f7f5f0", build: 1.05, height: 1.06 },
     { bio: "Kalba tyliai, bet nieko nepraleidžia pro akis." }),
   N("russo", "Mia Russo", ["Junior cook", "Jaunoji virėja"], "f", "af_sky",
-    { skin: SK.olive, hair: { style: "braid", color: HAIR.black, tie: "#1d4e6b" }, top: "#f7f5f0", bottom: "#2b2f3b", acc: ["apron"], accColor: "#1d4e6b", height: 0.95 },
+    { skin: SK.olive, hair: { style: "ponytail", color: HAIR.black }, top: "#f7f5f0", bottom: "#2b2f3b", acc: ["apron"], accColor: "#1d4e6b", height: 0.95 },
     { informal: true, bio: "Pirmą savaitę virtuvėje, nervinasi, bet turi talentą." }),
   // Batch H (27 Oct 2026): advanced songs P28 (a performance review), P18 (a startup) and P24 (two calls)
   N("emily", "Emily", ["Your manager, Brightline", "Tavo vadovė, „Brightline“"], "f", "af_jessica",
-    { skin: SK.tan, hair: { style: "wavy", color: HAIR.brown }, top: "#d9a441", bottom: "#33394a", acc: ["lanyard", "earrings"] },
+    { skin: SK.tan, hair: { style: "bun", color: HAIR.brown }, top: "#d9a441", bottom: "#33394a", acc: ["lanyard", "earrings"] },
     { informal: true, bio: "Šešias savaites vadovauja komandai, kurioje pati dar neseniai dirbo dizainere." }),
   N("tyler", "Tyler", ["Founder, Sproutly", "Startuolio „Sproutly“ įkūrėjas"], "m", "am_echo",
     { skin: SK.light, hair: { style: "wavy", color: HAIR.blonde }, top: "#6f8f5e", bottom: "#a89a7c", shoes: "#c9a77c", shorts: true, flipflops: true, acc: ["beard"] },
