@@ -2,7 +2,8 @@
 // Lucia's, customers in the queues and the aisles, office workers at their desks, a client in the salon chair, a
 // runner on the gym's treadmill… No name tags and no conversations of their own: they sit or stand where they are and
 // do the little things people do while waiting (characters/Character.ts). Two with the same `chat` talk in turns.
-// Game.spawnNpcs places them; their looks come from the passers-by's (walkerLook), drawn per room.
+// Game.spawnNpcs places them; their looks come from the passers-by's (walkerLook), drawn per room. Staff among them
+// with no conversation here (`says`) answer with one friendly line that points to where the talking is.
 import type { Look } from "../../content/npcs";
 
 export interface RoomPerson {
@@ -18,6 +19,11 @@ export interface RoomPerson {
   /** Running on a treadmill: its belt's height. */
   run?: number;
   chat?: number;
+  /** Staff with no conversation of their own: the key of their one line in the edition's STAFF_LINES
+   *  (content/ambient.ts), said when they are talked to (the talk prompt, E, or a tap on them), its meaning in a
+   *  bubble, in the passers-by's voice of their gender; `female` fixes that gender, so look and voice agree. */
+  says?: string;
+  female?: boolean;
 }
 
 const P = Math.PI;
@@ -71,11 +77,11 @@ export const ROOM_PEOPLE: Record<string, RoomPerson[]> = {
   // passengers queuing at check-in and one waiting at the baggage desk, a step back and to the side: clear of where the
   // player stands at each counter to talk (Kevin's and Priya's ax/az in interiors.ts) and of the way there from the door
   // (16 Nov 2026) and people waiting: two on the arrivals seats (0.46 m high), two at the gate (its seats 0.68 m), the
-  // coffee stand's barista behind her counter
+  // coffee stand's barista behind her counter (closed for cleaning: she sends you to Mia at Sunny Cup, s72)
   airport: [
     { x: 7, z: -5.7, rot: P, carry: "bag" }, { x: 7.3, z: -4.5, rot: P, carry: "bag" }, { x: -2.3, z: -6.7, rot: P },
     { x: -14.56, z: 7.27, rot: 0, sit: 0.46, phone: true }, { x: -8.6, z: 6.53, rot: P, sit: 0.46, carry: "paper" },
     { x: 17.6, z: 1.02, rot: 0, sit: 0.68, phone: true }, { x: 20.2, z: 4.02, rot: 0, sit: 0.68, carry: "paper" },
-    { x: 17.8, z: 8.85, rot: 0 },
+    { x: 17.8, z: 8.85, rot: 0, says: "airport_coffee", female: true },
   ],
 };
