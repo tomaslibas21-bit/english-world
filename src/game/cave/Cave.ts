@@ -200,6 +200,9 @@ export function buildCave(): CaveView {
     const inIsland = Math.hypot(x - P.ISLAND.x, z - P.ISLAND.z) < P.ISLAND.r + 0.6;
     let y = P.floorY(x, z);
     if (q && !inIsland) y = Math.min(y, -0.25 - 0.5 * Math.max(0, 1 - Math.hypot((x - q.x) / q.rx, (z - q.z) / q.rz)));
+    // (under the island's mound the floor lies well below it: the mound's top is the ground there. At the same height
+    // the two fought for every pixel: a pale flickering patch round the Yaxché's foot, 18 Nov 2026)
+    if (inIsland) y = -0.42;
     return [x, y, z];
   };
   const FLOOR_A = C("#7b7868"), FLOOR_B = C("#96907c"), SAND = C("#d6cdae"), PATH = C("#efe7d2"), PATH2 = C("#e4dbc4"), GREEN = C("#6a8266");
@@ -302,7 +305,8 @@ export function buildCave(): CaveView {
 
   // ---- the two great trees: buttressed trunk, roots over the floor, boughs; the Yaxché's flowers are lit later
   const tree = (t: (typeof P.TREES)[number], crown: boolean) => {
-    const { x, z, r: tr, h } = t, base = P.floorY(x, z);
+    // (the trunk, the buttresses and the roots start a little under the ground: no cap or edge lying in its plane)
+    const { x, z, r: tr, h } = t, base = P.floorY(x, z) - 0.06;
     sink.geo(new THREE.CylinderGeometry(tr * 0.62, tr, h, 9, 6).translate(x, base + h / 2, z), "#8f7f66", 0.06, 0.12);
     for (let i = 0; i < 7; i++) {
       const a = (i / 7) * Math.PI * 2 + r() * 0.5, len = 2.6 + r() * 3.2;
@@ -311,7 +315,7 @@ export function buildCave(): CaveView {
       g.setAttribute("position", new THREE.Float32BufferAttribute([0, 0, 0, 2.1, 0, 0.16, 0, 3.2, 0, 0, 0, 0, 0, 3.2, 0, 2.1, 0, -0.16, 2.1, 0, 0.16, 2.1, 0, -0.16, 0, 3.2, 0], 3));
       sink.geo(g.translate(tr * 0.75, 0, 0).rotateY(a).translate(x, base, z), "#857560", 0.06, 0.1);
       const ex = x + Math.cos(a) * (tr + len), ez = z - Math.sin(a) * (tr + len);
-      if (!P.poolAt(ex, ez, 0.2) || t === P.TREES[1]) sink.geo(new THREE.CylinderGeometry(0.07, 0.26, len, 5).rotateZ(Math.PI / 2).translate(tr + len / 2 + 1.2, 0.03, 0).rotateY(a).translate(x, base, z), "#7d6a55", 0.05, 0.1);
+      if (!P.poolAt(ex, ez, 0.2) || t === P.TREES[1]) sink.geo(new THREE.CylinderGeometry(0.07, 0.26, len, 5).rotateZ(Math.PI / 2).translate(tr + len / 2 + 1.2, 0.09, 0).rotateY(a).translate(x, base, z), "#7d6a55", 0.05, 0.1);
     }
     // (the Yaxché spreads its boughs wide and low over its lake; the ceiba reaches up for the eye's light)
     const wide = t === P.TREES[1], nb = wide ? 9 : 6;
@@ -356,7 +360,9 @@ export function buildCave(): CaveView {
     made++;
   }
   // the island's mound under the Yaxché, mossy
-  sink.geo(new THREE.CylinderGeometry(P.ISLAND.r - 0.3, P.ISLAND.r + 0.5, 0.5, 14).translate(P.ISLAND.x, -0.13, P.ISLAND.z), "#6d9a55");
+  // (its top is the whole of where one stands, floorY's 0.12 as far as ISLAND.r, and a hand more; its foot reaches under
+  // the lake's water, past where the floor comes up again)
+  sink.geo(new THREE.CylinderGeometry(P.ISLAND.r + 0.15, P.ISLAND.r + 1.05, 0.6, 18).translate(P.ISLAND.x, -0.18, P.ISLAND.z), "#6d9a55");
   for (let i = 0; i < 9; i++) { const a = (i / 9) * Math.PI * 2; sink.geo(new THREE.DodecahedronGeometry(0.45, 0).scale(1.2, 0.5, 1).translate(P.ISLAND.x + Math.cos(a) * (P.ISLAND.r + 1.6 + (i % 2) * 1.5), -0.02, P.ISLAND.z + Math.sin(a) * (P.ISLAND.r + 1.6 + (i % 2) * 1.5)), pick(ROCK)); }
 
   // ---- hanging roots: curtains of thin ones in every chamber, pillars of them in the garden; mushrooms that glow
