@@ -591,19 +591,30 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .sit-card .txt span { display: block; font-size: 0.82em; color: var(--ink-soft); }
 .sheet.scenarios { width: min(1120px, 100%); }
 .scn-lead { margin: 0 0 6px; color: var(--ink-soft); line-height: 1.45; }
-.scn-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+/* The picker's cards (and the pictures-only home's, light.css): the icon with the stars under it on the left, and the
+   words have the rest of the card to themselves. (The stars used to stand right of the words, which left a title 116
+   px on a computer: one word a line, and „Ką rekomenduotumėte?“ ran past the card's edge.) A word longer than its
+   line breaks, with a hyphen where the browser knows the language; tests/browser/picker-cards.mjs measures every
+   card at four widths. */
+.scn-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); gap: 12px; }
 .scn-card {
-  display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid #ebe3d5; border-radius: 16px; padding: 12px; text-align: left; cursor: pointer;
+  display: grid; grid-template-columns: 46px minmax(0, 1fr); grid-template-rows: auto 1fr; grid-template-areas: "ico txt" "stars txt";
+  align-items: start; gap: 5px 12px; min-width: 0; background: #fff; border: 1px solid #ebe3d5; border-radius: 16px; padding: 12px; text-align: left; cursor: pointer;
   box-shadow: 0 1px 2px rgba(20, 30, 40, 0.04), 0 4px 12px -8px rgba(20, 30, 40, 0.18); transition: transform 0.15s ease, border-color 0.15s, box-shadow 0.15s;
 }
 .scn-card:hover, .scn-card:focus-visible { border-color: rgba(31, 111, 120, 0.6); transform: translateY(-2px); box-shadow: 0 2px 4px rgba(20, 30, 40, 0.05), 0 14px 26px -14px rgba(31, 111, 120, 0.55); }
 .scn-card:hover .ico { background: var(--accent); color: #fff; }
 .scn-card .ico { transition: background-color 0.15s, color 0.15s; }
 .scn-card.done { background: #fffdf7; }
-.scn-card .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.scn-card .ico { grid-area: ico; }
+.scn-card .stars, .lh-card .stars { grid-area: stars; justify-self: center; gap: 0; }
+.scn-card .stars .ui-icon, .lh-card .stars .ui-icon { width: 14px; height: 14px; }
+.scn-card .txt { grid-area: txt; align-self: start; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .scn-card .txt b { font-size: 1.02em; line-height: 1.2; }
-.scn-card .txt i { font-family: var(--en); font-size: 1.08em; color: var(--ink-soft); }
-.scn-card .txt span { font-size: 0.8em; color: var(--ink-faint); }
+.scn-card .txt i { font-family: var(--en); font-size: 1.08em; line-height: 1.2; color: var(--ink-soft); }
+.scn-card .txt span { font-size: 0.8em; line-height: 1.35; color: var(--ink-faint); }
+.scn-card .txt :is(b, i, span), .lh-txt :is(b, i, span) { min-width: 0; overflow-wrap: anywhere; hyphens: auto; hyphenate-limit-chars: 12 4 4; }
+.scn-card .txt :is(b, i, span), .lh-txt :is(b, i, span) { text-wrap: balance; }
 .howto { background: #fffaf0; border: 1px solid #efe3cb; border-radius: 14px; margin: 12px 0 4px; }
 .howto summary { cursor: pointer; font-weight: 900; color: var(--ink); display: flex; align-items: center; gap: 8px; padding: 10px 14px; list-style: none; border-radius: 14px; }
 .howto summary::-webkit-details-marker { display: none; }

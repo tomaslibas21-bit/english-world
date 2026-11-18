@@ -90,6 +90,7 @@ export const STRINGS: Record<string, string> = {
 
   // The town's HUD (src/ui/Hud.tsx)
   "Visos situacijos": "All situations",
+  "Šis mygtukas dešinėje atveria visų situacijų sąrašą. Pasirink bet kurią – iškart atsidursi pokalbyje.": "This button on the right opens the list of all situations. Pick any one and you are in its conversation at once.",
   "Žemėlapis (M)": "Map (M)",
   "Užduotys (J)": "Tasks (J)",
   "Telefonas (P)": "Phone (P)",

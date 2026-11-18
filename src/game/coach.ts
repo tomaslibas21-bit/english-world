@@ -1,5 +1,6 @@
 // The 3D town's guide: a hint when the thing it is about first matters, one at a time, in a small card that never gets
 // in the way (Guide.tsx draws it). How to walk as the town opens; how to talk the first time one stands by somebody;
+// where the list of all situations is, the first time a later visit opens (the town opens by itself, without the list);
 // the car, the boat and the sea the first time one comes up to them; the surf lesson as one first comes near its school; running, jumping and the radio after a stretch on
 // foot. A hint goes when the learner does what it says, with "Gerai", or by itself after a while, and never comes
 // back; "Daugiau nerodyti" ends them all. Everything they say stays under "Kaip žaisti?" (Panels.tsx Help).
@@ -9,7 +10,7 @@ import { radio } from "../radio";
 
 export type CoachStep = NonNullable<HudState["coach"]>["step"];
 /** Every hint, in the order "Kaip žaisti?" lists them. */
-export const COACH_STEPS: CoachStep[] = ["walk", "run", "jump", "talk", "car", "boat", "water", "surf", "radio"];
+export const COACH_STEPS: CoachStep[] = ["walk", "run", "jump", "talk", "list", "car", "boat", "water", "surf", "radio"];
 /** How much of a hint's own doing ticks it off: metres walked, seconds at a run; once for the others. */
 const ENOUGH: Partial<Record<CoachStep, number>> = { walk: 7, run: 1.2 };
 /** A long stretch on foot without a run (s): the hint about running. */
@@ -30,20 +31,25 @@ class Coach {
   private off() { return !!useStore.getState().progress.coach?.done; }
   private seen(step: CoachStep) {
     const c = useStore.getState().progress.coach;
+    // (where the list is: also for whoever finished the guide of before 16 Nov 2026, when every visit opened with
+    // the list. "Daugiau nerodyti" marks it seen with the rest.)
+    if (step === "list") return !!c?.seen?.list;
     return !!c?.done || !!c?.seen?.[step] || (step === "run" && !!c?.run);
   }
   private mark(step: CoachStep) {
     useStore.getState().updateProgress((p) => { p.coach = { ...p.coach, seen: { ...p.coach?.seen, [step]: true }, ...(step === "run" ? { run: true } : {}) }; });
   }
 
-  /** The town opens: how to walk, the first time; the rest comes when it matters. */
-  begin() {
+  /** The town opens: how to walk, the first time; the rest comes when it matters. `back`: a visit that opens where
+   *  the learner left off, straight in the town (no flight, and no list of situations any more): once, where the
+   *  list is. */
+  begin(back = false) {
     clearTimeout(this.timer); clearTimeout(this.stay);
     this.walked = 0;
     this.far = 0;
     useStore.getState().setHud({ coach: null });
     this.watch();
-    this.cue("walk");
+    if (!this.cue("walk") && back) this.cue("list");
   }
 
   /** What the town itself shows: standing by somebody, by a car or a boat (the prompt), and taking the wheel, the
@@ -53,6 +59,7 @@ class Coach {
     this.watching = true;
     useStore.subscribe((s, prev) => {
       if (s.hud.prompt?.kind !== prev.hud.prompt?.kind) this.near(s.hud.prompt?.kind);
+      if (s.hud.panel === "scenarios" && prev.hud.panel !== "scenarios") this.did("list");
       if (s.hud.ride !== prev.hud.ride && s.hud.ride) this.did(s.hud.ride === "car" ? "car" : s.hud.ride === "boat" ? "boat" : s.hud.ride === "surf" ? "surf" : "water");
     });
   }
@@ -81,7 +88,7 @@ class Coach {
     const c = useStore.getState().hud.coach;
     if (what === "walk") { this.far += amount; this.onFoot(); }
     if (!c || c.step !== what) {
-      if (what !== "walk" && what !== "talk" && what !== "run" && !this.seen(what) && !this.off()) this.mark(what);
+      if (what !== "walk" && what !== "talk" && what !== "run" && !this.seen(what) && (what === "list" || !this.off())) this.mark(what);
       return;
     }
     if (c.ok) return;
@@ -113,7 +120,7 @@ class Coach {
     clearTimeout(this.timer); clearTimeout(this.stay);
     const st = useStore.getState();
     st.setHud({ coach: null });
-    st.updateProgress((p) => { p.coach = { ...p.coach, done: true }; });
+    st.updateProgress((p) => { p.coach = { ...p.coach, done: true, seen: { ...p.coach?.seen, list: true } }; });
   }
 
   /** Walking on outdoors without running (`dt` s more of it; `stopped`: they stood still or ran): after a long

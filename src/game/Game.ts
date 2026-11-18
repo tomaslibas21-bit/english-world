@@ -452,7 +452,7 @@ export class Game implements GameApi {
     this.renderer.render(this.scene, this.rig.cam);
     this.onReady?.();
     // the town's hints, each when its thing first matters (coach.ts); after the flight, if the visit opens with one
-    if (!this.flight) coach.begin();
+    if (!this.flight) coach.begin(true);
   }
 
   /** The very first visit (nothing saved of where the learner was) opens with a few seconds' flight over the town,

@@ -21,7 +21,7 @@ import { Toasts } from "./Toasts";
 import { sceneFor } from "./scenes";
 import { switchPlayMode, takeLinkedSituation } from "./playMode";
 import { Icon, InlineIcon, Stars, iconForEmoji, type IconName } from "./icons";
-import { L, Lx, TL } from "./i18n";
+import { HL, L, Lx, TL } from "./i18n";
 import { EDITION } from "../edition";
 import "./light.css";
 import { SectionHelpButton } from "./sectionHelp";
@@ -168,7 +168,7 @@ function SitCard({ s }: { s: SituationMeta }) {
     <button className={"lh-card" + (st ? " done" : "") + (current ? " current" : "")} data-sit={s.id} onClick={() => game?.startScenario(s.id)}>
       <span className="lh-ico"><Icon name={sitIcon(s)} size={25} /></span>
       <span className="lh-txt">
-        <b>{s.title.lt}</b>
+        <b lang={HL}>{s.title.lt}</b>
         <i lang={TL}>{s.title.en}</i>
         <span>{n?.name} · {isCall(s) ? (s.mode === "video" ? L("vaizdo skambutis") : L("skambutis")) : LOCATIONS[s.location]?.lt}{s.song !== "" && <> · {L("daina {song}", { song: s.song })}</>}{current && <em className="lh-tag">{L("Tavo užduotis")}</em>}</span>
       </span>
