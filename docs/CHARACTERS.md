@@ -16,8 +16,20 @@ and outfits are its own data.
   `Look.female`, set from the cast's gender and for the passers-by, else guessed from the hair), upper arms and
   forearms on elbows, mitten hands with a thumb, thighs and shins, shoes with a sole and a rounded upper.
   Height, head size and seat heights are as before, so the conversation camera's framing is unchanged.
-- **18 bones** standing (a skirt, a phone or something carried add one each), **24 scene nodes** (26 before: the main
-  groups are their parts' bones), about **5,700 triangles** for one of the cast (5,860 before).
+- **A woman's hair is always long** (18 Nov 2026, the owner's rule: a bun or a ponytail showed nothing from the front,
+  a bob read as a boy's cut, and the old braid was a string of beads). Four styles (`LONG_HAIR`): `long` (loose and
+  straight down the back, a lock over each shoulder; the one on the badge's side is shorter), `wavy` (the same in
+  waves, the ends curled), `curls` (long curls beside the face, over the shoulders and down the back) and `braid`
+  (the hair drawn off the back of the head to one shoulder, a thick braid over it and down the front to the waist,
+  a ribbon, a loose strand at each temple; `hair.side` picks the shoulder, `hair.tie` the ribbon). The lengths are
+  one part of their own (`buildMane`): it hangs on the body and swings a little with the steps, and its top is
+  blended onto the head, so the hair stays on the shoulders while the head turns and nods. Lengths go by the
+  person's height (a small person's braid is longer than to the waist, or the head would hide it), over a skirt and
+  over the player's backpack. A short or tied-up style given to a woman is built as the nearest long one
+  (`hairStyle`): a safety net, the casts and the passers-by name long ones themselves (tests keep it so). Men's hair
+  is as it was.
+- **18 bones** standing (a skirt, a phone, something carried and a woman's long hair add one each), **24 scene nodes** (26 before: the main
+  groups are their parts' bones), about **6,100 triangles** for one of the cast (5,900 before the women's long hair: 5,950 a man, 6,300 a woman).
 
 ## What a person does
 
