@@ -21,7 +21,7 @@ import type { SituationMeta } from "../content/types";
 import { useCards, cardKey, dueCards, ipaFor, type CardInput } from "../state/cards";
 import { MyCards, Glyph } from "./Cards";
 import { showToast } from "./Toasts";
-import { L, Lx } from "./i18n";
+import { HL, L, Lx, TL } from "./i18n";
 import { EDITION } from "../edition";
 import { chooseVariety, loadVariety } from "../state/variety";
 import { courseGuideUrl, setSectionHelp, useSectionHelp } from "./sectionHelp";
@@ -254,8 +254,8 @@ function ScenarioCard({ s, close }: { s: SituationMeta; close: () => void }) {
     <button className={"scn-card" + (st ? " done" : "")} data-sit={s.id} onClick={() => { close(); game?.startScenario(s.id); }}>
       <span className="ico"><Icon name={sitIcon(s)} size={24} /></span>
       <span className="txt">
-        <b>{s.title.lt}</b>
-        <i>{s.title.en}</i>
+        <b lang={HL}>{s.title.lt}</b>
+        <i lang={TL}>{s.title.en}</i>
         <span>{n?.name} · {isPhone(s) ? (s.mode === "video" ? L("vaizdo skambutis") : L("skambutis")) : loc?.lt}{s.song !== "" && <> · {L("daina {song}", { song: s.song })}</>}</span>
       </span>
       <Stars n={st} />

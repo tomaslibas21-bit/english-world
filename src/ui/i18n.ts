@@ -9,6 +9,8 @@ import { EDITION } from "../edition";
 
 /** The practised language for `lang` attributes: "en" in Maple Harbor, "es" in Puerto Colibrí. */
 export const TL = EDITION.target.split("-")[0];
+/** The learner's own language, for `lang` attributes on the interface's words (hyphenation): "lt", or "en" in Spanish Master English. */
+export const HL = EDITION.helper.split("-")[0];
 
 /** A Lithuanian interface string in the learner's language; `{name}` placeholders are filled from `vars`. */
 export function L(lt: string, vars?: Record<string, string | number>): string {

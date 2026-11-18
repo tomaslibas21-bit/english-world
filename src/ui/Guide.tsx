@@ -9,7 +9,7 @@ import { useRadio } from "../radio";
 import { Icon, type IconName } from "./icons";
 import { L } from "./i18n";
 
-export const COACH_ICON: Record<CoachStep, IconName> = { walk: "walk", run: "next", jump: "chevronUp", talk: "mic", car: "car", boat: "sunset", water: "drop", surf: "star", radio: "radio" };
+export const COACH_ICON: Record<CoachStep, IconName> = { walk: "walk", run: "next", jump: "chevronUp", talk: "mic", list: "clapper", car: "car", boat: "sunset", water: "drop", surf: "star", radio: "radio" };
 
 /** A hint's title and what it says, with the keys on a computer or the on-screen controls on a phone. */
 export function coachWords(step: CoachStep, touch: boolean): [string, string] {
@@ -18,6 +18,7 @@ export function coachWords(step: CoachStep, touch: boolean): [string, string] {
     case "run": return [L("Bėk"), touch ? L("Eidamas tiesiai pats pradedi bėgti risčia. Patrauk vairalazdę iki krašto – bėgsi greičiau.") : L("Eidamas tiesiai pats pradedi bėgti risčia. Laikyk Shift – bėgsi greičiau.")];
     case "jump": return [L("Pašok"), touch ? L("Mygtukas dešinėje – pašokti. Du kartus – salto, tris – aukštas dvigubas salto. Užšok ant suoliuko.") : L("Tarpas – pašokti. Du kartus – salto, tris – aukštas dvigubas salto. Užšok ant suoliuko.")];
     case "talk": return [L("Kalbėkis"), touch ? L("Prieik prie žmogaus ir bakstelėk „Kalbėti“. Užduoties kortelė rodo, pas ką eiti, o „Nuvesk mane“ nuveda.") : L("Prieik prie žmogaus ir spausk E. Užduoties kortelė rodo, pas ką eiti, o „Nuvesk mane“ nuveda.")];
+    case "list": return [L("Visos situacijos"), L("Šis mygtukas dešinėje atveria visų situacijų sąrašą. Pasirink bet kurią – iškart atsidursi pokalbyje.")];
     case "car": return [L("Važiuok"), touch ? L("Prieik prie kabrioleto ir bakstelėk mygtuką – sėsi prie vairo. Vairalazdė vairuoja, STOP stabdo.") : L("Prieik prie kabrioleto ir spausk E – sėsi prie vairo. Rodyklės vairuoja, Tarpas stabdo, E – išlipti.")];
     case "boat": return [L("Plauk valtimi"), touch ? L("Prieik prie valties ir bakstelėk mygtuką – įlipsi. Vairalazdė vairuoja.") : L("Prieik prie valties ir spausk E – įlipsi. Rodyklės vairuoja, E – išlipti.")];
     case "water": return [L("Jūra"), touch ? L("Bristi galima tol, kol gilu, – toliau plauksi. Mygtukas su rodykle žemyn – panerti.") : L("Bristi galima tol, kol gilu, – toliau plauksi. Tarpas – panerti, Shift – plaukti greičiau.")];
