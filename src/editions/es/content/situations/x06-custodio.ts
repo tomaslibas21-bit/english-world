@@ -48,7 +48,7 @@ export const custodio: SituationDef = {
   npc: "custodio",
   mode: "talk",
   goal: "Chat with Don Efraín at the gateway: tell him if it's your first time here, and ask him something about the temple.",
-  intro: "Where the beach ends, a gateway leads into the old Maya ruins. Don Efraín looks after them: he knows every stone, and he likes a chat with whoever comes in.",
+  intro: "You've walked to the end of the beach, where a gateway leads into the old Maya ruins. Don Efraín looks after them: he knows every stone, and he likes a chat with whoever comes in.",
 
   intents: {
     first_yes: { patterns: [

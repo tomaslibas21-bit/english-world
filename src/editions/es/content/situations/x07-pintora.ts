@@ -45,7 +45,7 @@ export const pintora: SituationDef = {
   npc: "pintora",
   mode: "talk",
   goal: "Chat with Citlali at her easel: tell her what you think of her painting, and whether you paint or draw.",
-  intro: "On the lawn of the ruins a young painter stands at her easel, the temple and the sea on her canvas. Citlali comes here every afternoon, and she doesn't mind being watched.",
+  intro: "On the lawn of the ruins you find a young painter at her easel, the temple and the sea on her canvas. Citlali comes here every afternoon, and she doesn't mind being watched.",
 
   intents: {
     like_it: { patterns: [

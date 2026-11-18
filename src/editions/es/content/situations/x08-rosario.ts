@@ -47,7 +47,7 @@ export const rosario: SituationDef = {
   npc: "rosario",
   mode: "talk",
   goal: "Chat with Doña Rosario in the shade: talk about the heat, and find out who Pepe is.",
-  intro: "By the wall of the ruins, in the shade, Doña Rosario weaves with her basket of thread beside her. On the big stone next to her something lies very still in the sun.",
+  intro: "By the wall of the ruins, in the shade, you come upon Doña Rosario weaving, her basket of thread beside her. On the big stone next to her something lies very still in the sun.",
 
   intents: {
     hot_yes: { patterns: [
