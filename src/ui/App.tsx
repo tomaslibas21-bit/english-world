@@ -46,8 +46,10 @@ function Play() {
       g = new Game(stage.current!, tags.current!);
       setGame(g);
       g.onReady = () => {
-        // (a first visit opens with the town itself, from the air: Game.beginFlight; later ones with the list)
-        setReady(true); useStore.getState().setScreen("play"); if (!useStore.getState().hud.flight) useStore.getState().setHud({ panel: "scenarios" });
+        // (the 3D game opens with the town itself: from the air on a first visit, Game.beginFlight; where the learner
+        // left off on later ones. The list of situations opens from its button; owner, 18 Nov 2026. The pictures-only
+        // mode's home is the list, LightHome.tsx.)
+        setReady(true); useStore.getState().setScreen("play");
         const sit = takeLinkedSituation();
         if (sit) g!.startScenario(sit);
       };

@@ -6,7 +6,8 @@
 //   from the list, and walked up to from right in front and from each side;
 // - when someone else of the conversation speaks, the camera turns to them (Game.aimTalk);
 // - a first visit opens with the flight over the town and one sentence, no manual (game/flyover.ts); any key or a tap
-//   ends it; then how to walk comes up, alone (game/coach.ts); the next visit opens with the list, as before.
+//   ends it; then how to walk comes up, alone (game/coach.ts); the next visit opens in the town too, with no flight and
+//   no list over it (tests/browser/town-entry.mjs).
 // Against a dev server or a built game:
 // WORLD_TEST_URL=http://127.0.0.1:8176 WORLD_PLAYWRIGHT_MODULE=/path/to/playwright-core/index.mjs node tests/browser/talk-view.mjs [--shots=<dir>]
 // (the Spanish edition: WORLD_STORAGE=puerto-colibri)
@@ -169,12 +170,12 @@ try {
       if (computer) await page.keyboard.press("x"); else await page.locator(".flight").tap();
       await page.waitForFunction(() => !window.__ew.store.getState().hud.flight && window.__ew.game.zone.id === "airport", null, { timeout: 4000 });
       check(`${label}: ${computer ? "any key" : "a tap"} ends the flight`, Date.now() - t0 < 3000, Date.now() - t0);
-      // the next visit: no flight, the list as before
+      // the next visit: no flight, and the town itself, not the list (it opens from its button)
       await page.reload({ waitUntil: "domcontentloaded" });
       await page.waitForFunction(() => window.__ew?.store?.getState().screen === "play", null, { timeout: 240000 });
       await page.waitForTimeout(500);
       s = await state();
-      check(`${label}: the next visit opens with the list, no flight`, !s.flight && s.panel === "scenarios" && s.zone === "airport", s);
+      check(`${label}: the next visit opens in the town, no flight and no list`, !s.flight && !s.panel && s.zone === "airport", s);
       check(`${label}: no page errors in the first minute`, errors.length === 0, errors.slice(0, 3));
       await ctx.close();
     }

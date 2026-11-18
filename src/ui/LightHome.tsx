@@ -164,7 +164,7 @@ function SitCard({ s }: { s: SituationMeta }) {
     <button className={"lh-card" + (st ? " done" : "") + (current ? " current" : "")} data-sit={s.id} onClick={() => game?.startScenario(s.id)}>
       <span className="lh-ico"><Icon name={sitIcon(s)} size={25} /></span>
       <span className="lh-txt">
-        <b>{s.title.lt}</b>
+        <b lang="lt">{s.title.lt}</b>
         <i lang="en">{s.title.en}</i>
         <span>{n?.name} · {isCall(s) ? (s.mode === "video" ? "vaizdo skambutis" : "skambutis") : LOCATIONS[s.location]?.lt}{s.song !== "" && <> · daina {s.song}</>}{current && <em className="lh-tag">Tavo užduotis</em>}</span>
       </span>
