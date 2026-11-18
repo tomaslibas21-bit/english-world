@@ -1880,6 +1880,10 @@ export class Game implements GameApi {
   surfStart(level: "beginner" | "advanced") { if (!this.session?.active && !this.zone.interior) this.surf?.start(level); }
   surfStop() { this.surf?.stop(); }
   surfChoose(cue: string) { if (!this.transitioning) this.surf?.choose(cue); }
+  /** The move the instructor asked for, by a tap on its button; her line again; the microphone on or off, or done. */
+  surfAct(what: string) { if (!this.transitioning && !useStore.getState().hud.panel) this.surf?.act(what as Parameters<SurfPlay["act"]>[0]); }
+  surfRepeat() { this.surf?.repeat(); }
+  surfMic(on: boolean | "finish") { if (on === "finish") this.surf?.finishListening(); else this.surf?.setMic(on); }
   surfAgain(level?: "beginner" | "advanced") { this.surf?.again(level); }
 
   /** `through`: a door's fade is under way: the player holds still, and a walk under way carries on on the other side. */

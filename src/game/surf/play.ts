@@ -1,14 +1,18 @@
 // The surf lesson as the game runs it: started at the school's boards or by its conversation ("¿Probamos una ola?"),
-// the instructor's lines said in her voice and shown on the card (src/ui/Surf.tsx), the learner's keys and buttons
-// handed to the rules (logic.ts), the score and what was heard kept (progress.surf, the phrase cards). Game.ts only
-// asks it "is a lesson on?" and hands it the frame.
+// the instructor's lines said in her voice and shown on the card (src/ui/Surf.tsx), the learner's turn after each of
+// them: their answer heard by the microphone as in every conversation (or tapped, and then said for them), or their
+// keys and buttons handed to the rules (logic.ts) with the move she asked for shown beside her line; the score and
+// what was heard and said kept (progress.surf, the phrase cards). Game.ts only asks it "is a lesson on?" and hands it
+// the frame.
 import * as THREE from "three";
 import { floorY } from "../water";
 import { audio } from "../audio";
 import { NPCS } from "../../content/npcs";
 import { getSituation, loadSituation, prefetchSituations } from "../../content/situations/catalog";
-import { npcVoice } from "../../content/voices";
+import { coachVoice, npcVoice } from "../../content/voices";
 import { compose, type Sentence } from "../../convo/compose";
+import { createSpeechAttempt, speechSupported, type Verdict } from "../../convo/speech";
+import { compareRepeat, repeatProgress } from "../../convo/suggest";
 import { useStore } from "../../state/store";
 import { countPlay } from "../../state/playStats";
 import { sentenceInput, useCards } from "../../state/cards";
@@ -17,8 +21,8 @@ import type { SurfSpot } from "../world/surf";
 import type { CameraRig } from "../camera";
 import type { GameCharacter } from "../characters";
 import { Surf } from "./Surf";
-import { COMMANDS, SurfLogic, type Level, type SurfInput } from "./logic";
-import { EMPTY_SCORE, useSurf, type SurfLine } from "./store";
+import { COMMANDS, SurfLogic, type Do, type Level, type SurfInput } from "./logic";
+import { EMPTY_SCORE, NO_MIC, useSurf, type SurfLine } from "./store";
 
 /** What the lesson needs of the game. */
 export interface SurfGame {
@@ -42,12 +46,23 @@ export interface SurfGame {
 const CARDS = new Set([
   ...COMMANDS.map((c) => c.cue), "paddle", "paddle_hard", "wave_duck", "this_one", "not_this", "let_pass", "turn", "turn_shore", "now_up",
   "board_ask", "what_happened", "wipeout", "missed", "q_go", "again_q", "slang1", "slang2", "slang3", "slang4",
+  "coming", "not_yet", "ride_q", "you_ok",
 ]);
 /** How often a line has been heard before its help fades: its glosses and meaning, then the Spanish alone, then only
  *  the voice. */
-/** Short praise keeps the picture of the command it praises (the card doesn't change shape between two commands). */
-const KEEPS_PICTURE = new Set(["good1", "good2", "good3", "r_exact"]);
+/** Short praise keeps the picture of the command it praises (the card doesn't change shape between two commands);
+ *  so do her short words between two moves. */
+const KEEPS_PICTURE = new Set(["good1", "good2", "good3", "r_exact", "not_yet", "ride_q", "easy"]);
 const supportFor = (heard: number): 0 | 1 | 2 => (heard < 3 ? 0 : heard < 7 ? 1 : 2);
+/** A command of the ride heard so often that only her voice is left of it (supportFor: 2) is the learner's to
+ *  understand first: the move it asks for is shown only after this long without one (s). Every other move is shown
+ *  at once. */
+const KNOWN = 7, HESITATE = 2;
+const RIDE_DOES = new Set<Do>(["left", "right", "down", "fwd", "steady", "jump"]);
+/** How much of an answer must be heard for it to count (the share of its words), and with a single answer to give. */
+const HEARD_ENOUGH = 0.75, HEARD_ONLY = 0.6;
+/** What a tap on the move's button does to the stick, and for how long (s). */
+const PUSH: Partial<Record<Do, [number, number]>> = { duck: [0, -1], turn: [1, 0], left: [-1, 0], right: [1, 0], down: [0, -1], fwd: [0, 1] };
 
 export class SurfPlay {
   scene: Surf;
@@ -61,6 +76,16 @@ export class SurfPlay {
   private overShown = false;
   private lastPic: string | undefined;
   private loaded: HTMLImageElement[] = [];
+  /** The learner's turn to speak: the microphone's attempt, the turn it is for, how often it has not understood. */
+  private speech: ReturnType<typeof createSpeechAttempt> | null = null;
+  private listenT: ReturnType<typeof setTimeout> | null = null;
+  private unclear = 0;
+  /** A tap on the move's button: the stick pushed for a moment. */
+  private push = { x: 0, y: 0, t: 0 };
+  /** The move asked for now (her cue) and how long it has been asked (s). */
+  private todoCue = "";
+  private todoT = 0;
+  private paused = false;
 
   /** Where the lesson starts: a ring on the sand, as at a counter's talk spot, pulsing gently (Game adds it to the
    *  scene and calls tick). */
@@ -118,7 +143,7 @@ export class SurfPlay {
     const src = getSituation(this.content.situation)?.lines["sg_" + cue]?.[0] ?? this.content.lines?.["sg_" + cue]?.[0];
     if (!src) return null;
     const npc = this.npc, me = useStore.getState().progress.profile?.gender ?? "f", her = npc?.gender ?? "f";
-    const mine = cue.startsWith("a_");
+    const mine = cue.startsWith("a_") || cue.startsWith("b_");
     return compose(src, {}, { look: () => undefined, addressee: mine ? her : me, speaker: mine ? me : her, formal: !npc?.informal });
   }
 
@@ -173,16 +198,19 @@ export class SurfPlay {
     this.overShown = false;
     this.lastChoice = null;
     this.lastPic = undefined;
+    this.unclear = 0;
+    this.push.t = 0;
+    this.todoCue = "";
     this.preload();
     countPlay("games", "surf");
-    this.logic = new SurfLogic({ say: (cue) => this.say(cue), fx: (name) => this.fx(name), rnd: Math.random }, { level, rides: s.waves, slow: !!st.settings.slowVoice });
+    this.logic = new SurfLogic({ say: (cue) => this.say(cue), answer: (cue, spoken) => this.answer(cue, spoken), fx: (name) => this.fx(name), rnd: Math.random, busy: () => this.heardNow() }, { level, rides: s.waves, slow: !!st.settings.slowVoice });
     this.game.entered();
     this.game.hideNpc(this.content.npc, true);
     this.scene.begin(this.logic, this.npc.look);
     this.game.rig.mode = "stage";
     this.game.rig.stage = this.scene.cam;
     this.game.rig.stageSnap();
-    useSurf.getState().set({ active: true, picking: false, level, phase: this.logic.phase, line: null, choice: null, support: 0, balance: 1, asked: false, mark: null, score: { ...EMPTY_SCORE }, over: false, best: { waves: s.waves, seconds: s.seconds } });
+    useSurf.getState().set({ active: true, picking: false, level, phase: this.logic.phase, line: null, choice: null, todo: null, said: null, mic: speechSupported() ? NO_MIC : { status: "unsupported", heard: "" }, support: 0, balance: 1, asked: false, mark: null, score: { ...EMPTY_SCORE }, over: false, best: { waves: s.waves, seconds: s.seconds } });
     st.setHud({ prompt: null, ride: "surf" });
   }
 
@@ -190,6 +218,7 @@ export class SurfPlay {
   again(level: Level = this.level) {
     if (!this.logic) return;
     audio.stop();
+    this.stopListening();
     this.game.fade(() => { this.finish(); this.launch(level); });
   }
 
@@ -216,6 +245,7 @@ export class SurfPlay {
     if (!this.logic) { this.cancel(); return; }
     const out = () => {
       this.finish();
+      this.stopListening();
       audio.stop();
       this.logic = null;
       this.scene.end();
@@ -235,12 +265,108 @@ export class SurfPlay {
   stroke() { this.in.stroke = true; }
   /** The stand-up button (Space, the jump button): up onto the feet; in a ride, the trick. */
   up() { this.in.up = true; }
-  /** An answer tapped (its cue). */
-  choose(cue: string) {
+  /** An answer tapped (its cue): it is said for the learner, and she goes on. */
+  choose(cue: string) { this.logic?.choose(cue, false); }
+  /** The move she asked for, done by a tap on its button beside her line (as its key would). */
+  act(what: Do) {
     const L = this.logic;
-    if (!L?.choice) return;
-    if (cue.startsWith("a_") && !this.answered.includes(cue)) this.answered.push(cue);
-    L.choose(cue);
+    if (!L?.todo || L.todo.do !== what) return;
+    if (what === "paddle") this.in.stroke = true;
+    else if (what === "up" || what === "jump") this.in.up = true;
+    else { const p = PUSH[what]; if (p) { this.push.x = p[0]; this.push.y = p[1]; this.push.t = 0.22; } }
+  }
+  /** Her line once more (a tap on it): the microphone waits for her to finish. */
+  repeat() {
+    const L = this.logic, line = useSurf.getState().line;
+    if (!L || !line || L.talking) return;
+    const again = !!this.speech;
+    this.stopListening();
+    const npc = this.npc, slow = !!useStore.getState().settings.slowVoice;
+    void audio.play(npcVoice(npc), npc?.speed ?? 1, line.s.say, { slow, male: npc?.gender === "m" }).then(() => { if (again && this.logic?.choice) this.listen(); });
+  }
+
+  // --- the learner's turn to speak ----------------------------------------------------------------------------------
+
+  /** The microphone on or off for this lesson (its button): off, the answers are tapped. */
+  setMic(on: boolean) {
+    useSurf.getState().set({ micOn: on });
+    if (!on) this.stopListening(); else if (this.logic?.choice) { this.unclear = 0; this.listen(); }
+  }
+
+  /** A voice is being heard right now (hers, or the learner's line said for them). */
+  private heardNow() { const st = audio.getState(); return st === "loading" || st === "playing"; }
+
+  /** The microphone opens for the answers on show: what is heard is held against each of them. */
+  listen(waited = 0) {
+    const L = this.logic, ui = useSurf.getState();
+    if (this.listenT) { clearTimeout(this.listenT); this.listenT = null; }
+    if (!L?.choice || !ui.choice || !ui.micOn || !speechSupported() || this.paused || typeof document === "undefined" || document.visibilityState !== "visible") return;
+    // (never over her voice: it waits for her to finish, within reason)
+    if (this.heardNow() && waited < 6000) { this.listenT = setTimeout(() => { this.listenT = null; this.listen(waited + 200); }, 200); return; }
+    this.stopListening();
+    const turn = L.choice, options = ui.choice.options;
+    const best = (text: string) => {
+      let top: { cue: string; score: number } | null = null;
+      for (const o of options) { const score = compareRepeat(o.s.en, text).score; if (!top || score > top.score) top = { cue: o.cue, score }; }
+      return top;
+    };
+    audio.stop(); // (the speaker lets go before the microphone opens)
+    const attempt = createSpeechAttempt({
+      evaluate: (text): Verdict => {
+        let v: Verdict = "none";
+        for (const o of options) { const p = repeatProgress(o.s.en, text); if (p === "complete") return "complete"; if (p === "prefix") v = "prefix"; }
+        return v;
+      },
+      phrases: options.map((o) => o.s.en),
+      preferLocal: useStore.getState().settings.onDevice,
+      onUpdate: (s) => {
+        if (this.speech !== attempt) return;
+        const status = s.status === "idle" ? "off" : s.status === "reconnecting" ? "listening" : s.status;
+        useSurf.getState().set({ mic: { status, heard: s.heard, error: s.error } });
+        // (nothing heard, or no microphone: the answers stay there to tap, the button turns it on again)
+        if (s.status === "nothing" || s.status === "denied" || s.status === "error") { this.speech = null; attempt.dispose(); }
+      },
+      onCommit: (text, alts) => {
+        if (this.speech !== attempt || this.logic?.choice !== turn) return;
+        this.speech = null;
+        attempt.dispose();
+        let top: { cue: string; score: number } | null = null;
+        for (const t of [text, ...alts]) { const b = best(t); if (b && (!top || b.score > top.score)) top = b; }
+        if (top && top.score >= (options.length === 1 ? HEARD_ONLY : HEARD_ENOUGH)) { this.unclear = 0; this.logic?.choose(top.cue, true); return; }
+        // something else was heard: it is shown, and the microphone listens again (a few times, then it rests)
+        this.unclear++;
+        useSurf.getState().set({ mic: { status: this.unclear < 3 ? "unclear" : "off", heard: text.trim() } });
+        if (this.unclear < 3) this.listenT = setTimeout(() => { this.listenT = null; this.listen(); }, 1300);
+      },
+    });
+    this.speech = attempt;
+    attempt.start();
+  }
+
+  /** The mic button while it listens: what was heard so far is the answer. */
+  finishListening() { if (this.speech?.running) this.speech.finish(); }
+
+  stopListening() {
+    if (this.listenT) { clearTimeout(this.listenT); this.listenT = null; }
+    if (this.speech) { const a = this.speech; this.speech = null; a.dispose(); }
+    const ui = useSurf.getState();
+    if (ui.mic.status !== "unsupported" && ui.mic.status !== "off") ui.set({ mic: { status: "off", heard: ui.mic.heard } });
+  }
+
+  /** The learner has answered (the rules ask): aloud, and she goes on at once; by a tap, and their line is said for
+   *  them first, in the voice the learner's examples have. */
+  private answer(cue: string, spoken: boolean): number {
+    this.stopListening();
+    if (!this.answered.includes(cue)) this.answered.push(cue);
+    const s = this.line(cue);
+    useSurf.getState().set({ said: s ? { cue, s } : null, mic: speechSupported() ? NO_MIC : { status: "unsupported", heard: "" } });
+    if (!s || spoken) return 0.15;
+    const voice = coachVoice(useStore.getState().progress.profile?.gender);
+    // (a line with no recording yet is only shown)
+    const secs = audio.clipDuration(voice, 1, s.say);
+    if (secs == null) return 0.5;
+    void audio.play(voice, 1, s.say);
+    return secs;
   }
   /** A key while a lesson is on: true when it was the lesson's. */
   key(k: string, repeat: boolean, keys: Set<string>): boolean {
@@ -254,6 +380,7 @@ export class SurfPlay {
     }
     if (k === " ") { if (!repeat) this.in.up = true; return true; }
     if (k === "e" || k === "enter") { if (!repeat) this.in.stroke = true; return true; }
+    if (k === "m") { if (!repeat) this.setMic(!useSurf.getState().micOn); return true; }
     if (k >= "1" && k <= "3" && L.choice) { const o = L.choice.options[Number(k) - 1]; if (o) this.choose(o); return true; }
     if (k === "escape") { this.stop(); return true; }
     return true;
@@ -272,7 +399,7 @@ export class SurfPlay {
     this.heard[cue] = n + 1;
     const pic = this.picture(cue) ?? (KEEPS_PICTURE.has(cue) ? this.lastPic : undefined);
     this.lastPic = pic;
-    useSurf.getState().set({ line: { cue, s, pic }, support: supportFor(n) });
+    useSurf.getState().set({ line: { cue, s, pic }, support: supportFor(n), said: null });
     return secs;
   }
 
@@ -305,8 +432,12 @@ export class SurfPlay {
     const L = this.logic;
     if (!L) return;
     L.setSlow(!!useStore.getState().settings.slowVoice);
+    // (a tap on the move's button pushes the stick for a moment)
+    if (this.push.t > 0) { this.push.t -= dt; x = this.push.x; y = this.push.y; }
     const inp: SurfInput = { x, y, stroke: this.in.stroke && !paused, up: this.in.up && !paused };
     this.in.stroke = this.in.up = false;
+    // (a panel over the lesson: the microphone closes, and opens again with the lesson)
+    if (paused !== this.paused) { this.paused = paused; if (paused) this.stopListening(); else if (L.choice) this.listen(); }
     this.scene.update(dt, t, inp, paused);
     this.sync(dt);
   }
@@ -314,10 +445,21 @@ export class SurfPlay {
   private sync(dt: number) {
     const L = this.logic!, ui = useSurf.getState(), patch: Partial<typeof ui> = {};
     if (ui.phase !== L.phase) patch.phase = L.phase;
-    if (L.choice !== this.lastChoice) {
+    const turn = L.choice !== this.lastChoice;
+    if (turn) {
       this.lastChoice = L.choice;
       patch.choice = L.choice ? { id: L.choice.id, options: L.choice.options.map((cue) => ({ cue, s: this.line(cue) })).filter((o): o is SurfLine => !!o.s) } : null;
     }
+    // the move she asks for: shown beside her line at once, but a command of the ride the learner has heard often is
+    // theirs to understand first (it shows when they hesitate)
+    const t = L.todo;
+    if (t) {
+      if (t.cue !== this.todoCue) { this.todoCue = t.cue; this.todoT = 0; } else this.todoT += dt;
+      const show = !RIDE_DOES.has(t.do) || (this.heard[t.cue] ?? 0) <= KNOWN || this.todoT > HESITATE;
+      const left = t.win && t.t != null ? Math.max(0, Math.min(1, t.t / t.win)) : null;
+      const was = ui.todo;
+      if (!was || was.do !== t.do || was.cue !== t.cue || was.left !== (t.left ?? null) || was.show !== show || (left != null && Math.abs((was.time ?? 1) - left) > 0.02)) patch.todo = { do: t.do, cue: t.cue, left: t.left ?? null, of: t.of ?? null, time: left, show };
+    } else { this.todoCue = ""; if (ui.todo) patch.todo = null; }
     const bal = Math.round(Math.max(0, L.balance) * 20) / 20;
     if (ui.balance !== bal) patch.balance = bal;
     if (ui.asked !== !!L.cmd) patch.asked = !!L.cmd;
@@ -326,8 +468,14 @@ export class SurfPlay {
     if (this.markT > 0) { this.markT -= dt; if (this.markT <= 0) patch.mark = null; }
     if (L.phase === "over" && !this.overShown) { this.overShown = true; patch.over = true; patch.line = null; }
     if (Object.keys(patch).length) ui.set(patch);
-    // the round button on a phone is the paddle while one lies on the board
-    const hud = useStore.getState().hud, paddling = L.phase === "out" || L.phase === "catch";
+    // the learner's turn to speak: the microphone opens once she has finished (and closes with the turn)
+    if (turn) {
+      this.unclear = 0;
+      this.stopListening();
+      if (L.choice) this.listenT = setTimeout(() => { this.listenT = null; this.listen(); }, 250);
+    }
+    // the round button on a phone is the paddle while paddling is what she asked for
+    const hud = useStore.getState().hud, paddling = L.todo?.do === "paddle";
     if (paddling !== (hud.prompt?.kind === "paddle")) useStore.getState().setHud({ prompt: paddling ? { label: "", kind: "paddle" } : null });
   }
 }
