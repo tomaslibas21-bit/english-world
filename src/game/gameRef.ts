@@ -36,6 +36,11 @@ export interface GameApi {
   surfStart(level: "beginner" | "advanced"): void;
   surfStop(): void;
   surfChoose(cue: string): void;
+  /** In the lesson: the move she asked for done by a tap (its name), her line once more, the microphone on or off
+   *  ("finish": what was heard so far is the answer). */
+  surfAct(what: string): void;
+  surfRepeat(): void;
+  surfMic(on: boolean | "finish"): void;
   surfAgain(level?: "beginner" | "advanced"): void;
   /** The end card of a conversation: true for the surf school's (its first button then starts the lesson). */
   surfAfter(sitId: string): boolean;

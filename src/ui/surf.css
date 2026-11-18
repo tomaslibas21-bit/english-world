@@ -12,14 +12,44 @@
 .surf-score span { display: inline-flex; align-items: center; gap: 4px; }
 .surf-score i { font-style: normal; font-size: 0.95em; }
 
-/* her line: a card at the top, out of the wave's and the board's way */
-.surf-card { position: fixed; top: calc(62px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); width: max-content; max-width: min(620px, calc(100vw - 24px)); background: var(--panel); color: var(--ink); border-radius: 18px; padding: 12px 18px 12px; box-shadow: 0 6px 24px rgba(10, 40, 60, 0.28); border: 3px solid transparent; transition: border-color 0.15s ease; }
+/* her line: a card at the top, out of the wave's and the board's way; under it, the move it asks for */
+.surf-say { position: fixed; top: calc(62px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 10px; width: max-content; max-width: calc(100vw - 24px); pointer-events: none; }
+.surf-say > * { pointer-events: auto; }
+.surf-card { position: relative; width: max-content; max-width: min(620px, calc(100vw - 24px)); background: var(--panel); color: var(--ink); border-radius: 18px; padding: 12px 18px 12px; box-shadow: 0 6px 24px rgba(10, 40, 60, 0.28); border: 3px solid transparent; transition: border-color 0.15s ease; }
 .surf-card .il { justify-content: center; font-size: 1.7em; font-weight: 600; }
 .surf-card .nat { border-left: 0; border-top: 1px solid var(--line); padding: 7px 4px 0; margin-top: 9px; text-align: center; font-size: 1em; color: var(--ink-soft); }
 .surf-card.asked { border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
 .surf-card.ok { border-color: var(--good, #37a26b); }
 .surf-card.no { border-color: var(--warm, #e7a13a); }
 .surf-words { min-width: 0; }
+.surf-again { position: absolute; right: -10px; bottom: -10px; width: 36px; height: 36px; border-radius: 50%; border: 0; display: grid; place-items: center; background: var(--panel-solid); color: var(--accent); box-shadow: 0 2px 8px rgba(10, 40, 60, 0.3); cursor: pointer; }
+.surf-again:hover { filter: brightness(1.06); }
+
+/* the move she asks for: its name and its key in large letters, right under her line (on a phone: the button to tap) */
+.surf-move { display: grid; justify-items: center; gap: 7px; border: 0; border-radius: 18px; padding: 11px 22px 12px; background: linear-gradient(160deg, #ffd166, #f6b93b); color: #3a2a00; font: inherit; font-family: var(--ui); box-shadow: 0 6px 20px rgba(120, 80, 0, 0.35), inset 0 -3px 0 rgba(120, 80, 0, 0.18); cursor: pointer; animation: surf-move-in 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2), surf-move-pulse 1.5s ease-in-out 0.3s infinite; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+.surf-move.still { cursor: default; animation: surf-move-in 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2); background: linear-gradient(160deg, #d8f3ee, #b9e6de); color: #0c3b36; box-shadow: 0 6px 20px rgba(10, 60, 60, 0.25); }
+.surf-move:active { transform: scale(0.97); }
+.surf-move-text { display: inline-flex; align-items: center; flex-wrap: wrap; justify-content: center; gap: 0 0.32em; font-size: 1.5em; font-weight: 700; line-height: 1.15; }
+.surf-move-text b { font-weight: 900; }
+.surf-keys-now { display: inline-flex; gap: 5px; margin-left: 2px; }
+.surf-key { display: inline-grid; place-items: center; min-width: 1.75em; height: 1.75em; padding: 0 0.4em; border-radius: 9px; background: #fff; color: #23303a; font: inherit; font-weight: 900; font-size: 1em; box-shadow: 0 3px 0 rgba(60, 40, 0, 0.35), 0 0 0 2px rgba(60, 40, 0, 0.16); }
+.surf-move.tap { min-width: min(300px, calc(100vw - 48px)); min-height: 64px; padding: 14px 22px; }
+.surf-strokes { display: inline-flex; gap: 6px; }
+.surf-strokes i { width: 13px; height: 13px; border-radius: 50%; background: rgba(60, 40, 0, 0.18); transition: background 0.15s ease, transform 0.15s ease; }
+.surf-strokes i.done { background: #1c8f6a; transform: scale(1.12); }
+.surf-time { display: block; width: 100%; min-width: 180px; height: 7px; border-radius: 4px; background: rgba(60, 40, 0, 0.18); overflow: hidden; }
+.surf-time i { display: block; height: 100%; border-radius: 4px; background: #c2410c; transition: width 0.12s linear; }
+@keyframes surf-move-in { from { opacity: 0; transform: translateY(-8px) scale(0.9); } }
+@keyframes surf-move-pulse { 50% { box-shadow: 0 6px 20px rgba(120, 80, 0, 0.35), inset 0 -3px 0 rgba(120, 80, 0, 0.18), 0 0 0 7px rgba(255, 209, 102, 0.45); } }
+@media (prefers-reduced-motion: reduce) { .surf-move, .surf-move.still { animation: none; } }
+
+/* the learner's turn to speak: the microphone and what it hears, over the lines they may answer with */
+.surf-turn { display: flex; align-items: center; gap: 12px; background: var(--panel); color: var(--ink); border-radius: 16px; padding: 8px 14px 8px 8px; box-shadow: 0 4px 14px rgba(10, 40, 60, 0.22); }
+.surf-turn .surf-mic { width: 50px; height: 50px; flex: none; }
+.surf-turn .surf-mic.muted { background: #9aa7b1; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.1); }
+.surf-turn .mic-status b { font-size: 1.05em; }
+.surf-said { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(70px + env(safe-area-inset-bottom)); display: inline-flex; align-items: center; gap: 8px; max-width: calc(100vw - 24px); background: var(--good, #37a26b); color: #fff; border-radius: 999px; padding: 9px 18px 9px 14px; font-family: var(--en); font-size: 1.25em; font-weight: 600; box-shadow: 0 4px 14px rgba(10, 60, 40, 0.3); animation: surf-move-in 0.2s ease-out; pointer-events: none; }
+.surf.touch .surf-said { bottom: calc(184px + env(safe-area-inset-bottom)); }
 
 /* the picture of what she asks for: a small framed photograph beside her words (above them on a phone held upright),
    which slides in as she calls the command and gives way to the next one */
@@ -44,7 +74,6 @@
 .surf-choice-text { font-family: var(--en); font-size: 1.3em; font-weight: 600; line-height: 1.2; }
 .surf-choice small { color: var(--ink-soft); font-weight: 600; font-size: 0.86em; grid-column: -2 / -1; }
 .surf-keys { bottom: 14px; }
-.surf-hint { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(176px + env(safe-area-inset-bottom)); max-width: calc(100vw - 24px); width: max-content; background: rgba(14, 40, 52, 0.66); color: #fff; border-radius: 999px; padding: 6px 14px; font-size: 0.86em; font-weight: 700; text-align: center; pointer-events: none; }
 .surf-pick { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(8, 30, 42, 0.38); z-index: 30; pointer-events: auto; padding: 14px; }
 .surf-pick-card { background: var(--panel-solid); color: var(--ink); border-radius: 22px; padding: 20px 20px 16px; width: min(460px, 100%); box-shadow: 0 16px 50px rgba(0, 20, 40, 0.4); text-align: center; font-family: var(--ui); max-height: calc(100vh - 28px); overflow: auto; }
 .surf-pick-card h2 { margin: 0 0 6px; font-size: 1.4em; color: var(--ink); }
@@ -61,8 +90,15 @@
 .surf-result div { background: var(--accent-soft, #f1f7f6); border-radius: 14px; padding: 10px 6px; display: grid; gap: 2px; }
 .surf-result b { font-size: 1.6em; color: var(--ink); font-variant-numeric: tabular-nums; }
 .surf-result span { font-size: 0.78em; color: var(--ink-soft); line-height: 1.2; }
+/* a wide screen: the learner's turn to the right, clear of them on their board in the middle */
+@media (min-width: 900px) and (min-height: 521px) {
+  .surf-choices { left: auto; right: 24px; bottom: 22px; transform: none; width: 400px; }
+}
 @media (max-width: 520px) {
-  .surf-card { top: calc(58px + env(safe-area-inset-top)); padding: 10px 12px; }
+  .surf-say { top: calc(58px + env(safe-area-inset-top)); gap: 8px; }
+  .surf-card { padding: 10px 12px; }
+  .surf-move-text { font-size: 1.3em; }
+  .surf-again { right: -6px; bottom: -8px; }
   .surf-card .il { font-size: 1.45em; }
   .surf-levels { grid-template-columns: 1fr; }
   /* a phone held upright: the picture across the card's top, her words under it; the card stops well above the board */
@@ -72,12 +108,16 @@
   @keyframes surf-frame-in { from { opacity: 0; transform: translateY(-10px) scale(0.96); } }
 }
 @media (max-height: 520px) and (orientation: landscape) {
-  .surf-card { top: calc(8px + env(safe-area-inset-top)); max-width: min(520px, calc(100vw - 300px)); padding: 8px 12px; }
+  .surf-say { top: calc(8px + env(safe-area-inset-top)); gap: 6px; }
+  .surf-card { max-width: min(520px, calc(100vw - 300px)); padding: 8px 12px; }
+  .surf-move { padding: 7px 16px 8px; }
+  .surf-move.tap { min-height: 48px; padding: 8px 16px; }
+  .surf-move-text { font-size: 1.15em; }
+  .surf-said { bottom: calc(14px + env(safe-area-inset-bottom)); }
   .surf-card .il { font-size: 1.3em; }
   /* a phone held sideways: the picture small beside her words, the card between the two corners' buttons */
   .surf-card.has-pic { flex-direction: row; align-items: center; gap: 10px; width: max-content; max-width: min(560px, calc(100vw - 290px)); padding: 6px 12px 6px 6px; }
   .surf-pic { width: 142px; aspect-ratio: 16 / 9; max-height: none; transform: none; box-shadow: none; }
   .surf.touch .surf-choices { bottom: calc(12px + env(safe-area-inset-bottom)); width: min(400px, calc(100vw - 380px)); }
-  .surf-hint { bottom: calc(10px + env(safe-area-inset-bottom)); max-width: calc(100vw - 380px); }
   .surf-choice { min-height: 44px; padding: 6px 12px; }
 }
