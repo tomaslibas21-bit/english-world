@@ -235,8 +235,8 @@ function ScenarioCard({ s, close }: { s: SituationMeta; close: () => void }) {
     <button className={"scn-card" + (st ? " done" : "")} data-sit={s.id} onClick={() => { close(); game?.startScenario(s.id); }}>
       <span className="ico"><Icon name={sitIcon(s)} size={24} /></span>
       <span className="txt">
-        <b>{s.title.lt}</b>
-        <i>{s.title.en}</i>
+        <b lang="lt">{s.title.lt}</b>
+        <i lang="en">{s.title.en}</i>
         <span>{n?.name} · {isPhone(s) ? (s.mode === "video" ? "vaizdo skambutis" : "skambutis") : loc?.lt}{s.song !== "" && <> · daina {s.song}</>}</span>
       </span>
       <Stars n={st} />

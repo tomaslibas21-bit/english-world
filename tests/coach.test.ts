@@ -137,4 +137,45 @@ describe("the town's guide", () => {
     expect(hud()).toBeNull();
     for (const s of COACH_STEPS) expect(coach.cue(s)).toBe(false);
   });
+
+  // Owner, 18 Nov 2026: the 3D game opens straight in the town; the list of situations opens from its button.
+  it("a later visit opens in the town: once, where the list of situations is", () => {
+    // the first visit (after the flight): how to walk, nothing about the list
+    coach.begin();
+    expect(hud()).toMatchObject({ step: "walk" });
+    coach.next();
+    // the next visit opens where the learner left off
+    useStore.getState().setHud({ panel: null });
+    coach.begin(true);
+    expect(hud()).toMatchObject({ step: "list", ok: false });
+    // opening the list ticks it off
+    useStore.getState().setHud({ panel: "scenarios" });
+    expect(hud()).toMatchObject({ step: "list", ok: true });
+    vi.advanceTimersByTime(1200);
+    expect(hud()).toBeNull();
+    useStore.getState().setHud({ panel: null });
+    coach.begin(true);
+    expect(hud()).toBeNull();
+  });
+
+  it("whoever opens the list by themselves is never told where it is", () => {
+    coach.begin(); coach.next();
+    useStore.getState().setHud({ panel: "scenarios" });
+    useStore.getState().setHud({ panel: null });
+    expect(useStore.getState().progress.coach?.seen?.list).toBe(true);
+    coach.begin(true);
+    expect(hud()).toBeNull();
+  });
+
+  it("a learner who finished the guide of before (every visit opened with the list then) is told once too", () => {
+    useStore.getState().updateProgress((p) => { p.coach = { done: true, run: true }; });
+    coach.begin(true);
+    expect(hud()).toMatchObject({ step: "list" });
+    coach.next();
+    coach.begin(true);
+    expect(hud()).toBeNull();
+    // and nothing else comes up for them
+    prompt("talk"); coach.did("walk", 300);
+    expect(hud()).toBeNull();
+  });
 });
