@@ -31,6 +31,8 @@ const INIT = `(() => {
   window.cancelAnimationFrame = () => {};
   window.__step = (n, dt = 1000 / 60) => { for (let i = 0; i < n; i++) { now += dt; const cbs = q.splice(0); for (const cb of cbs) cb(now); } return now; };
 })();`;
+/** A quarter of a second of silence (8 kHz, 16 bit, one channel) as a WAV file. */
+const SILENCE = (() => { const n = 2000, b = Buffer.alloc(44 + n * 2); b.write("RIFF", 0); b.writeUInt32LE(36 + n * 2, 4); b.write("WAVEfmt ", 8); b.writeUInt32LE(16, 16); b.writeUInt16LE(1, 20); b.writeUInt16LE(1, 22); b.writeUInt32LE(8000, 24); b.writeUInt32LE(16000, 28); b.writeUInt16LE(2, 32); b.writeUInt16LE(16, 34); b.write("data", 36); b.writeUInt32LE(n * 2, 40); return b; })();
 /** The ruins' plan (src/game/world/mexican.ts RUINS), from the temple at (−124, −74). */
 const T = { x: -124, z: -74 }, GATE = { x: T.x + 10.5, z: T.z + 7.5 }, FOOT = T.z + 5.26, LANDING = { z: T.z - 1.2, y: 5.3 };
 const CHATS = [
@@ -50,8 +52,9 @@ try {
     const page = await ctx.newPage();
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));
-    // (no clips: silence, so the lines' own lengths time the turns)
-    await page.route(/\.mp3(\?.*)?$/, (r) => r.fulfill({ status: 404, body: "" }));
+    // (every clip is a quarter of a second of silence: the same run with or without the recordings at hand, and no
+    // waiting for a voice; a clip in the list that could not be fetched would hold the conversation for a retry)
+    await page.route(/\.mp3(\?.*)?$/, (r) => r.fulfill({ status: 200, contentType: "audio/wav", body: SILENCE }));
     await page.addInitScript(([k, v]) => { if (sessionStorage.getItem("seeded") !== "1") { sessionStorage.setItem("seeded", "1"); localStorage.clear(); localStorage.setItem(k, v); } }, [`${storage}-progress-v1`, JSON.stringify(progress)]);
     await page.addInitScript(INIT);
     await page.goto(base, { waitUntil: "domcontentloaded" });
