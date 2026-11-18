@@ -106,6 +106,9 @@ const LOOK: Record<string, Partial<Look>> = {
   // greens and the yellow of the ceiba's flowers
   alux_kin: { skin: "#b9814f", hair: { style: "short", color: "#1f1a17" }, top: "#5fae5a", bottom: "#8a6a3c", shorts: true, flipflops: true, sleeves: "short", acc: ["jipi"], accColor: "#e3cf8e", height: 0.52, build: 1.2 },
   alux_nikte: { skin: "#c08a5a", hair: { style: "braid", color: "#1f1a17" }, top: "#f2c14e", bottom: "#3f9a8c", skirt: true, flipflops: true, sleeves: "short", acc: ["flower", "embroidered", "earrings"], height: 0.5, build: 1.12 },
+  // the Yaxché, the great tree of the grotto's heart (x04): it speaks, but nobody stands for it (its conversation has
+  // no figure in the grotto: src/game/cave). The look is only what a person's record must have.
+  yaxche: { skin: "#8f7f66", hair: { style: "long", color: "#3f8a3a" }, top: "#4f9a3e", bottom: "#857560" },
 };
 
 /** Who is who. Roles are neutral Spanish (a role label isn't a line: no Mexican-only words in them). */
@@ -187,6 +190,9 @@ const EXTRA: Record<string, [base: string, ...cast: Cast]> = {
   // Ka'an: Kin ("sun") keeps its way in, Nikté ("flower") asks riddles further down. They say tú to everyone.
   alux_kin: ["tyler", "Kin", "Alux, guardián de la gruta", "Alux, keeper of the grotto", { gender: "m", informal: true, informalSpain: true }],
   alux_nikte: ["chloe", "Nikté", "Alux de las adivinanzas", "Alux of the riddles", { gender: "f", informal: true, informalSpain: true }],
+  // the Yaxché: the first tree of the Maya, the ceiba that holds up the sky, in the grotto's last chamber. It speaks
+  // once all fifteen stones are lit (x04): slowly, kindly, tú to everyone.
+  yaxche: ["mrs_lee", "Yaxché", "El árbol sagrado", "The sacred tree", { gender: "f", informal: true, informalSpain: true }],
   // the watersports palapa on the beach west of El Muelle (x01-surf, and the surf game: src/game/surf/): a surfer from
   // Puerto Escondido on the Pacific coast, who teaches beginners on the Caribbean's small waves; tú to everyone
   // the store at Gasolinera El Faro (x05-tienda), behind its counter: the attendant (Doña Chela, s71b) works the pumps
