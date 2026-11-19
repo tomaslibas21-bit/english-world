@@ -1,0 +1,230 @@
+{
+ "_about": "The Yaxché, Ka'an's sacred tree, speaks in the heart of the grotto (x04-yaxche, a bonus conversation). The tree has no figure: no person in the pictures.",
+ "scenes": {
+  "x04-yaxche": {
+   "npc": "Yaxché, the sacred tree",
+   "focus": [
+    45,
+    45
+   ],
+   "start": "greet"
+  }
+ },
+ "defaults": {
+  "model": "gemini-nano-banana-2.1",
+  "kind": "scene",
+  "web_size": [
+   1600,
+   900
+  ]
+ },
+ "items": [
+  {
+   "id": "x04-yaxche/greet",
+   "scene": "x04-yaxche",
+   "situation": "x04-yaxche",
+   "moment": "greet",
+   "lines": [
+    "greet",
+    "stones_lit",
+    "again"
+   ],
+   "refs": [
+    "place:place/gruta-corazon"
+   ],
+   "prompt": "The Yaxché, the great sacred ceiba on its island, seen from the white path at the water's edge. It is awake: soft petals of warm golden light drift slowly down from its crown, and around the pool's rim the old standing stones glow pale blue. A hush of wonder. Nobody is in the picture.",
+   "out": "public/scenes-es/x04-yaxche/greet.webp",
+   "setting": "gruta",
+   "people": false
+  },
+  {
+   "id": "x04-yaxche/who",
+   "scene": "x04-yaxche",
+   "situation": "x04-yaxche",
+   "moment": "who",
+   "phases": [
+    "who"
+   ],
+   "lines": [
+    "ask_who",
+    "i_am",
+    "know_yes"
+   ],
+   "refs": [
+    "edit:x04-yaxche/greet"
+   ],
+   "prompt": "Change only the light and the view upward: the trunk of the tree rises like a pillar of the world into the dark roof, its wide crown spreading under the stone, glowing softly from within, with drifting golden petals.",
+   "out": "public/scenes-es/x04-yaxche/who.webp",
+   "setting": "gruta",
+   "people": false
+  },
+  {
+   "id": "x04-yaxche/roots",
+   "scene": "x04-yaxche",
+   "situation": "x04-yaxche",
+   "moment": "i_am2",
+   "lines": [
+    "i_am2"
+   ],
+   "refs": [
+    "setting:place/gruta-corazon"
+   ],
+   "prompt": "A cutaway view of the Yaxché: below the glowing turquoise water its roots spread deep and wide, drinking from the cenote, and above, its crown pushes up through a round opening in the cave roof into a bright blue sky with white clouds. Calm, mythic, simple. Nobody is in the picture.",
+   "out": "public/scenes-es/x04-yaxche/roots.webp",
+   "setting": "gruta",
+   "people": false,
+   "frame": "view"
+  },
+  {
+   "id": "x04-yaxche/root",
+   "scene": "x04-yaxche",
+   "situation": "x04-yaxche",
+   "moment": "root",
+   "lines": [
+    "root"
+   ],
+   "refs": [
+    "setting:place/gruta-corazon"
+   ],
+   "prompt": "Close to the foot of the tree: from its moss-covered roots, thin new rootlets of warm golden light spread out across the island and into the water like glowing threads. Nobody is in the picture.",
+   "out": "public/scenes-es/x04-yaxche/root.webp",
+   "setting": "gruta",
+   "people": false,
+   "frame": "view"
+  },
+  {
+   "id": "x04-yaxche/home",
+   "scene": "x04-yaxche",
+   "situation": "x04-yaxche",
+   "moment": "home",
+   "phases": [
+    "home"
+   ],
+   "lines": [
+    "home",
+    "home_again",
+    "thanks_back",
+    "like_back"
+   ],
+   "refs": [
+    "edit:x04-yaxche/greet"
+   ],
+   "prompt": "Change only the light: warm golden light fills the whole hall, the curtain of tiny lights glows brighter, and pale ceiba flowers float across the water toward the viewer's feet, welcoming.",
+   "out": "public/scenes-es/x04-yaxche/home.webp",
+   "setting": "gruta",
+   "people": false
+  },
+  {
+   "id": "x04-yaxche/slow",
+   "scene": "x04-yaxche",
+   "situation": "x04-yaxche",
+   "moment": "slow",
+   "lines": [
+    "slow"
+   ],
+   "refs": [
+    "setting:place/gruta-corazon"
+   ],
+   "prompt": "At the edge of the moss island, beside one vast gray buttress root of the Yaxché, a tiny ceiba seedling with two small fresh green leaves grows in a patch of light. Nobody is in the picture.",
+   "out": "public/scenes-es/x04-yaxche/slow.webp",
+   "setting": "gruta",
+   "people": false,
+   "frame": "view"
+  },
+  {
+   "id": "x04-yaxche/promise",
+   "scene": "x04-yaxche",
+   "situation": "x04-yaxche",
+   "moment": "promise",
+   "phases": [
+    "promise"
+   ],
+   "lines": [
+    "ask_go",
+    "glad",
+    "rest"
+   ],
+   "refs": [
+    "edit:x04-yaxche/greet"
+   ],
+   "prompt": "Change only the flowers and the light: all over the crown, ceiba flowers open in soft pink and cream, glowing, and the falling petals of light swirl gently like a happy sigh.",
+   "out": "public/scenes-es/x04-yaxche/promise.webp",
+   "setting": "gruta",
+   "people": false
+  },
+  {
+   "id": "x04-yaxche/aluxes",
+   "scene": "x04-yaxche",
+   "situation": "x04-yaxche",
+   "moment": "aluxes",
+   "lines": [
+    "aluxes"
+   ],
+   "refs": [
+    "setting:place/gruta-corazon",
+    "person:cast/alux_kin",
+    "person:cast/alux_nikte"
+   ],
+   "prompt": "Among the big roots on the far side of the tree's island, two aluxes peek out mischievously and laugh: Kin in his straw hat behind one root and Nikté with the white flower behind her ear behind another, both small and far away, half hidden.",
+   "out": "public/scenes-es/x04-yaxche/aluxes.webp",
+   "setting": "gruta",
+   "people": false,
+   "frame": "alux_view"
+  },
+  {
+   "id": "x04-yaxche/age",
+   "scene": "x04-yaxche",
+   "situation": "x04-yaxche",
+   "moment": "age",
+   "lines": [
+    "age"
+   ],
+   "refs": [
+    "setting:place/gruta-corazon"
+   ],
+   "prompt": "The gnarled, ancient bark of the Yaxché's trunk up close, deeply grooved and mossy, with old Maya glyph-like patterns of light shimmering in the bark like rings of many centuries. Nobody is in the picture.",
+   "out": "public/scenes-es/x04-yaxche/age.webp",
+   "setting": "gruta",
+   "people": false,
+   "frame": "view"
+  },
+  {
+   "id": "x04-yaxche/stone",
+   "scene": "x04-yaxche",
+   "situation": "x04-yaxche",
+   "moment": "stone_ok",
+   "lines": [
+    "stone_ok"
+   ],
+   "refs": [
+    "setting:place/gruta-corazon"
+   ],
+   "prompt": "One old standing stone at the edge of the pool, waist-high, its single carved glyph shining bright pale blue, and a ring of tiny sparks rising from it; the tree softly glowing behind. Nobody is in the picture.",
+   "out": "public/scenes-es/x04-yaxche/stone.webp",
+   "setting": "gruta",
+   "people": false,
+   "frame": "view"
+  },
+  {
+   "id": "x04-yaxche/bye",
+   "scene": "x04-yaxche",
+   "situation": "x04-yaxche",
+   "moment": "closing",
+   "phases": [
+    "closing"
+   ],
+   "lines": [
+    "keep",
+    "back",
+    "bye"
+   ],
+   "refs": [
+    "edit:x04-yaxche/greet"
+   ],
+   "prompt": "Keep the tree's trunk its own gray-green bark color, exactly as it is. Change only a few details: a few last golden petals drift down, the light is calm and soft like evening, and the white stone slabs of the path at the bottom of the picture glow faintly, showing the way back.",
+   "out": "public/scenes-es/x04-yaxche/bye.webp",
+   "setting": "gruta",
+   "people": false
+  }
+ ]
+}

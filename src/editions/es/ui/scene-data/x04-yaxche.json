@@ -1,0 +1,8 @@
+{
+  "npc": "Yaxché, the sacred tree",
+  "images": ["greet", "who", "roots", "root", "home", "slow", "promise", "aluxes", "age", "stone", "bye"],
+  "start": "greet",
+  "phases": {"who": "who", "home": "home", "promise": "promise", "closing": "bye"},
+  "lines": {"greet": "greet", "stones_lit": "greet", "again": "greet", "ask_who": "who", "i_am": "who", "know_yes": "who", "i_am2": "roots", "root": "root", "home": "home", "home_again": "home", "thanks_back": "home", "like_back": "home", "slow": "slow", "ask_go": "promise", "glad": "promise", "rest": "promise", "aluxes": "aluxes", "age": "age", "stone_ok": "stone", "keep": "bye", "back": "bye", "bye": "bye"},
+  "focus": [45, 45]
+}

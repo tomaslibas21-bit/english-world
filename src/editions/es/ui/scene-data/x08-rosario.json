@@ -1,0 +1,8 @@
+{
+  "npc": "Doña Rosario, hammock weaver",
+  "images": ["greet", "heat", "shade", "pepe", "sun", "bite", "eat", "weave", "bye"],
+  "start": "greet",
+  "phases": {"heat": "heat", "pepe": "pepe", "closing": "bye"},
+  "lines": {"greet": "greet", "again": "greet", "ask_heat": "heat", "shade": "shade", "lucky": "shade", "ask_pepe": "pepe", "is_iguana": "pepe", "king": "pepe", "sun": "sun", "bite": "bite", "eat": "eat", "weave": "weave", "sit": "bye", "welcome": "bye", "bye": "bye"},
+  "focus": [34, 45]
+}

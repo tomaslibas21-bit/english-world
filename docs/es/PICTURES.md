@@ -690,3 +690,31 @@ for lots of amazing pictures"; `STOP_USD` went from $75 to $80). Manifests: `ref
 - **Cost** (the ledger): $8.85 for x01–x03 in all: the 7 references $0.43, 113 scene pictures and one fix $7.35 (104
   through the regular API before the credits ran out at $7.03 of balance, 10 in batches after the owner's top-up),
   the 17 cue pictures (19 requests) $0.83, the 21 card pictures $0.24. Spent in all: $60.96.
+
+## 11. x04–x08: the tree, Paco and the ruins (19 Nov 2026), with Gemini
+
+The five bonus conversations of 18 Nov 2026 got their pictures on 19 Nov 2026, made with Google's
+`gemini-nano-banana-2.1` through its **Batch API** (`tools/es-pictures/gemini_batch.py`: the same manifests, references
+and prompts as the OpenAI tools, through `espics.build_prompt`; 2K pictures, `thinkingLevel: "minimal"`; the key from
+the file `GEMINI_KEY_FILE` names, only into the request header; its own ledger `<work>/gemini-ledger.jsonl`, stop $10
+by default). Batches of 1–27 pictures came back in 3–5 minutes. Manifests: `refs-x2`, `x04-yaxche`, `x05-tienda`,
+`x06-custodio`, `x07-pintora`, `x08-rosario`, written by `<work>/x-new4/build_manifests.py <repository>`.
+
+- **References** (`refs-x2`): portraits `cast/tienda` (Paco, his "Paco" badge), `cast/custodio` (Don Efraín),
+  `cast/pintora` (Citlali), `cast/rosario` (Doña Rosario), the looks of their 3D figures, the women with long hair;
+  places `place/tienda-el-faro` (the gas station's shop from the counter; the station itself as a setting reference),
+  `place/ruinas-entrada` (the gateway, Don Efraín's table, the Temple of the Sea), `place/ruinas-caballete` (Citlali's
+  easel by the stairs), `place/ruinas-sombra` (the stone bench under a sea grape, Pepe's stone), `place/gruta-corazon`
+  (the heart of the grotto with the Yaxché).
+- **Scene pictures**, by line (section 8, point 6): x04-yaxche 11 (the tree has no figure: nobody in the pictures,
+  but for the aluxes peeking out), x05-tienda 17, x06-custodio 10, x07-pintora 9, x08-rosario 9. Web versions
+  1600 × 900, about 70 kB each (4 MB for the five). `scene-walk.ts x04 … x08`: 0 errors (two warnings: Paco's
+  `stock` and `sorry` answer side questions the simulated conversations don't ask).
+- **Cards**: 28 phrase groups (`cards.py` map/manifest as for x01–x03; the five stone groups of x04 each show their
+  own chamber). `<work>/cards/card-art.json` lists 58 conversations.
+- **Checked**: every picture on sheets (faces against the portraits, hands, the place, the learner unseen),
+  `review_text.py` (only glyph stones, an easel's crossbar and hammock stripes; Paco's tag read "Paco"). Redone: the
+  shop place (letters on the ATM and snack bags), the easel place (it had copied the gateway), Don Efraín's `old`, the
+  tree's `bye` (its trunk had turned white), Citlali's `you` and `sell` (moved into a town street).
+- Gemini's edits keep the place and the person well, but now and then move the camera closer or change the place:
+  look at every edit next to its first picture.

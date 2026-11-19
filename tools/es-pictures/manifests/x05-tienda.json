@@ -1,0 +1,352 @@
+{
+ "_about": "Paco, the cashier at Tienda El Faro, the gas station's shop (x05-tienda, a bonus conversation).",
+ "scenes": {
+  "x05-tienda": {
+   "npc": "Paco, store cashier",
+   "focus": [
+    34,
+    40
+   ],
+   "start": "greet"
+  }
+ },
+ "defaults": {
+  "model": "gemini-nano-banana-2.1",
+  "kind": "scene",
+  "web_size": [
+   1600,
+   900
+  ]
+ },
+ "items": [
+  {
+   "id": "x05-tienda/greet",
+   "scene": "x05-tienda",
+   "situation": "x05-tienda",
+   "moment": "howareyou",
+   "phases": [
+    "howareyou",
+    "order"
+   ],
+   "lines": [
+    "greet",
+    "greet_howareyou",
+    "ask_order",
+    "go_ahead"
+   ],
+   "refs": [
+    "place:place/tienda-el-faro",
+    "person:cast/tienda"
+   ],
+   "prompt": "Paco, the cashier, stands behind the counter about one third from the left, both hands resting lightly on the counter beside the register, leaning a little forward with a friendly smile, ready to serve (\"¡Buenas tardes! ¿Qué le doy?\").",
+   "out": "public/scenes-es/x05-tienda/greet.webp"
+  },
+  {
+   "id": "x05-tienda/stock",
+   "scene": "x05-tienda",
+   "situation": "x05-tienda",
+   "moment": "what_else",
+   "lines": [
+    "what_else",
+    "stock",
+    "have_yes",
+    "which_one"
+   ],
+   "refs": [
+    "edit:x05-tienda/greet",
+    "person:cast/tienda"
+   ],
+   "prompt": "Change only his pose: half turned, he sweeps one open hand toward the shelves of snacks and drinks behind him and points with the other toward the coffee maker at the end of the counter, eyebrows raised helpfully: what would you like?",
+   "out": "public/scenes-es/x05-tienda/stock.webp"
+  },
+  {
+   "id": "x05-tienda/size",
+   "scene": "x05-tienda",
+   "situation": "x05-tienda",
+   "moment": "size",
+   "phases": [
+    "size"
+   ],
+   "lines": [
+    "ask_size",
+    "two_sizes",
+    "sizes",
+    "price_coffee"
+   ],
+   "refs": [
+    "edit:x05-tienda/greet",
+    "person:cast/tienda"
+   ],
+   "prompt": "Change only his pose and what he holds: he holds up two blank paper coffee cups side by side at chest height, a small one in one hand and a tall one in the other, eyebrows raised, asking which size.",
+   "out": "public/scenes-es/x05-tienda/size.webp"
+  },
+  {
+   "id": "x05-tienda/coffee",
+   "scene": "x05-tienda",
+   "situation": "x05-tienda",
+   "moment": "coffee_served",
+   "lines": [
+    "coffee_served",
+    "coffees_served",
+    "sugar",
+    "fresh_yes",
+    "wait_ok"
+   ],
+   "refs": [
+    "edit:x05-tienda/greet",
+    "person:cast/tienda"
+   ],
+   "prompt": "Change only his pose and what he holds: he sets a steaming blank paper cup of coffee with a plain lid on the counter in front of the learner and points with his other hand to the sugar and creamer by the coffee maker at the end of the counter, smiling.",
+   "out": "public/scenes-es/x05-tienda/coffee.webp"
+  },
+  {
+   "id": "x05-tienda/coffee_out",
+   "scene": "x05-tienda",
+   "situation": "x05-tienda",
+   "moment": "coffee_wait",
+   "phases": [
+    "coffee_wait"
+   ],
+   "lines": [
+    "coffee_out",
+    "fresh_out",
+    "wait_again"
+   ],
+   "refs": [
+    "edit:x05-tienda/greet",
+    "person:cast/tienda"
+   ],
+   "prompt": "Change only his pose and what he holds: he has stepped to the coffee maker at the left end of the counter and holds up an empty glass coffee pot, tilting it to show it is empty, with an apologetic grimace; a fresh pot is dripping full in the machine behind him.",
+   "out": "public/scenes-es/x05-tienda/coffee_out.webp"
+  },
+  {
+   "id": "x05-tienda/ice",
+   "scene": "x05-tienda",
+   "situation": "x05-tienda",
+   "moment": "ice_self",
+   "lines": [
+    "ice_self",
+    "ice_self_pl",
+    "ice_where"
+   ],
+   "refs": [
+    "edit:x05-tienda/greet",
+    "person:cast/tienda"
+   ],
+   "prompt": "Change only his pose: he leans a little over the counter and points with a straight arm to the right, toward the white chest freezer for ice by the glass door, with an easy nod: help yourself.",
+   "out": "public/scenes-es/x05-tienda/ice.webp"
+  },
+  {
+   "id": "x05-tienda/scan",
+   "scene": "x05-tienda",
+   "situation": "x05-tienda",
+   "moment": "more",
+   "phases": [
+    "more",
+    "else",
+    "extra",
+    "after_have",
+    "which"
+   ],
+   "lines": [
+    "ask_more",
+    "ask_more_short",
+    "ack",
+    "removed",
+    "removed_pl",
+    "swap_ok",
+    "price_one",
+    "something_else"
+   ],
+   "refs": [
+    "edit:x05-tienda/greet",
+    "person:cast/tienda"
+   ],
+   "prompt": "Change only his pose and what he holds: he holds a plain bottle of water with a blank label in one hand and scans it with a handheld barcode scanner in the other; a bag of chips and a chocolate bar with blank wrappers wait on the counter. He looks up at the learner: anything else?",
+   "out": "public/scenes-es/x05-tienda/scan.webp"
+  },
+  {
+   "id": "x05-tienda/sorry",
+   "scene": "x05-tienda",
+   "situation": "x05-tienda",
+   "moment": "unknown",
+   "lines": [
+    "unknown",
+    "no_bags"
+   ],
+   "refs": [
+    "edit:x05-tienda/greet",
+    "person:cast/tienda"
+   ],
+   "prompt": "Change only his pose: he gives a small apologetic shrug with both palms turned up and his lips pressed together, head tilted: sorry, he can't help with that.",
+   "out": "public/scenes-es/x05-tienda/sorry.webp"
+  },
+  {
+   "id": "x05-tienda/restroom",
+   "scene": "x05-tienda",
+   "situation": "x05-tienda",
+   "moment": "restroom",
+   "lines": [
+    "restroom"
+   ],
+   "refs": [
+    "edit:x05-tienda/greet",
+    "person:cast/tienda"
+   ],
+   "prompt": "Change only his pose: he points with his thumb back over his shoulder toward a plain side door behind the counter, explaining with a friendly nod that it is outside, right behind the store.",
+   "out": "public/scenes-es/x05-tienda/restroom.webp"
+  },
+  {
+   "id": "x05-tienda/atm",
+   "scene": "x05-tienda",
+   "situation": "x05-tienda",
+   "moment": "atm",
+   "lines": [
+    "atm",
+    "atm_there",
+    "atm_offer",
+    "atm_wait"
+   ],
+   "refs": [
+    "edit:x05-tienda/greet",
+    "person:cast/tienda"
+   ],
+   "prompt": "Change only his pose: he points across the shop with a straight arm toward the small ATM against the wall by the glass door, nodding: right there, by the entrance.",
+   "out": "public/scenes-es/x05-tienda/atm.webp"
+  },
+  {
+   "id": "x05-tienda/gas",
+   "scene": "x05-tienda",
+   "situation": "x05-tienda",
+   "moment": "gas_outside",
+   "lines": [
+    "gas_outside",
+    "pay_here"
+   ],
+   "refs": [
+    "edit:x05-tienda/greet",
+    "person:cast/tienda"
+   ],
+   "prompt": "Change only his pose: he points out through the glass door toward the pumps on the forecourt, where a gas station attendant in the same red polo stands small and far away by a pump, his other hand flat on the counter: she takes care of the gas.",
+   "out": "public/scenes-es/x05-tienda/gas.webp"
+  },
+  {
+   "id": "x05-tienda/total",
+   "scene": "x05-tienda",
+   "situation": "x05-tienda",
+   "moment": "pay",
+   "phases": [
+    "pay"
+   ],
+   "lines": [
+    "say_total",
+    "total_screen",
+    "ask_pay",
+    "not_paid",
+    "extra_due",
+    "not_yet"
+   ],
+   "refs": [
+    "edit:x05-tienda/greet",
+    "person:cast/tienda"
+   ],
+   "prompt": "Change only his pose: he turns the register's small blank customer screen a little toward the learner with one hand and gestures at it with the other, waiting with a patient smile; the items lie on the counter.",
+   "out": "public/scenes-es/x05-tienda/total.webp"
+  },
+  {
+   "id": "x05-tienda/round",
+   "scene": "x05-tienda",
+   "situation": "x05-tienda",
+   "moment": "round",
+   "phases": [
+    "round"
+   ],
+   "lines": [
+    "round_ask",
+    "round_again",
+    "round_what",
+    "round_yes",
+    "round_no"
+   ],
+   "refs": [
+    "edit:x05-tienda/greet",
+    "person:cast/tienda"
+   ],
+   "prompt": "Change only his pose and what he holds: he taps a small clear donation jar on the counter, half full of coins, with a simple painted paw print on it (no letters), smiling hopefully: would you like to round up for the animal shelter?",
+   "out": "public/scenes-es/x05-tienda/round.webp"
+  },
+  {
+   "id": "x05-tienda/card",
+   "scene": "x05-tienda",
+   "situation": "x05-tienda",
+   "moment": "card_yes",
+   "lines": [
+    "card_yes",
+    "card_ok"
+   ],
+   "refs": [
+    "edit:x05-tienda/greet",
+    "person:cast/tienda"
+   ],
+   "prompt": "Change only his pose and what he holds: he holds the black card terminal out across the counter toward the learner; its small screen shows only a simple contactless symbol (curved waves), and he gives a thumbs-up with his other hand.",
+   "out": "public/scenes-es/x05-tienda/card.webp"
+  },
+  {
+   "id": "x05-tienda/no_system",
+   "scene": "x05-tienda",
+   "situation": "x05-tienda",
+   "moment": "no_system",
+   "lines": [
+    "no_system",
+    "no_system_again"
+   ],
+   "refs": [
+    "edit:x05-tienda/greet",
+    "person:cast/tienda"
+   ],
+   "prompt": "Change only his pose and what he holds: he holds up the black card terminal, its small screen showing only a crossed-out signal icon (empty bars with a diagonal line), and grimaces apologetically: the card system is down, cash only.",
+   "out": "public/scenes-es/x05-tienda/no_system.webp"
+  },
+  {
+   "id": "x05-tienda/cash",
+   "scene": "x05-tienda",
+   "situation": "x05-tienda",
+   "moment": "cash_yes",
+   "lines": [
+    "cash_yes",
+    "change_is",
+    "change_back",
+    "exact",
+    "cash_thanks",
+    "tip_thanks",
+    "short",
+    "short_again"
+   ],
+   "refs": [
+    "edit:x05-tienda/greet",
+    "person:cast/tienda"
+   ],
+   "prompt": "Change only his pose and what he holds: the cash drawer of the register is open; he holds out a few coins and one plain banknote (a simple colored bill with no numbers and no portrait) toward the learner across the counter: the change.",
+   "out": "public/scenes-es/x05-tienda/cash.webp"
+  },
+  {
+   "id": "x05-tienda/bye",
+   "scene": "x05-tienda",
+   "situation": "x05-tienda",
+   "moment": "closing",
+   "phases": [
+    "closing"
+   ],
+   "lines": [
+    "bye",
+    "bye_nothing"
+   ],
+   "refs": [
+    "edit:x05-tienda/greet",
+    "person:cast/tienda"
+   ],
+   "prompt": "Change only his pose: he raises one hand in a warm wave goodbye, smiling broadly, the other hand resting on the counter.",
+   "out": "public/scenes-es/x05-tienda/bye.webp"
+  }
+ ]
+}

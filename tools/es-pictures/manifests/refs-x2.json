@@ -1,0 +1,153 @@
+{
+ "_about": "References for Puerto Colibrí's bonus conversations of 18 Nov 2026 (19 Nov 2026): Paco of Tienda El Faro (x05), the three people at the walkable ruins (x06 Don Efraín, x07 Citlali, x08 Doña Rosario), their places, and the heart of the grotto where the Yaxché speaks (x04). The looks follow their 3D figures (src/editions/es/content/npcs.ts); the women have long hair (18 Nov 2026).",
+ "defaults": {
+  "model": "gemini-nano-banana-2.1"
+ },
+ "items": [
+  {
+   "id": "cast/tienda",
+   "kind": "cast",
+   "npc": "tienda",
+   "name": "Paco",
+   "label": "Paco (the store cashier)",
+   "situation": [
+    "x05-tienda"
+   ],
+   "moment": null,
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "nametag": {
+    "text": "Paco",
+    "kind": "badge"
+   },
+   "out": "public/scenes-es/ref/cast/tienda.webp",
+   "prompt": "Paco, the young cashier of Tienda El Faro, the shop of the town's gas station: a slim, cheerful man of about 24 with warm medium-brown skin, short neat black hair with a slight wave on top, clean-shaven, dark friendly eyes and an easy, helpful smile. He wears the station's red short-sleeved polo shirt (the same red as its pumps) with a small white name badge on the chest, and dark navy trousers."
+  },
+  {
+   "id": "cast/custodio",
+   "kind": "cast",
+   "npc": "custodio",
+   "name": "Don Efraín",
+   "label": "Don Efraín (the keeper of the ruins)",
+   "situation": [
+    "x06-custodio"
+   ],
+   "moment": null,
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/custodio.webp",
+   "prompt": "Don Efraín, the keeper of the old Maya ruins on the point past the beach: a kind, dignified man of about 68 from Yucatán, with sun-browned warm brown skin, short gray hair, a neat gray mustache, deep laugh lines and wise, twinkling dark eyes. He wears a cream-white guayabera (the Yucatecan pleated shirt with two vertical rows of fine pleats and small buttons), brown cotton trousers, and a pale straw jipi hat (a Panama hat) with a dark brown band. Calm and welcoming."
+  },
+  {
+   "id": "cast/pintora",
+   "kind": "cast",
+   "npc": "pintora",
+   "name": "Citlali",
+   "label": "Citlali (the young painter)",
+   "situation": [
+    "x07-pintora"
+   ],
+   "moment": null,
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/pintora.webp",
+   "prompt": "Citlali, a young painter of about 26 who paints the Maya temple every afternoon: warm golden-brown skin, long, loose, wavy black hair down past her shoulders, lively dark eyes, a bright open smile, small blue dangling earrings and a fleck of teal paint on one cheek. She wears a light white-blue short-sleeved cotton blouse, a deep-blue painter's apron with a few paint smudges, and navy-blue trousers."
+  },
+  {
+   "id": "cast/rosario",
+   "kind": "cast",
+   "npc": "rosario",
+   "name": "Doña Rosario",
+   "label": "Doña Rosario (the hammock weaver)",
+   "situation": [
+    "x08-rosario"
+   ],
+   "moment": null,
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/rosario.webp",
+   "prompt": "Doña Rosario, a Maya grandmother of about 75 who weaves hammocks in the shade at the ruins: short and sturdy, warm brown skin with soft wrinkles, a round kind face, bright amused eyes, small gold earrings, and long white-gray hair in one thick braid over her shoulder. She wears a white hipil (the traditional Maya cotton dress, loose and straight) with a wide band of red and colorful embroidered flowers round its square neckline and its hem, and a red rebozo (a long woven shawl) over her shoulders."
+  },
+  {
+   "id": "place/tienda-el-faro",
+   "kind": "place",
+   "label": "Tienda El Faro, the gas station's shop, from the counter",
+   "situation": [
+    "x05-tienda"
+   ],
+   "moment": null,
+   "refs": [
+    "style:en/s69-local/greet",
+    "setting:place/gasolinera"
+   ],
+   "out": "public/scenes-es/ref/place/tienda-el-faro.webp",
+   "prompt": "Inside Tienda El Faro, the small shop of the town's gas station, on a bright afternoon, seen from the customer's side of the counter. The counter runs across the left two thirds: its front is red with a yellow band (blank), its top white; on it a cash register with a small blank customer screen facing the learner, a black card terminal, and a little rack of gum and chocolate bars. Behind the counter, shelves of plain colorful snack bags, bottles and boxes, and at the left end a side counter with a coffee maker, two glass coffee pots, stacks of paper cups, sugar and creamer. A white tiled floor. In the right third, calm: a glass door and a window onto the sunny forecourt with the red-and-white pumps under their canopy and a palm beyond; just inside the door a white chest freezer for bags of ice and a small blank ATM against the wall. Everything blank: no letters, prices or logos anywhere."
+  },
+  {
+   "id": "place/ruinas-entrada",
+   "kind": "place",
+   "label": "The gateway into the ruins, where Don Efraín keeps watch",
+   "situation": [
+    "x06-custodio"
+   ],
+   "moment": null,
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/ruinas-entrada.webp",
+   "prompt": "Afternoon at the end of the town's beach, at the way into the old Maya ruins: a gap about two meters wide in a low, weathered limestone wall, with white sand underfoot giving way to a path of pale flagstones on short green grass. Just inside the gateway, at the left, a small wooden table in the shade of a palm with an open visitors' book, a pen and a red clay jug, and a plain wooden chair. Beside the gateway outside, a brown wooden sign board on two posts, blank. Through the gateway: The Temple of the Sea: a small Maya temple of pale weathered limestone on a low rocky point above the turquoise Caribbean, about eight hundred years old: a stepped platform of three tiers with one wide, steep central staircase of narrow high steps, and on top a low temple building with three dark doorways framed by square pillars and a flat roof. Around it a walled lawn of short green grass with a path of pale flagstones, coconut palms and sea grapes, a few fallen round column drums, and green iguanas basking on the warm stones. The temple stands in the middle distance a little right of center; the right third is calm: the wall, the sea and the sky."
+  },
+  {
+   "id": "place/ruinas-caballete",
+   "kind": "place",
+   "label": "Citlali's easel on the lawn at the foot of the temple's stairs",
+   "situation": [
+    "x07-pintora"
+   ],
+   "moment": null,
+   "refs": [
+    "style:en/s69-local/greet",
+    "setting:place/ruinas-entrada"
+   ],
+   "out": "public/scenes-es/ref/place/ruinas-caballete.webp",
+   "prompt": "On the lawn inside the ruins in warm late-afternoon light, near the foot of the temple's wide stone staircase: The Temple of the Sea: a small Maya temple of pale weathered limestone on a low rocky point above the turquoise Caribbean, about eight hundred years old: a stepped platform of three tiers with one wide, steep central staircase of narrow high steps, and on top a low temple building with three dark doorways framed by square pillars and a flat roof. Around it a walled lawn of short green grass with a path of pale flagstones, coconut palms and sea grapes, a few fallen round column drums, and green iguanas basking on the warm stones. A wooden painter's easel stands on the grass about one third from the left, turned three quarters toward the learner, holding a canvas with a half-finished painting of the temple and the turquoise sea in soft brush strokes. We are well inside the walled lawn, past the gateway: no gateway, no sign board, no table or jug in view; the temple's wide stone staircase rises large in the right half. Beside it a small wooden box of paints, a jar of brushes and a rag on a fallen column drum. Behind, at the left, the low wall with the sea beyond it and a leaning palm; the staircase rises in the background at the right. The right third is calm: lawn, stone and sky."
+  },
+  {
+   "id": "place/ruinas-sombra",
+   "kind": "place",
+   "label": "Doña Rosario's stone bench in the shade at the ruins",
+   "situation": [
+    "x08-rosario"
+   ],
+   "moment": null,
+   "refs": [
+    "style:en/s69-local/greet",
+    "setting:place/ruinas-entrada"
+   ],
+   "out": "public/scenes-es/ref/place/ruinas-sombra.webp",
+   "prompt": "A quiet corner of the lawn inside the ruins on a hot afternoon: a long low bench of old carved limestone in the deep shade of a big sea-grape tree, about one third from the left. On the bench a round woven basket full of skeins of brightly colored cotton thread (red, yellow, turquoise, pink) and the end of a half-woven hammock in rainbow stripes draped over the seat. A little way to the right in full sun, a flat, warm, waist-high block of fallen stone where a big green iguana lies basking. Behind, the low weathered wall and glimpses of the turquoise sea; in the background at the right, part of the temple's stepped side. The right third is calm: sunlit lawn, wall and sky."
+  },
+  {
+   "id": "place/gruta-corazon",
+   "kind": "place",
+   "label": "El Corazón de Ka'an, the heart of the grotto, with the Yaxché",
+   "situation": [
+    "x04-yaxche"
+   ],
+   "moment": null,
+   "setting": "gruta",
+   "people": false,
+   "frame": "view",
+   "refs": [
+    "style:en/s69-local/greet",
+    "setting:place/gruta-sala"
+   ],
+   "out": "public/scenes-es/ref/place/gruta-corazon.webp",
+   "prompt": "El Corazón de Ka'an, the heart of the grotto: a round, high cave hall. In its middle lies a round pool of glowing turquoise water, and in the pool a low round island of soft green moss. From the island rises the Yaxché, an enormous ancient ceiba tree: a vast smooth gray-green trunk that goes up and out of the top of the picture, wide buttress roots, and long roots reaching out over the water like fallen logs. From the cave roof hang hundreds of long fine strands of tiny glowing lights, like a curtain of falling stars, and pale pink-white ceiba flowers float on the water. A few lily pads, clusters of softly glowing mushrooms (pale pink, cream) on the shore, fireflies. A path of white stone slabs leads from the viewer to the water's edge. The tree stands a little left of the center; the right third is calm: water, rock and soft light. Nobody is in the picture."
+  }
+ ]
+}

@@ -1,0 +1,191 @@
+{
+ "_about": "Don Efraín, the keeper of the ruins, at the gateway (x06-custodio, a bonus chat).",
+ "scenes": {
+  "x06-custodio": {
+   "npc": "Don Efraín, keeper of the ruins",
+   "focus": [
+    34,
+    40
+   ],
+   "start": "greet"
+  }
+ },
+ "defaults": {
+  "model": "gemini-nano-banana-2.1",
+  "kind": "scene",
+  "web_size": [
+   1600,
+   900
+  ]
+ },
+ "items": [
+  {
+   "id": "x06-custodio/greet",
+   "scene": "x06-custodio",
+   "situation": "x06-custodio",
+   "moment": "first",
+   "phases": [
+    "first"
+   ],
+   "lines": [
+    "greet",
+    "again",
+    "ask_first"
+   ],
+   "refs": [
+    "place:place/ruinas-entrada",
+    "person:cast/custodio"
+   ],
+   "prompt": "Don Efraín, the keeper of the ruins, stands just inside the gateway about one third from the left, beside his small table, welcoming the learner in with one open hand held out toward the path and a warm smile (\"¡Pase, por favor!\").",
+   "out": "public/scenes-es/x06-custodio/greet.webp"
+  },
+  {
+   "id": "x06-custodio/first_yes",
+   "scene": "x06-custodio",
+   "situation": "x06-custodio",
+   "moment": "first_yes",
+   "lines": [
+    "first_yes"
+   ],
+   "refs": [
+    "edit:x06-custodio/greet",
+    "person:cast/custodio"
+   ],
+   "prompt": "Change only his pose: delighted, he puts one hand on his heart and beams, nodding: how nice, you will like it.",
+   "out": "public/scenes-es/x06-custodio/first_yes.webp"
+  },
+  {
+   "id": "x06-custodio/first_no",
+   "scene": "x06-custodio",
+   "situation": "x06-custodio",
+   "moment": "first_no",
+   "lines": [
+    "first_no"
+   ],
+   "refs": [
+    "edit:x06-custodio/greet",
+    "person:cast/custodio"
+   ],
+   "prompt": "Change only his pose: with a knowing smile he touches the brim of his jipi hat and points down the flagstone path toward the temple: then you already know the way.",
+   "out": "public/scenes-es/x06-custodio/first_no.webp"
+  },
+  {
+   "id": "x06-custodio/climb",
+   "scene": "x06-custodio",
+   "situation": "x06-custodio",
+   "moment": "free",
+   "lines": [
+    "free",
+    "climb"
+   ],
+   "refs": [
+    "edit:x06-custodio/greet",
+    "person:cast/custodio"
+   ],
+   "prompt": "Change only his pose: he points up at the temple's steep staircase in the distance with one hand, and raises the other palm out in a gentle, friendly 'carefully' sign.",
+   "out": "public/scenes-es/x06-custodio/climb.webp"
+  },
+  {
+   "id": "x06-custodio/ask",
+   "scene": "x06-custodio",
+   "situation": "x06-custodio",
+   "moment": "ask",
+   "phases": [
+    "ask"
+   ],
+   "lines": [
+    "ask_q",
+    "no_q"
+   ],
+   "refs": [
+    "edit:x06-custodio/greet",
+    "person:cast/custodio"
+   ],
+   "prompt": "Change only his pose: hands clasped behind his back, he leans in a little with an inviting, curious look: any questions?",
+   "out": "public/scenes-es/x06-custodio/ask.webp"
+  },
+  {
+   "id": "x06-custodio/old",
+   "scene": "x06-custodio",
+   "situation": "x06-custodio",
+   "moment": "old",
+   "lines": [
+    "old"
+   ],
+   "refs": [
+    "setting:place/ruinas-entrada",
+    "person:cast/custodio"
+   ],
+   "prompt": "Much closer, standing on the lawn just in front of the temple (the gateway, its table and sign are behind the viewer, out of view): the Temple of the Sea fills most of the picture, its weathered pale stone and wide steep staircase in warm afternoon light. Don Efraín stands at the left, small in the picture, half turned toward it, sweeping his open hand up toward its old stones with a proud, gentle look: about eight hundred years old.",
+   "out": "public/scenes-es/x06-custodio/old.webp",
+   "frame": "view"
+  },
+  {
+   "id": "x06-custodio/name",
+   "scene": "x06-custodio",
+   "situation": "x06-custodio",
+   "moment": "name",
+   "lines": [
+    "name",
+    "name2"
+   ],
+   "refs": [
+    "setting:place/ruinas-entrada",
+    "person:cast/custodio"
+   ],
+   "prompt": "From the lawn's edge by the low wall: the Temple of the Sea on its rocky point, seen from the side, its three dark doorways facing out over the wide turquoise Caribbean, waves breaking white on the rocks below. Don Efraín stands at the left, small, pointing from the temple out to the sea.",
+   "out": "public/scenes-es/x06-custodio/name.webp",
+   "frame": "view"
+  },
+  {
+   "id": "x06-custodio/up",
+   "scene": "x06-custodio",
+   "situation": "x06-custodio",
+   "moment": "up",
+   "lines": [
+    "up"
+   ],
+   "refs": [
+    "edit:x06-custodio/climb",
+    "person:cast/custodio"
+   ],
+   "prompt": "Change only his pose: he holds one hand flat, raised at knee height to show how high each step is, and with a friendly nod makes a slow, calm 'take it easy' gesture with the other.",
+   "out": "public/scenes-es/x06-custodio/up.webp"
+  },
+  {
+   "id": "x06-custodio/iguanas",
+   "scene": "x06-custodio",
+   "situation": "x06-custodio",
+   "moment": "iguanas",
+   "lines": [
+    "iguanas"
+   ],
+   "refs": [
+    "edit:x06-custodio/greet",
+    "person:cast/custodio"
+   ],
+   "prompt": "Change only his pose and add the iguanas: he laughs and points down at two big green iguanas basking side by side on a warm flat stone at the foot of the table, and a third one on the low wall behind him: they own the place.",
+   "out": "public/scenes-es/x06-custodio/iguanas.webp"
+  },
+  {
+   "id": "x06-custodio/bye",
+   "scene": "x06-custodio",
+   "situation": "x06-custodio",
+   "moment": "closing",
+   "phases": [
+    "closing"
+   ],
+   "lines": [
+    "enjoy",
+    "welcome",
+    "bye"
+   ],
+   "refs": [
+    "edit:x06-custodio/greet",
+    "person:cast/custodio"
+   ],
+   "prompt": "Change only his pose: smiling, he lifts his jipi hat a little in a courteous farewell.",
+   "out": "public/scenes-es/x06-custodio/bye.webp"
+  }
+ ]
+}
