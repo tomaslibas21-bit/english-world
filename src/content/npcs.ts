@@ -3,6 +3,8 @@
 // in advance by tools/build-audio.ts. `informal` NPCs address the player with Lithuanian "tu".
 // (18 Nov 2026, the owner's rule) Every woman's hair is long: loose, wavy, long curls or a thick braid, whatever her
 // picture shows (a bun and a ponytail showed nothing from the front, and a bob read as a boy's cut): see HairStyle.
+// (19 Nov 2026) The pictures were redrawn to match; every named woman's braid lies over her right shoulder (`side: -1`),
+// the side the image model draws it on, so a picture and the 3D person agree.
 import type { NpcInfo } from "../convo/dialogue";
 
 export type HairStyle = "short" | "long" | "bun" | "ponytail" | "curly" | "bald" | "buzz" | "bob" | "wavy" | "side"
@@ -86,7 +88,7 @@ const N = (id: string, name: string, role: [string, string], gender: "m" | "f", 
 export const NPCS: Record<string, NpcDef> = Object.fromEntries([
   // Arrival
   N("diaz", "Officer Diaz", ["Passport control", "Pasų kontrolė"], "f", "af_kore",
-    { skin: SK.olive, hair: { style: "braid", color: HAIR.black, tie: "#c9a227" }, top: "#8a9fbd", bottom: "#1f2d40", acc: ["police", "badge"] }, { bio: "Griežta, bet teisinga pareigūnė." }),
+    { skin: SK.olive, hair: { style: "braid", color: HAIR.black, side: -1, tie: "#c9a227" }, top: "#8a9fbd", bottom: "#1f2d40", acc: ["police", "badge"] }, { bio: "Griežta, bet teisinga pareigūnė." }),
   N("priya", "Priya", ["Baggage services", "Bagažo tarnyba"], "f", "af_nova",
     { skin: SK.brown, hair: { style: "long", color: HAIR.black }, top: "#e05a47", bottom: "#2b2b3a", acc: ["lanyard", "earrings"] }),
   N("vinnie", "Vinnie", ["Taxi driver", "Taksi vairuotojas"], "m", "am_puck",
@@ -97,9 +99,9 @@ export const NPCS: Record<string, NpcDef> = Object.fromEntries([
     { skin: SK.light, hair: { style: "bald", color: HAIR.gray }, top: "#6d8f3e", bottom: "#4a3b2c", acc: ["glasses", "vest", "mustache"], build: 1.1 }, { speed: 1.18, bio: "Kalba labai greitai – paprašyk sulėtinti!" }),
   // Downtown
   N("mia", "Mia", ["Barista", "Barista"], "f", "af_bella",
-    { skin: SK.tan, hair: { style: "braid", color: HAIR.brown, tie: "#2f7d6b" }, top: "#f4efe6", bottom: "#394150", acc: ["apron"], accColor: "#2f7d6b" }, { bio: "Piešia širdeles ant kavos putų." }),
+    { skin: SK.tan, hair: { style: "braid", color: HAIR.brown, side: -1, tie: "#2f7d6b" }, top: "#f4efe6", bottom: "#394150", acc: ["apron"], accColor: "#2f7d6b" }, { bio: "Piešia širdeles ant kavos putų." }),
   N("rosa", "Rosa", ["Local, born and raised", "Vietinė gyventoja"], "f", "af_aoede",
-    { skin: SK.olive, hair: { style: "braid", color: HAIR.white, tie: "#b5485d" }, top: "#b5485d", bottom: "#3a3550", acc: ["glasses", "cardigan", "earrings"], accColor: "#e8c07a", height: 0.93 }, { bio: "Visą gyvenimą gyvena Maple Harbore." }),
+    { skin: SK.olive, hair: { style: "braid", color: HAIR.white, side: -1, tie: "#b5485d" }, top: "#b5485d", bottom: "#3a3550", acc: ["glasses", "cardigan", "earrings"], accColor: "#e8c07a", height: 0.93 }, { bio: "Visą gyvenimą gyvena Maple Harbore." }),
   N("ben", "Ben", ["Museum tickets", "Muziejaus kasa"], "m", "am_liam",
     { skin: SK.dark, hair: { style: "buzz", color: HAIR.black }, top: "#6b4a8a", bottom: "#23232e", acc: ["lanyard"] }),
   N("harold", "Harold", ["Museum guard", "Muziejaus prižiūrėtojas"], "m", "am_onyx",
@@ -132,7 +134,7 @@ export const NPCS: Record<string, NpcDef> = Object.fromEntries([
   N("grant", "Officer Grant", ["Airport security", "Oro uosto apsauga"], "m", "am_onyx",
     { skin: SK.brown, hair: { style: "buzz", color: HAIR.black }, top: "#e9edf2", bottom: "#1f2633", acc: ["badge"], build: 1.12 }),
   N("nina", "Nina", ["Gate agent", "Vartų darbuotoja"], "f", "af_sarah",
-    { skin: SK.light, hair: { style: "braid", color: HAIR.blonde, tie: "#c9a227" }, top: "#1d3f73", bottom: "#1d2536", acc: ["scarf", "badge"], accColor: "#c9a227" }),
+    { skin: SK.light, hair: { style: "braid", color: HAIR.blonde, side: -1, tie: "#c9a227" }, top: "#1d3f73", bottom: "#1d2536", acc: ["scarf", "badge"], accColor: "#c9a227" }),
   // Settling in
   N("linda", "Linda", ["Dental office reception", "Odontologijos klinikos registratūra"], "f", "af_nova",
     { skin: SK.fair, hair: { style: "long", color: HAIR.brown }, top: "#8fc1c9", bottom: "#394150", acc: ["headset", "glasses"] }),
@@ -171,7 +173,7 @@ export const NPCS: Record<string, NpcDef> = Object.fromEntries([
   N("dan", "Dan", ["Your friend, dinner host", "Draugas, vakarienės šeimininkas"], "m", "am_michael",
     { skin: SK.brown, hair: { style: "short", color: HAIR.black }, top: "#6a8caf", bottom: "#3a3f4a", acc: ["glasses"] }, { informal: true }),
   N("nora", "Nora", ["Dan's wife", "Dano žmona"], "f", "af_aoede",
-    { skin: SK.light, hair: { style: "braid", color: HAIR.blonde, tie: "#4f8f6a" }, top: "#d98b5f", bottom: "#4a4a5a", skirt: true }, { informal: true }),
+    { skin: SK.light, hair: { style: "braid", color: HAIR.blonde, side: -1, tie: "#4f8f6a" }, top: "#d98b5f", bottom: "#4a4a5a", skirt: true }, { informal: true }),
   N("lucy", "Lucy", ["Old school friend", "Sena mokyklos draugė"], "f", "af_bella",
     { skin: SK.fair, hair: { style: "wavy", color: HAIR.blonde }, top: "#ef8354", bottom: "#2d3142", acc: ["shades", "scarf"], accColor: "#4f5d75" }, { informal: true }),
   N("mrs_lee", "Mrs. Lee", ["Flower stall", "Gėlių prekystalis"], "f", "af_alloy",
@@ -180,7 +182,7 @@ export const NPCS: Record<string, NpcDef> = Object.fromEntries([
     { skin: SK.olive, hair: { style: "buzz", color: HAIR.black }, top: "#2a3f66", bottom: "#1d2940", acc: ["police", "badge"] }),
   // Songs 31–35
   N("carter", "Dr. Carter", ["Family doctor", "Šeimos gydytoja"], "f", "af_sarah",
-    { skin: SK.brown, hair: { style: "braid", color: HAIR.black, tie: "#f4f6f8" }, top: "#f4f6f8", bottom: "#2f4a6b", acc: ["glasses", "badge"] }, { bio: "Rami ir kruopšti šeimos gydytoja." }),
+    { skin: SK.brown, hair: { style: "braid", color: HAIR.black, side: -1, tie: "#f4f6f8" }, top: "#f4f6f8", bottom: "#2f4a6b", acc: ["glasses", "badge"] }, { bio: "Rami ir kruopšti šeimos gydytoja." }),
   N("marcus", "Marcus", ["Cashier", "Kasininkas"], "m", "am_puck",
     { skin: SK.dark, hair: { style: "buzz", color: HAIR.black }, top: "#2e8b57", bottom: "#2b2f3b", acc: ["apron", "badge"], accColor: "#1f5f3c" }),
   N("sco", "Self-checkout", ["Self-checkout machine", "Savitarnos kasa"], "f", "af_river",
@@ -208,7 +210,7 @@ export const NPCS: Record<string, NpcDef> = Object.fromEntries([
     { skin: SK.brown, hair: { style: "short", color: HAIR.gray }, top: "#f7f5f0", bottom: "#2b2f3b", acc: ["chef", "apron", "beard"], accColor: "#f7f5f0", build: 1.05, height: 1.06 },
     { bio: "Kalba tyliai, bet nieko nepraleidžia pro akis." }),
   N("russo", "Mia Russo", ["Junior cook", "Jaunoji virėja"], "f", "af_sky",
-    { skin: SK.olive, hair: { style: "braid", color: HAIR.black, tie: "#1d4e6b" }, top: "#f7f5f0", bottom: "#2b2f3b", acc: ["apron"], accColor: "#1d4e6b", height: 0.95 },
+    { skin: SK.olive, hair: { style: "braid", color: HAIR.black, side: -1, tie: "#1d4e6b" }, top: "#f7f5f0", bottom: "#2b2f3b", acc: ["apron"], accColor: "#1d4e6b", height: 0.95 },
     { informal: true, bio: "Pirmą savaitę virtuvėje, nervinasi, bet turi talentą." }),
   // Batch H (27 Oct 2026): advanced songs P28 (a performance review), P18 (a startup) and P24 (two calls)
   N("emily", "Emily", ["Your manager, Brightline", "Tavo vadovė, „Brightline“"], "f", "af_jessica",
