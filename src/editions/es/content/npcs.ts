@@ -36,14 +36,14 @@ const HAIR = { black: "#1f1a17", dark: "#2e2119", brown: "#5a3a25", gray: "#b8b3
  *  as in Maple Harbor. No one wears the police cap (`police`): no officer's portrait shows one. */
 const LOOK: Record<string, Partial<Look>> = {
   // the arrival
-  diaz: { skin: "#b0754d", hair: { style: "braid", color: "#2e2119", tie: "#22304a" }, top: "#b5cdff", bottom: "#303d50", acc: ["badge", "earrings"] },
+  diaz: { skin: "#b0754d", hair: { style: "braid", color: "#2e2119", side: -1, tie: "#22304a" }, top: "#b5cdff", bottom: "#303d50", acc: ["badge", "earrings"] },
   priya: { skin: "#9a6949", hair: { style: "long", color: "#1f1a17" }, top: "#cb4f41", bottom: "#2c4c5a", acc: ["lanyard", "earrings"] },
   vinnie: { skin: "#a06f4a", hair: { style: "short", color: "#8f8a85" }, top: "#fca938", bottom: "#304a54", acc: ["cap", "mustache"], accColor: "#706f4d", build: 1.16 },
   olivia: { skin: "#d4a07a", hair: { style: "wavy", color: "#74502f" }, top: "#fbf2e2", bottom: "#224250", acc: ["cardigan", "badge", "earrings"], accColor: "#375168" },
   chuck: { skin: "#b3784e", hair: { style: "bald", color: "#e8e2da" }, top: "#f7ecda", acc: ["glasses", "vest", "mustache", "guayabera"], accColor: "#635f52", build: 1.12 },
   // the center
   mia: { skin: "#7d573b", hair: { style: "curls", color: "#1f1a17" }, top: "#f4e4d2", bottom: "#353d4a", acc: ["apron", "earrings"], accColor: "#33534f", build: 0.95 },
-  rosa: { skin: "#a8734b", hair: { style: "braid", color: "#e6e0d8", tie: "#e4007c" }, top: "#f9f3ee", bottom: "#f6f0ea", skirt: true, acc: ["glasses", "hipil", "rebozo", "earrings"], accColor: "#ffb142", height: 0.92, build: 0.94 },
+  rosa: { skin: "#a8734b", hair: { style: "braid", color: "#e6e0d8", side: -1, tie: "#e4007c" }, top: "#f9f3ee", bottom: "#f6f0ea", skirt: true, acc: ["glasses", "hipil", "rebozo", "earrings"], accColor: "#ffb142", height: 0.92, build: 0.94 },
   ben: { skin: "#c2895f", hair: { style: "short", color: "#1f1a17" }, top: "#6c4561", bottom: "#303038", acc: ["lanyard", "mustache"], build: 0.96 },
   harold: { skin: "#eabfa3", hair: { style: "short", color: "#e2dcd4" }, top: "#405172", bottom: "#2f3c54", acc: ["tie", "badge", "mustache"], accColor: "#2c2f37", build: 1.1 },
   marco: { skin: "#b77c52", hair: { style: "curly", color: "#1f1a17" }, top: "#fbf9f5", bottom: "#26262c", acc: ["waistapron", "guayabera"], accColor: "#39393f", build: 0.96 },
@@ -83,7 +83,7 @@ const LOOK: Record<string, Partial<Look>> = {
   mrs_lee: { skin: "#a2724a", hair: { style: "braid", color: "#8a847c", side: -1, tie: "#f2b632" }, top: "#7a9459", acc: ["apron", "glasses", "earrings"], accColor: "#cf552d", height: 0.93 },
   reyes: { skin: "#8c6142", hair: { style: "buzz", color: "#1f1a17" }, top: "#33405b", bottom: "#304157", acc: ["mustache", "badge"] },
   // songs 31–35
-  carter: { skin: "#9e6d4a", hair: { style: "braid", color: "#1f1a17", tie: "#f4f6f8" }, top: "#314862", bottom: "#2c4159", acc: ["glasses", "cardigan", "badge"], accColor: "#fcfbfc" },
+  carter: { skin: "#9e6d4a", hair: { style: "braid", color: "#1f1a17", side: -1, tie: "#f4f6f8" }, top: "#314862", bottom: "#2c4159", acc: ["glasses", "cardigan", "badge"], accColor: "#fcfbfc" },
   marcus: { skin: "#a06d4a", hair: { style: "braid", color: "#4a3f38", side: -1, tie: "#2aa7a0" }, top: "#e25d44", bottom: "#2f3a5a", skirt: true, acc: ["apron", "embroidered", "earrings"], accColor: "#ffa636", height: 0.95, build: 1.08 },
   frank: { skin: "#e0b291", hair: { style: "short", color: "#e8e2da" }, top: "#a2b8a0", acc: ["glasses", "mustache", "jipi", "guayabera"], accColor: "#d6c393" },
   jordan: { skin: "#c58e63", hair: { style: "braid", color: "#4a3427", side: -1, tie: "#f0883e" }, top: "#2f617d", bottom: "#363e44", acc: ["badge"] },
@@ -94,7 +94,7 @@ const LOOK: Record<string, Partial<Look>> = {
   vanessa: { skin: "#edc9b1", hair: { style: "curls", color: "#33241c" }, top: "#2e2e30", bottom: "#2d2e32", acc: ["lanyard", "earrings", "cardigan"], accColor: "#c74232" },
   greg: { skin: "#e6bd9e", hair: { style: "short", color: "#8f8780" }, top: "#828482", bottom: "#353e4d", acc: ["readers", "beard"] },
   whitaker: { skin: "#80593c", hair: { style: "short", color: "#77716b" }, top: "#eef0f0", acc: ["apron", "beard"], accColor: "#fdfdfb" },
-  russo: { skin: "#976a47", hair: { style: "braid", color: "#1f1a17", tie: "#f4f1ea" }, top: "#f6eadc", acc: ["apron", "bandana", "earrings"], accColor: "#2e4255" },
+  russo: { skin: "#976a47", hair: { style: "braid", color: "#1f1a17", side: -1, tie: "#f4f1ea" }, top: "#f6eadc", acc: ["apron", "bandana", "earrings"], accColor: "#2e4255" },
   emily: { skin: "#ae774c", hair: { style: "long", color: "#4a2e20" }, top: "#e38837", bottom: "#2f4e5d", acc: ["lanyard", "earrings"] },
   tyler: { skin: "#c89367", hair: { style: "wavy", color: "#2a211c" }, top: "#5d5c43", acc: ["beard", "cardigan"], accColor: "#e9cab0" },
   mr_grant: { skin: "#6d4933", hair: { style: "bald", color: "#b8b2aa" }, top: "#9f4d41", acc: ["beard", "readers"] },
