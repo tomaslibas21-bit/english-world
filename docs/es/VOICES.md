@@ -4,7 +4,10 @@
 learner answers aloud or by a tap, and a tapped answer is said for them. So the learner's own lines there (`sg_a_…`,
 `sg_b_…`: reach-es.ts `UNSPOKEN`, never in Nayeli's voice) are now listed in the coach voices of both genders
 (lines-es.ts step 2b), with Nayeli's three new lines: 177 clips, about $0.04 in batch
-(`prepare --only=x01 --kind=surftalk`). Not recorded yet: waiting for a key.
+(`prepare --only=x01 --kind=surftalk`). Recorded 19 Nov 2026 in a folder of its own (`~/puerto-colibri-voicing-surf`,
+so as not to cross the other sessions' voicing; then added to the master folder): batches 091-surftalk (177) and
+092-surfredo (3 re-takes: "¿Ahora?", "Entendido." and the neutral "¡Todavía no! Espera…" were heard differently),
+$0.041; Whisper hears all 177 at 0.87 or over. On R2 since 19 Nov (`spanish-master-en/game/audio-es`).
 
 **Spain's set (11 Nov 2026):** the owner added a third text, Spain's Spanish (docs/es/STYLE.md "Spain Spanish"),
 voiced as a third set `esp_<id>` with the same Gemini voice and manner per character and a Castilian accent direction
