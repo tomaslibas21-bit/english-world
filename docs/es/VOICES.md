@@ -9,6 +9,18 @@ so as not to cross the other sessions' voicing; then added to the master folder)
 092-surfredo (3 re-takes: "¿Ahora?", "Entendido." and the neutral "¡Todavía no! Espera…" were heard differently),
 $0.041; Whisper hears all 177 at 0.87 or over. On R2 since 19 Nov (`spanish-master-en/game/audio-es`).
 
+**19 Nov 2026: Paco's conversation and the vendors.** x05-tienda (Tienda El Faro) and the tianguis vendors' two lines
+were voiced in the three sets: 2,584 clips in one batch ($0.99) and 12 by `retake`; 157 of the batch's clips were taken
+again or cut ($0.17). What the checks taught:
+- `prepare --only=<conversation>` also lists the coach clips that exist already (their style is another when one
+  conversation is listed alone): filter the request file by `public/audio-es/manifest.json` before `send` (354 left out).
+- Whisper's likeness lets one short extra word through. Heard word by word against the line (numbers as numbers), 38
+  takes began with an added "Ah," / "Ay," / "Ok," and a dozen had another word ("bolsita", "250" for 255, a dropped
+  "no" or "pesos", tú for usted). A new take fixes most; where every take of a line begins with the interjection, it
+  is cut off at the pause after it and heard again. A last vowel the two recognizers disagree on (le / la / lo,
+  quiere / quieres) is the recognizers', not the take's.
+- The spend is in the shared ledger (rows noted "x05-tienda"): $59.24 of the $60 stop line.
+
 **Spain's set (11 Nov 2026):** the owner added a third text, Spain's Spanish (docs/es/STYLE.md "Spain Spanish"),
 voiced as a third set `esp_<id>` with the same Gemini voice and manner per character and a Castilian accent direction
 (casting-es.ts `ACCENTS.spain`); the samples first (`sample --accent=spain`, then `judge`), then the set after the
