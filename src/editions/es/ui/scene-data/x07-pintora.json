@@ -1,0 +1,8 @@
+{
+  "npc": "Citlali, painter",
+  "images": ["greet", "thanks", "light", "you", "bring", "view", "canvas", "sell", "bye"],
+  "start": "greet",
+  "phases": {"like": "greet", "you": "you", "closing": "bye"},
+  "lines": {"greet": "greet", "again": "greet", "ask_like": "greet", "thanks": "thanks", "needs_color": "thanks", "light": "light", "ask_you": "you", "bring": "bring", "never_late": "bring", "view": "view", "what": "canvas", "sell": "sell", "welcome": "bye", "bye": "bye"},
+  "focus": [34, 40]
+}

@@ -1,0 +1,173 @@
+{
+ "_about": "Citlali, a young painter at her easel on the lawn of the ruins (x07-pintora, a bonus chat).",
+ "scenes": {
+  "x07-pintora": {
+   "npc": "Citlali, painter",
+   "focus": [
+    34,
+    40
+   ],
+   "start": "greet"
+  }
+ },
+ "defaults": {
+  "model": "gemini-nano-banana-2.1",
+  "kind": "scene",
+  "web_size": [
+   1600,
+   900
+  ]
+ },
+ "items": [
+  {
+   "id": "x07-pintora/greet",
+   "scene": "x07-pintora",
+   "situation": "x07-pintora",
+   "moment": "like",
+   "phases": [
+    "like"
+   ],
+   "lines": [
+    "greet",
+    "again",
+    "ask_like"
+   ],
+   "refs": [
+    "place:place/ruinas-caballete",
+    "person:cast/pintora"
+   ],
+   "prompt": "Citlali, the young painter, stands at her easel about one third from the left, a brush in one hand, and with the other turns the canvas a little toward the learner to show her half-finished painting of the temple and the sea, smiling and curious: do you like it?",
+   "out": "public/scenes-es/x07-pintora/greet.webp"
+  },
+  {
+   "id": "x07-pintora/thanks",
+   "scene": "x07-pintora",
+   "situation": "x07-pintora",
+   "moment": "thanks",
+   "lines": [
+    "thanks",
+    "needs_color"
+   ],
+   "refs": [
+    "edit:x07-pintora/greet",
+    "person:cast/pintora"
+   ],
+   "prompt": "Change only her pose: laughing modestly, she points her brush at a pale, unfinished corner of the canvas that is still only a pencil sketch: it isn't finished yet, it needs color.",
+   "out": "public/scenes-es/x07-pintora/thanks.webp"
+  },
+  {
+   "id": "x07-pintora/light",
+   "scene": "x07-pintora",
+   "situation": "x07-pintora",
+   "moment": "light",
+   "lines": [
+    "light"
+   ],
+   "refs": [
+    "edit:x07-pintora/greet",
+    "person:cast/pintora"
+   ],
+   "prompt": "Change only her pose: she shades her eyes with one hand and points with her brush toward the temple glowing in the golden afternoon sun: she comes every afternoon for this light.",
+   "out": "public/scenes-es/x07-pintora/light.webp"
+  },
+  {
+   "id": "x07-pintora/you",
+   "scene": "x07-pintora",
+   "situation": "x07-pintora",
+   "moment": "you",
+   "phases": [
+    "you"
+   ],
+   "lines": [
+    "ask_you"
+   ],
+   "refs": [
+    "edit:x07-pintora/greet",
+    "person:cast/pintora"
+   ],
+   "prompt": "Change only her pose: Same place, same camera: the lawn, her easel and the temple behind her stay exactly as they are. She points the end of her brush playfully toward the learner, head tilted, eyebrows raised: and you, do you paint or draw?",
+   "out": "public/scenes-es/x07-pintora/you.webp"
+  },
+  {
+   "id": "x07-pintora/bring",
+   "scene": "x07-pintora",
+   "situation": "x07-pintora",
+   "moment": "bring",
+   "lines": [
+    "bring",
+    "never_late"
+   ],
+   "refs": [
+    "edit:x07-pintora/greet",
+    "person:cast/pintora"
+   ],
+   "prompt": "Change only her pose and what she holds: she holds out an open tin of colored pencils toward the learner with an encouraging smile.",
+   "out": "public/scenes-es/x07-pintora/bring.webp"
+  },
+  {
+   "id": "x07-pintora/view",
+   "scene": "x07-pintora",
+   "situation": "x07-pintora",
+   "moment": "view",
+   "lines": [
+    "view"
+   ],
+   "refs": [
+    "edit:x07-pintora/greet",
+    "person:cast/pintora"
+   ],
+   "prompt": "Change only her pose: she points up toward the top of the temple's staircase with her whole arm, her face bright: go up, the view is lovely.",
+   "out": "public/scenes-es/x07-pintora/view.webp"
+  },
+  {
+   "id": "x07-pintora/canvas",
+   "scene": "x07-pintora",
+   "situation": "x07-pintora",
+   "moment": "what",
+   "lines": [
+    "what"
+   ],
+   "refs": [
+    "setting:place/ruinas-caballete",
+    "person:cast/pintora"
+   ],
+   "prompt": "A close view of Citlali's canvas on the easel, filling most of the picture: a loose, bright painting of the Temple of the Sea on its point and the wide turquoise sea, in quick brush strokes, no signature. Citlali's hand with a brush comes in from the left edge, adding a touch of blue to the sea; her palette rests on the easel's ledge.",
+   "out": "public/scenes-es/x07-pintora/canvas.webp",
+   "frame": "view"
+  },
+  {
+   "id": "x07-pintora/sell",
+   "scene": "x07-pintora",
+   "situation": "x07-pintora",
+   "moment": "sell",
+   "lines": [
+    "sell"
+   ],
+   "refs": [
+    "edit:x07-pintora/greet",
+    "person:cast/pintora"
+   ],
+   "prompt": "Change only her pose and what she holds: Same place, same camera: the lawn, her easel and the temple behind her stay exactly as they are. She holds up two small finished paintings of the temple and the sea, one in each hand, with a proud little shrug: she sells some at the market on Saturdays.",
+   "out": "public/scenes-es/x07-pintora/sell.webp"
+  },
+  {
+   "id": "x07-pintora/bye",
+   "scene": "x07-pintora",
+   "situation": "x07-pintora",
+   "moment": "closing",
+   "phases": [
+    "closing"
+   ],
+   "lines": [
+    "welcome",
+    "bye"
+   ],
+   "refs": [
+    "edit:x07-pintora/greet",
+    "person:cast/pintora"
+   ],
+   "prompt": "Change only her pose: she waves goodbye with the hand that holds the brush, smiling widely.",
+   "out": "public/scenes-es/x07-pintora/bye.webp"
+  }
+ ]
+}

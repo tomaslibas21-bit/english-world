@@ -1,0 +1,173 @@
+{
+ "_about": "Doña Rosario, a hammock weaver, and Pepe the iguana at the ruins (x08-rosario, a bonus chat).",
+ "scenes": {
+  "x08-rosario": {
+   "npc": "Doña Rosario, hammock weaver",
+   "focus": [
+    34,
+    45
+   ],
+   "start": "greet"
+  }
+ },
+ "defaults": {
+  "model": "gemini-nano-banana-2.1",
+  "kind": "scene",
+  "web_size": [
+   1600,
+   900
+  ]
+ },
+ "items": [
+  {
+   "id": "x08-rosario/greet",
+   "scene": "x08-rosario",
+   "situation": "x08-rosario",
+   "moment": "greet",
+   "lines": [
+    "greet",
+    "again"
+   ],
+   "refs": [
+    "place:place/ruinas-sombra",
+    "person:cast/rosario"
+   ],
+   "prompt": "Doña Rosario sits on the stone bench in the shade about one third from the left, the half-woven striped hammock in her lap and a wooden weaving needle in one hand, raising the other hand in a friendly greeting with a warm smile. Pepe, the big green iguana, basks on his sunny stone to the right of her.",
+   "out": "public/scenes-es/x08-rosario/greet.webp"
+  },
+  {
+   "id": "x08-rosario/heat",
+   "scene": "x08-rosario",
+   "situation": "x08-rosario",
+   "moment": "heat",
+   "phases": [
+    "heat"
+   ],
+   "lines": [
+    "ask_heat"
+   ],
+   "refs": [
+    "edit:x08-rosario/greet",
+    "person:cast/rosario"
+   ],
+   "prompt": "Change only her pose and what she holds: she fans herself with a woven palm-leaf fan, looking up at the bright sky with a comic, long-suffering face: so hot today!",
+   "out": "public/scenes-es/x08-rosario/heat.webp"
+  },
+  {
+   "id": "x08-rosario/shade",
+   "scene": "x08-rosario",
+   "situation": "x08-rosario",
+   "moment": "shade",
+   "lines": [
+    "shade",
+    "lucky"
+   ],
+   "refs": [
+    "edit:x08-rosario/greet",
+    "person:cast/rosario"
+   ],
+   "prompt": "Change only her pose: she pats the shady stone bench beside her with one hand and smiles knowingly: here in the shade it's better.",
+   "out": "public/scenes-es/x08-rosario/shade.webp"
+  },
+  {
+   "id": "x08-rosario/pepe",
+   "scene": "x08-rosario",
+   "situation": "x08-rosario",
+   "moment": "pepe",
+   "phases": [
+    "pepe"
+   ],
+   "lines": [
+    "ask_pepe",
+    "is_iguana",
+    "king"
+   ],
+   "refs": [
+    "edit:x08-rosario/greet",
+    "person:cast/rosario"
+   ],
+   "prompt": "Change only her pose: she points with an amused, proud smile at Pepe the iguana on his stone, who lifts his head like a little king.",
+   "out": "public/scenes-es/x08-rosario/pepe.webp"
+  },
+  {
+   "id": "x08-rosario/sun",
+   "scene": "x08-rosario",
+   "situation": "x08-rosario",
+   "moment": "sun",
+   "lines": [
+    "sun"
+   ],
+   "refs": [
+    "setting:place/ruinas-sombra"
+   ],
+   "prompt": "A close view of Pepe, a big green iguana with a spiny crest and a round dewlap, lying stretched out with his eyes half closed on a flat, warm block of pale stone in full sun, utterly content; the sunny lawn and the old wall soft behind him. Nobody is in the picture.",
+   "out": "public/scenes-es/x08-rosario/sun.webp",
+   "frame": "view"
+  },
+  {
+   "id": "x08-rosario/bite",
+   "scene": "x08-rosario",
+   "situation": "x08-rosario",
+   "moment": "bite",
+   "lines": [
+    "bite"
+   ],
+   "refs": [
+    "edit:x08-rosario/greet",
+    "person:cast/rosario"
+   ],
+   "prompt": "Change only her pose: she laughs and waves one hand dismissively, reassuring the learner; Pepe sleeps peacefully: he's harmless.",
+   "out": "public/scenes-es/x08-rosario/bite.webp"
+  },
+  {
+   "id": "x08-rosario/eat",
+   "scene": "x08-rosario",
+   "situation": "x08-rosario",
+   "moment": "eat",
+   "lines": [
+    "eat"
+   ],
+   "refs": [
+    "edit:x08-rosario/greet",
+    "person:cast/rosario"
+   ],
+   "prompt": "Change only her pose and what she holds: she leans toward Pepe and holds out a slice of ripe orange mango to him on her open palm; he stretches his head toward it.",
+   "out": "public/scenes-es/x08-rosario/eat.webp"
+  },
+  {
+   "id": "x08-rosario/weave",
+   "scene": "x08-rosario",
+   "situation": "x08-rosario",
+   "moment": "weave",
+   "lines": [
+    "weave"
+   ],
+   "refs": [
+    "edit:x08-rosario/greet",
+    "person:cast/rosario"
+   ],
+   "prompt": "Change only her pose: she holds up the half-woven hammock with both hands to show its bright rainbow stripes, smiling proudly: it's for her grandson.",
+   "out": "public/scenes-es/x08-rosario/weave.webp"
+  },
+  {
+   "id": "x08-rosario/bye",
+   "scene": "x08-rosario",
+   "situation": "x08-rosario",
+   "moment": "closing",
+   "phases": [
+    "closing"
+   ],
+   "lines": [
+    "sit",
+    "welcome",
+    "bye"
+   ],
+   "refs": [
+    "edit:x08-rosario/greet",
+    "person:cast/rosario"
+   ],
+   "prompt": "Change only her pose: she smiles warmly and gestures with an open hand to the free place on the bench beside her, inviting the learner to sit, then to come back whenever they like.",
+   "out": "public/scenes-es/x08-rosario/bye.webp"
+  }
+ ]
+}

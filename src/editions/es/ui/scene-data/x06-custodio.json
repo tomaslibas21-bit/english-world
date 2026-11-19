@@ -1,0 +1,8 @@
+{
+  "npc": "Don Efraín, keeper of the ruins",
+  "images": ["greet", "first_yes", "first_no", "climb", "ask", "old", "name", "up", "iguanas", "bye"],
+  "start": "greet",
+  "phases": {"first": "greet", "ask": "ask", "closing": "bye"},
+  "lines": {"greet": "greet", "again": "greet", "ask_first": "greet", "first_yes": "first_yes", "first_no": "first_no", "free": "climb", "climb": "climb", "ask_q": "ask", "no_q": "ask", "old": "old", "name": "name", "name2": "name", "up": "up", "iguanas": "iguanas", "enjoy": "bye", "welcome": "bye", "bye": "bye"},
+  "focus": [34, 40]
+}
