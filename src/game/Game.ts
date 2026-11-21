@@ -1741,7 +1741,7 @@ export class Game implements GameApi {
         market, harbor: out ? near("the-pier", 34) * sea : 0, plaza: out && onSquare ? 1 : 0, tropical,
       });
     }
-    // "walking" for the HUD (the task card folds away on a phone while you walk): after 0.4 s on the move, until
+    // "walking" for the HUD (the task card folds away while you walk): after 0.4 s on the move, until
     // 1.2 s standing still
     if (this.vel.lengthSq() > 1) { this.moveT += dt; this.stillT = 0; } else { this.stillT += dt; this.moveT = 0; }
     const walking = st.hud.walking ? this.stillT < 1.2 : this.moveT > 0.4;
@@ -2243,7 +2243,7 @@ export class Game implements GameApi {
     this.hudCheck = 10;
     const c = this.container.getBoundingClientRect();
     this.hudBoxCache = [];
-    for (const el of document.querySelectorAll<HTMLElement>(".objective-card, .minimap, .toolbar")) {
+    for (const el of document.querySelectorAll<HTMLElement>(".objective-card, .minimap, .toolbar, .toolbar.menu-open .toolbar-tools")) {
       if (!el.offsetParent) continue;
       const r = el.getBoundingClientRect();
       if (r.width && r.height) this.hudBoxCache.push({ x0: r.left - c.left, x1: r.right - c.left, y0: r.top - c.top, y1: r.bottom - c.top });

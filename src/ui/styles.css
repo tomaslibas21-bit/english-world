@@ -109,8 +109,10 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 /* ---------- HUD ---------- */
 .hud { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
 .hud > * { pointer-events: auto; }
+.hud-top { --card-top: 14px; --card-left: 14px; display: contents; pointer-events: none; }
+.objective-notes { display: contents; }
 .objective-card {
-  position: absolute; top: 14px; left: 14px; width: min(390px, calc(100vw - 150px));
+  position: absolute; top: var(--card-top); left: var(--card-left); width: min(390px, calc(100vw - 150px)); pointer-events: auto;
   background: var(--panel); border-radius: var(--radius); box-shadow: var(--shadow); padding: 12px 14px 13px;
   border: 1px solid rgba(255, 255, 255, 0.75);
 }
@@ -134,13 +136,22 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .objective-card .row { display: flex; gap: 8px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
 .objective-card .dist { font-weight: 800; color: var(--accent); display: inline-flex; align-items: center; gap: 6px; font-size: 0.9em; }
 .arrow { display: inline-block; width: 22px; height: 22px; transition: transform 0.2s; }
-.objective-card.collapsed p, .objective-card.collapsed .row { display: none; }
+.objective-card.collapsed { padding: 0; height: 48px; }
+.hud.has-touch .objective-card.collapsed { height: 44px; }
+.objective-card .objective-summary {
+  display: flex; align-items: center; gap: 6px; width: 100%; height: 100%; margin: 0; padding: 0 10px;
+  border-radius: inherit; color: var(--accent); white-space: nowrap; text-align: left;
+}
+.objective-card .objective-summary::before { content: none; }
+.objective-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-weight: 900; color: var(--ink); }
+.objective-summary .dist { flex: none; gap: 3px; }
+.objective-summary .arrow { width: 17px; height: 17px; }
 
 /* The little map: round outdoors; indoors it folds into a small card with the place's name (Hud.tsx Minimap). The
    frame glides between the two: indoors its size is the card's, set on the element. */
 .minimap {
   --mm: 170px; --mm-edge: 5px;
-  position: absolute; top: 14px; right: 14px; width: var(--mm); height: var(--mm); border-radius: calc(var(--mm) / 2);
+  position: absolute; top: var(--card-top); right: var(--card-left); width: var(--mm); height: var(--mm); border-radius: calc(var(--mm) / 2); pointer-events: auto;
   overflow: hidden; box-shadow: var(--shadow); border: var(--mm-edge) solid var(--panel-solid); background: #8fc66a; cursor: pointer;
 }
 /* .live: from its second frame on (a map that appears indoors is the card at once, with no glide) */
@@ -170,13 +181,23 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .mm-go { grid-area: go; display: grid; place-items: center; width: 32px; height: 32px; margin-left: 2px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel-solid); color: var(--ink-soft); transition: background-color 0.15s, color 0.15s, border-color 0.15s; }
 .minimap.inside:hover .mm-go { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
 
-.toolbar { position: absolute; right: max(14px, env(safe-area-inset-right)); top: 200px; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
-.toolbar-tools { display: grid; grid-auto-flow: column; grid-template-rows: repeat(8, 52px); gap: 10px; }
+.toolbar { --tool-size: 52px; --tool-gap: 10px; position: absolute; right: max(14px, env(safe-area-inset-right)); top: 200px; display: flex; flex-direction: column; align-items: flex-end; gap: var(--tool-gap); }
+.toolbar-tools { display: grid; grid-auto-flow: column; grid-template-rows: repeat(8, var(--tool-size)); gap: var(--tool-gap); direction: rtl; }
+.toolbar-tools > * { direction: ltr; }
+.toolbar.in-ride { flex-direction: row-reverse; align-items: flex-start; }
+.toolbar .ride-menu { border-radius: 50%; }
+.toolbar.in-ride .toolbar-tools {
+  position: absolute; top: calc(var(--tool-size) + var(--tool-gap)); right: 0;
+  grid-template-rows: repeat(5, var(--tool-size)); transform-origin: top right;
+  opacity: 0; visibility: hidden; transform: scale(0.96);
+  transition: opacity 160ms ease, transform 160ms ease, visibility 0s linear 160ms;
+}
+.toolbar.in-ride.menu-open .toolbar-tools { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
 .light-mode-btn { font-size: 17px; font-weight: 900; color: var(--accent); }
 .toolbar-tooltip { position: absolute; right: calc(100% + 10px); top: 50%; transform: translateY(-50%); padding: 7px 11px; border: 1px solid var(--ink-faint); border-radius: 10px; background: var(--panel-solid); color: var(--ink); font-size: 14px; white-space: nowrap; pointer-events: none; opacity: 0; }
 .light-mode-btn:hover .toolbar-tooltip, .light-mode-btn:focus-visible .toolbar-tooltip { opacity: 1; }
 .zone-banner {
-  position: absolute; top: 18%; left: 50%; transform: translateX(-50%); text-align: center; pointer-events: none;
+  position: fixed; top: 18%; left: 50%; transform: translateX(-50%); text-align: center; pointer-events: none;
   color: #fff; text-shadow: 0 2px 12px rgba(0,0,0,0.45); animation: fadein 0.5s ease;
 }
 .zone-banner h2 { margin: 0; font-size: 2.3em; font-family: var(--en); font-weight: 600; }
@@ -223,11 +244,20 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 }
 .help-strip button { position: relative; display: inline-flex; align-items: center; gap: 3px; background: none; border: 0; color: #cfe8ff; font-weight: 800; padding: 1px 4px; margin-left: 4px; border-radius: 6px; }
 .help-strip button:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
+.ride-keys { position: absolute; bottom: 14px; left: 14px; max-width: calc(100vw - 28px); }
+.ride-keys .ride-strip { display: block; position: static; }
+.ride-keys-chip {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 44px; margin-top: 6px; padding: 0 12px;
+  border: 0; border-radius: 999px; background: rgba(31, 42, 51, 0.74); color: #fff; font-size: 0.8em; font-weight: 800;
+}
+.ride-keys-chip:hover { background: rgba(31, 42, 51, 0.88); }
 
 .fade { position: fixed; inset: 0; background: #0e1419; pointer-events: none; z-index: 40; transition: opacity 0.3s ease; }
 
 /* ---------- toasts ---------- */
 .toasts { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 60; display: flex; flex-direction: column; gap: 10px; width: min(560px, calc(100vw - 32px)); pointer-events: none; }
+.toasts.town-toasts { width: min(460px, calc(100vw - 32px)); }
+.town-toasts .t-text { overflow-wrap: anywhere; }
 .toast {
   pointer-events: auto; background: var(--panel-solid); border-radius: 18px; box-shadow: var(--shadow); padding: 12px 12px 12px 12px;
   display: flex; gap: 12px; align-items: flex-start; animation: drop 0.3s ease; border: 1px solid rgba(31, 42, 51, 0.06);
@@ -245,6 +275,24 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .toast .x { flex: none; margin: -2px -2px 0 auto; background: none; border: 0; color: var(--ink-faint); width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; transition: background-color 0.15s, color 0.15s; }
 .toast .x:hover { background: rgba(31, 42, 51, 0.07); color: var(--ink); }
 @keyframes drop { from { opacity: 0; transform: translateY(-10px); } }
+
+/* Leave a lane for the toast between the task and the map, including as the map changes size indoors. */
+@media (min-width: 901px) {
+  .hud-top {
+    --task-width: 390px;
+    display: grid; position: absolute; inset: var(--card-top) var(--card-left) auto;
+    grid-template-columns: minmax(0, var(--task-width)) minmax(160px, 1fr) auto; column-gap: 12px; align-items: start;
+  }
+  .hud-top .objective-card { grid-area: 1 / 1; position: relative; inset: auto; width: 100%; }
+  .hud-top .minimap { grid-area: 1 / 3; position: relative; inset: auto; justify-self: end; }
+  .toasts.town-toasts {
+    grid-area: 1 / 2; position: static; width: auto; max-width: 460px; transform: none;
+    margin: 2px 0 0 max(0px, calc(50vw - 230px - var(--card-left) - var(--task-width) - 12px));
+  }
+  .town-toasts .toast { animation-name: note-in; }
+}
+
+@keyframes note-in { from { opacity: 0; } }
 
 /* ---------- conversation panel ---------- */
 .convo {
@@ -749,11 +797,16 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .mm-card small { align-self: center; font-size: 9.5px; letter-spacing: 0.09em; }
   .mm-card b { justify-self: center; max-width: none; font-size: 11.25px; line-height: 1.18; }
   .mm-go { display: none; }
-  .toolbar { top: 112px; right: max(10px, env(safe-area-inset-right)); }
-  .toolbar-tools { grid-template-rows: repeat(8, 46px); }
+  .toolbar { --tool-size: 46px; top: 112px; right: max(10px, env(safe-area-inset-right)); }
+  .toolbar-tools { grid-template-rows: repeat(4, var(--tool-size)); }
   .icon-btn { width: 46px; height: 46px; border-radius: 14px; }
   .icon-btn .ui-icon { width: 22px; height: 22px; }
   .help-strip { display: none; }
+  .toasts.town-toasts {
+    top: auto; bottom: 112px; left: max(8px, env(safe-area-inset-left)); transform: none;
+    width: min(460px, calc(100vw - 132px - env(safe-area-inset-left) - env(safe-area-inset-right)));
+  }
+  .hud.has-touch .town-toasts { bottom: calc(224px + env(safe-area-inset-bottom)); }
   .create-grid { grid-template-columns: repeat(3, 1fr); }
   .il { font-size: 1.3em; }
 }
@@ -765,12 +818,15 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .toolbar-tools { grid-template-rows: repeat(4, 52px); }
 }
 @media (max-width: 900px) and (max-height: 760px) {
-  .toolbar-tools { grid-template-rows: repeat(4, 46px); }
   .objective-card { max-width: calc(100vw - 140px); }
 }
+@media (max-width: 600px) {
+  .objective-card.collapsed { height: 44px; }
+}
 @media (min-width: 540px) and (max-height: 520px) {
-  .toolbar { top: 12px; right: max(112px, calc(env(safe-area-inset-right) + 100px)); gap: 8px; }
-  .toolbar-tools { grid-template-rows: repeat(2, 46px); gap: 8px; }
+  .hud-top { --task-width: min(390px, calc(100vw - 350px)); }
+  .toolbar { --tool-size: 46px; --tool-gap: 8px; top: 12px; right: max(112px, calc(env(safe-area-inset-right) + 100px)); }
+  .toolbar-tools, .toolbar.in-ride .toolbar-tools { grid-template-rows: repeat(2, var(--tool-size)); }
   .toolbar .icon-btn { width: 46px; height: 46px; }
   .minimap { --mm: 88px; --mm-edge: 5px; }
   .mm-card { width: 92px; max-width: none; padding: 8px 4px 9px; grid-template-columns: auto auto; grid-template-areas: "ico kick" "name name"; justify-content: center; column-gap: 4px; row-gap: 3px; text-align: center; }
@@ -784,8 +840,8 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 @media (max-width: 480px) {
   body { font-size: calc(17px * var(--scale)); }
   .mission-dots { display: none; }
-  .objective-card { left: 8px; top: 8px; padding: 9px 11px; }
-  .minimap { top: 8px; right: 8px; }
+  .hud-top { --card-left: 8px; --card-top: 8px; }
+  .objective-card { padding: 9px 11px; }
   .sheet-head { padding: 12px 12px 12px 14px; gap: 10px; }
   .sheet-ico { width: 36px; height: 36px; border-radius: 11px; }
   .sheet-body { padding: 14px 14px 18px; }
@@ -797,6 +853,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .scn-card, .scn-card:hover, .icon-btn, .icon-btn:hover, .mic { transition: none; transform: none; }
   .map-pin { transition: none; }
   .map-pin:hover { transform: translate(-50%, -50%); }
+  .toolbar.in-ride .toolbar-tools { transition: none; }
 }
 
 /* Illustrated conversation scenes: above the 3D view and HUD, below the conversation panel */
@@ -965,7 +1022,7 @@ body.scene-on .tag-layer { display: none; }
    colour: a see-through theme's card would let the town show through its words). It stands above where the talk / enter prompt
    appears (the prompt: bottom 34 px, about 52 px tall), so the two never cover each other. */
 .coach {
-  position: absolute; left: 50%; bottom: 112px; transform: translateX(-50%); z-index: 11;
+  position: fixed; left: 50%; bottom: 112px; transform: translateX(-50%); z-index: 11; pointer-events: auto;
   display: flex; flex-wrap: wrap; gap: 0 12px; align-items: flex-start; width: min(430px, calc(100vw - 28px));
   background: var(--panel-solid); color: var(--ink); border-radius: 18px; padding: 12px 14px 10px;
   border: 1px solid var(--g-edge, rgba(255, 255, 255, 0.75)); box-shadow: var(--shadow);
@@ -983,16 +1040,31 @@ body.scene-on .tag-layer { display: none; }
 .coach-skip { margin-left: auto; background: none; border: 0; color: var(--ink-soft); font-weight: 800; font-size: 0.88em; min-height: 44px; padding: 0 10px; border-radius: 10px; }
 .coach-skip:hover { background: var(--g-hover, rgba(31, 42, 51, 0.06)); }
 .coach-next { min-height: 44px; min-width: 84px; }
-/* on a phone held upright: under the task card (folded while the guide is up, Hud.tsx) and beside the buttons, clear
-   of the middle of the picture, where the player walks */
-@media (max-width: 600px) {
-  .coach, .hud.has-touch .coach {
-    left: max(8px, env(safe-area-inset-left)); right: auto; bottom: auto; top: calc(104px + env(safe-area-inset-top)); transform: none;
-    width: calc(100vw - 78px - env(safe-area-inset-left) - env(safe-area-inset-right)); gap: 0 10px; padding: 10px 12px 8px; border-radius: 16px;
-    animation-name: coach-in-top;
+/* On an upright phone the task and note share a column. Leave room for two columns of tools on the right
+   and for the touch controls at the bottom. The card can scroll if large text would push the note too low. */
+@media (max-width: 600px) and (orientation: portrait) {
+  .objective-notes {
+    --note-right: calc(max(10px, env(safe-area-inset-right)) + 46px + 10px + 46px + 16px);
+    --note-width: calc(100vw - var(--card-left) - var(--note-right));
+    position: absolute; top: var(--card-top); left: var(--card-left); width: calc(100vw - 120px);
+    display: flex; flex-direction: column; max-height: calc(100dvh - var(--card-top) - 170px - env(safe-area-inset-bottom));
   }
-  /* (with the radio the buttons stand two abreast) */
-  .hud:has(.toolbar.has-radio) .coach { width: calc(100vw - 136px - env(safe-area-inset-left) - env(safe-area-inset-right)); }
+  .objective-notes .objective-card { position: relative; inset: auto; width: 100%; flex: none; }
+  .objective-notes .objective-card:not(.collapsed) { max-height: calc(50dvh - var(--card-top) - 16px); overflow-y: auto; }
+  .objective-notes :is(.town-toasts, .zone-banner, .coach) {
+    position: static; width: var(--note-width); margin: 12px 0 0; min-height: 0; transform: none;
+  }
+  .objective-notes .town-toasts:empty { margin: 0; }
+  .objective-notes .town-toasts .toast { min-height: 0; overflow: auto; animation-name: note-in; }
+  .objective-notes .zone-banner { text-align: left; overflow: hidden; overflow-wrap: anywhere; animation-name: note-in; }
+  .objective-notes .zone-banner h2 { line-height: 1.08; }
+  /* Keep the folded card's banner at its usual height and centre it as far as the toolbar allows. */
+  .objective-notes.task-folded .zone-banner {
+    position: fixed; top: max(18%, calc(var(--card-top) + 44px + 12px)); left: 50%;
+    width: max-content; max-width: var(--note-width); margin: 0; text-align: center;
+    transform: translateX(clamp(calc(var(--card-left) - 50vw), -50%, calc(50vw - var(--note-right) - 100%)));
+  }
+  .objective-notes .coach { gap: 0 10px; padding: 10px 12px 8px; border-radius: 16px; animation-name: note-in; }
   .coach-icon { width: 36px; height: 36px; border-radius: 12px; }
   .coach-text p { font-size: 0.86em; line-height: 1.35; }
   .coach-row { margin-top: 2px; gap: 6px; }
@@ -1009,9 +1081,7 @@ body.scene-on .tag-layer { display: none; }
   /* (at a door or by someone, the prompt needs the room: the hint keeps its title and its buttons) */
   .hud:has(.prompt) .coach .coach-text p { display: none; }
 }
-@keyframes coach-in-top { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
-/* a phone held sideways: low, between the stick and the buttons (the task card is folded meanwhile, Hud.tsx); the
-   prompt over the buttons keeps to their side */
+/* A phone held sideways keeps the hint low between the stick and the buttons. The prompt stays on the right. */
 @media (max-height: 520px) and (orientation: landscape) {
   .hud.has-touch .coach { top: auto; left: calc(50% - 60px); transform: translateX(-50%); bottom: calc(8px + env(safe-area-inset-bottom)); width: min(370px, calc(100vw - 470px)); animation-name: coach-in; }
   .hud.has-touch .coach .coach-text p { font-size: 0.84em; line-height: 1.32; }

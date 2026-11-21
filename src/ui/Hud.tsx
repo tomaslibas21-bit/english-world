@@ -1,5 +1,6 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useStore } from "../state/store";
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
+import { townRide, useStore, type HudState } from "../state/store";
+import { townNote } from "../state/townNotes";
 import { SectionHelpButton } from "./sectionHelp";
 import { useSurf } from "../game/surf/store";
 import { SurfOverlay, SurfPicker } from "./Surf";
@@ -15,6 +16,7 @@ import { useCards, dueCards } from "../state/cards";
 import { LyricStrip, RadioTool } from "./Radio";
 import { useRadio } from "../radio";
 import { Guide } from "./Guide";
+import { TownToast } from "./Toasts";
 import "./light.css";
 
 /** Inside English Master (VITE_BACK_URL, e.g. "/"): the way back to the course site. */
@@ -37,11 +39,13 @@ export function useDueCards(): number {
 
 export function Hud() {
   const hud = useStore((s) => s.hud);
-  const conv = useStore((s) => s.conv);
-  const due = useDueCards();
-  const hasRadio = useRadio((s) => s.available);
+  const inConversation = useStore((s) => s.conv.active);
   const surfing = useSurf((s) => s.active);
-  if (conv.active) return <Fade />;
+  const inTown = !inConversation && !hud.flight && !surfing;
+  const ride = townRide(hud.ride);
+  const riding = ride !== null;
+  const task = useTaskCard(hud.objective?.sitId ?? null, inTown && !hud.panel);
+  if (inConversation) return <Fade />;
   // the first visit's flight over the town has the screen to itself too: where one is, and what to do first
   if (hud.flight) return <div className="hud"><Flight /><Fade /></div>;
   // the surf lesson has the screen to itself: her line, the answers, the score, and the phone's controls
@@ -53,31 +57,21 @@ export function Hud() {
     </div>
   );
   const banner = hud.zoneBanner ? splitLead(hud.zoneBanner.title) : null;
+  const guideVisible = !hud.panel && townNote(hud) === "guide";
+  const collapsed = task.manual ?? (!task.fresh && (hud.walking || riding));
   return (
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")}>
-      <Objective />
-      <Minimap />
-      <div className={"toolbar" + (hasRadio ? " has-radio" : "")}>
-        <div className="toolbar-tools">
-          {COURSE_URL && <a className="icon-btn" href={COURSE_URL} title="Grįžti į kursą" aria-label="Grįžti į kursą"><Icon name="home" size={25} /></a>}
-          <ToolButton icon="clapper" title="Visos situacijos" panel="scenarios" />
-          <ToolButton icon="map" title="Žemėlapis (M)" panel="map" hotkey="M" />
-          <ToolButton icon="journal" title="Užduotys (J)" panel="journal" hotkey="J" />
-          <ToolButton icon="smartphone" title="Telefonas (P)" panel="phone" hotkey="P" />
-          <ToolButton icon="bookOpen" title="Frazių knygelė" panel="phrasebook" badge={due} />
-          <ToolButton icon="settings" title="Nustatymai (Esc)" panel="settings" />
-          <SectionHelpButton />
+      <div className="hud-top">
+        <div className={"objective-notes" + (collapsed ? " task-folded" : "")}>
+          <Objective key={hud.objective?.sitId ?? "complete"} collapsed={collapsed} fresh={task.fresh && !hud.panel} setCollapsed={task.setManual} />
+          {hud.zoneBanner && banner && <div className="zone-banner"><h2>{banner.icon && <Icon name={banner.icon} size="0.8em" className="zb-ico" />}{banner.rest}</h2>{hud.zoneBanner.sub && <p>{hud.zoneBanner.sub}</p>}</div>}
+          <Guide visible={guideVisible} />
+          <TownToast />
         </div>
-        <div className="toolbar-extra">
-          <RadioTool />
-          <button className="icon-btn light-mode-btn" onClick={() => switchPlayMode("light")} title="Lengvas režimas" aria-label="Lengvas režimas">
-            <span aria-hidden>LR</span>
-            <span className="toolbar-tooltip" aria-hidden>Lengvas režimas</span>
-          </button>
-        </div>
+        <Minimap />
       </div>
+      <Toolbar riding={riding} />
       {!hud.panel && <LyricStrip />}
-      {hud.zoneBanner && banner && <div className="zone-banner"><h2>{banner.icon && <Icon name={banner.icon} size="0.8em" className="zb-ico" />}{banner.rest}</h2>{hud.zoneBanner.sub && <p>{hud.zoneBanner.sub}</p>}</div>}
       {/* (on a phone the way out of a car is the round button itself: no second label over it) */}
       {hud.prompt && !hud.panel && !(hud.showTouch && hud.prompt.kind === "out") && (
         <button className={"prompt" + (hud.showTouch ? " touch" : "")} onClick={() => game?.interact()}>
@@ -85,20 +79,103 @@ export function Hud() {
           <span className="prompt-text">{hud.prompt.label}{hud.prompt.lt && <small lang="lt">{hud.prompt.lt}</small>}</span>
         </button>
       )}
-      <Guide />
-      {/* at a wheel, at the boat's helm or in the water: what the keys do there (a computer; a phone has its buttons) */}
-      {hud.ride && !hud.showTouch && !hud.panel && !hud.coach && (
-        <div className="help-strip ride-strip">
-          {hud.ride === "car" || hud.ride === "boat" ? <>
-            {hud.ride === "car" ? "Vairuok" : "Plauk"} <kbd><Icon name="arrowUp" size="1em" strokeWidth={2.25} label="aukštyn" /></kbd><kbd><Icon name="arrowDown" size="1em" strokeWidth={2.25} label="žemyn" /></kbd><kbd><Icon name="arrowLeft" size="1em" strokeWidth={2.25} label="kairėn" /></kbd><kbd><Icon name="arrowRight" size="1em" strokeWidth={2.25} label="dešinėn" /></kbd> arba <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> · stabdyti <kbd>Tarpas</kbd> · išlipti <kbd>E</kbd>
-          </> : <>
-            Plauk <kbd><Icon name="arrowUp" size="1em" strokeWidth={2.25} label="aukštyn" /></kbd><kbd><Icon name="arrowDown" size="1em" strokeWidth={2.25} label="žemyn" /></kbd><kbd><Icon name="arrowLeft" size="1em" strokeWidth={2.25} label="kairėn" /></kbd><kbd><Icon name="arrowRight" size="1em" strokeWidth={2.25} label="dešinėn" /></kbd> · greičiau <kbd>Shift</kbd> · {hud.ride === "dive" ? "išnirti" : "panerti"} <kbd>Tarpas</kbd>
-          </>}
-        </div>
+      {riding && hud.rideStartedAt !== null && !hud.showTouch && (
+        <RideKeys key={`${ride}-${hud.rideStartedAt}`} ride={hud.ride} startedAt={hud.rideStartedAt} hidden={!!hud.panel || guideVisible} />
       )}
       {hud.showTouch && <TouchControls />}
       <SurfPicker />
       <Fade />
+    </div>
+  );
+}
+
+function useTaskCard(taskId: string | null, visible: boolean) {
+  const [state, setState] = useState<{ id: string | null; manual: boolean | null; fresh: boolean }>({ id: taskId, manual: null, fresh: false });
+  // A manual choice belongs to one task. Give the next task its pop when the card is back on screen.
+  if (taskId !== state.id) setState({ id: taskId, manual: null, fresh: taskId !== null });
+  useEffect(() => {
+    if (!state.fresh || !visible) return;
+    const timer = setTimeout(() => setState((current) => current.id === state.id ? { ...current, fresh: false } : current), 3000);
+    return () => clearTimeout(timer);
+  }, [state.id, state.fresh, visible]);
+  return { ...state, setManual: (manual: boolean) => setState((current) => ({ ...current, manual })) };
+}
+
+// Enter and Space belong to a button reached by keyboard, even while the game is listening for movement.
+function activateHudButton(e: KeyboardEvent<HTMLElement>) {
+  if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(":focus-visible")) e.stopPropagation();
+}
+
+function Toolbar({ riding }: { riding: boolean }) {
+  const due = useDueCards();
+  const hasRadio = useRadio((s) => s.available);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const keepOpen = () => {
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => setMenuOpen(false), 5000);
+  };
+  const open = riding && menuOpen;
+  useEffect(() => {
+    if (!riding) setMenuOpen(false);
+    return () => clearTimeout(timer.current);
+  }, [riding]);
+  const toggleMenu = () => {
+    if (open) clearTimeout(timer.current);
+    else keepOpen();
+    setMenuOpen(!open);
+  };
+  const lightMode = (
+    <button className="icon-btn light-mode-btn" onClick={() => switchPlayMode("light")} title="Lengvas režimas" aria-label="Lengvas režimas">
+      <span aria-hidden>LR</span>
+      <span className="toolbar-tooltip" aria-hidden>Lengvas režimas</span>
+    </button>
+  );
+  return (
+    <div className={"toolbar" + (hasRadio ? " has-radio" : "") + (riding ? " in-ride" : "") + (open ? " menu-open" : "")} onKeyDown={activateHudButton}>
+      {riding && <button className="icon-btn ride-menu" onClick={toggleMenu} title="Meniu" aria-label="Meniu" aria-expanded={open} aria-controls="town-tools">
+        <Icon name="menu" size={25} />
+        {!!due && <span className="due-badge" aria-hidden>{due}</span>}
+      </button>}
+      <div className="toolbar-tools" id="town-tools" inert={riding && !open} onClick={open ? keepOpen : undefined}>
+        {COURSE_URL && <a className="icon-btn" href={COURSE_URL} title="Grįžti į kursą" aria-label="Grįžti į kursą"><Icon name="home" size={25} /></a>}
+        <ToolButton icon="clapper" title="Visos situacijos" panel="scenarios" />
+        <ToolButton icon="map" title="Žemėlapis (M)" panel="map" hotkey="M" />
+        <ToolButton icon="journal" title="Užduotys (J)" panel="journal" hotkey="J" />
+        <ToolButton icon="smartphone" title="Telefonas (P)" panel="phone" hotkey="P" />
+        <ToolButton icon="bookOpen" title="Frazių knygelė" panel="phrasebook" badge={due} />
+        <ToolButton icon="settings" title="Nustatymai (Esc)" panel="settings" />
+        <SectionHelpButton />
+        {riding && lightMode}
+      </div>
+      <div className="toolbar-extra" onClick={open ? keepOpen : undefined}>
+        <RadioTool />
+        {!riding && lightMode}
+      </div>
+    </div>
+  );
+}
+
+function RideKeys({ ride, startedAt, hidden }: { ride: HudState["ride"]; startedAt: number; hidden: boolean }) {
+  const count = useStore((s) => s.progress.coach?.rides ?? 0);
+  const [intro, setIntro] = useState(() => count <= 3 && Date.now() - startedAt < 8000);
+  const [pinned, setPinned] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  useEffect(() => {
+    if (!intro) return;
+    const timer = setTimeout(() => setIntro(false), Math.max(0, startedAt + 8000 - Date.now()));
+    return () => clearTimeout(timer);
+  }, [intro, startedAt]);
+  const expanded = intro || pinned || hovered;
+  return (
+    <div className="ride-keys" hidden={hidden} onMouseEnter={() => { if (!intro) setHovered(true); }} onMouseLeave={() => setHovered(false)}>
+      {expanded && <div className="help-strip ride-strip" id="ride-key-help">
+        {ride === "car" ? "Vairuok" : "Plauk"} <kbd><Icon name="arrowUp" size="1em" strokeWidth={2.25} label="aukštyn" /></kbd><kbd><Icon name="arrowDown" size="1em" strokeWidth={2.25} label="žemyn" /></kbd><kbd><Icon name="arrowLeft" size="1em" strokeWidth={2.25} label="kairėn" /></kbd><kbd><Icon name="arrowRight" size="1em" strokeWidth={2.25} label="dešinėn" /></kbd>
+        {ride === "car" || ride === "boat" ? <> arba <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> · stabdyti <kbd>Tarpas</kbd> · išlipti <kbd>E</kbd></> : <> · greičiau <kbd>Shift</kbd> · {ride === "dive" ? "išnirti" : "panerti"} <kbd>Tarpas</kbd></>}
+      </div>}
+      {!intro && <button className="ride-keys-chip" aria-expanded={expanded} aria-controls={expanded ? "ride-key-help" : undefined} onClick={() => setPinned(!pinned)} onKeyDown={activateHudButton}>
+        <Icon name="keyboard" size={20} /> Klavišai
+      </button>}
     </div>
   );
 }
@@ -124,32 +201,27 @@ function Fade() {
   return <div className="fade" style={{ opacity: fade }} />;
 }
 
-function Objective() {
+function Objective({ collapsed, fresh, setCollapsed }: { collapsed: boolean; fresh: boolean; setCollapsed: (collapsed: boolean) => void }) {
   const o = useStore((s) => s.hud.objective);
   const progress = useStore((s) => s.progress);
-  // a new task (the last one done, or another picked): the card pops up for a moment
-  const [fresh, setFresh] = useState(false);
-  const lastTask = useRef(o?.sitId);
-  useEffect(() => {
-    if (!o?.sitId || o.sitId === lastTask.current) return;
-    const first = lastTask.current === undefined;
-    lastTask.current = o.sitId;
-    if (first) return;
-    setFresh(true);
-    const t = setTimeout(() => setFresh(false), 1300);
-    return () => clearTimeout(t);
-  }, [o?.sitId]);
-  // on a phone it folds away by itself while you walk (and opens when you stop), until you fold or open it yourself
-  const [manual, setManual] = useState<boolean | null>(null);
-  const walking = useStore((s) => s.hud.walking);
-  // (and while the first-time guide's card is up, which sits under it)
-  const coachOn = useStore((s) => !!s.hud.coach);
-  const collapsed = manual ?? (typeof window !== "undefined" && ((walking && window.innerWidth < 600) || (coachOn && (window.innerWidth < 600 || window.innerHeight <= 520))));
-  const setCollapsed = (v: boolean) => setManual(v);
+  if (collapsed) {
+    return (
+      <div className="objective-card collapsed">
+        <button className="collapse-btn objective-summary" aria-expanded={false} onClick={() => setCollapsed(false)} onKeyDown={activateHudButton}>
+          <Icon name="target" size={16} strokeWidth={2} />
+          <span className="objective-title">{o?.title ?? "Visos užduotys atliktos"}</span>
+          <Icon name="chevronDown" size={16} strokeWidth={2} />
+          {o?.dist != null && <span className="dist">{o.angle !== null && <Arrow angle={o.angle} />}{o.dist} m</span>}
+        </button>
+      </div>
+    );
+  }
+  const fold = <button className="collapse-btn" onClick={() => setCollapsed(true)} onKeyDown={activateHudButton} aria-label="Suskleisti" aria-expanded><Icon name="chevronUp" size={18} strokeWidth={2} /></button>;
+  const className = "objective-card" + (fresh ? " fresh" : "");
   if (!o) {
     return (
-      <div className="objective-card">
-        <div className="kicker">Visos užduotys atliktos <InlineIcon name="party" /></div>
+      <div className={className}>
+        <div className="kicker">Visos užduotys atliktos <InlineIcon name="party" />{fold}</div>
         <p>Grįžk į bet kurią vietą ir pabandyk pasakyti kitaip – žmonės kaskart kalba šiek tiek skirtingai.</p>
       </div>
     );
@@ -158,11 +230,11 @@ function Objective() {
   const phone = sit?.mode === "phone" || sit?.mode === "video" || sit?.location === "phone";
   const st = stars(sitProgress(progress, o.sitId));
   return (
-    <div className={"objective-card" + (collapsed ? " collapsed" : "") + (fresh ? " fresh" : "")}>
+    <div className={className}>
       <div className="kicker">
         <span className="kicker-label"><Icon name="target" size={15} strokeWidth={2} /> Užduotis</span>
         {st > 0 && <Stars n={st} size={14} />}
-        <button className="collapse-btn" onClick={() => setCollapsed(!collapsed)} aria-label="Suskleisti" aria-expanded={!collapsed}><Icon name={collapsed ? "chevronDown" : "chevronUp"} size={18} strokeWidth={2} /></button>
+        {fold}
       </div>
       <h3>{o.title} <span className="en-title">· {sit?.title.en}</span></h3>
       <p>{o.goal}</p>
