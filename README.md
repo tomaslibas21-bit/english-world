@@ -131,7 +131,7 @@ So recognition needs an internet connection in most browsers. Audio sent to Goog
 - **Pronunciation (IPA):** generated automatically from the CMU Pronouncing Dictionary (primary pronunciations), with the story course's `ipa.py` convention and overrides. It's AI/dictionary-generated and wasn't checked against the recordings.
 - **Lithuanian translations and glosses:** written with AI assistance following TOMAS-INTERLINEAR-v2 and LIBRARY-MINIMUM-UNIT-v3. They still need a native-speaker review (see "Known limitations").
 - **Fonts:** Nunito, EB Garamond and Gentium Book Plus (SIL Open Font License), bundled through @fontsource.
-- **3D:** everything is procedural (Three.js geometry), so there are no third-party models.
+- Car models: Kenney (www.kenney.nl), CC0
 - **Scene illustrations** (`public/scenes/`): generated for this game with Nano Banana Pro through Higgsfield (see `docs/SCENE-ART.md`), and with ChatGPT for the calls, a few extras and the five conversations of songs 31–35 (see `docs/PICTURES-WANTED.md`). Any text in them was specified word for word and checked.
 
 ## Testing status

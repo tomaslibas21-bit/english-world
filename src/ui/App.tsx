@@ -54,7 +54,7 @@ function Play() {
         if (sit) g!.startScenario(sit);
       };
       g.init();
-      (window as any).__ew = { game: g, store: useStore, radio, voice: audio.getState, audio, coach, surf: useSurf };
+      (window as any).__ew = { game: g, store: useStore, radio, voice: audio.getState, audio, coach, surf: useSurf, carStats: () => g!.carStats() };
     });
     return () => { gone = true; g?.dispose(); setGame(null); };
   }, []);

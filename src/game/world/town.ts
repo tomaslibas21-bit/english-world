@@ -1,9 +1,10 @@
 // Builds the outdoor town of Maple Harbor from layout.ts: ground, sea, buildings, props, colliders, doors.
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, TAXI, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, type BuildingDef } from "./layout";
+import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, type BuildingDef } from "./layout";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
 import { carParts } from "./car";
+import { carFootprint, carModelEntry, type CarPlacement } from "./carModels";
 import { STYLED, IS_REAL, grade } from "../style";
 import { SHORE, DECKS, POOLS, FLOORS, sandY, SAND_GLSL, SHORE_GLSL, SWELL_GLSL } from "../water";
 import { addMapleDecor, FALL } from "./maple";
@@ -15,10 +16,17 @@ export interface Door { loc: string; bid: string; x: number; z: number; face: "n
 /** A place to sit (the café chairs and the benches): the seat's top `y`, facing `rot`; a café chair's table. */
 export interface Seat { x: number; z: number; rot: number; y: number; table?: [number, number] }
 
+export interface ParkedCars {
+  group: THREE.Group;
+  fallback: THREE.Mesh;
+  placements: readonly CarPlacement[];
+}
+
 export interface Town {
   group: THREE.Group;
   colliders: Colliders;
   doors: Door[];
+  parkedCars: ParkedCars;
   /** Where townspeople can sit (Ambient seats some of them). */
   seats: Seat[];
   groundCanvas: HTMLCanvasElement;
@@ -154,11 +162,13 @@ export function buildTown(): Town {
   for (const b of BUILDINGS) buildBuilding(b, M, colliders, doors, signs, group, b.seed !== undefined ? rand(b.seed) : r);
 
   // --- street furniture & nature -----------------------------------------------
-  addStreetProps(M, colliders, group, r);
+  addStreetProps(M, colliders);
+  const parkedCars = makeParkedCars(colliders);
+  group.add(parkedCars.group);
   addTrees(group, colliders, r);
   addSquareAndMarket(M, colliders, group, r);
   addHarbor(M, colliders, group, r);
-  addTransport(M, colliders, group, r);
+  addTransport(M, colliders, group);
   addBackyard(M, colliders, group);
   addMaggiesCar(M, colliders, group);
   // the fall: leaves, bunting, baskets and banners, pumpkins, the truck, the lighthouse's lantern, the harbor's gear
@@ -201,7 +211,7 @@ export function buildTown(): Town {
   const gulls = STYLED ? [] : makeGulls(group);
 
   return {
-    group, colliders, doors, seats: [...seats], groundCanvas,
+    group, colliders, doors, parkedCars, seats: [...seats], groundCanvas,
     update(t, dt) {
       seaMat.uniforms.uTime.value = t;
       wind.value = t;
@@ -464,6 +474,7 @@ function drawGround(): HTMLCanvasElement {
   rectW(x, 126, -30, 134, 14, P.lot);
   rectW(x, 102, 1, 124, 12, P.gasLot); // gas forecourt
   rectW(x, SPROUTLY_LOT.x1, SPROUTLY_LOT.z1, SPROUTLY_LOT.x2, SPROUTLY_LOT.z2, P.lot); // Sproutly's forecourt
+  for (const { x0, x1, z0, z1 } of PARKING_LOTS) rectW(x, x0, z0, x1, z1, P.road);
   // sidewalks
   for (const rd of ROADS) roadRect(x, rd, rd.w / 2 + SIDEWALK, P.sidewalk);
   for (const rd of ROADS) roadRect(x, rd, rd.w / 2 + SIDEWALK - 0.25, P.sidewalkInner);
@@ -1303,7 +1314,7 @@ function buildPlane(M: Merger, x: number, z: number) {
 
 // ---------------------------------------------------------------------------
 
-function addStreetProps(M: Merger, col: Colliders, group: THREE.Group, r: () => number) {
+function addStreetProps(M: Merger, col: Colliders) {
   const lampPost = mat("#2f3a40");
   const lampGlass = mat("#fff4c4", { emissive: "#a08a3a" });
   const addLamp = (x: number, z: number) => {
@@ -1344,28 +1355,25 @@ function addStreetProps(M: Merger, col: Colliders, group: THREE.Group, r: () => 
     col.addCircle(x, z, 0.1);
   };
   for (const [x, z] of [[-75, 32], [5, 32], [65, 32], [-5, -14], [75, -14]]) stop(x, z);
-  // parked cars
-  const colors = ["#e45b4f", "#4a7bb7", "#f2c14e", "#6fbf73", "#f4f4f4", "#3d3d46", "#b5838d"];
-  const parked: [THREE.BufferGeometry, THREE.ColorRepresentation][] = [];
-  const car = (x: number, z: number, rot: number, color: string) => {
-    if (!STYLED) {
-      for (const [g, c] of carParts(color)) parked.push([g.rotateY(rot).translate(x, 0, z), c]);
-      col.addBox(x, z, Math.abs(Math.cos(rot)) * 2 + Math.abs(Math.sin(rot)) * 4.3, Math.abs(Math.sin(rot)) * 2 + Math.abs(Math.cos(rot)) * 4.3, "car");
-      return;
+}
+
+function makeParkedCars(col: Colliders): ParkedCars {
+  const group = new THREE.Group();
+  group.name = "parked-cars";
+  const parts: [THREE.BufferGeometry, THREE.ColorRepresentation][] = [];
+  for (const spot of PARKED_CARS) {
+    const { model, x, z, rot, color } = spot;
+    col.boxes.push({ ...carFootprint(spot), tag: "car", split: true });
+    const { width, length, height } = carModelEntry(model).collisionBox;
+    const taxi = model === "taxi";
+    for (const [geometry, paint] of carParts(color, { taxi })) {
+      geometry.scale(width / 2.12, height / (taxi ? 1.8 : 1.56), length / 4.42).rotateY(rot).translate(x, 0, z);
+      parts.push([geometry, paint]);
     }
-    const body = mat(color, { flat: true });
-    M.add("car-" + color, body, boxGeo(1.9, 0.7, 4.2, 0, 0.65, 0).rotateY(rot).translate(x, 0, z));
-    M.add("car-" + color, body, boxGeo(1.7, 0.6, 2.2, 0, 1.3, -0.2).rotateY(rot).translate(x, 0, z));
-    M.add("car-glass", mat("#9ccbe6", { emissive: "#1b3a4c" }), boxGeo(1.72, 0.45, 2.0, 0, 1.3, -0.2).rotateY(rot).translate(x, 0, z), false);
-    for (const [wx, wz] of [[-0.9, 1.3], [0.9, 1.3], [-0.9, -1.3], [0.9, -1.3]]) {
-      M.add("wheel", mat("#222"), cylGeo(0.36, 0.36, 0.3, 0, 0, 0, 10).rotateZ(Math.PI / 2).translate(wx, 0.36, wz).rotateY(rot).translate(x, 0, z));
-    }
-    col.addBox(x, z, Math.abs(Math.cos(rot)) * 2 + Math.abs(Math.sin(rot)) * 4.3, Math.abs(Math.sin(rot)) * 2 + Math.abs(Math.cos(rot)) * 4.3, "car");
-  };
-  let ci = 0;
-  for (const [x, z, rot] of PARKED_CARS) car(x, z, rot, colors[ci++ % colors.length]);
-  if (parked.length) group.add(staticColoured(parked, "parked-cars"));
-  void r;
+  }
+  const fallback = staticColoured(parts, "parked-car-fallback");
+  group.add(fallback);
+  return { group, fallback, placements: PARKED_CARS };
 }
 
 function nearIntersection(x: number, z: number) {
@@ -1534,7 +1542,7 @@ function reflective(m: THREE.Material) {
 }
 let boatMat: THREE.MeshLambertMaterial | null = null;
 
-/** Still shapes in their own colours as one mesh that casts shadows (the parked cars, the taxi). */
+/** Parked car fallbacks in their own colours as one mesh that casts shadows. */
 function staticColoured(parts: [THREE.BufferGeometry, THREE.ColorRepresentation][], name: string) {
   boatMat ??= new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
   const mesh = new THREE.Mesh(colourMerge(parts), boatMat);
@@ -1702,22 +1710,7 @@ function addHarbor(M: Merger, col: Colliders, group: THREE.Group, r: () => numbe
   void group;
 }
 
-function addTransport(M: Merger, col: Colliders, group: THREE.Group, r: () => number) {
-  // taxi
-  const { x, z, rot } = TAXI;
-  const yellow = mat("#f5c518", { flat: true });
-  if (!STYLED) group.add(staticColoured(carParts("#f5c518", { taxi: true }).map(([g, c]) => [g.rotateY(rot).translate(x, 0, z), c]), "taxi"));
-  else M.add("taxi", yellow, boxGeo(1.9, 0.72, 4.4, 0, 0.66, 0).rotateY(rot).translate(x, 0, z));
-  if (STYLED) {
-    M.add("taxi", yellow, boxGeo(1.7, 0.6, 2.3, 0, 1.32, -0.1).rotateY(rot).translate(x, 0, z));
-    M.add("car-glass", mat("#9ccbe6", { emissive: "#1b3a4c" }), boxGeo(1.72, 0.45, 2.1, 0, 1.32, -0.1).rotateY(rot).translate(x, 0, z), false);
-    M.add("taxi-sign", mat("#ffffff", { emissive: "#666600" }), boxGeo(0.7, 0.25, 0.3, 0, 1.75, -0.1).rotateY(rot).translate(x, 0, z));
-    M.add("taxi-check", mat("#222"), boxGeo(1.92, 0.12, 4.42, 0, 0.72, 0).rotateY(rot).translate(x, 0, z), false);
-    for (const [wx, wz] of [[-0.9, 1.4], [0.9, 1.4], [-0.9, -1.4], [0.9, -1.4]]) {
-      M.add("wheel", mat("#222"), cylGeo(0.36, 0.36, 0.3, 0, 0, 0, 10).rotateZ(Math.PI / 2).translate(wx, 0.36, wz).rotateY(rot).translate(x, 0, z));
-    }
-  }
-  col.addBox(x, z, 4.4, 2.1, "car");
+function addTransport(M: Merger, col: Colliders, group: THREE.Group) {
   const taxiSign = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.5), new THREE.MeshBasicMaterial({ map: textTexture("TAXI", { bg: "#f5c518", fg: "#222", w: 256, h: 96 }) }));
   // (on the street side of the airport canopy's last post: behind it, the post stood in front of its word)
   taxiSign.position.set(126.5, 2.4, 0.55); taxiSign.rotation.y = Math.PI;
@@ -1780,14 +1773,6 @@ function addTransport(M: Merger, col: Colliders, group: THREE.Group, r: () => nu
     n.position.set(104 + i * 6, 2.2, 2.8); n.rotation.y = Math.PI;
     group.add(n);
   }
-  // rental cars lot
-  for (const [cx, c] of [[78, "#ffffff"], [82, "#4a7bb7"], [86, "#e45b4f"], [90, "#3d3d46"]] as [number, string][]) {
-    const body = mat(c, { flat: true });
-    M.add("car-" + c, body, boxGeo(1.9, 0.7, 4.2, cx, 0.65, 20));
-    M.add("car-" + c, body, boxGeo(1.7, 0.6, 2.2, cx, 1.3, 19.8));
-    col.addBox(cx, 20, 2, 4.3, "car");
-  }
-  void r;
 }
 
 /** Advanced song P25: Maggie's cherry-red convertible for sale in her drive on Cedar Lane: the top folded down, cream

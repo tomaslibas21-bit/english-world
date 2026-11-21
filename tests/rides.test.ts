@@ -10,7 +10,7 @@ import { SHALLOWS } from "../src/game/rides/Rides";
 import { RIDE_OWNERS, RIDE_SHOUTS, RIDE_NAMES } from "../src/content/rides";
 import { rideVoice, shoutVoice } from "../src/content/voices";
 import { roleFor, VOICES } from "../tools/casting";
-import { PARKED_CARS, TAXI, TRAFFIC_LANES, WORLD, OUTDOOR_NPCS } from "../src/game/world/layout";
+import { PARKED_CARS, TRAFFIC_LANES, WORLD, OUTDOOR_NPCS } from "../src/game/world/layout";
 import { SHORE, SEA_LEVEL, SWIM, BAY, DEEP, DECKS, POOLS, FLOORS, sandY, seaBedY, floorY, waterY, bayHold, poolBedY } from "../src/game/water";
 
 const PI = Math.PI, go = { throttle: 1, steer: 0, brake: false };
@@ -372,7 +372,7 @@ describe("this town's convertibles and boat", () => {
   });
   it("clear of the parked cars, the taxi, the traffic's lanes and the people one talks to", () => {
     for (const c of RIDES.cars) {
-      for (const [x, z] of [...PARKED_CARS, [TAXI.x, TAXI.z]]) expect(Math.hypot(c.x - x, c.z - z), c.id).toBeGreaterThan(6);
+      for (const { x, z } of PARKED_CARS) expect(Math.hypot(c.x - x, c.z - z), c.id).toBeGreaterThan(6);
       for (const n of OUTDOOR_NPCS) expect(Math.hypot(c.x - n.x, c.z - n.z), `${c.id}, ${n.npc}`).toBeGreaterThan(5);
       const ez = Math.abs(Math.cos(c.rot)) * CAR.half + Math.abs(Math.sin(c.rot)) * CAR.wide;
       for (const l of TRAFFIC_LANES) if (c.x > l.from - 3 && c.x < l.to + 3) expect(Math.abs(c.z - l.z), `${c.id}, the lane at ${l.z}`).toBeGreaterThan(ez + 1.15);

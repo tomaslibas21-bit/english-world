@@ -2,6 +2,8 @@
 import * as THREE from "three";
 import { showConversationEvent } from "./convEvents";
 import { buildTown, type Town, type Door } from "./world/town";
+import { carLedges, loadedCarModelCount } from "./world/carModels";
+import type { CarVisuals } from "./world/carVisuals";
 import { getInterior, type Interior } from "./world/interiors";
 import { OUTDOOR_NPCS, AIRPORT_EXIT, WORLD, BUILDINGS, ROADS, DROPOFF, SEA_Z, BEACH_Z, FOUNTAIN, PARK, SQUARE } from "./world/layout";
 import { createCharacter, setBlobShadows, withBackpack, type GameCharacter } from "./characters";
@@ -205,6 +207,8 @@ export class Game implements GameApi {
   private tmpV = new THREE.Vector3();
   private disposed = false;
   private ambient!: Ambient;
+  private carLoadStarted = false;
+  private carVisuals?: CarVisuals;
   private unbindAmbience: (() => void) | null = null;
   private ambienceAllowed = () => {
     const st = useStore.getState();
@@ -309,9 +313,12 @@ export class Game implements GameApi {
     // time once the town is up; never a café table's chairs, nor what the camera's field holds solid (a gazebo)
     // (what is thin and looked through, a stall's awning, is no top, but nobody stands on the stall's table under it)
     this.ledges = Ledges.build(this.town.group, this.town.colliders, {
-      skip: (o) => o.userData?.v !== undefined || !!o.userData?.gull || !!o.userData?.boat, thin: (o) => !!o.userData?.thin, keep: this.town.seats.filter((s) => s.table).map((s) => [s.x, s.z]), tall: (x, z) => this.field.overSolid(x, z),
+      skip: (o) => o.userData?.v !== undefined || !!o.userData?.gull || !!o.userData?.boat || o === this.town.parkedCars.group, thin: (o) => !!o.userData?.thin, keep: this.town.seats.filter((s) => s.table).map((s) => [s.x, s.z]), tall: (x, z) => this.field.overSolid(x, z),
       beside: OUTDOOR_NPCS.flatMap((n) => (n.ax !== undefined && n.az !== undefined ? [[n.x, n.z], [n.ax, n.az]] : [[n.x, n.z]]) as [number, number][]),
     }, (next) => setTimeout(next, 16));
+    for (const { model, x, z, rot } of this.town.parkedCars.placements) {
+      for (const piece of carLedges(model, x, z, rot)) this.ledges.add(piece);
+    }
     // (a car that has stopped is climbed like a parked one: its pieces come and go with it)
     this.ledges.dynamic = (x, z) => this.ambient.carPieces(x, z);
     // the boats lying in the shallows are in a wader's way
@@ -420,6 +427,13 @@ export class Game implements GameApi {
     this.onReady?.();
     // the town's hints, each when its thing first matters (coach.ts); after the flight, if the visit opens with one
     if (!this.flight) coach.begin(true);
+  }
+
+  /** Renderer counters for the most recent frame, plus the car assets and instances ready to draw. */
+  carStats() {
+    const { calls, triangles } = this.renderer.info.render;
+    const models = this.carVisuals?.stats() ?? { trafficModels: 0, parkedModels: 0, taxi: false };
+    return { calls, triangles, loadedCarModels: loadedCarModelCount(), ...models };
   }
 
   /** The very first visit (nothing saved of where the learner was) opens with a few seconds' flight over the town,
@@ -1647,7 +1661,10 @@ export class Game implements GameApi {
     if (!riding) this.rides.update(dt, this.t, null);
     audio.motor(riding && this.rides.phase === "on" && !this.zone.interior ? riding.kind : null, this.rides.revs);
     this.updateNpcs(dt, talking);
-    if (!this.zone.interior) this.ambient.update(dt, this.player.root.position);
+    if (!this.zone.interior) {
+      this.ambient.update(dt, this.player.root.position);
+      this.carVisuals?.update(dt);
+    }
     this.town.update(this.t, dt);
     this.zone.interior?.update?.(this.t, dt);
     this.surf?.tick(dt, !this.zone.interior && !talking && !this.flight);
@@ -1730,6 +1747,16 @@ export class Game implements GameApi {
     const covered = this.covered = talking && picturesOn(st.settings) && !!sceneFor(st.conv.sitId, st.conv.hostId);
     if (!covered) {
       this.renderer.render(this.scene, this.rig.cam);
+      if (!this.carLoadStarted && !this.zone.interior) {
+        this.carLoadStarted = true;
+        // Let the browser paint the town before fetching the visual upgrade.
+        requestAnimationFrame(() => {
+          if (this.disposed) return;
+          void import("./world/carVisuals").then(({ CarVisuals }) => {
+            if (!this.disposed) this.carVisuals = new CarVisuals(this.town.parkedCars, this.ambient);
+          }).catch((error) => console.warn("Car models unavailable", error));
+        });
+      }
       this.updateTags();
     }
     this.hudT -= dt;
@@ -2376,6 +2403,7 @@ export class Game implements GameApi {
   dispose() {
     this.keepsake.dispose();
     this.disposed = true;
+    this.carVisuals?.dispose();
     useStore.getState().setHud({ coach: null });
     this.renderer.setAnimationLoop(null);
     window.removeEventListener("keydown", this.onKeyDown);

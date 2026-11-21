@@ -152,8 +152,8 @@ export class Ledges {
    *  called with the rest of the work), so a town is walkable before this is done; until then nothing can be climbed. */
   static build(root: THREE.Object3D, col: Colliders, opts: LedgeOptions = {}, slice?: (next: () => void) => void): Ledges {
     const led = new Ledges();
-    // (never a building, nor what the town tags as the edge of where one walks: `edge`)
-    const boxes = (col.boxes as Box[]).filter((b) => b.tag !== "building" && b.tag !== "edge" && Math.min(b.maxX - b.minX, b.maxZ - b.minZ) <= 4 && (b.maxX - b.minX) * (b.maxZ - b.minZ) <= 60);
+    // Skip registered pieces, buildings and what the town tags as the edge of where one walks (`edge`).
+    const boxes = (col.boxes as Box[]).filter((b) => !b.split && b.tag !== "building" && b.tag !== "edge" && Math.min(b.maxX - b.minX, b.maxZ - b.minZ) <= 4 && (b.maxX - b.minX) * (b.maxZ - b.minZ) <= 60);
     const circles = (col.circles as Circle[]).filter((c) => c.r <= 4.5 && !(c as { npc?: string }).npc);
     /** The roofs the town lists as ones to stand on (a shelter's, a stall's). */
     const listed = (col as { roofs?: Box[] }).roofs ?? [];

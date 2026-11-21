@@ -1,6 +1,6 @@
 // One low-poly car (forward = +Z, wheels on y = 0): a body with a sloping hood and trunk, a glass cabin under a roof
 // with pillars, bumpers, a grille, lights, mirrors and wheels with hubcaps. Vertex-coloured, one geometry, so a car is
-// one draw call (parked cars are merged into a single mesh). Used by the parked cars, the taxi and the cars that drive.
+// one draw call. Used while the car models load, and for the miniature display in the rental shop.
 import * as THREE from "three";
 import { colourMerge } from "./util";
 
