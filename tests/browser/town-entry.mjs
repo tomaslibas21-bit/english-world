@@ -80,6 +80,8 @@ try {
 
     // ---- a returning learner in the 3D town
     let { ctx, page, errors } = await open(save("town", back));
+    // (the place's name gets the screen first; the hint waits until it has gone, A5)
+    for (let t0 = Date.now(); Date.now() - t0 < 12000; await real(250)) { await page.evaluate(() => window.__step(15)); if ((await state(page)).coachCard) break; }
     let s = await state(page);
     await shot(page, "returning");
     check(`${label}: a returning learner is in the town at once, where they left off: no list over it`, s.panel === null && !s.list && !s.flight && !s.talking && s.zone === "town" && s.canvas, s);
