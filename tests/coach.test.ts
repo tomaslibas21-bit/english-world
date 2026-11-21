@@ -40,6 +40,19 @@ describe("the town's guide", () => {
     expect(hud()).toBeNull();
   });
 
+  it("keeps a hint that was ticked off while a place banner was up", () => {
+    coach.begin();
+    useStore.getState().setHud({ zoneBanner: { title: "Maple Harbor" } });
+    coach.did("walk", 8);
+    vi.advanceTimersByTime(2600);
+    expect(hud()).toMatchObject({ step: "walk", ok: true });
+    useStore.getState().setHud({ zoneBanner: null });
+    vi.advanceTimersByTime(1099);
+    expect(hud()?.ok).toBe(true);
+    vi.advanceTimersByTime(1);
+    expect(hud()).toBeNull();
+  });
+
   it("standing by somebody, by a car, by a boat: each one's hint, once, and one at a time", () => {
     coach.begin();
     prompt("talk"); // (how to walk is still up: not yet)

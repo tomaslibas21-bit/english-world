@@ -1971,7 +1971,7 @@ export class Game implements GameApi {
         homes: out ? THREE.MathUtils.clamp((pz - sn.homesZ) / 12, 0, 1) : 0,
       });
     }
-    // "walking" for the HUD (the task card folds away on a phone while you walk): after 0.4 s on the move, until
+    // "walking" for the HUD (the task card folds away while you walk): after 0.4 s on the move, until
     // 1.2 s standing still
     if (this.vel.lengthSq() > 1) { this.moveT += dt; this.stillT = 0; } else { this.stillT += dt; this.moveT = 0; }
     const walking = st.hud.walking ? this.stillT < 1.2 : this.moveT > 0.4;
@@ -2514,7 +2514,13 @@ export class Game implements GameApi {
     this.hudCheck = 10;
     const c = this.container.getBoundingClientRect();
     this.hudBoxCache = [];
-    for (const el of document.querySelectorAll<HTMLElement>(".objective-card, .minimap, .toolbar")) {
+    const selectors = [
+      ".objective-card", ".cave-card", ".minimap", ".toolbar",
+      ".toolbar.menu-open:not(.portrait-toolbar) .toolbar-tools",
+      ".portrait-toolbar.menu-open .toolbar-drawer",
+      ".portrait-toolbar.in-ride:not(.menu-open) .radio-tool",
+    ];
+    for (const el of document.querySelectorAll<HTMLElement>(selectors.join(", "))) {
       if (!el.offsetParent) continue;
       const r = el.getBoundingClientRect();
       if (r.width && r.height) this.hudBoxCache.push({ x0: r.left - c.left, x1: r.right - c.left, y0: r.top - c.top, y1: r.bottom - c.top });
@@ -2599,7 +2605,8 @@ export class Game implements GameApi {
     }
     // what the player does instead of walking, for the buttons and the hints
     const ride = riding ? riding.kind : this.swimming ? (this.diveK > 0.5 ? "dive" : "swim") : null;
-    if (st.hud.ride !== ride) st.setHud({ ride });
+    const wading = !ride && !this.zone.interior && this.wet;
+    if (st.hud.ride !== ride || st.hud.wading !== wading) st.setHud({ ride, wading });
     // objective distance & minimap
     const tgt = this.objectiveTarget();
     const o = st.hud.objective;

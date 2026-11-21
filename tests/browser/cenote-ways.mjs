@@ -17,6 +17,7 @@ const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwr
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:8176";
 const storage = process.env.WORLD_STORAGE || "puerto-colibri";
 const shots = process.argv.find((a) => a.startsWith("--shots="))?.slice(8);
+const grottoNote = /You found the Grotto|Radai Aluksų grotą/i;
 if (shots) mkdirSync(shots, { recursive: true });
 const check = (name, value, detail) => {
   assert(value, `${name}: ${JSON.stringify(detail)}`);
@@ -50,7 +51,7 @@ try {
     };
     const state = (page) => page.evaluate(() => {
       const g = window.__ew.game, p = g.player.root.position, st = window.__ew.store.getState();
-      return { zone: g.zoneId, x: +p.x.toFixed(1), y: +p.y.toFixed(2), z: +p.z.toFixed(1), swim: g.swimming, prompt: st.hud.prompt?.kind ?? null, label: st.hud.prompt?.label ?? null, toasts: st.toasts.map((t) => t.title) };
+      return { zone: g.zoneId, x: +p.x.toFixed(1), y: +p.y.toFixed(2), z: +p.z.toFixed(1), swim: g.swimming, prompt: st.hud.prompt?.kind ?? null, label: st.hud.prompt?.label ?? null };
     });
     /** A tap on the ground at (x, z): the player walks there (the game's own way-finding); waits until they are within
      *  `near` m of it, or the zone changes, or `until` holds. */
@@ -67,6 +68,10 @@ try {
     const press = async (page) => { if (phone) await page.locator(".act-btn").tap(); else await page.keyboard.press("e"); };
     const snap = async (page, name) => { if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: path.join(shots, `${name}-${label}.png`) }); } };
     const settled = (page) => page.waitForFunction(() => window.__ew.store.getState().hud.fade === 0, null, { timeout: 15000 });
+    const expectGrottoNote = async (page) => {
+      await page.locator(".town-toasts .toast.tip b").filter({ hasText: grottoNote }).waitFor({ timeout: 25000 });
+      console.log("ok", `${label}: the grotto's first-time note is shown`);
+    };
 
     // ---- 1. north of the sacbé, across the meadow, down the beach, a swim to the cave's mouth
     {
@@ -83,8 +88,7 @@ try {
       await settled(page);
       s = await state(page);
       check(`${label}: swum on into the cave's mouth: in the grotto, by the water one comes up through`, s.zone === "gruta" && Math.hypot(s.x, s.z - 2.2) < 2.5, s);
-      await page.waitForTimeout(2500);
-      check(`${label}: and the first-time card says so`, (await state(page)).toasts.some((t) => /Grotto|grot/i.test(t)), (await state(page)).toasts);
+      await expectGrottoNote(page);
       // out by the water: back at the cave's mouth
       await tap(page, [0, 6.6], { near: 0.5 });
       await page.waitForFunction(() => window.__ew.game.zoneId === "town", null, { timeout: 15000 });
@@ -111,8 +115,7 @@ try {
       await settled(page);
       s = await state(page);
       check(`${label}: in through the cleft: in the grotto where its side passage comes out, on the way in's side of Kin`, s.zone === "gruta" && Math.hypot(s.x - 1.2, s.z + 0.7) < 1.5, s);
-      await page.waitForFunction(() => window.__ew.store.getState().toasts.some((t) => /Grotto|grot/i.test(t.title)), null, { timeout: 8000 }).catch(() => {});
-      check(`${label}: the first-time card is shown this way in too`, (await state(page)).toasts.some((t) => /Grotto|grot/i.test(t)), (await state(page)).toasts);
+      await expectGrottoNote(page);
       await snap(page, "2c-inside-by-the-cleft");
       await tap(page, [2, 0.5]);
       await tap(page, [9.6, -2.3], { near: 0.4 });
@@ -154,8 +157,7 @@ try {
       await settled(page);
       s = await state(page);
       check(`${label}: stepped into El Ojo: dropped in from above, down into the grotto's water`, s.zone === "gruta" && high > 3 && s.y < 0.2 && Math.hypot(s.x, s.z - 9) < 3, { high, s });
-      await page.waitForFunction(() => window.__ew.store.getState().toasts.some((t) => /Grotto|grot/i.test(t.title)), null, { timeout: 8000 }).catch(() => {});
-      check(`${label}: and the first-time card is shown coming in from above too`, (await state(page)).toasts.some((t) => /Grotto|grot/i.test(t)), (await state(page)).toasts);
+      await expectGrottoNote(page);
       await snap(page, "3b-dropped-in");
       check(`${label}: no page errors (El Ojo, El Salto, the rock steps)`, errors.length === 0, errors);
       await ctx.close();

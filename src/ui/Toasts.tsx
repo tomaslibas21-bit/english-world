@@ -1,4 +1,5 @@
-import { useStore, type Toast } from "../state/store";
+import { useStore, usesTownNotes, type Toast } from "../state/store";
+import { useSurf } from "../game/surf/store";
 import { Icon, Stars, splitLead, withIcons, type IconName } from "./icons";
 import { L } from "./i18n";
 
@@ -9,10 +10,21 @@ export function showToast(t: ToastInput) { useStore.getState().toast(t); }
 const KIND_ICON: Record<Toast["kind"], IconName> = { tip: "bulb", stamp: "medal", success: "checkCircle", info: "info" };
 
 export function Toasts() {
-  const toasts = useStore((s) => s.toasts);
+  // The surf picker and lesson can change screens without changing the main store.
+  useSurf((s) => s.active || s.picking);
+  const toasts = useStore((s) => usesTownNotes(s) ? null : s.toasts);
+  return <ToastList toasts={toasts ?? []} />;
+}
+
+export function TownToast({ visible }: { visible: boolean }) {
+  const first = useStore((s) => s.townToasts[0]);
+  return <ToastList toasts={visible && first?.startedAt != null ? [first.toast] : []} town />;
+}
+
+function ToastList({ toasts, town }: { toasts: Toast[]; town?: boolean }) {
   const dismiss = useStore((s) => s.dismissToast);
   return (
-    <div className="toasts" aria-live="polite">
+    <div className={"toasts" + (town ? " town-toasts" : "")} aria-live="polite">
       {toasts.map((t) => {
         const lead = splitLead(t.title);
         const icon = (t as ToastInput).icon ?? lead.icon ?? KIND_ICON[t.kind] ?? "info";

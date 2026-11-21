@@ -23,7 +23,8 @@ const STAY = 25000;
 class Coach {
   private done = 0;
   private timer: ReturnType<typeof setTimeout> | undefined;
-  private stay: ReturnType<typeof setTimeout> | undefined;
+  private remaining = 0;
+  private deadline = 0;
   private walked = 0;
   private far = 0;
   private watching = false;
@@ -40,11 +41,29 @@ class Coach {
     useStore.getState().updateProgress((p) => { p.coach = { ...p.coach, seen: { ...p.coach?.seen, [step]: true }, ...(step === "run" ? { run: true } : {}) }; });
   }
 
+  private stopTimer() {
+    clearTimeout(this.timer);
+    this.timer = undefined;
+    this.remaining = 0;
+  }
+
+  private startTimer() {
+    if (!this.remaining || useStore.getState().hud.zoneBanner) return;
+    this.deadline = Date.now() + this.remaining;
+    this.timer = setTimeout(() => this.next(), this.remaining);
+  }
+
+  private timeHint(ms: number) {
+    this.stopTimer();
+    this.remaining = ms;
+    this.startTimer();
+  }
+
   /** The town opens: how to walk, the first time; the rest comes when it matters. `back`: a visit that opens where
    *  the learner left off, straight in the town (no flight, and no list of situations any more): once, where the
    *  list is. */
   begin(back = false) {
-    clearTimeout(this.timer); clearTimeout(this.stay);
+    this.stopTimer();
     this.walked = 0;
     this.far = 0;
     useStore.getState().setHud({ coach: null });
@@ -58,6 +77,12 @@ class Coach {
     if (this.watching) return;
     this.watching = true;
     useStore.subscribe((s, prev) => {
+      // The place name gets the screen first. A hint keeps its time, even if it was already ticked off.
+      if (s.hud.zoneBanner && !prev.hud.zoneBanner && this.timer !== undefined) {
+        this.remaining = Math.max(1, this.deadline - Date.now());
+        clearTimeout(this.timer);
+        this.timer = undefined;
+      } else if (!s.hud.zoneBanner && prev.hud.zoneBanner) this.startTimer();
       if (s.hud.prompt?.kind !== prev.hud.prompt?.kind) this.near(s.hud.prompt?.kind);
       if (s.hud.panel === "scenarios" && prev.hud.panel !== "scenarios") this.did("list");
       if (s.hud.ride !== prev.hud.ride && s.hud.ride) this.did(s.hud.ride === "car" ? "car" : s.hud.ride === "boat" ? "boat" : s.hud.ride === "surf" ? "surf" : "water");
@@ -77,8 +102,7 @@ class Coach {
     this.done = 0;
     this.mark(step);
     st.setHud({ coach: { step, ok: false } });
-    clearTimeout(this.stay);
-    this.stay = setTimeout(() => this.next(), STAY);
+    this.timeHint(STAY);
     return true;
   }
 
@@ -96,8 +120,7 @@ class Coach {
     if (this.done < (ENOUGH[what] ?? 1)) return;
     // a tick for a moment, then the card goes
     useStore.getState().setHud({ coach: { ...c, ok: true } });
-    clearTimeout(this.timer); clearTimeout(this.stay);
-    this.timer = setTimeout(() => this.next(), 1100);
+    this.timeHint(1100);
   }
 
   /** After a stretch on foot: jumping, and later the radio. */
@@ -108,7 +131,7 @@ class Coach {
 
   /** "Gerai", or the hint's time is up: the card goes; whatever else matters right now may come up. */
   next() {
-    clearTimeout(this.timer); clearTimeout(this.stay);
+    this.stopTimer();
     const st = useStore.getState();
     if (!st.hud.coach) return;
     st.setHud({ coach: null });
@@ -117,7 +140,7 @@ class Coach {
 
   /** "Daugiau nerodyti": no more hints, ever. */
   finish() {
-    clearTimeout(this.timer); clearTimeout(this.stay);
+    this.stopTimer();
     const st = useStore.getState();
     st.setHud({ coach: null });
     st.updateProgress((p) => { p.coach = { ...p.coach, done: true, seen: { ...p.coach?.seen, list: true } }; });

@@ -1,6 +1,7 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useStore } from "../state/store";
-import { SectionHelpButton } from "./sectionHelp";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { townRide, usesTownNotes, useStore, type HudState } from "../state/store";
+import { townNote } from "../state/townNotes";
+import { SectionHelpButton, useSectionHelp } from "./sectionHelp";
 import { useSurf } from "../game/surf/store";
 import { SurfOverlay, SurfPicker } from "./Surf";
 import { game } from "../game/gameRef";
@@ -18,15 +19,18 @@ import { L, Lx } from "./i18n";
 import { EDITION } from "../edition";
 import { CaveCard } from "./Cave";
 import { Guide } from "./Guide";
+import { TownToast } from "./Toasts";
+import { portraitToolbarRows } from "./toolbarLayout";
 import "./light.css";
 
 /** Inside English Master (VITE_BACK_URL, e.g. "/"): the way back to the course site. */
 export const COURSE_URL = import.meta.env.VITE_BACK_URL as string | undefined;
 
-function ToolButton({ icon, title, panel, hotkey, badge }: { icon: IconName; title: string; panel: "scenarios" | "map" | "journal" | "phone" | "phrasebook" | "settings"; hotkey?: string; badge?: number }) {
+function ToolButton({ icon, title, panel, hotkey, badge, shortcuts = true }: { icon: IconName; title: string; panel: "scenarios" | "map" | "journal" | "phone" | "phrasebook" | "settings"; hotkey?: string; badge?: number; shortcuts?: boolean }) {
+  const label = shortcuts ? title : title.replace(/ \((?:M|J|P|Esc)\)$/, "");
   return (
-    <button className="icon-btn" onClick={() => useStore.getState().setHud({ panel })} title={title} aria-label={badge ? `${title} (${badge})` : title}>
-      <Icon name={icon} size={25} />{hotkey && <span className="key" aria-hidden>{hotkey}</span>}
+    <button className="icon-btn" onClick={() => useStore.getState().setHud({ panel })} title={label} aria-label={badge ? `${label} (${badge})` : label}>
+      <Icon name={icon} size={25} />{shortcuts && hotkey && <span className="key" aria-hidden>{hotkey}</span>}
       {!!badge && <span className="due-badge" aria-hidden>{badge}</span>}
     </button>
   );
@@ -43,47 +47,40 @@ const RIDE_ARROWS = () => <><kbd><Icon name="arrowUp" size="1em" strokeWidth={2.
 
 export function Hud() {
   const hud = useStore((s) => s.hud);
-  const conv = useStore((s) => s.conv);
-  const due = useDueCards();
-  const hasRadio = useRadio((s) => s.available);
+  const inConversation = useStore((s) => s.conv.active);
   const surfing = useSurf((s) => s.active);
-  if (conv.active) return <Fade />;
+  const picking = useSurf((s) => s.picking);
+  const notesVisible = useStore(usesTownNotes);
+  const ride = townRide(hud.ride);
+  const riding = ride !== null;
+  const task = useTaskCard(hud.objective?.sitId ?? null, notesVisible && !hud.cave);
+  if (inConversation) return <Fade />;
   // the first visit's flight over the town has the screen to itself too: where one is, and what to do first
   if (hud.flight) return <div className="hud"><Flight /><Fade /></div>;
-  // the surf lesson has the screen to itself: her line, the answers, the score, and the phone's controls
+  // The surf lesson keeps her line, the answers, the score, and the phone's controls.
   if (surfing) return (
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")}>
-      <SurfOverlay />
+      <SurfOverlay toolbar={<Toolbar riding touch={hud.showTouch} surf />} />
       {hud.showTouch && <TouchControls />}
       <Fade />
     </div>
   );
-  const banner = hud.zoneBanner ? splitLead(hud.zoneBanner.title) : null;
+  const note = notesVisible ? townNote(hud) : null;
+  const banner = note === "banner" && hud.zoneBanner ? splitLead(hud.zoneBanner.title) : null;
+  const collapsed = !hud.cave && (task.manual ?? (!task.fresh && (hud.walking || riding)));
   return (
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")}>
-      <Objective />
-      <Minimap />
-      <div className={"toolbar" + (hasRadio ? " has-radio" : "")}>
-        <div className="toolbar-tools">
-          {COURSE_URL && <a className="icon-btn" href={COURSE_URL} title={L("Grįžti į kursą")} aria-label={L("Grįžti į kursą")}><Icon name="home" size={25} /></a>}
-          <ToolButton icon="clapper" title={L("Visos situacijos")} panel="scenarios" />
-          <ToolButton icon="map" title={L("Žemėlapis (M)")} panel="map" hotkey="M" />
-          <ToolButton icon="journal" title={L("Užduotys (J)")} panel="journal" hotkey="J" />
-          <ToolButton icon="smartphone" title={L("Telefonas (P)")} panel="phone" hotkey="P" />
-          <ToolButton icon="bookOpen" title={L("Frazių knygelė")} panel="phrasebook" badge={due} />
-          <ToolButton icon="settings" title={L("Nustatymai (Esc)")} panel="settings" />
-          <SectionHelpButton />
+      <div className="hud-top">
+        <div className={"objective-notes" + (collapsed ? " task-folded" : "")}>
+          {hud.cave ? <CaveCard /> : <Objective collapsed={collapsed} fresh={task.fresh && notesVisible} setCollapsed={task.setManual} />}
+          {hud.zoneBanner && banner && <div className="zone-banner"><h2>{banner.icon && <Icon name={banner.icon} size="0.8em" className="zb-ico" />}{banner.rest}</h2>{hud.zoneBanner.sub && <p>{hud.zoneBanner.sub}</p>}</div>}
+          <Guide visible={note === "guide"} />
+          <TownToast visible={note === "toast"} />
         </div>
-        <div className="toolbar-extra">
-          <RadioTool />
-          <button className="icon-btn light-mode-btn" onClick={() => switchPlayMode("light")} title={L("Lengvas režimas")} aria-label={L("Lengvas režimas")}>
-            <span aria-hidden>{L("LR")}</span>
-            <span className="toolbar-tooltip" aria-hidden>{L("Lengvas režimas")}</span>
-          </button>
-        </div>
+        <Minimap />
       </div>
+      <Toolbar riding={riding || hud.wading} touch={hud.showTouch} />
       {!hud.panel && <LyricStrip />}
-      {hud.zoneBanner && banner && <div className="zone-banner"><h2>{banner.icon && <Icon name={banner.icon} size="0.8em" className="zb-ico" />}{banner.rest}</h2>{hud.zoneBanner.sub && <p>{hud.zoneBanner.sub}</p>}</div>}
       {/* (on a phone the way out of a car is the round button itself: no second label over it) */}
       {hud.prompt && !hud.panel && !(hud.showTouch && hud.prompt.kind === "out") && (
         <button className={"prompt" + (hud.showTouch ? " touch" : "")} onClick={() => game?.interact()}>
@@ -91,23 +88,168 @@ export function Hud() {
           <span className="prompt-text">{hud.prompt.label}{hud.prompt.lt && <small lang={EDITION.helper}>{hud.prompt.lt}</small>}</span>
         </button>
       )}
-      <Guide />
-      <CaveCard />
-      {/* at a wheel, at the boat's helm or in the water: what the keys do there (a computer; a phone has its buttons) */}
-      {hud.ride && !hud.showTouch && !hud.panel && !hud.coach && (
-        <div className="help-strip ride-strip">
-          {hud.ride === "car"
-            ? Lx("Vairuok {arrows} arba {wasd} · stabdyti {space} · išlipti {e}", { arrows: RIDE_ARROWS(), wasd: <><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></>, space: <kbd>{L("Tarpas")}</kbd>, e: <kbd>E</kbd> })
-            : hud.ride === "boat"
-              ? Lx("Plauk {arrows} arba {wasd} · stabdyti {space} · išlipti {e}", { arrows: RIDE_ARROWS(), wasd: <><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></>, space: <kbd>{L("Tarpas")}</kbd>, e: <kbd>E</kbd> })
-              : hud.ride === "dive"
-                ? Lx("Plauk {arrows} · greičiau {shift} · išnirti {space}", { arrows: RIDE_ARROWS(), shift: <kbd>Shift</kbd>, space: <kbd>{L("Tarpas")}</kbd> })
-                : Lx("Plauk {arrows} · greičiau {shift} · panerti {space}", { arrows: RIDE_ARROWS(), shift: <kbd>Shift</kbd>, space: <kbd>{L("Tarpas")}</kbd> })}
-        </div>
+      {riding && hud.rideStartedAt !== null && !hud.showTouch && (
+        <RideKeys key={`${ride}-${hud.rideStartedAt}`} ride={hud.ride} startedAt={hud.rideStartedAt} hidden={!!hud.panel || !!hud.glyph || picking || note === "guide"} />
       )}
       {hud.showTouch && <TouchControls />}
       <SurfPicker />
       <Fade />
+    </div>
+  );
+}
+
+function useTaskCard(taskId: string | null, visible: boolean) {
+  const [state, setState] = useState<{ id: string | null; manual: boolean | null; fresh: boolean }>({ id: taskId, manual: null, fresh: false });
+  // A manual choice belongs to one task. Give the next task its pop when the card is back on screen.
+  if (taskId !== state.id) setState({ id: taskId, manual: null, fresh: taskId !== null });
+  useEffect(() => {
+    if (!state.fresh || !visible) return;
+    const timer = setTimeout(() => setState((current) => current.id === state.id ? { ...current, fresh: false } : current), 3000);
+    return () => clearTimeout(timer);
+  }, [state.id, state.fresh, visible]);
+  return { ...state, setManual: (manual: boolean) => setState((current) => ({ ...current, manual })) };
+}
+
+// Enter and Space belong to a button reached by keyboard, even while the game is listening for movement.
+function activateHudButton(e: KeyboardEvent<HTMLElement>) {
+  if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(":focus-visible")) e.stopPropagation();
+}
+
+function Toolbar({ riding, touch, surf = false }: { riding: boolean; touch: boolean; surf?: boolean }) {
+  const due = useDueCards();
+  const hasRadio = useRadio((s) => s.available);
+  const hasHelp = useSectionHelp();
+  const hasTouchPrompt = useStore((s) => !s.hud.panel && !!s.hud.prompt && s.hud.prompt.kind !== "out");
+  const [upright, setUpright] = useState(false);
+  useLayoutEffect(() => {
+    if (!touch) return;
+    const view = window.matchMedia("(max-width: 600px) and (orientation: portrait)");
+    const update = () => setUpright(view.matches);
+    update();
+    view.addEventListener("change", update);
+    return () => view.removeEventListener("change", update);
+  }, [touch]);
+  const portrait = touch && upright;
+  const toolbar = useRef<HTMLDivElement>(null);
+  const fitLimit = useRef<HTMLDivElement>(null);
+  const [twoColumns, setTwoColumns] = useState(false);
+  const drawerRows = portraitToolbarRows({ hasHelp, hasRadio, hasCourse: !!COURSE_URL });
+  const rows = drawerRows.single + Number(riding);
+  useLayoutEffect(() => {
+    const bar = toolbar.current, limit = fitLimit.current;
+    if (!portrait || !bar || !limit) return;
+    const hud = bar.closest(".hud")!;
+    const prompt = hud.querySelector<HTMLElement>(".prompt.touch");
+    const jump = hud.querySelector<HTMLElement>(".jump-btn");
+    const update = () => {
+      const style = getComputedStyle(bar);
+      const size = parseFloat(style.getPropertyValue("--tool-size"));
+      const gap = parseFloat(style.getPropertyValue("--tool-gap"));
+      // The column ends at its top offset + one button per row + the gaps between them. Leave 12 px above the controls.
+      const end = bar.getBoundingClientRect().top + rows * size + (rows - 1) * gap;
+      const clearUntil = Math.min(limit.getBoundingClientRect().bottom, prompt?.getBoundingClientRect().top ?? Infinity, jump?.getBoundingClientRect().top ?? Infinity);
+      setTwoColumns(end + 12 > clearUntil);
+    };
+    const observer = new ResizeObserver(update);
+    observer.observe(limit);
+    if (prompt) observer.observe(prompt);
+    update();
+    return () => observer.disconnect();
+  }, [portrait, riding, rows, hasTouchPrompt]);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const keepOpen = () => {
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => setMenuOpen(false), 5000);
+  };
+  const open = riding && menuOpen;
+  useEffect(() => {
+    if (!riding) setMenuOpen(false);
+    return () => clearTimeout(timer.current);
+  }, [riding]);
+  const toggleMenu = () => {
+    if (open) clearTimeout(timer.current);
+    else keepOpen();
+    setMenuOpen(!open);
+  };
+  const course = COURSE_URL && <a className="icon-btn course-link" href={COURSE_URL} title={L("Grįžti į kursą")} aria-label={L("Grįžti į kursą")}><Icon name="home" size={25} /></a>;
+  const lightMode = (
+    <button className="icon-btn light-mode-btn" onClick={() => switchPlayMode("light")} title={L("Lengvas režimas")} aria-label={L("Lengvas režimas")}>
+      <span aria-hidden>{L("LR")}</span>
+      <span className="toolbar-tooltip" aria-hidden>{L("Lengvas režimas")}</span>
+    </button>
+  );
+  const menu = riding && <button className="icon-btn ride-menu" onClick={toggleMenu} title={L("Meniu")} aria-label={L("Meniu")} aria-expanded={open} aria-controls="town-tools">
+    <Icon name="menu" size={25} />
+    {!!due && <span className="due-badge" aria-hidden>{due}</span>}
+  </button>;
+  const actions = <>
+    <ToolButton icon="clapper" title={L("Visos situacijos")} panel="scenarios" />
+    <ToolButton icon="map" title={L("Žemėlapis (M)")} panel="map" hotkey="M" shortcuts={!surf} />
+    <ToolButton icon="journal" title={L("Užduotys (J)")} panel="journal" hotkey="J" shortcuts={!surf} />
+    <ToolButton icon="smartphone" title={L("Telefonas (P)")} panel="phone" hotkey="P" shortcuts={!surf} />
+    <ToolButton icon="bookOpen" title={L("Frazių knygelė")} panel="phrasebook" badge={due} />
+    <ToolButton icon="settings" title={L("Nustatymai (Esc)")} panel="settings" shortcuts={!surf} />
+    <SectionHelpButton />
+  </>;
+  const className = "toolbar" + (hasRadio ? " has-radio" : "") + (riding ? " in-ride" : "") + (open ? " menu-open" : "") + (surf ? " surf-toolbar" : "");
+  const folded = riding && !open;
+  const radioTool = (!surf || !folded) && <RadioTool shortcut={!surf} />;
+  if (portrait) return (
+    <div ref={toolbar} className={className + " portrait-toolbar" + (twoColumns ? " two-columns" : "")} onKeyDown={activateHudButton}>
+      {menu}
+      <div className="toolbar-fit-limit" ref={fitLimit} aria-hidden />
+      <div className="toolbar-drawer" id="town-tools" style={{ "--drawer-rows": drawerRows.split } as CSSProperties} onClick={open ? keepOpen : undefined}>
+        <div className="toolbar-tools">
+          <div className="toolbar-actions" inert={folded}>{actions}</div>
+          {radioTool}
+        </div>
+        <div className="toolbar-shortcuts" inert={folded}>{lightMode}{course}</div>
+      </div>
+    </div>
+  );
+  return (
+    <div className={className} onKeyDown={activateHudButton}>
+      {menu}
+      <div className="toolbar-tools" id="town-tools" inert={folded} onClick={open ? keepOpen : undefined}>
+        {course}
+        {actions}
+        {riding && lightMode}
+        {surf && radioTool}
+      </div>
+      {!surf && <div className="toolbar-extra" onClick={open ? keepOpen : undefined}>
+        {radioTool}
+        {!riding && lightMode}
+      </div>}
+    </div>
+  );
+}
+
+function RideKeys({ ride, startedAt, hidden }: { ride: HudState["ride"]; startedAt: number; hidden: boolean }) {
+  const count = useStore((s) => s.progress.coach?.rides ?? 0);
+  const [intro, setIntro] = useState(() => count <= 3 && Date.now() - startedAt < 8000);
+  const [pinned, setPinned] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  useEffect(() => {
+    if (!intro) return;
+    const timer = setTimeout(() => setIntro(false), Math.max(0, startedAt + 8000 - Date.now()));
+    return () => clearTimeout(timer);
+  }, [intro, startedAt]);
+  const expanded = intro || pinned || hovered;
+  return (
+    <div className="ride-keys" hidden={hidden} onMouseEnter={() => { if (!intro) setHovered(true); }} onMouseLeave={() => setHovered(false)}>
+      {expanded && <div className="help-strip ride-strip" id="ride-key-help">
+        {ride === "car"
+          ? Lx("Vairuok {arrows} arba {wasd} · stabdyti {space} · išlipti {e}", { arrows: RIDE_ARROWS(), wasd: <><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></>, space: <kbd>{L("Tarpas")}</kbd>, e: <kbd>E</kbd> })
+          : ride === "boat"
+            ? Lx("Plauk {arrows} arba {wasd} · stabdyti {space} · išlipti {e}", { arrows: RIDE_ARROWS(), wasd: <><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></>, space: <kbd>{L("Tarpas")}</kbd>, e: <kbd>E</kbd> })
+            : ride === "dive"
+              ? Lx("Plauk {arrows} · greičiau {shift} · išnirti {space}", { arrows: RIDE_ARROWS(), shift: <kbd>Shift</kbd>, space: <kbd>{L("Tarpas")}</kbd> })
+              : Lx("Plauk {arrows} · greičiau {shift} · panerti {space}", { arrows: RIDE_ARROWS(), shift: <kbd>Shift</kbd>, space: <kbd>{L("Tarpas")}</kbd> })}
+      </div>}
+      {!intro && <button className="ride-keys-chip" aria-expanded={expanded} aria-controls={expanded ? "ride-key-help" : undefined} onClick={() => setPinned(!pinned)} onKeyDown={activateHudButton}>
+        <Icon name="keyboard" size={20} /> Klavišai
+      </button>}
     </div>
   );
 }
@@ -133,35 +275,27 @@ function Fade() {
   return <div className="fade" style={{ opacity: fade }} />;
 }
 
-function Objective() {
+function Objective({ collapsed, fresh, setCollapsed }: { collapsed: boolean; fresh: boolean; setCollapsed: (collapsed: boolean) => void }) {
   const o = useStore((s) => s.hud.objective);
   const progress = useStore((s) => s.progress);
-  // a new task (the last one done, or another picked): the card pops up for a moment
-  const [fresh, setFresh] = useState(false);
-  const lastTask = useRef(o?.sitId);
-  useEffect(() => {
-    if (!o?.sitId || o.sitId === lastTask.current) return;
-    const first = lastTask.current === undefined;
-    lastTask.current = o.sitId;
-    if (first) return;
-    setFresh(true);
-    const t = setTimeout(() => setFresh(false), 1300);
-    return () => clearTimeout(t);
-  }, [o?.sitId]);
-  // on a phone it folds away by itself while you walk (and opens when you stop), until you fold or open it yourself
-  const [manual, setManual] = useState<boolean | null>(null);
-  const walking = useStore((s) => s.hud.walking);
-  // (and while the first-time guide's card is up, which sits under it)
-  const coachOn = useStore((s) => !!s.hud.coach);
-  const collapsed = manual ?? (typeof window !== "undefined" && ((walking && window.innerWidth < 600) || (coachOn && (window.innerWidth < 600 || window.innerHeight <= 520))));
-  const setCollapsed = (v: boolean) => setManual(v);
-  // (down in the grotto its own card stands here: the town's task waits up in the town)
-  const inCave = useStore((s) => !!s.hud.cave);
-  if (inCave) return null;
+  if (collapsed) {
+    return (
+      <div className="objective-card collapsed">
+        <button className="collapse-btn objective-summary" aria-expanded={false} onClick={() => setCollapsed(false)} onKeyDown={activateHudButton}>
+          <Icon name="target" size={16} strokeWidth={2} />
+          <span className="objective-title">{o?.title ?? L("Visos užduotys atliktos")}</span>
+          <Icon name="chevronDown" size={16} strokeWidth={2} />
+          {o?.dist != null && <span className="dist">{o.angle !== null && <Arrow angle={o.angle} />}{o.dist} m</span>}
+        </button>
+      </div>
+    );
+  }
+  const fold = <button className="collapse-btn" onClick={() => setCollapsed(true)} onKeyDown={activateHudButton} aria-label={L("Suskleisti")} aria-expanded><Icon name="chevronUp" size={18} strokeWidth={2} /></button>;
+  const className = "objective-card" + (fresh ? " fresh" : "");
   if (!o) {
     return (
-      <div className="objective-card">
-        <div className="kicker">{L("Visos užduotys atliktos")} <InlineIcon name="party" /></div>
+      <div className={className}>
+        <div className="kicker">{L("Visos užduotys atliktos")} <InlineIcon name="party" />{fold}</div>
         <p>{L("Grįžk į bet kurią vietą ir pabandyk pasakyti kitaip – žmonės kaskart kalba šiek tiek skirtingai.")}</p>
       </div>
     );
@@ -170,11 +304,11 @@ function Objective() {
   const phone = sit && isPhone(sit);
   const st = stars(sitProgress(progress, o.sitId));
   return (
-    <div className={"objective-card" + (collapsed ? " collapsed" : "") + (fresh ? " fresh" : "")}>
+    <div className={className}>
       <div className="kicker">
         <span className="kicker-label"><Icon name="target" size={15} strokeWidth={2} /> {L("Užduotis")}</span>
         {st > 0 && <Stars n={st} size={14} />}
-        <button className="collapse-btn" onClick={() => setCollapsed(!collapsed)} aria-label={L("Suskleisti")} aria-expanded={!collapsed}><Icon name={collapsed ? "chevronDown" : "chevronUp"} size={18} strokeWidth={2} /></button>
+        {fold}
       </div>
       <h3>{o.title} <span className="en-title">· {sit?.title.en}</span></h3>
       <p>{o.goal}</p>

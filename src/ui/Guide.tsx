@@ -2,7 +2,7 @@
 // out of the way of the task card, the map, the controls and the talk / enter prompt. It never takes the keys or
 // blocks a tap on the town. Its colours are the game's own variables, so it follows a course's theme (styles.css
 // `.coach`). The same words are listed under "Kaip žaisti?" (Panels.tsx Help: `coachWords`).
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect } from "react";
 import { useStore } from "../state/store";
 import { coach, type CoachStep } from "../game/coach";
 import { useRadio } from "../radio";
@@ -27,30 +27,16 @@ export function coachWords(step: CoachStep, touch: boolean): [string, string] {
   }
 }
 
-export function Guide() {
+export function Guide({ visible }: { visible: boolean }) {
   const c = useStore((s) => s.hud.coach);
-  const panel = useStore((s) => s.hud.panel);
   const touch = useStore((s) => s.hud.showTouch);
   const radioOn = useRadio((s) => s.on);
   // the radio's hint is done when the radio is switched on (by its button or R)
   useEffect(() => { if (radioOn) coach.did("radio"); }, [radioOn, c?.step]);
-  // on a phone held upright the card sits right under the task card, however tall that is (folded, or opened by hand)
-  const [under, setUnder] = useState<number | null>(null);
-  const shown = !!c && !panel;
-  useLayoutEffect(() => {
-    const card = document.querySelector(".objective-card");
-    if (!shown || !card || typeof ResizeObserver === "undefined") return;
-    const place = () => setUnder(window.innerWidth <= 600 && window.innerHeight > 520 ? Math.round(card.getBoundingClientRect().bottom) + 8 : null);
-    const ro = new ResizeObserver(place);
-    ro.observe(card);
-    window.addEventListener("resize", place);
-    place();
-    return () => { ro.disconnect(); window.removeEventListener("resize", place); };
-  }, [shown]);
-  if (!c || panel) return null;
+  if (!c || !visible) return null;
   const [title, body] = coachWords(c.step, touch);
   return (
-    <div className={"coach" + (c.ok ? " ok" : "")} role="status" aria-live="polite" style={under !== null ? { top: under } : undefined}>
+    <div className={"coach" + (c.ok ? " ok" : "")} role="status" aria-live="polite">
       <span className="coach-icon" aria-hidden><Icon name={c.ok ? "check" : COACH_ICON[c.step]} size={24} strokeWidth={2} /></span>
       <div className="coach-text">
         <b>{title}</b>

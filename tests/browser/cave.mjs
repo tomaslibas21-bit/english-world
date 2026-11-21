@@ -126,7 +126,7 @@ try {
     q = await page.evaluate(() => window.__ew.store.getState().hud.glyph);
     await page.locator(".glyph-opt").nth(q.answer).click();
     await page.waitForFunction(() => window.__ew.store.getState().progress.cave?.lit?.includes("agua-3"), null, { timeout: 10000 });
-    await page.waitForFunction(() => window.__ew.store.getState().toasts.some((t) => /open|atviras/i.test(t.body ?? "")), null, { timeout: 15000 });
+    await page.locator(".toast p").filter({ hasText: /The way is open|Kelias atviras/i }).waitFor({ timeout: 20000 });
     // (the card catches up once the stone's card has gone)
     await page.waitForFunction(() => window.__ew.store.getState().hud.cave?.open === 2, null, { timeout: 15000 });
     s = await state();

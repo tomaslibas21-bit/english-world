@@ -20,17 +20,19 @@ const DIAL = { from: 88, to: 108, marks: [88, 92, 96, 100, 104, 108] };
 const onDial = (freq: number) => `${6 + Math.max(0, Math.min(1, (freq - DIAL.from) / (DIAL.to - DIAL.from))) * 88}%`;
 
 /** The toolbar's power button, the dial plate, and the radio set. Nothing where the build has no songs. */
-export function RadioTool() {
+export function RadioTool({ shortcut = true }: { shortcut?: boolean }) {
   const available = useRadio((s) => s.available);
   const on = useRadio((s) => s.on);
   const open = useRadio((s) => s.open);
   useEffect(() => { bindRadio(); }, []);
   if (!available) return null;
-  const title = on ? L("Išjungti radiją (R)") : L("Įjungti radiją (R)");
+  const title = shortcut
+    ? (on ? L("Išjungti radiją (R)") : L("Įjungti radiją (R)"))
+    : (on ? L("Išjungti radiją") : L("Įjungti radiją"));
   return (
     <div className={"radio-tool " + SKIN}>
       <button className={"icon-btn radio-btn" + (on ? " on" : "")} onClick={() => radio.power()} title={title} aria-label={title} aria-pressed={on}>
-        <Icon name="radio" size={25} /><span className="key" aria-hidden>R</span>
+        <Icon name="radio" size={25} />{shortcut && <span className="key" aria-hidden>R</span>}
         <span className="radio-lamp" aria-hidden />
       </button>
       {on && !open && <RadioPlate />}

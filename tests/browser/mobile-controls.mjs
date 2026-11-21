@@ -1,17 +1,18 @@
 // Production-output smoke checks for the toolbar and sustained touch movement.
-// WORLD_TEST_URL=http://127.0.0.1:5198 WORLD_BROWSER_CHANNEL=chrome WORLD_PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node tests/browser/mobile-controls.mjs
+// WORLD_TEST_URL=http://127.0.0.1:5198 WORLD_STORAGE=puerto-colibri WORLD_BROWSER_CHANNEL=chrome WORLD_PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node tests/browser/mobile-controls.mjs
 import assert from "node:assert/strict";
 const { chromium, webkit } = await import(
   process.env.WORLD_PLAYWRIGHT_MODULE || "playwright"
 );
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:5188";
+const storage = process.env.WORLD_STORAGE || "english-world";
 const check = (name, value, detail) => {
   assert(value, `${name}: ${JSON.stringify(detail)}`);
   console.log("ok", name);
 };
-function init() {
+function init(storage) {
   localStorage.setItem(
-    "english-world-progress-v1",
+    `${storage}-progress-v1`,
     JSON.stringify({
       version: 1,
       profile: {
@@ -37,7 +38,9 @@ function init() {
       phrases: {},
       seenIntro: {},
       started: Date.now(),
-      place: { zone: "town", x: -70, z: -30, rot: Math.PI },
+      place: storage === "puerto-colibri"
+        ? { zone: "town", x: 110, z: 76, rot: -Math.PI / 2 }
+        : { zone: "town", x: -70, z: -30, rot: Math.PI },
     }),
   );
   sessionStorage.setItem("ew-play-now", "1");
@@ -68,7 +71,7 @@ for (const [name, engine] of [
         hasTouch: true,
         isMobile: true,
       });
-      await context.addInitScript(init);
+      await context.addInitScript(init, storage);
       const page = await context.newPage(),
         errors = [];
       page.on("pageerror", (e) => errors.push(e.message));
@@ -97,7 +100,8 @@ for (const [name, engine] of [
             right: lr.right,
             left: lr.left,
           },
-          bottom: Math.max(...tools.map((r) => r.bottom)),
+          followsTools: tools.every((r) => lr.top >= r.bottom + 4 || (el.classList.contains("two-columns") && lr.left < r.left)),
+          bottom: Math.max(lr.bottom, ...tools.map((r) => r.bottom)),
           top: Math.min(...tools.map((r) => r.top)),
           movement: movement?.top,
           height: innerHeight,
@@ -105,8 +109,8 @@ for (const [name, engine] of [
         };
       });
       check(
-        `${label}: LR is below all tools and on screen`,
-        layout.lr.top >= layout.bottom + 4 &&
+        `${label}: LR follows the town tools and is on screen`,
+        layout.followsTools &&
           layout.lr.bottom <= height &&
           layout.lr.right <= width &&
           layout.lr.left >= 0 &&
@@ -115,7 +119,7 @@ for (const [name, engine] of [
       );
       check(
         `${label}: toolbar stays clear of movement controls`,
-        !layout.movement || layout.lr.bottom < layout.movement,
+        !layout.movement || layout.bottom < layout.movement,
         layout,
       );
       const selectable = await page

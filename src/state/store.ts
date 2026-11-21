@@ -5,7 +5,9 @@ import type { BestPhrase } from "../convo/bestPhrase";
 import type { Suggestion, Tip } from "../content/types";
 import type { Look } from "../content/npcs";
 import type { Guess, Practice } from "../convo/suggest";
+import { useSurf } from "../game/surf/store";
 import { loadProgress, saveProgress, type Progress } from "./progress";
+import { advanceTownToasts, enqueueTownToasts, toastDuration, townNote, type TownToast } from "./townNotes";
 
 export type Screen = "loading" | "title" | "create" | "play";
 
@@ -148,9 +150,13 @@ export interface HudState {
   /** What the player does instead of walking (game/rides, water.ts SWIM): at a car's wheel, at a boat's helm,
    *  swimming, under water on a dive, or on a surfboard in the surf lesson (game/surf). */
   ride: null | "car" | "boat" | "swim" | "dive" | "surf";
+  /** When the current drive, boat trip or swim started. Diving and resurfacing stay in the same swim. */
+  rideStartedAt: number | null;
+  /** Standing or walking in shallow water, with the usual walking controls. */
+  wading: boolean;
   /** At a wheel or a helm, going fast enough for a slide (the phone's brake button says so). */
   fast: boolean;
-  /** The player is on the move (the task card folds away on a phone meanwhile). */
+  /** The player is on the move (the task card folds away meanwhile). */
   walking: boolean;
   objective: { sitId: string; title: string; goal: string; where: string; dist: number | null; angle: number | null; inside: boolean } | null;
   minimap: { px: number; pz: number; heading: number; targetX?: number; targetZ?: number; zone: string };
@@ -174,6 +180,7 @@ interface Store {
   conv: ConvUI;
   hud: HudState;
   toasts: Toast[];
+  townToasts: TownToast[];
   loadingText: string;
   setScreen(s: Screen): void;
   setSettings(p: Partial<Settings>): void;
@@ -186,7 +193,17 @@ interface Store {
 }
 
 let toastId = 1;
+const stackTimers = new Map<number, { timer: ReturnType<typeof setTimeout>; resumesTown: boolean; deadline: number }>();
 const initial = loadProgress();
+
+export function townRide(ride: HudState["ride"]) {
+  return ride === "surf" ? null : ride === "dive" ? "swim" : ride;
+}
+
+export function usesTownNotes(s: Pick<Store, "screen" | "settings" | "conv" | "hud">) {
+  const surf = useSurf.getState();
+  return s.screen === "play" && s.settings.play === "town" && !s.conv.active && !s.hud.panel && !s.hud.glyph && !s.hud.flight && !surf.active && !surf.picking;
+}
 
 /** Saved settings plus new defaults. v2 (owner feedback: a calmer conversation panel): the natural
  *  Lithuanian sentence and the suggestion list start collapsed; both are one tap away.
@@ -219,11 +236,12 @@ export const useStore = create<Store>((set, get) => ({
   progress: initial,
   conv: EMPTY_CONV,
   hud: {
-    zoneName: "", zoneBanner: null, prompt: null, ride: null, fast: false, walking: false, objective: null, minimap: { px: 0, pz: 0, heading: 0, zone: "town" }, fade: 0, panel: null,
+    zoneName: "", zoneBanner: null, prompt: null, ride: null, rideStartedAt: null, wading: false, fast: false, walking: false, objective: null, minimap: { px: 0, pz: 0, heading: 0, zone: "town" }, fade: 0, panel: null,
     showTouch: typeof window !== "undefined" && (("ontouchstart" in window) || navigator.maxTouchPoints > 1),
     coach: null, flight: false, cave: null, glyph: null,
   },
   toasts: [],
+  townToasts: [],
   loadingText: "",
   setScreen: (screen) => set({ screen }),
   setSettings: (p) => {
@@ -233,13 +251,29 @@ export const useStore = create<Store>((set, get) => ({
     get().updateProgress((pr) => { pr.settings = settings; });
   },
   setConv: (p) => set((st) => ({ conv: { ...st.conv, ...(typeof p === "function" ? p(st.conv) : p) } })),
-  setHud: (p) => set((st) => ({ hud: { ...st.hud, ...p } })),
+  setHud: (p) => set((st) => {
+    const hud = { ...st.hud, ...p };
+    const ride = townRide(hud.ride);
+    if (ride === townRide(st.hud.ride)) return { hud };
+    hud.rideStartedAt = ride ? Date.now() : null;
+    if (!ride || st.settings.play !== "town") return { hud };
+    const progress = { ...st.progress, coach: { ...st.progress.coach, rides: (st.progress.coach?.rides ?? 0) + 1 } };
+    saveProgress(progress);
+    return { hud, progress };
+  }),
   toast: (t) => {
-    const id = toastId++;
-    set((st) => ({ toasts: [...st.toasts.slice(-3), { ...t, id }] }));
-    setTimeout(() => get().dismissToast(id), t.ms ?? (t.kind === "tip" ? 9000 : t.kind === "stamp" ? 7000 : 4500));
+    const toast = { ...t, id: toastId++ };
+    if (usesTownNotes(get())) {
+      set((st) => ({ townToasts: enqueueTownToasts(st.townToasts, [toast], Date.now()) }));
+    } else {
+      timeStackToast(toast, toastDuration(toast));
+      set((st) => ({ toasts: [...st.toasts.slice(-3), toast] }));
+    }
   },
-  dismissToast: (id) => set((st) => ({ toasts: st.toasts.filter((x) => x.id !== id) })),
+  dismissToast: (id) => {
+    stopStackTimer(id);
+    set((st) => ({ toasts: st.toasts.filter((x) => x.id !== id), townToasts: st.townToasts.filter((x) => x.toast.id !== id) }));
+  },
   updateProgress: (f) => {
     const p = structuredClone(get().progress);
     f(p);
@@ -248,3 +282,65 @@ export const useStore = create<Store>((set, get) => ({
   },
   setProfile: (prof) => get().updateProgress((p) => { p.profile = prof; }),
 }));
+
+let townToastTimer: ReturnType<typeof setTimeout> | undefined;
+let townToastDeadline: number | null = null;
+
+function stopStackTimer(id: number) {
+  clearTimeout(stackTimers.get(id)?.timer);
+  stackTimers.delete(id);
+}
+
+function timeStackToast(toast: Toast, ms: number, resumesTown = false) {
+  const timer = setTimeout(() => useStore.getState().dismissToast(toast.id), ms);
+  stackTimers.set(toast.id, { timer, resumesTown, deadline: Date.now() + ms });
+}
+
+function syncTownToasts() {
+  const st = useStore.getState();
+  const inTown = usesTownNotes(st);
+  const now = Date.now();
+  // A toast already on screen can stay up as a panel or conversation opens or closes.
+  const active = st.townToasts[0];
+  if (!inTown && active?.startedAt != null) {
+    const remaining = active.startedAt + active.remaining - now;
+    if (remaining > 0) {
+      timeStackToast(active.toast, remaining, true);
+      useStore.setState({ toasts: [...st.toasts.slice(-3), active.toast], townToasts: st.townToasts.slice(1) });
+      return;
+    }
+  }
+  const carry = inTown && st.toasts.length > 0;
+  let queue = st.townToasts;
+  if (carry) {
+    const resuming = st.toasts.find((toast) => stackTimers.get(toast.id)?.resumesTown);
+    queue = enqueueTownToasts(queue, st.toasts.filter((toast) => toast !== resuming), now);
+    if (resuming) {
+      const remaining = stackTimers.get(resuming.id)!.deadline - now;
+      if (remaining > 0) queue = [{ toast: resuming, queuedAt: null, startedAt: null, remaining }, ...queue];
+    }
+  }
+  const next = advanceTownToasts(queue, inTown && townNote(st.hud) === "toast", now);
+  if (carry || next !== queue) {
+    if (carry) for (const toast of st.toasts) stopStackTimer(toast.id);
+    useStore.setState(carry ? { townToasts: next, toasts: [] } : { townToasts: next });
+    return;
+  }
+
+  const first = next[0];
+  const deadline = first?.startedAt != null ? first.startedAt + first.remaining : null;
+  if (deadline === townToastDeadline) return;
+  clearTimeout(townToastTimer);
+  townToastDeadline = deadline;
+  if (deadline !== null) townToastTimer = setTimeout(() => {
+    townToastDeadline = null;
+    syncTownToasts();
+  }, Math.max(0, deadline - now));
+}
+
+useStore.subscribe((s, prev) => {
+  if (s.townToasts !== prev.townToasts || s.toasts !== prev.toasts || usesTownNotes(s) !== usesTownNotes(prev) || townNote(s.hud) !== townNote(prev.hud)) syncTownToasts();
+});
+useSurf.subscribe((s, prev) => {
+  if (s.active !== prev.active || s.picking !== prev.picking) syncTownToasts();
+});

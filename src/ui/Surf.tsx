@@ -142,7 +142,7 @@ export function SurfPicker() {
   );
 }
 
-export function SurfOverlay() {
+export function SurfOverlay({ toolbar }: { toolbar: ReactNode }) {
   const s = useSurf();
   const touch = useStore((st) => st.hud.showTouch);
   const slow = useStore((st) => !!st.settings.slowVoice);
@@ -166,6 +166,7 @@ export function SurfOverlay() {
           <span title={L("Sekundės ant bangos")}><i aria-hidden>⏱</i>{sc.seconds}</span>
           <span title={L("Komandos laiku")}><i aria-hidden>✓</i>{sc.followed}/{sc.asked}</span>
         </div>
+        {!s.over && toolbar}
       </div>
       {s.line && !s.over && (
         <div className="surf-say">

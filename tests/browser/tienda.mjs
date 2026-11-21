@@ -142,7 +142,7 @@ try {
       const p = v.ch.root.position.clone(); p.y = 1.2; p.project(g.rig.cam);
       const rect = g.renderer.domElement.getBoundingClientRect();
       g.onClick(rect.left + (p.x + 1) / 2 * rect.width, rect.top + (1 - p.y) / 2 * rect.height);
-      return window.__ew.store.getState().toasts.slice(-1)[0]?.title ?? "";
+      return window.__ew.store.getState().townToasts.at(-1)?.toast.title ?? "";
     });
     assert(r !== null, "no vendor behind the pottery stall");
     lines.add(r);

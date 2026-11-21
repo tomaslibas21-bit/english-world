@@ -117,7 +117,14 @@ try {
     await fade();
     let s = await L();
     check(`${label}: a beginner's lesson is on, on the sand`, s?.level === "beginner" && s.phase === "intro" && (await hud()).ride === "surf", s);
-    check(`${label}: the town's own buttons are away, her line is on show`, await page.locator(".toolbar, .minimap").count() === 0 && await page.locator(".surf-score").count() === 1);
+    const menu = page.getByRole("button", { name: "Meniu" });
+    check(`${label}: the town's tools are tucked into Meniu beside the surf score`,
+      await page.locator(".surf-toolbar .icon-btn:visible").count() === 1 && await menu.isVisible()
+      && await page.locator(".minimap").count() === 0 && await page.locator(".surf-score").isVisible());
+    await menu.click();
+    await page.locator(".surf-toolbar .light-mode-btn").waitFor();
+    await menu.click();
+    await page.locator(".surf-toolbar .light-mode-btn").waitFor({ state: "hidden" });
     const npcHidden = await page.evaluate(() => window.__ew.game.npcs.find((n) => n.id === window.__ew.game.surf.content.npc)?.ch.root.visible === false);
     check(`${label}: the instructor is in the water with the learner, not at her counter too`, npcHidden);
 
