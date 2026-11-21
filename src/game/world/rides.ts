@@ -8,6 +8,7 @@ export interface CarSpot {
   id: string; x: number; z: number; rot: number;
   /** The body's colour and the seats'. */
   paint: string; inside?: string;
+  model?: string; speedLimit?: number;
   /** Who sits in it (one or two; one in the simple quality). */
   people: 1 | 2;
 }

@@ -1,9 +1,10 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ComponentType, type CSSProperties, type KeyboardEvent } from "react";
 import { townRide, useStore, type HudState } from "../state/store";
 import { townNote } from "../state/townNotes";
 import { SectionHelpButton, useSectionHelp } from "./sectionHelp";
 import { useSurf } from "../game/surf/store";
 import { SurfOverlay, SurfPicker } from "./Surf";
+import { TaxiOverlay } from "./Taxi";
 import { game } from "../game/gameRef";
 import { WORLD, SEA_Z } from "../game/world/layout";
 import { SITUATION_BY_ID } from "../content/situations/catalog";
@@ -38,11 +39,13 @@ export function useDueCards(): number {
   return dueCards(cards, Date.now()).length;
 }
 
+const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = { taxi: TaxiOverlay };
+
 export function Hud() {
   const hud = useStore((s) => s.hud);
   const inConversation = useStore((s) => s.conv.active);
   const surfing = useSurf((s) => s.active);
-  const inTown = !inConversation && !hud.flight && !surfing;
+  const inTown = !inConversation && !hud.flight && !surfing && !hud.modeScreen;
   const ride = townRide(hud.ride);
   const riding = ride !== null;
   const task = useTaskCard(hud.objective?.sitId ?? null, inTown && !hud.panel);
@@ -57,6 +60,17 @@ export function Hud() {
       <Fade />
     </div>
   );
+  if (hud.modeScreen?.kind === "menu") {
+    const Overlay = modeOverlays[hud.modeScreen.id];
+    return (
+      <div className={"hud mode-hud" + (hud.showTouch ? " has-touch" : "")}>
+        {!hud.panel && Overlay && <Overlay touch={hud.showTouch} />}
+        <Toolbar riding touch={hud.showTouch} modeExit={hud.modeScreen.exitLabel} />
+        {hud.showTouch && hud.ride && <TouchControls />}
+        <Fade />
+      </div>
+    );
+  }
   const banner = hud.zoneBanner ? splitLead(hud.zoneBanner.title) : null;
   const guideVisible = !hud.panel && townNote(hud) === "guide";
   const collapsed = task.manual ?? (!task.fresh && (hud.walking || riding));
@@ -107,7 +121,7 @@ function activateHudButton(e: KeyboardEvent<HTMLElement>) {
   if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(":focus-visible")) e.stopPropagation();
 }
 
-function Toolbar({ riding, touch }: { riding: boolean; touch: boolean }) {
+function Toolbar({ riding, touch, modeExit }: { riding: boolean; touch: boolean; modeExit?: string }) {
   const due = useDueCards();
   const hasRadio = useRadio((s) => s.available);
   const hasHelp = useSectionHelp();
@@ -125,7 +139,7 @@ function Toolbar({ riding, touch }: { riding: boolean; touch: boolean }) {
   const toolbar = useRef<HTMLDivElement>(null);
   const fitLimit = useRef<HTMLDivElement>(null);
   const [twoColumns, setTwoColumns] = useState(false);
-  const drawerRows = portraitToolbarRows({ hasHelp, hasRadio, hasCourse: !!COURSE_URL });
+  const drawerRows = portraitToolbarRows({ hasHelp, hasRadio, hasCourse: !!COURSE_URL, modeExit: !!modeExit });
   const rows = drawerRows.single + Number(riding);
   useLayoutEffect(() => {
     const bar = toolbar.current, limit = fitLimit.current;
@@ -176,6 +190,7 @@ function Toolbar({ riding, touch }: { riding: boolean; touch: boolean }) {
     {!!due && <span className="due-badge" aria-hidden>{due}</span>}
   </button>;
   const actions = <>
+    {modeExit && <button className="icon-btn mode-exit" title={modeExit} aria-label={modeExit} onClick={() => game?.modeExit()}><Icon name="walk" size={25} /></button>}
     <ToolButton icon="clapper" title="Visos situacijos" panel="scenarios" />
     <ToolButton icon="map" title="Žemėlapis (M)" panel="map" hotkey="M" />
     <ToolButton icon="journal" title="Užduotys (J)" panel="journal" hotkey="J" />
@@ -457,9 +472,9 @@ function TouchControls() {
       <div className="joy" ref={ref}><div className="knob" ref={knob} /></div>
       {/* the jump stays under the right thumb; with someone to talk to or a door to go through it moves over for that button
           (a second tap while in the air is a flip: every press goes to the game, which knows where the player is) */}
-      {prompt && <button className="act-btn" onClick={() => game?.interact()}>{prompt.kind === "talk" ? "Kalbėti" : prompt.kind === "exit" ? "Išeiti" : prompt.kind === "drive" ? "Vairuoti" : prompt.kind === "boat" ? "Plaukti" : prompt.kind === "out" ? "Išlipti" : prompt.kind === "climb" ? "Užlipti" : prompt.kind === "surf" ? "Banglentė" : prompt.kind === "paddle" ? "Irkluoti" : "Įeiti"}</button>}
+      {prompt && <button className="act-btn" onClick={() => game?.interact()}>{prompt.kind === "talk" ? "Kalbėti" : prompt.kind === "exit" ? "Išeiti" : prompt.kind === "drive" ? "Vairuoti" : prompt.kind === "boat" ? "Plaukti" : prompt.kind === "out" ? "Išlipti" : prompt.kind === "climb" ? "Užlipti" : prompt.kind === "surf" ? "Banglentė" : prompt.kind === "paddle" ? "Irkluoti" : prompt.kind === "taxi" ? prompt.label : "Įeiti"}</button>}
       {/* (at a wheel the same button is the brake, for as long as it is held; in the water, a dive and the way back up) */}
-      {ride === "car" || ride === "boat"
+      {ride === "car" || ride === "boat" || ride === "taxi"
         ? <button className={"jump-btn brake-btn" + (prompt ? " beside" : "")} aria-label="Stabdyti" title="Stabdyti" onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); game?.hold(true); }} onPointerUp={() => game?.hold(false)} onPointerCancel={() => game?.hold(false)} onLostPointerCapture={() => game?.hold(false)}><span aria-hidden>{fast ? "DRIFT" : "STOP"}</span></button>
         : ride === "swim" || ride === "dive"
           ? <button className={"jump-btn" + (prompt ? " beside" : "")} aria-label={ride === "dive" ? "Išnirti" : "Panerti"} title={ride === "dive" ? "Išnirti" : "Panerti"} onPointerDown={(e) => { e.preventDefault(); game?.jump(); }}><Icon name={ride === "dive" ? "chevronUp" : "chevronDown"} size={34} strokeWidth={2.5} /></button>

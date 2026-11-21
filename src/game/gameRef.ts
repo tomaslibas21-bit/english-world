@@ -31,21 +31,11 @@ export interface GameApi {
   jump(): void;
   /** The jump button held down or let go (at a wheel it is the brake). */
   hold(on: boolean): void;
-  /** The surf lesson (game/surf): start one at this level, leave it, tap an answer (its cue), another lesson from the
-   *  score card, close the level's choice. */
-  surfStart(level: "beginner" | "advanced"): void;
-  surfStop(): void;
-  surfChoose(cue: string): void;
-  /** In the lesson: the move she asked for done by a tap (its name), her line once more, the microphone on or off
-   *  ("finish": what was heard so far is the answer). */
-  surfAct(what: string): void;
-  surfRepeat(): void;
-  surfMic(on: boolean | "finish"): void;
-  surfAgain(level?: "beginner" | "advanced"): void;
-  /** The end card of a conversation: true for the surf school's (its first button then starts the lesson). */
-  surfAfter(sitId: string): boolean;
-  /** That button: the conversation closes and the lesson starts. */
-  surfFromConversation(): void;
+  modeStart(id: string, option?: string): void;
+  modeExit(): void;
+  modeAction(id: string, name: string, value?: string | boolean): void;
+  modeOffer(sitId: string): { id: string; label: string } | null;
+  modeFromConversation(id: string): void;
   setQuality(q: "high" | "low"): void;
   readonly groundCanvas: HTMLCanvasElement | undefined;
   /** What one can take (the boats, the convertibles) and where it is, for the round map. */

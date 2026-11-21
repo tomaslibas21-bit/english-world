@@ -166,7 +166,7 @@ export class Motion {
       const steady = road && !c.brake && t > 0.6 && Math.abs(this.steer) < 0.42 && v > S.town * 0.55 && this.bump < 0.2;
       this.hold = steady ? Math.min(CAR.holdTo, this.hold + dt) : Math.max(0, this.hold - dt * (Math.abs(this.steer) > 0.75 || braking || !road ? 6 : 2.5));
       const k = Math.min(1, Math.max(0, (this.hold - CAR.holdFrom) / (CAR.holdTo - CAR.holdFrom)));
-      top = road || !car ? S.town + (S.max - S.town) * k * k * (3 - 2 * k) : CAR.rough;
+      top = road || !car ? S.town + (S.max - S.town) * k * k * (3 - 2 * k) : Math.min(CAR.rough, S.max);
       if (this.boost > 0) top += D.kick * Math.min(1, this.boost / 0.4);
       this.top = top;
     }
@@ -179,9 +179,9 @@ export class Motion {
     // never into someone on foot: no faster than what stops short of them (forwards, backing up or sliding)
     if (car && (gap !== Infinity || care !== Infinity)) {
       let most = Infinity, hard = 16;
-      if (gap !== Infinity) { const room = gap - CAR.half - CAR.clear; most = room > 0 ? Math.sqrt(2 * CAR.yield * room) : 0; if (room <= 0) hard = 40; }
+      if (gap !== Infinity) { const room = gap - S.half - CAR.clear; most = room > 0 ? Math.sqrt(2 * CAR.yield * room) : 0; if (room <= 0) hard = 40; }
       // someone straight ahead but off the way its wheel takes it (`care`: how far): past them, but at a careful pace
-      if (care !== Infinity) { const room = care - CAR.half - CAR.clear; most = Math.min(most, Math.max(CAR.careful, room > 0 ? Math.sqrt(2 * CAR.yield * room) : 0)); }
+      if (care !== Infinity) { const room = care - S.half - CAR.clear; most = Math.min(most, Math.max(CAR.careful, room > 0 ? Math.sqrt(2 * CAR.yield * room) : 0)); }
       const pace = Math.hypot(v, sl);
       if (pace > most) { const k = Math.max(most, pace - hard * dt) / pace; v *= k; sl *= k; }
     }

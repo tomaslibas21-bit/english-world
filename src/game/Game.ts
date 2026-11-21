@@ -18,13 +18,13 @@ import { Rides, type Ride } from "./rides/Rides";
 import { KeepsakeInHand } from "./keepsake";
 import { keepsakeFor } from "../content/keepsakes";
 import { Undersea } from "./rides/undersea";
-import { CAR_DRIFT, BOAT_DRIFT, controlsFrom } from "./rides/drive";
+import { CAR_DRIFT, BOAT_DRIFT, controlsFrom, type Controls } from "./rides/drive";
 import { RIDES } from "./world/rides";
 import { RIDE_NAMES } from "../content/rides";
-import { SURF_SPOT } from "./world/surf";
-import { SURF } from "../content/surf";
-import { SurfPlay } from "./surf/play";
-import { useSurf } from "./surf/store";
+import { ModeRegistry } from "./kit/modes";
+import type { ModeHost } from "./kit/host";
+import { createSurfMode } from "./surf/mode";
+import { createTaxiMode } from "./taxi/mode";
 import { OcclusionField } from "./occlusion";
 import { PropFader } from "./fade";
 import { CUT, withCutout } from "./cutout";
@@ -192,7 +192,7 @@ export class Game implements GameApi {
   private hudBoxCache: TagBox[] = [];
   private hudCheck = 0;
   private tagLayer: HTMLDivElement;
-  private nearest: { kind: "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "surf"; id: string; label: string } | null = null;
+  private nearest: { kind: "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "mode"; id: string; label: string; prompt?: NonNullable<import("../state/store").HudState["prompt"]> } | null = null;
   private pushDoorT = 0;
   private transitioning = false;
   /** The first visit's look at the town from the air (flyover.ts): how long it has been going (s). */
@@ -231,11 +231,15 @@ export class Game implements GameApi {
   private washT = 0;
   /** What one can drive (rides/Rides.ts): the convertibles and the boat; the jump button held (a brake at the wheel). */
   rides!: Rides;
-  /** The surf lesson (surf/play.ts), where the town has a surf school (world/surf.ts); the one its conversation asked for. */
-  surf: SurfPlay | null = null;
-  private pendingSurf: "beginner" | "advanced" | null = null;
-  /** The end card's "Surf lesson" was tapped without a yes in the conversation: the level's choice, once it closes. */
-  private pendingSurfPick = false;
+  readonly modes = new ModeRegistry({
+    read: () => useStore.getState().hud.modeScreen,
+    set: (modeScreen) => useStore.getState().setHud({ modeScreen }),
+  });
+
+  // Retained for the surf browser tests and diagnostics.
+  get surf() { return (this.modes.get("surf") as ReturnType<typeof createSurfMode>)?.play ?? null; }
+  surfStop() { if (this.modes.owns("surf")) this.modes.exit(); }
+
   private brake = false;
   private bumpT = 0;
   private braked = false;
@@ -304,8 +308,8 @@ export class Game implements GameApi {
     this.town = buildTown();
     // the follow camera never goes into or behind anything built in the town (the church, a gazebo, a canopy…: all of
     // it, from the meshes themselves), and the trees in its way fade; not what moves (clouds, gulls, boats)
-    // (nor what is thin and looked through, userData.thin: the gas station's canopy)
-    const moves = (o: THREE.Object3D) => o.userData?.v !== undefined || !!o.userData?.gull || !!o.userData?.boat || !!o.userData?.thin;
+    // (nor what is thin and looked through, userData.thin: the sign on the gas station's canopy)
+    const moves = (o: THREE.Object3D) => o.userData?.v !== undefined || !!o.userData?.gull || !!o.userData?.boat || !!o.userData?.thin || o === this.town.parkedCars.taxi?.root;
     this.field = OcclusionField.fromObject(this.town.group, { minX: WORLD.minX - 24, maxX: WORLD.maxX + 24, minZ: WORLD.minZ - 24, maxZ: WORLD.maxZ + 24 }, { skip: moves });
     this.field.fillFootprints(this.town.colliders.boxes, this.town.colliders.circles);
     this.fader = new PropFader(this.town.group, moves);
@@ -313,14 +317,19 @@ export class Game implements GameApi {
     // time once the town is up; never a café table's chairs, nor what the camera's field holds solid (a gazebo)
     // (what is thin and looked through, a stall's awning, is no top, but nobody stands on the stall's table under it)
     this.ledges = Ledges.build(this.town.group, this.town.colliders, {
-      skip: (o) => o.userData?.v !== undefined || !!o.userData?.gull || !!o.userData?.boat || o === this.town.parkedCars.group, thin: (o) => !!o.userData?.thin, keep: this.town.seats.filter((s) => s.table).map((s) => [s.x, s.z]), tall: (x, z) => this.field.overSolid(x, z),
+      skip: (o) => o.userData?.v !== undefined || !!o.userData?.gull || !!o.userData?.boat || o === this.town.parkedCars.group, thin: (o) => !!(o.userData?.thin || o.userData?.roofOnly), keep: this.town.seats.filter((s) => s.table).map((s) => [s.x, s.z]), tall: (x, z) => this.field.overSolid(x, z),
       beside: OUTDOOR_NPCS.flatMap((n) => (n.ax !== undefined && n.az !== undefined ? [[n.x, n.z], [n.ax, n.az]] : [[n.x, n.z]]) as [number, number][]),
     }, (next) => setTimeout(next, 16));
     for (const { model, x, z, rot } of this.town.parkedCars.placements) {
+      if (model === "taxi" && this.town.parkedCars.taxi) continue;
       for (const piece of carLedges(model, x, z, rot)) this.ledges.add(piece);
     }
     // (a car that has stopped is climbed like a parked one: its pieces come and go with it)
-    this.ledges.dynamic = (x, z) => this.ambient.carPieces(x, z);
+    this.ledges.dynamic = (x, z) => {
+      const moving = this.ambient.carPieces(x, z);
+      const parked = this.rides.modeCarPieces(x, z);
+      return parked.length ? moving.concat(parked) : moving;
+    };
     // the boats lying in the shallows are in a wader's way
     const hull = new THREE.Box3();
     for (const o of this.town.group.children) if (o.userData.boat) {
@@ -359,7 +368,9 @@ export class Game implements GameApi {
     this.rides = new Rides({
       cam: this.rig.cam, colliders: this.town.colliders, nav, ambient: this.ambient, player: null as unknown as GameCharacter, quality: st.settings.quality,
       people: () => (this.zone.interior ? [] : this.npcs.map((n) => n.home)),
-      say: (line, voice, female, ch) => this.saysAloud(line, female, ch, voice),
+      say: (line, voice, female, ch) => {
+        if (this.modes.active?.cleanScreen !== "menu") this.saysAloud(line, female, ch, voice);
+      },
       thud: (k) => { if (this.bumpT <= 0) { audio.bump(Math.min(1, 0.35 + k * 0.65)); this.bumpT = 0.12; } },
       rescue: (put) => {
         const hud = useStore.getState();
@@ -383,18 +394,35 @@ export class Game implements GameApi {
     this.rides.onLeft = (x, y, z, rot) => this.leftRide(x, y, z, rot);
     this.rides.onStuck = () => useStore.getState().toast({ kind: "info", title: "Čia išlipti nėra kur", body: "Pavažiuok truputį toliau." });
     this.undersea = new Undersea(RIDES.deep, RIDES.rocks);
-    if (SURF_SPOT && SURF && NPCS[SURF.npc]) {
-      this.surf = new SurfPlay(SURF_SPOT, SURF, {
-        player: () => this.player, rig: this.rig, time: () => this.t,
-        splash: (x, y, z, dx, dz, k) => this.splashes.burst(x, y, z, dx, dz, k),
-        fade: (fn) => { if (this.transitioning) return false; this.fadeThen(fn); return true; },
-        hideNpc: (id, hidden) => { const n = this.npcs.find((q) => q.id === id); if (n) n.ch.root.visible = !hidden; },
-        entered: () => this.onSurf(),
-        left: (x, z, rot) => this.offSurf(x, z, rot),
-        portrait: () => this.container.clientHeight > this.container.clientWidth * 1.15,
-      });
-      this.scene.add(this.surf.group, this.surf.marker);
-    }
+    const host: ModeHost = {
+      player: () => this.player, rig: this.rig, rides: this.rides, standTaxi: this.town.parkedCars.taxi, doors: this.town.doors, time: () => this.t,
+      add: (...objects) => this.scene.add(...objects),
+      canStart: (indoors) => !this.disposed && !this.session?.active && !useStore.getState().hud.panel
+        && !this.transitioning && !this.flight && this.rideTimer === undefined && (indoors || !this.zone.interior),
+      fade: (fn) => { if (this.transitioning || this.disposed) return false; this.fadeThen(() => { if (!this.disposed) fn(); }); return true; },
+      splash: (x, y, z, dx, dz, k) => this.splashes.burst(x, y, z, dx, dz, k),
+      hideNpc: (id, hidden) => { const n = this.npcs.find((q) => q.id === id); if (n) n.ch.root.visible = !hidden; },
+      entered: (id) => this.modes.entered(id), left: (id) => this.modes.left(id), owns: (id) => this.modes.owns(id),
+      portrait: () => this.container.clientHeight > this.container.clientWidth * 1.15,
+      prepare: () => this.prepareMode(),
+      place: (x, z, rot) => this.placeOnFoot(x, z, rot),
+      updatePose: (dt, heading) => this.updateModePose(dt, heading),
+      board: (ride) => this.boardRide(ride, true),
+      drive: (dt, controls) => this.updateRide(dt, controls),
+      dismount: (x, z, rot) => {
+        const point = this.rides.riding && this.rides.carExit(this.rides.riding)?.clone();
+        this.endRide();
+        const p = point ?? this.player.root.position;
+        this.placeOnFoot(x ?? p.x, z ?? p.z, rot ?? this.heading);
+      },
+      snapRide: ({ m }) => {
+        this.rideCourse = this.rig.yaw = m.heading;
+        this.rig.target.set(m.x, 0, m.z);
+        this.rig.snap();
+      },
+    };
+    this.modes.register(createSurfMode(host));
+    this.modes.register(createTaxiMode(host));
     this.scene.add(this.npcLayer, this.guidance.group, this.ambient.group, this.rides.group, this.dust.group, this.splashes.group, this.undersea.group);
     this.rig.space = {
       free: (a, b) => (this.zone?.interior ? 1 : this.field.free(a, b)),
@@ -509,6 +537,7 @@ export class Game implements GameApi {
     const z = this.getZone(id);
     if (!z) return;
     const doIt = () => {
+      if (this.modes.active) this.modes.exit(true);
       if (this.flight) {
         this.flight = null;
         this.rig.stage = null;
@@ -707,9 +736,10 @@ export class Game implements GameApi {
     const k = e.key.toLowerCase();
     if (st.conv.active) return; // the conversation panel handles its own keys
     if (st.hud.panel) { if (k === "escape") st.setHud({ panel: null }); return; }
-    // in the surf lesson the keys are the board's (surf/play.ts)
-    if (useSurf.getState().picking) { if (k === "escape") this.surf?.cancel(); return; }
-    if (this.surf?.active) { if (!this.transitioning && this.surf.key(k, e.repeat, this.keys)) e.preventDefault(); return; }
+    if (this.modes.modal || this.modes.active) {
+      if (!this.transitioning && this.modes.input({ kind: "key", key: k, repeat: e.repeat, keys: this.keys })) e.preventDefault();
+      return;
+    }
     if (["arrowup", "arrowdown", "arrowleft", "arrowright", "w", "a", "s", "d", "shift"].includes(k)) {
       this.keys.add(k); this.autoPath = null; this.autoTarget = null; e.preventDefault(); return;
     }
@@ -742,8 +772,7 @@ export class Game implements GameApi {
   jump() {
     const st = useStore.getState();
     if (this.session?.active || st.conv.active || st.hud.panel || this.transitioning || !this.player) return;
-    // (on a surfboard it is getting to one's feet, and the trick)
-    if (this.surf?.active) { this.surf.up(); return; }
+    if (this.modes.input({ kind: "jump" })) return;
     // (at a wheel the button is the brake: hold(); in the water it is a dive, and the way back up)
     if (this.rides.riding) return;
     if (this.swimming) { this.dive(); return; }
@@ -822,16 +851,16 @@ export class Game implements GameApi {
   }
 
   /** Into a convertible or the boat: whatever the player was doing on foot stops there. */
-  private boardRide(r: Ride) {
+  private boardRide(r: Ride, duringTransition = false) {
     const st = useStore.getState();
-    if (this.session?.active || st.hud.panel || this.transitioning || this.rides.riding) return;
+    if (this.session?.active || st.hud.panel || (this.transitioning && !duringTransition) || this.rides.riding) return false;
     this.autoPath = null; this.autoTarget = null;
     this.steer.reset(); this.gaitOn = false; this.stepOut = 0; this.jogT = 0;
     this.vel.set(0, 0, 0);
     this.hop.land(this.player.root.position.y); this.applyHop();
     this.surface(true);
     this.player.bank = 0;
-    if (!this.rides.board(r)) return;
+    if (!this.rides.board(r)) return false;
     this.keepsake.clear();
     this.ambient.riding = r.kind === "car";
     this.nearest = null;
@@ -839,6 +868,7 @@ export class Game implements GameApi {
     st.setHud({ prompt: null });
     audio.sfx("pop");
     if (r.kind === "boat") { const p = this.player.root.position; this.splashes.burst(r.m.x, waterY(p.x, p.z, this.t) ?? SEA_LEVEL, r.m.z, 0, 0, 0.5); }
+    return true;
   }
 
   /** On foot again (Rides.onLeft): where the player stands now, facing away from what they got out of. */
@@ -911,9 +941,10 @@ export class Game implements GameApi {
 
   private onClick(cx: number, cy: number) {
     const st = useStore.getState();
-    // (in the surf lesson a tap on the picture is a paddle stroke)
-    if (this.surf?.active) { if (!st.hud.panel && !this.transitioning) this.surf.stroke(); return; }
-    if (useSurf.getState().picking) return;
+    if (this.modes.active || this.modes.modal) {
+      if (!st.hud.panel && !this.transitioning) this.modes.input({ kind: "tap" });
+      return;
+    }
     if (st.conv.active || st.hud.panel || this.rides.riding) return;
     const rect = this.renderer.domElement.getBoundingClientRect();
     const ndc = new THREE.Vector2(((cx - rect.left) / rect.width) * 2 - 1, -((cy - rect.top) / rect.height) * 2 + 1);
@@ -1008,14 +1039,16 @@ export class Game implements GameApi {
   // ------------------------------------------------------------------ interaction
 
   interact() {
-    // (lying on a surfboard: a paddle stroke)
-    if (this.surf?.active) { if (!this.session?.active && !useStore.getState().hud.panel && !this.transitioning) this.surf.stroke(); return; }
+    if (this.modes.active) {
+      if (!this.session?.active && !useStore.getState().hud.panel && !this.transitioning) this.modes.input({ kind: "interact" });
+      return;
+    }
     if (this.rides.riding) { if (!this.session?.active && !useStore.getState().hud.panel) this.rides.leave(); return; }
     const n = this.nearest;
     if (!n) return;
     if (n.kind === "ride") { const r = this.rides.list.find((q) => q.id === n.id); if (r) this.boardRide(r); }
     else if (n.kind === "climb") this.climbOut();
-    else if (n.kind === "surf") this.surf?.open();
+    else if (n.kind === "mode") this.modes.start(n.id);
     else if (n.kind === "npc") this.talkTo(n.id);
     else if (n.kind === "staff") this.staffSays(+n.id);
     else if (n.kind === "door") this.enterDoor(n.id);
@@ -1091,8 +1124,7 @@ export class Game implements GameApi {
     if (!sit) return;
     const st = useStore.getState();
     st.setHud({ panel: null });
-    // (a conversation picked from the list in the middle of a surf lesson: the lesson is over)
-    this.surf?.stop(true);
+    this.modes.exit(true);
     this.lastScenario = sitId;
     prefetchSituations([sitId]);
     const go = () => {
@@ -1144,6 +1176,7 @@ export class Game implements GameApi {
   }
 
   private startSession(sit: SituationDef, actor: NpcActor | null) {
+    this.modes.exit(true);
     this.keepsake.clear();
     this.cancelRide();
     // a hop ends at once, and the player's own walk gives way to the conversation's stop (as it always was)
@@ -1433,8 +1466,7 @@ export class Game implements GameApi {
     if (name === "bus-ride" && data?.to) this.pendingRide = { to: data.to, by: "bus" };
     if (name === "go" && data?.zone) this.pendingRide = { to: data.zone, by: "taxi" };
     if (name === "board") this.pendingRide = { to: "airport", by: "plane" };
-    // "¿Probamos una ola?": the surf lesson starts as the conversation ends
-    if (name === "surf" && this.surf) this.pendingSurf = data?.level === "advanced" ? "advanced" : "beginner";
+    this.modes.event(name, data);
     const st = useStore.getState();
     if (name === "give" && data?.item) {
       // known props, else the situation's own item (a jacket, a medicine…) in the accusative
@@ -1459,31 +1491,26 @@ export class Game implements GameApi {
     this.rig.cam.clearViewOffset();
     // the person stays turned to the player and turns back home in their own time (updateNpcs)
     this.talkNpc = null;
-    if (completed && !this.swimming && !this.rides.riding && !this.surf?.active && !this.pendingSurfPick) {
+    if (completed && !this.swimming && !this.rides.riding && !this.modes.active && !this.modes.modal) {
       this.keepsake.show(this.player.rightHand, keepsakeFor(sit.id));
     }
     if (this.pendingRide) { const r = this.pendingRide; this.pendingRide = null; this.ride(r.to, r.by); }
-    // (the conversation's yes starts the lesson at its level as it closes, however it is closed but by picking another
-    // conversation (cancelRide); the end card's "Surf lesson" too, or the level's choice without a yes)
-    if (this.pendingSurf || this.pendingSurfPick) {
-      const l = this.pendingSurf, asked = this.pendingSurfPick;
-      this.pendingSurf = null; this.pendingSurfPick = false;
-      if (l) this.surf?.start(l); else if (asked) this.surf?.open();
-    }
+    this.modes.launchQueued();
     if (completed) this.advanceObjective(sit);
     this.refreshObjective();
   }
 
   closeConversation() { this.session?.close(); }
-  /** The end card's "Surf lesson" (Conversation.tsx): shown after the surf school's conversation in a town with a
-   *  lesson. */
-  surfAfter(sitId: string) { return !!this.surf && this.surf.situation === sitId; }
-  /** It was tapped: the conversation closes and the lesson starts (at the level its yes asked for, else the level's
-   *  choice). */
-  surfFromConversation() {
-    if (!this.surf) return;
-    this.pendingSurfPick = true;
-    if (this.session?.active) this.session.close(); else { const l = this.pendingSurf; this.pendingSurf = null; this.pendingSurfPick = false; if (l) this.surf.start(l); else this.surf.open(); }
+  modeOffer(sitId: string) { return this.modes.offer(sitId); }
+  modeFromConversation(id: string) {
+    if (!this.modes.queue(id)) return;
+    this.pendingRide = null;
+    if (this.session?.active) this.session.close(); else this.modes.launchQueued();
+  }
+  modeStart(id: string, option?: string) { this.modes.start(id, option); }
+  modeExit() { this.modes.exit(); }
+  modeAction(id: string, name: string, value?: string | boolean) {
+    if (this.modes.active?.id === id && !this.transitioning && !useStore.getState().hud.panel) this.modes.active.action?.(name, value);
   }
   get activeSession() { return this.session; }
 
@@ -1516,8 +1543,7 @@ export class Game implements GameApi {
    *  (lift its fade and banner; the player stays where the conversation puts them). */
   private cancelRide() {
     this.pendingRide = null;
-    // (and a surf lesson the conversation asked for: another conversation was picked instead)
-    this.pendingSurf = null; this.pendingSurfPick = false;
+    this.modes.cancelQueued();
     if (this.rideTimer === undefined) return;
     clearTimeout(this.rideTimer);
     this.rideTimer = undefined;
@@ -1540,7 +1566,7 @@ export class Game implements GameApi {
 
   teleportTo(loc: string) {
     const dest = this.arrivalPoint(loc);
-    if (dest) this.enterZone("town", dest);
+    if (dest) { this.modes.exit(true); this.enterZone("town", dest); }
   }
 
   // ------------------------------------------------------------------ objectives
@@ -1646,15 +1672,15 @@ export class Game implements GameApi {
     this.t += dt;
     const st = useStore.getState();
     const talking = !!this.session?.active;
-    const surfing = !!this.surf?.active;
+    const mode = this.modes.active;
     if (this.flight && this.rig.stage) {
       // the first visit's flight over the town: the camera along its path, and down to the airport at its end
       this.flight.t += dt;
       flightAt(THEME.flyover, this.flight.t / FLIGHT_SECONDS, this.rig.stage.pos, this.rig.stage.look);
       if (this.flight.t >= FLIGHT_SECONDS) this.endFlight();
     }
-    const blocked = talking || !!st.hud.panel || this.transitioning || useSurf.getState().picking || !!this.flight;
-    this.updatePlayer(dt, blocked, this.transitioning && !talking && !st.hud.panel && !surfing);
+    const blocked = talking || !!st.hud.panel || this.transitioning || this.modes.modal || !!this.flight;
+    this.updatePlayer(dt, blocked, this.transitioning && !talking && !st.hud.panel && !mode);
     this.keepsake.tick();
     // (what one can drive: its people, the way back to its curb; at the wheel it is moved from updatePlayer)
     const riding = this.rides.riding;
@@ -1667,13 +1693,13 @@ export class Game implements GameApi {
     }
     this.town.update(this.t, dt);
     this.zone.interior?.update?.(this.t, dt);
-    this.surf?.tick(dt, !this.zone.interior && !talking && !this.flight);
-    this.guidance.visible = !talking && !surfing && !this.flight;
-    this.guidance.group.visible = !talking && !surfing && !this.flight;
+    this.modes.tick(dt, !this.zone.interior && !talking && !this.flight);
+    this.guidance.visible = !talking && !mode && !this.flight;
+    this.guidance.group.visible = !talking && !mode && !this.flight;
     this.guidance.update(dt, this.zone.interior ? undefined : floorY);
     // guidance path (throttled)
     this.pathT -= dt;
-    if (this.pathT <= 0 && !talking && !surfing) {
+    if (this.pathT <= 0 && !talking && !mode) {
       this.pathT = 0.5;
       const tgt = this.objectiveTarget();
       const p = this.player.root.position;
@@ -1684,7 +1710,7 @@ export class Game implements GameApi {
     // camera: where the player is heading and how fast (it swings in behind them after a moment, camera.ts)
     const speed = Math.hypot(this.moveVel.x, this.moveVel.z);
     // (at a wheel the camera stays behind the car, backing up too)
-    this.rig.motion.dir = riding ? this.rideCourse : surfing ? this.heading : speed > 0.3 ? Math.atan2(this.moveVel.x, this.moveVel.z) : this.heading;
+    this.rig.motion.dir = riding ? this.rideCourse : mode ? this.heading : speed > 0.3 ? Math.atan2(this.moveVel.x, this.moveVel.z) : this.heading;
     this.rig.motion.speed = speed;
     // (where they will be in a moment, walking on as now, out of the walls: the camera makes room before it is needed)
     this.rig.motion.next.copy(this.player.root.position).addScaledVector(this.moveVel, 0.3).setY(0);
@@ -1695,6 +1721,7 @@ export class Game implements GameApi {
     this.rig.target.lerp(this.tmpV.copy(this.player.root.position).setY(this.player.root.position.y + this.hop.lift * 0.5), Math.min(1, dt * 10));
     // the conversation's camera leans in a little while the other person speaks, and eases back when they stop
     if (this.rig.talk && this.talkHome && this.talkNear) this.rig.talk.pos.lerp(this.t < this.talkLean ? this.talkNear : this.talkHome, 1 - Math.exp(-dt * 1.4));
+    if (mode?.camera && this.modes.active === mode) this.rig.mode = mode.camera;
     this.rig.update(dt, this.heading, speed > 0.7, true, (st.settings.cameraFollow || !!riding) && !this.pointer.down);
     // under the water (a dive: the camera below the surface): the seabed, the fish, the water's own light
     {
@@ -1789,9 +1816,7 @@ export class Game implements GameApi {
   /** An illustrated scene covers the town (a conversation in pictures). */
   private covered = false;
 
-  /** At a car's wheel or a boat's helm: the keys or the stick drive it (rides/drive.ts), the player sits in it. */
-  private updateRide(dt: number, blocked: boolean) {
-    const r = this.rides.riding!, m = r.m;
+  private driveInput(blocked: boolean) {
     let x = 0, y = 0;
     if (!blocked) {
       if (this.keys.has("arrowup") || this.keys.has("w")) y += 1;
@@ -1800,7 +1825,13 @@ export class Game implements GameApi {
       if (this.keys.has("arrowright") || this.keys.has("d")) x += 1;
       if (this.joy.x !== 0 || this.joy.y !== 0) { x = this.joy.x; y = this.joy.y; }
     }
-    this.rides.update(dt, this.t, blocked ? null : controlsFrom(x, y, this.keys.has(" ") || this.brake));
+    return { x, y, brake: this.keys.has(" ") || this.brake };
+  }
+
+  /** At a car's wheel or a boat's helm, the player sits in it. */
+  private updateRide(dt: number, controls: Controls | null) {
+    const r = this.rides.riding!, m = r.m;
+    this.rides.update(dt, this.t, controls);
     // (getting out ends the ride inside update: the player is on foot again, leftRide has set them down)
     if (this.rides.riding !== r) return;
     const on = this.rides.phase === "on", v = on ? m.speed : 0, pace = on ? m.pace : 0, car = r.kind === "car";
@@ -1847,7 +1878,7 @@ export class Game implements GameApi {
     if (r.kind === "boat" && on) this.splashes.update(dt, this.t, { x: m.x - m.fx * 0.6, y: (waterY(m.x, m.z, this.t) ?? SEA_LEVEL) + 0.02, z: m.z - m.fz * 0.6 }, Math.min(1, av / 6), 2.6 + Math.min(1.4, Math.abs(m.slip) * 0.3));
     else this.splashes.update(dt, this.t, null, 0);
     if (r.kind === "car" && on) {
-      const braking = !blocked && !m.drift && (this.keys.has(" ") || this.brake || y < -0.35) && v > 0;
+      const braking = !!controls && !m.drift && (controls.brake || controls.throttle < 0) && v > 0;
       if (braking && !this.braked && av > 8.5) audio.skid(Math.min(1, av / 15));
       this.braked = braking;
       this.dustT -= dt;
@@ -1865,19 +1896,8 @@ export class Game implements GameApi {
     coach.stroll(dt, true);
   }
 
-  /** In the surf lesson (surf/play.ts): the keys or the stick are the board's, the lesson puts the player where they are. */
-  private updateSurf(dt: number, blocked: boolean) {
-    let x = 0, y = 0;
-    if (!blocked) {
-      if (this.keys.has("arrowup") || this.keys.has("w")) y += 1;
-      if (this.keys.has("arrowdown") || this.keys.has("s")) y -= 1;
-      if (this.keys.has("arrowleft") || this.keys.has("a")) x -= 1;
-      if (this.keys.has("arrowright") || this.keys.has("d")) x += 1;
-      if (this.joy.x !== 0 || this.joy.y !== 0) { x = this.joy.x; y = this.joy.y; }
-    }
-    this.surf!.update(dt, this.t, x, y, blocked);
-    if (!this.surf!.active) return;
-    this.heading = this.surf!.heading;
+  private updateModePose(dt: number, heading: number) {
+    this.heading = heading;
     this.vel.set(0, 0, 0); this.moveVel.set(0, 0, 0);
     this.lastSpeed = 0;
     this.player.update(dt);
@@ -1885,8 +1905,7 @@ export class Game implements GameApi {
     this.dust.update(dt);
   }
 
-  /** Onto the surfboard: whatever the player was doing on foot stops there. */
-  private onSurf() {
+  private prepareMode() {
     this.keepsake.clear();
     this.endRide();
     this.autoPath = null; this.autoTarget = null;
@@ -1900,8 +1919,8 @@ export class Game implements GameApi {
     this.guidance.setPath(null);
   }
 
-  /** Off it: on the sand by the school's boards, the walking camera behind them. */
-  private offSurf(x: number, z: number, rot: number) {
+  private placeOnFoot(x: number, z: number, rot: number) {
+    if (this.zone.interior) { this.enterZone("town", { x, z, rot }, true); return; }
     const p = this.player.root.position;
     p.set(x, floorY(x, z), z);
     this.heading = rot;
@@ -1915,20 +1934,17 @@ export class Game implements GameApi {
     this.nearest = null;
   }
 
-  // (the surf lesson's buttons on the screen: src/ui/Surf.tsx)
-  surfStart(level: "beginner" | "advanced") { if (!this.session?.active && !this.zone.interior) this.surf?.start(level); }
-  surfStop() { this.surf?.stop(); }
-  surfChoose(cue: string) { if (!this.transitioning) this.surf?.choose(cue); }
-  /** The move the instructor asked for, by a tap on its button; her line again; the microphone on or off, or done. */
-  surfAct(what: string) { if (!this.transitioning && !useStore.getState().hud.panel) this.surf?.act(what as Parameters<SurfPlay["act"]>[0]); }
-  surfRepeat() { this.surf?.repeat(); }
-  surfMic(on: boolean | "finish") { if (on === "finish") this.surf?.finishListening(); else this.surf?.setMic(on); }
-  surfAgain(level?: "beginner" | "advanced") { this.surf?.again(level); }
-
   /** `through`: a door's fade is under way: the player holds still, and a walk under way carries on on the other side. */
   private updatePlayer(dt: number, blocked: boolean, through = false) {
-    if (this.surf?.active) { this.updateSurf(dt, blocked); return; }
-    if (this.rides.riding) { this.updateRide(dt, blocked); return; }
+    if (this.modes.active) {
+      this.modes.update({ dt, time: this.t, blocked, ...this.driveInput(blocked) });
+      return;
+    }
+    if (this.rides.riding) {
+      const { x, y, brake } = this.driveInput(blocked);
+      this.updateRide(dt, blocked ? null : controlsFrom(x, y, brake));
+      return;
+    }
     const p = this.player.root.position;
     let ix = 0, iz = 0;
     if (!blocked || through) {
@@ -2015,7 +2031,7 @@ export class Game implements GameApi {
         this.ledges?.resolve(p, 0.38, this.hop.y, this.hop.air);
         this.ambient.resolvePlayer(p, 0.38); this.ambient.resolvePeople(p, 0.38, true);
         // (the convertibles and their people standing about; swimming, the rocks and the boats at anchor)
-        this.rides.resolvePlayer(p, 0.38, this.swimming);
+        this.rides.resolvePlayer(p, 0.38, this.swimming, this.hop.y);
         if (p.z < BAY.z0) p.z = BAY.z0;
       }
     }
@@ -2235,7 +2251,7 @@ export class Game implements GameApi {
     const v = new THREE.Vector3();
     const obj = this.currentObjective();
     // in a conversation the header names the person and every line its speaker: no tags over heads
-    const talking = !!this.session?.active;
+    const talking = !!this.session?.active, modeMenu = useStore.getState().hud.modeScreen?.kind === "menu";
     const shown: { n: NpcActor; x: number; y: number; dist: number }[] = [];
     for (const n of this.npcs) {
       v.set(n.ch.root.position.x, n.ch.height + (n.sit ? -0.1 : 0.45), n.ch.root.position.z);
@@ -2243,7 +2259,7 @@ export class Game implements GameApi {
       v.project(this.rig.cam);
       // only for people in the picture (a tag kept inside it never points at someone out of sight)
       // (nor for someone who is away from their spot: the surf instructor during a lesson)
-      const visible = !talking && !this.flight && n.ch.root.visible && v.z < 1 && dist < 34 && Math.abs(v.x) < 1.02 && Math.abs(v.y) < 1.02;
+      const visible = !talking && !this.flight && !modeMenu && n.ch.root.visible && v.z < 1 && dist < 34 && Math.abs(v.x) < 1.02 && Math.abs(v.y) < 1.02;
       if (!visible) { n.tag.style.display = "none"; continue; }
       n.tag.style.display = "";
       shown.push({ n, x: ((v.x + 1) / 2) * w, y: ((1 - v.y) / 2) * h, dist });
@@ -2298,8 +2314,7 @@ export class Game implements GameApi {
     let best: Game["nearest"] = null;
     let bd = Infinity;
     const riding = this.rides.riding;
-    // (in the surf lesson the buttons are its own: surf/play.ts keeps them)
-    if (this.surf?.active) { this.nearest = null; return; }
+    if (this.modes.active) { this.nearest = null; return; }
     if (riding) {
       // at the wheel: only the way out (nobody is talked to, no door gone through)
       if (this.rides.phase === "on" && !this.session?.active) best = { kind: "out", id: riding.id, label: "Išlipti" };
@@ -2318,10 +2333,13 @@ export class Game implements GameApi {
         const r = this.rides.near(p.x, p.z);
         if (r && (r.kind === "boat" || !this.swimming) && 1 < bd) { bd = 1; best = { kind: "ride", id: r.id, label: r.kind }; }
         else if (this.swimming && !best && this.rides.climbOut(p.x, p.z)) { bd = 1; best = { kind: "climb", id: "pier", label: "Užlipti ant prieplaukos" }; }
-        // the surf school's boards at the water's edge: a lesson
-        if (this.surf && !this.swimming && best?.kind !== "ride") { const d = this.surf.reach(p.x, p.z); if (d < bd) { bd = d; best = { kind: "surf", id: "surf", label: "Banglenčių pamoka" }; } }
-        // the first time one comes near the school: one hint that the lesson is there (coach.ts)
-        if (this.surf && this.surf.distance(p.x, p.z) < (SURF_SPOT?.hintWithin ?? 15)) coach.cue("surf");
+        if (!this.swimming) {
+          const m = this.modes.prompt(p.x, p.z, best?.kind === "ride" ? 0 : bd);
+          if (m) {
+            bd = m.distance;
+            best = { kind: "mode", id: m.id, label: m.label, prompt: { label: m.label, lt: m.hint, kind: m.kind } };
+          }
+        }
       }
       if (!this.zone.interior) {
         for (const dd of this.town.doors) {
@@ -2343,7 +2361,7 @@ export class Game implements GameApi {
         : best.kind === "ride" ? (best.label === "car" ? { label: `Vairuoti: ${names.car.en}`, lt: names.car.lt || undefined, kind: "drive" } : { label: `Plaukti: ${names.boat.en}`, lt: names.boat.lt || undefined, kind: "boat" })
         : best.kind === "out" ? { label: "Išlipti", kind: "out" }
         : best.kind === "climb" ? { label: best.label, kind: "climb" }
-        : best.kind === "surf" ? { label: best.label, lt: this.surf?.npc?.name, kind: "surf" }
+        : best.kind === "mode" ? best.prompt!
         : best.kind === "staff" ? { label: best.label, kind: "talk" }
         : { label: best.kind === "npc" ? `Kalbėtis: ${best.label}` : best.kind === "door" ? `Įeiti: ${best.label}` : "Išeiti į lauką", lt: best.kind === "door" ? placeLt(best.id) : undefined, kind: best.kind === "npc" ? "talk" : best.kind === "door" ? "enter" : "exit" } });
     }
@@ -2404,6 +2422,7 @@ export class Game implements GameApi {
     this.keepsake.dispose();
     this.disposed = true;
     this.carVisuals?.dispose();
+    this.modes.dispose();
     useStore.getState().setHud({ coach: null });
     this.renderer.setAnimationLoop(null);
     window.removeEventListener("keydown", this.onKeyDown);

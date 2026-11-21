@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { Ambient } from "../ambient";
 import { loadCarModel, type CarModel, type CarModelName } from "./carModels";
+import { TAXI } from "./layout";
 import type { ParkedCars } from "./town";
 
 type TrafficCar = Ambient["traffic"][number];
@@ -134,13 +135,21 @@ export class CarVisuals {
   }
 
   private async loadParking() {
-    const { placements, group, fallback } = this.parking;
+    const { placements, group, fallback, taxi } = this.parking;
     const models = await Promise.all(placements.map(({ model }) => loadCarModel(model)));
     if (this.disposed) return;
     const halves: THREE.BufferGeometry[][] = [[], []];
     let material: THREE.Material | undefined;
-    placements.forEach(({ x, z, rot, color }, i) => {
+    placements.forEach((spot, i) => {
+      const { x, z, rot, color } = spot;
       const instance = models[i].createInstance(color);
+      if (taxi && spot === TAXI) {
+        taxi.instance = instance;
+        taxi.root.add(instance);
+        taxi.fallback.removeFromParent();
+        taxi.fallback.geometry.dispose();
+        return;
+      }
       instance.position.set(x, 0, z);
       instance.rotation.y = rot;
       halves[Number(x >= 0)].push(...parts(instance));
@@ -172,6 +181,7 @@ export class CarVisuals {
   dispose() {
     this.disposed = true;
     this.traffic?.dispose();
+    this.parking.taxi?.instance?.removeFromParent();
     for (const mesh of this.parked) {
       mesh.removeFromParent();
       mesh.geometry.dispose();

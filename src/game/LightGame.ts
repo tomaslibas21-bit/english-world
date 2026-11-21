@@ -115,15 +115,11 @@ export class LightGame implements GameApi {
   jump() { /* no walking */ }
   hold(_on: boolean) { /* no walking */ }
   setQuality(_q: "high" | "low") { /* nothing is rendered in 3D */ }
-  surfStart() { /* the surf lesson is the town's */ }
-  surfStop() { /* the surf lesson is the town's */ }
-  surfChoose() { /* the surf lesson is the town's */ }
-  surfAct() { /* the surf lesson is the town's */ }
-  surfRepeat() { /* the surf lesson is the town's */ }
-  surfMic() { /* the surf lesson is the town's */ }
-  surfAgain() { /* the surf lesson is the town's */ }
-  surfAfter() { return false; }
-  surfFromConversation() { /* the surf lesson is the town's */ }
+  modeStart() { /* mini-games are in the 3D town */ }
+  modeExit() {}
+  modeAction() {}
+  modeOffer() { return null; }
+  modeFromConversation() {}
   /** "Nuvesk mane" (the journal): there is nowhere to walk, so the task's conversation starts. */
   autoWalkToObjective() {
     const o = this.currentObjective();

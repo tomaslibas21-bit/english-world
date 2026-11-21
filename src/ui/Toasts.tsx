@@ -12,7 +12,7 @@ const KIND_ICON: Record<Toast["kind"], IconName> = { tip: "bulb", stamp: "medal"
 export function Toasts() {
   // The surf picker and lesson can change screens without changing the main store.
   useSurf((s) => s.active || s.picking);
-  const toasts = useStore((s) => usesTownNotes(s) ? null : s.toasts);
+  const toasts = useStore((s) => usesTownNotes(s) || s.hud.modeScreen?.kind === "menu" ? null : s.toasts);
   return <ToastList toasts={toasts ?? []} />;
 }
 

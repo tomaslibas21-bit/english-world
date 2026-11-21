@@ -220,7 +220,7 @@ function EndCard({ sit }: { sit: SituationDef }) {
   const earned = stars(sitProgress(progress, sit.id));
   const kind = keepsakeFor(sit.id);
   const light = game?.light;
-  const surf = !light && game?.surfAfter(sit.id);
+  const modeOffer = !light && game?.modeOffer(sit.id);
   const nextId = game?.nextScenarioId(sit.id);
   const next = nextId ? SITUATION_BY_ID[nextId] : undefined;
   const startNext = () => { if (nextId) game?.startScenario(nextId); };
@@ -250,7 +250,7 @@ function EndCard({ sit }: { sit: SituationDef }) {
         {completed && <div className="ended-keepsake"><KeepsakeIcon kind={kind} /> Gavai {KIND[kind].accusative}</div>}
         {newExpressions.length > 0 && <div className="ended-sub">Naujų frazių knygelėje: {newExpressions.length}</div>}
       </div>}
-      {surf && <button className="btn surf-cta" onClick={() => game?.surfFromConversation()}><Icon name="star" size={19} /> Banglenčių pamoka</button>}
+      {modeOffer && <button className={`btn ${modeOffer.id}-cta`} onClick={() => game?.modeFromConversation(modeOffer.id)}><Icon name="star" size={19} /> {modeOffer.label}</button>}
       {light ? (
         <div className="sit-actions">
           <button className="btn" onClick={startNext}><Icon name="arrowRight" size={18} /> Kita situacija</button>
@@ -269,7 +269,7 @@ function EndCard({ sit }: { sit: SituationDef }) {
       ) : (
         <>
           <div className="ended-main">
-            <button className={"btn" + (surf ? " soft" : "")} onClick={close}><Icon name="walk" size={18} /> Tęsti</button>
+            <button className={"btn" + (modeOffer ? " soft" : "")} onClick={close}><Icon name="walk" size={18} /> Tęsti</button>
             <button className="btn soft" onClick={startNext}><Icon name="arrowRight" size={18} /> Kita situacija</button>
           </div>
           <div className="sit-actions">

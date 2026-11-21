@@ -1,8 +1,8 @@
 // The instanced props (trees, palms: InstancedMesh) that stand between the follow camera and the player, or right in
-// front of the camera, fade to a fine see-through dither and come back once they are out of the way, so the camera
-// never dodges a tree and never looks through a crown of leaves. The rest of the town makes the camera come in
-// instead (occlusion.ts). Found in the town's group when it is built: a new kind of tree needs nothing here.
+// front of the camera, fade to a fine see-through dither and come back once they are out of the way. Large props
+// marked fadeNearCamera also fade when the lens comes close enough for them to cover the edge of the view.
 import * as THREE from "three";
+import { smoothstep } from "./movement";
 
 interface FadeSet {
   mesh: THREE.InstancedMesh;
@@ -13,19 +13,26 @@ interface FadeSet {
   attr: THREE.InstancedBufferAttribute;
 }
 
+interface ForegroundProp {
+  bounds: THREE.Box3;
+  materials: { material: THREE.Material; opacity: number }[];
+}
+
 /** At most this much of a faded prop's surface is left out (0–1). */
 const MOST = 0.82;
 
 export class PropFader {
   private sets: FadeSet[] = [];
+  private foreground: ForegroundProp[] = [];
   private a = new THREE.Vector3();
   private b = new THREE.Vector3();
 
-  /** Every instanced mesh under `root` that stands taller than `minTop` m and isn't skipped. */
+  /** Finds marked foreground props and instanced meshes standing taller than `minTop` m under `root`. */
   constructor(root: THREE.Object3D, skip?: (o: THREE.Object3D) => boolean, minTop = 1.3) {
     root.updateMatrixWorld(true);
     const m4 = new THREE.Matrix4(), s = new THREE.Sphere(), box = new THREE.Box3();
     root.traverse((o) => {
+      if (o.userData.fadeNearCamera && !skip?.(o)) this.addForeground(o);
       const mesh = o as THREE.InstancedMesh;
       if (!mesh.isInstancedMesh || skip?.(o) || Array.isArray(mesh.material)) return;
       const g = mesh.geometry;
@@ -53,10 +60,28 @@ export class PropFader {
     });
   }
 
+  private addForeground(root: THREE.Object3D) {
+    const materials: ForegroundProp["materials"] = [];
+    root.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if (!mesh.isMesh || Array.isArray(mesh.material)) return;
+      const material = mesh.material = copyOf(mesh.material);
+      material.alphaHash = true;
+      materials.push({ material, opacity: material.opacity });
+    });
+    this.foreground.push({ bounds: new THREE.Box3().setFromObject(root), materials });
+  }
+
+  private showForeground(prop: ForegroundProp, amount: number) {
+    // Dither the canopy material so the roof still casts its usual shadow.
+    for (const { material, opacity } of prop.materials) material.opacity = opacity * amount;
+  }
+
   get count() { return this.sets.reduce((n, s) => n + s.mesh.count, 0); }
 
   /** Everything whole again at once (a new place, a conversation). */
   reset() {
+    for (const prop of this.foreground) this.showForeground(prop, 1);
     for (const set of this.sets) {
       if (!set.now.some((v) => v !== 0)) continue;
       set.now.fill(0);
@@ -69,6 +94,11 @@ export class PropFader {
   /** Fades what stands within its own size of the line from `cam` to `subject` (or right in front of the camera),
    *  and brings back the rest, a little each frame. `on` false: everything back (indoors, in a conversation). */
   update(dt: number, cam: THREE.Vector3, subject: THREE.Vector3, on = true) {
+    // A wide roof can fill the edge of the frame even when the central sightline is clear.
+    // Keep the nearest part of the follow view clear, then bring the roof back as the camera pulls away.
+    for (const prop of this.foreground) {
+      this.showForeground(prop, on ? smoothstep(5.5, 7.5, prop.bounds.distanceToPoint(cam)) : 1);
+    }
     const k = Math.min(1, dt * 7);
     for (const set of this.sets) {
       let changed = -1, last = -1;

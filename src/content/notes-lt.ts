@@ -6,6 +6,13 @@
 // Terms: dalelytė ar, „būti“/„yra“ (the copula), tariamoji / liepiamoji nuosaka, the case names (kilmininkas…),
 // dalies kilmininkas (partitive), „(susieta su „like“)“ = the gloss sits under that other unit.
 export const NOTES_LT: Record<string, string> = {
+  // the ride-along taxi (src/content/taxi-lines.ts)
+  "“Let's”: no separate word; the ending -kime of pabandykime carries it.": "„Let's“: atskiro žodžio nėra; tai pasako veiksmažodžio pabandykime galūnė -kime.",
+  "“do”: no separate word; a Lithuanian question needs no helper verb.": "„do“: atskiro žodžio nėra; lietuviškam klausimui pagalbinio veiksmažodžio nereikia.",
+  "“It's”: in Lithuanian the verb is often left out (Jis – šalia pašto).": "„It's“: lietuviškai veiksmažodis „yra“ dažnai praleidžiamas (Jis – šalia pašto).",
+  "Prices are said as two numbers, dollars then cents: twenty-four fifty = $24.50.": "Kainą amerikiečiai sako dviem skaičiais – doleriai, paskui centai: twenty-four fifty = 24,50 dolerio.",
+  "Prices are said as two numbers, dollars then cents: twenty fifty = $20.50.": "Kainą amerikiečiai sako dviem skaičiais – doleriai, paskui centai: twenty fifty = 20,50 dolerio.",
+  "“the second right” = the second street on the right; English leaves out “street”.": "„the second right“ = antra gatvė į dešinę; žodį „street“ anglai praleidžia.",
   "Question “Do” = the particle ar.": "Klausime „Do“ = dalelytė ar.",
   "“Is” in a yes/no question = the particle ar; Lithuanian needs no copula here.": "„Is“ klausime = dalelytė ar; žodžio „yra“ lietuviškai čia nereikia.",
   "Question “do” has no Lithuanian word; the tense sits on the verb.": "Klausiamasis „do“ lietuviškai atskiro žodžio neturi; laiką perteikia veiksmažodis.",

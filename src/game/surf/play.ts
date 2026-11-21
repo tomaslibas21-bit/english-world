@@ -10,12 +10,12 @@ import { audio } from "../audio";
 import { NPCS } from "../../content/npcs";
 import { getSituation, loadSituation, prefetchSituations } from "../../content/situations/catalog";
 import { coachVoice, npcVoice } from "../../content/voices";
-import { compose, type Sentence } from "../../convo/compose";
-import { createSpeechAttempt, speechSupported, type Verdict } from "../../convo/speech";
-import { compareRepeat, repeatProgress } from "../../convo/suggest";
+import type { Sentence } from "../../convo/compose";
+import { createSpeechAttempt, speechSupported } from "../../convo/speech";
+import { answerProgress, bestAnswer, conversationLine } from "../kit/lines";
 import { useStore } from "../../state/store";
 import { countPlay } from "../../state/playStats";
-import { sentenceInput, useCards } from "../../state/cards";
+import { keepPhrases } from "../kit/phrases";
 import type { SurfContent } from "../../content/surf";
 import type { SurfSpot } from "../world/surf";
 import type { CameraRig } from "../camera";
@@ -140,11 +140,8 @@ export class SurfPlay {
   /** A cue's line in the Spanish chosen now, as the instructor says it to this learner (the answers: as the learner
    *  says them); null where the edition has none. */
   line(cue: string): Sentence | null {
-    const src = getSituation(this.content.situation)?.lines["sg_" + cue]?.[0] ?? this.content.lines?.["sg_" + cue]?.[0];
-    if (!src) return null;
-    const npc = this.npc, me = useStore.getState().progress.profile?.gender ?? "f", her = npc?.gender ?? "f";
     const mine = cue.startsWith("a_") || cue.startsWith("b_");
-    return compose(src, {}, { look: () => undefined, addressee: mine ? her : me, speaker: mine ? me : her, formal: !npc?.informal });
+    return conversationLine(this.content.situation, this.content.npc, "sg_" + cue, this.content.lines, mine);
   }
 
   /** The picture of what a cue asks for (its URL), where the edition has one. */
@@ -233,11 +230,8 @@ export class SurfPlay {
       s.heard = { ...this.heard };
       p.surf = s;
     });
-    const cards = useCards.getState();
-    for (const cue of [...L.heard.filter((c) => CARDS.has(c)), ...this.answered]) {
-      const s = this.line(cue);
-      if (s) cards.add(sentenceInput(s, this.content.situation));
-    }
+    keepPhrases(this.content.situation, [...L.heard.filter((c) => CARDS.has(c)), ...this.answered]
+      .flatMap((cue) => { const sentence = this.line(cue); return sentence ? [sentence] : []; }));
   }
 
   /** Out of the lesson: back on the sand by the boards (`now`: with no fade, something else is taking the player). */
@@ -305,19 +299,11 @@ export class SurfPlay {
     if (this.heardNow() && waited < 6000) { this.listenT = setTimeout(() => { this.listenT = null; this.listen(waited + 200); }, 200); return; }
     this.stopListening();
     const turn = L.choice, options = ui.choice.options;
-    const best = (text: string) => {
-      let top: { cue: string; score: number } | null = null;
-      for (const o of options) { const score = compareRepeat(o.s.en, text).score; if (!top || score > top.score) top = { cue: o.cue, score }; }
-      return top;
-    };
+    const phrases = options.map((o) => o.s.en);
     audio.stop(); // (the speaker lets go before the microphone opens)
     const attempt = createSpeechAttempt({
-      evaluate: (text): Verdict => {
-        let v: Verdict = "none";
-        for (const o of options) { const p = repeatProgress(o.s.en, text); if (p === "complete") return "complete"; if (p === "prefix") v = "prefix"; }
-        return v;
-      },
-      phrases: options.map((o) => o.s.en),
+      evaluate: (text) => answerProgress(phrases, text),
+      phrases,
       preferLocal: useStore.getState().settings.onDevice,
       onUpdate: (s) => {
         if (this.speech !== attempt) return;
@@ -330,9 +316,8 @@ export class SurfPlay {
         if (this.speech !== attempt || this.logic?.choice !== turn) return;
         this.speech = null;
         attempt.dispose();
-        let top: { cue: string; score: number } | null = null;
-        for (const t of [text, ...alts]) { const b = best(t); if (b && (!top || b.score > top.score)) top = b; }
-        if (top && top.score >= (options.length === 1 ? HEARD_ONLY : HEARD_ENOUGH)) { this.unclear = 0; this.logic?.choose(top.cue, true); return; }
+        const top = bestAnswer(options, (option) => option.s.en, [text, ...alts]);
+        if (top && top.score >= (options.length === 1 ? HEARD_ONLY : HEARD_ENOUGH)) { this.unclear = 0; this.logic?.choose(top.option.cue, true); return; }
         // something else was heard: it is shown, and the microphone listens again (a few times, then it rests)
         this.unclear++;
         useSurf.getState().set({ mic: { status: this.unclear < 3 ? "unclear" : "off", heard: text.trim() } });

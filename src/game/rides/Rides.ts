@@ -9,6 +9,8 @@ import { STYLED, vertexColorMaterial } from "../style";
 import { Chatter, walkerLook, type Ambient } from "../ambient";
 import { Colliders, rand } from "../world/util";
 import { WORLD } from "../world/layout";
+import { carLedges, carModelEntry, type CarPlacement } from "../world/carModels";
+import { TOE, type Piece } from "../ledges";
 import type { NavGrid } from "../nav";
 import type { RidesPlan, CarSpot, BoatSpot } from "../world/rides";
 import { countPlay } from "../../state/playStats";
@@ -74,7 +76,7 @@ interface Owner {
 export interface Ride {
   id: string; kind: "car" | "boat";
   home: { x: number; z: number; rot: number };
-  mesh: THREE.Mesh;
+  mesh: THREE.Object3D;
   m: Motion;
   owners: Owner[];
   chat: Chatter | null;
@@ -128,9 +130,14 @@ const _frustum = new THREE.Frustum(), _pv = new THREE.Matrix4(), _ball = new THR
 const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 const ease = (k: number) => k * k * (3 - 2 * k);
 
+const carModels = new Map([["convertible", convertibleGeometry]]);
+type CarBox = Ambient["rideBoxes"][number];
+
 export class Rides {
   group = new THREE.Group();
   readonly list: Ride[] = [];
+  private readonly modeCars = new Map<Ride, CarBox & { surfaces: Piece[] }>();
+  private readonly vehicleMaterial = STYLED ? vertexColorMaterial("prop") : new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
   /** Where a car may be (anywhere in the town that is open and dry) and where the asphalt is (the streets, the lots). */
   readonly drivable: Drivable;
   readonly asphalt: Drivable;
@@ -183,8 +190,8 @@ export class Rides {
     this.drivable = townGround();
     this.asphalt = townAsphalt(plan.lots);
     this.bumps = plan.bumps;
-    const mat = STYLED ? vertexColorMaterial("prop") : new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
-    plan.cars.forEach((spot, i) => this.addCar(spot, i, mat));
+    const mat = this.vehicleMaterial;
+    plan.cars.forEach((spot, i) => this.addCar(spot, i));
     plan.boats.forEach((spot, i) => this.addBoat(spot, i, mat));
     // the sea's own ground plan, for a boat: the pier's decks, the boats lying at anchor, the rocks
     for (const d of DECKS) if (d.z0 < SHORE.limit) this.sea.boxes.push({ minX: d.x0, maxX: d.x1, minZ: d.z0, maxZ: d.z1 });
@@ -214,7 +221,7 @@ export class Rides {
     this.marks.frustumCulled = false;
     this.group.add(this.marks);
     this.group.add(this.skids.mesh);
-    host.ambient.rideBoxes = this.boxes;
+    host.ambient.rideBoxes = [...this.boxes];
   }
 
   /** For the round map: what one can take and where it is (the one being driven is the player's own arrow). */
@@ -228,17 +235,61 @@ export class Rides {
   private buoys: THREE.Mesh;
 
   /** The cars' ground plans as they stand now (the passers-by step round them, the traffic stops behind them). */
-  readonly boxes: { x: number; z: number; heading: number; hl: number; hw: number }[] = [];
+  readonly boxes: CarBox[] = [];
 
-  private addCar(spot: CarSpot, i: number, mat: THREE.Material) {
-    const mesh = new THREE.Mesh(convertibleGeometry(spot.paint, spot.inside), mat);
+  /** Mode cars use the same physics and remain world obstacles, outside the public list of town rides. */
+  createModeCar(spot: CarPlacement & { id: string; speedLimit?: number }, root: THREE.Group): Ride {
+    const { width, length } = carModelEntry(spot.model).collisionBox;
+    const car = this.makeCar({ ...spot, paint: spot.color }, "mode-car-", root, { half: length / 2, wide: width / 2 });
+    const box = { ...this.carBox(car), surfaces: carLedges(spot.model, spot.x, spot.z, spot.rot) };
+    this.modeCars.set(car, box);
+    this.host.ambient.rideBoxes.push(box);
+    this.place(car, 0, 0);
+    return car;
+  }
+
+  removeModeCar(car: Ride) {
+    const box = this.modeCars.get(car);
+    if (!box) return;
+    this.modeCars.delete(car);
+    const traffic = this.host.ambient.rideBoxes;
+    const index = traffic.indexOf(box);
+    if (index >= 0) traffic.splice(index, 1);
+    car.mesh.removeFromParent();
+  }
+
+  modeCarPieces(x: number, z: number): Piece[] {
+    for (const [car, box] of this.modeCars) {
+      if (car !== this.riding && Math.abs(car.m.x - x) < 5 && Math.abs(car.m.z - z) < 5) return box.surfaces;
+    }
+    return [];
+  }
+
+  private carBox({ m }: Ride): CarBox {
+    return { x: m.x, z: m.z, heading: m.heading, hl: m.spec.half, hw: m.spec.wide };
+  }
+
+  private makeCar(spot: Omit<CarSpot, "people">, prefix: string, root?: THREE.Group, size = { half: CAR.half, wide: CAR.wide }): Ride {
+    const geometry = carModels.get(spot.model ?? "convertible") ?? convertibleGeometry;
+    const mesh = root ?? new THREE.Mesh(geometry(spot.paint, spot.inside), this.vehicleMaterial);
     mesh.castShadow = true;
     mesh.rotation.order = "YXZ";
-    mesh.name = "ride-car-" + spot.id;
+    mesh.name = prefix + spot.id;
     this.group.add(mesh);
-    const m = new Motion(CAR, "car");
+    const spec = spot.speedLimit ? { ...CAR, ...size, max: spot.speedLimit, town: spot.speedLimit, back: spot.speedLimit } : { ...CAR, ...size };
+    const m = new Motion(spec, "car");
     m.set(spot.x, spot.z, spot.rot);
-    const ride: Ride = { id: spot.id, kind: "car", home: { x: spot.x, z: spot.z, rot: spot.rot }, mesh, m, owners: [], chat: null, awayT: 0, thanked: true, phase: 0, sus: this.springs(), tint: spot.paint };
+    // Passers-by plan their walks around the parked car.
+    const nav = this.host.nav;
+    for (let u = -spec.half; u <= spec.half + 1e-6; u += nav.cell * 0.5) for (let w = -spec.wide; w <= spec.wide + 1e-6; w += nav.cell * 0.5) {
+      const c = nav.idx(spot.x + u * Math.sin(spot.rot) + w * Math.cos(spot.rot), spot.z + u * Math.cos(spot.rot) - w * Math.sin(spot.rot));
+      if (c >= 0) nav.blocked[c] = 1;
+    }
+    return { id: spot.id, kind: "car", home: { x: spot.x, z: spot.z, rot: spot.rot }, mesh, m, owners: [], chat: null, awayT: 0, thanked: true, phase: 0, sus: this.springs(), tint: spot.paint };
+  }
+
+  private addCar(spot: CarSpot, i: number) {
+    const ride = this.makeCar(spot, "ride-car-");
     const cast = RIDE_OWNERS[spot.id] ?? [], n = Math.min(cast.length, this.host.quality === "low" ? 1 : spot.people), r = rand(9100 + i * 7);
     for (let k = 0; k < n; k++) {
       const who = cast[k], female = who.female, look = walkerLook(female, r);
@@ -257,13 +308,7 @@ export class Rides {
     }
     if (ride.owners.length === 2) ride.chat = new Chatter(ride.owners[0].ch, ride.owners[1].ch, r);
     this.list.push(ride);
-    this.boxes.push({ x: spot.x, z: spot.z, heading: spot.rot, hl: CAR.half, hw: CAR.wide });
-    // the passers-by plan their walks round where it is parked
-    const nav = this.host.nav;
-    for (let u = -CAR.half; u <= CAR.half + 1e-6; u += nav.cell * 0.5) for (let w = -CAR.wide; w <= CAR.wide + 1e-6; w += nav.cell * 0.5) {
-      const c = nav.idx(spot.x + u * Math.sin(spot.rot) + w * Math.cos(spot.rot), spot.z + u * Math.cos(spot.rot) - w * Math.sin(spot.rot));
-      if (c >= 0) nav.blocked[c] = 1;
-    }
+    this.boxes.push(this.carBox(ride));
     this.place(ride, 0, 0);
   }
 
@@ -303,6 +348,18 @@ export class Rides {
     return Math.hypot(Math.max(0, u), Math.max(0, w));
   }
 
+  private *solidVehicles() {
+    yield* this.list;
+    yield* this.modeCars.keys();
+  }
+
+  private otherCarNear(ride: Ride, x: number, z: number, distance: number) {
+    for (const car of this.solidVehicles()) {
+      if (car !== ride && car.kind === "car" && this.reach(car, x, z) < distance) return true;
+    }
+    return false;
+  }
+
   /** The ride near enough to get into from (x, z), if any: a car from the street, a boat from the pier's boards or
    *  the water beside it. */
   near(x: number, z: number): Ride | null {
@@ -338,7 +395,7 @@ export class Rides {
     if (this.riding) return false;
     const p = this.host.player.root.position;
     this.riding = r;
-    countPlay("rides", r.kind);
+    if (!this.modeCars.has(r)) countPlay("rides", r.kind);
     this.phase = "in";
     this.phaseT = 0;
     this.wantOut = false;
@@ -397,13 +454,13 @@ export class Rides {
   }
 
   /** Where the driver steps out to: their own side first, then the other, then the ends. */
-  private carExit(r: Ride): THREE.Vector3 | null {
+  carExit(r: Ride): THREE.Vector3 | null {
     const col = this.host.colliders;
     for (const [x, z] of [[1.8, -0.3], [-1.8, -0.3], [1.8, 0.9], [-1.8, 0.9], [1.8, -1.4], [-1.8, -1.4], [0, -3.1], [0, 3.1]]) {
       this.at(r, x, z, _v);
       if (_v.x < WORLD.minX + 1 || _v.x > WORLD.maxX - 1 || _v.z > WORLD.maxZ - 1 || _v.z < SHORE.limit) continue;
       if (col.blocked(_v.x, _v.z, 0.42)) continue;
-      if (this.list.some((o) => o !== r && o.kind === "car" && this.reach(o, _v.x, _v.z) < 0.45)) continue;
+      if (this.otherCarNear(r, _v.x, _v.z, 0.45)) continue;
       if (this.list.some((o) => o.owners.some((q) => q.state !== "in" && Math.hypot(q.ch.root.position.x - _v.x, q.ch.root.position.z - _v.z) < 0.8))) continue;
       return _v.setY(floorY(_v.x, _v.z));
     }
@@ -452,6 +509,7 @@ export class Rides {
   abandon() {
     const r = this.riding;
     if (!r) return;
+    this.glide = null;
     this.riding = null;
     this.phase = "on";
     this.wantOut = false;
@@ -461,12 +519,33 @@ export class Rides {
     this.sendHome(r);
   }
 
+  resetPosition(r: Ride, { x, z, rot }: Ride["home"]) {
+    if (r === this.riding) {
+      this.glide = null;
+      this.pushAt = { x, z, h: rot };
+      this.pushT = this.stuckT = this.yieldT = 0;
+    }
+    r.m.set(x, z, rot);
+    r.sus = this.springs();
+    this.place(r, 0, 0);
+    const box = this.modeCars.get(r);
+    if (box) this.syncBox(box, r);
+  }
+
+  private syncBox(box: CarBox, { m }: Ride) {
+    box.x = m.x;
+    box.z = m.z;
+    box.heading = m.heading;
+  }
+
   private sendHome(r: Ride) {
     r.m.set(r.home.x, r.home.z, r.home.rot);
     r.awayT = 0;
     r.thanked = true;
     for (const o of r.owners) { this.wake(o); o.state = "in"; o.path = null; this.seatOwner(r, o); }
     this.place(r, 0, 0);
+    const box = this.modeCars.get(r);
+    if (box) this.syncBox(box, r);
   }
 
   // ------------------------------------------------------------------------------------------------ update
@@ -510,7 +589,11 @@ export class Rides {
       this.place(q, dt, t);
       this.updateOwners(q, dt);
       if (q !== r) this.rest(q, dt);
-      if (q.kind === "car") { const b = this.boxes[i]; b.x = q.m.x; b.z = q.m.z; b.heading = q.m.heading; }
+      if (q.kind === "car") this.syncBox(this.boxes[i], q);
+    }
+    for (const [car, box] of this.modeCars) {
+      this.place(car, dt, t);
+      this.syncBox(box, car);
     }
     if (!r) return;
     this.phaseT += dt;
@@ -585,15 +668,15 @@ export class Rides {
     // it, the way is free), brakes for one that comes the other way, and waits behind one that stands. With the wheel
     // turned it noses up to a standing one and slides round it (that car waits for the convertible as often as not:
     // two cars never wait for each other)
-    const lead = host.ambient.carAhead(m.x, m.z, fx, fz, 30, CAR.wide + 0.2 + wide, curv, _lead);
-    const behind = lead.gap - CAR.half - 1, moving = Math.abs(lead.speed) > 0.3, round = !moving && Math.abs(m.steer) > 0.3;
+    const lead = host.ambient.carAhead(m.x, m.z, fx, fz, 30, m.spec.wide + 0.2 + wide, curv, _lead);
+    const behind = lead.gap - m.spec.half - 1, moving = Math.abs(lead.speed) > 0.3, round = !moving && Math.abs(m.steer) > 0.3;
     if (lead.gap !== Infinity) {
       const most = Math.max(round ? 1.6 : 0, Math.max(0, lead.speed) + Math.sqrt(2 * 9 * Math.max(0, behind)));
       m.limit(most, 20, dt);
     }
     // (following one that moves, or waiting behind one that stands: not stuck)
     const queued = lead.gap !== Infinity && ((behind < 2.5 && lead.speed > 0.3) || (behind < 1.5 && !moving && !round));
-    const was = m.speed, x0 = m.x, z0 = m.z, h0 = m.heading, near0 = this.peopleGap(m.x, m.z, m.heading);
+    const was = m.speed, x0 = m.x, z0 = m.z, h0 = m.heading, near0 = this.peopleGap(m.spec, m.x, m.z, m.heading);
     m.step(dt, c, gap, this.asphalt.has(m.x, m.z), care);
     m.settle((p, rad) => {
       // on the town's dry ground; out of its walls, trees, benches and parked cars; out of the other convertibles, the
@@ -601,7 +684,7 @@ export class Rides {
       this.drivable.nearest(p.x, p.z, p);
       host.colliders.resolve(_v.set(p.x, 0, p.z), rad);
       p.x = _v.x; p.z = _v.z;
-      for (const o of this.list) if (o !== r && o.kind === "car") pushOutOfBox(p, rad, o.m.x, o.m.z, o.m.heading, CAR.half, CAR.wide);
+      for (const o of this.solidVehicles()) if (o !== r && o.kind === "car") pushOutOfBox(p, rad, o.m.x, o.m.z, o.m.heading, o.m.spec.half, o.m.spec.wide);
       host.ambient.pushOutOfCars(p, rad);
       for (const o of this.list) for (const w of o.owners) if (w.state !== "in") {
         const q = w.ch.root.position, dx = p.x - q.x, dz = p.z - q.z, d = Math.hypot(dx, dz), min = rad + 0.35;
@@ -611,14 +694,14 @@ export class Rides {
     // nobody is ever touched, however it moves (coming round on the spot, sliding broadside, backing up): a move that
     // would bring its body within a hand's breadth of someone, and nearer than it was, is not made
     if (near0 < 3) {
-      const near = this.peopleGap(m.x, m.z, m.heading);
+      const near = this.peopleGap(m.spec, m.x, m.z, m.heading);
       if (near < 0.4 && near < near0 - 1e-4) { m.x = x0; m.z = z0; m.heading = h0; m.speed = 0; m.slip = 0; m.drift = false; }
     }
     this.ride(r, dt);
     // going by close and fast: those on foot jump aside, and now and then one of them calls after it
     this.shoutT -= dt;
-    if (m.pace > 4.5) {
-      const w = host.ambient.startle(m.x, m.z, fx, fz, m.pace, CAR.half, CAR.wide + wide, this.onStreet);
+    if (!this.modeCars.has(r) && m.pace > 4.5) {
+      const w = host.ambient.startle(m.x, m.z, fx, fz, m.pace, m.spec.half, m.spec.wide + wide, this.onStreet);
       // (one voice at a time and not often: a quarter of a minute at least between two calls, and whoever has called
       // does not again for minutes)
       if (w && this.shoutT <= 0) { this.shoutT = 14 + Math.random() * 8; host.ambient.called(w); host.say(RIDE_SHOUTS[Math.floor(Math.random() * RIDE_SHOUTS.length)], shoutVoice(w.female, w.tone ?? 0), w.female, w.ch); }
@@ -627,18 +710,18 @@ export class Rides {
     // (behind a car of the traffic it is waiting, not stuck)
     // (nor while it is coming round on the spot: that is the way out of a tight place)
     const turning = Math.abs(Math.atan2(Math.sin(m.heading - this.pushAt.h), Math.cos(m.heading - this.pushAt.h))) > 0.5;
-    const pushing = Math.abs(c.throttle) > 0.5 && m.pace < 0.7 && Math.abs(was) < 0.7 && Math.abs(m.yaw) < 0.25 && gap > CAR.half + CAR.clear + 1 && !queued;
+    const pushing = Math.abs(c.throttle) > 0.5 && m.pace < 0.7 && Math.abs(was) < 0.7 && Math.abs(m.yaw) < 0.25 && gap > m.spec.half + CAR.clear + 1 && !queued;
     this.stuckT = pushing ? this.stuckT + dt : 0;
     if (this.stuckT > 1.8 && !this.stuckTold) { this.stuckTold = true; host.stuck(); }
     // held up by someone who stays where they are (on a bench, at a stall): a word about going round, once a ride
     // (or by a car of the traffic that stands in its way)
-    const held = Math.abs(c.throttle) > 0.5 && !c.brake && Math.abs(m.speed) < 0.3 && (gap <= CAR.half + CAR.clear + 1 || (lead.gap !== Infinity && behind < 1.5 && !moving));
+    const held = Math.abs(c.throttle) > 0.5 && !c.brake && Math.abs(m.speed) < 0.3 && (gap <= m.spec.half + CAR.clear + 1 || (lead.gap !== Infinity && behind < 1.5 && !moving));
     this.yieldT = held ? this.yieldT + dt : 0;
     if (this.yieldT > 2.2 && !this.yieldTold) { this.yieldTold = true; host.waiting(); }
     // and if, backing and turning, it still has not left the spot after a good while of trying: back onto the street
     // by itself (nobody is ever left boxed in between a wall and a bench)
     if (Math.hypot(m.x - this.pushAt.x, m.z - this.pushAt.z) > 2.2 || turning) { this.pushAt.x = m.x; this.pushAt.z = m.z; this.pushAt.h = m.heading; this.pushT = 0; }
-    else if (Math.abs(c.throttle) > 0.5 && !c.brake && gap > CAR.half + CAR.clear + 1 && !queued) this.pushT += dt;
+    else if (Math.abs(c.throttle) > 0.5 && !c.brake && gap > m.spec.half + CAR.clear + 1 && !queued) this.pushT += dt;
     // truly wedged: after a moment it is set free gently, gliding to the nearest clear place with room to drive off
     // (nothing fades, nothing jumps); and if there is none in reach, onto the street as before
     if (this.pushT > 2.4 && !this.rescuing) {
@@ -662,11 +745,11 @@ export class Rides {
 
   /** How near anyone on foot is to a car's body at (x, z) facing `rot` (m): the passers-by and their dogs, the people
    *  one talks to, the owners standing about. */
-  private peopleGap(x: number, z: number, rot: number) {
-    let gap = this.host.ambient.gapToBox(x, z, rot, CAR.half, CAR.wide);
+  private peopleGap({ half, wide }: Motion["spec"], x: number, z: number, rot: number) {
+    let gap = this.host.ambient.gapToBox(x, z, rot, half, wide);
     const s = Math.sin(rot), c = Math.cos(rot);
     const at = (px: number, pz: number) => {
-      const dx = px - x, dz = pz - z, u = Math.abs(dx * s + dz * c) - CAR.half, w = Math.abs(dx * c - dz * s) - CAR.wide;
+      const dx = px - x, dz = pz - z, u = Math.abs(dx * s + dz * c) - half, w = Math.abs(dx * c - dz * s) - wide;
       gap = Math.min(gap, Math.hypot(Math.max(0, u), Math.max(0, w)));
     };
     for (const q of this.host.people()) at(q.x, q.z);
@@ -676,14 +759,15 @@ export class Rides {
 
   /** A whole car at (x, z) facing `rot` stands clear of walls, things, other cars and the traffic, with `more` m to spare. */
   private fits(r: Ride, x: number, z: number, rot: number, more: number) {
-    const col = this.host.colliders, fx = Math.sin(rot), fz = Math.cos(rot);
-    if (this.peopleGap(x, z, rot) < 0.9 + more) return false;
-    for (const o of [-1.3, 0, 1.3]) {
-      const px = x + fx * o, pz = z + fz * o;
-      if (!this.drivable.has(px, pz) || col.blocked(px, pz, CAR.wide + more) || this.list.some((c) => c !== r && c.kind === "car" && this.reach(c, px, pz) < CAR.wide + more + 0.2)) return false;
+    const m = r.m, col = this.host.colliders, fx = Math.sin(rot), fz = Math.cos(rot);
+    if (this.peopleGap(m.spec, x, z, rot) < 0.9 + more) return false;
+    const end = 1.3 * m.spec.half / CAR.half;
+    for (const offset of [-end, 0, end]) {
+      const px = x + fx * offset, pz = z + fz * offset;
+      if (!this.drivable.has(px, pz) || col.blocked(px, pz, m.spec.wide + more) || this.otherCarNear(r, px, pz, m.spec.wide + more + 0.2)) return false;
       _p.x = px; _p.z = pz;
       const before = _p.x + _p.z;
-      this.host.ambient.pushOutOfCars(_p, CAR.wide + more + 0.3);
+      this.host.ambient.pushOutOfCars(_p, m.spec.wide + more + 0.3);
       if (_p.x + _p.z !== before) return false;
     }
     return true;
@@ -705,7 +789,7 @@ export class Rides {
         // (and nobody stands in the way there: the glide itself passes no closer to anyone than half a metre)
         let clear = true;
         const dh = Math.atan2(Math.sin(rot - m.heading), Math.cos(rot - m.heading));
-        for (let k = 1; k < 6 && clear; k++) { const e = k / 6; if (this.peopleGap(m.x + (x - m.x) * e, m.z + (z - m.z) * e, m.heading + dh * e) < 0.5) clear = false; }
+        for (let k = 1; k < 6 && clear; k++) { const e = k / 6; if (this.peopleGap(m.spec, m.x + (x - m.x) * e, m.z + (z - m.z) * e, m.heading + dh * e) < 0.5) clear = false; }
         if (!clear) continue;
         bs = score; best = { x, z, rot };
       }
@@ -717,6 +801,7 @@ export class Rides {
    *  has got itself boxed in. */
   private streetSpot(r: Ride): { x: number; z: number; rot: number } | null {
     const col = this.host.colliders, m = r.m;
+    const end = 1.3 * m.spec.half / CAR.half;
     let best: { x: number; z: number; rot: number } | null = null, bd = Infinity;
     for (const q of this.asphalt.rects) {
       const ew = q.x1 - q.x0 > q.z1 - q.z0, cx = (q.x0 + q.x1) / 2, cz = (q.z0 + q.z1) / 2;
@@ -729,12 +814,12 @@ export class Rides {
         if (d >= bd) continue;
         const fx = Math.sin(rot), fz = Math.cos(rot);
         let free = true;
-        for (const o of [-1.3, 0, 1.3]) {
-          const px = x + fx * o, pz = z + fz * o;
-          if (col.blocked(px, pz, CAR.wide + 0.1) || this.list.some((c) => c !== r && c.kind === "car" && this.reach(c, px, pz) < CAR.wide + 0.3)) { free = false; break; }
+        for (const offset of [-end, 0, end]) {
+          const px = x + fx * offset, pz = z + fz * offset;
+          if (col.blocked(px, pz, m.spec.wide + 0.1) || this.otherCarNear(r, px, pz, m.spec.wide + 0.3)) { free = false; break; }
           _p.x = px; _p.z = pz;
           const before = _p.x + _p.z;
-          this.host.ambient.pushOutOfCars(_p, CAR.wide + 0.5);
+          this.host.ambient.pushOutOfCars(_p, m.spec.wide + 0.5);
           if (_p.x + _p.z !== before) { free = false; break; }
         }
         if (free) { bd = d; best = { x, z, rot }; }
@@ -1023,9 +1108,11 @@ export class Rides {
 
   /** Keeps the player on foot out of the rides and of their people standing about (`inWater`: and, swimming, out of
    *  the rocks and the boats at anchor). */
-  resolvePlayer(p: THREE.Vector3, rad: number, inWater: boolean) {
-    for (const r of this.list) {
+  resolvePlayer(p: THREE.Vector3, rad: number, inWater: boolean, feet = p.y) {
+    for (const r of this.solidVehicles()) {
       if (r === this.riding) continue;
+      const surfaces = this.modeCars.get(r)?.surfaces;
+      if (surfaces && feet + TOE >= surfaces[0].top) continue; // Ledges handles the higher tiers.
       if (Math.abs(r.m.x - p.x) < 5 && Math.abs(r.m.z - p.z) < 5) {
         _p.x = p.x; _p.z = p.z;
         if (pushOutOfBox(_p, rad, r.m.x, r.m.z, r.m.heading, r.m.spec.half, r.m.spec.wide)) { p.x = _p.x; p.z = _p.z; }

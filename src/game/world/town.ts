@@ -1,7 +1,7 @@
 // Builds the outdoor town of Maple Harbor from layout.ts: ground, sea, buildings, props, colliders, doors.
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, type BuildingDef } from "./layout";
+import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, type BuildingDef } from "./layout";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
 import { carParts } from "./car";
 import { carFootprint, carModelEntry, type CarPlacement } from "./carModels";
@@ -20,6 +20,13 @@ export interface ParkedCars {
   group: THREE.Group;
   fallback: THREE.Mesh;
   placements: readonly CarPlacement[];
+  taxi?: StandTaxi;
+}
+
+export interface StandTaxi {
+  root: THREE.Group;
+  fallback: THREE.Mesh;
+  instance?: THREE.Group;
 }
 
 export interface Town {
@@ -202,9 +209,18 @@ export function buildTown(): Town {
   }
   // (the pier's own meshes stay as they are: under water the town is put away but for them, Game.ts)
   M.build(group, { name: "town-solid", cell: 100, keep: /^(pier|gas-canopy)/ });
-  // the gas station's canopy: looked through by the camera (cutout.ts) rather than a roof it must stay under, or under
-  // it, at the store's door, the camera has nowhere to go but behind the player's head (Game.ts's field skips it)
-  for (const o of group.children) if (/^gas-canopy/.test(o.name)) o.userData.thin = true;
+  // The roof still guides the camera, but the whole canopy fades if its edge comes into the foreground.
+  const gasCanopy = new THREE.Group();
+  gasCanopy.name = "gas-canopy-assembly";
+  gasCanopy.userData.fadeNearCamera = true;
+  for (const o of group.children.filter((o) => /^gas-canopy(?:-trim|-sign)?(?:~\d+)?$/.test(o.name))) {
+    if (!o.userData.thin) {
+      o.userData.roofOnly = true;
+      o.userData.cameraClearance = 0.6;
+    }
+    gasCanopy.add(o);
+  }
+  group.add(gasCanopy);
 
   const clouds = makeClouds(group, r);
   const boats = group.children.filter((o) => o.userData.boat);
@@ -1361,19 +1377,31 @@ function makeParkedCars(col: Colliders): ParkedCars {
   const group = new THREE.Group();
   group.name = "parked-cars";
   const parts: [THREE.BufferGeometry, THREE.ColorRepresentation][] = [];
+  let taxi: StandTaxi | undefined;
   for (const spot of PARKED_CARS) {
     const { model, x, z, rot, color } = spot;
-    col.boxes.push({ ...carFootprint(spot), tag: "car", split: true });
     const { width, length, height } = carModelEntry(model).collisionBox;
-    const taxi = model === "taxi";
-    for (const [geometry, paint] of carParts(color, { taxi })) {
-      geometry.scale(width / 2.12, height / (taxi ? 1.8 : 1.56), length / 4.42).rotateY(rot).translate(x, 0, z);
-      parts.push([geometry, paint]);
+    const atStand = spot === TAXI;
+    const local = carParts(color, { taxi: atStand });
+    for (const [geometry] of local) geometry.scale(width / 2.12, height / (atStand ? 1.8 : 1.56), length / 4.42);
+    if (atStand) {
+      // The mode moves this car, so it needs its own root and the mode owns its collision.
+      const root = new THREE.Group();
+      root.position.set(x, 0, z);
+      root.rotation.y = rot;
+      const fallback = staticColoured(local, "stand-taxi-fallback");
+      root.add(fallback);
+      group.add(root);
+      taxi = { root, fallback };
+      continue;
     }
+    col.boxes.push({ ...carFootprint(spot), tag: "car", split: true });
+    for (const [geometry] of local) geometry.rotateY(rot).translate(x, 0, z);
+    parts.push(...local);
   }
   const fallback = staticColoured(parts, "parked-car-fallback");
   group.add(fallback);
-  return { group, fallback, placements: PARKED_CARS };
+  return { group, fallback, placements: PARKED_CARS, taxi };
 }
 
 function nearIntersection(x: number, z: number) {
@@ -1759,11 +1787,12 @@ function addTransport(M: Merger, col: Colliders, group: THREE.Group) {
     col.addBox(px, 5.5, 1.1, 0.8);
   }
   // the station's name on the canopy's front, where the street sees it (the canopy hides the shop's sign behind it from
-  // the street); see-through for the walking camera with the canopy (its name: buildTown, userData.thin)
+  // the street). The camera can look through the sign itself.
   const gasName = BUILDINGS.find((b) => b.id === "gas")?.sign;
   if (gasName) {
     const gs = new THREE.Mesh(new THREE.PlaneGeometry(7, 0.58), new THREE.MeshBasicMaterial({ map: textTexture(gasName, { bg: "#f4f4f4", fg: "#d94b3d", w: 1024, h: 85 }), alphaTest: 0.5, toneMapped: false }));
     gs.name = "gas-canopy-sign";
+    gs.userData.thin = true;
     gs.position.set(112, 5.0, 0.94); gs.rotation.y = Math.PI;
     group.add(gs);
   }

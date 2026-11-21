@@ -147,7 +147,8 @@ export interface HudState {
   prompt: { label: string; lt?: string; kind: "talk" | "enter" | "exit" | "taxi" | "drive" | "boat" | "out" | "climb" | "surf" | "paddle" } | null;
   /** What the player does instead of walking (game/rides, water.ts SWIM): at a car's wheel, at a boat's helm,
    *  swimming, under water on a dive, or on a surfboard in the surf lesson (game/surf). */
-  ride: null | "car" | "boat" | "swim" | "dive" | "surf";
+  ride: null | "car" | "boat" | "swim" | "dive" | "surf" | "taxi";
+  modeScreen: import("../game/kit/modes").ModeScreen | null;
   /** When the current drive, boat trip or swim started. Diving and resurfacing stay in the same swim. */
   rideStartedAt: number | null;
   /** At a wheel or a helm, going fast enough for a slide (the phone's brake button says so). */
@@ -189,12 +190,12 @@ const stackTimers = new Map<number, { timer: ReturnType<typeof setTimeout>; resu
 const initial = loadProgress();
 
 export function townRide(ride: HudState["ride"]) {
-  return ride === "surf" ? null : ride === "dive" ? "swim" : ride;
+  return ride === "surf" || ride === "taxi" ? null : ride === "dive" ? "swim" : ride;
 }
 
 export function usesTownNotes(s: Pick<Store, "screen" | "settings" | "conv" | "hud">) {
   const surf = useSurf.getState();
-  return s.screen === "play" && s.settings.play === "town" && !s.conv.active && !s.hud.panel && !s.hud.flight && !surf.active && !surf.picking;
+  return s.screen === "play" && s.settings.play === "town" && !s.conv.active && !s.hud.panel && !s.hud.flight && !s.hud.modeScreen && !surf.active && !surf.picking;
 }
 
 /** Saved settings plus new defaults. v2 (owner feedback: a calmer conversation panel): the natural
@@ -228,7 +229,7 @@ export const useStore = create<Store>((set, get) => ({
   progress: initial,
   conv: EMPTY_CONV,
   hud: {
-    zoneName: "", zoneBanner: null, prompt: null, ride: null, rideStartedAt: null, fast: false, walking: false, objective: null, minimap: { px: 0, pz: 0, heading: 0, zone: "town" }, fade: 0, panel: null,
+    zoneName: "", zoneBanner: null, prompt: null, ride: null, modeScreen: null, rideStartedAt: null, fast: false, walking: false, objective: null, minimap: { px: 0, pz: 0, heading: 0, zone: "town" }, fade: 0, panel: null,
     showTouch: typeof window !== "undefined" && (("ontouchstart" in window) || navigator.maxTouchPoints > 1),
     coach: null, flight: false,
   },

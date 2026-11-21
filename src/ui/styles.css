@@ -618,9 +618,9 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .ended-main { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 10px; }
 .ended-main .btn { flex: 1 1 160px; max-width: 220px; white-space: nowrap; }
 /* the surf school's end card: the lesson first, wide, in the beach's turquoise */
-.btn.surf-cta { display: flex; width: min(450px, 100%); margin: 12px auto 0; justify-content: center; min-height: 52px; font-size: 1.08em; background: linear-gradient(160deg, #2ec4b6, #17a2a2); color: #fff; box-shadow: 0 4px 14px rgba(23, 162, 162, 0.4); }
-.btn.surf-cta:hover { filter: brightness(1.06); }
-.ended-box .surf-cta { margin: 0; min-height: 44px; }
+.btn:is(.surf-cta, .taxi-cta) { display: flex; width: min(450px, 100%); margin: 12px auto 0; justify-content: center; min-height: 52px; font-size: 1.08em; background: linear-gradient(160deg, #2ec4b6, #17a2a2); color: #fff; box-shadow: 0 4px 14px rgba(23, 162, 162, 0.4); }
+.btn:is(.surf-cta, .taxi-cta):hover { filter: brightness(1.06); }
+.ended-box :is(.surf-cta, .taxi-cta) { margin: 0; min-height: 44px; }
 /* a task done: confetti bursts from the task bar (ui/Confetti.tsx) */
 .confetti { position: fixed; width: 0; height: 0; pointer-events: none; z-index: 80; }
 .confetti i {
