@@ -1,4 +1,4 @@
-// The town HUD while walking and driving, with the same viewports as talk-view.mjs.
+// The town HUD while walking and driving, including tall and short portrait viewports.
 // WORLD_TEST_URL=http://127.0.0.1:8176 WORLD_STORAGE=english-world WORLD_PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node tests/browser/playing-screen.mjs
 import assert from "node:assert/strict";
 
@@ -13,28 +13,71 @@ const returning = {
   coach: { done: true, run: true, view: true, seen: { list: true } },
 };
 const iPhone = { deviceScaleFactor: 2, isMobile: true, hasTouch: true, userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1" };
-const sizes = { computer: { viewport: { width: 1280, height: 800 } }, phone: { ...iPhone, viewport: { width: 375, height: 812 } }, "short phone": { ...iPhone, viewport: { width: 375, height: 667 } } };
+const sizes = {
+  computer: { viewport: { width: 1280, height: 800 } },
+  phone: { ...iPhone, viewport: { width: 375, height: 812 } },
+  "short phone": { ...iPhone, viewport: { width: 375, height: 667 } },
+  "tall 390 px phone": { ...iPhone, viewport: { width: 390, height: 844 } },
+  "short 390 px phone": { ...iPhone, viewport: { width: 390, height: 664 } },
+  "tall 412 px phone": { ...iPhone, viewport: { width: 412, height: 915 } },
+};
 
-const hudBoxes = [".objective-card", ".minimap", ".toolbar", ".toolbar.menu-open .toolbar-tools", ".prompt", ".joy", ".jump-btn", ".act-btn"];
+const hudBoxes = [".objective-card", ".minimap", ".toolbar", ".toolbar.menu-open .toolbar-tools", ".toolbar.menu-open .toolbar-drawer", ".prompt", ".joy", ".jump-btn", ".act-btn"];
 
 async function settledBoxes(page, selectors) {
   return page.evaluate(async (selectors) => {
-    const read = () => selectors.flatMap((selector) => {
-      const el = document.querySelector(selector), r = el?.getBoundingClientRect();
-      if (!r?.width || !r.height || getComputedStyle(el).visibility !== "visible") return [];
-      return [{ selector, left: r.left, top: r.top, right: r.right, bottom: r.bottom }];
-    });
+    const read = () => selectors.flatMap((selector) => [...document.querySelectorAll(selector)].flatMap((el) => {
+      const r = el.getBoundingClientRect();
+      if (!r.width || !r.height || getComputedStyle(el).visibility !== "visible") return [];
+      return [{ selector, radio: el.matches(".radio-btn"), lr: el.matches(".light-mode-btn"), course: el.matches(".course-link"), left: r.left, top: r.top, right: r.right, bottom: r.bottom }];
+    }));
     const deadline = performance.now() + 2200;
     let previous = read();
     while (performance.now() < deadline) {
       await new Promise((resolve) => setTimeout(resolve, 150));
       const current = read();
-      const animating = current.some(({ selector }) => document.querySelector(selector).getAnimations().some((a) => a.playState === "running" && Number.isFinite(a.effect?.getComputedTiming().endTime)));
+      const elements = selectors.flatMap((selector) => [...document.querySelectorAll(selector)]);
+      const animating = elements.some((el) => el.getAnimations().some((a) => a.playState === "running" && Number.isFinite(a.effect?.getComputedTiming().endTime)));
       if (!animating && JSON.stringify(previous) === JSON.stringify(current)) return current;
       previous = current;
     }
     throw new Error(`HUD boxes did not settle: ${JSON.stringify(previous)}`);
   }, selectors);
+}
+
+async function checkPhoneToolbar(page, label, { width, columns, radio, course, prompt = false }) {
+  const drawerButtons = ".toolbar-drawer .icon-btn";
+  const menu = ".toolbar .ride-menu";
+  const obstacles = [".objective-card", ".minimap", ".zone-banner", ".town-toasts .toast", ".coach", ".joy", ".jump-btn", ".act-btn", ".prompt.touch"];
+  const { boxes, overlaps } = await layout(page, [drawerButtons, menu, ...obstacles]);
+  const drawer = boxes.filter((b) => b.selector === drawerButtons), all = boxes.filter((b) => b.selector.startsWith(".toolbar"));
+  const lefts = [...new Set(drawer.map((b) => b.left))].sort((a, b) => b - a);
+  assert.equal(drawer.filter((b) => b.radio).length, Number(radio), `${label}: radio counted in the drawer`);
+  assert.equal(drawer.filter((b) => b.lr).length, 1, `${label}: LR is in the drawer`);
+  assert.equal(drawer.filter((b) => b.course).length, Number(course), `${label}: optional course link counted in the drawer`);
+  assert.equal(drawer.length, 8 + Number(radio) + Number(course), `${label}: every drawer button is visible`);
+  assert.equal(lefts.length, columns, `${label}: ${JSON.stringify(drawer)}`);
+  assert(all.every((b) => lefts.includes(b.left)), `${label}: every button is in a right-edge column`);
+  assert(width - lefts[0] <= 60 && all.every((b) => width - b.left <= 120), `${label}: the columns are within 120 px of the right edge`);
+  if (columns === 2) {
+    const counts = lefts.map((left) => drawer.filter((b) => b.left === left).length);
+    assert(counts[0] >= counts[1] && counts[0] - counts[1] <= 1, `${label}: the right column takes the extra button in an odd split: ${counts}`);
+    assert.deepEqual([...drawer].sort((a, b) => b.left - a.left || a.top - b.top), drawer, `${label}: the drawer keeps its order down the right column first`);
+  } else {
+    const clearances = boxes.filter((b) => [".jump-btn", ".act-btn", ".prompt.touch"].includes(b.selector));
+    if (prompt) assert(clearances.some((b) => b.selector === ".prompt.touch"), `${label}: the touch talk prompt is visible`);
+    assert(clearances.some((b) => b.selector === ".jump-btn"), `${label}: the jump or brake button is visible`);
+    const end = Math.max(...all.map((b) => b.bottom));
+    assert(clearances.every((b) => b.top - end >= 12), `${label}: the column has 12 px of clearance: ${JSON.stringify({ end, clearances })}`);
+    const actionsAndLinks = drawer.filter((b) => !b.radio);
+    assert.deepEqual([...actionsAndLinks].sort((a, b) => a.top - b.top), actionsAndLinks, `${label}: the actions keep their order with LR and the course link at the bottom`);
+  }
+  assert.deepEqual(overlaps.filter((pair) => pair.some((s) => s.startsWith(".toolbar"))), [], `${label}: no tool overlaps another HUD element: ${JSON.stringify(boxes)}`);
+}
+
+async function setRadioAvailable(page, available) {
+  await page.evaluate((available) => window.__ew.radio.store.setState({ available }), available);
+  await page.locator(".toolbar .radio-btn").waitFor({ state: available ? "visible" : "hidden" });
 }
 
 async function layout(page, selectors = hudBoxes) {
@@ -101,6 +144,7 @@ const browser = await chromium.launch({ channel: process.env.WORLD_BROWSER_CHANN
 try {
   for (const [label, options] of Object.entries(sizes)) {
     const phone = !!options.hasTouch;
+    const { width, height } = options.viewport;
     const ctx = await browser.newContext(options);
     // The course voices need a sign-in. An empty response keeps this test independent of it.
     await ctx.route(/\.mp3(\?|$)/, (r) => r.fulfill({ status: 204, headers: { "access-control-allow-origin": "*" } }));
@@ -116,12 +160,16 @@ try {
     await page.goto(base + "/", { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => window.__ew?.store.getState().screen === "play" && window.__ew.game?.ledges?.ready, null, { timeout: 240000 });
     await page.locator(".objective-card .row button").first().waitFor();
+    // Exercise the radio button even on a build with no songs configured.
+    if (phone) await setRadioAvailable(page, true);
     const press = (selector) => phone ? page.locator(selector).tap() : page.locator(selector).click();
     const go = (on) => phone ? page.evaluate((v) => window.__ew.game.setJoystick(0, v ? 1 : 0), on) : page.keyboard[on ? "down" : "up"]("w");
     const toolbar = page.locator(".toolbar");
+    const phoneLayout = { width, columns: label.startsWith("short") ? 2 : 1, radio: true, course: await toolbar.locator(".course-link").count() > 0 };
     const menu = toolbar.locator(".ride-menu");
     const radio = toolbar.locator(".radio-btn");
     const due = toolbar.locator(".toolbar-tools .due-badge");
+    const firstAction = toolbar.locator(".toolbar-tools button.icon-btn:not(.radio-btn)").first();
     const walkingTools = await toolbar.locator(".icon-btn:visible").count();
     const [firstTool] = await settledBoxes(page, [".toolbar-tools .icon-btn"]);
     const radioCount = await radio.count();
@@ -138,10 +186,17 @@ try {
     assert.deepEqual(walking.overlaps, [], `${label}: walking ${JSON.stringify(walking)}`);
     assert(walking.boxes.some(({ selector }) => selector === ".prompt"), `${label}: the settled door prompt is visible`);
     if (phone) assert.equal(walking.boxes.filter(({ selector }) => [".joy", ".jump-btn", ".act-btn"].includes(selector)).length, 3);
-    if (phone) await checkMovingNotes(page, `${label} walking`, options.viewport.height);
+    if (phone) {
+      await checkPhoneToolbar(page, `${label} walking`, { ...phoneLayout, prompt: true });
+      await setRadioAvailable(page, false);
+      await checkPhoneToolbar(page, `${label} walking without radio`, { ...phoneLayout, radio: false, prompt: true });
+      await setRadioAvailable(page, true);
+      await checkMovingNotes(page, `${label} walking`, height);
+    }
     await go(false);
     await page.waitForTimeout(2000);
     assert(await page.locator(".objective-card .row button").first().isVisible(), `${label}: the task reopened while standing still`);
+    if (phone) await checkPhoneToolbar(page, `${label} with the task open`, phoneLayout);
 
     // Start by the driver's door, as in rides.mjs.
     await page.evaluate(() => {
@@ -153,7 +208,7 @@ try {
     if (phone) await press(".act-btn"); else await page.keyboard.press("e");
     await page.waitForFunction(() => window.__ew.game.rides.phase === "on" && window.__ew.store.getState().hud.prompt?.kind === "out", null, { timeout: 5000 });
     await menu.waitFor();
-    await toolbar.locator(".toolbar-tools").waitFor({ state: "hidden" });
+    await firstAction.waitFor({ state: "hidden" });
     assert.equal(await toolbar.locator(".icon-btn:visible").count(), 1 + radioCount, `${label}: only Meniu and the available radio`);
     assert.equal(await menu.locator(".due-badge").innerText(), "1", `${label}: Meniu shows the due card`);
     const [menuBox] = await settledBoxes(page, [".ride-menu"]);
@@ -165,15 +220,30 @@ try {
     const parked = await layout(page);
     const anchored = (boxes) => boxes.filter(({ selector }) => [".minimap", ".joy", ".jump-btn", ".act-btn"].includes(selector));
     await press(".ride-menu");
-    await toolbar.locator(".toolbar-tools").waitFor();
+    await firstAction.waitFor();
     const expanded = await layout(page);
     assert.equal(await toolbar.locator(".icon-btn:visible").count(), walkingTools + 1, `${label}: Meniu revealed the full toolbar`);
     assert.equal(await due.innerText(), "1", `${label}: the phrasebook shows the due card`);
     assert.deepEqual(anchored(expanded.boxes), anchored(parked.boxes), `${label}: the minimap and controls stayed in place`);
     assert.deepEqual(expanded.overlaps, [], `${label}: open ride toolbar ${JSON.stringify(expanded)}`);
-    if (phone) await checkMovingNotes(page, `${label} open ride toolbar`, options.viewport.height);
+    if (phone) {
+      await checkPhoneToolbar(page, `${label} open ride toolbar`, phoneLayout);
+      await setRadioAvailable(page, false);
+      await checkPhoneToolbar(page, `${label} open ride toolbar without radio`, { ...phoneLayout, radio: false });
+      await setRadioAvailable(page, true);
+      await checkMovingNotes(page, `${label} open ride toolbar`, height);
+    }
     await page.waitForTimeout(6000);
     assert.equal(await toolbar.locator(".icon-btn:visible").count(), 1 + radioCount, `${label}: Meniu folded after five idle seconds`);
+    if (phone) {
+      // A new task opens the card briefly without taking the learner out of the car.
+      await press(".ride-menu");
+      await page.evaluate(() => window.__ew.game.setObjective("s72-cafe"));
+      await page.locator(".objective-card.fresh").waitFor();
+      await checkPhoneToolbar(page, `${label} open ride toolbar and open task`, phoneLayout);
+      await press(".ride-menu");
+      await page.locator(".objective-card.collapsed").waitFor();
+    }
     await page.keyboard.press("m");
     await page.locator(".overlay .sheet").waitFor();
     assert.equal(await page.evaluate(() => window.__ew.store.getState().hud.panel), "map", `${label}: M opens the map while folded`);

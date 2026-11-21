@@ -2243,7 +2243,7 @@ export class Game implements GameApi {
     this.hudCheck = 10;
     const c = this.container.getBoundingClientRect();
     this.hudBoxCache = [];
-    for (const el of document.querySelectorAll<HTMLElement>(".objective-card, .minimap, .toolbar, .toolbar.menu-open .toolbar-tools")) {
+    for (const el of document.querySelectorAll<HTMLElement>(".objective-card, .minimap, .toolbar, .toolbar.menu-open:not(.portrait-toolbar) .toolbar-tools, .portrait-toolbar.menu-open .toolbar-drawer, .portrait-toolbar.in-ride:not(.menu-open) .radio-tool")) {
       if (!el.offsetParent) continue;
       const r = el.getBoundingClientRect();
       if (r.width && r.height) this.hudBoxCache.push({ x0: r.left - c.left, x1: r.right - c.left, y0: r.top - c.top, y1: r.bottom - c.top });

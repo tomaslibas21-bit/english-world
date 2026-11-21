@@ -1,7 +1,7 @@
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { townRide, useStore, type HudState } from "../state/store";
 import { townNote } from "../state/townNotes";
-import { SectionHelpButton } from "./sectionHelp";
+import { SectionHelpButton, useSectionHelp } from "./sectionHelp";
 import { useSurf } from "../game/surf/store";
 import { SurfOverlay, SurfPicker } from "./Surf";
 import { game } from "../game/gameRef";
@@ -17,6 +17,7 @@ import { LyricStrip, RadioTool } from "./Radio";
 import { useRadio } from "../radio";
 import { Guide } from "./Guide";
 import { TownToast } from "./Toasts";
+import { portraitToolbarRows } from "./toolbarLayout";
 import "./light.css";
 
 /** Inside English Master (VITE_BACK_URL, e.g. "/"): the way back to the course site. */
@@ -70,7 +71,7 @@ export function Hud() {
         </div>
         <Minimap />
       </div>
-      <Toolbar riding={riding} />
+      <Toolbar riding={riding} touch={hud.showTouch} />
       {!hud.panel && <LyricStrip />}
       {/* (on a phone the way out of a car is the round button itself: no second label over it) */}
       {hud.prompt && !hud.panel && !(hud.showTouch && hud.prompt.kind === "out") && (
@@ -106,9 +107,47 @@ function activateHudButton(e: KeyboardEvent<HTMLElement>) {
   if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(":focus-visible")) e.stopPropagation();
 }
 
-function Toolbar({ riding }: { riding: boolean }) {
+function Toolbar({ riding, touch }: { riding: boolean; touch: boolean }) {
   const due = useDueCards();
   const hasRadio = useRadio((s) => s.available);
+  const hasHelp = useSectionHelp();
+  const hasTouchPrompt = useStore((s) => !s.hud.panel && !!s.hud.prompt && s.hud.prompt.kind !== "out");
+  const [upright, setUpright] = useState(false);
+  useLayoutEffect(() => {
+    if (!touch) return;
+    const view = window.matchMedia("(max-width: 600px) and (orientation: portrait)");
+    const update = () => setUpright(view.matches);
+    update();
+    view.addEventListener("change", update);
+    return () => view.removeEventListener("change", update);
+  }, [touch]);
+  const portrait = touch && upright;
+  const toolbar = useRef<HTMLDivElement>(null);
+  const fitLimit = useRef<HTMLDivElement>(null);
+  const [twoColumns, setTwoColumns] = useState(false);
+  const drawerRows = portraitToolbarRows({ hasHelp, hasRadio, hasCourse: !!COURSE_URL });
+  const rows = drawerRows.single + Number(riding);
+  useLayoutEffect(() => {
+    const bar = toolbar.current, limit = fitLimit.current;
+    if (!portrait || !bar || !limit) return;
+    const hud = bar.parentElement!;
+    const prompt = hud.querySelector<HTMLElement>(".prompt.touch");
+    const jump = hud.querySelector<HTMLElement>(".jump-btn");
+    const update = () => {
+      const style = getComputedStyle(bar);
+      const size = parseFloat(style.getPropertyValue("--tool-size"));
+      const gap = parseFloat(style.getPropertyValue("--tool-gap"));
+      // The column ends at its top offset + one button per row + the gaps between them. Leave 12 px above the controls.
+      const end = bar.offsetTop + rows * size + (rows - 1) * gap;
+      const clearUntil = Math.min(limit.getBoundingClientRect().bottom, prompt?.offsetTop ?? Infinity, jump?.offsetTop ?? Infinity);
+      setTwoColumns(end + 12 > clearUntil);
+    };
+    const observer = new ResizeObserver(update);
+    observer.observe(limit);
+    if (prompt) observer.observe(prompt);
+    update();
+    return () => observer.disconnect();
+  }, [portrait, riding, rows, hasTouchPrompt]);
   const [menuOpen, setMenuOpen] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const keepOpen = () => {
@@ -125,27 +164,47 @@ function Toolbar({ riding }: { riding: boolean }) {
     else keepOpen();
     setMenuOpen(!open);
   };
+  const course = COURSE_URL && <a className="icon-btn course-link" href={COURSE_URL} title="Grįžti į kursą" aria-label="Grįžti į kursą"><Icon name="home" size={25} /></a>;
   const lightMode = (
     <button className="icon-btn light-mode-btn" onClick={() => switchPlayMode("light")} title="Lengvas režimas" aria-label="Lengvas režimas">
       <span aria-hidden>LR</span>
       <span className="toolbar-tooltip" aria-hidden>Lengvas režimas</span>
     </button>
   );
+  const menu = riding && <button className="icon-btn ride-menu" onClick={toggleMenu} title="Meniu" aria-label="Meniu" aria-expanded={open} aria-controls="town-tools">
+    <Icon name="menu" size={25} />
+    {!!due && <span className="due-badge" aria-hidden>{due}</span>}
+  </button>;
+  const actions = <>
+    <ToolButton icon="clapper" title="Visos situacijos" panel="scenarios" />
+    <ToolButton icon="map" title="Žemėlapis (M)" panel="map" hotkey="M" />
+    <ToolButton icon="journal" title="Užduotys (J)" panel="journal" hotkey="J" />
+    <ToolButton icon="smartphone" title="Telefonas (P)" panel="phone" hotkey="P" />
+    <ToolButton icon="bookOpen" title="Frazių knygelė" panel="phrasebook" badge={due} />
+    <ToolButton icon="settings" title="Nustatymai (Esc)" panel="settings" />
+    <SectionHelpButton />
+  </>;
+  const className = "toolbar" + (hasRadio ? " has-radio" : "") + (riding ? " in-ride" : "") + (open ? " menu-open" : "");
+  const folded = riding && !open;
+  if (portrait) return (
+    <div ref={toolbar} className={className + " portrait-toolbar" + (twoColumns ? " two-columns" : "")} onKeyDown={activateHudButton}>
+      {menu}
+      <div className="toolbar-fit-limit" ref={fitLimit} aria-hidden />
+      <div className="toolbar-drawer" id="town-tools" style={{ "--drawer-rows": drawerRows.split } as CSSProperties} onClick={open ? keepOpen : undefined}>
+        <div className="toolbar-tools">
+          <div className="toolbar-actions" inert={folded}>{actions}</div>
+          <RadioTool />
+        </div>
+        <div className="toolbar-shortcuts" inert={folded}>{lightMode}{course}</div>
+      </div>
+    </div>
+  );
   return (
-    <div className={"toolbar" + (hasRadio ? " has-radio" : "") + (riding ? " in-ride" : "") + (open ? " menu-open" : "")} onKeyDown={activateHudButton}>
-      {riding && <button className="icon-btn ride-menu" onClick={toggleMenu} title="Meniu" aria-label="Meniu" aria-expanded={open} aria-controls="town-tools">
-        <Icon name="menu" size={25} />
-        {!!due && <span className="due-badge" aria-hidden>{due}</span>}
-      </button>}
-      <div className="toolbar-tools" id="town-tools" inert={riding && !open} onClick={open ? keepOpen : undefined}>
-        {COURSE_URL && <a className="icon-btn" href={COURSE_URL} title="Grįžti į kursą" aria-label="Grįžti į kursą"><Icon name="home" size={25} /></a>}
-        <ToolButton icon="clapper" title="Visos situacijos" panel="scenarios" />
-        <ToolButton icon="map" title="Žemėlapis (M)" panel="map" hotkey="M" />
-        <ToolButton icon="journal" title="Užduotys (J)" panel="journal" hotkey="J" />
-        <ToolButton icon="smartphone" title="Telefonas (P)" panel="phone" hotkey="P" />
-        <ToolButton icon="bookOpen" title="Frazių knygelė" panel="phrasebook" badge={due} />
-        <ToolButton icon="settings" title="Nustatymai (Esc)" panel="settings" />
-        <SectionHelpButton />
+    <div className={className} onKeyDown={activateHudButton}>
+      {menu}
+      <div className="toolbar-tools" id="town-tools" inert={folded} onClick={open ? keepOpen : undefined}>
+        {course}
+        {actions}
         {riding && lightMode}
       </div>
       <div className="toolbar-extra" onClick={open ? keepOpen : undefined}>

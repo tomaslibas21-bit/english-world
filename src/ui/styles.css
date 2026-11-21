@@ -846,6 +846,44 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .sheet-ico { width: 36px; height: 36px; border-radius: 11px; }
   .sheet-body { padding: 14px 14px 18px; }
 }
+@media (max-width: 600px) and (orientation: portrait) {
+  .hud { --portrait-tool-size: 44px; --portrait-tool-gap: 4px; }
+  .toolbar.portrait-toolbar {
+    --tool-size: var(--portrait-tool-size); --tool-gap: var(--portrait-tool-gap);
+    flex-direction: column; align-items: flex-end;
+  }
+  /* Reserve the prompt's 132 px bottom offset, 16 px padding, 2 px border, 2 px above the translation and
+     two title lines plus one translation line at the prompt's 0.95em × 1.2 line height (translation: 0.74em).
+     A ride reserves 26 + 92 px for the exit button. The safe-area inset applies in both cases. */
+  .toolbar-fit-limit {
+    position: fixed; top: 0; bottom: calc(132px + 20px + 3.1236em + env(safe-area-inset-bottom));
+    right: 0; width: 1px; visibility: hidden; pointer-events: none;
+  }
+  .in-ride .toolbar-fit-limit { bottom: calc(118px + env(safe-area-inset-bottom)); }
+  .portrait-toolbar .icon-btn { width: var(--tool-size); height: var(--tool-size); }
+  .portrait-toolbar .toolbar-drawer, .portrait-toolbar .toolbar-shortcuts {
+    display: flex; flex-direction: column; align-items: flex-end; gap: var(--tool-gap);
+  }
+  .toolbar.portrait-toolbar .toolbar-tools { grid-auto-flow: row; grid-auto-rows: var(--tool-size); grid-template-rows: none; }
+  .portrait-toolbar .toolbar-actions { display: contents; }
+  /* Flow the whole drawer down the right column first. Its row count is half the button count, rounded up. */
+  .portrait-toolbar.two-columns .toolbar-drawer {
+    display: grid; grid-auto-flow: column; grid-template-rows: repeat(var(--drawer-rows), var(--tool-size)); direction: rtl;
+  }
+  .portrait-toolbar.two-columns :is(.toolbar-tools, .toolbar-shortcuts) { display: contents; }
+  .portrait-toolbar .toolbar-shortcuts { direction: ltr; }
+  .portrait-toolbar.in-ride .toolbar-drawer { position: absolute; top: calc(var(--tool-size) + var(--tool-gap)); right: 0; }
+  .toolbar.portrait-toolbar.in-ride .toolbar-tools { position: static; opacity: 1; visibility: visible; transform: none; transition: none; }
+  .portrait-toolbar.in-ride .radio-tool { pointer-events: auto; }
+  .portrait-toolbar.in-ride:not(.two-columns) .radio-tool { order: -1; }
+  .portrait-toolbar.in-ride :is(.toolbar-actions, .toolbar-shortcuts) .icon-btn {
+    transform-origin: top right; transition: opacity 160ms ease, transform 160ms ease, visibility 0s linear;
+  }
+  .portrait-toolbar.in-ride:not(.menu-open) .toolbar-drawer { pointer-events: none; }
+  .portrait-toolbar.in-ride:not(.menu-open) :is(.toolbar-actions, .toolbar-shortcuts) .icon-btn {
+    opacity: 0; visibility: hidden; transform: scale(0.96); transition-delay: 0s, 0s, 160ms;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .yt-title.phase-you b::before, .ended-badge, .sheet, .objective-card.fresh, .nat-tipbox { animation: none; }
   .nat-star { transition: none; }
@@ -854,6 +892,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .map-pin { transition: none; }
   .map-pin:hover { transform: translate(-50%, -50%); }
   .toolbar.in-ride .toolbar-tools { transition: none; }
+  .portrait-toolbar.in-ride :is(.toolbar-actions, .toolbar-shortcuts) .icon-btn { transition: none; }
 }
 
 /* Illustrated conversation scenes: above the 3D view and HUD, below the conversation panel */
@@ -1040,11 +1079,13 @@ body.scene-on .tag-layer { display: none; }
 .coach-skip { margin-left: auto; background: none; border: 0; color: var(--ink-soft); font-weight: 800; font-size: 0.88em; min-height: 44px; padding: 0 10px; border-radius: 10px; }
 .coach-skip:hover { background: var(--g-hover, rgba(31, 42, 51, 0.06)); }
 .coach-next { min-height: 44px; min-width: 84px; }
-/* On an upright phone the task and note share a column. Leave room for two columns of tools on the right
+/* On an upright phone the task and note share a column. Leave room for the toolbar on the right
    and for the touch controls at the bottom. The card can scroll if large text would push the note too low. */
 @media (max-width: 600px) and (orientation: portrait) {
+  .hud:has(.portrait-toolbar) { --note-tool-width: var(--portrait-tool-size); }
+  .hud:has(.portrait-toolbar.two-columns) { --note-tool-width: calc(2 * var(--portrait-tool-size) + var(--portrait-tool-gap)); }
   .objective-notes {
-    --note-right: calc(max(10px, env(safe-area-inset-right)) + 46px + 10px + 46px + 16px);
+    --note-right: calc(max(10px, env(safe-area-inset-right)) + var(--note-tool-width, 102px) + 16px);
     --note-width: calc(100vw - var(--card-left) - var(--note-right));
     position: absolute; top: var(--card-top); left: var(--card-left); width: calc(100vw - 120px);
     display: flex; flex-direction: column; max-height: calc(100dvh - var(--card-top) - 170px - env(safe-area-inset-bottom));
@@ -1055,6 +1096,8 @@ body.scene-on .tag-layer { display: none; }
     position: static; width: var(--note-width); margin: 12px 0 0; min-height: 0; transform: none;
   }
   .objective-notes .town-toasts:empty { margin: 0; }
+  /* With a folded card the toast and guide start alongside the map, which can be 100 px wide indoors. */
+  .objective-notes.task-folded :is(.town-toasts, .coach) { max-width: calc(100vw - 2 * var(--card-left) - 108px); }
   .objective-notes .town-toasts .toast { min-height: 0; overflow: auto; animation-name: note-in; }
   .objective-notes .zone-banner { text-align: left; overflow: hidden; overflow-wrap: anywhere; animation-name: note-in; }
   .objective-notes .zone-banner h2 { line-height: 1.08; }

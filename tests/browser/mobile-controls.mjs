@@ -97,7 +97,8 @@ for (const [name, engine] of [
             right: lr.right,
             left: lr.left,
           },
-          bottom: Math.max(...tools.map((r) => r.bottom)),
+          followsTools: tools.every((r) => lr.top >= r.bottom + 4 || (el.classList.contains("two-columns") && lr.left < r.left)),
+          bottom: Math.max(lr.bottom, ...tools.map((r) => r.bottom)),
           top: Math.min(...tools.map((r) => r.top)),
           movement: movement?.top,
           height: innerHeight,
@@ -105,8 +106,8 @@ for (const [name, engine] of [
         };
       });
       check(
-        `${label}: LR is below all tools and on screen`,
-        layout.lr.top >= layout.bottom + 4 &&
+        `${label}: LR follows the town tools and is on screen`,
+        layout.followsTools &&
           layout.lr.bottom <= height &&
           layout.lr.right <= width &&
           layout.lr.left >= 0 &&
@@ -115,7 +116,7 @@ for (const [name, engine] of [
       );
       check(
         `${label}: toolbar stays clear of movement controls`,
-        !layout.movement || layout.lr.bottom < layout.movement,
+        !layout.movement || layout.bottom < layout.movement,
         layout,
       );
       const selectable = await page
