@@ -5,10 +5,10 @@ import { useSurf } from "../game/surf/store";
 import { SurfOverlay, SurfPicker } from "./Surf";
 import { game } from "../game/gameRef";
 import { WORLD, SEA_Z } from "../game/world/layout";
-import { LOCATIONS } from "../content/locations";
 import { SITUATION_BY_ID } from "../content/situations/catalog";
 import { sitProgress, stars } from "../state/progress";
-import { Icon, InlineIcon, Stars, iconForEmoji, splitLead, type IconName } from "./icons";
+import { Icon, InlineIcon, Stars, splitLead, type IconName } from "./icons";
+import { isPhone } from "./objective";
 import { drawRideMarks } from "./mapMarks";
 import { switchPlayMode } from "./playMode";
 import { useCards, dueCards } from "../state/cards";
@@ -167,7 +167,7 @@ function Objective() {
     );
   }
   const sit = SITUATION_BY_ID[o.sitId];
-  const phone = sit?.mode === "phone" || sit?.mode === "video" || sit?.location === "phone";
+  const phone = sit && isPhone(sit);
   const st = stars(sitProgress(progress, o.sitId));
   return (
     <div className={"objective-card" + (collapsed ? " collapsed" : "") + (fresh ? " fresh" : "")}>
@@ -349,6 +349,3 @@ function TouchControls() {
     </>
   );
 }
-
-/** The icon of a place (its emoji in the location data, drawn as one of our icons). */
-export function locIcon(id: string): IconName { return iconForEmoji(LOCATIONS[id]?.icon) ?? "pin"; }

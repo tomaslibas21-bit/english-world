@@ -351,6 +351,7 @@ export class Character {
   private head = new THREE.Group();
   private armL = new THREE.Group();
   private armR = new THREE.Group();
+  readonly rightHand = new THREE.Group();
   /** The forearms with their hands, on the elbows. */
   private foreL = new THREE.Group();
   private foreR = new THREE.Group();
@@ -561,6 +562,9 @@ export class Character {
     this.energy = THREE.MathUtils.clamp(trait(look, 1) * 1.1 - this.stoop * 0.35, 0, 1);
     this.breathRate = 1.35 + trait(look, 2) * 0.6 - this.stoop * 0.15;
     this.swayRate = 0.38 + trait(look, 4) * 0.3;
+    this.rightHand.position.set(0.025 * b, -HAND * h, 0.075 * b);
+    this.rightHand.rotation.x = 1.05;
+    this.foreR.add(this.rightHand);
     // from here on the parts are bones of one mesh
     const bone = this.bake();
     this.iris = bone(this.iris); this.lids = bone(this.lids);
@@ -1302,7 +1306,10 @@ export class Character {
    *  place. */
   private bake() {
     const fresh: THREE.Object3D[] = [];
+    // Held props remain independent of the character's skinned mesh.
+    this.rightHand.removeFromParent();
     this.body.traverse((o) => { if ((o as THREE.Mesh).isMesh || (o.userData.joint && !this.parts.some((p) => p.bone === o))) fresh.push(o); });
+    this.foreR.add(this.rightHand);
     const swap = new Map<THREE.Object3D, THREE.Object3D>();
     for (const o of fresh) {
       if (!(o as THREE.Mesh).isMesh) { this.parts.push({ bone: o, geo: null }); continue; }
@@ -1730,6 +1737,12 @@ export class Character {
       headTurn += (1.05 - headTurn) * stand;
       headNod *= 1 - stand;
       this.body.position.y -= (0.66 * h * (1 - Math.cos(k)) + 0.05) * stand;
+    }
+    if (this.rightHand.children.length) {
+      rx = -0.26 + rx * 0.17;
+      rz = 0.18;
+      rf = -0.79;
+      rfy = rfz = 0;
     }
     this.armL.rotation.set(lx, 0, lz);
     this.armR.rotation.set(rx, 0, rz);

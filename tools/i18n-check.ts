@@ -7,9 +7,11 @@ import path from "node:path";
 import { STRINGS } from "../src/editions/es/ui/strings";
 
 // AudioDiagnostics.tsx (?audioDebug=1, the owner's iPhone audio check) is shown in the English edition only (App.tsx).
+// lt.ts and lt-lithuanian.ts contain language rules and data for the interface.
+const UI_EXCLUDED = new Set(["strings.ts", "i18n.ts", "lt.ts", "lt-lithuanian.ts", "AudioDiagnostics.tsx"]);
 const ROOT = path.resolve(import.meta.dirname, "..");
 const FILES = [
-  ...readdirSync(path.join(ROOT, "src/ui")).filter((f) => /\.(tsx?|ts)$/.test(f) && f !== "strings.ts" && f !== "i18n.ts" && f !== "lt.ts" && f !== "AudioDiagnostics.tsx").map((f) => `src/ui/${f}`),
+  ...readdirSync(path.join(ROOT, "src/ui")).filter((f) => /\.(tsx?|ts)$/.test(f) && !UI_EXCLUDED.has(f)).map((f) => `src/ui/${f}`),
   ...["src/game/Game.ts", "src/game/LightGame.ts", "src/game/given.ts", "src/game/session.ts", "src/game/convEvents.ts", "src/game/ambient.ts", "src/game/coach.ts",
     "src/state/store.ts", "src/state/cards.ts", "src/state/progress.ts", "src/convo/suggest.ts"],
 ];

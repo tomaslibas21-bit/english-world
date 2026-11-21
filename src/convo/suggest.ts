@@ -1,4 +1,5 @@
 import { EDITION } from "../edition";
+import { L } from "../ui/i18n";
 // Help with speaking, as pure functions (no store, no DOM; tests/suggest.test.ts):
 //
 // "Did you mean…?" — when an answer isn't understood, the model answers of the learner's current
@@ -37,16 +38,13 @@ export interface AnswerOpts {
  *  name: recognition uses playerVars. */
 export const EXAMPLE_PLAYER = EDITION.simPlayer;
 export const exampleVars = (): Record<string, string> => ({ name: EXAMPLE_PLAYER.name, surname: EXAMPLE_PLAYER.surname, letters: EXAMPLE_PLAYER.surname });
-const OWN_NOTE = {
-  lt: { name: "Pasakyk savo vardą.", surname: "Pasakyk savo pavardę.", both: "Pasakyk savo vardą ir pavardę.", letters: "Pasakyk savo pavardę paraidžiui." },
-  en: { name: "Say your own name.", surname: "Say your own last name.", both: "Say your own first and last name.", letters: "Spell your own last name." },
-};
 /** The note for a line that has the learner's name in it ("Pasakyk savo vardą."), in the learner's own language. */
 export function ownNameNote(src: string): string | undefined {
   const n = /\{\$name\b/.test(src), sn = /\{\$surname\b/.test(src), l = /\{\$letters\b/.test(src);
   if (!n && !sn && !l) return undefined;
-  const t = OWN_NOTE[EDITION.helper.startsWith("lt") ? "lt" : "en"];
-  return l ? t.letters : n && sn ? t.both : n ? t.name : t.surname;
+  if (l) return L("Pasakyk savo pavardę paraidžiui.");
+  if (n && sn) return L("Pasakyk savo vardą ir pavardę.");
+  return n ? L("Pasakyk savo vardą.") : L("Pasakyk savo pavardę.");
 }
 
 /** The learner's name for model answers ("My name is Tomas."). */

@@ -68,7 +68,7 @@ export class LightGame implements GameApi {
     // the voices (the first time) and the conversation's own file (src/content/situations/catalog.ts)
     const def = getSituation(sitId);
     if (def && (this.loaded || !this.loading)) { go(def); return; }
-    const slow = setTimeout(() => useStore.getState().toast({ kind: "info", title: L(def ? "Ruošiami balsai…" : "Kraunamas pokalbis…"), ms: 2500 }), 500);
+    const slow = setTimeout(() => useStore.getState().toast({ kind: "info", title: def ? L("Ruošiami balsai…") : L("Kraunamas pokalbis…"), ms: 2500 }), 500);
     Promise.all([loadSituation(sitId), this.loaded ? null : this.loading]).then(
       ([d]) => { clearTimeout(slow); go(d); },
       () => { clearTimeout(slow); useStore.getState().toast({ kind: "info", title: L("Nepavyko atsisiųsti pokalbio"), body: L("Patikrink interneto ryšį ir pabandyk dar kartą.") }); },

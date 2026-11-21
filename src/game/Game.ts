@@ -13,6 +13,8 @@ import { Ledges, LAND } from "./ledges";
 import { coach } from "./coach";
 import { Wading, Splashes, floorY, waterY, bayHold, SEA_LEVEL, SHORE, SWIM, BAY } from "./water";
 import { Rides, type Ride } from "./rides/Rides";
+import { KeepsakeInHand } from "./keepsake";
+import { keepsakeFor } from "../content/keepsakes";
 import { Undersea } from "./rides/undersea";
 import { CAR_DRIFT, BOAT_DRIFT, controlsFrom } from "./rides/drive";
 import { RIDES } from "./world/rides";
@@ -149,6 +151,8 @@ export class Game implements GameApi {
   zone!: ZoneState;
   private zones = new Map<string, ZoneState>();
   player!: GameCharacter;
+  private keepsake = new KeepsakeInHand();
+  keepsakeKind() { return this.keepsake.kind; }
   private npcs: NpcActor[] = [];
   /** The room's townspeople (roomPeople.ts) and the pairs of them talking. */
   private extras: GameCharacter[] = [];
@@ -874,6 +878,7 @@ export class Game implements GameApi {
     this.surface(true);
     this.player.bank = 0;
     if (!this.rides.board(r)) return;
+    this.keepsake.clear();
     this.ambient.riding = r.kind === "car";
     this.nearest = null;
     this.brake = false;
@@ -1252,6 +1257,7 @@ export class Game implements GameApi {
   }
 
   private startSession(sit: SituationDef, actor: NpcActor | null) {
+    this.keepsake.clear();
     this.cancelRide();
     // a hop ends at once, and the player's own walk gives way to the conversation's stop (as it always was)
     this.hop.land(this.hop.ground); this.applyHop();
@@ -1628,6 +1634,9 @@ export class Game implements GameApi {
     this.rig.cam.clearViewOffset();
     // the person stays turned to the player and turns back home in their own time (updateNpcs)
     this.talkNpc = null;
+    if (completed && !this.swimming && !this.rides.riding && !this.surf?.active && !this.pendingSurf && !this.pendingSurfPick) {
+      this.keepsake.show(this.player.rightHand, keepsakeFor(sit.id));
+    }
     if (this.pendingRide) { const r = this.pendingRide; this.pendingRide = null; this.ride(r.to, r.by); }
     // (the conversation's yes starts the lesson at its level as it closes, however it is closed but by picking another
     // conversation (cancelRide); the end card's "Surf lesson" too, or the level's choice without a yes)
@@ -1666,6 +1675,7 @@ export class Game implements GameApi {
     const st = useStore.getState();
     const dest = by === "plane" ? AIRPORT_EXIT : this.arrivalPoint(to);
     if (!dest) return;
+    this.keepsake.clear();
     const banner = by === "plane" ? { title: "✈️ " + L("Gero skrydžio!"), sub: L("…ir sveiki sugrįžę į Maple Harbor") }
       : { title: by === "bus" ? "🚌 " + L("Važiuojame autobusu…") : "🚕 " + L("Važiuojame…"), sub: LOCATIONS[to]?.name };
     st.setHud({ fade: 1, zoneBanner: banner });
@@ -1832,6 +1842,7 @@ export class Game implements GameApi {
     }
     const blocked = talking || !!st.hud.panel || !!st.hud.glyph || this.transitioning || useSurf.getState().picking || !!this.flight;
     this.updatePlayer(dt, blocked, this.transitioning && !talking && !st.hud.panel && !st.hud.glyph && !surfing);
+    this.keepsake.tick();
     // (what one can drive: its people, the way back to its curb; at the wheel it is moved from updatePlayer)
     const riding = this.rides.riding;
     if (!riding) this.rides.update(dt, this.t, null);
@@ -2068,6 +2079,7 @@ export class Game implements GameApi {
 
   /** Onto the surfboard: whatever the player was doing on foot stops there. */
   private onSurf() {
+    this.keepsake.clear();
     this.endRide();
     this.autoPath = null; this.autoTarget = null;
     this.steer.reset(); this.gaitOn = false; this.stepOut = 0; this.jogT = 0;
@@ -2262,6 +2274,7 @@ export class Game implements GameApi {
     // deep enough, and in it (someone who jumps off the pier swims once their feet are under): they float and swim
     const wasSwimming = this.swimming;
     this.swimming = !through && over > (wasSwimming ? SWIM.out : SWIM.depth) && this.hop.y < surface - 0.3;
+    if (this.swimming && !wasSwimming) this.keepsake.clear();
     let landed = 0;
     if (this.swimming) {
       // the chest at the surface, the body along it (Character.swim); on a dive, under, but clear of the bed
@@ -2647,6 +2660,7 @@ export class Game implements GameApi {
   }
 
   dispose() {
+    this.keepsake.dispose();
     this.disposed = true;
     useStore.getState().setHud({ coach: null });
     this.renderer.setAnimationLoop(null);

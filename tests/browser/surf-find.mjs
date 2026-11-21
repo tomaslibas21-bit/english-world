@@ -123,10 +123,10 @@ try {
     check(`${label}: after her "¿Probamos una ola?" and a yes, the button starts the lesson at its level`, lvl === "advanced", lvl);
     await page.evaluate(() => window.__ew.game.surfStop());
     await real(700); await step(30);
-    // "Tęsti" after a yes starts it too; "Kita situacija" after a yes does not
+    // "Tęsti" after a yes starts it too; restarting the conversation clears the queued lesson.
     await endCard();
     await page.evaluate(() => window.__ew.game.onSessionEvent("surf", { level: "beginner" }));
-    await page.locator(".ended-main .btn").first().click();
+    await page.locator(".ended-secondary .btn").first().click();
     for (let i = 0; i < 80 && !(await page.evaluate(() => !!window.__ew.game.surf.logic)); i++) { await step(4); await real(25); }
     lvl = await page.evaluate(() => window.__ew.game.surf.logic?.level ?? null);
     check(`${label}: after a yes, "Continue" starts the lesson too`, lvl === "beginner", lvl);
@@ -134,9 +134,9 @@ try {
     await real(700); await step(30);
     await endCard();
     await page.evaluate(() => window.__ew.game.onSessionEvent("surf", { level: "beginner" }));
-    await page.locator(".ended-main .btn").nth(1).click();
+    await page.locator(".ended-secondary .btn").last().click();
     for (let i = 0; i < 60; i++) { await step(4); await real(15); }
-    check(`${label}: "Next situation" after a yes goes there, with no lesson`, !(await page.evaluate(() => !!window.__ew.game.surf.logic || window.__ew.store.getState().hud.ride === "surf")));
+    check(`${label}: restarting after a yes starts no lesson`, !(await page.evaluate(() => !!window.__ew.game.surf.logic || window.__ew.store.getState().hud.ride === "surf")));
     // any other conversation's end card has no such button
     await page.evaluate(() => { const g = window.__ew.game; g.activeSession?.close(); });
     await step(20);

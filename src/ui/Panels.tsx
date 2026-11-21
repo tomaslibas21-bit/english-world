@@ -3,10 +3,11 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { picturesOn, useStore } from "../state/store";
 import { game } from "../game/gameRef";
 import { switchPlayMode } from "./playMode";
-// (the route: the town's conversations; the ones off it, SituationDef.bonus, are not listed or counted)
-import { SITUATION_BY_ID } from "../content/situations/catalog";
+// The route is the town's tasks. Off-route conversations appear in the journal once completed.
+import { SITUATION_BY_ID, SITUATIONS as CATALOG } from "../content/situations/catalog";
 import { ROUTE as SITUATIONS } from "../content/route";
 import { LOCATIONS, TOWN_LT, placeLt } from "../content/locations";
+import { keepsakeFor } from "../content/keepsakes";
 import { NPCS } from "../content/npcs";
 import { coachVoice } from "../content/voices";
 import { OUTDOOR_NPCS, WORLD, SEA_Z, AIRPORT_EXIT } from "../game/world/layout";
@@ -15,8 +16,8 @@ import { audio } from "../game/audio";
 import { STYLES_ENABLED } from "../game/worldStyles";
 import { speechSupported, localAvailability, installLocal, refreshLocalState, type LocalAvailability } from "../convo/speech";
 import { avatarColor } from "./Conversation";
-import { locIcon } from "./Hud";
-import { Icon, InlineIcon, Stars, type IconName } from "./icons";
+import { isPhone, locIcon, sitIcon, walkToSituation } from "./objective";
+import { Icon, InlineIcon, KeepsakeIcon, Stars, type IconName } from "./icons";
 import type { SituationMeta } from "../content/types";
 import { useCards, cardKey, dueCards, ipaFor, type CardInput } from "../state/cards";
 import { MyCards, Glyph } from "./Cards";
@@ -32,19 +33,12 @@ import { SURF } from "../content/surf";
 
 export const CHAPTERS: Record<number, string> = { 1: L("Atvykimas"), 2: L("Pirmosios dienos mieste"), 3: L("Įsikūrimas"), 4: L("Darbas"), 5: L("Žmonės"), 6: L("Kelionės"), 7: L("Pagalba"), 8: L("Pažengusiems"), 9: L("Gyva kalba") };
 
-/** The icon of a situation: the phone or camera for calls, else its place. */
-function sitIcon(s: SituationMeta): IconName {
-  return isPhone(s) ? (s.mode === "video" ? "video" : "phoneCall") : locIcon(s.location);
-}
-
 /** The NPC shown for a situation (the date is with the partner the player chose). */
 function mainNpc(s: SituationMeta) {
   if (s.npc !== "sam" && s.npc !== "emma") return NPCS[s.npc];
   const p = useStore.getState().progress.profile;
   return NPCS[p?.datePartner ?? (p?.gender === "f" ? "sam" : "emma")];
 }
-
-function isPhone(s: SituationMeta) { return s.mode === "phone" || s.mode === "video" || s.location === "phone"; }
 
 /** The Spanish edition: Mexican Spanish (the default), neutral Latin American Spanish or Spain's Spanish
  *  (docs/es/STYLE.md). Its words are English: it is only shown in that edition. */
@@ -137,7 +131,7 @@ function SitActions({ s, close }: { s: SituationMeta; close: () => void }) {
         <button className="btn warm small" onClick={() => { close(); game?.call(s.id); }}><Icon name="smartphone" size={17} /> {L("Skambinti dabar")}</button>
       ) : (
         <>
-          <button className="btn soft small" onClick={() => { game?.setObjective(s.id); close(); setTimeout(() => game?.autoWalkToObjective(), 50); }}><Icon name="walk" size={17} /> {L("Nuvesk mane")}</button>
+          <button className="btn soft small" onClick={() => walkToSituation(s.id, close)}><Icon name="walk" size={17} /> {L("Nuvesk mane")}</button>
           <button className="btn ghost small" onClick={() => { game?.setObjective(s.id); close(); game?.teleportTo(s.location); }}><Icon name="taxi" size={17} /> {L("Nuvykti taksi")}</button>
         </>
       )}
@@ -145,19 +139,21 @@ function SitActions({ s, close }: { s: SituationMeta; close: () => void }) {
   );
 }
 
-function SitCard({ s, onClick, open }: { s: SituationMeta; onClick: () => void; open: boolean }) {
+function SitCard({ s, onClick, open }: { s: SituationMeta; onClick?: () => void; open?: boolean }) {
   const progress = useStore((st) => st.progress);
   const sp = sitProgress(progress, s.id);
   const loc = LOCATIONS[s.location];
+  const Row = onClick ? "button" : "div";
   return (
-    <button className={"sit-card" + (progress.objective === s.id ? " current" : "")} data-sit={s.id} onClick={onClick} aria-expanded={open}>
+    <Row className={"sit-card" + (progress.objective === s.id ? " current" : "")} data-sit={s.id} onClick={onClick} aria-expanded={open}>
       <span className="ico"><Icon name={locIcon(s.location)} size={24} /></span>
       <span className="txt">
         <b>{s.title.lt}</b>
         <span><i style={{ fontFamily: "var(--en)", fontSize: "1.1em" }}>{s.title.en}</i> · {loc?.lt}{s.song !== "" && <> · {L("daina {song}", { song: s.song })}</>}</span>
       </span>
+      {sp.completions > 0 && <KeepsakeIcon kind={keepsakeFor(s.id)} named />}
       <Stars n={stars(sp)} />
-    </button>
+    </Row>
   );
 }
 
@@ -267,7 +263,7 @@ function Journal({ close }: { close: () => void }) {
   const [open, setOpen] = useState<string | null>(useStore.getState().progress.objective);
   const byCh = useMemo(() => {
     const m = new Map<number, SituationMeta[]>();
-    for (const s of [...SITUATIONS].sort((a, b) => a.chapter - b.chapter || a.order - b.order)) {
+    for (const s of [...CATALOG].sort((a, b) => a.chapter - b.chapter || a.order - b.order)) {
       const l = m.get(s.chapter) ?? []; l.push(s); m.set(s.chapter, l);
     }
     return [...m.entries()];
@@ -286,14 +282,15 @@ function Journal({ close }: { close: () => void }) {
             three: <Stars n={3} of={3} size="1.05em" label={L("3 žvaigždutės")} />,
           })}
         </div>
-        {byCh.map(([ch, list]) => (
+        {byCh.map(([ch, list]) => [ch, list.filter((s) => !s.bonus || sitProgress(progress, s.id).completions > 0)] as const)
+          .filter(([, list]) => list.length > 0).map(([ch, list]) => (
           <div className="chapter" key={ch}>
             <h3>{ch}. {CHAPTERS[ch] ?? ""}</h3>
             <div className="sit-list">
               {list.map((s) => (
                 <div key={s.id}>
-                  <SitCard s={s} open={open === s.id} onClick={() => setOpen(open === s.id ? null : s.id)} />
-                  {open === s.id && (
+                  {s.bonus ? <SitCard s={s} /> : <SitCard s={s} open={open === s.id} onClick={() => setOpen(open === s.id ? null : s.id)} />}
+                  {!s.bonus && open === s.id && (
                     <div style={{ padding: "8px 6px 4px" }}>
                       <div style={{ color: "var(--ink-soft)", lineHeight: 1.45 }}>{s.goal}</div>
                       <div style={{ fontSize: "0.85em", color: "var(--ink-faint)", marginTop: 4 }}>{mainNpc(s)?.name} · {mainNpc(s)?.role.lt}</div>

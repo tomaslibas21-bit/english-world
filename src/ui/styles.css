@@ -335,12 +335,12 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .gx .il.plain { line-height: 1.25; }
 .gx .u .ipa { font-size: 0.6em; }
 .gx .nat { font-size: 0.84em; margin-top: 6px; padding: 1px 0 1px 9px; }
-.gx .play, .hint-row .play {
+.gx .play, .hint-row .play, .ended-phrase .play {
   flex: none; border: 0; background: var(--accent-soft); color: var(--accent); width: 40px; height: 40px; border-radius: 50%;
   display: grid; place-items: center; cursor: pointer; transition: background-color 0.15s, color 0.15s, box-shadow 0.15s, transform 0.1s;
 }
-.gx .play:hover, .hint-row .play:hover { background: var(--accent); color: #fff; box-shadow: 0 5px 12px -5px rgba(31, 111, 120, 0.7); }
-.gx .play:active, .hint-row .play:active { transform: scale(0.93); }
+.gx .play:hover, .hint-row .play:hover, .ended-phrase .play:hover { background: var(--accent); color: #fff; box-shadow: 0 5px 12px -5px rgba(31, 111, 120, 0.7); }
+.gx .play:active, .hint-row .play:active, .ended-phrase .play:active { transform: scale(0.93); }
 .gx-en { font-family: var(--en); font-size: 1.28em; line-height: 1.2; color: var(--ink); }
 .guide-alt { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; font-size: 0.85em; color: var(--ink-faint); padding-top: 8px; border-top: 1px dashed #eadfcc; }
 .guide-alt span { font-weight: 700; }
@@ -516,15 +516,56 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .miss-box { background: #fff; border: 1.5px dashed #e3c38f; border-radius: 14px; padding: 10px 12px; margin-bottom: 10px; font-size: 0.92em; }
 .miss-box .heard { font-family: var(--en); font-size: 1.15em; }
 .miss-box .acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
-.ended-box { text-align: center; padding: 16px 14px 12px; }
+.convo[data-phase="ended"] .transcript { flex: 1 1 0; min-height: 0; }
+.convo[data-phase="ended"] .ended-box {
+  flex: 0 1 auto; max-height: none; overflow-y: auto;
+  align-items: center; gap: 7px; text-align: center; padding: 10px 14px max(8px, env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, #fffcf5, #fbf6ee);
+}
+.ended-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 7px; }
 .ended-badge {
-  width: 50px; height: 50px; margin: 0 auto 8px; border-radius: 50%; display: grid; place-items: center; color: #fff;
-  background: linear-gradient(160deg, #3bb58c, var(--good)); box-shadow: 0 0 0 5px #e0f2ec, 0 8px 18px -8px rgba(42, 157, 143, 0.8);
+  width: 25px; height: 25px; flex: none; border-radius: 50%; display: grid; place-items: center; color: #fff;
+  background: linear-gradient(160deg, #3bb58c, var(--good)); box-shadow: 0 0 0 3px #e0f2ec;
   animation: pop 0.45s cubic-bezier(.2,.9,.3,1.4);
 }
 @keyframes pop { from { transform: scale(0.6); opacity: 0; } }
-.ended-title { font-weight: 900; font-size: 1.12em; margin-bottom: 6px; }
-.ended-sub { color: var(--ink-soft); margin-bottom: 8px; }
+.ended-title { margin: 0; font-weight: 900; font-size: 1.16em; line-height: 1.2; }
+.ended-phrase, .ended-destination {
+  width: min(100%, 450px); align-items: center; gap: 9px; text-align: left;
+  border: 1px solid var(--line); border-radius: 15px; padding: 6px 10px;
+}
+.ended-phrase { display: flex; background: #fff; justify-content: space-between; }
+.ended-phrase > div { min-width: 0; }
+.ended-phrase-label { color: var(--accent); font-weight: 800; font-size: 0.8em; line-height: 1.25; }
+.ended-phrase-target { font: 600 1.24em/1.15 var(--en); overflow-wrap: anywhere; }
+.ended-phrase .nat { margin-top: 3px; padding-block: 0; font-size: 0.84em; line-height: 1.25; }
+.ended-phrase .play { width: 44px; height: 44px; }
+.ended-rewards { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 3px 10px; line-height: 1.2; }
+.ended-keepsake { display: flex; align-items: center; gap: 5px; color: #765119; font-size: 0.88em; font-weight: 800; }
+.keepsake-icon { color: #946021; flex: none; }
+.ended-sub { color: var(--ink-soft); font-size: 0.75em; }
+.ended-destination {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
+  background: var(--accent-soft); border-color: transparent;
+}
+.ended-destination .place-ico { background: #fff; width: 34px; height: 34px; border-radius: 10px; }
+.ended-destination > div { line-height: 1.16; overflow-wrap: normal; word-break: normal; hyphens: none; }
+.ended-destination b span { white-space: nowrap; }
+.ended-destination small { display: block; margin-top: 3px; color: var(--ink-soft); line-height: 1.22; }
+.ended-destination .btn { padding-inline: 0.8em; font-size: 0.88em; }
+.ended-box .sit-actions { justify-content: center; margin: 0; }
+.ended-box .ended-secondary { gap: 4px; }
+.ended-secondary .btn { padding-inline: 0.65em; white-space: nowrap; }
+.ended-box .copy-link { margin: 0; padding-block: 2px; }
+@container (max-width: 430px) {
+  .convo[data-phase="ended"] .ended-box { gap: 5px; padding-inline: 12px; }
+  .ended-title { font-size: 1.07em; }
+  .ended-phrase { padding-block: 5px; }
+  .ended-destination { grid-template-columns: auto minmax(0, 1fr); row-gap: 6px; }
+  .ended-destination .btn { grid-column: 1 / -1; }
+  .ended-secondary .btn { font-size: 0.8em; padding-inline: 0.55em; }
+  .ended-secondary .ui-icon { width: 15px; height: 15px; }
+}
 /* in the town: "Tęsti" and "Kita situacija" side by side, the same size (one above the other on a narrow phone);
    the smaller ones under them */
 .ended-main { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 10px; }
@@ -532,6 +573,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 /* the surf school's end card: the lesson first, wide, in the beach's turquoise */
 .btn.surf-cta { display: flex; width: min(450px, 100%); margin: 12px auto 0; justify-content: center; min-height: 52px; font-size: 1.08em; background: linear-gradient(160deg, #2ec4b6, #17a2a2); color: #fff; box-shadow: 0 4px 14px rgba(23, 162, 162, 0.4); }
 .btn.surf-cta:hover { filter: brightness(1.06); }
+.ended-box .surf-cta { margin: 0; min-height: 44px; }
 /* a task done: confetti bursts from the task bar (ui/Confetti.tsx) */
 .confetti { position: fixed; width: 0; height: 0; pointer-events: none; z-index: 80; }
 .confetti i {
@@ -589,6 +631,8 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .sit-card .txt { flex: 1; min-width: 0; }
 .sit-card .txt b { display: block; font-size: 1em; }
 .sit-card .txt span { display: block; font-size: 0.82em; color: var(--ink-soft); }
+.sit-card .keepsake-icon { margin-inline: -4px; }
+.sit-card:not(button) { cursor: default; }
 .sheet.scenarios { width: min(1120px, 100%); }
 .scn-lead { margin: 0 0 6px; color: var(--ink-soft); line-height: 1.45; }
 /* The picker's cards (and the pictures-only home's, light.css): the icon with the stars under it on the left, and the
@@ -936,7 +980,7 @@ body.scene-on .tag-layer { display: none; }
   .convo-tools { grid-column: 1 / -1; }
   .convo .transcript { grid-column: 1; min-height: 0; }
   .convo .yourturn { grid-column: 2; min-height: 0; max-height: none; border-left: 1px solid var(--line); }
-  .convo .ended-box { grid-column: 1 / -1; overflow-y: auto; }
+  .convo[data-phase="ended"] .ended-box { grid-column: 2; max-height: none; }
   .convo .mission-list { max-height: 90px; }
   .scene-backdrop img { width: 25vw; height: 100%; bottom: 0; }
   .convo .yt-title { flex-wrap: wrap; }
