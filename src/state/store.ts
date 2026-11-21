@@ -1,6 +1,7 @@
 // UI state shared between the React overlay and the game.
 import { create } from "zustand";
 import type { Sentence } from "../convo/compose";
+import type { BestPhrase } from "../convo/bestPhrase";
 import type { Suggestion, Tip } from "../content/types";
 import type { Look } from "../content/npcs";
 import type { Guess, Practice } from "../convo/suggest";
@@ -90,6 +91,7 @@ export interface ConvUI {
   hostId: string;
   mode: "talk" | "phone" | "video";
   transcript: TranscriptLine[];
+  bestPhrase: BestPhrase | null;
   speechChoices?: string[];
   phase: "npc" | "you" | "thinking" | "ended";
   suggest: Suggestion[];
@@ -131,7 +133,7 @@ export interface ConvUI {
 }
 
 export const EMPTY_CONV: ConvUI = {
-  active: false, sitId: "", npcId: "", hostId: "", mode: "talk", transcript: [], phase: "npc", suggest: [], hints: [], chosen: {}, openHint: null,
+  active: false, sitId: "", npcId: "", hostId: "", mode: "talk", transcript: [], bestPhrase: null, phase: "npc", suggest: [], hints: [], chosen: {}, openHint: null,
   mic: { status: "off", heard: "" }, failures: 0, misses: 0, slowMode: false, lastHeard: "", prefix: false, completed: false, speaking: null, reveal: {}, note: null,
   typing: false, newExpressions: [], checklist: [], focus: 0, stepId: null, guess: null, practice: null, run: 0, guideHidden: false, introOpen: false,
 };

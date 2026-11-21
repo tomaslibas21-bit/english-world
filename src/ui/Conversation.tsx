@@ -4,17 +4,19 @@ import { picturesOn, useStore, type TranscriptLine } from "../state/store";
 import { Interlinear } from "./Interlinear";
 import { NPCS } from "../content/npcs";
 import { coachVoice, npcVoice } from "../content/voices";
-import { getSituation } from "../content/situations/catalog";
+import { getSituation, SITUATION_BY_ID } from "../content/situations/catalog";
+import { KIND, keepsakeFor } from "../content/keepsakes";
 import { GLOBAL } from "../content/global";
 import { placeLtNamed } from "../content/locations";
 import { compose, type Sentence } from "../convo/compose";
-import type { EntityDef, HintGroup, SituationDef } from "../content/types";
+import type { EntityDef, HintGroup, SituationDef, SituationMeta } from "../content/types";
 import { audio } from "../game/audio";
 import { game } from "../game/gameRef";
 import { speechSupported } from "../convo/speech";
-import { sitProgress } from "../state/progress";
+import { sitProgress, stars } from "../state/progress";
 import { toImperative } from "./lt";
-import { Icon, InlineIcon, type IconName } from "./icons";
+import { Icon, InlineIcon, KeepsakeIcon, Stars, type IconName } from "./icons";
+import { isPhone, objectiveLabels, sitIcon, walkToSituation } from "./objective";
 import { showToast } from "./Toasts";
 import { Confetti } from "./Confetti";
 import { answerFrames, exampleVars, modelAnswers, ownNameNote, type Guess, type HeardWord, type RepeatWord } from "../convo/suggest";
@@ -104,8 +106,6 @@ export function Conversation() {
   if (!conv.active || !sit) return null;
   const formal = !npc?.informal;
   const gender = useStore.getState().progress.profile?.gender ?? "m";
-  const startNext = () => { const next = game?.nextScenarioId(sit.id); if (next) game?.startScenario(next); };
-  const showAll = () => { game?.closeConversation(); useStore.getState().setHud({ panel: "scenarios" }); };
 
   const send = () => {
     const v = typed.trim();
@@ -208,41 +208,97 @@ export function Conversation() {
           )}
           </div>
         </div>
-      ) : (
-        <div className="yourturn ended-box">
-          {conv.completed && <div className="ended-badge"><Icon name="check" size={30} strokeWidth={2.5} /></div>}
-          <div className="ended-title">{conv.completed ? "Užduotis įvykdyta!" : "Pokalbis baigtas"}</div>
-          {conv.newExpressions.length > 0 && <div className="ended-sub">Naujų frazių knygelėje: {conv.newExpressions.length}</div>}
-          {game?.light ? (
-            <div className="sit-actions" style={{ justifyContent: "center" }}>
-              <button className="btn" onClick={startNext}><Icon name="arrowRight" size={18} /> Kita situacija</button>
-              <button className="btn soft" onClick={() => game?.restartScenario()}><Icon name="restart" size={18} /> Dar kartą</button>
-              <button className="btn ghost" onClick={showAll}><Icon name="list" size={18} /> Visos situacijos</button>
-            </div>
-          ) : (
-            <>
-              {/* in the town: walk on (the next task shows as usual), or straight into the next conversation, the
-                  two the same size (owner, 29 Oct 2026); the light mode above has no town, so it leads with the next */}
-              {/* after the surf school's conversation: the lesson first, the most prominent (owner, 16 Nov 2026) */}
-              {game?.surfAfter(sit.id) && (
-                <button className="btn surf-cta" onClick={() => game?.surfFromConversation()}><Icon name="star" size={19} /> Banglenčių pamoka</button>
-              )}
-              <div className="ended-main">
-                <button className={"btn" + (game?.surfAfter(sit.id) ? " soft" : "")} onClick={() => game?.closeConversation()}><Icon name="walk" size={18} /> Tęsti</button>
-                <button className="btn soft" onClick={startNext}><Icon name="arrowRight" size={18} /> Kita situacija</button>
-              </div>
-              <div className="sit-actions" style={{ justifyContent: "center" }}>
-                <button className="btn soft small" onClick={() => game?.restartScenario()}><Icon name="restart" size={17} /> Dar kartą</button>
-                <button className="btn ghost small" onClick={showAll}><Icon name="list" size={17} /> Visos situacijos</button>
-              </div>
-            </>
-          )}
-          <button className="copy-link" onClick={() => copyConversation(sit)}><Icon name="clipboard" size={17} /> Kopijuoti pokalbį mokytojui</button>
-        </div>
-      )}
+      ) : <EndCard sit={sit} />}
     </div>
     </>
   );
+}
+
+function EndCard({ sit }: { sit: SituationDef }) {
+  const { completed, bestPhrase, newExpressions } = useStore((s) => s.conv);
+  const progress = useStore((s) => s.progress);
+  const earned = stars(sitProgress(progress, sit.id));
+  const kind = keepsakeFor(sit.id);
+  const light = game?.light;
+  const surf = !light && game?.surfAfter(sit.id);
+  const nextId = game?.nextScenarioId(sit.id);
+  const next = nextId ? SITUATION_BY_ID[nextId] : undefined;
+  const startNext = () => { if (nextId) game?.startScenario(nextId); };
+  const close = () => game?.closeConversation();
+  const showAll = () => { close(); useStore.getState().setHud({ panel: "scenarios" }); };
+  const restart = () => game?.restartScenario();
+
+  return (
+    <div className="yourturn ended-box">
+      <div className="ended-heading">
+        {completed && <span className="ended-badge"><Icon name="check" size={17} strokeWidth={2.5} /></span>}
+        <h2 className="ended-title">{completed ? "Užduotis įvykdyta!" : "Pokalbis baigtas"}</h2>
+        {earned > 0 && <Stars n={earned} size={17} />}
+      </div>
+      {bestPhrase && <div className="ended-phrase">
+        <div>
+          <div className="ended-phrase-label">{bestPhrase.spoken ? "Geriausiai pasakei" : "Tavo frazė"}</div>
+          <div className="ended-phrase-en" lang="en">{bestPhrase.en}</div>
+          {bestPhrase.nat && <div className="nat" lang="lt">{bestPhrase.nat}</div>}
+        </div>
+        <button className="play" title="Klausyti" aria-label="Klausyti" onClick={() => {
+          game?.activeSession?.stopListening();
+          void audio.play(coachVoice(progress.profile?.gender), 1, bestPhrase.say);
+        }}><Icon name="speaker" size={20} /></button>
+      </div>}
+      {(completed || newExpressions.length > 0) && <div className="ended-rewards">
+        {completed && <div className="ended-keepsake"><KeepsakeIcon kind={kind} /> Gavai {KIND[kind].accusative}</div>}
+        {newExpressions.length > 0 && <div className="ended-sub">Naujų frazių knygelėje: {newExpressions.length}</div>}
+      </div>}
+      {surf && <button className="btn surf-cta" onClick={() => game?.surfFromConversation()}><Icon name="star" size={19} /> Banglenčių pamoka</button>}
+      {light ? (
+        <div className="sit-actions">
+          <button className="btn" onClick={startNext}><Icon name="arrowRight" size={18} /> Kita situacija</button>
+          <button className="btn soft" onClick={restart}><Icon name="restart" size={18} /> Dar kartą</button>
+          <button className="btn ghost" onClick={showAll}><Icon name="list" size={18} /> Visos situacijos</button>
+        </div>
+      ) : completed ? (
+        <>
+          {next && <EndDestination sit={next} close={close} />}
+          <div className="sit-actions ended-secondary">
+            <button className="btn soft small" onClick={close}><Icon name="walk" size={17} /> Tęsti</button>
+            <button className="btn ghost small" onClick={showAll}><Icon name="list" size={17} /> Visos situacijos</button>
+            <button className="btn ghost small" onClick={restart}><Icon name="restart" size={17} /> Dar kartą</button>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="ended-main">
+            <button className={"btn" + (surf ? " soft" : "")} onClick={close}><Icon name="walk" size={18} /> Tęsti</button>
+            <button className="btn soft" onClick={startNext}><Icon name="arrowRight" size={18} /> Kita situacija</button>
+          </div>
+          <div className="sit-actions">
+            <button className="btn soft small" onClick={restart}><Icon name="restart" size={17} /> Dar kartą</button>
+            <button className="btn ghost small" onClick={showAll}><Icon name="list" size={17} /> Visos situacijos</button>
+          </div>
+        </>
+      )}
+      <button className="copy-link" onClick={() => copyConversation(sit)}><Icon name="clipboard" size={17} /> Kopijuoti pokalbį mokytojui</button>
+    </div>
+  );
+}
+
+function EndDestination({ sit, close }: { sit: SituationMeta; close: () => void }) {
+  const { title, where } = objectiveLabels(sit);
+  const phone = isPhone(sit);
+  const go = () => {
+    if (!phone) { walkToSituation(sit.id, close); return; }
+    game?.setObjective(sit.id);
+    close();
+    useStore.getState().setHud({ panel: "phone" });
+  };
+  return <div className="ended-destination" data-sit={sit.id}>
+    <span className="place-ico"><Icon name={sitIcon(sit)} size={23} /></span>
+    <div><b>{title}</b><small>{where}</small></div>
+    <button className="btn" onClick={go}>
+      <Icon name={phone ? "smartphone" : "walk"} size={18} /> {phone ? "Paskambinti" : "Nuvesk mane"}
+    </button>
+  </div>;
 }
 
 /** Identity and place stay one tap away without consuming the sentence/answer space. */

@@ -70,7 +70,7 @@ export interface CharSpec {
   height: number;
   sitDrop: number;
   joints: {
-    hipX: number; hipY: number; thigh: number; shin: number; shoulderX: number; shoulderY: number; upper: number; neckTop: number;
+    hipX: number; hipY: number; thigh: number; shin: number; shoulderX: number; shoulderY: number; upper: number; hand: number; neckTop: number;
     eyes: [number, number]; mouth: [number, number]; brows: [number, number]; tail: [number, number, number] | null;
   };
   motion: { bob: number; stride: number; armOut: number; squash: number; mouthIdle: number; mouthOpen: number; browLift: number };
@@ -433,7 +433,8 @@ function build(look: Look): CharSpec {
   return {
     geometry, height, sitDrop,
     joints: {
-      hipX: S.hipX * b, hipY, thigh: S.thigh * h, shin: S.shin * h, shoulderX: S.shoulderX * b, shoulderY, upper: S.upper * h, neckTop,
+      hipX: S.hipX * b, hipY, thigh: S.thigh * h, shin: S.shin * h, shoulderX: S.shoulderX * b, shoulderY, upper: S.upper * h,
+      hand: S.fore * h + S.handR * 0.9, neckTop,
       eyes: [eyeY, eyeZ], mouth: [mouthY, mouthZ], brows: [browY, browZ], tail,
     },
     motion: IS_TOON

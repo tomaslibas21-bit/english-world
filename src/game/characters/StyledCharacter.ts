@@ -9,6 +9,7 @@ import { buildCharacter, BONE, BONE_COUNT, type CharSpec } from "./builders";
 
 export class StyledCharacter {
   root = new THREE.Group();
+  readonly rightHand = new THREE.Group();
   anim: Anim = "idle";
   talking = 0;
   /** A hop: how high the body is drawn off the ground (m), as the original Character. */
@@ -41,6 +42,9 @@ export class StyledCharacter {
     link(BONE.fArmL, BONE.uArmL, 0, -j.upper, 0);
     link(BONE.uArmR, BONE.body, j.shoulderX, j.shoulderY, 0);
     link(BONE.fArmR, BONE.uArmR, 0, -j.upper, 0);
+    this.rightHand.position.set(0.025, -j.hand, 0.07);
+    this.rightHand.rotation.x = 1.05;
+    b[BONE.fArmR].add(this.rightHand);
     link(BONE.thighL, BONE.body, -j.hipX, j.hipY, 0);
     link(BONE.shinL, BONE.thighL, 0, -j.thigh, 0);
     link(BONE.thighR, BONE.body, j.hipX, j.hipY, 0);
@@ -162,6 +166,10 @@ export class StyledCharacter {
       body.rotation.set(lean, 0, sway);
       const sy = 1 + squash, sxz = 1 / Math.sqrt(sy);
       body.scale.set(sxz, sy, sxz);
+    }
+    if (this.rightHand.children.length) {
+      uR.rotation.set(-0.26 + uR.rotation.x * 0.17, 0, 0.18);
+      fR.rotation.set(-0.79, 0, 0);
     }
     head.rotation.set(nod, turn, tilt);
     // ponytail swings

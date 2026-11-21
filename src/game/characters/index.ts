@@ -8,6 +8,7 @@ import { STYLED } from "../style";
 /** What the game needs from a character (the original Character and StyledCharacter both fit). */
 export interface GameCharacter {
   root: THREE.Group;
+  readonly rightHand: THREE.Group;
   anim: Anim;
   readonly height: number;
   setAnim(a: Anim): void;

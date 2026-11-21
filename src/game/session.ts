@@ -4,6 +4,7 @@ import { Conversation, type TurnOut } from "../convo/dialogue";
 import { createSpeechAttempt, hasNegation, speechSupported } from "../convo/speech";
 import { audioDiagnosticsPaused } from "../convo/audioDiagnostics";
 import { polarityChoices, bestReading } from "../convo/readings";
+import { bestPhrase } from "../convo/bestPhrase";
 import { GLOBAL } from "../content/global";
 import { NPCS } from "../content/npcs";
 import { coachVoice, npcVoice } from "../content/voices";
@@ -88,7 +89,7 @@ export class Session {
     const date = this.sit.npc === "sam" || this.sit.npc === "emma";
     const npcId = date ? prof?.datePartner ?? (prof?.gender === "f" ? "sam" : "emma") : this.sit.npc;
     st.setConv({
-      active: true, sitId: this.sit.id, npcId, hostId: npcId, mode: this.sit.mode ?? "talk", transcript: [], phase: "npc",
+      active: true, sitId: this.sit.id, npcId, hostId: npcId, mode: this.sit.mode ?? "talk", transcript: [], bestPhrase: null, phase: "npc",
       suggest: [], hints: [], chosen: {}, openHint: null, mic: { status: speechSupported() ? "off" : "unsupported", heard: "" },
       failures: 0, misses: 0, slowMode: this.conv.slow, lastHeard: "", prefix: false, completed: false, speaking: null, reveal: {}, note: null, typing: !speechSupported(), newExpressions: [],
       checklist: [], focus: 0, stepId: null, guess: null, practice: null, speechChoices:undefined, run: st.conv.run + 1, guideHidden: false,
@@ -260,6 +261,8 @@ export class Session {
       if (best !== clean) { alts = [clean, ...alts.filter((a) => a !== best)]; clean = best; }
     }
     if (via === "helped") this.helpedTried.add(`${this.momentId()}|${clean}`);
+    // Keep the current turn's authored phrases before the answer advances to a new turn.
+    const candidates = this.answerCandidates([clean, ...alts.slice(0, 3)]);
     st.setConv({ phase: "thinking", lastHeard: clean, guess: null, practice: null });
     let chosen = clean;
     let out = this.conv.input(clean);
@@ -270,7 +273,12 @@ export class Session {
         if (probe.ok) { this.conv.failures = Math.max(0, this.conv.failures - 1); chosen = a; out = this.conv.input(a); break; }
       }
     }
-    this.pushLine({ who: "you", text: displayUtterance(chosen), understood: out.understood, tips: out.tips, via, ...(via === "voice" ? {heard, alternatives: alternatives.slice(0,3)} : {}) });
+    const en = displayUtterance(chosen);
+    const match = rankAnswers([chosen], candidates)[0];
+    const exact = candidates.find((candidate) => displayUtterance(candidate.en) === en);
+    const phrase = guess?.options.find((option) => option.en === chosen) ?? exact ?? match?.s ?? { en, nat: "", say: en };
+    st.setConv((c) => ({ bestPhrase: bestPhrase(c.bestPhrase, { ...phrase, spoken: via === "voice", score: match?.score ?? 0 }) }));
+    this.pushLine({ who: "you", text: en, understood: out.understood, tips: out.tips, via, ...(via === "voice" ? {heard, alternatives: alternatives.slice(0,3)} : {}) });
     // the one who answers (else the last to speak) shows at once whether they got it
     const who = out.lines[0]?.npc ?? (useStore.getState().conv.npcId || this.sit.npc);
     this.hooks.npcReact?.(who, out.understood && !out.checking && !out.checkNo ? "nod" : "puzzled");
@@ -307,19 +315,29 @@ export class Session {
     return bestReading(this.conv.nlu, this.conv.expectedIntents(), text, alts);
   }
 
+  private answerCandidates(heard: string[]) {
+    const { conv: c, progress } = useStore.getState();
+    const ids = new Set([...c.suggest.flatMap((s) => s.hint ? [s.hint] : []), ...c.hints]);
+    const groups = [...ids].flatMap((id) => {
+      const g = this.sit.hints[id] ?? GLOBAL.hints[id];
+      return g ? [{ g, chosen: c.chosen[id] }] : [];
+    });
+    const lastNpc = c.transcript.findLast((l) => l.who === "npc" && l.npc)?.npc ?? c.npcId;
+    const prof = progress.profile;
+    return answerCandidates(this.sit, groups, {
+      formal: !NPCS[c.npcId]?.informal,
+      gender: prof?.gender ?? "m",
+      npcGender: NPCS[lastNpc]?.gender ?? "f",
+      vars: playerVars(prof, this.conv.said),
+    }, heard);
+  }
+
   /** "Did you mean…?": the 1–2 model answers of the current hint groups closest to what was heard
    *  (and understood by the engine right now), or null (silence, noise, nothing close). */
   private didYouMean(heard: string, alts: string[], stuck = false): Guess | null {
     try {
-      const st = useStore.getState();
-      const c = st.conv;
-      const ids = [...new Set([...c.suggest.map((x) => x.hint).filter(Boolean) as string[], ...c.hints])];
-      const groups = ids.map((id) => ({ g: this.sit.hints[id] ?? GLOBAL.hints[id], chosen: c.chosen[id] })).filter((x) => !!x.g);
-      const lastNpc = [...c.transcript].reverse().find((l) => l.who === "npc" && l.npc)?.npc ?? c.npcId;
-      const prof = st.progress.profile;
-      const opts = { formal: !NPCS[c.npcId]?.informal, gender: prof?.gender ?? "m", npcGender: NPCS[lastNpc]?.gender ?? "f", vars: playerVars(prof, this.conv.said) } as const;
       const heardAll = [heard, ...alts.slice(0, 3)];
-      const cands = answerCandidates(this.sit, groups, opts, heardAll);
+      const cands = this.answerCandidates(heardAll);
       const ranked = rankAnswers(heardAll, cands);
       const expected = this.conv.expectedIntents();
       const understands = (en: string) => this.conv.nlu.parse(en, expected).ok;

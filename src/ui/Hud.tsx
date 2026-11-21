@@ -6,10 +6,10 @@ import { useSurf } from "../game/surf/store";
 import { SurfOverlay, SurfPicker } from "./Surf";
 import { game } from "../game/gameRef";
 import { WORLD, SEA_Z } from "../game/world/layout";
-import { LOCATIONS } from "../content/locations";
 import { SITUATION_BY_ID } from "../content/situations/catalog";
 import { sitProgress, stars } from "../state/progress";
-import { Icon, InlineIcon, Stars, iconForEmoji, splitLead, type IconName } from "./icons";
+import { Icon, InlineIcon, Stars, splitLead, type IconName } from "./icons";
+import { isPhone, objectiveLabels } from "./objective";
 import { drawRideMarks } from "./mapMarks";
 import { switchPlayMode } from "./playMode";
 import { useCards, dueCards } from "../state/cards";
@@ -286,7 +286,8 @@ function Objective({ collapsed, fresh, setCollapsed }: { collapsed: boolean; fre
     );
   }
   const sit = SITUATION_BY_ID[o.sitId];
-  const phone = sit?.mode === "phone" || sit?.mode === "video" || sit?.location === "phone";
+  const phone = sit && isPhone(sit);
+  const { title, where } = sit ? objectiveLabels(sit) : o;
   const st = stars(sitProgress(progress, o.sitId));
   return (
     <div className={className}>
@@ -295,7 +296,7 @@ function Objective({ collapsed, fresh, setCollapsed }: { collapsed: boolean; fre
         {st > 0 && <Stars n={st} size={14} />}
         {fold}
       </div>
-      <h3>{o.title} <span className="en-title">· {sit?.title.en}</span></h3>
+      <h3>{title} <span className="en-title">· {sit?.title.en}</span></h3>
       <p>{o.goal}</p>
       <div className="row">
         {phone ? (
@@ -304,7 +305,7 @@ function Objective({ collapsed, fresh, setCollapsed }: { collapsed: boolean; fre
           <>
             <span className="dist">
               {o.angle !== null && <Arrow angle={o.angle} />}
-              {o.inside && o.dist !== null && o.dist < 4 ? "Čia pat!" : o.dist !== null ? `${o.dist} m` : ""} · {o.where}
+              {o.inside && o.dist !== null && o.dist < 4 ? "Čia pat!" : o.dist !== null ? `${o.dist} m` : ""} · {where}
             </span>
             <button className="btn small" onClick={() => game?.autoWalkToObjective()} title="G"><Icon name="walk" size={17} /> Nuvesk mane</button>
           </>
@@ -468,6 +469,3 @@ function TouchControls() {
     </>
   );
 }
-
-/** The icon of a place (its emoji in the location data, drawn as one of our icons). */
-export function locIcon(id: string): IconName { return iconForEmoji(LOCATIONS[id]?.icon) ?? "pin"; }

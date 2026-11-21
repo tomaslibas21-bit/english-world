@@ -3,6 +3,7 @@
 // `iconForEmoji` maps the emojis that still come from content and game data (place icons,
 // items people hand you, toast and banner titles) to these icons at render time.
 import type { CSSProperties, ReactNode } from "react";
+import { KIND, type KeepsakeKind } from "../content/keepsakes";
 
 // ---------------------------------------------------------------------------------------------
 // geometry helpers
@@ -204,6 +205,40 @@ export function Icon({ name, size = 20, className, style, strokeWidth = 1.75, la
       fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round"
       focusable="false" {...(label ? { role: "img", "aria-label": label } : { "aria-hidden": true })}>
       {def.rot ? <g transform={`rotate(${def.rot} 12 12)`}>{def.parts.map(renderPart)}</g> : def.parts.map(renderPart)}
+    </svg>
+  );
+}
+
+const KEEPSAKE_ICONS: Record<KeepsakeKind, string> = {
+  passport_stamp: "M12 6Q8 3 3 5v14q5-2 9 1 4-3 9-1V5q-5-2-9 1v14M15 11l2-2 2 2-2 2z",
+  boarding_pass: "M3 6h18v12H3zM16 6v12M6 10h6m-6 4h4",
+  baggage_tag: "M8 7h8l3 4v9H5v-9zM10 7V5a2 2 0 1 1 4 0v2m-5 8h6",
+  ticket: "M3 7h18v3a2 2 0 0 0 0 4v3H3v-3a2 2 0 0 0 0-4zM15 7v2m0 3v1m0 3v1",
+  room_key: "M8 8h9v12H8zM10 8V5a2.5 2.5 0 0 1 5 0v3m-4 6h3",
+  home_key: "M10 11a4 4 0 1 0-2-2l-5 5v5h4v-3h3v-3l2-2zM12 6h.01",
+  car_key: "M8 4h8a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM11 14v6h3v-6M10 9h4",
+  map: "M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2zM9 4v14m6-12v14",
+  coffee_cup: "M5 8h14l-2 12H7zM4 8V6h16v2M7 6l1-3h8l1 3M6 12h12m-11 4h10",
+  receipt: "M6 3l3 2 3-2 3 2 3-2v18l-3-2-3 2-3-2-3 2zM9 9h6m-6 4h6m-6 3h3",
+  shopping_bag: "M5 8h14l1 12H4zM9 10V6a3 3 0 0 1 6 0v4",
+  business_card: "M3 6h18v12H3zM6 10h3m3 0h6m-6 4h4",
+  badge: "M7 7h10a2 2 0 0 1 2 2v10H5V9a2 2 0 0 1 2-2zM10 7V3h4v4m-5 5h6m-6 3h4",
+  note: "M4 4h16v11l-5 5H4zM15 20v-5h5M8 8h8m-8 4h5",
+  flower: "M12 11c-5 0-6-7-3-7 2 0 3 2 3 2s1-2 3-2c3 0 2 7-3 7v9m0-4c-1-2-3-3-5-3 0 3 3 4 5 4",
+  balloon: "M12 15c-4-2-6-4-6-7a6 6 0 0 1 12 0c0 3-2 5-6 7zm0 0c-3 4 3 3 0 6",
+  water_bottle: "M9 3h6v4l2 3v9a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-9l2-3zM9 7h6m-8 6h10",
+  prescription: "M5 3h10l4 4v14H5zM15 3v5h4m-7 2v7m-3.5-3.5h7",
+  wallet: "M19 8V5H6a2 2 0 0 0 0 4h15v10H6a2 2 0 0 1-2-2V7m17 5h-5v4h5m-2.5-2h.01",
+};
+
+export function KeepsakeIcon({ kind, named = false }: { kind: KeepsakeKind; named?: boolean }) {
+  const label = KIND[kind].nominative;
+  return (
+    <svg className="ui-icon keepsake-icon" width={21} height={21} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" focusable="false"
+      {...(named ? { role: "img", "aria-label": label } : { "aria-hidden": true })}>
+      {named && <title>{label}</title>}
+      <path d={KEEPSAKE_ICONS[kind]} />
     </svg>
   );
 }

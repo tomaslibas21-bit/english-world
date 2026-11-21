@@ -5,6 +5,7 @@ import { game } from "../game/gameRef";
 import { switchPlayMode } from "./playMode";
 import { SITUATIONS, SITUATION_BY_ID } from "../content/situations/catalog";
 import { LOCATIONS, TOWN_LT, placeLt } from "../content/locations";
+import { keepsakeFor } from "../content/keepsakes";
 import { NPCS } from "../content/npcs";
 import { coachVoice } from "../content/voices";
 import { OUTDOOR_NPCS, WORLD, SEA_Z, AIRPORT_EXIT } from "../game/world/layout";
@@ -13,8 +14,8 @@ import { audio } from "../game/audio";
 import { STYLES_ENABLED } from "../game/worldStyles";
 import { speechSupported, localAvailability, installLocal, refreshLocalState, type LocalAvailability } from "../convo/speech";
 import { avatarColor } from "./Conversation";
-import { locIcon } from "./Hud";
-import { Icon, InlineIcon, Stars, type IconName } from "./icons";
+import { isPhone, locIcon, sitIcon, walkToSituation } from "./objective";
+import { Icon, InlineIcon, KeepsakeIcon, Stars, type IconName } from "./icons";
 import type { SituationMeta } from "../content/types";
 import { useCards, cardKey, dueCards, ipaFor, type CardInput } from "../state/cards";
 import { MyCards, Glyph } from "./Cards";
@@ -27,19 +28,12 @@ import { SURF } from "../content/surf";
 
 export const CHAPTERS: Record<number, string> = { 1: "Atvykimas", 2: "Pirmosios dienos mieste", 3: "Įsikūrimas", 4: "Darbas", 5: "Žmonės", 6: "Kelionės", 7: "Pagalba", 8: "Pažengusiems", 9: "Gyva kalba" };
 
-/** The icon of a situation: the phone or camera for calls, else its place. */
-function sitIcon(s: SituationMeta): IconName {
-  return isPhone(s) ? (s.mode === "video" ? "video" : "phoneCall") : locIcon(s.location);
-}
-
 /** The NPC shown for a situation (the date is with the partner the player chose). */
 function mainNpc(s: SituationMeta) {
   if (s.npc !== "sam" && s.npc !== "emma") return NPCS[s.npc];
   const p = useStore.getState().progress.profile;
   return NPCS[p?.datePartner ?? (p?.gender === "f" ? "sam" : "emma")];
 }
-
-function isPhone(s: SituationMeta) { return s.mode === "phone" || s.mode === "video" || s.location === "phone"; }
 
 export function Panels() {
   const panel = useStore((s) => s.hud.panel);
@@ -119,7 +113,7 @@ function SitActions({ s, close }: { s: SituationMeta; close: () => void }) {
         <button className="btn warm small" onClick={() => { close(); game?.call(s.id); }}><Icon name="smartphone" size={17} /> Skambinti dabar</button>
       ) : (
         <>
-          <button className="btn soft small" onClick={() => { game?.setObjective(s.id); close(); setTimeout(() => game?.autoWalkToObjective(), 50); }}><Icon name="walk" size={17} /> Nuvesk mane</button>
+          <button className="btn soft small" onClick={() => walkToSituation(s.id, close)}><Icon name="walk" size={17} /> Nuvesk mane</button>
           <button className="btn ghost small" onClick={() => { game?.setObjective(s.id); close(); game?.teleportTo(s.location); }}><Icon name="taxi" size={17} /> Nuvykti taksi</button>
         </>
       )}
@@ -138,6 +132,7 @@ function SitCard({ s, onClick, open }: { s: SituationMeta; onClick: () => void; 
         <b>{s.title.lt}</b>
         <span><i style={{ fontFamily: "var(--en)", fontSize: "1.1em" }}>{s.title.en}</i> · {loc?.lt}{s.song !== "" && <> · daina {s.song}</>}</span>
       </span>
+      {sp.completions > 0 && <KeepsakeIcon kind={keepsakeFor(s.id)} named />}
       <Stars n={stars(sp)} />
     </button>
   );
