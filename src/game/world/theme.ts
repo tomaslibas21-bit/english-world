@@ -8,6 +8,8 @@
 // in the rooms, props, the cenote).
 
 import type { FlyKey } from "../flyover";
+import type { Rect } from "../rides/drive";
+import type { CarPlacement } from "./carModels";
 
 export interface BuildingLook {
   color?: string; trim?: string; awning?: string; roofColor?: string;
@@ -125,9 +127,6 @@ export interface TownTheme {
   /** Outdoor people whose conversation has no door to find it by (the attendant at the pump): their talk spot is
    *  marked on the ground all the time, a ring and a small gem over them in the guidance beacon's colours. */
   talkMarks: string[];
-  /** Cars parked for a conversation (added at the end of layout.ts PARKED_CARS, so `parkedCars` below can give them a
-   *  look): x, z and heading. */
-  spotCars: [number, number, number][];
   // --- the town outdoors (town.ts) ---
   /** The middle of the square: Maple Harbor's fountain, or a kiosco (a bandstand on a platform). */
   centrepiece: "fountain" | "kiosco";
@@ -169,10 +168,11 @@ export interface TownTheme {
   /** A little corner shop in a building's ground floor: the building, where along its front (m from the middle),
    *  how wide, its painted sign and the one on its side wall. */
   tiendita: { building: string; u: number; w: number; sign: string; side: string } | null;
-  /** The parked cars, in PARKED_CARS's order (none: Maple Harbor's sedans in its colours). */
-  parkedCars: { kind: "sedan" | "vocho"; color: string }[];
+  /** The edition's curbside and service vehicles, and its extra asphalt bays. */
+  parkedCars: CarPlacement[] | null;
+  parkingLots: Rect[] | null;
   /** The taxi at the stand and the stand's sign (null: Maple Harbor's yellow cab and "TAXI"). */
-  taxi: { body: string; trim: string; sign: string } | null;
+  taxi: { body: string; trim: string; sign: string; z: number } | null;
   /** The bus stop's sign. */
   busSign: string;
   /** A church on the square: where its door is and which way it faces. */
@@ -187,6 +187,8 @@ export interface TownTheme {
   foodCart: { x: number; z: number; rot: number; sign: string } | null;
   /** What drives past, one per car Ambient makes (none: Maple Harbor's cars). */
   traffic: Vehicle[];
+  /** The four everyday cars' paint colours, in the order of layout.ts TRAFFIC_CARS. */
+  trafficPaint: string[];
   /** Sounds of the town made on the spot (audio.ts): the church bell (where it rings), the street vendors (round
    *  this spot) and the trucks of the residential streets (south of this z: the gas truck's tune, the garbage truck's
    *  bell). */
@@ -431,7 +433,6 @@ export const THEME: TownTheme = {
   outdoorNpcs: [],
   roomNpcs: {},
   talkMarks: [],
-  spotCars: [],
   centrepiece: "fountain",
   gazebo: true,
   buildings: {},
@@ -447,7 +448,8 @@ export const THEME: TownTheme = {
   mexican: null,
   bougainvillea: [],
   tiendita: null,
-  parkedCars: [],
+  parkedCars: null,
+  parkingLots: null,
   taxi: null,
   busSign: "BUS",
   church: null,
@@ -456,6 +458,7 @@ export const THEME: TownTheme = {
   topes: null,
   foodCart: null,
   traffic: [],
+  trafficPaint: [],
   sounds: null,
   // in from the bay over the beach, along the shore with the square and its fountain below, and down to the airport
   flyover: [

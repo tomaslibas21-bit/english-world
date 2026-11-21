@@ -1,5 +1,6 @@
 // Maple Harbor: a small American coastal town. X = east, Z = south (north is -Z), 1 unit = 1 m.
 import { LOCATIONS } from "../../content/locations";
+import type { CarModelName, CarPlacement } from "./carModels";
 import { THEME } from "./theme";
 
 export type Face = "n" | "s" | "e" | "w";
@@ -137,27 +138,59 @@ export const STALLS = [
   { x: 46, z: -36, color: "#f4d35e", goods: "bread" },
 ];
 
-/** A car's footprint (the parked ones, the taxi and the passing cars are the same size). */
-export const CAR = { length: 4.2, width: 1.9 };
+/** The everyday traffic mix, in the town's paint colours. */
+const everyday: readonly { model: CarModelName; color: string }[] = [
+  { model: "sedan", color: "#e45b4f" }, { model: "suv", color: "#4a7bb7" },
+  { model: "van", color: "#f2f2f2" }, { model: "pickup", color: "#6fbf73" },
+];
+export const TRAFFIC_CARS = everyday.map(({ model, color }, i) => ({ model, color: THEME.trafficPaint[i] ?? color }));
 
 /** The passing cars (src/game/ambient.ts), right-hand traffic: eastbound on the south half of each east–west street,
  *  westbound on the north half. On Main Street and Oak Avenue the lanes keep to the middle of the road, so the cars
  *  parked at the curb (PARKED_CARS) are never in their way. */
 export const TRAFFIC_LANES: { z: number; dir: 1 | -1; from: number; to: number }[] = [
   { z: -6.5, dir: 1, from: -102, to: 116 }, { z: -9.5, dir: -1, from: -102, to: 116 }, // Main Street, z -13 … -3
-  { z: 39.2, dir: 1, from: -102, to: 124 }, { z: 36.8, dir: -1, from: -102, to: 124 }, // Oak Avenue, z 33.5 … 42.5
+  { z: 39.1, dir: 1, from: -102, to: 124 }, { z: 36.8, dir: -1, from: -102, to: 124 }, // Oak Avenue, z 33.5 … 42.5
   { z: -52.8, dir: 1, from: -102, to: 124 }, { z: -57.2, dir: -1, from: -102, to: 124 }, // Harbor Road, z -59.5 … -50.5
 ];
 
-/** Cars parked at the curb: x, z and heading (π/2: facing east, −π/2: west, 0: south, π: north). */
-export const PARKED_CARS: [number, number, number][] = [
-  [-80, -4.2, Math.PI / 2], [-30, -4.2, Math.PI / 2], [34, -4.2, Math.PI / 2], [88, -11.8, -Math.PI / 2], [-40, -11.8, -Math.PI / 2],
-  [-60, 41.45, Math.PI / 2], [30, 34.55, -Math.PI / 2], [-66.4, 20, 0], [3.8, 60, Math.PI], [88, 41.45, Math.PI / 2],
-  // the edition's own (theme.ts): none in Maple Harbor
-  ...THEME.spotCars,
+/** Asphalt lots, with the fuel forecourt painted in its own shade. */
+export const GAS_FORECOURT = { x0: 102, x1: 124, z0: 1, z1: 12 };
+export const PARKING_LOTS = [
+  { x0: 77.2, x1: 92, z0: 16.7, z1: 23.3 }, // behind the rental shop
+  ...(THEME.parkingLots ?? [{ x0: -83.5, x1: -77.2, z0: 65, z1: 68.6 }]),
 ];
 
-export const TAXI = { x: 121, z: -4.8, rot: -Math.PI / 2 };
+export const TAXI: CarPlacement = {
+  model: "taxi", x: 121, z: THEME.taxi?.z ?? -4.8, rot: -Math.PI / 2,
+  color: THEME.taxi?.body ?? "#f5c518", trim: THEME.taxi?.trim,
+};
+
+/** Curbside cars, rental stock and service vehicles. +Z is south, +X is east. */
+export const PARKED_CARS: readonly CarPlacement[] = [
+  ...(THEME.parkedCars ?? [
+    { model: "sedan", x: -80, z: -4.2, rot: Math.PI / 2, color: "#e45b4f" },
+    { model: "delivery", x: -30, z: -4.2, rot: Math.PI / 2, color: "#4a7bb7" },
+    { model: "suv", x: 34, z: -4.2, rot: Math.PI / 2, color: "#f2c14e" },
+    { model: "pickup", x: 88, z: -11.8, rot: -Math.PI / 2, color: "#6fbf73" },
+    { model: "van", x: -40, z: -11.8, rot: -Math.PI / 2, color: "#f4f4f4" },
+    { model: "suv", x: -60, z: 41.45, rot: Math.PI / 2, color: "#3d3d46" },
+    { model: "sedan", x: 30, z: 34.55, rot: -Math.PI / 2, color: "#b5838d" },
+    { model: "pickup", x: -67.2, z: 20, rot: 0, color: "#e45b4f" },
+    { model: "van", x: 3.25, z: 60, rot: Math.PI, color: "#4a7bb7" },
+    { model: "sedan", x: 88, z: 41.45, rot: Math.PI / 2, color: "#f2c14e" },
+    { model: "sedan", x: 78.5, z: 20, rot: 0, color: "#ffffff" },
+    { model: "suv", x: 82, z: 20, rot: 0, color: "#4a7bb7" },
+    { model: "van", x: 86, z: 20, rot: 0, color: "#e45b4f" },
+    { model: "pickup", x: 90, z: 20, rot: 0, color: "#3d3d46" },
+    { model: "police", x: 54.5, z: -11.8, rot: -Math.PI / 2, color: "#34495e" },
+    { model: "ambulance", x: 102.5, z: 34.65, rot: -Math.PI / 2, color: "#f4f4f4" },
+    { model: "firetruck", x: -80.35, z: 66.8, rot: Math.PI / 2, color: "#d94b3d" },
+    { model: "garbage", x: -54, z: 73.2, rot: -Math.PI / 2, color: "#6fbf73" },
+  ] as const),
+  TAXI,
+  ...THEME.taxis.map(([x, z, rot]) => ({ ...TAXI, x, z, rot })),
+];
 export const BUS_STOP = { x: -10, z: 44, rot: Math.PI };
 export const FOUNTAIN = { x: 30, z: -30 };
 export const LIGHTHOUSE = { x: 104, z: -88 };

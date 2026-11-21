@@ -145,7 +145,6 @@ export const THEME: TownTheme = {
   roomNpcs: { "gas-station": [{ npc: "tienda", x: -3, z: -3.8, rot: 0, ax: -3, az: -1.7 }] },
   // s71b: the pump has no door to find it by, so Doña Chela's talk spot is marked all the time (the owner, 17 Nov 2026)
   talkMarks: ["dot"],
-  spotCars: [[113, 4.6, Math.PI]],
   // --- the town outdoors ---
   centrepiece: "kiosco",
   gazebo: false,
@@ -232,13 +231,30 @@ export const THEME: TownTheme = {
   // s81, s82: "Hay una tiendita en la esquina": in the ground floor of Departamentos Las Palmas, at the corner
   tiendita: { building: "apartments", u: 7.8, w: 4.4, sign: "Abarrotes Las Palmas", side: "Refrescos · Botanas · Recargas" },
   parkedCars: [
-    { kind: "vocho", color: "#3d9be9" }, { kind: "sedan", color: "#f4f4f4" }, { kind: "vocho", color: "#e4572e" }, { kind: "sedan", color: "#c0392b" },
-    { kind: "sedan", color: "#e9c46a" }, { kind: "vocho", color: "#7ac143" }, { kind: "sedan", color: "#5e548e" }, { kind: "vocho", color: "#f2f2f2" },
-    { kind: "sedan", color: "#2a9d8f" }, { kind: "vocho", color: "#f6a800" },
-    // the learner's rented car at the pump (s71b; `spotCars`)
-    { kind: "sedan", color: "#c0c7cf" },
+    { model: "sedan", x: -80, z: -4.2, rot: Math.PI / 2, color: "#3d9be9" }, // avenida Juárez by the shops
+    { model: "van", x: -88, z: -11.8, rot: -Math.PI / 2, color: "#e9c46a" }, // hotel curb
+    { model: "pickup", x: 89, z: -11.8, rot: -Math.PI / 2, color: "#c0392b" }, // park curb
+    { model: "suv", x: -42, z: 41.45, rot: Math.PI / 2, color: "#7ac143" }, // residential curb
+    { model: "suv", x: 30, z: 34.6, rot: -Math.PI / 2, color: "#e4572e" },
+    { model: "pickup", x: -67.2, z: 20, rot: 0, color: "#f2f2f2" }, // calle Flamboyán
+    { model: "van", x: 3.25, z: 60, rot: Math.PI, color: "#2a9d8f" }, // calle Ceiba
+    { model: "sedan", x: 88, z: 41.45, rot: Math.PI / 2, color: "#f6a800" }, // residential curb
+    // the rental shop's stock, and the learner's rented car at the pump (s71b)
+    { model: "sedan", x: 78.5, z: 20, rot: 0, color: "#f4f4f4" },
+    { model: "suv", x: 82, z: 20, rot: 0, color: "#3d9be9" },
+    { model: "van", x: 86, z: 20, rot: 0, color: "#e4572e" },
+    { model: "pickup", x: 90, z: 20, rot: 0, color: "#5e548e" },
+    { model: "sedan", x: 113, z: 4.6, rot: Math.PI, color: "#c0c7cf" },
+    { model: "police", x: 54.15, z: -17.6, rot: -Math.PI / 2, color: "#34495e" }, // Policía Municipal
+    { model: "ambulance", x: 102.5, z: 34.65, rot: -Math.PI / 2, color: "#f4f4f4" }, // Clínica Familiar
+    { model: "delivery", x: -38, z: -45.6, rot: Math.PI / 2, color: "#2a9d8f" }, // Mercado Municipal
+    { model: "garbage", x: -54, z: 73.2, rot: -Math.PI / 2, color: "#7ac143" }, // behind the homes
   ],
-  taxi: { body: "#f4f6f8", trim: "#1f8a4c", sign: "SITIO DE TAXIS" },
+  parkingLots: [
+    { x0: 51.6, x1: 56.8, z0: -19, z1: -16.2 }, // beside the police entrance
+    { x0: -41, x1: -34.8, z0: -47.3, z1: -44.1 }, // beside the market frontage
+  ],
+  taxi: { body: "#f4f6f8", trim: "#1f8a4c", sign: "SITIO DE TAXIS", z: -4.07 },
   busSign: "PARADA",
   // at the square's east end beside the Policía Municipal, facing the kiosco (TOWN.md task 3: the north side has no
   // room without moving the stalls; the owner may still choose that)
@@ -263,6 +279,7 @@ export const THEME: TownTheme = {
   foodCart: { x: 33.5, z: -17.3, rot: Math.PI / 2, sign: "Elotes · Esquites" },
   // route 7's bus (s67b), a colectivo and two white-and-green taxis among the cars
   traffic: ["bus", "taxi", "colectivo", "car", "car", "taxi", "car", "car"],
+  trafficPaint: ["#e4572e", "#3d9be9", "#e9c46a", "#2a9d8f"],
   sounds: { bell: [52, -41], vendors: [30, -24], homesZ: 30 },
 
   // The last details (docs/es/TOWN.md "Done: the last details"): every speaker in the conversation's picture, the
@@ -484,7 +501,7 @@ export const THEME: TownTheme = {
   // the mirador where avenida Juárez ends at the meadow, looking out west to Cenote Ka'an
   mirador: { x: -107, z: -7.5, rot: -Math.PI / 2, sign: "Mirador · Cenote Ka'an →" },
   // a second taxi waiting at the sitio, behind the first, at the curb (clear of the cars' lane)
-  taxis: [[115.8, -4.25, -Math.PI / 2]],
+  taxis: [[115.8, -4.07, -Math.PI / 2]],
   // graphics round 4: the rooms' walls taller than the phone's room view (its top is wall, not the dark above it)
   roomWallH: 8.6,
   // Graphics, round 4 (town, docs/es/TOWN.md "Graphics, round 4"): the street trees as flamboyanes and almendros

@@ -8,7 +8,7 @@ import { RIDES } from "../../src/game/world/rides";
 import { RIDE_OWNERS, RIDE_SHOUTS, RIDE_NAMES } from "../../src/content/rides";
 import { rideVoice, shoutVoice } from "../../src/content/voices";
 import { RIDERS, SCENES, castingProblems, roleOf, styleFor, voiceFor, whoOf } from "../../tools/es-voices/casting-es";
-import { PARKED_CARS, TAXI, TRAFFIC_LANES, OUTDOOR_NPCS, CHAT_SPOTS, WORLD } from "../../src/game/world/layout";
+import { PARKED_CARS, TRAFFIC_LANES, OUTDOOR_NPCS, CHAT_SPOTS, WORLD } from "../../src/game/world/layout";
 import { THEME } from "../../src/game/world/theme";
 import { cenoteWalk } from "../../src/game/world/mexican";
 import { Colliders } from "../../src/game/world/util";
@@ -22,7 +22,7 @@ describe("Puerto Colibrí's convertibles and lancha", () => {
     for (const c of RIDES.cars) {
       const fx = Math.sin(c.rot), fz = Math.cos(c.rot);
       for (const k of [-1.2, 0, 1.2]) expect(ground.has(c.x + fx * k, c.z + fz * k), `${c.id} on the street`).toBe(true);
-      for (const [x, z] of [...PARKED_CARS, [TAXI.x, TAXI.z]]) expect(Math.hypot(c.x - x, c.z - z), c.id).toBeGreaterThan(6);
+      for (const { x, z } of PARKED_CARS) expect(Math.hypot(c.x - x, c.z - z), c.id).toBeGreaterThan(6);
       for (const n of OUTDOOR_NPCS) expect(Math.hypot(c.x - n.x, c.z - n.z), `${c.id}, ${n.npc}`).toBeGreaterThan(5);
       for (const [ax, az, bx, bz] of CHAT_SPOTS) for (const [x, z] of [[ax, az], [bx, bz]]) expect(Math.hypot(c.x - x, c.z - z), c.id).toBeGreaterThan(3.5);
       for (const [x1, z1, x2, z2] of THEME.topes?.at ?? []) expect(Math.hypot(c.x - (x1 + x2) / 2, c.z - (z1 + z2) / 2), `${c.id}, a tope`).toBeGreaterThan(8);

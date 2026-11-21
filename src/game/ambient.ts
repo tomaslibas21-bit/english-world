@@ -14,7 +14,8 @@ import { Colliders as GroundPlan } from "./world/util";
 import type { NavGrid } from "./nav";
 import type { HairStyle, Look } from "../content/npcs";
 import { rand, type Colliders } from "./world/util";
-import { CAR, TRAFFIC_LANES, CHAT_SPOTS } from "./world/layout";
+import { TAXI, TRAFFIC_CARS, TRAFFIC_LANES, CHAT_SPOTS } from "./world/layout";
+import { carLedges, carModelEntry, type CarModelName, type CarPaint } from "./world/carModels";
 import type { Seat } from "./world/town";
 import { Dog } from "./dog";
 import { aheadOnArc, pushOutOfBox, startles } from "./rides/drive";
@@ -97,8 +98,9 @@ export class Chatter {
 interface Car {
   mesh: THREE.Mesh; lane: number; dir: 1 | -1; x: number; from: number; to: number;
   speed: number; max: number; hidden: number; grow: number;
-  /** How long it is (a car: CAR.length), and how far its front is ahead of a car's from the middle. */
-  len: number; front: number;
+  model?: CarModelName; paint: CarPaint; half: { x: number; z: number };
+  /** How much earlier a longer vehicle starts braking for people. */
+  front: number;
   /** Full size and in the picture (not growing at its lane's start or shrinking at its end). */
   whole?: boolean;
   /** Waiting for the player to get off or step away (s still to wait once they have), and how long they have stood
@@ -127,8 +129,6 @@ const F_HAIR: HairStyle[] = ["long", "braid", "wavy", "curls", "long", "wavy"];
 /** A braid's ribbon. */
 const TIES = ["#e4007c", "#f2b632", "#2aa7a0", "#f4f1ea", "#d94b3d"];
 const M_HAIR: HairStyle[] = ["short", "buzz", "side", "bald", "curly", "wavy"];
-const CAR_COLORS = ["#e45b4f", "#4a7bb7", "#f2f2f2", "#3d3d46", "#6fbf73", "#f2c14e", "#9b5de5", "#b0b7bf"];
-
 const LANES = TRAFFIC_LANES;
 const _hand = new THREE.Vector3(), _steer = new THREE.Vector3(), _side = { x: 0, z: 0 };
 
@@ -245,6 +245,7 @@ export class Ambient {
   private walkers: Walker[] = [];
   private chats: Chatter[] = [];
   private cars: Car[] = [];
+  get traffic(): readonly Car[] { return this.cars; }
   private r = rand(4242);
   /** Things in the passers-by's hands, and the people sitting and standing: streams of their own. */
   private rThings = rand(5150);
@@ -280,11 +281,14 @@ export class Ambient {
     // (graphics round 5, theme.ts `farPeople`) each of them in fewer triangles too, drawn when far from the camera
     if (THEME.farPeople !== null) for (const w of this.walkers) if (w.look) addFarVersion(w.ch, w.look);
     const carMat = STYLED ? vertexColorMaterial("prop") : new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+    let everyday = 0;
     for (let i = 0; i < nc; i++) {
       const lane = LANES[i % LANES.length];
-      const color = CAR_COLORS[i % CAR_COLORS.length];
-      // the edition's own vehicles among the cars (theme.ts: route 7's bus, a colectivo, taxis), else a car
       const kind = THEME.traffic[i] ?? "car";
+      const look = kind === "car" ? TRAFFIC_CARS[everyday++ % TRAFFIC_CARS.length] : kind === "taxi" ? TAXI : undefined;
+      const color = look?.color ?? "#f2f2f2";
+      const model = look?.model;
+      const paint = kind === "taxi" && TAXI.trim ? { body: color, trim: TAXI.trim } : color;
       const mesh = new THREE.Mesh(kind !== "car" ? vehicleGeometry(kind, color) : STYLED ? styledCarGeometry(color) : carGeometry(color), carMat);
       mesh.castShadow = true;
       if (IS_TOON) mesh.add(makeOutline(mesh, outlineColorFor(new THREE.Color(color)), 0.03));
@@ -295,8 +299,10 @@ export class Ambient {
       const x = lane.from + (lane.to - lane.from) * t;
       mesh.position.set(x, 0, lane.z);
       this.group.add(mesh);
-      const len = kind === "car" ? CAR.length : VEHICLE_LENGTH[kind];
-      this.cars.push({ mesh, lane: lane.z, dir: lane.dir, x, from: lane.from, to: lane.to, speed: 6, max: 7 + this.r() * 2.5, hidden: 0, grow: 1, len, front: (len - CAR.length) / 2 });
+      const size = model ? carModelEntry(model).collisionBox : undefined;
+      const half = size ? { x: size.length / 2, z: size.width / 2 } : { x: VEHICLE_LENGTH[kind] / 2 + 0.05, z: 1.25 };
+      this.cars.push({ mesh, model, paint, half, front: size ? 0 : (VEHICLE_LENGTH[kind] - VEHICLE_LENGTH.car) / 2,
+        lane: lane.z, dir: lane.dir, x, from: lane.from, to: lane.to, speed: 6, max: 7 + this.r() * 2.5, hidden: 0, grow: 1 });
     }
   }
 
@@ -556,7 +562,8 @@ export class Ambient {
 
   private blockedAhead(c: Car, x: number, z: number): number {
     const ahead = (x - c.x) * c.dir - c.front;
-    if (ahead <= 0 || ahead > 11 || Math.abs(z - c.lane) > 1.9) return Infinity;
+    const reach = c.model ? c.half.z + 0.9 : 1.9;
+    if (ahead <= 0 || ahead > 11 || Math.abs(z - c.lane) > reach) return Infinity;
     return ahead;
   }
 
@@ -566,7 +573,15 @@ export class Ambient {
       const sx = c.dir > 0 ? c.from : c.to;
       // don't pop in on top of the player or another car
       const clear = Math.hypot(player.x - sx, player.z - c.lane) > 12 && !this.cars.some((o) => o !== c && o.lane === c.lane && o.hidden <= 0 && Math.abs(o.x - sx) < 10);
-      if (c.hidden <= 0 && clear) { c.x = sx; c.grow = 0; c.speed = c.max * 0.6; c.mesh.visible = true; }
+      if (c.hidden <= 0 && clear) {
+        c.x = sx;
+        c.grow = 0;
+        c.whole = false;
+        c.speed = c.max * 0.6;
+        c.mesh.position.x = sx;
+        c.mesh.scale.setScalar(0.001);
+        c.mesh.visible = true;
+      }
       else if (c.hidden <= 0) c.hidden = 0.5;
       return;
     }
@@ -576,19 +591,18 @@ export class Ambient {
     for (const b of this.rideBoxes) {
       const ex = Math.abs(Math.sin(b.heading)) * b.hl + Math.abs(Math.cos(b.heading)) * b.hw, ez = Math.abs(Math.cos(b.heading)) * b.hl + Math.abs(Math.sin(b.heading)) * b.hw;
       const a = (b.x - c.x) * c.dir;
-      if (a > 0 && a < 18 + ex && Math.abs(b.z - c.lane) < ez + this.half(c).z + 0.15) gap = Math.min(gap, a - ex - this.half(c).x + 0.6);
+      if (a > 0 && a < 18 + ex && Math.abs(b.z - c.lane) < ez + c.half.z + 0.15) gap = Math.min(gap, a - ex - c.half.x + 0.6);
     }
     for (const w of this.walkers) if (w.kind === "walk") gap = Math.min(gap, this.blockedAhead(c, w.ch.root.position.x, w.ch.root.position.z));
     for (const o of this.cars) if (o !== c && o.lane === c.lane && o.hidden <= 0) {
-      // (between two cars: half of each, CAR.length; a bus is longer)
-      const a = (o.x - c.x) * c.dir, both = (c.len + o.len) / 2;
-      if (a > 0 && a < 16 + (both - CAR.length)) gap = Math.min(gap, a - both + 0.7);
+      const a = (o.x - c.x) * c.dir, both = c.half.x + o.half.x;
+      if (a > 0 && a < 16 + (both - VEHICLE_LENGTH.car)) gap = Math.min(gap, a - both + 0.7);
     }
     let want = gap === Infinity ? c.max : Math.max(0, Math.min(c.max, (gap - 3.4) * 1.4));
     // a car that has stopped can be climbed like a parked one (carPieces), and its driver waits while the player is on
     // it or over it, a few seconds while they stand right beside it, and a moment longer
     if (this.standing(c)) {
-      const h = this.half(c), dx = Math.abs(player.x - c.x), dz = Math.abs(player.z - c.lane);
+      const h = c.half, dx = Math.abs(player.x - c.x), dz = Math.abs(player.z - c.lane);
       if (dx < h.x + 6 && dz < h.z + 6) this.readDecks(c);
       const on = dx < h.x + 0.45 && dz < h.z + 0.45 && player.y > 0.3, by = dx < h.x + 1.1 && dz < h.z + 1.1;
       // (beside it only for a few seconds: time to jump on, not a street held up by someone talking at the curb)
@@ -746,7 +760,7 @@ export class Ambient {
     out.gap = Infinity; out.speed = 0;
     for (const c of this.cars) {
       if (c.hidden > 0 || c.mesh.scale.x < 0.5 || Math.abs(c.x - x) > reach + 4 || Math.abs(c.lane - z) > reach + 4) continue;
-      const h = this.half(c);
+      const h = c.half;
       // (its body as three points along its length; its own half width is added to the strip)
       for (const k of [-0.8, 0, 0.8]) {
         const gap = aheadOnArc(x, z, fx, fz, curv, c.x + k * h.x, c.lane, reach, half + h.z) - 0.2 * h.x;
@@ -760,26 +774,27 @@ export class Ambient {
   pushOutOfCars(p: { x: number; z: number }, r: number) {
     for (const c of this.cars) {
       if (c.hidden > 0 || c.mesh.scale.x < 0.5) continue;
-      const h = this.half(c);
+      const h = c.half;
       if (Math.abs(c.x - p.x) > h.x + r || Math.abs(c.lane - p.z) > h.z + r) continue;
       pushOutOfBox(p, r, c.x, c.lane, Math.PI / 2, h.x, h.z);
     }
   }
 
-  /** Half a driving car's ground plan (along its lane, across it; a van or a bus is longer and wider). */
-  private half(c: Car) { return c.len === CAR.length ? CAR_HALF : { x: c.len / 2 + 0.05, z: 1.25 }; }
-
   /** A car standing still at its full size. */
   private standing(c: Car) { return c.hidden <= 0 && !!c.whole && c.speed < 0.05; }
 
-  /** A car's hood, roof and trunk as pieces with a height, read once from its own mesh where it stands (none for what
-   *  is too tall to climb: that stays a wall). */
+  /** A stopped car exposes the same climbable surfaces as a parked car of this model. */
   private readDecks(c: Car) {
     if (c.decks) return;
-    const plan = new GroundPlan(), h = this.half(c);
-    plan.addBox(c.x, c.lane, h.x * 2, h.z * 2, "car");
-    const pieces = Ledges.build(c.mesh, plan).pieces;
+    const pieces = c.model ? carLedges(c.model, c.x, c.lane, c.mesh.rotation.y) : this.proceduralDecks(c);
     c.decks = { at: c.x, pieces, x: c.x, now: pieces };
+  }
+
+  /** Read the stopped bus and colectivo's surfaces from their procedural meshes. */
+  private proceduralDecks(c: Car) {
+    const plan = new GroundPlan();
+    plan.addBox(c.x, c.lane, c.half.x * 2, c.half.z * 2, "car");
+    return Ledges.build(c.mesh, plan).pieces;
   }
 
   /** The hoods, roofs and trunks of the cars standing still near (x, z), as pieces with a height (ledges.ts): a car
@@ -799,7 +814,7 @@ export class Ambient {
   resolvePlayer(p: THREE.Vector3, r: number) {
     for (const c of this.cars) {
       if (c.hidden > 0 || c.mesh.scale.x < 0.5 || (this.standing(c) && c.decks?.pieces.length)) continue;
-      const { x: hx, z: hz } = this.half(c);
+      const { x: hx, z: hz } = c.half;
       const cx = Math.max(c.x - hx, Math.min(p.x, c.x + hx)), cz = Math.max(c.lane - hz, Math.min(p.z, c.lane + hz));
       const dx = p.x - cx, dz = p.z - cz, d2 = dx * dx + dz * dz;
       if (d2 < r * r) {
@@ -810,5 +825,4 @@ export class Ambient {
   }
 }
 
-const CAR_HALF = { x: 2.15, z: 1.0 };
 const NO_PIECES: Piece[] = [];

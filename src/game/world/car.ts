@@ -1,6 +1,6 @@
 // One low-poly car (forward = +Z, wheels on y = 0): a body with a sloping hood and trunk, a glass cabin under a roof
 // with pillars, bumpers, a grille, lights, mirrors and wheels with hubcaps. Vertex-coloured, one geometry, so a car is
-// one draw call (parked cars are merged into a single mesh). Used by the parked cars, the taxi and the cars that drive.
+// one draw call. Used while the car models load, and for the miniature display in the rental shop.
 import * as THREE from "three";
 import { colourMerge } from "./util";
 
@@ -55,7 +55,7 @@ export function carGeometry(color: string, opts: { taxi?: boolean } = {}) {
 }
 
 // ---------------------------------------------------------------------------------------------------------------
-// A Mexican town's vehicles (the Spanish edition's theme: docs/es/TOWN.md): a vochito, a white-and-green taxi, the
+// A Mexican town's vehicles (the Spanish edition's theme: docs/es/TOWN.md): a white-and-green taxi fallback, the
 // colectivo van and the city bus. Same conventions as carParts: forward = +Z, wheels on y = 0, vertex-coloured.
 
 type Parts = [THREE.BufferGeometry, THREE.ColorRepresentation][];
@@ -65,35 +65,6 @@ function wheels(parts: Parts, pts: [number, number][], r: number, w: number) {
     parts.push([new THREE.CylinderGeometry(r, r, w, 14).rotateZ(Math.PI / 2).translate(x, r, z), "#222326"]);
     parts.push([new THREE.CylinderGeometry(r * 0.52, r * 0.52, w + 0.02, 10).rotateZ(Math.PI / 2).translate(x, r, z), "#c9ccd1"]);
   }
-}
-
-/** A "vochito" (the old VW Beetle that Mexico kept making until 2003): the round shell, the fenders over the wheels,
- *  running boards, round headlights on the front fenders, chrome bumpers. A little shorter and narrower than a car. */
-export function vochoParts(color: string): Parts {
-  const parts: Parts = [];
-  const glass = "#7fa9c4", dark = "#2f3136", chrome = "#d8dde2";
-  // the shell: a low nose, the windshield, the round roof and the sloping back over the engine
-  parts.push([profile([[-1.98, 0.32], [1.96, 0.32], [2.0, 0.55], [1.86, 0.78], [1.45, 0.92], [0.98, 0.98], [0.58, 1.38], [0.1, 1.47], [-0.45, 1.45],
-    [-0.98, 1.3], [-1.45, 1.05], [-1.82, 0.78], [-2.0, 0.5]], 1.5), color]);
-  // the windows: a band that stands a little out of the shell at the sides, the windshield in front
-  parts.push([profile([[1.02, 0.97], [0.6, 1.37], [-0.45, 1.36], [-0.98, 1.2], [-1.12, 1.0]], 1.53), glass]);
-  for (const s of [-1, 1]) {
-    // the window pillars, in the body colour
-    parts.push([new THREE.BoxGeometry(0.05, 0.4, 0.09).rotateX(-0.75).translate(s * 0.765, 1.18, 0.8), color]);
-    parts.push([new THREE.BoxGeometry(0.05, 0.38, 0.09).translate(s * 0.765, 1.17, -0.25), color]);
-    // fenders over the wheels and the running board between them
-    for (const z of [1.25, -1.3]) parts.push([new THREE.CylinderGeometry(0.44, 0.44, 0.3, 8, 1, false, 0, Math.PI).rotateZ(Math.PI / 2).rotateX(Math.PI / 2).rotateY(Math.PI / 2).translate(s * 0.73, 0.4, z), color]);
-    parts.push([new THREE.BoxGeometry(0.16, 0.06, 1.5).translate(s * 0.8, 0.32, 0), dark]);
-    // a round headlight on each front fender, a small tail light on each back one
-    parts.push([new THREE.SphereGeometry(0.11, 6, 4).scale(1, 1, 0.6).translate(s * 0.62, 0.75, 1.62), "#fff4c2"]);
-    parts.push([new THREE.BoxGeometry(0.1, 0.16, 0.06).translate(s * 0.68, 0.72, -1.7), "#d8343a"]);
-    parts.push([new THREE.BoxGeometry(0.06, 0.08, 0.14).translate(s * 0.8, 1.0, 0.9), dark]); // mirrors
-  }
-  parts.push([new THREE.BoxGeometry(1.62, 0.1, 0.12).translate(0, 0.42, 2.02), chrome]); // bumpers
-  parts.push([new THREE.BoxGeometry(1.62, 0.1, 0.12).translate(0, 0.42, -2.03), chrome]);
-  for (let i = 0; i < 4; i++) parts.push([new THREE.BoxGeometry(0.5, 0.025, 0.04).translate(0, 0.86 + i * 0.05, -1.62 - i * 0.04), dark]); // the engine's louvres
-  wheels(parts, [[-0.72, 1.25], [0.72, 1.25], [-0.72, -1.3], [0.72, -1.3]], 0.33, 0.24);
-  return parts;
 }
 
 /** A taxi of the town: the car in `body` with its doors and hood in `trim` (white and green, made up after

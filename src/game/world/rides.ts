@@ -2,6 +2,7 @@
 // owners in them, a small boat at the pier. Maple Harbor's; the Spanish edition has its own file of this name for
 // Puerto Colibrí. Headings as everywhere: 0 faces +Z (south), π/2 east, π north (the sea), −π/2 west.
 import type { Rect } from "../rides/drive";
+import { PARKING_LOTS } from "./layout";
 
 export interface CarSpot {
   id: string; x: number; z: number; rot: number;
@@ -43,8 +44,8 @@ export const RIDES: RidesPlan = {
     { id: "pier", x: -17.15, z: -75, rot: Math.PI, stripe: "#2f6db5" },
     { id: "beach", x: -6.5, z: -74.3, rot: Math.PI - 0.3, stripe: "#e2483d" },
   ],
-  // the airport's forecourt at the end of Main Street, Sproutly's at the end of Harbor Road
-  lots: [{ x0: 126, x1: 134, z0: -30, z1: 14 }, { x0: 126, x1: 137, z0: -59.5, z1: -50.5 }],
+  // the airport's and Sproutly's forecourts, and the asphalt parking lots
+  lots: [{ x0: 126, x1: 134, z0: -30, z1: 14 }, { x0: 126, x1: 137, z0: -59.5, z1: -50.5 }, ...PARKING_LOTS],
   // the lighthouse's rocks
   rocks: [[104, -88, 7.5]],
   deep: "#2a93ad",

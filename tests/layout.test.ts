@@ -1,7 +1,9 @@
 // The town's buildings stand clear of the roads, the passing cars' lanes, the parked cars and each other; the newest
 // one, Sproutly's warehouse at the east end of Harbor Road, also keeps its distance from the road's end and sidewalks.
 import { describe, expect, it } from "vitest";
-import { BUILDINGS, CAR, PARKED_CARS, ROADS, SIDEWALK, SPROUTLY_LOT, TAXI, TRAFFIC_LANES, SEA_Z, WORLD } from "../src/game/world/layout";
+import { BUILDINGS, GAS_FORECOURT, PARKED_CARS, PARKING_LOTS, ROADS, SIDEWALK, SPROUTLY_LOT, TRAFFIC_CARS, TRAFFIC_LANES, SEA_Z, WORLD } from "../src/game/world/layout";
+import { carFootprint, carModelEntry } from "../src/game/world/carModels";
+import { THEME } from "../src/game/world/theme";
 import { LOCATIONS } from "../src/content/locations";
 
 import { backgroundHillPosition, HILL_MARGIN } from "../src/game/world/town";
@@ -13,13 +15,11 @@ const footprint = (b: (typeof BUILDINGS)[number]): Box => ({ x1: b.x - b.w / 2, 
 const road = (r: (typeof ROADS)[number], half: number): Box => r.z1 === r.z2
   ? { x1: r.x1, x2: r.x2, z1: r.z1 - half, z2: r.z1 + half }
   : { x1: r.x1 - half, x2: r.x1 + half, z1: r.z1, z2: r.z2 };
-const car = (x: number, z: number, rot: number): Box => {
-  const along = Math.abs(Math.sin(rot)) > 0.5;
-  const hx = (along ? CAR.length : CAR.width) / 2, hz = (along ? CAR.width : CAR.length) / 2;
-  return { x1: x - hx, x2: x + hx, z1: z - hz, z2: z + hz };
-};
-const lanes = TRAFFIC_LANES.map((l): Box => ({ x1: l.from - CAR.length / 2, x2: l.to + CAR.length / 2, z1: l.z - CAR.width / 2, z2: l.z + CAR.width / 2 }));
-const cars = [...PARKED_CARS.map(([x, z, r]) => car(x, z, r)), car(TAXI.x, TAXI.z, TAXI.rot)];
+const sizes = TRAFFIC_CARS.map(({ model }) => carModelEntry(model).collisionBox);
+const hl = Math.max(...sizes.map((size) => size.length)) / 2, hw = Math.max(...sizes.map((size) => size.width)) / 2;
+const lanes = TRAFFIC_LANES.map((l): Box => ({ x1: l.from - hl, x2: l.to + hl, z1: l.z - hw, z2: l.z + hw }));
+const cars = PARKED_CARS.map(carFootprint).map(({ minX, maxX, minZ, maxZ }) => ({ x1: minX, x2: maxX, z1: minZ, z2: maxZ }));
+const contains = (outer: Box, inner: Box) => outer.x1 <= inner.x1 && outer.x2 >= inner.x2 && outer.z1 <= inner.z1 && outer.z2 >= inner.z2;
 
 describe("town layout", () => {
   it("no building stands on a road, in a traffic lane, on a parked car or on another building (touching is fine)", () => {
@@ -29,6 +29,23 @@ describe("town layout", () => {
       for (const l of lanes) expect(gap(f, l), `${b.id} in a lane`).toBeGreaterThanOrEqual(0);
       for (const c of cars) expect(gap(f, c), `${b.id} on a parked car`).toBeGreaterThanOrEqual(0);
       for (const o of BUILDINGS) if (o !== b) expect(gap(f, footprint(o)), `${b.id} and ${o.id}`).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it("keeps each parked footprint on asphalt and clear of every traffic lane", () => {
+    const streets = ROADS.map((r) => road(r, r.w / 2));
+    const withSidewalks = ROADS.map((r) => road(r, r.w / 2 + SIDEWALK));
+    const lots = [...PARKING_LOTS, GAS_FORECOURT].map(({ x0, x1, z0, z1 }): Box => ({ x1: x0, x2: x1, z1: z0, z2: z1 }));
+    const cobblestone = THEME.adoquin?.streets.map(([x1, z1, x2, z2]) => ({ x1, z1, x2, z2 })) ?? [];
+    for (const [i, car] of cars.entries()) {
+      const { model, x, z } = PARKED_CARS[i];
+      const label = `${model} at (${x}, ${z})`;
+      const onStreet = streets.some((street) => contains(street, car));
+      // Sidewalks are painted over the lots, so a footprint in a lot must also clear the sidewalks.
+      const inLot = lots.some((lot) => contains(lot, car)) && withSidewalks.every((street) => gap(street, car) >= 0);
+      expect(onStreet || inLot, `${label} fits on asphalt`).toBe(true);
+      for (const paving of cobblestone) expect(gap(car, paving), `${label} clears the cobblestone`).toBeGreaterThanOrEqual(0);
+      for (const lane of lanes) expect(gap(car, lane), `${label} clears the traffic lane at z ${(lane.z1 + lane.z2) / 2}`).toBeGreaterThanOrEqual(0);
     }
   });
 

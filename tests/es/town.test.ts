@@ -1,15 +1,43 @@
 // Puerto Colibrí's conversations have their places (docs/es/TOWN.md "Every conversation's spot"): the checks that need
 // no browser. The rooms themselves are drawn on a canvas, so the tour (tools/es-tour.mjs) walks to every spot in Chromium.
 // Runs in the vitest project "es" (vite.config.ts), where src/editions/es/ replaces the base files.
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { SITUATIONS, SITUATION_BY_ID } from "../../src/content/situations";
 import { LOCATIONS, NAME_MEANING, placeLtNamed } from "../../src/content/locations";
 import { NPCS } from "../../src/content/npcs";
-import { BUILDINGS, CAR, CHAT_SPOTS, FOUNTAIN, OUTDOOR_NPCS, PARK, PARKED_CARS, ROADS, SIDEWALK, SQUARE, STALLS, TRAFFIC_LANES, WORLD } from "../../src/game/world/layout";
+import { BUILDINGS, CHAT_SPOTS, FOUNTAIN, OUTDOOR_NPCS, PARK, PARKED_CARS, ROADS, SIDEWALK, SQUARE, STALLS, TRAFFIC_CARS, TRAFFIC_LANES, WORLD } from "../../src/game/world/layout";
+import { carFootprint, carModelEntry } from "../../src/game/world/carModels";
 import { THEME } from "../../src/game/world/theme";
 import { STALL_SIZE } from "../../src/game/world/mexican";
+import { buildTown } from "../../src/game/world/town";
 import { ROOM_PEOPLE } from "../../src/game/world/roomPeople";
 import { STAFF_LINES, VENDOR_LINES } from "../../src/content/ambient";
+
+const trafficHalfWidth = Math.max(...TRAFFIC_CARS.map(({ model }) => carModelEntry(model).collisionBox.width / 2));
+
+it("keeps the model footprints clear of the generated town props", () => {
+  const noop = () => {};
+  const context = new Proxy({
+    measureText: (s: string) => ({ width: s.length * 10 }),
+    createLinearGradient: () => ({ addColorStop: noop }),
+    createRadialGradient: () => ({ addColorStop: noop }),
+  }, { get: (target, key) => Reflect.get(target, key) ?? noop });
+  vi.stubGlobal("document", { createElement: () => ({ width: 0, height: 0, getContext: () => context }) });
+  try {
+    const { colliders, parkedCars } = buildTown();
+    const boxes = colliders.boxes.filter((box) => !(box.tag === "car" && box.split));
+    for (const spot of parkedCars.placements) {
+      const { minX, maxX, minZ, maxZ } = carFootprint(spot);
+      const label = `${spot.model} at (${spot.x}, ${spot.z})`;
+      expect(boxes.filter((box) => box.minX < maxX && minX < box.maxX && box.minZ < maxZ && minZ < box.maxZ), label).toEqual([]);
+      const circles = colliders.circles.filter(({ x, z, r }) =>
+        Math.hypot(Math.max(minX - x, 0, x - maxX), Math.max(minZ - z, 0, z - maxZ)) < r);
+      expect(circles, label).toEqual([]);
+    }
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
 
 const isCall = (id: string) => {
   const s = SITUATION_BY_ID[id];
@@ -65,11 +93,11 @@ describe("every Spanish conversation's place", () => {
       for (const px of [104, 110, 116]) expect(Math.abs(p.x - px) > 0.55 + 0.45 || Math.abs(p.z - 5.5) > 0.4 + 0.45, `${p.x},${p.z} on pump ${px}`).toBe(true);
     }
     // the car beside her: one of the parked cars, clear of her, of the player's spot and of the street's lanes
-    const [cx, cz, rot] = THEME.spotCars[0];
-    expect(PARKED_CARS).toContainEqual([cx, cz, rot]);
-    const hx = (Math.abs(Math.sin(rot)) > 0.5 ? CAR.length : CAR.width) / 2 + 0.1, hz = (Math.abs(Math.sin(rot)) > 0.5 ? CAR.width : CAR.length) / 2 + 0.1;
-    for (const p of [chela, { x: chela.ax!, z: chela.az! }]) expect(Math.abs(p.x - cx) > hx + 0.4 || Math.abs(p.z - cz) > hz + 0.4).toBe(true);
-    for (const l of TRAFFIC_LANES) expect(Math.abs(cz - l.z)).toBeGreaterThan(hz + CAR.width / 2);
+    const rental = PARKED_CARS.find(({ x, z }) => x === 113 && z === 4.6)!;
+    expect(rental?.model).toBe("sedan");
+    const { minX, maxX, minZ, maxZ } = carFootprint(rental);
+    for (const p of [chela, { x: chela.ax!, z: chela.az! }]) expect(p.x < minX - 0.5 || p.x > maxX + 0.5 || p.z < minZ - 0.5 || p.z > maxZ + 0.5).toBe(true);
+    for (const l of TRAFFIC_LANES) expect(l.z + trafficHalfWidth < minZ || l.z - trafficHalfWidth > maxZ).toBe(true);
     // she faces the learner
     expect(Math.abs(Math.atan2(chela.ax! - chela.x, chela.az! - chela.z) - chela.rot)).toBeLessThan(0.2);
   });
@@ -197,8 +225,8 @@ describe("graphics round 2: the zócalo dressed, its people, the letters, the co
     expect(bt.buses.length).toBeGreaterThan(0);
     const oak = TRAFFIC_LANES.filter((l) => Math.abs(l.z - 38) < 3);
     for (const bus of bt.buses) for (const l of oak) {
-      // a coach 2.5 m wide at the curb (z 42.5 - 1.08), the cars 1.9 m wide in their lane
-      expect(Math.abs(42.5 - 1.08 - l.z), `the coach at x ${bus.x} and the lane at z ${l.z}`).toBeGreaterThanOrEqual(1.25 + CAR.width / 2 - 0.001);
+      // a coach 2.5 m wide at the curb (z 42.5 - 1.08)
+      expect(Math.abs(42.5 - 1.08 - l.z), `the coach at x ${bus.x} and the lane at z ${l.z}`).toBeGreaterThanOrEqual(1.25 + trafficHalfWidth - 0.001);
     }
   });
 });
@@ -224,7 +252,10 @@ describe("graphics round 3: the town's new things keep clear of everyone", () =>
     ["the atrial cross", box(THEME.atrialCross![0], THEME.atrialCross![1], 0.8, 0.8)],
     ["the mirador", turned(THEME.mirador!.x, THEME.mirador!.z, THEME.mirador!.rot, 2.0, 1.5)],
     ...THEME.cables!.poles.map(([x, z]) => ["a pole", box(x, z, 0.18, 0.18)] as [string, ReturnType<typeof box>]),
-    ...THEME.taxis.map(([x, z, rot]) => ["a taxi", turned(x, z, rot, CAR.width / 2 + 0.1, CAR.length / 2 + 0.1)] as [string, ReturnType<typeof box>]),
+    ...PARKED_CARS.filter(({ model }) => model === "taxi").map((taxi): [string, ReturnType<typeof box>] => {
+      const { minX: x0, maxX: x1, minZ: z0, maxZ: z1 } = carFootprint(taxi);
+      return ["a taxi", { x0, x1, z0, z1 }];
+    }),
     // (graphics round 5) the centro's bins, bolardos and the bolero's stand
     ...THEME.adoquin!.bins.map(([x, z]) => ["a bin", box(x, z, 0.3, 0.3)] as [string, ReturnType<typeof box>]),
     ...THEME.adoquin!.bolardos.map(([x0, z0, x1, z1]) => ["bolardos", { x0: Math.min(x0, x1) - 0.15, x1: Math.max(x0, x1) + 0.15, z0: Math.min(z0, z1) - 0.15, z1: Math.max(z0, z1) + 0.15 }] as [string, ReturnType<typeof box>]),
@@ -239,7 +270,7 @@ describe("graphics round 3: the town's new things keep clear of everyone", () =>
     for (const [i, [a, p]] of things.entries()) for (const [k, [b, q]] of things.entries()) if (k > i && !(a === "a maceta" && b === "a maceta"))
       expect(p.x1 < q.x0 || q.x1 < p.x0 || p.z1 < q.z0 || q.z1 < p.z0, `${a} and ${b}`).toBe(true);
     for (const [what, b] of things) for (const l of TRAFFIC_LANES) if (b.x1 > l.from && b.x0 < l.to)
-      expect(b.z1 < l.z - CAR.width / 2 - 0.2 || b.z0 > l.z + CAR.width / 2 + 0.2, `${what} and the lane at z ${l.z}`).toBe(true);
+      expect(b.z1 < l.z - trafficHalfWidth - 0.2 || b.z0 > l.z + trafficHalfWidth + 0.2, `${what} and the lane at z ${l.z}`).toBe(true);
   });
 
   it("the overhead lines' poles stand on calle Hidalgo's north sidewalk, clear of its corners", () => {
@@ -338,7 +369,7 @@ describe("world-v2: street palms, ceibas and people on the meadows", () => {
     for (const [what, x, z, r] of trees) {
       for (const [who, px, pz] of people) expect(Math.hypot(px - x, pz - z), `${what} at ${x}, ${z} and ${who}`).toBeGreaterThan(r + 1);
       for (const st of STALLS) expect(Math.abs(st.x - x) > STALL_SIZE.lona.x + r + 0.3 || Math.abs(st.z - z) > STALL_SIZE.lona.z1 + r + 0.3, `${what} at ${x}, ${z} and a stall`).toBe(true);
-      for (const l of TRAFFIC_LANES) if (x > l.from && x < l.to) expect(Math.abs(z - l.z), `${what} at ${x}, ${z} and the lane at z ${l.z}`).toBeGreaterThan(CAR.width / 2 + r + 0.2);
+      for (const l of TRAFFIC_LANES) if (x > l.from && x < l.to) expect(Math.abs(z - l.z), `${what} at ${x}, ${z} and the lane at z ${l.z}`).toBeGreaterThan(trafficHalfWidth + r + 0.2);
     }
   });
 

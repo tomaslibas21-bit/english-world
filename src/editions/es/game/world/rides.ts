@@ -3,6 +3,7 @@
 // Muelle. Headings as everywhere: 0 faces +Z (south), π/2 east, π north (the sea), −π/2 west.
 import type { RidesPlan } from "@/game/world/rides";
 import { THEME } from "@/game/world/theme";
+import { GAS_FORECOURT, PARKING_LOTS } from "@/game/world/layout";
 export type { CarSpot, BoatSpot, RidesPlan } from "@/game/world/rides";
 
 export const RIDES: RidesPlan = {
@@ -21,8 +22,8 @@ export const RIDES: RidesPlan = {
     { id: "muelle", x: -11.5, z: -74.3, rot: Math.PI - 0.25, stripe: "#f6a800" },
     { id: "playa", x: 11.5, z: -74.5, rot: Math.PI + 0.3, stripe: "#e4007c" },
   ],
-  // the airport's forecourt at the end of avenida Juárez, Brotecito's at the end of avenida del Puerto
-  lots: [{ x0: 126, x1: 134, z0: -30, z1: 14 }, { x0: 126, x1: 137, z0: -59.5, z1: -50.5 }],
+  // the airport's, Brotecito's and the gas station's forecourts, and the asphalt parking bays
+  lots: [{ x0: 126, x1: 134, z0: -30, z1: 14 }, { x0: 126, x1: 137, z0: -59.5, z1: -50.5 }, GAS_FORECOURT, ...PARKING_LOTS],
   // the lighthouse's rocks
   rocks: [[104, -88, 7.5]],
   deep: "#1fb3c6",
