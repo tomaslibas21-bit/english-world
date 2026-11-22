@@ -12,7 +12,7 @@ import { CAR_SEATS } from "../rides/shapes";
 import { carModelEntry } from "../world/carModels";
 import { TAXI } from "../world/layout";
 import type { RoadHost, WalkEdge } from "./entry";
-import { Gate } from "./gates";
+import { Gate, LANE_PAINT } from "./gates";
 import { ghostAt, GhostRecorder, readBest, saveBest } from "./ghost";
 import { Lift } from "./lift";
 import { DRIVE_SECONDS, FIRST_GATE, nextGate, RunScore } from "./run";
@@ -90,7 +90,7 @@ export class RoadMode {
       return;
     }
     const size = this.source ? { width: this.source.m.spec.wide * 2, length: this.source.m.spec.half * 2 } : taxiSize;
-    const track = new Track(), view = new RoadView(mesh, size, this.host.sky()), car = new RoadCar();
+    const track = new Track(), view = new RoadView(mesh, size), car = new RoadCar();
     view.scene.add(track.group);
     if (this.lift) {
       const ch = this.lift.driver;
@@ -199,7 +199,7 @@ export class RoadMode {
       const correct = score.answer(prompt, lane);
       if (correct) {
         car.boost = Math.max(car.boost, 1.2);
-        view.celebrate(frame.time);
+        view.celebrate(frame.time, distance, lane, LANE_PAINT[lane]);
         audio.kickRush();
         audio.sfx("success");
       } else {

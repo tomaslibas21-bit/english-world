@@ -1,8 +1,12 @@
 import * as THREE from "three";
-import { THEME } from "../world/theme";
+import { OpenSky } from "../kit/openSky";
+import { SoftPuffs } from "../kit/puffs";
 import { colourMerge } from "../world/util";
-import { course, point, type Track } from "./track";
+import { course, laneOffset, point, type Track } from "./track";
+import { ROAD_LOOK } from "./look";
 import { Props } from "./props";
+import { Ranges } from "./ranges";
+import { DRIVE_SECONDS } from "./run";
 import { RoadChase } from "./chase";
 import type { Pose } from "./ghost";
 import type { Gate } from "./gates";
@@ -26,23 +30,31 @@ function copyCar(source: THREE.Object3D) {
 
 function makeClouds() {
   const geometry = colourMerge([
-    [new THREE.IcosahedronGeometry(1, 0).scale(7.8, 1.7, 4.2), "#e8f0ed"],
-    [new THREE.IcosahedronGeometry(1, 0).scale(5, 2.5, 3.8).translate(-1.8, 0.95, 0), "#faf7e9"],
-    [new THREE.IcosahedronGeometry(1, 0).scale(3.4, 1.9, 3.1).translate(3.1, 0.7, -0.85), "#fff9ec"],
+    [new THREE.IcosahedronGeometry(1, 0).scale(7.8, 1.5, 4.2), "#dfe3ea"],
+    [new THREE.IcosahedronGeometry(1, 0).scale(5, 2.3, 3.8).translate(-1.8, 0.95, 0), "#f6f3ee"],
+    [new THREE.IcosahedronGeometry(1, 0).scale(3.4, 1.8, 3.1).translate(3.1, 0.7, -0.85), "#ffffff"],
   ]);
-  const positions = [[-37, 27, -156], [19, 30, -196], [42, 19, -118], [-91, 30, -169], [87, 26, -233]];
+  // Small and high near the road, long and low toward the horizon.
+  const positions = [[-37, 27, -156, 1], [19, 31, -196, 1.1], [44, 20, -118, 0.9], [-95, 32, -175, 1.4], [91, 27, -238, 1.5],
+    [-150, 38, -330, 2.6], [128, 44, -390, 3], [-36, 52, -420, 3.2], [210, 36, -300, 2.4]];
   const clouds = new THREE.InstancedMesh(geometry, new THREE.MeshBasicMaterial({ vertexColors: true, fog: false }), positions.length);
   const matrix = new THREE.Matrix4();
-  positions.forEach(([x, y, z], i) => {
-    matrix.makeScale(0.9 + i * 0.13, 1 + i * 0.065, 1.2).setPosition(x, y, z);
+  positions.forEach(([x, y, z, k], i) => {
+    matrix.makeScale(k * (1 + i % 3 * 0.12), 0.8 + i % 2 * 0.25, 1.2 * k).setPosition(x, y, z);
     clouds.setMatrixAt(i, matrix);
   });
+  clouds.frustumCulled = false;
   return clouds;
 }
 
+const DUST = 28;
+const BURST = 44;
+const CONFETTI = ["#fff2d5", "#ffd166", "#ffffff"];
+const WHITE = new THREE.Color("#ffffff");
+
 export class RoadView {
   readonly scene = new THREE.Scene();
-  readonly camera = new THREE.PerspectiveCamera(57, 1, 0.18, 470);
+  readonly camera = new THREE.PerspectiveCamera(57, 1, 0.18, 960);
   readonly props = new Props();
   readonly gateMaterial = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
   private car: THREE.Object3D;
@@ -52,8 +64,21 @@ export class RoadView {
   private sparks = new THREE.InstancedMesh(new THREE.BoxGeometry(0.095, 0.095, 0.38),
     new THREE.MeshBasicMaterial({ color: "#ffce52" }), 22);
   private burstAt = -Infinity;
-  private sky: THREE.Mesh;
+  private sky = new OpenSky(700, ROAD_LOOK.sky, ROAD_LOOK.sunAzimuth);
+  private ranges = new Ranges(ROAD_LOOK.rock);
   private clouds = makeClouds();
+  private sun = new THREE.DirectionalLight("#ffffff", 2);
+  private fill = new THREE.HemisphereLight("#ffffff", "#ffffff", 1.3);
+  private fog = new THREE.Fog("#ffffff", 100, 298);
+  // Dust the tyres lift when they bite.
+  private dust = new SoftPuffs(DUST, ROAD_LOOK.dust, 0.5);
+  private puffIn = 0;
+  private airborne = false;
+  // The right gate: paper flies up from its lane and a ring of light runs out along the road.
+  private burst = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1),
+    new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide }), BURST);
+  private joy?: { time: number; s: number; lane: number; paint: THREE.Color };
+  private day = -1;
   private geometries: Iterable<THREE.BufferGeometry>;
   private ghostMaterials = new Map<THREE.Material, THREE.Material>();
   private readonly chase = new RoadChase();
@@ -61,17 +86,15 @@ export class RoadView {
   private readonly worldCorners: THREE.Vector3[];
   private cameraMotion = { distance: 0, lift: 0, pace: 0, time: 0, dt: 0 };
 
-  constructor(mesh: THREE.Object3D, size: { width: number; length: number }, sky: THREE.Mesh) {
-    const light = THEME.light;
-    this.scene.background = new THREE.Color(light.dome[2]);
-    this.scene.fog = new THREE.Fog(light.haze, 100, 298);
-    const sun = new THREE.DirectionalLight(light.sun, 2.05);
-    sun.position.set(-40, 70, 30);
-    // The town dome has a radius of 600 m. Keep the road dome inside its shorter far plane.
-    this.sky = new THREE.Mesh(new THREE.SphereGeometry(this.camera.far * 0.75, 28, 18), sky.material);
-    this.sky.frustumCulled = false;
-    this.sky.renderOrder = -1;
-    this.scene.add(this.sky, this.clouds, sun, new THREE.HemisphereLight(light.sky, light.ground, light.fill), this.props.group);
+  constructor(mesh: THREE.Object3D, size: { width: number; length: number }) {
+    this.scene.fog = this.fog;
+    this.sun.position.set(-40, 62, 34);
+    this.burst.frustumCulled = false;
+    this.burst.count = 0;
+    this.burst.visible = false;
+    this.burst.renderOrder = 3;
+    this.scene.add(this.sky.mesh, this.ranges.mesh, this.clouds, this.sun, this.fill, this.props.group, this.dust.mesh, this.burst);
+    this.daylight(0);
     const { car, geometry } = copyCar(mesh);
     this.car = car;
     car.position.set(0, 0, 0);
@@ -106,7 +129,85 @@ export class RoadView {
     void this.props.loadModels();
   }
 
-  celebrate(time: number) { this.burstAt = time; }
+  /** The right gate at `s`, passed in `lane`, painted `paint`. */
+  celebrate(time: number, s?: number, lane = 1, paint = "#ffd166") {
+    this.burstAt = time;
+    this.sky.pulse();
+    if (s !== undefined) this.joy = { time, s, lane, paint: new THREE.Color(paint) };
+  }
+
+  /** The timer is the time of day: 0 as the run starts, 1 as it ends. */
+  private daylight(day: number) {
+    if (Math.abs(day - this.day) < 0.004) return;
+    this.day = day;
+    const sky = this.sky;
+    sky.blend(day);
+    this.fog.color.copy(sky.haze);
+    this.sun.color.copy(sky.light);
+    this.sun.intensity = sky.lightPower;
+    this.fill.color.copy(sky.fillSky);
+    this.fill.groundColor.copy(sky.fillGround);
+    this.fill.intensity = sky.fill;
+    this.ranges.light(sky.haze, sky.light);
+    (this.clouds.material as THREE.MeshBasicMaterial).color.copy(sky.cloud);
+    this.dust.tint.set(ROAD_LOOK.dust).multiply(sky.cloud);
+  }
+
+  private raiseDust(s: number, lateral: number, lift: number, drift: boolean, wobble: number, dt: number) {
+    // Only when the tyres bite: a drift, a stumble, or the landing after a ramp.
+    const landed = this.airborne && lift < 0.05;
+    this.airborne = lift > 0.25;
+    const hard = drift || wobble > 0.2 || landed;
+    if (((this.puffIn -= dt) <= 0 || landed) && lift < 0.2 && hard) {
+      this.puffIn = 0.07;
+      for (const side of landed ? [-1, 1, -1, 1] : [-1, 1]) {
+        this.dust.emit(point(s - 1.3, lateral + side * 0.85, 0.3), landed ? 1.5 : 1.05, 0.85,
+          { x: side * 0.5, y: 0.9, z: 2.5 }, landed ? 2.4 : 1.9);
+      }
+    }
+    this.dust.update(dt);
+  }
+
+  private throwPaper(time: number) {
+    const joy = this.joy;
+    const age = joy ? (time - joy.time) / 1.05 : 1;
+    if (!joy || age >= 1 || age < 0) {
+      if (joy) this.joy = undefined;
+      this.burst.visible = false;
+      this.burst.count = 0;
+      return;
+    }
+    const fresh = this.burst.count === 0;
+    const colour = new THREE.Color();
+    const x0 = laneOffset(joy.lane), out = 1 - (1 - age) ** 3;
+    for (let i = 0; i < BURST; i++) {
+      if (i < 16) {
+        // A ring of dashes on the asphalt, running out from under the arch.
+        const angle = i / 16 * Math.PI * 2, reach = 1.2 + out * 9.5;
+        dummy.position.copy(point(joy.s + Math.cos(angle) * reach + age * 7, x0 + Math.sin(angle) * reach * 0.62, 0.09));
+        dummy.rotation.set(-Math.PI / 2, 0, -angle + Math.PI / 2);
+        dummy.scale.set(0.16, (1.5 - age) * 0.9, 1).multiplyScalar(1 - age * age);
+        if (fresh) colour.copy(joy.paint).lerp(WHITE, 0.35);
+      } else {
+        // Paper from the two posts of the arch: up and out, then fluttering down beside the car as it pulls away.
+        const j = i - 16, a = j * 2.399, b = (j * 0.618) % 1, side = j % 2 ? 1 : -1;
+        const rise = 2.2 + (j % 5) * 0.8;
+        dummy.position.copy(point(joy.s + 1 + age * (11 + b * 9), x0 + side * (1.8 + (0.4 + b * 2.6) * out),
+          3.9 + rise * age - 6.4 * age * age + Math.sin(a) * 0.4));
+        dummy.rotation.set(a + age * (7 + j % 4), a * 1.7 + age * 5, age * 9 + j);
+        dummy.scale.setScalar((0.36 + (j % 3) * 0.1) * Math.min(1, (1 - age) * 3.2));
+        if (fresh && j % 3 === 0) colour.set(CONFETTI[(j / 3 | 0) % 3]);
+        else if (fresh) colour.copy(joy.paint).lerp(WHITE, j % 3 === 1 ? 0 : 0.45);
+      }
+      dummy.updateMatrix();
+      this.burst.setMatrixAt(i, dummy.matrix);
+      if (fresh) this.burst.setColorAt(i, colour);
+    }
+    this.burst.count = BURST;
+    this.burst.visible = true;
+    this.burst.instanceMatrix.needsUpdate = true;
+    if (fresh && this.burst.instanceColor) this.burst.instanceColor.needsUpdate = true;
+  }
 
   passenger(root: THREE.Object3D) { this.car.add(root); }
 
@@ -148,12 +249,18 @@ export class RoadView {
       this.sparks.setMatrixAt(i, dummy.matrix);
     }
     if (this.sparks.count) this.sparks.instanceMatrix.needsUpdate = true;
+    this.raiseDust(s, lateral, lift, drift, wobble, dt);
+    this.throwPaper(time);
+    this.sky.update(dt, this.camera.position);
+    this.ranges.update(s);
     this.cameraMotion = { distance: s, lift, pace: fraction, time, dt };
-    this.clouds.position.z = -s;
+    // The clouds keep their place in the sky and drift a little.
+    this.clouds.position.set(Math.sin(time * 0.02) * 14, 0, -s);
   }
 
   stream(track: Track, s: number, time: number, propsChanged = false) {
-    this.props.update(track, s, time, track.stream(s), propsChanged);
+    this.daylight(time / DRIVE_SECONDS);
+    this.props.update(track, time, track.stream(s), propsChanged);
   }
 
   render(renderer: THREE.WebGLRenderer, width: number, height: number, gate: Gate | undefined) {
@@ -161,7 +268,7 @@ export class RoadView {
     this.car.updateMatrix();
     this.worldCorners.forEach((corner, i) => corner.copy(this.carCorners[i]).applyMatrix4(this.car.matrix));
     this.chase.update(this.camera, this.car.position, distance, lift, pace, time, dt, width, height, this.worldCorners, gate?.crossed ? undefined : gate);
-    this.sky.position.copy(this.camera.position);
+    this.sky.mesh.position.copy(this.camera.position);
     renderer.render(this.scene, this.camera);
     return gate?.labels(this.camera, width, height) ?? [];
   }
@@ -178,7 +285,12 @@ export class RoadView {
 
   dispose() {
     this.scene.clear();
-    this.sky.geometry.dispose();
+    this.sky.dispose();
+    this.ranges.dispose();
+    this.dust.dispose();
+    this.burst.geometry.dispose();
+    this.burst.material.dispose();
+    this.burst.dispose();
     this.clouds.geometry.dispose();
     this.clouds.material.dispose();
     this.clouds.dispose();
