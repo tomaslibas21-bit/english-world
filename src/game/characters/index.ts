@@ -57,7 +57,6 @@ export interface GameCharacter {
   swim?: number;
   poolHit?: number;
   wading?: boolean;
-  hideBackpack?: boolean;
   dive?: number;
   /** On a surfboard (src/game/surf/; the original Character): lying on it and paddling, standing side-on, astride. */
   surf?: { prone: number; stance: number; crouch: number; pitch: number; stroke: number; wobble: number; straddle: number };

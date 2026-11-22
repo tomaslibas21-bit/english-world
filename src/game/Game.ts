@@ -1091,7 +1091,7 @@ export class Game implements GameApi {
     this.swimming = false; this.swimK = 0; this.diveK = 0;
     if (this.player) {
       this.player.swim = 0; this.player.dive = 0;
-      this.player.hideBackpack = false;
+      this.player.setBackpack?.(true);
       this.player.wading = false;
     }
     this.underWater(false);
@@ -2953,7 +2953,7 @@ export class Game implements GameApi {
     const depth = indoor ? 0 : Math.max(0, surface - this.hop.y);
     this.wading.depth = indoor || this.swimming ? 0 : Math.max(0, over);
     const wet = depth > 0.05 && this.diveK < 0.5;
-    this.player.hideBackpack = hotelWater && depth > 0.05;
+    this.player.setBackpack?.(!(hotelWater && depth > 0.05));
     this.player.wading = hotelWater && wet;
     if (wet && !blocked) coach.cue("water");
     this.washT -= dt;

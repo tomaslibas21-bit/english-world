@@ -39,7 +39,6 @@ export interface SurfGame {
   entered(): void;
   /** On foot again at (x, z), facing `rot`. */
   left(x: number, z: number, rot: number): void;
-  portrait(): boolean;
 }
 
 /** The lines that become phrase cards once heard: the commands one acts on, the questions, the rewards. */
@@ -198,7 +197,11 @@ export class SurfPlay {
     const scene = this.scene ?? import("./Surf").then(({ Surf }) => {
       if (request !== this.startRequest) return;
       const game = this.game;
-      this.scene ??= new Surf(this.spot, { get player() { return game.player(); }, splash: game.splash, portrait: game.portrait }, this.group);
+      this.scene ??= new Surf(this.spot, {
+        get player() { return game.player(); },
+        get aspect() { return game.rig.cam.aspect; },
+        splash: game.splash,
+      }, this.group);
     });
     void Promise.all([scene, lines]).then(start).catch((err) => {
       if (request !== this.startRequest) return;

@@ -101,6 +101,7 @@ class PoolMode implements GameMode {
       this.host.prepare();
       const learner = POOL_CIRCLE.learner;
       this.host.place(learner.x, learner.z, Math.PI);
+      this.host.player().setBackpack?.(false);
       this.host.entered(this.id);
       this.host.rig.stage = this.stage;
       this.host.rig.mode = "stage";
@@ -308,7 +309,6 @@ class PoolMode implements GameMode {
     }
     this.ball.visible = this.phase === "opening" || this.phase === "play";
     const player = this.host.player();
-    player.hideBackpack = true;
     const centerHeading = Math.atan2(POOL_CENTER.x - POOL_CIRCLE.learner.x, POOL_CENTER.z - POOL_CIRCLE.learner.z);
     const heading = this.pose(player, "learner", centerHeading, dt, false);
     this.host.updatePose(dt, heading);
@@ -421,7 +421,7 @@ class PoolMode implements GameMode {
       const player = this.host.player();
       player.poolHit = 0;
       player.wading = false;
-      player.hideBackpack = false;
+      player.setBackpack?.(true);
       this.host.rig.stage = null;
       this.host.rig.mode = "follow";
       if (!immediate) this.host.place(POOL_ENTRY.x, POOL_ENTRY.z, POOL_ENTRY.rot);

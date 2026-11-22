@@ -6,7 +6,11 @@ import { GLOBAL } from "@/content/global";
 import { ROUTE } from "@/content/route";
 import { SITUATION_BY_ID } from "@/content/situations";
 import { buildNlu, type TurnOut } from "@/convo/dialogue";
+import { CameraRig } from "@/game/camera";
+import { withBackpack } from "@/game/characters";
+import { Character } from "@/game/characters/Character";
 import type { ModeHost } from "@/game/kit/host";
+import { createPoolMode } from "@/game/pool/mode";
 import { NavGrid } from "@/game/nav";
 import { floorY, POOLS, SWIM, waterY } from "@/game/water";
 import { BUILDINGS, OUTDOOR_NPCS, ROADS, SEA_Z, SIDEWALK, WORLD } from "@/game/world/layout";
@@ -113,6 +117,30 @@ describe("Hotel Mar Azul's pool", () => {
     const nav = new NavGrid(WORLD.minX - 50, WORLD.minZ, WORLD.maxX, WORLD.maxZ, 1, col);
     expect(nav.path(POOL_ENTRY.x, POOL_ENTRY.z + 2, POOL_TALK.x, POOL_TALK.z)).not.toBeNull();
     expect(nav.path(POOL_TALK.x, POOL_TALK.z, x, z - 3)).not.toBeNull();
+  });
+
+  it("hides the learner's backpack on ball-game entry and restores it on exit", () => {
+    const player = new Character(withBackpack(NPCS.vale.look));
+    const rig = new CameraRig(1);
+    const place = (x: number, z: number) => player.root.position.set(x, 0, z);
+    const mode = createPoolMode({
+      player: () => player, rig, place, add() {}, prepare() {}, entered() {}, left() {},
+      canStart: () => true, owns: () => true, portrait: () => false,
+      fade: (enter: () => void) => { enter(); return true; },
+    } as unknown as ModeHost)!;
+    try {
+      place(POOL_ENTRY.x, POOL_ENTRY.z);
+      expect(player.backpackVisible).toBe(true);
+      expect(mode.start()).toBe(true);
+      expect(player.root.position).toMatchObject(POOL_CIRCLE.learner);
+      expect(player.backpackVisible).toBe(false);
+      mode.exit(false);
+      expect(player.root.position.toArray()).toEqual([POOL_ENTRY.x, 0, POOL_ENTRY.z]);
+      expect(player.backpackVisible).toBe(true);
+    } finally {
+      mode.dispose();
+      player.dispose();
+    }
   });
 });
 

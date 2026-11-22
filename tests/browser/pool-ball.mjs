@@ -25,6 +25,7 @@ try {
 
     const step = (n = 1) => page.evaluate((frames) => window.__stepPool(frames), n);
     const state = () => page.evaluate(() => window.__ew.game.pool?.debug());
+    const backpack = () => page.evaluate(() => window.__ew.game.player.backpackVisible);
     const waitFor = async (predicate, description, batch = 5, limit = 150) => {
       for (let i = 0; i < limit; i++) {
         if (predicate(await state())) return;
@@ -35,6 +36,7 @@ try {
 
     assert.equal(await page.evaluate(() => window.__ew.game.poolTeleport()), true);
     await step(4);
+    assert.equal(await backpack(), true, `${label}: backpack visible on the deck`);
     const idle = await page.evaluate(() => window.__ew.game.drawStats());
     assert(idle.calls > 0, `${label}: renderer reports draw calls at the pool`);
     const walkingPool = () => page.evaluate(() => {
@@ -53,6 +55,7 @@ try {
     const afterWalk = await walkingPool();
     assert.equal(afterWalk.view, "follow", `${label}: idle rally uses the walking camera`);
     assert.equal(afterWalk.prompt, "pool", `${label}: completed chat unlocks the pool prompt`);
+    assert.equal(await backpack(), false, `${label}: backpack hidden while wading`);
     assert(await page.getByRole("button", { name: /Play ball|Žaisti kamuoliu/ }).first().isVisible());
     assert(Array.isArray(afterWalk.ball), `${label}: idle ball visible`);
     assert.notDeepEqual(afterWalk.ball, beforeWalk.ball, `${label}: idle rally advances`);
@@ -77,10 +80,7 @@ try {
       assert.deepEqual(blockers, [], `${label}: clear sightline to ${id}`);
     }
     assert.deepEqual(foreground, [], `${label}: clear foreground across the frame`);
-    assert.equal(await page.evaluate(() => {
-      const backpack = window.__ew.game.player.root.getObjectByName("backpack");
-      return !!backpack && backpack.scale.x < 0.01;
-    }), true, `${label}: backpack hidden in the pool`);
+    assert.equal(await backpack(), false, `${label}: backpack hidden during the ball game`);
 
     await shot("stage");
     if (phone) await page.locator(".pool-hit").dispatchEvent("pointerdown", { pointerType: "touch", bubbles: true });
@@ -107,6 +107,9 @@ try {
     const saved = await page.evaluate(() => window.__ew.store.getState().progress.pool);
     assert.deepEqual(saved, { best: 2, rounds: 1, rulesHeard: true });
     await shot("score");
+    await page.keyboard.press("Escape");
+    assert.equal((await state()).phase, null, `${label}: the ball game ended`);
+    assert.equal(await backpack(), true, `${label}: backpack restored after the ball game`);
     assert.deepEqual(errors, []);
     console.log(`${label}: hit, miss, score. Draw calls at the pool: ${idle.calls}.`);
     await context.close();

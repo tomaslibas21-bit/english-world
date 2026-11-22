@@ -6,6 +6,7 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { SEA_LEVEL, SWELL_GLSL, floorY, swell } from "../water";
 import { audio } from "../audio";
+import type { CameraRig } from "../camera";
 import { colourMerge } from "../world/util";
 import { STYLED, vertexColorMaterial } from "../style";
 import { createCharacter, type GameCharacter } from "../characters";
@@ -62,14 +63,13 @@ export interface SurfSceneHost {
   player: GameCharacter;
   /** Drops thrown up from the water (Game's Splashes). */
   splash(x: number, y: number, z: number, dx: number, dz: number, k: number): void;
-  /** A phone held upright: the camera stands further back. */
-  portrait(): boolean;
+  readonly aspect: number;
 }
 
 export class Surf {
   logic: SurfLogic | null = null;
   /** Where the camera should stand and what it should look at now (Game puts it there: camera.ts "stage"). */
-  cam = { pos: new THREE.Vector3(), look: new THREE.Vector3(), rate: 3 };
+  readonly cam: NonNullable<CameraRig["stage"]> = { pos: new THREE.Vector3(), look: new THREE.Vector3(), rate: 3 };
   /** The instructor in the water (built for the first lesson). */
   coach: GameCharacter | null = null;
   /** Which way the learner faces (Game's headings: 0 the beach, π the sea). */
@@ -484,8 +484,9 @@ export class Surf {
       wv.u.uFade.value = sstep(-2.5, 1.5, w.d);
     });
     // --- the camera
-    const tall = this.host.portrait(), far = tall ? 1.35 : 1;
+    const aspect = this.host.aspect, tall = aspect < 1 / 1.15, far = tall ? 1.35 : 1;
     const C = this.cam;
+    C.shiftY = undefined;
     if (onBeach) {
       // from the water's side: the two of them, the boards behind them, the town beyond
       C.pos.set(S.x + 0.2, 1.9, B.z - 5.6 * far); C.look.set(S.x + 0.25, 1.15, B.z + 1.5); C.rate = 3;
@@ -508,11 +509,14 @@ export class Surf {
     }
     if (demo) {
       // Show the face from the side, then turn back to the learner as Nayeli reaches the shallows.
-      const k = 1 - sstep(DEMO_LAND - 0.3, DEMO_END, this.demoT);
+      const k = 1 - sstep(DEMO_LAND, DEMO_END, this.demoT);
       const cp = c.root.position, blend = THREE.MathUtils.lerp;
-      C.pos.set(blend(C.pos.x, cp.x + 4.75 * far, k), blend(C.pos.y, 2.15, k), blend(C.pos.z, cp.z + 2 * far, k));
-      C.look.set(blend(C.look.x, cp.x - 0.35, k), blend(C.look.y, cp.y + 0.85, k), blend(C.look.z, cp.z - 0.55, k));
-      C.rate = 5;
+      const distance = tall ? Math.max(6.1, 3.6 / Math.max(aspect, 0.35)) : 5.2;
+      C.pos.set(blend(C.pos.x, cp.x + distance, k), blend(C.pos.y, tall ? 2.45 : 2.15, k), blend(C.pos.z, cp.z + 2, k));
+      C.look.set(blend(C.look.x, cp.x - 0.35, k), blend(C.look.y, cp.y + (tall ? 0.53 : 0.75), k), blend(C.look.z, cp.z + (tall ? 0.18 : -0.24), k));
+      // Ease back into the normal portrait shift as the learner comes back into view.
+      if (tall) C.shiftY = -0.1 * (1 - k);
+      C.rate = tall ? 7.5 : 5;
     }
   }
 }

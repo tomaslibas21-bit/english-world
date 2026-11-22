@@ -383,10 +383,6 @@ export class Character {
   /** The phone in the right hand, shown while they look at it. */
   private phone: THREE.Object3D | null = null;
   private backpack: THREE.Object3D | null = null;
-  private backpackHidden = false;
-  /** Hidden in the hotel pool and during its ball game; only a change touches the pack (the surf sets it too). */
-  get hideBackpack() { return this.backpackHidden; }
-  set hideBackpack(hidden: boolean) { if (hidden !== this.backpackHidden) { this.backpackHidden = hidden; this.setBackpack(!hidden); } }
   /** The shins with their feet: standing, and longer ones for sitting (built when the character first sits). */
   private shins: THREE.Object3D[] = [];
   private seatShins: THREE.Object3D[] | null = null;
@@ -593,7 +589,9 @@ export class Character {
   }
 
   /** Toggle the pack and both straps together in the baked character mesh. */
-  setBackpack(visible: boolean) { if (this.backpack) vis(this.backpack, visible); }
+  setBackpack(visible: boolean) {
+    if (this.backpack && this.backpackVisible !== visible) vis(this.backpack, visible);
+  }
   get backpackVisible() { return !!this.backpack && this.backpack.scale.x > 0.5; }
 
   // ------------------------------------------------------------------ body

@@ -118,6 +118,7 @@ try {
       return {
         side: camera.position.x - position.x, height: camera.position.y, pitch: rotation.x,
         left: (left.project(camera).x - feet.x) * innerWidth / 2,
+        center: [feet.x, feet.y],
         inView: inView(feet) && inView(head.project(camera)),
         waveHeight: Math.max(...active.map(({ u }) => u.uH.value)),
         singlePass: active.length > 0 && active.every(({ mesh }) => mesh.material.forceSinglePass && mesh.geometry.groups.length === 0),
@@ -309,6 +310,10 @@ try {
     const { learnerFrame, coachFrame } = run;
     check(`${label}: both riders fit in the low side view on a tall, single-pass wave`,
       [learnerFrame, coachFrame].every((f) => f?.inView && f.side > 3 && f.height < 2.6 && f.pitch > 0.3 && f.waveHeight >= 1.2 && f.singlePass), { learnerFrame, coachFrame });
+    if (phone) {
+      const [x, y] = coachFrame.center;
+      check(`${label}: Nayeli's board is centered above the touch controls`, Math.abs(x) < 0.3 && y > -0.32 && y < 0.2, coachFrame);
+    }
     check(`${label}: the learner's left still projects screen-left in the riding camera`, learnerFrame?.left < -3, learnerFrame);
     const beginnerSounds = await sounds();
     const hands = beginnerSounds.filter((e) => e.method === "surfStroke").map((e) => e.hand);
