@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import * as THREE from "three";
 import { TAXI_CAR, TAXI_ROUTES } from "../src/content/taxi";
 import { TAXI_LINES } from "../src/content/taxi-lines";
@@ -13,21 +13,27 @@ import { carLedges, carModelEntry } from "../src/game/world/carModels";
 import { BUILDINGS, PARKED_CARS, ROADS, TAXI } from "../src/game/world/layout";
 import { RIDES } from "../src/game/world/rides";
 import { Colliders } from "../src/game/world/util";
-import { approach, approachDistance, checkDecision, resetPose, taxiScore, type Point } from "../src/game/taxi/route";
+import { approach, approachDistance, checkDecision, inStopZone, resetPose, taxiScore, type Point } from "../src/game/taxi/route";
 
 const taxiSize = carModelEntry(TAXI.model).collisionBox;
 
+function makeRides(allowsHints?: () => boolean) {
+  const colliders = new Colliders();
+  const nav = new NavGrid(112, -16, 132, 8, 1, colliders);
+  const ambient = new Ambient(nav, [[125, 2]], "low");
+  const player = createCharacter(NPCS.vinnie.look);
+  const quiet = () => {};
+  const waiting = vi.fn();
+  const rides = new Rides({ cam: new THREE.PerspectiveCamera(), colliders, nav, ambient, player, quality: "low",
+    people: () => [], outdoors: () => true, say: quiet, thud: quiet, stuck: quiet, aground: quiet,
+    allowsHints, waiting, freed: quiet, rescue: quiet, splash: quiet, fan: quiet,
+  }, RIDES, []);
+  return { rides, player, ambient, waiting };
+}
+
 describe("Maple Harbor taxi routes", () => {
   it("keeps the taxi outside the town rides and map while sharing driving and collision physics", () => {
-    const colliders = new Colliders();
-    const nav = new NavGrid(112, -16, 132, 8, 1, colliders);
-    const ambient = new Ambient(nav, [[125, 2]], "low");
-    const player = createCharacter(NPCS.vinnie.look);
-    const quiet = () => {};
-    const rides = new Rides({ cam: new THREE.PerspectiveCamera(), colliders, nav, ambient, player, quality: "low",
-      people: () => [], outdoors: () => true, say: quiet, thud: quiet, stuck: quiet, aground: quiet,
-      waiting: quiet, freed: quiet, rescue: quiet, splash: quiet, fan: quiet,
-    }, RIDES, []);
+    const { rides, player, ambient } = makeRides();
     const marks = rides.marksForMap();
     const parking = new THREE.Group(), standCar = new THREE.Group();
     parking.add(standCar);
@@ -61,6 +67,40 @@ describe("Maple Harbor taxi routes", () => {
     expect(rides.modeCarPieces(TAXI.x, TAXI.z).map(({ top }) => top)).toContain(taxiSize.height);
     rides.removeModeCar(car);
     expect(ambient.rideBoxes).not.toContain(trafficBox);
+  });
+
+  it("shows the waiting hint only for a sustained obstruction while the mode allows hints", () => {
+    let hints = false;
+    const { rides, player, ambient, waiting } = makeRides(() => hints);
+    const car = rides.createModeCar(TAXI_CAR, new THREE.Group());
+    player.root.position.copy(car.mesh.position);
+    expect(rides.board(car)).toBe(true);
+    const obstacle = vi.spyOn(ambient, "personAhead").mockReturnValue(0);
+    let time = 0;
+    const drive = (frames: number) => {
+      for (let i = 0; i < frames; i++) rides.update(0.05, time += 0.05, { throttle: 1, steer: 0, brake: false });
+    };
+
+    drive(80);
+    expect(rides.phase).toBe("on");
+    expect(waiting).not.toHaveBeenCalled();
+    expect(rides.waitingForTraffic).toBe(false);
+
+    hints = true;
+    drive(40);
+    expect(waiting).not.toHaveBeenCalled();
+    drive(8);
+    expect(waiting).toHaveBeenCalledOnce();
+    expect(rides.waitingForTraffic).toBe(true);
+
+    obstacle.mockReturnValue(Infinity);
+    drive(1);
+    expect(rides.waitingForTraffic).toBe(false);
+    obstacle.mockReturnValue(0);
+    drive(48);
+    expect(rides.waitingForTraffic).toBe(true);
+    rides.abandon();
+    expect(rides.waitingForTraffic).toBe(false);
   });
 
   it("uses the stand, late-bound conversation lines, ordered decision points and an actual door", () => {
@@ -164,6 +204,9 @@ describe("taxi scoring", () => {
     expect(measure(at.x + 4.1, at.z, 0)).toBe("continue");
     expect(measure(at.x, at.z + 2, 0)).toBe("continue");
     expect(measure(at.x, at.z, 0.5)).toBe("continue");
+    expect(inStopZone(route, { x: at.x + 4, z: at.z })).toBe(true);
+    expect(inStopZone(route, { x: at.x + 4.1, z: at.z })).toBe(false);
+    expect(inStopZone(route, { x: at.x, z: at.z + 2 })).toBe(false);
     expect(measure(at.x - 16, at.z, 1)).toBe("passed");
     const other = TAXI_ROUTES[1];
     const reset = resetPose(approach(other, index));

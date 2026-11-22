@@ -18,7 +18,7 @@ import type { Ride } from "../rides/Rides";
 import type { Door, StandTaxi } from "../world/town";
 import { carModelEntry } from "../world/carModels";
 import { CAR_SEATS } from "../rides/shapes";
-import { approach, approachDistance, checkDecision, resetPose, taxiScore, type TaxiRoute } from "./route";
+import { approach, approachDistance, checkDecision, inStopZone, resetPose, taxiScore, type TaxiRoute } from "./route";
 import { resetTaxiUi, useTaxi } from "./store";
 
 type Phase = "opening" | "drive" | "wrong" | "passed" | "closing" | "result";
@@ -73,6 +73,10 @@ class TaxiMode implements GameMode {
 
   get active() { return this.run !== null; }
   get route() { return this.run?.route; }
+
+  allowsRideHints() {
+    return this.run?.phase === "drive" && !inStopZone(this.run.route, this.car.m);
+  }
 
   tick(dt: number, outdoors: boolean) {
     this.marker.visible = outdoors && !this.active;

@@ -37,6 +37,8 @@ export interface RideHost {
   say(line: RideLine, voice: string | null, female: boolean, ch: GameCharacter): void;
   /** A wheel over a kerb or a speed bump (`k` 0–1: how hard). */
   thud(k: number): void;
+  /** Whether the current mode can show driving hints. */
+  allowsHints?(): boolean;
   /** The car has pushed at something for a while and gets nowhere: a word about backing up. */
   stuck(): void;
   /** The boat lies with its bow on the shallows and is still being driven at the beach: a word about backing off. */
@@ -550,6 +552,8 @@ export class Rides {
 
   // ------------------------------------------------------------------------------------------------ update
 
+  get waitingForTraffic() { return this.riding !== null && !this.glide && this.yieldT > 2.2; }
+
   /** `c`: the hands (null: nobody may drive now: a panel is open, a call has started). `t`: the town's clock. */
   update(dt: number, t: number, c: Controls | null) {
     const host = this.host, pl = host.player, pp = pl.root.position;
@@ -711,13 +715,14 @@ export class Rides {
     // (nor while it is coming round on the spot: that is the way out of a tight place)
     const turning = Math.abs(Math.atan2(Math.sin(m.heading - this.pushAt.h), Math.cos(m.heading - this.pushAt.h))) > 0.5;
     const pushing = Math.abs(c.throttle) > 0.5 && m.pace < 0.7 && Math.abs(was) < 0.7 && Math.abs(m.yaw) < 0.25 && gap > m.spec.half + CAR.clear + 1 && !queued;
-    this.stuckT = pushing ? this.stuckT + dt : 0;
+    const hints = host.allowsHints?.() ?? true;
+    this.stuckT = hints && pushing ? this.stuckT + dt : 0;
     if (this.stuckT > 1.8 && !this.stuckTold) { this.stuckTold = true; host.stuck(); }
     // held up by someone who stays where they are (on a bench, at a stall): a word about going round, once a ride
     // (or by a car of the traffic that stands in its way)
     const held = Math.abs(c.throttle) > 0.5 && !c.brake && Math.abs(m.speed) < 0.3 && (gap <= m.spec.half + CAR.clear + 1 || (lead.gap !== Infinity && behind < 1.5 && !moving));
-    this.yieldT = held ? this.yieldT + dt : 0;
-    if (this.yieldT > 2.2 && !this.yieldTold) { this.yieldTold = true; host.waiting(); }
+    this.yieldT = hints && held ? this.yieldT + dt : 0;
+    if (this.waitingForTraffic && !this.yieldTold) { this.yieldTold = true; host.waiting(); }
     // and if, backing and turning, it still has not left the spot after a good while of trying: back onto the street
     // by itself (nobody is ever left boxed in between a wall and a bench)
     if (Math.hypot(m.x - this.pushAt.x, m.z - this.pushAt.z) > 2.2 || turning) { this.pushAt.x = m.x; this.pushAt.z = m.z; this.pushAt.h = m.heading; this.pushT = 0; }

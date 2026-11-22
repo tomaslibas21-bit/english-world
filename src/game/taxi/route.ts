@@ -42,6 +42,17 @@ function measure(p: Point, origin: Point, dir: Point) {
   return { along: x * dir.x + z * dir.z, across: Math.abs(x * dir.z - z * dir.x) };
 }
 
+function insideStopBounds({ along, across }: ReturnType<typeof measure>) {
+  return Math.abs(along) <= 4 && across <= 1.8;
+}
+
+export function inStopZone(route: TaxiRoute, p: Point) {
+  const stop = route.decisions.at(-1);
+  if (stop?.action !== "stop") return false;
+  const from = stop.via?.at(-1) ?? route.decisions.at(-2)?.at ?? route.start;
+  return insideStopBounds(measure(p, stop.at, axis(from, stop.at)));
+}
+
 export function approachDistance(path: Point[], p: Point) {
   let nearest = Infinity, remaining = Infinity, after = 0;
   for (let i = path.length - 1; i > 0; i--) {
@@ -75,7 +86,7 @@ export function checkDecision(route: TaxiRoute, index: number, car: DrivePositio
   const incoming = axis(path[path.length - 2], step.at);
   const inLine = measure(car, step.at, incoming);
   if (step.action === "stop") {
-    if (Math.abs(inLine.along) <= 4 && inLine.across <= 1.8 && car.pace < 0.5) return "stopped";
+    if (insideStopBounds(inLine) && car.pace < 0.5) return "stopped";
     if (inLine.along > 15) return "passed";
     return inLine.across > 12 && approachDistance(path, car).nearest > 14 ? "wrong" : "continue";
   }

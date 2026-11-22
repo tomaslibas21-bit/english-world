@@ -127,6 +127,19 @@ function taxiStandView() {
   return { taxiInFrame, canopyClear: true };
 }
 
+async function checkNoRideHints(page, where) {
+  const visible = await page.locator(".toast:visible").evaluateAll((toasts) => toasts
+    .filter((toast) => toast.hasAttribute("data-ride-hint") || toast.querySelector(".t-text b")?.textContent === "Kelias užimtas")
+    .map((toast) => toast.textContent));
+  assert.deepEqual(visible, [], `no ride hint is visible ${where}`);
+  const queued = await page.evaluate(() => {
+    const { toasts, townToasts } = window.__ew.store.getState();
+    return [...toasts, ...townToasts.map(({ toast }) => toast)]
+      .filter((toast) => toast.rideHint || toast.title === "Kelias užimtas").map(({ title }) => title);
+  });
+  assert.deepEqual(queued, [], `no ride hint is stored ${where}`);
+}
+
 const browser = await chromium.launch({
   channel: process.env.WORLD_BROWSER_CHANNEL || "chromium",
   headless: true,
@@ -291,6 +304,7 @@ try {
       const { m } = window.__ew.game.rides.riding;
       return Math.abs(m.x + 87) <= 4 && Math.abs(m.z + 11.6) <= 1.8 && m.pace < 0.5;
     }), "the real car has stopped in the curb zone");
+    await checkNoRideHints(page, "at the curb");
     if (phone) await choice("tx_a_here").tap(); else await page.keyboard.press("1");
     await waitFor(() => choice("tx_r1_a_fare").count(), "Vinnie asks what he owes");
     if (phone) await press(choice("tx_r1_a_fare")); else await speak("tx_r1_a_fare", "$24.50");
@@ -298,6 +312,7 @@ try {
     await waitFor(() => choice("tx_a_bye").count(), "learner gets the last turn");
     await press(choice("tx_a_bye"));
     await waitFor(async () => { await real(10); return page.locator(".mode-score-card").count(); }, "score card opens", { attempts: 150 });
+    await checkNoRideHints(page, "on the score card");
     await shot("score");
 
     const card = page.locator(".mode-score-card");
@@ -320,6 +335,7 @@ try {
     }, `${storage}-cards-v1`), "on foot at the destination door, with route rotation and cards saved");
     await press(card.getByRole("button", { name: "Baigti" }));
     await waitFor(() => page.locator(".minimap").count(), "town HUD returns");
+    await checkNoRideHints(page, "after leaving the score card");
 
     if (!phone) {
       await page.evaluate(() => window.__ew.game.startScenario("s66-taxi"));
@@ -348,6 +364,7 @@ try {
       await page.getByRole("button", { name: "Išlipti", exact: true }).click();
       await real(470);
       await waitFor(() => page.locator(".minimap").count(), "menu exits the ride and restores the HUD");
+      await checkNoRideHints(page, "after exiting from the menu");
     }
     assert.deepEqual(errors, []);
     console.log("ok", label);

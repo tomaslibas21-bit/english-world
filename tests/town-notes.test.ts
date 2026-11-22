@@ -113,6 +113,26 @@ describe("town toasts", () => {
     vi.advanceTimersByTime(1000);
     expect(shown()).toBe("second");
   });
+
+  it("dismisses only matching ride hints across the toast stack and town queue", () => {
+    state().toast({ kind: "tip", title: "active waiting hint", rideHint: "waiting" });
+    state().toast({ kind: "tip", title: "queued waiting hint", rideHint: "waiting" });
+    state().toast({ kind: "info", title: "queued ride info", rideHint: "other" });
+    state().toast({ kind: "stamp", title: "town reward" });
+    state().setHud({ modeScreen: { kind: "menu", id: "taxi" } });
+    state().toast({ kind: "success", title: "ordinary notice" });
+    expect(state().toasts.map(({ title }) => title)).toEqual(["active waiting hint", "ordinary notice"]);
+
+    state().dismissRideToasts("waiting");
+    expect(state().toasts.map(({ title }) => title)).toEqual(["ordinary notice"]);
+    expect(state().townToasts.map(({ toast }) => toast.title)).toEqual(["queued ride info", "town reward"]);
+
+    state().dismissRideToasts();
+    state().setHud({ modeScreen: null });
+    expect(shown()).toBe("town reward");
+    state().dismissToast(state().townToasts[0].toast.id);
+    expect(shown()).toBe("ordinary notice");
+  });
 });
 
 it("counts each drive, boat trip and swim once, starting at zero on an older save", () => {

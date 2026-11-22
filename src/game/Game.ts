@@ -48,7 +48,7 @@ import { LOCATIONS, placeLt } from "../content/locations";
 import { SITUATIONS, SITUATION_BY_ID, prefetchSituations } from "../content/situations/catalog";
 import { whenLoaded } from "./prefetch";
 import type { SituationDef, SituationMeta } from "../content/types";
-import { picturesOn, useStore } from "../state/store";
+import { picturesOn, useStore, type Toast } from "../state/store";
 import { sceneFor } from "../ui/scenes";
 import { sitProgress } from "../state/progress";
 import { textTexture, rand } from "./world/util";
@@ -233,7 +233,11 @@ export class Game implements GameApi {
   rides!: Rides;
   readonly modes = new ModeRegistry({
     read: () => useStore.getState().hud.modeScreen,
-    set: (modeScreen) => useStore.getState().setHud({ modeScreen }),
+    set: (modeScreen) => {
+      const st = useStore.getState();
+      if (st.hud.modeScreen?.kind === "menu" && st.hud.modeScreen !== modeScreen) st.dismissRideToasts();
+      st.setHud({ modeScreen });
+    },
   });
 
   // Retained for the surf browser tests and diagnostics.
@@ -372,7 +376,9 @@ export class Game implements GameApi {
         if (this.modes.active?.cleanScreen !== "menu") this.saysAloud(line, female, ch, voice);
       },
       thud: (k) => { if (this.bumpT <= 0) { audio.bump(Math.min(1, 0.35 + k * 0.65)); this.bumpT = 0.12; } },
+      allowsHints: () => this.allowsRideHints(),
       rescue: (put) => {
+        const ride = this.rides.riding;
         const hud = useStore.getState();
         hud.setHud({ fade: 1 });
         setTimeout(() => {
@@ -380,19 +386,19 @@ export class Game implements GameApi {
           const car = this.rides.riding;
           if (car) { this.rig.yaw = car.m.heading; this.rig.target.set(car.m.x, 0, car.m.z); this.rig.snap(); }
           useStore.getState().setHud({ fade: 0 });
-          useStore.getState().toast({ kind: "info", title: "Mašina vėl gatvėje", ms: 2600 });
+          if (car === ride) this.showRideToast({ kind: "info", title: "Mašina vėl gatvėje", ms: 2600 });
         }, 280);
       },
-      waiting: () => useStore.getState().toast({ kind: "tip", title: "Kelias užimtas", body: "Mašina sustoja pati. Pasuk į šoną ir apvažiuok arba pavažiuok atbulas.", ms: 5000 }),
-      freed: () => useStore.getState().toast({ kind: "info", title: "Mašina išlaisvinta", body: "Ji pati pasitraukė ten, kur laisva.", ms: 2600 }),
-      stuck: () => useStore.getState().toast({ kind: "tip", title: "Užstrigai?", body: useStore.getState().hud.showTouch ? "Patrauk vairalazdę žemyn – važiuosi atbulas." : "Rodyklė žemyn – važiuosi atbulas.", ms: 5000 }),
-      aground: () => useStore.getState().toast({ kind: "tip", title: "Čia per sekli vieta", body: useStore.getState().hud.showTouch ? "Patrauk vairalazdę žemyn – valtis atsitrauks nuo kranto." : "Rodyklė žemyn – valtis atsitrauks nuo kranto.", ms: 5000 }),
+      waiting: () => this.showRideToast({ kind: "tip", title: "Kelias užimtas", body: "Mašina sustoja pati. Pasuk į šoną ir apvažiuok arba pavažiuok atbulas.", ms: 5000 }, "waiting"),
+      freed: () => this.showRideToast({ kind: "info", title: "Mašina išlaisvinta", body: "Ji pati pasitraukė ten, kur laisva.", ms: 2600 }),
+      stuck: () => this.showRideToast({ kind: "tip", title: "Užstrigai?", body: useStore.getState().hud.showTouch ? "Patrauk vairalazdę žemyn – važiuosi atbulas." : "Rodyklė žemyn – važiuosi atbulas.", ms: 5000 }),
+      aground: () => this.showRideToast({ kind: "tip", title: "Čia per sekli vieta", body: useStore.getState().hud.showTouch ? "Patrauk vairalazdę žemyn – valtis atsitrauks nuo kranto." : "Rodyklė žemyn – valtis atsitrauks nuo kranto.", ms: 5000 }),
       splash: (x, y, z, dx, dz, k) => this.splashes.burst(x, y, z, dx, dz, k),
       fan: (x, y, z, dx, dz, k) => this.splashes.fan(x, y, z, dx, dz, k),
       outdoors: () => !this.zone.interior && !this.covered,
     }, RIDES, this.town.group.children.filter((o) => o.userData.boat));
     this.rides.onLeft = (x, y, z, rot) => this.leftRide(x, y, z, rot);
-    this.rides.onStuck = () => useStore.getState().toast({ kind: "info", title: "Čia išlipti nėra kur", body: "Pavažiuok truputį toliau." });
+    this.rides.onStuck = () => this.showRideToast({ kind: "info", title: "Čia išlipti nėra kur", body: "Pavažiuok truputį toliau." });
     this.undersea = new Undersea(RIDES.deep, RIDES.rocks);
     const host: ModeHost = {
       player: () => this.player, rig: this.rig, rides: this.rides, standTaxi: this.town.parkedCars.taxi, doors: this.town.doors, time: () => this.t,
@@ -883,8 +889,18 @@ export class Game implements GameApi {
     else audio.land(this.underfoot(y > 0.05), 0.5);
   }
 
+  private allowsRideHints() {
+    const mode = this.modes.active;
+    return !mode || (!this.transitioning && !!mode.allowsRideHints?.());
+  }
+
+  private showRideToast(toast: Omit<Toast, "id" | "rideHint">, rideHint: NonNullable<Toast["rideHint"]> = "other") {
+    if (this.rides.riding && this.allowsRideHints()) useStore.getState().toast({ ...toast, rideHint });
+  }
+
   /** What getting out of a ride leaves behind, however it ended. */
   private afterRide() {
+    if (this.modes.active) useStore.getState().dismissRideToasts();
     const p = this.player.root.position;
     this.hop.land(p.y); this.applyHop();
     this.vel.set(0, 0, 0); this.moveVel.set(0, 0, 0);
@@ -1907,6 +1923,7 @@ export class Game implements GameApi {
 
   private prepareMode() {
     this.keepsake.clear();
+    useStore.getState().dismissRideToasts();
     this.endRide();
     this.autoPath = null; this.autoTarget = null;
     this.steer.reset(); this.gaitOn = false; this.stepOut = 0; this.jogT = 0;
@@ -1938,6 +1955,8 @@ export class Game implements GameApi {
   private updatePlayer(dt: number, blocked: boolean, through = false) {
     if (this.modes.active) {
       this.modes.update({ dt, time: this.t, blocked, ...this.driveInput(blocked) });
+      if (!this.allowsRideHints()) useStore.getState().dismissRideToasts();
+      else if (!this.rides.waitingForTraffic) useStore.getState().dismissRideToasts("waiting");
       return;
     }
     if (this.rides.riding) {

@@ -58,8 +58,8 @@
 .taxi-action .taxi-action-icon { flex: none; width: clamp(40px, 8vw, 48px); height: auto; color: var(--accent); }
 .taxi-action kbd { flex: none; }
 @keyframes taxi-action-in {
-  from { opacity: 0; transform: translateY(4px) scale(0.96); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 @media (max-width: 600px) {
   .taxi-line { max-width: min(385px, calc(100% - 80px)); }

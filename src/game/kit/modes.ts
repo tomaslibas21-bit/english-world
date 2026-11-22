@@ -29,6 +29,7 @@ export interface GameMode {
   readonly exitLabel?: string;
   readonly camera?: "stage" | "follow";
   readonly conversation?: { situation: string; label: string };
+  allowsRideHints?(): boolean;
   start(option?: string): boolean;
   update(frame: ModeFrame): void;
   tick?(dt: number, outdoors: boolean): void;

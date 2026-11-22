@@ -138,7 +138,15 @@ export const EMPTY_CONV: ConvUI = {
   typing: false, newExpressions: [], checklist: [], focus: 0, stepId: null, guess: null, practice: null, run: 0, guideHidden: false, introOpen: false,
 };
 
-export interface Toast { id: number; kind: "info" | "success" | "tip" | "stamp"; title: string; body?: string; better?: string; ms?: number }
+export interface Toast {
+  id: number;
+  kind: "info" | "success" | "tip" | "stamp";
+  title: string;
+  body?: string;
+  better?: string;
+  ms?: number;
+  rideHint?: "waiting" | "other";
+}
 
 export interface HudState {
   zoneName: string;
@@ -181,6 +189,7 @@ interface Store {
   setHud(p: Partial<HudState>): void;
   toast(t: Omit<Toast, "id">): void;
   dismissToast(id: number): void;
+  dismissRideToasts(only?: Toast["rideHint"]): void;
   updateProgress(f: (p: Progress) => void): void;
   setProfile(p: { name: string; surname: string; gender: "m" | "f"; look: Look; lookId: string }): void;
 }
@@ -266,6 +275,18 @@ export const useStore = create<Store>((set, get) => ({
   dismissToast: (id) => {
     stopStackTimer(id);
     set((st) => ({ toasts: st.toasts.filter((x) => x.id !== id), townToasts: st.townToasts.filter((x) => x.toast.id !== id) }));
+  },
+  dismissRideToasts: (only) => {
+    const { toasts, townToasts } = get();
+    const matches = (t: Toast) => !!t.rideHint && (only === undefined || t.rideHint === only);
+    const visible = toasts.some(matches);
+    const queued = townToasts.some(({ toast }) => matches(toast));
+    if (!visible && !queued) return;
+    for (const toast of toasts) if (matches(toast)) stopStackTimer(toast.id);
+    set({
+      toasts: visible ? toasts.filter((toast) => !matches(toast)) : toasts,
+      townToasts: queued ? townToasts.filter(({ toast }) => !matches(toast)) : townToasts,
+    });
   },
   updateProgress: (f) => {
     const p = structuredClone(get().progress);
