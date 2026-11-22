@@ -168,10 +168,9 @@
 .barista-chips { display: flex; flex-wrap: wrap; gap: 4px; }
 .barista-chip {
   min-height: 44px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-content: center;
-  justify-items: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   position: relative;
   min-width: 76px;
   max-width: 130px;
@@ -185,10 +184,8 @@
   font-weight: 850;
   line-height: 1.08;
   text-align: center;
-  overflow-wrap: anywhere;
   transition: background-color 160ms, border-color 160ms, box-shadow 160ms;
 }
-.barista-chip > [lang] { min-width: 0; max-width: 100%; }
 .barista-chip small { display: block; margin-top: 2px; font-size: 11px; font-weight: 650; color: #536459; }
 .barista-chip[aria-pressed="true"] {
   color: #164d3d;
@@ -230,9 +227,9 @@
 @media (min-width: 1000px) {
   .barista-row[data-row="drink"] .barista-chips {
     display: grid;
-    grid-template-columns: repeat(8, minmax(0, 1fr));
+    grid-template-columns: repeat(8, minmax(min-content, 1fr));
   }
-  .barista-row[data-row="drink"] .barista-chip { min-width: 0; }
+  .barista-row[data-row="drink"] .barista-chip { min-width: 44px; }
 }
 
 @media (max-width: 600px) {
@@ -246,12 +243,18 @@
   .barista-tray { padding: 7px; gap: 5px 6px; border-radius: 14px; max-height: 76dvh; overflow-y: auto; }
   .barista-row { grid-template-columns: minmax(0, 1fr); gap: 2px; }
   .barista-row-label { padding: 0 5px; font-size: 12px; }
-  .barista-chips { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; }
-  .barista-row[data-row="drink"] .barista-chips { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .barista-chips { display: grid; grid-template-columns: repeat(5, minmax(min-content, 1fr)); gap: 3px; }
+  .barista-row[data-row="drink"] .barista-chips { grid-template-columns: repeat(4, minmax(min-content, 1fr)); }
   .barista-row[data-row="size"], .barista-row[data-row="dine"] { grid-template-columns: 57px minmax(0, 1fr); }
-  .barista-row[data-row="size"] .barista-chips { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .barista-row[data-row="dine"] .barista-chips { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .barista-chip { min-width: 0; max-width: none; padding: 2px; font-size: 13px; }
+  .barista-row[data-row="size"] .barista-chips { grid-template-columns: repeat(3, minmax(min-content, 1fr)); }
+  .barista-row[data-row="dine"] .barista-chips { grid-template-columns: repeat(2, minmax(min-content, 1fr)); }
+  .barista-chip { min-width: 44px; max-width: none; padding: 2px; font-size: 13px; }
   .barista-chip small { line-height: 1.1; }
   .barista-give .btn { border-radius: 10px; padding-inline: 10px; font-size: 14px; }
+}
+
+@media (width < 390px) {
+  .barista-row:not([data-row="size"], [data-row="dine"]) .barista-chips { display: flex; }
+  .barista-row[data-row="dine"] { grid-template-columns: minmax(0, 1fr); }
+  .barista-chip { flex: 1 1 min-content; }
 }

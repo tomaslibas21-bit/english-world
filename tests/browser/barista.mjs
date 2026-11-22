@@ -234,12 +234,14 @@ try {
 
       if (i === 0) {
         await step();
-        const layout = await page.evaluate(() => {
+        const layout = await page.evaluate(async () => {
+          await document.fonts.ready;
           const { game } = window.__ew;
           const mode = game.modes.get("barista");
           const { customer, serving, mia, props } = mode.run;
           const { cam, stage } = game.rig;
-          const tray = document.querySelector(".barista-tray").getBoundingClientRect();
+          const trayElement = document.querySelector(".barista-tray");
+          const tray = trayElement.getBoundingClientRect();
           const pixel = (p) => {
             const q = p.project(game.rig.cam);
             return { x: (1 + q.x) * innerWidth / 2, y: (1 - q.y) * innerHeight / 2 };
@@ -257,8 +259,10 @@ try {
             openSightline(customer.ch.root.position.clone().setY(customer.ch.height * y)));
           Object.assign(ray, { far, near });
           const drinkRow = document.querySelector('[data-row="drink"] .barista-chips');
+          const range = document.createRange();
           return {
             tray: tray.top,
+            trayFitsWidth: trayElement.scrollWidth <= trayElement.clientWidth + 1,
             clear,
             cameraPitch: Math.asin(cam.position.clone().sub(stage.look).normalize().y) * 180 / Math.PI,
             drinkCount: drinkRow.children.length,
@@ -271,9 +275,21 @@ try {
             cup: pixel(serving.position.clone()),
             chipProblems: [...document.querySelectorAll(".barista-chip")].flatMap((item) => {
               const box = item.getBoundingClientRect();
-              const fits = box.height >= 44 && item.scrollWidth <= item.clientWidth + 1
+              const fits = box.width >= 44 && box.height >= 44 && item.scrollWidth <= item.clientWidth + 1
                 && box.left >= tray.left && box.right <= tray.right && box.top >= tray.top && box.bottom <= tray.bottom;
-              return fits ? [] : [{ chip: item.dataset.chip, box: box.toJSON(), scroll: item.scrollWidth, client: item.clientWidth }];
+              const splitWords = [...item.querySelectorAll("[lang]")].flatMap((label) => {
+                const text = label.firstChild;
+                return [...text.textContent.matchAll(/\S+/gu)].flatMap((match) => {
+                  const [word] = match;
+                  const { index } = match;
+                  range.setStart(text, index);
+                  range.setEnd(text, index + word.length);
+                  return range.getClientRects().length > 1 ? [{ lang: label.lang, word }] : [];
+                });
+              });
+              return fits && !splitWords.length ? [] : [{
+                chip: item.dataset.chip, box: box.toJSON(), scroll: item.scrollWidth, client: item.clientWidth, splitWords,
+              }];
             }),
           };
         });
@@ -282,7 +298,7 @@ try {
         assert(Math.abs(layout.mia.x - layout.face.x) >= width * 0.15, JSON.stringify(layout));
         assert(layout.shoulder.x < width * 0.35 && layout.shoulder.y > layout.face.y, JSON.stringify(layout));
         assert.equal(layout.drinkCount, 8);
-        assert(layout.drinkRowFits, JSON.stringify(layout));
+        assert(layout.trayFitsWidth && layout.drinkRowFits, JSON.stringify(layout));
         for (const { x, y } of [layout.face, layout.cup, layout.mia]) {
           assert(x > 0 && x < width && y > 65 && y < layout.freeBottom - 12 && y < layout.tray, JSON.stringify(layout));
         }
