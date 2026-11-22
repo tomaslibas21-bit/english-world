@@ -27,8 +27,7 @@ function withTown<T>(check: (town: ReturnType<typeof buildTown>) => T): T {
   try { return check(buildTown()); } finally { vi.unstubAllGlobals(); }
 }
 
-function makeRides(allowsHints?: () => boolean) {
-  const colliders = new Colliders();
+function makeRides(allowsHints?: () => boolean, colliders = new Colliders()) {
   const nav = new NavGrid(112, -16, 132, 8, 1, colliders);
   const ambient = new Ambient(nav, [[125, 2]], "low");
   const player = createCharacter(NPCS.vinnie.look);
@@ -117,6 +116,35 @@ describe("Puerto Colibrí taxi routes", () => {
     rides.abandon();
     expect(rides.waitingForTraffic).toBe(false);
   });
+
+  it("lets the bus clear Juárez while the taxi yields during the first turn", () => withTown(({ colliders, parkedCars }) => {
+    const { rides, player, ambient } = makeRides(undefined, colliders);
+    const route = TAXI_ROUTES[0], { at } = route.decisions[0];
+    const bus = ambient.traffic[0];
+    const taxi = rides.createModeCar(TAXI_CAR, parkedCars.taxi!.root);
+    const za = bus.lane - bus.half.z - taxi.m.spec.half;
+    // The bus is already alongside, at the position where the taxi's nose comes to rest against its side.
+    rides.resetPosition(taxi, { x: at.x, z: za, rot: 0 });
+    player.root.position.set(at.x, 0, za - 2);
+    expect(rides.board(taxi)).toBe(true);
+    ambient.riding = true;
+    let time = 0;
+    for (let i = 0; i < 16; i++) rides.update(0.05, time += 0.05, null);
+    expect(rides.phase).toBe("on");
+    bus.x = at.x - bus.half.x / 2;
+    bus.speed = 0;
+    for (const other of ambient.traffic.slice(1)) other.hidden = 100;
+
+    let peakBump = 0;
+    for (let i = 0; i < 160; i++) {
+      rides.update(0.05, time += 0.05, { throttle: 1, steer: 0, brake: false });
+      ambient.update(0.05, player.root.position);
+      peakBump = Math.max(peakBump, taxi.m.bump);
+    }
+    expect(bus.x, "the bus must finish crossing").toBeGreaterThan(at.x + bus.half.x);
+    expect(checkDecision(route, 0, taxi.m)).toBe("followed");
+    expect(peakBump).toBeLessThan(0.3);
+  }));
 
   it("uses the stand, late-bound conversation lines, ordered decision points and an actual door", () => {
     expect(TAXI_CAR).toMatchObject(TAXI);

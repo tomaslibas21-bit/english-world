@@ -137,6 +137,17 @@ describe("town toasts", () => {
     state().dismissToast(state().townToasts[0].toast.id);
     expect(shown()).toBe("ordinary notice");
   });
+
+  it("keeps the surf toast transition tied to the lesson's own active state", () => {
+    state().toast({ kind: "tip", title: "visible ride hint", rideHint: "waiting", ms: 3000 });
+    state().setHud({ modeScreen: { kind: "overlay", id: "surf" } });
+    expect(shown()).toBe("visible ride hint");
+
+    useSurf.getState().set({ active: true });
+    expect(state().toasts.map(({ title }) => title)).toEqual(["visible ride hint"]);
+    useSurf.getState().reset();
+    expect(shown()).toBe("visible ride hint");
+  });
 });
 
 it("counts each drive, boat trip and swim once, starting at zero on an older save", () => {

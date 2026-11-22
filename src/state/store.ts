@@ -212,7 +212,7 @@ export function townRide(ride: HudState["ride"]) {
 
 export function usesTownNotes(s: Pick<Store, "screen" | "settings" | "conv" | "hud">) {
   const surf = useSurf.getState();
-  return s.screen === "play" && s.settings.play === "town" && !s.conv.active && !s.hud.panel && !s.hud.glyph && !s.hud.flight && !s.hud.modeScreen && !surf.active && !surf.picking;
+  return s.screen === "play" && s.settings.play === "town" && !s.conv.active && !s.hud.panel && !s.hud.glyph && !s.hud.flight && s.hud.modeScreen?.kind !== "menu" && !surf.active && !surf.picking;
 }
 
 /** Saved settings plus new defaults. v2 (owner feedback: a calmer conversation panel): the natural

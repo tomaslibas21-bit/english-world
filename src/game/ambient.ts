@@ -256,7 +256,7 @@ export class Ambient {
   obstacles: [number, number][] = [];
   /** The cars one can drive (src/game/rides), as they stand or roll now: the passers-by step out of their way, the
    *  traffic stops behind them. `riding`: the player is in one (their place is the car's own). */
-  rideBoxes: { x: number; z: number; heading: number; hl: number; hw: number }[] = [];
+  rideBoxes: { x: number; z: number; heading: number; hl: number; hw: number; modeCar?: boolean }[] = [];
   riding = false;
   private colliders?: Colliders;
 
@@ -590,10 +590,16 @@ export class Ambient {
     // A ride outside the traffic lane's ends cannot block that lane.
     const h = c.half;
     for (const b of this.rideBoxes) {
-      const ex = Math.abs(Math.sin(b.heading)) * b.hl + Math.abs(Math.cos(b.heading)) * b.hw, ez = Math.abs(Math.cos(b.heading)) * b.hl + Math.abs(Math.sin(b.heading)) * b.hw;
+      const s = Math.abs(Math.sin(b.heading)), co = Math.abs(Math.cos(b.heading));
+      const ex = s * b.hl + co * b.hw, ez = co * b.hl + s * b.hw;
       if (b.x - ex > c.to + h.x || b.x + ex < c.from - h.x) continue;
-      const a = (b.x - c.x) * c.dir;
-      if (a > 0 && a < 18 + ex && Math.abs(b.z - c.lane) < ez + h.z + 0.15) gap = Math.min(gap, a - ex - h.x + 0.6);
+      const a = (b.x - c.x) * c.dir, across = Math.abs(b.z - c.lane);
+      if (a <= 0 || a >= 18 + ex || across >= ez + h.z + 0.15) continue;
+      // Let traffic already alongside a yielding mode car finish passing. Use the car's round-ended
+      // collision shape, with room for the few centimetres of contact left by a physics step.
+      const collisionEdge = co * (b.hl - b.hw) + b.hw + h.z;
+      if (b.modeCar && a < ex + h.x && across >= collisionEdge - 0.05) continue;
+      gap = Math.min(gap, a - ex - h.x + 0.6);
     }
     for (const w of this.walkers) if (w.kind === "walk") gap = Math.min(gap, this.blockedAhead(c, w.ch.root.position.x, w.ch.root.position.z));
     for (const o of this.cars) if (o !== c && o.lane === c.lane && o.hidden <= 0) {

@@ -193,7 +193,8 @@ function Toolbar({ riding, touch, surf = false, modeExit }: { riding: boolean; t
       <span className="toolbar-tooltip" aria-hidden>{L("Lengvas režimas")}</span>
     </button>
   );
-  const menu = riding && <button className="icon-btn ride-menu" onClick={toggleMenu} title={L("Meniu")} aria-label={L("Meniu")} aria-expanded={open} aria-controls="town-tools">
+  const menuLabel = surf ? "Meniu" : L("Meniu");
+  const menu = riding && <button className="icon-btn ride-menu" onClick={toggleMenu} title={menuLabel} aria-label={menuLabel} aria-expanded={open} aria-controls="town-tools">
     <Icon name="menu" size={25} />
     {!!due && <span className="due-badge" aria-hidden>{due}</span>}
   </button>;

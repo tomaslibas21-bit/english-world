@@ -109,6 +109,7 @@ class TaxiMode implements GameMode {
     if (!door) { this.host.left(this.id); return; }
 
     const { x, z } = this.car.home;
+    useStore.getState().dismissRideToasts();
     this.host.prepare();
     const player = this.host.player().root.position;
     if (Math.hypot(player.x - x, player.z - z) > 5) this.host.place(x, z + 2.5, Math.PI);

@@ -964,7 +964,7 @@ export class Game implements GameApi {
 
   /** What getting out of a ride leaves behind, however it ended. */
   private afterRide() {
-    if (this.modes.active) useStore.getState().dismissRideToasts();
+    if (this.modes.active?.cleanScreen === "menu") useStore.getState().dismissRideToasts();
     const p = this.player.root.position;
     this.hop.land(p.y); this.applyHop();
     this.vel.set(0, 0, 0); this.moveVel.set(0, 0, 0);
@@ -2145,7 +2145,6 @@ export class Game implements GameApi {
 
   private prepareMode() {
     this.keepsake.clear();
-    useStore.getState().dismissRideToasts();
     this.endRide();
     this.autoPath = null; this.autoTarget = null;
     this.steer.reset(); this.gaitOn = false; this.stepOut = 0; this.jogT = 0;
@@ -2185,10 +2184,13 @@ export class Game implements GameApi {
 
   /** `through`: a door's fade is under way: the player holds still, and a walk under way carries on on the other side. */
   private updatePlayer(dt: number, blocked: boolean, through = false) {
-    if (this.modes.active) {
+    const mode = this.modes.active;
+    if (mode) {
       this.modes.update({ dt, time: this.t, blocked, ...this.driveInput(blocked) });
-      if (!this.allowsRideHints()) useStore.getState().dismissRideToasts();
-      else if (!this.rides.waitingForTraffic) useStore.getState().dismissRideToasts("waiting");
+      if (mode.cleanScreen === "menu") {
+        if (!this.allowsRideHints()) useStore.getState().dismissRideToasts();
+        else if (!this.rides.waitingForTraffic) useStore.getState().dismissRideToasts("waiting");
+      }
       return;
     }
     if (this.rides.riding) {
