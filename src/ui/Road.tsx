@@ -66,7 +66,7 @@ function measureLabel(text: string, font: string) {
 }
 
 function GateLabel({ text, anchor }: { text: string; anchor: LabelAnchor }) {
-  const { lane, x, y, width, height, opacity } = anchor;
+  const { lane, x, y, width, height, opacity, tilt } = anchor;
   const font = useMemo(() => `800 100px ${getComputedStyle(document.documentElement).getPropertyValue("--ui").trim()}`, []);
   const [fontVersion, setFontVersion] = useState(0);
   useEffect(() => {
@@ -90,7 +90,8 @@ function GateLabel({ text, anchor }: { text: string; anchor: LabelAnchor }) {
       lines = split.lines;
     }
   }
-  return <div className="road-gate" data-lane={lane} aria-label={text} style={{ left: x, top: y, width, height, fontSize, opacity }}>
+  const transform = tilt === undefined ? undefined : `translate(-50%, -50%) rotate(${tilt}rad)`;
+  return <div className="road-gate" data-lane={lane} aria-label={text} style={{ left: x, top: y, width, height, fontSize, opacity, transform }}>
     {lines.map((line, i) => <span key={i} style={{ width: `${100 / scale}%`, transform: `scaleX(${scale})` }}>{line}</span>)}
   </div>;
 }

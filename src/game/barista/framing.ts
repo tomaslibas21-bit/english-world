@@ -58,7 +58,7 @@ export function servingDetails(customerHeight: number, serving: Group): CounterF
 
 /** Anchor the face and keep the action above the controls on the same camera axis. */
 export function fitCounterView(camera: PerspectiveCamera, width: number, height: number, freeBottom: number,
-  details: CounterFrame, from?: CounterLens, progress = 1): CounterLens {
+  details: CounterFrame, trayCrop = 0, from?: CounterLens, progress = 1): CounterLens {
   camera.zoom = 1;
   camera.aspect = width / height;
   camera.clearViewOffset();
@@ -79,9 +79,13 @@ export function fitCounterView(camera: PerspectiveCamera, width: number, height:
 
   const header = Math.min(62, freeBottom * 0.24);
   const floor = Math.max(header + 2, freeBottom - 22);
-  const x = width * (width <= 600 ? 0.61 : 0.49);
+  // In a taller order view, use the available width from Mia to the pastry plate.
+  // Their projected distances from the customer determine where to anchor the face.
+  const margin = MathUtils.lerp(18, 4, trayCrop);
+  const centeredGroup = margin + (width - 2 * margin) * left / (left + right);
+  const x = MathUtils.lerp(width * (width <= 600 ? 0.61 : 0.49), centeredGroup, trayCrop);
   const y = header + (floor - header) * 0.36;
-  const zoom = Math.min(1.65, Math.max(1, x - 18) / left, Math.max(1, width - x - 18) / right, (y - header) / top, (floor - y) / bottom);
+  const zoom = Math.min(1.65, Math.max(1, x - margin) / left, Math.max(1, width - x - margin) / right, (y - header) / top, (floor - y) / bottom);
   const offsetX = (1 + face.x * zoom) * width / 2 - x;
   const offsetY = (1 - face.y * zoom) * height / 2 - y;
   camera.zoom = MathUtils.lerp(from?.zoom ?? zoom, zoom, progress);

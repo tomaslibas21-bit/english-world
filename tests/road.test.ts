@@ -213,7 +213,7 @@ describe("desert road", () => {
     material.dispose();
   });
 
-  it.each([true, false])("replaces only the crossed label and clears the arch before the camera (correct=%s)", (correct) => {
+  it.each([true, false])("marks the chosen board and clears the arch before the camera (correct=%s)", (correct) => {
     const material = new MeshBasicMaterial({ vertexColors: true });
     const gate = new Gate(FIRST_GATE, {} as Prompt, material);
     const camera = new PerspectiveCamera(49, 390 / 664, 0.18, 470);
@@ -227,19 +227,27 @@ describe("desert road", () => {
     boards.getMatrixAt(2, original);
     gate.cross(2, correct);
     expect(gate.crossed).toBe(true);
-    expect(gate.mesh.children).toHaveLength(2);
-    const stamp = gate.mesh.children[1] as Mesh;
+    expect(gate.mesh.children).toHaveLength(correct ? 2 : 1);
+    const stamp = gate.mesh.children[1] as Mesh | undefined;
+    if (stamp) expect(stamp.renderOrder).toBeGreaterThan(boards.renderOrder);
     const tint = new Color();
     boards.getColorAt(1, tint);
     expect(tint.getHex()).toBe(0xffffff);
     boards.getColorAt(2, tint);
     expect(tint.g > tint.r).toBe(correct);
-    expect(gate.labels(camera, 390, 664).map(({ lane }) => lane)).toEqual([0, 1]);
+    const labels = gate.labels(camera, 390, 664);
+    expect(labels.map(({ lane }) => lane)).toEqual(correct ? [0, 1] : [0, 1, 2]);
     expect(gate.animatePass(0.15, FIRST_GATE + 3)).toBe(true);
     const animated = new Matrix4();
     boards.getMatrixAt(2, animated);
     expect(animated.elements[13] > original.elements[13]).toBe(correct);
     expect(animated.elements[1] === 0).toBe(correct);
+    if (!correct) {
+      const chosen = gate.labels(camera, 390, 664)[2];
+      expect(chosen.opacity).toBeLessThan(labels[0].opacity);
+      expect(chosen.tilt).toBeGreaterThan(0.01);
+      expect(chosen.y).toBeGreaterThan(labels[2].y);
+    }
     expect(gate.animatePass(0.18, FIRST_GATE + 7)).toBe(true);
     for (const label of gate.labels(camera, 390, 664)) {
       expect(label.opacity).toBeGreaterThan(0);
@@ -249,9 +257,9 @@ describe("desert road", () => {
     expect(material.transparent).toBe(false);
     const released = vi.fn();
     boards.geometry.addEventListener("dispose", released);
-    stamp.geometry.addEventListener("dispose", released);
+    stamp?.geometry.addEventListener("dispose", released);
     gate.dispose();
-    expect(released).toHaveBeenCalledTimes(2);
+    expect(released).toHaveBeenCalledTimes(correct ? 2 : 1);
     material.dispose();
   });
 

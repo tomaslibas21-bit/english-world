@@ -290,6 +290,12 @@ try {
     // Keep the usual simulation budget while sampling every frame for the brief pass animation.
     const waitForGatePass = (total, description) =>
       waitFor(async () => (await read()).totalGates === total, description, 150 * 5, 1);
+    const checkPassState = async () => {
+      const state = await read();
+      assert.equal(state.gates, undefined);
+      assert.equal(await replay.count(), 0);
+      assert.ok(state.drawCalls <= maxRoadCalls);
+    };
     const rightLane = (await read()).right;
     await page.evaluate((lane) => window.__ew.road.steer(lane), rightLane);
     await waitForGatePass(1, "passes the correct gate");
@@ -299,17 +305,14 @@ try {
     assert.equal(hit.streak, 1);
     assert.equal(await page.getByText(ui("Teisingai!", "Right!"), { exact: true }).count(), 1);
     assert.ok(hit.boost > 0);
-    const passLabels = async (lane) => {
-      assert.equal((await read()).gates, undefined);
-      assert.equal(await replay.count(), 0);
-      await waitFor(async () => await labels.count() === 2, "the stamp replaces the selected label", 4, 1);
-      assert.equal(await page.locator(`.road-gate[data-lane="${lane}"]`).count(), 0);
-      assert.ok((await read()).drawCalls <= maxRoadCalls);
-    };
-    await passLabels(rightLane);
+    await waitFor(async () => await labels.count() === 2, "the tick replaces the selected label", 4, 1);
+    assert.equal(await page.locator(`.road-gate[data-lane="${rightLane}"]`).count(), 0);
+    await checkPassState();
     await shot("gate-right");
     await waitFor(async () => (await read()).gates?.length === 3, "next three choices appear");
-    const wrongLane = ((await read()).right + 1) % 3;
+    const { right: nextRightLane, gates: options } = await read();
+    const wrongLane = (nextRightLane + 1) % 3;
+    const wrongWord = options[wrongLane];
     await page.evaluate((lane) => window.__ew.road.steer(lane), wrongLane);
     await waitForGatePass(2, "passes the wrong gate");
     const miss = await read();
@@ -320,7 +323,20 @@ try {
     assert.equal(await page.getByText(wrongCopy, { exact: true }).count(), 1);
     assert.ok(miss.wobble > 0);
     assert.ok((await page.locator(".road-feedback.wrong").innerText()).trim().length > wrongCopy.length);
-    await passLabels(wrongLane);
+    await waitFor(() => labels.evaluateAll((boards, { lane, word }) => {
+      if (boards.length !== 3) return false;
+      const chosen = boards.find((board) => Number(board.dataset.lane) === lane);
+      if (!chosen || chosen.getAttribute("aria-label") !== word) return false;
+      const text = Array.from(chosen.children, (line) => line.textContent).join(" ");
+      const bounds = chosen.getBoundingClientRect();
+      const style = getComputedStyle(chosen);
+      const opacity = Number(style.opacity);
+      const visible = style.visibility === "visible" && bounds.width > 0 && bounds.height > 0
+        && bounds.right > 0 && bounds.left < innerWidth && bounds.bottom > 0 && bounds.top < innerHeight;
+      const dimmed = opacity > 0 && boards.every((board) => board === chosen || Number(getComputedStyle(board).opacity) > opacity);
+      return text === word && visible && dimmed && Math.abs(new DOMMatrixReadOnly(style.transform).b) > 0.001;
+    }, { lane: wrongLane, word: wrongWord }), "the chosen word stays visible on the dimmed, tilted board", 4, 1);
+    await checkPassState();
     await shot("gate-wrong");
 
     await waitFor(async () => (await read()).speed > 12, "recovers from the missed gate");

@@ -10,7 +10,7 @@ const FACE_Z = 0.47;
 const TEXT_HALF_WIDTH = 1.76;
 const TEXT_HALF_HEIGHT = 0.78;
 type Part = [THREE.BufferGeometry, string];
-export type LabelAnchor = { lane: number; x: number; y: number; width: number; height: number; opacity: number };
+export type LabelAnchor = { lane: number; x: number; y: number; width: number; height: number; opacity: number; tilt?: number };
 
 function plate(width: number, height: number, depth: number, cut: number) {
   const x = width / 2, y = height / 2;
@@ -22,19 +22,15 @@ function plate(width: number, height: number, depth: number, cut: number) {
   return new THREE.ExtrudeGeometry(outline, { depth, bevelEnabled: false });
 }
 
-function makeStamp(correct: boolean, material: THREE.Material) {
+function makeTick(material: THREE.Material) {
   const parts: Part[] = [];
   const stroke = (length: number, thickness: number, angle: number, x: number, y: number, color: string) =>
     parts.push([new THREE.BoxGeometry(length, thickness, 0.06).rotateZ(angle).translate(x, y, 0), color]);
-  if (correct) {
-    stroke(0.59, 0.21, -Math.PI / 4, -0.35, -0.04, "#125c54");
-    stroke(1.12, 0.21, Math.PI / 4, 0.17, 0.14, "#125c54");
-    for (const side of [-1, 1]) {
-      stroke(0.28, 0.10, side * 0.58, side * 1.18, 0.32, "#348e79");
-      stroke(0.20, 0.10, -side * 0.3, side * 1.30, -0.14, "#348e79");
-    }
-  } else {
-    stroke(0.95, 0.22, 0, 0, 0, "#775345");
+  stroke(0.59, 0.21, -Math.PI / 4, -0.35, -0.04, "#125c54");
+  stroke(1.12, 0.21, Math.PI / 4, 0.17, 0.14, "#125c54");
+  for (const side of [-1, 1]) {
+    stroke(0.28, 0.10, side * 0.58, side * 1.18, 0.32, "#348e79");
+    stroke(0.20, 0.10, -side * 0.3, side * 1.30, -0.14, "#348e79");
   }
   return new THREE.Mesh(colourMerge(parts), material);
 }
@@ -43,9 +39,9 @@ export class Gate {
   readonly mesh: THREE.Mesh;
   readonly frame: readonly THREE.Vector3[];
   private boards: THREE.InstancedMesh<THREE.BufferGeometry, THREE.Material>;
-  private banners: THREE.Vector3[][];
+  private labelPose = new THREE.Matrix4();
   private projected = new THREE.Vector3();
-  private pass?: { lane: number; correct: boolean; age: number; stamp: THREE.Mesh; material: THREE.Material };
+  private pass?: { lane: number; correct: boolean; age: number; stamp?: THREE.Mesh; material: THREE.Material };
   private boardPose = new THREE.Object3D();
 
   constructor(readonly distance: number, readonly prompt: Prompt, material: THREE.Material) {
@@ -89,10 +85,6 @@ export class Gate {
     this.boards.computeBoundingSphere();
     this.boards.boundingSphere!.radius += 0.6;
     this.mesh.add(this.boards);
-    this.banners = [0, 1, 2].map((lane) =>
-      [[0, 0], [-TEXT_HALF_WIDTH, TEXT_HALF_HEIGHT], [TEXT_HALF_WIDTH, TEXT_HALF_HEIGHT],
-        [-TEXT_HALF_WIDTH, -TEXT_HALF_HEIGHT], [TEXT_HALF_WIDTH, -TEXT_HALF_HEIGHT]]
-        .map(([dx, dy]) => facePoint(laneOffset(lane) + dx, BANNER_Y + dy)));
     this.frame = [-5.97, 5.97].flatMap((x) => [-1.05, 1.05].map((dy) =>
       facePoint(x, BANNER_Y + dy)));
   }
@@ -103,10 +95,12 @@ export class Gate {
     const material = this.boards.material.clone();
     material.transparent = true;
     this.mesh.material = this.boards.material = material;
-    const stamp = makeStamp(correct, material);
+    const stamp = correct ? makeTick(material) : undefined;
     this.boards.renderOrder = 1;
-    stamp.renderOrder = 2;
-    this.mesh.add(stamp);
+    if (stamp) {
+      stamp.renderOrder = 2;
+      this.mesh.add(stamp);
+    }
     this.pass = { lane, correct, stamp, material, age: 0 };
     this.boards.setColorAt(lane, new THREE.Color(correct ? "#adffdb" : "#caa58c"));
     this.boards.instanceColor!.needsUpdate = true;
@@ -125,9 +119,10 @@ export class Gate {
     this.boardPose.updateMatrix();
     this.boards.setMatrixAt(lane, this.boardPose.matrix);
     this.boards.instanceMatrix.needsUpdate = true;
-    stamp.position.set(0, 0, FACE_Z + 0.05).applyMatrix4(this.boardPose.matrix);
-    stamp.rotation.z = this.boardPose.rotation.z;
-    stamp.scale.setScalar(this.boardPose.scale.x * (correct ? 1 + kick * 0.18 : 1));
+    if (stamp) {
+      stamp.position.set(0, 0, FACE_Z + 0.05).applyMatrix4(this.boardPose.matrix);
+      stamp.scale.setScalar(this.boardPose.scale.x * (1 + kick * 0.18));
+    }
     // Clear the immediate foreground before the chase camera reaches the plane of the signs.
     material.opacity = 1 - Math.max(THREE.MathUtils.smoothstep(t, 0.55, 1),
       THREE.MathUtils.smoothstep(carDistance - this.distance, 4, 10));
@@ -135,20 +130,25 @@ export class Gate {
   }
 
   labels(camera: THREE.PerspectiveCamera, width: number, height: number): LabelAnchor[] {
-    const pixels = (world: THREE.Vector3) => {
-      const p = this.projected.copy(world).project(camera);
+    const pixels = (x: number, y: number) => {
+      const p = this.projected.set(x, y, FACE_Z).applyMatrix4(this.labelPose).add(this.mesh.position).project(camera);
       return { x: (1 + p.x) * width / 2, y: (1 - p.y) * height / 2, depth: p.z };
     };
-    return this.banners.flatMap(([center, tl, tr, bl, br], lane) => {
-      if (lane === this.pass?.lane) return [];
-      const mid = pixels(center);
+    return [0, 1, 2].flatMap((lane) => {
+      const chosen = lane === this.pass?.lane;
+      if (chosen && this.pass?.correct) return [];
+      this.boards.getMatrixAt(lane, this.labelPose);
+      const mid = pixels(0, 0);
       if (mid.depth < -1 || mid.depth >= 1) return [];
-      const a = pixels(tl), b = pixels(tr), c = pixels(bl), d = pixels(br);
+      const a = pixels(-TEXT_HALF_WIDTH, TEXT_HALF_HEIGHT), b = pixels(TEXT_HALF_WIDTH, TEXT_HALF_HEIGHT);
+      const c = pixels(-TEXT_HALF_WIDTH, -TEXT_HALF_HEIGHT), d = pixels(TEXT_HALF_WIDTH, -TEXT_HALF_HEIGHT);
       // Keep upright type inside the projected banner, including when the track curves.
       const hw = Math.min(mid.x - Math.max(a.x, c.x), Math.min(b.x, d.x) - mid.x);
       const hh = Math.min(mid.y - Math.max(a.y, b.y), Math.min(c.y, d.y) - mid.y);
       if (hw < 6 || hh < 3 || mid.x + hw < 0 || mid.x - hw > width) return [];
-      return [{ lane, x: mid.x, y: mid.y, width: 2 * hw, height: 2 * hh, opacity: this.pass?.material.opacity ?? 1 }];
+      const tilt = chosen ? Math.atan2(b.y - a.y + d.y - c.y, b.x - a.x + d.x - c.x) : undefined;
+      const opacity = (this.pass?.material.opacity ?? 1) * (chosen ? 0.88 : 1);
+      return [{ lane, x: mid.x, y: mid.y, width: 2 * hw, height: 2 * hh, opacity, tilt }];
     });
   }
 
@@ -157,7 +157,7 @@ export class Gate {
     this.mesh.geometry.dispose();
     this.boards.geometry.dispose();
     this.boards.dispose();
-    this.pass?.stamp.geometry.dispose();
+    this.pass?.stamp?.geometry.dispose();
     this.pass?.material.dispose();
   }
 }

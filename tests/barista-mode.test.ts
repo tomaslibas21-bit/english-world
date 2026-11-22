@@ -2,7 +2,7 @@ import { expect, it, vi } from "vitest";
 import { Group, PerspectiveCamera, Vector3 } from "three";
 import { BARISTA_ORDERS, type Row } from "../src/content/barista";
 import { loadSituation } from "../src/content/situations/catalog";
-import { COUNTER_SEAT, MIA_ASIDE } from "../src/game/barista/framing";
+import { COUNTER_SEAT, MIA_ASIDE, counterDetails, fitCounterView } from "../src/game/barista/framing";
 import { createBaristaMode, BARISTA_PROMPT } from "../src/game/barista/mode";
 import { CUP_AT, CUP_SERVED } from "../src/game/barista/props";
 import { useBarista } from "../src/game/barista/store";
@@ -161,12 +161,28 @@ it("runs the counter offer, guided correction, concealed order, scoring and clea
       if (i === 0) {
         const { stage } = host.rig;
         const cup = room.getObjectByName("barista-serving")!.position;
-        const customerFace = rosa.position.clone().setY(1.75 * (NPCS.rosa.look.height ?? 1) * 0.91);
+        const customerHeight = 1.75 * (NPCS.rosa.look.height ?? 1);
+        const customerFace = rosa.position.clone().setY(customerHeight * 0.91);
         const miaFace = mia.root.position.clone().setY(mia.height * 0.91);
         expect(stage!.pos.z).toBeLessThan(staff.z);
         for (const [width, height, freeBottom] of views) {
           const cam = aimAtStage(width, height);
+          const bottom = Math.min(freeBottom, height - Math.min(width <= 600 ? 350 : 325, height * 0.54));
+          const wide = fitCounterView(cam, width, height, bottom, counterDetails(customerHeight, mia.height));
+          const wideProjection = cam.projectionMatrix.toArray();
           mode.frameView(width, height, freeBottom);
+          if (height === 844) {
+            const zoomRatio = cam.zoom / wide.zoom;
+            expect(zoomRatio).toBeGreaterThan(1.1);
+            expect(zoomRatio).toBeLessThan(1.18);
+            const nearCounterEdge = pixel(CUP_AT.clone().setZ(-3.81), cam, width, height);
+            expect(nearCounterEdge.x).toBeGreaterThan(0);
+            expect(nearCounterEdge.x).toBeLessThan(width);
+            expect(nearCounterEdge.y).toBeGreaterThan(pixel(cup, cam, width, height).y);
+            expect(nearCounterEdge.y).toBeLessThan(freeBottom);
+          } else {
+            expect(cam.projectionMatrix.toArray()).toEqual(wideProjection);
+          }
           for (const position of [cup, customerFace, miaFace]) {
             const { x, y } = pixel(position, cam, width, height);
             expect(x).toBeGreaterThan(0);
