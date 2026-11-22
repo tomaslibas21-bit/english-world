@@ -826,6 +826,8 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 }
 @media (max-width: 600px) and (orientation: portrait) {
   .toolbar.portrait-toolbar { top: 112px; right: max(10px, env(safe-area-inset-right)); }
+  /* The place's name appears under the open task card when the learner comes out of a door. */
+  .hud:has(.objective-card:not(.collapsed)) .zone-banner { top: 46%; width: calc(100vw - 24px); }
 }
 @media (max-height: 520px) and (orientation: landscape) {
   .toolbar.in-ride.folds { --tool-gap: 6px; top: 12px; right: max(112px, calc(env(safe-area-inset-right) + 100px)); }
@@ -833,11 +835,12 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
     top: 8px; left: max(8px, env(safe-area-inset-left)); max-width: min(46vw, 400px);
     max-height: calc(100dvh - 16px); overflow-y: auto;
   }
-  .objective-card.collapsed .objective-head { grid-template-columns: 32px minmax(0, 1fr) auto; align-items: center; }
-  .objective-card.collapsed .objective-ico { grid-row: 1; align-self: start; margin-top: 0; }
-  .objective-card.collapsed h3 { grid-column: 2; grid-row: 1; }
-  .objective-card.collapsed .objective-head .kicker { grid-column: 3; grid-row: 1; }
+  /* The folded card keeps the conversation's icon, title and chevron in one row. */
+  .objective-card.collapsed .objective-head { display: flex; align-items: center; gap: 8px; }
+  .objective-card.collapsed .objective-head .kicker { display: contents; }
   .objective-card.collapsed .objective-head .kicker-label { display: none; }
+  .objective-card.collapsed .objective-ico { order: -2; flex: none; margin-top: 0; }
+  .objective-card.collapsed h3 { order: -1; flex: 1; min-width: 0; margin: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
   .objective-card.collapsed .collapse-btn { flex: none; }
 }
 @media (prefers-reduced-motion: reduce) {

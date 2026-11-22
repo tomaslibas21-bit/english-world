@@ -356,7 +356,8 @@ describe("the radio", () => {
     const radio = new Radio(deps({ config: null }));
     expect(radio.store.getState().available).toBe(false);
     radio.power();
-    expect(radio.store.getState().on).toBe(false);
+    radio.tap();
+    expect(radio.store.getState()).toMatchObject({ on: false, open: false });
     expect(out.log).toEqual([]);
   });
 
@@ -381,6 +382,24 @@ describe("the radio", () => {
     radio.setOpen(true);
     radio.toggle();
     expect(radio.store.getState()).toMatchObject({ on: false, open: true });
+  });
+
+  it("the phone button opens the set on every tap and leaves a playing song alone", async () => {
+    const radio = new Radio(deps());
+    radio.tap();
+    expect(out.log).toEqual(["unlock"]);
+    expect(saved().introduced).toBe(true);
+    await settle();
+    expect(radio.store.getState()).toMatchObject({ on: true, open: true, playing: true });
+    radio.setOpen(false);
+    const log = [...out.log], fades = [...out.fades];
+    radio.tap();
+    expect(radio.store.getState()).toMatchObject({ on: true, open: true, playing: true });
+    expect(out.log).toEqual(log);
+    expect(out.fades).toEqual(fades);
+    radio.power();
+    radio.power();
+    expect(radio.store.getState()).toMatchObject({ on: true, open: false });
   });
 
   it("fades in over a second when turned on, and out over about a second when turned off: never a cut", async () => {

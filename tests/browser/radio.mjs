@@ -1,4 +1,4 @@
-// The town's radio in real browsers: one tap turns it on and the next off, with a fade; it plays the course's songs
+// The town's radio in real browsers: it fades in and out; it plays the course's songs
 // with the files token, starting with the first grammar song; its set shows the course's kinds of song as stations,
 // moves on from one to the next, and its heart writes the course's own favorites; it shows the sung line, is silent
 // for a conversation and a microphone, comes back, and stays reachable on phones. On an iPhone it must not make a media
@@ -25,7 +25,7 @@ const RADIO = PC ? "Radio Puerto Colibrí" : "Maple Harbor Radio";
 const FM = PC
   ? { grammar: "Gramática FM", vocab: "Vocabulario FM", situations: "Situaciones FM", random: "Al Azar FM", favorites: "Favoritas FM" }
   : { grammar: "Grammar FM", vocab: "Vocab FM", situations: "Situations FM", random: "Random FM", favorites: "Favorites FM" };
-const EN = { "Teksto dydis": "Text size", "Sakinio vertimas": "Sentence translation", "Paaiškinimai": "Notes", "Paveikslėliai": "Pictures", "Pridėta prie mėgstamų": "Added to your favorites" };
+const EN = { "Radijas": "Radio", "Teksto dydis": "Text size", "Sakinio vertimas": "Sentence translation", "Paaiškinimai": "Notes", "Paveikslėliai": "Pictures", "Pridėta prie mėgstamų": "Added to your favorites" };
 let english = false;
 const L = (lt) => (english ? EN[lt] : lt);
 const manifest = JSON.parse(await readFile("public/audio/manifest.json", "utf8"));
@@ -50,6 +50,12 @@ const FAVORITES = "fluentsteps.songs.favorites.v1";
 const lines = Array.from({ length: 186 }, (_, i) => {
   const s = 0.4 + i * 1.6;
   return { s, e: s + 1.4, sec: 0, lab: "", src: "Every evening home", lt: "Kiekvieną vakarą namo", u: [["Every evening,", "Kiekvieną vakarą,", 2], ["home", "namo (į namus)", 1]], w: [[s, s + 0.4], [s + 0.5, s + 0.9], [s + 1, s + 1.4]], wt: ["Every", "evening,", "home"] };
+});
+// The same fixture sung six phrases to a line, longer than the space between the thumbs.
+const longLines = lines.filter((_, i) => i % 6 === 0).map((first, i) => {
+  const phrases = lines.slice(i * 6, i * 6 + 6);
+  return { ...first, e: phrases.at(-1).e, src: phrases.map((p) => p.src).join(" "), lt: phrases.map((p) => p.lt).join(" "),
+    u: phrases.flatMap((p) => p.u), w: phrases.flatMap((p) => p.w), wt: phrases.flatMap((p) => p.wt) };
 });
 // what goes with the lines (src/radio/extras.ts): the course's note on every third line, and one picture, listed in
 // the plain kind of list (this course's site has no flashcard list for the song: that address answers 404)
@@ -151,8 +157,8 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
 
       // ---- the button: there, big enough, clear of the other controls
       const button = page.locator(".radio-btn");
-      const pressPower = async () => { await openPhoneMenu(page); await (phone ? button.tap() : button.click()); };
-      const openSet = async () => { await openPhoneMenu(page); await page.locator(".radio-plate").click(); };
+      const pressRadio = async () => { await openPhoneMenu(page); await (phone ? button.tap() : button.click()); };
+      const openSet = () => phone ? pressRadio() : page.locator(".radio-plate").click();
       await openPhoneMenu(page);
       const layout = await page.evaluate(() => {
         const box = (sel) => { const r = document.querySelector(sel)?.getBoundingClientRect(); return r ? { l: r.left, t: r.top, r: r.right, b: r.bottom } : null; };
@@ -165,7 +171,7 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       // ---- one tap: on, the card, a song with the token
       let s = await state(page);
       check(`${label}: silent until asked`, !s.on && !s.sounding, s);
-      await pressPower();
+      await pressRadio();
       await playing(page);
       await page.waitForTimeout(1300);
       s = await state(page);
@@ -180,6 +186,11 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       // the very first time, the radio set opens by itself: the radio's name, the dial, the display, five keys, and the
       // stations: the course's kinds of song that it has (no Idioms FM here), the mix, and the favorites
       const card = await page.locator(".radio-set").boundingBox();
+      const menu = page.locator(".ride-menu"), lamp = menu.locator(".radio-lamp");
+      const setAlone = async () => await page.locator(".hud > .radio-set").isVisible()
+        && await menu.getAttribute("aria-expanded") === "false" && await button.isHidden()
+        && await page.locator(".toolbar-drawer[inert]").count() === 1 && await page.locator(".radio-plate").count() === 0;
+      if (phone) check(`${label}: the first tap opens the set over the town and folds the menu`, await setAlone(), card);
       const rows = await page.locator(".rs-st").evaluateAll((els) => els.map((el) => ({ name: el.querySelector("b").textContent, count: el.querySelector(".rs-st-count")?.textContent ?? null, on: el.getAttribute("aria-checked") === "true", empty: el.getAttribute("aria-disabled") === "true" })));
       check(`${label}: the radio set is on screen with its name, five keys and the stations`, card && card.x >= 0 && card.y >= 0 && card.x + card.width <= layout.w && card.y + card.height <= layout.h
         && (await page.locator(".rs-name").textContent()) === RADIO && await page.locator(".rs-key").count() === 5, card);
@@ -227,41 +238,71 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       await page.waitForTimeout(100);
       s = await state(page);
       check(`${label}: a heart given on the course's own page shows here too`, s.liked && s.counts.favorites === 2 && await heart.getAttribute("aria-pressed") === "true", s);
-      await page.locator(".rs-x").click();
+      if (phone) {
+        // Below the set, between the two thumbs, the tap reaches the town.
+        await page.touchscreen.tap(layout.w / 2, layout.h - 12);
+        await lamp.waitFor();
+        s = await state(page);
+        check(`${label}: folded and playing, the menu lamp is the only radio control in view`, s.on && s.playing && s.sounding
+          && await button.isHidden() && await menu.getAttribute("aria-expanded") === "false"
+          && await page.locator(".radio-plate, .radio-set").count() === 0, s);
+        await openPhoneMenu(page);
+        check(`${label}: the open menu has the lit radio button and three moving bars`, await button.getAttribute("title") === L("Radijas")
+          && await button.getAttribute("aria-label") === L("Radijas") && await button.locator(".radio-lamp").isVisible()
+          && await page.locator(".radio-btn.on .radio-eq i").evaluateAll((bars) => bars.length === 3 && bars.every((bar) => getComputedStyle(bar).animationName === "radio-eq"))
+          && await page.locator(".radio-plate").count() === 0, null);
+        await button.tap();
+        check(`${label}: another tap opens the set and the song plays on`, await setAlone() && (await state(page)).sounding, null);
+        await page.locator(".rs-knob").tap();
+        check(`${label}: the knob switches off and leaves the set open`, await setAlone() && !(await state(page)).on, null);
+        await page.locator(".rs-x").tap();
+        await page.waitForTimeout(1200);
+        s = await state(page);
+        check(`${label}: the music has faded out and the folded menu lamp is dark`, !s.sounding && !s.playing && await lamp.isHidden()
+          && await menu.getAttribute("aria-expanded") === "false" && await page.locator(".radio-plate, .radio-set").count() === 0, s);
+        await pressRadio();
+        await playing(page);
+        check(`${label}: a tap from off opens the set again`, await setAlone(), null);
+        await page.keyboard.press("r");
+        check(`${label}: R powers off and closes the set`, !(await state(page)).on && await page.locator(".radio-set").count() === 0, null);
+        await page.keyboard.press("r");
+        await playing(page);
+        await lamp.waitFor();
+      } else {
+        await page.locator(".rs-x").click();
 
-      // ---- folded away: the lit button and the station's plate; a tap on the button is off, the next is on
-      // the plate has slid in (a slow machine draws few frames, so wait for the animation itself, not a time)
-      await until(page, () => { const el = document.querySelector(".radio-plate"); return !!el && el.getAnimations().every((a) => a.playState === "finished"); }, 15000);
-      await openPhoneMenu(page);
-      const folded = await page.evaluate(() => {
-        const box = (sel) => { const r = document.querySelector(sel)?.getBoundingClientRect(); return r ? { l: r.left, t: r.top, r: r.right, b: r.bottom } : null; };
-        return { plate: box(".radio-plate"), text: document.querySelector(".radio-plate-text")?.textContent, lit: document.querySelector(".radio-btn").classList.contains("on"),
-          set: !!document.querySelector(".radio-set"), tools: [...document.querySelectorAll(".toolbar .icon-btn")].map((el) => { const r = el.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom }; }), w: innerWidth };
-      });
-      check(`${label}: while it plays, the button is lit and a plate beside it names the station or the song`, folded.lit && !folded.set && folded.plate && folded.plate.l >= 0 && folded.plate.r <= folded.w
-        && folded.plate.b - folded.plate.t >= 36 && folded.tools.every((t) => apart(t, folded.plate)) && [FM.grammar, "Radio Song 1"].includes(folded.text), folded);
-      await pressPower();
-      s = await state(page);
-      check(`${label}: one tap turns it off: the button goes dark and the plate leaves at once`, !s.on && await page.locator(".radio-plate").count() === 0 && !(await button.evaluate((el) => el.classList.contains("on"))), s);
-      await page.waitForTimeout(1200);
-      s = await state(page);
-      check(`${label}: and the music has faded out`, !s.sounding && !s.playing, s);
-      await pressPower();
-      await playing(page);
-      check(`${label}: the next tap turns it on again, without the set in the way`, (await state(page)).on && await page.locator(".radio-set").count() === 0 && await page.locator(".radio-plate").count() === 1, await state(page));
-      await openSet();
-      check(`${label}: a tap on the plate opens the set, a tap elsewhere folds it away`, await page.locator(".radio-set").count() === 1, null);
-      await page.evaluate(() => document.querySelector(".stage").dispatchEvent(new PointerEvent("pointerdown", { bubbles: true })));
-      await page.waitForTimeout(100);
-      check(`${label}: folded away again, still playing`, await page.locator(".radio-set").count() === 0 && (await state(page)).on, null);
-      // switched off with the set open: off looks off, the set folds away too; on again shows the plate only
-      await openSet();
-      await page.evaluate(() => window.__ew.radio.power());
-      check(`${label}: switched off with the set open, the set folds away`, await page.locator(".radio-set").count() === 0 && await page.locator(".radio-plate").count() === 0 && !(await state(page)).on, await state(page));
-      await page.waitForTimeout(1100);
-      await page.evaluate(() => window.__ew.radio.power());
-      await playing(page);
-      check(`${label}: on again brings the plate, not the set`, await page.locator(".radio-set").count() === 0 && await page.locator(".radio-plate").count() === 1, null);
+        // Wait for the plate to finish sliding in. A slow machine may draw only a few frames.
+        await until(page, () => { const el = document.querySelector(".radio-plate"); return !!el && el.getAnimations().every((a) => a.playState === "finished"); }, 15000);
+        const folded = await page.evaluate(() => {
+          const box = (sel) => { const r = document.querySelector(sel)?.getBoundingClientRect(); return r ? { l: r.left, t: r.top, r: r.right, b: r.bottom } : null; };
+          return { plate: box(".radio-plate"), text: document.querySelector(".radio-plate-text")?.textContent, lit: document.querySelector(".radio-btn").classList.contains("on"),
+            set: !!document.querySelector(".radio-set"), tools: [...document.querySelectorAll(".toolbar .icon-btn")].map((el) => { const r = el.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom }; }), w: innerWidth };
+        });
+        check(`${label}: while it plays, the button is lit and a plate beside it names the station or the song`, folded.lit && !folded.set && folded.plate && folded.plate.l >= 0 && folded.plate.r <= folded.w
+          && folded.plate.b - folded.plate.t >= 36 && folded.tools.every((t) => apart(t, folded.plate)) && [FM.grammar, "Radio Song 1"].includes(folded.text), folded);
+        await pressRadio();
+        s = await state(page);
+        check(`${label}: one tap turns it off: the button goes dark and the plate leaves at once`, !s.on && await page.locator(".radio-plate").count() === 0 && !(await button.evaluate((el) => el.classList.contains("on"))), s);
+        await page.waitForTimeout(1200);
+        s = await state(page);
+        check(`${label}: and the music has faded out`, !s.sounding && !s.playing, s);
+        await pressRadio();
+        await playing(page);
+        check(`${label}: the next tap turns it on again, without the set in the way`, (await state(page)).on && await page.locator(".radio-set").count() === 0 && await page.locator(".radio-plate").count() === 1, await state(page));
+        await openSet();
+        check(`${label}: a tap on the plate opens the set, a tap elsewhere folds it away`, await page.locator(".radio-set").count() === 1, null);
+        await page.evaluate(() => document.querySelector(".stage").dispatchEvent(new PointerEvent("pointerdown", { bubbles: true })));
+        await page.waitForTimeout(100);
+        check(`${label}: folded away again, still playing`, await page.locator(".radio-set").count() === 0 && (await state(page)).on, null);
+        // Switching off closes the set. Switching on again brings back the plate.
+        await openSet();
+        await page.evaluate(() => window.__ew.radio.power());
+        check(`${label}: switched off with the set open, the set folds away`, await page.locator(".radio-set").count() === 0 && await page.locator(".radio-plate").count() === 0 && !(await state(page)).on, await state(page));
+        await page.waitForTimeout(1100);
+        await page.evaluate(() => window.__ew.radio.power());
+        await playing(page);
+        check(`${label}: on again brings the plate, not the set`, await page.locator(".radio-set").count() === 0 && await page.locator(".radio-plate").count() === 1, null);
+      }
 
       // ---- the lyric strip: the sung line, the word lit, the glosses with the game's translation setting
       // (looked at in the moment a word is lit: between two lines' first words none is)
@@ -434,7 +475,7 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       s = await state(page);
       check(`${label}: a tap elsewhere leaves it off`, !s.on && !s.sounding, s);
       // the power button goes on with the same song
-      await pressPower();
+      await pressRadio();
       await playing(page);
       await page.waitForTimeout(1200);
       s = await state(page);
@@ -452,28 +493,61 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
     }
 
     // ---- the button and the open card at other sizes
-    for (const [width, height] of [[320, 568], [844, 390], [1280, 720], [1024, 600]]) {
+    for (const [width, height] of [[320, 568], [844, 390], [664, 390], [1280, 720], [1024, 600]]) {
       const context = await browser.newContext({ viewport: { width, height }, hasTouch: width < 1000, isMobile: width < 1000 });
       await context.addInitScript(init, [TOKEN, `${storage}-progress-v1`]);
       const page = await context.newPage();
       await page.route("**/songs/index.json", (route) => route.fulfill({ json: { lang: "en", songs } }));
-      await page.route("**/radio-files/songs/**", (route) => route.request().url().endsWith(".mp3") || route.request().url().includes(".mp3?") ? route.fulfill(recording(route.request().url())) : route.fulfill({ json: { L: lines } }));
+      await page.route("**/radio-files/songs/**", (route) => route.request().url().endsWith(".mp3") || route.request().url().includes(".mp3?") ? route.fulfill(recording(route.request().url())) : route.fulfill({ json: { L: longLines } }));
       await page.goto(base, { waitUntil: "domcontentloaded" });
       await until(page, () => window.__ew?.store.getState().screen === "play", 90000);
       english = (await page.evaluate(() => document.documentElement.lang)) !== "lt";
       await page.evaluate((touch) => window.__ew.store.getState().setHud({ panel: null, ...(touch ? { showTouch: true } : {}) }), width < 1000);
       await openPhoneMenu(page);
-      await page.evaluate(() => window.__ew.radio.setOpen(true));
       const boxes = await page.evaluate(() => {
         const box = (sel) => { const r = document.querySelector(sel)?.getBoundingClientRect(); return r ? { l: r.left, t: r.top, r: r.right, b: r.bottom } : null; };
         const tools = [...document.querySelectorAll(".toolbar .icon-btn")].map((el) => { const r = el.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom }; });
-        return { radio: box(".radio-btn"), lr: box(".light-mode-btn"), card: box(".radio-set"), jump: box(".jump-btn"), joy: box(".joy"), tools, w: innerWidth, h: innerHeight };
+        return { radio: box(".radio-btn"), lr: box(".light-mode-btn"), jump: box(".jump-btn"), joy: box(".joy"), tools, w: innerWidth, h: innerHeight };
       });
       const inside = (b) => b && b.l >= 0 && b.t >= 0 && b.r <= boxes.w && b.b <= boxes.h;
       const apart = (a, b) => !a || !b || a.r <= b.l || b.r <= a.l || a.b <= b.t || b.b <= a.t;
       check(`${name} ${width}×${height}: every tool, the radio and the light-mode button are on screen and apart`, boxes.tools.every(inside) && boxes.tools.every((a, i) => boxes.tools.every((b, j) => i === j || apart(a, b))), boxes);
       check(`${name} ${width}×${height}: the tools stay clear of the movement controls`, boxes.tools.every((t) => apart(t, boxes.jump) && apart(t, boxes.joy)), boxes);
-      check(`${name} ${width}×${height}: the open radio set fits the screen`, inside(boxes.card), boxes);
+      if (height === 390) await page.locator(".radio-btn").tap();
+      else await page.evaluate(() => window.__ew.radio.setOpen(true));
+      const set = page.locator(".radio-set");
+      await set.waitFor();
+      const card = await set.evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        return { l: r.left, t: r.top, r: r.right, b: r.bottom };
+      });
+      check(`${name} ${width}×${height}: the open radio set fits the screen`, inside(card), card);
+      if (height === 390) {
+        await playing(page);
+        await page.locator(".rs-x").tap();
+        await page.locator(".ride-menu .radio-lamp").waitFor();
+        const layout = await (await until(page, () => {
+          const strip = document.querySelector(".radio-strip");
+          const row = strip?.querySelector(".radio-line"), unit = row?.querySelector(".ru.now:nth-last-child(-n+3)");
+          if (!unit) return null;
+          const box = (el) => {
+            const r = el.getBoundingClientRect();
+            return { l: r.left, t: r.top, r: r.right, b: r.bottom };
+          };
+          const controls = [".joy", ".jump-btn", ".objective-card", ".ride-menu", ".minimap"].map((sel) => box(document.querySelector(sel)));
+          return { strip: box(strip), controls, row: box(row), unit: box(unit), scrolled: row.scrollLeft,
+            rows: [...row.children].map((word) => word.offsetTop) };
+        })).jsonValue();
+        const [joy, jump] = layout.controls;
+        check(`${name} ${width}×${height}: folded and playing, one lyric row fits between the thumbs and clears the town controls`,
+          inside(layout.strip) && layout.strip.l >= joy.r && layout.strip.r <= jump.l && layout.strip.b >= height - 32
+          && new Set(layout.rows).size === 1 && layout.controls.every((control) => apart(layout.strip, control))
+          && await page.locator(".radio-plate, .radio-set").count() === 0, layout);
+        check(`${name} ${width}×${height}: a long lyric line follows the singing to its last words`,
+          layout.scrolled > 0 && layout.unit.l >= layout.row.l - 1 && layout.unit.r <= layout.row.r + 1, layout);
+        await openPhoneMenu(page);
+        await page.locator(".radio-btn").tap();
+      }
       // the largest text size (Nustatymai: A++): the radio's name and every station's name show in full, the set still
       // fits, and the station that plays is in view (on the smallest screens the stations scroll)
       await page.evaluate(() => window.__ew.store.getState().setSettings({ textSize: 1.3 }));

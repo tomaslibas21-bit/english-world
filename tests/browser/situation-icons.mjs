@@ -47,7 +47,9 @@ async function inspect(page, cards, titles, objective = false) {
       const range = document.createRange();
       range.selectNodeContents(heading);
       const lines = [...range.getClientRects()].filter((r) => r.width && r.height);
-      check(lines.length && lines.every(inside), "title text outside card");
+      // A folded title with an ellipsis ends at its visible box.
+      const cut = getComputedStyle(heading).textOverflow === "ellipsis";
+      check(lines.length && (cut || lines.every(inside)), "title text outside card");
       if (card.matches(".contact")) {
         const avatar = card.querySelector(".avatar");
         const badge = icon.closest(".contact-badge");
