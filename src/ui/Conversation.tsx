@@ -283,7 +283,7 @@ function EndCard({ sit }: { sit: SituationDef }) {
   );
 }
 
-function EndDestination({ sit, close }: { sit: SituationMeta; close: () => void }) {
+export function EndDestination({ sit, close, label }: { sit: SituationMeta; close: () => void; label?: string }) {
   const { title, where } = objectiveLabels(sit);
   const phone = isPhone(sit);
   const go = () => {
@@ -296,7 +296,7 @@ function EndDestination({ sit, close }: { sit: SituationMeta; close: () => void 
     <span className="place-ico"><Icon name={sitIcon(sit)} size={23} /></span>
     <div><b>{title}</b><small>{where}</small></div>
     <button className="btn" onClick={go}>
-      <Icon name={phone ? "smartphone" : "walk"} size={18} /> {phone ? "Paskambinti" : "Nuvesk mane"}
+      <Icon name={phone ? "smartphone" : "walk"} size={18} /> {label ?? (phone ? "Paskambinti" : "Nuvesk mane")}
     </button>
   </div>;
 }

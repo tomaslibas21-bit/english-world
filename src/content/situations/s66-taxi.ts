@@ -1,3 +1,4 @@
+import { ROAD_LINES, ROAD_MERGES } from "../road-lines";
 import { TAXI_LINES, TAXI_MERGES } from "../taxi-lines";
 // Song 66 "Keep the Change": taking a taxi in Maple Harbor. Vinnie is a chatty driver who sings
 // along with the radio. The learner says where to go (any place in town, a vague place gets a
@@ -384,6 +385,7 @@ export const taxi: SituationDef = {
 
   lines: {
     ...TAXI_LINES,
+    ...ROAD_LINES,
     greet: [
       t("Hi there! | Hop in! | Where to?", "Sveiki! | Lipkite! | Kur važiuojame?", "Sveiki! Lipkite! Kur važiuojame?"),
       t("Taxi? | Hop in! | Where | are | you | headed?", "Taksi? | Lipkite! | Kur | — | Jūs | keliaujate?", "Taksi? Lipkite! Kur keliaujate?",
@@ -686,6 +688,7 @@ export const taxi: SituationDef = {
 
   merges: {
     ...TAXI_MERGES,
+    ...ROAD_MERGES,
     "where to": { reason: "lexical_expression", split: "Where → kur + to → į leaves the verb missing; the elliptical taxi question “Where to?” = kur važiuojame.", minimal: "Two words, one question." },
     "hop in": { reason: "lexical_expression", split: "hop → šokti + in → į is false; the invitation = lipkite (get in).", minimal: "Verb + particle." },
     "sure thing": { reason: "lexical_expression", split: "sure → tikras + thing → daiktas is false; the reply = žinoma.", minimal: "Two words." },

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ComponentType, type CSSProperties, type KeyboardEvent } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type ComponentType, type CSSProperties, type KeyboardEvent } from "react";
 import { townRide, useStore, type HudState } from "../state/store";
 import { townNote } from "../state/townNotes";
 import { SectionHelpButton, useSectionHelp } from "./sectionHelp";
@@ -6,6 +6,7 @@ import { useSurf } from "../game/surf/store";
 import { SurfOverlay, SurfPicker } from "./Surf";
 import { TaxiOverlay } from "./Taxi";
 import { BaristaOffer, BaristaOverlay } from "./Barista";
+import { ROAD_UI } from "../content/road";
 import { game } from "../game/gameRef";
 import { WORLD, SEA_Z } from "../game/world/layout";
 import { SITUATION_BY_ID } from "../content/situations/catalog";
@@ -40,7 +41,8 @@ export function useDueCards(): number {
   return dueCards(cards, Date.now()).length;
 }
 
-const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = { taxi: TaxiOverlay, barista: BaristaOverlay };
+const RoadOverlay = lazy(() => import("./Road").then(({ RoadOverlay }) => ({ default: RoadOverlay })));
+const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = { taxi: TaxiOverlay, barista: BaristaOverlay, road: RoadOverlay };
 
 export function Hud() {
   const hud = useStore((s) => s.hud);
@@ -63,11 +65,12 @@ export function Hud() {
   );
   if (hud.modeScreen?.kind === "menu") {
     const Overlay = modeOverlays[hud.modeScreen.id];
+    const road = hud.modeScreen.id === "road";
     return (
-      <div className={"hud mode-hud" + (hud.showTouch ? " has-touch" : "")}>
-        {!hud.panel && Overlay && <Overlay touch={hud.showTouch} />}
-        {hud.modeScreen.id !== "barista" && <Toolbar riding touch={hud.showTouch} modeExit={hud.modeScreen.exitLabel} />}
-        {hud.showTouch && hud.ride && <TouchControls />}
+      <div className={"hud mode-hud" + (road ? " road-mode" : "") + (hud.showTouch ? " has-touch" : "")}>
+        {!hud.panel && Overlay && <Suspense fallback={null}><Overlay touch={hud.showTouch} /></Suspense>}
+        {!road && hud.modeScreen.id !== "barista" && <Toolbar riding touch={hud.showTouch} modeExit={hud.modeScreen.exitLabel} />}
+        {hud.showTouch && hud.ride && <TouchControls road={road} />}
         <Fade />
       </div>
     );
@@ -78,6 +81,7 @@ export function Hud() {
   return (
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")}>
       <div className="hud-top">
+          {hud.speedLines && <div className="drive-wind" aria-hidden />}
         <div className={"objective-notes" + (collapsed ? " task-folded" : "")}>
           <Objective key={hud.objective?.sitId ?? "complete"} collapsed={collapsed} fresh={task.fresh && !hud.panel} setCollapsed={task.setManual} />
           {hud.zoneBanner && banner && <div className="zone-banner"><h2>{banner.icon && <Icon name={banner.icon} size="0.8em" className="zb-ico" />}{banner.rest}</h2>{hud.zoneBanner.sub && <p>{hud.zoneBanner.sub}</p>}</div>}
@@ -91,7 +95,7 @@ export function Hud() {
       {/* (on a phone the way out of a car is the round button itself: no second label over it) */}
       {hud.prompt && !hud.panel && !(hud.showTouch && hud.prompt.kind === "out") && (
         <button className={"prompt" + (hud.showTouch ? " touch" : "")} onClick={() => game?.interact()}>
-          <kbd>{hud.showTouch ? <Icon name="tap" size={18} /> : "E"}</kbd>
+          <kbd>{hud.prompt.label === ROAD_UI.drive ? <Icon name="key" size={18} /> : hud.showTouch ? <Icon name="tap" size={18} /> : "E"}</kbd>
           <span className="prompt-text">{hud.prompt.label}{hud.prompt.lt && <small lang="lt">{hud.prompt.lt}</small>}</span>
         </button>
       )}
@@ -126,6 +130,7 @@ function activateHudButton(e: KeyboardEvent<HTMLElement>) {
 function Toolbar({ riding, touch, modeExit }: { riding: boolean; touch: boolean; modeExit?: string }) {
   const due = useDueCards();
   const hasRadio = useRadio((s) => s.available);
+  const canHonk = useStore((s) => s.hud.ride === "car" || s.hud.ride === "taxi");
   const hasHelp = useSectionHelp();
   const hasTouchPrompt = useStore((s) => !s.hud.panel && !!s.hud.prompt && s.hud.prompt.kind !== "out");
   const [upright, setUpright] = useState(false);
@@ -141,7 +146,9 @@ function Toolbar({ riding, touch, modeExit }: { riding: boolean; touch: boolean;
   const toolbar = useRef<HTMLDivElement>(null);
   const fitLimit = useRef<HTMLDivElement>(null);
   const [twoColumns, setTwoColumns] = useState(false);
-  const drawerRows = portraitToolbarRows({ hasHelp, hasRadio, hasCourse: !!COURSE_URL, modeExit: !!modeExit });
+  const baseRows = portraitToolbarRows({ hasHelp, hasRadio, hasCourse: !!COURSE_URL, modeExit: !!modeExit });
+  const hornInMenu = canHonk && !touch;
+  const drawerRows = { single: baseRows.single + Number(hornInMenu), split: baseRows.split + Number(hornInMenu) };
   const rows = drawerRows.single + Number(riding);
   useLayoutEffect(() => {
     const bar = toolbar.current, limit = fitLimit.current;
@@ -192,6 +199,7 @@ function Toolbar({ riding, touch, modeExit }: { riding: boolean; touch: boolean;
     {!!due && <span className="due-badge" aria-hidden>{due}</span>}
   </button>;
   const actions = <>
+    {hornInMenu && <HornButton />}
     {modeExit && <button className="icon-btn mode-exit" title={modeExit} aria-label={modeExit} onClick={() => game?.modeExit()}><Icon name="walk" size={25} /></button>}
     <ToolButton icon="clapper" title="Visos situacijos" panel="scenarios" />
     <ToolButton icon="map" title="Žemėlapis (M)" panel="map" hotkey="M" />
@@ -430,7 +438,12 @@ function Minimap() {
   );
 }
 
-function TouchControls() {
+function HornButton({ touch }: { touch?: boolean }) {
+  return <button className={touch ? "drive-horn" : "icon-btn"} type="button" aria-label={ROAD_UI.horn}
+    title={ROAD_UI.horn} onClick={() => game?.horn?.()}><Icon name="horn" size={23} /></button>;
+}
+
+function TouchControls({ road = false }: { road?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const knob = useRef<HTMLDivElement>(null);
   const prompt = useStore((s) => s.hud.prompt);
@@ -476,9 +489,10 @@ function TouchControls() {
       {/* the jump stays under the right thumb; with someone to talk to or a door to go through it moves over for that button
           (a second tap while in the air is a flip: every press goes to the game, which knows where the player is) */}
       {prompt && <button className="act-btn" onClick={() => game?.interact()}>{prompt.kind === "talk" ? "Kalbėti" : prompt.kind === "exit" ? "Išeiti" : prompt.kind === "drive" ? "Vairuoti" : prompt.kind === "boat" ? "Plaukti" : prompt.kind === "out" ? "Išlipti" : prompt.kind === "climb" ? "Užlipti" : prompt.kind === "surf" ? "Banglentė" : prompt.kind === "paddle" ? "Irkluoti" : (prompt.kind === "taxi" || prompt.kind === "barista") ? prompt.label : "Įeiti"}</button>}
+      {(ride === "car" || ride === "taxi") && <HornButton touch />}
       {/* (at a wheel the same button is the brake, for as long as it is held; in the water, a dive and the way back up) */}
       {ride === "car" || ride === "boat" || ride === "taxi"
-        ? <button className={"jump-btn brake-btn" + (prompt ? " beside" : "")} aria-label="Stabdyti" title="Stabdyti" onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); game?.hold(true); }} onPointerUp={() => game?.hold(false)} onPointerCancel={() => game?.hold(false)} onLostPointerCapture={() => game?.hold(false)}><span aria-hidden>{fast ? "DRIFT" : "STOP"}</span></button>
+        ? <button className={"jump-btn brake-btn" + (prompt ? " beside" : "")} aria-label={road ? ROAD_UI.drift : "Stabdyti"} title={road ? ROAD_UI.drift : "Stabdyti"} onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); game?.hold(true); }} onPointerUp={() => game?.hold(false)} onPointerCancel={() => game?.hold(false)} onLostPointerCapture={() => game?.hold(false)}><span aria-hidden>{road ? ROAD_UI.drift : fast ? "DRIFT" : "STOP"}</span></button>
         : ride === "swim" || ride === "dive"
           ? <button className={"jump-btn" + (prompt ? " beside" : "")} aria-label={ride === "dive" ? "Išnirti" : "Panerti"} title={ride === "dive" ? "Išnirti" : "Panerti"} onPointerDown={(e) => { e.preventDefault(); game?.jump(); }}><Icon name={ride === "dive" ? "chevronUp" : "chevronDown"} size={34} strokeWidth={2.5} /></button>
           : ride === "surf"

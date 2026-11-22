@@ -28,6 +28,7 @@ export class ModeDialogue {
     animate?(seconds: number): void;
     allowBrowserVoice?: boolean;
     framePlayback?: boolean;
+    speechFallback?: boolean;
   }) {}
 
   private resolve(situation: string, npcId: string, key: string, fallback: Record<string, SentSrc[]>, learner: boolean): KitLine | null {
@@ -40,14 +41,14 @@ export class ModeDialogue {
     const text = line.sentence.say;
     const clip = audio.clipDuration(voice, speed, text);
     const est = clip == null ? (learner && !this.ui.allowBrowserVoice ? 0.5 : Math.min(4, 0.5 + text.length * 0.06)) : clip / (slow ? 0.82 : 1);
-    const voiced = clip != null || !!this.ui.allowBrowserVoice;
+    const voiced = clip != null || !!this.ui.allowBrowserVoice || !!this.ui.speechFallback;
     if (!learner) this.ui.animate?.(est);
     return new Promise<boolean>((finish) => {
       const estimate = this.ui.framePlayback && clip == null ? Math.max(est, text.length * (slow ? 0.09 : 0.07)) : est;
       const left = clip == null && !this.ui.framePlayback ? estimate : estimate + 2;
       const playing = { left, clip: voiced, completed: false, finish };
       this.playback = playing;
-      if (voiced) void audio.play(voice, speed, text, { slow, male }).then((ok) => {
+      if (voiced) void audio.play(voice, speed, text, { slow, male, localVoiceOnly: this.ui.speechFallback }).then((ok) => {
         if (!ok || this.playback !== playing) return;
         if (this.ui.framePlayback) playing.completed = true;
         else this.endPlayback(true);

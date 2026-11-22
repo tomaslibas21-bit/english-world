@@ -134,6 +134,12 @@ export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: 
           }
           return;
         }
+        if (sit.id === "s66-taxi" && /^rd_a_/.test(lid)) {
+          for (const voice of coachVoices(opts.v2)) {
+            add(voice, 1, compose(src, {}, { look }), `${sit.id}:${lid}[${i}]`, true);
+          }
+          return;
+        }
         for (const b of bindings) for (const n of speakers) {
           try { add(voiceOf(n), n.speed ?? 1, compose(src, b, { look, addressee: "m", speaker: n.gender, formal: !n.informal }), `${sit.id}:${lid}[${i}]`); }
           catch { /* this entity type doesn't fit this line */ }

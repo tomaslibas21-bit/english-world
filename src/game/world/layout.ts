@@ -1,4 +1,5 @@
 // Maple Harbor: a small American coastal town. X = east, Z = south (north is -Z), 1 unit = 1 m.
+import { ROAD_EDITION } from "../../content/road";
 import { LOCATIONS } from "../../content/locations";
 import type { CarModelName, CarPlacement } from "./carModels";
 
@@ -30,7 +31,7 @@ export const WORLD = { minX: -112, maxX: 182, minZ: -104, maxZ: 96 };
 
 export const ROADS: Road[] = [
   { x1: -104, z1: -55, x2: 126, z2: -55, w: 9, name: "Harbor Road" },
-  { x1: -104, z1: -8, x2: 132, z2: -8, w: 10, name: "Main Street" },
+  { x1: ROAD_EDITION.enabled ? WORLD.minX : -104, z1: ROAD_EDITION.edge.z, x2: 132, z2: -8, w: 10, name: ROAD_EDITION.edge.street },
   { x1: -104, z1: 38, x2: 126, z2: 38, w: 9, name: "Oak Avenue" },
   { x1: -104, z1: 76, x2: 126, z2: 76, w: 8, name: "Station Road" },
   { x1: -70, z1: -55, x2: -70, z2: 76, w: 8, name: "West Street" },

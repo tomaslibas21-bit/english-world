@@ -31,6 +31,7 @@ export interface GameApi {
   jump(): void;
   /** The jump button held down or let go (at a wheel it is the brake). */
   hold(on: boolean): void;
+  horn?(): void;
   modeStart(id: string, option?: string): void;
   modeExit(): void;
   modeAction(id: string, name: string, value?: string | boolean): void;

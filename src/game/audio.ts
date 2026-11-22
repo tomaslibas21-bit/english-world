@@ -258,7 +258,7 @@ export class AudioSystem {
 
   /** True after playback finishes or the learner explicitly continues reading. Cancellation is false;
    *  denial keeps the same line pending. */
-  play(voice: string, speed: number, text: string, opts: { slow?: boolean; male?: boolean } = {}): Promise<boolean> {
+  play(voice: string, speed: number, text: string, opts: { slow?: boolean; male?: boolean; localVoiceOnly?: boolean } = {}): Promise<boolean> {
     this.stopDiagnostic("normal-playback");
     this.stop();
     // nothing to say (a hint whose blank is still empty comes out as ".")
@@ -687,7 +687,7 @@ export class AudioSystem {
     this.envelopes.set(key, env);
   }
 
-  private speakFallback(request: PlaybackRequest, text: string, opts: { slow?: boolean; male?: boolean }, reason: "manifest-miss" | "explicit-choice" = "explicit-choice") {
+  private speakFallback(request: PlaybackRequest, text: string, opts: { slow?: boolean; male?: boolean; localVoiceOnly?: boolean }, reason: "manifest-miss" | "explicit-choice" = "explicit-choice") {
     this.clip = null;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let playAttempt = 0;
@@ -701,8 +701,9 @@ export class AudioSystem {
         void waitForMicrophone().then(() => { if (!request.done && run === playAttempt) start(); });
         return;
       }
-      const vs = typeof navigator !== "undefined" && navigator.onLine ? this.fallbackVoices : this.fallbackVoices.filter((v) => v.localService);
-      if (typeof speechSynthesis === "undefined" || (!navigator.onLine && !vs.length)) {
+      const localOnly = opts.localVoiceOnly || typeof navigator === "undefined" || !navigator.onLine;
+      const vs = localOnly ? this.fallbackVoices.filter((v) => v.localService) : this.fallbackVoices;
+      if (typeof speechSynthesis === "undefined" || (localOnly && !vs.length)) {
         this.setState("unavailable");
         return;
       }
@@ -1494,7 +1495,7 @@ export class AudioSystem {
     src.start(now); src.stop(now + 1.85);
   }
 
-  sfx(name: "success" | "pop" | "door" | "cheer" | "soft" | "listen" | "coin" | "car" | "error" | "ring" | "beep" | "knock" | "tick") {
+  sfx(name: "success" | "pop" | "door" | "cheer" | "soft" | "listen" | "coin" | "car" | "error" | "ring" | "beep" | "knock" | "tick" | "horn" | "hornReply") {
     audioDiagnostic("context.effect", { reason: name });
     const ctx = this.ac();
     if (!ctx) return;
@@ -1528,6 +1529,8 @@ export class AudioSystem {
       case "car": tone(90, 0, 0.9, "sawtooth", vol * 0.25); break;
       case "error": tone(300, 0, 0.15, "triangle", vol * 0.5); tone(240, 0.1, 0.2, "triangle", vol * 0.5); break;
       case "ring": for (const at of [0, 0.5]) { tone(440, at, 0.35, "sine", vol * 0.45); tone(480, at, 0.35, "sine", vol * 0.45); } break;
+      case "horn": tone(382, 0, 0.26, "triangle", vol * 0.55); tone(480, 0, 0.23, "triangle", vol * 0.4); break;
+      case "hornReply": tone(329, 0, 0.17, "triangle", vol * 0.28); tone(415, 0, 0.16, "triangle", vol * 0.2); break;
       case "beep": tone(1000, 0, 0.4, "sine", vol * 0.5); break;
       case "knock": for (const at of [0, 0.16, 0.32]) tone(140, at, 0.07, "square", vol * 0.5); break;
       case "tick": tone(1180, 0, 0.05, "triangle", vol * 0.32); tone(1580, 0.03, 0.06, "triangle", vol * 0.22); break;

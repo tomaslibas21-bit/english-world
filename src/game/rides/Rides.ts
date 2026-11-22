@@ -7,9 +7,9 @@ import * as THREE from "three";
 import { createCharacter, addFarVersion, type GameCharacter } from "../characters";
 import { STYLED, vertexColorMaterial } from "../style";
 import { Chatter, walkerLook, type Ambient } from "../ambient";
-import { Colliders, rand } from "../world/util";
+import { Colliders, colourMerge, rand } from "../world/util";
 import { WORLD } from "../world/layout";
-import { carLedges, carModelEntry, type CarPlacement } from "../world/carModels";
+import { carLedges, carModelEntry, type CarModelName, type CarPlacement } from "../world/carModels";
 import { TOE, type Piece } from "../ledges";
 import type { NavGrid } from "../nav";
 import type { RidesPlan, CarSpot, BoatSpot } from "../world/rides";
@@ -77,6 +77,8 @@ interface Owner {
 
 export interface Ride {
   id: string; kind: "car" | "boat";
+  model?: CarModelName;
+  parked?: () => void;
   home: { x: number; z: number; rot: number };
   mesh: THREE.Object3D;
   m: Motion;
@@ -135,10 +137,23 @@ const ease = (k: number) => k * k * (3 - 2 * k);
 const carModels = new Map([["convertible", convertibleGeometry]]);
 type CarBox = Ambient["rideBoxes"][number];
 
+function parkedKeyGeometry() {
+  const gold = "#ffda72";
+  return colourMerge([
+    [new THREE.CircleGeometry(0.39, 24), "#24515a"],
+    [new THREE.TorusGeometry(0.366, 0.017, 5, 24).translate(0, 0, 0.016), "#fff1c8"],
+    [new THREE.TorusGeometry(0.091, 0.033, 6, 14).translate(-0.126, -0.088, 0.032), gold],
+    [new THREE.BoxGeometry(0.32, 0.055, 0.03).rotateZ(0.59).translate(0.074, 0.040, 0.032), gold],
+    [new THREE.BoxGeometry(0.061, 0.115, 0.03).rotateZ(0.59).translate(0.184, 0.046, 0.032), gold],
+    [new THREE.BoxGeometry(0.052, 0.09, 0.03).rotateZ(0.59).translate(0.088, -0.004, 0.032), gold],
+  ]);
+}
+
 export class Rides {
   group = new THREE.Group();
   readonly list: Ride[] = [];
   private readonly modeCars = new Map<Ride, CarBox & { surfaces: Piece[] }>();
+  private readonly parkingKeys: THREE.InstancedMesh;
   private readonly vehicleMaterial = STYLED ? vertexColorMaterial("prop") : new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
   /** Where a car may be (anywhere in the town that is open and dry) and where the asphalt is (the streets, the lots). */
   readonly drivable: Drivable;
@@ -222,6 +237,14 @@ export class Rides {
     this.marks.count = 0;
     this.marks.frustumCulled = false;
     this.group.add(this.marks);
+    this.parkingKeys = new THREE.InstancedMesh(parkedKeyGeometry(), new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false }), 24);
+    this.parkingKeys.name = "parked-car-keys";
+    this.parkingKeys.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.parkingKeys.visible = false;
+    this.parkingKeys.count = 0;
+    this.parkingKeys.frustumCulled = false;
+    this.parkingKeys.renderOrder = 4;
+    this.group.add(this.parkingKeys);
     this.group.add(this.skids.mesh);
     host.ambient.rideBoxes = [...this.boxes];
   }
@@ -240,9 +263,11 @@ export class Rides {
   readonly boxes: CarBox[] = [];
 
   /** Mode cars use the same physics and remain world obstacles, outside the public list of town rides. */
-  createModeCar(spot: CarPlacement & { id: string; speedLimit?: number }, root: THREE.Group): Ride {
+  createModeCar(spot: CarPlacement & { id: string; speedLimit?: number }, root: THREE.Group, parked?: () => void): Ride {
     const { width, length } = carModelEntry(spot.model).collisionBox;
-    const car = this.makeCar({ ...spot, paint: spot.color }, "mode-car-", root, { half: length / 2, wide: width / 2 });
+    const car = this.makeCar({ ...spot, paint: spot.color }, parked ? "parked-car-" : "mode-car-", root, { half: length / 2, wide: width / 2 }, !parked);
+    car.model = spot.model;
+    car.parked = parked;
     const box = { ...this.carBox(car), modeCar: true, surfaces: carLedges(spot.model, spot.x, spot.z, spot.rot) };
     this.modeCars.set(car, box);
     this.host.ambient.rideBoxes.push(box);
@@ -261,17 +286,22 @@ export class Rides {
   }
 
   modeCarPieces(x: number, z: number): Piece[] {
+    const pieces: Piece[] = [];
     for (const [car, box] of this.modeCars) {
-      if (car !== this.riding && Math.abs(car.m.x - x) < 5 && Math.abs(car.m.z - z) < 5) return box.surfaces;
+      if (car !== this.riding && Math.abs(car.m.x - x) < 5 && Math.abs(car.m.z - z) < 5) pieces.push(...box.surfaces);
     }
-    return [];
+    return pieces;
+  }
+
+  freeParkingAt(car: Ride, x: number, z: number) {
+    return !this.host.colliders.blocked(x, z, car.m.spec.wide + 0.25) && !this.otherCarNear(car, x, z, car.m.spec.half + 0.3);
   }
 
   private carBox({ m }: Ride): CarBox {
     return { x: m.x, z: m.z, heading: m.heading, hl: m.spec.half, hw: m.spec.wide };
   }
 
-  private makeCar(spot: Omit<CarSpot, "people">, prefix: string, root?: THREE.Group, size = { half: CAR.half, wide: CAR.wide }): Ride {
+  private makeCar(spot: Omit<CarSpot, "people">, prefix: string, root?: THREE.Group, size = { half: CAR.half, wide: CAR.wide }, blockNav = true): Ride {
     const geometry = carModels.get(spot.model ?? "convertible") ?? convertibleGeometry;
     const mesh = root ?? new THREE.Mesh(geometry(spot.paint, spot.inside), this.vehicleMaterial);
     mesh.castShadow = true;
@@ -283,7 +313,7 @@ export class Rides {
     m.set(spot.x, spot.z, spot.rot);
     // Passers-by plan their walks around the parked car.
     const nav = this.host.nav;
-    for (let u = -spec.half; u <= spec.half + 1e-6; u += nav.cell * 0.5) for (let w = -spec.wide; w <= spec.wide + 1e-6; w += nav.cell * 0.5) {
+    if (blockNav) for (let u = -spec.half; u <= spec.half + 1e-6; u += nav.cell * 0.5) for (let w = -spec.wide; w <= spec.wide + 1e-6; w += nav.cell * 0.5) {
       const c = nav.idx(spot.x + u * Math.sin(spot.rot) + w * Math.cos(spot.rot), spot.z + u * Math.cos(spot.rot) - w * Math.sin(spot.rot));
       if (c >= 0) nav.blocked[c] = 1;
     }
@@ -362,12 +392,18 @@ export class Rides {
     return false;
   }
 
+  find(id: string): Ride | undefined {
+    return this.list.find((ride) => ride.id === id)
+      ?? [...this.modeCars.keys()].find((ride) => !!ride.parked && ride.id === id);
+  }
+
   /** The ride near enough to get into from (x, z), if any: a car from the street, a boat from the pier's boards or
    *  the water beside it. */
   near(x: number, z: number): Ride | null {
     if (this.riding) return null;
     let best: Ride | null = null, bd = Infinity;
-    for (const r of this.list) {
+    for (const r of this.solidVehicles()) {
+      if (this.modeCars.has(r) && !r.parked) continue;
       // (not while its people are on their way out of it or back into it)
       if (r.owners.some((o) => o.state === "hop-out" || o.state === "hop-in")) continue;
       const d = this.reach(r, x, z);
@@ -397,7 +433,8 @@ export class Rides {
     if (this.riding) return false;
     const p = this.host.player.root.position;
     this.riding = r;
-    if (!this.modeCars.has(r)) countPlay("rides", r.kind);
+    r.parked?.();
+    if (!this.modeCars.has(r) || r.parked) countPlay("rides", r.kind);
     this.phase = "in";
     this.phaseT = 0;
     this.wantOut = false;
@@ -508,7 +545,7 @@ export class Rides {
 
   /** A door, a ride across town, a conversation started from the list: the player is on foot at once, wherever they
    *  are put next, and what they drove goes back to its place. */
-  abandon() {
+  abandon(keep = false) {
     const r = this.riding;
     if (!r) return;
     this.glide = null;
@@ -518,7 +555,8 @@ export class Rides {
     const ch = this.host.player;
     ch.busy = null; ch.recline = 0; ch.steer = 0; ch.lift = 0; ch.tuck = 0;
     ch.setAnim("idle");
-    this.sendHome(r);
+    if (keep || r.parked) this.resetPosition(r, { x: r.m.x, z: r.m.z, rot: r.m.heading });
+    else this.sendHome(r);
   }
 
   resetPosition(r: Ride, { x, z, rot }: Ride["home"]) {
@@ -530,14 +568,23 @@ export class Rides {
     r.m.set(x, z, rot);
     r.sus = this.springs();
     this.place(r, 0, 0);
-    const box = this.modeCars.get(r);
-    if (box) this.syncBox(box, r);
+    const mode = this.modeCars.get(r);
+    const box = this.boxes[this.list.indexOf(r)];
+    if (mode) this.syncModeBox(mode, r);
+    else if (box && r.kind === "car") this.syncBox(box, r);
   }
 
   private syncBox(box: CarBox, { m }: Ride) {
     box.x = m.x;
     box.z = m.z;
     box.heading = m.heading;
+  }
+
+  private syncModeBox(box: CarBox & { surfaces: Piece[] }, r: Ride) {
+    if (r.model && (r.m.x !== box.x || r.m.z !== box.z || r.m.heading !== box.heading)) {
+      box.surfaces = carLedges(r.model, r.m.x, r.m.z, r.m.heading);
+    }
+    this.syncBox(box, r);
   }
 
   private sendHome(r: Ride) {
@@ -547,7 +594,7 @@ export class Rides {
     for (const o of r.owners) { this.wake(o); o.state = "in"; o.path = null; this.seatOwner(r, o); }
     this.place(r, 0, 0);
     const box = this.modeCars.get(r);
-    if (box) this.syncBox(box, r);
+    if (box) this.syncModeBox(box, r);
   }
 
   // ------------------------------------------------------------------------------------------------ update
@@ -597,7 +644,7 @@ export class Rides {
     }
     for (const [car, box] of this.modeCars) {
       this.place(car, dt, t);
-      this.syncBox(box, car);
+      this.syncModeBox(box, car);
     }
     if (!r) return;
     this.phaseT += dt;
@@ -639,6 +686,32 @@ export class Rides {
     const e = ease(k);
     ch.root.position.set(a.x + (b.x - a.x) * e, a.y + (b.y - a.y) * e + Math.sin(Math.PI * k) * up, a.z + (b.z - a.z) * e);
     ch.tuck = Math.sin(Math.PI * k) * 0.8;
+  }
+
+  updateParkingKeys(time: number, visible: boolean) {
+    const mesh = this.parkingKeys;
+    const { cam, player } = this.host;
+    const { x, z } = player.root.position;
+    let count = 0;
+    if (visible && !this.riding) {
+      for (const car of this.modeCars.keys()) {
+        const m = car.m;
+        if (!car.parked || !car.model || (m.x - x) ** 2 + (m.z - z) ** 2 > 15 ** 2) continue;
+        const y = car.mesh.position.y + carModelEntry(car.model).collisionBox.height + 0.52 + Math.sin(time * 3) * 0.07;
+        const scale = THREE.MathUtils.clamp(cam.position.distanceTo(_v.set(m.x, y, m.z)) / 12, 0.58, 1.35);
+        _mark.makeRotationFromQuaternion(cam.quaternion).scale(_w.setScalar(scale)).setPosition(m.x, y, m.z);
+        mesh.setMatrixAt(count++, _mark);
+      }
+    }
+    mesh.visible = count > 0;
+    mesh.count = count;
+    if (count) mesh.instanceMatrix.needsUpdate = true;
+  }
+
+  disposeParkingKeys() {
+    this.parkingKeys.geometry.dispose();
+    (this.parkingKeys.material as THREE.Material).dispose();
+    this.parkingKeys.dispose();
   }
 
   private driveCar(r: Ride, dt: number, c: Controls) {

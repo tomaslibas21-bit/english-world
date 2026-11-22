@@ -4,10 +4,12 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, type BuildingDef } from "./layout";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
 import { carParts } from "./car";
-import { carFootprint, carModelEntry, type CarPlacement } from "./carModels";
+import { carModelEntry, type CarPlacement } from "./carModels";
 import { STYLED, IS_REAL, grade } from "../style";
 import { SHORE, DECKS, POOLS, FLOORS, sandY, SAND_GLSL, SHORE_GLSL, SWELL_GLSL } from "../water";
 import { addMapleDecor, FALL } from "./maple";
+import { ROAD_EDITION } from "../../content/road";
+import { ParkedFleet } from "./parkedFleet";
 import { THEME } from "./theme";
 import { GROUND_BLOCKS, groundPalette, groundExtras, groundMaterial, seaMaterial, trunkGeometry, canopyGeometry, canopyMaterial, bushGeometry, bushMaterial, outlineInstanced, cloudMaterial, cloudPuff } from "./styled";
 
@@ -18,7 +20,7 @@ export interface Seat { x: number; z: number; rot: number; y: number; table?: [n
 
 export interface ParkedCars {
   group: THREE.Group;
-  fallback: THREE.Mesh;
+  fleet: ParkedFleet;
   placements: readonly CarPlacement[];
   taxi?: StandTaxi;
 }
@@ -170,8 +172,23 @@ export function buildTown(): Town {
 
   // --- street furniture & nature -----------------------------------------------
   addStreetProps(M, colliders);
-  const parkedCars = makeParkedCars(colliders);
+  const parkedCars = makeParkedCars();
   group.add(parkedCars.group);
+  if (ROAD_EDITION.enabled) {
+    const { x, z, rot } = ROAD_EDITION.edge.sign;
+    const board = new THREE.Mesh(new THREE.PlaneGeometry(4.1, 1.07), new THREE.MeshBasicMaterial({
+      map: textTexture(ROAD_EDITION.sign, { bg: "#32594f", fg: "#fff7dc", border: "#fff7dc", w: 512, h: 134 }),
+      side: THREE.DoubleSide, toneMapped: false,
+    }));
+    board.position.set(x, 2.66, z);
+    board.rotation.y = rot;
+    group.add(board);
+    for (const offset of [-1.52, 1.52]) {
+      const px = x + Math.cos(rot) * offset, pz = z - Math.sin(rot) * offset;
+      M.add("desert-road-sign", mat("#6e7c77"), boxGeo(0.095, 2.25, 0.12, px, 1.125, pz, rot));
+      colliders.addCircle(px, pz, 0.11);
+    }
+  }
   addTrees(group, colliders, r);
   addSquareAndMarket(M, colliders, group, r);
   addHarbor(M, colliders, group, r);
@@ -1373,10 +1390,10 @@ function addStreetProps(M: Merger, col: Colliders) {
   for (const [x, z] of [[-75, 32], [5, 32], [65, 32], [-5, -14], [75, -14]]) stop(x, z);
 }
 
-function makeParkedCars(col: Colliders): ParkedCars {
+function makeParkedCars(): ParkedCars {
   const group = new THREE.Group();
   group.name = "parked-cars";
-  const parts: [THREE.BufferGeometry, THREE.ColorRepresentation][] = [];
+  const fleet = new ParkedFleet(group);
   let taxi: StandTaxi | undefined;
   for (const spot of PARKED_CARS) {
     const { model, x, z, rot, color } = spot;
@@ -1384,24 +1401,20 @@ function makeParkedCars(col: Colliders): ParkedCars {
     const atStand = spot === TAXI;
     const local = carParts(color, { taxi: atStand });
     for (const [geometry] of local) geometry.scale(width / 2.12, height / (atStand ? 1.8 : 1.56), length / 4.42);
+    const fallback = staticColoured(local, atStand ? "stand-taxi-fallback" : "parked-car-fallback");
     if (atStand) {
-      // The mode moves this car, so it needs its own root and the mode owns its collision.
       const root = new THREE.Group();
       root.position.set(x, 0, z);
       root.rotation.y = rot;
-      const fallback = staticColoured(local, "stand-taxi-fallback");
       root.add(fallback);
       group.add(root);
       taxi = { root, fallback };
-      continue;
+    } else {
+      fleet.add(spot, fallback);
     }
-    col.boxes.push({ ...carFootprint(spot), tag: "car", split: true });
-    for (const [geometry] of local) geometry.rotateY(rot).translate(x, 0, z);
-    parts.push(...local);
   }
-  const fallback = staticColoured(parts, "parked-car-fallback");
-  group.add(fallback);
-  return { group, fallback, placements: PARKED_CARS, taxi };
+  fleet.refresh();
+  return { group, fleet, placements: PARKED_CARS, taxi };
 }
 
 function nearIntersection(x: number, z: number) {

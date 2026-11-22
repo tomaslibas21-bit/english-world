@@ -55,7 +55,11 @@ function Play() {
         else if (sit) g!.startScenario(sit);
       };
       g.init();
-      (window as any).__ew = { game: g, store: useStore, radio, voice: audio.getState, audio, coach, surf: useSurf, barista: g.debugBarista(), carStats: () => g!.carStats() };
+      (window as any).__ew = {
+        game: g, store: useStore, radio, voice: audio.getState, audio, coach, surf: useSurf,
+        barista: g.debugBarista(), carStats: () => g!.carStats(),
+        road: { state: () => g!.roadDebug(), steer: (lane: number) => g!.roadSteer(lane), jumpTimer: (seconds?: number) => g!.roadJumpTimer(seconds) },
+      };
     });
     return () => { gone = true; g?.dispose(); setGame(null); };
   }, []);

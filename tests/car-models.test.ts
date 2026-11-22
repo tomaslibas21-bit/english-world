@@ -1,3 +1,4 @@
+import { ROAD_CONES } from "../src/content/road";
 import { readFileSync, readdirSync } from "node:fs";
 import * as THREE from "three";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -19,7 +20,7 @@ afterEach(() => {
 describe("car models", () => {
   it("ships only used models, shares the palette, and matches the loaded meshes to the collision metadata", async () => {
     expect(new Set([...PARKED_CARS, ...TRAFFIC_CARS].map(({ model }) => model))).toEqual(new Set(names));
-    expect(readdirSync(assets).filter((name) => name.endsWith(".glb")).sort()).toEqual(names.map((name) => carModelEntry(name).file).sort());
+    expect(readdirSync(assets).filter((name) => name.endsWith(".glb")).sort()).toEqual([...names.map((name) => carModelEntry(name).file), ...ROAD_CONES].sort());
     expect(readdirSync(new URL("Textures/", assets))).toEqual(["colormap.png"]);
 
     const NativeRequest = Request;
