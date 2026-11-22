@@ -1155,6 +1155,28 @@ body.scene-on .tag-layer { display: none; }
   .coach-skip { padding: 0 6px; }
   .coach-next { min-width: 76px; }
 }
+@media (max-width: 480px) {
+  .objective-notes .town-toasts:not(:empty) { margin-top: 6px; }
+  .objective-notes .town-toasts .toast {
+    padding: 7px 8px; gap: 6px; border-radius: 14px; overflow-y: auto;
+    /* Reserve the top inset, the folded task's 44px and the gap above the toast. */
+    max-height: calc(30dvh - var(--card-top) - 44px - 6px);
+  }
+  .town-toasts .toast .t-icon { width: 24px; height: 24px; border-radius: 8px; }
+  .town-toasts .t-icon .ui-icon { width: 16px; height: 16px; }
+  .town-toasts .toast .t-text { padding: 0; }
+  .town-toasts .toast b { font-size: 0.92em; line-height: 1.22; }
+  .town-toasts .toast p {
+    font-size: 0.85em; line-height: 1.3; max-height: 3lh; overflow-y: auto;
+  }
+}
+@media (max-width: 480px) and (orientation: landscape) {
+  .objective-notes:has(.toast) {
+    position: absolute; top: var(--card-top); left: var(--card-left); width: calc(100vw - 140px);
+    display: flex; flex-direction: column;
+  }
+  .objective-notes:has(.toast) :is(.objective-card, .town-toasts) { position: static; width: 100%; }
+}
 /* the smallest phones: no icon, so the words have the card's width */
 @media (max-width: 360px) {
   .coach, .hud.has-touch .coach { padding: 8px 11px 5px; }

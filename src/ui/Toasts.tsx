@@ -17,10 +17,14 @@ export function Toasts() {
   return <ToastList toasts={(modeMenu ? toasts?.filter((t) => t.rideHint) : toasts) ?? []} />;
 }
 
-export function TownToast() {
+export function useTownToast() {
   const picking = useSurf((s) => s.picking);
   const toast = useStore((s) => usesTownNotes(s) && townNote(s.hud) === "toast" && s.townToasts[0]?.startedAt != null ? s.townToasts[0].toast : null);
-  return <ToastList toasts={!picking && toast ? [toast] : []} town />;
+  return picking ? null : toast;
+}
+
+export function TownToast({ toast }: { toast: Toast | null }) {
+  return <ToastList toasts={toast ? [toast] : []} town />;
 }
 
 function ToastList({ toasts, town }: { toasts: Toast[]; town?: boolean }) {

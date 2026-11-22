@@ -20,7 +20,7 @@ import { useCards, dueCards } from "../state/cards";
 import { LyricStrip, RadioTool } from "./Radio";
 import { useRadio } from "../radio";
 import { Guide } from "./Guide";
-import { TownToast } from "./Toasts";
+import { TownToast, useTownToast } from "./Toasts";
 import { PhoneRing } from "./PhoneRing";
 import { portraitToolbarRows } from "./toolbarLayout";
 import "./light.css";
@@ -56,7 +56,10 @@ export function Hud() {
   const ride = townRide(hud.ride);
   const riding = ride !== null;
   const taskId = hud.objective?.followUp ? hud.objective.title : hud.objective?.sitId ?? null;
-  const task = useTaskCard(taskId, inTown && !hud.panel);
+  const toast = useTownToast();
+  const narrow = useNarrowHud();
+  const phoneToast = narrow && toast !== null;
+  const task = useTaskCard(taskId, inTown && !hud.panel, phoneToast);
   if (inConversation) return <Fade />;
   // the first visit's flight over the town has the screen to itself too: where one is, and what to do first
   if (hud.flight) return <div className="hud"><Flight /><Fade /></div>;
@@ -87,7 +90,8 @@ export function Hud() {
   const banner = hud.zoneBanner && note === "banner" ? splitLead(hud.zoneBanner.title) : null;
   const guideVisible = !hud.panel && note === "guide";
   const moving = hud.walking || riding;
-  const collapsed = (moving && !!hud.objective?.followUp) || (task.manual ?? (!task.fresh && moving));
+  const collapsed = phoneToast ? !task.openedDuringToast
+    : (moving && !!hud.objective?.followUp) || (task.manual ?? (!task.fresh && moving));
   return (
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")}>
       <div className="hud-top">
@@ -97,7 +101,7 @@ export function Hud() {
           {hud.zoneBanner && banner && <div className="zone-banner"><h2>{banner.icon && <Icon name={banner.icon} size="0.8em" className="zb-ico" />}{banner.rest}</h2>{hud.zoneBanner.sub && <p>{hud.zoneBanner.sub}</p>}</div>}
           {!hud.panel && hud.phoneCard && <PhoneRing id={hud.phoneCard} />}
           <Guide visible={guideVisible} />
-          <TownToast />
+          <TownToast toast={toast} />
         </div>
         <Minimap />
       </div>
@@ -121,8 +125,22 @@ export function Hud() {
   );
 }
 
-function useTaskCard(taskId: string | null, visible: boolean) {
+function useNarrowHud() {
+  const [view] = useState(() => window.matchMedia("(max-width: 480px)"));
+  const [narrow, setNarrow] = useState(view.matches);
+  useLayoutEffect(() => {
+    const update = () => setNarrow(view.matches);
+    update();
+    view.addEventListener("change", update);
+    return () => view.removeEventListener("change", update);
+  }, [view]);
+  return narrow;
+}
+
+function useTaskCard(taskId: string | null, visible: boolean, phoneToast: boolean) {
   const [state, setState] = useState<{ id: string | null; manual: boolean | null; fresh: boolean }>({ id: taskId, manual: null, fresh: false });
+  const [openedDuringToast, setOpenedDuringToast] = useState(false);
+  if (openedDuringToast && (!phoneToast || taskId !== state.id)) setOpenedDuringToast(false);
   // A manual choice belongs to one task. Give the next task its pop when the card is back on screen.
   if (taskId !== state.id) setState({ id: taskId, manual: null, fresh: taskId !== null });
   useEffect(() => {
@@ -130,7 +148,11 @@ function useTaskCard(taskId: string | null, visible: boolean) {
     const timer = setTimeout(() => setState((current) => current.id === state.id ? { ...current, fresh: false } : current), 3000);
     return () => clearTimeout(timer);
   }, [state.id, state.fresh, visible]);
-  return { ...state, setManual: (manual: boolean) => setState((current) => ({ ...current, manual })) };
+  function setManual(manual: boolean) {
+    setState((current) => ({ ...current, manual }));
+    setOpenedDuringToast(phoneToast && !manual);
+  }
+  return { ...state, openedDuringToast, setManual };
 }
 
 // Enter and Space belong to a button reached by keyboard, even while the game is listening for movement.
