@@ -117,6 +117,7 @@ async function checkNoteLayout(page, label, selector, { folded, phone, height })
   }
   if (phone && selector === ".zone-banner" && folded) assert(Math.abs(note.top - height * 0.18) < 1, `${label}: the banner keeps its usual height with the card folded`);
   if (phone && selector !== ".zone-banner") assert(note.top < height / 2, `${label}: toast starts above the middle of the screen`);
+  if (phone && folded && selector.includes(".toast")) assert(note.bottom <= height * 0.3 + 1, `${label}: the toast leaves the speaker in view`);
 }
 
 async function checkMovingNotes(page, label, height) {
@@ -346,7 +347,7 @@ try {
     await page.locator(".coach").waitFor({ timeout: 6000 });
     await page.waitForTimeout(350);
     await press(".coach-next");
-    await checkNoteLayout(page, `${label} standing toast`, ".town-toasts .toast.tip", openCard);
+    await checkNoteLayout(page, `${label} standing toast`, ".town-toasts .toast.tip", { ...openCard, folded: phone });
     await page.waitForFunction(() => window.__playingNotes.sequence.includes("Puiku!"), null, { timeout: 12000 });
     const notes = await page.evaluate(() => {
       const sample = window.__playingNotes;
@@ -355,6 +356,21 @@ try {
     });
     assert.deepEqual(notes.overlaps, [], `${label}: at most one visible note on every frame`);
     assert.deepEqual(notes.sequence, ["zone-banner", "coach", "Kelias užimtas", "Pasirašyta", "Puiku!"], `${label}: banner, guide and all three toasts in order`);
+
+    if (phone) {
+      const details = page.locator(".objective-card:not(.collapsed) .row");
+      const tip = page.locator(".town-toasts .toast.tip");
+      await page.locator(".town-toasts .toast").waitFor({ state: "hidden" });
+      await details.waitFor(); // The queue ended while standing still.
+      await press(".objective-card .collapse-btn");
+      await page.evaluate(() => window.__ew.store.getState().toast({ kind: "tip", title: "Kelias užimtas" }));
+      await tip.waitFor();
+      await press(".objective-summary");
+      await details.waitFor(); // The player can reopen their task during the tip.
+      await press(".town-toasts .toast.tip .x");
+      await tip.waitFor({ state: "hidden" });
+      assert(await details.isVisible(), `${label}: dismissing the tip preserves the player's choice`);
+    }
 
     if (puerto && !phone) {
       const shore = (z) => page.evaluate((z) => window.__ew.game.enterZone("town", { x: 38, z, rot: Math.PI }, true), z);

@@ -17,9 +17,15 @@ export function Toasts() {
   return <ToastList toasts={(modeMenu ? toasts?.filter((toast) => toast.rideHint) : toasts) ?? []} />;
 }
 
-export function TownToast({ visible }: { visible: boolean }) {
-  const first = useStore((s) => s.townToasts[0]);
-  return <ToastList toasts={visible && first?.startedAt != null ? [first.toast] : []} town />;
+export function useTownToast(visible: boolean) {
+  return useStore((s) => {
+    const first = s.townToasts[0];
+    return visible && first?.startedAt != null ? first.toast : null;
+  });
+}
+
+export function TownToast({ toast }: { toast: Toast | null }) {
+  return <ToastList toasts={toast ? [toast] : []} town />;
 }
 
 function ToastList({ toasts, town }: { toasts: Toast[]; town?: boolean }) {

@@ -10,14 +10,17 @@ import { L, TL } from "./i18n";
 import { EDITION } from "../edition";
 
 /** Which chamber one is in and what comes next. */
-export function CaveCard({ arrow: Arrow }: { arrow: ComponentType<{ angle: number }> }) {
+export function CaveCard({ arrow: Arrow, phoneToast }: { arrow: ComponentType<{ angle: number }>; phoneToast: boolean }) {
   const cave = useStore((s) => s.hud.cave);
   const talking = useStore((s) => s.conv.active);
   const panel = useStore((s) => s.hud.panel);
   const glyph = useStore((s) => s.hud.glyph);
   const map = useStore((s) => s.hud.minimap);
   const objective = useStore((s) => s.hud.objective);
-  const [expanded, setExpanded] = useState(false);
+  const [card, setCard] = useState({ expanded: false, openedDuringToast: false });
+  if (card.openedDuringToast && !phoneToast) setCard({ ...card, openedDuringToast: false });
+  const expanded = card.expanded && (!phoneToast || card.openedDuringToast);
+  const toggle = () => setCard({ expanded: !expanded, openedDuringToast: phoneToast && !expanded });
   if (!cave || talking || panel || glyph) return null;
   const name = <b lang={TL}>{cave.name}</b>;
   const count = <span className="cave-n">{cave.n} / {cave.of}</span>;
@@ -27,7 +30,7 @@ export function CaveCard({ arrow: Arrow }: { arrow: ComponentType<{ angle: numbe
   return (
     <div className="cave-card" role="status">
       <div className="cave-top">{name}{count}</div>
-      <button className="collapse-btn objective-summary cave-toggle" aria-expanded={expanded} aria-controls="cave-details" onClick={() => setExpanded(!expanded)}>
+      <button className="collapse-btn objective-summary cave-toggle" aria-expanded={expanded} aria-controls="cave-details" onClick={toggle}>
         <span className="cave-summary-name">
           {name} {!expanded && <span className="cave-stones" role="img" aria-label={stonesLabel}>{stones}</span>}
         </span>

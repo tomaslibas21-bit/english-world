@@ -200,7 +200,7 @@ try {
         });
         assert(layout.cardHeight <= 48, "The chamber summary fits in one tappable row");
         if (layout.tipTop !== undefined) {
-          assert(layout.tipTop >= layout.cardBottom && layout.tipBottom <= height / 2, "The tip fits between the card and the middle of the scene");
+          assert(layout.tipTop >= layout.cardBottom && layout.tipBottom <= height * 0.3 + 1, "The chamber card and tip leave Kin in view");
         }
       }
       await shot(page, "kin-mid-hop");
@@ -216,10 +216,38 @@ try {
       await page.waitForFunction(() => window.__ew.game.objectiveTarget()?.id === "grieta");
       if (phone) {
         const toggle = page.locator(".cave-card .collapse-btn");
+        if (height === 664) {
+          await page.evaluate(() => {
+            const st = window.__ew.store.getState();
+            for (const { toast } of st.townToasts) st.dismissToast(toast.id);
+          });
+          await page.locator(".town-toasts .toast").waitFor({ state: "hidden" });
+        }
         assert.equal(await toggle.getAttribute("aria-expanded"), "false");
         assert.equal(await page.locator('.cave-guide button[data-guide="cave"]').isVisible(), false);
         await press(toggle);
         assert.equal(await toggle.getAttribute("aria-expanded"), "true");
+        if (height === 664) {
+          await page.evaluate(() => {
+            const line = "Čia gyvena aluksai – mažos majų miško dvasios. Pasikalbėk su Kinu: jis saugo kelią.";
+            window.__ew.store.getState().toast({ kind: "tip", title: "Radai Aluksų grotą!", body: `${line} ${line} ${line}` });
+          });
+          const tip = page.locator(".town-toasts .toast.tip");
+          await tip.waitFor();
+          assert.equal(await toggle.getAttribute("aria-expanded"), "false", "A tip folds an open chamber card");
+          const layout = await tip.evaluate((toast) => {
+            const box = toast.getBoundingClientRect();
+            const card = document.querySelector(".cave-card").getBoundingClientRect();
+            const body = toast.querySelector("p");
+            return { top: box.top, bottom: box.bottom, cardBottom: card.bottom, cardHeight: card.height,
+              bodyHeight: body.clientHeight, scrollHeight: body.scrollHeight, lineHeight: parseFloat(getComputedStyle(body).lineHeight) };
+          });
+          assert(layout.cardHeight <= 48 && layout.top >= layout.cardBottom && layout.bottom <= height * 0.3 + 1,
+            `The folded chamber card and tip fit in the top 30%: ${JSON.stringify(layout)}`);
+          assert(layout.scrollHeight > layout.bodyHeight && layout.bodyHeight <= 3 * layout.lineHeight + 1, "The long tip body scrolls within three lines");
+          await press(tip.locator(".x"));
+          await page.locator('.cave-toggle[aria-expanded="true"]').waitFor();
+        }
       }
       assert.match(await page.locator(".cave-guide").filter({ has: page.locator('[data-guide="cave"]') }).innerText(), /Kin/);
       await press(page.locator('.cave-guide button[data-guide="objective"]'));
