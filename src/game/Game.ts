@@ -288,6 +288,9 @@ export class Game implements GameApi {
   private ambient!: Ambient;
   private carLoadStarted = false;
   private carVisuals?: CarVisuals;
+  private crashShadersScheduled = false;
+  private crashShaderProbes?: THREE.Group;
+  private crashShadersReady = false;
   private unbindAmbience: (() => void) | null = null;
   private ambienceAllowed = () => {
     const st = useStore.getState();
@@ -2638,8 +2641,35 @@ export class Game implements GameApi {
         this.sampleFps(true);
         return;
       }
+      const probes = this.zone.id === "town" ? this.crashShaderProbes : undefined;
+      if (probes) {
+        // Submit the shaders once with the town's actual framebuffer and lighting. The probes sit behind the near plane.
+        const cam = this.rig.cam;
+        probes.position.set(0, 0, 2).applyQuaternion(cam.quaternion).add(cam.position);
+        this.scene.add(probes);
+      }
       this.renderer.render(this.scene, this.rig.cam);
-      this.sampleFps(false);
+      if (probes) {
+        probes.removeFromParent();
+        this.rides.finishCrashShaderWarmup();
+        this.crashShaderProbes = undefined;
+        this.crashShadersReady = true;
+      } else this.sampleFps(false);
+      if (!this.crashShadersScheduled && this.zone.id === "town" && this.ledges?.ready && this.carVisuals?.ready) {
+        this.crashShadersScheduled = true;
+        const warm = () => {
+          if (this.disposed) return;
+          if (this.zone?.id !== "town" || this.modes.owns("road")) {
+            this.crashShadersScheduled = false;
+            return;
+          }
+          void this.rides.compileCrashShaders(this.renderer, this.scene).then((group) => {
+            if (!this.disposed) this.crashShaderProbes = group;
+          }).catch((error) => console.warn("Crash shader warmup unavailable", error));
+        };
+        if (window.requestIdleCallback) window.requestIdleCallback(warm, { timeout: 750 });
+        else setTimeout(warm, 0);
+      }
       if (!this.carLoadStarted && this.zone.id === "town") {
         this.carLoadStarted = true;
         // Let the browser paint the town before fetching the visual upgrade.

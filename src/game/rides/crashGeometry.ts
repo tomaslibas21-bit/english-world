@@ -20,9 +20,12 @@ export function crashSide(nx: number, nz: number, heading = 0): CrashSide {
   return Math.abs(z) >= Math.abs(x) ? (z < 0 ? "front" : "back") : (x < 0 ? "left" : "right");
 }
 
+const isSideDent = ({ side }: Pick<Dent, "side">) => side === "left" || side === "right";
+const doorRadius = (k: number) => 0.29 + 0.44 * k;
+
 export function addDent(dents: Dent[], dent: Omit<Dent, "depth">) {
   if (dents.length >= MAX_DENTS) dents.shift();
-  const depth = 0.18 * dent.k ** 0.72;
+  const depth = (isSideDent(dent) ? 0.14 : 0.18) * dent.k ** 0.72;
   let total = depth;
   for (const old of dents) total += old.depth;
   if (total > MAX_DEPTH) {
@@ -34,6 +37,13 @@ export function addDent(dents: Dent[], dent: Omit<Dent, "depth">) {
 
 export function dentFalloff(dent: Dent, x: number, y: number, z: number) {
   const dx = x - dent.x, dz = z - dent.z;
+  if (isSideDent(dent)) {
+    // The collision box reaches the mirrors and fenders. The door face usually sits farther in.
+    const inset = Math.max(0, Math.abs(dx) - 0.18);
+    const radiusSq = (inset / 0.42) ** 2 + (dz / doorRadius(dent.k)) ** 2 + ((y - dent.y) / 0.40) ** 2;
+    const bowl = Math.max(0, 1 - radiusSq);
+    return bowl * bowl * (3 - 2 * bowl);
+  }
   const across = (dx * dent.nz - dz * dent.nx) / (0.22 + 0.27 * dent.k);
   const along = (dx * dent.nx + dz * dent.nz) / (0.25 + 0.19 * dent.k);
   const height = (y - dent.y) / (0.26 + 0.22 * dent.k);
@@ -54,38 +64,45 @@ type Lamp = {
 };
 
 const wheelAt = (range: WheelRange, i: number) => !!range && i >= range[0] && i < range[1];
-const REGION_XZ = 0.58;
-const REGION_Y = 0.49;
+type DentRegion = {
+  x: number; y: number; z: number; side: boolean;
+  x0: number; x1: number; y0: number; y1: number; z0: number; z1: number;
+};
 
-function nearDent(dents: readonly Dent[], minX: number, maxX: number, minY: number, maxY: number, minZ: number, maxZ: number) {
-  for (const hit of dents) {
-    if (hit.z >= minZ - REGION_XZ && hit.z <= maxZ + REGION_XZ
-      && hit.x >= minX - REGION_XZ && hit.x <= maxX + REGION_XZ
-      && hit.y >= minY - REGION_Y && hit.y <= maxY + REGION_Y) return true;
+function dentRegion(dent: Dent): DentRegion {
+  const { x, y, z } = dent, side = isSideDent(dent);
+  // Leave room for a follow-up hit close to this one and split only the struck side of the car.
+  const width = side ? 0.64 : 0.58, length = side ? doorRadius(1) + 0.14 : 0.58;
+  return { x, y, z, side, x0: x - width, x1: x + width, y0: y - 0.49, y1: y + 0.49, z0: z - length, z1: z + length };
+}
+
+function nearDent(regions: readonly DentRegion[], minX: number, maxX: number, minY: number, maxY: number, minZ: number, maxZ: number) {
+  for (const { x0, x1, y0, y1, z0, z1 } of regions) {
+    if (minZ <= z1 && maxZ >= z0 && minX <= x1 && maxX >= x0 && minY <= y1 && maxY >= y0) return true;
   }
   return false;
 }
 
 /** Every copy of an edge is split by the same position test, even across flat normals and UV seams. */
 function splitEdges(
-  local: number[], index: ArrayLike<number>, dents: readonly Dent[],
+  local: number[], index: ArrayLike<number>, regions: readonly DentRegion[],
   parents: number[], minLength: number,
 ) {
   const count = local.length / 3;
-  if (!dents.length || count >= MAX_VERTICES) return index;
+  if (!regions.length || count >= MAX_VERTICES) return index;
   const middle = new Map<number, number>();
   const result: number[] = [];
   const threshold = minLength * minLength;
   let lowZ = Infinity, highZ = -Infinity, lowX = Infinity, highX = -Infinity;
-  for (const hit of dents) {
-    lowX = Math.min(lowX, hit.x - REGION_XZ); highX = Math.max(highX, hit.x + REGION_XZ);
-    lowZ = Math.min(lowZ, hit.z - REGION_XZ); highZ = Math.max(highZ, hit.z + REGION_XZ);
+  for (const { x0, x1, z0, z1 } of regions) {
+    lowX = Math.min(lowX, x0); highX = Math.max(highX, x1);
+    lowZ = Math.min(lowZ, z0); highZ = Math.max(highZ, z1);
   }
   const midpoint = (a: number, b: number) => {
     const j = a * 3, k = b * 3;
     const ax = local[j], ay = local[j + 1], az = local[j + 2], bx = local[k], by = local[k + 1], bz = local[k + 2];
     const lengthSq = (ax - bx) ** 2 + (ay - by) ** 2 + (az - bz) ** 2;
-    if (lengthSq < threshold || !nearDent(dents, Math.min(ax, bx), Math.max(ax, bx),
+    if (lengthSq < threshold || !nearDent(regions, Math.min(ax, bx), Math.max(ax, bx),
       Math.min(ay, by), Math.max(ay, by), Math.min(az, bz), Math.max(az, bz))) return -1;
     const key = Math.min(a, b) * count + Math.max(a, b);
     const existing = middle.get(key);
@@ -174,6 +191,39 @@ const crashPaint = `
     }
   }`;
 
+function crashPaintUniforms() {
+  return {
+    hitCount: { value: 0 },
+    centers: { value: Array.from({ length: MAX_DENTS }, () => new THREE.Vector4()) },
+    planes: { value: Array.from({ length: MAX_DENTS }, () => new THREE.Vector3()) },
+    broken: { value: new Float32Array(4) },
+    lenses: { value: Array.from({ length: 4 }, () => new THREE.Vector4()) },
+    fade: { value: 1 },
+  };
+}
+
+function createCrashMaterial(source: THREE.Material, paint: ReturnType<typeof crashPaintUniforms>) {
+  const material = source.clone();
+  material.customProgramCacheKey = () => `crash:${source.customProgramCacheKey()}`;
+  material.onBeforeCompile = (shader, renderer) => {
+    source.onBeforeCompile(shader, renderer);
+    Object.assign(shader.uniforms, {
+      crashHits: paint.centers, crashPlanes: paint.planes, crashHitCount: paint.hitCount, crashBroken: paint.broken,
+      crashLenses: paint.lenses, crashFade: paint.fade, crashScuff: { value: warmScuff }, crashGlass: { value: cracked },
+    });
+    shader.vertexShader = `attribute vec4 crashRest; varying vec4 vCrashRest;\n${shader.vertexShader}`
+      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvCrashRest = crashRest;");
+    shader.fragmentShader = `
+      varying vec4 vCrashRest;
+      uniform vec4 crashHits[${MAX_DENTS}], crashLenses[4];
+      uniform vec3 crashPlanes[${MAX_DENTS}], crashScuff, crashGlass;
+      uniform int crashHitCount;
+      uniform float crashBroken[4], crashFade;
+      ${shader.fragmentShader}`.replace("#include <color_fragment>", `#include <color_fragment>\n${crashPaint}`);
+  };
+  return material;
+}
+
 /** Owns the geometry and paint for one damaged car. Each damage pass reads from the original geometry. */
 export class CrashGeometry {
   readonly original: THREE.BufferGeometry;
@@ -197,20 +247,15 @@ export class CrashGeometry {
   private readonly changedNormals: Uint8Array;
   private readonly point = new THREE.Vector3();
   private readonly outline?: CarMesh;
-  private readonly originalMaterial: THREE.Material;
+  readonly originalMaterial: THREE.Material;
   private readonly material: THREE.Material;
-  private readonly hitCount = { value: 0 };
-  private readonly centers = { value: Array.from({ length: MAX_DENTS }, () => new THREE.Vector4()) };
-  private readonly planes = { value: Array.from({ length: MAX_DENTS }, () => new THREE.Vector3()) };
-  private readonly broken = { value: new Float32Array(4) };
-  private readonly lenses = { value: Array.from({ length: 4 }, () => new THREE.Vector4()) };
-  private readonly fade = { value: 1 };
-  private readonly refined: { x: number; y: number; z: number }[];
+  private readonly paint = crashPaintUniforms();
+  private readonly refined: DentRegion[];
 
   constructor(readonly mesh: CarMesh, root: THREE.Object3D, dents: readonly Dent[]) {
     this.original = mesh.geometry;
     this.originalMaterial = mesh.material;
-    this.refined = dents.map(({ x, y, z }) => ({ x, y, z }));
+    this.refined = dents.map(dentRegion);
     const inCar = new THREE.Matrix4();
     for (let child: THREE.Object3D | null = mesh; child && child !== root; child = child.parent) {
       if (child.matrixAutoUpdate) child.updateMatrix();
@@ -240,9 +285,11 @@ export class CrashGeometry {
         if (indices[i] >= wheelStart) { bodyEnd = i; break; }
       }
     }
-    const first = splitEdges(local, indices.subarray(0, bodyEnd), dents, parents, indexed ? 0.36 : 0.48);
-    // The procedural body panels start with much larger triangles than the kit cars.
-    const refined = indexed ? first : splitEdges(local, first, dents, parents, 0.37);
+    const first = splitEdges(local, indices.subarray(0, bodyEnd), this.refined, parents, indexed ? 0.36 : 0.48);
+    // Broad door panels need more samples for the bowl, even on an indexed kit car.
+    const sideRegions = this.refined.filter((region) => region.side);
+    const second = splitEdges(local, first, indexed ? sideRegions : this.refined, parents, indexed ? 0.24 : 0.37);
+    const refined = indexed ? second : splitEdges(local, second, sideRegions, parents, 0.24);
     const vertices = local.length / 3;
     for (const name in this.original.attributes) {
       const source = this.original.getAttribute(name);
@@ -272,7 +319,7 @@ export class CrashGeometry {
     this.geometry.boundingSphere.radius += 0.3;
     const rest = this.measureLamps();
     this.geometry.setAttribute("crashRest", new THREE.BufferAttribute(rest, 4));
-    this.material = this.crashMaterial();
+    this.material = createCrashMaterial(this.originalMaterial, this.paint);
     this.outline = mesh.children.find((child): child is CarMesh => (child as CarMesh).geometry === this.original);
     mesh.geometry = this.geometry;
     mesh.material = this.material;
@@ -280,29 +327,8 @@ export class CrashGeometry {
   }
 
   covers(dent: Dent) {
-    return this.refined.some(({ x, y, z }) => (dent.x - x) ** 2 + (dent.y - y) ** 2 + (dent.z - z) ** 2 < 0.19 ** 2);
-  }
-
-  private crashMaterial() {
-    const source = this.originalMaterial, material = source.clone();
-    material.customProgramCacheKey = () => `crash:${source.customProgramCacheKey()}`;
-    material.onBeforeCompile = (shader, renderer) => {
-      source.onBeforeCompile(shader, renderer);
-      Object.assign(shader.uniforms, {
-        crashHits: this.centers, crashPlanes: this.planes, crashHitCount: this.hitCount, crashBroken: this.broken,
-        crashLenses: this.lenses, crashFade: this.fade, crashScuff: { value: warmScuff }, crashGlass: { value: cracked },
-      });
-      shader.vertexShader = `attribute vec4 crashRest; varying vec4 vCrashRest;\n${shader.vertexShader}`
-        .replace("#include <begin_vertex>", "#include <begin_vertex>\nvCrashRest = crashRest;");
-      shader.fragmentShader = `
-        varying vec4 vCrashRest;
-        uniform vec4 crashHits[${MAX_DENTS}], crashLenses[4];
-        uniform vec3 crashPlanes[${MAX_DENTS}], crashScuff, crashGlass;
-        uniform int crashHitCount;
-        uniform float crashBroken[4], crashFade;
-        ${shader.fragmentShader}`.replace("#include <color_fragment>", `#include <color_fragment>\n${crashPaint}`);
-    };
-    return material;
+    const side = isSideDent(dent);
+    return this.refined.some((r) => r.side === side && (dent.x - r.x) ** 2 + (dent.y - r.y) ** 2 + (dent.z - r.z) ** 2 < 0.12 ** 2);
   }
 
   private measureLamps() {
@@ -333,10 +359,10 @@ export class CrashGeometry {
     for (let i = 0; i < this.lamps.length; i++) {
       const lamp = this.lamps[i], front = i < 2, left = i % 2 !== 0;
       if (lamp.count) {
-        this.lenses.value[i].set((lamp.minX + lamp.maxX) * 0.5, (lamp.minY + lamp.maxY) * 0.5,
+        this.paint.lenses.value[i].set((lamp.minX + lamp.maxX) * 0.5, (lamp.minY + lamp.maxY) * 0.5,
           Math.max(0.03, lamp.maxX - lamp.minX), Math.max(0.03, lamp.maxY - lamp.minY));
       } else {
-        this.lenses.value[i].set((left ? max.x : min.x) * 0.71, 0.72, 0.12, 0.12);
+        this.paint.lenses.value[i].set((left ? max.x : min.x) * 0.71, 0.72, 0.12, 0.12);
       }
       lamp.z = lamp.count ? lamp.z + (front ? 0.018 : -0.018) : front ? max.z + 0.01 : min.z - 0.01;
     }
@@ -348,22 +374,23 @@ export class CrashGeometry {
     const front = this.bumper(dents, "front");
     const rear = this.bumper(dents, "back");
     this.hanging = !!(front || rear);
-    this.hitCount.value = dents.length;
+    this.paint.hitCount.value = dents.length;
     for (let i = 0; i < dents.length; i++) {
       const { x, y, z, k, nx, nz, scrape } = dents[i];
-      this.centers.value[i].set(x, y, z, k);
-      this.planes.value[i].set(nx, nz, scrape ?? 0);
+      this.paint.centers.value[i].set(x, y, z, k);
+      this.paint.planes.value[i].set(nx, nz, scrape ?? 0);
     }
     let crackedNow = false;
     for (let i = 0; i < this.lamps.length; i++) {
-      const lamp = this.lamps[i], lens = this.lenses.value[i];
+      const lamp = this.lamps[i], lens = this.paint.lenses.value[i];
       const close = lamp.count > 0 && dents.some((hit) => hit.k >= 0.35 && Math.hypot(lens.x - hit.x, (lamp.z - hit.z) * 0.8) < 0.41);
       crackedNow ||= close && !lamp.cracked;
       lamp.cracked = close;
-      this.broken.value[i] = Number(close);
+      this.paint.broken.value[i] = Number(close);
     }
 
     const positions = this.damagedPosition, local = this.local;
+    const regions = dents.map(dentRegion);
     positions.set(this.basePosition);
     this.moved.fill(0);
     this.changedNormals.fill(0);
@@ -373,7 +400,7 @@ export class CrashGeometry {
       const x = local[j], y = local[j + 1], z = local[j + 2];
       const end = z > 0 ? max.z : min.z, hit = z > 0 ? front : rear;
       const bumper = hit && Math.abs(z - end) < 0.35 && y < 0.53;
-      if (!bumper && !nearDent(dents, x, x, y, y, z, z)) continue;
+      if (!bumper && !nearDent(regions, x, x, y, y, z, z)) continue;
       this.dentPoint(dents, x, y, z);
       if (bumper) {
         const taper = THREE.MathUtils.smoothstep(Math.abs(z), Math.abs(end) - 0.35, Math.abs(end) - 0.14)
@@ -390,7 +417,7 @@ export class CrashGeometry {
     }
     // Anchor the glowing lens on the deformed surface as well as on the undamaged one.
     for (let i = 0; i < this.lamps.length; i++) {
-      const lamp = this.lamps[i], lens = this.lenses.value[i];
+      const lamp = this.lamps[i], lens = this.paint.lenses.value[i];
       this.dentPoint(dents, lens.x + lens.z * (i % 2 ? 0.16 : -0.16), lens.y, lamp.z);
       lamp.x = this.point.x; lamp.y = this.point.y;
       // Keep the measured outer lens plane for the next rebuild.
@@ -404,15 +431,16 @@ export class CrashGeometry {
   readonly lampDepth = new Float32Array(4);
 
   private dentPoint(dents: readonly Dent[], x: number, y: number, z: number) {
-    let dx = 0, depth = 0, dz = 0;
+    let dx = 0, depth = 0, dz = 0, door = 0;
     for (const hit of dents) {
       const dent = dentFalloff(hit, x, y, z) * hit.depth;
-      dx += hit.nx * dent; dz += hit.nz * dent; depth += dent;
+      if (isSideDent(hit)) door += Math.sign(hit.nx) * dent;
+      else { dx += hit.nx * dent; dz += hit.nz * dent; depth += dent; }
     }
-    if (!depth) { this.point.set(x, y, z); return; }
+    if (!depth) { this.point.set(x + door, y, z); return; }
     const wrinkle = Math.sin(x * 34 + y * 31 - z * 43) * 0.12;
     const crumple = 0.88 + wrinkle;
-    this.point.set(x + dx * crumple, y + depth * crumple * wrinkle, z + dz * crumple);
+    this.point.set(x + door + dx * crumple, y + depth * crumple * wrinkle, z + dz * crumple);
   }
 
   private recomputeNormals() {
@@ -445,7 +473,7 @@ export class CrashGeometry {
   }
 
   show(amount: number) {
-    this.fade.value = amount;
+    this.paint.fade.value = amount;
     this.blend("position", this.basePosition, this.damagedPosition, amount);
     this.blend("normal", this.baseNormal, this.damagedNormal, amount);
   }
