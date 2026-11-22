@@ -3,6 +3,7 @@ import * as THREE from "three";
 import type { Look } from "../../content/npcs";
 import { Character, type Anim, type Moment, type Mood } from "./Character";
 import { StyledCharacter } from "./StyledCharacter";
+import type { PoolPose } from "./poolPose";
 import { STYLED } from "../style";
 
 /** What the game needs from a character (the original Character and StyledCharacter both fit). */
@@ -55,7 +56,7 @@ export interface GameCharacter {
   steer?: number;
   /** Swimming (0–1) and, under water, diving (0–1): src/game/water.ts SWIM (the original Character). */
   swim?: number;
-  poolHit?: number;
+  poolPose?: PoolPose;
   wading?: boolean;
   dive?: number;
   /** On a surfboard (src/game/surf/; the original Character): lying on it and paddling, standing side-on, astride. */

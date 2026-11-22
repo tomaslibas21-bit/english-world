@@ -10,8 +10,8 @@ import * as THREE from "three";
 import * as GROUNDS from "../cave/grounds";
 import { surfboardParts } from "../surf/shapes";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { rand, roundRect, type Colliders } from "./util";
-import { HOTEL_POOL, hotelPoolBed, hotelPoolBounds, POOL_CIRCLE, POOL_KIDS } from "./pool";
+import { colourMerge, rand, roundRect, type Colliders } from "./util";
+import { HOTEL_POOL, hotelPoolBed, hotelPoolBounds, poolMotionPreference, POOL_CIRCLE, POOL_KIDS } from "./pool";
 import { POOLS, FLOORS } from "../water";
 import type { TianguisGoods } from "./theme";
 
@@ -2402,8 +2402,15 @@ export function hotelPool(parts: Part[], flat: Part[], col: Colliders) {
     addBox(flat, tile, (ax + bx) / 2, deep / 2, (az + bz) / 2, wx, -deep, wz);
     col.addBox(x + (ax + bx) / 2, z + (az + bz) / 2, wx, wz, "edge");
     const tiles = Math.ceil(length / 0.5);
+    // A pale grout bed and a row of glazed blue tiles just under the coping lip.
+    const side = ax === bx;
+    addBox(flat, "#b1dace", (ax + bx) / 2, water - 0.018, (az + bz) / 2,
+      side ? 0.316 : length, 0.218, side ? length : 0.316);
+    const glaze = ["#145978", "#278ba1", "#176481", "#348e9b"];
     for (let i = 0; i < tiles; i++) {
       const f = (i + 0.5) / tiles;
+      addBox(flat, glaze[i % glaze.length], ax + (bx - ax) * f, water - 0.018, az + (bz - az) * f,
+        side ? 0.33 : length / tiles - 0.023, 0.18, side ? length / tiles - 0.023 : 0.33);
       addBox(flat, i % 3 === 0 ? "#fdf1dc" : coping, ax + (bx - ax) * f, 0.028, az + (bz - az) * f,
         ax === bx ? 0.42 : length / tiles - 0.018, 0.08, az === bz ? 0.42 : length / tiles - 0.018);
     }
@@ -2413,6 +2420,21 @@ export function hotelPool(parts: Part[], flat: Part[], col: Colliders) {
   rim(w, -d, w, d);
   rim(-w, d, stepL, d);
   rim(stepR, d, w, d);
+
+  // Bent stainless rails, deck sockets and three treads, all in the basin batch.
+  const ladderZ = -2.85, railX = -w + 0.39;
+  for (const pz of [ladderZ - 0.37, ladderZ + 0.37]) {
+    const profile = [[-w - 0.42, 0.06], [-w - 0.42, 0.48], [-w - 0.34, 0.67],
+      [-w - 0.13, 0.72], [railX - 0.09, 0.54], [railX, 0.31], [railX, -1.23]];
+    const rail = new THREE.CatmullRomCurve3(profile.map(([px, y]) => new THREE.Vector3(x + px, y, z + pz)));
+    flat.push([new THREE.TubeGeometry(rail, 22, 0.049, 10, false), "#96afba"]);
+    flat.push([new THREE.TubeGeometry(rail, 22, 0.018, 6, false).translate(0.032, 0.02, 0.027), "#f1faf6"]);
+    flat.push([cyl(0.095, 0.12, 0.055, x - w - 0.42, 0.055, z + pz), "#859da5"]);
+  }
+  for (const y of [0.03, -0.44, -0.91]) {
+    addBox(flat, "#869fac", railX, y, ladderZ, 0.17, 0.065, 0.75);
+    addBox(flat, "#d9eeee", railX + 0.065, y + 0.021, ladderZ, 0.043, 0.052, 0.75);
+  }
 
   // Floor panels follow the same shelf and slope as the walking surface.
   for (const [a, b, ya, yb, color] of [
@@ -2506,6 +2528,26 @@ export function hotelPool(parts: Part[], flat: Part[], col: Colliders) {
   POOLS.push({ bounds: hotelPoolBounds(), y: water, bed: hotelPoolBed });
 }
 
+function poolFloats() {
+  const material = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+  const panels: Part[] = [];
+  const arc = Math.PI / 4;
+  for (let i = 0; i < 8; i++) {
+    panels.push([new THREE.TorusGeometry(0.42, 0.142, 10, 4, arc).rotateZ(i * arc).rotateX(-Math.PI / 2),
+      i % 2 === 0 ? "#ff805f" : "#ffebbd"]);
+  }
+  const ring = new THREE.Mesh(colourMerge(panels), material);
+  const curve = new THREE.QuadraticBezierCurve3(new THREE.Vector3(-0.83, 0.08, 0.21),
+    new THREE.Vector3(-0.12, -0.075, -0.54), new THREE.Vector3(0.83, 0.055, 0.09));
+  const noodleParts: Part[] = [[new THREE.TubeGeometry(curve, 18, 0.099, 10, false), "#efcf42"]];
+  for (const end of [0, 1]) {
+    const tip = curve.getPoint(end), dir = curve.getTangent(end).multiplyScalar(end === 0 ? -1 : 1);
+    const rot = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
+    noodleParts.push([new THREE.RingGeometry(0.034, 0.099, 10).applyQuaternion(rot).translate(tip.x, tip.y, tip.z), "#ffe98c"]);
+  }
+  return { ring, noodle: new THREE.Mesh(colourMerge(noodleParts), material) };
+}
+
 export function hotelPoolWater() {
   const { x, z, halfWidth, halfLength, water } = HOTEL_POOL;
   const material = new THREE.ShaderMaterial({
@@ -2515,16 +2557,33 @@ export function hotelPoolWater() {
       tick: { value: 0 },
       bathers: { value: POOL_KIDS.map((kid) => new THREE.Vector2(POOL_CIRCLE[kid].x - x, POOL_CIRCLE[kid].z - z)) },
     },
-    vertexShader: `varying vec2 point;
-      void main() { point = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-    fragmentShader: `varying vec2 point; uniform float tick; uniform vec2 bathers[3];
+    vertexShader: `varying vec2 point, below;
+      void main() {
+        point = uv;
+        vec3 ray = normalize((modelMatrix * vec4(position, 1.0)).xyz - cameraPosition);
+        vec3 bent = refract(ray, vec3(0.0, 1.0, 0.0), 0.75);
+        below = bent.xz / max(0.5, -bent.y);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }`,
+    fragmentShader: `varying vec2 point, below; uniform float tick; uniform vec2 bathers[3];
       void main() {
         vec2 size = vec2(${(halfWidth * 2).toFixed(1)}, ${(halfLength * 2).toFixed(1)});
-        vec2 p = point * size;
-        float a = sin(p.x * 2.8 + p.y * 0.8 + sin(p.y * 1.55 - tick) + tick * 0.8);
-        float b = sin(p.y * 2.15 - p.x * 0.9 + sin(p.x * 1.34 + tick * 0.6) - tick);
-        float ripples = smoothstep(0.82, 1.0, a * b);
         vec2 at = vec2(point.x - 0.5, 0.5 - point.y) * size;
+        float depth = mix(1.85, 1.04, smoothstep(-2.2, 0.5, at.y));
+        vec2 floorAt = at + below * depth;
+        // The shared edges of two offset grids make a net of sunlight. Bend the
+        // cells slowly and soften the light where the ray reaches the wall.
+        vec2 p = floorAt * 1.26;
+        p += 0.25 * sin(p.yx * 1.65 + vec2(0.29, -0.22) * tick)
+           + 0.13 * cos(p.yx * 3.06 + p * 0.8 - 0.32 * tick);
+        vec2 cell = vec2(1.0, 1.732);
+        vec2 a = mod(p, cell) - 0.5 * cell;
+        vec2 b = mod(p + 0.5 * cell, cell) - 0.5 * cell;
+        vec2 q = abs(dot(a, a) < dot(b, b) ? a : b);
+        float edge = max(q.x, dot(q, vec2(0.5, 0.866)));
+        float light = smoothstep(0.425, 0.495, edge) * (0.58 + 0.34 * sin(p.x * 2.3 + p.y));
+        vec2 margin = size * 0.5 - abs(floorAt);
+        light *= smoothstep(0.1, 0.6, min(margin.x, margin.y));
         float wake = 0.0;
         for (int i = 0; i < 3; i++) {
           vec2 d = at - bathers[i];
@@ -2535,7 +2594,7 @@ export function hotelPoolWater() {
         }
         float shelf = smoothstep(0.35, 0.7, 1.0 - point.y);
         vec3 color = mix(vec3(0.018, 0.24, 0.35), vec3(0.035, 0.49, 0.50), shelf);
-        gl_FragColor = vec4(color + ripples * 0.13 + wake * 0.18, 0.80 - shelf * 0.11 + ripples * 0.08);
+        gl_FragColor = vec4(color + vec3(0.23, 0.27, 0.21) * light + wake * 0.18, 0.64 - shelf * 0.09);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }`,
@@ -2545,5 +2604,16 @@ export function hotelPoolWater() {
   mesh.userData.thin = true;
   mesh.position.set(x, water, z);
   mesh.renderOrder = 2;
-  return mesh;
+  const { ring, noodle } = poolFloats();
+  mesh.add(ring, noodle);
+  const update = (time: number) => {
+    const t = poolMotionPreference?.matches ? 0 : time;
+    material.uniforms.tick.value = t;
+    ring.position.set(-0.57 + 0.19 * Math.sin(t * 0.31), 0.038 + 0.018 * Math.sin(t * 1.7), -2.84 + 0.14 * Math.cos(t * 0.37));
+    ring.rotation.set(0.055 * Math.sin(t * 1.2), 0.28 + 0.34 * Math.sin(t * 0.27), 0.044 * Math.cos(t * 1.55));
+    noodle.position.set(-1.62 + 0.17 * Math.cos(t * 0.29), 0.023 + 0.015 * Math.sin(t * 1.4), -1.23 + 0.14 * Math.sin(t * 0.4));
+    noodle.rotation.y = -0.68 + 0.23 * Math.sin(t * 0.36);
+  };
+  update(0);
+  return { mesh, update };
 }

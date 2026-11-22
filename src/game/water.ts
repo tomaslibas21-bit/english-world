@@ -187,7 +187,19 @@ export class Splashes {
     this.life = new Float32Array(N);
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.BufferAttribute(this.pos, 3));
-    this.drops = new THREE.Points(g, new THREE.PointsMaterial({ color: "#f4fbff", size: 0.11, sizeAttenuation: true, transparent: true, opacity: 0.9, depthWrite: false }));
+    // A rounded bead with a sunlit shoulder. Writing its depth lets the clear pool
+    // surface tint submerged drops while airborne spray stays bright.
+    const beads = new THREE.PointsMaterial({ color: "#f4fbff", size: 0.11, sizeAttenuation: true });
+    beads.onBeforeCompile = (shader) => {
+      shader.fragmentShader = shader.fragmentShader.replace("#include <color_fragment>", `
+        #include <color_fragment>
+        vec2 bead = (gl_PointCoord - 0.5) * vec2(2.24, 2.0);
+        if (dot(bead, bead) > 1.0) discard;
+        diffuseColor.rgb *= mix(vec3(0.38, 0.77, 0.86), vec3(1.0),
+          1.0 - smoothstep(0.2, 1.35, length(bead + vec2(0.3, 0.4))));
+      `);
+    };
+    this.drops = new THREE.Points(g, beads);
     this.drops.frustumCulled = false;
     this.group.add(this.ring, this.drops);
     this.group.visible = false;

@@ -15,6 +15,7 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { HairStyle, Look } from "../../content/npcs";
+import { applyPoolPose, type PoolPose } from "./poolPose";
 
 let gradient: THREE.DataTexture | null = null;
 function gradientMap() {
@@ -531,8 +532,7 @@ export class Character {
   private walkPhase = 0;
   /** Where the legs are in their swing (radians, growing as they walk): a foot comes down at every π/2 + kπ. */
   get stepPhase() { return this.walkPhase; }
-  /** An overhead reach, eased over the beach ball's hit. */
-  poolHit = 0;
+  poolPose?: PoolPose;
   wading = false;
   private blob: THREE.Mesh;
   seated = false;
@@ -1775,13 +1775,6 @@ export class Character {
       rf = -0.79;
       rfy = rfz = 0;
     }
-    if (this.poolHit > 0) {
-      const k = this.poolHit;
-      lx += (-2.75 - lx) * k; rx += (-2.75 - rx) * k;
-      lz += (-0.17 - lz) * k; rz += (0.17 - rz) * k;
-      lf += (-0.22 - lf) * k; rf += (-0.22 - rf) * k;
-      headNod -= 0.16 * k;
-    }
     if (this.look.child) this.body.position.y -= 0.66 * h * 0.16;
     this.armL.rotation.set(lx, 0, lz);
     this.armR.rotation.set(rx, 0, rz);
@@ -1825,6 +1818,12 @@ export class Character {
     this.head.rotation.x = headNod;
     this.head.rotation.y = headTurn;
     this.head.rotation.z = tilt;
+    if (this.poolPose) {
+      applyPoolPose(this.poolPose, this.body, this.head, this.armL, this.foreL, this.armR, this.foreR);
+      this.shinL.rotation.x += 0.14 + 0.13 * this.poolPose.paddle;
+      this.shinR.rotation.x += 0.14 - 0.13 * this.poolPose.paddle;
+      happyEyes ||= this.poolPose.laugh > 0.7;
+    }
     if (this.mane) {
       // long hair: it swings from side to side with the steps and lifts a little off the back; standing, the slightest
       // sway (small enough that a lock or a braid on the chest never sinks into it)

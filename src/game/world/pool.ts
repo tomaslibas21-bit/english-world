@@ -5,6 +5,8 @@ export const HOTEL_POOL_ENABLED = THEME.hotelPool && !(
 );
 
 export const POOL_SITUATION = "x09-alberca";
+export const poolMotionPreference = typeof matchMedia === "function"
+  ? matchMedia("(prefers-reduced-motion: reduce)") : null;
 
 export const HOTEL_POOL = {
   x: -106,

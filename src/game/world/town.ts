@@ -210,7 +210,7 @@ export function buildTown({ movableParking = false } = {}): Town {
   const poolWater = HOTEL_POOL_ENABLED ? MX.hotelPoolWater() : null;
   if (poolWater) {
     MX.hotelPool(mx, mxFlat, colliders);
-    group.add(poolWater);
+    group.add(poolWater.mesh);
   }
   if (THEME.papelPicado.length) group.add(makePapelPicado());
   if (THEME.palms.length || beachPalms.length) group.add(makePalms(colliders, beachPalms));
@@ -314,7 +314,7 @@ export function buildTown({ movableParking = false } = {}): Town {
     group, colliders, doors, parkedCars, seats: [...seats], groundCanvas, portals: [...portals],
     update(t, dt, cam) {
       seaMat.uniforms.uTime.value = t;
-      if (poolWater) poolWater.material.uniforms.tick.value = t;
+      poolWater?.update(t);
       if (cam) for (const f of farHidden) f.mesh.visible = (cam.x - f.x) ** 2 + (cam.z - f.z) ** 2 < f.r * f.r;
       wind.value = t;
       for (const s of sprays) s(t);

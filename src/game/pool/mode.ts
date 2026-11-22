@@ -15,7 +15,7 @@ import { conversationLine } from "../kit/lines";
 import type { GameMode, ModeFrame, ModeInput } from "../kit/modes";
 import { keepPhrases } from "../kit/phrases";
 import { rand } from "../world/util";
-import { HOTEL_POOL, HOTEL_POOL_ENABLED, hotelPoolKidY, POOL_CENTER, POOL_CIRCLE, POOL_ENTRY, POOL_KIDS, POOL_SITUATION, type PoolKid } from "../world/pool";
+import { HOTEL_POOL, HOTEL_POOL_ENABLED, hotelPoolKidY, poolMotionPreference, POOL_CENTER, POOL_CIRCLE, POOL_ENTRY, POOL_KIDS, POOL_SITUATION, type PoolKid } from "../world/pool";
 import { flightPosition, nextFlight, PoolRound, SPLASH_SECONDS, type Flight, type PoolEvent, type Receiver } from "./logic";
 import { poolSave, resetPoolUi, usePool } from "./store";
 
@@ -24,6 +24,7 @@ type CueSlot = "cue" | "aside";
 type Cue = { key: string; speaker: PoolKid; at: number; hold: number; slot: CueSlot };
 type Voice = { voice: string; speed: number; say: string; seconds: number; male: boolean };
 const handY: Record<Receiver, number> = { learner: 0.76, vale: 0.58, diego: 0.70, santi: 0.64 };
+const paddlePhase: Record<Receiver, number> = { learner: 1.5, vale: 0, diego: 2.6, santi: 4.3 };
 const phraseKeys = new Set(["pl_tuya", "pl_mia", "pl_arriba", "pl_cuidado", "pl_otra", "pl_casi", "pl_cayo", "pl_record"]);
 
 function ballMesh() {
@@ -48,6 +49,30 @@ export function createPoolMode(host: ModeHost) {
   return HOTEL_POOL_ENABLED ? new PoolMode(host) : null;
 }
 
+function splashRings() {
+  // Two crests spreading from one contact point, drawn together above the water.
+  const geometry = new THREE.PlaneGeometry(2.6, 2.6).rotateX(-Math.PI / 2);
+  const material = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false,
+    uniforms: { spread: { value: 0 }, strength: { value: 0 } },
+    vertexShader: `varying vec2 offset;
+      void main() { offset = position.xz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: `varying vec2 offset; uniform float spread, strength;
+      void main() {
+        float r = length(offset) + 0.012 * sin(offset.x * 17.0) * cos(offset.y * 13.0);
+        float edge = r - (0.22 + 0.96 * spread);
+        float outer = 1.0 - smoothstep(0.015, 0.055, abs(edge));
+        float inner = 1.0 - smoothstep(0.01, 0.045, abs(edge + 0.14 + 0.08 * spread));
+        gl_FragColor = vec4(0.77, 0.99, 0.96, (outer + inner * 0.58) * strength);
+        #include <colorspace_fragment>
+      }`,
+  });
+  const rings = new THREE.Mesh(geometry, material);
+  rings.renderOrder = 3;
+  rings.visible = false;
+  return rings;
+}
+
 class PoolMode implements GameMode {
   readonly id = "pool";
   readonly cleanScreen = "menu";
@@ -67,8 +92,11 @@ class PoolMode implements GameMode {
   private playingVoice = false;
   private kept = new Map<string, KitLine>();
   private hitAt = new Map<Receiver, number>();
+  private dropAt = -Infinity;
   private ball = ballMesh();
+  private rings = splashRings();
   private origin = new THREE.Vector3();
+  private target = new THREE.Vector3();
   private idleRandom = rand(929);
   private idle = nextFlight("vale", this.idleRandom, false);
   private idleTime = 0;
@@ -77,7 +105,7 @@ class PoolMode implements GameMode {
 
   constructor(private host: ModeHost) {
     this.ball.visible = false;
-    host.add(this.ball);
+    host.add(this.ball, this.rings);
   }
 
   get active() { return this.phase !== null; }
@@ -125,6 +153,7 @@ class PoolMode implements GameMode {
     this.clearCues();
     this.kept.clear();
     this.hitAt.clear();
+    this.dropAt = -Infinity;
     this.holdBall("vale");
     resetPoolUi();
     if (this.taught) this.sequence(["pl_rules", "pl_rules2", "pl_start"]);
@@ -197,17 +226,15 @@ class PoolMode implements GameMode {
 
   private placeBall(flight: Flight, seconds: number, from: THREE.Vector3) {
     const { travel, lift } = flightPosition(flight, seconds);
-    const to = POOL_CIRCLE[flight.to];
-    this.ball.position.set(
-      THREE.MathUtils.lerp(from.x, to.x, travel),
-      THREE.MathUtils.lerp(from.y, handY[flight.to], travel) + lift,
-      THREE.MathUtils.lerp(from.z, to.z, travel),
-    );
+    this.holdBall(flight.to, this.target);
+    this.ball.position.lerpVectors(from, this.target, travel);
+    this.ball.position.y += lift;
   }
 
   private holdBall(by: Receiver, at = this.ball.position) {
     const { x, z } = POOL_CIRCLE[by];
     at.set(x, handY[by], z);
+    if (by === "learner") { at.x += 0.24; at.z -= 0.34; }
   }
 
   private call(flight: Flight, delay: number) {
@@ -227,6 +254,7 @@ class PoolMode implements GameMode {
 
   private hit(event: Extract<PoolEvent, { kind: "hit" }>, round: PoolRound) {
     this.hitAt.set(event.by, this.time);
+    this.hitSpray(event.by, round.flight.to);
     this.origin.copy(this.ball.position);
     usePool.setState({ streak: round.streak });
     const by = POOL_KIDS.find((kid) => kid !== event.by && kid !== round.flight.to) ?? "vale";
@@ -239,6 +267,22 @@ class PoolMode implements GameMode {
     }
     const st = useStore.getState();
     if (round.best > poolSave(st.progress).best) st.updateProgress((p) => { p.pool = { ...poolSave(p), best: round.best }; });
+  }
+
+  private hitSpray(by: Receiver, to: Receiver) {
+    if (poolMotionPreference?.matches) return;
+    const from = POOL_CIRCLE[by], target = POOL_CIRCLE[to];
+    const angle = Math.atan2(target.x - from.x, target.z - from.z);
+    const dx = Math.sin(angle), dz = Math.cos(angle);
+    this.host.splash(from.x + 0.34 * dx - 0.31 * dz, HOTEL_POOL.water + 0.16,
+      from.z + 0.34 * dz + 0.31 * dx, dx * 0.4, dz * 0.4, 0.35);
+  }
+
+  private fallingBall(t: number) {
+    this.holdBall("learner");
+    this.ball.position.x += 0.62 * t;
+    this.ball.position.z -= 0.15 * t;
+    this.ball.position.y = THREE.MathUtils.lerp(handY.learner, HOTEL_POOL.water + 0.08, t * (0.55 + 0.45 * t));
   }
 
   private closeRound(round: PoolRound, delay = 0) {
@@ -261,7 +305,10 @@ class PoolMode implements GameMode {
       this.holdBall(previous.to);
       this.hit(event, round);
     } else if (event?.kind === "drop") {
-      this.ball.position.y = HOTEL_POOL.water + 0.08;
+      this.fallingBall(1);
+      this.dropAt = this.time;
+      this.rings.position.copy(this.ball.position);
+      this.rings.position.y = HOTEL_POOL.water + 0.014;
       this.host.splash(this.ball.position.x, HOTEL_POOL.water, this.ball.position.z, 0, 0, 0.9);
       audio.splash(0.6);
       usePool.setState({ streak: 0, cue: null, aside: null });
@@ -271,9 +318,7 @@ class PoolMode implements GameMode {
     } else if (event?.kind === "serve") this.serve(round);
     else if (event?.kind === "end") this.closeRound(round);
     else if (round.phase === "fall") {
-      const t = Math.min(1, round.phaseTime / SPLASH_SECONDS);
-      this.holdBall("learner");
-      this.ball.position.y = THREE.MathUtils.lerp(handY.learner, HOTEL_POOL.water + 0.08, t * (0.55 + 0.45 * t));
+      this.fallingBall(Math.min(1, round.phaseTime / SPLASH_SECONDS));
     }
     if (round.phase === "rally") this.placeBall(round.flight, round.phaseTime, this.origin);
   }
@@ -308,12 +353,26 @@ class PoolMode implements GameMode {
       else if (this.phase === "closing" && this.round && this.clock >= this.nextPhaseAt) this.showResult(this.round);
       this.tickCues();
       this.updateHelp();
-      this.ball.rotation.set(this.time * 1.25, this.time * 1.8, this.time * 0.54);
+      if (!poolMotionPreference?.matches) {
+        const spin = this.round?.phase === "reset" ? 0.22 : 1;
+        this.ball.rotation.x += dt * spin * 1.25;
+        this.ball.rotation.y += dt * spin * 1.8;
+      }
     }
-    this.ball.visible = this.phase === "opening" || this.phase === "play";
+    const sinceDrop = this.time - this.dropAt;
+    this.rings.visible = sinceDrop < 1.2;
+    if (this.rings.visible) {
+      const t = sinceDrop / 1.2;
+      this.rings.material.uniforms.spread.value = poolMotionPreference?.matches ? 0.3 : 1 - (1 - t) ** 2;
+      this.rings.material.uniforms.strength.value = 0.95 * (1 - t) ** 1.4;
+      if (!poolMotionPreference?.matches && this.round?.phase !== "rally") {
+        this.ball.position.y = HOTEL_POOL.water + 0.08 + 0.14 * Math.sin(sinceDrop * 11) * Math.exp(-sinceDrop * 3.8);
+      }
+    }
+    this.ball.visible = this.phase === "opening" || this.phase === "play" || (this.phase === "closing" && this.rings.visible);
     const player = this.host.player();
     const centerHeading = Math.atan2(POOL_CENTER.x - POOL_CIRCLE.learner.x, POOL_CENTER.z - POOL_CIRCLE.learner.z);
-    const heading = this.pose(player, "learner", centerHeading, dt, false);
+    const heading = this.pose(player, "learner", centerHeading, dt);
     this.host.updatePose(dt, heading);
   }
 
@@ -366,33 +425,36 @@ class PoolMode implements GameMode {
     if (this.idleTime >= this.idle.seconds) {
       this.hitAt.set(this.idle.to, this.time);
       this.idle = nextFlight(this.idle.to, this.idleRandom, false);
+      const p = this.host.player().root.position;
+      if (Math.hypot(p.x - POOL_CENTER.x, p.z - POOL_CENTER.z) < 12) this.hitSpray(this.idle.from, this.idle.to);
       this.idleTime = 0;
     }
     this.holdBall(this.idle.from, this.origin);
     this.placeBall(this.idle, this.idleTime, this.origin);
-    this.ball.rotation.set(this.time * 0.85, this.time * 1.3, 0.35);
+    if (!poolMotionPreference?.matches) this.ball.rotation.set(this.time * 0.85, this.time * 1.3, 0.35);
   }
 
   poseKid(ch: GameCharacter, id: string, dt: number, talking: boolean) {
     const kid = POOL_KIDS.find((who) => who === id);
     if (!kid) return false;
     const { x, z } = POOL_CIRCLE[kid];
-    ch.root.position.y = hotelPoolKidY(kid) + Math.sin(this.time * 2.7 + x + z) * 0.045;
+    ch.root.position.y = hotelPoolKidY(kid);
     ch.wading = true;
-    if (talking && kid === "vale") { ch.poolHit = 0; return false; }
+    if (talking && kid === "vale") { ch.poolPose = undefined; return false; }
     const heading = Math.atan2(POOL_CENTER.x - x, POOL_CENTER.z - z);
-    this.pose(ch, kid, heading, dt, true);
+    this.pose(ch, kid, heading, dt);
     return true;
   }
 
-  private pose(ch: GameCharacter, who: Receiver, heading: number, dt: number, anticipation: boolean) {
+  private pose(ch: GameCharacter, who: Receiver, heading: number, dt: number) {
     const flight = this.round?.phase === "rally" ? this.round.flight : !this.active && this.ball.visible ? this.idle : null;
     const t = this.round?.phaseTime ?? this.idleTime;
-    const reach = anticipation && flight?.to === who ? THREE.MathUtils.smoothstep(t, flight.seconds - 0.24, flight.seconds) : 0;
-    const ago = this.time - (this.hitAt.get(who) ?? -1);
-    const hit = ago >= 0 && ago < 0.42 ? 1 - THREE.MathUtils.smoothstep(ago, 0.06, 0.42) : 0;
+    const ease = THREE.MathUtils.smoothstep;
+    const reach = flight?.to === who ? 0.58 * ease(t, flight.seconds - 0.8, flight.seconds) : 0;
+    const ago = this.time - (this.hitAt.get(who) ?? -Infinity);
+    const hit = 1 - ease(ago, 0.18, 0.59);
     const p = ch.root.position, b = this.ball.position;
-    const facing = this.ball.visible && Math.hypot(b.x - p.x, b.z - p.z) > 0.35 ? Math.atan2(b.x - p.x, b.z - p.z) : heading;
+    const facing = this.ball.visible && Math.hypot(b.x - p.x, b.z - p.z) > 0.12 ? Math.atan2(b.x - p.x, b.z - p.z) : heading;
     const delta = facing - ch.root.rotation.y;
     ch.root.rotation.y += Math.atan2(Math.sin(delta), Math.cos(delta)) * Math.min(1, dt * 6);
     ch.watch = this.ball.visible ? b : null;
@@ -400,7 +462,13 @@ class PoolMode implements GameMode {
     ch.attentive = true;
     ch.wading = true;
     ch.moveSpeed = 0;
-    ch.poolHit = Math.max(reach, hit);
+    const pose = ch.poolPose ??= { paddle: 0, reach: 0, surprise: 0, laugh: 0 };
+    pose.paddle = poolMotionPreference?.matches ? 0 : Math.sin(this.time * 2.25 + paddlePhase[who]);
+    pose.reach = Math.max(reach, hit);
+    const after = this.time - this.dropAt - paddlePhase[who] * 0.027;
+    const reaction = ease(after, 0, 0.16) * (1 - ease(after, 0.66, 1.15));
+    pose.surprise = who === "learner" || who === "diego" ? reaction : 0;
+    pose.laugh = who === "vale" || who === "santi" ? reaction : 0;
     ch.setAnim("idle");
     return ch.root.rotation.y;
   }
@@ -419,10 +487,12 @@ class PoolMode implements GameMode {
     this.notice = null;
     this.clearCues();
     this.hitAt.clear();
+    this.rings.visible = false;
+    this.dropAt = -Infinity;
     resetPoolUi();
     if (placed) {
       const player = this.host.player();
-      player.poolHit = 0;
+      player.poolPose = undefined;
       player.wading = false;
       player.setBackpack?.(true);
       this.host.rig.stage = null;
@@ -437,5 +507,8 @@ class PoolMode implements GameMode {
     this.ball.removeFromParent();
     this.ball.geometry.dispose();
     this.ball.material.dispose();
+    this.rings.removeFromParent();
+    this.rings.geometry.dispose();
+    this.rings.material.dispose();
   }
 }

@@ -4,6 +4,7 @@
 import * as THREE from "three";
 import type { Look } from "../../content/npcs";
 import type { Anim } from "./Character";
+import { applyPoolPose, type PoolPose } from "./poolPose";
 import { OUTLINE_LAYER, outlineMaterial, addOutlineNormals, vertexColorMaterial } from "../style";
 import { buildCharacter, BONE, BONE_COUNT, type CharSpec } from "./builders";
 
@@ -11,6 +12,7 @@ export class StyledCharacter {
   root = new THREE.Group();
   readonly rightHand = new THREE.Group();
   anim: Anim = "idle";
+  poolPose?: PoolPose;
   talking = 0;
   /** A hop: how high the body is drawn off the ground (m), as the original Character. */
   lift = 0;
@@ -176,6 +178,7 @@ export class StyledCharacter {
       fR.rotation.set(-0.79, 0, 0);
     }
     head.rotation.set(nod, turn, tilt);
+    if (this.poolPose) applyPoolPose(this.poolPose, body, head, uL, fL, uR, fR);
     // ponytail swings
     const tail = b[BONE.tail];
     tail.rotation.set(0.12 + lean * 1.5 + (walking ? Math.abs(Math.sin(t * f)) * 0.18 : Math.sin(t * 1.4) * 0.03), 0, walking ? Math.sin(t * f) * 0.16 : 0);
