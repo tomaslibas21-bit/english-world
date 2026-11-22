@@ -25,8 +25,10 @@ import { EDITION } from "../edition";
 import { CaveCard } from "./Cave";
 import { Guide } from "./Guide";
 import { TownToast } from "./Toasts";
+import { PhoneRing } from "./PhoneRing";
 import { portraitToolbarRows } from "./toolbarLayout";
 import "./light.css";
+import "./townPhone.css";
 
 /** Inside English Master (VITE_BACK_URL, e.g. "/"): the way back to the course site. */
 export const COURSE_URL = import.meta.env.VITE_BACK_URL as string | undefined;
@@ -50,6 +52,7 @@ export function useDueCards(): number {
 /** The four arrow keys, for the hints at a wheel and in the water. */
 const RIDE_ARROWS = () => <><kbd><Icon name="arrowUp" size="1em" strokeWidth={2.25} label={L("aukštyn")} /></kbd><kbd><Icon name="arrowDown" size="1em" strokeWidth={2.25} label={L("žemyn")} /></kbd><kbd><Icon name="arrowLeft" size="1em" strokeWidth={2.25} label={L("kairėn")} /></kbd><kbd><Icon name="arrowRight" size="1em" strokeWidth={2.25} label={L("dešinėn")} /></kbd></>;
 
+const FriendMeeting = lazy(() => import("./FriendMeeting"));
 const RoadOverlay = lazy(() => import("./Road").then(({ RoadOverlay }) => ({ default: RoadOverlay })));
 const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = { taxi: TaxiOverlay, road: RoadOverlay, barista: BaristaOverlay, pool: PoolOverlay };
 
@@ -61,7 +64,8 @@ export function Hud() {
   const notesVisible = useStore(usesTownNotes);
   const ride = townRide(hud.ride);
   const riding = ride !== null;
-  const task = useTaskCard(hud.objective?.sitId ?? null, notesVisible && !hud.cave);
+  const taskId = hud.objective?.followUp ? hud.objective.title : hud.objective?.sitId ?? null;
+  const task = useTaskCard(taskId, notesVisible && !hud.cave);
   if (inConversation) return <Fade />;
   // the first visit's flight over the town has the screen to itself too: where one is, and what to do first
   if (hud.flight) return <div className="hud"><Flight /><Fade /></div>;
@@ -72,6 +76,9 @@ export function Hud() {
       {hud.showTouch && <TouchControls />}
       <Fade />
     </div>
+  );
+  if (hud.modeScreen?.id === "friend-meeting") return (
+    <div className="hud mode-hud"><Suspense><FriendMeeting /></Suspense><Fade /></div>
   );
   if (hud.modeScreen?.kind === "menu") {
     const Overlay = modeOverlays[hud.modeScreen.id];
@@ -87,14 +94,16 @@ export function Hud() {
   }
   const note = notesVisible ? townNote(hud) : null;
   const banner = note === "banner" && hud.zoneBanner ? splitLead(hud.zoneBanner.title) : null;
-  const collapsed = !hud.cave && (task.manual ?? (!task.fresh && (hud.walking || riding)));
+  const moving = hud.walking || riding;
+  const collapsed = !hud.cave && ((moving && !!hud.objective?.followUp) || (task.manual ?? (!task.fresh && moving)));
   return (
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")}>
       {hud.speedLines && !hud.panel && <div className="drive-wind" aria-hidden />}
       <div className="hud-top">
         <div className={"objective-notes" + (collapsed ? " task-folded" : "")}>
-          {hud.cave ? <CaveCard arrow={Arrow} /> : <Objective collapsed={collapsed} fresh={task.fresh && notesVisible} setCollapsed={task.setManual} />}
+          {hud.cave ? <CaveCard arrow={Arrow} /> : <Objective key={taskId ?? "complete"} collapsed={collapsed} fresh={task.fresh && notesVisible} setCollapsed={task.setManual} />}
           {hud.zoneBanner && banner && <div className="zone-banner"><h2>{banner.icon && <Icon name={banner.icon} size="0.8em" className="zb-ico" />}{banner.rest}</h2>{hud.zoneBanner.sub && <p>{hud.zoneBanner.sub}</p>}</div>}
+          {note === "phone" && hud.phoneCard && <PhoneRing id={hud.phoneCard} />}
           <Guide visible={note === "guide"} />
           <TownToast visible={note === "toast"} />
         </div>
@@ -139,6 +148,7 @@ function activateHudButton(e: KeyboardEvent<HTMLElement>) {
 
 function Toolbar({ riding, touch, surf = false, modeExit }: { riding: boolean; touch: boolean; surf?: boolean; modeExit?: string }) {
   const due = useDueCards();
+  const missedCalls = useStore((s) => Object.keys(s.progress.phone?.missed ?? {}).length);
   const hasRadio = useRadio((s) => s.available);
   const hasHelp = useSectionHelp();
   const hasTouchPrompt = useStore((s) => !s.hud.panel && !!s.hud.prompt && s.hud.prompt.kind !== "out");
@@ -215,7 +225,7 @@ function Toolbar({ riding, touch, surf = false, modeExit }: { riding: boolean; t
     <ToolButton icon="clapper" title={L("Visos situacijos")} panel="scenarios" />
     <ToolButton icon="map" title={L("Žemėlapis (M)")} panel="map" hotkey="M" shortcuts={!surf} />
     <ToolButton icon="journal" title={L("Užduotys (J)")} panel="journal" hotkey="J" shortcuts={!surf} />
-    <ToolButton icon="smartphone" title={L("Telefonas (P)")} panel="phone" hotkey="P" shortcuts={!surf} />
+    <ToolButton icon="smartphone" title={L("Telefonas (P)")} panel="phone" hotkey="P" badge={missedCalls} shortcuts={!surf} />
     <ToolButton icon="bookOpen" title={L("Frazių knygelė")} panel="phrasebook" badge={due} />
     <ToolButton icon="settings" title={L("Nustatymai (Esc)")} panel="settings" shortcuts={!surf} />
     <SectionHelpButton />
@@ -309,10 +319,10 @@ function Objective({ collapsed, fresh, setCollapsed }: { collapsed: boolean; fre
   const progress = useStore((s) => s.progress);
   if (collapsed) {
     return (
-      <div className="objective-card collapsed">
+      <div className="objective-card collapsed" data-target-location={o?.targetLoc}>
         <button className="collapse-btn objective-summary" aria-expanded={false} onClick={() => setCollapsed(false)} onKeyDown={activateHudButton}>
           <Icon name="target" size={16} strokeWidth={2} />
-          <span className="objective-title">{o?.title ?? L("Visos užduotys atliktos")}</span>
+          <span className="objective-title" title={o?.followUp ? o.title : undefined}>{o?.title ?? L("Visos užduotys atliktos")}</span>
           <Icon name="chevronDown" size={16} strokeWidth={2} />
           {o?.dist != null && <span className="dist">{o.angle !== null && <Arrow angle={o.angle} />}{o.dist} m</span>}
         </button>
@@ -329,6 +339,19 @@ function Objective({ collapsed, fresh, setCollapsed }: { collapsed: boolean; fre
       </div>
     );
   }
+  if (o.followUp) return (
+    <div className={className} data-target-location={o.targetLoc}>
+      <div className="kicker">
+        <span className="kicker-label"><Icon name="target" size={15} strokeWidth={2} /> {L("Užduotis")}</span>
+        {fold}
+      </div>
+      <h3>{o.title}</h3>
+      <div className="row">
+        {o.dist !== null && <span className="dist">{o.angle !== null && <Arrow angle={o.angle} />}{o.dist} m</span>}
+        <button className="btn small" onClick={() => game?.autoWalkToObjective("objective")} title="G"><Icon name="walk" size={17} /> {L("Nuvesk mane")}</button>
+      </div>
+    </div>
+  );
   const sit = SITUATION_BY_ID[o.sitId];
   const phone = sit && isPhone(sit);
   const st = stars(sitProgress(progress, o.sitId));

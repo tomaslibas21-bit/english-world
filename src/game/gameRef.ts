@@ -18,6 +18,7 @@ export interface GameApi {
   restartScenario(): void;
   nextScenarioId(after?: string): string | null;
   call(sitId: string): void;
+  handlePhoneCard?(id: string, answer: boolean): void;
   closeConversation(): void;
   orderedSituations(): SituationMeta[];
   currentObjective(): SituationMeta | null;

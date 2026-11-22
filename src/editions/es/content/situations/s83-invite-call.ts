@@ -29,6 +29,7 @@ import type { Ctx, EntityDef, Handler, Pending, Segment, SituationDef } from "@/
 import { ent, t } from "@/content/dsl";
 import { GLOBAL_HANDLERS } from "@/content/global";
 import { pick, pickFrom } from "../hint-pick";
+import { MEETING_LINES } from "../phoneMeeting";
 
 const A_LO_MEJOR = "a lo mejor: maybe, perhaps; very common in speech. Literally “at the best”, but it doesn't mean “at best” (that's en el mejor de los casos).";
 
@@ -945,6 +946,7 @@ export const inviteCall: SituationDef = {
   },
 
   lines: {
+    ...MEETING_LINES,
     hello_q: [t("¿Bueno?", "Hello?", "Hello?", { flags: { 0: MEX + "how people answer the phone." }, neutral: t("¿Hola?", "Hello?", "Hello?"), spain: t("¿Sí?", "Hello?", "Hello?", { flags: { 0: "Spain: how people answer the phone (also ¿Diga?)." } }) })],
     who_is_this: [
       t("¿Bueno? | ¿Quién | habla?", "Hello? | Who | is speaking?", "Hello? Who's this?", { flags: { 0: MEX + "how people answer the phone." },

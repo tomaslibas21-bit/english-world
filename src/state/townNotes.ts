@@ -1,7 +1,7 @@
 import type { HudState, Toast } from "./store";
 
-export function townNote(hud: Pick<HudState, "zoneBanner" | "coach">) {
-  return hud.zoneBanner ? "banner" : hud.coach ? "guide" : "toast";
+export function townNote(hud: Pick<HudState, "zoneBanner" | "coach" | "phoneCard">) {
+  return hud.phoneCard ? "phone" : hud.zoneBanner ? "banner" : hud.coach ? "guide" : "toast";
 }
 
 export function toastDuration(t: Omit<Toast, "id">) {

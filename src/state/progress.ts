@@ -2,6 +2,7 @@
 // blocked storage simply start fresh.
 import type { Look } from "../content/npcs";
 import { EDITION } from "../edition";
+import type { Invitation } from "../content/phoneInvitation";
 
 export interface SitProgress {
   visits: number;
@@ -13,6 +14,15 @@ export interface SitProgress {
   lastPlayed?: number;
   /** The learner made this conversation speak slowly („Lėčiau“). */
   slow?: boolean;
+}
+
+export interface PhoneProgress {
+  played: number;
+  lastCard?: number;
+  missed: Record<string, { presentations: number; retryAt: number }>;
+  invitation?: Invitation;
+  office?: boolean;
+  followUp?: "invitation" | "office";
 }
 
 export interface Progress {
@@ -40,6 +50,7 @@ export interface Progress {
   miniGameHelp?: Record<string, import("../game/kit/help").HelpProgress>;
   taxi?: { nextRoute: number };
   pool?: import("../game/pool/store").PoolSave;
+  phone?: PhoneProgress;
   /** The surf lesson (game/surf): waves ridden and seconds on them, commands followed of those asked, lessons taken,
    *  and how often each of the instructor's lines has been heard (their help fades with it). */
   surf?: { waves: number; seconds: number; followed: number; asked: number; lessons: number; heard: Record<string, number> };

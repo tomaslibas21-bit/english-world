@@ -28,6 +28,10 @@ import { FrameFade } from "./kit/frameFade";
 import type { ModeHost } from "./kit/host";
 import { scoreShot } from "./kit/scoreShot";
 import type { SurfPlay } from "./surf/play";
+import { FLOOD_INCOMING_INTRO, invitationLocation, invitationTitle, OFFICE_TASK } from "../content/phoneCalls";
+import { TownPhone } from "./phone/Phone";
+import { freeToWalk, type PhoneSnapshot } from "./phone/schedule";
+import type { FriendMeeting } from "./phone/meeting";
 import { createSurfMode } from "./surf/mode";
 import { createTaxiMode } from "./taxi/mode";
 import { BARISTA_PROMPT, createBaristaMode } from "./barista/mode";
@@ -52,9 +56,10 @@ import { nearLevel, surfLevel, surfaceAt, type Surface } from "./soundscape";
 import { radio } from "../radio";
 import { Dust } from "./dust";
 import { Pigeons } from "./pigeons";
+import { audioDiagnosticsEnabled, audioDiagnosticsPaused, subscribeAudioDiagnostics } from "../convo/audioDiagnostics";
 import { NPCS, type Look } from "../content/npcs";
 import { LOCATIONS, placeLt } from "../content/locations";
-import { SITUATIONS, SITUATION_BY_ID, prefetchSituations } from "../content/situations/catalog";
+import { SITUATIONS, SITUATION_BY_ID, loadSituation, prefetchSituations } from "../content/situations/catalog";
 import { whenLoaded } from "./prefetch";
 import type { SituationDef, SituationMeta } from "../content/types";
 import { picturesOn, useStore, type HudState, type Toast } from "../state/store";
@@ -68,7 +73,7 @@ import { EDITION } from "../edition";
 import type { GameApi } from "./gameRef";
 import { THEME } from "./world/theme";
 import { caveLure } from "./cave";
-import { CAVE_ZONE, caveWays, preferredCaveEntry } from "./cave/groundsPlan";
+import { CAVE_ZONE, caveWays, groundsBounds, preferredCaveEntry } from "./cave/groundsPlan";
 import { emptyCave, gateState, GATES, SPAWNS, TREE_SIT as CAVE_TREE, TREES } from "./cave/plan";
 import type { caveGateGrid } from "./cave/routing";
 import type { CaveQuest } from "./cave/quest";
@@ -96,6 +101,7 @@ const JOG_AFTER = 1.5, JOG_EASE = 0.9;
 /** Where the learner stands in the airport on the very first visit, just off the plane. */
 const ARRIVAL = { x: -14, z: -1, rot: Math.PI };
 const isCall = (s: SituationMeta) => s.mode === "phone" || s.mode === "video" || s.location === "phone";
+const cenoteGrounds = THEME.cenote?.open && groundsBounds(THEME.cenote.x, THEME.cenote.z, WORLD.minX);
 /** A point `d` metres in front of someone facing `rot` (0 = +Z), turned towards them. */
 /** A person's name tag: their name, their role in the practised language (in the Spanish chosen: roleSaid) and in the
  *  learner's language under it (unless it is the same word, like "Barista"). */
@@ -251,6 +257,16 @@ export class Game implements GameApi {
   private transitioning = false;
   private barista: ReturnType<typeof createBaristaMode> | null = null;
   private frameFade = new FrameFade((fade) => useStore.getState().setHud({ fade, fadeOnFrames: this.frameFade.active }));
+  private readonly phone = new TownPhone();
+  private phoneWatch: (() => void)[] = [];
+  private readonly debugAudio = audioDiagnosticsEnabled();
+  private wasHidden = false;
+  private conversationLoads = 0;
+  private sceneDelays = new Set<ReturnType<typeof setTimeout>>();
+  private meeting: FriendMeeting | undefined;
+  private loadMeeting = false;
+  private officeRequested = false;
+  private modeHost!: ModeHost;
   /** The first visit's look at the town from the air (flyover.ts): how long it has been going (s). */
   private flight: { t: number } | null = null;
   private npcToSits = new Map<string, SituationMeta[]>();
@@ -471,7 +487,7 @@ export class Game implements GameApi {
     this.rides.onLeft = (x, y, z, rot) => this.leftRide(x, y, z, rot);
     this.rides.onStuck = () => this.showRideToast({ kind: "info", title: L("Čia išlipti nėra kur"), body: L("Pavažiuok truputį toliau.") });
     this.undersea = new Undersea(RIDES.deep, RIDES.rocks);
-    const host: ModeHost = {
+    const host: ModeHost = this.modeHost = {
       player: () => this.player, rig: this.rig, rides: this.rides, standTaxi: this.town.parkedCars.taxi, doors: this.town.doors, time: () => this.t,
       add: (...objects) => this.scene.add(...objects),
       canStart: (indoors) => !this.disposed && !this.session?.active && !useStore.getState().hud.panel
@@ -573,6 +589,16 @@ export class Game implements GameApi {
       if (this.wantsFlight()) this.beginFlight();
       else this.enterZone("airport", ARRIVAL, true);
     }
+    this.phoneWatch.push(useStore.subscribe((state, previous) => {
+      if (state.hud !== previous.hud || state.conv.active !== previous.conv.active || state.screen !== previous.screen || state.settings !== previous.settings) {
+        this.phone.observe(this.phoneSnapshot());
+      }
+    }), radio.store.subscribe((state, previous) => {
+      if (state.open !== previous.open) this.phone.observe(this.phoneSnapshot());
+    }));
+    if (this.debugAudio) this.phoneWatch.push(subscribeAudioDiagnostics(() => this.phone.observe(this.phoneSnapshot())));
+    document.addEventListener("visibilitychange", this.phoneVisibility);
+    window.addEventListener("pagehide", this.phonePageHide);
     this.bindInput();
     window.addEventListener("resize", this.onResize);
     this.renderer.setAnimationLoop(this.loop);
@@ -703,6 +729,7 @@ export class Game implements GameApi {
     const z = this.getZone(id);
     if (!z) return;
     const doIt = () => {
+      this.phone.dismiss();
       if (this.modes.active || this.modes.owns("barista")) this.modes.exit(true);
       if (this.flight) {
         this.flight = null;
@@ -765,7 +792,7 @@ export class Game implements GameApi {
       this.rig.homePitch = wild?.camera?.pitch ?? FOLLOW.pitch;
       if (wild?.camera && !this.townCam) { this.townCam = { pitch: this.rig.pitch, dist: this.rig.dist }; this.rig.pitch = wild.camera.pitch; this.rig.dist = wild.camera.dist; }
       else if (!wild && this.townCam) { this.rig.pitch = this.townCam.pitch; this.rig.dist = this.townCam.dist; this.townCam = null; }
-      this.caveGuideMode = this.guidedWalk ?? (wild && this.currentObjective()?.location !== CAVE_ZONE ? "cave" : "objective");
+      this.caveGuideMode = this.guidedWalk ?? (wild && !this.phoneTask() && this.currentObjective()?.location !== CAVE_ZONE ? "cave" : "objective");
       if (z.cave && this.caveCode) {
         const { view, syncGates } = z.cave;
         this.cave = new this.caveCode.CaveQuest(view, {
@@ -972,7 +999,10 @@ export class Game implements GameApi {
     if (this.ambient.nearbyTraffic(car.m.x, car.m.z, 16) && Math.random() < 0.38) this.trafficReplyAt = this.t + 0.45 + Math.random() * 0.45;
   }
 
-  modeStart(id: string, option?: string) { this.modes.start(id, option); }
+  modeStart(id: string, option?: string) {
+    this.modes.start(id, option);
+    this.phone.observe(this.phoneSnapshot());
+  }
 
   private returnRoadCar(car: Ride, onFoot: boolean) {
     const start = ROAD_EDITION.edge.return;
@@ -1125,6 +1155,7 @@ export class Game implements GameApi {
     this.surface(true);
     this.player.bank = 0;
     if (!this.rides.board(r)) return false;
+    this.phone.observe(this.phoneSnapshot());
     this.keepsake.clear();
     this.ambient.riding = r.kind === "car";
     this.nearest = null;
@@ -1325,12 +1356,13 @@ export class Game implements GameApi {
     this.stepOut = 0;
   }
 
-  autoWalkToObjective(mode: GuideMode = this.caveGuideMode) {
+  autoWalkToObjective(mode: GuideMode = this.phoneTask() ? "objective" : this.caveGuideMode) {
     // (at a wheel one drives there oneself: the marks on the ground lead the way)
     if (this.rides.riding) { useStore.getState().toast({ kind: "info", title: L("Pirmiausia išlipk"), body: L("Arba važiuok pats – rodyklės ant žemės rodo kelią.") }); return; }
-    const throughGrotto = mode === "cave" || this.cave || this.currentObjective()?.location === CAVE_ZONE;
+    const followUp = mode === "objective" && this.phoneTask();
+    const throughGrotto = mode === "cave" || this.cave || (!followUp && this.currentObjective()?.location === CAVE_ZONE);
     if (this.caveLoading || (this.transitioning && throughGrotto)) return;
-    if (throughGrotto) {
+    if (throughGrotto || followUp) {
       this.stopAutoWalk();
       this.guidedWalk = mode;
     }
@@ -1362,7 +1394,7 @@ export class Game implements GameApi {
     if (!n) return;
     if (n.kind === "ride") { const r = this.rides.find(n.id); if (r) this.boardRide(r); }
     else if (n.kind === "climb") this.climbOut();
-    else if (n.kind === "mode") this.modes.start(n.id);
+    else if (n.kind === "mode") this.modeStart(n.id);
     else if (n.kind === "npc") this.talkTo(n.id);
     else if (n.kind === "staff") this.staffSays(+n.id);
     else if (n.kind === "glyph") this.cave?.open(n.id);
@@ -1451,7 +1483,7 @@ export class Game implements GameApi {
       return;
     }
     const actor = this.npcs.find((n) => n.id === npc) ?? null;
-    whenLoaded(sit.id, (def) => this.startSession(def, actor), () => !this.session?.active);
+    this.requestConversation(sit.id, actor);
   }
 
   /** Situation picker: go straight into a conversation (no walking). The player appears in front of
@@ -1481,13 +1513,22 @@ export class Game implements GameApi {
       }
       this.enterZone(zone, spawn ?? undefined, true);
       // let the NPCs spawn, then talk
-      setTimeout(() => this.talkTo(npc, sitId), 150);
+      this.afterSceneDelay(() => this.talkTo(npc, sitId), 150);
     };
     // "Dar kartą" / "Kita situacija" after a taxi, bus or plane ride was queued: no ride (and no
     // teleport or black fade in the middle of the new conversation). Before close(), which runs endSession.
     this.cancelRide();
-    if (this.session?.active) { this.session.close(); setTimeout(go, 250); } else go();
+    this.phone.dismiss();
+    if (this.session?.active) { this.session.close(); this.afterSceneDelay(go, 250); } else go();
   }
+  private afterSceneDelay(run: () => void, delay: number) {
+    const timer = setTimeout(() => {
+      try { if (!this.disposed) run(); } finally { this.sceneDelays.delete(timer); }
+    }, delay);
+    this.sceneDelays.add(timer);
+    this.phone.observe(this.phoneSnapshot());
+  }
+
   lastScenario: string | null = null;
 
   /** The same situation again, from the start. */
@@ -1504,12 +1545,12 @@ export class Game implements GameApi {
   }
 
   /** Phone and video calls from the phone UI. */
-  call(sitId: string) {
+  call(sitId: string, fromCard = false) {
     if (this.session?.active) return;
     const sit = SITUATION_BY_ID[sitId];
     if (!sit) return;
     useStore.getState().setHud({ panel: null });
-    whenLoaded(sitId, (def) => this.startSession(def, null), () => !this.session?.active);
+    this.requestConversation(sitId, null, fromCard);
   }
 
   /** The grotto's great tree speaks (x04-yaxche; cave/quest.ts says when: the heart found, the learner on its
@@ -1550,7 +1591,80 @@ export class Game implements GameApi {
     this.rig.mode = "talk";
   }
 
-  private startSession(sit: SituationDef, actor: NpcActor | null) {
+  private requestConversation(sitId: string, actor: NpcActor | null, fromCard = false) {
+    this.conversationLoads++;
+    this.phone.observe(this.phoneSnapshot());
+    let opened = false;
+    whenLoaded(sitId, (def) => {
+      this.startSession(def, actor, fromCard && sitId === "p24-flood" ? FLOOD_INCOMING_INTRO : undefined);
+      opened = true;
+    }, () => !this.disposed && !this.session?.active, () => {
+      this.conversationLoads--;
+      if (fromCard && !opened && !this.disposed) this.phone.markMissed(sitId);
+    });
+  }
+
+  private phoneSnapshot(): PhoneSnapshot {
+    const st = useStore.getState(), hud = st.hud;
+    const p = this.player?.root.position;
+    const atCenote = p && cenoteGrounds && !this.zone?.interior && p.x >= cenoteGrounds.minX && p.x <= cenoteGrounds.maxX
+      && p.z >= cenoteGrounds.minZ && p.z <= cenoteGrounds.maxZ;
+    const caveWalk = this.guidedWalk === "cave" || this.autoTarget?.kind === "cave-entry";
+    return {
+      town: !this.disposed && st.screen === "play" && st.settings.play === "town",
+      onFoot: !!p && !this.rides?.riding && !this.swimming && !this.cave && !this.wild && !caveWalk && !atCenote && !(EDITION.id === "es" && this.wet),
+      grounded: !this.hop.air && !this.aloft,
+      visible: !document.hidden,
+      enabled: st.settings.phoneCalls,
+      conversation: !!this.session?.active || st.conv.active,
+      panel: !!hud.panel,
+      dialog: !!hud.glyph || radio.store.getState().open || (this.debugAudio && audioDiagnosticsPaused()),
+      guide: !!hud.coach && !hud.phoneCard,
+      banner: !!hud.zoneBanner,
+      cardOpen: !!hud.phoneCard,
+      flight: !!this.flight || hud.flight,
+      loading: !!this.caveLoading || this.conversationLoads > 0 || this.sceneDelays.size > 0,
+      transition: this.transitioning || !!hud.fade || this.rideTimer !== undefined,
+      mode: this.modes.engaged || this.modes.hasQueued || !!hud.modeScreen,
+    };
+  }
+
+  handlePhoneCard(id: string, answer: boolean) {
+    const snapshot = this.phoneSnapshot();
+    this.phone.observe(snapshot);
+    if (!answer) this.phone.dismiss(id);
+    else if (snapshot.visible && this.phone.answer(id)) this.call(id, true);
+  }
+
+  phoneDueNow() { this.phone.dueNow(); }
+
+  phoneState() {
+    const { hud, progress } = useStore.getState();
+    return { card: hud.phoneCard, missed: progress.phone?.missed ?? {}, invitation: progress.phone?.invitation ?? null };
+  }
+
+  finishPhoneCallForTest(id: string, state: Record<string, unknown> = {}) {
+    const session = this.session;
+    if (!session?.active || session.sit.id !== id || !isCall(session.sit)) return false;
+    Object.assign(session.conv.s, state);
+    session.conv.completed = true;
+    session.close();
+    return true;
+  }
+
+  private phoneVisibility = () => {
+    this.wasHidden = true;
+    this.phone.observe(this.phoneSnapshot());
+  };
+
+  private phonePageHide = () => {
+    this.phone.dismiss();
+    if (useStore.getState().progress.phone) {
+      useStore.getState().updateProgress((p) => this.phone.saveClock(p));
+    }
+  };
+
+  private startSession(sit: SituationDef, actor: NpcActor | null, introOverride?: string) {
     this.modes.exit(true);
     this.keepsake.clear();
     this.cancelRide();
@@ -1594,7 +1708,7 @@ export class Game implements GameApi {
       // its "taxi-ride" would otherwise be queued for the next, unrelated conversation
       onEvent: (name, data) => { if (this.session === session) this.onSessionEvent(name, data); },
       onEnd: (s, completed) => this.endSession(s, completed),
-    });
+    }, introOverride);
     this.session = session;
     this.session.begin();
   }
@@ -2058,19 +2172,70 @@ export class Game implements GameApi {
     return first;
   }
 
+  private phoneTask() {
+    const phone = useStore.getState().progress.phone;
+    if (phone?.office && (phone.followUp === "office" || !phone.invitation)) {
+      return { id: "s90-running-late", loc: "office", title: OFFICE_TASK };
+    }
+    const invite = phone?.invitation;
+    const loc = invite && invitationLocation(invite.place);
+    return invite && loc ? { id: "s83-invite-call", loc, title: invitationTitle(invite) } : null;
+  }
+
+  private updatePhoneTasks(dt: number, snapshot: PhoneSnapshot) {
+    const progress = useStore.getState().progress.phone;
+    const invite = progress?.invitation;
+    if (!progress?.office) this.officeRequested = false;
+    if (!invite && !progress?.office && !this.meeting) return;
+    const outdoors = !this.zone.interior;
+    if (invite && outdoors && !this.meeting && !this.loadMeeting) {
+      this.loadMeeting = true;
+      // Puerto Colibrí's learner table arrives with s83, including after loading a saved invitation.
+      const lines = EDITION.id === "es" ? loadSituation("s83-invite-call") : undefined;
+      void Promise.all([import("./phone/meeting"), lines]).then(([{ FriendMeeting }]) => {
+        if (this.disposed) return;
+        const mode = this.meeting = new FriendMeeting(this.modeHost, this.town, () => this.refreshObjective());
+        this.modes.register(mode);
+      }, (error) => console.warn("Friend meeting unavailable", error));
+    }
+
+    if (this.meeting) {
+      this.meeting.waitAt((invite && invitationLocation(invite.place)) ?? null);
+      this.meeting.updateActor(dt, outdoors);
+    }
+    if (!snapshot.visible || !freeToWalk(snapshot)) return;
+    if (outdoors && this.meeting?.nearPlayer()) {
+      this.modeStart(this.meeting.id);
+      return;
+    }
+    if (progress?.office) {
+      const door = outdoors && this.town.doors.find((d) => d.loc === "office");
+      const p = this.player.root.position;
+      const indoors = this.zone.id === "office";
+      const atDoor = !!door && Math.hypot(door.outX - p.x, door.outZ - p.z) < 3;
+      if (!indoors && !atDoor) this.officeRequested = false;
+      else if (!this.officeRequested) {
+        this.officeRequested = true;
+        if (indoors) this.startScenario("s34-meeting");
+        else this.fadeThen(() => { if (!this.disposed) this.startScenario("s34-meeting"); });
+      }
+    }
+  }
+
   /** The destination of the current leg. Cave prerequisites use the same route for the arrow, beacon and walk. */
   objectiveTarget(mode: GuideMode = "objective"): GuideTarget | null {
+    const task = mode === "objective" ? this.phoneTask() : null;
     const sit = this.currentObjective();
     const p = this.player.root.position;
     const loc = sit && LOCATIONS[sit.location];
     const saved = this.cave ? useStore.getState().progress.cave ?? emptyCave() : null;
     const all = this.cave?.seeAll;
-    const stayInCave = mode === "cave" || sit?.location === CAVE_ZONE;
+    const stayInCave = mode === "cave" || (!task && sit?.location === CAVE_ZONE);
     if (this.cave && saved && mode === "cave") {
       const next = this.cave.guide(p);
       return next && (this.caveCode?.caveGateTarget(p, next, saved, all) ?? next);
     }
-    if (mode === "objective" && (!sit || !loc || isCall(sit))) return null;
+    if (mode === "objective" && !task && (!sit || !loc || isCall(sit))) return null;
     if (saved && !stayInCave) {
       const exits = this.wild!.exits;
       const exit = exits.find((e) => e.id === "grieta") ?? exits[0];
@@ -2083,6 +2248,15 @@ export class Game implements GameApi {
       return { kind: "cave-entry", id: way.id, x: stand.x, z: stand.z, person: way };
     }
     const exit = this.zone.interior ? { kind: "exit" as const, x: this.zone.interior.exit.x, z: this.zone.interior.exit.z - 0.4 } : null;
+    if (task) {
+      if (this.zone.id === "office" && task.loc === "office") {
+        const kate = this.npcs.find((npc) => npc.id === "kate");
+        return kate ? { kind: "point", x: kate.home.x, z: kate.home.z } : null;
+      }
+      if (exit) return exit;
+      const point = this.arrivalPoint(task.loc);
+      return point ? { kind: "point", x: point.x, z: point.z } : null;
+    }
     // An outdoor place can have a room inside it, where the person is found through the door.
     if (!sit || !loc || mode === "cave") return exit;
     const outside = loc.kind === "outdoor" || sit.id === POOL_SITUATION ? OUTDOOR_NPCS.find((n) => n.npc === sit.npc) : undefined;
@@ -2103,7 +2277,9 @@ export class Game implements GameApi {
   }
 
   private guidanceTarget() {
-    return this.objectiveTarget(this.caveGuideMode);
+    // A requested cave quest walk keeps its own route while it is in progress.
+    const mode = this.phoneTask() && this.guidedWalk !== "cave" ? "objective" : this.caveGuideMode;
+    return this.objectiveTarget(mode);
   }
 
   refreshObjective() {
@@ -2111,6 +2287,13 @@ export class Game implements GameApi {
     this.guidance.setMarks(this.zone?.interior ? [] : THEME.talkMarks.flatMap((id) => { const o = OUTDOOR_NPCS.find((n) => n.npc === id); return o ? [talkAt(o)] : []; }));
     const sit = this.currentObjective();
     const st = useStore.getState();
+    const task = this.phoneTask();
+    if (task) {
+      st.setHud({ objective: { followUp: true, targetLoc: task.loc, sitId: task.id, title: task.title, goal: "", where: LOCATIONS[task.loc].lt, dist: null, angle: null, inside: this.zone.id === task.loc } });
+      this.showBeacon(this.guidanceTarget());
+      this.pathT = 0;
+      return;
+    }
     if (!this.cave && this.caveGuideMode === "cave") {
       st.setHud({ objective: { sitId: CAVE_ZONE, title: LOCATIONS[CAVE_ZONE].name, goal: "", where: "", dist: null, angle: null, inside: false } });
       this.showBeacon(this.guidanceTarget());
@@ -2168,7 +2351,8 @@ export class Game implements GameApi {
   private loop = () => {
     if (this.disposed) return;
     this.adaptResolution(performance.now());
-    const dt = Math.min(0.05, this.clock.getDelta());
+    const elapsed = this.clock.getDelta();
+    const dt = Math.min(0.05, elapsed);
     this.t += dt;
     if (this.frameFade.active) {
       this.frameFade.update(dt);
@@ -2186,6 +2370,13 @@ export class Game implements GameApi {
     const blocked = talking || !!st.hud.panel || !!st.hud.glyph || this.transitioning || !!this.caveLoading || this.modes.modal || !!this.flight;
     this.updatePlayer(dt, blocked, this.transitioning && !this.frameFade.active && !talking && !st.hud.panel && !st.hud.glyph && !mode);
     if (!blocked) this.checkRoadEntry();
+
+    const phoneState = this.phoneSnapshot();
+    this.updatePhoneTasks(dt, phoneState);
+    // Do not count the gap between animation frames across a tab visibility change.
+    this.phone.tick(this.wasHidden ? 0 : elapsed, this.phoneSnapshot());
+    this.wasHidden = document.hidden;
+
     if (this.road?.render(this.renderer, this.container.clientWidth, this.container.clientHeight)) {
       this.sampleFps(true);
       return;
@@ -2542,7 +2733,7 @@ export class Game implements GameApi {
   }
 
   // (the surf lesson's buttons on the screen: src/ui/Surf.tsx)
-  surfStart(level: "beginner" | "advanced") { if (!this.session?.active && !this.zone.interior) this.modes.start("surf", level); }
+  surfStart(level: "beginner" | "advanced") { if (!this.session?.active && !this.zone.interior) this.modeStart("surf", level); }
   surfStop() { if (this.modes.owns("surf")) this.modes.exit(); }
   surfChoose(cue: string) { if (!this.transitioning) this.surf?.choose(cue); }
   /** The move the instructor asked for, by a tap on its button; her line again; the microphone on or off, or done. */
@@ -3001,7 +3192,7 @@ export class Game implements GameApi {
     const c = this.container.getBoundingClientRect();
     this.hudBoxCache = [];
     const selectors = [
-      ".objective-card", ".cave-card", ".minimap", ".toolbar",
+      ".objective-card", ".cave-card", ".phone-ring", ".minimap", ".toolbar",
       ".toolbar.menu-open:not(.portrait-toolbar) .toolbar-tools",
       ".portrait-toolbar.menu-open .toolbar-drawer",
       ".portrait-toolbar.in-ride:not(.menu-open) .radio-tool",
@@ -3099,8 +3290,8 @@ export class Game implements GameApi {
     const wading = !ride && !this.zone.interior && this.wet;
     if (st.hud.ride !== ride || st.hud.wading !== wading) st.setHud({ ride, wading });
     // Objective and cave quest arrows use the same destinations as the walk buttons.
-    const tgt = this.cave ? this.objectiveTarget() : this.guidanceTarget();
     const o = st.hud.objective;
+    const tgt = this.cave || o?.followUp ? this.objectiveTarget() : this.guidanceTarget();
     if (o) {
       const dist = tgt ? Math.round(Math.hypot(tgt.x - p.x, tgt.z - p.z)) : null;
       const angle = tgt ? Math.atan2(tgt.x - p.x, tgt.z - p.z) : null;
@@ -3108,7 +3299,7 @@ export class Game implements GameApi {
     }
     const mm = st.hud.minimap, zone = this.zone.id;
     const quest = this.cave ? this.objectiveTarget("cave") : null;
-    const marker = this.cave && this.caveGuideMode === "cave" ? quest : tgt;
+    const marker = this.cave || o?.followUp ? this.guidanceTarget() : tgt;
     const gates = this.cave ? this.caveGates : undefined;
     if (Math.abs(mm.px - p.x) > 0.3 || Math.abs(mm.pz - p.z) > 0.3 || Math.abs(mm.heading - this.heading) > 0.05 ||
       mm.zone !== zone || mm.targetX !== marker?.x || mm.targetZ !== marker?.z ||
@@ -3123,7 +3314,10 @@ export class Game implements GameApi {
   private savePlace() {
     if (!this.player || !this.zone) return;
     const p = this.player.root.position;
-    useStore.getState().updateProgress((pr) => { pr.place = { zone: this.zone.id, x: +p.x.toFixed(2), z: +p.z.toFixed(2), rot: +this.heading.toFixed(2) }; });
+    useStore.getState().updateProgress((pr) => {
+      pr.place = { zone: this.zone.id, x: +p.x.toFixed(2), z: +p.z.toFixed(2), rot: +this.heading.toFixed(2) };
+      this.phone.saveClock(pr);
+    });
   }
 
   get groundCanvas() { return this.town?.groundCanvas; }
@@ -3162,6 +3356,12 @@ export class Game implements GameApi {
   }
 
   dispose() {
+    for (const unsubscribe of this.phoneWatch) unsubscribe();
+    document.removeEventListener("visibilitychange", this.phoneVisibility);
+    window.removeEventListener("pagehide", this.phonePageHide);
+    this.phonePageHide();
+    for (const timer of this.sceneDelays) clearTimeout(timer);
+    this.sceneDelays.clear();
     this.keepsake.dispose();
     this.disposed = true;
     this.modes.dispose();

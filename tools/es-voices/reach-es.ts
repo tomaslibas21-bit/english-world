@@ -173,7 +173,10 @@ function maxOneItem(sit: SituationDef): number {
  *  they ask for; Nayeli's lines (every other sg_ line) are played by key and are voiced in her voice. Since 18 Nov
  *  2026 the learner's lines are said for them when they answer by a tap: lines-es.ts lists them in the coach voices
  *  (the learner's example voice), never in hers. */
-export const UNSPOKEN: Record<string, RegExp> = { "x01-surf": /^sg_[ab]_/ };
+export const UNSPOKEN: Record<string, RegExp> = {
+  "x01-surf": /^sg_[ab]_/,
+  "s83-invite-call": /^phone_meet_(ready|tickets)$/,
+};
 export const unspoken = (sit: string, lineId: string) => !!UNSPOKEN[sit]?.test(lineId);
 
 /** Item lists an item line is said with, read in its code, for a line the runs hear with fewer (the line list adds the

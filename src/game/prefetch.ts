@@ -15,15 +15,15 @@ let ticket = 0;
 
 /** `go` with the conversation's whole definition: at once when its file is loaded, else when it arrives (if `still()`
  *  then holds, and no other conversation was asked for meanwhile). A file that can't be fetched (offline) says so. */
-export function whenLoaded(sitId: string, go: (def: SituationDef) => void, still: () => boolean = () => true) {
+export function whenLoaded(sitId: string, go: (def: SituationDef) => void, still: () => boolean = () => true, settled?: () => void) {
   const def = getSituation(sitId);
   const mine = ++ticket;
-  if (def) { go(def); return; }
+  if (def) { try { go(def); } finally { settled?.(); } return; }
   const slow = setTimeout(() => useStore.getState().toast({ kind: "info", title: L("Kraunamas pokalbis…"), ms: 2000 }), 600);
   loadSituation(sitId).then(
     (d) => { clearTimeout(slow); if (d && mine === ticket && still()) go(d); },
     () => { clearTimeout(slow); useStore.getState().toast({ kind: "info", title: L("Nepavyko atsisiųsti pokalbio"), body: L("Patikrink interneto ryšį ir pabandyk dar kartą.") }); },
-  );
+  ).finally(() => settled?.());
 }
 
 const CALLS = SITUATIONS.filter((s) => s.mode === "phone" || s.mode === "video" || s.location === "phone").map((s) => s.id);

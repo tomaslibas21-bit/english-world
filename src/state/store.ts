@@ -22,6 +22,7 @@ export interface Settings {
   volume: number;
   /** How loud the game's sounds are beside the voices: steps, the sea, the town, the effects (0–1; 0: none). */
   sounds: number;
+  phoneCalls: boolean;
   textSize: number;
   quality: "high" | "low";
   cameraFollow: boolean;
@@ -52,7 +53,7 @@ function defaultPlayMode(): PlayMode {
 
 export const DEFAULT_SETTINGS: Settings = {
   lt: true, ltNatural: false, ipa: false, suggestions: false, hintsOpen: false,
-  confirmSpeech:false, slowVoice: false, volume: 0.9, sounds: 0.8,
+  confirmSpeech:false, slowVoice: false, volume: 0.9, sounds: 0.8, phoneCalls: true,
   textSize: typeof window === "undefined" || window.innerWidth > 900 ? 1.15 : 1,
   quality: "high", cameraFollow: true, onDevice: false, sayLt: true, sayIpa: true, worldStyle: "blocks",
   play: defaultPlayMode(),
@@ -132,6 +133,7 @@ export interface ConvUI {
   guideHidden: boolean;
   /** The scene card (SituationDef.intro, src/ui/SceneIntro.tsx) is open: the person's first line waits for it. */
   introOpen: boolean;
+  introOverride?: string;
 }
 
 export const EMPTY_CONV: ConvUI = {
@@ -168,10 +170,11 @@ export interface HudState {
   speedLines?: boolean;
   /** The player is on the move (the task card folds away meanwhile). */
   walking: boolean;
-  objective: { sitId: string; title: string; goal: string; where: string; dist: number | null; angle: number | null; inside: boolean } | null;
+  objective: { followUp?: true; targetLoc?: string; sitId: string; title: string; goal: string; where: string; dist: number | null; angle: number | null; inside: boolean } | null;
   minimap: { px: number; pz: number; heading: number; targetX?: number; targetZ?: number; zone: string; gates?: number; questX?: number; questZ?: number };
   fade: number;
   fadeOnFrames: boolean;
+  phoneCard: string | null;
   panel: null | "map" | "journal" | "phone" | "settings" | "phrasebook" | "help" | "scenarios";
   showTouch: boolean;
   /** Puerto Colibrí's chamber and quest card, and the card of the glyph stone the learner is at. */
@@ -247,7 +250,7 @@ export const useStore = create<Store>((set, get) => ({
   progress: initial,
   conv: EMPTY_CONV,
   hud: {
-    zoneName: "", zoneBanner: null, prompt: null, ride: null, modeScreen: null, rideStartedAt: null, wading: false, fast: false, walking: false, objective: null, minimap: { px: 0, pz: 0, heading: 0, zone: "town" }, fade: 0, fadeOnFrames: false, panel: null,
+    zoneName: "", zoneBanner: null, prompt: null, ride: null, modeScreen: null, rideStartedAt: null, wading: false, fast: false, walking: false, objective: null, minimap: { px: 0, pz: 0, heading: 0, zone: "town" }, fade: 0, fadeOnFrames: false, phoneCard: null, panel: null,
     showTouch: typeof window !== "undefined" && (("ontouchstart" in window) || navigator.maxTouchPoints > 1),
     coach: null, flight: false, cave: null, glyph: null,
   },
