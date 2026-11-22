@@ -2,7 +2,7 @@ import { expect, it, vi } from "vitest";
 import { Group, PerspectiveCamera, Vector3 } from "three";
 import { BARISTA_ORDERS, type Row } from "../src/content/barista";
 import { loadSituation } from "../src/content/situations/catalog";
-import { COUNTER_SEAT, MIA_ASIDE } from "../src/game/barista/framing";
+import { COUNTER_SEAT, MIA_ASIDE, counterDetails, fitCounterView } from "../src/game/barista/framing";
 import { createBaristaMode, BARISTA_PROMPT } from "../src/game/barista/mode";
 import { CUP_AT, CUP_SERVED } from "../src/game/barista/props";
 import { useBarista } from "../src/game/barista/store";
@@ -145,7 +145,10 @@ it("runs the counter offer, guided correction, concealed order, scoring and clea
           cam.aspect = width / height;
           cam.position.copy(stage!.pos);
           cam.lookAt(stage!.look);
+          const wide = fitCounterView(cam, width, height, freeBottom, counterDetails(1.75, mia.height));
           mode.frameView(width, height, freeBottom);
+          if (height === 844) expect(cam.zoom).toBeGreaterThan(wide.zoom * 1.1);
+          else expect(cam.zoom).toBeCloseTo(wide.zoom);
           for (const position of [cup, customerFace, miaFace]) {
             const { x, y } = position.clone().project(cam);
             const top = (1 - y) * height / 2;

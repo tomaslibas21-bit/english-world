@@ -213,7 +213,7 @@ describe("desert road", () => {
     material.dispose();
   });
 
-  it.each([true, false])("replaces only the crossed label and clears the arch before the camera (correct=%s)", (correct) => {
+  it.each([true, false])("marks the chosen board and clears the arch before the camera (correct=%s)", (correct) => {
     const material = new MeshBasicMaterial({ vertexColors: true });
     const gate = new Gate(FIRST_GATE, {} as Prompt, material);
     const camera = new PerspectiveCamera(49, 390 / 664, 0.18, 470);
@@ -221,8 +221,15 @@ describe("desert road", () => {
     camera.lookAt(point(FIRST_GATE, 0, 3.2));
     camera.updateMatrixWorld();
     gate.cross(2, correct);
-    expect(gate.labels(camera, 390, 664).map(({ lane }) => lane)).toEqual([0, 1]);
+    const labels = gate.labels(camera, 390, 664);
+    expect(labels.map(({ lane }) => lane)).toEqual(correct ? [0, 1] : [0, 1, 2]);
     expect(gate.animatePass(0.15, FIRST_GATE + 3)).toBe(true);
+    if (!correct) {
+      const chosen = gate.labels(camera, 390, 664)[2];
+      expect(chosen.opacity).toBeLessThan(labels[0].opacity);
+      expect(chosen.tilt).toBeLessThan(-0.01);
+      expect(chosen.y).toBeGreaterThan(labels[2].y);
+    }
     expect(gate.animatePass(0.18, FIRST_GATE + 7)).toBe(true);
     for (const label of gate.labels(camera, 390, 664)) {
       expect(label.opacity).toBeGreaterThan(0);

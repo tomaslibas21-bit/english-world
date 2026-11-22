@@ -438,12 +438,16 @@ class BaristaMode implements GameMode {
       // The empty space below the removed tray showed the learner's back. Use it for
       // the cup, settle before it moves, then hold the composition through payment.
       const progress = THREE.MathUtils.smoothstep(run.slide, 0, SERVE_LEAD);
-      fitCounterView(cam, width, height, Math.min(freeBottom, height * 0.77), run.servingFrame,
+      fitCounterView(cam, width, height, Math.min(freeBottom, height * 0.77), run.servingFrame, 0,
         sameViewport ? previous.lens : undefined, progress);
     } else {
       const hold = run.shift.step === "handover" && sameViewport;
       const bottom = hold ? previous.bottom : Math.min(closing ? height * 0.56 : reservation, freeBottom);
-      const lens = fitCounterView(cam, width, height, bottom, run.framing);
+      // Reserve room for a side plate throughout pastry orders, including before it is built.
+      const hasPastry = run.shift.order.pieces.some(({ hint }) => hint.group === "order_food");
+      const crop = width <= 600 && useBarista.getState().tray
+        ? THREE.MathUtils.smoothstep(bottom / width, 0.84, 1.1) * (hasPastry ? 0.5 : 1) : 0;
+      const lens = fitCounterView(cam, width, height, bottom, run.framing, crop);
       run.picture = { width, height, bottom, lens };
     }
     if (cue && this.speaker) {
