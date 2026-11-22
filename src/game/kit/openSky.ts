@@ -51,7 +51,7 @@ void main() {
   vec3 d = normalize(vDir);
   float e = d.y;
   float turn = atan(d.x, -d.z) / 6.2831853;
-  vec3 col = mix(horizon, mid, smoothstep(0.0, 0.15, e));
+  vec3 col = mix(horizon, mid, smoothstep(0.0, 0.11, e));
   col = mix(col, zenith, smoothstep(0.07, 0.52, e));
 
   float toSun = max(dot(d, sunDir), 0.0);
@@ -64,9 +64,9 @@ void main() {
   col += haloColor * flash * 0.07;
 
   // thin high cloud: long wavy bands, brightest toward the sun
-  float wave = sin(e * 74.0 + sin(turn * 25.133 + drift) * 2.6 + sin(turn * 69.115 + 1.3) * 1.1);
+  float wave = sin(e * 88.0 + sin(turn * 18.850 + drift) * 1.1 + sin(turn * 69.115 + 1.3) * 0.7);
   float veil = smoothstep(0.72, 1.0, wave) * smoothstep(0.06, 0.17, e) * (1.0 - smoothstep(0.30, 0.52, e));
-  veil *= 0.55 + 0.45 * sin(turn * 37.7 + e * 21.0);
+  veil *= smoothstep(-0.2, 0.7, sin(turn * 31.416 + e * 33.0 + 0.6 * sin(turn * 81.68)));
   col = mix(col, streakColor + haloColor * wide * 0.5, clamp(veil, 0.0, 1.0) * streaks * 0.6);
 
   // brighter than white, so that the tone mapping leaves it glowing

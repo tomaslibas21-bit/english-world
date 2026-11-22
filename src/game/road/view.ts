@@ -49,7 +49,7 @@ function makeClouds() {
 
 const DUST = 28;
 const BURST = 44;
-const CONFETTI = ["#fff2d5", "#ffd166", "#ffffff"];
+const CONFETTI = ["#ffd166", "#76ffda", "#ff8a5c"];
 const WHITE = new THREE.Color("#ffffff");
 
 export class RoadView {
@@ -186,16 +186,16 @@ export class RoadView {
         const angle = i / 16 * Math.PI * 2, reach = 1.2 + out * 9.5;
         dummy.position.copy(point(joy.s + Math.cos(angle) * reach + age * 7, x0 + Math.sin(angle) * reach * 0.62, 0.09));
         dummy.rotation.set(-Math.PI / 2, 0, -angle + Math.PI / 2);
-        dummy.scale.set(0.16, (1.5 - age) * 0.9, 1).multiplyScalar(1 - age * age);
+        dummy.scale.set(0.22, (1.6 - age) * 1.0, 1).multiplyScalar(1 - age * age);
         if (fresh) colour.copy(joy.paint).lerp(WHITE, 0.35);
       } else {
         // Paper from the two posts of the arch: up and out, then fluttering down beside the car as it pulls away.
         const j = i - 16, a = j * 2.399, b = (j * 0.618) % 1, side = j % 2 ? 1 : -1;
         const rise = 2.2 + (j % 5) * 0.8;
-        dummy.position.copy(point(joy.s + 1 + age * (11 + b * 9), x0 + side * (1.8 + (0.4 + b * 2.6) * out),
-          3.9 + rise * age - 6.4 * age * age + Math.sin(a) * 0.4));
+        dummy.position.copy(point(joy.s + 1 + age * (12 + b * 9), x0 + side * (0.5 + (0.6 + b * 2.9) * out),
+          0.9 + rise * 1.7 * age - 4.6 * age * age + Math.sin(a) * 0.3));
         dummy.rotation.set(a + age * (7 + j % 4), a * 1.7 + age * 5, age * 9 + j);
-        dummy.scale.setScalar((0.36 + (j % 3) * 0.1) * Math.min(1, (1 - age) * 3.2));
+        dummy.scale.setScalar((0.42 + (j % 3) * 0.13) * Math.min(1, (1 - age) * 3.2));
         if (fresh && j % 3 === 0) colour.set(CONFETTI[(j / 3 | 0) % 3]);
         else if (fresh) colour.copy(joy.paint).lerp(WHITE, j % 3 === 1 ? 0 : 0.45);
       }

@@ -215,6 +215,23 @@ export class Track {
       kind: (j + Number(side > 0)) % 2 ? "cactus" : "rock", s: s + 6 + j * 14 + r() * 6,
       x: side * (j < 3 ? 7.7 + r() * 4.5 : 16 + r() * 18), seed: r(),
     });
+    if (index === 0) {
+      // The last of the town falls behind in the first seconds: a few low houses, a water tower, then open desert.
+      const walls = ROAD_LOOK.town;
+      const house = (at: number, x: number, wide: number, deep: number, tall: number, i: number) => {
+        const base = ground(s + at, x, -0.6);
+        add(parts, new THREE.BoxGeometry(wide, tall + 0.6, deep).translate(base.x, base.y + (tall + 0.6) / 2, base.z), walls[i % walls.length]);
+        add(parts, new THREE.BoxGeometry(wide + 0.5, 0.28, deep + 0.5).translate(base.x, base.y + tall + 0.74, base.z), ROAD_LOOK.roof);
+        add(parts, new THREE.BoxGeometry(0.12, 1.9, 0.9).translate(base.x - Math.sign(x) * (wide / 2 + 0.02), base.y + 1.55, base.z), "#5a4338");
+      };
+      house(20, -13.5, 6, 8, 3.4, 0); house(33, 15.5, 7, 7, 3.0, 1); house(46, -14.5, 6, 6, 2.8, 2); house(58, 16, 6, 8, 3.2, 3);
+      const tower = ground(s + 38, -24, -0.4);
+      for (const [dx, dz] of [[-1.3, -1.3], [1.3, -1.3], [-1.3, 1.3], [1.3, 1.3]]) {
+        add(parts, new THREE.CylinderGeometry(0.1, 0.13, 7.4, 5).translate(tower.x + dx, tower.y + 3.7, tower.z + dz), "#6f5a4c");
+      }
+      add(parts, new THREE.CylinderGeometry(2.3, 2.3, 2.8, 9).translate(tower.x, tower.y + 8.6, tower.z), walls[1]);
+      add(parts, new THREE.ConeGeometry(2.55, 1.2, 9).translate(tower.x, tower.y + 10.6, tower.z), ROAD_LOOK.roof);
+    }
     const place = (kind: Kind, at: number, lane: number, phase = r()) =>
       features.push({ kind, s: s + at, x: laneOffset(lane), phase, hit: false });
     if (index === 0) {
