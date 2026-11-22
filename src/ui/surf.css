@@ -18,8 +18,8 @@
 .surf-say { position: fixed; top: calc(62px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 10px; width: max-content; max-width: calc(100vw - 24px); pointer-events: none; }
 .surf-say > * { pointer-events: auto; }
 .surf-card { position: relative; width: max-content; max-width: min(620px, calc(100vw - 24px)); background: var(--panel); color: var(--ink); border-radius: 18px; padding: 12px 18px 12px; box-shadow: 0 6px 24px rgba(10, 40, 60, 0.28); border: 3px solid transparent; transition: border-color 0.15s ease; }
-.surf-card .il { justify-content: center; font-size: 1.7em; font-weight: 600; }
-.surf-card .nat { border-left: 0; border-top: 1px solid var(--line); padding: 7px 4px 0; margin-top: 9px; text-align: center; font-size: 1em; color: var(--ink-soft); }
+.surf-card .il { justify-content: center; font-size: 1.7em; font-weight: 600; padding: 0 14px; /* the replay button sits in the corner */ }
+.surf-card .nat { border-left: 0; border-top: 1px solid var(--line); padding: 7px 26px 0; /* clear of the replay button in the corner */ margin-top: 9px; text-align: center; font-size: 1em; color: var(--ink-soft); }
 .surf-card.asked { border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
 .surf-card.ok { border-color: var(--good, #37a26b); }
 .surf-card.no { border-color: var(--warm, #e7a13a); }
@@ -75,6 +75,15 @@
 .surf.touch .surf-choice { grid-template-columns: 1fr; }
 .surf-choice-text { font-family: var(--en); font-size: 1.3em; font-weight: 600; line-height: 1.2; }
 .surf-choice small { color: var(--ink-soft); font-weight: 600; font-size: 0.86em; grid-column: -2 / -1; }
+/* an answer's words, each with its meaning under it (22 Nov 2026): the game's interlinear, smaller, not tappable */
+.surf-choice .surf-il { display: flex; flex-wrap: wrap; justify-content: flex-start; column-gap: 0.32em; row-gap: 2px; font-size: 1.3em; }
+.surf-choice .surf-il .u { display: inline-flex; flex-direction: column; align-items: flex-start; }
+.surf-choice .surf-il .lt { font-family: var(--ui, inherit); font-size: 0.58em; font-weight: 600; color: var(--ink-soft); line-height: 1.15; }
+.surf-choice .surf-il .lt.dash { opacity: 0.55; }
+/* what the learner said, its meaning under it (a pill while it is one line; a rounded card when it wraps) */
+.surf-said { border-radius: 22px; width: max-content; max-width: min(440px, calc(100vw - 24px)); }
+.surf-said-words { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+.surf-said small { font-family: var(--ui, inherit); font-size: 0.66em; font-weight: 600; opacity: 0.92; margin-top: 2px; }
 .surf-keys { bottom: 14px; }
 .surf-pick { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(8, 30, 42, 0.38); z-index: 30; pointer-events: auto; padding: 14px; }
 .surf-pick-card { background: var(--panel-solid); color: var(--ink); border-radius: 22px; padding: 20px 20px 16px; width: min(460px, 100%); box-shadow: 0 16px 50px rgba(0, 20, 40, 0.4); text-align: center; font-family: var(--ui); max-height: calc(100vh - 28px); overflow: auto; }
