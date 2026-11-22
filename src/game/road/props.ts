@@ -24,7 +24,7 @@ async function loadCone(file: string): Promise<Cone> {
   return { geometry, material };
 }
 
-function cactus(): Part[] {
+export function cactus(): Part[] {
   const make = (r: number, h: number, x: number, y: number, angle = 0) =>
     new THREE.CylinderGeometry(r * 0.82, r, h, 6).rotateZ(angle).translate(x, y, 0);
   return [

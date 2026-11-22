@@ -41,6 +41,7 @@ export interface ParkedCars {
 
 export interface Town {
   group: THREE.Group;
+  roadSign: ReturnType<typeof addRoadSign>;
   colliders: Colliders;
   doors: Door[];
   parkedCars: ParkedCars;
@@ -217,7 +218,7 @@ export function buildTown({ movableParking = false } = {}): Town {
   addTransport(M, colliders, group);
   const parkedCars = makeParkedCars(movableParking ? undefined : colliders);
   group.add(parkedCars.group);
-  addRoadSign(group, colliders);
+  const roadSign = addRoadSign(group, colliders);
   addBackyard(M, colliders, group);
   addMaggiesCar(M, colliders, group);
 
@@ -336,6 +337,7 @@ export function buildTown({ movableParking = false } = {}): Town {
         g.scale.y = 1.2 * flap;
       }
     },
+    roadSign,
     walkableAt(x, z) {
       return x > WORLD.minX && x < WORLD.maxX && z > WORLD.minZ && z < WORLD.maxZ && !colliders.blocked(x, z, 0.3);
     },
@@ -1700,22 +1702,27 @@ function addStreetProps(M: Merger, col: Colliders) {
 
 function addRoadSign(group: THREE.Group, col: Colliders) {
   const { x, z, rot } = ROAD_EDITION.edge.sign;
-  const sign = new THREE.Group();
-  sign.position.set(x, 0, z);
-  sign.rotation.y = rot;
+  const root = new THREE.Group();
+  root.position.set(x, 0, z);
+  root.rotation.y = rot;
   const face = new THREE.Mesh(new THREE.PlaneGeometry(4.8, 0.9), new THREE.MeshBasicMaterial({
     map: textTexture(ROAD_EDITION.sign, { bg: "#27634e", fg: "#fff8df", w: 768, h: 144 }),
     side: THREE.DoubleSide,
+    alphaTest: 0.5,
   }));
   face.position.set(0, 2.4, 0.09);
-  sign.add(face);
+  const posts = [];
   for (const side of [-1, 1]) {
-    const post = new THREE.Mesh(new THREE.BoxGeometry(0.11, 2.45, 0.11), mat("#867e65"));
-    post.position.set(side * 1.85, 1.225, 0);
-    sign.add(post);
-    col.addCircle(x + post.position.x * Math.cos(rot), z - post.position.x * Math.sin(rot), 0.1);
+    const offset = side * 1.85;
+    posts.push(new THREE.BoxGeometry(0.11, 2.45, 0.11).translate(offset, 1.225, 0));
+    col.addCircle(x + offset * Math.cos(rot), z - offset * Math.sin(rot), 0.1);
   }
-  group.add(sign);
+  const postGeometry = mergeGeometries(posts, false)!;
+  for (const post of posts) post.dispose();
+  const postColor = "#867e65";
+  root.add(face, new THREE.Mesh(postGeometry, mat(postColor)));
+  group.add(root);
+  return { root, face, postGeometry, postColor };
 }
 
 function makeParkedCars(staticColliders?: Colliders): ParkedCars {
@@ -2342,14 +2349,20 @@ function makeSelva(): THREE.InstancedMesh {
   geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
   const mesh = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true }), spots.length);
   const o = new THREE.Object3D(), c = new THREE.Color();
-  spots.forEach(([x, z, s, h], i) => {
+  let count = 0;
+  const exitX = ROAD_EDITION.edge.x;
+  for (const [x, z, s, h] of spots) {
     o.position.set(x, s * h * 0.7 + 1.2, z);
     o.rotation.set(0, r() * Math.PI, 0);
     o.scale.set(s * (0.9 + r() * 0.3), s * h, s * (0.9 + r() * 0.3));
+    c.set(greens[Math.floor(r() * greens.length)]);
+    // Open the inland road's sightline through the south band while keeping the surrounding crowns in place.
+    if (!ROAD_EDITION.walkAnywhere && z > WORLD.maxZ && Math.abs(x - exitX) < 49) continue;
     o.updateMatrix();
-    mesh.setMatrixAt(i, o.matrix);
-    mesh.setColorAt(i, c.set(greens[Math.floor(r() * greens.length)]));
-  });
+    mesh.setMatrixAt(count, o.matrix);
+    mesh.setColorAt(count++, c);
+  }
+  mesh.count = count;
   mesh.name = "selva";
   mesh.userData.fadeNearStage = true;
   return mesh;

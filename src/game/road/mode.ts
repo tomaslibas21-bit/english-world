@@ -152,7 +152,7 @@ export class RoadMode {
     if (this.phase === "approach" && this.lift?.arrive(frame.dt)) {
       this.phase = "offer";
       void this.offer(session);
-    } else if (this.phase === "offer") this.lift?.driver.update(frame.dt);
+    } else if (this.phase === "offer") this.lift?.updateActors(frame.dt);
     else if (this.phase === "depart" && this.lift?.leave(frame.dt)) this.exit(true);
     else if (this.phase === "drive" && this.run) this.updateRun(frame, this.run);
     else if (this.phase === "result") this.lift?.driver.update(frame.dt);
@@ -322,11 +322,11 @@ export class RoadMode {
     if (this.lift) {
       this.host.deferLift();
       this.host.hideNpc(driver.npc, false);
-      if (!usedRoad && !immediate) this.lift.decline();
       if (usedRoad && !immediate && !this.returnedTaxi) {
         const ride = this.host.rides.createModeCar({ ...TAXI, ...ROAD_EDITION.edge.return, id: "lift-taxi" }, this.lift.park(), () => {});
         this.returnedTaxi = { lift: this.lift, ride };
       }
+      if (!usedRoad || immediate) this.lift.returnToEdge();
       this.lift.dispose();
       if (usedRoad && !immediate && this.returnedTaxi) this.host.returnCar(this.returnedTaxi.ride, onFoot);
     } else if (this.source && !immediate) this.host.returnCar(this.source, onFoot);

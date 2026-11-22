@@ -19,6 +19,7 @@ import { buildTown } from "../../src/game/world/town";
 import { floorY } from "../../src/game/water";
 import { Colliders } from "../../src/game/world/util";
 import { approach, approachDistance, checkDecision, inStopZone, resetPose, taxiScore, type Point } from "../../src/game/taxi/route";
+import { createStopBay } from "../../src/game/taxi/stopBay";
 
 function withTown<T>(check: (town: ReturnType<typeof buildTown>) => T): T {
   const draw = () => {};
@@ -48,6 +49,41 @@ const taxiBox = carModelEntry(TAXI.model).collisionBox;
 const taxiSurfaces = carLedges(TAXI.model, TAXI.x, TAXI.z, TAXI.rot);
 
 describe("Puerto Colibrí taxi routes", () => {
+  it("paints two meshes alongside the curb at each stop and clears the hotel's parked van", () => {
+    for (const route of TAXI_ROUTES) {
+      const bay = createStopBay(route), stop = route.decisions.at(-1)!.at;
+      const [paint, glow] = bay.root.children as [
+        THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>,
+        THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>,
+      ];
+      expect(bay.root.visible).toBe(false);
+      expect(bay.root.children).toHaveLength(2);
+      expect(paint.geometry.groups).toHaveLength(0);
+      expect(Math.abs(bay.root.rotation.y)).toBeCloseTo(Math.PI / 2);
+      bay.root.updateMatrixWorld(true);
+      const bounds = new THREE.Box3().setFromObject(paint, true);
+      expect(bounds.min.x).toBeCloseTo(stop.x - 4);
+      expect(bounds.max.x).toBeCloseTo(stop.x + 4);
+      const curb = route.destination === "hotel" ? -13 : route.destination === "market" ? -50.5 : -3;
+      const offset = route.destination === "hotel" ? bounds.min.z - curb : curb - bounds.max.z;
+      expect(offset).toBeGreaterThan(0);
+      if (route.destination === "hotel") {
+        const van = PARKED_CARS.find(({ model, x }) => model === "van" && x === -88)!;
+        expect(bounds.min.z).toBeGreaterThan(carFootprint(van).maxZ);
+        expect(bounds.min.z - carFootprint(van).maxZ).toBeLessThan(0.3);
+        expect(bounds.max.z).toBeLessThan(-8.09);
+      } else expect(offset).toBeLessThan(0.25);
+
+      const centre = new THREE.Vector3().fromBufferAttribute(glow.geometry.getAttribute("position"), 0);
+      expect(centre.z).toBeGreaterThan(3.5);
+      bay.pulse(0);
+      const peak = glow.material.opacity;
+      bay.pulse(1);
+      expect(glow.material.opacity).toBeLessThan(peak);
+      bay.dispose();
+    }
+  });
+
   it("boards the existing stand car and keeps it out of the town rides and map", () => withTown(({ parkedCars, colliders }) => {
     const { rides, player, ambient } = makeRides();
     const marks = rides.marksForMap();

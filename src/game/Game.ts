@@ -534,7 +534,7 @@ export class Game implements GameApi {
         useStore.getState().setHud({ prompt: null, ride: null, fast: false, speedLines: false });
       },
       left: (id) => { this.tagLayer.style.visibility = ""; host.left(id); },
-      canPullUp: (x, z) => !this.zone.colliders.blocked(x, z, 1.15),
+      roadSign: this.town.roadSign,
       deferLift: () => this.road?.deferLift(),
       returnCar: (car, onFoot) => this.returnRoadCar(car, onFoot),
     });

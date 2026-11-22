@@ -22,6 +22,8 @@ export interface TaxiRoute {
 
 export type TipTier = "great" | "good" | "ok";
 
+export const STOP_BOUNDS = { halfLength: 4, halfWidth: 1.8 } as const;
+
 export function taxiScore(total: number, first: number, cleanStop: boolean, crashes: number) {
   const points = first + Number(cleanStop) + Number(crashes === 0);
   const max = total + 2;
@@ -45,7 +47,7 @@ function measure(p: Point, origin: Point, dir: Point) {
 }
 
 function insideStopBounds({ along, across }: ReturnType<typeof measure>) {
-  return Math.abs(along) <= 4 && across <= 1.8;
+  return Math.abs(along) <= STOP_BOUNDS.halfLength && across <= STOP_BOUNDS.halfWidth;
 }
 
 export function inStopZone(route: TaxiRoute, p: Point) {

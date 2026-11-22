@@ -4,6 +4,7 @@ import type { ModeHost } from "../kit/host";
 import type { GameMode, ModeFrame, ModeInput } from "../kit/modes";
 import type { Ride } from "../rides/Rides";
 import { SIDEWALK, WORLD } from "../world/layout";
+import type { Town } from "../world/town";
 import type { RoadMode } from "./mode";
 
 export type WalkEdge = { x: number; z: number; inward: number };
@@ -11,7 +12,7 @@ export interface RoadHost extends ModeHost {
   sky(): Mesh;
   clearTownHud(): void;
   returnCar(car: Ride, onFoot: boolean): void;
-  canPullUp(x: number, z: number): boolean;
+  roadSign: Town["roadSign"];
   deferLift(): void;
 }
 
