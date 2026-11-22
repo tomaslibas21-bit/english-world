@@ -25,6 +25,7 @@ export interface GameApi {
   // the 3D world
   interact(): void;
   autoWalkToObjective(): void;
+  guideToLighthouse?(): void;
   teleportTo(loc: string): void;
   setJoystick(x: number, y: number): void;
   /** A jump (Space, the phone's button); again in the air: a flip; a third time: the high jump, twice head over heels. */

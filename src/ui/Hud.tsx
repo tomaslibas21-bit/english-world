@@ -9,11 +9,12 @@ import { BaristaOffer, BaristaOverlay } from "./Barista";
 import { ROAD_UI } from "../content/road";
 import { game } from "../game/gameRef";
 import { WORLD, SEA_Z } from "../game/world/layout";
+import { LIGHTHOUSE_ISLAND } from "../game/world/island";
 import { SITUATION_BY_ID } from "../content/situations/catalog";
 import { sitProgress, stars } from "../state/progress";
 import { Icon, InlineIcon, Stars, splitLead, type IconName } from "./icons";
 import { isPhone, objectiveLabels } from "./objective";
-import { drawRideMarks } from "./mapMarks";
+import { drawIslandMap, drawRideMarks } from "./mapMarks";
 import { switchPlayMode } from "./playMode";
 import { useCards, dueCards } from "../state/cards";
 import { LyricStrip, RadioTool } from "./Radio";
@@ -289,12 +290,13 @@ function Fade() {
 function Objective({ collapsed, fresh, setCollapsed }: { collapsed: boolean; fresh: boolean; setCollapsed: (collapsed: boolean) => void }) {
   const o = useStore((s) => s.hud.objective);
   const progress = useStore((s) => s.progress);
+  const titleLt = o?.titleLt && <> <span lang="lt">· {o.titleLt}</span></>;
   if (collapsed) {
     return (
       <div className="objective-card collapsed">
         <button className="collapse-btn objective-summary" aria-expanded={false} onClick={() => setCollapsed(false)} onKeyDown={activateHudButton}>
           <Icon name="target" size={16} strokeWidth={2} />
-          <span className="objective-title">{o?.title ?? "Visos užduotys atliktos"}</span>
+          <span className="objective-title">{o?.title ?? "Visos užduotys atliktos"}{titleLt}</span>
           <Icon name="chevronDown" size={16} strokeWidth={2} />
           {o?.dist != null && <span className="dist">{o.angle !== null && <Arrow angle={o.angle} />}{o.dist} m</span>}
         </button>
@@ -322,8 +324,8 @@ function Objective({ collapsed, fresh, setCollapsed }: { collapsed: boolean; fre
         {st > 0 && <Stars n={st} size={14} />}
         {fold}
       </div>
-      <h3>{title} <span className="en-title">· {sit?.title.en}</span></h3>
-      <p>{o.goal}</p>
+      <h3>{title}{titleLt}{sit && <> <span className="en-title">· {sit.title.en}</span></>}</h3>
+      {o.goal && <p>{o.goal}</p>}
       <div className="row">
         {phone ? (
           <button className="btn small" onClick={() => useStore.getState().setHud({ panel: "phone" })}><Icon name="smartphone" size={17} /> Paskambinti</button>
@@ -331,7 +333,7 @@ function Objective({ collapsed, fresh, setCollapsed }: { collapsed: boolean; fre
           <>
             <span className="dist">
               {o.angle !== null && <Arrow angle={o.angle} />}
-              {o.inside && o.dist !== null && o.dist < 4 ? "Čia pat!" : o.dist !== null ? `${o.dist} m` : ""} · {where}
+              {o.inside && o.dist !== null && o.dist < 4 ? "Čia pat!" : o.dist !== null ? `${o.dist} m` : ""}{where && ` · ${where}`}
             </span>
             <button className="btn small" onClick={() => game?.autoWalkToObjective()} title="G"><Icon name="walk" size={17} /> Nuvesk mane</button>
           </>
@@ -405,6 +407,10 @@ function Minimap() {
     // (beyond the town's own picture: the sea to the north, grass everywhere else)
     { const shore = ((SEA_Z + 1 - mm.pz) / view + 0.5) * S; if (shore < S) { x.fillStyle = "#86b866"; x.fillRect(0, Math.max(0, shore), S, S); } }
     x.drawImage(g, sx, sz, view * PPM, view * PPM, 0, 0, S, S);
+    const island = LIGHTHOUSE_ISLAND;
+    if (island && Math.abs(island.center.x - mm.px) < view / 2 + 20 && Math.abs(island.center.z - mm.pz) < view / 2 + 12) {
+      drawIslandMap(x, island, mm.px - view / 2, mm.pz - view / 2, S / view);
+    }
     // target
     if (mm.targetX !== undefined && mm.targetZ !== undefined) {
       const tx = ((mm.targetX - mm.px) / view + 0.5) * S, tz = ((mm.targetZ - mm.pz) / view + 0.5) * S;

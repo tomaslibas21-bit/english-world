@@ -1,5 +1,6 @@
 // Grid navigation (A*) for click-to-walk, auto-walk and the guidance trail.
 import type { Colliders } from "./world/util";
+import { islandGroundY, type IslandPlan } from "./world/island";
 
 export class NavGrid {
   cols: number; rows: number;
@@ -139,5 +140,22 @@ export class NavGrid {
     }
     out.push(pts[pts.length - 1]);
     return out;
+  }
+}
+
+/** The sea collider closes the bay in the grid. Reopen the dry cells, leaving room around the props and the rim. */
+export function openIslandNav(island: IslandPlan, nav: NavGrid, colliders: Colliders) {
+  const d = island.jetty;
+  const points = [...island.outline, { x: d.x0, z: d.z0 }, { x: d.x1, z: d.z1 }];
+  const x0 = Math.floor(Math.min(...points.map((p) => p.x))), x1 = Math.ceil(Math.max(...points.map((p) => p.x)));
+  const z0 = Math.floor(Math.min(...points.map((p) => p.z))), z1 = Math.ceil(Math.max(...points.map((p) => p.z)));
+  const margin = nav.cell * 0.48;
+  const offsets = [[0, 0], [-margin, 0], [margin, 0], [0, -margin], [0, margin]];
+  for (let z = z0; z < z1; z += nav.cell) for (let x = x0; x < x1; x += nav.cell) {
+    const i = nav.idx(x, z);
+    if (i < 0) continue;
+    const [cx, cz] = nav.center(i);
+    const dry = offsets.every(([dx, dz]) => islandGroundY(island, cx + dx, cz + dz) !== undefined);
+    if (dry && !colliders.blocked(cx, cz, 0.54, true)) nav.blocked[i] = 0;
   }
 }

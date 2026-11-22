@@ -36,6 +36,7 @@ export interface Progress {
   /** The help level and clean streak for each mini-game that uses the kit. */
   miniGameHelp?: Record<string, import("../game/kit/help").HelpProgress>;
   taxi?: { nextRoute: number };
+  lighthouse?: { greeted?: boolean; boat?: { id: string; x: number; z: number; rot: number } };
   /** The surf lesson (game/surf): waves ridden and seconds on them, commands followed of those asked, lessons taken,
    *  and how often each of the instructor's lines has been heard (their help fades with it). */
   surf?: { waves: number; seconds: number; followed: number; asked: number; lessons: number; heard: Record<string, number> };

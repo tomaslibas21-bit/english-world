@@ -9,6 +9,8 @@ import { keepsakeFor } from "../content/keepsakes";
 import { NPCS } from "../content/npcs";
 import { coachVoice } from "../content/voices";
 import { OUTDOOR_NPCS, WORLD, SEA_Z, AIRPORT_EXIT } from "../game/world/layout";
+import { LIGHTHOUSE_ISLAND } from "../game/world/island";
+import { drawIslandMap } from "./mapMarks";
 import { sitProgress, stars, emptyProgress } from "../state/progress";
 import { audio } from "../game/audio";
 import { STYLES_ENABLED } from "../game/worldStyles";
@@ -296,14 +298,21 @@ function MapPanel({ close }: { close: () => void }) {
   const [sel, setSel] = useState<string | null>(null);
   const progress = useStore((s) => s.progress);
   const mm = useStore((s) => s.hud.minimap);
+  const island = game?.guideToLighthouse ? LIGHTHOUSE_ISLAND : undefined;
+  const north = island ? WORLD.minZ : SEA_Z - 2;
+  const W = WORLD.maxX - WORLD.minX, D = WORLD.maxZ - north;
   useEffect(() => {
     const g = game?.groundCanvas, c = ref.current;
     if (!g || !c) return;
-    c.width = g.width; c.height = g.height;
-    c.getContext("2d")!.drawImage(g, 0, 0);
-  }, []);
-  const W = WORLD.maxX - WORLD.minX, D = WORLD.maxZ - (SEA_Z - 2);
-  const pct = (x: number, z: number) => ({ left: `${((x - WORLD.minX) / W) * 100}%`, top: `${((z - (SEA_Z - 2)) / D) * 100}%` });
+    const ppm = g.width / W, sea = (SEA_Z - 2 - north) * ppm;
+    c.width = g.width; c.height = g.height + sea;
+    const ctx = c.getContext("2d")!;
+    ctx.fillStyle = "#3f8fb5";
+    ctx.fillRect(0, 0, c.width, sea);
+    ctx.drawImage(g, 0, sea);
+    if (island) drawIslandMap(ctx, island, WORLD.minX, north, ppm);
+  }, [W, island, north]);
+  const pct = (x: number, z: number) => ({ left: `${((x - WORLD.minX) / W) * 100}%`, top: `${((z - north) / D) * 100}%` });
   const locs = Object.values(LOCATIONS).filter((l) => l.kind !== "phone" && SITUATIONS.some((s) => s.location === l.id));
   const selSits = sel ? SITUATIONS.filter((s) => s.location === sel) : [];
   return (
@@ -312,9 +321,13 @@ function MapPanel({ close }: { close: () => void }) {
       <div className="sheet-body">
         <div className="town-lt" lang="lt">{TOWN_LT}</div>
         <div className="map-wrap">
-          <div className="map-canvas">
+          <div className="map-canvas" style={island ? { aspectRatio: W / D } : undefined}>
             <canvas ref={ref} />
             {mm.zone === "town" && <div className="map-me" style={pct(mm.px, mm.pz)} title="Tu esi čia" />}
+            {island && <button className={"map-pin map-place-label" + (sel === "lighthouse" ? " sel" : "")}
+              style={pct(island.center.x, island.center.z)} aria-pressed={sel === "lighthouse"} onClick={() => setSel("lighthouse")}>
+              <span>{island.name} <span lang="lt">· {island.lt}</span></span>
+            </button>}
             {locs.map((l) => {
               const p = locationPoint(l.id);
               if (!p) return null;
@@ -330,7 +343,14 @@ function MapPanel({ close }: { close: () => void }) {
           </div>
           <div>
             {!sel && <div className="info-box">Pasirink vietą žemėlapyje. Geltonas taškas – tavo užduotis, raudonas – tu.<br /><br /><InlineIcon name="smartphone" /> Kai kurios užduotys atliekamos telefonu (P).</div>}
-            {sel && (
+            {island && sel === "lighthouse" && (
+              <div>
+                <h3 className="place-title">{island.name}</h3>
+                <div lang="lt" style={{ color: "var(--ink-soft)", marginBottom: 10 }}>{island.lt}</div>
+                <button className="btn soft small" onClick={() => { close(); game?.guideToLighthouse?.(); }}><Icon name="walk" size={17} /> Nuvesk mane</button>
+              </div>
+            )}
+            {sel && LOCATIONS[sel] && (
               <div>
                 <h3 className="place-title"><span className="place-ico"><Icon name={locIcon(sel)} size={22} /></span>{LOCATIONS[sel].name}</h3>
                 <div style={{ color: "var(--ink-soft)", marginBottom: 10 }}>{placeLt(sel)}</div>

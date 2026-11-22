@@ -3,6 +3,7 @@
 // the player (the floor under the water, how deep it is, where wading stops). Both towns: the colours are each sea's own.
 import * as THREE from "three";
 import { SEA_Z } from "./world/layout";
+import { islandGroundY, LIGHTHOUSE_ISLAND } from "./world/island";
 
 /** The sea's surface at rest (the sea mesh's height) and how far its swell lifts and drops it (town.ts's vertex shader). */
 export const SEA_LEVEL = -0.25;
@@ -67,6 +68,10 @@ export const FLOORS: { x0: number; x1: number; z0: number; z1: number; y(x: numb
 export function floorY(x: number, z: number) {
   for (const d of DECKS) if (x > d.x0 && x < d.x1 && z > d.z0 && z < d.z1) return d.y ?? 0;
   for (const f of FLOORS) if (x > f.x0 && x < f.x1 && z > f.z0 && z < f.z1) return f.y(x, z);
+  if (LIGHTHOUSE_ISLAND && Math.abs(x - LIGHTHOUSE_ISLAND.center.x) < 24 && z < SHORE.limit) {
+    const y = islandGroundY(LIGHTHOUSE_ISLAND, x, z);
+    if (y !== undefined) return y;
+  }
   if (POOLS.length) { const p = poolAt(x, z); if (p) return poolBedY(p, x, z); }
   return z < SHORE.limit ? seaBedY(x, z) : sandY(x, z);
 }

@@ -164,7 +164,7 @@ export interface HudState {
   speedLines?: boolean;
   /** The player is on the move (the task card folds away meanwhile). */
   walking: boolean;
-  objective: { sitId: string; title: string; goal: string; where: string; dist: number | null; angle: number | null; inside: boolean } | null;
+  objective: { sitId: string; title: string; titleLt?: string; goal: string; where: string; dist: number | null; angle: number | null; inside: boolean } | null;
   minimap: { px: number; pz: number; heading: number; targetX?: number; targetZ?: number; zone: string };
   fade: number;
   fadeOnFrames: boolean;

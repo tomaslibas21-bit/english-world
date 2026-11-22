@@ -658,6 +658,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   display: grid; place-items: center; color: var(--accent); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28); transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 .map-pin:hover { transform: translate(-50%, -50%) scale(1.12); z-index: 2; }
+.map-pin.map-place-label { width: auto; height: auto; padding: 1px 7px; font-size: 0.75rem; white-space: nowrap; }
 .map-pin.sel { box-shadow: 0 0 0 3px var(--gold), 0 4px 12px rgba(0, 0, 0, 0.32); z-index: 3; }
 .map-pin .pin-done { position: absolute; top: -7px; right: -7px; width: 17px; height: 17px; border-radius: 50%; background: var(--good); color: #fff; display: grid; place-items: center; box-shadow: 0 0 0 2px #fff; }
 .map-me { position: absolute; width: 18px; height: 18px; border-radius: 50%; background: #e63946; border: 3px solid #fff; transform: translate(-50%, -50%); box-shadow: 0 0 0 4px rgba(230,57,70,0.3); }

@@ -287,8 +287,8 @@ export class Colliders {
       }
     }
   }
-  blocked(x: number, z: number, r: number) {
-    for (const b of this.boxes) if (x > b.minX - r && x < b.maxX + r && z > b.minZ - r && z < b.maxZ + r) return true;
+  blocked(x: number, z: number, r: number, ignoreSea = false) {
+    for (const b of this.boxes) if ((!ignoreSea || b.tag !== "sea") && x > b.minX - r && x < b.maxX + r && z > b.minZ - r && z < b.maxZ + r) return true;
     for (const c of this.circles) { const dx = x - c.x, dz = z - c.z; if (dx * dx + dz * dz < (r + c.r) ** 2) return true; }
     return false;
   }

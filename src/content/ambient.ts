@@ -14,7 +14,9 @@ export const AMBIENT_LINES: { en: string; lt: string }[] = [
 
 /** What staff with no conversation of their own say when talked to (roomPeople.ts `says`), in the passers-by's voice of
  *  their gender: a friendly line that points to where the talking is. */
-export const STAFF_LINES: Record<string, { en: string; lt: string }> = {
+export const STAFF_LINES: Record<string, { en: string; lt: string; female?: boolean }> = {
+  lighthouse_keeper: { en: "Not many visitors make it out here. Enjoy the view!", lt: "Nedaug kas atplaukia iki čia. Pasigrožėkite vaizdu!", female: false },
+  lighthouse_keeper_2: { en: "Watch your step on the rocks. They get slippery!", lt: "Atsargiai ant akmenų – jie slidūs!", female: false },
   // the airport's coffee stand by the gate (roomPeople.ts): its barista sends you to Mia at Sunny Cup (s72)
   airport_coffee: { en: "Sorry, we're closed for cleaning! For a good coffee, try Sunny Cup in town.", lt: "Atsiprašau, uždaryta – valome! Gerą kavą rasite „Sunny Cup“ kavinėje mieste." },
 };

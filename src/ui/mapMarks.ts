@@ -1,3 +1,5 @@
+import type { IslandPlan } from "../game/world/island";
+
 // The small marks on the round map for what one can take: the boats (a white hull in a yellow ring, so they are
 // found from the beach) and the convertibles (a small car in its paint). Drawn where they are now.
 export interface RideMark { kind: "car" | "boat"; x: number; z: number; heading: number; tint: string; taken: boolean }
@@ -25,4 +27,29 @@ export function drawRideMarks(c: CanvasRenderingContext2D, marks: RideMark[], px
     }
     c.restore();
   }
+}
+
+/** The same coastline and boards on both scales of map. */
+export function drawIslandMap(c: CanvasRenderingContext2D, island: IslandPlan, x0: number, z0: number, scale: number) {
+  const x = (worldX: number) => (worldX - x0) * scale;
+  const z = (worldZ: number) => (worldZ - z0) * scale;
+  const { outline, jetty: d, center, cottage } = island;
+  c.save();
+  c.fillStyle = "#8db568";
+  c.strokeStyle = "#535e56";
+  c.lineWidth = Math.max(1.2, scale * 0.55);
+  c.beginPath();
+  for (const p of outline) c.lineTo(x(p.x), z(p.z));
+  c.closePath();
+  c.fill();
+  c.stroke();
+  c.fillStyle = "#c2a074";
+  c.fillRect(x(d.x0), z(d.z0), (d.x1 - d.x0) * scale, (d.z1 - d.z0) * scale);
+  c.fillStyle = "#80534a";
+  c.fillRect(x(cottage.x - cottage.w / 2), z(cottage.z - cottage.d / 2), cottage.w * scale, cottage.d * scale);
+  c.fillStyle = "#f4ede0";
+  c.beginPath();
+  c.arc(x(center.x), z(center.z), 2.4 * scale, 0, 2 * Math.PI);
+  c.fill();
+  c.restore();
 }

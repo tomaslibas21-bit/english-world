@@ -3,6 +3,7 @@
 // word and stand by; drive off; get out anywhere and the car stays there; after a while its owners stroll back to it,
 // and once nobody is looking it is back at its curb with them in it. Nobody is ever pulled out, pushed or run over:
 // people step out of a car's way, and it stops by itself short of anyone ahead (drive.ts).
+import { clearIslandCoast, islandGroundY, jettyStop, type IslandPlan } from "../world/island";
 import * as THREE from "three";
 import { createCharacter, addFarVersion, type GameCharacter } from "../characters";
 import { STYLED, vertexColorMaterial } from "../style";
@@ -202,7 +203,7 @@ export class Rides {
   /** Called when there is nowhere to get out. */
   onStuck: (() => void) | null = null;
 
-  constructor(readonly host: RideHost, plan: RidesPlan, boats: THREE.Object3D[]) {
+  constructor(readonly host: RideHost, private readonly plan: RidesPlan & { island?: IslandPlan }, boats: THREE.Object3D[]) {
     this.group.name = "rides";
     this.drivable = townGround();
     this.asphalt = townAsphalt(plan.lots);
@@ -442,6 +443,7 @@ export class Rides {
     this.from.copy(p);
     this.fromRot = this.host.player.root.rotation.y;
     r.awayT = 0;
+    this.islandMoorings.delete(r.id);
     r.thanked = false;
     let said = false;
     r.chat?.hold(6);
@@ -478,7 +480,9 @@ export class Rides {
     const r = this.riding;
     if (!r || this.phase !== "on") return false;
     if (Math.abs(r.m.speed) > 1.2) { this.wantOut = true; return true; }
-    const spot = r.kind === "car" ? this.carExit(r) : this.boatExit(r);
+    const dock = r.kind === "boat" ? this.atIslandJetty(r) : null;
+    const spot = dock ? _v.set(dock.x, dock.y, dock.z) : r.kind === "car" ? this.carExit(r) : this.boatExit(r);
+    if (dock) this.islandMoorings.add(r.id);
     if (!spot) { this.onStuck?.(); return false; }
     this.wantOut = false;
     r.m.speed = 0; r.m.bump = 0; r.m.steer = 0;
@@ -521,7 +525,7 @@ export class Rides {
     const m = r.m, col = this.host.colliders;
     let best: THREE.Vector3 | null = null, bd = 3.3;
     for (const d of DECKS) {
-      if (d.y === undefined || d.z0 > SHORE.limit) continue;
+      if (d === this.plan.island?.jetty || d.y === undefined || d.z0 > SHORE.limit) continue;
       const x = Math.max(d.x0 + 0.7, Math.min(m.x, d.x1 - 0.7)), z = Math.max(d.z0 + 0.7, Math.min(m.z, d.z1 - 0.7));
       const dist = this.reach(r, x, z);
       if (dist < bd && !col.blocked(x, z, 0.4)) { bd = dist; best = _v.set(x, d.y, z); }
@@ -540,7 +544,58 @@ export class Rides {
       if (!this.solid(x, z, 0.4)) return _v.set(x, floorY(x, z), z);
     }
     this.at(r, 1.75, -0.4, _v);
+    const island = this.plan.island;
+    if (island) clearIslandCoast(island, _v, 0.45);
     return _v.setY(floorY(_v.x, _v.z));
+  }
+
+  private islandMoorings = new Set<string>();
+
+  private atIslandJetty(r: Ride) {
+    const d = this.plan.island?.jetty;
+    if (!d) return null;
+    const stop = jettyStop(d, r.m.x, r.m.z, (x, z) => this.reach(r, x, z));
+    return stop && !this.host.colliders.blocked(stop.x, stop.z, 0.4, true) ? stop : null;
+  }
+
+  islandBoat() {
+    const boat = this.list.find((r) => this.islandMoorings.has(r.id));
+    return boat && { id: boat.id, x: boat.m.x, z: boat.m.z, rot: boat.m.heading };
+  }
+
+  restoreIslandBoat(saved?: NonNullable<ReturnType<Rides["islandBoat"]>>) {
+    const island = this.plan.island;
+    if (!island) return;
+    const boat = this.list.find((r) => r.kind === "boat" && r.id === saved?.id)
+      ?? this.list.find((r) => r.kind === "boat");
+    if (!boat) return;
+    this.resetPosition(boat, saved ?? island.berth);
+    if (!this.atIslandJetty(boat)) this.resetPosition(boat, island.berth);
+    this.islandMoorings.add(boat.id);
+  }
+
+  /** A dry boarding point for the nearest boat that can be reached on foot. */
+  boatApproach(x: number, z: number) {
+    const nav = this.host.nav;
+    let best: { x: number; z: number; id: string } | null = null, d = Infinity;
+    for (const r of this.list) {
+      if (r.kind !== "boat" || this.islandMoorings.has(r.id)) continue;
+      const boatDist = Math.hypot(r.m.x - x, r.m.z - z);
+      if (boatDist >= d) continue;
+      let step: { x: number; z: number; id: string } | null = null, near = Infinity;
+      for (let dx = -5; dx <= 5; dx++) for (let dz = -5; dz <= 5; dz++) {
+        const i = nav.idx(r.m.x + dx, r.m.z + dz);
+        if (!nav.free(i)) continue;
+        const [cx, cz] = nav.center(i);
+        const island = this.plan.island;
+        if (island && islandGroundY(island, cx, cz) !== undefined) continue;
+        if (this.reach(r, cx, cz) >= BOAT.reach) continue;
+        const dist = Math.hypot(cx - x, cz - z);
+        if (dist < near) { step = { x: cx, z: cz, id: r.id }; near = dist; }
+      }
+      if (step) { best = step; d = boatDist; }
+    }
+    return best;
   }
 
   /** A door, a ride across town, a conversation started from the list: the player is on foot at once, wherever they
@@ -588,6 +643,7 @@ export class Rides {
   }
 
   private sendHome(r: Ride) {
+    this.islandMoorings.delete(r.id);
     r.m.set(r.home.x, r.home.z, r.home.rot);
     r.awayT = 0;
     r.thanked = true;
@@ -968,6 +1024,7 @@ export class Rides {
       p.z = Math.max(BAY.z0 + 1, Math.min(p.z, SHALLOWS));
       this.sea.resolve(_v.set(p.x, 0, p.z), rad);
       p.x = _v.x; p.z = _v.z;
+      if (this.plan.island) clearIslandCoast(this.plan.island, p, rad);
       for (const o of this.list) if (o !== r && o.kind === "boat") pushOutOfBox(p, rad, o.m.x, o.m.z, o.m.heading, BOAT.half, BOAT.wide);
     });
     // spray at the stern while it moves
@@ -1139,6 +1196,9 @@ export class Rides {
   /** A ride nobody is at the wheel of: its people come back to it after a moment, and once it has stood away from
    *  its place a while and nobody is looking, it is back there with them in it. */
   private rest(r: Ride, dt: number) {
+    const island = this.plan.island;
+    const p = this.host.player.root.position;
+    if (island && this.islandMoorings.has(r.id) && this.host.outdoors() && islandGroundY(island, p.x, p.z) !== undefined) return;
     const away = Math.hypot(r.m.x - r.home.x, r.m.z - r.home.z) > 1 || Math.abs(wrap(r.m.heading - r.home.rot)) > 0.35;
     const out = r.owners.filter((o) => o.state !== "in");
     if (!away && !out.length) { r.awayT = 0; return; }
@@ -1201,6 +1261,12 @@ export class Rides {
         if (d < min && d > 1e-4) { p.x = q.x + (dx / d) * min; p.z = q.z + (dz / d) * min; }
       }
     }
+    const island = this.plan.island;
+    if (island && feet < island.y - 0.3) {
+      const d = island.jetty;
+      clearIslandCoast(island, p, rad);
+      pushOutOfBox(p, rad, (d.x0 + d.x1) / 2, (d.z0 + d.z1) / 2, 0, (d.z1 - d.z0) / 2, (d.x1 - d.x0) / 2);
+    }
     if (inWater) for (const c of this.sea.circles) {
       const dx = p.x - c.x, dz = p.z - c.z, d = Math.hypot(dx, dz), min = rad + c.r;
       if (d < min && d > 1e-4) { p.x = c.x + (dx / d) * min; p.z = c.z + (dz / d) * min; }
@@ -1213,7 +1279,7 @@ export class Rides {
       if (d.y === undefined || d.z0 > SHORE.limit) continue;
       const cx = Math.max(d.x0 + 0.75, Math.min(x, d.x1 - 0.75)), cz = Math.max(d.z0 + 0.75, Math.min(z, d.z1 - 0.75));
       const dist = Math.hypot(cx - x, cz - z);
-      if (dist > 0.3 && dist < 2.1 && !this.host.colliders.blocked(cx, cz, 0.4)) return _v.set(cx, d.y, cz);
+      if (dist > 0.3 && dist < 2.1 && !this.host.colliders.blocked(cx, cz, 0.4, d === this.plan.island?.jetty)) return _v.set(cx, d.y, cz);
     }
     return null;
   }

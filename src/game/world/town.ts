@@ -7,6 +7,7 @@ import { carParts } from "./car";
 import { carModelEntry, type CarPlacement } from "./carModels";
 import { STYLED, IS_REAL, grade } from "../style";
 import { SHORE, DECKS, POOLS, FLOORS, sandY, SAND_GLSL, SHORE_GLSL, SWELL_GLSL } from "../water";
+import { islandGroundY, LIGHTHOUSE_ISLAND, TOWER_FOOT } from "./island";
 import { addMapleDecor, FALL } from "./maple";
 import { ROAD_EDITION } from "../../content/road";
 import { ParkedFleet } from "./parkedFleet";
@@ -192,6 +193,15 @@ export function buildTown(): Town {
   addTrees(group, colliders, r);
   addSquareAndMarket(M, colliders, group, r);
   addHarbor(M, colliders, group, r);
+  const island = LIGHTHOUSE_ISLAND;
+  if (island) {
+    const { center, jetty, cottage, bench, keeper } = island;
+    DECKS.push(jetty);
+    colliders.addCircle(center.x, center.z, TOWER_FOOT);
+    colliders.addBox(cottage.x, cottage.z, cottage.w, cottage.d, "building");
+    colliders.addBox(bench.x, bench.z, 0.65, 1.6, "edge");
+    colliders.addCircle(keeper.x, keeper.z, 0.28);
+  }
   addTransport(M, colliders, group);
   addBackyard(M, colliders, group);
   addMaggiesCar(M, colliders, group);
@@ -270,7 +280,7 @@ export function buildTown(): Town {
       }
     },
     walkableAt(x, z) {
-      return x > WORLD.minX && x < WORLD.maxX && z > WORLD.minZ && z < WORLD.maxZ && !colliders.blocked(x, z, 0.3);
+      return x > WORLD.minX && x < WORLD.maxX && z > WORLD.minZ && z < WORLD.maxZ && !colliders.blocked(x, z, 0.3, island !== undefined && islandGroundY(island, x, z) !== undefined);
     },
   };
 }
@@ -1722,16 +1732,18 @@ function addHarbor(M: Merger, col: Colliders, group: THREE.Group, r: () => numbe
   // (the beach side's edge is a wall for the passers-by and the way-finding, a ledge with its posts for the player:
   // one jumps up onto the boards from the sand and hops along the posts, ledges.ts)
   col.addBox(-37.5, -72.2, 7.6, 0.3, "ledge"); col.addBox(-22.5, -72.2, 7.6, 0.3, "ledge");
-  // lighthouse on rocks
-  const { x, z } = LIGHTHOUSE;
-  for (let i = 0; i < 9; i++) {
-    const g = new THREE.DodecahedronGeometry(2 + r() * 2.5, 0).translate(x + (r() - 0.5) * 10, 0, z + (r() - 0.5) * 8);
-    M.add("rocks", mat("#8d8f93", { flat: true }), g);
+  if (!LIGHTHOUSE_ISLAND) {
+    // lighthouse on rocks
+    const { x, z } = LIGHTHOUSE;
+    for (let i = 0; i < 9; i++) {
+      const g = new THREE.DodecahedronGeometry(2 + r() * 2.5, 0).translate(x + (r() - 0.5) * 10, 0, z + (r() - 0.5) * 8);
+      M.add("rocks", mat("#8d8f93", { flat: true }), g);
+    }
+    M.add("lighthouse", mat("#f5f5f0"), cylGeo(1.9, 2.6, 16, x, 9, z, 16));
+    for (const y of [4, 10]) M.add("lighthouse-red", mat("#c8392f"), cylGeo(2.35 - y * 0.03, 2.45 - y * 0.03, 2.4, x, y, z, 16));
+    M.add("lighthouse-top", mat("#fff2b0", { emissive: "#c9a53a" }), cylGeo(1.5, 1.5, 2, x, 18, z, 12));
+    M.add("lighthouse-cap", mat("#c8392f", { flat: true }), new THREE.ConeGeometry(2, 2, 12).translate(x, 20, z));
   }
-  M.add("lighthouse", mat("#f5f5f0"), cylGeo(1.9, 2.6, 16, x, 9, z, 16));
-  for (const y of [4, 10]) M.add("lighthouse-red", mat("#c8392f"), cylGeo(2.35 - y * 0.03, 2.45 - y * 0.03, 2.4, x, y, z, 16));
-  M.add("lighthouse-top", mat("#fff2b0", { emissive: "#c9a53a" }), cylGeo(1.5, 1.5, 2, x, 18, z, 12));
-  M.add("lighthouse-cap", mat("#c8392f", { flat: true }), new THREE.ConeGeometry(2, 2, 12).translate(x, 20, z));
   // boats: each one mesh (a hull with a pointed bow, a deck, a cabin, a mast) that rocks on the water (see update)
   if (STYLED) {
     for (const [bx, bz, rot, c] of BOATS) {
