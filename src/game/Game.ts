@@ -46,7 +46,6 @@ import { whenLoaded } from "./prefetch";
 import type { SituationDef, SituationMeta } from "../content/types";
 import { picturesOn, useStore } from "../state/store";
 import { sceneFor } from "../ui/scenes";
-import { SIDEWAYS_PHONE } from "../ui/useScreen";
 import { sitProgress } from "../state/progress";
 import { textTexture, rand } from "./world/util";
 import { givenItem } from "./given";
@@ -234,7 +233,9 @@ export class Game implements GameApi {
   private disposed = false;
   private screenW = 0;
   private screenH = 0;
-  private readonly sidewaysPhone = window.matchMedia(SIDEWAYS_PHONE);
+  /** A phone held sideways, by the size the picture has now (useScreen's SIDEWAYS_PHONE, without waiting for the
+   *  browser's media query: after a rotation that can still say what the screen was a moment ago). */
+  private get sidewaysPhone() { return this.screenW > this.screenH && this.screenH <= 520; }
   private readonly visualViewport = window.visualViewport;
   private resizeObserver: ResizeObserver | null = null;
   private ambient!: Ambient;
@@ -1518,7 +1519,7 @@ export class Game implements GameApi {
     // On a phone held upright the picture is only the strip above the conversation (styles.css
     // --conversation-image-height; the loop's applyViewShift centres it there): each point must fall in that strip too,
     // 10 px in, for the people spoken with. A framing the old test passed and the strip shows stays as it was.
-    const sideways = this.sidewaysPhone.matches, strip = !wide && !sideways ? talkPictureHeight(h) : 0, ssy = (h - strip) / 2;
+    const sideways = this.sidewaysPhone, strip = !wide && !sideways ? talkPictureHeight(h) : 0, ssy = (h - strip) / 2;
     // And the top of the head of each person spoken with (hair and hats included, 0.12 m to each side) under the
     // picture's top edge, 10 px in: the head and chest points alone passed with the top of a head cut off by the
     // strip's top edge (s65a's officer, s79's clerk…).
@@ -1874,7 +1875,7 @@ export class Game implements GameApi {
     const w = this.container.clientWidth, h = this.container.clientHeight;
     if (w <= 0 || h <= 0 || (w === this.screenW && h === this.screenH)) return;
     this.renderer.setSize(w, h);
-    this.rig.resize(w, h, this.sidewaysPhone.matches);
+    this.rig.resize(w, h, w > h && h <= 520);
     this.screenW = w;
     this.screenH = h;
     // The cached conversation shots were fitted to the previous space beside the panel.
@@ -1890,7 +1891,7 @@ export class Game implements GameApi {
   screenState() {
     const { width: bufferW, height: bufferH } = this.renderer.domElement;
     const { aspect, fov } = this.rig.cam;
-    return { w: this.container.clientWidth, h: this.container.clientHeight, bufferW, bufferH, pixelRatio: this.renderer.getPixelRatio(), aspect, fov };
+    return { w: this.container.clientWidth, h: this.container.clientHeight, bufferW, bufferH, pixelRatio: this.renderer.getPixelRatio(), aspect, fov, follow: this.rig.followScale };
   }
 
   /** Resolution that follows the phone: every 2 s, slow frames (under about 45 a second) lower the pixel ratio a
@@ -1999,7 +2000,7 @@ export class Game implements GameApi {
     CUT.r.value = this.rig.mode === "follow" && !this.zone.interior ? 0.55 : 0;
     // Give the conversation panel its part of the picture and let the player stand lower while walking on a phone.
     {
-      const sideways = this.sidewaysPhone.matches;
+      const sideways = this.sidewaysPhone;
       if (talking && (this.talkNpc || this.talkTree)) {
         const wide = w > 900 && !sideways;
         // Match the conversation's visible picture area, including scenes-off 3D conversations.
