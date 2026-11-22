@@ -157,10 +157,31 @@ try {
       await page.waitForFunction(() => {
         const { game: g } = window.__ew, n = g.npcs.find((n) => n.id === "alux_kin"), p = g.player.root.position;
         const wanted = Math.atan2(p.x - n.home.x, p.z - n.home.z);
-        return Math.cos(wanted - n.ch.root.rotation.y) > 0.98;
+        return n.ch.lift === 0 && Math.cos(wanted - n.ch.root.rotation.y) > 0.98;
       });
       const before = await pose(page, "alux_kin");
-      await walk(page, 0.9, 0.25);
+      const followCamera = await page.evaluate(() => {
+        const g = window.__ew.game, { rig } = g;
+        const { home } = g.npcs.find((n) => n.id === "alux_kin");
+        // Stand on the dry path, 3.7 m from Kin, with the camera over the learner's shoulder.
+        const x = 1.2, z = -0.7;
+        const heading = Math.atan2(home.x - x, home.z - z);
+        g.player.root.position.set(x, g.wild.floor(x, z), z);
+        g.player.root.rotation.y = g.heading = heading;
+        g.vel.set(0, 0, 0);
+        g.moveVel.set(0, 0, 0);
+
+        const original = { pitch: rig.pitch, dist: rig.dist };
+        rig.target.copy(g.player.root.position);
+        rig.yaw = heading - 0.2;
+        rig.pitch = 0.47;
+        rig.dist = 5.5;
+        // Clear the camera's ongoing turn from the previous walk before snapping to this angle.
+        rig.yawVel = 0;
+        rig.slideYaw = rig.standYaw = null;
+        rig.snap();
+        return original;
+      });
       await page.waitForFunction(() => {
         const { game: g } = window.__ew, n = g.npcs.find((n) => n.id === "alux_kin"), p = g.player.root.position;
         const wanted = Math.atan2(p.x - n.home.x, p.z - n.home.z);
@@ -183,7 +204,12 @@ try {
         }
       }
       await shot(page, "kin-mid-hop");
-      await resume(page);
+      await page.evaluate(({ pitch, dist }) => {
+        const g = window.__ew.game;
+        g.rig.pitch = pitch;
+        g.rig.dist = dist;
+        g.renderer.setAnimationLoop(g.loop);
+      }, followCamera);
 
       // Select a regular task from inside. Its arrow points to the dry exit and the walk resumes in town.
       await page.evaluate(() => window.__ew.game.setObjective("s69-local"));
