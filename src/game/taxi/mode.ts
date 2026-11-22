@@ -43,7 +43,6 @@ class TaxiMode implements GameMode {
   readonly id = "taxi";
   readonly cleanScreen = "menu";
   readonly exitLabel = L("Išlipti");
-  readonly camera = "follow";
   readonly conversation = { situation, label: L("Vairuoti taksi") };
   private run: Run | null = null;
   private passenger: GameCharacter | null = null;
@@ -73,6 +72,7 @@ class TaxiMode implements GameMode {
   }
 
   get active() { return this.run !== null; }
+  get camera() { return this.run?.phase === "result" && this.host.rig.stage ? "stage" : "follow"; }
   get route() { return this.run?.route; }
 
   allowsRideHints() {
@@ -106,7 +106,10 @@ class TaxiMode implements GameMode {
     const index = Number.isInteger(next) && next >= 0 ? next % TAXI_ROUTES.length : 0;
     const route = TAXI_ROUTES[index];
     const door = this.host.doors.find((d) => d.loc === route.destination);
-    if (!door) { this.host.left(this.id); return; }
+    if (!door) {
+      if (this.run) this.exit(true); else this.host.left(this.id);
+      return;
+    }
 
     const { x, z } = this.car.home;
     useStore.getState().dismissRideToasts();
@@ -115,10 +118,11 @@ class TaxiMode implements GameMode {
     if (Math.hypot(player.x - x, player.z - z) > 5) this.host.place(x, z + 2.5, Math.PI);
     this.host.rides.resetPosition(this.car, route.start);
     if (!this.host.board(this.car)) {
-      this.host.rides.resetPosition(this.car, this.car.home);
-      this.host.left(this.id);
+      if (this.run) this.exit(true);
+      else { this.host.rides.resetPosition(this.car, this.car.home); this.host.left(this.id); }
       return;
     }
+    if (this.run?.phase === "result") this.clearScoreShot();
     this.host.snapRide(this.car);
     this.host.hideNpc(npc, true);
     this.passenger = createCharacter(NPCS[npc].look);
@@ -226,11 +230,19 @@ class TaxiMode implements GameMode {
       if (this.run !== run) return;
       this.clearPassenger();
       const { door } = run;
-      this.host.dismount(door.outX, door.outZ, door.rot);
+      this.host.dismount(door.outX, door.outZ, door.rot, true);
+      const { rig } = this.host;
+      const taxi = this.car.mesh.position.clone().add(new THREE.Vector3(0, 0.9, 0));
+      rig.stage = this.host.scoreShot(taxi);
+      if (rig.stage) {
+        // Settle behind the fade so the lens never moves through the player or the curbside geometry.
+        rig.mode = "stage";
+        rig.stageSnap();
+      }
+      run.phase = "result";
       this.dialogue.clearLine();
       keepPhrases(situation, [...run.kept.values()].map((line) => line.sentence));
       useTaxi.setState({ result: { ...score, fare: route.fare, tip: route.tips[score.tier], onTarget: !run.stopMiss, cards: run.kept.size } });
-      run.phase = "result";
       countPlay("games", this.id);
       sendStat("taxi", { section: route.id, n: score.points });
     });
@@ -244,9 +256,19 @@ class TaxiMode implements GameMode {
     this.host.hideNpc(npc, false);
   }
 
+  private clearScoreShot() {
+    const { rig } = this.host;
+    rig.stage = null;
+    rig.mode = "follow";
+  }
+
   update({ dt, x, y, brake, blocked }: ModeFrame) {
     const run = this.run;
-    if (!run || run.phase === "result") return;
+    if (!run) return;
+    if (run.phase === "result") {
+      this.host.updatePose(dt, run.door.rot);
+      return;
+    }
     if (this.host.rides.riding !== this.car) { this.exit(true); return; }
     this.dialogue.update(dt, blocked);
     const drive = run.phase === "drive" || run.phase === "passed";
@@ -354,9 +376,11 @@ class TaxiMode implements GameMode {
       if (this.run !== run) return;
       this.dialogue.cancel();
       this.clearPassenger();
-      if (run.phase !== "result") {
-        this.host.dismount();
-      }
+      if (run.phase === "result") {
+        this.host.rides.resetPosition(this.car, this.car.home);
+        this.clearScoreShot();
+        this.host.rig.snap();
+      } else this.host.dismount();
       this.run = null;
       this.assist = false;
       this.highlight.visible = false;

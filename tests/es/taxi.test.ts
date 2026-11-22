@@ -6,11 +6,13 @@ import { NPCS } from "../../src/content/npcs";
 import taxi from "../../src/content/situations/s66-taxi";
 import { Ambient } from "../../src/game/ambient";
 import { createCharacter } from "../../src/game/characters";
+import { scoreShot } from "../../src/game/kit/scoreShot";
 import { NavGrid } from "../../src/game/nav";
+import { OcclusionField } from "../../src/game/occlusion";
 import { Rides } from "../../src/game/rides/Rides";
 import { CAR, pushOutOfBox } from "../../src/game/rides/drive";
 import { carFootprint, carLedges, carModelEntry } from "../../src/game/world/carModels";
-import { PARKED_CARS, ROADS, TAXI } from "../../src/game/world/layout";
+import { PARKED_CARS, ROADS, TAXI, WORLD } from "../../src/game/world/layout";
 import { RIDES } from "../../src/game/world/rides";
 import { buildTown } from "../../src/game/world/town";
 import { Colliders } from "../../src/game/world/util";
@@ -79,11 +81,52 @@ describe("Puerto Colibrí taxi routes", () => {
     expect(car.mesh.position.x).toBe(car.m.x);
     expect(car.m.pace).toBeLessThanOrEqual(TAXI_CAR.speedLimit);
     expect(trafficBox.x).toBe(car.m.x);
+    const stop = { x: car.m.x, z: car.m.z, rot: car.m.heading };
+    rides.abandon(true);
+    expect(rides.riding).toBeNull();
+    expect(car.m.pace).toBe(0);
+    expect(trafficBox).toMatchObject({ x: stop.x, z: stop.z });
+    expect(rides.modeCarPieces(stop.x, stop.z)).toEqual(carLedges(TAXI.model, stop.x, stop.z, stop.rot));
+
+    player.root.position.set(stop.x, 0, stop.z + 1.5);
+    expect(rides.board(car)).toBe(true);
     rides.abandon();
     expect(trafficBox.x).toBe(TAXI.x);
     expect(rides.modeCarPieces(TAXI.x, TAXI.z)).toEqual(taxiSurfaces);
     rides.removeModeCar(car);
     expect(ambient.rideBoxes).not.toContain(trafficBox);
+  }));
+
+  it("frames the parked taxi and the learner at each destination", () => withTown(({ group, doors, colliders, parkedCars }) => {
+    const field = OcclusionField.fromObject(group, {
+      minX: WORLD.minX - 24, maxX: WORLD.maxX + 24, minZ: WORLD.minZ - 24, maxZ: WORLD.maxZ + 24,
+    }, { skip: (o) => o.userData.v !== undefined || !!o.userData.gull || !!o.userData.boat || !!o.userData.thin || o === parkedCars.taxi?.root });
+    field.fillFootprints(colliders.boxes, colliders.circles);
+    const space = {
+      free: (a: THREE.Vector3, b: THREE.Vector3) => field.free(a, b),
+      inside: (p: THREE.Vector3) => field.solidAt(p.x, p.y, p.z, 0.15),
+      overSolid: (x: number, z: number) => field.overSolid(x, z),
+    };
+    const blocked = (x: number, z: number) => colliders.blocked(x, z, 0.65);
+    for (const route of TAXI_ROUTES) {
+      const door = doors.find(({ loc }) => loc === route.destination)!;
+      const player = new THREE.Vector3(door.outX, 1.35, door.outZ);
+      const { at } = route.decisions.at(-1)!;
+      for (const dx of [-3, 0, 3]) {
+        const taxi = new THREE.Vector3(at.x + dx, 0.9, at.z);
+        for (const aspect of [1280 / 800, 390 / 844]) {
+          const shot = scoreShot(player, door.rot, aspect, space, blocked, taxi);
+          const label = `${route.destination} (${dx}, ${aspect.toFixed(2)})`;
+          expect(shot, label).not.toBeNull();
+          expect(shot!.look, label).toEqual(player.clone().lerp(taxi, 0.5));
+          expect(blocked(shot!.pos.x, shot!.pos.z), label).toBe(false);
+          for (const point of [player, taxi]) {
+            expect(field.free(point, shot!.pos), label).toBe(1);
+            expect(point.distanceTo(shot!.pos), label).toBeGreaterThanOrEqual(5);
+          }
+        }
+      }
+    }
   }));
 
   it("shows the waiting hint only for a sustained obstruction while the mode allows hints", () => {

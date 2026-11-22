@@ -142,6 +142,10 @@ try {
     }, cafe);
     assert.equal(await destination.getAttribute("data-sit"), next.id);
     assert.equal(await destination.locator("b").textContent(), next.title.lt);
+    if (label === "1280x800") {
+      const lines = await destination.locator("b").evaluate((title) => title.getClientRects().length);
+      assert(lines > 0 && lines <= 2, `${label}: destination title fits in two lines (${lines})`);
+    }
     const splitWords = await destination.locator("b span").evaluateAll((words) =>
       words.flatMap((word) => {
         const range = document.createRange();
