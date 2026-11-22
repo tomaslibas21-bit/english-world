@@ -99,6 +99,31 @@ describe("dent geometry", () => {
     expect(mesh.geometry).toBe(original);
   });
 
+  it("gives a coarse side panel a broad bowl with a shallower shoulder", () => {
+    const geometry = new THREE.BoxGeometry(1.64, 0.8, 1.4, 1, 1, 2).translate(0, 0.77, 0);
+    geometry.setAttribute("color", new THREE.BufferAttribute(new Float32Array(geometry.getAttribute("position").count * 3).fill(1), 3));
+    const mesh = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial());
+    const dents: Dent[] = [];
+    addDent(dents, { side: "right", x: -1, y: 0.77, z: 0, nx: 0.83, nz: 0.56, k: 0.7 });
+    const surface = new CrashGeometry(mesh, mesh, dents);
+    surface.rebuild(dents);
+    const positions = surface.geometry.getAttribute("position"), rest = surface.geometry.getAttribute("crashRest");
+    let center = 0, shoulder = 0;
+    for (let i = 0; i < rest.count; i++) {
+      if (rest.getX(i) > -0.8 || Math.abs(rest.getY(i) - 0.77) > 0.11) continue;
+      const along = Math.abs(rest.getZ(i));
+      const inset = positions.getX(i) - rest.getX(i);
+      if (along < 0.05) center = Math.max(center, inset);
+      if (along > 0.3 && along < 0.55) shoulder = Math.max(shoulder, inset);
+      expect(positions.getZ(i)).toBe(rest.getZ(i));
+    }
+    expect(center).toBeGreaterThan(0.09);
+    expect(shoulder).toBeGreaterThan(0.025);
+    expect(shoulder).toBeLessThan(center);
+    expect(positions.count).toBeGreaterThan(geometry.getAttribute("position").count);
+    surface.restore();
+  });
+
   it("returns temporarily damaged cars to the shared draw until they have been driven", () => {
     const group = new THREE.Group(), fleet = new ParkedFleet(group);
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshLambertMaterial());
@@ -134,16 +159,56 @@ describe("crash effects", () => {
     };
   };
 
-  function fixture() {
+  function fixture(quality: "low" | "high" = "low") {
     const group = new THREE.Group(), cam = new THREE.PerspectiveCamera(50, 1);
     cam.position.set(0, 3, 8); cam.lookAt(0, 0, 0); cam.updateMatrixWorld();
     const crashSound = vi.fn();
-    const host = { cam, crashSound, quality: "low", player: { root: new THREE.Group() } } as unknown as RideHost;
+    const host = { cam, crashSound, quality, ambient: { traffic: [] }, player: { root: new THREE.Group() } } as unknown as RideHost;
     const car = makeCar("driver");
     const crashes = new Crashes(host, group, () => car);
     const frontHit = { circle: 0, x: 0.67, z: 2.16, nx: 0, nz: -1, into: 10 } as const;
     return { crashes, car, group, crashSound, frontHit };
   }
+
+  it.each([{ quality: "low", limit: 6 }, { quality: "high", limit: 8 }] as const)(
+    "feeds a plume over time within the $quality quality budget", ({ quality, limit }) => {
+      const { crashes, car, frontHit } = fixture(quality);
+      crashes.impact(car, "town", frontHit);
+      expect(crashes.inspect.stats().puffs).toBe(2);
+      let peak = 0;
+      for (let i = 0; i < 47; i++) {
+        crashes.update(0.05, car);
+        peak = Math.max(peak, crashes.inspect.stats().puffs);
+      }
+      expect(peak).toBeGreaterThanOrEqual(limit - 1);
+      expect(peak).toBeLessThanOrEqual(limit);
+      expect(crashes.inspect.stats().puffs).toBeGreaterThan(0);
+      crashes.update(0.4, car);
+      expect(crashes.inspect.stats().puffs).toBe(0);
+      crashes.dispose();
+    },
+  );
+
+  it("precompiles the damage program and both instanced effects and keeps their programs alive", async () => {
+    const { crashes, car, group, frontHit } = fixture();
+    const scene = new THREE.Scene();
+    const compileAsync = vi.fn<THREE.WebGLRenderer["compileAsync"]>().mockImplementation(async (probes) => probes);
+    const probes = await crashes.compileShaders({ compileAsync } as unknown as THREE.WebGLRenderer, scene, [car]);
+    expect(compileAsync).toHaveBeenCalledWith(probes, expect.any(THREE.PerspectiveCamera), scene);
+    expect(probes.parent).toBeNull();
+    const [panel, hazards, clouds] = probes.children as THREE.Mesh[];
+    expect(hazards.material).toBe((group.getObjectByName("crash-hazards") as THREE.Mesh).material);
+    expect(clouds.material).toBe((group.getObjectByName("crash-puffs") as THREE.Mesh).material);
+    const retained = panel.material as THREE.Material, dispose = vi.fn();
+    retained.addEventListener("dispose", dispose);
+    crashes.finishShaderWarmup();
+    expect(dispose).not.toHaveBeenCalled();
+    expect(probes.children).toHaveLength(0);
+    crashes.impact(car, "town", frontHit);
+    expect(((car.mesh as THREE.Mesh).material as THREE.Material).customProgramCacheKey()).toBe(retained.customProgramCacheKey());
+    crashes.dispose();
+    expect(dispose).toHaveBeenCalledTimes(1);
+  });
 
   it("debounces repeats, keeps three parked cars damaged, and ages out the damage on the driven car", () => {
     const { crashes, car, frontHit } = fixture();

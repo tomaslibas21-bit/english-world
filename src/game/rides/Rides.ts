@@ -837,6 +837,10 @@ export class Rides {
   }
 
   releaseCrashVisual(mesh: THREE.Mesh) { this.crashEffects.releaseVisual(mesh); }
+  compileCrashShaders(renderer: THREE.WebGLRenderer, scene: THREE.Scene) {
+    return this.crashEffects.compileShaders(renderer, scene, this.solidVehicles());
+  }
+  finishCrashShaderWarmup() { this.crashEffects.finishShaderWarmup(); }
   healCrashes() { this.crashEffects.healAll(); }
   crashQuality(quality: "high" | "low") { this.crashEffects.setQuality(quality); }
   disposeCrashes() { this.crashEffects.dispose(); }

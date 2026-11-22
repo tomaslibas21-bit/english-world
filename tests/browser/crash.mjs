@@ -41,11 +41,12 @@ try {
         sessionStorage.setItem("ew-play-now", "1");
       }, [`${storage}-progress-v1`, JSON.stringify(progress)]);
       await page.goto(base, { waitUntil: "domcontentloaded" });
-      await page.waitForFunction(() => {
+      await page.waitForFunction((beforeOnly) => {
         const ew = window.__ew, g = ew?.game;
         return ew?.store.getState().screen === "play" && g?.zone?.id === "town" && g.ledges?.ready
-          && !g.transitioning && g.carVisuals?.stats().parkedModels > 0 && g.carVisuals.stats().trafficModels > 0;
-      }, null, { timeout: 120000 });
+          && !g.transitioning && g.carVisuals?.stats().parkedModels > 0 && g.carVisuals.stats().trafficModels > 0
+          && (beforeOnly || g.crashShadersReady);
+      }, beforeOnly, { timeout: 120000 });
 
       const wait = (fn, arg, timeout = 8000) => page.waitForFunction(fn, arg, { timeout }).catch(async (error) => {
         const state = await page.evaluate(() => {
@@ -161,7 +162,9 @@ try {
       await photo("impact");
       if (!beforeOnly) {
         await page.waitForTimeout(1000);
-        console.log(`${label} longest frame around the first crash ${(await page.evaluate(() => window.__frames.worst)).toFixed(1)} ms`);
+        const longest = await page.evaluate(() => window.__frames.worst);
+        console.log(`${label} longest frame around the first crash ${longest.toFixed(1)} ms`);
+        assert(longest < 120, `${label}: longest crash frame ${longest.toFixed(1)} ms (120 ms budget)`);
       }
       await brake(false);
 

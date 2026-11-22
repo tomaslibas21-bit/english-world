@@ -15,6 +15,7 @@ type Damage = {
   driver: boolean;
   hazardUntil: number;
   blink: number;
+  steam?: { x: number; y: number; z: number; next: number; interval: number; remaining: number };
 };
 type Puff = { x: number; y: number; z: number; dx: number; dz: number; rise: number; start: number; life: number; size: number; kind: PuffKind };
 type PuffKind = "steam" | "dust" | "sparkle";
@@ -23,6 +24,7 @@ const isTraffic = (car: Car): car is TrafficCar => "dir" in car;
 const HAZARD_HZ = 1.6;
 const LAMP_NAMES = ["front-right", "front-left", "back-right", "back-left"] as const;
 const PUFF_COLORS = { dust: new THREE.Color("#a39b90"), steam: new THREE.Color("#fffdf6"), sparkle: new THREE.Color("#ffdf83") };
+const STEAM_EMISSION_TIME = 1.25;
 
 function hazardMesh() {
   const slots = 24, size = 48, pixels = new Uint8Array(size * size * 4);
@@ -71,7 +73,7 @@ function puffGeometry() {
 }
 
 const puffMaterial = () => new THREE.ShaderMaterial({
-  transparent: true, depthWrite: false,
+  transparent: true, depthWrite: false, toneMapped: false,
   vertexShader: `
     attribute float puffAlpha;
     varying vec2 shape;
@@ -89,7 +91,7 @@ const puffMaterial = () => new THREE.ShaderMaterial({
     varying float opacity;
     void main() {
       float core = 1.0 - smoothstep(0.05, 0.5, length(shape));
-      float mask = core * core;
+      float mask = core * (0.68 + 0.32 * core);
       if (opacity < 0.0) {
         vec2 axis = abs(shape);
         float rays = (1.0 - smoothstep(0.02, 0.10, min(axis.x, axis.y)))
@@ -121,6 +123,7 @@ export class Crashes {
   private puffLimit: number;
   private puffCount = 0;
   private lastBuildMs = 0;
+  private warmup?: { group: THREE.Group; bodies: THREE.BufferGeometry[]; materials: THREE.Material[]; instances: THREE.InstancedMesh[] };
   private lastImpact?: Readonly<{ id: string; k: number; into: number; side: Dent["side"]; target: "town" | "traffic" | "parked" }>;
 
   constructor(private readonly host: RideHost, group: THREE.Group, private readonly driver: () => Ride | null) {
@@ -144,6 +147,58 @@ export class Crashes {
     last: () => this.lastImpact,
     ...(import.meta.env.DEV ? { healAll: () => this.healAll(), age: (seconds: number) => this.age(seconds) } : {}),
   });
+
+  async compileShaders(renderer: THREE.WebGLRenderer, scene: THREE.Scene, rides: Iterable<Ride>) {
+    const group = new THREE.Group();
+    group.scale.setScalar(0.01);
+    const sources = new Map<THREE.Material, THREE.BufferGeometry>();
+    const addSource = (car: Car, mesh?: THREE.Mesh) => {
+      const surface = this.damage.get(car)?.surface;
+      const material = surface?.originalMaterial ?? mesh?.material;
+      const geometry = surface?.original ?? mesh?.geometry;
+      if (material && !Array.isArray(material) && geometry && !sources.has(material)) sources.set(material, geometry);
+    };
+    for (const ride of rides) if (ride.kind === "car") addSource(ride, this.visual(ride));
+    for (const car of this.host.ambient.traffic) addSource(car, car.batchBody ?? car.mesh);
+
+    // Use the real body attributes on the probes so the renderer selects exactly the same shader variants.
+    const bodies: THREE.BufferGeometry[] = [], materials: THREE.Material[] = [];
+    for (const [material, geometry] of sources) {
+      if (!geometry.boundingBox) geometry.computeBoundingBox();
+      const { min, max } = geometry.boundingBox!;
+      const dents: Dent[] = [];
+      addDent(dents, { x: min.x * 0.46, y: 0.65, z: max.z, nx: 0, nz: -1, k: 0.75, side: "front" });
+      addDent(dents, { x: min.x, y: 0.77, z: (min.z + max.z) * 0.5, nx: 1, nz: 0, k: 0.7, side: "right" });
+      const mesh = new THREE.Mesh(geometry, material);
+      const surface = new CrashGeometry(mesh, mesh, dents);
+      surface.rebuild(dents);
+      bodies.push(mesh.geometry);
+      materials.push(mesh.material);
+      group.add(mesh);
+    }
+
+    const instances = [this.hazards, this.clouds].map((effect) => {
+      const mesh = new THREE.InstancedMesh(effect.geometry, effect.material, 1);
+      if (effect.instanceColor) mesh.setColorAt(0, PUFF_COLORS.steam);
+      group.add(mesh);
+      return mesh;
+    });
+    for (const obj of group.children) obj.frustumCulled = false;
+    this.warmup = { group, bodies, materials, instances };
+    await renderer.compileAsync(group, this.host.cam, scene);
+    return group;
+  }
+
+  finishShaderWarmup() {
+    // Keep the material references alive so Three keeps their linked programs after repairs.
+    const warmup = this.warmup;
+    if (!warmup?.group.children.length) return;
+    warmup.group.clear();
+    for (const geometry of warmup.bodies) geometry.dispose();
+    warmup.bodies.length = 0;
+    for (const mesh of warmup.instances) mesh.dispose();
+    warmup.instances.length = 0;
+  }
 
   impact(ride: Ride, target: CrashTarget, hit: MotionImpact) {
     const { into } = hit;
@@ -212,8 +267,11 @@ export class Crashes {
     if (!state.surface) { this.heal(car); return; }
     if (this.crackedLamps(state) & ~previous) this.host.crashSound?.("glass", k);
     if (side === "front" && k >= 0.6) {
-      this.puff("steam", cx + s * lz * 0.72 + c * lx * 0.35, root.position.y + state.surface.hoodHeight,
-        cz + c * lz * 0.72 - s * lx * 0.35, 3);
+      const x = lx * 0.35, y = state.surface.hoodHeight + 0.10, z = lz * 0.72;
+      const remaining = this.puffLimit === 6 ? 4 : 6;
+      const interval = STEAM_EMISSION_TIME / remaining;
+      state.steam = { x, y, z, next: this.now + interval, interval, remaining };
+      this.puff("steam", cx + s * z + c * x, root.position.y + y, cz + c * z - s * x, 2);
       this.host.crashSound?.("steam", k);
     } else this.puff("dust", cx + c * lx + s * lz, root.position.y + y, cz - s * lx + c * lz, 2);
     return dent;
@@ -310,6 +368,17 @@ export class Crashes {
       this.bind(car, state);
       if (state.driver && elapsed >= 90) state.surface?.show(1 - THREE.MathUtils.smoothstep(elapsed, 90, 92));
       if (traffic) this.trafficPose(car, state);
+      const pose = traffic ? car.damagedBody ?? root : root;
+      const steam = state.steam;
+      if (steam && this.now >= steam.next) {
+        if (this.now - steam.next < steam.interval) {
+          pose.updateMatrix();
+          this.pos.set(steam.x, steam.y, steam.z).applyMatrix4(pose.matrix);
+          this.puff("steam", this.pos.x, this.pos.y, this.pos.z, 1);
+          steam.next += steam.interval;
+          if (--steam.remaining === 0) state.steam = undefined;
+        } else state.steam = undefined;
+      }
       if (!state.surface || state.hazardUntil <= this.now) continue;
       const flash = Math.floor(elapsed * HAZARD_HZ * 2);
       if (car === phase && flash !== state.blink) this.host.crashSound?.("tick", 1);
@@ -317,7 +386,6 @@ export class Crashes {
       if (!visible || flash % 2) continue;
       const t = (elapsed * HAZARD_HZ * 2) % 1;
       const intensity = THREE.MathUtils.smoothstep(t, 0, 0.14) * (1 - THREE.MathUtils.smoothstep(t, 0.82, 1));
-      const pose = traffic ? car.damagedBody ?? root : root;
       pose.updateMatrix();
       this.scale.setScalar(0.37 * pose.scale.x);
       for (let i = 0; i < state.surface.lamps.length; i++) {
@@ -355,13 +423,14 @@ export class Crashes {
         if (p.start + p.life < first.start + first.life) first = p;
       }
       if (!first.life) this.puffCount++;
-      const a = Math.random() * Math.PI * 2, spread = kind === "sparkle" ? 1.15 : 0.34;
+      const a = Math.random() * Math.PI * 2, steam = kind === "steam";
+      const spread = kind === "sparkle" ? 1.15 : steam ? 0.18 : 0.38;
       first.x = x + Math.cos(a) * spread * 0.4; first.y = y + i * 0.07; first.z = z + Math.sin(a) * spread * 0.4;
       first.dx = Math.cos(a) * spread; first.dz = Math.sin(a) * spread;
-      first.rise = kind === "steam" ? 0.55 + i * 0.09 : 0.42;
       first.start = this.now;
-      first.life = kind === "steam" ? 2.2 + i * 0.22 : 0.62 + i * 0.07;
-      first.size = kind === "steam" ? 0.9 : kind === "dust" ? 0.65 : 0.23;
+      first.life = steam ? 1.25 + Math.random() * 0.12 : 0.62 + i * 0.07;
+      first.rise = steam ? 1.5 / first.life : 0.42;
+      first.size = steam ? 0.79 + Math.random() * 0.09 : kind === "dust" ? 0.80 : 0.23;
       first.kind = kind;
     }
   }
@@ -377,11 +446,13 @@ export class Crashes {
       this.pos.set(p.x + p.dx * elapsed, p.y + p.rise * elapsed, p.z + p.dz * elapsed);
       if (!this.frustum.intersectsSphere(this.sphere.set(this.pos, 1))) continue;
       const t = elapsed / p.life;
-      this.scale.setScalar(p.size * (0.65 + 0.8 * t));
+      const steam = p.kind === "steam";
+      this.scale.setScalar(p.size * (steam ? 0.58 + 0.42 * Math.sqrt(t) : 0.65 + 0.8 * t));
       this.clouds.setMatrixAt(n, this.matrix.compose(this.pos, this.host.cam.quaternion, this.scale));
       this.clouds.setColorAt(n, PUFF_COLORS[p.kind]);
       const sparkle = p.kind === "sparkle";
-      this.alpha.setX(n++, (sparkle ? -0.95 : 0.58) * (1 - t) * Math.min(1, 0.35 + t * 8));
+      const opacity = steam ? 0.94 * (1 - THREE.MathUtils.smoothstep(t, 0.26, 1)) : (sparkle ? -0.95 : 0.58) * (1 - t);
+      this.alpha.setX(n++, opacity * Math.min(1, (steam ? 0.68 : 0.35) + t * 8));
     }
     this.puffCount = alive;
     this.finish(this.clouds, n);
@@ -457,6 +528,9 @@ export class Crashes {
 
   dispose() {
     this.healAll();
+    this.finishShaderWarmup();
+    for (const material of this.warmup?.materials ?? []) material.dispose();
+    this.warmup = undefined;
     this.hazards.material.uniforms.gradient.value.dispose();
     for (const mesh of [this.clouds, this.hazards]) {
       mesh.geometry.dispose(); mesh.material.dispose(); mesh.dispose();

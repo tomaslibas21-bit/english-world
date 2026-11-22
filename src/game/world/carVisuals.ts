@@ -117,12 +117,15 @@ export class CarVisuals {
   private parked = false;
   private taxi = false;
   private staticFleet?: ParkedFleet;
+  ready = false;
 
   constructor(private parking: ParkedCars | (Omit<ParkedCars, "fleet"> & { fallback: THREE.Mesh }), private ambient: Ambient,
     private beforeReplace?: (mesh: THREE.Mesh) => void) {
     // Each fleet replaces its procedural fallback once all the geometry for its batches is ready.
-    void this.loadTraffic().catch((error) => console.warn("Traffic models unavailable", error));
-    void this.loadParking().catch((error) => console.warn("Parked car models unavailable", error));
+    void Promise.all([
+      this.loadTraffic().catch((error) => console.warn("Traffic models unavailable", error)),
+      this.loadParking().catch((error) => console.warn("Parked car models unavailable", error)),
+    ]).then(() => { this.ready = true; });
   }
 
   private async loadTraffic() {
