@@ -1,5 +1,5 @@
+import { ROUTE } from "../../content/route";
 import { PHONE_CALLS } from "../../content/phoneCalls";
-import { SITUATIONS } from "../../content/situations/catalog";
 import type { Progress } from "../../state/progress";
 import { useStore } from "../../state/store";
 import { audio } from "../audio";
@@ -60,7 +60,7 @@ export class TownPhone {
     if (!canShowPhoneCard(snapshot, {
       active: this.elapsed, sinceCard: this.played - this.lastCard, calm: this.calm, forceDue: this.forceDue,
     })) return;
-    const id = nextPhoneCall(SITUATIONS, st.progress, this.played);
+    const id = nextPhoneCall(ROUTE, st.progress, this.played);
     if (!id) return;
     this.lastCard = this.played;
     this.forceDue = false;

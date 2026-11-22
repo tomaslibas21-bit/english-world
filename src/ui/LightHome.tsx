@@ -1,3 +1,4 @@
+import { ROUTE } from "../content/route";
 // The light mode (no 3D town): the situation list is the home screen, and a tap starts the conversation
 // at once. Face-to-face conversations show their illustrated pictures (SceneBackdrop); calls, and
 // conversations without a picture, a calm call screen (CallBackdrop).
@@ -5,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { picturesOn, useStore } from "../state/store";
 import { setGame, game } from "../game/gameRef";
 import { LightGame } from "../game/LightGame";
-import { SITUATIONS, SITUATION_BY_ID } from "../content/situations/catalog";
+import { SITUATION_BY_ID } from "../content/situations/catalog";
 import { TOWN_LT } from "../content/locations";
 import { LOCATIONS } from "../content/locations";
 import { NPCS } from "../content/npcs";
@@ -90,14 +91,14 @@ function LightHome() {
   const covered = useStore((s) => s.conv.active || !!s.hud.panel);
   const byCh = useMemo(() => {
     const m = new Map<number, SituationMeta[]>();
-    for (const s of [...SITUATIONS].sort((a, b) => a.chapter - b.chapter || a.order - b.order)) {
+    for (const s of [...ROUTE].sort((a, b) => a.chapter - b.chapter || a.order - b.order)) {
       const l = m.get(s.chapter) ?? []; l.push(s); m.set(s.chapter, l);
     }
     return [...m.entries()];
   }, []);
   const isDone = (s: SituationMeta) => sitProgress(progress, s.id).completions > 0;
-  const done = SITUATIONS.filter(isDone).length;
-  const totalStars = SITUATIONS.reduce((a, s) => a + stars(sitProgress(progress, s.id)), 0);
+  const done = ROUTE.filter(isDone).length;
+  const totalStars = ROUTE.reduce((a, s) => a + stars(sitProgress(progress, s.id)), 0);
   const open = (panel: "phrasebook" | "journal" | "settings") => useStore.getState().setHud({ panel });
   const due = useDueCards();
   return (
@@ -120,8 +121,8 @@ function LightHome() {
           <h1>Labas{progress.profile?.name ? `, ${progress.profile.name}` : ""}!</h1>
           <p>Pasirink situaciją – pokalbis prasidės iš karto.</p>
           <div className="lh-progress">
-            <div className="lh-bar" role="progressbar" aria-valuemin={0} aria-valuemax={SITUATIONS.length} aria-valuenow={done} aria-label="Įveiktos situacijos"><i style={{ width: `${(done / SITUATIONS.length) * 100}%` }} /></div>
-            <span>Įveikta <b>{done}</b> iš {SITUATIONS.length}</span>
+            <div className="lh-bar" role="progressbar" aria-valuemin={0} aria-valuemax={ROUTE.length} aria-valuenow={done} aria-label="Įveiktos situacijos"><i style={{ width: `${(done / ROUTE.length) * 100}%` }} /></div>
+            <span>Įveikta <b>{done}</b> iš {ROUTE.length}</span>
             <span className="lh-stars"><Icon name="star" size={17} label="Žvaigždučių:" /> {totalStars}</span>
           </div>
         </section>

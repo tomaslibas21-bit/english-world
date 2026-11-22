@@ -61,6 +61,8 @@ export interface HintItem {
 }
 
 export interface HintGroup {
+  /** Fill name placeholders with the learner's profile on this group's examples. */
+  ownName?: boolean;
   /** What you want to communicate, in Lithuanian ("Užsisakyti gėrimą"). */
   lt: string;
   /** Entity type used for chips/examples; the placeholder name in items is "X". */
@@ -184,6 +186,10 @@ export type Handler = (ctx: Ctx, slots: any, seg: Segment) => void;
 
 export interface SituationDef {
   id: string;
+  /** Optional conversation outside the town’s route. */
+  bonus?: boolean;
+  /** Let this conversation continue through the transcript when voice playback is interrupted or unavailable. */
+  optionalVoice?: boolean;
   /** Mission checklist shown to the learner from the start: 3–6 short imperative labels ("Užsisakyk gėrimą").
    *  Each item is either tied to a step (`step`: ticked when the step is done or resolved) or has its own
    *  `done` predicate on the conversation state. `when` (or the step's `when`) + `optional` hides items that
@@ -233,7 +239,7 @@ export interface SituationDef {
 
 /** What the town, its lists, the map, the radio and the title screen know of a conversation before its own file is
  *  loaded: src/content/situations/catalog.ts (the values: meta.gen.ts, written by tools/gen-meta.ts). */
-export const SITUATION_META_FIELDS = ["id", "song", "songTitle", "title", "topic", "chapter", "order", "location", "npc", "npcs", "mode", "goal", "intro"] as const;
+export const SITUATION_META_FIELDS = ["id", "bonus", "song", "songTitle", "title", "topic", "chapter", "order", "location", "npc", "npcs", "mode", "goal", "intro"] as const;
 export type SituationMeta = Pick<SituationDef, (typeof SITUATION_META_FIELDS)[number]>;
 
 export interface NluTest {

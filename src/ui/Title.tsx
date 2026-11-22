@@ -1,9 +1,10 @@
+import { ROUTE } from "../content/route";
 import { useEffect, useState } from "react";
 import { useStore, type PlayMode } from "../state/store";
 import type { Look } from "../content/npcs";
 import { NPCS } from "../content/npcs";
 import { LOCATIONS, TOWN_LT } from "../content/locations";
-import { SITUATIONS, SITUATION_BY_ID } from "../content/situations/catalog";
+import { SITUATION_BY_ID } from "../content/situations/catalog";
 import { sitProgress, stars } from "../state/progress";
 import { ltCount } from "./lt";
 import { Icon } from "./icons";
@@ -116,7 +117,7 @@ function ModeChoice() {
 }
 
 function Perks() {
-  const n = SITUATIONS.length;
+  const n = ROUTE.length;
   return (
     <ul className="ts-perks">
       <li><Icon name="mic" size={18} /> Kalbėk balsu arba rašyk</li>
@@ -162,17 +163,17 @@ export function Title({ onPlay }: { onPlay: () => void }) {
   const progress = useStore((s) => s.progress);
   const [creating, setCreating] = useState(false);
   if (creating || !profile) return <Create onDone={onPlay} canCancel={!!profile} onCancel={() => setCreating(false)} />;
-  const done = SITUATIONS.filter((s) => sitProgress(progress, s.id).completions > 0).length;
-  const totalStars = SITUATIONS.reduce((a, s) => a + stars(sitProgress(progress, s.id)), 0);
+  const done = ROUTE.filter((s) => sitProgress(progress, s.id).completions > 0).length;
+  const totalStars = ROUTE.reduce((a, s) => a + stars(sitProgress(progress, s.id)), 0);
   return (
     <Frame name={profile.name}
-      head={<p className="ts-lead">Tavo miestelis laukia – kavinė, stotis, parduotuvės ir {SITUATIONS.length} {ltCount(SITUATIONS.length, "pokalbis", "pokalbiai", "pokalbių")} su jo žmonėmis.</p>}
+      head={<p className="ts-lead">Tavo miestelis laukia – kavinė, stotis, parduotuvės ir {ROUTE.length} {ltCount(ROUTE.length, "pokalbis", "pokalbiai", "pokalbių")} su jo žmonėmis.</p>}
       body={
         <div className="ts-card">
           <p className="ts-hello">{profile.gender === "f" ? "Sveika sugrįžusi" : "Sveikas sugrįžęs"}, <b>{profile.name}</b>!</p>
           <div className="ts-progress">
-            <div className="ts-bar" role="progressbar" aria-valuemin={0} aria-valuemax={SITUATIONS.length} aria-valuenow={done} aria-label="Įveiktos situacijos"><i style={{ width: `${Math.max(3, (done / SITUATIONS.length) * 100)}%` }} /></div>
-            <span>Įveikta <b>{done}</b> iš {SITUATIONS.length}</span>
+            <div className="ts-bar" role="progressbar" aria-valuemin={0} aria-valuemax={ROUTE.length} aria-valuenow={done} aria-label="Įveiktos situacijos"><i style={{ width: `${Math.max(3, (done / ROUTE.length) * 100)}%` }} /></div>
+            <span>Įveikta <b>{done}</b> iš {ROUTE.length}</span>
             {totalStars > 0 && <span className="ts-stars"><Icon name="star" size={16} label="Žvaigždučių:" /> {totalStars}</span>}
           </div>
           <button className="btn ts-go" onClick={onPlay} autoFocus>Tęsti <Icon name="play" size={17} /></button>

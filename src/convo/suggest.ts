@@ -34,6 +34,8 @@ export interface AnswerOpts {
  *  name: recognition uses playerVars. */
 export const EXAMPLE_PLAYER = { name: "Tomas", surname: "Mikalauskas" };
 export const exampleVars = (): Record<string, string> => ({ name: EXAMPLE_PLAYER.name, surname: EXAMPLE_PLAYER.surname, letters: EXAMPLE_PLAYER.surname });
+export const hintVars = (group: HintGroup, profile?: Parameters<typeof playerVars>[0]) =>
+  group.ownName ? playerVars(profile) : exampleVars();
 const OWN_NOTE = {
   lt: { name: "Pasakyk savo vardą.", surname: "Pasakyk savo pavardę.", both: "Pasakyk savo vardą ir pavardę.", letters: "Pasakyk savo pavardę paraidžiui." },
   en: { name: "Say your own name.", surname: "Say your own last name.", both: "Say your own first and last name.", letters: "Spell your own last name." },

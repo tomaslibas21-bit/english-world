@@ -52,6 +52,7 @@ export const RIDERS: Record<string, Role> = {
 
 /** Hand-picked voices where the character calls for it (age, manner); the rest is drawn from the role. */
 const PICKS: Record<string, { voice: string; note: string }> = {
+  tina: { voice: "Sulafat", note: "pool hall owner in her early fifties, warm and slightly husky" },
   maggie: { voice: "Gacrux", note: "about 60, a retired drama teacher: warm, theatrical, enjoys a good haggle" },
   frank: { voice: "Algenib", note: "a retired neighbor: chatty, warm, a little slow" },
   mrs_lee: { voice: "Vindemiatrix", note: "an older flower seller: kind, calm, motherly" },
@@ -71,6 +72,7 @@ const PICKS: Record<string, { voice: string; note: string }> = {
 
 /** How each character speaks (manner only). */
 const STYLE: Record<string, string> = {
+  tina: "warm and teasing",
   diaz: "firm, clear and businesslike", priya: "friendly and helpful", vinnie: "cheerful and chatty", olivia: "warm and welcoming",
   chuck: "very fast and enthusiastic", mia: "bright and friendly", rosa: "relaxed and friendly", ben: "polite and helpful",
   harold: "slow and dry, with quiet humor", marco: "friendly and attentive", chloe: "upbeat and helpful", okafor: "patient, calm and caring",

@@ -1,3 +1,4 @@
+import { ROUTE } from "../content/route";
 // Conversation files on demand (phone loading, 16 Nov 2026; src/content/situations/catalog.ts). A conversation opens
 // once its file is here (whenLoaded); the files the learner will likely open next are fetched in the background
 // before they are needed, so opening one isn't slower than before: the task's, the ones of the people within ~25 m
@@ -6,7 +7,7 @@
 // conversation the one its end box offers next. A course's link to one conversation (?sit=) fetches it at once
 // (src/ui/playMode.ts).
 import { useStore } from "../state/store";
-import { SITUATIONS, getSituation, loadSituation, prefetchSituations } from "../content/situations/catalog";
+import { getSituation, loadSituation, prefetchSituations } from "../content/situations/catalog";
 import type { SituationDef } from "../content/types";
 import type { GameApi } from "./gameRef";
 
@@ -25,7 +26,7 @@ export function whenLoaded(sitId: string, go: (def: SituationDef) => void, still
   ).finally(() => settled?.());
 }
 
-const CALLS = SITUATIONS.filter((s) => s.mode === "phone" || s.mode === "video" || s.location === "phone").map((s) => s.id);
+const CALLS = ROUTE.filter((s) => s.mode === "phone" || s.mode === "video" || s.location === "phone").map((s) => s.id);
 let timer: ReturnType<typeof setInterval> | null = null;
 
 /** Keeps fetching the conversations the learner is near (gameRef.setGame starts it for each game, and stops it). */

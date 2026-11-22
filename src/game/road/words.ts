@@ -1,5 +1,6 @@
+import { ROUTE } from "../../content/route";
 import { NPCS } from "../../content/npcs";
-import { loadSituation, SITUATIONS } from "../../content/situations/catalog";
+import { loadSituation } from "../../content/situations/catalog";
 import type { SentSrc, SituationDef } from "../../content/types";
 import { coachVoice, npcVoice } from "../../content/voices";
 import { compose, type Sentence } from "../../convo/compose";
@@ -17,12 +18,12 @@ export type Prompt = { word: Word; options: string[]; right: number; gap?: Gap }
 type Voice = Omit<Clip, "say">;
 type HasClip = (voice: string, speed: number, text: string) => boolean;
 
-export const starterIds = [...SITUATIONS]
+export const starterIds = [...ROUTE]
   .sort((a, b) => a.chapter - b.chapter || a.order - b.order || a.id.localeCompare(b.id))
   .slice(0, 3).map(({ id }) => id);
 
 export function wordSources(progress: Progress) {
-  const finished = SITUATIONS.filter(({ id }) => sitProgress(progress, id).completions > 0).map(({ id }) => id);
+  const finished = ROUTE.filter(({ id }) => sitProgress(progress, id).completions > 0).map(({ id }) => id);
   return { finished, ids: finished.length ? finished : starterIds };
 }
 

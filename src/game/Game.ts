@@ -1,3 +1,4 @@
+import { ROUTE } from "../content/route";
 // The game: renderer, zones (town + interiors), player, NPCs, input, guidance and conversations.
 import * as THREE from "three";
 import { showConversationEvent } from "./convEvents";
@@ -37,6 +38,8 @@ import type { LizzieMeeting } from "./phone/meeting";
 import { scoreShot } from "./kit/scoreShot";
 import { createSurfMode } from "./surf/mode";
 import { createTaxiMode } from "./taxi/mode";
+import { BilliardsMode, BILLIARDS_PLACE } from "./billiards/mode";
+import { makeCue, TABLE_NAME, TABLE_PROMPT, type TableView } from "./billiards/table";
 import { BARISTA_PROMPT, createBaristaMode } from "./barista/mode";
 import { BARISTA_CONVERSATION } from "../content/barista";
 import { GOFISH_CONVERSATION } from "../content/gofish";
@@ -220,6 +223,7 @@ export class Game implements GameApi {
   private nearest: { kind: "npc" | "staff" | "door" | "exit" | "ride" | "out" | "climb" | "mode"; id: string; label: string; prompt?: NonNullable<import("../state/store").HudState["prompt"]> } | null = null;
   private pushDoorT = 0;
   private transitioning = false;
+  private billiards!: BilliardsMode;
   private barista: ReturnType<typeof createBaristaMode> | null = null;
   private gofish: ReturnType<typeof createGoFishMode> | null = null;
   private frameFade = new FrameFade((fade) => useStore.getState().setHud({ fade, fadeOnFrames: true }));
@@ -519,6 +523,13 @@ export class Game implements GameApi {
       place: (x, z, rot) => this.placeOnFoot(x, z, rot, true),
       savePlace: () => this.savePlace(),
     }));
+    this.modes.register(this.billiards = new BilliardsMode(host, {
+      table: () => this.zone.id === BILLIARDS_PLACE
+        ? this.zone.group.getObjectByName(TABLE_NAME)?.userData.table as TableView ?? null : null,
+      tina: () => this.npcs.find((actor) => actor.id === "tina")?.ch,
+      place: (x, z, rot) => this.placeOnFoot(x, z, rot, true),
+      save: () => this.savePlace(),
+    }));
     if (ROAD_EDITION.enabled) {
       this.road = new RoadEntry({
         ...host,
@@ -729,7 +740,7 @@ export class Game implements GameApi {
 
   /** `via`: through a door ("in" or "out"): the camera starts near the player and settles; out into the street, with
    *  nothing held, the player takes two steps out of the doorway. */
-  enterZone(id: string, spawn?: { x: number; z: number; rot: number }, instant = false, via?: "in" | "out") {
+  enterZone(id: string, spawn?: { x: number; z: number; rot: number }, instant = false, via?: "in" | "out", onEntered?: () => void) {
     const z = this.getZone(id);
     if (!z) return;
     const doIt = () => {
@@ -778,8 +789,9 @@ export class Game implements GameApi {
       this.scene.fog = indoor ? null : new THREE.Fog(THEME.light.haze, 110, 420);
       this.scene.background = indoor ? new THREE.Color(z.interior?.warm ? "#2b2320" : "#23282e") : null;
       // outdoors a little less flat fill and a little more sun than before (deeper colours, clearer shapes)
-      this.hemi.intensity = indoor ? 1.9 : THEME.light.fill;
-      this.sun.intensity = indoor ? 1.6 : THEME.light.sunPower;
+      const poolHall = id === BILLIARDS_PLACE;
+      this.hemi.intensity = indoor ? (poolHall ? 1.23 : 1.9) : THEME.light.fill;
+      this.sun.intensity = indoor ? (poolHall ? 0.92 : 1.6) : THEME.light.sunPower;
       this.fx?.zone(indoor, !!z.interior?.warm);
       this.rig.mode = indoor ? "interior" : "follow";
       if (indoor) this.rig.interiorBounds = { w: z.interior!.w, d: z.interior!.d };
@@ -794,6 +806,7 @@ export class Game implements GameApi {
       setTimeout(() => { if (useStore.getState().hud.zoneBanner?.title === name) useStore.getState().setHud({ zoneBanner: null }); }, 2600);
       this.refreshObjective();
       this.savePlace();
+      onEntered?.();
     };
     if (instant) { doIt(); return; }
     this.fadeThen(doIt);
@@ -817,7 +830,12 @@ export class Game implements GameApi {
   }
 
   private spawnNpcs() {
-    for (const n of this.npcs) { n.ch.dispose?.(); this.npcLayer.remove(n.ch.root); n.tag.remove(); }
+    for (const n of this.npcs) {
+      n.ch.rightHand.getObjectByName("tina-cue")?.traverse((piece) => {
+        if (piece instanceof THREE.Mesh) { piece.geometry.dispose(); piece.material.dispose(); }
+      });
+      n.ch.dispose?.(); this.npcLayer.remove(n.ch.root); n.tag.remove();
+    }
     this.npcs = [];
     const spots = this.zone.interior ? this.zone.interior.npcs : OUTDOOR_NPCS;
     const partner = this.chosenDatePartner();
@@ -831,6 +849,13 @@ export class Game implements GameApi {
       ch.root.rotation.y = sp.rot;
       if (sp.sit) { ch.seatY = sp.seat ?? 0.5; ch.setAnim("sit"); }
       ch.busy = AT_WORK[sp.npc] ?? null;
+      if (sp.npc === "tina") {
+        const cue = makeCue();
+        cue.name = "tina-cue";
+        cue.position.set(0.04, 0.61, 0.06);
+        cue.rotation.z = 0.12;
+        ch.rightHand.add(cue);
+      }
       this.npcLayer.add(ch.root);
       const tag = document.createElement("div");
       tag.className = "nametag";
@@ -943,7 +968,7 @@ export class Game implements GameApi {
       this.horn(); e.preventDefault(); return;
     }
     if (this.modes.modal || this.modes.active) {
-      if (!this.transitioning && this.modes.input({ kind: "key", key: k, repeat: e.repeat, keys: this.keys })) e.preventDefault();
+      if (!this.transitioning && this.modes.input({ kind: "key", key: k, repeat: e.repeat, keys: this.keys, shift: e.shiftKey })) e.preventDefault();
       return;
     }
     if (k === "escape" && this.modes.input({ kind: "key", key: k, repeat: e.repeat, keys: this.keys })) {
@@ -964,8 +989,12 @@ export class Game implements GameApi {
     if (k === "r" && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) radio.power();
     if (k === "escape") st.setHud({ panel: "settings" });
   };
-  private onKeyUp = (e: KeyboardEvent) => { this.keys.delete(e.key.toLowerCase()); };
-  private onBlur = () => { this.keys.clear(); };
+  private onKeyUp = (e: KeyboardEvent) => {
+    const key = e.key.toLowerCase();
+    this.keys.delete(key);
+    if (this.billiards.release(key)) e.preventDefault();
+  };
+  private onBlur = () => { this.keys.clear(); this.billiards.release(" ", true); };
 
   horn() {
     if (useStore.getState().hud.panel || this.transitioning || this.session?.active) return;
@@ -1490,17 +1519,17 @@ export class Game implements GameApi {
     this.enterZone(loc, undefined, false, "in");
   }
 
-  exitInterior() {
+  exitInterior(onEntered?: () => void) {
     if (!this.zone.interior) return;
     const loc = this.zone.id;
     const door = this.town.doors.find((d) => d.loc === loc);
-    if (loc === "airport") { this.enterZone("town", AIRPORT_EXIT, false, "out"); return; }
+    if (loc === "airport") { this.enterZone("town", AIRPORT_EXIT, false, onEntered ? undefined : "out", onEntered); return; }
     if (door) {
       // a metre further out than the door's own spot (clear of an awning's edge, so the camera has room behind)
       const x = door.outX + Math.sin(door.rot), z = door.outZ + Math.cos(door.rot);
       const out = this.town.walkableAt(x, z) ? { x, z } : { x: door.outX, z: door.outZ };
-      this.enterZone("town", { ...out, rot: door.rot }, false, "out");
-    } else this.enterZone("town");
+      this.enterZone("town", { ...out, rot: door.rot }, false, onEntered ? undefined : "out", onEntered);
+    } else this.enterZone("town", undefined, false, undefined, onEntered);
   }
 
   sitsForNpc(npc: string): SituationMeta[] { return this.npcToSits.get(npc) ?? []; }
@@ -1990,7 +2019,7 @@ export class Game implements GameApi {
     }
     if (this.pendingRide) { const r = this.pendingRide; this.pendingRide = null; this.ride(r.to, r.by); }
     this.modes.launchQueued();
-    if (completed) this.advanceObjective(sit);
+    if (completed && !sit.bonus) this.advanceObjective(sit);
     this.refreshObjective();
   }
 
@@ -2009,6 +2038,19 @@ export class Game implements GameApi {
   modeAction(id: string, name: string, value?: string | boolean) {
     if (this.transitioning || useStore.getState().hud.panel) return;
     if (this.modes.owns(id)) this.modes.get(id)?.action?.(name, value);
+  }
+  debugBilliards() {
+    const debug = this.billiards.debug();
+    if (!debug) return undefined;
+    return {
+      ...debug,
+      start: (group?: "solids" | "stripes") => {
+        if (this.transitioning || this.modes.active || this.session?.active) return false;
+        useStore.getState().setHud({ panel: null });
+        if (this.zone.id !== BILLIARDS_PLACE) this.enterZone(BILLIARDS_PLACE, TABLE_PROMPT, true);
+        return this.modes.start("billiards", group);
+      },
+    };
   }
   debugBarista() {
     if (!import.meta.env.DEV) return undefined;
@@ -2096,7 +2138,15 @@ export class Game implements GameApi {
   // ------------------------------------------------------------------ objectives
 
   orderedSituations(): SituationMeta[] {
-    return [...SITUATIONS].sort((a, b) => a.chapter - b.chapter || a.order - b.order || a.id.localeCompare(b.id));
+    return [...ROUTE].sort((a, b) => a.chapter - b.chapter || a.order - b.order || a.id.localeCompare(b.id));
+  }
+
+  guideToPlace(loc: string) {
+    const door = this.town.doors.find((d) => d.loc === loc);
+    if (!door || this.zone.id === loc || this.rides.riding) return;
+    if (this.zone.interior) {
+      this.walkTo(this.zone.interior.exit.x, this.zone.interior.exit.z - 0.6, { kind: "exit", id: loc });
+    } else this.walkTo(door.outX, door.outZ, { kind: "point" });
   }
 
   guideToLighthouse() {
@@ -2107,6 +2157,7 @@ export class Game implements GameApi {
   }
 
   setObjective(sitId: string | null) {
+    if (sitId && SITUATION_BY_ID[sitId]?.bonus) return;
     this.islandGuide = false;
     useStore.getState().updateProgress((p) => { p.objective = sitId; });
     this.refreshObjective();
@@ -2114,7 +2165,7 @@ export class Game implements GameApi {
 
   private advanceObjective(done: SituationDef) {
     const pr = useStore.getState().progress;
-    if (pr.objective && pr.objective !== done.id) return;
+    if (pr.objective && pr.objective !== done.id && !SITUATION_BY_ID[pr.objective]?.bonus) return;
     const next = this.orderedSituations().find((s) => !sitProgress(pr, s.id).completions);
     this.setObjective(next?.id ?? null);
     // (in the situation picker flow the end-of-conversation buttons offer the next one instead)
@@ -2123,7 +2174,7 @@ export class Game implements GameApi {
 
   currentObjective(): SituationMeta | null {
     const pr = useStore.getState().progress;
-    if (pr.objective && SITUATION_BY_ID[pr.objective]) return SITUATION_BY_ID[pr.objective];
+    if (pr.objective && SITUATION_BY_ID[pr.objective] && !SITUATION_BY_ID[pr.objective].bonus) return SITUATION_BY_ID[pr.objective];
     const first = this.orderedSituations().find((s) => !sitProgress(pr, s.id).completions) ?? null;
     return first;
   }
@@ -2407,6 +2458,8 @@ export class Game implements GameApi {
         const pictureHeight = talkPictureHeight(h);
         this.rig.applyViewShift(w, h, sideways ? w * 0.375 : wide ? Math.min(w * 0.22, 380) : 0,
           wide || sideways ? 0 : (h - pictureHeight) / 2);
+      } else if (mode === this.billiards) {
+        this.billiards.frameView(w, h, document.querySelector(".bl-table-pad")?.getBoundingClientRect());
       } else if (this.barista && mode === this.barista) {
         const bottom = document.querySelector(".barista-bottom, .barista-result .mode-score-card")?.getBoundingClientRect().top;
         this.barista.frameView(w, h, bottom ?? h, document.querySelector<HTMLElement>(".barista-cue"));
@@ -2919,7 +2972,7 @@ export class Game implements GameApi {
     if (!t) return;
     if (t.kind === "npc" && t.id) this.talkTo(t.id);
     else if (t.kind === "door" && t.id) this.enterDoor(t.id);
-    else if (t.kind === "exit") this.exitInterior();
+    else if (t.kind === "exit") this.exitInterior(t.id ? () => this.guideToPlace(t.id!) : undefined);
   }
 
   private updateNpcs(dt: number, talking: boolean, mode: ReturnType<ModeRegistry["get"]> | null) {

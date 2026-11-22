@@ -1,3 +1,4 @@
+import { ROUTE } from "../content/route";
 // The light mode: the situation list and the conversations with their illustrated pictures, without the
 // 3D town (no Three.js scene, no WebGL), so it opens in seconds and saves a phone's battery. The UI
 // talks to it through the same members it uses on the 3D game (GameApi); the world ones do nothing.
@@ -7,7 +8,7 @@ import type { Door } from "./world/town";
 import { Session } from "./session";
 import { audio } from "./audio";
 import { givenItem } from "./given";
-import { SITUATIONS, SITUATION_BY_ID, getSituation, loadSituation } from "../content/situations/catalog";
+import { SITUATION_BY_ID, getSituation, loadSituation } from "../content/situations/catalog";
 import type { SituationDef, SituationMeta } from "../content/types";
 import { useStore } from "../state/store";
 import { sitProgress } from "../state/progress";
@@ -95,16 +96,17 @@ export class LightGame implements GameApi {
   closeConversation() { this.session?.close(); }
 
   orderedSituations(): SituationMeta[] {
-    return [...SITUATIONS].sort((a, b) => a.chapter - b.chapter || a.order - b.order || a.id.localeCompare(b.id));
+    return [...ROUTE].sort((a, b) => a.chapter - b.chapter || a.order - b.order || a.id.localeCompare(b.id));
   }
 
   currentObjective(): SituationMeta | null {
     const pr = useStore.getState().progress;
-    if (pr.objective && SITUATION_BY_ID[pr.objective]) return SITUATION_BY_ID[pr.objective];
+    if (pr.objective && SITUATION_BY_ID[pr.objective] && !SITUATION_BY_ID[pr.objective].bonus) return SITUATION_BY_ID[pr.objective];
     return this.orderedSituations().find((s) => !sitProgress(pr, s.id).completions) ?? null;
   }
 
   setObjective(sitId: string | null) {
+    if (sitId && SITUATION_BY_ID[sitId]?.bonus) return;
     useStore.getState().updateProgress((p) => { p.objective = sitId; });
   }
 
@@ -143,7 +145,7 @@ export class LightGame implements GameApi {
         if (this.session !== session) return;
         this.session = null;
         useStore.getState().setConv({ active: false });
-        if (completed) this.advanceObjective(s);
+        if (completed && !s.bonus) this.advanceObjective(s);
       },
     });
     this.session = session;
@@ -166,7 +168,7 @@ export class LightGame implements GameApi {
   /** The task is done: the next one not yet completed becomes the task (as in the town). */
   private advanceObjective(done: SituationDef) {
     const pr = useStore.getState().progress;
-    if (pr.objective && pr.objective !== done.id) return;
+    if (pr.objective && pr.objective !== done.id && !SITUATION_BY_ID[pr.objective]?.bonus) return;
     const next = this.orderedSituations().find((s) => !sitProgress(pr, s.id).completions);
     this.setObjective(next?.id ?? null);
   }

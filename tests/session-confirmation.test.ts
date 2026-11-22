@@ -137,3 +137,24 @@ describe("speech confirmations belong to the learner's current turn", () => {
     listen.mockRestore();
   });
 });
+
+it("ticks Tina's name checklist immediately and opens the group turn after interrupted voice", async () => {
+  session.close();
+  await loadSituation("x01-pool-hall");
+  session = new Session("x01-pool-hall", { npcTalk() {}, onEvent() {}, onEnd() {} });
+  const begin = session.begin();
+  useStore.getState().setConv({ introOpen: false, typing: true });
+  await begin;
+  await session.submit("A little.");
+
+  let interrupt!: (played: boolean) => void;
+  vi.mocked(audio.play).mockImplementationOnce(() => new Promise((resolve) => { interrupt = resolve; }));
+  const name = session.submit("I'm Ana.");
+  expect(useStore.getState().conv.phase).toBe("npc");
+  expect(useStore.getState().conv.checklist.find((item) => item.id === "name")?.done).toBe(true);
+  interrupt(false);
+  await name;
+
+  expect(useStore.getState().conv).toMatchObject({ phase: "you", stepId: "group", speaking: null });
+  expect(useStore.getState().conv.transcript.at(-1)?.sentence?.en).toBe("Solids or stripes?");
+});

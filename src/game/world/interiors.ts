@@ -8,6 +8,8 @@ import { THEME } from "./theme";
 import { DINING, DINING_SEATS, DINNER_PROPS } from "../gofish/framing";
 import { leafShape } from "./maple";
 import { floorMaterial, floorColor } from "./styled";
+import { makeCue, TableView, TABLE_X, TABLE_Z, TINA_HOME } from "../billiards/table";
+import { rack } from "../billiards/rules";
 
 /** `ax/az`: where the player stands to talk (the walk to them, the guidance trail and the situation picker all end
  *  there), when that is not simply in front of the person: across a table, or across a counter, 0.6 m in front of it
@@ -633,7 +635,129 @@ function policeBoard() {
 // ---------------------------------------------------------------------------
 // Rooms
 
+function poolHall(c: Ctx) {
+  const { M, col, g } = c;
+  const box = (w: number, h: number, d: number, x: number, y: number, z: number, color: string) =>
+    M.add("pool-" + color, mat(color), boxGeo(w, h, d, x, y, z));
+  const cyl = (top: number, base: number, h: number, x: number, y: number, z: number, color: string) =>
+    M.add("pool-" + color, mat(color), cylGeo(top, base, h, x, y, z, 12));
+  const walnut = "#503123", edge = "#83563b", brass = "#c7a262";
+  const table = new TableView();
+  table.setRack(rack(401));
+  g.add(table.root);
+  col.addBox(0, 0, TABLE_X * 2, TABLE_Z * 2);
+
+  // Walnut wainscot with raised panels and a cap rail.
+  box(11, 1.0, 0.08, 0, 0.55, -4.96, walnut);
+  box(11, 0.09, 0.13, 0, 1.07, -4.92, edge);
+  for (const side of [-1, 1]) {
+    box(0.08, 1.0, 10, side * 5.46, 0.55, 0, walnut);
+    box(0.13, 0.09, 10, side * 5.42, 1.07, 0, edge);
+    for (let z = -4.6; z <= 4.6; z += 0.7) box(0.10, 0.74, 0.035, side * 5.44, 0.60, z, edge);
+  }
+  for (let x = -5.2; x <= 5.2; x += 0.7) box(0.035, 0.74, 0.10, x, 0.60, -4.94, edge);
+
+  // The lamp is placed at the far lip of the canopy sightline for the overhead table camera.
+  box(1.9, 0.06, 0.09, 0, 2.76, -0.82, brass);
+  for (const x of [-0.78, 0.78]) cyl(0.016, 0.016, 1.4, x, 3.44, -0.82, brass);
+  for (const x of [-0.54, 0, 0.54]) {
+    cyl(0.095, 0.22, 0.21, x, 2.61, -0.82, "#355848");
+    cyl(0.21, 0.21, 0.025, x, 2.50, -0.82, brass);
+    const glow = new THREE.Mesh(new THREE.CircleGeometry(0.183, 16).rotateX(Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: "#ffe0a2", toneMapped: false }));
+    glow.position.set(x, 2.485, -0.82); g.add(glow);
+  }
+  const light = new THREE.PointLight("#ffd3a0", 12, 5, 2);
+  light.position.set(0, 2.38, -0.62); g.add(light);
+  box(1.6, 0.021, 0.021, 0.1, 2.73, -1.76, brass);
+  for (const x of [-0.72, 0.92]) cyl(0.018, 0.018, 1.48, x, 3.44, -1.76, brass);
+  for (let i = 0; i < 10; i++) {
+    box(0.055, 0.085, 0.08, i < 5 ? -0.65 + 0.085 * i : 0.48 + 0.085 * (i - 5), 2.73, -1.76, i < 5 ? "#ad5146" : "#e0b762");
+  }
+
+  counter(c, -3.05, -4.15, 3.82, 0.94, walnut, edge);
+  for (const x of [-4.25, -3.05, -1.85]) {
+    cyl(0.24, 0.24, 0.09, x, 0.695, -3.05, "#9d493d");
+    cyl(0.052, 0.075, 0.62, x, 0.35, -3.05, walnut);
+    cyl(0.19, 0.21, 0.045, x, 0.035, -3.05, brass);
+    cyl(0.13, 0.13, 0.025, x, 0.34, -3.05, brass);
+    col.addCircle(x, -3.05, 0.25);
+  }
+  for (let i = 0; i < 7; i++) {
+    const x = -4.57 + i * 0.13, color = ["#c27538", "#a64045", "#6a9572", "#ceac61"][i % 4];
+    cyl(0.037, 0.049, 0.19, x, 1.15, -4.16, color);
+    cyl(0.024, 0.027, 0.076, x, 1.27, -4.16, color);
+    cyl(0.028, 0.028, 0.024, x, 1.315, -4.16, "#ede1bf");
+  }
+  box(0.64, 0.13, 0.5, -1.65, 1.11, -4.13, "#a84637");
+  box(0.65, 0.12, 0.52, -1.65, 1.73, -4.13, "#a84637");
+  M.add("popcorn-glass", mat("#f5dfaa", { transparent: 0.19 }), boxGeo(0.59, 0.52, 0.45, -1.65, 1.42, -4.13), false);
+  for (const x of [-1.94, -1.36]) for (const z of [-4.34, -3.92]) box(0.032, 0.57, 0.032, x, 1.43, z, brass);
+  for (let i = 0; i < 18; i++) {
+    M.add("popcorn", mat(i % 3 ? "#fff0bd" : "#efc878"),
+      new THREE.IcosahedronGeometry(0.045 + c.r() * 0.025, 0).translate(-1.88 + c.r() * 0.47, 1.22 + c.r() * 0.09, -4.28 + c.r() * 0.27));
+  }
+  const neon = canvasTex(512, 128, (x) => {
+    x.fillStyle = "#202a26"; x.fillRect(0, 0, 512, 128);
+    x.shadowColor = "#e19659"; x.shadowBlur = 14;
+    x.strokeStyle = "#cf8964"; x.lineWidth = 3;
+    x.strokeRect(13, 15, 486, 98);
+    x.fillStyle = "#ffe1a5";
+    x.font = "700 39px Georgia"; x.textAlign = "center"; x.textBaseline = "middle";
+    x.fillText("THE CORNER POCKET", 256, 66, 452);
+  });
+  wallPanel(c, neon, -3.05, 2.82, -4.91, 3.48, 0.87);
+  sign(c, "CALL YOUR SHOT", 0.35, 3.25, -4.91, 2.5, "#21342b", "#e9e1c6");
+
+  // Along the right wall, varnished cue rack and a cork dartboard.
+  for (const y of [0.49, 1.48, 2.2]) box(0.19, 0.09, 1.26, 5.27, y, -1.83, edge);
+  for (let i = 0; i < 5; i++) {
+    const cue = makeCue(); cue.position.set(5.18, 1.84 + 0.05 * (i % 2), -2.26 + i * 0.21); g.add(cue);
+  }
+  const dart = canvasTex(128, 128, (x) => {
+    x.fillStyle = "#3c2924"; x.fillRect(0, 0, 128, 128);
+    for (let i = 0; i < 20; i++) {
+      const a = i * Math.PI / 10, b = (i + 1) * Math.PI / 10;
+      for (const [r, color] of [[57, i % 2 ? "#a74044" : "#478363"], [50, i % 2 ? "#292d2c" : "#e3cba4"],
+        [32, i % 2 ? "#a74044" : "#478363"], [27, i % 2 ? "#292d2c" : "#e3cba4"]] as const) {
+        x.fillStyle = color; x.beginPath(); x.moveTo(64, 64); x.arc(64, 64, r, a, b); x.fill();
+      }
+    }
+    for (const [r, color] of [[9, "#468265"], [4, "#be4740"]] as const) {
+      x.fillStyle = color; x.beginPath(); x.arc(64, 64, r, 0, Math.PI * 2); x.fill();
+    }
+  });
+  wallPanel(c, dart, 5.39, 2.12, 0.02, 0.79, 0.79, -Math.PI / 2);
+  framedArt(c, 17, 1.96, 2.15, -4.91, 0.89, 0.72);
+  framedArt(c, 37, 3.02, 2.25, -4.91, 1.0, 0.77);
+  framedArt(c, 61, 4.21, 2.13, -4.91, 0.83, 0.67);
+
+  const jx = -4.72, jz = -0.34;
+  box(0.87, 1.15, 0.59, jx, 0.65, jz, "#513b37");
+  M.add("jukebox-top", mat("#b76e45"), new THREE.CylinderGeometry(0.434, 0.434, 0.59, 16)
+    .rotateX(Math.PI / 2).translate(jx, 1.22, jz));
+  box(0.74, 0.49, 0.02, jx, 0.51, jz + 0.303, "#352f32");
+  for (let i = 0; i < 8; i++) box(0.59, 0.014, 0.021, jx, 0.34 + i * 0.045, jz + 0.32, brass);
+  const jukeboxGlow = new THREE.Mesh(new THREE.RingGeometry(0.32, 0.377, 20, 1, 0, Math.PI),
+    new THREE.MeshBasicMaterial({ color: "#ff8d70", toneMapped: false }));
+  jukeboxGlow.position.set(jx, 1.22, jz + 0.305); g.add(jukeboxGlow);
+  sign(c, "JUKEBOX", jx, 1.32, jz + 0.312, 0.56, "#384150", "#f9cf91");
+  col.addBox(jx, jz, 0.87, 0.63);
+
+  // A covered practice table.
+  const spare = new TableView();
+  spare.root.name = "pool-hall-spare";
+  spare.root.scale.set(0.79, 0.94, 0.83);
+  spare.root.position.set(3.7, 0, 2.63);
+  spare.root.rotation.y = Math.PI / 2;
+  g.add(spare.root);
+  box(1.89, 0.10, 1.04, 3.7, 0.85, 2.63, "#4e5157");
+  col.addBox(3.7, 2.63, 1.89, 1.04);
+}
+
 const B: Record<string, () => Interior> = {
+  "pool-hall": () => room("pool-hall", 11, 10, "#67493d", "#294838", poolHall,
+    [{ npc: "tina", ...TINA_HOME, ax: 1.55, az: 1.28 }], { accent: "#503123", warm: true }),
   "sunny-cup": () => room("sunny-cup", 16, 12, "#c89b6d", "#fbe8cf", (c) => {
     counter(c, -2, -3.2, 7, 1.1, "#8a5a3c", "#e8d9c2");
     const props = new THREE.Group();

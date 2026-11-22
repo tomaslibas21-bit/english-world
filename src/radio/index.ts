@@ -1,10 +1,11 @@
+import { ROUTE } from "../content/route";
 // The game's one radio (radio.ts), tied to the rest of the game: it is silent for conversations, voices and the
 // microphone, follows the volume setting, and hears which place the learner walks into.
 import { useStore as useZustand } from "zustand";
 import { audio, filesToken, usesBufferRecordings } from "../game/audio";
 import { watchMicrophone } from "../convo/audioFocus";
 import { useStore } from "../state/store";
-import { SITUATIONS, SITUATION_BY_ID } from "../content/situations/catalog";
+import { SITUATION_BY_ID } from "../content/situations/catalog";
 import { STATIONS, songOfSituation } from "../content/radio";
 import { courseFavorites, FAVORITES_KEY } from "./favorites";
 import { BufferOutput, HtmlOutput } from "./output";
@@ -75,7 +76,7 @@ export function useRadio<T>(pick: (s: RadioState) => T): T { return useZustand(r
 
 /** The songs of the conversations at a place, the current task's first. */
 function songsAt(zone: string): (string | null)[] {
-  const here = SITUATIONS.filter((s) => s.location === zone);
+  const here = ROUTE.filter((s) => s.location === zone);
   const task = useStore.getState().hud.objective?.sitId;
   const first = task && SITUATION_BY_ID[task]?.location === zone ? [SITUATION_BY_ID[task]] : [];
   return [...first, ...here].map(songOfSituation);

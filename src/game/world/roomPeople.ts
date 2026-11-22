@@ -29,6 +29,10 @@ export interface RoomPerson {
 const P = Math.PI;
 
 export const ROOM_PEOPLE: Record<string, RoomPerson[]> = {
+  "pool-hall": [
+    { x: -3.05, z: -3.05, rot: P, sit: 0.74, carry: "cup", chat: 1 },
+    { x: -1.85, z: -3.05, rot: P, sit: 0.74, carry: "cup", chat: 1 },
+  ],
   // the round tables' chairs are half a metre high, north and south of each table
   "sunny-cup": [
     { x: 3, z: 1.45, rot: P, sit: 0.5, carry: "cup", chat: 1 }, { x: 3, z: -0.45, rot: 0, sit: 0.5, carry: "cup", chat: 1 },

@@ -11,7 +11,7 @@ import { ViewSwitch } from "./ViewSwitch";
 import { Panels } from "./Panels";
 import { Toasts } from "./Toasts";
 import { LightPlay } from "./LightHome";
-import { debugBaristaLink, debugGoFishLink, takeAutoStart, takeLinkedSituation } from "./playMode";
+import { debugBaristaLink, debugGoFishLink, debugBilliardsLink, takeAutoStart, takeLinkedSituation } from "./playMode";
 import { refreshLocalState } from "../convo/speech";
 import { audio } from "../game/audio";
 import { radio } from "../radio";
@@ -53,12 +53,13 @@ function Play() {
         const sit = takeLinkedSituation();
         if (debugBaristaLink) g!.debugBarista()?.start();
         else if (debugGoFishLink) g!.debugGoFish()?.start();
+        else if (debugBilliardsLink) g!.debugBilliards()?.start();
         else if (sit) g!.startScenario(sit);
       };
       g.init();
       (window as any).__ew = {
         game: g, store: useStore, radio, voice: audio.getState, audio, coach, surf: useSurf,
-        barista: g.debugBarista(), gofish: g.debugGoFish(), carStats: () => g!.carStats(),
+        barista: g.debugBarista(), gofish: g.debugGoFish(), billiards: g.debugBilliards(), carStats: () => g!.carStats(),
         ...(import.meta.env.DEV ? {
           sea: () => g!.seaDebug(), seaSteer: (lane: number) => g!.seaSteer(lane),
           seaTimer: (seconds?: number) => g!.seaTimer(seconds),

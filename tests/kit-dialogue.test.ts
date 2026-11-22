@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SPEECH_TIMING, type SpeechOptions, type SpeechRecognizer } from "../src/convo/speech";
 import { compose } from "../src/convo/compose";
+import { BILLIARDS_LINES } from "../src/content/billiards-lines";
 import { TAXI_ACCEPT, TAXI_LINES } from "../src/content/taxi-lines";
 import { GOFISH_ACCEPT, GOFISH_LINES } from "../src/content/gofish-lines";
+import { parseCall } from "../src/game/billiards/calls";
 import { ModeDialogue } from "../src/game/kit/dialogue";
 
 const mocks = vi.hoisted(() => ({
@@ -154,6 +156,29 @@ describe("mini-game dialogue", () => {
     await vi.advanceTimersByTimeAsync(SPEECH_TIMING.openAnswer);
     expect(select).toHaveBeenLastCalledWith("dan");
     expect(await turn).toMatchObject({ key: "gf_ask_apple", sentence: { en: "Do you have any apples?" } });
+  });
+
+  it("returns the original billiards call when a custom speech matcher accepts it", async () => {
+    const { dialogue } = setup();
+    const pieces = ["bl_b7", "bl_p_fl"].map((key) => compose(BILLIARDS_LINES[key][0], {}, { look: () => undefined }));
+    const option = { key: "7:fl", pieces, sentence: {
+      units: pieces.flatMap((piece) => piece.units),
+      en: pieces.map((piece) => piece.en).join(" "),
+      nat: pieces.map((piece) => piece.nat).join(" "),
+      say: pieces.map((piece) => piece.say).join(" "),
+    } };
+    const turn = dialogue.expectLines([option], {
+      phrases: [option.sentence.en],
+      read: (heard) => {
+        const call = parseCall(heard);
+        const answer = call?.ball === 7 && call.pocket === "fl" ? option : undefined;
+        return { answer, verdict: answer ? "complete" : "prefix" };
+      },
+    });
+    speak("7 top left corner");
+    await vi.advanceTimersByTimeAsync(SPEECH_TIMING.openAnswer);
+    await expect(turn).resolves.toBe(option);
+    expect(mocks.play).not.toHaveBeenCalled();
   });
 
   it("replays a cue during a learner turn and restores listening without replacing the choices", async () => {

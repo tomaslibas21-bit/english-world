@@ -168,3 +168,17 @@ describe("iOS recorded Web Audio", () => {
     audio.continueReading(); expect(await done).toBe(true);
   });
 });
+
+it("falls back to speech when an optional iPhone recording is empty, then releases a stalled utterance", async () => {
+  fetcher.mockImplementation(async () => new Response(null, { status: 204 }));
+  const done = audio.play(voice, 1, lines[0], { optional: true });
+  await tick();
+  expect(synth).toHaveBeenCalledOnce();
+  expect(audio.getState()).toBe("playing");
+
+  // A native voice can fail to report either onend or onerror.
+  await vi.advanceTimersByTimeAsync(10_000);
+  expect(await done).toBe(false);
+  expect(audio.getState()).toBe("idle");
+  expect(html).not.toHaveBeenCalled();
+});

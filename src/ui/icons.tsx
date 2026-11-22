@@ -93,6 +93,7 @@ const ICONS = {
   settings: [{ d: GEAR + c(12, 12, 3), k: "soft" }],
   party: [{ d: "M3.75 20.25 8.4 8.6l7 7z", k: "soft" }, "M12.25 8.25c-.2-2 .7-3.6 2.5-4.5", "M15.75 11.75c2-.2 3.6.7 4.5 2.5", "M14 10l3.5-3.5",
     dot(19.25, 3.75), dot(20.5, 8.75), dot(16.5, 3.25)],
+  billiards: [c(12, 12, 9.25), c(12, 12, 4.5), "M11 12a1.4 1.4 0 1 0 2 0 1.4 1.4 0 1 0-2 0z"],
   target: [c(12, 12, 9.25), { d: c(12, 12, 5.5), k: "soft" }, { d: c(12, 12, 1.75), k: "fill" }],
   star: [{ d: star(12, 12.6, 9.4, 4.3), k: "solid" }],
   walk: [{ d: c(13.25, 4.5, 2), k: "fill" }, "M12.5 8.25 11 13.5", "M11 13.5l-1.75 3.25L7 20.5", "M11 13.5l2.5 3 1.25 4",
@@ -211,6 +212,7 @@ export function Icon({ name, size = 20, className, style, strokeWidth = 1.75, la
 }
 
 const KEEPSAKE_ICONS: Record<KeepsakeKind, string> = {
+  cue_chalk: "M4 7l8-4 8 4v10l-8 4-8-4zM4 7l8 4 8-4m-8 4v10",
   passport_stamp: "M12 6Q8 3 3 5v14q5-2 9 1 4-3 9-1V5q-5-2-9 1v14M15 11l2-2 2 2-2 2z",
   boarding_pass: "M3 6h18v12H3zM16 6v12M6 10h6m-6 4h4",
   baggage_tag: "M8 7h8l3 4v9H5v-9zM10 7V5a2 2 0 1 1 4 0v2m-5 8h6",
@@ -288,7 +290,7 @@ const EMOJI: Record<string, IconName> = {
   "\u{1F3E8}": "bed", "\u{2139}": "info", "\u{1F5BC}": "frame", "\u{2615}": "coffee", "\u{1F35D}": "restaurant", "\u{1F455}": "shirt",
   "\u{1F48A}": "pill", "\u{2702}": "scissors", "\u{1F3E6}": "bank", "\u{1F4EE}": "mail", "\u{1F33B}": "flower", "\u{1F693}": "police",
   "\u{1F3E2}": "building", "\u{1F389}": "party", "\u{1F3E1}": "home", "\u{1F3E0}": "home", "\u{1F4BC}": "briefcase", "\u{1F305}": "sunset",
-  "\u{1FA7A}": "stethoscope", "\u{1F6D2}": "cart", "\u{1F3CB}": "dumbbell", "\u{1F331}": "sprout",
+  "\u{1F3B1}": "billiards", "\u{1FA7A}": "stethoscope", "\u{1F6D2}": "cart", "\u{1F3CB}": "dumbbell", "\u{1F331}": "sprout",
   "\u{1F4F1}": "smartphone", "\u{1F4DE}": "phoneCall", "\u{1F3A5}": "video", "\u{1F4CD}": "pin",
   // things people hand you, and other toasts (src/game/Game.ts, src/game/session.ts)
   "\u{1F3A7}": "headphones", "\u{1F4C4}": "document", "\u{1F3AB}": "ticket", "\u{1F39F}": "ticket", "\u{1F5D3}": "calendar", "\u{1F4C5}": "calendar",

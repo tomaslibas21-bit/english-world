@@ -603,9 +603,19 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   const frameMat = mat("#f3eee4");
   const darkGlass = reflective(mat("#5f8fb0", { emissive: "#0e2233" }));
   const key = b.id;
+  const poolHall = b.loc === "pool-hall";
   const { n, t, halfDepth, halfWidth } = faceInfo(b);
   // walls
   M.add(`${key}-walls`, wallMat, boxGeo(b.w, b.h, b.d, b.x, b.h / 2, b.z));
+  if (poolHall) {
+    const seam = mat("#2c4738");
+    for (let y = 0.64; y < b.h - 0.45; y += 0.29) {
+      for (const side of [-1, 1]) {
+        M.add("pool-hall-siding", seam, boxGeo(b.w, 0.022, 0.03, b.x, y, b.z + side * b.d / 2), false);
+        M.add("pool-hall-siding", seam, boxGeo(0.03, 0.022, b.d, b.x + side * b.w / 2, y, b.z), false);
+      }
+    }
+  }
   // plinth and cornice
   M.add(`trim-${b.trim}`, trimMat, boxGeo(b.w + 0.3, 0.5, b.d + 0.3, b.x, 0.25, b.z));
   if (b.roof !== "gable") M.add(`trim-${b.trim}`, trimMat, boxGeo(b.w + 0.5, 0.6, b.d + 0.5, b.x, b.h - 0.1, b.z));
@@ -713,6 +723,10 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   if (b.loc) {
     const out = 2.2;
     doors.push({ loc: b.loc, bid: b.id, x: dx, z: dz, face: b.face, name: b.sign || b.loc, outX: dx + n[0] * out, outZ: dz + n[1] * out, rot: Math.atan2(n[0], n[1]) });
+    if (poolHall) {
+      M.add("pool-hall-path", mat("#c9b89a"), boxGeo(2.3, 0.025, 2.24, 0, 0.013, 0)
+        .rotateY(rotY).translate(dx + n[0] * 1.12, 0, dz + n[1] * 1.12), false);
+    }
     // welcome mat
     M.add("mat", mat("#7a4b36"), boxGeo(doorW + 0.4, 0.04, 1.1, 0, 0.02, 0).rotateY(rotY).translate(dx + n[0] * 0.7, 0, dz + n[1] * 0.7), false);
   }
@@ -788,16 +802,17 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   // awning over the entrance (narrower over an off-centre door, so it stays on the facade)
   if (b.awning) {
     const aw = Math.min(halfWidth * 2 - 1 - 2 * Math.abs(doorOff), b.style === "hotel" ? 7 : 9);
-    const ay = 3.15;
-    const g = boxGeo(aw, 0.14, 1.8, 0, 0, 0);
+    const depth = poolHall ? 1.18 : 1.8;
+    const ay = poolHall ? 3.08 : 3.15;
+    const g = boxGeo(aw, 0.14, depth, 0, 0, 0);
     g.rotateX(0.32);
     g.rotateY(rotY);
-    g.translate(dx + n[0] * 0.9, ay, dz + n[1] * 0.9);
+    g.translate(dx + n[0] * depth / 2, ay, dz + n[1] * depth / 2);
     M.add(`awning-${b.awning}`, mat(b.awning), g);
     // stripes
     for (let i = -aw / 2 + 0.4; i < aw / 2; i += 0.9) {
-      const s = boxGeo(0.42, 0.02, 1.82, i, 0.08, 0);
-      s.rotateX(0.32); s.rotateY(rotY); s.translate(dx + n[0] * 0.9, ay, dz + n[1] * 0.9);
+      const s = boxGeo(0.42, 0.02, depth + 0.02, i, 0.08, 0);
+      s.rotateX(0.32); s.rotateY(rotY); s.translate(dx + n[0] * depth / 2, ay, dz + n[1] * depth / 2);
       M.add("awning-stripe", mat("#fff8ec"), s, false);
     }
   }
@@ -807,15 +822,17 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   let signW = 0, signH = 0, signY = 0;
   if (b.sign) {
     const tex = textTexture(b.sign, { bg: "#fffaf0", fg: signInk(b), border: b.trim, w: 768, h: 160 });
-    const sw = Math.min(halfWidth * 2 - 1.5, Math.max(5, b.sign.length * 0.55));
+    const sw = poolHall ? 7.2 : Math.min(halfWidth * 2 - 1.5, Math.max(5, b.sign.length * 0.55));
     const sign = new THREE.Mesh(new THREE.PlaneGeometry(sw, sw * 160 / 768), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
     let sy = b.style === "house" ? 0 : b.style === "hotel" || b.style === "office" || b.style === "apartments" ? Math.min(b.h - 1.5, 8.2) : Math.min(b.h - 1.1, 4.8);
+    if (poolHall) sy = 4.29;
     // the terminal's name above its canopy (under it, the canopy hid it from the street)
     if (b.style === "terminal") sy = Math.min(b.h - 0.4 - sw * 80 / 768, TERMINAL_CANOPY_TOP + 0.25 + sw * 80 / 768);
     signW = sw; signH = sw * 160 / 768; signY = sy;
     // centred on the facade (the same place as the door, unless the door is off-centre); the museum's on the frieze
     // over its columns (behind them, the columns cut its words)
-    const out = b.style === "museum" ? MUSEUM_FRIEZE.out + 0.03 : 0.2;
+    const out = b.style === "museum" ? MUSEUM_FRIEZE.out + 0.03 : poolHall ? 0.32 : 0.2;
+    if (poolHall) M.add("pool-hall-sign-board", trimMat, boxGeo(sw + 0.08, signH + 0.08, 0.31, b.x, sy, dz + 0.15));
     if (b.style === "museum") sign.position.set(dx + n[0] * out, MUSEUM_FRIEZE.y, dz + n[1] * out);
     else sign.position.set(dx - t[0] * doorOff + n[0] * out, sy, dz - t[1] * doorOff + n[1] * out);
     sign.rotation.y = rotY;

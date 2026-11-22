@@ -68,7 +68,7 @@ export class Session {
     setKnownNames([player.name, player.surname].filter(Boolean));
     audio.names = [player.name, player.surname].filter(Boolean);
     this.conv = new Conversation(sit, {
-      global: GLOBAL, npcs: NPCS, player, visits: sp.completions, memory: sp.memory, sharedNlu: nluCache,
+      global: GLOBAL, npcs: NPCS, player, visits: sit.bonus ? sp.visits : sp.completions, memory: sp.memory, sharedNlu: nluCache,
     });
     // „Lėčiau“ chosen last time in this situation
     if (sp.slow) this.conv.slow = true;
@@ -127,7 +127,12 @@ export class Session {
     const st = useStore.getState();
     // the question the person is about to ask (the phase picture changes as they start speaking);
     // "closing" when this turn is the goodbye
-    st.setConv({ phase: "npc", stepId: this.conv.ended ? "closing" : this.conv.pending?.id ?? this.conv.effectiveStep()?.id ?? null });
+    const optionalVoice = this.sit.optionalVoice === true;
+    st.setConv({
+      phase: "npc",
+      stepId: this.conv.ended ? "closing" : this.conv.pending?.id ?? this.conv.effectiveStep()?.id ?? null,
+      ...(optionalVoice ? { checklist: this.conv.checklist() } : {}),
+    });
     this.stopListening();
     if (out.note) st.setConv({ note: out.note });
     // "Slower, please" made this conversation slow: the „Lėčiau“ switch shows it, and it is remembered
@@ -145,8 +150,13 @@ export class Session {
       useStore.getState().setConv({ speaking: id, npcId: l.npc });
       const dur = audio.clipDuration(npcVoice(npc), npc?.speed ?? 1, l.sentence.say) ?? Math.max(1.2, l.sentence.say.length * 0.06);
       this.hooks.npcTalk(l.npc, dur / (slow ? 0.82 : 1), l.sentence.say);
-      if (!await audio.play(npcVoice(npc), npc?.speed ?? 1, l.sentence.say, { slow, male: npc?.gender === "m" })) return;
-      await wait(160);
+      const played = await audio.play(npcVoice(npc), npc?.speed ?? 1, l.sentence.say,
+        { slow, male: npc?.gender === "m", ...(optionalVoice ? { optional: true } : {}) });
+      // Tina's transcript is usable even when a device interrupts or cannot synthesize a line.
+      if (!optionalVoice) {
+        if (!played) return;
+        await wait(160);
+      }
     }
     // the learner left (Esc, another situation) while the person was talking: no events (a taxi
     // ride…) or next turn from this conversation (close() has already counted a completed task)

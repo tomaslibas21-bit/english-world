@@ -25,6 +25,10 @@ const green = 0x3b8b58;
 const black = 0x2a2e36;
 
 export const KIND = {
+  cue_chalk: {
+    nominative: "Biliardo kreida", accusative: "biliardo kreidą",
+    shape: [box(blue, 4.8, 4.6, 4.8), box(0x8cc8e6, 4.8, 0.4, 4.8, 0, 2.4)],
+  },
   passport_stamp: {
     nominative: "Antspaudas pase", accusative: "antspaudą pase",
     shape: [box(darkBlue, 14, 10, 0.7), box(white, 6.3, 9, 0.25, -3.4, 0, 0.4),
@@ -149,6 +153,7 @@ export const KEEPSAKES: Record<string, KeepsakeKind> = {
   "s71a-rental": "car_key",
   "s71b-gas": "receipt",
   "s72-cafe": "coffee_cup",
+  "x01-pool-hall": "cue_chalk",
   "s73-restaurant": "receipt",
   "s74-clothes": "shopping_bag",
   "s75-pharmacy": "shopping_bag",

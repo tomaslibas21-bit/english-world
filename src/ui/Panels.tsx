@@ -1,3 +1,4 @@
+import { ROUTE } from "../content/route";
 import { useKeyboardHints } from "./keyboardHints";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { picturesOn, useStore } from "../state/store";
@@ -111,13 +112,13 @@ function SitActions({ s, close }: { s: SituationMeta; close: () => void }) {
   return (
     <div className="sit-actions">
       <button className="btn small" onClick={() => { close(); game?.startScenario(s.id); }}><Icon name="play" size={15} /> Pradėti dabar</button>
-      {!current && !light && <button className="btn ghost small" onClick={() => { game?.setObjective(s.id); close(); }}><Icon name="target" size={17} /> Pasirinkti užduotimi</button>}
+      {!s.bonus && !current && !light && <button className="btn ghost small" onClick={() => { game?.setObjective(s.id); close(); }}><Icon name="target" size={17} /> Pasirinkti užduotimi</button>}
       {light ? null : isPhone(s) ? (
         <button className="btn warm small" onClick={() => { close(); game?.call(s.id); }}><Icon name="smartphone" size={17} /> Skambinti dabar</button>
       ) : (
         <>
-          <button className="btn soft small" onClick={() => walkToSituation(s.id, close)}><Icon name="walk" size={17} /> Nuvesk mane</button>
-          <button className="btn ghost small" onClick={() => { game?.setObjective(s.id); close(); game?.teleportTo(s.location); }}><Icon name="taxi" size={17} /> Nuvykti taksi</button>
+          <button className="btn soft small" onClick={() => { if (s.bonus) { close(); game?.guideToPlace?.(s.location); } else walkToSituation(s.id, close); }}><Icon name="walk" size={17} /> Nuvesk mane</button>
+          <button className="btn ghost small" onClick={() => { if (!s.bonus) game?.setObjective(s.id); close(); game?.teleportTo(s.location); }}><Icon name="taxi" size={17} /> Nuvykti taksi</button>
         </>
       )}
     </div>
@@ -193,15 +194,16 @@ function Scenarios({ close }: { close: () => void }) {
   const progress = useStore((st) => st.progress);
   const byCh = useMemo(() => {
     const m = new Map<number, SituationMeta[]>();
-    for (const s of [...SITUATIONS].sort((a, b) => a.chapter - b.chapter || a.order - b.order)) {
+    for (const s of [...ROUTE].sort((a, b) => a.chapter - b.chapter || a.order - b.order)) {
       const l = m.get(s.chapter) ?? []; l.push(s); m.set(s.chapter, l);
     }
     return [...m.entries()];
   }, []);
-  const done = SITUATIONS.filter((s) => sitProgress(progress, s.id).completions > 0).length;
+  const done = ROUTE.filter((s) => sitProgress(progress, s.id).completions > 0).length;
+  const bonus = SITUATIONS.filter((s) => s.bonus && sitProgress(progress, s.id).completions > 0);
   return (
     <div className="sheet scenarios">
-      <SheetHead icon="clapper" title={`Pasirink situaciją · ${done}/${SITUATIONS.length}`} close={close} />
+      <SheetHead icon="clapper" title={`Pasirink situaciją · ${done}/${ROUTE.length}`} close={close} />
       <div className="sheet-body">
         <p className="scn-lead">Paspausk situaciją – iškart atsidursi vietoje ir kalbėsi su žmogumi. Po pokalbio galėsi pakartoti arba rinktis kitą.</p>
         <HowToPlay />
@@ -216,6 +218,9 @@ function Scenarios({ close }: { close: () => void }) {
             <div className="scn-grid">{list.map((s) => <ScenarioCard key={s.id} s={s} close={close} />)}</div>
           </div>
         ))}
+        {bonus.length > 0 && <div className="chapter"><div className="scn-grid">
+          {bonus.map((s) => <ScenarioCard key={s.id} s={s} close={close} />)}
+        </div></div>}
         <div className="scn-foot">
           <button className="btn ghost" onClick={close}><Icon name="walk" size={19} /> Vaikščioti po miestą</button>
         </div>
@@ -246,17 +251,17 @@ function Journal({ close }: { close: () => void }) {
   const [open, setOpen] = useState<string | null>(useStore.getState().progress.objective);
   const byCh = useMemo(() => {
     const m = new Map<number, SituationMeta[]>();
-    for (const s of [...SITUATIONS].sort((a, b) => a.chapter - b.chapter || a.order - b.order)) {
+    for (const s of [...ROUTE].sort((a, b) => a.chapter - b.chapter || a.order - b.order)) {
       const l = m.get(s.chapter) ?? []; l.push(s); m.set(s.chapter, l);
     }
     return [...m.entries()];
   }, []);
   const progress = useStore((st) => st.progress);
-  const done = SITUATIONS.filter((s) => sitProgress(progress, s.id).completions > 0).length;
-  const totalStars = SITUATIONS.reduce((a, s) => a + stars(sitProgress(progress, s.id)), 0);
+  const done = ROUTE.filter((s) => sitProgress(progress, s.id).completions > 0).length;
+  const totalStars = ROUTE.reduce((a, s) => a + stars(sitProgress(progress, s.id)), 0);
   return (
     <div className="sheet narrow">
-      <SheetHead icon="journal" title={<>Užduotys · {done}/{SITUATIONS.length} · <span className="head-stars"><Icon name="star" size="0.9em" label="Žvaigždučių:" /> {totalStars}</span></>} close={close} />
+      <SheetHead icon="journal" title={<>Užduotys · {done}/{ROUTE.length} · <span className="head-stars"><Icon name="star" size="0.9em" label="Žvaigždučių:" /> {totalStars}</span></>} close={close} />
       <div className="sheet-body">
         <div className="info-box" style={{ marginBottom: 8 }}>
           Rekomenduojama tvarka – iš viršaus į apačią, bet gali rinktis bet kurią užduotį. <Stars n={1} of={1} size="1.05em" label="1 žvaigždutė" /> – įveikta, <Stars n={2} of={2} size="1.05em" label="2 žvaigždutės" /> – pavartojai bent 6 skirtingas frazes, <Stars n={3} of={3} size="1.05em" label="3 žvaigždutės" /> – įveikei 3 kartus (žmonės kaskart kalba kitaip).
@@ -314,7 +319,7 @@ function MapPanel({ close }: { close: () => void }) {
     if (island) drawIslandMap(ctx, island, WORLD.minX, north, ppm);
   }, [W, island, north]);
   const pct = (x: number, z: number) => ({ left: `${((x - WORLD.minX) / W) * 100}%`, top: `${((z - north) / D) * 100}%` });
-  const locs = Object.values(LOCATIONS).filter((l) => l.kind !== "phone" && SITUATIONS.some((s) => s.location === l.id));
+  const locs = Object.values(LOCATIONS).filter((l) => l.kind !== "phone" && (l.id === "pool-hall" || ROUTE.some((s) => s.location === l.id)));
   const selSits = sel ? SITUATIONS.filter((s) => s.location === sel) : [];
   return (
     <div className="sheet">
@@ -355,6 +360,7 @@ function MapPanel({ close }: { close: () => void }) {
               <div>
                 <h3 className="place-title"><span className="place-ico"><Icon name={locIcon(sel)} size={22} /></span>{LOCATIONS[sel].name}</h3>
                 <div style={{ color: "var(--ink-soft)", marginBottom: 10 }}>{placeLt(sel)}</div>
+                {sel === "pool-hall" && <p>Biliardo salė – partija su Tina</p>}
                 <div className="sit-list">
                   {selSits.map((s) => (
                     <div key={s.id}>
@@ -374,7 +380,7 @@ function MapPanel({ close }: { close: () => void }) {
 }
 
 function Phone({ close }: { close: () => void }) {
-  const calls = SITUATIONS.filter(isPhone).sort((a, b) => a.chapter - b.chapter || a.order - b.order);
+  const calls = ROUTE.filter(isPhone).sort((a, b) => a.chapter - b.chapter || a.order - b.order);
   const progress = useStore((s) => s.progress);
   const missed = calls.filter((sit) => progress.phone?.missed[sit.id]);
   return (

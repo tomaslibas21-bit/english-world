@@ -19,6 +19,8 @@ export interface DiagnosticPlaybackState {
 export type PlaybackState = "idle" | "loading" | "playing" | "blocked" | "unavailable";
 interface PlaybackRequest {
   done: boolean;
+  optional?: boolean;
+  fail(state: "blocked" | "unavailable"): void;
   cleanup: () => void;
   finish(completed: boolean): void;
   retry?: () => void;
@@ -257,23 +259,37 @@ export class AudioSystem {
   continueReading = () => this.request?.finish(true);
 
   /** True after playback finishes or the learner explicitly continues reading. Cancellation is false;
-   *  denial keeps the same line pending. */
-  play(voice: string, speed: number, text: string, opts: { slow?: boolean; male?: boolean; localVoiceOnly?: boolean } = {}): Promise<boolean> {
+   *  denial keeps the same line pending. Optional playback resolves false on failure or timeout. */
+  play(voice: string, speed: number, text: string, opts: { slow?: boolean; male?: boolean; localVoiceOnly?: boolean; optional?: boolean } = {}): Promise<boolean> {
     this.stopDiagnostic("normal-playback");
     this.stop();
     // nothing to say (a hint whose blank is still empty comes out as ".")
     if (!/[a-z0-9]/i.test(text)) return Promise.resolve(true);
     return new Promise((resolve) => {
+      let deadline: ReturnType<typeof setTimeout> | undefined;
       const request: PlaybackRequest = {
-        done: false, cleanup: () => {},
+        done: false,
+        optional: opts.optional,
+        fail: (state) => {
+          if (request.done) return;
+          if (!opts.optional) this.setState(state);
+          else if (request.fallback) request.fallback();
+          else request.finish(false);
+        }, cleanup: () => {},
         finish: (completed) => {
           if (request.done) return;
           request.done = true;
+          clearTimeout(deadline);
           request.cleanup();
           if (this.request === request) { this.request = null; this.setState("idle"); }
           resolve(completed);
         },
       };
+      if (opts.optional) {
+        const duration = this.clipDuration(voice, speed, text);
+        deadline = setTimeout(() => request.finish(false),
+          Math.max(7000, 2200 + text.length * (opts.slow ? 155 : 125), (duration ?? 0) * 1250 + 5000));
+      }
       this.request = request;
       this.setState("loading");
       const begin = async () => {
@@ -282,7 +298,11 @@ export class AudioSystem {
         await Promise.all([this.init(), waitForMicrophone()]);
         if (request.done) return;
         // A missing manifest does not prove that this NPC has no recording.
-        if (!this.ready) { audioDiagnostic("recording.manifest-unavailable", { manifestReady: false }); this.setState("unavailable"); return; }
+        if (!this.ready) {
+          audioDiagnostic("recording.manifest-unavailable", { manifestReady: false });
+          request.fail("unavailable");
+          return;
+        }
         const key = this.recordingKey(voice, speed, text);
         audioDiagnostic("recording.lookup", { clipId: key, recordingPresent: !!this.manifest[key], manifestReady: this.ready });
         if (this.manifest[key]) {
@@ -291,7 +311,7 @@ export class AudioSystem {
         }
         else this.speakFallback(request, text, opts, "manifest-miss");
       };
-      const start = () => { void begin().catch(() => { if (!request.done) this.setState("unavailable"); }); };
+      const start = () => { void begin().catch(() => request.fail("unavailable")); };
       request.retry = () => { this.retryInitAt = 0; start(); };
       request.fallback = () => this.speakFallback(request, text, opts);
       start();
@@ -411,7 +431,7 @@ export class AudioSystem {
     const waiting = (state: "blocked" | "unavailable", error?: unknown) => {
       if (!current()) return;
       run++; clearTimeout(timer); stopOutput();
-      this.setState(state); diagnostic(`buffer.${state}`, error);
+      request.fail(state); diagnostic(`buffer.${state}`, error);
     };
     const interrupted = () => {
       if (current() && playing && ctx?.state !== "running") waiting(ctx?.state === "closed" ? "unavailable" : "blocked", "ContextInterrupted");
@@ -533,15 +553,15 @@ export class AudioSystem {
         if (!current()) return;
         clearTimeout(timer);
         if (a.paused || a.ended) releasePlayback();
-        this.setState(state);
+        request.fail(state);
       };
       const failed = () => {
         if (!current()) return;
         if (cached) this.recordings.delete(this.cacheKey(key));
         if (!retry && !started) { cleanup(true); attempt(true); return; }
         // A network error is visible. Keep the NPC's recorded voice unless the learner chooses otherwise.
-        waiting("unavailable");
         request.retry = () => { cleanup(true); attempt(false); };
+        waiting("unavailable");
       };
       const start = () => {
         if (!current()) return;
@@ -704,7 +724,7 @@ export class AudioSystem {
       const localOnly = opts.localVoiceOnly || typeof navigator === "undefined" || !navigator.onLine;
       const vs = localOnly ? this.fallbackVoices.filter((v) => v.localService) : this.fallbackVoices;
       if (typeof speechSynthesis === "undefined" || (localOnly && !vs.length)) {
-        this.setState("unavailable");
+        request.fail("unavailable");
         return;
       }
       const u = new SpeechSynthesisUtterance(text);
@@ -714,15 +734,23 @@ export class AudioSystem {
       const pick = vs.find((v) => (opts.male ? /(male|daniel|fred|alex|aaron|arthur|guy|david|mark)/i : /(female|samantha|victoria|allison|ava|susan|zira|aria|jenny)/i).test(v.name) && v.localService)
         ?? vs.find((v) => v.localService) ?? vs[0];
       if (pick) { u.voice = pick; u.lang = pick.lang; }
-      const waiting = () => { clearTimeout(timer); if (!request.done) this.setState("blocked"); };
-      u.onend = () => request.finish(true);
+      let ended = false;
+      const waiting = () => { clearTimeout(timer); request.fail("blocked"); };
+      u.onend = () => { ended = true; request.finish(true); };
       u.onerror = waiting;
       const releaseRoute = holdPlaybackRoute();
-      request.cleanup = () => { playAttempt++; clearTimeout(timer); u.onend = u.onerror = null; speechSynthesis.cancel(); releaseRoute(); };
+      request.cleanup = () => {
+        playAttempt++; clearTimeout(timer); u.onend = u.onerror = null;
+        if (!ended || !request.optional) speechSynthesis.cancel();
+        releaseRoute();
+      };
       this.setState("playing");
       audioDiagnostic("voice.browser-start", { reason });
-      speechSynthesis.speak(u);
       timer = setTimeout(waiting, 1500 + text.length * 120);
+      try { speechSynthesis.speak(u); } catch (error) {
+        if (!request.optional) throw error;
+        waiting();
+      }
     };
     request.retry = () => { request.cleanup(); start(); };
     start();
@@ -1546,14 +1574,14 @@ export class AudioSystem {
   }
 
   sfx(name: "success" | "seaBell" | "pop" | "door" | "cheer" | "soft" | "listen" | "coin" | "car" | "error" | "ring" | "beep" | "knock" | "tick" | "horn" | "hornReply"
-    | "doubleHonk" | "chirp" | "glass" | "hazardTick" | "ding") {
+    | "doubleHonk" | "chirp" | "glass" | "hazardTick" | "ding" | "cueStrike" | "poolClick" | "poolCushion" | "poolDrop", intensity = 1) {
     audioDiagnostic("context.effect", { reason: name });
     const ctx = this.ac();
     if (!ctx) return;
     const now = ctx.currentTime;
     const g = ctx.createGain();
     g.connect(this.fx(ctx));
-    const vol = this.volume * 0.18;
+    const vol = this.volume * 0.18 * Math.min(1, Math.max(0, intensity));
     const tone = (f: number, t0: number, dur: number, type: OscillatorType = "sine", v = vol) => {
       const o = ctx.createOscillator();
       const gg = ctx.createGain();
@@ -1570,6 +1598,10 @@ export class AudioSystem {
         tone(1976, 0, 0.36, "sine", vol * 0.42);
         tone(2592, 0, 0.21, "sine", vol * 0.19);
         break;
+      case "cueStrike": tone(1140, 0, 0.05, "triangle", vol * 0.8); tone(276, 0, 0.07, "sine", vol * 0.27); break;
+      case "poolClick": tone(1740, 0, 0.043, "triangle", vol * 0.64); tone(840, 0, 0.047, "sine", vol * 0.3); break;
+      case "poolCushion": tone(142, 0, 0.077, "triangle", vol * 0.58); break;
+      case "poolDrop": tone(305, 0, 0.09, "triangle", vol * 0.48); tone(103, 0.055, 0.13, "triangle", vol * 0.41); break;
       case "success": tone(784, 0, 0.18); tone(1175, 0.09, 0.3); break;
       // a task done: a bright run up, a shimmering chord, a few twinkles on top
       case "cheer":
