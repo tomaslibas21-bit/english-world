@@ -6,12 +6,15 @@ import { NPCS } from "../src/content/npcs";
 import taxi from "../src/content/situations/s66-taxi";
 import { Ambient } from "../src/game/ambient";
 import { createCharacter } from "../src/game/characters";
+import { scoreShot } from "../src/game/kit/scoreShot";
 import { NavGrid } from "../src/game/nav";
+import { OcclusionField } from "../src/game/occlusion";
 import { Rides } from "../src/game/rides/Rides";
 import { CAR } from "../src/game/rides/drive";
 import { carLedges, carModelEntry } from "../src/game/world/carModels";
-import { BUILDINGS, PARKED_CARS, ROADS, TAXI } from "../src/game/world/layout";
+import { BUILDINGS, PARKED_CARS, ROADS, TAXI, WORLD } from "../src/game/world/layout";
 import { RIDES } from "../src/game/world/rides";
+import { buildTown } from "../src/game/world/town";
 import { Colliders } from "../src/game/world/util";
 import { approach, approachDistance, checkDecision, inStopZone, resetPose, taxiScore, type Point } from "../src/game/taxi/route";
 
@@ -62,11 +65,66 @@ describe("Maple Harbor taxi routes", () => {
     expect(car.m.x).toBeLessThan(TAXI.x - 1);
     expect(car.mesh.position.x).toBe(car.m.x);
     expect(trafficBox.x).toBe(car.m.x);
+
+    const stop = { x: car.m.x, z: car.m.z, heading: car.m.heading };
+    rides.abandon(true);
+    expect(rides.riding).toBeNull();
+    expect(car.m).toMatchObject({ ...stop, pace: 0 });
+    expect(car.mesh.position).toMatchObject({ x: stop.x, z: stop.z });
+    expect(trafficBox).toMatchObject(stop);
+    expect(rides.modeCarPieces(stop.x, stop.z)).toEqual(carLedges(TAXI.model, stop.x, stop.z, stop.heading));
+
+    player.root.position.set(stop.x, 0, stop.z + 1.5);
+    expect(rides.board(car)).toBe(true);
     rides.abandon();
     expect(trafficBox.x).toBe(TAXI.x);
     expect(rides.modeCarPieces(TAXI.x, TAXI.z).map(({ top }) => top)).toContain(taxiSize.height);
     rides.removeModeCar(car);
     expect(ambient.rideBoxes).not.toContain(trafficBox);
+  });
+
+  it("frames the parked taxi and the learner at each destination", () => {
+    const draw = () => {};
+    const gradient = () => ({ addColorStop: draw });
+    const canvas = new Proxy({
+      measureText: (text: string) => ({ width: text.length * 9 }), createLinearGradient: gradient, createRadialGradient: gradient,
+    }, { get: (target, key) => Reflect.get(target, key) ?? draw });
+    vi.stubGlobal("document", { createElement: () => ({ getContext: () => canvas }) });
+    try {
+      const { group, doors, colliders, parkedCars } = buildTown();
+      const skip = (o: THREE.Object3D) => o.userData.v !== undefined || !!o.userData.gull || !!o.userData.boat || !!o.userData.thin || o === parkedCars.taxi?.root;
+      const field = OcclusionField.fromObject(group, {
+        minX: WORLD.minX - 24, maxX: WORLD.maxX + 24, minZ: WORLD.minZ - 24, maxZ: WORLD.maxZ + 24,
+      }, { skip });
+      field.fillFootprints(colliders.boxes, colliders.circles);
+      const space = {
+        free: (a: THREE.Vector3, b: THREE.Vector3) => field.free(a, b),
+        inside: (p: THREE.Vector3) => field.solidAt(p.x, p.y, p.z, 0.15),
+        overSolid: (x: number, z: number) => field.overSolid(x, z),
+      };
+      const blocked = (x: number, z: number) => colliders.blocked(x, z, 0.65);
+      for (const route of TAXI_ROUTES) {
+        const door = doors.find(({ loc }) => loc === route.destination)!;
+        const player = new THREE.Vector3(door.outX, 1.35, door.outZ);
+        const { at } = route.decisions.at(-1)!;
+        for (const offset of [-3, 0, 3]) {
+          const taxi = new THREE.Vector3(at.x + offset, 0.9, at.z);
+          for (const [width, height] of [[1280, 800], [390, 844]]) {
+            const shot = scoreShot(player, door.rot, width / height, space, blocked, taxi);
+            const label = `${route.destination} (${offset} m, ${width}×${height})`;
+            expect(shot, label).not.toBeNull();
+            expect(shot!.look, label).toEqual(player.clone().lerp(taxi, 0.5));
+            expect(blocked(shot!.pos.x, shot!.pos.z), label).toBe(false);
+            for (const point of [player, taxi]) {
+              expect(field.free(point, shot!.pos), label).toBe(1);
+              expect(point.distanceTo(shot!.pos), label).toBeGreaterThanOrEqual(5);
+            }
+          }
+        }
+      }
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("shows the waiting hint only for a sustained obstruction while the mode allows hints", () => {

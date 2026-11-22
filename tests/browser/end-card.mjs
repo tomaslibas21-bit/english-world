@@ -127,7 +127,7 @@ try {
     assert.equal(await destination.getAttribute("data-sit"), next.id);
     assert.equal(await destination.locator("b").innerText(), next.title.lt);
     if (label === "1280x800") {
-      const lines = await destination.locator("b").evaluate((title) => title.getClientRects().length);
+      const lines = await destination.locator("b").evaluate((title) => new Set([...title.getClientRects()].filter((r) => r.width > 0).map((r) => Math.round(r.top))).size);
       assert(lines > 0 && lines <= 2, `${label}: destination title fits in two lines (${lines})`);
     }
     const place = await destination.locator("small").innerText();
