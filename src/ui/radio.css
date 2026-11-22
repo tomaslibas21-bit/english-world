@@ -31,7 +31,8 @@
 .radio-tool { position: relative; display: flex; }
 .radio-lamp { position: absolute; top: 7px; right: 7px; width: 8px; height: 8px; border-radius: 50%; background: rgba(120, 130, 140, 0.32); transition: background-color 0.5s ease, box-shadow 0.5s ease; }
 .radio-btn.on { box-shadow: 0 0 0 2px var(--rs-edge), 0 6px 16px -6px rgba(20, 30, 40, 0.35); }
-.radio-btn.on .radio-lamp { background: var(--rs-lamp); box-shadow: 0 0 0 2px rgba(255, 194, 77, 0.28), 0 0 9px 2px var(--rs-lamp); }
+.radio-btn.on .radio-lamp, .ride-menu .radio-lamp { background: var(--rs-lamp); box-shadow: 0 0 0 2px rgba(255, 194, 77, 0.28), 0 0 9px 2px var(--rs-lamp); }
+.ride-menu .radio-lamp { top: auto; bottom: 6px; }
 
 .radio-plate {
   position: absolute; right: calc(100% + 8px); top: 50%; transform: translateY(-50%); height: 38px; max-width: min(220px, calc(100vw - 150px));
@@ -50,9 +51,10 @@
 /* three small bars: they move while a song sounds and rest while it loads */
 .radio-eq { display: flex; align-items: flex-end; gap: 2.5px; height: 13px; flex: none; }
 .radio-eq i { width: 3px; height: 100%; border-radius: 2px; background: var(--rs-lamp); transform-origin: bottom; transform: scaleY(0.3); }
-.radio-plate.playing .radio-eq i { animation: radio-eq 0.9s ease-in-out infinite; }
-.radio-plate.playing .radio-eq i:nth-child(2) { animation-delay: -0.3s; }
-.radio-plate.playing .radio-eq i:nth-child(3) { animation-delay: -0.6s; }
+.radio-btn .radio-eq { position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); height: 6px; gap: 2px; }
+:is(.radio-plate.playing, .menu-open .radio-btn) .radio-eq i { animation: radio-eq 0.9s ease-in-out infinite; }
+:is(.radio-plate.playing, .menu-open .radio-btn) .radio-eq i:nth-child(2) { animation-delay: -0.3s; }
+:is(.radio-plate.playing, .menu-open .radio-btn) .radio-eq i:nth-child(3) { animation-delay: -0.6s; }
 @keyframes radio-eq { 0%, 100% { transform: scaleY(0.35); } 50% { transform: scaleY(1); } }
 
 /* ---------- the radio set ---------- */
@@ -327,8 +329,23 @@
   .radio-line.translation.glossed .ru { padding-block: calc((1.18em * 1.15 + 0.68em * 1.2 - 1.12em * 1.38) / 2 + 0.5px); }
   .radio-plate { height: 36px; max-width: min(190px, calc(100vw - 136px)); }
 }
+@media (max-width: 600px) and (orientation: portrait) {
+  .radio-strip { left: max(8px, env(safe-area-inset-left)); right: max(8px, env(safe-area-inset-right)); }
+}
+@media (max-height: 520px) and (orientation: landscape) {
+  .hud .radio-strip {
+    left: max(8px, env(safe-area-inset-left)); right: max(8px, env(safe-area-inset-right));
+    width: auto; max-width: none; transform: none;
+  }
+  .hud .radio-strip, .hud.has-touch .radio-strip, .hud:has(.help-strip) .radio-strip { bottom: calc(12px + env(safe-area-inset-bottom)); }
+  /* Leave 8px beyond the joystick and the jump button, including when jump moves beside the action button. */
+  .hud.has-touch .radio-strip { left: calc(166px + env(safe-area-inset-left)); right: calc(108px + env(safe-area-inset-right)); }
+  .hud:has(.jump-btn.beside) .radio-strip { right: calc(196px + env(safe-area-inset-right)); }
+  .radio-line { position: relative; max-width: 100%; flex-wrap: nowrap; justify-content: flex-start; overflow: hidden; }
+  .radio-line .ru { flex: none; white-space: nowrap; }
+}
 @media (prefers-reduced-motion: reduce) {
-  .radio-eq i, .radio-plate.playing .radio-eq i, .rs-st.on .radio-eq i, .radio-set.playing .rs-spectrum i, .radio-set, .radio-line, .radio-plate, .radio-plate-text,
+  .radio-eq i, :is(.radio-plate.playing, .menu-open .radio-btn) .radio-eq i, .rs-st.on .radio-eq i, .radio-set.playing .rs-spectrum i, .radio-set, .radio-line, .radio-plate, .radio-plate-text,
   .rs-heart-pop, .rs-heart-pop::after, .rs-now em.rs-hearted, .radio-pic, .radio-nat, .radio-notes { animation: none; }
   .radio-set.playing .rs-spectrum i:nth-child(odd) { transform: scaleY(0.7); }
   .radio-set.playing .rs-spectrum i:nth-child(even) { transform: scaleY(0.45); }

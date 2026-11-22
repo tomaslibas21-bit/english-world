@@ -10,18 +10,20 @@ songs, kind by kind, as its Songs page has them.
 
 The owner's brief (13 Nov 2026): a nice feel, easy to turn on and off, calm while walking, each town's own look.
 
-- **One tap on, one tap off.** The toolbar's radio button is the power switch; R does the same. On shows at a glance:
-  the button's lamp glows, and a plate beside it names the station, with three moving bars. A new song's title shows on
-  the plate for five seconds.
-- **Off looks off.** Switched off with the toolbar button (or R), an open set folds away too. The set's own knob
-  turns the radio off without closing the set the learner is using.
+- **On a computer or tablet**, the toolbar's radio button switches the power. While the radio is on, its lamp glows
+  and a plate beside it opens the set. The plate names the station, shows a new song's title for five seconds and
+  carries three bars that move with the music. The first press that turns the radio on also opens the set.
+- **On a phone**, tapping the radio button folds the menu and opens the set over the town. The same tap starts the
+  radio if it was off. While a song plays, the open menu shows the lamp and three moving bars on the radio button.
+  With the set and menu folded, only the little lamp on the menu button shows that the radio is on.
+- **Power and dismissal.** R switches the power on every screen. Switching off with R or the desktop power button
+  closes the set. The set's own knob leaves it open. A tap outside the set folds it away while the music plays on.
 - **The radio's name always shows in full.** `RADIO_NAME` has the header's line to itself: no frequency is written
   there (the owner's call, 13 Nov; the dial and its needle say where the station is). The set's width follows the text
   size (A, A+, A++), and a name too long for the line takes two.
-- **The radio set** opens from the plate (its small chevron says so) and folds away at a tap anywhere else. The very
-  first time the radio is turned on it opens by itself, once (`introduced` in the saved state). From the top: the
-  name; an FM dial with a dot for each station, whose needle glides to the one that plays (`freq` in
-  `src/content/radio.ts`); the display; five keys around the on-off knob; the stations.
+- **The radio set** shows its name above an FM dial. Each station has a dot on the dial, and the needle glides to
+  the station that plays (`freq` in `src/content/radio.ts`). Below it are the display, five keys around the on-off
+  knob, and the stations. The saved `introduced` flag remembers the first opening from either button or R.
 - **The display** (the owner's "old school" touch, 14 Nov: a hi-fi's dark glass with glowing letters) shows a small
   spectrum that moves while a song sounds, the station, the song's place in it ("03/43"), the time, the song with its
   translation and genre, the heart, and a thin line that fills as the song goes.
@@ -31,7 +33,9 @@ The owner's brief (13 Nov 2026): a nice feel, easy to turn on and off, calm whil
   are listed also while empty, with how to fill them.
 - **Small screens.** The set is never taller than the screen: the stations scroll when it would be, and the one that
   plays is brought into view. A phone held sideways has the display and keys on the left and the stations beside
-  them, without the dial window; a short phone held upright has no dial window either.
+  them, without the dial window; a short phone held upright has no dial window either. Upright, the lyric strip sits
+  above the movement controls. Sideways, the words and their glosses share one row between the joystick and jump
+  button. A long line scrolls to keep the words being sung in view.
 - **Skins.** The set is an object with colours of its own, so it reads the same in every course theme. `RADIO_SKIN` in
   `src/content/radio.ts` picks one: `maple` (navy, brass, a cream dial, a maple-red needle, the name in serif italic)
   or `colibri` (teal, coral and sun yellow under a string of papel picado, the name as a hand-painted sign). Their

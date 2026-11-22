@@ -822,6 +822,8 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 }
 @media (max-width: 600px) and (orientation: portrait) {
   .toolbar.portrait-toolbar { top: 112px; right: max(10px, env(safe-area-inset-right)); }
+  /* a place's name as one comes out of a door: under the open task card, not across it */
+  .hud:has(.objective-card:not(.collapsed)) .zone-banner { top: 46%; width: calc(100vw - 24px); }
 }
 @media (max-height: 520px) and (orientation: landscape) {
   .toolbar.in-ride.folds { --tool-gap: 6px; top: 12px; right: max(112px, calc(env(safe-area-inset-right) + 100px)); }
@@ -829,10 +831,12 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
     top: 8px; left: max(8px, env(safe-area-inset-left)); max-width: min(46vw, 400px);
     max-height: calc(100dvh - 16px); overflow-y: auto;
   }
-  .objective-card.collapsed:has(h3) { display: flex; align-items: center; gap: 8px; }
-  .objective-card.collapsed:has(h3) .kicker { display: contents; }
-  .objective-card.collapsed:has(h3) .kicker-label { display: none; }
-  .objective-card.collapsed h3 { order: -1; margin: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  /* folded: one row, the conversation's icon, its title (cut short where it must be), the chevron */
+  .objective-card.collapsed .objective-head { display: flex; align-items: center; gap: 8px; }
+  .objective-card.collapsed .kicker { display: contents; }
+  .objective-card.collapsed .kicker-label { display: none; }
+  .objective-card.collapsed .objective-ico { order: -2; flex: none; margin-top: 0; }
+  .objective-card.collapsed h3 { order: -1; flex: 1; min-width: 0; margin: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
   .objective-card.collapsed .collapse-btn { flex: none; }
 }
 @media (prefers-reduced-motion: reduce) {

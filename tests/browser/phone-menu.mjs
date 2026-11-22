@@ -140,10 +140,10 @@ for (const [name, engine] of [["chromium", chromium], ["webkit", webkit]]) {
             await page.evaluate(() => window.__ew.radio.setOpen(true));
             await page.locator(".radio-set").waitFor();
             await page.waitForTimeout(5200);
-            assert.equal(await menu(page).getAttribute("aria-expanded"), "true");
+            assert(await page.locator(".radio-set").isVisible());
+            assert.equal(await menu(page).getAttribute("aria-expanded"), "false");
             await shot(page, `${label}-radio`);
             await page.locator(".radio-set .rs-x").tap();
-            await menu(page).tap();
             await checkFolded(page);
           }
           await menu(page).tap();
