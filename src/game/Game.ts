@@ -2223,8 +2223,8 @@ export class Game implements GameApi {
         this.rig.applyViewShift(w, h, sideways ? w * 0.375 : wide ? Math.min(w * 0.22, 380) : 0,
           wide || sideways ? 0 : (h - pictureHeight) / 2);
       } else if (this.barista && mode === this.barista) {
-        const bottom = document.querySelector(".barista-bottom")?.getBoundingClientRect().top;
-        this.barista.frameView(w, h, bottom ?? h);
+        const bottom = document.querySelector(".barista-bottom, .barista-result .mode-score-card")?.getBoundingClientRect().top;
+        this.barista.frameView(w, h, bottom ?? h, document.querySelector<HTMLElement>(".barista-cue"));
       } else {
         const stageShift = this.rig.mode === "stage" ? this.rig.stage?.shiftY : undefined;
         const portraitShift = this.rig.mode !== "talk" && h > w * 1.15 ? -(this.rig.mode === "follow" ? 0.12 : 0.1) : 0;

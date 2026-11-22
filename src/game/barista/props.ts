@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { boxGeo, colourMerge } from "../world/util";
 import { priceText } from "../../content/barista";
 import { makeKeepsake } from "../keepsake";
 import type { Build } from "./tray";
@@ -67,15 +68,41 @@ function pastry(parent: Parent, id: string, x: number, y: number, z: number, sca
   }
 }
 
+// The normal dollhouse view looks in through the open front. From inside the café
+// these toy shop windows frame the seated guests and the arriving customer.
+function shopWindows() {
+  const panes: [THREE.BufferGeometry, string][] = [
+    [boxGeo(16.3, 0.14, 12.4, 0, 4.25, 0), "#f3dbbc"],
+    [boxGeo(16.1, 0.2, 0.28, 0, 4.11, 6.03), CREAM],
+  ];
+  for (const x of [-4.6, 4.6]) {
+    panes.push([boxGeo(6.8, 3.2, 0.12, x, 2.58, 6.14), "#c5e4dc"]);
+    for (const dx of [-3.35, -1.65, 0, 1.65, 3.35]) {
+      panes.push([boxGeo(0.09, 3.2, 0.16, x + dx, 2.58, 6.1), CREAM]);
+    }
+    panes.push([boxGeo(6.8, 0.1, 0.19, x, 2.95, 6.09), CREAM]);
+    panes.push([boxGeo(6.8, 0.14, 0.24, x, 1.04, 6.06), TRIM]);
+  }
+  panes.push([boxGeo(2.36, 2.53, 0.14, 0, 1.27, 6.14), "#b3d5cb"]);
+  panes.push([boxGeo(2.36, 0.8, 0.18, 0, 0.4, 6.1), TEAL]);
+  panes.push([boxGeo(0.09, 2.6, 0.18, 0, 1.3, 6.1), TRIM]);
+  panes.push([boxGeo(0.07, 0.34, 0.12, 0.19, 1.23, 5.98), "#d4ac69"]);
+  panes.push([boxGeo(2.4, 1.65, 0.14, 0, 3.38, 6.13), "#c5e4dc"]);
+  panes.push([boxGeo(2.52, 0.14, 0.2, 0, 2.62, 6.09), TRIM]);
+  return new THREE.Mesh(colourMerge(panes), new THREE.MeshLambertMaterial({ vertexColors: true }));
+}
+
 export class CounterProps {
   readonly root = new THREE.Group();
   private canvas = document.createElement("canvas");
   private texture = new THREE.CanvasTexture(this.canvas);
 
   constructor() {
+    this.root.add(shopWindows());
     const machine = new THREE.Group();
-    machine.position.set(0.91, TOP, -3.42);
-    machine.scale.setScalar(0.74);
+    machine.position.set(-0.58, TOP, -3.29);
+    machine.rotation.y = 0.46;
+    machine.scale.setScalar(0.64);
     this.root.add(machine);
     box(machine, TRIM, 1.42, 0.13, 0.81, 0, 0.065, 0);
     box(machine, TEAL, 1.35, 0.58, 0.53, 0, 0.42, 0.102);
@@ -91,11 +118,23 @@ export class CounterProps {
       ball(machine, color, 0.037, x, 0.65, -0.426);
     }
 
-    for (const [x, color] of [[0.45, CREAM], [0.68, "#afc7a3"], [0.91, "#e6b27c"]] as const) {
-      cylinder(this.root, color, 0.064, 0.079, 0.16, x, TOP + 0.08, -2.97);
-      cylinder(this.root, CREAM, 0.067, 0.067, 0.02, x, TOP + 0.169, -2.97);
-      torus(this.root, color, 0.051, 0.011, x + 0.071, TOP + 0.08, -2.97);
+    for (const [x, color] of [[-0.44, CREAM], [-0.13, "#afc7a3"], [0.18, "#e6b27c"]] as const) {
+      cylinder(machine, color, 0.093, 0.11, 0.18, x, 0.903, 0.11);
+      cylinder(machine, CREAM, 0.095, 0.095, 0.015, x, 1.0, 0.11);
+      torus(machine, color, 0.063, 0.015, x + 0.103, 0.91, 0.11);
     }
+
+    // The machine and its warming cups never move independently.
+    const parts: [THREE.BufferGeometry, THREE.Color][] = [];
+    for (const part of [...machine.children]) {
+      if (!(part instanceof THREE.Mesh)) continue;
+      part.updateMatrix();
+      parts.push([part.geometry.applyMatrix4(part.matrix), part.material.color]);
+      machine.remove(part);
+      part.material.dispose();
+    }
+    machine.add(new THREE.Mesh(colourMerge(parts), new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true })));
+    for (const [geometry] of parts) geometry.dispose();
 
     const displayCase = new THREE.Group();
     displayCase.position.set(-3.95, TOP, -2.99);
@@ -107,7 +146,7 @@ export class CounterProps {
     ["croissant", "blueberry_muffin", "cookie", "cinnamon_roll"].forEach((id, i) => pastry(displayCase, id, -0.5 + i * 0.33, 0.08, 0, 0.92));
 
     const till = new THREE.Group();
-    till.position.set(-0.41, TOP, -3.34);
+    till.position.set(0.73, TOP, -3.34);
     this.root.add(till);
     box(till, TRIM, 0.65, 0.125, 0.52, 0, 0.062, 0);
     box(till, TEAL, 0.58, 0.25, 0.29, 0, 0.22, 0.07);
@@ -137,8 +176,8 @@ export class CounterProps {
   }
 }
 
-export const CUP_AT = new THREE.Vector3(-1.12, TOP, -3.18);
-export const CUP_SERVED = new THREE.Vector3(-1.12, TOP, -2.7);
+export const CUP_AT = new THREE.Vector3(-1.61, TOP, -3.03);
+export const CUP_SERVED = new THREE.Vector3(-1.09, TOP, -2.8);
 
 function cupWall(parent: Parent, color: string, base: number, rim: number, foot: number, lip: number, opacity = 1) {
   const profile = [

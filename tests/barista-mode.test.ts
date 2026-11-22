@@ -4,6 +4,7 @@ import { BARISTA_ORDERS, type Row } from "../src/content/barista";
 import { loadSituation } from "../src/content/situations/catalog";
 import { COUNTER_SEAT, MIA_ASIDE } from "../src/game/barista/framing";
 import { createBaristaMode, BARISTA_PROMPT } from "../src/game/barista/mode";
+import { CUP_AT, CUP_SERVED } from "../src/game/barista/props";
 import { useBarista } from "../src/game/barista/store";
 import { createCharacter, type GameCharacter } from "../src/game/characters";
 import { FrameFade } from "../src/game/kit/frameFade";
@@ -15,7 +16,7 @@ import { useStore } from "../src/state/store";
 
 const playback = vi.hoisted(() => vi.fn(async (..._args: unknown[]) => true));
 vi.mock("../src/game/audio", () => ({
-  audio: { clipDuration: () => 1, play: playback, stop: () => {}, getState: () => "playing" },
+  audio: { sfx: vi.fn(), clipDuration: () => 1, play: playback, stop: () => {}, getState: () => "playing" },
 }));
 vi.mock("../src/game/characters", async () => {
   const { Group } = await import("three");
@@ -162,15 +163,34 @@ it("runs the counter offer, guided correction, concealed order, scoring and clea
         expect(ui().highlight?.id).toBe("medium");
         pick("size", "medium");
       }
+      const drink = room.getObjectsByProperty("name", "barista-serving").find((item) => item.position.equals(CUP_AT));
+      expect(drink).toBeDefined();
+      const [width, height, trayTop] = [[390, 664, 259], [390, 844, 439], [1280, 800, 497]][i % 3];
+      const { cam, stage } = host.rig;
+      cam.fov = width <= 600 ? 62 : 55;
+      cam.position.copy(stage!.pos);
+      cam.lookAt(stage!.look);
+      mode.frameView(width, height, trayTop);
+      const orderLens = cam.projectionMatrix.toArray(), orderZoom = cam.zoom;
       mode.action("give");
       expect(ui().step).toBe("handover");
-      if (i === 0) {
-        const { cam } = host.rig;
-        const before = cam.projectionMatrix.toArray();
-        mode.frameView(390, 844, 844);
-        expect(cam.projectionMatrix.toArray()).toEqual(before);
+      mode.frameView(width, height, height);
+      expect(cam.projectionMatrix.toArray()).toEqual(orderLens);
+
+      await until(() => !drink!.position.equals(CUP_AT));
+      mode.frameView(width, height, height);
+      const slideLens = cam.projectionMatrix.toArray();
+      if (width <= 600) expect(cam.zoom).toBeGreaterThan(orderZoom);
+      else expect(slideLens).toEqual(orderLens);
+      for (const point of [CUP_AT, CUP_SERVED, COUNTER_SEAT.clone().setY(1.6)]) {
+        const projected = point.clone().project(cam);
+        expect(Math.abs(projected.x)).toBeLessThan(0.8);
+        expect(Math.abs(projected.y)).toBeLessThan(0.8);
       }
       await until(() => ui().price === order.price);
+      mode.frameView(width, height, height);
+      expect(cam.projectionMatrix.toArray()).toEqual(slideLens);
+      expect(drink!.position.distanceTo(CUP_SERVED)).toBeLessThan(0.001);
       await choose(order.priceLine);
       await choose("bs_a_welcome");
     }

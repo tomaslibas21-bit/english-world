@@ -1,4 +1,3 @@
-import { useLayoutEffect, useRef } from "react";
 import { BARISTA_ORDERS, BARISTA_UI as words, priceText, type Row } from "../content/barista";
 import { speechSupported } from "../convo/speech";
 import { useBarista } from "../game/barista/store";
@@ -27,30 +26,19 @@ export function BaristaOffer() {
 function OrderTray({ touch }: { touch: boolean }) {
   const { built, row, page, highlight: target, step, ready, menu, line } = useBarista();
   const highlight = line?.key === "bs_c_sorry" ? null : target;
-  const tray = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
-    const strip = tray.current?.querySelector<HTMLElement>(`[data-row="${row}"] .barista-chips`);
-    const focus = highlight && tray.current?.querySelector<HTMLElement>(`[data-row="${highlight.row}"] [data-chip="${highlight.id}"]`);
-    const chip = focus || strip?.children[page * 4] as HTMLElement | undefined;
-    if (!chip) return;
-    const scroller = chip.parentElement!;
-    const parent = scroller.getBoundingClientRect();
-    const item = chip.getBoundingClientRect();
-    if (item.left < parent.left || item.right > parent.right) {
-      scroller.scrollLeft += item.left - parent.left - (focus ? 16 : 0);
-    }
-  }, [row, page, highlight, step]);
   if (!menu) return null;
 
   return (
-    <div className="barista-tray barista-panel" ref={tray}>
+    <div className="barista-tray barista-panel" data-shortcuts={!touch}>
       {trayRows(built).map((kind: Row) => {
         const selected = kind === row;
         return (
           <div key={kind} className={`barista-row${selected ? " barista-row-active" : ""}`} data-row={kind}>
-            <button className="barista-row-label" type="button" onClick={() => act("row", kind)} aria-pressed={selected}>
-              {words[kind]}{!touch && selected && <span className="barista-row-keys" aria-hidden>↑ ↓{menu[kind].length > 4 && " · ← →"}</span>}
-            </button>
+            {touch ? <span className="barista-row-label">{words[kind]}</span> : (
+              <button className="barista-row-label" type="button" onClick={() => act("row", kind)} aria-pressed={selected}>
+                {words[kind]}{selected && <span className="barista-row-keys" aria-hidden>↑ ↓{menu[kind].length > 4 && " · ← →"}</span>}
+              </button>
+            )}
             <div className="barista-chips" role="group" aria-label={words[kind]}>
               {menu[kind].map(({ id, en, lt }, i) => {
                 const marked = highlight?.row === kind && highlight.id === id;
@@ -80,7 +68,7 @@ function OrderTray({ touch }: { touch: boolean }) {
 
 export function BaristaOverlay({ touch }: { touch: boolean }) {
   const { line, hiddenOrder, revealed, choices, mic, micOn, customer, tray, step, ready, repair, price, result } = useBarista();
-  if (result) return <ScoreCard title={words.title}
+  if (result) return <div className="barista-result"><ScoreCard title={words.title}
     rows={[
       { label: words.orders, value: `${result.served}/${total}` },
       { label: words.firstTime, value: `${result.firstTime}/${total}` },
@@ -88,7 +76,7 @@ export function BaristaOverlay({ touch }: { touch: boolean }) {
     phrases={{ label: words.cards, count: result.cards }}
     again={{ label: words.again, run: () => act("again") }}
     done={{ label: words.done, run: () => game?.modeExit() }}
-  />;
+  /></div>;
 
   const listening = mic.status === "starting" || mic.status === "listening";
   const concealed = hiddenOrder.length > 0 && !repair;
@@ -98,9 +86,14 @@ export function BaristaOverlay({ touch }: { touch: boolean }) {
         {customer > 0 && <div className="barista-counter barista-panel">{words.customer} <b>{customer} {words.of} {total}</b></div>}
         <button className="barista-exit barista-panel" type="button" onClick={() => game?.modeExit()}>{words.exit}</button>
       </header>
+      {!concealed && line && (
+        <div className="barista-cue" data-line={line.key} aria-live="polite">
+          <div className="barista-cue-text barista-panel"><GlossLine sentence={line.sentence} gloss /></div>
+        </div>
+      )}
       <div className="barista-bottom">
         {price !== null && <div className="barista-price barista-panel"><span>{words.price}</span><strong>{priceText(price)}</strong></div>}
-        {concealed ? (
+        {concealed && (
           <div className="barista-listen barista-panel">
             {revealed && (
               <ul className="barista-order-text" role="list" tabIndex={0}
@@ -117,10 +110,6 @@ export function BaristaOverlay({ touch }: { touch: boolean }) {
               <button type="button" disabled={step !== "build" || !ready} onClick={() => act("hear")}><Icon name="speaker" size={18} /> {words.hear}</button>
               {!revealed && <button type="button" onClick={() => act("show")}>{words.show}</button>}
             </div>
-          </div>
-        ) : line && (
-          <div className="barista-cue barista-panel" data-line={line.key} aria-live="polite">
-            <GlossLine sentence={line.sentence} gloss />
           </div>
         )}
         {!!choices.length && (

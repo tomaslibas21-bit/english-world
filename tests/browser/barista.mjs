@@ -106,8 +106,8 @@ try {
       }
       assert.fail(`${label}: ${description}: ${JSON.stringify(await state())}, ${errors.join(", ")}`);
     };
-    const shot = async (name) => {
-      await step(3);
+    const shot = async (name, frames = 3) => {
+      if (frames) await step(frames);
       await page.screenshot({ path: join(dir, `${name}.png`) });
     };
     const press = (target) => phone ? target.tap() : target.click();
@@ -118,7 +118,16 @@ try {
     const enabledGive = give.and(page.locator(":enabled"));
     const cameraState = () => page.evaluate(() => {
       const { cam } = window.__ew.game.rig;
-      return [...cam.projectionMatrix.elements, ...cam.matrixWorld.elements];
+      const { customer, serving } = window.__ew.game.modes.get("barista").run;
+      const pixel = (point) => {
+        const p = point.project(cam);
+        return { x: (1 + p.x) * innerWidth / 2, y: (1 - p.y) * innerHeight / 2 };
+      };
+      return {
+        pose: cam.matrixWorld.toArray(), lens: cam.projectionMatrix.toArray(), zoom: cam.zoom,
+        face: pixel(customer.ch.root.position.clone().setY(customer.ch.height * 0.91)),
+        cup: pixel(serving.position.clone()),
+      };
     });
     const offer = page.locator(".barista-offer");
     const prompt = page.locator(".prompt").getByText(startLabel);
@@ -260,16 +269,20 @@ try {
             face: pixel(customer.ch.root.position.clone().setY(customer.ch.height * 0.91)),
             mia: pixel(mia.ch.root.position.clone().setY(mia.ch.height * 0.91)),
             cup: pixel(serving.position.clone()),
-            chips: [...document.querySelectorAll(".barista-chip")].every((item) =>
-              item.getBoundingClientRect().height >= 44 && item.scrollWidth <= item.clientWidth + 1),
+            chipProblems: [...document.querySelectorAll(".barista-chip")].flatMap((item) => {
+              const box = item.getBoundingClientRect();
+              const fits = box.height >= 44 && item.scrollWidth <= item.clientWidth + 1
+                && box.left >= tray.left && box.right <= tray.right && box.top >= tray.top && box.bottom <= tray.bottom;
+              return fits ? [] : [{ chip: item.dataset.chip, box: box.toJSON(), scroll: item.scrollWidth, client: item.clientWidth }];
+            }),
           };
         });
-        assert(layout.chips && layout.customerFacesBarista && layout.clear, JSON.stringify(layout));
+        assert(!layout.chipProblems.length && layout.customerFacesBarista && layout.clear, JSON.stringify(layout));
         assert(layout.cameraPitch >= 25 && layout.cameraPitch <= 30, JSON.stringify(layout));
         assert(Math.abs(layout.mia.x - layout.face.x) >= width * 0.15, JSON.stringify(layout));
         assert(layout.shoulder.x < width * 0.35 && layout.shoulder.y > layout.face.y, JSON.stringify(layout));
         assert.equal(layout.drinkCount, 8);
-        if (!phone) assert(layout.drinkRowFits, JSON.stringify(layout));
+        assert(layout.drinkRowFits, JSON.stringify(layout));
         for (const { x, y } of [layout.face, layout.cup, layout.mia]) {
           assert(x > 0 && x < width && y > 65 && y < layout.freeBottom - 12 && y < layout.tray, JSON.stringify(layout));
         }
@@ -290,8 +303,21 @@ try {
       await press(give);
       if (i === 0) {
         await wait(async () => (await state())?.step === "handover", "the cup slides to the customer");
-        await shot("handover");
-        assert.deepEqual(await cameraState(), beforeHandover, "hand-over keeps the same camera framing");
+        // Sample the landing while the cup is still on the counter.
+        await wait(() => page.evaluate(() => {
+          const { serving, shift } = window.__ew.game.modes.get("barista").run;
+          return shift.step === "handover" && serving.position.x > -1.1;
+        }), "cup reaches the customer");
+        await shot("handover", 0);
+        const landing = await cameraState();
+        assert.deepEqual(landing.pose, beforeHandover.pose, "the camera stays on the order axis");
+        if (phone) {
+          assert(landing.zoom > beforeHandover.zoom, "hand-over brings the cup closer");
+          assert(landing.cup.x > width * 0.15 && landing.cup.x < width * 0.85
+            && landing.cup.y > landing.face.y && landing.cup.y < height * 0.75, JSON.stringify(landing));
+        } else {
+          assert.deepEqual(landing.lens, beforeHandover.lens, "desktop keeps the order framing");
+        }
       }
       const priceLine = choice(`bs_a_price_${i + 1}`);
       await wait(() => priceLine.isVisible(), "the till presents the price");

@@ -37,7 +37,7 @@ it("shows the complete bilingual transcript only after revealing either back-to-
 });
 
 const latte = { drink: "latte", size: "medium", milk: "whole", dine: "here", extras: [] };
-const camera = counterShot(new Vector3(-1.2, 0, -4.2), 1.75, 1.75).pos;
+const camera = counterShot(new Vector3(-1.2, 0, -4.2), 1.75).pos;
 
 describe("barista serving meshes", () => {
   it.each([
