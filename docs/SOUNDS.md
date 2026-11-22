@@ -14,6 +14,10 @@ Spanish edition has its own), `src/game/Game.ts` (where they are asked for).
 | Footsteps | each step, in time with the legs | filtered noise by surface: stone, sand, grass, boards (a low knock), tiles (a tiny tap) |
 | Wading | steps in the water, walking into the sea | splashes and a small wave (the shore's own code) |
 | The surf | within 38 m of the waterline, louder towards it | a recorded loop, `public/sfx/sea.mp3` |
+| Surf lesson paddle | each accepted stroke, alternating hands | short filtered water noise with a slight left/right pan |
+| Surf lesson wave | a crest approaches and then passes the learner or breaks near the shore | rising filtered noise, then a soft wash |
+| Surf lesson stand-up | the learner gets to their feet | a short upward sweep of filtered air |
+| Surf lesson wipeout | the learner tumbles into the water | a soft splash with a lower, trailing wash |
 | People's murmur | in the market and the cafés, on the square, around Puerto Colibrí's market hall | a recorded loop, `public/sfx/market.mp3` |
 | Birds | among the trees, away from the sea | chirps; in Puerto Colibrí also a few seconds of `public/sfx/birds.mp3` now and then |
 | Gulls, a buoy's bell, a boat's horn | by the sea and the pier | synthesized, at random moments |

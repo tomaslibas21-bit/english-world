@@ -61,6 +61,8 @@ try {
     const page = await ctx.newPage();
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));
+    page.on("console", (m) => { if (m.type() === "error" && /WebGLProgram: Shader Error/.test(m.text())) errors.push(m.text()); });
+    await page.route(/\.mp3(?:\?|$)/, (route) => route.fulfill({ status: 204, body: "" }));
     await page.addInitScript(([k, v]) => { if (sessionStorage.getItem("seeded") !== "1") { sessionStorage.setItem("seeded", "1"); localStorage.clear(); localStorage.setItem(k, v); } }, [`${storage}-progress-v1`, JSON.stringify(progress)]);
     await page.addInitScript(INIT);
     await page.goto(base, { waitUntil: "domcontentloaded" });
@@ -78,9 +80,50 @@ try {
     await page.evaluate(() => { window.__ew.coach?.finish?.(); window.__ew.store.getState().setHud({ panel: null }); });
     const has = await page.evaluate(() => !!window.__ew.game.surf);
     check(`${label}: this town has a surf school`, has);
-    const L = () => page.evaluate(() => { const l = window.__ew.game.surf.logic; return l ? { phase: l.phase, pose: l.pose, d: +l.d.toFixed(1), saying: l.saying, choice: l.choice?.id ?? null, options: l.choice?.options ?? null, todo: l.todo ? { do: l.todo.do, left: l.todo.left ?? null, cue: l.todo.cue } : null, cmd: l.cmd?.c.act ?? null, score: l.score, level: l.level, reason: l.reason, heard: l.heard, upOpen: l.upOpen, talking: l.talking } : null; });
+    await page.evaluate(() => {
+      const { audio, game } = window.__ew;
+      window.__surfSoundEvents = [];
+      for (const method of ["surfStroke", "surfWaveRush", "surfWaveBreak", "surfStand", "surfWipeout"]) {
+        const playSound = audio[method].bind(audio);
+        audio[method] = (...args) => {
+          window.__surfSoundEvents.push({ method, hand: args[0], phase: game.surf.logic?.phase });
+          return playSound(...args);
+        };
+      }
+    });
+    const sounds = () => page.evaluate(() => window.__surfSoundEvents);
+    const L = () => page.evaluate(() => {
+      const { surf, player } = window.__ew.game, l = surf.logic;
+      if (!l) return null;
+      const scene = surf.scene, coach = scene?.coach;
+      return {
+        phase: l.phase, pose: l.pose, d: +l.d.toFixed(1), saying: l.saying, choice: l.choice?.id ?? null,
+        options: l.choice?.options ?? null, todo: l.todo ? { do: l.todo.do, left: l.todo.left ?? null, cue: l.todo.cue } : null,
+        cmd: l.cmd?.c.act ?? null, score: l.score, level: l.level, reason: l.reason, heard: l.heard,
+        upOpen: l.upOpen, talking: l.talking, backpack: player.backpackVisible, stroke: player.surf?.stroke,
+        rideT: l.rideT, pitch: player.root.rotation.x, demo: scene?.demoState,
+        coachStance: coach?.surf?.stance, coachZ: coach?.root.position.z, time: performance.now(),
+      };
+    });
     const ui = () => page.evaluate(() => { const u = window.__ew.surf.getState(); return { mic: u.mic.status, heard: u.mic.heard, micOn: u.micOn, said: u.said?.cue ?? null, todo: u.todo, choice: u.choice?.options.map((o) => ({ cue: o.cue, es: o.s.en })) ?? null }; });
-    const shot = async (name) => { if (shots) { await step(2); await real(250); await page.screenshot({ path: `${shots}/${label}-${name}.png` }); } };
+    const rideFrame = (isCoach) => page.evaluate((isCoach) => {
+      const g = window.__ew.game, scene = g.surf.scene, camera = g.rig.cam;
+      const rider = isCoach ? scene.coach : g.player;
+      const { position, rotation } = rider.root;
+      const feet = position.clone().project(camera), head = position.clone(), left = position.clone();
+      head.y += rider.height;
+      left.x += 1; // Shore-facing input moves the learner along world +X.
+      const inView = ({ x, y, z }) => Math.abs(x) < 1 && Math.abs(y) < 1 && Math.abs(z) < 1;
+      const active = scene.waves.filter(({ mesh }) => mesh.visible);
+      return {
+        side: camera.position.x - position.x, height: camera.position.y, pitch: rotation.x,
+        left: (left.project(camera).x - feet.x) * innerWidth / 2,
+        inView: inView(feet) && inView(head.project(camera)),
+        waveHeight: Math.max(...active.map(({ u }) => u.uH.value)),
+        singlePass: active.length > 0 && active.every(({ mesh }) => mesh.material.forceSinglePass && mesh.geometry.groups.length === 0),
+      };
+    }, isCoach);
+    const shot = async (name, scale = "device") => { if (shots) { await step(2); await real(250); await page.screenshot({ path: `${shots}/${label}-${name}.png`, scale }); } };
     const shown = new Set();
     const hud = () => page.evaluate(() => window.__ew.store.getState().hud);
     const paddle = async () => { if (phone) await page.locator(".act-btn").tap(); else await page.keyboard.press("e"); };
@@ -117,6 +160,7 @@ try {
     await fade();
     let s = await L();
     check(`${label}: a beginner's lesson is on, on the sand`, s?.level === "beginner" && s.phase === "intro" && (await hud()).ride === "surf", s);
+    check(`${label}: the learner wears the backpack on the sand`, s?.backpack === true);
     const menu = page.getByRole("button", { name: "Meniu" });
     check(`${label}: the town's tools are tucked into Meniu beside the surf score`,
       await page.locator(".surf-toolbar .icon-btn:visible").count() === 1 && await menu.isVisible()
@@ -149,9 +193,32 @@ try {
     const play = async (how, level) => {
       let wrongBoard = how === "good", early = how === "early", frames = 0, strokeT = 0, upT = 0, askT = 0, moveT = 0, lastCue = "", spoken = 0, keyed = 0, tapped = 0, prev = "";
       const said = [], mine = [];
+      const waterPack = {}, demo = { start: null, end: null, z0: null, z1: null, waits: true, stance: 0 };
+      let learnerFrame = null, coachFrame = null;
       for (; frames < 60 * 400; frames++) {
         s = await L();
         if (!s) break;
+        if (s.pose !== "walk" && s.phase !== "over") waterPack[s.pose] = (waterPack[s.pose] ?? true) && s.backpack === false;
+        if (["paddle", "ride", "shore"].includes(s.demo)) {
+          demo.start ??= s.time;
+          demo.waits &&= !s.saying && !s.choice && !s.todo && s.score.waves === 0 && s.score.asked === 0;
+          if (s.demo === "ride") {
+            demo.z0 ??= s.coachZ;
+            demo.z1 = s.coachZ;
+            demo.stance = Math.max(demo.stance, s.coachStance);
+            if (!coachFrame && s.coachStance > 0.96) {
+              coachFrame = await rideFrame(true);
+              if (shots && !shown.has("coach-ride")) { shown.add("coach-ride"); await shot("coach-ride", "css"); }
+            }
+          }
+        } else if (s.demo === "done" && demo.start !== null) demo.end ??= s.time;
+        if (shots && !shown.has("paddling") && s.phase === "out" && s.pose === "prone" && s.stroke > 0.25) {
+          shown.add("paddling"); await shot("paddling", "css");
+        }
+        if (!learnerFrame && s.pose === "stand" && s.rideT > 0.85 && s.pitch > 0.15) {
+          learnerFrame = await rideFrame(false);
+          if (shots && !shown.has("standing-wave")) { shown.add("standing-wave"); await shot("standing-wave", "css"); }
+        }
         if (s.saying && said.at(-1) !== s.saying) said.push(s.saying);
         if (s.saying === "prev_mine" || s.saying === "prev_yours") prev = s.saying;
         if (hasPics && s.saying && frames % 3 === 0) { const pn = await picNow(); if (pn?.cue === s.saying) { const o = seenPics.get(pn.cue) ?? { ...pn, clear: Infinity }; seenPics.set(pn.cue, { ...pn, clear: Math.min(o.clear, pn.clear), over: o.over || pn.over, inView: o.inView !== false && pn.inView }); } }
@@ -223,7 +290,7 @@ try {
         await step(4);
       }
       await stick(0, 0);
-      return { said, mine, frames, spoken, keyed, tapped };
+      return { said, mine, frames, spoken, keyed, tapped, waterPack, demo, learnerFrame, coachFrame };
     };
     // ---- she waits for the learner: a long silence at her first line, and nothing has gone on
     for (let i = 0; i < 400 && !(await L())?.choice; i++) await step(4);
@@ -236,6 +303,17 @@ try {
     let run = await play("good", "beginner");
     s = await L();
     check(`${label}: the lesson ran to its end: a wave ridden to the beach, every command followed`, s?.phase === "over" && s.score.waves === 1 && s.score.falls === 0 && s.score.followed === s.score.asked && s.score.asked >= 4, s?.score);
+    check(`${label}: the backpack is hidden paddling, sitting and riding, and comes back at the beach`, ["prone", "sit", "stand"].every((pose) => run.waterPack[pose]) && s.backpack === true, run.waterPack);
+    const d = run.demo;
+    check(`${label}: Nayeli rides towards the beach before the first learner wave, while the lesson waits`, d.waits && d.stance > 0.9 && d.z1 - d.z0 > 6 && d.end - d.start > 0 && d.end - d.start < 8000, d);
+    const { learnerFrame, coachFrame } = run;
+    check(`${label}: both riders fit in the low side view on a tall, single-pass wave`,
+      [learnerFrame, coachFrame].every((f) => f?.inView && f.side > 3 && f.height < 2.6 && f.pitch > 0.3 && f.waveHeight >= 1.2 && f.singlePass), { learnerFrame, coachFrame });
+    check(`${label}: the learner's left still projects screen-left in the riding camera`, learnerFrame?.left < -3, learnerFrame);
+    const beginnerSounds = await sounds();
+    const hands = beginnerSounds.filter((e) => e.method === "surfStroke").map((e) => e.hand);
+    check(`${label}: paddling alternates hands and the audio gets the rush, break and stand cues`, hands.length >= 8 && hands.every((hand, i) => hand === (i % 2 ? 1 : -1)) && ["surfWaveRush", "surfWaveBreak", "surfStand"].every((method) => beginnerSounds.some((e) => e.method === method)), beginnerSounds);
+    if (shots) check(`${label}: captured the learner standing, Nayeli riding and paddling`, ["standing-wave", "coach-ride", "paddling"].every((name) => shown.has(name)));
     check(`${label}: the wrong board got a word, the wave its call`, ["board_no", "now_up", "up_ok", "shore"].every((c) => s.heard.includes(c)), s.heard.length);
     // ---- a conversation: the learner spoke at every step of it, aloud and by ${phone ? "taps" : "keys"}
     check(`${label}: the learner answered her all the way: on the sand, about the wave, about the moment, in the ride, at the end`, ["a_perfect", "a_ready", "a_coming", "a_and_now", "a_this", "a_now", "a_allgood", "a_thanks", "a_enough"].every((c) => run.mine.includes(c)) && run.mine.length >= 13, run.mine);
@@ -273,15 +351,18 @@ try {
     run = await play("early", "advanced");
     s = await L();
     check(`${label}: a fall was a question, and the next wave was ridden`, s?.phase === "over" && s.score.falls === 1 && s.score.waves === 1 && ["wipeout", "you_ok", "what_happened", "r_exact", "tip_early", "another", "q_go"].every((c) => s.heard.includes(c)), { score: s?.score, heard: s?.heard.length });
+    const wipeouts = (await sounds()).filter((e) => e.method === "surfWipeout");
+    check(`${label}: the pack stays off through the wipeout and the splash and wash are cued`, run.waterPack.swim === true && wipeouts.some((e) => e.phase === "fall"), wipeouts);
     check(`${label}: the learner said they were fine, what went wrong, and that they understood`, ["a_fine", "a_early", "a_understood", "a_again"].every((c) => run.mine.includes(c)), run.mine);
     await step(20);
     await page.locator(".surf-later").click();
     await fade();
     const after = await page.evaluate(() => {
       const g = window.__ew.game, p = g.player.root.position, st = window.__ew.store.getState();
-      return { x: +p.x.toFixed(1), z: +p.z.toFixed(1), y: +p.y.toFixed(2), on: g.surf.active, mode: g.rig.mode, ride: st.hud.ride, surf: st.progress.surf, npc: g.npcs.find((n) => n.id === g.surf.content.npc)?.ch.root.visible, order: g.player.root.rotation.order, cards: (localStorage.getItem(Object.keys(localStorage).find((k) => /cards/.test(k)) ?? "") ?? "").length, mine: /¿Ahora\?/.test(localStorage.getItem(Object.keys(localStorage).find((k) => /cards/.test(k)) ?? "") ?? "") };
+      return { x: +p.x.toFixed(1), z: +p.z.toFixed(1), y: +p.y.toFixed(2), on: g.surf.active, mode: g.rig.mode, ride: st.hud.ride, surf: st.progress.surf, npc: g.npcs.find((n) => n.id === g.surf.content.npc)?.ch.root.visible, backpack: g.player.backpackVisible, order: g.player.root.rotation.order, cards: (localStorage.getItem(Object.keys(localStorage).find((k) => /cards/.test(k)) ?? "") ?? "").length, mine: /¿Ahora\?/.test(localStorage.getItem(Object.keys(localStorage).find((k) => /cards/.test(k)) ?? "") ?? "") };
     });
     check(`${label}: back on the sand by the boards, walking again, the instructor at her counter`, !after.on && after.mode === "follow" && after.ride === null && after.npc === true && after.order === "XYZ" && Math.hypot(after.x - start.x, after.z - start.z) < 0.5, after);
+    check(`${label}: leaving the lesson restores the backpack`, after.backpack === true);
     check(`${label}: the waves, the seconds and what was heard are kept, and the phrases are cards (the learner's own too)`, after.surf?.waves === 2 && after.surf.lessons === 2 && after.surf.seconds > 20 && after.surf.heard.now_up >= 2 && after.cards > 500 && after.mine, { ...after.surf, heard: Object.keys(after.surf?.heard ?? {}).length, cards: after.cards, mine: after.mine });
     await step(30);
     check(`${label}: the town's buttons are back`, await page.locator(".toolbar").count() === 1);
@@ -320,9 +401,17 @@ try {
         check(`${label}: with reduced motion the picture does not slide`, still.every((n) => n === "none"), still);
         await page.emulateMedia({ reducedMotion: "no-preference" });
       }
+      for (let i = 0; i < 150; i++) {
+        s = await L();
+        if (s?.phase === "out") break;
+        if (s?.choice) await page.evaluate((cue) => window.__ew.game.surfChoose(cue), s.choice === "board" ? "b_short" : s.options[0]);
+        await step(12);
+      }
+      check(`${label}: the learner can leave while still on the water`, s?.phase === "out" && s.backpack === false);
       if (phone) await page.locator(".surf-x").tap(); else await page.keyboard.press("Escape");
       await fade();
       check(`${label}: out of it at once, on foot`, !(await L()) && (await hud()).ride === null);
+      check(`${label}: leaving from the water puts the backpack back on`, await page.evaluate(() => window.__ew.game.player.backpackVisible === true));
     }
     check(`${label}: no errors on the page`, errors.length === 0, errors.slice(0, 3));
     await ctx.close();

@@ -20,7 +20,7 @@ import type { SurfContent } from "../../content/surf";
 import type { SurfSpot } from "../world/surf";
 import type { CameraRig } from "../camera";
 import type { GameCharacter } from "../characters";
-import { Surf } from "./Surf";
+import type { Surf } from "./Surf";
 import { COMMANDS, SurfLogic, type Do, type Level, type SurfInput } from "./logic";
 import { EMPTY_SCORE, NO_MIC, useSurf, type SurfLine } from "./store";
 
@@ -65,8 +65,10 @@ const HEARD_ENOUGH = 0.75, HEARD_ONLY = 0.6;
 const PUSH: Partial<Record<Do, [number, number]>> = { duck: [0, -1], turn: [1, 0], left: [-1, 0], right: [1, 0], down: [0, -1], fwd: [0, 1] };
 
 export class SurfPlay {
-  scene: Surf;
+  scene: Surf | null = null;
+  group = new THREE.Group();
   private logic: SurfLogic | null = null;
+  private startRequest = 0;
   private level: Level = "beginner";
   private in = { stroke: false, up: false };
   private lastChoice: unknown = null;
@@ -93,7 +95,6 @@ export class SurfPlay {
   private ringT = 0;
 
   constructor(private spot: SurfSpot, private content: SurfContent, private game: SurfGame) {
-    this.scene = new Surf(spot, { get player() { return game.player(); }, splash: game.splash, portrait: game.portrait });
     const mat = new THREE.MeshBasicMaterial({ color: "#ffd166", transparent: true, opacity: 0.85, depthWrite: false });
     const ring = new THREE.Mesh(new THREE.RingGeometry(0.62, 0.84, 36).rotateX(-Math.PI / 2), mat);
     const halo = new THREE.Mesh(new THREE.RingGeometry(0.9, 1.0, 36).rotateX(-Math.PI / 2), mat.clone());
@@ -113,9 +114,8 @@ export class SurfPlay {
     (halo.material as THREE.MeshBasicMaterial).opacity = 0.45 * (1 - k);
   }
 
-  get group() { return this.scene.group; }
   get active() { return !!this.logic; }
-  get heading() { return this.scene.heading; }
+  get heading() { return this.scene?.heading ?? Math.PI; }
   /** Near enough to the school's boards for its prompt. */
   near(x: number, z: number) {
     const near = this.reach(x, z) < Infinity;
@@ -178,18 +178,37 @@ export class SurfPlay {
     useSurf.getState().set({ picking: true, best: { waves: s.waves, seconds: s.seconds } });
     audio.sfx("pop");
   }
-  cancel() { useSurf.getState().set({ picking: false }); }
+  cancel() {
+    this.startRequest++;
+    useSurf.getState().set({ picking: false });
+  }
 
   start(level: Level) {
     if (this.active) return;
     useSurf.getState().set({ picking: false });
+    const request = ++this.startRequest;
+    const start = () => {
+      if (request !== this.startRequest || this.active) return;
+      this.game.fade(() => { if (request === this.startRequest) this.launch(level); });
+    };
     // (its lines in the learner's language are its conversation's: here already when the school was near)
     const id = this.content.situation;
-    if (!id || getSituation(id)) { this.game.fade(() => this.launch(level)); return; }
-    loadSituation(id).catch(() => null).then(() => { if (!this.active) this.game.fade(() => this.launch(level)); });
+    const lines = id && !getSituation(id) ? loadSituation(id).catch(() => null) : null;
+    if (this.scene && !lines) { start(); return; }
+    const scene = this.scene ?? import("./Surf").then(({ Surf }) => {
+      if (request !== this.startRequest) return;
+      const game = this.game;
+      this.scene ??= new Surf(this.spot, { get player() { return game.player(); }, splash: game.splash, portrait: game.portrait }, this.group);
+    });
+    void Promise.all([scene, lines]).then(start).catch((err) => {
+      if (request !== this.startRequest) return;
+      console.error("Could not load the surf lesson", err);
+      this.open();
+    });
   }
 
   private launch(level: Level) {
+    const scene = this.scene!;
     const st = useStore.getState(), s = this.saved();
     this.level = level;
     this.heard = { ...s.heard };
@@ -201,14 +220,15 @@ export class SurfPlay {
     this.unclear = 0;
     this.push.t = 0;
     this.todoCue = "";
+    this.paused = false;
     this.preload();
     countPlay("games", "surf");
     this.logic = new SurfLogic({ say: (cue) => this.say(cue), answer: (cue, spoken) => this.answer(cue, spoken), fx: (name) => this.fx(name), rnd: Math.random, busy: () => this.heardNow() }, { level, rides: s.waves, slow: !!st.settings.slowVoice });
     this.game.entered();
     this.game.hideNpc(this.content.npc, true);
-    this.scene.begin(this.logic, this.npc.look);
+    scene.begin(this.logic, this.npc.look);
     this.game.rig.mode = "stage";
-    this.game.rig.stage = this.scene.cam;
+    this.game.rig.stage = scene.cam;
     this.game.rig.stageSnap();
     useSurf.getState().set({ active: true, picking: false, level, phase: this.logic.phase, line: null, choice: null, todo: null, said: null, mic: speechSupported() ? NO_MIC : { status: "unsupported", heard: "" }, support: 0, balance: 1, asked: false, mark: null, score: { ...EMPTY_SCORE }, over: false, best: { waves: s.waves, seconds: s.seconds } });
     st.setHud({ prompt: null, ride: "surf" });
@@ -248,7 +268,7 @@ export class SurfPlay {
       this.stopListening();
       audio.stop();
       this.logic = null;
-      this.scene.end();
+      this.scene?.end();
       this.game.hideNpc(this.content.npc, false);
       this.game.rig.stage = null;
       useSurf.getState().reset();
@@ -394,7 +414,7 @@ export class SurfPlay {
     const st = useStore.getState(), npc = this.npc, voice = npcVoice(npc), speed = npc?.speed ?? 1, slow = !!st.settings.slowVoice;
     const secs = (audio.clipDuration(voice, speed, s.say) ?? 0.45 + s.say.length * 0.058) / (slow ? 0.82 : 1);
     void audio.play(voice, speed, s.say, { slow, male: npc?.gender === "m" });
-    this.scene.coach?.talk(secs, () => audio.level(), () => audio.vowel());
+    this.scene?.coach?.talk(secs, () => audio.level(), () => audio.vowel());
     const n = this.heard[cue] ?? 0;
     this.heard[cue] = n + 1;
     const pic = this.picture(cue) ?? (KEEPS_PICTURE.has(cue) ? this.lastPic : undefined);
@@ -404,14 +424,12 @@ export class SurfPlay {
   }
 
   private fx(name: string) {
-    this.scene.fx(name, this.game.time());
+    this.scene?.fx(name, this.game.time());
     const ui = useSurf.getState();
     switch (name) {
-      case "stroke": audio.splash(0.2); break;
       case "duck": audio.splash(0.6); break;
-      case "tumble": case "wipeout": audio.splash(1); break;
+      case "tumble": audio.surfWipeout(); break;
       case "missed": audio.wash(); break;
-      case "pop": audio.jump(); break;
       case "flip": audio.jump(1.4); break;
       case "cheer": audio.sfx("cheer"); break;
       case "right": audio.sfx("pop"); ui.set({ mark: "ok" }); this.markT = 0.9; break;
@@ -438,13 +456,17 @@ export class SurfPlay {
     this.in.stroke = this.in.up = false;
     // (a panel over the lesson: the microphone closes, and opens again with the lesson)
     if (paused !== this.paused) { this.paused = paused; if (paused) this.stopListening(); else if (L.choice) this.listen(); }
-    this.scene.update(dt, t, inp, paused);
+    this.scene?.update(dt, t, inp, paused);
     this.sync(dt);
   }
 
   private sync(dt: number) {
     const L = this.logic!, ui = useSurf.getState(), patch: Partial<typeof ui> = {};
     if (ui.phase !== L.phase) patch.phase = L.phase;
+    if (this.scene?.demonstrating) {
+      if (ui.line) patch.line = null;
+      if (ui.said && this.scene.demoState !== "paddle") patch.said = null;
+    }
     const turn = L.choice !== this.lastChoice;
     if (turn) {
       this.lastChoice = L.choice;

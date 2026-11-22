@@ -1616,6 +1616,51 @@ export class AudioSystem {
     src.start(now); src.stop(now + 1.85);
   }
 
+  /** One quiet layer of filtered water or air, with the same world bus as splashes. */
+  private surfNoise(sweep: [number, number, number], envelope: [number, number, number], pan = 0, delay = 0) {
+    if (this.volume <= 0 || this.soundsLevel <= 0 || this.hushed.size) return;
+    const ctx = this.ac();
+    if (!ctx) return;
+    const [startHz, peakHz, endHz] = sweep;
+    const [attack, duration, peak] = envelope;
+    const start = ctx.currentTime + delay, turn = start + attack, end = start + duration;
+    const src = ctx.createBufferSource();
+    src.buffer = this.hiss(ctx);
+    src.loop = true;
+    const band = ctx.createBiquadFilter();
+    band.type = "bandpass";
+    band.Q.value = 0.65;
+    band.frequency.setValueAtTime(startHz, start);
+    band.frequency.exponentialRampToValueAtTime(peakHz, turn);
+    band.frequency.exponentialRampToValueAtTime(endHz, end);
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, start);
+    gain.gain.linearRampToValueAtTime(this.volume * peak, turn);
+    gain.gain.exponentialRampToValueAtTime(0.0001, end);
+    src.connect(band);
+    band.connect(gain);
+    const stereo = pan !== 0 && typeof ctx.createStereoPanner === "function" ? ctx.createStereoPanner() : null;
+    if (stereo) { stereo.pan.value = pan; gain.connect(stereo); }
+    (stereo ?? gain).connect(this.out(ctx));
+    src.onended = () => { src.disconnect(); band.disconnect(); gain.disconnect(); stereo?.disconnect(); };
+    src.start(start, Math.random());
+    src.stop(end);
+  }
+
+  /** A hand pulling water beside the board. */
+  surfStroke(hand: -1 | 1) {
+    this.surfNoise([820, hand < 0 ? 1700 : 1950, 520], [0.038, 0.25, 0.048], hand * 0.24);
+  }
+
+  surfWaveRush() { this.surfNoise([360, 1550, 920], [0.65, 1.03, 0.077]); }
+  surfWaveBreak() { this.surfNoise([630, 2100, 420], [0.085, 0.88, 0.082]); }
+  surfStand() { this.surfNoise([520, 2280, 780], [0.038, 0.18, 0.057]); }
+
+  surfWipeout() {
+    this.surfNoise([900, 2600, 620], [0.026, 0.34, 0.082]);
+    this.surfNoise([540, 1050, 330], [0.12, 0.72, 0.064], 0, 0.11);
+  }
+
   // ---- A recorded line heard from somewhere in the world (a glyph stone in the grotto calling, src/game/cave): on
   // the world's bus (silent in a conversation, under an open panel), as loud and as far to one side as `at()` says for
   // as long as it plays, with a little of a cave's echo behind it. One at a time.

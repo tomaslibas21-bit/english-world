@@ -12,6 +12,7 @@ export interface GameCharacter {
   anim: Anim;
   readonly height: number;
   setAnim(a: Anim): void;
+  setBackpack?(visible: boolean): void;
   update(dt: number): void;
   /** Talk for `seconds`; `level` tells how loud the voice is right now (0–1; -1: it has ended; null: no recording to
    *  follow), for the mouth. */
