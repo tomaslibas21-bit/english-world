@@ -4,6 +4,7 @@ import { SceneIntro, sceneText } from "./SceneIntro";
 import { picturesOn, useStore, type TranscriptLine } from "../state/store";
 import { Interlinear } from "./Interlinear";
 import { NPCS } from "../content/npcs";
+import { PHONE_CALLS } from "../content/phoneCalls";
 import { coachVoice, npcVoice } from "../content/voices";
 import { getSituation, SITUATION_BY_ID } from "../content/situations/catalog";
 import { KIND, keepsakeFor } from "../content/keepsakes";
@@ -27,6 +28,7 @@ import "./answer.css";
 import {ReportProblem} from "./ReportProblem";
 import { SectionHelpButton } from "./sectionHelp";
 import { useKeyboardHints } from "./keyboardHints";
+import { usePortrait } from "./usePortrait";
 
 function playVoice(...args: Parameters<typeof audio.play>) {
   return game?.activeSession?.playVoice(...args) ?? audio.play(...args);
@@ -122,10 +124,14 @@ export function Conversation() {
   };
 
   const turn = turnAnswers(sit, conv, formal, gender);
+  const townPhone = sit.mode === "phone" && !game?.light;
+  const livePhone = townPhone && conv.phase !== "ended";
+  const openingCall = livePhone && conv.phase === "npc" && !conv.transcript.length && !conv.note;
   return (
     <>
-    <div className="convo" data-phase={conv.phase} role="dialog" aria-label={L("Pokalbis: {name}", { name: npc?.name ?? "" })}>
+    <div className="convo" data-phase={conv.phase} data-call-opening={openingCall || undefined} role="dialog" aria-label={L("Pokalbis: {name}", { name: npc?.name ?? "" })}>
       <div className="convo-tools">
+      {townPhone && <PhoneCallHeader key={conv.run} />}
       <div className="convo-head">
         <div className="toggles">
           <button className={"toggle" + (settings.lt ? " on" : "")} onClick={() => setSettings({ lt: !settings.lt })} title={L("Lietuviškas vertimas (L) · visas sakinys lietuviškai (N)")} aria-pressed={settings.lt}>{L("LT")}</button>
@@ -139,13 +145,13 @@ export function Conversation() {
         <div className="head-actions">
           <button className="close-x" onClick={() => game?.restartScenario()} title={L("Pradėti šį pokalbį iš naujo")} aria-label={L("Pradėti iš naujo")}><Icon name="restart" /></button>
           <button className="close-x" onClick={() => { game?.closeConversation(); useStore.getState().setHud({ panel: "scenarios" }); }} title={L("Visos situacijos")} aria-label={L("Visos situacijos")}><Icon name="list" /></button>
-          <button className="close-x" onClick={() => game?.closeConversation()} title={keyboardHints ? L("Baigti pokalbį (Esc)") : L("Baigti pokalbį")} aria-label={L("Baigti pokalbį")}><Icon name="close" /></button>
+          <button className={"close-x" + (livePhone ? " hang-up" : "")} onClick={() => game?.closeConversation()} title={keyboardHints ? L("Baigti pokalbį (Esc)") : L("Baigti pokalbį")} aria-label={L("Baigti pokalbį")}><Icon name={livePhone ? "phoneCall" : "close"} /></button>
         </div>
       </div>
 
       <SceneIntro sit={sit} />
       <AudioRecovery />
-      {(sit.mode === "video" || sit.mode === "phone") && <CallStrip sit={sit} />}
+      {!townPhone && (sit.mode === "video" || sit.mode === "phone") && <CallStrip key={conv.run} sit={sit} />}
       <Mission />
       </div>
 
@@ -562,17 +568,49 @@ function Guide({ sit, formal, gender, turn }: { sit: SituationDef; formal: boole
   );
 }
 
-/** Phone and video calls: who is on the call, and who is talking right now. */
+function CallClock({ ended }: { ended: boolean }) {
+  const [seconds, setSeconds] = useState(0);
+  useEffect(() => {
+    if (ended) return;
+    const start = Date.now();
+    const timer = setInterval(() => setSeconds(Math.floor((Date.now() - start) / 1000)), 1000);
+    return () => clearInterval(timer);
+  }, [ended]);
+  return <span className="clock" role="timer">{Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")}</span>;
+}
+
+function PhoneCallHeader() {
+  const { npcId, sitId, phase, speaking, transcript } = useStore((s) => s.conv);
+  const call = transcript.length === 0 ? PHONE_CALLS[sitId] : undefined;
+  const callerId = call?.npc ?? npcId;
+  const portrait = usePortrait(callerId);
+  const name = NPCS[callerId]?.name ?? "";
+  const ended = phase === "ended";
+  return (
+    <div className={ended ? "call-strip phone" : "phone-call-header"}>
+      {ended ? <>{L("Skambutis baigtas")} · </> : <>
+        <span className="phone-call-face" aria-hidden="true" style={{ backgroundColor: portrait ? undefined : avatarColor(callerId) }}>
+          {portrait ? <img src={portrait} alt="" /> : name.replace(/^(Mr\.|Ms\.|Mrs\.|Officer) /, "").charAt(0)}
+        </span>
+        <div className="phone-call-identity">
+          <strong>{call?.name ?? name}</strong>
+          <small><Icon name="phoneCall" size={13} /> {L("Skambutis")}</small>
+        </div>
+        <span className="phone-call-wave" data-speaking={speaking !== null} aria-hidden="true"><i /><i /><i /></span>
+      </>}
+      <CallClock ended={ended} />
+    </div>
+  );
+}
+
+/** The participant strip for video calls and the light mode's call screen. */
 function CallStrip({ sit }: { sit: SituationDef }) {
   const conv = useStore((s) => s.conv);
   const profile = useStore((s) => s.progress.profile);
-  const [secs, setSecs] = useState(0);
-  // the clock stops when the call is over (the end box stays until the learner leaves)
   const ended = conv.phase === "ended";
-  useEffect(() => { if (ended) return; const t = setInterval(() => setSecs((x) => x + 1), 1000); return () => clearInterval(t); }, [ended]);
+  const clock = <CallClock ended={ended} />;
   const speakingNpc = conv.transcript.find((l) => l.id === conv.speaking)?.npc;
   const listening = ["listening", "starting", "reconnecting"].includes(conv.mic.status);
-  const clock = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
   if (sit.mode === "phone") {
     return <div className="call-strip phone">{ended ? L("Skambutis baigtas") : <><span className="dot" /> {L("Skambutis")}</>} · {clock}</div>;
   }
@@ -589,7 +627,7 @@ function CallStrip({ sit }: { sit: SituationDef }) {
         <span className="face" style={{ background: "#1f6f78" }}>{(profile?.name ?? L("Tu")).charAt(0)}</span>
         <span className="nm">{profile?.name ?? L("Tu")}</span>
       </div>
-      <span className="clock">{clock}</span>
+      {clock}
     </div>
   );
 }

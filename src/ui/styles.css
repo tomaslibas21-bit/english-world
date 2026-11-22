@@ -337,7 +337,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .call-strip .tile.talking { border-color: #57d38c; }
 .call-strip .tile .face { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 900; }
 .call-strip .tile .nm { font-size: 0.78em; font-weight: 800; white-space: nowrap; }
-.call-strip .clock { margin-left: auto; font-variant-numeric: tabular-nums; color: #9fb0bf; padding-left: 6px; }
+.call-strip.video .clock { margin-left: auto; font-variant-numeric: tabular-nums; color: #9fb0bf; padding-left: 6px; }
 @keyframes callpulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
 
 .mission { border-bottom: 1px solid var(--line); background: #fbf7ef; }

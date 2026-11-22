@@ -186,11 +186,26 @@ try {
   assert.equal(await card.getAttribute("data-kind"), "reminder");
   assert.equal(await card.locator("strong").innerText(), friend);
   await waitFor(() => card.locator("img").isVisible(), `${friend} portrait`);
+  const ringingPortrait = await card.locator("img").getAttribute("src");
   await shot("reminder", card);
   await press(card.getByRole("button", { name: ui("Skambinti", "Call"), exact: true }));
   await waitFor(() => conv(invite), "answer opens the phone conversation");
   assert.equal(await page.evaluate(() => window.__ew.store.getState().conv.mode), "phone");
-  await shot("answered", page.locator(".convo"));
+  const panel = page.locator(".convo");
+  const header = panel.locator(".phone-call-header");
+  const hangUp = panel.locator("button.hang-up");
+  await waitFor(() => header.locator("img").isVisible(), "answered call shows the ringing portrait");
+  assert.equal(await header.locator("img").getAttribute("src"), ringingPortrait);
+  assert.equal(await header.locator("strong").innerText(), friend);
+  assert.equal(await header.locator("small").innerText(), ui("Skambutis", "Call"));
+  assert.equal(await hangUp.getAttribute("aria-label"), ui("Baigti pokalbį", "End conversation"));
+  assert(await panel.locator(".scene-intro").isVisible());
+  assert.equal(await panel.locator(".transcript").isVisible(), false, "no transcript before the first line");
+  assert.equal(await panel.locator(".yourturn").isVisible(), false, "no reply controls before the first line");
+  const gap = await panel.evaluate((el) => el.clientHeight - el.querySelector(".convo-tools").offsetHeight);
+  assert(gap <= 1, `the opening panel fits its controls (${gap}px of extra height)`);
+  await waitFor(async () => (await header.getByRole("timer").innerText()) !== "0:00", "call clock runs");
+  await shot("answered", panel);
 
   await page.evaluate((done) => window.__ew.store.getState().updateProgress((p) => { p.sits["p18-startup"] = done; }), completed);
   await force();
@@ -198,7 +213,13 @@ try {
   await page.evaluate(() => window.__ew.store.getState().setConv({ phase: "ended" }));
   const endCard = page.locator('.convo[data-phase="ended"]');
   await waitFor(() => endCard.isVisible(), "end card is shown");
+  assert.equal(await header.count(), 0, "the live header clears at the end");
+  const stoppedClock = endCard.getByRole("timer");
+  const elapsed = await stoppedClock.innerText();
+  assert.notEqual(elapsed, "0:00", "the ended call retains its elapsed time");
   await noCardFor("the end card still blocks a due card");
+  await real(1100);
+  assert.equal(await stoppedClock.innerText(), elapsed, "the ended call clock stops");
   // Completing through the hook closes the end card and returns to the town.
   assert(await page.evaluate((id) => window.__ew.game.finishPhoneCallForTest(id, { place: "cafe", meetTime: { h: 7, m: 30 }, day: "friday" }), invite));
   await waitFor(async () => !(await page.locator(".convo").isVisible()), "end card closes before the invitation shot");
@@ -291,10 +312,18 @@ try {
   await press(card.getByRole("button", { name: ui("Atsiliepti", "Answer") }));
   await waitFor(() => conv(flood), "answering the incoming call opens it");
   assert((await page.locator(".scene-intro").innerText()).includes(ui(`Skambina ${friend}`, "Andrea is calling")));
+  await press(panel.locator(".scene-intro").getByRole("button", { name: ui("Pradėti", "Start"), exact: true }));
+  await waitFor(() => panel.locator(".transcript .msg.npc").first().isVisible(), "first spoken line appears");
+  assert(await header.isVisible());
+  assert(await panel.locator(".yourturn").isVisible());
   assert(await page.evaluate((id) => window.__ew.game.finishPhoneCallForTest(id), flood));
 
   await page.evaluate(() => window.__ew.game.call("s90-running-late"));
   await waitFor(() => conv("s90-running-late"), "running late starts from the list path");
+  await press(hangUp);
+  await waitFor(async () => !(await panel.isVisible()), "hang-up closes the conversation");
+  await page.evaluate(() => window.__ew.game.call("s90-running-late"));
+  await waitFor(() => conv("s90-running-late"), "running late can be called again");
   assert(await page.evaluate(() => window.__ew.game.finishPhoneCallForTest("s90-running-late")));
   const office = page.locator('.objective-card[data-target-location="office"]');
   assert((await office.innerText()).includes(ui("Skubėk į biurą – susirinkimas jau prasidėjo", "Hurry to the office: the meeting has already started")));
