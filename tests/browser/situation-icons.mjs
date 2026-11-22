@@ -42,7 +42,9 @@ async function inspect(page, cards, titles, objective = false) {
       const range = document.createRange();
       range.selectNodeContents(heading);
       const lines = [...range.getClientRects()].filter((r) => r.width && r.height);
-      check(lines.length && lines.every(inside), "title text outside card");
+      // (a title cut short with an ellipsis, the folded card on a sideways phone, ends where its own box ends)
+      const cut = getComputedStyle(heading).textOverflow === "ellipsis";
+      check(lines.length && (cut || lines.every(inside)), "title text outside card");
       if (card.matches(".contact")) {
         const avatar = card.querySelector(".avatar");
         const badge = icon.closest(".contact-badge");
@@ -167,6 +169,8 @@ try {
       await shot("review");
 
       await panel(null);
+      // (on a phone the town's buttons are behind the menu button)
+      if (await page.locator(".toolbar .ride-menu").count()) await page.locator(".toolbar .ride-menu").click();
       await page.locator(".light-mode-btn").click();
       const light = await inspect(page, ".lh-card", ".lh-txt b, .lh-txt i");
       match(light);
