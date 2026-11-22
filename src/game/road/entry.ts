@@ -11,7 +11,6 @@ export interface RoadHost extends ModeHost {
   sky(): Mesh;
   clearTownHud(): void;
   returnCar(car: Ride, onFoot: boolean): void;
-  canPullUp(x: number, z: number): boolean;
   deferLift(): void;
 }
 
