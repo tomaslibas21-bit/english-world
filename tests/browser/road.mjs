@@ -46,6 +46,7 @@ const browser = await chromium.launch({
 try {
   for (const phone of [false, true]) {
     const label = phone ? "phone" : "computer";
+    const maxRoadCalls = phone ? 26 : 60;
     const context = await browser.newContext(phone
       ? { viewport: { width: 390, height: Number(process.env.WORLD_PHONE_HEIGHT || 844) }, deviceScaleFactor: 2, isMobile: true, hasTouch: true }
       : { viewport: { width: 1280, height: 800 } });
@@ -176,7 +177,7 @@ try {
     const road = await read();
     assert.equal(road.car, carId);
     assert.equal(road.model, "van");
-    assert.ok(road.drawCalls <= 60 && road.fps > 0, `draw calls ${road.drawCalls}, FPS ${road.fps}`);
+    assert.ok(road.drawCalls <= maxRoadCalls && road.fps > 0, `draw calls ${road.drawCalls}, FPS ${road.fps}`);
     assert.equal(road.gates.length, 3);
     if (phone) {
       const horn = page.getByRole("button", { name: "Signalas", exact: true });
@@ -196,30 +197,33 @@ try {
     // the estimated time to the gate suddenly, including between a frame and its HTML label update.
     let layout, seen = [];
     await waitFor(async () => {
-      layout = await page.evaluate(async (minFont) => {
+      layout = await page.evaluate(async ({ minFont, minWidth }) => {
         const { gateDistance, speed, totalGates } = window.__ew.road.state();
-        if (totalGates !== 0 || !(gateDistance / speed <= 2.2 && gateDistance / speed >= 1.1)) return [];
+        if (totalGates !== 0 || !(gateDistance / speed <= 2.2 && gateDistance / speed >= 1.85)) return [];
         // game time is frozen between steps; give the page real time to paint the gate labels first
         await new Promise((resolve) => setTimeout(resolve, 80));
         const header = document.querySelector(".road-header").getBoundingClientRect();
         const controls = [...document.querySelectorAll(".road-mode .joy, .road-mode .brake-btn, .road-mode .drive-horn")]
           .map((element) => element.getBoundingClientRect());
-        return [...document.querySelectorAll(".road-gate")].map((gate) => {
+        const gates = [...document.querySelectorAll(".road-gate")];
+        return gates.map((gate, lane) => {
           const r = gate.getBoundingClientRect();
           const lines = [...gate.children];
           const wholeWords = lines.map((line) => line.textContent).join(" ") === gate.getAttribute("aria-label")
             && lines.every((line) => getComputedStyle(line).whiteSpace === "nowrap" && line.scrollWidth <= line.clientWidth + 1);
-          return wholeWords && r.left >= 0 && r.right <= innerWidth && r.top > header.bottom
-            && r.width >= 43 && parseFloat(getComputedStyle(gate).fontSize) >= minFont && r.bottom < innerHeight
+          const separated = lane === 0 || r.left > gates[lane - 1].getBoundingClientRect().right;
+          return wholeWords && separated && r.left >= 0 && r.right <= innerWidth && r.top > header.bottom
+            && r.width >= minWidth && parseFloat(getComputedStyle(gate).fontSize) >= minFont && r.bottom < innerHeight
             && controls.every((c) => r.bottom < c.top || r.right < c.left || r.left > c.right);
         });
-      }, phone ? 9 : 18);
+      }, phone ? { minFont: 15, minWidth: 88 } : { minFont: 18, minWidth: 110 });
       if (layout.length) seen = layout;
       return layout.length === 3 && layout.every(Boolean);
     }, "the banner text fits whole words and clears the controls on the first gate approach", 120, 1).catch((error) => {
       throw new Error(`${error.message} — last measured: ${JSON.stringify(seen)}`);
     });
     assert.deepEqual(layout, [true, true, true]);
+    assert.ok((await read()).drawCalls <= maxRoadCalls);
     await shot("gates");
 
     await page.evaluate(() => window.__ew.road.steer(window.__ew.road.state().right));
@@ -227,6 +231,7 @@ try {
     assert.equal((await read()).streak, 1);
     assert.equal(await page.getByText("Teisingai!", { exact: true }).count(), 1);
     assert.ok((await read()).boost > 0);
+    assert.ok((await read()).drawCalls <= maxRoadCalls);
     await shot("gate-right");
     await waitFor(async () => (await read()).gates?.length === 3, "next three choices appear");
     await page.evaluate(() => {
@@ -238,6 +243,7 @@ try {
     assert.equal(await page.getByText("Ne visai. Teisingai:", { exact: true }).count(), 1);
     assert.ok((await read()).wobble > 0);
     assert.ok((await page.locator(".road-feedback.wrong").innerText()).trim().length > "Ne visai. Teisingai:".length);
+    assert.ok((await read()).drawCalls <= maxRoadCalls);
     await shot("gate-wrong");
 
     await waitFor(async () => (await read()).speed > 12, "recovers from the missed gate");
@@ -260,7 +266,7 @@ try {
     });
     await waitFor(async () => (await read()).liftHeight > 0.75, "drives up a ramp and leaves the ground", 200, 3);
     const jump = await read();
-    assert.ok(jump.drawCalls <= 60);
+    assert.ok(jump.drawCalls <= maxRoadCalls);
     assert.ok(inFrame(jump.carFrame), `the whole car stays on screen during the jump: ${JSON.stringify(jump.carFrame)}`);
     await shot("jump");
 
@@ -275,7 +281,7 @@ try {
     }, "the eighth gate's gap prompt and banner labels are visible", 150, 4);
     assert.equal(await page.getByText("Kurio žodžio trūksta?", { exact: true }).count(), 1);
     assert.match(await page.locator(".road-gap").innerText(), /____/);
-    assert.ok((await read()).drawCalls <= 60);
+    assert.ok((await read()).drawCalls <= maxRoadCalls);
     await shot("gap");
 
     await page.evaluate(() => window.__ew.road.jumpTimer(149.8));

@@ -46,27 +46,34 @@ function LiftOffer({ touch }: { touch: boolean }) {
 
 let textMeasure: CanvasRenderingContext2D | null | undefined;
 
-function fitLabel(text: string, width: number, height: number) {
+function measureLabel(text: string) {
   textMeasure ??= document.createElement("canvas").getContext("2d");
-  if (textMeasure) textMeasure.font = `900 100px ${getComputedStyle(document.documentElement).getPropertyValue("--ui")}`;
-  const parts = text.split(/\s+/);
-  const splits = [[text], ...parts.slice(1).map((_, i) => [parts.slice(0, i + 1).join(" "), parts.slice(i + 1).join(" ")])];
-  let fontSize = 0;
-  let lines = splits[0];
-  for (const split of splits) {
-    const longest = Math.max(...split.map((line) => textMeasure?.measureText(line).width ?? line.length * 58));
-    const size = Math.min(28, width * 94 / longest, height / (split.length * 1.07));
-    if (size > fontSize) { fontSize = size; lines = split; }
-  }
-  return { lines, fontSize };
+  if (textMeasure) textMeasure.font = `800 100px ${getComputedStyle(document.documentElement).getPropertyValue("--ui")}`;
+  const words = text.split(/\s+/);
+  const splits = [[text], ...words.slice(1).map((_, i) => [words.slice(0, i + 1).join(" "), words.slice(i + 1).join(" ")])];
+  return splits.map((lines) => ({
+    lines,
+    em: Math.max(...lines.map((line) => (textMeasure?.measureText(line).width ?? line.length * 58) / 100)),
+  }));
 }
 
 function GateLabel({ text, anchor }: { text: string; anchor: LabelAnchor }) {
-  const { lane, x, y, width, height } = anchor;
-  const w = Math.floor(width), h = Math.floor(height);
-  const { lines, fontSize } = useMemo(() => fitLabel(text, w, h), [text, w, h]);
-  return <div className="road-gate" data-lane={lane} aria-label={text} style={{ left: x, top: y, width, height, fontSize }}>
-    {lines.map((line, i) => <span key={i}>{line}</span>)}
+  const { lane, x, y, width, height, opacity } = anchor;
+  const splits = useMemo(() => measureLabel(text), [text]);
+  let fontSize = 0, scale = 1, lines = splits[0].lines;
+  for (const split of splits) {
+    const fit = width * 0.98 / split.em;
+    // Keep tall letterforms for long words using at most a modest width squeeze.
+    const readableFit = Math.max(fit, Math.min(18, fit / 0.88));
+    const size = Math.min(32, height / (split.lines.length === 1 ? 1.55 : 2.16), readableFit);
+    if (size > fontSize) {
+      fontSize = size;
+      scale = Math.min(1, fit / size);
+      lines = split.lines;
+    }
+  }
+  return <div className="road-gate" data-lane={lane} aria-label={text} style={{ left: x, top: y, width, height, fontSize, opacity }}>
+    {lines.map((line, i) => <span key={i} style={{ width: `${100 / scale}%`, transform: `scaleX(${scale})` }}>{line}</span>)}
   </div>;
 }
 
@@ -88,25 +95,27 @@ function DriveOverlay({ touch }: { touch: boolean }) {
   return <>
     {wind && <div className="drive-wind" aria-hidden />}
     <header className="road-header">
-      <div className="road-top">
+      <div className="road-dash">
         <button className="road-icon" aria-label={words.town} title={words.town} onClick={done}><Icon name="home" size={21} /></button>
         <h1>{words.title}</h1>
+        <div className="road-meters">
+          <span>{words.time} <b>{clockText(remaining)}</b></span>
+          <span>{words.streak} <b>{streak}</b></span>
+          {ghost && <span className="road-ghost">{words.ghost}</span>}
+        </div>
         {!touch && <button className="road-icon" aria-label={words.horn} title={words.horn} onClick={() => act("horn")}><Icon name="horn" size={21} /></button>}
       </div>
-      <div className="road-meters">
-        <span>{words.time} <b>{clockText(remaining)}</b></span>
-        <span>{words.streak} <b>{streak}</b></span>
-        {ghost && <span className="road-ghost">{words.ghost}</span>}
-      </div>
-      {prompt ? <div className="road-cue">
-        <strong>{prompt.gap ? words.gap : words.hear}</strong>
-        {prompt.gap ? <div className="road-gap"><GlossLine sentence={prompt.gap.sentence} gloss /></div>
-          : <button className="road-icon road-replay" aria-label={words.replay} title={words.replay} onClick={() => act("replay")}><Icon name="speaker" size={21} /></button>}
-      </div> : feedback && <div className={`road-feedback ${feedback.correct ? "correct" : "wrong"}`} aria-live="polite">
+      {feedback ? <div className={`road-feedback ${feedback.correct ? "correct" : "wrong"}`} aria-live="polite">
         <b>{feedback.correct ? words.right : words.wrong}</b>
         {!feedback.correct && <span><span lang="en">{feedback.word.en}</span> · {feedback.word.lt}</span>}
+      </div> : prompt && <div className="road-cue">
+        <div className="road-question">
+          <strong>{prompt.gap ? words.gap : words.hear}</strong>
+          {!prompt.gap && <button className="road-icon road-replay" aria-label={words.replay} title={words.replay} onClick={() => act("replay")}><Icon name="speaker" size={21} /></button>}
+        </div>
+        {prompt.gap && <div className="road-gap"><GlossLine sentence={prompt.gap.sentence} gloss /></div>}
+        {remaining >= 147 && <p className="road-hint">{words.hint}</p>}
       </div>}
-      {remaining >= 147 && <p className="road-hint">{words.hint}</p>}
     </header>
     <GateLabels />
     {!touch && <div className="road-controls">{words.controls}</div>}

@@ -51,6 +51,7 @@ export class RoadView {
     new THREE.MeshBasicMaterial({ color: "#423833", opacity: 0.27, transparent: true, depthWrite: false }));
   private sparks = new THREE.InstancedMesh(new THREE.BoxGeometry(0.095, 0.095, 0.38),
     new THREE.MeshBasicMaterial({ color: "#ffce52" }), 22);
+  private burstAt = -Infinity;
   private sky: THREE.Mesh;
   private clouds = makeClouds();
   private geometries: Iterable<THREE.BufferGeometry>;
@@ -105,6 +106,8 @@ export class RoadView {
     void this.props.loadModels();
   }
 
+  celebrate(time: number) { this.burstAt = time; }
+
   passenger(root: THREE.Object3D) { this.car.add(root); }
 
   pose(pose: Pose, ghost: Pose | undefined, pace: number, drift: boolean, wobble: number, time: number, dt: number, boost = false) {
@@ -123,13 +126,24 @@ export class RoadView {
       this.ghost.rotation.y = course(ghost[0]) + ghost[3];
     }
     this.sparks.count = drift || boost ? 22 : 0;
-    if (this.sparks.count) this.sparks.material.color.set(drift ? "#ffce52" : "#97ffe1");
+    const burst = (time - this.burstAt) / 0.48;
+    if (this.sparks.count) this.sparks.material.color.set(burst < 1 ? "#ffde91" : drift ? "#ffce52" : "#97ffe1");
     for (let i = 0; i < this.sparks.count; i++) {
-      const age = (time * (boost ? 7 : 5) + i / this.sparks.count) % 1;
-      dummy.position.copy(point(s - 1.5 - age * (boost ? 5.8 : 3.7),
-        lateral + (i % 2 ? 0.92 : -0.92) + steer * age, 0.12 + Math.sin(age * Math.PI) * (0.26 + i % 3 * 0.10)));
-      dummy.rotation.set(age, i, time + i);
-      dummy.scale.setScalar(1.24 - age);
+      const side = i % 2 ? 1 : -1;
+      if (burst < 1 && i < 8) {
+        // Eight chips fan out from the rear fenders, then give their slots back to the boost trail.
+        const spread = 0.85 + burst * (0.9 + Math.floor(i / 2) * 0.34);
+        dummy.position.copy(point(s - 1.2 - burst * (1 + i % 3), lateral + side * spread,
+          lift + 0.60 + Math.sin(burst * Math.PI) * (0.7 + i % 3 * 0.28)));
+        dummy.rotation.set(i + burst * 3, side * 0.7, side * burst * 4);
+        dummy.scale.setScalar(1.9 * (1 - burst));
+      } else {
+        const age = (time * (boost ? 7 : 5) + i / this.sparks.count) % 1;
+        dummy.position.copy(point(s - 1.5 - age * (boost ? 5.8 : 3.7),
+          lateral + side * 0.92 + steer * age, 0.12 + Math.sin(age * Math.PI) * (0.26 + i % 3 * 0.10)));
+        dummy.rotation.set(age, i, time + i);
+        dummy.scale.setScalar(1.24 - age);
+      }
       dummy.updateMatrix();
       this.sparks.setMatrixAt(i, dummy.matrix);
     }
@@ -146,7 +160,7 @@ export class RoadView {
     const { distance, lift, pace, time, dt } = this.cameraMotion;
     this.car.updateMatrix();
     this.worldCorners.forEach((corner, i) => corner.copy(this.carCorners[i]).applyMatrix4(this.car.matrix));
-    this.chase.update(this.camera, this.car.position, distance, lift, pace, time, dt, width, height, this.worldCorners, gate);
+    this.chase.update(this.camera, this.car.position, distance, lift, pace, time, dt, width, height, this.worldCorners, gate?.crossed ? undefined : gate);
     this.sky.position.copy(this.camera.position);
     renderer.render(this.scene, this.camera);
     return gate?.labels(this.camera, width, height) ?? [];

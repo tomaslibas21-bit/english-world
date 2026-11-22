@@ -213,6 +213,27 @@ describe("desert road", () => {
     material.dispose();
   });
 
+  it.each([true, false])("replaces only the crossed label and clears the arch before the camera (correct=%s)", (correct) => {
+    const material = new MeshBasicMaterial({ vertexColors: true });
+    const gate = new Gate(FIRST_GATE, {} as Prompt, material);
+    const camera = new PerspectiveCamera(49, 390 / 664, 0.18, 470);
+    camera.position.copy(point(FIRST_GATE - 25, 0, 4.4));
+    camera.lookAt(point(FIRST_GATE, 0, 3.2));
+    camera.updateMatrixWorld();
+    gate.cross(2, correct);
+    expect(gate.labels(camera, 390, 664).map(({ lane }) => lane)).toEqual([0, 1]);
+    expect(gate.animatePass(0.15, FIRST_GATE + 3)).toBe(true);
+    expect(gate.animatePass(0.18, FIRST_GATE + 7)).toBe(true);
+    for (const label of gate.labels(camera, 390, 664)) {
+      expect(label.opacity).toBeGreaterThan(0);
+      expect(label.opacity).toBeLessThan(1);
+    }
+    expect(gate.animatePass(0.15, FIRST_GATE + 10)).toBe(false);
+    expect(material.transparent).toBe(false);
+    gate.dispose();
+    material.dispose();
+  });
+
   it("frames all three gates and an airborne car in the outside lane on both phone heights and desktop", () => {
     const material = new MeshBasicMaterial({ vertexColors: true });
     const gate = new Gate(FIRST_GATE, {} as Prompt, material);
@@ -231,7 +252,7 @@ describe("desert road", () => {
           expect(label.x - label.width / 2).toBeGreaterThan(0);
           expect(label.x + label.width / 2).toBeLessThan(width);
           expect(label.y + label.height / 2).toBeLessThan(height * 0.75);
-          if (width === 1280 && toGo === near) expect(label.width).toBeGreaterThan(85);
+          if (toGo >= 32) expect(label.width).toBeGreaterThan(width === 390 ? 82 : 100);
         }
         for (const corner of corners) {
           const projected = corner.clone().project(camera);
