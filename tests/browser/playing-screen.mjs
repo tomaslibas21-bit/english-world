@@ -1,6 +1,7 @@
 // The town HUD while walking and driving, including tall and short portrait viewports.
 // WORLD_TEST_URL=http://127.0.0.1:8176 WORLD_STORAGE=english-world WORLD_PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node tests/browser/playing-screen.mjs
 import assert from "node:assert/strict";
+import { portraitToolbarRows } from "../../src/ui/toolbarLayout.ts";
 
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:8176";
@@ -48,14 +49,15 @@ async function settledBoxes(page, selectors) {
 async function checkPhoneToolbar(page, label, { width, columns, radio, course, prompt = false }) {
   const drawerButtons = ".toolbar-drawer .icon-btn";
   const menu = ".toolbar .ride-menu";
-  const obstacles = [".objective-card", ".minimap", ".zone-banner", ".town-toasts .toast", ".coach", ".joy", ".jump-btn", ".act-btn", ".prompt.touch"];
+  const obstacles = [".objective-card", ".minimap", ".zone-banner", ".town-toasts .toast", ".coach", ".joy", ".jump-btn", ".act-btn", ".drive-horn", ".prompt.touch"];
   const { boxes, overlaps } = await layout(page, [drawerButtons, menu, ...obstacles]);
   const drawer = boxes.filter((b) => b.selector === drawerButtons), all = boxes.filter((b) => b.selector.startsWith(".toolbar"));
   const lefts = [...new Set(drawer.map((b) => b.left))].sort((a, b) => b - a);
   assert.equal(drawer.filter((b) => b.radio).length, Number(radio), `${label}: radio counted in the drawer`);
   assert.equal(drawer.filter((b) => b.lr).length, 1, `${label}: LR is in the drawer`);
   assert.equal(drawer.filter((b) => b.course).length, Number(course), `${label}: optional course link counted in the drawer`);
-  assert.equal(drawer.length, 8 + Number(radio) + Number(course), `${label}: every drawer button is visible`);
+  const { single } = portraitToolbarRows({ hasHelp: true, hasRadio: radio, hasCourse: course });
+  assert.equal(drawer.length, single, `${label}: every drawer button is visible`);
   assert.equal(lefts.length, columns, `${label}: ${JSON.stringify(drawer)}`);
   assert(all.every((b) => lefts.includes(b.left)), `${label}: every button is in a right-edge column`);
   assert(width - lefts[0] <= 60 && all.every((b) => width - b.left <= 120), `${label}: the columns are within 120 px of the right edge`);
@@ -83,8 +85,9 @@ async function setRadioAvailable(page, available) {
 async function layout(page, selectors = hudBoxes) {
   const boxes = await settledBoxes(page, selectors);
   const overlaps = [];
+  const includesToolbarContainer = selectors.includes(".toolbar");
   for (const [i, a] of boxes.entries()) for (const b of boxes.slice(i + 1)) {
-    if (a.selector.startsWith(".toolbar") && b.selector.startsWith(".toolbar")) continue;
+    if (includesToolbarContainer && a.selector.startsWith(".toolbar") && b.selector.startsWith(".toolbar")) continue;
     if (a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom) overlaps.push([a.selector, b.selector]);
   }
   return { boxes, overlaps };
@@ -170,10 +173,12 @@ try {
     const radio = toolbar.locator(".radio-btn");
     const due = toolbar.locator(".toolbar-tools .due-badge");
     const firstAction = toolbar.locator(".toolbar-tools button.icon-btn:not(.radio-btn)").first();
-    const walkingTools = await toolbar.locator(".icon-btn:visible").count();
+    const visibleTools = toolbar.locator(".icon-btn:visible");
     const [firstTool] = await settledBoxes(page, [".toolbar-tools .icon-btn"]);
     const radioCount = await radio.count();
-    assert(walkingTools >= 8 && await due.innerText() === "1", `${label}: the full toolbar and the due card`);
+    const { single: walkingTools } = portraitToolbarRows({ hasHelp: true, hasRadio: radioCount > 0, hasCourse: phoneLayout.course });
+    assert.equal(await visibleTools.count(), walkingTools, `${label}: the full toolbar is visible`);
+    assert.equal(await due.innerText(), "1", `${label}: the phrasebook shows the due card`);
 
     await go(true);
     await page.waitForFunction(() => window.__ew.store.getState().hud.walking);
@@ -209,7 +214,8 @@ try {
     await page.waitForFunction(() => window.__ew.game.rides.phase === "on" && window.__ew.store.getState().hud.prompt?.kind === "out", null, { timeout: 5000 });
     await menu.waitFor();
     await firstAction.waitFor({ state: "hidden" });
-    assert.equal(await toolbar.locator(".icon-btn:visible").count(), 1 + radioCount, `${label}: only Meniu and the available radio`);
+    const menuCount = await menu.count();
+    assert.equal(await visibleTools.count(), menuCount + radioCount, `${label}: only Meniu and the available radio`);
     assert.equal(await menu.locator(".due-badge").innerText(), "1", `${label}: Meniu shows the due card`);
     const [menuBox] = await settledBoxes(page, [".ride-menu"]);
     assert.equal(menuBox.left, firstTool.left, `${label}: menu in the first tool's column`);
@@ -222,7 +228,9 @@ try {
     await press(".ride-menu");
     await firstAction.waitFor();
     const expanded = await layout(page);
-    assert.equal(await toolbar.locator(".icon-btn:visible").count(), walkingTools + 1, `${label}: Meniu revealed the full toolbar`);
+    const hornInMenu = !phone;
+    assert.equal(await toolbar.getByRole("button", { name: "Signalas", exact: true }).count(), Number(hornInMenu), `${label}: horn in the car toolbar`);
+    assert.equal(await visibleTools.count(), walkingTools + menuCount + Number(hornInMenu), `${label}: Meniu revealed the full toolbar`);
     assert.equal(await due.innerText(), "1", `${label}: the phrasebook shows the due card`);
     assert.deepEqual(anchored(expanded.boxes), anchored(parked.boxes), `${label}: the minimap and controls stayed in place`);
     assert.deepEqual(expanded.overlaps, [], `${label}: open ride toolbar ${JSON.stringify(expanded)}`);
@@ -234,7 +242,7 @@ try {
       await checkMovingNotes(page, `${label} open ride toolbar`, height);
     }
     await page.waitForTimeout(6000);
-    assert.equal(await toolbar.locator(".icon-btn:visible").count(), 1 + radioCount, `${label}: Meniu folded after five idle seconds`);
+    assert.equal(await visibleTools.count(), menuCount + radioCount, `${label}: Meniu folded after five idle seconds`);
     if (phone) {
       // A new task opens the card briefly without taking the learner out of the car.
       await press(".ride-menu");
@@ -288,7 +296,7 @@ try {
     if (phone) await press(".act-btn"); else await page.keyboard.press("e");
     await page.waitForFunction(() => !window.__ew.game.rides.riding && !window.__ew.store.getState().hud.ride, null, { timeout: 5000 });
     await page.waitForTimeout(2000);
-    assert(!(await menu.isVisible()) && await toolbar.locator(".icon-btn:visible").count() === walkingTools, `${label}: getting out restores all tools`);
+    assert(!(await menu.isVisible()) && await visibleTools.count() === walkingTools, `${label}: getting out restores all tools`);
     assert(await page.locator(".objective-card:not(.collapsed) p").isVisible(), `${label}: getting out and standing still reopens the card`);
     const savedRides = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)).coach.rides, `${storage}-progress-v1`);
     assert.equal(savedRides, 1, `${label}: the first drive was saved`);

@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
+import { carFootprint } from "../../src/game/world/carModels.ts";
 
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:5188";
@@ -149,21 +150,19 @@ try {
       await page.screenshot({ path: join(shots, `cars-${label}.png`) });
 
       if (width === 1280) {
-        const b = await page.evaluate(() => {
-          const g = window.__ew.game, spot = g.town.parkedCars.placements[0];
-          const box = g.town.colliders.boxes.find((b) => b.tag === "car" && b.minX < spot.x && b.maxX > spot.x && b.minZ < spot.z && b.maxZ > spot.z);
-          g.enterZone("town", { x: box.maxX + 2.5, z: spot.z, rot: -Math.PI / 2 }, true);
-          return box;
-        });
+        // Drivable parked cars use ride collision. Take the expected edge from the model's footprint.
+        const spot = await page.evaluate(() => window.__ew.game.town.parkedCars.placements[0]);
+        const { maxX } = carFootprint(spot);
+        await page.evaluate((spawn) => window.__ew.game.enterZone("town", spawn, true), { x: maxX + 2.5, z: spot.z, rot: -Math.PI / 2 });
         await page.keyboard.down("w");
         try {
-          await page.waitForFunction((x) => window.__ew.game.player.root.position.x < x + 0.42, b.maxX, { timeout: 8000 });
+          await page.waitForFunction((x) => window.__ew.game.player.root.position.x < x + 0.42, maxX, { timeout: 8000 });
           await page.waitForTimeout(500);
           const p = await page.evaluate(() => {
             const { x, y, z } = window.__ew.game.player.root.position;
             return { x, y, z };
           });
-          assert(p.x >= b.maxX + 0.36 && p.x < b.maxX + 0.42 && p.y < 0.1, `parked car stopped the walker: ${JSON.stringify(p)}`);
+          assert(p.x >= maxX + 0.36 && p.x < maxX + 0.42 && p.y < 0.1, `parked car stopped the walker: ${JSON.stringify(p)}`);
         } finally {
           await page.keyboard.up("w");
         }
