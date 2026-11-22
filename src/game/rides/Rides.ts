@@ -243,7 +243,7 @@ export class Rides {
   createModeCar(spot: CarPlacement & { id: string; speedLimit?: number }, root: THREE.Group): Ride {
     const { width, length } = carModelEntry(spot.model).collisionBox;
     const car = this.makeCar({ ...spot, paint: spot.color }, "mode-car-", root, { half: length / 2, wide: width / 2 });
-    const box = { ...this.carBox(car), surfaces: carLedges(spot.model, spot.x, spot.z, spot.rot) };
+    const box = { ...this.carBox(car), modeCar: true, surfaces: carLedges(spot.model, spot.x, spot.z, spot.rot) };
     this.modeCars.set(car, box);
     this.host.ambient.rideBoxes.push(box);
     this.place(car, 0, 0);

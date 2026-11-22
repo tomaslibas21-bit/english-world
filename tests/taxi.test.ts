@@ -103,6 +103,35 @@ describe("Maple Harbor taxi routes", () => {
     expect(rides.waitingForTraffic).toBe(false);
   });
 
+  it("lets eastbound traffic clear Main Street while the taxi yields at Center Street", () => {
+    const { rides, player, ambient } = makeRides();
+    const route = TAXI_ROUTES[0], { at } = route.decisions[0];
+    const traffic = ambient.traffic[0];
+    const car = rides.createModeCar(TAXI_CAR, new THREE.Group());
+    // The taxi's nose is at the side of the car that is already crossing the intersection.
+    const z = traffic.lane - traffic.half.z - car.m.spec.half;
+    rides.resetPosition(car, { x: at.x, z, rot: 0 });
+    player.root.position.set(at.x, 0, z - 2);
+    expect(rides.board(car)).toBe(true);
+    ambient.riding = true;
+    let time = 0;
+    for (let i = 0; i < 16; i++) rides.update(0.05, time += 0.05, null);
+    expect(rides.phase).toBe("on");
+    traffic.x = at.x - traffic.half.x / 2;
+    traffic.speed = 0;
+    for (const other of ambient.traffic.slice(1)) other.hidden = 100;
+
+    let peakBump = 0;
+    for (let i = 0; i < 160; i++) {
+      rides.update(0.05, time += 0.05, { throttle: 1, steer: 0, brake: false });
+      ambient.update(0.05, player.root.position);
+      peakBump = Math.max(peakBump, car.m.bump);
+    }
+    expect(traffic.x, "the traffic car must finish crossing").toBeGreaterThan(at.x + traffic.half.x);
+    expect(checkDecision(route, 0, car.m)).toBe("followed");
+    expect(peakBump).toBeLessThan(0.3);
+  });
+
   it("uses the stand, late-bound conversation lines, ordered decision points and an actual door", () => {
     expect(TAXI_CAR).toMatchObject(TAXI);
     expect(RIDES.cars.map(({ id }) => id)).not.toContain(TAXI_CAR.id);
