@@ -287,6 +287,7 @@ export function carGeometry(color: string): THREE.BufferGeometry {
     box(0.36, 0.14, 0.06, x, 0.76, 2.12, "#fff6c8", [0.2, 0], 0.02);
     box(0.36, 0.13, 0.06, x, 0.78, -2.12, "#d83a3a", [0.3, 0], 0.02);
   }
+  const wheelStart = parts.length;
   for (const [x, z] of [[-0.88, 1.35], [0.88, 1.35], [-0.88, -1.35], [0.88, -1.35]]) {
     const wheel = new THREE.CylinderGeometry(0.37, 0.37, 0.3, 16).rotateZ(Math.PI / 2).translate(x, 0.37, z);
     parts.push({ g: wheel, c: "#222226", pbr: [0.9, 0] });
@@ -303,5 +304,8 @@ export function carGeometry(color: string): THREE.BufferGeometry {
     ng.setAttribute("aPbr", new THREE.BufferAttribute(a, 2));
     return ng;
   });
-  return mergeGeometries(geos, false)!;
+  const geometry = mergeGeometries(geos, false)!;
+  const firstWheel = geos.slice(0, wheelStart).reduce((n, g) => n + g.getAttribute("position").count, 0);
+  geometry.userData.crashWheels = [firstWheel, geometry.getAttribute("position").count];
+  return geometry;
 }

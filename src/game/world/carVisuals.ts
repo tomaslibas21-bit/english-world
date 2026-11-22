@@ -8,20 +8,21 @@ import type { ParkedCars } from "./town";
 
 type TrafficCar = Ambient["traffic"][number];
 
-function parts(instance: THREE.Group, omit: readonly string[] = []) {
+function mergeCar(instance: THREE.Group, omit: readonly string[] = []) {
   instance.updateMatrixWorld(true);
-  const geometries: THREE.BufferGeometry[] = [];
+  const housings: THREE.BufferGeometry[] = [], wheels: THREE.BufferGeometry[] = [];
   instance.traverse((obj) => {
     const mesh = obj as THREE.Mesh;
-    if (mesh.isMesh && !omit.includes(mesh.name)) geometries.push(mesh.geometry.clone().applyMatrix4(mesh.matrixWorld));
+    if (!mesh.isMesh || omit.includes(mesh.name)) return;
+    const part = mesh.geometry.clone().applyMatrix4(mesh.matrixWorld);
+    (mesh.name.startsWith("wheel-") ? wheels : housings).push(part);
   });
-  return geometries;
-}
-
-function merge(parts: THREE.BufferGeometry[]) {
+  const start = housings.reduce((n, part) => n + part.getAttribute("position").count, 0);
+  const parts = [...housings, ...wheels];
   const geometry = mergeGeometries(parts);
   for (const part of parts) part.dispose();
   if (!geometry) throw new Error("Incompatible car geometry");
+  geometry.userData.crashWheels = [start, geometry.getAttribute("position").count];
   return geometry;
 }
 
@@ -50,13 +51,14 @@ class TrafficBatch {
       if (!wheelMatrices) {
         const { wheelNodes } = model.entry;
         const instance = model.createInstance(car.color);
-        const geometry = merge(parts(instance, wheelNodes));
+        const geometry = mergeCar(instance, wheelNodes);
         const slots = cars.filter((other) => other.model === car.model).length;
         const mesh = this.instances(geometry, body(instance).material, slots, `traffic-${car.model}`);
         this.bodies.set(car.model, { mesh, count: 0 });
         wheelMatrices = wheelNodes.map((name) => instance.getObjectByName(name)!.matrixWorld.clone());
         poses.set(car.model, wheelMatrices);
       }
+      car.batchBody = this.bodies.get(car.model)!.mesh;
       this.entries.push({ car, wheelMatrices, angle: 0, radius: 0.3 * model.entry.scale[2] });
     });
   }
@@ -79,13 +81,13 @@ class TrafficBatch {
       if (!car.mesh.visible) continue;
       car.mesh.updateMatrix();
       const batch = this.bodies.get(car.model)!;
-      batch.mesh.setMatrixAt(batch.count++, car.mesh.matrix);
+      if (!car.damagedBody) batch.mesh.setMatrixAt(batch.count++, car.mesh.matrix);
       entry.angle = (entry.angle + car.speed * dt / radius) % (2 * Math.PI);
       this.rotation.makeRotationX(entry.angle);
-      wheelMatrices.forEach((wheel, i) => {
-        this.matrix.multiplyMatrices(car.mesh.matrix, wheel).multiply(this.rotation);
+      for (let i = 0; i < wheelMatrices.length; i++) {
+        this.matrix.multiplyMatrices(car.mesh.matrix, wheelMatrices[i]).multiply(this.rotation);
         this.wheels[i % 2].setMatrixAt(wheels * 2 + (i >> 1), this.matrix);
-      });
+      }
       wheels++;
     }
     for (const { mesh, count } of this.bodies.values()) this.finish(mesh, count);
@@ -116,7 +118,8 @@ export class CarVisuals {
   private taxi = false;
   private staticFleet?: ParkedFleet;
 
-  constructor(private parking: ParkedCars | (Omit<ParkedCars, "fleet"> & { fallback: THREE.Mesh }), private ambient: Ambient) {
+  constructor(private parking: ParkedCars | (Omit<ParkedCars, "fleet"> & { fallback: THREE.Mesh }), private ambient: Ambient,
+    private beforeReplace?: (mesh: THREE.Mesh) => void) {
     // Each fleet replaces its procedural fallback once all the geometry for its batches is ready.
     void this.loadTraffic().catch((error) => console.warn("Traffic models unavailable", error));
     void this.loadParking().catch((error) => console.warn("Parked car models unavailable", error));
@@ -131,6 +134,7 @@ export class CarVisuals {
     traffic.update(0);
     this.ambient.group.add(...traffic.meshes);
     for (const { mesh } of cars) {
+      this.beforeReplace?.(mesh);
       mesh.removeFromParent();
       mesh.geometry.dispose();
     }
@@ -144,15 +148,19 @@ export class CarVisuals {
     placements.forEach((spot, i) => {
       const instance = models[i].createInstance(spot.color);
       if (taxi && spot === TAXI) {
+        this.beforeReplace?.(taxi.fallback);
         taxi.instance = instance;
         taxi.root.add(instance);
         taxi.fallback.removeFromParent();
         taxi.fallback.geometry.dispose();
       } else {
         const car = fleet.cars.find((entry) => entry.spot === spot);
-        const mesh = new THREE.Mesh(merge(parts(instance)), body(instance).material);
+        const mesh = new THREE.Mesh(mergeCar(instance), body(instance).material);
         mesh.castShadow = mesh.receiveShadow = true;
-        if (car) fleet.replace(car, mesh);
+        if (car) {
+          this.beforeReplace?.(car.visual);
+          fleet.replace(car, mesh);
+        }
         else fleet.add(spot, mesh);
       }
     });

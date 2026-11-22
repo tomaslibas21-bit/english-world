@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { CarPlacement } from "./carModels";
 
-export type ParkedCar = { spot: CarPlacement; root: THREE.Group; visual: THREE.Mesh; taken: boolean };
+export type ParkedCar = { spot: CarPlacement; root: THREE.Group; visual: THREE.Mesh; taken: boolean; driven: boolean };
 
 /** Cars which have never moved still share a town draw. The first boarding removes that car from the batch. */
 export class ParkedFleet {
@@ -16,14 +16,22 @@ export class ParkedFleet {
     root.position.set(spot.x, 0, spot.z);
     root.rotation.y = spot.rot;
     root.add(visual);
-    this.cars.push({ spot, root, visual, taken: false });
+    this.cars.push({ spot, root, visual, taken: false, driven: false });
     visual.visible = false;
   }
 
-  take(car: ParkedCar) {
+  take(car: ParkedCar, driven = true) {
+    car.driven ||= driven;
     if (car.taken) return;
     car.taken = true;
     car.visual.visible = true;
+    this.refresh();
+  }
+
+  untake(car: ParkedCar) {
+    if (!car.taken || car.driven) return;
+    car.taken = false;
+    car.visual.visible = false;
     this.refresh();
   }
 

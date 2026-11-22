@@ -1376,6 +1376,23 @@ export class AudioSystem {
     this.burst(ctx, ctx.currentTime, 420, 0.8, 0.006, 0.09, this.volume * 0.03 * (0.4 + 0.6 * strength), 0.8);
   }
 
+  carCrash(sound: import("./rides/crash").CrashSound, k: number) {
+    if (this.volume <= 0) return;
+    if (sound !== "crunch" && sound !== "steam") {
+      this.sfx(sound === "tick" ? "hazardTick" : sound === "honk" ? "doubleHonk" : sound);
+      return;
+    }
+    const ctx = this.ac();
+    if (!ctx) return;
+    const at = ctx.currentTime, vol = this.volume;
+    if (sound === "steam") this.burst(ctx, at + 0.1, 3200, 0.5, 0.08, 0.73, vol * 0.038, 0.14);
+    else {
+      const len = 0.2 + 0.6 * k;
+      this.thump(ctx, at, 88 - 33 * k, len * 0.7, vol * (0.033 + 0.072 * k));
+      this.burst(ctx, at, 680 + 480 * k, 0.62, 0.008, len, vol * (0.038 + 0.095 * k), 0.12 / len);
+    }
+  }
+
   /** Tires on a hard stop: a short hiss that falls, quiet (`strength` 0–1). */
   skid(strength = 0.6) {
     const ctx = this.ac();
@@ -1528,7 +1545,8 @@ export class AudioSystem {
     };
   }
 
-  sfx(name: "success" | "seaBell" | "pop" | "door" | "cheer" | "soft" | "listen" | "coin" | "car" | "error" | "ring" | "beep" | "knock" | "tick" | "horn" | "hornReply") {
+  sfx(name: "success" | "seaBell" | "pop" | "door" | "cheer" | "soft" | "listen" | "coin" | "car" | "error" | "ring" | "beep" | "knock" | "tick" | "horn" | "hornReply"
+    | "doubleHonk" | "chirp" | "glass" | "hazardTick" | "ding") {
     audioDiagnostic("context.effect", { reason: name });
     const ctx = this.ac();
     if (!ctx) return;
@@ -1572,6 +1590,13 @@ export class AudioSystem {
       case "beep": tone(1000, 0, 0.4, "sine", vol * 0.5); break;
       case "knock": for (const at of [0, 0.16, 0.32]) tone(140, at, 0.07, "square", vol * 0.5); break;
       case "tick": tone(1180, 0, 0.05, "triangle", vol * 0.32); tone(1580, 0.03, 0.06, "triangle", vol * 0.22); break;
+      case "doubleHonk":
+        for (const at of [0.17, 0.36]) { tone(350, at, 0.13, "triangle", vol * 0.42); tone(446, at, 0.12, "triangle", vol * 0.28); }
+        break;
+      case "chirp": tone(920, 0.12, 0.08, "triangle", vol * 0.18); tone(735, 0.24, 0.13, "triangle", vol * 0.14); break;
+      case "glass": tone(2410, 0.025, 0.17, "sine", vol * 0.18); tone(3130, 0.075, 0.11, "sine", vol * 0.13); break;
+      case "hazardTick": tone(960, 0, 0.036, "triangle", vol * 0.10); break;
+      case "ding": tone(1047, 0, 0.38, "sine", vol * 0.42); tone(2094, 0, 0.19, "sine", vol * 0.14); break;
     }
   }
 }

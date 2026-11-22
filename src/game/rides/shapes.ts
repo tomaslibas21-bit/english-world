@@ -2,6 +2,7 @@
 // geometry (forward = +Z, the wheels or the keel on y = 0), so each is one draw call, like the town's other cars.
 import * as THREE from "three";
 import { colourMerge } from "../world/util";
+import { mergedVertexCount } from "./crashGeometry";
 
 type Part = [THREE.BufferGeometry, THREE.ColorRepresentation];
 
@@ -71,12 +72,15 @@ export function convertibleGeometry(paint: string, inside = "#f3e6cf") {
   }
   for (const z of [-2.265, 2.265]) add(box(0.46, 0.14, 0.02, 0, 0.42, z), "#f6f3ea");
   // the wheels: a tire, a white wall, a chrome cap
+  const wheelStart = mergedVertexCount(parts);
   for (const [x, z] of [[-0.88, 1.36], [0.88, 1.36], [-0.88, -1.36], [0.88, -1.36]]) {
     add(new THREE.CylinderGeometry(0.37, 0.37, 0.26, 14).rotateZ(Math.PI / 2).translate(x, 0.37, z), "#222326");
     add(new THREE.CylinderGeometry(0.27, 0.27, 0.28, 12).rotateZ(Math.PI / 2).translate(x, 0.37, z), "#f2f0ea");
     add(new THREE.CylinderGeometry(0.16, 0.16, 0.3, 10).rotateZ(Math.PI / 2).translate(x, 0.37, z), chrome);
   }
-  return colourMerge(parts);
+  const geometry = colourMerge(parts);
+  geometry.userData.crashWheels = [wheelStart, geometry.getAttribute("position").count];
+  return geometry;
 }
 
 /** Where one sits in the boat (its own coordinates) and where its waterline is (m over its keel). */

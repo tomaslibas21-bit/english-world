@@ -88,7 +88,7 @@ export class Chatter {
     this.face(true);
   }
 }
-interface Car {
+export interface TrafficCar {
   mesh: THREE.Mesh; lane: number; dir: 1 | -1; x: number; from: number; to: number;
   model: CarModelName; color: string; half: { x: number; z: number };
   speed: number; max: number; hidden: number; grow: number;
@@ -97,10 +97,14 @@ interface Car {
   /** Waiting for the player to get off or step away (s still to wait once they have), and how long they have stood
    *  beside it without getting on (s). */
   held?: number;
+  crashStop?: number;
+  batchBody?: THREE.Mesh;
+  damagedBody?: THREE.Mesh;
   byT?: number;
   /** Its hood, roof and trunk as pieces with a height (ledges.ts), updated when it stops. */
   decks?: { at: number; pieces: Piece[]; x: number; now: Piece[] };
 }
+type Car = TrafficCar;
 
 const SKINS = ["#f2d3bd", "#f6dcc8", "#d9a47e", "#c68e63", "#a0694a", "#6e4630", "#4f3223"];
 const HAIRS = ["#1f1a17", "#5a3a25", "#7b4a2a", "#d9b36a", "#a8472a", "#b8b3ac", "#e8e4dc"];
@@ -481,7 +485,10 @@ export class Ambient {
       else c.held = Math.max(0, (c.held ?? 0) - dt);
       if (c.held > 0) want = 0;
     } else c.held = 0;
-    c.speed += Math.max(-9 * dt, Math.min(3 * dt, want - c.speed));
+    if (c.crashStop && c.crashStop > 0) {
+      c.speed = Math.max(0, c.speed - 20 * dt);
+      if (c.speed === 0) c.crashStop = Math.max(0, c.crashStop - dt);
+    } else c.speed += Math.max(-9 * dt, Math.min(3 * dt, want - c.speed));
     c.x += c.speed * c.dir * dt;
     c.grow = Math.min(1, c.grow + dt * 1.6);
     const end = c.dir > 0 ? c.to : c.from;
@@ -645,13 +652,21 @@ export class Ambient {
   }
 
   /** A point (a driven car's front, middle or back, `r` across) pushed out of the traffic's cars. */
-  pushOutOfCars(p: { x: number; z: number }, r: number) {
+  pushOutOfCars(p: { x: number; z: number }, r: number, hit?: { x: number; z: number; dx: number; dz: number }) {
+    let car: Car | null = null, most = 0;
     for (const c of this.cars) {
       if (c.hidden > 0 || c.mesh.scale.x < 0.5) continue;
       const h = c.half;
       if (Math.abs(c.x - p.x) > h.x + r || Math.abs(c.lane - p.z) > h.z + r) continue;
-      pushOutOfBox(p, r, c.x, c.lane, Math.PI / 2, h.x, h.z);
+      const x = p.x, z = p.z;
+      if (!pushOutOfBox(p, r, c.x, c.lane, Math.PI / 2, h.x, h.z)) continue;
+      const dx = p.x - x, dz = p.z - z, d = dx * dx + dz * dz;
+      if (d <= most) continue;
+      most = d;
+      car = c;
+      if (hit) { hit.x = p.x; hit.z = p.z; hit.dx = dx; hit.dz = dz; }
     }
+    return car;
   }
 
   /** A car standing still at its full size. */

@@ -2,9 +2,9 @@
 import * as THREE from "three";
 import { markTownBoat } from "./boatRide";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, type BuildingDef } from "./layout";
+import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, GAS_FORECOURT, type BuildingDef } from "./layout";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
-import { carParts } from "./car";
+import { carParts, mergeCarParts } from "./car";
 import { carModelEntry, type CarPlacement } from "./carModels";
 import { STYLED, IS_REAL, grade } from "../style";
 import { SHORE, DECKS, POOLS, FLOORS, sandY, SAND_GLSL, SHORE_GLSL, SWELL_GLSL } from "../water";
@@ -1414,7 +1414,7 @@ function makeParkedCars(): ParkedCars {
     const atStand = spot === TAXI;
     const local = carParts(color, { taxi: atStand });
     for (const [geometry] of local) geometry.scale(width / 2.12, height / (atStand ? 1.8 : 1.56), length / 4.42);
-    const fallback = staticColoured(local, atStand ? "stand-taxi-fallback" : "parked-car-fallback");
+    const fallback = staticColoured(mergeCarParts(local), atStand ? "stand-taxi-fallback" : "parked-car-fallback");
     if (atStand) {
       const root = new THREE.Group();
       root.position.set(x, 0, z);
@@ -1597,9 +1597,9 @@ function reflective(m: THREE.Material) {
 let boatMat: THREE.MeshLambertMaterial | null = null;
 
 /** Parked car fallbacks in their own colours as one mesh that casts shadows. */
-function staticColoured(parts: [THREE.BufferGeometry, THREE.ColorRepresentation][], name: string) {
+function staticColoured(geometry: THREE.BufferGeometry, name: string) {
   boatMat ??= new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
-  const mesh = new THREE.Mesh(colourMerge(parts), boatMat);
+  const mesh = new THREE.Mesh(geometry, boatMat);
   mesh.name = name;
   mesh.castShadow = mesh.receiveShadow = true;
   mesh.matrixAutoUpdate = false;
@@ -1808,13 +1808,15 @@ function addTransport(M: Merger, col: Colliders, group: THREE.Group) {
   }
   col.addBox(52, 86, 60, 3.2);
   // gas station canopy and pumps
-  M.add("gas-canopy", mat("#f4f4f4"), boxGeo(18, 0.6, 9, 112, 5, 5.5));
-  M.add("gas-canopy-trim", mat("#d94b3d"), boxGeo(18.1, 0.35, 9.1, 112, 4.6, 5.5));
-  for (const px of [104, 110, 116]) {
-    M.add("pump", mat("#d94b3d"), boxGeo(0.9, 1.7, 0.6, px, 0.85, 5.5));
-    M.add("pump-screen", mat("#1d1d1d", { emissive: "#113322" }), boxGeo(0.5, 0.3, 0.62, px, 1.3, 5.5), false);
-    M.add("canopy-post", mat("#d9d9d9"), cylGeo(0.18, 0.18, 4.6, px, 2.3, 3), false);
-    col.addBox(px, 5.5, 1.1, 0.8);
+  if (!GAS_FORECOURT) return;
+  const { x, z, width, depth } = GAS_FORECOURT;
+  M.add("gas-canopy", mat("#f4f4f4"), boxGeo(width, 0.6, depth, x, 5, z));
+  M.add("gas-canopy-trim", mat("#d94b3d"), boxGeo(width + 0.1, 0.35, depth + 0.1, x, 4.6, z));
+  for (const px of [x - 8, x - 2, x + 4]) {
+    M.add("pump", mat("#d94b3d"), boxGeo(0.9, 1.7, 0.6, px, 0.85, z));
+    M.add("pump-screen", mat("#1d1d1d", { emissive: "#113322" }), boxGeo(0.5, 0.3, 0.62, px, 1.3, z), false);
+    M.add("canopy-post", mat("#d9d9d9"), cylGeo(0.18, 0.18, 4.6, px, 2.3, z - 2.5), false);
+    col.addBox(px, z, 1.1, 0.8);
   }
   // the station's name on the canopy's front, where the street sees it (the canopy hides the shop's sign behind it from
   // the street). The camera can look through the sign itself.
@@ -1823,13 +1825,13 @@ function addTransport(M: Merger, col: Colliders, group: THREE.Group) {
     const gs = new THREE.Mesh(new THREE.PlaneGeometry(7, 0.58), new THREE.MeshBasicMaterial({ map: textTexture(gasName, { bg: "#f4f4f4", fg: "#d94b3d", w: 1024, h: 85 }), alphaTest: 0.5, toneMapped: false }));
     gs.name = "gas-canopy-sign";
     gs.userData.thin = true;
-    gs.position.set(112, 5.0, 0.94); gs.rotation.y = Math.PI;
+    gs.position.set(x, 5.0, z - depth / 2 - 0.06); gs.rotation.y = Math.PI;
     group.add(gs);
   }
   // the pumps' numbers on the canopy's posts, towards the street (on the pumps, the posts hid them from the street)
   for (let i = 0; i < 3; i++) {
     const n = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.6), new THREE.MeshBasicMaterial({ map: textTexture(String(i + 1), { bg: "#ffffff", fg: "#d94b3d", w: 128, h: 128 }) }));
-    n.position.set(104 + i * 6, 2.2, 2.8); n.rotation.y = Math.PI;
+    n.position.set(x - 8 + i * 6, 2.2, z - 2.7); n.rotation.y = Math.PI;
     group.add(n);
   }
 }

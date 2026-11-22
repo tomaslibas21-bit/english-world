@@ -3,6 +3,7 @@
 // one draw call. Used while the car models load, and for the miniature display in the rental shop.
 import * as THREE from "three";
 import { colourMerge } from "./util";
+import { mergedVertexCount } from "../rides/crashGeometry";
 
 /** A side profile (z forward, y up) extruded across the car's width, centred on x = 0. */
 function profile(points: [number, number][], width: number) {
@@ -38,19 +39,26 @@ export function carParts(color: string, opts: { taxi?: boolean } = {}): [THREE.B
     box(0.38, 0.14, 0.05, x, 0.72, 2.13, "#fff4c2"); // headlights
     box(0.34, 0.12, 0.05, x, 0.78, -2.15, "#d8343a"); // tail lights
   }
-  for (const [x, z] of [[-0.86, 1.35], [0.86, 1.35], [-0.86, -1.35], [0.86, -1.35]]) {
-    parts.push([new THREE.CylinderGeometry(0.37, 0.37, 0.28, 14).rotateZ(Math.PI / 2).translate(x, 0.37, z), "#222326"]);
-    parts.push([new THREE.CylinderGeometry(0.2, 0.2, 0.3, 10).rotateZ(Math.PI / 2).translate(x, 0.37, z), "#c9ccd1"]);
-  }
   if (opts.taxi) {
     box(0.72, 0.24, 0.32, 0, 1.68, -0.2, "#ffffff"); // the roof light
     for (let i = 0; i < 8; i++) box(1.9, 0.08, 0.24, 0, 0.68, -1.75 + i * 0.5, i % 2 ? "#222222" : color); // the checks
+  }
+  for (const [x, z] of [[-0.86, 1.35], [0.86, 1.35], [-0.86, -1.35], [0.86, -1.35]]) {
+    parts.push([new THREE.CylinderGeometry(0.37, 0.37, 0.28, 14).rotateZ(Math.PI / 2).translate(x, 0.37, z), "#222326"]);
+    parts.push([new THREE.CylinderGeometry(0.2, 0.2, 0.3, 10).rotateZ(Math.PI / 2).translate(x, 0.37, z), "#c9ccd1"]);
   }
   return parts;
 }
 
 /** The car as one vertex-coloured geometry. */
 export function carGeometry(color: string, opts: { taxi?: boolean } = {}) {
-  return colourMerge(carParts(color, opts));
+  return mergeCarParts(carParts(color, opts));
+}
+
+export function mergeCarParts(parts: ReturnType<typeof carParts>) {
+  const start = mergedVertexCount(parts.slice(0, -8)); // the tires and hubcaps, in pairs
+  const geometry = colourMerge(parts);
+  geometry.userData.crashWheels = [start, geometry.getAttribute("position").count];
+  return geometry;
 }
 

@@ -420,6 +420,8 @@ export class Game implements GameApi {
         if (this.modes.active?.cleanScreen !== "menu") this.saysAloud(line, female, ch, voice);
       },
       thud: (k) => { if (this.bumpT <= 0) { audio.bump(Math.min(1, 0.35 + k * 0.65)); this.bumpT = 0.12; } },
+      crashSound: (sound, k) => audio.carCrash(sound, k),
+      allowsCrashes: () => this.zone.id === "town" && !this.modes.owns("road"),
       allowsHints: () => this.allowsRideHints(),
       rescue: (put) => {
         const ride = this.rides.riding;
@@ -444,7 +446,11 @@ export class Game implements GameApi {
     }, RIDES, this.town.group.children.filter((o) => o.userData.boat));
     const { fleet } = this.town.parkedCars;
     fleet.cars.forEach((entry, index) => {
-      this.rides.createModeCar({ ...entry.spot, id: `parked-${index}` }, entry.root, () => fleet.take(entry));
+      const ride = this.rides.createModeCar({ ...entry.spot, id: `parked-${index}` }, entry.root, () => fleet.take(entry));
+      ride.crashParking = {
+        visual: () => entry.visual, solo: () => entry.taken && !entry.driven,
+        take: () => fleet.take(entry, false), untake: () => fleet.untake(entry),
+      };
     });
     this.rides.onLeft = (x, y, z, rot) => this.leftRide(x, y, z, rot);
     this.rides.onStuck = () => this.showRideToast({ kind: "info", title: "Čia išlipti nėra kur", body: "Pavažiuok truputį toliau." });
@@ -733,6 +739,7 @@ export class Game implements GameApi {
         useStore.getState().setHud({ flight: false });
         coach.begin();
       }
+      if (this.zone?.id === "town" && id !== "town") this.rides.healCrashes();
       if (this.zone) this.scene.remove(this.zone.group);
       this.zone = z;
       this.scene.add(z.group);
@@ -2316,6 +2323,7 @@ export class Game implements GameApi {
         this.trafficReplyAt = undefined;
         if (driver && !blocked && this.ambient.nearbyTraffic(driver.x, driver.z, 20)) audio.sfx("hornReply");
       }
+      this.rides.updateCrashes(dt);
       this.carVisuals?.update(dt);
     }
     this.town.update(this.t, dt);
@@ -2451,7 +2459,7 @@ export class Game implements GameApi {
         requestAnimationFrame(() => {
           if (this.disposed) return;
           void import("./world/carVisuals").then(({ CarVisuals }) => {
-            if (!this.disposed) this.carVisuals = new CarVisuals(this.town.parkedCars, this.ambient);
+            if (!this.disposed) this.carVisuals = new CarVisuals(this.town.parkedCars, this.ambient, (mesh) => this.rides.releaseCrashVisual(mesh));
           }).catch((error) => console.warn("Car models unavailable", error));
         });
       }
@@ -3110,6 +3118,7 @@ export class Game implements GameApi {
     setBlobShadows(q !== "high");
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, q === "high" ? 1.75 : 1));
     this.fx?.quality(q);
+    this.rides?.crashQuality(q);
     this.onResize();
   }
 
@@ -3124,6 +3133,7 @@ export class Game implements GameApi {
     this.disposed = true;
     this.modes.dispose();
     this.frameFade.clear();
+    this.rides?.disposeCrashes();
     this.carVisuals?.dispose();
     this.islandScene?.dispose();
     this.town?.parkedCars.fleet.dispose();

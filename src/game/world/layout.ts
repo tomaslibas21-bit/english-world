@@ -151,6 +151,9 @@ export const TRAFFIC_LANES: { z: number; dir: 1 | -1; from: number; to: number }
 
 export const TAXI: CarPlacement = { model: "taxi", x: 121, z: -4.8, rot: -Math.PI / 2, color: "#f5c518" };
 
+const gas = BUILDINGS.find(({ id }) => id === "gas");
+export const GAS_FORECOURT = gas && { x: gas.x, z: gas.z - gas.d / 2 - 6.5, width: 18, depth: 9 };
+
 /** Asphalt parking beside the east sidewalk and the west sidewalk, respectively. */
 export const PARKING_LOTS = [
   { x0: 77.2, x1: 92, z0: 16.7, z1: 23.3 }, // behind Harbor Car Rental
