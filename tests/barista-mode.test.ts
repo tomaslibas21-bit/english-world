@@ -4,6 +4,7 @@ import { BARISTA_ORDERS, type Row } from "../src/content/barista";
 import { loadSituation } from "../src/content/situations/catalog";
 import { COUNTER_SEAT, MIA_ASIDE } from "../src/game/barista/framing";
 import { createBaristaMode, BARISTA_PROMPT } from "../src/game/barista/mode";
+import { CUP_AT, CUP_SERVED } from "../src/game/barista/props";
 import { useBarista } from "../src/game/barista/store";
 import { createCharacter, type GameCharacter } from "../src/game/characters";
 import { FrameFade } from "../src/game/kit/frameFade";
@@ -16,17 +17,18 @@ import { useStore } from "../src/state/store";
 
 const es = EDITION.id === "es";
 const playback = vi.hoisted(() => vi.fn(async (..._args: unknown[]) => true));
+const sfx = vi.hoisted(() => vi.fn());
 vi.mock("../src/game/audio", () => ({
-  audio: { clipDuration: () => 1, play: playback, stop: () => {}, getState: () => "playing" },
+  audio: { sfx, clipDuration: () => 1, play: playback, stop: () => {}, getState: () => "playing" },
 }));
 vi.mock("../src/game/characters", async () => {
   const { Group } = await import("three");
-  return { createCharacter: () => {
+  return { createCharacter: (look: (typeof NPCS)[string]["look"]) => {
     const root = new Group();
     const rightHand = new Group();
     root.add(rightHand);
     return {
-      root, rightHand, height: 1.75, anim: "idle", update() {}, talk() {},
+      root, rightHand, height: 1.75 * (look.height ?? 1), anim: "idle", update() {}, talk() {},
       setAnim(this: GameCharacter, anim: GameCharacter["anim"]) { this.anim = anim; },
     };
   } };
@@ -79,6 +81,18 @@ it("runs the counter offer, guided correction, concealed order, scoring and clea
     mode.action("choose", key);
   };
   const pick = (row: Row, id: string) => mode.action(row, id);
+  const views = [[390, 664, 285], [390, 844, 465], [1280, 800, 497]];
+  const aimAtStage = (width: number, height: number) => {
+    const { cam, stage } = host.rig;
+    cam.fov = width / height < 0.87 ? 62 : 55;
+    cam.position.copy(stage!.pos);
+    cam.lookAt(stage!.look);
+    return cam;
+  };
+  const pixel = (point: Vector3, cam: PerspectiveCamera, width: number, height: number) => {
+    const { x, y } = point.clone().project(cam);
+    return { x: (1 + x) * width / 2, y: (1 - y) * height / 2 };
+  };
   try {
     expect(registry.prompt(BARISTA_PROMPT.x, BARISTA_PROMPT.z, Infinity, true)).toBeNull();
     useStore.getState().updateProgress((p) => { p.sits["s72-cafe"] = { visits: 1, completions: 1, used: [], twists: [], memory: {} }; });
@@ -126,7 +140,9 @@ it("runs the counter offer, guided correction, concealed order, scoring and clea
         for (const [j, piece] of order.pieces.entries()) {
           await until(() => ui().step === "order" && ui().ready && mode.state()?.piece === j);
           expect(ui().highlight?.id).toBe(i < 2 ? piece.id : undefined);
+          sfx.mockClear();
           pick(piece.row, piece.id);
+          expect(sfx).toHaveBeenCalledExactlyOnceWith("tick");
         }
       } else {
         await until(() => ui().step === "build" && ui().ready);
@@ -138,52 +154,86 @@ it("runs the counter offer, guided correction, concealed order, scoring and clea
         mode.action("hear");
         expect(ui().step).toBe("order");
         await until(() => ui().step === "build" && ui().ready);
+        sfx.mockClear();
         for (const piece of order.pieces) pick(piece.row, piece.id);
+        expect(sfx).not.toHaveBeenCalled();
       }
       if (i === 0) {
-        const { cam, stage } = host.rig;
+        const { stage } = host.rig;
         const cup = room.getObjectByName("barista-serving")!.position;
-        const customerFace = rosa.position.clone().setY(1.6);
-        const miaFace = mia.root.position.clone().setY(1.6);
+        const customerFace = rosa.position.clone().setY(1.75 * (NPCS.rosa.look.height ?? 1) * 0.91);
+        const miaFace = mia.root.position.clone().setY(mia.height * 0.91);
         expect(stage!.pos.z).toBeLessThan(staff.z);
-        for (const [width, height, freeBottom] of [[1280, 800, 336], [390, 664, 250], [390, 844, 410]]) {
-          cam.fov = width > 600 ? 55 : 62;
-          cam.aspect = width / height;
-          cam.position.copy(stage!.pos);
-          cam.lookAt(stage!.look);
+        for (const [width, height, freeBottom] of views) {
+          const cam = aimAtStage(width, height);
           mode.frameView(width, height, freeBottom);
           for (const position of [cup, customerFace, miaFace]) {
-            const { x, y } = position.clone().project(cam);
-            const top = (1 - y) * height / 2;
-            expect(Math.abs(x)).toBeLessThan(1);
-            expect(top).toBeGreaterThan(60);
-            expect(top).toBeLessThan(freeBottom - 20);
+            const { x, y } = pixel(position, cam, width, height);
+            expect(x).toBeGreaterThan(0);
+            expect(x).toBeLessThan(width);
+            expect(y).toBeGreaterThan(60);
+            expect(y).toBeLessThan(freeBottom - 20);
           }
+          expect(pixel(customerFace, cam, width, height).y).toBeLessThan(freeBottom / 2);
           const separation = Math.abs(customerFace.clone().project(cam).x - miaFace.clone().project(cam).x);
           expect(separation / 2).toBeGreaterThanOrEqual(0.15);
         }
+        sfx.mockClear();
         pick("size", "large");
+        expect(sfx).not.toHaveBeenCalled();
         mode.action("give");
         expect(ui().line?.key).toBe("bs_c_sorry");
         await until(() => ui().step === "build" && ui().ready);
         expect(ui().highlight?.id).toBe("medium");
         pick("size", "medium");
+        expect(sfx).toHaveBeenCalledExactlyOnceWith("tick");
       }
+      const drink = room.getObjectsByProperty("name", "barista-serving").find((item) => item.position.equals(CUP_AT))!;
+      expect(drink).toBeDefined();
+      const [width, height, trayTop] = views[i % views.length];
+      const cam = aimAtStage(width, height);
+      mode.frameView(width, height, trayTop);
+      const orderLens = cam.projectionMatrix.toArray(), orderZoom = cam.zoom;
       mode.action("give");
       expect(ui().step).toBe("handover");
-      if (i === 0) {
-        const { cam } = host.rig;
-        const before = cam.projectionMatrix.toArray();
-        mode.frameView(390, 844, 844);
-        expect(cam.projectionMatrix.toArray()).toEqual(before);
+      mode.frameView(width, height, height);
+      expect(cam.projectionMatrix.toArray()).toEqual(orderLens);
+
+      await until(() => !drink.position.equals(CUP_AT));
+      mode.frameView(width, height, height);
+      const slideLens = cam.projectionMatrix.toArray();
+      if (width <= 600) expect(cam.zoom).toBeGreaterThan(orderZoom);
+      else expect(slideLens).toEqual(orderLens);
+      const face = COUNTER_SEAT.clone().setY(1.75 * (NPCS[order.npc].look.height ?? 1) * 0.91);
+      const faceY = pixel(face, cam, width, height).y;
+      for (const point of [CUP_AT, CUP_SERVED]) {
+        const projected = pixel(point, cam, width, height);
+        expect(projected.x).toBeGreaterThan(0);
+        expect(projected.x).toBeLessThan(width);
+        expect(projected.y).toBeGreaterThan(faceY);
+        expect(projected.y).toBeLessThan(height * 0.77);
       }
       await until(() => ui().price === order.price);
+      mode.frameView(width, height, height - 150);
+      expect(cam.projectionMatrix.toArray()).toEqual(slideLens);
+      expect(drink.position.distanceTo(CUP_SERVED)).toBeLessThan(0.001);
       await choose(order.priceLine);
       await choose("bs_a_welcome");
     }
 
     await until(() => ui().result?.served === 6);
     expect(ui().result).toMatchObject({ firstTime: 5, served: 6 });
+    expect(mia.root.position).toEqual(COUNTER_SEAT);
+    for (const [width, height] of views) {
+      const cardTop = height - 300;
+      const cam = aimAtStage(width, height);
+      mode.frameView(width, height, cardTop);
+      const { x, y } = pixel(mia.root.position.clone().setY(mia.height * 0.91), cam, width, height);
+      expect(x).toBeGreaterThan(width * 0.25);
+      expect(x).toBeLessThan(width * 0.75);
+      expect(y).toBeGreaterThan(60);
+      expect(y).toBeLessThan(cardTop / 2);
+    }
     expect(playback).toHaveBeenCalledWith(npcVoice(NPCS.mia), 1, es ? "¿Quiere probar de este lado de la barra?" : "Want to try my side of the counter?", expect.anything());
     expect(playback).toHaveBeenCalledWith(coachVoice("f"), 1, es ? "Ay, perdón, eso no es lo que pedí." : "Oh, sorry, that's not what I ordered.", expect.anything());
     expect(playback).toHaveBeenCalledWith(coachVoice("m"), 1, es ? "Quisiera un capuchino, por favor." : "I'd like a cappuccino, please.", expect.anything());

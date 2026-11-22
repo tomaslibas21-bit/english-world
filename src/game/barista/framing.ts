@@ -1,50 +1,64 @@
-import { PerspectiveCamera, Vector3 } from "three";
-import { covers, shoulderShots, type Shot } from "../talkShot";
-import { CUP_AT } from "./props";
+import { Box3, MathUtils, PerspectiveCamera, Vector3, type Group } from "three";
+import type { Shot } from "../talkShot";
+import { CUP_AT, CUP_SERVED } from "./props";
 
 export const COUNTER_SEAT = new Vector3(-1.12, 0, -1.95);
-export const MIA_ASIDE = new Vector3(0, 0, -4.4);
-const FOCUS = new Vector3(-1.15, 1.32, -2.63);
-const SHOULDER_ANGLES = [44, 47, 50];
-const PITCH = Math.tan(27.5 * Math.PI / 180);
+export const MIA_ASIDE = new Vector3(2.32, 0, -1.06);
 
-export function counterShot(player: Vector3, playerHeight: number, miaHeight: number): Shot {
-  const learner = { x: player.x, y: player.y, z: player.z, top: player.y + playerHeight + 0.16, r: 0.4 };
-  const mia = { x: MIA_ASIDE.x, y: 0, z: MIA_ASIDE.z, top: miaHeight + 0.12, r: 0.32 };
-  const serving = [
-    CUP_AT, ...[-0.16, 0.16].map((x) => CUP_AT.clone().add(new Vector3(x, 0.24, 0))),
-    COUNTER_SEAT.clone().setY(1.65), COUNTER_SEAT.clone().setY(1.12),
-  ];
-  const miaFace = MIA_ASIDE.clone().setY(miaHeight * 0.91);
-  let fallback: Shot | undefined;
-  for (const shot of shoulderShots(player, COUNTER_SEAT, FOCUS, 4.2, 4.45, -1, SHOULDER_ANGLES)) {
-    if (shot.pos.x >= player.x || shot.pos.z < -5.85 || shot.pos.z > player.z - 0.45) continue;
-    shot.pos.y = FOCUS.y + PITCH * Math.hypot(shot.pos.x - FOCUS.x, shot.pos.z - FOCUS.z);
-    fallback ??= shot;
-    if ([...serving, miaFace].some((point) => covers(shot.pos, point, learner))) continue;
-    if (serving.some((point) => covers(shot.pos, point, mia))) continue;
-    return shot;
-  }
-  return fallback!;
+/** Just outside the learner's left shoulder, looking down the clear lane beside the machine. */
+export function counterShot(player: Vector3, playerHeight: number): Shot {
+  const pos = player.clone().add(new Vector3(-0.86, playerHeight + 0.26, -0.26));
+  const look = COUNTER_SEAT.clone();
+  look.y = pos.y - Math.tan(26 * Math.PI / 180) * Math.hypot(pos.x - look.x, pos.z - look.z);
+  return { pos, look };
 }
 
-export function counterDetails(customerHeight: number, miaHeight: number) {
-  const heads = [[COUNTER_SEAT, customerHeight], [MIA_ASIDE, miaHeight]] as const;
+interface CounterFrame { face: Vector3; edges: Vector3[] }
+export interface CounterLens { zoom: number; offsetX: number; offsetY: number }
+
+function headEdges(at: Vector3, height: number) {
+  return [-0.24, 0.24].flatMap((x) => [0.82, 1.07].map((y) => new Vector3(at.x + x, height * y, at.z)));
+}
+
+export function counterDetails(customerHeight: number, miaHeight: number): CounterFrame {
   return {
     face: COUNTER_SEAT.clone().setY(customerHeight * 0.91),
     edges: [
-      ...heads.flatMap(([at, height]) => [-0.24, 0.24].flatMap((x) => [0.82, 1.07].map((y) =>
-        new Vector3(at.x + x, height * y, at.z)))),
+      ...headEdges(COUNTER_SEAT, customerHeight), ...headEdges(MIA_ASIDE, miaHeight),
       CUP_AT.clone().add(new Vector3(-0.55, 0, 0)),
       CUP_AT.clone().add(new Vector3(0.22, 0, -0.14)),
       CUP_AT.clone().add(new Vector3(0.22, 0.48, 0.14)),
+      CUP_SERVED,
     ],
   };
 }
 
-/** Keep the customer in the upper middle and fit Mia and the serving area around them. */
-export function fitCounterView(camera: PerspectiveCamera, width: number, height: number, freeBottom: number, details: ReturnType<typeof counterDetails>) {
-  if (width <= 0 || height <= 0) return;
+export function scoreDetails(height: number): CounterFrame {
+  return {
+    face: COUNTER_SEAT.clone().setY(height * 0.91),
+    edges: [...headEdges(COUNTER_SEAT, height), COUNTER_SEAT.clone().setY(1.08)],
+  };
+}
+
+/** Include the customer, cup and any food at both ends of the slide. */
+export function servingDetails(customerHeight: number, serving: Group): CounterFrame {
+  const edges = headEdges(COUNTER_SEAT, customerHeight);
+  const box = new Box3().setFromObject(serving);
+  const travel = CUP_SERVED.clone().sub(CUP_AT);
+  for (const x of [box.min.x, box.max.x]) {
+    for (const y of [box.min.y, box.max.y]) {
+      for (const z of [box.min.z, box.max.z]) {
+        const corner = new Vector3(x, y, z);
+        edges.push(corner, corner.clone().add(travel));
+      }
+    }
+  }
+  return { face: COUNTER_SEAT.clone().setY(customerHeight * 0.91), edges };
+}
+
+/** Anchor the face and keep the action above the controls on the same camera axis. */
+export function fitCounterView(camera: PerspectiveCamera, width: number, height: number, freeBottom: number,
+  details: CounterFrame, from?: CounterLens, progress = 1): CounterLens {
   camera.zoom = 1;
   camera.aspect = width / height;
   camera.clearViewOffset();
@@ -65,8 +79,13 @@ export function fitCounterView(camera: PerspectiveCamera, width: number, height:
 
   const header = Math.min(62, freeBottom * 0.24);
   const floor = Math.max(header + 2, freeBottom - 22);
-  const x = width * 0.54, y = Math.min(floor - 1, Math.max(header + 14, freeBottom * 0.43));
-  const zoom = Math.min(1.28, Math.max(1, x - 18) / left, Math.max(1, width - x - 18) / right, (y - header) / top, (floor - y) / bottom);
-  camera.zoom = zoom;
-  camera.setViewOffset(width, height, (1 + face.x * zoom) * width / 2 - x, (1 - face.y * zoom) * height / 2 - y, width, height);
+  const x = width * (width <= 600 ? 0.61 : 0.49);
+  const y = header + (floor - header) * 0.36;
+  const zoom = Math.min(1.65, Math.max(1, x - 18) / left, Math.max(1, width - x - 18) / right, (y - header) / top, (floor - y) / bottom);
+  const offsetX = (1 + face.x * zoom) * width / 2 - x;
+  const offsetY = (1 - face.y * zoom) * height / 2 - y;
+  camera.zoom = MathUtils.lerp(from?.zoom ?? zoom, zoom, progress);
+  camera.setViewOffset(width, height, MathUtils.lerp(from?.offsetX ?? offsetX, offsetX, progress),
+    MathUtils.lerp(from?.offsetY ?? offsetY, offsetY, progress), width, height);
+  return { zoom, offsetX, offsetY };
 }

@@ -137,8 +137,8 @@ try {
       }
       assert.fail(`${label}: ${description}: ${JSON.stringify(await state())}, ${errors.join(", ")}`);
     };
-    const shot = async (name) => {
-      await step(3);
+    const shot = async (name, frames = 3) => {
+      if (frames) await step(frames);
       await page.screenshot({ path: join(dir, `${name}.png`) });
     };
     const press = (target) => phone ? target.tap() : target.click();
@@ -149,7 +149,38 @@ try {
     const enabledGive = give.and(page.locator(":enabled"));
     const cameraState = () => page.evaluate(() => {
       const { cam } = window.__ew.game.rig;
-      return [...cam.projectionMatrix.elements, ...cam.matrixWorld.elements];
+      const { customer, serving } = window.__ew.game.modes.get("barista").run;
+      const pixel = (point) => {
+        const p = point.project(cam);
+        return { x: (1 + p.x) * innerWidth / 2, y: (1 - p.y) * innerHeight / 2 };
+      };
+      return {
+        pose: cam.matrixWorld.toArray(), lens: cam.projectionMatrix.toArray(), zoom: cam.zoom,
+        face: pixel(customer.ch.root.position.clone().setY(customer.ch.height * 0.91)),
+        cup: pixel(serving.position.clone()),
+      };
+    });
+    const chipProblems = () => page.locator(".barista-tray").evaluate(async (tray) => {
+      await document.fonts.ready;
+      const bounds = tray.getBoundingClientRect();
+      const range = document.createRange();
+      return [...tray.querySelectorAll(".barista-chip")].flatMap((item) => {
+        const box = item.getBoundingClientRect();
+        const brokenWords = [...item.querySelectorAll(":scope > [lang]")].flatMap((label) => {
+          const node = label.firstChild;
+          if (!(node instanceof Text)) return [];
+          return [...node.data.matchAll(/\S+/gu)].flatMap(({ 0: word, index }) => {
+            range.setStart(node, index);
+            range.setEnd(node, index + word.length);
+            const [first, ...rest] = range.getClientRects();
+            return rest.some((rect) => Math.abs(rect.top - first.top) > 1) ? [{ word, lang: label.lang }] : [];
+          });
+        });
+        const fits = box.height >= 44 && box.width >= 44 && item.scrollWidth <= item.clientWidth + 1
+          && box.left >= bounds.left && box.right <= bounds.right && box.top >= bounds.top && box.bottom <= bounds.bottom
+          && getComputedStyle(item).transform === "none" && !brokenWords.length;
+        return fits ? [] : [{ chip: item.dataset.chip, brokenWords, box: box.toJSON(), scroll: item.scrollWidth, client: item.clientWidth }];
+      });
     });
     const offer = page.locator(".barista-offer");
     const prompt = page.locator(".prompt").getByText(words.start);
@@ -260,6 +291,7 @@ try {
         });
         assert(textFits.aboveTray && textFits.scrollsToLastLine && textFits.fitsWidth, JSON.stringify(textFits));
         for (const [row, id] of order) await press(chip(row, id));
+        assert.deepEqual(await chipProblems(), [], "every chip remains on the tray with the transcript open");
       }
 
       if (i === 0) {
@@ -292,9 +324,12 @@ try {
             return ray.intersectObjects([props.root, mia.ch.root, game.player.root], true).length === 0;
           };
           const clear = [0.68, 0.91].every((y) =>
-            openSightline(customer.ch.root.position.clone().setY(customer.ch.height * y)));
+            openSightline(customer.ch.root.position.clone().setY(customer.ch.height * y)))
+            && openSightline(serving.position.clone().setY(serving.position.y + 0.18));
           Object.assign(ray, { far, near });
           const drinkRow = document.querySelector('[data-row="drink"] .barista-chips');
+          const bubble = document.querySelector(".barista-cue")?.getBoundingClientRect();
+          const face = pixel(customer.ch.root.position.clone().setY(customer.ch.height * 0.91));
           return {
             tray: tray.top,
             clear,
@@ -304,19 +339,19 @@ try {
             shoulder: pixel(game.player.root.position.clone().setY(game.player.height * 0.85)),
             freeBottom: document.querySelector(".barista-bottom").getBoundingClientRect().top,
             customerFacesBarista: Math.cos(customer.ch.root.rotation.y) < -0.99 && customer.ch.root.position.z > -2.6,
-            face: pixel(customer.ch.root.position.clone().setY(customer.ch.height * 0.91)),
+            face,
+            bubbleClearsFace: !!bubble && (face.x < bubble.left || face.x > bubble.right),
             mia: pixel(mia.ch.root.position.clone().setY(mia.ch.height * 0.91)),
             cup: pixel(serving.position.clone()),
-            chips: [...document.querySelectorAll(".barista-chip")].every((item) =>
-              item.getBoundingClientRect().height >= 44 && item.scrollWidth <= item.clientWidth + 1),
           };
         });
-        assert(layout.chips && layout.customerFacesBarista && layout.clear, JSON.stringify(layout));
+        assert.deepEqual(await chipProblems(), [], "every chip is a 44px target inside the tray with unbroken words");
+        assert(layout.customerFacesBarista && layout.clear && layout.bubbleClearsFace, JSON.stringify(layout));
         assert(layout.cameraPitch >= 25 && layout.cameraPitch <= 30, JSON.stringify(layout));
         assert(Math.abs(layout.mia.x - layout.face.x) >= width * 0.15, JSON.stringify(layout));
         assert(layout.shoulder.x < width * 0.35 && layout.shoulder.y > layout.face.y, JSON.stringify(layout));
         assert.equal(layout.drinkCount, es ? 7 : 8);
-        if (!phone) assert(layout.drinkRowFits, JSON.stringify(layout));
+        assert(layout.drinkRowFits && layout.face.y < layout.freeBottom / 2, JSON.stringify(layout));
         for (const { x, y } of [layout.face, layout.cup, layout.mia]) {
           assert(x > 0 && x < width && y > 65 && y < layout.freeBottom - 12 && y < layout.tray, JSON.stringify(layout));
         }
@@ -337,8 +372,20 @@ try {
       await press(give);
       if (i === 0) {
         await wait(async () => (await state())?.step === "handover", "the cup slides to the customer");
-        await shot("handover");
-        assert.deepEqual(await cameraState(), beforeHandover, "hand-over keeps the same camera framing");
+        await wait(() => page.evaluate(() => {
+          const { serving, customer, shift } = window.__ew.game.modes.get("barista").run;
+          const seat = customer.ch.root.position;
+          return shift.step === "handover" && Math.abs(serving.position.x - seat.x) < 0.02
+            && serving.position.z > seat.z - 0.92 && serving.position.z < seat.z - 0.86;
+        }), "cup reaches the customer while still on the counter");
+        await shot("handover", 0);
+        const landing = await cameraState();
+        assert.deepEqual(landing.pose, beforeHandover.pose, "the camera stays on the order axis");
+        if (phone) assert(landing.zoom > beforeHandover.zoom, "hand-over brings the cup closer");
+        else assert.deepEqual(landing.lens, beforeHandover.lens, "desktop keeps the order framing");
+        assert(landing.face.x > 0 && landing.face.x < width && landing.face.y > 55
+          && landing.cup.x > width * 0.15 && landing.cup.x < width * 0.85
+          && landing.cup.y > landing.face.y && landing.cup.y < height * 0.75, JSON.stringify(landing));
       }
       const priceLine = choice(`bs_a_price_${i + 1}`);
       await wait(() => priceLine.isVisible(), "the till presents the price");
@@ -351,6 +398,15 @@ try {
 
     const card = page.locator(".mode-score-card");
     await wait(() => card.isVisible(), "score card opens");
+    await step();
+    assert(await card.evaluate((el) => {
+      const { game } = window.__ew;
+      const { mia, customer } = game.modes.get("barista").run;
+      const face = mia.ch.root.position.clone().setY(mia.ch.height * 0.91).project(game.rig.cam);
+      const faceY = (1 - face.y) * innerHeight / 2;
+      return mia.ch === window.__originalMia && mia.path.length === 0 && customer.leaving
+        && Math.abs(face.x) < 0.5 && faceY > 55 && faceY < el.getBoundingClientRect().top / 2;
+    }), "the barista steps to the counter above the score card");
     assert.equal(await card.locator("h2").innerText(), words.title);
     assert.deepEqual((await card.locator("dd").allTextContents()).slice(0, 2), ["6/6", "5/6"]);
     assert(await page.evaluate(({ key, cardLines }) => {

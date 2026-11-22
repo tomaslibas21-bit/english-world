@@ -128,7 +128,7 @@ class RoomMerger extends Merger {
   }
 }
 
-function room(id: string, w: number, d: number, floor: string, wall: string, build: Builder, npcs: NpcSpot[], opts: { floorKind?: FloorKind; accent?: string; warm?: boolean } = {}): Interior {
+function room(id: string, w: number, d: number, floor: string, wall: string, build: Builder, npcs: NpcSpot[], opts: { floorKind?: FloorKind; accent?: string; warm?: boolean; openEntry?: boolean } = {}): Interior {
   // this edition's look for the room (theme.ts `roomLooks`; Maple Harbor has none)
   const look = THEME.roomLooks[id];
   if (look) {
@@ -194,7 +194,12 @@ function room(id: string, w: number, d: number, floor: string, wall: string, bui
   const gap = 2.4;
   M.add("front", wm, boxGeo(w / 2 - gap / 2, 0.9, 0.3, -(w / 4 + gap / 4), 0.45, d / 2 + 0.15), false);
   M.add("front", wm, boxGeo(w / 2 - gap / 2, 0.9, 0.3, (w / 4 + gap / 4), 0.45, d / 2 + 0.15), false);
-  M.add("front-top", base, boxGeo(w + 0.6, 0.12, 0.4, 0, 0.95, d / 2 + 0.15), false);
+  if (opts.openEntry) {
+    const cap = (w + 0.6 - gap) / 2;
+    for (const side of [-1, 1]) M.add("front-top", base, boxGeo(cap, 0.12, 0.4, side * (cap + gap) / 2, 0.95, d / 2 + 0.15), false);
+  } else {
+    M.add("front-top", base, boxGeo(w + 0.6, 0.12, 0.4, 0, 0.95, d / 2 + 0.15), false);
+  }
   col.addBox(0, -d / 2 - 0.3, w + 2, 0.6);
   col.addBox(-w / 2 - 0.3, 0, 0.6, d + 2);
   col.addBox(w / 2 + 0.3, 0, 0.6, d + 2);
@@ -793,7 +798,7 @@ const B: Record<string, () => Interior> = {
     rug(c, 0, 1, 6, 3.5, "#e8c07a");
     if (THEME.roomExtras.cafeMx) cafeMx(c);
     if (THEME.roomExtras.services) { const S = msmalls(c); restroomDoor(c, S, -6.9, -c.d / 2, 0, "#6d2e46", "#f4e4cc"); clayPlant(c, S, -7.25, -0.9, 0.9); }
-  }, [{ npc: "mia", x: -1.2, z: -4.2, rot: 0, ax: -1.2, az: -2.05 }], { floorKind: "wood", accent: "#8a5a3c", warm: true }),
+  }, [{ npc: "mia", x: -1.2, z: -4.2, rot: 0, ax: -1.2, az: -2.05 }], { floorKind: "wood", accent: "#8a5a3c", warm: true, openEntry: THEME.roomExtras.cafeMx }),
 
   trattoria: () => THEME.restaurant === "yucateco" ? cocina() : room("trattoria", 18, 14, "#a8745a", "#f4e1c8", (c) => {
     c.M.add("host-stand", mat("#5a3a2a"), boxGeo(0.9, 1.1, 0.6, -5.5, 0.55, 4.2)); c.col.addBox(-5.5, 4.2, 0.9, 0.6);

@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { BARISTA_CHOCOLATE, BARISTA_MENU, priceText } from "../../content/barista";
 import { makeKeepsake } from "../keepsake";
+import { boxGeo, colourMerge, cylGeo } from "../world/util";
 import type { Build } from "./tray";
 
 const TOP = 1.08;
@@ -76,35 +77,48 @@ function pastry(parent: Parent, id: string, x: number, y: number, z: number, sca
   }
 }
 
+function espressoMachine() {
+  // Merge the controls, body and warming cups into one draw call.
+  const parts: [THREE.BufferGeometry, string][] = [
+    [boxGeo(1.42, 0.13, 0.81, 0, 0.065, 0), TRIM],
+    [boxGeo(1.35, 0.58, 0.53, 0, 0.42, 0.102), TEAL],
+    [boxGeo(1.35, 0.25, 0.78, 0, 0.65, 0), TEAL],
+    [boxGeo(1.4, 0.045, 0.81, 0, 0.79, 0), METAL],
+    [boxGeo(1.11, 0.087, 0.046, 0, 0.63, -0.39), METAL],
+  ];
+  for (const x of [-0.32, 0.31]) {
+    parts.push(
+      [cylGeo(0.11, 0.095, 0.085, x, 0.492, -0.25), METAL],
+      [boxGeo(0.078, 0.064, 0.22, x, 0.48, -0.4), DARK],
+      [cylGeo(0.074, 0.059, 0.079, x, 0.174, -0.27), CREAM],
+    );
+  }
+  for (const [x, color] of [[-0.1, "#ffbe72"], [0.06, "#faf4cc"], [0.22, "#a5cf9f"]] as const) {
+    parts.push([new THREE.IcosahedronGeometry(0.037, 1).translate(x, 0.65, -0.426), color]);
+  }
+  for (const [x, color] of [[-0.44, CREAM], [-0.13, "#afc7a3"], [0.18, "#e6b27c"]] as const) {
+    parts.push(
+      [cylGeo(0.093, 0.11, 0.18, x, 0.903, 0.11), color],
+      [cylGeo(0.095, 0.095, 0.015, x, 1.0, 0.11), CREAM],
+      [new THREE.TorusGeometry(0.063, 0.015, 6, 14).translate(x + 0.103, 0.91, 0.11), color],
+    );
+  }
+  const machine = new THREE.Mesh(colourMerge(parts), new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true }));
+  for (const [geometry] of parts) if (geometry.index) geometry.dispose();
+  machine.name = "barista-machine";
+  machine.position.set(-0.58, TOP, -3.29);
+  machine.rotation.y = 0.46;
+  machine.scale.setScalar(0.64);
+  return machine;
+}
+
 export class CounterProps {
   readonly root = new THREE.Group();
   private canvas = document.createElement("canvas");
   private texture = new THREE.CanvasTexture(this.canvas);
 
   constructor() {
-    const machine = new THREE.Group();
-    machine.position.set(0.91, TOP, -3.42);
-    machine.scale.setScalar(0.74);
-    this.root.add(machine);
-    box(machine, TRIM, 1.42, 0.13, 0.81, 0, 0.065, 0);
-    box(machine, TEAL, 1.35, 0.58, 0.53, 0, 0.42, 0.102);
-    box(machine, TEAL, 1.35, 0.25, 0.78, 0, 0.65, 0);
-    box(machine, METAL, 1.4, 0.045, 0.81, 0, 0.79, 0);
-    box(machine, METAL, 1.11, 0.087, 0.046, 0, 0.63, -0.39);
-    for (const x of [-0.32, 0.31]) {
-      cylinder(machine, METAL, 0.11, 0.095, 0.085, x, 0.492, -0.25);
-      box(machine, DARK, 0.078, 0.064, 0.22, x, 0.48, -0.4);
-      cylinder(machine, CREAM, 0.074, 0.059, 0.079, x, 0.174, -0.27);
-    }
-    for (const [x, color] of [[-0.1, "#ffbe72"], [0.06, "#faf4cc"], [0.22, "#a5cf9f"]] as const) {
-      ball(machine, color, 0.037, x, 0.65, -0.426);
-    }
-
-    for (const [x, color] of [[0.45, CREAM], [0.68, "#afc7a3"], [0.91, "#e6b27c"]] as const) {
-      cylinder(this.root, color, 0.064, 0.079, 0.16, x, TOP + 0.08, -2.97);
-      cylinder(this.root, CREAM, 0.067, 0.067, 0.02, x, TOP + 0.169, -2.97);
-      torus(this.root, color, 0.051, 0.011, x + 0.071, TOP + 0.08, -2.97);
-    }
+    this.root.add(espressoMachine());
 
     const displayCase = new THREE.Group();
     displayCase.position.set(-3.95, TOP, -2.99);
@@ -116,7 +130,7 @@ export class CounterProps {
     BARISTA_MENU.food.forEach((id, i) => pastry(displayCase, id, -0.5 + i * 0.33, 0.08, 0, 0.92));
 
     const till = new THREE.Group();
-    till.position.set(-0.41, TOP, -3.34);
+    till.position.set(0.73, TOP, -3.34);
     this.root.add(till);
     box(till, TRIM, 0.65, 0.125, 0.52, 0, 0.062, 0);
     box(till, TEAL, 0.58, 0.25, 0.29, 0, 0.22, 0.07);
@@ -146,8 +160,8 @@ export class CounterProps {
   }
 }
 
-export const CUP_AT = new THREE.Vector3(-1.12, TOP, -3.18);
-export const CUP_SERVED = new THREE.Vector3(-1.12, TOP, -2.7);
+export const CUP_AT = new THREE.Vector3(-1.61, TOP, -3.03);
+export const CUP_SERVED = new THREE.Vector3(-1.12, TOP, -2.84);
 
 function cupWall(parent: Parent, color: string, base: number, rim: number, foot: number, lip: number, opacity = 1) {
   const profile = [

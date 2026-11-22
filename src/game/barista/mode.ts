@@ -22,7 +22,7 @@ import { matchesPick, trayRows } from "./tray";
 import { CounterProps, CUP_AT, CUP_SERVED, disposeBaristaProps, makeServing } from "./props";
 import { baristaMenu, baristaPieceLine, baristaThanks } from "./menu";
 import { resetBaristaUi, useBarista } from "./store";
-import { COUNTER_SEAT, MIA_ASIDE, counterDetails, counterShot, fitCounterView } from "./framing";
+import { COUNTER_SEAT, MIA_ASIDE, counterDetails, counterShot, fitCounterView, scoreDetails, servingDetails, type CounterLens } from "./framing";
 
 const { situation, npc } = BARISTA_CONVERSATION;
 export const BARISTA_PROMPT = { x: -2.55, z: -2.03, rot: Math.PI };
@@ -33,6 +33,9 @@ const AISLE = [new THREE.Vector3(1.72, 0, 4.18), new THREE.Vector3(1.68, 0, 1.28
 const QUEUE = new THREE.Vector3(0.5, 0, -1.15);
 const LEAVE = [new THREE.Vector3(-2.96, 0, -1.68), new THREE.Vector3(-3.3, 0, 0.7), new THREE.Vector3(-1.9, 0, 4.46), DOOR];
 const ui = useBarista.setState;
+const WALK_SPEED = 2.75;
+const SERVE_LEAD = 0.28;
+const SERVE_SLIDE = 0.64;
 
 type Actor = { ch: GameCharacter; path: THREE.Vector3[]; idleYaw: number; serving?: THREE.Group; leaving?: boolean };
 type RoomHost = {
@@ -52,7 +55,8 @@ type Run = {
   mia: Actor;
   miaHome: { position: THREE.Vector3; yaw: number; busy: GameCharacter["busy"]; watch: GameCharacter["watch"] };
   framing: ReturnType<typeof counterDetails>;
-  picture?: { width: number; height: number; bottom: number };
+  picture?: { width: number; height: number; bottom: number; lens: CounterLens };
+  servingFrame?: ReturnType<typeof servingDetails>;
   customer: Actor;
   queued?: Actor;
   serving: THREE.Group | null;
@@ -79,6 +83,8 @@ class BaristaMode implements GameMode {
   private starting = false;
   private loading: Promise<SituationDef | null> | null = null;
   private speaker?: GameCharacter;
+  private cueAnchor = new THREE.Vector3();
+  private cueAnchorRight = new THREE.Vector3();
   private playback = new ModeDialogue({
     allowBrowserVoice: true,
     framePlayback: true,
@@ -172,7 +178,10 @@ class BaristaMode implements GameMode {
     room.add(root);
     const originalProps = room.getObjectByName("sunny-cup-counter-props");
     if (originalProps) originalProps.visible = false;
-    const mia = { ch: barista, path: [MIA_ASIDE], idleYaw: -1.55 };
+    // Stage Mia in the aisle under the fade. She can welcome guests and see the learner's work.
+    const mia = { ch: barista, path: [], idleYaw: Math.atan2(STAFF.x - MIA_ASIDE.x, STAFF.z - MIA_ASIDE.z) };
+    barista.root.position.copy(MIA_ASIDE);
+    barista.root.rotation.y = mia.idleYaw;
     const shift = new BaristaShift();
     const customer = this.actor(root, shift.order.npc, DOOR, [...AISLE, COUNTER_SEAT]);
     const run: Run = {
@@ -185,7 +194,7 @@ class BaristaMode implements GameMode {
     ui({ micOn: this.playback.micOn, menu: run.menu });
     this.host.entered(this.id);
     this.host.rig.mode = "stage";
-    const shot = counterShot(player.root.position, player.height, barista.height);
+    const shot = counterShot(player.root.position, player.height);
     this.host.rig.stage = { ...shot, rate: 8 };
     this.host.rig.stageSnap();
     this.paint(run);
@@ -291,7 +300,12 @@ class BaristaMode implements GameMode {
   private pick(run: Run, pick: Pick) {
     const { shift } = run;
     if (!useBarista.getState().ready || !run.menu[pick.row].some(({ id }) => id === pick.id)) return;
+    const correction = shift.correction;
+    const expected = shift.step === "order" ? shift.currentPiece : correction?.chip;
     shift.select(pick);
+    if (expected?.row === pick.row && expected.id === pick.id && matchesPick(shift.built, pick) === (correction?.selected ?? true)) {
+      audio.sfx("tick");
+    }
     this.rebuild(run);
     if (shift.step === "order") {
       const p = shift.currentPiece;
@@ -341,9 +355,9 @@ class BaristaMode implements GameMode {
       run.actors.push(run.queued);
     }
     run.slide = 0;
-    if (!await this.delay(run, 0.86) || run.closing) return;
-    run.customer.serving = run.serving ?? undefined;
-    run.serving = null;
+    if (run.serving) run.servingFrame = servingDetails(run.customer.ch.height, run.serving);
+    if (!await this.delay(run, SERVE_LEAD + SERVE_SLIDE + 0.35) || run.closing) return;
+    run.customer.ch.react?.("nod");
     run.props.price(shift.order.price);
     shift.step = "price";
     ui({ price: shift.order.price });
@@ -363,6 +377,9 @@ class BaristaMode implements GameMode {
     this.playback.clearLine();
     run.props.price(null);
     ui({ price: null });
+    run.servingFrame = undefined;
+    run.customer.serving = run.serving ?? undefined;
+    run.serving = null;
     run.customer.path = [...LEAVE];
     run.customer.leaving = true;
     if (shift.next() && run.queued) {
@@ -374,7 +391,15 @@ class BaristaMode implements GameMode {
       this.paint(run);
     } else {
       this.paint(run);
-      if (!await this.sayMia("bs_done", run.mia.ch) || this.run !== run || run.closing) return;
+      run.mia.idleYaw = TOWARD_BARISTA;
+      run.mia.path.push(COUNTER_SEAT);
+      run.framing = scoreDetails(run.mia.ch.height);
+      this.host.rig.stage = {
+        pos: new THREE.Vector3(-3.55, 2.82, -5.64), look: COUNTER_SEAT.clone().setY(1.1), rate: 2.4,
+      };
+      const walkTime = run.mia.ch.root.position.distanceTo(COUNTER_SEAT) / WALK_SPEED;
+      const [line, arrived] = await Promise.all([this.sayMia("bs_done", run.mia.ch), this.delay(run, walkTime)]);
+      if (!line || !arrived || this.run !== run || run.closing) return;
       this.playback.clearLine();
       shift.step = "score";
       keepPhrases(situation, [...run.kept.values()].map((line) => line.sentence));
@@ -391,7 +416,7 @@ class BaristaMode implements GameMode {
     if (target) {
       const delta = target.clone().sub(ch.root.position);
       const length = delta.length();
-      const speed = 2.75 * dt;
+      const speed = WALK_SPEED * dt;
       if (length <= speed) {
         ch.root.position.copy(target);
         path.shift();
@@ -399,7 +424,7 @@ class BaristaMode implements GameMode {
         ch.root.rotation.y = Math.atan2(delta.x, delta.z);
         ch.root.position.addScaledVector(delta, speed / length);
         if (ch.anim !== "walk") ch.setAnim("walk");
-        ch.moveSpeed = 2.75;
+        ch.moveSpeed = WALK_SPEED;
       }
     }
     if (target && !path.length) {
@@ -414,16 +439,39 @@ class BaristaMode implements GameMode {
     }
   }
 
-  frameView(width: number, height: number, freeBottom: number) {
+  frameView(width: number, height: number, freeBottom: number, cue?: HTMLElement | null) {
     const run = this.run;
-    if (!run) return;
+    if (!run || width <= 0 || height <= 0) return;
     const previous = run.picture;
-    // Reserve tap space from the opening, then use any larger measured obstruction for this viewport.
-    // Keeping the reservation when the controls disappear leaves the hand-over shot in place.
-    const reserved = previous?.width === width && previous.height === height ? previous.bottom : height - Math.min(365, height * 0.58);
-    const bottom = Math.min(reserved, freeBottom);
-    run.picture = { width, height, bottom };
-    fitCounterView(this.host.rig.cam, width, height, bottom, run.framing);
+    const closing = run.shift.step === "closing" || run.shift.step === "score";
+    const reservation = height - Math.min(width <= 600 ? 350 : 325, height * 0.54);
+    const sameViewport = previous?.width === width && previous.height === height;
+    const cam = this.host.rig.cam;
+    if (width <= 600 && run.servingFrame) {
+      // The empty space below the removed tray showed the learner's back. Use it for
+      // the cup, settle before it moves, then hold the composition through payment.
+      const progress = THREE.MathUtils.smoothstep(run.slide, 0, SERVE_LEAD);
+      fitCounterView(cam, width, height, Math.min(freeBottom, height * 0.77), run.servingFrame,
+        sameViewport ? previous.lens : undefined, progress);
+    } else {
+      const hold = run.servingFrame && sameViewport;
+      const bottom = hold ? previous.bottom : Math.min(closing ? height * 0.56 : reservation, freeBottom);
+      const lens = fitCounterView(cam, width, height, bottom, run.framing);
+      run.picture = { width, height, bottom, lens };
+    }
+    if (cue && this.speaker) {
+      const anchor = this.cueAnchor.copy(this.speaker.root.position);
+      anchor.y += this.speaker.height * 0.91;
+      // Project the far cheek so the bubble clears the head at every zoom level.
+      const before = width <= 600 && (this.speaker === run.customer.ch || closing);
+      anchor.addScaledVector(this.cueAnchorRight.setFromMatrixColumn(cam.matrixWorld, 0), before ? -0.34 : 0.34);
+      anchor.project(cam);
+      cue.classList.toggle("barista-cue-before", before);
+      const inset = (1 + (before ? -anchor.x : anchor.x)) * width / 2;
+      cue.style.setProperty("--cue-inset", `${Math.round(inset) + 6}px`);
+      cue.style.setProperty("--cue-top", `${Math.round((1 - anchor.y) * height / 2) - 17}px`);
+      cue.style.setProperty("--cue-bottom", `${Math.round(freeBottom) - 5}px`);
+    }
   }
 
   tick(dt: number) {
@@ -440,11 +488,7 @@ class BaristaMode implements GameMode {
     const run = this.run;
     if (!run || run.closing) return;
     this.playback.update(dt, blocked);
-    if (blocked) {
-      // Make room for the learner under the fade so the two figures do not overlap when it lifts.
-      if (!run.introStarted) this.move(run.mia, dt);
-      return;
-    }
+    if (blocked) return;
     this.host.updatePose(dt, STAFF.rot);
     if (!run.introStarted) {
       run.introStarted = true;
@@ -460,13 +504,7 @@ class BaristaMode implements GameMode {
     if (run.shift.step === "arrive" && !run.customer.path.length) void this.greet(run);
     if (run.shift.step === "handover" && run.serving) {
       run.slide += dt;
-      if (run.slide <= 0.58) {
-        run.serving.position.lerpVectors(CUP_AT, CUP_SERVED, THREE.MathUtils.smoothstep(run.slide, 0, 0.58));
-      } else {
-        const hand = run.customer.ch.rightHand.getWorldPosition(new THREE.Vector3());
-        hand.y += 0.06;
-        run.serving.position.lerpVectors(CUP_SERVED, hand, THREE.MathUtils.smoothstep(run.slide, 0.58, 0.85));
-      }
+      run.serving.position.lerpVectors(CUP_AT, CUP_SERVED, THREE.MathUtils.smoothstep(run.slide, SERVE_LEAD, SERVE_LEAD + SERVE_SLIDE));
     }
     const wait = run.wait;
     if (wait && (wait.left -= dt) <= 0) {
