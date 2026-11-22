@@ -8,6 +8,7 @@ import { coach } from "../game/coach";
 import { WORLD, SEA_Z } from "../game/world/layout";
 import { LOCATIONS } from "../content/locations";
 import { SITUATION_BY_ID } from "../content/situations/catalog";
+import { SitIcon } from "./SitIcon";
 import { sitProgress, stars } from "../state/progress";
 import { Icon, InlineIcon, Stars, iconForEmoji, splitLead, type IconName } from "./icons";
 import { drawRideMarks } from "./mapMarks";
@@ -276,12 +277,15 @@ function Objective({ portraitPhone, sidewaysPhone }: Screen) {
   const st = stars(sitProgress(progress, o.sitId));
   return (
     <div className={"objective-card" + (collapsed ? " collapsed" : "") + (fresh ? " fresh" : "")}>
-      <div className="kicker">
-        <span className="kicker-label"><Icon name="target" size={15} strokeWidth={2} /> Užduotis</span>
-        {st > 0 && <Stars n={st} size={14} />}
-        <button className="collapse-btn" onClick={() => setCollapsed(!collapsed)} aria-label="Suskleisti" aria-expanded={!collapsed}><Icon name={collapsed ? "chevronDown" : "chevronUp"} size={18} strokeWidth={2} /></button>
+      <div className="objective-head">
+        <div className="kicker">
+          <span className="kicker-label"><Icon name="target" size={15} strokeWidth={2} /> Užduotis</span>
+          {st > 0 && <Stars n={st} size={14} />}
+          <button className="collapse-btn" onClick={() => setCollapsed(!collapsed)} aria-label="Suskleisti" aria-expanded={!collapsed}><Icon name={collapsed ? "chevronDown" : "chevronUp"} size={18} strokeWidth={2} /></button>
+        </div>
+        <SitIcon id={o.sitId} size={32} className="objective-ico" />
+        <h3 lang="lt">{o.title} <span lang="en" className="en-title">· {sit?.title.en}</span></h3>
       </div>
-      <h3>{o.title} <span className="en-title">· {sit?.title.en}</span></h3>
       <p>{o.goal}</p>
       <div className="row">
         {phone ? (

@@ -434,7 +434,7 @@ export class Session {
     audio.sfx("cheer");
     // the person the learner is talking with is pleased: a little applause (after their nod and their last words)
     this.hooks.npcReact?.(st.conv.npcId || this.sit.npc, "clap");
-    st.toast({ kind: "stamp", title: after > before ? `${"★".repeat(after)} ${this.sit.title.en}` : `✓ ${this.sit.title.en}`, body: after > before ? "Nauja žvaigždutė! Situacija įveikta." : "Puiku! Situacija įveikta dar kartą." });
+    st.toast({ kind: "stamp", sitId: this.sit.id, title: after > before ? `${"★".repeat(after)} ${this.sit.title.en}` : `✓ ${this.sit.title.en}`, body: after > before ? "Nauja žvaigždutė! Situacija įveikta." : "Puiku! Situacija įveikta dar kartą." });
   }
 
   /** The learner leaves the conversation (Esc, a button, another situation). */

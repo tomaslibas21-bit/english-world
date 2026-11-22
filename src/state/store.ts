@@ -134,7 +134,7 @@ export const EMPTY_CONV: ConvUI = {
   typing: false, newExpressions: [], checklist: [], focus: 0, stepId: null, guess: null, practice: null, run: 0, guideHidden: false, introOpen: false,
 };
 
-export interface Toast { id: number; kind: "info" | "success" | "tip" | "stamp"; title: string; body?: string; better?: string; ms?: number }
+export interface Toast { id: number; kind: "info" | "success" | "tip" | "stamp"; title: string; body?: string; better?: string; sitId?: string; ms?: number }
 
 export interface HudState {
   zoneName: string;

@@ -1,4 +1,5 @@
 import { useStore, type Toast } from "../state/store";
+import { SitIcon } from "./SitIcon";
 import { Icon, Stars, splitLead, withIcons, type IconName } from "./icons";
 
 /** A toast from the UI can name its own icon (game toasts put an emoji at the start of the title). */
@@ -17,7 +18,9 @@ export function Toasts() {
         const icon = (t as ToastInput).icon ?? lead.icon ?? KIND_ICON[t.kind] ?? "info";
         return (
           <div key={t.id} className={"toast " + t.kind}>
-            <span className="t-icon"><Icon name={icon} size={22} /></span>
+            {t.sitId
+              ? <SitIcon id={t.sitId} size="1.25em" className="t-situation" />
+              : <span className="t-icon"><Icon name={icon} size={22} /></span>}
             <div className="t-text">
               <b>{lead.stars > 0 && <Stars n={lead.stars} of={lead.stars} size={17} label={`${lead.stars} iš 3`} />}{withIcons(lead.rest)}</b>
               {t.body && <p>{withIcons(t.body)}</p>}
