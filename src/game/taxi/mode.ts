@@ -19,6 +19,7 @@ import type { Door, StandTaxi } from "../world/town";
 import { carFootprint, carModelEntry } from "../world/carModels";
 import { CAR_SEATS } from "../rides/shapes";
 import { approach, approachDistance, checkDecision, inStopZone, resetPose, taxiScore, type TaxiRoute } from "./route";
+import { createStopBay } from "./stopBay";
 import { resetTaxiUi, useTaxi } from "./store";
 
 type Phase = "opening" | "drive" | "wrong" | "passed" | "closing" | "result";
@@ -55,6 +56,7 @@ class TaxiMode implements GameMode {
   private halo = new THREE.Mesh(new THREE.RingGeometry(0.9, 1, 36).rotateX(-Math.PI / 2), this.ring.material.clone());
   private highlight = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2),
     new THREE.MeshBasicMaterial({ color: "#ffd166", transparent: true, opacity: 0.23, depthWrite: false }));
+  private stopBay = createStopBay();
   private markerTime = 0;
   private dialogue = new ModeDialogue({
     say: (line) => useTaxi.setState({ line }),
@@ -68,7 +70,8 @@ class TaxiMode implements GameMode {
     this.marker.position.set(this.car.home.x, 0.04, this.car.home.z + 1.85);
     this.marker.add(this.ring, this.halo);
     this.highlight.visible = false;
-    host.add(this.marker, this.highlight);
+    this.highlight.scale.set(2.15, 1, 8);
+    host.add(this.marker, this.highlight, this.stopBay.root);
   }
 
   get active() { return this.run !== null; }
@@ -343,17 +346,21 @@ class TaxiMode implements GameMode {
     const action = near && help.action ? step.action : null;
     const ui = useTaxi.getState();
     if (ui.action !== action || ui.gloss !== help.gloss) useTaxi.setState({ action, gloss: help.gloss });
-    this.highlight.visible = !!action;
+    const stop = action === "stop";
+    this.stopBay.root.visible = stop;
+    this.highlight.visible = !!action && !stop;
     if (!action) return;
     const path = approach(run.route, run.index);
     const prev = path[path.length - 2], next = run.route.decisions[run.index + 1];
-    const goal = action === "stop" || action === "straight" ? step.at : next.via?.[0] ?? next.at;
-    const origin = action === "stop" || action === "straight" ? prev : step.at;
-    const z = goal.z - origin.z, x = goal.x - origin.x, yaw = Math.atan2(x, z);
-    const ahead = action === "stop" ? 0 : 7;
-    this.highlight.position.set(step.at.x + Math.sin(yaw) * ahead, 0.045, step.at.z + Math.cos(yaw) * ahead);
-    this.highlight.rotation.y = yaw;
-    this.highlight.scale.set(action === "stop" ? 3.6 : 2.15, 1, 8);
+    const followsApproach = stop || action === "straight";
+    const goal = followsApproach ? step.at : next.via?.[0] ?? next.at;
+    const origin = followsApproach ? prev : step.at;
+    const yaw = Math.atan2(goal.x - origin.x, goal.z - origin.z);
+    const ahead = stop ? 0 : 7;
+    const mark = stop ? this.stopBay.root : this.highlight;
+    mark.position.set(step.at.x + Math.sin(yaw) * ahead, 0.045, step.at.z + Math.cos(yaw) * ahead);
+    mark.rotation.y = yaw;
+    if (stop) this.stopBay.pulse(run.nearTime);
   }
 
   input(input: ModeInput) {
@@ -394,6 +401,7 @@ class TaxiMode implements GameMode {
       this.run = null;
       this.assist = false;
       this.highlight.visible = false;
+      this.stopBay.root.visible = false;
       resetTaxiUi();
       this.host.left(this.id);
     };
@@ -405,6 +413,7 @@ class TaxiMode implements GameMode {
     if (this.stand.fallback.parent) this.stand.fallback.geometry.dispose();
     this.marker.removeFromParent();
     this.highlight.removeFromParent();
+    this.stopBay.dispose();
     for (const mesh of [this.ring, this.halo, this.highlight]) {
       mesh.geometry.dispose();
       mesh.material.dispose();
