@@ -1,6 +1,28 @@
 // The interface in English for the Spanish edition: each Lithuanian original (as written in src/ui/…, through
 // L() / Lx() of src/ui/i18n.ts) and its English. Keep the {placeholders}. Replaces src/ui/strings.ts in this edition.
 export const STRINGS: Record<string, string> = {
+  "Kelias per dykumą": "Desert road",
+  "Klausykite ir važiuokite pro teisingus vartus": "Listen and drive through the right gate",
+  "Ką išgirdote?": "What did you hear?",
+  "Kurio žodžio trūksta?": "Which word is missing?",
+  "Teisingai!": "Right!",
+  "Ne visai. Teisingai:": "Not quite. It's:",
+  "Serija": "Streak",
+  "Geriausias važiavimas": "Best run",
+  "Laikas": "Time",
+  "Vairuokite rodyklėmis · Tarpas – driftas · H – signalas": "Steer with the arrows · Space – drift · H – horn",
+  "Driftas": "Drift",
+  "Signalas": "Horn",
+  "Važiavimas baigtas": "Drive over",
+  "Taškai": "Points",
+  "Teisingi vartai": "Right gates",
+  "Ilgiausia serija": "Best streak",
+  "Nuvažiuota": "Distance",
+  "Naujas rekordas!": "New best!",
+  "Šiuos žodžius verta pakartoti": "Worth another look",
+  "Šis žodis skamba čia:": "You'll hear it here:",
+  "Atgal į miestą": "Back to town",
+  "Pirmiausia pakalbėkite su žmonėmis mieste – tada čia atsiras žodžių.": "Talk with people in town first – then words will show up here.",
   // Ride-along taxi
   "Vairuoti taksi": "Drive the taxi",
   "← Sukite kairėn": "← Turn left",

@@ -9,9 +9,10 @@ interface ScoreCardProps {
   phrases: { label: string; count: number };
   again: { label: string; run(): void };
   done: { label: string; run(): void };
+  children?: ReactNode;
 }
 
-export function ScoreCard({ title, score, rows, phrases, again, done }: ScoreCardProps) {
+export function ScoreCard({ title, score, rows, phrases, again, done, children }: ScoreCardProps) {
   return (
     <div className="mode-score" lang={HL}>
       <section className="mode-score-card" role="dialog" aria-labelledby="mode-score-title">
@@ -21,6 +22,7 @@ export function ScoreCard({ title, score, rows, phrases, again, done }: ScoreCar
           {rows.map(({ label, value }) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
           <div><dt>{phrases.label}</dt><dd>{phrases.count}</dd></div>
         </dl>
+        {children}
         <div className="mode-score-actions">
           <button className="btn" onClick={again.run}>{again.label}</button>
           <button className="btn soft" onClick={done.run}>{done.label}</button>

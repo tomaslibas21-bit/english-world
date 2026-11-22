@@ -1,12 +1,14 @@
 // Builds the outdoor town of Maple Harbor from layout.ts: ground, sea, buildings, props, colliders, doors.
 import * as THREE from "three";
 import { TAXI_ROUTES } from "../../content/taxi";
+import { ROAD_EDITION } from "../../content/road";
 import * as GROUNDS from "../cave/grounds";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, GAS_FORECOURT, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, type BuildingDef } from "./layout";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
 import { carParts, mxTaxiParts } from "./car";
 import { carFootprint, carModelEntry, type CarPlacement } from "./carModels";
+import { ParkedFleet } from "./parkedFleet";
 import { THEME, type TianguisGoods } from "./theme";
 import * as MX from "./mexican";
 import { LOCATIONS } from "../../content/locations";
@@ -31,7 +33,7 @@ export interface StandTaxi {
 
 export interface ParkedCars {
   group: THREE.Group;
-  fallback: THREE.Mesh;
+  fleet: ParkedFleet;
   placements: readonly CarPlacement[];
   taxi?: StandTaxi;
 }
@@ -86,7 +88,7 @@ export function backgroundHillPosition(x: number, z: number, fx: number, fz: num
   return { x, z };
 }
 
-export function buildTown(): Town {
+export function buildTown({ movableParking = false } = {}): Town {
   const group = new THREE.Group();
   group.name = "town";
   const colliders = new Colliders();
@@ -206,8 +208,9 @@ export function buildTown(): Town {
   if (THEME.palms.length || beachPalms.length) group.add(makePalms(colliders, beachPalms));
   addHarbor(M, colliders, group, r);
   addTransport(M, colliders, group);
-  const parkedCars = makeParkedCars(colliders);
+  const parkedCars = makeParkedCars(movableParking ? undefined : colliders);
   group.add(parkedCars.group);
+  addRoadSign(group, colliders);
   addBackyard(M, colliders, group);
   addMaggiesCar(M, colliders, group);
 
@@ -1660,10 +1663,30 @@ function addStreetProps(M: Merger, col: Colliders) {
   for (const [x, z] of [[-75, 32], [5, 32], [65, 32], [-5, -14], [75, -14]]) stop(x, z);
 }
 
-function makeParkedCars(col: Colliders): ParkedCars {
+function addRoadSign(group: THREE.Group, col: Colliders) {
+  const { x, z, rot } = ROAD_EDITION.edge.sign;
+  const sign = new THREE.Group();
+  sign.position.set(x, 0, z);
+  sign.rotation.y = rot;
+  const face = new THREE.Mesh(new THREE.PlaneGeometry(4.8, 0.9), new THREE.MeshBasicMaterial({
+    map: textTexture(ROAD_EDITION.sign, { bg: "#27634e", fg: "#fff8df", w: 768, h: 144 }),
+    side: THREE.DoubleSide,
+  }));
+  face.position.set(0, 2.4, 0.09);
+  sign.add(face);
+  for (const side of [-1, 1]) {
+    const post = new THREE.Mesh(new THREE.BoxGeometry(0.11, 2.45, 0.11), mat("#867e65"));
+    post.position.set(side * 1.85, 1.225, 0);
+    sign.add(post);
+    col.addCircle(x + post.position.x * Math.cos(rot), z - post.position.x * Math.sin(rot), 0.1);
+  }
+  group.add(sign);
+}
+
+function makeParkedCars(staticColliders?: Colliders): ParkedCars {
   const group = new THREE.Group();
   group.name = "parked-cars";
-  const parts: [THREE.BufferGeometry, THREE.ColorRepresentation][] = [];
+  const fleet = new ParkedFleet(group);
   let standTaxi: StandTaxi | undefined;
   for (const spot of PARKED_CARS) {
     const { model, x, z, rot, color, trim } = spot;
@@ -1682,13 +1705,11 @@ function makeParkedCars(col: Colliders): ParkedCars {
       standTaxi = { root, fallback };
       continue;
     }
-    col.boxes.push({ ...carFootprint(spot), tag: "car", split: true });
-    for (const [geometry] of fallbackParts) geometry.rotateY(rot).translate(x, 0, z);
-    parts.push(...fallbackParts);
+    staticColliders?.boxes.push({ ...carFootprint(spot), tag: "car", split: true });
+    fleet.add(spot, staticColoured(fallbackParts, "parked-car-fallback"));
   }
-  const fallback = staticColoured(parts, "parked-car-fallback");
-  group.add(fallback);
-  return { group, fallback, placements: PARKED_CARS, taxi: standTaxi };
+  fleet.refresh();
+  return { group, fleet, placements: PARKED_CARS, taxi: standTaxi };
 }
 
 function nearIntersection(x: number, z: number) {

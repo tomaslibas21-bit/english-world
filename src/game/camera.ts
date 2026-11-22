@@ -47,7 +47,7 @@ export class CameraRig {
   talk: { pos: THREE.Vector3; look: THREE.Vector3 } | null = null;
   /** "stage": the camera goes where it is put, eased (the surf lesson: src/game/surf/): where it stands, what it looks
    *  at, and how fast it gets there (1/s). */
-  stage: { pos: THREE.Vector3; look: THREE.Vector3; rate: number } | null = null;
+  stage: { pos: THREE.Vector3; look: THREE.Vector3; rate: number; shiftY?: number } | null = null;
   /** What the follow camera keeps clear of (Game: the town's OcclusionField; nothing indoors): how far along a line
    *  one gets before something solid (0–1), whether a spot is inside something, whether it is over something one can't
    *  walk into (a building, a gazebo, a stall, a car: the camera stands over open ground). */

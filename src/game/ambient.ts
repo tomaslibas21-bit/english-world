@@ -14,11 +14,14 @@ import { Colliders as GroundPlan } from "./world/util";
 import type { NavGrid } from "./nav";
 import type { HairStyle, Look } from "../content/npcs";
 import { rand, type Colliders } from "./world/util";
-import { TAXI, TRAFFIC_CARS, TRAFFIC_LANES, CHAT_SPOTS } from "./world/layout";
+import { TAXI, TRAFFIC_CARS, TRAFFIC_LANES, CHAT_SPOTS, ROADS } from "./world/layout";
 import { carLedges, carModelEntry, type CarModelName, type CarPaint } from "./world/carModels";
 import type { Seat } from "./world/town";
 import { Dog } from "./dog";
 import { aheadOnArc, pushOutOfBox, startles } from "./rides/drive";
+
+const crossStreets = ROADS.filter((road) => road.x1 === road.x2);
+type DrivenCar = { x: number; z: number; heading: number };
 
 /** A townsperson: one who strolls between places ("walk"), sits at a café table or on a bench ("sit"), or stands
  *  chatting with someone ("stand"). */
@@ -443,7 +446,7 @@ export class Ambient {
     return { female: w.female };
   }
 
-  update(dt: number, player: THREE.Vector3, cam?: THREE.Vector3) {
+  update(dt: number, player: THREE.Vector3, cam?: THREE.Vector3, driven?: DrivenCar) {
     this.learner.set(player.x, player.y + 1.5, player.z);
     // at most one path search every 0.3 s (a long search takes a few milliseconds)
     this.pathCooldown -= dt;
@@ -474,7 +477,7 @@ export class Ambient {
         w.dog.update(dt, w.ch.root.localToWorld(_hand.set(-0.38, 0.74, 0.08)), p.x, p.z, w.heading, w.ch.anim === "walk");
       }
     }
-    for (const c of this.cars) this.updateCar(c, dt, player);
+    for (const c of this.cars) this.updateCar(c, dt, player, driven);
   }
 
   private updateWalker(w: Walker, dt: number, player: THREE.Vector3) {
@@ -567,7 +570,7 @@ export class Ambient {
     return ahead;
   }
 
-  private updateCar(c: Car, dt: number, player: THREE.Vector3) {
+  private updateCar(c: Car, dt: number, player: THREE.Vector3, driven?: DrivenCar) {
     if (c.hidden > 0) {
       c.hidden -= dt;
       const sx = c.dir > 0 ? c.from : c.to;
@@ -607,6 +610,18 @@ export class Ambient {
       if (a > 0 && a < 16 + (both - VEHICLE_LENGTH.car)) gap = Math.min(gap, a - both + 0.7);
     }
     let want = gap === Infinity ? c.max : Math.max(0, Math.min(c.max, (gap - 3.4) * 1.4));
+    if (driven) {
+      const behind = (c.x - driven.x) * c.dir;
+      const alongLane = Math.sin(driven.heading) * c.dir;
+      if (behind > 2.5 && behind < 11 && alongLane > 0.75 && Math.abs(driven.z - c.lane) < 1.65) {
+        want = Math.min(want, c.max * 0.72);
+      }
+      if (behind < 0 && behind > -21 && Math.abs(driven.z - c.lane) < 5.1 && Math.abs(alongLane) < 0.78
+        && crossStreets.some((road) => Math.abs(driven.x - road.x1) < road.w * 0.5
+          && c.lane >= road.z1 - 3 && c.lane <= road.z2 + 3)) {
+        want = Math.min(want, Math.max(0, (-behind - c.half.x - 4.1) * 1.1));
+      }
+    }
     // a car that has stopped can be climbed like a parked one (carPieces), and its driver waits while the player is on
     // it or over it, a few seconds while they stand right beside it, and a moment longer
     if (this.standing(c)) {
@@ -629,6 +644,10 @@ export class Ambient {
     c.mesh.scale.setScalar(Math.max(0.001, s));
     c.mesh.position.set(c.x, 0, c.lane);
     if (toEnd <= 0) { c.mesh.visible = false; c.hidden = 2 + this.r() * 6; }
+  }
+
+  nearbyTraffic(x: number, z: number, range: number) {
+    return this.cars.some((car) => car.hidden <= 0 && Math.hypot(car.x - x, car.lane - z) <= range);
   }
 
   /** How loud the traffic is where the player stands (0–1): the cars in sight, louder the nearer and faster. */

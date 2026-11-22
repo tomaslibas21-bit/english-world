@@ -9,6 +9,7 @@
 
 import type { Ctx, EntityDef, Pending, Segment, SituationDef } from "../types";
 import { ent, t } from "../dsl";
+import { ROAD_LINES, ROAD_MERGES } from "../road-lines";
 
 // ---------------------------------------------------------------------------
 // Destinations (id, English units, Lithuanian forms, gender) with location id, meter fare (cents)
@@ -382,6 +383,7 @@ export const taxi: SituationDef = {
   },
 
   lines: {
+    ...ROAD_LINES,
     greet: [
       t("Hi there! | Hop in! | Where to?", "Sveiki! | Lipkite! | Kur važiuojame?", "Sveiki! Lipkite! Kur važiuojame?"),
       t("Taxi? | Hop in! | Where | are | you | headed?", "Taksi? | Lipkite! | Kur | — | jūs | keliaujate?", "Taksi? Lipkite! Kur keliaujate?",
@@ -683,6 +685,7 @@ export const taxi: SituationDef = {
   },
 
   merges: {
+    ...ROAD_MERGES,
     "where to": { reason: "lexical_expression", split: "Where → kur + to → į leaves the verb missing; the elliptical taxi question “Where to?” = kur važiuojame.", minimal: "Two words, one question." },
     "hop in": { reason: "lexical_expression", split: "hop → šokti + in → į is false; the invitation = lipkite (get in).", minimal: "Verb + particle." },
     "sure thing": { reason: "lexical_expression", split: "sure → tikras + thing → daiktas is false; the reply = žinoma.", minimal: "Two words." },

@@ -26,6 +26,7 @@ export class ModeDialogue {
     choices(lines: KitLine[]): void;
     mic(state: KitMic): void;
     animate?(seconds: number): void;
+    speechFallback?: boolean;
   }) {}
 
   private resolve(situation: string, npcId: string, key: string, fallback: Record<string, SentSrc[]>, learner: boolean): KitLine | null {
@@ -44,7 +45,7 @@ export class ModeDialogue {
     return new Promise<boolean>((finish) => {
       const playing = { left: audible ? est + 2 : est, audible, finish };
       this.playback = playing;
-      if (audible) void audio.play(voice, speed, text, { slow, male }).then((ok) => {
+      if (audible) void audio.play(voice, speed, text, { slow, male, localVoiceOnly: this.ui.speechFallback }).then((ok) => {
         if (ok && this.playback === playing) this.endPlayback(true);
       });
     });

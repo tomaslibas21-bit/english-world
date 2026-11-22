@@ -165,6 +165,7 @@ export interface HudState {
   wading: boolean;
   /** At a wheel or a helm, going fast enough for a slide (the phone's brake button says so). */
   fast: boolean;
+  speedLines?: boolean;
   /** The player is on the move (the task card folds away meanwhile). */
   walking: boolean;
   objective: { sitId: string; title: string; goal: string; where: string; dist: number | null; angle: number | null; inside: boolean } | null;

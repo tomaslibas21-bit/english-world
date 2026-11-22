@@ -2,10 +2,10 @@
 import * as THREE from "three";
 import { showConversationEvent } from "./convEvents";
 import { buildTown, type Town, type Door } from "./world/town";
-import { carLedges, loadedCarModelCount } from "./world/carModels";
+import { loadedCarModelCount } from "./world/carModels";
 import type { CarVisuals } from "./world/carVisuals";
 import { getInterior, type Interior } from "./world/interiors";
-import { OUTDOOR_NPCS, AIRPORT_EXIT, WORLD, BUILDINGS, ROADS, DROPOFF, SEA_Z, BEACH_Z, FOUNTAIN, PARK, SQUARE, TAXI } from "./world/layout";
+import { OUTDOOR_NPCS, AIRPORT_EXIT, WORLD, BUILDINGS, ROADS, DROPOFF, SEA_Z, BEACH_Z, FOUNTAIN, PARK, SQUARE } from "./world/layout";
 import { createCharacter, setBlobShadows, withBackpack, type GameCharacter } from "./characters";
 import { moodOf } from "./characters/mood";
 import { styleRenderer, createStyleFx, type StyleFx } from "./styleScene";
@@ -20,6 +20,8 @@ import { keepsakeFor } from "../content/keepsakes";
 import { Undersea } from "./rides/undersea";
 import { CAR_DRIFT, BOAT_DRIFT, controlsFrom, type Controls } from "./rides/drive";
 import { RIDES } from "./world/rides";
+import { ROAD_EDITION, ROAD_UI } from "../content/road";
+import { RoadEntry, leavingByRoad, walkEdge } from "./road/entry";
 import { RIDE_NAMES } from "../content/rides";
 import { ModeRegistry } from "./kit/modes";
 import type { ModeHost } from "./kit/host";
@@ -285,6 +287,13 @@ export class Game implements GameApi {
   private rideCourse = 0;
   private rideBack = 0;
   private rideFov = 0;
+  private road?: RoadEntry;
+  private fpsAverage = 0;
+  private lastRender = 0;
+  private lastRenderWasRoad = false;
+  private speedShake = 0;
+  private hornAt = -Infinity;
+  private trafficReplyAt?: number;
   private kicked = false;
   /** Swimming (water.ts SWIM): in deep water now; how far into the stroke's pose (0–1); a dive: how long it still
    *  lasts (s) and how far under (0–1); the stroke's last splash. */
@@ -341,12 +350,12 @@ export class Game implements GameApi {
     const st = useStore.getState();
     st.setScreen("loading");
     this.setupLights();
-    this.town = buildTown();
+    this.town = buildTown({ movableParking: true });
     // the follow camera never goes into or behind anything built in the town (the church, a gazebo, a canopy…: all of
     // it, from the meshes themselves), and the trees in its way fade; not what moves (clouds, gulls, boats)
     // (nor what is thin and looked through, userData.thin: the overhead lines a town may have, the gas station's
     // canopy, the tianguis' lonas)
-    const moves = (o: THREE.Object3D) => o.userData?.v !== undefined || !!o.userData?.gull || !!o.userData?.boat || !!o.userData?.thin || o === this.town.parkedCars.taxi?.root;
+    const moves = (o: THREE.Object3D) => o.userData?.v !== undefined || !!o.userData?.gull || !!o.userData?.boat || !!o.userData?.thin || o === this.town.parkedCars.group;
     // (the cenote's grounds open to explore, cave/grounds.ts: they reach further west than the town's own edge)
     const west = THEME.cenote?.open ? 50 : 0;
     this.field = OcclusionField.fromObject(this.town.group, { minX: WORLD.minX - 24 - west / 2, maxX: WORLD.maxX + 24, minZ: WORLD.minZ - 24, maxZ: WORLD.maxZ + 24 }, { skip: moves });
@@ -359,10 +368,6 @@ export class Game implements GameApi {
       skip: (o) => o.userData?.v !== undefined || !!o.userData?.gull || !!o.userData?.boat || o === this.town.parkedCars.group, thin: (o) => !!(o.userData?.thin || o.userData?.roofOnly), keep: this.town.seats.filter((s) => s.table).map((s) => [s.x, s.z]), tall: (x, z) => this.field.overSolid(x, z),
       beside: OUTDOOR_NPCS.flatMap((n) => (n.ax !== undefined && n.az !== undefined ? [[n.x, n.z], [n.ax, n.az]] : [[n.x, n.z]]) as [number, number][]),
     }, (next) => setTimeout(next, 16));
-    for (const spot of this.town.parkedCars.placements) {
-      if (spot === TAXI && this.town.parkedCars.taxi) continue;
-      for (const piece of carLedges(spot.model, spot.x, spot.z, spot.rot)) this.ledges.add(piece);
-    }
     // (a car that has stopped is climbed like a parked one: its pieces come and go with it)
     this.ledges.dynamic = (x, z) => {
       const traffic = this.ambient.carPieces(x, z);
@@ -434,6 +439,10 @@ export class Game implements GameApi {
       fan: (x, y, z, dx, dz, k) => this.splashes.fan(x, y, z, dx, dz, k),
       outdoors: () => !this.zone.interior && !this.covered,
     }, RIDES, this.town.group.children.filter((o) => o.userData.boat));
+    const { fleet } = this.town.parkedCars;
+    fleet.cars.forEach((entry, index) => {
+      this.rides.createModeCar({ ...entry.spot, id: `parked-${index}` }, entry.root, () => fleet.take(entry));
+    });
     this.rides.onLeft = (x, y, z, rot) => this.leftRide(x, y, z, rot);
     this.rides.onStuck = () => this.showRideToast({ kind: "info", title: L("Čia išlipti nėra kur"), body: L("Pavažiuok truputį toliau.") });
     this.undersea = new Undersea(RIDES.deep, RIDES.rocks);
@@ -466,6 +475,20 @@ export class Game implements GameApi {
     };
     this.modes.register(createSurfMode(host));
     this.modes.register(createTaxiMode(host));
+    this.road = new RoadEntry({
+      ...host,
+      sky: () => this.sky,
+      clearTownHud: () => {
+        this.nearest = null;
+        this.tagLayer.style.visibility = "hidden";
+        useStore.getState().setHud({ prompt: null, ride: null, fast: false, speedLines: false });
+      },
+      left: (id) => { this.tagLayer.style.visibility = ""; host.left(id); },
+      canPullUp: (x, z) => !this.zone.colliders.blocked(x, z, 1.15),
+      deferLift: () => this.road?.deferLift(),
+      returnCar: (car, onFoot) => this.returnRoadCar(car, onFoot),
+    });
+    this.modes.register(this.road);
     this.scene.add(this.npcLayer, this.guidance.group, this.ambient.group, this.rides.group, this.dust.group, this.splashes.group, this.undersea.group);
     // (a place like the grotto keeps the camera inside itself: Interior.wild.space)
     this.rig.space = {
@@ -509,6 +532,22 @@ export class Game implements GameApi {
     const { calls, triangles } = this.renderer.info.render;
     const models = this.carVisuals?.stats() ?? { trafficModels: 0, parkedModels: 0, taxi: false };
     return { calls, triangles, loadedCarModels: loadedCarModelCount(), ...models };
+  }
+
+  roadDebug() {
+    return { ...this.road?.debug(), drawCalls: this.renderer.info.render.calls, fps: this.fpsAverage };
+  }
+
+  roadSteer(lane: number) { this.road?.steer(lane); }
+  roadJumpTimer(seconds?: number) { this.road?.jumpTimer(seconds); }
+
+  private sampleFps(road: boolean) {
+    const now = performance.now(), ms = now - this.lastRender;
+    if (ms > 0 && this.lastRender > 0 && road === this.lastRenderWasRoad) {
+      this.fpsAverage = this.fpsAverage ? this.fpsAverage * 0.92 + 80 / ms : 1000 / ms;
+    } else if (road !== this.lastRenderWasRoad) this.fpsAverage = 0;
+    this.lastRender = now;
+    this.lastRenderWasRoad = road;
   }
 
   /** The very first visit (nothing saved of where the learner was) opens with a few seconds' flight over the town,
@@ -805,6 +844,9 @@ export class Game implements GameApi {
       if (k === "escape") this.modes.exit();
       return;
     }
+    if (k === "h" && !e.repeat && this.rides.riding?.kind === "car" && !this.modes.owns("road")) {
+      this.horn(); e.preventDefault(); return;
+    }
     if (this.modes.active) {
       if (!this.transitioning && this.modes.input({ kind: "key", key: k, repeat: e.repeat, keys: this.keys })) e.preventDefault();
       return;
@@ -826,6 +868,61 @@ export class Game implements GameApi {
   };
   private onKeyUp = (e: KeyboardEvent) => { this.keys.delete(e.key.toLowerCase()); };
   private onBlur = () => { this.keys.clear(); };
+
+  horn() {
+    if (useStore.getState().hud.panel || this.transitioning || this.session?.active) return;
+    if (this.modes.active?.id === "road") { this.modeAction("road", "horn"); return; }
+    const car = this.rides.riding;
+    if (car?.kind !== "car" || this.rides.phase !== "on" || this.t - this.hornAt < 0.36) return;
+    this.hornAt = this.t;
+    audio.sfx("horn");
+    if (this.ambient.nearbyTraffic(car.m.x, car.m.z, 16) && Math.random() < 0.38) this.trafficReplyAt = this.t + 0.45 + Math.random() * 0.45;
+  }
+
+  modeStart(id: string, option?: string) { this.modes.start(id, option); }
+
+  private returnRoadCar(car: Ride, onFoot: boolean) {
+    const start = ROAD_EDITION.edge.return;
+    const sin = Math.sin(start.rot), cos = Math.cos(start.rot);
+    const spots = [[0, 0], [5, 0], [0, -3.4], [10, 0]];
+    const position = spots.map(([along, across]) => ({
+      x: start.x + sin * along + cos * across, z: start.z + cos * along - sin * across, rot: start.rot,
+    })).find(({ x, z }) => this.rides.freeParkingAt(car, x, z)) ?? start;
+    this.keys.clear();
+    this.joy.x = this.joy.y = 0;
+    this.brake = false;
+    this.rideFov = 0;
+    this.speedShake = 0;
+    this.rig.dist /= 1 + this.rideBack;
+    this.rideBack = 0;
+    if (onFoot && this.rides.riding === car) this.endRide(true);
+    this.rides.resetPosition(car, position);
+    const step = this.rides.carExit(car);
+    if (this.rides.riding !== car) {
+      this.placeOnFoot(step?.x ?? position.x, step?.z ?? position.z + 2, position.rot);
+      if (!onFoot) this.boardRide(car);
+    }
+    if (!onFoot && this.rides.riding === car) {
+      this.rides.update(0, this.t, null);
+      this.rideCourse = this.rig.yaw = position.rot;
+      this.rig.target.set(position.x, 0, position.z);
+      this.rig.snap();
+      useStore.getState().setHud({ ride: "car" });
+    } else useStore.getState().setHud({ ride: null });
+    this.savePlace();
+  }
+
+  private checkRoadEntry() {
+    if (!this.road || this.zone.interior || this.modes.active || this.modes.modal || this.swimming) return;
+    const car = this.rides.riding;
+    if (car) {
+      if (this.rides.phase === "on" && leavingByRoad(car)) this.modes.start("road");
+      return;
+    }
+    const p = this.player.root.position;
+    const edge = walkEdge(p.x, p.z, this.vel.x, this.vel.z);
+    if (edge && this.road.offer(edge)) this.modes.start("road", "walk");
+  }
 
   setJoystick(x: number, y: number) { this.joy.x = x; this.joy.y = y; if (x || y) { this.autoPath = null; this.autoTarget = null; } }
 
@@ -975,14 +1072,14 @@ export class Game implements GameApi {
     audio.motor(null);
     audio.rush("squeal", 0); audio.rush("wind", 0);
     // (the camera comes back to where the player had it)
-    this.rig.dist /= 1 + this.rideBack; this.rideBack = 0; this.rideFov = 0;
-    useStore.getState().setHud({ prompt: null, ride: null, fast: false });
+    this.rig.dist /= 1 + this.rideBack; this.rideBack = 0; this.rideFov = 0; this.speedShake = 0;
+    useStore.getState().setHud({ prompt: null, ride: null, fast: false, speedLines: false });
   }
 
   /** Out of a ride at once, with no hop (a door's zone change, a taxi, a conversation picked from the list). */
-  private endRide() {
+  private endRide(keep = false) {
     if (!this.rides?.riding) return;
-    this.rides.abandon();
+    this.rides.abandon(keep);
     this.afterRide();
   }
 
@@ -1130,7 +1227,7 @@ export class Game implements GameApi {
     if (this.rides.riding) { if (!this.session?.active && !useStore.getState().hud.panel) this.rides.leave(); return; }
     const n = this.nearest;
     if (!n) return;
-    if (n.kind === "ride") { const r = this.rides.list.find((q) => q.id === n.id); if (r) this.boardRide(r); }
+    if (n.kind === "ride") { const r = this.rides.find(n.id); if (r) this.boardRide(r); }
     else if (n.kind === "climb") this.climbOut();
     else if (n.kind === "mode") this.modes.start(n.id);
     else if (n.kind === "npc") this.talkTo(n.id);
@@ -1901,14 +1998,24 @@ export class Game implements GameApi {
     }
     const blocked = talking || !!st.hud.panel || !!st.hud.glyph || this.transitioning || this.modes.modal || !!this.flight;
     this.updatePlayer(dt, blocked, this.transitioning && !talking && !st.hud.panel && !st.hud.glyph && !mode);
+    if (!blocked) this.checkRoadEntry();
+    if (this.road?.render(this.renderer, this.container.clientWidth, this.container.clientHeight)) {
+      this.sampleFps(true);
+      return;
+    }
     this.keepsake.tick();
     // (what one can drive: its people, the way back to its curb; at the wheel it is moved from updatePlayer)
     const riding = this.rides.riding;
     if (!riding) this.rides.update(dt, this.t, null);
-    audio.motor(riding && this.rides.phase === "on" && !this.zone.interior ? riding.kind : null, this.rides.revs);
+    audio.motor(riding && this.rides.phase === "on" && !this.zone.interior && !this.modes.owns("road") ? riding.kind : null, this.rides.revs);
     this.updateNpcs(dt, talking);
     if (!this.zone.interior) {
-      this.ambient.update(dt, this.player.root.position, this.rig.cam.position);
+      const driver = riding?.kind === "car" && this.rides.phase === "on" ? riding.m : undefined;
+      this.ambient.update(dt, this.player.root.position, this.rig.cam.position, driver);
+      if (this.trafficReplyAt !== undefined && this.t >= this.trafficReplyAt) {
+        this.trafficReplyAt = undefined;
+        if (driver && !blocked && this.ambient.nearbyTraffic(driver.x, driver.z, 20)) audio.sfx("hornReply");
+      }
       this.carVisuals?.update(dt);
     }
     this.town.update(this.t, dt, this.rig.cam.position);
@@ -1947,6 +2054,10 @@ export class Game implements GameApi {
     if (this.rig.talk && this.talkHome && this.talkNear) this.rig.talk.pos.lerp(this.t < this.talkLean ? this.talkNear : this.talkHome, 1 - Math.exp(-dt * 1.4));
     if (mode?.camera && this.modes.active === mode) this.rig.mode = mode.camera;
     this.rig.update(dt, this.heading, speed > 0.7, true, (st.settings.cameraFollow || !!riding) && !this.pointer.down);
+    if (this.speedShake > 0 && riding?.kind === "car") {
+      this.rig.cam.position.x += Math.sin(this.t * 41) * this.speedShake;
+      this.rig.cam.position.y += Math.cos(this.t * 37) * this.speedShake * 0.7;
+    }
     // under the water (a dive: the camera below the surface): the seabed, the fish, the water's own light
     {
       const cp = this.rig.cam.position, pp1 = this.player.root.position, sur = this.zone.interior ? null : waterY(pp1.x, pp1.z, this.t);
@@ -1986,7 +2097,11 @@ export class Game implements GameApi {
         const pictureHeight = talkPictureHeight(h);
         this.rig.applyViewShift(w, h, sideways ? w * 0.375 : wide ? Math.min(w * 0.22, 380) : 0,
           wide || sideways ? 0 : (h - pictureHeight) / 2);
-      } else this.rig.applyViewShift(w, h, 0, this.rig.mode !== "talk" && h > w * 1.15 ? -h * (this.rig.mode === "follow" ? 0.12 : 0.1) : 0);
+      } else {
+        const stageShift = this.rig.mode === "stage" ? this.rig.stage?.shiftY : undefined;
+        const portraitShift = this.rig.mode !== "talk" && h > w * 1.15 ? -(this.rig.mode === "follow" ? 0.12 : 0.1) : 0;
+        this.rig.applyViewShift(w, h, 0, h * (stageShift ?? portraitShift));
+      }
     }
     // sun follows the player for crisp shadows
     const pp = this.player.root.position;
@@ -1996,8 +2111,10 @@ export class Game implements GameApi {
     this.sky.position.copy(this.rig.cam.position);
     // an illustrated scene covers the view during the conversation: save the phone's battery
     const covered = this.covered = talking && picturesOn(st.settings) && !!sceneFor(st.conv.sitId, st.conv.hostId);
+    this.rides.updateParkingKeys(this.t, !this.zone.interior && !talking && !this.flight && !this.modes.active && !this.transitioning);
     if (!covered) {
       this.renderer.render(this.scene, this.rig.cam);
+      this.sampleFps(false);
       if (!this.carLoadStarted && this.zone.id === "town") {
         this.carLoadStarted = true;
         // Let the browser paint the town before fetching the visual upgrade.
@@ -2104,7 +2221,9 @@ export class Game implements GameApi {
     {
       const fast = on && pace > (car ? CAR_DRIFT.from : BOAT_DRIFT.from);
       const hud = useStore.getState();
-      if (hud.hud.fast !== fast) hud.setHud({ fast });
+      const speedLines = car && !this.modes.active && pace > m.spec.max * 0.7;
+      this.speedShake = car ? Math.max(0, pace / m.spec.max - 0.85) * 0.23 : 0;
+      if (hud.hud.fast !== fast || !!hud.hud.speedLines !== speedLines) hud.setHud({ fast, speedLines });
     }
     this.player.moveSpeed = 0;
     this.player.update(dt);
@@ -2629,7 +2748,7 @@ export class Game implements GameApi {
       // a convertible or the boat within a step (a boat from the water too), a pier's boards beside a swimmer
       if (!this.zone.interior && !this.hop.air && this.diveK < 0.3) {
         const r = this.rides.near(p.x, p.z);
-        if (r && (r.kind === "boat" || !this.swimming) && 1 < bd) { bd = 1; best = { kind: "ride", id: r.id, label: r.kind }; }
+        if (r && (r.kind === "boat" || !this.swimming) && 1 < bd) { bd = 1; best = { kind: "ride", id: r.id, label: r.parked ? "parked" : r.kind }; }
         else if (this.swimming && !best && this.rides.climbOut(p.x, p.z)) { bd = 1; best = { kind: "climb", id: "pier", label: L("Užlipti ant prieplaukos") }; }
         const mode = this.modes.prompt(p.x, p.z, this.swimming || best?.kind === "ride" ? 0 : bd);
         if (mode) {
@@ -2669,7 +2788,9 @@ export class Game implements GameApi {
       if (best) audio.sfx("tick");
       const names = RIDE_NAMES;
       st.setHud({ prompt: !best ? null
-        : best.kind === "ride" ? (best.label === "car" ? { label: L("Vairuoti: {name}", { name: names.car.en }), lt: names.car.lt || undefined, kind: "drive" } : { label: L("Plaukti: {name}", { name: names.boat.en }), lt: names.boat.lt || undefined, kind: "boat" })
+        : best.kind === "ride" ? (best.label === "parked" ? { label: L(ROAD_UI.drive), kind: "drive" }
+          : best.label === "car" ? { label: L("Vairuoti: {name}", { name: names.car.en }), lt: names.car.lt || undefined, kind: "drive" }
+          : { label: L("Plaukti: {name}", { name: names.boat.en }), lt: names.boat.lt || undefined, kind: "boat" })
         : best.kind === "out" ? { label: L("Išlipti"), kind: "out" }
         : best.kind === "climb" ? { label: best.label, kind: "climb" }
         : best.kind === "glyph" ? { label: L("Klausytis: kalbantis akmuo"), kind: "listen" }
@@ -2746,8 +2867,10 @@ export class Game implements GameApi {
   dispose() {
     this.keepsake.dispose();
     this.disposed = true;
-    this.carVisuals?.dispose();
     this.modes.dispose();
+    this.carVisuals?.dispose();
+    this.town?.parkedCars.fleet.dispose();
+    this.rides?.disposeParkingKeys();
     useStore.getState().setHud({ coach: null });
     this.renderer.setAnimationLoop(null);
     window.removeEventListener("keydown", this.onKeyDown);
