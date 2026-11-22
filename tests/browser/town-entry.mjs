@@ -11,6 +11,7 @@
 // WORLD_SHOTS=/a/folder saves a picture of each opening.
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import { openPhoneMenu } from "./screen-harness.mjs";
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:8096";
 const storage = process.env.WORLD_STORAGE || "english-world";
@@ -85,6 +86,10 @@ try {
     check(`${label}: a returning learner is in the town at once, where they left off: no list over it`, s.panel === null && !s.list && !s.flight && !s.talking && s.zone === "town" && s.canvas, s);
     check(`${label}: the task card and the buttons are there`, s.task && s.tools, s);
     check(`${label}: once, a hint says where the list is`, s.hint === "list" && s.coachCard && s.toldList, s);
+    if (await page.locator(".ride-menu").count()) {
+      check(`${label}: the hint reveals the list button`, await page.locator(".ride-menu").getAttribute("aria-expanded") === "true");
+      await openPhoneMenu(page);
+    }
     const btn = listButton(page);
     check(`${label}: the list's button is on the screen, big enough for a finger`, await btn.evaluate((b) => { const r = b.getBoundingClientRect(); return r.width >= 44 && r.height >= 44 && r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight && document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest("button") === b; }), await btn.getAttribute("title"));
     if (touch) await btn.tap(); else await btn.click();

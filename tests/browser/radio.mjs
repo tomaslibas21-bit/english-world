@@ -10,6 +10,7 @@
 // Desktop WebKit is not an iPhone: this shows the lifecycle, not how a phone's speaker sounds.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { openPhoneMenu } from "./screen-harness.mjs";
 const { chromium, webkit } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:5198";
 const manifest = JSON.parse(await readFile("public/audio/manifest.json", "utf8"));
@@ -133,6 +134,9 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
 
       // ---- the button: there, big enough, clear of the other controls
       const button = page.locator(".radio-btn");
+      const pressPower = async () => { await openPhoneMenu(page); await (phone ? button.tap() : button.click()); };
+      const openSet = async () => { await openPhoneMenu(page); await page.locator(".radio-plate").click(); };
+      await openPhoneMenu(page);
       const layout = await page.evaluate(() => {
         const box = (sel) => { const r = document.querySelector(sel)?.getBoundingClientRect(); return r ? { l: r.left, t: r.top, r: r.right, b: r.bottom } : null; };
         return { radio: box(".radio-btn"), lr: box(".light-mode-btn"), jump: box(".jump-btn"), joy: box(".joy"), w: innerWidth, h: innerHeight };
@@ -144,7 +148,7 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       // ---- one tap: on, the card, a song with the token
       let s = await state(page);
       check(`${label}: silent until asked`, !s.on && !s.sounding, s);
-      await (phone ? button.tap() : button.click());
+      await pressPower();
       await playing(page);
       await page.waitForTimeout(1300);
       s = await state(page);
@@ -218,22 +222,22 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       });
       check(`${label}: while it plays, the button is lit and a plate beside it names the station or the song`, folded.lit && !folded.set && folded.plate && folded.plate.l >= 0 && folded.plate.r <= folded.w
         && folded.plate.b - folded.plate.t >= 36 && folded.tools.every((t) => apart(t, folded.plate)) && ["Grammar FM", "Radio Song 1"].includes(folded.text), folded);
-      await (phone ? button.tap() : button.click());
+      await pressPower();
       s = await state(page);
       check(`${label}: one tap turns it off: the button goes dark and the plate leaves at once`, !s.on && await page.locator(".radio-plate").count() === 0 && !(await button.evaluate((el) => el.classList.contains("on"))), s);
       await page.waitForTimeout(1200);
       s = await state(page);
       check(`${label}: and the music has faded out`, !s.sounding && !s.playing, s);
-      await (phone ? button.tap() : button.click());
+      await pressPower();
       await playing(page);
       check(`${label}: the next tap turns it on again, without the set in the way`, (await state(page)).on && await page.locator(".radio-set").count() === 0 && await page.locator(".radio-plate").count() === 1, await state(page));
-      await page.locator(".radio-plate").click();
+      await openSet();
       check(`${label}: a tap on the plate opens the set, a tap elsewhere folds it away`, await page.locator(".radio-set").count() === 1, null);
       await page.evaluate(() => document.querySelector(".stage").dispatchEvent(new PointerEvent("pointerdown", { bubbles: true })));
       await page.waitForTimeout(100);
       check(`${label}: folded away again, still playing`, await page.locator(".radio-set").count() === 0 && (await state(page)).on, null);
       // switched off with the set open: off looks off, the set folds away too; on again shows the plate only
-      await page.locator(".radio-plate").click();
+      await openSet();
       await page.evaluate(() => window.__ew.radio.power());
       check(`${label}: switched off with the set open, the set folds away`, await page.locator(".radio-set").count() === 0 && await page.locator(".radio-plate").count() === 0 && !(await state(page)).on, await state(page));
       await page.waitForTimeout(1100);
@@ -270,7 +274,7 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       });
       const fits = (m) => m.box.r - m.box.l > 60 && m.box.b - m.box.t > 20 && m.box.l >= 0 && m.box.r <= m.w && m.box.t >= 0 && m.box.b <= m.h && apart(m.box, m.joy) && apart(m.box, m.jump) && apart(m.box, m.tools) && m.through === "none";
       const usual = await measure();
-      await page.locator(".radio-plate").click();
+      await openSet();
       const chip = (name) => page.locator(".rs-opt", { hasText: name });
       const press = (name) => (phone ? chip(name).tap() : chip(name).click());
       const savedNote = () => page.evaluate(() => JSON.parse(localStorage.getItem("ew-radio-v2")));
@@ -412,7 +416,7 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       s = await state(page);
       check(`${label}: a tap elsewhere leaves it off`, !s.on && !s.sounding, s);
       // the power button goes on with the same song
-      await (phone ? page.locator(".radio-btn").tap() : page.locator(".radio-btn").click());
+      await pressPower();
       await playing(page);
       await page.waitForTimeout(1200);
       s = await state(page);
@@ -439,6 +443,7 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       await page.goto(base, { waitUntil: "domcontentloaded" });
       await until(page, () => window.__ew?.store.getState().screen === "play", 90000);
       await page.evaluate((touch) => window.__ew.store.getState().setHud({ panel: null, ...(touch ? { showTouch: true } : {}) }), width < 1000);
+      await openPhoneMenu(page);
       await page.evaluate(() => window.__ew.radio.setOpen(true));
       const boxes = await page.evaluate(() => {
         const box = (sel) => { const r = document.querySelector(sel)?.getBoundingClientRect(); return r ? { l: r.left, t: r.top, r: r.right, b: r.bottom } : null; };

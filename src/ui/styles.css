@@ -172,6 +172,22 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 
 .toolbar { position: absolute; right: max(14px, env(safe-area-inset-right)); top: 200px; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
 .toolbar-tools { display: grid; grid-auto-flow: column; grid-template-rows: repeat(8, 52px); gap: 10px; }
+.toolbar.in-ride.folds {
+  --tool-size: 44px; --tool-gap: 4px; --tool-bottom: max(8px, env(safe-area-inset-bottom));
+  gap: var(--tool-gap);
+}
+.hud.has-touch .toolbar.folds { --tool-bottom: calc(108px + env(safe-area-inset-bottom)); }
+.toolbar .ride-menu { border-radius: 50%; }
+.toolbar.folds .icon-btn { width: var(--tool-size); height: var(--tool-size); }
+.toolbar-fit-limit { position: fixed; top: 0; right: 0; bottom: var(--tool-bottom); width: 1px; visibility: hidden; pointer-events: none; }
+.toolbar.folds .toolbar-drawer {
+  position: absolute; top: calc(var(--tool-size) + var(--tool-gap)); right: 0;
+  display: grid; grid-auto-flow: row dense; gap: var(--tool-gap); direction: rtl;
+  grid-template-rows: repeat(var(--drawer-rows), var(--tool-size)); grid-auto-columns: var(--tool-size);
+}
+.toolbar.folds :is(.toolbar-tools, .toolbar-actions, .toolbar-shortcuts, .drawer-tool) { display: contents; }
+.toolbar.folds .drawer-tool > * { grid-column: var(--tool-column); direction: ltr; }
+.toolbar.folds:not(.menu-open) .toolbar-drawer { visibility: hidden; pointer-events: none; }
 .light-mode-btn { font-size: 17px; font-weight: 900; color: var(--accent); }
 .toolbar-tooltip { position: absolute; right: calc(100% + 10px); top: 50%; transform: translateY(-50%); padding: 7px 11px; border: 1px solid var(--ink-faint); border-radius: 10px; background: var(--panel-solid); color: var(--ink); font-size: 14px; white-space: nowrap; pointer-events: none; opacity: 0; }
 .light-mode-btn:hover .toolbar-tooltip, .light-mode-btn:focus-visible .toolbar-tooltip { opacity: 1; }
@@ -779,7 +795,6 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .mm-card small { align-self: center; font-size: 9.5px; letter-spacing: 0.09em; }
   .mm-card b { justify-self: center; max-width: none; font-size: 10.5px; line-height: 1.18; }
   .mm-go { display: none; }
-  .objective-card { max-width: calc(100vw - 350px); max-height: calc(100dvh - 180px - env(safe-area-inset-bottom)); overflow-y: auto; }
 }
 @media (max-width: 480px) {
   body { font-size: calc(17px * var(--scale)); }
@@ -789,6 +804,21 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .sheet-head { padding: 12px 12px 12px 14px; gap: 10px; }
   .sheet-ico { width: 36px; height: 36px; border-radius: 11px; }
   .sheet-body { padding: 14px 14px 18px; }
+}
+@media (max-width: 600px) and (orientation: portrait) {
+  .toolbar.portrait-toolbar { top: 112px; right: max(10px, env(safe-area-inset-right)); }
+}
+@media (max-height: 520px) and (orientation: landscape) {
+  .toolbar.in-ride.folds { --tool-gap: 6px; top: 12px; right: max(112px, calc(env(safe-area-inset-right) + 100px)); }
+  .objective-card {
+    top: 8px; left: max(8px, env(safe-area-inset-left)); max-width: min(46vw, 400px);
+    max-height: calc(100dvh - 16px); overflow-y: auto;
+  }
+  .objective-card.collapsed:has(h3) { display: flex; align-items: center; gap: 8px; }
+  .objective-card.collapsed:has(h3) .kicker { display: contents; }
+  .objective-card.collapsed:has(h3) .kicker-label { display: none; }
+  .objective-card.collapsed h3 { order: -1; margin: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .objective-card.collapsed .collapse-btn { flex: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .yt-title.phase-you b::before, .ended-badge, .sheet, .objective-card.fresh, .nat-tipbox { animation: none; }
@@ -985,14 +1015,13 @@ body.scene-on .tag-layer { display: none; }
 .coach-next { min-height: 44px; min-width: 84px; }
 /* on a phone held upright: under the task card (folded while the guide is up, Hud.tsx) and beside the buttons, clear
    of the middle of the picture, where the player walks */
-@media (max-width: 600px) {
+@media (max-width: 600px) and (orientation: portrait) {
   .coach, .hud.has-touch .coach {
     left: max(8px, env(safe-area-inset-left)); right: auto; bottom: auto; top: calc(104px + env(safe-area-inset-top)); transform: none;
     width: calc(100vw - 78px - env(safe-area-inset-left) - env(safe-area-inset-right)); gap: 0 10px; padding: 10px 12px 8px; border-radius: 16px;
     animation-name: coach-in-top;
   }
-  /* (with the radio the buttons stand two abreast) */
-  .hud:has(.toolbar.has-radio) .coach { width: calc(100vw - 136px - env(safe-area-inset-left) - env(safe-area-inset-right)); }
+  .hud:has(.toolbar.two-columns) .coach { width: calc(100vw - 126px - env(safe-area-inset-left) - env(safe-area-inset-right)); }
   .coach-icon { width: 36px; height: 36px; border-radius: 12px; }
   .coach-text p { font-size: 0.86em; line-height: 1.35; }
   .coach-row { margin-top: 2px; gap: 6px; }
@@ -1013,8 +1042,8 @@ body.scene-on .tag-layer { display: none; }
 /* a phone held sideways: low, between the stick and the buttons (the task card is folded meanwhile, Hud.tsx); the
    prompt over the buttons keeps to their side */
 @media (max-height: 520px) and (orientation: landscape) {
-  .hud.has-touch .coach { top: auto; left: calc(50% - 60px); transform: translateX(-50%); bottom: calc(8px + env(safe-area-inset-bottom)); width: min(370px, calc(100vw - 470px)); animation-name: coach-in; }
-  .hud.has-touch .coach .coach-text p { font-size: 0.84em; line-height: 1.32; }
+  .coach, .hud.has-touch .coach { top: auto; left: calc(50% - 60px); transform: translateX(-50%); bottom: calc(8px + env(safe-area-inset-bottom)); width: min(370px, max(144px, calc(100vw - 470px))); animation-name: coach-in; }
+  .coach .coach-text p { font-size: 0.84em; line-height: 1.32; }
   .hud:has(.coach) .prompt.touch { max-width: calc(50vw - min(185px, 50vw - 235px) - 90px); }
 }
 /* the song's line gives way to the guide while it is up */
