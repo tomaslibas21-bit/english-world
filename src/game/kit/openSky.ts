@@ -51,8 +51,8 @@ void main() {
   vec3 d = normalize(vDir);
   float e = d.y;
   float turn = atan(d.x, -d.z) / 6.2831853;
-  vec3 col = mix(horizon, mid, smoothstep(0.0, 0.11, e));
-  col = mix(col, zenith, smoothstep(0.07, 0.52, e));
+  vec3 col = mix(horizon, mid, smoothstep(0.005, 0.085, e));
+  col = mix(col, zenith, smoothstep(0.06, 0.42, e));
 
   float toSun = max(dot(d, sunDir), 0.0);
   float wide = toSun * toSun; wide *= wide; wide *= wide; wide *= wide;   // ^16
@@ -60,7 +60,7 @@ void main() {
   vec2 flat2 = normalize(d.xz + vec2(0.0, -1e-4));
   float side = max(dot(flat2, normalize(sunDir.xz)), 0.0);
   float band = exp(-abs(e) * 8.0) * (0.25 + 0.75 * side * side);
-  col += haloColor * (wide * 0.22 + tight * 0.95 + band * 0.22) * (1.0 + flash * 1.6);
+  col += haloColor * (wide * 0.16 + tight * 0.95 + band * 0.2) * (1.0 + flash * 1.6);
   col += haloColor * flash * 0.07;
 
   // thin high cloud: long wavy bands, brightest toward the sun

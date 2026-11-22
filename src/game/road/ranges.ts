@@ -14,8 +14,8 @@ const LIGHT = new THREE.Vector3(-0.42, 0.62, -0.66).normalize();
 
 type Row = { count: number; near: number; far: number; width: [number, number]; height: [number, number] };
 const ROWS: Row[] = [
-  { count: 5, near: 46, far: 92, width: [9, 20], height: [9, 23] },
-  { count: 4, near: 135, far: 225, width: [34, 66], height: [26, 48] },
+  { count: 7, near: 44, far: 88, width: [9, 20], height: [9, 23] },
+  { count: 6, near: 135, far: 225, width: [34, 66], height: [26, 48] },
   { count: 5, near: 300, far: 390, width: [80, 130], height: [42, 78] },
 ];
 

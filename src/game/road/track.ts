@@ -65,7 +65,7 @@ function terrain(s0: number) {
 
 /** The poles stand every POLE_GAP metres on the right, with one wire sagging between each pair. */
 export const POLE_GAP = PIECE_LENGTH / 2;
-export const POLE_X = 9.4;
+export const POLE_X = 12.5;
 const POLE_FIRST = 10;
 function wire(s0: number) {
   const positions: number[] = [], index: number[] = [];
@@ -76,8 +76,8 @@ function wire(s0: number) {
       const t = i / spans, s = s0 + t * POLE_GAP, sag = 4 * t * (1 - t) * 0.85;
       const p = point(s, POLE_X, 0);
       // The pole's crossarm lies across the road; the wire hangs from its two insulators.
-      const y = THREE.MathUtils.lerp(height(s0), height(s0 + POLE_GAP), t) - 0.07 + 6.12 - sag;
-      positions.push(p.x + arm, y + 0.016, p.z, p.x + arm, y - 0.016, p.z);
+      const y = THREE.MathUtils.lerp(ground(s0, POLE_X).y, ground(s0 + POLE_GAP, POLE_X).y, t) - 0.07 + 6.12 - sag;
+      positions.push(p.x + arm, y + 0.012, p.z, p.x + arm, y - 0.012, p.z);
       if (i) { const a = base + i * 2 - 2; index.push(a, a + 1, a + 2, a + 1, a + 3, a + 2, a + 2, a + 1, a, a + 2, a + 3, a + 1); }
     }
   }
@@ -224,7 +224,7 @@ export class Track {
         add(parts, new THREE.BoxGeometry(wide + 0.5, 0.28, deep + 0.5).translate(base.x, base.y + tall + 0.74, base.z), ROAD_LOOK.roof);
         add(parts, new THREE.BoxGeometry(0.12, 1.9, 0.9).translate(base.x - Math.sign(x) * (wide / 2 + 0.02), base.y + 1.55, base.z), "#5a4338");
       };
-      house(20, -13.5, 6, 8, 3.4, 0); house(33, 15.5, 7, 7, 3.0, 1); house(46, -14.5, 6, 6, 2.8, 2); house(58, 16, 6, 8, 3.2, 3);
+      house(20, -13.5, 6, 8, 3.4, 0); house(33, 18, 7, 7, 3.0, 1); house(46, -14.5, 6, 6, 2.8, 2); house(58, 18.5, 6, 8, 3.2, 3);
       const tower = ground(s + 38, -24, -0.4);
       for (const [dx, dz] of [[-1.3, -1.3], [1.3, -1.3], [-1.3, 1.3], [1.3, 1.3]]) {
         add(parts, new THREE.CylinderGeometry(0.1, 0.13, 7.4, 5).translate(tower.x + dx, tower.y + 3.7, tower.z + dz), "#6f5a4c");
