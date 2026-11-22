@@ -1,7 +1,7 @@
 // Puerto Colibrí's grotto on the screen (src/game/cave): the chamber and quest card
 // (which chamber, how many of its stones are lit, what opens next), and the card of the glyph stone the learner is
 // at: the stone says its phrase; they pick what it means, or say it back.
-import { useEffect, type ComponentType } from "react";
+import { useEffect, useState, type ComponentType } from "react";
 import { useStore } from "../state/store";
 import { game } from "../game/gameRef";
 import { Icon } from "./icons";
@@ -17,34 +17,46 @@ export function CaveCard({ arrow: Arrow }: { arrow: ComponentType<{ angle: numbe
   const glyph = useStore((s) => s.hud.glyph);
   const map = useStore((s) => s.hud.minimap);
   const objective = useStore((s) => s.hud.objective);
+  const [expanded, setExpanded] = useState(false);
   if (!cave || talking || panel || glyph) return null;
+  const name = <b lang={TL}>{cave.name}</b>;
+  const count = <span className="cave-n">{cave.n} / {cave.of}</span>;
+  const stonesLabel = L("Uždegta akmenų: {lit} iš {n}", { lit: cave.lit, n: cave.stones });
+  const stones = Array.from({ length: cave.stones }, (_, i) => <i key={i} className={i < cave.lit ? "on" : ""} />);
+  const objectiveLabel = objective?.where.trim() || objective?.title.trim();
   return (
     <div className="cave-card" role="status">
-      <div className="cave-top">
-        <b lang={TL}>{cave.name}</b>
-        <span className="cave-n">{cave.n} / {cave.of}</span>
-      </div>
-      <small lang={EDITION.helper}>{cave.lt}</small>
-      <div className="cave-stones" aria-label={L("Uždegta akmenų: {lit} iš {n}", { lit: cave.lit, n: cave.stones })}>
-        {Array.from({ length: cave.stones }, (_, i) => <i key={i} className={i < cave.lit ? "on" : ""} />)}
-        <span className="cave-rooms" aria-label={L("Atvirų salių: {open} iš {n}", { open: cave.open, n: cave.of })}>
-          {Array.from({ length: cave.of }, (_, i) => <u key={i} className={i < cave.open ? (i + 1 === cave.n ? "here" : "open") : ""} />)}
+      <div className="cave-top">{name}{count}</div>
+      <button className="collapse-btn objective-summary cave-toggle" aria-expanded={expanded} aria-controls="cave-details" onClick={() => setExpanded(!expanded)}>
+        <span className="cave-summary-name">
+          {name} {!expanded && <span className="cave-stones" role="img" aria-label={stonesLabel}>{stones}</span>}
         </span>
+        {count}
+        <Icon name={expanded ? "chevronUp" : "chevronDown"} size={16} strokeWidth={2} />
+      </button>
+      <div id="cave-details">
+        <small lang={EDITION.helper}>{cave.lt}</small>
+        <div className="cave-stones" aria-label={stonesLabel}>
+          {stones}
+          <span className="cave-rooms" aria-label={L("Atvirų salių: {open} iš {n}", { open: cave.open, n: cave.of })}>
+            {Array.from({ length: cave.of }, (_, i) => <u key={i} className={i < cave.open ? (i + 1 === cave.n ? "here" : "open") : ""} />)}
+          </span>
+        </div>
+        {map.questX !== undefined && map.questZ !== undefined && cave.next.trim() ? (
+          <div className="cave-guide">
+            <Arrow angle={Math.atan2(map.questX - map.px, map.questZ - map.pz)} />
+            <p id="cave-quest-label">{cave.next}</p>
+            <button className="btn small" data-guide="cave" aria-describedby="cave-quest-label" onClick={() => game?.autoWalkToObjective("cave")}><Icon name="walk" size={17} /> {L("Nuvesk mane")}</button>
+          </div>
+        ) : <p>{cave.next}</p>}
+        {objective?.angle != null && objectiveLabel && (
+          <div className="cave-guide">
+            <Arrow angle={objective.angle} />
+            <small id="cave-objective-label">{objectiveLabel}</small>
+            <button className="btn small" data-guide="objective" aria-describedby="cave-objective-label" onClick={() => game?.autoWalkToObjective("objective")}><Icon name="walk" size={17} /> {L("Nuvesk mane")}</button>
+          </div>
+        )}
       </div>
-      <p>{cave.next}</p>
-      {map.questX !== undefined && map.questZ !== undefined && (
-        <div className="cave-guide">
-          <Arrow angle={Math.atan2(map.questX - map.px, map.questZ - map.pz)} />
-          <button className="btn small" data-guide="cave" onClick={() => game?.autoWalkToObjective("cave")}><Icon name="walk" size={17} /> {L("Nuvesk mane")}</button>
-        </div>
-      )}
-      {objective?.angle != null && (
-        <div className="cave-guide">
-          <Arrow angle={objective.angle} />
-          <small>{objective.where}</small>
-          <button className="btn small" data-guide="objective" onClick={() => game?.autoWalkToObjective("objective")}><Icon name="walk" size={17} /> {L("Nuvesk mane")}</button>
-        </div>
-      )}
     </div>
   );
 }

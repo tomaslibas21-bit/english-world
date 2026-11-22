@@ -171,13 +171,31 @@ try {
       const hop = await pose(page, "alux_kin");
       assert(Math.abs(hop.yaw - before.yaw) > 0.45 && hop.facingError < 0.25);
       assert(hop.body - before.body > 0.1 && hop.calls < 40);
+      if (phone) {
+        const layout = await page.locator(".cave-card").evaluate((card) => {
+          const tip = document.querySelector(".town-toasts .tip")?.getBoundingClientRect();
+          const box = card.getBoundingClientRect();
+          return { cardHeight: box.height, cardBottom: box.bottom, tipTop: tip?.top, tipBottom: tip?.bottom };
+        });
+        assert(layout.cardHeight <= 48, "The chamber summary fits in one tappable row");
+        if (layout.tipTop !== undefined) {
+          assert(layout.tipTop >= layout.cardBottom && layout.tipBottom <= height / 2, "The tip fits between the card and the middle of the scene");
+        }
+      }
       await shot(page, "kin-mid-hop");
       await resume(page);
 
       // Select a regular task from inside. Its arrow points to the dry exit and the walk resumes in town.
       await page.evaluate(() => window.__ew.game.setObjective("s69-local"));
       await page.waitForFunction(() => window.__ew.game.objectiveTarget()?.id === "grieta");
-      // The objective row appears after the next HUD update. The quest row can already be pressed.
+      if (phone) {
+        const toggle = page.locator(".cave-card .collapse-btn");
+        assert.equal(await toggle.getAttribute("aria-expanded"), "false");
+        assert.equal(await page.locator('.cave-guide button[data-guide="cave"]').isVisible(), false);
+        await press(toggle);
+        assert.equal(await toggle.getAttribute("aria-expanded"), "true");
+      }
+      assert.match(await page.locator(".cave-guide").filter({ has: page.locator('[data-guide="cave"]') }).innerText(), /Kin/);
       await press(page.locator('.cave-guide button[data-guide="objective"]'));
       await page.waitForFunction(() => {
         const g = window.__ew.game;

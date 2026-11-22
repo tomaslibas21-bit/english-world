@@ -138,7 +138,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .arrow { display: inline-block; width: 22px; height: 22px; transition: transform 0.2s; }
 .objective-card.collapsed { padding: 0; height: 48px; }
 .hud.has-touch .objective-card.collapsed { height: 44px; }
-.objective-card .objective-summary {
+:is(.objective-card, .cave-card) .objective-summary {
   display: flex; align-items: center; gap: 6px; width: 100%; height: 100%; margin: 0; padding: 0 10px;
   border-radius: inherit; color: var(--accent); white-space: nowrap; text-align: left;
 }
@@ -1188,7 +1188,8 @@ body.scene-on .tag-layer { display: none; }
   box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.6), 0 0 22px -6px rgba(63, 217, 255, 0.35); backdrop-filter: blur(6px); animation: fadein 0.4s ease; pointer-events: none;
 }
 .cave-top { display: flex; align-items: baseline; gap: 10px; }
-.cave-top b { font-family: var(--en, inherit); font-size: 1.12em; line-height: 1.15; flex: 1; min-width: 0; color: #fff; }
+.cave-card .cave-toggle { display: none; }
+.cave-top b, .cave-summary-name b { font-family: var(--en, inherit); font-size: 1.12em; line-height: 1.15; flex: 1; min-width: 0; color: #fff; }
 .cave-n { font-weight: 800; font-size: 0.82em; color: #9fe9e2; white-space: nowrap; }
 .cave-card small { display: block; font-size: 0.78em; color: #a9d8d4; font-weight: 700; margin-top: 1px; }
 .cave-stones { display: flex; align-items: center; gap: 7px; margin: 7px 0 5px; }
@@ -1239,6 +1240,39 @@ body.scene-on .tag-layer { display: none; }
   .glyph-veil { align-items: end; padding: 10px 10px calc(12px + env(safe-area-inset-bottom)); }
   .glyph-opt kbd { display: none; }
 }
+@media (max-width: 480px) {
+  .cave-card { padding: 0; border-radius: 14px; pointer-events: auto; }
+  .cave-top { display: none; }
+  .cave-card .cave-toggle {
+    display: flex; min-height: 44px; height: auto; border: 0; background: none; color: #9fe9e2;
+  }
+  /* The three stones wrap out of the single-line summary when the chamber name needs the space. */
+  .cave-summary-name {
+    flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-content: start; align-items: center;
+    column-gap: 6px; height: 1.4em; overflow: hidden;
+  }
+  .cave-summary-name b {
+    flex: none; max-width: 100%; line-height: 1.4em; font-size: 1em; overflow: hidden; text-overflow: ellipsis;
+  }
+  .cave-summary-name .cave-stones { margin: 0; gap: 3px; }
+  .cave-summary-name i { width: 7px; height: 10px; border-radius: 3px 3px 2px 2px; }
+  .cave-toggle[aria-expanded="true"] .cave-summary-name { height: auto; white-space: normal; }
+  .cave-toggle[aria-expanded="false"] + #cave-details { display: none; }
+  #cave-details { padding: 0 10px 10px; max-height: 32dvh; overflow-y: auto; }
+  .cave-guide .btn.small { padding-inline: 0.65em; }
+  .objective-notes:has(.cave-card) {
+    position: absolute; top: var(--card-top); left: var(--card-left); display: flex; flex-direction: column;
+  }
+  .objective-notes:has(.cave-card ~ .town-toasts .tip) { max-height: calc(48dvh - var(--card-top)); }
+  .objective-notes .cave-card { position: relative; inset: auto; flex: none; }
+  .cave-card:has(~ .town-toasts .tip) #cave-details { max-height: 21dvh; }
+  .objective-notes .cave-card ~ .town-toasts {
+    position: static; min-height: 0; max-width: calc(100vw - 2 * var(--card-left) - 96px); margin: 6px 0 0; transform: none;
+  }
+  .cave-card ~ .town-toasts .toast.tip { padding: 8px; gap: 8px; border-radius: 14px; overflow-y: auto; }
+  .cave-card ~ .town-toasts .tip .t-icon { width: 28px; height: 28px; border-radius: 9px; }
+  .cave-card ~ .town-toasts .tip .t-icon svg { width: 18px; height: 18px; }
+}
 @media (prefers-reduced-motion: reduce) { .cave-card, .glyph-card { animation: none; } }
 
 .drive-horn {
@@ -1272,4 +1306,4 @@ body.scene-on .tag-layer { display: none; }
 .cave-guide { display: flex; align-items: center; gap: 6px; margin-top: 5px; }
 .cave-guide .arrow { width: 16px; height: 16px; flex: none; }
 .cave-guide .btn { margin-left: auto; white-space: nowrap; pointer-events: auto; }
-.cave-guide small { min-width: 0; overflow-wrap: anywhere; }
+.cave-guide :is(p, small) { min-width: 0; overflow-wrap: anywhere; }
