@@ -1,7 +1,7 @@
-// Puerto Colibrí's grotto on the screen (src/game/cave): the small card that stands in for the map down there
+// Puerto Colibrí's grotto on the screen (src/game/cave): the chamber and quest card
 // (which chamber, how many of its stones are lit, what opens next), and the card of the glyph stone the learner is
 // at: the stone says its phrase; they pick what it means, or say it back.
-import { useEffect } from "react";
+import { useEffect, type ComponentType } from "react";
 import { useStore } from "../state/store";
 import { game } from "../game/gameRef";
 import { Icon } from "./icons";
@@ -10,11 +10,13 @@ import { L, TL } from "./i18n";
 import { EDITION } from "../edition";
 
 /** Which chamber one is in and what comes next. */
-export function CaveCard() {
+export function CaveCard({ arrow: Arrow }: { arrow: ComponentType<{ angle: number }> }) {
   const cave = useStore((s) => s.hud.cave);
   const talking = useStore((s) => s.conv.active);
   const panel = useStore((s) => s.hud.panel);
   const glyph = useStore((s) => s.hud.glyph);
+  const map = useStore((s) => s.hud.minimap);
+  const objective = useStore((s) => s.hud.objective);
   if (!cave || talking || panel || glyph) return null;
   return (
     <div className="cave-card" role="status">
@@ -30,6 +32,19 @@ export function CaveCard() {
         </span>
       </div>
       <p>{cave.next}</p>
+      {map.questX !== undefined && map.questZ !== undefined && (
+        <div className="cave-guide">
+          <Arrow angle={Math.atan2(map.questX - map.px, map.questZ - map.pz)} />
+          <button className="btn small" data-guide="cave" onClick={() => game?.autoWalkToObjective("cave")}><Icon name="walk" size={17} /> {L("Nuvesk mane")}</button>
+        </div>
+      )}
+      {objective?.angle != null && (
+        <div className="cave-guide">
+          <Arrow angle={objective.angle} />
+          <small>{objective.where}</small>
+          <button className="btn small" data-guide="objective" onClick={() => game?.autoWalkToObjective("objective")}><Icon name="walk" size={17} /> {L("Nuvesk mane")}</button>
+        </div>
+      )}
     </div>
   );
 }

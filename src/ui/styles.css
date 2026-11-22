@@ -1271,3 +1271,7 @@ body.scene-on .tag-layer { display: none; }
 }
 @keyframes drive-wind { from { opacity: .19; } to { opacity: .38; } }
 @media (prefers-reduced-motion: reduce) { .hud .drive-wind { animation: none; } }
+.cave-guide { display: flex; align-items: center; gap: 6px; margin-top: 5px; }
+.cave-guide .arrow { width: 16px; height: 16px; flex: none; }
+.cave-guide .btn { margin-left: auto; white-space: nowrap; pointer-events: auto; }
+.cave-guide small { min-width: 0; overflow-wrap: anywhere; }

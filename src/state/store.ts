@@ -169,12 +169,11 @@ export interface HudState {
   /** The player is on the move (the task card folds away meanwhile). */
   walking: boolean;
   objective: { sitId: string; title: string; goal: string; where: string; dist: number | null; angle: number | null; inside: boolean } | null;
-  minimap: { px: number; pz: number; heading: number; targetX?: number; targetZ?: number; zone: string };
+  minimap: { px: number; pz: number; heading: number; targetX?: number; targetZ?: number; zone: string; gates?: number; questX?: number; questZ?: number };
   fade: number;
   panel: null | "map" | "journal" | "phone" | "settings" | "phrasebook" | "help" | "scenarios";
   showTouch: boolean;
-  /** Puerto Colibrí's grotto (src/game/cave/quest.ts): the card that stands in for the map down there, and the card
-   *  of the glyph stone the learner is at. */
+  /** Puerto Colibrí's chamber and quest card, and the card of the glyph stone the learner is at. */
   cave: import("../game/cave/quest").CaveCard | null;
   glyph: import("../game/cave/quest").GlyphQuiz | null;
   /** The town guide's hint on show (game/coach.ts): which, and `ok` for the moment it was just done. */

@@ -154,7 +154,7 @@ export class StyledCharacter {
     if (sitting) {
       tL.rotation.set(-1.5, 0, -0.04); tR.rotation.set(-1.5, 0, 0.04);
       sL.rotation.set(1.45, 0, 0); sR.rotation.set(1.45, 0, 0);
-      body.position.y = -this.spec.sitDrop;
+      body.position.y = -this.spec.sitDrop + this.lift;
       if (this.talking <= 0 || this.gestureSide < 0) { uR.rotation.x = -0.4; fR.rotation.x = -0.85; }
       if (this.talking <= 0 || this.gestureSide > 0) { uL.rotation.x = -0.4; fL.rotation.x = -0.85; }
       body.rotation.set(0, 0, 0);

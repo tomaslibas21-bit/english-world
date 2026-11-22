@@ -1,50 +1,10 @@
-// The grotto under Cenote Ka'an (Puerto Colibrí; theme.ts `cenote.grotto`) as a zone of the game: built the first time
-// someone swims into the cave's mouth at the cenote's far side. plan.ts: its plan and rules; Cave.ts: how it looks;
-// quest.ts: the glyph stones' listening quest. Maple Harbor has none.
+// The outdoor glow of the grotto under Cenote Ka'an. The cave scene and quest load on entry in zone.ts.
 import * as THREE from "three";
-import type { Interior } from "../world/interiors";
 import { THEME } from "../world/theme";
-import { buildCave, type CaveView } from "./Cave";
-import * as P from "./plan";
-import { groundsGlow, ways, type Way } from "./grounds";
+import { groundsGlow } from "./grounds";
+import { caveWays, R } from "./groundsPlan";
 
-export const CAVE_ZONE = "gruta";
-/** The great tree's conversation (x04) and where the tree stands in the grotto (Game: its prompt, its camera). */
-export const CAVE_TREE = P.TREE_SIT;
-export const CAVE_TREE_AT = P.TREES[1];
-export type CaveZone = Interior & { view: CaveView };
-let cave: CaveZone | null = null;
-
-/** The cenote's water, its radius and the cave's mouth at its far (west) side, in the town's coordinates. */
-const R = 6;
-/** The ways into the grotto from the town: the cave's mouth, swum up to (and on into); with the cenote's grounds open
- *  (theme `cenote.open`, grounds.ts) also La Grieta, walked into, and El Ojo, which drops one in. */
-export function caveWays(): Way[] {
-  const c = THEME.cenote;
-  if (!c?.grotto) return [];
-  return c.open ? ways(c.x, c.z) : [{ id: "boca", x: c.x - R + 1.25, z: c.z, reach: 2.3, swim: true, out: { x: c.x - R + 2.9, z: c.z, rot: Math.PI / 2 }, exit: "agua" }];
-}
-
-export function getCave(id: string): CaveZone | null {
-  if (id !== CAVE_ZONE || !caveWays().length) return null;
-  if (cave) return cave;
-  const view = buildCave();
-  cave = {
-    id, view, group: view.group, colliders: view.colliders,
-    w: P.BOUNDS.maxX - P.BOUNDS.minX, d: P.BOUNDS.maxZ - P.BOUNDS.minZ,
-    exit: P.EXIT, spawn: P.ENTRY,
-    npcs: P.ALUXES.map((a) => ({ npc: a.npc, x: a.x, z: a.z, rot: a.rot, ax: a.ax, az: a.az, ...(a.sit ? { sit: true, seat: a.seat } : {}) })),
-    wild: {
-      fog: view.fog, background: "#05232c", hemi: ["#a8eef2", "#1d5560", 1.55], sun: ["#fff1d0", 1.25],
-      space: view.space, floor: P.floorY, walkable: P.walkable, bounds: P.BOUNDS,
-      // (the cleft's way out only where its other end is: the cenote's grounds open)
-      exits: THEME.cenote?.open ? P.EXITS : P.EXITS.slice(0, 1), spawns: P.SPAWNS,
-      camera: { pitch: 0.3, dist: 9.5 },
-      frame: (t, dt, cam, at, h) => view.update(t, dt, cam, at, h),
-    },
-  };
-  return cave;
-}
+export { CAVE_ZONE, caveWays } from "./groundsPlan";
 
 /** What shows of it from the cenote: a glow in the cave's dark mouth and a few fireflies drifting out over the water
  *  (two small meshes in the town's group). */

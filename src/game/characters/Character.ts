@@ -1666,8 +1666,8 @@ export class Character {
     // a hop: the body up (the shadow stays on the ground, smaller), the legs tucked, the arms out, a squash on landing
     if (this.lift > 0 || this.tuck > 0 || this.squash !== 0 || this.flip !== 0 || this.hopShown) {
       const k = this.tuck;
+      this.body.position.y += this.lift;
       if (!seated) {
-        this.body.position.y += this.lift;
         this.legL.rotation.x += (-0.55 - this.legL.rotation.x) * k;
         this.legR.rotation.x += (-0.35 - this.legR.rotation.x) * k;
         this.shinL.rotation.x += (1.1 - this.shinL.rotation.x) * k;

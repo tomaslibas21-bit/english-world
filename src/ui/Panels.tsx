@@ -10,7 +10,9 @@ import { LOCATIONS, TOWN_LT, placeLt } from "../content/locations";
 import { keepsakeFor } from "../content/keepsakes";
 import { NPCS } from "../content/npcs";
 import { coachVoice } from "../content/voices";
-import { OUTDOOR_NPCS, WORLD, SEA_Z, AIRPORT_EXIT } from "../game/world/layout";
+import { OUTDOOR_NPCS, AIRPORT_EXIT } from "../game/world/layout";
+import { CAVE_ZONE, preferredCaveEntry } from "../game/cave/groundsPlan";
+import { drawTownMap, groundBounds, mapPoint, townBounds } from "./worldMap";
 import { sitProgress, stars, emptyProgress } from "../state/progress";
 import { audio } from "../game/audio";
 import { STYLES_ENABLED } from "../game/worldStyles";
@@ -122,17 +124,17 @@ function SheetHead({ icon, title, close }: { icon: IconName; title: ReactNode; c
 function SitActions({ s, close }: { s: SituationMeta; close: () => void }) {
   const progress = useStore((st) => st.progress);
   const light = useStore((st) => st.settings.play === "light");
-  const current = progress.objective === s.id;
+  const current = progress.objective === s.id, grotto = s.location === CAVE_ZONE;
   return (
     <div className="sit-actions">
-      <button className="btn small" onClick={() => { close(); game?.startScenario(s.id); }}><Icon name="play" size={15} /> {L("Pradėti dabar")}</button>
+      {!grotto && <button className="btn small" onClick={() => { close(); game?.startScenario(s.id); }}><Icon name="play" size={15} /> {L("Pradėti dabar")}</button>}
       {!current && !light && <button className="btn ghost small" onClick={() => { game?.setObjective(s.id); close(); }}><Icon name="target" size={17} /> {L("Pasirinkti užduotimi")}</button>}
       {light ? null : isPhone(s) ? (
         <button className="btn warm small" onClick={() => { close(); game?.call(s.id); }}><Icon name="smartphone" size={17} /> {L("Skambinti dabar")}</button>
       ) : (
         <>
           <button className="btn soft small" onClick={() => walkToSituation(s.id, close)}><Icon name="walk" size={17} /> {L("Nuvesk mane")}</button>
-          <button className="btn ghost small" onClick={() => { game?.setObjective(s.id); close(); game?.teleportTo(s.location); }}><Icon name="taxi" size={17} /> {L("Nuvykti taksi")}</button>
+          {!grotto && <button className="btn ghost small" onClick={() => { game?.setObjective(s.id); close(); game?.teleportTo(s.location); }}><Icon name="taxi" size={17} /> {L("Nuvykti taksi")}</button>}
         </>
       )}
     </div>
@@ -308,6 +310,7 @@ function Journal({ close }: { close: () => void }) {
 }
 
 function locationPoint(loc: string): { x: number; z: number } | null {
+  if (loc === CAVE_ZONE) return preferredCaveEntry() ?? null;
   if (loc === "airport") return { x: AIRPORT_EXIT.x + 12, z: AIRPORT_EXIT.z };
   const d = game?.doors.find((dd) => dd.loc === loc);
   if (d) return { x: d.x, z: d.z };
@@ -324,13 +327,19 @@ function MapPanel({ close }: { close: () => void }) {
   useEffect(() => {
     const g = game?.groundCanvas, c = ref.current;
     if (!g || !c) return;
-    c.width = g.width; c.height = g.height;
-    c.getContext("2d")!.drawImage(g, 0, 0);
+    const ppm = g.width / (groundBounds.maxX - groundBounds.minX);
+    c.width = Math.round((townBounds.maxX - townBounds.minX) * ppm);
+    c.height = Math.round((townBounds.maxZ - townBounds.minZ) * ppm);
+    c.dataset.map = drawTownMap(c, g, townBounds) ? "cenote" : "town";
   }, []);
-  const W = WORLD.maxX - WORLD.minX, D = WORLD.maxZ - (SEA_Z - 2);
-  const pct = (x: number, z: number) => ({ left: `${((x - WORLD.minX) / W) * 100}%`, top: `${((z - (SEA_Z - 2)) / D) * 100}%` });
-  const locs = Object.values(LOCATIONS).filter((l) => l.kind !== "phone" && SITUATIONS.some((s) => s.location === l.id));
-  const selSits = sel ? SITUATIONS.filter((s) => s.location === sel) : [];
+  const pct = (x: number, z: number) => {
+    const [u, v] = mapPoint(townBounds, x, z);
+    return { left: `${u * 100}%`, top: `${v * 100}%` };
+  };
+  const aluxSits = CATALOG.filter((s) => s.location === CAVE_ZONE && (s.npc === "alux_kin" || s.npc === "alux_nikte"));
+  const mapSits = (loc: string) => loc === CAVE_ZONE ? aluxSits : SITUATIONS.filter((s) => s.location === loc);
+  const locs = Object.values(LOCATIONS).filter((l) => l.kind !== "phone" && mapSits(l.id).length > 0);
+  const selSits = sel ? mapSits(sel) : [];
   return (
     <div className="sheet">
       <SheetHead icon="map" title={EDITION.town} close={close} />
@@ -343,7 +352,7 @@ function MapPanel({ close }: { close: () => void }) {
             {locs.map((l) => {
               const p = locationPoint(l.id);
               if (!p) return null;
-              const sits = SITUATIONS.filter((s) => s.location === l.id);
+              const sits = mapSits(l.id);
               const allDone = sits.length > 0 && sits.every((s) => sitProgress(progress, s.id).completions > 0);
               return (
                 <button key={l.id} className={"map-pin" + (sel === l.id ? " sel" : "") + (allDone ? " done" : "")} style={pct(p.x, p.z)} onClick={() => setSel(l.id)} title={l.name} aria-label={l.name} aria-pressed={sel === l.id}>
@@ -360,6 +369,11 @@ function MapPanel({ close }: { close: () => void }) {
                 <h3 className="place-title"><span className="place-ico"><Icon name={locIcon(sel)} size={22} /></span>{LOCATIONS[sel].name}</h3>
                 <div style={{ color: "var(--ink-soft)", marginBottom: 10 }}>{placeLt(sel)}</div>
                 <div className="sit-list">
+                  {sel === CAVE_ZONE && !game?.light && mm.zone !== CAVE_ZONE && (
+                    <button className="btn soft small" onClick={() => { close(); game?.autoWalkToObjective("cave"); }}>
+                      <Icon name="walk" size={17} /> {L("Nuvesk mane")}
+                    </button>
+                  )}
                   {selSits.map((s) => (
                     <div key={s.id}>
                       <SitCard s={s} open onClick={() => {}} />

@@ -552,8 +552,7 @@ export function buildCave(): CaveView {
     group.add(veil);
     const rings: { x: number; z: number; r: number }[] = [];
     for (let o = -half + 0.35; o <= half - 0.35 + 1e-6; o += 0.7) rings.push({ x: g.x + cx * o, z: g.z - sx * o, r: 0.5 });
-    // (its rings are put in the ground plan when it is shut, setGate: not here, so the way-finding, made once from
-    // this plan, goes through every gate, and someone walking by a tap is simply held at a shut one)
+    // The quest toggles the physical rings and the navigation grid together.
     gates.set(g.id, { g, veil, open, want: 0, rings });
   }
   // the bridge of roots over the river: a deck of woven roots, low rails

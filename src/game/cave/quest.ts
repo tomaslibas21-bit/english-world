@@ -20,6 +20,7 @@ import { rand } from "../world/util";
 import { L } from "../../ui/i18n";
 import type { CaveView } from "./Cave";
 import * as P from "./plan";
+import { caveQuestTarget } from "./routing";
 import type { Sentence } from "../../convo/compose";
 import { loadSituation } from "../../content/situations/catalog";
 
@@ -35,7 +36,7 @@ export interface GlyphQuiz {
   /** Saying it back: the microphone's state and what it heard. */
   mic: "off" | "listening" | "missed" | "unsupported"; heard: string;
 }
-/** The little card that stands in for the map down here (store hud.cave). */
+/** The chamber and quest card (store hud.cave). */
 export interface CaveCard { n: number; of: number; name: string; lt: string; lit: number; stones: number; next: string; open: number }
 
 /** How long a stone rests after it is understood, once the stones speak again (s). */
@@ -81,11 +82,12 @@ export class CaveQuest {
   private treeAsked = false;
   private petalT = 0;
 
-  constructor(private view: CaveView, private hooks: { tree?: () => void } = {}) {
+  constructor(private view: CaveView, private hooks: { tree?: () => void; gates?: (save: P.CaveSave, all: boolean) => void } = {}) {
     const st = useStore.getState(), s = save();
     this.voice = coachVoice(st.progress.profile?.gender);
     this.replay = !!s.heart;
     for (const g of P.GATES) view.setGate(g.id, P.gateState(g, s, SEE_ALL).open, true);
+    this.hooks.gates?.(s, SEE_ALL);
     for (const c of P.CHAMBERS) for (const q of c.stones) view.setStone(q.id, this.isLit(q.id, s));
     view.setHeart(!!s.heart, true);
     void audio.init().then(() => { if (this.alive) this.assign(); });
@@ -187,6 +189,12 @@ export class CaveQuest {
     audio.stopCall();
     audio.stopCave();
     useStore.getState().setHud({ cave: null, glyph: null });
+  }
+
+  guide(p: { x: number; z: number }) {
+    const s = save();
+    const replay = this.replay && s.tree ? (id: string) => !this.relit.has(id) && this.phrases.has(id) : undefined;
+    return caveQuestTarget(p, s, SEE_ALL, replay);
   }
 
   /** The stone within reach that still waits (for the prompt), if any. */
@@ -404,6 +412,7 @@ export class CaveQuest {
     }
     const next = P.CHAMBERS[gate.to!];
     this.view.setGate(gate.id, true);
+    this.hooks.gates?.(save(), SEE_ALL);
     this.view.burst(gate.x, 2.2, gate.z, "#7ff5ea");
     audio.chime("gate");
     st.toast({ kind: "success", title: L("Visi trys akmenys dega!"), body: L("Kelias atviras: „{name}“.", { name: next.name }), ms: 5200 });
@@ -416,6 +425,7 @@ export class CaveQuest {
     const was = save().passed.includes(gate);
     useStore.getState().updateProgress((p) => { const c = p.cave ?? P.emptyCave(); if (!c.passed.includes(gate)) c.passed.push(gate); p.cave = c; });
     this.view.setGate(g.id, true);
+    this.hooks.gates?.(save(), SEE_ALL);
     if (!was) { this.view.burst(g.x, 2, g.z, "#7ff5ea"); audio.chime("gate"); }
     this.nextCall = 4;
   }

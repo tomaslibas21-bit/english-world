@@ -7,12 +7,13 @@ import { useSurf } from "../game/surf/store";
 import { TaxiOverlay } from "./Taxi";
 import { SurfOverlay, SurfPicker } from "./Surf";
 import { game } from "../game/gameRef";
-import { WORLD, SEA_Z } from "../game/world/layout";
+import { CAVE_ZONE } from "../game/cave/groundsPlan";
 import { SITUATION_BY_ID } from "../content/situations/catalog";
 import { sitProgress, stars } from "../state/progress";
 import { Icon, InlineIcon, Stars, splitLead, type IconName } from "./icons";
 import { isPhone } from "./objective";
 import { drawRideMarks } from "./mapMarks";
+import { caveBounds, drawCaveMap, drawTownMap, mapPoint, mapWindow } from "./worldMap";
 import { switchPlayMode } from "./playMode";
 import { useCards, dueCards } from "../state/cards";
 import { LyricStrip, RadioTool } from "./Radio";
@@ -90,7 +91,7 @@ export function Hud() {
       {hud.speedLines && !hud.panel && <div className="drive-wind" aria-hidden />}
       <div className="hud-top">
         <div className={"objective-notes" + (collapsed ? " task-folded" : "")}>
-          {hud.cave ? <CaveCard /> : <Objective collapsed={collapsed} fresh={task.fresh && notesVisible} setCollapsed={task.setManual} />}
+          {hud.cave ? <CaveCard arrow={Arrow} /> : <Objective collapsed={collapsed} fresh={task.fresh && notesVisible} setCollapsed={task.setManual} />}
           {hud.zoneBanner && banner && <div className="zone-banner"><h2>{banner.icon && <Icon name={banner.icon} size="0.8em" className="zb-ico" />}{banner.rest}</h2>{hud.zoneBanner.sub && <p>{hud.zoneBanner.sub}</p>}</div>}
           <Guide visible={note === "guide"} />
           <TownToast visible={note === "toast"} />
@@ -334,8 +335,8 @@ function Objective({ collapsed, fresh, setCollapsed }: { collapsed: boolean; fre
         {st > 0 && <Stars n={st} size={14} />}
         {fold}
       </div>
-      <h3>{o.title} <span className="en-title">· {sit?.title.en}</span></h3>
-      <p>{o.goal}</p>
+      <h3>{o.title}{sit && <> <span className="en-title">· {sit.title.en}</span></>}</h3>
+      {o.goal && <p>{o.goal}</p>}
       <div className="row">
         {phone ? (
           <button className="btn small" onClick={() => useStore.getState().setHud({ panel: "phone" })}><Icon name="smartphone" size={17} /> {L("Paskambinti")}</button>
@@ -343,7 +344,7 @@ function Objective({ collapsed, fresh, setCollapsed }: { collapsed: boolean; fre
           <>
             <span className="dist">
               {o.angle !== null && <Arrow angle={o.angle} />}
-              {o.inside && o.dist !== null && o.dist < 4 ? L("Čia pat!") : o.dist !== null ? `${o.dist} m` : ""} · {o.where}
+              {o.inside && o.dist !== null && o.dist < 4 ? L("Čia pat!") : o.dist !== null ? `${o.dist} m` : ""}{o.where && ` · ${o.where}`}
             </span>
             <button className="btn small" onClick={() => game?.autoWalkToObjective()} title="G"><Icon name="walk" size={17} /> {L("Nuvesk mane")}</button>
           </>
@@ -372,7 +373,8 @@ function Minimap() {
   // Indoors there is no map to show: the round map folds into a small card with the place's name (all of it, on as
   // many lines as it needs) and unfolds again at the door. The frame glides between the two shapes, so indoors it
   // takes the card's own size, measured here (styles.css ".minimap").
-  const inside = mm.zone !== "town";
+  const cave = mm.zone === CAVE_ZONE;
+  const inside = mm.zone !== "town" && !cave;
   const place = useRef("");
   if (inside) place.current = zoneName;
   const [box, setBox] = useState<{ w: number; h: number } | null>(null);
@@ -403,36 +405,35 @@ function Minimap() {
   useEffect(() => {
     const c = ref.current;
     const g = game?.groundCanvas;
-    // indoors the last picture of the town stays on the canvas while it fades out
-    if (!c || !g || mm.zone !== "town") return;
+    if (!c || inside || (!cave && !g)) return;
     const x = c.getContext("2d")!;
-    const S = 220;
+    const S = 220, view = 90;
     c.width = S; c.height = S;
-    x.clearRect(0, 0, S, S);
-    const PPM = g.width / (WORLD.maxX - WORLD.minX);
-    const view = 90; // metres across
-    const sx = (mm.px - WORLD.minX) * PPM - (view / 2) * PPM;
-    const sz = (mm.pz - (SEA_Z - 2)) * PPM - (view / 2) * PPM;
-    x.fillStyle = "#3f8fb5"; x.fillRect(0, 0, S, S);
-    // (beyond the town's own picture: the sea to the north, grass everywhere else)
-    { const shore = ((SEA_Z + 1 - mm.pz) / view + 0.5) * S; if (shore < S) { x.fillStyle = "#86b866"; x.fillRect(0, Math.max(0, shore), S, S); } }
-    x.drawImage(g, sx, sz, view * PPM, view * PPM, 0, 0, S, S);
+    const bounds = cave ? caveBounds : mapWindow(mm.px, mm.pz, view);
+    const [px, pz] = mapPoint(bounds, mm.px, mm.pz);
+    if (cave) drawCaveMap(c, mm.gates ?? 0);
+    const grounds = !cave && drawTownMap(c, g!, bounds);
+    c.dataset.map = cave ? "gruta" : grounds ? "cenote" : "town";
+    c.dataset.player = `${px},${pz}`;
+    c.dataset.gates = cave ? String(mm.gates ?? 0) : "";
     // target
     if (mm.targetX !== undefined && mm.targetZ !== undefined) {
-      const tx = ((mm.targetX - mm.px) / view + 0.5) * S, tz = ((mm.targetZ - mm.pz) / view + 0.5) * S;
+      const [u, v] = mapPoint(bounds, mm.targetX, mm.targetZ);
+      const tx = u * S, tz = v * S;
       const inside = tx > 10 && tx < S - 10 && tz > 10 && tz < S - 10;
       const cx = Math.max(12, Math.min(S - 12, tx)), cz = Math.max(12, Math.min(S - 12, tz));
       x.fillStyle = "#ffb703"; x.strokeStyle = "#fff"; x.lineWidth = 3;
-      x.beginPath(); x.arc(cx, cz, inside ? 9 : 7, 0, Math.PI * 2); x.fill(); x.stroke();
+      x.beginPath(); x.arc(cx, cz, cave ? 5 : inside ? 9 : 7, 0, Math.PI * 2); x.fill(); x.stroke();
     }
     // what one can take: the boats and the convertibles, where they are now
-    if (game?.rideMarks) drawRideMarks(x, game.rideMarks(), mm.px, mm.pz, view, S);
+    if (!cave && game?.rideMarks) drawRideMarks(x, game.rideMarks(), mm.px, mm.pz, view, S);
     // player arrow
-    x.save(); x.translate(S / 2, S / 2); x.rotate(Math.PI - mm.heading);
+    x.save(); x.translate(px * S, pz * S); x.rotate(Math.PI - mm.heading);
+    if (cave) x.scale(0.65, 0.65);
     x.fillStyle = "#e63946"; x.strokeStyle = "#fff"; x.lineWidth = 3;
     x.beginPath(); x.moveTo(0, -12); x.lineTo(9, 10); x.lineTo(0, 5); x.lineTo(-9, 10); x.closePath(); x.stroke(); x.fill();
     x.restore();
-  }, [mm]);
+  }, [mm, cave, inside]);
   return (
     <div className={"minimap" + (inside ? " inside" : "") + (live ? " live" : "")}
       style={inside && box ? { width: box.w + 2, height: box.h + 2 } : undefined}
