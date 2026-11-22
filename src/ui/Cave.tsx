@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { useStore } from "../state/store";
 import { game } from "../game/gameRef";
 import { Icon } from "./icons";
+import { SitIcon } from "./SitIcon";
 import { Interlinear } from "./Interlinear";
 import { L, TL } from "./i18n";
 import { EDITION } from "../edition";
@@ -29,7 +30,7 @@ export function CaveCard() {
           {Array.from({ length: cave.of }, (_, i) => <u key={i} className={i < cave.open ? (i + 1 === cave.n ? "here" : "open") : ""} />)}
         </span>
       </div>
-      <p>{cave.next}</p>
+      <p>{cave.nextSitId && <><SitIcon id={cave.nextSitId} size="1.15em" />{" "}</>}{cave.next}</p>
     </div>
   );
 }

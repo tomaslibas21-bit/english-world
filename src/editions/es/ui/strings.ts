@@ -758,6 +758,7 @@ export const STRINGS: Record<string, string> = {
   "Gerai": "OK",
   "Kaip judėti mieste?": "How do I get around town?",
   "Klavišai.": "Keys.",
+  "Meniu": "Menu",
   "Spustelėk žemę – nueisi ten. {g} – nueiti iki užduoties, {m} – žemėlapis, {j} – užduotys, {p} – telefonas.": "Click the ground to walk there. {g} walks to your task, {m} opens the map, {j} your tasks, {p} the phone.",
   "Patarimai vėl bus rodomi": "The tips will show again",
   "Rodyti patarimus iš naujo": "Show the tips again",

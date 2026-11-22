@@ -16,6 +16,7 @@ import { speechSupported } from "../convo/speech";
 import { sitProgress } from "../state/progress";
 import { toImperative } from "./lt";
 import { Icon, InlineIcon, type IconName } from "./icons";
+import { SitIcon } from "./SitIcon";
 import { showToast } from "./Toasts";
 import { Confetti } from "./Confetti";
 import { L, Lx, TL } from "./i18n";
@@ -228,7 +229,7 @@ export function Conversation() {
                   two the same size (owner, 29 Oct 2026); the light mode above has no town, so it leads with the next */}
               {/* after the surf school's conversation: the lesson first, the most prominent (owner, 16 Nov 2026) */}
               {game?.surfAfter(sit.id) && (
-                <button className="btn surf-cta" onClick={() => game?.surfFromConversation()}><Icon name="star" size={19} /> {L("Banglenčių pamoka")}</button>
+                <button className="btn surf-cta" onClick={() => game?.surfFromConversation()}><SitIcon id={sit.id} size={19} /> {L("Banglenčių pamoka")}</button>
               )}
               <div className="ended-main">
                 <button className={"btn" + (game?.surfAfter(sit.id) ? " soft" : "")} onClick={() => game?.closeConversation()}><Icon name="walk" size={18} /> {L("Tęsti")}</button>

@@ -1,6 +1,7 @@
 // Production-output smoke checks for the toolbar and sustained touch movement.
 // WORLD_TEST_URL=http://127.0.0.1:5198 WORLD_BROWSER_CHANNEL=chrome WORLD_PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node tests/browser/mobile-controls.mjs
 import assert from "node:assert/strict";
+import { openPhoneMenu } from "./screen-harness.mjs";
 const { chromium, webkit } = await import(
   process.env.WORLD_PLAYWRIGHT_MODULE || "playwright"
 );
@@ -9,9 +10,9 @@ const check = (name, value, detail) => {
   assert(value, `${name}: ${JSON.stringify(detail)}`);
   console.log("ok", name);
 };
-function init() {
+function init(storage) {
   localStorage.setItem(
-    "english-world-progress-v1",
+    `${storage}-progress-v1`,
     JSON.stringify({
       version: 1,
       profile: {
@@ -68,7 +69,7 @@ for (const [name, engine] of [
         hasTouch: true,
         isMobile: true,
       });
-      await context.addInitScript(init);
+      await context.addInitScript(init, process.env.WORLD_STORAGE || "puerto-colibri");
       const page = await context.newPage(),
         errors = [];
       page.on("pageerror", (e) => errors.push(e.message));
@@ -82,6 +83,8 @@ for (const [name, engine] of [
         window.__ew.store.getState().setHud({ panel: null, showTouch: true }),
       );
       const label = `${name} ${width}×${height}`;
+      await page.locator(".toolbar").waitFor();
+      await openPhoneMenu(page);
       const layout = await page.locator(".toolbar").evaluate((el) => {
         const lr = el.querySelector(".light-mode-btn").getBoundingClientRect();
         const tools = [...el.querySelectorAll(".toolbar-tools .icon-btn")].map(
@@ -102,11 +105,14 @@ for (const [name, engine] of [
           movement: movement?.top,
           height: innerHeight,
           width: innerWidth,
+          toolsBeforeLR: tools.every((r) => r.left > lr.left || (r.left === lr.left && r.bottom + 4 <= lr.top)),
+          movementClear: !movement || [...tools, lr].every((r) => r.bottom <= movement.top || r.right <= movement.left || r.left >= movement.right),
+          drawer: el.classList.contains("folds"),
         };
       });
       check(
-        `${label}: LR is below all tools and on screen`,
-        layout.lr.top >= layout.bottom + 4 &&
+        `${label}: LR follows the town tools and is on screen`,
+        (layout.drawer ? layout.toolsBeforeLR : layout.lr.top >= layout.bottom + 4) &&
           layout.lr.bottom <= height &&
           layout.lr.right <= width &&
           layout.lr.left >= 0 &&
@@ -115,7 +121,7 @@ for (const [name, engine] of [
       );
       check(
         `${label}: toolbar stays clear of movement controls`,
-        !layout.movement || layout.lr.bottom < layout.movement,
+        layout.drawer ? layout.movementClear : !layout.movement || layout.lr.bottom < layout.movement,
         layout,
       );
       const selectable = await page

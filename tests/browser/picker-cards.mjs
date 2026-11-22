@@ -4,14 +4,15 @@
 // No word runs past its card (the owner's „Ką rekomenduotumėte?“), nothing is cut off, the icon and the stars never
 // sit on the words, and the text column is wide enough to read: a title takes three lines at most and no line is a
 // lone short word squeezed between the icon and the stars. Against a dev server or a built game:
-// WORLD_TEST_URL=http://127.0.0.1:8096 WORLD_STORAGE=english-world WORLD_PLAYWRIGHT_MODULE=/path/to/playwright-core/index.mjs node tests/browser/picker-cards.mjs
+// WORLD_TEST_URL=http://127.0.0.1:8096 WORLD_STORAGE=puerto-colibri WORLD_PLAYWRIGHT_MODULE=/path/to/playwright-core/index.mjs node tests/browser/picker-cards.mjs
 // WORLD_SHOTS=/a/folder saves a picture of each list at each width; WORLD_REPORT=1 lists every failing card
 // instead of stopping at the first width that fails.
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import { openPhoneMenu } from "./screen-harness.mjs";
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:8096";
-const storage = process.env.WORLD_STORAGE || "english-world";
+const storage = process.env.WORLD_STORAGE || "puerto-colibri";
 const shots = process.env.WORLD_SHOTS || "";
 const report = !!process.env.WORLD_REPORT;
 if (shots) fs.mkdirSync(shots, { recursive: true });
@@ -137,7 +138,13 @@ try {
         await new Promise((r) => setTimeout(r, 300));
       }
       const name = `${label}, ${mode === "town" ? "the 3D town's list" : "the pictures-only home"}`;
-      if (mode === "town") await page.evaluate(() => { window.__ew.coach?.finish?.(); window.__ew.store.getState().setHud({ panel: "scenarios" }); });
+      if (mode === "town") {
+        await page.evaluate(() => window.__ew.coach?.finish?.());
+        await page.locator(".toolbar").waitFor();
+        await openPhoneMenu(page);
+        const listButton = page.locator(".toolbar-tools button.icon-btn").first();
+        if (screen.hasTouch) await listButton.tap(); else await listButton.click();
+      }
       await page.evaluate(() => window.__step(10));
       await page.waitForSelector(card, { timeout: 20000 });
       await page.evaluate(() => document.fonts.ready);

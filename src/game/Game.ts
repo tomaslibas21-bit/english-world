@@ -46,6 +46,7 @@ import { whenLoaded } from "./prefetch";
 import type { SituationDef, SituationMeta } from "../content/types";
 import { picturesOn, useStore } from "../state/store";
 import { sceneFor } from "../ui/scenes";
+import { SIDEWAYS_PHONE } from "../ui/useScreen";
 import { sitProgress } from "../state/progress";
 import { textTexture, rand } from "./world/util";
 import { givenItem } from "./given";
@@ -231,6 +232,11 @@ export class Game implements GameApi {
   private moveVel = new THREE.Vector3();
   private tmpV = new THREE.Vector3();
   private disposed = false;
+  private screenW = 0;
+  private screenH = 0;
+  private readonly sidewaysPhone = window.matchMedia(SIDEWAYS_PHONE);
+  private readonly visualViewport = window.visualViewport;
+  private resizeObserver: ResizeObserver | null = null;
   private ambient!: Ambient;
   private unbindAmbience: (() => void) | null = null;
   private ambienceAllowed = () => {
@@ -307,7 +313,6 @@ export class Game implements GameApi {
     const q = useStore.getState().settings.quality;
     this.renderer = new THREE.WebGLRenderer({ antialias: q === "high", powerPreference: "high-performance" });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, q === "high" ? 1.75 : 1));
-    this.renderer.setSize(container.clientWidth, container.clientHeight);
     this.renderer.shadowMap.enabled = q === "high";
     // soft edges come from the sun's shadow.radius (three.js no longer has PCFSoftShadowMap)
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -316,7 +321,8 @@ export class Game implements GameApi {
     this.renderer.toneMappingExposure = 1.0;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     container.appendChild(this.renderer.domElement);
-    this.rig = new CameraRig(container.clientWidth / container.clientHeight);
+    this.rig = new CameraRig(1);
+    this.syncSize();
     styleRenderer(this.renderer, this.rig.cam, q);
     for (const s of SITUATIONS) {
       const ids = s.npc === "sam" || s.npc === "emma" ? ["sam", "emma"] : [s.npc];
@@ -459,6 +465,13 @@ export class Game implements GameApi {
     else this.enterZone("airport", ARRIVAL, true);
     this.bindInput();
     window.addEventListener("resize", this.onResize);
+    window.addEventListener("orientationchange", this.onResize);
+    window.addEventListener("pageshow", this.onResize);
+    this.visualViewport?.addEventListener("resize", this.onResize);
+    if (typeof ResizeObserver !== "undefined") {
+      this.resizeObserver = new ResizeObserver(this.onResize);
+      this.resizeObserver.observe(this.container);
+    }
     this.renderer.setAnimationLoop(this.loop);
     this.refreshObjective();
     // Keep the logo over the canvas until an actual town frame is ready to show.
@@ -1415,11 +1428,15 @@ export class Game implements GameApi {
     let shot = this.talkViews.get(to.id);
     if (!shot) this.talkViews.set(to.id, shot = this.talkView(to, group));
     this.talkIn = group;
+    this.talkLean = 0;
+    this.applyTalkShot(shot);
+  }
+
+  private applyTalkShot(shot: Shot) {
     // (the camera's own copy: it leans in from there while they speak)
     this.rig.talk = { pos: shot.pos.clone(), look: shot.look };
     this.talkHome = shot.near ? shot.pos : null;
     this.talkNear = shot.near ?? null;
-    this.talkLean = 0;
     // (nowhere shows their face past the learner: the learner's figure steps out of the picture meanwhile)
     this.player.root.visible = !shot.covered;
   }
@@ -1501,7 +1518,7 @@ export class Game implements GameApi {
     // On a phone held upright the picture is only the strip above the conversation (styles.css
     // --conversation-image-height; the loop's applyViewShift centres it there): each point must fall in that strip too,
     // 10 px in, for the people spoken with. A framing the old test passed and the strip shows stays as it was.
-    const sideways = h <= 520 && w > h, strip = !wide && !sideways ? talkPictureHeight(h) : 0, ssy = (h - strip) / 2;
+    const sideways = this.sidewaysPhone.matches, strip = !wide && !sideways ? talkPictureHeight(h) : 0, ssy = (h - strip) / 2;
     // And the top of the head of each person spoken with (hair and hats included, 0.12 m to each side) under the
     // picture's top edge, 10 px in: the head and chest points alone passed with the top of a head cut off by the
     // strip's top edge (s65a's officer, s79's clerk…).
@@ -1790,7 +1807,7 @@ export class Game implements GameApi {
     const next = this.orderedSituations().find((s) => !sitProgress(pr, s.id).completions);
     this.setObjective(next?.id ?? null);
     // (in the situation picker flow the end-of-conversation buttons offer the next one instead)
-    if (next && !this.lastScenario) setTimeout(() => useStore.getState().toast({ kind: "info", title: L("Kita užduotis"), body: `${next.title.lt} — ${LOCATIONS[next.location]?.lt ?? ""}` }), 2500);
+    if (next && !this.lastScenario) setTimeout(() => useStore.getState().toast({ kind: "info", sitId: next.id, title: L("Kita užduotis"), body: `${next.title.lt} — ${LOCATIONS[next.location]?.lt ?? ""}` }), 2500);
   }
 
   currentObjective(): SituationMeta | null {
@@ -1851,12 +1868,30 @@ export class Game implements GameApi {
 
   // ------------------------------------------------------------------ loop
 
-  private onResize = () => {
+  private onResize = () => { if (!this.disposed) this.syncSize(); };
+
+  private syncSize() {
     const w = this.container.clientWidth, h = this.container.clientHeight;
+    if (w <= 0 || h <= 0 || (w === this.screenW && h === this.screenH)) return;
     this.renderer.setSize(w, h);
-    this.rig.cam.aspect = w / h;
-    this.rig.cam.updateProjectionMatrix();
-  };
+    this.rig.resize(w, h, this.sidewaysPhone.matches);
+    this.screenW = w;
+    this.screenH = h;
+    // The cached conversation shots were fitted to the previous space beside the panel.
+    const speaker = this.talkIn[0];
+    if (this.rig.mode === "talk" && speaker) {
+      this.talkViews.clear();
+      const shot = this.talkView(speaker, this.talkIn);
+      this.talkViews.set(speaker.id, shot);
+      this.applyTalkShot(shot);
+    } else if (this.talkTree) this.aimTree();
+  }
+
+  screenState() {
+    const { width: bufferW, height: bufferH } = this.renderer.domElement;
+    const { aspect, fov } = this.rig.cam;
+    return { w: this.container.clientWidth, h: this.container.clientHeight, bufferW, bufferH, pixelRatio: this.renderer.getPixelRatio(), aspect, fov };
+  }
 
   /** Resolution that follows the phone: every 2 s, slow frames (under about 45 a second) lower the pixel ratio a
    *  step, and 6 s of easy frames raise it again, between 1 and the quality's top. */
@@ -1869,13 +1904,16 @@ export class Game implements GameApi {
     const avg = p.acc / p.n, q = useStore.getState().settings.quality;
     p.acc = 0; p.n = 0;
     const top = Math.min(window.devicePixelRatio, q === "high" ? 1.75 : 1), pr = this.renderer.getPixelRatio();
-    if (avg > 22 && pr > 1) { this.renderer.setPixelRatio(Math.max(1, pr - 0.25)); this.onResize(); p.easy = 0; }
-    else if (avg < 17 && pr < top) { if ((p.easy += 2) >= 6) { this.renderer.setPixelRatio(Math.min(top, pr + 0.25)); this.onResize(); p.easy = 0; } }
+    if (avg > 22 && pr > 1) { this.renderer.setPixelRatio(Math.max(1, pr - 0.25)); p.easy = 0; }
+    else if (avg < 17 && pr < top) { if ((p.easy += 2) >= 6) { this.renderer.setPixelRatio(Math.min(top, pr + 0.25)); p.easy = 0; } }
     else p.easy = 0;
   }
 
   private loop = () => {
     if (this.disposed) return;
+    this.syncSize();
+    const w = this.screenW, h = this.screenH;
+    if (!w || !h) return;
     this.adaptResolution(performance.now());
     const dt = Math.min(0.05, this.clock.getDelta());
     this.t += dt;
@@ -1899,7 +1937,7 @@ export class Game implements GameApi {
     this.town.update(this.t, dt, this.rig.cam.position);
     this.zone.interior?.update?.(this.t, dt);
     // (the grotto: its water, lights and sparks, and its stones calling)
-    this.wild?.frame?.(this.t, dt, this.rig.cam, this.player.root.position, this.container.clientHeight * this.renderer.getPixelRatio());
+    this.wild?.frame?.(this.t, dt, this.rig.cam, this.player.root.position, h * this.renderer.getPixelRatio());
     this.cave?.update(dt, this.player.root.position, this.rig.yaw, !this.ambienceAllowed() || this.transitioning);
     if (this.caveLure && !this.zone.interior) this.caveLure.userData.tick(this.t, this.player.root.position.x, this.player.root.position.z);
     this.surf?.tick(dt, !this.zone.interior && !talking && !this.wild && !this.flight);
@@ -1941,7 +1979,7 @@ export class Game implements GameApi {
     // the lens (camera.ts fovFor): wider while walking, a touch more at a run (a sense of speed), the conversation's
     // 50° exactly
     {
-      const fov = this.rig.fovFor(this.container.clientWidth, this.container.clientHeight, this.rig.mode === "follow" && this.vel.lengthSq() > 30) + (this.rig.mode === "follow" ? this.rideFov : 0);
+      const fov = this.rig.fovFor(w, h, this.rig.mode === "follow" && this.vel.lengthSq() > 30) + (this.rig.mode === "follow" ? this.rideFov : 0);
       const d = fov - this.rig.cam.fov;
       if (d !== 0) {
         this.rig.cam.fov = Math.abs(d) < 0.05 ? fov : this.rig.cam.fov + d * Math.min(1, dt * (this.rig.mode === "talk" ? 4.5 : 3));
@@ -1959,18 +1997,21 @@ export class Game implements GameApi {
     CUT.a.value.copy(this.rig.cam.position);
     CUT.b.value.copy(this.chest);
     CUT.r.value = this.rig.mode === "follow" && !this.zone.interior ? 0.55 : 0;
-    // shift the picture while the conversation panel is open; on a phone held upright, walking around, the player
-    // stands lower in the picture (about two thirds down), so the street ahead shows instead of the ground underfoot
+    // Give the conversation panel its part of the picture and let the player stand lower while walking on a phone.
     {
-      const w = this.container.clientWidth, h = this.container.clientHeight;
+      const sideways = this.sidewaysPhone.matches;
       if (talking && (this.talkNpc || this.talkTree)) {
-        const sideways = h <= 520 && w > h;
         const wide = w > 900 && !sideways;
         // Match the conversation's visible picture area, including scenes-off 3D conversations.
         const pictureHeight = talkPictureHeight(h);
         this.rig.applyViewShift(w, h, sideways ? w * 0.375 : wide ? Math.min(w * 0.22, 380) : 0,
           wide || sideways ? 0 : (h - pictureHeight) / 2);
-      } else this.rig.applyViewShift(w, h, 0, this.rig.mode !== "talk" && h > w * 1.15 ? -h * (this.rig.mode === "follow" ? 0.12 : 0.1) : 0);
+      } else {
+        const walkingLens = this.rig.mode === "follow" || this.rig.mode === "interior";
+        const uprightShift = this.rig.mode !== "talk" && h > w * 1.15 ? (this.rig.mode === "follow" ? 0.12 : 0.1) : 0;
+        const shift = sideways && walkingLens && !talking ? 0.1 : uprightShift;
+        this.rig.applyViewShift(w, h, 0, -h * shift);
+      }
     }
     // sun follows the player for crisp shadows
     const pp = this.player.root.position;
@@ -2768,6 +2809,10 @@ export class Game implements GameApi {
     window.removeEventListener("keydown", this.onKeyDown);
     window.removeEventListener("keyup", this.onKeyUp);
     window.removeEventListener("resize", this.onResize);
+    window.removeEventListener("orientationchange", this.onResize);
+    window.removeEventListener("pageshow", this.onResize);
+    this.visualViewport?.removeEventListener("resize", this.onResize);
+    this.resizeObserver?.disconnect();
     window.removeEventListener("blur", this.onBlur);
     this.unbindAmbience?.();
     this.unbindAmbience = null;

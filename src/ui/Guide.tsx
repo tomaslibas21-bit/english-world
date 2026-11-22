@@ -8,6 +8,7 @@ import { coach, type CoachStep } from "../game/coach";
 import { useRadio } from "../radio";
 import { Icon, type IconName } from "./icons";
 import { L } from "./i18n";
+import type { useScreen } from "./useScreen";
 
 export const COACH_ICON: Record<CoachStep, IconName> = { walk: "walk", run: "next", jump: "chevronUp", talk: "mic", list: "clapper", car: "car", boat: "sunset", water: "drop", surf: "star", radio: "radio" };
 
@@ -27,7 +28,7 @@ export function coachWords(step: CoachStep, touch: boolean): [string, string] {
   }
 }
 
-export function Guide() {
+export function Guide({ w, h, portraitPhone }: ReturnType<typeof useScreen>) {
   const c = useStore((s) => s.hud.coach);
   const panel = useStore((s) => s.hud.panel);
   const touch = useStore((s) => s.hud.showTouch);
@@ -38,19 +39,18 @@ export function Guide() {
   const [under, setUnder] = useState<number | null>(null);
   const shown = !!c && !panel;
   useLayoutEffect(() => {
-    const card = document.querySelector(".objective-card");
-    if (!shown || !card || typeof ResizeObserver === "undefined") return;
-    const place = () => setUnder(window.innerWidth <= 600 && window.innerHeight > 520 ? Math.round(card.getBoundingClientRect().bottom) + 8 : null);
-    const ro = new ResizeObserver(place);
-    ro.observe(card);
-    window.addEventListener("resize", place);
+    const card = document.querySelector<HTMLElement>(".objective-card");
+    if (!shown || !portraitPhone || !card) { setUnder(null); return; }
+    const place = () => setUnder(card.offsetTop + card.offsetHeight + 8);
+    const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(place);
+    ro?.observe(card);
     place();
-    return () => { ro.disconnect(); window.removeEventListener("resize", place); };
-  }, [shown]);
+    return () => ro?.disconnect();
+  }, [shown, portraitPhone, w, h]);
   if (!c || panel) return null;
   const [title, body] = coachWords(c.step, touch);
   return (
-    <div className={"coach" + (c.ok ? " ok" : "")} role="status" aria-live="polite" style={under !== null ? { top: under } : undefined}>
+    <div className={"coach" + (c.ok ? " ok" : "")} role="status" aria-live="polite" style={portraitPhone && under !== null ? { top: under } : undefined}>
       <span className="coach-icon" aria-hidden><Icon name={c.ok ? "check" : COACH_ICON[c.step]} size={24} strokeWidth={2} /></span>
       <div className="coach-text">
         <b>{title}</b>
