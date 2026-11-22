@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { ROAD_UI as words } from "../content/road";
 import { SITUATION_BY_ID } from "../content/situations/catalog";
 import { speechSupported } from "../convo/speech";
@@ -8,7 +8,7 @@ import { useRoad, type RoadResult } from "../game/road/store";
 import { EndDestination } from "./Conversation";
 import { Icon } from "./icons";
 import { GlossLine } from "./kit/GlossLine";
-import { ScoreCard } from "./kit/ScoreCard";
+import { ScoreCard, ScoreNumber } from "./kit/ScoreCard";
 import "./road.css";
 
 const act = (name: string, value?: string | boolean) => game?.modeAction("road", name, value);
@@ -123,8 +123,12 @@ function DriveOverlay({ touch }: { touch: boolean }) {
 }
 
 function Result({ result }: { result: RoadResult }) {
+  const [missedIndex, setMissedIndex] = useState(0);
+  const word = result.missed[missedIndex];
+  const sit = word && SITUATION_BY_ID[word.situation];
   return <div className="road-result">
-    <ScoreCard title={words.finish} score={<><small>{words.points}</small> {result.points}</>}
+    <ScoreCard title={words.finish} ratio={result.right / result.total}
+      score={<><small>{words.points}</small> <ScoreNumber value={result.points} /></>}
       rows={[
         { label: words.correct, value: `${result.right}/${result.total}` },
         { label: words.bestStreak, value: result.streak },
@@ -135,15 +139,15 @@ function Result({ result }: { result: RoadResult }) {
       done={{ label: words.town, run: done }}>
         {result.record && <b className="road-record">{words.record}</b>}
         <LiftLine />
-        {!!result.missed.length && <section className="road-missed">
-          <h3>{words.missed}</h3>
-          {result.missed.map((word) => {
-            const sit = SITUATION_BY_ID[word.situation];
-            return <article key={`${word.situation}|${word.en}`}>
-              <strong lang="en">{word.en}</strong> <span>· {word.lt}</span>
-              {sit && <><small>{words.from}</small><EndDestination sit={sit} label={words.guide} close={() => act("guide")} /></>}
-            </article>;
-          })}
+        {word && <section className="road-missed">
+          <h3 id="road-missed-title">{words.missed}</h3>
+          <article>
+            {result.missed.length === 1 ? <><strong lang="en">{word.en}</strong> · {word.lt}</> :
+              <select aria-labelledby="road-missed-title" value={missedIndex} onChange={e => setMissedIndex(Number(e.target.value))}>
+                {result.missed.map((item, i) => <option key={`${item.situation}|${item.en}`} value={i}>{item.en} · {item.lt}</option>)}
+              </select>}
+            {sit && <><small>{words.from}</small><EndDestination sit={sit} label={words.guide} close={() => act("guide")} /></>}
+          </article>
         </section>}
     </ScoreCard>
   </div>;

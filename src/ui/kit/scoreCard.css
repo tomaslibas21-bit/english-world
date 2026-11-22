@@ -3,6 +3,7 @@
   inset: 0;
   z-index: 30;
   display: grid;
+  grid-template-rows: minmax(0, 1fr);
   place-items: center;
   padding: 16px;
   background: rgb(8 30 42 / 38%);
@@ -19,8 +20,34 @@
   box-shadow: 0 16px 50px rgb(0 20 40 / 40%);
   text-align: center;
 }
-.mode-score-card h2 { margin: 0; }
-.mode-score-line { display: block; margin-top: 4px; font-size: 2.45em; font-variant-numeric: tabular-nums; }
+.mode-score-card h2 { margin: 0; line-height: 1.2; }
+.mode-score-award {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  height: 40px;
+  margin-bottom: 5px;
+  gap: 12px;
+}
+.mode-score-award::before, .mode-score-award::after {
+  content: "";
+  width: 38px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #dcb56a);
+}
+.mode-score-award::after { rotate: 180deg; }
+.mode-score-award .stars { gap: 2px; }
+.mode-score-award .ui-icon { stroke-width: 1.15; }
+.mode-score-award .on { stroke: #b57818; filter: drop-shadow(0 2px 0 #ead4a1); }
+.mode-score-award .off path { fill: #f5eddf; }
+.mode-score-award .ui-icon:first-child { rotate: -10deg; }
+.mode-score-award .ui-icon:nth-child(2) { width: 35px; height: 35px; translate: 0 -3px; }
+.mode-score-award .ui-icon:last-child { rotate: 10deg; }
+.mode-score-sparks { display: none; pointer-events: none; }
+.mode-score-line { display: block; margin-top: 4px; font-size: 2.45em; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.mode-score-number { display: inline-block; position: relative; }
+.mode-score-number i { display: none; }
 .mode-score-card dl { margin: 12px 0 20px; }
 .mode-score-card dl > div {
   display: flex;
@@ -33,3 +60,50 @@
 }
 .mode-score-card dd { flex: none; margin: 0; font-weight: 800; }
 .mode-score-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; }
+
+@property --mode-score-count {
+  syntax: "<integer>";
+  inherits: false;
+  initial-value: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .mode-score-card { animation: score-arrive 150ms cubic-bezier(.2,.85,.35,1.12); }
+  .mode-score-award .on { animation: score-star 220ms ease-out; }
+  .mode-score-award .on:nth-child(2) { animation-delay: 100ms; }
+  .mode-score-award .on:nth-child(3) { animation-delay: 200ms; }
+  .mode-score-sparks { display: block; position: absolute; width: 180px; height: 40px; }
+  .mode-score-sparks g { transform-origin: 90px 20px; animation: score-spark 520ms 330ms both; }
+  .mode-score-number > span { animation: score-hide-total 600ms; }
+  .mode-score-number i {
+    display: inline;
+    font: inherit;
+    visibility: hidden;
+    counter-reset: score var(--mode-score-count);
+    animation: score-count 600ms ease-out;
+  }
+  .mode-score-number i::before { content: counter(score); position: absolute; inset: 0; text-align: right; }
+}
+@keyframes score-arrive {
+  from { transform: translateY(4px) scale(.985); }
+}
+@keyframes score-star {
+  50% { transform: scale(1.12); }
+}
+@keyframes score-spark {
+  0% { opacity: 0; transform: scale(.65); }
+  35% { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.16); }
+}
+@keyframes score-hide-total { from, to { opacity: 0; } }
+@keyframes score-count {
+  from { visibility: visible; --mode-score-count: 0; }
+  to { visibility: visible; --mode-score-count: var(--score-total); }
+}
+
+@media (max-height: 700px) {
+  .mode-score-card { padding-block: 12px; }
+  .mode-score-award { height: 34px; margin-bottom: 2px; }
+  .mode-score-card dl { margin: 8px 0 12px; }
+  .mode-score-card dl > div { padding-block: 4px; }
+}

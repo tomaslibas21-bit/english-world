@@ -69,6 +69,7 @@ function OrderTray({ touch }: { touch: boolean }) {
 export function BaristaOverlay({ touch }: { touch: boolean }) {
   const { line, hiddenOrder, revealed, choices, mic, micOn, customer, tray, step, ready, repair, price, result } = useBarista();
   if (result) return <div className="barista-result"><ScoreCard title={words.title}
+    ratio={result.firstTime / result.served}
     rows={[
       { label: words.orders, value: `${result.served}/${total}` },
       { label: words.firstTime, value: `${result.firstTime}/${total}` },
