@@ -140,7 +140,15 @@ export const EMPTY_CONV: ConvUI = {
   typing: false, newExpressions: [], checklist: [], focus: 0, stepId: null, lineKey: null, guess: null, practice: null, run: 0, guideHidden: false, introOpen: false,
 };
 
-export interface Toast { id: number; kind: "info" | "success" | "tip" | "stamp"; title: string; body?: string; better?: string; ms?: number }
+export interface Toast {
+  id: number;
+  kind: "info" | "success" | "tip" | "stamp";
+  title: string;
+  body?: string;
+  better?: string;
+  ms?: number;
+  rideHint?: "waiting" | "other";
+}
 
 export interface HudState {
   zoneName: string;
@@ -149,7 +157,8 @@ export interface HudState {
   prompt: { label: string; lt?: string; kind: "talk" | "enter" | "exit" | "taxi" | "drive" | "boat" | "out" | "climb" | "surf" | "paddle" | "listen" } | null;
   /** What the player does instead of walking (game/rides, water.ts SWIM): at a car's wheel, at a boat's helm,
    *  swimming, under water on a dive, or on a surfboard in the surf lesson (game/surf). */
-  ride: null | "car" | "boat" | "swim" | "dive" | "surf";
+  ride: null | "car" | "boat" | "swim" | "dive" | "surf" | "taxi";
+  modeScreen: import("../game/kit/modes").ModeScreen | null;
   /** When the current drive, boat trip or swim started. Diving and resurfacing stay in the same swim. */
   rideStartedAt: number | null;
   /** Standing or walking in shallow water, with the usual walking controls. */
@@ -188,6 +197,7 @@ interface Store {
   setHud(p: Partial<HudState>): void;
   toast(t: Omit<Toast, "id">): void;
   dismissToast(id: number): void;
+  dismissRideToasts(only?: Toast["rideHint"]): void;
   updateProgress(f: (p: Progress) => void): void;
   setProfile(p: { name: string; surname: string; gender: "m" | "f"; look: Look; lookId: string }): void;
 }
@@ -197,12 +207,12 @@ const stackTimers = new Map<number, { timer: ReturnType<typeof setTimeout>; resu
 const initial = loadProgress();
 
 export function townRide(ride: HudState["ride"]) {
-  return ride === "surf" ? null : ride === "dive" ? "swim" : ride;
+  return ride === "surf" || ride === "taxi" ? null : ride === "dive" ? "swim" : ride;
 }
 
 export function usesTownNotes(s: Pick<Store, "screen" | "settings" | "conv" | "hud">) {
   const surf = useSurf.getState();
-  return s.screen === "play" && s.settings.play === "town" && !s.conv.active && !s.hud.panel && !s.hud.glyph && !s.hud.flight && !surf.active && !surf.picking;
+  return s.screen === "play" && s.settings.play === "town" && !s.conv.active && !s.hud.panel && !s.hud.glyph && !s.hud.flight && !s.hud.modeScreen && !surf.active && !surf.picking;
 }
 
 /** Saved settings plus new defaults. v2 (owner feedback: a calmer conversation panel): the natural
@@ -236,7 +246,7 @@ export const useStore = create<Store>((set, get) => ({
   progress: initial,
   conv: EMPTY_CONV,
   hud: {
-    zoneName: "", zoneBanner: null, prompt: null, ride: null, rideStartedAt: null, wading: false, fast: false, walking: false, objective: null, minimap: { px: 0, pz: 0, heading: 0, zone: "town" }, fade: 0, panel: null,
+    zoneName: "", zoneBanner: null, prompt: null, ride: null, modeScreen: null, rideStartedAt: null, wading: false, fast: false, walking: false, objective: null, minimap: { px: 0, pz: 0, heading: 0, zone: "town" }, fade: 0, panel: null,
     showTouch: typeof window !== "undefined" && (("ontouchstart" in window) || navigator.maxTouchPoints > 1),
     coach: null, flight: false, cave: null, glyph: null,
   },
@@ -273,6 +283,18 @@ export const useStore = create<Store>((set, get) => ({
   dismissToast: (id) => {
     stopStackTimer(id);
     set((st) => ({ toasts: st.toasts.filter((x) => x.id !== id), townToasts: st.townToasts.filter((x) => x.toast.id !== id) }));
+  },
+  dismissRideToasts: (only) => {
+    const { toasts, townToasts } = get();
+    const matches = (toast: Toast) => !!toast.rideHint && (only === undefined || toast.rideHint === only);
+    const visible = toasts.some(matches);
+    const queued = townToasts.some(({ toast }) => matches(toast));
+    if (!visible && !queued) return;
+    for (const toast of toasts) if (matches(toast)) stopStackTimer(toast.id);
+    set({
+      toasts: visible ? toasts.filter((toast) => !matches(toast)) : toasts,
+      townToasts: queued ? townToasts.filter(({ toast }) => !matches(toast)) : townToasts,
+    });
   },
   updateProgress: (f) => {
     const p = structuredClone(get().progress);

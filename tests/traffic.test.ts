@@ -3,19 +3,29 @@
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
 import { Ambient } from "../src/game/ambient";
-import { PARKED_CARS, TRAFFIC_LANES, ROADS } from "../src/game/world/layout";
-import { carFootprint } from "../src/game/world/carModels";
+import { PARKED_CARS, TRAFFIC_LANES, ROADS, TAXI } from "../src/game/world/layout";
+import { carFootprint, carModelEntry } from "../src/game/world/carModels";
+import { RIDES } from "../src/game/world/rides";
+import { CAR } from "../src/game/rides/drive";
 import type { NavGrid } from "../src/game/nav";
 
 type Box = ReturnType<typeof carFootprint>;
 const overlap = (a: Box, b: Box) => Math.min(a.maxX, b.maxX) > Math.max(a.minX, b.minX) && Math.min(a.maxZ, b.maxZ) > Math.max(a.minZ, b.minZ);
 const STILL = PARKED_CARS.map(carFootprint);
+const taxiBox = carModelEntry(TAXI.model).collisionBox;
+const rideBoxes = [
+  ...RIDES.cars.map(({ x, z, rot }) => ({ x, z, heading: rot, hl: CAR.half, hw: CAR.wide })),
+  { x: TAXI.x, z: TAXI.z, heading: TAXI.rot, hl: taxiBox.length / 2, hw: taxiBox.width / 2 },
+];
 
 /** Walkers stay put (no paths): only the cars move. */
 const nav = { nearestFree: () => -1, center: () => [0, 0], path: () => null } as unknown as NavGrid;
 
 describe("traffic", () => {
   it("each lane lies on its street, and lanes don't touch each other or anything parked", () => {
+    for (const [i, parked] of STILL.entries()) {
+      for (const other of STILL.slice(i + 1)) expect(overlap(parked, other)).toBe(false);
+    }
     const cars = new Ambient(nav, [[0, 0]], "high").traffic;
     for (const { lane, from, to, half } of cars) {
       const road = ROADS.find((r) => r.z1 === r.z2 && Math.abs(lane - r.z1) < r.w / 2);
@@ -30,16 +40,20 @@ describe("traffic", () => {
   for (const quality of ["high", "low"] as const) {
     it(`moving cars never overlap (${quality} quality, 10 minutes, the player stopping a lane now and then)`, () => {
       const amb = new Ambient(nav, [[0, 0]], quality);
+      amb.rideBoxes = rideBoxes;
       const cars = amb.traffic;
+      const eastbound = cars.find((car) => car.dir === 1 && car.lane === TRAFFIC_LANES[0].z)!;
       const player = new THREE.Vector3(0, 0, -200);
       let worst = Infinity;
       let overlapAt: { x: number; z: number } | undefined;
+      let reachedEnd = false;
       for (let step = 0; step < 12000; step++) {
         // every 40 s the player stands in a different lane for 15 s
         const k = Math.floor(step / 800), inLane = step % 800 < 300;
         const lane = TRAFFIC_LANES[k % TRAFFIC_LANES.length];
         player.set(inLane ? -40 + (k % 5) * 30 : 0, 0, inLane ? lane.z : -200);
         amb.update(0.05, player);
+        reachedEnd ||= eastbound.hidden > 0;
         const live = cars.filter((c) => c.hidden <= 0 && c.mesh.visible && c.mesh.scale.x > 0.05);
         for (const c of live) {
           const b = { minX: c.x - c.half.x, maxX: c.x + c.half.x, minZ: c.lane - c.half.z, maxZ: c.lane + c.half.z };
@@ -48,6 +62,7 @@ describe("traffic", () => {
         }
       }
       expect(overlapAt, "there is no moving car inside a parked car").toBeUndefined();
+      expect(reachedEnd, "eastbound traffic can reach the lane end with the taxi at the stand").toBe(true);
       // bumper to bumper, cars in a lane always keep a gap
       expect(worst).toBeGreaterThan(0.5);
     });

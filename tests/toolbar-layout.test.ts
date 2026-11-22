@@ -10,3 +10,7 @@ it.each([
   const { single, split } = portraitToolbarRows({ hasHelp: true, hasRadio, hasCourse });
   expect([split, single - split]).toEqual(columns);
 });
+
+it("reserves an extra row for the mode exit in the ride drawer", () => {
+  expect(portraitToolbarRows({ hasHelp: true, hasRadio: false, hasCourse: false, modeExit: true })).toEqual({ single: 9, split: 5 });
+});

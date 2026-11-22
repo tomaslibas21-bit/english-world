@@ -85,7 +85,7 @@ class Coach {
       } else if (!s.hud.zoneBanner && prev.hud.zoneBanner) this.startTimer();
       if (s.hud.prompt?.kind !== prev.hud.prompt?.kind) this.near(s.hud.prompt?.kind);
       if (s.hud.panel === "scenarios" && prev.hud.panel !== "scenarios") this.did("list");
-      if (s.hud.ride !== prev.hud.ride && s.hud.ride) this.did(s.hud.ride === "car" ? "car" : s.hud.ride === "boat" ? "boat" : s.hud.ride === "surf" ? "surf" : "water");
+      if (s.hud.ride !== prev.hud.ride && s.hud.ride && s.hud.ride !== "taxi") this.did(s.hud.ride === "car" ? "car" : s.hud.ride === "boat" ? "boat" : s.hud.ride === "surf" ? "surf" : "water");
     });
   }
   private near(kind: NonNullable<HudState["prompt"]>["kind"] | undefined) {

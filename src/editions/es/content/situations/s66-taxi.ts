@@ -14,6 +14,7 @@ import type { Ctx, EntityDef, Segment, SituationDef } from "@/content/types";
 import { ent, t } from "@/content/dsl";
 import { WORLD_COUNTRIES, WORLD_NATIONALITIES } from "../countries";
 import { pick, pickFrom } from "../hint-pick";
+import { TAXI_LINES, TAXI_MERGES } from "../taxi-lines";
 
 // ---------------------------------------------------------------------------
 // Places: Spanish head, English gloss, gender, location id, fare (cents of a peso). `def`: the definite article when it
@@ -301,6 +302,7 @@ export const taxi: SituationDef = {
   },
 
   lines: {
+    ...TAXI_LINES,
     greet: [
       t("¡Buenas! | ¿A | dónde | {m:lo|f:la} | llevo?", "Hi! | To | where | you | I-take?", "Hi! Where can I take you?",
         { flags: { 3: "lo / la: “you” (usted) – lo for a man, la for a woman." } }),
@@ -409,6 +411,7 @@ export const taxi: SituationDef = {
   },
 
   merges: {
+    ...TAXI_MERGES,
     // Spain's twins (11 Nov 2026)
     "hemos llegado": { reason: "grammatical_fusion", split: "hemos → have/has + llegado (participle): haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
     "he venido": { reason: "grammatical_fusion", split: "he → have/has + venido (participle): haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },

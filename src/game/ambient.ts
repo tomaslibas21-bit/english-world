@@ -587,11 +587,13 @@ export class Ambient {
     }
     // obstacles: the player, people and the car ahead
     let gap = this.riding ? Infinity : this.blockedAhead(c, player.x, player.z);
-    // (and a car one can drive, parked in the lane or rolling along it)
+    // A ride outside the traffic lane's ends cannot block that lane.
+    const h = c.half;
     for (const b of this.rideBoxes) {
       const ex = Math.abs(Math.sin(b.heading)) * b.hl + Math.abs(Math.cos(b.heading)) * b.hw, ez = Math.abs(Math.cos(b.heading)) * b.hl + Math.abs(Math.sin(b.heading)) * b.hw;
+      if (b.x - ex > c.to + h.x || b.x + ex < c.from - h.x) continue;
       const a = (b.x - c.x) * c.dir;
-      if (a > 0 && a < 18 + ex && Math.abs(b.z - c.lane) < ez + c.half.z + 0.15) gap = Math.min(gap, a - ex - c.half.x + 0.6);
+      if (a > 0 && a < 18 + ex && Math.abs(b.z - c.lane) < ez + h.z + 0.15) gap = Math.min(gap, a - ex - h.x + 0.6);
     }
     for (const w of this.walkers) if (w.kind === "walk") gap = Math.min(gap, this.blockedAhead(c, w.ch.root.position.x, w.ch.root.position.z));
     for (const o of this.cars) if (o !== c && o.lane === c.lane && o.hidden <= 0) {

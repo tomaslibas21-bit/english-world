@@ -8,6 +8,7 @@ import { CAR_MODELS, carFootprint, carLedges, carModelEntry, isCarModelLoaded, l
 import { CarVisuals } from "../src/game/world/carVisuals";
 import { BUILDINGS, OUTDOOR_NPCS, PARKED_CARS, TAXI, TRAFFIC_CARS } from "../src/game/world/layout";
 import { THEME } from "../src/game/world/theme";
+import type { StandTaxi } from "../src/game/world/town";
 
 const assets = new URL("../public/models/cars/", import.meta.url);
 const names = Object.keys(CAR_MODELS) as CarModelName[];
@@ -114,14 +115,26 @@ describe("car models", () => {
 
     const parking = new THREE.Group(), fallback = new THREE.Mesh();
     parking.add(fallback);
+    const stand: StandTaxi | undefined = THEME.taxi ? { root: new THREE.Group(), fallback: new THREE.Mesh() } : undefined;
+    const rides = new THREE.Group();
+    if (stand) {
+      stand.root.add(stand.fallback);
+      rides.add(stand.root);
+    }
     const nav = { nearestFree: () => -1 } as unknown as NavGrid;
     const ambient = new Ambient(nav, [[0, 0]], "low");
-    const visuals = new CarVisuals({ group: parking, fallback, placements: PARKED_CARS }, ambient);
+    const visuals = new CarVisuals({ group: parking, fallback, placements: PARKED_CARS, taxi: stand }, ambient);
     try {
       const modelCount = THEME.traffic.length ? 2 : 4;
       await vi.waitFor(() => expect(visuals.stats()).toEqual({ trafficModels: modelCount, parkedModels: PARKED_CARS.length, taxi: true }));
       expect(fallback.parent).toBeNull();
       expect(parking.children).toHaveLength(2);
+      if (stand) {
+        expect(stand.instance?.parent).toBe(stand.root);
+        expect(stand.fallback.parent).toBeNull();
+        expect(stand.root.parent).toBe(rides);
+        expect(stand.instance?.getObjectByName("wheel-front-left")).toBeDefined();
+      }
       const batches = ambient.group.children.filter((mesh) => mesh.name.startsWith("traffic-")) as THREE.InstancedMesh[];
       expect(batches).toHaveLength(6);
       for (const car of ambient.traffic) expect(car.mesh.parent).toBe(car.model ? null : ambient.group);
@@ -136,6 +149,7 @@ describe("car models", () => {
     } finally {
       visuals.dispose();
     }
+    if (stand) expect(stand.instance?.parent).toBeNull();
   });
 
   it("uses the same footprint to stop a walker and lets a jump land at the rotated sedan's roof height", () => {

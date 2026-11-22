@@ -1,0 +1,35 @@
+.mode-score {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(8 30 42 / 38%);
+  pointer-events: auto;
+}
+.mode-score-card {
+  width: min(100%, 440px);
+  max-height: 100%;
+  overflow: auto;
+  padding: clamp(16px, 4vw, 28px);
+  border-radius: 22px;
+  background: var(--panel-solid);
+  color: var(--ink);
+  box-shadow: 0 16px 50px rgb(0 20 40 / 40%);
+  text-align: center;
+}
+.mode-score-card h2 { margin: 0; }
+.mode-score-line { display: block; margin-top: 4px; font-size: 2.45em; font-variant-numeric: tabular-nums; }
+.mode-score-card dl { margin: 12px 0 20px; }
+.mode-score-card dl > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+  text-align: left;
+}
+.mode-score-card dd { flex: none; margin: 0; font-weight: 800; }
+.mode-score-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; }

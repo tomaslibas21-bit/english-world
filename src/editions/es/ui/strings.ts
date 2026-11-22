@@ -1,6 +1,20 @@
 // The interface in English for the Spanish edition: each Lithuanian original (as written in src/ui/…, through
 // L() / Lx() of src/ui/i18n.ts) and its English. Keep the {placeholders}. Replaces src/ui/strings.ts in this edition.
 export const STRINGS: Record<string, string> = {
+  // Ride-along taxi
+  "Vairuoti taksi": "Drive the taxi",
+  "← Sukite kairėn": "← Turn left",
+  "Sukite dešinėn →": "Turn right →",
+  "↑ Važiuokite tiesiai": "↑ Go straight",
+  "Sustokite čia": "Stop here",
+  "Kelionė baigta": "Ride over",
+  "Kaina": "Fare",
+  "Arbatpinigiai": "Tip",
+  "Posūkiai iš pirmo karto": "Turns right the first time",
+  "Sustojote": "Stopped",
+  "prie durų": "at the door",
+  "per toli": "too far",
+  "Frazių kortelės": "Phrase cards",
   // The start screen (src/ui/Title.tsx)
   "Sveiki! Ką jums paduoti?": "Hello! What can I get you?",
   "Imsiu latę.": "I'll have a latte.",
@@ -803,6 +817,8 @@ export const STRINGS: Record<string, string> = {
   "Gerai": "OK",
   "Kaip judėti mieste?": "How do I get around town?",
   "Klavišai.": "Keys.",
+  "Klavišai": "Keys",
+  "Meniu": "Menu",
   "Spustelėk žemę – nueisi ten. {g} – nueiti iki užduoties, {m} – žemėlapis, {j} – užduotys, {p} – telefonas.": "Click the ground to walk there. {g} walks to your task, {m} opens the map, {j} your tasks, {p} the phone.",
   "Patarimai vėl bus rodomi": "The tips will show again",
   "Rodyti patarimus iš naujo": "Show the tips again",

@@ -13,7 +13,8 @@ export function Toasts() {
   // The surf picker and lesson can change screens without changing the main store.
   useSurf((s) => s.active || s.picking);
   const toasts = useStore((s) => usesTownNotes(s) ? null : s.toasts);
-  return <ToastList toasts={toasts ?? []} />;
+  const modeMenu = useStore((s) => s.hud.modeScreen?.kind === "menu");
+  return <ToastList toasts={(modeMenu ? toasts?.filter((toast) => toast.rideHint) : toasts) ?? []} />;
 }
 
 export function TownToast({ visible }: { visible: boolean }) {
@@ -29,7 +30,7 @@ function ToastList({ toasts, town }: { toasts: Toast[]; town?: boolean }) {
         const lead = splitLead(t.title);
         const icon = (t as ToastInput).icon ?? lead.icon ?? KIND_ICON[t.kind] ?? "info";
         return (
-          <div key={t.id} className={"toast " + t.kind}>
+          <div key={t.id} className={"toast " + t.kind} data-ride-hint={t.rideHint}>
             <span className="t-icon"><Icon name={icon} size={22} /></span>
             <div className="t-text">
               <b>{lead.stars > 0 && <Stars n={lead.stars} of={lead.stars} size={17} label={L("{n} iš 3", { n: lead.stars })} />}{withIcons(lead.rest)}</b>

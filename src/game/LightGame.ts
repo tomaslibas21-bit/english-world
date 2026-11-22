@@ -124,8 +124,10 @@ export class LightGame implements GameApi {
   surfRepeat() { /* the surf lesson is the town's */ }
   surfMic() { /* the surf lesson is the town's */ }
   surfAgain() { /* the surf lesson is the town's */ }
-  surfAfter() { return false; }
-  surfFromConversation() { /* the surf lesson is the town's */ }
+  modeOffer() { return null; }
+  modeFromConversation() { /* modes are in the town */ }
+  modeExit() {}
+  modeAction() {}
   refreshNameTags() { /* no name tags without the town */ }
   /** "Nuvesk mane" (the journal): there is nowhere to walk, so the task's conversation starts. */
   autoWalkToObjective() {

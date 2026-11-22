@@ -281,7 +281,7 @@ try {
     await page.evaluate(() => window.__ew.game.hold(false));
 
     if (!phone) {
-      const chip = page.getByRole("button", { name: "Klavišai" });
+      const chip = page.getByRole("button", { name: englishUi ? "Keys" : "Klavišai" });
       await chip.waitFor();
       assert(!(await page.locator(".ride-strip").isVisible()), "the key strip shrank to the chip");
       await chip.hover();
@@ -300,7 +300,7 @@ try {
       await page.evaluate(() => window.__ew.store.getState().setHud({ objective: null }));
       assert.equal(await page.locator(".objective-card.collapsed .objective-title").innerText(), englishUi ? "All tasks done" : "Visos užduotys atliktos");
     } else {
-      assert.equal(await page.getByRole("button", { name: "Klavišai" }).count(), 0, "touch controls have no key chip");
+      assert.equal(await page.getByRole("button", { name: englishUi ? "Keys" : "Klavišai" }).count(), 0, "touch controls have no key chip");
     }
     if (phone) await press(".act-btn"); else await page.keyboard.press("e");
     await page.waitForFunction(() => !window.__ew.game.rides.riding && !window.__ew.store.getState().hud.ride, null, { timeout: 5000 });

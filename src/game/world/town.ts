@@ -1,8 +1,9 @@
 // Builds the outdoor town of Maple Harbor from layout.ts: ground, sea, buildings, props, colliders, doors.
 import * as THREE from "three";
+import { TAXI_ROUTES } from "../../content/taxi";
 import * as GROUNDS from "../cave/grounds";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, GAS_FORECOURT, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, type BuildingDef } from "./layout";
+import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, GAS_FORECOURT, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, type BuildingDef } from "./layout";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
 import { carParts, mxTaxiParts } from "./car";
 import { carFootprint, carModelEntry, type CarPlacement } from "./carModels";
@@ -22,10 +23,17 @@ export interface Seat {
   recline?: number;
 }
 
+export interface StandTaxi {
+  root: THREE.Group;
+  fallback: THREE.Mesh;
+  instance?: THREE.Group;
+}
+
 export interface ParkedCars {
   group: THREE.Group;
   fallback: THREE.Mesh;
   placements: readonly CarPlacement[];
+  taxi?: StandTaxi;
 }
 
 export interface Town {
@@ -286,9 +294,6 @@ export function buildTown(): Town {
   if (signsMesh && M instanceof TownMerger) signsMesh.renderOrder = 1;
   if (signsMesh) group.add(signsMesh);
   M.build(group);
-  // the gas station's canopy: looked through by the camera (cutout.ts) rather than a roof it must stay under, or under
-  // it, at the store's door, the camera has nowhere to go but behind the player's head (Game.ts's field skips it)
-  for (const o of group.children) if (/^gas-canopy/.test(o.name)) o.userData.thin = true;
 
   const clouds = makeClouds(group, r);
   const boats = group.children.filter((o) => o.userData.boat);
@@ -1659,20 +1664,31 @@ function makeParkedCars(col: Colliders): ParkedCars {
   const group = new THREE.Group();
   group.name = "parked-cars";
   const parts: [THREE.BufferGeometry, THREE.ColorRepresentation][] = [];
+  let standTaxi: StandTaxi | undefined;
   for (const spot of PARKED_CARS) {
     const { model, x, z, rot, color, trim } = spot;
-    col.boxes.push({ ...carFootprint(spot), tag: "car", split: true });
     const { width, length, height } = carModelEntry(model).collisionBox;
     const taxi = model === "taxi";
     const fallbackParts = taxi && trim ? mxTaxiParts(color, trim) : carParts(color, { taxi });
-    for (const [geometry, paint] of fallbackParts) {
-      geometry.scale(width / 2.12, height / (taxi ? 1.8 : 1.56), length / 4.42).rotateY(rot).translate(x, 0, z);
-      parts.push([geometry, paint]);
+    for (const [geometry] of fallbackParts) geometry.scale(width / 2.12, height / (taxi ? 1.8 : 1.56), length / 4.42);
+    if (spot === TAXI && TAXI_ROUTES.length) {
+      // The mode boards the stand car itself and owns its collision and climbing surfaces.
+      const root = new THREE.Group();
+      root.position.set(x, 0, z);
+      root.rotation.y = rot;
+      const fallback = staticColoured(fallbackParts, "stand-taxi-fallback");
+      root.add(fallback);
+      group.add(root);
+      standTaxi = { root, fallback };
+      continue;
     }
+    col.boxes.push({ ...carFootprint(spot), tag: "car", split: true });
+    for (const [geometry] of fallbackParts) geometry.rotateY(rot).translate(x, 0, z);
+    parts.push(...fallbackParts);
   }
   const fallback = staticColoured(parts, "parked-car-fallback");
   group.add(fallback);
-  return { group, fallback, placements: PARKED_CARS };
+  return { group, fallback, placements: PARKED_CARS, taxi: standTaxi };
 }
 
 function nearIntersection(x: number, z: number) {
@@ -2393,10 +2409,8 @@ class TownMerger extends Merger {
     const g = geo.index ? geo.toNonIndexed() : geo;
     if (e.flat) { g.deleteAttribute("normal"); g.computeVertexNormals(); } // (each triangle its own normal)
     else if (!g.attributes.normal) g.computeVertexNormals();
-    // (the gas station's canopy: a roof the walking camera looks through, as Maple Harbor's own mesh is: after M.build)
-    // (graphics round 6: and the hotel's canopy and its posts, the drop-off's posts, the taxi stand's sign pole: the camera
-    // no longer shortens to a metre or goes up over her head walking by one, it looks through)
-    this.put(g, e.color, /^gas-canopy|^hotel-canopy|^dropoff-post$|^taxi-sign-pole$/.test(key) ? "thinCast" : k.cast ? "cast" : "still");
+    // Keep the hotel's canopy and posts, the drop-off's posts and the taxi sign pole in camera-thin meshes.
+    this.put(g, e.color, /^hotel-canopy|^dropoff-post$|^taxi-sign-pole$/.test(key) ? "thinCast" : k.cast ? "cast" : "still");
   }
   /** The edition's vertex-coloured pieces (mexican.ts: flat-shaded) into the squares too: `kind` "thin" for the overhead
    *  lines (a mesh the walking camera looks through: userData.thin, no shadow). */
@@ -2618,23 +2632,33 @@ function addTransport(M: Merger, col: Colliders, group: THREE.Group) {
   }
   col.addBox(52, 86, 60, 3.2);
   // gas station canopy and pumps
-  M.add("gas-canopy", mat("#f4f4f4"), boxGeo(18, 0.6, 9, 112, 5, 5.5));
-  M.add("gas-canopy-trim", mat("#d94b3d"), boxGeo(18.1, 0.35, 9.1, 112, 4.6, 5.5));
+  const canopy = new THREE.Group();
+  canopy.name = "gas-canopy-assembly";
+  canopy.userData.fadeNearCamera = true;
+  const roof = new Merger();
+  roof.add("gas-canopy", mat("#f4f4f4"), boxGeo(18, 0.6, 9, 112, 5, 5.5));
+  roof.add("gas-canopy-trim", mat("#d94b3d"), boxGeo(18.1, 0.35, 9.1, 112, 4.6, 5.5));
+  roof.build(canopy);
+  for (const part of canopy.children) {
+    part.userData.roofOnly = true;
+    part.userData.cameraClearance = 0.6;
+  }
+  group.add(canopy);
   for (const px of [104, 110, 116]) {
     M.add("pump", mat("#d94b3d"), boxGeo(0.9, 1.7, 0.6, px, 0.85, 5.5));
     M.add("pump-screen", mat("#1d1d1d", { emissive: "#113322" }), boxGeo(0.5, 0.3, 0.62, px, 1.3, 5.5), false);
     M.add("canopy-post", mat("#d9d9d9"), cylGeo(0.18, 0.18, 4.6, px, 2.3, 3), false);
     col.addBox(px, 5.5, 1.1, 0.8);
   }
-  // the station's name on the canopy's front, where the street sees it (the canopy hides the shop's sign behind it from
-  // the street); see-through for the walking camera with the canopy (its name: buildTown, userData.thin)
+  // The canopy sign faces the street and fades with its roof.
   // (this edition's name for it: themed, as the building's own sign)
   const gasDef = BUILDINGS.find((b) => b.id === "gas"), gasName = gasDef && themed(gasDef).sign;
   if (gasName) {
     const gs = new THREE.Mesh(new THREE.PlaneGeometry(7, 0.58), new THREE.MeshBasicMaterial({ map: textTexture(gasName, { bg: "#f4f4f4", fg: "#d94b3d", w: 1024, h: 85 }), alphaTest: 0.5, toneMapped: false }));
     gs.name = "gas-canopy-sign";
+    gs.userData.thin = true;
     gs.position.set(112, 5.0, 0.94); gs.rotation.y = Math.PI;
-    group.add(gs);
+    canopy.add(gs);
   }
   // the pumps' numbers on the canopy's posts, towards the street (on the pumps, the posts hid them from the street)
   for (let i = 0; i < 3; i++) {
