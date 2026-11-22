@@ -13,8 +13,9 @@ export interface SurfUi {
   phase: Phase | null;
   /** What the instructor says now (it stays on show until her next line). */
   line: SurfLine | null;
-  /** How much help the line gets: 0 the Spanish with its glosses and its meaning, 1 the Spanish alone, 2 only her
-   *  voice (tap to read it). It fades as waves are ridden. */
+  /** How well the learner knows the line: 0 new, 1 heard a few times, 2 heard often (a command heard often shows its
+   *  move only when the learner hesitates). The screen shows every line with its translation all the same (22 Nov 2026):
+   *  the game's translation settings decide that, as in every conversation. */
   support: 0 | 1 | 2;
   /** The learner's turn to speak: the lines they may answer with (said aloud, or tapped). */
   choice: { id: string; options: SurfLine[] } | null;

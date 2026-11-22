@@ -1,6 +1,6 @@
-// The surf lesson on the screen (src/game/surf/): what the instructor says, shown with as much help as the learner
-// still needs for that line (its glosses and its meaning at first, then the Spanish alone, then only her voice), and
-// beside it a picture of what it asks for, where the edition has pictures (it goes when only her voice is left). Then
+// The surf lesson on the screen (src/game/surf/): what the instructor says, with its word line and its meaning as the
+// game's translation settings give them (every time: 22 Nov 2026), and beside it a picture of what it asks for, where
+// the edition has pictures. Then
 // the learner's turn, as in every conversation: the lines they may answer with and the microphone that listens for
 // them (a tap answers too), or, when she asked for a move, that move and its key in large letters right under her
 // line ("Stokis – spausk ↑"; on a phone it is the button to tap). The balance in a ride; the score; the level's
@@ -17,12 +17,34 @@ import { L, Lx, TL } from "./i18n";
 import { EDITION } from "../edition";
 import "./surf.css";
 
-/** One of her lines or one of the answers, with the help it gets. */
-function Line({ line, support }: { line: SurfLine; support: 0 | 1 | 2 }) {
-  // (a line of a word or two whose glosses already say it all gets no second translation under them)
-  const bare = (t: string) => t.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
-  const same = bare(line.s.units.map((u) => u.lt).join(" ")) === bare(line.s.nat ?? "");
-  return <Interlinear s={line.s} lt={support === 0} ipa={false} nat={support === 0 && !same} />;
+/** A line of Spanish with nothing under it but the same words: no second translation for it. */
+const bare = (t: string) => t.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+const sameAsGloss = (s: SurfLine["s"]) => bare(s.units.map((u) => u.lt).join(" ")) === bare(s.nat ?? "");
+
+/** One of her lines, with the help every conversation gives (the game's own setting „Vertimas po žodžiais“): the word
+ *  line under the Spanish and the meaning under that, every time she says it (owner, 22 Nov 2026: lines that had lost
+ *  their translation after a few hearings read as untranslated). With the setting off, the Spanish alone; a tap on a
+ *  word still gives its meaning. */
+function Line({ line, lt }: { line: SurfLine; lt: boolean }) {
+  return <Interlinear s={line.s} lt={lt} ipa={false} nat={lt && !sameAsGloss(line.s)} />;
+}
+
+/** One of the learner's answers inside its button: the Spanish, each word with its meaning under it, and the whole
+ *  meaning where it says more than the words (no popovers: the tap is the answer). */
+function Answer({ s, lt }: { s: SurfLine["s"]; lt: boolean }) {
+  return (
+    <>
+      <span className="surf-choice-text il surf-il" lang={TL}>
+        {s.units.map((u, i) => (
+          <span className="u" key={i}>
+            <span className="en">{u.en}</span>
+            {lt && <span className={"lt" + (u.lt.startsWith("—") ? " dash" : "")} lang={EDITION.helper}>{u.lt}</span>}
+          </span>
+        ))}
+      </span>
+      {(!lt || !sameAsGloss(s)) && s.nat && <small lang={EDITION.helper}>{s.nat}</small>}
+    </>
+  );
 }
 
 /** The picture of what her line asks for, in a small frame: the new one slides in over the one before it (no blank
@@ -146,16 +168,13 @@ export function SurfOverlay() {
   const s = useSurf();
   const touch = useStore((st) => st.hud.showTouch);
   const slow = useStore((st) => !!st.settings.slowVoice);
-  const [shown, setShown] = useState(false);
-  // (her next line is heard first again)
-  useEffect(() => { setShown(false); }, [s.line?.cue, s.line?.s.en]);
+  // the translations follow the game's settings, as in every conversation: her lines (lt), the learner's (sayLt)
+  const lt = useStore((st) => st.settings.lt !== false);
+  const sayLt = useStore((st) => st.settings.sayLt !== false);
   if (!s.active) return null;
   const sc = s.score;
-  const hidden = s.support === 2 && !shown;
   const riding = s.phase === "ride";
-  // the picture is help too: it stays while the words lose their translation, and goes when only her voice is left
-  // (a tap brings the words and the picture back)
-  const pic = hidden ? undefined : s.line?.pic;
+  const pic = s.line?.pic;
   return (
     <div className={"surf" + (touch ? " touch" : "")}>
       <div className="surf-top">
@@ -172,9 +191,7 @@ export function SurfOverlay() {
           <div className={"surf-card" + (pic ? " has-pic" : "") + (s.mark ? " " + s.mark : "") + (s.asked ? " asked" : "")} lang={TL}>
             {pic && <Picture src={pic} />}
             <div className="surf-words">
-              {hidden
-                ? <button className="surf-listen" onClick={() => setShown(true)} lang={EDITION.helper}><Icon name="speaker" size={22} /> <span>{L("Klausyk")}</span><small>{L("Rodyti tekstą")}</small></button>
-                : <Line line={s.line} support={s.support === 2 ? 1 : s.support} />}
+              <Line line={s.line} lt={lt} />
               {riding && <div className="surf-balance" role="meter" aria-label={L("Pusiausvyra")} aria-valuemin={0} aria-valuemax={1} aria-valuenow={s.balance}><i style={{ width: `${Math.round(s.balance * 100)}%` }} /></div>}
             </div>
             <button className="surf-again" onClick={() => game?.surfRepeat()} title={L("Pakartoti")} aria-label={L("Pakartoti")} lang={EDITION.helper}><Icon name="speaker" size={19} /></button>
@@ -190,14 +207,13 @@ export function SurfOverlay() {
           {s.choice.options.map((o, i) => (
             <button key={o.cue} className="surf-choice" onClick={() => game?.surfChoose(o.cue)}>
               {!touch && <kbd>{i + 1}</kbd>}
-              <span className="surf-choice-text" lang={TL}>{o.s.en}</span>
-              <small lang={EDITION.helper}>{o.s.nat}</small>
+              <Answer s={o.s} lt={sayLt} />
             </button>
           ))}
         </div>
       )}
       {/* what the learner has just said, until she answers */}
-      {s.said && !s.choice && !s.over && <div className="surf-said" lang={TL}><Icon name="check" size={18} strokeWidth={2.6} /> <span>{s.said.s.en}</span></div>}
+      {s.said && !s.choice && !s.over && <div className="surf-said" lang={TL}><Icon name="check" size={18} strokeWidth={2.6} /> <span className="surf-said-words"><span>{s.said.s.en}</span>{sayLt && s.said.s.nat && <small lang={EDITION.helper}>{s.said.s.nat}</small>}</span></div>}
       {s.over && (
         <div className="surf-pick">
           <div className="surf-pick-card">

@@ -5,7 +5,7 @@
 // to tap). The wrong board first; a second lesson by a learner who stands up too early and answers her questions; the
 // score card, back on the sand with the score and the cards kept; the lesson started by the conversation's own event;
 // the way out at any moment; and, where the edition has them, the picture of what each command asks for (beside her
-// words, clear of the board, gone when only her voice is left, still with reduced motion). Time is stepped by hand, so
+// words, clear of the board, kept when the line is heard often, still with reduced motion). Time is stepped by hand, so
 // a lesson takes seconds. Playwright's own Chromium only (never the owner's Chrome). Against a dev server or a built game
 // of a town with a surf school (Puerto Colibrí); WORLD_SHOTS=<folder> keeps pictures of its moments:
 // WORLD_TEST_URL=http://127.0.0.1:8096 WORLD_STORAGE=puerto-colibri WORLD_PLAYWRIGHT_MODULE=/path/to/playwright-core/index.mjs node tests/browser/surf.mjs
@@ -224,8 +224,8 @@ try {
     await step(60 * 20);
     const later = await L();
     check(`${label}: she waits: twenty seconds of silence, and it is still the learner's turn to answer her first line`, first?.choice === "ack" && later?.choice === "ack" && later.phase === "intro" && later.heard.length === first.heard.length, { first: first?.heard, later: later?.heard });
-    const panel = await page.evaluate(() => ({ turn: !!document.querySelector(".surf-turn"), mic: !!document.querySelector(".surf-turn .surf-mic"), options: [...document.querySelectorAll(".surf-choice .surf-choice-text")].map((e) => e.innerText), helps: [...document.querySelectorAll(".surf-choice small")].map((e) => e.innerText) }));
-    check(`${label}: the learner's lines are on show with their meaning, under the microphone`, panel.turn && panel.mic && panel.options.length === 2 && /Perfecto/.test(panel.options[0]) && panel.helps.every((h) => h.length > 1), panel);
+    const panel = await page.evaluate(() => ({ turn: !!document.querySelector(".surf-turn"), mic: !!document.querySelector(".surf-turn .surf-mic"), options: [...document.querySelectorAll(".surf-choice .surf-choice-text")].map((e) => [...e.querySelectorAll(".en")].map((w) => w.innerText).join(" ")), helps: [...document.querySelectorAll(".surf-choice")].map((b) => [...b.querySelectorAll(".lt")].map((w) => w.innerText).join(" ")) }));
+    check(`${label}: the learner's lines are on show with their words' meaning, under the microphone`, panel.turn && panel.mic && panel.options.length === 2 && /Perfecto/.test(panel.options[0]) && panel.helps.every((h) => h.length > 1), panel);
     let run = await play("good", "beginner");
     s = await L();
     check(`${label}: the lesson ran to its end: a wave ridden to the beach, every command followed`, s?.phase === "over" && s.score.waves === 1 && s.score.falls === 0 && s.score.followed === s.score.asked && s.score.asked >= 4, s?.score);
@@ -298,14 +298,12 @@ try {
         await new Promise((r) => setTimeout(r, 350));
         const withHelp = await page.evaluate(() => ({ pic: !!document.querySelector(".surf-card.has-pic .surf-pic img.new"), gloss: !!document.querySelector(".surf-card .u .lt") }));
         check(`${label}: a new line comes with its picture and its glosses`, withHelp.pic && withHelp.gloss, withHelp);
-        // heard often: the words lose their translation, the picture stays; heard more: only her voice, no picture
+        // heard often: the words keep their translation and the picture (22 Nov 2026: the help no longer fades;
+        // the game's translation setting decides it, tests/browser/surf-glosses.mjs)
         const stage = async (support) => { await page.evaluate((n) => window.__ew.surf?.setState?.({ support: n }), support); await step(2); return page.evaluate(() => ({ pic: !!document.querySelector(".surf-pic"), gloss: !!document.querySelector(".surf-card .u .lt"), listen: !!document.querySelector(".surf-listen") })); };
         if (await page.evaluate(() => !!window.__ew.surf)) {
           const one = await stage(1), two = await stage(2);
-          check(`${label}: the Spanish alone still has its picture; voice only has none until asked for`, one.pic && !one.gloss && !two.pic && two.listen, { one, two });
-          await page.locator(".surf-listen").click();
-          await step(2);
-          check(`${label}: a tap brings her words and the picture back`, await page.locator(".surf-pic").count() === 1);
+          check(`${label}: a line heard often keeps its translation and its picture`, one.pic && one.gloss && two.pic && two.gloss && !two.listen, { one, two });
           await stage(0);
         }
         await page.emulateMedia({ reducedMotion: "reduce" });
