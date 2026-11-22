@@ -145,6 +145,7 @@ function SitCard({ s, onClick, open }: { s: SituationMeta; onClick?: () => void;
   const progress = useStore((st) => st.progress);
   const sp = sitProgress(progress, s.id);
   const loc = LOCATIONS[s.location];
+  const keepsake = keepsakeFor(s.id);
   const Row = onClick ? "button" : "div";
   return (
     <Row className={"sit-card" + (progress.objective === s.id ? " current" : "")} data-sit={s.id} onClick={onClick} aria-expanded={open}>
@@ -153,7 +154,7 @@ function SitCard({ s, onClick, open }: { s: SituationMeta; onClick?: () => void;
         <b>{s.title.lt}</b>
         <span><i style={{ fontFamily: "var(--en)", fontSize: "1.1em" }}>{s.title.en}</i> · {loc?.lt}{s.song !== "" && <> · {L("daina {song}", { song: s.song })}</>}</span>
       </span>
-      {sp.completions > 0 && <KeepsakeIcon kind={keepsakeFor(s.id)} named />}
+      {sp.completions > 0 && keepsake && <KeepsakeIcon kind={keepsake} named />}
       <Stars n={stars(sp)} />
     </Row>
   );

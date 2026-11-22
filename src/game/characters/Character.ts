@@ -383,6 +383,10 @@ export class Character {
   /** The phone in the right hand, shown while they look at it. */
   private phone: THREE.Object3D | null = null;
   private backpack: THREE.Object3D | null = null;
+  private backpackHidden = false;
+  /** Hidden in the hotel pool and during its ball game; only a change touches the pack (the surf sets it too). */
+  get hideBackpack() { return this.backpackHidden; }
+  set hideBackpack(hidden: boolean) { if (hidden !== this.backpackHidden) { this.backpackHidden = hidden; this.setBackpack(!hidden); } }
   /** The shins with their feet: standing, and longer ones for sitting (built when the character first sits). */
   private shins: THREE.Object3D[] = [];
   private seatShins: THREE.Object3D[] | null = null;
@@ -531,6 +535,9 @@ export class Character {
   private walkPhase = 0;
   /** Where the legs are in their swing (radians, growing as they walk): a foot comes down at every π/2 + kπ. */
   get stepPhase() { return this.walkPhase; }
+  /** An overhead reach, eased over the beach ball's hit. */
+  poolHit = 0;
+  wading = false;
   private blob: THREE.Mesh;
   seated = false;
   /** Height of the seat top when sitting (chairs and benches in the town are about half a metre). */
@@ -540,7 +547,7 @@ export class Character {
 
   constructor(public look: Look) {
     const h = look.height ?? 1;
-    const b = look.build ?? 1;
+    const b = (look.build ?? 1) * (look.child ? 0.93 : 1);
     this.height = 1.75 * h;
     const acc = look.acc || [];
     this.root.add(this.body);
@@ -551,6 +558,10 @@ export class Character {
     this.body.add(this.head);
     this.head.position.y = 1.52 * h;
     this.buildHead(look, acc);
+    if (look.child) {
+      this.head.scale.setScalar(1.04);
+      this.legL.scale.y = this.legR.scale.y = 0.84;
+    }
     this.buildCarried(look, h, b);
     this.busy = look.carry === "cup" || look.carry === "paper" ? look.carry : null;
     this.holds = look.carry === "coffee" || look.carry === "bag" ? look.carry : null;
@@ -573,9 +584,9 @@ export class Character {
     this.smile = bone(this.smile); this.corners = bone(this.corners); this.mouth = bone(this.mouth);
     this.browY = this.browL.position.y;
     if (this.skirt) this.skirt = bone(this.skirt);
+    if (this.backpack) this.backpack = bone(this.backpack);
     if (this.mane) this.mane = bone(this.mane);
     if (this.phone) { this.phone = bone(this.phone); vis(this.phone, false); }
-    if (this.backpack) this.backpack = bone(this.backpack);
     this.shins = this.shins.map(bone);
     vis(this.mouth, false);
     vis(this.lids, false);
@@ -747,17 +758,26 @@ export class Character {
     if (look.backpack) {
       // the player's backpack: a pack on the back with a flap and a pocket, its straps over the shoulders and down the
       // chest (so it shows from the front too)
-      const parts = new Parts(), pack = new THREE.Color(look.backpack), strap = pack.clone().multiplyScalar(0.7);
+      const backpack = new Parts();
+      const pack = new THREE.Color(look.backpack), strap = pack.clone().multiplyScalar(0.7);
       const bz = -tr * 0.78 - 0.075;
-      parts.add(new THREE.BoxGeometry(0.36 * b, 0.42 * h, 0.17).translate(0, 1.0 * h, bz), pack);
-      parts.add(new THREE.BoxGeometry(0.38 * b, 0.1 * h, 0.18).translate(0, 1.19 * h, bz - 0.004), strap);
-      parts.add(new THREE.BoxGeometry(0.24 * b, 0.15 * h, 0.06).translate(0, 0.9 * h, bz - 0.1), strap);
+      backpack.add(new THREE.BoxGeometry(0.36 * b, 0.42 * h, 0.17).translate(0, 1.0 * h, bz), pack);
+      backpack.add(new THREE.BoxGeometry(0.38 * b, 0.1 * h, 0.18).translate(0, 1.19 * h, bz - 0.004), strap);
+      backpack.add(new THREE.BoxGeometry(0.24 * b, 0.15 * h, 0.06).translate(0, 0.9 * h, bz - 0.1), strap);
       for (const s of [-1, 1]) {
-        parts.add(new THREE.BoxGeometry(0.055, 0.05, 0.36).translate(s * 0.12 * b, 1.27 * h, -0.03), strap);
-        parts.add(new THREE.BoxGeometry(0.055, 0.3 * h, 0.02).translate(s * 0.12 * b, 1.08 * h, front(1.08 * h) + 0.012), strap);
+        backpack.add(new THREE.BoxGeometry(0.055, 0.05, 0.36).translate(s * 0.12 * b, 1.27 * h, -0.03), strap);
+        backpack.add(new THREE.BoxGeometry(0.055, 0.3 * h, 0.02).translate(s * 0.12 * b, 1.08 * h, front(1.08 * h) + 0.012), strap);
       }
-      this.backpack = parts.mesh();
+      this.backpack = backpack.mesh();
+      this.backpack.name = "backpack";
       this.body.add(this.backpack);
+    }
+    if (look.swimRing) {
+      const panels = ["#ffbd21", "#fff1ba", "#ff7d43", "#ffbd21", "#fff1ba", "#ff7d43"];
+      const arc = Math.PI * 2 / panels.length;
+      for (const [i, color] of panels.entries()) {
+        P.add(G.torus(0.29, 0.108, 8, 5, arc).rotateZ(i * arc).rotateX(-Math.PI / 2).translate(0, h, 0), color);
+      }
     }
     rigid(this.body, P.mesh());
     if (this.longHair) this.buildMane(look, acc, h, b, R);
@@ -1326,6 +1346,7 @@ export class Character {
       if (m.userData.rigid && !this.parts.some((p) => p.bone === parent)) bone = parent;
       else {
         bone = new THREE.Bone();
+        bone.name = m.name;
         bone.position.copy(m.position); bone.quaternion.copy(m.quaternion); bone.scale.copy(m.scale);
         parent.add(bone);
       }
@@ -1381,9 +1402,13 @@ export class Character {
     bone.removeFromParent();
   }
 
+  headPosition(out: THREE.Vector3) {
+    return this.head.getWorldPosition(out);
+  }
+
   update(dt: number) {
     this.t += dt;
-    this.blob.visible = Character.blobShadows;
+    this.blob.visible = Character.blobShadows && !this.wading;
     const t = this.t, h = this.look.height ?? 1, b = this.look.build ?? 1;
     const seated = this.anim === "sit", walking = this.anim === "walk" || this.anim === "run";
     const E = this.energy, old = this.stoop, clamp = THREE.MathUtils.clamp;
@@ -1752,6 +1777,14 @@ export class Character {
       rf = -0.79;
       rfy = rfz = 0;
     }
+    if (this.poolHit > 0) {
+      const k = this.poolHit;
+      lx += (-2.75 - lx) * k; rx += (-2.75 - rx) * k;
+      lz += (-0.17 - lz) * k; rz += (0.17 - rz) * k;
+      lf += (-0.22 - lf) * k; rf += (-0.22 - rf) * k;
+      headNod -= 0.16 * k;
+    }
+    if (this.look.child) this.body.position.y -= 0.66 * h * 0.16;
     this.armL.rotation.set(lx, 0, lz);
     this.armR.rotation.set(rx, 0, rz);
     this.foreL.rotation.set(lf, lfy, lfz);

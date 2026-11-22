@@ -256,3 +256,20 @@ export const NPCS: Record<string, NpcDef> = Object.fromEntries([
   ...Object.entries(BASE).map(([id, n]) => [id, CAST[id] ? cast(id, n, CAST[id]) : { ...n, look: lookOf(id, n.look, n.gender) }]),
   ...Object.entries(EXTRA).map(([id, [base, ...c]]) => [id, cast(id, BASE[base], c)]),
 ]);
+
+for (const kid of [
+  { id: "vale", name: "Vale", gender: "f", voice: "ef_dora", look: {
+    skin: SKIN[2], hair: { style: "braid", color: HAIR.dark, side: -1, tie: "#ffd166" },
+    top: "#ee5c77", bottom: "#ee5c77", height: 0.78, build: 0.8, swim: "suit",
+  } },
+  { id: "diego", name: "Diego", gender: "m", voice: "em_alex", look: {
+    skin: SKIN[3], hair: { style: "short", color: HAIR.black },
+    top: "#27b5aa", bottom: "#2a6389", height: 0.85, build: 0.83, swim: "trunks",
+  } },
+  { id: "santi", name: "Santi", gender: "m", voice: "em_santa", look: {
+    skin: SKIN[2], hair: { style: "curly", color: HAIR.dark },
+    top: "#f5bb43", bottom: "#ec7752", height: 0.66, build: 0.72, swim: "trunks", swimRing: true,
+  } },
+] satisfies { id: string; name: string; gender: NpcDef["gender"]; voice: string; look: Look }[]) {
+  NPCS[kid.id] = { ...kid, role: { en: "", lt: "" }, informal: true, look: { ...kid.look, sleeves: "none", child: true, flipflops: true } };
+}

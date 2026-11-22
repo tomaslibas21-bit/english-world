@@ -1,0 +1,48 @@
+.hud > .pool-overlay { position: absolute; inset: 0; pointer-events: none; }
+
+.pool-top {
+  position: absolute;
+  inset: calc(14px + env(safe-area-inset-top)) 0 auto;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding-inline: 12px;
+}
+
+.pool-counter, .pool-cue, .pool-aside {
+  border-radius: 14px;
+  background: var(--panel-solid);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.pool-counter { padding: 5px 11px; font-size: 0.83rem; }
+.pool-counter b { padding-inline-start: 0.25em; font-variant-numeric: tabular-nums; }
+
+.pool-cues { display: grid; justify-items: center; gap: 6px; max-width: min(90vw, 440px); }
+.pool-cue, .pool-aside { padding: 6px 11px; }
+.pool-aside { font-size: 0.86em; }
+
+.pool-help {
+  position: absolute;
+  inset: auto 0 calc(24px + env(safe-area-inset-bottom));
+  width: max-content;
+  max-width: min(88vw, 390px);
+  margin-inline: auto;
+  padding: 9px 13px;
+  background: var(--panel-solid);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgb(0 20 40 / 25%);
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  animation: pool-help-in 0.24s ease-out;
+}
+
+@keyframes pool-help-in { from { opacity: 0.88; } }
+@media (prefers-reduced-motion: reduce) { .pool-help { animation: none; } }
+.pool-help-touch { bottom: calc(112px + env(safe-area-inset-bottom)); }
+.pool-hit { pointer-events: auto; }

@@ -21,6 +21,7 @@
 // 3D room) have the kitchen on the left and the sea from the balcony: the lines name no side, and the sea is "se alcanza
 // a ver" (at the end of calle Flamboyán).
 
+import { nameHint } from "../personal-hints";
 import type { Ctx, EntityDef, SituationDef } from "@/content/types";
 import { ent, t } from "@/content/dsl";
 import type { ConvCtx } from "@/convo/dialogue";
@@ -949,7 +950,7 @@ export const apartment: SituationDef = {
       { id: "like_see", s: t("Me gustaría | ver | el | departamento, | por favor.", "I'd like | to see | the | apartment, | please.", "I'd like to see the apartment, please.", { neutral: t("Me gustaría | ver | el | apartamento, | por favor.", "I'd like | to see | the | apartment, | please.", "I'd like to see the apartment, please."), spain: t("Me gustaría | ver | el | piso, | por favor.", "I'd like | to see | the | apartment, | please.", "I'd like to see the apartment, please.") }), register: "polite" },
       { id: "spoke_phone", s: t("Hablamos | por | teléfono | ayer.", "We spoke | on | the phone | yesterday.", "We spoke on the phone yesterday.") },
       { id: "still_avail", s: t("¿Todavía | está | disponible | el | departamento?", "Still | is | available | the | apartment?", "Is the apartment still available?", { neutral: t("¿Todavía | está | disponible | el | apartamento?", "Still | is | available | the | apartment?", "Is the apartment still available?"), spain: t("¿Todavía | está | disponible | el | piso?", "Still | is | available | the | apartment?", "Is the apartment still available?") }) },
-      { id: "my_name", s: t("Me llamo | {$name}.", "My name is | {$name}.", "My name is {$name}.") },
+      { id: "my_name", s: nameHint() },
     ] },
     ask_terms: { lt: "Ask about the rental terms", items: [
       { id: "q_rent", s: t("¿Cuánto | es | la | renta?", "How much | is | the | rent?", "How much is the rent?", { neutral: t("¿Cuánto | es | el | alquiler?", "How much | is | the | rent?", "How much is the rent?"), spain: t("¿Cuánto | es | el | alquiler?", "How much | is | the | rent?", "How much is the rent?") }) },

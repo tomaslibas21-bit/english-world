@@ -5,6 +5,7 @@ import type { GameApi } from "./gameRef";
 import { showConversationEvent } from "./convEvents";
 import type { Door } from "./world/town";
 import { Session } from "./session";
+import { POOL_SITUATION } from "./world/pool";
 import { audio } from "./audio";
 import { givenItem } from "./given";
 import { SITUATION_BY_ID, getSituation, loadSituation } from "../content/situations/catalog";
@@ -146,6 +147,7 @@ export class LightGame implements GameApi {
 
   private begin(sit: SituationDef) {
     const session: Session = new Session(sit.id, {
+      recordedOnly: sit.id === POOL_SITUATION,
       npcTalk: () => { /* no characters to animate */ },
       onEvent: (name, data) => { if (this.session === session) this.onSessionEvent(name, data); },
       onEnd: (s, completed) => {

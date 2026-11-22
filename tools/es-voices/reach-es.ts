@@ -14,6 +14,7 @@ import path from "node:path";
 import { parseAst } from "rolldown/parseAst";
 import { placeholders } from "../../src/convo/compose";
 import type { EntityDef, SituationDef } from "../../src/content/types";
+import { POOL_KIDS, POOL_SITUATION } from "../../src/game/world/pool";
 
 type Binding = Record<string, unknown>;
 const ROOT = path.resolve(import.meta.dirname, "../..");
@@ -430,6 +431,17 @@ export function codeSpeakers(sit: SituationDef): Map<string, Set<string>> {
       }
     };
     walk(file.ast, (n) => { if (n.type === "BlockStatement" || n.type === "Program") scan(n.body); });
+  }
+  if (sit.id === POOL_SITUATION) {
+    // The kit says these rally lines by key. Match the possible speakers in pool/mode.ts.
+    for (const key of Object.keys(sit.lines)) {
+      if (/^pl_(tuya|mia|arriba|cuidado|eso|bien|record|n\d+)$/.test(key)) {
+        for (const kid of POOL_KIDS) put(key, kid);
+      }
+      for (const named of POOL_KIDS) if (key === "pl_" + named) {
+        for (const kid of POOL_KIDS) if (kid !== named) put(key, kid);
+      }
+    }
   }
   speakerCache.set(sit.id, out);
   return out;

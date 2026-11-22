@@ -60,6 +60,7 @@ export const META: SituationMeta[] = [
   {"id":"x06-custodio","song":"","songTitle":"","title":{"en":"El Templo del Mar","lt":"The Temple of the Sea"},"topic":{"en":"En las ruinas","lt":"At the ruins"},"chapter":9,"order":5,"location":"ruinas","npc":"custodio","mode":"talk","goal":"Chat with Don Efraín at the gateway: tell him if it's your first time here, and ask him something about the temple.","intro":"You've walked to the end of the beach, where a gateway leads into the old Maya ruins. Don Efraín looks after them: he knows every stone, and he likes a chat with whoever comes in.","bonus":true},
   {"id":"x07-pintora","song":"","songTitle":"","title":{"en":"La pintora del templo","lt":"The temple's painter"},"topic":{"en":"En las ruinas","lt":"At the ruins"},"chapter":9,"order":6,"location":"ruinas","npc":"pintora","mode":"talk","goal":"Chat with Citlali at her easel: tell her what you think of her painting, and whether you paint or draw.","intro":"On the lawn of the ruins you find a young painter at her easel, the temple and the sea on her canvas. Citlali comes here every afternoon, and she doesn't mind being watched.","bonus":true},
   {"id":"x08-rosario","song":"","songTitle":"","title":{"en":"A la sombra","lt":"In the shade"},"topic":{"en":"En las ruinas","lt":"At the ruins"},"chapter":9,"order":7,"location":"ruinas","npc":"rosario","mode":"talk","goal":"Chat with Doña Rosario in the shade: talk about the heat, and find out who Pepe is.","intro":"By the wall of the ruins, in the shade, you come upon Doña Rosario weaving, her basket of thread beside her. On the big stone next to her something lies very still in the sun.","bonus":true},
+  {"id":"x09-alberca","song":"","songTitle":"","title":{"en":"La alberca","lt":"The pool"},"topic":{"en":"Junto a la alberca","lt":"By the pool"},"chapter":9,"order":8,"location":"hotel","npc":"vale","mode":"talk","goal":"Chat with Vale by the pool: tell her your name and where you're from, then join the ball game.","intro":"At the pool of Hotel Mar Azul, three kids are keeping a beach ball in the air. The oldest, Vale, waves you over.","bonus":true},
 ];
 
 export const LOAD: Record<string, () => Promise<SituationDef>> = {
@@ -121,4 +122,5 @@ export const LOAD: Record<string, () => Promise<SituationDef>> = {
   "x06-custodio": () => import("./x06-custodio").then((m) => m.default),
   "x07-pintora": () => import("./x07-pintora").then((m) => m.default),
   "x08-rosario": () => import("./x08-rosario").then((m) => m.default),
+  "x09-alberca": () => import("./x09-alberca").then((m) => m.default),
 };

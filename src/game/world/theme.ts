@@ -253,6 +253,8 @@ export interface TownTheme {
    *  from the camera (metres; null: always whole). */
   farPeople: number | null;
   adoquin: { streets: [number, number, number, number][]; bins: [number, number, number][]; bolardos: [number, number, number, number][]; bolero: [number, number, number] | null } | null;
+  /** Hotel Mar Azul's pool and its ball game. */
+  hotelPool: boolean;
   /** A cenote in the meadow beyond the town's west edge (its water's middle and its painted sign): seen from the ends
    *  of the streets, not reached on foot. */
   cenote: { x: number; z: number; sign: string;
@@ -494,6 +496,7 @@ export const THEME: TownTheme = {
   meadow: null,
   adoquin: null,
   farPeople: null,
+  hotelPool: false,
   cenote: null,
   ruins: null,
   sea: null,

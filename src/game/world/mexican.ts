@@ -11,6 +11,7 @@ import * as GROUNDS from "../cave/grounds";
 import { surfboardParts } from "../surf/shapes";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { rand, roundRect, type Colliders } from "./util";
+import { HOTEL_POOL, hotelPoolBed, hotelPoolBounds, POOL_CIRCLE, POOL_KIDS } from "./pool";
 import { POOLS, FLOORS } from "../water";
 import type { TianguisGoods } from "./theme";
 
@@ -2377,4 +2378,172 @@ export function surfShack(parts: Part[], roofs: Part[], col: Colliders, atlas: S
     for (const sd of [-1, 1]) put(box(0.34, 0.03, 0.16, sd * 1.05, 0, 0).rotateY(0.5).translate(0, 0.45, 0.45), "#17a2a2");
     for (const d of [-1.1, 0, 1.1]) col.addCircle(kx + Math.sin(kr) * d, kz + Math.cos(kr) * d, 0.5);
   }
+}
+
+/** All opaque pool furniture and the tiled basin join the town's existing static batches. */
+export function hotelPool(parts: Part[], flat: Part[], col: Colliders) {
+  const { x, z, steps, deck, bench, halfWidth: w, halfLength: d, shallow, deep, water } = HOTEL_POOL;
+  const paving = "#eadac0", coping = "#f7ead5", tile = "#5dacc1", deepTile = "#318ca7";
+  const addBox = (target: Part[], color: string, px: number, y: number, pz: number, width: number, height: number, length: number) =>
+    target.push([box(width, height, length, x + px, y, z + pz), color]);
+  const slab = (x0: number, x1: number, z0: number, z1: number) =>
+    addBox(flat, paving, (x0 + x1) / 2, -0.021, (z0 + z1) / 2, x1 - x0, 0.06, z1 - z0);
+
+  slab(-deck.halfWidth, -w, deck.north, deck.south);
+  slab(w, deck.halfWidth, deck.north, deck.south);
+  slab(-w, w, deck.north, -d);
+  slab(-w, w, d, deck.south);
+
+  // Back and side walls of the basin, with separately laid coping tiles.
+  const stepL = steps.x - steps.width / 2, stepR = steps.x + steps.width / 2;
+  const rim = (ax: number, az: number, bx: number, bz: number) => {
+    const length = Math.hypot(bx - ax, bz - az);
+    const wx = ax === bx ? 0.28 : length, wz = az === bz ? 0.28 : length;
+    addBox(flat, tile, (ax + bx) / 2, deep / 2, (az + bz) / 2, wx, -deep, wz);
+    col.addBox(x + (ax + bx) / 2, z + (az + bz) / 2, wx, wz, "edge");
+    const tiles = Math.ceil(length / 0.5);
+    for (let i = 0; i < tiles; i++) {
+      const f = (i + 0.5) / tiles;
+      addBox(flat, i % 3 === 0 ? "#fdf1dc" : coping, ax + (bx - ax) * f, 0.028, az + (bz - az) * f,
+        ax === bx ? 0.42 : length / tiles - 0.018, 0.08, az === bz ? 0.42 : length / tiles - 0.018);
+    }
+  };
+  rim(-w, -d, w, -d);
+  rim(-w, -d, -w, d);
+  rim(w, -d, w, d);
+  rim(-w, d, stepL, d);
+  rim(stepR, d, w, d);
+
+  // Floor panels follow the same shelf and slope as the walking surface.
+  for (const [a, b, ya, yb, color] of [
+    [-d, -2.2, deep, deep, deepTile], [-2.2, 0.5, deep, shallow, tile], [0.5, d, shallow, shallow, "#a0dae0"],
+  ] as const) {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute([
+      x - w, ya, z + a, x + w, ya, z + a, x - w, yb, z + b, x + w, yb, z + b,
+    ], 3));
+    g.setIndex([0, 2, 1, 1, 2, 3]);
+    g.computeVertexNormals();
+    flat.push([g, color]);
+  }
+  // A submerged bench along the east wall gives the two older children a place to stand.
+  addBox(flat, "#8bc8d1", (bench.x0 + bench.x1) / 2, (bench.y + shallow) / 2, (bench.z0 + bench.z1) / 2,
+    bench.x1 - bench.x0, bench.y - shallow, bench.z1 - bench.z0);
+  addBox(flat, "#b4dade", bench.x0 + 0.06, bench.y + 0.005, (bench.z0 + bench.z1) / 2, 0.11, 0.01, bench.z1 - bench.z0);
+
+  for (let i = 0; i < 4; i++) {
+    const length = (d - steps.foot) / 4, pz = steps.foot + length * (i + 0.5);
+    const top = hotelPoolBed(x + steps.x, z + pz);
+    addBox(flat, i % 2 ? "#d8eff0" : "#c3e6e8", steps.x, (top + shallow) / 2, pz, steps.width, top - shallow, length);
+    addBox(flat, "#80bac2", steps.x, top + 0.004, pz - length / 2 + 0.035, steps.width, 0.008, 0.045);
+  }
+
+  const wall = (px: number, pz: number, width: number, length: number) => {
+    addBox(parts, "#f2dfbf", px, 0.38, pz, width, 0.76, length);
+    addBox(parts, "#d99269", px, 0.77, pz, width + 0.12, 0.16, length + 0.12);
+    col.addBox(x + px, z + pz, width, length, "edge");
+  };
+  const span = deck.south - deck.north;
+  for (const px of [-deck.halfWidth, deck.halfWidth]) wall(px, (deck.north + deck.south) / 2, 0.25, span);
+  wall(0, deck.north, deck.halfWidth * 2, 0.25);
+  const gapL = 0.2, gapR = 2.7;
+  wall((gapL - deck.halfWidth) / 2, deck.south, gapL + deck.halfWidth, 0.25);
+  wall((gapR + deck.halfWidth) / 2, deck.south, deck.halfWidth - gapR, 0.25);
+
+  for (const [i, px] of [-4.3, -1.55, 1.25, 4.05].entries()) {
+    const pz = -6.75, color = ["#38aab4", "#ee8056", "#ee8056", "#38aab4"][i];
+    addBox(parts, "#b57b55", px, 0.22, pz, 0.95, 0.34, 2);
+    addBox(parts, color, px, 0.43, pz + 0.34, 1, 0.14, 1.24);
+    parts.push([new THREE.BoxGeometry(1, 0.15, 0.91).rotateX(0.58).translate(x + px, 0.64, z + pz - 0.62), color]);
+    addBox(parts, "#fff4df", px, 0.49, pz + 0.77, 0.96, 0.05, 0.23);
+    col.addBox(x + px, z + pz, 1, 2.05);
+  }
+  for (const px of [-2.95, 2.65]) {
+    const pz = -7.5;
+    parts.push([cyl(0.035, 0.045, 2.45, x + px, 1.23, z + pz, 8), "#9b704f"]);
+    parts.push([cyl(0.29, 0.38, 0.12, x + px, 0.06, z + pz, 8), "#bda485"]);
+    const ribs = 10;
+    for (let i = 0; i < ribs; i++) {
+      const a = i * Math.PI * 2 / ribs, b = (i + 1) * Math.PI * 2 / ribs;
+      const canopy = new THREE.BufferGeometry();
+      canopy.setAttribute("position", new THREE.Float32BufferAttribute([
+        x + px, 2.85, z + pz,
+        x + px + Math.cos(b) * 1.55, 2.3, z + pz + Math.sin(b) * 1.55,
+        x + px + Math.cos(a) * 1.55, 2.3, z + pz + Math.sin(a) * 1.55,
+      ], 3));
+      const color = i % 2 ? "#fff4df" : px < 0 ? "#239b9a" : "#ed7954";
+      const underside = canopy.clone();
+      canopy.setIndex([0, 1, 2]);
+      underside.setIndex([0, 2, 1]);
+      canopy.computeVertexNormals();
+      underside.computeVertexNormals();
+      parts.push([canopy, color], [underside, color]);
+    }
+    col.addCircle(x + px, z + pz, 0.3);
+  }
+
+  const towelX = -4.7, towelZ = 3.75;
+  for (const h of [0.23, 0.61, 0.99]) {
+    addBox(parts, "#bc8258", towelX, h, towelZ, 1.12, 0.09, 0.58);
+    for (const [j, color] of ["#fff6e5", "#38aab4", "#f6a853"].entries()) {
+      parts.push([new THREE.CylinderGeometry(0.115, 0.115, 0.44, 10).rotateX(Math.PI / 2)
+        .translate(x + towelX + (j - 1) * 0.31, h + 0.155, z + towelZ), color]);
+    }
+  }
+  for (const dx of [-0.49, 0.49]) addBox(parts, "#995e40", towelX + dx, 0.57, towelZ, 0.12, 1.14, 0.6);
+  col.addBox(x + towelX, z + towelZ, 1.12, 0.6);
+
+  const random = rand(929);
+  for (const [px, pz] of [[-4.8, 5.9], [4.8, 5.9]]) {
+    parts.push([cyl(0.48, 0.35, 0.54, x + px, 0.27, z + pz, 9), "#cc805b"]);
+    parts.push([cyl(0.5, 0.5, 0.08, x + px, 0.51, z + pz, 9), "#e6a478"]);
+    const palm: Part[] = [];
+    farPalm(palm, random, 0, 0, 4.2, px < 0 ? 1.6 : -1.6, 0.12);
+    for (const [g, color] of palm) parts.push([g.scale(0.39, 0.39, 0.39).translate(x + px, 0.5, z + pz), color]);
+    col.addCircle(x + px, z + pz, 0.48);
+  }
+
+  POOLS.push({ bounds: hotelPoolBounds(), y: water, bed: hotelPoolBed });
+}
+
+export function hotelPoolWater() {
+  const { x, z, halfWidth, halfLength, water } = HOTEL_POOL;
+  const material = new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    uniforms: {
+      tick: { value: 0 },
+      bathers: { value: POOL_KIDS.map((kid) => new THREE.Vector2(POOL_CIRCLE[kid].x - x, POOL_CIRCLE[kid].z - z)) },
+    },
+    vertexShader: `varying vec2 point;
+      void main() { point = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: `varying vec2 point; uniform float tick; uniform vec2 bathers[3];
+      void main() {
+        vec2 size = vec2(${(halfWidth * 2).toFixed(1)}, ${(halfLength * 2).toFixed(1)});
+        vec2 p = point * size;
+        float a = sin(p.x * 2.8 + p.y * 0.8 + sin(p.y * 1.55 - tick) + tick * 0.8);
+        float b = sin(p.y * 2.15 - p.x * 0.9 + sin(p.x * 1.34 + tick * 0.6) - tick);
+        float ripples = smoothstep(0.82, 1.0, a * b);
+        vec2 at = vec2(point.x - 0.5, 0.5 - point.y) * size;
+        float wake = 0.0;
+        for (int i = 0; i < 3; i++) {
+          vec2 d = at - bathers[i];
+          float phase = fract(tick * 0.62 + float(i) * 0.37);
+          float rim = (i == 2 ? 0.38 : 0.21) + 0.27 * phase;
+          float ring = 1.0 - smoothstep(0.015, 0.045, abs(length(d) - rim));
+          wake += ring * sin(phase * 3.14159) * (0.55 + 0.45 * sin(d.x * 11.0 + d.y * 13.0 + tick * 2.0));
+        }
+        float shelf = smoothstep(0.35, 0.7, 1.0 - point.y);
+        vec3 color = mix(vec3(0.018, 0.24, 0.35), vec3(0.035, 0.49, 0.50), shelf);
+        gl_FragColor = vec4(color + ripples * 0.13 + wake * 0.18, 0.80 - shelf * 0.11 + ripples * 0.08);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }`,
+  });
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(halfWidth * 2, halfLength * 2).rotateX(-Math.PI / 2), material);
+  mesh.name = "hotel-pool-water";
+  mesh.userData.thin = true;
+  mesh.position.set(x, water, z);
+  mesh.renderOrder = 2;
+  return mesh;
 }

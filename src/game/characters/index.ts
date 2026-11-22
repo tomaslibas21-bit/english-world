@@ -14,6 +14,7 @@ export interface GameCharacter {
   setAnim(a: Anim): void;
   setBackpack?(visible: boolean): void;
   update(dt: number): void;
+  headPosition?(out: THREE.Vector3): THREE.Vector3;
   /** Talk for `seconds`; `level` tells how loud the voice is right now (0–1; -1: it has ended; null: no recording to
    *  follow), for the mouth. */
   talk(seconds: number, level?: () => number | null, vowel?: () => number | null): void;
@@ -54,6 +55,9 @@ export interface GameCharacter {
   steer?: number;
   /** Swimming (0–1) and, under water, diving (0–1): src/game/water.ts SWIM (the original Character). */
   swim?: number;
+  poolHit?: number;
+  wading?: boolean;
+  hideBackpack?: boolean;
   dive?: number;
   /** On a surfboard (src/game/surf/; the original Character): lying on it and paddling, standing side-on, astride. */
   surf?: { prone: number; stance: number; crouch: number; pitch: number; stroke: number; wobble: number; straddle: number };

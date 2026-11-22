@@ -200,7 +200,7 @@ export const THEME: TownTheme = {
     [-100, -13.75], [-45, -13.75], [-10.5, -13.75], [78, -13.75], [91, -13.75],
     [6.9, -22.5], [6.9, -40.5], [19.5, -47.3], [40.5, -47.3]],
   // (world-v2) a ceiba in the park and one on the lawn where avenida Juárez ends at the mirador
-  ceibas: [[88, -22, 1], [-105, -21, 0.9]],
+  ceibas: [[88, -22, 1], [-109.5, -17, 0.9]], // the west ceiba stands clear of the hotel's pool approach
   market: "mercado",
 
   // Beyond the square (docs/es/TOWN.md tasks 1–5): the malecón and the beach, the buildings' Mexican details, the
@@ -304,6 +304,7 @@ export const THEME: TownTheme = {
   // the leafy trees green, and in bloom here and there: a flamboyán red-orange, a guayacán yellow (one in eight each;
   // in Maple Harbor's order, so the reds and yellows that were autumn's stay where the blooms are)
   treeColors: ["#4f9a3e", "#3f8a3a", "#f2c230", "#e8432b", "#5aa83c", "#2f7d3c", "#6db544", "#7cbf4a"],
+  hotelPool: true,
   // beyond the town's edge (TOWN.md task 8): a cenote across the meadow at the west end of avenida Juárez (s69: not on
   // foot, twenty minutes by colectivo: the town's edge is as far as the learner walks), and small Mayan ruins on the
   // rocky point past the beach's west end (s69: half an hour on foot)

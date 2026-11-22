@@ -206,6 +206,7 @@ const PUERTO_COLIBRI = {
   "x06-custodio": "pebble", // The ruins' guardian says entry is free.
   "x07-pintora": "pebble",
   "x08-rosario": "pebble",
+  "x09-alberca": "balloon", // The kids by the pool and their beach ball.
 } satisfies Record<string, KeepsakeKind>;
 
 export const KEEPSAKES: Record<string, KeepsakeKind> = EDITION.id === "es" ? PUERTO_COLIBRI : MAPLE_HARBOR;

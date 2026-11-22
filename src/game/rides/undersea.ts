@@ -122,7 +122,7 @@ export class Undersea {
       const x = BAY.x0 + r() * (BAY.x1 - BAY.x0), z = SHORE.limit - 1 - r() * (SHORE.limit - 4 - BAY.z0), y = floorY(x, z);
       if (r() < 0.45) star(x, y, z); else if (r() < 0.6) shell(x, y, z); else grass(x, y, z);
     }
-    for (const p of POOLS) this.poolBed(p, parts, r);
+    for (const p of POOLS) if ("r" in p) this.poolBed(p, parts, r);
     const things = new THREE.Mesh(colourMerge(parts), new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }));
     things.name = "seabed-things";
     things.frustumCulled = false;
@@ -203,7 +203,7 @@ export class Undersea {
     this.underU.uTime.value = t;
     this.bedU.uTime.value = t;
     // (a pool's surface is its own: the plane moves over the diver's water)
-    const pool = POOLS.find((p) => (at.x - p.x) ** 2 + (at.z - p.z) ** 2 < (p.r + 2) ** 2);
+    const pool = POOLS.find((p): p is Pool => "r" in p && (at.x - p.x) ** 2 + (at.z - p.z) ** 2 < (p.r + 2) ** 2);
     this.under!.position.set(at.x, (pool ? pool.y : SEA_LEVEL) - 0.3, at.z);
     this.far!.position.set(at.x, -3, at.z);
     // (a pool is small: its water closes in sooner, and only two little schools live in it)

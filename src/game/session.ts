@@ -28,6 +28,10 @@ export interface SessionHooks {
   npcTalk(npcId: string, seconds: number, text?: string): void;
   /** The person's face as the learner's answer lands: a nod (understood), a puzzled look (not, or not sure). */
   npcReact?(npcId: string, kind: "nod" | "puzzled" | "clap"): void;
+  /** Leave unrecorded lines available as text without falling back to browser speech. */
+  recordedOnly?: boolean;
+  /** Whether the last turn hands off directly to an activity in the town. */
+  autoClose?(): boolean;
   onEvent(name: string, data: any): void;
   onEnd(sit: SituationDef, completed: boolean): void;
 }
@@ -119,6 +123,11 @@ export class Session {
     return id;
   }
 
+  playVoice(...args: Parameters<typeof audio.play>) {
+    const [voice, speed, say] = args;
+    return this.hooks.recordedOnly && !audio.hasClip(voice, speed, say) ? Promise.resolve(true) : audio.play(...args);
+  }
+
   private async play(out: TurnOut) {
     if (!this.alive) return;
     const st = useStore.getState();
@@ -140,9 +149,13 @@ export class Session {
       const id = this.pushLine({ who: "npc", npc: l.npc, sentence: l.sentence, slow: l.slow });
       const slow = !!l.slow || useStore.getState().settings.slowVoice;
       useStore.getState().setConv({ speaking: id, npcId: l.npc, lineKey: l.lineId });
-      const dur = audio.clipDuration(npcVoice(npc), npc?.speed ?? 1, l.sentence.say) ?? Math.max(1.2, l.sentence.say.length * 0.06);
+      const voice = npcVoice(npc), speed = npc?.speed ?? 1;
+      const clip = audio.clipDuration(voice, speed, l.sentence.say);
+      const dur = clip ?? Math.max(1.2, l.sentence.say.length * 0.06);
       this.hooks.npcTalk(l.npc, dur / (slow ? 0.82 : 1), l.sentence.say);
-      if (!await audio.play(npcVoice(npc), npc?.speed ?? 1, l.sentence.say, { slow, male: npc?.gender === "m" })) return;
+      if (this.hooks.recordedOnly && clip === null) {
+        await wait(Math.min(2000, dur * 600));
+      } else if (!await audio.play(voice, speed, l.sentence.say, { slow, male: npc?.gender === "m" })) return;
       await wait(160);
     }
     // the learner left (Esc, another situation) while the person was talking: no events (a taxi
@@ -158,7 +171,7 @@ export class Session {
     }
     for (const e of out.events) if ((e.at ?? Infinity) >= out.lines.length) this.hooks.onEvent(e.name, e.data);
     if (out.completed && !this.wasCompleted) this.onCompleted();
-    if (this.conv.ended) { this.finish(); return; }
+    if (this.conv.ended) { this.finish(this.hooks.autoClose?.()); return; }
     this.yourTurn();
   }
 
@@ -371,7 +384,7 @@ export class Session {
     this.stopListening(); // the conversation's own mic off, and no auto-listen
     const run = ++this.practiceRun;
     useStore.getState().setConv({ practice: { en, status: "playing", heard: "" } });
-    if (!await audio.play(coachVoice(useStore.getState().progress.profile?.gender), 1, say)) return;
+    if (!await this.playVoice(coachVoice(useStore.getState().progress.profile?.gender), 1, say)) return;
     // cancelled meanwhile (another button, the mic, the person's turn, left)?
     if (run !== this.practiceRun || !this.alive || this.speech || useStore.getState().conv.phase !== "you") return;
     const attempt = createSpeechAttempt({

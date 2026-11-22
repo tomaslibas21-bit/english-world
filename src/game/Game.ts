@@ -31,6 +31,8 @@ import { createSurfMode } from "./surf/mode";
 import { createTaxiMode } from "./taxi/mode";
 import { BARISTA_PROMPT, createBaristaMode } from "./barista/mode";
 import { BARISTA_CONVERSATION } from "../content/barista";
+import { createPoolMode } from "./pool/mode";
+import { HOTEL_POOL, HOTEL_POOL_ENABLED, hotelPoolKidY, inHotelPool, POOL_ENTRY, POOL_KIDS, POOL_SITUATION } from "./world/pool";
 import { OcclusionField } from "./occlusion";
 import { PropFader } from "./fade";
 import { CUT, withCutout } from "./cutout";
@@ -296,6 +298,7 @@ export class Game implements GameApi {
     },
   });
 
+  get pool() { return this.modes.get("pool") as NonNullable<ReturnType<typeof createPoolMode>> | undefined; }
   // The surf overlay and browser diagnostics use the original controller.
   get surf() { return (this.modes.get("surf") as ReturnType<typeof createSurfMode>)?.play ?? null; }
 
@@ -526,6 +529,7 @@ export class Game implements GameApi {
       savePlace: () => this.savePlace(),
     });
     this.modes.register(this.barista);
+    this.modes.register(createPoolMode(host));
     this.scene.add(this.npcLayer, this.guidance.group, this.ambient.group, this.rides.group, this.dust.group, this.splashes.group, this.undersea.group);
     // (a place like the grotto keeps the camera inside itself: Interior.wild.space)
     this.rig.space = {
@@ -570,11 +574,16 @@ export class Game implements GameApi {
     if (!this.flight) coach.begin(true);
   }
 
+  /** Renderer counters for the most recent frame. */
+  drawStats() {
+    const { calls, triangles } = this.renderer.info.render;
+    return { calls, triangles };
+  }
+
   /** Renderer counters for the most recent frame, plus the car assets and instances ready to draw. */
   carStats() {
-    const { calls, triangles } = this.renderer.info.render;
     const models = this.carVisuals?.stats() ?? { trafficModels: 0, parkedModels: 0, taxi: false };
-    return { calls, triangles, loadedCarModels: loadedCarModelCount(), ...models };
+    return { ...this.drawStats(), loadedCarModels: loadedCarModelCount(), ...models };
   }
 
   roadDebug() {
@@ -802,7 +811,8 @@ export class Game implements GameApi {
       if (!def) continue;
       const ch = createCharacter({ ...def.look, female: def.look.female ?? def.gender === "f" });
       ch.watch = this.learnerAt;
-      ch.root.position.set(sp.x, 0, sp.z);
+      const poolKid = !this.zone.interior && HOTEL_POOL_ENABLED ? POOL_KIDS.find((kid) => kid === sp.npc) : undefined;
+      ch.root.position.set(sp.x, poolKid ? hotelPoolKidY(poolKid) : 0, sp.z);
       ch.root.rotation.y = sp.rot;
       if (sp.sit) { ch.seatY = sp.seat ?? 0.5; ch.setAnim("sit"); }
       ch.busy = AT_WORK[sp.npc] ?? null;
@@ -813,7 +823,7 @@ export class Game implements GameApi {
       this.tagLayer.appendChild(tag);
       const ap = sp as { ax?: number; az?: number };
       this.npcs.push({
-        id: sp.npc, ch, home: new THREE.Vector3(sp.x, 0, sp.z), rot: sp.rot, tag, sit: sp.sit, waved: false,
+        id: sp.npc, ch, home: ch.root.position.clone(), rot: sp.rot, tag, sit: sp.sit, waved: false,
         approach: ap.ax !== undefined && ap.az !== undefined ? new THREE.Vector3(ap.ax, 0, ap.az) : undefined,
         alux: this.zone.cave ? { next: 6 + Math.random() * 6, hop: 0 } : undefined,
       });
@@ -1039,7 +1049,11 @@ export class Game implements GameApi {
     this.diveT = 0;
     if (!all) return;
     this.swimming = false; this.swimK = 0; this.diveK = 0;
-    if (this.player) { this.player.swim = 0; this.player.dive = 0; }
+    if (this.player) {
+      this.player.swim = 0; this.player.dive = 0;
+      this.player.hideBackpack = false;
+      this.player.wading = false;
+    }
     this.underWater(false);
   }
 
@@ -1189,6 +1203,10 @@ export class Game implements GameApi {
     this.player.flip = this.hop.spin;
   }
 
+  private poolCompanion(id: string) {
+    return HOTEL_POOL_ENABLED && id !== "vale" && POOL_KIDS.some((kid) => kid === id);
+  }
+
   private onClick(cx: number, cy: number) {
     const st = useStore.getState();
     if (this.modes.active || this.modes.modal) {
@@ -1223,7 +1241,7 @@ export class Game implements GameApi {
       if (i >= 0) { this.staffSays(i); return; }
     }
     // NPC hit?
-    const hits = this.raycaster.intersectObjects(this.npcs.map((n) => n.ch.root), true);
+    const hits = this.raycaster.intersectObjects(this.npcs.filter((n) => !this.poolCompanion(n.id)).map((n) => n.ch.root), true);
     if (hits.length) {
       const actor = this.npcs.find((n) => { let o: THREE.Object3D | null = hits[0].object; while (o) { if (o === n.ch.root) return true; o = o.parent; } return false; });
       if (actor) { const t = actor.approach ?? actor.home; this.walkTo(t.x, t.z, { kind: "npc", id: actor.id }); return; }
@@ -1411,7 +1429,7 @@ export class Game implements GameApi {
   }
 
   talkTo(npc: string, sitId?: string) {
-    if (this.session?.active) return;
+    if (this.session?.active || this.poolCompanion(npc)) return;
     const sit = sitId ? SITUATION_BY_ID[sitId] : this.pickSituation(npc);
     if (!sit) {
       const def = NPCS[npc];
@@ -1442,7 +1460,7 @@ export class Game implements GameApi {
       const loc = LOCATIONS[sit.location];
       let spawn: { x: number; z: number; rot: number } | null = null;
       let zone = "town";
-      if (loc?.kind === "interior" && getInterior(sit.location)) {
+      if (sit.id !== POOL_SITUATION && loc?.kind === "interior" && getInterior(sit.location)) {
         zone = sit.location;
         const it = this.getZone(zone)?.interior;
         const sp = it?.npcs.find((n) => n.npc === npc);
@@ -1548,6 +1566,8 @@ export class Game implements GameApi {
       this.player.setAnim("idle");
     }
     const session: Session = new Session(sit.id, {
+      recordedOnly: sit.id === POOL_SITUATION,
+      autoClose: sit.id === POOL_SITUATION ? () => this.modes.hasQueued : undefined,
       npcTalk: (npcId, secs, text) => {
         const n = this.npcs.find((x) => x.id === npcId);
         if (!n) return;
@@ -1901,7 +1921,8 @@ export class Game implements GameApi {
     // the person stays turned to the player and turns back home in their own time (updateNpcs)
     this.talkNpc = null;
     if (completed && !this.swimming && !this.rides.riding && !this.modes.active && !this.modes.hasQueued) {
-      this.keepsake.show(this.player.rightHand, keepsakeFor(sit.id));
+      const kind = keepsakeFor(sit.id);
+      if (kind) this.keepsake.show(this.player.rightHand, kind);
     }
     if (this.pendingRide) { const r = this.pendingRide; this.pendingRide = null; this.ride(r.to, r.by); }
     this.modes.launchQueued();
@@ -2054,7 +2075,7 @@ export class Game implements GameApi {
     const exit = this.zone.interior ? { kind: "exit" as const, x: this.zone.interior.exit.x, z: this.zone.interior.exit.z - 0.4 } : null;
     // An outdoor place can have a room inside it, where the person is found through the door.
     if (!sit || !loc || mode === "cave") return exit;
-    const outside = loc.kind === "outdoor" ? OUTDOOR_NPCS.find((n) => n.npc === sit.npc) : undefined;
+    const outside = loc.kind === "outdoor" || sit.id === POOL_SITUATION ? OUTDOOR_NPCS.find((n) => n.npc === sit.npc) : undefined;
     if (outside) return exit ?? { kind: "npc", id: sit.npc, ...talkAt(outside) };
     if (loc.kind === "outdoor" && !THEME.roomNpcs[sit.location]?.some((n) => n.npc === sit.npc)) return null;
     if (this.zone.id === sit.location && this.zone.interior) {
@@ -2234,10 +2255,11 @@ export class Game implements GameApi {
     // people and cars far down the street, a few pixels tall in the haze, are left out of the walking view (it is wider
     // than it was: this keeps its draw calls as they were)
     this.farCull();
-    // the trees between the camera and the player fade (fade.ts); none in a conversation or indoors
+    // Walking clears the player's sightline. The pool stage also clears the nearby selva from the edge of the frame.
     const pp0 = this.player.root.position;
     this.chest.set(pp0.x, 1.35, pp0.z);
-    this.fader.update(dt, this.rig.cam.position, this.chest, this.rig.mode === "follow" && !this.zone.interior);
+    const stageClearance = this.rig.mode === "stage" && this.modes.owns("pool") ? 5.5 : 0;
+    this.fader.update(dt, this.rig.cam.position, this.chest, this.rig.mode === "follow" && !this.zone.interior, stageClearance);
     // and what is too thin for either (a lamp post right in the way) is see-through along the line to the player
     CUT.a.value.copy(this.rig.cam.position);
     CUT.b.value.copy(this.chest);
@@ -2417,7 +2439,9 @@ export class Game implements GameApi {
     this.vel.set(0, 0, 0); this.moveVel.set(0, 0, 0);
     this.lastSpeed = 0;
     this.player.update(dt);
-    this.splashes.update(dt, this.t, null, 0);
+    const { x, z } = this.player.root.position;
+    const at = this.modes.active?.id === "pool" ? { x, y: HOTEL_POOL.water, z } : null;
+    this.splashes.update(dt, this.t, at, 0);
     this.dust.update(dt);
   }
 
@@ -2448,6 +2472,63 @@ export class Game implements GameApi {
     this.rig.target.copy(p);
     this.rig.yaw = rot; this.rig.snap();
     this.nearest = null;
+  }
+
+  /** The same debug spawn with or without the pool geometry. */
+  poolTeleport() {
+    if (!THEME.hotelPool || !this.player || this.session?.active) return false;
+    this.enterZone("town", POOL_ENTRY, true);
+    return true;
+  }
+
+  /** Projection, subject sightlines and foreground coverage for the browser test. */
+  poolFraming() {
+    const ball = this.scene.getObjectByName("hotel-pool-ball");
+    if (this.modes.active?.id !== "pool" || !ball?.visible) return null;
+    const camera = this.rig.cam;
+    const actors = this.npcs.filter((n) => POOL_KIDS.some((kid) => kid === n.id));
+    const players = [{ id: "learner", ch: this.player }, ...actors];
+    const allowed = new Set<THREE.Object3D>([ball]);
+    this.splashes.group.traverse((object) => allowed.add(object));
+    for (const { ch } of players) ch.root.traverse((object) => allowed.add(object));
+    const solids: THREE.Mesh[] = [];
+    this.scene.updateMatrixWorld(true);
+    camera.updateMatrixWorld();
+    this.scene.traverseVisible((object) => {
+      const mesh = object as THREE.Mesh;
+      if (mesh.isMesh && !allowed.has(mesh) && mesh.name !== "hotel-pool-water") solids.push(mesh);
+    });
+    const points = players.map(({ id, ch }) => ({
+      id, point: ch.headPosition?.(new THREE.Vector3()) ?? ch.root.position.clone().add(new THREE.Vector3(0, ch.height * 0.9, 0)),
+    }));
+    points.push({ id: "ball", point: ball.getWorldPosition(new THREE.Vector3()) });
+    const ray = new THREE.Raycaster();
+    ray.layers.mask = camera.layers.mask;
+    const visibleHit = ({ object, instanceId }: THREE.Intersection) => instanceId === undefined
+      || (object as THREE.InstancedMesh).geometry.getAttribute("aFadeOut")?.getX(instanceId) !== 1;
+    const subjects = points.map(({ id, point }) => {
+      const direction = point.clone().sub(camera.position);
+      ray.far = direction.length();
+      ray.set(camera.position, direction.normalize());
+      const blockers = [...new Set(ray.intersectObjects(solids, false).filter(visibleHit).map(({ object }) => object.name || object.type))];
+      return { id, point: point.project(camera).toArray(), blockers };
+    });
+    const foreground = [];
+    const sample = new THREE.Vector2();
+    // The broad selva crowns can still fill a corner at over 6 m. Check them beyond the immediate foreground.
+    ray.near = camera.near;
+    ray.far = 9.5;
+    for (let row = 0; row <= 8; row++) {
+      for (let col = 0; col <= 12; col++) {
+        sample.set(-0.99 + col * 1.98 / 12, -0.99 + row * 1.98 / 8);
+        ray.setFromCamera(sample, camera);
+        const hit = ray.intersectObjects(solids, false).find(visibleHit);
+        if (hit && (hit.distance < 4 || hit.object.userData.fadeNearStage)) {
+          foreground.push({ row, col, mesh: hit.object.name || hit.object.type, distance: hit.distance });
+        }
+      }
+    }
+    return { subjects, foreground };
   }
 
   // (the surf lesson's buttons on the screen: src/ui/Surf.tsx)
@@ -2628,7 +2709,9 @@ export class Game implements GameApi {
     const over = sur === null || on > 0 ? 0 : sur - ground;
     // deep enough, and in it (someone who jumps off the pier swims once their feet are under): they float and swim
     const wasSwimming = this.swimming;
-    this.swimming = !through && over > (wasSwimming ? SWIM.out : SWIM.depth) && this.hop.y < surface - 0.3;
+    const hotelWater = HOTEL_POOL_ENABLED && !indoor && inHotelPool(p.x, p.z);
+    const swim = hotelWater ? HOTEL_POOL.swim : SWIM;
+    this.swimming = !through && over > (wasSwimming ? swim.out : swim.depth) && this.hop.y < surface - 0.3;
     if (this.swimming && !wasSwimming) this.keepsake.clear();
     let landed = 0;
     if (this.swimming) {
@@ -2669,6 +2752,8 @@ export class Game implements GameApi {
     const depth = indoor ? 0 : Math.max(0, surface - this.hop.y);
     this.wading.depth = indoor || this.swimming ? 0 : Math.max(0, over);
     const wet = depth > 0.05 && this.diveK < 0.5;
+    this.player.hideBackpack = hotelWater && depth > 0.05;
+    this.player.wading = hotelWater && wet;
     if (wet && !blocked) coach.cue("water");
     this.washT -= dt;
     if (wet && !this.wet && this.washT <= 0 && moved > 1) { audio.wash(); this.washT = 6; }
@@ -2819,6 +2904,8 @@ export class Game implements GameApi {
         n.ch.update(dt);
         continue;
       }
+      if (!this.zone.interior && this.pool?.poseKid(n.ch, n.id, dt, n === partner)) { n.ch.update(dt); continue; }
+      if (n.id === "vale" && n === partner) n.ch.watch = this.learnerAt;
       const d = n.ch.root.position.distanceTo(p);
       // with the player close by, or in the conversation, they stop what they were doing and pay attention
       n.ch.attentive = d < 5.5 || (talking && (n === this.talkNpc || taking.includes(n.id)));
@@ -2855,7 +2942,10 @@ export class Game implements GameApi {
     const talking = !!this.session?.active, modeMenu = useStore.getState().hud.modeScreen?.kind === "menu";
     const shown: { n: NpcActor; x: number; y: number; dist: number }[] = [];
     for (const n of this.npcs) {
-      v.set(n.ch.root.position.x, n.ch.height + (n.sit ? -0.1 : 0.45) + (n.alux ? n.ch.lift ?? 0 : 0), n.ch.root.position.z);
+      if (this.poolCompanion(n.id)) { n.tag.style.display = "none"; continue; }
+      const p = n.ch.root.position;
+      const floor = HOTEL_POOL_ENABLED && n.id === "vale" ? p.y : 0;
+      v.set(p.x, floor + n.ch.height + (n.sit ? -0.1 : 0.45) + (n.alux ? n.ch.lift ?? 0 : 0), p.z);
       const dist = v.distanceTo(this.rig.cam.position);
       v.project(this.rig.cam);
       // only for people in the picture (a tag kept inside it never points at someone out of sight)
@@ -2927,6 +3017,7 @@ export class Game implements GameApi {
       if (this.rides.phase === "on" && !this.session?.active) best = { kind: "out", id: riding.id, label: L("Išlipti") };
     } else if (!this.session?.active && !this.aloft) {
       for (const n of this.npcs) {
+        if (this.poolCompanion(n.id)) continue;
         const d = talkDist(n, p);
         if (d < TALK_RANGE && d < bd) { bd = d; best = { kind: "npc", id: n.id, label: NPCS[n.id]?.name ?? n.id }; }
       }

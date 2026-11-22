@@ -99,18 +99,23 @@ export class PropFader {
     }
   }
 
-  /** Fades what stands within its own size of the line from `cam` to `subject` (or right in front of the camera),
-   *  and brings back the rest, a little each frame. `on` false: everything back (indoors, in a conversation). */
-  update(dt: number, cam: THREE.Vector3, subject: THREE.Vector3, on = true) {
+  /** Fade props along the walking sightline. A stage can also clear flagged canopies around its lens. */
+  update(dt: number, cam: THREE.Vector3, subject: THREE.Vector3, on = true, stageClearance = 0) {
     // A wide roof can fill the edge of the view while the centre sightline is clear.
     for (const prop of this.foreground) {
       this.showForeground(prop, on ? smoothstep(5.5, 7.5, prop.bounds.distanceToPoint(cam)) : 1);
     }
     const k = Math.min(1, dt * 7), deep = this.deep;
     for (const set of this.sets) {
+      const clearance = set.mesh.userData.fadeNearStage ? stageClearance : 0;
       let changed = -1, last = -1;
       for (let i = 0; i < set.mesh.count; i++) {
         let want = on ? (deep ? deepFade(set.spheres, i, cam, subject, deep, this.a, this.b) : wantFade(set.spheres, i, cam, subject, this.a, this.b)) : 0;
+        if (clearance > 0) {
+          const s = set.spheres, j = i * 4;
+          const distance = Math.hypot(s[j] - cam.x, s[j + 1] - cam.y, s[j + 2] - cam.z);
+          if (distance < s[j + 3] + clearance) want = 1;
+        }
         if (set.leader && set.leader.now[i] > want) want = set.leader.now[i];
         const cur = set.now[i];
         if (cur === want) continue;

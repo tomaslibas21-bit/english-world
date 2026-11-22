@@ -1,4 +1,5 @@
 // Maple Harbor: a small American coastal town. X = east, Z = south (north is -Z), 1 unit = 1 m.
+import { HOTEL_POOL_ENABLED, POOL_SPOTS } from "./pool";
 import { LOCATIONS } from "../../content/locations";
 import { ROAD_EDITION } from "../../content/road";
 import type { CarModelName, CarPlacement } from "./carModels";
@@ -109,6 +110,7 @@ export const OUTDOOR_NPCS: { npc: string; x: number; z: number; rot: number; sit
   { npc: "maggie", x: 101.2, z: 47.7, rot: Math.PI, ax: 101.2, az: 45.5 },
   // the edition's own (theme.ts): none in Maple Harbor
   ...THEME.outdoorNpcs,
+  ...(HOTEL_POOL_ENABLED ? POOL_SPOTS : []),
 ];
 
 /** Two townspeople standing and chatting (Ambient), face to face: [x, z] of one and [x, z] of the other. In the square

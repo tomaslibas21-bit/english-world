@@ -47,6 +47,9 @@ export interface Look {
   accColor?: string;
   height?: number;
   build?: number;
+  child?: boolean;
+  /** An inflatable ring worn while floating in the pool. */
+  swimRing?: boolean;
   /** Something in the hands (townspeople): a coffee to go or a shopping bag while walking, a cup at a café table, a
    *  newspaper on a bench. */
   carry?: "coffee" | "bag" | "cup" | "paper";

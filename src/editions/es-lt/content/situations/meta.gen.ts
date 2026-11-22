@@ -66,6 +66,7 @@ export const META: SituationMeta[] = [
   {"id":"x06-custodio","song":"","songTitle":"","title":{"en":"El Templo del Mar","lt":"Jūros šventykla"},"topic":{"en":"En las ruinas","lt":"Prie griuvėsių"},"chapter":9,"order":5,"location":"ruinas","npc":"custodio","mode":"talk","goal":"Pasikalbėk su Don Efraínu prie vartų: pasakyk, ar čia esi pirmą kartą, ir ko nors paklausk apie šventyklą.","intro":"Atėjai iki paplūdimio galo: čia pro vartus įeinama į senus majų griuvėsius. Juos prižiūri Don Efraínas: jis pažįsta kiekvieną akmenį ir mielai pasišneka su kiekvienu, kas užsuka.","bonus":true},
   {"id":"x07-pintora","song":"","songTitle":"","title":{"en":"La pintora del templo","lt":"Šventyklos tapytoja"},"topic":{"en":"En las ruinas","lt":"Prie griuvėsių"},"chapter":9,"order":6,"location":"ruinas","npc":"pintora","mode":"talk","goal":"Pasikalbėk su Citlali prie jos molberto: pasakyk, ką manai apie jos paveikslą ir ar tu tapai arba pieši.","intro":"Griuvėsių pievelėje randi jauną tapytoją prie molberto, o jos drobėje – šventykla ir jūra. Citlali ateina čia kiekvieną popietę ir visai nepyksta, kai į ją žiūri.","bonus":true},
   {"id":"x08-rosario","song":"","songTitle":"","title":{"en":"A la sombra","lt":"Pavėsyje"},"topic":{"en":"En las ruinas","lt":"Prie griuvėsių"},"chapter":9,"order":7,"location":"ruinas","npc":"rosario","mode":"talk","goal":"Pasikalbėk su Doña Rosario pavėsyje: pasišnekėkite apie karštį ir sužinok, kas toks Pepė.","intro":"Prie griuvėsių sienos, pavėsyje, sutinki Doña Rosario: ji pina hamaką, o šalia – pintinė su siūlais. Ant didelio akmens greta kažkas visai nejudėdamas guli saulėje.","bonus":true},
+  {"id":"x09-alberca","song":"","songTitle":"","title":{"en":"La alberca","lt":"Baseinas"},"topic":{"en":"Junto a la alberca","lt":"Prie baseino"},"chapter":9,"order":8,"location":"hotel","npc":"vale","mode":"talk","goal":"Pasikalbėk su Vale prie baseino: pasakyk jai savo vardą ir iš kur esi, tada prisijunk prie žaidimo kamuoliu.","intro":"Prie viešbučio „Mar Azul“ baseino trys vaikai mėto paplūdimio kamuolį, kad šis nenukristų. Vyriausioji, Vale, pamoja tau prieiti.","bonus":true},
 ];
 
 const TABLE: Record<string, () => Promise<{ default: unknown }>> = {
@@ -127,6 +128,7 @@ const TABLE: Record<string, () => Promise<{ default: unknown }>> = {
   "x06-custodio": () => import("../../tables/x06-custodio.json"),
   "x07-pintora": () => import("../../tables/x07-pintora.json"),
   "x08-rosario": () => import("../../tables/x08-rosario.json"),
+  "x09-alberca": () => import("../../tables/x09-alberca.json"),
 };
 
 export const LOAD: Record<string, () => Promise<SituationDef>> = Object.fromEntries(Object.entries(EDITION_LOAD).map(([id, load]) =>

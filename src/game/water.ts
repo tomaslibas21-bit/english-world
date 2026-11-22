@@ -46,14 +46,25 @@ export function seaBedY(x: number, z: number) {
  *  from the rim to `depth` m in the middle; `ramp`: where one walks in (a point on its rim: the bed there is a ramp of
  *  steps `rampW` wide). The town lists them as it builds them, like DECKS. */
 export interface Pool { x: number; z: number; r: number; y: number; depth: number; ramp?: { x: number; z: number; w: number } }
-export const POOLS: Pool[] = [];
+export interface RectPool {
+  bounds: { x0: number; x1: number; z0: number; z1: number };
+  y: number;
+  bed(x: number, z: number): number;
+}
+export const POOLS: (Pool | RectPool)[] = [];
 /** The pool at (x, z), if any. */
-export function poolAt(x: number, z: number): Pool | null {
-  for (const p of POOLS) if ((x - p.x) ** 2 + (z - p.z) ** 2 < p.r * p.r) return p;
+export function poolAt(x: number, z: number): Pool | RectPool | null {
+  for (const p of POOLS) {
+    if ("bounds" in p) {
+      const { x0, x1, z0, z1 } = p.bounds;
+      if (x > x0 && x < x1 && z > z0 && z < z1) return p;
+    } else if ((x - p.x) ** 2 + (z - p.z) ** 2 < p.r * p.r) return p;
+  }
   return null;
 }
 /** A pool's bed at (x, z) inside it: a step down at the rim, then a bowl. */
-export function poolBedY(p: Pool, x: number, z: number) {
+export function poolBedY(p: Pool | RectPool, x: number, z: number) {
+  if ("bed" in p) return p.bed(x, z);
   const t = Math.min(1, Math.hypot(x - p.x, z - p.z) / p.r), k = 1 - t * t;
   return p.y - 0.45 - (p.depth - 0.45) * k * (2 - k);
 }

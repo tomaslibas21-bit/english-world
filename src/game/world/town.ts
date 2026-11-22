@@ -1,4 +1,5 @@
 // Builds the outdoor town of Maple Harbor from layout.ts: ground, sea, buildings, props, colliders, doors.
+import { HOTEL_POOL, HOTEL_POOL_ENABLED, hotelPoolBounds } from "./pool";
 import * as THREE from "three";
 import { TAXI_ROUTES } from "../../content/taxi";
 import { ROAD_EDITION } from "../../content/road";
@@ -57,6 +58,7 @@ export interface Town {
 const PPM = 6; // ground texture pixels per metre
 const GW = WORLD.maxX - WORLD.minX, GD = WORLD.maxZ - SEA_Z + 2;
 const G0Z = SEA_Z - 2;
+const OUTER_X = 35, OUTER_Z = SEA_Z + 1 + 320;
 /** Open grass between the town's west edge and the foot of the hills beyond it (m). */
 const WEST_MEADOW = 40;
 /** The letters' colour on a building's printed sign: its trim, or a dark one when the trim is too pale to read on the
@@ -131,7 +133,7 @@ export function buildTown({ movableParking = false } = {}): Town {
   const outer = new THREE.Mesh(outerGeometry(), mat("#7fb85e"));
   outer.rotation.x = -Math.PI / 2;
   // the outer grass stops at the shore, so the sea near the beach is not hidden under it
-  outer.position.set(35, -0.05, SEA_Z + 1 + 320);
+  outer.position.set(OUTER_X, -0.05, OUTER_Z);
   outer.receiveShadow = true;
   group.add(outer);
   // (round the edition's town, theme.ts `selva`, low rises in the jungle's green instead: the same random draws)
@@ -204,6 +206,11 @@ export function buildTown({ movableParking = false } = {}): Town {
   addSquareAndMarket(M, colliders, group, r);
   // the edition's own additions (theme.ts): none in Maple Harbor
   addTownMx(M, colliders);
+  const poolWater = HOTEL_POOL_ENABLED ? MX.hotelPoolWater() : null;
+  if (poolWater) {
+    MX.hotelPool(mx, mxFlat, colliders);
+    group.add(poolWater);
+  }
   if (THEME.papelPicado.length) group.add(makePapelPicado());
   if (THEME.palms.length || beachPalms.length) group.add(makePalms(colliders, beachPalms));
   addHarbor(M, colliders, group, r);
@@ -306,6 +313,7 @@ export function buildTown({ movableParking = false } = {}): Town {
     group, colliders, doors, parkedCars, seats: [...seats], groundCanvas, portals: [...portals],
     update(t, dt, cam) {
       seaMat.uniforms.uTime.value = t;
+      if (poolWater) poolWater.material.uniforms.tick.value = t;
       if (cam) for (const f of farHidden) f.mesh.visible = (cam.x - f.x) ** 2 + (cam.z - f.z) ** 2 < f.r * f.r;
       wind.value = t;
       for (const s of sprays) s(t);
@@ -339,19 +347,27 @@ export function buildTown({ movableParking = false } = {}): Town {
 /** The ground: flat, but for its last metres at the sea, where the sand slopes down under the water (water.ts sandY:
  *  the sea then meets real sand, and its swell washes up and down it). A strip of small quads there, one big one for
  *  the rest; laid out as PlaneGeometry lays its own (the mesh is turned flat), with the same texture coordinates. */
-function groundGeometry() {
+export function groundGeometry() {
   const zs = [WORLD.maxZ], x0 = WORLD.minX, z0 = G0Z;
   for (let z = SHORE.top + 0.9; z > z0 + 1e-3; z -= 0.45) zs.push(z);
   zs.push(z0);
   const nx = Math.round(GW / 3), pos: number[] = [], uv: number[] = [], idx: number[] = [];
+  const xs = Array.from({ length: nx + 1 }, (_, i) => x0 + (GW * i) / nx);
+  const hole = HOTEL_POOL_ENABLED ? hotelPoolBounds() : null;
+  if (hole) {
+    xs.push(hole.x0, hole.x1);
+    xs.sort((a, b) => a - b);
+    zs.push(hole.z0, hole.z1);
+    zs.sort((a, b) => b - a);
+  }
   const cx = x0 + GW / 2, cz = z0 + GD / 2;
-  for (const z of zs) for (let i = 0; i <= nx; i++) {
-    const x = x0 + (GW * i) / nx;
+  for (const z of zs) for (const x of xs) {
     pos.push(x - cx, -(z - cz), sandY(x, z));
     uv.push((x - x0) / GW, 1 - (z - z0) / GD);
   }
-  for (let k = 0; k + 1 < zs.length; k++) for (let i = 0; i < nx; i++) {
-    const a = k * (nx + 1) + i, b = a + 1, c = a + nx + 1, d = c + 1;
+  for (let k = 0; k + 1 < zs.length; k++) for (let i = 0; i + 1 < xs.length; i++) {
+    if (hole && zs[k] <= hole.z1 && zs[k + 1] >= hole.z0 && xs[i] >= hole.x0 && xs[i + 1] <= hole.x1) continue;
+    const a = k * xs.length + i, b = a + 1, c = a + xs.length, d = c + 1;
     idx.push(a, b, c, b, d, c);
   }
   const g = new THREE.BufferGeometry();
@@ -364,10 +380,23 @@ function groundGeometry() {
 
 /** The grass beyond the town (900 × 640 m, laid out as PlaneGeometry lays its own), cut back from the sea along the
  *  town's own beach, where the ground's sand slopes down below it (groundGeometry). */
-function outerGeometry() {
-  const back = 2.6, x0 = WORLD.minX + 1 - 35, x1 = WORLD.maxX - 1 - 35;
+export function outerGeometry() {
+  const back = 2.6, x0 = WORLD.minX + 1 - OUTER_X, x1 = WORLD.maxX - 1 - OUTER_X;
+  const top = 320 - back, bottom = -320;
+  const plane = (left: number, right: number, low: number, high: number) =>
+    new THREE.PlaneGeometry(right - left, high - low).translate((left + right) / 2, (low + high) / 2, 0);
+  const grass = [plane(-450, 450, bottom, top)];
+  if (HOTEL_POOL_ENABLED) {
+    // This grass also lies under the town's ground. Leave a hole through both layers for the basin.
+    const hole = hotelPoolBounds();
+    const left = hole.x0 - OUTER_X, right = hole.x1 - OUTER_X;
+    const low = OUTER_Z - hole.z1, high = OUTER_Z - hole.z0;
+    grass[0].dispose();
+    grass.splice(0, 1, plane(-450, left, bottom, top), plane(right, 450, bottom, top),
+      plane(left, right, bottom, low), plane(left, right, high, top));
+  }
   return mergeGeometries([
-    new THREE.PlaneGeometry(900, 640 - back).translate(0, -back / 2, 0),
+    ...grass,
     new THREE.PlaneGeometry(x0 + 450, back).translate((x0 - 450) / 2, 320 - back / 2, 0),
     new THREE.PlaneGeometry(450 - x1, back).translate((x1 + 450) / 2, 320 - back / 2, 0),
   ], false)!;
@@ -713,6 +742,12 @@ function drawGround(): HTMLCanvasElement {
     x.fillRect(x0, z0, (b.w + 1.6) * PPM, (b.d + 1.6) * PPM);
   }
   if (STYLED) groundExtras(x, toC, PPM);
+  if (HOTEL_POOL_ENABLED) {
+    const { x: px, z: pz, deck } = HOTEL_POOL;
+    const { x0, x1, z0, z1 } = hotelPoolBounds();
+    rectW(x, px - deck.halfWidth, pz + deck.north, px + deck.halfWidth, pz + deck.south, "#eadac0");
+    rectW(x, x0, z0, x1, z1, "#33b4bd");
+  }
   return c;
 
   function rectW(x: CanvasRenderingContext2D, ax: number, az: number, bx: number, bz: number, col: string) {
@@ -2316,6 +2351,7 @@ function makeSelva(): THREE.InstancedMesh {
     mesh.setColorAt(i, c.set(greens[Math.floor(r() * greens.length)]));
   });
   mesh.name = "selva";
+  mesh.userData.fadeNearStage = true;
   return mesh;
 }
 

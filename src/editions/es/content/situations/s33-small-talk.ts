@@ -29,6 +29,7 @@
 //   show tú forms for him until then.
 // NEEDS: global.ts g_bye: "que le vaya bien" is there; "que pase buen fin de semana" is not (bye_wish has it here).
 
+import { countryHint } from "../personal-hints";
 import type { Ctx, EntityDef, Handler, Pending, Segment, SituationDef, StepDef } from "@/content/types";
 import { ent, t } from "@/content/dsl";
 import { WORLD_NATIONALITIES, withWorld } from "../countries";
@@ -1464,7 +1465,7 @@ export const smallTalk: SituationDef = {
     from: {
       lt: "Say where you're from", slot: "country", examples: ["canada", "usa", "uk"],
       items: [
-        { id: "f_from", s: t("Soy | de | {X}.", "I'm | from | {X}.", "I'm from {X}.") },
+        { id: "f_from", s: countryHint() },
         { id: "f_nat", s: t("Soy | canadiense.", "I'm | Canadian.", "I'm Canadian."), only: (e) => e.id === "canada" },
         { id: "f_city", s: t("Soy | de | Toronto, | en | Canadá.", "I'm | from | Toronto, | in | Canada.", "I'm from Toronto, in Canada."), only: (e) => e.id === "canada" },
       ],

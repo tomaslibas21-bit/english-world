@@ -11,6 +11,7 @@
 //   EDITION=es npx tsx --import ./tools/edition-hook.mjs tools/es-voices/voice-casting-es.ts   (the table)
 import { NPCS } from "../../src/content/npcs";
 import { SITUATIONS } from "../../src/content/situations";
+import { POOL_KIDS, POOL_SITUATION } from "../../src/game/world/pool";
 
 /** Gemini's prebuilt voices with Google's one-word descriptions; the gender is how they usually sound. */
 export const VOICES: { name: string; g: "f" | "m"; trait: string }[] = [
@@ -96,6 +97,7 @@ const MEXICO: Record<string, string> = {
   // x05-tienda (18 Nov 2026): Paco, Tienda El Faro's young cashier: the catalog's youngest man's voice (21, calm and
   // warm), nobody else's
   tienda: "es-419-commercial-4",
+  vale: "es-419-training-8", diego: "es-419-assistant-9", santi: "es-419-csagent-4",
   // the convertibles' owners (RIDERS): Valeria bright and breezy at 32, Don Rafa textured and soothing at 57, Marisol
   // at 47, Beto crisp and eager at 28; and the passers-by who call after a car: a younger and an older voice a gender
   ride_park: "es-419-training-8", ride_east: "es-419-csagent-9", ride_west1: "es-419-assistant-6", ride_west2: "es-419-assistant-9",
@@ -155,6 +157,7 @@ const SPAIN: Record<string, string> = {
   custodio: "es-es-podcaster-7", pintora: "es-es-csagent-5", rosario: "es-es-csagent-6",
   // x05-tienda: Paco, a young man's voice (23); nobody else speaks in his conversation
   tienda: "es-es-training-9",
+  vale: "es-es-concierge-3", diego: "es-es-training-9", santi: "es-es-concierge-12",
   // the convertibles' owners and the passers-by who call after a car, by gender and age as in the Mexican set
   ride_park: "es-es-techagent-5", ride_east: "es-es-assistant-3", ride_west1: "es-es-training-12", ride_west2: "es-es-training-11",
   shout_f0: "es-es-concierge-3", shout_f1: "es-es-podcaster-5", shout_m0: "es-es-training-9", shout_m1: "es-es-assistant-4",
@@ -279,6 +282,9 @@ export const CAST: Record<string, Role> = {
   // the beach (x01-surf and the surf game's commands): a surf instructor from Puerto Escondido, about 28
   surf: { voice: "Aoede", age: "about 28", manner: "warm, sporty and lively, a surf instructor who loves the sea", pace: "lively" },
   // the ruins on the point (x06–x08): their keeper, a young painter, a grandmother weaving in the shade
+  vale: { voice: "Leda", age: "9", manner: "bright and inviting, with a playful energy", pace: "lively" },
+  diego: { voice: "Puck", age: "11", manner: "upbeat and clear, calling to friends nearby", pace: "lively" },
+  santi: { voice: "Sadachbia", age: "6", manner: "eager and cheerful, with quick bursts of excitement", pace: "lively" },
   custodio: { voice: "Algenib", age: "about 65", manner: "kind and unhurried, the keeper of old ruins who welcomes every visitor like a guest in his own house", pace: "unhurried" },
   pintora: { voice: "Callirrhoe", age: "about 22", manner: "a young painter at her easel: soft-spoken, a little dreamy, friendly", pace: "easy" },
   rosario: { voice: "Vindemiatrix", age: "about 72", manner: "a grandmother weaving in the shade: gentle, amused and unhurried", pace: "slow" },
@@ -339,6 +345,7 @@ export const SCENES: Record<string, Scene> = {
   "x05-tienda": { setting: "at the counter of a small gas station store on the road, relaxed and friendly" },
   "x06-custodio": { setting: "outdoors at the gateway of small Maya ruins by the sea, on a calm afternoon" },
   "x07-pintora": { setting: "outdoors on the lawn of small Maya ruins by the sea, painting at an easel, on a calm afternoon" },
+  [POOL_SITUATION]: { setting: "outdoors at a hotel pool, talking with the kids beside the water" },
   "x08-rosario": { setting: "outdoors, sitting in the shade of an old stone wall by the sea, on a hot calm afternoon" },
   // the convertibles (no conversation: the owners' lines when their car is taken or brought back, and what passers-by
   // call after a car that went by too close)
@@ -407,6 +414,7 @@ export const where = (id: string) => SITUATIONS.filter((s) => s.npc === id || (s
 const together = new Map<string, Set<string>>();
 for (const s of SITUATIONS) {
   const ids = [s.npc, ...(s.npcs || [])].filter((id) => NPCS[id]);
+  if (s.id === POOL_SITUATION) ids.push(...POOL_KIDS.filter((kid) => kid !== s.npc));
   // customs at the end of the baggage hall (c.speaker("aduana") in s65b)
   if (s.id.startsWith("s65b")) ids.push("aduana");
   if (s.id.startsWith("p26")) ids.push("harbor_bot");

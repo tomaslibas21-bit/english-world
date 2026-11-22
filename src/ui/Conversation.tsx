@@ -28,6 +28,10 @@ import {ReportProblem} from "./ReportProblem";
 import { SectionHelpButton } from "./sectionHelp";
 import { useKeyboardHints } from "./keyboardHints";
 
+function playVoice(...args: Parameters<typeof audio.play>) {
+  return game?.activeSession?.playVoice(...args) ?? audio.play(...args);
+}
+
 export function avatarColor(npcId: string) {
   const n = NPCS[npcId];
   const pick = [n?.look.top, n?.look.accColor, n?.look.bottom, "#1f6f78"].find((c) => c && luminance(c) < 0.62);
@@ -246,11 +250,11 @@ function EndCard({ sit }: { sit: SituationDef }) {
         </div>
         <button className="play" title={L("Klausyti")} aria-label={L("Klausyti")} onClick={() => {
           game?.activeSession?.stopListening();
-          void audio.play(coachVoice(progress.profile?.gender), 1, bestPhrase.say);
+          void playVoice(coachVoice(progress.profile?.gender), 1, bestPhrase.say);
         }}><Icon name="speaker" size={20} /></button>
       </div>}
       {(completed || newExpressions.length > 0) && <div className="ended-rewards">
-        {completed && <div className="ended-keepsake"><KeepsakeIcon kind={kind} /> {L("Gavai {item}", { item: L(KIND[kind].accusative) })}</div>}
+        {completed && kind && <div className="ended-keepsake"><KeepsakeIcon kind={kind} /> {L("Gavai {item}", { item: L(KIND[kind].accusative) })}</div>}
         {newExpressions.length > 0 && <div className="ended-sub">{L("Naujų frazių knygelėje: {n}", { n: newExpressions.length })}</div>}
       </div>}
       {modeOffer && <button className={`btn ${modeOffer.id}-cta`} onClick={() => game?.modeFromConversation(modeOffer.id)}><Icon name="star" size={19} /> {modeOffer.label}</button>}
@@ -397,7 +401,7 @@ function NpcGroup({ lines, speaking, lt, ipa, nat, reveal }: { lines: Transcript
   const npc = NPCS[lines[0].npc!];
   const replay = async (slow: boolean) => {
     game?.activeSession?.stopListening();
-    for (const l of lines) if (!await audio.play(npcVoice(npc), npc?.speed ?? 1, l.sentence!.say, { slow, male: npc?.gender === "m" })) return;
+    for (const l of lines) if (!await playVoice(npcVoice(npc), npc?.speed ?? 1, l.sentence!.say, { slow, male: npc?.gender === "m" })) return;
   };
   return (
     <div className={"msg npc" + (speaking ? " speaking" : "")}>
@@ -522,7 +526,7 @@ function Guide({ sit, formal, gender, turn }: { sit: SituationDef; formal: boole
             <div className="gx" key={i}>
               {/* listen, and under it listen-and-repeat: one narrow column, so the phrase has the rest of the row */}
               <div className="gx-btns">
-                <button className="play" onClick={() => { game?.activeSession?.stopListening(); audio.play(coachVoice(useStore.getState().progress.profile?.gender), 1, ex.say); }} title={L("Klausyti")} aria-label={L("Klausyti")}><Icon name="speaker" size={19} /></button>
+                <button className="play" onClick={() => { game?.activeSession?.stopListening(); playVoice(coachVoice(useStore.getState().progress.profile?.gender), 1, ex.say); }} title={L("Klausyti")} aria-label={L("Klausyti")}><Icon name="speaker" size={19} /></button>
                 <RepeatButton ex={ex} />
               </div>
               <div className="gx-text" tabIndex={0} role="region" aria-label={L("Atsakymo pavyzdys {n}", { n: i + 1 })}>
@@ -600,7 +604,7 @@ function optionEntities(sit: SituationDef, options?: string | string[]): EntityD
 function Line({ l, speaking, lt, ipa, nat }: { l: TranscriptLine; speaking: boolean; lt: boolean; ipa: boolean; nat: boolean }) {
   if (l.who === "npc" && l.sentence) {
     const npc = NPCS[l.npc!];
-    const replay = (slow: boolean) => { game?.activeSession?.stopListening(); audio.play(npcVoice(npc), npc?.speed ?? 1, l.sentence!.say, { slow, male: npc?.gender === "m" }); };
+    const replay = (slow: boolean) => { game?.activeSession?.stopListening(); playVoice(npcVoice(npc), npc?.speed ?? 1, l.sentence!.say, { slow, male: npc?.gender === "m" }); };
     return (
       <div className={"msg npc" + (speaking ? " speaking" : "")}>
         <div className="meta">
@@ -692,7 +696,7 @@ function HintGroupView({ id, g, sit, formal, gender, chosen, lt, ipa, used }: { 
             {!hasGap && it.register && <span className={"tag " + it.register}>{it.register === "polite" ? L("mandagu") : L("laisviau")}</span>}
             {(variety() === "spain" && it.noteSpain || it.note || ownNameNote(it.s.en)) && <div className="note">{[variety() === "spain" && it.noteSpain || it.note, ownNameNote(it.s.en)].filter(Boolean).join(" ")}</div>}
           </div>
-          <button className="play" onClick={() => { game?.activeSession?.stopListening(); audio.play(coachVoice(useStore.getState().progress.profile?.gender), 1, full.say); }} title={L("Klausyti")} aria-label={L("Klausyti")}><Icon name="speaker" size={20} /></button>
+          <button className="play" onClick={() => { game?.activeSession?.stopListening(); playVoice(coachVoice(useStore.getState().progress.profile?.gender), 1, full.say); }} title={L("Klausyti")} aria-label={L("Klausyti")}><Icon name="speaker" size={20} /></button>
         </div>
       ))}
     </div>
