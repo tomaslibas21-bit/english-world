@@ -2,20 +2,20 @@ export type Pose = [distance: number, lateral: number, height: number, heading: 
 export type BestRun = { points: number; frames: Pose[] };
 type StoragePort = Pick<Storage, "getItem" | "setItem">;
 
-const storageKey = (edition: string) => `english-world-road-v1:${edition}`;
+const storageKey = (edition: string, mode: "road" | "sea") => `english-world-${mode}-v1:${edition}`;
 const SAMPLE = 0.1;
 
-export function readBest(edition: string, storage?: StoragePort): BestRun | undefined {
+export function readBest(edition: string, storage?: StoragePort, mode: "road" | "sea" = "road"): BestRun | undefined {
   try {
-    const best: BestRun = JSON.parse((storage ?? localStorage).getItem(storageKey(edition)) ?? "null");
+    const best: BestRun = JSON.parse((storage ?? localStorage).getItem(storageKey(edition, mode)) ?? "null");
     if (best && Number.isFinite(best.points) && best.points > 0 && Array.isArray(best.frames)
         && best.frames.length <= 1501 && best.frames.every((frame) => Array.isArray(frame) && frame.length === 4 && frame.every(Number.isFinite))) return best;
   } catch { /* Storage can be unavailable. */ }
 }
 
-export function saveBest(edition: string, run: BestRun, previous?: BestRun, storage?: StoragePort) {
-  if (run.points <= Math.max(previous?.points ?? 0, readBest(edition, storage)?.points ?? 0)) return false;
-  try { (storage ?? localStorage).setItem(storageKey(edition), JSON.stringify(run)); }
+export function saveBest(edition: string, run: BestRun, previous?: BestRun, storage?: StoragePort, mode: "road" | "sea" = "road") {
+  if (run.points <= Math.max(previous?.points ?? 0, readBest(edition, storage, mode)?.points ?? 0)) return false;
+  try { (storage ?? localStorage).setItem(storageKey(edition, mode), JSON.stringify(run)); }
   catch { /* The current mode still keeps its best run in memory. */ }
   return true;
 }

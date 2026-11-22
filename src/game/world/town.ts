@@ -1,5 +1,6 @@
 // Builds the outdoor town of Maple Harbor from layout.ts: ground, sea, buildings, props, colliders, doors.
 import * as THREE from "three";
+import { markTownBoat } from "./boatRide";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, type BuildingDef } from "./layout";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
@@ -40,6 +41,7 @@ export interface Town {
   /** Where townspeople can sit (Ambient seats some of them). */
   seats: Seat[];
   groundCanvas: HTMLCanvasElement;
+  sea: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>;
   update(t: number, dt: number): void;
   walkableAt(x: number, z: number): boolean;
 }
@@ -254,7 +256,7 @@ export function buildTown(): Town {
   const gulls = STYLED ? [] : makeGulls(group);
 
   return {
-    group, colliders, doors, parkedCars, seats: [...seats], groundCanvas,
+    group, colliders, doors, parkedCars, seats: [...seats], groundCanvas, sea,
     update(t, dt) {
       seaMat.uniforms.uTime.value = t;
       wind.value = t;
@@ -265,6 +267,7 @@ export function buildTown(): Town {
         if (c.position.x > 260) c.position.x = -200;
       }
       for (const b of boats) {
+        if (!b.userData.boat) continue; // Rides took over this mesh.
         const { phase, rot } = b.userData.boat;
         b.position.y = Math.sin(t * 1.1 + phase) * 0.12;
         b.rotation.set(Math.sin(t * 0.9 + phase) * 0.035, rot, Math.sin(t * 1.3 + phase * 1.3) * 0.05);
@@ -1604,18 +1607,19 @@ function staticColoured(parts: [THREE.BufferGeometry, THREE.ColorRepresentation]
   return mesh;
 }
 
-function makeBoats() {
+export function makeBoats() {
   boatMat ??= new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
   // the hull seen from above: square stern, pointed bow
   const shape = new THREE.Shape();
   shape.moveTo(-1.1, -3); shape.lineTo(1.1, -3); shape.lineTo(1.1, 1.2); shape.quadraticCurveTo(1.0, 2.4, 0, 3.2);
   shape.quadraticCurveTo(-1.0, 2.4, -1.1, 1.2); shape.lineTo(-1.1, -3);
   return BOATS.map(([bx, bz, rot, c], i) => {
-    const hull = new THREE.ExtrudeGeometry(shape, { depth: 0.9, bevelEnabled: false, curveSegments: 6 }).rotateX(-Math.PI / 2).translate(0, -0.35, 0);
-    const deck = new THREE.ExtrudeGeometry(shape, { depth: 0.06, bevelEnabled: false, curveSegments: 6 }).rotateX(-Math.PI / 2).scale(0.9, 1, 0.9).translate(0, 0.56, 0);
-    const stripe = new THREE.ExtrudeGeometry(shape, { depth: 0.12, bevelEnabled: false, curveSegments: 6 }).rotateX(-Math.PI / 2).scale(1.015, 1, 1.008).translate(0, 0.25, 0);
+    const hull = new THREE.ExtrudeGeometry(shape, { depth: 0.9, bevelEnabled: false, curveSegments: 6 }).rotateX(Math.PI / 2).translate(0, 0.55, 0);
+    const deck = new THREE.ExtrudeGeometry(shape, { depth: 0.06, bevelEnabled: false, curveSegments: 6 }).rotateX(Math.PI / 2).scale(0.9, 1, 0.9).translate(0, 0.62, 0);
+    const stripe = new THREE.ExtrudeGeometry(shape, { depth: 0.12, bevelEnabled: false, curveSegments: 6 }).rotateX(Math.PI / 2).scale(1.015, 1, 1.008).translate(0, 0.37, 0);
     const mesh = new THREE.Mesh(coloured([
       [hull, c], [stripe, c === "#ffffff" ? "#2f6db5" : "#ffffff"], [deck, "#c9a27a"],
+      [new THREE.BoxGeometry(0.85, 0.3, 0.43).translate(0, 0.77, -2.24), "#ad805b"],
       [new THREE.BoxGeometry(1.4, 0.9, 1.8).translate(0, 1.05, -0.6), "#f4f6f8"],
       [new THREE.BoxGeometry(1.42, 0.3, 1.3).translate(0, 1.2, -0.45), "#5f8fb0"], // the cabin's windows
       [new THREE.CylinderGeometry(0.05, 0.05, 5, 5).translate(0, 3, 0.4), "#dddddd"],
@@ -1624,6 +1628,7 @@ function makeBoats() {
     mesh.rotation.y = rot;
     mesh.castShadow = true;
     mesh.userData.boat = { phase: i * 1.7, rot };
+    markTownBoat(mesh, hull, `anchored-${i + 1}`, c, 0.62, [0, -2.16]);
     return mesh;
   });
 }

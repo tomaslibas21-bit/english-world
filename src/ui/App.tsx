@@ -58,6 +58,11 @@ function Play() {
       (window as any).__ew = {
         game: g, store: useStore, radio, voice: audio.getState, audio, coach, surf: useSurf,
         barista: g.debugBarista(), carStats: () => g!.carStats(),
+        ...(import.meta.env.DEV ? {
+          sea: () => g!.seaDebug(), seaSteer: (lane: number) => g!.seaSteer(lane),
+          seaTimer: (seconds?: number) => g!.seaTimer(seconds),
+          seaPlaceBoat: (x: number, z: number, heading?: number) => g!.seaPlaceBoat(x, z, heading),
+        } : {}),
         road: { state: () => g!.roadDebug(), steer: (lane: number) => g!.roadSteer(lane), jumpTimer: (seconds?: number) => g!.roadJumpTimer(seconds) },
       };
     });

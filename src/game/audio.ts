@@ -1528,7 +1528,7 @@ export class AudioSystem {
     };
   }
 
-  sfx(name: "success" | "pop" | "door" | "cheer" | "soft" | "listen" | "coin" | "car" | "error" | "ring" | "beep" | "knock" | "tick" | "horn" | "hornReply") {
+  sfx(name: "success" | "seaBell" | "pop" | "door" | "cheer" | "soft" | "listen" | "coin" | "car" | "error" | "ring" | "beep" | "knock" | "tick" | "horn" | "hornReply") {
     audioDiagnostic("context.effect", { reason: name });
     const ctx = this.ac();
     if (!ctx) return;
@@ -1547,6 +1547,11 @@ export class AudioSystem {
       o.start(now + t0); o.stop(now + t0 + dur + 0.05);
     };
     switch (name) {
+      case "seaBell":
+        tone(988, 0, 0.53);
+        tone(1976, 0, 0.36, "sine", vol * 0.42);
+        tone(2592, 0, 0.21, "sine", vol * 0.19);
+        break;
       case "success": tone(784, 0, 0.18); tone(1175, 0.09, 0.3); break;
       // a task done: a bright run up, a shimmering chord, a few twinkles on top
       case "cheer":

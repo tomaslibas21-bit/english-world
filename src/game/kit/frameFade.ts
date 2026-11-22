@@ -3,14 +3,14 @@ const RAMP = 0.3;
 const HOLD = 0.12;
 
 export class FrameFade {
-  private fade: { time: number; swap?: () => void } | null = null;
+  private fade: { time: number; end: number; swap?: () => void } | null = null;
 
   constructor(private opacity: (value: number) => void) {}
 
   get active() { return this.fade !== null; }
 
-  start(swap: () => void) {
-    this.fade = { time: 0, swap };
+  start(swap: () => void, hold = HOLD) {
+    this.fade = { time: 0, end: 2 * RAMP + hold, swap };
     this.opacity(0);
   }
 
@@ -25,11 +25,11 @@ export class FrameFade {
       swap();
       return;
     }
-    if (fade.time >= 2 * RAMP + HOLD) {
+    if (fade.time >= fade.end) {
       this.clear();
       return;
     }
-    this.opacity(Math.min(1, fade.time / RAMP, (2 * RAMP + HOLD - fade.time) / RAMP));
+    this.opacity(Math.min(1, fade.time / RAMP, (fade.end - fade.time) / RAMP));
   }
 
   clear() {

@@ -32,7 +32,10 @@ export interface Progress {
   /** Phrasebook: expression id → { en, lt, sitId, count, last } */
   phrases: Record<string, { en: string; lt: string; sitId: string; count: number; last: number }>;
   objective: string | null;
-  place: { zone: string; x: number; z: number; rot: number } | null;
+  place: {
+    zone: string; x: number; z: number; rot: number;
+    boat?: { id: string; x: number; z: number; rot: number; mooring?: { x: number; z: number; rot: number } };
+  } | null;
   seenIntro: Record<string, boolean>;
   started: number;
   /** The 3D town's guide (game/coach.ts): `seen`: the hints shown so far (each comes once, when its thing first

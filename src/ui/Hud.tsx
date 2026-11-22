@@ -23,6 +23,7 @@ import { Guide } from "./Guide";
 import { TownToast, useTownToast } from "./Toasts";
 import { PhoneRing } from "./PhoneRing";
 import { portraitToolbarRows } from "./toolbarLayout";
+import { getSeaOverlay } from "./seaOverlay";
 import "./light.css";
 import "./townPhone.css";
 
@@ -75,13 +76,14 @@ export function Hud() {
     <div className="hud mode-hud"><Suspense><LizzieMeeting /></Suspense><Fade /></div>
   );
   if (hud.modeScreen?.kind === "menu") {
-    const Overlay = modeOverlays[hud.modeScreen.id];
     const road = hud.modeScreen.id === "road";
+    const sea = hud.modeScreen.id === "sea";
+    const Overlay = sea ? getSeaOverlay() : modeOverlays[hud.modeScreen.id];
     return (
-      <div className={"hud mode-hud" + (road ? " road-mode" : "") + (hud.showTouch ? " has-touch" : "")}>
+      <div className={"hud mode-hud" + (road ? " road-mode" : sea ? " sea-mode" : "") + (hud.showTouch ? " has-touch" : "")}>
         {!hud.panel && Overlay && <Suspense fallback={null}><Overlay touch={hud.showTouch} /></Suspense>}
-        {!road && hud.modeScreen.id !== "barista" && <Toolbar riding touch={hud.showTouch} modeExit={hud.modeScreen.exitLabel} />}
-        {hud.showTouch && hud.ride && <TouchControls road={road} />}
+        {!road && !sea && hud.modeScreen.id !== "barista" && <Toolbar riding touch={hud.showTouch} modeExit={hud.modeScreen.exitLabel} />}
+        {hud.showTouch && hud.ride && <TouchControls road={road} stickOnly={sea} />}
         <Fade />
       </div>
     );
@@ -495,7 +497,7 @@ function HornButton({ touch }: { touch?: boolean }) {
     title={ROAD_UI.horn} onClick={() => game?.horn?.()}><Icon name="horn" size={23} /></button>;
 }
 
-function TouchControls({ road = false }: { road?: boolean }) {
+function TouchControls({ road = false, stickOnly = false }: { road?: boolean; stickOnly?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const knob = useRef<HTMLDivElement>(null);
   const prompt = useStore((s) => s.hud.prompt);
@@ -535,9 +537,11 @@ function TouchControls({ road = false }: { road?: boolean }) {
       window.removeEventListener("blur", stop); document.removeEventListener("visibilitychange", hidden); stop();
     };
   }, []);
+  const stick = <div className="joy" ref={ref}><div className="knob" ref={knob} /></div>;
+  if (stickOnly) return stick;
   return (
     <>
-      <div className="joy" ref={ref}><div className="knob" ref={knob} /></div>
+      {stick}
       {/* the jump stays under the right thumb; with someone to talk to or a door to go through it moves over for that button
           (a second tap while in the air is a flip: every press goes to the game, which knows where the player is) */}
       {prompt && <button className="act-btn" onClick={() => game?.interact()}>{prompt.kind === "talk" ? "Kalbėti" : prompt.kind === "exit" ? "Išeiti" : prompt.kind === "drive" ? "Vairuoti" : prompt.kind === "boat" ? "Plaukti" : prompt.kind === "out" ? "Išlipti" : prompt.kind === "climb" ? "Užlipti" : prompt.kind === "surf" ? "Banglentė" : prompt.kind === "paddle" ? "Irkluoti" : (prompt.kind === "taxi" || prompt.kind === "barista") ? prompt.label : "Įeiti"}</button>}

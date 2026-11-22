@@ -1,3 +1,5 @@
+import { useCards } from "../../state/cards";
+import { keepPhrases } from "../kit/phrases";
 import type { Prompt, Word } from "./words";
 
 export const DRIVE_SECONDS = 150;
@@ -14,11 +16,13 @@ export class RunScore {
   readonly missed = new Map<string, Word>();
   readonly learned = new Map<string, Prompt>();
 
+  constructor(readonly duration = DRIVE_SECONDS) {}
+
   advance(dt: number) {
-    this.elapsed = Math.min(DRIVE_SECONDS, this.elapsed + dt);
-    // Avoid an extra frame at 150 seconds due to accumulated floating-point error.
-    if (DRIVE_SECONDS - this.elapsed < 1e-8) this.elapsed = DRIVE_SECONDS;
-    return this.elapsed >= DRIVE_SECONDS;
+    this.elapsed = Math.min(this.duration, this.elapsed + dt);
+    // Avoid an extra frame due to accumulated floating-point error.
+    if (this.duration - this.elapsed < 1e-8) this.elapsed = this.duration;
+    return this.elapsed >= this.duration;
   }
 
   answer(prompt: Prompt, lane: number) {
@@ -37,4 +41,14 @@ export class RunScore {
     }
     return correct;
   }
+}
+
+
+export function keepRunPhrases(score: RunScore) {
+  const before = useCards.getState().cards.length;
+  for (const { word, gap } of score.learned.values()) {
+    if (gap) keepPhrases(word.situation, [gap.full]);
+    else keepPhrases(word.situation, [{ en: word.en, nat: word.lt, say: word.clip.say, units: [{ en: word.en, lt: word.lt }] }]);
+  }
+  return useCards.getState().cards.length - before;
 }

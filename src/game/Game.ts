@@ -24,6 +24,8 @@ import { islandGroundY, LIGHTHOUSE_ISLAND } from "./world/island";
 import type { buildLighthouseIsland } from "./world/lighthouseIsland";
 import { ROAD_EDITION, ROAD_UI } from "../content/road";
 import { RoadEntry, leavingByRoad, walkEdge } from "./road/entry";
+import { SEA_EDITION } from "../content/sea";
+import { SeaEntry, seaReturn } from "./sea/entry";
 import { RIDE_NAMES } from "../content/rides";
 import { ModeRegistry } from "./kit/modes";
 import { FrameFade } from "./kit/frameFade";
@@ -286,6 +288,8 @@ export class Game implements GameApi {
   private rideBack = 0;
   private rideFov = 0;
   private road?: RoadEntry;
+  private sea?: SeaEntry;
+  private seaMooring?: Ride["home"];
   private fpsAverage = 0;
   private lastRender = 0;
   private lastRenderWasRoad = false;
@@ -369,11 +373,10 @@ export class Game implements GameApi {
       const parked = this.rides.modeCarPieces(x, z);
       return parked.length ? moving.concat(parked) : moving;
     };
-    // the boats lying in the shallows are in a wader's way
+    // Any scenery boats stay in the ledge map. Ride boats use moving collision boxes.
     const hull = new THREE.Box3();
-    for (const o of this.town.group.children) if (o.userData.boat) {
+    for (const o of this.town.group.children) if (o.userData.boat && !o.userData.rideBoat) {
       hull.setFromObject(o);
-      // (all of them: one swims out among them now)
       this.ledges.add({ minX: hull.min.x, maxX: hull.max.x, minZ: hull.min.z, maxZ: hull.max.z, top: Infinity });
     }
     withCutout(this.town.group);
@@ -433,6 +436,7 @@ export class Game implements GameApi {
       splash: (x, y, z, dx, dz, k) => this.splashes.burst(x, y, z, dx, dz, k),
       fan: (x, y, z, dx, dz, k) => this.splashes.fan(x, y, z, dx, dz, k),
       outdoors: () => !this.zone.interior && !this.covered,
+      openSea: (boat) => this.sea?.openEdge(boat) ?? false,
     }, RIDES, this.town.group.children.filter((o) => o.userData.boat));
     const { fleet } = this.town.parkedCars;
     fleet.cars.forEach((entry, index) => {
@@ -510,6 +514,28 @@ export class Game implements GameApi {
       });
       this.modes.register(this.road);
     }
+    if (SEA_EDITION.enabled) {
+      this.sea = new SeaEntry({
+        ...host,
+        environment: () => ({ sky: this.sky, sea: this.town.sea, fog: this.scene.fog as THREE.Fog | null, hemi: this.hemi, sun: this.sun }),
+        clearTownHud: () => {
+          this.nearest = null;
+          this.tagLayer.style.visibility = "hidden";
+          useStore.getState().dismissRideToasts();
+          useStore.getState().setHud({ prompt: null, ride: null, fast: false, speedLines: false });
+        },
+        left: (id) => { this.tagLayer.style.visibility = ""; host.left(id); },
+        fade: (swap) => {
+          if (this.transitioning || this.disposed) return false;
+          this.transitioning = true;
+          this.frameFade.start(swap, 0.08);
+          return true;
+        },
+        returnBoat: (boat, onFoot) => this.returnSeaBoat(boat, onFoot),
+        tip: (title, body) => this.showRideToast({ kind: "tip", title, body }),
+      });
+      this.modes.register(this.sea);
+    }
     this.scene.add(this.npcLayer, this.guidance.group, this.ambient.group, this.rides.group, this.dust.group, this.splashes.group, this.undersea.group);
     this.rig.space = {
       free: (a, b) => (this.zone?.interior ? 1 : this.field.free(a, b)),
@@ -533,6 +559,18 @@ export class Game implements GameApi {
     if (place && (place.zone === "town" || getInterior(place.zone))) {
       if (place.zone === "town" && island && islandGroundY(island, place.x, place.z) !== undefined) this.rides.restoreIslandBoat(st.progress.lighthouse?.boat);
       this.enterZone(place.zone, { x: place.x, z: place.z, rot: place.rot }, true);
+      if (place.zone === "town" && place.boat) {
+        const saved = place.boat, boat = this.rides.find(saved.id);
+        if (boat?.kind === "boat" && [saved.x, saved.z, saved.rot].every(Number.isFinite)) {
+          this.rides.resetPosition(boat, { ...saved, z: Math.max(BAY.z0 + 5, saved.z) });
+          if (this.rides.restoreBoat(boat, this.t)) {
+            this.seaMooring = saved.mooring ?? boat.home;
+            this.sea?.prefetch(boat);
+            this.snapSeaBoat(boat);
+            this.savePlace();
+          }
+        }
+      }
     }
     else if (this.wantsFlight()) this.beginFlight();
     else this.enterZone("airport", ARRIVAL, true);
@@ -570,6 +608,28 @@ export class Game implements GameApi {
 
   roadSteer(lane: number) { this.road?.steer(lane); }
   roadJumpTimer(seconds?: number) { this.road?.jumpTimer(seconds); }
+
+  seaDebug() {
+    if (!import.meta.env.DEV) return;
+    const r = this.rides.riding, cam = this.rig.cam;
+    return {
+      ...this.sea?.debug(), drawCalls: this.renderer.info.render.calls, edge: BAY.z0,
+      town: r?.kind === "boat" ? { id: r.id, phase: this.rides.phase, x: r.m.x, z: r.m.z, heading: r.m.heading,
+        speed: r.m.speed, bowZ: r.m.z + r.m.fz * r.m.spec.half, hull: r.mesh.position.toArray(),
+        camera: { position: cam.position.toArray(), rotation: cam.quaternion.toArray(), fov: cam.fov } } : undefined,
+    };
+  }
+
+  seaSteer(lane: number) { if (import.meta.env.DEV) this.sea?.steer(lane); }
+  seaTimer(seconds?: number) { if (import.meta.env.DEV) this.sea?.jumpTimer(seconds); }
+
+  seaPlaceBoat(x: number, z: number, heading = Math.PI) {
+    const boat = this.rides.riding;
+    if (!import.meta.env.DEV || this.modes.active || boat?.kind !== "boat" || this.rides.phase !== "on") return false;
+    this.rides.resetPosition(boat, { x, z, rot: heading });
+    this.snapSeaBoat(boat);
+    return true;
+  }
 
   private sampleFps(road: boolean) {
     const now = performance.now(), ms = now - this.lastRender;
@@ -924,6 +984,40 @@ export class Game implements GameApi {
     this.savePlace();
   }
 
+  private snapSeaBoat(boat: Ride) {
+    this.surface(true);
+    this.rides.syncBoatRider(boat, this.t);
+    this.heading = this.rideCourse = this.rig.yaw = boat.m.heading;
+    this.rig.mode = "follow";
+    this.rig.target.copy(this.player.root.position);
+    this.rig.snap();
+    useStore.getState().setHud({ ride: "boat", prompt: null });
+  }
+
+  private returnSeaBoat(boat: Ride, onFoot: boolean) {
+    this.keys.clear();
+    this.setJoystick(0, 0);
+    this.brake = false;
+    if (onFoot) {
+      const mooring = this.seaMooring ?? boat.home;
+      this.endRide(true);
+      this.rides.resetPosition(boat, mooring);
+      const x = Math.max(WORLD.minX + 3, Math.min(WORLD.maxX - 3, mooring.x)), z = SHORE.top + 1;
+      const beach = [0, -5, 5, -10, 10].map((d) => ({ x: x + d, z }))
+        .find((p) => this.town.walkableAt(p.x, p.z)) ?? { x, z: z + 5 };
+      this.placeOnFoot(beach.x, beach.z, 0);
+    } else {
+      this.rideFov = 0;
+      this.rig.dist /= 1 + this.rideBack;
+      this.rideBack = 0;
+      this.rides.resetPosition(boat, seaReturn(boat));
+      boat.m.speed = 3.1;
+      this.moveVel.set(0, 0, 0);
+      this.snapSeaBoat(boat);
+    }
+    this.savePlace();
+  }
+
   private checkRoadEntry() {
     if (!this.road || this.zone.interior || this.modes.active || this.modes.modal || this.swimming) return;
     const car = this.rides.riding;
@@ -1106,7 +1200,13 @@ export class Game implements GameApi {
     this.brake = false;
     st.setHud({ prompt: null });
     audio.sfx("pop");
-    if (r.kind === "boat") { const p = this.player.root.position; this.splashes.burst(r.m.x, waterY(p.x, p.z, this.t) ?? SEA_LEVEL, r.m.z, 0, 0, 0.5); }
+    if (r.kind === "boat") {
+      this.seaMooring = { x: r.m.x, z: r.m.z, rot: r.m.heading };
+      this.sea?.prefetch(r);
+      const p = this.player.root.position;
+      this.splashes.burst(r.m.x, waterY(p.x, p.z, this.t) ?? SEA_LEVEL, r.m.z, 0, 0, 0.5);
+      this.savePlace();
+    }
     return true;
   }
 
@@ -1117,7 +1217,10 @@ export class Game implements GameApi {
     this.heading = rot;
     this.player.root.rotation.set(0, rot, 0);
     this.afterRide();
-    if (LIGHTHOUSE_ISLAND && islandGroundY(LIGHTHOUSE_ISLAND, x, z) !== undefined) this.savePlace();
+    if (this.seaMooring || (LIGHTHOUSE_ISLAND && islandGroundY(LIGHTHOUSE_ISLAND, x, z) !== undefined)) {
+      this.seaMooring = undefined;
+      this.savePlace();
+    }
     const sur = waterY(x, z, this.t);
     if (sur !== null && sur - y > 0.3) { audio.splash(Math.min(1, 0.4 + (sur - y) * 0.4)); this.splashes.burst(x, sur, z, 0, 0, 1); }
     else audio.land(this.underfoot(y > 0.05), 0.5);
@@ -1153,6 +1256,7 @@ export class Game implements GameApi {
   private endRide(keep = false) {
     if (!this.rides?.riding) return;
     this.rides.abandon(keep);
+    this.seaMooring = undefined;
     this.afterRide();
   }
 
@@ -1534,6 +1638,7 @@ export class Game implements GameApi {
   };
 
   private phonePageHide = () => {
+    if (this.rides?.riding?.kind === "boat") this.savePlace();
     this.phone.dismiss();
     if (useStore.getState().progress.phone) {
       useStore.getState().updateProgress((p) => this.phone.saveClock(p));
@@ -2165,7 +2270,8 @@ export class Game implements GameApi {
     this.phone.tick(this.wasHidden ? 0 : elapsed, this.phoneSnapshot());
     this.wasHidden = document.hidden;
     if (!blocked) this.checkRoadEntry();
-    if (this.road?.render(this.renderer, this.container.clientWidth, this.container.clientHeight)) {
+    if (this.road?.render(this.renderer, this.container.clientWidth, this.container.clientHeight)
+      || this.sea?.render(this.renderer, this.container.clientWidth, this.container.clientHeight)) {
       this.sampleFps(true);
       return;
     }
@@ -2282,6 +2388,13 @@ export class Game implements GameApi {
     const covered = this.covered = talking && picturesOn(st.settings) && !!sceneFor(st.conv.sitId, st.conv.hostId);
     this.rides.updateParkingKeys(this.t, !this.zone.interior && !talking && !this.flight && !this.modes.active && !this.transitioning);
     if (!covered) {
+      if (!blocked && !mode && riding?.kind === "boat" && this.rides.phase === "on" && this.sea?.shouldStart(riding)
+        && this.modes.start("sea")) {
+        this.savePlace();
+        this.sea.render(this.renderer, this.container.clientWidth, this.container.clientHeight);
+        this.sampleFps(true);
+        return;
+      }
       this.renderer.render(this.scene, this.rig.cam);
       this.sampleFps(false);
       const island = LIGHTHOUSE_ISLAND;
@@ -2930,6 +3043,12 @@ export class Game implements GameApi {
     const island = LIGHTHOUSE_ISLAND;
     useStore.getState().updateProgress((pr) => {
       pr.place = { zone: this.zone.id, x: +p.x.toFixed(2), z: +p.z.toFixed(2), rot: +this.heading.toFixed(2) };
+      const boat = this.rides.riding;
+      if (this.zone.id === "town" && boat?.kind === "boat" && this.rides.phase !== "out") {
+        const position = this.modes.owns("sea") ? seaReturn(boat) : { x: boat.m.x, z: boat.m.z, rot: boat.m.heading };
+        pr.place.boat = { id: boat.id, ...position, mooring: this.seaMooring };
+        if (this.modes.owns("sea")) Object.assign(pr.place, position);
+      }
       if (this.zone.id === "town" && island && islandGroundY(island, p.x, p.z) !== undefined) {
         pr.lighthouse = { ...pr.lighthouse, boat: this.rides.islandBoat() };
       } else if (island && pr.lighthouse?.boat) delete pr.lighthouse.boat;

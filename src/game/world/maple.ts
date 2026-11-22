@@ -7,6 +7,7 @@
 // calls: the leaves on the ground (1), the leaves in the air (1), the bunting (1), Main Street's brick (1), the buoys
 // (1), two boats (2) and the truck's sign (1). Only the original look has it (the trial styles keep the plain town).
 import * as THREE from "three";
+import { markTownBoat } from "./boatRide";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { BUILDINGS, FOUNTAIN, LIGHTHOUSE, STALLS, BEACH_Z } from "./layout";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, colourMerge } from "./util";
@@ -75,18 +76,19 @@ export function buoy(parts: [THREE.BufferGeometry, THREE.ColorRepresentation][],
 
 /** A lobster boat (its bow towards +z): a high-bowed hull, the wheelhouse forward with its roof running aft, an open
  *  deck with traps and buoys, a hauler. One mesh that rocks on the water like the other boats (town.ts update). */
-function lobsterBoat(hullC: string, trimC: string, material: THREE.Material, x: number, z: number, rot: number, phase: number) {
+function lobsterBoat(hullC: string, trimC: string, material: THREE.Material, x: number, z: number, rot: number, phase: number, id: string) {
   const shape = new THREE.Shape();
   shape.moveTo(-1.25, -3.5); shape.lineTo(1.25, -3.5); shape.lineTo(1.3, 1.2); shape.quadraticCurveTo(1.15, 2.8, 0, 3.9);
   shape.quadraticCurveTo(-1.15, 2.8, -1.3, 1.2); shape.lineTo(-1.25, -3.5);
-  const ex = (depth: number, y: number, sx = 1, sz = 1) => new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false, curveSegments: 5 }).rotateX(-Math.PI / 2).scale(sx, 1, sz).translate(0, y, 0);
+  const ex = (depth: number, y: number, sx = 1, sz = 1) => new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false, curveSegments: 5 }).rotateX(Math.PI / 2).scale(sx, 1, sz).translate(0, y + depth, 0);
   // the raised bow: the forward third of the hull's plan, a step higher
   const bow = new THREE.Shape();
   bow.moveTo(-1.3, 1.0); bow.lineTo(1.3, 1.0); bow.quadraticCurveTo(1.15, 2.8, 0, 3.9); bow.quadraticCurveTo(-1.15, 2.8, -1.3, 1.0);
-  const bowG = new THREE.ExtrudeGeometry(bow, { depth: 0.34, bevelEnabled: false, curveSegments: 5 }).rotateX(-Math.PI / 2).translate(0, 0.62, 0);
+  const bowG = new THREE.ExtrudeGeometry(bow, { depth: 0.34, bevelEnabled: false, curveSegments: 5 }).rotateX(Math.PI / 2).translate(0, 0.96, 0);
+  const hull = ex(1.0, -0.38);
   const parts: [THREE.BufferGeometry, THREE.ColorRepresentation][] = [
-    [ex(1.0, -0.38), hullC], [ex(0.1, 0.52, 1.02, 1.01), trimC], [ex(0.05, 0.6, 0.9, 0.93), "#b9a383"], [bowG, hullC],
-    [new THREE.ExtrudeGeometry(bow, { depth: 0.06, bevelEnabled: false, curveSegments: 5 }).rotateX(-Math.PI / 2).scale(1.02, 1, 1.01).translate(0, 0.96, 0), trimC],
+    [hull, hullC], [ex(0.1, 0.52, 1.02, 1.01), trimC], [ex(0.05, 0.6, 0.9, 0.93), "#b9a383"], [bowG, hullC],
+    [new THREE.ExtrudeGeometry(bow, { depth: 0.06, bevelEnabled: false, curveSegments: 5 }).rotateX(Math.PI / 2).scale(1.02, 1, 1.01).translate(0, 1.02, 0), trimC],
     // the wheelhouse, its windows, and the roof that shelters the helm
     [new THREE.BoxGeometry(1.7, 1.5, 1.7).translate(0, 1.4, 1.3), "#f4f1ea"],
     [new THREE.BoxGeometry(1.72, 0.5, 1.5).translate(0, 1.72, 1.35), "#4f7f9c"],
@@ -96,6 +98,7 @@ function lobsterBoat(hullC: string, trimC: string, material: THREE.Material, x: 
     // a mast with the radar's bar and an antenna
     [new THREE.CylinderGeometry(0.04, 0.04, 1.1, 5).translate(0, 2.8, 1.2), "#d9d9d9"], [new THREE.BoxGeometry(0.7, 0.07, 0.12).translate(0, 2.9, 1.2), "#f4f1ea"],
     [new THREE.CylinderGeometry(0.012, 0.012, 1.6, 4).translate(0.5, 3.0, 1.9), "#d9d9d9"],
+    [new THREE.BoxGeometry(0.66, 0.3, 0.36).translate(-0.42, 0.8, -1.43), "#9f8769"],
     // the hauler on the starboard rail, a coil of rope, a fish crate
     [new THREE.CylinderGeometry(0.05, 0.05, 1.3, 5).translate(1.15, 1.3, -0.3), "#8a939b"], [new THREE.BoxGeometry(0.5, 0.06, 0.06).translate(1.37, 1.92, -0.3), "#8a939b"],
     [new THREE.CylinderGeometry(0.14, 0.14, 0.06, 8).rotateZ(Math.PI / 2).translate(1.6, 1.9, -0.3), "#3a3d42"],
@@ -112,7 +115,15 @@ function lobsterBoat(hullC: string, trimC: string, material: THREE.Material, x: 
   mesh.castShadow = true;
   mesh.name = "lobster-boat";
   mesh.userData.boat = { phase, rot };
+  markTownBoat(mesh, hull, id, hullC, 0.65, [-0.42, -1.35]);
   return mesh;
+}
+
+export function makeLobsterBoats(boatMat: THREE.Material) {
+  return [
+    lobsterBoat("#f4f1ea", "#b5382c", boatMat, -43.6, -80.5, Math.PI, 2.3, "lobster-1"),
+    lobsterBoat("#2f6b4f", "#f6ecd9", boatMat, 76, -92, 2.0, 4.1, "lobster-2"),
+  ];
 }
 
 /** Builds the fall decor into the town (before its Merger is built). Returns what moves it each frame. */
@@ -436,8 +447,7 @@ function addSquare(add: Add, col: Colliders, group: THREE.Group) {
 function addHarborGear(add: Add, col: Colliders, group: THREE.Group, updates: ((t: number, dt: number) => void)[]) {
   const boatMat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
   // one made fast along the pier's west side, one working her traps towards the lighthouse
-  group.add(lobsterBoat("#f4f1ea", "#b5382c", boatMat, -43.6, -80.5, Math.PI, 2.3));
-  group.add(lobsterBoat("#2f6b4f", "#f6ecd9", boatMat, 76, -92, 2.0, 4.1));
+  group.add(...makeLobsterBoats(boatMat));
 
   const TRAPS = ["#d9b23a", "#3f7d5c", "#d9b23a", "#4a5a52"];
   // the big stack west of the walkway: three long, two deep, three high (stepped)
