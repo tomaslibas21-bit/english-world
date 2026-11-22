@@ -128,8 +128,26 @@
 .road-missed h3 { margin: 0 0 7px; font-size: 1.05rem; }
 .road-missed article { border-top: 1px solid var(--line); padding: 7px 0; }
 .road-missed article > small { display: block; }
-.road-missed .ended-destination { margin: 4px 0 0; gap: 6px; }
-.road-missed .ended-destination .btn { font-size: .82rem; white-space: nowrap; }
+.road-missed select {
+  width: 100%;
+  min-height: 44px;
+  padding-inline: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font: inherit;
+  color: var(--ink);
+  background: var(--panel-solid);
+}
+.road-missed .ended-destination { grid-template-columns: auto minmax(0, 1fr) auto; margin: 4px 0 0; gap: 6px; }
+.road-missed .ended-destination .btn { grid-column: auto; font-size: .82rem; white-space: nowrap; }
+@media (max-height: 700px) {
+  .road-result .mode-score-actions, .road-missed { margin-top: 6px; }
+  .road-record { margin: 0 0 4px; }
+  .road-missed h3 { margin-bottom: 3px; }
+  .road-missed article { padding-block: 4px; }
+  .road-result .road-lift-line { padding: 5px 8px; }
+  .road-result .road-lift-line .il { justify-content: center; font-size: 1.1em; gap: 3px 7px; }
+}
 @media (max-width: 520px) {
   .road-mode .joy { width: 112px; height: 112px; }
   .road-mode .jump-btn.brake-btn { right: calc(18px + env(safe-area-inset-right)); bottom: calc(21px + env(safe-area-inset-bottom)); }

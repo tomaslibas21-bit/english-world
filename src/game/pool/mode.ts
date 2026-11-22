@@ -283,7 +283,10 @@ class PoolMode implements GameMode {
     keepPhrases(POOL_SITUATION, kept);
     this.phase = "result";
     this.clearCues();
-    usePool.setState({ result: { best: round.best, learnerHits: round.learnerHits, cards: kept.length }, help: null });
+    usePool.setState({
+      result: { best: round.best, learnerHits: round.learnerHits, drops: round.drops, cards: kept.length },
+      help: null,
+    });
   }
 
   update({ dt, time, blocked }: ModeFrame) {

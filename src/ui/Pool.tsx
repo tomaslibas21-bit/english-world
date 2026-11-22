@@ -3,7 +3,7 @@ import { usePool } from "../game/pool/store";
 import { Icon } from "./icons";
 import { HL, L, TL } from "./i18n";
 import { GlossLine } from "./kit/GlossLine";
-import { ScoreCard } from "./kit/ScoreCard";
+import { ScoreCard, ScoreNumber } from "./kit/ScoreCard";
 import "./pool.css";
 
 const helpText = {
@@ -17,8 +17,9 @@ export function PoolOverlay({ touch }: { touch: boolean }) {
   const { cue, aside, help, streak, result } = usePool();
   if (result) return (
     <ScoreCard title={L("Kamuolys ore")}
+      ratio={result.learnerHits / Math.max(1, result.learnerHits + result.drops)}
       rows={[
-        { label: L("Geriausia serija"), value: <>{result.best} {L("Iš eilės").toLocaleLowerCase(HL)}</> },
+        { label: L("Geriausia serija"), value: <><ScoreNumber value={result.best} /> {L("Iš eilės").toLocaleLowerCase(HL)}</> },
         { label: L("Tavo smūgiai"), value: result.learnerHits },
       ]}
       phrases={{ label: L("Frazių kortelės"), count: result.cards }}

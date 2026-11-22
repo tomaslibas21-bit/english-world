@@ -5,7 +5,7 @@ import { speechSupported } from "../convo/speech";
 import { game } from "../game/gameRef";
 import { useTaxi } from "../game/taxi/store";
 import { GlossLine } from "./kit/GlossLine";
-import { ScoreCard } from "./kit/ScoreCard";
+import { ScoreCard, ScoreNumber } from "./kit/ScoreCard";
 import { Icon } from "./icons";
 import "./taxi.css";
 
@@ -21,7 +21,8 @@ const actionIcons = { left: "arrowLeft", right: "arrowRight", straight: "arrowUp
 export function TaxiOverlay({ touch }: { touch: boolean }) {
   const { line, action, gloss, choices, mic, micOn, result } = useTaxi();
   const [revealed, setRevealed] = useState<typeof line>(null);
-  if (result) return <ScoreCard title={L("Kelionė baigta")} score={`${result.points}/${result.max}`}
+  if (result) return <ScoreCard title={L("Kelionė baigta")} ratio={result.points / result.max}
+    score={<><ScoreNumber value={result.points} />/{result.max}</>}
     rows={[
       { label: L("Kaina"), value: priceEn(result.fare) },
       { label: L("Arbatpinigiai"), value: priceEn(result.tip) },

@@ -17,7 +17,7 @@ interface PoolUi {
   aside: KitLine | null;
   help: "long" | "short" | "timing" | "wrong" | null;
   streak: number;
-  result: { best: number; learnerHits: number; cards: number } | null;
+  result: { best: number; learnerHits: number; drops: number; cards: number } | null;
 }
 
 const empty: PoolUi = { cue: null, aside: null, help: null, streak: 0, result: null };

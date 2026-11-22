@@ -1,10 +1,12 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import { Stars } from "../icons";
 import { HL } from "../i18n";
 import "./scoreCard.css";
 
 interface ScoreCardProps {
   title: string;
   score?: ReactNode;
+  ratio?: number;
   rows: { label: string; value: ReactNode }[];
   phrases: { label: string; count: number };
   again: { label: string; run(): void };
@@ -12,10 +14,37 @@ interface ScoreCardProps {
   children?: ReactNode;
 }
 
-export function ScoreCard({ title, score, rows, phrases, again, done, children }: ScoreCardProps) {
+/** Keep the final value available to assistive technology throughout the visual count. */
+export function ScoreNumber({ value }: { value: number }) {
+  return <span className="mode-score-number" style={{ "--score-total": value } as CSSProperties}>
+    <span>{value}</span><i aria-hidden="true" />
+  </span>;
+}
+
+function ScoreStars({ ratio }: { ratio: number }) {
+  const earned = ratio >= 0.8 ? 3 : ratio >= 0.5 ? 2 : 1;
+  return <div className="mode-score-award" aria-hidden="true">
+    <Stars n={earned} size={29} label={false} />
+    {earned >= 2 && <svg className="mode-score-sparks" viewBox="0 0 180 40" fill="none" aria-hidden="true">
+      <g>
+        <path d="m30 6 1.6 4.4L36 12l-4.4 1.6L30 18l-1.6-4.4L24 12l4.4-1.6Z" fill="var(--gold)" />
+        <path d="m14 21 5 2" stroke="var(--good)" strokeWidth="3" strokeLinecap="round" />
+        <circle cx="32" cy="30" r="2" fill="var(--warm)" />
+      </g>
+      <g>
+        <path d="m155 20 1.5 4.5L161 26l-4.5 1.5L155 32l-1.5-4.5L149 26l4.5-1.5Z" fill="var(--good)" />
+        <path d="m147 11 3-4" stroke="var(--warm)" strokeWidth="3" strokeLinecap="round" />
+        <circle cx="168" cy="16" r="2" fill="var(--gold)" />
+      </g>
+    </svg>}
+  </div>;
+}
+
+export function ScoreCard({ title, score, ratio, rows, phrases, again, done, children }: ScoreCardProps) {
   return (
     <div className="mode-score" lang={HL}>
       <section className="mode-score-card" role="dialog" aria-labelledby="mode-score-title">
+        {ratio != null && Number.isFinite(ratio) && <ScoreStars ratio={ratio} />}
         <h2 id="mode-score-title">{title}</h2>
         {score != null && <strong className="mode-score-line">{score}</strong>}
         <dl>

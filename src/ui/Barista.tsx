@@ -71,7 +71,7 @@ export function BaristaOverlay({ touch }: { touch: boolean }) {
   const { line, hiddenOrder, revealed, choices, mic, micOn, customer, tray, step, ready, repair, price, result } = useBarista();
   if (result) return (
     <div className="barista-result" lang={HL}>
-      <ScoreCard title={L(words.title)}
+      <ScoreCard title={L(words.title)} ratio={result.firstTime / result.served}
         rows={[
           { label: L(words.orders), value: `${result.served}/${total}` },
           { label: L(words.firstTime), value: `${result.firstTime}/${total}` },
