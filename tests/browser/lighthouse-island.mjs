@@ -70,10 +70,12 @@ try {
     await context.close();
   }
 
-  for (const phone of [true, false]) {
-    const context = await browser.newContext(phone ? phoneView : desktopView);
+  const shortPhoneView = { ...phoneView, viewport: { width: 390, height: 664 } };
+  for (const view of [phoneView, shortPhoneView, desktopView]) {
+    const phone = !!view.isMobile;
+    const context = await browser.newContext(view);
     const page = await open(context, base);
-    const label = phone ? "390x844" : "1280x800";
+    const label = `${view.viewport.width}x${view.viewport.height}`;
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.waitForFunction(() => !!window.__ew.game.islandScene);
@@ -103,8 +105,9 @@ try {
       const calls = await harborCalls(page);
       const delta = calls.after - calls.hidden;
       assert(delta > 0 && delta <= 6, JSON.stringify(calls));
-      console.log(`390x844 harbor draw calls, island hidden/visible ${calls.hidden}/${calls.after} (+${delta})`);
-      if (originalCalls !== undefined) console.log(`390x844 harbor draw calls, original/current ${originalCalls}/${calls.after}`);
+      console.log(`${label} harbor draw calls, island hidden/visible ${calls.hidden}/${calls.after} (+${delta})`);
+      if (view === phoneView) assert(calls.after <= 32, JSON.stringify(calls));
+      if (view === phoneView && originalCalls !== undefined) console.log(`${label} harbor draw calls, original/current ${originalCalls}/${calls.after}`);
       await page.evaluate((at) => window.__ew.game.enterZone("town", at, true), spawn);
     }
 

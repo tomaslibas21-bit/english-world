@@ -51,7 +51,7 @@ function bale(add: Add, x: number, y: number, z: number, rot: number) {
   for (const u of [-0.28, 0.28]) add(boxGeo(0.04, 0.52, 0.57, u, 0.25, 0).rotateY(rot).translate(x, y, z), "#b08f45");
 }
 /** A clump of mums: a green mound with blooms on it, `r` across, its foot at y. */
-function mums(add: Add, x: number, y: number, z: number, r: number, k: number) {
+export function mums(add: Add, x: number, y: number, z: number, r: number, k: number) {
   add(new THREE.IcosahedronGeometry(r, 0).scale(1, 0.62, 1).translate(x, y + r * 0.45, z), "#4f8f3f", { flat: true });
   for (let i = 0; i < 4; i++) {
     const a = i * 1.7 + k;
@@ -66,7 +66,7 @@ function trap(add: Add, x: number, y: number, z: number, rot: number, c: string)
   add(P(boxGeo(0.96, 0.04, 0.56, 0, 0.02, 0)), "#8a6a48");
 }
 /** A lobster buoy: a painted float with a band and its stick, standing on y. */
-function buoy(parts: [THREE.BufferGeometry, THREE.ColorRepresentation][], x: number, y: number, z: number, a: string, b: string, lean = 0) {
+export function buoy(parts: [THREE.BufferGeometry, THREE.ColorRepresentation][], x: number, y: number, z: number, a: string, b: string, lean = 0) {
   const P = (g: THREE.BufferGeometry) => g.rotateZ(lean).translate(x, y, z);
   parts.push([P(new THREE.CylinderGeometry(0.11, 0.07, 0.34, 6).translate(0, 0.17, 0)), a]);
   parts.push([P(new THREE.CylinderGeometry(0.115, 0.115, 0.08, 6).translate(0, 0.27, 0)), b]);

@@ -62,7 +62,7 @@ export const RIDES: RidesPlan = {
     berth: { x: 82.6, z: -83.1, rot: Math.PI / 2 },
     cottage: { x: 111.7, z: -88, w: 4.6, d: 3.8 },
     bench: { x: 113.9, z: -84.45 },
-    keeper: { x: 109.6, z: -83.55, approach: { x: 107.7, z: -83.6 }, says: "lighthouse_keeper", repeat: "lighthouse_keeper_2" },
+    keeper: { x: 110, z: -85.05, approach: { x: 108.4, z: -83.55 }, says: "lighthouse_keeper", repeat: "lighthouse_keeper_2" },
   },
   deep: "#2a93ad",
   // (Maple Harbor has none in its streets; the kerbs are felt everywhere)

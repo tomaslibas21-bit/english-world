@@ -147,7 +147,7 @@ export function seaMaterial(): THREE.ShaderMaterial {
       ${SAND_GLSL}
       void main(){
         // (the water over the sand where the beach slopes under it, water.ts: the foam follows the waterline)
-        float depth = vW.y - sandY(vW.xz);
+        float depth = shoreDepth(vW);
         float shore = smoothstep(${(sz + 1).toFixed(1)}, ${(sz - 18).toFixed(1)}, vW.z);
         vec3 c = mix(uShallow, uDeep, shore);
         float w = sin(vW.x*0.35 + uTime*1.3 + sin(vW.z*0.2)) * sin(vW.z*0.42 - uTime*1.1);

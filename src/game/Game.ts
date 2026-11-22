@@ -168,6 +168,8 @@ export class Game implements GameApi {
   private islandScene?: ReturnType<typeof buildLighthouseIsland>;
   private keeperNear = false;
   private keeperSpokeAt = -Infinity;
+  private keeperFrame = 0;
+  private keeperFrameDismissed = false;
   private sun!: THREE.DirectionalLight;
   private hemi!: THREE.HemisphereLight;
   private sky!: THREE.Mesh;
@@ -834,7 +836,12 @@ export class Game implements GameApi {
     const release = (e: PointerEvent) => { if (e.pointerId === this.pointer.id) this.pointer.down = false; };
     el.addEventListener("pointercancel", release);
     el.addEventListener("lostpointercapture", release);
-    el.addEventListener("wheel", (e) => { if (this.rig.mode === "follow") this.rig.zoom(e.deltaY); }, { passive: true });
+    el.addEventListener("wheel", (e) => {
+      if (this.rig.mode === "follow") {
+        if (this.keeperFrame > 0.001) this.keeperFrameDismissed = true;
+        this.rig.zoom(e.deltaY);
+      }
+    }, { passive: true });
     el.addEventListener("contextmenu", (e) => e.preventDefault());
   }
 
@@ -1031,6 +1038,7 @@ export class Game implements GameApi {
     const line = STAFF_LINES[id];
     if (!line) return;
     this.keeperSpokeAt = this.t;
+    this.keeperFrameDismissed = false;
     this.saysAloud(line, false, ch);
     if (!st.progress.lighthouse?.greeted) st.updateProgress((p) => { p.lighthouse = { ...p.lighthouse, greeted: true }; });
     if (this.islandGuide) { this.islandGuide = false; this.refreshObjective(); }
@@ -1042,6 +1050,7 @@ export class Game implements GameApi {
     scene.update(this.t);
     const p = this.player.root.position, ch = scene.keeper, q = ch.root.position;
     const dist = q.distanceTo(p);
+    if (dist > 7) this.keeperFrameDismissed = false;
     if (dist > 4.3) this.keeperNear = false;
     const near = !this.rides.riding && !this.swimming && !this.aloft && dist < TALK_RANGE;
     if (near) {
@@ -1055,6 +1064,28 @@ export class Game implements GameApi {
     ch.steady = near;
     ch.attentive = near;
     if (dist < 85) ch.update(dt);
+  }
+
+  private frameKeeper(dt: number, blocked: boolean) {
+    const scene = this.islandScene;
+    if (!scene || blocked || this.zone.interior || this.rig.mode !== "follow" || this.rides.riding || this.swimming) {
+      this.keeperFrame = 0;
+      return;
+    }
+    const p = this.player.root.position, q = scene.keeper.root.position;
+    const distance = p.distanceTo(q);
+    if (distance > 8) { this.keeperFrame = 0; return; }
+    if (this.rig.dragging) this.keeperFrameDismissed = true;
+    const guided = this.islandGuide && !!this.autoPath?.length;
+    const greeting = this.t - this.keeperSpokeAt < 3.2 && !this.gaitOn;
+    const focus = !this.keeperFrameDismissed && (guided || greeting) && p.z >= q.z - 0.3
+      ? 1 - smoothstep(TALK_RANGE, 7, distance) : 0;
+    this.keeperFrame = THREE.MathUtils.damp(this.keeperFrame, focus, 9, dt);
+    if (this.keeperFrame < 0.001) return;
+    const cam = this.rig.cam, { pos, look } = scene.keeperView;
+    const aim = cam.getWorldDirection(this.tmpV).multiplyScalar(cam.position.distanceTo(look)).add(cam.position);
+    cam.position.lerp(pos, this.keeperFrame);
+    cam.lookAt(aim.lerp(look, this.keeperFrame));
   }
 
   /** Into a convertible or the boat: whatever the player was doing on foot stops there. */
@@ -2188,6 +2219,7 @@ export class Game implements GameApi {
     if (this.rig.talk && this.talkHome && this.talkNear) this.rig.talk.pos.lerp(this.t < this.talkLean ? this.talkNear : this.talkHome, 1 - Math.exp(-dt * 1.4));
     if (mode?.camera && this.modes.active === mode) this.rig.mode = mode.camera;
     this.rig.update(dt, this.heading, speed > 0.7, true, (st.settings.cameraFollow || !!riding) && !this.pointer.down);
+    this.frameKeeper(dt, blocked || !!mode);
     if (this.speedShake > 0 && riding?.kind === "car") {
       this.rig.cam.position.x += Math.sin(this.t * 41) * this.speedShake;
       this.rig.cam.position.y += Math.cos(this.t * 37) * this.speedShake * 0.7;

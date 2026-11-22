@@ -3,7 +3,7 @@
 // the player (the floor under the water, how deep it is, where wading stops). Both towns: the colours are each sea's own.
 import * as THREE from "three";
 import { SEA_Z } from "./world/layout";
-import { islandGroundY, LIGHTHOUSE_ISLAND } from "./world/island";
+import { islandGroundY, LIGHTHOUSE_ISLAND, type IslandPlan } from "./world/island";
 
 /** The sea's surface at rest (the sea mesh's height) and how far its swell lifts and drops it (town.ts's vertex shader). */
 export const SEA_LEVEL = -0.25;
@@ -83,6 +83,28 @@ export function waterY(x: number, z: number, t: number): number | null {
   return z < SHORE.top + 1.5 ? SEA_LEVEL + swell(x, z, t) : null;
 }
 
+/** A narrow submerged shelf for the surf shader. Bake the convex coast's edge equations once. */
+function islandWash(island?: IslandPlan) {
+  if (!island) return "";
+  const { center, outline } = island;
+  const reach = Math.max(...outline.map(p => Math.hypot(p.x - center.x, p.z - center.z))) + 4;
+  const planes = outline.map((p, i) => {
+    const q = outline[(i + 1) % outline.length];
+    const dx = q.x - p.x, dz = q.z - p.z, len = Math.hypot(dx, dz);
+    const nx = dz / len, nz = -dx / len;
+    const offset = nx * (p.x - center.x) + nz * (p.z - center.z);
+    return `edge = max(edge, dot(local, vec2(${nx.toFixed(5)}, ${nz.toFixed(5)})) - ${offset.toFixed(4)});`;
+  });
+  return `
+    vec2 local = w.xz - vec2(${center.x.toFixed(2)}, ${center.z.toFixed(2)});
+    if (dot(local, local) < ${(reach * reach).toFixed(2)}) {
+      float edge = -100.0;
+      ${planes.join("\n      ")}
+      float ledge = ${(SEA_LEVEL + 0.26).toFixed(3)} - 0.48 * edge + 0.09 * sin(local.x * 2.1 + local.y);
+      bed = max(bed, ledge);
+    }`;
+}
+
 /** The same in the sea's shaders: `float sandY(vec2 p)` (p = world x, z). */
 export const SAND_GLSL = `
   float sandY(vec2 p) {
@@ -90,6 +112,11 @@ export const SAND_GLSL = `
     if (t <= 0.0) return 0.0;
     if (t < 1.0) return -${SHORE.drop.toFixed(3)} * t * t * (3.0 - 2.0 * t) * (0.5 + 0.5 * t);
     return -${SHORE.drop.toFixed(3)} - (t - 1.0) * ${(RUN * BED).toFixed(4)};
+  }
+  float shoreDepth(vec3 w) {
+    float bed = sandY(w.xz);
+    ${islandWash(LIGHTHOUSE_ISLAND)}
+    return w.y - bed;
   }`;
 
 /** The sea's swell (m) at (x, z) and time `t`, as the sea mesh's vertex shader moves it. */
@@ -101,7 +128,7 @@ export const swell = (x: number, z: number, t: number) => Math.sin(x * 0.08 + t 
  *  runs along the waterline as it moves, and thin foam trails behind it. */
 export const SHORE_GLSL = (foam = "vec3(0.985, 0.99, 0.975)", wet = "vec3(0.78, 0.71, 0.56)") => `
     {
-      float depth = vW.y - sandY(vW.xz);
+      float depth = shoreDepth(vW);
       float lace = sin(vW.x * 2.3 + sin(vW.z * 3.1 + uTime * 0.6) * 1.4) * sin(vW.z * 2.9 - uTime * 0.9 + sin(vW.x * 1.7) * 1.2);
       float bub = sin(vW.x * 7.0 + uTime * 1.3) * sin(vW.z * 8.0 - uTime * 1.1);
       c = mix(${wet}, c, smoothstep(0.0, 0.30, depth) * 0.82 + 0.18);
