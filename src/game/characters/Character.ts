@@ -452,7 +452,7 @@ export class Character {
   private swimPhase = 0;
   private moment: { kind: Moment; t: number; dur: number; s: number; w: number } | null = null;
   private momentT = 1 + Math.random() * 5;
-  private legLook!: { h: number; b: number; shin: THREE.ColorRepresentation; shoes: string; skin: THREE.ColorRepresentation; flipflops: boolean };
+  private legLook!: { h: number; b: number; shin: THREE.ColorRepresentation; shoes: string; skin: THREE.ColorRepresentation; flipflops: boolean; barefoot: boolean };
   /** While talking: how loud the voice is right now (0–1; -1 once it has ended), or null with no recording to follow. */
   private level: (() => number | null) | null = null;
   /** And how round the sound is (0: a wide "ee", 1: a round "oo"), or null when that isn't known. */
@@ -605,6 +605,12 @@ export class Character {
     this.hairStyle = hairStyle(look, female);
     this.longHair = female && LONG_HAIR.includes(this.hairStyle);
     const suit = look.swim === "suit";
+    let panel: THREE.ColorRepresentation = top;
+    if (look.rash) {
+      const c = new THREE.Color(top);
+      const light = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+      panel = light > 0.23 ? c.multiplyScalar(0.19) : c.lerp(new THREE.Color("#effafa"), 0.75);
+    }
     // the torso: from the hips up over the waist and the chest to the shoulders, then in to the neck (its radius at
     // each height, in the old capsule's radius `tr`; a little narrower at the waist, more so for a woman, whose
     // shoulders are narrower and hips wider); trousers from the waist down (they follow the torso's rounded bottom)
@@ -626,9 +632,22 @@ export class Character {
       const prof: THREE.Vector2[] = [];
       // (a rounded bottom under the hips, as the capsule's was)
       for (let i = 0; i < 4; i++) { const a = -Math.PI / 2 + (i / 4) * (Math.PI / 2), r0 = SHAPE[0][1] * tr; prof.push(new THREE.Vector2(Math.max(1e-3, r0 * Math.cos(a)), 0.8 * h + r0 * Math.sin(a))); }
-      for (const [t, r] of SHAPE) prof.push(new THREE.Vector2(r * tr, t * h));
-      prof.push(new THREE.Vector2(1e-3, 1.345 * h));
-      P.add(G.lathe(prof, 14).scale(1, 1, 0.78), top);
+      for (const [t, r] of SHAPE) {
+        const fit = look.rash && t > 0.86 && t < 1.225 ? 0.96 : 1;
+        prof.push(new THREE.Vector2(r * tr * fit, t * h));
+      }
+      if (look.rash) {
+        // Four pieces of the same fitted top. Both side panels wrap far enough onto the back to see while paddling.
+        for (let i = 0; i < 4; i++) {
+          P.add(G.lathe(prof, 5, (i - 0.5) * Math.PI / 2, Math.PI / 2).scale(1, 1, 0.78), i % 2 ? panel : top);
+        }
+        // A close collar from the shoulders up to the neck.
+        P.add(G.lathe([prof[prof.length - 1], new THREE.Vector2(0.095 * b, 1.327 * h),
+          new THREE.Vector2(0.093 * b, 1.346 * h), new THREE.Vector2(0.062, 1.346 * h)], 20, -Math.PI / 4).scale(1, 1, 0.78), panel);
+      } else {
+        prof.push(new THREE.Vector2(1e-3, 1.345 * h));
+        P.add(G.lathe(prof, 14).scale(1, 1, 0.78), top);
+      }
     }
     if (!look.skirt) {
       const r = SHAPE[0][1] * tr + 0.006, prof: THREE.Vector2[] = [];
@@ -784,7 +803,7 @@ export class Character {
     const trunks = look.swim === "trunks";
     const bare = look.skirt || look.shorts || suit || trunks;
     const legC = bare ? skin : bottom;
-    this.legLook = { h, b, shin: legC, shoes, skin, flipflops: !!look.flipflops };
+    this.legLook = { h, b, shin: legC, shoes, skin, flipflops: !!look.flipflops, barefoot: shoes === look.skin };
     for (const [leg, shin, x] of [[this.legL, this.shinL, -0.12 * b], [this.legR, this.shinR, 0.12 * b]] as [THREE.Group, THREE.Group, number][]) {
       leg.position.set(x, 0.66 * h, 0);
       const T = new Parts();
@@ -806,16 +825,24 @@ export class Character {
     // arms: the upper arm from the shoulder, the forearm with its hand from the elbow (cardigan sleeves in its colour;
     // Look.sleeves: short ones end above the elbow, none leaves the arm bare)
     const sleeve = acc.includes("cardigan") || acc.includes("coverup") ? ac : top;
-    const sleeves = acc.includes("cardigan") ? "long" : acc.includes("coverup") ? "short" : look.sleeves ?? (suit ? "none" : "long");
-    const sx = (female ? 0.315 : 0.33) * b;
+    const sleeves = look.rash ? "short" : acc.includes("cardigan") ? "long" : acc.includes("coverup") ? "short" : look.sleeves ?? (suit ? "none" : "long");
+    const sx = (female ? 0.315 : 0.33) * b * (look.rash ? 0.89 : 1);
     for (const [arm, fore, s] of [[this.armL, this.foreL, -1], [this.armR, this.foreR, 1]] as [THREE.Group, THREE.Group, number][]) {
       arm.position.set(s * sx, 1.2 * h, 0);
       const A = new Parts();
-      A.add(G.capsule(0.075 * b, (ELBOW - 0.035) * h, 3, 8).translate(0, -(ELBOW + 0.035) / 2 * h, 0), sleeves === "none" ? skin : sleeve);
-      // (a short sleeve: the arm bare below it, the sleeve a little wider)
-      if (sleeves === "short") {
-        A.add(G.capsule(0.07 * b, 0.11 * h, 2, 8).translate(0, -(ELBOW - 0.055) * h, 0), skin);
-        A.add(G.cylinder(0.08 * b, 0.086 * b, 0.05 * h, 8).translate(0, -0.135 * h, 0), sleeve);
+      if (look.rash) {
+        // Bare upper arm below a snug raglan sleeve. Its cuff picks up the collar colour.
+        A.add(G.capsule(0.070 * b, (ELBOW - 0.035) * h, 3, 8).translate(0, -(ELBOW + 0.035) / 2 * h, 0), skin);
+        const prof = [[0.076, -0.164], [0.082, -0.065], [0.091, -0.01], [0.077, 0.035], [0.038, 0.065], [0.001, 0.072]];
+        A.add(G.lathe(prof.map(([r, y]) => new THREE.Vector2(r * b, y * h)), 12), top);
+        A.add(G.cylinder(0.078 * b, 0.076 * b, 0.022 * h, 12).translate(0, -0.165 * h, 0), panel);
+      } else {
+        A.add(G.capsule(0.075 * b, (ELBOW - 0.035) * h, 3, 8).translate(0, -(ELBOW + 0.035) / 2 * h, 0), sleeves === "none" ? skin : sleeve);
+        // (a short sleeve: the arm bare below it, the sleeve a little wider)
+        if (sleeves === "short") {
+          A.add(G.capsule(0.07 * b, 0.11 * h, 2, 8).translate(0, -(ELBOW - 0.055) * h, 0), skin);
+          A.add(G.cylinder(0.08 * b, 0.086 * b, 0.05 * h, 8).translate(0, -0.135 * h, 0), sleeve);
+        }
       }
       rigid(arm, A.mesh());
       fore.position.set(0, -ELBOW * h, 0);
@@ -882,15 +909,17 @@ export class Character {
 
   /** One shin with its foot, `extra` longer than a standing one (seated feet reach the floor). */
   private shinMesh(extra: number) {
-    const { h, b, shin, shoes, skin, flipflops } = this.legLook;
+    const { h, b, shin, shoes, skin, flipflops, barefoot } = this.legLook;
     const S = new Parts();
     S.add(G.capsule(0.096 * b, 0.21 * h + extra, 3, 9).translate(0, -0.105 * h - extra / 2, 0), shin);
     const y = -0.3 * h - extra;
     if (flipflops) {
-      // a sole, the bare foot on it and a strap across
-      S.add(new THREE.BoxGeometry(0.17 * b, 0.03, 0.28).translate(0, y - 0.035, 0.05), shoes);
       S.add(new THREE.BoxGeometry(0.12 * b, 0.06, 0.22).translate(0, y + 0.01, 0.04), skin);
-      S.add(new THREE.BoxGeometry(0.135 * b, 0.016, 0.035).translate(0, y + 0.042, 0.08), new THREE.Color(shoes).multiplyScalar(0.55));
+      // Skin-coloured flip-flops use the bare foot alone.
+      if (!barefoot) {
+        S.add(new THREE.BoxGeometry(0.17 * b, 0.03, 0.28).translate(0, y - 0.035, 0.05), shoes);
+        S.add(new THREE.BoxGeometry(0.135 * b, 0.016, 0.035).translate(0, y + 0.042, 0.08), new THREE.Color(shoes).multiplyScalar(0.55));
+      }
     } else {
       // a shoe: a sole (a shade darker) and a rounded upper, higher at the heel's end than at the toe
       S.add(new THREE.BoxGeometry(0.17 * b, 0.03, 0.28).translate(0, y - 0.035, 0.05), new THREE.Color(shoes).multiplyScalar(0.72));

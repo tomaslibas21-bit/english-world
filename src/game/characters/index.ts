@@ -82,6 +82,22 @@ export function withBackpack(look: Look): Look {
   return { ...look, backpack: warm ? "#1d3557" : "#e9a23b" };
 }
 
+/** The player's own colours in surf clothes, with only the accessories that stay on in the water. */
+export function surfLook(look: Look): Look {
+  const { backpack, carry, phone, ...clothes } = look;
+  return {
+    ...clothes,
+    rash: true,
+    sleeves: "short",
+    swim: "trunks",
+    shorts: false,
+    skirt: false,
+    flipflops: true,
+    shoes: look.skin,
+    acc: look.acc?.filter((a) => a === "beard" || a === "mustache" || a === "earrings" || a === "flower"),
+  };
+}
+
 export function createCharacter(look: Look): GameCharacter {
   return STYLED ? new StyledCharacter(look) : new Character(look);
 }

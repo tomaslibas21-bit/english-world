@@ -242,8 +242,7 @@ export class Surf {
     this.logic = null;
     this.group.visible = false;
     const p = this.host.player;
-    p.setBackpack?.(true);
-    if (p.surf) Object.assign(p.surf, { prone: 0, stance: 0, crouch: 0, pitch: 0, wobble: 0, straddle: 0 });
+    if (p.surf) Object.assign(p.surf, { prone: 0, stance: 0, crouch: 0, pitch: 0, stroke: 0, wobble: 0, straddle: 0 });
     p.swim = 0; p.flip = 0; p.lift = 0; p.bank = 0;
     p.root.rotation.order = "XYZ";
     p.setAnim("idle");
@@ -342,7 +341,6 @@ export class Surf {
     const sea = SEA_LEVEL + swell(x, z, t);
     const surface = onBeach || demo ? { y: sea, slope: 0, slopeX: 0 } : this.waterAt(x, d, t, L.waves);
     const water = surface.y, tilt = faceTilt(surface.slope, surface.slopeX, this.heading);
-    pl.setBackpack?.(pose === "walk");
     if (pose !== this.lastPose) { this.lastPose = pose; this.poseK = 0; }
     this.poseK = Math.min(1, this.poseK + dt / 0.35);
     const k = snap ? 1 : this.poseK * this.poseK * (3 - 2 * this.poseK);
@@ -486,7 +484,9 @@ export class Surf {
     // --- the camera
     const aspect = this.host.aspect, tall = aspect < 1 / 1.15, far = tall ? 1.35 : 1;
     const C = this.cam;
-    C.shiftY = undefined;
+    // In portrait the board, including its tail on a steep wave, sits between the words and the arrows.
+    const boardShift = 0.04;
+    C.shiftY = tall ? boardShift : undefined;
     if (onBeach) {
       // from the water's side: the two of them, the boards behind them, the town beyond
       C.pos.set(S.x + 0.2, 1.9, B.z - 5.6 * far); C.look.set(S.x + 0.25, 1.15, B.z + 1.5); C.rate = 3;
@@ -515,7 +515,7 @@ export class Surf {
       C.pos.set(blend(C.pos.x, cp.x + distance, k), blend(C.pos.y, tall ? 2.45 : 2.15, k), blend(C.pos.z, cp.z + 2, k));
       C.look.set(blend(C.look.x, cp.x - 0.35, k), blend(C.look.y, cp.y + (tall ? 0.53 : 0.75), k), blend(C.look.z, cp.z + (tall ? 0.18 : -0.24), k));
       // Ease back into the normal portrait shift as the learner comes back into view.
-      if (tall) C.shiftY = -0.1 * (1 - k);
+      if (tall) C.shiftY = boardShift * (1 - k);
       C.rate = tall ? 7.5 : 5;
     }
   }

@@ -41,7 +41,7 @@ export interface Look {
   skirt?: boolean;
   /** Shorts instead of trousers (bare knees and shins). */
   shorts?: boolean;
-  /** Flip-flops in the shoe colour instead of shoes (bare feet). */
+  /** Flip-flops in the shoe colour. Match the shoe colour to the skin for bare feet. */
   flipflops?: boolean;
   acc?: Accessory[];
   accColor?: string;
@@ -63,6 +63,8 @@ export interface Look {
   /** Sleeves: long ones unless given (everyone in Maple Harbor); short ones end above the elbow, none leaves the arms
    *  bare. */
   sleeves?: "short" | "none";
+  /** A fitted rash guard in the top's colour. */
+  rash?: boolean;
   /** Swimwear (the Spanish edition's beach; Maple Harbor uses none): "trunks", swim shorts to the knee in the bottom's
    *  colour, a stripe down their side; "suit", a one-piece swimsuit in the top's colour, the legs and arms bare. */
   swim?: "trunks" | "suit";

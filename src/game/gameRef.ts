@@ -3,6 +3,7 @@
 import type { Session } from "./session";
 import type { SituationMeta } from "../content/types";
 import type { Door } from "./world/town";
+import type { Do, SurfArrow } from "./surf/logic";
 import { watchSituations } from "./prefetch";
 
 /** What the UI uses from the game: the 3D town (Game), or the light mode without 3D (LightGame, whose
@@ -40,7 +41,8 @@ export interface GameApi {
   surfChoose(cue: string): void;
   /** In the lesson: the move she asked for done by a tap (its name), her line once more, the microphone on or off
    *  ("finish": what was heard so far is the answer). */
-  surfAct(what: string): void;
+  surfAct(what: Do): void;
+  surfArrow(dir: SurfArrow, down: boolean): void;
   surfRepeat(): void;
   surfMic(on: boolean | "finish"): void;
   surfAgain(level?: "beginner" | "advanced"): void;

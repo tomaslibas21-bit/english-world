@@ -122,6 +122,7 @@ export class LightGame implements GameApi {
   surfStop() { /* the surf lesson is the town's */ }
   surfChoose() { /* the surf lesson is the town's */ }
   surfAct() { /* the surf lesson is the town's */ }
+  surfArrow() { /* the surf lesson is the town's */ }
   surfRepeat() { /* the surf lesson is the town's */ }
   surfMic() { /* the surf lesson is the town's */ }
   surfAgain() { /* the surf lesson is the town's */ }

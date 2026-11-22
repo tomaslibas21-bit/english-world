@@ -6,7 +6,8 @@ import { loadedCarModelCount } from "./world/carModels";
 import type { CarVisuals } from "./world/carVisuals";
 import { getInterior, type Interior } from "./world/interiors";
 import { OUTDOOR_NPCS, AIRPORT_EXIT, WORLD, BUILDINGS, ROADS, DROPOFF, SEA_Z, BEACH_Z, FOUNTAIN, PARK, SQUARE } from "./world/layout";
-import { createCharacter, setBlobShadows, withBackpack, type GameCharacter } from "./characters";
+import { createCharacter, setBlobShadows, surfLook, withBackpack, type GameCharacter } from "./characters";
+import { Character } from "./characters/Character";
 import { moodOf } from "./characters/mood";
 import { styleRenderer, createStyleFx, type StyleFx } from "./styleScene";
 import { CameraRig, FOLLOW } from "./camera";
@@ -27,7 +28,7 @@ import { ModeRegistry } from "./kit/modes";
 import { FrameFade } from "./kit/frameFade";
 import type { ModeHost } from "./kit/host";
 import { scoreShot } from "./kit/scoreShot";
-import type { SurfPlay } from "./surf/play";
+import type { Do, SurfArrow } from "./surf/logic";
 import { FLOOD_INCOMING_INTRO, invitationLocation, invitationTitle, OFFICE_TASK } from "../content/phoneCalls";
 import { TownPhone } from "./phone/Phone";
 import { freeToWalk, type PhoneSnapshot } from "./phone/schedule";
@@ -179,6 +180,10 @@ export class Game implements GameApi {
   zone!: ZoneState;
   private zones = new Map<string, ZoneState>();
   player!: GameCharacter;
+  private playerLook!: Look;
+  private normalPlayer!: GameCharacter;
+  private surfPlayer?: GameCharacter;
+  get outfit(): "surf" | null { return this.surfPlayer && this.player === this.surfPlayer ? "surf" : null; }
   private keepsake = new KeepsakeInHand();
   keepsakeKind() { return this.keepsake.kind; }
   private npcs: NpcActor[] = [];
@@ -452,8 +457,10 @@ export class Game implements GameApi {
     places.push([22, -20], [40, -46], [16, -36], [-12, -62], [30, -63], [-30, -61], [96, -30], [-6, 46], [62, 44], [-42, 44], [118, 2]);
     this.ambient = new Ambient(nav, places, st.settings.quality, this.town.seats, this.town.colliders);
     // what one can drive: the convertibles at the curb with their people in them, the boat at the pier
+    const game = this;
     this.rides = new Rides({
-      cam: this.rig.cam, colliders: this.town.colliders, nav, ambient: this.ambient, player: null as unknown as GameCharacter, quality: st.settings.quality,
+      cam: this.rig.cam, colliders: this.town.colliders, nav, ambient: this.ambient, quality: st.settings.quality,
+      get player() { return game.player; },
       people: () => (this.zone.interior ? [] : this.npcs.filter((n) => n.ch.root.visible).map((n) => n.home)),
       say: (line, voice, female, ch) => {
         if (this.modes.active?.id !== "taxi") this.saysAloud(line, female, ch, voice);
@@ -523,7 +530,7 @@ export class Game implements GameApi {
           (x, z) => this.zone.colliders.blocked(x, z, 0.65), beside);
       },
     };
-    this.modes.register(createSurfMode(host));
+    this.modes.register(createSurfMode(host, (outfit) => this.dressPlayer(outfit)));
     this.modes.register(createTaxiMode(host));
     this.road = new RoadEntry({
       ...host,
@@ -567,9 +574,9 @@ export class Game implements GameApi {
     this.caveLure = caveLure();
     if (this.caveLure) this.town.group.add(this.caveLure);
     const prof = st.progress.profile!;
-    this.player = createCharacter(withBackpack({ ...prof.look, female: prof.look.female ?? prof.gender === "f" }));
+    this.playerLook = withBackpack({ ...prof.look, female: prof.look.female ?? prof.gender === "f" });
+    this.player = this.normalPlayer = createCharacter(this.playerLook);
     this.player.fidgets = false;
-    this.rides.host.player = this.player;
     this.scene.add(this.player.root);
     // (the clip list loads meanwhile: the town doesn't wait for it, a conversation's first line does, audio.play)
     void audio.init();
@@ -730,7 +737,7 @@ export class Game implements GameApi {
     if (!z) return;
     const doIt = () => {
       this.phone.dismiss();
-      if (this.modes.active || this.modes.owns("barista")) this.modes.exit(true);
+      if (this.modes.active || this.modes.owns("barista") || this.modes.owns("surf")) this.modes.exit(true);
       if (this.flight) {
         this.flight = null;
         this.rig.stage = null;
@@ -1375,7 +1382,10 @@ export class Game implements GameApi {
 
   private walkObjective(mode: GuideMode) {
     const tgt = this.objectiveTarget(mode);
-    if (tgt) this.startWalk(tgt.x, tgt.z, tgt);
+    if (tgt) {
+      if (this.modes.owns("surf")) this.modes.exit(true);
+      this.startWalk(tgt.x, tgt.z, tgt);
+    }
     else {
       if (this.guidedWalk) this.stopAutoWalk();
       if (mode === "objective") useStore.getState().toast({ kind: "info", title: L("Ši užduotis atliekama telefonu"), body: L("Atidaryk telefoną (P) ir paskambink.") });
@@ -2732,12 +2742,35 @@ export class Game implements GameApi {
     return { subjects, foreground };
   }
 
+  /** Change clothes in place, keeping both characters ready to use again. */
+  dressPlayer(outfit: "surf" | null) {
+    if (!this.player || this.outfit === outfit) return;
+    // The block character has the poses used by the lesson in every world style.
+    const next = outfit === "surf" ? (this.surfPlayer ??= new Character(surfLook(this.playerLook))) : this.normalPlayer;
+    const before = this.player;
+    next.fidgets = false;
+    next.root.position.copy(before.root.position);
+    next.root.rotation.copy(before.root.rotation);
+    next.root.scale.copy(before.root.scale);
+    next.root.visible = before.root.visible;
+    if (before.seatY !== undefined) next.seatY = before.seatY;
+    next.setAnim(before.anim);
+    if (!outfit) next.setBackpack?.(true);
+    const parent = before.root.parent;
+    before.root.removeFromParent();
+    this.player = next;
+    parent?.add(next.root);
+  }
+
   // (the surf lesson's buttons on the screen: src/ui/Surf.tsx)
   surfStart(level: "beginner" | "advanced") { if (!this.session?.active && !this.zone.interior) this.modeStart("surf", level); }
   surfStop() { if (this.modes.owns("surf")) this.modes.exit(); }
   surfChoose(cue: string) { if (!this.transitioning) this.surf?.choose(cue); }
   /** The move the instructor asked for, by a tap on its button; her line again; the microphone on or off, or done. */
-  surfAct(what: string) { if (!this.transitioning && !useStore.getState().hud.panel) this.surf?.act(what as Parameters<SurfPlay["act"]>[0]); }
+  surfAct(what: Do) { if (!this.transitioning && !useStore.getState().hud.panel) this.surf?.act(what); }
+  surfArrow(dir: SurfArrow, down: boolean) {
+    if (!down || (!this.transitioning && !useStore.getState().hud.panel)) this.surf?.arrow(dir, down);
+  }
   surfRepeat() { this.surf?.repeat(); }
   surfMic(on: boolean | "finish") { if (on === "finish") this.surf?.finishListening(); else this.surf?.setMic(on); }
   surfAgain(level?: "beginner" | "advanced") { this.surf?.again(level); }
@@ -3365,6 +3398,9 @@ export class Game implements GameApi {
     this.keepsake.dispose();
     this.disposed = true;
     this.modes.dispose();
+    this.player?.root.removeFromParent();
+    this.normalPlayer?.dispose?.();
+    this.surfPlayer?.dispose?.();
     this.frameFade.clear();
     this.carVisuals?.dispose();
     this.town?.parkedCars.fleet.dispose();

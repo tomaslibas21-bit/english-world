@@ -1,8 +1,7 @@
 // The surf lesson in the real game (src/game/surf/), on a computer and two phone sizes: the prompt at the boards, the
 // level's choice, a whole lesson played as the conversation it is: she says a line and waits; the learner answers
 // aloud (a stand-in for the browser's speech recognition hears the test's words), by a key or by a tap, or makes the
-// move she asked for, which is named with its key in large letters right under her line (on a phone it is the button
-// to tap). The wrong board first; a second lesson by a learner who stands up too early and answers her questions; the
+// move she asked for, which is named with its arrow under her line and played on the keyboard or touch pad. The wrong board first; a second lesson by a learner who stands up too early and answers her questions; the
 // score card, back on the sand with the score and the cards kept; the lesson started by the conversation's own event;
 // the way out at any moment; and, where the edition has them, the picture of what each command asks for (beside her
 // words, clear of the board, kept when the line is heard often, still with reduced motion). Time is stepped by hand, so
@@ -95,14 +94,14 @@ try {
     });
     const sounds = () => page.evaluate(() => window.__surfSoundEvents);
     const L = () => page.evaluate(() => {
-      const { surf, player } = window.__ew.game, l = surf.logic;
+      const g = window.__ew.game, { surf, player } = g, l = surf.logic;
       if (!l) return null;
       const scene = surf.scene, coach = scene?.coach;
       return {
         phase: l.phase, pose: l.pose, d: +l.d.toFixed(1), saying: l.saying, choice: l.choice?.id ?? null,
         options: l.choice?.options ?? null, todo: l.todo ? { do: l.todo.do, left: l.todo.left ?? null, cue: l.todo.cue } : null,
         cmd: l.cmd?.c.act ?? null, score: l.score, level: l.level, reason: l.reason, heard: l.heard,
-        upOpen: l.upOpen, talking: l.talking, backpack: player.backpackVisible, stroke: player.surf?.stroke,
+        upOpen: l.upOpen, talking: l.talking, backpack: player.backpackVisible, outfit: g.outfit ?? null, stroke: player.surf?.stroke,
         rideT: l.rideT, pitch: player.root.rotation.x, demo: scene?.demoState,
         coachStance: coach?.surf?.stance, coachZ: coach?.root.position.z, time: performance.now(),
       };
@@ -129,22 +128,53 @@ try {
     const shot = async (name, scale = "device") => { if (shots) { await step(2); await real(250); await page.screenshot({ path: `${shots}/${label}-${name}.png`, scale }); } };
     const shown = new Set();
     const hud = () => page.evaluate(() => window.__ew.store.getState().hud);
-    const paddle = async () => { if (phone) await page.locator(".act-btn").tap(); else await page.keyboard.press("e"); };
-    const stand = async () => { if (phone) await page.locator(".jump-btn").tap(); else await page.keyboard.press(" "); };
-    /** A key held for a few frames (an arrow is read by the frame). */
-    const hold = async (key) => { await page.keyboard.down(key); await step(4); await page.keyboard.up(key); };
+    const press = async (dir) => {
+      if (phone) { await page.locator(`.surf-pad [data-dir=${dir}]`).tap(); return; }
+      const key = "Arrow" + dir[0].toUpperCase() + dir.slice(1);
+      await page.keyboard.down(key);
+      await step(4);
+      await page.keyboard.up(key);
+    };
     /** The move she asks for, as it is shown under her line: its words, its keys, where it is. */
     const moveNow = () => page.evaluate(() => {
       const m = document.querySelector(".surf-move"), card = document.querySelector(".surf-card");
       if (!m || !card) return null;
       const r = m.getBoundingClientRect(), c = card.getBoundingClientRect(), g = window.__ew.game;
       const p = g.player.root.position.clone().project(g.rig.cam), y = ((1 - p.y) / 2) * innerHeight, x = ((p.x + 1) / 2) * innerWidth;
-      return { text: m.querySelector(".surf-move-text").innerText.replace(/\s+/g, " ").trim(), keys: [...m.querySelectorAll(".surf-key")].map((k) => k.innerText), button: m.tagName === "BUTTON", gap: Math.round(r.top - c.bottom), w: Math.round(r.width), h: Math.round(r.height), font: parseFloat(getComputedStyle(m.querySelector(".surf-move-text")).fontSize), inView: r.left >= 0 && r.right <= innerWidth + 0.5 && r.top >= 0 && r.bottom <= innerHeight, over: x > r.left && x < r.right && y > r.top && y < r.bottom, clear: Math.round(y - r.bottom), dots: m.querySelectorAll(".surf-strokes i").length, done: m.querySelectorAll(".surf-strokes i.done").length, time: !!m.querySelector(".surf-time") };
+      const pad = document.querySelector(".surf-pad");
+      const asked = [...document.querySelectorAll(".surf-pad .ask")].map((el) => el.textContent);
+      const board = g.surf.scene?.boards.get(g.surf.logic?.board);
+      let boardTop = y, boardBottom = y;
+      if (pad && board?.visible) {
+        const points = board.geometry.attributes.position;
+        for (let i = 0; i < points.count; i++) {
+          p.fromBufferAttribute(points, i).applyMatrix4(board.matrixWorld).project(g.rig.cam);
+          const boardY = (1 - p.y) * innerHeight / 2;
+          boardTop = Math.min(boardTop, boardY);
+          boardBottom = Math.max(boardBottom, boardY);
+        }
+      }
+      const padGap = pad ? pad.getBoundingClientRect().top - boardBottom : null;
+      return { asked, padGap, boardClear: boardTop - r.bottom, still: !!pad?.classList.contains("still"), text: m.querySelector(".surf-move-text").innerText.replace(/\s+/g, " ").trim(), keys: [...m.querySelectorAll(".surf-key")].map((k) => k.innerText), button: m.tagName === "BUTTON", gap: Math.round(r.top - c.bottom), w: Math.round(r.width), h: Math.round(r.height), font: parseFloat(getComputedStyle(m.querySelector(".surf-move-text")).fontSize), inView: r.left >= 0 && r.right <= innerWidth + 0.5 && r.top >= 0 && r.bottom <= innerHeight, over: x > r.left && x < r.right && y > r.top && y < r.bottom, clear: Math.round(y - r.bottom), dots: m.querySelectorAll(".surf-strokes i").length, done: m.querySelectorAll(".surf-strokes i.done").length, time: !!m.querySelector(".surf-time") };
     });
     const moves = new Map();
-    const stick = async (x, y) => {
-      if (phone) { await page.evaluate(([a, b]) => window.__ew.game.setJoystick(a, b), [x, y]); return; }
-      for (const [k, on] of [["ArrowLeft", x < 0], ["ArrowRight", x > 0], ["ArrowDown", y < 0], ["ArrowUp", y > 0]]) await page.keyboard[on ? "down" : "up"](k);
+    const checkAnswersFit = async (name, choice) => {
+      const layout = await page.locator(".surf-choices").evaluate((el) => {
+        const answers = el.getBoundingClientRect();
+        const cue = document.querySelector(".surf-card").getBoundingClientRect();
+        const pad = document.querySelector(".surf-pad").getBoundingClientRect();
+        const visible = (r) => r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight;
+        const apart = (a, b) => a.right < b.left || b.right < a.left || a.bottom < b.top || b.bottom < a.top;
+        const minKey = Math.min(...Array.from(document.querySelectorAll(".surf-pad button"), (el) => {
+          const { width, height } = el.getBoundingClientRect();
+          return Math.min(width, height);
+        }));
+        return { inView: [answers, cue, pad].every(visible), clear: apart(answers, cue) && apart(answers, pad) && apart(cue, pad),
+          cueGap: answers.top - cue.bottom, padGap: pad.top - answers.bottom, overflow: el.scrollHeight - el.clientHeight, minKey };
+      });
+      const portrait = name === label;
+      check(`${name}: the ${choice} turn fits between the cue and touch controls`, layout.inView && layout.clear && layout.overflow <= 1
+        && (!portrait || (layout.cueGap >= 0 && layout.padGap > 0)) && layout.minKey >= (name === "phone" ? 60 : 52), layout);
     };
 
     // ---- at the school's boards: the prompt, the level's choice, and "not now"
@@ -163,7 +193,20 @@ try {
     await fade();
     let s = await L();
     check(`${label}: a beginner's lesson is on, on the sand`, s?.level === "beginner" && s.phase === "intro" && (await hud()).ride === "surf", s);
-    check(`${label}: the learner wears the backpack on the sand`, s?.backpack === true);
+    check(`${label}: in surf clothes from the start of the lesson, on the sand too, and no backpack`, s?.backpack === false && s?.outfit === "surf", { backpack: s?.backpack, outfit: s?.outfit });
+    if (phone) {
+      check(`${label}: the lesson replaces the joystick and round buttons with four arrows`,
+        await page.locator(".surf-pad button:visible").count() === 4 && await page.locator(".joy:visible, .act-btn:visible, .jump-btn:visible").count() === 0);
+      const left = page.locator(".surf-pad [data-dir=left]"), right = page.locator(".surf-pad [data-dir=right]");
+      const finger = (id) => ({ pointerType: "touch", pointerId: id, button: 0, buttons: 1 });
+      await left.dispatchEvent("pointerdown", finger(31));
+      await right.dispatchEvent("pointerdown", finger(32));
+      check(`${label}: both thumbs can hold an arrow`, await page.locator(".surf-pad [aria-pressed=true]").count() === 2);
+      await left.dispatchEvent("pointerout", finger(31));
+      check(`${label}: sliding off releases only that thumb`, await left.getAttribute("aria-pressed") === "false" && await right.getAttribute("aria-pressed") === "true");
+      await right.dispatchEvent("pointercancel", finger(32));
+      check(`${label}: cancelling releases the other arrow`, await page.locator(".surf-pad [aria-pressed=true], .surf-pad .ask").count() === 0);
+    }
     const menu = page.getByRole("button", { name: "Meniu" });
     check(`${label}: the town's tools are tucked into Meniu beside the surf score`,
       await page.locator(".surf-toolbar .icon-btn:visible").count() === 1 && await menu.isVisible()
@@ -191,8 +234,8 @@ try {
       return { name: img.getAttribute("src").split("/").pop().replace(".webp", ""), loaded: img.complete && img.naturalWidth > 0, clear: Math.round(y - r.bottom), over: x > r.left && x < r.right && y > r.top && y < r.bottom, w: Math.round(f.width), h: Math.round(f.height), inView: r.left >= 0 && r.right <= innerWidth + 0.5 && r.top >= 0, cue, phase: g.surf.logic?.phase };
     });
     /** What the moves are called (Lithuanian, English) and their keys: what the learner reads under her line. */
-    const MOVES = { paddle: [/Irkluok|Paddle/, ["E"]], duck: [/Nerk|Duck/, ["↓"]], turn: [/Suk lentą|Turn the board/, ["←", "→"]], up: [/Stokis|Stand up/, ["↑"]], left: [/kairę|left/, ["←"]], right: [/dešinę|right/, ["→"]], down: [/Tūpk|Crouch/, ["↓"]], fwd: [/pirmyn|forward/, ["↑"]], jump: [/Šok|Jump/, null], steady: [/ramiai|steady/, []] };
-    const KEY = { duck: "ArrowDown", turn: "ArrowRight", up: "ArrowUp", left: "ArrowLeft", right: "ArrowRight", down: "ArrowDown", fwd: "ArrowUp" };
+    const MOVES = { paddle: [/Irkluok|Paddle/, ["↑"]], duck: [/Nerk|Duck/, ["↓"]], turn: [/Suk lentą|Turn the board/, ["←", "→"]], up: [/Stokis|Stand up/, ["↑"]], left: [/kairę|left/, ["←"]], right: [/dešinę|right/, ["→"]], down: [/Tūpk|Crouch/, ["↓"]], fwd: [/pirmyn|forward/, ["↑"]], jump: [/Šok|Jump/, ["↑"]], steady: [/ramiai|steady/, []] };
+    const DIR = { paddle: "up", duck: "down", turn: "right", up: "up", left: "left", right: "right", down: "down", fwd: "up", jump: "up" };
     const play = async (how, level) => {
       let wrongBoard = how === "good", early = how === "early", frames = 0, strokeT = 0, upT = 0, askT = 0, moveT = 0, lastCue = "", spoken = 0, keyed = 0, tapped = 0, prev = "";
       const said = [], mine = [];
@@ -241,21 +284,15 @@ try {
           if (!shown.has("turn:" + s.choice)) {
             shown.add("turn:" + s.choice);
             await real(350);
-            if (label === "short-phone") {
-              const layout = await page.locator(".surf-choices").evaluate((el) => {
-                const { left, right, top, bottom } = el.getBoundingClientRect();
-                const cueBottom = document.querySelector(".surf-card").getBoundingClientRect().bottom;
-                const controls = document.querySelectorAll(".joy, .jump-btn, .act-btn");
-                const controlsTop = Math.min(...Array.from(controls, (control) => control.getBoundingClientRect().top));
-                return {
-                  inView: left >= 0 && right <= innerWidth && top >= 0 && bottom <= innerHeight,
-                  cueGap: top - cueBottom,
-                  controlsGap: controlsTop - bottom,
-                  overflow: el.scrollHeight - el.clientHeight,
-                };
-              });
-              check(`${label}: the ${s.choice} turn fits between the cue and touch controls`,
-                layout.inView && layout.cueGap >= 0 && layout.controlsGap > 0 && layout.overflow <= 1, layout);
+            if (phone) {
+              await checkAnswersFit(label, s.choice);
+              if (label === "short-phone" && s.choice === "board") {
+                for (const [w, h] of [[844, 390], [664, 390], [1280, 800]]) {
+                  await page.setViewportSize({ width: w, height: h });
+                  await checkAnswersFit(`${w}×${h} touch`, s.choice);
+                }
+                await page.setViewportSize({ width, height });
+              }
             }
             await shot("turn-" + s.choice);
           }
@@ -285,7 +322,7 @@ try {
           if (pick === "a_again" || pick === "a_coming" || pick === "a_vamos") { await step(30); await fade(); }
           continue;
         } else if (!s.choice) askT = 0;
-        // ---- the learner's turn to act: the move is named under her line, with its key (a phone: the button to tap)
+        // ---- the learner's turn to act: the move is named under her line, with its key
         const t = s.todo;
         if (t) {
           if (t.cue !== lastCue) { lastCue = t.cue; moveT = 0; }
@@ -294,25 +331,46 @@ try {
           if (m && moveT > 2) {
             const o = moves.get(t.do) ?? { n: 0, ok: true, gapMax: 0, clearMin: Infinity, inView: true, over: false };
             const [name, keys] = MOVES[t.do];
-            const right = name.test(m.text) && (phone || keys === null || keys.every((k) => m.keys.includes(k)));
+            const right = name.test(m.text) && keys.join("") === m.keys.join("");
+            if (phone) {
+              assert.deepEqual(m.asked, keys, `${label}: highlighted arrows for ${t.do}`);
+              assert.equal(m.still, t.do === "steady");
+              assert(!m.button && m.boardClear > 0 && m.padGap > 0, `${label}: board between the move label and pad for ${t.do} (${m.boardClear}px, ${m.padGap}px)`);
+            }
             moves.set(t.do, { n: o.n + 1, ok: o.ok && right, text: m.text, keys: m.keys, button: m.button, font: m.font, h: m.h, w: m.w, gapMax: Math.max(o.gapMax, m.gap), clearMin: Math.min(o.clearMin, m.clear), inView: o.inView && m.inView, over: o.over || m.over, dots: m.dots, time: m.time });
             if (!shown.has("move:" + t.do)) { shown.add("move:" + t.do); await real(300); await shot("move-" + t.do); }
           }
-          if (t.do === "paddle") { if (++strokeT >= 4) { strokeT = 0; if (phone && frames % 2) await page.locator(".surf-move").tap().catch(() => paddle()); else await paddle(); } }
-          else if (moveT > 6) {
-            if (t.do === "steady") { /* nothing: that is the move */ }
-            else if (t.do === "up" && early) { /* (this learner was already in the water) */ }
-            else if (phone) { if (m) await page.locator(".surf-move").tap(); else if (t.do === "jump") await stand(); else { const d = { duck: [0, -1], turn: [1, 0], left: [-1, 0], right: [1, 0], down: [0, -1], fwd: [0, 1], up: [0, 1] }[t.do]; await stick(d[0], d[1]); await step(4); await stick(0, 0); } }
-            else if (t.do === "jump") await stand();
-            else await hold(KEY[t.do]);
+          if (t.do === "paddle") {
+            if (++strokeT >= 4) {
+              strokeT = 0;
+              await press("up");
+              if (m && t.left === 1 && !shown.has("last-stroke")) {
+                shown.add("last-stroke");
+                await step(1);
+                check(`${label}: the last stroke finishes the row`, await page.locator(".surf-finished .done").count() === m.dots);
+              }
+              if (m && m.done === 0 && !shown.has("first-stroke")) {
+                shown.add("first-stroke");
+                await step(1);
+                check(`${label}: the first up press fills one stroke dot`, (await moveNow())?.done === 1);
+                if (!phone) check(`${label}: the pressed key lights up`, await page.locator(".surf-move .surf-key.lit").innerText() === "↑");
+                if (phone) {
+                  await page.emulateMedia({ reducedMotion: "reduce" });
+                  const still = await page.locator(".surf-pad .ask span").evaluate((el) => getComputedStyle(el).animationName === "none" && getComputedStyle(el).boxShadow !== "none");
+                  check(`${label}: reduced motion leaves a steady glow`, still);
+                  await page.emulateMedia({ reducedMotion: "no-preference" });
+                }
+              }
+            }
+          } else if (moveT > 6) {
+            if (t.do !== "steady" && !(t.do === "up" && early)) await press(DIR[t.do]);
             moveT = 0;
           }
         } else lastCue = "";
         // (a learner who can't wait for her "¡Ahora!")
-        if (s.phase === "catch" && early && !s.upOpen && s.choice === "now" && ++upT > 6) { early = false; upT = 0; await stand(); }
+        if (s.phase === "catch" && early && !s.upOpen && s.choice === "now" && ++upT > 6) { early = false; upT = 0; await press("up"); }
         await step(4);
       }
-      await stick(0, 0);
       return { said, mine, frames, spoken, keyed, tapped, waterPack, demo, learnerFrame, coachFrame };
     };
     // ---- she waits for the learner: a long silence at her first line, and nothing has gone on
@@ -326,7 +384,7 @@ try {
     let run = await play("good", "beginner");
     s = await L();
     check(`${label}: the lesson ran to its end: a wave ridden to the beach, every command followed`, s?.phase === "over" && s.score.waves === 1 && s.score.falls === 0 && s.score.followed === s.score.asked && s.score.asked >= 4, s?.score);
-    check(`${label}: the backpack is hidden paddling, sitting and riding, and comes back at the beach`, ["prone", "sit", "stand"].every((pose) => run.waterPack[pose]) && s.backpack === true, run.waterPack);
+    check(`${label}: no backpack paddling, sitting and riding, nor at the score card (the lesson's surf clothes)`, ["prone", "sit", "stand"].every((pose) => run.waterPack[pose]) && s.backpack === false, run.waterPack);
     const d = run.demo;
     check(`${label}: Nayeli rides towards the beach before the first learner wave, while the lesson waits`, d.waits && d.stance > 0.9 && d.z1 - d.z0 > 6 && d.end - d.start > 0 && d.end - d.start < 8000, d);
     const { learnerFrame, coachFrame } = run;
@@ -346,15 +404,15 @@ try {
     check(`${label}: the learner answered her all the way: on the sand, about the wave, about the moment, in the ride, at the end`, ["a_perfect", "a_ready", "a_coming", "a_and_now", "a_this", "a_now", "a_allgood", "a_thanks", "a_enough"].every((c) => run.mine.includes(c)) && run.mine.length >= 13, run.mine);
     check(`${label}: answers said aloud were heard (${run.spoken}), and ${phone ? "taps" : "keys"} answered too (${phone ? run.tapped : run.keyed})`, run.spoken >= 5 && (phone ? run.tapped : run.keyed) >= 3, { spoken: run.spoken, keyed: run.keyed, tapped: run.tapped });
     check(`${label}: “¿Ahora?” got “¡Todavía no!” before “¡Ahora!”`, run.said.indexOf("not_yet") > run.said.indexOf("coming") && run.said.indexOf("now_up") > run.said.indexOf("not_yet"), run.said.slice(run.said.indexOf("coming")));
-    // ---- every move she asked for was named under her line, large, with its key (a phone: the button to tap)
+    // ---- every move she asked for was named under her line, large, with its key
     const mv = Object.fromEntries(moves);
     check(`${label}: paddling, the duck, the turn and the stand-up were each named under her line`, ["paddle", "duck", "turn", "up"].every((d) => mv[d]?.n > 0 && mv[d].ok), Object.fromEntries(Object.entries(mv).map(([k, v]) => [k, v.text + " " + v.keys.join("")])));
     check(`${label}: and at least two of the ride's commands`, Object.keys(mv).filter((d) => ["left", "right", "down", "fwd", "steady"].includes(d) && mv[d].ok).length >= 2, Object.keys(mv));
     check(`${label}: the move is large, right under her line, whole in the picture`, Object.values(mv).every((v) => v.font >= (phone ? 19 : 22) && v.gapMax <= 14 && v.gapMax >= 0 && v.inView && v.h >= (phone && v.button ? 56 : 40)), Object.fromEntries(Object.entries(mv).map(([k, v]) => [k, `${v.font}px gap ${v.gapMax} h ${v.h}`])));
     check(`${label}: the move never covers the learner on their board`, Object.values(mv).every((v) => !v.over && v.clearMin > 12), Object.fromEntries(Object.entries(mv).map(([k, v]) => [k, v.clearMin])));
     check(`${label}: paddling shows its strokes, the stand-up its time`, mv.paddle.dots >= 4 && mv.up.time, { dots: mv.paddle.dots, time: mv.up.time });
-    if (phone) check(`${label}: on a phone the move is a button to tap`, ["paddle", "duck", "turn", "up"].every((d) => mv[d].button) && /bakstelėk|tap/.test(mv.up.text), mv.up.text);
-    else check(`${label}: with keys it says which: “${mv.up.text}”`, /spausk|press/.test(mv.up.text) && mv.up.keys.includes("↑") && mv.paddle.keys.includes("E"), mv.up);
+    if (phone) check(`${label}: on a phone the move labels the arrow to tap`, ["paddle", "duck", "turn", "up"].every((d) => !mv[d].button) && /bakstelėk|tap/.test(mv.up.text), mv.up.text);
+    else check(`${label}: with keys it says which: “${mv.up.text}”`, /spausk|press/.test(mv.up.text) && mv.up.keys.includes("↑") && mv.paddle.keys.includes("↑"), mv.up);
     await step(20);
     check(`${label}: the score card is on show`, await page.locator(".surf-result").count() === 1);
     if (label === "short-phone") {
@@ -375,7 +433,7 @@ try {
       check(`${label}: all the lesson's pictures are loaded ahead`, ready >= 17, ready);
       const afloat = rows.filter(([, v]) => ["out", "wait", "catch", "ride"].includes(v.phase));
       check(`${label}: the picture's card is whole in the picture, and never over the learner or their board`, afloat.length >= 5 && afloat.every(([, v]) => v.inView && !v.over && v.clear > 40), afloat.map(([cue, v]) => `${cue}:${v.clear}`).join(" "));
-      check(`${label}: the picture is big enough to read the move`, rows.every(([, v]) => v.w >= (phone ? 250 : 220) && v.h >= 110), rows[0]?.[1]);
+      check(`${label}: the picture is big enough to read the move`, rows.every(([, v]) => v.w >= (label === "short-phone" ? 104 : phone ? 250 : 220) && v.h >= (label === "short-phone" ? 78 : 110)), rows[0]?.[1]);
       check(`${label}: praise keeps the command's picture; a line with none shows her words alone`, !of.good1 && !of.again_q && await page.evaluate(() => { const l = window.__ew.game.surf.logic; return l.heard.includes("again_q"); }));
     }
     // ---- another lesson from the card, further out: stand up too early once, answer her, ride the next
@@ -394,13 +452,15 @@ try {
     await fade();
     const after = await page.evaluate(() => {
       const g = window.__ew.game, p = g.player.root.position, st = window.__ew.store.getState();
-      return { x: +p.x.toFixed(1), z: +p.z.toFixed(1), y: +p.y.toFixed(2), on: g.surf.active, mode: g.rig.mode, ride: st.hud.ride, surf: st.progress.surf, npc: g.npcs.find((n) => n.id === g.surf.content.npc)?.ch.root.visible, backpack: g.player.backpackVisible, order: g.player.root.rotation.order, cards: (localStorage.getItem(Object.keys(localStorage).find((k) => /cards/.test(k)) ?? "") ?? "").length, mine: /¿Ahora\?/.test(localStorage.getItem(Object.keys(localStorage).find((k) => /cards/.test(k)) ?? "") ?? "") };
+      return { x: +p.x.toFixed(1), z: +p.z.toFixed(1), y: +p.y.toFixed(2), on: g.surf.active, mode: g.rig.mode, ride: st.hud.ride, surf: st.progress.surf, npc: g.npcs.find((n) => n.id === g.surf.content.npc)?.ch.root.visible, backpack: g.player.backpackVisible, outfit: g.outfit ?? null, order: g.player.root.rotation.order, cards: (localStorage.getItem(Object.keys(localStorage).find((k) => /cards/.test(k)) ?? "") ?? "").length, mine: /¿Ahora\?/.test(localStorage.getItem(Object.keys(localStorage).find((k) => /cards/.test(k)) ?? "") ?? "") };
     });
     check(`${label}: back on the sand by the boards, walking again, the instructor at her counter`, !after.on && after.mode === "follow" && after.ride === null && after.npc === true && after.order === "XYZ" && Math.hypot(after.x - start.x, after.z - start.z) < 0.5, after);
-    check(`${label}: leaving the lesson restores the backpack`, after.backpack === true);
+    check(`${label}: leaving the lesson: own clothes and the backpack again`, after.backpack === true && after.outfit === null, { backpack: after.backpack, outfit: after.outfit });
     check(`${label}: the waves, the seconds and what was heard are kept, and the phrases are cards (the learner's own too)`, after.surf?.waves === 2 && after.surf.lessons === 2 && after.surf.seconds > 20 && after.surf.heard.now_up >= 2 && after.cards > 500 && after.mine, { ...after.surf, heard: Object.keys(after.surf?.heard ?? {}).length, cards: after.cards, mine: after.mine });
     await step(30);
     check(`${label}: the town's buttons are back`, await page.locator(".toolbar").count() === 1);
+
+    if (phone) check(`${label}: leaving restores the town joystick and removes the pad`, await page.locator(".joy").isVisible() && await page.locator(".surf-pad").count() === 0);
 
     // ---- the conversation's "¿Probamos una ola?": its event starts the lesson as it ends; the way out at any moment
     const sitOk = await page.evaluate(() => {
@@ -444,7 +504,7 @@ try {
       if (phone) await page.locator(".surf-x").tap(); else await page.keyboard.press("Escape");
       await fade();
       check(`${label}: out of it at once, on foot`, !(await L()) && (await hud()).ride === null);
-      check(`${label}: leaving from the water puts the backpack back on`, await page.evaluate(() => window.__ew.game.player.backpackVisible === true));
+      check(`${label}: leaving from the water: own clothes and the backpack again`, await page.evaluate(() => window.__ew.game.player.backpackVisible === true && window.__ew.game.outfit === null));
     }
     check(`${label}: no errors on the page`, errors.length === 0, errors.slice(0, 3));
     await ctx.close();

@@ -1,7 +1,7 @@
 /* The surf lesson (src/ui/Surf.tsx): her line at the top with the picture of what it asks for, the answers over the
    controls, the score in a corner. Painted with the game's own variables (--panel, --ink, --line, --accent…), so it
    follows every theme of every course (their fs-theme.css sets them), light or dark. */
-.surf { position: fixed; inset: 0; pointer-events: none; z-index: 13; font-family: var(--ui); }
+.surf { --surf-gold: #ffd166; --surf-dark: #302716; --arrow-size: 64px; --pad-gap: 5px; --pad-bottom: calc(12px + env(safe-area-inset-bottom)); --above-pad: calc(var(--pad-bottom) + 2 * var(--arrow-size) + var(--pad-gap) + 12px); position: fixed; inset: 0; pointer-events: none; z-index: 13; font-family: var(--ui); }
 .surf > * { pointer-events: auto; }
 .surf-top { position: fixed; top: calc(10px + env(safe-area-inset-top)); left: calc(10px + env(safe-area-inset-left)); right: calc(10px + env(safe-area-inset-right)); display: flex; align-items: center; gap: 8px; pointer-events: none; z-index: 1; }
 .surf-top > * { pointer-events: auto; }
@@ -27,23 +27,50 @@
 .surf-again { position: absolute; right: -10px; bottom: -10px; width: 36px; height: 36px; border-radius: 50%; border: 0; display: grid; place-items: center; background: var(--panel-solid); color: var(--accent); box-shadow: 0 2px 8px rgba(10, 40, 60, 0.3); cursor: pointer; }
 .surf-again:hover { filter: brightness(1.06); }
 
-/* the move she asks for: its name and its key in large letters, right under her line (on a phone: the button to tap) */
-.surf-move { display: grid; justify-items: center; gap: 7px; border: 0; border-radius: 18px; padding: 11px 22px 12px; background: linear-gradient(160deg, #ffd166, #f6b93b); color: #3a2a00; font: inherit; font-family: var(--ui); box-shadow: 0 6px 20px rgba(120, 80, 0, 0.35), inset 0 -3px 0 rgba(120, 80, 0, 0.18); cursor: pointer; animation: surf-move-in 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2), surf-move-pulse 1.5s ease-in-out 0.3s infinite; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
-.surf-move.still { cursor: default; animation: surf-move-in 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2); background: linear-gradient(160deg, #d8f3ee, #b9e6de); color: #0c3b36; box-shadow: 0 6px 20px rgba(10, 60, 60, 0.25); }
-.surf-move:active { transform: scale(0.97); }
+/* The cue and the arrow under the thumb use the same gold. */
+.surf-move { display: grid; justify-items: center; gap: 6px; border: 0; border-radius: 16px; padding: 9px 18px; background: #ffefc8; color: var(--surf-dark); font: inherit; box-shadow: 0 3px 12px #31291338; }
+.surf-move.still { background: #d8f3ee; color: #0c3b36; }
+button.surf-move { cursor: pointer; }
+.surf-say div.surf-move { pointer-events: none; }
 .surf-move-text { display: inline-flex; align-items: center; flex-wrap: wrap; justify-content: center; gap: 0 0.32em; font-size: 1.5em; font-weight: 700; line-height: 1.15; }
 .surf-move-text b { font-weight: 900; }
 .surf-keys-now { display: inline-flex; gap: 5px; margin-left: 2px; }
-.surf-key { display: inline-grid; place-items: center; min-width: 1.75em; height: 1.75em; padding: 0 0.4em; border-radius: 9px; background: #fff; color: #23303a; font: inherit; font-weight: 900; font-size: 1em; box-shadow: 0 3px 0 rgba(60, 40, 0, 0.35), 0 0 0 2px rgba(60, 40, 0, 0.16); }
-.surf-move.tap { min-width: min(300px, calc(100vw - 48px)); min-height: 64px; padding: 14px 22px; }
+.surf-key { display: inline-grid; place-items: center; min-width: 1.7em; height: 1.6em; padding: 0 0.25em; border-radius: 8px; background: var(--surf-gold); color: var(--surf-dark); font: inherit; font-weight: 900; box-shadow: 0 2px 0 #96671c; }
+.surf-keys .surf-key { background: #ffffff29; color: white; box-shadow: none; }
+.surf .surf-key.lit { background: #fff8dd; color: var(--surf-dark); box-shadow: 0 0 0 2px var(--surf-gold), 0 0 10px #ffc14f; }
 .surf-strokes { display: inline-flex; gap: 6px; }
-.surf-strokes i { width: 13px; height: 13px; border-radius: 50%; background: rgba(60, 40, 0, 0.18); transition: background 0.15s ease, transform 0.15s ease; }
-.surf-strokes i.done { background: #1c8f6a; transform: scale(1.12); }
-.surf-time { display: block; width: 100%; min-width: 180px; height: 7px; border-radius: 4px; background: rgba(60, 40, 0, 0.18); overflow: hidden; }
-.surf-time i { display: block; height: 100%; border-radius: 4px; background: #c2410c; transition: width 0.12s linear; }
+.surf-strokes i { width: 12px; height: 12px; border-radius: 50%; background: #d2b479; }
+.surf-say .surf-finished { display: flex; border-radius: 20px; padding: 6px 10px; background: #ffefc8; pointer-events: none; }
+.surf-strokes i.done { background: #197857; }
+.surf-time { display: block; width: 100%; min-width: 150px; height: 6px; border-radius: 4px; background: #d2b479; overflow: hidden; }
+.surf-time i { display: block; height: 100%; border-radius: 4px; background: #b14717; transition: width 0.12s linear; }
 @keyframes surf-move-in { from { opacity: 0; transform: translateY(-8px) scale(0.9); } }
-@keyframes surf-move-pulse { 50% { box-shadow: 0 6px 20px rgba(120, 80, 0, 0.35), inset 0 -3px 0 rgba(120, 80, 0, 0.18), 0 0 0 7px rgba(255, 209, 102, 0.45); } }
-@media (prefers-reduced-motion: reduce) { .surf-move, .surf-move.still { animation: none; } }
+
+/* The arrow cluster has the same shape as the keyboard's, leaving the upper corners open to the sea. */
+.surf-pad { position: fixed; right: calc(12px + env(safe-area-inset-right)); bottom: var(--pad-bottom); display: grid;
+  grid-template-areas: ". up ." "left down right"; grid-template-rows: var(--arrow-size) var(--arrow-size);
+  grid-template-columns: var(--arrow-size) var(--arrow-size) var(--arrow-size);
+  gap: var(--pad-gap); pointer-events: none; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.surf-pad [data-dir=up] { grid-area: up; }
+.surf-pad [data-dir=left] { grid-area: left; }
+.surf-pad [data-dir=down] { grid-area: down; }
+.surf-pad [data-dir=right] { grid-area: right; }
+.surf-pad button { pointer-events: auto; touch-action: none; appearance: none; padding: 0; border: 0; border-radius: 16px;
+  background: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.surf-pad button span { pointer-events: none; display: grid; place-items: center; height: 100%; border: 2px solid #cbe5e5aa;
+  border-radius: 16px; background: #193b4de8; color: #fff; font: 800 32px/1 var(--ui);
+  box-shadow: inset 0 -3px 0 #0d2836, 0 2px 6px #102e3540; }
+.surf-pad button.ask span { background: var(--surf-gold); color: var(--surf-dark); border-color: #fff0bb;
+  box-shadow: inset 0 -3px 0 #c58b27, 0 0 0 2px #ffc34d, 0 0 12px #ffc34d99; }
+.surf-pad.still { opacity: 0.7; }
+.surf-pad button[aria-pressed=true] span { transform: scale(0.93); background: #d5efef; color: #143448; }
+.surf-pad button.ask[aria-pressed=true] span { background: #fff6d7; }
+@media (prefers-reduced-motion: no-preference) {
+  .surf-pad button.ask span { animation: surf-ask 1.7s ease-in-out infinite alternate; }
+  .surf-strokes i.done { animation: surf-stroke 0.23s ease-out; }
+}
+@keyframes surf-ask { to { box-shadow: inset 0 -3px 0 #c58b27, 0 0 0 4px #ffd16677, 0 0 18px #ffc34dcc; } }
+@keyframes surf-stroke { 45% { transform: scale(1.45); } }
 
 /* the learner's turn to speak: the microphone and what it hears, over the lines they may answer with */
 .surf-turn { display: flex; align-items: center; gap: 12px; background: var(--panel); color: var(--ink); border-radius: 16px; padding: 8px 14px 8px 8px; box-shadow: 0 4px 14px rgba(10, 40, 60, 0.22); }
@@ -51,7 +78,7 @@
 .surf-turn .surf-mic.muted { background: #9aa7b1; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.1); }
 .surf-turn .mic-status b { font-size: 1.05em; }
 .surf-said { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(70px + env(safe-area-inset-bottom)); display: inline-flex; align-items: center; gap: 8px; max-width: calc(100vw - 24px); background: var(--good, #37a26b); color: #fff; border-radius: 999px; padding: 9px 18px 9px 14px; font-family: var(--en); font-size: 1.25em; font-weight: 600; box-shadow: 0 4px 14px rgba(10, 60, 40, 0.3); animation: surf-move-in 0.2s ease-out; pointer-events: none; }
-.surf.touch .surf-said { bottom: calc(184px + env(safe-area-inset-bottom)); }
+.surf.touch .surf-said { bottom: var(--above-pad); }
 
 /* the picture of what she asks for: a small framed photograph beside her words (above them on a phone held upright),
    which slides in as she calls the command and gives way to the next one */
@@ -68,7 +95,7 @@
 .surf-balance { height: 7px; border-radius: 4px; background: color-mix(in srgb, var(--accent) 18%, transparent); margin-top: 10px; overflow: hidden; }
 .surf-balance i { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, #f3b33d, #37a26b); transition: width 0.25s ease; }
 .surf-choices { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(64px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px; width: min(440px, calc(100vw - 24px)); }
-.surf.touch .surf-choices { bottom: calc(178px + env(safe-area-inset-bottom)); }
+.surf.touch .surf-choices { bottom: var(--above-pad); }
 .surf-choice { display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 10px; text-align: left; border: 2px solid var(--line); background: var(--panel); border-radius: 14px; padding: 10px 14px; min-height: 52px; box-shadow: 0 4px 14px rgba(10, 40, 60, 0.22); cursor: pointer; font: inherit; color: var(--ink); }
 .surf-choice:hover { border-color: var(--gold); background: var(--panel-solid); }
 .surf-choice kbd { grid-row: span 2; background: var(--ink); color: var(--panel-solid); border-radius: 6px; padding: 2px 8px; font-weight: 800; font-size: 0.85em; }
@@ -103,6 +130,7 @@
 .surf-result span { font-size: 0.78em; color: var(--ink-soft); line-height: 1.2; }
 /* a wide screen: the learner's turn to the right, clear of them on their board in the middle */
 @media (min-width: 900px) and (min-height: 521px) {
+  .surf.touch .surf-choices { left: calc(18px + env(safe-area-inset-left)); right: auto; bottom: var(--pad-bottom); }
   .surf-choices { left: auto; right: 24px; bottom: 22px; transform: none; width: 400px; }
 }
 @media (max-width: 520px) {
@@ -114,55 +142,51 @@
   .surf-levels { grid-template-columns: 1fr; }
   /* a phone held upright: the picture across the card's top, her words under it; the card stops well above the board */
   .surf-card.has-pic { flex-direction: column; align-items: stretch; gap: 9px; width: min(351px, calc(100vw - 24px)); padding: 8px 8px 10px; }
-  .surf-pic { width: auto; aspect-ratio: 2 / 1; max-height: 22vh; transform: none; box-shadow: none; border-radius: 11px; }
+  .surf-pic { align-self: center; width: min(100%, 270px); aspect-ratio: 7 / 3; transform: none; box-shadow: none; border-radius: 11px; }
   .surf-card.has-pic .surf-words { padding: 0 4px; }
   @keyframes surf-frame-in { from { opacity: 0; transform: translateY(-10px) scale(0.96); } }
 }
-@media (max-width: 520px) and (max-height: 700px) and (orientation: portrait) {
-  .surf-card { padding-block: 7px; }
-  .surf-card.has-pic { width: min(366px, calc(100vw - 24px)); padding: 6px 8px; gap: 6px; }
-  .surf-pic { align-self: center; width: min(100%, 270px); aspect-ratio: 7 / 3; }
-  .surf-card .il:not(.plain) { column-gap: 0.4em; row-gap: 0.25em; line-height: 1.1; }
-  .surf-card .nat { margin-top: 5px; padding-top: 4px; line-height: 1.25; }
-  .surf-balance { margin-top: 6px; }
-  .surf-move { max-width: 100%; padding: 8px 16px; }
-  .surf-move.tap { padding: 10px 16px; }
-
-  /* Give the microphone and answers their own space below the cue and above the 158px touch controls. */
+/* On phones the answers share a row. The instructor and the pad keep their own space. */
+@media (max-width: 520px), (max-height: 520px) and (orientation: landscape) {
   .surf.touch:has(.surf-choices) {
     display: grid; grid-template-rows: auto minmax(0, 1fr); justify-items: center; row-gap: 10px;
-    padding: calc(58px + env(safe-area-inset-top)) 0 calc(162px + env(safe-area-inset-bottom));
+    padding: calc(58px + env(safe-area-inset-top)) calc(10px + env(safe-area-inset-right)) var(--above-pad) calc(10px + env(safe-area-inset-left));
   }
-  .surf.touch:has(.surf-choices) .surf-say { position: static; transform: none; align-self: start; }
+  .surf.touch:has(.surf-choices) .surf-say { position: static; transform: none; align-self: start; max-width: 100%; }
   .surf.touch .surf-choices {
-    position: static; transform: none; grid-row: 2; align-self: end; max-height: 100%;
+    position: static; transform: none; grid-row: 2; align-self: start; max-height: 100%; min-height: 0;
     display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: max-content; gap: 6px;
-    width: min(448px, calc(100vw - 16px)); padding: 4px;
-    overflow-y: auto; overscroll-behavior: contain;
+    width: min(100%, 540px); overflow-y: auto; overscroll-behavior: contain;
   }
-  .surf-choices:has(> .surf-choice:nth-of-type(3)) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .surf.touch .surf-choices:has(> .surf-choice:nth-of-type(3)) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .surf-turn, .surf-choice:only-of-type { grid-column: 1 / -1; }
-  .surf-turn { padding-block: 5px; }
+  .surf-turn { padding-block: 4px; }
   .surf-turn .surf-mic { width: 44px; height: 44px; }
-  .surf-choice { align-content: center; padding: 5px 3px; overflow-wrap: anywhere; }
-  .surf-choice-text { font-size: 1.15em; line-height: 1.1; }
-  .surf-choice small { font-size: 0.83em; line-height: 1.2; }
+  .surf-choice { min-height: 46px; align-content: center; padding: 5px 7px; overflow-wrap: anywhere; }
+  .surf-choice .surf-il { font-size: 1.1em; line-height: 1.12; }
+  .surf-choice .surf-il .lt { font-size: max(12px, 0.65em); margin-top: 1px; }
+  .surf-choice small { line-height: 1.2; }
+}
+@media (max-width: 520px) and (max-height: 700px), (max-height: 520px) and (orientation: landscape) {
+  .surf { --arrow-size: 56px; --pad-gap: 4px; --pad-bottom: calc(8px + env(safe-area-inset-bottom)); }
+  .surf-say { gap: 6px; }
+  .surf-card { padding: 6px 10px; }
+  .surf-card.has-pic { flex-direction: row; align-items: center; gap: 8px; width: min(366px, calc(100vw - 24px)); padding: 6px; }
+  .surf-pic { width: 108px; aspect-ratio: 4 / 3; max-height: none; transform: none; box-shadow: none; }
+  .surf-card .il { padding: 0; font-size: 19px; }
+  .surf-card .il:not(.plain) { column-gap: 0.34em; row-gap: 3px; line-height: 1.1; }
+  .surf-card .lt { font-size: 12px; }
+  .surf-card .nat { margin-top: 4px; padding: 4px 13px 0 0; font-size: 14px; line-height: 1.2; }
+  .surf-balance { margin-top: 5px; }
+  .surf-move { min-height: 40px; padding: 6px 14px; }
+  .surf-move-text { font-size: 20px; }
 }
 @media (max-height: 520px) and (orientation: landscape) {
-  .surf-say { top: calc(8px + env(safe-area-inset-top)); gap: 6px; }
-  .surf-card { max-width: min(520px, calc(100vw - 300px)); padding: 8px 12px; }
-  .surf-move { padding: 7px 16px 8px; }
-  .surf-move.tap { min-height: 48px; padding: 8px 16px; }
-  .surf-move-text { font-size: 1.15em; }
-  .surf-said { bottom: calc(14px + env(safe-area-inset-bottom)); }
-  .surf-card .il { font-size: 1.3em; }
-  /* a phone held sideways: the picture small beside her words, the card between the two corners' buttons */
-  .surf-card.has-pic { flex-direction: row; align-items: center; gap: 10px; width: max-content; max-width: min(560px, calc(100vw - 290px)); padding: 6px 12px 6px 6px; }
-  .surf-pic { width: 142px; aspect-ratio: 16 / 9; max-height: none; transform: none; box-shadow: none; }
-  .surf.touch .surf-choices { bottom: calc(12px + env(safe-area-inset-bottom)); width: min(400px, calc(100vw - 380px)); }
-  .surf-choice { min-height: 44px; padding: 6px 12px; }
-}
-@media (max-width: 640px) and (max-height: 520px) and (orientation: landscape) {
-  /* The score and menu sit beside the instructor's card. */
-  .surf:has(.surf-toolbar) .surf-card { max-width: calc(100vw - 340px); }
+  .surf.touch { --pad-space: calc(3 * var(--arrow-size) + 2 * var(--pad-gap) + 26px + env(safe-area-inset-right)); }
+  .surf.touch .surf-say { top: calc(56px + env(safe-area-inset-top)); left: calc(12px + env(safe-area-inset-left)); transform: none; }
+  .surf.touch .surf-card { max-width: min(44vw, 400px); }
+  .surf.touch:has(.surf-choices) { justify-items: start; padding-bottom: var(--pad-bottom); }
+  .surf.touch:has(.surf-choices) .surf-card { width: max-content; max-width: min(620px, 100%); }
+  .surf.touch .surf-choices { align-self: end; width: min(540px, calc(100vw - var(--pad-space) - 12px - env(safe-area-inset-left))); }
+  .surf.touch .surf-said { left: calc(12px + env(safe-area-inset-left)); transform: none; bottom: var(--pad-bottom); max-width: calc(100vw - var(--pad-space) - 20px); }
 }

@@ -21,12 +21,13 @@ import type { SurfSpot } from "../world/surf";
 import type { CameraRig } from "../camera";
 import type { GameCharacter } from "../characters";
 import type { Surf } from "./Surf";
-import { COMMANDS, SurfLogic, type Do, type Level, type SurfInput } from "./logic";
+import { arrowFor, COMMANDS, SurfLogic, type Do, type Level, type SurfArrow, type SurfInput } from "./logic";
 import { EMPTY_SCORE, NO_MIC, useSurf, type SurfLine } from "./store";
 
 /** What the lesson needs of the game. */
 export interface SurfGame {
   player(): GameCharacter;
+  dressPlayer(outfit: "surf" | null): void;
   rig: CameraRig;
   /** The game's clock (s), as the sea's swell runs on it. */
   time(): number;
@@ -60,16 +61,20 @@ const KNOWN = 7, HESITATE = 2;
 const RIDE_DOES = new Set<Do>(["left", "right", "down", "fwd", "steady", "jump"]);
 /** How much of an answer must be heard for it to count (the share of its words), and with a single answer to give. */
 const HEARD_ENOUGH = 0.75, HEARD_ONLY = 0.6;
-/** What a tap on the move's button does to the stick, and for how long (s). */
-const PUSH: Partial<Record<Do, [number, number]>> = { duck: [0, -1], turn: [1, 0], left: [-1, 0], right: [1, 0], down: [0, -1], fwd: [0, 1] };
+const ARROW_KEYS = new Map<string, SurfArrow>([
+  ["arrowup", "up"], ["arrowdown", "down"], ["arrowleft", "left"], ["arrowright", "right"],
+  ["w", "up"], ["s", "down"], ["a", "left"], ["d", "right"],
+]);
+const ARROW_STICK: Record<SurfArrow, [number, number]> = { up: [0, 1], down: [0, -1], left: [-1, 0], right: [1, 0] };
 
 export class SurfPlay {
   scene: Surf | null = null;
   group = new THREE.Group();
   private logic: SurfLogic | null = null;
   private startRequest = 0;
+  private leaving = false;
   private level: Level = "beginner";
-  private in = { stroke: false, up: false };
+  private in = { strokes: 0, up: false };
   private lastChoice: unknown = null;
   private markT = 0;
   private heard: Record<string, number> = {};
@@ -83,6 +88,11 @@ export class SurfPlay {
   private unclear = 0;
   /** A tap on the move's button: the stick pushed for a moment. */
   private push = { x: 0, y: 0, t: 0 };
+  /** The phone's held arrows. A press that paddles or jumps does not push the stick. */
+  private arrows = new Map<SurfArrow, boolean>();
+  // Keep even a tap released between two frames.
+  private arrowFrame = new Set<SurfArrow>();
+  private keyFlashT = 0;
   /** The move asked for now (her cue) and how long it has been asked (s). */
   private todoCue = "";
   private todoT = 0;
@@ -216,7 +226,9 @@ export class SurfPlay {
     this.level = level;
     this.heard = { ...s.heard };
     this.answered = [];
-    this.in.stroke = this.in.up = false;
+    this.in.strokes = 0; this.in.up = false;
+    this.arrows.clear();
+    this.arrowFrame.clear();
     this.overShown = false;
     this.lastChoice = null;
     this.lastPic = undefined;
@@ -228,21 +240,26 @@ export class SurfPlay {
     countPlay("games", "surf");
     this.logic = new SurfLogic({ say: (cue) => this.say(cue), answer: (cue, spoken) => this.answer(cue, spoken), fx: (name) => this.fx(name), rnd: Math.random, busy: () => this.heardNow() }, { level, rides: s.waves, slow: !!st.settings.slowVoice });
     this.game.entered();
+    this.game.dressPlayer("surf");
     this.game.hideNpc(this.content.npc, true);
     scene.begin(this.logic, this.npc.look);
     this.game.rig.mode = "stage";
     this.game.rig.stage = scene.cam;
     this.game.rig.stageSnap();
-    useSurf.getState().set({ active: true, picking: false, level, phase: this.logic.phase, line: null, choice: null, todo: null, said: null, mic: speechSupported() ? NO_MIC : { status: "unsupported", heard: "" }, support: 0, balance: 1, asked: false, mark: null, score: { ...EMPTY_SCORE }, over: false, best: { waves: s.waves, seconds: s.seconds } });
+    useSurf.getState().set({ active: true, keyFlash: null, picking: false, level, phase: this.logic.phase, line: null, choice: null, todo: null, said: null, mic: speechSupported() ? NO_MIC : { status: "unsupported", heard: "" }, support: 0, balance: 1, asked: false, mark: null, score: { ...EMPTY_SCORE }, over: false, best: { waves: s.waves, seconds: s.seconds } });
     st.setHud({ prompt: null, ride: "surf" });
   }
 
   /** Another lesson, from the beach (the score card's "Otra vez"): the same level, or the other one. */
   again(level: Level = this.level) {
-    if (!this.logic) return;
-    audio.stop();
-    this.stopListening();
-    this.game.fade(() => { this.finish(); this.launch(level); });
+    const L = this.logic;
+    if (!L || this.leaving) return;
+    if (this.game.fade(() => {
+      if (this.logic === L) { this.finish(); this.launch(level); }
+    })) {
+      audio.stop();
+      this.stopListening();
+    }
   }
 
   /** What was heard and done goes into the learner's progress and their cards. */
@@ -265,13 +282,18 @@ export class SurfPlay {
 
   /** Out of the lesson: back on the sand by the boards (`now`: with no fade, something else is taking the player). */
   stop(now = false) {
-    if (!this.logic) { this.cancel(); return; }
+    const L = this.logic;
+    if (!L) { this.cancel(); return; }
     const out = () => {
+      if (this.logic !== L) return;
       this.finish();
       this.stopListening();
       audio.stop();
+      this.leaving = false;
       this.logic = null;
+      this.arrows.clear();
       this.scene?.end();
+      this.game.dressPlayer(null);
       this.game.hideNpc(this.content.npc, false);
       this.game.rig.stage = null;
       useSurf.getState().reset();
@@ -279,24 +301,51 @@ export class SurfPlay {
       const s = this.spot.start;
       this.game.left(s.x, s.z, s.rot);
     };
-    if (now || !this.game.fade(out)) { if (now) out(); }
+    if (now) out();
+    else if (!this.leaving) {
+      this.leaving = true;
+      if (!this.game.fade(out)) out();
+    }
   }
 
   // --- the learner's hands ----------------------------------------------------------------------------------------
 
-  /** A paddle stroke (E, the round button). */
-  stroke() { this.in.stroke = true; }
+  /** One paddle stroke. */
+  stroke() { this.in.strokes++; }
   /** The stand-up button (Space, the jump button): up onto the feet; in a ride, the trick. */
   up() { this.in.up = true; }
   /** An answer tapped (its cue): it is said for the learner, and she goes on. */
   choose(cue: string) { this.logic?.choose(cue, false); }
   /** The move she asked for, done by a tap on its button beside her line (as its key would). */
   act(what: Do) {
-    const L = this.logic;
-    if (!L?.todo || L.todo.do !== what) return;
-    if (what === "paddle") this.in.stroke = true;
-    else if (what === "up" || what === "jump") this.in.up = true;
-    else { const p = PUSH[what]; if (p) { this.push.x = p[0]; this.push.y = p[1]; this.push.t = 0.22; } }
+    if (this.logic?.todo?.do !== what) return;
+    const dir = arrowFor(what).at(-1);
+    if (dir && this.pressArrow(dir)) {
+      const [x, y] = ARROW_STICK[dir];
+      this.push = { x, y, t: 0.22 };
+    }
+  }
+
+  /** Press or release one of the phone's arrows. */
+  arrow(dir: SurfArrow, down: boolean) {
+    if (!down) this.arrows.delete(dir);
+    else if (this.logic && !this.arrows.has(dir)) {
+      const steer = this.pressArrow(dir);
+      this.arrows.set(dir, steer);
+      if (steer) this.arrowFrame.add(dir);
+    }
+  }
+
+  /** A press returns true when the arrow also pushes the stick while held. */
+  private pressArrow(dir: SurfArrow): boolean {
+    const L = this.logic!;
+    if (dir === "up") {
+      if (L.todo?.do === "paddle") { this.stroke(); return false; }
+      if (L.todo?.do === "jump") { this.up(); return false; }
+    }
+    // Lying on the board, the arrows to either side are the two arms.
+    if ((dir === "left" || dir === "right") && (L.phase === "out" || L.phase === "catch")) this.stroke();
+    return true;
   }
   /** Her line once more (a tap on it): the microphone waits for her to finish. */
   repeat() {
@@ -395,14 +444,19 @@ export class SurfPlay {
   key(k: string, repeat: boolean, keys: Set<string>): boolean {
     const L = this.logic;
     if (!L) return false;
-    if (["arrowup", "arrowdown", "arrowleft", "arrowright", "w", "a", "s", "d"].includes(k)) {
-      keys.add(k);
-      // lying on the board, the arrows to either side are the two arms
-      if (!repeat && (L.phase === "out" || L.phase === "catch") && ["arrowleft", "arrowright", "a", "d"].includes(k)) this.in.stroke = true;
+    k = k.toLowerCase();
+    const dir = ARROW_KEYS.get(k);
+    if (dir) {
+      if (!repeat) {
+        useSurf.getState().set({ keyFlash: dir });
+        this.keyFlashT = 0.2;
+        if (this.pressArrow(dir)) keys.add(k);
+        else keys.delete(k);
+      }
       return true;
     }
-    if (k === " ") { if (!repeat) this.in.up = true; return true; }
-    if (k === "e" || k === "enter") { if (!repeat) this.in.stroke = true; return true; }
+    if (k === " ") { if (!repeat) this.up(); return true; }
+    if (k === "e" || k === "enter") { if (!repeat) this.stroke(); return true; }
     if (k === "m") { if (!repeat) this.setMic(!useSurf.getState().micOn); return true; }
     if (k >= "1" && k <= "3" && L.choice) { const o = L.choice.options[Number(k) - 1]; if (o) this.choose(o); return true; }
     if (k === "escape") { this.stop(); return true; }
@@ -448,15 +502,22 @@ export class SurfPlay {
 
   // --- a frame ------------------------------------------------------------------------------------------------------
 
-  /** `x`, `y`: the stick or the arrows; `paused`: a panel is open. */
+  /** `x`, `y`: the stick or the keys; `paused`: a panel is open. */
   update(dt: number, t: number, x: number, y: number, paused: boolean) {
     const L = this.logic;
     if (!L) return;
     L.setSlow(!!useStore.getState().settings.slowVoice);
+    for (const [dir, steer] of this.arrows) if (steer) this.arrowFrame.add(dir);
+    for (const dir of this.arrowFrame) {
+      const [dx, dy] = ARROW_STICK[dir];
+      x += dx; y += dy;
+    }
+    this.arrowFrame.clear();
     // (a tap on the move's button pushes the stick for a moment)
     if (this.push.t > 0) { this.push.t -= dt; x = this.push.x; y = this.push.y; }
-    const inp: SurfInput = { x, y, stroke: this.in.stroke && !paused, up: this.in.up && !paused };
-    this.in.stroke = this.in.up = false;
+    const inp: SurfInput = { x: THREE.MathUtils.clamp(x, -1, 1), y: THREE.MathUtils.clamp(y, -1, 1), stroke: this.in.strokes > 0 && !paused, up: this.in.up && !paused };
+    this.in.strokes = paused ? 0 : Math.max(0, this.in.strokes - 1);
+    this.in.up = false;
     // (a panel over the lesson: the microphone closes, and opens again with the lesson)
     if (paused !== this.paused) { this.paused = paused; if (paused) this.stopListening(); else if (L.choice) this.listen(); }
     this.scene?.update(dt, t, inp, paused);
@@ -465,6 +526,10 @@ export class SurfPlay {
 
   private sync(dt: number) {
     const L = this.logic!, ui = useSurf.getState(), patch: Partial<typeof ui> = {};
+    if (ui.keyFlash) {
+      this.keyFlashT -= dt;
+      if (this.keyFlashT <= 0) patch.keyFlash = null;
+    }
     if (ui.phase !== L.phase) patch.phase = L.phase;
     if (this.scene?.demonstrating) {
       if (ui.line) patch.line = null;

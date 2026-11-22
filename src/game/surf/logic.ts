@@ -16,6 +16,20 @@ export type Phase = "intro" | "board" | "out" | "wait" | "catch" | "ride" | "fal
 export type Act = "left" | "right" | "down" | "fwd" | "steady" | "jump";
 /** Everything the learner is asked to do with their hands: on the way out and catching a wave, and in the ride. */
 export type Do = "paddle" | "duck" | "turn" | "up" | Act;
+export type SurfArrow = "up" | "down" | "left" | "right";
+
+/** The arrows that do each move. */
+export function arrowFor(what: Do): SurfArrow[] {
+  switch (what) {
+    case "paddle": case "up": case "fwd": case "jump": return ["up"];
+    case "duck": case "down": return ["down"];
+    case "turn": return ["left", "right"];
+    case "left": return ["left"];
+    case "right": return ["right"];
+    case "steady": return [];
+  }
+}
+
 /** What a fall or a missed wave is blamed on (the learner's answers a_<reason>, the instructor's r_<reason>, tip_<reason>). */
 export type Reason = "late" | "early" | "nopaddle" | "back" | "knees" | "feet" | "lean" | "side" | "trick";
 export type Pose = "walk" | "prone" | "sit" | "stand" | "duck" | "swim";

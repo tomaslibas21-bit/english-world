@@ -1,12 +1,13 @@
 // What the surf lesson shows on the screen (src/ui/Surf.tsx), kept by Game.ts as the lesson goes.
 import { create } from "zustand";
 import type { Sentence } from "../../convo/compose";
-import type { Do, Level, Phase, Score } from "./logic";
+import type { Do, Level, Phase, Score, SurfArrow } from "./logic";
 
 /** One of her lines (or an answer), and the picture of what it asks for where the edition has one (its URL). */
 export interface SurfLine { cue: string; s: Sentence; pic?: string }
 export interface SurfUi {
   active: boolean;
+  keyFlash: SurfArrow | null;
   /** The level is being chosen (the lesson was started from the palapa, not from the conversation). */
   picking: boolean;
   level: Level | null;
@@ -43,7 +44,7 @@ export interface SurfUi {
 
 export const EMPTY_SCORE: Score = { waves: 0, seconds: 0, followed: 0, asked: 0, falls: 0 };
 export const NO_MIC: SurfUi["mic"] = { status: "off", heard: "" };
-const EMPTY: SurfUi = { active: false, picking: false, level: null, phase: null, line: null, support: 0, choice: null, todo: null, said: null, mic: NO_MIC, micOn: true, balance: 1, asked: false, mark: null, score: EMPTY_SCORE, over: false, best: { waves: 0, seconds: 0 } };
+const EMPTY: SurfUi = { active: false, keyFlash: null, picking: false, level: null, phase: null, line: null, support: 0, choice: null, todo: null, said: null, mic: NO_MIC, micOn: true, balance: 1, asked: false, mark: null, score: EMPTY_SCORE, over: false, best: { waves: 0, seconds: 0 } };
 
 export const useSurf = create<SurfUi & { set(p: Partial<SurfUi>): void; reset(): void }>((set) => ({
   ...EMPTY,

@@ -3,12 +3,12 @@
 // the edition has pictures. Then
 // the learner's turn, as in every conversation: the lines they may answer with and the microphone that listens for
 // them (a tap answers too), or, when she asked for a move, that move and its key in large letters right under her
-// line ("Stokis – spausk ↑"; on a phone it is the button to tap). The balance in a ride; the score; the level's
+// line. On a phone the arrows sit under the right thumb. The balance in a ride; the score; the level's
 // choice at the start and the score card at the end.
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import { useStore } from "../state/store";
 import { useSurf, type SurfLine, type SurfUi } from "../game/surf/store";
-import type { Do } from "../game/surf/logic";
+import { arrowFor, type Do, type SurfArrow } from "../game/surf/logic";
 import { speechSupported } from "../convo/speech";
 import { game } from "../game/gameRef";
 import { Interlinear } from "./Interlinear";
@@ -68,42 +68,104 @@ function Picture({ src }: { src: string }) {
   );
 }
 
-const K = ({ children }: { children: ReactNode }) => <kbd className="surf-key">{children}</kbd>;
-/** What a move is called in the learner's language, and the key that makes it. */
-function move(what: Do): { name: string; keys: ReactNode } {
-  switch (what) {
-    case "paddle": return { name: L("Irkluok"), keys: <K>E</K> };
-    case "duck": return { name: L("Nerk po banga"), keys: <K>↓</K> };
-    case "turn": return { name: L("Suk lentą"), keys: <><K>←</K><K>→</K></> };
-    case "up": return { name: L("Stokis"), keys: <K>↑</K> };
-    case "left": return { name: L("Svirk į kairę"), keys: <K>←</K> };
-    case "right": return { name: L("Svirk į dešinę"), keys: <K>→</K> };
-    case "down": return { name: L("Tūpk"), keys: <K>↓</K> };
-    case "fwd": return { name: L("Svorį pirmyn"), keys: <K>↑</K> };
-    case "jump": return { name: L("Šok"), keys: <K>{L("Tarpas")}</K> };
-    case "steady": return { name: L("Laikykis ramiai"), keys: null };
-  }
+const MOVE_NAMES: Record<Do, string> = {
+  paddle: L("Irkluok"), duck: L("Nerk po banga"), turn: L("Suk lentą"), up: L("Stokis"), left: L("Svirk į kairę"),
+  right: L("Svirk į dešinę"), down: L("Tūpk"), fwd: L("Svorį pirmyn"), jump: L("Šok"), steady: L("Laikykis ramiai"),
+};
+const ARROW_GLYPHS: Record<SurfArrow, string> = { up: "↑", down: "↓", left: "←", right: "→" };
+const DIRECTIONS = ["up", "left", "down", "right"] as const;
+/** The pad's arrows by name, for a screen reader. */
+const ARROW_NAMES: Record<SurfArrow, string> = { up: L("Rodyklė aukštyn"), down: L("Rodyklė žemyn"), left: L("Rodyklė kairėn"), right: L("Rodyklė dešinėn") };
+
+function ArrowKey({ dir }: { dir: SurfArrow }) {
+  const lit = useSurf((s) => s.keyFlash === dir);
+  return <kbd className={"surf-key" + (lit ? " lit" : "")}>{ARROW_GLYPHS[dir]}</kbd>;
 }
 
-/** The move she asks for, right under her line: its name and its key in large letters; on a phone, the button that
- *  makes it. The strokes still to paddle as dots; where the wave won't wait, the time left as a bar. */
-function Move({ todo, touch }: { todo: NonNullable<SurfUi["todo"]>; touch: boolean }) {
-  const m = move(todo.do);
+/** Four arrows under the thumb. Each finger holds its own arrow until it lifts or slides off. */
+function SurfPad({ todo }: { todo: SurfUi["todo"] }) {
+  const held = useRef(new Map<SurfArrow, number>());
+  const [pressed, setPressed] = useState<SurfArrow[]>([]);
+  const asked = todo?.show ? arrowFor(todo.do) : [];
+  useEffect(() => {
+    const clear = () => {
+      for (const dir of held.current.keys()) game?.surfArrow(dir, false);
+      held.current.clear();
+      setPressed([]);
+    };
+    const hidden = () => { if (document.hidden) clear(); };
+    window.addEventListener("blur", clear);
+    document.addEventListener("visibilitychange", hidden);
+    return () => {
+      window.removeEventListener("blur", clear);
+      document.removeEventListener("visibilitychange", hidden);
+      clear();
+    };
+  }, []);
+  function down(dir: SurfArrow, e: PointerEvent<HTMLButtonElement>) {
+    if (e.button !== 0 || held.current.has(dir)) return;
+    e.preventDefault();
+    // Touch takes pointer capture by default. Let sliding off a key release it like a mouse would.
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+    held.current.set(dir, e.pointerId);
+    setPressed([...held.current.keys()]);
+    game?.surfArrow(dir, true);
+    navigator.vibrate?.(8);
+  }
+  function up(dir: SurfArrow, id: number) {
+    if (held.current.get(dir) !== id) return;
+    held.current.delete(dir);
+    setPressed([...held.current.keys()]);
+    game?.surfArrow(dir, false);
+  }
+  return (
+    <div className={"surf-pad" + (todo?.show && todo.do === "steady" ? " still" : "")} onContextMenu={(e) => e.preventDefault()}>
+      {DIRECTIONS.map((dir) => (
+        <button type="button" key={dir} data-dir={dir} aria-label={ARROW_NAMES[dir]} aria-pressed={pressed.includes(dir)}
+          className={asked.includes(dir) ? "ask" : undefined}
+          onPointerDown={(e) => down(dir, e)} onPointerUp={(e) => up(dir, e.pointerId)}
+          onPointerCancel={(e) => up(dir, e.pointerId)} onPointerLeave={(e) => up(dir, e.pointerId)}
+          onClick={(e) => {
+            // Assistive controls can activate a button without a pointer.
+            if (e.detail === 0) { game?.surfArrow(dir, true); game?.surfArrow(dir, false); }
+          }}><span aria-hidden>{ARROW_GLYPHS[dir]}</span></button>
+      ))}
+    </div>
+  );
+}
+
+function Strokes({ of, left }: { of: number; left: number }) {
+  return <span className="surf-strokes" aria-hidden>{Array.from({ length: of }, (_, i) => <i key={i} className={i < of - left ? "done" : ""} />)}</span>;
+}
+
+/** Her move and its arrows, with a dot per stroke and a bar when the wave won't wait. */
+function Move({ todo, touch }: { todo: SurfUi["todo"]; touch: boolean }) {
+  // The last stroke clears the move in the same frame. Give its filled dot a moment on screen too.
+  const [lastStroke, setLastStroke] = useState(0);
+  useEffect(() => {
+    if (todo) setLastStroke(todo.do === "paddle" && todo.left === 1 ? todo.of ?? 0 : 0);
+    else if (lastStroke) {
+      const t = setTimeout(() => setLastStroke(0), 230);
+      return () => clearTimeout(t);
+    }
+  }, [todo, lastStroke]);
+  if (!todo) return lastStroke ? <div className="surf-finished"><Strokes of={lastStroke} left={0} /></div> : null;
+  if (!todo.show) return null;
   const still = todo.do === "steady";
+  const what = <b>{MOVE_NAMES[todo.do]}</b>;
+  const key = <span className="surf-keys-now">{arrowFor(todo.do).map((dir) => <ArrowKey key={dir} dir={dir} />)}</span>;
   const body = (
     <>
       <span className="surf-move-text">
-        {still ? Lx("{what} – nieko nespausk", { what: <b>{m.name}</b> })
-          : touch ? Lx("{what} – bakstelėk", { what: <b>{m.name}</b> })
-            : Lx("{what} – spausk {key}", { what: <b>{m.name}</b>, key: <span className="surf-keys-now">{m.keys}</span> })}
+        {still ? Lx("{what} – nieko nespausk", { what })
+          : touch ? Lx("{what} – bakstelėk {key}", { what, key }) : Lx("{what} – spausk {key}", { what, key })}
       </span>
-      {todo.of != null && todo.left != null && <span className="surf-strokes" aria-hidden>{Array.from({ length: todo.of }, (_, i) => <i key={i} className={i < todo.of! - todo.left! ? "done" : ""} />)}</span>}
+      {todo.of != null && todo.left != null && <Strokes of={todo.of} left={todo.left} />}
       {todo.time != null && <span className="surf-time" aria-hidden><i style={{ width: `${Math.round(todo.time * 100)}%` }} /></span>}
     </>
   );
-  // (a move made by not moving has nothing to tap)
-  if (still) return <div className="surf-move still" lang={EDITION.helper} role="status">{body}</div>;
-  return <button className={"surf-move" + (touch ? " tap" : "")} lang={EDITION.helper} onPointerDown={(e) => { e.preventDefault(); game?.surfAct(todo.do); }}>{body}</button>;
+  if (touch || still) return <div className={"surf-move" + (still ? " still" : "")} lang={EDITION.helper} role="status">{body}</div>;
+  return <button className="surf-move" lang={EDITION.helper} onPointerDown={(e) => { e.preventDefault(); game?.surfAct(todo.do); }}>{body}</button>;
 }
 
 /** The learner's turn to speak: what the microphone is doing, and its button (answering aloud on or off). */
@@ -198,7 +260,7 @@ export function SurfOverlay({ toolbar }: { toolbar: ReactNode }) {
             <button className="surf-again" onClick={() => game?.surfRepeat()} title={L("Pakartoti")} aria-label={L("Pakartoti")} lang={EDITION.helper}><Icon name="speaker" size={19} /></button>
           </div>
           {/* her line asks for a move: the move and its key, large, right under it */}
-          {s.todo?.show && <Move todo={s.todo} touch={touch} />}
+          <Move todo={s.todo} touch={touch} />
         </div>
       )}
       {/* the learner's turn to speak: the microphone listens for one of these lines; a tap answers too */}
@@ -215,6 +277,7 @@ export function SurfOverlay({ toolbar }: { toolbar: ReactNode }) {
       )}
       {/* what the learner has just said, until she answers */}
       {s.said && !s.choice && !s.over && <div className="surf-said" lang={TL}><Icon name="check" size={18} strokeWidth={2.6} /> <span className="surf-said-words"><span>{s.said.s.en}</span>{sayLt && s.said.s.nat && <small lang={EDITION.helper}>{s.said.s.nat}</small>}</span></div>}
+      {touch && !s.over && <SurfPad todo={s.todo} />}
       {s.over && (
         <div className="surf-pick">
           <div className="surf-pick-card">
@@ -236,6 +299,7 @@ export function SurfOverlay({ toolbar }: { toolbar: ReactNode }) {
       )}
       {!touch && !s.over && (
         <div className="help-strip surf-keys">
+          <div>{Lx("Judesiai {arrows}", { arrows: DIRECTIONS.map((dir) => <ArrowKey key={dir} dir={dir} />) })}</div>
           {Lx("Atsakyk balsu arba {n} · mikrofonas {m} · baigti {esc}", { n: <><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd></>, m: <kbd>M</kbd>, esc: <kbd>Esc</kbd> })}
         </div>
       )}

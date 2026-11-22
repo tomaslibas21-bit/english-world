@@ -73,11 +73,10 @@ export function Hud() {
   if (inConversation) return <Fade />;
   // the first visit's flight over the town has the screen to itself too: where one is, and what to do first
   if (hud.flight) return <div className="hud"><Flight /><Fade /></div>;
-  // The surf lesson keeps her line, the answers, the score, and the phone's controls.
+  // The surf lesson keeps her line, the answers, the score, and its own arrows.
   if (surfing) return (
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")}>
       <SurfOverlay toolbar={<Toolbar riding touch={hud.showTouch} surf />} />
-      {hud.showTouch && <TouchControls />}
       <Fade />
     </div>
   );
@@ -559,8 +558,6 @@ function TouchControls({ road = false }: { road?: boolean }) {
         ? <button className={"jump-btn brake-btn" + (prompt ? " beside" : "")} aria-label={L(road ? ROAD_UI.drift : "Stabdyti")} title={L(road ? ROAD_UI.drift : "Stabdyti")} onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); game?.hold(true); }} onPointerUp={() => game?.hold(false)} onPointerCancel={() => game?.hold(false)} onLostPointerCapture={() => game?.hold(false)}><span aria-hidden>{road ? L(ROAD_UI.drift) : fast ? "DRIFT" : "STOP"}</span></button>
         : ride === "swim" || ride === "dive"
           ? <button className={"jump-btn" + (prompt ? " beside" : "")} aria-label={ride === "dive" ? L("Išnirti") : L("Panerti")} title={ride === "dive" ? L("Išnirti") : L("Panerti")} onPointerDown={(e) => { e.preventDefault(); game?.jump(); }}><Icon name={ride === "dive" ? "chevronUp" : "chevronDown"} size={34} strokeWidth={2.5} /></button>
-          : ride === "surf"
-            ? <button className={"jump-btn" + (prompt ? " beside" : "")} aria-label={L("Atsistoti")} title={L("Atsistoti")} onPointerDown={(e) => { e.preventDefault(); game?.jump(); }}><Icon name="chevronUp" size={34} strokeWidth={2.5} /></button>
           : <button className={"jump-btn" + (prompt ? " beside" : "")} aria-label={L("Pašokti")} title={L("Pašokti")} onPointerDown={(e) => { e.preventDefault(); game?.jump(); }}><Icon name="chevronUp" size={34} strokeWidth={2.5} /></button>}
     </>
   );
