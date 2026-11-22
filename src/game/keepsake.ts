@@ -14,6 +14,24 @@ function geometry(part: KeepsakePart) {
   }
 }
 
+export function makeKeepsake(kind: KeepsakeKind, materials = new Map<number, THREE.MeshStandardMaterial>()) {
+  const group = new THREE.Group();
+  group.name = "keepsake";
+  group.scale.setScalar(CENTIMETER);
+  for (const part of KIND[kind].shape) {
+    let material = materials.get(part.color);
+    if (!material) {
+      material = new THREE.MeshStandardMaterial({ color: part.color, roughness: 0.82 });
+      materials.set(part.color, material);
+    }
+    const mesh = new THREE.Mesh(geometry(part), material);
+    mesh.position.set(part.x, part.y, part.z);
+    mesh.rotation.z = part.tilt;
+    group.add(mesh);
+  }
+  return group;
+}
+
 export class KeepsakeInHand {
   private current: { kind: KeepsakeKind; group: THREE.Group; shrinkAt: number } | null = null;
   private materials = new Map<number, THREE.MeshStandardMaterial>();
@@ -22,20 +40,7 @@ export class KeepsakeInHand {
 
   show(hand: THREE.Group, kind: KeepsakeKind) {
     this.clear();
-    const group = new THREE.Group();
-    group.name = "keepsake";
-    group.scale.setScalar(CENTIMETER);
-    for (const part of KIND[kind].shape) {
-      let material = this.materials.get(part.color);
-      if (!material) {
-        material = new THREE.MeshStandardMaterial({ color: part.color, roughness: 0.82 });
-        this.materials.set(part.color, material);
-      }
-      const mesh = new THREE.Mesh(geometry(part), material);
-      mesh.position.set(part.x, part.y, part.z);
-      mesh.rotation.z = part.tilt;
-      group.add(mesh);
-    }
+    const group = makeKeepsake(kind, this.materials);
     hand.add(group);
     this.current = { kind, group, shrinkAt: performance.now() + HOLD_MS };
   }

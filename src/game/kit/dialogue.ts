@@ -14,7 +14,7 @@ export interface KitMic {
 }
 
 export class ModeDialogue {
-  private playback: { left: number; clip: boolean; finish(ok: boolean): void } | null = null;
+  private playback: { left: number; clip: boolean; completed: boolean; finish(ok: boolean): void } | null = null;
   private turn: { options: KitLine[]; speech: ReturnType<typeof learnerTurn<KitLine>>; finish(line: KitLine | null): void; retries: number } | null = null;
   private attempt: ReturnType<typeof createSpeechAttempt> | null = null;
   private retryIn = 0;
@@ -26,6 +26,8 @@ export class ModeDialogue {
     choices(lines: KitLine[]): void;
     mic(state: KitMic): void;
     animate?(seconds: number): void;
+    allowBrowserVoice?: boolean;
+    framePlayback?: boolean;
   }) {}
 
   private resolve(situation: string, npcId: string, key: string, fallback: Record<string, SentSrc[]>, learner: boolean): KitLine | null {
@@ -37,13 +39,18 @@ export class ModeDialogue {
     const slow = !!useStore.getState().settings.slowVoice;
     const text = line.sentence.say;
     const clip = audio.clipDuration(voice, speed, text);
-    const est = clip == null ? (learner ? 0.5 : Math.min(4, 0.5 + text.length * 0.06)) : clip / (slow ? 0.82 : 1);
+    const est = clip == null ? (learner && !this.ui.allowBrowserVoice ? 0.5 : Math.min(4, 0.5 + text.length * 0.06)) : clip / (slow ? 0.82 : 1);
+    const voiced = clip != null || !!this.ui.allowBrowserVoice;
     if (!learner) this.ui.animate?.(est);
     return new Promise<boolean>((finish) => {
-      const playing = { left: clip == null ? est : est + 2, clip: clip != null, finish };
+      const estimate = this.ui.framePlayback && clip == null ? Math.max(est, text.length * (slow ? 0.09 : 0.07)) : est;
+      const left = clip == null && !this.ui.framePlayback ? estimate : estimate + 2;
+      const playing = { left, clip: voiced, completed: false, finish };
       this.playback = playing;
-      if (clip != null) void audio.play(voice, speed, text, { slow, male }).then((ok) => {
-        if (ok && this.playback === playing) this.endPlayback(true);
+      if (voiced) void audio.play(voice, speed, text, { slow, male }).then((ok) => {
+        if (!ok || this.playback !== playing) return;
+        if (this.ui.framePlayback) playing.completed = true;
+        else this.endPlayback(true);
       });
     });
   }
@@ -52,9 +59,14 @@ export class ModeDialogue {
     if (this.turn || this.playback) return null;
     const line = this.resolve(situation, npcId, key, fallback, false);
     if (!line) return null;
-    this.ui.say(line);
     const npc = NPCS[npcId];
-    return await this.play(line, npcVoice(npc), npc.speed ?? 1, npc.gender === "m") ? line : null;
+    return this.sayLine(line, npcVoice(npc), npc.speed ?? 1, npc.gender === "m");
+  }
+
+  async sayLine(line: KitLine, voice: string, speed: number, male: boolean) {
+    if (this.turn || this.playback) return null;
+    this.ui.say(line);
+    return await this.play(line, voice, speed, male) ? line : null;
   }
 
   clearLine() {
@@ -156,7 +168,11 @@ export class ModeDialogue {
     }
     if (paused) return;
     const playing = this.playback;
-    if (playing && (!playing.clip || audio.getState() !== "playing") && (playing.left -= dt) <= 0) this.endPlayback(true);
+    // A mode clock can bound stalled audio and apply completions on its next frame.
+    if (playing) {
+      if (this.ui.framePlayback || !playing.clip || audio.getState() !== "playing") playing.left -= dt;
+      if (playing.completed || playing.left <= 0) this.endPlayback(true);
+    }
     if (this.retryIn > 0 && (this.retryIn -= dt) <= 0) this.listen();
   }
 

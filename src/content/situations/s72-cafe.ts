@@ -5,6 +5,7 @@
 import type { Ctx, EntityDef, SituationDef, Suggestion } from "../types";
 import { ent, t } from "../dsl";
 import { expectHowAreYou } from "../global";
+import { BARISTA_LINES, BARISTA_MERGES } from "../barista-lines";
 
 // ---------------------------------------------------------------------------
 // Menu
@@ -97,7 +98,7 @@ interface Item {
   cupOf?: boolean;
 }
 
-function itemPrice(it: Item): number {
+export function itemPrice(it: Item): number {
   const e = byId(it.id);
   const p = e.attrs?.price;
   let base = Array.isArray(p) ? p[SIZE_IDX[it.size || "medium"]] : (p ?? 300);
@@ -268,6 +269,7 @@ export const cafe: SituationDef = {
   npc: "mia",
   goal: "Užsisakyk gėrimą (ir, jei nori, ką nors užkąsti), pasakyk, ar gersi čia, ar išsineši, ir susimokėk.",
   intro: "Tu užsuki kavos į „Sunny Cup“ – jaukią kavinę aikštėje. Už prekystalio – barista Mia. Meniu kabo ant lentos už jos.",
+  merges: BARISTA_MERGES,
   entities: { drink: DRINKS, food: FOODS, size: SIZES, milk: MILKS, temp: TEMPS },
 
   grammar: {
@@ -438,6 +440,7 @@ export const cafe: SituationDef = {
   },
 
   lines: {
+    ...BARISTA_LINES,
     food_menu: [
       t("For | food, | we | have | croissants, | muffins, | bagels | and | cookies.", "Iš | maisto, | mes | turime | kruasanų, | keksiukų, | riestainių | ir | sausainių.", "Iš maisto turime kruasanų, keksiukų, riestainių ir sausainių."),
       t("We | have | croissants, | muffins, | bagels, | cookies | and | sandwiches.", "Mes | turime | kruasanų, | keksiukų, | riestainių, | sausainių | ir | sumuštinių.", "Turime kruasanų, keksiukų, riestainių, sausainių ir sumuštinių."),

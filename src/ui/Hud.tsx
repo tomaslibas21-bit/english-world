@@ -5,6 +5,7 @@ import { SectionHelpButton, useSectionHelp } from "./sectionHelp";
 import { useSurf } from "../game/surf/store";
 import { SurfOverlay, SurfPicker } from "./Surf";
 import { TaxiOverlay } from "./Taxi";
+import { BaristaOffer, BaristaOverlay } from "./Barista";
 import { game } from "../game/gameRef";
 import { WORLD, SEA_Z } from "../game/world/layout";
 import { SITUATION_BY_ID } from "../content/situations/catalog";
@@ -39,7 +40,7 @@ export function useDueCards(): number {
   return dueCards(cards, Date.now()).length;
 }
 
-const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = { taxi: TaxiOverlay };
+const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = { taxi: TaxiOverlay, barista: BaristaOverlay };
 
 export function Hud() {
   const hud = useStore((s) => s.hud);
@@ -65,7 +66,7 @@ export function Hud() {
     return (
       <div className={"hud mode-hud" + (hud.showTouch ? " has-touch" : "")}>
         {!hud.panel && Overlay && <Overlay touch={hud.showTouch} />}
-        <Toolbar riding touch={hud.showTouch} modeExit={hud.modeScreen.exitLabel} />
+        {hud.modeScreen.id !== "barista" && <Toolbar riding touch={hud.showTouch} modeExit={hud.modeScreen.exitLabel} />}
         {hud.showTouch && hud.ride && <TouchControls />}
         <Fade />
       </div>
@@ -98,6 +99,7 @@ export function Hud() {
         <RideKeys key={`${ride}-${hud.rideStartedAt}`} ride={hud.ride} startedAt={hud.rideStartedAt} hidden={!!hud.panel || guideVisible} />
       )}
       {hud.showTouch && <TouchControls />}
+      {!hud.panel && <BaristaOffer />}
       <SurfPicker />
       <Fade />
     </div>
@@ -272,7 +274,8 @@ function Flight() {
 
 function Fade() {
   const fade = useStore((s) => s.hud.fade);
-  return <div className="fade" style={{ opacity: fade }} />;
+  const fadeOnFrames = useStore((s) => s.hud.fadeOnFrames);
+  return <div className="fade" style={{ opacity: fade, transition: fadeOnFrames ? "none" : undefined }} />;
 }
 
 function Objective({ collapsed, fresh, setCollapsed }: { collapsed: boolean; fresh: boolean; setCollapsed: (collapsed: boolean) => void }) {
@@ -472,7 +475,7 @@ function TouchControls() {
       <div className="joy" ref={ref}><div className="knob" ref={knob} /></div>
       {/* the jump stays under the right thumb; with someone to talk to or a door to go through it moves over for that button
           (a second tap while in the air is a flip: every press goes to the game, which knows where the player is) */}
-      {prompt && <button className="act-btn" onClick={() => game?.interact()}>{prompt.kind === "talk" ? "Kalbėti" : prompt.kind === "exit" ? "Išeiti" : prompt.kind === "drive" ? "Vairuoti" : prompt.kind === "boat" ? "Plaukti" : prompt.kind === "out" ? "Išlipti" : prompt.kind === "climb" ? "Užlipti" : prompt.kind === "surf" ? "Banglentė" : prompt.kind === "paddle" ? "Irkluoti" : prompt.kind === "taxi" ? prompt.label : "Įeiti"}</button>}
+      {prompt && <button className="act-btn" onClick={() => game?.interact()}>{prompt.kind === "talk" ? "Kalbėti" : prompt.kind === "exit" ? "Išeiti" : prompt.kind === "drive" ? "Vairuoti" : prompt.kind === "boat" ? "Plaukti" : prompt.kind === "out" ? "Išlipti" : prompt.kind === "climb" ? "Užlipti" : prompt.kind === "surf" ? "Banglentė" : prompt.kind === "paddle" ? "Irkluoti" : (prompt.kind === "taxi" || prompt.kind === "barista") ? prompt.label : "Įeiti"}</button>}
       {/* (at a wheel the same button is the brake, for as long as it is held; in the water, a dive and the way back up) */}
       {ride === "car" || ride === "boat" || ride === "taxi"
         ? <button className={"jump-btn brake-btn" + (prompt ? " beside" : "")} aria-label="Stabdyti" title="Stabdyti" onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); game?.hold(true); }} onPointerUp={() => game?.hold(false)} onPointerCancel={() => game?.hold(false)} onLostPointerCapture={() => game?.hold(false)}><span aria-hidden>{fast ? "DRIFT" : "STOP"}</span></button>

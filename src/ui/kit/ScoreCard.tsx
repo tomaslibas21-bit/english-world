@@ -3,7 +3,7 @@ import "./scoreCard.css";
 
 interface ScoreCardProps {
   title: string;
-  score: ReactNode;
+  score?: ReactNode;
   rows: { label: string; value: ReactNode }[];
   phrases: { label: string; count: number };
   again: { label: string; run(): void };
@@ -15,7 +15,7 @@ export function ScoreCard({ title, score, rows, phrases, again, done }: ScoreCar
     <div className="mode-score" lang="lt">
       <section className="mode-score-card" role="dialog" aria-labelledby="mode-score-title">
         <h2 id="mode-score-title">{title}</h2>
-        <strong className="mode-score-line">{score}</strong>
+        {score != null && <strong className="mode-score-line">{score}</strong>}
         <dl>
           {rows.map(({ label, value }) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
           <div><dt>{phrases.label}</dt><dd>{phrases.count}</dd></div>
