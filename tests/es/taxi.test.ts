@@ -5,6 +5,7 @@ import { TAXI_LINES, TAXI_MERGES } from "../../src/content/taxi-lines";
 import { NPCS } from "../../src/content/npcs";
 import taxi from "../../src/content/situations/s66-taxi";
 import { Ambient } from "../../src/game/ambient";
+import { CameraRig } from "../../src/game/camera";
 import { createCharacter } from "../../src/game/characters";
 import { scoreShot } from "../../src/game/kit/scoreShot";
 import { NavGrid } from "../../src/game/nav";
@@ -15,6 +16,7 @@ import { carFootprint, carLedges, carModelEntry } from "../../src/game/world/car
 import { PARKED_CARS, ROADS, TAXI, WORLD } from "../../src/game/world/layout";
 import { RIDES } from "../../src/game/world/rides";
 import { buildTown } from "../../src/game/world/town";
+import { floorY } from "../../src/game/water";
 import { Colliders } from "../../src/game/world/util";
 import { approach, approachDistance, checkDecision, inStopZone, resetPose, taxiScore, type Point } from "../../src/game/taxi/route";
 
@@ -110,19 +112,41 @@ describe("Puerto Colibrí taxi routes", () => {
     const blocked = (x: number, z: number) => colliders.blocked(x, z, 0.65);
     for (const route of TAXI_ROUTES) {
       const door = doors.find(({ loc }) => loc === route.destination)!;
-      const player = new THREE.Vector3(door.outX, 1.35, door.outZ);
+      const { outX, outZ } = door;
+      const ground = floorY(outX, outZ);
+      const player = new THREE.Box3(new THREE.Vector3(outX - 0.35, ground, outZ - 0.35),
+        new THREE.Vector3(outX + 0.35, ground + 1.9, outZ + 0.35));
       const { at } = route.decisions.at(-1)!;
-      for (const dx of [-3, 0, 3]) {
-        const taxi = new THREE.Vector3(at.x + dx, 0.9, at.z);
-        for (const aspect of [1280 / 800, 390 / 844]) {
+      const from = approach(route, route.decisions.length - 1).at(-2)!;
+      const rot = Math.atan2(at.x - from.x, at.z - from.z);
+      for (const [along, across, turn] of [[0, 0, 0], [-3.5, 0, 0], [3.5, 0, 0], [-3.5, -1.3, -0.2], [3.5, 1.3, 0.2]]) {
+        const x = at.x + Math.sin(rot) * along + Math.cos(rot) * across;
+        const z = at.z + Math.cos(rot) * along - Math.sin(rot) * across;
+        const { minX, maxX, minZ, maxZ } = carFootprint({ model: TAXI.model, x, z, rot: rot + turn });
+        const taxi = new THREE.Box3(new THREE.Vector3(minX, 0, minZ), new THREE.Vector3(maxX, taxiBox.height, maxZ));
+        for (const [width, height] of [[1280, 800], [390, 844]]) {
+          const aspect = width / height;
           const shot = scoreShot(player, door.rot, aspect, space, blocked, taxi);
-          const label = `${route.destination} (${dx}, ${aspect.toFixed(2)})`;
+          const label = `${route.destination} (${along}, ${across}, ${width}×${height})`;
           expect(shot, label).not.toBeNull();
-          expect(shot!.look, label).toEqual(player.clone().lerp(taxi, 0.5));
           expect(blocked(shot!.pos.x, shot!.pos.z), label).toBe(false);
-          for (const point of [player, taxi]) {
-            expect(field.free(point, shot!.pos), label).toBe(1);
-            expect(point.distanceTo(shot!.pos), label).toBeGreaterThanOrEqual(5);
+          expect(taxi.distanceToPoint(shot!.pos.clone().setY(taxi.min.y)), label).toBeGreaterThanOrEqual(5);
+          const rig = new CameraRig(aspect);
+          rig.stage = shot;
+          rig.mode = "stage";
+          rig.stageSnap();
+          rig.update(0, door.rot, false, true, true);
+          rig.applyViewShift(width, height, 0, height * (shot!.shiftY ?? 0));
+          rig.cam.updateMatrixWorld();
+          for (const box of [taxi, player]) {
+            const visible = box.getCenter(new THREE.Vector3());
+            if (box === player) visible.y = player.max.y - 0.5;
+            expect(field.free(visible, shot!.pos), label).toBe(1);
+            for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) {
+              const point = new THREE.Vector3(x, y, z).project(rig.cam);
+              expect(Math.max(Math.abs(point.x), Math.abs(point.y)), label).toBeLessThanOrEqual(0.85);
+              if (width < height) expect(point.y, label).toBeGreaterThanOrEqual(0.5);
+            }
           }
         }
       }

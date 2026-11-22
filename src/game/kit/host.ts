@@ -1,4 +1,4 @@
-import type { Object3D, Vector3 } from "three";
+import type { Box3, Object3D } from "three";
 import type { GameCharacter } from "../characters";
 import type { CameraRig } from "../camera";
 import type { Ride, Rides } from "../rides/Rides";
@@ -28,5 +28,5 @@ export interface ModeHost {
   drive(dt: number, controls: Controls | null): void;
   dismount(x?: number, z?: number, rot?: number, keepParked?: boolean): void;
   snapRide(ride: Ride): void;
-  scoreShot(beside?: Vector3): CameraRig["stage"];
+  scoreShot(beside?: Box3): CameraRig["stage"];
 }

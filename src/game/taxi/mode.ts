@@ -16,7 +16,7 @@ import { keepPhrases } from "../kit/phrases";
 import { controlsFrom } from "../rides/drive";
 import type { Ride } from "../rides/Rides";
 import type { Door, StandTaxi } from "../world/town";
-import { carModelEntry } from "../world/carModels";
+import { carFootprint, carModelEntry } from "../world/carModels";
 import { L } from "../../ui/i18n";
 import { CAR_SEATS } from "../rides/shapes";
 import { approach, approachDistance, checkDecision, inStopZone, resetPose, taxiScore, type TaxiRoute } from "./route";
@@ -45,6 +45,7 @@ class TaxiMode implements GameMode {
   readonly exitLabel = L("Išlipti");
   readonly conversation = { situation, label: L("Vairuoti taksi") };
   private run: Run | null = null;
+  private scoreAspect = 0;
   private passenger: GameCharacter | null = null;
   readonly car: Ride;
   private wheels?: THREE.Object3D[];
@@ -231,14 +232,7 @@ class TaxiMode implements GameMode {
       this.clearPassenger();
       const { door } = run;
       this.host.dismount(door.outX, door.outZ, door.rot, true);
-      const { rig } = this.host;
-      const taxi = this.car.mesh.position.clone().add(new THREE.Vector3(0, 0.9, 0));
-      rig.stage = this.host.scoreShot(taxi);
-      if (rig.stage) {
-        // Settle behind the fade so the lens never moves through the player or the curbside geometry.
-        rig.mode = "stage";
-        rig.stageSnap();
-      }
+      this.frameScore();
       run.phase = "result";
       this.dialogue.clearLine();
       keepPhrases(situation, [...run.kept.values()].map((line) => line.sentence));
@@ -262,10 +256,26 @@ class TaxiMode implements GameMode {
     rig.mode = "follow";
   }
 
+  private frameScore() {
+    const { rig } = this.host;
+    const { x, y, z } = this.car.mesh.position;
+    const { minX, maxX, minZ, maxZ } = carFootprint({ model: TAXI_CAR.model, x, z, rot: this.car.m.heading });
+    const body = new THREE.Box3(new THREE.Vector3(minX, y, minZ),
+      new THREE.Vector3(maxX, y + taxiModel.collisionBox.height, maxZ));
+    this.scoreAspect = rig.cam.aspect;
+    rig.stage = this.host.scoreShot(body);
+    if (rig.stage) {
+      // Switch views behind the arrival fade, and reframe if the screen turns while the card is open.
+      rig.mode = "stage";
+      rig.stageSnap();
+    }
+  }
+
   update({ dt, x, y, brake, blocked }: ModeFrame) {
     const run = this.run;
     if (!run) return;
     if (run.phase === "result") {
+      if (this.scoreAspect !== this.host.rig.cam.aspect) this.frameScore();
       this.host.updatePose(dt, run.door.rot);
       return;
     }

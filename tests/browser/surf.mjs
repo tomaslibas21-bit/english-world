@@ -330,6 +330,7 @@ try {
     else check(`${label}: with keys it says which: “${mv.up.text}”`, /spausk|press/.test(mv.up.text) && mv.up.keys.includes("↑") && mv.paddle.keys.includes("E"), mv.up);
     await step(20);
     check(`${label}: the score card is on show`, await page.locator(".surf-result").count() === 1);
+    await shot("result");
     if (hasPics) {
       const of = await page.evaluate(() => window.__ew.game.surf.content.pictures.of);
       const rows = [...seenPics.entries()];

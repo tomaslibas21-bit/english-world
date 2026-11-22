@@ -498,7 +498,11 @@ export class Game implements GameApi {
         this.rig.snap();
       },
       scoreShot: (beside) => {
-        const subject = this.player.root.position.clone().add(new THREE.Vector3(0, 1.35, 0));
+        const { root: { position: p }, height } = this.player;
+        const subject = new THREE.Box3(
+          new THREE.Vector3(p.x - 0.35, p.y, p.z - 0.35),
+          new THREE.Vector3(p.x + 0.35, p.y + height + 0.15, p.z + 0.35),
+        );
         return scoreShot(subject, this.heading, this.rig.cam.aspect, this.rig.space,
           (x, z) => this.zone.colliders.blocked(x, z, 0.65), beside);
       },
