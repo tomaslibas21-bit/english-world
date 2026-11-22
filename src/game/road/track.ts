@@ -24,7 +24,7 @@ export function point(s: number, x = 0, y = 0) {
   return new THREE.Vector3(center(s) + x, height(s) + y, -s);
 }
 
-function ribbon(s0: number, length: number, lo: number, hi: number, y: number, steps: number) {
+export function ribbon(s0: number, length: number, lo: number, hi: number, y: number, steps: number) {
   const positions: number[] = [];
   const triangles: number[] = [];
   for (let i = 0; i <= steps; i++) {

@@ -1,52 +1,137 @@
 import * as THREE from "three";
 import { colourMerge } from "../world/util";
-import { course, laneOffset, point } from "./track";
+import { laneOffset, point, ribbon } from "./track";
 import type { Prompt } from "./words";
 
-const GATE_COLORS = ["#ffb65a", "#61dfca", "#a9a9fa"];
+const LANE_PAINT = ["#f2a83e", "#38b9aa", "#a39bdd"];
+const IRON = "#364955";
 const BANNER_Y = 4.22;
-const TEXT_HALF_WIDTH = 1.78;
-const TEXT_HALF_HEIGHT = 0.96;
-export type LabelAnchor = { lane: number; x: number; y: number; width: number; height: number };
+const FACE_Z = 0.47;
+const TEXT_HALF_WIDTH = 1.76;
+const TEXT_HALF_HEIGHT = 0.78;
+type Part = [THREE.BufferGeometry, string];
+export type LabelAnchor = { lane: number; x: number; y: number; width: number; height: number; opacity: number };
+
+function plate(width: number, height: number, depth: number, cut: number) {
+  const x = width / 2, y = height / 2;
+  const outline = new THREE.Shape();
+  outline.moveTo(-x + cut, -y);
+  for (const [px, py] of [[x - cut, -y], [x, -y + cut], [x, y - cut], [x - cut, y],
+    [-x + cut, y], [-x, y - cut], [-x, -y + cut]]) outline.lineTo(px, py);
+  outline.closePath();
+  return new THREE.ExtrudeGeometry(outline, { depth, bevelEnabled: false });
+}
+
+function makeStamp(correct: boolean, material: THREE.Material) {
+  const parts: Part[] = [];
+  const stroke = (length: number, thickness: number, angle: number, x: number, y: number, color: string) =>
+    parts.push([new THREE.BoxGeometry(length, thickness, 0.06).rotateZ(angle).translate(x, y, 0), color]);
+  if (correct) {
+    stroke(0.59, 0.21, -Math.PI / 4, -0.35, -0.04, "#125c54");
+    stroke(1.12, 0.21, Math.PI / 4, 0.17, 0.14, "#125c54");
+    for (const side of [-1, 1]) {
+      stroke(0.28, 0.10, side * 0.58, side * 1.18, 0.32, "#348e79");
+      stroke(0.20, 0.10, -side * 0.3, side * 1.30, -0.14, "#348e79");
+    }
+  } else {
+    stroke(0.95, 0.22, 0, 0, 0, "#775345");
+  }
+  return new THREE.Mesh(colourMerge(parts), material);
+}
 
 export class Gate {
   readonly mesh: THREE.Mesh;
   readonly frame: readonly THREE.Vector3[];
+  private boards: THREE.InstancedMesh<THREE.BufferGeometry, THREE.Material>;
   private banners: THREE.Vector3[][];
   private projected = new THREE.Vector3();
+  private pass?: { lane: number; correct: boolean; age: number; stamp: THREE.Mesh; material: THREE.Material };
+  private boardPose = new THREE.Object3D();
 
   constructor(readonly distance: number, readonly prompt: Prompt, material: THREE.Material) {
-    const parts: [THREE.BufferGeometry, string][] = [];
-    const block = (w: number, h: number, d: number, x: number, y: number, z: number, color: string) =>
-      parts.push([new THREE.BoxGeometry(w, h, d).translate(x, y, z), color]);
+    const origin = point(distance);
+    const facePoint = (x: number, y: number) => new THREE.Vector3(x, y, FACE_Z).add(origin);
+    const parts: Part[] = [];
+    const block = (w: number, h: number, d: number, x: number, y: number, z: number, color: string, tilt = 0) =>
+      parts.push([new THREE.BoxGeometry(w, h, d).rotateZ(tilt).translate(x, y, z), color]);
 
     for (let lane = 0; lane < 3; lane++) {
-      const x = laneOffset(lane), ink = GATE_COLORS[lane];
+      const x = laneOffset(lane), paint = LANE_PAINT[lane];
       for (const side of [-1, 1]) {
-        const post = x + side * 1.79;
-        block(0.29, 3.92, 0.55, post, 1.96, 0, ink);
-        block(0.40, 0.64, 0.70, post, 0.32, 0, "#263843");
-        block(0.31, 0.17, 0.57, post, 0.79, 0, "#fff0ce");
-        block(0.31, 0.17, 0.57, post, 2.51, 0, "#fff0ce");
+        const edge = x + side * 1.80;
+        block(0.24, 4.18, 0.45, edge, 2.09, 0, paint);
+        block(0.38, 0.53, 0.62, edge, 0.265, 0, IRON);
+        block(0.27, 0.18, 0.48, edge, 0.63, 0, "#fff0ce");
+        block(0.21, 1.08, 0.32, edge - side * 0.30, 3.12, 0, paint, side * 0.66);
+        // Twin approach stripes follow the actual road crown, including on hills and bends.
+        for (const [start, length] of [[-10, 0.8], [-8, 1.5], [-5.4, 5.5]]) {
+          const strip = ribbon(distance + start, length, edge - 0.10, edge + 0.10, 0.060, 3);
+          parts.push([strip.translate(-origin.x, -origin.y, -origin.z), paint]);
+        }
       }
-      block(3.88, 2.20, 0.65, x, BANNER_Y, 0, ink);
-      block(3.65, 1.99, 0.06, x, BANNER_Y, 0.335, "#252d37");
-      block(1.9, 0.045, 0.63, x, 0.038, 1.24, ink);
-      block(1.9, 0.045, 0.17, x, 0.038, 1.94, ink);
+      parts.push([plate(3.94, 2.10, 0.42, 0.18).translate(x, BANNER_Y, -0.21), paint]);
+      block(0.44, 0.44, 0.27, x, BANNER_Y - 1.04, 0, paint, Math.PI / 4);
     }
+
     this.mesh = new THREE.Mesh(colourMerge(parts), material);
-    // Distant gate colours remain recognizable before the car reaches the haze.
-    this.mesh.position.copy(point(distance));
-    this.mesh.rotation.y = course(distance) - Math.PI;
-    this.mesh.updateMatrixWorld(true);
-    this.banners = [0, 1, 2].map((lane) => {
-      const x = laneOffset(lane);
-      return [[0, 0], [-TEXT_HALF_WIDTH, TEXT_HALF_HEIGHT], [TEXT_HALF_WIDTH, TEXT_HALF_HEIGHT],
+    this.mesh.position.copy(origin);
+    const panel = colourMerge([
+      [plate(3.84, 1.94, 0.18, 0.15).translate(0, 0, 0.20), IRON],
+      [plate(3.72, 1.80, 0.08, 0.12).translate(0, 0, 0.38), "#fff2d5"],
+    ]);
+    this.boards = new THREE.InstancedMesh(panel, material, 3);
+    for (let lane = 0; lane < 3; lane++) {
+      this.boardPose.position.set(laneOffset(lane), BANNER_Y, 0);
+      this.boardPose.updateMatrix();
+      this.boards.setMatrixAt(lane, this.boardPose.matrix);
+      this.boards.setColorAt(lane, new THREE.Color(0xffffff));
+    }
+    this.boards.computeBoundingSphere();
+    this.boards.boundingSphere!.radius += 0.6;
+    this.mesh.add(this.boards);
+    this.banners = [0, 1, 2].map((lane) =>
+      [[0, 0], [-TEXT_HALF_WIDTH, TEXT_HALF_HEIGHT], [TEXT_HALF_WIDTH, TEXT_HALF_HEIGHT],
         [-TEXT_HALF_WIDTH, -TEXT_HALF_HEIGHT], [TEXT_HALF_WIDTH, -TEXT_HALF_HEIGHT]]
-        .map(([dx, dy]) => this.mesh.localToWorld(new THREE.Vector3(x + dx, BANNER_Y + dy, 0.371)));
-    });
-    this.frame = [-5.94, 5.94].flatMap((x) => [BANNER_Y - 1.1, BANNER_Y + 1.1]
-      .map((y) => this.mesh.localToWorld(new THREE.Vector3(x, y, 0.371))));
+        .map(([dx, dy]) => facePoint(laneOffset(lane) + dx, BANNER_Y + dy)));
+    this.frame = [-5.97, 5.97].flatMap((x) => [-1.05, 1.05].map((dy) =>
+      facePoint(x, BANNER_Y + dy)));
+  }
+
+  get crossed() { return !!this.pass; }
+
+  cross(lane: number, correct: boolean) {
+    const material = this.boards.material.clone();
+    material.transparent = true;
+    this.mesh.material = this.boards.material = material;
+    const stamp = makeStamp(correct, material);
+    this.boards.renderOrder = 1;
+    stamp.renderOrder = 2;
+    this.mesh.add(stamp);
+    this.pass = { lane, correct, stamp, material, age: 0 };
+    this.boards.setColorAt(lane, new THREE.Color(correct ? "#adffdb" : "#caa58c"));
+    this.boards.instanceColor!.needsUpdate = true;
+    this.animatePass(0, this.distance);
+  }
+
+  animatePass(dt: number, carDistance: number) {
+    if (!this.pass) return false;
+    const { lane, correct, stamp, material } = this.pass;
+    const t = Math.min(1, (this.pass.age += dt) / 0.85);
+    const kick = Math.sin(Math.PI * Math.min(1, t * 2.4));
+    const sway = Math.sin(t * Math.PI * 3) * (1 - t) ** 2;
+    this.boardPose.position.set(laneOffset(lane), BANNER_Y + (correct ? 0.34 : -0.13) * kick, 0.18 * kick);
+    this.boardPose.rotation.z = correct ? 0 : -0.10 - 0.08 * sway;
+    this.boardPose.scale.setScalar(1 + (correct ? 0.09 : -0.04) * kick);
+    this.boardPose.updateMatrix();
+    this.boards.setMatrixAt(lane, this.boardPose.matrix);
+    this.boards.instanceMatrix.needsUpdate = true;
+    stamp.position.set(0, 0, FACE_Z + 0.05).applyMatrix4(this.boardPose.matrix);
+    stamp.rotation.z = this.boardPose.rotation.z;
+    stamp.scale.setScalar(this.boardPose.scale.x * (correct ? 1 + kick * 0.18 : 1));
+    // Clear the immediate foreground before the chase camera reaches the plane of the signs.
+    material.opacity = 1 - Math.max(THREE.MathUtils.smoothstep(t, 0.55, 1),
+      THREE.MathUtils.smoothstep(carDistance - this.distance, 4, 10));
+    return material.opacity > 0;
   }
 
   labels(camera: THREE.PerspectiveCamera, width: number, height: number): LabelAnchor[] {
@@ -55,6 +140,7 @@ export class Gate {
       return { x: (1 + p.x) * width / 2, y: (1 - p.y) * height / 2, depth: p.z };
     };
     return this.banners.flatMap(([center, tl, tr, bl, br], lane) => {
+      if (lane === this.pass?.lane) return [];
       const mid = pixels(center);
       if (mid.depth < -1 || mid.depth >= 1) return [];
       const a = pixels(tl), b = pixels(tr), c = pixels(bl), d = pixels(br);
@@ -62,12 +148,16 @@ export class Gate {
       const hw = Math.min(mid.x - Math.max(a.x, c.x), Math.min(b.x, d.x) - mid.x);
       const hh = Math.min(mid.y - Math.max(a.y, b.y), Math.min(c.y, d.y) - mid.y);
       if (hw < 6 || hh < 3 || mid.x + hw < 0 || mid.x - hw > width) return [];
-      return [{ lane, x: mid.x, y: mid.y, width: 2 * hw, height: 2 * hh }];
+      return [{ lane, x: mid.x, y: mid.y, width: 2 * hw, height: 2 * hh, opacity: this.pass?.material.opacity ?? 1 }];
     });
   }
 
   dispose() {
     this.mesh.removeFromParent();
     this.mesh.geometry.dispose();
+    this.boards.geometry.dispose();
+    this.boards.dispose();
+    this.pass?.stamp.geometry.dispose();
+    this.pass?.material.dispose();
   }
 }

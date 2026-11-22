@@ -1,4 +1,4 @@
-import { MeshBasicMaterial, PerspectiveCamera, Vector3 } from "three";
+import { Color, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, PerspectiveCamera, Vector3 } from "three";
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { audioKey } from "../src/audio-key";
@@ -213,6 +213,48 @@ describe("desert road", () => {
     material.dispose();
   });
 
+  it.each([true, false])("replaces only the crossed label and clears the arch before the camera (correct=%s)", (correct) => {
+    const material = new MeshBasicMaterial({ vertexColors: true });
+    const gate = new Gate(FIRST_GATE, {} as Prompt, material);
+    const camera = new PerspectiveCamera(49, 390 / 664, 0.18, 470);
+    camera.position.copy(point(FIRST_GATE - 25, 0, 4.4));
+    camera.lookAt(point(FIRST_GATE, 0, 3.2));
+    camera.updateMatrixWorld();
+    const [boards] = gate.mesh.children as InstancedMesh[];
+    expect(gate.mesh.children).toHaveLength(1);
+    expect(boards.count).toBe(3);
+    const original = new Matrix4();
+    boards.getMatrixAt(2, original);
+    gate.cross(2, correct);
+    expect(gate.crossed).toBe(true);
+    expect(gate.mesh.children).toHaveLength(2);
+    const stamp = gate.mesh.children[1] as Mesh;
+    const tint = new Color();
+    boards.getColorAt(1, tint);
+    expect(tint.getHex()).toBe(0xffffff);
+    boards.getColorAt(2, tint);
+    expect(tint.g > tint.r).toBe(correct);
+    expect(gate.labels(camera, 390, 664).map(({ lane }) => lane)).toEqual([0, 1]);
+    expect(gate.animatePass(0.15, FIRST_GATE + 3)).toBe(true);
+    const animated = new Matrix4();
+    boards.getMatrixAt(2, animated);
+    expect(animated.elements[13] > original.elements[13]).toBe(correct);
+    expect(animated.elements[1] === 0).toBe(correct);
+    expect(gate.animatePass(0.18, FIRST_GATE + 7)).toBe(true);
+    for (const label of gate.labels(camera, 390, 664)) {
+      expect(label.opacity).toBeGreaterThan(0);
+      expect(label.opacity).toBeLessThan(1);
+    }
+    expect(gate.animatePass(0.15, FIRST_GATE + 10)).toBe(false);
+    expect(material.transparent).toBe(false);
+    const released = vi.fn();
+    boards.geometry.addEventListener("dispose", released);
+    stamp.geometry.addEventListener("dispose", released);
+    gate.dispose();
+    expect(released).toHaveBeenCalledTimes(2);
+    material.dispose();
+  });
+
   it("frames all three gates and an airborne car in the outside lane on both phone heights and desktop", () => {
     const material = new MeshBasicMaterial({ vertexColors: true });
     const gate = new Gate(FIRST_GATE, {} as Prompt, material);
@@ -227,11 +269,13 @@ describe("desert road", () => {
         chase.update(camera, car, distance, 1.1, 0.9, near - toGo, 0.05, width, height, corners, gate);
         const labels = gate.labels(camera, width, height);
         expect(labels).toHaveLength(3);
+        let leftLimit = 0;
         for (const label of labels) {
-          expect(label.x - label.width / 2).toBeGreaterThan(0);
-          expect(label.x + label.width / 2).toBeLessThan(width);
+          expect(label.x - label.width / 2).toBeGreaterThan(leftLimit);
+          leftLimit = label.x + label.width / 2;
+          expect(leftLimit).toBeLessThan(width);
           expect(label.y + label.height / 2).toBeLessThan(height * 0.75);
-          if (width === 1280 && toGo === near) expect(label.width).toBeGreaterThan(85);
+          if (toGo >= 32) expect(label.width).toBeGreaterThan(width === 390 ? 82 : 100);
         }
         for (const corner of corners) {
           const projected = corner.clone().project(camera);
