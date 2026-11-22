@@ -6,6 +6,7 @@ import { SITUATION_BY_ID, prefetchSituations } from "../content/situations/catal
 
 const KEY = "ew-play-now";
 export const debugBaristaLink = import.meta.env.DEV && new URLSearchParams(location.search).get("barista") === "1";
+export const debugGoFishLink = import.meta.env.DEV && new URLSearchParams(location.search).get("gofish") === "1";
 
 export function switchPlayMode(to: PlayMode) {
   useStore.getState().setSettings({ play: to });
@@ -19,7 +20,7 @@ export function takeAutoStart(): PlayMode | null {
   let flag = false;
   try { flag = sessionStorage.getItem(KEY) === "1"; sessionStorage.removeItem(KEY); } catch { /* no storage */ }
   const st = useStore.getState();
-  return (flag || linked || debugBaristaLink) && st.progress.profile ? st.settings.play : null;
+  return (flag || linked || debugBaristaLink || debugGoFishLink) && st.progress.profile ? st.settings.play : null;
 }
 
 // A link to one situation (?sit=s72-cafe: the course links its situations this way). It is read once and

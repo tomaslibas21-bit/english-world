@@ -13,9 +13,13 @@ export interface KitMic {
   heard: string;
 }
 
+type SpeechMatch = { key: string; sentence: { en: string }; line?: KitLine; name?: string };
+type SpokenNames = { names: readonly string[]; select(name: string): void };
+
 export class ModeDialogue {
   private playback: { left: number; clip: boolean; completed: boolean; finish(ok: boolean): void } | null = null;
-  private turn: { options: KitLine[]; speech: ReturnType<typeof learnerTurn<KitLine>>; finish(line: KitLine | null): void; retries: number } | null = null;
+  private turn: { options: KitLine[]; speech: ReturnType<typeof learnerTurn<SpeechMatch>>; spokenNames?: SpokenNames;
+    finish(line: KitLine | null): void; retries: number } | null = null;
   private attempt: ReturnType<typeof createSpeechAttempt> | null = null;
   private retryIn = 0;
   private paused = false;
@@ -25,6 +29,7 @@ export class ModeDialogue {
     say(line: KitLine | null): void;
     choices(lines: KitLine[]): void;
     mic(state: KitMic): void;
+    answer?(line: KitLine): void;
     animate?(seconds: number): void;
     allowBrowserVoice?: boolean;
     framePlayback?: boolean;
@@ -70,16 +75,35 @@ export class ModeDialogue {
     return await this.play(line, voice, speed, male) ? line : null;
   }
 
+  async replayLine(line: KitLine, voice: string, speed: number, male: boolean, learner = false) {
+    if (this.paused || this.playback) return;
+    this.stopListening();
+    const turn = this.turn;
+    await this.play(line, voice, speed, male, learner);
+    if (turn && this.turn === turn) this.listen();
+  }
+
   clearLine() {
     this.ui.say(null);
   }
 
-  async expect(situation: string, npcId: string, keys: string[], fallback: Record<string, SentSrc[]>, accept: Readonly<Record<string, readonly string[]>> = {}) {
+  async expect(situation: string, npcId: string, keys: string[], fallback: Record<string, SentSrc[]>,
+    accept: Readonly<Record<string, readonly string[]>> = {}, spokenNames?: SpokenNames) {
     if (this.turn || this.playback) return null;
     const options = keys.flatMap((key) => this.resolve(situation, npcId, key, fallback, true) ?? []);
     if (!options.length) return null;
+    const matches: SpeechMatch[] = options.map((line) => ({ ...line, line }));
+    const namedAccept: Record<string, readonly string[]> = { ...accept };
+    for (const name of spokenNames?.names ?? []) {
+      matches.push({ key: name, sentence: { en: name }, name });
+      for (const line of options) {
+        const key = `${name}:${line.key}`;
+        matches.push({ key, sentence: { en: `${name} ${line.sentence.en}` }, line, name });
+        namedAccept[key] = (accept[line.key] ?? []).map((phrase) => `${name} ${phrase}`);
+      }
+    }
     return new Promise<KitLine | null>((finish) => {
-      this.turn = { options, speech: learnerTurn(options, accept), finish, retries: 0 };
+      this.turn = { options, speech: learnerTurn(matches, namedAccept), spokenNames, finish, retries: 0 };
       this.ui.choices(options);
       this.listen();
     });
@@ -98,6 +122,7 @@ export class ModeDialogue {
     if (!turn || !line || this.paused || this.playback) return;
     this.stopListening();
     this.ui.choices([]);
+    this.ui.answer?.(line);
     if (spoken) {
       this.turn = null;
       turn.finish(line);
@@ -136,8 +161,11 @@ export class ModeDialogue {
         if (this.attempt !== attempt || this.turn !== turn) return;
         this.stopListening();
         const answer = [text, ...alternatives].map((heard) => read(heard).answer).find(Boolean);
-        if (answer) this.choose(answer.key, true);
-        else {
+        if (answer) {
+          if (answer.name) turn.spokenNames?.select(answer.name);
+          if (answer.line) this.choose(answer.line.key, true);
+          else { turn.retries = 0; this.retryIn = 0.15; }
+        } else {
           this.ui.mic({ status: "unclear", heard: text });
           if (++turn.retries < 3) this.retryIn = 1.3;
         }

@@ -39,6 +39,9 @@ import { createSurfMode } from "./surf/mode";
 import { createTaxiMode } from "./taxi/mode";
 import { BARISTA_PROMPT, createBaristaMode } from "./barista/mode";
 import { BARISTA_CONVERSATION } from "../content/barista";
+import { GOFISH_CONVERSATION } from "../content/gofish";
+import { createGoFishMode } from "./gofish/mode";
+import { GOFISH_PROMPT } from "./gofish/framing";
 import { OcclusionField } from "./occlusion";
 import { PropFader } from "./fade";
 import { CUT, withCutout } from "./cutout";
@@ -218,6 +221,7 @@ export class Game implements GameApi {
   private pushDoorT = 0;
   private transitioning = false;
   private barista: ReturnType<typeof createBaristaMode> | null = null;
+  private gofish: ReturnType<typeof createGoFishMode> | null = null;
   private frameFade = new FrameFade((fade) => useStore.getState().setHud({ fade, fadeOnFrames: true }));
   private readonly phone = new TownPhone();
   private phoneWatch: (() => void)[] = [];
@@ -483,7 +487,7 @@ export class Game implements GameApi {
     };
     this.modes.register(createSurfMode(host));
     this.modes.register(createTaxiMode(host));
-    this.barista = createBaristaMode({
+    const stageHost: ModeHost = {
       ...host,
       fade: (swap) => {
         if (this.transitioning || this.disposed) return false;
@@ -492,13 +496,20 @@ export class Game implements GameApi {
         this.frameFade.start(swap);
         return true;
       },
-    }, {
+    };
+    this.barista = createBaristaMode(stageHost, {
       room: () => this.zone.id === BARISTA_CONVERSATION.location ? this.zone.group : null,
       mia: () => this.npcs.find((actor) => actor.id === BARISTA_CONVERSATION.npc)?.ch,
       place: (x, z, rot) => this.placeOnFoot(x, z, rot, true),
       savePlace: () => this.savePlace(),
     });
     this.modes.register(this.barista);
+    this.modes.register(this.gofish = createGoFishMode(stageHost, {
+      room: () => this.zone.id === GOFISH_CONVERSATION.location ? this.zone.group : null,
+      npc: (id) => this.npcs.find((actor) => actor.id === id)?.ch,
+      place: (x, z, rot) => this.placeOnFoot(x, z, rot, true),
+      savePlace: () => this.savePlace(),
+    }));
     if (ROAD_EDITION.enabled) {
       this.road = new RoadEntry({
         ...host,
@@ -714,7 +725,7 @@ export class Game implements GameApi {
     if (!z) return;
     const doIt = () => {
       this.phone.dismiss();
-      if (this.modes.active || this.modes.owns("barista")) this.modes.exit(true);
+      if (this.modes.active || this.modes.owns("barista") || this.modes.owns("gofish")) this.modes.exit(true);
       if (this.flight) {
         this.flight = null;
         this.rig.stage = null;
@@ -924,6 +935,9 @@ export class Game implements GameApi {
     if (this.modes.modal || this.modes.active) {
       if (!this.transitioning && this.modes.input({ kind: "key", key: k, repeat: e.repeat, keys: this.keys })) e.preventDefault();
       return;
+    }
+    if (k === "escape" && this.modes.input({ kind: "key", key: k, repeat: e.repeat, keys: this.keys })) {
+      e.preventDefault(); return;
     }
     if (["arrowup", "arrowdown", "arrowleft", "arrowright", "w", "a", "s", "d", "shift"].includes(k)) {
       this.keys.add(k); this.autoPath = null; this.autoTarget = null; e.preventDefault(); return;
@@ -1984,8 +1998,7 @@ export class Game implements GameApi {
   modeExit() { this.modes.exit(); }
   modeAction(id: string, name: string, value?: string | boolean) {
     if (this.transitioning || useStore.getState().hud.panel) return;
-    const mode = this.modes.active ?? (id === "barista" && this.modes.owns(id) ? this.modes.get(id) : null);
-    if (mode?.id === id) mode.action?.(name, value);
+    if (this.modes.owns(id)) this.modes.get(id)?.action?.(name, value);
   }
   debugBarista() {
     if (!import.meta.env.DEV) return undefined;
@@ -1997,6 +2010,20 @@ export class Game implements GameApi {
         return this.modes.start("barista", "debug");
       },
       state: () => this.barista?.state() ?? null,
+    };
+  }
+  debugGoFish() {
+    if (!import.meta.env.DEV) return undefined;
+    return {
+      start: (seed?: number) => {
+        if (this.transitioning || this.modes.active || this.session?.active) return false;
+        useStore.getState().setHud({ panel: null });
+        if (this.zone.id !== GOFISH_CONVERSATION.location) this.enterZone(GOFISH_CONVERSATION.location, GOFISH_PROMPT, true);
+        if (seed !== undefined) this.gofish?.seed(seed);
+        return this.modes.start("gofish", "debug");
+      },
+      seed: (seed: number) => this.gofish?.seed(seed),
+      state: () => this.gofish?.state() ?? null,
     };
   }
   get activeSession() { return this.session; }
@@ -2280,7 +2307,7 @@ export class Game implements GameApi {
     const riding = this.rides.riding;
     if (!riding) this.rides.update(dt, this.t, null);
     audio.motor(riding && this.rides.phase === "on" && !this.zone.interior && !this.modes.owns("road") ? riding.kind : null, this.rides.revs);
-    this.updateNpcs(dt, talking, mode === this.barista && !!mode);
+    this.updateNpcs(dt, talking, mode);
     this.updateIsland(dt, blocked || !!mode);
     if (!this.zone.interior) {
       const driver = riding?.kind === "car" && this.rides.phase === "on" ? riding.m : undefined;
@@ -2372,6 +2399,10 @@ export class Game implements GameApi {
       } else if (this.barista && mode === this.barista) {
         const bottom = document.querySelector(".barista-bottom, .barista-result .mode-score-card")?.getBoundingClientRect().top;
         this.barista.frameView(w, h, bottom ?? h, document.querySelector<HTMLElement>(".barista-cue"));
+      } else if (this.gofish && mode === this.gofish) {
+        const top = document.querySelector(".gofish-top")?.getBoundingClientRect().bottom;
+        const bottom = document.querySelector(".gofish-bottom, .gofish-result .mode-score-card")?.getBoundingClientRect().top;
+        this.gofish.frameView(w, h, top ?? 0, bottom ?? h);
       } else {
         const stageShift = this.rig.mode === "stage" ? this.rig.stage?.shiftY : undefined;
         const portraitShift = this.rig.mode !== "talk" && h > w * 1.15 ? -(this.rig.mode === "follow" ? 0.12 : 0.1) : 0;
@@ -2853,7 +2884,7 @@ export class Game implements GameApi {
     else if (t.kind === "exit") this.exitInterior();
   }
 
-  private updateNpcs(dt: number, talking: boolean, barista: boolean) {
+  private updateNpcs(dt: number, talking: boolean, mode: ReturnType<ModeRegistry["get"]> | null) {
     const p = this.player.root.position;
     const taking = talking ? this.session?.sit.npcs ?? [] : [];
     // the people look at the learner's head; the player at the one they talk with
@@ -2863,7 +2894,7 @@ export class Game implements GameApi {
     this.player.watch = partner ? this.talkAt : null;
     this.player.steady = !!partner;
     for (const n of this.npcs) {
-      if (barista && n.id === BARISTA_CONVERSATION.npc) continue;
+      if (mode?.ownsNpc?.(n.id)) continue;
       const d = n.ch.root.position.distanceTo(p);
       // with the player close by, or in the conversation, they stop what they were doing and pay attention
       n.ch.attentive = d < 5.5 || (talking && (n === this.talkNpc || taking.includes(n.id)));

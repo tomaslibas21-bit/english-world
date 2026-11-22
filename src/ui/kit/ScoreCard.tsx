@@ -8,7 +8,7 @@ interface ScoreCardProps {
   ratio?: number;
   rows: { label: string; value: ReactNode }[];
   phrases: { label: string; count: number };
-  again: { label: string; run(): void };
+  again: { label: string; subtitle?: string; run(): void };
   done: { label: string; run(): void };
   children?: ReactNode;
 }
@@ -52,7 +52,9 @@ export function ScoreCard({ title, score, ratio, rows, phrases, again, done, chi
         </dl>
         {children}
         <div className="mode-score-actions">
-          <button className="btn" onClick={again.run}>{again.label}</button>
+          <button className="btn" onClick={again.run}>{again.label}
+            {again.subtitle && <small className="mode-score-subtitle">{again.subtitle}</small>}
+          </button>
           <button className="btn soft" onClick={done.run}>{done.label}</button>
         </div>
       </section>

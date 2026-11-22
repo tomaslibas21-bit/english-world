@@ -60,6 +60,7 @@
 }
 .mode-score-card dd { flex: none; margin: 0; font-weight: 800; }
 .mode-score-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; }
+.mode-score-subtitle { display: block; margin-top: 2px; font-size: 0.75em; font-weight: 600; }
 
 @property --mode-score-count {
   syntax: "<integer>";

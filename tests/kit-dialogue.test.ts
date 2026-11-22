@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SPEECH_TIMING, type SpeechOptions, type SpeechRecognizer } from "../src/convo/speech";
 import { compose } from "../src/convo/compose";
 import { TAXI_ACCEPT, TAXI_LINES } from "../src/content/taxi-lines";
+import { GOFISH_ACCEPT, GOFISH_LINES } from "../src/content/gofish-lines";
 import { ModeDialogue } from "../src/game/kit/dialogue";
 
 const mocks = vi.hoisted(() => ({
@@ -136,5 +137,39 @@ describe("mini-game dialogue", () => {
     const pending = dialogue.expect(situation, npc, ["tx_a_bye"], TAXI_LINES);
     dialogue.cancel();
     expect(await pending).toBeNull();
+  });
+
+  it("lets a spoken name select a Go Fish opponent alone or with a held card", async () => {
+    const { dialogue, ui } = setup();
+    const select = vi.fn();
+    const turn = dialogue.expect("s85-dinner", "dan", ["gf_ask_apple"], GOFISH_LINES, GOFISH_ACCEPT,
+      { names: ["dan", "nora"], select });
+    expect(mocks.speech.mock.lastCall![0].evaluate("Dan, do you have any bananas?")).toBe("none");
+    expect(ui.choices.mock.lastCall![0]).toHaveLength(1);
+    speak("Nora");
+    await vi.advanceTimersByTimeAsync(SPEECH_TIMING.openAnswer);
+    expect(select).toHaveBeenCalledWith("nora");
+    dialogue.update(0.15, false);
+    speak("Dan, apples please");
+    await vi.advanceTimersByTimeAsync(SPEECH_TIMING.openAnswer);
+    expect(select).toHaveBeenLastCalledWith("dan");
+    expect(await turn).toMatchObject({ key: "gf_ask_apple", sentence: { en: "Do you have any apples?" } });
+  });
+
+  it("replays a cue during a learner turn and restores listening without replacing the choices", async () => {
+    const { dialogue, ui } = setup();
+    const cue = dialogue.say("s85-dinner", "nora", "gf_ask_apple", GOFISH_LINES);
+    dialogue.update(4, false);
+    const line = (await cue)!;
+    const turn = dialogue.expect("s85-dinner", "nora", ["gf_yes", "gf_nope"], GOFISH_LINES, GOFISH_ACCEPT);
+    const replay = dialogue.replayLine(line, "g_nora", 1, false);
+    expect(mocks.recognition).toBeNull();
+    dialogue.choose("gf_nope");
+    dialogue.update(4, false);
+    await replay;
+    expect(ui.choices).toHaveBeenCalledTimes(1);
+    speak("Go fish!");
+    await vi.advanceTimersByTimeAsync(SPEECH_TIMING.openAnswer);
+    expect(await turn).toMatchObject({ key: "gf_nope" });
   });
 });

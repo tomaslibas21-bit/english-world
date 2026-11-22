@@ -95,6 +95,7 @@ class BaristaMode implements GameMode {
   constructor(private host: ModeHost, private café: RoomHost) {}
 
   get active() { return this.run !== null; }
+  ownsNpc(id: string) { return this.active && id === npc; }
   available() { return sitProgress(useStore.getState().progress, situation).completions > 0; }
 
   prompt(x: number, z: number) {

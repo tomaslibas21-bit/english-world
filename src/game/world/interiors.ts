@@ -5,6 +5,7 @@ import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, c
 import { STYLED } from "../style";
 import { carParts } from "./car";
 import { THEME } from "./theme";
+import { DINING, DINING_SEATS, DINNER_PROPS } from "../gofish/framing";
 import { leafShape } from "./maple";
 import { floorMaterial, floorColor } from "./styled";
 
@@ -172,18 +173,20 @@ function shelf(c: Ctx, x: number, z: number, w: number, h: number, color: string
 }
 /** A table with chairs around it. `from`: the direction of the first chair from the table (radians from +x towards
  *  +z; the default π/2 puts it on the south side, the others follow evenly around). */
-function table(c: Ctx, x: number, z: number, opts: { round?: boolean; cloth?: string; chairs?: number; w?: number; d?: number; chairColor?: string; from?: number } = {}) {
+function table(c: Ctx, x: number, z: number, opts: { round?: boolean; cloth?: string; chairs?: number; w?: number; d?: number; chairColor?: string; from?: number; seats?: readonly { x: number; z: number; rot: number }[] } = {}) {
   const top = opts.cloth ?? "#e8dccb";
   if (opts.round) c.M.add("table-" + top, mat(top), cylGeo(0.6, 0.6, 0.06, x, 0.76, z, 16));
   else c.M.add("table-" + top, mat(top), boxGeo(opts.w ?? 1.4, 0.06, opts.d ?? 0.9, x, 0.76, z));
   c.M.add("table-leg", mat("#5a4636"), cylGeo(0.06, 0.08, 0.74, x, 0.37, z, 6));
-  const n = opts.chairs ?? 2;
+  const n = opts.seats?.length ?? opts.chairs ?? 2;
   for (let i = 0; i < n; i++) {
     const a = (i / n) * Math.PI * 2 + (opts.from ?? Math.PI / 2);
-    const cx = x + Math.cos(a) * 0.95, cz = z + Math.sin(a) * 0.95;
+    const seat = opts.seats?.[i];
+    const cx = seat?.x ?? x + Math.cos(a) * 0.95, cz = seat?.z ?? z + Math.sin(a) * 0.95;
+    const back = seat ? seat.rot + Math.PI : -a + Math.PI / 2;
     const cc = opts.chairColor ?? "#6b4a3a";
     c.M.add("chair-" + cc, mat(cc), boxGeo(0.45, 0.08, 0.45, cx, 0.46, cz));
-    c.M.add("chair-" + cc, mat(cc), boxGeo(0.45, 0.55, 0.08, 0, 0.72, 0.2).rotateY(-a + Math.PI / 2).translate(cx, 0, cz));
+    c.M.add("chair-" + cc, mat(cc), boxGeo(0.45, 0.55, 0.08, 0, 0.72, 0.2).rotateY(back).translate(cx, 0, cz));
     for (const [lx, lz] of [[-0.18, -0.18], [0.18, -0.18], [-0.18, 0.18], [0.18, 0.18]]) c.M.add("chair-leg", mat("#3b2a20"), boxGeo(0.05, 0.44, 0.05, cx + lx, 0.22, cz + lz), false);
     c.col.addCircle(cx, cz, 0.28);
   }
@@ -1432,11 +1435,16 @@ const B: Record<string, () => Interior> = {
   }, [{ npc: "rita", x: -7, z: -5.2, rot: 0 }, { npc: "patel", x: 3, z: -2.6, rot: Math.PI / 4 }], { floorKind: "wood", accent: "#8a5a44" }),
 
   "dans-house": () => room("dans-house", 16, 12, "#a67c52", "#f7ecdc", (c) => {
-    table(c, 1.5, -1.5, { cloth: "#f2efe8", chairs: 4, w: 2.6, d: 1.2 });
-    for (let i = 0; i < 4; i++) c.M.add("plate", mat("#ffffff"), cylGeo(0.2, 0.2, 0.02, 0.6 + i * 0.6, 0.8, -1.5 + (i % 2 ? 0.3 : -0.3), 12), false);
-    c.M.add("lasagna", mat("#d9763a", { flat: true }), boxGeo(0.6, 0.12, 0.4, 1.5, 0.86, -1.5), false);
-    c.M.add("vase", mat("#4a7bb7"), cylGeo(0.1, 0.12, 0.3, 2.6, 0.95, -1.5, 8), false);
-    for (let i = 0; i < 5; i++) c.M.add("flowers", mat(["#e84a5f", "#ffd166", "#f7a072"][i % 3], { flat: true }), new THREE.SphereGeometry(0.07, 6, 4).translate(2.52 + (i % 3) * 0.08, 1.2 + (i % 2) * 0.06, -1.55 + (i % 2) * 0.08), false);
+    table(c, DINING.x, DINING.z, { cloth: "#f2efe8", seats: Object.values(DINING_SEATS), w: 2.6, d: 1.2 });
+    const props = new THREE.Group();
+    props.name = DINNER_PROPS;
+    const M = new Merger();
+    for (let i = 0; i < 4; i++) M.add("plate", mat("#ffffff"), cylGeo(0.2, 0.2, 0.02, 0.6 + i * 0.6, 0.8, -1.5 + (i % 2 ? 0.3 : -0.3), 12), false);
+    M.add("lasagna", mat("#d9763a", { flat: true }), boxGeo(0.6, 0.12, 0.4, 1.5, 0.86, -1.5), false);
+    M.add("vase", mat("#4a7bb7"), cylGeo(0.1, 0.12, 0.3, 2.6, 0.95, -1.5, 8), false);
+    for (let i = 0; i < 5; i++) M.add("flowers", mat(["#e84a5f", "#ffd166", "#f7a072"][i % 3], { flat: true }), new THREE.SphereGeometry(0.07, 6, 4).translate(2.52 + (i % 3) * 0.08, 1.2 + (i % 2) * 0.06, -1.55 + (i % 2) * 0.08), false);
+    M.build(props, { name: DINNER_PROPS });
+    c.g.add(props);
     c.M.add("kitchen", mat("#f4f4f4"), boxGeo(4, 1, 0.7, 5.2, 0.5, -5.3)); c.col.addBox(5.2, -5.3, 4, 0.7);
     c.M.add("stove", mat("#2b2b2b"), boxGeo(0.9, 0.05, 0.6, 4.2, 1.03, -5.3), false);
     sofa(c, -5, 2.5, "#b5452f", 0, 2.4);

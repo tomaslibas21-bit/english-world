@@ -6,6 +6,7 @@ import { useSurf } from "../game/surf/store";
 import { SurfOverlay, SurfPicker } from "./Surf";
 import { TaxiOverlay } from "./Taxi";
 import { BaristaOffer, BaristaOverlay } from "./Barista";
+import { GoFishOffer, GoFishOverlay } from "./GoFish";
 import { ROAD_UI } from "../content/road";
 import { game } from "../game/gameRef";
 import { WORLD, SEA_Z } from "../game/world/layout";
@@ -46,7 +47,7 @@ export function useDueCards(): number {
 }
 
 const RoadOverlay = lazy(() => import("./Road").then(({ RoadOverlay }) => ({ default: RoadOverlay })));
-const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = { taxi: TaxiOverlay, barista: BaristaOverlay, road: RoadOverlay };
+const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = { taxi: TaxiOverlay, barista: BaristaOverlay, gofish: GoFishOverlay, road: RoadOverlay };
 const LizzieMeeting = lazy(() => import("./LizzieMeeting"));
 
 export function Hud() {
@@ -82,7 +83,7 @@ export function Hud() {
     return (
       <div className={"hud mode-hud" + (road ? " road-mode" : sea ? " sea-mode" : "") + (hud.showTouch ? " has-touch" : "")}>
         {!hud.panel && Overlay && <Suspense fallback={null}><Overlay touch={hud.showTouch} /></Suspense>}
-        {!road && !sea && hud.modeScreen.id !== "barista" && <Toolbar riding touch={hud.showTouch} modeExit={hud.modeScreen.exitLabel} />}
+        {!road && !sea && hud.modeScreen.id !== "barista" && hud.modeScreen.id !== "gofish" && <Toolbar riding touch={hud.showTouch} modeExit={hud.modeScreen.exitLabel} />}
         {hud.showTouch && hud.ride && <TouchControls road={road} stickOnly={sea} />}
         <Fade />
       </div>
@@ -120,7 +121,7 @@ export function Hud() {
         <RideKeys key={`${ride}-${hud.rideStartedAt}`} ride={hud.ride} startedAt={hud.rideStartedAt} hidden={!!hud.panel || guideVisible} />
       )}
       {hud.showTouch && <TouchControls />}
-      {!hud.panel && <BaristaOffer />}
+      {!hud.panel && <><BaristaOffer /><GoFishOffer /></>}
       <SurfPicker />
       <Fade />
     </div>
@@ -544,7 +545,7 @@ function TouchControls({ road = false, stickOnly = false }: { road?: boolean; st
       {stick}
       {/* the jump stays under the right thumb; with someone to talk to or a door to go through it moves over for that button
           (a second tap while in the air is a flip: every press goes to the game, which knows where the player is) */}
-      {prompt && <button className="act-btn" onClick={() => game?.interact()}>{prompt.kind === "talk" ? "Kalbėti" : prompt.kind === "exit" ? "Išeiti" : prompt.kind === "drive" ? "Vairuoti" : prompt.kind === "boat" ? "Plaukti" : prompt.kind === "out" ? "Išlipti" : prompt.kind === "climb" ? "Užlipti" : prompt.kind === "surf" ? "Banglentė" : prompt.kind === "paddle" ? "Irkluoti" : (prompt.kind === "taxi" || prompt.kind === "barista") ? prompt.label : "Įeiti"}</button>}
+      {prompt && <button className="act-btn" onClick={() => game?.interact()}>{prompt.kind === "talk" ? "Kalbėti" : prompt.kind === "exit" ? "Išeiti" : prompt.kind === "drive" ? "Vairuoti" : prompt.kind === "boat" ? "Plaukti" : prompt.kind === "out" ? "Išlipti" : prompt.kind === "climb" ? "Užlipti" : prompt.kind === "surf" ? "Banglentė" : prompt.kind === "paddle" ? "Irkluoti" : (prompt.kind === "taxi" || prompt.kind === "barista" || prompt.kind === "gofish") ? prompt.label : "Įeiti"}</button>}
       {(ride === "car" || ride === "taxi") && <HornButton touch />}
       {/* (at a wheel the same button is the brake, for as long as it is held; in the water, a dive and the way back up) */}
       {ride === "car" || ride === "boat" || ride === "taxi"

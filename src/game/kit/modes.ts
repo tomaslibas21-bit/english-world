@@ -18,7 +18,7 @@ export interface ModePrompt {
   distance: number;
   label: string;
   hint?: string;
-  kind: "surf" | "taxi" | "barista";
+  kind: "surf" | "taxi" | "barista" | "gofish";
 }
 
 export interface GameMode {
@@ -31,6 +31,7 @@ export interface GameMode {
   readonly camera?: "stage" | "talk" | "follow";
   readonly conversation?: { situation: string; label: string; option?: string };
   available?(): boolean;
+  ownsNpc?(id: string): boolean;
   allowsRideHints?(): boolean;
   start(option?: string): boolean;
   update(frame: ModeFrame): void;

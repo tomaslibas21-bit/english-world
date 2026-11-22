@@ -12,6 +12,7 @@
 import type { Ctx, EntityDef, Handler, Pending, SituationDef } from "../types";
 import { ent, t } from "../dsl";
 import { GLOBAL_HANDLERS } from "../global";
+import { GOFISH_LINES, GOFISH_MERGES } from "../gofish-lines";
 
 // ---------------------------------------------------------------------------
 // Entities
@@ -439,6 +440,7 @@ export const dinner: SituationDef = {
   },
 
   lines: {
+    ...GOFISH_LINES,
     // at the door
     door_dan: [
       t("Hey! | You | made it! | Come on in!", "Labas! | Tu | atvykai! | Užeik!", "Labas! Atvykai! Užeik!"),
@@ -813,6 +815,7 @@ export const dinner: SituationDef = {
   },
 
   merges: {
+    ...GOFISH_MERGES,
     "made it": { reason: "lexical_expression", split: "made → padarei + it → tai is false; arriving somewhere = atvykai.", minimal: "Two words." },
     "make it": { reason: "lexical_expression", split: "make → padaryti + it → tai is false; managing to come = atvykti.", minimal: "Two words." },
     "come on in": { reason: "lexical_expression", split: "come → ateik, on → ant, in → į: an invitation to enter = užeik.", minimal: "Three words, one invitation." },

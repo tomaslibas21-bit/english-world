@@ -5,7 +5,10 @@
 // note in the conversations needs its line (tests/notes-lt.test.ts). Most used first.
 // Terms: dalelytė ar, „būti“/„yra“ (the copula), tariamoji / liepiamoji nuosaka, the case names (kilmininkas…),
 // dalies kilmininkas (partitive), „(susieta su „like“)“ = the gloss sits under that other unit.
+import { GOFISH_NOTES_LT } from "./gofish-lines";
+
 export const NOTES_LT: Record<string, string> = {
+  ...GOFISH_NOTES_LT,
   "Prices are said as two numbers, dollars then cents: four seventy-five = $4.75.": "Kainą amerikiečiai sako dviem skaičiais – doleriai, paskui centai: four seventy-five = 4,75 dolerio.",
   // the ride-along taxi (src/content/taxi-lines.ts)
   "“Let's”: no separate word; the ending -kime of pabandykime carries it.": "„Let's“: atskiro žodžio nėra; tai pasako veiksmažodžio pabandykime galūnė -kime.",
