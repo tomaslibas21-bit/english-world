@@ -7,11 +7,26 @@
 // the repository a few seconds long (the one whose end the test waits for). Start the game with the radio on and run:
 //   VITE_RADIO_INDEX=/songs/index.json VITE_RADIO_FILES=/radio-files npx vite --port 5198 --strictPort
 //   WORLD_TEST_URL=http://127.0.0.1:5198 WORLD_PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node tests/browser/radio.mjs
+// Puerto Colibrí's radio the same way: VITE_EDITION=es for the game, WORLD_STORAGE=puerto-colibri for the test (its save,
+// its set's name and stations).
 // Desktop WebKit is not an iPhone: this shows the lifecycle, not how a phone's speaker sounds.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 const { chromium, webkit } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:5198";
+const storage = process.env.WORLD_STORAGE || "english-world";
+// The edition's own words (src/content/radio.ts, src/editions/es/content/radio.ts): the set's name and its stations' names
+// stay as they are in every learner language; the strip's settings and what the heart says are in the learner's
+// language, through L(): Lithuanian (Maple Harbor, and Puerto Colibrí for Lithuanian learners: their page says
+// lang="lt"), else English (src/editions/es/ui/strings.ts).
+const PC = storage === "puerto-colibri";
+const RADIO = PC ? "Radio Puerto Colibrí" : "Maple Harbor Radio";
+const FM = PC
+  ? { grammar: "Gramática FM", vocab: "Vocabulario FM", situations: "Situaciones FM", random: "Al Azar FM", favorites: "Favoritas FM" }
+  : { grammar: "Grammar FM", vocab: "Vocab FM", situations: "Situations FM", random: "Random FM", favorites: "Favorites FM" };
+const EN = { "Teksto dydis": "Text size", "Sakinio vertimas": "Sentence translation", "Paaiškinimai": "Notes", "Paveikslėliai": "Pictures", "Pridėta prie mėgstamų": "Added to your favorites" };
+let english = false;
+const L = (lt) => (english ? EN[lt] : lt);
 const manifest = JSON.parse(await readFile("public/audio/manifest.json", "utf8"));
 const [clip, seconds] = Object.entries(manifest).find(([, n]) => n > 9 && n < 12);
 const short = await readFile(`public/audio/${clip}.mp3`);
@@ -43,15 +58,16 @@ const picture = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUl
 let checks = 0;
 const check = (name, value, detail) => { assert(value, `${name}: ${JSON.stringify(detail)}`); console.log("ok", name); checks++; };
 
-function init(token) {
-  if (!localStorage.getItem("english-world-progress-v1")) {
-    localStorage.setItem("english-world-progress-v1", JSON.stringify({
+function init([token, save]) {
+  if (!localStorage.getItem(save)) {
+    localStorage.setItem(save, JSON.stringify({
       version: 1,
       profile: { name: "Test", gender: "m", lookId: "m1", look: { skin: "#f2d3bd", hair: { style: "short", color: "#5a3a25" }, top: "#2a9d8f", bottom: "#264653" } },
       settings: { v: 5, play: "town", quality: "low", scenes: false, volume: 0.8, cameraFollow: false },
       sits: {}, phrases: {}, seenIntro: {}, started: Date.now(), place: { zone: "town", x: -70, z: -30, rot: Math.PI },
-      // the first-time guide is done: while its card is up, the lyric strip is not shown (styles.css)
-      coach: { done: true },
+      // the first-time guide is done, with the hint about where the list is (a later visit opens in the town with that
+      // one): while a hint's card is up, the lyric strip is not shown (styles.css)
+      coach: { done: true, seen: { list: true } },
     }));
   }
   localStorage.setItem("fs-files-token", JSON.stringify({ token, exp: Math.floor(Date.now() / 1000) + 3600 }));
@@ -103,7 +119,7 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
     for (const phone of [false, true]) {
       const label = `${name} ${phone ? "as an iPhone" : "desktop"}`;
       const context = await browser.newContext(phone ? { userAgent: iphone, isMobile: true, hasTouch: true, viewport: { width: 390, height: 844 } } : { viewport: { width: 1280, height: 800 } });
-      await context.addInitScript(init, TOKEN);
+      await context.addInitScript(init, [TOKEN, `${storage}-progress-v1`]);
       const page = await context.newPage(), errors = [], asked = [];
       page.on("pageerror", (e) => errors.push(e.message));
       await page.route("**/songs/index.json", (route) => route.fulfill({ json: { lang: "en", songs } }));
@@ -129,6 +145,7 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       });
       await page.goto(base, { waitUntil: "domcontentloaded" });
       await until(page, () => window.__ew?.store.getState().screen === "play", 90000);
+      english = (await page.evaluate(() => document.documentElement.lang)) !== "lt";
       await page.evaluate((touch) => window.__ew.store.getState().setHud({ panel: null, ...(touch ? { showTouch: true } : {}) }), phone);
 
       // ---- the button: there, big enough, clear of the other controls
@@ -161,13 +178,13 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       const card = await page.locator(".radio-set").boundingBox();
       const rows = await page.locator(".rs-st").evaluateAll((els) => els.map((el) => ({ name: el.querySelector("b").textContent, count: el.querySelector(".rs-st-count")?.textContent ?? null, on: el.getAttribute("aria-checked") === "true", empty: el.getAttribute("aria-disabled") === "true" })));
       check(`${label}: the radio set is on screen with its name, five keys and the stations`, card && card.x >= 0 && card.y >= 0 && card.x + card.width <= layout.w && card.y + card.height <= layout.h
-        && (await page.locator(".rs-name").textContent()) === "Maple Harbor Radio" && await page.locator(".rs-key").count() === 5, card);
+        && (await page.locator(".rs-name").textContent()) === RADIO && await page.locator(".rs-key").count() === 5, card);
       check(`${label}: the stations are the course's kinds of song with their counts, then the mix and the favorites; Grammar FM plays`,
-        rows.map((r) => `${r.name} ${r.count}`).join("|") === "Grammar FM 2|Vocab FM 1|Situations FM 1|Random FM 4|Favorites FM null" && rows.map((r) => r.on).join() === "true,false,false,false,false" && rows[4].empty && !rows[0].empty, rows);
+        rows.map((r) => `${r.name} ${r.count}`).join("|") === `${FM.grammar} 2|${FM.vocab} 1|${FM.situations} 1|${FM.random} 4|${FM.favorites} null` && rows.map((r) => r.on).join() === "true,false,false,false,false" && rows[4].empty && !rows[0].empty, rows);
       const keys = await page.locator(".rs-key, .rs-st, .rs-heart").evaluateAll((els) => els.map((el) => { const r = el.getBoundingClientRect(); return Math.min(r.width, r.height); }));
       check(`${label}: every key, every station and the heart is at least 44 px`, keys.length === 11 && keys.every((k) => k >= 44), keys);
       const opts = await page.locator(".rs-opt").evaluateAll((els) => els.map((el) => { const r = el.getBoundingClientRect(), t = el.querySelector(".rs-opt-text"); return { text: t.textContent, w: r.width, h: r.height, full: t.scrollWidth <= t.clientWidth + 1, on: el.getAttribute("aria-pressed") }; }));
-      check(`${label}: under the keys, the strip's four settings by the course's words for them, each at least 44 px, all off at first`, opts.map((o) => o.text).join("|") === "Teksto dydis|Sakinio vertimas|Paaiškinimai|Paveikslėliai"
+      check(`${label}: under the keys, the strip's four settings by the course's words for them, each at least 44 px, all off at first`, opts.map((o) => o.text).join("|") === ["Teksto dydis", "Sakinio vertimas", "Paaiškinimai", "Paveikslėliai"].map(L).join("|")
         && opts.every((o) => o.w >= 44 && o.h >= 44 && o.full) && opts.slice(1).every((o) => o.on === "false"), opts);
       const dial = await page.evaluate(() => {
         const d = document.querySelector(".rs-dial").getBoundingClientRect(), n = document.querySelector(".rs-needle").getBoundingClientRect();
@@ -176,9 +193,9 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       });
       check(`${label}: the needle stands at Grammar FM's 89.5 on a dial whose numbers all fit, with a dot for each station`, Math.abs(dial.needle - (0.06 + ((89.5 - 88) / 20) * 0.88)) < 0.02 && dial.marksInside && dial.ticks === 5, dial);
       const header = await page.evaluate(() => { const n = document.querySelector(".rs-name"), top = document.querySelector(".rs-top"); return { name: [n.scrollWidth, n.clientWidth], right: n.getBoundingClientRect().right, x: document.querySelector(".rs-x").getBoundingClientRect().left, text: top.textContent.trim() }; });
-      check(`${label}: the radio's name shows in full, alone in the header`, header.name[0] <= header.name[1] + 1 && header.right <= header.x + 1 && header.text === "Maple Harbor Radio", header);
+      check(`${label}: the radio's name shows in full, alone in the header`, header.name[0] <= header.name[1] + 1 && header.right <= header.x + 1 && header.text === RADIO, header);
       const display = await page.evaluate(() => ({ station: document.querySelector(".rs-station").textContent, place: document.querySelector(".rs-place")?.textContent, time: document.querySelector(".rs-time")?.textContent, song: document.querySelector(".rs-now b")?.textContent }));
-      check(`${label}: the display names the station, the song's place in it, the time and the song`, display.station === "Grammar FM" && display.place === "01/02" && /^0:0\d$/.test(display.time) && display.song === "Radio Song 1", display);
+      check(`${label}: the display names the station, the song's place in it, the time and the song`, display.station === FM.grammar && display.place === "01/02" && /^0:0\d$/.test(display.time) && display.song === "Radio Song 1", display);
 
       // ---- the heart: the song joins the course's favorite songs (the note its Songs page reads and its account keeps)
       const heart = page.locator(".rs-heart");
@@ -191,7 +208,7 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       check(`${label}: the heart writes the song into the course's favorites, as the course writes them`, note && Object.keys(note).join() === "G01" && note.G01.liked === true && Math.abs(note.G01.at - Date.now()) < 60000 && s.liked && s.counts.favorites === 1
         && await heart.getAttribute("aria-pressed") === "true" && s.playing && s.sounding, { note, s });
       const after = await page.locator(".rs-keys").boundingBox();
-      check(`${label}: it says so, nothing under it moves, and Favorites FM has a song`, said.startsWith("Pridėta prie mėgstamų") && Math.abs(after.y - top.y) <= 1
+      check(`${label}: it says so, nothing under it moves, and Favorites FM has a song`, said.startsWith(L("Pridėta prie mėgstamų")) && Math.abs(after.y - top.y) <= 1
         && await page.locator(".rs-st-favorites .rs-st-count").textContent() === "1" && await page.locator(".rs-st-favorites").getAttribute("aria-disabled") === "false", { top, after });
       const first = note.G01.at;
       await (phone ? heart.tap() : heart.click());
@@ -217,7 +234,7 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
           set: !!document.querySelector(".radio-set"), tools: [...document.querySelectorAll(".toolbar .icon-btn")].map((el) => { const r = el.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom }; }), w: innerWidth };
       });
       check(`${label}: while it plays, the button is lit and a plate beside it names the station or the song`, folded.lit && !folded.set && folded.plate && folded.plate.l >= 0 && folded.plate.r <= folded.w
-        && folded.plate.b - folded.plate.t >= 36 && folded.tools.every((t) => apart(t, folded.plate)) && ["Grammar FM", "Radio Song 1"].includes(folded.text), folded);
+        && folded.plate.b - folded.plate.t >= 36 && folded.tools.every((t) => apart(t, folded.plate)) && [FM.grammar, "Radio Song 1"].includes(folded.text), folded);
       await (phone ? button.tap() : button.click());
       s = await state(page);
       check(`${label}: one tap turns it off: the button goes dark and the plate leaves at once`, !s.on && await page.locator(".radio-plate").count() === 0 && !(await button.evaluate((el) => el.classList.contains("on"))), s);
@@ -271,7 +288,7 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       const fits = (m) => m.box.r - m.box.l > 60 && m.box.b - m.box.t > 20 && m.box.l >= 0 && m.box.r <= m.w && m.box.t >= 0 && m.box.b <= m.h && apart(m.box, m.joy) && apart(m.box, m.jump) && apart(m.box, m.tools) && m.through === "none";
       const usual = await measure();
       await page.locator(".radio-plate").click();
-      const chip = (name) => page.locator(".rs-opt", { hasText: name });
+      const chip = (name) => page.locator(".rs-opt", { hasText: L(name) });
       const press = (name) => (phone ? chip(name).tap() : chip(name).click());
       const savedNote = () => page.evaluate(() => JSON.parse(localStorage.getItem("ew-radio-v2")));
       const sizes = [];
@@ -360,26 +377,26 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
       s = await state(page);
       check(`${label}: next goes to Grammar FM's second song`, s.station === "grammar" && s.song === "G02" && s.place?.n === 2, s);
       const row = (name) => page.locator(".rs-st", { hasText: name });
-      await (phone ? row("Vocab FM").tap() : row("Vocab FM").click());
+      await (phone ? row(FM.vocab).tap() : row(FM.vocab).click());
       await playing(page);
       await page.waitForTimeout(900);
       s = await state(page);
       const tuned = await page.evaluate(() => { const d = document.querySelector(".rs-dial")?.getBoundingClientRect(), n = document.querySelector(".rs-needle")?.getBoundingClientRect(); return { needle: d && d.width ? (n.left + n.width / 2 - d.left) / d.width : null, on: document.querySelector(".rs-st.on b").textContent, station: document.querySelector(".rs-station").textContent }; });
       check(`${label}: a tap on Vocab FM tunes to it: its first song, a free example found on the course's site without the token`, s.station === "vocab" && s.song === "V01" && s.sounding && asked.includes("/songs/audio/V01.mp3") && !asked.some((u) => u.startsWith("/songs/") && u.includes("t=")), { s, asked: asked.slice(-6) });
-      check(`${label}: the needle has moved to 93.1, and the row and the display say Vocab FM`, (tuned.needle === null || Math.abs(tuned.needle - (0.06 + ((93.1 - 88) / 20) * 0.88)) < 0.02) && tuned.on === "Vocab FM" && tuned.station === "Vocab FM", tuned);
-      await (phone ? row("Grammar FM").tap() : row("Grammar FM").click());
+      check(`${label}: the needle has moved to 93.1, and the row and the display say Vocab FM`, (tuned.needle === null || Math.abs(tuned.needle - (0.06 + ((93.1 - 88) / 20) * 0.88)) < 0.02) && tuned.on === FM.vocab && tuned.station === FM.vocab, tuned);
+      await (phone ? row(FM.grammar).tap() : row(FM.grammar).click());
       await playing(page);
       s = await state(page);
       check(`${label}: back on Grammar FM, it goes on from the song it was left at`, s.station === "grammar" && s.song === "G02", s);
       // the shuffle key is the station's own; Random FM is always shuffled, whatever the key says
-      await (phone ? row("Random FM").tap() : row("Random FM").click());
+      await (phone ? row(FM.random).tap() : row(FM.random).click());
       await playing(page);
       const shuffleKey = page.locator(".rs-key").first();
       s = await state(page);
       check(`${label}: Random FM plays all the course's songs shuffled, its shuffle key lit and fixed`, s.station === "random" && s.shuffle && s.place?.of === 4 && await shuffleKey.getAttribute("aria-pressed") === "true" && await shuffleKey.getAttribute("aria-disabled") === "true", s);
       await (phone ? shuffleKey.tap({ force: true }) : shuffleKey.click({ force: true }));
       check(`${label}: a tap on it changes nothing there`, (await state(page)).shuffle, null);
-      await (phone ? row("Grammar FM").tap() : row("Grammar FM").click());
+      await (phone ? row(FM.grammar).tap() : row(FM.grammar).click());
       await playing(page);
       s = await state(page);
       check(`${label}: and Grammar FM is in the course's order still, at its song`, s.station === "grammar" && !s.shuffle && s.song === "G02" && await shuffleKey.getAttribute("aria-pressed") === "false", s);
@@ -432,12 +449,13 @@ for (const [name, engine] of [["Chromium", chromium], ["WebKit", webkit]]) {
     // ---- the button and the open card at other sizes
     for (const [width, height] of [[320, 568], [844, 390], [1280, 720], [1024, 600]]) {
       const context = await browser.newContext({ viewport: { width, height }, hasTouch: width < 1000, isMobile: width < 1000 });
-      await context.addInitScript(init, TOKEN);
+      await context.addInitScript(init, [TOKEN, `${storage}-progress-v1`]);
       const page = await context.newPage();
       await page.route("**/songs/index.json", (route) => route.fulfill({ json: { lang: "en", songs } }));
       await page.route("**/radio-files/songs/**", (route) => route.request().url().endsWith(".mp3") || route.request().url().includes(".mp3?") ? route.fulfill(recording(route.request().url())) : route.fulfill({ json: { L: lines } }));
       await page.goto(base, { waitUntil: "domcontentloaded" });
       await until(page, () => window.__ew?.store.getState().screen === "play", 90000);
+      english = (await page.evaluate(() => document.documentElement.lang)) !== "lt";
       await page.evaluate((touch) => window.__ew.store.getState().setHud({ panel: null, ...(touch ? { showTouch: true } : {}) }), width < 1000);
       await page.evaluate(() => window.__ew.radio.setOpen(true));
       const boxes = await page.evaluate(() => {

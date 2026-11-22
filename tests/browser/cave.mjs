@@ -7,6 +7,8 @@ import assert from "node:assert/strict";
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:8176";
 const storage = process.env.WORLD_STORAGE || "puerto-colibri";
+/** A quarter of a second of silence (8 kHz, 16 bit, one channel) as a WAV file. */
+const SILENCE = (() => { const n = 2000, b = Buffer.alloc(44 + n * 2); b.write("RIFF", 0); b.writeUInt32LE(36 + n * 2, 4); b.write("WAVEfmt ", 8); b.writeUInt32LE(16, 16); b.writeUInt16LE(1, 20); b.writeUInt16LE(1, 22); b.writeUInt32LE(8000, 24); b.writeUInt32LE(16000, 28); b.writeUInt16LE(2, 32); b.writeUInt16LE(16, 34); b.write("data", 36); b.writeUInt32LE(n * 2, 40); return b; })();
 const check = (name, value, detail) => {
   assert(value, `${name}: ${JSON.stringify(detail)}`);
   console.log("ok", name, detail === undefined ? "" : JSON.stringify(detail));
@@ -26,6 +28,10 @@ try {
     const page = await ctx.newPage();
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));
+    // (every clip is a quarter of a second of silence: the same run with or without the recordings at hand. Kin's lines
+    // are in the clip list, and a dev server without the clips answers with its page, so a clip that could not be
+    // played would hold the conversation for a retry)
+    await page.route(/\.mp3(\?.*)?$/, (r) => r.fulfill({ status: 200, contentType: "audio/wav", body: SILENCE }));
     // (the saved game is put in once: a reload keeps what the test has done since)
     await page.addInitScript(([k, v]) => { try { sessionStorage.setItem("ew-play-now", "1"); if (sessionStorage.getItem("cave-seeded")) return; sessionStorage.setItem("cave-seeded", "1"); } catch {} localStorage.setItem(k, v); }, [`${storage}-progress-v1`, JSON.stringify(progress)]);
     await page.goto(base, { waitUntil: "domcontentloaded" });

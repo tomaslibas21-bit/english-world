@@ -19,8 +19,9 @@ const progress = {
   profile: { name: "Test", surname: "Tester", gender: "m", lookId: "m1", look: { skin: "#f2d3bd", hair: { style: "short", color: "#5a3a25" }, top: "#2a9d8f", bottom: "#264653" } },
   settings: { v: 6, play: "town", quality: "low", scenes: false, volume: 0, cameraFollow: true },
   sits: {}, phrases: {}, seenIntro: {}, started: 1, place: { zone: "town", x: -20, z: -64.5, rot: -Math.PI / 2 },
-  // (the first hints were seen: walking, talking; not the surf lesson's)
-  coach: { seen: { walk: true, run: true, jump: true, talk: true, car: true, boat: true, water: true, radio: true }, run: true, view: true },
+  // (the first hints were seen: walking, talking, where the list is (a later visit opens in the town with that one,
+  // and one hint is up at a time); not the surf lesson's)
+  coach: { seen: { walk: true, run: true, jump: true, talk: true, list: true, car: true, boat: true, water: true, radio: true }, run: true, view: true },
 };
 const INIT = `(() => {
   try { sessionStorage.setItem("ew-play-now", "1"); } catch {}
@@ -33,6 +34,7 @@ const INIT = `(() => {
 })();`;
 
 const browser = await chromium.launch({ channel: "chromium", headless: true, args: ["--use-angle=metal", "--enable-gpu", "--ignore-gpu-blocklist"] });
+let skipped = false;
 try {
   for (const phone of [false, true]) {
     const label = phone ? "phone" : "computer";
@@ -54,6 +56,13 @@ try {
     const real = (ms) => new Promise((r) => setTimeout(r, ms));
     const shot = async (name) => { if (shots) { await step(2); await real(300); await page.screenshot({ path: `${shots}/${label}-${name}.png` }); } };
     await page.evaluate(() => window.__ew.store.getState().setHud({ panel: null }));
+    // (a town without a surf school, Maple Harbor: nothing here to find)
+    if (!(await page.evaluate(() => !!window.__ew.game.surf))) {
+      console.log("skipped: this town has no surf school (the test is about Puerto Colibrí's La Ola)");
+      await ctx.close();
+      skipped = true;
+      break;
+    }
     const at = async (x, z, rot = Math.PI) => { await page.evaluate(([x, z, rot]) => { const g = window.__ew.game; g.keys.clear(); g.enterZone("town", { x, z, rot }, true); g.rig.yaw = rot; g.rig.snap(); }, [x, z, rot]); await step(20); };
     const hud = () => page.evaluate(() => window.__ew.store.getState().hud);
     const spot = await page.evaluate(() => ({ ...window.__ew.game.surf.spot }));
@@ -149,7 +158,7 @@ try {
     check(`${label}: no errors on the page`, errors.length === 0, errors.slice(0, 3));
     await ctx.close();
   }
-  console.log("surf-find: all checks passed");
+  console.log(skipped ? "surf-find: skipped" : "surf-find: all checks passed");
 } finally {
   await browser.close();
 }
