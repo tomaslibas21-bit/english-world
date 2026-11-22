@@ -150,7 +150,7 @@ try {
   for (const phone of [false, true]) {
     const label = phone ? "phone" : "computer";
     const context = await browser.newContext(phone
-      ? { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true }
+      ? { viewport: { width: 390, height: Number(process.env.WORLD_PHONE_HEIGHT || 844) }, deviceScaleFactor: 2, isMobile: true, hasTouch: true }
       : { viewport: { width: 1280, height: 800 } });
     const page = await context.newPage();
     const errors = [];
