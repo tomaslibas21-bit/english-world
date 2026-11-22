@@ -32,6 +32,7 @@ import { FLOOD_INCOMING_INTRO, invitationLocation, invitationTitle, OFFICE_TASK 
 import { TownPhone } from "./phone/Phone";
 import { freeToWalk, type PhoneSnapshot } from "./phone/schedule";
 import type { LizzieMeeting } from "./phone/meeting";
+import { scoreShot } from "./kit/scoreShot";
 import { createSurfMode } from "./surf/mode";
 import { createTaxiMode } from "./taxi/mode";
 import { BARISTA_PROMPT, createBaristaMode } from "./barista/mode";
@@ -453,9 +454,9 @@ export class Game implements GameApi {
       updatePose: (dt, heading) => this.updateModePose(dt, heading),
       board: (ride) => this.boardRide(ride, true),
       drive: (dt, controls) => this.updateRide(dt, controls),
-      dismount: (x, z, rot) => {
+      dismount: (x, z, rot, keepParked) => {
         const point = this.rides.riding && this.rides.carExit(this.rides.riding)?.clone();
-        this.endRide();
+        this.endRide(keepParked);
         const p = point ?? this.player.root.position;
         this.placeOnFoot(x ?? p.x, z ?? p.z, rot ?? this.heading);
       },
@@ -463,6 +464,11 @@ export class Game implements GameApi {
         this.rideCourse = this.rig.yaw = m.heading;
         this.rig.target.set(m.x, 0, m.z);
         this.rig.snap();
+      },
+      scoreShot: (beside) => {
+        const subject = this.player.root.position.clone().add(new THREE.Vector3(0, 1.35, 0));
+        return scoreShot(subject, this.heading, this.rig.cam.aspect, this.rig.space,
+          (x, z) => this.zone.colliders.blocked(x, z, 0.65), beside);
       },
     };
     this.modes.register(createSurfMode(host));

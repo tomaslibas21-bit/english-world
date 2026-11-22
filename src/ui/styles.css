@@ -593,13 +593,13 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .keepsake-icon { color: #946021; flex: none; }
 .ended-sub { color: var(--ink-soft); font-size: 0.75em; }
 .ended-destination {
-  display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
+  display: grid; grid-template-columns: auto minmax(0, 1fr); row-gap: 6px;
   background: var(--accent-soft); border-color: transparent;
 }
 .ended-destination .place-ico { background: #fff; width: 34px; height: 34px; border-radius: 10px; }
 .ended-destination > div { line-height: 1.16; overflow-wrap: normal; word-break: normal; hyphens: none; }
 .ended-destination small { display: block; margin-top: 3px; color: var(--ink-soft); line-height: 1.22; }
-.ended-destination .btn { padding-inline: 0.8em; font-size: 0.88em; }
+.ended-destination .btn { grid-column: 1 / -1; padding-inline: 0.8em; font-size: 0.88em; }
 .ended-box .sit-actions { justify-content: center; margin: 0; }
 .ended-box .ended-secondary { gap: 4px; }
 .ended-secondary .btn { padding-inline: 0.65em; white-space: nowrap; }
@@ -608,8 +608,6 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .convo[data-phase="ended"] .ended-box { gap: 5px; padding-inline: 12px; }
   .ended-title { font-size: 1.07em; }
   .ended-phrase { padding-block: 5px; }
-  .ended-destination { grid-template-columns: auto minmax(0, 1fr); row-gap: 6px; }
-  .ended-destination .btn { grid-column: 1 / -1; }
   .ended-secondary .btn { font-size: 0.8em; padding-inline: 0.55em; }
   .ended-secondary .ui-icon { width: 15px; height: 15px; }
 }
