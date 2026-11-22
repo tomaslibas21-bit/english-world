@@ -117,6 +117,9 @@ for (const [name, engine] of [["chromium", chromium], ["webkit", webkit]]) {
         await resize(page, landscape, events);
         assert.equal((await state(page)).screen.pixelRatio, fresh.screen.pixelRatio);
         await waitForFov(page, landscapeFov);
+        // (the camera comes in for the short screen at once, whatever the browser's media query says by now; back
+        // upright it stands where a fresh portrait has it: `follow` is in the state compared below)
+        assert((await state(page)).screen.follow < 1, "the sideways camera stands closer");
         await checkPlayer(page, landscape.width, landscape.height);
         await shot(page, `rotation-${name}-${events}-landscape`);
         if (events === "normal") {

@@ -90,7 +90,7 @@ export class CameraRig {
   /** After a change of mode (the end of a conversation) or a door: how long the camera still glides to its place (s). */
   private blendT = 0;
   private lastMode: CamMode = "follow";
-  private followScale = 1;
+  followScale = 1;
   private chest = new THREE.Vector3();
   private feet = new THREE.Vector3();
   private look = new THREE.Vector3();
