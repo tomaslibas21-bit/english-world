@@ -8,6 +8,8 @@
 // it pick up from its town pace to its open-road one, as a walk becomes a jog; off the asphalt it goes gently.
 // The boat: the same hands, on water: slower to pick up and to turn, it glides on when let go.
 
+import { angleDiff, smoothstep } from "../movement";
+
 export interface Rect { x0: number; x1: number; z0: number; z1: number }
 
 /** Where a car may be: the union of rectangles (streets, lots), each drawn in by `inset` m (the car's half width, so
@@ -46,6 +48,19 @@ export function controlsFrom(x: number, y: number, brake = false): Controls {
   const steer = Math.max(-1, Math.min(1, x * 1.25));
   const throttle = y < -0.35 ? Math.max(-1, y * 1.2) : Math.min(1, Math.max(y * 1.15, Math.abs(x) * 0.55, 0));
   return { throttle, steer, brake };
+}
+
+/** Steer toward a world heading, easing the throttle through a turn. */
+export function pointAndGo(heading: number, want: number, mag: number, speed: number, reverse = true): Controls {
+  const off = angleDiff(want, heading);
+  const push = Math.max(0, Math.min(1, mag));
+  if (push < 0.12) return controlsFrom(0, 0);
+  // Back away when pointed astern at low speed, and keep backing while held.
+  const back = reverse && speed < 1.5 && Math.abs(off) > 2.3;
+  const turn = back ? angleDiff(want, heading + Math.PI) : angleDiff(heading, want);
+  const steer = Math.max(-1, Math.min(1, turn * 0.8));
+  const throttle = back ? -push : push * (1 - 0.68 * smoothstep(0.2, 2, Math.abs(off)));
+  return { throttle, steer, brake: false };
 }
 
 export const CAR = {

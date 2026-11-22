@@ -145,6 +145,7 @@ export function buildTown(): Town {
         gl_FragColor = vec4(c, 1.0); }`,
   });
   const sea = new THREE.Mesh(new THREE.PlaneGeometry(900, 320, 90, 32), seaMat);
+  sea.renderOrder = 2;
   sea.rotation.x = -Math.PI / 2;
   sea.position.set(35, -0.25, SEA_Z - 158);
   group.add(sea);
