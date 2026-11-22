@@ -30,6 +30,8 @@ const LOCATIONS = {
 const DAYS: Readonly<Record<string, string>> = {
   monday: "pirmadienį", tuesday: "antradienį", wednesday: "trečiadienį",
   thursday: "ketvirtadienį", friday: "penktadienį", saturday: "šeštadienį", sunday: "sekmadienį",
+  // s83 also accepts these two (same words as its own glosses).
+  tonight: "šįvakar", tomorrow: "rytoj",
 };
 
 export interface Invitation {
