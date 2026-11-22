@@ -144,6 +144,11 @@ try {
   await press(card.getByRole("button", { name: "Skambinti", exact: true }));
   await waitFor(() => conv(invite), "answer opens the phone conversation");
   assert.equal(await page.evaluate(() => window.__ew.store.getState().conv.mode), "phone");
+  const header = page.locator(".phone-call-header");
+  await waitFor(() => header.locator("img").isVisible(), "answered call shows the ringing portrait");
+  assert.equal(await header.locator("strong").innerText(), "Lizzie");
+  assert.equal(await page.locator(".convo .transcript").isVisible(), false, "no space reserved before the first line");
+  await waitFor(async () => (await header.getByRole("timer").innerText()) !== "0:00", "call clock runs");
   await shot("answered", page.locator(".convo"));
 
   await page.evaluate((done) => window.__ew.store.getState().updateProgress((p) => { p.sits["p18-startup"] = done; }), completed);
@@ -152,6 +157,7 @@ try {
   await page.evaluate(() => window.__ew.store.getState().setConv({ phase: "ended" }));
   const endCard = page.locator('.convo[data-phase="ended"]');
   await waitFor(() => endCard.isVisible(), "end card is shown");
+  assert.equal(await header.count(), 0, "the live header clears at the end");
   await noCardFor("the end card still blocks a due card");
   // Completing through the hook closes the end card and returns to the town.
   assert(await page.evaluate((id) => window.__ew.game.finishPhoneCallForTest(id, { place: "cafe", meetTime: { h: 7, m: 30 }, day: "friday" }), invite));
@@ -243,6 +249,10 @@ try {
   await press(card.getByRole("button", { name: "Atsiliepti" }));
   await waitFor(() => conv(flood), "answering the incoming call opens it");
   assert.match(await page.locator(".scene-intro").innerText(), /Skambina Lizzie/);
+  await press(page.locator(".scene-intro").getByRole("button", { name: "Pradėti" }));
+  await waitFor(() => page.locator(".transcript .msg.npc").first().isVisible(), "first spoken line appears");
+  assert(await header.isVisible());
+  assert(await page.locator(".yourturn").isVisible());
   assert(await page.evaluate((id) => window.__ew.game.finishPhoneCallForTest(id), flood));
 
   await page.evaluate(() => window.__ew.game.call("s90-running-late"));
