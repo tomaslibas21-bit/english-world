@@ -53,7 +53,7 @@ export class Steer {
   private lastY = 0;
   private carried = false;
   /** How quickly (1/s) a stick held off to one side comes back to meaning the screen's direction. */
-  settle = 0.45;
+  constructor(public settle = 0.45, private foldBack = true) {}
 
   get held() { return this.world !== null; }
 
@@ -92,7 +92,7 @@ export class Steer {
     else if (this.carried) this.off = angleDiff(this.world - worldFromScreen(camYaw, sk), 0);
     else this.off -= swing;
     this.carried = false;
-    if (!this.fold && Math.abs(s) > 1.75 && this.world !== null && Math.abs(angleDiff(this.world, camYaw)) < Math.PI / 2) {
+    if (this.foldBack && !this.fold && Math.abs(s) > 1.75 && this.world !== null && Math.abs(angleDiff(this.world, camYaw)) < Math.PI / 2) {
       // the camera has come round behind a player walking back towards it: from now on the stick's lower half mirrors
       // its upper half (held down means "on"), the heading unchanged
       this.fold = true;

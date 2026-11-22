@@ -3,6 +3,8 @@
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
 import { Ambient } from "../src/game/ambient";
+import { Ledges } from "../src/game/ledges";
+import { Hop } from "../src/game/movement";
 import { CAR, PARKED_CARS, TAXI, TRAFFIC_LANES, ROADS } from "../src/game/world/layout";
 import type { NavGrid } from "../src/game/nav";
 
@@ -62,12 +64,7 @@ describe("traffic", () => {
     const player = new THREE.Vector3(0, 0, -200);
     const run = (s: number) => { for (let i = 0; i < s / 0.05; i++) amb.update(0.05, player); };
     run(2);
-    // on the move it is a wall, and has no pieces to stand on
     expect(car.speed).toBeGreaterThan(3);
-    expect(amb.carPieces(car.x, car.lane).length).toBe(0);
-    const inIt = new THREE.Vector3(car.x + 0.5, 0, car.lane);
-    amb.resolvePlayer(inIt, 0.38);
-    expect(Math.abs(inIt.z - car.lane)).toBeGreaterThan(1.3);
     // the player stands in its lane: it stops short of them
     player.set(car.x + 9, 0, car.lane);
     run(6);
@@ -95,9 +92,53 @@ describe("traffic", () => {
     expect(car.x).toBeCloseTo(x0, 2);
     run(6);
     expect(car.x).toBeGreaterThan(x0 + 3);
-    // and well away from it, it is a wall on the move again
+    // The pieces are only returned for nearby cars.
     player.set(0, 0, -200);
     run(1);
-    expect(amb.carPieces(car.x, car.lane).length).toBe(0);
+    expect(amb.carPieces(player.x, player.z).length).toBe(0);
+  });
+
+  it("lands on the current hood, rides along while jumping, and waits at the end of the lane", () => {
+    const amb = new Ambient(nav, [[0, 0]], "low");
+    const cars = (amb as any).cars;
+    const car = cars.find((c: { dir: number }) => c.dir === 1);
+    cars.splice(0, cars.length, car);
+    car.x = car.to - 28;
+    car.mesh.position.x = car.x;
+    const ledges = new Ledges();
+    ledges.dynamic = (x, z) => amb.carPieces(x, z);
+    const player = new THREE.Vector3(0, 0, -200);
+    const dt = 1 / 60;
+    amb.update(dt, player);
+    const hop = new Hop();
+    player.set(car.x + car.speed * 0.5 + 1.6, 0, car.lane);
+    expect(ledges.support(player.x, player.z, 1.1, true)).toBe(0);
+    // The car moves into place under a descending jumper.
+    const away = new THREE.Vector3(0, 0, -200);
+    for (let i = 0; i < 30; i++) amb.update(dt, away);
+    const hood = ledges.support(player.x, player.z, 1.1, true);
+    expect(hood).toBeGreaterThan(0.8);
+    expect(hood).toBeLessThan(1.1);
+    hop.y = 1.1; hop.air = true; hop.vy = -5;
+    while (hop.air) hop.update(dt, hood);
+    player.y = hop.ground;
+    const offset = player.x - car.x;
+    amb.update(dt, player, undefined, hop.y);
+    expect(car.rider).toBe(true);
+    hop.update(0.13, hood);
+    expect(hop.start()).toBe(true);
+    for (let i = 0; i < 420; i++) {
+      hop.update(dt, ledges.support(player.x, player.z, hop.y, hop.air));
+      player.y = hop.ground;
+      amb.update(dt, player, undefined, hop.y);
+      expect(player.x - car.x).toBeCloseTo(offset);
+    }
+    expect(car.x).toBeCloseTo(car.to - 6);
+    expect(car.speed).toBe(0);
+    expect(car.hidden).toBe(0);
+    player.set(0, 0, -200);
+    amb.update(dt, player);
+    expect(car.rider).toBe(false);
+    expect(car.speed).toBeGreaterThan(0);
   });
 });

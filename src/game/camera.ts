@@ -63,6 +63,11 @@ export class CameraRig {
   /** The player is in the air (a jump): the arm stays as it is until they are down. Jumping up through a shelter's
    *  roof must not bring the camera in on them for the moment the roof is in between (the cut-out shows them). */
   hold = false;
+  /** At a boat's helm on a phone held upright (Game sets it): the arm a little higher and longer and the look a little
+   *  ahead of the bow (`helmFrame`): a little lower and further back than at the wheel, so the boat sits above the stick
+   *  and the buttons with the horizon in sight (chosen from screenshots at 390×844 and 390×664, 22 Nov 2026). */
+  portraitHelm = false;
+  helmFrame = { pitch: -0.1, dist: 3, ahead: 1 };
   private yawVel = 0;
   private movingT = 0;
   private lastDir = 0;
@@ -207,11 +212,13 @@ export class CameraRig {
    *  head only if no arm is clear for 3 m. */
   private bestArm(yaw: number) {
     this.evalYaw = yaw;
-    let bestP = Math.min(1.3, this.pitch), bestL = this.dist, score = -1;
+    const pitch = this.pitch + (this.portraitHelm ? this.helmFrame.pitch : 0);
+    const dist = this.dist + (this.portraitHelm ? this.helmFrame.dist : 0);
+    let bestP = Math.min(1.3, pitch), bestL = dist, score = -1;
     for (const r of RAISES) {
-      const p = THREE.MathUtils.clamp(this.pitch + r, 0.12, 1.3), fl = this.armLen(p, this.dist), sc = Math.min(fl, 7) * (1 - (r > 0 ? 0.9 : 1.4) * Math.abs(r));
+      const p = THREE.MathUtils.clamp(pitch + r, 0.12, 1.3), fl = this.armLen(p, dist), sc = Math.min(fl, 7) * (1 - (r > 0 ? 0.9 : 1.4) * Math.abs(r));
       if (sc > score + 1e-6) { score = sc; bestP = p; bestL = fl; }
-      if (fl >= this.dist * 0.999) break;
+      if (fl >= dist * 0.999) break;
     }
     if (bestL < CRANE.below) {
       const fl = this.armLen(CRANE.pitch, CRANE.len);
@@ -227,7 +234,7 @@ export class CameraRig {
     this.look.set(t.x + a.x, t.y + 1.45, t.z + a.z);
     // (the same question as last frame, standing still with the camera settled: the same answer)
     const m = this.motion, moving = Math.abs(this.yawVel) > 0.15 || m.speed > 0.8;
-    const key = moving || snap ? "" : [t.x, t.z, this.yaw, this.pitch, this.dist].map((v) => v.toFixed(3)).join();
+    const key = moving || snap ? "" : [t.x, t.z, this.yaw, this.pitch, this.dist, +this.portraitHelm].map((v) => v.toFixed(3)).join();
     let best: { p: number; l: number };
     if (this.lastBest && ((key && key === this.lastKey) || (this.hold && !snap))) best = { ...this.lastBest };
     else {
@@ -298,7 +305,7 @@ export class CameraRig {
     const m = this.motion;
     if (this.mode === "follow") {
       // (on the move: the time since they set off, or since they last turned sharply: the swing waits a moment)
-      const on = m.speed > 0.8;
+      const on = m.speed > 0.8 || this.portraitHelm;
       const turning = dt > 0 && Math.abs(angleDiff(m.dir, this.lastDir)) / dt > 3.5;
       this.lastDir = m.dir;
       this.movingT = on && !turning ? this.movingT + dt : 0;
@@ -351,7 +358,7 @@ export class CameraRig {
         this.yaw = angleDiff(this.yaw + this.yawVel * dt, 0);
       }
       // a look a little ahead of where they are going (more at a run), eased
-      const k = smoothstep(0.6, 7.4, m.speed) * 2.4;
+      const k = this.portraitHelm ? this.helmFrame.ahead : smoothstep(0.6, 7.4, m.speed) * 2.4;
       this.ahead.x = ease(this.ahead.x, Math.sin(m.dir) * k, 1.6, dt);
       this.ahead.z = ease(this.ahead.z, Math.cos(m.dir) * k, 1.6, dt);
     } else {

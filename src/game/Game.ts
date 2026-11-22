@@ -12,9 +12,9 @@ import { Steer, Gait, Hop, angleDiff, smoothstep } from "./movement";
 import { Ledges, LAND } from "./ledges";
 import { coach } from "./coach";
 import { Wading, Splashes, floorY, waterY, bayHold, SEA_LEVEL, SHORE, SWIM, BAY } from "./water";
-import { Rides, type Ride } from "./rides/Rides";
+import { Rides, SHALLOWS, type Ride } from "./rides/Rides";
 import { Undersea } from "./rides/undersea";
-import { CAR_DRIFT, BOAT_DRIFT, controlsFrom } from "./rides/drive";
+import { CAR_DRIFT, BOAT_DRIFT, BOAT, BAY_EDGE, controlsFrom, pointAndGo } from "./rides/drive";
 import { RIDES } from "./world/rides";
 import { RIDE_NAMES } from "../content/rides";
 import { SURF_SPOT } from "./world/surf";
@@ -102,7 +102,7 @@ function talkAt(sp: { x: number; z: number; ax?: number; az?: number }) {
 /** Close enough to talk to someone (the "Kalbėtis" prompt shows): `talkDist` under this. */
 const TALK_RANGE = 2.9;
 /** How far `p` is from talking to `n`: from them, or from their spot to talk from plus a metre. */
-function talkDist(n: NpcActor, p: THREE.Vector3) {
+function talkDist(n: NpcActor, p: { x: number; z: number }) {
   const d = Math.hypot(n.home.x - p.x, n.home.z - p.z);
   return n.approach ? Math.min(d, Math.hypot(n.approach.x - p.x, n.approach.z - p.z) + 1) : d;
 }
@@ -169,6 +169,8 @@ export class Game implements GameApi {
   private heading = Math.PI;
   private autoPath: [number, number][] | null = null;
   private autoTarget: { kind: "npc" | "door" | "exit" | "point"; id?: string } | null = null;
+  private walkCheck = { time: 0, remaining: Infinity };
+  private lastBlockedTap = -Infinity;
   private clock = new THREE.Clock();
   private t = 0;
   private hudT = 0;
@@ -240,6 +242,8 @@ export class Game implements GameApi {
   private get wild() { return this.zone?.interior?.wild ?? null; }
   /** Walking under the player's own control (movement.ts): the direction pressed, the turn and the speed, a hop. */
   private steer = new Steer();
+  // At the helm a held stick keeps the same world direction, even on the way back.
+  private helmSteer = new Steer(0, false);
   private gait = new Gait();
   private gaitOn = false;
   private hop = new Hop();
@@ -261,6 +265,11 @@ export class Game implements GameApi {
   /** The end card's "Surf lesson" was tapped without a yes in the conversation: the level's choice, once it closes. */
   private pendingSurfPick = false;
   private brake = false;
+  /** Where a tap from the wheel or the helm sent the car or the boat (it drives there by itself until it is there, is
+   *  stuck, or the player takes the wheel): how long it has got nowhere (s), whether it is stopping, how long it is
+   *  still to back up with the wheel the other way round (a turn in three: a tap behind a parked car), how many times
+   *  it has backed up, how long it has been going (s). */
+  rideGoal: { x: number; z: number; still: number; stopping: boolean; back: number; turn: boolean; tries: number; age: number } | null = null;
   private bumpT = 0;
   private braked = false;
   private dustT = 0;
@@ -343,7 +352,7 @@ export class Game implements GameApi {
       skip: (o) => o.userData?.v !== undefined || !!o.userData?.gull || !!o.userData?.boat, thin: (o) => !!o.userData?.thin, keep: this.town.seats.filter((s) => s.table).map((s) => [s.x, s.z]), tall: (x, z) => this.field.overSolid(x, z),
       beside: OUTDOOR_NPCS.flatMap((n) => (n.ax !== undefined && n.az !== undefined ? [[n.x, n.z], [n.ax, n.az]] : [[n.x, n.z]]) as [number, number][]),
     }, (next) => setTimeout(next, 16));
-    // (a car that has stopped is climbed like a parked one: its pieces come and go with it)
+    // The traffic's climbable pieces move with the cars.
     this.ledges.dynamic = (x, z) => this.ambient.carPieces(x, z);
     // the boats lying in the shallows are in a wader's way
     const hull = new THREE.Box3();
@@ -752,11 +761,11 @@ export class Game implements GameApi {
     if (useSurf.getState().picking) { if (k === "escape") this.surf?.cancel(); return; }
     if (this.surf?.active) { if (!this.transitioning && this.surf.key(k, e.repeat, this.keys)) e.preventDefault(); return; }
     if (["arrowup", "arrowdown", "arrowleft", "arrowright", "w", "a", "s", "d", "shift"].includes(k)) {
-      this.keys.add(k); this.autoPath = null; this.autoTarget = null; e.preventDefault(); return;
+      this.keys.add(k); this.autoPath = null; this.autoTarget = null; this.rideGoal = null; e.preventDefault(); return;
     }
     // Space: talk or go in, as E, when there is someone or a door to; else a jump (in the air: the second jump). At a wheel it
     // is the brake, for as long as it is held; swimming, a dive
-    if (k === " " && this.rides.riding) { this.keys.add(" "); e.preventDefault(); return; }
+    if (k === " " && this.rides.riding) { this.keys.add(" "); this.rideGoal = null; e.preventDefault(); return; }
     if (k === " ") { if (this.nearest && !this.hop.air && !this.swimming) this.interact(); else if (!e.repeat) this.jump(); e.preventDefault(); return; }
     if (k === "e" || k === "enter") { this.interact(); e.preventDefault(); return; }
     if (k === "m") st.setHud({ panel: "map" });
@@ -769,7 +778,11 @@ export class Game implements GameApi {
   private onKeyUp = (e: KeyboardEvent) => { this.keys.delete(e.key.toLowerCase()); };
   private onBlur = () => { this.keys.clear(); };
 
-  setJoystick(x: number, y: number) { this.joy.x = x; this.joy.y = y; if (x || y) { this.autoPath = null; this.autoTarget = null; } }
+  setJoystick(x: number, y: number) {
+    this.joy.x = x; this.joy.y = y;
+    if (x || y) { this.autoPath = null; this.autoTarget = null; this.rideGoal = null; }
+    else this.helmSteer.reset();
+  }
 
   /** What the player stands on, for the sound of their steps (soundscape.ts): `raised` on a pier's or a terrace's
    *  boards or a bench (ledges.ts). */
@@ -793,7 +806,7 @@ export class Game implements GameApi {
   }
 
   /** The jump button held down or let go: at a wheel it is the brake. */
-  hold(on: boolean) { this.brake = on; }
+  hold(on: boolean) { this.brake = on; if (on) this.rideGoal = null; }
 
   /** Under the water for a few breaths (and back up at once on a second press): only where it is deep enough for the
    *  camera to follow. */
@@ -901,12 +914,15 @@ export class Game implements GameApi {
     this.vel.set(0, 0, 0); this.moveVel.set(0, 0, 0);
     this.gait.sync(this.heading, 0); this.gaitOn = false; this.steer.reset();
     this.keys.delete(" "); this.brake = false;
+    this.rideGoal = null;
+    this.helmSteer.reset();
     this.ambient.riding = false;
     this.nearest = null;
     audio.motor(null);
     audio.rush("squeal", 0); audio.rush("wind", 0);
     // (the camera comes back to where the player had it)
     this.rig.dist /= 1 + this.rideBack; this.rideBack = 0; this.rideFov = 0;
+    this.rig.portraitHelm = false;
     useStore.getState().setHud({ prompt: null, ride: null, fast: false });
   }
 
@@ -955,10 +971,26 @@ export class Game implements GameApi {
     // (in the surf lesson a tap on the picture is a paddle stroke)
     if (this.surf?.active) { if (!st.hud.panel && !this.transitioning) this.surf.stroke(); return; }
     if (useSurf.getState().picking) return;
-    if (st.conv.active || st.hud.panel || st.hud.glyph || this.rides.riding) return;
+    if (st.conv.active || st.hud.panel || st.hud.glyph || this.transitioning || this.flight) return;
     const rect = this.renderer.domElement.getBoundingClientRect();
     const ndc = new THREE.Vector2(((cx - rect.left) / rect.width) * 2 - 1, -((cy - rect.top) / rect.height) * 2 + 1);
     this.raycaster.setFromCamera(ndc, this.rig.cam);
+    const r = this.rides.riding;
+    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), r?.kind === "boat" ? -SEA_LEVEL : 0);
+    const p = new THREE.Vector3();
+    if (r) {
+      if (this.rides.phase !== "on" || this.keys.size || this.joy.x || this.joy.y || this.brake ||
+          !this.raycaster.ray.intersectPlane(plane, p)) return;
+      if (r.kind === "boat") {
+        // Leave room for the turn the bay puts into the boat as it approaches its edges.
+        const inset = BAY_EDGE.inset + BAY_EDGE.band / 2;
+        p.x = THREE.MathUtils.clamp(p.x, BAY.x0 + inset, BAY.x1 - inset);
+        p.z = THREE.MathUtils.clamp(p.z, BAY.z0 + inset, SHALLOWS - (BOAT.half - BOAT.wide));
+      }
+      this.rideGoal = { x: p.x, z: p.z, still: 0, stopping: false, back: 0, turn: false, tries: 0, age: 0 };
+      this.clickMarker(p.x, p.z);
+      return;
+    }
     // a passer-by?
     if (!this.zone.interior) {
       const wh = this.raycaster.intersectObjects(this.ambient.walkerRoots, true);
@@ -989,8 +1021,6 @@ export class Game implements GameApi {
       if (actor) { const t = actor.approach ?? actor.home; this.walkTo(t.x, t.z, { kind: "npc", id: actor.id }); return; }
     }
     // ground
-    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-    const p = new THREE.Vector3();
     if (!this.raycaster.ray.intersectPlane(plane, p)) return;
     // door near the click?
     if (!this.zone.interior) {
@@ -1023,10 +1053,16 @@ export class Game implements GameApi {
   walkTo(x: number, z: number, target: Game["autoTarget"]) {
     const p = this.player.root.position;
     const nav = this.zone.nav;
+    const outdoors = !this.zone.interior;
+    const toSea = outdoors && z < SHORE.limit;
+    if (toSea) {
+      x = THREE.MathUtils.clamp(x, BAY.x0, BAY.x1);
+      z = Math.max(z, BAY.z0 + 0.5);
+    }
     // standing on something they jumped onto (a bench's seat): first straight down off it, to the nearest open spot
     // that its back or a wall beside it doesn't stand in the way of; the walk is planned from there
     let from: [number, number] = [p.x, p.z], down: [number, number][] = [];
-    if (!this.zone.interior && this.ledges && this.hop.ground > 0.05) {
+    if (outdoors && this.ledges && p.z >= SHORE.limit && this.hop.ground > 0.05) {
       let bd = Infinity;
       for (let dz = -3; dz <= 3; dz++) for (let dx = -3; dx <= 3; dx++) {
         const i = nav.idx(p.x + dx * nav.cell, p.z + dz * nav.cell);
@@ -1035,10 +1071,32 @@ export class Game implements GameApi {
         if (d < bd && this.ledges.clear(p.x, p.z, cx, cz, this.hop.y)) { bd = d; from = [cx, cz]; down = [from]; }
       }
     }
-    const path = nav.path(from[0], from[1], x, z);
-    if (!path) { useStore.getState().toast({ kind: "info", title: L("Ten nueiti negalima") }); return; }
+    const inSea = outdoors && (p.z < SHORE.limit || (p.z < SHORE.top && p.y < -0.05 && this.wading.depth > 0.08));
+    let path: [number, number][] | null = inSea ? [[p.x, p.z], [x, z]]
+      : nav.path(from[0], from[1], x, toSea ? SHORE.limit + 0.5 : z, true);
+    if (toSea && !inSea) {
+      // The pedestrian grid usually stops above the wading limit. Start the swim from its last reachable shore cell.
+      const end = path?.at(-1) ?? from;
+      if (end[1] <= SEA_Z + 1.5 * nav.cell) {
+        path ??= [from];
+        path.push([x, z]);
+      }
+    }
+    if (!path && down.length) path = [from];
+    this.autoPath = null; this.autoTarget = null;
+    if (!path) {
+      const now = performance.now();
+      if (now - this.lastBlockedTap >= 6000) {
+        this.lastBlockedTap = now;
+        useStore.getState().toast({ kind: "info", title: L("Ten nueiti negalima") });
+      }
+      return;
+    }
+    const [endX, endZ] = path.at(-1)!;
     this.autoPath = [...down, ...path.slice(1)];
-    this.autoTarget = target;
+    const npc = target?.kind === "npc" ? this.npcs.find((n) => n.id === target.id) : undefined;
+    if ((endX === x && endZ === z) || (npc && talkDist(npc, { x: endX, z: endZ }) < TALK_RANGE - 0.35)) this.autoTarget = target;
+    this.walkCheck = { time: 0, remaining: Infinity };
     this.stepOut = 0;
   }
 
@@ -1055,7 +1113,7 @@ export class Game implements GameApi {
   interact() {
     // (lying on a surfboard: a paddle stroke)
     if (this.surf?.active) { if (!this.session?.active && !useStore.getState().hud.panel && !this.transitioning) this.surf.stroke(); return; }
-    if (this.rides.riding) { if (!this.session?.active && !useStore.getState().hud.panel) this.rides.leave(); return; }
+    if (this.rides.riding) { if (!this.session?.active && !useStore.getState().hud.panel) { this.rideGoal = null; this.rides.leave(); } return; }
     const n = this.nearest;
     if (!n) return;
     if (n.kind === "ride") { const r = this.rides.list.find((q) => q.id === n.id); if (r) this.boardRide(r); }
@@ -1837,7 +1895,7 @@ export class Game implements GameApi {
     if (!riding) this.rides.update(dt, this.t, null);
     audio.motor(riding && this.rides.phase === "on" && !this.zone.interior ? riding.kind : null, this.rides.revs);
     this.updateNpcs(dt, talking);
-    if (!this.zone.interior) this.ambient.update(dt, this.player.root.position, this.rig.cam.position);
+    if (!this.zone.interior) this.ambient.update(dt, this.player.root.position, this.rig.cam.position, this.hop.y, this.hop.air);
     this.town.update(this.t, dt, this.rig.cam.position);
     this.zone.interior?.update?.(this.t, dt);
     // (the grotto: its water, lights and sparks, and its stones calling)
@@ -1973,18 +2031,57 @@ export class Game implements GameApi {
   /** At a car's wheel or a boat's helm: the keys or the stick drive it (rides/drive.ts), the player sits in it. */
   private updateRide(dt: number, blocked: boolean) {
     const r = this.rides.riding!, m = r.m;
+    const stick = !blocked && (this.joy.x !== 0 || this.joy.y !== 0);
+    const brake = this.keys.has(" ") || this.brake;
     let x = 0, y = 0;
     if (!blocked) {
       if (this.keys.has("arrowup") || this.keys.has("w")) y += 1;
       if (this.keys.has("arrowdown") || this.keys.has("s")) y -= 1;
       if (this.keys.has("arrowleft") || this.keys.has("a")) x -= 1;
       if (this.keys.has("arrowright") || this.keys.has("d")) x += 1;
-      if (this.joy.x !== 0 || this.joy.y !== 0) { x = this.joy.x; y = this.joy.y; }
+      if (stick) { x = this.joy.x; y = this.joy.y; }
     }
-    this.rides.update(dt, this.t, blocked ? null : controlsFrom(x, y, this.keys.has(" ") || this.brake));
+    let hands = controlsFrom(x, y, brake);
+    if (r.kind === "boat") {
+      const aim = this.helmSteer.update(stick ? x : 0, stick ? y : 0, true, this.rig.yaw, this.rig.manualTurn, dt);
+      if (aim.dir !== null && !brake) hands = pointAndGo(m.heading, aim.dir, aim.mag, m.speed);
+    }
+    this.rig.manualTurn = 0;
+    if (this.keys.size || stick || brake || this.rides.phase !== "on") this.rideGoal = null;
+    const goal = blocked ? null : this.rideGoal;
+    const x0 = m.x, z0 = m.z, heading0 = m.heading;
+    if (goal) {
+      const dx = goal.x - x0, dz = goal.z - z0;
+      const d = Math.hypot(dx, dz), want = Math.atan2(dx, dz), off = angleDiff(want, m.heading);
+      const closing = d > 0 ? Math.max(0, (dx * m.vx + dz * m.vz) / d) : 0;
+      goal.age += dt;
+      goal.stopping ||= d <= 3;
+      // a car whose goal lies behind it, standing (a tap behind a parked car), first backs up with the wheel the other
+      // way, so its nose comes round, then goes forwards: a turn in three, not a pivot into the kerb
+      if (r.kind === "car" && !goal.stopping && goal.back <= 0 && goal.tries === 0 && Math.abs(off) > 2.2 && Math.abs(m.speed) < 1.5) { goal.back = 1.6; goal.turn = true; goal.tries = 1; }
+      const braking = goal.stopping || d <= 2 + closing * closing / (2 * m.spec.brake);
+      if (goal.back > 0 && !braking) {
+        // (the turn in three ends as soon as the nose is round; backing out of a tight spot goes on for its time)
+        goal.back = goal.turn && Math.abs(off) < 1.2 ? 0 : goal.back - dt;
+        hands = { throttle: -0.7, steer: off > 0 ? 1 : -1, brake: false };
+      } else hands = braking ? controlsFrom(0, 0, true)
+        : pointAndGo(m.heading, want, 0.55 + 0.45 * smoothstep(3, 20, d), m.speed, false);
+    }
+    this.rides.update(dt, this.t, blocked ? null : hands);
+    if (goal) {
+      const pace = Math.hypot(m.x - x0, m.z - z0) / Math.max(dt, 1e-4);
+      const turning = Math.abs(angleDiff(m.heading, heading0)) > 0.18 * dt;
+      goal.still = !goal.stopping && pace < 0.5 && !turning ? goal.still + dt : 0;
+      // (wedged going forwards: back up a little with the wheel the other way and try again, three times at most)
+      if (goal.still >= 0.8 && goal.back <= 0 && goal.tries < 3 && r.kind === "car") { goal.back = 1.2; goal.turn = false; goal.tries++; goal.still = 0; }
+      // (someone standing in its way, the owners who have just handed it over: it waits a moment before giving up)
+      if ((goal.stopping && m.pace < 0.05) || goal.still >= 2 || goal.age > 30) this.rideGoal = null;
+    }
     // (getting out ends the ride inside update: the player is on foot again, leftRide has set them down)
     if (this.rides.riding !== r) return;
     const on = this.rides.phase === "on", v = on ? m.speed : 0, pace = on ? m.pace : 0, car = r.kind === "car";
+    const portraitHelm = on && !car && useStore.getState().hud.showTouch && this.container.clientHeight > this.container.clientWidth * 1.15;
+    this.rig.portraitHelm = portraitHelm;
     this.heading = on ? m.heading : this.player.root.rotation.y;
     this.vel.set(on ? m.vx : 0, 0, on ? m.vz : 0);
     this.moveVel.lerp(this.vel, Math.min(1, dt * 15));
@@ -1993,7 +2090,7 @@ export class Game implements GameApi {
     {
       const want = on && pace > 2.5 && v > 0 && Math.abs(m.slip) > 1 ? Math.atan2(m.vx, m.vz) : this.heading;
       const d = Math.atan2(Math.sin(want - this.rideCourse), Math.cos(want - this.rideCourse));
-      this.rideCourse += d * Math.min(1, dt * (Math.abs(d) > 2 ? 30 : 7));
+      this.rideCourse += d * Math.min(1, dt * (portraitHelm ? 4 : Math.abs(d) > 2 ? 30 : 7));
     }
     // a sense of speed: at its open-road pace the camera drops back a little and the lens widens; more for the kick
     {
@@ -2168,15 +2265,33 @@ export class Game implements GameApi {
           if (!this.autoPath.length) this.arrived();
         } else {
           want.set(tx - p.x, 0, tz - p.z).normalize();
-          const remaining = d + this.autoPath.slice(1).reduce((a, b, i, arr) => a + (i ? Math.hypot(b[0] - arr[i - 1][0], b[1] - arr[i - 1][1]) : 0), 0);
-          speed = (remaining > 12 && !room ? RUN : WALK) * pace;
+          let remaining = d;
+          for (let i = 1; i < this.autoPath.length; i++) {
+            const [ax, az] = this.autoPath[i - 1], [bx, bz] = this.autoPath[i];
+            remaining += Math.hypot(bx - ax, bz - az);
+          }
+          if (!this.swimming) speed = (remaining > 12 && !room ? RUN : WALK) * pace;
           // arrive next to an NPC rather than on top of them (a spot of their own to talk from, across a counter or a
           // table, is walked onto); and, held up on the way (walking but getting nowhere: someone in the way), as soon
           // as they are close enough to talk to
-          if (this.autoTarget?.kind === "npc") {
-            const a = this.npcs.find((n) => n.id === this.autoTarget!.id);
-            const heldUp = this.vel.lengthSq() > 4 && this.lastSpeed < 0.5;
-            if ((this.autoPath.length === 1 && d < 1.6 && !a?.approach) || (a && heldUp && talkDist(a, p) < TALK_RANGE)) { this.autoPath = []; this.arrived(); want.set(0, 0, 0); }
+          const npc = this.autoTarget?.kind === "npc" ? this.npcs.find((n) => n.id === this.autoTarget?.id) : undefined;
+          const nearNpc = npc && talkDist(npc, p) < TALK_RANGE;
+          const heldUp = this.vel.lengthSq() > 4 && this.lastSpeed < 0.5;
+          if (nearNpc && (heldUp || (this.autoPath.length === 1 && d < 1.6 && !npc.approach))) {
+            this.arrived();
+            want.set(0, 0, 0);
+          } else {
+            const check = this.walkCheck;
+            if (check.time === 0) check.remaining = remaining;
+            check.time += dt;
+            if (check.time >= 0.8) {
+              if (check.remaining - remaining < 0.2) {
+                if (!nearNpc) this.autoTarget = null;
+                this.arrived();
+                want.set(0, 0, 0);
+              }
+              check.time = 0;
+            }
           }
         }
       }
