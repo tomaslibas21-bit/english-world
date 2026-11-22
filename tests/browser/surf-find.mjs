@@ -2,8 +2,8 @@
 // notification when I'm at the board"): every board at the school gives the lesson's prompt (the kayak he stood on
 // too), a ring marks the start on the sand, the first time one comes near the school one hint says the lesson is
 // there, and the end card of the school's conversation leads with "Surf lesson" (its yes starts the lesson at its
-// level, else the level's choice). A computer and a phone, Playwright's own Chromium, time stepped by hand. Against a
-// dev server or a built game of a town with a surf school (Puerto Colibrí):
+// level, else the level's choice). Uses Playwright's Chromium on a computer and two phone sizes, with time stepped
+// by hand. Against a dev server or a built game of a town with a surf school (Puerto Colibrí):
 // WORLD_TEST_URL=http://127.0.0.1:8096 WORLD_STORAGE=puerto-colibri WORLD_PLAYWRIGHT_MODULE=/path/to/playwright-core/index.mjs node tests/browser/surf-find.mjs
 import assert from "node:assert/strict";
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
@@ -36,9 +36,11 @@ const INIT = `(() => {
 const browser = await chromium.launch({ channel: "chromium", headless: true, args: ["--use-angle=metal", "--enable-gpu", "--ignore-gpu-blocklist"] });
 let skipped = false;
 try {
-  for (const phone of [false, true]) {
-    const label = phone ? "phone" : "computer";
-    const ctx = await browser.newContext(phone ? { viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true } : { viewport: { width: 1280, height: 800 } });
+  for (const [label, width, height] of [["computer", 1280, 800], ["phone", 375, 812], ["short-phone", 390, 664]]) {
+    const phone = label !== "computer";
+    const ctx = await browser.newContext({
+      viewport: { width, height }, ...(phone ? { deviceScaleFactor: 2, isMobile: true, hasTouch: true } : {}),
+    });
     const page = await ctx.newPage();
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));

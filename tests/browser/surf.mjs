@@ -1,4 +1,4 @@
-// The surf lesson in the real game (src/game/surf/), a computer and a phone: the prompt at the school's boards, the
+// The surf lesson in the real game (src/game/surf/), on a computer and two phone sizes: the prompt at the boards, the
 // level's choice, a whole lesson played as the conversation it is: she says a line and waits; the learner answers
 // aloud (a stand-in for the browser's speech recognition hears the test's words), by a key or by a tap, or makes the
 // move she asked for, which is named with its key in large letters right under her line (on a phone it is the button
@@ -56,8 +56,11 @@ const INIT = `(() => {
 
 const browser = await chromium.launch({ channel: process.env.WORLD_BROWSER_CHANNEL || "chromium", headless: true, args: ["--use-angle=metal", "--enable-gpu", "--ignore-gpu-blocklist"] });
 try {
-  for (const phone of [false, true]) {
-    const ctx = await browser.newContext(phone ? { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true } : { viewport: { width: 1280, height: 800 } });
+  for (const [label, width, height] of [["computer", 1280, 800], ["phone", 390, 844], ["short-phone", 390, 664]]) {
+    const phone = label !== "computer";
+    const ctx = await browser.newContext({
+      viewport: { width, height }, ...(phone ? { deviceScaleFactor: 2, isMobile: true, hasTouch: true } : {}),
+    });
     const page = await ctx.newPage();
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));
@@ -73,7 +76,6 @@ try {
       assert(Date.now() - t0 < 180000, "the game did not start: " + st);
       await new Promise((r) => setTimeout(r, 300));
     }
-    const label = phone ? "phone" : "computer";
     const step = (n) => page.evaluate((k) => window.__step(k), n);
     const real = (ms) => new Promise((r) => setTimeout(r, ms));
     const fade = async () => { await real(600); await step(20); };
@@ -236,7 +238,27 @@ try {
             : s.options[0];
           if (s.choice === "board") wrongBoard = false;
           const i = s.options.indexOf(pick), es = u.choice[i].es;
-          if (!shown.has("turn:" + s.choice)) { shown.add("turn:" + s.choice); await real(350); await shot("turn-" + s.choice); }
+          if (!shown.has("turn:" + s.choice)) {
+            shown.add("turn:" + s.choice);
+            await real(350);
+            if (label === "short-phone") {
+              const layout = await page.locator(".surf-choices").evaluate((el) => {
+                const { left, right, top, bottom } = el.getBoundingClientRect();
+                const cueBottom = document.querySelector(".surf-card").getBoundingClientRect().bottom;
+                const controls = document.querySelectorAll(".joy, .jump-btn, .act-btn");
+                const controlsTop = Math.min(...Array.from(controls, (control) => control.getBoundingClientRect().top));
+                return {
+                  inView: left >= 0 && right <= innerWidth && top >= 0 && bottom <= innerHeight,
+                  cueGap: top - cueBottom,
+                  controlsGap: controlsTop - bottom,
+                  overflow: el.scrollHeight - el.clientHeight,
+                };
+              });
+              check(`${label}: the ${s.choice} turn fits between the cue and touch controls`,
+                layout.inView && layout.cueGap >= 0 && layout.controlsGap > 0 && layout.overflow <= 1, layout);
+            }
+            await shot("turn-" + s.choice);
+          }
           const aloud = how === "good" ? spoken < 5 || s.choice === "wave" || s.choice === "now" : s.choice === "why" || s.choice === "ok";
           if (aloud) {
             // (the microphone opened by itself as she finished)
@@ -335,6 +357,13 @@ try {
     else check(`${label}: with keys it says which: “${mv.up.text}”`, /spausk|press/.test(mv.up.text) && mv.up.keys.includes("↑") && mv.paddle.keys.includes("E"), mv.up);
     await step(20);
     check(`${label}: the score card is on show`, await page.locator(".surf-result").count() === 1);
+    if (label === "short-phone") {
+      const layout = await page.locator(".surf-pick-card").evaluate((el) => {
+        const { left, right, top, bottom } = el.getBoundingClientRect();
+        return { inView: left >= 0 && right <= innerWidth && top >= 0 && bottom <= innerHeight, overflow: el.scrollHeight - el.clientHeight };
+      });
+      check(`${label}: the score card and its actions fit on screen`, layout.inView && layout.overflow <= 1, layout);
+    }
     await shot("result");
     if (hasPics) {
       const of = await page.evaluate(() => window.__ew.game.surf.content.pictures.of);
