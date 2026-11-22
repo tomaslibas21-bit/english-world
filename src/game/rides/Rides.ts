@@ -17,11 +17,12 @@ import { countPlay } from "../../state/playStats";
 import { RIDE_OWNERS, RIDE_SHOUTS, type RideOwner, type RideLine } from "../../content/rides";
 import { rideVoice, shoutVoice } from "../../content/voices";
 import { BAY, DECKS, SEA_LEVEL, SHORE, bayHold, floorY, waterY } from "../water";
-import { Drivable, Motion, CAR, BOAT, BAY_EDGE, CAR_REACH, aheadIn, aheadOnArc, bayTurn, pushOutOfBox, shoreSpeed, type Controls } from "./drive";
+import { Drivable, Motion, CAR, BOAT, BAY_EDGE, CAR_REACH, aheadIn, aheadOnArc, bayTurn, pushOutOfBox, shoreSpeed, type BodyCircle, type Controls, type MotionImpact } from "./drive";
 import { townAsphalt, townGround } from "./ground";
 import { convertibleGeometry, motorboatGeometry, buoysGeometry, CAR_SEATS, BOAT_SEATS } from "./shapes";
 import type { TownBoat } from "../world/boatRide";
 import { Skids } from "./skids";
+import { Crashes, type CrashSound, type CrashTarget } from "./crash";
 
 export interface RideHost {
   cam: THREE.PerspectiveCamera;
@@ -38,6 +39,8 @@ export interface RideHost {
   say(line: RideLine, voice: string | null, female: boolean, ch: GameCharacter): void;
   /** A wheel over a kerb or a speed bump (`k` 0–1: how hard). */
   thud(k: number): void;
+  crashSound?(sound: CrashSound, k: number): void;
+  allowsCrashes?(): boolean;
   /** Whether the current mode permits driving hints at the car's current position. */
   allowsHints?(): boolean;
   /** The car has pushed at something for a while and gets nowhere: a word about backing up. */
@@ -83,6 +86,7 @@ export interface Ride {
   model?: CarModelName;
   parked?: () => void;
   townBoat?: TownBoat;
+  crashParking?: { visual(): THREE.Mesh; solo(): boolean; take(): void; untake(): void };
   home: { x: number; z: number; rot: number };
   beach?: { y: number; roll: number; circles: Colliders["circles"]; launch: Ride["home"] };
   mesh: THREE.Object3D;
@@ -159,6 +163,15 @@ export class Rides {
   readonly list: Ride[] = [];
   private readonly modeCars = new Map<Ride, CarBox & { surfaces: Piece[] }>();
   private readonly parkingKeys: THREE.InstancedMesh;
+  private readonly crashEffects: Crashes;
+  readonly crashes: Crashes["inspect"];
+  private readonly impact: MotionImpact = { into: 0, nx: 0, nz: 0, x: 0, z: 0, circle: 0 };
+  private readonly contacts = Array.from({ length: 3 }, () => ({
+    target: null as CrashTarget | null, push: 0, dx: 0, dz: 0, x: 0, z: 0,
+  }));
+  private readonly trafficPush = { x: 0, z: 0, dx: 0, dz: 0 };
+  private settlingCar!: Ride;
+  private reportCrash = false;
   private readonly vehicleMaterial = STYLED ? vertexColorMaterial("prop") : new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
   /** Where a car may be (anywhere in the town that is open and dry) and where the asphalt is (the streets, the lots). */
   readonly drivable: Drivable;
@@ -209,6 +222,8 @@ export class Rides {
 
   constructor(readonly host: RideHost, plan: RidesPlan, boats: THREE.Object3D[]) {
     this.group.name = "rides";
+    this.crashEffects = new Crashes(host, this.group, () => this.riding);
+    this.crashes = this.crashEffects.inspect;
     this.drivable = townGround();
     this.asphalt = townAsphalt(plan.lots);
     this.bumps = plan.bumps;
@@ -284,6 +299,7 @@ export class Rides {
   removeModeCar(car: Ride) {
     const box = this.modeCars.get(car);
     if (!box) return;
+    this.crashEffects.heal(car);
     this.modeCars.delete(car);
     const traffic = this.host.ambient.rideBoxes;
     const index = traffic.indexOf(box);
@@ -809,6 +825,54 @@ export class Rides {
     this.parkingKeys.dispose();
   }
 
+  updateCrashes(dt: number) {
+    this.crashEffects.update(dt, this.phase === "on" && !this.glide && !this.rescuing ? this.riding : null);
+  }
+
+  releaseCrashVisual(mesh: THREE.Mesh) { this.crashEffects.releaseVisual(mesh); }
+  healCrashes() { this.crashEffects.healAll(); }
+  crashQuality(quality: "high" | "low") { this.crashEffects.setQuality(quality); }
+  disposeCrashes() { this.crashEffects.dispose(); }
+
+  private recordContact(circle: BodyCircle, target: CrashTarget | null, x: number, z: number, dx: number, dz: number) {
+    const push = dx * dx + dz * dz, contact = this.contacts[circle];
+    if (push <= contact.push) return;
+    contact.push = push; contact.target = target;
+    contact.x = x; contact.z = z; contact.dx = dx; contact.dz = dz;
+  }
+
+  private readonly settleCar = (p: { x: number; z: number }, rad: number, circle: BodyCircle) => {
+    const host = this.host;
+    let x = p.x, z = p.z;
+    this.drivable.nearest(x, z, p);
+    this.contacts[circle].push = 0;
+    this.contacts[circle].target = null;
+    if (this.reportCrash) this.recordContact(circle, null, p.x, p.z, p.x - x, p.z - z);
+    x = p.x; z = p.z;
+    host.colliders.resolve(_v.set(x, 0, z), rad);
+    p.x = _v.x; p.z = _v.z;
+    if (this.reportCrash) this.recordContact(circle, "town", p.x, p.z, p.x - x, p.z - z);
+    for (const o of this.solidVehicles()) if (o !== this.settlingCar && o.kind === "car") {
+      x = p.x; z = p.z;
+      if (pushOutOfBox(p, rad, o.m.x, o.m.z, o.m.heading, o.m.spec.half, o.m.spec.wide) && this.reportCrash) {
+        this.recordContact(circle, o, p.x, p.z, p.x - x, p.z - z);
+      }
+    }
+    const traffic = host.ambient.pushOutOfCars(p, rad, this.reportCrash ? this.trafficPush : undefined);
+    if (traffic && this.reportCrash) {
+      const { x, z, dx, dz } = this.trafficPush;
+      this.recordContact(circle, traffic, x, z, dx, dz);
+    }
+    for (const o of this.list) for (const w of o.owners) if (w.state !== "in") {
+      const q = w.ch.root.position, dx = p.x - q.x, dz = p.z - q.z, d = Math.hypot(dx, dz), min = rad + 0.35;
+      if (d < min && d > 1e-4) {
+        x = p.x; z = p.z;
+        p.x = q.x + (dx / d) * min; p.z = q.z + (dz / d) * min;
+        if (this.reportCrash) this.recordContact(circle, null, p.x, p.z, p.x - x, p.z - z);
+      }
+    }
+  };
+
   private driveCar(r: Ride, dt: number, c: Controls) {
     const m = r.m, host = this.host;
     // (being set free: it glides to the clear place found for it, the hands off)
@@ -852,24 +916,37 @@ export class Rides {
     const queued = lead.gap !== Infinity && ((behind < 2.5 && lead.speed > 0.3) || (behind < 1.5 && !moving && !round));
     const was = m.speed, x0 = m.x, z0 = m.z, h0 = m.heading, near0 = this.peopleGap(m.spec, m.x, m.z, m.heading);
     m.step(dt, c, gap, this.asphalt.has(m.x, m.z), care);
-    m.settle((p, rad) => {
-      // on the town's dry ground; out of its walls, trees, benches and parked cars; out of the other convertibles, the
-      // traffic and anyone standing
-      this.drivable.nearest(p.x, p.z, p);
-      host.colliders.resolve(_v.set(p.x, 0, p.z), rad);
-      p.x = _v.x; p.z = _v.z;
-      for (const o of this.solidVehicles()) if (o !== r && o.kind === "car") pushOutOfBox(p, rad, o.m.x, o.m.z, o.m.heading, o.m.spec.half, o.m.spec.wide);
-      host.ambient.pushOutOfCars(p, rad);
-      for (const o of this.list) for (const w of o.owners) if (w.state !== "in") {
-        const q = w.ch.root.position, dx = p.x - q.x, dz = p.z - q.z, d = Math.hypot(dx, dz), min = rad + 0.35;
-        if (d < min && d > 1e-4) { p.x = q.x + (dx / d) * min; p.z = q.z + (dz / d) * min; }
-      }
-    });
+    this.settlingCar = r;
+    this.reportCrash = !this.rescuing && (host.allowsCrashes?.() ?? true) && host.outdoors();
+    const vx = this.reportCrash ? m.vx : 0, vz = this.reportCrash ? m.vz : 0;
+    m.settle(this.settleCar, this.reportCrash ? this.impact : undefined);
+    let movedSafely = true;
     // nobody is ever touched, however it moves (coming round on the spot, sliding broadside, backing up): a move that
     // would bring its body within a hand's breadth of someone, and nearer than it was, is not made
     if (near0 < 3) {
       const near = this.peopleGap(m.spec, m.x, m.z, m.heading);
-      if (near < 0.4 && near < near0 - 1e-4) { m.x = x0; m.z = z0; m.heading = h0; m.speed = 0; m.slip = 0; m.drift = false; }
+      if (near < 0.4 && near < near0 - 1e-4) {
+        m.x = x0; m.z = z0; m.heading = h0; m.speed = 0; m.slip = 0; m.drift = false;
+        movedSafely = false;
+      }
+    }
+    const hit = this.impact;
+    if (movedSafely && this.reportCrash && (hit.nx || hit.nz)) {
+      const { target, x, z, dx, dz, push } = this.contacts[hit.circle];
+      if (target) {
+        // A second collider may have moved the same circle. Use the chosen collider's contact and relative speed.
+        const length = Math.sqrt(push);
+        const nx = dx / length, nz = dz / length;
+        const traffic = target !== "town" && "dir" in target;
+        const trafficVelocity = traffic ? target.speed * target.dir : 0;
+        if (traffic || Math.abs(hit.nx - nx) + Math.abs(hit.nz - nz) > 1e-4) {
+          hit.into = (trafficVelocity - vx) * nx - vz * nz;
+        }
+        hit.scrape = THREE.MathUtils.clamp(((vx - trafficVelocity) * nz - vz * nx) / 4, -1, 1);
+        hit.nx = nx; hit.nz = nz;
+        hit.x = x - nx * m.spec.wide; hit.z = z - nz * m.spec.wide;
+        this.crashEffects.impact(r, target, hit);
+      }
     }
     this.ride(r, dt);
     // going by close and fast: those on foot jump aside, and now and then one of them calls after it

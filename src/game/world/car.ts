@@ -3,6 +3,9 @@
 // one draw call. Used while the car models load, and for the miniature display in the rental shop.
 import * as THREE from "three";
 import { colourMerge } from "./util";
+import { mergedVertexCount } from "../rides/crashGeometry";
+
+const WHEEL_PARTS = 8; // four tires and four hubcaps
 
 /** A side profile (z forward, y up) extruded across the car's width, centred on x = 0. */
 function profile(points: [number, number][], width: number) {
@@ -38,20 +41,27 @@ export function carParts(color: string, opts: { taxi?: boolean } = {}): [THREE.B
     box(0.38, 0.14, 0.05, x, 0.72, 2.13, "#fff4c2"); // headlights
     box(0.34, 0.12, 0.05, x, 0.78, -2.15, "#d8343a"); // tail lights
   }
-  for (const [x, z] of [[-0.86, 1.35], [0.86, 1.35], [-0.86, -1.35], [0.86, -1.35]]) {
-    parts.push([new THREE.CylinderGeometry(0.37, 0.37, 0.28, 14).rotateZ(Math.PI / 2).translate(x, 0.37, z), "#222326"]);
-    parts.push([new THREE.CylinderGeometry(0.2, 0.2, 0.3, 10).rotateZ(Math.PI / 2).translate(x, 0.37, z), "#c9ccd1"]);
-  }
   if (opts.taxi) {
     box(0.72, 0.24, 0.32, 0, 1.68, -0.2, "#ffffff"); // the roof light
     for (let i = 0; i < 8; i++) box(1.9, 0.08, 0.24, 0, 0.68, -1.75 + i * 0.5, i % 2 ? "#222222" : color); // the checks
+  }
+  for (const [x, z] of [[-0.86, 1.35], [0.86, 1.35], [-0.86, -1.35], [0.86, -1.35]]) {
+    parts.push([new THREE.CylinderGeometry(0.37, 0.37, 0.28, 14).rotateZ(Math.PI / 2).translate(x, 0.37, z), "#222326"]);
+    parts.push([new THREE.CylinderGeometry(0.2, 0.2, 0.3, 10).rotateZ(Math.PI / 2).translate(x, 0.37, z), "#c9ccd1"]);
   }
   return parts;
 }
 
 /** The car as one vertex-coloured geometry. */
 export function carGeometry(color: string, opts: { taxi?: boolean } = {}) {
-  return colourMerge(carParts(color, opts));
+  return mergeCarParts(carParts(color, opts));
+}
+
+export function mergeCarParts(parts: ReturnType<typeof carParts>) {
+  const start = mergedVertexCount(parts.slice(0, -WHEEL_PARTS));
+  const geometry = colourMerge(parts);
+  geometry.userData.crashWheels = [start, geometry.getAttribute("position").count];
+  return geometry;
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -71,6 +81,7 @@ function wheels(parts: Parts, pts: [number, number][], r: number, w: number) {
  *  Cancún's), a roof light and a door number. */
 export function mxTaxiParts(body: string, trim: string): Parts {
   const parts = carParts(body);
+  const wheelParts = parts.splice(-WHEEL_PARTS);
   for (const s of [-1, 1]) {
     parts.push([new THREE.BoxGeometry(0.03, 0.3, 2.6).translate(s * 0.945, 0.56, 0.05), trim]); // the doors' band
     parts.push([new THREE.BoxGeometry(0.03, 0.15, 0.24).translate(s * 0.95, 0.78, 0.55), "#ffffff"]); // the number plate on the door
@@ -78,6 +89,7 @@ export function mxTaxiParts(body: string, trim: string): Parts {
   parts.push([new THREE.BoxGeometry(1.5, 0.03, 1.0).translate(0, 0.89, 1.5), trim]); // the hood
   parts.push([new THREE.BoxGeometry(0.78, 0.22, 0.3).translate(0, 1.67, -0.2), "#ffffff"]); // the roof light
   parts.push([new THREE.BoxGeometry(0.8, 0.07, 0.32).translate(0, 1.6, -0.2), trim]);
+  parts.push(...wheelParts);
   return parts;
 }
 

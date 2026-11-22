@@ -8,7 +8,7 @@ import { markTownBoat } from "./boatRide";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, GAS_FORECOURT, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, type BuildingDef } from "./layout";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
-import { carParts, mxTaxiParts } from "./car";
+import { carParts, mergeCarParts, mxTaxiParts } from "./car";
 import { carFootprint, carModelEntry, type CarPlacement } from "./carModels";
 import { ParkedFleet } from "./parkedFleet";
 import { THEME, type TianguisGoods } from "./theme";
@@ -1739,19 +1739,20 @@ function makeParkedCars(staticColliders?: Colliders): ParkedCars {
     const taxi = model === "taxi";
     const fallbackParts = taxi && trim ? mxTaxiParts(color, trim) : carParts(color, { taxi });
     for (const [geometry] of fallbackParts) geometry.scale(width / 2.12, height / (taxi ? 1.8 : 1.56), length / 4.42);
-    if (spot === TAXI && TAXI_ROUTES.length) {
+    const atStand = spot === TAXI && TAXI_ROUTES.length > 0;
+    const fallback = staticColoured(mergeCarParts(fallbackParts), atStand ? "stand-taxi-fallback" : "parked-car-fallback");
+    if (atStand) {
       // The mode boards the stand car itself and owns its collision and climbing surfaces.
       const root = new THREE.Group();
       root.position.set(x, 0, z);
       root.rotation.y = rot;
-      const fallback = staticColoured(fallbackParts, "stand-taxi-fallback");
       root.add(fallback);
       group.add(root);
       standTaxi = { root, fallback };
       continue;
     }
     staticColliders?.boxes.push({ ...carFootprint(spot), tag: "car", split: true });
-    fleet.add(spot, staticColoured(fallbackParts, "parked-car-fallback"));
+    fleet.add(spot, fallback);
   }
   fleet.refresh();
   return { group, fleet, placements: PARKED_CARS, taxi: standTaxi };
@@ -2388,10 +2389,10 @@ function reflective(m: THREE.Material) {
 }
 let boatMat: THREE.MeshLambertMaterial | null = null;
 
-/** Still shapes in their own colours as one mesh that casts shadows (the parked cars, the taxi). */
-function staticColoured(parts: [THREE.BufferGeometry, THREE.ColorRepresentation][], name: string) {
+/** Still shapes in their own colours as one mesh that casts shadows. */
+function staticColoured(parts: [THREE.BufferGeometry, THREE.ColorRepresentation][] | THREE.BufferGeometry, name: string) {
   boatMat ??= new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
-  const mesh = new THREE.Mesh(colourMerge(parts), boatMat);
+  const mesh = new THREE.Mesh(Array.isArray(parts) ? colourMerge(parts) : parts, boatMat);
   mesh.name = name;
   mesh.castShadow = mesh.receiveShadow = true;
   mesh.matrixAutoUpdate = false;

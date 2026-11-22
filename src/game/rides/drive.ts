@@ -37,6 +37,15 @@ export class Drivable {
 /** The hands on the wheel: `throttle` −1…1 (down: brake, then reverse), `steer` −1…1 (left negative), `brake`. */
 export interface Controls { throttle: number; steer: number; brake: boolean }
 
+export type BodyCircle = 0 | 1 | 2; // front, middle, back
+export interface MotionImpact {
+  into: number;
+  scrape?: number;
+  nx: number; nz: number;
+  x: number; z: number;
+  circle: BodyCircle;
+}
+
 /** The stick or the keys as a throttle and a steer: up the screen is go, down is brake and reverse, the sides steer;
  *  pushed mostly sideways, the car still rolls on (so a phone's stick held to the left turns left instead of
  *  stopping). `x` right, `y` up the screen (−1…1). */
@@ -115,6 +124,9 @@ export class Motion {
    *  the body's lean and squat. */
   yaw = 0;
   surge = 0;
+  private readonly front = { x: 0, z: 0 };
+  private readonly middle = { x: 0, z: 0 };
+  private readonly back = { x: 0, z: 0 };
   constructor(readonly spec: typeof CAR | typeof BOAT, readonly kind: "car" | "boat") {}
 
   set(x: number, z: number, heading: number) {
@@ -239,12 +251,34 @@ export class Motion {
   /** The body as circles along its length (front, middle, back), each pushed by `fix` out of what it may not be in
    *  (`fix` moves the point it is given); the body follows its front and back circles, turning with them, and loses
    *  the speed that went into the obstacle and no more: it slides along a kerb, a wall or a parked car. */
-  settle(fix: (p: { x: number; z: number }, r: number) => void) {
+  settle(fix: (p: { x: number; z: number }, r: number, circle: BodyCircle) => void, impact?: MotionImpact) {
     const S = this.spec, off = S.half - S.wide, fx = this.fx, fz = this.fz;
-    const a = { x: this.x + fx * off, z: this.z + fz * off }, b = { x: this.x - fx * off, z: this.z - fz * off }, m = { x: this.x, z: this.z };
+    const a = this.front, m = this.middle, b = this.back;
+    a.x = this.x + fx * off; a.z = this.z + fz * off;
+    b.x = this.x - fx * off; b.z = this.z - fz * off;
+    m.x = this.x; m.z = this.z;
     const a0x = a.x, a0z = a.z, b0x = b.x, b0z = b.z, m0x = m.x, m0z = m.z;
-    fix(a, S.wide); fix(b, S.wide); fix(m, S.wide);
+    fix(a, S.wide, 0); fix(b, S.wide, 2); fix(m, S.wide, 1);
     const mx = m.x - m0x, mz = m.z - m0z;
+    if (impact) impact.into = impact.nx = impact.nz = 0;
+    if (impact && (mx || mz || a.x !== a0x || a.z !== a0z || b.x !== b0x || b.z !== b0z)) {
+      // Report the strongest contact before the middle circle's correction is shared with both ends.
+      const vx = this.vx, vz = this.vz;
+      let best = 0;
+      for (let i = 0; i < 3; i++) {
+        const p = i === 0 ? a : i === 1 ? m : b;
+        const dx = p.x - (i === 0 ? a0x : i === 1 ? m0x : b0x);
+        const dz = p.z - (i === 0 ? a0z : i === 1 ? m0z : b0z);
+        const push = Math.hypot(dx, dz);
+        if (push < 1e-5) continue;
+        const nx = dx / push, nz = dz / push, into = Math.max(0, -(vx * nx + vz * nz));
+        const score = push * (1 + into);
+        if (score <= best) continue;
+        best = score;
+        impact.into = into; impact.nx = nx; impact.nz = nz; impact.circle = i as BodyCircle;
+        impact.x = p.x - nx * S.wide; impact.z = p.z - nz * S.wide;
+      }
+    }
     a.x += mx * 0.5; a.z += mz * 0.5; b.x += mx * 0.5; b.z += mz * 0.5;
     const moved = Math.hypot(a.x - a0x, a.z - a0z) + Math.hypot(b.x - b0x, b.z - b0z);
     if (moved < 1e-5) return 0;
