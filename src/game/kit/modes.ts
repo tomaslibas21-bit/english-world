@@ -28,7 +28,7 @@ export interface GameMode {
   readonly indoorPrompt?: boolean;
   readonly cleanScreen: CleanScreen;
   readonly exitLabel?: string;
-  readonly camera?: "stage" | "follow";
+  readonly camera?: "stage" | "talk" | "follow";
   readonly conversation?: { situation: string; label: string; option?: string };
   available?(): boolean;
   allowsRideHints?(): boolean;
@@ -58,6 +58,7 @@ export class ModeRegistry {
   get(id: string) { return this.modes.get(id); }
   get active() { return this.selected?.active ? this.selected : null; }
   get modal() { return !!this.selected?.modal; }
+  get engaged() { return this.selected !== null; }
 
   start(id: string, option?: string) {
     const mode = this.get(id);

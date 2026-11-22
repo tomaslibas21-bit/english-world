@@ -1495,6 +1495,39 @@ export class AudioSystem {
     src.start(now); src.stop(now + 1.85);
   }
 
+  /** A handset alert with its own output so dismissing the card cuts every scheduled pulse. */
+  phoneAlert(incoming: boolean) {
+    if (this.volume <= 0 || this.soundsLevel <= 0) return;
+    const ctx = this.context();
+    if (!ctx || ctx.state !== "running") return;
+    const output = ctx.createGain();
+    output.connect(this.fx(ctx));
+    const nodes: OscillatorNode[] = [];
+    for (const offset of incoming ? [0, 0.5] : [0, 0.25]) {
+      for (const hz of incoming ? [440, 480] : [350]) {
+        const start = ctx.currentTime + offset;
+        const duration = incoming ? 0.35 : 0.13;
+        const tone = ctx.createOscillator(), envelope = ctx.createGain();
+        tone.frequency.value = hz;
+        tone.type = incoming ? "sine" : "triangle";
+        envelope.gain.setValueAtTime(0, start);
+        envelope.gain.linearRampToValueAtTime(this.volume * (incoming ? 0.075 : 0.04), start + 0.015);
+        envelope.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+        tone.connect(envelope);
+        envelope.connect(output);
+        tone.onended = () => { tone.disconnect(); envelope.disconnect(); };
+        tone.start(start);
+        tone.stop(start + duration);
+        nodes.push(tone);
+      }
+    }
+    nodes.at(-1)!.addEventListener("ended", () => output.disconnect(), { once: true });
+    return () => {
+      output.disconnect();
+      for (const tone of nodes) { try { tone.stop(); } catch { /* already ended */ } }
+    };
+  }
+
   sfx(name: "success" | "pop" | "door" | "cheer" | "soft" | "listen" | "coin" | "car" | "error" | "ring" | "beep" | "knock" | "tick" | "horn" | "hornReply") {
     audioDiagnostic("context.effect", { reason: name });
     const ctx = this.ac();

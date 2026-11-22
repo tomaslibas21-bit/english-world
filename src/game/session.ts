@@ -5,6 +5,7 @@ import { createSpeechAttempt, hasNegation, speechSupported } from "../convo/spee
 import { audioDiagnosticsPaused } from "../convo/audioDiagnostics";
 import { polarityChoices, bestReading } from "../convo/readings";
 import { bestPhrase } from "../convo/bestPhrase";
+import { concertInvitation, PHONE_CALLS } from "../content/phoneCalls";
 import { GLOBAL } from "../content/global";
 import { NPCS } from "../content/npcs";
 import { coachVoice, npcVoice } from "../content/voices";
@@ -54,7 +55,7 @@ export class Session {
   /** Bumped whenever a practice starts or is cancelled (a stale one never goes on to listen). */
   private practiceRun = 0;
 
-  constructor(sitId: string, hooks: SessionHooks) {
+  constructor(sitId: string, hooks: SessionHooks, private introOverride?: string) {
     // (loaded before a session starts: Game / LightGame, src/game/prefetch.ts whenLoaded)
     const sit = getSituation(sitId);
     if (!sit) throw new Error("Situation not loaded " + sitId);
@@ -93,8 +94,11 @@ export class Session {
       suggest: [], hints: [], chosen: {}, openHint: null, mic: { status: speechSupported() ? "off" : "unsupported", heard: "" },
       failures: 0, misses: 0, slowMode: this.conv.slow, lastHeard: "", prefix: false, completed: false, speaking: null, reveal: {}, note: null, typing: !speechSupported(), newExpressions: [],
       checklist: [], focus: 0, stepId: null, guess: null, practice: null, speechChoices:undefined, run: st.conv.run + 1, guideHidden: false,
-      introOpen: !!this.sit.intro,
+      introOpen: !!(this.introOverride ?? this.sit.intro), introOverride: this.introOverride,
     });
+    if (this.sit.id === "s34-meeting" && st.progress.phone?.office) {
+      st.updateProgress((p) => { delete p.phone!.office; });
+    }
     const out = this.conv.start();
     await this.introRead();
     await this.play(out);
@@ -447,6 +451,19 @@ export class Session {
       s.memory = { ...s.memory, ...this.conv.memoryOut };
       after = stars(s);
       p.sits[this.sit.id] = s;
+      if (Object.hasOwn(PHONE_CALLS, this.sit.id) && p.phone) delete p.phone.missed[this.sit.id];
+      if (this.sit.id === "s83-invite-call") {
+        const invitation = concertInvitation(this.conv.s, this.sit.entities?.place ?? []);
+        if (invitation) {
+          p.phone ??= { played: 0, missed: {} };
+          p.phone.invitation = invitation;
+          p.phone.followUp = "invitation";
+        }
+      } else if (this.sit.id === "s90-running-late") {
+        p.phone ??= { played: 0, missed: {} };
+        p.phone.office = true;
+        p.phone.followUp = "office";
+      }
     });
     st.setConv({ completed: true, checklist: this.conv.checklist() });
     audio.sfx("cheer");

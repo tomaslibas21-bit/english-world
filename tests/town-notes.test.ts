@@ -77,6 +77,20 @@ describe("town toasts", () => {
     expect(shown()).toBeUndefined();
   });
 
+  it("waits behind a phone card, then resumes the previous toast", () => {
+    state().toast({ kind: "tip", title: "interrupted", ms: 3000 });
+    vi.advanceTimersByTime(1000);
+    state().setHud({ phoneCard: "p24-flood" });
+    state().toast({ kind: "success", title: "next" });
+    expect(townNote(state().hud)).toBe("phone");
+    vi.advanceTimersByTime(25000);
+    expect(shown()).toBeUndefined();
+    state().setHud({ phoneCard: null });
+    expect(shown()).toBe("interrupted");
+    vi.advanceTimersByTime(2000);
+    expect(shown()).toBe("next");
+  });
+
   it.each(["panel", "conversation", "light"] as const)("keeps the existing four-toast stack and expiry in %s", (context) => {
     if (context === "panel") state().setHud({ panel: "map" });
     if (context === "conversation") state().setConv({ active: true });

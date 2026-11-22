@@ -1,0 +1,72 @@
+.phone-ring {
+  position: absolute;
+  top: max(28%, 112px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(calc(100vw - 120px), 330px);
+  box-sizing: border-box;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--panel-solid);
+  color: var(--ink);
+  box-shadow: 0 5px 20px #16232b38;
+  pointer-events: auto;
+}
+.phone-ring-id {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.phone-ring-id strong, .phone-ring-id small { display: block; }
+.phone-ring-id small { line-height: 1.25; }
+.phone-ring-avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #deeee7;
+  color: #175a4c;
+}
+.phone-ring-avatar img { width: 100%; height: 100%; object-fit: cover; }
+@media (min-width: 901px) {
+  .phone-ring { grid-area: 1 / 2; position: static; width: min(100%, 330px); transform: none; }
+}
+@media (max-width: 600px) and (orientation: portrait) {
+  .objective-notes .phone-ring {
+    position: static;
+    width: min(100%, var(--note-width));
+    margin-top: 12px;
+    transform: none;
+    flex: none;
+  }
+}
+.phone-ring p { margin: 8px 0 0; line-height: 1.3; }
+.phone-ring-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+.phone-ring-actions .btn { min-height: 44px; }
+.missed-calls .missed-call { align-items: center; }
+.missed-call .btn { flex: none; margin-left: auto; min-height: 44px; }
+.objective-card.collapsed[data-target-location] .objective-title { font-size: 0.86em; }
+.lizzie-meeting {
+  position: absolute;
+  inset: auto 0 max(16px, env(safe-area-inset-bottom));
+  width: min(calc(100% - 24px), 520px);
+  margin: auto;
+  padding: 14px;
+  box-sizing: border-box;
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel-solid);
+  color: var(--ink);
+  box-shadow: 0 5px 20px #16232b38;
+  pointer-events: auto;
+}
+.lizzie-meeting header { display: flex; align-items: center; justify-content: space-between; }
+.lizzie-meeting header .icon-btn { width: 44px; height: 44px; }
+.lizzie-meeting header .listening { color: var(--accent); }
+.lizzie-meeting .btn { padding: 5px 10px; min-height: 44px; text-align: left; }

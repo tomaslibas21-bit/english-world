@@ -21,8 +21,10 @@ import { LyricStrip, RadioTool } from "./Radio";
 import { useRadio } from "../radio";
 import { Guide } from "./Guide";
 import { TownToast } from "./Toasts";
+import { PhoneRing } from "./PhoneRing";
 import { portraitToolbarRows } from "./toolbarLayout";
 import "./light.css";
+import "./townPhone.css";
 
 /** Inside English Master (VITE_BACK_URL, e.g. "/"): the way back to the course site. */
 export const COURSE_URL = import.meta.env.VITE_BACK_URL as string | undefined;
@@ -44,6 +46,7 @@ export function useDueCards(): number {
 
 const RoadOverlay = lazy(() => import("./Road").then(({ RoadOverlay }) => ({ default: RoadOverlay })));
 const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = { taxi: TaxiOverlay, barista: BaristaOverlay, road: RoadOverlay };
+const LizzieMeeting = lazy(() => import("./LizzieMeeting"));
 
 export function Hud() {
   const hud = useStore((s) => s.hud);
@@ -52,7 +55,8 @@ export function Hud() {
   const inTown = !inConversation && !hud.flight && !surfing && !hud.modeScreen;
   const ride = townRide(hud.ride);
   const riding = ride !== null;
-  const task = useTaskCard(hud.objective?.sitId ?? null, inTown && !hud.panel);
+  const taskId = hud.objective?.followUp ? hud.objective.title : hud.objective?.sitId ?? null;
+  const task = useTaskCard(taskId, inTown && !hud.panel);
   if (inConversation) return <Fade />;
   // the first visit's flight over the town has the screen to itself too: where one is, and what to do first
   if (hud.flight) return <div className="hud"><Flight /><Fade /></div>;
@@ -63,6 +67,9 @@ export function Hud() {
       {hud.showTouch && <TouchControls />}
       <Fade />
     </div>
+  );
+  if (hud.modeScreen?.id === "lizzie-meeting") return (
+    <div className="hud mode-hud"><Suspense><LizzieMeeting /></Suspense><Fade /></div>
   );
   if (hud.modeScreen?.kind === "menu") {
     const Overlay = modeOverlays[hud.modeScreen.id];
@@ -76,16 +83,19 @@ export function Hud() {
       </div>
     );
   }
-  const banner = hud.zoneBanner ? splitLead(hud.zoneBanner.title) : null;
-  const guideVisible = !hud.panel && townNote(hud) === "guide";
-  const collapsed = task.manual ?? (!task.fresh && (hud.walking || riding));
+  const note = townNote(hud);
+  const banner = hud.zoneBanner && note === "banner" ? splitLead(hud.zoneBanner.title) : null;
+  const guideVisible = !hud.panel && note === "guide";
+  const moving = hud.walking || riding;
+  const collapsed = (moving && !!hud.objective?.followUp) || (task.manual ?? (!task.fresh && moving));
   return (
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")}>
       <div className="hud-top">
           {hud.speedLines && <div className="drive-wind" aria-hidden />}
         <div className={"objective-notes" + (collapsed ? " task-folded" : "")}>
-          <Objective key={hud.objective?.sitId ?? "complete"} collapsed={collapsed} fresh={task.fresh && !hud.panel} setCollapsed={task.setManual} />
+          <Objective key={taskId ?? "complete"} collapsed={collapsed} fresh={task.fresh && !hud.panel} setCollapsed={task.setManual} />
           {hud.zoneBanner && banner && <div className="zone-banner"><h2>{banner.icon && <Icon name={banner.icon} size="0.8em" className="zb-ico" />}{banner.rest}</h2>{hud.zoneBanner.sub && <p>{hud.zoneBanner.sub}</p>}</div>}
+          {!hud.panel && hud.phoneCard && <PhoneRing id={hud.phoneCard} />}
           <Guide visible={guideVisible} />
           <TownToast />
         </div>
@@ -130,6 +140,7 @@ function activateHudButton(e: KeyboardEvent<HTMLElement>) {
 
 function Toolbar({ riding, touch, modeExit }: { riding: boolean; touch: boolean; modeExit?: string }) {
   const due = useDueCards();
+  const missedCalls = useStore((s) => Object.keys(s.progress.phone?.missed ?? {}).length);
   const hasRadio = useRadio((s) => s.available);
   const canHonk = useStore((s) => s.hud.ride === "car" || s.hud.ride === "taxi");
   const hasHelp = useSectionHelp();
@@ -205,7 +216,7 @@ function Toolbar({ riding, touch, modeExit }: { riding: boolean; touch: boolean;
     <ToolButton icon="clapper" title="Visos situacijos" panel="scenarios" />
     <ToolButton icon="map" title="Žemėlapis (M)" panel="map" hotkey="M" />
     <ToolButton icon="journal" title="Užduotys (J)" panel="journal" hotkey="J" />
-    <ToolButton icon="smartphone" title="Telefonas (P)" panel="phone" hotkey="P" />
+    <ToolButton icon="smartphone" title="Telefonas (P)" panel="phone" hotkey="P" badge={missedCalls} />
     <ToolButton icon="bookOpen" title="Frazių knygelė" panel="phrasebook" badge={due} />
     <ToolButton icon="settings" title="Nustatymai (Esc)" panel="settings" />
     <SectionHelpButton />
@@ -293,10 +304,10 @@ function Objective({ collapsed, fresh, setCollapsed }: { collapsed: boolean; fre
   const titleLt = o?.titleLt && <> <span lang="lt">· {o.titleLt}</span></>;
   if (collapsed) {
     return (
-      <div className="objective-card collapsed">
+      <div className="objective-card collapsed" data-target-location={o?.targetLoc}>
         <button className="collapse-btn objective-summary" aria-expanded={false} onClick={() => setCollapsed(false)} onKeyDown={activateHudButton}>
           <Icon name="target" size={16} strokeWidth={2} />
-          <span className="objective-title">{o?.title ?? "Visos užduotys atliktos"}{titleLt}</span>
+          <span className="objective-title" title={o?.followUp ? o.title : undefined}>{o?.title ?? "Visos užduotys atliktos"}{titleLt}</span>
           <Icon name="chevronDown" size={16} strokeWidth={2} />
           {o?.dist != null && <span className="dist">{o.angle !== null && <Arrow angle={o.angle} />}{o.dist} m</span>}
         </button>
@@ -313,6 +324,19 @@ function Objective({ collapsed, fresh, setCollapsed }: { collapsed: boolean; fre
       </div>
     );
   }
+  if (o.followUp) return (
+    <div className={className} data-target-location={o.targetLoc}>
+      <div className="kicker">
+        <span className="kicker-label"><Icon name="target" size={15} strokeWidth={2} /> Užduotis</span>
+        {fold}
+      </div>
+      <h3>{o.title}</h3>
+      <div className="row">
+        {o.dist !== null && <span className="dist">{o.angle !== null && <Arrow angle={o.angle} />}{o.dist} m</span>}
+        <button className="btn small" onClick={() => game?.autoWalkToObjective()} title="G"><Icon name="walk" size={17} /> Nuvesk mane</button>
+      </div>
+    </div>
+  );
   const sit = SITUATION_BY_ID[o.sitId];
   const phone = sit && isPhone(sit);
   const { title, where } = sit ? objectiveLabels(sit) : o;

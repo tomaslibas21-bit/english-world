@@ -6,6 +6,7 @@ import { switchPlayMode } from "./playMode";
 import { SITUATIONS, SITUATION_BY_ID } from "../content/situations/catalog";
 import { LOCATIONS, TOWN_LT, placeLt } from "../content/locations";
 import { keepsakeFor } from "../content/keepsakes";
+import { PHONE_CALLS } from "../content/phoneCalls";
 import { NPCS } from "../content/npcs";
 import { coachVoice } from "../content/voices";
 import { OUTDOOR_NPCS, WORLD, SEA_Z, AIRPORT_EXIT } from "../game/world/layout";
@@ -375,11 +376,21 @@ function MapPanel({ close }: { close: () => void }) {
 function Phone({ close }: { close: () => void }) {
   const calls = SITUATIONS.filter(isPhone).sort((a, b) => a.chapter - b.chapter || a.order - b.order);
   const progress = useStore((s) => s.progress);
+  const missed = calls.filter((sit) => progress.phone?.missed[sit.id]);
   return (
     <div className="phone" role="dialog" aria-label="Telefonas">
       <div className="phone-status">
         <span>9:41</span><button className="phone-close" onClick={close} aria-label="Uždaryti"><Icon name="close" size={20} /></button>
       </div>
+      {!!missed.length && <section className="missed-calls">
+        <h2>Praleisti skambučiai</h2>
+        {missed.map((sit) => (
+          <div className="contact missed-call" key={sit.id} data-call={sit.id}>
+            <span className="txt"><b>{PHONE_CALLS[sit.id]?.name ?? NPCS[sit.npc]?.name}</b><span>Praleistas skambutis</span></span>
+            <button className="btn small" onClick={() => { close(); game?.call(sit.id); }}>Perskambinti</button>
+          </div>
+        ))}
+      </section>}
       <h2><Icon name="smartphone" size={22} /> Skambučiai</h2>
       {calls.length === 0 && <div style={{ color: "#aab7c2", textAlign: "center" }}>Kol kas nėra kam skambinti.</div>}
       {calls.map((s) => {
@@ -435,6 +446,7 @@ function Settings({ close }: { close: () => void }) {
           <div className="txt"><b>Režimas</b><span>Lengvas – be 3D miesto, tik pokalbiai su piešiniais. Pakeitus puslapis persikrauna.</span></div>
           <div className="seg">{([["light", "Lengvas"], ["town", "3D miestas"]] as const).map(([v, n]) => <button key={v} className={s.play === v ? "on" : ""} onClick={() => { if (s.play !== v) switchPlayMode(v); }}>{n}</button>)}</div>
         </div>
+        {s.play !== "light" && <Toggle on={s.phoneCalls} onChange={(v) => set({ phoneCalls: v })} label="Skambučiai einant po miestą" sub="Telefonas kartais suskamba, kai vaikštai." />}
         {s.play !== "light" && <Toggle on={s.cameraFollow} onChange={(v) => set({ cameraFollow: v })} label="Kamera seka personažą" />}
         <Toggle on={picturesOn(s)} onChange={(v) => set({ scenes: v })} label="Iliustruotos scenos" sub={s.play === "light" ? "Pokalbio metu vietoje 3D vaizdo rodomas piešinys, kuris keičiasi pagal pokalbio etapą." : "Pokalbio metu vietoje 3D vaizdo rodomas piešinys, kuris keičiasi pagal pokalbio etapą. Per pokalbį perjungsi mažu paveikslėliu vaizdo kampe arba klavišu P."} />
         <div className="set-row">
@@ -476,7 +488,7 @@ function Settings({ close }: { close: () => void }) {
         {import.meta.env.BASE_URL === "/zaidimas/" && <div className="set-row"><a className="btn ghost small" href="/atsisiuntimai" target="_top">Atsisiuntimai ir failų pašalinimas</a></div>}
         <div className="set-row">
           <div className="txt"><b>Pradėti iš naujo</b><span>Ištrina šios naršyklės išsaugotą progresą.</span></div>
-          <button className="btn ghost small" onClick={() => { if (confirm("Tikrai ištrinti progresą?")) { useStore.getState().updateProgress((p) => { Object.assign(p, emptyProgress()); }); location.reload(); } }}>Ištrinti</button>
+          <button className="btn ghost small" onClick={() => { if (confirm("Tikrai ištrinti progresą?")) { useStore.getState().updateProgress((p) => { delete p.phone; Object.assign(p, emptyProgress()); }); location.reload(); } }}>Ištrinti</button>
         </div>
       </div>
     </div>

@@ -48,7 +48,8 @@ class Coach {
   }
 
   private startTimer() {
-    if (!this.remaining || useStore.getState().hud.zoneBanner) return;
+    const { hud } = useStore.getState();
+    if (!this.remaining || hud.zoneBanner || hud.phoneCard) return;
     this.deadline = Date.now() + this.remaining;
     this.timer = setTimeout(() => this.next(), this.remaining);
   }
@@ -78,11 +79,13 @@ class Coach {
     this.watching = true;
     useStore.subscribe((s, prev) => {
       // The place name gets the screen first. A hint keeps its time, even if it was already ticked off.
-      if (s.hud.zoneBanner && !prev.hud.zoneBanner && this.timer !== undefined) {
+      const covered = !!(s.hud.zoneBanner || s.hud.phoneCard);
+      const wasCovered = !!(prev.hud.zoneBanner || prev.hud.phoneCard);
+      if (covered && !wasCovered && this.timer !== undefined) {
         this.remaining = Math.max(1, this.deadline - Date.now());
         clearTimeout(this.timer);
         this.timer = undefined;
-      } else if (!s.hud.zoneBanner && prev.hud.zoneBanner) this.startTimer();
+      } else if (!covered && wasCovered) this.startTimer();
       if (s.hud.prompt?.kind !== prev.hud.prompt?.kind) this.near(s.hud.prompt?.kind);
       if (s.hud.panel === "scenarios" && prev.hud.panel !== "scenarios") this.did("list");
       if (s.hud.ride !== prev.hud.ride && s.hud.ride) this.did(s.hud.ride === "car" ? "car" : s.hud.ride === "boat" ? "boat" : s.hud.ride === "surf" ? "surf" : "water");

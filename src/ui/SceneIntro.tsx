@@ -9,13 +9,14 @@ import { genderChoice } from "../convo/lt-morph";
 export function SceneIntro({ sit }: { sit: SituationDef }) {
   const open = useStore((s) => s.conv.introOpen);
   const gender = useStore((s) => s.progress.profile?.gender) ?? "m";
-  if (!open || !sit.intro) return null;
+  const intro = useStore((s) => s.conv.introOverride) ?? sit.intro;
+  if (!open || !intro) return null;
   const close = () => useStore.getState().setConv({ introOpen: false });
   return <div className="scene-intro" role="region" aria-label="Scena">
     <div className="scene-intro-head"><b>Scena</b>
       <button className="close-x" onClick={close} aria-label="Uždaryti sceną"><Icon name="close" size={18} /></button>
     </div>
-    <p>{sceneText(sit.intro, gender)}</p>
+    <p>{sceneText(intro, gender)}</p>
     <button className="btn small" onClick={close}>Pradėti</button>
   </div>;
 }
