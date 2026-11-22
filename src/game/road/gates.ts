@@ -3,7 +3,7 @@ import { colourMerge } from "../world/util";
 import { laneOffset, point, ribbon } from "./track";
 import type { Prompt } from "./words";
 
-const LANE_PAINT = ["#f2a83e", "#38b9aa", "#a39bdd"];
+export const LANE_PAINT = ["#f2a83e", "#38b9aa", "#a39bdd"];
 const IRON = "#364955";
 const BANNER_Y = 4.22;
 const FACE_Z = 0.47;
