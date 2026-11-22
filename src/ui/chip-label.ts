@@ -21,6 +21,10 @@ export function chipLabel(e: EntityDef, fem = false): string {
   const alt = v === "spain" ? a?.spainChip ?? a?.spain ?? a?.neutralChip ?? a?.neutral : v === "neutral" ? a?.neutralChip ?? a?.neutral : undefined;
   if (e.chip && typeof alt === "string") return alt;
   if (e.chip) return e.chip;
+  return chipGloss(e);
+}
+
+export function chipGloss(e: EntityDef): string {
   // the natural name ("Yucatecan food"), never the word-by-word gloss in the practised language's order ("food
   // Yucatecan"); a one-word gloss is the name itself
   const nat = natName(e);

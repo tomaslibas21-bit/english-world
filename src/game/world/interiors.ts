@@ -555,7 +555,7 @@ function seat(c: Ctx, x: number, z: number, rot: number, color: string) {
 
 type Smalls = { add(g: THREE.BufferGeometry, color: THREE.ColorRepresentation): void; done(): void };
 let smallsMat: THREE.MeshLambertMaterial | null = null;
-function smalls(c: Ctx): Smalls {
+function smalls(c: Ctx, parent = c.g): Smalls {
   const parts: [THREE.BufferGeometry, THREE.ColorRepresentation][] = [];
   return {
     add: (g, color) => { parts.push([g, color]); },
@@ -563,7 +563,7 @@ function smalls(c: Ctx): Smalls {
       if (!parts.length) return;
       const m = new THREE.Mesh(colourMerge(parts), (smallsMat ??= new THREE.MeshLambertMaterial({ vertexColors: true })));
       m.castShadow = m.receiveShadow = true;
-      c.g.add(m);
+      parent.add(m);
     },
   };
 }
@@ -764,13 +764,22 @@ function policeBoard() {
 const B: Record<string, () => Interior> = {
   "sunny-cup": () => room("sunny-cup", 16, 12, "#c89b6d", "#fbe8cf", (c) => {
     counter(c, -2, -3.2, 7, 1.1, "#8a5a3c", "#e8d9c2");
-    c.M.add("espresso", mat("#c0c4c8"), boxGeo(1.1, 0.7, 0.6, -4.2, 1.45, -3.4));
-    c.M.add("espresso", mat("#2b2b2b"), boxGeo(1.12, 0.12, 0.62, -4.2, 1.85, -3.4));
-    c.M.add("register", mat("#34495e"), boxGeo(0.5, 0.35, 0.4, 0.6, 1.25, -3.1));
+    const props = new THREE.Group();
+    props.name = "sunny-cup-counter-props";
+    const M = new Merger();
+    M.add("espresso", mat("#c0c4c8"), boxGeo(1.1, 0.7, 0.6, -4.2, 1.45, -3.4));
+    M.add("espresso", mat("#2b2b2b"), boxGeo(1.12, 0.12, 0.62, -4.2, 1.85, -3.4));
+    M.add("register", mat("#34495e"), boxGeo(0.5, 0.35, 0.4, 0.6, 1.25, -3.1));
     // pastry case
-    c.M.add("pastry-glass", mat("#dff3fb", { transparent: 0.35 }), boxGeo(2.2, 0.55, 0.9, -1.6, 1.36, -3.1), false);
-    // (in this edition, theme.ts roomExtras.cafeMx, conchas in the case: cafeMx)
-    if (!THEME.roomExtras.cafeMx) for (let i = 0; i < 6; i++) c.M.add("pastry", mat(["#e0a45e", "#8a4b2a", "#f2d49b"][i % 3], { flat: true }), new THREE.SphereGeometry(0.12, 6, 4).scale(1.4, 0.6, 1).translate(-2.4 + i * 0.32, 1.2, -3.1), false);
+    M.add("pastry-glass", mat("#dff3fb", { transparent: 0.35 }), boxGeo(2.2, 0.55, 0.9, -1.6, 1.36, -3.1), false);
+    if (!THEME.roomExtras.cafeMx) for (let i = 0; i < 6; i++) M.add("pastry", mat(["#e0a45e", "#8a4b2a", "#f2d49b"][i % 3], { flat: true }), new THREE.SphereGeometry(0.12, 6, 4).scale(1.4, 0.6, 1).translate(-2.4 + i * 0.32, 1.2, -3.1), false);
+    M.build(props);
+    if (THEME.roomExtras.cafeMx) {
+      const S = smalls(c, props);
+      conchas(S, -1.6, 1.09, -3.1, 5, 2);
+      S.done();
+    }
+    c.g.add(props);
     wallPanel(c, menuBoard(["                    small · medium · large|", "Latte|$4.25 · 4.75 · 5.25", "Cappuccino|$4.00 · 4.50 · 5.00", "Americano|$3.00 · 3.50 · 4.00", "Mocha|$4.75 · 5.25 · 5.75", "Drip Coffee|$2.50 · 3.00 · 3.50", "Hot Chocolate|$3.50 · 4.00 · 4.50", "Espresso · Flat White|$2.75 · $4.50", "Tea (black, green, mint, chamomile)|$3.00", "Oat, almond or soy milk|+$0.75", "Iced drinks|+$0.50"], "SUNNY CUP · DRINKS"), -3.6, 2.75, -c.d / 2 + 0.2, 4.2, 3.2);
     wallPanel(c, menuBoard(["Croissant|$3.25", "Muffin (blueberry, chocolate)|$3.50", "Cinnamon Roll|$3.75", "Bagel|$3.00", "Cookie|$2.50", "Turkey Sandwich|$7.25"], "FOOD"), 0.9, 2.75, -c.d / 2 + 0.2, 3.2, 2);
     sign(c, "Wi-Fi: SunnyCup · password: sunnycup22", 4.8, 2.9, -c.d / 2 + 0.2, 3.4, "#fff8e8", "#8a5a3c");
@@ -3258,7 +3267,6 @@ function chalkboard() {
  *  pastries, talavera on the counter's front, jarritos hanging on the west wall, two ceiling fans. */
 function cafeMx(c: Ctx) {
   const S = smalls(c);
-  conchas(S, -1.6, 1.09, -3.1, 5, 2);
   talavera(S, 6.9, 0.92, (g) => g.translate(-2, 0.5, -2.65 + 0.012), 0.23); // the counter (-2, -3.2; its front at z -2.65)
   for (let i = 0; i < 7; i++) jarrito(S, -c.w / 2 + 0.02, 2.35, -3.4 + i * 0.5, Math.PI / 2);
   ceilingFan(S, 2.4, 1.7); ceilingFan(S, -4.6, 1.6);

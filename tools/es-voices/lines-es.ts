@@ -27,6 +27,8 @@
 // Run with the edition overlay: EDITION=es npx tsx --import ./tools/edition-hook.mjs tools/es-voices/…
 import { SITUATIONS } from "../../src/content/situations";
 import { GLOBAL } from "../../src/content/global";
+import { BARISTA_CONVERSATION } from "../../src/content/barista";
+import { isBaristaCoachLine } from "../../src/content/barista-lines";
 import { NPCS, type NpcDef } from "../../src/content/npcs";
 import { AMBIENT_LINES, STAFF_LINES, VENDOR_LINES } from "../../src/content/ambient";
 import { RIDE_OWNERS, RIDE_SHOUTS } from "../../src/content/rides";
@@ -48,6 +50,7 @@ const NAMES = [EDITION.simPlayer.name, EDITION.simPlayer.surname];
 const NAMES_RE = new RegExp(`\\b(${NAMES.join("|")})\\b`);
 const GENDERS = ["m", "f"] as const;
 const VARIETIES = ["default", "neutral", "spain"] as const;
+const modeCoachLine = (sit: string, lid: string) => unspoken(sit, lid) || (sit === BARISTA_CONVERSATION.situation && isBaristaCoachLine(lid));
 
 export interface EsUtt {
   voice: string; speed: number;
@@ -136,7 +139,7 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
       const opts = { look, addressee: h.gender, speaker: n.gender ?? "f", formal: !addressInformal(n) };
       // a part of the conversation with a setting of its own (casting-es.ts LINE_SCENES: x01-surf's surf commands)
       const at = sceneSit(sit.id, h.line.lineId);
-      if (unspoken(sit.id, h.line.lineId)) return;
+      if (modeCoachLine(sit.id, h.line.lineId)) return;
       if (own) add(npcVoice(n), n.speed ?? 1, h.line.sentence, where, at, "heard");
       else if (src) { try { add(npcVoice(n), n.speed ?? 1, compose(src, h.line.vars, opts), where, at, "heard"); } catch { /* skip */ } }
       if (src) for (const v of ["neutral", "spain"] as const) {
@@ -186,7 +189,7 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
     // 1. every line variant, with what the runs showed: its speakers, item lists, quantities and values
     const plan: { lid: string; i: number; binds: { b: Record<string, unknown>; why: string }[]; speakers: NpcDef[]; who: string; tag: Map<string, string> }[] = [];
     for (const [lid, variants] of Object.entries(sit.lines)) {
-      if (unspoken(sit.id, lid)) continue; // shown, never played (reach-es.ts UNSPOKEN)
+      if (modeCoachLine(sit.id, lid)) continue;
       const s = said.get(lid);
       // everyone heard saying it, and everyone the code makes say it (reach-es.ts codeSpeakers); else a guess
       const known = new Set([...(s?.by ?? []), ...(code.get(lid) ?? [])]);
@@ -263,7 +266,7 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
         plan.push({ lid, i, binds, speakers, who, tag });
       });
     }
-    for (const lid of Object.keys(sit.lines)) if (!said.has(lid) && !unspoken(sit.id, lid)) unreached.push({ sit: sit.id, line: lid, named: referenced(sit, lid) });
+    for (const lid of Object.keys(sit.lines)) if (!said.has(lid) && !modeCoachLine(sit.id, lid)) unreached.push({ sit: sit.id, line: lid, named: referenced(sit, lid) });
     for (const variety of VARIETIES) {
       setVariety(variety); // the text (neutral or Spain twins) and the voice ids (es_ / esn_ / esp_) of this Spanish
       for (const { lid, i, binds, speakers, who, tag } of plan) {
@@ -287,11 +290,9 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
           }
         }
       }
-      // 2b. the learner's own lines in a part of the conversation played by key (reach-es.ts UNSPOKEN: the surf
-      // lesson's answers): said for the learner when they answer by a tap (src/game/surf/play.ts answer), in the
-      // coach voice of their gender, as said to the people here
+      // 2b. the surf learner's lines and the barista shift's learner and customer lines use coach voices.
       for (const [lid, variants] of Object.entries(sit.lines)) {
-        if (!unspoken(sit.id, lid)) continue;
+        if (!modeCoachLine(sit.id, lid)) continue;
         variants.forEach((src, i) => {
           for (const n of people) for (const learner of GENDERS) {
             try { add(coachVoice(learner), 1, compose(src, {}, { look, addressee: n.gender, speaker: learner, formal: !addressInformal(n) }), `${sit.id}:${lid}[${i}]`, sit.id, "hint", true); } catch { /* skip */ }

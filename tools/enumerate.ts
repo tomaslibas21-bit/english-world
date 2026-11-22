@@ -6,6 +6,7 @@
 //    simulation turns and hint examples as input) whose NPC lines are collected. This finds
 //    dynamic renderings (prices, chosen items) and crash-tests every handler.
 import { SITUATIONS } from "../src/content/situations";
+import { isBaristaCoachLine } from "../src/content/barista-lines";
 import { GLOBAL } from "../src/content/global";
 import { NPCS } from "../src/content/npcs";
 import { AMBIENT_LINES, STAFF_LINES, VENDOR_LINES } from "../src/content/ambient";
@@ -130,9 +131,9 @@ export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: 
           const u = unreached.find((x) => x.sit === sit.id && x.line === lid);
           if (u) u.items = pool.size;
         }
-        if (sit.id === "s66-taxi" && /^rd_a_/.test(lid)) {
+        if ((sit.id === "s66-taxi" && lid.startsWith("rd_a_")) || (sit.id === "s72-cafe" && isBaristaCoachLine(lid))) {
           for (const voice of coachVoices(opts.v2)) {
-            add(voice, 1, compose(src, {}, { look }), `${sit.id}:${lid}[${i}]`);
+            add(voice, 1, compose(src, {}, { look, formal: true }), `${sit.id}:${lid}[${i}]`);
           }
           return;
         }

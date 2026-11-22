@@ -154,7 +154,7 @@ export interface HudState {
   zoneName: string;
   zoneBanner: { title: string; sub?: string } | null;
   /** What E / the tap does here; `lt` is a second line (a door's place in Lithuanian and what its name means). */
-  prompt: { label: string; lt?: string; kind: "talk" | "enter" | "exit" | "taxi" | "drive" | "boat" | "out" | "climb" | "surf" | "paddle" | "listen" } | null;
+  prompt: { label: string; lt?: string; kind: "talk" | "enter" | "exit" | "taxi" | "drive" | "boat" | "out" | "climb" | "surf" | "paddle" | "listen" | "barista" } | null;
   /** What the player does instead of walking (game/rides, water.ts SWIM): at a car's wheel, at a boat's helm,
    *  swimming, under water on a dive, or on a surfboard in the surf lesson (game/surf). */
   ride: null | "car" | "boat" | "swim" | "dive" | "surf" | "taxi";
@@ -171,6 +171,7 @@ export interface HudState {
   objective: { sitId: string; title: string; goal: string; where: string; dist: number | null; angle: number | null; inside: boolean } | null;
   minimap: { px: number; pz: number; heading: number; targetX?: number; targetZ?: number; zone: string; gates?: number; questX?: number; questZ?: number };
   fade: number;
+  fadeOnFrames: boolean;
   panel: null | "map" | "journal" | "phone" | "settings" | "phrasebook" | "help" | "scenarios";
   showTouch: boolean;
   /** Puerto Colibrí's chamber and quest card, and the card of the glyph stone the learner is at. */
@@ -246,7 +247,7 @@ export const useStore = create<Store>((set, get) => ({
   progress: initial,
   conv: EMPTY_CONV,
   hud: {
-    zoneName: "", zoneBanner: null, prompt: null, ride: null, modeScreen: null, rideStartedAt: null, wading: false, fast: false, walking: false, objective: null, minimap: { px: 0, pz: 0, heading: 0, zone: "town" }, fade: 0, panel: null,
+    zoneName: "", zoneBanner: null, prompt: null, ride: null, modeScreen: null, rideStartedAt: null, wading: false, fast: false, walking: false, objective: null, minimap: { px: 0, pz: 0, heading: 0, zone: "town" }, fade: 0, fadeOnFrames: false, panel: null,
     showTouch: typeof window !== "undefined" && (("ontouchstart" in window) || navigator.maxTouchPoints > 1),
     coach: null, flight: false, cave: null, glyph: null,
   },
@@ -263,6 +264,7 @@ export const useStore = create<Store>((set, get) => ({
   setConv: (p) => set((st) => ({ conv: { ...st.conv, ...(typeof p === "function" ? p(st.conv) : p) } })),
   setHud: (p) => set((st) => {
     const hud = { ...st.hud, ...p };
+    if (p.fade !== undefined) hud.fadeOnFrames = p.fadeOnFrames ?? false;
     const ride = townRide(hud.ride);
     if (ride === townRide(st.hud.ride)) return { hud };
     hud.rideStartedAt = ride ? Date.now() : null;

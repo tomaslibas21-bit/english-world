@@ -1,0 +1,187 @@
+.barista-overlay { position: fixed; inset: 0; pointer-events: none; }
+.barista-panel {
+  color: #243c34;
+  background: #fffaf0;
+  border: 1px solid #ddcdb7;
+  border-radius: 16px;
+  box-shadow: 0 5px 20px #24190933;
+  pointer-events: auto;
+}
+.barista-header {
+  position: absolute;
+  inset: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) auto max(12px, env(safe-area-inset-left));
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+.barista-counter, .barista-exit { padding: 9px 13px; font-size: 15px; }
+.barista-counter b { margin-left: 3px; }
+.barista-exit { margin-left: auto; min-height: 44px; font-weight: 800; }
+.barista-bottom {
+  position: absolute;
+  inset: auto max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+.barista-offer {
+  position: absolute;
+  z-index: 5;
+  bottom: 88px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - 24px);
+  padding: 12px;
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+}
+.has-touch .barista-offer { bottom: calc(142px + env(safe-area-inset-bottom)); }
+.barista-cue, .barista-listen { max-width: min(620px, 100%); padding: 6px 12px; }
+.barista-cue { max-height: 24dvh; overflow-y: auto; }
+.barista-overlay .interlinear, .barista-offer .interlinear { gap: 2px 6px; }
+.barista-cue .nat { margin-top: 2px; }
+.barista-listen-actions { display: flex; gap: 8px; justify-content: center; }
+.barista-listen-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 44px;
+  padding-inline: 12px;
+  border-radius: 10px;
+  background: #e5eee4;
+  color: #24483d;
+  font-weight: 800;
+}
+.barista-listen-actions button:disabled { opacity: 0.6; }
+.barista-order-text {
+  margin: 0 0 6px;
+  padding: 0 4px 0 0;
+  list-style: none;
+  max-height: min(116px, 16dvh);
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+.barista-order-text li {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  align-items: baseline;
+  gap: 0 12px;
+  padding-block: 2px;
+  overflow-wrap: anywhere;
+  font: 650 15px / 1.2 var(--ui);
+}
+.barista-order-text li + li { border-top: 1px solid #e9dfd0; }
+.barista-order-text small { color: #4c6156; font-size: 13px; }
+@media (max-width: 600px) {
+  .barista-order-text li { gap: 0 8px; font-size: 14px; }
+}
+.barista-price {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  border-radius: 12px;
+  padding: 8px 14px;
+  font-weight: 700;
+}
+.barista-price strong { color: #1c5b4a; font: 800 20px ui-monospace, monospace; }
+.barista-choices { width: min(440px, 100%); display: grid; gap: 7px; padding: 9px; }
+.barista-turn { display: flex; align-items: center; gap: 8px; }
+.barista-turn small { display: block; color: #4c6156; }
+.barista-choice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  min-height: 48px;
+  padding: 8px;
+  border: 1px solid #a9baa7;
+  border-radius: 10px;
+  color: #243c34;
+  background: #edf4e8;
+  text-align: left;
+  font-weight: 800;
+}
+.barista-choice small { color: #4c6156; font-weight: 600; }
+
+.barista-tray { width: min(1080px, 100%); padding: 7px 9px; display: grid; gap: 3px; }
+.barista-row {
+  display: grid;
+  grid-template-columns: 111px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 8px;
+}
+.barista-row-label {
+  min-height: 44px;
+  padding-inline: 6px;
+  text-align: left;
+  font-weight: 800;
+  color: #4c6156;
+  border-radius: 8px;
+  line-height: 1.12;
+}
+.barista-row-keys { display: block; margin-top: 2px; font-size: 10px; }
+.barista-row-active .barista-row-label { color: #124b3c; background: #e1eee4; }
+.barista-chips {
+  display: flex;
+  align-items: stretch;
+  gap: 5px;
+  overflow-x: auto;
+  padding: 2px;
+  scrollbar-width: none;
+  overscroll-behavior-inline: contain;
+  touch-action: pan-x;
+}
+.barista-chips::-webkit-scrollbar { display: none; }
+.barista-chip {
+  min-height: 44px;
+  flex: 0 0 auto;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  position: relative;
+  min-width: 76px;
+  max-width: 130px;
+  padding: 2px 8px;
+  border: 1px solid #d3c3af;
+  border-radius: 9px;
+  background: #fffdf7;
+  color: #243c34;
+  font-weight: 850;
+  line-height: 1.08;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.barista-chip small { display: block; margin-top: 3px; font-size: 11px; font-weight: 650; color: #4c6156; }
+.barista-chip[aria-pressed="true"] { color: #164d3d; border-color: #55856f; background: #e0efe5; }
+.barista-chip.barista-chip-glow {
+  border-color: #9b5e14;
+  background: #ffe2a0;
+  box-shadow: inset 0 0 0 1px #af761d, 0 0 0 1px #e0ad53;
+}
+.barista-chip kbd { position: absolute; top: 2px; left: 3px; padding: 0 3px; font-size: 9px; }
+.barista-chip:has(kbd) { padding-left: 17px; }
+.barista-give { display: flex; justify-content: flex-end; }
+.barista-give .btn, .barista-offer .btn { min-height: 44px; padding: 5px 15px; }
+.barista-give kbd { margin-left: 8px; color: inherit; }
+.barista-give button:disabled { opacity: 0.55; }
+@media (min-width: 601px) {
+  .barista-chips { flex-wrap: wrap; overflow: visible; }
+  .barista-chip { font-size: 17px; }
+}
+@media (min-width: 1000px) {
+  .barista-row[data-row="drink"] .barista-chips {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+  }
+  .barista-row[data-row="drink"] .barista-chip { min-width: 0; }
+}
+@media (max-width: 600px) {
+  .barista-tray { padding: 5px 6px; gap: 0; }
+  .barista-row { grid-template-columns: 60px minmax(0, 1fr); gap: 4px; }
+  .barista-row-label { padding-inline: 4px; font-size: 12px; }
+  .barista-chip { font-size: 14px; }
+}

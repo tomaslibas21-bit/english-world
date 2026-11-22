@@ -28,13 +28,13 @@ const ANGLES = [46, 58, 36, 70, 82];
 /** The over-the-shoulder views, the nearest first: the camera `d` metres from `focus`, turned `ANGLES` away from the
  *  line behind the learner (who stands at `p` and speaks with someone at `a`), on the side `first` (1 or -1) and then
  *  on the other, looking a little down. From `d0` out to `max`, a step at a time. */
-export function* shoulderShots(p: THREE.Vector3, a: THREE.Vector3, focus: THREE.Vector3, d0: number, max: number, first: 1 | -1): Generator<Shot> {
+export function* shoulderShots(p: THREE.Vector3, a: THREE.Vector3, focus: THREE.Vector3, d0: number, max: number, first: 1 | -1, angles = ANGLES): Generator<Shot> {
   const back = new THREE.Vector3(p.x - a.x, 0, p.z - a.z);
   if (back.lengthSq() < 0.01) back.set(0, 0, 1);
   back.normalize();
   const side = new THREE.Vector3(-back.z, 0, back.x);
   for (let d = d0; d <= max * 1.001; d = Math.min(d * 1.09, d < max ? max : d * 2)) {
-    for (const deg of ANGLES) for (const s of [first, -first]) {
+    for (const deg of angles) for (const s of [first, -first]) {
       const ang = THREE.MathUtils.degToRad(deg);
       const pos = focus.clone().addScaledVector(back, Math.cos(ang) * d).addScaledVector(side, Math.sin(ang) * s * d);
       // (17° down from near; further off, as the older framings: more of the ground, less of the town behind them)

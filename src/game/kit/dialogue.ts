@@ -14,7 +14,7 @@ export interface KitMic {
 }
 
 export class ModeDialogue {
-  private playback: { left: number; audible: boolean; finish(ok: boolean): void } | null = null;
+  private playback: { left: number; audible: boolean; completed: boolean; finish(ok: boolean): void } | null = null;
   private turn: { options: KitLine[]; speech: ReturnType<typeof learnerTurn<KitLine>>; finish(line: KitLine | null): void; retries: number } | null = null;
   private attempt: ReturnType<typeof createSpeechAttempt> | null = null;
   private retryIn = 0;
@@ -26,10 +26,14 @@ export class ModeDialogue {
     choices(lines: KitLine[]): void;
     mic(state: KitMic): void;
     animate?(seconds: number): void;
+    /** Use only installed browser voices for speech synthesis. */
     speechFallback?: boolean;
+    /** Give an unrecorded learner line time for browser speech. */
+    allowBrowserVoice?: boolean;
+    framePlayback?: boolean;
   }) {}
 
-  private resolve(situation: string, npcId: string, key: string, fallback: Record<string, SentSrc[]>, learner: boolean): KitLine | null {
+  private resolve(situation: string, npcId: string, key: string, fallback: Record<string, SentSrc[]> | undefined, learner: boolean): KitLine | null {
     const sentence = conversationLine(situation, npcId, key, fallback, learner);
     return sentence ? { key, sentence } : null;
   }
@@ -38,33 +42,41 @@ export class ModeDialogue {
     const { slowVoice: slow, volume } = useStore.getState().settings;
     const text = line.sentence.say;
     const clip = audio.clipDuration(voice, speed, text);
-    // Muted dialogue keeps its reading time without waiting for browser audio events.
+    // Muted dialogue uses its reading time and never waits for browser audio.
     const audible = volume !== 0 && (clip != null || text !== `[${line.key}]`);
-    const est = clip == null ? (learner ? 0.5 : Math.min(4, 0.5 + text.length * 0.06)) : clip / (slow ? 0.82 : 1);
+    const est = clip == null ? (learner && !this.ui.allowBrowserVoice ? 0.5 : Math.min(4, 0.5 + text.length * 0.06)) : clip / (slow ? 0.82 : 1);
     if (!learner) this.ui.animate?.(est);
     return new Promise<boolean>((finish) => {
-      const playing = { left: audible ? est + 2 : est, audible, finish };
+      const estimate = this.ui.framePlayback && clip == null ? Math.max(est, text.length * (slow ? 0.09 : 0.07)) : est;
+      const playing = { left: audible ? estimate + 2 : estimate, audible, completed: false, finish };
       this.playback = playing;
       if (audible) void audio.play(voice, speed, text, { slow, male, localVoiceOnly: this.ui.speechFallback }).then((ok) => {
-        if (ok && this.playback === playing) this.endPlayback(true);
+        if (!ok || this.playback !== playing) return;
+        if (this.ui.framePlayback) playing.completed = true;
+        else this.endPlayback(true);
       });
     });
   }
 
-  async say(situation: string, npcId: string, key: string, fallback: Record<string, SentSrc[]>) {
+  async say(situation: string, npcId: string, key: string, fallback?: Record<string, SentSrc[]>) {
     if (this.turn || this.playback) return null;
     const line = this.resolve(situation, npcId, key, fallback, false);
     if (!line) return null;
-    this.ui.say(line);
     const npc = NPCS[npcId];
-    return await this.play(line, npcVoice(npc), npc.speed ?? 1, npc.gender === "m") ? line : null;
+    return this.sayLine(line, npcVoice(npc), npc.speed ?? 1, npc.gender === "m");
+  }
+
+  async sayLine(line: KitLine, voice: string, speed: number, male: boolean) {
+    if (this.turn || this.playback) return null;
+    this.ui.say(line);
+    return await this.play(line, voice, speed, male) ? line : null;
   }
 
   clearLine() {
     this.ui.say(null);
   }
 
-  async expect(situation: string, npcId: string, keys: string[], fallback: Record<string, SentSrc[]>, accept: Readonly<Record<string, readonly string[]>> = {}) {
+  async expect(situation: string, npcId: string, keys: string[], fallback: Record<string, SentSrc[]> | undefined, accept: Readonly<Record<string, readonly string[]>> = {}) {
     if (this.turn || this.playback) return null;
     const options = keys.flatMap((key) => this.resolve(situation, npcId, key, fallback, true) ?? []);
     if (!options.length) return null;
@@ -159,7 +171,11 @@ export class ModeDialogue {
     }
     if (paused) return;
     const playing = this.playback;
-    if (playing && (!playing.audible || audio.getState() !== "playing") && (playing.left -= dt) <= 0) this.endPlayback(true);
+    // A mode clock can bound stalled audio and apply completions on its next frame.
+    if (playing) {
+      if (this.ui.framePlayback || !playing.audible || audio.getState() !== "playing") playing.left -= dt;
+      if (playing.completed || playing.left <= 0) this.endPlayback(true);
+    }
     if (this.retryIn > 0 && (this.retryIn -= dt) <= 0) this.listen();
   }
 

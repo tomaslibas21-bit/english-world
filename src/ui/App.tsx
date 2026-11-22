@@ -12,7 +12,7 @@ import { ViewSwitch } from "./ViewSwitch";
 import { Panels } from "./Panels";
 import { Toasts } from "./Toasts";
 import { LightPlay } from "./LightHome";
-import { takeAutoStart, takeLinkedSituation } from "./playMode";
+import { debugBaristaLink, takeAutoStart, takeLinkedSituation } from "./playMode";
 import { refreshLocalState } from "../convo/speech";
 import { L } from "./i18n";
 import { audio } from "../game/audio";
@@ -54,11 +54,15 @@ function Play() {
         // mode's home is the list, LightHome.tsx.)
         setReady(true); useStore.getState().setScreen("play");
         const sit = takeLinkedSituation();
-        if (sit) g!.startScenario(sit);
+        if (debugBaristaLink) g!.debugBarista()?.start();
+        else if (sit) g!.startScenario(sit);
       };
       g.init();
-      (window as any).__ew = { game: g, store: useStore, radio, voice: audio.getState, audio, coach, surf: useSurf, carStats: () => g!.carStats(),
-        road: { state: () => g!.roadDebug(), steer: (lane: number) => g!.roadSteer(lane), jumpTimer: (seconds?: number) => g!.roadJumpTimer(seconds) } };
+      (window as any).__ew = {
+        game: g, store: useStore, radio, voice: audio.getState, audio, coach, surf: useSurf, carStats: () => g!.carStats(),
+        road: { state: () => g!.roadDebug(), steer: (lane: number) => g!.roadSteer(lane), jumpTimer: (seconds?: number) => g!.roadJumpTimer(seconds) },
+        barista: g.debugBarista(),
+      };
     });
     return () => { gone = true; g?.dispose(); setGame(null); };
   }, []);

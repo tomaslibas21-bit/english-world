@@ -6,6 +6,7 @@ import { SectionHelpButton, useSectionHelp } from "./sectionHelp";
 import { useSurf } from "../game/surf/store";
 import { TaxiOverlay } from "./Taxi";
 import { SurfOverlay, SurfPicker } from "./Surf";
+import { BaristaOffer, BaristaOverlay } from "./Barista";
 import { game } from "../game/gameRef";
 import { CAVE_ZONE } from "../game/cave/groundsPlan";
 import { SITUATION_BY_ID } from "../content/situations/catalog";
@@ -49,7 +50,7 @@ export function useDueCards(): number {
 const RIDE_ARROWS = () => <><kbd><Icon name="arrowUp" size="1em" strokeWidth={2.25} label={L("aukštyn")} /></kbd><kbd><Icon name="arrowDown" size="1em" strokeWidth={2.25} label={L("žemyn")} /></kbd><kbd><Icon name="arrowLeft" size="1em" strokeWidth={2.25} label={L("kairėn")} /></kbd><kbd><Icon name="arrowRight" size="1em" strokeWidth={2.25} label={L("dešinėn")} /></kbd></>;
 
 const RoadOverlay = lazy(() => import("./Road").then(({ RoadOverlay }) => ({ default: RoadOverlay })));
-const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = { taxi: TaxiOverlay, road: RoadOverlay };
+const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = { taxi: TaxiOverlay, road: RoadOverlay, barista: BaristaOverlay };
 
 export function Hud() {
   const hud = useStore((s) => s.hud);
@@ -77,7 +78,7 @@ export function Hud() {
     return (
       <div className={"hud mode-hud" + (road ? " road-mode" : "") + (hud.showTouch ? " has-touch" : "")}>
         {!hud.panel && Overlay && <Suspense fallback={null}><Overlay touch={hud.showTouch} /></Suspense>}
-        {!road && <Toolbar riding touch={hud.showTouch} modeExit={hud.modeScreen.exitLabel} />}
+        {!road && hud.modeScreen.id !== "barista" && <Toolbar riding touch={hud.showTouch} modeExit={hud.modeScreen.exitLabel} />}
         {hud.showTouch && hud.ride && <TouchControls road={road} />}
         <Fade />
       </div>
@@ -111,6 +112,7 @@ export function Hud() {
         <RideKeys key={`${ride}-${hud.rideStartedAt}`} ride={hud.ride} startedAt={hud.rideStartedAt} hidden={!!hud.panel || !!hud.glyph || picking || note === "guide"} />
       )}
       {hud.showTouch && <TouchControls />}
+      {!hud.panel && <BaristaOffer />}
       <SurfPicker />
       <Fade />
     </div>
@@ -297,7 +299,8 @@ function Flight() {
 
 function Fade() {
   const fade = useStore((s) => s.hud.fade);
-  return <div className="fade" style={{ opacity: fade }} />;
+  const fadeOnFrames = useStore((s) => s.hud.fadeOnFrames);
+  return <div className="fade" style={{ opacity: fade, transition: fadeOnFrames ? "none" : undefined }} />;
 }
 
 function Objective({ collapsed, fresh, setCollapsed }: { collapsed: boolean; fresh: boolean; setCollapsed: (collapsed: boolean) => void }) {
@@ -503,7 +506,7 @@ function TouchControls({ road = false }: { road?: boolean }) {
       {(ride === "car" || ride === "taxi") && <HornButton touch />}
       {/* the jump stays under the right thumb; with someone to talk to or a door to go through it moves over for that button
           (a second tap while in the air is a flip: every press goes to the game, which knows where the player is) */}
-      {prompt && <button className="act-btn" onClick={() => game?.interact()}>{prompt.kind === "taxi" ? prompt.label : prompt.kind === "talk" ? L("Kalbėti") : prompt.kind === "exit" ? L("Išeiti") : prompt.kind === "drive" ? L("Vairuoti") : prompt.kind === "boat" ? L("Plaukti") : prompt.kind === "out" ? L("Išlipti") : prompt.kind === "climb" ? L("Užlipti") : prompt.kind === "listen" ? L("Klausyti") : prompt.kind === "surf" ? L("Banglentė") : prompt.kind === "paddle" ? L("Irkluoti") : L("Įeiti")}</button>}
+      {prompt && <button className="act-btn" onClick={() => game?.interact()}>{(prompt.kind === "taxi" || prompt.kind === "barista") ? prompt.label : prompt.kind === "talk" ? L("Kalbėti") : prompt.kind === "exit" ? L("Išeiti") : prompt.kind === "drive" ? L("Vairuoti") : prompt.kind === "boat" ? L("Plaukti") : prompt.kind === "out" ? L("Išlipti") : prompt.kind === "climb" ? L("Užlipti") : prompt.kind === "listen" ? L("Klausyti") : prompt.kind === "surf" ? L("Banglentė") : prompt.kind === "paddle" ? L("Irkluoti") : L("Įeiti")}</button>}
       {/* (at a wheel the same button is the brake, for as long as it is held; in the water, a dive and the way back up) */}
       {ride === "car" || ride === "boat" || ride === "taxi"
         ? <button className={"jump-btn brake-btn" + (prompt ? " beside" : "")} aria-label={L(road ? ROAD_UI.drift : "Stabdyti")} title={L(road ? ROAD_UI.drift : "Stabdyti")} onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); game?.hold(true); }} onPointerUp={() => game?.hold(false)} onPointerCancel={() => game?.hold(false)} onLostPointerCapture={() => game?.hold(false)}><span aria-hidden>{road ? L(ROAD_UI.drift) : fast ? "DRIFT" : "STOP"}</span></button>

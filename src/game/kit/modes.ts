@@ -18,17 +18,19 @@ export interface ModePrompt {
   distance: number;
   label: string;
   hint?: string;
-  kind: "surf" | "taxi";
+  kind: "surf" | "taxi" | "barista";
 }
 
 export interface GameMode {
   id: string;
   readonly active: boolean;
   readonly modal?: boolean;
+  readonly indoorPrompt?: boolean;
   readonly cleanScreen: CleanScreen;
   readonly exitLabel?: string;
   readonly camera?: "stage" | "follow";
-  readonly conversation?: { situation: string; label: string };
+  readonly conversation?: { situation: string; label: string; option?: string };
+  available?(): boolean;
   allowsRideHints?(): boolean;
   start(option?: string): boolean;
   update(frame: ModeFrame): void;
@@ -91,9 +93,10 @@ export class ModeRegistry {
     for (const mode of this.modes.values()) mode.tick?.(dt, outdoors && !this.active);
   }
 
-  prompt(x: number, z: number, nearerThan: number) {
+  prompt(x: number, z: number, nearerThan: number, indoors = false) {
     let result: (ModePrompt & { id: string }) | null = null;
     for (const mode of this.modes.values()) {
+      if (!!mode.indoorPrompt !== indoors) continue;
       const prompt = mode.prompt?.(x, z);
       if (prompt && prompt.distance < (result?.distance ?? nearerThan)) result = { ...prompt, id: mode.id };
     }
@@ -102,7 +105,7 @@ export class ModeRegistry {
 
   offer(situation: string) {
     for (const mode of this.modes.values()) {
-      if (mode.conversation?.situation === situation) return { id: mode.id, label: mode.conversation.label };
+      if (mode.conversation?.situation === situation && (mode.available?.() ?? true)) return { id: mode.id, label: mode.conversation.label };
     }
     return null;
   }
@@ -115,8 +118,9 @@ export class ModeRegistry {
   }
 
   queue(id: string) {
-    if (!this.get(id)) return false;
-    if (this.queued?.id !== id) this.queued = { id };
+    const mode = this.get(id);
+    if (!mode || !(mode.available?.() ?? true)) return false;
+    if (this.queued?.id !== id) this.queued = { id, option: mode.conversation?.option };
     return true;
   }
 

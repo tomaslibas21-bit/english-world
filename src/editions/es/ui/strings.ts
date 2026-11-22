@@ -1,6 +1,7 @@
 // The interface in English for the Spanish edition: each Lithuanian original (as written in src/ui/…, through
 // L() / Lx() of src/ui/i18n.ts) and its English. Keep the {placeholders}. Replaces src/ui/strings.ts in this edition.
 export const STRINGS: Record<string, string> = {
+  // Road game
   "Kelias per dykumą": "Desert road",
   "Klausykite ir važiuokite pro teisingus vartus": "Listen and drive through the right gate",
   "Ką išgirdote?": "What did you hear?",
@@ -23,6 +24,23 @@ export const STRINGS: Record<string, string> = {
   "Šis žodis skamba čia:": "You'll hear it here:",
   "Atgal į miestą": "Back to town",
   "Pirmiausia pakalbėkite su žmonėmis mieste – tada čia atsiras žodžių.": "Talk with people in town first – then words will show up here.",
+  // Barista shift
+  "Pabandyti už prekystalio": "Try the barista's side",
+  "Pamaina baigta": "Shift over",
+  "Aptarnauti klientai": "Customers served",
+  "Teisingai iš pirmo karto": "Right the first time",
+  "Dydis": "Size",
+  "Gėrimas": "Drink",
+  "Pienas": "Milk",
+  "Priedai": "Extras",
+  "Čia ar išsinešti": "For here or to go",
+  "čia": "for here",
+  "išsinešti": "to go",
+  "be pieno": "no milk",
+  "Paduoti": "Hand over",
+  "barista:Kaina": "Price",
+  "Klientas": "Customer",
+  "Baigti pamainą": "End the shift",
   // Ride-along taxi
   "Vairuoti taksi": "Drive the taxi",
   "← Sukite kairėn": "← Turn left",

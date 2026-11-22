@@ -6,6 +6,7 @@
 // Terms: dalelytė ar, „būti“/„yra“ (the copula), tariamoji / liepiamoji nuosaka, the case names (kilmininkas…),
 // dalies kilmininkas (partitive), „(susieta su „like“)“ = the gloss sits under that other unit.
 export const NOTES_LT: Record<string, string> = {
+  "Prices are said as two numbers, dollars then cents: four seventy-five = $4.75.": "Kainą amerikiečiai sako dviem skaičiais – doleriai, paskui centai: four seventy-five = 4,75 dolerio.",
   "Question “Do” = the particle ar.": "Klausime „Do“ = dalelytė ar.",
   "“Is” in a yes/no question = the particle ar; Lithuanian needs no copula here.": "„Is“ klausime = dalelytė ar; žodžio „yra“ lietuviškai čia nereikia.",
   "Question “do” has no Lithuanian word; the tense sits on the verb.": "Klausiamasis „do“ lietuviškai atskiro žodžio neturi; laiką perteikia veiksmažodis.",
