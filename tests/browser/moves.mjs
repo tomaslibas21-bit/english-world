@@ -189,9 +189,16 @@ try {
     // (b) from the beach, a tap far out on the water: walked in, waded, swum towards it
     await page.evaluate(() => { window.__toasts.length = 0; });
     const beach = await page.evaluate(() => {
-      const g = window.__ew.game, b = g.rides.list.find((q) => q.kind === "boat");
-      // (beside a boat's place, a few metres up the beach)
-      return { x: b.home.x + 8, z: b.home.z + 9 };
+      const g = window.__ew.game, b = g.rides.list.find((q) => q.kind === "boat"), nav = g.zone.nav, x = b.home.x + 8;
+      // (beside a boat's place, a few metres up the beach: on the sand, with nothing between it and the water, not on
+      // a promenade above a sea wall)
+      for (const dz of [9, 8, 7, 6, 5, 4]) {
+        const z = b.home.z + dz;
+        let open = true;
+        for (let zz = z; zz >= b.home.z + 3.5; zz -= 0.5) if (!nav.free(nav.idx(x, zz))) { open = false; break; }
+        if (open) return { x, z };
+      }
+      return { x, z: b.home.z + 4 };
     });
     await place(beach.x, beach.z, Math.PI);
     await page.evaluate(() => { const g = window.__ew.game; g.rig.pitch = 0.45; });
