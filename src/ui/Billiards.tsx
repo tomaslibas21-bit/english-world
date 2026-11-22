@@ -145,7 +145,10 @@ export function BilliardsOverlay({ touch }: { touch: boolean }) {
         <div className="bl-chip-heading">Kišenė</div>
         <div className="bl-pocket-chips" role="group" aria-label="Kišenė">
           {pockets.map(({ id, line }) => <button key={id} data-pocket={id} className="bl-choice" aria-pressed={id === selection.pocket}
-            disabled={state.replaying} onClick={() => act("pocket", id)}><GlossLine sentence={line.sentence} gloss compact /></button>)}
+            disabled={state.replaying} onClick={() => act("pocket", id)}>
+            <GlossLine sentence={{ ...line.sentence, en: line.sentence.en.replace(/\.$/, ""),
+              nat: line.sentence.nat.replace(/\.$/, "") }} gloss compact />
+          </button>)}
         </div>
         {phase === "call" && call && <button className="bl-confirm" onClick={() => act("confirm")}>
           <span data-mic={state.mic.status}><Icon name="mic" size={15} />Pasakyk arba bakstelėk:</span>

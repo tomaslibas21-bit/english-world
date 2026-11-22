@@ -397,8 +397,9 @@ export class BilliardsMode implements GameMode {
     }
     if (round.side === "learner") {
       round.streak = judgement.scored ? round.streak + 1 : 0;
-      if (judgement.scored) {
+      if (judgement.scored && shot.call) {
         round.made++;
+        this.table!.showPoint(shot.call.pocket);
         cues.push(round.streak > 1 ? "bl_again" : "bl_nice");
       } else if (judgement.wrongPocket) cues.push("bl_wrong_pocket");
       else if (judgement.wrongBall) cues.push("bl_wrong_ball");

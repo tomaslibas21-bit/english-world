@@ -58,7 +58,7 @@ try {
       await context.addInitScript(installControls, [`${storage}-progress-v1`, JSON.stringify(progress)]);
       const page = await context.newPage();
       const errors = [];
-      page.on("pageerror", (err) => errors.push(err.message));
+      page.on("pageerror", (err) => { errors.push(err.message); console.log("PAGEERROR", err.stack?.slice(0, 900)); });
       await page.goto(base, { waitUntil: "domcontentloaded" });
       const step = (frames = 4) => page.evaluate((n) => window.__stepBilliards(n), frames);
       const state = () => page.evaluate(() => window.__ew?.billiards?.state());
@@ -229,12 +229,27 @@ try {
       assert.equal((await state()).selection.ball, own);
       assert.equal((await state()).selection.pocket, "ls");
       await checkLayout(false);
+      const pocketLabels = await page.locator(".bl-pocket-chips .kit-gloss-compact > *").allTextContents();
+      assert.equal(pocketLabels.length, 12);
+      assert(pocketLabels.every((label) => !label.endsWith(".")));
+      assert.match(await page.locator(".bl-confirm [lang=en]").innerText(), /left side pocket\.$/);
       await screenshot("03-call");
       await press(page.locator(".bl-confirm"));
       await phase("aim");
       await checkLayout(true);
       await screenshot("03-aim");
       await shoot(0.45);
+      const point = () => page.evaluate(() => {
+        const table = window.__ew.game.zone.group.getObjectByName("billiards-table");
+        const ring = table.getObjectByName("billiards-point-ring");
+        const number = table.getObjectByName("billiards-point");
+        return { flash: ring.visible, number: number.visible, x: ring.position.x, z: ring.position.z };
+      });
+      const scored = await point();
+      assert.deepEqual(scored, { flash: true, number: true, x: -0.495, z: 0 });
+      await screenshot("03-made");
+      await step(12);
+      assert.deepEqual(await point(), { ...scored, flash: false, number: false });
       await phase("call");
       assert.equal((await state()).layout.find((b) => b.id === own).pocket, "ls");
 
@@ -297,6 +312,11 @@ try {
       assert.equal(result.sunk, 4);
       assert(result.understood > 0 && result.understood < result.listens);
       assert.equal(result.cards, 9);
+      await step(16);
+      // The game frames are stepped, while the score's CSS animations use the browser clock.
+      await page.locator(".mode-score-card").evaluate(async (card) => {
+        await Promise.allSettled(card.getAnimations({ subtree: true }).map((animation) => animation.finished));
+      });
       await screenshot("06-score");
 
       const rack = (await state()).layout.map(({ id }) => id);
