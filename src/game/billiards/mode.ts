@@ -361,7 +361,7 @@ export class BilliardsMode implements GameMode {
     this.table!.markCall(round.balls, ai.call, false);
     ui({ correct, reveal: !correct });
     audio.sfx(correct ? "success" : "soft");
-    this.answerDelay = correct ? 0.85 : 2.45;
+    this.answerDelay = correct ? 1.5 : 2.45;  // (a right answer shows the call too: time to read it)
     this.afterFeedback = () => this.fire(ai.power, ai.call);
   }
 
@@ -428,6 +428,7 @@ export class BilliardsMode implements GameMode {
 
   private async finish(round: Round, winner: Winner) {
     const key = winner === "learner" ? "bl_you_win" : winner === "tina" ? "bl_i_win" : "bl_tie";
+    if (winner === "learner") audio.sfx("cheer");
     if (!await this.sayAll(round, [key])) return;
     this.setPhase("reply");
     this.replyDelay = 8;

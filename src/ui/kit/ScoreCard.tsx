@@ -1,4 +1,5 @@
-import type { CSSProperties, ReactNode } from "react";
+import { useRef, type CSSProperties, type ReactNode } from "react";
+import { Confetti } from "../Confetti";
 import { Stars } from "../icons";
 import { HL } from "../i18n";
 import "./scoreCard.css";
@@ -12,6 +13,8 @@ interface ScoreCardProps {
   again: { label: string; run(): void };
   done: { label: string; run(): void };
   children?: ReactNode;
+  /** The learner won: a burst of confetti from the title. */
+  celebrate?: boolean;
 }
 
 /** Keep the final value available to assistive technology throughout the visual count. */
@@ -40,12 +43,14 @@ function ScoreStars({ ratio }: { ratio: number }) {
   </div>;
 }
 
-export function ScoreCard({ title, score, ratio, rows, phrases, again, done, children }: ScoreCardProps) {
+export function ScoreCard({ title, score, ratio, rows, phrases, again, done, children, celebrate }: ScoreCardProps) {
+  const heading = useRef<HTMLHeadingElement>(null);
   return (
     <div className="mode-score" lang={HL}>
       <section className="mode-score-card" role="dialog" aria-labelledby="mode-score-title">
         {ratio != null && Number.isFinite(ratio) && <ScoreStars ratio={ratio} />}
-        <h2 id="mode-score-title">{title}</h2>
+        <h2 id="mode-score-title" ref={heading}>{title}</h2>
+        {celebrate && <Confetti from={heading} />}
         {score != null && <strong className="mode-score-line">{score}</strong>}
         <dl>
           {rows.map(({ label, value }) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}

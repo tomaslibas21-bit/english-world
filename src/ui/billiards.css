@@ -128,3 +128,63 @@
   .bl-pocket-chips .kit-gloss-compact > span { font-size: 0.83rem; }
   .bl-pocket-chips .kit-gloss-compact > small { font-size: 0.65rem; }
 }
+/* A screen wider than tall (a computer, a phone held sideways): three columns, so the table gets the whole height:
+   the score and the exit on the left, the table in the middle, the panel on the right. (Below each other, the table
+   was a narrow strip in the middle of a computer screen, and a postage stamp on a phone held sideways.) */
+@media (min-aspect-ratio: 6/5) {
+  .billiards {
+    grid-template: "status stage panel" minmax(0, 1fr) / minmax(150px, auto) minmax(0, 1fr) minmax(270px, 33%);
+    justify-items: stretch; gap: 10px;
+  }
+  .bl-header { display: contents; }
+  .bl-status { grid-area: status; align-self: start; }
+  .bl-exit { grid-area: status; align-self: end; justify-self: start; }
+  .bl-stage { grid-area: stage; width: 100%; height: 100%; }
+  .bl-panel { grid-area: panel; width: 100%; align-self: center; max-height: 100%; }
+  .bl-pocket-chips { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .billiards .bl-pocket-chips .kit-gloss-compact > small { font-size: 0.69rem; }
+}
+/* A computer: bigger type, balls and chips. */
+@media (min-aspect-ratio: 6/5) and (min-height: 600px) {
+  .billiards { grid-template-columns: minmax(190px, auto) minmax(0, 1fr) minmax(320px, 30%); }
+  .bl-status { padding: 10px 14px 12px; }
+  .bl-turn { font-size: 1.05rem; }
+  .bl-turn i { width: 10px; height: 10px; }
+  .bl-rack { gap: 4px; margin-top: 6px; }
+  .bl-row { gap: 6px; min-height: 30px; }
+  .bl-row-name { min-width: 44px; font-size: 0.95rem; }
+  .bl-ball { width: 28px; height: 28px; }
+  .bl-ball b { width: 18px; height: 18px; font-size: 11px; }
+  .bl-exit { font-size: 0.92rem; padding: 9px 13px; }
+  .bl-panel { padding: 14px 16px; border-radius: 18px; }
+  .bl-panel h2 { font-size: 1.1rem; }
+  .bl-chip-heading { font-size: 0.82rem; margin: 11px 0 6px; }
+  .bl-ball-chips, .bl-choices { gap: 7px; }
+  .bl-ball-option { min-width: 52px; min-height: 44px; }
+  .bl-ball-option .bl-ball { width: 32px; height: 32px; }
+  .bl-ball-option .bl-ball b { width: 20px; height: 20px; font-size: 12px; }
+  .bl-pocket-chips { gap: 6px; }
+  .bl-choice { min-height: 52px; padding: 5px 8px; border-radius: 10px; }
+  .billiards .bl-choice .kit-gloss-compact > span { font-size: 1.14rem; }
+  .billiards .bl-pocket-chips .kit-gloss-compact > small, .billiards .bl-choice .kit-gloss-compact > small { font-size: 0.8rem; }
+  .billiards .bl-speech .kit-gloss-compact > span { font-size: 1.4rem; }
+  .billiards .bl-speech .kit-gloss-compact > small { font-size: 0.92rem; }
+  .bl-confirm { padding: 6px 8px 8px; margin-top: 9px; }
+  .bl-confirm > span:first-child { font-size: 0.84rem; }
+  .bl-aim p { font-size: 0.98rem; }
+  .bl-key-help { font-size: 0.82rem; }
+  .bl-replay, .bl-nudge { font-size: 0.88rem; }
+  .bl-nudge { width: 40px; min-height: 40px; }
+  .bl-power { width: 54px; height: min(60%, 320px); }
+}
+/* A phone held sideways: a wider, tighter panel, so a whole call fits without scrolling. */
+@media (min-aspect-ratio: 6/5) and (max-height: 520px) {
+  .billiards { grid-template-columns: minmax(140px, auto) minmax(0, 1fr) minmax(290px, 37%); gap: 8px; }
+  .bl-panel { padding: 6px 8px; }
+  .bl-panel h2 { font-size: 0.82rem; }
+  .bl-chip-heading { display: none; }
+  .bl-ball-chips { margin-block: 4px; }
+  .bl-choice { min-height: 32px; padding: 2px 5px; }
+  .billiards .bl-choice .kit-gloss-compact > span { font-size: 0.9rem; }
+  .bl-confirm { margin-top: 4px; }
+}
