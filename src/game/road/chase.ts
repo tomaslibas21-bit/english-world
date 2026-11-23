@@ -38,7 +38,7 @@ export class RoadChase {
     // A longer lens brings the gate row forward while a matching dolly preserves the car's size.
     // Release it progressively on the last stretch so the player still feels the pass overhead.
     const approaching = gate ? smoothstep(remaining, 9, 53) * (1 - smoothstep(remaining, 85, 135)) : 0;
-    const zoom = portrait ? clamp(3.25 * aspect, 1, 2.15) : short ? 2.4 : 0.78;
+    const zoom = portrait ? clamp(3.25 * aspect, 1, 2.15) : short ? 2.4 : 1.25;
     const targetLens = 1 + zoom * approaching;
     this.lens = lerp(this.lens, targetLens, ease);
     const vertical = Math.tan(degToRad((baseFov + this.widen * (portrait ? 19 : 12)) / 2)) / this.lens;

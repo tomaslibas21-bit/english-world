@@ -62,8 +62,8 @@ export class SeaView {
   private portrait = false;
   /** A phone on its side. */
   private short = false;
-  /** On a phone the lens reaches for the gate row while the camera backs off to match: the boat keeps its size and
-   *  the three boards fill the width seconds earlier. */
+  /** The lens reaches for the gate row while the camera backs off to match: the boat keeps its size and the three
+   *  boards can be read seconds earlier (most of all on a phone). */
   private lens = 1;
   /** Half the picture's width per metre of distance at the unzoomed lens. */
   private spread = 0.35;
@@ -138,9 +138,7 @@ export class SeaView {
     this.followX = THREE.MathUtils.lerp(this.followX, boat.worldX, ease);
     // Orbit about the hull so the approach can look towards the middle gate while keeping the boat in frame.
     const ahead = gateAhead ?? 0;
-    const reach = portrait || this.short;
-    const lookAcross = THREE.MathUtils.smoothstep(ahead, 9, 22)
-      * (1 - THREE.MathUtils.smoothstep(ahead, reach ? 78 : 38, reach ? 100 : 64));
+    const lookAcross = THREE.MathUtils.smoothstep(ahead, 9, 22) * (1 - THREE.MathUtils.smoothstep(ahead, 78, 100));
     this.approach = lookAcross;
     const across = Math.atan2(boat.x, Math.max(22, ahead)) * lookAcross;
     const wanted = boat.turning ? boat.heading : Math.PI + across;
@@ -150,10 +148,12 @@ export class SeaView {
     const turn = Math.sin(Math.PI * boat.turnProgress);
     const hullRoom = Math.max(0, m.spec.half - 3.2) * 1.35;
     const baseBack = (portrait ? 11.4 : 10.5) + turn * 0.75 + hullRoom;
-    // Fill 84% of the width with the row of boards, then let go over the last metres so the pass is still felt.
-    const fill = this.spread * 0.84;
-    const reaching = reach && gateAhead !== undefined && !boat.turning && boat.age > 1.6;
-    const wantedLens = reaching ? 1 + (THREE.MathUtils.clamp(fill * ahead / Math.max(1, GATE_HALF - fill * baseBack), 1, 2.3) - 1)
+    // Fill 84% of a phone's width with the row of boards (a wide screen: 45%, with a gentler lens), then let go over
+    // the last metres so the pass is still felt.
+    const phone = portrait || this.short;
+    const fill = this.spread * (phone ? 0.84 : 0.45);
+    const reaching = gateAhead !== undefined && !boat.turning && boat.age > 1.6;
+    const wantedLens = reaching ? 1 + (THREE.MathUtils.clamp(fill * ahead / Math.max(1, GATE_HALF - fill * baseBack), 1, phone ? 2.3 : 1.6) - 1)
       * THREE.MathUtils.smoothstep(ahead, 6, 22) : 1;
     // (slow to reach out, quick to let go: the row must never outgrow the picture on the way in)
     this.lens += (wantedLens - this.lens) * (1 - Math.exp(-dt * (wantedLens < this.lens ? 12 : 1.8)));
@@ -225,9 +225,8 @@ export class SeaView {
     const portraitFov = THREE.MathUtils.radToDeg(2 * Math.atan(portraitTan * (h / w) / this.lens));
     this.short = !this.portrait && h < 520;
     this.spread = this.portrait ? portraitTan : Math.tan(THREE.MathUtils.degToRad(26)) * w / h;
-    const desktopFov = this.short
-      ? THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(26)) / this.lens))
-      : 52 - (w >= WIDE_GATE_VIEW ? 2.5 * this.approach : 0);
+    const desktopFov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(26)) / this.lens))
+      - (!this.short && w >= WIDE_GATE_VIEW ? 2.5 * this.approach : 0);
     this.camera.fov = THREE.MathUtils.lerp(this.fov, this.portrait ? portraitFov : desktopFov, this.cameraMix);
     if (this.age > 0) {
       if (Math.abs(this.shift) > 0.0001) this.camera.setViewOffset(w, h, 0, this.shift * h, w, h);
