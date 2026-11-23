@@ -35,14 +35,19 @@ try {
     if (!phone) {
       // a parked car: walked at, it is a wall; a jump is its hood or its trunk; a second jump from there its roof
       const car = await page.evaluate(() => {
-        const g = window.__ew.game, col = g.town.colliders;
-        for (const b of col.boxes) {
-          if (b.tag !== "car" || !b.split) continue;
-          const cx = (b.minX + b.maxX) / 2, cz = (b.minZ + b.maxZ) / 2, alongX = b.maxX - b.minX > b.maxZ - b.minZ;
+        // The parked cars are ride cars (Rides.createModeCar, since the Kenney cars): a moving box each, with the
+        // hood, roof and trunk as pieces with heights (carLedges), not split town colliders any more.
+        const g = window.__ew.game, col = g.town.colliders, boxes = [...g.rides.modeCars];
+        for (const [ride, b] of boxes) {
+          if (!ride.parked) continue;
+          const c = Math.abs(Math.cos(b.heading)), sn = Math.abs(Math.sin(b.heading));
+          const hx = c * b.hw + sn * b.hl, hz = sn * b.hw + c * b.hl;
+          const cx = b.x, cz = b.z, alongX = hx > hz;
           for (const s of [1, -1]) {
-            const x = alongX ? cx + s * ((b.maxX - b.minX) / 2 + 2.4) : cx, z = alongX ? cz : cz + s * ((b.maxZ - b.minZ) / 2 + 2.4);
-            const others = col.boxes.filter((o) => o !== b);
-            if (others.some((o) => x > o.minX - 0.6 && x < o.maxX + 0.6 && z > o.minZ - 0.6 && z < o.maxZ + 0.6)) continue;
+            const x = alongX ? cx + s * (hx + 2.4) : cx, z = alongX ? cz : cz + s * (hz + 2.4);
+            if (col.boxes.some((o) => x > o.minX - 0.6 && x < o.maxX + 0.6 && z > o.minZ - 0.6 && z < o.maxZ + 0.6)) continue;
+            if (col.circles?.some((o) => Math.hypot(o.x - x, o.z - z) < o.r + 0.6)) continue;
+            if (boxes.some(([, o]) => o !== b && Math.hypot(o.x - x, o.z - z) < o.hl + 1)) continue;
             return { x, z, rot: alongX ? (s > 0 ? -Math.PI / 2 : Math.PI / 2) : s > 0 ? Math.PI : 0, cx, cz };
           }
         }
@@ -56,7 +61,9 @@ try {
       await page.waitForTimeout(1200);
       let s = await state();
       check("walking at a car stops at it", s.y === 0 && Math.hypot(s.x - car.cx, s.z - car.cz) > 2, s);
-      await page.keyboard.press("Space");
+      // The jump button (the phone's, Game.jump): beside a parked car, Space is E and gets in (it is a ride now).
+      const jump = () => page.evaluate(() => window.__ew.game.jump());
+      await jump();
       await page.waitForFunction(() => { const g = window.__ew.game; return !g.hop.air && g.hop.y > 0.6; }, null, { timeout: 5000 });
       await page.keyboard.up("w");
       s = await state();
@@ -64,8 +71,8 @@ try {
       // (onto the windshield or the roof; from the windshield one more)
       const onRoof = () => page.waitForFunction(() => { const g = window.__ew.game; return !g.hop.air && g.hop.y > 1.4; }, null, { timeout: 1500 }).then(() => true, () => false);
       await page.keyboard.down("w");
-      await page.keyboard.press("Space");
-      if (!(await onRoof())) { await page.keyboard.press("Space"); await onRoof(); }
+      await jump();
+      if (!(await onRoof())) { await jump(); await onRoof(); }
       await page.keyboard.up("w");
       s = await state();
       check("and the next one on its roof", s.y > 1.4 && s.y < 1.75, s);
@@ -104,7 +111,9 @@ try {
 
       // a car's roof straight from the street: beside its door, the three presses, a step in at the top
       const beside = await page.evaluate((c) => {
-        const g = window.__ew.game, b = g.town.colliders.boxes.find((q) => q.tag === "car" && q.split && Math.abs((q.minX + q.maxX) / 2 - c.cx) < 0.1 && Math.abs((q.minZ + q.maxZ) / 2 - c.cz) < 0.1);
+        const g = window.__ew.game, [, q] = [...g.rides.modeCars].find(([, q]) => Math.abs(q.x - c.cx) < 0.1 && Math.abs(q.z - c.cz) < 0.1);
+        const co = Math.abs(Math.cos(q.heading)), sn = Math.abs(Math.sin(q.heading)), hx = co * q.hw + sn * q.hl, hz = sn * q.hw + co * q.hl;
+        const b = { minX: q.x - hx, maxX: q.x + hx, minZ: q.z - hz, maxZ: q.z + hz };
         const alongX = b.maxX - b.minX > b.maxZ - b.minZ;
         // (the side away from the curb's things: whichever is free)
         for (const s of [1, -1]) {
@@ -117,10 +126,10 @@ try {
       await page.evaluate((c) => { const g = window.__ew.game; g.keys.clear(); g.enterZone("town", { x: c.x, z: c.z, rot: c.rot }, true); g.rig.yaw = c.rot; g.rig.snap(); }, beside);
       await settle();
       const street = await state();
-      await page.keyboard.press("Space");
+      await jump();
       await page.waitForFunction(() => window.__ew.game.hop.air, null, { timeout: 5000 });
-      await page.keyboard.press("Space");
-      await page.keyboard.press("Space");
+      await jump();
+      await jump();
       await page.waitForFunction(() => window.__ew.game.hop.y > 1.9, null, { timeout: 5000 });
       await page.keyboard.down("w");
       await page.waitForFunction(() => !window.__ew.game.hop.air, null, { timeout: 5000 });
