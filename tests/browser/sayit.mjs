@@ -201,7 +201,7 @@ async function testGame(context, game, size, touch, supported) {
       }, exit);
       await wait(async () => (await read()).ready, "road is ready aboard the van");
       await page.keyboard.down("ArrowUp");
-      await wait(async () => (await read()).phase === "drive", "drives over the crest", 240, 1);
+      await wait(async () => (await read()).phase === "briefing", "drives over the crest", 240, 1);
       await page.keyboard.up("ArrowUp");
     } else {
       await page.keyboard.down("ArrowUp");
@@ -215,9 +215,10 @@ async function testGame(context, game, size, touch, supported) {
       const { edge, town } = await read();
       assert.equal(await page.evaluate(([x, z]) => window.__ew.seaPlaceBoat(x, z), [town.x, edge + 34]), true);
       await page.keyboard.down("ArrowUp");
-      await wait(async () => (await read()).phase === "drive", "sails out past the buoy line");
+      await wait(async () => (await read()).phase === "briefing", "sails out past the buoy line");
       await page.keyboard.up("ArrowUp");
     }
+    await press(page.locator('[data-way="words"]'));
     await wait(async () => (await read()).phase === "drive" && await page.locator(".road-question").isVisible(), "first word gate");
     const prompt = await read();
     const controls = ".road-gate, .road-replay, .road-dash button, .joy, .brake-btn, .drive-horn";

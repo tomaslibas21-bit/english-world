@@ -4,7 +4,7 @@ import { game } from "../game/gameRef";
 import { useRoad } from "../game/road/store";
 import { Icon } from "./icons";
 import { GlossLine } from "./kit/GlossLine";
-import { GateLabels, WordGateHeader, WordGateResult } from "./kit/WordGates";
+import { GateKaraoke, GateLabels, WordGateHeader, WordGateResult, WordGateStart } from "./kit/WordGates";
 import "./road.css";
 
 const act = (name: string, value?: string | boolean) => game?.modeAction("road", name, value);
@@ -46,6 +46,7 @@ function DriveOverlay({ touch }: { touch: boolean }) {
   const streak = useRoad((s) => s.streak);
   const ghost = useRoad((s) => s.ghost);
   const wind = useRoad((s) => s.wind);
+  const way = useRoad((s) => s.way);
   return <>
     {wind && <div className="drive-wind" aria-hidden />}
     <WordGateHeader game="road" words={words} {...{ prompt, sayIt, feedback, remaining, streak }} showHint={remaining >= 147}
@@ -53,6 +54,7 @@ function DriveOverlay({ touch }: { touch: boolean }) {
       extraMeter={ghost && <span className="road-ghost">{words.ghost}</span>}
       extraButton={!touch && <button className="road-icon" aria-label={words.horn} title={words.horn} onClick={() => act("horn")}><Icon name="horn" size={21} /></button>} />
     {prompt && gateId !== undefined && <GateLabels key={gateId} mode="road" prompt={prompt} gateId={gateId} />}
+    {way === "phrases" && <GateKaraoke mode="road" />}
     {!touch && <div className="road-controls">{words.controls}</div>}
   </>;
 }
@@ -62,8 +64,10 @@ const scoreActions = { again: () => act("again"), done, guide: () => act("guide"
 export function RoadOverlay({ touch }: { touch: boolean }) {
   const phase = useRoad((s) => s.phase);
   const result = useRoad((s) => s.result);
+  const way = useRoad((s) => s.way);
   return <div className="road-overlay" lang="lt">
     {phase === "lift" && <LiftOffer touch={touch} />}
+    {phase === "briefing" && <WordGateStart way={way} start={(choice) => act("start", choice)} done={done} town={words.town} />}
     {phase === "drive" && <DriveOverlay touch={touch} />}
     {phase === "result" && result && <WordGateResult result={result} words={words} actions={scoreActions}><LiftLine /></WordGateResult>}
     {(phase === "loading" || phase === "unavailable") && <div className="road-lift road-loading">

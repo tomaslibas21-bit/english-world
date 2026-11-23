@@ -57,6 +57,7 @@ export interface Progress {
   /** The help level and clean streak for each mini-game that uses the kit. */
   miniGameHelp?: Record<string, import("../game/kit/help").HelpProgress>;
   photoWalk?: import("../game/photowalk/state").PhotoWalkProgress;
+  wordGames?: Record<string, import("../game/road/save").WordGameProgress>;
   taxi?: { nextRoute: number };
   lighthouse?: { greeted?: boolean; boat?: { id: string; x: number; z: number; rot: number } };
   phone?: PhoneProgress;

@@ -342,7 +342,8 @@ try {
     for (let i = 0; i < 600; i++) {
       await step(1);
       const current = await read();
-      if (current.phase === "drive") { first = current; break; }
+      assert.equal(await loading.count(), 0);
+      if (current.phase === "briefing") { first = current; break; }
       if (current.town.bowZ - edge < 7.5) {
         await assertPresentation(current, preceding.at(-1));
         await patches(current, "approach to the outer buoys");
@@ -373,11 +374,15 @@ try {
     assert.equal(first.elapsed, 0);
     assert.equal(await page.locator(".fade").evaluate((element) => Number(getComputedStyle(element).opacity)), 0);
     assert.ok(first.drawCalls <= 25, `first sea frame uses ${first.drawCalls} draw calls`);
+    await page.keyboard.up("ArrowUp");
+    await press(page.locator('[data-way="words"]'));
+    const start = await read();
+    assert.equal(start.phase, "drive");
+    assert.equal(start.presented.serial, first.presented.serial);
     if (screenshots) await shot("first-sea");
     assertBoatFrame(first, "first sea frame");
     await patches(first, "first sea frame");
-    await page.keyboard.up("ArrowUp");
-    if (full) await departure(first, before, "departure");
+    if (full) await departure(start, before, "departure");
     else {
       await title.waitFor({ state: "attached" });
       const current = await titleState();
@@ -633,6 +638,8 @@ Gate layout at 19–32 m: ${JSON.stringify(layoutChecks)}`);
   await waitFor(() => result.isVisible(), "shows the score before retrying");
   const beforeRetry = await titleState();
   await press(result.getByRole("button", { name: "Dar kartą" }));
+  assert.equal((await read()).phase, "briefing");
+  await press(page.locator('[data-way="words"]'));
   await waitFor(async () => (await read()).phase === "drive" && !!(await read()).gates, "retry opens a prompt offshore", 15, 1);
   const retried = await read();
   assert.equal((await titleState()).mounts, beforeRetry.mounts);

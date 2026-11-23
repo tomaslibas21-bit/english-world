@@ -87,7 +87,7 @@ export class Gate {
   private pass?: { lane: number; correct: boolean; age: number; stamp?: THREE.Mesh; material: THREE.Material };
   private boardPose = new THREE.Object3D();
 
-  constructor(readonly distance: number, readonly prompt: Prompt, material: THREE.Material) {
+  constructor(readonly distance: number, public prompt: Prompt, material: THREE.Material) {
     const origin = point(distance);
     const facePoint = (x: number, y: number) => new THREE.Vector3(x, y, FACE_Z).add(origin);
     this.mesh = new THREE.Mesh(gateStructure(distance, origin), material);

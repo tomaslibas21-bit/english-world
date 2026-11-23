@@ -37,7 +37,7 @@ describe("rendering the first sea approach", () => {
     vi.unstubAllGlobals();
   });
 
-  it.each([[1280, 800], [390, 844], [390, 664]])("draws three boards and mounts three controls at 25 m on %ix%i", async (w, h) => {
+  it.each([[1280, 800], [390, 844], [390, 664], [844, 390]])("draws three boards and mounts three controls at 25 m on %ix%i", async (w, h) => {
     vi.stubGlobal("location", { search: "" });
     const { Hud } = await import("../src/ui/Hud");
     vi.spyOn(audio, "init").mockResolvedValue(undefined);
@@ -74,8 +74,8 @@ describe("rendering the first sea approach", () => {
     } as unknown as SeaHost;
     const word = { en: "boat", lt: "valtis", situation: "s66-taxi", clip: { say: "boat", voice: "", speed: 1, male: false } };
     // The boat sails down the center, so desktop exercises a correct pass and the phones exercise a miss.
-    const prompt = { word, options: ["Jis oranžinis", "Jis sidabrinis", "Jis violetinis"], right: w < h ? 0 : 1 };
-    const mode = new SeaMode(host, source, { ...prepared, pick: () => prompt, first: prompt });
+    const prompt = { word, options: ["Jis oranžinis", "Jis sidabrinis", "Jis violetinis"], right: w >= 900 ? 1 : 0 };
+    const mode = new SeaMode(host, source, { ...prepared, first: prompt });
     const renderer = { render: (scene: Object3D) => scene.updateMatrixWorld() };
 
     function sailFor(seconds: number) {
@@ -89,6 +89,9 @@ describe("rendering the first sea approach", () => {
 
     try {
       mode.start();
+      expect(renderToStaticMarkup(createElement(Hud))).toContain("Kaip žaisime?");
+      mode.action("start", "words");
+      await Promise.resolve();
       mode.render(renderer, w, h);
       expect(renderToStaticMarkup(createElement(Hud))).toContain('<header class="road-header"');
 

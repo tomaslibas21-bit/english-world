@@ -135,7 +135,11 @@ async function driveExit(url, scenario, expectedHeading, viewport = { width: 128
       let crossed = false;
       for (let frame = 0; frame < 180; frame++) {
         await step();
-        const state = await read();
+        let state = await read();
+        if (state.phase === "briefing") {
+          await page.locator('[data-way="words"]').click();
+          state = await read();
+        }
         await assertWorldFrame(page, previous, state, 60, "pc-computer", shots);
         if (state.elapsed === 0) crossed = true;
         previous = state;
@@ -166,7 +170,10 @@ async function driveExit(url, scenario, expectedHeading, viewport = { width: 128
           assert.equal((await read()).phase, "town");
         }
       } else {
-        const first = await until((state) => state.phase === "drive", "automatically enters when the module arrives");
+        await until((state) => state.phase === "briefing", "shows the choice when the module arrives");
+        await page.locator('[data-way="words"]').click();
+        const first = await read();
+        assert.equal(first.phase, "drive");
         assertRoadContinuity(first);
       }
     }
@@ -433,7 +440,11 @@ try {
     };
     for (let frame = 0; frame < 360; frame++) {
       await step(1);
-      const state = await read();
+      let state = await read();
+      if (state.phase === "briefing") {
+        await press(page.locator('[data-way="words"]'));
+        state = await read();
+      }
       if (!first || last.elapsed < 3) await assertWorldFrame(page, last, state, maxRoadCalls, label, shots);
       if (state.phase === "drive") {
         sampleHazards(state);
@@ -639,6 +650,7 @@ try {
     assert.equal(await result.getByRole("button", { name: "Nuvesk mane" }).count(), 1);
     await shot("result");
     await press(result.getByRole("button", { name: "Dar kartą" }));
+    await press(page.locator('[data-way="words"]'));
     await waitFor(async () => (await read()).phase === "drive", "retries directly on the road");
     await steerForGate(1);
     let ghostSeen = false;
@@ -696,6 +708,8 @@ try {
     assert.ok(frame?.face && frame?.taxi);
     await shot("lift");
     await press(yes);
+    await waitFor(async () => (await read()).phase === "briefing", "shows the choice after accepting the taxi lift");
+    await press(page.locator('[data-way="words"]'));
     await waitFor(async () => {
       const state = await read();
       return state.phase === "drive" && state.lifted && state.model === "taxi";
