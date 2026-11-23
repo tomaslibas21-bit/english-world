@@ -109,3 +109,10 @@
   .road-missed h3 { margin-bottom: 3px; }
   .road-missed article { padding-block: 4px; }
 }
+/* A phone on its side: the bar and the question share one slim row, so the word boards keep the sky. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .road-header { display: flex; align-items: flex-start; gap: 8px; width: min(96%, 780px); top: calc(6px + env(safe-area-inset-top)); }
+  .road-dash { flex: 1; min-width: 0; }
+  .road-cue, .road-feedback { flex: none; margin: 0; max-width: 48%; }
+  .road-hint { font-size: .72rem; white-space: nowrap; }
+}
