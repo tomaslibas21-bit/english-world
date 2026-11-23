@@ -6,27 +6,14 @@ import { shot } from "./screen-harness.mjs";
 const browser = await questBrowser();
 try {
   for (const [width, height] of questSizes) {
-    const { context, page, press } = await openQuestTown(browser, width, height);
+    const { context, page, press, languages } = await openQuestTown(browser, width, height);
     const label = `directions-${width}x${height}`;
     try {
-      const { npc, location, place, lineIds, lines, words, title, ask, thank } = await page.evaluate(async () => {
-        const { ASK_WAY_NPC, ASK_WAY_PLACES, ASK_WAY_LINES, ASK_WAY_HINTS, ASK_WAY_META, ASK_WAY_UI } = await import("/src/content/ask-way-lines.ts");
-        const { L } = await import("/src/ui/i18n.ts");
-        const { LOCATIONS } = await import("/src/content/locations.ts");
-        const { location, lines } = ASK_WAY_PLACES[0];
-        const unpipe = (source) => source.en.replaceAll(" | ", " ");
-        return {
-          npc: ASK_WAY_NPC, location, place: LOCATIONS[location].lt, lineIds: lines,
-          lines: lines.map((key) => unpipe(ASK_WAY_LINES[key][0])),
-          words: { ...Object.fromEntries(Object.entries(ASK_WAY_UI).map(([key, value]) => [key, L(value)])),
-            to: L(ASK_WAY_UI.to, { place: LOCATIONS[location].lt }) },
-          title: ASK_WAY_META.title.en,
-          ask: unpipe(ASK_WAY_HINTS.where.items[0].s), thank: unpipe(ASK_WAY_HINTS.thanks.items[0].s),
-        };
-      });
+      const { npc, situation, destination, location, place, lines, words, title, ask, thank } = await page.evaluate(async () =>
+        (await import("/tests/browser/quest-content.mjs")).directionsContent());
       const card = page.locator(".directions-card");
       assert.equal(await card.count(), 0);
-      await talkTo(page, npc);
+      await talkTo(page, npc, situation);
       assert.deepEqual(await page.evaluate(() => window.__ew.store.getState().conv.stepProgress), { step: 1, of: 2 });
       await answer(page, "where", ask);
       assert.equal(await card.count(), 0);
@@ -37,6 +24,7 @@ try {
       await completion.waitFor();
       assert.equal(await card.isVisible(), false);
       await card.getByText(words.to, { exact: true }).waitFor();
+      assert.equal(await card.getAttribute("data-destination"), destination);
       await checkHud(page, ".directions-card");
       await page.evaluate(() => {
         const { audio } = window.__ew;
@@ -49,13 +37,14 @@ try {
         window.__ew.store.getState().setSettings({ volume: 1 });
       });
       await press(card.getByRole("button", { name: words.replay, exact: true }));
-      await page.waitForFunction(() => window.__replayedDirections?.length >= 2);
-      for (const [i, key] of lineIds.entries()) {
-        const line = card.locator(`[data-line="${key}"]`);
-        await line.getByText(lines[i], { exact: true }).waitFor();
+      await page.waitForFunction((count) => window.__replayedDirections?.length >= count, lines.length);
+      assert.deepEqual(await page.evaluate(() => window.__replayedDirections), lines.map(({ say }) => say));
+      for (const sentence of lines) {
+        const line = card.locator(`[data-line="${sentence.key}"]`);
+        await line.getByText(sentence.en, { exact: true }).waitFor();
         assert.equal(await line.locator("small").count(), 0);
         await press(line);
-        await checkGlossStack(line);
+        await checkGlossStack(line, sentence, languages);
       }
       await checkHud(page, ".directions-card");
       if (height <= 520) assert((await card.boundingBox()).width <= 256);

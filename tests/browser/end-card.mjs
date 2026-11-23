@@ -2,32 +2,22 @@
 // WORLD_TEST_URL=http://127.0.0.1:8176 WORLD_STORAGE=puerto-colibri WORLD_PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs END_CARD_SHOTS=/tmp/end-card node tests/browser/end-card.mjs
 import assert from "node:assert/strict";
 import { openPhoneMenu } from "./screen-harness.mjs";
-import { silentClip } from "./quests-harness.mjs";
+import { checkEdition, questBrowser, silenceClips, worldStorage } from "./quests-harness.mjs";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 
-const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:8176";
-const storage = process.env.WORLD_STORAGE || "puerto-colibri";
 const expectedLayer = process.env.END_CARD_LAYER;
 const shots = process.env.END_CARD_SHOTS;
 if (shots) mkdirSync(shots, { recursive: true });
 
-const words = {
-  lt: { start: "Pradėti", send: "Siųsti", complete: "Užduotis įvykdyta!", got: "Gavai kavos puodelį",
-    phrase: "Tavo frazė", listen: "Klausyti", resume: "Tęsti", next: "Kita situacija", guide: "Nuvesk mane",
-    journal: "Užduotys (J)", tasks: /^Užduotys/, cup: "Kavos puodelis", close: "Uždaryti" },
-  en: { start: "Start", send: "Send", complete: "Task completed!", got: "You got a cup of coffee",
-    phrase: "Your phrase", listen: "Listen", resume: "Continue", next: "Next situation", guide: "Take me there",
-    journal: "Tasks (J)", tasks: /^Tasks/, cup: "Coffee cup", close: "Close" },
-};
-assert(!expectedLayer || Object.hasOwn(words, expectedLayer), "END_CARD_LAYER must be lt or en");
+assert(!expectedLayer || ["lt", "en"].includes(expectedLayer), "END_CARD_LAYER must be lt or en");
 
 const cafe = "s72-cafe";
 const returning = {
   version: 1,
   profile: { name: "Test", gender: "m", lookId: "m1", look: { skin: "#f2d3bd", hair: { style: "short", color: "#5a3a25" }, top: "#2a9d8f", bottom: "#264653" } },
-  settings: { v: 6, play: "town", quality: "low", volume: 0, sounds: 0, scenes: false, cameraFollow: true },
+  settings: { v: 6, play: "town", quality: "low", volume: 0, sounds: 0, scenes: false, cameraFollow: true, phoneCalls: false },
   sits: {}, phrases: {}, seenIntro: {}, started: 1, place: { zone: "town", x: 100, z: 76, rot: -Math.PI / 2 },
   coach: { done: true, run: true, view: true, seen: { list: true } },
 };
@@ -37,26 +27,12 @@ const sizes = {
   "390x844": { ...iPhone, viewport: { width: 390, height: 844 } },
   "1280x800": { viewport: { width: 1280, height: 800 } },
 };
-const cafeAnswers = {
-  howareyou: "Bastante bien, gracias.",
-  order: "Un expreso, por favor.",
-  more: "Es todo, gracias.",
-  dine: "Para aquí, por favor.",
-  pay: "Con tarjeta, por favor.",
-  receipt: "No, gracias.",
-  closing: "¡Muchas gracias!",
-};
-
-const browser = await chromium.launch({
-  channel: process.env.WORLD_BROWSER_CHANNEL || "chromium",
-  headless: true,
-  args: ["--use-angle=metal", "--enable-gpu", "--ignore-gpu-blocklist", "--mute-audio"],
-});
+const browser = await questBrowser();
 try {
   for (const [label, options] of Object.entries(sizes)) {
     const ctx = await browser.newContext(options);
     const shot = (page, name) => shots && page.screenshot({ path: path.join(shots, `${label}-${name}.png`) });
-    await ctx.route(/\.mp3(?:\?|$)/, (route) => route.fulfill({ contentType: "audio/wav", body: silentClip }));
+    await silenceClips(ctx);
     const page = await ctx.newPage();
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
@@ -65,13 +41,13 @@ try {
       sessionStorage.setItem("ew-play-now", "1");
       window.SpeechRecognition = undefined;
       window.webkitSpeechRecognition = undefined;
-    }, [`${storage}-progress-v1`, JSON.stringify(returning)]);
-    await page.goto(base + "/", { waitUntil: "domcontentloaded" });
-    const layer = await page.locator("html").getAttribute("lang");
-    assert(Object.hasOwn(words, layer), `${label}: unexpected learner language ${layer}`);
-    if (expectedLayer) assert.equal(layer, expectedLayer);
-    const t = words[layer];
+    }, [`${worldStorage}-progress-v1`, JSON.stringify(returning)]);
+    await page.goto(base, { waitUntil: "domcontentloaded" });
+    const { TL, HL } = await checkEdition(page);
+    if (expectedLayer) assert.equal(HL, expectedLayer);
     await page.waitForFunction(() => window.__ew?.store.getState().screen === "play" && window.__ew.game?.ledges?.ready, null, { timeout: 240000 });
+    const { words: t, answers: cafeAnswers, keepsake, voice } = await page.evaluate(async (id) =>
+      (await import("/tests/browser/quest-content.mjs")).endCardContent(id, window.__ew.store.getState().progress.profile.gender), cafe);
     await page.evaluate((id) => {
       const { audio, game, store } = window.__ew;
       const play = audio.play.bind(audio);
@@ -117,15 +93,14 @@ try {
     assert.equal(await phrase.locator(".ended-phrase-label").innerText(), t.phrase);
     const selected = await page.evaluate(() => window.__ew.store.getState().conv.bestPhrase);
     assert(Object.values(cafeAnswers).includes(selected.en), `${label}: features an answer typed in this run`);
-    assert.equal(await phrase.locator("[lang=es]").innerText(), selected.en);
+    assert.equal(await phrase.locator(`[lang=${TL}]`).innerText(), selected.en);
     assert(selected.nat.trim());
-    assert.equal(await phrase.locator(`[lang=${layer}]`).innerText(), selected.nat);
+    assert.equal(await phrase.locator(`[lang=${HL}]`).innerText(), selected.nat);
     const replay = phrase.getByRole("button", { name: t.listen });
     assert.equal(await replay.getAttribute("title"), t.listen);
     await press(replay);
     const played = await page.evaluate(() => window.endCardReplay);
-    assert.equal(played[0], "es_coach_m");
-    assert.deepEqual(played.slice(1), [1, selected.say]);
+    assert.deepEqual(played, [voice, 1, selected.say]);
     await page.evaluate(() => document.fonts.ready.then(() => null));
     await shot(page, "fit-check");
     const bounds = await card.evaluate((el) => ({
@@ -140,13 +115,10 @@ try {
     await shot(page, "end-card");
 
     const destination = card.locator(".ended-destination");
-    const next = await page.evaluate((id) => {
-      const g = window.__ew.game;
-      const nextId = g.nextScenarioId(id);
-      return g.orderedSituations().find((sit) => sit.id === nextId);
-    }, cafe);
+    const next = await page.evaluate(async (id) =>
+      (await import("/tests/browser/quest-content.mjs")).nextDestination(id), cafe);
     assert.equal(await destination.getAttribute("data-sit"), next.id);
-    assert.equal(await destination.locator("b").textContent(), next.title.lt);
+    assert.equal(await destination.locator("b").textContent(), next.title);
     if (label === "1280x800") {
       const lines = await destination.locator("b").evaluate((title) => new Set([...title.getClientRects()].filter((r) => r.width > 0).map((r) => Math.round(r.top))).size);
       assert(lines > 0 && lines <= 2, `${label}: destination title fits in two lines (${lines})`);
@@ -158,8 +130,7 @@ try {
         return range.getClientRects().length > 1 ? [word.textContent] : [];
       }));
     assert.deepEqual(splitWords, [], `${label}: destination words stay on one line each`);
-    const place = await destination.locator("small").innerText();
-    assert(place.trim());
+    assert.equal(await destination.locator("small").innerText(), next.where);
     const secondary = card.locator(".ended-secondary");
     const smallNext = secondary.getByRole("button", { name: t.next, exact: true });
     assert(await smallNext.isVisible());
@@ -181,8 +152,8 @@ try {
       const { game, store } = window.__ew;
       return store.getState().hud.objective?.sitId === id && game.autoTarget?.kind === "exit" && game.autoPath?.length;
     }, next.id);
-    assert.equal(await page.evaluate(() => window.__ew.store.getState().hud.objective.where), place);
-    assert.equal(await page.evaluate(() => window.__ew.game.keepsakeKind()), "coffee_cup");
+    assert.equal(await page.evaluate(() => window.__ew.store.getState().hud.objective.where), next.where);
+    assert.equal(await page.evaluate(() => window.__ew.game.keepsakeKind()), keepsake);
     if (shots) {
       await page.evaluate(() => {
         const { game } = window.__ew;
@@ -209,7 +180,7 @@ try {
 
     await openPhoneMenu(page); // (batch 0: on a phone the town's tools fold behind the menu)
     await press(page.getByRole("button", { name: t.journal }));
-    const journal = page.locator(".overlay .sheet").filter({ has: page.getByRole("heading", { name: t.tasks }) });
+    const journal = page.locator(".overlay .sheet").filter({ has: page.getByRole("heading", { name: `${t.tasks} ·` }) });
     const icon = journal.locator(`.sit-card[data-sit="${cafe}"]`).getByRole("img", { name: t.cup });
     await icon.waitFor();
     assert.equal(await icon.locator("title").textContent(), t.cup);
@@ -232,7 +203,7 @@ try {
     }, next.id, { timeout: 30000 });
     assert.deepEqual(errors, [], `${label}: no page errors`);
     await ctx.close();
-    console.log("ok", layer, label);
+    console.log("ok", HL, label);
   }
 } finally {
   await browser.close();

@@ -1,29 +1,24 @@
 // WORLD_TEST_URL=http://127.0.0.1:8096 WORLD_STORAGE=puerto-colibri WORLD_PLAYWRIGHT_MODULE=playwright node tests/browser/photowalk.mjs
 import assert from "node:assert/strict";
-import { answer, checkGlossStack, checkHud, closeChat, openPhone, openQuestTown, questBrowser, questSizes, talkTo } from "./quests-harness.mjs";
+import { answer, approachAndTalk, checkGlossStack, checkHud, closeChat, openPhone, openQuestTown, questBrowser, questSizes, talkTo } from "./quests-harness.mjs";
 import { shot } from "./screen-harness.mjs";
 
 const browser = await questBrowser();
 try {
   for (const [width, height] of questSizes) {
     for (const speech of [false, true]) {
-      const { context, page, press } = await openQuestTown(browser, width, height, speech);
+      const { context, page, press, languages } = await openQuestTown(browser, width, height, speech);
       const label = `photowalk-${width}x${height}-${speech ? "speech" : "choices"}`;
       try {
-        const { npc, words, accept, later } = await page.evaluate(async () => {
-          const { PHOTO_WALK_NPC, PHOTO_WALK_UI, PHOTO_WALK_HINTS } = await import("/src/content/photo-walk-lines.ts");
-          const { L } = await import("/src/ui/i18n.ts");
-          const quit = document.documentElement.lang === "lt" ? PHOTO_WALK_UI.quit : "Stop";
-          const items = PHOTO_WALK_HINTS.help.items;
-          return { npc: PHOTO_WALK_NPC, words: { ...Object.fromEntries(Object.entries(PHOTO_WALK_UI).map(([key, value]) => [key, L(value)])), quit, quitYes: quit }, accept: items[0].s.en.replaceAll(" | ", " "), later: items[2].s.en.replaceAll(" | ", " ") };
-        });
+        const { npc, situation, things, words, accept, later, spokenName, name } = await page.evaluate(async () =>
+          (await import("/tests/browser/quest-content.mjs")).photoWalkContent());
         const chip = page.locator(".photo-chip");
         assert.equal(await chip.count(), 0);
-        await talkTo(page, npc);
+        await talkTo(page, npc, situation);
         await answer(page, "help", later);
         await closeChat(page);
         assert.equal(await chip.count(), 0);
-        await talkTo(page, npc);
+        await talkTo(page, npc, situation);
         await answer(page, "help", accept);
         await closeChat(page);
         await chip.waitFor();
@@ -34,7 +29,7 @@ try {
           game.enterZone("town", { x, z: z - 4, rot: 0 }, true);
         });
         await page.locator('.photo-chip[data-near="mailbox"]').waitFor();
-        assert.equal(await chip.textContent(), `0/12${words.shoot}`);
+        assert.equal(await chip.textContent(), `0/${things.length}${words.shoot}`);
         await checkHud(page, ".photo-chip");
         await shot(page, `${label}-chip`);
         if (width >= 901) await page.keyboard.press("c");
@@ -54,7 +49,7 @@ try {
         if (speech) {
           await press(quiz.locator(".mic"));
           await page.waitForFunction(() => !!window.__questReader?.onresult);
-          assert.equal(await page.evaluate(() => window.__questSpeak("Es el buzón")), true);
+          assert.equal(await page.evaluate((text) => window.__questSpeak(text), spokenName), true);
         } else await press(quiz.locator('[data-choice="mailbox"]'));
         await quiz.getByText(words.got, { exact: true }).waitFor();
         await shot(page, `${label}-got`);
@@ -62,10 +57,10 @@ try {
 
         const book = page.locator(".photo-book");
         await book.waitFor();
-        assert.equal(await book.locator(".photo-page").count(), 12);
-        assert.match(await book.locator("header p").textContent(), /1.*12/);
+        assert.deepEqual(await book.locator(".photo-page").evaluateAll((pages) => pages.map((p) => p.dataset.thing)), things);
+        assert.equal(await book.locator("header p").textContent(), words.found);
         const foundPage = book.locator('.photo-page[data-thing="mailbox"][data-found="true"]');
-        await checkGlossStack(foundPage);
+        await checkGlossStack(foundPage, name, languages);
         const picture = foundPage.locator("img");
         const photo = await picture.evaluate(async (img) => {
           await img.decode();
@@ -97,7 +92,7 @@ try {
         await chip.waitFor({ state: "detached" });
         await openPhone(page, press);
         const contact = page.locator(".photo-contact", { hasText: words.phone });
-        assert.match(await contact.textContent(), /1\/12/);
+        assert.equal(await contact.locator(".txt span").textContent(), `1/${things.length}`);
         await press(contact);
         await press(book.getByRole("button", { name: words.resume }));
         await book.waitFor({ state: "detached" });
@@ -112,7 +107,7 @@ try {
         await book.getByText(words.quitAsk, { exact: true }).waitFor();
         await press(book.getByRole("button", { name: words.quitNo, exact: true }));
         await press(book.getByRole("button", { name: words.quit, exact: true }));
-        await press(book.getByRole("button", { name: words.quitYes, exact: true }));
+        await press(book.getByRole("button", { name: words.quit, exact: true }));
         await book.waitFor({ state: "detached" });
         assert.equal(await chip.count(), 0);
         assert.deepEqual(await page.evaluate(() => window.__ew.store.getState().progress.photoWalk), { status: "off", found: ["mailbox"] });
@@ -120,26 +115,20 @@ try {
         assert.equal(await page.locator(".photo-contact").count(), 0);
         if (width >= 901) {
           // Seed the first eleven pages, then take the last photo and play the whole handoff.
-          await page.evaluate(async () => {
-            const { PHOTO_THINGS } = await import("/src/content/photo-walk-lines.ts");
+          await page.evaluate((things) => {
             const { game, store } = window.__ew;
             store.getState().setHud({ panel: null });
             store.getState().updateProgress((p) => {
-              p.photoWalk = { status: "on", found: PHOTO_THINGS.map(({ id }) => id).filter((id) => id !== "mailbox") };
+              p.photoWalk = { status: "on", found: things.filter((id) => id !== "mailbox") };
             });
             const { x, z } = game.town.photoSpots.find(({ id }) => id === "mailbox");
             game.enterZone("town", { x, z: z - 4, rot: 0 }, true);
-          });
+          }, things);
           await page.locator('.photo-chip[data-near="mailbox"]').waitFor();
           await press(chip);
           await press(quiz.locator('[data-choice="mailbox"]'));
           await press(quiz.getByRole("button", { name: words.close, exact: true }));
-          await page.evaluate((id) => {
-            const { game } = window.__ew;
-            const { approach, home } = game.npcs.find((npc) => npc.id === id);
-            game.enterZone("town", { x: approach.x, z: approach.z, rot: Math.atan2(home.x - approach.x, home.z - approach.z) }, true);
-            game.talkTo(id);
-          }, npc);
+          await approachAndTalk(page, npc, situation);
           const finale = page.locator(".photo-finale");
           for (const line of ["pw_a_here", "pw_a_welcome"]) await press(finale.locator(`button[data-line="${line}"]`));
           await book.getByRole("heading", { name: words.done, exact: true }).waitFor();

@@ -2,22 +2,32 @@ import assert from "node:assert/strict";
 import { openPhoneMenu } from "./screen-harness.mjs";
 
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:8096";
-const storage = process.env.WORLD_STORAGE || "puerto-colibri";
-const progressKey = `${storage}-progress-v1`;
+export const worldStorage = process.env.WORLD_STORAGE || "puerto-colibri";
+const progressKey = `${worldStorage}-progress-v1`;
 
 export const questSizes = [[390, 844], [390, 664], [844, 390], [1280, 800]];
+
+export async function checkEdition(page) {
+  const { storage, TL, HL, lang } = await page.evaluate(async () => {
+    const { EDITION, TL, HL } = await import("/tests/browser/quest-content.mjs");
+    return { storage: EDITION.storage, TL, HL, lang: document.documentElement.lang };
+  });
+  assert.equal(storage, worldStorage, "WORLD_STORAGE must match the Vite server's edition");
+  assert.equal(lang, HL, "the page language matches the learner layer");
+  return { TL, HL };
+}
 
 export async function questBrowser() {
   const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
   return chromium.launch({
     headless: true,
     channel: process.env.WORLD_BROWSER_CHANNEL || "chromium",
-    args: ["--use-angle=metal", "--enable-gpu", "--ignore-gpu-blocklist"],
+    args: ["--use-angle=metal", "--enable-gpu", "--ignore-gpu-blocklist", "--mute-audio"],
   });
 }
 
 // A short silent PCM wave, served in place of recorded clips.
-export const silentClip = Buffer.alloc(1644);
+const silentClip = Buffer.alloc(1644);
 silentClip.write("RIFF", 0);
 silentClip.writeUInt32LE(silentClip.length - 8, 4);
 silentClip.write("WAVEfmt ", 8);
@@ -31,13 +41,19 @@ silentClip.writeUInt16LE(16, 34);
 silentClip.write("data", 36);
 silentClip.writeUInt32LE(silentClip.length - 44, 40);
 
+export function silenceClips(context) {
+  return context.route(/\.mp3(?:\?|$)/, (route) => route.fulfill({
+    contentType: "audio/wav", body: silentClip, headers: { "access-control-allow-origin": "*" },
+  }));
+}
+
 export async function openQuestTown(browser, width, height, speech = false) {
   const phone = width < 500 || height < 500;
   const context = await browser.newContext({
     viewport: { width, height }, ...(phone ? { isMobile: true, hasTouch: true, deviceScaleFactor: 2 } : {}),
   });
   try {
-    await context.route(/\.mp3(?:\?|$)/, (route) => route.fulfill({ contentType: "audio/wav", body: silentClip }));
+    await silenceClips(context);
     await context.addInitScript(({ key, speech }) => {
       localStorage.setItem(key, JSON.stringify({
         version: 1,
@@ -73,30 +89,35 @@ export async function openQuestTown(browser, width, height, speech = false) {
     const page = await context.newPage();
     page.setDefaultTimeout(60000);
     await page.goto(base, { waitUntil: "domcontentloaded" });
+    const languages = await checkEdition(page);
     await page.waitForFunction(() => window.__ew?.store.getState().screen === "play" && document.querySelector(".toolbar"), null, { timeout: 180000 });
     await page.evaluate(() => {
       window.__ew.audio.play = async () => true;
       return document.fonts.ready.then(() => undefined);
     });
-    return { context, page, press: (locator) => phone ? locator.tap() : locator.click() };
+    return { context, page, languages, press: (locator) => phone ? locator.tap() : locator.click() };
   } catch (error) {
     await context.close();
     throw error;
   }
 }
 
-export async function talkTo(page, id) {
-  await page.evaluate((id) => {
+export async function approachAndTalk(page, id, situation) {
+  await page.evaluate(({ id, situation }) => {
     const { game } = window.__ew;
     const actor = game.npcs.find((npc) => npc.id === id);
     const { x, z } = actor.approach;
     game.enterZone("town", { x, z, rot: Math.atan2(actor.home.x - x, actor.home.z - z) }, true);
-    game.talkTo(id);
-  }, id);
-  await page.waitForFunction((id) => {
-    const { active, hostId } = window.__ew.store.getState().conv;
-    return active && hostId === id;
-  }, id);
+    game.talkTo(id, situation);
+  }, { id, situation });
+}
+
+export async function talkTo(page, id, situation) {
+  await approachAndTalk(page, id, situation);
+  await page.waitForFunction(({ id, situation }) => {
+    const { active, hostId, sitId } = window.__ew.store.getState().conv;
+    return active && hostId === id && sitId === situation;
+  }, { id, situation });
   await page.evaluate(() => window.__ew.store.getState().setConv({ introOpen: false }));
 }
 
@@ -115,17 +136,22 @@ export async function closeChat(page) {
 
 export async function openPhone(page, press) {
   await openPhoneMenu(page);
-  const title = await page.evaluate(async () => (await import("/src/ui/i18n.ts")).L("Telefonas (P)"));
-  await press(page.locator(`.toolbar button[title="${title}"]`));
+  const title = await page.evaluate(async () => (await import("/tests/browser/quest-content.mjs")).L("Telefonas (P)"));
+  await press(page.locator(".toolbar").getByRole("button", { name: title, exact: true }));
 }
 
-export async function checkGlossStack(line) {
-  assert(await line.locator(".kit-gloss-compact").evaluate((gloss) => {
-    const target = gloss.querySelector("span[lang=es]");
-    const helper = gloss.querySelector(`small[lang=${document.documentElement.lang}]`);
+export async function checkGlossStack(line, sentence, { TL, HL }) {
+  const gloss = line.locator(".kit-gloss-compact");
+  const target = gloss.locator(`span[lang=${TL}]`);
+  const helper = gloss.locator(`small[lang=${HL}]`);
+  assert.equal(await target.textContent(), sentence.en);
+  assert.equal(await helper.textContent(), sentence.nat);
+  assert(await gloss.evaluate((gloss) => {
+    const target = gloss.querySelector("span");
+    const helper = gloss.querySelector("small");
     return helper.getBoundingClientRect().top >= target.getBoundingClientRect().bottom
       && parseFloat(getComputedStyle(helper).fontSize) < parseFloat(getComputedStyle(target).fontSize);
-  }), "the smaller gloss sits below the Spanish");
+  }), "the smaller gloss sits below the target language");
 }
 
 export async function checkHud(page, target) {
