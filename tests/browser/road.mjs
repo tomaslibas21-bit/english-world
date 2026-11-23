@@ -81,6 +81,14 @@ async function driveExit(url, scenario, expectedHeading, viewport = { width: 128
     await page.addInitScript(installClock);
     await page.goto(url, { waitUntil: "domcontentloaded" });
     const read = () => page.evaluate(() => window.__ew?.road.state());
+    const words = page.locator('.road-overlay [data-way="words"]');
+    const driving = async (state) => {
+      if (state.phase === "briefing") {
+        await (phone ? words.tap() : words.click());
+        return (await read()).phase === "drive";
+      }
+      return state.phase === "drive";
+    };
     const step = async (ms = 50) => {
       const draws = await page.evaluate((ms) => window.__step(1, ms), ms);
       for (const count of draws) assert.ok(count > 0 && count <= (phone ? 26 : 60), `${scenario}: road frame drew ${count} calls`);
@@ -127,7 +135,7 @@ async function driveExit(url, scenario, expectedHeading, viewport = { width: 128
     if (phone) await page.evaluate(() => window.__ew.game.setJoystick(0, 1));
     else await page.keyboard.down("ArrowUp");
     if (measureApproach) {
-      await until((state) => state.phase === "drive", "enters the desert");
+      await until(driving, "enters the desert");
       await page.evaluate(() => {
         window.__ew.game.setJoystick(0, 0);
         window.__ew.road.steer(2);
@@ -167,8 +175,8 @@ async function driveExit(url, scenario, expectedHeading, viewport = { width: 128
           assert.equal((await read()).phase, "town");
         }
       } else {
-        const first = await until((state) => state.phase === "drive", "automatically enters when the module arrives");
-        assertRoadContinuity(first);
+        await until(driving, "automatically enters when the module arrives");
+        assertRoadContinuity(await read());
       }
     }
   } finally {
@@ -293,6 +301,7 @@ try {
       assert.fail(`${label}: ${description}: ${JSON.stringify(await read())}`);
     };
     const press = (element) => phone ? element.tap() : element.click();
+    const chooseWords = () => press(page.locator('.road-overlay [data-way="words"]'));
     const shot = (name) => shots && page.screenshot({ path: `${shots}/${label}-road-${name}.png` });
     await waitFor(() => page.evaluate(() => window.__ew?.store.getState().screen === "play"), "town loads", 500);
     const helper = await page.evaluate(() => document.documentElement.lang);
@@ -455,7 +464,11 @@ try {
     };
     for (let frame = 0; frame < 360; frame++) {
       await step(1);
-      const state = await read();
+      let state = await read();
+      if (state.phase === "briefing") {
+        await chooseWords();
+        state = await read();
+      }
       if (!first || last.elapsed < 3) await assertWorldFrame(page, last, state, maxRoadCalls, label, shots);
       if (state.phase === "drive") {
         sampleHazards(state);
@@ -707,6 +720,7 @@ try {
     assert.ok(best.frames.length > 1);
     await shot("result");
     await press(result.getByRole("button", { name: ui("Dar kartą", "Try again") }));
+    if (puertoColibri) await chooseWords();
     await waitFor(async () => (await read()).phase === "drive", "retries directly on the road");
     await steerForGate(1);
     let ghostSeen = false;
@@ -768,6 +782,10 @@ try {
     assert.ok(frame?.face && frame?.taxi);
     await shot("lift");
     await press(yes);
+    if (puertoColibri) {
+      await waitFor(async () => (await read()).phase === "briefing", "the taxi offers a choice before driving");
+      await chooseWords();
+    }
     await waitFor(async () => {
       const state = await read();
       return state.phase === "drive" && state.lifted && state.model === "taxi";

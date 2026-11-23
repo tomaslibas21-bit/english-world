@@ -5,6 +5,7 @@ import { audioKey } from "../../src/audio-key";
 import { SEA_EDITION, SEA_UI } from "../../src/content/sea";
 import { audioDir } from "../../src/content/voices";
 import { audio } from "../../src/game/audio";
+import { pickPrompt } from "../../src/game/road/review";
 import { Rides, type RideHost } from "../../src/game/rides/Rides";
 import { prepareSea } from "../../src/game/sea/mode";
 import { SHORE } from "../../src/game/water";
@@ -29,11 +30,13 @@ describe("Puerto Colibrí open water", () => {
     vi.spyOn(audio, "hasClip").mockImplementation((voice, speed, text) => !!manifest[audioKey(voice, speed, text)]);
     useStore.setState({ progress });
     try {
-      const { first, pick } = await prepareSea();
+      const { first, pool } = await prepareSea();
       expect(ids).toContain(first?.word.situation);
       expect(first?.gap).toBeUndefined();
       expect(first?.options[first.right]).toBe(first?.word.lt);
-      const gap = pick(7);
+      const history = pool.listen.slice(0, 7).map((prompt) => ({ prompt, correct: true }));
+      expect(history).toHaveLength(7);
+      const gap = pickPrompt(pool, [], [], history, 8, Math.random);
       expect(ids).toContain(gap?.word.situation);
       expect(gap?.gap?.sentence.en).toContain("____");
       expect(gap?.options[gap.right]).toBe(gap?.word.en.toLowerCase());

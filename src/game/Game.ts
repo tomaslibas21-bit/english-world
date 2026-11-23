@@ -26,6 +26,7 @@ import { CAR_DRIFT, BOAT_DRIFT, BOAT, BAY_EDGE, controlsFrom, pointAndGo, type C
 import { RIDES } from "./world/rides";
 import { ROAD_EDITION, ROAD_UI } from "../content/road";
 import { RoadEntry, walkEdge } from "./road/entry";
+import { isPlayWay, playWay, setPlayWay, type PlayWay, type WordGame } from "./road/save";
 import { SEA_EDITION } from "../content/sea";
 import { SeaEntry, seaReturn, cameraPose, crossingPose, RETURN_SETTLE, RETURN_SPEED, type SeaHandoff } from "./sea/entry";
 import { TownQuests } from "./photowalk/mode";
@@ -834,6 +835,29 @@ export class Game implements GameApi {
 
   roadSteer(lane: number) { this.road?.steer(lane); }
   roadJumpTimer(seconds?: number) { this.road?.jumpTimer(seconds); }
+
+  wordGameWay(id: WordGame, way?: PlayWay) {
+    if (!import.meta.env.DEV) return;
+    const town = id === "road" ? ROAD_EDITION.id : SEA_EDITION.id;
+    if (isPlayWay(way)) {
+      useStore.getState().updateProgress((progress) => setPlayWay(progress, town, id, way));
+      this.modes.get(id)?.action?.("way", way);
+    }
+    return playWay(useStore.getState().progress, town, id);
+  }
+
+  wordGameStart(id: WordGame, way: PlayWay = "phrases") {
+    if (!import.meta.env.DEV || !isPlayWay(way)) return false;
+    if (!this.modes.owns(id) && !this.modes.start(id)) return false;
+    const entry = id === "road" ? this.road : this.sea;
+    entry?.action("again");
+    return entry?.startWay(way) ?? false;
+  }
+
+  wordGameForceGate(id: WordGame, correct: boolean) {
+    if (!import.meta.env.DEV || !this.modes.owns(id)) return false;
+    return (id === "road" ? this.road : this.sea)?.forceGate(correct) ?? false;
+  }
 
   seaDebug() {
     if (!import.meta.env.DEV) return;

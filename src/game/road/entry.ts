@@ -8,6 +8,7 @@ import { SIDEWALK, WORLD } from "../world/layout";
 import { CREST_DISTANCE, exitCoordinates } from "../world/roadExit";
 import type { RoadEnvironment } from "./view";
 import type { PreparedRoad, RoadMode } from "./mode";
+import type { PlayWay } from "./save";
 import type { RoadOpening } from "./track";
 
 export type WalkEdge = { x: number; z: number; inward: number };
@@ -204,6 +205,8 @@ export class RoadEntry implements GameMode {
   }
   steer(lane: number) { this.mode?.steer(lane); }
   previewOptions(options?: readonly string[]) { this.mode?.previewOptions(options); }
+  startWay(way: PlayWay) { return this.mode?.startWay(way) ?? false; }
+  forceGate(correct: boolean) { return this.mode?.forceGate(correct) ?? false; }
   jumpTimer(seconds = 150) { this.mode?.jumpTimer(seconds); }
 
   deferLift() { this.nextLift = this.host.time() + 60; }

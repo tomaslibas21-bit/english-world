@@ -37,7 +37,12 @@ export const STRINGS: Record<string, string> = {
   "loteria:Dar kartą": LOTERIA_UI_EN["Dar kartą"],
   "Loterijos korta": "a lotería card",
   "loterijos kortą": "a lotería card",
-  // Road game
+  // Road and open-water games
+  "Kaip žaisime?": "How do you want to play?",
+  "Žodžiai": "Words",
+  "Išgirskite ispaniškai, pasirinkite reikšmę": "Hear Spanish, pick the meaning",
+  "Išgirskite lietuviškai, pasirinkite ispaniškai": "Hear English, pick the Spanish",
+  "Šįkart pataikėte!": "Got it this time!",
   "Kelias per dykumą": "Desert road",
   "Klausykite ir važiuokite pro teisingus vartus": "Listen and drive through the right gate",
   "Ką išgirdote?": "What did you hear?",

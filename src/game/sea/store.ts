@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import type { SayItCue } from "../kit/sayIt";
 import type { RoadResult } from "../road/store";
-import type { Prompt, Word } from "../road/words";
+import type { GateWord, Prompt } from "../road/words";
+import type { PlayWay } from "../road/save";
 import { SEA_SECONDS } from "./course";
 
 export type CrossingTitle = { opacity: number; node?: HTMLElement };
@@ -15,7 +16,8 @@ export function showCrossingTitle(title: CrossingTitle, opacity: number) {
 }
 
 type SeaUi = {
-  phase: "town" | "drive" | "turn" | "result" | "unavailable" | "guide";
+  phase: "town" | "briefing" | "loading" | "drive" | "turn" | "result" | "unavailable" | "guide";
+  way: PlayWay;
   crossing?: CrossingTitle;
   prompt?: Prompt;
   sayIt?: SayItCue;
@@ -23,10 +25,10 @@ type SeaUi = {
   answeredLane?: number;
   remaining: number;
   streak: number;
-  feedback?: { correct: boolean; word: Word };
+  feedback?: { correct: boolean; word: GateWord };
   result?: RoadResult;
 };
 
-const initial: SeaUi = { phase: "town", remaining: SEA_SECONDS, streak: 0 };
+const initial: SeaUi = { phase: "town", way: "words", remaining: SEA_SECONDS, streak: 0 };
 export const useSea = create<SeaUi>(() => initial);
 export function resetSeaUi() { useSea.setState(initial, true); }

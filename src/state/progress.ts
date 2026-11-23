@@ -61,6 +61,7 @@ export interface Progress {
   cave?: import("../game/cave/plan").CaveSave;
   /** Saved cue support and route rotation for kit games. */
   miniGameHelp?: Record<string, import("../game/kit/help").HelpProgress>;
+  wordGames?: Record<string, import("../game/road/save").WordGameProgress>;
   taxi?: { nextRoute: number };
   pool?: import("../game/pool/store").PoolSave;
   phone?: PhoneProgress;

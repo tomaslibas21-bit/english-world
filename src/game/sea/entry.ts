@@ -6,6 +6,7 @@ import type { Ride } from "../rides/Rides";
 import { BAY_EDGE, BOAT } from "../rides/drive";
 import { BAY, type Splashes } from "../water";
 import type { Town } from "../world/town";
+import type { PlayWay } from "../road/save";
 import type { SeaMode, PreparedSea } from "./mode";
 
 export type SeaEnvironment = {
@@ -139,5 +140,7 @@ export class SeaEntry implements GameMode {
 
   debug() { return { phase: "town", ...this.mode?.debug(), ready: !!this.loaded, armed: this.armed, enabled: SEA_EDITION.enabled }; }
   steer(lane: number) { this.mode?.steer(lane); }
+  startWay(way: PlayWay) { return this.mode?.startWay(way) ?? false; }
+  forceGate(correct: boolean) { return this.mode?.forceGate(correct) ?? false; }
   jumpTimer(seconds?: number) { this.mode?.jumpTimer(seconds); }
 }

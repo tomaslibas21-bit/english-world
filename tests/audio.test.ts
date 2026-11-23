@@ -47,6 +47,26 @@ beforeEach(() => {
 afterEach(() => { audio.stop(); vi.useRealTimers(); vi.unstubAllGlobals(); });
 
 describe("recorded voice reliability", () => {
+  it("plays an authored MP3 by filename and keeps its clock without fetching the manifest or using browser speech", async () => {
+    audio.base = "/voices/";
+    const clip = audio.playFile("ph-123456789a.mp3"), player = players[0];
+    expect(player.src).toBe("/voices/ph-123456789a.mp3");
+    expect(clip.status).toBe("loading");
+    player.emitPlaying();
+    player.currentTime = 1.2;
+    expect(clip.status).toBe("playing");
+    expect(clip.currentTime).toBe(1.2);
+    player.emitEnded();
+    expect(clip.status).toBe("ended");
+    const blocked = audio.playFile("ph-abcdef1234.mp3");
+    player.onerror?.();
+    player.currentTime = 0;
+    expect(blocked.status).toBe("unavailable");
+    expect(clip.currentTime).toBe(1.2);
+    expect(fetcher).not.toHaveBeenCalled();
+    expect(synth.speak).not.toHaveBeenCalled();
+  });
+
   it("does not mistake an unavailable manifest for an unrecorded NPC, and retries on request", async () => {
     fetcher.mockResolvedValue(new Response("offline", { status: 503 }));
     let settled = false;

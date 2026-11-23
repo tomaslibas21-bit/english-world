@@ -51,6 +51,7 @@ class BoardFaces {
   private width = 0;
   private height = 0;
   serial = 0;
+  top = Infinity;
 
   constructor(private mode: FaceMode) {}
 
@@ -85,11 +86,13 @@ class BoardFaces {
     this.view.copy(camera.matrixWorldInverse);
     this.viewProjection.multiplyMatrices(this.projection, this.view);
     this.poses.clear();
+    this.top = Infinity;
     for (const face of faces) {
       const projected = projectFace(this.mode, face, this.viewProjection, width, height);
-      if (face.opacity > 0 && projected) this.poses.set(face.lane, {
-        transform: projected.transform, opacity: face.opacity, interactive: !!face.interactive,
-      });
+      if (face.opacity > 0 && projected) {
+        for (const point of projected.points) this.top = Math.min(this.top, point.y);
+        this.poses.set(face.lane, { transform: projected.transform, opacity: face.opacity, interactive: !!face.interactive });
+      }
     }
     for (const [key, lanes] of this.nodes) {
       for (const [lane, node] of lanes) this.apply(node, key === id ? this.poses.get(lane) : undefined);

@@ -21,6 +21,7 @@ import { AudioDiagnostics } from "./AudioDiagnostics";
 import { Loading } from "./Loading";
 import { EDITION } from "../edition";
 import { startPlayStats } from "../state/playStats";
+import type { PlayWay } from "../game/road/save";
 import { useSurf } from "../game/surf/store";
 
 export function App() {
@@ -68,9 +69,17 @@ function Play() {
           sea: () => g!.seaDebug(), seaSteer: (lane: number) => g!.seaSteer(lane),
           seaTimer: (seconds?: number) => g!.seaTimer(seconds),
           seaPlaceBoat: (x: number, z: number, heading?: number) => g!.seaPlaceBoat(x, z, heading),
+          seaWay: (way?: PlayWay) => g!.wordGameWay("sea", way),
+          seaStart: (way?: PlayWay) => g!.wordGameStart("sea", way),
+          seaForceGate: (correct: boolean) => g!.wordGameForceGate("sea", correct),
         } : {}),
         road: { state: () => g!.roadDebug(), steer: (lane: number) => g!.roadSteer(lane), jumpTimer: (seconds?: number) => g!.roadJumpTimer(seconds),
-          ...(import.meta.env.DEV ? { previewOptions: (options?: readonly string[]) => g!.roadPreviewOptions(options) } : {}) },
+          ...(import.meta.env.DEV ? {
+            previewOptions: (options?: readonly string[]) => g!.roadPreviewOptions(options),
+            way: (way?: PlayWay) => g!.wordGameWay("road", way),
+            start: (way?: PlayWay) => g!.wordGameStart("road", way),
+            forceGate: (correct: boolean) => g!.wordGameForceGate("road", correct),
+          } : {}) },
         billiards: g.debugBilliards(), barista: g.debugBarista(), loteria: g.debugLoteria(),
       };
     });

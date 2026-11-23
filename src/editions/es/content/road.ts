@@ -1,4 +1,4 @@
-export { ROAD_CONES, ROAD_UI } from "../../../content/road";
+export { ROAD_CONES, ROAD_UI, WORD_GATE_UI } from "../../../content/road";
 
 // Calle Ceiba continues inland past Calle Uxmal.
 export const ROAD_EDITION = {

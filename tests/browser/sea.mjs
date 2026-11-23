@@ -103,6 +103,7 @@ try {
   };
   const shot = (name) => shots && page.screenshot({ path: `${shots}/${size}-sea-${name}.png` });
   const press = (element) => phone ? element.tap() : element.click();
+  const chooseWords = () => press(page.locator('.sea-overlay [data-way="words"]'));
   const loading = page.locator(":is(.ew-loading, .road-loading, .sea-loading):visible");
   const ready = () => page.waitForFunction(() => window.__ew?.sea?.().ready, undefined, { polling: 50 });
   const hasPlayScreen = () => page.evaluate(() => window.__ew?.store.getState().screen === "play");
@@ -345,7 +346,11 @@ try {
     let last = await read(), first;
     for (let i = 0; i < 600; i++) {
       await step(1);
-      const current = await read();
+      let current = await read();
+      if (current.phase === "briefing") {
+        await chooseWords();
+        current = await read();
+      }
       if (current.phase === "drive") { first = current; break; }
       if (current.town.bowZ - edge < 7.5) {
         await assertPresentation(current, preceding.at(-1));
@@ -645,6 +650,7 @@ Gate layout at 19–32 m: ${JSON.stringify(layoutChecks)}`);
   await waitFor(() => result.isVisible(), "shows the score before retrying");
   const beforeRetry = await titleState();
   await press(result.getByRole("button", { name: ui("Dar kartą", "Try again") }));
+  if (storage === "puerto-colibri") await chooseWords();
   await waitFor(async () => (await read()).phase === "drive" && !!(await read()).gates, "retry opens a prompt offshore", 15, 1);
   const retried = await read();
   assert.equal((await titleState()).mounts, beforeRetry.mounts);

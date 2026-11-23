@@ -32,6 +32,12 @@ interface PlaybackRequest {
   fallback?: () => void;
 }
 
+export type FilePlayback = {
+  readonly status: "loading" | "playing" | "ended" | "unavailable";
+  readonly currentTime: number;
+  stop(): void;
+};
+
 // A short, silent WAV: prime the SAME media element during a real tap, before any fetch/await.
 // A muted element does not unlock later audible playback. No network or continuously running audio.
 const SILENCE = "data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQIAAAAAAA==";
@@ -249,6 +255,11 @@ export class AudioSystem {
     }
     if (this.ctx && this.ctx.state !== "running") void this.ctx.resume().catch(() => {});
     if (this.state === "blocked") { this.retry(); return; }
+    this.primeFile();
+  }
+
+  /** Direct recordings use the media clock. Prime that element during the start tap, including on buffer-audio devices. */
+  primeFile() {
     if (this.unlocked || (this.clip && !this.clip.done)) return;
     if (!playbackRoute()) return;
     const a = this.media();
@@ -259,6 +270,36 @@ export class AudioSystem {
       // A line may already have replaced the silent clip while play() was settling.
       if (a.src === SILENCE) a.pause();
     }).catch(() => { /* a linked page may still need its first tap; show recovery on the real line */ });
+  }
+
+  /** Play a named MP3 alongside the manifest-backed voices. Its clock belongs to this request. */
+  playFile(file: string): FilePlayback {
+    this.stopDiagnostic("normal-playback");
+    this.stop();
+    const a = this.media();
+    let finished = false, ended = false, endTime = 0;
+    const status = () => finished ? (ended ? "ended" : "unavailable")
+      : this.state === "playing" ? "playing" : "loading";
+    const request: PlaybackRequest = {
+      done: false, optional: true, cleanup: () => {},
+      fail: () => request.finish(false),
+      finish: (completed) => {
+        if (request.done) return;
+        request.done = finished = true;
+        ended = completed;
+        endTime = a.currentTime;
+        request.cleanup();
+        if (this.request === request) { this.request = null; this.setState("idle"); }
+      },
+    };
+    this.request = request;
+    this.setState("loading");
+    this.playRecording(request, file, "", {}, file);
+    return {
+      get status() { return status(); },
+      get currentTime() { return finished ? endTime : a.currentTime; },
+      stop: () => request.finish(false),
+    };
   }
 
   /** Called directly by a tap, with no awaited work before play(). */
@@ -533,14 +574,14 @@ export class AudioSystem {
     load();
   }
 
-  private playRecording(request: PlaybackRequest, key: string, text: string, opts: { slow?: boolean; male?: boolean }) {
-    this.lastRecordingKey = key;
+  private playRecording(request: PlaybackRequest, key: string, text: string, opts: { slow?: boolean; male?: boolean }, file?: string) {
+    if (!file) this.lastRecordingKey = key;
     const a = this.media();
     const attempt = (retry: boolean) => {
       if (request.done) return;
-      const cached = this.recordings.get(this.cacheKey(key));
+      const cached = file ? undefined : this.recordings.get(this.cacheKey(key));
       // Keep the gesture-unlocked element across every sentence, retry, and offline recording.
-      a.src = cached ?? clipUrl(this.base, key, this.repairVersions[key], filesToken());
+      a.src = file ? this.base + file : cached ?? clipUrl(this.base, key, this.repairVersions[key], filesToken());
       a.volume = this.volume;
       a.preservesPitch = true;
       a.playbackRate = opts.slow ? 0.82 : 1;
@@ -571,6 +612,7 @@ export class AudioSystem {
       };
       const failed = () => {
         if (!current()) return;
+        if (file) { waiting("unavailable"); return; }
         if (cached) this.recordings.delete(this.cacheKey(key));
         if (!retry && !started) { cleanup(true); attempt(true); return; }
         // A network error is visible. Keep the NPC's recorded voice unless the learner chooses otherwise.
@@ -600,7 +642,7 @@ export class AudioSystem {
         });
       };
       request.retry = start;
-      request.fallback = () => {
+      if (!file) request.fallback = () => {
         if (!current()) return;
         cleanup(true);
         this.speakFallback(request, text, opts);
@@ -609,7 +651,7 @@ export class AudioSystem {
         // A queued event from an earlier source can reach this reused element.
         // Only its current playback state can confirm that this line has ended.
         if (!current() || !a.ended) return;
-        cleanup();
+        if (!file) cleanup();
         request.finish(true);
       };
       a.onerror = failed;
@@ -624,9 +666,9 @@ export class AudioSystem {
         this.setState("playing");
         clearTimeout(timer);
         // A stalled/backgrounded line must never be counted as successfully spoken.
-        const remaining = Math.max(0, (this.manifest[key] || 4) - a.currentTime);
+        const remaining = Math.max(0, ((file ? a.duration : this.manifest[key]) || 4) - a.currentTime);
         timer = setTimeout(() => waiting("blocked"), remaining / a.playbackRate * 1000 + 5000);
-        void this.cacheRecording(key);
+        if (!file) void this.cacheRecording(key);
       };
       start();
     };

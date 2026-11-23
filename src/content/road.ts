@@ -1,5 +1,12 @@
 export const ROAD_CONES = ["cone.glb", "cone-flat.glb"] as const;
 
+export const WORD_GATE_UI = {
+  heading: "Kaip žaisime?",
+  words: { title: "Žodžiai", line: "Išgirskite ispaniškai, pasirinkite reikšmę" },
+  phrases: { title: "Frazės", line: "Išgirskite lietuviškai, pasirinkite ispaniškai" },
+  recovered: "Šįkart pataikėte!",
+} as const;
+
 export const ROAD_UI = {
   title: "Kelias per dykumą", hint: "Klausykite ir važiuokite pro teisingus vartus",
   hear: "Ką išgirdote?", gap: "Kurio žodžio trūksta?", replay: "Klausyti dar kartą",

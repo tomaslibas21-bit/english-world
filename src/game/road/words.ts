@@ -15,7 +15,16 @@ type Choice = { en: string; lt: string; kind?: WordKind; gapKind?: WordKind; hea
 export type Word = Choice & { situation: string; clip: Clip; saved?: boolean; inContext?: boolean };
 export type Gap = { word: Word; sentence: Sentence; full: Sentence; clip: Clip };
 export type Pool = { words: Word[]; gaps: Gap[]; borrowed?: Choice[]; gapChoices?: Choice[] };
-export type Prompt = { word: Word; options: string[]; right: number; gap?: Gap };
+export type GateWord = Pick<Word, "en" | "lt" | "situation">;
+export type Phrase = {
+  id: string; f: string; p: string; topic: string; words: readonly string[];
+  t: readonly (readonly [number, number])[]; fClip: string; pClip: string; src: string;
+};
+type GateOptions = { options: readonly string[]; right: number; practice?: "review" | "firstRetry" | "lastRetry" | "repeat" };
+type WordPrompt = GateOptions & { word: Word; gap?: Gap; phrase?: undefined };
+type PhrasePrompt = GateOptions & { word: GateWord; phrase: Phrase; gap?: undefined };
+export type Prompt = WordPrompt | PhrasePrompt;
+export type PromptPool = { listen: readonly Prompt[]; gaps: readonly WordPrompt[] };
 type Voice = Omit<Clip, "say">;
 type HasClip = (voice: string, speed: number, text: string) => boolean;
 
@@ -270,13 +279,38 @@ export function distractors<T extends Choice>(word: Choice, words: readonly T[],
   });
 }
 
-export function makePicker(pool: Pool, rng = Math.random) {
-  const heard = new Set<string>(), gapped = new Set<string>();
+export function wordPrompts(pool: Pool) {
   const allHear = [...pool.words, ...(pool.borrowed ?? [])];
   const gapWords = [...pool.words, ...(pool.gapChoices ?? [])];
   const hearMeanings = meanings(allHear), gapMeanings = meanings(gapWords);
   const owned = new Set(pool.words);
-  const hearChoices = (word: Word) => distractors(word, allHear, false, hearMeanings, owned).slice(0, 2);
+  const listen = (words: readonly Word[]): WordPrompt[] => words.flatMap((word) => {
+    const choices = distractors(word, allHear, false, hearMeanings, owned).slice(0, 2);
+    if (choices.length < 2) return [];
+    const lt = listenGloss(word)!;
+    return [{ word: { ...word, lt }, options: [lt, ...choices.map((w) => listenGloss(w)!)], right: 0 }];
+  });
+  const standalone = listen(pool.words.filter((word) => !word.inContext));
+  const gaps: WordPrompt[] = pool.gaps.flatMap((gap) => {
+    const { word } = gap;
+    const context = new Set(gap.full.units.map((unit) => key(unit.en)));
+    context.delete(key(word.en));
+    const choices = distractors(word, gapWords.filter((w) => !context.has(key(w.en))), true, gapMeanings).slice(0, 2);
+    if (choices.length < 2) return [];
+    const label = (w: Choice) => w.gapEn ?? gapLabel(w.en);
+    return [{ word, gap, options: [word, ...choices].map(label), right: 0 }];
+  });
+  return { listen: standalone.length ? standalone : listen(pool.words), gaps };
+}
+
+export function shufflePrompt<T extends Prompt>(prompt: T, rng: () => number): T {
+  const answer = prompt.options[prompt.right], options = shuffle(prompt.options, rng);
+  return { ...prompt, options, right: options.indexOf(answer) };
+}
+
+export function makePicker(pool: Pool, rng = Math.random) {
+  const heard = new Set<string>(), gapped = new Set<string>();
+  const { listen, gaps } = wordPrompts(pool);
   const take = <T,>(items: T[], history: Set<string>, identify: (item: T) => string, prefer?: (item: T) => boolean) => {
     if (!items.length) return undefined;
     let fresh = items.filter((item) => !history.has(identify(item)));
@@ -286,25 +320,9 @@ export function makePicker(pool: Pool, rng = Math.random) {
     history.add(identify(item));
     return item;
   };
-  const standalone = pool.words.filter((word) => !word.inContext);
-  const hear = standalone.filter((word) => hearChoices(word).length === 2);
-  // A finished conversation can have very few short recordings compared with the number of voiced sentences.
-  const shortListen = hear.length ? hear : pool.words.filter((word) => hearChoices(word).length === 2);
-  const gapOptions = (gap: Gap) => {
-    const context = new Set(gap.full.units.map((unit) => key(unit.en)));
-    context.delete(key(gap.word.en));
-    return gapWords.filter((word) => !context.has(key(word.en)));
-  };
-  const gaps = pool.gaps.filter((gap) => distractors(gap.word, gapOptions(gap), true, gapMeanings).length >= 2);
-  return (index: number): Prompt | undefined => {
-    const gap = index >= 7 ? take(gaps, gapped, (g) => key(g.full.en)) : undefined;
-    const word = gap?.word ?? take(shortListen, heard, (w) => key(w.en), (w) => !!w.saved);
-    if (!word) return undefined;
-    const answer = gap ? word.gapEn ?? gapLabel(word.en) : listenGloss(word)!;
-    const labels = gap
-      ? distractors(word, gapOptions(gap), true, gapMeanings).slice(0, 2).map((w) => w.gapEn ?? gapLabel(w.en))
-      : hearChoices(word).map((w) => listenGloss(w)!);
-    const options = shuffle([answer, ...labels], rng);
-    return { word: gap ? word : { ...word, lt: answer }, options, right: options.indexOf(answer), gap };
+  return (index: number): WordPrompt | undefined => {
+    const prompt = (index >= 7 ? take(gaps, gapped, (p) => key(p.gap!.full.en)) : undefined)
+      ?? take(listen, heard, (p) => key(p.word.en), (p) => !!p.word.saved);
+    return prompt && shufflePrompt(prompt, rng);
   };
 }
