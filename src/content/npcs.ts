@@ -5,6 +5,7 @@
 // picture shows (a bun and a ponytail showed nothing from the front, and a bob read as a boy's cut): see HairStyle.
 // (19 Nov 2026) The pictures were redrawn to match; every named woman's braid lies over her right shoulder (`side: -1`),
 // the side the image model draws it on, so a picture and the 3D person agree.
+import { QUEST_PEOPLE } from "./townQuests";
 import type { NpcInfo } from "../convo/dialogue";
 
 export type HairStyle = "short" | "long" | "bun" | "ponytail" | "curly" | "bald" | "buzz" | "bob" | "wavy" | "side"
@@ -30,7 +31,8 @@ export type Accessory = "apron" | "cap" | "glasses" | "sunglasses" | "hat" | "ti
   // beachwear (the Spanish edition's beach, theme.ts `beachwear`; Maple Harbor uses none): a sarong tied over a skirt's
   // shape, a light shirt worn open over a swimsuit (in accColor), a broad-brimmed sun hat (its ribbon in accColor), a
   // bucket hat (in accColor)
-  | "sarong" | "coverup" | "sunhat" | "bucket";
+  | "sarong" | "coverup" | "sunhat" | "bucket"
+  | "camera" | "rainJacket" | "flatCap" | "plaid" | "foldedPaper";
 
 export interface Look {
   skin: string;
@@ -224,6 +226,7 @@ export const NPCS: Record<string, NpcDef> = Object.fromEntries([
   N("mr_grant", "Mr. Grant", ["Your landlord", "Tavo nuomotojas"], "m", "am_liam",
     { skin: SK.dark, hair: { style: "bald", color: HAIR.gray }, top: "#9b3b36", bottom: "#3a3f4a", acc: ["beard", "readers"] },
     { bio: "Laiškuose labai oficialus, telefonu – visai ne." }),
+  ...QUEST_PEOPLE,
 ].map((n) => [n.id, n]));
 
 /** Voice used for English hint examples (the learner's "model" voice). */

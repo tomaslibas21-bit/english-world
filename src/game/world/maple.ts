@@ -5,7 +5,8 @@
 // buoys and an upturned dinghy at the pier, lobster buoys out in the bay, chairs and beach grass on the sand.
 // Everything still goes into the town's baked meshes (util.ts `Merger.build`), so all of it costs a handful of draw
 // calls: the leaves on the ground (1), the leaves in the air (1), the bunting (1), Main Street's brick (1), the buoys
-// (1), two boats (2) and the truck's sign (1). Only the original look has it (the trial styles keep the plain town).
+// (1), two boats (2) and the truck's sign (1). The trial styles keep the pumpkins, truck and fishing boats for the photo walk.
+import type { AddPhotoSpot } from "../../content/townQuests";
 import * as THREE from "three";
 import { markTownBoat } from "./boatRide";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
@@ -23,6 +24,7 @@ export interface MapleCtx {
   trees: { x: number; z: number; s: number; color: string }[];
   /** The town's clock for the shaders that move (town.ts `wind`). */
   wind: { value: number };
+  photo: AddPhotoSpot;
 }
 
 /** The maples' colours in October: reds, oranges and golds, and one that has not turned yet. */
@@ -128,9 +130,24 @@ export function makeLobsterBoats(boatMat: THREE.Material) {
 
 /** Builds the fall decor into the town (before its Merger is built). Returns what moves it each frame. */
 export function addMapleDecor(c: MapleCtx): (t: number, dt: number) => void {
-  if (STYLED) return () => {};
-  const { M, col, group } = c;
+  const { M, col, group, photo } = c;
   const add: Add = (g, color, o = {}) => M.add("mh-" + color + (o.flat ? "f" : "") + (o.emissive ?? ""), mat(color, { flat: o.flat || undefined, emissive: o.emissive }), g, o.cast ?? true);
+  const placePumpkin = (x: number, y: number, z: number, scale: number, seed: number) => {
+    pumpkin(add, x, y, z, scale, seed);
+    photo("pumpkin", x, y + scale * 0.7, z);
+  };
+  const addBoats = () => {
+    const material = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+    const boats = makeLobsterBoats(material);
+    for (const boat of boats) photo("boat", boat.position.x, 1.2, boat.position.z, boat.position);
+    group.add(...boats);
+  };
+  if (STYLED) {
+    addDoorPumpkins(placePumpkin);
+    addLobsterTruck(add, col, group, photo, placePumpkin);
+    addBoats();
+    return () => {};
+  }
   const updates: ((t: number, dt: number) => void)[] = [];
   const r = rand(1016);
 
@@ -345,6 +362,19 @@ export function addMapleDecor(c: MapleCtx): (t: number, dt: number) => void {
     }
   }
 
+  addDoorPumpkins(placePumpkin);
+  addSquare(add, col, placePumpkin);
+  addLobsterTruck(add, col, group, photo, placePumpkin);
+  addBoats();
+  if (!LIGHTHOUSE_ISLAND) addLighthouse(add, LIGHTHOUSE);
+  addHarborGear(add, col, group, updates);
+  addBeach(add, col);
+  return (t, dt) => { for (const u of updates) u(t, dt); };
+}
+
+type PlacePumpkin = (x: number, y: number, z: number, scale: number, seed: number) => void;
+
+function addDoorPumpkins(placePumpkin: PlacePumpkin) {
   // --- pumpkins by the doors on Main Street and in front of the houses ---
   for (const b of BUILDINGS) {
     const n = ({ n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] } as Record<string, [number, number]>)[b.face], t: [number, number] = [-n[1], n[0]];
@@ -353,21 +383,15 @@ export function addMapleDecor(c: MapleCtx): (t: number, dt: number) => void {
     if (!house && !(b.style === "shop" || b.style === "restaurant" || b.id === "visitor" || b.id === "post")) continue;
     const dw = (b.doorWidth ?? 1.8) / 2 + (house ? 1.5 : 0.75), out = hd + (house ? 2.7 : 0.42);
     const s = (b.x + b.z) % 2 > 0 ? 1 : -1, px = b.x + n[0] * out + t[0] * (off + s * dw), pz = b.z + n[1] * out + t[1] * (off + s * dw);
-    pumpkin(add, px, 0, pz, 0.26, Math.abs(Math.round(b.x)));
-    pumpkin(add, px + t[0] * s * 0.42 + n[0] * 0.1, 0, pz + t[1] * s * 0.42 + n[1] * 0.1, 0.17, Math.abs(Math.round(b.x)) + 1);
-    if (house) pumpkin(add, px - t[0] * s * 0.4 + n[0] * 0.25, 0, pz - t[1] * s * 0.4 + n[1] * 0.25, 0.2, Math.abs(Math.round(b.x)) + 3);
+    placePumpkin(px, 0, pz, 0.26, Math.abs(Math.round(b.x)));
+    placePumpkin(px + t[0] * s * 0.42 + n[0] * 0.1, 0, pz + t[1] * s * 0.42 + n[1] * 0.1, 0.17, Math.abs(Math.round(b.x)) + 1);
+    if (house) placePumpkin(px - t[0] * s * 0.4 + n[0] * 0.25, 0, pz - t[1] * s * 0.4 + n[1] * 0.25, 0.2, Math.abs(Math.round(b.x)) + 3);
   }
-
-  addSquare(add, col, group);
-  if (!LIGHTHOUSE_ISLAND) addLighthouse(add, LIGHTHOUSE);
-  addHarborGear(add, col, group, updates);
-  addBeach(add, col);
-  return (t, dt) => { for (const u of updates) u(t, dt); };
 }
 
 /** The square in October: planters of mums round the fountain, hay bales, pumpkins and corn stalks at the farmers'
- *  market, and the lobster-roll truck parked on its west side, serving into the square. */
-function addSquare(add: Add, col: Colliders, group: THREE.Group) {
+ *  market. */
+function addSquare(add: Add, col: Colliders, placePumpkin: PlacePumpkin) {
   const { x: fx, z: fz } = FOUNTAIN;
   for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
     const x = fx + sx * 5.6, z = fz + sz * 5.6;
@@ -379,16 +403,19 @@ function addSquare(add: Add, col: Colliders, group: THREE.Group) {
   // between the stalls (behind the line the shoppers walk): bales with pumpkins on and around them, corn stalks
   for (const [x, z, k] of [[20, -43.9, 0], [32, -44.1, 1]] as [number, number, number][]) {
     bale(add, x - 0.55, 0, z, 0.06); bale(add, x + 0.55, 0, z, -0.05); bale(add, x, 0.5, z, 0.2);
-    pumpkin(add, x - 0.7, 0.5, z, 0.22, k); pumpkin(add, x + 0.75, 0.5, z + 0.05, 0.18, k + 1); pumpkin(add, x, 1.0, z, 0.24, k + 2);
-    pumpkin(add, x - 1.35, 0, z + 0.5, 0.3, k + 1); pumpkin(add, x + 1.4, 0, z + 0.45, 0.24, k); pumpkin(add, x + 0.2, 0, z + 0.62, 0.2, k + 3);
+    placePumpkin(x - 0.7, 0.5, z, 0.22, k); placePumpkin(x + 0.75, 0.5, z + 0.05, 0.18, k + 1); placePumpkin(x, 1.0, z, 0.24, k + 2);
+    placePumpkin(x - 1.35, 0, z + 0.5, 0.3, k + 1); placePumpkin(x + 1.4, 0, z + 0.45, 0.24, k); placePumpkin(x + 0.2, 0, z + 0.62, 0.2, k + 3);
     for (let i = 0; i < 5; i++) add(new THREE.ConeGeometry(0.1, 2.3, 4).translate(x - 1.5 + (i % 3) * 0.09, 1.15, z - 0.25 + i * 0.07), i % 2 ? "#c9a55a" : "#b8934a", { flat: true });
     add(boxGeo(0.34, 0.08, 0.34, x - 1.42, 0.9, z - 0.12), "#8a5a3c", { cast: false });
     col.addBox(x, z, 2.3, 0.8);
   }
-  for (const s of STALLS) { pumpkin(add, s.x - 2.35, 0, s.z + 0.55, 0.26, s.x); pumpkin(add, s.x + 2.4, 0, s.z + 0.5, 0.2, s.x + 1); }
+  for (const s of STALLS) { placePumpkin(s.x - 2.35, 0, s.z + 0.55, 0.26, s.x); placePumpkin(s.x + 2.4, 0, s.z + 0.5, 0.2, s.x + 1); }
+}
 
+function addLobsterTruck(add: Add, col: Colliders, group: THREE.Group, photo: AddPhotoSpot, placePumpkin: PlacePumpkin) {
   // the truck: its cab to the north, the serving window on the east side under a striped awning
   const X = 11.4, Z = -31;
+  photo("food_truck", X, 1.9, Z);
   const body = "#2a9d8f", cream = "#f6ecd9", dark = "#2b3338";
   add(boxGeo(2.4, 2.3, 4.5, X, 1.7, Z + 0.75), body);
   add(boxGeo(2.42, 0.34, 4.52, X, 0.95, Z + 0.75), cream, { cast: false });
@@ -438,7 +465,7 @@ function addSquare(add: Add, col: Colliders, group: THREE.Group) {
   for (let i = 0; i < 4; i++) add(boxGeo(0.4 - (i % 2) * 0.1, 0.03, 0.01, 14.1, 0.78 - i * 0.14, -27.02 - i * 0.026), "#f6ecd9", { cast: false });
   col.addBox(14.1, -27.3, 0.7, 0.5);
   add(boxGeo(0.8, 0.4, 0.6, 12.4, 0.2, -27.2), "#9c6b43");
-  pumpkin(add, 12.2, 0.4, -27.25, 0.2, 0); pumpkin(add, 12.62, 0.4, -27.15, 0.17, 2); pumpkin(add, 13.0, 0, -26.9, 0.24, 1);
+  placePumpkin(12.2, 0.4, -27.25, 0.2, 0); placePumpkin(12.62, 0.4, -27.15, 0.17, 2); placePumpkin(13.0, 0, -26.9, 0.24, 1);
   col.addBox(12.4, -27.2, 0.85, 0.65);
 }
 
@@ -446,8 +473,6 @@ function addSquare(add: Add, col: Colliders, group: THREE.Group) {
  *  crates and rope, a dinghy turned over for the winter; and the lobstermen's buoys out in the bay. */
 function addHarborGear(add: Add, col: Colliders, group: THREE.Group, updates: ((t: number, dt: number) => void)[]) {
   const boatMat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
-  // one made fast along the pier's west side, one working her traps towards the lighthouse
-  group.add(...makeLobsterBoats(boatMat));
 
   const TRAPS = ["#d9b23a", "#3f7d5c", "#d9b23a", "#4a5a52"];
   // the big stack west of the walkway: three long, two deep, three high (stepped)

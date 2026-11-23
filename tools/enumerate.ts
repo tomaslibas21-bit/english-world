@@ -5,6 +5,7 @@
 //  • plus a fuzzing pass: many random conversations per situation (test utterances,
 //    simulation turns and hint examples as input) whose NPC lines are collected. This finds
 //    dynamic renderings (prices, chosen items) and crash-tests every handler.
+import { PHOTO_WALK_ACCEPT, PHOTO_WALK_SITUATION } from "../src/content/photo-walk-lines";
 import { SITUATIONS } from "../src/content/situations";
 import { isBaristaCoachLine } from "../src/content/barista-lines";
 import { MEETING_LINES } from "../src/content/phoneMeeting";
@@ -36,6 +37,7 @@ export const KIT_LEARNER: Record<string, { only?: RegExp; both?: RegExp }> = {
   "s85-dinner": { both: /^gf_(ask_[a-z_]+|yes|nope|pair)$/ },
   "x01-pool-hall": { only: /^h_(solids|stripes|gg|fun)$/, both: /^bl_(b\d+|p_[a-z]+)$/ },
   "s83-invite-call": { only: /^phone_meet_(ready|tickets)$/ },
+  [PHOTO_WALK_SITUATION]: { only: /^pw_a_/ },
 };
 /** Lines a mini-game says in a conversation's name that are not among that conversation's own lines. */
 const KIT_EXTRA_LINES: Record<string, Record<string, SentSrc[]>> = {

@@ -34,8 +34,8 @@ describe("recorded conversation hints", () => {
   it("keeps recordings for the existing conversations", () => {
     const manifest = JSON.parse(fs.readFileSync("public/audio-v2/manifest.json", "utf8"));
     const { utts } = enumerateAll({ v2: true, fuzzRuns: 0 });
-    // The new pool hall uses browser synthesis until its dialogue is recorded.
-    const missing = utts.filter((u) => u.where.includes(":hint:") && !u.where.startsWith("x01-pool-hall:") &&
+    // Conversations that allow optional voice use browser synthesis while their clips are prepared.
+    const missing = utts.filter((u) => u.where.includes(":hint:") && !SITUATION_BY_ID[u.where.split(":")[0]]?.optionalVoice &&
       /[a-z0-9]/i.test(u.say) && !(audioKey(u.voice, u.speed, u.say) in manifest));
     expect(missing.map((u) => `${u.where} ${u.voice}: ${u.say}`)).toEqual([]);
   });

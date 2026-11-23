@@ -8,6 +8,7 @@ import { TaxiOverlay } from "./Taxi";
 import { BaristaOffer, BaristaOverlay } from "./Barista";
 import { GoFishOffer, GoFishOverlay } from "./GoFish";
 import { ROAD_UI } from "../content/road";
+import { ASK_WAY_SITUATION } from "../content/ask-way-lines";
 import { game } from "../game/gameRef";
 import { coach } from "../game/coach";
 import { WORLD, SEA_Z } from "../game/world/layout";
@@ -22,6 +23,7 @@ import { switchPlayMode } from "./playMode";
 import { useCards, dueCards } from "../state/cards";
 import { LyricStrip, RadioMenuLamp, RadioSetLayer, RadioTool } from "./Radio";
 import { radio, useRadio } from "../radio";
+import { DirectionsCard, PhotoChip, PhotoWalkOverlay, QuestArrival } from "./PhotoWalk";
 import { Guide } from "./Guide";
 import { TownToast, useTownToast } from "./Toasts";
 import { PhoneRing } from "./PhoneRing";
@@ -52,7 +54,7 @@ export function useDueCards(): number {
 const RoadOverlay = lazy(() => import("./Road").then(({ RoadOverlay }) => ({ default: RoadOverlay })));
 const BilliardsOverlay = lazy(() => import("./Billiards").then(({ BilliardsOverlay }) => ({ default: BilliardsOverlay })));
 const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = {
-  taxi: TaxiOverlay, barista: BaristaOverlay, gofish: GoFishOverlay, billiards: BilliardsOverlay, road: RoadOverlay,
+  photowalk: PhotoWalkOverlay, taxi: TaxiOverlay, barista: BaristaOverlay, gofish: GoFishOverlay, billiards: BilliardsOverlay, road: RoadOverlay,
 };
 const LizzieMeeting = lazy(() => import("./LizzieMeeting"));
 
@@ -64,11 +66,14 @@ export function Hud() {
   const screen = useScreen();
   const layout = screen.sidewaysPhone ? "sideways" : screen.portraitPhone ? "portrait" : "full";
   const surfing = useSurf((s) => s.active);
+  const surfPicking = useSurf((s) => s.picking);
   const inTown = !inConversation && !hud.flight && !surfing && !hud.modeScreen;
   const ride = townRide(hud.ride);
   const riding = ride !== null;
+  const questHud = inTown && !hud.ride && !hud.panel && !surfPicking;
   const taskId = hud.objective?.followUp ? hud.objective.title : hud.objective?.sitId ?? null;
   const toast = useTownToast();
+  const directionsToast = toast?.kind === "stamp" && toast.sitId === ASK_WAY_SITUATION;
   const narrow = useNarrowHud();
   const phoneToast = narrow && toast !== null;
   const task = useTaskCard(taskId, inTown && !hud.panel, phoneToast, layout);
@@ -90,7 +95,7 @@ export function Hud() {
     const road = hud.modeScreen.id === "road";
     const sea = hud.modeScreen.id === "sea";
     const Overlay = sea ? getSeaOverlay() : modeOverlays[hud.modeScreen.id];
-    const tools = !road && !sea && hud.modeScreen.id !== "barista" && hud.modeScreen.id !== "gofish" && hud.modeScreen.id !== "billiards";
+    const tools = !road && !sea && hud.modeScreen.id !== "barista" && hud.modeScreen.id !== "gofish" && hud.modeScreen.id !== "billiards" && hud.modeScreen.id !== "photowalk";
     return (
       <div className={"hud mode-hud" + (road ? " road-mode" : sea ? " sea-mode" : "") + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
         {!hud.panel && Overlay && <Suspense fallback={null}><Overlay touch={hud.showTouch} /></Suspense>}
@@ -117,6 +122,7 @@ export function Hud() {
           {!hud.panel && hud.phoneCard && <PhoneRing id={hud.phoneCard} />}
           <Guide visible={guideVisible} />
           <TownToast toast={toast} />
+          {questHud && !directionsToast && <DirectionsCard />}
         </div>
         <Minimap {...screen} />
       </div>
@@ -135,6 +141,7 @@ export function Hud() {
       )}
       {hud.showTouch && <TouchControls />}
       {!hud.panel && <><BaristaOffer /><GoFishOffer /></>}
+      {questHud && <><PhotoChip /><QuestArrival /></>}
       <SurfPicker />
       <Fade />
     </div>

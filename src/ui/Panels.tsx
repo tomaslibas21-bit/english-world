@@ -1,3 +1,6 @@
+import { isTownQuest } from "../content/townQuests";
+import { clearPhotos } from "../game/photowalk/photos";
+import { PhotoBookContact } from "./PhotoWalk";
 import { ROUTE } from "../content/route";
 import { useKeyboardHints } from "./keyboardHints";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -201,7 +204,8 @@ function Scenarios({ close }: { close: () => void }) {
     return [...m.entries()];
   }, []);
   const done = ROUTE.filter((s) => sitProgress(progress, s.id).completions > 0).length;
-  const bonus = SITUATIONS.filter((s) => s.bonus && sitProgress(progress, s.id).completions > 0);
+  const light = useStore((s) => s.settings.play === "light");
+  const bonus = SITUATIONS.filter((s) => s.bonus && !(light && isTownQuest(s.id)) && sitProgress(progress, s.id).completions > 0);
   return (
     <div className="sheet scenarios">
       <SheetHead icon="clapper" title={`Pasirink situaciją · ${done}/${ROUTE.length}`} close={close} />
@@ -321,7 +325,7 @@ function MapPanel({ close }: { close: () => void }) {
   }, [W, island, north]);
   const pct = (x: number, z: number) => ({ left: `${((x - WORLD.minX) / W) * 100}%`, top: `${((z - north) / D) * 100}%` });
   const locs = Object.values(LOCATIONS).filter((l) => l.kind !== "phone" && (l.id === "pool-hall" || ROUTE.some((s) => s.location === l.id)));
-  const selSits = sel ? SITUATIONS.filter((s) => s.location === sel) : [];
+  const selSits = sel ? SITUATIONS.filter((s) => s.location === sel && !(game?.light && isTownQuest(s.id))) : [];
   return (
     <div className="sheet">
       <SheetHead icon="map" title="Maple Harbor" close={close} />
@@ -338,7 +342,7 @@ function MapPanel({ close }: { close: () => void }) {
             {locs.map((l) => {
               const p = locationPoint(l.id);
               if (!p) return null;
-              const sits = SITUATIONS.filter((s) => s.location === l.id);
+              const sits = SITUATIONS.filter((s) => s.location === l.id && !isTownQuest(s.id));
               const allDone = sits.length > 0 && sits.every((s) => sitProgress(progress, s.id).completions > 0);
               return (
                 <button key={l.id} className={"map-pin" + (sel === l.id ? " sel" : "") + (allDone ? " done" : "")} style={pct(p.x, p.z)} onClick={() => setSel(l.id)} title={l.name} aria-label={l.name} aria-pressed={sel === l.id}>
@@ -389,6 +393,7 @@ function Phone({ close }: { close: () => void }) {
       <div className="phone-status">
         <span>9:41</span><button className="phone-close" onClick={close} aria-label="Uždaryti"><Icon name="close" size={20} /></button>
       </div>
+      <PhotoBookContact close={close} />
       {!!missed.length && <section className="missed-calls">
         <h2>Praleisti skambučiai</h2>
         {missed.map((sit) => (
@@ -498,7 +503,7 @@ function Settings({ close }: { close: () => void }) {
         {import.meta.env.BASE_URL === "/zaidimas/" && <div className="set-row"><a className="btn ghost small" href="/atsisiuntimai" target="_top">Atsisiuntimai ir failų pašalinimas</a></div>}
         <div className="set-row">
           <div className="txt"><b>Pradėti iš naujo</b><span>Ištrina šios naršyklės išsaugotą progresą.</span></div>
-          <button className="btn ghost small" onClick={() => { if (confirm("Tikrai ištrinti progresą?")) { useStore.getState().updateProgress((p) => { delete p.phone; Object.assign(p, emptyProgress()); }); location.reload(); } }}>Ištrinti</button>
+          <button className="btn ghost small" onClick={() => { if (confirm("Tikrai ištrinti progresą?")) { useStore.getState().updateProgress((p) => { delete p.phone; delete p.photoWalk; Object.assign(p, emptyProgress()); }); clearPhotos(); location.reload(); } }}>Ištrinti</button>
         </div>
       </div>
     </div>

@@ -1,4 +1,5 @@
 // Maple Harbor: a small American coastal town. X = east, Z = south (north is -Z), 1 unit = 1 m.
+import { QUEST_PEOPLE_SPOTS } from "../../content/townQuests";
 import { ROAD_EDITION } from "../../content/road";
 import { LOCATIONS } from "../../content/locations";
 import type { CarModelName, CarPlacement } from "./carModels";
@@ -91,6 +92,7 @@ export const SPROUTLY_LOT = { x1: 126, x2: 137, z1: -59.5, z2: -50.5 };
 /** Where each outdoor NPC stands (and which way they face, radians; 0 = facing +Z/south).
  *  `ax/az` = where the player stops to talk (e.g. the customer side of a market stall). */
 export const OUTDOOR_NPCS: { npc: string; x: number; z: number; rot: number; sit?: boolean; seat?: number; ax?: number; az?: number }[] = [
+  ...QUEST_PEOPLE_SPOTS,
   // Rosa sits on the bench south-west of the fountain, her back to it (as in her pictures), facing you
   { npc: "rosa", x: 18, z: -23.2, rot: 0, sit: true, seat: 0.55, ax: 18, az: -21 },
   { npc: "lucy", x: 34, z: -38, rot: -0.6 },

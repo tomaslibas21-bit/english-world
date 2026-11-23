@@ -1,4 +1,5 @@
 // Builds the outdoor town of Maple Harbor from layout.ts: ground, sea, buildings, props, colliders, doors.
+import type { AddPhotoSpot, PhotoSpot } from "../../content/townQuests";
 import * as THREE from "three";
 import { markTownBoat } from "./boatRide";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
@@ -38,6 +39,7 @@ export interface Town {
   group: THREE.Group;
   colliders: Colliders;
   doors: Door[];
+  photoSpots: PhotoSpot[];
   parkedCars: ParkedCars;
   /** Where townspeople can sit (Ambient seats some of them). */
   seats: Seat[];
@@ -171,12 +173,21 @@ export function buildTown(): Town {
   sea.position.set(35, -0.25, SEA_Z - 158);
   group.add(sea);
 
+  const photoSpots: PhotoSpot[] = [];
+  const photo: AddPhotoSpot = (id, x, y, z, anchor) => {
+    photoSpots.push(anchor ? {
+      id,
+      get x() { return anchor.x; },
+      get y() { return anchor.y + y; },
+      get z() { return anchor.z; },
+    } : { id, x, y, z });
+  };
   // --- buildings --------------------------------------------------------------
   const signs: THREE.Mesh[] = [];
-  for (const b of BUILDINGS) buildBuilding(b, M, colliders, doors, signs, group, b.seed !== undefined ? rand(b.seed) : r);
+  for (const b of BUILDINGS) buildBuilding(b, M, colliders, doors, signs, group, b.seed !== undefined ? rand(b.seed) : r, photo);
 
   // --- street furniture & nature -----------------------------------------------
-  addStreetProps(M, colliders);
+  addStreetProps(M, colliders, photo);
   const parkedCars = makeParkedCars();
   group.add(parkedCars.group);
   if (ROAD_EDITION.enabled) {
@@ -194,10 +205,12 @@ export function buildTown(): Town {
       colliders.addCircle(px, pz, 0.11);
     }
   }
-  addTrees(group, colliders, r);
-  addSquareAndMarket(M, colliders, group, r);
-  addHarbor(M, colliders, group, r);
+  addTrees(group, colliders, r, photo);
+  addSquareAndMarket(M, colliders, group, r, photo);
+  addHarbor(M, colliders, group, r, photo);
   const island = LIGHTHOUSE_ISLAND;
+  const tower = island?.center ?? LIGHTHOUSE;
+  photo("lighthouse", tower.x, (island?.y ?? 0) + 10, tower.z);
   if (island) {
     const { center, jetty, cottage, bench, keeper } = island;
     DECKS.push(jetty);
@@ -206,11 +219,11 @@ export function buildTown(): Town {
     colliders.addBox(bench.x, bench.z, 0.65, 1.6, "edge");
     colliders.addCircle(keeper.x, keeper.z, 0.28);
   }
-  addTransport(M, colliders, group);
+  addTransport(M, colliders, group, photo);
   addBackyard(M, colliders, group);
   addMaggiesCar(M, colliders, group);
   // the fall: leaves, bunting, baskets and banners, pumpkins, the truck, the lighthouse's lantern, the harbor's gear
-  const fall = addMapleDecor({ M, col: colliders, group, lamps, trees: treeSpots, wind });
+  const fall = addMapleDecor({ M, col: colliders, group, lamps, trees: treeSpots, wind, photo });
 
   // world bounds
   // (the north one lies out in the sea: like the sea itself, it stops everyone but the player, who swims on out to the
@@ -258,7 +271,7 @@ export function buildTown(): Town {
   const gulls = STYLED ? [] : makeGulls(group);
 
   return {
-    group, colliders, doors, parkedCars, seats: [...seats], groundCanvas, sea,
+    group, colliders, doors, photoSpots, parkedCars, seats: [...seats], groundCanvas, sea,
     update(t, dt) {
       seaMat.uniforms.uTime.value = t;
       wind.value = t;
@@ -596,7 +609,7 @@ function faceInfo(b: BuildingDef) {
   return { n, t, halfDepth, halfWidth };
 }
 
-function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[], signs: THREE.Mesh[], group: THREE.Group, r: () => number) {
+function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[], signs: THREE.Mesh[], group: THREE.Group, r: () => number, photo: AddPhotoSpot) {
   // the details added later (roof kit, chimneys) draw from their own sequence, so `r`'s draws stay as they were
   const dr = rand([...b.id].reduce((a, ch) => a * 31 + ch.charCodeAt(0), 7) % 100000 + 911);
   const wallMat = mat(b.color);
@@ -950,8 +963,9 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     for (const s of [-1, 1]) M.add("columns", mat("#f7f3ea"), cylGeo(0.35, 0.4, 5, dx + t[0] * s * cu + n[0] * 0.6, 2.5, dz + t[1] * s * cu + n[1] * 0.6, 10));
   }
   if (b.id === "post") {
+    photo("mailbox", dx + t[0] * 4 + n[0] * 1.6, 1.15, dz + t[1] * 4 + n[1] * 1.6);
     M.add("mailbox-blue", mat("#1f4e9c"), boxGeo(0.8, 1.2, 0.7, dx + t[0] * 4 + n[0] * 1.6, 0.8, dz + t[1] * 4 + n[1] * 1.6));
-    M.add("mailbox-blue", mat("#1f4e9c"), cylGeo(0.4, 0.4, 0.8, dx + t[0] * 4 + n[0] * 1.6, 1.4, dz + t[1] * 4 + n[1] * 1.6, 12).rotateZ(Math.PI / 2).translate(0, 0, 0));
+    M.add("mailbox-blue", mat("#1f4e9c"), cylGeo(0.35, 0.35, 0.8, 0, 0, 0, 12).rotateZ(Math.PI / 2).translate(dx + t[0] * 4 + n[0] * 1.6, 1.4, dz + t[1] * 4 + n[1] * 1.6));
     col.addBox(dx + t[0] * 4 + n[0] * 1.6, dz + t[1] * 4 + n[1] * 1.6, 0.9, 0.8);
     M.add("flagpole", mat("#dddddd"), cylGeo(0.06, 0.06, 9, dx - t[0] * 6 + n[0] * 1.2, 4.5, dz - t[1] * 6 + n[1] * 1.2, 6));
     col.addCircle(dx - t[0] * 6 + n[0] * 1.2, dz - t[1] * 6 + n[1] * 1.2, 0.12);
@@ -1379,7 +1393,7 @@ function buildPlane(M: Merger, x: number, z: number) {
 
 // ---------------------------------------------------------------------------
 
-function addStreetProps(M: Merger, col: Colliders) {
+function addStreetProps(M: Merger, col: Colliders, photo: AddPhotoSpot) {
   const lampPost = mat("#2f3a40");
   const lampGlass = mat("#fff4c4", { emissive: "#a08a3a" });
   const addLamp = (x: number, z: number) => {
@@ -1406,12 +1420,17 @@ function addStreetProps(M: Merger, col: Colliders) {
   const bench = (x: number, z: number, rot: number) => streetBench(M, col, x, z, rot);
   for (const [x, z, rot] of [[-75, -17.5, 0], [-48, -17.5, 0], [-6, -17.5, 0], [60, -40, 0], [-64, 2, Math.PI], [40, 2, Math.PI], [-84, 44.5, 0]] as [number, number, number][]) bench(x, z, rot);
   const hydrant = (x: number, z: number) => {
+    photo("hydrant", x, 0.55, z);
     M.add("hydrant", mat("#d63b2f"), cylGeo(0.18, 0.2, 0.7, x, 0.35, z, 8));
     M.add("hydrant", mat("#d63b2f"), new THREE.SphereGeometry(0.18, 8, 6).translate(x, 0.72, z));
     col.addCircle(x, z, 0.22);
   };
   for (const [x, z] of [[-68, -1.5], [-2, -1.5], [44, -14.5], [-78, 43], [66, 43]]) hydrant(x, z);
-  const trash = (x: number, z: number) => { M.add("trash", mat("#3f5a4a"), cylGeo(0.3, 0.28, 0.9, x, 0.45, z, 10)); col.addCircle(x, z, 0.32); };
+  const trash = (x: number, z: number) => {
+    photo("trash_can", x, 0.5, z);
+    M.add("trash", mat("#3f5a4a"), cylGeo(0.3, 0.28, 0.9, x, 0.45, z, 10));
+    col.addCircle(x, z, 0.32);
+  };
   for (const [x, z] of [[-45, -15], [8, -15], [-30, -1], [26, -1], [-14, 43]]) trash(x, z);
   // stop signs at a few corners
   const stop = (x: number, z: number) => {
@@ -1471,7 +1490,7 @@ function nearDoor(x: number, z: number) {
 
 // ---------------------------------------------------------------------------
 
-function addTrees(group: THREE.Group, col: Colliders, r: () => number) {
+function addTrees(group: THREE.Group, col: Colliders, r: () => number, photo: AddPhotoSpot) {
   const spots: [number, number, number][] = [];
   const add = (x: number, z: number, s = 1) => { spots.push([x, z, s]); };
   // street trees along Oak Avenue and Harbor Road sidewalks
@@ -1521,6 +1540,7 @@ function addTrees(group: THREE.Group, col: Colliders, r: () => number) {
     const leafCol = palette[Math.floor(r() * palette.length)];
     leaves.setColorAt(i, STYLED ? grade(leafCol) : new THREE.Color(leafCol));
     treeSpots.push({ x, z, s: sc, color: leafCol });
+    if (["#d9542b", "#c8402f", "#b5382c", "#e0692c"].includes(leafCol)) photo("maple", x, 3.2 * s.y, z);
     col.addCircle(x, z, 0.35 * sc);
   });
   trunks.castShadow = leaves.castShadow = true;
@@ -1549,9 +1569,10 @@ function addTrees(group: THREE.Group, col: Colliders, r: () => number) {
   if (STYLED) outlineInstanced(bushes, "#2f5f2a", 0.03, "bush");
 }
 
-function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: () => number) {
+function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: () => number, photo: AddPhotoSpot) {
   // fountain
   const { x, z } = FOUNTAIN;
+  photo("fountain", x, 1.65, z);
   M.add("fountain", mat("#d8d2c4"), cylGeo(3.4, 3.6, 0.8, x, 0.4, z, 24));
   M.add("fountain-water", mat("#6cc3dc", { emissive: "#0f3b48" }), cylGeo(3.0, 3.0, 0.1, x, 0.76, z, 24), false);
   M.add("fountain", mat("#d8d2c4"), cylGeo(0.4, 0.6, 2.2, x, 1.5, z, 12));
@@ -1588,6 +1609,7 @@ function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: ()
     if (bx !== 18) seats.push({ x: bx, z: bz, rot: rot + Math.PI, y: 0.55 });
   }
   // bandstand-ish gazebo
+  photo("gazebo", 44, 2.4, -22);
   M.add("gazebo", mat("#ffffff"), cylGeo(3, 3, 0.4, 44, 0.2, -22, 8));
   for (let i = 0; i < 8; i++) {
     const a = (i / 8) * Math.PI * 2;
@@ -1731,7 +1753,7 @@ function makeGulls(group: THREE.Group) {
   });
 }
 
-function addHarbor(M: Merger, col: Colliders, group: THREE.Group, r: () => number) {
+function addHarbor(M: Merger, col: Colliders, group: THREE.Group, r: () => number, photo: AddPhotoSpot) {
   // pier walkway and deck
   const wood = mat("#b8895a");
   M.add("pier", wood, boxGeo(4.4, 0.3, 14, -30, 0.15, -69));
@@ -1779,6 +1801,7 @@ function addHarbor(M: Merger, col: Colliders, group: THREE.Group, r: () => numbe
   } else for (const b of makeBoats()) group.add(b);
   // beach umbrellas and seagull-free calm
   for (const [ux, uz, c] of [[-80, -67, "#e45b4f"], [-60, -68, "#f2c14e"], [40, -67, "#4a7bb7"], [70, -68, "#e45b4f"]] as [number, number, string][]) {
+    photo("umbrella", ux, 2.2, uz);
     M.add("umbrella", mat(c, { flat: true }), new THREE.ConeGeometry(1.6, 0.7, 8).translate(ux, 2.4, uz));
     M.add("umbrella-pole", mat("#ddd"), cylGeo(0.04, 0.04, 2.4, ux, 1.2, uz, 5));
     col.addCircle(ux, uz, 0.1);
@@ -1787,7 +1810,7 @@ function addHarbor(M: Merger, col: Colliders, group: THREE.Group, r: () => numbe
   void group;
 }
 
-function addTransport(M: Merger, col: Colliders, group: THREE.Group) {
+function addTransport(M: Merger, col: Colliders, group: THREE.Group, photo: AddPhotoSpot) {
   const taxiSign = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.5), new THREE.MeshBasicMaterial({ map: textTexture("TAXI", { bg: "#f5c518", fg: "#222", w: 256, h: 96 }) }));
   // (on the street side of the airport canopy's last post: behind it, the post stood in front of its word)
   taxiSign.position.set(126.5, 2.4, 0.55); taxiSign.rotation.y = Math.PI;
@@ -1796,6 +1819,7 @@ function addTransport(M: Merger, col: Colliders, group: THREE.Group) {
   group.add(taxiSign);
   // bus stop shelter
   const b = BUS_STOP;
+  photo("bus_stop", b.x, 1.7, b.z);
   M.add("bus-shelter", mat("#2f3a40"), boxGeo(3.6, 0.12, 1.6, b.x, 2.6, b.z));
   // (a roof to stand on: the second jump reaches it, from the street or up through it from the bench: ledges.ts)
   col.addRoof(b.x, b.z, 3.6, 1.6);

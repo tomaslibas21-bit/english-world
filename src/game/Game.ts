@@ -28,6 +28,8 @@ import { RoadEntry, leavingByRoad, walkEdge } from "./road/entry";
 import { SEA_EDITION } from "../content/sea";
 import { SeaEntry, seaReturn } from "./sea/entry";
 import { RIDE_NAMES } from "../content/rides";
+import { TownQuests } from "./photowalk/mode";
+import { isTownQuest } from "../content/townQuests";
 import { ModeRegistry } from "./kit/modes";
 import { FrameFade } from "./kit/frameFade";
 import type { ModeHost } from "./kit/host";
@@ -36,6 +38,7 @@ import { TownPhone } from "./phone/Phone";
 import { freeToWalk, type PhoneSnapshot } from "./phone/schedule";
 import type { LizzieMeeting } from "./phone/meeting";
 import { scoreShot } from "./kit/scoreShot";
+import { useSurf } from "./surf/store";
 import { createSurfMode } from "./surf/mode";
 import { createTaxiMode } from "./taxi/mode";
 import { BilliardsMode, BILLIARDS_PLACE } from "./billiards/mode";
@@ -239,6 +242,7 @@ export class Game implements GameApi {
   private loadMeeting = false;
   private officeRequested = false;
   private modeHost!: ModeHost;
+  private quests!: TownQuests;
   /** The first visit's look at the town from the air (flyover.ts): how long it has been going (s). */
   private flight: { t: number } | null = null;
   private npcToSits = new Map<string, SituationMeta[]>();
@@ -516,6 +520,17 @@ export class Game implements GameApi {
     };
     this.modes.register(createSurfMode(host));
     this.modes.register(createTaxiMode(host));
+    this.modes.register(this.quests = new TownQuests(host, {
+      spots: this.town.photoSpots,
+      walking: () => this.questAvailable() && this.zone.id === "town" && this.rig.mode === "follow",
+      available: () => this.questAvailable(),
+      zone: () => this.zone.id,
+      guide: (id) => this.guideToPlace(id),
+      animate: (seconds) => {
+        const hana = this.npcs.find(({ id }) => this.quests.handlesNpc(id));
+        hana?.ch.talk(seconds, () => audio.level(), () => audio.vowel());
+      },
+    }));
     const stageHost: ModeHost = {
       ...host,
       fade: (swap) => {
@@ -1005,6 +1020,7 @@ export class Game implements GameApi {
     if (k === " " && this.rides.riding) { this.keys.add(" "); this.rideGoal = null; e.preventDefault(); return; }
     if (k === " ") { if (this.nearest && !this.hop.air && !this.swimming) this.interact(); else if (!e.repeat) this.jump(); e.preventDefault(); return; }
     if (k === "e" || k === "enter") { this.interact(); e.preventDefault(); return; }
+    if (k === "c" && !e.repeat && !e.altKey && !e.ctrlKey && !e.metaKey && this.modes.start(this.quests.id, "camera")) { e.preventDefault(); return; }
     if (k === "m") st.setHud({ panel: "map" });
     if (k === "j") st.setHud({ panel: "journal" });
     if (k === "p") st.setHud({ panel: "phone" });
@@ -1621,8 +1637,17 @@ export class Game implements GameApi {
     return list.find((s) => !sitProgress(pr, s.id).completions) ?? list[0];
   }
 
+  private questAvailable() {
+    return this.modeHost.canStart(true) && !this.modes.active && !this.modes.modal && !this.rides.riding && !this.swimming
+      && !useSurf.getState().picking && !document.hidden;
+  }
+
   talkTo(npc: string, sitId?: string) {
     if (this.session?.active) return;
+    if (this.quests.handlesNpc(npc)) {
+      this.modes.start(this.quests.id, "visit");
+      return;
+    }
     const sit = sitId ? SITUATION_BY_ID[sitId] : this.pickSituation(npc);
     if (!sit) {
       const def = NPCS[npc];
@@ -1653,7 +1678,7 @@ export class Game implements GameApi {
       const loc = LOCATIONS[sit.location];
       let spawn: { x: number; z: number; rot: number } | null = null;
       let zone = "town";
-      if (loc?.kind === "interior" && getInterior(sit.location)) {
+      if (!isTownQuest(sitId) && loc?.kind === "interior" && getInterior(sit.location)) {
         zone = sit.location;
         const it = this.getZone(zone)?.interior;
         const sp = it?.npcs.find((n) => n.npc === npc);
@@ -1705,6 +1730,7 @@ export class Game implements GameApi {
   }
 
   private requestConversation(sitId: string, actor: NpcActor | null, fromCard = false) {
+    this.quests.stopReplay();
     this.conversationLoads++;
     this.phone.observe(this.phoneSnapshot());
     let opened = false;
@@ -2117,7 +2143,8 @@ export class Game implements GameApi {
   modeExit() { this.modes.exit(); }
   modeAction(id: string, name: string, value?: string | boolean) {
     if (this.transitioning || useStore.getState().hud.panel) return;
-    if (this.modes.owns(id)) this.modes.get(id)?.action?.(name, value);
+    if (id === "directions") this.quests.directionAction(name);
+    else if (this.modes.owns(id)) this.modes.get(id)?.action?.(name, value);
   }
   debugBilliards() {
     const debug = this.billiards.debug();
@@ -2537,6 +2564,7 @@ export class Game implements GameApi {
         this.rig.cam.updateProjectionMatrix();
       }
     }
+    this.quests.observe(this.rig.cam);
     // people and cars far down the street, a few pixels tall in the haze, are left out of the walking view (it is wider
     // than it was: this keeps its draw calls as they were)
     this.farCull();
@@ -2600,6 +2628,7 @@ export class Game implements GameApi {
         this.scene.add(probes);
       }
       this.renderer.render(this.scene, this.rig.cam);
+      this.quests.capture(this.renderer.domElement);
       if (probes) {
         probes.removeFromParent();
         this.rides.finishCrashShaderWarmup();
@@ -3206,6 +3235,7 @@ export class Game implements GameApi {
       shown.push({ n, x: ((v.x + 1) / 2) * w, y: ((1 - v.y) / 2) * h, dist });
       const isObj = !!obj && !isCall(obj) && (obj.npc === n.id || ((obj.npc === "sam" || obj.npc === "emma") && (n.id === "sam" || n.id === "emma")));
       n.tag.classList.toggle("objective", isObj && !talking);
+      n.tag.classList.toggle("quest-available", this.quests.marker(n.id));
       n.tag.style.opacity = String(Math.max(0.35, 1 - (dist - 12) / 22));
     }
     // Each tag takes the free spot nearest its person, the nearer people first: where it is; beside or above a tag
@@ -3240,7 +3270,7 @@ export class Game implements GameApi {
     this.hudCheck = 10;
     const c = this.container.getBoundingClientRect();
     this.hudBoxCache = [];
-    for (const el of document.querySelectorAll<HTMLElement>(".objective-card, .phone-ring, .minimap, .toolbar, .toolbar.menu-open:not(.portrait-toolbar) .toolbar-tools, .portrait-toolbar.menu-open .toolbar-drawer, .portrait-toolbar.in-ride:not(.menu-open) .radio-tool")) {
+    for (const el of document.querySelectorAll<HTMLElement>(".objective-card, .phone-ring, .directions-card, .photo-chip, .minimap, .toolbar, .toolbar.menu-open:not(.portrait-toolbar) .toolbar-tools, .portrait-toolbar.menu-open .toolbar-drawer, .portrait-toolbar.in-ride:not(.menu-open) .radio-tool")) {
       if (!el.offsetParent) continue;
       const r = el.getBoundingClientRect();
       if (r.width && r.height) this.hudBoxCache.push({ x0: r.left - c.left, x1: r.right - c.left, y0: r.top - c.top, y1: r.bottom - c.top });

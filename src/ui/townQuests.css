@@ -1,0 +1,227 @@
+.nametag.quest-available:not(.objective)::before {
+  content: "!";
+  position: absolute;
+  top: -21px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: #3b2a00;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  font-size: 0.84rem;
+}
+
+.photo-chip {
+  position: absolute;
+  bottom: 96px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 2px;
+  min-width: 68px;
+  min-height: 44px;
+  padding: 5px 12px;
+  border: 1px solid var(--ink-faint);
+  border-radius: 17px;
+  background: var(--panel-solid);
+  color: var(--accent);
+  box-shadow: var(--shadow);
+  font-weight: 900;
+}
+.photo-chip > span { display: flex; gap: 6px; align-items: center; line-height: 1; }
+.photo-chip small { font-size: 0.74em; line-height: 1; }
+.photo-chip[data-near] { border-color: var(--gold); box-shadow: var(--shadow), 0 0 11px #ffdc8499; }
+@media (orientation: portrait) {
+  .hud.has-touch .photo-chip { bottom: calc(194px + env(safe-area-inset-bottom)); }
+}
+@media (orientation: landscape) {
+  .hud.has-touch .photo-chip { bottom: max(12px, env(safe-area-inset-bottom)); }
+}
+
+.photo-backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+  place-items: center;
+  padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right))
+    max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  background: #16272e59;
+}
+.photo-sheet, .directions-card {
+  border: 1px solid var(--ink-faint);
+  background: var(--panel-solid);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  color: var(--ink);
+}
+.photo-sheet {
+  width: min(100%, 420px);
+  max-height: 100%;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 12px;
+}
+.photo-book { width: min(100%, 656px); display: flex; flex-direction: column; gap: 8px; }
+.photo-sheet header, .directions-card header { display: flex; gap: 8px; align-items: center; }
+.photo-sheet header > .ui-icon, .directions-card header > .ui-icon { color: var(--accent); flex: none; }
+.photo-sheet h2, .directions-card h2 { margin: 0; font-size: 1.03em; line-height: 1.12; }
+.photo-sheet p, .directions-card p { margin: 3px 0 0; color: var(--ink-soft); line-height: 1.2; font-size: 0.84em; }
+.quest-close {
+  display: grid;
+  place-items: center;
+  margin-left: auto;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink-soft);
+}
+.quest-close:hover { background: var(--accent-soft); }
+.photo-sheet footer, .directions-card footer { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.photo-book footer { justify-content: end; }
+.photo-confirm { flex-basis: 100%; font-size: 0.9em; }
+.photo-pages {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: 7px;
+  margin: 0;
+  padding: 2px;
+  list-style: none;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+@media (min-width: 901px) {
+  .photo-book { width: min(100%, 760px); }
+  .photo-pages { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+.photo-page {
+  align-self: stretch;
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  padding: 6px;
+  border: 1px solid var(--ink-faint);
+  border-radius: 10px;
+  background: #f6f7f5;
+  font-size: 0.86em;
+}
+.photo-page img, .photo-placeholder { width: 100%; height: auto; aspect-ratio: 4 / 3; border-radius: 6px; }
+.photo-page img { object-fit: cover; }
+.photo-placeholder { display: grid; place-items: center; background: var(--accent-soft); font-size: 2em; }
+.photo-page[data-found="false"] .photo-placeholder { filter: grayscale(1); opacity: 0.63; }
+.photo-page .btn { justify-self: start; font-size: 0.93em; min-height: 36px; padding: 4px 6px; text-align: left; }
+.photo-page .il { font-size: 1.1em; gap: 3px 5px; }
+.photo-visit { flex: 0 1 auto; max-height: 25dvh; overflow: auto; padding: 4px; }
+.photo-quiz, .photo-finale { display: grid; gap: 10px; }
+.photo-quiz .photo-choices { display: flex; flex-wrap: wrap; }
+.photo-choices { display: grid; gap: 6px; }
+.photo-choices .btn:disabled { background: #e5e6e5; color: var(--ink-soft); }
+.photo-quiz-mic { display: flex; gap: 8px; align-items: center; font-size: 0.9em; }
+.photo-quiz-mic:empty { display: none; }
+.photo-quiz-mic .mic { width: 44px; height: 44px; padding: 0; }
+.photo-flash { position: fixed; inset: 0; z-index: 1; background: white; pointer-events: none; animation: photo-flash 0.22s ease-out both; }
+@keyframes photo-flash { from { opacity: 0.85; } to { opacity: 0; } }
+.quest-sparkle { color: #c58a19; animation: quest-sparkle 0.65s ease-out both; }
+.quest-arrival { position: absolute; left: calc(50% - 16px); top: 46%; pointer-events: none; color: #ffe29a; filter: drop-shadow(0 0 5px #c58121); }
+@keyframes quest-sparkle { 0% { transform: scale(0.55); } 55% { transform: scale(1.24); } }
+@media (prefers-reduced-motion: reduce) {
+  .photo-flash { display: none; }
+  .quest-sparkle { animation: none; }
+}
+
+.directions-card {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 6px 8px 8px;
+  pointer-events: auto;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.directions-card .direction-lines { display: grid; gap: 3px; }
+.direction-lines button {
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--ink);
+  padding: 5px 7px;
+  text-align: left;
+  line-height: 1.12;
+}
+.direction-lines button .kit-gloss-compact { font-size: 0.94em; }
+.directions-card .btn { min-height: 38px; white-space: normal; text-align: left; padding: 3px 7px; font-size: 0.78em; }
+.directions-card .quest-close { align-self: start; }
+
+.objective-notes:has(.directions-card) {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.objective-notes:has(.directions-card) .objective-card {
+  position: static;
+  max-width: none;
+  width: 100%;
+}
+@media (min-width: 901px) {
+  .objective-notes:has(.directions-card) { grid-area: 1 / 1; }
+  .objective-notes:has(.directions-card) .town-toasts { margin: 0; }
+}
+@media (max-width: 900px) {
+  .objective-notes:has(.directions-card) {
+    position: absolute;
+    top: var(--card-top);
+    left: max(var(--card-left), env(safe-area-inset-left));
+    max-height: calc(100dvh - 174px - env(safe-area-inset-bottom));
+    width: min(350px, calc(100vw - 120px));
+    overflow-y: auto;
+  }
+  .objective-notes:has(.directions-card) .objective-card:not(.collapsed) {
+    flex-shrink: 0;
+    max-height: min(30dvh, 175px);
+    overflow: auto;
+  }
+  .directions-card { min-height: min(160px, 43dvh); }
+}
+@media (max-width: 900px) and (orientation: landscape) {
+  .objective-notes:has(.directions-card) { width: min(348px, 43vw); }
+  .objective-notes:has(.directions-card) .objective-card:not(.collapsed) { flex-shrink: 1; }
+  .objective-notes:has(.directions-card) .zone-banner { left: 56%; }
+}
+@media (max-height: 520px) and (orientation: landscape) {
+  .directions-card {
+    width: min(256px, 100%);
+    min-height: 0;
+    padding: 4px 6px 6px;
+    gap: 3px;
+    border-radius: 12px;
+    font-size: 0.82em;
+  }
+  .directions-card header { gap: 5px; }
+  .directions-card header > .ui-icon { width: 15px; height: 15px; }
+  .directions-card p { margin-top: 2px; }
+  .directions-card .quest-close { flex-basis: 30px; width: 30px; height: 30px; border-radius: 8px; }
+  .directions-card .direction-lines { gap: 2px; }
+  .direction-lines button { padding: 3px 5px; border-radius: 6px; }
+  .direction-lines .kit-gloss-compact { gap: 1px; line-height: 1.1; }
+  .directions-card footer { gap: 4px; }
+  .directions-card .btn.small { min-height: 28px; padding: 2px 4px; font-size: 0.82em; }
+  .directions-card footer .ui-icon { width: 13px; height: 13px; }
+}
+@media (max-width: 600px) and (orientation: portrait) {
+  .hud:has(.photo-chip) .objective-notes:has(.directions-card) { max-height: calc(100dvh - 254px - env(safe-area-inset-bottom)); }
+  .photo-pages { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

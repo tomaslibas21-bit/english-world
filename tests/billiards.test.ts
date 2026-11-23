@@ -177,7 +177,7 @@ describe("Maple Harbor's bonus conversation", () => {
     const bonus = SITUATION_BY_ID["x01-pool-hall"];
     expect(bonus).toMatchObject({ bonus: true, location: "pool-hall", npc: "tina", mode: "talk" });
     expect(SITUATIONS).toContain(bonus);
-    expect(ROUTE).toEqual(SITUATIONS.filter((sit) => sit !== bonus));
+    expect(ROUTE).toEqual(SITUATIONS.filter((sit) => !sit.bonus));
     expect(ROUTE).toHaveLength(50);
   });
 });

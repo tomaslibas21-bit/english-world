@@ -48,6 +48,7 @@ export interface Progress {
   play?: import("./playStats").PlayStats;
   /** The help level and clean streak for each mini-game that uses the kit. */
   miniGameHelp?: Record<string, import("../game/kit/help").HelpProgress>;
+  photoWalk?: import("../game/photowalk/state").PhotoWalkProgress;
   taxi?: { nextRoute: number };
   lighthouse?: { greeted?: boolean; boat?: { id: string; x: number; z: number; rot: number } };
   phone?: PhoneProgress;
@@ -56,7 +57,7 @@ export interface Progress {
   surf?: { waves: number; seconds: number; followed: number; asked: number; lessons: number; heard: Record<string, number> };
 }
 
-const KEY = "english-world-progress-v1";
+export const PROGRESS_KEY = "english-world-progress-v1";
 
 export function emptyProgress(): Progress {
   return { version: 1, profile: null, sits: {}, phrases: {}, objective: null, place: null, seenIntro: {}, started: Date.now() };
@@ -64,7 +65,7 @@ export function emptyProgress(): Progress {
 
 export function loadProgress(): Progress {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(PROGRESS_KEY);
     if (!raw) return emptyProgress();
     const p = JSON.parse(raw);
     if (p?.version !== 1) return emptyProgress();
@@ -75,7 +76,7 @@ export function loadProgress(): Progress {
 }
 
 export function saveProgress(p: Progress) {
-  try { localStorage.setItem(KEY, JSON.stringify(p)); } catch { /* storage unavailable: progress lives for this session */ }
+  try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(p)); } catch { /* storage unavailable: progress lives for this session */ }
 }
 
 export function sitProgress(p: Progress, id: string): SitProgress {

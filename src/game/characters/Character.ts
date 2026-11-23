@@ -688,6 +688,43 @@ export class Character {
     }
     // the torso's front surface at (x, y): an ellipse across (R, R·0.78)
     const frontAt = (x: number, y: number) => Math.sqrt(Math.max(0, R(y) ** 2 - x * x)) * 0.78;
+    if (acc.includes("plaid")) {
+      // The cardigan leaves a narrow panel of the shirt visible.
+      for (const x of [-0.04, 0.04]) {
+        P.add(new THREE.BoxGeometry(0.014, 0.39 * h, 0.01).translate(x, 1.055 * h, frontAt(x, 1.10 * h) + 0.007), "#637875");
+      }
+      for (const row of [0.91, 0.98, 1.05, 1.12, 1.19]) {
+        const y = row * h;
+        P.add(new THREE.BoxGeometry(0.124, 0.015, 0.016).translate(0, y, frontAt(0.04, y) + 0.008), "#83574c");
+      }
+    }
+    if (acc.includes("foldedPaper")) {
+      const fold = (geometry: THREE.BufferGeometry) => geometry.rotateZ(-0.17).translate(-0.205 * b, 1.01 * h, 0.04);
+      P.add(fold(new THREE.BoxGeometry(0.06, 0.24, 0.28)), "#efeadc");
+      P.add(fold(new THREE.BoxGeometry(0.068, 0.024, 0.282).translate(0, 0.093, 0)), "#d3caba");
+      for (const y of [-0.046, 0.002, 0.045]) {
+        P.add(fold(new THREE.BoxGeometry(0.004, 0.008, 0.15).translate(-0.031, y, 0.033)), "#aaa293");
+      }
+    }
+    if (acc.includes("rainJacket")) {
+      P.add(G.torus(0.132 * b, 0.038, 5, 14).rotateX(1.25).translate(0, 1.28 * h, -0.055), top);
+      P.add(new THREE.BoxGeometry(0.012, 0.29 * h, 0.011).translate(0, 1.15 * h, front(1.12 * h) + 0.01), "#987020");
+    }
+    if (acc.includes("camera")) {
+      const y = 1.04 * h, z = front(y) + 0.07;
+      P.add(new THREE.BoxGeometry(0.23, 0.137, 0.083).translate(0, y, z), "#292e32");
+      P.add(new THREE.BoxGeometry(0.065, 0.028, 0.065).translate(-0.05, y + 0.073, z), "#424950");
+      P.add(G.cylinder(0.06, 0.067, 0.064, 10).rotateX(Math.PI / 2).translate(0.025, y, z + 0.057), "#181c21");
+      P.add(G.cylinder(0.044, 0.044, 0.007, 10).rotateX(Math.PI / 2).translate(0.025, y, z + 0.091), "#526d76");
+      for (const side of [-1, 1]) {
+        const strap = new THREE.CatmullRomCurve3([
+          new THREE.Vector3(side * 0.104, y + 0.052, z),
+          new THREE.Vector3(side * 0.065, 1.22 * h, front(1.22 * h) + 0.025),
+          new THREE.Vector3(side * 0.083, 1.31 * h, 0.03),
+        ]);
+        P.add(new THREE.TubeGeometry(strap, 5, 0.009, 4, false), "#36302a");
+      }
+    }
     if (acc.includes("embroidered") || acc.includes("hipil")) {
       // flowers round a square neckline, front and back: red, pink, yellow and blue, a green leaf by each
       const y0 = 1.17 * h, pts: [number, number][] = [];
@@ -1213,6 +1250,13 @@ export class Character {
         if (sun) P.add(up(G.circle(0.052, 16).rotateY(s * 0.3).translate(s * EYE_X, EYE_Y, 0.263)), gm);
       }
       P.add(up(new THREE.BoxGeometry(0.08, 0.012, 0.012).translate(0, EYE_Y + 0.012, 0.266)), gm);
+    }
+    if (acc.includes("flatCap")) {
+      // A low wool crown sloping forward over the short peak.
+      P.add(G.sphere(R * 1.09, 14, 7, 0, Math.PI * 2, 0, Math.PI * 0.51)
+        .scale(1, 0.48, 1.09).rotateX(0.17).translate(0, 0.16, -0.005), "#695d4d");
+      P.add(G.cylinder(0.15, 0.15, 0.017, 12, 1, false, -Math.PI / 2, Math.PI)
+        .scale(1, 1, 0.65).rotateX(0.17).translate(0, 0.16, 0.169), "#584b40");
     }
     if (acc.includes("cap")) {
       P.add(G.sphere(R * 1.09, 20, 8, 0, Math.PI * 2, 0, Math.PI * 0.42).translate(0, 0.045, -0.006), ac);

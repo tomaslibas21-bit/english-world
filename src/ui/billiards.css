@@ -83,9 +83,9 @@
 .bl-pocket-chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
 .bl-choice { border-radius: 8px; min-height: 36px; padding: 3px 6px; }
 .bl-choice:disabled, .bl-ball-option:disabled, .bl-replay:disabled { opacity: 0.68; }
-.kit-gloss-compact { display: grid; justify-items: center; gap: 2px; text-align: center; }
-.kit-gloss-compact > [lang=en] { font-family: var(--en, Georgia); font-size: 1rem; font-weight: 700; line-height: 1.04; }
-.kit-gloss-compact > small { color: var(--bl-light, var(--ink-soft)); font: 650 0.69rem/1.09 system-ui; }
+.billiards .kit-gloss-compact { justify-items: center; text-align: center; }
+.billiards .kit-gloss-compact > [lang=en] { font-size: 1rem; font-weight: 700; line-height: 1.04; }
+.billiards .kit-gloss-compact > small { color: var(--bl-light, var(--ink-soft)); font: 650 0.69rem/1.09 system-ui; }
 .bl-speech { padding: 4px 3px; }
 .bl-speech .kit-gloss-compact > [lang=en] { font-size: 1.13rem; }
 .bl-speech .kit-gloss-compact > small { font-size: 0.78rem; }
