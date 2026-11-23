@@ -1,6 +1,7 @@
 // Interiors: dollhouse-style rooms (back and side walls, a low front wall) seen from the entrance.
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { ROAD_EDITION } from "../../content/road";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
 import { STYLED } from "../style";
 import { carParts } from "./car";
@@ -157,6 +158,34 @@ function room(id: string, w: number, d: number, floor: string, wall: string, bui
 function counter(c: Ctx, x: number, z: number, w: number, d: number, color: string, top = "#f2efe8") {
   c.M.add("counter-" + color, mat(color), boxGeo(w, 1.0, d, x, 0.5, z));
   c.M.add("counter-top-" + top, mat(top), boxGeo(w + 0.12, 0.08, d + 0.12, x, 1.04, z));
+  c.col.addBox(x, z, w, d);
+}
+function sunnyCupCounter(c: Ctx) {
+  const x = -2, z = -3.2, w = 7, d = 1.1;
+  const body = boxGeo(w, 1.0, d, x, 0.5, z);
+  const slab = boxGeo(w + 0.12, 0.08, d + 0.12, x, 1.04, z);
+  // The floor and slab cover the body's -Y and +Y faces. The boards replace the slab's +Y face.
+  const bodyIndices = body.index!.array, slabIndices = slab.index!.array;
+  body.setIndex([...bodyIndices.slice(0, 12), ...bodyIndices.slice(24)]);
+  slab.setIndex([...slabIndices.slice(0, 12), ...slabIndices.slice(18)]);
+  body.clearGroups();
+  slab.clearGroups();
+  c.M.add("counter-body", mat("#78503d"), body);
+  c.M.add("counter-slab", mat("#aa7954"), slab);
+
+  slab.computeBoundingBox();
+  const { min, max } = slab.boundingBox!;
+  const edges = [min.z, z - 0.21, z + 0.21, max.z];
+  const colors = ["#d4ae83", "#c9a078", "#d9b68d"];
+  colors.forEach((color, i) => {
+    const board = new THREE.BufferGeometry();
+    board.setAttribute("position", new THREE.Float32BufferAttribute([
+      min.x, max.y, edges[i], min.x, max.y, edges[i + 1],
+      max.x, max.y, edges[i + 1], max.x, max.y, edges[i],
+    ], 3));
+    board.setIndex([0, 1, 2, 0, 2, 3]);
+    c.M.add("counter-top-" + color, mat(color), board);
+  });
   c.col.addBox(x, z, w, d);
 }
 function shelf(c: Ctx, x: number, z: number, w: number, h: number, color: string, goods: string[], rot = 0, depth = 0.5) {
@@ -759,7 +788,8 @@ const B: Record<string, () => Interior> = {
   "pool-hall": () => room("pool-hall", 11, 10, "#67493d", "#294838", poolHall,
     [{ npc: "tina", ...TINA_HOME, ax: 1.55, az: 1.28 }], { accent: "#503123", warm: true }),
   "sunny-cup": () => room("sunny-cup", 16, 12, "#c89b6d", "#fbe8cf", (c) => {
-    counter(c, -2, -3.2, 7, 1.1, "#8a5a3c", "#e8d9c2");
+    if (ROAD_EDITION.id === "maple-harbor" && !STYLED) sunnyCupCounter(c);
+    else counter(c, -2, -3.2, 7, 1.1, "#8a5a3c", "#e8d9c2");
     const props = new THREE.Group();
     props.name = "sunny-cup-counter-props";
     const M = new Merger();

@@ -1,7 +1,9 @@
 import * as THREE from "three";
 import { boxGeo, colourMerge } from "../world/util";
 import { priceText } from "../../content/barista";
+import { ROAD_EDITION } from "../../content/road";
 import { makeKeepsake } from "../keepsake";
+import { STYLED } from "../style";
 import type { Build } from "./tray";
 
 const TOP = 1.08;
@@ -68,28 +70,68 @@ function pastry(parent: Parent, id: string, x: number, y: number, z: number, sca
   }
 }
 
+function windowBoxFaces(geometry: THREE.BufferGeometry, faces: number[]) {
+  // BoxGeometry orders its six faces +X, -X, +Y, -Y, +Z, -Z.
+  const indices = geometry.index!.array;
+  geometry.setIndex(faces.flatMap((face) => Array.from(indices.slice(face * 6, (face + 1) * 6))));
+  geometry.clearGroups();
+  return geometry;
+}
+
 // The normal dollhouse view looks in through the open front. From inside the café
 // these toy shop windows frame the seated guests and the arriving customer.
 function shopWindows() {
+  const autumn = ROAD_EDITION.id === "maple-harbor" && !STYLED;
+  const sky = "#deebdf";
   const panes: [THREE.BufferGeometry, string][] = [
     [boxGeo(16.3, 0.14, 12.4, 0, 4.25, 0), "#f3dbbc"],
     [boxGeo(16.1, 0.2, 0.28, 0, 4.11, 6.03), CREAM],
   ];
-  for (const x of [-4.6, 4.6]) {
-    panes.push([boxGeo(6.8, 3.2, 0.12, x, 2.58, 6.14), "#c5e4dc"]);
+  const banks = [
+    { x: -4.6, roofs: [1.39, 1.68, 1.42, 1.44, 1.62], maples: [2.08, 2.46, 2.15, 2.30, 2.08] },
+    { x: 4.6, roofs: [1.48, 1.46, 1.70, 1.43, 1.48], maples: [2.16, 2.32, 2.08, 2.40, 2.18] },
+  ];
+  for (const { x, roofs, maples } of banks) {
+    const glass = boxGeo(6.8, 3.2, 0.12, x, 2.58, 6.14);
+    if (autumn) {
+      glass.computeBoundingBox();
+      const { min, max } = glass.boundingBox!;
+      const columns = [min.x, x - 1.7, x, x + 1.7, max.x];
+      const edges = [columns.map(() => min.y), roofs, maples, columns.map(() => max.y)];
+      const bands = ["#839997", "#c7a17e", sky];
+      panes.push([windowBoxFaces(glass, [0, 1, 2, 3, 4]), "#c5e4dc"]);
+      bands.forEach((color, band) => {
+        const lower = edges[band], upper = edges[band + 1];
+        for (let i = 0; i < columns.length - 1; i++) {
+          const left = columns[i], right = columns[i + 1], z = min.z;
+          const quad = new THREE.BufferGeometry();
+          quad.setAttribute("position", new THREE.Float32BufferAttribute([
+            left, lower[i], z, left, upper[i], z,
+            right, upper[i + 1], z, right, lower[i + 1], z,
+          ], 3));
+          quad.setIndex([0, 1, 2, 0, 2, 3]);
+          panes.push([quad, color]);
+        }
+      });
+    } else {
+      panes.push([glass, "#c5e4dc"]);
+    }
     for (const dx of [-3.35, -1.65, 0, 1.65, 3.35]) {
-      panes.push([boxGeo(0.09, 3.2, 0.16, x + dx, 2.58, 6.1), CREAM]);
+      const mullion = boxGeo(0.09, 3.2, 0.16, x + dx, 2.58, 6.1);
+      panes.push([autumn ? windowBoxFaces(mullion, [0, 1, 5]) : mullion, CREAM]);
     }
     panes.push([boxGeo(6.8, 0.1, 0.19, x, 2.95, 6.09), CREAM]);
     panes.push([boxGeo(6.8, 0.14, 0.24, x, 1.04, 6.06), TRIM]);
   }
-  panes.push([boxGeo(2.36, 2.53, 0.14, 0, 1.27, 6.14), "#b3d5cb"]);
+  panes.push([boxGeo(2.36, 2.53, 0.14, 0, 1.27, 6.14), autumn ? "#bbd2c8" : "#b3d5cb"]);
   panes.push([boxGeo(2.36, 0.8, 0.18, 0, 0.4, 6.1), TEAL]);
   panes.push([boxGeo(0.09, 2.6, 0.18, 0, 1.3, 6.1), TRIM]);
   panes.push([boxGeo(0.07, 0.34, 0.12, 0.19, 1.23, 5.98), "#d4ac69"]);
-  panes.push([boxGeo(2.4, 1.65, 0.14, 0, 3.38, 6.13), "#c5e4dc"]);
+  panes.push([boxGeo(2.4, 1.65, 0.14, 0, 3.38, 6.13), autumn ? sky : "#c5e4dc"]);
   panes.push([boxGeo(2.52, 0.14, 0.2, 0, 2.62, 6.09), TRIM]);
-  return new THREE.Mesh(colourMerge(panes), new THREE.MeshLambertMaterial({ vertexColors: true }));
+  const windows = new THREE.Mesh(colourMerge(panes), new THREE.MeshLambertMaterial({ vertexColors: true }));
+  windows.name = "barista-shop-windows";
+  return windows;
 }
 
 export class CounterProps {
