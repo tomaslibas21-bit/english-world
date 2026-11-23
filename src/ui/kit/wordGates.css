@@ -59,10 +59,16 @@
   border: 1px solid #ddc59680;
 }
 .road-cue:has(.road-replay) { padding: 2px 5px 2px 12px; }
-.road-cue { position: relative; }
-.road-cue .say-it { position: static; }
-.road-cue .say-it-message { right: 4px; }
 .road-question { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.road-cue .say-it { align-items: center; flex: 0 1 auto; gap: 6px; min-width: 0; }
+.road-cue .say-it-mic { flex: none; }
+/* Keep a place for the live message beside the mic so feedback cannot hang below the cue. */
+.road-cue .say-it-message { width: 10.75rem; min-width: 0; }
+.road-cue .say-it-message:not(:empty) {
+  position: static;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 .road-replay { background: #40545a; }
 .road-gap .il { justify-content: center; gap: 3px 8px; }
 .road-gap .il .en { color: #fff5df; font-size: .95rem; }
@@ -123,10 +129,13 @@
   .road-missed h3 { margin-bottom: 3px; }
   .road-missed article { padding-block: 4px; }
 }
-/* A phone on its side: the bar and the question share one slim row, so the word boards keep the sky. */
-@media (orientation: landscape) and (max-height: 520px) {
-  .road-header { display: flex; align-items: flex-start; gap: 8px; width: min(96%, 780px); top: calc(6px + env(safe-area-inset-top)); }
+/* With room across the screen, keep the entire cue in the dashboard's top band. */
+@media (min-width: 900px), (orientation: landscape) and (max-height: 520px) {
+  .road-header { display: flex; align-items: flex-start; gap: 8px; width: min(96%, 980px); }
   .road-dash { flex: 1; min-width: 0; }
   .road-cue, .road-feedback { flex: none; margin: 0; max-width: 48%; }
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .road-header { width: min(96%, 780px); top: calc(6px + env(safe-area-inset-top)); }
   .road-hint { font-size: .72rem; white-space: nowrap; }
 }
