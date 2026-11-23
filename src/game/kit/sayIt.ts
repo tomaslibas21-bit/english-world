@@ -2,6 +2,7 @@ import { tokenizeInput, tokenSimilarity, type Tokens } from "../../convo/normali
 import { wholeSoundalike } from "../../convo/soundalike";
 import { createSpeechAttempt, hasNegation, speechSupported, type Verdict } from "../../convo/speech";
 import { useStore } from "../../state/store";
+import { audio } from "../audio";
 
 export type SayItTarget = { phrases: string[]; lang?: string; evaluate(text: string): Verdict };
 
@@ -92,6 +93,7 @@ export class SayItCue {
           && this.target.evaluate(heard) === "complete");
         if (hit) {
           this.credited = true;
+          audio.sfx("sparkle"); // the bonus: a bright little chime (recorded; silent until loaded)
           this.award();
         }
         show(hit ? "hit" : "miss");

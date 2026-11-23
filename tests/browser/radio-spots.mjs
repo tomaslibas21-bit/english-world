@@ -1,4 +1,7 @@
 // Use radio.mjs's server environment, with VITE_RADIO_INDEX=/songs/index.json and VITE_RADIO_FILES=/radio-files.
+// RADIO_SPOTS_REAL=1 plays the town's own recorded spots (the real clip list and MP3s from the server) instead of the
+// silent stand-ins, with the other spots taken out of the list so the same jingle and ad come up; the songs stay
+// stand-ins either way.
 import assert from "node:assert/strict";
 import { openPhoneMenu } from "./screen-harness.mjs";
 import { contentUrl, contextOptions, installTown, key, openContentPage, progress, screenshot, viewports } from "./life-harness.mjs";
@@ -6,7 +9,7 @@ import { silence } from "./radio-fixtures.mjs";
 
 const { chromium, webkit } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const url = process.env.WORLD_TEST_URL || "http://127.0.0.1:5198";
-const songDuration = 1.8, spotDuration = 4.8;
+const songDuration = 1.8, spotDuration = 4.8, real = process.env.RADIO_SPOTS_REAL === "1";
 const wave = { contentType: "audio/wav", body: silence(songDuration) };
 const spotWave = { contentType: "audio/wav", body: silence(spotDuration) };
 const songs = Array.from({ length: 8 }, (_, i) => ({
@@ -21,9 +24,10 @@ async function radioContent(page) {
   return page.evaluate(async ([spots, hash]) => {
     const { RADIO_SPOTS, RADIO_SPOT_VOICE } = await import(spots);
     const { audioKey } = await import(hash);
+    const all = RADIO_SPOTS.map((spot) => audioKey(RADIO_SPOT_VOICE, 1, spot.id));
     return ["jingle", "ad"].map((kind) => {
       const spot = RADIO_SPOTS.find((spot) => spot.kind === kind);
-      return { ...spot, key: audioKey(RADIO_SPOT_VOICE, 1, spot.id) };
+      return { ...spot, key: audioKey(RADIO_SPOT_VOICE, 1, spot.id), all };
     });
   }, [spotFile, contentUrl(url, "audio-key")]);
 }
@@ -36,10 +40,17 @@ async function playFixture(context, ready, contents, mobile) {
   await page.route(/\/songs\/data\/G0\d\.json/, (route) => route.fulfill({ json: { L: [lyric] } }));
   await page.route(/\/songs\/audio\/G0\d\.mp3/, (route) => route.fulfill(wave));
   const manifest = ready ? Object.fromEntries(contents.map((spot) => [spot.key, spotDuration])) : {};
-  await page.route(/\/audio[^/]*\/manifest\.json(?:\?|$)/, (route) => route.fulfill({ json: manifest }));
+  await page.route(/\/audio[^/]*\/manifest\.json(?:\?|$)/, async (route) => {
+    if (!(ready && real)) return route.fulfill({ json: manifest });
+    const response = await route.fetch(), json = await response.json(), keep = contents.map((spot) => spot.key);
+    for (const other of contents[0].all) if (!keep.includes(other)) delete json[other];
+    assert(keep.every((k) => json[k] > 0), "the recorded spots are in the clip list");
+    return route.fulfill({ response, json });
+  });
   for (const spot of contents) {
     await page.route(new RegExp(`/${spot.key}\\.mp3(?:\\?|$)`), (route) => {
       requested.push(spot.id);
+      if (ready && real) return route.continue();
       return route.fulfill(ready ? spotWave : { status: 404, body: "" });
     });
   }
@@ -142,7 +153,7 @@ for (const [name, engine] of [["chromium", chromium], ["webkit", webkit]]) {
         }, next);
         assert(requested.includes(jingle.id) && requested.includes(ad.id));
         assert.deepEqual(errors, []);
-        console.log(`ok radio spots ${name} ${width}×${height}`);
+        console.log(`ok radio spots ${name} ${width}×${height}${real ? " (recorded spots)" : ""}`);
       } finally {
         await context.close();
       }

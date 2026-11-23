@@ -77,6 +77,32 @@ try {
   for (const p of pics) assert.ok(p.w >= 512, `${p.p}: ${p.error ?? p.w}`);
   console.log(`pictures: ${pics.length} load`);
 
+  // 3a. the town radio's spots (batch 5): every spot has its mixed recording in the clip list, and it decodes at the
+  //     length listed (Maple Harbor; Puerto Colibrí's spots come later)
+  if (!spanish) {
+    const spots = await page.evaluate(async () => {
+      const { RADIO_SPOTS, RADIO_SPOT_VOICE } = await import("/src/content/radioSpots.ts");
+      const { audioKey } = await import("/src/audio-key.ts");
+      const manifest = await (await fetch("/audio-v2/manifest.json")).json();
+      const ctx = new OfflineAudioContext(1, 22050, 22050), out = [];
+      for (const spot of RADIO_SPOTS) {
+        const key = audioKey(RADIO_SPOT_VOICE, 1, spot.id);
+        try {
+          const buf = await ctx.decodeAudioData(await (await fetch(`/audio-v2/${key}.mp3`)).arrayBuffer());
+          out.push({ id: spot.id, kind: spot.kind, listed: manifest[key], sec: buf.duration });
+        } catch (e) { out.push({ id: spot.id, listed: manifest[key], error: String(e) }); }
+      }
+      return out;
+    });
+    assert.equal(spots.length, 12);
+    for (const s of spots) {
+      assert.ok(s.listed && !s.error, `${s.id}: ${s.error ?? "not in the clip list"}`);
+      assert.ok(Math.abs(s.sec - s.listed) < 0.15, `${s.id}: ${s.sec.toFixed(2)} s, listed ${s.listed}`);
+      assert.ok(s.kind === "jingle" ? s.sec >= 4 && s.sec <= 8 : s.sec >= 11 && s.sec <= 21, `${s.id}: ${s.sec.toFixed(2)} s`);
+    }
+    console.log(`radio spots: ${spots.length} recorded and listed`);
+  }
+
   // 3. a mini-game's bed starts when the game is entered and stops when it is left
   for (const mode of spanish ? ["billiards"] : ["billiards", "gofish"]) {
     const p = await context.newPage();

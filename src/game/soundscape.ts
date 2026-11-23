@@ -128,6 +128,11 @@ export const SAMPLES = {
   chirp: { files: ["alarm-chirp.mp3"], gain: 0.25 },
   // (the hazard relay stays synthesized: two generations came out as a steady rattle, not a tick and a tock)
   ding: { files: ["repair-ding.mp3"], gain: 0.35 },
+  // batch 5's quests: Hana's photo walk, asking Earl the way, the "say it" bonus
+  shutter: { files: ["shutter.mp3"], gain: 0.35 },
+  bookPage: { files: ["book-page.mp3"], gain: 0.3, synth: null },
+  sparkle: { files: ["sparkle.mp3"], gain: 0.3, synth: null },
+  arrive: { files: ["arrive.mp3"], gain: 0.35, synth: "success" },
 } as const satisfies Record<string, SampleDef>;
 export type SampleName = keyof typeof SAMPLES;
 export const isSample = (name: string): name is SampleName => Object.prototype.hasOwnProperty.call(SAMPLES, name);

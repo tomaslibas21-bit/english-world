@@ -904,7 +904,8 @@ export class AudioSystem {
 
   private ac(resume = true) {
     if (!this.ctx || this.ctx.state === "closed") {
-      const AC = window.AudioContext || (window as any).webkitAudioContext;
+      // no window (a game rule run in a unit test): no sound, as on a browser without Web Audio
+      const AC = typeof window === "undefined" ? undefined : window.AudioContext || (window as any).webkitAudioContext;
       if (!AC) return null;
       this.ctx = new AC();
       if (audioDiagnosticsEnabled()) {
