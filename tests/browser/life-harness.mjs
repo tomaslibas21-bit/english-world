@@ -7,16 +7,18 @@ import { join } from "node:path";
 const storage = process.env.WORLD_STORAGE || "english-world";
 const pc = storage === "puerto-colibri";
 const lithuanian = !pc || process.env.WORLD_LEARNER === "lt";
+const editionPath = pc ? `editions/${lithuanian ? "es-lt" : "es"}/` : "";
 export const key = `${storage}-progress-v1`;
 export const targetLang = pc ? "es" : "en";
 export const helperLang = lithuanian ? "lt" : "en";
+export const profileName = `${pc ? "pc" : "mh"}-${helperLang}`;
 export const variety = pc ? (process.env.WORLD_VARIETY || "neutral") : "default";
-export const lineText = (line) => variety === "default" ? line.en : line.neutral ?? line.en;
+export const lineText = (line) => variety === "neutral" || variety === "spain" ? line.neutral ?? line.en : line.en;
 export const learnerLabel = (lt, en) => lithuanian ? lt : en;
 export const viewports = process.env.WORLD_PHONE_WIDTH || process.env.WORLD_PHONE_HEIGHT
   ? [[Number(process.env.WORLD_PHONE_WIDTH || 390), Number(process.env.WORLD_PHONE_HEIGHT || 844)]]
   : [[390, 844], [390, 664], [844, 390], [1280, 800]];
-const shots = process.env.WORLD_SHOT_DIR || process.env.WORLD_SHOTS || "";
+const shots = process.env.WORLD_SHOTS || process.env.WORLD_SHOT_DIR || "";
 
 export const progress = {
   version: 1,
@@ -78,13 +80,22 @@ export function manualFrames(page) {
 export async function screenshot(page, name, width, height) {
   if (!shots) return;
   await mkdir(shots, { recursive: true });
-  await page.screenshot({ path: join(shots, `${name}-${width}x${height}.png`) });
+  await page.screenshot({ path: join(shots, `${profileName}-${name}-${width}x${height}.png`) });
 }
 
 export const contentUrl = (base, name) => new URL(`src/${name}.ts`, base.endsWith("/") ? base : base + "/").href;
-export const lifeContentUrl = (base, name) => contentUrl(base,
-  pc ? `editions/${lithuanian ? "es-lt" : "es"}/content/${name}` : `content/${name}`);
+export const lifeContentUrl = (base, name) => contentUrl(base, `${editionPath}content/${name}`);
 export const radioContentUrl = (base) => contentUrl(base, pc ? "editions/es/content/radio" : "content/radio");
+
+export async function assertTownProfile(page, base) {
+  const actual = await page.evaluate(async (url) => {
+    const { EDITION } = await import(url);
+    return { title: document.title, lang: document.documentElement.lang, editionTitle: EDITION.title, storage: EDITION.storage };
+  }, contentUrl(base, `${editionPath}edition`));
+  assert.equal(actual.storage, storage, `WORLD_STORAGE must match the edition for ${profileName}`);
+  assert.equal(actual.title, actual.editionTitle, `WORLD_STORAGE must match the town served for ${profileName}`);
+  assert.equal(actual.lang, helperLang, `WORLD_LEARNER must match the learner language served for ${profileName}`);
+}
 
 export async function openContentPage(page, base) {
   const fixture = new URL("life-browser-test.html", base.endsWith("/") ? base : base + "/").href;

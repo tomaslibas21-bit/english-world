@@ -1,6 +1,6 @@
-// Run on the same local Vite server and Chromium setup as phone-rings.mjs.
+// See README-life.md for the local Vite server and browser profiles.
 import assert from "node:assert/strict";
-import { contentUrl, contextOptions, helperLang, installTown, key, lifeContentUrl, lineText, manualFrames, probeEffects, progress, screenshot, stubVoiceClips, targetLang, variety, viewports } from "./life-harness.mjs";
+import { assertTownProfile, contentUrl, contextOptions, helperLang, installTown, key, lifeContentUrl, lineText, manualFrames, probeEffects, profileName, progress, screenshot, stubVoiceClips, targetLang, variety, viewports } from "./life-harness.mjs";
 
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const url = process.env.WORLD_TEST_URL || "http://127.0.0.1:8310";
@@ -17,6 +17,7 @@ try {
       page.on("pageerror", (error) => errors.push(error.message));
       await stubVoiceClips(page);
       await page.goto(url, { waitUntil: "domcontentloaded" });
+      await assertTownProfile(page, url);
       const { step, waitFor, during } = manualFrames(page);
       await waitFor(() => page.evaluate(() => window.__ew?.store.getState().screen === "play"), "town opens");
       await waitFor(() => page.evaluate(() => !window.__ew.store.getState().hud.zoneBanner), "zone banner clears");
@@ -63,7 +64,8 @@ try {
       const assertLine = async (kind) => {
         const last = (await state()).last;
         assert.equal(last?.kind, kind);
-        assert(lines[kind].some((line) => lineText(line) === last.text && line.lt === last.lt));
+        assert(lines[kind].some((line) => lineText(line) === last.text && line.lt === last.lt),
+          `${kind} uses the ${variety} line and its ${helperLang} meaning`);
         return last;
       };
       const dropOntoCar = (withOwner) => page.evaluate((withOwner) => {
@@ -279,6 +281,7 @@ try {
           await waitFor(() => page.evaluate(() => !window.__ew.game.transitioning), `${id} finishes entering`);
           await page.evaluate(() => window.__ew.game.modes.exit(true));
         }
+        await waitFor(() => page.evaluate(() => !window.__ew.game.modes.engaged && !window.__ew.game.transitioning), "back in town after the last mode");
         await page.evaluate(() => window.__ew.game.placeOnFoot(-124, -61, Math.PI));
         assert.equal(await page.evaluate(() => window.__ew.game.zone.id), "town");
         await assertSuppressed("the outdoor ruins precinct blocks reactions");
@@ -287,7 +290,7 @@ try {
         await assertSuppressed("the grotto blocks reactions");
       }
       assert.deepEqual(errors, []);
-      console.log(`ok reactions ${width}×${height}`);
+      console.log(`ok ${profileName} reactions ${width}×${height}`);
     } finally {
       await context.close();
     }

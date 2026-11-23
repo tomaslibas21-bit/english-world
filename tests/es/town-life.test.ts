@@ -1,6 +1,7 @@
 import { Vector3 } from "three";
 import { afterEach, expect, it, vi } from "vitest";
 import { REACT_LINES } from "../../src/content/reacts";
+import { SITUATION_BY_ID } from "../../src/content/situations/catalog";
 import { TEXT_THREADS } from "../../src/content/texts";
 import { shoutVoice } from "../../src/content/voices";
 import { setVariety } from "../../src/convo/compose";
@@ -9,18 +10,23 @@ import { Ambient, type TrafficCar } from "../../src/game/ambient";
 import { townLineText } from "../../src/game/life/lineText";
 import { inTownRuins, TownReactions } from "../../src/game/life/townReactions";
 import { NavGrid } from "../../src/game/nav";
+import { TownPhone } from "../../src/game/phone/Phone";
+import type { PhoneSnapshot } from "../../src/game/phone/schedule";
 import type { Ride } from "../../src/game/rides/Rides";
 import { BAY, SHORE } from "../../src/game/water";
 import { WORLD } from "../../src/game/world/layout";
 import { RIDES } from "../../src/game/world/rides";
 import { THEME } from "../../src/game/world/theme";
 import { Colliders } from "../../src/game/world/util";
+import { emptyProgress, sitProgress } from "../../src/state/progress";
 import { useStore } from "../../src/state/store";
 
 afterEach(() => {
   setVariety("default");
   useStore.setState(useStore.getInitialState());
+  vi.useRealTimers();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 it.each([
@@ -74,9 +80,54 @@ it("recognizes the ruins precinct within the town zone", () => {
   expect(inTownRuins(new Vector3(WORLD.minX + 1, 0, z + 7.5))).toBe(false);
 });
 
-it.each(["default", "neutral", "spain"] as const)("selects the %s text answer", (selected) => {
+it.each([
+  ["default", "en"], ["neutral", "neutral"], ["spain", "neutral"],
+] as const)("selects town lines for the %s variety", (selected, field) => {
   setVariety(selected);
   const answer = TEXT_THREADS.find(({ from }) => from === "memo")!.replies[0].answer[0];
   expect(answer.neutral).toBeTruthy();
-  expect(townLineText(answer)).toBe(selected === "default" ? answer.en : answer.neutral);
+  const lines = [
+    ...Object.values(REACT_LINES).flat(),
+    ...TEXT_THREADS.flatMap(({ lines, replies }) => [...lines, ...replies.flatMap((reply) => [reply, ...reply.answer])]),
+  ];
+  for (const line of lines) expect(townLineText(line), line.en).toBe(line[field] ?? line.en);
+});
+
+const walking: PhoneSnapshot = {
+  town: true, onFoot: true, grounded: true, visible: true, enabled: false, conversation: false, panel: false, dialog: false,
+  guide: false, banner: false, cardOpen: false, flight: false, loading: false, transition: false, mode: false,
+};
+
+it.each([
+  ["s85-dinner", "dan-dinner", "nextDay"],
+  ["s82-neighbor", "rita-package", "nextDay"],
+  ["x11-billar", "memo-tournament", "later"],
+  ["s86-old-friend", "lucy-coffee", "later"],
+  ["x10-loteria", "tona-loteria", "later"],
+] as const)("schedules %s's thread %s once its wait has elapsed", (conversation, thread, wait) => {
+  expect(SITUATION_BY_ID[conversation]).toBeDefined();
+  vi.setSystemTime(new Date(2026, 10, 23, 12));
+  vi.stubGlobal("navigator", { vibrate: vi.fn() });
+  vi.spyOn(audio, "sfx").mockImplementation(() => {});
+  const progress = emptyProgress();
+  progress.sits[conversation] = { ...sitProgress(progress, conversation), visits: 1 };
+  useStore.setState({ progress });
+  const phone = new TownPhone();
+  phone.tick(0, walking);
+  expect(phone.textsState()).toMatchObject({ pending: {}, due: null, sessionCount: 0 });
+
+  useStore.getState().updateProgress((p) => {
+    p.sits[conversation].completions = 1;
+  });
+  phone.tick(0, walking);
+  expect(phone.textsState().pending).toEqual({ [thread]: { day: "2026-11-23", played: 0 } });
+
+  phone.tick(wait === "nextDay" ? 480 : 479, walking);
+  expect(phone.textsState().due).toBeNull();
+  expect(phone.textsState().sessionCount).toBe(0);
+  if (wait === "nextDay") vi.setSystemTime(new Date(2026, 10, 24, 12));
+  phone.tick(1, walking);
+  expect(useStore.getState().hud.textArrival).toBe(thread);
+  expect(phone.textsState()).toMatchObject({ pending: {}, due: null, sessionCount: 1, unread: 1 });
+  expect(Object.keys(phone.textsState().got)).toEqual([thread]);
 });

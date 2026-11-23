@@ -1,7 +1,7 @@
-// Run on the same local Vite server and Chromium setup as phone-rings.mjs.
+// See README-life.md for the local Vite server and browser profiles.
 import assert from "node:assert/strict";
 import { openPhoneMenu } from "./screen-harness.mjs";
-import { contextOptions, helperLang, installTown, key, learnerLabel, lifeContentUrl, lineText, manualFrames, openContentPage, probeEffects, progress, screenshot, stubVoiceClips, targetLang, variety, viewports } from "./life-harness.mjs";
+import { assertTownProfile, contextOptions, helperLang, installTown, key, learnerLabel, lifeContentUrl, lineText, manualFrames, openContentPage, probeEffects, profileName, progress, screenshot, stubVoiceClips, targetLang, variety, viewports } from "./life-harness.mjs";
 
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const url = process.env.WORLD_TEST_URL || "http://127.0.0.1:8310";
@@ -29,6 +29,7 @@ try {
       await page.addInitScript(installTown, { key, progress: seed, manual: true, variety });
       page.on("pageerror", (error) => errors.push(error.message));
       await page.goto(url, { waitUntil: "domcontentloaded" });
+      await assertTownProfile(page, url);
       const { step, waitFor, during } = manualFrames(page);
       const ready = async () => {
         await waitFor(() => page.evaluate(() => window.__ew?.store.getState().screen === "play"), "town opens");
@@ -105,6 +106,9 @@ try {
       await tap(chip.getByRole("button"));
       assert.equal(await thread.getAttribute("data-thread"), dinner.id);
       await checkThreadViewport(newest, ".text-replies button");
+      const choices = thread.locator(".text-replies button");
+      assert.deepEqual(await choices.locator(`span[lang="${targetLang}"]`).allTextContents(), dinner.replies.map(lineText));
+      assert.deepEqual(await choices.locator(`small[lang="${helperLang}"]`).allTextContents(), dinner.replies.map((reply) => reply.lt));
       assert.equal((await state()).unread, 0);
       assert.equal(await phone.locator(".due-badge").count(), 0);
       const first = thread.locator(".text-bubble").first();
@@ -117,7 +121,7 @@ try {
       await during(() => screenshot(page, "text-translation", width, height));
 
       const reply = dinner.replies[0];
-      await tap(thread.locator(".text-replies button").first());
+      await tap(choices.first());
       assert.equal(await thread.locator(".mine .text-bubble").innerText(), lineText(reply));
       assert.equal(await thread.locator(".text-sent").innerText(), learnerLabel("Išsiųsta", "Sent"));
       assert.equal(await thread.locator(".text-typing i").count(), 3);
@@ -170,7 +174,7 @@ try {
             return Promise.resolve(true);
           };
         }, threads);
-        for (const { id, from } of threads) {
+        for (const { id, from, replies } of threads) {
           const npc = contacts[from];
           await tap(panel.locator(`.text-contact[data-thread="${id}"]`));
           assert.equal(await thread.locator("header strong").innerText(), npc.name);
@@ -179,18 +183,19 @@ try {
             node.querySelector("img")?.src.startsWith("data:image/") ? "portrait" : node.textContent);
           assert(["portrait", npc.name[0]].includes(face), `face resolves for ${from}`);
           if (from === "memo") {
-            const answer = lineText(second.replies[0].answer.at(-1));
+            const answer = replies[0].answer.at(-1);
             const bubble = thread.locator(".text-bubble").last();
-            assert.equal(await bubble.innerText(), answer);
+            assert.equal(await bubble.locator(`span[lang="${targetLang}"]`).innerText(), lineText(answer));
             await tap(bubble);
+            assert.equal(await bubble.locator(`small[lang="${helperLang}"]`).innerText(), answer.lt);
             const voice = variety === "spain" ? "esp_memo" : variety === "neutral" ? "esn_memo" : "es_memo";
-            assert.deepEqual(await page.evaluate(() => window.__textVoice.at(-1)), { voice, text: answer });
+            assert.deepEqual(await page.evaluate(() => window.__textVoice.at(-1)), { voice, text: lineText(answer) });
           }
           await tap(thread.locator(".text-thread-head button"));
         }
       }
       assert.deepEqual(errors, []);
-      console.log(`ok texts ${width}×${height}`);
+      console.log(`ok ${profileName} texts ${width}×${height}`);
     } finally {
       await context.close();
     }

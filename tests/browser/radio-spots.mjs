@@ -1,7 +1,7 @@
-// Use radio.mjs's server environment, with VITE_RADIO_INDEX=/songs/index.json and VITE_RADIO_FILES=/radio-files.
+// See README-life.md for the local Vite server and browser profiles.
 import assert from "node:assert/strict";
 import { openPhoneMenu } from "./screen-harness.mjs";
-import { contentUrl, contextOptions, helperLang, installTown, key, learnerLabel, lifeContentUrl, openContentPage, progress, radioContentUrl, screenshot, targetLang, variety, viewports } from "./life-harness.mjs";
+import { assertTownProfile, contentUrl, contextOptions, helperLang, installTown, key, learnerLabel, lifeContentUrl, openContentPage, profileName, progress, radioContentUrl, screenshot, targetLang, variety, viewports } from "./life-harness.mjs";
 import { silence } from "./radio-fixtures.mjs";
 
 const { chromium, webkit } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
@@ -12,7 +12,6 @@ const spotWave = { contentType: "audio/wav", body: silence(spotDuration) };
 const songs = Array.from({ length: 8 }, (_, i) => ({
   id: `G0${i + 1}`, t: `Song ${i + 1}`, tl: "", c: "g", n: i + 1, g: "", tp: "", d: songDuration, a: `/songs/audio/G0${i + 1}.mp3`,
 }));
-const lyric = { s: 0, e: songDuration, src: "Every evening", lt: "Kiekvieną vakarą", u: [["Every evening", "Kiekvieną vakarą", 1]], w: [[0, songDuration]], wt: ["Every evening"] };
 const phoneAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 Version/26.6 Mobile/15E148 Safari/604.1";
 
 async function radioContent(page) {
@@ -34,6 +33,8 @@ async function playFixture(context, ready, contents, radioName, mobile) {
   await context.addInitScript(installTown, { key, progress, manual: false, variety });
   const page = await context.newPage(), errors = [], requested = [];
   page.on("pageerror", (e) => errors.push(e.message));
+  const { en, lt } = contents[0].lines[0];
+  const lyric = { s: 0, e: songDuration, src: en, lt, u: [[en, lt, 1]], w: [[0, songDuration]], wt: [en] };
   await page.route("**/songs/index.json", (route) => route.fulfill({ json: { lang: targetLang, songs } }));
   await page.route(/\/songs\/data\/G0\d\.json/, (route) => route.fulfill({ json: { L: [lyric] } }));
   await page.route(/\/songs\/audio\/G0\d\.mp3/, (route) => route.fulfill(wave));
@@ -46,6 +47,7 @@ async function playFixture(context, ready, contents, radioName, mobile) {
     });
   }
   await page.goto(url, { waitUntil: "domcontentloaded" });
+  await assertTownProfile(page, url);
   const until = (test, arg) => page.waitForFunction(test, arg, { timeout: 90000 });
   await until(() => window.__ew?.store.getState().screen === "play" && window.__ew.radio.store.getState().ready);
   await page.evaluate(() => {
@@ -102,23 +104,33 @@ for (const [name, engine] of [["chromium", chromium], ["webkit", webkit]]) {
       try {
         const { page, until, set, errors, requested, openRadio } = await playFixture(context, true, contents, radioName, mobile);
         const strip = page.locator(".radio-strip[data-spot]");
+        const checkSpotWords = async (spot) => {
+          const visible = await strip.evaluate((node, [target, helper]) => ({
+            id: node.getAttribute("data-spot"),
+            text: node.querySelector(`.rt[lang="${target}"]`)?.textContent,
+            meaning: node.querySelector(`.radio-nat[lang="${helper}"]`)?.textContent,
+          }), [targetLang, helperLang]);
+          assert.equal(visible.id, spot.id);
+          const line = spot.lines.find(({ en }) => en === visible.text);
+          assert(line, `${spot.id} shows a ${targetLang} line from the edition`);
+          assert.equal(visible.meaning, line.lt, `${spot.id} shows the matching ${helperLang} meaning`);
+          return line.en;
+        };
         await until((id) => document.querySelector(".radio-strip")?.dataset.spot === id, jingle.id);
         const first = await page.evaluate(() => window.__radioSpotsLog.slice(0, 3));
         assert.deepEqual(first, [{ song: "G01", spot: null }, { song: "G02", spot: null }, { song: "G02", spot: jingle.id }]);
-        assert(jingle.lines.map((line) => line.en).includes(await strip.locator(`.rt[lang="${targetLang}"]`).innerText()));
-        assert(jingle.lines.map((line) => line.lt).includes(await strip.locator(`.radio-nat[lang="${helperLang}"]`).innerText()));
+        await checkSpotWords(jingle);
         assert.equal(await strip.locator(".radio-notes, .radio-pic").count(), 0);
         await screenshot(page, `radio-jingle-${name}`, width, height);
         await until((id) => document.querySelector(".radio-strip")?.dataset.spot === id, ad.id);
         assert.equal(await strip.locator(".radio-spot-label").innerText(), learnerLabel("Reklama", "Ad"));
-        const firstAdLine = await strip.locator(".rt").innerText();
-        assert(ad.lines.map((line) => line.en).includes(firstAdLine));
-        assert(ad.lines.map((line) => line.lt).includes(await strip.locator(`.radio-nat[lang="${helperLang}"]`).innerText()));
+        const firstAdLine = await checkSpotWords(ad);
         if (ad.lines.length > 1) {
-          await until((first) => {
-            const words = document.querySelector(".radio-strip[data-spot] .rt");
+          await until(({ id, first }) => {
+            const words = document.querySelector(`.radio-strip[data-spot="${id}"] .rt`);
             return !!words && words.textContent !== first;
-          }, firstAdLine);
+          }, { id: ad.id, first: firstAdLine });
+          await checkSpotWords(ad);
         }
         await screenshot(page, `radio-ad-${name}`, width, height);
         await until((id) => {
@@ -146,7 +158,7 @@ for (const [name, engine] of [["chromium", chromium], ["webkit", webkit]]) {
         }, next);
         assert(requested.includes(jingle.id) && requested.includes(ad.id));
         assert.deepEqual(errors, []);
-        console.log(`ok radio spots ${name} ${width}×${height}`);
+        console.log(`ok ${profileName} radio spots ${name} ${width}×${height}`);
       } finally {
         await context.close();
       }
