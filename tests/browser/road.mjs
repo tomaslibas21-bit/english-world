@@ -308,7 +308,13 @@ try {
       game.setJoystick(0, 1);
     });
     const yes = page.locator('.road-choice[data-line="rd_a_yes"]');
+    // (Vinnie at the wheel under the taxi's roof is out of sight; standing beside it, in sight; beside the learner on
+    // the road, under the roof again)
+    const vinnie = () => page.evaluate(() => window.__ew.game.modes.get("road").mode?.lift?.driver.root.visible);
+    await waitFor(async () => (await read()).phase === "approach", "walking to the boundary calls Vinnie's taxi", 750, 1);
+    assert.equal(await vinnie(), false, "Vinnie drives up out of sight under the taxi's roof");
     await waitFor(() => yes.isVisible(), "walking to the boundary summons Vinnie's lift");
+    assert.equal(await vinnie(), true, "Vinnie stands beside his taxi, in sight");
     await page.evaluate(() => window.__ew.game.setJoystick(0, 0));
     assert.ok(await page.evaluate(() => window.__roadAudio.some(({ text }) => text === "Need a lift? Hop in, you drive!")));
     assert.equal(await page.locator('.road-choice[data-line="rd_a_no"]').count(), 1);
@@ -323,6 +329,7 @@ try {
       const state = await read();
       return state.phase === "drive" && state.lifted && state.model === "taxi";
     }, "accepts the lift and starts driving Vinnie's taxi");
+    assert.equal(await vinnie(), false, "Vinnie rides beside the learner out of sight under the taxi's roof");
     await page.evaluate(() => window.__ew.road.jumpTimer());
     await waitFor(() => result.isVisible(), "shows the taxi run's result");
     await waitFor(() => page.locator('[data-line="rd_end"]').isVisible(), "Vinnie's ending line is shown with the score");

@@ -9,11 +9,14 @@ type Surface = readonly [startZ: number, endZ: number, width: number, top: numbe
 
 function entry(
   file: string, scale: Scale, source: readonly [width: number, minZ: number, maxZ: number, height: number],
-  bodyTop: number, surfaces: readonly Surface[], paintColumn?: number,
+  bodyTop: number, surfaces: readonly Surface[], paintColumn?: number, roof = true,
 ) {
   const [width, minZ, maxZ, height] = source;
   return {
     file, scale, sourceCenterZ: (minZ + maxZ) / 2, wheelNodes: WHEELS,
+    // A roof over the seats (the kit's windows are opaque): whoever sits in it is not drawn, or their head and
+    // backpack would stick out through it. An open model (none yet) keeps its driver and passengers in sight.
+    roof,
     collisionBox: { width: width * scale[0], length: (maxZ - minZ) * scale[2], height: height * scale[1] },
     // Kenney's shaded body-paint swatch (rows 4–7 in the palette). Service colours are kept as supplied.
     paintColumn, surfaces: [[minZ, maxZ, width, bodyTop] as Surface, ...surfaces],
@@ -63,6 +66,10 @@ export interface CarModel {
 }
 
 export function carModelEntry(name: CarModelName): CarModelEntry { return CAR_MODELS[name]; }
+
+/** Whether the people in a car are under a roof and out of sight. A car without a model is a convertible
+ *  (rides/shapes.ts): its people sit in the open. */
+export function carHasRoof(name: CarModelName | undefined) { return !!name && CAR_MODELS[name].roof; }
 
 const pending = new Map<CarModelName, Promise<CarModel>>();
 const loaded = new Map<CarModelName, CarModel>();

@@ -217,8 +217,8 @@ try {
     assert(await page.evaluate(atTaxiStand, "r1"), "the first ride boards the parked taxi at the stand");
     assert(await page.evaluate(() => {
       const mode = window.__ew.game.modes.get("taxi");
-      return mode.passenger.root.parent === mode.car.mesh && mode.passenger.root.position.z < 0;
-    }), "Vinnie sits in the back of the taxi");
+      return mode.passenger.root.parent === mode.car.mesh && mode.passenger.root.position.z < 0 && !mode.passenger.root.visible;
+    }), "Vinnie sits in the back of the taxi, out of sight under its roof");
     assert.equal(await page.locator(".toolbar .ride-menu").count(), 1);
     assert.equal(await page.locator(".minimap, .objective-card").count(), 0);
     assert.equal(await page.locator(".toolbar.menu-open").count(), 0);
@@ -230,6 +230,7 @@ try {
       const game = window.__ew.game;
       return game.modes.get("taxi").run?.phase === "drive" && game.rides.phase === "on";
     }), "boarding finishes and the taxi is ready to drive");
+    assert(await page.evaluate(() => !window.__ew.game.player.root.visible), "the learner at the taxi's wheel is out of sight under its roof");
 
     if (phone) {
       const cdp = await context.newCDPSession(page);
@@ -329,7 +330,7 @@ try {
       const door = game.doors.find((d) => d.loc === "hotel");
       const stopLine = game.modes.get("taxi").run.kept.get("tx_r1_c6")?.sentence.en;
       const cards = JSON.parse(localStorage.getItem(storageKey) ?? "null")?.cards ?? [];
-      return !game.rides.riding && Math.hypot(p.x - door.outX, p.z - door.outZ) < 0.5
+      return !game.rides.riding && game.player.root.visible && Math.hypot(p.x - door.outX, p.z - door.outZ) < 0.5
         && window.__ew.store.getState().progress.taxi.nextRoute === 1
         && cards.some((c) => c.situationId === "s66-taxi" && c.sentence.en === stopLine);
     }, `${storage}-cards-v1`), "on foot at the destination door, with route rotation and cards saved");
@@ -364,6 +365,7 @@ try {
       await page.getByRole("button", { name: "Išlipti", exact: true }).click();
       await real(470);
       await waitFor(() => page.locator(".minimap").count(), "menu exits the ride and restores the HUD");
+      assert(await page.evaluate(() => window.__ew.game.player.root.visible), "on foot again after the menu's way out, in sight");
       await checkNoRideHints(page, "after exiting from the menu");
     }
     assert.deepEqual(errors, []);

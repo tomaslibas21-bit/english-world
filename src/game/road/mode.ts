@@ -8,7 +8,7 @@ import { ModeDialogue } from "../kit/dialogue";
 import type { ModeFrame, ModeInput } from "../kit/modes";
 import type { Ride } from "../rides/Rides";
 import { CAR_SEATS } from "../rides/shapes";
-import { carModelEntry } from "../world/carModels";
+import { carHasRoof, carModelEntry } from "../world/carModels";
 import { TAXI } from "../world/layout";
 import type { RoadHost, WalkEdge } from "./entry";
 import { Gate, LANE_PAINT } from "./gates";
@@ -97,6 +97,8 @@ export class RoadMode {
       ch.recline = 0.12;
       ch.root.position.set(CAR_SEATS.passenger[0], CAR_SEATS.floor, CAR_SEATS.passenger[1]);
       ch.root.rotation.y = 0;
+      // (beside the learner under the taxi's roof: heard, not seen)
+      ch.root.visible = !carHasRoof(TAXI.model);
       ch.setAnim("sit");
       ch.update(0.05);
       view.passenger(ch.root);
