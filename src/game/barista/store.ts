@@ -17,6 +17,7 @@ interface BaristaUi {
   built: Build;
   highlight: Pick | null;
   repair: boolean;
+  correctionSelected: boolean | null;
   menu: Record<Row, { id: string; en: string; lt: string }[]> | null;
   tray: boolean;
   ready: boolean;
@@ -29,7 +30,7 @@ interface BaristaUi {
 const empty: BaristaUi = {
   offered: false, line: null, hiddenOrder: [], revealed: false, choices: [],
   mic: { status: "off", heard: "" }, micOn: true, customer: 0, step: "intro", built: { extras: [] },
-  highlight: null, repair: false, menu: null, tray: false, ready: false, row: "drink", page: 0, price: null, result: null,
+  highlight: null, repair: false, correctionSelected: null, menu: null, tray: false, ready: false, row: "drink", page: 0, price: null, result: null,
 };
 
 export const useBarista = create<BaristaUi>(() => empty);

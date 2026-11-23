@@ -127,6 +127,26 @@ function taxiStandView() {
   return { taxiInFrame, canopyClear: true };
 }
 
+async function checkSightlines(page, moment) {
+  const view = await page.evaluate(() => {
+    const { rig } = window.__ew.game;
+    const shot = rig.taxiShot;
+    if (!shot) return { active: false };
+    return {
+      active: true, rays: rig.taxiSnapRays,
+      points: rig.taxiSightPoints(shot.subject).map((point) => ({
+        clear: shot.clear(rig.cam.position, point),
+        visible: point.clone().project(rig.cam).toArray().every((n) => Math.abs(n) < 1),
+      })),
+    };
+  });
+  assert(view.active && view.rays >= 4 && view.rays <= 20 && view.rays % 4 === 0,
+    `${moment} uses a taxi shot selected with at most 20 rays: ${JSON.stringify(view)}`);
+  assert.equal(view.points.length, 4);
+  assert(view.points.every(({ clear, visible }) => clear && visible),
+    `${moment}: roof, rear corners and road are visible: ${JSON.stringify(view)}`);
+}
+
 async function checkNoRideHints(page, where) {
   const visible = await page.locator(".toast:visible").evaluateAll((toasts) => toasts
     .filter((toast) => toast.hasAttribute("data-ride-hint") || toast.querySelector(".t-text b")?.textContent === "Kelias užimtas")
@@ -215,6 +235,7 @@ try {
     await real(470);
     await waitFor(() => choice("tx_a_where").count(), "Vinnie gets in and asks for the learner's turn");
     assert(await page.evaluate(atTaxiStand, "r1"), "the first ride boards the parked taxi at the stand");
+    await checkSightlines(page, "opening pickup");
     assert(await page.evaluate(() => {
       const mode = window.__ew.game.modes.get("taxi");
       return mode.passenger.root.parent === mode.car.mesh && mode.passenger.root.position.z < 0 && !mode.passenger.root.visible;
@@ -289,6 +310,7 @@ try {
       const { m } = window.__ew.game.rides.riding;
       return Math.abs(m.x - 14) < 0.5 && Math.abs(m.z + 9) < 0.5 && Math.abs(m.pace) < 0.5 && Math.abs(m.heading + Math.PI / 2) < 0.01;
     }), "the taxi is reset on its approach, facing west");
+    await checkSightlines(page, "retry snap");
     await waitFor(() => heard("tx_r1_c1"), "the cue repeats");
 
     await page.evaluate(installSteering, { wrong: false });
@@ -352,6 +374,7 @@ try {
       await real(480);
       await waitFor(() => choice("tx_a_where").count(), "s66 end card starts a taxi mode");
       assert(await page.evaluate(atTaxiStand, "r2"), "the second route boards the same taxi at the stand");
+      await checkSightlines(page, "second pickup");
       if (shots) {
         await page.keyboard.press("1");
         await waitFor(() => phase("drive"), "route 2 is ready to drive");

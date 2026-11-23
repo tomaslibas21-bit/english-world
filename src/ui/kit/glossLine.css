@@ -1,3 +1,17 @@
-.kit-gloss-compact { display: grid; gap: 2px; line-height: 1.2; }
-.kit-gloss-compact > [lang="en"] { font-family: var(--en, Georgia); }
-.kit-gloss-compact > small { color: var(--ink-soft); font-size: 0.82em; }
+.kit-gloss-compact {
+  display: grid;
+  gap: 2px;
+  overflow-wrap: normal;
+  hyphens: none;
+}
+.kit-gloss-compact > span {
+  font: 700 var(--kit-phrase-size, 18px)/1.15 var(--en, Georgia);
+}
+.kit-gloss-compact > small {
+  color: var(--kit-gloss-color, var(--ink-soft));
+  font: 650 var(--kit-translation-size, 14px)/1.15 system-ui;
+}
+@media (min-width: 700px) {
+  .kit-gloss-compact > span { font-size: var(--kit-phrase-size, 22px); }
+  .kit-gloss-compact > small { font-size: var(--kit-translation-size, 16px); }
+}

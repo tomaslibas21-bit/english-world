@@ -547,6 +547,9 @@ try {
     const correctFeedback = page.getByText("Teisingai!", { exact: true });
     await correctFeedback.first().waitFor({ state: "visible" });
     assert.equal(await correctFeedback.count(), 1);
+    const rightBadge = page.locator('.road-feedback .kit-feedback[data-feedback="right"]');
+    assert.equal(await rightBadge.locator('svg[width="16"]').count(), 1);
+    assert.equal(await rightBadge.evaluate((el) => getComputedStyle(el).backgroundColor), "rgb(229, 243, 232)");
     assert.ok((await read()).boost > 0);
     assert.ok((await read()).drawCalls <= maxRoadCalls);
     await shot("gate-right");
@@ -563,6 +566,10 @@ try {
     const wrongFeedback = page.getByText("Ne visai. Teisingai:", { exact: true });
     await wrongFeedback.first().waitFor({ state: "visible" });
     assert.equal(await wrongFeedback.count(), 1);
+    const retryBadge = page.locator('.road-feedback .kit-feedback[data-feedback="retry"]');
+    assert.equal(await retryBadge.locator('svg[width="16"]').count(), 1);
+    assert.equal(await retryBadge.evaluate((el) => getComputedStyle(el).color), "rgb(121, 71, 17)");
+    assert.equal(await page.locator(".road-feedback.wrong span[lang=en]").count(), 1);
     assert.ok((await read()).wobble > 0);
     assert.ok((await page.locator(".road-feedback.wrong").innerText()).trim().length > "Ne visai. Teisingai:".length);
     assert.ok((await read()).drawCalls <= maxRoadCalls);

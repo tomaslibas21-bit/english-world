@@ -178,6 +178,20 @@ try {
       };
     });
     assert(staged.behind && staged.camera && staged.mia && staged.customerZ > 3, JSON.stringify(staged));
+    if (phone) {
+      const intro = await page.locator('.barista-cue[data-line="bs_intro"]').evaluate((cue) => {
+        const { game } = window.__ew;
+        const { mia } = game.modes.get("barista").run;
+        const p = mia.ch.root.position.clone().setY(mia.ch.height * 0.91).project(game.rig.cam);
+        const x = (1 + p.x) * innerWidth / 2, y = (1 - p.y) * innerHeight / 2;
+        const box = cue.getBoundingClientRect();
+        const text = cue.querySelector(".barista-cue-text");
+        return { width: box.width, bottom: innerHeight - box.bottom, faceVisible: x > 0 && x < innerWidth && y > 0 && y < box.top,
+          textFits: text.scrollWidth <= text.clientWidth + 1 && text.scrollHeight <= text.clientHeight + 1 };
+      });
+      assert(Math.abs(intro.width - Math.min(width * 0.94, 440)) <= 1 && Math.abs(intro.bottom - 12) <= 1
+        && intro.faceVisible && intro.textFits, JSON.stringify(intro));
+    }
     await step(20);
     assert(await page.evaluate((z) => window.__ew.game.modes.get("barista").run.customer.ch.root.position.z < z, staged.customerZ),
       "the customer walks up on stepped frames");
@@ -275,7 +289,10 @@ try {
             cup: pixel(serving.position.clone()),
             chipProblems: [...document.querySelectorAll(".barista-chip")].flatMap((item) => {
               const box = item.getBoundingClientRect();
-              const fits = box.width >= 44 && box.height >= 44 && item.scrollWidth <= item.clientWidth + 1
+              const typeFits = parseFloat(getComputedStyle(item).fontSize) >= 13
+                && parseFloat(getComputedStyle(item.querySelector("small")).fontSize) >= 12;
+              const hittable = item.contains(document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2));
+              const fits = typeFits && hittable && box.width >= 44 && box.height >= 44 && item.scrollWidth <= item.clientWidth + 1
                 && box.left >= tray.left && box.right <= tray.right && box.top >= tray.top && box.bottom <= tray.bottom;
               const splitWords = [...item.querySelectorAll("[lang]")].flatMap((label) => {
                 const text = label.firstChild;
@@ -309,8 +326,32 @@ try {
         await wait(() => heard("bs_c_sorry"), "customer apologizes for the wrong size");
         await wait(async () => (await state())?.step === "build" && await chip("size", "medium").evaluate((el) => el.classList.contains("barista-chip-glow")), "recorded size repeats and the correction glows");
         assert.equal((await state()).wrong, 1);
+        const size = chip("size", "medium");
+        assert.equal((await page.locator('[data-row="size"] .barista-repair-mark').textContent()).trim(), "+");
+        assert.equal(await size.getAttribute("aria-pressed"), "false");
+        assert.equal(await size.getAttribute("data-repair"), "add");
+        assert.equal(await size.evaluate((el) => getComputedStyle(el).outlineWidth), "2px");
         await shot("wrong");
-        await press(chip("size", "medium"));
+        await press(size);
+        assert.equal(await page.locator("[data-repair]").count(), 0, "one correct tap clears the add marker");
+
+        const extra = chip("extras", "iced");
+        await press(extra);
+        await extra.evaluate(async (el) => {
+          await Promise.allSettled(el.getAnimations().map((animation) => animation.finished));
+        });
+        const fill = await extra.evaluate((el) => getComputedStyle(el).backgroundColor);
+        await press(give);
+        await wait(async () => (await state())?.wrong === 2 && (await state())?.step === "build",
+          "the requested order is repeated and the extra can be removed");
+        assert.equal((await page.locator('[data-row="extras"] .barista-repair-mark').textContent()).trim(), "−");
+        assert.equal(await extra.getAttribute("data-repair"), "remove");
+        assert.equal(await extra.getAttribute("aria-pressed"), "true");
+        assert.equal(await extra.evaluate((el) => getComputedStyle(el).backgroundColor), fill, "removal keeps the selected fill");
+        assert.equal(await extra.evaluate((el) => getComputedStyle(el).outlineWidth), "2px");
+        await press(extra);
+        assert.equal(await extra.getAttribute("aria-pressed"), "false");
+        assert.equal(await page.locator("[data-repair]").count(), 0, "one correct tap clears the remove marker");
         await step();
         beforeHandover = await cameraState();
       }

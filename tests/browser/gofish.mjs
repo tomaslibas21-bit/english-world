@@ -88,6 +88,17 @@ try {
     const prompt = page.locator(".prompt").getByText(start);
     const score = page.locator(".gofish-result .mode-score-card");
     const shot = (name) => page.screenshot({ path: join(dir, `gofish-${name}.png`) });
+    const opponents = page.locator(".gofish-person");
+    const countPositions = () => opponents.locator(".gofish-count").evaluateAll((counts) =>
+      counts.map((count) => count.getBoundingClientRect().left));
+    const checkTarget = async (id) => {
+      const selected = opponents.filter({ has: page.locator('[data-turn-cue="target"] svg[width="16"]') });
+      assert.equal(await selected.count(), 1);
+      assert.equal(await selected.getAttribute("data-target"), id);
+      assert.equal(await selected.getAttribute("aria-pressed"), "true");
+      assert.equal(await selected.evaluate((el) => getComputedStyle(el).outline), "rgb(37, 121, 107) solid 2px");
+      assert.equal(await page.locator('[data-turn-cue="speaker"]').count(), 0);
+    };
 
     async function checkLayout(stage) {
       await step(2);
@@ -208,14 +219,19 @@ try {
     await wait(() => handCard("hot_dog").isVisible(), "the seeded hand is dealt");
     assert.equal(await page.locator(".minimap, .objective-card").count(), 0);
     assert.deepEqual(await page.locator(".gofish-person strong").allTextContents(), ["Dan", "Nora"]);
-    assert.equal(await target("dan").getAttribute("aria-pressed"), "true");
+    await checkTarget("dan");
+    const initialCounts = await countPositions();
     if (!phone) {
       await page.keyboard.press("ArrowRight");
-      assert.equal(await target("nora").getAttribute("aria-pressed"), "true");
+    } else {
+      await press(target("nora"));
+    }
+    await checkTarget("nora");
+    assert.deepEqual(await countPositions(), initialCounts, "opponent counts stay put when the target changes");
+    if (!phone) {
       await page.keyboard.press("d");
       await page.keyboard.press("1");
     } else {
-      await press(target("nora"));
       await press(target("dan"));
       await press(handCard("hot_dog"));
     }
@@ -256,7 +272,16 @@ try {
         await checkLayout("ask");
         if (!phone && asks === 0) await page.keyboard.press("Enter"); else await press(chip);
       } else if (action === "reply") {
-        const question = await page.locator(".gofish-cue").getAttribute("data-line");
+        const cue = page.locator(".gofish-cue");
+        const question = await cue.getAttribute("data-line");
+        const speaker = await cue.getAttribute("data-speaker");
+        assert.equal(await page.locator('.gofish-person[aria-pressed="true"], [data-turn-cue="target"]').count(), 0);
+        const speaking = opponents.filter({ has: page.locator('[data-turn-cue="speaker"] svg[width="16"]') });
+        assert.equal(await speaking.count(), 1);
+        assert.equal(await speaking.getAttribute("data-target"), speaker);
+        assert.equal(await speaking.locator("strong").innerText(), await cue.locator(".gofish-speaker").innerText());
+        assert.deepEqual(await opponents.locator(".gofish-turn-icon").evaluateAll((slots) =>
+          slots.map((slot) => slot.getBoundingClientRect().width)), [16, 16], "both opponents reserve icon space");
         const word = question.slice("gf_ask_".length);
         const correct = round.hands.learner.includes(word) ? "gf_yes" : "gf_nope";
         await checkLayout("reply");
@@ -304,12 +329,10 @@ try {
       return ["Do you have any pancakes?", "Yes, here you go.", "Nope. Go fish!", "I got a pair!", "Your turn!", "Lucky me!"].every((en) =>
         cards.some((card) => card.situationId === "s85-dinner" && card.sentence.en === en));
     }, `${storage}-cards-v1`), "last ask and game phrases become phrase cards");
-    await score.evaluate(async (card) => {
-      await Promise.all(card.getAnimations({ subtree: true }).map((animation) => animation.finished));
-    });
-    assert.deepEqual(await score.locator(".mode-score-number > span").evaluateAll((totals) =>
-      totals.filter((total) => getComputedStyle(total).visibility === "visible").map((total) => total.textContent)),
-    ["7", "2", "1"], "the final pair totals are visible");
+    assert.deepEqual(await score.locator(".mode-score-number").evaluateAll((totals) =>
+      totals.filter((total) => getComputedStyle(total).visibility === "visible" && getComputedStyle(total).opacity === "1"
+        && total.getAnimations({ subtree: true }).length === 0).map((total) => total.textContent)),
+    ["7", "2", "1"], "the final pair totals are visible when the score opens");
     await checkLayout("score");
     await shot("score");
     await press(score.getByRole("button", { name: "Baigti", exact: true }));

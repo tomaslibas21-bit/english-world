@@ -6,6 +6,7 @@ import type { RoadResult } from "../../game/road/store";
 import type { Prompt, Word } from "../../game/road/words";
 import { EndDestination } from "../Conversation";
 import { Icon } from "../icons";
+import { FeedbackBadge } from "./FeedbackBadge";
 import { GlossLine } from "./GlossLine";
 import { SayIt } from "./SayIt";
 import { ScoreCard, ScoreNumber } from "./ScoreCard";
@@ -102,7 +103,7 @@ export function WordGateHeader({ game, sayIt, words, prompt, feedback, remaining
         {extraButton}
       </div>
       {questionSlot ?? (feedback ? <div className={`road-feedback ${feedback.correct ? "correct" : "wrong"}`} aria-live="polite">
-        <b>{feedback.correct ? words.right : words.wrong}</b>
+        <FeedbackBadge correct={feedback.correct}>{feedback.correct ? words.right : words.wrong}</FeedbackBadge>
         {!feedback.correct && <span><span lang="en">{feedback.word.en}</span> · {feedback.word.lt}</span>}
       </div> : prompt && <div className="road-cue">
         <div className="road-question">

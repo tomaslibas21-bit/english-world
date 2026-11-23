@@ -20,6 +20,7 @@ interface BilliardsUI {
   available: number[];
   pockets: { id: Pocket; line: KitLine }[];
   selection: Partial<Call>;
+  callOptions: KitLine[];
   call: KitLine | null;
   sayIt: SayItCue | null;
   reveal: boolean;
@@ -33,7 +34,7 @@ interface BilliardsUI {
 const empty: BilliardsUI = {
   phase: "intro", side: "learner", line: null, choices: [],
   mic: { status: "off", heard: "" }, micOn: true,
-  balls: { learner: [], tina: [] }, available: [], pockets: [], selection: {}, call: null, sayIt: null,
+  balls: { learner: [], tina: [] }, available: [], pockets: [], selection: {}, callOptions: [], call: null, sayIt: null,
   reveal: false, replaying: false, correct: null, power: 0, aimHelp: false, result: null,
 };
 export const useBilliards = create<BilliardsUI>(() => empty);

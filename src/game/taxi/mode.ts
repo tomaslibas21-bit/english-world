@@ -125,7 +125,7 @@ class TaxiMode implements GameMode {
       return;
     }
     if (this.run?.phase === "result") this.clearScoreShot();
-    this.host.snapRide(this.car);
+    this.host.snapTaxi(this.car, taxiModel.collisionBox);
     this.host.hideNpc(npc, true);
     this.passenger = createCharacter(NPCS[npc].look);
     this.passenger.root.traverse((part) => { part.castShadow = false; });
@@ -210,7 +210,7 @@ class TaxiMode implements GameMode {
     this.host.fade(() => {
       if (this.run !== run) return;
       this.host.rides.resetPosition(this.car, resetPose(approach(run.route, run.index)));
-      this.host.snapRide(this.car);
+      this.host.snapTaxi(this.car, taxiModel.collisionBox);
       this.assist = false;
       run.phase = "drive";
       run.spoken = false;

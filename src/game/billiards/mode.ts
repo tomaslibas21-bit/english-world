@@ -250,10 +250,11 @@ export class BilliardsMode implements GameMode {
     if (round.shots < 2) announce.push("bl_call");
     if (!await this.sayAll(round, announce)) return;
     this.dialogue.clearLine();
-    const options = this.validBalls().flatMap(({ id }) => POCKET_IDS.map((pocket) => callLine({ ball: id, pocket }, true)));
+    const available = this.validBalls().map(({ id }) => id);
+    const options = available.flatMap((ball) => POCKET_IDS.map((pocket) => callLine({ ball, pocket }, true)));
     const byKey = new Map(options.map((option) => [option.key, option]));
     this.setPhase("call");
-    ui({ available: this.validBalls().map(({ id }) => id) });
+    ui({ available, callOptions: options });
     this.table!.markCall(round.balls, {}, true);
     const option = await this.dialogue.expectLines(options, {
       phrases: options.map(({ sentence }) => sentence.en),

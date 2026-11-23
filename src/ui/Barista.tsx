@@ -24,7 +24,7 @@ export function BaristaOffer() {
 }
 
 function OrderTray({ touch }: { touch: boolean }) {
-  const { built, row, page, highlight: target, step, ready, menu, line } = useBarista();
+  const { built, row, page, highlight: target, correctionSelected, step, ready, menu, line } = useBarista();
   const highlight = line?.key === "bs_c_sorry" ? null : target;
   if (!menu) return null;
 
@@ -32,11 +32,18 @@ function OrderTray({ touch }: { touch: boolean }) {
     <div className="barista-tray barista-panel" data-shortcuts={!touch}>
       {trayRows(built).map((kind: Row) => {
         const selected = kind === row;
+        const repair = highlight?.row === kind && correctionSelected !== null;
+        const marker = repair ? (correctionSelected ? "add" : "remove") : undefined;
+        const label = <span className="barista-row-name">{words[kind]}
+          <span className="barista-repair-mark" data-repair={marker}>
+            {marker === "add" ? "+" : marker === "remove" ? "−" : null}
+          </span>
+        </span>;
         return (
           <div key={kind} className={`barista-row${selected ? " barista-row-active" : ""}`} data-row={kind}>
-            {touch ? <span className="barista-row-label">{words[kind]}</span> : (
+            {touch ? <span className="barista-row-label">{label}</span> : (
               <button className="barista-row-label" type="button" onClick={() => act("row", kind)} aria-pressed={selected}>
-                {words[kind]}{selected && <span className="barista-row-keys" aria-hidden>↑ ↓{menu[kind].length > 4 && " · ← →"}</span>}
+                {label}{selected && <span className="barista-row-keys" aria-hidden>↑ ↓{menu[kind].length > 4 && " · ← →"}</span>}
               </button>
             )}
             <div className="barista-chips" role="group" aria-label={words[kind]}>
@@ -46,7 +53,7 @@ function OrderTray({ touch }: { touch: boolean }) {
                 return (
                   <button key={id} type="button" data-chip={id}
                     className={`barista-chip${marked ? " barista-chip-glow" : ""}`}
-                    aria-pressed={pressed} aria-disabled={!ready}
+                    data-repair={marked ? marker : undefined} aria-pressed={pressed} aria-disabled={!ready}
                     onClick={() => act(kind, id)}>
                     {!touch && selected && Math.floor(i / 4) === page && <kbd>{i % 4 + 1}</kbd>}
                     <span lang="en">{en}</span><small lang="lt">{lt}</small>

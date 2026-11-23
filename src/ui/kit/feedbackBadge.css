@@ -1,0 +1,16 @@
+.kit-feedback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  color: #195e46;
+  background: #e5f3e8;
+  font: 800 13px/1.15 var(--ui, system-ui);
+  vertical-align: middle;
+}
+.kit-feedback[data-feedback="retry"] { color: #794711; background: #fff1d4; }
+.kit-feedback > svg { flex: none; }

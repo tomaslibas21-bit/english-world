@@ -163,6 +163,8 @@
   color: #54645a;
   line-height: 1.12;
 }
+.barista-row-name { display: inline-flex; align-items: center; }
+.barista-repair-mark { width: 14px; flex: none; color: #794711; font: 900 14px/1 system-ui; text-align: center; }
 .barista-row-keys { display: block; margin-top: 3px; font-size: 10px; }
 .barista-row-active .barista-row-label { color: #205c4a; border-color: #397a63; }
 .barista-chips { display: flex; flex-wrap: wrap; gap: 4px; }
@@ -182,22 +184,25 @@
   color: #243c34;
   font-size: 17px;
   font-weight: 850;
-  line-height: 1.08;
+  line-height: 1.15;
   text-align: center;
+  overflow-wrap: normal;
+  hyphens: none;
   transition: background-color 160ms, border-color 160ms, box-shadow 160ms;
 }
-.barista-chip small { display: block; margin-top: 2px; font-size: 11px; font-weight: 650; color: #536459; }
+.barista-chip small { display: block; margin-top: 2px; font-size: 12px; font-weight: 650; color: #536459; }
 .barista-chip[aria-pressed="true"] {
   color: #164d3d;
   border-color: #65917c;
   background: #e2efe3;
   box-shadow: inset 0 -2px #589079;
 }
-.barista-chip.barista-chip-glow {
+.barista-chip.barista-chip-glow:not([data-repair]) {
   border-color: #a66b24;
   background: #ffebbc;
   box-shadow: inset 0 0 0 1px #cc9343;
 }
+.barista-chip[data-repair] { outline: 2px solid #a66b24; outline-offset: -2px; }
 @media (prefers-reduced-motion: no-preference) {
   .barista-chip[aria-pressed="true"]:not(.barista-chip-glow) { animation: barista-settle 200ms ease-out; }
   @keyframes barista-settle {
@@ -245,11 +250,11 @@
   .barista-row-label { padding: 0 5px; font-size: 12px; }
   .barista-chips { display: grid; grid-template-columns: repeat(5, minmax(min-content, 1fr)); gap: 3px; }
   .barista-row[data-row="drink"] .barista-chips { grid-template-columns: repeat(4, minmax(min-content, 1fr)); }
-  .barista-row[data-row="size"], .barista-row[data-row="dine"] { grid-template-columns: 57px minmax(0, 1fr); }
+  .barista-row[data-row="size"] { grid-template-columns: 64px minmax(0, 1fr); }
+  .barista-row[data-row="dine"] { grid-template-columns: 76px minmax(0, 1fr); }
   .barista-row[data-row="size"] .barista-chips { grid-template-columns: repeat(3, minmax(min-content, 1fr)); }
   .barista-row[data-row="dine"] .barista-chips { grid-template-columns: repeat(2, minmax(min-content, 1fr)); }
   .barista-chip { min-width: 44px; max-width: none; padding: 2px; font-size: 13px; }
-  .barista-chip small { line-height: 1.1; }
   .barista-give .btn { border-radius: 10px; padding-inline: 10px; font-size: 14px; }
 }
 
@@ -257,4 +262,15 @@
   .barista-row:not([data-row="size"], [data-row="dine"]) .barista-chips { display: flex; }
   .barista-row[data-row="dine"] { grid-template-columns: minmax(0, 1fr); }
   .barista-chip { flex: 1 1 min-content; }
+}
+
+@media (orientation: portrait) {
+  .barista-cue[data-line="bs_intro"] {
+    inset: auto auto calc(12px + env(safe-area-inset-bottom)) 50%;
+    width: min(94vw, 440px);
+    max-width: none;
+    transform: translateX(-50%);
+  }
+  .barista-cue[data-line="bs_intro"]::before { display: none; }
+  .barista-cue[data-line="bs_intro"] .barista-cue-text { max-height: 45dvh; }
 }
