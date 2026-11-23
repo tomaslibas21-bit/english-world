@@ -289,7 +289,10 @@ export class Ambient {
       w.dog = dog;
     });
     this.seatPeople(seats, high);
-    this.standPairs(high ? CHAT_SPOTS.length : 1, colliders);
+    // Keep the beach's witnesses on phones too, including by the lanchas at each end.
+    const beach = THEME.beachwear;
+    const chats = high ? CHAT_SPOTS : CHAT_SPOTS.filter(([, az, , bz], i) => i === 0 || (beach && az < beach.z && bz < beach.z));
+    this.standPairs(chats, colliders);
     if (high) this.standAlone(THEME.vendors, colliders);
     // (graphics round 5, theme.ts `farPeople`) each of them in fewer triangles too, drawn when far from the camera
     if (THEME.farPeople !== null) for (const w of this.walkers) if (w.look) addFarVersion(w.ch, w.look);
@@ -405,9 +408,9 @@ export class Ambient {
   }
 
   /** Pairs standing and chatting (layout CHAT_SPOTS): walkers' paths and the player go round them. */
-  private standPairs(n: number, colliders?: Colliders) {
+  private standPairs(spots: typeof CHAT_SPOTS, colliders?: Colliders) {
     const r = this.rPeople;
-    for (const [ax, az, bx, bz] of CHAT_SPOTS.slice(0, n)) {
+    for (const [ax, az, bx, bz] of spots) {
       const two = [[ax, az, bx, bz], [bx, bz, ax, az]].map(([x, z, ox, oz]) => {
         const female = r() < 0.5;
         const plain = walkerThings(walkerLook(female, r), r);

@@ -36,7 +36,7 @@ import { makeCue, TABLE_NAME, TABLE_PROMPT, type TableView } from "./billiards/t
 import type { Do, SurfArrow } from "./surf/logic";
 import { FLOOD_INCOMING_INTRO, invitationLocation, invitationTitle, OFFICE_TASK } from "../content/phoneCalls";
 import { TownPhone } from "./phone/Phone";
-import { reactionTestSpot, TownReactions } from "./life/townReactions";
+import { inTownRuins, reactionTestSpot, TownReactions } from "./life/townReactions";
 import { speakTownLine } from "./life/townVoice";
 import type { ReactKind } from "../content/reacts";
 import { freeToWalk, type PhoneSnapshot } from "./phone/schedule";
@@ -1895,7 +1895,8 @@ export class Game implements GameApi {
   private reactionsBlocked() {
     const s = this.phoneSnapshot();
     return this.zone?.id !== "town" || !s.town || !s.visible || s.conversation || s.panel || s.dialog ||
-      s.cardOpen || s.flight || s.loading || s.transition || s.mode || this.rig.mode === "talk";
+      s.cardOpen || s.flight || s.loading || s.transition || s.mode || this.rig.mode === "talk" ||
+      inTownRuins(this.player.root.position);
   }
 
   react(kind: ReactKind, { force = false } = {}) {

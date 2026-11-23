@@ -11,6 +11,21 @@ import { ScoreCard, ScoreNumber } from "./kit/ScoreCard";
 import "./billiards.css";
 
 const mapleHarbor = BILLIARDS_NPC === "tina";
+const opponentLabels = mapleHarbor ? {
+  name: "Tina",
+  won: "Laimėjo Tina", // i18n-ok: Maple Harbor only.
+  turn: "Tinos eilė", // i18n-ok: Maple Harbor only.
+  listen: "Ką paskelbė Tina? Pasirink kamuolį ir kišenę.", // i18n-ok: Maple Harbor only.
+  called: "Tina paskelbė:", // i18n-ok: Maple Harbor only.
+  understood: "Suprasti Tinos skelbimai",
+} : {
+  name: L("Don Memas"),
+  won: L("Laimėjo Don Memas"),
+  turn: L("Don Memo eilė"),
+  listen: L("Ką paskelbė Don Memas? Pasirink kamuolį ir kišenę."),
+  called: L("Don Memas paskelbė:"),
+  understood: L("Suprasti Don Memo skelbimai"),
+};
 const act = (name: string, value?: string) => game?.modeAction("billiards", name, value);
 
 function BallBadge({ id, down }: RackBall) {
@@ -111,14 +126,14 @@ export function BilliardsOverlay({ touch }: { touch: boolean }) {
   const waitingForTina = side === "tina" && phase === "tina";
   const showCall = !!call && (phase === "feedback" || (phase === "listen" || waitingForTina) && reveal);
   const shotOk = phase === "feedback" && correct;
-  const scoreTitle = result?.winner === "learner" ? L("Laimėjai!") : result?.winner === "tina" ? (mapleHarbor ? "Laimėjo Tina" : L("Laimėjo Don Memas")) : L("Lygiosios");
+  const scoreTitle = result?.winner === "learner" ? L("Laimėjai!") : result?.winner === "tina" ? opponentLabels.won : L("Lygiosios");
   return <div className="billiards" data-phase={phase} lang={HL}>
     <header className="bl-header">
       <section className="bl-status">
-        <div className="bl-turn" aria-live="polite"><i />{side === "learner" ? L("Tavo eilė") : (mapleHarbor ? "Tinos eilė" : L("Don Memo eilė"))}</div>
+        <div className="bl-turn" aria-live="polite"><i />{side === "learner" ? L("Tavo eilė") : opponentLabels.turn}</div>
         <div className="bl-rack">
           <BallRow name={L("Tu")} balls={state.balls.learner} active={side === "learner"} />
-          <BallRow name={mapleHarbor ? "Tina" : L("Don Memas")} balls={state.balls.tina} active={side === "tina"} />
+          <BallRow name={opponentLabels.name} balls={state.balls.tina} active={side === "tina"} />
         </div>
       </section>
       <button className="bl-exit" onClick={() => game?.modeExit()}><Icon name="close" size={15} />{L("Baigti partiją")}</button>
@@ -134,7 +149,7 @@ export function BilliardsOverlay({ touch }: { touch: boolean }) {
       </>}
       {picking && <>
         <div className="bl-instruction">
-          <h2>{phase === "listen" ? (mapleHarbor ? "Ką paskelbė Tina? Pasirink kamuolį ir kišenę." : L("Ką paskelbė Don Memas? Pasirink kamuolį ir kišenę.")) : L("Paskelbk smūgį: pasirink kamuolį ir kišenę.")}</h2>
+          <h2>{phase === "listen" ? opponentLabels.listen : L("Paskelbk smūgį: pasirink kamuolį ir kišenę.")}</h2>
           {phase === "listen" && <button className="bl-replay" disabled={state.replaying} onClick={() => act("replay")}>
             <Icon name="speaker" size={15} />{L("Klausyti dar kartą")}
           </button>}
@@ -169,7 +184,7 @@ export function BilliardsOverlay({ touch }: { touch: boolean }) {
         {!touch && state.aimHelp && <small className="bl-key-help">{L("← → – taikyti, tarpas – smūgis")}</small>}
       </>}
       {phase === "feedback" && <>
-        <h2 className={shotOk ? "bl-correct" : undefined}>{shotOk ? L("Teisingai!") : (mapleHarbor ? "Tina paskelbė:" : L("Don Memas paskelbė:"))}</h2>
+        <h2 className={shotOk ? "bl-correct" : undefined}>{shotOk ? L("Teisingai!") : opponentLabels.called}</h2>
         {showCall && <Speech line={call} />}
       </>}
       {waitingForTina && (showCall ? <Speech line={call} /> : line && !call && <Speech line={line} />)}
@@ -183,7 +198,7 @@ export function BilliardsOverlay({ touch }: { touch: boolean }) {
       ratio={(result.called + result.understood) / Math.max(1, result.shots + result.listens)}
       rows={[
         { label: L("Pataikyti paskelbti smūgiai"), value: <><ScoreNumber value={result.called} />/{result.shots}</> },
-        { label: (mapleHarbor ? "Suprasti Tinos skelbimai" : L("Suprasti Don Memo skelbimai")), value: <><ScoreNumber value={result.understood} />/{result.listens}</> },
+        { label: opponentLabels.understood, value: <><ScoreNumber value={result.understood} />/{result.listens}</> },
         { label: L("Įmušti tavo kamuoliai"), value: <><ScoreNumber value={result.sunk} />/4</> },
       ]}
       again={{ label: L("Dar vieną partiją"), run: () => act("again") }}

@@ -113,6 +113,7 @@ for (const [name, engine] of [["chromium", chromium], ["webkit", webkit]]) {
         assert.equal(await strip.locator(".radio-spot-label").innerText(), learnerLabel("Reklama", "Ad"));
         const firstAdLine = await strip.locator(".rt").innerText();
         assert(ad.lines.map((line) => line.en).includes(firstAdLine));
+        assert(ad.lines.map((line) => line.lt).includes(await strip.locator(`.radio-nat[lang="${helperLang}"]`).innerText()));
         if (ad.lines.length > 1) {
           await until((first) => {
             const words = document.querySelector(".radio-strip[data-spot] .rt");

@@ -1,6 +1,6 @@
 // Run on the same local Vite server and Chromium setup as phone-rings.mjs.
 import assert from "node:assert/strict";
-import { contextOptions, helperLang, installTown, key, lifeContentUrl, lineText, manualFrames, probeEffects, progress, screenshot, stubVoiceClips, targetLang, variety, viewports } from "./life-harness.mjs";
+import { contentUrl, contextOptions, helperLang, installTown, key, lifeContentUrl, lineText, manualFrames, probeEffects, progress, screenshot, stubVoiceClips, targetLang, variety, viewports } from "./life-harness.mjs";
 
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const url = process.env.WORLD_TEST_URL || "http://127.0.0.1:8310";
@@ -148,6 +148,8 @@ try {
       await opacityIs(0.5);
       await stepTo(honkEnd + 5);
       assert.equal(await bubble.count(), 0);
+      await waitFor(() => page.evaluate((index) => window.__ew.game.ambient.traffic[index].speed < 1, first.carIndex),
+        "the first car gives way");
       let second;
       await waitFor(async () => { second = await place("honk", first.carIndex); return !!second; }, "another moving traffic car is available");
       await waitFor(() => page.evaluate((index) => window.__ew.game.ambient.traffic[index].brakingForPlayer, second.carIndex), "the second car brakes for the player");
@@ -196,12 +198,37 @@ try {
 
       assert(await place("bump"), "a nearby walker is in view for the forced reactions");
       for (const kind of ["crash", "crashDriver", "boat", "swim"]) {
-        assert(await force(kind), kind);
+        if (targetLang === "es" && kind === "boat") {
+          const count = (await state()).count;
+          await step(1, 181000);
+          await page.evaluate(() => window.__ew.game.placeOnFoot(64, -68, Math.PI));
+          await waitFor(() => page.evaluate(() => window.__ew.game.nearest?.id === "lancha-beached-3"), "the beached lancha is in reach");
+          await page.keyboard.press("e");
+          await waitFor(async () => (await state()).count === count + 1, "boarding triggers a shore reaction");
+        } else if (targetLang === "es" && kind === "swim") {
+          const count = (await state()).count;
+          await step(1, 181000);
+          await page.evaluate(async (url) => {
+            const { SHORE } = await import(url);
+            const { game } = window.__ew;
+            game.endRide();
+            game.placeOnFoot(0, SHORE.limit - 12, Math.PI);
+            game.setJoystick(0, 1);
+          }, contentUrl(url, "game/water"));
+          await waitFor(async () => (await state()).count === count + 1, "swimming out triggers a warning from the shore");
+          await page.evaluate(() => window.__ew.game.setJoystick(0, 0));
+        } else {
+          assert(await force(kind), kind);
+        }
         const line = await assertLine(kind);
         if (["carJump", "crash", "boat", "swim"].includes(kind)) {
           await waitFor(() => bubble.isVisible(), `the ${kind} bubble is visible`);
           assert.equal(await bubble.locator(".reaction-copy > span").innerText(), line.text);
         }
+      }
+      if (targetLang === "es") {
+        await page.evaluate(() => window.__ew.game.placeOnFoot(28, -20, Math.PI));
+        assert(await place("bump"), "a passer-by is in view again after swimming");
       }
 
       const assertSuppressed = async (label) => {
@@ -235,6 +262,30 @@ try {
       await page.evaluate(() => window.__ew.game.closeConversation());
       await waitFor(() => page.evaluate(() => !window.__ew.store.getState().conv.active), "conversation closes");
       assert.equal(await force("bump"), false, "protected quiet time after conversation");
+
+      if (targetLang === "es") {
+        await step(1, 21000);
+        for (const id of ["surf", "pool", "loteria", "billiards"]) {
+          await waitFor(() => page.evaluate(() => !window.__ew.game.transitioning), "the town is ready for the next mode");
+          const started = await page.evaluate((id) => {
+            const { game } = window.__ew;
+            if (id === "billiards") return game.debugBilliards().start();
+            if (id === "pool") game.poolTeleport();
+            return game.modes.start(id, id === "surf" ? "beginner" : undefined);
+          }, id);
+          assert(started, `starts ${id}`);
+          await waitFor(() => page.evaluate((id) => window.__ew.store.getState().hud.modeScreen?.id === id, id), `${id} mode opens`);
+          await assertSuppressed(`${id} blocks reactions`);
+          await waitFor(() => page.evaluate(() => !window.__ew.game.transitioning), `${id} finishes entering`);
+          await page.evaluate(() => window.__ew.game.modes.exit(true));
+        }
+        await page.evaluate(() => window.__ew.game.placeOnFoot(-124, -61, Math.PI));
+        assert.equal(await page.evaluate(() => window.__ew.game.zone.id), "town");
+        await assertSuppressed("the outdoor ruins precinct blocks reactions");
+        await page.evaluate(() => window.__ew.game.enterZone("gruta", undefined, true));
+        await waitFor(() => page.evaluate(() => window.__ew.game.zone.id === "gruta" && !window.__ew.game.caveLoading), "the grotto opens");
+        await assertSuppressed("the grotto blocks reactions");
+      }
       assert.deepEqual(errors, []);
       console.log(`ok reactions ${width}×${height}`);
     } finally {

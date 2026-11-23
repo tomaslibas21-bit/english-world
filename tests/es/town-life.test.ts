@@ -1,12 +1,20 @@
+import { Vector3 } from "three";
 import { afterEach, expect, it, vi } from "vitest";
 import { REACT_LINES } from "../../src/content/reacts";
 import { TEXT_THREADS } from "../../src/content/texts";
 import { shoutVoice } from "../../src/content/voices";
 import { setVariety } from "../../src/convo/compose";
 import { audio } from "../../src/game/audio";
-import type { TrafficCar } from "../../src/game/ambient";
+import { Ambient, type TrafficCar } from "../../src/game/ambient";
 import { townLineText } from "../../src/game/life/lineText";
-import { TownReactions } from "../../src/game/life/townReactions";
+import { inTownRuins, TownReactions } from "../../src/game/life/townReactions";
+import { NavGrid } from "../../src/game/nav";
+import type { Ride } from "../../src/game/rides/Rides";
+import { BAY, SHORE } from "../../src/game/water";
+import { WORLD } from "../../src/game/world/layout";
+import { RIDES } from "../../src/game/world/rides";
+import { THEME } from "../../src/game/world/theme";
+import { Colliders } from "../../src/game/world/util";
 import { useStore } from "../../src/state/store";
 
 afterEach(() => {
@@ -15,12 +23,14 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-it.each(["default", "neutral", "spain"] as const)("shows and voices the %s traffic line", (selected) => {
+it.each([
+  ["default", "es-MX", true], ["neutral", "es-419", false], ["spain", "es-ES", false],
+] as const)("shows and voices the %s traffic line", (selected, fallbackLang, recorded) => {
   setVariety(selected);
   vi.spyOn(Math, "random").mockReturnValue(0);
   const now = vi.spyOn(performance, "now").mockReturnValue(0);
   vi.spyOn(audio, "sfx").mockImplementation(() => {});
-  vi.spyOn(audio, "hasClip").mockReturnValue(true);
+  vi.spyOn(audio, "hasClip").mockReturnValue(recorded);
   const play = vi.spyOn(audio, "play").mockResolvedValue(true);
   const car = { index: 0, front: 0, x: 0, lane: 0, dir: 1, hidden: 0 } as TrafficCar;
   const reactions = new TownReactions(() => false);
@@ -31,7 +41,37 @@ it.each(["default", "neutral", "spain"] as const)("shows and voices the %s traff
   const line = REACT_LINES.honk[0];
   expect(line.neutral).toBeTruthy();
   expect(text).toBe(selected === "default" ? line.en : line.neutral);
-  expect(play).toHaveBeenCalledWith(shoutVoice(true, 0), 1, text, expect.objectContaining({ recordingOnly: true }));
+  expect(play).toHaveBeenCalledWith(shoutVoice(true, 0), 1, text, expect.objectContaining({
+    optional: true, recordingOnly: false, fallbackLang,
+  }));
+});
+
+it.each(["low", "high"] as const)("has a shore witness for the lanchas and far swimmers at %s quality", (quality) => {
+  const nav = new NavGrid(WORLD.minX, WORLD.minZ, WORLD.maxX, WORLD.maxZ, 1, new Colliders());
+  const ambient = new Ambient(nav, [[0, 0]], quality);
+  vi.spyOn(audio, "hasClip").mockReturnValue(false);
+  vi.spyOn(audio, "play").mockResolvedValue(true);
+  const { beached, afloat } = THEME.lanchas!;
+  const boats = [...RIDES.boats, ...[...beached, ...afloat].map(([x, z]) => ({ x, z }))];
+  for (const { x, z } of boats) {
+    const reactions = new TownReactions(() => false);
+    reactions.boat(ambient, { m: { x, z } } as Ride);
+    expect(reactions.schedule.state().last?.kind, `boat at ${x}, ${z}`).toBe("boat");
+    reactions.clear();
+  }
+  const reactions = new TownReactions(() => false);
+  reactions.swim(ambient, new Vector3(0, 0, SHORE.limit), true);
+  expect(reactions.schedule.state().count).toBe(0);
+  reactions.swim(ambient, new Vector3(0, 0, SHORE.limit + (BAY.z0 - SHORE.limit) / 3), true);
+  expect(reactions.schedule.state().last?.kind).toBe("swim");
+  reactions.clear();
+});
+
+it("recognizes the ruins precinct within the town zone", () => {
+  const { x, z } = THEME.ruins!;
+  expect(inTownRuins(new Vector3(x, 0, z + 12))).toBe(true);
+  expect(inTownRuins(new Vector3(x, 5.3, z))).toBe(true);
+  expect(inTownRuins(new Vector3(WORLD.minX + 1, 0, z + 7.5))).toBe(false);
 });
 
 it.each(["default", "neutral", "spain"] as const)("selects the %s text answer", (selected) => {

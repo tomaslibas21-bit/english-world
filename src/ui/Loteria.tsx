@@ -147,7 +147,7 @@ export function LoteriaOverlay({ touch }: { touch: boolean }) {
             </div>
           </div>
           {speechSupported() && (playable || reading) &&
-            <button type="button" className="loteria-mic" aria-pressed={micOn} aria-label={L(micOn ? "Išjungti mikrofoną" : "Įjungti mikrofoną")}
+            <button type="button" className="loteria-mic" aria-pressed={micOn} aria-label={micOn ? L("Išjungti mikrofoną") : L("Įjungti mikrofoną")}
               data-listening={mic.status === "listening" || mic.status === "starting"} onClick={() => act("mic", !micOn)}>
               <Icon name="mic" size={19} />
             </button>}

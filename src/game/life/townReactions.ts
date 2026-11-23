@@ -7,6 +7,9 @@ import type { Ambient, TrafficCar, Walker } from "../ambient";
 import type { GameCharacter } from "../characters";
 import type { Ride, Rides } from "../rides/Rides";
 import { carModelEntry } from "../world/carModels";
+import { WORLD } from "../world/layout";
+import { ruinsBounds } from "../world/mexican";
+import { THEME } from "../world/theme";
 import type { Colliders } from "../world/util";
 import { BAY, SHORE, floorY, waterY } from "../water";
 import { ReactionSchedule, reactionDuration } from "./reacts";
@@ -54,6 +57,11 @@ function closest<T>(items: Iterable<T>, x: number, z: number, max: number, posit
 }
 
 const now = () => performance.now() / 1000;
+const ruins = THEME.ruins?.walk ? ruinsBounds(THEME.ruins.x, THEME.ruins.z, WORLD.minX) : null;
+
+export function inTownRuins(p: Vector3) {
+  return !!ruins && p.x >= ruins.minX && p.x <= ruins.maxX && p.z >= ruins.minZ && p.z <= ruins.maxZ;
+}
 
 export class TownReactions {
   readonly schedule = new ReactionSchedule();

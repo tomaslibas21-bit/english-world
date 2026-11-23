@@ -1,7 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { NPCS } from "../content/npcs";
 import { TEXT_THREADS, type TextLine, type TextThread as Thread } from "../content/texts";
+import { coachVoice, npcVoice } from "../content/voices";
+import { EDITION } from "../edition";
 import { townLineText } from "../game/life/lineText";
+import { speakTownLine } from "../game/life/townVoice";
 import { useStore } from "../state/store";
 import type { TextProgress } from "../state/progress";
 import { Icon } from "./icons";
@@ -46,16 +49,20 @@ export function TextList({ got }: { got: TextProgress["got"] | undefined }) {
   </section>;
 }
 
-function Bubble({ line, mine = false }: { line: TextLine; mine?: boolean }) {
+function Bubble({ line, mine = false, onTranslation }: {
+  line: TextLine; mine?: boolean; onTranslation: (text: string, mine: boolean, visible: boolean) => void;
+}) {
   const [translated, show] = useState(false);
+  const text = townLineText(line);
   const toggle = () => {
     show(!translated);
+    onTranslation(text, mine, !translated);
     const st = useStore.getState();
     if (!st.progress.texts?.translated) st.updateProgress((p) => { if (p.texts) p.texts.translated = true; });
   };
   return <div className={"text-message" + (mine ? " mine" : "")}>
     <button type="button" className="text-bubble" onClick={toggle} aria-expanded={translated}>
-      <span lang={TL}>{townLineText(line)}</span>
+      <span lang={TL}>{text}</span>
       {translated && <small lang={HL}>{line.lt}</small>}
     </button>
     {mine && <small className="text-sent">{LABELS.sent}</small>}
@@ -67,9 +74,10 @@ export function TextThread({ thread, entry }: { thread: Thread; entry: TextProgr
   const translated = useStore((s) => s.progress.texts?.translated);
   const [typing, setTyping] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const voice = useRef<AbortController | undefined>(undefined);
   const body = useRef<HTMLDivElement>(null);
   const reply = thread.replies[entry.reply ?? -1];
-  useEffect(() => () => clearTimeout(timer.current), []);
+  useEffect(() => () => { clearTimeout(timer.current); voice.current?.abort(); }, []);
   useLayoutEffect(() => {
     const scroller = body.current;
     if (scroller) scroller.scrollTop = scroller.scrollHeight;
@@ -78,9 +86,19 @@ export function TextThread({ thread, entry }: { thread: Thread; entry: TextProgr
   const send = (index: number) => {
     const st = useStore.getState();
     if (st.progress.texts?.got[thread.id]?.reply !== undefined) return;
+    voice.current?.abort();
     setTyping(true);
     st.updateProgress((p) => { p.texts!.got[thread.id].reply = index; });
     timer.current = setTimeout(() => setTyping(false), 1200);
+  };
+
+  const read = (text: string, mine: boolean, visible: boolean) => {
+    if (EDITION.id !== "es") return;
+    voice.current?.abort();
+    if (!visible) return;
+    const gender = useStore.getState().progress.profile?.gender;
+    const controller = voice.current = new AbortController();
+    speakTownLine(undefined, mine ? coachVoice(gender) : npcVoice(npc), (mine ? gender : npc.gender) === "f", text, 0, controller.signal);
   };
 
   return <section className="text-thread" data-thread={thread.id}>
@@ -90,11 +108,11 @@ export function TextThread({ thread, entry }: { thread: Thread; entry: TextProgr
     </header>
     <div className="text-thread-body" ref={body}>
       {!translated && <p className="text-hint">{LABELS.hint}</p>}
-      {thread.lines.map((line, i) => <Bubble key={i} line={line} />)}
+      {thread.lines.map((line, i) => <Bubble key={i} line={line} onTranslation={read} />)}
       {reply ? <>
-        <Bubble line={reply} mine />
+        <Bubble line={reply} mine onTranslation={read} />
         {typing ? <div className="text-typing" aria-hidden><i /><i /><i /></div>
-          : reply.answer.map((line, i) => <Bubble key={`a${i}`} line={line} />)}
+          : reply.answer.map((line, i) => <Bubble key={`a${i}`} line={line} onTranslation={read} />)}
       </> : <div className="text-replies">
         <strong>{LABELS.reply}</strong>
         {thread.replies.map((choice, i) => <button type="button" key={i} onClick={() => send(i)}><span lang={TL}>{townLineText(choice)}</span><small lang={HL}>{choice.lt}</small></button>)}

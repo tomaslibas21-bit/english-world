@@ -152,6 +152,43 @@ try {
       await checkThreadViewport(".text-message:last-child .text-bubble");
       await tap(thread.locator(".text-thread-head button"));
       assert(await preview.isVisible());
+      if (targetLang === "es") {
+        const contacts = await page.evaluate(async (url) => (await import(url)).NPCS, lifeContentUrl(url, "npcs"));
+        await page.evaluate((threads) => {
+          const { store, audio } = window.__ew;
+          store.getState().updateProgress((p) => {
+            for (const { id } of threads) {
+              delete p.texts.pending[id];
+              p.texts.got[id] ??= { at: Date.now(), read: true, reply: 0 };
+            }
+          });
+          window.__textVoice = [];
+          const play = audio.play.bind(audio);
+          audio.play = (voice, speed, text, options) => {
+            if (!options?.optional || !options?.fallbackLang) return play(voice, speed, text, options);
+            window.__textVoice.push({ voice, text });
+            return Promise.resolve(true);
+          };
+        }, threads);
+        for (const { id, from } of threads) {
+          const npc = contacts[from];
+          await tap(panel.locator(`.text-contact[data-thread="${id}"]`));
+          assert.equal(await thread.locator("header strong").innerText(), npc.name);
+          assert.equal(await thread.locator(`header small[lang="${helperLang}"]`).innerText(), npc.role.lt);
+          const face = await thread.locator("header .text-face").evaluate((node) =>
+            node.querySelector("img")?.src.startsWith("data:image/") ? "portrait" : node.textContent);
+          assert(["portrait", npc.name[0]].includes(face), `face resolves for ${from}`);
+          if (from === "memo") {
+            const answer = lineText(second.replies[0].answer.at(-1));
+            const bubble = thread.locator(".text-bubble").last();
+            assert.equal(await bubble.innerText(), answer);
+            await tap(bubble);
+            const voice = variety === "spain" ? "esp_memo" : variety === "neutral" ? "esn_memo" : "es_memo";
+            assert.deepEqual(await page.evaluate(() => window.__textVoice.at(-1)), { voice, text: answer });
+          }
+          await tap(thread.locator(".text-thread-head button"));
+        }
+      }
       assert.deepEqual(errors, []);
       console.log(`ok texts ${width}×${height}`);
     } finally {

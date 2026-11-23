@@ -143,11 +143,8 @@ export class AudioSystem {
     if (typeof speechSynthesis !== "undefined") {
       const load = () => {
         const voices = speechSynthesis.getVoices();
-        // Maple Harbor: any English voice (en-US, en-GB…: offline only the device's own voices speak, whichever they are)
-        if (EDITION.id === "en") { this.fallbackVoices = voices.filter((v) => /^en(?:[-_]|$)/i.test(v.lang)); return; }
-        this.fallbackVoices = voices.filter((v) => VOICE_LANG.test(v.lang));
-        // the Spanish edition: any Spanish voice when the device has no Mexican one
-        if (!this.fallbackVoices.length) this.fallbackVoices = voices.filter((v) => v.lang.toLowerCase().startsWith(EDITION.target.slice(0, 2)));
+        const language = EDITION.target.split("-")[0].toLowerCase();
+        this.fallbackVoices = voices.filter((v) => v.lang.toLowerCase().split(/[-_]/)[0] === language);
       };
       load();
       speechSynthesis.onvoiceschanged = load;
@@ -272,7 +269,7 @@ export class AudioSystem {
 
   /** True after playback finishes or the learner explicitly continues reading. Cancellation is false;
    *  denial keeps the same line pending. Optional playback resolves false on failure or timeout. */
-  play(voice: string, speed: number, text: string, opts: { slow?: boolean; male?: boolean; localVoiceOnly?: boolean; optional?: boolean; recordingOnly?: boolean; signal?: AbortSignal } = {}): Promise<boolean> {
+  play(voice: string, speed: number, text: string, opts: { slow?: boolean; male?: boolean; localVoiceOnly?: boolean; fallbackLang?: string; optional?: boolean; recordingOnly?: boolean; signal?: AbortSignal } = {}): Promise<boolean> {
     if (opts.signal?.aborted) return Promise.resolve(false);
     this.stopDiagnostic("normal-playback");
     this.stop();
@@ -724,7 +721,7 @@ export class AudioSystem {
     this.envelopes.set(key, env);
   }
 
-  private speakFallback(request: PlaybackRequest, text: string, opts: { slow?: boolean; male?: boolean; localVoiceOnly?: boolean }, reason: "manifest-miss" | "explicit-choice" = "explicit-choice") {
+  private speakFallback(request: PlaybackRequest, text: string, opts: { slow?: boolean; male?: boolean; localVoiceOnly?: boolean; fallbackLang?: string }, reason: "manifest-miss" | "explicit-choice" = "explicit-choice") {
     this.clip = null;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let playAttempt = 0;
@@ -739,13 +736,17 @@ export class AudioSystem {
         return;
       }
       const localOnly = opts.localVoiceOnly || typeof navigator === "undefined" || !navigator.onLine;
-      const vs = localOnly ? this.fallbackVoices.filter((v) => v.localService) : this.fallbackVoices;
+      const eligible = localOnly ? this.fallbackVoices.filter((v) => v.localService) : this.fallbackVoices;
+      const language = opts.fallbackLang?.toLowerCase();
+      const preferred = eligible.filter((v) => v.lang.toLowerCase().replace("_", "-") === language);
+      const regional = EDITION.id === "es" ? eligible.filter((v) => VOICE_LANG.test(v.lang)) : [];
+      const vs = preferred.length ? preferred : regional.length ? regional : eligible;
       if (typeof speechSynthesis === "undefined" || (localOnly && !vs.length)) {
         request.fail("unavailable");
         return;
       }
       const u = new SpeechSynthesisUtterance(text);
-      u.lang = EDITION.target;
+      u.lang = opts.fallbackLang ?? EDITION.target;
       u.rate = opts.slow ? 0.78 : 0.95;
       u.volume = this.volume;
       const pick = vs.find((v) => (opts.male ? /(male|daniel|fred|alex|aaron|arthur|guy|david|mark)/i : /(female|samantha|victoria|allison|ava|susan|zira|aria|jenny)/i).test(v.name) && v.localService)
