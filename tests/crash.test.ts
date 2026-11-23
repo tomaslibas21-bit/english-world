@@ -43,7 +43,7 @@ describe("dent geometry", () => {
     const dents: Dent[] = [];
     addDent(dents, { ...front, k: 0.2 });
     const light = dents[0];
-    expect(light.depth).toBeCloseTo(0.06, 2);
+    expect(light.depth).toBeCloseTo(0.074, 3);
     expect(dentFalloff(light, light.x, light.y, light.z)).toBe(1);
     expect(dentFalloff(light, light.x + 0.12, light.y, light.z)).toBeGreaterThan(dentFalloff(light, light.x + 0.22, light.y, light.z));
     expect(dentFalloff(light, light.x + 0.4, light.y, light.z)).toBe(0);
@@ -174,9 +174,9 @@ describe("crash effects", () => {
     "feeds a plume over time within the $quality quality budget", ({ quality, limit }) => {
       const { crashes, car, frontHit } = fixture(quality);
       crashes.impact(car, "town", frontHit);
-      expect(crashes.inspect.stats().puffs).toBe(2);
+      expect(crashes.inspect.stats().puffs).toBe(limit);
       let peak = 0;
-      for (let i = 0; i < 47; i++) {
+      for (let i = 0; i < 95; i++) {
         crashes.update(0.05, car);
         peak = Math.max(peak, crashes.inspect.stats().puffs);
       }
