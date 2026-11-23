@@ -174,6 +174,7 @@ try {
           if (!ready) await page.waitForTimeout(35);
           return ready;
         }, `chat step ${expected}`);
+        if (expected === "group") await screenshot("01b-chat");
         if (expected === "group") {
           assert.equal(await page.evaluate(() => window.__ew.store.getState().conv.checklist.filter((item) => item.done).length), 2);
         }

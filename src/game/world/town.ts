@@ -11,6 +11,7 @@ import { SHORE, DECKS, POOLS, FLOORS, sandY, SAND_GLSL, SHORE_GLSL, SWELL_GLSL }
 import { islandGroundY, LIGHTHOUSE_ISLAND, TOWER_FOOT } from "./island";
 import { addMapleDecor, FALL } from "./maple";
 import { ROAD_EDITION } from "../../content/road";
+import { LOCATIONS } from "../../content/locations";
 import { ParkedFleet } from "./parkedFleet";
 import { THEME } from "./theme";
 import { GROUND_BLOCKS, groundPalette, groundExtras, groundMaterial, seaMaterial, trunkGeometry, canopyGeometry, canopyMaterial, bushGeometry, bushMaterial, outlineInstanced, cloudMaterial, cloudPuff } from "./styled";
@@ -723,7 +724,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   }
   if (b.loc) {
     const out = 2.2;
-    doors.push({ loc: b.loc, bid: b.id, x: dx, z: dz, face: b.face, name: b.sign || b.loc, outX: dx + n[0] * out, outZ: dz + n[1] * out, rot: Math.atan2(n[0], n[1]) });
+    doors.push({ loc: b.loc, bid: b.id, x: dx, z: dz, face: b.face, name: b.sign || LOCATIONS[b.loc]?.name || b.loc, outX: dx + n[0] * out, outZ: dz + n[1] * out, rot: Math.atan2(n[0], n[1]) });
     if (poolHall) {
       M.add("pool-hall-path", mat("#c9b89a"), boxGeo(2.3, 0.025, 2.24, 0, 0.013, 0)
         .rotateY(rotY).translate(dx + n[0] * 1.12, 0, dz + n[1] * 1.12), false);
