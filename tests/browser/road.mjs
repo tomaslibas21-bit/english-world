@@ -53,9 +53,10 @@ async function driveExit(url, scenario, expectedHeading) {
   const page = await context.newPage();
   let allowModule, requested = false;
   const released = new Promise((resolve) => { allowModule = resolve; });
-  const modulePath = /\/src\/game\/road\/mode\.ts(?:\?|$)/;
+  const origin = new URL(url).origin;
+  const roadModule = (url) => url.origin === origin && url.pathname.endsWith("/src/game/road/mode.ts");
   try {
-    await page.route(modulePath, async (route) => {
+    await page.route(roadModule, async (route) => {
       requested = true;
       if (scenario !== "warm") await released;
       await route.continue();
@@ -70,25 +71,31 @@ async function driveExit(url, scenario, expectedHeading) {
       for (let frame = 0; frame < limit; frame++) {
         await step();
         const state = await read();
-        if (state && condition(state)) return state;
+        if (state && await condition(state)) return state;
       }
       assert.fail(`${scenario}: ${message}: ${JSON.stringify(await read())}`);
     };
     const before = await until((state) => state.presented?.scene === "town", "the town presents", 750);
     assert.equal(requested, false);
     assert.ok(Math.abs(before.exit.outward - expectedHeading) < 0.01, "drives through the edition's physical exit");
-    await page.evaluate(({ x, z, outward }) => {
-      const { game } = window.__ew;
-      const ride = game.rides.list.find((entry) => entry.kind === "car" && entry.model);
-      const start = { x: x - Math.sin(outward) * 19, z: z - Math.cos(outward) * 19, rot: outward };
-      game.rides.resetPosition(ride, start);
-      game.placeOnFoot(start.x - Math.cos(outward) * 2, start.z + Math.sin(outward) * 2, outward);
-      if (!game.boardRide(ride)) throw new Error("Could not board the test car");
-      game.modeHost.snapRide(ride);
-    }, before.exit);
-    if (!requested) await page.waitForRequest(modulePath);
-    const ready = await until((state) => state.requested && (scenario !== "warm" || state.ready), "requests the road aboard");
-    assert.equal(ready.phase, "town");
+    await Promise.all([
+      page.waitForRequest((request) => roadModule(new URL(request.url()))),
+      page.evaluate(({ x, z, outward }) => {
+        const { game } = window.__ew;
+        // Both towns build the park convertible with procedural geometry during initialization.
+        const ride = game.rides.find("park");
+        if (ride?.kind !== "car") throw new Error("Could not find the town's park convertible");
+        const start = { x: x - Math.sin(outward) * 19, z: z - Math.cos(outward) * 19, rot: outward };
+        game.rides.resetPosition(ride, start);
+        game.placeOnFoot(start.x - Math.cos(outward) * 2, start.z + Math.sin(outward) * 2, outward);
+        if (!game.boardRide(ride)) throw new Error("Could not board the park convertible");
+        game.modeHost.snapRide(ride);
+      }, before.exit),
+    ]);
+    const aboard = await until(async (state) => requested && state.requested
+      && (scenario !== "warm" || state.ready)
+      && await page.evaluate(() => window.__ew.game.rides.phase === "on"), "boards the convertible and requests the road");
+    assert.equal(aboard.phase, "town");
     await page.keyboard.down("ArrowUp");
     if (scenario === "warm") {
       let previous = await until((state) => state.exitDistance >= -state.townCar.speed * 0.5 - 2.5,
@@ -104,6 +111,10 @@ async function driveExit(url, scenario, expectedHeading) {
       }
       assert.ok(crossed && previous.elapsed >= 3);
     } else {
+      const approach = await until((state) => state.onStrip && state.exitDistance >= 20, "reaches the start of the holding band");
+      const slowed = await until((state) => state.exitDistance >= 30, "approaches the crest with the road module held");
+      assert.ok(slowed.townCar.speed > 0 && slowed.townCar.speed < approach.townCar.speed,
+        "slows down before reaching the crest");
       const held = await until((state) => state.onStrip && state.exitDistance >= 31.99 && Math.abs(state.townCar.speed) < 0.1,
         "holds at the cold crest with town still running");
       assert.equal(held.ready, false);
@@ -274,69 +285,10 @@ try {
       const { exitDistance, townCar, phase } = await read();
       return phase === "town" && exitDistance > -townCar.speed * 0.5 - 2.5;
     }, "approaches the actual signed exit", 240, 1);
-    await shot("departure");
-    let last = await read(), first;
-    let cone, coneHit = false;
-    const stillFeatures = new Map();
-    const sampleHazards = (state) => {
-      assert.ok(!state.propBatches.includes("weed"));
-      for (const { kind, id, x, z } of state.hazards) {
-        assert.ok(["cone", "rock", "cactus", "ramp", "boost"].includes(kind));
-        const old = stillFeatures.get(id);
-        if (old) assert.ok(Math.hypot(old.x - x, old.z - z) <= 0.001, `${kind} ${id} moved`);
-        stillFeatures.set(id, { x, z });
-      }
-    };
-    for (let frame = 0; frame < 180; frame++) {
-      await step(1);
-      const state = await read();
-      await assertWorldFrame(page, last, state, maxRoadCalls, label, shots);
-      if (state.phase === "drive") {
-        sampleHazards(state);
-        if (!first) {
-          first = state;
-          await shot("first-road");
-          cone = state.hazards.find(({ kind, s }) => kind === "cone" && s === 13);
-          assert.ok(cone);
-          await page.evaluate((lane) => window.__ew.road.steer(lane), cone.lane);
-        } else assert.ok(state.roadPosition > last.roadPosition, "the warm handoff advances on every road frame");
-        if (state.gateDistance <= 70) registration ??= new BoardRegistration("road", 50, maxRoadCalls);
-        if (!coneHit && state.hazards.find(({ id }) => id === cone.id)?.hit) {
-          coneHit = true;
-          assert.ok(state.wobble > 0 && state.propBatches.includes("flat"), "hitting a cone flattens it and causes a stumble");
-        }
-      } else assert.ok(state.exitDistance > last.exitDistance, "the warm approach advances on every town frame");
-      last = state;
-      if (first && state.elapsed >= 3) break;
-    }
-    assert.ok(first && last.elapsed >= 3 && coneHit, "samples the warm crest through its first three seconds");
-    if (phone) await page.evaluate(() => window.__ew.game.setJoystick(0, 0));
-    else await page.keyboard.up("ArrowUp");
-
-    const labels = page.locator(".road-gate");
-    await waitFor(async () => (await labels.count()) === 3 && modelRequests.length >= 2 && roadRequests.length > 0, "the gates, road code and both cones load");
-    const road = await read();
-    assert.equal(road.car, carId);
-    assert.equal(road.model, "van");
-    assert.ok(road.drawCalls <= maxRoadCalls && road.fps > 0, `draw calls ${road.drawCalls}, FPS ${road.fps}`);
-    assert.equal(road.gates.length, 3);
-    if (phone) {
-      const horn = page.getByRole("button", { name: "Signalas", exact: true });
-      assert.equal(await horn.count(), 1);
-      assert.equal(await page.locator(".road-mode .drive-horn").count(), 1);
-      assert.equal(await page.locator(".road-mode .road-header").getByRole("button", { name: "Signalas" }).count(), 0);
-      const drift = await page.getByRole("button", { name: "Driftas" }).boundingBox(), honk = await horn.boundingBox();
-      assert.ok(drift && honk && honk.x + honk.width < drift.x && Math.abs(honk.y + honk.height / 2 - drift.y - drift.height / 2) < 10);
-      const beeps = await page.evaluate(() => window.__roadSfx.filter((sound) => sound === "horn").length);
-      await press(horn);
-      assert.equal(await page.evaluate(() => window.__roadSfx.filter((sound) => sound === "horn").length), beeps + 1);
-    }
-    const replay = page.locator(".road-cue").getByRole("button", { name: "Klausyti dar kartą" });
-    await press(replay);
-    await page.evaluate(async () => { await document.fonts.ready; });
     // A boost changes the time remaining, so sample layout and distance from the same draw.
     const measureGates = ({ minFont, minWidth }) => {
-      const header = document.querySelector(".road-header").getBoundingClientRect();
+      const header = document.querySelector(".road-header")?.getBoundingClientRect();
+      if (!header) return [];
       const controls = [...document.querySelectorAll(".road-mode .joy, .road-mode .brake-btn, .road-mode .drive-horn")]
         .map((element) => element.getBoundingClientRect());
       const gates = [...document.querySelectorAll(".road-gate")];
@@ -357,20 +309,87 @@ try {
       });
     };
     const fitAtApproach = phone ? { minFont: 15, minWidth: 88 } : { minFont: 18, minWidth: 110 };
-    let layout, seen = [];
-    await waitFor(async () => {
-      const { gateDistance, speed, totalGates } = await read();
-      if (totalGates !== 0 || !(gateDistance / speed <= 2.2 && gateDistance / speed >= 1.85)) return false;
-      layout = await page.evaluate(measureGates, fitAtApproach);
-      if (layout.length) seen = layout;
-      return layout.length === 3 && layout.every(Boolean);
-    }, "the banner text fits whole words and clears the controls on the first gate approach", 120, 1).catch((error) => {
-      throw new Error(`${error.message} — last measured: ${JSON.stringify(seen)}`);
-    });
-    assert.deepEqual(layout, [true, true, true]);
-    assert.ok((await read()).drawCalls <= maxRoadCalls);
-    await shot("gates");
-
+    const labels = page.locator(".road-gate");
+    await shot("departure");
+    let last = await read(), first;
+    let layout, lastLayout;
+    let cone, coneHit = false;
+    const stillFeatures = new Map();
+    const sampleHazards = (state) => {
+      assert.ok(!state.propBatches.includes("weed"));
+      for (const { kind, id, x, z } of state.hazards) {
+        assert.ok(["cone", "rock", "cactus", "ramp", "boost"].includes(kind));
+        const old = stillFeatures.get(id);
+        if (old) assert.ok(Math.hypot(old.x - x, old.z - z) <= 0.001, `${kind} ${id} moved`);
+        stillFeatures.set(id, { x, z });
+      }
+    };
+    for (let frame = 0; frame < 180; frame++) {
+      await step(1);
+      const state = await read();
+      if (!first || last.elapsed < 3) await assertWorldFrame(page, last, state, maxRoadCalls, label, shots);
+      if (state.phase === "drive") {
+        sampleHazards(state);
+        if (!first) {
+          first = state;
+          await shot("first-road");
+          if (phone) await page.evaluate(() => window.__ew.game.setJoystick(0, 0));
+          else await page.keyboard.up("ArrowUp");
+          await labels.nth(2).waitFor({ state: "attached" });
+          await page.evaluate(async () => { await document.fonts.ready; });
+          cone = state.hazards.find(({ kind, s }) => kind === "cone" && s === 13);
+          assert.ok(cone);
+          await page.evaluate((lane) => window.__ew.road.steer(lane), cone.lane);
+        } else assert.ok(state.roadPosition > last.roadPosition, "the warm handoff advances on every road frame");
+        if (state.gateDistance <= 70) registration ??= new BoardRegistration("road", 50, maxRoadCalls);
+        if (!coneHit && state.hazards.find(({ id }) => id === cone.id)?.hit) {
+          coneHit = true;
+          assert.ok(state.wobble > 0 && state.propBatches.includes("flat"), "hitting a cone flattens it and causes a stumble");
+        }
+        if (!layout) {
+          assert.equal(state.totalGates, 0,
+            `${label}: crossed the first gate before measuring readable banners. Last sample: ${JSON.stringify(lastLayout)}`);
+          const secondsToGate = state.gateDistance / state.speed;
+          if (secondsToGate >= 1.85 && secondsToGate <= 2.2) {
+            const rows = await page.evaluate(measureGates, fitAtApproach);
+            lastLayout = { elapsed: state.elapsed, gateDistance: state.gateDistance, secondsToGate, rows };
+            if (rows.length === 3 && rows.every(Boolean)) {
+              layout = rows;
+              await shot("gates");
+            }
+          }
+        }
+      } else assert.ok(state.exitDistance > last.exitDistance, "the warm approach advances on every town frame");
+      last = state;
+      if (first && state.elapsed >= 3 && layout) break;
+    }
+    assert.ok(first && last.elapsed >= 3 && coneHit, "samples the warm crest through its first three seconds");
+    assert.deepEqual(layout, [true, true, true],
+      `${label}: banner text fits whole words and clears the controls on the first gate approach. Last sample: ${JSON.stringify(lastLayout)}`);
+    // Inspect resources and use the controls with the clock stopped on the same approach.
+    assert.equal(await labels.count(), 3, "the first gate shows all three labels");
+    assert.ok(modelRequests.length >= 2 && roadRequests.length > 0, "the road code and both cone models were requested");
+    const road = await read();
+    assert.equal(road.car, carId);
+    assert.equal(road.model, "van");
+    assert.ok(road.drawCalls <= maxRoadCalls && road.fps > 0, `draw calls ${road.drawCalls}, FPS ${road.fps}`);
+    assert.equal(road.gates.length, 3);
+    assert.equal(road.totalGates, 0, "the first prompt is still available to replay");
+    if (phone) {
+      const horn = page.getByRole("button", { name: "Signalas", exact: true });
+      assert.equal(await horn.count(), 1);
+      assert.equal(await page.locator(".road-mode .drive-horn").count(), 1);
+      assert.equal(await page.locator(".road-mode .road-header").getByRole("button", { name: "Signalas" }).count(), 0);
+      const drift = await page.getByRole("button", { name: "Driftas" }).boundingBox(), honk = await horn.boundingBox();
+      assert.ok(drift && honk && honk.x + honk.width < drift.x && Math.abs(honk.y + honk.height / 2 - drift.y - drift.height / 2) < 10);
+      const beeps = await page.evaluate(() => window.__roadSfx.filter((sound) => sound === "horn").length);
+      await press(horn);
+      assert.equal(await page.evaluate(() => window.__roadSfx.filter((sound) => sound === "horn").length), beeps + 1);
+    }
+    const replay = page.locator(".road-cue").getByRole("button", { name: "Klausyti dar kartą" });
+    const beforeReplay = await page.evaluate(() => window.__roadAudio.length);
+    await press(replay);
+    assert.equal(await page.evaluate(() => window.__roadAudio.length), beforeReplay + 1, "replays the first prompt");
     if (Math.cos((await read()).exit.outward) > 0.9) {
       const words = pcLongLabels(storage);
       const captured = registration;
@@ -394,28 +413,41 @@ try {
       registration.serial = undefined;
     }
 
-    await page.evaluate(() => window.__ew.road.steer(window.__ew.road.state().right));
-    await waitFor(async () => (await read()).rightGates === 1, "passes the correct gate");
+    const steerForGate = (number, wrong = false) => page.evaluate(({ number, wrong }) => {
+      const { road } = window.__ew;
+      const { totalGates, right, lane } = road.state();
+      if (totalGates !== number - 1 || right === undefined) throw new Error(`Gate ${number} is no longer available to steer through`);
+      road.steer(wrong ? [0, 1, 2].find((candidate) => candidate !== lane && candidate !== right) : right);
+    }, { number, wrong });
+    const waitForGate = (number, distance = Infinity) => waitFor(async () => {
+      const state = await read();
+      assert.ok(state.totalGates < number, `${label}: passed gate ${number} while waiting for its approach`);
+      return state.totalGates === number - 1 && state.gates?.length === 3 && state.gateDistance <= distance;
+    }, `approaches gate ${number}`, 250, distance === Infinity ? 4 : 1);
+
+    await steerForGate(1);
+    await waitFor(async () => (await read()).totalGates >= 1, "passes the first gate", 150, 1);
+    assert.equal((await read()).rightGates, 1, "takes the correct lane on the first gate");
     assert.equal((await read()).streak, 1);
-    assert.equal(await page.getByText("Teisingai!", { exact: true }).count(), 1);
+    const correctFeedback = page.getByText("Teisingai!", { exact: true });
+    await correctFeedback.first().waitFor({ state: "visible" });
+    assert.equal(await correctFeedback.count(), 1);
     assert.ok((await read()).boost > 0);
     assert.ok((await read()).drawCalls <= maxRoadCalls);
     await shot("gate-right");
     await step(8);
     registration.verify();
     registration = undefined;
-    await waitFor(async () => (await read()).gates?.length === 3, "next three choices appear");
-    await waitFor(async () => (await read()).gateDistance <= 70, "approaches the second gate", 250, 1);
+    await waitForGate(2, 70);
     milliseconds = 1000 / 120;
     registration = new BoardRegistration("road", milliseconds, maxRoadCalls);
-    await page.evaluate(() => {
-      const { road } = window.__ew;
-      const { lane, right } = road.state();
-      road.steer([0, 1, 2].find((candidate) => candidate !== lane && candidate !== right));
-    });
-    await waitFor(async () => (await read()).totalGates === 2, "passes the wrong gate");
+    await steerForGate(2, true);
+    await waitFor(async () => (await read()).totalGates >= 2, "passes the second gate", 750, 1);
+    assert.equal((await read()).rightGates, 1, "takes the wrong lane on the second gate");
     assert.equal((await read()).streak, 0);
-    assert.equal(await page.getByText("Ne visai. Teisingai:", { exact: true }).count(), 1);
+    const wrongFeedback = page.getByText("Ne visai. Teisingai:", { exact: true });
+    await wrongFeedback.first().waitFor({ state: "visible" });
+    assert.equal(await wrongFeedback.count(), 1);
     assert.ok((await read()).wobble > 0);
     assert.ok((await page.locator(".road-feedback.wrong").innerText()).trim().length > "Ne visai. Teisingai:".length);
     assert.ok((await read()).drawCalls <= maxRoadCalls);
@@ -444,19 +476,25 @@ try {
       game.setJoystick(0, 0);
       road.steer(road.state().nextRamp.lane);
     });
-    await waitFor(async () => (await read()).liftHeight > 0.75, "drives up a ramp and leaves the ground", 200, 3);
+    await waitFor(async () => {
+      const state = await read();
+      assert.equal(state.totalGates, 2, "tests the ramp before scoring gate three");
+      return state.liftHeight > 0.75;
+    }, "drives up a ramp and leaves the ground", 200, 3);
     const jump = await read();
     assert.ok(jump.drawCalls <= maxRoadCalls);
     assert.ok(inFrame(jump.carFrame), `the whole car stays on screen during the jump: ${JSON.stringify(jump.carFrame)}`);
     await shot("jump");
 
     for (let gate = 3; gate <= 7; gate++) {
-      await waitFor(async () => (await read()).gates?.length === 3, `gate ${gate} appears`, 120, 8);
-      await page.evaluate(() => window.__ew.road.steer(window.__ew.road.state().right));
-      await waitFor(async () => (await read()).totalGates === gate, `passes gate ${gate}`, 120, 8);
+      await waitForGate(gate);
+      await steerForGate(gate);
+      await waitFor(async () => (await read()).totalGates >= gate, `passes gate ${gate}`, 120, 8);
+      assert.equal((await read()).rightGates, gate - 1, `takes the correct lane on gate ${gate}`);
     }
     await waitFor(async () => {
       const state = await read();
+      assert.equal(state.totalGates, 7, "checks the gap prompt before scoring gate eight");
       return state.gates?.length === 3 && state.gateDistance / state.speed < 2.15 && (await labels.count()) === 3;
     }, "the eighth gate's gap prompt and banner labels are visible", 150, 4);
     assert.equal(await page.getByText("Kurio žodžio trūksta?", { exact: true }).count(), 1);
@@ -480,15 +518,15 @@ try {
     await shot("result");
     await press(result.getByRole("button", { name: "Dar kartą" }));
     await waitFor(async () => (await read()).phase === "drive", "retries directly on the road");
-    await page.evaluate(() => window.__ew.road.steer(window.__ew.road.state().right));
+    await steerForGate(1);
     let ghostSeen = false;
-    for (let frame = 0; frame < 135; frame++) {
-      await step(1);
+    await waitFor(async () => {
       const state = await read();
       assert.ok(state.drawCalls > 0 && state.drawCalls <= maxRoadCalls, `retry drew ${state.drawCalls} calls`);
       if (state.visibleGhost) ghostSeen = true;
-      if (state.rightGates > 0 && state.elapsed > 5.6) break;
-    }
+      return state.totalGates === 1 && state.boost <= 0;
+    }, "checks replay through the first gate and its boost", 180, 1);
+    assert.equal((await read()).rightGates, 1, "answers the first gate on the retry");
     assert.ok(ghostSeen, "the best-run ghost is drawn on the retry");
     if (phone && height === 844) {
       await page.setViewportSize({ width: height, height: 390 });

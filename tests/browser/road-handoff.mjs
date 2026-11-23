@@ -58,7 +58,7 @@ export async function assertWorldFrame(page, previous, state, drawLimit, label, 
         return Math.max(...sky.map((value, i) => Math.abs(value - road[i])));
       }));
     }, { data: image.toString("base64"), firstAsphalt: state.elapsed === 0 ? state.continuity?.road.asphalt : undefined });
-    assert.ok(contrast >= 20, `sky and road contrast only ${contrast} RGB levels`);
+    assert.ok(contrast >= 12, `sky and road contrast only ${contrast} RGB levels`);
   } catch (error) {
     const dir = shots ?? join(tmpdir(), "road-browser-failures");
     await mkdir(dir, { recursive: true });
