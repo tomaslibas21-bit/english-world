@@ -495,7 +495,7 @@ export class Game implements GameApi {
         if (this.modes.active?.id !== "taxi") this.saysAloud(line, female, ch, voice);
       },
       thud: (k) => { if (this.bumpT <= 0) { audio.bump(Math.min(1, 0.35 + k * 0.65)); this.bumpT = 0.12; } },
-      crashSound: (sound, k) => audio.carCrash(sound, k),
+      crashSound: (sound, k) => { audio.carCrash(sound, k); if (sound === "crunch") this.rig.jolt(k); },
       allowsCrashes: () => this.zone.id === "town" && !this.modes.owns("road"),
       allowsHints: () => this.allowsRideHints(),
       rescue: (put) => {

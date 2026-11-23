@@ -37,6 +37,8 @@ const { clamp, degToRad, radToDeg } = THREE.MathUtils;
 const verticalFov = (halfHorizontal: number, aspect: number) => radToDeg(2 * Math.atan(Math.tan(degToRad(halfHorizontal)) / aspect));
 const wideFollowFov = (aspect: number) => aspect > 1.9 ? clamp(verticalFov(40, aspect), 38, 55) : 55;
 
+const JOLT_TIME = 0.42;
+
 export class CameraRig {
   cam: THREE.PerspectiveCamera;
   mode: CamMode = "follow";
@@ -421,6 +423,23 @@ export class CameraRig {
     if (near === 0.1 ? this.cam.near !== 0.1 : Math.abs(this.cam.near - near) > 0.02) { this.cam.near = near; this.cam.updateProjectionMatrix(); }
     this.cam.position.copy(this.curPos);
     this.cam.lookAt(this.curLook);
+    if (this.joltT < JOLT_TIME) {
+      // (a crash: the picture takes a short knock and settles; it never moves what the camera follows)
+      this.joltT += dt;
+      const fade = Math.max(0, 1 - this.joltT / JOLT_TIME) ** 2 * this.joltK;
+      this.cam.position.y += Math.cos(this.joltT * 47) * 0.12 * fade;
+      this.cam.rotateZ(Math.sin(this.joltT * 56) * 0.028 * fade);
+      this.cam.rotateY(Math.sin(this.joltT * 41) * 0.012 * fade);
+    }
+  }
+
+  private joltK = 0;
+  private joltT = JOLT_TIME;
+  /** A crash knocks the picture for a moment (`k` 0–1: how hard). Not for people who asked for less motion. */
+  jolt(k: number) {
+    if (typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    this.joltK = THREE.MathUtils.clamp(k, 0.2, 1);
+    this.joltT = 0;
   }
 
   /** Shift the rendered image so the subject sits left of the conversation panel (or above it on phones). */
