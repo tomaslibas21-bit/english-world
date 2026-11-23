@@ -983,7 +983,7 @@ export class AudioSystem {
       let file = this.bedFiles.get(url);
       if (!file) {
         file = fetch(url).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
-          .then((bytes) => new Promise<AudioBuffer>((done, fail) => { ctx.decodeAudioData(bytes, done, fail); }));
+          .then((bytes) => new Promise<AudioBuffer>((done, fail) => { void (ctx.decodeAudioData(bytes, done, fail) as Promise<AudioBuffer> | undefined)?.catch?.(() => {}); }));
         file.catch(() => this.bedFiles.delete(url));
         this.bedFiles.set(url, file);
       }
@@ -1033,7 +1033,8 @@ export class AudioSystem {
   private fetchClip(ctx: AudioContext, file: string): Promise<AudioBuffer> {
     return fetch(`${import.meta.env.BASE_URL}sfx/${file}`)
       .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
-      .then((bytes) => new Promise<AudioBuffer>((done, fail) => { ctx.decodeAudioData(bytes, done, fail); }));
+      // the callbacks answer; the promise some browsers also return must not reject unhandled (an empty or broken file)
+      .then((bytes) => new Promise<AudioBuffer>((done, fail) => { void (ctx.decodeAudioData(bytes, done, fail) as Promise<AudioBuffer> | undefined)?.catch?.(() => {}); }));
   }
   private loop(name: LoopName, level: number) {
     const ctx = this.ctx;

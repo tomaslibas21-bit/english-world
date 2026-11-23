@@ -55,6 +55,9 @@ try {
     await mkdir(dir, { recursive: true });
     const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: phone ? 2 : 1, isMobile: phone, hasTouch: phone });
     try {
+      // the lines are voiced now (23 Nov 2026); this test follows them through the device voice it fakes, so the
+      // clip list is served empty and every line takes that path (the clips themselves: tests/browser/media.mjs)
+      await context.route(/audio-(?:v2|es)\/manifest\.json(?:\?|$)/, (route) => route.fulfill({ status: 200, contentType: "application/json", body: "{}" }));
       await context.route(/\.mp3(?:\?|$)/, (route) => route.fulfill({ status: 204, body: "" }));
       await context.addInitScript(installControls, [`${storage}-progress-v1`, JSON.stringify(progress)]);
       const page = await context.newPage();
