@@ -22,18 +22,18 @@ export type Coast = { x0: number; x1: number; z: number; lighthouse?: { x: numbe
 // Maple Harbor: a clear, cool New England afternoon that turns gold.
 const MAPLE_HARBOR: SeaView = {
   sky: [
-    { zenith: "#0f4fc2", mid: "#3d94ea", horizon: "#cfe6f0", sun: "#fffbe9", halo: "#c9b792", elevation: 13,
+    { zenith: "#386fa9", mid: "#87b8cb", horizon: "#e7e2d4", sun: "#fffbe9", halo: "#a38e72", elevation: 13,
       ridgeFar: "#9fb6cf", ridgeNear: "#86a2bd", streak: "#ffffff", streaks: 0.32, cloud: "#ffffff",
       light: "#fff0d2", lightPower: 2.3, fillSky: "#e8f1f6", fillGround: "#8fb2c4", fill: 1.35 },
-    { zenith: "#1e50bb", mid: "#eeb486", horizon: "#ffd595", sun: "#fff0bd", halo: "#ffa65a", elevation: 8,
+    { zenith: "#4b709c", mid: "#d8ad86", horizon: "#f3d2aa", sun: "#fff0bd", halo: "#dba16f", elevation: 8,
       ridgeFar: "#a892b4", ridgeNear: "#93799e", streak: "#ffdcb8", streaks: 0.75, cloud: "#ffe6cf",
       light: "#ffd6a0", lightPower: 2.1, fillSky: "#e6dfe6", fillGround: "#a99aa8", fill: 1.3 },
-    { zenith: "#28389a", mid: "#ec7f6c", horizon: "#ffa55e", sun: "#ffd894", halo: "#ff7440", elevation: 4,
+    { zenith: "#474c80", mid: "#cf897b", horizon: "#edb192", sun: "#ffd894", halo: "#d17f63", elevation: 4,
       ridgeFar: "#8a6aa0", ridgeNear: "#735888", streak: "#ffb08e", streaks: 0.9, cloud: "#ffc7b2",
       light: "#ffbe8c", lightPower: 1.9, fillSky: "#d5c9e6", fillGround: "#a58aa0", fill: 1.26 },
   ],
   sunAzimuth: 0.26,
-  water: { deep: "#0a5a94", bright: "#2b9fca", foam: "#f4fbf8" },
+  water: { deep: "#155968", bright: "#458e96", foam: "#e9eee3" },
   island: { sand: "#cdb892", green: ["#3f6f52", "#a8552f"], rock: "#7f7a78", trees: "pine" },
   sails: ["#ffffff", "#f6e9cf", "#e8553f"],
   coast: { walls: ["#f3ead8", "#b9523f", "#d9c9a8", "#8fa7b4", "#e7d3a1"], roofs: ["#5b4a44", "#7b3f35", "#3f4d57"], land: "#c9b48a", hills: "#b0683a" },

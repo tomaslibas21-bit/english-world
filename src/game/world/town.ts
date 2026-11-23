@@ -155,6 +155,7 @@ export function buildTown(): Town {
   }
 
   // --- sea ------------------------------------------------------------------
+  const mapleBay = ROAD_EDITION.id === "maple-harbor";
   const seaMat = STYLED ? seaMaterial() : new THREE.ShaderMaterial({
     uniforms: { uTime: { value: 0 }, uFog: { value: new THREE.Color(THEME.light.haze) } },
     vertexShader: `varying vec2 vUv; varying vec3 vW; uniform float uTime;
@@ -164,20 +165,25 @@ export function buildTown(): Town {
     fragmentShader: `varying vec2 vUv; varying vec3 vW; uniform float uTime; uniform vec3 uFog;
       ${SAND_GLSL}
       void main(){
-        float shore = smoothstep(${(SEA_Z + 1).toFixed(1)}, ${(SEA_Z - 14).toFixed(1)}, vW.z);
-        vec3 deep = vec3(0.13,0.47,0.62); vec3 shallow = vec3(0.35,0.78,0.80);
+        float shore = ${mapleBay
+          ? `smoothstep(0.0, 15.0, ${(SEA_Z + 1).toFixed(1)} - vW.z)`
+          : `smoothstep(${(SEA_Z + 1).toFixed(1)}, ${(SEA_Z - 14).toFixed(1)}, vW.z)`};
+        vec3 deep = ${mapleBay ? "vec3(0.075, 0.375, 0.46)" : "vec3(0.13,0.47,0.62)"};
+        vec3 shallow = ${mapleBay ? "vec3(0.40, 0.69, 0.62)" : "vec3(0.35,0.78,0.80)"};
         vec3 c = mix(shallow, deep, shore);
         float w = sin(vW.x*0.35 + uTime*1.3 + sin(vW.z*0.2)) * sin(vW.z*0.42 - uTime*1.1);
-        c += vec3(0.09) * smoothstep(0.5, 1.0, w);
+        c += ${mapleBay ? "vec3(0.065, 0.080, 0.072)" : "vec3(0.09)"} * smoothstep(0.5, 1.0, w);
         c -= vec3(0.05, 0.06, 0.05) * smoothstep(0.45, 1.0, -w);
         float chop = sin(vW.x*1.1 - uTime*1.7 + sin(vW.z*0.9)) * sin(vW.z*1.3 + uTime*1.4);
-        c += vec3(0.04) * chop;
-        float glint = pow(max(0.0, sin(vW.x*2.1 + uTime*2.4) * sin(vW.z*1.7 - uTime*2.0) * sin(vW.x*0.5 - vW.z*0.6 + uTime)), 18.0);
-        c += vec3(0.55) * glint * (0.4 + 0.6 * shore);
+        c += ${mapleBay ? "vec3(0.032)" : "vec3(0.04)"} * chop;
+        float glint = ${mapleBay
+          ? "smoothstep(0.70, 0.94, w) * smoothstep(0.32, 0.84, chop)"
+          : "pow(max(0.0, sin(vW.x*2.1 + uTime*2.4) * sin(vW.z*1.7 - uTime*2.0) * sin(vW.x*0.5 - vW.z*0.6 + uTime)), 18.0)"};
+        c += ${mapleBay ? "vec3(0.27, 0.25, 0.19)" : "vec3(0.55)"} * glint * (0.4 + 0.6 * shore);
         // the sand under the shallows, the foam along the waterline as it washes up and down the beach (water.ts)
-        ${SHORE_GLSL()}
+        ${mapleBay ? SHORE_GLSL("vec3(0.95, 0.96, 0.89)", "vec3(0.72, 0.62, 0.46)") : SHORE_GLSL()}
         float dist = length(vW.xz - cameraPosition.xz);
-        c = mix(c, uFog, smoothstep(160.0, 420.0, dist));
+        c = mix(c, uFog, smoothstep(${mapleBay ? "90.0, 255.0" : "160.0, 420.0"}, dist));
         gl_FragColor = vec4(c, 1.0); }`,
   });
   const sea = new THREE.Mesh(new THREE.PlaneGeometry(900, 320, 90, 32), seaMat);
