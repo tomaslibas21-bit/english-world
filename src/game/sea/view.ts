@@ -9,6 +9,8 @@ import type { SeaBoat } from "./boat";
 import type { SeaGate } from "./buoys";
 import type { SeaEnvironment } from "./entry";
 import { LANE_WIDTH, WIDE_GATE_VIEW } from "./course";
+
+const GATE_HALF = LANE_WIDTH * 1.5;
 import { seaScenery } from "./scenery";
 import { SeaWake } from "./wake";
 
@@ -58,6 +60,13 @@ export class SeaView {
   private followX = 0;
   private followHeading = Math.PI;
   private portrait = false;
+  /** A phone on its side. */
+  private short = false;
+  /** On a phone the lens reaches for the gate row while the camera backs off to match: the boat keeps its size and
+   *  the three boards fill the width seconds earlier. */
+  private lens = 1;
+  /** Half the picture's width per metre of distance at the unzoomed lens. */
+  private spread = 0.35;
   private shift = 0;
   private startHeading = 0;
   private age = 0;
@@ -129,7 +138,9 @@ export class SeaView {
     this.followX = THREE.MathUtils.lerp(this.followX, boat.worldX, ease);
     // Orbit about the hull so the approach can look towards the middle gate while keeping the boat in frame.
     const ahead = gateAhead ?? 0;
-    const lookAcross = THREE.MathUtils.smoothstep(ahead, 9, 22) * (1 - THREE.MathUtils.smoothstep(ahead, 38, 64));
+    const reach = portrait || this.short;
+    const lookAcross = THREE.MathUtils.smoothstep(ahead, 9, 22)
+      * (1 - THREE.MathUtils.smoothstep(ahead, reach ? 78 : 38, reach ? 100 : 64));
     this.approach = lookAcross;
     const across = Math.atan2(boat.x, Math.max(22, ahead)) * lookAcross;
     const wanted = boat.turning ? boat.heading : Math.PI + across;
@@ -138,7 +149,15 @@ export class SeaView {
     const dx = Math.sin(this.followHeading), dz = Math.cos(this.followHeading);
     const turn = Math.sin(Math.PI * boat.turnProgress);
     const hullRoom = Math.max(0, m.spec.half - 3.2) * 1.35;
-    const back = (portrait ? 11.4 : 10.5) + turn * 0.75 + hullRoom, height = portrait ? 5.05 : 4.65;
+    const baseBack = (portrait ? 11.4 : 10.5) + turn * 0.75 + hullRoom;
+    // Fill 84% of the width with the row of boards, then let go over the last metres so the pass is still felt.
+    const fill = this.spread * 0.84;
+    const reaching = reach && gateAhead !== undefined && !boat.turning && boat.age > 1.6;
+    const wantedLens = reaching ? 1 + (THREE.MathUtils.clamp(fill * ahead / Math.max(1, GATE_HALF - fill * baseBack), 1, 2.3) - 1)
+      * THREE.MathUtils.smoothstep(ahead, 6, 22) : 1;
+    // (slow to reach out, quick to let go: the row must never outgrow the picture on the way in)
+    this.lens += (wantedLens - this.lens) * (1 - Math.exp(-dt * (wantedLens < this.lens ? 12 : 1.8)));
+    const back = baseBack * this.lens, height = portrait ? 5.05 : 4.65;
     // The camera rides the swell with the hull, so the boat keeps its place in the picture and the horizon moves.
     const ride = wave * 0.85;
     this.chase.position.set(this.followX - dx * back, height + ride, boat.worldZ - dz * back);
@@ -202,8 +221,13 @@ export class SeaView {
   render(renderer: Pick<THREE.WebGLRenderer, "render">, w: number, h: number, gate?: SeaGate) {
     this.camera.aspect = w / h;
     // Keep the portrait lens the same across the width. A taller handset should show more sky and water.
-    const portraitFov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(61) / 2) * (h / w) / (664 / 390)));
-    const desktopFov = 52 - (w >= WIDE_GATE_VIEW ? 2.5 * this.approach : 0);
+    const portraitTan = Math.tan(THREE.MathUtils.degToRad(61) / 2) / (664 / 390);
+    const portraitFov = THREE.MathUtils.radToDeg(2 * Math.atan(portraitTan * (h / w) / this.lens));
+    this.short = !this.portrait && h < 520;
+    this.spread = this.portrait ? portraitTan : Math.tan(THREE.MathUtils.degToRad(26)) * w / h;
+    const desktopFov = this.short
+      ? THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(26)) / this.lens))
+      : 52 - (w >= WIDE_GATE_VIEW ? 2.5 * this.approach : 0);
     this.camera.fov = THREE.MathUtils.lerp(this.fov, this.portrait ? portraitFov : desktopFov, this.cameraMix);
     if (this.age > 0) {
       if (Math.abs(this.shift) > 0.0001) this.camera.setViewOffset(w, h, 0, this.shift * h, w, h);

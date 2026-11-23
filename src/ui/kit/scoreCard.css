@@ -107,3 +107,12 @@
   .mode-score-card dl { margin: 8px 0 12px; }
   .mode-score-card dl > div { padding-block: 4px; }
 }
+/* A phone on its side: the two buttons stay in view while the rest scrolls under them. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .mode-score { padding: 8px 16px; }
+  .mode-score .mode-score-card { width: min(100%, 620px); padding-bottom: 0; }
+  .mode-score-award { height: 28px; margin: 0; }
+  .mode-score-line { margin-top: 0; font-size: 1.9em; }
+  .mode-score-card dl { display: grid; grid-template-columns: 1fr 1fr; column-gap: 22px; margin: 6px 0 8px; }
+  .mode-score-actions { position: sticky; bottom: 0; margin-top: 6px; padding: 8px 0 10px; background: linear-gradient(transparent, var(--panel-solid) 10px); }
+}

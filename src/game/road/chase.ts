@@ -17,6 +17,8 @@ export class RoadChase {
   update(cam: PerspectiveCamera, car: Vector3, distance: number, lift: number, pace: number, time: number,
     dt: number, width: number, height: number, carCorners: readonly Vector3[], gate?: GateFrame) {
     const portrait = height > width * 1.15;
+    // A phone on its side has little height, so the lens reaches further to keep the word boards readable.
+    const short = !portrait && height < 520;
     const aspect = width / Math.max(1, height);
     const remaining = gate ? Math.max(0, gate.distance - distance) : Infinity;
     const nearGate = 1 - smoothstep(remaining, 3, 27);
@@ -36,7 +38,7 @@ export class RoadChase {
     // A longer lens brings the gate row forward while a matching dolly preserves the car's size.
     // Release it progressively on the last stretch so the player still feels the pass overhead.
     const approaching = gate ? smoothstep(remaining, 9, 53) * (1 - smoothstep(remaining, 85, 135)) : 0;
-    const zoom = portrait ? clamp(3.25 * aspect, 1, 2.15) : 0.78;
+    const zoom = portrait ? clamp(3.25 * aspect, 1, 2.15) : short ? 2.4 : 0.78;
     const targetLens = 1 + zoom * approaching;
     this.lens = lerp(this.lens, targetLens, ease);
     const vertical = Math.tan(degToRad((baseFov + this.widen * (portrait ? 19 : 12)) / 2)) / this.lens;
@@ -62,7 +64,7 @@ export class RoadChase {
     };
     fit(carCorners, 0.92, 0.88, 0.89);
     // Ease out as the car reaches the arches. Their banners stay between the HUD and the driving controls.
-    if (gate && remaining < 85) fit(gate.frame, 0.93, portrait ? 0.43 : 0.48, 0.44);
+    if (gate && remaining < 85) fit(gate.frame, 0.93, portrait ? 0.43 : short ? 0.62 : 0.48, 0.44);
     this.back = Math.max(fitBack, lerp(this.back, fitBack, ease));
     cam.aspect = aspect;
     cam.fov = fov;
