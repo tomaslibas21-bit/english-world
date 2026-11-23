@@ -189,9 +189,12 @@ try {
     // (b) from the beach, a tap far out on the water: walked in, waded, swum towards it
     await page.evaluate(() => { window.__toasts.length = 0; });
     const beach = await page.evaluate(() => {
-      const g = window.__ew.game, b = g.rides.list.find((q) => q.kind === "boat"), nav = g.zone.nav, x = b.home.x + 8;
+      const g = window.__ew.game, b = g.rides.list.find((q) => q.kind === "boat"), nav = g.zone.nav;
       // (beside a boat's place, a few metres up the beach: on the sand, with nothing between it and the water, not on
-      // a promenade above a sea wall)
+      // a promenade above a sea wall; and a straight swim out from there that nothing stops: in Maple Harbor a boat
+      // lies at anchor 8 m east of the pier boat's place)
+      const clear = (x) => !g.rides.sea.circles.some((c) => Math.abs(c.x - x) < c.r + 0.6 && c.z < b.home.z + 10 && c.z > b.home.z - 30);
+      const x = b.home.x + ([8, 12, 4, 16].find((dx) => clear(b.home.x + dx)) ?? 8);
       for (const dz of [9, 8, 7, 6, 5, 4]) {
         const z = b.home.z + dz;
         let open = true;
