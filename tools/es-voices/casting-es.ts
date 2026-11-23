@@ -107,6 +107,12 @@ const MEXICO: Record<string, string> = {
   // at 47, Beto crisp and eager at 28; and the passers-by who call after a car: a younger and an older voice a gender
   ride_park: "es-419-training-8", ride_east: "es-419-csagent-9", ride_west1: "es-419-assistant-6", ride_west2: "es-419-assistant-9",
   shout_f0: "es-419-commercial-8", shout_f1: "es-419-tutor-3", shout_m0: "es-419-tutor-5", shout_m1: "es-419-concierge-7",
+  // Street regulars and the shared voices for one-off encounters (STREET).
+  st_chucho: "es-419-csagent-9", st_beto: "es-419-concierge-2", st_yoli: "es-419-training-8", st_lupita: "es-419-training-7",
+  st_teo: "es-419-training-10", st_mateo: "es-419-assistant-9", st_chema: "es-419-concierge-7", st_chayo: "es-419-tutor-3",
+  st_polo: "es-419-tutor-5", st_rafa: "es-419-concierge-8",
+  st_f_adult: "es-419-advisor-4", st_f_old: "es-419-tutor-3", st_f_young: "es-419-assistant-1", st_kid_f: "es-419-csagent-7",
+  st_m_adult: "es-419-tutor-4", st_m_old: "es-419-concierge-2", st_m_young: "es-419-commercial-12", st_kid_m: "es-419-commercial-4",
 };
 /** The catalog's Castilian voices (es-ES, `voices --lang=es-ES`, 12 Nov 2026). Spain's set (esp_) is voiced with these:
  *  the sample sp1 gave the Mexican casting's es-419 voices a Castilian direction, and Gemini 3.1 Pro heard 39 of 80
@@ -169,6 +175,12 @@ const SPAIN: Record<string, string> = {
   // the convertibles' owners and the passers-by who call after a car, by gender and age as in the Mexican set
   ride_park: "es-es-techagent-5", ride_east: "es-es-assistant-3", ride_west1: "es-es-training-12", ride_west2: "es-es-training-11",
   shout_f0: "es-es-concierge-3", shout_f1: "es-es-podcaster-5", shout_m0: "es-es-training-9", shout_m1: "es-es-assistant-4",
+  // Street regulars and the shared voices for one-off encounters (STREET).
+  st_chucho: "es-es-podcaster-7", st_beto: "es-es-assistant-4", st_yoli: "es-es-training-12", st_lupita: "es-es-commercial-3",
+  st_teo: "es-es-techagent-4", st_mateo: "es-es-training-9", st_chema: "es-es-assistant-3", st_chayo: "es-es-podcaster-5",
+  st_polo: "es-es-concierge-4", st_rafa: "es-es-training-3",
+  st_f_adult: "es-es-tutor-12", st_f_old: "es-es-csagent-6", st_f_young: "es-es-techagent-5", st_kid_f: "es-es-concierge-3",
+  st_m_adult: "es-es-advisor-2", st_m_old: "es-es-assistant-4", st_m_young: "es-es-training-11", st_kid_m: "es-es-training-9",
 };
 /** Which casting: Gemini's 30 prebuilt voices ("prebuilt") or the catalog's Mexican voices ("mexico"). */
 export type Casting = "prebuilt" | "mexico";
@@ -319,6 +331,28 @@ export const RIDERS: Record<string, Role & { g: "f" | "m" }> = {
   shout_m1: { g: "m", voice: "Algenib", age: "about 58", manner: "startled and a little indignant, never angry", pace: "quick" },
 };
 
+/** Street regulars and shared encounter voices (es_st_…, esn_st_…, esp_st_…). */
+export const STREET: Record<string, Role & { g: "f" | "m" }> = {
+  st_chucho: { g: "m", voice: "Algieba", age: "about 70", manner: "a warm, resonant old trovador with a musical speaking rhythm", pace: "unhurried" },
+  st_beto: { g: "m", voice: "Alnilam", age: "early 60s", manner: "an older corn vendor with a hearty, clear market call", pace: "steady" },
+  st_yoli: { g: "f", voice: "Laomedeia", age: "mid 40s", manner: "a cheerful vendor who greets customers with a smile in her voice", pace: "lively" },
+  st_lupita: { g: "f", voice: "Leda", age: "early 20s", manner: "young, friendly and casually amused", pace: "easy" },
+  st_teo: { g: "m", voice: "Schedar", age: "mid 60s", manner: "an older hammock seller with a patient, matter-of-fact delivery", pace: "measured" },
+  st_mateo: { g: "m", voice: "Sadachbia", age: "about 8", manner: "a lively boy with a light pitch and quick bursts of excitement", pace: "lively" },
+  st_chema: { g: "m", voice: "Algenib", age: "late 60s", manner: "an old fisherman, low and slightly rough, with thoughtful pauses", pace: "unhurried" },
+  st_chayo: { g: "f", voice: "Sulafat", age: "early 70s", manner: "a warm grandmother with an affectionate, reassuring tone", pace: "easy" },
+  st_polo: { g: "m", voice: "Umbriel", age: "early 40s", manner: "an easygoing coconut seller, welcoming and relaxed", pace: "easy" },
+  st_rafa: { g: "m", voice: "Rasalgethi", age: "about 60", manner: "a chatty shoeshiner with a mature, animated delivery and a hint of humor", pace: "lively" },
+  st_f_adult: { g: "f", voice: "Despina", age: "about 40", manner: "friendly and conversational", pace: "even" },
+  st_f_old: { g: "f", voice: "Gacrux", age: "mid 60s", manner: "friendly and calm, with clear phrasing", pace: "easy" },
+  st_f_young: { g: "f", voice: "Aoede", age: "early 20s", manner: "friendly and relaxed", pace: "even" },
+  st_kid_f: { g: "f", voice: "Zephyr", age: "about 9", manner: "friendly and earnest, with a light pitch", pace: "easy" },
+  st_m_adult: { g: "m", voice: "Achird", age: "about 40", manner: "friendly and conversational", pace: "even" },
+  st_m_old: { g: "m", voice: "Charon", age: "mid 60s", manner: "friendly and calm, with clear phrasing", pace: "easy" },
+  st_m_young: { g: "m", voice: "Zubenelgenubi", age: "early 20s", manner: "friendly and relaxed", pace: "even" },
+  st_kid_m: { g: "m", voice: "Puck", age: "about 10", manner: "friendly and direct, with a light pitch", pace: "easy" },
+};
+
 /** A conversation's setting, for everyone in it or only for some (`who`). `fx`: the sound of a phone line or a
  *  video call, made on the clip after it is recorded (a band-pass; the clean take stays in the work folder). */
 export interface Scene { setting: string; who?: string[]; fx?: "phone" | "video" }
@@ -384,9 +418,9 @@ export function whoOf(voiceId: string): string | null {
 }
 export const accentOf = (voiceId: string): Accent => (voiceId.startsWith("esn_") ? "neutral" : voiceId.startsWith("esp_") ? "spain" : "mx");
 
-/** The role behind a voice id: a character, a coach or a passer-by, with the voice of the casting in use. */
+/** The role behind a voice id, with the voice of the casting in use. */
 export function roleOf(who: string, casting: Casting = CASTING): Role | null {
-  const r = who === "coach_f" || who === "coach_m" ? COACH[who.slice(-1) as "f" | "m"] : who === "amb_f" || who === "amb_m" ? AMBIENT[who.slice(-1) as "f" | "m"] : CAST[who] ?? RIDERS[who];
+  const r = who === "coach_f" || who === "coach_m" ? COACH[who.slice(-1) as "f" | "m"] : who === "amb_f" || who === "amb_m" ? AMBIENT[who.slice(-1) as "f" | "m"] : CAST[who] ?? RIDERS[who] ?? STREET[who];
   return r ? { ...r, voice: voiceIn(casting, who, r) } : null;
 }
 
@@ -465,8 +499,8 @@ export function castingProblems(casting: Casting = CASTING): string[] {
     if (spCoach.has(voice)) out.push(`Spain's set: ${n.id} has a coach's voice (${voice})`);
     for (const p of partners(n.id)) if (SPAIN[p] === voice && n.id < p) out.push(`Spain's set: ${n.id} and ${p} meet in one conversation and share ${voice}`);
   }
-  // the convertibles' owners and the calling passers-by: a voice of their gender in each set
-  for (const [id, r] of Object.entries(RIDERS)) {
+  // Town-wide roles need a voice of their gender in each set.
+  for (const [id, r] of Object.entries({ ...RIDERS, ...STREET })) {
     const v = list.find((x) => x.name === voiceOf(id)), sp = ES_VOICES.find((x) => x.name === SPAIN[id]);
     if (!v) out.push(`${id}: unknown voice ${voiceOf(id)}`);
     else if (v.g !== r.g && v.g !== "n") out.push(`${id} (${r.g}) has ${v.name} (${v.g})`);

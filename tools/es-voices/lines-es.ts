@@ -1,13 +1,13 @@
 // Every line Puerto Colibrí can speak, for its Gemini voices (tools/es-voices/voice-batch-es.ts, docs/es/VOICES.md).
 // It is tools/enumerate.ts's list made for Spanish, which that file (shared with Maple Harbor and its fingerprint)
 // leaves as it is:
-//  • both Spanishes, each in its own voice set: Mexican (es_…, the default) and neutral Latin American (esn_…), each
-//    line as the learner who chose it hears it (compose's variety picks the text, a line's neutral twin, and
-//    src/editions/es/content/voices.ts the voice ids), so every line is recorded once per accent;
+//  • three voice sets: Mexican (es_…, the default), neutral Latin American (esn_…) and Spain (esp_…). The selected
+//    variety picks the line's wording and the voice ids in src/editions/es/content/voices.ts;
 //  • both learner genders: Spanish shows the learner's gender in what people say to them ("¿Está listo?" /
 //    "¿Está lista?"), so every line is made for a male and a female learner;
 //  • the example answers in the coach voice of the learner's own gender ({m:…|f:…} in a hint is the learner, who
 //    hears es_coach_f or es_coach_m), with the register and the gender of the people in that conversation;
+//  • street moments, saved street phrases and overheard chatter;
 //  • speakers a conversation switches to (c.speaker("aduana") in s65b) and their global lines.
 // What the conversations really say comes first (runs-es.ts: random runs, the sims, and probes where a conversation
 // has more than one speaker), played once and made in both Spanishes; it shows each line's speakers, the item lists
@@ -33,13 +33,16 @@ import { isBaristaCoachLine } from "../../src/content/barista-lines";
 import { NPCS, type NpcDef } from "../../src/content/npcs";
 import { AMBIENT_LINES, STAFF_LINES, VENDOR_LINES } from "../../src/content/ambient";
 import { RIDE_OWNERS, RIDE_SHOUTS } from "../../src/content/rides";
-import { ambientVoice, coachVoice, npcVoice, rideVoice, shoutVoice } from "../../src/content/voices";
+import { STREET_CHATTER, STREET_MOMENTS } from "../../src/content/street";
+import { ambientVoice, coachVoice, coachVoices, npcVoice, rideVoice, shoutVoice } from "../../src/content/voices";
 import { withoutAddressedNames } from "../../src/audio-key";
 import { addressInformal, compose, placeholders, setVariety, type Sentence } from "../../src/convo/compose";
 import { soundKey } from "../../src/convo/soundalike";
 import { EDITION } from "../../src/edition";
 import type { EntityDef, SituationDef } from "../../src/content/types";
 import { hintBinding } from "../../src/convo/target";
+import { byCast, resolveStreetLine, streetVoice, type Gender } from "../../src/game/street/lines";
+import type { StreetLine } from "../../src/game/street/types";
 import { lookFor, observe, usesPartner, type Heard, type ObserveStats } from "./runs-es";
 import { PHOTO_WALK_SITUATION } from "../../src/content/photo-walk-lines";
 import { BILLIARDS_SITUATION, GROUP_KEYS, REPLY_KEYS } from "../../src/content/billiards-lines";
@@ -85,7 +88,7 @@ const pluralItem = (e: EntityDef | undefined) => !!(e?.attrs?.plural || e?.attrs
  *  and how many of each kind of item ("<placeholder>|sg" / "|pl"). */
 interface Said { by: Set<string>; how: Map<string, Set<string>>; lists: Map<string, Set<string>>; qty: Map<string, Set<number>> }
 
-/** `part` [k, n]: only every n-th conversation from the k-th (the passers-by in part 0), for workers running side by
+/** `part` [k, n]: only every n-th conversation from the k-th (town-wide lines in part 0), for workers running side by
  *  side; their lists merge into the whole one (mergeUtts). */
 export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [number, number]; probes?: boolean; log?: (s: string) => void } = {}): LinesResult {
   if (EDITION.id !== "es") throw new Error("the Spanish lines need the Spanish edition: EDITION=es npx tsx --import ./tools/edition-hook.mjs …");
@@ -94,6 +97,14 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
   // the reachability check before voicing (18 Nov 2026): lines no run, sim or probe reached; item lines left unfilled
   const unreached: Unreached[] = [], unfilled: string[] = [];
   const stats: Record<string, ObserveStats> = {};
+  const addUtterance = (voice: string, speed: number, say: string, shown: string, where: string, sit: string | undefined, why: string): EsUtt => {
+    const k = `${voice}|${speed}|${say}`;
+    let u = out.get(k);
+    if (!u) out.set(k, (u = { voice, speed, say, shown, where, sits: [], ...(voice.startsWith("esn_") ? { neutral: true } : voice.startsWith("esp_") ? { spain: true } : {}), why }));
+    else u.why = betterWhy(u.why, why);
+    if (sit && !u.sits.includes(sit)) u.sits.push(sit);
+    return u;
+  };
   const add = (voice: string, speed: number, s: Sentence, where: string, sit: string | undefined, why: string, example = false): EsUtt | undefined => {
     if (!s.say.trim()) return;
     if (/\s[.,!?]/.test(s.say)) return; // a value was missing ("Me llamo .")
@@ -102,13 +113,19 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
     // the learner's name is part of the line: the browser voice says it; but a hint example's name is the fixed example
     // learner's (src/convo/suggest.ts exampleVars, 17 Nov 2026), recorded like any other line
     if (!example && alt === null && NAMES_RE.test(say)) return;
-    const k = `${voice}|${speed}|${say}`;
-    let u = out.get(k);
-    if (!u) out.set(k, (u = { voice, speed, say, shown: s.en, where, sits: [], ...(voice.startsWith("esn_") ? { neutral: true } : voice.startsWith("esp_") ? { spain: true } : {}), why }));
-    else u.why = betterWhy(u.why, why);
-    if (sit && !u.sits.includes(sit)) u.sits.push(sit);
-    return u;
+    return addUtterance(voice, speed, say, s.en, where, sit, why);
   };
+  if ((!opts.only?.length || opts.only.includes("street")) && (!opts.part || opts.part[0] === 0)) {
+    // Insert street clips first so a shared coach or passer-by clip keeps its street provenance.
+    for (const variety of VARIETIES) {
+      setVariety(variety);
+      addStreetUtterances((voice, { say, en }, where) => addUtterance(voice, 1, say, en, where, undefined, "street"));
+    }
+    setVariety("default");
+  }
+  if (opts.only?.length === 1 && opts.only[0] === "street") {
+    return { utts: [...out.values()], errors, warnings, stats, unreached, unfilled };
+  }
   const sits = SITUATIONS.filter((s, i) => (!opts.only?.length || opts.only.some((o) => s.id.startsWith(o))) && (!opts.part || i % opts.part[1] === opts.part[0]));
   const speakersSeen = new Set<string>();
   const sitsOf = new Map<string, Set<string>>(); // npc id → the conversations they speak in
@@ -356,6 +373,45 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
   }
   setVariety("default");
   return { utts: [...out.values()], errors, warnings: [...new Set(warnings)], stats, unreached, unfilled };
+}
+
+/** The street engine already has the exact text it looks up at speed 1, in the current variety. */
+function addStreetUtterances(add: (voice: string, sentence: Sentence, where: string) => void) {
+  const coaches = coachVoices();
+  const say = (line: StreetLine, learner: Gender, speaker: Gender, where: string, voices: readonly string[]) => {
+    const sentence = resolveStreetLine(line, learner, speaker);
+    if (/[a-z0-9]/i.test(sentence.say)) for (const voice of voices) add(voice, sentence, where);
+  };
+
+  for (const moment of STREET_MOMENTS) {
+    const scripts = moment.kind === "arc" ? ["first"] as const : ["first", "second", "familiar"] as const;
+    for (const name of scripts) {
+      const script = moment[name];
+      if (!script) continue;
+      const where = `street/${moment.id}/${name}`;
+      for (const cast of moment.cast) for (const learner of GENDERS) {
+        const town = [streetVoice(cast.gender, cast.voice)];
+        const away = byCast(script.away, cast.id);
+        const card = byCast(script.card, cast.id);
+        if (away) say(away, learner, cast.gender, where, town);
+        // Saved phrases can be replayed in either coach voice if the profile's gender changes.
+        if (card) say(card, learner, cast.gender, where, coaches);
+        for (const turn of [script, script.then]) {
+          if (!turn) continue;
+          const answerVoices = !card && turn === (script.then ?? script) ? coaches : [coachVoice(learner)];
+          for (const line of byCast(turn.open, cast.id) ?? []) say(line, learner, cast.gender, where, town);
+          for (const choice of turn.choices) {
+            say(byCast(choice.say, cast.id)!, learner, cast.gender, where, answerVoices);
+            for (const line of byCast(choice.reply ?? turn.reply, cast.id) ?? []) say(line, learner, cast.gender, where, town);
+          }
+        }
+      }
+    }
+  }
+
+  for (const chatter of STREET_CHATTER) for (const line of chatter.lines) for (const speaker of GENDERS) for (const learner of GENDERS) {
+    say(line, learner, speaker, `street/chatter/${chatter.id}`, [ambientVoice(speaker)]);
+  }
 }
 
 /** Two variants with the same placeholders (one warning per line). */

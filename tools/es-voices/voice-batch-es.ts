@@ -181,14 +181,15 @@ const SAY_AS: Record<string, string> = {};
 function newestSource(): number {
   let t = 0;
   const walk = (p: string) => { if (!fs.existsSync(p)) return; const s = fs.statSync(p); if (s.isDirectory()) for (const f of fs.readdirSync(p)) walk(path.join(p, f)); else t = Math.max(t, s.mtimeMs); };
-  for (const p of ["src/content", "src/convo", "src/editions/es/content", "src/editions/es/convo", "src/audio-key.ts", "tools/enumerate.ts", "tools/sim-play.ts", "tools/es-voices/lines-es.ts", "tools/es-voices/runs-es.ts", "tools/es-voices/reach-es.ts"]) walk(path.join(ROOT, p));
+  for (const p of ["src/content", "src/convo", "src/editions/es/content", "src/editions/es/convo", "src/game/street/lines.ts", "src/audio-key.ts", "tools/enumerate.ts", "tools/sim-play.ts", "tools/es-voices/lines-es.ts", "tools/es-voices/runs-es.ts", "tools/es-voices/reach-es.ts"]) walk(path.join(ROOT, p));
   return t;
 }
 /** Every line the game can speak (lines-es.ts), cached in <work>/lines.json until the content changes (--fresh makes
  *  it again). The random conversations take a while, so `--workers=2` (the default; the machine is shared, so no
  *  more than two heavy processes) lists the conversations in parallel processes, niced. `--only=s73,s65b` lists only
  *  those conversations (with the global lines of their people), into <work>/lines-only.json, never the whole list:
- *  for trying a change quickly. The clips in <work>/lines-extra.json (check-list-es.ts --extras) are added to it. */
+ *  for trying a change quickly. `--only=street` lists street clips alone. The clips in <work>/lines-extra.json
+ *  (check-list-es.ts --extras) are added to the whole list. */
 async function utterances(): Promise<EsUtt[]> {
   const list = await listed();
   // the clips check-list-es.ts --extras heard in its own runs and found missing from the list
