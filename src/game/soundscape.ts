@@ -1,3 +1,4 @@
+import { smoothstep } from "./movement";
 // The world's sounds, the part that is plain arithmetic (the sounds themselves: audio.ts): what the player walks
 // on, how each surface sounds underfoot, how loud a place's quiet loop is where they stand, and the three short
 // recordings in public/sfx/.
@@ -157,3 +158,12 @@ export interface BedLoop { file: string; start: number; end: number; gain: numbe
 export interface Bed { room?: BedLoop; music?: BedLoop }
 /** How much a bed drops while a voice speaks or the microphone listens (about −7 dB). */
 export const BED_DUCK = 0.45;
+
+export type SeaSoundLevels = { surf: number; wind: number };
+
+export function seaSoundLevels(from: SeaSoundLevels, speed: number, age: number, returning: boolean): SeaSoundLevels {
+  const mix = returning ? smoothstep(0.15, 1.20, age) : smoothstep(0.15, 1.25, age);
+  const surf = returning ? 1 : 0.12;
+  const wind = returning ? 0 : Math.min(1, Math.max(0, 0.24 + 0.50 * (speed - 6) / 10));
+  return { surf: from.surf + (surf - from.surf) * mix, wind: from.wind + (wind - from.wind) * mix };
+}

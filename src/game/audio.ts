@@ -1102,11 +1102,16 @@ export class AudioSystem {
   }
 
   private noise: AudioBuffer | null = null;
+  private surfTarget = 0;
+  private windTarget = 0;
+
+  seaSoundTargets() { return { surf: this.surfTarget, wind: this.windTarget }; }
   private amb: { nextGull: number; nextBird: number; nextClink: number; nextBell: number; nextHorn: number; nextTune: number } | null = null;
   private ambientSounds = new Set<() => void>();
 
   /** Environmental sounds belong to the visible town, never the conversation or a background tab. */
   stopAmbience() {
+    this.surfTarget = 0;
     for (const stop of this.ambientSounds) stop();
     for (const l of this.loops.values()) this.endLoop(l, 0.35);
     this.amb = null;
@@ -1134,7 +1139,8 @@ export class AudioSystem {
   ambience(on: boolean, { sea = 0, surf = 0, gulls = false, birds = 0, cafe = false, market = 0, harbor = 0, plaza = 0, tropical = false }:
     { sea?: number; surf?: number; gulls?: boolean; birds?: number; cafe?: boolean; market?: number; harbor?: number; plaza?: number; tropical?: boolean } = {}) {
     const ctx = this.ctx;
-    const live = on && !document.hidden && this.volume > 0 && this.soundsLevel > 0 && !!ctx && ctx.state === "running";
+    this.surfTarget = on ? surf : 0;
+    const live = on && !globalThis.document?.hidden && this.volume > 0 && this.soundsLevel > 0 && !!ctx && ctx.state === "running";
     this.hush("away", !live);
     if (!live) {
       this.stopAmbience();
@@ -1520,6 +1526,7 @@ export class AudioSystem {
    *  screech), the air at speed ("wind": low and wide). `level` 0–1 (0: it fades out and stops), `tone` 0–1: higher. */
   private held = new Map<string, { ctx: AudioContext; src: AudioBufferSourceNode; f: BiquadFilterNode; gain: GainNode }>();
   rush(name: "squeal" | "wind", level: number, tone = 0.5) {
+    if (name === "wind") this.windTarget = level;
     let h = this.held.get(name);
     const ctx = this.ctx;
     if (h && (h.ctx !== ctx || h.ctx.state === "closed" || level <= 0.01 || this.volume <= 0)) {

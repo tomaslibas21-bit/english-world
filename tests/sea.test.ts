@@ -1,6 +1,7 @@
+import { projectFace } from "../src/game/kit/boardFaces";
 import { projectBoards } from "./board-projection";
 import {
-  DirectionalLight, Fog, Group, HemisphereLight, Mesh, MeshLambertMaterial, PerspectiveCamera,
+  DirectionalLight, Fog, Group, HemisphereLight, Mesh, MeshLambertMaterial, Matrix4, PerspectiveCamera,
   PlaneGeometry, ShaderMaterial, Vector3, type WebGLRenderer,
 } from "three";
 import { describe, expect, it } from "vitest";
@@ -153,7 +154,8 @@ describe("the town-to-sea camera", () => {
     const water = new Mesh(new PlaneGeometry(900, 320), new ShaderMaterial({ uniforms: { uTime: { value: 0 } } }));
     const env = { sky: new Mesh(), sea: water, fog: new Fog("lightgray", 110, 420),
       hemi: new HemisphereLight(), sun: new DirectionalLight() };
-    const view = new SeaView({ mesh, m: motion, townBoat }, rider, camera, env, new Mesh());
+    const ride = { mesh, m: motion, townBoat, phase: 0 };
+    const view = new SeaView(ride, rider, camera, env, new Mesh());
     const boat = new SeaBoat(-10, BAY.z0, Math.PI, CRUISE_SPEED);
     view.begin(boat);
     const renderer = { render() {} } as unknown as WebGLRenderer;
@@ -189,6 +191,37 @@ describe("the town-to-sea camera", () => {
       }
       return readable;
     }
+    if (portrait) for (const lane of [0, 2]) {
+      const outside = new SeaBoat(-10, BAY.z0, Math.PI, CRUISE_SPEED);
+      outside.steer(lane);
+      view.begin(outside);
+      let samples = 0;
+      while (gate.distance - outside.distance >= 16) {
+        const ahead = gate.distance - outside.distance;
+        time += 0.05;
+        outside.drive(0.05, 0, 1);
+        view.pose(outside, time, 0.05, portrait, ahead);
+        gate.pose(time, ahead);
+        view.render(renderer, w, h, gate);
+        if (ahead > 32) continue;
+        assertFittedBoat();
+        const projection = new Matrix4().multiplyMatrices(view.camera.projectionMatrix, view.camera.matrixWorldInverse);
+        expect(gate.faces()).toHaveLength(3);
+        for (const face of gate.faces()) {
+          const xs = projectFace("sea", face, projection, w, h)!.points.map(p => p.x);
+          expect(Math.min(...xs)).toBeGreaterThanOrEqual(8);
+          expect(Math.max(...xs)).toBeLessThanOrEqual(w - 8);
+          expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThanOrEqual(86);
+        }
+        samples++;
+      }
+      expect(samples).toBeGreaterThan(10);
+    }
+    mesh.position.set(-10, 0, BAY.z0);
+    mesh.rotation.set(0.05, Math.PI, -0.04, "YXZ");
+    rider.position.set(-10, 0.6, BAY.z0 + 1);
+    view.camera.copy(camera);
+    view.begin(boat);
     expect(driveThroughGate()).toBe(true);
     for (const lane of [0, 2]) {
       boat.steer(lane);
@@ -210,6 +243,24 @@ describe("the town-to-sea camera", () => {
       view.render(renderer, w, h);
       assertFittedBoat();
     }
+    const destination = seaReturn({ m: motion });
+    const endpoint = boat.commitReturn();
+    const rides = new Rides({ ambient: { rideBoxes: [] } } as unknown as RideHost, { ...RIDES, cars: [], boats: [] }, []);
+    view.startReturn(destination, endpoint, rides);
+    for (let frame = 0; frame < 24; frame++) {
+      time += 0.05;
+      expect(boat.advanceTurn(0.05)).toBe(frame === 23);
+      view.pose(boat, time, 0.05, portrait);
+      view.render(renderer, w, h);
+      assertFittedBoat();
+    }
+    const spill = new Group(), helm = new Group(), handoff = view.handoff(time);
+    rides.sampleBoatReturn(ride, destination, boat.speed, time, spill, helm);
+    const offset = new Vector3(destination.x - endpoint.x, 0, destination.z - endpoint.z);
+    expect(mesh.position.clone().add(offset).distanceTo(spill.position)).toBeLessThan(0.0001);
+    expect(rider.position.clone().add(offset).distanceTo(helm.position)).toBeLessThan(0.0001);
+    expect(view.camera.quaternion.angleTo(handoff.camera.quaternion)).toBeLessThan(0.0001);
+    expect(handoff.camera.projectionMatrix.elements).toEqual(view.camera.projectionMatrix.elements);
     gate.dispose();
     view.dispose();
     expect(mesh.parent).toBe(town);

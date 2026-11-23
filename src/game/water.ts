@@ -173,7 +173,7 @@ export class Wading {
 export class Splashes {
   group = new THREE.Group();
   private ring: THREE.Mesh;
-  private ringU = { uT: { value: 0 }, uMove: { value: 0 }, uFoam: { value: new THREE.Color("#fbfdf9") } };
+  private ringU = { uT: { value: 0 }, uMove: { value: 0 }, uOpacity: { value: 1 }, uFoam: { value: new THREE.Color("#fbfdf9") } };
   private drops: THREE.Points;
   private pos: Float32Array;
   private vel: Float32Array;
@@ -186,7 +186,7 @@ export class Splashes {
       transparent: true, depthWrite: false, uniforms: this.ringU,
       vertexShader: "varying vec2 vP; void main(){ vP = position.xz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
       // two rings born at the legs, spreading and fading, brighter while moving; a little foam right at the legs
-      fragmentShader: `varying vec2 vP; uniform float uT; uniform float uMove; uniform vec3 uFoam;
+      fragmentShader: `varying vec2 vP; uniform float uT; uniform float uMove; uniform float uOpacity; uniform vec3 uFoam;
         void main(){
           float r = length(vP), a = 0.0;
           for (int i = 0; i < 2; i++) {
@@ -196,7 +196,7 @@ export class Splashes {
           }
           float wob = 0.5 + 0.5 * sin(atan(vP.y, vP.x) * 7.0 + uT * 3.0);
           a = a * (0.45 + 0.45 * uMove) + (1.0 - smoothstep(0.22, 0.4, r)) * (0.35 + 0.4 * uMove) * (0.6 + 0.4 * wob);
-          gl_FragColor = vec4(uFoam, clamp(a, 0.0, 0.9));
+          gl_FragColor = vec4(uFoam, clamp(a, 0.0, 0.9) * uOpacity);
         }`,
     });
     this.ring = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 3.2).rotateX(-Math.PI / 2), mat);
@@ -212,6 +212,35 @@ export class Splashes {
     this.drops.frustumCulled = false;
     this.group.add(this.ring, this.drops);
     this.group.visible = false;
+  }
+
+  copyRing(from: Splashes) {
+    this.ring.position.copy(from.ring.position);
+    this.ring.scale.copy(from.ring.scale);
+    this.ring.visible = from.group.visible && from.ring.visible;
+    this.ringU.uT.value = from.ringU.uT.value;
+    this.ringU.uMove.value = from.ringU.uMove.value;
+    this.ringU.uOpacity.value = from.ringU.uOpacity.value;
+    this.group.visible = this.ring.visible;
+    this.drops.visible = false;
+  }
+
+  clearDrops() {
+    this.life.fill(0);
+    this.pos.fill(-999);
+    this.drops.visible = false;
+  }
+
+  boatRing(dt: number, time: number, { x, z, heading, pace, slip }: {
+    x: number; z: number; heading: number; pace: number; slip: number;
+  }, { opacity = 1, offset, match = false }: {
+    opacity?: number; offset?: { x: number; z: number }; match?: boolean;
+  } = {}) {
+    const move = Math.min(1, pace / 6);
+    if (match) this.ringU.uMove.value = move;
+    this.update(dt, time, { x: x - Math.sin(heading) * 0.6, z: z - Math.cos(heading) * 0.6,
+      y: (waterY(x + (offset?.x ?? 0), z + (offset?.z ?? 0), time) ?? SEA_LEVEL) + 0.02 }, move,
+      2.6 + Math.min(1.4, Math.abs(slip) * 0.3), opacity);
   }
 
   /** Drops thrown up at (x, z) from the water's surface `y`, more of them the harder the step (`k` 0–1). */
@@ -241,7 +270,7 @@ export class Splashes {
 
   /** `at`: where the wader's legs meet the water (null: nobody in it); `move` 0–1: how fast they wade; `size`: how
    *  wide the rings spread (1: a person's; a boat's wake is wider). */
-  update(dt: number, t: number, at: { x: number; y: number; z: number } | null, move: number, size = 1) {
+  update(dt: number, t: number, at: { x: number; y: number; z: number } | null, move: number, size = 1, opacity = 1) {
     let alive = false;
     for (let j = 0; j < Splashes.N; j++) {
       if (this.life[j] <= 0) continue;
@@ -252,7 +281,8 @@ export class Splashes {
     }
     if (alive || this.drops.visible) (this.drops.geometry.attributes.position as THREE.BufferAttribute).needsUpdate = true;
     this.drops.visible = alive;
-    this.ring.visible = !!at;
+    this.ring.visible = !!at && opacity > 0;
+    this.ringU.uOpacity.value = opacity;
     if (at) {
       this.ring.position.set(at.x, at.y + 0.02, at.z);
       // (`size`: a boat's wake is the same rings, wider)
@@ -260,6 +290,6 @@ export class Splashes {
       this.ringU.uT.value = t;
       this.ringU.uMove.value += (move - this.ringU.uMove.value) * Math.min(1, dt * 6);
     }
-    this.group.visible = alive || !!at;
+    this.group.visible = alive || this.ring.visible;
   }
 }

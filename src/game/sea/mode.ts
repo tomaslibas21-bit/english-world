@@ -14,8 +14,10 @@ import { loadPool, makePicker, type Clip, type Pool, type Prompt } from "../road
 import { SeaBoat } from "./boat";
 import { SeaGate } from "./buoys";
 import { FIRST_GATE, nextGate, SEA_SECONDS } from "./course";
-import type { SeaHost } from "./entry";
-import { resetSeaUi, useSea } from "./store";
+import { seaReturn, type SeaHost } from "./entry";
+import { seaSoundLevels, type SeaSoundLevels } from "../soundscape";
+import { TITLE_SECONDS, titleOpacity } from "./crossing";
+import { resetSeaUi, showCrossingTitle, useSea, type CrossingTitle } from "./store";
 import { SeaView } from "./view";
 
 const driveKeys = new Set(["arrowup", "arrowdown", "arrowleft", "arrowright", "w", "a", "s", "d"]);
@@ -49,7 +51,11 @@ export class SeaMode {
   private feedback = 0;
   private sailed = 0;
   private reveal?: { clip: Clip; in: number };
-  private returning = false;
+  private crossing?: CrossingTitle;
+  private soundFrom: SeaSoundLevels = { surf: 0, wind: 0 };
+  private soundAge = 0;
+  private returning?: { matched?: number; presented: boolean };
+  private guideAge?: number;
   /** Seconds to the next far-off gull. */
   private gullIn = 5;
 
@@ -61,20 +67,25 @@ export class SeaMode {
   }
 
   get active() { return this.phase !== "town"; }
+  get handingOff() { return !!this.returning?.presented; }
+  get guiding() { return this.guideAge !== undefined; }
 
   start() {
     this.host.entered("sea");
     this.host.clearTownHud();
-    audio.stopAmbience();
-    this.begin(this.prepared.first);
+    this.soundFrom = audio.seaSoundTargets();
+    this.begin(this.prepared.first, true);
   }
 
-  private begin(prompt?: Prompt) {
+  private begin(prompt: Prompt | undefined, departure = false) {
     this.score = new RunScore(SEA_SECONDS);
     this.gateAt = FIRST_GATE;
     this.nextPromptIn = this.feedback = this.sailed = 0;
     this.reveal = undefined;
-    this.view.begin(this.boat);
+    this.soundAge = 0;
+    this.gullIn = 5;
+    this.crossing = departure && prompt ? { opacity: 0 } : undefined;
+    this.view.begin(this.boat, departure && !!prompt);
     resetSeaUi();
     if (!prompt) {
       this.phase = "unavailable";
@@ -84,7 +95,7 @@ export class SeaMode {
     }
     this.phase = "drive";
     useStore.getState().setHud({ ride: "boat" });
-    useSea.setState({ phase: this.phase });
+    useSea.setState({ phase: this.phase, crossing: this.crossing });
     countPlay("games", "sea");
     this.openGate(prompt);
   }
@@ -100,7 +111,7 @@ export class SeaMode {
     this.view.scene.add(this.gate.mesh);
     useSea.setState({ prompt, gateId: this.gate.id, sayIt: this.score.sayIt.open(gateSayItTarget(prompt)) });
     void preloadBoardFont(prompt.options);
-    if (!prompt.gap) this.play(prompt.word.clip);
+    if (!prompt.gap && !this.crossing) this.play(prompt.word.clip);
   }
 
   private poseGate(time: number, dt = 0) {
@@ -151,14 +162,21 @@ export class SeaMode {
   }
 
   update({ dt, time, x, y, blocked }: ModeFrame) {
-    if (this.returning || blocked || (this.phase !== "drive" && this.phase !== "turn")) return;
+    const returning = this.returning;
+    if (returning) {
+      if (returning.presented) this.leave(false, this.view.handoff(returning.matched!));
+      else if (!blocked) {
+        const reached = this.boat.advanceTurn(dt);
+        this.pose(time, dt);
+        if (reached) returning.matched = time;
+      }
+      return;
+    }
+    if (blocked || (this.phase !== "drive" && this.phase !== "turn")) return;
     if (this.phase === "turn") {
       const turned = this.boat.advanceTurn(dt);
       this.pose(time, dt);
-      if (turned) {
-        if (this.score.total) this.finish();
-        else this.returnToTown(false);
-      }
+      if (turned) this.finish();
       return;
     }
 
@@ -169,6 +187,13 @@ export class SeaMode {
     const ended = this.score.advance(dt);
     this.pose(time, dt);
 
+    if (this.crossing) {
+      if (this.boat.age + 1e-8 >= TITLE_SECONDS) {
+        this.clearTitle();
+        const prompt = this.gate?.prompt;
+        if (prompt && !prompt.gap) this.play(prompt.word.clip);
+      } else showCrossingTitle(this.crossing, titleOpacity(this.boat.age));
+    }
     if (this.reveal && (this.reveal.in -= dt) <= 0) {
       this.play(this.reveal.clip);
       this.reveal = undefined;
@@ -193,14 +218,25 @@ export class SeaMode {
     const { speed } = this.boat, player = this.host.player();
     player.steer = -this.boat.lateral / 12;
     player.update(dt);
-    audio.motor("boat", Math.min(1.25, speed / 16));
-    audio.rush("wind", Math.max(0, (speed - 6) / 14), Math.min(1, speed / 16));
+    this.soundAge += dt;
+    const { surf, wind } = seaSoundLevels(this.soundFrom, speed, this.soundAge, !!this.returning);
+    audio.ambience(!globalThis.document?.hidden && !useStore.getState().hud.panel, { surf, gulls: false });
+    audio.motor("boat", Math.min(1.25, speed / this.source.m.spec.max));
+    audio.rush("wind", globalThis.document?.hidden ? 0 : wind, Math.min(1, speed / 16));
     const gate = this.gate;
     this.view.day = this.score.elapsed / SEA_SECONDS;
     this.view.pose(this.boat, time, dt, this.host.portrait(), gate && !gate.crossed ? gate.distance - this.boat.distance : undefined);
   }
 
+  private clearTitle() {
+    if (!this.crossing) return;
+    this.crossing = undefined;
+    useSea.setState({ crossing: undefined });
+  }
+
   private turnAround() {
+    if (!this.score.total) { this.returnToTown(false); return; }
+    this.clearTitle();
     this.phase = "turn";
     this.closeGate();
     this.reveal = undefined;
@@ -213,6 +249,7 @@ export class SeaMode {
   private finish() {
     this.phase = "result";
     this.closeGate();
+    this.clearTitle();
     this.quiet();
     const { score } = this;
     const best = { points: score.points, frames: [] };
@@ -228,6 +265,7 @@ export class SeaMode {
 
   private quiet() {
     audio.stop();
+    audio.stopAmbience();
     audio.motor(null);
     audio.rush("wind", 0);
   }
@@ -235,6 +273,7 @@ export class SeaMode {
   render(renderer: Pick<WebGLRenderer, "render">, width: number, height: number) {
     if (!this.active) return false;
     this.view.render(renderer, width, height, this.gate);
+    if (this.returning?.matched !== undefined) this.returning.presented = true;
     return true;
   }
 
@@ -267,29 +306,61 @@ export class SeaMode {
   }
 
   private returnToTown(onFoot: boolean) {
-    if (this.returning) return;
-    this.returning = this.host.fade(() => this.leave(true, onFoot));
-    if (this.returning) this.quiet();
+    if (this.returning || this.guiding) return;
+    if (onFoot) {
+      this.guideAge = 0;
+      this.leave(true);
+      return;
+    }
+    this.phase = "turn";
+    this.clearTitle();
+    this.closeGate();
+    this.reveal = undefined;
+    audio.stop();
+    audio.sfx("boatTurn");
+    this.soundFrom = audio.seaSoundTargets();
+    this.soundAge = 0;
+    this.returning = { presented: false };
+    this.view.startReturn(seaReturn(this.source), this.boat.commitReturn(), this.host.rides);
+    useStore.getState().setHud({ ride: "boat" });
+    useSea.setState({ phase: this.phase, feedback: undefined, result: undefined });
+  }
+
+  tickGuide(dt: number) {
+    if (this.guideAge === undefined) return;
+    this.guideAge += dt;
+    if (this.guideAge + 1e-8 < 0.16) return;
+    this.guideAge = undefined;
+    resetSeaUi();
+    this.host.left("sea");
   }
 
   exit(immediate: boolean) {
+    if (immediate && this.guiding) {
+      this.tickGuide(0.16);
+      return;
+    }
     if (!this.active) return;
-    if (immediate) this.leave(!this.returning, false);
+    if (immediate) this.leave(false);
     else if (!this.returning) {
       if (this.phase === "drive") this.turnAround();
       else if (this.phase !== "turn") this.returnToTown(false);
     }
   }
 
-  private leave(restoreTown: boolean, onFoot: boolean) {
+  private leave(onFoot: boolean, handoff?: ReturnType<SeaView["handoff"]>) {
     if (!this.active) return;
     this.phase = "town";
+    this.reveal = undefined;
     this.closeGate();
     this.view.dispose();
-    this.quiet();
-    if (restoreTown) this.host.returnBoat(this.source, onFoot);
-    resetSeaUi();
-    this.host.left("sea");
+    if (!handoff) this.quiet();
+    this.host.returnBoat(this.source, onFoot, handoff);
+    if (this.guiding) useSea.setState({ phase: "guide" });
+    else {
+      resetSeaUi();
+      this.host.left("sea");
+    }
   }
 
   steer(lane: number) { if (this.phase === "drive") this.boat.steer(lane); }
@@ -303,16 +374,15 @@ export class SeaMode {
   debug() {
     const { boat, score, view } = this;
     const gate = this.gate?.crossed ? undefined : this.gate;
-    if (!this.active) return { phase: this.phase };
+    if (this.phase === "town") return { phase: this.phase, gateDistance: undefined };
     return {
-      phase: this.returning ? "return" : this.phase, boat: this.source.id, elapsed: score.elapsed, duration: SEA_SECONDS,
+      phase: this.phase, boat: this.source.id, elapsed: score.elapsed, duration: SEA_SECONDS,
       lane: boat.lane, x: boat.worldX, z: boat.worldZ, heading: boat.heading, speed: boat.speed,
       renderSerial: boardFaces.sea.serial, registration: boardFaces.sea.debug(),
       boost: boat.boost, wobble: boat.wobble, gateDistance: gate && gate.distance - boat.distance,
       gates: gate?.prompt.options, right: gate?.prompt.right, totalGates: score.total, rightGates: score.right, streak: score.streak,
       word: gate && gateWord(gate.prompt), gap: !!gate?.prompt.gap, points: score.points, said: score.sayIt.count,
-      result: useSea.getState().result, camera: { position: view.camera.position.toArray(), rotation: view.camera.quaternion.toArray(), fov: view.camera.fov },
-      hull: this.source.mesh.position.toArray(), hullFrame: view.hullFrame(),
+      result: useSea.getState().result, ...view.debug(this.host.time()), hullFrame: view.hullFrame(),
     };
   }
 }

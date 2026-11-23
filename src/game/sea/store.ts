@@ -4,8 +4,19 @@ import type { RoadResult } from "../road/store";
 import type { Prompt, Word } from "../road/words";
 import { SEA_SECONDS } from "./course";
 
+export type CrossingTitle = { opacity: number; node?: HTMLElement };
+
+export function showCrossingTitle(title: CrossingTitle, opacity: number) {
+  title.opacity = opacity;
+  if (title.node) {
+    title.node.style.opacity = String(opacity);
+    title.node.toggleAttribute("data-visible", opacity > 0);
+  }
+}
+
 type SeaUi = {
-  phase: "town" | "drive" | "turn" | "result" | "unavailable";
+  phase: "town" | "drive" | "turn" | "result" | "unavailable" | "guide";
+  crossing?: CrossingTitle;
   prompt?: Prompt;
   sayIt?: SayItCue;
   gateId?: number;

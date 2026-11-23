@@ -34,3 +34,20 @@
 @media (orientation: landscape) and (max-height: 520px) {
   .sea-mode.has-touch .road-controls { bottom: calc(12px + env(safe-area-inset-bottom)); }
 }
+
+.sea-crossing-title {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  transform: translateX(-50%);
+  font: 600 clamp(20px, 4.8vw, 30px)/1.15 var(--ui);
+  color: #fff6e4;
+  text-shadow: 0 1px 3px #173846, 0 0 1px #173846;
+  opacity: 0;
+  pointer-events: none;
+}
+.sea-overlay .road-header:has(.sea-crossing-title[data-visible]) h1 { color: transparent; }
+.sea-overlay[data-guiding] { animation: sea-guide-dissolve 160ms linear both; }
+@keyframes sea-guide-dissolve { to { opacity: 0; } }

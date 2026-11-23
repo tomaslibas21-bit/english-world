@@ -162,12 +162,12 @@ export function buildTown(): Town {
 
   // --- sea ------------------------------------------------------------------
   const seaMat = STYLED ? seaMaterial() : new THREE.ShaderMaterial({
-    uniforms: { uTime: { value: 0 }, uFog: { value: new THREE.Color(THEME.light.haze) } },
-    vertexShader: `varying vec2 vUv; varying vec3 vW; uniform float uTime;
-      void main(){ vUv = uv; vec4 w = modelMatrix * vec4(position,1.0);
+    uniforms: { uTime: { value: 0 }, uBayOffset: { value: new THREE.Vector3() }, uFog: { value: new THREE.Color(THEME.light.haze) } },
+    vertexShader: `varying vec2 vUv; varying vec3 vW; uniform float uTime; uniform vec3 uBayOffset;
+      void main(){ vUv = uv; vec4 w = modelMatrix * vec4(position,1.0); w.xyz += uBayOffset;
         w.y += ${SWELL_GLSL}; vW = w.xyz;
-        gl_Position = projectionMatrix * viewMatrix * w; }`,
-    fragmentShader: `varying vec2 vUv; varying vec3 vW; uniform float uTime; uniform vec3 uFog;
+        gl_Position = projectionMatrix * viewMatrix * vec4(w.xyz - uBayOffset, 1.0); }`,
+    fragmentShader: `varying vec2 vUv; varying vec3 vW; uniform float uTime; uniform vec3 uBayOffset; uniform vec3 uFog;
       ${SAND_GLSL}
       void main(){
         float shore = smoothstep(${(SEA_Z + 1).toFixed(1)}, ${(SEA_Z - 14).toFixed(1)}, vW.z);
@@ -182,7 +182,7 @@ export function buildTown(): Town {
         c += vec3(0.55) * glint * (0.4 + 0.6 * shore);
         // the sand under the shallows, the foam along the waterline as it washes up and down the beach (water.ts)
         ${SHORE_GLSL()}
-        float dist = length(vW.xz - cameraPosition.xz);
+        float dist = length(vW.xz - (cameraPosition + uBayOffset).xz);
         c = mix(c, uFog, smoothstep(160.0, 420.0, dist));
         gl_FragColor = vec4(c, 1.0); }`,
   });

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { boardId, type BoardFace } from "../kit/boardFaces";
+import { boardId, FACE_SIZES, type BoardFace } from "../kit/boardFaces";
 import type { Prompt } from "../road/words";
 import { SEA_LEVEL } from "../water";
 import { seaSwell as swell } from "./backdrop";
@@ -8,6 +8,7 @@ import { LANE_WIDTH, laneOffset } from "./course";
 
 const BOARD_Y = 2.05;
 const PANEL_WIDTH = 6.4, PANEL_HEIGHT = 2.55;
+export const SEA_BOARD_FRAME = [PANEL_WIDTH + 0.16, PANEL_HEIGHT + 0.15, FACE_SIZES.sea[2]] as const;
 const LANES = [0, 1, 2];
 const BUOYS = [-1.5, -0.5, 0.5, 1.5].map((lane) => lane * LANE_WIDTH);
 const PASS_SECONDS = 0.65;
@@ -33,7 +34,7 @@ function boardGeometry() {
     new THREE.Vector3(LANE_WIDTH / 2, 3.24 - BOARD_Y, 0.34),
   );
   const parts: Part[] = [
-    [new THREE.BoxGeometry(PANEL_WIDTH + 0.16, PANEL_HEIGHT + 0.15, 0.26).translate(0, 0, 0.06), "#b58755"],
+    [new THREE.BoxGeometry(SEA_BOARD_FRAME[0], SEA_BOARD_FRAME[1], 0.26).translate(0, 0, 0.06), "#b58755"],
     [new THREE.BoxGeometry(PANEL_WIDTH, PANEL_HEIGHT, 0.11).translate(0, 0, 0.19), "#fff4db"],
     [new THREE.TubeGeometry(rope, 8, 0.035, 5), "#604c38"],
     // The rope sags onto the board's upper trim and meets both buoy masts.

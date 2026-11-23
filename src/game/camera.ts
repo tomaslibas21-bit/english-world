@@ -142,6 +142,12 @@ export class CameraRig {
     this.lastMode = this.mode;
   }
 
+  /** Resume follow from the camera already presented at a scene handoff. */
+  seedFollow() {
+    this.curPos.copy(this.cam.position);
+    this.curLook.set(0, 0, -1).applyQuaternion(this.cam.quaternion).add(this.curPos);
+  }
+
   /** In "stage" mode: there at once (the first frame, after a fade). */
   stageSnap() {
     if (!this.stage) return;

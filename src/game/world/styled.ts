@@ -132,17 +132,17 @@ export function seaMaterial(): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
     uniforms: {
       // fog is mixed in after tone mapping, in display colours, like three.js does for its own materials
-      uTime: { value: 0 }, uFog: { value: fogColor.clone().convertLinearToSRGB() }, uFogNear: { value: fogNear }, uFogFar: { value: fogFar },
+      uTime: { value: 0 }, uBayOffset: { value: new THREE.Vector3() }, uFog: { value: fogColor.clone().convertLinearToSRGB() }, uFogNear: { value: fogNear }, uFogFar: { value: fogFar },
       uDeep: { value: new THREE.Color(P.deep) }, uShallow: { value: new THREE.Color(P.shallow) }, uFoam: { value: new THREE.Color(P.foam) },
       uSkyTop: { value: new THREE.Color(L.sky[0]) }, uSkyLow: { value: new THREE.Color(L.sky[2]) },
       uSun: { value: new THREE.Vector3(...L.sun[3]).normalize() },
     },
     defines: { STYLE_TOON: IS_TOON ? 1 : 0, STYLE_STORY: IS_STORY ? 1 : 0, STYLE_REAL: IS_REAL ? 1 : 0 },
-    vertexShader: `varying vec3 vW; uniform float uTime;
-      void main(){ vec4 w = modelMatrix * vec4(position,1.0);
+    vertexShader: `varying vec3 vW; uniform float uTime; uniform vec3 uBayOffset;
+      void main(){ vec4 w = modelMatrix * vec4(position,1.0); w.xyz += uBayOffset;
         w.y += ${SWELL_GLSL}; vW = w.xyz;
-        gl_Position = projectionMatrix * viewMatrix * w; }`,
-    fragmentShader: `varying vec3 vW; uniform float uTime; uniform vec3 uFog; uniform float uFogNear; uniform float uFogFar;
+        gl_Position = projectionMatrix * viewMatrix * vec4(w.xyz - uBayOffset, 1.0); }`,
+    fragmentShader: `varying vec3 vW; uniform float uTime; uniform vec3 uBayOffset; uniform vec3 uFog; uniform float uFogNear; uniform float uFogFar;
       uniform vec3 uDeep; uniform vec3 uShallow; uniform vec3 uFoam; uniform vec3 uSkyTop; uniform vec3 uSkyLow; uniform vec3 uSun;
       ${SAND_GLSL}
       void main(){
@@ -167,7 +167,7 @@ export function seaMaterial(): THREE.ShaderMaterial {
             0.05 * cos(q.x*0.35 + tt*1.3 + sin(q.y*0.2)) + 0.03 * cos(q.x*1.1 - q.y*0.7 + tt*1.9) + 0.015 * cos(q.x*3.1 + q.y*2.3 - tt*2.7),
             1.0,
             0.05 * cos(q.y*0.42 - tt*1.1) + 0.03 * cos(q.y*1.3 + q.x*0.5 - tt*1.6) + 0.015 * cos(q.y*2.9 - q.x*3.3 + tt*2.3)));
-          vec3 V = normalize(cameraPosition - vW);
+          vec3 V = normalize((cameraPosition + uBayOffset) - vW);
           float fres = 0.02 + 0.98 * pow(1.0 - max(dot(N, V), 0.0), 5.0);
           vec3 R = reflect(-V, N);
           vec3 sky = mix(mix(uSkyLow, uSkyTop, 0.35), uSkyTop, clamp(R.y * 2.5, 0.0, 1.0)) * 0.9;
@@ -180,7 +180,7 @@ export function seaMaterial(): THREE.ShaderMaterial {
         gl_FragColor = vec4(c, 1.0);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
-        float dist = length(vW.xz - cameraPosition.xz);
+        float dist = length(vW.xz - (cameraPosition + uBayOffset).xz);
         gl_FragColor.rgb = mix(gl_FragColor.rgb, uFog, smoothstep(uFogNear, uFogFar, dist));
       }`,
   });

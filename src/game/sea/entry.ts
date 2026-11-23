@@ -1,22 +1,22 @@
-import type { Fog, HemisphereLight, DirectionalLight, Mesh, WebGLRenderer } from "three";
+import type { Fog, HemisphereLight, DirectionalLight, Mesh, Object3D, PerspectiveCamera, WebGLRenderer } from "three";
 import { SEA_EDITION, SEA_UI } from "../../content/sea";
 import type { ModeHost } from "../kit/host";
 import type { GameMode, ModeFrame, ModeInput } from "../kit/modes";
 import type { Ride } from "../rides/Rides";
-import { BAY_EDGE } from "../rides/drive";
-import { BAY } from "../water";
+import { BAY_EDGE, BOAT } from "../rides/drive";
+import { BAY, type Splashes } from "../water";
 import type { Town } from "../world/town";
 import type { SeaMode, PreparedSea } from "./mode";
 
 export type SeaEnvironment = {
   sky: Mesh; sea: Town["sea"]; fog: Fog | null;
-  hemi: HemisphereLight; sun: DirectionalLight;
+  hemi: HemisphereLight; sun: DirectionalLight; rings?: Splashes;
 };
 
 export interface SeaHost extends ModeHost {
   environment(): SeaEnvironment;
   clearTownHud(): void;
-  returnBoat(boat: Ride, onFoot: boolean): void;
+  returnBoat(boat: Ride, onFoot: boolean, handoff?: SeaHandoff): void;
   tip(title: string, body: string): void;
 }
 
@@ -34,6 +34,34 @@ export function seaReturn(ride: Pick<Ride, "m">): Ride["home"] {
   return { x: Math.max(BAY.x0 + margin, Math.min(BAY.x1 - margin, ride.m.x)), z: BAY.z0 + 14, rot: 0 };
 }
 
+export const RETURN_SETTLE = 0.6;
+export const RETURN_SPEED = 3.1;
+
+export type SeaHandoff = {
+  camera: PerspectiveCamera;
+  time: number;
+};
+
+export function cameraPose(camera: PerspectiveCamera) {
+  return { position: camera.position.toArray(), rotation: camera.quaternion.toArray(), fov: camera.fov };
+}
+
+export function crossingPose(camera: PerspectiveCamera, hull: Object3D, rider: Object3D, time: number) {
+  const { half } = hull.userData.rideBoat ?? BOAT;
+  const project = (x: number, y: number, z: number) => {
+    const p = hull.position.clone().set(x, y, z);
+    return hull.localToWorld(p).project(camera).toArray().slice(0, 2);
+  };
+  return {
+    camera: cameraPose(camera), view: camera.view?.enabled ? { ...camera.view } : null,
+    projection: camera.projectionMatrix.toArray(), time,
+    hull: hull.position.toArray(), hullRotation: hull.quaternion.toArray(),
+    rider: rider.position.toArray(), riderRotation: rider.quaternion.toArray(),
+    landmarks: { bow: project(0, 0.55, half * 0.86), stern: project(0, 0.55, -half * 0.82),
+      helm: rider.position.clone().project(camera).toArray().slice(0, 2) },
+  };
+}
+
 export class SeaEntry implements GameMode {
   readonly id = "sea";
   readonly cleanScreen = "menu";
@@ -47,6 +75,9 @@ export class SeaEntry implements GameMode {
 
   constructor(private host: SeaHost) {}
   get active() { return !!this.mode?.active; }
+  get handingOff() { return !!this.mode?.handingOff; }
+
+  tick(dt: number) { this.mode?.tickGuide(dt); }
 
   prefetch(boat: Ride) {
     const request = this.loading = {};
@@ -96,7 +127,7 @@ export class SeaEntry implements GameMode {
   action(name: string, value?: string | boolean) { this.mode?.action(name, value); }
   render(renderer: WebGLRenderer, w: number, h: number) {
     if (this.mode?.active) return this.mode.render(renderer, w, h);
-    if (this.mode) {
+    if (this.mode && !this.mode.guiding) {
       this.mode = undefined;
       const boat = this.host.rides.riding;
       if (boat && boat === this.boarded) this.prefetch(boat);

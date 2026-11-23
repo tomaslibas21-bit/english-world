@@ -1,6 +1,6 @@
 // Use the Vite dev server for the sea debug hooks. SEA_SIZE sets the viewport and SEA_SHOTS saves the handoff and gates.
 import assert from "node:assert/strict";
-import { mkdir } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { BoardRegistration, sampleBoardRegistration } from "./board-registration.mjs";
 
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
@@ -11,6 +11,17 @@ const size = process.env.SEA_SIZE || "1280x800";
 assert.ok(["1280x800", "390x844", "390x664"].includes(size), `Unsupported SEA_SIZE: ${size}`);
 const [width, height] = size.split("x").map(Number);
 const phone = width === 390;
+const locationTitle = process.env.VITE_EDITION === "es" && process.env.VITE_LEARNER !== "lt" ? "Open sea" : "Atvira jūra";
+const distance = (a, b) => Math.hypot(...a.map((n, i) => n - b[i]));
+const dot = (a, b) => a.reduce((n, q, i) => n + q * b[i], 0);
+const angle = (a, b) => 2 * Math.acos(Math.min(1, Math.abs(dot(a, b)))) * 180 / Math.PI;
+const cssPoint = ([x, y]) => [(x + 1) * width / 2, (1 - y) * height / 2];
+function slerp(a, b, mix) {
+  const cosine = dot(a, b), theta = Math.acos(Math.min(1, Math.abs(cosine)));
+  if (theta < 1e-8) return a;
+  const from = Math.sin((1 - mix) * theta) / Math.sin(theta), to = Math.sin(mix * theta) / Math.sin(theta);
+  return a.map((n, i) => from * n + Math.sign(cosine || 1) * to * b[i]);
+}
 if (shots) await mkdir(shots, { recursive: true });
 
 const finished = { visits: 1, completions: 1, used: [], twists: [], memory: {} };
@@ -28,6 +39,13 @@ const progress = {
 function installClock([key, save]) {
   if (!localStorage.getItem(key)) localStorage.setItem(key, save);
   sessionStorage.setItem("ew-play-now", "1");
+  window.__seaTitles = 0;
+  new MutationObserver(records => {
+    for (const record of records) for (const node of record.addedNodes) {
+      if (node instanceof Element) window.__seaTitles += Number(node.matches(".sea-crossing-title"))
+        + node.querySelectorAll(".sea-crossing-title").length;
+    }
+  }).observe(document, { childList: true, subtree: true });
   let now = 1000;
   performance.now = () => now;
   const frames = [];
@@ -85,7 +103,7 @@ try {
   };
   const shot = (name) => shots && page.screenshot({ path: `${shots}/${size}-sea-${name}.png` });
   const press = (element) => phone ? element.tap() : element.click();
-  const loading = page.locator(".ew-loading, .road-loading, .sea-loading");
+  const loading = page.locator(":is(.ew-loading, .road-loading, .sea-loading):visible");
   const ready = () => page.waitForFunction(() => window.__ew?.sea?.().ready, undefined, { polling: 50 });
   const hasPlayScreen = () => page.evaluate(() => window.__ew?.store.getState().screen === "play");
   await waitFor(hasPlayScreen, "the beach loads", 500);
@@ -114,35 +132,259 @@ try {
   await ready();
   assert.ok(seaRequests.some((path) => path.endsWith("/mode.ts")), "the mode prefetches aboard");
 
-  async function sailOut(screenshots = false) {
+  const title = page.locator(".sea-crossing-title");
+  const titleState = () => page.evaluate(() => {
+    const node = document.querySelector(".sea-crossing-title");
+    return { mounts: window.__seaTitles, clips: window.__seaAudio.length, text: node?.textContent,
+      opacity: node ? Number(getComputedStyle(node).opacity) : undefined };
+  });
+
+  async function assertPresentation(state, previous) {
+    try {
+      if (previous) assert.equal(state.presented.serial, previous.presented.serial + 1, "one scene per presentation");
+      assert.ok(state.triangles > 0 && state.drawCalls > 0, "the presentation contains geometry");
+      if (state.presented.scene === "sea") assert.ok(state.drawCalls <= 25, `sea budget at ${state.crossingAge}s: ${state.drawCalls}`);
+      assert.equal(await loading.count(), 0);
+      assert.equal(await page.locator(".fade").evaluate(element => Number(getComputedStyle(element).opacity)), 0);
+    } catch (error) {
+      const path = `${shots || process.env.TMPDIR || "/tmp"}/${size}-sea-presentation-failure.png`;
+      await page.screenshot({ path });
+      throw new Error(`${error.message} (saved ${path})`);
+    }
+  }
+
+  async function frame(previous) {
+    await step(1);
+    const state = await read();
+    await assertPresentation(state, previous);
+    return state;
+  }
+
+  async function pixels(image, points) {
+    return page.evaluate(async ({ data, points }) => {
+      const png = Uint8Array.from(atob(data), value => value.charCodeAt(0));
+      const bitmap = await createImageBitmap(new Blob([png], { type: "image/png" }));
+      const ctx = new OffscreenCanvas(bitmap.width, bitmap.height).getContext("2d");
+      ctx.drawImage(bitmap, 0, 0);
+      bitmap.close();
+      return points.map(([x, y]) => {
+        const patch = ctx.getImageData(x - 2, y - 2, 5, 5).data;
+        const values = [0, 1, 2].map(channel => Array.from({ length: 25 }, (_, i) => patch[4 * i + channel]));
+        return { median: values.map(a => a.sort((x, y) => x - y)[12]),
+          mean: values.map(a => a.reduce((x, y) => x + y, 0) / a.length) };
+      });
+    }, { data: image.toString("base64"), points });
+  }
+
+  async function patches(state, label) {
+    const points = await page.evaluate(() => {
+      const { game } = window.__ew;
+      const camera = game.sea.active ? game.sea.mode.view.camera : game.rig.cam;
+      const boat = game.rides.riding.mesh, rider = game.player.root;
+      const { width: w, height: h } = document.querySelector(".stage canvas").getBoundingClientRect();
+      const ray = new game.raycaster.constructor();
+      const p = boat.position.clone(), f = boat.position.clone().project(camera);
+      const x = (f.x + 1) * w / 2, y = (1 - f.y) * h / 2;
+      const hud = [...document.querySelectorAll(".road-header, .road-controls, .joy, .mode-score-card, .hud-top button, .sea-crossing-title")]
+        .filter(node => getComputedStyle(node).visibility !== "hidden").map(node => node.getBoundingClientRect());
+      const clear = (x, y) => x > 2 && x < w - 2 && y > 2 && y < h - 2
+        && !hud.some(box => x + 2 >= box.left && x - 2 <= box.right && y + 2 >= box.top && y - 2 <= box.bottom);
+      const sample = (cx, cy) => {
+        ray.setFromCamera(p.set(cx / w * 2 - 1, 1 - cy / h * 2, 0), camera);
+        const water = (-0.25 - ray.ray.origin.y) / ray.ray.direction.y;
+        const hit = ray.intersectObjects([boat, rider], true)[0];
+        if (hit && (water <= 0 || hit.distance < water)) {
+          for (let o = hit.object; o; o = o.parent) if (o === boat) return "hull";
+          return null;
+        }
+        return water > 0 && water < 45 ? "water" : null;
+      };
+      const points = { hull: [], water: [] };
+      for (let dy = 18; dy >= -72; dy -= 5) for (let dx = -65; dx <= 65; dx += 5) {
+        if (points.hull.length === 12 && points.water.length === 12) break;
+        const cx = Math.round(x + dx), cy = Math.round(y + dy);
+        if (!clear(cx, cy)) continue;
+        const type = sample(cx, cy);
+        if (!type || points[type].length >= 12) continue;
+        if ([-2, 2].every(a => [-2, 2].every(b => sample(cx + a, cy + b) === type))) points[type].push([cx, cy]);
+      }
+      return points;
+    });
+    const image = await page.screenshot({ scale: "css" });
+    try {
+      assert.ok(points.hull.length && points.water.length, `${label}: unobstructed hull and water patches`);
+      const colors = await pixels(image, [...points.hull, ...points.water]);
+      const hull = colors.slice(0, points.hull.length), water = colors.slice(points.hull.length);
+      assert.ok(hull.some(a => water.some(b => a.median.some((c, i) => Math.abs(c - b.median[i]) >= 20))),
+        `${label}: hull and water have different composited colours at ${state.time ?? state.townFrame.time}`);
+      return { image, point: points.water[0] };
+    } catch (error) {
+      const folder = shots || process.env.TMPDIR || "/tmp";
+      const filename = `${folder}/${size}-sea-failure.png`;
+      await writeFile(filename, image);
+      throw new Error(`${error.message} (saved ${filename})`);
+    }
+  }
+
+  function sampleAt(samples, at, key, values) {
+    const next = samples.findIndex(s => s[key] >= at - 1e-8);
+    assert.ok(next >= 0, `samples reach ${at} seconds`);
+    if (next === 0 || Math.abs(samples[next][key] - at) < 1e-8) return values(samples[next]);
+    const a = samples[next - 1], b = samples[next], k = (at - a[key]) / (b[key] - a[key]);
+    return values(a).map((v, i) => v + (values(b)[i] - v) * k);
+  }
+
+  async function departure(first, before, label) {
+    await title.waitFor({ state: "attached" });
+    const initial = await titleState();
+    assert.equal(initial.mounts, before.mounts + 1, "one title mounts on physical departure");
+    assert.equal(initial.text, locationTitle);
+    assert.equal(initial.opacity, 0);
+    const heading = page.getByRole("heading", { name: locationTitle, exact: true });
+    assert.equal(await heading.count(), 1);
+    assert.equal(await title.getAttribute("aria-hidden"), "true");
+    const samples = [first];
+    let peak, reveal;
+    while (samples.at(-1).crossingAge < 2 - 1e-8) {
+      const state = await frame(samples.at(-1));
+      samples.push(state);
+      assertBoatFrame(state, label);
+      await patches(state, label);
+      const cue = await titleState();
+      if (!peak && state.crossingAge >= 0.65 - 1e-8) {
+        peak = cue;
+        assert.ok(cue.opacity > 0.95);
+        assert.ok(await title.evaluate(node => {
+          const box = node.getBoundingClientRect();
+          return [...document.querySelectorAll(".sea-mode button, .sea-mode .joy")].every(item => {
+            if (getComputedStyle(item).visibility === "hidden") return true;
+            const r = item.getBoundingClientRect();
+            return !r.width || r.right < box.left || r.left > box.right || r.bottom < box.top || r.top > box.bottom;
+          });
+        }), "the title has clearance from buttons and boards");
+      }
+      if (state.crossingAge < 1.2 - 1e-8) assert.equal(cue.clips, before.clips);
+      if (!reveal && state.crossingAge >= 1.2 - 1e-8) {
+        reveal = cue;
+        assert.equal(cue.clips, before.clips + Number(!first.gap), "one automatic non-gap clip at reveal");
+      }
+      if (state.crossingAge >= 1.25 - 1e-8) assert.equal(cue.text, undefined);
+    }
+    assert.equal((await titleState()).mounts, before.mounts + 1);
+    const reference = first.camera.position;
+    const lift = state => state.camera.position.map((x, i) => x - reference[i]
+      - (i === 1 ? 0 : state.hull[i] - first.hull[i]));
+    if (!first.reducedMotion) for (const [at, weight] of [[0.325, 0.5], [0.65, 1]]) {
+      const offset = sampleAt(samples, at, "crossingAge", lift);
+      const want = first.retreat.map((n, i) => weight * (i === 1 ? (phone ? 0.55 : 0.70) : n * (phone ? 1.00 : 1.35)));
+      assert.ok(distance(offset, want) <= 0.06, `${label}: rise and retreat at ${at}s: ${offset} vs ${want}`);
+    } else {
+      assert.ok(samples.slice(1).every(state => state.crestCameraLift === 0), "reduced motion disables the additional camera lift");
+    }
+    const end = samples.find(state => state.crossingAge >= 1.6 - 1e-8);
+    assert.ok(distance(end.camera.position, end.chase.position) <= 0.03, "departure settles into the live chase");
+    assert.ok(angle(end.camera.rotation, end.chase.rotation) <= 0.10);
+  }
+
+  async function checkReturn(label, first) {
+    const mounts = (await titleState()).mounts;
+    let last = first ?? await read(), patch;
+    if (last.presented.scene === "sea" && last.returnAge > 0) patch = await patches(last, label);
+    for (let i = 0; i < Math.ceil(1300 / milliseconds) + 3; i++) {
+      const state = await frame(last);
+      if (state.presented.scene === "town") {
+        const { townFrame: town } = state;
+        const translate = v => v.map((n, i) => n + last.translation[i]);
+        assert.ok(Math.abs(last.returnAge - 1.2) < 1e-7);
+        assert.equal(town.time, last.time, "the bay waves use the same time");
+        for (const key of ["hull", "rider"]) assert.ok(distance(translate(last[key]), town[key]) <= 0.01, key);
+        assert.ok(distance(translate(last.camera.position), town.camera.position) <= 0.01, "return eye");
+        assert.ok(angle(last.camera.rotation, town.camera.rotation) <= 0.10, "return gaze");
+        for (const key of ["hullRotation", "riderRotation"]) assert.ok(angle(last[key], town[key]) <= 0.10, key);
+        assert.ok(Math.abs(last.camera.fov - town.camera.fov) <= 0.10);
+        assert.deepEqual(last.view, town.view);
+        for (const key of ["bow", "stern", "helm"]) assert.ok(distance(cssPoint(last.landmarks[key]), cssPoint(town.landmarks[key])) <= 1, key);
+        const image = await page.screenshot({ scale: "css" });
+        const [a] = await pixels(patch.image, [patch.point]), [b] = await pixels(image, [patch.point]);
+        const change = a.mean.reduce((sum, n, i) => sum + Math.abs(n - b.mean[i]), 0) / 3;
+        if (change > 5) await writeFile(`${shots || process.env.TMPDIR || "/tmp"}/${size}-sea-water-failure.png`, image);
+        assert.ok(change <= 5, `${label}: adjacent water changes by ${change}/255`);
+        const towns = [state];
+        while (towns.at(-1).townBlend.age < 0.6 - 1e-8) {
+          towns.push(await frame(towns.at(-1)));
+        }
+        for (const at of [0.05, 0.30, 0.60]) {
+          const sample = towns.find(s => Math.abs(s.townBlend.age - at) < 0.001);
+          assert.ok(sample, `town has a rendered frame at ${at}s`);
+          const { age, eye, rotation, live } = sample.townBlend, k = (age / 0.6) ** 2 * (3 - 2 * age / 0.6);
+          assert.ok(distance(sample.townFrame.camera.position, eye.map((n, i) => n + (live.position[i] - n) * k)) <= 0.04);
+          assert.ok(angle(sample.townFrame.camera.rotation, slerp(rotation, live.rotation, k)) <= 0.15);
+        }
+        assert.equal((await titleState()).mounts, mounts);
+        return state;
+      }
+      assertBoatFrame(state, label);
+      patch = await patches(state, label);
+      last = state;
+    }
+    assert.fail(`${label}: town did not present after the committed return`);
+  }
+
+  async function sailOut(screenshots = false, full = true) {
+    const before = await titleState();
     const { edge, town: { x } } = await read();
     assert.equal(await page.evaluate(([x, z]) => window.__ew.seaPlaceBoat(x, z), [x, edge + 34]), true);
     await page.keyboard.down("ArrowUp");
-    await waitFor(async () => {
-      const state = await read();
-      return state.phase === "town" && state.town.bowZ > edge && state.town.bowZ - edge < 0.81;
-    }, "sails the last 30 m to the buoy line with the arrow key", 200, 1);
-    const last = await read();
-    if (screenshots) await shot("last-town");
-    assert.equal(await loading.count(), 0);
-    let first;
-    for (let frame = 0; frame < 4; frame++) {
+    // Start just before the last half-second so every frame through the seam is checked.
+    const approach = Math.ceil(0.5 * 1000 / milliseconds);
+    const preceding = [];
+    let last = await read(), first;
+    for (let i = 0; i < 600; i++) {
       await step(1);
-      const state = await read();
-      assert.equal(await loading.count(), 0);
-      if (state.phase === "drive") { first = state; break; }
+      const current = await read();
+      if (current.phase === "drive") { first = current; break; }
+      if (current.town.bowZ - edge < 7.5) {
+        await assertPresentation(current, preceding.at(-1));
+        await patches(current, "approach to the outer buoys");
+        preceding.push(current);
+        if (preceding.length > approach) preceding.shift();
+        if (screenshots && current.town.bowZ - edge < 0.81) await shot("last-town");
+      }
+      last = current;
     }
+    assert.equal(preceding.length, approach);
+    assert.ok(preceding.every(state => state.presented.scene === "town"));
     assert.ok(first, "the sea scene starts within a few frames of crossing");
+    await assertPresentation(first, last);
+    assert.ok(last.town.bowZ > edge && last.town.bowZ - edge < 0.81);
     assert.ok(first.town.bowZ <= edge);
+    assert.equal(first.presented.scene, "sea");
+    assert.equal(first.presented.serial, last.presented.serial + 1);
+    assert.ok(first.triangles > 0);
+    assert.equal(await loading.count(), 0);
+    for (const key of ["projection", "view", "hullRotation", "rider", "riderRotation"]) {
+      assert.ok(Array.isArray(first[key]) ? distance(first[key], first.departureFrom[key]) < 1e-8
+        : JSON.stringify(first[key]) === JSON.stringify(first.departureFrom[key]), `inherits town ${key}`);
+    }
     assert.deepEqual(first.camera, first.town.camera, "the first sea camera inherits the town pose and FOV");
     assert.deepEqual(first.hull, first.town.hull, "the first sea frame keeps the hull in place");
-    assert.ok(Math.abs(first.hull[2] - last.town.hull[2]) < 0.05 * 4 * 17, `hull moved ${first.hull[2] - last.town.hull[2]} m between the last town frame and the first sea frame`);
+    assert.ok(Math.abs(first.hull[2] - last.town.hull[2]) < milliseconds / 1000 * 4 * 17, `hull moved ${first.hull[2] - last.town.hull[2]} m between the last town frame and the first sea frame`);
     assert.ok(Math.abs(first.camera.fov - last.town.camera.fov) < 1);
     assert.equal(first.elapsed, 0);
     assert.equal(await page.locator(".fade").evaluate((element) => Number(getComputedStyle(element).opacity)), 0);
     assert.ok(first.drawCalls <= 25, `first sea frame uses ${first.drawCalls} draw calls`);
     if (screenshots) await shot("first-sea");
+    assertBoatFrame(first, "first sea frame");
+    await patches(first, "first sea frame");
     await page.keyboard.up("ArrowUp");
+    if (full) await departure(first, before, "departure");
+    else {
+      await title.waitFor({ state: "attached" });
+      const current = await titleState();
+      assert.equal(current.mounts, before.mounts + 1);
+      assert.equal(current.clips, before.clips);
+    }
+    return first;
   }
 
   function assertBoatFrame(state, moment) {
@@ -157,6 +399,48 @@ try {
     await waitFor(async () => (await read()).armed, "crossing 20 m back into town re-arms the sea entry");
     await page.keyboard.up("ArrowUp");
     await ready();
+  }
+
+  async function outsideLane(lane) {
+    if (!phone) return;
+    await page.keyboard.down("ArrowUp");
+    await page.evaluate(n => window.__ew.seaSteer(n), lane);
+    let count = 0, previous;
+    for (let i = 0; i < 360; i++) {
+      const state = await frame(previous);
+      previous = state;
+      assert.equal(state.totalGates, 0);
+      if (state.gateDistance > 32) continue;
+      if (state.gateDistance < 16) break;
+      count++;
+      assert.equal(state.lane, lane);
+      assert.ok(state.speed >= 15.99, "the outside lane is tested at full throttle");
+      assertBoatFrame(state, `outside lane ${lane}`);
+      const labels = await page.locator(".sea-overlay button.road-gate").evaluateAll(boards => {
+        return boards.map(board => {
+          const { left, right, width } = board.getBoundingClientRect();
+          const probe = key => board.querySelector(`[data-face-probe="${key}"]`).getBoundingClientRect();
+          const a = probe("center"), b = probe("em");
+          const { top, bottom } = board.getBoundingClientRect();
+          const header = document.querySelector(".sea-overlay header").getBoundingClientRect();
+          const joy = document.querySelector(".sea-mode .joy")?.getBoundingClientRect();
+          return { left, right, width, em: Math.hypot(b.left - a.left, b.top - a.top),
+            clearUi: top >= header.bottom && bottom < (joy?.top ?? innerHeight),
+            visible: getComputedStyle(board).visibility === "visible" && !board.disabled };
+        });
+      });
+      try {
+        assert.equal(labels.length, 3);
+        assert.ok(labels.every((board, i) => board.visible && board.clearUi && board.left >= 8 && board.right <= width - 8
+          && board.width >= 86 && board.em >= 15 && (!i || board.left > labels[i - 1].right)),
+        `lane ${lane} at ${state.gateDistance.toFixed(2)} m: ${JSON.stringify(labels)}`);
+      } catch (error) {
+        await page.screenshot({ path: `${shots || process.env.TMPDIR || "/tmp"}/${size}-sea-lane-${lane}-failure.png` });
+        throw error;
+      }
+    }
+    await page.keyboard.up("ArrowUp");
+    assert.ok(count >= Math.floor(1000 / milliseconds) - 1, "samples the entire 32–16 m decision window");
   }
 
   await sailOut(true);
@@ -262,6 +546,7 @@ Gate layout at 19–32 m: ${JSON.stringify(layoutChecks)}`);
   const result = page.getByRole("dialog", { name: "Plaukimas baigtas" });
   await waitFor(() => result.isVisible(), "shows the score at 120 seconds");
   const scored = await read();
+  assert.ok(scored.drawCalls <= 25);
   assert.equal(scored.elapsed, 120);
   assert.equal(scored.result.right, correct.rightGates);
   assert.equal(scored.result.total, wrong.totalGates);
@@ -271,8 +556,7 @@ Gate layout at 19–32 m: ${JSON.stringify(layoutChecks)}`);
   await shot("result");
 
   await press(result.getByRole("button", { name: "Atgal į krantą" }));
-  await waitFor(async () => (await read()).phase === "town", "returns to the bay");
-  let returned = await read();
+  let returned = await checkReturn("timed result → Back to shore");
   assert.equal(returned.town.id, "anchored-1");
   assert.equal(returned.town.phase, "on");
   assert.ok(Math.abs(returned.town.x - scored.town.x) < 0.1);
@@ -283,18 +567,38 @@ Gate layout at 19–32 m: ${JSON.stringify(layoutChecks)}`);
   await shot("town-return");
 
   await rearm();
+  await sailOut(false, false);
+  await page.evaluate(() => window.__ew.seaTimer(85));
+  await waitFor(() => result.isVisible(), "reaches a timed score beyond the bay mesh", 160, 10);
+  const deep = await read();
+  assert.equal(deep.elapsed, 120);
+  assert.ok(deep.z < deep.edge - 400 && deep.drawCalls <= 25);
+  await press(result.getByRole("button", { name: "Atgal į krantą" }));
+  await checkReturn("offshore timed result → Back to shore");
+
+  await rearm();
   await sailOut();
   await page.keyboard.down("ArrowDown");
   await waitFor(async () => (await read()).phase === "turn", "holding down at slow speed starts to turn");
   assert.equal((await read()).totalGates, 0);
-  await waitFor(async () => (await read()).phase === "town", "turns back without a score card");
+  await checkReturn("zero-answer slow hold");
   await page.keyboard.up("ArrowDown");
   assert.equal(await result.count(), 0);
   assert.equal((await read()).town.id, "anchored-1");
 
   await step(18);
   await rearm();
+  milliseconds = 1000 / 60;
+  const clipsBeforeEarly = (await titleState()).clips;
+  await sailOut(false, false);
+  for (let i = 0; i < 15; i++) await frame();
+  await page.keyboard.press("Escape");
+  await checkReturn("interrupted departure at 60 Hz");
+  assert.equal((await titleState()).clips, clipsBeforeEarly, "exit cancels the deferred cue");
+  await rearm();
+
   await sailOut();
+  await outsideLane(0);
   await page.evaluate(() => window.__ew.seaSteer(window.__ew.sea().right === 0 ? 2 : 0));
   await waitFor(async () => (await read()).totalGates === 1, "answers one gate before turning for shore");
   await page.keyboard.down("ArrowDown");
@@ -310,14 +614,39 @@ Gate layout at 19–32 m: ${JSON.stringify(layoutChecks)}`);
   assert.equal(turned.result.right, 0);
   assert.ok(Math.cos(turned.heading) > 0.99, "the boat faces shore behind the score card");
   assertBoatFrame(turned, "score card after turning");
+  await press(result.getByRole("button", { name: "Atgal į krantą" }));
+  await checkReturn("scored turn → Back to shore at 60 Hz");
+  await rearm();
+  milliseconds = 50;
+  await sailOut();
+  await outsideLane(2);
+  await page.evaluate(() => window.__ew.seaSteer(window.__ew.sea().right === 0 ? 2 : 0));
+  await waitFor(async () => (await read()).totalGates === 1, "answers one gate before retrying");
+  await page.keyboard.press("Escape");
+  await waitFor(() => result.isVisible(), "shows the score before retrying");
+  const beforeRetry = await titleState();
+  await press(result.getByRole("button", { name: "Dar kartą" }));
+  await waitFor(async () => (await read()).phase === "drive" && !!(await read()).gates, "retry opens a prompt offshore", 15, 1);
+  const retried = await read();
+  assert.equal((await titleState()).mounts, beforeRetry.mounts);
+  assert.equal((await titleState()).clips, beforeRetry.clips + Number(!retried.gap));
+  assert.equal(await page.locator(".road-cue").count(), 1);
+  assert.equal(retried.totalGates, 0);
+  await page.evaluate(() => window.__ew.seaSteer(window.__ew.sea().right === 0 ? 2 : 0));
+  await waitFor(async () => (await read()).totalGates === 1, "answers one gate before following the guide");
+  await page.keyboard.press("Escape");
+  await waitFor(() => result.isVisible(), "shows the score before following the guide");
   const destination = await result.locator("[data-sit]").getAttribute("data-sit");
   await press(result.getByRole("button", { name: "Nuvesk mane" }));
+  await frame();
+  assert.equal((await read()).presented.scene, "town");
+  assert.equal(await page.locator(".sea-overlay[data-guiding] .mode-score-card").count(), 1);
   await waitFor(() => page.evaluate((sit) => {
     const { game, store } = window.__ew;
     const state = store.getState();
     return !state.hud.fade && !state.hud.modeScreen && !game.rides.riding
       && state.progress.objective === sit && !!game.autoTarget && game.autoPath?.length > 0;
-  }, destination), "Nuvesk mane starts the guide on foot after the fade");
+  }, destination), "Nuvesk mane starts the guide on foot after the score dissolves");
   const guided = await page.evaluate((id) => {
     const { game } = window.__ew;
     const { x, y, z } = game.player.root.position, boat = game.rides.find(id).m;
@@ -339,6 +668,7 @@ Gate layout at 19–32 m: ${JSON.stringify(layoutChecks)}`);
   await waitFor(async () => (await read()).town?.phase === "on", "boards the lobster boat");
   assert.equal((await read()).town.id, "lobster-1");
   await ready();
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await sailOut();
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitFor(hasPlayScreen, "reloads from open water", 500);

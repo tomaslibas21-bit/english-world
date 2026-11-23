@@ -28,7 +28,7 @@ const subscribeWidth = (change: () => void) => {
   return () => query.removeEventListener("change", change);
 };
 
-function typeset(text: string, height: number, preferSingleLine: boolean) {
+function typeset(text: string, height: number, preferSingleLine: boolean, minSize: number) {
   const family = globalThis.document?.fonts?.check(`800 32px "${BOARD_FONT}"`, text) ? `"${BOARD_FONT}"` : fallbackFont;
   textMeasure ??= globalThis.document?.createElement("canvas").getContext("2d");
   if (textMeasure) textMeasure.font = `800 100px ${family}`;
@@ -53,7 +53,9 @@ function typeset(text: string, height: number, preferSingleLine: boolean) {
     if (size > best.size) best = { lines, size, scale: Math.max(0.88, Math.min(1, fitWidth / size)) };
     if (preferSingleLine && lines.length === 1 && size >= 20) break;
   }
-  return { ...best, family };
+  // A portrait sea label has a fixed local face. Preserve the em height on unusually long choices.
+  const size = Math.max(minSize, best.size);
+  return { ...best, size, scale: best.scale * best.size / size, family };
 }
 
 function GateLabel({ mode, id, lane, text, layout, steer }: {
@@ -74,7 +76,7 @@ export function GateLabels({ mode, prompt, gateId, steer, answeredLane }: {
   mode: FaceMode; prompt: Prompt; gateId: number; steer?: (lane: number) => void; answeredLane?: number;
 }) {
   const wide = useSyncExternalStore(subscribeWidth, wideBoard, wideBoard);
-  const layouts = useMemo(() => prompt.options.map((text) => typeset(text, faceHeight(mode), mode === "sea" && wide)),
+  const layouts = useMemo(() => prompt.options.map((text) => typeset(text, faceHeight(mode), mode === "sea" && wide, mode === "sea" && !wide ? 21 : 0)),
     [prompt, mode, wide]);
   return <div className="road-gates" data-gate-id={gateId} lang={prompt.gap ? "en" : "lt"}>
     {prompt.options.map((text, lane) => (answeredLane === undefined || lane === answeredLane) &&
@@ -82,11 +84,11 @@ export function GateLabels({ mode, prompt, gateId, steer, answeredLane }: {
   </div>;
 }
 
-export function WordGateHeader({ game, sayIt, words, prompt, feedback, remaining, streak, showHint, home, replay, extraButton, extraMeter }: {
+export function WordGateHeader({ game, sayIt, words, prompt, feedback, remaining, streak, showHint, home, replay, extraButton, extraMeter, questionSlot }: {
   game: string; sayIt?: SayItCue;
   words: CueWords; prompt?: Prompt; feedback?: { correct: boolean; word: Word };
   remaining: number; streak: number; showHint: boolean; home(): void; replay(): void;
-  extraButton?: ReactNode; extraMeter?: ReactNode;
+  extraButton?: ReactNode; extraMeter?: ReactNode; questionSlot?: ReactNode;
 }) {
   return <header className="road-header">
       <div className="road-dash">
@@ -99,7 +101,7 @@ export function WordGateHeader({ game, sayIt, words, prompt, feedback, remaining
         </div>
         {extraButton}
       </div>
-      {feedback ? <div className={`road-feedback ${feedback.correct ? "correct" : "wrong"}`} aria-live="polite">
+      {questionSlot ?? (feedback ? <div className={`road-feedback ${feedback.correct ? "correct" : "wrong"}`} aria-live="polite">
         <b>{feedback.correct ? words.right : words.wrong}</b>
         {!feedback.correct && <span><span lang="en">{feedback.word.en}</span> · {feedback.word.lt}</span>}
       </div> : prompt && <div className="road-cue">
@@ -110,7 +112,7 @@ export function WordGateHeader({ game, sayIt, words, prompt, feedback, remaining
         </div>
         {prompt.gap && <div className="road-gap"><GlossLine sentence={prompt.gap.sentence} gloss /></div>}
         {showHint && <p className="road-hint">{words.hint}</p>}
-      </div>}
+      </div>)}
     </header>
 }
 

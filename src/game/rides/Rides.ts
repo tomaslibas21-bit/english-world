@@ -425,10 +425,26 @@ export class Rides {
       awayT: 0, thanked: true, phase, sus: this.springs(), tint, townBoat });
   }
 
-  private boatSeat(r: Ride, out: THREE.Vector3) {
-    const [x, z] = r.townBoat?.helm ?? BOAT_SEATS.helm;
-    if (r.townBoat) return r.mesh.localToWorld(out.set(x, r.townBoat.deck, z));
-    return this.at(r, x, z, out, this.seatY(r));
+  private boatSeat(r: Pick<Ride, "mesh" | "townBoat">, out: THREE.Vector3, hull = r.mesh) {
+    if (r.townBoat) return hull.localToWorld(out.set(r.townBoat.helm[0], r.townBoat.deck, r.townBoat.helm[1]));
+    const [x, z] = BOAT_SEATS.helm, heading = hull.rotation.y;
+    const sin = Math.sin(heading), cos = Math.cos(heading);
+    return out.set(hull.position.x + x * cos + z * sin, hull.position.y + BOAT_SEATS.floor, hull.position.z - x * sin + z * cos);
+  }
+
+  /** Sample the settled hull and helm without moving the town ride. */
+  sampleBoatReturn(r: Pick<Ride, "mesh" | "townBoat" | "phase">, { x, z, rot }: Ride["home"], speed: number, time: number,
+    hull: THREE.Object3D, rider: THREE.Object3D) {
+    this.poseBoat(r, hull, x, z, rot, speed, time, 0, 0, 0);
+    this.boatSeat(r, rider.position, hull);
+    rider.rotation.set(0, rot, 0);
+  }
+
+  resetBoatReturn(r: Ride, position: Ride["home"], speed: number) {
+    this.resetPosition(r, position);
+    r.m.speed = speed;
+    this.roll = 0;
+    this.trail.length = 0;
   }
 
   restoreBoat(r: Ride, time: number) {
@@ -1316,14 +1332,21 @@ export class Rides {
       mesh.position.set(m.x, grade + r.sus.y, m.z);
       mesh.rotation.set(-slope + m.bump * 0.035 + r.sus.p + (driven ? this.squat : 0), m.heading, driven ? this.roll : 0);
     } else {
-      const sur = waterY(m.x, m.z, t) ?? -0.25, k = Math.min(1, m.pace / BOAT.max), driven = r === this.riding;
-      // (it heels into a turn, hard over in a slide; over a wave or its own wake it is thrown up and slaps down)
+      const k = Math.min(1, m.pace / BOAT.max), driven = r === this.riding;
       const heel = driven ? THREE.MathUtils.clamp(m.steer * k * 0.12 + m.yaw * m.pace * 0.012, -0.34, 0.34) : 0;
       if (driven) this.roll += (heel - this.roll) * Math.min(1, dt * 7);
-      mesh.position.set(m.x, sur - (r.townBoat ? SEA_LEVEL : BOAT_SEATS.water) + Math.sin(t * 1.3 + r.phase) * 0.04 + k * 0.08 + r.sus.y, m.z);
-      mesh.rotation.set(Math.sin(t * 0.9 + r.phase) * 0.03 - k * 0.09 + r.sus.p, m.heading, Math.sin(t * 1.2 + r.phase * 1.3) * 0.045 - (driven ? this.roll : 0));
+      this.poseBoat(r, mesh, m.x, m.z, m.heading, m.pace, t, r.sus.y, r.sus.p, driven ? this.roll : 0);
     }
     void dt;
+  }
+
+  private poseBoat(r: Pick<Ride, "mesh" | "townBoat" | "phase">, mesh: THREE.Object3D, x: number, z: number, heading: number, speed: number,
+    time: number, lift: number, pitch: number, roll: number) {
+    const surface = waterY(x, z, time) ?? SEA_LEVEL, k = Math.min(1, speed / BOAT.max);
+    mesh.position.set(x, surface - (r.townBoat ? SEA_LEVEL : BOAT_SEATS.water)
+      + Math.sin(time * 1.3 + r.phase) * 0.04 + k * 0.08 + lift, z);
+    mesh.rotation.set(Math.sin(time * 0.9 + r.phase) * 0.03 - k * 0.09 + pitch, heading,
+      Math.sin(time * 1.2 + r.phase * 1.3) * 0.045 - roll, r.mesh.rotation.order);
   }
 
   /** Someone who held their pose moves again. */
