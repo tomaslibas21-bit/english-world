@@ -221,6 +221,7 @@ export class Crashes {
     if (own) {
       this.lastImpact = Object.freeze({ id: ride.id, k, into, side: own.side, target: what });
       this.host.crashSound?.("crunch", k);
+      if (target !== "town") this.host.carImpact?.(target);
     }
     if (target === "town" || !this.accepts(target, k)) return;
     const other = this.hit(target, hit, k, false);

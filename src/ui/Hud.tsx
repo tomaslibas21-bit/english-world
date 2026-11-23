@@ -29,6 +29,9 @@ import { CaveCard } from "./Cave";
 import { Guide } from "./Guide";
 import { TownToast, useTownToast } from "./Toasts";
 import { PhoneRing } from "./PhoneRing";
+import { TextArrival } from "./TextArrival";
+import { ReactBubble } from "./ReactBubble";
+import { unreadTexts } from "../game/phone/texts";
 import { portraitToolbarRows, toolbarColumns } from "./toolbarLayout";
 import { getSeaOverlay } from "./seaOverlay";
 import { useScreen } from "./useScreen";
@@ -38,10 +41,10 @@ import "./townPhone.css";
 /** Inside English Master (VITE_BACK_URL, e.g. "/"): the way back to the course site. */
 export const COURSE_URL = import.meta.env.VITE_BACK_URL as string | undefined;
 
-function ToolButton({ icon, title, panel, hotkey, badge, shortcuts = true }: { icon: IconName; title: string; panel: "scenarios" | "map" | "journal" | "phone" | "phrasebook" | "settings"; hotkey?: string; badge?: number; shortcuts?: boolean }) {
+function ToolButton({ icon, title, panel, hotkey, badge, unread, shortcuts = true }: { icon: IconName; title: string; panel: "scenarios" | "map" | "journal" | "phone" | "phrasebook" | "settings"; hotkey?: string; badge?: number; unread?: number; shortcuts?: boolean }) {
   const label = shortcuts ? title : title.replace(/ \((?:M|J|P|Esc)\)$/, "");
   return (
-    <button className="icon-btn" onClick={() => useStore.getState().setHud({ panel })} title={label} aria-label={badge ? `${label} (${badge})` : label}>
+    <button className="icon-btn" onClick={() => useStore.getState().setHud({ panel })} title={label} aria-label={(badge ? `${label} (${badge})` : label) + (unread ? `, ${unread} ${L("neperskaitytos žinutės")}` : "")}>
       <Icon name={icon} size={25} />{shortcuts && hotkey && <span className="key" aria-hidden>{hotkey}</span>}
       {!!badge && <span className="due-badge" aria-hidden>{badge}</span>}
     </button>
@@ -122,6 +125,7 @@ export function Hud() {
           {hud.cave ? <CaveCard arrow={Arrow} phoneToast={phoneToast} /> : <Objective key={taskId ?? "complete"} collapsed={collapsed} fresh={task.fresh && notesVisible} setCollapsed={task.setManual} />}
           {hud.zoneBanner && banner && <div className="zone-banner"><h2>{banner.icon && <Icon name={banner.icon} size="0.8em" className="zb-ico" />}{banner.rest}</h2>{hud.zoneBanner.sub && <p>{hud.zoneBanner.sub}</p>}</div>}
           {note === "phone" && hud.phoneCard && <PhoneRing id={hud.phoneCard} />}
+          {note === "text" && hud.textArrival && <TextArrival id={hud.textArrival} />}
           <Guide visible={note === "guide"} />
           <TownToast toast={toast} />
         </div>
@@ -130,6 +134,7 @@ export function Hud() {
       <Toolbar key={"tools-" + layout} {...screen} riding={riding || hud.wading} touch={hud.showTouch} hint={note === "guide"} />
       <RadioSetLayer />
       {!hud.panel && <LyricStrip sidewaysPhone={screen.sidewaysPhone} />}
+      {!hud.panel && hud.reaction && <ReactBubble key={hud.reaction.id} line={hud.reaction} />}
       {/* (on a phone the way out of a car is the round button itself: no second label over it) */}
       {hud.prompt && !hud.panel && !(hud.showTouch && hud.prompt.kind === "out") && (
         <button className={"prompt" + (hud.showTouch ? " touch" : "")} onClick={() => game?.interact()}>
@@ -197,6 +202,7 @@ function keepKeysOnHudButtons(e: KeyboardEvent<HTMLElement>) {
 function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, surf = false, modeExit, hint = false }: Screen & { riding: boolean; touch: boolean; surf?: boolean; modeExit?: string; hint?: boolean }) {
   const due = useDueCards();
   const missedCalls = useStore((s) => Object.keys(s.progress.phone?.missed ?? {}).length);
+  const unread = useStore((s) => unreadTexts(s.progress.texts));
   const hasRadio = useRadio((s) => s.available);
   const radioOpen = useRadio((s) => s.open);
   const canHonk = useStore((s) => s.hud.ride === "car" || s.hud.ride === "taxi");
@@ -289,7 +295,7 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, surf = fal
     <ToolButton key="scenarios" icon="clapper" title={L("Visos situacijos")} panel="scenarios" />,
     <ToolButton key="map" icon="map" title={L("Žemėlapis (M)")} panel="map" hotkey="M" shortcuts={!surf} />,
     <ToolButton key="journal" icon="journal" title={L("Užduotys (J)")} panel="journal" hotkey="J" shortcuts={!surf} />,
-    <ToolButton key="phone" icon="smartphone" title={L("Telefonas (P)")} panel="phone" hotkey="P" badge={missedCalls} shortcuts={!surf} />,
+    <ToolButton key="phone" icon="smartphone" title={L("Telefonas (P)")} panel="phone" hotkey="P" badge={missedCalls + unread} unread={unread} shortcuts={!surf} />,
     <ToolButton key="phrasebook" icon="bookOpen" title={L("Frazių knygelė")} panel="phrasebook" badge={due} />,
     <ToolButton key="settings" icon="settings" title={L("Nustatymai (Esc)")} panel="settings" shortcuts={!surf} />,
     ...(hasHelp ? [<SectionHelpButton key="help" />] : []),

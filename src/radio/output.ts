@@ -17,6 +17,7 @@ export interface RadioOutput {
   pause(): void;
   /** Seconds into the song. */
   position(): number;
+  duration?(): number;
   /** 0–1, at once or over `ms`. */
   setVolume(volume: number, ms?: number): void;
   /** In a tap: whatever lets a later play() sound without one. */
@@ -47,7 +48,7 @@ export class HtmlOutput implements RadioOutput {
     if (this.el) return this.el;
     const el = this.el = new Audio();
     el.preload = "auto";
-    el.addEventListener("ended", () => { if (this.wanted && el.src !== SILENCE) this.onEnded?.(); });
+    el.addEventListener("ended", () => { if (this.wanted && el.ended && el.src !== SILENCE) this.onEnded?.(); });
     // el.error is cleared when another recording is set: a late event of the one before is not this one's failure
     el.addEventListener("error", () => { if (this.wanted && el.error && el.src !== SILENCE) { this.wanted = false; this.onStopped?.("error"); } });
     el.addEventListener("play", () => { if (!this.wanted && el.src !== SILENCE) el.pause(); });
@@ -99,6 +100,7 @@ export class HtmlOutput implements RadioOutput {
   }
 
   position() { return this.el && this.el.src !== SILENCE ? this.el.currentTime || 0 : 0; }
+  duration() { return this.el && Number.isFinite(this.el.duration) ? this.el.duration : 0; }
 
   private apply() { try { if (this.el) this.el.volume = Math.max(0, Math.min(1, this.level)); } catch { /* a fixed-volume device */ } }
 
@@ -238,6 +240,8 @@ export class BufferOutput implements RadioOutput {
   position() {
     return this.sounding && this.ctx ? this.offset + Math.max(0, this.ctx.currentTime - this.startedAt) : this.offset;
   }
+
+  duration() { return this.buffer?.duration ?? 0; }
 
   setVolume(volume: number, ms = 0) {
     this.level = Math.max(0, Math.min(1, volume));

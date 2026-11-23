@@ -13,6 +13,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { openPhoneMenu } from "./screen-harness.mjs";
+import { silence } from "./radio-fixtures.mjs";
 const { chromium, webkit } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:5198";
 const storage = process.env.WORLD_STORAGE || "english-world";
@@ -31,13 +32,6 @@ const L = (lt) => (english ? EN[lt] : lt);
 const manifest = JSON.parse(await readFile("public/audio/manifest.json", "utf8"));
 const [clip, seconds] = Object.entries(manifest).find(([, n]) => n > 9 && n < 12);
 const short = await readFile(`public/audio/${clip}.mp3`);
-/** A silent recording of `length` seconds (8-bit mono PCM in a WAV file: every browser plays and decodes it). */
-function silence(length, rate = 8000) {
-  const n = length * rate, wav = Buffer.alloc(44 + n, 128);
-  wav.write("RIFF", 0); wav.writeUInt32LE(36 + n, 4); wav.write("WAVEfmt ", 8); wav.writeUInt32LE(16, 16); wav.writeUInt16LE(1, 20); wav.writeUInt16LE(1, 22);
-  wav.writeUInt32LE(rate, 24); wav.writeUInt32LE(rate, 28); wav.writeUInt16LE(1, 32); wav.writeUInt16LE(8, 34); wav.write("data", 36); wav.writeUInt32LE(n, 40);
-  return wav;
-}
 const LONG = 300, long = silence(LONG);
 /** The recording a song's address gets: the short clip for G02, the long silence for the others. */
 const recording = (path) => (path.includes("G02") ? { contentType: "audio/mpeg", body: short } : { contentType: "audio/wav", body: long });

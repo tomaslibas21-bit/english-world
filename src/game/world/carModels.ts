@@ -100,6 +100,11 @@ function bounds(x: number, z: number, rot: number, width: number, length: number
   return { minX: x - hx, maxX: x + hx, minZ: z - hz, maxZ: z + hz };
 }
 
+export function carTop(x: number, z: number, rot: number, start: number, end: number, width: number, top: number): Piece {
+  const offset = (start + end) / 2;
+  return { ...bounds(x + Math.sin(rot) * offset, z + Math.cos(rot) * offset, rot, width, end - start), top };
+}
+
 export function carFootprint({ model, x, z, rot }: Pick<CarPlacement, "model" | "x" | "z" | "rot">) {
   const { width, length } = carModelEntry(model).collisionBox;
   return bounds(x, z, rot, width, length);
@@ -108,8 +113,6 @@ export function carFootprint({ model, x, z, rot }: Pick<CarPlacement, "model" | 
 /** Solid steps with tops at the hood, trunk and roof, measured on the unscaled kit meshes. */
 export function carLedges(model: CarModelName, x: number, z: number, rot: number): Piece[] {
   const { surfaces, scale: [sx, sy, sz], sourceCenterZ } = carModelEntry(model);
-  return surfaces.map(([start, end, width, top]) => {
-    const offset = ((start + end) / 2 - sourceCenterZ) * sz;
-    return { ...bounds(x + Math.sin(rot) * offset, z + Math.cos(rot) * offset, rot, width * sx, (end - start) * sz), top: top * sy };
-  });
+  return surfaces.map(([start, end, width, top]) =>
+    carTop(x, z, rot, (start - sourceCenterZ) * sz, (end - sourceCenterZ) * sz, width * sx, top * sy));
 }

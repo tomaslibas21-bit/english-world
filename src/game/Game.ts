@@ -36,6 +36,9 @@ import { makeCue, TABLE_NAME, TABLE_PROMPT, type TableView } from "./billiards/t
 import type { Do, SurfArrow } from "./surf/logic";
 import { FLOOD_INCOMING_INTRO, invitationLocation, invitationTitle, OFFICE_TASK } from "../content/phoneCalls";
 import { TownPhone } from "./phone/Phone";
+import { reactionTestSpot, TownReactions } from "./life/townReactions";
+import { speakTownLine } from "./life/townVoice";
+import type { ReactKind } from "../content/reacts";
 import { freeToWalk, type PhoneSnapshot } from "./phone/schedule";
 import type { FriendMeeting } from "./phone/meeting";
 import { createSurfMode } from "./surf/mode";
@@ -274,6 +277,7 @@ export class Game implements GameApi {
   private barista: ReturnType<typeof createBaristaMode> | null = null;
   private frameFade = new FrameFade((fade) => useStore.getState().setHud({ fade, fadeOnFrames: this.frameFade.active }));
   private readonly phone = new TownPhone();
+  private readonly reactions = new TownReactions(() => this.reactionsBlocked());
   private phoneWatch: (() => void)[] = [];
   private readonly debugAudio = audioDiagnosticsEnabled();
   private wasHidden = false;
@@ -447,7 +451,7 @@ export class Game implements GameApi {
     // The traffic's climbable pieces move with the cars (a mini-game's parked car is climbed too).
     this.ledges.dynamic = (x, z) => {
       const traffic = this.ambient.carPieces(x, z);
-      const parked = this.rides.modeCarPieces(x, z);
+      const parked = this.rides.townCarPieces(x, z);
       return parked.length ? traffic.concat(parked) : traffic;
     };
     // Any scenery boats stay in the ledge map. Ride boats use moving collision boxes.
@@ -485,6 +489,8 @@ export class Game implements GameApi {
     const places: [number, number][] = this.town.doors.filter((d) => d.loc !== "airport").map((d) => [d.outX, d.outZ]);
     places.push([22, -20], [40, -46], [16, -36], [-12, -62], [30, -63], [-30, -61], [96, -30], [-6, 46], [62, 44], [-42, 44], [118, 2]);
     this.ambient = new Ambient(nav, places, st.settings.quality, this.town.seats, this.town.colliders);
+    this.ambient.onHonk = (car) => this.reactions.honk(car);
+    this.ambient.onBump = (walker, look) => this.reactions.bump(walker, look);
     // what one can drive: the convertibles at the curb with their people in them, the boat at the pier
     const game = this;
     this.rides = new Rides({
@@ -496,6 +502,7 @@ export class Game implements GameApi {
       },
       thud: (k) => { if (this.bumpT <= 0) { audio.bump(Math.min(1, 0.35 + k * 0.65)); this.bumpT = 0.12; } },
       crashSound: (sound, k) => { audio.carCrash(sound, k); if (sound === "crunch") this.rig.jolt(k); },
+      carImpact: (target) => this.reactions.crash(this.ambient, target),
       allowsCrashes: () => this.zone.id === "town" && !this.modes.owns("road"),
       allowsHints: () => this.allowsRideHints(),
       rescue: (put) => {
@@ -691,6 +698,9 @@ export class Game implements GameApi {
       else this.enterZone("airport", ARRIVAL, true);
     }
     this.phoneWatch.push(useStore.subscribe((state, previous) => {
+      if (state.conv.active !== previous.conv.active || state.hud.panel !== previous.hud.panel || state.hud.phoneCard !== previous.hud.phoneCard) {
+        this.reactions.observe(state.conv.active);
+      }
       if (state.hud !== previous.hud || state.conv.active !== previous.conv.active || state.screen !== previous.screen || state.settings !== previous.settings) {
         this.phone.observe(this.phoneSnapshot());
       }
@@ -1312,12 +1322,7 @@ export class Game implements GameApi {
   private saysAloud(line: { en: string; lt: string }, female: boolean, ch: GameCharacter, own: string | null = null) {
     // (their own voice, if they have one and it has this line; else a passer-by's)
     const voice = own && audio.hasClip(own, 1, line.en) ? own : ambientVoice(female ? "f" : "m");
-    let secs = 1.1 + line.en.length * 0.045;
-    if (audio.hasClip(voice, 1, line.en)) {
-      void audio.play(voice, 1, line.en, { male: !female });
-      secs = audio.clipDuration(voice, 1, line.en) ?? secs;
-      ch.talk(secs, () => audio.level(), () => audio.vowel());
-    } else ch.talk(secs);
+    speakTownLine(ch, voice, female, line.en, 1.1 + line.en.length * 0.045);
     useStore.getState().toast({ kind: "info", title: L("„{line}“", { line: line.en }), body: line.lt, ms: 3200 });
   }
 
@@ -1348,6 +1353,7 @@ export class Game implements GameApi {
     st.setHud({ prompt: null });
     audio.sfx("pop");
     if (r.kind === "boat") {
+      this.reactions.boat(this.ambient, r);
       this.seaMooring = r.beach?.launch ?? { x: r.m.x, z: r.m.z, rot: r.m.heading };
       this.sea?.prefetch(r);
       if (!r.beach) {
@@ -1883,6 +1889,34 @@ export class Game implements GameApi {
   }
 
   phoneDueNow() { this.phone.dueNow(); }
+  textsDueNow() { if (import.meta.env.DEV) this.phone.texts.dueNow(); }
+  textsState() { return this.phone.textsState(); }
+
+  private reactionsBlocked() {
+    const s = this.phoneSnapshot();
+    return this.zone?.id !== "town" || !s.town || !s.visible || s.conversation || s.panel || s.dialog ||
+      s.cardOpen || s.flight || s.loading || s.transition || s.mode || this.rig.mode === "talk";
+  }
+
+  react(kind: ReactKind, { force = false } = {}) {
+    if (!import.meta.env.DEV || !this.player) return false;
+    const { x, z } = this.player.root.position;
+    return this.reactions.debug(kind, this.ambient, this.rides, x, z, force);
+  }
+  reactState() { return this.reactions.schedule.state(); }
+  reactPosition(id: number) { return this.reactions.position(id, this.rig.cam, this.container.clientWidth, this.container.clientHeight); }
+  extendReaction(id: number) { this.reactions.extend(id); }
+
+  placeForReaction(kind: "honk" | "bump", excludeCar?: number) {
+    if (!import.meta.env.DEV || this.reactionsBlocked() || !this.player || this.rides.riding) return false;
+    const spot = reactionTestSpot(this.ambient, this.zone.colliders, this.player.root.position, kind, excludeCar);
+    if (!spot) return false;
+    this.autoPath = null; this.autoTarget = null;
+    this.vel.set(0, 0, 0);
+    this.setJoystick(0, 0);
+    this.placeOnFoot(spot.x, spot.z, spot.heading);
+    return spot;
+  }
 
   phoneState() {
     const { hud, progress } = useStore.getState();
@@ -1900,10 +1934,12 @@ export class Game implements GameApi {
 
   private phoneVisibility = () => {
     this.wasHidden = true;
+    this.reactions.observe(!!this.session?.active || useStore.getState().conv.active);
     this.phone.observe(this.phoneSnapshot());
   };
 
   private phonePageHide = () => {
+    this.reactions.clear();
     if (this.rides?.riding?.kind === "boat") this.savePlace();
     this.phone.dismiss();
     if (useStore.getState().progress.phone) {
@@ -2676,6 +2712,7 @@ export class Game implements GameApi {
     const st = useStore.getState();
     const talking = !!this.session?.active;
     const mode = this.modes.active;
+    this.reactions.observe(talking || st.conv.active);
     if (this.flight && this.rig.stage) {
       // the first visit's flight over the town: the camera along its path, and down to the airport at its end
       this.flight.t += dt;
@@ -2705,7 +2742,7 @@ export class Game implements GameApi {
     this.updateNpcs(dt, talking, mode ?? undefined);
     if (!this.zone.interior) {
       const driver = riding?.kind === "car" && this.rides.phase === "on" ? riding.m : undefined;
-      this.ambient.update(dt, this.player.root.position, this.rig.cam.position, this.hop.y, this.hop.air, driver);
+      this.ambient.update(dt, this.player.root.position, this.rig.cam.position, this.hop.y, this.hop.air, driver, !riding && !this.swimming && !this.aloft);
       if (this.trafficReplyAt !== undefined && this.t >= this.trafficReplyAt) {
         this.trafficReplyAt = undefined;
         if (driver && !blocked && this.ambient.nearbyTraffic(driver.x, driver.z, 20)) audio.sfx("hornReply");
@@ -3287,6 +3324,7 @@ export class Game implements GameApi {
       const sea = !indoor && p.z < SHORE.limit;
       p.x += sea ? bayHold(p.x, bayHold(p.x, this.vel.x * dt, BAY.x0, -1), BAY.x1, 1) : this.vel.x * dt;
       p.z += sea ? bayHold(p.z, this.vel.z * dt, BAY.z0, -1) : this.vel.z * dt;
+      if (!indoor && !blocked && !this.swimming && !this.hop.air && this.hop.y < 0.5) this.ambient.checkBump(before, p, dt);
       // outdoors the player's own ground plan: what is low enough to jump onto has its height (ledges.ts), and the
       // sea's edge is open as far as one can wade
       this.zone.colliders.resolve(p, 0.38, !indoor);
@@ -3352,7 +3390,8 @@ export class Game implements GameApi {
     // what is under their feet: a bench's seat or a planter's rim they jumped onto, else the ground, which by the sea
     // is the sand sloping down under the water (but for a pier's or a terrace's boards over it). A jump lands on it;
     // walking off an edge is a fall.
-    const on = indoor ? 0 : this.ledges?.support(p.x, p.z, this.hop.y, this.hop.air) ?? 0;
+    const surfacePiece = indoor ? undefined : this.ledges?.supportPiece(p.x, p.z, this.hop.y, this.hop.air);
+    const on = surfacePiece?.top ?? 0;
     const ground = wild ? wild.floor(p.x, p.z) : indoor ? 0 : on > 0 ? on : floorY(p.x, p.z);
     // the water here (the sea with its swell, a pool's), and how much of it is over what is underfoot
     const sur = indoor ? null : waterY(p.x, p.z, this.t), surface = sur ?? -99;
@@ -3362,6 +3401,7 @@ export class Game implements GameApi {
     const hotelWater = HOTEL_POOL_ENABLED && !indoor && inHotelPool(p.x, p.z);
     const swim = hotelWater ? HOTEL_POOL.swim : SWIM;
     this.swimming = !through && over > (wasSwimming ? swim.out : swim.depth) && this.hop.y < surface - 0.3;
+    if (this.swimming || wasSwimming) this.reactions.swim(this.ambient, p, this.swimming);
     if (this.swimming && !wasSwimming) this.keepsake.clear();
     let landed = 0;
     if (this.swimming) {
@@ -3383,6 +3423,8 @@ export class Game implements GameApi {
     } else {
       this.diveT = 0; this.diveK = Math.max(0, this.diveK - dt * 3);
       landed = this.hop.update(dt, ground);
+      const car = landed > 0 && surfacePiece && this.rides.carUnder(surfacePiece);
+      if (car) this.reactions.landing(this.ambient, car);
     }
     this.swimK = Math.max(0, Math.min(1, this.swimK + (this.swimming ? dt / 0.4 : -dt / 0.3)));
     this.player.swim = this.swimK * this.swimK * (3 - 2 * this.swimK);

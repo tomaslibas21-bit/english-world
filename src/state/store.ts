@@ -23,6 +23,7 @@ export interface Settings {
   /** How loud the game's sounds are beside the voices: steps, the sea, the town, the effects (0–1; 0: none). */
   sounds: number;
   phoneCalls: boolean;
+  textMessages: boolean;
   textSize: number;
   quality: "high" | "low";
   cameraFollow: boolean;
@@ -53,7 +54,7 @@ function defaultPlayMode(): PlayMode {
 
 export const DEFAULT_SETTINGS: Settings = {
   lt: true, ltNatural: false, ipa: false, suggestions: false, hintsOpen: false,
-  confirmSpeech:false, slowVoice: false, volume: 0.9, sounds: 0.8, phoneCalls: true,
+  confirmSpeech:false, slowVoice: false, volume: 0.9, sounds: 0.8, phoneCalls: true, textMessages: true,
   textSize: typeof window === "undefined" || window.innerWidth > 900 ? 1.15 : 1,
   quality: "high", cameraFollow: true, onDevice: false, sayLt: true, sayIpa: true, worldStyle: "blocks",
   play: defaultPlayMode(),
@@ -176,6 +177,9 @@ export interface HudState {
   fade: number;
   fadeOnFrames: boolean;
   phoneCard: string | null;
+  textArrival?: string | null;
+  textThread?: string | null;
+  reaction?: import("../game/life/reacts").ReactionLine | null;
   panel: null | "map" | "journal" | "phone" | "settings" | "phrasebook" | "help" | "scenarios";
   showTouch: boolean;
   /** Puerto Colibrí's chamber and quest card, and the card of the glyph stone the learner is at. */
@@ -268,6 +272,7 @@ export const useStore = create<Store>((set, get) => ({
   setConv: (p) => set((st) => ({ conv: { ...st.conv, ...(typeof p === "function" ? p(st.conv) : p) } })),
   setHud: (p) => set((st) => {
     const hud = { ...st.hud, ...p };
+    if (hud.panel !== "phone") hud.textThread = null;
     if (p.fade !== undefined) hud.fadeOnFrames = p.fadeOnFrames ?? false;
     const ride = townRide(hud.ride);
     if (ride === townRide(st.hud.ride)) return { hud };

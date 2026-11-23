@@ -79,7 +79,7 @@ export function nearLevel(metres: number, reach = 26): number {
 
 /** The synthesized effects (audio.ts sfx): what plays until a recording is loaded, or without one. */
 export type SynthName = "success" | "seaBell" | "pop" | "door" | "cheer" | "soft" | "listen" | "coin" | "car" | "error" | "ring" | "beep" | "knock" | "tick" | "horn" | "hornReply"
-  | "doubleHonk" | "chirp" | "glass" | "hazardTick" | "ding" | "loteriaFlip" | "loteriaBean" | "cueStrike" | "poolClick" | "poolCushion" | "poolDrop";
+  | "doubleHonk" | "chirp" | "glass" | "hazardTick" | "ding" | "message" | "loteriaFlip" | "loteriaBean" | "cueStrike" | "poolClick" | "poolCushion" | "poolDrop";
 
 /** A recorded effect: its takes in public/sfx/ (mono MP3, peak −3 dB), one picked at random each time with its speed
  *  varied a little, so a run of them never sounds copied. `gain`: its level on the effects bus (the synthesized effects

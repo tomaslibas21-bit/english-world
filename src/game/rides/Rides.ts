@@ -9,7 +9,7 @@ import { STYLED, vertexColorMaterial } from "../style";
 import { Chatter, walkerLook, type Ambient } from "../ambient";
 import { Colliders, colourMerge, rand } from "../world/util";
 import { PARKED_CARS, WORLD } from "../world/layout";
-import { carHasRoof, carLedges, carModelEntry, type CarModelName, type CarPlacement } from "../world/carModels";
+import { carHasRoof, carLedges, carModelEntry, carTop, type CarModelName, type CarPlacement } from "../world/carModels";
 import { TOE, type Piece } from "../ledges";
 import type { NavGrid } from "../nav";
 import type { RidesPlan, CarSpot, BoatSpot } from "../world/rides";
@@ -40,6 +40,7 @@ export interface RideHost {
   /** A wheel over a kerb or a speed bump (`k` 0–1: how hard). */
   thud(k: number): void;
   crashSound?(sound: CrashSound, k: number): void;
+  carImpact?(target: Exclude<CrashTarget, "town">): void;
   allowsCrashes?(): boolean;
   /** Whether the current mode permits driving hints at the car's current position. */
   allowsHints?(): boolean;
@@ -165,6 +166,8 @@ export class Rides {
   group = new THREE.Group();
   readonly list: Ride[] = [];
   private readonly modeCars = new Map<Ride, CarBox & { surfaces: Piece[] }>();
+  private readonly convertibleTops = new WeakMap<Ride, { x: number; z: number; heading: number; pieces: Piece[] }>();
+  private readonly surfaceCars = new WeakMap<Piece, Ride>();
   private readonly parkingKeys: THREE.InstancedMesh;
   private readonly crashEffects: Crashes;
   readonly crashes: Crashes["inspect"];
@@ -296,6 +299,7 @@ export class Rides {
     ride.model = spot.model;
     ride.parked = parked;
     const box = { ...this.carBox(ride), modeCar: true, surfaces: carLedges(spot.model, spot.x, spot.z, spot.rot) };
+    if (parked) for (const piece of box.surfaces) this.surfaceCars.set(piece, ride);
     this.modeCars.set(ride, box);
     this.host.ambient.rideBoxes.push(box);
     return ride;
@@ -319,6 +323,30 @@ export class Rides {
     }
     return pieces;
   }
+
+  private convertiblePieces(car: Ride) {
+    const { x, z, heading } = car.m;
+    let tops = this.convertibleTops.get(car);
+    if (!tops || tops.x !== x || tops.z !== z || tops.heading !== heading) {
+      const pieces = [carTop(x, z, heading, -1.22, 0.72, 1.7, 0.46),
+        carTop(x, z, heading, 0.72, 2.12, 1.9, 0.89), carTop(x, z, heading, -2.11, -1.22, 1.9, 0.91)];
+      tops = { x, z, heading, pieces };
+      for (const piece of pieces) this.surfaceCars.set(piece, car);
+      this.convertibleTops.set(car, tops);
+    }
+    return tops.pieces;
+  }
+
+  townCarPieces(x: number, z: number) {
+    const pieces = this.modeCarPieces(x, z);
+    for (const car of this.list) {
+      if (car.kind !== "car" || car === this.riding || Math.abs(car.m.x - x) >= 5 || Math.abs(car.m.z - z) >= 5) continue;
+      pieces.push(...this.convertiblePieces(car));
+    }
+    return pieces;
+  }
+
+  carUnder(piece: Piece) { return this.surfaceCars.get(piece); }
 
   freeParkingAt(car: Ride, x: number, z: number) {
     return !this.host.colliders.blocked(x, z, car.m.spec.wide + 0.25) && !this.otherCarNear(car, x, z, car.m.spec.half + 0.3);
@@ -715,6 +743,7 @@ export class Rides {
   private syncModeBox(box: CarBox & { surfaces: Piece[] }, r: Ride) {
     if (r.model && (r.m.x !== box.x || r.m.z !== box.z || r.m.heading !== box.heading)) {
       box.surfaces = carLedges(r.model, r.m.x, r.m.z, r.m.heading);
+      if (r.parked) for (const piece of box.surfaces) this.surfaceCars.set(piece, r);
     }
     this.syncBox(box, r);
   }
@@ -1418,11 +1447,12 @@ export class Rides {
   resolvePlayer(p: THREE.Vector3, rad: number, inWater: boolean, feet = p.y) {
     for (const r of this.solidVehicles()) {
       if (r === this.riding || r.beach) continue;
-      const surface = this.modeCars.get(r)?.surfaces[0];
-      if (surface && feet + TOE >= surface.top) continue;
       if (Math.abs(r.m.x - p.x) < 5 && Math.abs(r.m.z - p.z) < 5) {
-        _p.x = p.x; _p.z = p.z;
-        if (pushOutOfBox(_p, rad, r.m.x, r.m.z, r.m.heading, r.m.spec.half, r.m.spec.wide)) { p.x = _p.x; p.z = _p.z; }
+        const surfaces = r.kind === "car" ? this.modeCars.get(r)?.surfaces ?? this.convertiblePieces(r) : [];
+        if (!surfaces.length || feet + TOE < surfaces[0].top) {
+          _p.x = p.x; _p.z = p.z;
+          if (pushOutOfBox(_p, rad, r.m.x, r.m.z, r.m.heading, r.m.spec.half, r.m.spec.wide)) { p.x = _p.x; p.z = _p.z; }
+        }
       }
       for (const o of r.owners) {
         if (o.state === "in") continue;

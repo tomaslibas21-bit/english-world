@@ -24,7 +24,8 @@ type DrivenCar = { x: number; z: number; heading: number };
 
 /** A townsperson: one who strolls between places ("walk"), sits at a café table or on a bench ("sit"), or stands
  *  chatting with someone ("stand"). */
-interface Walker {
+export interface Walker {
+  id: number;
   ch: GameCharacter; female: boolean; kind: "walk" | "sit" | "stand";
   path: [number, number][] | null; wait: number; speed: number;
   heading: number; greetT: number; lastTarget: number;
@@ -98,6 +99,7 @@ export class Chatter {
   }
 }
 export interface TrafficCar {
+  index: number;
   mesh: THREE.Mesh; lane: number; dir: 1 | -1; x: number; from: number; to: number;
   speed: number; max: number; hidden: number; grow: number;
   model?: CarModelName; paint: CarPaint; half: { x: number; z: number };
@@ -114,6 +116,7 @@ export interface TrafficCar {
   batchBody?: THREE.Mesh;
   damagedBody?: THREE.Mesh;
   byT?: number;
+  brakingForPlayer?: boolean;
   /** The pieces read from its mesh at `at`, shifted to the car's current position in `now`. */
   decks?: { at: number; pieces: Piece[]; x: number; now: Piece[] };
 }
@@ -253,6 +256,9 @@ export class Ambient {
   private chats: Chatter[] = [];
   private cars: Car[] = [];
   get traffic(): readonly Car[] { return this.cars; }
+  onHonk?: (car: TrafficCar) => void;
+  onBump?: (walker: Walker, look: THREE.Vector3) => void;
+  private bumpContact = new Set<Walker>();
   private r = rand(4242);
   /** Things in the passers-by's hands, and the people sitting and standing: streams of their own. */
   private rThings = rand(5150);
@@ -308,7 +314,7 @@ export class Ambient {
       this.group.add(mesh);
       const size = model ? carModelEntry(model).collisionBox : undefined;
       const half = size ? { x: size.length / 2, z: size.width / 2 } : { x: VEHICLE_LENGTH[kind] / 2 + 0.05, z: 1.25 };
-      this.cars.push({ mesh, model, paint, half, front: size ? 0 : (VEHICLE_LENGTH[kind] - VEHICLE_LENGTH.car) / 2,
+      this.cars.push({ index: i, mesh, model, paint, half, front: size ? 0 : (VEHICLE_LENGTH[kind] - VEHICLE_LENGTH.car) / 2,
         lane: lane.z, dir: lane.dir, x, from: lane.from, to: lane.to, speed: 6, max: 7 + this.r() * 2.5, hidden: 0, grow: 1 });
     }
   }
@@ -321,7 +327,7 @@ export class Ambient {
     ch.watch = this.learner;
     ch.noticeWithin = 4;
     this.group.add(ch.root);
-    const w: Walker = { ch, female, kind, path: null, wait: 0.5 + this.r() * 4, speed: 1.7 + this.r() * 0.6, heading: 0, greetT: 0, lastTarget: -1, look };
+    const w: Walker = { id: this.walkers.length, ch, female, kind, path: null, wait: 0.5 + this.r() * 4, speed: 1.7 + this.r() * 0.6, heading: 0, greetT: 0, lastTarget: -1, look };
     this.walkers.push(w);
     return w;
   }
@@ -450,7 +456,7 @@ export class Ambient {
     return { female: w.female };
   }
 
-  update(dt: number, player: THREE.Vector3, cam?: THREE.Vector3, feet = player.y, air = false, driven?: DrivenCar) {
+  update(dt: number, player: THREE.Vector3, cam?: THREE.Vector3, feet = player.y, air = false, driven?: DrivenCar, onFoot = !this.riding) {
     this.learner.set(player.x, player.y + 1.5, player.z);
     // at most one path search every 0.3 s (a long search takes a few milliseconds)
     this.pathCooldown -= dt;
@@ -481,7 +487,39 @@ export class Ambient {
         w.dog.update(dt, w.ch.root.localToWorld(_hand.set(-0.38, 0.74, 0.08)), p.x, p.z, w.heading, w.ch.anim === "walk");
       }
     }
-    for (const c of this.cars) this.updateCar(c, dt, player, feet, air, driven);
+    for (const c of this.cars) this.updateCar(c, dt, player, feet, air, onFoot, driven);
+  }
+
+  nearbyWalker(x: number, z: number, range: number, accepts?: (point: THREE.Vector3) => boolean, includeSeated = false) {
+    let nearest: Walker | undefined, best = range ** 2;
+    for (const w of this.walkers) {
+      const p = w.ch.root.position, d = (p.x - x) ** 2 + (p.z - z) ** 2;
+      if ((includeSeated || w.kind !== "sit") && w.ch.root.visible && d <= best && (!accepts || accepts(p))) { nearest = w; best = d; }
+    }
+    return nearest;
+  }
+
+  /** Check the proposed step before collision resolution removes the part that hit the person. */
+  checkBump(from: THREE.Vector3, to: THREE.Vector3, dt: number) {
+    if (dt <= 0) return;
+    const vx = (to.x - from.x) / dt, vz = (to.z - from.z) / dt;
+    for (const w of this.walkers) {
+      if (w.kind === "sit" || !w.ch.root.visible) continue;
+      const p = w.ch.root.position, dx = p.x - from.x, dz = p.z - from.z;
+      const reach = w.kind === "stand" ? 0.78 : 0.68;
+      const d = Math.hypot(dx, dz);
+      if (d > reach + 0.12) this.bumpContact.delete(w);
+      if (this.bumpContact.has(w) || d < 1e-4 || Math.hypot(p.x - to.x, p.z - to.z) >= reach) continue;
+      const forward = (vx * dx + vz * dz) / d;
+      const pace = w.kind === "walk" && w.ch.anim === "walk" ? w.speed : 0;
+      const closing = forward - pace * (Math.sin(w.heading) * dx + Math.cos(w.heading) * dz) / d;
+      if (forward > 0 && closing >= 1.2) {
+        this.bumpContact.add(w);
+        w.tone ??= w.id % 2;
+        this.learner.set(from.x, from.y + 1.5, from.z);
+        this.onBump?.(w, this.learner);
+      }
+    }
   }
 
   private updateWalker(w: Walker, dt: number, player: THREE.Vector3) {
@@ -574,8 +612,9 @@ export class Ambient {
     return ahead;
   }
 
-  private updateCar(c: Car, dt: number, player: THREE.Vector3, feet = player.y, air = false, driven?: DrivenCar) {
+  private updateCar(c: Car, dt: number, player: THREE.Vector3, feet: number, air: boolean, onFoot: boolean, driven?: DrivenCar) {
     if (c.hidden > 0) {
+      c.brakingForPlayer = false;
       c.hidden -= dt;
       const sx = c.dir > 0 ? c.from : c.to;
       // don't pop in on top of the player or another car
@@ -602,7 +641,8 @@ export class Ambient {
     c.rider = on && (!!c.rider || !standing);
     // A player on this car is out of its way, and so is one in the air (a jump onto it as it comes: it keeps its pace
     // and they come down on it, 22 Nov 2026); on the ground ahead of it they are waited for.
-    let gap = this.riding || on || air ? Infinity : this.blockedAhead(c, player.x, player.z);
+    const playerGap = this.riding || on || air ? Infinity : this.blockedAhead(c, player.x, player.z);
+    let gap = Infinity;
     // (and a car one can drive, parked in the lane or rolling along it; a ride outside the lane's ends cannot block it)
     for (const b of this.rideBoxes) {
       const s = Math.abs(Math.sin(b.heading)), co = Math.abs(Math.cos(b.heading));
@@ -621,6 +661,12 @@ export class Ambient {
       const a = (o.x - c.x) * c.dir, both = c.half.x + o.half.x;
       if (a > 0 && a < 16 + (both - VEHICLE_LENGTH.car)) gap = Math.min(gap, a - both + 0.7);
     }
+    const brakesForPlayer = onFoot && c.whole && playerGap < gap && c.speed > Math.max(0, (playerGap - 3.4) * 1.4);
+    if (brakesForPlayer && !c.brakingForPlayer && c.speed >= 3 && !c.crashStop) {
+      c.brakingForPlayer = true;
+      this.onHonk?.(c);
+    } else if (playerGap === Infinity) c.brakingForPlayer = false;
+    gap = Math.min(gap, playerGap);
     let want = gap === Infinity ? c.max : Math.max(0, Math.min(c.max, (gap - 3.4) * 1.4));
     if (driven) {
       const behind = (c.x - driven.x) * c.dir;

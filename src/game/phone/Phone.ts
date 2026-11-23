@@ -4,11 +4,14 @@ import type { Progress } from "../../state/progress";
 import { useStore } from "../../state/store";
 import { audio } from "../audio";
 import { canShowPhoneCard, freeToWalk, nextPhoneCall, PHONE_WAIT, type PhoneSnapshot } from "./schedule";
+import { TEXT_WAIT, TownTexts } from "./texts";
 
 export class TownPhone {
+  readonly texts = new TownTexts();
   private elapsed = 0;
   private played = useStore.getState().progress.phone?.played ?? 0;
   private lastCard = useStore.getState().progress.phone?.lastCard ?? -Infinity;
+  private lastCardEnd = useStore.getState().progress.phone?.lastCardEnd ?? this.lastCard;
   private calm = PHONE_WAIT.calm;
   private forceDue = false;
   private card: { id: string; expires: number; soundAgain: number } | null = null;
@@ -35,6 +38,7 @@ export class TownPhone {
   }
 
   observe(snapshot: PhoneSnapshot) {
+    this.texts.observe(snapshot, this.played);
     const { town, conversation, panel, dialog, mode, onFoot, loading, transition, visible, enabled } = snapshot;
     if (town && (conversation || panel || dialog || mode || !onFoot || loading || transition)) this.calm = 0;
     if (!visible) this.silence();
@@ -44,10 +48,18 @@ export class TownPhone {
 
   tick(dt: number, snapshot: PhoneSnapshot) {
     this.observe(snapshot);
-    if (!snapshot.visible || !freeToWalk(snapshot)) return;
-    this.elapsed += dt;
-    this.played += dt;
-    this.calm += dt;
+    if (snapshot.visible && freeToWalk(snapshot)) {
+      this.elapsed += dt;
+      this.played += dt;
+      this.calm += dt;
+      this.tickCalls(snapshot);
+    }
+    this.texts.tick({ ...snapshot, cardOpen: !!this.card }, dt, this.played, this.elapsed, this.calm, this.played - this.lastCardEnd);
+  }
+
+  textsState() { return this.texts.state(this.played); }
+
+  private tickCalls(snapshot: PhoneSnapshot) {
     if (this.card) {
       if (this.played >= this.card.expires) this.dismiss();
       else if (this.played >= this.card.soundAgain) {
@@ -57,6 +69,7 @@ export class TownPhone {
       return;
     }
     const st = useStore.getState();
+    if (st.hud.textArrival || this.played - (st.progress.phone?.lastText ?? -Infinity) < TEXT_WAIT.cardGap) return;
     if (!canShowPhoneCard(snapshot, {
       active: this.elapsed, sinceCard: this.played - this.lastCard, calm: this.calm, forceDue: this.forceDue,
     })) return;
@@ -109,7 +122,10 @@ export class TownPhone {
 
   private clear() {
     this.card = null;
+    this.lastCardEnd = this.played;
     this.silence();
-    useStore.getState().setHud({ phoneCard: null });
+    const st = useStore.getState();
+    st.updateProgress((p) => { if (p.phone) p.phone.played = p.phone.lastCardEnd = this.played; });
+    st.setHud({ phoneCard: null });
   }
 }
