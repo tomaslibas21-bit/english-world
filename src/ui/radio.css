@@ -351,3 +351,7 @@
   .radio-set.playing .rs-spectrum i:nth-child(even) { transform: scaleY(0.45); }
   .rs-needle, .rs-dial, .rs-lamp, .radio-lamp, .rs-progress i { transition: none; }
 }
+
+.radio-spot-label { font: 700 .76em/1.2 var(--ui); color: #ffe9ad; text-align: center; margin-bottom: .25em; }
+.radio-strip[data-spot] .radio-line { justify-content: center; overflow: visible; text-align: center; }
+.radio-strip[data-spot] .ru { white-space: normal; }

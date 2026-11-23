@@ -13,6 +13,8 @@ import { carried, readLinePictures, readSongNotes, songArtUrls, type LineNote } 
 import type { FavoriteStore } from "./favorites";
 import { LYRIC_SIZES, loadSaved, nextStation, shuffled, stationOrder, stationSongs, step, storeSaved, type RadioSaved, type Station } from "./playlist";
 import { readSongLines, readSongList, songAudioUrls, songDataUrls, songNotesUrls, type RadioConfig, type SongMeta } from "./songs";
+import { RADIO_SPOTS, type RadioSpot } from "../content/radioSpots";
+import { SpotSchedule, type ReadySpot } from "./spots";
 
 /** What stops the music: a conversation is open, a voice is loading or speaking, a microphone is listening. */
 export type Hold = "conversation" | "voice" | "microphone";
@@ -58,6 +60,7 @@ export interface RadioState {
   /** the radio card is open */
   open: boolean;
   song: SongMeta | null;
+  spot: ReadySpot | null;
   /** the song's lines, once they are here */
   timeline: Timeline | null;
   /** a song waiting to play next out of turn (the song of the place the learner walked into) */
@@ -81,6 +84,7 @@ export interface RadioDeps {
   random?: () => number;
   /** a soft tuning sweep, when the learner changes station (never needed for the music itself) */
   tune?: () => void;
+  spotRecording?(spot: RadioSpot): ReadySpot | null;
 }
 
 /** Music sits under the voices: this share of the game's volume. */
@@ -113,6 +117,8 @@ export class Radio {
   private hearts: ReadonlySet<string> = new Set();
   private suggested = new Set<string>();
   private resumeAt = 0;
+  private spotAt = 0;
+  private spots: SpotSchedule;
   private holds = new Set<Hold>();
   private run = 0;
   private failures = 0;
@@ -124,6 +130,7 @@ export class Radio {
   private saveTimer: ReturnType<typeof setInterval> | undefined;
 
   constructor(private deps: RadioDeps) {
+    this.spots = new SpotSchedule(deps.random);
     this.saved = loadSaved(deps.storageKey, deps.storageBefore);
     if (!this.saved.station) this.newSeed(); // a first visit: its own shuffle
     const station = this.stationOf(this.saved.station);
@@ -132,9 +139,9 @@ export class Radio {
       ready: false, on: false, playing: false, held: false, needsTap: false, failed: false,
       station: station?.id ?? "", shuffle: shuffled(station, this.saved.shuffle), counts: {}, place: null, liked: false,
       lyrics: this.saved.lyrics, lyricSize: this.saved.size, nat: this.saved.nat, notes: this.saved.notes, pictures: this.saved.pictures,
-      lineNotes: null, linePictures: null, open: false, song: null, timeline: null, upNext: null,
+      lineNotes: null, linePictures: null, open: false, song: null, spot: null, timeline: null, upNext: null,
     }));
-    deps.output.onEnded = () => this.go(1, true);
+    deps.output.onEnded = () => this.ended();
     deps.output.onStopped = (reason) => this.stopped(reason);
   }
 
@@ -241,11 +248,13 @@ export class Radio {
       clearTimeout(this.resumeTimer);
       clearTimeout(this.switchTimer);
       this.set({ on: false, needsTap: false });
+      this.spots = new SpotSchedule(this.deps.random);
+      const finish = () => { this.silence(); if (this.state.spot) this.go(1, true); };
       if (this.state.playing && !this.holds.size) {
         out.setVolume(0, FADE_OUT_MS);
         clearTimeout(this.fadeTimer);
-        this.fadeTimer = setTimeout(() => this.silence(), FADE_OUT_MS);
-      } else this.silence();
+        this.fadeTimer = setTimeout(finish, FADE_OUT_MS);
+      } else finish();
       this.save();
       return;
     }
@@ -316,7 +325,7 @@ export class Radio {
   /** The heart: the song that is playing joins the course's favorite songs, or leaves them. */
   like() {
     const song = this.state.song;
-    if (!song || !this.deps.favorites) return;
+    if (!song || this.state.spot || !this.deps.favorites) return;
     this.deps.favorites.toggle(song.id);
     this.favoritesChanged();
   }
@@ -368,7 +377,10 @@ export class Radio {
   }
 
   /** Seconds into the song. */
-  position(): number { return this.state.playing ? this.deps.output.position() : this.resumeAt; }
+  position(): number { return this.state.playing && !this.state.spot ? this.deps.output.position() : this.resumeAt; }
+
+  spotPosition() { return this.state.playing ? this.deps.output.position() : this.spotAt; }
+  spotDuration() { return this.deps.output.duration?.() || this.state.spot?.duration || 0; }
 
   // ---------------------------------------------------------------- holds
 
@@ -402,7 +414,10 @@ export class Radio {
   private silence() {
     clearTimeout(this.fadeTimer);
     clearTimeout(this.switchTimer);
-    if (this.sounding()) this.resumeAt = this.deps.output.position();
+    if (this.state.playing) {
+      if (this.state.spot) this.spotAt = this.deps.output.position();
+      else this.resumeAt = this.deps.output.position();
+    }
     this.run++;
     this.starting = false;
     this.deps.output.pause();
@@ -434,7 +449,20 @@ export class Radio {
       this.cursor = id;
       this.resumeAt = id === this.saved.song ? this.saved.at : 0;
     }
-    this.sound(song, this.resumeAt, fade);
+    this.sound(song, this.state.spot ? this.spotAt : this.resumeAt, fade);
+  }
+
+  private ended() {
+    if (!this.sounding()) return;
+    const s = this.state;
+    const spot = s.on && !s.spot && this.deps.spotRecording && this.spots.songEnded(RADIO_SPOTS, this.deps.spotRecording);
+    if (!spot) { this.go(1, true); return; }
+    this.silence();
+    // The buffer output rewinds itself when a recording ends.
+    if (!this.resumeAt) this.resumeAt = this.deps.output.duration?.() ?? 0;
+    this.spotAt = 0;
+    this.set({ spot });
+    this.start(0);
   }
 
   /** Move to the next (1) or the previous (-1) song. `auto`: the song before ended by itself (or wouldn't play), so
@@ -443,7 +471,10 @@ export class Radio {
     if (!this.state.ready) return;
     let id: string | null, turn = true;
     const outOfTurn = !!this.state.song && this.state.song.id !== this.cursor;
-    if (dir > 0 && this.queued) {
+    if (dir < 0 && this.state.spot && this.state.song) {
+      id = this.state.song.id;
+      turn = !outOfTurn;
+    } else if (dir > 0 && this.queued) {
       id = this.queued;
       turn = false; // the station stays where it is
       this.queued = null;
@@ -489,7 +520,7 @@ export class Radio {
     if (!(dip && this.state.playing && this.state.on && !this.holds.size)) {
       this.silence();
       this.resumeAt = at;
-      this.set({ song, timeline: this.lines.get(id) ?? null, needsTap: false });
+      this.set({ song, spot: null, timeline: this.lines.get(id) ?? null, needsTap: false });
       this.save();
       if (this.state.on && !this.holds.size) this.sound(song, at, dip ? SKIP_IN_MS : 0);
       return;
@@ -501,7 +532,7 @@ export class Radio {
     this.starting = false;
     this.stopSaving();
     this.resumeAt = at;
-    this.set({ song, timeline: this.lines.get(id) ?? null, needsTap: false, playing: false });
+    this.set({ song, spot: null, timeline: this.lines.get(id) ?? null, needsTap: false, playing: false });
     this.save();
     out.setVolume(0, SKIP_OUT_MS);
     this.switchTimer = setTimeout(() => {
@@ -515,18 +546,19 @@ export class Radio {
   private sound(song: SongMeta, at: number, fade: number, index = this.played.get(song.id) ?? 0) {
     if (this.holds.size || !this.state.on) return;
     const run = ++this.run, out = this.deps.output;
+    const spot = this.state.spot;
     this.starting = true;
-    this.attempt = { song, at, fade, index };
+    this.attempt = spot ? null : { song, at, fade, index };
     if (this.state.song !== song) this.set({ song, timeline: this.lines.get(song.id) ?? null });
     out.setVolume(fade ? 0 : this.level());
-    out.play(this.audioUrl(song, index), at).then((sounds) => {
+    out.play(spot?.url ?? this.audioUrl(song, index), at).then((sounds) => {
       if (run !== this.run) return;
       this.starting = false;
-      if (!sounds) return;
+      if (!sounds) { if (spot && this.state.on && !this.holds.size) this.go(1, true); return; }
       // a hold that came while the song was loading has silenced it already (run moved on); this is belt and braces
       if (this.holds.size || !this.state.on) { out.pause(); return; }
       this.failures = 0;
-      this.played.set(song.id, index);
+      if (!spot) this.played.set(song.id, index);
       if (fade) out.setVolume(this.level(), fade);
       this.set({ playing: true, needsTap: false, failed: false });
       this.startSaving();
@@ -535,11 +567,14 @@ export class Radio {
     }, (error) => {
       if (run !== this.run) return;
       this.starting = false;
+      if (spot) { this.go(1, true); return; }
       if (error instanceof NeedsTap) { this.set({ playing: false, needsTap: true }); return; }
       this.startFailed();
     });
-    this.loadLines(song);
-    this.extras();
+    if (!spot) {
+      this.loadLines(song);
+      this.extras();
+    }
   }
 
   /** The recording didn't start: its other address is tried (a free example lives on the course's site), then the
@@ -584,13 +619,15 @@ export class Radio {
   private stopped(reason: "error" | "interrupted") {
     if (!this.state.playing && !this.starting) return;
     if (reason === "error") {
+      if (this.state.spot) { this.go(1, true); return; }
       const starting = this.starting;
       this.run++; this.starting = false; this.stopSaving();
       if (starting) this.startFailed(); else this.songFailed();
       return;
     }
     // taken away by the system: it waits where it was for the next tap
-    this.resumeAt = this.deps.output.position();
+    if (this.state.spot) this.spotAt = this.deps.output.position();
+    else this.resumeAt = this.deps.output.position();
     this.run++;
     this.starting = false;
     this.stopSaving();
@@ -623,7 +660,7 @@ export class Radio {
    *  Neither holds the music up, and a song plays on without them. */
   private extras() {
     const s = this.state, song = s.song, cfg = this.deps.config;
-    if (!song || !cfg || !s.on || !s.lyrics) return;
+    if (!song || s.spot || !cfg || !s.on || !s.lyrics) return;
     const keep = <T,>(map: Map<string, T>, value: T) => { if (map.size >= 12) map.delete(map.keys().next().value!); map.set(song.id, value); };
     if (s.notes && !s.lineNotes) {
       const have = this.songNotes.get(song.id);

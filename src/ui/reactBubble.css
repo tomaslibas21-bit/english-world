@@ -1,0 +1,39 @@
+.hud .reaction-bubble {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9;
+  visibility: hidden;
+  pointer-events: none;
+  max-width: min(260px, 70vw);
+}
+.reaction-bubble::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: var(--tail, 50%);
+  transform: translateX(-50%);
+  border: 7px solid transparent;
+  border-top-color: #fff;
+  border-bottom: 0;
+}
+.reaction-bubble[data-below]::after {
+  top: auto;
+  bottom: 100%;
+  border-top: 0;
+  border-bottom: 7px solid #fff;
+}
+.reaction-copy {
+  background: #fff;
+  border: 1px solid rgba(31, 42, 51, 0.07);
+  border-radius: 5px 14px 14px 14px;
+  box-shadow: 0 3px 12px #17232b29;
+  color: var(--ink);
+  font: inherit;
+  padding: 7px 11px;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.reaction-bubble button { position: absolute; inset: 0; background: transparent; border: 0; border-radius: inherit; pointer-events: auto; touch-action: manipulation; }
+.reaction-bubble span { display: block; font: 1.05em/1.2 var(--en); }
+.reaction-bubble small { display: block; margin-top: 4px; color: var(--ink-soft); font-size: .82em; }

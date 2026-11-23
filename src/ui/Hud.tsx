@@ -27,6 +27,9 @@ import { DirectionsCard, PhotoChip, PhotoWalkOverlay, QuestArrival } from "./Pho
 import { Guide } from "./Guide";
 import { TownToast, useTownToast } from "./Toasts";
 import { PhoneRing } from "./PhoneRing";
+import { TextArrival } from "./TextArrival";
+import { ReactBubble } from "./ReactBubble";
+import { unreadTexts } from "../game/phone/texts";
 import { portraitToolbarRows, toolbarColumns } from "./toolbarLayout";
 import { getSeaOverlay } from "./seaOverlay";
 import { useScreen } from "./useScreen";
@@ -36,9 +39,9 @@ import "./townPhone.css";
 /** Inside English Master (VITE_BACK_URL, e.g. "/"): the way back to the course site. */
 export const COURSE_URL = import.meta.env.VITE_BACK_URL as string | undefined;
 
-function ToolButton({ icon, title, panel, hotkey, badge }: { icon: IconName; title: string; panel: "scenarios" | "map" | "journal" | "phone" | "phrasebook" | "settings"; hotkey?: string; badge?: number }) {
+function ToolButton({ icon, title, panel, hotkey, badge, unread }: { icon: IconName; title: string; panel: "scenarios" | "map" | "journal" | "phone" | "phrasebook" | "settings"; hotkey?: string; badge?: number; unread?: number }) {
   return (
-    <button className="icon-btn" onClick={() => useStore.getState().setHud({ panel })} title={title} aria-label={badge ? `${title} (${badge})` : title}>
+    <button className="icon-btn" onClick={() => useStore.getState().setHud({ panel })} title={title} aria-label={(badge ? `${title} (${badge})` : title) + (unread ? `, ${unread} neperskaitytos žinutės` : "")}>
       <Icon name={icon} size={25} />{hotkey && <span className="key" aria-hidden>{hotkey}</span>}
       {!!badge && <span className="due-badge" aria-hidden>{badge}</span>}
     </button>
@@ -120,6 +123,7 @@ export function Hud() {
           <Objective key={taskId ?? "complete"} collapsed={collapsed} fresh={task.fresh && !hud.panel} setCollapsed={task.setManual} />
           {hud.zoneBanner && banner && <div className="zone-banner"><h2>{banner.icon && <Icon name={banner.icon} size="0.8em" className="zb-ico" />}{banner.rest}</h2>{hud.zoneBanner.sub && <p>{hud.zoneBanner.sub}</p>}</div>}
           {!hud.panel && hud.phoneCard && <PhoneRing id={hud.phoneCard} />}
+          {!hud.panel && hud.textArrival && <TextArrival id={hud.textArrival} />}
           <Guide visible={guideVisible} />
           <TownToast toast={toast} />
           {questHud && !directionsToast && <DirectionsCard />}
@@ -129,6 +133,7 @@ export function Hud() {
       <Toolbar key={"tools-" + layout} {...screen} riding={riding} touch={hud.showTouch} hint={guideVisible} />
       <RadioSetLayer />
       {!hud.panel && <LyricStrip sidewaysPhone={screen.sidewaysPhone} />}
+      {!hud.panel && hud.reaction && <ReactBubble key={hud.reaction.id} line={hud.reaction} />}
       {/* (on a phone the way out of a car is the round button itself: no second label over it) */}
       {hud.prompt && !hud.panel && !(hud.showTouch && hud.prompt.kind === "out") && (
         <button className={"prompt" + (hud.showTouch ? " touch" : "")} onClick={() => game?.interact()}>
@@ -196,6 +201,7 @@ function keepKeysOnHudButtons(e: KeyboardEvent<HTMLElement>) {
 function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, modeExit, hint = false }: Screen & { riding: boolean; touch: boolean; modeExit?: string; hint?: boolean }) {
   const due = useDueCards();
   const missedCalls = useStore((s) => Object.keys(s.progress.phone?.missed ?? {}).length);
+  const unread = useStore((s) => unreadTexts(s.progress.texts));
   const hasRadio = useRadio((s) => s.available);
   const radioOpen = useRadio((s) => s.open);
   const canHonk = useStore((s) => s.hud.ride === "car" || s.hud.ride === "taxi");
@@ -286,7 +292,7 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, modeExit, 
     <ToolButton key="scenarios" icon="clapper" title="Visos situacijos" panel="scenarios" />,
     <ToolButton key="map" icon="map" title="Žemėlapis (M)" panel="map" hotkey="M" />,
     <ToolButton key="journal" icon="journal" title="Užduotys (J)" panel="journal" hotkey="J" />,
-    <ToolButton key="phone" icon="smartphone" title="Telefonas (P)" panel="phone" hotkey="P" badge={missedCalls} />,
+    <ToolButton key="phone" icon="smartphone" title="Telefonas (P)" panel="phone" hotkey="P" badge={missedCalls + unread} unread={unread} />,
     <ToolButton key="phrasebook" icon="bookOpen" title="Frazių knygelė" panel="phrasebook" badge={due} />,
     <ToolButton key="settings" icon="settings" title="Nustatymai (Esc)" panel="settings" />,
     ...(hasHelp ? [<SectionHelpButton key="help" />] : []),

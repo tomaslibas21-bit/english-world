@@ -138,13 +138,17 @@ export class Ledges {
 
   /** How high the thing under (x, z) stands that feet at `feet` m are on or over (0: the ground). */
   support(x: number, z: number, feet: number, air: boolean) {
+    return this.supportPiece(x, z, feet, air)?.top ?? 0;
+  }
+
+  supportPiece(x: number, z: number, feet: number, air: boolean) {
     const reach = feet + Ledges.rise(feet, air), m = 0.2;
-    let top = 0;
+    let piece: Piece | undefined;
     for (const b of this.near(x, z)) {
-      if (b.wall || b.top > reach || b.top <= top) continue;
-      if (x > b.minX - m && x < b.maxX + m && z > b.minZ - m && z < b.maxZ + m) top = b.top;
+      if (b.wall || b.top > reach || b.top <= (piece?.top ?? 0)) continue;
+      if (x > b.minX - m && x < b.maxX + m && z > b.minZ - m && z < b.maxZ + m) piece = b;
     }
-    return top;
+    return piece;
   }
 
   /** Reads the heights of `col`'s small colliders from the meshes under `root` and splits the low ones (marks them

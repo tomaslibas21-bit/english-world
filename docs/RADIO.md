@@ -228,3 +228,15 @@ more to show the stations.
   iPhone output.
 - `tests/browser/radio.mjs`: the real game in Chrome and WebKit, on a desktop and as an iPhone, with fixture songs. Its
   header says how to run it.
+
+## Town spots
+
+The scripts live in `src/content/radioSpots.ts`. Put each mixed MP3 in the edition's voice clip folder. The
+default Maple Harbor voices use `public/audio-v2/` locally and the configured voice clip host in production.
+Name it using `audioKey(RADIO_SPOT_VOICE, 1, spot.id)` and add that key and the
+recording length in seconds to the voice `manifest.json`. The manifest entry uses the spot ID as the text used
+to generate the key. The radio uses the voice clip version and files token when it builds the recording URL.
+
+The first spot follows two finished songs. Later spots follow two or three finished songs. Jingles and ads
+alternate as recordings become ready. If the next kind has no recording in the manifest, the radio continues
+straight to the next song. The lyric strip divides the clip duration among its lines by character count.

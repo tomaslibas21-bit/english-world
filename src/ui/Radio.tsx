@@ -6,10 +6,12 @@ import { notedLineAt } from "../radio/extras";
 import { LYRIC_SIZES, type Station } from "../radio/playlist";
 import { bindRadio, radio, useRadio } from "../radio";
 import { lineAt, shortGloss, unitAt } from "../radio/lyrics";
+import { spotLineAt, type ReadySpot } from "../radio/spots";
 import { Icon } from "./icons";
 import "./radio.css";
 
 const SKIN = `radio-skin-${RADIO_SKIN}`;
+const SPOT_AD = "Reklama";
 /** The set's FM dial. */
 const DIAL = { from: 88, to: 108, marks: [88, 92, 96, 100, 104, 108] };
 /** A frequency's place across the dial window, which keeps a margin at both ends for the first and last number. */
@@ -213,7 +215,7 @@ function RadioSet() {
               {note && <em>{note}</em>}
               {s.upNext && <em>Toliau – šios vietos daina: <i lang="en">{s.upNext.t}</i></em>}
             </div>
-            {s.song && (
+            {s.song && !s.spot && (
               <button className={"rs-heart" + (s.liked ? " on" : "")} onClick={like} aria-pressed={s.liked} aria-label={`${heartLabel}: ${s.song.t}`} title={heartLabel}>
                 <span key={beat} className={beat && s.liked ? "rs-heart-pop" : undefined}><Icon name={s.liked ? "heartFull" : "heart"} size={25} /></span>
               </button>
@@ -268,6 +270,41 @@ function RadioSet() {
  *  taps go through it to the ground. */
 export function LyricStrip({ sidewaysPhone }: { sidewaysPhone: boolean }) {
   const show = useRadio((s) => s.on && s.lyrics && s.playing);
+  const spot = useRadio((s) => s.spot);
+  if (show && spot) return <SpotStrip key={spot.spot.id} recording={spot} />;
+  return <SongStrip show={show} sidewaysPhone={sidewaysPhone} />;
+}
+
+function SpotStrip({ recording }: { recording: ReadySpot }) {
+  const { spot } = recording;
+  const station = useRadio((s) => s.station);
+  const size = useRadio((s) => s.lyricSize);
+  const nat = useRadio((s) => s.nat);
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    let frame: number;
+    const tick = () => {
+      setIndex(spotLineAt(spot, radio.spotDuration(), radio.spotPosition()));
+      frame = requestAnimationFrame(tick);
+    };
+    tick();
+    return () => cancelAnimationFrame(frame);
+  }, [spot]);
+  const line = spot.lines[index];
+  if (!line) return null;
+  const label = spot.kind === "ad" ? SPOT_AD : STATIONS.find((s) => s.id === station)?.name ?? RADIO_NAME;
+  return <div className={"radio-strip " + SKIN} data-spot={spot.id} style={{ "--rl": LYRIC_SIZES[size] ?? 1 } as React.CSSProperties} aria-hidden>
+    <div className="radio-card">
+      <div className="radio-words">
+        <div className="radio-spot-label">{label}</div>
+        <div className="radio-line" key={index}><span className="ru"><span className="rt" lang="en">{line.en}</span></span></div>
+        {nat && <div className="radio-nat" lang="lt" key={`n${index}`}>{line.lt}</div>}
+      </div>
+    </div>
+  </div>;
+}
+
+function SongStrip({ show, sidewaysPhone }: { show: boolean; sidewaysPhone: boolean }) {
   const timeline = useRadio((s) => s.timeline);
   const size = useRadio((s) => s.lyricSize);
   const nat = useRadio((s) => s.nat);

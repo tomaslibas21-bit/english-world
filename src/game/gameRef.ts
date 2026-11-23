@@ -19,6 +19,8 @@ export interface GameApi {
   nextScenarioId(after?: string): string | null;
   call(sitId: string): void;
   handlePhoneCard?(id: string, answer: boolean): void;
+  reactPosition?(id: number): { x: number; y: number; opacity: number } | null;
+  extendReaction?(id: number): void;
   closeConversation(): void;
   orderedSituations(): SituationMeta[];
   currentObjective(): SituationMeta | null;

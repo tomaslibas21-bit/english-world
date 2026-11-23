@@ -11,6 +11,8 @@ import { SITUATIONS, SITUATION_BY_ID } from "../content/situations/catalog";
 import { LOCATIONS, TOWN_LT, placeLt } from "../content/locations";
 import { keepsakeFor } from "../content/keepsakes";
 import { PHONE_CALLS } from "../content/phoneCalls";
+import { TEXT_THREADS } from "../content/texts";
+import { TextList, TextThread } from "./TextThread";
 import { NPCS } from "../content/npcs";
 import { coachVoice } from "../content/voices";
 import { OUTDOOR_NPCS, WORLD, SEA_Z, AIRPORT_EXIT } from "../game/world/layout";
@@ -387,12 +389,16 @@ function MapPanel({ close }: { close: () => void }) {
 function Phone({ close }: { close: () => void }) {
   const calls = ROUTE.filter(isPhone).sort((a, b) => a.chapter - b.chapter || a.order - b.order);
   const progress = useStore((s) => s.progress);
+  const textId = useStore((s) => s.hud.textThread);
+  const thread = TEXT_THREADS.find(({ id, from }) => id === textId && NPCS[from] && progress.texts?.got[id]);
   const missed = calls.filter((sit) => progress.phone?.missed[sit.id]);
   return (
-    <div className="phone" role="dialog" aria-label="Telefonas">
+    <div className={"phone" + (thread ? " thread-open" : "")} role="dialog" aria-label="Telefonas">
       <div className="phone-status">
         <span>9:41</span><button className="phone-close" onClick={close} aria-label="Uždaryti"><Icon name="close" size={20} /></button>
       </div>
+      {thread ? <TextThread key={thread.id} thread={thread} entry={progress.texts!.got[thread.id]} /> : <>
+      <TextList got={progress.texts?.got} />
       <PhotoBookContact close={close} />
       {!!missed.length && <section className="missed-calls">
         <h2>Praleisti skambučiai</h2>
@@ -419,6 +425,7 @@ function Phone({ close }: { close: () => void }) {
           </button>
         );
       })}
+      </>}
     </div>
   );
 }
@@ -462,6 +469,7 @@ function Settings({ close }: { close: () => void }) {
           <div className="seg">{([["light", "Lengvas"], ["town", "3D miestas"]] as const).map(([v, n]) => <button key={v} className={s.play === v ? "on" : ""} onClick={() => { if (s.play !== v) switchPlayMode(v); }}>{n}</button>)}</div>
         </div>
         {s.play !== "light" && <Toggle on={s.phoneCalls} onChange={(v) => set({ phoneCalls: v })} label="Skambučiai einant po miestą" sub="Telefonas kartais suskamba, kai vaikštai." />}
+        {s.play !== "light" && <Toggle on={s.textMessages} onChange={(v) => set({ textMessages: v })} label="Žinutės einant po miestą" sub="Draugai kartais parašo trumpą žinutę." />}
         {s.play !== "light" && <Toggle on={s.cameraFollow} onChange={(v) => set({ cameraFollow: v })} label="Kamera seka personažą" />}
         <Toggle on={picturesOn(s)} onChange={(v) => set({ scenes: v })} label="Iliustruotos scenos" sub={s.play === "light" ? "Pokalbio metu vietoje 3D vaizdo rodomas piešinys, kuris keičiasi pagal pokalbio etapą." : "Pokalbio metu vietoje 3D vaizdo rodomas piešinys, kuris keičiasi pagal pokalbio etapą. Per pokalbį perjungsi mažu paveikslėliu vaizdo kampe arba klavišu P."} />
         <div className="set-row">
@@ -503,7 +511,7 @@ function Settings({ close }: { close: () => void }) {
         {import.meta.env.BASE_URL === "/zaidimas/" && <div className="set-row"><a className="btn ghost small" href="/atsisiuntimai" target="_top">Atsisiuntimai ir failų pašalinimas</a></div>}
         <div className="set-row">
           <div className="txt"><b>Pradėti iš naujo</b><span>Ištrina šios naršyklės išsaugotą progresą.</span></div>
-          <button className="btn ghost small" onClick={() => { if (confirm("Tikrai ištrinti progresą?")) { useStore.getState().updateProgress((p) => { delete p.phone; delete p.photoWalk; Object.assign(p, emptyProgress()); }); clearPhotos(); location.reload(); } }}>Ištrinti</button>
+          <button className="btn ghost small" onClick={() => { if (confirm("Tikrai ištrinti progresą?")) { useStore.getState().updateProgress((p) => { delete p.phone; delete p.photoWalk; delete p.texts; Object.assign(p, emptyProgress()); }); clearPhotos(); location.reload(); } }}>Ištrinti</button>
         </div>
       </div>
     </div>

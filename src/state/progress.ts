@@ -18,10 +18,18 @@ export interface SitProgress {
 export interface PhoneProgress {
   played: number;
   lastCard?: number;
+  lastCardEnd?: number;
+  lastText?: number;
   missed: Record<string, { presentations: number; retryAt: number }>;
   invitation?: Invitation;
   office?: boolean;
   followUp?: "invitation" | "office";
+}
+
+export interface TextProgress {
+  pending: Record<string, { day: string; played: number }>;
+  got: Record<string, { at: number; read?: true; reply?: number }>;
+  translated?: true;
 }
 
 export interface Progress {
@@ -52,6 +60,7 @@ export interface Progress {
   taxi?: { nextRoute: number };
   lighthouse?: { greeted?: boolean; boat?: { id: string; x: number; z: number; rot: number } };
   phone?: PhoneProgress;
+  texts?: TextProgress;
   /** The surf lesson (game/surf): waves ridden and seconds on them, commands followed of those asked, lessons taken,
    *  and how often each of the instructor's lines has been heard (their help fades with it). */
   surf?: { waves: number; seconds: number; followed: number; asked: number; lessons: number; heard: Record<string, number> };

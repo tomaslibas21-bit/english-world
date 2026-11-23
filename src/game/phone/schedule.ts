@@ -39,8 +39,8 @@ export function canShowPhoneCard(s: PhoneSnapshot, t: PhoneTimers) {
     && (t.forceDue || (t.active >= PHONE_WAIT.initial && t.sinceCard >= PHONE_WAIT.between));
 }
 
-type RouteEntry = Pick<SituationMeta, "id" | "chapter" | "order">;
-const routeOrder = (a: RouteEntry, b: RouteEntry) => a.chapter - b.chapter || a.order - b.order;
+export type RouteEntry = Pick<SituationMeta, "id" | "chapter" | "order">;
+export const routeOrder = (a: RouteEntry, b: RouteEntry) => a.chapter - b.chapter || a.order - b.order;
 
 export function nextPhoneCall(route: readonly RouteEntry[], progress: Pick<Progress, "sits" | "phone">, played: number) {
   let chapter = -Infinity, firstOrder = Infinity;

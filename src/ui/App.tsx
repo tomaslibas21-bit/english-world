@@ -27,7 +27,10 @@ export function App() {
   const [mode, setMode] = useState<PlayMode | null>(() => takeAutoStart());
   useEffect(() => { document.documentElement.style.setProperty("--scale", String(textSize)); }, [textSize]);
   useEffect(() => audio.bindGestures(), []);
-  useEffect(() => startPlayStats({ playing: () => radio.store.getState().playing, subscribe: (fn) => radio.store.subscribe(fn) }), []);
+  useEffect(() => startPlayStats({ playing: () => {
+    const { playing, spot } = radio.store.getState();
+    return playing && !spot;
+  }, subscribe: (fn) => radio.store.subscribe(fn) }), []);
   useEffect(() => { if (!mode) useStore.getState().setScreen("title"); refreshLocalState(); }, []);
   if (!mode) return <><Title onPlay={() => setMode(useStore.getState().settings.play)} /><Toasts /><AudioDiagnostics /></>;
   return <>{mode === "light" ? <LightPlay /> : <Play />}<AudioDiagnostics /></>;

@@ -2,7 +2,9 @@ import { ROUTE } from "../content/route";
 // The game's one radio (radio.ts), tied to the rest of the game: it is silent for conversations, voices and the
 // microphone, follows the volume setting, and hears which place the learner walks into.
 import { useStore as useZustand } from "zustand";
-import { audio, filesToken, usesBufferRecordings } from "../game/audio";
+import { audio, clipUrl, filesToken, usesBufferRecordings } from "../game/audio";
+import { audioKey } from "../audio-key";
+import { RADIO_SPOT_VOICE } from "../content/radioSpots";
 import { watchMicrophone } from "../convo/audioFocus";
 import { useStore } from "../state/store";
 import { SITUATION_BY_ID } from "../content/situations/catalog";
@@ -70,6 +72,11 @@ export const radio = new Radio({
   storageBefore: RADIO_STORAGE_BEFORE,
   favorites: typeof window === "undefined" ? undefined : courseFavorites(),
   tune,
+  spotRecording: (spot) => {
+    if (!audio.hasClip(RADIO_SPOT_VOICE, 1, spot.id)) return null;
+    const key = audioKey(RADIO_SPOT_VOICE, 1, spot.id);
+    return { spot, url: clipUrl(audio.base, key, audio.repairVersions[key], filesToken()), duration: audio.clipDuration(RADIO_SPOT_VOICE, 1, spot.id) ?? 0 };
+  },
 });
 
 export function useRadio<T>(pick: (s: RadioState) => T): T { return useZustand(radio.store, pick); }

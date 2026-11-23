@@ -260,31 +260,35 @@ export class AudioSystem {
 
   /** True after playback finishes or the learner explicitly continues reading. Cancellation is false;
    *  denial keeps the same line pending. Optional playback resolves false on failure or timeout. */
-  play(voice: string, speed: number, text: string, opts: { slow?: boolean; male?: boolean; localVoiceOnly?: boolean; optional?: boolean } = {}): Promise<boolean> {
+  play(voice: string, speed: number, text: string, opts: { slow?: boolean; male?: boolean; localVoiceOnly?: boolean; optional?: boolean; recordingOnly?: boolean; signal?: AbortSignal } = {}): Promise<boolean> {
+    if (opts.signal?.aborted) return Promise.resolve(false);
     this.stopDiagnostic("normal-playback");
     this.stop();
     // nothing to say (a hint whose blank is still empty comes out as ".")
     if (!/[a-z0-9]/i.test(text)) return Promise.resolve(true);
     return new Promise((resolve) => {
       let deadline: ReturnType<typeof setTimeout> | undefined;
+      const abort = () => request.finish(false);
       const request: PlaybackRequest = {
         done: false,
         optional: opts.optional,
         fail: (state) => {
           if (request.done) return;
           if (!opts.optional) this.setState(state);
-          else if (request.fallback) request.fallback();
+          else if (!opts.recordingOnly && request.fallback) request.fallback();
           else request.finish(false);
         }, cleanup: () => {},
         finish: (completed) => {
           if (request.done) return;
           request.done = true;
           clearTimeout(deadline);
+          opts.signal?.removeEventListener("abort", abort);
           request.cleanup();
           if (this.request === request) { this.request = null; this.setState("idle"); }
           resolve(completed);
         },
       };
+      opts.signal?.addEventListener("abort", abort, { once: true });
       if (opts.optional) {
         const duration = this.clipDuration(voice, speed, text);
         deadline = setTimeout(() => request.finish(false),
@@ -309,6 +313,7 @@ export class AudioSystem {
           if (usesBufferRecordings()) this.playBufferRecording(request, key, text, opts);
           else this.playRecording(request, key, text, opts);
         }
+        else if (opts.recordingOnly) request.finish(false);
         else this.speakFallback(request, text, opts, "manifest-miss");
       };
       const start = () => { void begin().catch(() => request.fail("unavailable")); };
@@ -1574,7 +1579,7 @@ export class AudioSystem {
   }
 
   sfx(name: "success" | "seaBell" | "pop" | "door" | "cheer" | "soft" | "listen" | "coin" | "car" | "error" | "ring" | "beep" | "knock" | "tick" | "horn" | "hornReply"
-    | "shutter" | "doubleHonk" | "chirp" | "glass" | "hazardTick" | "ding" | "cueStrike" | "poolClick" | "poolCushion" | "poolDrop", intensity = 1) {
+    | "shutter" | "doubleHonk" | "chirp" | "glass" | "hazardTick" | "ding" | "message" | "cueStrike" | "poolClick" | "poolCushion" | "poolDrop", intensity = 1) {
     audioDiagnostic("context.effect", { reason: name });
     const ctx = this.ac();
     if (!ctx) return;
@@ -1613,6 +1618,7 @@ export class AudioSystem {
       case "pop": tone(660, 0, 0.08, "triangle", vol * 0.7); break;
       case "soft": tone(440, 0, 0.12, "sine", vol * 0.5); break;
       case "listen": tone(880, 0, 0.09, "sine", vol * 0.6); tone(1320, 0.07, 0.12, "sine", vol * 0.5); break;
+      case "message": tone(660, 0, 0.14, "sine", vol * 0.27); tone(880, 0.11, 0.23, "sine", vol * 0.23); break;
       case "coin": tone(988, 0, 0.1, "square", vol * 0.35); tone(1319, 0.08, 0.25, "square", vol * 0.35); break;
       case "door": tone(180, 0, 0.18, "triangle", vol * 0.8); tone(140, 0.12, 0.2, "triangle", vol * 0.6); break;
       case "car": tone(90, 0, 0.9, "sawtooth", vol * 0.25); break;

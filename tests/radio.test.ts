@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { captureAudio, watchMicrophone } from "../src/convo/audioFocus";
 import { STATIONS, songOfSituation } from "../src/content/radio";
 import { ROUTE } from "../src/content/route";
+import { RADIO_SPOTS } from "../src/content/radioSpots";
 import { buildTimeline, lineAt, shortGloss, unitAt, withSungTranslations, wordsBegun } from "../src/radio/lyrics";
 import { BufferOutput, NeedsTap, type RadioOutput } from "../src/radio/output";
 import { carried, lineKey, notedLineAt, readLinePictures, readSongNotes, songArtUrls } from "../src/radio/extras";
@@ -360,6 +361,51 @@ describe("the radio", () => {
     radio.tap();
     expect(radio.store.getState()).toMatchObject({ on: false, open: false });
     expect(out.log).toEqual([]);
+  });
+
+  it("keeps the song's place during a spot, holds it, and skips it to the next song", async () => {
+    const radio = new Radio(deps({ spotRecording: (spot) => ({ spot, url: `/spot/${spot.id}.mp3`, duration: 4 }) }));
+    radio.setOn(true);
+    await settle();
+    out.onEnded?.();
+    await settle();
+    expect(radio.store.getState().song?.id).toBe("B");
+    out.at = 28;
+    out.onEnded?.();
+    await settle();
+    expect(radio.store.getState().spot?.spot.kind).toBe("jingle");
+    out.at = 1.5;
+    radio.save();
+    expect(saved()).toMatchObject({ song: "B", at: 28 });
+    radio.like();
+    expect(radio.store.getState().liked).toBe(false);
+    radio.hold("microphone", true);
+    expect(out.sounding).toBe(false);
+    radio.release("microphone");
+    await vi.advanceTimersByTimeAsync(RESUME_AFTER_MS);
+    expect(out.at).toBe(1.5);
+    radio.next();
+    await settle();
+    expect(radio.store.getState()).toMatchObject({ song: { id: "C" }, spot: null, playing: true });
+    radio.shutdown();
+  });
+
+  it("steps back from a spot to the song just heard and skips a broken spot silently", async () => {
+    const jingle = RADIO_SPOTS.find((spot) => spot.kind === "jingle")!;
+    const ad = RADIO_SPOTS.find((spot) => spot.kind === "ad")!;
+    const radio = new Radio(deps({ spotRecording: (spot) => spot === jingle || spot === ad ? { spot, url: `/spot/${spot.id}.mp3`, duration: 3 } : null }));
+    radio.setOn(true);
+    await settle();
+    for (let i = 0; i < 2; i++) { out.onEnded?.(); await settle(); }
+    expect(radio.store.getState().spot?.spot).toBe(jingle);
+    radio.previous();
+    await settle();
+    expect(radio.store.getState()).toMatchObject({ song: { id: "B" }, spot: null });
+    out.broken.add(`${ad.id}.mp3`);
+    for (let i = 0; i < 3; i++) { out.onEnded?.(); await settle(); }
+    expect(out.log.some((entry) => entry.includes(ad.id))).toBe(true);
+    expect(radio.store.getState()).toMatchObject({ song: { id: "A" }, spot: null, failed: false, playing: true });
+    radio.shutdown();
   });
 
   it("the button is the power switch: one press on, the next off, and the set opens by itself only the first time", async () => {
