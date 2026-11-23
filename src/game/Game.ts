@@ -1,4 +1,7 @@
 // The game: renderer, zones (town + interiors), player, NPCs, input, guidance and conversations.
+import { StreetLife } from "./street";
+import { TownStreet } from "./street/world";
+import type { StreetSnapshot } from "./street/schedule";
 import * as THREE from "three";
 import { showConversationEvent } from "./convEvents";
 import { buildTown, type Town, type Door } from "./world/town";
@@ -281,6 +284,7 @@ export class Game implements GameApi {
   private frameFade = new FrameFade((fade) => useStore.getState().setHud({ fade, fadeOnFrames: this.frameFade.active }));
   private readonly phone = new TownPhone();
   private readonly reactions = new TownReactions(() => this.reactionsBlocked());
+  streetLife!: StreetLife;
   private phoneWatch: (() => void)[] = [];
   private readonly debugAudio = audioDiagnosticsEnabled();
   private wasHidden = false;
@@ -495,6 +499,9 @@ export class Game implements GameApi {
     this.ambient = new Ambient(nav, places, st.settings.quality, this.town.seats, this.town.colliders);
     this.ambient.onHonk = (car) => this.reactions.honk(car);
     this.ambient.onBump = (walker, look) => this.reactions.bump(walker, look);
+    this.streetLife = new StreetLife(new TownStreet(this.town.group, nav, this.town.colliders, this.ambient,
+      this.rig.cam, () => this.player, () => useStore.getState().progress.profile?.look.top,
+      this.field, () => this.screenW <= 600 && this.screenW < this.screenH || this.sidewaysPhone));
     // what one can drive: the convertibles at the curb with their people in them, the boat at the pier
     const game = this;
     this.rides = new Rides({
@@ -733,12 +740,12 @@ export class Game implements GameApi {
         this.reactions.observe(state.conv.active);
       }
       if (state.hud !== previous.hud || state.conv.active !== previous.conv.active || state.screen !== previous.screen || state.settings !== previous.settings) {
-        this.phone.observe(this.phoneSnapshot());
+        this.observeStreetAndPhone();
       }
     }), radio.store.subscribe((state, previous) => {
-      if (state.open !== previous.open) this.phone.observe(this.phoneSnapshot());
+      if (state.open !== previous.open) this.observeStreetAndPhone();
     }));
-    if (this.debugAudio) this.phoneWatch.push(subscribeAudioDiagnostics(() => this.phone.observe(this.phoneSnapshot())));
+    if (this.debugAudio) this.phoneWatch.push(subscribeAudioDiagnostics(() => this.observeStreetAndPhone()));
     document.addEventListener("visibilitychange", this.phoneVisibility);
     window.addEventListener("pagehide", this.phonePageHide);
     this.bindInput();
@@ -755,6 +762,7 @@ export class Game implements GameApi {
     // Keep the logo over the canvas until an actual town frame is ready to show.
     this.renderer.render(this.scene, this.rig.cam);
     this.onReady?.();
+    if (import.meta.env.DEV) this.streetLife.devRequest();
     // the town's hints, each when its thing first matters (coach.ts); after the flight, if the visit opens with one
     if (!this.flight) coach.begin(true);
   }
@@ -912,6 +920,7 @@ export class Game implements GameApi {
       if (this.zone?.id === "town" && id !== "town") this.rides.healCrashes();
       if (this.zone) this.scene.remove(this.zone.group);
       this.zone = z;
+      this.streetLife?.observe(this.streetSnapshot());
       this.scene.add(z.group);
       const indoor = !!z.interior, wild = z.interior?.wild;
       this.jogT = 0;
@@ -1190,7 +1199,7 @@ export class Game implements GameApi {
 
   modeStart(id: string, option?: string) {
     this.modes.start(id, option);
-    this.phone.observe(this.phoneSnapshot());
+    this.observeStreetAndPhone();
   }
 
   private returnRoadCar(car: Ride, onFoot: boolean) {
@@ -1377,7 +1386,7 @@ export class Game implements GameApi {
     this.surface(true);
     this.player.bank = 0;
     if (!this.rides.board(r)) return false;
-    this.phone.observe(this.phoneSnapshot());
+    this.observeStreetAndPhone();
     this.keepsake.clear();
     this.ambient.riding = r.kind === "car";
     this.nearest = null;
@@ -1819,7 +1828,7 @@ export class Game implements GameApi {
       try { if (!this.disposed) run(); } finally { this.sceneDelays.delete(timer); }
     }, delay);
     this.sceneDelays.add(timer);
-    this.phone.observe(this.phoneSnapshot());
+    this.observeStreetAndPhone();
   }
 
   lastScenario: string | null = null;
@@ -1887,7 +1896,7 @@ export class Game implements GameApi {
   private requestConversation(sitId: string, actor: NpcActor | null, fromCard = false) {
     this.quests.stopReplay();
     this.conversationLoads++;
-    this.phone.observe(this.phoneSnapshot());
+    this.observeStreetAndPhone();
     let opened = false;
     whenLoaded(sitId, (def) => {
       this.startSession(def, actor, fromCard && sitId === "p24-flood" ? FLOOD_INCOMING_INTRO : undefined);
@@ -1916,12 +1925,35 @@ export class Game implements GameApi {
       guide: !!hud.coach && !hud.phoneCard,
       banner: !!hud.zoneBanner,
       cardOpen: !!hud.phoneCard,
+      streetBlocked: this.streetLife?.blocksPhone,
       flight: !!this.flight || hud.flight,
       loading: !!this.caveLoading || this.conversationLoads > 0 || this.sceneDelays.size > 0,
       transition: this.transitioning || !!hud.fade || this.rideTimer !== undefined,
       mode: this.modes.engaged || this.modes.hasQueued || !!hud.modeScreen,
     };
   }
+
+  private streetSnapshot(snapshot = this.phoneSnapshot()): StreetSnapshot {
+    return { ...snapshot, outdoors: this.zone?.id === "town" };
+  }
+
+  private observeStreetAndPhone() {
+    this.phone.observe(this.phoneSnapshot());
+    this.streetLife?.observe(this.streetSnapshot());
+  }
+
+  streetNow = import.meta.env.DEV ? (id?: string, cast?: string) => {
+    this.streetLife?.observe(this.streetSnapshot());
+    return this.streetLife?.streetNow(id, cast) ?? false;
+  } : undefined;
+
+  streetChatterNow = import.meta.env.DEV ? (id?: string) => {
+    this.streetLife?.observe(this.streetSnapshot());
+    return this.streetLife?.streetChatterNow(id) ?? false;
+  } : undefined;
+
+  streetState = import.meta.env.DEV ? () => this.streetLife?.streetState() : undefined;
+  streetAdvance = import.meta.env.DEV ? (seconds: number) => this.streetLife?.streetAdvance(seconds, this.streetSnapshot()) : undefined;
 
   handlePhoneCard(id: string, answer: boolean) {
     const snapshot = this.phoneSnapshot();
@@ -1978,7 +2010,7 @@ export class Game implements GameApi {
   private phoneVisibility = () => {
     this.wasHidden = true;
     this.reactions.observe(!!this.session?.active || useStore.getState().conv.active);
-    this.phone.observe(this.phoneSnapshot());
+    this.observeStreetAndPhone();
   };
 
   private phonePageHide = () => {
@@ -2770,11 +2802,13 @@ export class Game implements GameApi {
     const phoneState = this.phoneSnapshot();
     this.updatePhoneTasks(dt, phoneState);
     // Do not count the gap between animation frames across a tab visibility change.
-    this.phone.tick(this.wasHidden ? 0 : elapsed, this.phoneSnapshot());
+    const visibleElapsed = this.wasHidden ? 0 : elapsed;
+    this.phone.tick(visibleElapsed, this.phoneSnapshot());
     this.wasHidden = document.hidden;
 
     // (the open road and the open sea draw their own scenes, at the size syncSize has just applied)
     if (this.road?.render(this.renderer, w, h) || this.sea?.render(this.renderer, w, h)) {
+      this.streetLife.observe(this.streetSnapshot());
       this.sampleFps(true);
       return;
     }
@@ -2888,6 +2922,8 @@ export class Game implements GameApi {
       }
     }
     this.quests.observe(this.rig.cam);
+    // Street subjects use the camera and lens that will draw this frame.
+    this.streetLife.tick(dt, this.streetSnapshot(), visibleElapsed);
     // sun follows the player for crisp shadows
     const pp = this.player.root.position;
     this.sun.position.set(pp.x - 40, 70, pp.z + 30);
@@ -3733,7 +3769,8 @@ export class Game implements GameApi {
     const c = this.container.getBoundingClientRect();
     this.hudBoxCache = [];
     const selectors = [
-      ".objective-card", ".cave-card", ".phone-ring", ".directions-card", ".photo-chip", ".minimap", ".toolbar",
+      ".objective-card", ".cave-card", ".phone-ring", ".directions-card", ".photo-chip",
+      ".street-card", ".street-bubble", ".minimap", ".toolbar",
       ".toolbar.menu-open:not(.portrait-toolbar) .toolbar-tools",
       ".portrait-toolbar.menu-open .toolbar-drawer",
       ".portrait-toolbar.in-ride:not(.menu-open) .radio-tool",
@@ -3917,6 +3954,7 @@ export class Game implements GameApi {
     for (const timer of this.sceneDelays) clearTimeout(timer);
     this.sceneDelays.clear();
     this.keepsake.dispose();
+    this.streetLife?.dispose();
     this.disposed = true;
     this.modes.dispose();
     this.player?.root.removeFromParent();

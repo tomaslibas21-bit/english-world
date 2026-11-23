@@ -31,7 +31,7 @@ export interface LearnerTable { sent: Record<string, SentLt>; entity: Record<str
 
 export const sentKey = (es: string, gloss: string, nat: string) => `${es}␟${gloss}␟${nat}`;
 
-const TEXT_KEYS = new Set(["lt", "note", "noteSpain", "label", "goal", "intro", "split", "minimal"]);
+const TEXT_KEYS = new Set(["lt", "note", "noteSpain", "label", "goal", "intro", "split", "minimal", "role", "scene"]);
 const SKIP = new Set(["intents", "tests", "sims", "grammar", "domains", "entities", "handlers", "patterns", "forms", "examples", "expects", "attrs", "neutral", "spain"]);
 const isSent = (o: any) => o && typeof o === "object" && typeof o.en === "string" && typeof o.lt === "string" && typeof o.nat === "string";
 
@@ -40,7 +40,7 @@ type Visit = { sent(o: any, where: string): void; text(o: any, key: string, wher
 function walk(o: any, where: string, v: Visit, seen: WeakSet<object>) {
   if (!o || typeof o !== "object" || seen.has(o)) return;
   seen.add(o);
-  if (Array.isArray(o)) { o.forEach((x, i) => walk(x, where, v, seen)); return; }
+  if (Array.isArray(o)) { o.forEach((x, i) => walk(x, `${where}[${i}]`, v, seen)); return; }
   if (isSent(o)) {
     v.sent(o, where);
     for (const tw of ["neutral", "spain"]) if (isSent(o[tw])) v.sent(o[tw], where + "." + tw);
@@ -48,8 +48,15 @@ function walk(o: any, where: string, v: Visit, seen: WeakSet<object>) {
   }
   for (const [k, x] of Object.entries(o)) {
     if (SKIP.has(k)) continue;
-    if (typeof x === "string") { if (TEXT_KEYS.has(k) && /[A-Za-z]/.test(x)) v.text(o, k, where + "." + k); continue; }
-    walk(x, where ? where + "." + k : k, v, seen);
+    const at = where ? where + "." + k : k;
+    if (typeof x === "string") { if (TEXT_KEYS.has(k) && /[A-Za-z]/.test(x)) v.text(o, k, at); continue; }
+    if (k === "scene" && x && typeof x === "object" && "byCast" in x && x.byCast) {
+      for (const [id, scene] of Object.entries(x.byCast)) {
+        if (typeof scene === "string" && /[A-Za-z]/.test(scene)) v.text(x.byCast, id, `${at}.byCast.${id}`);
+      }
+      continue;
+    }
+    walk(x, at, v, seen);
   }
 }
 
@@ -80,7 +87,7 @@ export function learnerItems(def: any): LearnerItem[] {
       const s = o[key];
       if (texts.has(s)) return;
       texts.add(s);
-      out.push({ kind: "text", en: s, where });
+      out.push({ kind: "text", en: s, where, ...(key === "lt" && typeof o.en === "string" ? { es: o.en } : {}) });
     },
   }, new WeakSet());
   return out;

@@ -27,6 +27,7 @@ import { EDITION } from "../edition";
 import "./light.css";
 import { SectionHelpButton } from "./sectionHelp";
 import { Loading } from "./Loading";
+import { StreetLight } from "./street/StreetLight";
 import { usePortrait } from "./usePortrait";
 
 /** The same short, varied set to start with as in the situation picker (Panels). */
@@ -118,6 +119,8 @@ function LightHome() {
             <button className="lh-tool" onClick={() => open("settings")} title={L("Nustatymai")} aria-label={L("Nustatymai")}><Icon name="settings" size={24} /><span>{L("Nustatymai")}</span></button>
           </nav>
         </header>
+
+        <StreetLight />
 
         <section className="lh-hello">
           <Skyline className="lh-hello-sky" />

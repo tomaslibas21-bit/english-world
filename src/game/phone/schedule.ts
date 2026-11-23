@@ -17,6 +17,7 @@ export interface PhoneSnapshot {
   guide: boolean;
   banner: boolean;
   cardOpen: boolean;
+  streetBlocked?: boolean;
   flight: boolean;
   loading: boolean;
   transition: boolean;
@@ -35,7 +36,7 @@ export function freeToWalk(s: PhoneSnapshot) {
 }
 
 export function canShowPhoneCard(s: PhoneSnapshot, t: PhoneTimers) {
-  return s.enabled && s.visible && !s.guide && !s.banner && !s.cardOpen && freeToWalk(s) && t.calm >= PHONE_WAIT.calm
+  return s.enabled && s.visible && !s.guide && !s.banner && !s.cardOpen && !s.streetBlocked && freeToWalk(s) && t.calm >= PHONE_WAIT.calm
     && (t.forceDue || (t.active >= PHONE_WAIT.initial && t.sinceCard >= PHONE_WAIT.between));
 }
 

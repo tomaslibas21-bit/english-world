@@ -11,7 +11,7 @@ import { SITUATIONS } from "../../src/editions/es/content/situations";
 import { learnerItems, type LearnerItem } from "../../src/editions/es/learner/walk";
 
 const out = process.argv.slice(2).find((a) => a.includes("/")) ?? path.join(os.homedir(), "puerto-colibri-lt", "work");
-const only = process.argv.slice(2).filter((a) => /^[spx]\d|^_shared$/.test(a));
+const only = process.argv.slice(2).filter((a) => /^[spx]\d|^_shared$|^street$/.test(a));
 fs.mkdirSync(out, { recursive: true });
 const ROOT = path.resolve(import.meta.dirname, "../..");
 const SRC = path.join(ROOT, "src/editions/es/content/situations");
@@ -45,5 +45,14 @@ if (!only.length || only.includes("_shared")) {
   for (const s of literals(path.join(ROOT, "src/editions/es/content/global.ts"))) if (!have.has(s) && /[a-z]/i.test(s) && !/^[a-z0-9]+(_[a-z0-9]+)+$/.test(s)) { items.push({ kind: "text", en: s, where: "code" }); have.add(s); }
   fs.writeFileSync(path.join(out, "_shared.json"), JSON.stringify({ sit: "_shared", title: { en: "Puerto Colibrí", lt: "the whole town" }, items: items.map((i) => ({ ...i, lt: "" })) }, null, 1));
   total += items.length;
+}
+if (!only.length || only.includes("street")) {
+  const { STREET_MOMENTS, STREET_CHATTER } = await import("../../src/editions/es/content/street");
+  const { streetLearnerContent } = await import("../../src/editions/es/learner/street");
+  const items = learnerItems(streetLearnerContent(STREET_MOMENTS, STREET_CHATTER));
+  const title = { en: "Street life", lt: "Gatvės gyvenimas" };
+  fs.writeFileSync(path.join(out, "street.json"), JSON.stringify({ sit: "street", title, items: items.map((i) => ({ ...i, lt: "" })) }, null, 1));
+  total += items.length;
+  chars += items.reduce((sum, item) => sum + (item.en?.length ?? 0), 0);
 }
 console.log(`${total} items, ${Math.round(chars / 1000)}k chars of English → ${out}`);

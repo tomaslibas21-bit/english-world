@@ -15,7 +15,7 @@ export interface KitMic {
 }
 
 export class ModeDialogue {
-  private playback: { left: number; audible: boolean; completed: boolean; finish(ok: boolean): void } | null = null;
+  private playback: { key: string; left: number; audible: boolean; completed: boolean; restart(): void; finish(ok: boolean): void } | null = null;
   private turn: { options: KitLine[]; speech: SpeechMatcher; finish(line: KitLine | null): void; retries: number; choosing?: boolean } | null = null;
   private attempt: ReturnType<typeof createSpeechAttempt> | null = null;
   private retryIn = 0;
@@ -26,6 +26,7 @@ export class ModeDialogue {
 
   constructor(private ui: {
     say(line: KitLine | null): void;
+    answer?(line: KitLine): void;
     choices(lines: KitLine[]): void;
     mic(state: KitMic): void;
     animate?(seconds: number): void;
@@ -48,21 +49,32 @@ export class ModeDialogue {
     // Muted dialogue uses its reading time and never waits for browser audio.
     const audible = volume !== 0 && (clip != null || text !== `[${line.key}]`);
     const est = clip == null ? (learner && !this.ui.allowBrowserVoice ? 0.5 : Math.min(4, 0.5 + text.length * 0.06)) : clip / (slow ? 0.82 : 1);
-    if (!learner) this.ui.animate?.(est);
     return new Promise<boolean>((finish) => {
       const estimate = this.ui.framePlayback && clip == null ? Math.max(est, text.length * (slow ? 0.09 : 0.07)) : est;
+      const duration = audible ? estimate + 2 : estimate;
       let heard = false;
-      const playing = { left: audible ? estimate + 2 : estimate, audible, completed: false, finish: (ok: boolean) => {
-        onVoiced?.(heard);
-        finish(ok);
-      } };
+      let playbackId = 0;
+      const playing = {
+        key: line.key, left: duration, audible, completed: false,
+        restart: () => {
+          const id = ++playbackId;
+          playing.left = duration;
+          playing.completed = false;
+          if (!learner) this.ui.animate?.(est);
+          if (audible) void audio.play(voice, speed, text, { slow, male, localVoiceOnly: this.ui.speechFallback }).then((ok) => {
+            if (!ok || this.playback !== playing || id !== playbackId) return;
+            heard = true;
+            if (this.ui.framePlayback) playing.completed = true;
+            else this.endPlayback(true);
+          });
+        },
+        finish: (ok: boolean) => {
+          onVoiced?.(heard);
+          finish(ok);
+        },
+      };
       this.playback = playing;
-      if (audible) void audio.play(voice, speed, text, { slow, male, localVoiceOnly: this.ui.speechFallback }).then((ok) => {
-        if (!ok || this.playback !== playing) return;
-        heard = true;
-        if (this.ui.framePlayback) playing.completed = true;
-        else this.endPlayback(true);
-      });
+      playing.restart();
     });
   }
 
@@ -78,6 +90,18 @@ export class ModeDialogue {
     if (this.turn || this.playback) return null;
     this.ui.say(line);
     return await this.play(line, voice, speed, male) ? line : null;
+  }
+
+  /** Replay the visible line without advancing the dialogue or accepting mic input over the clip. */
+  async replayLine(line: KitLine, voice: string, speed: number, male: boolean, learner = false) {
+    if (this.paused) return;
+    if (this.playback) {
+      if (this.playback.key === line.key) this.playback.restart();
+      return;
+    }
+    if (this.turn?.choosing) return;
+    this.stopListening();
+    if (await this.playPieces(line, voice, speed, male, learner)) this.listen();
   }
 
   /** Shows one composed call while its individual recording keys play in order. */
@@ -129,6 +153,7 @@ export class ModeDialogue {
     if (!turn || !line || turn.choosing || this.paused || this.playback) return;
     this.stopListening();
     this.ui.choices([]);
+    this.ui.answer?.(line);
     if (spoken) {
       this.turn = null;
       turn.finish(line);

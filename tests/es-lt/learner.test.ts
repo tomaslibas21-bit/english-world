@@ -7,8 +7,13 @@ import * as Situations from "@/content/situations";
 import { EDITION } from "@/edition";
 import { setVariety } from "@/convo/compose";
 import { ROAD_LINES, ROAD_MERGES } from "@/content/road-lines";
+import { STREET_CHATTER, STREET_MOMENTS } from "@/content/street";
+import { resolveStreetLine, streetText } from "@/game/street/lines";
 import { STRINGS } from "@/ui/strings";
-import { learnerItems } from "../../src/editions/es/learner/walk";
+import { STREET_CHATTER as ES_CHATTER, STREET_MOMENTS as ES_MOMENTS } from "../../src/editions/es/content/street";
+import { streetLearnerContent } from "../../src/editions/es/learner/street";
+import streetTable from "../../src/editions/es-lt/tables/street.json";
+import { applyLearner, learnerItems } from "../../src/editions/es/learner/walk";
 import { sharedContent } from "../../src/editions/es/learner/shared";
 import { playSim } from "../../tools/sim-play";
 import { chipLabel } from "@/ui/chip-label";
@@ -40,6 +45,38 @@ describe("Puerto Colibrí for Lithuanians", () => {
     const { renata, queta, ...npcs } = shared.npcs;
     const left = learnerItems({ ...shared, npcs }).filter((i) => (i.kind === "text" ? ENGLISH.test(i.en ?? "") : i.kind === "sent" && ENGLISH.test(i.nat ?? "")));
     expect(left.slice(0, 10).map((i) => i.en ?? i.nat)).toEqual([]);
+  });
+
+  it("applies the street table and reports entries still awaiting Lithuanian", () => {
+    const source = streetLearnerContent(ES_MOMENTS, ES_CHATTER);
+    const rows = learnerItems(source);
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.every(({ kind }) => kind === "text")).toBe(true);
+    const translations: Record<string, string> = streetTable.text;
+    const missing = rows.filter(({ en }) => !translations[en!]?.trim() || translations[en!] === en);
+    if (missing.length) console.warn(`Street life: ${missing.length} entries awaiting Lithuanian\n` +
+      missing.map(({ where, en }) => `  ${where}: ${en}`).join("\n"));
+    const expected = structuredClone(source);
+    applyLearner(expected, streetTable);
+    expect(streetLearnerContent(STREET_MOMENTS, STREET_CHATTER)).toEqual(expected);
+    expect(STREET_MOMENTS).not.toBe(ES_MOMENTS);
+    expect(STREET_CHATTER).not.toBe(ES_CHATTER);
+  });
+
+  it("applies both kinds of gender switch to street lines, cast roles and by-cast scenes", () => {
+    const text = "{nm:Praeivis|nf:Praeivė} · {m:pasirengęs|f:pasirengusi}";
+    const content = {
+      cast: [{ role: "role" }],
+      scene: { byCast: { a: "scene" } },
+      choices: [{ say: { byCast: { a: { en: "Hola", lt: "line" } } } }],
+    };
+    expect(learnerItems(content)).toContainEqual({
+      kind: "text", where: "choices[0].say.byCast.a.lt", en: "line", es: "Hola",
+    });
+    applyLearner(content, { sent: {}, entity: {}, text: { role: text, scene: text, line: text } });
+    expect(streetText(content.cast[0].role, "m", "f")).toBe("Praeivė · pasirengęs");
+    expect(streetText(content.scene.byCast.a, "f", "m")).toBe("Praeivis · pasirengusi");
+    expect(resolveStreetLine(content.choices[0].say.byCast.a, "f", "f").nat).toBe("Praeivė · pasirengusi");
   });
 
   it("answer chips say the natural Lithuanian name in the nominative, never the gloss in Spanish order", () => {
