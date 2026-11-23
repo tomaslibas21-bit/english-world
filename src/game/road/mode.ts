@@ -204,6 +204,7 @@ export class RoadMode {
         view.celebrate(frame.time, distance, lane, LANE_PAINT[lane]);
         audio.kickRush();
         audio.sfx("success");
+        audio.sfx("paperBurst"); // with the confetti of the right gate
       } else {
         car.stumble();
         audio.sfx("error");

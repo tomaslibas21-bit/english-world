@@ -58,7 +58,9 @@
   height: 20px;
   border: 1px solid #55778e;
   border-radius: 3px;
-  background: #182f48 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cg fill='%23a7c7cc'%3E%3Cpath d='M4 6q4-5 9 0l4-3v6l-4-3Q8 11 4 6zm3 12q4-5 9 0l4-3v6l-4-3q-5 5-9 0z'/%3E%3C/g%3E%3C/svg%3E") center / 100% auto repeat-y;
+  /* the deck's back picture (GoFish.tsx BACK_ART) over the drawn pattern, which shows when the picture is missing */
+  background: var(--card-back-art, none) center / cover no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cg fill='%23a7c7cc'%3E%3Cpath d='M4 6q4-5 9 0l4-3v6l-4-3Q8 11 4 6zm3 12q4-5 9 0l4-3v6l-4-3q-5 5-9 0z'/%3E%3C/g%3E%3C/svg%3E") center / 100% auto repeat-y #182f48;
 }
 .gofish-pair-icon {
   flex: 0 0 auto;

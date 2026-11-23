@@ -255,7 +255,9 @@ class GoFishMode implements GameMode {
   }
 
   private async playRound(run: Run) {
-    if (!await this.say(run, "nora", "gf_intro") || !await this.say(run, "nora", "gf_shuffle")) return;
+    if (!await this.say(run, "nora", "gf_intro")) return;
+    audio.sfx("cardShuffle");
+    if (!await this.say(run, "nora", "gf_shuffle")) return;
     this.sync(run, run.round);
     if (!await this.say(run, "nora", "gf_first")) return;
     while (this.live(run) && !finished(run.round)) {
@@ -343,6 +345,7 @@ class GoFishMode implements GameMode {
       if (!await this.say(run, ask.target, has ? YES : NO, turn)) return false;
     }
     const guided = turn === "learner" && actionHelp(this.help(run, run.asks - 1), 0).action;
+    if (!has) audio.sfx("bloop"); // "Go fish!": a little splash into the pond
     if (!has && !await this.fish(run, guided ? GOFISH_UI.tipFish : null)) return false;
     const outcome = resolveAsk(run.round, ask);
     return !!outcome && await this.resolve(run, outcome, guided, ask);
@@ -378,7 +381,8 @@ class GoFishMode implements GameMode {
         ui({ round: { ...run.round, pond: round.pond } });
         run.props.sync({ ...run.round, pond: round.pond });
       }
-      audio.sfx(revealed ? "pop" : "tick");
+      // a card drawn from the pond turns over; one handed across slides on the table (recorded, with a synth stand-in)
+      audio.sfx(revealed ? "cardFlip" : "cardSlide");
       run.props.slide(move.from, turn, round.pond.length, move.word, duration);
       if (!await this.delay(run, duration)) return false;
       this.sync(run, round);
@@ -394,7 +398,7 @@ class GoFishMode implements GameMode {
         this.phase("pair", { tip: guided ? GOFISH_UI.tipPair : null, hintCard: guided ? pair : null });
         if (!await this.expect(run, ask?.target === "nora" ? "nora" : "dan", ["gf_pair"])) return false;
       } else if (!await this.say(run, turn, "gf_pair")) return false;
-      audio.sfx("success");
+      audio.sfx("pairChime");
     }
     const next = finishTurn(outcome);
     if (pair && again && turn === "learner" && !finished(next)) {
@@ -428,7 +432,7 @@ class GoFishMode implements GameMode {
     if (run.lastAsk) sentences.unshift(run.lastAsk.sentence);
     keepPhrases(situation, sentences);
     this.playback.clearLine();
-    if (won === "learner") audio.sfx("listen");
+    if (won === "learner") audio.sfx("winJingle");
     this.phase("score", { result: { winner: won, right: run.right, replies: run.replies, cards: sentences.length, ...run.sayIt.result } });
   }
 

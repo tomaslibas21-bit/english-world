@@ -51,7 +51,9 @@ export function PictureCard({ word, picture }: { word: GoFishWord; picture?: str
   </span>;
 }
 
-function CardBack() { return <span className="gofish-back" aria-hidden="true" />; }
+/** The deck's own back (public/gofish/back.webp) over the drawn pattern, which shows if the picture is missing. */
+const BACK_ART = { "--card-back-art": `url("${import.meta.env.BASE_URL}gofish/back.webp")` } as CSSProperties;
+function CardBack() { return <span className="gofish-back" aria-hidden="true" style={BACK_ART} />; }
 
 export function GoFishOverlay({ touch }: { touch: boolean }) {
   const { round, step, line, choices, gloss, busy, target, picked, hintCard, hintReply, tip, mic, micOn, drawn, drawSayIt, result } = useGoFish();

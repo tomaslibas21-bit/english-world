@@ -68,7 +68,7 @@ import { AMBIENT_LINES, STAFF_LINES } from "../content/ambient";
 import { ambientVoice } from "../content/voices";
 import { audio } from "./audio";
 import { TOWN_SOUNDS } from "./townSounds";
-import { nearLevel, surfLevel, surfaceAt, type Surface } from "./soundscape";
+import { MODE_SAMPLES, nearLevel, surfLevel, surfaceAt, type Surface } from "./soundscape";
 import { radio } from "../radio";
 import { Dust } from "./dust";
 import { Pigeons } from "./pigeons";
@@ -504,7 +504,9 @@ export class Game implements GameApi {
       fade: (fn) => { if (this.transitioning || this.disposed) return false; this.fadeThen(() => { if (!this.disposed) fn(); }); return true; },
       splash: (x, y, z, dx, dz, k) => this.splashes.burst(x, y, z, dx, dz, k),
       hideNpc: (id, hidden) => { const n = this.npcs.find((q) => q.id === id); if (n) n.ch.root.visible = !hidden; },
-      entered: (id) => this.modes.entered(id), left: (id) => this.modes.left(id), owns: (id) => this.modes.owns(id),
+      // a mini-game's recorded effects load as it starts, and its room and music play while it runs (audio.bed)
+      entered: (id) => { this.modes.entered(id); audio.preload(MODE_SAMPLES[id] ?? []); audio.bed(id); },
+      left: (id) => { this.modes.left(id); audio.bed(null); }, owns: (id) => this.modes.owns(id),
       portrait: () => this.container.clientHeight > this.container.clientWidth * 1.15,
       prepare: () => this.prepareMode(),
       place: (x, z, rot) => this.placeOnFoot(x, z, rot),
@@ -3496,6 +3498,7 @@ export class Game implements GameApi {
     this.streetLife?.dispose();
     this.disposed = true;
     this.modes.dispose();
+    audio.bed(null);
     this.frameFade.clear();
     this.rides?.disposeCrashes();
     this.carVisuals?.dispose();

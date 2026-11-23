@@ -109,6 +109,8 @@ export function bindRadio() {
   const voice = () => { const state = audio.getState(); if (state === "loading" || state === "playing") radio.hold("voice"); else radio.release("voice"); };
   audio.subscribe(voice);
   watchMicrophone((listening) => { if (listening) radio.hold("microphone", true); else radio.release("microphone"); });
+  // a mini-game's own music (audio.bed): the radio waits until it stops
+  audio.subscribeBed((music) => { if (music) radio.hold("bed"); else radio.release("bed"); });
   // the town's quiet loops (the surf, a market's murmur) play lower under the radio's music, and its own far-off
   // notes not at all (audio.ts underRadio)
   const music = () => audio.underRadio(radio.store.getState().playing);

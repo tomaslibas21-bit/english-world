@@ -1,0 +1,19 @@
+{
+  "npc": "Tina, The Corner Pocket",
+  "images": ["greet", "name_me", "bl_which", "my_years", "break"],
+  "start": "greet",
+  "done": "break",
+  "phases": {
+    "play": "greet",
+    "name": "name_me",
+    "group": "bl_which",
+    "ask": "my_years",
+    "closing": "break"
+  },
+  "focus": [41, 32],
+  "jobs": {
+    "greet": "6c7392f6-a1ef-4550-8c05-3b3d4ad713dd", "name_me": "21bf1326-d700-45a6-9381-08f3e73c2f93",
+    "bl_which": "04285453-9ee7-4dc9-afd2-fd343dda0793", "my_years": "5dd95d60-f7a4-49c1-be8d-ce233c287184",
+    "break": "02413812-fc89-4fc7-9fb2-9b9df62d46c3"
+  }
+}

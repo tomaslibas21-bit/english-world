@@ -74,3 +74,81 @@ export function nearLevel(metres: number, reach = 26): number {
   const k = clamp01(1 - metres / reach);
   return k * k * (3 - 2 * k);
 }
+
+// ---- Recorded effects, the mini-games' rooms and music (batch 1–4 media, 23 Nov 2026; docs/SOUNDS.md).
+
+/** The synthesized effects (audio.ts sfx): what plays until a recording is loaded, or without one. */
+export type SynthName = "success" | "seaBell" | "pop" | "door" | "cheer" | "soft" | "listen" | "coin" | "car" | "error" | "ring" | "beep" | "knock" | "tick" | "horn" | "hornReply"
+  | "shutter" | "doubleHonk" | "chirp" | "glass" | "hazardTick" | "ding" | "message" | "cueStrike" | "poolClick" | "poolCushion" | "poolDrop";
+
+/** A recorded effect: its takes in public/sfx/ (mono MP3, peak −3 dB), one picked at random each time with its speed
+ *  varied a little, so a run of them never sounds copied. `gain`: its level on the effects bus (the synthesized effects
+ *  peak at about 0.18 × the volume). `synth`: the synthesized sound that stands in until the takes are loaded, offline
+ *  or when a file is missing; a name of the synthesized set stands in for itself; null: nothing (the caller may play
+ *  its own stand-in, see audio.sample). */
+export interface SampleDef { files: readonly string[]; gain: number; synth?: SynthName | null }
+
+const takes = (stem: string, n: number) => Array.from({ length: n }, (_, i) => `${stem}-${i + 1}.mp3`);
+
+export const SAMPLES = {
+  // the pool hall (both towns)
+  cueStrike: { files: takes("cue-strike", 4), gain: 0.42 },
+  poolClick: { files: takes("pool-clack", 5), gain: 0.5 },
+  poolCushion: { files: ["pool-cushion.mp3"], gain: 0.42 },
+  poolDrop: { files: ["pool-drop.mp3"], gain: 0.45 },
+  breakShot: { files: ["pool-break.mp3"], gain: 0.5, synth: "poolClick" },
+  chalk: { files: ["chalk.mp3"], gain: 0.3, synth: null },
+  winSting: { files: ["win-sting.mp3"], gain: 0.4, synth: "cheer" },
+  // the cards: Go Fish (Maple Harbor) and Lotería (Puerto Colibrí)
+  cardShuffle: { files: ["card-shuffle.mp3"], gain: 0.4, synth: null },
+  cardSlide: { files: takes("card-slide", 3), gain: 0.35, synth: "tick" },
+  cardFlip: { files: takes("card-flip", 2), gain: 0.35, synth: "pop" },
+  pairChime: { files: ["pair-chime.mp3"], gain: 0.38, synth: "success" },
+  bloop: { files: ["bloop.mp3"], gain: 0.38, synth: null },
+  winJingle: { files: ["win-jingle.mp3"], gain: 0.38, synth: "listen" },
+  cardSlap: { files: takes("card-slap", 2), gain: 0.4, synth: null },
+  beanDrop: { files: ["bean.mp3"], gain: 0.32, synth: "pop" },
+  crowdCheer: { files: ["crowd-cheer.mp3"], gain: 0.4, synth: "cheer" },
+  // the open water (both towns)
+  seaBell: { files: ["buoy-bell.mp3"], gain: 0.45 },
+  buoyBonk: { files: takes("buoy-bonk", 2), gain: 0.45, synth: null },
+  bowSplash: { files: ["bow-splash.mp3"], gain: 0.35, synth: null },
+  gull: { files: takes("gull", 3), gain: 0.22, synth: null },
+  boatTurn: { files: ["boat-turn.mp3"], gain: 0.35, synth: null },
+  gateWhoosh: { files: ["gate-whoosh.mp3"], gain: 0.3, synth: null },
+  // the road game
+  paperBurst: { files: ["paper-burst.mp3"], gain: 0.32, synth: null },
+  // a car that crashes (rides/crash.ts)
+  carBump: { files: ["car-bump.mp3"], gain: 0.45, synth: null },
+  carCrunch: { files: ["car-crunch.mp3"], gain: 0.5, synth: null },
+  paintChips: { files: ["paint-chips.mp3"], gain: 0.3, synth: null },
+  steamHiss: { files: ["steam-hiss.mp3"], gain: 0.3, synth: null },
+  glass: { files: ["glass.mp3"], gain: 0.32 },
+  doubleHonk: { files: ["honk.mp3"], gain: 0.35 },
+  chirp: { files: ["alarm-chirp.mp3"], gain: 0.25 },
+  // (the hazard relay stays synthesized: two generations came out as a steady rattle, not a tick and a tock)
+  ding: { files: ["repair-ding.mp3"], gain: 0.35 },
+} as const satisfies Record<string, SampleDef>;
+export type SampleName = keyof typeof SAMPLES;
+export const isSample = (name: string): name is SampleName => Object.prototype.hasOwnProperty.call(SAMPLES, name);
+
+/** The takes a mini-game loads as it starts (audio.preload), so its first move already sounds recorded. */
+export const MODE_SAMPLES: Record<string, readonly SampleName[]> = {
+  billiards: ["cueStrike", "poolClick", "poolCushion", "poolDrop", "breakShot", "chalk", "winSting"],
+  gofish: ["cardShuffle", "cardSlide", "cardFlip", "pairChime", "bloop", "winJingle"],
+  loteria: ["cardShuffle", "cardFlip", "cardSlap", "beanDrop", "crowdCheer"],
+  sea: ["seaBell", "buoyBonk", "bowSplash", "gull", "boatTurn", "gateWhoosh"],
+  road: ["paperBurst", "carBump", "carCrunch"],
+};
+
+/** One loop of a mini-game's bed, played between `start` and `end` (seconds) inside its file, with a little of the
+ *  loop before and after them, so the seam is silent whatever padding the decoder adds. `gain`: its level beside the
+ *  effects. A room's file is in public/sfx/ (small, in git); music is in the clip folder (R2 in the courses: kept out
+ *  of git and the courses' builds), named without ".mp3". */
+export interface BedLoop { file: string; start: number; end: number; gain: number }
+/** What a mini-game sounds like under its voices (TOWN_SOUNDS.beds, by mode id): its room and its music. Both play
+ *  on the effects side, a little lower while a voice speaks or the microphone listens (never cut, so a caller's
+ *  every line doesn't pump them), and the radio waits while the music plays (radio hold "bed"). */
+export interface Bed { room?: BedLoop; music?: BedLoop }
+/** How much a bed drops while a voice speaks or the microphone listens (about −7 dB). */
+export const BED_DUCK = 0.45;

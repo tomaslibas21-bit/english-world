@@ -5,7 +5,8 @@ import { audioDir } from "../content/voices";
 import { holdPlaybackRoute, microphoneHandoffState, playbackRoute, waitForMicrophone, watchMicrophone } from "../convo/audioFocus";
 import { audioDiagnostic, audioDiagnosticsEnabled, audioSessionSnapshot, diagnosticError } from "../convo/audioDiagnostics";
 import { stretchSpeech } from "./timeStretch";
-import { BIRDSONG, LOOPS, STEPS, type LoopName, type Surface } from "./soundscape";
+import { BED_DUCK, BIRDSONG, LOOPS, SAMPLES, STEPS, isSample, type Bed, type BedLoop, type LoopName, type SampleDef, type SampleName, type Surface, type SynthName } from "./soundscape";
+import { TOWN_SOUNDS } from "./townSounds";
 
 export type DiagnosticPipeline = "html" | "buffer";
 export interface DiagnosticPlaybackState {
@@ -954,6 +955,74 @@ export class AudioSystem {
     const was = this.hushed.size > 0;
     if (on) this.hushed.add(reason); else this.hushed.delete(reason);
     if (was !== this.hushed.size > 0) this.levelBuses(on ? (now ? 0.03 : 0.25) : 0.5);
+    // a mini-game's bed only steps back for a voice or the microphone (bed, below)
+    const duck = this.hushed.has("voice") || this.hushed.has("microphone");
+    if (duck !== this.bedDucked) { this.bedDucked = duck; this.levelBed(duck ? 0.2 : 0.9); }
+  }
+
+  // ---- A mini-game's bed (soundscape.ts Bed, TOWN_SOUNDS.beds by mode id): its room and its music, looped while the
+  // game runs, on the effects side, ducked (not cut) under a voice; the radio waits while its music plays.
+  private bedNow: { id: string; parts: { src: AudioBufferSourceNode; gain: GainNode; level: number }[]; music: boolean } | null = null;
+  private bedDucked = false;
+  private bedFiles = new Map<string, Promise<AudioBuffer>>();
+  private bedListeners = new Set<(music: boolean) => void>();
+  /** The bed playing now (its mode id), for tests and the radio. */
+  get playingBed(): string | null { return this.bedNow?.id ?? null; }
+  /** Called with true while a bed's music plays, false when it stops (src/radio holds the radio meanwhile). */
+  subscribeBed(listener: (music: boolean) => void) { this.bedListeners.add(listener); return () => { this.bedListeners.delete(listener); }; }
+  /** Start the bed of mode `id` (none if the edition has none for it), or stop it (null). */
+  bed(id: string | null) {
+    if ((this.bedNow?.id ?? null) === id) return;
+    this.stopBed();
+    const def: Bed | undefined = id ? (TOWN_SOUNDS as { beds?: Partial<Record<string, Bed>> }).beds?.[id] : undefined;
+    const ctx = id && def ? this.ac() : null;
+    if (!id || !def || !ctx) return;
+    const now = { id, parts: [] as { src: AudioBufferSourceNode; gain: GainNode; level: number }[], music: false };
+    this.bedNow = now;
+    const start = (loop: BedLoop, url: string, music: boolean) => {
+      let file = this.bedFiles.get(url);
+      if (!file) {
+        file = fetch(url).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
+          .then((bytes) => new Promise<AudioBuffer>((done, fail) => { ctx.decodeAudioData(bytes, done, fail); }));
+        file.catch(() => this.bedFiles.delete(url));
+        this.bedFiles.set(url, file);
+      }
+      file.then((buf) => {
+        if (this.bedNow !== now || ctx.state === "closed") return;
+        const src = ctx.createBufferSource(), gain = ctx.createGain();
+        src.buffer = buf; src.loop = true;
+        src.loopStart = loop.start; src.loopEnd = Math.min(loop.end, buf.duration);
+        gain.gain.value = 0;
+        src.connect(gain); gain.connect(this.fx(ctx));
+        src.start(ctx.currentTime, loop.start);
+        now.parts.push({ src, gain, level: loop.gain });
+        this.levelBed(1.5);
+        if (music && !now.music) { now.music = true; for (const listener of this.bedListeners) listener(true); }
+      }, () => { /* no file (offline, or not uploaded yet): the game goes on without it */ });
+    };
+    if (def.room) start(def.room, `${import.meta.env.BASE_URL}sfx/${def.room.file}`, false);
+    if (def.music) start(def.music, clipUrl(this.base, def.music.file, undefined, filesToken()), true);
+  }
+  private levelBed(seconds: number) {
+    const ctx = this.busCtx, bed = this.bedNow;
+    if (!ctx || !bed || ctx.state === "closed") return;
+    for (const p of bed.parts) {
+      p.gain.gain.cancelScheduledValues(ctx.currentTime);
+      p.gain.gain.setTargetAtTime(this.volume * p.level * (this.bedDucked ? BED_DUCK : 1), ctx.currentTime, Math.max(0.01, seconds / 3));
+    }
+  }
+  private stopBed() {
+    const bed = this.bedNow, ctx = this.busCtx;
+    this.bedNow = null;
+    if (!bed) return;
+    for (const p of bed.parts) {
+      try {
+        if (ctx && ctx.state !== "closed") { p.gain.gain.cancelScheduledValues(ctx.currentTime); p.gain.gain.setTargetAtTime(0, ctx.currentTime, 0.2); p.src.stop(ctx.currentTime + 0.8); }
+        else p.src.stop();
+      } catch { /* already stopped */ }
+      p.src.onended = () => { p.src.disconnect(); p.gain.disconnect(); };
+    }
+    if (bed.music) for (const listener of this.bedListeners) listener(false);
   }
   /** The radio is playing music (src/radio/index.ts): the places' loops go lower under it. */
   underRadio(playing: boolean) { this.underMusic = playing ? 0.4 : 1; }
@@ -1415,6 +1484,11 @@ export class AudioSystem {
       this.sfx(sound === "tick" ? "hazardTick" : sound === "honk" ? "doubleHonk" : sound);
       return;
     }
+    // the recordings first: a bump or a crunch by how hard, the chips of paint with a hard one, the radiator's hiss
+    if (sound === "steam" ? this.sample("steamHiss") : this.sample(k < 0.4 ? "carBump" : "carCrunch", 0.55 + 0.45 * k)) {
+      if (sound === "crunch" && k >= 0.4) this.sample("paintChips", k);
+      return;
+    }
     const ctx = this.ac();
     if (!ctx) return;
     const at = ctx.currentTime, vol = this.volume;
@@ -1578,8 +1652,50 @@ export class AudioSystem {
     };
   }
 
-  sfx(name: "success" | "seaBell" | "pop" | "door" | "cheer" | "soft" | "listen" | "coin" | "car" | "error" | "ring" | "beep" | "knock" | "tick" | "horn" | "hornReply"
-    | "shutter" | "doubleHonk" | "chirp" | "glass" | "hazardTick" | "ding" | "message" | "cueStrike" | "poolClick" | "poolCushion" | "poolDrop", intensity = 1) {
+  /** An effect: its recording once loaded (soundscape.ts SAMPLES), else the synthesized sound that stands in for it. */
+  sfx(name: SynthName | SampleName, intensity = 1) {
+    if (!isSample(name)) { this.synth(name, intensity); return; }
+    if (this.sample(name, intensity)) return;
+    const stand = (SAMPLES[name] as SampleDef).synth;
+    if (stand !== null) this.synth(stand ?? (name as SynthName), intensity);
+  }
+
+  // ---- Recorded effects (SAMPLES): each name's takes, fetched the first time it is wanted (or by preload).
+  private takes = new Map<SampleName, { bufs: AudioBuffer[]; asked: boolean }>();
+  private takesOf(ctx: AudioContext, name: SampleName) {
+    let t = this.takes.get(name);
+    if (!t) this.takes.set(name, (t = { bufs: [], asked: false }));
+    if (!t.asked) {
+      t.asked = true;
+      const into = t;
+      for (const file of SAMPLES[name].files) this.fetchClip(ctx, file).then((buf) => { into.bufs.push(buf); }, () => { /* the synthesized sound stays */ });
+    }
+    return t;
+  }
+  /** Load a mini-game's takes before its first move (soundscape.ts MODE_SAMPLES). */
+  preload(names: readonly SampleName[]) {
+    const ctx = this.context();
+    if (ctx) for (const name of names) this.takesOf(ctx, name);
+  }
+  /** Play one of a recorded effect's takes on the effects bus; false (and nothing played) while none is loaded. */
+  sample(name: SampleName, intensity = 1): boolean {
+    if (this.volume <= 0) return false;
+    const ctx = this.ac();
+    if (!ctx) return false;
+    const { bufs } = this.takesOf(ctx, name);
+    if (!bufs.length) return false;
+    audioDiagnostic("context.effect", { reason: name, recorded: true });
+    const src = ctx.createBufferSource(), gain = ctx.createGain();
+    src.buffer = bufs[Math.floor(Math.random() * bufs.length)];
+    src.playbackRate.value = 0.96 + Math.random() * 0.08;
+    gain.gain.value = this.volume * SAMPLES[name].gain * Math.min(1, Math.max(0, intensity));
+    src.connect(gain); gain.connect(this.fx(ctx));
+    src.onended = () => { src.disconnect(); gain.disconnect(); };
+    src.start();
+    return true;
+  }
+
+  private synth(name: SynthName, intensity = 1) {
     audioDiagnostic("context.effect", { reason: name });
     const ctx = this.ac();
     if (!ctx) return;
