@@ -51,7 +51,7 @@ export interface StreetWorld {
   near(kind: StreetMoment["near"]): boolean;
   prepare(draw: Omit<MomentDraw, "bag">): (() => StreetActor) | undefined;
   pairs(radius: number, allowEdge?: boolean): StreetPair[];
-  anchor(person: StreetCharacter, clamp?: boolean): StreetAnchor | null;
+  anchor(person: StreetCharacter, allowEdge?: boolean): StreetAnchor | null;
   gender(person: StreetCharacter): Gender | undefined;
   tick(dt: number, outdoors?: boolean): void;
   dispose(): void;

@@ -271,14 +271,17 @@ export class TownStreet implements StreetWorld {
     return (allowEdge ? spot.depth : spot.onScreen) && this.clearSight(this.camera.position, head);
   }
 
-  anchor(person: StreetCharacter, clamp = false) {
+  anchor(person: StreetCharacter, allowEdge = false) {
     this.camera.updateMatrixWorld();
     const head = this.head(person as GameCharacter);
     const spot = this.project(head);
-    if (!spot.depth || !clamp && !spot.onScreen) return null;
-    const bubble = this.project(head.addScaledVector(up, 0.2));
+    if (!spot.depth || !allowEdge && !spot.onScreen) return null;
+    // Speech uses the head projection, including offscreen coordinates, to aim its pointer.
+    if (allowEdge) return { x: Math.round(1000 * spot.x) / 10, y: Math.round(1000 * spot.y) / 10 };
+    const raised = this.project(head.addScaledVector(up, 0.2));
+    const marker = raised.depth ? raised : spot;
     const trim = (n: number) => Math.round(1000 * THREE.MathUtils.clamp(n, 0, 1)) / 10;
-    return bubble.depth ? { x: trim(bubble.x), y: trim(bubble.y) } : { x: trim(spot.x), y: trim(spot.y) };
+    return { x: trim(marker.x), y: trim(marker.y) };
   }
 
   gender(person: StreetCharacter) {

@@ -1,5 +1,5 @@
 // Run with a local development server. Optionally set WORLD_TEST_URL, WORLD_STORAGE,
-// WORLD_PLAYWRIGHT_MODULE, WORLD_BROWSER_CHANNEL, WORLD_PHONE_WIDTH/HEIGHT or WORLD_SPAWN ("x,z,rot").
+// WORLD_PLAYWRIGHT_MODULE, WORLD_BROWSER_CHANNEL, WORLD_SHOTS, WORLD_PHONE_WIDTH/HEIGHT or WORLD_SPAWN ("x,z,rot").
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
@@ -117,6 +117,30 @@ async function assertPicture(card) {
     assert.equal(art.icons.length, 2);
     assert(art.icons.every((width) => width >= 27), "the role and prop icons are legible");
   } else assert(art.height <= 161, "real pictures fit the height limit");
+}
+
+async function assertBubbleFits(bubble, viewport, label) {
+  const fit = await bubble.evaluate((el) => {
+    const a = el.getBoundingClientRect();
+    const hits = [];
+    for (const hud of document.querySelectorAll(".objective-card, .phone-ring, .street-card, .directions-card, .photo-chip, " +
+      ".minimap, .toolbar, .toolbar-drawer, .toolbar button, .joy, .jump-btn, .act-btn, .prompt")) {
+      const b = hud.getBoundingClientRect();
+      if (b.width > 0 && b.height > 0 && getComputedStyle(hud).visibility === "visible" &&
+        a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom) hits.push(hud.className);
+    }
+    const text = document.createRange();
+    const clipped = [...el.querySelectorAll(".kit-gloss-compact > span, .street-tr")].filter((line) => {
+      text.selectNodeContents(line);
+      return [...text.getClientRects()].some((b) => b.left < a.left || b.right > a.right || b.top < a.top || b.bottom > a.bottom);
+    }).map((line) => line.textContent);
+    return { hits, clipped, onScreen: a.width > 0 && a.height > 0 && a.left >= 0 && a.right <= innerWidth &&
+      a.top >= 0 && a.bottom <= innerHeight && getComputedStyle(el).visibility === "visible" };
+  });
+  const context = `${viewport.join("x")} ${label}`;
+  assert(fit.onScreen, `${context}: bubble is visible and fits on screen`);
+  assert.deepEqual(fit.hits, [], `${context}: bubble clears all visible HUD rectangles`);
+  assert.deepEqual(fit.clipped, [], `${context}: bubble text fits inside the button`);
 }
 
 try {
@@ -266,21 +290,51 @@ try {
       assert(started, "a real Ambient pair is available");
       await step(6);
       assert(await page.evaluate(() => window.__ew.game.streetLife.world.pairs(5).length > 0), "the pair qualifies for natural chatter");
-      assert(await page.evaluate(() => window.__ew.game.streetChatterNow()), "the nearby pair starts chatter");
+      const task = page.locator(".objective-card");
+      const toggleTask = task.locator(".collapse-btn");
+      if (await toggleTask.getAttribute("aria-expanded") === "false") await press(toggleTask);
+      assert(await page.locator(".objective-card:not(.collapsed)").isVisible(), "the task is open when the pair starts chatter");
+      const chatterId = storage === "english-world" ? "c_lights" : undefined;
+      assert(await page.evaluate((id) => window.__ew.game.streetChatterNow(id), chatterId), "the nearby pair starts chatter");
       const bubble = page.locator(".street-bubble[data-chatter]");
       await wait(() => bubble.isVisible(), "the first speaker's bubble appears");
       const first = await bubble.innerText();
       const id = await bubble.getAttribute("data-chatter");
+      if (chatterId) assert.equal(id, chatterId);
+      await assertBubbleFits(bubble, viewport, "first line with expanded task");
+      await shot("chatter-expanded");
+
+      // Force a collision even in layouts where the task already clears the bubble's preferred spot.
+      await bubble.evaluate((element) => {
+        const { left, top, width, height } = element.getBoundingClientRect();
+        const chip = document.createElement("div");
+        chip.className = "photo-chip";
+        chip.dataset.streetTestBlocker = "";
+        Object.assign(chip.style, { position: "fixed", left: `${left}px`, top: `${top}px`, width: `${width}px`, height: `${height}px` });
+        document.body.append(chip);
+      });
+      await step(2);
+      await assertBubbleFits(bubble, viewport, "first line after a quest chip occupies its spot");
+      await page.locator("[data-street-test-blocker]").evaluate((chip) => chip.remove());
+
+      await press(toggleTask);
+      await wait(() => page.locator(".objective-card.collapsed").isVisible(), "the task folds while chatter is visible");
+      await step();
+      await assertBubbleFits(bubble, viewport, "first line with folded task");
+      await shot("chatter-folded");
+
+      await press(toggleTask);
+      await wait(() => page.locator(".objective-card:not(.collapsed)").isVisible(), "the task reopens during the line");
+      await step();
+      await assertBubbleFits(bubble, viewport, "first line with reopened task");
       await press(bubble);
       assert(await bubble.locator(".street-tr").isVisible());
-      assert(await bubble.evaluate((el) => {
-        const bounds = el.getBoundingClientRect();
-        return bounds.left >= 0 && bounds.right <= innerWidth && bounds.top >= 0 && bounds.bottom <= innerHeight;
-      }), "translated bubble fits on screen");
+      await assertBubbleFits(bubble, viewport, "translated line with expanded task");
       await shot("chatter");
       await wait(async () => await bubble.isVisible() && !(await bubble.locator(".street-tr").isVisible()) && await bubble.innerText() !== first,
         "the second speaker's bubble appears");
       assert.equal(await bubble.getAttribute("data-chatter"), id);
+      await assertBubbleFits(bubble, viewport, "second line with expanded task");
       await wait(async () => !(await bubble.count()), "the snippet ends");
 
       const returnToSpawn = async () => {
