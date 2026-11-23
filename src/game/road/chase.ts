@@ -4,6 +4,21 @@ import { point } from "./track";
 const { clamp, lerp, smoothstep, degToRad } = MathUtils;
 
 type GateFrame = { distance: number; frame: readonly Vector3[] };
+type ProjectedCar = ReturnType<typeof projectedCar>;
+
+export function projectedCar(camera: PerspectiveCamera, roof: Vector3, corners: readonly Vector3[]) {
+  const p = new Vector3();
+  let left = Infinity, right = -Infinity;
+  for (const corner of corners) {
+    p.copy(corner).project(camera);
+    left = Math.min(left, p.x);
+    right = Math.max(right, p.x);
+  }
+  const horizon = camera.getWorldDirection(p).setY(0).applyQuaternion(camera.quaternion.clone().invert());
+  const projection = camera.projectionMatrix.elements;
+  const horizonY = -projection[5] * horizon.y / horizon.z - projection[9];
+  return { roof: roof.clone().project(camera), width: right - left, horizonY };
+}
 
 export class RoadChase {
   private yaw = 0;
@@ -13,6 +28,51 @@ export class RoadChase {
   private lens = 1;
   private focus = new Vector3();
   private target = new Vector3();
+
+  settle(camera: PerspectiveCamera, start: PerspectiveCamera, inherited: ProjectedCar, roof: Vector3,
+    corners: readonly Vector3[], mix: number, width: number, height: number) {
+    const live = projectedCar(camera, roof, corners);
+    const target = inherited.roof.clone().lerp(live.roof, mix);
+    const targetWidth = lerp(inherited.width, live.width, mix);
+    const horizonY = lerp(inherited.horizonY, live.horizonY, mix);
+    camera.quaternion.slerp(start.quaternion, 1 - mix);
+    camera.fov = lerp(start.fov, camera.fov, mix);
+    camera.near = lerp(start.near, camera.near, mix);
+    camera.far = lerp(start.far, camera.far, mix);
+    if (start.view?.enabled) {
+      camera.setViewOffset(width, height, start.view.offsetX / start.view.fullWidth * width * (1 - mix),
+        start.view.offsetY / start.view.fullHeight * height * (1 - mix), width, height);
+    } else camera.updateProjectionMatrix();
+
+    const projection = camera.projectionMatrix.elements;
+    const screenRight = projection[0], screenUp = projection[5];
+    const forward = new Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+    const horizontal = forward.setY(0).applyQuaternion(camera.quaternion.clone().invert());
+    camera.rotateX(Math.atan2(horizontal.y, -horizontal.z) - Math.atan((horizonY + projection[9]) / screenUp));
+    const inverse = camera.quaternion.clone().invert();
+    const local = corners.map((corner) => corner.clone().sub(roof).applyQuaternion(inverse));
+    const roofX = target.x + projection[8], roofY = target.y + projection[9];
+
+    // At depth d, the roof's screen position fixes its x and y in camera space.
+    // Only depth is left to solve, using all eight corners for the chassis width.
+    let near = Math.max(...local.map((corner) => corner.z)) + camera.near;
+    let far = camera.far * 0.5;
+    for (let i = 0; i < 22; i++) {
+      const depth = (near + far) / 2;
+      let left = Infinity, right = -Infinity;
+      for (const corner of local) {
+        const x = (roofX * depth + corner.x * screenRight) / (depth - corner.z);
+        left = Math.min(left, x);
+        right = Math.max(right, x);
+      }
+      if (right - left > targetWidth) near = depth;
+      else far = depth;
+    }
+    const depth = (near + far) / 2;
+    this.target.set(roofX * depth / screenRight, roofY * depth / screenUp, -depth).applyQuaternion(camera.quaternion);
+    camera.position.copy(roof).sub(this.target);
+    camera.updateMatrixWorld(true);
+  }
 
   update(cam: PerspectiveCamera, car: Vector3, distance: number, lift: number, pace: number, time: number,
     dt: number, width: number, height: number, carCorners: readonly Vector3[], gate?: GateFrame) {

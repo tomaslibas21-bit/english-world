@@ -11,8 +11,12 @@ import { STYLED, IS_REAL, grade } from "../style";
 import { SHORE, DECKS, POOLS, FLOORS, sandY, SAND_GLSL, SHORE_GLSL, SWELL_GLSL } from "../water";
 import { islandGroundY, LIGHTHOUSE_ISLAND, TOWER_FOOT } from "./island";
 import { addMapleDecor, FALL } from "./maple";
-import { exitSightline, exitToTown, makeExitGeometry, makeExitSign } from "./roadExit";
+import { EXIT_HAZE, exitBackdropCutout, exitSightline, exitToTown, makeExitSign } from "./roadExit";
 import { ROAD_EDITION } from "../../content/road";
+import { makeGateSilhouette } from "../road/gates";
+import { previewCones } from "../road/props";
+import { FIRST_GATE } from "../road/run";
+import { PIECE_LENGTH, ribbon, Track, type RoadOpening } from "../road/track";
 import { LOCATIONS } from "../../content/locations";
 import { ParkedFleet } from "./parkedFleet";
 import { THEME } from "./theme";
@@ -46,6 +50,7 @@ export interface Town {
   seats: Seat[];
   groundCanvas: HTMLCanvasElement;
   sea: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>;
+  roadOpening?: RoadOpening;
   update(t: number, dt: number): void;
   walkableAt(x: number, z: number): boolean;
 }
@@ -115,7 +120,19 @@ export function buildTown(): Town {
   group.add(ground);
 
   // outer grass beyond the playable area + hills
-  const outer = new THREE.Mesh(outerGeometry(), mat("#7fb85e"));
+  const outerGrass = mat("#7fb85e");
+  const outer = new THREE.Mesh(outerGeometry(), ROAD_EDITION.enabled ? outerGrass.clone() : outerGrass);
+  if (ROAD_EDITION.enabled) {
+    const shaderKey = outerGrass.customProgramCacheKey();
+    outer.material.customProgramCacheKey = () => `${shaderKey}-road-exit`;
+    outer.material.onBeforeCompile = (shader, renderer) => {
+      outerGrass.onBeforeCompile(shader, renderer);
+      shader.vertexShader = `varying vec3 vExitGround;\n` + shader.vertexShader.replace("#include <project_vertex>",
+        "#include <project_vertex>\nvExitGround = (modelMatrix * vec4(transformed, 1.0)).xyz;");
+      shader.fragmentShader = `varying vec3 vExitGround;\n` + shader.fragmentShader.replace("void main() {",
+        `void main() { ${exitBackdropCutout("vExitGround")}`);
+    };
+  }
   outer.rotation.x = -Math.PI / 2;
   // the outer grass stops at the shore, so the sea near the beach is not hidden under it
   outer.position.set(35, -0.05, SEA_Z + 1 + 320);
@@ -169,6 +186,8 @@ export function buildTown(): Town {
         c = mix(c, uFog, smoothstep(160.0, 420.0, dist));
         gl_FragColor = vec4(c, 1.0); }`,
   });
+  if (ROAD_EDITION.enabled) seaMat.fragmentShader = seaMat.fragmentShader.replace("void main(){",
+    `void main(){ ${exitBackdropCutout("vW")}`);
   const sea = new THREE.Mesh(new THREE.PlaneGeometry(900, 320, 90, 32), seaMat);
   sea.renderOrder = 2;
   sea.rotation.x = -Math.PI / 2;
@@ -192,12 +211,22 @@ export function buildTown(): Town {
   addStreetProps(M, colliders, photo);
   const parkedCars = makeParkedCars();
   group.add(parkedCars.group);
-  if (ROAD_EDITION.enabled) {
-    const strip = new THREE.Mesh(makeExitGeometry(), new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }));
-    strip.name = "desert-road-crest";
-    strip.applyMatrix4(exitToTown);
-    strip.receiveShadow = true;
-    group.add(strip);
+  const roadOpening = ROAD_EDITION.enabled ? Track.opening() : undefined;
+  if (roadOpening) {
+    // A continuation beyond the preview is already fully in the exchange haze.
+    const hazeFloor = colourMerge([[ribbon(3 * PIECE_LENGTH, 2 * PIECE_LENGTH, -320, 320, -0.09, 1), "#ffffff"]]);
+    const extras = [previewCones(roadOpening), makeGateSilhouette(FIRST_GATE), hazeFloor];
+    const geometry = mergeGeometries([...roadOpening.map((piece) => piece.geometry), ...extras], false)!;
+    extras.forEach((part) => part.dispose());
+    const material = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+    material.onBeforeCompile = (shader) => {
+      shader.fragmentShader = shader.fragmentShader.replace("#include <fog_fragment>",
+        THREE.ShaderChunk.fog_fragment.replace("fogNear, fogFar", `${EXIT_HAZE.near}.0, ${EXIT_HAZE.far}.0`));
+    };
+    const preview = new THREE.Mesh(geometry, material);
+    preview.name = "desert-road-crest";
+    preview.applyMatrix4(exitToTown);
+    group.add(preview);
     group.add(makeExitSign(colliders));
   }
   addTrees(group, colliders, r, photo);
@@ -266,7 +295,7 @@ export function buildTown(): Town {
   const gulls = STYLED ? [] : makeGulls(group);
 
   return {
-    group, colliders, doors, photoSpots, parkedCars, seats: [...seats], groundCanvas, sea,
+    group, colliders, doors, photoSpots, parkedCars, seats: [...seats], groundCanvas, sea, roadOpening,
     update(t, dt) {
       seaMat.uniforms.uTime.value = t;
       wind.value = t;

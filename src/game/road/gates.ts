@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { boardId, FACE_SIZES, type BoardFace } from "../kit/boardFaces";
 import { colourMerge } from "../world/util";
 import { laneOffset, point, ribbon } from "./track";
@@ -33,6 +34,50 @@ function makeTick(material: THREE.Material) {
   return new THREE.Mesh(colourMerge(parts), material);
 }
 
+function gateStructure(distance: number, origin = point(distance)) {
+  const parts: Part[] = [];
+  const block = (w: number, h: number, d: number, x: number, y: number, z: number, color: string, tilt = 0) =>
+    parts.push([new THREE.BoxGeometry(w, h, d).rotateZ(tilt).translate(x, y, z), color]);
+
+  for (let lane = 0; lane < 3; lane++) {
+    const x = laneOffset(lane), paint = LANE_PAINT[lane];
+    for (const side of [-1, 1]) {
+      const edge = x + side * 1.80;
+      block(0.24, 4.18, 0.45, edge, 2.09, 0, paint);
+      block(0.38, 0.53, 0.62, edge, 0.265, 0, IRON);
+      block(0.27, 0.18, 0.48, edge, 0.63, 0, "#fff0ce");
+      block(0.21, 1.08, 0.32, edge - side * 0.30, 3.12, 0, paint, side * 0.66);
+      // Twin approach stripes follow the actual road crown, including on hills and bends.
+      for (const [start, length] of [[-10, 0.8], [-8, 1.5], [-5.4, 5.5]]) {
+        const strip = ribbon(distance + start, length, edge - 0.10, edge + 0.10, 0.060, 3);
+        parts.push([strip.translate(-origin.x, -origin.y, -origin.z), paint]);
+      }
+    }
+    parts.push([plate(3.94, 2.10, 0.42, 0.18).translate(x, BANNER_Y, -0.21), paint]);
+    block(0.44, 0.44, 0.27, x, BANNER_Y - 1.04, 0, paint, Math.PI / 4);
+  }
+  return colourMerge(parts);
+}
+
+function gatePanel() {
+  return colourMerge([
+    [plate(3.84, 1.94, 0.18, 0.15).translate(0, 0, 0.20), IRON],
+    [plate(3.72, 1.80, 0.08, 0.12).translate(0, 0, 0.38), "#fff2d5"],
+  ]);
+}
+
+export function makeGateSilhouette(distance: number) {
+  const origin = point(distance);
+  const frame = gateStructure(distance, origin).translate(origin.x, origin.y, origin.z);
+  const panel = gatePanel();
+  const panels = [0, 1, 2].map((lane) => panel.clone().translate(origin.x + laneOffset(lane), origin.y + BANNER_Y, origin.z));
+  const geometry = mergeGeometries([frame, ...panels], false)!;
+  [frame, panel, ...panels].forEach((part) => part.dispose());
+  return geometry;
+}
+
+export const gateSilhouetteTop = (distance: number) => point(distance, 3.94 / 2 - 0.18, BANNER_Y + 1.05).add(new THREE.Vector3(0, 0, 0.21));
+
 export class Gate {
   readonly mesh: THREE.Mesh;
   readonly frame: readonly THREE.Vector3[];
@@ -45,35 +90,9 @@ export class Gate {
   constructor(readonly distance: number, readonly prompt: Prompt, material: THREE.Material) {
     const origin = point(distance);
     const facePoint = (x: number, y: number) => new THREE.Vector3(x, y, FACE_Z).add(origin);
-    const parts: Part[] = [];
-    const block = (w: number, h: number, d: number, x: number, y: number, z: number, color: string, tilt = 0) =>
-      parts.push([new THREE.BoxGeometry(w, h, d).rotateZ(tilt).translate(x, y, z), color]);
-
-    for (let lane = 0; lane < 3; lane++) {
-      const x = laneOffset(lane), paint = LANE_PAINT[lane];
-      for (const side of [-1, 1]) {
-        const edge = x + side * 1.80;
-        block(0.24, 4.18, 0.45, edge, 2.09, 0, paint);
-        block(0.38, 0.53, 0.62, edge, 0.265, 0, IRON);
-        block(0.27, 0.18, 0.48, edge, 0.63, 0, "#fff0ce");
-        block(0.21, 1.08, 0.32, edge - side * 0.30, 3.12, 0, paint, side * 0.66);
-        // Twin approach stripes follow the actual road crown, including on hills and bends.
-        for (const [start, length] of [[-10, 0.8], [-8, 1.5], [-5.4, 5.5]]) {
-          const strip = ribbon(distance + start, length, edge - 0.10, edge + 0.10, 0.060, 3);
-          parts.push([strip.translate(-origin.x, -origin.y, -origin.z), paint]);
-        }
-      }
-      parts.push([plate(3.94, 2.10, 0.42, 0.18).translate(x, BANNER_Y, -0.21), paint]);
-      block(0.44, 0.44, 0.27, x, BANNER_Y - 1.04, 0, paint, Math.PI / 4);
-    }
-
-    this.mesh = new THREE.Mesh(colourMerge(parts), material);
+    this.mesh = new THREE.Mesh(gateStructure(distance, origin), material);
     this.mesh.position.copy(origin);
-    const panel = colourMerge([
-      [plate(3.84, 1.94, 0.18, 0.15).translate(0, 0, 0.20), IRON],
-      [plate(3.72, 1.80, 0.08, 0.12).translate(0, 0, 0.38), "#fff2d5"],
-    ]);
-    this.boards = new THREE.InstancedMesh(panel, material, 3);
+    this.boards = new THREE.InstancedMesh(gatePanel(), material, 3);
     for (let lane = 0; lane < 3; lane++) {
       this.boardPose.position.set(laneOffset(lane), BANNER_Y, 0);
       this.boardPose.updateMatrix();

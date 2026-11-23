@@ -70,7 +70,7 @@ export class PreparedRoad {
 
   stage(renderer: WebGLRenderer) {
     if (this.ready || this.warming || this.disposed || this.failed || !this.first) return;
-    const track = this.track ??= new Track(this.host.roadExitGeometry());
+    const track = this.track ??= new Track(this.host.roadOpening());
     if (this.index < 5) { track.prepare(this.index++); return; }
     const model = carModelEntry(this.source.model ?? TAXI.model);
     const view = this.view = new RoadView(this.source.mesh, rideSize(this.source), model);
@@ -190,7 +190,7 @@ export class RoadMode {
     const seat = this.run?.view.seatedPose();
     this.clearRun();
     const model = carModelEntry(this.source?.model ?? TAXI.model);
-    const track = new Track(this.host.roadExitGeometry()), view = new RoadView(mesh, size, model), car = new RoadCar();
+    const track = new Track(this.host.roadOpening()), view = new RoadView(mesh, size, model), car = new RoadCar();
     view.scene.add(track.group);
     if (seat) view.seatPlayer(this.host.player().root, seat.position, seat.rotation);
     if (this.lift) {
@@ -496,6 +496,7 @@ export class RoadMode {
       lane: run && laneAt(run.car.x), x: run?.car.x, speed: run?.car.speed, roadPosition: run?.car.s,
       boost: run?.car.boost, wobble: run?.car.wobble, liftHeight: run?.car.height, drifting: run?.drifting,
       fov: run?.view.camera.fov, carFrame: run?.view.carFraming(),
+      settleFrame: run?.view.settleFraming(),
       visibleGhost: run?.view.visibleGhost, continuity: run?.view.departureDebug(), renderSerial: run && boardFaces.road.serial, registration: run && boardFaces.road.debug(),
       hazards: run && [...run.track.pieces.values()].flatMap(({ index, features }) => features.map((feature, i) => {
         const { x, z } = point(feature.s, feature.x);

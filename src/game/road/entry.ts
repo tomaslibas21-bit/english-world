@@ -1,5 +1,5 @@
 import { ROAD_EDITION } from "../../content/road";
-import type { BufferGeometry, Object3D, WebGLRenderer } from "three";
+import type { Object3D, WebGLRenderer } from "three";
 import type { ModeHost } from "../kit/host";
 import type { GameMode, ModeFrame, ModeInput } from "../kit/modes";
 import type { Controls } from "../rides/drive";
@@ -8,11 +8,12 @@ import { WORLD } from "../world/layout";
 import { CREST_DISTANCE, exitCoordinates } from "../world/roadExit";
 import type { RoadEnvironment } from "./view";
 import type { PreparedRoad, RoadMode } from "./mode";
+import type { RoadOpening } from "./track";
 
 export type WalkEdge = { x: number; z: number; inward: number };
 export interface RoadHost extends ModeHost {
   environment(): RoadEnvironment;
-  roadExitGeometry(): BufferGeometry | undefined;
+  roadOpening(): RoadOpening | undefined;
   roadSign(): Object3D | undefined;
   viewport(): { width: number; height: number };
   approach(approaching: boolean): void;

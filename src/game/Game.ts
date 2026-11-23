@@ -584,7 +584,7 @@ export class Game implements GameApi {
         environment: () => ({ sky: this.sky, fog: this.scene.fog as THREE.Fog | null, hemi: this.hemi, sun: this.sun,
           environment: this.scene.environment, environmentIntensity: this.scene.environmentIntensity }),
         roadSign: () => this.town.group.getObjectByName("desert-road-sign"),
-        roadExitGeometry: () => (this.town.group.getObjectByName("desert-road-crest") as THREE.Mesh | undefined)?.geometry,
+        roadOpening: () => this.town.roadOpening,
         viewport: () => ({ width: this.screenW, height: this.screenH }),
         approach: (roadApproach) => {
           const state = useStore.getState();

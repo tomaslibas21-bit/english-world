@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { EXIT_ASPHALT, EXIT_SHARED_LENGTH, EXIT_VERGE, LANE, makeExitGeometry, ROAD_HALF, roadCenter, roadHeight } from "../world/roadExit";
+import { EXIT_ASPHALT, EXIT_SHARED_LENGTH, LANE, makeExitGeometry, ROAD_HALF, roadCenter, roadHeight } from "../world/roadExit";
 import { colourMerge, rand } from "../world/util";
 import { FIRST_GATE, nextGate } from "./run";
 import { ROAD_LOOK } from "./look";
@@ -18,16 +18,20 @@ export const laneAt = (x: number) => THREE.MathUtils.clamp(Math.round(x / LANE) 
 type Kind = "cone" | "boost" | "ramp" | "cactus" | "rock";
 export type Feature = { kind: Kind; s: number; x: number; hit: boolean; phase: number };
 type Scenery = { kind: "cactus" | "rock" | "pole" | "sign"; s: number; x: number; seed: number };
+type ObstacleKind = "cactus" | "pole" | "wire";
 export type TrackPiece = {
-  index: number; mesh: THREE.Mesh; features: Feature[];
+  index: number; mesh: THREE.Mesh<THREE.BufferGeometry>; features: Feature[]; vergeVertices: number; terrainStart: number;
+  obstacles: { kind: ObstacleKind; start: number; end: number }[];
 };
+type PieceGeometry = Omit<TrackPiece, "index" | "mesh"> & { geometry: THREE.BufferGeometry };
+export type RoadOpening = readonly PieceGeometry[];
 type Part = [THREE.BufferGeometry, THREE.ColorRepresentation];
 
 /** The desert floor: flat by the road, rolling into low dunes farther out. */
 export function dune(s: number, x: number) {
   const out = Math.abs(x);
   if (out <= 9) return 0;
-  const rise = THREE.MathUtils.smoothstep(out, 9, 36);
+  const rise = THREE.MathUtils.smoothstep(out, 9, 36) * THREE.MathUtils.smoothstep(s, 0, 16);
   return rise * (1.5 * Math.sin(s / 41 + x / 29) + 1.0 * Math.sin(s / 19 - x / 37 + 1.3) + 0.55 * Math.sin(x / 11 + s / 67));
 }
 /** A point on the ground beside the road, `x` metres from its middle. */
@@ -38,7 +42,8 @@ const SAND = ROAD_LOOK.sand.map((c) => new THREE.Color(c));
 const SHOULDER = new THREE.Color(ROAD_LOOK.shoulder);
 
 /** Both sides of the desert floor for one piece: flat-shaded facets in three tones of sand. */
-function terrain(s0: number, across = ACROSS) {
+function terrain(s0: number) {
+  const across = ACROSS;
   const positions: number[] = [], colours: number[] = [];
   const tone = new THREE.Color();
   const corner = (s: number, x: number) => { const p = ground(s, x, -0.07); positions.push(p.x, p.y, p.z); };
@@ -68,17 +73,23 @@ function terrain(s0: number, across = ACROSS) {
 export const POLE_GAP = PIECE_LENGTH / 2;
 export const POLE_X = 12.5;
 const POLE_FIRST = 10;
+const OPENING_SIGHTLINE = 96;
+const OPENING_SHOULDER = 24;
+// Keep the far end of the last opening span wide until the entire sightline is clear.
+const poleOffset = (s: number) => s < OPENING_SIGHTLINE + POLE_GAP ? OPENING_SHOULDER : POLE_X;
+export const firstPole = () => ground(POLE_FIRST, poleOffset(POLE_FIRST), 6.33);
 function wire(s0: number) {
   const positions: number[] = [], index: number[] = [];
   const spans = 6;
+  const start = ground(s0, poleOffset(s0)), end = ground(s0 + POLE_GAP, poleOffset(s0 + POLE_GAP));
   for (const arm of [-0.82, 0.82]) {
     const base = positions.length / 3;
     for (let i = 0; i <= spans; i++) {
-      const t = i / spans, s = s0 + t * POLE_GAP, sag = 4 * t * (1 - t) * 0.85;
-      const p = point(s, POLE_X, 0);
+      const t = i / spans, sag = 4 * t * (1 - t) * 0.85;
+      const x = THREE.MathUtils.lerp(start.x, end.x, t) + arm, z = THREE.MathUtils.lerp(start.z, end.z, t);
       // The pole's crossarm lies across the road; the wire hangs from its two insulators.
-      const y = THREE.MathUtils.lerp(ground(s0, POLE_X).y, ground(s0 + POLE_GAP, POLE_X).y, t) - 0.07 + 6.12 - sag;
-      positions.push(p.x + arm, y + 0.012, p.z, p.x + arm, y - 0.012, p.z);
+      const y = THREE.MathUtils.lerp(start.y, end.y, t) - 0.07 + 6.12 - sag;
+      positions.push(x, y + 0.012, z, x, y - 0.012, z);
       if (i) { const a = base + i * 2 - 2; index.push(a, a + 1, a + 2, a + 1, a + 3, a + 2, a + 2, a + 1, a, a + 2, a + 3, a + 1); }
     }
   }
@@ -108,8 +119,8 @@ export function ribbon(s0: number, length: number, lo: number, hi: number, y: nu
   return g;
 }
 
-const RAMP_LENGTH = 5;
-const RAMP_RISE = 0.65;
+export const RAMP_LENGTH = 5;
+export const RAMP_RISE = 0.65;
 
 function rampTop(s: number, x: number, y: number) {
   return point(s, x, y + 0.035);
@@ -187,7 +198,7 @@ export class Track {
   private material = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
   released = 0;
 
-  constructor(private readonly sharedExit?: THREE.BufferGeometry) {}
+  constructor(private readonly opening?: RoadOpening) {}
 
   stream(distance: number) {
     const current = Math.floor(distance / PIECE_LENGTH);
@@ -205,15 +216,38 @@ export class Track {
   }
 
   prepare(index: number) {
-    const piece = this.build(index);
+    const prepared = this.opening?.[index];
+    const { geometry, ...pieceData } = prepared
+      ? { ...prepared, geometry: prepared.geometry.clone(), features: prepared.features.map((feature) => ({ ...feature })) }
+      : Track.build(index);
+    const piece = { ...pieceData, index, mesh: new THREE.Mesh(geometry, this.material) };
     this.pieces.set(index, piece);
     this.group.add(piece.mesh);
   }
 
-  private build(index: number): TrackPiece {
+  private release(index: number) {
+    const piece = this.pieces.get(index);
+    if (!piece) return;
+    piece.mesh.removeFromParent();
+    piece.mesh.geometry.dispose();
+    this.pieces.delete(index);
+    this.released++;
+  }
+
+  dispose() {
+    for (const index of this.pieces.keys()) this.release(index);
+    this.material.dispose();
+  }
+
+  static opening(): RoadOpening {
+    return [0, 1, 2].map(Track.build);
+  }
+
+  private static build(index: number): PieceGeometry {
     const s = index * PIECE_LENGTH;
     const r = rand(317 + index * 1709);
     const parts: Part[] = [], features: Feature[] = [], scenery: Scenery[] = [];
+    const obstacleParts: TrackPiece["obstacles"] = [];
     const strip = (x0: number, x1: number, y: number, color: string) => add(parts, ribbon(s, PIECE_LENGTH, x0, x1, y, STEPS), color);
     if (index > 0) {
       strip(-ROAD_HALF, ROAD_HALF, 0, EXIT_ASPHALT);
@@ -225,8 +259,9 @@ export class Track {
       }
     }
     for (let at = POLE_FIRST; at < PIECE_LENGTH; at += POLE_GAP) {
-      scenery.push({ kind: "pole", s: s + at, x: POLE_X, seed: r() });
+      scenery.push({ kind: "pole", s: s + at, x: poleOffset(s + at), seed: r() });
       add(parts, wire(s + at), "#6a5a50");
+      if (s + at < OPENING_SIGHTLINE) obstacleParts.push({ kind: "wire", start: parts.length - 1, end: parts.length });
     }
     // Marker posts count the metres on both shoulders: the rhythm of the road.
     for (const side of [-1, 1]) for (let at = 4; at < PIECE_LENGTH; at += 16) {
@@ -307,31 +342,34 @@ export class Track {
     // Scenery is fixed for the lifetime of a piece. Fold it into the road mesh to save separate draws.
     for (const { kind, s: at, x, seed } of scenery) {
       const k = kind === "rock" ? 0.36 + seed * 1.4 : kind === "pole" ? 1 : 0.78 + seed * 0.66;
-      const base = ground(at, x, kind === "rock" ? 0.1 : -0.07);
+      const offset = kind === "cactus" && at < OPENING_SIGHTLINE ? Math.sign(x) * Math.max(Math.abs(x), OPENING_SHOULDER) : x;
+      const base = ground(at, offset, kind === "rock" ? 0.1 : -0.07);
+      const firstPart = parts.length;
       for (const [geometry, color] of sceneryParts[kind]()) {
         add(parts, geometry.scale(k, kind === "rock" ? k * 0.65 : k, k)
           .rotateY(kind === "pole" ? 0 : seed * 5).translate(base.x, base.y, base.z), color);
       }
+      if (at < OPENING_SIGHTLINE && (kind === "cactus" || kind === "pole")) {
+        obstacleParts.push({ kind, start: firstPart, end: parts.length });
+      }
     }
-    const built = [colourMerge(parts), terrain(s, index === 0 ? [EXIT_VERGE, ...ACROSS.filter((x) => x > EXIT_VERGE)] : ACROSS)];
-    if (index === 0 && !this.sharedExit) built.push(makeExitGeometry());
-    const geometries = index === 0 && this.sharedExit ? [...built, this.sharedExit] : built;
-    const mesh = new THREE.Mesh(mergeGeometries(geometries, false)!, this.material);
+    const offsets = [0];
+    if (obstacleParts.length) for (const [part] of parts) {
+      offsets.push(offsets[offsets.length - 1] + (part.index?.count ?? part.attributes.position.count));
+    }
+    const built = [colourMerge(parts), terrain(s)];
+    let vergeVertices = 0, stripVertices = 0;
+    if (index === 0) {
+      const { strip, verge } = makeExitGeometry();
+      vergeVertices = verge.attributes.position.count;
+      stripVertices = strip.attributes.position.count + vergeVertices;
+      built.unshift(verge, strip);
+    }
+    const obstacles = obstacleParts.map(({ kind, start, end }) =>
+      ({ kind, start: offsets[start] + stripVertices, end: offsets[end] + stripVertices }));
+    const geometry = mergeGeometries(built, false)!;
+    const terrainStart = geometry.attributes.position.count - built[built.length - 1].attributes.position.count;
     built.forEach((g) => g.dispose());
-    return { index, mesh, features };
-  }
-
-  private release(index: number) {
-    const piece = this.pieces.get(index);
-    if (!piece) return;
-    piece.mesh.removeFromParent();
-    piece.mesh.geometry.dispose();
-    this.pieces.delete(index);
-    this.released++;
-  }
-
-  dispose() {
-    for (const index of this.pieces.keys()) this.release(index);
-    this.material.dispose();
+    return { geometry, features, vergeVertices, terrainStart, obstacles };
   }
 }

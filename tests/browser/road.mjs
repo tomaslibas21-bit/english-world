@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { BoardRegistration, sampleBoardRegistration } from "./board-registration.mjs";
-import { assertRoadContinuity, assertWorldFrame } from "./road-handoff.mjs";
+import { assertCameraSettle, assertRoadContinuity, assertWorldFrame } from "./road-handoff.mjs";
 
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:8310";
@@ -30,10 +30,14 @@ function installClock() {
   window.requestAnimationFrame = (fn) => { frames.push(fn); return frames.length; };
   window.cancelAnimationFrame = () => {};
   window.__step = (count, ms = 50) => {
+    const draws = [];
     for (let i = 0; i < count; i++) {
       now += ms;
+      const game = window.__ew?.game, previous = game?.presentedWorld;
       for (const fn of frames.splice(0)) fn(now);
+      if (game?.presentedWorld !== previous && game?.presentedWorld?.scene === "road") draws.push(game.renderer.info.render.calls);
     }
+    return draws;
   };
   let seed = 20261122;
   Math.random = () => ((seed = (Math.imul(1664525, seed) + 1013904223) >>> 0) / 4294967296);
@@ -48,8 +52,12 @@ const browser = await chromium.launch({
   args: ["--use-angle=metal", "--enable-gpu", "--ignore-gpu-blocklist"],
 });
 
-async function driveExit(url, scenario, expectedHeading) {
-  const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+async function driveExit(url, scenario, expectedHeading, viewport = { width: 1280, height: 800 }) {
+  const phone = viewport.width !== 1280;
+  const measureApproach = scenario === "sightline" || scenario === "ramp";
+  const holdModule = scenario === "release" || scenario === "reverse";
+  const context = await browser.newContext(phone
+    ? { viewport, deviceScaleFactor: 2, isMobile: true, hasTouch: true } : { viewport });
   const page = await context.newPage();
   let allowModule, requested = false;
   const released = new Promise((resolve) => { allowModule = resolve; });
@@ -58,7 +66,7 @@ async function driveExit(url, scenario, expectedHeading) {
   try {
     await page.route(roadModule, async (route) => {
       requested = true;
-      if (scenario !== "warm") await released;
+      if (holdModule) await released;
       await route.continue();
     });
     await page.route(/\.mp3(?:\?|$)/, (route) => route.fulfill({ status: 204, body: "" }));
@@ -66,7 +74,10 @@ async function driveExit(url, scenario, expectedHeading) {
     await page.addInitScript(installClock);
     await page.goto(url, { waitUntil: "domcontentloaded" });
     const read = () => page.evaluate(() => window.__ew?.road.state());
-    const step = () => page.evaluate(() => window.__step(1));
+    const step = async (ms = 50) => {
+      const draws = await page.evaluate((ms) => window.__step(1, ms), ms);
+      for (const count of draws) assert.ok(count > 0 && count <= (phone ? 26 : 60), `${scenario}: road frame drew ${count} calls`);
+    };
     const until = async (condition, message, limit = 250) => {
       for (let frame = 0; frame < limit; frame++) {
         await step();
@@ -78,9 +89,14 @@ async function driveExit(url, scenario, expectedHeading) {
     const before = await until((state) => state.presented?.scene === "town", "the town presents", 750);
     assert.equal(requested, false);
     assert.ok(Math.abs(before.exit.outward - expectedHeading) < 0.01, "drives through the edition's physical exit");
-    await Promise.all([
-      page.waitForRequest((request) => roadModule(new URL(request.url()))),
-      page.evaluate(({ x, z, outward }) => {
+    const board = async () => {
+      if (measureApproach) {
+        const van = page.locator(".prompt").getByText("Vairuoti", { exact: true });
+        await until(() => van.isVisible(), "the parked van can be driven", 750);
+        await (phone ? van.tap() : van.click());
+        return;
+      }
+      await page.evaluate(({ x, z, outward }) => {
         const { game } = window.__ew;
         // Both towns build the park convertible with procedural geometry during initialization.
         const ride = game.rides.find("park");
@@ -90,14 +106,30 @@ async function driveExit(url, scenario, expectedHeading) {
         game.placeOnFoot(start.x - Math.cos(outward) * 2, start.z + Math.sin(outward) * 2, outward);
         if (!game.boardRide(ride)) throw new Error("Could not board the park convertible");
         game.modeHost.snapRide(ride);
-      }, before.exit),
+      }, before.exit);
+    };
+    await Promise.all([
+      page.waitForRequest((request) => roadModule(new URL(request.url()))),
+      board(),
     ]);
     const aboard = await until(async (state) => requested && state.requested
-      && (scenario !== "warm" || state.ready)
-      && await page.evaluate(() => window.__ew.game.rides.phase === "on"), "boards the convertible and requests the road");
+      && (holdModule || state.ready)
+      && await page.evaluate(() => window.__ew.game.rides.phase === "on"), "boards and requests the road");
     assert.equal(aboard.phase, "town");
-    await page.keyboard.down("ArrowUp");
-    if (scenario === "warm") {
+    if (phone) await page.evaluate(() => window.__ew.game.setJoystick(0, 1));
+    else await page.keyboard.down("ArrowUp");
+    if (measureApproach) {
+      await until((state) => state.phase === "drive", "enters the desert");
+      await page.evaluate(() => {
+        window.__ew.game.setJoystick(0, 0);
+        window.__ew.road.steer(2);
+      });
+      if (!phone) await page.keyboard.up("ArrowUp");
+      await page.locator(".road-gate").nth(2).waitFor({ state: "attached" });
+      await page.evaluate(async () => { await document.fonts.ready; });
+      if (scenario === "sightline") await assertOpeningSightline(page, read, step);
+      else await assertRampTakeoff(page, read, step);
+    } else if (scenario === "warm") {
       let previous = await until((state) => state.exitDistance >= -state.townCar.speed * 0.5 - 2.5,
         "drives towards the trigger plane");
       let crossed = false;
@@ -144,15 +176,85 @@ async function driveExit(url, scenario, expectedHeading) {
   }
 }
 
+async function assertOpeningSightline(page, read, step) {
+  let first, last, frames = 0;
+  for (let i = 0; i < 150; i++) {
+    await step(50);
+    const state = await read();
+    assert.equal(state.totalGates, 0, "checks the right lane on a fresh first-gate approach");
+    const remaining = state.gateDistance / state.speed;
+    if (remaining > 2.2) continue;
+    if (remaining < 0.8) break;
+    first ??= remaining;
+    last = remaining;
+    frames++;
+    assert.equal(state.lane, 2);
+    const intersections = await page.evaluate(() => {
+      const { game, road } = window.__ew;
+      const { track, view, gate } = game.modes.get("road").mode.run;
+      const ray = new game.raycaster.constructor();
+      const pieces = [...track.pieces.values()].filter(({ obstacles }) => obstacles.length);
+      const kinds = new Set(pieces.flatMap(({ obstacles }) => obstacles.map(({ kind }) => kind)));
+      if (kinds.size !== 3) throw new Error("Expected cactus, pole and wire triangles in the opening pieces");
+      const meshes = pieces.map(({ mesh }) => mesh);
+      const faceZ = road.state().registration.faceSize[2];
+      const targets = [view.roof(view.car), ...gate.faces().map(({ world }) => view.camera.position.clone().set(0, 0, faceZ).applyMatrix4(world))];
+      return targets.map((target) => {
+        const direction = target.clone().sub(view.camera.position);
+        ray.far = direction.length();
+        ray.set(view.camera.position, direction.normalize());
+        return ray.intersectObjects(meshes, false).flatMap((hit) => {
+          const piece = pieces.find(({ mesh }) => mesh === hit.object);
+          const vertex = hit.faceIndex * 3;
+          return piece.obstacles.filter(({ start, end }) => vertex >= start && vertex < end).map(({ kind }) => kind);
+        });
+      });
+    });
+    assert.deepEqual(intersections, [[], [], [], []], `roof and words must be clear at ${remaining.toFixed(3)}s`);
+  }
+  assert.ok(first >= 2.1 && last <= 0.9 && frames >= 24, `sightline window sampled from ${first} to ${last}s over ${frames} frames`);
+}
+
+async function assertRampTakeoff(page, read, step) {
+  const ms = 1000 / 120, registration = new BoardRegistration("road", ms, 60);
+  const trace = [];
+  for (let i = 0; i < 600; i++) {
+    await step(ms);
+    const state = await read();
+    assert.equal(state.totalGates, 0, "measures the opening ramp before gate one");
+    if (state.gateDistance > 70) continue;
+    const frame = await sampleBoardRegistration(page, "road");
+    registration.record(frame);
+    if (state.roadPosition >= 38.5) {
+      const centers = frame.samples.filter(({ name }) => name === "center").map(({ projected }) => projected);
+      assert.equal(centers.length, 3, "all three board centers stay visible at takeoff");
+      trace.push({ s: state.roadPosition, lift: state.liftHeight, centers });
+    }
+    if (state.roadPosition >= 52) break;
+  }
+  registration.verify();
+  assert.ok(trace[0].s < 39.5 && trace.at(-1).s >= 52, "traces the wedge from toe past the airborne peak");
+  assert.ok(Math.max(...trace.map(({ lift }) => lift)) > 0.75, "the van launches off the lip");
+  for (let i = 1; i < trace.length; i++) {
+    const { s, lift, centers } = trace[i], last = trace[i - 1];
+    assert.ok(Math.abs(lift - last.lift) < 0.06, `lift stepped from ${last.lift} to ${lift} at ${s}m`);
+    if (i < 2) continue;
+    for (let lane = 0; lane < 3; lane++) {
+      const delta = Math.hypot(...centers[lane].map((n, c) => n - 2 * last.centers[lane][c] + trace[i - 2].centers[lane][c]));
+      assert.ok(delta <= 1, `board ${lane} moved ${delta.toFixed(3)} CSS px at ${s}m`);
+    }
+  }
+}
+
 try {
   const heights = process.env.WORLD_PHONE_HEIGHT ? [Number(process.env.WORLD_PHONE_HEIGHT)] : [844, 664];
-  for (const height of [800, ...heights]) {
-    const phone = height !== 800;
-    const label = phone ? (height === 844 ? "phone" : `phone-${height}`) : "computer";
+  for (const [width, height] of [[1280, 800], ...heights.map((h) => [390, h]), [844, 390]]) {
+    const phone = width !== 1280, sideways = width > height && phone;
+    const label = sideways ? "landscape" : phone ? (height === 844 ? "phone" : `phone-${height}`) : "computer";
     const maxRoadCalls = phone ? 26 : 60;
     const context = await browser.newContext(phone
-      ? { viewport: { width: 390, height }, deviceScaleFactor: 2, isMobile: true, hasTouch: true }
-      : { viewport: { width: 1280, height: 800 } });
+      ? { viewport: { width, height }, deviceScaleFactor: 2, isMobile: true, hasTouch: true }
+      : { viewport: { width, height } });
     const page = await context.newPage();
     const errors = [], modelRequests = [], roadRequests = [];
     page.on("pageerror", (err) => errors.push(err.message));
@@ -171,7 +273,10 @@ try {
     const read = () => page.evaluate(() => window.__ew?.road.state());
     let registration;
     let milliseconds = 50;
-    const rawStep = (frames = 1) => page.evaluate(([n, ms]) => window.__step(n, ms), [frames, milliseconds]);
+    const rawStep = async (frames = 1) => {
+      const draws = await page.evaluate(([n, ms]) => window.__step(n, ms), [frames, milliseconds]);
+      for (const count of draws) assert.ok(count > 0 && count <= maxRoadCalls, `${label}: road frame drew ${count} calls`);
+    };
     const step = async (frames) => {
       if (!registration) return rawStep(frames);
       for (let i = 0; i < frames; i++) {
@@ -289,7 +394,7 @@ try {
     const measureGates = ({ minFont, minWidth }) => {
       const header = document.querySelector(".road-header")?.getBoundingClientRect();
       if (!header) return [];
-      const controls = [...document.querySelectorAll(".road-mode .joy, .road-mode .brake-btn, .road-mode .drive-horn")]
+      const controls = [...document.querySelectorAll(".road-mode .joy, .road-mode .brake-btn, .road-mode .drive-horn, .road-controls")]
         .map((element) => element.getBoundingClientRect());
       const gates = [...document.querySelectorAll(".road-gate")];
       return gates.map((gate, lane) => {
@@ -303,7 +408,8 @@ try {
             return getComputedStyle(line).whiteSpace === "nowrap" && word.left >= r.left - 0.5 && word.right <= r.right + 0.5;
           });
         const separated = lane === 0 || r.left > gates[lane - 1].getBoundingClientRect().right;
-        return wholeWords && separated && r.left >= 0 && r.right <= innerWidth && r.top > header.bottom
+        const visible = getComputedStyle(gate).visibility === "visible" && Number(getComputedStyle(gate).opacity) > 0;
+        return visible && wholeWords && separated && r.left >= 0 && r.right <= innerWidth && r.top > header.bottom
           && r.width >= minWidth && font >= minFont && r.bottom < innerHeight
           && controls.every((c) => r.bottom < c.top || r.right < c.left || r.left > c.right);
       });
@@ -314,6 +420,7 @@ try {
     let last = await read(), first;
     let layout, lastLayout;
     let cone, coneHit = false;
+    const settle = [];
     const stillFeatures = new Map();
     const sampleHazards = (state) => {
       assert.ok(!state.propBatches.includes("weed"));
@@ -324,7 +431,7 @@ try {
         stillFeatures.set(id, { x, z });
       }
     };
-    for (let frame = 0; frame < 180; frame++) {
+    for (let frame = 0; frame < 360; frame++) {
       await step(1);
       const state = await read();
       if (!first || last.elapsed < 3) await assertWorldFrame(page, last, state, maxRoadCalls, label, shots);
@@ -332,6 +439,7 @@ try {
         sampleHazards(state);
         if (!first) {
           first = state;
+          milliseconds = 1000 / 60;
           await shot("first-road");
           if (phone) await page.evaluate(() => window.__ew.game.setJoystick(0, 0));
           else await page.keyboard.up("ArrowUp");
@@ -341,7 +449,14 @@ try {
           assert.ok(cone);
           await page.evaluate((lane) => window.__ew.road.steer(lane), cone.lane);
         } else assert.ok(state.roadPosition > last.roadPosition, "the warm handoff advances on every road frame");
-        if (state.gateDistance <= 70) registration ??= new BoardRegistration("road", 50, maxRoadCalls);
+        if (milliseconds === 1000 / 60) {
+          settle.push(state);
+          if (state.elapsed >= 1.6 - 1e-8) {
+            assertCameraSettle(settle);
+            milliseconds = 50;
+          }
+        }
+        if (state.gateDistance <= 70) registration ??= new BoardRegistration("road", "16.7/50", maxRoadCalls);
         if (!coneHit && state.hazards.find(({ id }) => id === cone.id)?.hit) {
           coneHit = true;
           assert.ok(state.wobble > 0 && state.propBatches.includes("flat"), "hitting a cone flattens it and causes a stumble");
@@ -591,6 +706,9 @@ try {
   }
   await driveExit(base, "release", -Math.PI / 2);
   await driveExit(base, "reverse", -Math.PI / 2);
+  await driveExit(base, "sightline", -Math.PI / 2, { width: 390, height: 844 });
+  await driveExit(base, "sightline", -Math.PI / 2, { width: 844, height: 390 });
+  await driveExit(base, "ramp", -Math.PI / 2);
   if (process.env.WORLD_TEST_PC_URL) {
     await driveExit(process.env.WORLD_TEST_PC_URL, "warm", 0);
     await driveExit(process.env.WORLD_TEST_PC_URL, "release", 0);

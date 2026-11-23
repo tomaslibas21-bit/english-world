@@ -1,11 +1,13 @@
 import { MathUtils } from "three";
 import type { ModeFrame } from "../kit/modes";
 import type { Pose } from "./ghost";
-import { center, ROAD_HALF, type Track } from "./track";
+import { center, RAMP_LENGTH, RAMP_RISE, ROAD_HALF, type Feature, type Track } from "./track";
 import { DRIVE_SECONDS } from "./run";
 
 const { clamp, lerp } = MathUtils;
 const ease = (dt: number, strength: number) => 1 - Math.exp(-dt * strength);
+const GRAVITY = 17;
+const TAKEOFF_SPEED = 4.55;
 
 export class RoadCar {
   s = 0;
@@ -19,6 +21,7 @@ export class RoadCar {
   height = 0;
   private vertical = 0;
   private landed = false;
+  private ramp?: Feature;
 
   get pose(): Pose { return [this.s, this.x, this.height, this.yaw]; }
 
@@ -52,9 +55,9 @@ export class RoadCar {
     this.x = clamp(planned, -limit, limit);
     if (Math.abs(planned) > limit && Math.abs(this.slide) > 3.8) { this.stumble(); this.slide *= 0.5; }
 
-    if (this.height > 0 || this.vertical !== 0) {
+    if (!this.ramp && (this.height > 0 || this.vertical !== 0)) {
       this.height += this.vertical * dt;
-      this.vertical -= 17 * dt;
+      this.vertical -= GRAVITY * dt;
       if (this.height <= 0) {
         this.height = 0;
         if (this.landed) this.vertical = 0;
@@ -63,13 +66,25 @@ export class RoadCar {
     }
     let changed = false;
     for (const { features } of track.pieces.values()) for (const feature of features) {
-      if (feature.hit || feature.s < s0 || feature.s >= this.s) continue;
+      const contact = feature.kind === "ramp" ? feature.s - RAMP_LENGTH / 2 : feature.s;
+      if (feature.hit || contact < s0 || contact >= this.s) continue;
       const crossing = Math.abs(this.x - feature.x);
       if (crossing > (feature.kind === "boost" || feature.kind === "ramp" ? 1.52 : 1.25) || this.height > 0.72) continue;
       feature.hit = changed = true;
       if (feature.kind === "boost") this.boost = Math.max(this.boost, 1.5);
-      else if (feature.kind === "ramp") { this.height = 0.57; this.vertical = 4.55; this.landed = false; }
+      else if (feature.kind === "ramp") this.ramp = feature;
       else this.stumble();
+    }
+    if (this.ramp) {
+      const lip = this.ramp.s + RAMP_LENGTH / 2;
+      this.height = RAMP_RISE * clamp(1 + (this.s - lip) / RAMP_LENGTH, 0, 1);
+      if (this.s >= lip) {
+        const airTime = (this.s - lip) / this.speed;
+        this.height += (TAKEOFF_SPEED - GRAVITY * airTime / 2) * airTime;
+        this.vertical = TAKEOFF_SPEED - GRAVITY * airTime;
+        this.landed = false;
+        this.ramp = undefined;
+      }
     }
     const groundDistance = Math.hypot(this.s - s0, center(this.s) + this.x - center(s0) - x0);
     return { changed, drifting, pace: this.speed / (cruise + 3), groundDistance };

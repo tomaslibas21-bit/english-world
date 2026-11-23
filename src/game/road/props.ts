@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { ROAD_CONES } from "../../content/road";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { colourMerge } from "../world/util";
-import { point, type Track } from "./track";
+import { point, type RoadOpening, type Track } from "./track";
 
 type Part = [THREE.BufferGeometry, THREE.ColorRepresentation];
 type Cone = { geometry: THREE.BufferGeometry; material: THREE.Material };
@@ -31,6 +31,15 @@ function coneFallback(flat: boolean): Part[] {
     [new THREE.CylinderGeometry(0.065, 0.31, 0.84, 7).scale(1, scale, 1).translate(0, 0.42 * scale, 0), "#f88946"],
     [new THREE.CylinderGeometry(0.125, 0.18, 0.19, 7, 1, true).scale(1, scale, 1).translate(0, 0.49 * scale, 0), "#fff1db"],
   ];
+}
+
+export function previewCones(track: RoadOpening) {
+  return colourMerge(track.flatMap(({ features }) => features.flatMap(({ kind, s, x, phase }) => {
+    if (kind !== "cone") return [];
+    const p = point(s, x);
+    return coneFallback(false).map(([geometry, color]): Part =>
+      [geometry.rotateY(phase).translate(p.x, p.y, p.z), color]);
+  })));
 }
 
 type Prop = "cone" | "flat";

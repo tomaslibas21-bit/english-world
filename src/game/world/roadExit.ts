@@ -15,6 +15,7 @@ export const LANE = 4;
 export const EXIT_SHARED_LENGTH = 64;
 export const EXIT_VERGE = 34;
 export const EXIT_ASPHALT = "#5b626b";
+export const EXIT_HAZE = { near: 120, far: 180 };
 
 const yaw = edge.outward - Math.PI;
 const origin = new THREE.Vector3(edge.x + nx * CREST_DISTANCE, CREST_HEIGHT, edge.z + nz * CREST_DISTANCE);
@@ -51,16 +52,28 @@ export function keepOnExit(point: { x: number; z: number }, radius: number) {
 
 export function exitSightline(x: number, z: number, halfX: number, halfZ: number) {
   const p = exitCoordinates(x, z);
-  return p.s + Math.abs(nx) * halfX + Math.abs(nz) * halfZ > 32
-    && Math.abs(p.x) < 42 + Math.abs(nz) * halfX + Math.abs(nx) * halfZ;
+  const far = p.s + Math.abs(nx) * halfX + Math.abs(nz) * halfZ;
+  return far > 32 && Math.abs(p.x) < Math.min(310, EXIT_VERGE + far) + Math.abs(nz) * halfX + Math.abs(nx) * halfZ;
+}
+
+/** Town ground and water must not show through the low parts of the desert dunes. */
+export function exitBackdropCutout(position: string) {
+  const vec = (x: number, z: number) => `vec2(${x.toFixed(6)}, ${z.toFixed(6)})`;
+  return `
+    vec2 exitDelta = ${position}.xz - ${vec(origin.x, origin.z)};
+    float exitDistance = dot(exitDelta, ${vec(nx, nz)});
+    float exitSide = dot(exitDelta, ${vec(-nz, nx)});
+    if (exitDistance >= 0.0 && abs(exitSide) < min(310.0, ${EXIT_VERGE}.0 + exitDistance)) discard;
+  `;
 }
 
 export const exitPostTops = [-1, 1].map((side) =>
   new THREE.Vector3(roadCenter(9) + side * (ROAD_HALF + 1.05), roadHeight(9) + 1.02, -9));
 
-/** One vertex-coloured roadbed for both views of the crest. All positions are road-local. */
+/** The connecting asphalt and its incoming verge, in road-local coordinates. */
 export function makeExitGeometry() {
   const parts: [THREE.BufferGeometry, THREE.ColorRepresentation][] = [];
+  const verge: typeof parts = [];
   const palette = groundPalette();
   const town = new THREE.Color(palette.grass);
   const sand = new THREE.Color(ROAD_LOOK.sand[0]);
@@ -69,23 +82,25 @@ export function makeExitGeometry() {
   const townRoad = new THREE.Color(palette.road);
   const sections = [ASPHALT_END, -28, -24, -20, -16, -12, -8, -4, 0, ...Array.from({ length: 32 }, (_, i) => 2 * (i + 1))];
   const point = (s: number, x: number, lift: number) => new THREE.Vector3(roadCenter(s) + x, roadHeight(s) + lift, -s);
-  const strip = (s: number, e: number, a: number, b: number, c: number, d: number, y: number, color: THREE.ColorRepresentation) => {
+  const strip = (s: number, e: number, a: number, b: number, c: number, d: number, y: number,
+    color: THREE.ColorRepresentation, into = parts) => {
     const tl = point(s, a, y), tr = point(s, b, y), bl = point(e, c, y), br = point(e, d, y);
-    parts.push([new THREE.BufferGeometry().setFromPoints([tl, tr, bl, tr, br, bl]), color]);
+    into.push([new THREE.BufferGeometry().setFromPoints([tl, tr, bl, tr, br, bl]), color]);
   };
   for (let i = 1; i < sections.length; i++) {
     const s = sections[i - 1], e = sections[i], half = exitHalf(s), endHalf = exitHalf(e);
     const desert = smoothstep((s + e) / 2, ASPHALT_END, -5);
-    const verge = (distance: number) => lerp(edge.width / 2 + 3.1, EXIT_VERGE, smoothstep(distance, ASPHALT_END, -14));
+    const vergeEdge = (distance: number) => lerp(edge.width / 2 + 3.1, EXIT_VERGE, smoothstep(distance, ASPHALT_END, -14));
     strip(s, e, -half, half, -endHalf, endHalf, 0, townRoad.clone().lerp(road, desert));
     for (const side of [-1, 1]) {
-      const band = (a: number, b: number, c: number, d: number, y: number, color: THREE.ColorRepresentation) => {
-        if (side < 0) strip(s, e, -b, -a, -d, -c, y, color);
-        else strip(s, e, a, b, c, d, y, color);
+      const band = (a: number, b: number, c: number, d: number, y: number, color: THREE.ColorRepresentation, into = parts) => {
+        if (side < 0) strip(s, e, -b, -a, -d, -c, y, color, into);
+        else strip(s, e, a, b, c, d, y, color, into);
       };
-      band(half, half + 1.25, endHalf, endHalf + 1.25, -0.018, shoulder);
-      const vergeColor = town.clone().lerp(sand, desert);
-      band(half + 1.25, verge(s), endHalf + 1.25, verge(e), -0.018, vergeColor);
+      if (s < 0) {
+        band(half, half + 1.25, endHalf, endHalf + 1.25, -0.018, shoulder);
+        band(half + 1.25, vergeEdge(s), endHalf + 1.25, vergeEdge(e), -0.018, town.clone().lerp(sand, desert), verge);
+      }
       band(half - 0.30, half - 0.16, endHalf - 0.30, endHalf - 0.16, 0.025, "#f3c982");
     }
   }
@@ -115,7 +130,7 @@ export function makeExitGeometry() {
     tier(0.57, 0.56, 0.51, 0.60, ROAD_LOOK.sand[2]);
     tier(0.56, 0.48, 0.60, 1, ROAD_LOOK.rock[0]);
   }
-  return colourMerge(parts);
+  return { strip: colourMerge(parts), verge: colourMerge(verge) };
 }
 
 
