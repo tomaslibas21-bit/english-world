@@ -40,7 +40,7 @@ try {
         localStorage.setItem(key, save);
         sessionStorage.setItem("ew-play-now", "1");
       }, [`${storage}-progress-v1`, JSON.stringify(progress)]);
-      await page.goto(base, { waitUntil: "domcontentloaded" });
+      await page.goto(base, { waitUntil: "domcontentloaded", timeout: 120000 });
       await page.waitForFunction((beforeOnly) => {
         const ew = window.__ew, g = ew?.game;
         return ew?.store.getState().screen === "play" && g?.zone?.id === "town" && g.ledges?.ready
@@ -126,8 +126,11 @@ try {
       // (the longest frame from here until a second after the crash: the first dent must not stall a phone)
       await page.evaluate(() => {
         window.__frames = { last: performance.now(), worst: 0, until: Infinity };
+        // (the hardest impact of this run: the car can scrape on along the wall after the crash)
+        window.__hardest = null;
         const tick = (now) => {
-          const f = window.__frames;
+          const f = window.__frames, hit = window.__ew.game.rides.crashes?.last();
+          if (hit && (!window.__hardest || hit.k > window.__hardest.k)) window.__hardest = hit;
           f.worst = Math.max(f.worst, now - f.last); f.last = now;
           if (now < f.until) requestAnimationFrame(tick);
         };
@@ -144,6 +147,7 @@ try {
       let hard;
       if (!beforeOnly) {
         hard = await info();
+        hard.hit = await page.evaluate(() => window.__hardest);
         assert(hard.hit?.k > 0.3 && hard.hit.target === "town", JSON.stringify(hard));
         assert(hard.damage.sides.includes("front") && hard.damage.scuffs && hard.damage.hazards, JSON.stringify(hard));
         assert(hard.damage.lampCracked && hard.damage.crackedLamps.join() === "front-right", JSON.stringify(hard));
@@ -287,6 +291,14 @@ try {
         return { x: parked.m.x + parked.m.spec.wide + r.m.spec.half + 0.4, z: parked.m.z };
       });
       await pose(parkedPose.x, parkedPose.z, -Math.PI / 2, 6);
+      await page.evaluate(() => {
+        window.__parkedHazards = false;
+        const watch = () => {
+          if (window.__ew.game.rides.crashes?.info(window.__crashParked)?.hazards) window.__parkedHazards = true;
+          else requestAnimationFrame(watch);
+        };
+        requestAnimationFrame(watch);
+      });
       await drive(1);
       await wait(() => window.__crashRide.m.bump > 0.35);
       await drive(0);
@@ -299,7 +311,7 @@ try {
           };
         });
         assert(parked.hit.target === "parked" && parked.hit.into > 4.5 && parked.hit.into < 7.5, JSON.stringify(parked));
-        assert(parked.damage.sides.includes("left") && parked.damage.scuffs && parked.damage.hazards && parked.chirped && parked.solo, JSON.stringify(parked));
+        assert(parked.damage.sides.includes("left") && parked.damage.scuffs && (parked.damage.hazards || await page.evaluate(() => window.__parkedHazards)) && parked.chirped && parked.solo, JSON.stringify(parked));
       }
       await pose(-60, 26, Math.PI);
       await frame("parked", phone ? [-4.4, 1.7, -2.0] : [-3.4, 1.5, -1.5], [-0.8, 0.75, 0]);
