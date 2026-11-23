@@ -5,7 +5,7 @@ import { audio } from "../audio";
 import { createCharacter } from "../characters";
 import { CAR_SEATS } from "../rides/shapes";
 import { carGeometry, mxTaxiParts } from "../world/car";
-import { loadCarModel } from "../world/carModels";
+import { carHasRoof, loadCarModel } from "../world/carModels";
 import { TAXI } from "../world/layout";
 import { colourMerge } from "../world/util";
 import type { RoadHost, WalkEdge } from "./entry";
@@ -64,6 +64,8 @@ export class Lift {
   private seatDriver() {
     this.driver.root.position.set(CAR_SEATS.driver[0], CAR_SEATS.floor, CAR_SEATS.driver[1]);
     this.driver.root.rotation.y = 0;
+    // (at the wheel under the taxi's roof: out of sight until he steps out beside it)
+    this.driver.root.visible = !carHasRoof(TAXI.model);
     this.driver.busy = "wheel";
     this.driver.recline = 0.12;
     this.driver.setAnim("sit");
@@ -84,6 +86,7 @@ export class Lift {
       const door = Math.sign(beside.x) * 1.36;
       this.driver.root.position.set(door, 0, -0.26);
       this.driver.root.rotation.y = Math.atan2(beside.x - door, beside.z + 0.26);
+      this.driver.root.visible = true;
       this.driver.busy = null;
       this.driver.recline = 0;
       this.driver.setAnim("idle");

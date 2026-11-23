@@ -1,5 +1,5 @@
 // What one can drive, in the real game: a convertible taken from its people at the curb (they hop out and stand by),
-// driven, braked and left; nobody talked to from the wheel; the boat taken out, left for a swim, a dive and back up;
+// driven, braked and left; nobody talked to from the wheel; a closed parked car, its driver out of sight under its roof; the boat taken out, left for a swim, a dive and back up;
 // the same from a phone's buttons. Against a dev server or a built game, either town:
 // WORLD_TEST_URL=http://127.0.0.1:5188 WORLD_STORAGE=english-world WORLD_PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node tests/browser/rides.mjs
 import assert from "node:assert/strict";
@@ -60,6 +60,7 @@ try {
     let s = await state();
     const owners = await page.evaluate(() => window.__ew.game.rides.riding.owners.map((o) => ({ state: o.state, d: +window.__ew.game.rides.reach(window.__ew.game.rides.riding, o.ch.root.position.x, o.ch.root.position.z).toFixed(2) })));
     check(`${label}: its people hopped out and stand beside it, the player is at the wheel`, s.ride === car.id && owners.every((o) => o.state !== "in" && o.d > 0.3), { s, owners });
+    check(`${label}: in a convertible the driver sits in sight`, await page.evaluate(() => window.__ew.game.player.root.visible));
     const said = await page.evaluate(() => window.__said);
     check(`${label}: one of them says something, in a voice of their own`, said.length === 1 && /_ride_/.test(said[0]), said);
     await page.waitForFunction(() => window.__ew.store.getState().hud.prompt?.kind === "out", null, { timeout: 3000 });
@@ -118,6 +119,54 @@ try {
     s = await state();
     const beside = await page.evaluate((id) => { const g = window.__ew.game, r = g.rides.list.find((q) => q.id === id), p = g.player.root.position; return +g.rides.reach(r, p.x, p.z).toFixed(2); }, car.id);
     check(`${label}: out, on foot beside it`, s.ride === null && s.y === 0 && beside > 0.3 && beside < 2.5, { s, beside });
+
+    // ---- a closed car (a parked one of the car kit's): the driver is under its roof and out of sight (the roof would
+    // cut through their head and backpack); they step to its door and in, and are in sight again the moment they step
+    // out of it
+    const closed = await page.evaluate(() => {
+      const g = window.__ew.game, R = g.rides, r = [...R.modeCars.keys()].find((q) => q.parked && R.roofed(q));
+      const h = r.m.heading, d = r.m.spec.wide + 0.7, x = r.m.x + Math.cos(h) * d, z = r.m.z - Math.sin(h) * d;
+      g.keys.clear(); g.enterZone("town", { x, z, rot: h }, true); g.rig.yaw = h; g.rig.snap();
+      return { id: r.id, model: r.model, visible: g.player.root.visible };
+    });
+    check(`${label}: on foot by a closed car, in sight`, closed.visible, closed);
+    // (each frame from here on: in or out of it, and whether the figure is drawn and how far it is from the body)
+    const sample = () => page.evaluate(() => {
+      const g = window.__ew.game;
+      window.__seen = [];
+      window.__seenOn = true;
+      const tick = () => {
+        const r = g.rides.riding, p = g.player.root.position;
+        if (r) window.__seen.push({ phase: g.rides.phase, shown: g.player.root.visible, d: +g.rides.reach(r, p.x, p.z).toFixed(2) });
+        if (window.__seenOn) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    const sampled = () => page.evaluate(() => { window.__seenOn = false; return window.__seen; });
+    await page.waitForFunction((id) => window.__ew.store.getState().hud.prompt?.kind === "drive" && window.__ew.game.rides.near(window.__ew.game.player.root.position.x, window.__ew.game.player.root.position.z)?.id === id, closed.id, { timeout: 5000 });
+    await sample();
+    await press();
+    await page.waitForFunction(() => { const g = window.__ew.game; return g.rides.riding && g.rides.phase === "on"; }, null, { timeout: 5000 });
+    await page.waitForTimeout(400);
+    let seen = await sampled();
+    const stepIn = seen.filter((f) => f.phase === "in");
+    check(`${label}: into the closed car: a step to its door in sight, never inside its body`, stepIn.length > 0 && stepIn.every((f) => !f.shown || f.d > 0), stepIn.slice(-4));
+    check(`${label}: at its wheel the driver is out of sight`, seen.some((f) => f.phase === "on") && seen.filter((f) => f.phase === "on").every((f) => !f.shown), { model: closed.model, on: seen.filter((f) => f.phase === "on").length });
+    await go(true);
+    await page.waitForTimeout(1000);
+    await go(false);
+    if (phone) { await page.evaluate(() => window.__ew.game.hold(true)); await page.waitForTimeout(1200); await page.evaluate(() => window.__ew.game.hold(false)); }
+    else { await page.keyboard.down("Space"); await page.waitForTimeout(1200); await page.keyboard.up("Space"); }
+    s = await state();
+    check(`${label}: driven, still out of sight`, s.ride === closed.id && Math.abs(s.v) < 0.3 && !(await page.evaluate(() => window.__ew.game.player.root.visible)), s);
+    await sample();
+    await press();
+    await page.waitForFunction(() => !window.__ew.game.rides.riding, null, { timeout: 5000 });
+    seen = await sampled();
+    const stepOut = seen.filter((f) => f.phase === "out");
+    check(`${label}: out of the closed car: in sight at once, at its door and beyond`, stepOut.length > 0 && stepOut.every((f) => f.shown && f.d > 0), stepOut.slice(0, 3));
+    const outside = await page.evaluate((id) => { const g = window.__ew.game, r = g.rides.find(id), p = g.player.root.position; return { shown: g.player.root.visible, d: +g.rides.reach(r, p.x, p.z).toFixed(2), y: +p.y.toFixed(2) }; }, closed.id);
+    check(`${label}: on foot beside the closed car, in sight`, outside.shown && outside.d > 0.3 && outside.d < 2.5 && outside.y < 0.1, outside);
 
     // ---- the boat: from the pier's boards, or wading out to it
     const boat = await page.evaluate((LIMIT) => {

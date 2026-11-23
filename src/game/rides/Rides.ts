@@ -9,7 +9,7 @@ import { STYLED, vertexColorMaterial } from "../style";
 import { Chatter, walkerLook, type Ambient } from "../ambient";
 import { Colliders, colourMerge, rand } from "../world/util";
 import { PARKED_CARS, WORLD } from "../world/layout";
-import { carLedges, carModelEntry, type CarModelName, type CarPlacement } from "../world/carModels";
+import { carHasRoof, carLedges, carModelEntry, type CarModelName, type CarPlacement } from "../world/carModels";
 import { TOE, type Piece } from "../ledges";
 import type { NavGrid } from "../nav";
 import type { RidesPlan, CarSpot, BoatSpot } from "../world/rides";
@@ -106,6 +106,9 @@ export interface Ride {
 }
 
 const HOP = 0.55;
+/** How high the hop into a closed car and out of it goes: a step through its door (over a convertible's door and a
+ *  boat's side it is a jump). */
+const DOOR_HOP = 0.2;
 const LAUNCH_SECONDS = 1.5;
 /** Beyond this (m) from the player, the people sitting in a parked convertible hold their pose. */
 const STILL = 26;
@@ -212,6 +215,8 @@ export class Rides {
   private fromRot = 0;
   /** Asked to get out while still rolling: it brakes first. */
   private wantOut = false;
+  /** The player's figure is hidden in a closed car (and shown again by this class only). */
+  private hidRider = false;
   private sprayT = 0;
   private learner = new THREE.Vector3(0, -99, 0);
   private r = rand(9090);
@@ -511,6 +516,27 @@ export class Rides {
   /** The seat's height over the ground or the keel, where the player's and the owners' feet are put. */
   private seatY(r: Ride) { return r.mesh.position.y + (r.kind === "car" ? CAR_SEATS.floor : BOAT_SEATS.floor); }
 
+  /** A car with a roof over its seats (a parked car's or the taxi's model: carModels.ts `roof`): whoever sits in it is
+   *  out of sight. A convertible's and a boat's people sit in the open. */
+  roofed(r: Ride) { return r.kind === "car" && carHasRoof(r.model); }
+
+  /** The player's figure while they sit under a roof: hidden (it would stick out through it), and back at once when
+   *  they are out. */
+  private hideRider(hidden: boolean) {
+    if (hidden) { this.host.player.root.visible = false; this.hidRider = true; }
+    else if (this.hidRider) { this.host.player.root.visible = true; this.hidRider = false; }
+  }
+
+  /** Just outside a car's body, at its side (or end) nearest (x, z): where one steps in through a door, or out. */
+  private door(r: Ride, x: number, z: number, out: THREE.Vector3) {
+    const s = Math.sin(r.m.heading), c = Math.cos(r.m.heading), dx = x - r.m.x, dz = z - r.m.z;
+    const { half, wide } = r.m.spec, across = dx * c - dz * s, along = dx * s + dz * c;
+    if (Math.abs(across) - wide >= Math.abs(along) - half) {
+      return this.at(r, (Math.sign(across) || 1) * (wide + 0.08), Math.max(-1.2, Math.min(0.5, along)), out, this.seatY(r));
+    }
+    return this.at(r, Math.max(-wide + 0.25, Math.min(wide - 0.25, across)), (Math.sign(along) || 1) * (half + 0.08), out, this.seatY(r));
+  }
+
   private seatOwner(r: Ride, o: Owner) {
     const ch = o.ch;
     this.at(r, o.seat[0], o.seat[1], ch.root.position, this.seatY(r));
@@ -586,6 +612,11 @@ export class Rides {
     const ch = this.host.player;
     ch.busy = null; ch.recline = 0; ch.steer = 0;
     ch.setAnim("idle");
+    // (out of a closed car through the door on the way out: in sight again at once, beside it)
+    if (this.roofed(r)) {
+      ch.root.position.copy(this.door(r, this.to.x, this.to.z, this.from));
+      this.hideRider(false);
+    }
     return true;
   }
 
@@ -653,6 +684,7 @@ export class Rides {
     const ch = this.host.player;
     ch.busy = null; ch.recline = 0; ch.steer = 0; ch.lift = 0; ch.tuck = 0;
     ch.setAnim("idle");
+    this.hideRider(false);
     if (keep || r.parked || r.townBoat) this.resetPosition(r, r.beach?.launch ?? { x: r.m.x, z: r.m.z, rot: r.m.heading });
     else this.sendHome(r);
   }
@@ -757,10 +789,16 @@ export class Rides {
     if (this.phase === "in") {
       // (the people in it leave first; then the player's hop into the seat)
       const wait = r.owners.some((o) => o.state === "hop-out") ? 0.4 : 0, k = Math.min(1, Math.max(0, this.phaseT - wait) / HOP);
-      if (r.kind === "car") this.at(r, ...CAR_SEATS.driver, this.to, this.seatY(r));
+      const roofed = this.roofed(r);
+      // (into a closed car: a step to its door, and out of sight in it; over a convertible's door to the wheel)
+      if (roofed) this.door(r, this.from.x, this.from.z, this.to);
+      else if (r.kind === "car") this.at(r, ...CAR_SEATS.driver, this.to, this.seatY(r));
       else this.boatSeat(r, this.to);
-      this.arc(pl, this.from, this.to, k, 0.75);
-      pl.root.rotation.y = this.fromRot + wrap(r.m.heading - this.fromRot) * ease(k);
+      this.arc(pl, this.from, this.to, k, roofed ? DOOR_HOP : 0.75);
+      // (turning to the wheel's heading, or to face the closed car's door)
+      const dx = this.to.x - this.from.x, dz = this.to.z - this.from.z;
+      const face = roofed && dx * dx + dz * dz > 0.01 ? Math.atan2(dx, dz) : r.m.heading;
+      pl.root.rotation.y = this.fromRot + wrap(face - this.fromRot) * ease(k);
       if (k >= 1) {
         this.placeRiderInSeat(r);
         if (r.beach) { this.phase = "launch"; this.phaseT = 0; }
@@ -770,10 +808,12 @@ export class Rides {
       else this.boatSeat(r, pp);
       pl.root.rotation.set(0, r.m.heading, 0);
       pl.steer = r.m.steer;
+      if (this.roofed(r)) this.hideRider(true);
     } else {
       const k = Math.min(1, this.phaseT / HOP);
-      this.arc(pl, this.from, this.to, k, 0.7);
+      this.arc(pl, this.from, this.to, k, this.roofed(r) ? DOOR_HOP : 0.7);
       if (k >= 1) {
+        this.hideRider(false);
         pl.lift = 0; pl.tuck = 0;
         this.riding = null;
         this.phase = "on";
@@ -786,6 +826,7 @@ export class Rides {
   private placeRiderInSeat(r: Ride) {
     const pl = this.host.player;
     this.phase = "on";
+    if (this.roofed(r)) this.hideRider(true);
     pl.lift = 0; pl.tuck = 0;
     pl.seatY = r.kind === "car" ? CAR_SEATS.seat : BOAT_SEATS.seat;
     pl.recline = r.kind === "car" ? 0.12 : 0;

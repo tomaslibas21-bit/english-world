@@ -16,7 +16,7 @@ import { keepPhrases } from "../kit/phrases";
 import { controlsFrom } from "../rides/drive";
 import type { Ride } from "../rides/Rides";
 import type { Door, StandTaxi } from "../world/town";
-import { carFootprint, carModelEntry } from "../world/carModels";
+import { carFootprint, carHasRoof, carModelEntry } from "../world/carModels";
 import { L } from "../../ui/i18n";
 import { CAR_SEATS } from "../rides/shapes";
 import { approach, approachDistance, checkDecision, inStopZone, resetPose, taxiScore, type TaxiRoute } from "./route";
@@ -140,6 +140,8 @@ class TaxiMode implements GameMode {
     this.passenger.setAnim("sit");
     this.car.mesh.add(this.passenger.root);
     this.passenger.root.position.set(-0.43, CAR_SEATS.floor, -0.91);
+    // (in the back, under the taxi's roof: heard, not seen, as the learner at the wheel is)
+    this.passenger.root.visible = !carHasRoof(TAXI_CAR.model);
     this.assist = false;
     const help = progress.miniGameHelp?.[this.id]?.level ?? 0;
     resetTaxiUi();

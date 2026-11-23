@@ -410,7 +410,13 @@ try {
       game.setJoystick(0, 1);
     }, puertoColibri);
     const yes = page.locator('.road-choice[data-line="rd_a_yes"]');
+    // (the driver at the wheel under the taxi's roof is out of sight; standing beside it, in sight; beside the learner
+    // on the road, under the roof again)
+    const liftDriver = () => page.evaluate(() => window.__ew.game.modes.get("road").mode?.lift?.driver.root.visible);
+    await waitFor(async () => (await read()).phase === "approach", "walking to the boundary calls the taxi", 750, 1);
+    assert.equal(await liftDriver(), false, "the taxi driver drives up out of sight under the taxi's roof");
     await waitFor(() => yes.isVisible(), "walking to the boundary summons the taxi driver's lift");
+    assert.equal(await liftDriver(), true, "the taxi driver stands beside the taxi, in sight");
     await page.evaluate(() => window.__ew.game.setJoystick(0, 0));
     const liftLine = puertoColibri ? "¿Le doy un aventón? Súbase, ¡hoy maneja usted!" : "Need a lift? Hop in, you drive!";
     assert.ok(await page.evaluate((line) => window.__roadAudio.some(({ text }) => text === line), liftLine));
@@ -427,6 +433,7 @@ try {
       const state = await read();
       return state.phase === "drive" && state.lifted && state.model === "taxi";
     }, "accepts the lift and starts driving the taxi");
+    assert.equal(await liftDriver(), false, "the taxi driver rides beside the learner out of sight under the taxi's roof");
     await waitFor(() => page.getByText(ui("Geriausias važiavimas", "Best run"), { exact: true }).isVisible(), "the best run is available as a ghost");
     await page.evaluate(() => window.__ew.road.jumpTimer());
     await waitFor(() => result.isVisible(), "shows the taxi run's result");
