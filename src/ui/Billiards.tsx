@@ -106,7 +106,7 @@ export function BilliardsOverlay({ touch }: { touch: boolean }) {
   const aiming = phase === "aim" || phase === "break";
   const picking = phase === "call" || phase === "listen";
   const waitingForTina = side === "tina" && phase === "tina";
-  const showCall = !!call && (phase === "feedback" && !correct || (phase === "listen" || waitingForTina) && reveal);
+  const showCall = !!call && (phase === "feedback" || (phase === "listen" || waitingForTina) && reveal);
   const shotOk = phase === "feedback" && correct;
   const scoreTitle = result?.winner === "learner" ? "Laimėjai!" : result?.winner === "tina" ? "Laimėjo Tina" : "Lygiosios";
   return <div className="billiards" data-phase={phase} lang="lt">
@@ -176,7 +176,7 @@ export function BilliardsOverlay({ touch }: { touch: boolean }) {
         <button className="bl-replay" onClick={() => act("skip")}>Baigti</button>
       </div>}
     </section>
-    {phase === "result" && result && <ScoreCard title={scoreTitle}
+    {phase === "result" && result && <ScoreCard title={scoreTitle} celebrate={result.winner === "learner"}
       ratio={(result.called + result.understood) / Math.max(1, result.shots + result.listens)}
       rows={[
         { label: "Pataikyti paskelbti smūgiai", value: <><ScoreNumber value={result.called} />/{result.shots}</> },

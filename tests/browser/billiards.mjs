@@ -50,7 +50,7 @@ const browser = await chromium.launch({
 });
 try {
   for (const [width, height] of sizes) {
-    const phone = width === 390, label = `${width}x${height}`;
+    const phone = width === 390 || height === 390, label = `${width}x${height}`;
     const dir = join(shots, label);
     await mkdir(dir, { recursive: true });
     const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: phone ? 2 : 1, isMobile: phone, hasTouch: phone });
@@ -92,23 +92,27 @@ try {
       async function checkLayout(aiming) {
         await wait(() => page.evaluate(() => !!document.querySelector(".bl-header") && !!document.querySelector(".bl-panel") && !!document.querySelector(".bl-table-pad")), "game screen");
         await step();
-        const { table, actors, header, panel, stage, power } = await page.evaluate(() => {
+        const { table, actors, header, status, exit, panel, stage, power } = await page.evaluate(() => {
           const rect = (selector) => document.querySelector(selector)?.getBoundingClientRect().toJSON();
           const { table, actors } = window.__ew.billiards.state();
-          return { table, actors, header: rect(".bl-header"),
+          return { table, actors, header: rect(".bl-header"), status: rect(".bl-status"), exit: rect(".bl-exit"),
             panel: rect(".bl-panel"), stage: rect(".bl-table-pad"), power: rect(".bl-power") };
         });
         const intersects = (a, b) => a.top < b.bottom && a.bottom > b.top && a.left < b.right && a.right > b.left;
         const visibleActors = actors.filter((actor) => actor.visible);
         const actorsClear = visibleActors.every((actor) => [table, header, panel, power].filter(Boolean).every((area) => !intersects(actor, area)));
-        if (!(table.top >= (header?.bottom ?? 0) && table.bottom <= (panel?.top ?? 1e9)) || !actorsClear) { await page.screenshot({ path: join(dir, `fail-layout-${aiming}.png`) }); console.log("LAYOUT", JSON.stringify({ table, actors, header, panel, stage, power })); }
+        // A screen wider than tall puts the panel beside the table (billiards.css); else it is under it.
+        const beside = panel.left >= table.right - 1;
+        const between = beside ? table.right <= panel.left && !intersects(table, status) && !intersects(table, exit)
+          : table.top >= header.bottom && table.bottom <= panel.top;
+        if (!between || !actorsClear) { await page.screenshot({ path: join(dir, `fail-layout-${aiming}.png`) }); console.log("LAYOUT", JSON.stringify({ table, actors, header, panel, stage, power })); }
         assert(actorsClear, `${label}: visible players clear the table, header and controls`);
         assert(table.left >= stage.left - 1 && table.right <= stage.right + 1, `${label}: rails fit across the stage`);
-        assert(table.top >= header.bottom && table.bottom <= panel.top, `${label}: rails fit between header and controls ${JSON.stringify({ table, header, panel })}`);
+        assert(between, `${label}: rails fit between header and controls ${JSON.stringify({ table, header, panel, status, exit })}`);
         assert(table.width >= 120 && table.height >= 180, `${label}: table is readable`);
         assert(panel.top > 0 && panel.bottom <= height && panel.height >= 65, `${label}: whole panel is on screen`);
         assert.equal(!!power, aiming);
-        if (power) assert(table.right < power.left && power.top >= header.bottom && power.bottom <= panel.top, `${label}: power bar clears table and panels`);
+        if (power) assert(table.right < power.left && (beside ? power.right <= panel.left && !intersects(power, exit) : power.top >= header.bottom && power.bottom <= panel.top), `${label}: power bar clears table and panels`);
       }
 
       async function listen(correct, capture, beforeShot) {
