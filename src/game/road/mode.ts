@@ -7,7 +7,6 @@ import { useStore } from "../../state/store";
 import { audio } from "../audio";
 import { ModeDialogue } from "../kit/dialogue";
 import type { ModeFrame, ModeInput } from "../kit/modes";
-import { keepPhrases } from "../kit/phrases";
 import type { Ride } from "../rides/Rides";
 import { CAR_SEATS } from "../rides/shapes";
 import { carModelEntry } from "../world/carModels";
@@ -16,7 +15,7 @@ import type { RoadHost, WalkEdge } from "./entry";
 import { Gate, LANE_PAINT } from "./gates";
 import { ghostAt, GhostRecorder, readBest, saveBest } from "./ghost";
 import { Lift } from "./lift";
-import { DRIVE_SECONDS, FIRST_GATE, nextGate, RunScore } from "./run";
+import { DRIVE_SECONDS, FIRST_GATE, nextGate, RunScore, keepRunPhrases } from "./run";
 import { RoadCar } from "./steering";
 import { resetRoadUi, useRoad } from "./store";
 import { laneAt, laneOffset, Track } from "./track";
@@ -253,15 +252,11 @@ export class RoadMode {
     const best = { points: score.points, frames: run.ghost.frames };
     const record = saveBest(edition, best, this.best);
     if (record) this.best = best;
-    const before = useCards.getState().cards.length;
-    for (const { word, gap } of score.learned.values()) {
-      if (gap) keepPhrases(word.situation, [gap.full]);
-      else keepPhrases(word.situation, [{ en: word.en, nat: word.lt, say: word.clip.say, units: [{ en: word.en, lt: word.lt }] }]);
-    }
+    const cards = keepRunPhrases(score);
     useStore.getState().setHud({ ride: null });
     useRoad.setState({ phase: "result", feedback: undefined, prompt: undefined, anchors: [], wind: false, result: {
       points: score.points, right: score.right, total: score.total, streak: score.bestStreak, distance: run.distance,
-      record, cards: useCards.getState().cards.length - before, missed: [...score.missed.values()],
+      record, cards, missed: [...score.missed.values()],
     } });
     if (this.lift) void this.say("rd_end");
   }

@@ -24,6 +24,15 @@ export const STRINGS: Record<string, string> = {
   "Šis žodis skamba čia:": "You'll hear it here:",
   "Atgal į miestą": "Back to town",
   "Pirmiausia pakalbėkite su žmonėmis mieste – tada čia atsiras žodžių.": "Talk with people in town first – then words will show up here.",
+  // Open-water game
+  "Atvira jūra": "Open sea",
+  "Klausykite ir plaukite pro teisingus vartus": "Listen and sail through the right gate",
+  "Vairuokite rodyklėmis · Rodyklė žemyn – atgal į krantą": "Steer with the arrows · Down arrow – back to shore",
+  "Patraukite vairalazdę žemyn – grįšite į krantą": "Pull the stick down to head back to shore",
+  "Plaukimas baigtas": "Boat ride over",
+  "Nuplaukta": "Distance",
+  "Atgal į krantą": "Back to shore",
+  "Plaukite pro plūdurus į horizontą – ten laukia žodžių žaidimas.": "Sail past the buoys toward the horizon – a word game is waiting out there.",
   // Barista shift
   "Pabandyti už prekystalio": "Try the barista's side",
   "Pamaina baigta": "Shift over",

@@ -321,7 +321,7 @@ export function palapas(parts: Part[], col: Colliders, spots: [number, number][]
 
 /** A lancha (an open fishing boat, white with a stripe in `stripe`) made round (0, 0), the bow towards +z: its hull
  *  with a floor inside, the stripe along the gunwale, two thwarts and an outboard motor at the stern. */
-export function lanchaParts(stripe: string): Part[] {
+export function lanchaParts(stripe: string) {
   const parts: Part[] = [];
   const outline = (inset: number) => {
     const s = new THREE.Shape();
@@ -331,28 +331,23 @@ export function lanchaParts(stripe: string): Part[] {
     return s;
   };
   // ExtrudeGeometry lies along +z: turned so it stands up (y) and the outline is the boat seen from above
-  const ext = (s: THREE.Shape, depth: number, y: number) => new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: false, curveSegments: 4 }).rotateX(-Math.PI / 2).translate(0, y, 0);
+  const ext = (s: THREE.Shape, depth: number, y: number) => new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: false, curveSegments: 4 })
+    .rotateX(Math.PI / 2).translate(0, y + depth, 0);
   const shell = outline(0);
   shell.holes.push(new THREE.Path(outline(0.09).getPoints(4)));
-  parts.push([ext(outline(0), 0.22, 0), "#f4f6f8"]);
+  const hull = ext(outline(0), 0.22, 0);
+  parts.push([hull, "#f4f6f8"]);
   parts.push([ext(shell, 0.55, 0.22), "#f4f6f8"]);
   const band = outline(-0.01);
   band.holes.push(new THREE.Path(outline(0.08).getPoints(4)));
   parts.push([ext(band, 0.12, 0.62), stripe]);
-  parts.push([ext(outline(0.09), 0.02, 0.22), "#9fb7c4"]); // the floor
-  for (const z of [-1.2, 0.6]) parts.push([box(1.62, 0.06, 0.32, 0, 0.55, z), "#b8895a"]);
+  const deck = 0.24, aftBench = -1.2;
+  parts.push([ext(outline(0.09), 0.02, deck - 0.02), "#9fb7c4"]);
+  for (const z of [aftBench, 0.6]) parts.push([box(1.62, 0.06, 0.32, 0, 0.55, z), "#b8895a"]);
   parts.push([box(0.4, 0.5, 0.45, 0, 1.0, -3.15), "#2f3136"]); // the motor's cowl
   parts.push([box(0.12, 0.7, 0.14, 0, 0.45, -3.25), "#55595e"]);
   parts.push([box(0.4, 0.1, 0.45, 0, 1.27, -3.15), "#e9ecef"]);
-  return parts;
-}
-
-/** Lanchas pulled up on the sand, leaning a little on their keel. */
-export function beachedLanchas(parts: Part[], col: Colliders, boats: [number, number, number, string][]) {
-  for (const [x, z, rot, stripe] of boats) {
-    for (const [g, c] of lanchaParts(stripe)) parts.push([g.rotateZ(0.09).rotateY(rot).translate(x, 0.02, z), c]);
-    for (const k of [-2, 0, 2]) col.addCircle(x + Math.sin(rot) * k, z + Math.cos(rot) * k, 0.95);
-  }
+  return { parts, hull, deck, aftBench };
 }
 
 // ------------------------------------------------------------------------------------------------ buildings

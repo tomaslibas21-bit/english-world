@@ -7,10 +7,10 @@ import { ScoreCard, ScoreNumber } from "./kit/ScoreCard";
 import "./pool.css";
 
 const helpText = {
-  long: "Kai vaikai sušunka „¡Tuya!“ (tavo!), kamuolys skrenda pas tave. Bakstelėk ekraną, spausk tarpą arba šuolio mygtuką ir atmušk.",
-  short: "„¡Tuya!“ – mušk!",
-  timing: "Atmušk, kai kamuolys leidžiasi pas tave.",
-  wrong: "Šitas buvo kitam vaikui.",
+  long: L("Kai vaikai sušunka „¡Tuya!“ (tavo!), kamuolys skrenda pas tave. Bakstelėk ekraną, spausk tarpą arba šuolio mygtuką ir atmušk."),
+  short: L("„¡Tuya!“ – mušk!"),
+  timing: L("Atmušk, kai kamuolys leidžiasi pas tave."),
+  wrong: L("Šitas buvo kitam vaikui."),
 } as const;
 
 export function PoolOverlay({ touch }: { touch: boolean }) {
@@ -37,9 +37,9 @@ export function PoolOverlay({ touch }: { touch: boolean }) {
           {aside && <div className="pool-aside" data-line={aside.key} lang={TL}><GlossLine sentence={aside.sentence} gloss /></div>}
         </div>
       </div>
-      {help && <div key={help} className={`pool-help ${touch ? "pool-help-touch" : ""}`} lang={HL}>{L(helpText[help])}</div>}
+      {help && <div key={help} className={`pool-help ${touch ? "pool-help-touch" : ""}`} lang={HL}>{helpText[help]}</div>}
       {touch && (
-        <button type="button" className="jump-btn pool-hit" aria-label={L(helpText.short)}
+        <button type="button" className="jump-btn pool-hit" aria-label={helpText.short}
           onPointerDown={(e) => { e.preventDefault(); game?.jump(); }}
           onClick={(e) => { if (e.detail === 0) game?.jump(); }}>
           <Icon name="chevronUp" size={34} strokeWidth={2.5} />

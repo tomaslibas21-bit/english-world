@@ -26,7 +26,8 @@ export function walkToSituation(sitId: string, close: () => void) {
   if (!town) return;
   town.setObjective(sitId);
   close();
-  const onFoot = ({ hud }: ReturnType<typeof useStore.getState>) => !hud.fade && hud.ride !== "surf";
+  const onFoot = ({ hud }: ReturnType<typeof useStore.getState>) =>
+    !hud.fade && hud.ride !== "surf" && hud.modeScreen?.id !== "sea";
   if (onFoot(useStore.getState())) {
     town.autoWalkToObjective();
     return;

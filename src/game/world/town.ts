@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { TAXI_ROUTES } from "../../content/taxi";
 import { ROAD_EDITION } from "../../content/road";
 import * as GROUNDS from "../cave/grounds";
+import { markTownBoat } from "./boatRide";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, GAS_FORECOURT, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, type BuildingDef } from "./layout";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
@@ -48,6 +49,7 @@ export interface Town {
   /** Where townspeople can sit (Ambient seats some of them). */
   seats: Seat[];
   groundCanvas: HTMLCanvasElement;
+  sea: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>;
   /** `cam`: where the camera is (the edition's small things far from it are left out: theme.ts `farHide`). */
   update(t: number, dt: number, cam?: THREE.Vector3): void;
   walkableAt(x: number, z: number): boolean;
@@ -311,7 +313,7 @@ export function buildTown({ movableParking = false } = {}): Town {
   const gulls = STYLED ? [] : makeGulls(group);
 
   return {
-    group, colliders, doors, parkedCars, seats: [...seats], groundCanvas, portals: [...portals],
+    group, colliders, doors, parkedCars, seats: [...seats], groundCanvas, sea, portals: [...portals],
     update(t, dt, cam) {
       seaMat.uniforms.uTime.value = t;
       poolWater?.update(t);
@@ -323,6 +325,7 @@ export function buildTown({ movableParking = false } = {}): Town {
         if (c.position.x > 260) c.position.x = -200;
       }
       for (const b of boats) {
+        if (!b.userData.boat) continue; // Rides took over this mesh.
         const { phase, rot } = b.userData.boat;
         b.position.y = Math.sin(t * 1.1 + phase) * 0.12;
         b.rotation.set(Math.sin(t * 0.9 + phase) * 0.035, rot, Math.sin(t * 1.3 + phase * 1.3) * 0.05);
@@ -2042,7 +2045,6 @@ function addTownMx(M: Merger, col: Colliders) {
     const loungers = MX.palapas(mx, col, THEME.palapas, !!THEME.beachLife, mxRoofs);
     if (THEME.beachLife) for (const [x, z] of loungers) seats.push({ x, z, rot: Math.PI, y: 0.42, recline: 0.9 });
   }
-  if (THEME.lanchas) MX.beachedLanchas(mx, col, THEME.lanchas.beached);
   if (THEME.church) MX.church(mx, col, THEME.church.x, THEME.church.z, THEME.church.face);
   // (graphics round 4) its atrium, walled, and its facade's columns and niches
   if (THEME.church && THEME.atrio) MX.atrio(mx, mxFlat, col, THEME.church.x, THEME.church.z, THEME.church.face, THEME.atrio.depth, THEME.atrio.left, THEME.atrio.right, THEME.atrio.gate);
@@ -2397,31 +2399,40 @@ function staticColoured(parts: [THREE.BufferGeometry, THREE.ColorRepresentation]
   return mesh;
 }
 
-/** Lanchas afloat (theme.ts), each one mesh that rocks on the water like the boats. */
-function makeLanchas() {
+export function makeLanchas() {
+  const lanchas = THEME.lanchas;
+  if (!lanchas) return [];
   boatMat ??= new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
-  return THEME.lanchas!.afloat.map(([bx, bz, rot, stripe], i) => {
-    const mesh = new THREE.Mesh(coloured(MX.lanchaParts(stripe).map(([g, c]) => [g.translate(0, -0.3, 0), c])), boatMat!);
-    mesh.position.set(bx, 0, bz);
-    mesh.rotation.y = rot;
+  const draft = 0.3;
+  const placements = STYLED ? [true] : [false, true];
+  return placements.flatMap((beached) => (beached ? lanchas.beached : lanchas.afloat).map(([x, z, rot, stripe], i) => {
+    const { parts, hull, deck, aftBench } = MX.lanchaParts(stripe);
+    const id = `lancha-${beached ? "beached" : "afloat"}-${i + 1}`;
+    const mesh = new THREE.Mesh(coloured(parts.map(([g, c]) => [g.translate(0, -draft, 0), c])), boatMat!);
+    mesh.name = id;
+    mesh.rotation.set(0, rot, beached ? 0.09 : 0, "YXZ");
+    mesh.position.set(x, beached ? 0.02 + draft : 0, z);
     mesh.castShadow = true;
+    mesh.receiveShadow = beached;
     mesh.userData.boat = { phase: i * 1.7, rot };
+    markTownBoat(mesh, hull, id, stripe, deck - draft, [0, aftBench], beached);
     return mesh;
-  });
+  }));
 }
 
-function makeBoats() {
+export function makeBoats() {
   boatMat ??= new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
   // the hull seen from above: square stern, pointed bow
   const shape = new THREE.Shape();
   shape.moveTo(-1.1, -3); shape.lineTo(1.1, -3); shape.lineTo(1.1, 1.2); shape.quadraticCurveTo(1.0, 2.4, 0, 3.2);
   shape.quadraticCurveTo(-1.0, 2.4, -1.1, 1.2); shape.lineTo(-1.1, -3);
   return BOATS.map(([bx, bz, rot, c], i) => {
-    const hull = new THREE.ExtrudeGeometry(shape, { depth: 0.9, bevelEnabled: false, curveSegments: 6 }).rotateX(-Math.PI / 2).translate(0, -0.35, 0);
-    const deck = new THREE.ExtrudeGeometry(shape, { depth: 0.06, bevelEnabled: false, curveSegments: 6 }).rotateX(-Math.PI / 2).scale(0.9, 1, 0.9).translate(0, 0.56, 0);
-    const stripe = new THREE.ExtrudeGeometry(shape, { depth: 0.12, bevelEnabled: false, curveSegments: 6 }).rotateX(-Math.PI / 2).scale(1.015, 1, 1.008).translate(0, 0.25, 0);
+    const hull = new THREE.ExtrudeGeometry(shape, { depth: 0.9, bevelEnabled: false, curveSegments: 6 }).rotateX(Math.PI / 2).translate(0, 0.55, 0);
+    const deck = new THREE.ExtrudeGeometry(shape, { depth: 0.06, bevelEnabled: false, curveSegments: 6 }).rotateX(Math.PI / 2).scale(0.9, 1, 0.9).translate(0, 0.62, 0);
+    const stripe = new THREE.ExtrudeGeometry(shape, { depth: 0.12, bevelEnabled: false, curveSegments: 6 }).rotateX(Math.PI / 2).scale(1.015, 1, 1.008).translate(0, 0.37, 0);
     const mesh = new THREE.Mesh(coloured([
       [hull, c], [stripe, c === "#ffffff" ? "#2f6db5" : "#ffffff"], [deck, "#c9a27a"],
+      [new THREE.BoxGeometry(0.85, 0.3, 0.43).translate(0, 0.77, -2.24), "#ad805b"],
       [new THREE.BoxGeometry(1.4, 0.9, 1.8).translate(0, 1.05, -0.6), "#f4f6f8"],
       [new THREE.BoxGeometry(1.42, 0.3, 1.3).translate(0, 1.2, -0.45), "#5f8fb0"], // the cabin's windows
       [new THREE.CylinderGeometry(0.05, 0.05, 5, 5).translate(0, 3, 0.4), "#dddddd"],
@@ -2430,6 +2441,7 @@ function makeBoats() {
     mesh.rotation.y = rot;
     mesh.castShadow = true;
     mesh.userData.boat = { phase: i * 1.7, rot };
+    markTownBoat(mesh, hull, `anchored-${i + 1}`, c, 0.62, [0, -2.16]);
     return mesh;
   });
 }
@@ -2637,15 +2649,9 @@ function addHarbor(M: Merger, col: Colliders, group: THREE.Group, r: () => numbe
   for (const y of [4, 10]) M.add("lighthouse-red", mat("#c8392f"), cylGeo(2.35 - y * 0.03, 2.45 - y * 0.03, 2.4, x, y, z, 16));
   M.add("lighthouse-top", mat("#fff2b0", { emissive: "#c9a53a" }), cylGeo(1.5, 1.5, 2, x, 18, z, 12));
   M.add("lighthouse-cap", mat("#c8392f", { flat: true }), new THREE.ConeGeometry(2, 2, 12).translate(x, 20, z));
-  // boats: each one mesh (a hull with a pointed bow, a deck, a cabin, a mast) that rocks on the water (see update)
-  if (STYLED) {
-    for (const [bx, bz, rot, c] of BOATS) {
-      const hull = new THREE.BoxGeometry(2.2, 0.9, 6); hull.rotateY(rot); hull.translate(bx, 0.1, bz);
-      M.add("boat-" + c, mat(c, { flat: true }), hull);
-      M.add("boat-cabin", mat("#f4f6f8"), boxGeo(1.4, 0.9, 1.8, 0, 0, 0).rotateY(rot).translate(bx, 1, bz));
-      M.add("boat-mast", mat("#ddd"), cylGeo(0.05, 0.05, 5, bx, 3, bz, 5));
-    }
-  } else for (const b of THEME.lanchas ? makeLanchas() : makeBoats()) group.add(b);
+  // Each boat is a separate hull so it can move as a ride.
+  for (const boat of makeLanchas()) group.add(boat);
+  if (STYLED || !THEME.lanchas) group.add(...makeBoats());
   // beach umbrellas and seagull-free calm (palapas instead where the edition has them: addTownMx)
   if (!THEME.palapas.length) for (const [ux, uz, c] of [[-80, -67, "#e45b4f"], [-60, -68, "#f2c14e"], [40, -67, "#4a7bb7"], [70, -68, "#e45b4f"]] as [number, number, string][]) {
     M.add("umbrella", mat(c, { flat: true }), new THREE.ConeGeometry(1.6, 0.7, 8).translate(ux, 2.4, uz));

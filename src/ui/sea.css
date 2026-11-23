@@ -1,0 +1,34 @@
+.sea-overlay { position: fixed; inset: 0; color: #fff5df; pointer-events: none; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+.sea-overlay button, .sea-overlay select { pointer-events: auto; }
+.sea-overlay button.road-gate {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font-family: var(--ui);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.sea-overlay:has(.road-feedback.wrong) .road-gate { color: #fff5df; }
+.sea-overlay .road-controls {
+  width: max-content;
+  max-width: calc(100% - 32px);
+  text-align: center;
+  white-space: normal;
+}
+.sea-mode.has-touch .road-controls { bottom: calc(140px + env(safe-area-inset-bottom)); }
+.sea-mode .joy { width: 112px; height: 112px; }
+.sea-unavailable {
+  position: absolute;
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(94%, 530px);
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--panel-solid);
+  color: var(--ink);
+  text-align: center;
+}

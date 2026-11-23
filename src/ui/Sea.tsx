@@ -1,0 +1,29 @@
+import { SEA_UI as words } from "../content/sea";
+import { game } from "../game/gameRef";
+import { useSea } from "../game/sea/store";
+import { SEA_SECONDS } from "../game/sea/course";
+import { HL, L } from "./i18n";
+import { GateLabels, WordGateHeader, WordGateResult } from "./kit/WordGates";
+import "./sea.css";
+
+const act = (name: string, value?: string) => game?.modeAction("sea", name, value);
+const done = () => game?.modeExit();
+const steer = (lane: number) => act("steer", String(lane));
+const scoreActions = { again: () => act("again"), done, guide: () => act("guide") };
+
+export function SeaOverlay({ touch }: { touch: boolean }) {
+  const { phase, remaining, streak, prompt, feedback, anchors, wideLabels, result } = useSea();
+  const showHint = phase === "drive" && remaining >= SEA_SECONDS - 3;
+  return <div className="sea-overlay" lang={HL}>
+    {(phase === "drive" || phase === "turn") && <>
+      <WordGateHeader words={words} {...{ prompt, feedback, remaining, streak, showHint }} home={done} replay={() => act("replay")} />
+      <GateLabels prompt={prompt} anchors={anchors} steer={feedback ? undefined : steer} preferSingleLine={wideLabels} />
+      {showHint && <p className="road-controls">{L(touch ? words.touchControls : words.controls)}</p>}
+    </>}
+    {phase === "result" && result && <WordGateResult result={result} words={words} actions={scoreActions} />}
+    {phase === "unavailable" && <div className="sea-unavailable">
+      <strong>{L(words.unavailable)}</strong>
+      <button className="btn" onClick={done}>{L(words.town)}</button>
+    </div>}
+  </div>;
+}

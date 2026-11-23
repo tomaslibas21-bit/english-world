@@ -124,7 +124,7 @@ export function BaristaOverlay({ touch }: { touch: boolean }) {
                 onClick={() => act("mic", !(micOn && listening))}><Icon name="mic" size={24} /></button>}
               <div>
                 <b>{L(mic.status === "unclear" ? words.retry : words.turn)}</b>
-                <small>{mic.heard ? <span lang={TL}>„{mic.heard}“</span> : L(listening ? words.listen : words.answer)}</small>
+        <small>{mic.heard ? <span lang={TL}>„{mic.heard}“</span> : L(listening ? words.listen : words.answer)}{/* i18n-ok: quotes around recognized speech */}</small>
               </div>
             </div>
             {choices.map(({ key, sentence }, i) => (

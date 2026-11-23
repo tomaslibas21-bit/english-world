@@ -1,91 +1,6 @@
 .road-overlay { position: fixed; inset: 0; color: #fff5df; }
 .road-mode > .road-overlay { pointer-events: none; }
 .road-overlay button, .road-lift-line { pointer-events: auto; }
-.road-header {
-  position: absolute;
-  z-index: 2;
-  top: calc(8px + env(safe-area-inset-top));
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(94%, 560px);
-  text-align: center;
-}
-.road-dash, .road-cue, .road-feedback, .road-controls {
-  background: #23333af5;
-  box-shadow: 0 3px 0 #17272d77, 0 5px 12px #211a172b;
-}
-.road-dash {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 3px 5px;
-  border: 1px solid #d7b983;
-  border-radius: 12px;
-}
-.road-dash h1 { flex: 1; min-width: 0; margin: 0; font-size: clamp(1rem, 3.7vw, 1.35rem); line-height: 1.12; text-align: left; }
-.road-icon {
-  display: inline-grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border: 1px solid #f3d3a07a;
-  border-radius: 9px;
-  background: #4c555b;
-  color: #fff5df;
-  padding: 0;
-  flex: none;
-}
-.road-icon:hover, .road-icon:focus-visible { background: #735f4b; }
-.road-meters {
-  display: grid;
-  grid-template-columns: auto auto;
-  align-items: center;
-  gap: 1px 10px;
-  padding: 0 6px 0 10px;
-  border-left: 1px solid #fff2d538;
-  color: #ecdcc0;
-  font-size: .75rem;
-  line-height: 1.12;
-  font-variant-numeric: tabular-nums;
-}
-.road-meters b { display: block; color: #ffda96; font-size: 1rem; }
-.road-ghost { grid-column: 1 / -1; color: #a9e6db; }
-.road-cue, .road-feedback {
-  display: grid;
-  gap: 3px;
-  justify-items: center;
-  margin: 6px auto 0;
-  padding: 6px 12px;
-  width: fit-content;
-  max-width: 100%;
-  border-radius: 10px;
-  border: 1px solid #ddc59680;
-}
-.road-cue:has(.road-replay) { padding: 2px 5px 2px 12px; }
-.road-question { display: flex; align-items: center; justify-content: center; gap: 8px; }
-.road-replay { background: #40545a; }
-.road-gap .il { justify-content: center; gap: 3px 8px; }
-.road-gap .il .en { color: #fff5df; font-size: .95rem; }
-.road-gap .il .lt { color: #eac88d; font-size: .8rem; }
-.road-feedback.correct b { color: #a2e8bc; }
-.road-feedback.wrong b { color: #f9c582; }
-.road-controls { margin: 6px auto 0; padding: 7px 10px; border-radius: 8px; font-size: .85rem; }
-.road-hint { margin: 0 4px 4px 0; padding-top: 3px; border-top: 1px solid #fff2d530; color: #f0e1c7; font-size: .8rem; }
-.road-controls { position: absolute; inset: auto auto 20px 50%; transform: translateX(-50%); white-space: nowrap; }
-.road-gates { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
-.road-gate {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  text-align: center;
-  align-items: center;
-  line-height: 1.06;
-  font-weight: 800;
-  color: #172e3a;
-}
-.road-gate span { white-space: nowrap; }
 .road-lift {
   position: absolute;
   bottom: calc(18px + env(safe-area-inset-bottom));
@@ -120,31 +35,7 @@
 .road-choice span { font-weight: 800; }
 .road-mic { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; }
 .road-loading { text-align: center; justify-items: center; }
-.road-result .mode-score-card { width: min(100%, 495px); }
-.road-result .mode-score-line small { font-size: .5em; }
-.road-result .mode-score-actions { margin-top: 14px; }
-.road-record { display: block; color: #216d54; margin: -7px 0 10px; }
-.road-missed { text-align: left; margin: 12px 0 0; }
-.road-missed h3 { margin: 0 0 7px; font-size: 1.05rem; }
-.road-missed article { border-top: 1px solid var(--line); padding: 7px 0; }
-.road-missed article > small { display: block; }
-.road-missed select {
-  width: 100%;
-  min-height: 44px;
-  padding-inline: 8px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  font: inherit;
-  color: var(--ink);
-  background: var(--panel-solid);
-}
-.road-missed .ended-destination { grid-template-columns: auto minmax(0, 1fr) auto; margin: 4px 0 0; gap: 6px; }
-.road-missed .ended-destination .btn { grid-column: auto; font-size: .82rem; white-space: nowrap; }
 @media (max-height: 700px) {
-  .road-result .mode-score-actions, .road-missed { margin-top: 6px; }
-  .road-record { margin: 0 0 4px; }
-  .road-missed h3 { margin-bottom: 3px; }
-  .road-missed article { padding-block: 4px; }
   .road-result .road-lift-line { padding: 5px 8px; }
   .road-result .road-lift-line .il { justify-content: center; font-size: 1.1em; gap: 3px 7px; }
 }
