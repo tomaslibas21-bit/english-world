@@ -1022,8 +1022,11 @@ export class Game implements GameApi {
       }
     }
     const inSea = outdoors && (p.z < SHORE.limit || (p.z < SHORE.top && p.y < -0.05 && this.wading.depth > 0.08));
+    // (a tap on the ground goes as far towards it as one can; a person's talk spot, a door or the way out is walked
+    // onto exactly, even when it sits in a grid cell a counter or a wall fills)
+    const toward = target?.kind === "point";
     let path: [number, number][] | null = inSea ? [[p.x, p.z], [x, z]]
-      : nav.path(from[0], from[1], x, toSea ? SHORE.limit + 0.5 : z, true);
+      : nav.path(from[0], from[1], x, toSea ? SHORE.limit + 0.5 : z, toward);
     if (toSea && !inSea) {
       // The pedestrian grid usually stops above the wading limit. Start the swim from its last reachable shore cell.
       const end = path?.at(-1) ?? from;
