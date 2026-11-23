@@ -268,9 +268,14 @@ function EndCard({ sit }: { sit: SituationDef }) {
         <>
           {next && <EndDestination sit={next} close={close} />}
           <div className="sit-actions ended-secondary">
-            <button className="btn soft small" onClick={close}><Icon name="walk" size={17} /> Tęsti</button>
-            <button className="btn ghost small" onClick={showAll}><Icon name="list" size={17} /> Visos situacijos</button>
-            <button className="btn ghost small" onClick={restart}><Icon name="restart" size={17} /> Dar kartą</button>
+            <div>
+              <button className="btn soft small" onClick={close}><Icon name="walk" size={17} /> Tęsti</button>
+              <button className="btn ghost small" onClick={startNext}><Icon name="arrowRight" size={17} /> Kita situacija</button>
+            </div>
+            <div>
+              <button className="btn ghost small" onClick={showAll}><Icon name="list" size={17} /> Visos situacijos</button>
+              <button className="btn ghost small" onClick={restart}><Icon name="restart" size={17} /> Dar kartą</button>
+            </div>
           </div>
         </>
       ) : (

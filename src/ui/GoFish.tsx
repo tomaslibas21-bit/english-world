@@ -11,6 +11,7 @@ import { useGoFish } from "../game/gofish/store";
 import { useStore } from "../state/store";
 import { Icon } from "./icons";
 import { GlossLine } from "./kit/GlossLine";
+import { SayIt } from "./kit/SayIt";
 import { ScoreCard, ScoreNumber } from "./kit/ScoreCard";
 import "./gofish.css";
 
@@ -53,11 +54,11 @@ export function PictureCard({ word, picture }: { word: GoFishWord; picture?: str
 function CardBack() { return <span className="gofish-back" aria-hidden="true" />; }
 
 export function GoFishOverlay({ touch }: { touch: boolean }) {
-  const { round, step, line, choices, gloss, busy, target, picked, hintCard, hintReply, tip, mic, micOn, drawn, result } = useGoFish();
+  const { round, step, line, choices, gloss, busy, target, picked, hintCard, hintReply, tip, mic, micOn, drawn, drawSayIt, result } = useGoFish();
   const learner = useStore((s) => s.progress.profile?.name);
   if (result && round) {
     const { winner, right, replies, cards } = result;
-    return <div className="gofish-result"><ScoreCard title={words.title} celebrate={winner === "learner"}
+    return <div className="gofish-result"><ScoreCard title={words.title} celebrate={winner === "learner"} said={result.said}
       score={winner === "learner" ? words.youWin : winner ? words.winner(GOFISH_NAMES[winner].nom) : words.tie}
       rows={[
         { label: words.yourPairs, value: <ScoreNumber value={round.pairs.learner.length} /> },
@@ -96,8 +97,9 @@ export function GoFishOverlay({ touch }: { touch: boolean }) {
         {!gloss && <button type="button" onClick={() => act("show")}>{BARISTA_UI.show}</button>}
       </div>
     </div>}
-    {drawn && <div className="gofish-drawn" data-word={drawn} aria-hidden="true">
+    {drawn && <div className="gofish-drawn" data-word={drawn} data-say-it={!!drawSayIt} aria-hidden={drawSayIt ? undefined : true}>
       <PictureCard word={GOFISH_WORDS[drawn]} picture={pictureFor(drawn)} />
+      <SayIt game="gofish" cue={drawSayIt} />
     </div>}
     {round && <div className="gofish-opponents" role="group" aria-label={words.askWhom}>
       {GOFISH_SPEAKER_NAMES.map((id) => {

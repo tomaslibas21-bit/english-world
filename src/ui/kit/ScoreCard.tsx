@@ -1,4 +1,5 @@
 import { useRef, type CSSProperties, type ReactNode } from "react";
+import { SAY_IT_UI } from "../../content/say-it";
 import { Confetti } from "../Confetti";
 import { Stars } from "../icons";
 import "./scoreCard.css";
@@ -8,6 +9,7 @@ interface ScoreCardProps {
   score?: ReactNode;
   ratio?: number;
   rows: { label: string; value: ReactNode }[];
+  said?: number;
   phrases?: { label: string; count: number };
   again: { label: string; subtitle?: string; run(): void };
   done: { label: string; run(): void };
@@ -42,7 +44,7 @@ function ScoreStars({ ratio }: { ratio: number }) {
   </div>;
 }
 
-export function ScoreCard({ title, score, ratio, rows, phrases, again, done, children, celebrate }: ScoreCardProps) {
+export function ScoreCard({ title, score, ratio, rows, said = 0, phrases, again, done, children, celebrate }: ScoreCardProps) {
   const heading = useRef<HTMLHeadingElement>(null);
   return (
     <div className="mode-score" lang="lt">
@@ -53,6 +55,7 @@ export function ScoreCard({ title, score, ratio, rows, phrases, again, done, chi
         {score != null && <strong className="mode-score-line">{score}</strong>}
         <dl>
           {rows.map(({ label, value }) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
+          {said > 0 && <div><dt>{SAY_IT_UI.stat}</dt><dd>{said}</dd></div>}
           {phrases && <div><dt>{phrases.label}</dt><dd>{phrases.count}</dd></div>}
         </dl>
         {children}

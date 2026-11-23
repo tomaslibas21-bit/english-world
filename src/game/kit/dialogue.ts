@@ -24,6 +24,7 @@ export class ModeDialogue {
   private attempt: ReturnType<typeof createSpeechAttempt> | null = null;
   private retryIn = 0;
   private paused = false;
+  private micHeld = false;
   private generation = 0;
   micOn = true;
 
@@ -195,9 +196,16 @@ export class ModeDialogue {
     } else this.stopListening();
   }
 
+  /** Another cue in this mode temporarily owns speech input. */
+  holdMic(held: boolean) {
+    if (this.micHeld === held) return;
+    this.micHeld = held;
+    if (held) this.stopListening(); else this.listen();
+  }
+
   private listen() {
     const turn = this.turn;
-    if (!turn || turn.choosing || this.playback || this.paused || !this.micOn || !speechSupported() || document.hidden) return;
+    if (!turn || turn.choosing || this.playback || this.paused || this.micHeld || !this.micOn || !speechSupported() || document.hidden) return;
     this.stopListening();
     const { phrases, read } = turn.speech;
     const attempt = createSpeechAttempt({
@@ -266,5 +274,6 @@ export class ModeDialogue {
     this.ui.choices([]);
     this.clearLine();
     this.paused = false;
+    this.micHeld = false;
   }
 }

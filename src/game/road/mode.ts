@@ -14,7 +14,7 @@ import type { RoadHost, WalkEdge } from "./entry";
 import { Gate, LANE_PAINT } from "./gates";
 import { ghostAt, GhostRecorder, readBest, saveBest } from "./ghost";
 import { Lift } from "./lift";
-import { DRIVE_SECONDS, FIRST_GATE, nextGate, RunScore, keepRunPhrases } from "./run";
+import { DRIVE_SECONDS, FIRST_GATE, gateSayItTarget, gateWord, nextGate, RunScore, keepRunPhrases } from "./run";
 import { RoadCar } from "./steering";
 import { resetRoadUi, useRoad } from "./store";
 import { laneAt, laneOffset, Track } from "./track";
@@ -163,7 +163,7 @@ export class RoadMode {
     if (!prompt) return;
     run.gate = new Gate(run.gateAt, prompt, run.view.gateMaterial);
     run.view.scene.add(run.gate.mesh);
-    useRoad.setState({ prompt, anchors: [] });
+    useRoad.setState({ prompt, sayIt: run.score.sayIt.open(gateSayItTarget(prompt)), anchors: [] });
     if (!prompt.gap) this.play(prompt.word.clip);
   }
 
@@ -195,6 +195,7 @@ export class RoadMode {
       useRoad.setState({ prompt: undefined, anchors: [] });
     }
     if (run.gate && !run.gate.crossed && car.s >= run.gate.distance) {
+      score.sayIt.close();
       const { prompt, distance } = run.gate;
       const lane = laneAt(car.x);
       const correct = score.answer(prompt, lane);
@@ -223,7 +224,7 @@ export class RoadMode {
       run.feedback = correct ? 1.23 : 2.3;
       run.promptIn = prompt.gap ? Math.max(2.5, Math.min(4.8, correction + (audio.clipDuration(prompt.gap.clip.voice, prompt.gap.clip.speed, prompt.gap.clip.say) ?? 2.5))) : run.feedback;
       run.gateAt = nextGate(distance, score.total);
-      useRoad.setState({ streak: score.streak, feedback: { correct, word: prompt.word } });
+      useRoad.setState({ sayIt: undefined, streak: score.streak, feedback: { correct, word: prompt.word } });
     } else {
       if (run.feedback > 0 && (run.feedback -= dt) <= 0) useRoad.setState({ feedback: undefined });
       if ((run.promptIn -= dt) <= 0 && !run.gate) this.openGate(run);
@@ -239,6 +240,7 @@ export class RoadMode {
 
   private finish(run: Run) {
     this.phase = "result";
+    run.score.sayIt.close();
     run.gate?.dispose();
     run.gate = undefined;
     audio.stop();
@@ -251,9 +253,9 @@ export class RoadMode {
     if (record) this.best = best;
     const cards = keepRunPhrases(score);
     useStore.getState().setHud({ ride: null });
-    useRoad.setState({ phase: "result", feedback: undefined, prompt: undefined, anchors: [], wind: false, result: {
+    useRoad.setState({ phase: "result", feedback: undefined, prompt: undefined, sayIt: undefined, anchors: [], wind: false, result: {
       points: score.points, right: score.right, total: score.total, streak: score.bestStreak, distance: run.distance,
-      record, cards, missed: [...score.missed.values()],
+      record, cards, missed: [...score.missed.values()], ...score.sayIt.result,
     } });
     if (this.lift) void this.say("rd_end");
   }
@@ -287,7 +289,10 @@ export class RoadMode {
       this.dialogue.setMic(value);
       useRoad.setState({ micOn: value });
     }
-    if (name === "replay" && this.run?.gate && !this.run.gate.crossed && !this.run.gate.prompt.gap) this.play(this.run.gate.prompt.word.clip);
+    if (name === "replay" && this.run?.gate && !this.run.gate.crossed && !this.run.gate.prompt.gap) {
+      useRoad.getState().sayIt?.cancel();
+      this.play(this.run.gate.prompt.word.clip);
+    }
     if (name === "horn" && this.phase === "drive" && this.host.time() - this.hornAt >= 0.36) {
       this.hornAt = this.host.time();
       audio.sfx("horn");
@@ -302,6 +307,7 @@ export class RoadMode {
 
   private clearRun() {
     if (!this.run) return;
+    this.run.score.sayIt.close();
     this.run.gate?.dispose();
     this.run.track.dispose();
     this.run.view.dispose();
@@ -369,6 +375,7 @@ export class RoadMode {
         .map(({ s, x }) => ({ distance: s - run.car.s, lane: laneAt(x) }))[0],
       pieces: run?.track.pieces.size, released: run?.track.released,
       gates: gate?.prompt.options, right: gate?.prompt.right, gateDistance: run && gate && gate.distance - run.car.s,
+      word: gate && gateWord(gate.prompt), gap: !!gate?.prompt.gap, points: run?.score.points, said: run?.score.sayIt.count,
       rightGates: run?.score.right, totalGates: run?.score.total, streak: run?.score.streak, result: ui.result,
       choices: ui.choices.map(({ key }) => key), line: ui.line?.key, liftFrame: this.lift?.framing(), ghost: !!this.best };
   }

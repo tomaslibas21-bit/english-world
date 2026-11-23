@@ -264,6 +264,14 @@
   transform: translate(-50%, -50%);
   animation: gofish-draw 0.95s ease-in-out both;
 }
+.gofish-drawn[data-say-it="true"] { animation: gofish-reveal 0.22s ease-out both; }
+.gofish-drawn .say-it { position: absolute; top: 0; left: calc(100% + 5px); }
+/* the note grows away from the card, never over its word (on a narrow phone it grows back, to stay on screen) */
+.gofish-drawn .say-it .say-it-message:not(:empty) { right: auto; left: 0; }
+@media (max-width: 520px) { .gofish-drawn .say-it .say-it-message:not(:empty) { left: auto; right: 0; } }
+@keyframes gofish-reveal {
+  from { opacity: 0; scale: 0.6; }
+}
 @keyframes gofish-pulse { 50% { box-shadow: 0 0 0 4px #91c0ca75; } }
 @keyframes gofish-draw {
   from { opacity: 0; transform: translate(-50%, -50%) scale(0.35); }
@@ -342,6 +350,9 @@
   .gofish-actions:has(.gofish-choice) .gofish-pond { max-width: 64px; white-space: normal; }
   .gofish-actions:has(.gofish-choice) .gofish-pond .gofish-back { display: none; }
   .gofish-drawn { grid-area: panel; left: 50%; top: 45%; }
+  .gofish-drawn[data-say-it="true"] { grid-area: speech; top: auto; bottom: 7px; transform: translateX(-50%); }
+  /* the note grows up and away from the card, never over its word */
+  .gofish-drawn .say-it .say-it-message:not(:empty) { top: auto; bottom: calc(100% + 4px); right: auto; left: 0; }
   .gofish-result .mode-score {
     padding-left: 50%;
     padding-right: max(10px, env(safe-area-inset-right));
@@ -357,5 +368,5 @@
   .gofish-person, .gofish-tip, .gofish-status, .gofish-hand-caption, .gofish-pond { font-size: 14px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .gofish-fish:enabled, .gofish-drawn { animation: none; }
+  .gofish-fish:enabled, .gofish-drawn, .gofish-drawn[data-say-it="true"] { animation: none; }
 }

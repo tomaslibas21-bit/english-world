@@ -70,6 +70,15 @@ function likeness(a: string, b: string): number {
   return 1 - levenshtein(x, y) / Math.max(x.length, y.length);
 }
 
+/** A whole cue with no surrounding sentence to repair. Use the same named spellings and sound keys. */
+export function wholeSoundalike(heard: string, target: string): boolean {
+  if (heard.split(" ").some((word) => DISTINCT_FOODS.has(word) || NEGATION_TOKENS.has(word))) return false;
+  if (letters(heard).length < 4 || letters(target).length < 4) return false;
+  if (HEARD_AS[target]?.some((alias) => letters(alias) === letters(heard))) return true;
+  const key = soundKey(target);
+  return key.length >= 2 && soundKey(heard) === key && likeness(heard, target) >= 0.6;
+}
+
 /** Words that never start or end a sound-alike: they are the sentence around the name. */
 const EDGE = new Set(["a", "an", "the", "of", "to", "and", "or", "i", "you", "it", "is", "am", "are", "be", "please", "one", "some", "my", "your", "for", "with", "in", "on", "at", "can", "could", "get", "have", "like", "want", "would", "just", "yes", "yeah", "okay", "ok", "thanks", "thank", "uh", "um"]);
 

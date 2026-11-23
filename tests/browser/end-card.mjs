@@ -55,8 +55,8 @@ try {
     }, [`${storage}-progress-v1`, JSON.stringify(returning)]);
     await page.goto(base + "/", { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => window.__ew?.store.getState().screen === "play" && window.__ew.game?.ledges?.ready, null, { timeout: 240000 });
-    await page.evaluate((id) => {
-      const { audio, game, store } = window.__ew;
+    await page.evaluate(() => {
+      const { audio, store } = window.__ew;
       const play = audio.play.bind(audio);
       window.endCardReplay = null;
       audio.play = (...args) => {
@@ -66,30 +66,32 @@ try {
         void audio.init().then(() => audio.continueReading());
         return pending;
       };
-      game.startScenario(id);
-    }, cafe);
+    });
     const press = (target) => options.hasTouch ? target.tap() : target.click();
-    await page.locator(".convo").waitFor({ timeout: 20000 });
-    const intro = page.locator(".scene-intro").getByRole("button", { name: "Pradėti" });
-    if (await intro.isVisible()) await press(intro);
-
     const card = page.locator(".ended-box");
     const input = page.locator(".typebox input");
-    for (let turn = 0; turn < 10; turn++) {
-      await page.waitForFunction(() => ["you", "ended"].includes(window.__ew.store.getState().conv.phase), null, { timeout: 15000 });
-      const step = await page.evaluate(() => {
-        const { game, store } = window.__ew;
-        const conv = game.activeSession.conv;
-        return store.getState().conv.phase === "ended" ? null : (conv.pending?.id ?? conv.effectiveStep()?.id);
-      });
-      if (step === null) break;
-      assert(cafeAnswers[step], `${label}: unexpected café step ${step}`);
-      await input.fill(cafeAnswers[step]);
-      await press(page.locator(".typebox").getByRole("button", { name: "Siųsti" }));
+    async function completeCafe() {
+      await page.evaluate((id) => window.__ew.game.startScenario(id), cafe);
+      await page.locator(".convo").waitFor({ timeout: 20000 });
+      const intro = page.locator(".scene-intro").getByRole("button", { name: "Pradėti" });
+      if (await intro.isVisible()) await press(intro);
+      for (let turn = 0; turn < 10; turn++) {
+        await page.waitForFunction(() => ["you", "ended"].includes(window.__ew.store.getState().conv.phase), null, { timeout: 15000 });
+        const step = await page.evaluate(() => {
+          const { game, store } = window.__ew;
+          const conv = game.activeSession.conv;
+          return store.getState().conv.phase === "ended" ? null : (conv.pending?.id ?? conv.effectiveStep()?.id);
+        });
+        if (step === null) break;
+        assert(cafeAnswers[step], `${label}: unexpected café step ${step}`);
+        await input.fill(cafeAnswers[step]);
+        await press(page.locator(".typebox").getByRole("button", { name: "Siųsti" }));
+      }
+      await card.waitFor();
+      assert.equal(await card.locator(".ended-title").innerText(), "Užduotis įvykdyta!");
     }
 
-    await card.waitFor();
-    assert.equal(await card.locator(".ended-title").innerText(), "Užduotis įvykdyta!");
+    await completeCafe();
     assert.equal(await card.locator(".stars .ui-icon").count(), 3);
     assert(await card.locator(".stars .on").count() > 0);
     assert.equal(await card.locator(".ended-keepsake").innerText(), "Gavai kavos puodelį");
@@ -133,7 +135,20 @@ try {
     }
     const place = await destination.locator("small").innerText();
     assert(place.trim());
-    assert.equal(await card.getByRole("button", { name: "Kita situacija", exact: true }).count(), 0);
+    const secondary = card.locator(".ended-secondary");
+    const nextButton = secondary.getByRole("button", { name: "Kita situacija", exact: true });
+    assert(await nextButton.isVisible());
+    assert(await nextButton.evaluate((el) => el.matches(".btn.small") && el.previousElementSibling?.textContent.trim() === "Tęsti"));
+    const rows = await secondary.locator(".btn").evaluateAll((buttons) => {
+      const counts = new Map();
+      for (const button of buttons) {
+        const y = Math.round(button.getBoundingClientRect().top);
+        counts.set(y, (counts.get(y) ?? 0) + 1);
+      }
+      return [...counts.values()];
+    });
+    assert(rows.length === 1 && rows[0] === 4 || rows.length === 2 && rows.every((n) => n === 2),
+      `${label}: the secondary buttons fit on one row or wrap in pairs`);
     await press(destination.getByRole("button", { name: "Nuvesk mane" }));
     await card.waitFor({ state: "hidden" });
     await page.waitForFunction((id) => {
@@ -172,8 +187,8 @@ try {
     const icon = journal.locator(`.sit-card[data-sit="${cafe}"]`).getByRole("img", { name: "Kavos puodelis" });
     await icon.waitFor();
     assert.equal(await icon.locator("title").textContent(), "Kavos puodelis");
+    await press(journal.getByRole("button", { name: "Uždaryti" }));
     if (shots) {
-      await press(journal.getByRole("button", { name: "Uždaryti" }));
       await page.waitForFunction(() => window.__ew.game.zone.id === "town" && !window.__ew.game.transitioning, null, { timeout: 25000 });
       await page.evaluate(() => window.__ew.game.autoWalkToObjective());
       await page.waitForFunction(() => {
@@ -182,6 +197,12 @@ try {
       }, null, { timeout: 45000 });
       await shot(page, "destination");
     }
+    await completeCafe();
+    await press(nextButton);
+    await page.waitForFunction((id) => {
+      const c = window.__ew.store.getState().conv;
+      return c.active && c.sitId === id && c.phase !== "ended";
+    }, next.id, { timeout: 20000 });
     assert.deepEqual(errors, [], `${label}: no page errors`);
     await ctx.close();
     console.log("ok", label);

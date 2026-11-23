@@ -5,7 +5,7 @@
 //  • plus a fuzzing pass: many random conversations per situation (test utterances,
 //    simulation turns and hint examples as input) whose NPC lines are collected. This finds
 //    dynamic renderings (prices, chosen items) and crash-tests every handler.
-import { PHOTO_WALK_ACCEPT, PHOTO_WALK_SITUATION } from "../src/content/photo-walk-lines";
+import { PHOTO_WALK_SITUATION } from "../src/content/photo-walk-lines";
 import { SITUATIONS } from "../src/content/situations";
 import { isBaristaCoachLine } from "../src/content/barista-lines";
 import { MEETING_LINES } from "../src/content/phoneMeeting";

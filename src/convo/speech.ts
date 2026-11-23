@@ -80,6 +80,9 @@ export interface SpeechOptions {
   onCommit(text: string, alts: string[]): void;
   phrases?: string[];
   preferLocal?: boolean;
+  lang?: string;
+  /** Short prompts can settle sooner after speech. */
+  timing?: Partial<Record<"finishedAnswer" | "unclear" | "interimStable", number>>;
   /** Tests: a fake recogniser and clock. */
   createRecognition?: () => SpeechRecognizer;
   clock?: Clock;
@@ -126,6 +129,7 @@ export function createSpeechAttempt(opt: SpeechOptions) {
     clearTimeout: (timer) => clearTimeout(timer),
   };
   const createRecognition = opt.createRecognition ?? (() => new SPEECH_REC() as SpeechRecognizer);
+  const timing = { ...SPEECH_TIMING, ...opt.timing };
   let rec: SpeechRecognizer | null = null;
   let capture: ReturnType<typeof captureAudio> | null = null;
   let recognitionTrace: (ReturnType<typeof createRecognitionDiagnostics> & { ended(): void; observeLate(): void }) | null = null;
@@ -141,7 +145,8 @@ export function createSpeechAttempt(opt: SpeechOptions) {
   let lastActivity = 0;
   let emptyRestarts = 0;
   let transientRecoveries = 0;
-  let useLocal = !!opt.preferLocal && localState === "available";
+  const lang = opt.lang ?? "en-US";
+  let useLocal = lang === "en-US" && !!opt.preferLocal && localState === "available";
   let idleTimer: ReturnType<typeof setTimeout> | undefined;
   let stableTimer: ReturnType<typeof setTimeout> | undefined;
   /** the recogniser's own best guess has a negation: readings that drop it rank last */
@@ -233,11 +238,11 @@ export function createSpeechAttempt(opt: SpeechOptions) {
     const best = heard();
     const v = hasSpeech && best ? verdict(best) : null;
     const allowance = !v ? SPEECH_TIMING.firstWord
-      : v === "complete" && !pendingInterim ? SPEECH_TIMING.finishedAnswer
+      : v === "complete" && !pendingInterim ? timing.finishedAnswer
       : v === "open" && !pendingInterim ? SPEECH_TIMING.openAnswer
       : v === "prefix" ? SPEECH_TIMING.betweenWords
       : understood(v) ? SPEECH_TIMING.betweenWords // a complete reading with words still coming
-      : SPEECH_TIMING.unclear;
+      : timing.unclear;
     const silenceRemaining = allowance - (now - lastActivity);
     if (!speaking && silenceRemaining <= 0) {
       if (!hasSpeech || !best) { stopRunning(); update({ status: "nothing", heard: "" }); return; }
@@ -303,7 +308,7 @@ export function createSpeechAttempt(opt: SpeechOptions) {
       cancelStable();
     };
     pendingInterim = false;
-    r.lang = "en-US";
+    r.lang = lang;
     r.continuous = true;
     r.interimResults = true;
     r.maxAlternatives = MAX_ALTERNATIVES;
@@ -373,7 +378,7 @@ export function createSpeechAttempt(opt: SpeechOptions) {
       // final): hand it over once it stays the same for a moment (longer for a short one that may grow)
       const interimVerdict = pendingInterim ? verdict(interimCandidates[0] ?? "") : "none";
       if (understood(interimVerdict) && stableTimer === undefined) {
-        const wait = interimVerdict === "open" ? SPEECH_TIMING.openAnswer : SPEECH_TIMING.interimStable;
+        const wait = interimVerdict === "open" ? SPEECH_TIMING.openAnswer : timing.interimStable;
         stableTimer = clock.setTimeout(() => { stableTimer = undefined; if (current()) commit(); }, wait);
       }
     };

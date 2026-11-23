@@ -1,9 +1,10 @@
 import { Vector3, type Group, type Object3D } from "three";
-import { GOFISH_CONVERSATION, GOFISH_DECKS, GOFISH_NAMES, GOFISH_UI } from "../../content/gofish";
+import { GOFISH_CONVERSATION, GOFISH_DECKS, GOFISH_NAMES, GOFISH_UI, GOFISH_WORDS } from "../../content/gofish";
 import { GOFISH_ACCEPT, GOFISH_LINES, GOFISH_SPEAKER_NAMES } from "../../content/gofish-lines";
 import { NPCS } from "../../content/npcs";
 import { prefetchSituations } from "../../content/situations/catalog";
 import { coachVoice, npcVoice } from "../../content/voices";
+import { speechSupported } from "../../convo/speech";
 import { countPlay, readPlayStats } from "../../state/playStats";
 import { sitProgress } from "../../state/progress";
 import { useStore } from "../../state/store";
@@ -15,11 +16,13 @@ import type { ModeHost } from "../kit/host";
 import { conversationLine } from "../kit/lines";
 import type { GameMode, ModeFrame, ModeInput } from "../kit/modes";
 import { keepPhrases } from "../kit/phrases";
+import { SayItRound } from "../kit/sayIt";
 import { STYLED } from "../style";
 import { DINING, DINING_SEATS, DINNER_PROPS, GOFISH_PROMPT, SEAT_HEIGHT, TABLETOP_CORNERS, diningShot, fitDiningView, hostBounds } from "./framing";
 import { deal, defaultTarget, finished, finishTurn, npcAsk, prepareTurn, resolveAsk, seededRandom, targets,
   type Ask, type Npc, type Player, type Round, type TurnResult, type Word, winner } from "./logic";
 import { TableCards } from "./props";
+import { sayItCard } from "./sayIt";
 import { resetGoFishUi, useGoFish, type Step } from "./store";
 
 const { situation } = GOFISH_CONVERSATION;
@@ -49,6 +52,8 @@ type Run = {
   asks: number;
   replies: number;
   right: number;
+  sayIt: SayItRound;
+  drawTime: number;
   handovers: number;
   npcStarted: boolean;
   tipListen: boolean;
@@ -184,7 +189,7 @@ class GoFishMode implements GameMode {
     this.host.rig.stageSnap();
     this.run = {
       round, actors, props, playerSeatY, playerVisible, playerFace, dinnerProps, dinnerWasVisible, random, firstRound: played === 0,
-      asks: 0, replies: 0, right: 0, handovers: 0, npcStarted: false, tipListen: false, lucky: false,
+      asks: 0, replies: 0, right: 0, sayIt: new SayItRound(), drawTime: 0, handovers: 0, npcStarted: false, tipListen: false, lucky: false,
       began: false, closing: false, hostsFrame,
       tableFrame: [...hostsFrame, new Vector3(DINING.x, DINING.surface, DINING.z + 0.45)],
       landscapeFrame: [...hostsFrame, ...TABLETOP_CORNERS],
@@ -216,7 +221,17 @@ class GoFishMode implements GameMode {
   }
 
   private phase(step: Step, patch: Partial<ReturnType<typeof view>> = {}) {
+    if (this.run && (step === "ask" || step === "reply" || step === "fish" || step === "move")) {
+      this.closeDraw(this.run);
+    }
     ui({ step, target: null, picked: null, hintCard: null, hintReply: null, tip: null, ...patch });
+  }
+
+  private closeDraw(run: Run) {
+    if (!run.drawTime) return;
+    run.drawTime = 0;
+    run.sayIt.close();
+    ui({ drawn: null, drawSayIt: null });
   }
 
   private delay(run: Run, seconds: number) {
@@ -352,6 +367,12 @@ class GoFishMode implements GameMode {
       const revealed = move.from === "pond" && turn === "learner";
       const duration = revealed ? 0.95 : 0.38;
       this.phase("move", { drawn: revealed ? move.word : null });
+      if (revealed && speechSupported()) {
+        run.drawTime = 5;
+        const cue = run.sayIt.open(sayItCard(GOFISH_WORDS[move.word]));
+        cue.subscribe(() => this.playback.holdMic(cue.getSnapshot() === "listening"));
+        ui({ drawSayIt: cue });
+      }
       if (move.from === "pond") {
         // Shrink the pond immediately, then add the received card to the hand on landing.
         ui({ round: { ...run.round, pond: round.pond } });
@@ -361,7 +382,7 @@ class GoFishMode implements GameMode {
       run.props.slide(move.from, turn, round.pond.length, move.word, duration);
       if (!await this.delay(run, duration)) return false;
       this.sync(run, round);
-      ui({ drawn: null });
+      if (!run.drawTime) ui({ drawn: null });
       if (move.from !== "pond" && turn !== "learner" && !await this.say(run, turn, "gf_thanks", move.from)) return false;
       if (move.from === "pond" && pair && again && ask && turn !== "learner") {
         run.lucky = true;
@@ -397,6 +418,7 @@ class GoFishMode implements GameMode {
   }
 
   private async score(run: Run) {
+    this.closeDraw(run);
     const won = winner(run.round);
     ui({ gloss: true });
     if (!await this.say(run, won === "nora" ? "nora" : "dan", won === "learner" ? "gf_win_you" : won ? "gf_win_me" : "gf_tie")) return;
@@ -407,7 +429,7 @@ class GoFishMode implements GameMode {
     keepPhrases(situation, sentences);
     this.playback.clearLine();
     if (won === "learner") audio.sfx("listen");
-    this.phase("score", { result: { winner: won, right: run.right, replies: run.replies, cards: sentences.length } });
+    this.phase("score", { result: { winner: won, right: run.right, replies: run.replies, cards: sentences.length, ...run.sayIt.result } });
   }
 
   private selectTarget(run: Run, target: Npc) {
@@ -445,6 +467,8 @@ class GoFishMode implements GameMode {
   update({ dt, blocked }: ModeFrame) {
     const run = this.run;
     if (!run || run.closing) return;
+    if (run.drawTime && run.drawTime <= dt) this.closeDraw(run);
+    else if (run.drawTime) run.drawTime -= dt;
     this.playback.update(dt, blocked);
     if (blocked) return;
     if (!run.began) { run.began = true; void this.playRound(run); }
@@ -506,7 +530,11 @@ class GoFishMode implements GameMode {
     const { step, choices, picked, busy } = view();
     if (name === "again" && step === "score") this.begin(run);
     if (name === "show") ui({ gloss: true });
-    if (name === "mic") { this.playback.setMic(value === true); ui({ micOn: this.playback.micOn }); }
+    if (name === "mic") {
+      if (value === true) view().drawSayIt?.cancel();
+      this.playback.setMic(value === true);
+      ui({ micOn: this.playback.micOn });
+    }
     if (busy) return;
     if (name === "hear") void this.replay(run);
     if (name === "fish" && step === "fish") run.takeFish?.();
@@ -518,6 +546,7 @@ class GoFishMode implements GameMode {
     }
     if (name === "choose" && typeof value === "string" && (step !== "ask" || picked && value === askKey(picked))) {
       this.playback.choose(value);
+      if (step === "pair") this.closeDraw(run);
     }
   }
 
@@ -525,13 +554,14 @@ class GoFishMode implements GameMode {
     if (this.starting) return { step: "starting" as const };
     if (view().offered) return { step: "offer" as const };
     const run = this.run;
-    return run ? { step: view().step, round: run.round, asks: run.asks, replies: run.replies, right: run.right } : null;
+    return run ? { step: view().step, round: run.round, asks: run.asks, replies: run.replies, right: run.right, said: run.sayIt.count } : null;
   }
 
   seed(seed: number) { if (import.meta.env.DEV) this.debugSeed = seed; }
 
   private clearRun(run: Run) {
     run.closing = true;
+    this.closeDraw(run);
     this.playback.cancel();
     run.wait?.finish(false);
     run.takeFish?.();
@@ -564,7 +594,10 @@ class GoFishMode implements GameMode {
     if (!immediate && run?.closing && !this.starting) return;
     this.starting = false;
     this.playback.cancel();
-    if (run) run.closing = true;
+    if (run) {
+      run.closing = true;
+      this.closeDraw(run);
+    }
     const close = () => {
       if (run && this.run === run) {
         this.clearRun(run);

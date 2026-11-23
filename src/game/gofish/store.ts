@@ -1,9 +1,10 @@
 import { create } from "zustand";
 import type { KitLine, KitMic } from "../kit/dialogue";
+import type { SayItCue } from "../kit/sayIt";
 import type { Npc, Player, Round, Word } from "./logic";
 
 export type Step = "intro" | "listen" | "ask" | "reply" | "fish" | "pair" | "move" | "score";
-export type Result = { winner: Player | null; right: number; replies: number; cards: number };
+export type Result = { winner: Player | null; right: number; replies: number; cards: number; said?: number };
 type Cue = KitLine & { speaker: Player };
 
 interface GoFishUi {
@@ -22,12 +23,13 @@ interface GoFishUi {
   gloss: boolean;
   busy: boolean;
   drawn: Word | null;
+  drawSayIt: SayItCue | null;
   result: Result | null;
 }
 
 const empty: GoFishUi = {
   offered: false, round: null, step: "intro", line: null, choices: [], mic: { status: "off", heard: "" }, micOn: true,
-  target: null, picked: null, hintCard: null, hintReply: null, tip: null, gloss: true, busy: false, drawn: null, result: null,
+  target: null, picked: null, hintCard: null, hintReply: null, tip: null, gloss: true, busy: false, drawn: null, drawSayIt: null, result: null,
 };
 
 export const useGoFish = create<GoFishUi>(() => empty);

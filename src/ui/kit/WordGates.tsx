@@ -1,11 +1,13 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { SITUATION_BY_ID } from "../../content/situations/catalog";
+import type { SayItCue } from "../../game/kit/sayIt";
 import type { LabelAnchor } from "../../game/road/gates";
 import type { RoadResult } from "../../game/road/store";
 import type { Prompt, Word } from "../../game/road/words";
 import { EndDestination } from "../Conversation";
 import { Icon } from "../icons";
 import { GlossLine } from "./GlossLine";
+import { SayIt } from "./SayIt";
 import { ScoreCard, ScoreNumber } from "./ScoreCard";
 import "./wordGates.css";
 
@@ -62,7 +64,8 @@ export function GateLabels({ prompt, anchors, steer, preferSingleLine }: {
   </div>;
 }
 
-export function WordGateHeader({ words, prompt, feedback, remaining, streak, showHint, home, replay, extraButton, extraMeter }: {
+export function WordGateHeader({ game, sayIt, words, prompt, feedback, remaining, streak, showHint, home, replay, extraButton, extraMeter }: {
+  game: string; sayIt?: SayItCue;
   words: CueWords; prompt?: Prompt; feedback?: { correct: boolean; word: Word };
   remaining: number; streak: number; showHint: boolean; home(): void; replay(): void;
   extraButton?: ReactNode; extraMeter?: ReactNode;
@@ -85,6 +88,7 @@ export function WordGateHeader({ words, prompt, feedback, remaining, streak, sho
         <div className="road-question">
           <strong>{prompt.gap ? words.gap : words.hear}</strong>
           {!prompt.gap && <button className="road-icon road-replay" aria-label={words.replay} title={words.replay} onClick={replay}><Icon name="speaker" size={21} /></button>}
+          <SayIt game={game} cue={sayIt} />
         </div>
         {prompt.gap && <div className="road-gap"><GlossLine sentence={prompt.gap.sentence} gloss /></div>}
         {showHint && <p className="road-hint">{words.hint}</p>}
@@ -100,7 +104,7 @@ export function WordGateResult({ result, words, actions, children }: {
   const word = result.missed[missedIndex];
   const sit = word && SITUATION_BY_ID[word.situation];
   return <div className="road-result">
-    <ScoreCard title={words.finish} ratio={result.right / result.total}
+    <ScoreCard title={words.finish} ratio={result.right / result.total} said={result.said}
       score={<><small>{words.points}</small> <ScoreNumber value={result.points} /></>}
       rows={[
         { label: words.correct, value: `${result.right}/${result.total}` },

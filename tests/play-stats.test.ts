@@ -1,10 +1,62 @@
 // How the game is used, for the course's owner (state/playStats.ts): only active, visible time counts, by mode, with
 // the time in conversations and the radio's; openings and days go into the save, which an older save lacks.
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
-  IDLE_MS, RADIO_IDLE_MS, TICK_MS, PlayMeter, addCount, addOpen, addTime, addView, emptyPlayStats, localDay, readPlayStats,
+  IDLE_MS, RADIO_IDLE_MS, TICK_MS, PlayMeter, addCount, addOpen, addTime, addView, emptyPlayStats, localDay, readPlayStats, startPlayStats,
 } from "../src/state/playStats";
 import { endpoint } from "../src/state/stats";
+import { useStore } from "../src/state/store";
+
+it("sends one anonymous game:left per unfinished run and includes it in the hide or close flush", () => {
+  const page = new EventTarget();
+  const doc = Object.assign(new EventTarget(), { visibilityState: "visible" });
+  const fetch = vi.fn(async (_url: string, _init: RequestInit) => new Response(null, { status: 204 }));
+  vi.useFakeTimers();
+  vi.stubGlobal("window", page);
+  vi.stubGlobal("document", doc);
+  vi.stubGlobal("location", { pathname: "/" });
+  vi.stubGlobal("navigator", {});
+  vi.stubGlobal("localStorage", { getItem: () => JSON.stringify({ url: "https://stats.test", key: "public" }), setItem() {} });
+  vi.stubGlobal("fetch", fetch);
+  const events = () => fetch.mock.calls.flatMap(([, init]) => JSON.parse(String(init.body)))
+    .filter((row) => row.name === "game:left").map((row) => row.props);
+  const state = useStore.getState;
+  const begin = (sitId: string, of: number) => state().setConv((c) => ({
+    sitId, active: true, completed: false, run: c.run + 1, stepProgress: { step: 1, of },
+  }));
+  try {
+    startPlayStats();
+    useStore.setState({ screen: "play", settings: { ...state().settings, play: "light" } });
+    begin("first", 7);
+    state().setConv({ stepProgress: { step: 3, of: 7 }, stepId: "pending-question" });
+    state().setConv({ active: false });
+    vi.advanceTimersByTime(10_000);
+    const first = { section: "light", sit: "first", step: 3, of: 7 };
+    expect(events()).toEqual([first]);
+
+    begin("finished", 5);
+    state().setConv({ completed: true });
+    page.dispatchEvent(new Event("pagehide"));
+    state().setConv({ active: false });
+    expect(events()).toEqual([first]);
+
+    begin("hidden", 4);
+    doc.visibilityState = "hidden";
+    doc.dispatchEvent(new Event("visibilitychange"));
+    const hidden = { section: "light", sit: "hidden", step: 1, of: 4 };
+    expect(events()).toEqual([first, hidden]);
+    page.dispatchEvent(new Event("pagehide"));
+    state().setConv({ active: false });
+
+    begin("closed", 8);
+    state().setConv({ stepProgress: { step: 6, of: 8 } });
+    page.dispatchEvent(new Event("pagehide"));
+    expect(events()).toEqual([first, hidden, { section: "light", sit: "closed", step: 6, of: 8 }]);
+  } finally {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  }
+});
 
 function clock(start = Date.UTC(2026, 10, 14, 10)) {
   let t = start;

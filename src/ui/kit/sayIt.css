@@ -1,0 +1,56 @@
+.say-it {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  vertical-align: middle;
+}
+.say-it-mic {
+  display: grid;
+  place-items: center;
+  position: relative;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid #f3d3a07a;
+  border-radius: 50%;
+  background: #40545a;
+  color: #fff5df;
+  pointer-events: auto;
+}
+.say-it-mic:focus-visible, .say-it-mic:hover { background: #566c70; }
+.say-it-mic[aria-pressed="true"] { background: #8a3852; }
+.say-it-mic[aria-disabled="true"] { cursor: default; }
+.say-it-badge, .say-it-sparkle {
+  position: absolute;
+  color: #ffda96;
+  pointer-events: none;
+}
+.say-it-badge { top: 0; right: 0; }
+.say-it-sparkle {
+  z-index: 1;
+  top: -8px;
+  right: -7px;
+  filter: drop-shadow(0 0 4px #ffcd66);
+  animation: say-it-sparkle 850ms ease-out both;
+}
+.say-it-message:not(:empty) {
+  position: absolute;
+  z-index: 2;
+  top: calc(100% + 4px);
+  right: 0;
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: #23333a;
+  color: #fff5df;
+  font: 700 0.75rem/1.25 var(--ui);
+  white-space: nowrap;
+  pointer-events: none;
+}
+@keyframes say-it-sparkle {
+  0% { transform: scale(0.45) rotate(-28deg); }
+  40% { transform: translate(3px, -5px) scale(1.25) rotate(12deg); }
+  100% { transform: translate(7px, -10px) scale(0.8); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .say-it-sparkle { animation: none; }
+}

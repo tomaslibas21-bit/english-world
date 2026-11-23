@@ -59,6 +59,9 @@
   border: 1px solid #ddc59680;
 }
 .road-cue:has(.road-replay) { padding: 2px 5px 2px 12px; }
+.road-cue { position: relative; }
+.road-cue .say-it { position: static; }
+.road-cue .say-it-message { right: 4px; }
 .road-question { display: flex; align-items: center; justify-content: center; gap: 8px; }
 .road-replay { background: #40545a; }
 .road-gap .il { justify-content: center; gap: 3px 8px; }

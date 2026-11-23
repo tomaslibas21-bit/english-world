@@ -69,6 +69,18 @@
 .billiards[data-phase="result"] .bl-panel { visibility: hidden; }
 .bl-panel h2 { font: 770 0.89rem/1.2 system-ui; margin: 0; text-wrap: balance; }
 .bl-instruction { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 5px 12px; }
+.bl-listen-actions { display: inline-flex; align-items: center; gap: 6px; }
+.bl-listen-actions:has(.say-it-message:not(:empty)) {
+  display: grid;
+  grid-template-columns: auto auto;
+  row-gap: 3px;
+}
+.bl-listen-actions .say-it:has(.say-it-message:not(:empty)) { display: contents; }
+.bl-listen-actions .say-it-message:not(:empty) {
+  position: static;
+  grid-column: 1 / -1;
+  justify-self: center;
+}
 .bl-chip-heading { font: 740 0.69rem/1 system-ui; color: var(--bl-gold); text-align: left; margin: 5px 0 3px; }
 .bl-ball-chips, .bl-choices { display: flex; justify-content: center; flex-wrap: wrap; gap: 5px; }
 .bl-ball-option, .bl-choice, .bl-nudge, .bl-replay {
