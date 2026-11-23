@@ -132,6 +132,10 @@ try {
     await page.evaluate(() => {
       const { game: g } = window.__ew;
       g.rides.resetPosition(g.rides.riding, { x: 66, z: -83.15, rot: Math.PI / 2 });
+      // (and the camera behind it, as after any jump of the boat: on an upright phone the stick points the way on the
+      // screen, batch 0's point and go, so "up" is the way the camera looks)
+      g.rideCourse = g.rig.yaw = Math.PI / 2;
+      g.rig.snap();
     });
     await move("w", 1, () => wait(() => {
       const m = window.__ew.game.rides.riding.m;

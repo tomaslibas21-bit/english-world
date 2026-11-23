@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type ComponentType, type CSSProperties, type KeyboardEvent } from "react";
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type ComponentType, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { townRide, useStore, type HudState } from "../state/store";
 import { townNote } from "../state/townNotes";
 import { SectionHelpButton, useSectionHelp } from "./sectionHelp";
@@ -9,22 +9,25 @@ import { BaristaOffer, BaristaOverlay } from "./Barista";
 import { GoFishOffer, GoFishOverlay } from "./GoFish";
 import { ROAD_UI } from "../content/road";
 import { game } from "../game/gameRef";
+import { coach } from "../game/coach";
 import { WORLD, SEA_Z } from "../game/world/layout";
 import { LIGHTHOUSE_ISLAND } from "../game/world/island";
 import { SITUATION_BY_ID } from "../content/situations/catalog";
+import { SitIcon } from "./SitIcon";
 import { sitProgress, stars } from "../state/progress";
 import { Icon, InlineIcon, Stars, splitLead, type IconName } from "./icons";
 import { isPhone, objectiveLabels } from "./objective";
 import { drawIslandMap, drawRideMarks } from "./mapMarks";
 import { switchPlayMode } from "./playMode";
 import { useCards, dueCards } from "../state/cards";
-import { LyricStrip, RadioTool } from "./Radio";
-import { useRadio } from "../radio";
+import { LyricStrip, RadioMenuLamp, RadioSetLayer, RadioTool } from "./Radio";
+import { radio, useRadio } from "../radio";
 import { Guide } from "./Guide";
 import { TownToast, useTownToast } from "./Toasts";
 import { PhoneRing } from "./PhoneRing";
-import { portraitToolbarRows } from "./toolbarLayout";
+import { portraitToolbarRows, toolbarColumns } from "./toolbarLayout";
 import { getSeaOverlay } from "./seaOverlay";
+import { useScreen } from "./useScreen";
 import "./light.css";
 import "./townPhone.css";
 
@@ -53,9 +56,13 @@ const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = {
 };
 const LizzieMeeting = lazy(() => import("./LizzieMeeting"));
 
+type Screen = ReturnType<typeof useScreen>;
+
 export function Hud() {
   const hud = useStore((s) => s.hud);
   const inConversation = useStore((s) => s.conv.active);
+  const screen = useScreen();
+  const layout = screen.sidewaysPhone ? "sideways" : screen.portraitPhone ? "portrait" : "full";
   const surfing = useSurf((s) => s.active);
   const inTown = !inConversation && !hud.flight && !surfing && !hud.modeScreen;
   const ride = townRide(hud.ride);
@@ -64,7 +71,7 @@ export function Hud() {
   const toast = useTownToast();
   const narrow = useNarrowHud();
   const phoneToast = narrow && toast !== null;
-  const task = useTaskCard(taskId, inTown && !hud.panel, phoneToast);
+  const task = useTaskCard(taskId, inTown && !hud.panel, phoneToast, layout);
   if (inConversation) return <Fade />;
   // the first visit's flight over the town has the screen to itself too: where one is, and what to do first
   if (hud.flight) return <div className="hud"><Flight /><Fade /></div>;
@@ -83,11 +90,11 @@ export function Hud() {
     const road = hud.modeScreen.id === "road";
     const sea = hud.modeScreen.id === "sea";
     const Overlay = sea ? getSeaOverlay() : modeOverlays[hud.modeScreen.id];
+    const tools = !road && !sea && hud.modeScreen.id !== "barista" && hud.modeScreen.id !== "gofish" && hud.modeScreen.id !== "billiards";
     return (
-      <div className={"hud mode-hud" + (road ? " road-mode" : sea ? " sea-mode" : "") + (hud.showTouch ? " has-touch" : "")}>
+      <div className={"hud mode-hud" + (road ? " road-mode" : sea ? " sea-mode" : "") + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
         {!hud.panel && Overlay && <Suspense fallback={null}><Overlay touch={hud.showTouch} /></Suspense>}
-        {!road && !sea && hud.modeScreen.id !== "barista" && hud.modeScreen.id !== "gofish" && hud.modeScreen.id !== "billiards" &&
-          <Toolbar riding touch={hud.showTouch} modeExit={hud.modeScreen.exitLabel} />}
+        {tools && <><Toolbar key={"tools-" + layout} {...screen} riding touch={hud.showTouch} modeExit={hud.modeScreen.exitLabel} /><RadioSetLayer /></>}
         {hud.showTouch && hud.ride && <TouchControls road={road} stickOnly={sea} />}
         <Fade />
       </div>
@@ -97,10 +104,11 @@ export function Hud() {
   const banner = hud.zoneBanner && note === "banner" ? splitLead(hud.zoneBanner.title) : null;
   const guideVisible = !hud.panel && note === "guide";
   const moving = hud.walking || riding;
+  // A sideways phone keeps the task to one row unless it is opened by hand.
   const collapsed = phoneToast ? !task.openedDuringToast
-    : (moving && !!hud.objective?.followUp) || (task.manual ?? (!task.fresh && moving));
+    : (moving && !!hud.objective?.followUp) || (task.manual ?? (screen.sidewaysPhone || (!task.fresh && moving)));
   return (
-    <div className={"hud" + (hud.showTouch ? " has-touch" : "")}>
+    <div className={"hud" + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
       <div className="hud-top">
           {hud.speedLines && <div className="drive-wind" aria-hidden />}
         <div className={"objective-notes" + (collapsed ? " task-folded" : "")}>
@@ -110,10 +118,11 @@ export function Hud() {
           <Guide visible={guideVisible} />
           <TownToast toast={toast} />
         </div>
-        <Minimap />
+        <Minimap {...screen} />
       </div>
-      <Toolbar riding={riding} touch={hud.showTouch} />
-      {!hud.panel && <LyricStrip />}
+      <Toolbar key={"tools-" + layout} {...screen} riding={riding} touch={hud.showTouch} hint={guideVisible} />
+      <RadioSetLayer />
+      {!hud.panel && <LyricStrip sidewaysPhone={screen.sidewaysPhone} />}
       {/* (on a phone the way out of a car is the round button itself: no second label over it) */}
       {hud.prompt && !hud.panel && !(hud.showTouch && hud.prompt.kind === "out") && (
         <button className={"prompt" + (hud.showTouch ? " touch" : "")} onClick={() => game?.interact()}>
@@ -144,12 +153,14 @@ function useNarrowHud() {
   return narrow;
 }
 
-function useTaskCard(taskId: string | null, visible: boolean, phoneToast: boolean) {
-  const [state, setState] = useState<{ id: string | null; manual: boolean | null; fresh: boolean }>({ id: taskId, manual: null, fresh: false });
+function useTaskCard(taskId: string | null, visible: boolean, phoneToast: boolean, layout: string) {
+  const [state, setState] = useState<{ id: string | null; layout: string; manual: boolean | null; fresh: boolean }>({ id: taskId, layout, manual: null, fresh: false });
   const [openedDuringToast, setOpenedDuringToast] = useState(false);
   if (openedDuringToast && (!phoneToast || taskId !== state.id)) setOpenedDuringToast(false);
-  // A manual choice belongs to one task. Give the next task its pop when the card is back on screen.
-  if (taskId !== state.id) setState({ id: taskId, manual: null, fresh: taskId !== null });
+  // A manual choice belongs to one task and one way of holding the phone. Give the next task its pop when the card
+  // is back on screen.
+  if (taskId !== state.id) setState({ id: taskId, layout, manual: null, fresh: taskId !== null });
+  else if (layout !== state.layout) setState({ ...state, layout, manual: null });
   useEffect(() => {
     if (!state.fresh || !visible) return;
     const timer = setTimeout(() => setState((current) => current.id === state.id ? { ...current, fresh: false } : current), 3000);
@@ -167,116 +178,156 @@ function activateHudButton(e: KeyboardEvent<HTMLElement>) {
   if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(":focus-visible")) e.stopPropagation();
 }
 
-function Toolbar({ riding, touch, modeExit }: { riding: boolean; touch: boolean; modeExit?: string }) {
+// The same for the town's tools and the radio set, which opens over the town at the HUD's level.
+function keepKeysOnHudButtons(e: KeyboardEvent<HTMLElement>) {
+  if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(":is(.toolbar, .radio-set) :focus-visible")) e.stopPropagation();
+}
+
+/** The town's tools. On a phone (upright or sideways) they always fold behind one round menu button; on a computer
+ *  they fold only at a wheel, at the helm or in a mini-game. Opened, the drawer is the fewest even columns that fit
+ *  above the controls, the right column first (`toolbarColumns`): one column wherever it fits. */
+function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, modeExit, hint = false }: Screen & { riding: boolean; touch: boolean; modeExit?: string; hint?: boolean }) {
   const due = useDueCards();
   const missedCalls = useStore((s) => Object.keys(s.progress.phone?.missed ?? {}).length);
   const hasRadio = useRadio((s) => s.available);
+  const radioOpen = useRadio((s) => s.open);
   const canHonk = useStore((s) => s.hud.ride === "car" || s.hud.ride === "taxi");
   const hasHelp = useSectionHelp();
-  const hasTouchPrompt = useStore((s) => !s.hud.panel && !!s.hud.prompt && s.hud.prompt.kind !== "out");
-  const [upright, setUpright] = useState(false);
-  useLayoutEffect(() => {
-    if (!touch) return;
-    const view = window.matchMedia("(max-width: 600px) and (orientation: portrait)");
-    const update = () => setUpright(view.matches);
-    update();
-    view.addEventListener("change", update);
-    return () => view.removeEventListener("change", update);
-  }, [touch]);
-  const portrait = touch && upright;
+  const panel = useStore((s) => s.hud.panel);
+  const prompt = useStore((s) => s.hud.prompt?.kind);
+  // (`hint`: the town's guide is on screen; the hint that points at the list opens the menu while it shows)
+  const listHint = useStore((s) => s.hud.coach?.step === "list" && !s.hud.coach.ok) && hint;
+  const phone = portraitPhone || sidewaysPhone;
+  const folds = phone || riding;
+  // On a computer the radio stays beside the menu button during a ride; on a phone it is one of the drawer's buttons.
+  const radioInDrawer = phone;
   const toolbar = useRef<HTMLDivElement>(null);
   const fitLimit = useRef<HTMLDivElement>(null);
-  const [twoColumns, setTwoColumns] = useState(false);
-  const baseRows = portraitToolbarRows({ hasHelp, hasRadio, hasCourse: !!COURSE_URL, modeExit: !!modeExit });
   const hornInMenu = canHonk && !touch;
-  const drawerRows = { single: baseRows.single + Number(hornInMenu), split: baseRows.split + Number(hornInMenu) };
-  const rows = drawerRows.single + Number(riding);
+  const rows = portraitToolbarRows({ hasHelp, hasRadio: hasRadio && radioInDrawer, hasCourse: !!COURSE_URL, modeExit: !!modeExit });
+  const single = rows.single + Number(hornInMenu);
+  const split = Math.ceil(single / 2);
+  const [maxRows, setMaxRows] = useState(single);
   useLayoutEffect(() => {
     const bar = toolbar.current, limit = fitLimit.current;
-    if (!portrait || !bar || !limit) return;
-    const hud = bar.parentElement!;
-    const prompt = hud.querySelector<HTMLElement>(".prompt.touch");
-    const jump = hud.querySelector<HTMLElement>(".jump-btn");
+    if (!folds || !bar || !limit) return;
+    const controls = bar.parentElement!.querySelectorAll<HTMLElement>(".prompt, .jump-btn, .act-btn");
     const update = () => {
       const style = getComputedStyle(bar);
       const size = parseFloat(style.getPropertyValue("--tool-size"));
       const gap = parseFloat(style.getPropertyValue("--tool-gap"));
-      // The column ends at its top offset + one button per row + the gaps between them. Leave 12 px above the controls.
-      const end = bar.offsetTop + rows * size + (rows - 1) * gap;
-      const clearUntil = Math.min(limit.getBoundingClientRect().bottom, prompt?.offsetTop ?? Infinity, jump?.offsetTop ?? Infinity);
-      setTwoColumns(end + 12 > clearUntil);
+      const top = bar.getBoundingClientRect().top + size + gap;
+      let bottom = limit.getBoundingClientRect().bottom;
+      for (const control of controls) bottom = Math.min(bottom, control.offsetTop);
+      // Count the rows that end above the controls, with room to tap them.
+      setMaxRows(Math.max(1, Math.floor((bottom - top - (portraitPhone ? 12 : 8) + gap) / (size + gap))));
     };
-    const observer = new ResizeObserver(update);
-    observer.observe(limit);
-    if (prompt) observer.observe(prompt);
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(update);
+    observer?.observe(limit);
+    for (const control of controls) observer?.observe(control);
     update();
-    return () => observer.disconnect();
-  }, [portrait, riding, rows, hasTouchPrompt]);
+    return () => observer?.disconnect();
+  }, [folds, portraitPhone, w, h, touch, prompt, panel, riding, single]);
+  const columns = toolbarColumns(single, portraitPhone ? Math.max(maxRows, split) : maxRows);
+  const toolColumns = columns.flatMap((count, column) => Array<number>(count).fill(column + 1));
+
   const [menuOpen, setMenuOpen] = useState(false);
+  const open = folds && !panel && !(phone && radioOpen) && (menuOpen || listHint);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const keepOpen = () => {
+  const closeMenu = useCallback(() => {
+    setMenuOpen(false);
+    const hint = useStore.getState().hud.coach;
+    if (hint?.step === "list" && !hint.ok) coach.next();
+  }, []);
+  const keepOpen = useCallback(() => {
     clearTimeout(timer.current);
-    timer.current = setTimeout(() => setMenuOpen(false), 5000);
-  };
-  const open = riding && menuOpen;
+    if (!listHint) timer.current = setTimeout(() => setMenuOpen(false), 5000);
+  }, [listHint]);
   useEffect(() => {
-    if (!riding) setMenuOpen(false);
+    if (!open) return;
+    const outside = (e: PointerEvent) => {
+      const target = e.target as Element;
+      if (toolbar.current?.contains(target)) return;
+      // The guide's buttons dismiss their own hint when the tap finishes.
+      if (target.closest?.(".coach-row")) setMenuOpen(false);
+      else closeMenu();
+    };
+    const escape = (e: globalThis.KeyboardEvent) => { if (e.key === "Escape") closeMenu(); };
+    document.addEventListener("pointerdown", outside, true);
+    window.addEventListener("keydown", escape, true);
+    return () => {
+      document.removeEventListener("pointerdown", outside, true);
+      window.removeEventListener("keydown", escape, true);
+    };
+  }, [open, closeMenu]);
+  useEffect(() => {
+    if (open) keepOpen();
     return () => clearTimeout(timer.current);
-  }, [riding]);
-  const toggleMenu = () => {
-    if (open) clearTimeout(timer.current);
-    else keepOpen();
-    setMenuOpen(!open);
-  };
+  }, [open, keepOpen]);
+  useLayoutEffect(() => {
+    if (!folds) setMenuOpen(false);
+    else if (panel || (phone && radioOpen)) {
+      closeMenu();
+      if (panel && radioOpen) radio.setOpen(false);
+    }
+  }, [folds, phone, panel, radioOpen, closeMenu]);
+
   const course = COURSE_URL && <a className="icon-btn course-link" href={COURSE_URL} title="Grįžti į kursą" aria-label="Grįžti į kursą"><Icon name="home" size={25} /></a>;
+  const actions = [
+    ...(hornInMenu ? [<HornButton key="horn" />] : []),
+    ...(modeExit ? [<button key="exit" className="icon-btn mode-exit" title={modeExit} aria-label={modeExit} onClick={() => game?.modeExit()}><Icon name="walk" size={25} /></button>] : []),
+    <ToolButton key="scenarios" icon="clapper" title="Visos situacijos" panel="scenarios" />,
+    <ToolButton key="map" icon="map" title="Žemėlapis (M)" panel="map" hotkey="M" />,
+    <ToolButton key="journal" icon="journal" title="Užduotys (J)" panel="journal" hotkey="J" />,
+    <ToolButton key="phone" icon="smartphone" title="Telefonas (P)" panel="phone" hotkey="P" badge={missedCalls} />,
+    <ToolButton key="phrasebook" icon="bookOpen" title="Frazių knygelė" panel="phrasebook" badge={due} />,
+    <ToolButton key="settings" icon="settings" title="Nustatymai (Esc)" panel="settings" />,
+    ...(hasHelp ? [<SectionHelpButton key="help" />] : []),
+  ];
   const lightMode = (
     <button className="icon-btn light-mode-btn" onClick={() => switchPlayMode("light")} title="Lengvas režimas" aria-label="Lengvas režimas">
       <span aria-hidden>LR</span>
       <span className="toolbar-tooltip" aria-hidden>Lengvas režimas</span>
     </button>
   );
-  const menu = riding && <button className="icon-btn ride-menu" onClick={toggleMenu} title="Meniu" aria-label="Meniu" aria-expanded={open} aria-controls="town-tools">
-    <Icon name="menu" size={25} />
-    {!!due && <span className="due-badge" aria-hidden>{due}</span>}
-  </button>;
-  const actions = <>
-    {hornInMenu && <HornButton />}
-    {modeExit && <button className="icon-btn mode-exit" title={modeExit} aria-label={modeExit} onClick={() => game?.modeExit()}><Icon name="walk" size={25} /></button>}
-    <ToolButton icon="clapper" title="Visos situacijos" panel="scenarios" />
-    <ToolButton icon="map" title="Žemėlapis (M)" panel="map" hotkey="M" />
-    <ToolButton icon="journal" title="Užduotys (J)" panel="journal" hotkey="J" />
-    <ToolButton icon="smartphone" title="Telefonas (P)" panel="phone" hotkey="P" badge={missedCalls} />
-    <ToolButton icon="bookOpen" title="Frazių knygelė" panel="phrasebook" badge={due} />
-    <ToolButton icon="settings" title="Nustatymai (Esc)" panel="settings" />
-    <SectionHelpButton />
-  </>;
-  const className = "toolbar" + (hasRadio ? " has-radio" : "") + (riding ? " in-ride" : "") + (open ? " menu-open" : "");
-  const folded = riding && !open;
-  if (portrait) return (
-    <div ref={toolbar} className={className + " portrait-toolbar" + (twoColumns ? " two-columns" : "")} onKeyDown={activateHudButton}>
-      {menu}
-      <div className="toolbar-fit-limit" ref={fitLimit} aria-hidden />
-      <div className="toolbar-drawer" id="town-tools" style={{ "--drawer-rows": drawerRows.split } as CSSProperties} onClick={open ? keepOpen : undefined}>
-        <div className="toolbar-tools">
-          <div className="toolbar-actions" inert={folded}>{actions}</div>
-          <RadioTool />
-        </div>
-        <div className="toolbar-shortcuts" inert={folded}>{lightMode}{course}</div>
-      </div>
+  const className = "toolbar" + (hasRadio ? " has-radio" : "");
+  if (!folds) return (
+    <div className={className} onKeyDown={activateHudButton}>
+      <div className="toolbar-tools">{course}{actions}</div>
+      <div className="toolbar-extra"><RadioTool />{lightMode}</div>
     </div>
   );
+  const slot = (item: ReactNode, index: number) => (
+    <div className="drawer-tool" key={index} style={{ "--tool-column": toolColumns[index] } as CSSProperties}>{item}</div>
+  );
+  const radioSlots = radioInDrawer && hasRadio ? 1 : 0;
   return (
-    <div className={className} onKeyDown={activateHudButton}>
-      {menu}
-      <div className="toolbar-tools" id="town-tools" inert={folded} onClick={open ? keepOpen : undefined}>
-        {course}
-        {actions}
-        {riding && lightMode}
+    <div ref={toolbar} onKeyDown={activateHudButton}
+      className={className + " in-ride folds" + (phone ? " phone-menu" : "") + (portraitPhone ? " portrait-toolbar" : "") + (open ? " menu-open" : "") + (columns.length === 2 ? " two-columns" : "")}>
+      <button className="icon-btn ride-menu" title="Meniu" aria-label="Meniu" aria-expanded={open} aria-controls="town-tools"
+        onClick={() => {
+          if (open) closeMenu();
+          else {
+            if (phone && radioOpen) radio.setOpen(false);
+            setMenuOpen(true);
+          }
+        }}>
+        <Icon name="menu" size={25} />
+        {!!due && !open && <span className="due-badge" aria-hidden>{due}</span>}
+        {phone && !open && !radioOpen && <RadioMenuLamp />}
+      </button>
+      <div className="toolbar-fit-limit" ref={fitLimit} aria-hidden />
+      <div className="toolbar-drawer" id="town-tools" inert={!open} style={{ "--drawer-rows": columns[0] } as CSSProperties} onPointerDown={keepOpen} onClick={keepOpen}>
+        <div className="toolbar-tools">
+          <div className="toolbar-actions">{actions.map(slot)}</div>
+          {radioInDrawer && slot(<RadioTool phone />, actions.length)}
+        </div>
+        <div className="toolbar-shortcuts">
+          {slot(lightMode, actions.length + radioSlots)}
+          {course && slot(course, actions.length + radioSlots + 1)}
+        </div>
       </div>
-      <div className="toolbar-extra" onClick={open ? keepOpen : undefined}>
-        <RadioTool />
-        {!riding && lightMode}
-      </div>
+      {!radioInDrawer && <div className="toolbar-extra"><RadioTool /></div>}
     </div>
   );
 }
@@ -331,11 +382,13 @@ function Objective({ collapsed, fresh, setCollapsed }: { collapsed: boolean; fre
   const o = useStore((s) => s.hud.objective);
   const progress = useStore((s) => s.progress);
   const titleLt = o?.titleLt && <> <span lang="lt">· {o.titleLt}</span></>;
+  // A conversation's own drawing stands before its title; a follow-up errand and "all done" keep the target.
+  const situation = o && !o.followUp ? o.sitId : null;
   if (collapsed) {
     return (
       <div className="objective-card collapsed" data-target-location={o?.targetLoc}>
         <button className="collapse-btn objective-summary" aria-expanded={false} onClick={() => setCollapsed(false)} onKeyDown={activateHudButton}>
-          <Icon name="target" size={16} strokeWidth={2} />
+          {situation ? <SitIcon id={situation} size={18} className="objective-ico" /> : <Icon name="target" size={16} strokeWidth={2} />}
           <span className="objective-title" title={o?.followUp ? o.title : undefined}>{o?.title ?? "Visos užduotys atliktos"}{titleLt}</span>
           <Icon name="chevronDown" size={16} strokeWidth={2} />
           {o?.dist != null && <span className="dist">{o.angle !== null && <Arrow angle={o.angle} />}{o.dist} m</span>}
@@ -372,12 +425,15 @@ function Objective({ collapsed, fresh, setCollapsed }: { collapsed: boolean; fre
   const st = stars(sitProgress(progress, o.sitId));
   return (
     <div className={className}>
-      <div className="kicker">
-        <span className="kicker-label"><Icon name="target" size={15} strokeWidth={2} /> Užduotis</span>
-        {st > 0 && <Stars n={st} size={14} />}
-        {fold}
+      <div className="objective-head">
+        <div className="kicker">
+          <span className="kicker-label"><Icon name="target" size={15} strokeWidth={2} /> Užduotis</span>
+          {st > 0 && <Stars n={st} size={14} />}
+          {fold}
+        </div>
+        <SitIcon id={o.sitId} size={32} className="objective-ico" />
+        <h3 lang="lt">{title}{titleLt}{sit && <> <span lang="en" className="en-title">· {sit.title.en}</span></>}</h3>
       </div>
-      <h3>{title}{titleLt}{sit && <> <span className="en-title">· {sit.title.en}</span></>}</h3>
       {o.goal && <p>{o.goal}</p>}
       <div className="row">
         {phone ? (
@@ -407,7 +463,7 @@ function Arrow({ angle }: { angle: number }) {
   );
 }
 
-function Minimap() {
+function Minimap({ w, h }: Screen) {
   const ref = useRef<HTMLCanvasElement>(null);
   const card = useRef<HTMLDivElement>(null);
   const mm = useStore((s) => s.hud.minimap);
@@ -439,10 +495,9 @@ function Minimap() {
     // again when the card's size changes (the text size setting, a turned phone) or its font arrives
     const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
     ro?.observe(el);
-    window.addEventListener("resize", measure);
     document.fonts?.addEventListener?.("loadingdone", measure);
-    return () => { ro?.disconnect(); window.removeEventListener("resize", measure); document.fonts?.removeEventListener?.("loadingdone", measure); };
-  }, [inside, zoneName]);
+    return () => { ro?.disconnect(); document.fonts?.removeEventListener?.("loadingdone", measure); };
+  }, [inside, zoneName, w, h]);
   useEffect(() => {
     const c = ref.current;
     const g = game?.groundCanvas;

@@ -19,7 +19,8 @@ import { useDueCards, COURSE_URL } from "./Hud";
 import { Toasts } from "./Toasts";
 import { sceneFor } from "./scenes";
 import { switchPlayMode, takeLinkedSituation } from "./playMode";
-import { Icon, InlineIcon, Stars, iconForEmoji, type IconName } from "./icons";
+import { Icon, InlineIcon, Stars } from "./icons";
+import { SitIcon } from "./SitIcon";
 import "./light.css";
 import { SectionHelpButton } from "./sectionHelp";
 import { Loading } from "./Loading";
@@ -28,7 +29,6 @@ import { usePortrait } from "./usePortrait";
 /** The same short, varied set to start with as in the situation picker (Panels). */
 
 const isCall = (s: SituationMeta) => s.mode === "phone" || s.mode === "video" || s.location === "phone";
-const sitIcon = (s: SituationMeta): IconName => isCall(s) ? (s.mode === "video" ? "video" : "phoneCall") : iconForEmoji(LOCATIONS[s.location]?.icon) ?? "pin";
 /** Who the situation is with (the date is with the partner the learner chose). */
 function mainNpc(s: SituationMeta) {
   if (s.npc !== "sam" && s.npc !== "emma") return NPCS[s.npc];
@@ -164,7 +164,7 @@ function SitCard({ s }: { s: SituationMeta }) {
   const current = progress.objective === s.id;
   return (
     <button className={"lh-card" + (st ? " done" : "") + (current ? " current" : "")} data-sit={s.id} onClick={() => game?.startScenario(s.id)}>
-      <span className="lh-ico"><Icon name={sitIcon(s)} size={25} /></span>
+      <span className="lh-ico"><SitIcon id={s.id} size={25} /></span>
       <span className="lh-txt">
         <b lang="lt">{s.title.lt}</b>
         <i lang="en">{s.title.en}</i>

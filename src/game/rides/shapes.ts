@@ -87,26 +87,36 @@ export function convertibleGeometry(paint: string, inside = "#f3e6cf") {
 export const BOAT_SEATS = { floor: 0.2, seat: 0.3, helm: [0, -1.05] as [number, number], water: 0.34 };
 export const BOAT_SIZE = { length: 5.2, width: 1.74, rim: 0.78 };
 
+function boatOutline(inset: number) {
+  const s = new THREE.Shape(), w = 0.87 - inset, bow = 2.75 - inset * 1.6, st = -2.3 + inset;
+  // The outline's -y becomes +z at the bow.
+  s.moveTo(-w, -st); s.lineTo(w, -st); s.lineTo(w, -0.7); s.quadraticCurveTo(w * 0.95, -1.9, 0, -bow);
+  s.quadraticCurveTo(-w * 0.95, -1.9, -w, -0.7); s.lineTo(-w, -st);
+  return s;
+}
+
+/** Keeps the sea out of the hull, after the floor and anyone aboard have been drawn. */
+export function motorboatWaterMask() {
+  const cap = new THREE.ShapeGeometry(boatOutline(0.09), 5).rotateX(-Math.PI / 2).translate(0, 0.7, 0);
+  const mesh = new THREE.Mesh(cap, new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: true, depthTest: true }));
+  mesh.renderOrder = 1;
+  return mesh;
+}
+
 /** A small open motorboat: a white hull with a pointed bow, a stripe in `stripe` under its rim, two thwarts, an
  *  outboard motor with its tiller, a little light on a pole. */
 export function motorboatGeometry(stripe: string, hull = "#f4f6f8") {
   const parts: Part[] = [];
   const add = (g: THREE.BufferGeometry, c: THREE.ColorRepresentation) => parts.push([g, c]);
-  const outline = (inset: number) => {
-    const s = new THREE.Shape(), w = 0.87 - inset, bow = 2.75 - inset * 1.6, st = -2.3 + inset;
-    // (drawn with the bow at -y: standing the outline up along y turns the shape's -y into +z, the bow's side)
-    s.moveTo(-w, -st); s.lineTo(w, -st); s.lineTo(w, -0.7); s.quadraticCurveTo(w * 0.95, -1.9, 0, -bow);
-    s.quadraticCurveTo(-w * 0.95, -1.9, -w, -0.7); s.lineTo(-w, -st);
-    return s;
-  };
   // (an outline seen from above, stood up along y)
   const ext = (s: THREE.Shape, depth: number, y: number) => new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: false, curveSegments: 5 }).rotateX(-Math.PI / 2).translate(0, y, 0);
-  const ring = (a: number, b: number) => { const s = outline(a); s.holes.push(new THREE.Path(outline(b).getPoints(5))); return s; };
-  add(ext(outline(0.05), 0.2, 0), hull);
+  const ring = (a: number, b: number) => { const s = boatOutline(a); s.holes.push(new THREE.Path(boatOutline(b).getPoints(5))); return s; };
+  add(ext(boatOutline(0.05), 0.2, 0), hull);
   add(ext(ring(0, 0.09), 0.5, 0.2), hull);
   add(ext(ring(-0.012, 0.08), 0.1, 0.56), stripe);
   add(ext(ring(-0.02, 0.1), 0.08, 0.7), "#c9a27a"); // the wooden rim
-  add(ext(outline(0.09), 0.02, 0.2), "#b9cdd6"); // the floor
+  add(ext(boatOutline(0.09), 0.05, 0.2), "#b07a4c"); // the floor
+  for (const x of [-0.48, -0.24, 0, 0.24, 0.48]) add(box(0.014, 0.004, 3.75, x, 0.25, -0.31), "#805538");
   for (const z of [-1.05, 0.55]) add(box(1.58, 0.06, 0.34, 0, 0.5, z), "#b8895a");
   add(profile([[1.5, 0.2], [2.3, 0.2], [2.3, 0.62], [1.5, 0.62]], 0.9).scale(1, 1, 1), "#c9a27a"); // the bow's locker
   // the outboard: its cowl, its leg down to the propeller, the tiller forward to the helm

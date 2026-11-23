@@ -14,7 +14,9 @@ import * as THREE from "three";
 import { angleDiff, smoothstep, springStep } from "./movement";
 
 export type CamMode = "follow" | "interior" | "talk" | "stage";
-export const stageFov = (aspect: number) => aspect < 0.87 ? 62 : 55;
+/** The lens of a staged shot (the surf lesson, a mini-game's score): taller on an upright phone, the walking lens
+ *  elsewhere (`wideFollowFov`, below). */
+export const stageFov = (aspect: number): number => aspect < 0.87 ? 62 : wideFollowFov(aspect);
 
 /** The follow camera's lean (radians above level, from the player's chest) and distance (m) by default (before 5 Nov
  *  2026: 0.42 from a point 1.3 m up, 10 m). */
@@ -30,6 +32,10 @@ const ROOM_BACK = 3;
 /** Standing still, the yaws tried round from the camera's own (rad): the nearer ways first, to straight in front last
  *  (a doorway with someone in it right behind, as at Tienda El Faro's door). */
 const STAND_TRIES = [0.5, -0.5, 1, -1, 1.5, -1.5, 2.1, -2.1, 2.7, -2.7, Math.PI];
+
+const { clamp, degToRad, radToDeg } = THREE.MathUtils;
+const verticalFov = (halfHorizontal: number, aspect: number) => radToDeg(2 * Math.atan(Math.tan(degToRad(halfHorizontal)) / aspect));
+const wideFollowFov = (aspect: number) => aspect > 1.9 ? clamp(verticalFov(40, aspect), 38, 55) : 55;
 
 export class CameraRig {
   cam: THREE.PerspectiveCamera;
@@ -61,6 +67,11 @@ export class CameraRig {
   /** The player is in the air (a jump): the arm stays as it is until they are down. Jumping up through a shelter's
    *  roof must not bring the camera in on them for the moment the roof is in between (the cut-out shows them). */
   hold = false;
+  /** At a boat's helm on a phone held upright (Game sets it): the arm a little higher and longer and the look a little
+   *  ahead of the bow (`helmFrame`): a little lower and further back than at the wheel, so the boat sits above the stick
+   *  and the buttons with the horizon in sight (chosen from screenshots at 390×844 and 390×664, 22 Nov 2026). */
+  portraitHelm = false;
+  helmFrame = { pitch: -0.1, dist: 3, ahead: 1 };
   private yawVel = 0;
   private movingT = 0;
   private lastDir = 0;
@@ -87,6 +98,7 @@ export class CameraRig {
   /** After a change of mode (the end of a conversation) or a door: how long the camera still glides to its place (s). */
   private blendT = 0;
   private lastMode: CamMode = "follow";
+  followScale = 1;
   private chest = new THREE.Vector3();
   private feet = new THREE.Vector3();
   private look = new THREE.Vector3();
@@ -95,6 +107,14 @@ export class CameraRig {
 
   constructor(aspect: number) {
     this.cam = new THREE.PerspectiveCamera(50, aspect, 0.1, 900);
+  }
+
+  resize(w: number, h: number, sidewaysPhone: boolean) {
+    const aspect = w / h;
+    this.cam.aspect = aspect;
+    this.cam.updateProjectionMatrix();
+    // Keep the player about as tall as with the narrowest sideways lens, even on shorter, less wide phones.
+    this.followScale = sidewaysPhone ? Math.tan(degToRad(19)) / Math.tan(degToRad(wideFollowFov(aspect) / 2)) : 1;
   }
 
   drag(dx: number, dy: number) {
@@ -213,11 +233,13 @@ export class CameraRig {
    *  head only if no arm is clear for 3 m. */
   private bestArm(yaw: number) {
     this.evalYaw = yaw;
-    let bestP = Math.min(1.3, this.pitch), bestL = this.dist, score = -1;
+    const pitch = this.pitch + (this.portraitHelm ? this.helmFrame.pitch : 0);
+    const dist = this.dist * this.followScale + (this.portraitHelm ? this.helmFrame.dist : 0);
+    let bestP = Math.min(1.3, pitch), bestL = dist, score = -1;
     for (const r of RAISES) {
-      const p = THREE.MathUtils.clamp(this.pitch + r, 0.12, 1.3), fl = this.armLen(p, this.dist), sc = Math.min(fl, 7) * (1 - (r > 0 ? 0.9 : 1.4) * Math.abs(r));
+      const p = THREE.MathUtils.clamp(pitch + r, 0.12, 1.3), fl = this.armLen(p, dist), sc = Math.min(fl, 7) * (1 - (r > 0 ? 0.9 : 1.4) * Math.abs(r));
       if (sc > score + 1e-6) { score = sc; bestP = p; bestL = fl; }
-      if (fl >= this.dist * 0.999) break;
+      if (fl >= dist * 0.999) break;
     }
     if (bestL < CRANE.below) {
       const fl = this.armLen(CRANE.pitch, CRANE.len);
@@ -233,7 +255,7 @@ export class CameraRig {
     this.look.set(t.x + a.x, t.y + 1.45, t.z + a.z);
     // (the same question as last frame, standing still with the camera settled: the same answer)
     const m = this.motion, moving = Math.abs(this.yawVel) > 0.15 || m.speed > 0.8;
-    const key = moving || snap ? "" : [t.x, t.z, this.yaw, this.pitch, this.dist].map((v) => v.toFixed(3)).join();
+    const key = moving || snap ? "" : [t.x, t.z, this.yaw, this.pitch, this.dist * this.followScale, +this.portraitHelm].map((v) => v.toFixed(3)).join();
     let best: { p: number; l: number };
     if (this.lastBest && ((key && key === this.lastKey) || (this.hold && !snap))) best = { ...this.lastBest };
     else {
@@ -282,18 +304,18 @@ export class CameraRig {
     return pos;
   }
 
-  /** The lens for this mode and screen: the conversation's 50°, as always. Walking on a wide screen a wider view
-   *  (55°, 58° at a run; 50° and 54° before). On a phone held upright the walking lens stays as it was (50°, 54° at a
-   *  run): wider, its draw calls in the busiest streets would grow, so the room there comes from the camera standing
-   *  further back and higher, and looking ahead. Indoors 50°; on an upright phone about 30° across (24.5° before), to
-   *  show the room. */
+  /** The conversation uses 50° throughout. Very wide screens keep roughly the desktop's horizontal view, while
+   *  upright phones keep the taller framing of the town and the rooms. */
   fovFor(w: number, h: number, running: boolean) {
     if (this.mode === "talk") return 50;
-    if (this.mode === "stage") return this.stage?.fov ?? stageFov(w / Math.max(1, h));
     const aspect = w / Math.max(1, h);
-    if (this.mode === "interior") return aspect < 0.87 ? THREE.MathUtils.clamp(THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(15)) / aspect)), 50, 66) : 50;
+    if (this.mode === "stage") return this.stage?.fov ?? stageFov(aspect);
+    if (this.mode === "interior") {
+      if (aspect > 1.9) return clamp(verticalFov(36, aspect), 36, 50);
+      return aspect < 0.87 ? clamp(verticalFov(15, aspect), 50, 66) : 50;
+    }
     if (aspect < 0.87) return running ? 54 : 50;
-    return running ? 58 : 55;
+    return wideFollowFov(aspect) + (running ? 3 : 0);
   }
 
   update(dt: number, playerHeading: number, moving: boolean, forwardish: boolean, follow: boolean) {
@@ -304,7 +326,7 @@ export class CameraRig {
     const m = this.motion;
     if (this.mode === "follow") {
       // (on the move: the time since they set off, or since they last turned sharply: the swing waits a moment)
-      const on = m.speed > 0.8;
+      const on = m.speed > 0.8 || this.portraitHelm;
       const turning = dt > 0 && Math.abs(angleDiff(m.dir, this.lastDir)) / dt > 3.5;
       this.lastDir = m.dir;
       this.movingT = on && !turning ? this.movingT + dt : 0;
@@ -357,7 +379,7 @@ export class CameraRig {
         this.yaw = angleDiff(this.yaw + this.yawVel * dt, 0);
       }
       // a look a little ahead of where they are going (more at a run), eased
-      const k = smoothstep(0.6, 7.4, m.speed) * 2.4;
+      const k = this.portraitHelm ? this.helmFrame.ahead : smoothstep(0.6, 7.4, m.speed) * 2.4;
       this.ahead.x = ease(this.ahead.x, Math.sin(m.dir) * k, 1.6, dt);
       this.ahead.z = ease(this.ahead.z, Math.cos(m.dir) * k, 1.6, dt);
     } else {
@@ -400,7 +422,10 @@ export class CameraRig {
 
   /** Shift the rendered image so the subject sits left of the conversation panel (or above it on phones). */
   applyViewShift(w: number, h: number, shiftX: number, shiftY: number) {
-    if (Math.abs(shiftX) < 1 && Math.abs(shiftY) < 1) { this.cam.clearViewOffset(); return; }
+    if (Math.abs(shiftX) < 1 && Math.abs(shiftY) < 1) {
+      if (this.cam.view) { this.cam.view = null; this.cam.updateProjectionMatrix(); }
+      return;
+    }
     this.cam.setViewOffset(w, h, shiftX, shiftY, w, h);
   }
 }

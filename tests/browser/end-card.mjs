@@ -1,5 +1,6 @@
 // WORLD_TEST_URL=http://127.0.0.1:8176 WORLD_PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs END_CARD_SHOTS=/tmp/end-card node tests/browser/end-card.mjs
 import assert from "node:assert/strict";
+import { openPhoneMenu } from "./screen-harness.mjs";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 
@@ -165,6 +166,7 @@ try {
       });
     }
 
+    await openPhoneMenu(page); // (batch 0: on a phone the town's tools fold behind Meniu)
     await press(page.getByRole("button", { name: "Užduotys (J)" }));
     const journal = page.locator(".overlay .sheet").filter({ has: page.getByRole("heading", { name: /^Užduotys/ }) });
     const icon = journal.locator(`.sit-card[data-sit="${cafe}"]`).getByRole("img", { name: "Kavos puodelis" });

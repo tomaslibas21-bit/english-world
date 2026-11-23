@@ -2,7 +2,7 @@
 // streets a car stays on, the plan of this town's convertibles and boat (world/rides.ts), and the water past the
 // wading limit (water.ts). In the real game: tests/browser/rides.mjs.
 import { describe, expect, it } from "vitest";
-import { Drivable, Motion, CAR, BOAT, BAY_EDGE, CAR_DRIFT, BOAT_DRIFT, bayTurn, shoreSpeed, controlsFrom, pushOutOfBox, aheadIn, aheadOnArc, startles } from "../src/game/rides/drive";
+import { Drivable, Motion, CAR, BOAT, BAY_EDGE, CAR_DRIFT, BOAT_DRIFT, bayTurn, shoreSpeed, controlsFrom, pointAndGo, pushOutOfBox, aheadIn, aheadOnArc, startles } from "../src/game/rides/drive";
 import { townAsphalt, townGround } from "../src/game/rides/ground";
 import { convertibleGeometry, motorboatGeometry, buoysGeometry, CAR_SIZE, BOAT_SIZE } from "../src/game/rides/shapes";
 import { RIDES } from "../src/game/world/rides";
@@ -25,6 +25,30 @@ describe("the hands on the wheel", () => {
     expect(left.throttle).toBeGreaterThan(0.4);
     expect(controlsFrom(0.05, 0.05)).toMatchObject({ throttle: 0, steer: 0 });
     expect(controlsFrom(0, 1, true).brake).toBe(true);
+  });
+
+  it("aims across the angle wrap and eases the throttle for sharp turns", () => {
+    expect(pointAndGo(0, 0, 0.8, 3)).toEqual({ throttle: 0.8, steer: 0, brake: false });
+    const small = pointAndGo(PI - 0.1, -PI + 0.1, 1, 3);
+    expect(small.steer).toBeCloseTo(-0.16);
+    expect(small.throttle).toBeCloseTo(1);
+    const sharp = pointAndGo(0, -PI, 1, 3);
+    expect(Math.abs(sharp.steer)).toBe(1);
+    expect(sharp.throttle).toBeGreaterThan(0);
+    expect(sharp.throttle).toBeLessThan(0.5);
+    expect(pointAndGo(0, 0.5, 0.05, 0)).toEqual(controlsFrom(0, 0));
+  });
+
+  it("backs away at low speed and builds speed after a forward turn", () => {
+    const back = pointAndGo(0, PI, 1, 0.2);
+    expect(back.throttle).toBe(-1);
+    expect(back.steer).toBeCloseTo(0);
+    expect(pointAndGo(0, PI, 0.7, -2).throttle).toBeCloseTo(-0.7);
+    expect(pointAndGo(0, PI, 1, 0, false).throttle).toBeGreaterThan(0);
+    const boat = new Motion(BOAT, "boat"), want = -PI / 2;
+    for (let i = 0; i < 600; i++) boat.step(1 / 60, pointAndGo(boat.heading, want, 1, boat.speed));
+    expect(boat.heading).toBeCloseTo(want, 2);
+    expect(boat.speed).toBeGreaterThan(BOAT.town);
   });
 });
 

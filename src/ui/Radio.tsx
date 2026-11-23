@@ -1,7 +1,5 @@
-// The town's radio in the HUD (src/radio/): the power button in the toolbar, the small dial plate beside it while it
-// plays, the radio set that opens from the plate (the display with the heart, the keys, the stations), and the lyric
-// strip. docs/RADIO.md, "Look and feel".
-import { useEffect, useRef, useState } from "react";
+// The town's radio set opens over the town from the dial plate, or from the radio button in a phone's menu.
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useStore } from "../state/store";
 import { RADIO_NAME, RADIO_SKIN, STATIONS } from "../content/radio";
 import { notedLineAt } from "../radio/extras";
@@ -17,24 +15,36 @@ const DIAL = { from: 88, to: 108, marks: [88, 92, 96, 100, 104, 108] };
 /** A frequency's place across the dial window, which keeps a margin at both ends for the first and last number. */
 const onDial = (freq: number) => `${6 + Math.max(0, Math.min(1, (freq - DIAL.from) / (DIAL.to - DIAL.from))) * 88}%`;
 
-/** The toolbar's power button, the dial plate, and the radio set. Nothing where the build has no songs. */
-export function RadioTool() {
+/** A folded phone menu carries the radio's lamp while the radio is on. */
+export function RadioMenuLamp() {
+  const on = useRadio((s) => s.available && s.on);
+  return on ? <span className={"radio-lamp " + SKIN} aria-hidden /> : null;
+}
+
+export function RadioTool({ phone = false }: { phone?: boolean }) {
   const available = useRadio((s) => s.available);
   const on = useRadio((s) => s.on);
   const open = useRadio((s) => s.open);
+  const bars = useRadio((s) => phone && s.on && s.playing);
   useEffect(() => { bindRadio(); }, []);
   if (!available) return null;
-  const title = on ? "Išjungti radiją (R)" : "Įjungti radiją (R)";
+  const title = phone ? "Radijas" : on ? "Išjungti radiją (R)" : "Įjungti radiją (R)";
   return (
     <div className={"radio-tool " + SKIN}>
-      <button className={"icon-btn radio-btn" + (on ? " on" : "")} onClick={() => radio.power()} title={title} aria-label={title} aria-pressed={on}>
-        <Icon name="radio" size={25} /><span className="key" aria-hidden>R</span>
+      <button className={"icon-btn radio-btn" + (on ? " on" : "")} onClick={() => phone ? radio.tap() : radio.power()} title={title} aria-label={title}
+        aria-pressed={phone ? undefined : on} aria-haspopup={phone ? "dialog" : undefined} aria-expanded={phone ? open : undefined}>
+        <Icon name="radio" size={25} />{!phone && <span className="key" aria-hidden>R</span>}
         <span className="radio-lamp" aria-hidden />
+        {bars && <span className="radio-eq" aria-hidden><i /><i /><i /></span>}
       </button>
-      {on && !open && <RadioPlate />}
-      {open && <RadioSet />}
+      {!phone && on && !open && <RadioPlate />}
     </div>
   );
+}
+
+export function RadioSetLayer() {
+  const open = useRadio((s) => s.available && s.open);
+  return open ? <RadioSet /> : null;
 }
 
 /** While the radio plays: the station's name on a small plate beside the button. A new song's title shows on it for
@@ -256,7 +266,7 @@ function RadioSet() {
  *  line's picture beside them, and the course's notes on the line under the plate. The strip's type follows the
  *  set's size key: one factor on the strip, which every size in it is a share of. Between lines it shows nothing;
  *  taps go through it to the ground. */
-export function LyricStrip() {
+export function LyricStrip({ sidewaysPhone }: { sidewaysPhone: boolean }) {
   const show = useRadio((s) => s.on && s.lyrics && s.playing);
   const timeline = useRadio((s) => s.timeline);
   const size = useRadio((s) => s.lyricSize);
@@ -265,6 +275,16 @@ export function LyricStrip() {
   const pictures = useRadio((s) => (s.pictures ? s.linePictures : null));
   const glosses = useStore((s) => s.settings.lt);
   const [at, setAt] = useState<{ line: number; unit: number; notes: number }>({ line: -1, unit: -1, notes: -1 });
+  const row = useRef<HTMLDivElement>(null);
+  // Between the thumbs there is room for one row. Follow the singing when a long line runs past its edge.
+  useLayoutEffect(() => {
+    const el = row.current;
+    if (!sidewaysPhone || !el) return;
+    const unit = el.children[at.unit] as HTMLElement | undefined;
+    if (!unit) return;
+    const left = unit.offsetLeft, right = left + unit.offsetWidth;
+    if (left < el.scrollLeft || right > el.scrollLeft + el.clientWidth) el.scrollLeft = left;
+  }, [sidewaysPhone, at.line, at.unit, size, glosses, pictures]);
   useEffect(() => {
     if (!show || !timeline) { setAt({ line: -1, unit: -1, notes: -1 }); return; }
     let frame = 0;
@@ -294,7 +314,7 @@ export function LyricStrip() {
         {/* (a picture that doesn't arrive leaves no empty frame) */}
         {picture && <img className="radio-pic" src={picture} alt="" decoding="async" key={picture} onError={(e) => { e.currentTarget.style.display = "none"; }} />}
         <div className="radio-words">
-          <div className={"radio-line" + (translation ? " translation" : "") + (glosses ? " glossed" : "")} key={at.line}>
+          <div ref={row} className={"radio-line" + (translation ? " translation" : "") + (glosses ? " glossed" : "")} key={at.line}>
             {line.u.map((u, k) => (
               <span className={"ru" + (k < at.unit ? " sung" : k === at.unit ? " now" : "")} key={k}>
                 <span className="rt" lang={translation ? "lt" : "en"}>{u[0]}</span>

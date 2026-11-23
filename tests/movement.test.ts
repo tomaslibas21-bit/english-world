@@ -7,6 +7,7 @@ import { Steer, Gait, Hop, angleDiff, springStep } from "../src/game/movement";
 import { OcclusionField } from "../src/game/occlusion";
 import { wantFade } from "../src/game/fade";
 import { CameraRig } from "../src/game/camera";
+import { NavGrid } from "../src/game/nav";
 import { Colliders } from "../src/game/world/util";
 import { Ledges, CLIMB, LAND, TOE } from "../src/game/ledges";
 import { carGeometry } from "../src/game/world/car";
@@ -14,6 +15,31 @@ import { Wading, sandY, floorY, DECKS, SHORE, SEA_LEVEL } from "../src/game/wate
 
 const PI = Math.PI;
 const near = (a: number, b: number, eps = 1e-6) => Math.abs(angleDiff(a, b)) < eps;
+
+describe("walking toward a tap", () => {
+  const grid = () => {
+    const col = new Colliders();
+    col.addBox(3.5, 2.5, 0.5, 5);
+    return new NavGrid(0, 0, 7, 5, 1, col, 0);
+  };
+
+  it("takes the same path when the goal is reachable", () => {
+    const nav = grid();
+    expect(nav.path(0.5, 1.5, 2.3, 4.2, true)).toEqual(nav.path(0.5, 1.5, 2.3, 4.2));
+  });
+
+  it("ends at the nearest reachable cell when a wall divides the grid", () => {
+    const nav = grid();
+    expect(nav.path(0.5, 1.5, 5.4, 2.2)).toBeNull();
+    expect(nav.path(0.5, 1.5, 5.4, 2.2, true)?.at(-1)).toEqual([2.5, 2.5]);
+    expect(nav.path(2.5, 2.5, 5.4, 2.2, true)).toBeNull();
+  });
+
+  it("chooses the shorter path when cells tie, even for a goal far outside the grid", () => {
+    expect(grid().path(0.5, 1.5, 40, 2, true)?.at(-1)).toEqual([2.5, 1.5]);
+    expect(grid().path(0.5, 1.5, 3.5, 2, true)?.at(-1)).toEqual([2.5, 1.5]);
+  });
+});
 
 describe("angles and springs", () => {
   it("angleDiff takes the short way round", () => {
@@ -63,6 +89,14 @@ describe("Steer: the direction pressed", () => {
     s.update(0, 1, false, 0, 0, 1 / 60);
     const r = s.update(0, 1, false, 0.4, 0.4, 1 / 60);
     expect(near(r.dir!, 0.4)).toBe(true);
+  });
+
+  it("a held helm direction follows a drag and ignores the camera swing", () => {
+    const s = new Steer(0, false);
+    expect(near(s.update(0, -1, true, 0, 0, 0.02).dir!, PI)).toBe(true);
+    expect(near(s.update(0, -1, true, PI, 0, 0.02).dir!, PI)).toBe(true);
+    expect(near(s.update(0, -1, true, PI + 0.3, 0.3, 0.02).dir!, PI + 0.3)).toBe(true);
+    expect(near(s.update(1, -1, true, PI + 0.3, 0, 0.02).dir!, PI + 0.3 + PI / 4)).toBe(true);
   });
 
   it("the stick held towards the camera: steady through the camera's swing, and its lower half means on once the camera is behind", () => {

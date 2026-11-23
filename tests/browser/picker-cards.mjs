@@ -9,6 +9,7 @@
 // instead of stopping at the first width that fails.
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import { openPhoneMenu } from "./screen-harness.mjs";
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:8096";
 const storage = process.env.WORLD_STORAGE || "english-world";
@@ -137,7 +138,13 @@ try {
         await new Promise((r) => setTimeout(r, 300));
       }
       const name = `${label}, ${mode === "town" ? "the 3D town's list" : "the pictures-only home"}`;
-      if (mode === "town") await page.evaluate(() => { window.__ew.coach?.finish?.(); window.__ew.store.getState().setHud({ panel: "scenarios" }); });
+      if (mode === "town") {
+        await page.evaluate(() => window.__ew.coach?.finish?.());
+        await page.locator(".toolbar").waitFor();
+        await openPhoneMenu(page);
+        const listButton = page.locator('.toolbar-tools button[title="Visos situacijos"]');
+        if (screen.hasTouch) await listButton.tap(); else await listButton.click();
+      }
       await page.evaluate(() => window.__step(10));
       await page.waitForSelector(card, { timeout: 20000 });
       await page.evaluate(() => document.fonts.ready);

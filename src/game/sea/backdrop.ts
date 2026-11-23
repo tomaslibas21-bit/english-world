@@ -60,9 +60,10 @@ export class SeaBackdrop {
       hemi: [hemi.color.clone(), hemi.groundColor.clone(), hemi.intensity], sun: [sun.color.clone(), sun.intensity],
     };
     surface.open = 0;
-    // A hair over the bay's own water while the two are blended.
+    // A hair over the bay's own water while the two are blended, and drawn after it (the bay is 2: world/town.ts) and
+    // after the boats' hull masks (1: rides/shapes.ts motorboatWaterMask), so the floor stays dry out at sea too.
     this.sea.mesh.position.y = level + 0.03;
-    this.sea.mesh.renderOrder = 1;
+    this.sea.mesh.renderOrder = 3;
     this.sea.wakeStrength = 0.55;
     town.sky.renderOrder = -11;
     this.sky.cover = this.sea.cover = 0;

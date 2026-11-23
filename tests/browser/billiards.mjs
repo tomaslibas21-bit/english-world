@@ -1,5 +1,6 @@
 // Run against a local Vite server. Set WORLD_PLAYWRIGHT_MODULE to use an existing Playwright installation.
 import assert from "node:assert/strict";
+import { openPhoneMenu } from "./screen-harness.mjs";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -139,6 +140,7 @@ try {
       await wait(() => page.evaluate(() => window.__ew?.store.getState().screen === "play"), "town loads", 3000);
       const baseline = await page.evaluate(() => window.__ew.game.orderedSituations().length);
       assert.equal(baseline, 50);
+      await openPhoneMenu(page); // (batch 0: on a phone the town's tools fold behind Meniu)
       await press(page.getByRole("button", { name: "Visos situacijos", exact: true }).first());
       assert.equal(await page.locator('.scn-card[data-sit="x01-pool-hall"]').count(), 0);
       await press(page.locator(".sheet").getByRole("button", { name: "Uždaryti" }));
@@ -326,6 +328,7 @@ try {
       assert.notDeepEqual((await state()).layout.map(({ id }) => id), rack);
       await press(page.getByRole("button", { name: "Baigti partiją", exact: true }));
       await wait(async () => (await state()) === null, "returns to walking");
+      await openPhoneMenu(page);
       await press(page.getByRole("button", { name: "Žemėlapis (M)", exact: true }).first());
       await press(page.getByRole("button", { name: "The Corner Pocket", exact: true }));
       assert.equal(await page.locator(".sheet").getByRole("button", { name: "Nuvesk mane", exact: true }).count(), 1);
