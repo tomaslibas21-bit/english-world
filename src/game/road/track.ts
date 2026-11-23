@@ -173,7 +173,7 @@ export class Track {
     const r = rand(317 + index * 1709);
     const parts: Part[] = [], features: Feature[] = [], scenery: Scenery[] = [];
     const strip = (x0: number, x1: number, y: number, color: string) => add(parts, ribbon(s, PIECE_LENGTH, x0, x1, y, STEPS), color);
-    strip(-ROAD_HALF, ROAD_HALF, 0, "#495560");
+    strip(-ROAD_HALF, ROAD_HALF, 0, "#5b626b");
     for (const side of [-1, 1]) {
       const x = side * (ROAD_HALF - 0.23);
       strip(x - 0.07, x + 0.07, 0.025, "#f3c982");
