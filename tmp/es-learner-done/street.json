@@ -1,0 +1,4915 @@
+{
+ "sit": "street",
+ "title": {
+  "en": "Street life",
+  "lt": "Gatvės gyvenimas"
+ },
+ "items": [
+  {
+   "kind": "text",
+   "en": "Street singer",
+   "where": "moments.r_trovador.cast[0].role",
+   "lt": "Gatvės dainininkas"
+  },
+  {
+   "kind": "text",
+   "en": "Do you like boleros?",
+   "where": "moments.r_trovador.first.open[0].lt",
+   "es": "¿Le gustan los boleros?",
+   "lt": "Ar Jums patinka bolero?"
+  },
+  {
+   "kind": "text",
+   "en": "I sing Yucatecan ballads, too.",
+   "where": "moments.r_trovador.first.open[1].lt",
+   "es": "También canto trova yucateca.",
+   "lt": "Dainuoju ir Jukatano balades."
+  },
+  {
+   "kind": "text",
+   "en": "Yes. Could you sing me a bolero?",
+   "where": "moments.r_trovador.first.choices[0].say.lt",
+   "es": "Sí. ¿Me canta un bolero?",
+   "lt": "Taip. Padainuotumėte man bolero?"
+  },
+  {
+   "kind": "text",
+   "en": "I'd love to. This one's for listening in the shade.",
+   "where": "moments.r_trovador.first.choices[0].reply[0].lt",
+   "es": "Con gusto. Este es para escuchar a la sombra.",
+   "lt": "Mielai. Šitos dainos gera klausytis pavėsyje."
+  },
+  {
+   "kind": "text",
+   "en": "And what are those ballads like?",
+   "where": "moments.r_trovador.first.choices[1].say.lt",
+   "es": "¿Y cómo es la trova?",
+   "lt": "O kokios tos baladės?"
+  },
+  {
+   "kind": "text",
+   "en": "Mostly love songs. With a guitar, of course.",
+   "where": "moments.r_trovador.first.choices[1].reply[0].lt",
+   "es": "Canciones de amor, casi siempre. Con guitarra, claro.",
+   "lt": "Dažniausiai dainos apie meilę. Žinoma, su gitara."
+  },
+  {
+   "kind": "text",
+   "en": "Enjoy your stroll!",
+   "where": "moments.r_trovador.first.away.lt",
+   "es": "¡Que disfrute el paseo!",
+   "lt": "Malonaus pasivaikščiojimo!"
+  },
+  {
+   "kind": "text",
+   "en": "Good to see you here again!",
+   "where": "moments.r_trovador.second.open[0].lt",
+   "es": "¡Qué gusto {m:verlo|f:verla} por aquí otra vez!",
+   "lt": "Smagu vėl Jus čia matyti!"
+  },
+  {
+   "kind": "text",
+   "en": "I'm Chucho. Around here they call me Don Chucho.",
+   "where": "moments.r_trovador.second.open[1].lt",
+   "es": "Soy Chucho. Aquí me dicen Don Chucho.",
+   "lt": "Aš Chucho. Čia mane vadina Don Chuchu."
+  },
+  {
+   "kind": "text",
+   "en": "Nice to meet you, Don Chucho.",
+   "where": "moments.r_trovador.second.choices[0].say.lt",
+   "es": "Mucho gusto, Don Chucho.",
+   "lt": "Malonu susipažinti, Don Chuchai."
+  },
+  {
+   "kind": "text",
+   "en": "Likewise. It's nice when someone stays to listen.",
+   "where": "moments.r_trovador.second.choices[0].reply[0].lt",
+   "es": "Igualmente. Da gusto cantar cuando alguien se queda.",
+   "lt": "Man irgi malonu. Smagu dainuoti, kai kas nors pasilieka paklausyti."
+  },
+  {
+   "kind": "text",
+   "en": "Have you been singing here long?",
+   "where": "moments.r_trovador.second.choices[1].say.lt",
+   "es": "¿Hace mucho que canta aquí?",
+   "lt": "Ar seniai čia dainuojate?"
+  },
+  {
+   "kind": "text",
+   "en": "For years. The bandstand knows me pretty well by now.",
+   "where": "moments.r_trovador.second.choices[1].reply[0].lt",
+   "es": "Desde hace años. El kiosco ya me conoce bien.",
+   "lt": "Jau daug metų. Pavėsinė mane jau gerai pažįsta."
+  },
+  {
+   "kind": "text",
+   "en": "See you in the square!",
+   "where": "moments.r_trovador.second.away.lt",
+   "es": "¡Nos vemos en el zócalo!",
+   "lt": "Iki pasimatymo centrinėje aikštėje!"
+  },
+  {
+   "kind": "text",
+   "en": "Hello! You get to pick the song today.",
+   "where": "moments.r_trovador.familiar.open[0].lt",
+   "es": "¡Buenas! Hoy le toca escoger la canción.",
+   "lt": "Sveiki! Šiandien Jūsų eilė rinktis dainą."
+  },
+  {
+   "kind": "text",
+   "en": "A bolero or a ballad?",
+   "where": "moments.r_trovador.familiar.open[1].lt",
+   "es": "¿Un bolero o una de trova?",
+   "lt": "Bolero ar baladę?"
+  },
+  {
+   "kind": "text",
+   "en": "A bolero, please.",
+   "where": "moments.r_trovador.familiar.choices[0].say.lt",
+   "es": "Un bolero, por favor.",
+   "lt": "Bolero, prašau."
+  },
+  {
+   "kind": "text",
+   "en": "Of course. This bolero is for you.",
+   "where": "moments.r_trovador.familiar.choices[0].reply[0].lt",
+   "es": "Con gusto. Este bolero va para usted.",
+   "lt": "Mielai. Šis bolero – Jums."
+  },
+  {
+   "kind": "text",
+   "en": "A ballad, please.",
+   "where": "moments.r_trovador.familiar.choices[1].say.lt",
+   "es": "Una de trova, por favor.",
+   "lt": "Baladę, prašau."
+  },
+  {
+   "kind": "text",
+   "en": "This one's for you. It's from right here in Yucatán.",
+   "where": "moments.r_trovador.familiar.choices[1].reply[0].lt",
+   "es": "Esta se la dedico. Es de aquí, de Yucatán.",
+   "lt": "Šią dainą skiriu Jums. Ji iš čia, iš Jukatano."
+  },
+  {
+   "kind": "text",
+   "en": "I'll save the song for another day.",
+   "where": "moments.r_trovador.familiar.away.lt",
+   "es": "La canción se queda para otro día.",
+   "lt": "Pasiliksiu šią dainą kitam kartui."
+  },
+  {
+   "kind": "text",
+   "en": "Corn vendor",
+   "where": "moments.r_elotes.cast[0].role",
+   "lt": "Kukurūzų pardavėjas"
+  },
+  {
+   "kind": "text",
+   "en": "Hot corn on the cob! Would you like one?",
+   "where": "moments.r_elotes.first.open.byCast.a[0].lt",
+   "es": "¡Elotes calientitos! ¿Le sirvo uno?",
+   "lt": "Karštos kukurūzų burbuolės! Gal norėtumėte vienos?"
+  },
+  {
+   "kind": "text",
+   "en": "Hot corn in a cup! Would you like some?",
+   "where": "moments.r_elotes.first.open.byCast.b[0].lt",
+   "es": "¡Esquites calientitos! ¿Le sirvo un vasito?",
+   "lt": "Karšti kukurūzai puodeliuose! Gal norėtumėte puodelio?"
+  },
+  {
+   "kind": "text",
+   "en": "Yes, please. How much is it?",
+   "where": "moments.r_elotes.first.choices[0].say.lt",
+   "es": "Sí, por favor. ¿Cuánto cuesta?",
+   "lt": "Taip, prašau. Kiek kainuoja?"
+  },
+  {
+   "kind": "text",
+   "en": "It's thirty pesos.",
+   "where": "moments.r_elotes.first.choices[0].reply[0].lt",
+   "es": "Son treinta pesos.",
+   "lt": "Trisdešimt pesų."
+  },
+  {
+   "kind": "text",
+   "en": "What goes on it?",
+   "where": "moments.r_elotes.first.choices[1].say.lt",
+   "es": "¿Qué le pone?",
+   "lt": "Ką dedate ant viršaus?"
+  },
+  {
+   "kind": "text",
+   "en": "Mayo, cheese, chili, and lime.",
+   "where": "moments.r_elotes.first.choices[1].reply[0].lt",
+   "es": "Mayonesa, queso, chile y limón.",
+   "lt": "Majonezo, sūrio, čili ir laimų sulčių."
+  },
+  {
+   "kind": "text",
+   "en": "Everything on it?",
+   "where": "moments.r_elotes.first.then.open[0].lt",
+   "es": "¿Con todo?",
+   "lt": "Su visais priedais?"
+  },
+  {
+   "kind": "text",
+   "en": "Yes, everything, please.",
+   "where": "moments.r_elotes.first.then.choices[0].say.lt",
+   "es": "Sí, con todo, por favor.",
+   "lt": "Taip, su visais priedais, prašau."
+  },
+  {
+   "kind": "text",
+   "en": "No chili, please.",
+   "where": "moments.r_elotes.first.then.choices[1].say.lt",
+   "es": "Sin chile, por favor.",
+   "lt": "Be čili, prašau."
+  },
+  {
+   "kind": "text",
+   "en": "Of course. Here you go.",
+   "where": "moments.r_elotes.first.then.reply[0].lt",
+   "es": "Con gusto. Aquí tiene.",
+   "lt": "Žinoma. Prašom."
+  },
+  {
+   "kind": "text",
+   "en": "See you another day!",
+   "where": "moments.r_elotes.first.away.lt",
+   "es": "¡Hasta otro día!",
+   "lt": "Iki kito karto!"
+  },
+  {
+   "kind": "text",
+   "en": "Glad you're back! I'm Don Beto.",
+   "where": "moments.r_elotes.second.open.byCast.a[0].lt",
+   "es": "¡Qué gusto que volvió! Soy Don Beto.",
+   "lt": "Smagu, kad grįžote! Aš Don Beto."
+  },
+  {
+   "kind": "text",
+   "en": "Corn on the cob today?",
+   "where": "moments.r_elotes.second.open.byCast.a[1].lt",
+   "es": "¿Hoy quiere un elote?",
+   "lt": "Ar šiandien norėtumėte kukurūzų burbuolės?"
+  },
+  {
+   "kind": "text",
+   "en": "A cup of corn today?",
+   "where": "moments.r_elotes.second.open.byCast.b[1].lt",
+   "es": "¿Hoy quiere un vasito de esquites?",
+   "lt": "Ar šiandien norėtumėte kukurūzų puodelio?"
+  },
+  {
+   "kind": "text",
+   "en": "Yes, please. Just a little chili.",
+   "where": "moments.r_elotes.second.choices[0].say.lt",
+   "es": "Sí, por favor. Con poquito chile.",
+   "lt": "Taip, prašau. Tik truputį čili."
+  },
+  {
+   "kind": "text",
+   "en": "Sure. Just enough for a little flavor.",
+   "where": "moments.r_elotes.second.choices[0].reply[0].lt",
+   "es": "Claro. Solo para darle sabor.",
+   "lt": "Žinoma. Tik dėl skonio."
+  },
+  {
+   "kind": "text",
+   "en": "No chili for me today, please.",
+   "where": "moments.r_elotes.second.choices[1].say.lt",
+   "es": "Hoy sin chile, por favor.",
+   "lt": "Šiandien be čili, prašau."
+  },
+  {
+   "kind": "text",
+   "en": "Sure. It's really good with lime.",
+   "where": "moments.r_elotes.second.choices[1].reply[0].lt",
+   "es": "Claro. Con el limón queda buenísimo.",
+   "lt": "Žinoma. Su laimais labai skanu."
+  },
+  {
+   "kind": "text",
+   "en": "I'll be here!",
+   "where": "moments.r_elotes.second.away.lt",
+   "es": "¡Aquí estaré!",
+   "lt": "Būsiu čia!"
+  },
+  {
+   "kind": "text",
+   "en": "Hi! The usual?",
+   "where": "moments.r_elotes.familiar.open[0].lt",
+   "es": "¡Buenas! ¿Lo de siempre?",
+   "lt": "Sveiki! Kaip visada?"
+  },
+  {
+   "kind": "text",
+   "en": "Yes, with everything on it.",
+   "where": "moments.r_elotes.familiar.choices[0].say.lt",
+   "es": "Sí, con todo.",
+   "lt": "Taip, su visais priedais."
+  },
+  {
+   "kind": "text",
+   "en": "Sure. And a little extra cheese.",
+   "where": "moments.r_elotes.familiar.choices[0].reply[0].lt",
+   "es": "Claro. Y un poquito más de queso.",
+   "lt": "Žinoma. Ir dar truputį sūrio."
+  },
+  {
+   "kind": "text",
+   "en": "Extra lime today, please.",
+   "where": "moments.r_elotes.familiar.choices[1].say.lt",
+   "es": "Hoy con más limón, por favor.",
+   "lt": "Šiandien daugiau laimų sulčių, prašau."
+  },
+  {
+   "kind": "text",
+   "en": "Sure. An extra squeeze.",
+   "where": "moments.r_elotes.familiar.choices[1].reply[0].lt",
+   "es": "Claro. Un chorrito más.",
+   "lt": "Žinoma. Išspausiu dar truputį."
+  },
+  {
+   "kind": "text",
+   "en": "See you! Have a good one!",
+   "where": "moments.r_elotes.familiar.away.lt",
+   "es": "¡Nos vemos, que le vaya bien!",
+   "lt": "Iki pasimatymo! Geros dienos!"
+  },
+  {
+   "kind": "text",
+   "en": "Crepe roll vendor",
+   "where": "moments.r_marquesitas.cast[0].role",
+   "lt": "Traškių blynų vyniotinių pardavėja"
+  },
+  {
+   "kind": "text",
+   "en": "Crepe rolls! The Edam cheese one is the classic.",
+   "where": "moments.r_marquesitas.first.open.byCast.a[0].lt",
+   "es": "¡Marquesitas! La de queso de bola es la clásica.",
+   "lt": "Traškūs blynų vyniotiniai! Su Edamo sūriu – klasika."
+  },
+  {
+   "kind": "text",
+   "en": "Edam cheese or Nutella?",
+   "where": "moments.r_marquesitas.first.open.byCast.a[1].lt",
+   "es": "¿De queso de bola o de Nutella?",
+   "lt": "Su Edamo sūriu ar su „Nutella“?"
+  },
+  {
+   "kind": "text",
+   "en": "Crepe rolls! Nutella is the most popular.",
+   "where": "moments.r_marquesitas.first.open.byCast.b[0].lt",
+   "es": "¡Marquesitas! La de Nutella es la más pedida.",
+   "lt": "Traškūs blynų vyniotiniai! Su „Nutella“ perka dažniausiai."
+  },
+  {
+   "kind": "text",
+   "en": "Edam cheese, please.",
+   "where": "moments.r_marquesitas.first.choices[0].say.lt",
+   "es": "De queso de bola, por favor.",
+   "lt": "Su Edamo sūriu, prašau."
+  },
+  {
+   "kind": "text",
+   "en": "Sure. I'll use freshly grated cheese.",
+   "where": "moments.r_marquesitas.first.choices[0].reply[0].lt",
+   "es": "Claro. Le pongo el queso recién rallado.",
+   "lt": "Žinoma. Įdėsiu šviežiai tarkuoto sūrio."
+  },
+  {
+   "kind": "text",
+   "en": "Nutella, please.",
+   "where": "moments.r_marquesitas.first.choices[1].say.lt",
+   "es": "De Nutella, por favor.",
+   "lt": "Su „Nutella“, prašau."
+  },
+  {
+   "kind": "text",
+   "en": "Sure. I'll roll it as soon as it's done.",
+   "where": "moments.r_marquesitas.first.choices[1].reply[0].lt",
+   "es": "Claro. La enrollo en cuanto sale.",
+   "lt": "Žinoma. Susuksiu, vos tik iškeps."
+  },
+  {
+   "kind": "text",
+   "en": "See you tomorrow!",
+   "where": "moments.r_marquesitas.first.away.lt",
+   "es": "¡Hasta mañana!",
+   "lt": "Iki rytojaus!"
+  },
+  {
+   "kind": "text",
+   "en": "You're back just in time! I'm Doña Yoli.",
+   "where": "moments.r_marquesitas.second.open.byCast.a[0].lt",
+   "es": "¡Volvió justo a tiempo! Soy Doña Yoli.",
+   "lt": "Sugrįžote kaip tik laiku! Aš Doña Yoli."
+  },
+  {
+   "kind": "text",
+   "en": "I just grated the Edam cheese.",
+   "where": "moments.r_marquesitas.second.open.byCast.a[1].lt",
+   "es": "Acabo de rallar el queso de bola.",
+   "lt": "Ką tik sutarkavau Edamo sūrį."
+  },
+  {
+   "kind": "text",
+   "en": "I just opened a jar of Nutella.",
+   "where": "moments.r_marquesitas.second.open.byCast.b[1].lt",
+   "es": "Acabo de abrir un frasco de Nutella.",
+   "lt": "Ką tik atidariau „Nutella“ indelį."
+  },
+  {
+   "kind": "text",
+   "en": "How do you get it so crispy?",
+   "where": "moments.r_marquesitas.second.choices[0].say.lt",
+   "es": "¿Cómo hace para que quede tan crujiente?",
+   "lt": "Kaip padarote, kad taip traškėtų?"
+  },
+  {
+   "kind": "text",
+   "en": "I spread the batter thin, then roll the crepe.",
+   "where": "moments.r_marquesitas.second.choices[0].reply[0].lt",
+   "es": "Extiendo la masa bien delgada. La enrollo al sacarla.",
+   "lt": "Tešlą paskleidžiu plonai. Iškepusį blyną susuku."
+  },
+  {
+   "kind": "text",
+   "en": "I'll take one, please.",
+   "where": "moments.r_marquesitas.second.choices[1].say.lt",
+   "es": "Me llevo una, por favor.",
+   "lt": "Prašau vieno vyniotinio."
+  },
+  {
+   "kind": "text",
+   "en": "Of course. I'll make it nice and crisp.",
+   "where": "moments.r_marquesitas.second.choices[1].reply[0].lt",
+   "es": "Con gusto. Se la doy bien crujiente.",
+   "lt": "Mielai. Iškepsiu, kad gerai traškėtų."
+  },
+  {
+   "kind": "text",
+   "en": "Have a lovely afternoon!",
+   "where": "moments.r_marquesitas.second.away.lt",
+   "es": "¡Que tenga bonita tarde!",
+   "lt": "Gražios popietės!"
+  },
+  {
+   "kind": "text",
+   "en": "Hi! The Edam cheese is ready.",
+   "where": "moments.r_marquesitas.familiar.open.byCast.a[0].lt",
+   "es": "¡Buenas! Ya está listo el queso de bola.",
+   "lt": "Sveiki! Edamo sūris jau paruoštas."
+  },
+  {
+   "kind": "text",
+   "en": "Want one for the road?",
+   "where": "moments.r_marquesitas.familiar.open.byCast.a[1].lt",
+   "es": "¿Una para el camino?",
+   "lt": "Gal vieną pakeliui?"
+  },
+  {
+   "kind": "text",
+   "en": "Hi! I've got plenty of Nutella today.",
+   "where": "moments.r_marquesitas.familiar.open.byCast.b[0].lt",
+   "es": "¡Buenas! Hoy tengo Nutella para rato.",
+   "lt": "Sveiki! Šiandien „Nutella“ dar ilgam užteks."
+  },
+  {
+   "kind": "text",
+   "en": "Yes. I'll eat it on the way.",
+   "where": "moments.r_marquesitas.familiar.choices[0].say.lt",
+   "es": "Sí. Para comerla en el camino.",
+   "lt": "Taip. Suvalgysiu pakeliui."
+  },
+  {
+   "kind": "text",
+   "en": "Here you go. It's still warm.",
+   "where": "moments.r_marquesitas.familiar.choices[0].reply[0].lt",
+   "es": "Aquí tiene. Todavía está calientita.",
+   "lt": "Prašom. Dar šiltas."
+  },
+  {
+   "kind": "text",
+   "en": "Could you break it in half for me?",
+   "where": "moments.r_marquesitas.familiar.choices[1].say.lt",
+   "es": "¿Me la puede partir en dos?",
+   "lt": "Gal galite perlaužti per pusę?"
+  },
+  {
+   "kind": "text",
+   "en": "Sure. If it crunches, that's a good sign.",
+   "where": "moments.r_marquesitas.familiar.choices[1].reply[0].lt",
+   "es": "Claro. Si cruje, es buena señal.",
+   "lt": "Žinoma. Jei trakštelės, geras ženklas."
+  },
+  {
+   "kind": "text",
+   "en": "Come by anytime!",
+   "where": "moments.r_marquesitas.familiar.away.lt",
+   "es": "¡Vuelva cuando quiera!",
+   "lt": "Užsukite, kada norėsite!"
+  },
+  {
+   "kind": "text",
+   "en": "Dog walker",
+   "where": "moments.r_dogwalker.cast[0].role",
+   "lt": "Šunų vedžiotoja"
+  },
+  {
+   "kind": "text",
+   "en": "Do you like dogs?",
+   "where": "moments.r_dogwalker.first.open[0].lt",
+   "es": "¿Le gustan los perros?",
+   "lt": "Ar Jums patinka šunys?"
+  },
+  {
+   "kind": "text",
+   "en": "He even says hi to the pigeons.",
+   "where": "moments.r_dogwalker.first.open[1].lt",
+   "es": "Este saluda hasta a las palomas.",
+   "lt": "Šitas net su balandžiais sveikinasi."
+  },
+  {
+   "kind": "text",
+   "en": "I love dogs.",
+   "where": "moments.r_dogwalker.first.choices[0].say.lt",
+   "es": "Sí, me encantan.",
+   "lt": "Taip, dievinu šunis."
+  },
+  {
+   "kind": "text",
+   "en": "Then you've got a new friend in town.",
+   "where": "moments.r_dogwalker.first.choices[0].reply[0].lt",
+   "es": "Pues ya tiene otro amigo en el pueblo.",
+   "lt": "Tai jau turite dar vieną draugą miestelyje."
+  },
+  {
+   "kind": "text",
+   "en": "I do, but dogs make me a little nervous.",
+   "where": "moments.r_dogwalker.first.choices[1].say.lt",
+   "es": "Sí, pero me dan un poco de miedo.",
+   "lt": "Taip, bet jų truputį bijau."
+  },
+  {
+   "kind": "text",
+   "en": "That's okay. He'll stay right here with me.",
+   "where": "moments.r_dogwalker.first.choices[1].reply[0].lt",
+   "es": "No pasa nada. Se queda aquí conmigo.",
+   "lt": "Nieko tokio. Jis liks čia prie manęs."
+  },
+  {
+   "kind": "text",
+   "en": "Well, we'd better keep going. See you!",
+   "where": "moments.r_dogwalker.first.away.lt",
+   "es": "Bueno, seguimos. ¡Hasta luego!",
+   "lt": "Na, einame toliau. Iki pasimatymo!"
+  },
+  {
+   "kind": "text",
+   "en": "Hey, we meet again! I'm Lupita, by the way.",
+   "where": "moments.r_dogwalker.second.open[0].lt",
+   "es": "¡Otra vez por aquí! Por cierto, soy Lupita.",
+   "lt": "O, vėl susitinkame! Beje, aš Lupita."
+  },
+  {
+   "kind": "text",
+   "en": "Nice to meet you, Lupita.",
+   "where": "moments.r_dogwalker.second.choices[0].say.lt",
+   "es": "Mucho gusto, Lupita.",
+   "lt": "Malonu susipažinti, Lupita."
+  },
+  {
+   "kind": "text",
+   "en": "Nice to meet you, too. It's good to see a familiar face.",
+   "where": "moments.r_dogwalker.second.choices[0].reply[0].lt",
+   "es": "Igualmente. Da gusto ver una cara conocida.",
+   "lt": "Man irgi malonu. Smagu matyti pažįstamą veidą."
+  },
+  {
+   "kind": "text",
+   "en": "And what's your dog's name?",
+   "where": "moments.r_dogwalker.second.choices[1].say.lt",
+   "es": "¿Y cómo se llama su perro?",
+   "lt": "O kuo vardu Jūsų šuo?"
+  },
+  {
+   "kind": "text",
+   "en": "Cacao. Like chocolate! With that color, what else?",
+   "where": "moments.r_dogwalker.second.choices[1].reply.byCast.a[0].lt",
+   "es": "Cacao. Con ese color, ¿cómo más?",
+   "lt": "Cacao – tai „kakava“. Užteko pažiūrėti į kailio spalvą."
+  },
+  {
+   "kind": "text",
+   "en": "Copo means 'snowflake.' It never snows here, but we've got one.",
+   "where": "moments.r_dogwalker.second.choices[1].reply.byCast.b[0].lt",
+   "es": "Copo. Aquí no nieva, pero un copo sí tenemos.",
+   "lt": "Copo – tai „snaigė“. Čia nesninga, bet vieną vis tiek turime."
+  },
+  {
+   "kind": "text",
+   "en": "See you next time!",
+   "where": "moments.r_dogwalker.second.away.lt",
+   "es": "¡Hasta la próxima!",
+   "lt": "Iki kito karto!"
+  },
+  {
+   "kind": "text",
+   "en": "Good to see you!",
+   "where": "moments.r_dogwalker.familiar.open[0].lt",
+   "es": "¡Qué gusto {m:verlo|f:verla}!",
+   "lt": "Smagu Jus matyti!"
+  },
+  {
+   "kind": "text",
+   "en": "Shall we switch to tú?",
+   "where": "moments.r_dogwalker.familiar.open[1].lt",
+   "es": "¿Nos hablamos de tú?",
+   "lt": "Gal jau galime sakyti „tu“?"
+  },
+  {
+   "kind": "text",
+   "en": "Of course, Lupita. How are you?",
+   "where": "moments.r_dogwalker.familiar.choices[0].say.lt",
+   "es": "Claro, Lupita. ¿Cómo estás?",
+   "lt": "Žinoma, Lupita. Kaip laikaisi?"
+  },
+  {
+   "kind": "text",
+   "en": "I'm good. I like running into you around here.",
+   "where": "moments.r_dogwalker.familiar.choices[0].reply[0].lt",
+   "es": "Muy bien. Me gusta encontrarte por aquí.",
+   "lt": "Gerai. Smagu tave čia sutikti."
+  },
+  {
+   "kind": "text",
+   "en": "Sure, Lupita. Out with the dog again?",
+   "where": "moments.r_dogwalker.familiar.choices[1].say.lt",
+   "es": "Sí, Lupita. ¿Otra vuelta con el perro?",
+   "lt": "Taip, Lupita. Vėl vedžioji šunį?"
+  },
+  {
+   "kind": "text",
+   "en": "Yep. You know he's got to say hi to the pigeons.",
+   "where": "moments.r_dogwalker.familiar.choices[1].reply[0].lt",
+   "es": "Sí. Ya sabes, tiene que saludar a las palomas.",
+   "lt": "Taip. Juk žinai, jam reikia pasisveikinti su balandžiais."
+  },
+  {
+   "kind": "text",
+   "en": "See you around!",
+   "where": "moments.r_dogwalker.familiar.away.lt",
+   "es": "¡Nos vemos por aquí!",
+   "lt": "Dar pasimatysim!"
+  },
+  {
+   "kind": "text",
+   "en": "Hammock seller",
+   "where": "moments.r_hamacas.cast[0].role",
+   "lt": "Hamakų pardavėjas"
+  },
+  {
+   "kind": "text",
+   "en": "Hammocks made in Yucatán! Feel free to touch them.",
+   "where": "moments.r_hamacas.first.open.byCast.a[0].lt",
+   "es": "¡Hamacas hechas en Yucatán! Puede tocarlas, si quiere.",
+   "lt": "Jukatane pagaminti hamakai! Jei norite, galite pačiupinėti."
+  },
+  {
+   "kind": "text",
+   "en": "Hammocks and hats! All made in Yucatán.",
+   "where": "moments.r_hamacas.first.open.byCast.b[0].lt",
+   "es": "¡Hamacas y sombreros! Todo hecho en Yucatán.",
+   "lt": "Hamakai ir skrybėlės! Viskas pagaminta Jukatane."
+  },
+  {
+   "kind": "text",
+   "en": "What are the hammocks made of?",
+   "where": "moments.r_hamacas.first.choices[0].say.lt",
+   "es": "¿De qué material son las hamacas?",
+   "lt": "Iš ko pagaminti hamakai?"
+  },
+  {
+   "kind": "text",
+   "en": "Cotton. It feels cool in this heat.",
+   "where": "moments.r_hamacas.first.choices[0].reply[0].lt",
+   "es": "De algodón. Se siente fresco con este calor.",
+   "lt": "Iš medvilnės. Net per tokį karštį ji maloniai vėsi."
+  },
+  {
+   "kind": "text",
+   "en": "I'm just looking, thanks.",
+   "where": "moments.r_hamacas.first.choices[1].say.lt",
+   "es": "Solo estoy viendo, gracias.",
+   "lt": "Tik dairausi, ačiū."
+  },
+  {
+   "kind": "text",
+   "en": "Of course. Feel free to look around.",
+   "where": "moments.r_hamacas.first.choices[1].reply[0].lt",
+   "es": "Con toda confianza. Mire lo que quiera.",
+   "lt": "Žinoma. Drąsiai dairykitės."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks for stopping by!",
+   "where": "moments.r_hamacas.first.away.lt",
+   "es": "¡Gracias por pasar!",
+   "lt": "Ačiū, kad užsukote!"
+  },
+  {
+   "kind": "text",
+   "en": "Hello! We meet again. I'm Don Teo.",
+   "where": "moments.r_hamacas.second.open.byCast.a[0].lt",
+   "es": "¡Buenas! Nos volvemos a encontrar. Soy Don Teo.",
+   "lt": "Sveiki! Vėl susitinkame. Aš Don Teo."
+  },
+  {
+   "kind": "text",
+   "en": "I've got hammocks in several colors today.",
+   "where": "moments.r_hamacas.second.open.byCast.a[1].lt",
+   "es": "Hoy tengo hamacas de varios colores.",
+   "lt": "Šiandien turiu kelių spalvų hamakų."
+  },
+  {
+   "kind": "text",
+   "en": "I brought some sun hats today, too.",
+   "where": "moments.r_hamacas.second.open.byCast.b[1].lt",
+   "es": "Hoy también traje sombreros para el sol.",
+   "lt": "Šiandien atsinešiau ir skrybėlių nuo saulės."
+  },
+  {
+   "kind": "text",
+   "en": "Nice to meet you, Don Teo.",
+   "where": "moments.r_hamacas.second.choices[0].say.lt",
+   "es": "Mucho gusto, Don Teo.",
+   "lt": "Malonu susipažinti, Don Teo."
+  },
+  {
+   "kind": "text",
+   "en": "Likewise. Take your time looking around.",
+   "where": "moments.r_hamacas.second.choices[0].reply[0].lt",
+   "es": "Igualmente. Aquí puede mirar con calma.",
+   "lt": "Man irgi malonu. Galite ramiai pasižvalgyti."
+  },
+  {
+   "kind": "text",
+   "en": "Can I take a closer look at them?",
+   "where": "moments.r_hamacas.second.choices[1].say.byCast.a.lt",
+   "es": "¿Las puedo ver de cerca?",
+   "lt": "Gal galiu apžiūrėti iš arčiau?"
+  },
+  {
+   "kind": "text",
+   "en": "Can I try on a hat?",
+   "where": "moments.r_hamacas.second.choices[1].say.byCast.b.lt",
+   "es": "¿Me puedo probar un sombrero?",
+   "lt": "Ar galiu pasimatuoti skrybėlę?"
+  },
+  {
+   "kind": "text",
+   "en": "Sure. You can see the weave better up close.",
+   "where": "moments.r_hamacas.second.choices[1].reply.byCast.a[0].lt",
+   "es": "Claro. De cerquita se ve mejor el tejido.",
+   "lt": "Žinoma. Iš arti geriau matyti, kaip išausta."
+  },
+  {
+   "kind": "text",
+   "en": "Sure. See how it fits.",
+   "where": "moments.r_hamacas.second.choices[1].reply.byCast.b[0].lt",
+   "es": "Claro. Así ve si le queda bien.",
+   "lt": "Žinoma. Pažiūrėsite, ar tinka."
+  },
+  {
+   "kind": "text",
+   "en": "Take care!",
+   "where": "moments.r_hamacas.second.away.lt",
+   "es": "¡Cuídese mucho!",
+   "lt": "Laikykitės!"
+  },
+  {
+   "kind": "text",
+   "en": "Hi! I'm glad you stopped to say hello.",
+   "where": "moments.r_hamacas.familiar.open.byCast.a[0].lt",
+   "es": "¡Buenas! Qué gusto que pase a saludar.",
+   "lt": "Sveiki! Smagu, kad užsukote pasisveikinti."
+  },
+  {
+   "kind": "text",
+   "en": "These hammocks make you want to take a nap.",
+   "where": "moments.r_hamacas.familiar.open.byCast.a[1].lt",
+   "es": "Estas hamacas dan ganas de echarse una siesta.",
+   "lt": "Pamačius šiuos hamakus norisi nusnausti."
+  },
+  {
+   "kind": "text",
+   "en": "With a hat, you've got shade wherever you go.",
+   "where": "moments.r_hamacas.familiar.open.byCast.b[1].lt",
+   "es": "Con un sombrero, se lleva la sombra puesta.",
+   "lt": "Su skrybėle pavėsis visada kartu."
+  },
+  {
+   "kind": "text",
+   "en": "I just came by to say hi, Don Teo.",
+   "where": "moments.r_hamacas.familiar.choices[0].say.lt",
+   "es": "Hoy vine a saludar, Don Teo.",
+   "lt": "Šiandien tik užsukau pasisveikinti, Don Teo."
+  },
+  {
+   "kind": "text",
+   "en": "That's plenty. Have a good day!",
+   "where": "moments.r_hamacas.familiar.choices[0].reply[0].lt",
+   "es": "Con eso basta. ¡Que tenga buen día!",
+   "lt": "To ir užtenka. Geros dienos!"
+  },
+  {
+   "kind": "text",
+   "en": "One of these days I'll take one home.",
+   "where": "moments.r_hamacas.familiar.choices[1].say.byCast.a.lt",
+   "es": "Un día de estos me llevo una.",
+   "lt": "Kada nors vieną nusipirksiu."
+  },
+  {
+   "kind": "text",
+   "en": "This sun makes me want a hat.",
+   "where": "moments.r_hamacas.familiar.choices[1].say.byCast.b.lt",
+   "es": "Con este sol, sí dan ganas de usar sombrero.",
+   "lt": "Kai taip kepina, tikrai norisi skrybėlės."
+  },
+  {
+   "kind": "text",
+   "en": "I'll be here. Take your time deciding.",
+   "where": "moments.r_hamacas.familiar.choices[1].reply[0].lt",
+   "es": "Aquí estaré. Piénselo con calma.",
+   "lt": "Būsiu čia. Ramiai pagalvokite."
+  },
+  {
+   "kind": "text",
+   "en": "Boy with a kite",
+   "where": "moments.r_kite.cast[0].role",
+   "lt": "Berniukas su aitvaru"
+  },
+  {
+   "kind": "text",
+   "en": "On the beach, a boy lifts a red kite into the breeze.",
+   "where": "moments.r_kite.first.scene.byCast.a",
+   "lt": "Paplūdimyje berniukas kilsteli raudoną aitvarą prieš vėją."
+  },
+  {
+   "kind": "text",
+   "en": "On the beach, a boy holds up a fish-shaped kite.",
+   "where": "moments.r_kite.first.scene.byCast.b",
+   "lt": "Paplūdimyje berniukas iškelia žuvies formos aitvarą."
+  },
+  {
+   "kind": "text",
+   "en": "Look at my red kite!",
+   "where": "moments.r_kite.first.open.byCast.a[0].lt",
+   "es": "¡Mire mi papalote rojo!",
+   "lt": "Pažiūrėkite į mano raudoną aitvarą!"
+  },
+  {
+   "kind": "text",
+   "en": "Can you help me fly it?",
+   "where": "moments.r_kite.first.open.byCast.a[1].lt",
+   "es": "¿Me ayuda a volarlo?",
+   "lt": "Padėsite jį paleisti?"
+  },
+  {
+   "kind": "text",
+   "en": "Look! My kite looks like a fish!",
+   "where": "moments.r_kite.first.open.byCast.b[0].lt",
+   "es": "¡Mire! ¡Mi papalote parece un pez!",
+   "lt": "Pažiūrėkite! Mano aitvaras panašus į žuvį!"
+  },
+  {
+   "kind": "text",
+   "en": "Run! I'll let go.",
+   "where": "moments.r_kite.first.choices[0].say.lt",
+   "es": "¡Corre! Yo lo suelto.",
+   "lt": "Bėk! Aš paleisiu."
+  },
+  {
+   "kind": "text",
+   "en": "Wait for a little more wind.",
+   "where": "moments.r_kite.first.choices[1].say.lt",
+   "es": "Espera a que sople un poquito más.",
+   "lt": "Palauk, kol vėjas kiek sustiprės."
+  },
+  {
+   "kind": "text",
+   "en": "Here comes the wind! Look, it's flying!",
+   "where": "moments.r_kite.first.reply[0].lt",
+   "es": "¡Ya sopla! ¡Mire, está volando!",
+   "lt": "Jau pučia! Žiūrėkite, skrenda!"
+  },
+  {
+   "kind": "text",
+   "en": "Okay, I'll try again!",
+   "where": "moments.r_kite.first.away.lt",
+   "es": "¡Bueno, voy a probar otra vez!",
+   "lt": "Gerai, dar kartą pabandysiu!"
+  },
+  {
+   "kind": "text",
+   "en": "Oh, it's you! I'm Mateo.",
+   "where": "moments.r_kite.second.open.byCast.a[0].lt",
+   "es": "¡Ah, es usted! Me llamo Mateo.",
+   "lt": "O, tai Jūs! Aš Mateo."
+  },
+  {
+   "kind": "text",
+   "en": "Today the red one is going to touch the clouds!",
+   "where": "moments.r_kite.second.open.byCast.a[1].lt",
+   "es": "¡Hoy el rojo va a tocar las nubes!",
+   "lt": "Šiandien raudonas aitvaras sieks debesis!"
+  },
+  {
+   "kind": "text",
+   "en": "Today my fish is going to swim in the sky!",
+   "where": "moments.r_kite.second.open.byCast.b[1].lt",
+   "es": "¡Hoy mi pez va a nadar en el cielo!",
+   "lt": "Šiandien mano žuvis plaukios danguje!"
+  },
+  {
+   "kind": "text",
+   "en": "Good to see you, Mateo!",
+   "where": "moments.r_kite.second.choices[0].say.lt",
+   "es": "¡Qué gusto verte, Mateo!",
+   "lt": "Smagu tave matyti, Mateo!"
+  },
+  {
+   "kind": "text",
+   "en": "You too! Look how high it's going!",
+   "where": "moments.r_kite.second.choices[0].reply[0].lt",
+   "es": "¡A mí también! ¡Mire qué alto va!",
+   "lt": "Man irgi! Žiūrėkite, kaip aukštai skrenda!"
+  },
+  {
+   "kind": "text",
+   "en": "Can you show me how you do it?",
+   "where": "moments.r_kite.second.choices[1].say.lt",
+   "es": "¿Me enseñas cómo lo haces?",
+   "lt": "Parodysi, kaip tau pavyksta?"
+  },
+  {
+   "kind": "text",
+   "en": "Yep! When the wind picks up, I run.",
+   "where": "moments.r_kite.second.choices[1].reply[0].lt",
+   "es": "¡Sí! Cuando sopla fuerte, corro.",
+   "lt": "Taip! Kai vėjas stipriau pučia, bėgu."
+  },
+  {
+   "kind": "text",
+   "en": "Next time it'll fly even higher!",
+   "where": "moments.r_kite.second.away.lt",
+   "es": "¡La próxima vez vuela más alto!",
+   "lt": "Kitą kartą skris dar aukščiau!"
+  },
+  {
+   "kind": "text",
+   "en": "Look how hard it's pulling today!",
+   "where": "moments.r_kite.familiar.open[0].lt",
+   "es": "¡Mire, hoy sí jala fuerte!",
+   "lt": "Žiūrėkite, kaip stipriai šiandien traukia!"
+  },
+  {
+   "kind": "text",
+   "en": "Want to hold the string?",
+   "where": "moments.r_kite.familiar.open[1].lt",
+   "es": "¿Quiere sostener el hilo?",
+   "lt": "Norite palaikyti virvutę?"
+  },
+  {
+   "kind": "text",
+   "en": "Yes! Hand me the string.",
+   "where": "moments.r_kite.familiar.choices[0].say.lt",
+   "es": "¡Sí! Pásame el hilo.",
+   "lt": "Taip! Paduok virvutę."
+  },
+  {
+   "kind": "text",
+   "en": "Hold on tight! It's almost at the cloud!",
+   "where": "moments.r_kite.familiar.choices[0].reply[0].lt",
+   "es": "¡Agárrelo bien! ¡Ya casi llega a la nube!",
+   "lt": "Tvirtai laikykite! Jau beveik pasiekė debesį!"
+  },
+  {
+   "kind": "text",
+   "en": "Keep going! It's way up there!",
+   "where": "moments.r_kite.familiar.choices[1].say.lt",
+   "es": "¡Tú sigue! ¡Va altísimo!",
+   "lt": "Taip ir toliau! Kaip aukštai skrenda!"
+  },
+  {
+   "kind": "text",
+   "en": "Look! It looks tiny now!",
+   "where": "moments.r_kite.familiar.choices[1].reply[0].lt",
+   "es": "¡Mire! ¡Ya se ve chiquitito!",
+   "lt": "Žiūrėkite! Dabar jis atrodo visai mažytis!"
+  },
+  {
+   "kind": "text",
+   "en": "I'll show you a trick another day!",
+   "where": "moments.r_kite.familiar.away.lt",
+   "es": "¡Otro día le enseño un truco!",
+   "lt": "Kitą kartą parodysiu Jums triuką!"
+  },
+  {
+   "kind": "text",
+   "en": "Fisherman",
+   "where": "moments.r_pescador.cast[0].role",
+   "lt": "Žvejys"
+  },
+  {
+   "kind": "text",
+   "en": "A fisherman mends his net by the pier.",
+   "where": "moments.r_pescador.first.scene.byCast.a",
+   "lt": "Prie prieplaukos žvejys taiso tinklą."
+  },
+  {
+   "kind": "text",
+   "en": "A fisherman stands by the pier with a bucket of fish.",
+   "where": "moments.r_pescador.first.scene.byCast.b",
+   "lt": "Prie prieplaukos žvejys stovi su kibiru žuvų."
+  },
+  {
+   "kind": "text",
+   "en": "When the north wind blows, I mend my net.",
+   "where": "moments.r_pescador.first.open.byCast.a[0].lt",
+   "es": "Cuando entra el norte, aprovecho para remendar la red.",
+   "lt": "Kai papučia šaltas šiaurės vėjas, imuosi taisyti tinklą."
+  },
+  {
+   "kind": "text",
+   "en": "Look! I caught sardines today.",
+   "where": "moments.r_pescador.first.open.byCast.b[0].lt",
+   "es": "¡Mire! Hoy pesqué sardinas.",
+   "lt": "Pažiūrėkite! Šiandien pagavau sardinių."
+  },
+  {
+   "kind": "text",
+   "en": "Do you fix it yourself?",
+   "where": "moments.r_pescador.first.choices[0].say.byCast.a.lt",
+   "es": "¿Usted mismo la arregla?",
+   "lt": "Ar pats jį taisote?"
+  },
+  {
+   "kind": "text",
+   "en": "Did you catch them near the pier?",
+   "where": "moments.r_pescador.first.choices[0].say.byCast.b.lt",
+   "es": "¿Las pescó cerca del muelle?",
+   "lt": "Ar jas pagavote netoli prieplaukos?"
+  },
+  {
+   "kind": "text",
+   "en": "Yes. My dad taught me how to tie the knots.",
+   "where": "moments.r_pescador.first.choices[0].reply.byCast.a[0].lt",
+   "es": "Sí. Mi papá me enseñó a hacer los nudos.",
+   "lt": "Taip. Rišti mazgus mane išmokė tėtis."
+  },
+  {
+   "kind": "text",
+   "en": "A little farther out. I went out before dawn.",
+   "where": "moments.r_pescador.first.choices[0].reply.byCast.b[0].lt",
+   "es": "Un poco más lejos. Salí antes de amanecer.",
+   "lt": "Šiek tiek toliau. Išplaukiau dar prieš aušrą."
+  },
+  {
+   "kind": "text",
+   "en": "How's the sea today?",
+   "where": "moments.r_pescador.first.choices[1].say.lt",
+   "es": "¿Cómo está el mar hoy?",
+   "lt": "Kokia šiandien jūra?"
+  },
+  {
+   "kind": "text",
+   "en": "A little choppy. I'd rather stay on the pier today.",
+   "where": "moments.r_pescador.first.choices[1].reply.byCast.a[0].lt",
+   "es": "Algo picado. Hoy prefiero quedarme en el muelle.",
+   "lt": "Kiek banguota. Šiandien verčiau liksiu prieplaukoje."
+  },
+  {
+   "kind": "text",
+   "en": "It was calm at dawn. That's good fishing weather.",
+   "where": "moments.r_pescador.first.choices[1].reply.byCast.b[0].lt",
+   "es": "Estaba tranquilo al amanecer. Así da gusto pescar.",
+   "lt": "Auštant jūra buvo rami. Tokiu oru gera žvejoti."
+  },
+  {
+   "kind": "text",
+   "en": "Have a good one!",
+   "where": "moments.r_pescador.first.away.lt",
+   "es": "¡Que tenga buen día!",
+   "lt": "Geros dienos!"
+  },
+  {
+   "kind": "text",
+   "en": "Hello again! Call me Don Chema.",
+   "where": "moments.r_pescador.second.open.byCast.a[0].lt",
+   "es": "¡Buenas! Otra vez por aquí. Dígame Don Chema.",
+   "lt": "Vėl sveiki! Vadinkite mane Don Chema."
+  },
+  {
+   "kind": "text",
+   "en": "I'm patching a hole in the net today.",
+   "where": "moments.r_pescador.second.open.byCast.a[1].lt",
+   "es": "Hoy estoy cerrando un agujero en la red.",
+   "lt": "Šiandien lopau skylę tinkle."
+  },
+  {
+   "kind": "text",
+   "en": "I went out early today. You could barely see the pier.",
+   "where": "moments.r_pescador.second.open.byCast.b[1].lt",
+   "es": "Hoy salí temprano. Apenas se veía el muelle.",
+   "lt": "Šiandien išplaukiau anksti. Prieplaukos vos matėsi."
+  },
+  {
+   "kind": "text",
+   "en": "Will it be ready for tomorrow?",
+   "where": "moments.r_pescador.second.choices[0].say.byCast.a.lt",
+   "es": "¿Queda lista para mañana?",
+   "lt": "Ar rytoj jis jau bus paruoštas?"
+  },
+  {
+   "kind": "text",
+   "en": "So what did you catch?",
+   "where": "moments.r_pescador.second.choices[0].say.byCast.b.lt",
+   "es": "¿Y qué pescó?",
+   "lt": "Tai ką pagavote?"
+  },
+  {
+   "kind": "text",
+   "en": "Two more knots and it's ready. Then it's up to the wind.",
+   "where": "moments.r_pescador.second.choices[0].reply.byCast.a[0].lt",
+   "es": "Dos nudos más y queda lista. Luego manda el viento.",
+   "lt": "Dar du mazgai ir bus paruoštas. Tada viskas priklausys nuo vėjo."
+  },
+  {
+   "kind": "text",
+   "en": "Sardines. Luckily, the sea was calm.",
+   "where": "moments.r_pescador.second.choices[0].reply.byCast.b[0].lt",
+   "es": "Sardinas. El mar estaba tranquilo, por suerte.",
+   "lt": "Sardinių. Pasisekė, kad jūra buvo rami."
+  },
+  {
+   "kind": "text",
+   "en": "Do you think a north wind is coming?",
+   "where": "moments.r_pescador.second.choices[1].say.lt",
+   "es": "¿Cree que vaya a entrar un norte?",
+   "lt": "Kaip manote, ar pūs šaltas šiaurės vėjas?"
+  },
+  {
+   "kind": "text",
+   "en": "Could be. Best to look at the sky before heading out.",
+   "where": "moments.r_pescador.second.choices[1].reply[0].lt",
+   "es": "Puede ser. Más vale mirar el cielo antes de salir.",
+   "lt": "Gali būti. Prieš išplaukiant geriau pažvelgti į dangų."
+  },
+  {
+   "kind": "text",
+   "en": "Hi! The net's ready. Today's a fishing day.",
+   "where": "moments.r_pescador.familiar.open.byCast.a[0].lt",
+   "es": "¡Buenas! La red ya quedó. Hoy toca pescar.",
+   "lt": "Sveiki! Tinklas paruoštas. Šiandien metas žvejoti."
+  },
+  {
+   "kind": "text",
+   "en": "Hi! I've got fish to take home today.",
+   "where": "moments.r_pescador.familiar.open.byCast.b[0].lt",
+   "es": "¡Buenas! Hoy sí hay pescado para la casa.",
+   "lt": "Sveiki! Šiandien parsinešiu namo žuvies."
+  },
+  {
+   "kind": "text",
+   "en": "I always learn something when I stop by.",
+   "where": "moments.r_pescador.familiar.choices[0].say.lt",
+   "es": "Siempre aprendo algo cuando paso por aquí.",
+   "lt": "Kai čia užsuku, vis ką nors sužinau."
+  },
+  {
+   "kind": "text",
+   "en": "And there's plenty more to say about the sea.",
+   "where": "moments.r_pescador.familiar.choices[0].reply[0].lt",
+   "es": "Y eso que el mar da tema para rato.",
+   "lt": "O apie jūrą dar tiek galima papasakoti."
+  },
+  {
+   "kind": "text",
+   "en": "Are you going out fishing tomorrow, too?",
+   "where": "moments.r_pescador.familiar.choices[1].say.lt",
+   "es": "¿Mañana también sale a pescar?",
+   "lt": "Ar rytoj irgi išplauksite žvejoti?"
+  },
+  {
+   "kind": "text",
+   "en": "I will if the sea's calm.",
+   "where": "moments.r_pescador.familiar.choices[1].reply[0].lt",
+   "es": "Si el mar está tranquilo, sí.",
+   "lt": "Jei jūra bus rami, tai taip."
+  },
+  {
+   "kind": "text",
+   "en": "See you at the pier!",
+   "where": "moments.r_pescador.familiar.away.lt",
+   "es": "¡Nos vemos en el muelle!",
+   "lt": "Iki pasimatymo prieplaukoje!"
+  },
+  {
+   "kind": "text",
+   "en": "Neighbor at her door",
+   "where": "moments.r_chayo.cast[0].role",
+   "lt": "Kaimynė prie durų"
+  },
+  {
+   "kind": "text",
+   "en": "An older woman sits by her door waving a fan.",
+   "where": "moments.r_chayo.first.scene.byCast.a",
+   "lt": "Senyva moteris sėdi prie savo durų ir vėdinasi vėduokle."
+  },
+  {
+   "kind": "text",
+   "en": "An older woman waters plants by her door.",
+   "where": "moments.r_chayo.first.scene.byCast.b",
+   "lt": "Senyva moteris laisto augalus prie savo durų."
+  },
+  {
+   "kind": "text",
+   "en": "Hello, dear!",
+   "where": "moments.r_chayo.first.open.byCast.a[0].lt",
+   "es": "¡Buenas, {m:mijo|f:mija}!",
+   "lt": "Sveiki, vaikeli!"
+  },
+  {
+   "kind": "text",
+   "en": "In this heat, even my fan needs a break.",
+   "where": "moments.r_chayo.first.open.byCast.a[1].lt",
+   "es": "Con este calor, hasta mi abanico pide descanso.",
+   "lt": "Per tokį karštį net mano vėduoklei reikia poilsio."
+  },
+  {
+   "kind": "text",
+   "en": "My plants get thirsty in this heat, too.",
+   "where": "moments.r_chayo.first.open.byCast.b[1].lt",
+   "es": "Mis plantas también tienen sed con este calor.",
+   "lt": "Per tokį karštį ir mano augalai ištrokšta."
+  },
+  {
+   "kind": "text",
+   "en": "Can I help you with anything?",
+   "where": "moments.r_chayo.first.choices[0].say.lt",
+   "es": "¿Le ayudo con algo?",
+   "lt": "Gal galiu kuo nors padėti?"
+  },
+  {
+   "kind": "text",
+   "en": "Thanks. A hello is plenty.",
+   "where": "moments.r_chayo.first.choices[0].reply.byCast.a[0].lt",
+   "es": "Gracias. Con un saludo me basta.",
+   "lt": "Ačiū. Man ir pasisveikinti užtenka."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks. I'm almost done watering.",
+   "where": "moments.r_chayo.first.choices[0].reply.byCast.b[0].lt",
+   "es": "Gracias. Ya casi termino de regar.",
+   "lt": "Ačiū. Jau beveik palaisčiau."
+  },
+  {
+   "kind": "text",
+   "en": "Is it always this hot around here?",
+   "where": "moments.r_chayo.first.choices[1].say.lt",
+   "es": "¿Siempre hace tanto calor por aquí?",
+   "lt": "Ar čia visada taip karšta?"
+  },
+  {
+   "kind": "text",
+   "en": "Once the sun goes down, it's nice to sit and chat.",
+   "where": "moments.r_chayo.first.choices[1].reply[0].lt",
+   "es": "Al caer el sol, ya se platica a gusto.",
+   "lt": "Saulei nusileidus jau smagu pasišnekučiuoti."
+  },
+  {
+   "kind": "text",
+   "en": "Excuse me, I'm in a rush.",
+   "where": "moments.r_chayo.first.choices[2].say.lt",
+   "es": "Disculpe, voy de prisa.",
+   "lt": "Atsiprašau, skubu."
+  },
+  {
+   "kind": "text",
+   "en": "Don't worry. We'll chat another day.",
+   "where": "moments.r_chayo.first.choices[2].reply[0].lt",
+   "es": "No se preocupe. Otro día platicamos.",
+   "lt": "Nesijaudinkite. Pasišnekučiuosime kitą kartą."
+  },
+  {
+   "kind": "text",
+   "en": "See you later. Have a good day!",
+   "where": "moments.r_chayo.first.away.lt",
+   "es": "¡Hasta luego! Que le vaya bien.",
+   "lt": "Iki pasimatymo! Geros dienos!"
+  },
+  {
+   "kind": "text",
+   "en": "I'm glad you're back! Call me Doña Chayo.",
+   "where": "moments.r_chayo.second.open.byCast.a[0].lt",
+   "es": "¡Qué gusto que volvió! Dígame Doña Chayo.",
+   "lt": "Smagu, kad grįžote! Vadinkite mane Doña Chayo."
+  },
+  {
+   "kind": "text",
+   "en": "This fan makes the afternoons a little easier.",
+   "where": "moments.r_chayo.second.open.byCast.a[1].lt",
+   "es": "Con el abanico, ya aguanto mejor la tarde.",
+   "lt": "Su vėduokle popietes ištverti lengviau."
+  },
+  {
+   "kind": "text",
+   "en": "Even the plants want shade today.",
+   "where": "moments.r_chayo.second.open.byCast.b[1].lt",
+   "es": "Hoy hasta las plantas quieren sombra.",
+   "lt": "Šiandien net augalai nori pavėsio."
+  },
+  {
+   "kind": "text",
+   "en": "Nice to meet you, Doña Chayo.",
+   "where": "moments.r_chayo.second.choices[0].say.lt",
+   "es": "Mucho gusto, Doña Chayo.",
+   "lt": "Malonu susipažinti, Doña Chayo."
+  },
+  {
+   "kind": "text",
+   "en": "Nice to meet you, too. There's always time to say hello here.",
+   "where": "moments.r_chayo.second.choices[0].reply[0].lt",
+   "es": "Igualmente. Aquí siempre hay tiempo para un saludo.",
+   "lt": "Man irgi malonu. Čia visada yra laiko pasisveikinti."
+  },
+  {
+   "kind": "text",
+   "en": "Have you lived here long?",
+   "where": "moments.r_chayo.second.choices[1].say.lt",
+   "es": "¿Hace mucho que vive aquí?",
+   "lt": "Ar seniai čia gyvenate?"
+  },
+  {
+   "kind": "text",
+   "en": "Since I was a girl. I even learned to ride a bike here.",
+   "where": "moments.r_chayo.second.choices[1].reply[0].lt",
+   "es": "Desde niña. Aquí aprendí hasta a andar en bicicleta.",
+   "lt": "Nuo vaikystės. Čia net išmokau važiuoti dviračiu."
+  },
+  {
+   "kind": "text",
+   "en": "Stop and say hello anytime!",
+   "where": "moments.r_chayo.second.away.lt",
+   "es": "¡Pase a saludar cuando quiera!",
+   "lt": "Užsukite pasisveikinti, kada panorėsite!"
+  },
+  {
+   "kind": "text",
+   "en": "Come into the shade, dear!",
+   "where": "moments.r_chayo.familiar.open.byCast.a[0].lt",
+   "es": "¡Pásele a la sombrita, {m:mijo|f:mija}!",
+   "lt": "Ateikite į pavėsį, vaikeli!"
+  },
+  {
+   "kind": "text",
+   "en": "Are you getting used to the heat yet?",
+   "where": "moments.r_chayo.familiar.open.byCast.a[1].lt",
+   "es": "¿Ya se acostumbró al calor?",
+   "lt": "Ar jau pripratote prie karščio?"
+  },
+  {
+   "kind": "text",
+   "en": "Hi, dear! The plants are all watered.",
+   "where": "moments.r_chayo.familiar.open.byCast.b[0].lt",
+   "es": "¡Hola, {m:mijo|f:mija}! Las plantas ya están regadas.",
+   "lt": "Sveiki, vaikeli! Augalus jau palaisčiau."
+  },
+  {
+   "kind": "text",
+   "en": "I'm still looking for shade.",
+   "where": "moments.r_chayo.familiar.choices[0].say.lt",
+   "es": "Todavía busco sombra.",
+   "lt": "Vis dar ieškau pavėsio."
+  },
+  {
+   "kind": "text",
+   "en": "Then you know the most important thing about the neighborhood.",
+   "where": "moments.r_chayo.familiar.choices[0].reply[0].lt",
+   "es": "Ya sabe lo más importante del barrio.",
+   "lt": "Vadinasi, apie šį rajoną jau žinote svarbiausią dalyką."
+  },
+  {
+   "kind": "text",
+   "en": "Almost. My favorite part is the neighborhood.",
+   "where": "moments.r_chayo.familiar.choices[1].say.lt",
+   "es": "Ya casi. Lo que más me gusta es el barrio.",
+   "lt": "Jau beveik. Labiausiai man patinka šis rajonas."
+  },
+  {
+   "kind": "text",
+   "en": "And the neighborhood's happy to see you around.",
+   "where": "moments.r_chayo.familiar.choices[1].reply[0].lt",
+   "es": "Y al barrio le gusta {m:verlo|f:verla} por aquí.",
+   "lt": "Ir rajonui smagu Jus čia matyti."
+  },
+  {
+   "kind": "text",
+   "en": "Be well!",
+   "where": "moments.r_chayo.familiar.away.lt",
+   "es": "¡Que esté bien!",
+   "lt": "Laikykitės!"
+  },
+  {
+   "kind": "text",
+   "en": "Coconut seller",
+   "where": "moments.r_cocos.cast[0].role",
+   "lt": "Kokosų pardavėjas"
+  },
+  {
+   "kind": "text",
+   "en": "Cold coconuts! Want me to open one for you?",
+   "where": "moments.r_cocos.first.open.byCast.a[0].lt",
+   "es": "¡Cocos fríos! ¿Se lo preparo?",
+   "lt": "Šalti kokosai! Gal Jums vieną atidaryti?"
+  },
+  {
+   "kind": "text",
+   "en": "Ice-cold coconut water! Can I get you a cup?",
+   "where": "moments.r_cocos.first.open.byCast.b[0].lt",
+   "es": "¡Agua de coco bien fría! ¿Le sirvo un vaso?",
+   "lt": "Gerai atšaldytas kokosų vanduo! Gal įpilti Jums puodelį?"
+  },
+  {
+   "kind": "text",
+   "en": "How much do I owe you?",
+   "where": "moments.r_cocos.first.choices[0].say.lt",
+   "es": "¿Cuánto le debo?",
+   "lt": "Kiek Jums {m:skolingas|f:skolinga}?"
+  },
+  {
+   "kind": "text",
+   "en": "It's thirty-five pesos.",
+   "where": "moments.r_cocos.first.choices[0].reply.byCast.a[0].lt",
+   "es": "Son treinta y cinco pesos.",
+   "lt": "Trisdešimt penki pesai."
+  },
+  {
+   "kind": "text",
+   "en": "It's twenty-five pesos.",
+   "where": "moments.r_cocos.first.choices[0].reply.byCast.b[0].lt",
+   "es": "Son veinticinco pesos.",
+   "lt": "Dvidešimt penki pesai."
+  },
+  {
+   "kind": "text",
+   "en": "Yes, please. Nice and cold.",
+   "where": "moments.r_cocos.first.choices[1].say.lt",
+   "es": "Sí, por favor. Bien frío.",
+   "lt": "Taip, prašau. Gerai atšaldytą."
+  },
+  {
+   "kind": "text",
+   "en": "I'll open one up and put a straw in it.",
+   "where": "moments.r_cocos.first.choices[1].reply.byCast.a[0].lt",
+   "es": "Le abro uno y le pongo un popote.",
+   "lt": "Atidarysiu Jums vieną ir įdėsiu šiaudelį."
+  },
+  {
+   "kind": "text",
+   "en": "Sure. Here's your cup of coconut water.",
+   "where": "moments.r_cocos.first.choices[1].reply.byCast.b[0].lt",
+   "es": "Claro. Aquí tiene su vaso de agua de coco.",
+   "lt": "Žinoma. Prašom puodelį kokosų vandens."
+  },
+  {
+   "kind": "text",
+   "en": "Maybe in a bit, thanks.",
+   "where": "moments.r_cocos.first.choices[2].say.lt",
+   "es": "En otro rato, gracias.",
+   "lt": "Gal kiek vėliau, ačiū."
+  },
+  {
+   "kind": "text",
+   "en": "Sure. I'll be here on the beach.",
+   "where": "moments.r_cocos.first.choices[2].reply[0].lt",
+   "es": "Claro. Aquí seguimos en la playa.",
+   "lt": "Žinoma. Būsiu čia, paplūdimyje."
+  },
+  {
+   "kind": "text",
+   "en": "Enjoy the beach!",
+   "where": "moments.r_cocos.first.away.lt",
+   "es": "¡Que disfrute la playa!",
+   "lt": "Smagiai praleiskite laiką paplūdimyje!"
+  },
+  {
+   "kind": "text",
+   "en": "You're back! I'm Don Polo.",
+   "where": "moments.r_cocos.second.open.byCast.a[0].lt",
+   "es": "¡Ya volvió! Soy Don Polo.",
+   "lt": "Sugrįžote! Aš Don Polo."
+  },
+  {
+   "kind": "text",
+   "en": "Today's coconuts turned out nice and sweet.",
+   "where": "moments.r_cocos.second.open.byCast.a[1].lt",
+   "es": "Hoy los cocos salieron bien dulces.",
+   "lt": "Šiandien kokosai pasitaikė labai saldūs."
+  },
+  {
+   "kind": "text",
+   "en": "The coconut water's nice and cold now.",
+   "where": "moments.r_cocos.second.open.byCast.b[1].lt",
+   "es": "El agua de coco ya está bien fría.",
+   "lt": "Kokosų vanduo jau gerai atšalo."
+  },
+  {
+   "kind": "text",
+   "en": "Nice to meet you. Do you add sugar?",
+   "where": "moments.r_cocos.second.choices[0].say.lt",
+   "es": "Mucho gusto. ¿Le pone azúcar?",
+   "lt": "Malonu susipažinti. Dedate cukraus?"
+  },
+  {
+   "kind": "text",
+   "en": "Just the sugar that's already in the coconut.",
+   "where": "moments.r_cocos.second.choices[0].reply[0].lt",
+   "es": "Solo la que trae el coco.",
+   "lt": "Tik tiek, kiek jo yra pačiame kokose."
+  },
+  {
+   "kind": "text",
+   "en": "Can I drink it right here by the water?",
+   "where": "moments.r_cocos.second.choices[1].say.lt",
+   "es": "¿Puedo tomarlo aquí frente al mar?",
+   "lt": "Ar galiu išgerti čia pat prie jūros?"
+  },
+  {
+   "kind": "text",
+   "en": "Of course. It tastes even better with this view.",
+   "where": "moments.r_cocos.second.choices[1].reply[0].lt",
+   "es": "Claro. Con esta vista sabe todavía mejor.",
+   "lt": "Žinoma. Su tokiu vaizdu dar skaniau."
+  },
+  {
+   "kind": "text",
+   "en": "Say hi if you come by again!",
+   "where": "moments.r_cocos.second.away.lt",
+   "es": "¡Me saluda si vuelve a pasar!",
+   "lt": "Jei vėl eisite pro šalį, pasisveikinkite!"
+  },
+  {
+   "kind": "text",
+   "en": "A nice cold one, as usual?",
+   "where": "moments.r_cocos.familiar.open[0].lt",
+   "es": "¿Uno bien frío, como siempre?",
+   "lt": "Kaip visada, vieną gerai atšaldytą?"
+  },
+  {
+   "kind": "text",
+   "en": "The usual, Don Polo.",
+   "where": "moments.r_cocos.familiar.choices[0].say.lt",
+   "es": "Como siempre, Don Polo.",
+   "lt": "Kaip visada, Don Polo."
+  },
+  {
+   "kind": "text",
+   "en": "Sure. Nice and cold for a day like this.",
+   "where": "moments.r_cocos.familiar.choices[0].reply[0].lt",
+   "es": "Claro. Bien frío para este calor.",
+   "lt": "Žinoma. Gerai atšaldytą, kaip tik tokiam karščiui."
+  },
+  {
+   "kind": "text",
+   "en": "Could you get me two today?",
+   "where": "moments.r_cocos.familiar.choices[1].say.lt",
+   "es": "¿Hoy me puede preparar dos?",
+   "lt": "Gal šiandien paruoštumėte du?"
+  },
+  {
+   "kind": "text",
+   "en": "Sure. Two nice cold ones, coming right up.",
+   "where": "moments.r_cocos.familiar.choices[1].reply[0].lt",
+   "es": "Claro. Dos bien fríos, de una vez.",
+   "lt": "Žinoma. Tuoj bus du gerai atšaldyti."
+  },
+  {
+   "kind": "text",
+   "en": "See you around the beach!",
+   "where": "moments.r_cocos.familiar.away.lt",
+   "es": "¡Nos vemos por la playa!",
+   "lt": "Iki pasimatymo paplūdimyje!"
+  },
+  {
+   "kind": "text",
+   "en": "Shoeshiner",
+   "where": "moments.r_bolero.cast[0].role",
+   "lt": "Batų valytojas"
+  },
+  {
+   "kind": "text",
+   "en": "An older man sets a stool beside his shoeshine box.",
+   "where": "moments.r_bolero.first.scene.byCast.a",
+   "lt": "Senyvas vyras prie batų valymo dėžės pastato taburetę."
+  },
+  {
+   "kind": "text",
+   "en": "An older man reads a newspaper beside his shoeshine box.",
+   "where": "moments.r_bolero.first.scene.byCast.b",
+   "lt": "Senyvas vyras skaito laikraštį prie batų valymo dėžės."
+  },
+  {
+   "kind": "text",
+   "en": "Shoe shine? If you're in sneakers or sandals, we can still chat.",
+   "where": "moments.r_bolero.first.open.byCast.a[0].lt",
+   "es": "¿Una boleada? Con tenis o sandalias, también podemos platicar.",
+   "lt": "Gal nublizginti batus? Jei avite sportbačius ar basutes, galime pasišnekučiuoti."
+  },
+  {
+   "kind": "text",
+   "en": "My little stool's free.",
+   "where": "moments.r_bolero.first.open.byCast.a[1].lt",
+   "es": "Tengo el banquito libre.",
+   "lt": "Taburetė laisva."
+  },
+  {
+   "kind": "text",
+   "en": "I read the paper while I wait for customers.",
+   "where": "moments.r_bolero.first.open.byCast.b[1].lt",
+   "es": "Mientras llega alguien, me leo el periódico.",
+   "lt": "Kol kas nors ateis, paskaitau laikraštį."
+  },
+  {
+   "kind": "text",
+   "en": "What's the news today?",
+   "where": "moments.r_bolero.first.choices[0].say.lt",
+   "es": "¿Qué se cuenta hoy?",
+   "lt": "Kokių šiandien naujienų?"
+  },
+  {
+   "kind": "text",
+   "en": "The pigeons beat us to the shade again today.",
+   "where": "moments.r_bolero.first.choices[0].reply[0].lt",
+   "es": "Hoy las palomas volvieron a ganarnos la sombra.",
+   "lt": "Šiandien balandžiai vėl pirmi užėmė pavėsį."
+  },
+  {
+   "kind": "text",
+   "en": "I just stopped to say hello today.",
+   "where": "moments.r_bolero.first.choices[1].say.lt",
+   "es": "Hoy solo vine a saludar.",
+   "lt": "Šiandien tik užsukau pasisveikinti."
+  },
+  {
+   "kind": "text",
+   "en": "Well, a hello is always welcome.",
+   "where": "moments.r_bolero.first.choices[1].reply[0].lt",
+   "es": "Pues los saludos siempre caen bien.",
+   "lt": "Na, pasisveikinti visada malonu."
+  },
+  {
+   "kind": "text",
+   "en": "I'll be here if you feel like chatting!",
+   "where": "moments.r_bolero.first.away.lt",
+   "es": "¡Aquí estaré por si quiere platicar!",
+   "lt": "Būsiu čia, jei norėsite pasišnekučiuoti!"
+  },
+  {
+   "kind": "text",
+   "en": "Hello again! I'm Don Rafa.",
+   "where": "moments.r_bolero.second.open.byCast.a[0].lt",
+   "es": "¡Buenas otra vez! Soy Don Rafa.",
+   "lt": "Vėl sveiki! Aš Don Rafa."
+  },
+  {
+   "kind": "text",
+   "en": "You hear everything from this little stool.",
+   "where": "moments.r_bolero.second.open.byCast.a[1].lt",
+   "es": "Desde este banquito se entera uno de todo.",
+   "lt": "Sėdėdamas ant šitos taburetės viską sužinau."
+  },
+  {
+   "kind": "text",
+   "en": "I learn more sitting here than reading the paper.",
+   "where": "moments.r_bolero.second.open.byCast.b[1].lt",
+   "es": "Me entero de más aquí que leyendo el periódico.",
+   "lt": "Čia sužinau daugiau negu iš laikraščio."
+  },
+  {
+   "kind": "text",
+   "en": "Nice to meet you, Don Rafa. Anything interesting today?",
+   "where": "moments.r_bolero.second.choices[0].say.lt",
+   "es": "Mucho gusto, Don Rafa. ¿Algo interesante hoy?",
+   "lt": "Malonu susipažinti, Don Rafa. Šiandien kas nors įdomaus?"
+  },
+  {
+   "kind": "text",
+   "en": "They say the bandstand's getting new lights.",
+   "where": "moments.r_bolero.second.choices[0].reply[0].lt",
+   "es": "Dicen que el kiosco va a tener luces nuevas.",
+   "lt": "Sako, pavėsinėje bus naujų šviesų."
+  },
+  {
+   "kind": "text",
+   "en": "What a good spot to hear what's going on.",
+   "where": "moments.r_bolero.second.choices[1].say.lt",
+   "es": "Qué buen lugar para enterarse de todo.",
+   "lt": "Puiki vieta visoms naujienoms sužinoti."
+  },
+  {
+   "kind": "text",
+   "en": "Yep. The news comes straight to this little corner.",
+   "where": "moments.r_bolero.second.choices[1].reply[0].lt",
+   "es": "Sí. Las noticias llegan solitas a este rincón.",
+   "lt": "Taip. Naujienos pačios atkeliauja į šį kampelį."
+  },
+  {
+   "kind": "text",
+   "en": "See you around the square!",
+   "where": "moments.r_bolero.second.away.lt",
+   "es": "¡Nos vemos en la plaza!",
+   "lt": "Iki pasimatymo centrinėje aikštėje!"
+  },
+  {
+   "kind": "text",
+   "en": "Hi! They put flowers in front of the church today.",
+   "where": "moments.r_bolero.familiar.open[0].lt",
+   "es": "¡Buenas! Hoy pusieron flores frente a la iglesia.",
+   "lt": "Sveiki! Šiandien prie bažnyčios pastatė gėlių."
+  },
+  {
+   "kind": "text",
+   "en": "That's my favorite news of the day.",
+   "where": "moments.r_bolero.familiar.open[1].lt",
+   "es": "Es mi noticia favorita del día.",
+   "lt": "Iš visų šiandienos naujienų ši man labiausiai patinka."
+  },
+  {
+   "kind": "text",
+   "en": "How lovely! That brightens up the whole square.",
+   "where": "moments.r_bolero.familiar.choices[0].say.lt",
+   "es": "¡Qué bonito! Alegra toda la plaza.",
+   "lt": "Kaip gražu! Visa aikštė nuo jų linksmesnė."
+  },
+  {
+   "kind": "text",
+   "en": "That's what I thought. I even started whistling.",
+   "where": "moments.r_bolero.familiar.choices[0].reply[0].lt",
+   "es": "Eso pensé. Hasta me puse a silbar.",
+   "lt": "Ir aš taip pagalvojau. Net ėmiau švilpauti."
+  },
+  {
+   "kind": "text",
+   "en": "You always have good news, Don Rafa.",
+   "where": "moments.r_bolero.familiar.choices[1].say.lt",
+   "es": "Siempre tiene usted buenas noticias, Don Rafa.",
+   "lt": "Jūs visada turite gerų naujienų, Don Rafa."
+  },
+  {
+   "kind": "text",
+   "en": "Today I do. Those flowers deserve the front page.",
+   "where": "moments.r_bolero.familiar.choices[1].reply[0].lt",
+   "es": "Hoy sí. Las flores se ganaron la primera página.",
+   "lt": "Šiandien tikrai. Tos gėlės vertos pirmojo puslapio."
+  },
+  {
+   "kind": "text",
+   "en": "Have a nice afternoon!",
+   "where": "moments.r_bolero.familiar.away.lt",
+   "es": "¡Que tenga buena tarde!",
+   "lt": "Gražios popietės!"
+  },
+  {
+   "kind": "text",
+   "en": "Passer-by",
+   "where": "moments.i_dropped.cast[0].role",
+   "lt": "{nm:Praeivis|nf:Praeivė}"
+  },
+  {
+   "kind": "text",
+   "en": "Older lady",
+   "where": "moments.i_dropped.cast[2].role",
+   "lt": "Senyva ponia"
+  },
+  {
+   "kind": "text",
+   "en": "A man dropped his wallet and didn't notice.",
+   "where": "moments.i_dropped.first.scene.byCast.a",
+   "lt": "Vyrui iškrito piniginė, o jis nė nepastebėjo."
+  },
+  {
+   "kind": "text",
+   "en": "A woman dropped her keys and didn't notice.",
+   "where": "moments.i_dropped.first.scene.byCast.b",
+   "lt": "Moteriai iškrito raktai, o ji nė nepastebėjo."
+  },
+  {
+   "kind": "text",
+   "en": "An older lady dropped her sunglasses and didn't notice.",
+   "where": "moments.i_dropped.first.scene.byCast.c",
+   "lt": "Senyvai poniai iškrito akiniai nuo saulės, o ji nė nepastebėjo."
+  },
+  {
+   "kind": "text",
+   "en": "Excuse me! You dropped something!",
+   "where": "moments.i_dropped.first.choices[0].say.lt",
+   "es": "¡Disculpe! ¡Se le cayó algo!",
+   "lt": "Atsiprašau! Jums kai kas iškrito!"
+  },
+  {
+   "kind": "text",
+   "en": "Hey! Is this your wallet?",
+   "where": "moments.i_dropped.first.choices[1].say.byCast.a.lt",
+   "es": "¡Oiga! ¿Es su cartera?",
+   "lt": "Atsiprašau, ar čia Jūsų piniginė?"
+  },
+  {
+   "kind": "text",
+   "en": "Hey! Are these your keys?",
+   "where": "moments.i_dropped.first.choices[1].say.byCast.b.lt",
+   "es": "¡Oiga! ¿Son sus llaves?",
+   "lt": "Atsiprašau, ar čia Jūsų raktai?"
+  },
+  {
+   "kind": "text",
+   "en": "Ma'am! Are these your sunglasses?",
+   "where": "moments.i_dropped.first.choices[1].say.byCast.c.lt",
+   "es": "¡Señora! ¿Son sus lentes?",
+   "lt": "Ponia, ar čia Jūsų akiniai nuo saulės?"
+  },
+  {
+   "kind": "text",
+   "en": "Oh, my wallet! Thank you so much!",
+   "where": "moments.i_dropped.first.reply.byCast.a[0].lt",
+   "es": "¡Ay, mi cartera! ¡Muchísimas gracias!",
+   "lt": "Oi, mano piniginė! Labai Jums ačiū!"
+  },
+  {
+   "kind": "text",
+   "en": "You saved my day.",
+   "where": "moments.i_dropped.first.reply.byCast.a[1].lt",
+   "es": "Me salvó el día.",
+   "lt": "Jūs mane išgelbėjote!"
+  },
+  {
+   "kind": "text",
+   "en": "My keys! I can't get into my house without them.",
+   "where": "moments.i_dropped.first.reply.byCast.b[0].lt",
+   "es": "¡Mis llaves! Sin ellas no entro a mi casa.",
+   "lt": "Mano raktai! Be jų nepatekčiau namo."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks a million!",
+   "where": "moments.i_dropped.first.reply.byCast.b[1].lt",
+   "es": "¡Mil gracias!",
+   "lt": "Labai labai ačiū!"
+  },
+  {
+   "kind": "text",
+   "en": "Oh, my sunglasses! Thank you, dear.",
+   "where": "moments.i_dropped.first.reply.byCast.c[0].lt",
+   "es": "¡Ay, mis lentes! Gracias, {m:joven|f:señorita}.",
+   "lt": "Oi, mano akiniai nuo saulės! Ačiū, {m:jaunuoli|f:panele}."
+  },
+  {
+   "kind": "text",
+   "en": "I can't see a thing in this sun without them.",
+   "where": "moments.i_dropped.first.reply.byCast.c[1].lt",
+   "es": "Sin ellos no veo nada con este sol.",
+   "lt": "Be jų tokioje saulėje nieko nematau."
+  },
+  {
+   "kind": "text",
+   "en": "You're welcome!",
+   "where": "moments.i_dropped.first.then.choices[0].say.lt",
+   "es": "¡De nada!",
+   "lt": "Nėra už ką!"
+  },
+  {
+   "kind": "text",
+   "en": "Have a good day!",
+   "where": "moments.i_dropped.first.then.choices[1].say.lt",
+   "es": "¡Que le vaya bien!",
+   "lt": "Geros dienos!"
+  },
+  {
+   "kind": "text",
+   "en": "You too! Thanks again!",
+   "where": "moments.i_dropped.first.then.reply[0].lt",
+   "es": "¡Igualmente! ¡Gracias otra vez!",
+   "lt": "Ir Jums! Dar kartą ačiū!"
+  },
+  {
+   "kind": "text",
+   "en": "You dropped your wallet!",
+   "where": "moments.i_dropped.first.card.byCast.a.lt",
+   "es": "¡Se le cayó la cartera!",
+   "lt": "Jums iškrito piniginė!"
+  },
+  {
+   "kind": "text",
+   "en": "You dropped your keys!",
+   "where": "moments.i_dropped.first.card.byCast.b.lt",
+   "es": "¡Se le cayeron las llaves!",
+   "lt": "Jums iškrito raktai!"
+  },
+  {
+   "kind": "text",
+   "en": "You dropped your sunglasses!",
+   "where": "moments.i_dropped.first.card.byCast.c.lt",
+   "es": "¡Se le cayeron los lentes!",
+   "lt": "Jums iškrito akiniai nuo saulės!"
+  },
+  {
+   "kind": "text",
+   "en": "The same man's wallet slips out of his pocket again.",
+   "where": "moments.i_dropped.second.scene.byCast.a",
+   "lt": "Tam pačiam vyrui iš kišenės vėl išslysta piniginė."
+  },
+  {
+   "kind": "text",
+   "en": "The same woman's keys fall to the ground again.",
+   "where": "moments.i_dropped.second.scene.byCast.b",
+   "lt": "Tai pačiai moteriai vėl ant žemės nukrenta raktai."
+  },
+  {
+   "kind": "text",
+   "en": "The older lady's sunglasses slip to the ground again.",
+   "where": "moments.i_dropped.second.scene.byCast.c",
+   "lt": "Senyvai poniai vėl ant žemės nukrenta akiniai nuo saulės."
+  },
+  {
+   "kind": "text",
+   "en": "Excuse me! You dropped something again!",
+   "where": "moments.i_dropped.second.choices[0].say.lt",
+   "es": "¡Disculpe! ¡Se le cayó algo otra vez!",
+   "lt": "Atsiprašau! Jums vėl kai kas iškrito!"
+  },
+  {
+   "kind": "text",
+   "en": "Hey! Here's your wallet.",
+   "where": "moments.i_dropped.second.choices[1].say.byCast.a.lt",
+   "es": "¡Oiga! Aquí tiene su cartera.",
+   "lt": "Atsiprašau! Štai Jūsų piniginė."
+  },
+  {
+   "kind": "text",
+   "en": "Hey! Here are your keys.",
+   "where": "moments.i_dropped.second.choices[1].say.byCast.b.lt",
+   "es": "¡Oiga! Aquí tiene sus llaves.",
+   "lt": "Atsiprašau! Štai Jūsų raktai."
+  },
+  {
+   "kind": "text",
+   "en": "Ma'am! Here are your sunglasses.",
+   "where": "moments.i_dropped.second.choices[1].say.byCast.c.lt",
+   "es": "¡Señora! Aquí tiene sus lentes de sol.",
+   "lt": "Ponia, štai Jūsų akiniai nuo saulės."
+  },
+  {
+   "kind": "text",
+   "en": "You again? That's twice you've saved me!",
+   "where": "moments.i_dropped.second.reply.byCast.a[0].lt",
+   "es": "¿Otra vez usted? ¡Ya me salvó dos veces!",
+   "lt": "Vėl Jūs? Jau dukart mane išgelbėjote!"
+  },
+  {
+   "kind": "text",
+   "en": "I think my pocket has a secret door.",
+   "where": "moments.i_dropped.second.reply.byCast.a[1].lt",
+   "es": "Creo que mi bolsillo tiene una puerta secreta.",
+   "lt": "Matyt, mano kišenėje yra slaptos durys."
+  },
+  {
+   "kind": "text",
+   "en": "It's you! You've saved me twice now.",
+   "where": "moments.i_dropped.second.reply.byCast.b[0].lt",
+   "es": "¡Es usted! Ya van dos veces que me salva.",
+   "lt": "Tai Jūs! Jau antrą kartą mane išgelbėjote."
+  },
+  {
+   "kind": "text",
+   "en": "At this rate I'll be climbing in through a window.",
+   "where": "moments.i_dropped.second.reply.byCast.b[1].lt",
+   "es": "Si sigo así, entro por la ventana.",
+   "lt": "Jei taip ir toliau, teks lipti pro langą."
+  },
+  {
+   "kind": "text",
+   "en": "Oh! You've saved me again, dear!",
+   "where": "moments.i_dropped.second.reply.byCast.c[0].lt",
+   "es": "¡Ay, {m:joven|f:señorita}! ¡Me volvió a salvar!",
+   "lt": "Oi, {m:jaunuoli|f:panele}! Vėl mane išgelbėjote!"
+  },
+  {
+   "kind": "text",
+   "en": "I ought to put these on a leash.",
+   "where": "moments.i_dropped.second.reply.byCast.c[1].lt",
+   "es": "Les voy a poner correa, como a los perros.",
+   "lt": "Uždėsiu akiniams pavadėlį kaip šuniui."
+  },
+  {
+   "kind": "text",
+   "en": "Oh, it's you! My wallet's tucked away today.",
+   "where": "moments.i_dropped.familiar.open.byCast.a[0].lt",
+   "es": "¡Ah, es usted! Hoy mi cartera va bien guardada.",
+   "lt": "O, tai Jūs! Šiandien piniginė saugiai kišenėje."
+  },
+  {
+   "kind": "text",
+   "en": "I check for it every time I cross the street.",
+   "where": "moments.i_dropped.familiar.open.byCast.a[1].lt",
+   "es": "La reviso cada vez que cruzo la calle.",
+   "lt": "Kaskart eidamas per gatvę patikrinu, ar ji vietoje."
+  },
+  {
+   "kind": "text",
+   "en": "Hi again! I've got my keys in my hand today.",
+   "where": "moments.i_dropped.familiar.open.byCast.b[0].lt",
+   "es": "¡Hola otra vez! Hoy traigo las llaves en la mano.",
+   "lt": "Vėl sveiki! Šiandien raktus laikau rankoje."
+  },
+  {
+   "kind": "text",
+   "en": "I won't even let go to wave.",
+   "where": "moments.i_dropped.familiar.open.byCast.b[1].lt",
+   "es": "Ni para saludar las suelto.",
+   "lt": "Net sveikindamasi jų nepaleidžiu."
+  },
+  {
+   "kind": "text",
+   "en": "Hello! I've got my sunglasses today.",
+   "where": "moments.i_dropped.familiar.open.byCast.c[0].lt",
+   "es": "¡Hola! Hoy sí traigo mis lentes de sol.",
+   "lt": "Sveiki! Šiandien akinius nuo saulės tikrai turiu."
+  },
+  {
+   "kind": "text",
+   "en": "I even put them on a cord.",
+   "where": "moments.i_dropped.familiar.open.byCast.c[1].lt",
+   "es": "Ya hasta les puse un cordón.",
+   "lt": "Net virvelę pritaisiau."
+  },
+  {
+   "kind": "text",
+   "en": "Good idea!",
+   "where": "moments.i_dropped.familiar.choices[0].say.lt",
+   "es": "¡Qué buena idea!",
+   "lt": "Gera mintis!"
+  },
+  {
+   "kind": "text",
+   "en": "Lesson learned. Thanks again!",
+   "where": "moments.i_dropped.familiar.choices[0].reply[0].lt",
+   "es": "Ya aprendí la lección. ¡Gracias otra vez!",
+   "lt": "Pasimokiau. Dar kartą ačiū!"
+  },
+  {
+   "kind": "text",
+   "en": "It's good to see you again.",
+   "where": "moments.i_dropped.familiar.choices[1].say.lt",
+   "es": "Me da gusto volver a {nm:verlo|nf:verla}.",
+   "lt": "Smagu vėl Jus matyti."
+  },
+  {
+   "kind": "text",
+   "en": "You too! And thanks for the heads-up!",
+   "where": "moments.i_dropped.familiar.choices[1].reply[0].lt",
+   "es": "A mí también. ¡Y gracias por avisarme!",
+   "lt": "Ir man. Ačiū, kad tada perspėjote!"
+  },
+  {
+   "kind": "text",
+   "en": "Hi! Out for a walk?",
+   "where": "moments.i_dropped.familiar.choices[2].say.lt",
+   "es": "¡Hola! ¿Va de paseo?",
+   "lt": "Sveiki! Išėjote pasivaikščioti?"
+  },
+  {
+   "kind": "text",
+   "en": "Just taking a little walk. See you!",
+   "where": "moments.i_dropped.familiar.choices[2].reply[0].lt",
+   "es": "Sí, a dar una vuelta. ¡Hasta luego!",
+   "lt": "Taip, trumpam išėjau pasivaikščioti. Iki!"
+  },
+  {
+   "kind": "text",
+   "en": "Tourist",
+   "where": "moments.i_tourist.cast[0].role",
+   "lt": "{nm:Turistas|nf:Turistė}"
+  },
+  {
+   "kind": "text",
+   "en": "A man studies an unfolded map.",
+   "where": "moments.i_tourist.first.scene.byCast.a",
+   "lt": "Vyras įdėmiai žiūri į išskleistą žemėlapį."
+  },
+  {
+   "kind": "text",
+   "en": "A young woman keeps checking her phone.",
+   "where": "moments.i_tourist.first.scene.byCast.b",
+   "lt": "Jauna moteris vis žvilgčioja į telefoną."
+  },
+  {
+   "kind": "text",
+   "en": "An older man looks up from his guidebook.",
+   "where": "moments.i_tourist.first.scene.byCast.c",
+   "lt": "Senyvas vyras pakelia akis nuo kelionių vadovo."
+  },
+  {
+   "kind": "text",
+   "en": "Excuse me, can you help? I'm looking for the cenote.",
+   "where": "moments.i_tourist.first.open.byCast.a[0].lt",
+   "es": "Disculpe, ¿me ayuda? Busco el cenote.",
+   "lt": "Atsiprašau, gal padėsite? Ieškau cenotės."
+  },
+  {
+   "kind": "text",
+   "en": "Excuse me, my phone's about to die.",
+   "where": "moments.i_tourist.first.open.byCast.b[0].lt",
+   "es": "Disculpe, a mi celular casi no le queda batería.",
+   "lt": "Atsiprašau, mano telefonas tuoj išsikraus."
+  },
+  {
+   "kind": "text",
+   "en": "Do you know where the Mar Azul Hotel is?",
+   "where": "moments.i_tourist.first.open.byCast.b[1].lt",
+   "es": "¿Sabe dónde está el Hotel Mar Azul?",
+   "lt": "Gal žinote, kur viešbutis „Mar Azul“?"
+  },
+  {
+   "kind": "text",
+   "en": "My guidebook mentions the Maya Coast Museum.",
+   "where": "moments.i_tourist.first.open.byCast.c[0].lt",
+   "es": "Mi guía habla del Museo de la Costa Maya.",
+   "lt": "Kelionių vadove rašoma apie Majų pakrantės muziejų."
+  },
+  {
+   "kind": "text",
+   "en": "Do you know where it is?",
+   "where": "moments.i_tourist.first.open.byCast.c[1].lt",
+   "es": "¿Sabe dónde queda?",
+   "lt": "Ar žinote, kur jis?"
+  },
+  {
+   "kind": "text",
+   "en": "You could ask at the visitor center.",
+   "where": "moments.i_tourist.first.choices[0].say.byCast.a.lt",
+   "es": "Puede preguntar en Información Turística.",
+   "lt": "Galite paklausti turizmo informacijos centre."
+  },
+  {
+   "kind": "text",
+   "en": "Someone at La Ceiba Café might know.",
+   "where": "moments.i_tourist.first.choices[1].say.lt",
+   "es": "A lo mejor saben en Café La Ceiba.",
+   "lt": "Gal kavinėje „La Ceiba“ kas nors žinos."
+  },
+  {
+   "kind": "text",
+   "en": "Sorry, I'm new here too.",
+   "where": "moments.i_tourist.first.choices[2].say.lt",
+   "es": "Lo siento, yo también soy {m:nuevo|f:nueva} aquí.",
+   "lt": "Atsiprašau, aš irgi čia {m:naujas|f:nauja}."
+  },
+  {
+   "kind": "text",
+   "en": "No problem. I'll ask around.",
+   "where": "moments.i_tourist.first.choices[2].reply[0].lt",
+   "es": "No se preocupe. Pregunto por aquí.",
+   "lt": "Nieko tokio. Dar ko nors paklausiu."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks. I don't want to leave without seeing the cenote.",
+   "where": "moments.i_tourist.first.reply.byCast.a[0].lt",
+   "es": "Gracias. No quiero irme sin conocer el cenote.",
+   "lt": "Ačiū. Noriu pamatyti cenotę prieš išvykdamas."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks! Let's see if I get there before my phone dies.",
+   "where": "moments.i_tourist.first.reply.byCast.b[0].lt",
+   "es": "¡Gracias! A ver si llego antes de que se apague.",
+   "lt": "Ačiū! Gal dar spėsiu, kol telefonas neišsikraus."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks so much. That museum is first on my list.",
+   "where": "moments.i_tourist.first.reply.byCast.c[0].lt",
+   "es": "Muchas gracias. Ese museo es el primero de mi lista.",
+   "lt": "Labai ačiū. Pirmiausia noriu aplankyti tą muziejų."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks anyway!",
+   "where": "moments.i_tourist.first.away.lt",
+   "es": "¡Gracias de todos modos!",
+   "lt": "Vis tiek ačiū!"
+  },
+  {
+   "kind": "text",
+   "en": "It's you again! Now I'm looking for the ruins.",
+   "where": "moments.i_tourist.second.open.byCast.a[0].lt",
+   "es": "¡Otra vez usted! Ahora ando buscando las ruinas.",
+   "lt": "Vėl Jūs! Dabar ieškau griuvėsių."
+  },
+  {
+   "kind": "text",
+   "en": "I think I'm holding my map upside down.",
+   "where": "moments.i_tourist.second.open.byCast.a[1].lt",
+   "es": "Creo que tengo el mapa al revés.",
+   "lt": "Regis, žemėlapį laikau aukštyn kojomis."
+  },
+  {
+   "kind": "text",
+   "en": "Hi! Now my phone really is dead.",
+   "where": "moments.i_tourist.second.open.byCast.b[0].lt",
+   "es": "¡Hola! Ahora sí se me apagó el celular.",
+   "lt": "Sveiki! Dabar telefonas jau visai išsikrovė."
+  },
+  {
+   "kind": "text",
+   "en": "Do you know where the post office is?",
+   "where": "moments.i_tourist.second.open.byCast.b[1].lt",
+   "es": "¿Sabe dónde está la Oficina de Correos?",
+   "lt": "Gal žinote, kur paštas?"
+  },
+  {
+   "kind": "text",
+   "en": "We meet again! I'm looking for the church in the square.",
+   "where": "moments.i_tourist.second.open.byCast.c[0].lt",
+   "es": "¡Nos volvemos a encontrar! Busco la iglesia del zócalo.",
+   "lt": "Vėl susitinkame! Ieškau bažnyčios centrinėje aikštėje."
+  },
+  {
+   "kind": "text",
+   "en": "All my guidebook gives me is a picture.",
+   "where": "moments.i_tourist.second.open.byCast.c[1].lt",
+   "es": "Mi guía solo trae una foto.",
+   "lt": "Kelionių vadove radau tik nuotrauką."
+  },
+  {
+   "kind": "text",
+   "en": "The visitor center is a good place to ask.",
+   "where": "moments.i_tourist.second.choices[0].say.lt",
+   "es": "Lo mejor es preguntar en Información Turística.",
+   "lt": "Geriausia paklausti turizmo informacijos centre."
+  },
+  {
+   "kind": "text",
+   "en": "Someone at the market might know.",
+   "where": "moments.i_tourist.second.choices[1].say.lt",
+   "es": "En el mercado quizá sepan.",
+   "lt": "Gal turguje kas nors žinos."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks! I get lost without a map. With one, too!",
+   "where": "moments.i_tourist.second.reply.byCast.a[0].lt",
+   "es": "¡Gracias! Sin mapa me pierdo. ¡Y con mapa también!",
+   "lt": "Ačiū! Be žemėlapio pasiklystu. Ir su žemėlapiu pasiklystu!"
+  },
+  {
+   "kind": "text",
+   "en": "Thanks! I'm starting to miss paper maps.",
+   "where": "moments.i_tourist.second.reply.byCast.b[0].lt",
+   "es": "¡Gracias! Ya extraño los mapas de papel.",
+   "lt": "Ačiū! Jau pasiilgau popierinių žemėlapių."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks. My guidebook is better as a paperweight.",
+   "where": "moments.i_tourist.second.reply.byCast.c[0].lt",
+   "es": "Gracias. Mi guía pesa más de lo que ayuda.",
+   "lt": "Ačiū. Mano kelionių vadovas daugiau sveria, negu padeda."
+  },
+  {
+   "kind": "text",
+   "en": "Well, I'll keep looking. See you!",
+   "where": "moments.i_tourist.second.away.lt",
+   "es": "Bueno, sigo buscando. ¡Hasta luego!",
+   "lt": "Na, ieškosiu toliau. Iki pasimatymo!"
+  },
+  {
+   "kind": "text",
+   "en": "Hi! I got to see the cenote and the ruins.",
+   "where": "moments.i_tourist.familiar.open.byCast.a[0].lt",
+   "es": "¡Hola! Ya conocí el cenote y las ruinas.",
+   "lt": "Sveiki! Jau aplankiau cenotę ir griuvėsius."
+  },
+  {
+   "kind": "text",
+   "en": "Hi! I found the hotel and the post office.",
+   "where": "moments.i_tourist.familiar.open.byCast.b[0].lt",
+   "es": "¡Hola! Encontré el hotel y la Oficina de Correos.",
+   "lt": "Sveiki! Radau viešbutį ir paštą."
+  },
+  {
+   "kind": "text",
+   "en": "Good to see you! I found the museum and the church.",
+   "where": "moments.i_tourist.familiar.open.byCast.c[0].lt",
+   "es": "¡Qué gusto {m:verlo|f:verla}! Encontré el museo y la iglesia.",
+   "lt": "Smagu Jus matyti! Radau muziejų ir bažnyčią."
+  },
+  {
+   "kind": "text",
+   "en": "That's great! What was the best part?",
+   "where": "moments.i_tourist.familiar.choices[0].say.lt",
+   "es": "¡Qué bien! ¿Qué fue lo mejor?",
+   "lt": "Kaip smagu! Kas labiausiai patiko?"
+  },
+  {
+   "kind": "text",
+   "en": "The water in the cenote. I'd never seen that color before!",
+   "where": "moments.i_tourist.familiar.choices[0].reply.byCast.a[0].lt",
+   "es": "El agua del cenote. ¡Nunca había visto ese color!",
+   "lt": "Cenotės vanduo. Tokios spalvos dar nebuvau matęs!"
+  },
+  {
+   "kind": "text",
+   "en": "The outlet at the hotel. My phone came back to life!",
+   "where": "moments.i_tourist.familiar.choices[0].reply.byCast.b[0].lt",
+   "es": "El enchufe del hotel. ¡Mi celular volvió a la vida!",
+   "lt": "Viešbučio elektros lizdas. Mano telefonas atgijo!"
+  },
+  {
+   "kind": "text",
+   "en": "The museum. I spent the whole morning there.",
+   "where": "moments.i_tourist.familiar.choices[0].reply.byCast.c[0].lt",
+   "es": "El museo. Pasé toda la mañana ahí.",
+   "lt": "Muziejus. Ten praleidau visą rytą."
+  },
+  {
+   "kind": "text",
+   "en": "Enjoy the rest of your trip!",
+   "where": "moments.i_tourist.familiar.choices[1].say.lt",
+   "es": "¡Que siga disfrutando del viaje!",
+   "lt": "Gražios likusios kelionės!"
+  },
+  {
+   "kind": "text",
+   "en": "Thank you! See you around town!",
+   "where": "moments.i_tourist.familiar.choices[1].reply[0].lt",
+   "es": "Muchas gracias. ¡Nos vemos por el pueblo!",
+   "lt": "Labai ačiū! Pasimatysime miestelyje!"
+  },
+  {
+   "kind": "text",
+   "en": "See you later!",
+   "where": "moments.i_tourist.familiar.away.lt",
+   "es": "¡Hasta luego!",
+   "lt": "Iki pasimatymo!"
+  },
+  {
+   "kind": "text",
+   "en": "Shopper",
+   "where": "moments.i_spill.cast[0].role",
+   "lt": "{nm:Pirkėjas|nf:Pirkėja}"
+  },
+  {
+   "kind": "text",
+   "en": "Mangoes roll out of a woman's torn shopping bag.",
+   "where": "moments.i_spill.first.scene.byCast.a",
+   "lt": "Iš praplyšusio moters pirkinių maišelio išrieda mangai."
+  },
+  {
+   "kind": "text",
+   "en": "Oranges roll out of an older man's torn shopping bag.",
+   "where": "moments.i_spill.first.scene.byCast.b",
+   "lt": "Iš praplyšusio senyvo vyro pirkinių maišelio išrieda apelsinai."
+  },
+  {
+   "kind": "text",
+   "en": "Limes roll out of a young woman's torn shopping bag.",
+   "where": "moments.i_spill.first.scene.byCast.c",
+   "lt": "Iš praplyšusio jaunos moters pirkinių maišelio išrieda laimai."
+  },
+  {
+   "kind": "text",
+   "en": "Oh no, my mangoes! Can you help me pick them up?",
+   "where": "moments.i_spill.first.open.byCast.a[0].lt",
+   "es": "¡Ay, mis mangos! ¿Me ayuda a recogerlos?",
+   "lt": "Oi, mano mangai! Padėsite surinkti?"
+  },
+  {
+   "kind": "text",
+   "en": "My oranges! Can you help me pick them up?",
+   "where": "moments.i_spill.first.open.byCast.b[0].lt",
+   "es": "¡Mis naranjas! ¿Me ayuda a recogerlas?",
+   "lt": "Mano apelsinai! Padėsite surinkti?"
+  },
+  {
+   "kind": "text",
+   "en": "Oh no, my limes! Can you help me pick them up?",
+   "where": "moments.i_spill.first.open.byCast.c[0].lt",
+   "es": "¡Ay, mis limones! ¿Me ayuda a recogerlos?",
+   "lt": "Oi, mano laimai! Padėsite surinkti?"
+  },
+  {
+   "kind": "text",
+   "en": "Of course! I'll help you.",
+   "where": "moments.i_spill.first.choices[0].say.byCast.a.lt",
+   "es": "¡Claro! Yo le ayudo.",
+   "lt": "Žinoma! Aš Jums padėsiu."
+  },
+  {
+   "kind": "text",
+   "en": "I found some more over here!",
+   "where": "moments.i_spill.first.choices[1].say.lt",
+   "es": "¡Ya encontré más por acá!",
+   "lt": "Va, čia dar radau!"
+  },
+  {
+   "kind": "text",
+   "en": "Sorry, I'm in a hurry.",
+   "where": "moments.i_spill.first.choices[2].say.lt",
+   "es": "Lo siento, tengo prisa.",
+   "lt": "Atsiprašau, skubu."
+  },
+  {
+   "kind": "text",
+   "en": "No worries. I'll manage.",
+   "where": "moments.i_spill.first.choices[2].reply[0].lt",
+   "es": "No pasa nada. Ya me las arreglo.",
+   "lt": "Nieko tokio. Aš čia susitvarkysiu."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks! I've been craving mangoes with chili.",
+   "where": "moments.i_spill.first.reply.byCast.a[0].lt",
+   "es": "¡Gracias! Ya se me antojaban con chile.",
+   "lt": "Ačiū! Kaip tik norėjau mangų su čili."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks so much! Those oranges can really roll!",
+   "where": "moments.i_spill.first.reply.byCast.b[0].lt",
+   "es": "¡Muchas gracias! ¡Cómo ruedan estas naranjas!",
+   "lt": "Labai ačiū! Na ir rieda tie apelsinai!"
+  },
+  {
+   "kind": "text",
+   "en": "Thanks! I'm making limeade with them.",
+   "where": "moments.i_spill.first.reply.byCast.c[0].lt",
+   "es": "¡Gracias! Son para hacer agua de limón.",
+   "lt": "Ačiū! Iš jų darysiu laimų limonadą."
+  },
+  {
+   "kind": "text",
+   "en": "It's okay, I've got it.",
+   "where": "moments.i_spill.first.away.lt",
+   "es": "Bueno, yo me encargo.",
+   "lt": "Nieko tokio, susirinksiu {nm:pats|nf:pati}."
+  },
+  {
+   "kind": "text",
+   "en": "Can you help me pick up the fruit?",
+   "where": "moments.i_spill.first.card.byCast.a.lt",
+   "es": "¿Me ayuda a recoger la fruta?",
+   "lt": "Padėsite surinkti vaisius?"
+  },
+  {
+   "kind": "text",
+   "en": "The same woman's bag splits again, sending mangoes rolling.",
+   "where": "moments.i_spill.second.scene.byCast.a",
+   "lt": "Tai pačiai moteriai vėl plyšta maišelis ir išrieda mangai."
+  },
+  {
+   "kind": "text",
+   "en": "The older man's bag splits again, and oranges roll out.",
+   "where": "moments.i_spill.second.scene.byCast.b",
+   "lt": "Senyvam vyrui vėl plyšta maišelis ir išrieda apelsinai."
+  },
+  {
+   "kind": "text",
+   "en": "The young woman's bag splits again, and limes scatter.",
+   "where": "moments.i_spill.second.scene.byCast.c",
+   "lt": "Jaunai moteriai vėl plyšta maišelis ir pabirsta laimai."
+  },
+  {
+   "kind": "text",
+   "en": "Oh, come on! Again?",
+   "where": "moments.i_spill.second.open[0].lt",
+   "es": "¡No puede ser! ¡Otra vez!",
+   "lt": "Negali būti! Vėl!"
+  },
+  {
+   "kind": "text",
+   "en": "I've got the fruit! A cloth bag holds up better.",
+   "where": "moments.i_spill.second.choices[0].say.lt",
+   "es": "¡Ya junté la fruta! Una bolsa de tela aguanta más.",
+   "lt": "Vaisius jau surinkau! Medžiaginis maišelis tvirtesnis."
+  },
+  {
+   "kind": "text",
+   "en": "I'll get the fruit on this side.",
+   "where": "moments.i_spill.second.choices[1].say.lt",
+   "es": "Yo recojo la fruta de este lado.",
+   "lt": "Aš surinksiu vaisius šitoje pusėje."
+  },
+  {
+   "kind": "text",
+   "en": "Oh, it's you! Thanks for helping!",
+   "where": "moments.i_spill.second.reply.byCast.a[0].lt",
+   "es": "¡Ah, es usted! ¡Gracias por ayudarme!",
+   "lt": "O, tai Jūs! Ačiū, kad padėjote!"
+  },
+  {
+   "kind": "text",
+   "en": "My mangoes are always making a run for it.",
+   "where": "moments.i_spill.second.reply.byCast.a[1].lt",
+   "es": "Mis mangos siempre salen corriendo.",
+   "lt": "Mano mangai vis bando pabėgti."
+  },
+  {
+   "kind": "text",
+   "en": "We meet again! Thanks so much!",
+   "where": "moments.i_spill.second.reply.byCast.b[0].lt",
+   "es": "¡Nos volvemos a encontrar! ¡Muchas gracias!",
+   "lt": "Štai ir vėl susitinkame! Labai ačiū!"
+  },
+  {
+   "kind": "text",
+   "en": "I'm going to have to buy square oranges.",
+   "where": "moments.i_spill.second.reply.byCast.b[1].lt",
+   "es": "Voy a tener que comprar naranjas cuadradas.",
+   "lt": "Teks pirkti kvadratinius apelsinus."
+  },
+  {
+   "kind": "text",
+   "en": "You again! Am I glad to see you!",
+   "where": "moments.i_spill.second.reply.byCast.c[0].lt",
+   "es": "¡Otra vez por aquí! ¡Menos mal!",
+   "lt": "O, vėl Jūs! Kaip gerai, kad ėjote pro šalį!"
+  },
+  {
+   "kind": "text",
+   "en": "My limes can outrun me.",
+   "where": "moments.i_spill.second.reply.byCast.c[1].lt",
+   "es": "Mis limones ruedan más rápido que yo.",
+   "lt": "Mano laimai rieda greičiau, nei aš bėgu."
+  },
+  {
+   "kind": "text",
+   "en": "Hi! I'm carrying my fruit in a cloth bag now.",
+   "where": "moments.i_spill.familiar.open[0].lt",
+   "es": "¡Buenas! Ahora llevo la fruta en bolsa de tela.",
+   "lt": "Sveiki! Dabar vaisius nešuosi medžiaginiame maišelyje."
+  },
+  {
+   "kind": "text",
+   "en": "The market has some good fruit today.",
+   "where": "moments.i_spill.familiar.open[1].lt",
+   "es": "Hoy hay buena fruta en el mercado.",
+   "lt": "Šiandien turguje yra skanių vaisių."
+  },
+  {
+   "kind": "text",
+   "en": "Oh, nice! What's good today?",
+   "where": "moments.i_spill.familiar.choices[0].say.lt",
+   "es": "¡Qué bien! ¿Qué hay de bueno?",
+   "lt": "O, puiku! Ko verta paragauti?"
+  },
+  {
+   "kind": "text",
+   "en": "The mangoes are incredibly sweet.",
+   "where": "moments.i_spill.familiar.choices[0].reply.byCast.a[0].lt",
+   "es": "Los mangos están dulcísimos.",
+   "lt": "Mangai be galo saldūs."
+  },
+  {
+   "kind": "text",
+   "en": "The oranges turned out really sweet.",
+   "where": "moments.i_spill.familiar.choices[0].reply.byCast.b[0].lt",
+   "es": "Las naranjas salieron muy dulces.",
+   "lt": "Apelsinai šįkart labai saldūs."
+  },
+  {
+   "kind": "text",
+   "en": "The limes are nice and juicy.",
+   "where": "moments.i_spill.familiar.choices[0].reply.byCast.c[0].lt",
+   "es": "Los limones están bien jugosos.",
+   "lt": "Laimai labai sultingi."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks for the tip. I'll stop by.",
+   "where": "moments.i_spill.familiar.choices[1].say.lt",
+   "es": "Gracias por el dato. Me doy una vuelta.",
+   "lt": "Ačiū, kad pasakėte. Užsuksiu."
+  },
+  {
+   "kind": "text",
+   "en": "Yeah, it's worth a look. See you!",
+   "where": "moments.i_spill.familiar.choices[1].reply[0].lt",
+   "es": "Sí, vale la pena. ¡Nos vemos!",
+   "lt": "Taip, verta. Iki!"
+  },
+  {
+   "kind": "text",
+   "en": "Enjoy your walk!",
+   "where": "moments.i_spill.familiar.away.lt",
+   "es": "¡Buen paseo!",
+   "lt": "Smagaus pasivaikščiojimo!"
+  },
+  {
+   "kind": "text",
+   "en": "Excuse me, could you take our picture with my phone?",
+   "where": "moments.i_photo.first.open.byCast.a[0].lt",
+   "es": "Disculpe, ¿nos toma una foto con mi celular?",
+   "lt": "Atsiprašau, gal nufotografuotumėte mus mano telefonu?"
+  },
+  {
+   "kind": "text",
+   "en": "Excuse me, could you take our picture?",
+   "where": "moments.i_photo.first.open.byCast.b[0].lt",
+   "es": "Disculpe, ¿nos toma una foto?",
+   "lt": "Atsiprašau, gal nufotografuotumėte mus?"
+  },
+  {
+   "kind": "text",
+   "en": "The camera's on auto.",
+   "where": "moments.i_photo.first.open.byCast.b[1].lt",
+   "es": "La cámara está en automático.",
+   "lt": "Fotoaparatas nustatytas fotografuoti automatiškai."
+  },
+  {
+   "kind": "text",
+   "en": "Excuse me, could you take our picture with the tablet?",
+   "where": "moments.i_photo.first.open.byCast.c[0].lt",
+   "es": "Disculpe, ¿nos toma una foto con la tableta?",
+   "lt": "Atsiprašau, gal nufotografuotumėte mus planšete?"
+  },
+  {
+   "kind": "text",
+   "en": "Sure! Say cheese!",
+   "where": "moments.i_photo.first.choices[0].say.lt",
+   "es": "¡Claro! Digan «whisky».",
+   "lt": "Žinoma! Sakykite „viskis“!"
+  },
+  {
+   "kind": "text",
+   "en": "Of course. On the count of three.",
+   "where": "moments.i_photo.first.choices[1].say.lt",
+   "es": "Con gusto. A la cuenta de tres.",
+   "lt": "Mielai. Suskaičiuosiu iki trijų."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks! You got everybody in the shot.",
+   "where": "moments.i_photo.first.reply.byCast.a[0].lt",
+   "es": "¡Gracias! Ahora sí salimos todos.",
+   "lt": "Ačiū! Šįkart visi tilpome į kadrą."
+  },
+  {
+   "kind": "text",
+   "en": "It turned out great! Thanks so much.",
+   "where": "moments.i_photo.first.reply.byCast.b[0].lt",
+   "es": "¡Quedó muy bien! Muchas gracias.",
+   "lt": "Puikiai pavyko! Labai ačiū."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks! Now I can send it to the family group chat.",
+   "where": "moments.i_photo.first.reply.byCast.c[0].lt",
+   "es": "¡Gracias! Ya puedo mandarla al grupo de la familia.",
+   "lt": "Ačiū! Dabar galėsiu nusiųsti į šeimos pokalbį."
+  },
+  {
+   "kind": "text",
+   "en": "Could you take a picture of us?",
+   "where": "moments.i_photo.first.card.byCast.a.lt",
+   "es": "¿Nos toma una foto?",
+   "lt": "Gal nufotografuotumėte mus?"
+  },
+  {
+   "kind": "text",
+   "en": "Lucky we ran into you! Could you take another one?",
+   "where": "moments.i_photo.second.open.byCast.a[0].lt",
+   "es": "¡Qué suerte {m:encontrarlo|f:encontrarla}! ¿Nos toma otra?",
+   "lt": "Kaip pasisekė Jus sutikti! Gal dar kartą nufotografuotumėte?"
+  },
+  {
+   "kind": "text",
+   "en": "This time we want one with straight faces, too.",
+   "where": "moments.i_photo.second.open.byCast.a[1].lt",
+   "es": "Ahora también queremos una con cara seria.",
+   "lt": "Dabar norime ir vienos rimtais veidais."
+  },
+  {
+   "kind": "text",
+   "en": "Oh, it's you! Could you take another picture of us?",
+   "where": "moments.i_photo.second.open.byCast.b[0].lt",
+   "es": "¡Ah, es usted! ¿Nos toma otra foto?",
+   "lt": "O, tai Jūs! Gal dar kartą mus nufotografuotumėte?"
+  },
+  {
+   "kind": "text",
+   "en": "I promise I won't blink this time.",
+   "where": "moments.i_photo.second.open.byCast.b[1].lt",
+   "es": "Esta vez prometo no parpadear.",
+   "lt": "Pažadu šįkart nemirksėti."
+  },
+  {
+   "kind": "text",
+   "en": "Hello again! Could you take one more picture of us?",
+   "where": "moments.i_photo.second.open.byCast.c[0].lt",
+   "es": "¡Hola otra vez! ¿Nos toma otra foto?",
+   "lt": "Vėl sveiki! Gal dar vieną mūsų nuotrauką?"
+  },
+  {
+   "kind": "text",
+   "en": "My family already asked for another one.",
+   "where": "moments.i_photo.second.open.byCast.c[1].lt",
+   "es": "Mi familia ya pidió una más.",
+   "lt": "Šeima jau paprašė dar vienos."
+  },
+  {
+   "kind": "text",
+   "en": "Of course! Hold still this time.",
+   "where": "moments.i_photo.second.choices[0].say.lt",
+   "es": "¡Claro! Esta vez, sin moverse.",
+   "lt": "Žinoma! Šįkart nejudėkite."
+  },
+  {
+   "kind": "text",
+   "en": "Another one? Sure! A little closer together.",
+   "where": "moments.i_photo.second.choices[1].say.lt",
+   "es": "¿Otra? ¡Con gusto! Un poquito más juntos.",
+   "lt": "Dar vieną? Mielai! Truputį suglauskite pečius."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks! Keeping a straight face is hard.",
+   "where": "moments.i_photo.second.reply.byCast.a[0].lt",
+   "es": "¡Gracias! Eso de salir con cara seria cuesta trabajo.",
+   "lt": "Ačiū! Sunku išlaikyti rimtą veidą."
+  },
+  {
+   "kind": "text",
+   "en": "Got it! I didn't blink. I'm practically a model.",
+   "where": "moments.i_photo.second.reply.byCast.b[0].lt",
+   "es": "¡Listo! Ni un parpadeo. Soy casi modelo.",
+   "lt": "Viskas! Nė karto nemirktelėjau. Beveik kaip modelis."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks! They'll think I have a personal photographer.",
+   "where": "moments.i_photo.second.reply.byCast.c[0].lt",
+   "es": "¡Gracias! Van a creer que tengo {m:fotógrafo|f:fotógrafa} personal.",
+   "lt": "Ačiū! Pamanys, kad turiu {m:asmeninį fotografą|f:asmeninę fotografę}."
+  },
+  {
+   "kind": "text",
+   "en": "Another time, then. Thanks!",
+   "where": "moments.i_photo.second.away.lt",
+   "es": "Bueno, para otra vez. ¡Gracias!",
+   "lt": "Na, tai kitą kartą. Ačiū!"
+  },
+  {
+   "kind": "text",
+   "en": "Look how the photo turned out!",
+   "where": "moments.i_photo.familiar.open.byCast.a[0].lt",
+   "es": "¡Mire cómo quedó la foto!",
+   "lt": "Pažiūrėkite, kokia nuotrauka išėjo!"
+  },
+  {
+   "kind": "text",
+   "en": "It came out so well, I made it my wallpaper.",
+   "where": "moments.i_photo.familiar.open.byCast.a[1].lt",
+   "es": "Salió tan bien que la puse de fondo.",
+   "lt": "Taip gerai išėjo, kad užsidėjau kaip telefono ekrano foną."
+  },
+  {
+   "kind": "text",
+   "en": "I've even got my eyes open!",
+   "where": "moments.i_photo.familiar.open.byCast.b[1].lt",
+   "es": "¡Hasta salí con los ojos abiertos!",
+   "lt": "Net akys nuotraukoje atmerktos!"
+  },
+  {
+   "kind": "text",
+   "en": "The whole family loved it.",
+   "where": "moments.i_photo.familiar.open.byCast.c[1].lt",
+   "es": "A toda la familia le encantó.",
+   "lt": "Visai šeimai labai patiko."
+  },
+  {
+   "kind": "text",
+   "en": "That's a great picture!",
+   "where": "moments.i_photo.familiar.choices[0].say.lt",
+   "es": "¡Qué buena foto!",
+   "lt": "Puiki nuotrauka!"
+  },
+  {
+   "kind": "text",
+   "en": "Thanks. That's one I'm keeping.",
+   "where": "moments.i_photo.familiar.choices[0].reply[0].lt",
+   "es": "Gracias. Esa sí la voy a guardar.",
+   "lt": "Ačiū. Šitą tikrai pasiliksiu."
+  },
+  {
+   "kind": "text",
+   "en": "I was glad to help.",
+   "where": "moments.i_photo.familiar.choices[1].say.lt",
+   "es": "Me dio gusto ayudar.",
+   "lt": "Man buvo malonu padėti."
+  },
+  {
+   "kind": "text",
+   "en": "And I was glad to find someone so patient.",
+   "where": "moments.i_photo.familiar.choices[1].reply[0].lt",
+   "es": "Y a mí encontrar a alguien con tanta paciencia.",
+   "lt": "O man buvo malonu sutikti tokį kantrų žmogų."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks for the pictures!",
+   "where": "moments.i_photo.familiar.away.lt",
+   "es": "¡Gracias por las fotos!",
+   "lt": "Ačiū už nuotraukas!"
+  },
+  {
+   "kind": "text",
+   "en": "Older man",
+   "where": "moments.i_wind.cast[0].role",
+   "lt": "Senyvas vyras"
+  },
+  {
+   "kind": "text",
+   "en": "The sea breeze lifts an older man's hat right off his head.",
+   "where": "moments.i_wind.first.scene.byCast.a",
+   "lt": "Jūros vėjas nupučia skrybėlę nuo senyvo vyro galvos."
+  },
+  {
+   "kind": "text",
+   "en": "A gust catches a woman's beach wrap and sends it flying.",
+   "where": "moments.i_wind.first.scene.byCast.b",
+   "lt": "Vėjo gūsis pagriebia moters paplūdimio skarą ir nuneša ją tolyn."
+  },
+  {
+   "kind": "text",
+   "en": "The wind whips a young man's cap away.",
+   "where": "moments.i_wind.first.scene.byCast.c",
+   "lt": "Vėjas nupučia jaunuoliui kepuraitę."
+  },
+  {
+   "kind": "text",
+   "en": "Here's your hat!",
+   "where": "moments.i_wind.first.choices[0].say.byCast.a.lt",
+   "es": "¡Aquí está su sombrero!",
+   "lt": "Štai Jūsų skrybėlė!"
+  },
+  {
+   "kind": "text",
+   "en": "Here's your beach wrap!",
+   "where": "moments.i_wind.first.choices[0].say.byCast.b.lt",
+   "es": "¡Aquí está su pareo!",
+   "lt": "Štai Jūsų paplūdimio skara!"
+  },
+  {
+   "kind": "text",
+   "en": "Here's your cap!",
+   "where": "moments.i_wind.first.choices[0].say.byCast.c.lt",
+   "es": "¡Aquí está su gorra!",
+   "lt": "Štai Jūsų kepuraitė!"
+  },
+  {
+   "kind": "text",
+   "en": "It almost got away! Here it is!",
+   "where": "moments.i_wind.first.choices[1].say.lt",
+   "es": "¡Por poco se va! ¡Aquí está!",
+   "lt": "Vos nenunešė! Štai!"
+  },
+  {
+   "kind": "text",
+   "en": "Thanks! I'd melt in this sun without my hat.",
+   "where": "moments.i_wind.first.reply.byCast.a[0].lt",
+   "es": "¡Gracias! Sin sombrero me derrito con este sol.",
+   "lt": "Ačiū! Be skrybėlės tokioje saulėje ištirpčiau."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks! It almost went for a swim without me.",
+   "where": "moments.i_wind.first.reply.byCast.b[0].lt",
+   "es": "¡Gracias! Casi se va a nadar sin mí.",
+   "lt": "Ačiū! Vos nenuskrido maudytis be manęs."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks! My brother gave me that cap.",
+   "where": "moments.i_wind.first.reply.byCast.c[0].lt",
+   "es": "¡Gracias! Esta gorra me la regaló mi hermano.",
+   "lt": "Ačiū! Šią kepuraitę man padovanojo brolis."
+  },
+  {
+   "kind": "text",
+   "en": "The same man's hat goes flying again.",
+   "where": "moments.i_wind.second.scene.byCast.a",
+   "lt": "Tam pačiam vyrui vėjas vėl nupučia skrybėlę."
+  },
+  {
+   "kind": "text",
+   "en": "The same woman's beach wrap flutters away again.",
+   "where": "moments.i_wind.second.scene.byCast.b",
+   "lt": "Tai pačiai moteriai vėjas vėl nuneša paplūdimio skarą."
+  },
+  {
+   "kind": "text",
+   "en": "The young man's cap takes off in the breeze again.",
+   "where": "moments.i_wind.second.scene.byCast.c",
+   "lt": "Jaunuolio kepuraitę vėl nupučia vėjas."
+  },
+  {
+   "kind": "text",
+   "en": "That wind again! Here's your hat.",
+   "where": "moments.i_wind.second.choices[0].say.byCast.a.lt",
+   "es": "¡Otra vez el viento! Aquí tiene su sombrero.",
+   "lt": "Ir vėl tas vėjas! Štai Jūsų skrybėlė."
+  },
+  {
+   "kind": "text",
+   "en": "That wind again! Here's your beach wrap.",
+   "where": "moments.i_wind.second.choices[0].say.byCast.b.lt",
+   "es": "¡Otra vez el viento! Aquí tiene su pareo.",
+   "lt": "Ir vėl tas vėjas! Štai Jūsų paplūdimio skara."
+  },
+  {
+   "kind": "text",
+   "en": "That wind again! Here's your cap.",
+   "where": "moments.i_wind.second.choices[0].say.byCast.c.lt",
+   "es": "¡Otra vez el viento! Aquí tiene su gorra.",
+   "lt": "Ir vėl tas vėjas! Štai Jūsų kepuraitė."
+  },
+  {
+   "kind": "text",
+   "en": "Whew! That was close. Here it is.",
+   "where": "moments.i_wind.second.choices[1].say.lt",
+   "es": "¡Uf! ¡Por poco! Aquí está.",
+   "lt": "Uf! Vos spėjau. Štai!"
+  },
+  {
+   "kind": "text",
+   "en": "You again! What luck!",
+   "where": "moments.i_wind.second.reply.byCast.a[0].lt",
+   "es": "¡Otra vez usted, qué suerte!",
+   "lt": "Vėl Jūs! Kaip pasisekė!"
+  },
+  {
+   "kind": "text",
+   "en": "My hat needs an anchor.",
+   "where": "moments.i_wind.second.reply.byCast.a[1].lt",
+   "es": "A mi sombrero le falta un ancla.",
+   "lt": "Mano skrybėlei reikia inkaro."
+  },
+  {
+   "kind": "text",
+   "en": "Oh, it's you! You saved my wrap again!",
+   "where": "moments.i_wind.second.reply.byCast.b[0].lt",
+   "es": "¡Ah, es usted! ¡Me salvó el pareo otra vez!",
+   "lt": "O, tai Jūs! Vėl išgelbėjote mano skarą!"
+  },
+  {
+   "kind": "text",
+   "en": "This wrap thinks it's a kite.",
+   "where": "moments.i_wind.second.reply.byCast.b[1].lt",
+   "es": "Este pareo ya se cree papalote.",
+   "lt": "Ši skara įsivaizduoja, kad yra aitvaras."
+  },
+  {
+   "kind": "text",
+   "en": "Lucky you came by! Thanks again!",
+   "where": "moments.i_wind.second.reply.byCast.c[0].lt",
+   "es": "¡Qué suerte que pasó por aquí! ¡Gracias otra vez!",
+   "lt": "Kaip pasisekė, kad ėjote pro šalį! Dar kartą ačiū!"
+  },
+  {
+   "kind": "text",
+   "en": "My cap wants to travel for free.",
+   "where": "moments.i_wind.second.reply.byCast.c[1].lt",
+   "es": "Mi gorra quiere viajar gratis.",
+   "lt": "Mano kepuraitė nori keliauti nemokamai."
+  },
+  {
+   "kind": "text",
+   "en": "Hi! I tie my hat under my chin now.",
+   "where": "moments.i_wind.familiar.open.byCast.a[0].lt",
+   "es": "¡Buenas! Ahora el sombrero va atado bajo la barbilla.",
+   "lt": "Sveiki! Dabar skrybėlę prisirišu po smakru."
+  },
+  {
+   "kind": "text",
+   "en": "Hi! I tied my wrap with a double knot today.",
+   "where": "moments.i_wind.familiar.open.byCast.b[0].lt",
+   "es": "¡Hola! Hoy le hice doble nudo al pareo.",
+   "lt": "Sveiki! Šiandien skarą surišau dvigubu mazgu."
+  },
+  {
+   "kind": "text",
+   "en": "Hi! I tied my cap to my belt today.",
+   "where": "moments.i_wind.familiar.open.byCast.c[0].lt",
+   "es": "¡Hola! Hoy até la gorra al cinturón.",
+   "lt": "Sveiki! Šiandien kepuraitę pririšau prie diržo."
+  },
+  {
+   "kind": "text",
+   "en": "Good idea! You need it in this wind.",
+   "where": "moments.i_wind.familiar.choices[0].say.lt",
+   "es": "¡Buena idea! Con este viento, hace falta.",
+   "lt": "Gera mintis! Pučiant tokiam vėjui tikrai praverčia."
+  },
+  {
+   "kind": "text",
+   "en": "Yep. I've learned how to outsmart the wind.",
+   "where": "moments.i_wind.familiar.choices[0].reply[0].lt",
+   "es": "Sí. Ya aprendí a ganarle al viento.",
+   "lt": "Taip. Jau išmokau pergudrauti vėją."
+  },
+  {
+   "kind": "text",
+   "en": "It's nice running into you again!",
+   "where": "moments.i_wind.familiar.choices[1].say.lt",
+   "es": "¡Qué gusto encontrarnos otra vez!",
+   "lt": "Smagu vėl susitikti!"
+  },
+  {
+   "kind": "text",
+   "en": "Same here. Have a good day!",
+   "where": "moments.i_wind.familiar.choices[1].reply[0].lt",
+   "es": "Igualmente. ¡Que le vaya bien!",
+   "lt": "Man irgi malonu. Geros dienos!"
+  },
+  {
+   "kind": "text",
+   "en": "Student",
+   "where": "moments.i_change.cast[1].role",
+   "lt": "Studentė"
+  },
+  {
+   "kind": "text",
+   "en": "Do you have change for two hundred pesos?",
+   "where": "moments.i_change.first.open.byCast.a[0].lt",
+   "es": "¿Tiene cambio de doscientos?",
+   "lt": "Ar galite iškeisti du šimtus pesų?"
+  },
+  {
+   "kind": "text",
+   "en": "It's for the shared van.",
+   "where": "moments.i_change.first.open.byCast.a[1].lt",
+   "es": "Es para el colectivo.",
+   "lt": "Reikia susimokėti už maršrutinį mikroautobusą."
+  },
+  {
+   "kind": "text",
+   "en": "They can't break the bill at the stall.",
+   "where": "moments.i_change.first.open.byCast.b[1].lt",
+   "es": "En el puesto no me pueden cambiar el billete.",
+   "lt": "Prie prekystalio sako, kad neturi smulkių."
+  },
+  {
+   "kind": "text",
+   "en": "It's to pay for the water jug delivery.",
+   "where": "moments.i_change.first.open.byCast.c[1].lt",
+   "es": "Es para pagar el garrafón de agua.",
+   "lt": "Reikia sumokėti už atvežtą vandens bidoną."
+  },
+  {
+   "kind": "text",
+   "en": "Let me see… Yes, here you go.",
+   "where": "moments.i_change.first.choices[0].say.byCast.a.lt",
+   "es": "Déjeme ver… Sí, aquí tiene.",
+   "lt": "Luktelėkite, pažiūrėsiu… Taip, prašom."
+  },
+  {
+   "kind": "text",
+   "en": "Sorry, I don't have any change on me.",
+   "where": "moments.i_change.first.choices[1].say.lt",
+   "es": "Lo siento, no traigo cambio.",
+   "lt": "Atsiprašau, neturiu smulkių."
+  },
+  {
+   "kind": "text",
+   "en": "No worries. Thanks anyway!",
+   "where": "moments.i_change.first.choices[1].reply[0].lt",
+   "es": "No pasa nada. ¡Gracias de todos modos!",
+   "lt": "Nieko tokio. Vis tiek ačiū!"
+  },
+  {
+   "kind": "text",
+   "en": "Thanks! Now I can pay my fare.",
+   "where": "moments.i_change.first.reply.byCast.a[0].lt",
+   "es": "¡Gracias! Así ya puedo pagar el pasaje.",
+   "lt": "Ačiū! Dabar galėsiu susimokėti už kelionę."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks! I came here hungry.",
+   "where": "moments.i_change.first.reply.byCast.b[0].lt",
+   "es": "¡Gracias! Ya venía con ganas de comer.",
+   "lt": "Ačiū! Atėjau alkana."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks! They're already waiting with the water.",
+   "where": "moments.i_change.first.reply.byCast.c[0].lt",
+   "es": "¡Gracias! Ya me estaban esperando con el agua.",
+   "lt": "Ačiū! Manęs jau laukia su vandeniu."
+  },
+  {
+   "kind": "text",
+   "en": "All right, I'll ask around.",
+   "where": "moments.i_change.first.away.lt",
+   "es": "Bueno, voy a preguntar por ahí.",
+   "lt": "Gerai, dar ko nors paklausiu."
+  },
+  {
+   "kind": "text",
+   "en": "Oh, it's you! I'm short on change again.",
+   "where": "moments.i_change.second.open.byCast.a[0].lt",
+   "es": "¡Ah, es usted! Otra vez me falta cambio.",
+   "lt": "O, tai Jūs! Man ir vėl trūksta smulkių."
+  },
+  {
+   "kind": "text",
+   "en": "Could you break two hundred? It's for the van.",
+   "where": "moments.i_change.second.open.byCast.a[1].lt",
+   "es": "¿Me cambia doscientos? Es para el colectivo.",
+   "lt": "Gal iškeistumėte du šimtus? Reikia susimokėti už maršrutinį mikroautobusą."
+  },
+  {
+   "kind": "text",
+   "en": "Hi again! They still have no change at the stall.",
+   "where": "moments.i_change.second.open.byCast.b[0].lt",
+   "es": "¡Hola otra vez! En el puesto siguen sin cambio.",
+   "lt": "Vėl sveiki! Prie prekystalio vis dar neturi smulkių."
+  },
+  {
+   "kind": "text",
+   "en": "Could you break this bill for me?",
+   "where": "moments.i_change.second.open.byCast.b[1].lt",
+   "es": "¿Me cambia este billete?",
+   "lt": "Gal iškeistumėte man šį banknotą?"
+  },
+  {
+   "kind": "text",
+   "en": "So glad to see you! The water jug's here.",
+   "where": "moments.i_change.second.open.byCast.c[0].lt",
+   "es": "¡Qué bueno que {m:lo|f:la} veo! Llegó el garrafón.",
+   "lt": "Kaip smagu Jus matyti! Atvežė vandens bidoną."
+  },
+  {
+   "kind": "text",
+   "en": "Any chance you have change for two hundred today?",
+   "where": "moments.i_change.second.open.byCast.c[1].lt",
+   "es": "¿Tendrá cambio de doscientos?",
+   "lt": "Gal šiandien galite iškeisti du šimtus pesų?"
+  },
+  {
+   "kind": "text",
+   "en": "Sure. I've got change.",
+   "where": "moments.i_change.second.choices[0].say.lt",
+   "es": "Claro. Tengo cambio.",
+   "lt": "Žinoma. Turiu smulkių."
+  },
+  {
+   "kind": "text",
+   "en": "Yes! I've got twenties.",
+   "where": "moments.i_change.second.choices[1].say.lt",
+   "es": "¡Sí! Tengo billetes de veinte.",
+   "lt": "Taip! Turiu banknotų po dvidešimt."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks! I'll have to travel with my piggy bank.",
+   "where": "moments.i_change.second.reply.byCast.a[0].lt",
+   "es": "¡Gracias! Voy a tener que viajar con mi alcancía.",
+   "lt": "Ačiū! Teks vežiotis taupyklę."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks! Between me and the stall, nobody has change.",
+   "where": "moments.i_change.second.reply.byCast.b[0].lt",
+   "es": "¡Gracias! Entre el puesto y yo, nunca hay cambio.",
+   "lt": "Ačiū! Nei aš, nei pardavėjai niekada neturime smulkių."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks! I'll start keeping spare change in the kitchen.",
+   "where": "moments.i_change.second.reply.byCast.c[0].lt",
+   "es": "¡Gracias! Voy a guardar cambio hasta en la cocina.",
+   "lt": "Ačiū! Nuo šiol net virtuvėje laikysiu smulkių."
+  },
+  {
+   "kind": "text",
+   "en": "Hi! I carry coins for the fare now.",
+   "where": "moments.i_change.familiar.open.byCast.a[0].lt",
+   "es": "¡Buenas! Ahora llevo monedas para el pasaje.",
+   "lt": "Sveiki! Dabar nešiojuosi monetų kelionei."
+  },
+  {
+   "kind": "text",
+   "en": "Hi! I bring smaller bills to the stall now.",
+   "where": "moments.i_change.familiar.open.byCast.b[0].lt",
+   "es": "¡Hola! Ahora llevo billetes chicos al puesto.",
+   "lt": "Sveiki! Dabar prie prekystalio ateinu su smulkesniais banknotais."
+  },
+  {
+   "kind": "text",
+   "en": "Hi! I've got a jar of change for the water now.",
+   "where": "moments.i_change.familiar.open.byCast.c[0].lt",
+   "es": "¡Buenas! Ya tengo un frasco con cambio para el agua.",
+   "lt": "Sveiki! Dabar turiu stiklainį smulkių vandeniui."
+  },
+  {
+   "kind": "text",
+   "en": "You're all set now!",
+   "where": "moments.i_change.familiar.choices[0].say.lt",
+   "es": "¡Ya tiene todo listo!",
+   "lt": "Dabar jau viskuo pasirūpinote!"
+  },
+  {
+   "kind": "text",
+   "en": "Yep. I remembered my change today.",
+   "where": "moments.i_change.familiar.choices[0].reply[0].lt",
+   "es": "Sí. Hoy sí me acordé del cambio.",
+   "lt": "Taip. Šiandien tikrai nepamiršau smulkių."
+  },
+  {
+   "kind": "text",
+   "en": "That's great! That saves you some time.",
+   "where": "moments.i_change.familiar.choices[1].say.lt",
+   "es": "¡Qué bueno! Así se ahorra tiempo.",
+   "lt": "Puiku! Taip sutaupysite laiko."
+  },
+  {
+   "kind": "text",
+   "en": "Now I've even got time to say hello.",
+   "where": "moments.i_change.familiar.choices[1].reply[0].lt",
+   "es": "Y hasta me queda tiempo para saludar.",
+   "lt": "Dabar net lieka laiko pasisveikinti."
+  },
+  {
+   "kind": "text",
+   "en": "Have a nice day!",
+   "where": "moments.i_change.familiar.away.lt",
+   "es": "¡Buen día!",
+   "lt": "Geros dienos!"
+  },
+  {
+   "kind": "text",
+   "en": "Little girl",
+   "where": "moments.i_lost_dog.cast[0].role",
+   "lt": "Mergaitė"
+  },
+  {
+   "kind": "text",
+   "en": "Dog owner",
+   "where": "moments.i_lost_dog.cast[1].role",
+   "lt": "{nm:Šuns šeimininkas|nf:Šuns šeimininkė}"
+  },
+  {
+   "kind": "text",
+   "en": "A little girl looks around while a brown dog sniffs nearby.",
+   "where": "moments.i_lost_dog.first.scene.byCast.a",
+   "lt": "Mergaitė dairosi, o netoliese uostinėja rudas šuo."
+  },
+  {
+   "kind": "text",
+   "en": "A woman looks around while a white dog sniffs nearby.",
+   "where": "moments.i_lost_dog.first.scene.byCast.b",
+   "lt": "Moteris dairosi, o netoliese uostinėja baltas šuo."
+  },
+  {
+   "kind": "text",
+   "en": "An older man scans the street while a black dog trots nearby.",
+   "where": "moments.i_lost_dog.first.scene.byCast.c",
+   "lt": "Senyvas vyras dairosi gatvėje, o netoliese risnoja juodas šuo."
+  },
+  {
+   "kind": "text",
+   "en": "Can you help me? My dog Churro got away.",
+   "where": "moments.i_lost_dog.first.open.byCast.a[0].lt",
+   "es": "¿Me ayuda? Mi perro Churro se escapó.",
+   "lt": "Padėsite? Pabėgo mano šuo Churro."
+  },
+  {
+   "kind": "text",
+   "en": "Nube got away. Can you help me look for her?",
+   "where": "moments.i_lost_dog.first.open.byCast.b[0].lt",
+   "es": "Se me escapó Nube. ¿Me ayuda a buscarla?",
+   "lt": "Pabėgo Nube. Padėsite man jos paieškoti?"
+  },
+  {
+   "kind": "text",
+   "en": "Have you seen Rayo? He's my dog.",
+   "where": "moments.i_lost_dog.first.open.byCast.c[0].lt",
+   "es": "¿No ha visto a Rayo? Es mi perro.",
+   "lt": "Gal matėte Rayo? Tai mano šuo."
+  },
+  {
+   "kind": "text",
+   "en": "There he is! Is that him?",
+   "where": "moments.i_lost_dog.first.choices[0].say.byCast.a.lt",
+   "es": "¡Ahí está! ¿Es ese?",
+   "lt": "Štai šuo! Ar čia jis?"
+  },
+  {
+   "kind": "text",
+   "en": "There she is! Is that her?",
+   "where": "moments.i_lost_dog.first.choices[0].say.byCast.b.lt",
+   "es": "¡Ahí está! ¿Es esa?",
+   "lt": "Štai! Ar čia ji?"
+  },
+  {
+   "kind": "text",
+   "en": "Come here, Churro!",
+   "where": "moments.i_lost_dog.first.choices[1].say.byCast.a.lt",
+   "es": "¡Ven, Churro! ¡Aquí!",
+   "lt": "Ateik, Churro!"
+  },
+  {
+   "kind": "text",
+   "en": "Come here, Nube!",
+   "where": "moments.i_lost_dog.first.choices[1].say.byCast.b.lt",
+   "es": "¡Ven, Nube! ¡Aquí!",
+   "lt": "Ateik, Nube!"
+  },
+  {
+   "kind": "text",
+   "en": "Come here, Rayo!",
+   "where": "moments.i_lost_dog.first.choices[1].say.byCast.c.lt",
+   "es": "¡Ven, Rayo! ¡Aquí!",
+   "lt": "Ateik, Rayo!"
+  },
+  {
+   "kind": "text",
+   "en": "Churro! Thank you, I was getting scared!",
+   "where": "moments.i_lost_dog.first.reply.byCast.a[0].lt",
+   "es": "¡Churro! ¡Gracias, ya me estaba asustando!",
+   "lt": "Churro! Ačiū, jau pradėjau bijoti!"
+  },
+  {
+   "kind": "text",
+   "en": "Nube! Thanks. Anything can distract her.",
+   "where": "moments.i_lost_dog.first.reply.byCast.b[0].lt",
+   "es": "¡Nube! Gracias. Se distrae con cualquier cosa.",
+   "lt": "Nube! Ačiū. Jai viskas taip įdomu, kad vis nuklysta."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks! Rayo runs like lightning.",
+   "where": "moments.i_lost_dog.first.reply.byCast.c[0].lt",
+   "es": "¡Gracias! Rayo corre como un rayo.",
+   "lt": "Ačiū! Rayo lekia kaip žaibas."
+  },
+  {
+   "kind": "text",
+   "en": "Churro, wait for me!",
+   "where": "moments.i_lost_dog.first.away.byCast.a.lt",
+   "es": "¡Churro, espérame!",
+   "lt": "Churro, palauk manęs!"
+  },
+  {
+   "kind": "text",
+   "en": "Nube, over here!",
+   "where": "moments.i_lost_dog.first.away.byCast.b.lt",
+   "es": "¡Nube, ven para acá!",
+   "lt": "Nube, ateik čia!"
+  },
+  {
+   "kind": "text",
+   "en": "Rayo! Where are you going in such a hurry?",
+   "where": "moments.i_lost_dog.first.away.byCast.c.lt",
+   "es": "¡Rayo! ¿Adónde vas tan rápido?",
+   "lt": "Rayo! Kur taip skubi?"
+  },
+  {
+   "kind": "text",
+   "en": "The little girl's brown dog slips away again.",
+   "where": "moments.i_lost_dog.second.scene.byCast.a",
+   "lt": "Mergaitės rudas šuo vėl ištrūksta."
+  },
+  {
+   "kind": "text",
+   "en": "The woman's white dog wanders off again.",
+   "where": "moments.i_lost_dog.second.scene.byCast.b",
+   "lt": "Moters baltas šuo vėl nuklysta."
+  },
+  {
+   "kind": "text",
+   "en": "The older man's black dog darts away again.",
+   "where": "moments.i_lost_dog.second.scene.byCast.c",
+   "lt": "Senyvo vyro juodas šuo ir vėl nurūksta."
+  },
+  {
+   "kind": "text",
+   "en": "Churro got away again! I'm so glad to see you!",
+   "where": "moments.i_lost_dog.second.open.byCast.a[0].lt",
+   "es": "¡Churro se escapó otra vez! ¡Qué bueno que {m:lo|f:la} veo!",
+   "lt": "Churro vėl pabėgo! Kaip gerai, kad Jus matau!"
+  },
+  {
+   "kind": "text",
+   "en": "Nube! She got loose again. Oh, it's you!",
+   "where": "moments.i_lost_dog.second.open.byCast.b[0].lt",
+   "es": "¡Nube! Otra vez se me soltó. ¡Ah, es usted!",
+   "lt": "Nube! Ji man vėl ištrūko. O, tai Jūs!"
+  },
+  {
+   "kind": "text",
+   "en": "Rayo, not again! Lucky you're here!",
+   "where": "moments.i_lost_dog.second.open.byCast.c[0].lt",
+   "es": "¡Rayo, otra vez! ¡Qué suerte que anda por aquí!",
+   "lt": "Rayo, ir vėl! Kaip pasisekė, kad Jūs čia!"
+  },
+  {
+   "kind": "text",
+   "en": "Come on! Over here!",
+   "where": "moments.i_lost_dog.second.choices[0].say.lt",
+   "es": "¡Ven, ven! ¡Por aquí!",
+   "lt": "Ateik, ateik! Čia!"
+  },
+  {
+   "kind": "text",
+   "en": "Here comes the dog. I'll stay still.",
+   "where": "moments.i_lost_dog.second.choices[1].say.lt",
+   "es": "¡Ya viene! Me quedo {m:quieto|f:quieta}.",
+   "lt": "Jau atbėga! Stovėsiu ramiai."
+  },
+  {
+   "kind": "text",
+   "en": "Thank you! You helped me again!",
+   "where": "moments.i_lost_dog.second.reply.byCast.a[0].lt",
+   "es": "¡Gracias! ¡Otra vez me ayudó!",
+   "lt": "Ačiū! Vėl man padėjote!"
+  },
+  {
+   "kind": "text",
+   "en": "Churro, you're going to give me gray hair!",
+   "where": "moments.i_lost_dog.second.reply.byCast.a[1].lt",
+   "es": "Churro, ¡me vas a sacar canas!",
+   "lt": "Churro, per tave pražilsiu!"
+  },
+  {
+   "kind": "text",
+   "en": "That's twice you've helped me! Thank you so much.",
+   "where": "moments.i_lost_dog.second.reply.byCast.b[0].lt",
+   "es": "¡Ya van dos veces que me ayuda! Muchas gracias.",
+   "lt": "Jau dukart man padėjote! Labai ačiū."
+  },
+  {
+   "kind": "text",
+   "en": "Nube thinks she owns the whole street.",
+   "where": "moments.i_lost_dog.second.reply.byCast.b[1].lt",
+   "es": "Nube se cree dueña de toda la calle.",
+   "lt": "Nube mano, kad visa gatvė jos."
+  },
+  {
+   "kind": "text",
+   "en": "You've gotten to know both of us now. Thanks again!",
+   "where": "moments.i_lost_dog.second.reply.byCast.c[0].lt",
+   "es": "Ya nos conoce a los dos. ¡Gracias otra vez!",
+   "lt": "Dabar jau mus abu pažįstate. Dar kartą ačiū!"
+  },
+  {
+   "kind": "text",
+   "en": "Rayo wants to get enough exercise for both of us.",
+   "where": "moments.i_lost_dog.second.reply.byCast.c[1].lt",
+   "es": "Rayo quiere hacer ejercicio por los dos.",
+   "lt": "Rayo nori pasportuoti už mus abu."
+  },
+  {
+   "kind": "text",
+   "en": "Look! Churro's on a leash now.",
+   "where": "moments.i_lost_dog.familiar.open.byCast.a[0].lt",
+   "es": "¡Mire! Churro ya trae correa.",
+   "lt": "Pažiūrėkite! Churro jau su pavadėliu."
+  },
+  {
+   "kind": "text",
+   "en": "Hi! Nube always goes out on a leash now.",
+   "where": "moments.i_lost_dog.familiar.open.byCast.b[0].lt",
+   "es": "¡Hola! Ahora Nube siempre va con correa.",
+   "lt": "Sveiki! Dabar Nube visada vedžioju su pavadėliu."
+  },
+  {
+   "kind": "text",
+   "en": "Hey there! This leash keeps Rayo and me together.",
+   "where": "moments.i_lost_dog.familiar.open.byCast.c[0].lt",
+   "es": "¡Buenas! Con la correa, Rayo y yo vamos juntos.",
+   "lt": "Sveiki! Su pavadėliu Rayo ir aš laikomės drauge."
+  },
+  {
+   "kind": "text",
+   "en": "Oh, good! Can I pet him?",
+   "where": "moments.i_lost_dog.familiar.choices[0].say.byCast.a.lt",
+   "es": "¡Qué bien! ¿Me dejas acariciarlo?",
+   "lt": "Puiku! Leisi jį paglostyti?"
+  },
+  {
+   "kind": "text",
+   "en": "Oh, good! May I pet her?",
+   "where": "moments.i_lost_dog.familiar.choices[0].say.byCast.b.lt",
+   "es": "¡Qué bien! ¿Me deja acariciarla?",
+   "lt": "Puiku! Ar galiu ją paglostyti?"
+  },
+  {
+   "kind": "text",
+   "en": "May I pet Rayo?",
+   "where": "moments.i_lost_dog.familiar.choices[0].say.byCast.c.lt",
+   "es": "¿Puedo acariciar a Rayo?",
+   "lt": "Ar galiu paglostyti Rayo?"
+  },
+  {
+   "kind": "text",
+   "en": "Yes! He loves being petted.",
+   "where": "moments.i_lost_dog.familiar.choices[0].reply.byCast.a[0].lt",
+   "es": "¡Sí! Le encantan las caricias.",
+   "lt": "Taip! Jam labai patinka, kai jį glosto."
+  },
+  {
+   "kind": "text",
+   "en": "Sure. If she sits, that means she wants more.",
+   "where": "moments.i_lost_dog.familiar.choices[0].reply.byCast.b[0].lt",
+   "es": "Claro. Si se sienta, es que quiere más.",
+   "lt": "Žinoma. Jei atsisės, vadinasi, norės dar."
+  },
+  {
+   "kind": "text",
+   "en": "Of course. He's got time to say hello today.",
+   "where": "moments.i_lost_dog.familiar.choices[0].reply.byCast.c[0].lt",
+   "es": "Con gusto. Hoy tiene tiempo para saludar.",
+   "lt": "Žinoma. Šiandien jis turi laiko pasisveikinti."
+  },
+  {
+   "kind": "text",
+   "en": "What a nice day for a walk together!",
+   "where": "moments.i_lost_dog.familiar.choices[1].say.lt",
+   "es": "¡Qué buen día para pasear juntos!",
+   "lt": "Kokia puiki diena drauge pasivaikščioti!"
+  },
+  {
+   "kind": "text",
+   "en": "Yes! We're going at the same pace today.",
+   "where": "moments.i_lost_dog.familiar.choices[1].reply[0].lt",
+   "es": "¡Sí! Hoy vamos al mismo paso.",
+   "lt": "Taip! Šiandien einame vienodu žingsniu."
+  },
+  {
+   "kind": "text",
+   "en": "Cyclist",
+   "where": "moments.i_bike.cast[0].role",
+   "lt": "{nm:Dviratininkas|nf:Dviratininkė}"
+  },
+  {
+   "kind": "text",
+   "en": "Boy",
+   "where": "moments.i_bike.cast[2].role",
+   "lt": "Berniukas"
+  },
+  {
+   "kind": "text",
+   "en": "A young cyclist looks down at his loose chain.",
+   "where": "moments.i_bike.first.scene.byCast.a",
+   "lt": "Jaunuolis žiūri į nuslydusią dviračio grandinę."
+  },
+  {
+   "kind": "text",
+   "en": "A woman squeezes her bike's flat tire.",
+   "where": "moments.i_bike.first.scene.byCast.b",
+   "lt": "Moteris spaudžia nuleistą dviračio padangą."
+  },
+  {
+   "kind": "text",
+   "en": "A boy tries to turn a pedal on his jammed bike.",
+   "where": "moments.i_bike.first.scene.byCast.c",
+   "lt": "Berniukas bando pasukti užstrigusio dviračio pedalą."
+  },
+  {
+   "kind": "text",
+   "en": "My chain came off. Can you help for a second?",
+   "where": "moments.i_bike.first.open.byCast.a[0].lt",
+   "es": "Se me salió la cadena. ¿Me ayuda un momento?",
+   "lt": "Nuslydo grandinė. Gal akimirką padėsite?"
+  },
+  {
+   "kind": "text",
+   "en": "I've got a flat tire. Can you help me?",
+   "where": "moments.i_bike.first.open.byCast.b[0].lt",
+   "es": "Tengo una llanta ponchada. ¿Me ayuda?",
+   "lt": "Nuleido padangą. Padėsite?"
+  },
+  {
+   "kind": "text",
+   "en": "My chain's stuck! Can you help?",
+   "where": "moments.i_bike.first.open.byCast.c[0].lt",
+   "es": "¡Se atoró mi cadena! ¿Me ayuda?",
+   "lt": "Užstrigo grandinė! Padėsite?"
+  },
+  {
+   "kind": "text",
+   "en": "Want me to hold the bike?",
+   "where": "moments.i_bike.first.choices[0].say.byCast.a.lt",
+   "es": "¿Le detengo la bici?",
+   "lt": "Gal palaikyti dviratį?"
+  },
+  {
+   "kind": "text",
+   "en": "Want me to hold your bike?",
+   "where": "moments.i_bike.first.choices[0].say.byCast.c.lt",
+   "es": "¿Te detengo la bici?",
+   "lt": "Palaikyti tavo dviratį?"
+  },
+  {
+   "kind": "text",
+   "en": "Yes, thanks. Now I can take a look at the chain.",
+   "where": "moments.i_bike.first.choices[0].reply.byCast.a[0].lt",
+   "es": "Sí, gracias. Así puedo mirar la cadena.",
+   "lt": "Taip, ačiū. Dabar galiu apžiūrėti grandinę."
+  },
+  {
+   "kind": "text",
+   "en": "Yes, thanks. I'll check for a hole.",
+   "where": "moments.i_bike.first.choices[0].reply.byCast.b[0].lt",
+   "es": "Sí, gracias. Voy a ver si tiene un agujero.",
+   "lt": "Taip, ačiū. Pažiūrėsiu, ar padangoje yra skylė."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks! Now I can see where it's stuck.",
+   "where": "moments.i_bike.first.choices[0].reply.byCast.c[0].lt",
+   "es": "¡Gracias! Ya puedo ver dónde se atoró.",
+   "lt": "Ačiū! Dabar matau, kur užstrigo."
+  },
+  {
+   "kind": "text",
+   "en": "Shall we move the bike to the side for a moment?",
+   "where": "moments.i_bike.first.choices[1].say.byCast.a.lt",
+   "es": "¿Apartamos la bici un momento?",
+   "lt": "Gal trumpam patraukime dviratį į šalį?"
+  },
+  {
+   "kind": "text",
+   "en": "There's an air pump at El Faro gas station.",
+   "where": "moments.i_bike.first.choices[1].say.byCast.b.lt",
+   "es": "En la Gasolinera El Faro tienen aire.",
+   "lt": "Degalinėje „El Faro“ galima prisipūsti padangą."
+  },
+  {
+   "kind": "text",
+   "en": "Let's move the bike off to the side.",
+   "where": "moments.i_bike.first.choices[1].say.byCast.c.lt",
+   "es": "Vamos a poner la bici a un lado.",
+   "lt": "Patraukime dviratį į šalį."
+  },
+  {
+   "kind": "text",
+   "en": "Good idea. Then I can check it without rushing.",
+   "where": "moments.i_bike.first.choices[1].reply.byCast.a[0].lt",
+   "es": "Buena idea. Así la reviso con calma.",
+   "lt": "Gera mintis. Tada ramiai jį apžiūrėsiu."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks so much. I can ask about a patch there.",
+   "where": "moments.i_bike.first.choices[1].reply.byCast.b[0].lt",
+   "es": "Muchas gracias. Ahí puedo preguntar por un parche.",
+   "lt": "Labai ačiū. Ten galiu paklausti, ar turi lopų padangoms."
+  },
+  {
+   "kind": "text",
+   "en": "Yeah. I can look at it here without getting in the way.",
+   "where": "moments.i_bike.first.choices[1].reply.byCast.c[0].lt",
+   "es": "Sí. Aquí puedo mirar sin estorbar.",
+   "lt": "Taip. Čia galiu apžiūrėti niekam netrukdydamas."
+  },
+  {
+   "kind": "text",
+   "en": "All right, I'll take another look.",
+   "where": "moments.i_bike.first.away.lt",
+   "es": "Bueno, voy a mirar de nuevo.",
+   "lt": "Na, pažiūrėsiu dar kartą."
+  },
+  {
+   "kind": "text",
+   "en": "The same young man's bike chain has slipped off again.",
+   "where": "moments.i_bike.second.scene.byCast.a",
+   "lt": "Tam pačiam jaunuoliui vėl nuslydo dviračio grandinė."
+  },
+  {
+   "kind": "text",
+   "en": "The same woman has another flat bike tire.",
+   "where": "moments.i_bike.second.scene.byCast.b",
+   "lt": "Tai pačiai moteriai vėl nuleido dviračio padangą."
+  },
+  {
+   "kind": "text",
+   "en": "The boy's bike pedals are stuck again.",
+   "where": "moments.i_bike.second.scene.byCast.c",
+   "lt": "Berniuko dviračio pedalai vėl užstrigo."
+  },
+  {
+   "kind": "text",
+   "en": "It's you again! My chain came off again.",
+   "where": "moments.i_bike.second.open.byCast.a[0].lt",
+   "es": "¡Otra vez usted! Se me volvió a salir la cadena.",
+   "lt": "Vėl Jūs! Man vėl nuslydo grandinė."
+  },
+  {
+   "kind": "text",
+   "en": "Hi again! Another flat tire.",
+   "where": "moments.i_bike.second.open.byCast.b[0].lt",
+   "es": "¡Hola otra vez! Otra llanta ponchada.",
+   "lt": "Vėl sveiki! Ir vėl nuleido padangą."
+  },
+  {
+   "kind": "text",
+   "en": "It's me again! My chain got stuck.",
+   "where": "moments.i_bike.second.open.byCast.c[0].lt",
+   "es": "¡Soy yo otra vez! Mi cadena se atoró.",
+   "lt": "Ir vėl aš! Užstrigo grandinė."
+  },
+  {
+   "kind": "text",
+   "en": "Shall I hold it while you check it?",
+   "where": "moments.i_bike.second.choices[0].say.byCast.a.lt",
+   "es": "¿La sostengo mientras la revisa?",
+   "lt": "Palaikyti, kol apžiūrėsite?"
+  },
+  {
+   "kind": "text",
+   "en": "How about I hold it while you look?",
+   "where": "moments.i_bike.second.choices[0].say.byCast.c.lt",
+   "es": "¿La sostengo mientras la miras?",
+   "lt": "Palaikyti, kol apžiūrėsi?"
+  },
+  {
+   "kind": "text",
+   "en": "Thanks again! Even the chain recognizes you now.",
+   "where": "moments.i_bike.second.reply.byCast.a[0].lt",
+   "es": "¡Gracias otra vez! Hasta la cadena ya {m:lo|f:la} reconoce.",
+   "lt": "Dar kartą ačiū! Dabar Jus net grandinė atpažįsta."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks! My bike's determined to make me walk.",
+   "where": "moments.i_bike.second.reply.byCast.b[0].lt",
+   "es": "¡Gracias! Mi bici se empeña en que camine.",
+   "lt": "Ačiū! Mano dviratis užsispyrė, kad eičiau pėsčiomis."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks! My bike needs recess, just like me.",
+   "where": "moments.i_bike.second.reply.byCast.c[0].lt",
+   "es": "¡Gracias! Mi bici necesita recreo, igual que yo.",
+   "lt": "Ačiū! Mano dviračiui reikia pertraukos, kaip ir man."
+  },
+  {
+   "kind": "text",
+   "en": "The cyclist rides by and waves.",
+   "where": "moments.i_bike.familiar.scene",
+   "lt": "{nm:Dviratininkas|nf:Dviratininkė} mina pro šalį ir pamojuoja."
+  },
+  {
+   "kind": "text",
+   "en": "Hi! The chain's staying where it belongs now.",
+   "where": "moments.i_bike.familiar.open.byCast.a[0].lt",
+   "es": "¡Hola! Ahora la cadena va en su sitio.",
+   "lt": "Sveiki! Dabar grandinė laikosi savo vietoje."
+  },
+  {
+   "kind": "text",
+   "en": "Hi! I've changed the tire.",
+   "where": "moments.i_bike.familiar.open.byCast.b[0].lt",
+   "es": "¡Buenas! Ya cambié la llanta.",
+   "lt": "Sveiki! Jau pakeičiau padangą."
+  },
+  {
+   "kind": "text",
+   "en": "Look, I can pedal again!",
+   "where": "moments.i_bike.familiar.open.byCast.c[0].lt",
+   "es": "¡Mire, ya puedo pedalear otra vez!",
+   "lt": "Žiūrėkite, vėl galiu minti pedalus!"
+  },
+  {
+   "kind": "text",
+   "en": "Glad it's rolling again!",
+   "where": "moments.i_bike.familiar.choices[0].say.lt",
+   "es": "¡Qué bien que ya rueda!",
+   "lt": "Smagu, kad dviratis vėl rieda!"
+  },
+  {
+   "kind": "text",
+   "en": "Yeah. It feels good to be back on the bike!",
+   "where": "moments.i_bike.familiar.choices[0].reply[0].lt",
+   "es": "Sí. ¡Qué gusto volver a andar en bici!",
+   "lt": "Taip. Kaip smagu vėl važiuoti dviračiu!"
+  },
+  {
+   "kind": "text",
+   "en": "Enjoy the ride!",
+   "where": "moments.i_bike.familiar.choices[1].say.lt",
+   "es": "¡Buen paseo en bici!",
+   "lt": "Smagaus pasivažinėjimo!"
+  },
+  {
+   "kind": "text",
+   "en": "Thanks! See you on my next ride.",
+   "where": "moments.i_bike.familiar.choices[1].reply[0].lt",
+   "es": "¡Gracias! Nos vemos en la próxima vuelta.",
+   "lt": "Ačiū! Pasimatysime, kai vėl važiuosiu pro šalį."
+  },
+  {
+   "kind": "text",
+   "en": "See you on the next ride!",
+   "where": "moments.i_bike.familiar.away.lt",
+   "es": "¡Hasta la próxima vuelta!",
+   "lt": "Iki kito pasivažinėjimo!"
+  },
+  {
+   "kind": "text",
+   "en": "A man holds a large water jug with both hands.",
+   "where": "moments.i_carry.first.scene.byCast.a",
+   "lt": "Vyras abiem rankomis laiko didelį vandens bidoną."
+  },
+  {
+   "kind": "text",
+   "en": "A young woman carries a market bag in each hand.",
+   "where": "moments.i_carry.first.scene.byCast.b",
+   "lt": "Jauna moteris abiejose rankose neša po pirkinių maišelį."
+  },
+  {
+   "kind": "text",
+   "en": "An older woman balances a cake box in her arms.",
+   "where": "moments.i_carry.first.scene.byCast.c",
+   "lt": "Senyva moteris atsargiai neša dėžę su tortu."
+  },
+  {
+   "kind": "text",
+   "en": "Could you help me for a second?",
+   "where": "moments.i_carry.first.open.byCast.a[0].lt",
+   "es": "¿Me ayuda tantito?",
+   "lt": "Gal galite trumpam padėti?"
+  },
+  {
+   "kind": "text",
+   "en": "Could you open the gate? I've got this water jug.",
+   "where": "moments.i_carry.first.open.byCast.a[1].lt",
+   "es": "¿Me abre el portón? Traigo el garrafón de agua.",
+   "lt": "Gal atidarysite vartus? Nešu vandens bidoną."
+  },
+  {
+   "kind": "text",
+   "en": "Could you hold one of my market bags?",
+   "where": "moments.i_carry.first.open.byCast.b[1].lt",
+   "es": "¿Me sostiene una bolsa del mercado?",
+   "lt": "Gal palaikysite vieną pirkinių maišelį?"
+  },
+  {
+   "kind": "text",
+   "en": "Could you hold the cake box for me?",
+   "where": "moments.i_carry.first.open.byCast.c[1].lt",
+   "es": "¿Me sostiene la caja del pastel?",
+   "lt": "Gal palaikysite dėžę su tortu?"
+  },
+  {
+   "kind": "text",
+   "en": "Sure. I'll open the gate for you.",
+   "where": "moments.i_carry.first.choices[0].say.byCast.a.lt",
+   "es": "Claro. Yo le abro el portón.",
+   "lt": "Žinoma. Atidarysiu Jums vartus."
+  },
+  {
+   "kind": "text",
+   "en": "Sure. I'll hold one of the bags.",
+   "where": "moments.i_carry.first.choices[0].say.byCast.b.lt",
+   "es": "Claro. Le sostengo una bolsa.",
+   "lt": "Žinoma. Palaikysiu vieną maišelį."
+  },
+  {
+   "kind": "text",
+   "en": "Sure. I'll hold the box right here.",
+   "where": "moments.i_carry.first.choices[0].say.byCast.c.lt",
+   "es": "Claro. Aquí le sostengo la caja.",
+   "lt": "Žinoma. Palaikysiu dėžę čia pat."
+  },
+  {
+   "kind": "text",
+   "en": "Yes, happy to help.",
+   "where": "moments.i_carry.first.choices[1].say.lt",
+   "es": "Sí, sin problema.",
+   "lt": "Taip, mielai padėsiu."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks. I couldn't open it with my hands full.",
+   "where": "moments.i_carry.first.reply.byCast.a[0].lt",
+   "es": "Gracias. Con las manos ocupadas no podía abrir.",
+   "lt": "Ačiū. Pilnomis rankomis negalėjau atidaryti vartų."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks. I always buy more than I meant to.",
+   "where": "moments.i_carry.first.reply.byCast.b[0].lt",
+   "es": "Gracias. Siempre compro más de lo que pensaba.",
+   "lt": "Ačiū. Visada nusiperku daugiau, negu ketinau."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks. Now I can put the lid back on right.",
+   "where": "moments.i_carry.first.reply.byCast.c[0].lt",
+   "es": "Gracias. Así puedo acomodar bien la tapa.",
+   "lt": "Ačiū. Dabar galėsiu gerai uždėti dangtį."
+  },
+  {
+   "kind": "text",
+   "en": "All right, I'll manage. Thanks.",
+   "where": "moments.i_carry.first.away.lt",
+   "es": "Bueno, me las arreglo. Gracias.",
+   "lt": "Na, susitvarkysiu. Ačiū."
+  },
+  {
+   "kind": "text",
+   "en": "The same man has both hands on another water jug.",
+   "where": "moments.i_carry.second.scene.byCast.a",
+   "lt": "Tas pats vyras abiem rankomis neša kitą vandens bidoną."
+  },
+  {
+   "kind": "text",
+   "en": "The same young woman is back with both hands full of bags.",
+   "where": "moments.i_carry.second.scene.byCast.b",
+   "lt": "Ta pati jauna moteris vėl neša pirkinius abiem rankomis."
+  },
+  {
+   "kind": "text",
+   "en": "The older woman is back with another cake box.",
+   "where": "moments.i_carry.second.scene.byCast.c",
+   "lt": "Senyva moteris vėl neša dėžę su tortu."
+  },
+  {
+   "kind": "text",
+   "en": "Oh, it's you! My hands are full again.",
+   "where": "moments.i_carry.second.open.byCast.a[0].lt",
+   "es": "¡Ah, es usted! Otra vez tengo las manos ocupadas.",
+   "lt": "O, tai Jūs! Mano rankos vėl užimtos."
+  },
+  {
+   "kind": "text",
+   "en": "Could you get the gate for me again?",
+   "where": "moments.i_carry.second.open.byCast.a[1].lt",
+   "es": "¿Me abre el portón otra vez?",
+   "lt": "Gal vėl atidarysite man vartus?"
+  },
+  {
+   "kind": "text",
+   "en": "Oh, it's you! I came out with too many bags again.",
+   "where": "moments.i_carry.second.open.byCast.b[0].lt",
+   "es": "¡Ah, es usted! Otra vez salí con demasiadas bolsas.",
+   "lt": "O, tai Jūs! Ir vėl prisipirkau pilnus maišelius."
+  },
+  {
+   "kind": "text",
+   "en": "Could you hold one for a moment?",
+   "where": "moments.i_carry.second.open.byCast.b[1].lt",
+   "es": "¿Me sostiene una un momento?",
+   "lt": "Gal akimirką palaikysite vieną?"
+  },
+  {
+   "kind": "text",
+   "en": "You again, lucky me! I've got another cake.",
+   "where": "moments.i_carry.second.open.byCast.c[0].lt",
+   "es": "¡Otra vez usted, qué suerte! Traigo otro pastel.",
+   "lt": "Vėl Jūs! Kaip pasisekė! Nešu dar vieną tortą."
+  },
+  {
+   "kind": "text",
+   "en": "Could you hold the box for a moment?",
+   "where": "moments.i_carry.second.open.byCast.c[1].lt",
+   "es": "¿Me sostiene la caja un momento?",
+   "lt": "Gal akimirką palaikysite dėžę?"
+  },
+  {
+   "kind": "text",
+   "en": "Of course! It's easier with two people.",
+   "where": "moments.i_carry.second.choices[0].say.lt",
+   "es": "¡Claro! Entre dos es más fácil.",
+   "lt": "Žinoma! Dviese lengviau."
+  },
+  {
+   "kind": "text",
+   "en": "Hang on. I'll hold the gate for you.",
+   "where": "moments.i_carry.second.choices[1].say.byCast.a.lt",
+   "es": "Espere. Le detengo el portón.",
+   "lt": "Palaukite. Palaikysiu Jums vartus."
+  },
+  {
+   "kind": "text",
+   "en": "Hand me the heaviest bag.",
+   "where": "moments.i_carry.second.choices[1].say.byCast.b.lt",
+   "es": "Páseme la bolsa más pesada.",
+   "lt": "Paduokite man sunkiausią maišelį."
+  },
+  {
+   "kind": "text",
+   "en": "Yes. I'll hold it with both hands.",
+   "where": "moments.i_carry.second.choices[1].say.byCast.c.lt",
+   "es": "Sí. La sostengo con las dos manos.",
+   "lt": "Taip. Palaikysiu abiem rankomis."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks! This is turning into a two-person job.",
+   "where": "moments.i_carry.second.reply.byCast.a[0].lt",
+   "es": "¡Gracias! Ya parece un trabajo de dos.",
+   "lt": "Ačiū! Čia jau, regis, darbas dviem."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks again! I always say I'll buy just a little.",
+   "where": "moments.i_carry.second.reply.byCast.b[0].lt",
+   "es": "¡Gracias otra vez! Siempre digo que compraré poquito.",
+   "lt": "Dar kartą ačiū! Visada sakau, kad pirksiu nedaug."
+  },
+  {
+   "kind": "text",
+   "en": "Thanks! The cake's traveling first class today.",
+   "where": "moments.i_carry.second.reply.byCast.c[0].lt",
+   "es": "¡Gracias! Hoy el pastel viaja en primera clase.",
+   "lt": "Ačiū! Šiandien tortas keliauja pirmąja klase."
+  },
+  {
+   "kind": "text",
+   "en": "Hi! I start saying hello as soon as I spot you now.",
+   "where": "moments.i_carry.familiar.open.byCast.a[0].lt",
+   "es": "¡Buenas! A usted ya {m:lo|f:la} saludo desde lejos.",
+   "lt": "Sveiki! Dabar Jus sveikinu jau iš tolo."
+  },
+  {
+   "kind": "text",
+   "en": "Hi! It's nice to run into a familiar face.",
+   "where": "moments.i_carry.familiar.open.byCast.b[0].lt",
+   "es": "¡Hola! Da gusto encontrarse caras conocidas.",
+   "lt": "Sveiki! Smagu sutikti pažįstamų veidų."
+  },
+  {
+   "kind": "text",
+   "en": "Hello again! It's lovely to see you.",
+   "where": "moments.i_carry.familiar.open.byCast.c[0].lt",
+   "es": "¡Hola de nuevo! Qué gusto {m:verlo|f:verla}.",
+   "lt": "Vėl sveiki! Smagu Jus matyti."
+  },
+  {
+   "kind": "text",
+   "en": "It's good to run into you around here!",
+   "where": "moments.i_carry.familiar.choices[0].say.lt",
+   "es": "¡Qué gusto encontrarnos por aquí!",
+   "lt": "Smagu Jus čia sutikti!"
+  },
+  {
+   "kind": "text",
+   "en": "Same here. A friendly hello always cheers me up.",
+   "where": "moments.i_carry.familiar.choices[0].reply[0].lt",
+   "es": "Igualmente. Siempre alegra un buen saludo.",
+   "lt": "Man irgi. Nuo malonaus pasisveikinimo visada linksmiau."
+  },
+  {
+   "kind": "text",
+   "en": "Enjoy the rest of your day!",
+   "where": "moments.i_carry.familiar.choices[1].say.lt",
+   "es": "¡Que siga bien el día!",
+   "lt": "Geros likusios dienos!"
+  },
+  {
+   "kind": "text",
+   "en": "Thanks! Hope you have a good day, too.",
+   "where": "moments.i_carry.familiar.choices[1].reply[0].lt",
+   "es": "¡Gracias! Que también le vaya bien.",
+   "lt": "Ačiū! Geros dienos ir Jums!"
+  },
+  {
+   "kind": "text",
+   "en": "Till we cross paths again!",
+   "where": "moments.i_carry.familiar.away.lt",
+   "es": "¡Hasta que nos volvamos a cruzar!",
+   "lt": "Iki kito susitikimo!"
+  },
+  {
+   "kind": "text",
+   "en": "Radio reporter",
+   "where": "moments.i_survey.cast[1].role",
+   "lt": "Radijo reporteris"
+  },
+  {
+   "kind": "text",
+   "en": "Church volunteer",
+   "where": "moments.i_survey.cast[2].role",
+   "lt": "Bažnyčios savanorė"
+  },
+  {
+   "kind": "text",
+   "en": "Excuse me. It's for a school survey.",
+   "where": "moments.i_survey.first.open.byCast.a[0].lt",
+   "es": "Disculpe. Es para una encuesta de la escuela.",
+   "lt": "Atsiprašau. Atlieku apklausą mokyklai."
+  },
+  {
+   "kind": "text",
+   "en": "What do you like most about Puerto Colibrí?",
+   "where": "moments.i_survey.first.open.byCast.a[1].lt",
+   "es": "¿Qué es lo que más le gusta de Puerto Colibrí?",
+   "lt": "Kas Jums labiausiai patinka Puerto Colibrí miestelyje?"
+  },
+  {
+   "kind": "text",
+   "en": "I'm with Radio Puerto Colibrí. Got a moment?",
+   "where": "moments.i_survey.first.open.byCast.b[0].lt",
+   "es": "Soy de Radio Puerto Colibrí. ¿Tiene un momento?",
+   "lt": "Esu iš radijo „Puerto Colibrí“. Turite minutėlę?"
+  },
+  {
+   "kind": "text",
+   "en": "I'm doing a survey for the church.",
+   "where": "moments.i_survey.first.open.byCast.c[0].lt",
+   "es": "Estoy haciendo una encuesta para la iglesia.",
+   "lt": "Atlieku apklausą bažnyčiai."
+  },
+  {
+   "kind": "text",
+   "en": "The beach!",
+   "where": "moments.i_survey.first.choices[0].say.lt",
+   "es": "¡La playa!",
+   "lt": "Paplūdimys!"
+  },
+  {
+   "kind": "text",
+   "en": "Thanks! I hear that answer a lot.",
+   "where": "moments.i_survey.first.choices[0].reply[0].lt",
+   "es": "¡Gracias! Esa respuesta se oye mucho.",
+   "lt": "Ačiū! Šį atsakymą dažnai girdžiu."
+  },
+  {
+   "kind": "text",
+   "en": "The food!",
+   "where": "moments.i_survey.first.choices[1].say.byCast.a.lt",
+   "es": "¡La comida!",
+   "lt": "Maistas!"
+  },
+  {
+   "kind": "text",
+   "en": "The people!",
+   "where": "moments.i_survey.first.choices[1].say.byCast.b.lt",
+   "es": "¡La gente!",
+   "lt": "Žmonės!"
+  },
+  {
+   "kind": "text",
+   "en": "Thanks! I'll put that one down, too.",
+   "where": "moments.i_survey.first.choices[1].reply[0].lt",
+   "es": "¡Gracias! Esa también la apunto.",
+   "lt": "Ačiū! Ir šį atsakymą pasižymėsiu."
+  },
+  {
+   "kind": "text",
+   "en": "Sorry, I can't right now.",
+   "where": "moments.i_survey.first.choices[2].say.byCast.a.lt",
+   "es": "Ahorita no puedo, perdone.",
+   "lt": "Atleiskite, dabar negaliu."
+  },
+  {
+   "kind": "text",
+   "en": "Of course. Thanks anyway.",
+   "where": "moments.i_survey.first.choices[2].reply[0].lt",
+   "es": "Claro. Gracias de todos modos.",
+   "lt": "Žinoma. Vis tiek ačiū."
+  },
+  {
+   "kind": "text",
+   "en": "Have a lovely walk!",
+   "where": "moments.i_survey.first.away.lt",
+   "es": "¡Que tenga un buen paseo!",
+   "lt": "Malonaus pasivaikščiojimo!"
+  },
+  {
+   "kind": "text",
+   "en": "Hi again! I'm almost done with the survey.",
+   "where": "moments.i_survey.second.open.byCast.a[0].lt",
+   "es": "¡Hola otra vez! Ya casi termino la encuesta.",
+   "lt": "Vėl sveiki! Jau beveik baigiau apklausą."
+  },
+  {
+   "kind": "text",
+   "en": "What would you tell someone visiting for the first time?",
+   "where": "moments.i_survey.second.open.byCast.a[1].lt",
+   "es": "¿Qué le diría a quien llega por primera vez?",
+   "lt": "Ką pasakytumėte pirmą kartą čia atvykusiam žmogui?"
+  },
+  {
+   "kind": "text",
+   "en": "Hello again! Today I'm after tips for visitors.",
+   "where": "moments.i_survey.second.open.byCast.b[0].lt",
+   "es": "¡Buenas otra vez! Hoy quiero consejos para los visitantes.",
+   "lt": "Vėl sveiki! Šiandien renku patarimus svečiams."
+  },
+  {
+   "kind": "text",
+   "en": "Hello! I thought of another question for the survey.",
+   "where": "moments.i_survey.second.open.byCast.c[0].lt",
+   "es": "¡Hola! Se me ocurrió otra pregunta para la encuesta.",
+   "lt": "Sveiki! Sugalvojau dar vieną klausimą apklausai."
+  },
+  {
+   "kind": "text",
+   "en": "I'd say to take their time and enjoy the sea.",
+   "where": "moments.i_survey.second.choices[0].say.lt",
+   "es": "Que se tome su tiempo para ver el mar.",
+   "lt": "Pasakyčiau, kad neskubėtų ir pasigrožėtų jūra."
+  },
+  {
+   "kind": "text",
+   "en": "That's good advice. I'd tell them that, too.",
+   "where": "moments.i_survey.second.choices[0].reply[0].lt",
+   "es": "Qué buen consejo. Eso se lo diría yo también.",
+   "lt": "Geras patarimas. Aš irgi taip pasakyčiau."
+  },
+  {
+   "kind": "text",
+   "en": "I'd say to come ready to try the food.",
+   "where": "moments.i_survey.second.choices[1].say.lt",
+   "es": "Que venga con ganas de probar la comida.",
+   "lt": "Pasakyčiau, kad atvažiuotų nusiteikę paragauti vietinio maisto."
+  },
+  {
+   "kind": "text",
+   "en": "Good advice! There's always something tasty to try.",
+   "where": "moments.i_survey.second.choices[1].reply[0].lt",
+   "es": "¡Buen consejo! Siempre hay algo rico que probar.",
+   "lt": "Geras patarimas! Visada yra ko skanaus paragauti."
+  },
+  {
+   "kind": "text",
+   "en": "All right, I'll keep asking around. Thanks!",
+   "where": "moments.i_survey.second.away.lt",
+   "es": "Bueno, sigo con las preguntas. ¡Gracias!",
+   "lt": "Na, dar paklausinėsiu. Ačiū!"
+  },
+  {
+   "kind": "text",
+   "en": "Hi! I counted all the answers.",
+   "where": "moments.i_survey.familiar.open.byCast.a[0].lt",
+   "es": "¡Hola! Ya conté todas las respuestas.",
+   "lt": "Sveiki! Jau suskaičiavau visus atsakymus."
+  },
+  {
+   "kind": "text",
+   "en": "The beach won!",
+   "where": "moments.i_survey.familiar.open.byCast.a[1].lt",
+   "es": "¡Ganó la playa!",
+   "lt": "Laimėjo paplūdimys!"
+  },
+  {
+   "kind": "text",
+   "en": "Hi! We announced the result on the radio.",
+   "where": "moments.i_survey.familiar.open.byCast.b[0].lt",
+   "es": "¡Buenas! Ya dimos el resultado en la radio.",
+   "lt": "Sveiki! Per radiją jau paskelbėme rezultatą."
+  },
+  {
+   "kind": "text",
+   "en": "The beach got the most votes!",
+   "where": "moments.i_survey.familiar.open.byCast.b[1].lt",
+   "es": "¡La playa fue la más votada!",
+   "lt": "Daugiausia balsų surinko paplūdimys!"
+  },
+  {
+   "kind": "text",
+   "en": "Hello! We've got the survey result.",
+   "where": "moments.i_survey.familiar.open.byCast.c[0].lt",
+   "es": "¡Hola! Ya tenemos el resultado de la encuesta.",
+   "lt": "Sveiki! Jau žinome apklausos rezultatą."
+  },
+  {
+   "kind": "text",
+   "en": "The beach came in first.",
+   "where": "moments.i_survey.familiar.open.byCast.c[1].lt",
+   "es": "La playa quedó en primer lugar.",
+   "lt": "Pirmoje vietoje – paplūdimys."
+  },
+  {
+   "kind": "text",
+   "en": "That's great! And what came in second?",
+   "where": "moments.i_survey.familiar.choices[0].say.lt",
+   "es": "¡Qué bien! ¿Y qué quedó en segundo lugar?",
+   "lt": "Smagu! O kas antroje vietoje?"
+  },
+  {
+   "kind": "text",
+   "en": "The food. It nearly caught up with the beach.",
+   "where": "moments.i_survey.familiar.choices[0].reply[0].lt",
+   "es": "La comida. Casi alcanzó a la playa.",
+   "lt": "Maistas. Beveik pasivijo paplūdimį."
+  },
+  {
+   "kind": "text",
+   "en": "Nice! I like the beach, too.",
+   "where": "moments.i_survey.familiar.choices[1].say.lt",
+   "es": "¡Qué bueno! A mí también me gusta la playa.",
+   "lt": "Smagu! Man irgi patinka paplūdimys."
+  },
+  {
+   "kind": "text",
+   "en": "Yep. Some people answered without even thinking.",
+   "where": "moments.i_survey.familiar.choices[1].reply[0].lt",
+   "es": "Sí. Hubo quien contestó sin pensarlo.",
+   "lt": "Taip. Kai kas atsakė iškart."
+  },
+  {
+   "kind": "text",
+   "en": "See you in town!",
+   "where": "moments.i_survey.familiar.away.lt",
+   "es": "¡Nos vemos por el pueblo!",
+   "lt": "Iki pasimatymo miestelyje!"
+  },
+  {
+   "kind": "text",
+   "en": "Yesterday you brought my wallet back. That sticks with you.",
+   "where": "moments.a_cafe.first.open.byCast.a[0].lt",
+   "es": "Ayer me devolvió la cartera. Eso no se olvida.",
+   "lt": "Vakar grąžinote man piniginę. Tokių dalykų nepamiršti."
+  },
+  {
+   "kind": "text",
+   "en": "Today I'm treating you to spiced coffee from La Ceiba Café.",
+   "where": "moments.a_cafe.first.open.byCast.a[1].lt",
+   "es": "Hoy le invito un café de olla de Café La Ceiba.",
+   "lt": "Šiandien vaišinu Jus prieskonine puodo kava iš kavinės „La Ceiba“."
+  },
+  {
+   "kind": "text",
+   "en": "You saved me yesterday when I dropped my keys.",
+   "where": "moments.a_cafe.first.open.byCast.b[0].lt",
+   "es": "Ayer me salvó con las llaves.",
+   "lt": "Vakar mane išgelbėjote, kai man iškrito raktai."
+  },
+  {
+   "kind": "text",
+   "en": "You found my sunglasses for me yesterday.",
+   "where": "moments.a_cafe.first.open.byCast.c[0].lt",
+   "es": "Ayer me encontró los lentes de sol.",
+   "lt": "Vakar radote mano akinius nuo saulės."
+  },
+  {
+   "kind": "text",
+   "en": "That's so thoughtful. Thank you so much!",
+   "where": "moments.a_cafe.first.choices[0].say.lt",
+   "es": "¡Qué detalle! Muchas gracias.",
+   "lt": "Kaip malonu! Labai Jums ačiū!"
+  },
+  {
+   "kind": "text",
+   "en": "I was just in the mood for coffee!",
+   "where": "moments.a_cafe.first.choices[1].say.lt",
+   "es": "¡Justo se me antojaba un café!",
+   "lt": "Kaip tik norėjau kavos!"
+  },
+  {
+   "kind": "text",
+   "en": "Thank you. It's still nice and warm.",
+   "where": "moments.a_cafe.first.reply.byCast.a[0].lt",
+   "es": "Gracias a usted. Todavía está calientito.",
+   "lt": "Jums ačiū. Kava dar šilta."
+  },
+  {
+   "kind": "text",
+   "en": "You're welcome. My keys are tucked away today.",
+   "where": "moments.a_cafe.first.reply.byCast.b[0].lt",
+   "es": "De nada. Hoy sí guardé bien las llaves.",
+   "lt": "Nėra už ką. Šiandien raktus jau laikau saugiai."
+  },
+  {
+   "kind": "text",
+   "en": "You're welcome. It's for you to enjoy in the shade.",
+   "where": "moments.a_cafe.first.reply.byCast.c[0].lt",
+   "es": "De nada. Para que lo disfrute a la sombra.",
+   "lt": "Nėra už ką. Pasimėgaukite ja pavėsyje."
+  },
+  {
+   "kind": "text",
+   "en": "All right, I'll save it for you.",
+   "where": "moments.a_cafe.first.away.lt",
+   "es": "Bueno, se lo guardo para luego.",
+   "lt": "Na, atidėsiu Jums vėlesniam kartui."
+  },
+  {
+   "kind": "text",
+   "en": "Coffee's on me.",
+   "where": "moments.a_cafe.first.card.lt",
+   "es": "Le invito un café.",
+   "lt": "Vaišinu Jus kava."
+  },
+  {
+   "kind": "text",
+   "en": "I leave tomorrow. This woven bracelet is for you.",
+   "where": "moments.a_pulsera.first.open.byCast.a[0].lt",
+   "es": "Mañana me voy. Esta pulsera tejida es para usted.",
+   "lt": "Rytoj išvažiuoju. Ši pinta apyrankė – Jums."
+  },
+  {
+   "kind": "text",
+   "en": "I bought it from the artisans by the ruins.",
+   "where": "moments.a_pulsera.first.open.byCast.a[1].lt",
+   "es": "La compré a los artesanos junto a las ruinas.",
+   "lt": "Ją pirkau iš amatininkų prie griuvėsių."
+  },
+  {
+   "kind": "text",
+   "en": "I'm leaving tomorrow. I wanted you to have this woven bracelet.",
+   "where": "moments.a_pulsera.first.open.byCast.b[0].lt",
+   "es": "Mañana me voy. Quería darle esta pulsera tejida.",
+   "lt": "Rytoj išvažiuoju. Norėjau padovanoti Jums šią pintą apyrankę."
+  },
+  {
+   "kind": "text",
+   "en": "I'm leaving town tomorrow. I brought you this woven bracelet.",
+   "where": "moments.a_pulsera.first.open.byCast.c[0].lt",
+   "es": "Mañana salgo del pueblo. Le traje esta pulsera tejida.",
+   "lt": "Rytoj išvažiuoju iš miestelio. Atnešiau Jums šią pintą apyrankę."
+  },
+  {
+   "kind": "text",
+   "en": "It's beautiful! Thank you so much.",
+   "where": "moments.a_pulsera.first.choices[0].say.lt",
+   "es": "¡Qué bonita! Muchas gracias.",
+   "lt": "Kokia graži! Labai ačiū."
+  },
+  {
+   "kind": "text",
+   "en": "I'll keep it as a souvenir.",
+   "where": "moments.a_pulsera.first.choices[1].say.lt",
+   "es": "La voy a guardar de recuerdo.",
+   "lt": "Pasiliksiu ją atminimui."
+  },
+  {
+   "kind": "text",
+   "en": "A little something to thank you for the tip about the cenote.",
+   "where": "moments.a_pulsera.first.reply.byCast.a[0].lt",
+   "es": "Es un detalle. Gracias por lo del cenote.",
+   "lt": "Čia nedidelė dovanėlė. Ačiū, kad padėjote, kai ieškojau cenotės."
+  },
+  {
+   "kind": "text",
+   "en": "A little something to thank you for helping me find my hotel.",
+   "where": "moments.a_pulsera.first.reply.byCast.b[0].lt",
+   "es": "Es un detalle. Gracias por ayudarme con el hotel.",
+   "lt": "Čia nedidelė dovanėlė. Ačiū, kad padėjote rasti viešbutį."
+  },
+  {
+   "kind": "text",
+   "en": "A little something to thank you for the help with the museum.",
+   "where": "moments.a_pulsera.first.reply.byCast.c[0].lt",
+   "es": "Es un detalle. Gracias por lo del museo.",
+   "lt": "Čia nedidelė dovanėlė. Ačiū, kad padėjote, kai ieškojau muziejaus."
+  },
+  {
+   "kind": "text",
+   "en": "Well, I'll say goodbye. All the best!",
+   "where": "moments.a_pulsera.first.away.lt",
+   "es": "Bueno, me despido. ¡Que le vaya bien!",
+   "lt": "Na, atsisveikinsiu. Sėkmės Jums!"
+  },
+  {
+   "kind": "text",
+   "en": "It's a little something.",
+   "where": "moments.a_pulsera.first.card.lt",
+   "es": "Es un detalle.",
+   "lt": "Čia nedidelė dovanėlė."
+  },
+  {
+   "kind": "text",
+   "en": "Don Chucho lifts his guitar as people stop to listen.",
+   "where": "moments.a_serenata.first.scene",
+   "lt": "Don Chuchas kilsteli gitarą, o žmonės sustoja paklausyti."
+  },
+  {
+   "kind": "text",
+   "en": "A moment, neighbors! I'm going to sing a bolero.",
+   "where": "moments.a_serenata.first.open.byCast.a[0].lt",
+   "es": "¡Un momentito, vecinos! Hoy voy a cantar un bolero.",
+   "lt": "Minutėlę, kaimynai! Padainuosiu bolero."
+  },
+  {
+   "kind": "text",
+   "en": "This song is for you.",
+   "where": "moments.a_serenata.first.open.byCast.a[1].lt",
+   "es": "Esta canción va para usted.",
+   "lt": "Ši daina – Jums."
+  },
+  {
+   "kind": "text",
+   "en": "What an honor, Don Chucho. I'd love to hear it.",
+   "where": "moments.a_serenata.first.choices[0].say.lt",
+   "es": "Qué honor, Don Chucho. Lo escucho con gusto.",
+   "lt": "Kokia garbė, Don Chuchai. Mielai paklausysiu."
+  },
+  {
+   "kind": "text",
+   "en": "Thank you, Don Chucho. You made me smile.",
+   "where": "moments.a_serenata.first.choices[1].say.lt",
+   "es": "Gracias, Don Chucho. Me hizo sonreír.",
+   "lt": "Ačiū, Don Chuchai. Pradžiuginote mane."
+  },
+  {
+   "kind": "text",
+   "en": "I hope it keeps you company the way it does for me.",
+   "where": "moments.a_serenata.first.reply[0].lt",
+   "es": "Ojalá le haga tanta compañía como a mí.",
+   "lt": "Tikiuosi, ji palaikys Jums draugiją taip, kaip ir man."
+  },
+  {
+   "kind": "text",
+   "en": "May the sea sing softly to you on your way home.",
+   "where": "moments.a_serenata.first.reply[1].lt",
+   "es": "Que el mar le cante bajito camino de casa.",
+   "lt": "Tegul jūra tyliai Jums dainuoja pakeliui namo."
+  },
+  {
+   "kind": "text",
+   "en": "I'd be happy to sing it for you another day.",
+   "where": "moments.a_serenata.first.away.lt",
+   "es": "Otro día se la canto, con mucho gusto.",
+   "lt": "Mielai padainuosiu Jums kitą kartą."
+  },
+  {
+   "kind": "text",
+   "en": "Remember the mangoes? I saved you a cup.",
+   "where": "moments.a_mango.first.open.byCast.a[0].lt",
+   "es": "¿Se acuerda de los mangos? Le guardé un vasito.",
+   "lt": "Prisimenate mangus? Atidėjau Jums puodelį."
+  },
+  {
+   "kind": "text",
+   "en": "With chili and lime. It's for you.",
+   "where": "moments.a_mango.first.open.byCast.a[1].lt",
+   "es": "Con chile y limón. Para usted.",
+   "lt": "Su čili ir laimų sultimis. Čia Jums."
+  },
+  {
+   "kind": "text",
+   "en": "Remember my oranges? I brought you a cup.",
+   "where": "moments.a_mango.first.open.byCast.b[0].lt",
+   "es": "¿Se acuerda de mis naranjas? Le traje un vasito.",
+   "lt": "Prisimenate mano apelsinus? Atnešiau Jums puodelį."
+  },
+  {
+   "kind": "text",
+   "en": "Hi! I brought you a fruit cup.",
+   "where": "moments.a_mango.first.open.byCast.c[0].lt",
+   "es": "¡Hola! Le traje un vasito de fruta.",
+   "lt": "Sveiki! Atnešiau Jums puodelį vaisių."
+  },
+  {
+   "kind": "text",
+   "en": "With chili and juice from those limes.",
+   "where": "moments.a_mango.first.open.byCast.c[1].lt",
+   "es": "Con chile y el jugo de aquellos limones.",
+   "lt": "Su čili ir tų laimų sultimis."
+  },
+  {
+   "kind": "text",
+   "en": "That looks delicious! Thank you so much.",
+   "where": "moments.a_mango.first.choices[0].say.lt",
+   "es": "¡Se ve buenísimo! Muchas gracias.",
+   "lt": "Kaip skaniai atrodo! Labai ačiū."
+  },
+  {
+   "kind": "text",
+   "en": "With chili? Just the way I like it.",
+   "where": "moments.a_mango.first.choices[1].say.lt",
+   "es": "¿Con chile? Justo como me gusta.",
+   "lt": "Su čili? Kaip tik taip, kaip mėgstu."
+  },
+  {
+   "kind": "text",
+   "en": "Enjoy. They're from the mangoes we picked up that day.",
+   "where": "moments.a_mango.first.reply.byCast.a[0].lt",
+   "es": "Buen provecho. Son de los que juntamos aquel día.",
+   "lt": "Skanaus! Čia tie mangai, kuriuos tąkart surinkome."
+  },
+  {
+   "kind": "text",
+   "en": "Enjoy. These oranges behaved themselves better.",
+   "where": "moments.a_mango.first.reply.byCast.b[0].lt",
+   "es": "Buen provecho. Estas naranjas se portaron mejor.",
+   "lt": "Skanaus! Šie apelsinai elgėsi gražiau."
+  },
+  {
+   "kind": "text",
+   "en": "Enjoy. This time the limes stayed put.",
+   "where": "moments.a_mango.first.reply.byCast.c[0].lt",
+   "es": "Buen provecho. Esta vez los limones se quedaron quietos.",
+   "lt": "Skanaus! Šįkart laimai nė nepajudėjo."
+  },
+  {
+   "kind": "text",
+   "en": "I'll keep it for you for later.",
+   "where": "moments.a_mango.first.away.lt",
+   "es": "Se lo guardo para más tarde.",
+   "lt": "Atidėsiu Jums, jei vėliau užsuksite."
+  },
+  {
+   "kind": "text",
+   "en": "Enjoy your food!",
+   "where": "moments.a_mango.first.card.lt",
+   "es": "¡Buen provecho!",
+   "lt": "Skanaus!"
+  },
+  {
+   "kind": "text",
+   "en": "It's so hot today!",
+   "where": "chatter.c_calor.lines[0].lt",
+   "es": "¡Qué calor hace hoy!",
+   "lt": "Kaip šiandien karšta!"
+  },
+  {
+   "kind": "text",
+   "en": "Tell me about it! And it's only ten.",
+   "where": "chatter.c_calor.lines[1].lt",
+   "es": "¡Ni me digas! Y apenas son las diez.",
+   "lt": "Oi, nė nesakyk! Dar tik dešimta."
+  },
+  {
+   "kind": "text",
+   "en": "Feel that north wind yet?",
+   "where": "chatter.c_norte.lines[0].lt",
+   "es": "¿Ya sentiste el norte?",
+   "lt": "Jau jauti tą šaltą šiaurės vėją?"
+  },
+  {
+   "kind": "text",
+   "en": "Yep. Even the boats are dancing.",
+   "where": "chatter.c_norte.lines[1].lt",
+   "es": "Sí. Hasta las lanchas están bailando.",
+   "lt": "Taip. Net valtys šoka."
+  },
+  {
+   "kind": "text",
+   "en": "Want to go to the street market for some chiles?",
+   "where": "chatter.c_tianguis.lines[0].lt",
+   "es": "¿Vamos al tianguis por unos chiles?",
+   "lt": "Eime į lauko turgų čili pipirų?"
+  },
+  {
+   "kind": "text",
+   "en": "Sure. But this time you're the one tasting them.",
+   "where": "chatter.c_tianguis.lines[1].lt",
+   "es": "Va. Pero esta vez tú los pruebas.",
+   "lt": "Gerai. Bet šįkart ragausi tu."
+  },
+  {
+   "kind": "text",
+   "en": "How was the water in the cenote? Did you get in?",
+   "where": "chatter.c_cenote.lines[0].lt",
+   "es": "¿Cómo estaba el agua del cenote? ¿Sí te metiste?",
+   "lt": "Koks buvo vanduo cenotėje? Ar išdrįsai įlipti?"
+  },
+  {
+   "kind": "text",
+   "en": "Freezing. I got out a lot faster than I got in.",
+   "where": "chatter.c_cenote.lines[1].lt",
+   "es": "Helada. Tardé más en entrar que en salir.",
+   "lt": "Ledinis. Išlipau greičiau, nei įlipau."
+  },
+  {
+   "kind": "text",
+   "en": "Are you going to the church festival?",
+   "where": "chatter.c_fiesta_iglesia.lines[0].lt",
+   "es": "¿Vas a la fiesta de la iglesia?",
+   "lt": "Eisi į bažnyčios šventę?"
+  },
+  {
+   "kind": "text",
+   "en": "Of course. This time I'm learning the dance steps.",
+   "where": "chatter.c_fiesta_iglesia.lines[1].lt",
+   "es": "Claro. Esta vez sí me aprendo los pasos.",
+   "lt": "Žinoma. Šįkart jau išmoksiu šokio žingsnelius."
+  },
+  {
+   "kind": "text",
+   "en": "Have you practiced the waltz for the quinceañera?",
+   "where": "chatter.c_quince.lines[0].lt",
+   "es": "¿Ya ensayaste el vals para la quinceañera?",
+   "lt": "Ar jau repetavai valsą penkioliktojo gimtadienio šventei?"
+  },
+  {
+   "kind": "text",
+   "en": "Yep. The chair knows all the steps by now.",
+   "where": "chatter.c_quince.lines[1].lt",
+   "es": "Sí. La silla ya se sabe todos los pasos.",
+   "lt": "Taip. Kėdė jau moka visus žingsnelius."
+  },
+  {
+   "kind": "text",
+   "en": "Hear that? They play it a lot on Radio Puerto Colibrí.",
+   "where": "chatter.c_radio.lines[0].lt",
+   "es": "¿Oyes? La ponen mucho en Radio Puerto Colibrí.",
+   "lt": "Girdi? Per radiją „Puerto Colibrí“ ją dažnai leidžia."
+  },
+  {
+   "kind": "text",
+   "en": "I know it by heart now. I even sing it while doing dishes.",
+   "where": "chatter.c_radio.lines[1].lt",
+   "es": "Ya me la sé. Hasta la canto lavando platos.",
+   "lt": "Jau moku atmintinai. Net kai plaunu indus, dainuoju."
+  },
+  {
+   "kind": "text",
+   "en": "Have you tried the spiced coffee yet?",
+   "where": "chatter.c_cafe_de_olla.lines[0].lt",
+   "es": "¿Ya probaste el café de olla?",
+   "lt": "Ar jau ragavai prieskoninės puodo kavos?"
+  },
+  {
+   "kind": "text",
+   "en": "Yeah. You can smell the cinnamon out on the sidewalk.",
+   "where": "chatter.c_cafe_de_olla.lines[1].lt",
+   "es": "Sí. Huele a canela hasta en la banqueta.",
+   "lt": "Taip. Net ant šaligatvio kvepia cinamonu."
+  },
+  {
+   "kind": "text",
+   "en": "Did your power go out last night?",
+   "where": "chatter.c_apagon.lines[0].lt",
+   "es": "¿Se te fue la luz anoche?",
+   "lt": "Vakar vakare ir tau dingo elektra?"
+  },
+  {
+   "kind": "text",
+   "en": "Yep. I even took a chair outside to watch the stars.",
+   "where": "chatter.c_apagon.lines[1].lt",
+   "es": "Sí. Hasta saqué la silla para ver las estrellas.",
+   "lt": "Taip. Net išsinešiau kėdę į lauką pasigrožėti žvaigždėmis."
+  },
+  {
+   "kind": "text",
+   "en": "Have you seen the boats coming back to the pier?",
+   "where": "chatter.c_lanchas.lines[0].lt",
+   "es": "¿Ya viste las lanchas que vuelven al muelle?",
+   "lt": "Jau matei į prieplauką grįžtančias valtis?"
+  },
+  {
+   "kind": "text",
+   "en": "Yep. The gulls got here first, as usual.",
+   "where": "chatter.c_lanchas.lines[1].lt",
+   "es": "Sí. Las gaviotas llegaron primero, como siempre.",
+   "lt": "Taip. Žuvėdros atskrido pirmos, kaip visada."
+  },
+  {
+   "kind": "text",
+   "en": "Have you seen the cut-paper banners on the bandstand?",
+   "where": "chatter.c_papel_picado.lines[0].lt",
+   "es": "¿Ya viste el papel picado del kiosco?",
+   "lt": "Matei karpytas popierines girliandas ant pavėsinės?"
+  },
+  {
+   "kind": "text",
+   "en": "Yeah. My grandma made the blue ones.",
+   "where": "chatter.c_papel_picado.lines[1].lt",
+   "es": "Sí. Mi abuela hizo el azul.",
+   "lt": "Taip. Mėlynas girliandas iškarpė mano močiutė."
+  },
+  {
+   "kind": "text",
+   "en": "When's your nephew coming from Mérida?",
+   "where": "chatter.c_merida.lines[0].lt",
+   "es": "¿Cuándo llega tu sobrino de Mérida?",
+   "lt": "Kada atvažiuoja tavo sūnėnas iš Meridos?"
+  },
+  {
+   "kind": "text",
+   "en": "Tomorrow. He says he's coming for the sea and the mangoes.",
+   "where": "chatter.c_merida.lines[1].lt",
+   "es": "Mañana. Dice que viene por el mar y los mangos.",
+   "lt": "Rytoj. Sako, atvažiuoja dėl jūros ir mangų."
+  },
+  {
+   "kind": "text",
+   "en": "Feel like taking a surf lesson at La Ola?",
+   "where": "chatter.c_surf.lines[0].lt",
+   "es": "¿Te animas a una clase de surf en La Ola?",
+   "lt": "Norėtum pamokos banglenčių mokykloje „La Ola“?"
+  },
+  {
+   "kind": "text",
+   "en": "Yeah. First I want to learn to fall with style.",
+   "where": "chatter.c_surf.lines[1].lt",
+   "es": "Sí. Primero quiero aprender a caer con estilo.",
+   "lt": "Taip. Pirmiausia noriu išmokti stilingai nukristi."
+  },
+  {
+   "kind": "text",
+   "en": "Are you going to your cousin's wedding?",
+   "where": "chatter.c_boda.lines[0].lt",
+   "es": "¿Vas a la boda de tu prima?",
+   "lt": "Eisi į pusseserės vestuves?"
+  },
+  {
+   "kind": "text",
+   "en": "Yeah. She says we're going to dance till sunrise.",
+   "where": "chatter.c_boda.lines[1].lt",
+   "es": "Sí. Dice que vamos a bailar hasta que amanezca.",
+   "lt": "Taip. Sako, šoksime, kol išauš."
+  },
+  {
+   "kind": "text",
+   "en": "Are you staying under the beach shelter?",
+   "where": "chatter.c_palapa.lines[0].lt",
+   "es": "¿Te quedas bajo la palapa?",
+   "lt": "Pasiliksi po paplūdimio pavėsine?"
+  },
+  {
+   "kind": "text",
+   "en": "Yep. The sun's working harder than I am today.",
+   "where": "chatter.c_palapa.lines[1].lt",
+   "es": "Sí. Hoy el sol trabaja más que yo.",
+   "lt": "Taip. Šiandien saulė dirba daugiau už mane."
+  },
+  {
+   "kind": "text",
+   "en": "Does the Wi-Fi work for you here?",
+   "where": "chatter.c_wifi.lines[0].lt",
+   "es": "¿Te funciona el wifi aquí?",
+   "lt": "Ar tau čia veikia belaidis internetas?"
+  },
+  {
+   "kind": "text",
+   "en": "Yep. My messages can wait till I finish my coffee.",
+   "where": "chatter.c_wifi.lines[1].lt",
+   "es": "Sí. Los mensajes pueden esperar a que termine mi café.",
+   "lt": "Taip. Žinutės palauks, kol išgersiu kavą."
+  },
+  {
+   "kind": "text",
+   "en": "Have you seen the flowers in front of the church?",
+   "where": "chatter.c_flores.lines[0].lt",
+   "es": "¿Ya viste las flores frente a la iglesia?",
+   "lt": "Jau matei gėles prie bažnyčios?"
+  },
+  {
+   "kind": "text",
+   "en": "Yeah. My aunt says they brighten up the square.",
+   "where": "chatter.c_flores.lines[1].lt",
+   "es": "Sí. Mi tía dice que alegran la plaza.",
+   "lt": "Taip. Teta sako, kad su jomis aikštėje linksmiau."
+  },
+  {
+   "kind": "text",
+   "en": "Did you make it to the shared van in time?",
+   "where": "chatter.c_colectivo.lines[0].lt",
+   "es": "¿Alcanzaste el colectivo?",
+   "lt": "Ar spėjai į maršrutinį mikroautobusą?"
+  },
+  {
+   "kind": "text",
+   "en": "Yep. I ran so hard I earned my seat.",
+   "where": "chatter.c_colectivo.lines[1].lt",
+   "es": "Sí. Corrí tanto que me gané el asiento.",
+   "lt": "Taip. Tiek bėgau, kad nusipelniau vietos atsisėsti."
+  },
+  {
+   "kind": "text",
+   "en": "How much did you pay for mangoes at the market?",
+   "where": "chatter.c_mercado.lines[0].lt",
+   "es": "¿Cuánto pagaste por los mangos en el mercado?",
+   "lt": "Kiek turguje mokėjai už mangus?"
+  },
+  {
+   "kind": "text",
+   "en": "Thirty pesos a kilo. They gave me one to try.",
+   "where": "chatter.c_mercado.lines[1].lt",
+   "es": "Treinta pesos el kilo. Me dieron uno para probar.",
+   "lt": "Trisdešimt pesų už kilogramą. Vieną davė paragauti."
+  },
+  {
+   "kind": "text",
+   "en": "Did you see the cruise passengers at the market?",
+   "where": "chatter.c_crucero.lines[0].lt",
+   "es": "¿Viste a los del crucero en el mercado?",
+   "lt": "Matei turguje žmones iš kruizinio laivo?"
+  },
+  {
+   "kind": "text",
+   "en": "Yep. They left with hats for everybody.",
+   "where": "chatter.c_crucero.lines[1].lt",
+   "es": "Sí. Salieron con sombreros para todos.",
+   "lt": "Taip. Nupirko skrybėlių visai kompanijai."
+  }
+ ]
+}

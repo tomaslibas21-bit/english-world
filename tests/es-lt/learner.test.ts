@@ -47,15 +47,16 @@ describe("Puerto Colibrí for Lithuanians", () => {
     expect(left.slice(0, 10).map((i) => i.en ?? i.nat)).toEqual([]);
   });
 
-  it("applies the street table and reports entries still awaiting Lithuanian", () => {
+  it("applies Lithuanian to every piece of street learner text", () => {
     const source = streetLearnerContent(ES_MOMENTS, ES_CHATTER);
     const rows = learnerItems(source);
     expect(rows.length).toBeGreaterThan(0);
     expect(rows.every(({ kind }) => kind === "text")).toBe(true);
     const translations: Record<string, string> = streetTable.text;
-    const missing = rows.filter(({ en }) => !translations[en!]?.trim() || translations[en!] === en);
-    if (missing.length) console.warn(`Street life: ${missing.length} entries awaiting Lithuanian\n` +
-      missing.map(({ where, en }) => `  ${where}: ${en}`).join("\n"));
+    const missing = rows
+      .filter(({ en }) => !translations[en!]?.trim() || translations[en!] === en)
+      .map(({ where, en }) => `${where}: ${en}`);
+    expect(missing).toEqual([]);
     const expected = structuredClone(source);
     applyLearner(expected, streetTable);
     expect(streetLearnerContent(STREET_MOMENTS, STREET_CHATTER)).toEqual(expected);
