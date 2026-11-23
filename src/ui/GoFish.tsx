@@ -16,7 +16,7 @@ import "./gofish.css";
 
 const act = (name: string, value?: string | boolean) => game?.modeAction("gofish", name, value);
 const exit = () => game?.modeExit();
-const pictureFor = (id: string) => `/gofish/${id}.webp`;
+const pictureFor = (id: string) => `${import.meta.env.BASE_URL}gofish/${id}.webp`;
 const labelUnits = (text: string) => Math.max(...text.split(/\s+/u).map((part) => part.length)) * 0.64;
 
 export function GoFishOffer() {

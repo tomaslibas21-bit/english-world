@@ -7,6 +7,7 @@
 //    dynamic renderings (prices, chosen items) and crash-tests every handler.
 import { SITUATIONS } from "../src/content/situations";
 import { isBaristaCoachLine } from "../src/content/barista-lines";
+import { MEETING_LINES } from "../src/content/phoneMeeting";
 import { GLOBAL } from "../src/content/global";
 import { NPCS } from "../src/content/npcs";
 import { AMBIENT_LINES, STAFF_LINES, VENDOR_LINES } from "../src/content/ambient";
@@ -24,6 +25,22 @@ import { playSim } from "./sim-play";
 export interface Utt { voice: string; speed: number; say: string; en: string; where: string }
 /** A line simulated play never reached (the random runs and the sims): `named` false when no code names it either. */
 export interface Unreached { sit: string; line: string; named: boolean; items?: number }
+
+/** The learner's own lines in the kit's mini-games (23 Nov 2026). A tapped answer is said for the learner in the coach
+ *  voice of their gender, speed 1 (src/game/kit/dialogue.ts), composed as src/game/kit/lines.ts conversationLine does.
+ *  `only`: the learner says it, never the person (the taxi's answers and fares, the pool hall's answers, the phone
+ *  meeting's two answers); `both`: the person says it too (Go Fish's asks and replies, the pool calls, played as pieces).
+ *  The barista's (isBaristaCoachLine) and the road's rd_a_ lines keep their own cases below. */
+export const KIT_LEARNER: Record<string, { only?: RegExp; both?: RegExp }> = {
+  "s66-taxi": { only: /^tx_(r\d_)?a_/ },
+  "s85-dinner": { both: /^gf_(ask_[a-z_]+|yes|nope|pair)$/ },
+  "x01-pool-hall": { only: /^h_(solids|stripes|gg|fun)$/, both: /^bl_(b\d+|p_[a-z]+)$/ },
+  "s83-invite-call": { only: /^phone_meet_(ready|tickets)$/ },
+};
+/** Lines a mini-game says in a conversation's name that are not among that conversation's own lines. */
+const KIT_EXTRA_LINES: Record<string, Record<string, SentSrc[]>> = {
+  "s83-invite-call": MEETING_LINES,
+};
 
 function lookFor(sit: SituationDef) {
   return (id: string): EntityDef | undefined => {
@@ -97,7 +114,7 @@ export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: 
       } catch { /* a sim that throws is check-content's to report */ }
     }
     // 1. static lines and value-domain lines
-    for (const [lid, variants] of Object.entries(sit.lines)) {
+    for (const [lid, variants] of Object.entries({ ...sit.lines, ...KIT_EXTRA_LINES[sit.id] })) {
       const speakers = usedBy.has(lid) ? voices.filter((n) => usedBy.get(lid)!.has(n.id)) : voices;
       const lists = usedLists.get(lid);
       if (!usedBy.has(lid)) unreached.push({ sit: sit.id, line: lid, named: referenced(sit, lid) });
@@ -133,6 +150,15 @@ export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: 
             add(coach, 1, compose(src, {}, { look, formal: true }), `${sit.id}:${lid}[${i}]`);
           }
           return;
+        }
+        const kit = KIT_LEARNER[sit.id];
+        if (kit && (kit.only?.test(lid) || kit.both?.test(lid))) {
+          for (const voice of coachVoices(opts.v2)) {
+            const learner = voice.endsWith("_m") ? "m" : "f";
+            const npc = NPCS[sit.npc];
+            try { add(voice, 1, compose(src, {}, { look: () => undefined, addressee: npc?.gender ?? "f", speaker: learner, formal: !npc?.informal }), `${sit.id}:${lid}[${i}]`, true); } catch { /* skip */ }
+          }
+          if (kit.only?.test(lid)) return;
         }
         if (sit.id === "s66-taxi" && /^rd_a_/.test(lid)) {
           for (const voice of coachVoices(opts.v2)) {
