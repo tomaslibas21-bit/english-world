@@ -258,6 +258,7 @@ try {
       assert.equal((await scoreRows.nth(2).innerText()).trim(), "1", "covered a card before it turned over");
       await step(18);
       await fits(true);
+      await page.waitForTimeout(1600); // (the numbers count up on a real clock: the picture shows where they end)
       await shot("score");
 
       await press(page.getByRole("button", { name: lt ? "Dar kartą" : "Again", exact: true }));
