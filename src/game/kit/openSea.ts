@@ -8,8 +8,8 @@ import * as THREE from "three";
 /** How much bigger the open sea rolls than the bay (0 at the swim limit, 1 well out). */
 const ROLL = [
   // [x frequency, z frequency, speed, height]
-  [0.045, 0.060, 0.80, 0.30],
-  [-0.030, 0.130, -1.10, 0.17],
+  [0.045, 0.060, 0.80, 0.26],
+  [-0.030, 0.130, -1.10, 0.15],
 ] as const;
 
 /** The sea's height over rest level at (x, z) and time `t`; `open` 0–1 grows the long rollers. The bay's own swell
@@ -49,6 +49,8 @@ uniform vec3 deep, bright, sky, haze, sunColor, foam, sunDir;
 uniform vec4 boat;      // x, z, heading sin, heading cos
 uniform float wake;     // 0–1 with the boat's speed
 uniform float reach;    // where the water has become the horizon
+uniform float alpha;
+uniform vec4 floats;     // a row of four floats across the course: x of its middle, z, the gap between them, 0–1 shown
 varying vec3 vW;
 void main() {
   vec2 p = vW.xz;
@@ -76,13 +78,15 @@ void main() {
   float s64 = s8 * s8; s64 *= s64; s64 *= s64;
   // glitter in broken, drifting patches (warped, so it never lines up in rows)
   vec2 q = p + 1.7 * vec2(sin(p.y * 0.31 + uTime * 0.4), sin(p.x * 0.27 - uTime * 0.3));
-  float flecks = smoothstep(0.2, 0.85, sin(q.x * 2.3 + sin(q.y * 1.7 + uTime * 1.6) * 1.9) * sin(q.y * 2.9 - uTime * 1.3 + sin(q.x * 1.3) * 1.6));
-  c += sunColor * (s8 * 0.13 + s64 * (0.22 + 1.7 * flecks));
+  float flecks = smoothstep(0.35, 0.9, sin(q.x * 3.9 + sin(q.y * 2.3 + uTime * 1.6) * 1.9) * sin(q.y * 4.7 - uTime * 1.3 + sin(q.x * 1.9) * 1.6));
+  // fewer and finer under the bow, where they would be the size of the boat
+  flecks *= 0.35 + 0.65 * smoothstep(8.0, 70.0, far);
+  c += sunColor * (s8 * 0.07 + s64 * (0.12 + 1.7 * flecks));
 
   // foam on the highest crests, in broken streaks
   float lace = sin(p.x * 1.9 + sin(p.y * 2.3 + uTime * 0.5) * 1.5) * sin(p.y * 2.6 - uTime * 0.8 + sin(p.x * 1.4) * 1.2);
-  float cap = smoothstep(0.30, 0.52, lift) * smoothstep(0.25, 0.8, lace) * near * open;
-  c = mix(c, foam, cap * 0.75);
+  float cap = smoothstep(0.30, 0.50, lift) * smoothstep(0.55, 0.92, lace) * near * open;
+  c = mix(c, foam, cap * 0.6);
 
   // the wake: two arms opening behind the stern and the churned water between them
   vec2 d = p - boat.xy;
@@ -96,8 +100,18 @@ void main() {
     c = mix(c, foam, clamp(line * 0.8 + churn * 0.85, 0.0, 1.0) * fade);
   }
 
+  // rings spreading from each float of the gate ahead, so the buoys sit in the water
+  vec2 row = p - floats.xy;
+  if (floats.w > 0.0 && abs(row.y) < 6.0 && abs(row.x) < floats.z * 2.2) {
+    float across = abs(row.x) < floats.z ? abs(abs(row.x) - floats.z * 0.5) : abs(abs(row.x) - floats.z * 1.5);
+    float away = length(vec2(across, row.y - 0.34));
+    float rings = smoothstep(0.55, 1.0, sin(away * 4.6 - uTime * 3.2)) * smoothstep(4.2, 1.0, away) * smoothstep(0.75, 1.15, away);
+    float collar = smoothstep(1.35, 1.0, away) * smoothstep(0.8, 1.02, away);
+    c = mix(c, foam, clamp(rings * 0.5 + collar * 0.75, 0.0, 1.0) * floats.w);
+  }
+
   c = mix(c, haze, smoothstep(reach * 0.22, reach, far));
-  gl_FragColor = vec4(c, 1.0);
+  gl_FragColor = vec4(c, alpha);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }`;
@@ -106,6 +120,8 @@ export type SeaLook = { deep: string; bright: string; foam: string };
 
 export class OpenSea {
   readonly mesh: THREE.Mesh<THREE.BufferGeometry, THREE.ShaderMaterial>;
+  /** How strongly the water draws the boat's wake itself (0 when something else draws it). */
+  wakeStrength = 1;
 
   /** `reach`: the disc's radius in metres; the water has faded into the horizon by then. */
   constructor(look: SeaLook, level: number, readonly reach = 1100) {
@@ -133,12 +149,23 @@ export class OpenSea {
       uniforms: {
         uTime: { value: 0 }, open: { value: 0 }, deep: colour(look.deep), bright: colour(look.bright), foam: colour(look.foam),
         sky: colour(), haze: colour(), sunColor: colour(), sunDir: { value: new THREE.Vector3(0, 1, 0) },
-        boat: { value: new THREE.Vector4(0, 0, 0, 1) }, wake: { value: 0 }, reach: { value: reach },
+        boat: { value: new THREE.Vector4(0, 0, 0, 1) }, wake: { value: 0 }, reach: { value: reach }, alpha: { value: 1 },
+        floats: { value: new THREE.Vector4() },
       },
     }));
     this.mesh.position.y = level;
     this.mesh.frustumCulled = false;
   }
+
+  /** Lay this sea over another one (a bay's, drawn before it): 0 shows the other, 1 this one. */
+  set cover(alpha: number) {
+    const material = this.mesh.material;
+    material.uniforms.alpha.value = alpha;
+    material.blending = alpha < 1 ? THREE.CustomBlending : THREE.NormalBlending;
+  }
+
+  /** A gate's row of four floats, `gap` metres apart, centred on (x, z); `shown` 0 hides their rings. */
+  floats(x: number, z: number, gap: number, shown: number) { this.mesh.material.uniforms.floats.value.set(x, z, gap, shown); }
 
   /** What the sky lends the water: the colour it mirrors, the haze it ends in, the sun and where it stands. */
   light(sky: THREE.Color, haze: THREE.Color, sun: THREE.Color, sunDir: THREE.Vector3) {
@@ -155,7 +182,7 @@ export class OpenSea {
     u.uTime.value = time;
     u.open.value = open;
     u.boat.value.set(x, z, Math.sin(heading), Math.cos(heading));
-    u.wake.value = THREE.MathUtils.clamp(speed, 0, 1);
+    u.wake.value = THREE.MathUtils.clamp(speed, 0, 1) * this.wakeStrength;
     this.mesh.position.x = x;
     this.mesh.position.z = z;
   }

@@ -1,5 +1,6 @@
 import * as THREE from "three";
-import { SEA_LEVEL, swell } from "../water";
+import { SEA_LEVEL } from "../water";
+import { seaSwell as swell } from "./backdrop";
 
 const SAMPLES = 32, LIFE = 2.1, STEP = 0.07;
 type Sample = { x: number; z: number; sideX: number; sideZ: number; born: number };

@@ -13,7 +13,11 @@ export type SeaView = {
   sky: SkyLook[]; sunAzimuth: number; water: SeaLook;
   island: { sand: string; green: [string, string]; rock: string; trees: "pine" | "palm" };
   sails: string[];
+  /** The town seen from the sea: its walls, its roofs, the land behind it. */
+  coast: { walls: string[]; roofs: string[]; land: string; hills: string };
 };
+/** Where the shore lies, measured from the point the run starts at (x to the right, z toward the land). */
+export type Coast = { x0: number; x1: number; z: number; lighthouse?: { x: number; z: number } };
 
 // Maple Harbor: a clear, cool New England afternoon that turns gold.
 const MAPLE_HARBOR: SeaView = {
@@ -29,9 +33,10 @@ const MAPLE_HARBOR: SeaView = {
       light: "#ffbe8c", lightPower: 1.9, fillSky: "#d5c9e6", fillGround: "#a58aa0", fill: 1.26 },
   ],
   sunAzimuth: 0.26,
-  water: { deep: "#0d4a78", bright: "#2a86ad", foam: "#f4fbf8" },
+  water: { deep: "#0a5a94", bright: "#2b9fca", foam: "#f4fbf8" },
   island: { sand: "#cdb892", green: ["#3f6f52", "#a8552f"], rock: "#7f7a78", trees: "pine" },
   sails: ["#ffffff", "#f6e9cf", "#e8553f"],
+  coast: { walls: ["#f3ead8", "#b9523f", "#d9c9a8", "#8fa7b4", "#e7d3a1"], roofs: ["#5b4a44", "#7b3f35", "#3f4d57"], land: "#c9b48a", hills: "#b0683a" },
 };
 
 // Puerto Colibrí: Caribbean turquoise under a tall blue sky, then pink and violet.
@@ -48,9 +53,10 @@ const PUERTO_COLIBRI: SeaView = {
       light: "#ffb68e", lightPower: 1.9, fillSky: "#d3c1e8", fillGround: "#9f80ac", fill: 1.26 },
   ],
   sunAzimuth: -0.26,
-  water: { deep: "#07678f", bright: "#1fc2c0", foam: "#f6fffb" },
+  water: { deep: "#045f93", bright: "#17b2c2", foam: "#f6fffb" },
   island: { sand: "#f0dcae", green: ["#3f9a62", "#6fb85e"], rock: "#8d8478", trees: "palm" },
   sails: ["#ffffff", "#ffd45c", "#ff6f61"],
+  coast: { walls: ["#f6a35c", "#ee6f86", "#5fc0b8", "#f6dc7a", "#fbf3e2"], roofs: ["#b5533c", "#c9683f", "#8f4a3a"], land: "#ecd9a8", hills: "#4f9a5e" },
 };
 
 export const SEA_VIEW: SeaView = (ROAD_EDITION.id as string) === "puerto-colibri" ? PUERTO_COLIBRI : MAPLE_HARBOR;
@@ -128,10 +134,45 @@ function freighter(x: number, z: number, heading: number): Part[] {
   return parts;
 }
 
+/** The town from the sea: a strip of shore, low hills, a row of houses and trees, a church or a lighthouse. */
+function coast(view: SeaView, r: () => number, { x0, x1, z, lighthouse }: Coast): Part[] {
+  const { walls, roofs, land, hills } = view.coast, { green, trees } = view.island;
+  const mid = (x0 + x1) / 2, wide = x1 - x0;
+  const parts: Part[] = [
+    [at(new THREE.BoxGeometry(wide + 3200, 2.4, 70), mid, -0.4, z + 30), land],
+    [at(new THREE.BoxGeometry(wide + 3400, 5, 160), mid, 0.6, z + 140), green[0]],
+  ];
+  for (let i = 0; i < 7; i++) {
+    const x = mid + (i - 3) * (wide + 500) / 6 + (r() - 0.5) * 60, radius = 70 + r() * 80;
+    parts.push([at(new THREE.CylinderGeometry(radius * 0.35, radius, 16 + r() * 26, 7).scale(1.6, 1, 1), x, 9, z + 150 + r() * 60), i % 2 ? hills : green[1]]);
+  }
+  for (let x = x0 + 6; x < x1 - 6;) {
+    const w = 7 + r() * 9, tall = 4.5 + r() * 6.5, deep = 8 + r() * 6, back = z + 18 + r() * 30;
+    if (r() < 0.78) {
+      parts.push([at(new THREE.BoxGeometry(w, tall, deep), x + w / 2, 1 + tall / 2, back), walls[Math.floor(r() * walls.length)]]);
+      parts.push([at(new THREE.BoxGeometry(w + 0.8, 0.9, deep + 0.8), x + w / 2, 1.4 + tall, back), roofs[Math.floor(r() * roofs.length)]]);
+    } else parts.push(...tree(trees, r, x + w / 2, 1, back, 1.8 + r() * 1.2, green[Math.floor(r() * 2)]));
+    x += w + 1.5 + r() * 7;
+  }
+  // one tall landmark in the middle of town
+  const tower = mid + wide * 0.12;
+  parts.push([at(new THREE.BoxGeometry(6, 19, 6), tower, 10.5, z + 44), walls[0]],
+    [at(new THREE.ConeGeometry(4.8, 7, 4).rotateY(Math.PI / 4), tower, 23.5, z + 44), roofs[1]]);
+  if (lighthouse) {
+    const { x, z: lz } = lighthouse;
+    parts.push([at(new THREE.CylinderGeometry(15, 19, 3.4, 9), x, 0.6, lz), view.island.rock],
+      [at(new THREE.CylinderGeometry(1.5, 2.3, 15, 8), x, 9.8, lz), "#fbf6ea"],
+      [at(new THREE.CylinderGeometry(1.95, 2.05, 3.2, 8), x, 9, lz), "#d6453c"],
+      [at(new THREE.CylinderGeometry(1.3, 1.3, 2.2, 6), x, 18.4, lz), "#ffe9a8"],
+      [at(new THREE.ConeGeometry(2, 2.2, 8), x, 20.6, lz), "#3d4a57"]);
+  }
+  return parts;
+}
+
 /** Everything on the horizon as one mesh, laid out from the point where the run starts and heads out along -z:
  *  near stacks and islets to pass close by, bigger islands farther off on both sides, sails between them and a
- *  freighter on the skyline. Add it at the start point. */
-export function seaHorizon(sky: OpenSky, view = SEA_VIEW) {
+ *  freighter on the skyline; behind, the town's shore for the moment you turn back. Add it at the start point. */
+export function seaHorizon(sky: OpenSky, shore?: Coast, view = SEA_VIEW) {
   const r = rand(view.island.trees === "palm" ? 3301 : 8123);
   const parts: Part[] = [];
   const { rock } = view.island;
@@ -153,6 +194,7 @@ export function seaHorizon(sky: OpenSky, view = SEA_VIEW) {
   ];
   for (const [out, side, heading, size, sail, jib] of boats) parts.push(...sailboat(side, -out, heading, size, sail, jib));
   parts.push(...freighter(-420, -1250, 1.35), ...freighter(520, -2100, -1.2));
+  if (shore) parts.push(...coast(view, r, shore));
   const material = farMaterial(260, 2300, 0.86);
   const mesh = new THREE.Mesh(colourMerge(parts), material);
   mesh.frustumCulled = false;

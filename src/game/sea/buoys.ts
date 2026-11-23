@@ -1,7 +1,8 @@
 import * as THREE from "three";
 import type { LabelAnchor } from "../road/gates";
 import type { Prompt } from "../road/words";
-import { SEA_LEVEL, swell } from "../water";
+import { SEA_LEVEL } from "../water";
+import { seaSwell as swell } from "./backdrop";
 import { colourMerge } from "../world/util";
 import { LANE_WIDTH, laneOffset } from "./course";
 
@@ -62,6 +63,8 @@ export class SeaGate {
   }
 
   get crossed() { return !!this.pass; }
+  /** How much of the floats is showing (0–1), for the rings on the water around them. */
+  get shown() { return this.floats.material.opacity; }
 
   cross(lane: number, correct: boolean) {
     const material = this.material.clone();

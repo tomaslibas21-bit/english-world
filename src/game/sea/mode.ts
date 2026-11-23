@@ -186,6 +186,7 @@ export class SeaMode {
     audio.motor("boat", Math.min(1.25, speed / 16));
     audio.rush("wind", Math.max(0, (speed - 6) / 14), Math.min(1, speed / 16));
     const gate = this.gate;
+    this.view.day = this.score.elapsed / SEA_SECONDS;
     this.view.pose(this.boat, time, dt, this.host.portrait(), gate && !gate.crossed ? gate.distance - this.boat.distance : undefined);
   }
 
