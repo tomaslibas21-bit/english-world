@@ -29,9 +29,9 @@ function makeClouds() {
     [new THREE.IcosahedronGeometry(1, 0).scale(5, 2.3, 3.8).translate(-1.8, 0.95, 0), "#f6f3ee"],
     [new THREE.IcosahedronGeometry(1, 0).scale(3.4, 1.8, 3.1).translate(3.1, 0.7, -0.85), "#ffffff"],
   ]);
-  // A loose bank low over the horizon ahead, and a few behind over the town.
-  const spots = [[-260, 62, -640, 5], [150, 78, -760, 6.5], [420, 58, -560, 4.6], [-520, 70, -420, 5.4], [40, 96, -900, 8],
-    [640, 66, -200, 5], [-330, 74, 520, 6], [260, 60, 600, 5.2]];
+  // A bank of cumulus standing on the horizon ahead and to the sides, and a few behind over the town.
+  const spots = [[-520, 78, -1250, 15], [300, 96, -1400, 19], [900, 70, -1050, 13], [-1100, 84, -800, 15], [40, 60, -1500, 11],
+    [1300, 80, -350, 14], [-700, 88, 1050, 16], [520, 72, 1200, 13], [-1350, 76, 150, 14]];
   const clouds = new THREE.InstancedMesh(geometry, new THREE.MeshBasicMaterial({ vertexColors: true, fog: false, transparent: true, depthWrite: false }), spots.length);
   const matrix = new THREE.Matrix4();
   spots.forEach(([x, y, z, k], i) => {
