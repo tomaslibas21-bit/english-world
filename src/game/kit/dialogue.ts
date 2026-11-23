@@ -179,13 +179,17 @@ export class ModeDialogue {
     if (this.retryIn > 0 && (this.retryIn -= dt) <= 0) this.listen();
   }
 
-  cancel() {
-    this.endPlayback(false);
+  cancelTurn() {
     const turn = this.turn;
     this.turn = null;
     this.stopListening();
     turn?.finish(null);
     this.ui.choices([]);
+  }
+
+  cancel() {
+    this.endPlayback(false);
+    this.cancelTurn();
     this.clearLine();
     this.paused = false;
   }

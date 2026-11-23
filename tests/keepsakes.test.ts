@@ -11,7 +11,7 @@ describe("conversation keepsakes", () => {
   });
 
   it("defines both Lithuanian forms, their English translations and a shape for every kind", () => {
-    expect(Object.keys(KIND)).toHaveLength(22);
+    expect(Object.keys(KIND)).toHaveLength(23);
     for (const { nominative, accusative, shape } of Object.values(KIND)) {
       expect(nominative.trim()).not.toBe("");
       expect(accusative.trim()).not.toBe("");

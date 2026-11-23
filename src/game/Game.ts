@@ -26,7 +26,7 @@ import { RoadEntry, leavingByRoad, walkEdge } from "./road/entry";
 import { SEA_EDITION } from "../content/sea";
 import { SeaEntry, seaReturn } from "./sea/entry";
 import { RIDE_NAMES } from "../content/rides";
-import { ModeRegistry } from "./kit/modes";
+import { type GameMode, ModeRegistry } from "./kit/modes";
 import { FrameFade } from "./kit/frameFade";
 import type { ModeHost } from "./kit/host";
 import { scoreShot } from "./kit/scoreShot";
@@ -40,6 +40,9 @@ import { createTaxiMode } from "./taxi/mode";
 import { BARISTA_PROMPT, createBaristaMode } from "./barista/mode";
 import { BARISTA_CONVERSATION } from "../content/barista";
 import { createPoolMode } from "./pool/mode";
+import { createLoteriaMode, type LoteriaMode } from "./loteria/mode";
+import { loteriaDusk } from "./loteria/scene";
+import { LOTERIA_APPROACH } from "./loteria/location";
 import { HOTEL_POOL, HOTEL_POOL_ENABLED, hotelPoolKidY, inHotelPool, POOL_ENTRY, POOL_KIDS, POOL_SITUATION } from "./world/pool";
 import { OcclusionField } from "./occlusion";
 import { PropFader } from "./fade";
@@ -599,6 +602,12 @@ export class Game implements GameApi {
       });
       this.modes.register(this.sea);
     }
+    this.modes.register(createLoteriaMode(host, {
+      npc: (id) => this.npcs.find((n) => n.id === id)?.ch,
+      prop: (id) => this.town.group.getObjectByName(id),
+      dusk: () => loteriaDusk(this.sky, this.sun, this.hemi, this.scene.fog),
+      save: () => this.savePlace(),
+    }));
     this.scene.add(this.npcLayer, this.guidance.group, this.ambient.group, this.rides.group, this.dust.group, this.splashes.group, this.undersea.group);
     // (a place like the grotto keeps the camera inside itself: Interior.wild.space)
     this.rig.space = {
@@ -2223,6 +2232,21 @@ export class Game implements GameApi {
       state: () => this.barista?.state() ?? null,
     };
   }
+  debugLoteria() {
+    if (!import.meta.env.DEV) return undefined;
+    const mode = this.modes.get("loteria") as LoteriaMode | undefined;
+    if (!mode) return undefined;
+    return {
+      stage: (seed = 1, speed = 1) => {
+        if (this.transitioning || this.modes.engaged || this.session?.active) return false;
+        useStore.getState().setHud({ panel: null });
+        this.enterZone("town", LOTERIA_APPROACH, true);
+        mode.debug(seed, speed);
+        return true;
+      },
+      state: () => mode.state(),
+    };
+  }
   get activeSession() { return this.session; }
 
   /** Taxi or bus: fade, travel, arrive in front of the destination. After boarding a plane the
@@ -2524,7 +2548,7 @@ export class Game implements GameApi {
     const riding = this.rides.riding;
     if (!riding) this.rides.update(dt, this.t, null);
     audio.motor(riding && this.rides.phase === "on" && !this.zone.interior && !this.modes.owns("road") ? riding.kind : null, this.rides.revs);
-    this.updateNpcs(dt, talking, mode === this.barista && !!mode);
+    this.updateNpcs(dt, talking, mode ?? undefined);
     if (!this.zone.interior) {
       const driver = riding?.kind === "car" && this.rides.phase === "on" ? riding.m : undefined;
       this.ambient.update(dt, this.player.root.position, this.rig.cam.position, driver);
@@ -2618,6 +2642,8 @@ export class Game implements GameApi {
       } else if (this.barista && mode === this.barista) {
         const bottom = document.querySelector(".barista-bottom, .barista-result .mode-score-card")?.getBoundingClientRect().top;
         this.barista.frameView(w, h, bottom ?? h, document.querySelector<HTMLElement>(".barista-cue"));
+      } else if (mode?.frameStage) {
+        mode.frameStage(w, h);
       } else {
         const stageShift = this.rig.mode === "stage" ? this.rig.stage?.shiftY : undefined;
         const portraitShift = this.rig.mode !== "talk" && h > w * 1.15 ? -(this.rig.mode === "follow" ? 0.12 : 0.1) : 0;
@@ -3269,7 +3295,7 @@ export class Game implements GameApi {
     else if (t.kind === "tree") this.talkToTree();
   }
 
-  private updateNpcs(dt: number, talking: boolean, barista: boolean) {
+  private updateNpcs(dt: number, talking: boolean, mode?: GameMode) {
     const p = this.player.root.position;
     const taking = talking ? this.session?.sit.npcs ?? [] : [];
     // the people look at the learner's head; the player at the one they talk with
@@ -3279,7 +3305,7 @@ export class Game implements GameApi {
     this.player.watch = partner ? this.talkAt : null;
     this.player.steady = !!partner;
     for (const n of this.npcs) {
-      if (barista && n.id === BARISTA_CONVERSATION.npc) continue;
+      if ((this.barista && mode === this.barista && n.id === BARISTA_CONVERSATION.npc) || mode?.controlsNpc?.(n.id)) continue;
       if (n.alux) {
         const d = Math.hypot(p.x - n.home.x, p.z - n.home.z);
         const near = d < 6;

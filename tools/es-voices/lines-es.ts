@@ -27,6 +27,7 @@
 // Run with the edition overlay: EDITION=es npx tsx --import ./tools/edition-hook.mjs tools/es-voices/…
 import { SITUATIONS } from "../../src/content/situations";
 import { GLOBAL } from "../../src/content/global";
+import { LOTERIA_SITUATION } from "../../src/editions/es/content/loteria";
 import { BARISTA_CONVERSATION } from "../../src/content/barista";
 import { isBaristaCoachLine } from "../../src/content/barista-lines";
 import { NPCS, type NpcDef } from "../../src/content/npcs";
@@ -290,9 +291,9 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
           }
         }
       }
-      // 2b. the surf learner's lines and the barista shift's learner and customer lines use coach voices.
+      // 2b. The kit uses coach voices for examples, including lotería card names read back by the learner.
       for (const [lid, variants] of Object.entries(sit.lines)) {
-        if (!modeCoachLine(sit.id, lid)) continue;
+        if (!modeCoachLine(sit.id, lid) && !(sit.id === LOTERIA_SITUATION && lid.startsWith("lt_c_"))) continue;
         variants.forEach((src, i) => {
           for (const n of people) for (const learner of GENDERS) {
             try { add(coachVoice(learner), 1, compose(src, {}, { look, addressee: n.gender, speaker: learner, formal: !addressInformal(n) }), `${sit.id}:${lid}[${i}]`, sit.id, "hint", true); } catch { /* skip */ }

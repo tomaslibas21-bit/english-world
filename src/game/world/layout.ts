@@ -1,4 +1,7 @@
 // Maple Harbor: a small American coastal town. X = east, Z = south (north is -Z), 1 unit = 1 m.
+import { EDITION } from "../../edition";
+import { LOTERIA_NEIGHBOR } from "../../editions/es/content/loteria";
+import { LOTERIA_APPROACH, TABLE_SEAT, TONAS_SEAT } from "../loteria/location";
 import { HOTEL_POOL_ENABLED, POOL_SPOTS } from "./pool";
 import { LOCATIONS } from "../../content/locations";
 import { ROAD_EDITION } from "../../content/road";
@@ -111,6 +114,7 @@ export const OUTDOOR_NPCS: { npc: string; x: number; z: number; rot: number; sit
   // the edition's own (theme.ts): none in Maple Harbor
   ...THEME.outdoorNpcs,
   ...(HOTEL_POOL_ENABLED ? POOL_SPOTS : []),
+  ...(EDITION.id === "es" ? [{ npc: LOTERIA_NEIGHBOR, ...TONAS_SEAT, sit: true, seat: TABLE_SEAT, ax: LOTERIA_APPROACH.x, az: LOTERIA_APPROACH.z }] : []),
 ];
 
 /** Two townspeople standing and chatting (Ambient), face to face: [x, z] of one and [x, z] of the other. In the square

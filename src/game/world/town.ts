@@ -1,4 +1,6 @@
 // Builds the outdoor town of Maple Harbor from layout.ts: ground, sea, buildings, props, colliders, doors.
+import { EDITION } from "../../edition";
+import { loteriaTables } from "../loteria/scene";
 import { HOTEL_POOL, HOTEL_POOL_ENABLED, hotelPoolBounds } from "./pool";
 import * as THREE from "three";
 import { TAXI_ROUTES } from "../../content/taxi";
@@ -207,6 +209,7 @@ export function buildTown({ movableParking = false } = {}): Town {
   addStreetProps(M, colliders);
   addTrees(group, colliders, r);
   addSquareAndMarket(M, colliders, group, r);
+  if (EDITION.id === "es") group.add(loteriaTables(colliders));
   // the edition's own additions (theme.ts): none in Maple Harbor
   addTownMx(M, colliders);
   const poolWater = HOTEL_POOL_ENABLED ? MX.hotelPoolWater() : null;

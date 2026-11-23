@@ -1852,7 +1852,7 @@ export class AudioSystem {
   }
 
   sfx(name: "success" | "seaBell" | "pop" | "door" | "cheer" | "soft" | "listen" | "coin" | "car" | "error" | "ring" | "beep" | "knock" | "tick" | "horn" | "hornReply"
-    | "doubleHonk" | "chirp" | "glass" | "hazardTick" | "ding") {
+    | "doubleHonk" | "chirp" | "glass" | "hazardTick" | "ding" | "loteriaFlip" | "loteriaBean") {
     audioDiagnostic("context.effect", { reason: name });
     const ctx = this.ac();
     if (!ctx) return;
@@ -1895,6 +1895,8 @@ export class AudioSystem {
       case "hornReply": tone(329, 0, 0.17, "triangle", vol * 0.28); tone(415, 0, 0.16, "triangle", vol * 0.2); break;
       case "beep": tone(1000, 0, 0.4, "sine", vol * 0.5); break;
       case "knock": for (const at of [0, 0.16, 0.32]) tone(140, at, 0.07, "square", vol * 0.5); break;
+      case "loteriaFlip": this.burst(ctx, now, 1550, 1.2, 0.003, 0.055, vol * 0.45, 1.1); tone(183, 0.014, 0.065, "triangle", vol * 0.38); break;
+      case "loteriaBean": tone(530, 0, 0.04, "triangle", vol * 0.5); tone(285, 0.007, 0.052, "triangle", vol * 0.36); break;
       case "tick": tone(1180, 0, 0.05, "triangle", vol * 0.32); tone(1580, 0.03, 0.06, "triangle", vol * 0.22); break;
       case "doubleHonk":
         for (const at of [0.17, 0.36]) { tone(350, at, 0.13, "triangle", vol * 0.42); tone(446, at, 0.12, "triangle", vol * 0.28); }

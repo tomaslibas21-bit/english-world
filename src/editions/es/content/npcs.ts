@@ -41,6 +41,10 @@ const LOOK: Record<string, Partial<Look>> = {
   vinnie: { skin: "#a06f4a", hair: { style: "short", color: "#8f8a85" }, top: "#fca938", bottom: "#304a54", acc: ["cap", "mustache"], accColor: "#706f4d", build: 1.16 },
   olivia: { skin: "#d4a07a", hair: { style: "wavy", color: "#74502f" }, top: "#fbf2e2", bottom: "#224250", acc: ["cardigan", "badge", "earrings"], accColor: "#375168" },
   chuck: { skin: "#b3784e", hair: { style: "bald", color: "#e8e2da" }, top: "#f7ecda", acc: ["glasses", "vest", "mustache", "guayabera"], accColor: "#635f52", build: 1.12 },
+  tona: { skin: "#9c6a4e", hair: { style: "wavy", color: HAIR.white }, top: "#d5a2ba", bottom: "#4b2a47",
+    skirt: true, acc: ["rebozo", "earrings"], accColor: "#60498d", height: 0.93, build: 1.06 },
+  beto: { skin: "#ac7351", hair: { style: "short", color: "#5b534b" }, top: "#79a9a4", bottom: "#534338",
+    acc: ["jipi", "mustache", "guayabera"], build: 1.13 },
   // the center
   mia: { skin: "#7d573b", hair: { style: "curls", color: "#1f1a17" }, top: "#f4e4d2", bottom: "#353d4a", acc: ["apron", "earrings"], accColor: "#33534f", build: 0.95 },
   rosa: { skin: "#a8734b", hair: { style: "braid", color: "#e6e0d8", side: -1, tie: "#e4007c" }, top: "#f9f3ee", bottom: "#f6f0ea", skirt: true, acc: ["glasses", "hipil", "rebozo", "earrings"], accColor: "#ffb142", height: 0.92, build: 0.94 },
@@ -214,6 +218,10 @@ const EXTRA: Record<string, [base: string, ...cast: Cast]> = {
     bio: "Studies art in Mérida and paints the temple every afternoon, for the light." }],
   rosario: ["rosa", "Doña Rosario", "Tejedora de hamacas", "Hammock weaver", { gender: "f", informal: false, informalSpain: false,
     bio: "Weaves hammocks in the shade of the ruins' wall, with Pepe the iguana for company." }],
+  tona: ["brooks", "Doña Toña", "Vecina, fan de la lotería", "Neighbor and lotería regular", { gender: "f", informal: false, informalSpain: false,
+    bio: "Never misses a Friday lotería night in the zócalo, and always brings an extra board." }],
+  beto: ["patel", "Don Beto", "El gritón de la lotería", "The lotería caller", { gender: "m", informal: false, informalSpain: false,
+    bio: "Has called the cards at the zócalo's lotería for twenty years, with a verse for almost every one." }],
   surf: ["jordan", "Nayeli", "Instructora de surf", "Surf instructor", { informal: true, informalSpain: true,
     bio: "Grew up surfing in Puerto Escondido, on the Pacific. Here she teaches beginners on the Caribbean's gentle waves." }],
 };

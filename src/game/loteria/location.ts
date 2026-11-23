@@ -1,0 +1,10 @@
+export const TABLES = [22, 25.9] as const;
+export const TABLE_Z = -27;
+export const TABLE_SEAT = 0.49;
+export const TONAS_SEAT = { x: 22.75, z: -26.02, rot: -0.78 };
+export const LEARNER_SEAT = { x: 21.55, z: -26.02, rot: Math.PI - 0.4 };
+export const LOTERIA_APPROACH = { x: 21.28, z: -24.38, rot: 2.41 };
+export const BETOS_STAND = { x: 24.25, z: -30.55 };
+export const CALLER_CARD = { x: BETOS_STAND.x + 0.07, y: 1.27, z: BETOS_STAND.z + 0.75 };
+export const LOTERIA_BULBS = "loteria-bulbs-lit";
+export const LOTERIA_HOLDER = "loteria-card-holder";

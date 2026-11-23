@@ -4,6 +4,7 @@ import fs from "node:fs";
 import { describe, expect, it } from "vitest";
 import { exampleVars, ownNameNote } from "../../src/convo/suggest";
 import { audioKey } from "../../src/audio-key";
+import { LOTERIA_SITUATION } from "../../src/editions/es/content/loteria";
 import { enumerateEs } from "../../tools/es-voices/lines-es";
 
 describe("the example learner on hint cards", () => {
@@ -19,8 +20,8 @@ describe("every hint example has a recording", () => {
   it("no hint example falls to the browser voice", () => {
     const manifest = JSON.parse(fs.readFileSync("public/audio-es/manifest.json", "utf8"));
     const res: any = enumerateEs({ fuzzRuns: 0 });
-    // The pool chat displays unrecorded lines silently until its clips are available.
-    const PENDING = ["x09-alberca"];
+    // The pool and lotería chats are awaiting recordings.
+    const PENDING = ["x09-alberca", LOTERIA_SITUATION];
     const missing = (res.utts as any[]).filter((u) => u.where.includes(":hint:") && !PENDING.some((p) => u.where.startsWith(p + ":")) && /[\p{L}0-9]/u.test(u.say) && !(audioKey(u.voice, u.speed, u.say) in manifest));
     expect(missing.map((u) => `${u.where} ${u.voice}: ${u.say}`)).toEqual([]);
   }, 600_000);

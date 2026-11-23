@@ -227,6 +227,7 @@ const KEEPSAKE_ICONS: Record<KeepsakeKind, string> = {
   badge: "M7 7h10a2 2 0 0 1 2 2v10H5V9a2 2 0 0 1 2-2zM10 7V3h4v4m-5 5h6m-6 3h4",
   note: "M4 4h16v11l-5 5H4zM15 20v-5h5M8 8h8m-8 4h5",
   flower: "M12 11c-5 0-6-7-3-7 2 0 3 2 3 2s1-2 3-2c3 0 2 7-3 7v9m0-4c-1-2-3-3-5-3 0 3 3 4 5 4",
+  loteria_card: "M6 3h12v18H6z M15 11a3 3 0 1 1-6 0 3 3 0 0 1 6 0z",
   balloon: "M12 15c-4-2-6-4-6-7a6 6 0 0 1 12 0c0 3-2 5-6 7zm0 0c-3 4 3 3 0 6",
   water_bottle: "M9 3h6v4l2 3v9a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-9l2-3zM9 7h6m-8 6h10",
   prescription: "M5 3h10l4 4v14H5zM15 3v5h4m-7 2v7m-3.5-3.5h7",

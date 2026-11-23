@@ -12,6 +12,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { parseAst } from "rolldown/parseAst";
+import { LOTERIA_CALLER, LOTERIA_NEIGHBOR, LOTERIA_SITUATION } from "../../src/editions/es/content/loteria";
 import { placeholders } from "../../src/convo/compose";
 import type { EntityDef, SituationDef } from "../../src/content/types";
 import { POOL_KIDS, POOL_SITUATION } from "../../src/game/world/pool";
@@ -174,6 +175,7 @@ function maxOneItem(sit: SituationDef): number {
  *  2026 the learner's lines are said for them when they answer by a tap: lines-es.ts lists them in the coach voices
  *  (the learner's example voice), never in hers. */
 export const UNSPOKEN: Record<string, RegExp> = {
+  [LOTERIA_SITUATION]: /^lt_a_/,
   "x01-surf": /^sg_[ab]_/,
   "s83-invite-call": /^phone_meet_(ready|tickets)$/,
 };
@@ -444,6 +446,12 @@ export function codeSpeakers(sit: SituationDef): Map<string, Set<string>> {
       for (const named of POOL_KIDS) if (key === "pl_" + named) {
         for (const kid of POOL_KIDS) if (kid !== named) put(key, kid);
       }
+    }
+  }
+  if (sit.id === LOTERIA_SITUATION) {
+    for (const key of Object.keys(sit.lines)) {
+      if (/^lt_[bcv]_/.test(key)) put(key, LOTERIA_CALLER);
+      if (key.startsWith("lt_t_")) put(key, LOTERIA_NEIGHBOR);
     }
   }
   speakerCache.set(sit.id, out);

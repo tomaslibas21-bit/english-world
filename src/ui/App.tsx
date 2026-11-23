@@ -66,7 +66,7 @@ function Play() {
           seaPlaceBoat: (x: number, z: number, heading?: number) => g!.seaPlaceBoat(x, z, heading),
         } : {}),
         road: { state: () => g!.roadDebug(), steer: (lane: number) => g!.roadSteer(lane), jumpTimer: (seconds?: number) => g!.roadJumpTimer(seconds) },
-        barista: g.debugBarista(),
+        barista: g.debugBarista(), loteria: g.debugLoteria(),
       };
     });
     return () => { gone = true; g?.dispose(); setGame(null); };

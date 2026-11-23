@@ -9,6 +9,7 @@
 // direction differs. Some conversations add a setting (SCENES): a phone call, a video call, a hushed museum, a market
 // stall, a brisk airport, a party. The direction goes to Gemini as speech_metadata.style (never read aloud).
 //   EDITION=es npx tsx --import ./tools/edition-hook.mjs tools/es-voices/voice-casting-es.ts   (the table)
+import { LOTERIA_SITUATION } from "../../src/editions/es/content/loteria";
 import { NPCS } from "../../src/content/npcs";
 import { SITUATIONS } from "../../src/content/situations";
 import { POOL_KIDS, POOL_SITUATION } from "../../src/game/world/pool";
@@ -97,6 +98,7 @@ const MEXICO: Record<string, string> = {
   // x05-tienda (18 Nov 2026): Paco, Tienda El Faro's young cashier: the catalog's youngest man's voice (21, calm and
   // warm), nobody else's
   tienda: "es-419-commercial-4",
+  tona: "es-419-csagent-8", beto: "es-419-csagent-9",
   vale: "es-419-training-8", diego: "es-419-assistant-9", santi: "es-419-csagent-4",
   // the convertibles' owners (RIDERS): Valeria bright and breezy at 32, Don Rafa textured and soothing at 57, Marisol
   // at 47, Beto crisp and eager at 28; and the passers-by who call after a car: a younger and an older voice a gender
@@ -157,6 +159,7 @@ const SPAIN: Record<string, string> = {
   custodio: "es-es-podcaster-7", pintora: "es-es-csagent-5", rosario: "es-es-csagent-6",
   // x05-tienda: Paco, a young man's voice (23); nobody else speaks in his conversation
   tienda: "es-es-training-9",
+  tona: "es-es-podcaster-5", beto: "es-es-podcaster-7",
   vale: "es-es-concierge-3", diego: "es-es-training-9", santi: "es-es-concierge-12",
   // the convertibles' owners and the passers-by who call after a car, by gender and age as in the Mexican set
   ride_park: "es-es-techagent-5", ride_east: "es-es-assistant-3", ride_west1: "es-es-training-12", ride_west2: "es-es-training-11",
@@ -282,6 +285,8 @@ export const CAST: Record<string, Role> = {
   // the beach (x01-surf and the surf game's commands): a surf instructor from Puerto Escondido, about 28
   surf: { voice: "Aoede", age: "about 28", manner: "warm, sporty and lively, a surf instructor who loves the sea", pace: "lively" },
   // the ruins on the point (x06–x08): their keeper, a young painter, a grandmother weaving in the shade
+  tona: { voice: "Achernar", age: "about 68", manner: "warm and amused, speaking to the person beside her", pace: "unhurried" },
+  beto: { voice: "Orus", age: "mid 50s", manner: "a clear, rhythmic lotería caller, lively without rushing", pace: "measured" },
   vale: { voice: "Leda", age: "9", manner: "bright and inviting, with a playful energy", pace: "lively" },
   diego: { voice: "Puck", age: "11", manner: "upbeat and clear, calling to friends nearby", pace: "lively" },
   santi: { voice: "Sadachbia", age: "6", manner: "eager and cheerful, with quick bursts of excitement", pace: "lively" },
@@ -345,6 +350,7 @@ export const SCENES: Record<string, Scene> = {
   "x05-tienda": { setting: "at the counter of a small gas station store on the road, relaxed and friendly" },
   "x06-custodio": { setting: "outdoors at the gateway of small Maya ruins by the sea, on a calm afternoon" },
   "x07-pintora": { setting: "outdoors on the lawn of small Maya ruins by the sea, painting at an easel, on a calm afternoon" },
+  [LOTERIA_SITUATION]: { setting: "outdoors at a lotería table in the town square at dusk" },
   [POOL_SITUATION]: { setting: "outdoors at a hotel pool, talking with the kids beside the water" },
   "x08-rosario": { setting: "outdoors, sitting in the shade of an old stone wall by the sea, on a hot calm afternoon" },
   // the convertibles (no conversation: the owners' lines when their car is taken or brought back, and what passers-by

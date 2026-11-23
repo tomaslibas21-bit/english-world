@@ -1,6 +1,12 @@
+import { LOTERIA_UI_EN } from "../content/loteria";
+
 // The interface in English for the Spanish edition: each Lithuanian original (as written in src/ui/…, through
 // L() / Lx() of src/ui/i18n.ts) and its English. Keep the {placeholders}. Replaces src/ui/strings.ts in this edition.
 export const STRINGS: Record<string, string> = {
+  ...LOTERIA_UI_EN,
+  "loteria:Dar kartą": LOTERIA_UI_EN["Dar kartą"],
+  "Loterijos korta": "a lotería card",
+  "loterijos kortą": "a lotería card",
   // Road game
   "Kelias per dykumą": "Desert road",
   "Klausykite ir važiuokite pro teisingus vartus": "Listen and drive through the right gate",

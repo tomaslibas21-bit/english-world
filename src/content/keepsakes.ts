@@ -10,8 +10,8 @@ function cylinder(color: number, top: number, bottom: number, height: number, y:
 function loop(color: number, radius: number, tube: number, x: number, y: number, z = 0) {
   return { type: "loop", color, radius, tube, x, y, z, tilt: 0 } as const;
 }
-function sphere(color: number, radius: number, y: number, height = 1, width = 1, depth = 1, tilt = 0) {
-  return { type: "sphere", color, radius, height, width, depth, x: 0, y, z: 0, tilt } as const;
+function sphere(color: number, radius: number, y: number, height = 1, width = 1, depth = 1, tilt = 0, z = 0) {
+  return { type: "sphere", color, radius, height, width, depth, x: 0, y, z, tilt } as const;
 }
 
 function spiral(color: number, radius: number, y: number, z: number) {
@@ -101,6 +101,11 @@ export const KIND = {
   flower: {
     nominative: "Gėlė", accusative: "gėlę",
     shape: [cylinder(green, 0.35, 0.4, 11, -0.4), sphere(red, 2.5, 6, 0.8), box(green, 3.6, 1.3, 0.65, 1.2, 0.6, 0, 0.55)],
+  },
+  loteria_card: {
+    nominative: "Loterijos korta", accusative: "loterijos kortą",
+    shape: [box(red, 7.5, 11, 0.35), box(white, 6.6, 10.1, 0.22, 0, 0, 0.22),
+      sphere(red, 1.85, 0.4, 1, 1, 0.16, 0, 0.35)],
   },
   balloon: {
     nominative: "Balionas", accusative: "balioną",
@@ -207,6 +212,7 @@ const PUERTO_COLIBRI = {
   "x07-pintora": "pebble",
   "x08-rosario": "pebble",
   "x09-alberca": "balloon", // The kids by the pool and their beach ball.
+  "x10-loteria": "loteria_card",
 } satisfies Record<string, KeepsakeKind>;
 
 export const KEEPSAKES: Record<string, KeepsakeKind> = EDITION.id === "es" ? PUERTO_COLIBRI : MAPLE_HARBOR;

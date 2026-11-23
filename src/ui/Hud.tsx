@@ -6,6 +6,7 @@ import { SectionHelpButton, useSectionHelp } from "./sectionHelp";
 import { useSurf } from "../game/surf/store";
 import { TaxiOverlay } from "./Taxi";
 import { PoolOverlay } from "./Pool";
+import { LoteriaOverlay } from "./Loteria";
 import { SurfOverlay, SurfPicker } from "./Surf";
 import { BaristaOffer, BaristaOverlay } from "./Barista";
 import { game } from "../game/gameRef";
@@ -55,7 +56,7 @@ const RIDE_ARROWS = () => <><kbd><Icon name="arrowUp" size="1em" strokeWidth={2.
 
 const FriendMeeting = lazy(() => import("./FriendMeeting"));
 const RoadOverlay = lazy(() => import("./Road").then(({ RoadOverlay }) => ({ default: RoadOverlay })));
-const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = { taxi: TaxiOverlay, road: RoadOverlay, barista: BaristaOverlay, pool: PoolOverlay };
+const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = { taxi: TaxiOverlay, road: RoadOverlay, barista: BaristaOverlay, pool: PoolOverlay, loteria: LoteriaOverlay };
 
 export function Hud() {
   const hud = useStore((s) => s.hud);
@@ -91,7 +92,7 @@ export function Hud() {
     return (
       <div className={"hud mode-hud" + (road ? " road-mode" : sea ? " sea-mode" : "") + (hud.showTouch ? " has-touch" : "")}>
         {!hud.panel && Overlay && <Suspense fallback={null}><Overlay touch={hud.showTouch} /></Suspense>}
-        {!road && !sea && hud.modeScreen.id !== "barista" && <Toolbar riding touch={hud.showTouch} modeExit={hud.modeScreen.exitLabel} />}
+        {!road && !sea && hud.modeScreen.id !== "barista" && hud.modeScreen.id !== "loteria" && <Toolbar riding touch={hud.showTouch} modeExit={hud.modeScreen.exitLabel} />}
         {hud.showTouch && hud.ride && <TouchControls road={road} stickOnly={sea} />}
         <Fade />
       </div>

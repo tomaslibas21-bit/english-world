@@ -34,6 +34,8 @@ export interface GameMode {
   allowsRideHints?(): boolean;
   start(option?: string): boolean;
   update(frame: ModeFrame): void;
+  frameStage?(width: number, height: number): void;
+  controlsNpc?(id: string): boolean;
   tick?(dt: number, outdoors: boolean): void;
   input(input: ModeInput): boolean;
   prompt?(x: number, z: number): ModePrompt | null;
