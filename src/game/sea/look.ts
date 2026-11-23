@@ -22,8 +22,8 @@ export type Coast = { x0: number; x1: number; z: number; lighthouse?: { x: numbe
 // Maple Harbor: a clear, cool New England afternoon that turns gold.
 const MAPLE_HARBOR: SeaView = {
   sky: [
-    { zenith: "#1458c6", mid: "#5aa9ec", horizon: "#e3f0ee", sun: "#fffbe9", halo: "#ffe0a6", elevation: 13,
-      ridgeFar: "#9fb6cf", ridgeNear: "#86a2bd", streak: "#ffffff", streaks: 0.5, cloud: "#ffffff",
+    { zenith: "#0f4fc2", mid: "#3d94ea", horizon: "#cfe6f0", sun: "#fffbe9", halo: "#c9b792", elevation: 13,
+      ridgeFar: "#9fb6cf", ridgeNear: "#86a2bd", streak: "#ffffff", streaks: 0.32, cloud: "#ffffff",
       light: "#fff0d2", lightPower: 2.3, fillSky: "#e8f1f6", fillGround: "#8fb2c4", fill: 1.35 },
     { zenith: "#1e50bb", mid: "#eeb486", horizon: "#ffd595", sun: "#fff0bd", halo: "#ffa65a", elevation: 8,
       ridgeFar: "#a892b4", ridgeNear: "#93799e", streak: "#ffdcb8", streaks: 0.75, cloud: "#ffe6cf",
@@ -42,8 +42,8 @@ const MAPLE_HARBOR: SeaView = {
 // Puerto Colibrí: Caribbean turquoise under a tall blue sky, then pink and violet.
 const PUERTO_COLIBRI: SeaView = {
   sky: [
-    { zenith: "#0668c4", mid: "#4cc3e2", horizon: "#e4f6ea", sun: "#fffbe9", halo: "#ffe3a0", elevation: 13,
-      ridgeFar: "#9cc3cf", ridgeNear: "#7fb0b8", streak: "#ffffff", streaks: 0.45, cloud: "#ffffff",
+    { zenith: "#055fc4", mid: "#23ace0", horizon: "#c9eef0", sun: "#fffbe9", halo: "#c9bd92", elevation: 13,
+      ridgeFar: "#9cc3cf", ridgeNear: "#7fb0b8", streak: "#ffffff", streaks: 0.3, cloud: "#ffffff",
       light: "#fff1cf", lightPower: 2.35, fillSky: "#e3f4f3", fillGround: "#7fc3c4", fill: 1.35 },
     { zenith: "#2247b6", mid: "#f78a8e", horizon: "#ffb866", sun: "#fff0bd", halo: "#ff9558", elevation: 8,
       ridgeFar: "#a583b8", ridgeNear: "#8e6aa6", streak: "#ffc9b8", streaks: 0.75, cloud: "#ffe0d5",
