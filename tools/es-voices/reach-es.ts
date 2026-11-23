@@ -179,6 +179,7 @@ export const UNSPOKEN: Record<string, RegExp> = {
   [LOTERIA_SITUATION]: /^lt_a_/,
   "x01-surf": /^sg_[ab]_/,
   "s83-invite-call": /^phone_meet_(ready|tickets)$/,
+  "s66-taxi": /^(tx_(r\d_)?a_|rd_a_)/, // b14-media (23 Nov): the learner's taxi and road answers, said in the coach voices
 };
 export const unspoken = (sit: string, lineId: string) => !!UNSPOKEN[sit]?.test(lineId);
 
