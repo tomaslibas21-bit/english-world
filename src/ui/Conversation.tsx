@@ -59,7 +59,11 @@ export function Conversation() {
   const inputRef = useRef<HTMLInputElement>(null);
   const missRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight }); }, [conv.transcript.length, conv.phase]);
+  const lastLineId = conv.transcript.at(-1)?.id;
+  useEffect(() => {
+    const transcript = scrollRef.current;
+    transcript?.scrollTo({ top: transcript.scrollHeight });
+  }, [lastLineId, conv.phase, conv.run]);
   useEffect(() => { if (conv.typing && conv.phase === "you") inputRef.current?.focus(); }, [conv.typing, conv.phase]);
   // half-typed text doesn't carry over into the next conversation
   useEffect(() => { setTyped(""); }, [conv.sitId, conv.active]);
@@ -152,7 +156,7 @@ export function Conversation() {
       <div className="transcript" ref={scrollRef} aria-live="polite">
         {conv.transcript.length === 0 && <div style={{ color: "var(--ink-faint)", textAlign: "center", marginTop: 20 }}>…</div>}
         {groupLines(conv.transcript).map((grp) => grp.length > 1
-          ? <NpcGroup key={grp[0].id} lines={grp} speaking={grp.some((l) => l.id === conv.speaking)} lt={settings.lt} ipa={settings.ipa} nat={settings.ltNatural} reveal={conv.reveal} />
+          ? <NpcGroup key={grp[0].id} lines={grp} speakingId={conv.speaking} lt={settings.lt} ipa={settings.ipa} nat={settings.ltNatural} reveal={conv.reveal} />
           : <Line key={grp[0].id} l={grp[0]} speaking={conv.speaking === grp[0].id} lt={settings.lt || !!conv.reveal[grp[0].id]} ipa={settings.ipa} nat={settings.ltNatural || !!conv.reveal[grp[0].id]} />)}
         {conv.note && <div className="msg note"><div className="bubble"><Icon name="note" size={22} className="note-ico" /><span>{conv.note.en}</span></div></div>}
       </div>
@@ -400,20 +404,24 @@ function groupLines(lines: TranscriptLine[]): TranscriptLine[][] {
   return out;
 }
 
-function NpcGroup({ lines, speaking, lt, ipa, nat, reveal }: { lines: TranscriptLine[]; speaking: boolean; lt: boolean; ipa: boolean; nat: boolean; reveal: Record<number, boolean> }) {
+function NpcGroup({ lines, speakingId, lt, ipa, nat, reveal }: { lines: TranscriptLine[]; speakingId: number | null; lt: boolean; ipa: boolean; nat: boolean; reveal: Record<number, boolean> }) {
   const npc = NPCS[lines[0].npc!];
   const replay = async (slow: boolean) => {
     game?.activeSession?.stopListening();
     for (const l of lines) if (!await audio.play(npcVoice(npc), npc?.speed ?? 1, l.sentence!.say, { slow, male: npc?.gender === "m" })) return;
   };
   return (
-    <div className={"msg npc" + (speaking ? " speaking" : "")}>
+    <div className="msg npc">
       <div className="meta">
         <span>{npc?.name}</span>
         <ReplayButtons replay={replay} />
       </div>
       <div className="bubble">
-        {lines.map((l) => <div className="bubble-part" key={l.id}><Interlinear s={l.sentence!} lt={lt || !!reveal[l.id]} ipa={ipa} nat={nat || !!reveal[l.id]} natTip /></div>)}
+        {lines.map((l) => (
+          <div className={"bubble-part" + (l.id === speakingId ? " speaking" : "")} key={l.id}>
+            <Interlinear s={l.sentence!} lt={lt || !!reveal[l.id]} ipa={ipa} nat={nat || !!reveal[l.id]} natTip />
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -646,12 +654,16 @@ function Line({ l, speaking, lt, ipa, nat }: { l: TranscriptLine; speaking: bool
     const npc = NPCS[l.npc!];
     const replay = (slow: boolean) => { game?.activeSession?.stopListening(); audio.play(npcVoice(npc), npc?.speed ?? 1, l.sentence!.say, { slow, male: npc?.gender === "m" }); };
     return (
-      <div className={"msg npc" + (speaking ? " speaking" : "")}>
+      <div className="msg npc">
         <div className="meta">
           <span>{npc?.name}</span>
           <ReplayButtons replay={replay} />
         </div>
-        <div className="bubble"><Interlinear s={l.sentence} lt={lt} ipa={ipa} nat={nat} natTip /></div>
+        <div className="bubble">
+          <div className={"bubble-part" + (speaking ? " speaking" : "")}>
+            <Interlinear s={l.sentence} lt={lt} ipa={ipa} nat={nat} natTip />
+          </div>
+        </div>
       </div>
     );
   }
