@@ -89,14 +89,15 @@ export function TextThread({ thread, entry }: { thread: Thread; entry: TextProgr
     <div className="text-thread-body" ref={body}>
       {!translated && <p className="text-hint">{LABELS.hint}</p>}
       {thread.lines.map((line, i) => <Bubble key={i} line={line} />)}
-      {reply ? <>
+      {reply && <>
         <Bubble line={reply} mine />
         {typing ? <div className="text-typing" aria-hidden><i /><i /><i /></div>
           : reply.answer.map((line, i) => <Bubble key={`a${i}`} line={line} />)}
-      </> : <div className="text-replies">
-        <strong>{LABELS.reply}</strong>
-        {thread.replies.map((choice, i) => <button type="button" key={i} onClick={() => send(i)}><span lang="en">{choice.en}</span><small lang="lt">{choice.lt}</small></button>)}
-      </div>}
+      </>}
     </div>
+    {!reply && <div className="text-replies">
+      <strong>{LABELS.reply}</strong>
+      {thread.replies.map((choice, i) => <button type="button" key={i} onClick={() => send(i)}><span lang="en">{choice.en}</span><small lang="lt">{choice.lt}</small></button>)}
+    </div>}
   </section>;
 }

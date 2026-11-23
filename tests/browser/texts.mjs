@@ -37,6 +37,7 @@ try {
       const phone = page.locator(".toolbar .icon-btn[title$='(P)']");
       const panel = page.locator(".phone[role=dialog]");
       const thread = panel.locator(".text-thread");
+      const replies = thread.locator(".text-replies button");
       const tap = (locator) => during(() => Math.min(width, height) < 600 ? locator.tap() : locator.click());
       const checkArrival = async () => {
         const layout = await chip.evaluate((node) => {
@@ -56,21 +57,28 @@ try {
         });
         assert.deepEqual(layout, { insideScreen: true, toolbar: [], cards: [], tappable: true }, "the arrival chip and its button are clear of the HUD");
       };
-      const checkThreadViewport = async (...selectors) => {
-        const checks = await thread.locator(".text-thread-body").evaluate((body, selectors) => {
-          const area = body.getBoundingClientRect();
-          const bottom = area.top + body.clientHeight;
+      const checkThreadViewport = async (areaSelector, ...selectors) => {
+        const checks = await thread.locator(areaSelector).evaluate((area, selectors) => {
+          const bounds = area.getBoundingClientRect();
+          const phone = area.closest(".phone");
+          const panel = phone.getBoundingClientRect();
+          const left = Math.max(0, bounds.left, panel.left + phone.clientLeft);
+          const top = Math.max(0, bounds.top, panel.top + phone.clientTop);
+          const right = Math.min(innerWidth, bounds.left + area.clientWidth, panel.left + phone.clientLeft + phone.clientWidth);
+          const bottom = Math.min(innerHeight, bounds.top + area.clientHeight, panel.top + phone.clientTop + phone.clientHeight);
           return selectors.map((selector) => {
-            const elements = [...body.querySelectorAll(selector)];
+            const elements = [...area.querySelectorAll(selector)];
             return elements.length > 0 && elements.every((el) => {
               const rect = el.getBoundingClientRect();
-              return rect.height > 0 && rect.top >= area.top - 1 && rect.bottom <= bottom + 1;
+              return rect.width > 0 && rect.height > 0 && rect.left >= left - 1 && rect.top >= top - 1 &&
+                rect.right <= right + 1 && rect.bottom <= bottom + 1;
             });
           });
         }, selectors);
-        assert(checks.every(Boolean), `inside the thread's scroll area at ${width}×${height}: ${selectors.filter((_, i) => !checks[i]).join(", ")}`);
+        assert(checks.every(Boolean), `fully visible in ${areaSelector} at ${width}×${height}: ${selectors.filter((_, i) => !checks[i]).join(", ")}`);
       };
-      const newest = ".text-message:nth-last-child(2) .text-bubble";
+      const checkReplies = () => checkThreadViewport(".text-replies", "button", "button span", "button small");
+      const newest = ".text-message:last-child .text-bubble";
       await ready();
       await probeEffects(page);
       assert.equal((await state()).due, dinner.id);
@@ -102,7 +110,11 @@ try {
       await during(() => screenshot(page, "text-arrival", width, height));
       await tap(chip.getByRole("button"));
       assert.equal(await thread.getAttribute("data-thread"), dinner.id);
-      await checkThreadViewport(newest, ".text-replies button");
+      assert.equal(await replies.count(), dinner.replies.length);
+      assert.deepEqual(await replies.locator("span").allTextContents(), dinner.replies.map(({ en }) => en));
+      assert.deepEqual(await replies.locator("small").allTextContents(), dinner.replies.map(({ lt }) => lt));
+      await checkThreadViewport(".text-thread-body", newest);
+      await checkReplies();
       assert.equal((await state()).unread, 0);
       assert.equal(await phone.locator(".due-badge").count(), 0);
       const first = thread.locator(".text-bubble").first();
@@ -111,18 +123,20 @@ try {
       await tap(first);
       assert.equal(await first.locator("small").count(), 0);
       await tap(first);
+      assert.equal(await first.locator("small").innerText(), dinner.lines[0].lt);
       assert.equal(await thread.locator(".text-hint").count(), 0);
+      await checkReplies();
       await during(() => screenshot(page, "text-translation", width, height));
 
       const reply = dinner.replies[0];
-      await tap(thread.locator(".text-replies button").first());
+      await tap(replies.first());
       assert.equal(await thread.locator(".mine .text-bubble").innerText(), reply.en);
       assert.equal(await thread.locator(".text-sent").innerText(), "Išsiųsta");
       assert.equal(await thread.locator(".text-typing i").count(), 3);
-      await checkThreadViewport(".text-message.mine .text-bubble", ".text-typing");
+      await checkThreadViewport(".text-thread-body", ".text-message.mine .text-bubble", ".text-typing");
       await waitFor(async () => await thread.locator(".text-bubble").count() === dinner.lines.length + 1 + reply.answer.length, "answer arrives after typing");
       assert.equal(await thread.locator(".text-bubble").last().innerText(), reply.answer.at(-1).en);
-      await checkThreadViewport(".text-message:last-child .text-bubble");
+      await checkThreadViewport(".text-thread-body", newest);
       await during(() => screenshot(page, "text-replied", width, height));
       await tap(panel.locator(".phone-status button"));
       await page.evaluate(({ second, completed, day }) => window.__ew.store.getState().updateProgress((p) => {
@@ -147,7 +161,7 @@ try {
       assert.equal(await thread.locator(".text-replies").count(), 0);
       assert.equal(await thread.locator(".text-hint").count(), 0);
       assert.equal(await thread.locator(".text-bubble").last().innerText(), reply.answer.at(-1).en);
-      await checkThreadViewport(".text-message:last-child .text-bubble");
+      await checkThreadViewport(".text-thread-body", newest);
       await tap(thread.locator(".text-thread-head button"));
       assert(await preview.isVisible());
       assert.deepEqual(errors, []);

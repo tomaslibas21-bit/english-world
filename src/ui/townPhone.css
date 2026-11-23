@@ -230,7 +230,15 @@
 .text-message.mine .text-bubble { background: var(--accent-soft); border-radius: 14px 14px 4px 14px; }
 .text-bubble small, .text-replies small { display: block; margin-top: 4px; font-family: var(--ui); color: #48545c; }
 .text-sent { margin-top: 3px; color: #b9c7d1; }
-.text-replies { display: grid; gap: 6px; padding-top: 5px; }
+.text-replies {
+  flex: none;
+  display: grid;
+  gap: 6px;
+  padding: 5px 4px 8px;
+  max-height: 50dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
 .text-replies button { max-width: 100%; min-height: 44px; border-radius: 12px; background: #f4edd9; }
 @media (max-height: 520px) and (orientation: landscape) {
   .overlay > .phone.thread-open { width: min(560px, 100%); padding-block: 8px 12px; }
