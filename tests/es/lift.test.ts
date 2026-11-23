@@ -34,8 +34,10 @@ function withLift(check: (lift: Lift, player: ReturnType<typeof createCharacter>
       player.root.position.set(x, 0, z);
       player.root.rotation.y = heading;
     };
-    const lift = new Lift({ rig, place, roadSign: town.roadSign, player: () => player, add: (...parts) => scene.add(...parts) }, edge);
+    const originalSign = town.roadSign.root.position.clone();
+    const lift = new Lift({ rig, place, roadSign: () => town.roadSign.root, player: () => player, add: (...parts) => scene.add(...parts) }, edge);
     check(lift, player, rig, scene, town);
+    expect(town.roadSign.root.position).toEqual(originalSign);
     player.dispose?.();
   } finally {
     vi.unstubAllGlobals();
@@ -47,13 +49,14 @@ describe("Don Rigo's lift on Calle Ceiba", () => {
     withLift((lift, player, rig, scene, town) => {
       expect(lift.arrive(1.35)).toBe(true);
       scene.updateMatrixWorld(true);
-      const sign = scene.getObjectByName("turnout-sign") as typeof town.roadSign.face;
-      const turnout = sign.parent as THREE.Mesh;
-      expect(sign.material.map).toBe(town.roadSign.face.material.map);
+      const sign = town.roadSign.face;
+      const turnout = scene.getObjectByName("desert-road-crest") as THREE.Mesh;
+      expect(scene.getObjectByName("desert-road-sign-face")).toBe(sign);
       expect(sign.material.map?.name).toBe("Carretera del Desierto");
-      expect(town.roadSign.root.visible).toBe(false);
+      expect(sign.parent).toBe(town.roadSign.root);
+      expect(town.roadSign.root.visible).toBe(true);
+      expect(town.roadSign.root.position.z).toBeGreaterThan(WORLD.maxZ);
       expect(turnout.geometry.groups).toHaveLength(0);
-      expect(turnout.children).toEqual([sign]);
       expect(lift.car.position.z).toBeGreaterThan(WORLD.maxZ);
       expect(town.walkableAt(player.root.position.x, player.root.position.z)).toBe(true);
 

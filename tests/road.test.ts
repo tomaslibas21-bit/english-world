@@ -1,9 +1,13 @@
-import { Color, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, PerspectiveCamera, Vector3 } from "three";
+import { projectBoards } from "./board-projection";
+import { BoxGeometry, Color, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, PerspectiveCamera, Vector3, type Object3D } from "three";
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { audioKey } from "../src/audio-key";
 import { ROAD_EDITION } from "../src/content/road";
 import { audioDir, coachVoice } from "../src/content/voices";
+import { RoadView } from "../src/game/road/view";
+import { carModelEntry } from "../src/game/world/carModels";
+import { exitToTown } from "../src/game/world/roadExit";
 import { RoadChase } from "../src/game/road/chase";
 import { RoadWordForms } from "../src/game/road/wordForms";
 import { leavingByRoad, walkEdge } from "../src/game/road/entry";
@@ -186,7 +190,38 @@ describe("desert road", () => {
     expect([0, 1, 2].map((lane) => laneAt(laneOffset(lane)))).toEqual([0, 1, 2]);
   });
 
-  it("projects three fitted banner rectangles that grow with the arches", () => {
+  it("presents the crest with the same car, seated learner, and shifted camera", () => {
+    const town = new Group(), rider = new Group();
+    const car = new Mesh(new BoxGeometry(2, 1.4, 4), new MeshBasicMaterial());
+    car.position.set(2, 0.09, 0).applyMatrix4(exitToTown);
+    car.rotation.set(0.04, ROAD_EDITION.edge.outward - 0.08, 0.03);
+    rider.position.copy(car.position).add(new Vector3(0, 0.8, 0));
+    town.add(car, rider);
+    const camera = new PerspectiveCamera(54, 390 / 664, 0.3, 590);
+    camera.position.set(2, 6, 10).applyMatrix4(exitToTown);
+    camera.lookAt(car.position);
+    camera.setViewOffset(390, 664, 0, -80, 390, 664);
+    const view = new RoadView(car, { width: 2, length: 4 }, carModelEntry("van"));
+    view.depart(car, rider, camera, 390, 664);
+    const renderer = { render: (scene: Object3D) => scene.updateMatrixWorld(true) };
+    view.render(renderer, 390, 664, undefined);
+    const first = view.departureDebug()!;
+    for (const key of ["car", "rider", "camera"] as const) {
+      expect(new Vector3().fromArray(first.road[key]).distanceTo(new Vector3().fromArray(first.town[key]))).toBeLessThan(0.01);
+    }
+    expect(first.road.viewOffset).toEqual(first.town.viewOffset);
+    expect(first.road.fov).toBe(first.town.fov);
+    for (const [i, pixel] of [first.road.roof, ...first.road.posts].entries()) {
+      const other = [first.town.roof, ...first.town.posts][i];
+      expect(Math.hypot(pixel[0] - other[0], pixel[1] - other[1])).toBeLessThan(1);
+    }
+    view.dispose();
+    expect(rider.parent).toBe(town);
+    car.geometry.dispose();
+    car.material.dispose();
+  });
+
+  it("projects three board faces that grow with the arches", () => {
     const material = new MeshBasicMaterial({ vertexColors: true });
     const gate = new Gate(FIRST_GATE, {} as Prompt, material);
     gate.mesh.geometry.computeBoundingBox();
@@ -194,11 +229,12 @@ describe("desert road", () => {
     expect(size.max.x - size.min.x).toBeGreaterThan(11.5);
     expect(size.max.y - size.min.y).toBeGreaterThan(4);
     const cam = new PerspectiveCamera(49, 390 / 664, 0.18, 470);
+    gate.mesh.updateMatrixWorld(true);
     const labelsAt = (s: number) => {
       cam.position.copy(point(s - 11, 0, 5.4));
       cam.lookAt(point(s + 22, 0, 1.85));
       cam.updateMatrixWorld();
-      return gate.labels(cam, 390, 664);
+      return projectBoards("road", gate.faces(), cam, 390, 664);
     };
     const far = labelsAt(0), nearby = labelsAt(FIRST_GATE - 32);
     expect(far).toHaveLength(3);
@@ -235,7 +271,8 @@ describe("desert road", () => {
     expect(tint.getHex()).toBe(0xffffff);
     boards.getColorAt(2, tint);
     expect(tint.g > tint.r).toBe(correct);
-    const labels = gate.labels(camera, 390, 664);
+    gate.mesh.updateMatrixWorld(true);
+    const labels = projectBoards("road", gate.faces(), camera, 390, 664);
     expect(labels.map(({ lane }) => lane)).toEqual(correct ? [0, 1] : [0, 1, 2]);
     expect(gate.animatePass(0.15, FIRST_GATE + 3)).toBe(true);
     const animated = new Matrix4();
@@ -243,13 +280,13 @@ describe("desert road", () => {
     expect(animated.elements[13] > original.elements[13]).toBe(correct);
     expect(animated.elements[1] === 0).toBe(correct);
     if (!correct) {
-      const chosen = gate.labels(camera, 390, 664)[2];
+      const chosen = projectBoards("road", gate.faces(), camera, 390, 664)[2];
       expect(chosen.opacity).toBeLessThan(labels[0].opacity);
       expect(chosen.tilt).toBeGreaterThan(0.01);
       expect(chosen.y).toBeGreaterThan(labels[2].y);
     }
     expect(gate.animatePass(0.18, FIRST_GATE + 7)).toBe(true);
-    for (const label of gate.labels(camera, 390, 664)) {
+    for (const label of projectBoards("road", gate.faces(), camera, 390, 664)) {
       expect(label.opacity).toBeGreaterThan(0);
       expect(label.opacity).toBeLessThan(1);
     }
@@ -266,6 +303,7 @@ describe("desert road", () => {
   it("frames all three gates and an airborne car in the outside lane on both phone heights and desktop", () => {
     const material = new MeshBasicMaterial({ vertexColors: true });
     const gate = new Gate(FIRST_GATE, {} as Prompt, material);
+    gate.mesh.updateMatrixWorld(true);
     for (const [width, height] of [[390, 664], [390, 844], [1280, 800]]) {
       const chase = new RoadChase(), camera = new PerspectiveCamera();
       const near = 40;
@@ -275,7 +313,7 @@ describe("desert road", () => {
         const corners = [-1.1, 1.1].flatMap((x) => [0, 1.8].flatMap((y) => [-2.4, 2.4].map((z) =>
           new Vector3(Math.cos(yaw) * x + Math.sin(yaw) * z, y, -Math.sin(yaw) * x + Math.cos(yaw) * z).add(car))));
         chase.update(camera, car, distance, 1.1, 0.9, near - toGo, 0.05, width, height, corners, gate);
-        const labels = gate.labels(camera, width, height);
+        const labels = projectBoards("road", gate.faces(), camera, width, height);
         expect(labels).toHaveLength(3);
         let leftLimit = 0;
         for (const label of labels) {
@@ -305,6 +343,16 @@ describe("desert road", () => {
     for (let i = 1; i < 420; i++) {
       track.stream(i * PIECE_LENGTH);
       expect(track.pieces.size).toBeLessThanOrEqual(6);
+      if (i <= 10) for (const { features } of track.pieces.values()) {
+        expect(features.every(({ kind }) => ["cone", "rock", "cactus", "ramp", "boost"].includes(kind))).toBe(true);
+        for (const { kind, s } of features) {
+          if (kind !== "cactus" && kind !== "rock") {
+            let gate = FIRST_GATE, number = 0;
+            while (gate < s) gate = nextGate(gate, ++number);
+            expect(gate - s).toBeGreaterThanOrEqual(24);
+          }
+        }
+      }
       expect(track.group.children).toHaveLength(track.pieces.size);
     }
     expect(initial.parent).toBeNull();

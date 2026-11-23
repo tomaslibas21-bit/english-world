@@ -1,32 +1,37 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { EXIT_ASPHALT, EXIT_SHARED_LENGTH, LANE, makeExitGeometry, ROAD_HALF, roadCenter, roadHeight } from "../world/roadExit";
 import { colourMerge, rand } from "../world/util";
+import { FIRST_GATE, nextGate } from "./run";
 import { ROAD_LOOK } from "./look";
 
-export const PIECE_LENGTH = 64;
-export const LANE = 4;
-export const ROAD_HALF = 6.3;
+export const PIECE_LENGTH = EXIT_SHARED_LENGTH;
+export { LANE, ROAD_HALF };
 const STEPS = 16;
 
-export const center = (s: number) => 7 * Math.sin(s / 55) + 3 * Math.sin(s / 24);
-export const height = (s: number) => 1.1 * Math.sin(s / 31) + 0.7 * Math.sin(s / 71);
+export const center = roadCenter;
+export const height = roadHeight;
 export const course = (s: number) => Math.PI - Math.atan((center(s + 0.5) - center(s - 0.5)));
 export const laneOffset = (lane: number) => (lane - 1) * LANE;
 export const laneAt = (x: number) => THREE.MathUtils.clamp(Math.round(x / LANE) + 1, 0, 2);
 
-type Kind = "cone" | "weed" | "boost" | "ramp" | "cactus" | "rock";
+type Kind = "cone" | "boost" | "ramp" | "cactus" | "rock";
 export type Feature = { kind: Kind; s: number; x: number; hit: boolean; phase: number };
 type Scenery = { kind: "cactus" | "rock" | "pole" | "sign"; s: number; x: number; seed: number };
+type ObstacleKind = "cactus" | "pole" | "wire";
 export type TrackPiece = {
-  index: number; mesh: THREE.Mesh; features: Feature[]; scenery: Scenery[];
+  index: number; mesh: THREE.Mesh<THREE.BufferGeometry>; features: Feature[]; vergeVertices: number; terrainStart: number;
+  obstacles: { kind: ObstacleKind; start: number; end: number }[];
 };
+type PieceGeometry = Omit<TrackPiece, "index" | "mesh"> & { geometry: THREE.BufferGeometry };
+export type RoadOpening = readonly PieceGeometry[];
 type Part = [THREE.BufferGeometry, THREE.ColorRepresentation];
 
 /** The desert floor: flat by the road, rolling into low dunes farther out. */
 export function dune(s: number, x: number) {
   const out = Math.abs(x);
   if (out <= 9) return 0;
-  const rise = THREE.MathUtils.smoothstep(out, 9, 36);
+  const rise = THREE.MathUtils.smoothstep(out, 9, 36) * THREE.MathUtils.smoothstep(s, 0, 16);
   return rise * (1.5 * Math.sin(s / 41 + x / 29) + 1.0 * Math.sin(s / 19 - x / 37 + 1.3) + 0.55 * Math.sin(x / 11 + s / 67));
 }
 /** A point on the ground beside the road, `x` metres from its middle. */
@@ -38,11 +43,12 @@ const SHOULDER = new THREE.Color(ROAD_LOOK.shoulder);
 
 /** Both sides of the desert floor for one piece: flat-shaded facets in three tones of sand. */
 function terrain(s0: number) {
+  const across = ACROSS;
   const positions: number[] = [], colours: number[] = [];
   const tone = new THREE.Color();
   const corner = (s: number, x: number) => { const p = ground(s, x, -0.07); positions.push(p.x, p.y, p.z); };
-  for (const side of [-1, 1]) for (let i = 0; i < STEPS; i++) for (let j = 0; j + 1 < ACROSS.length; j++) {
-    const a = s0 + i * PIECE_LENGTH / STEPS, b = a + PIECE_LENGTH / STEPS, lo = side * ACROSS[j], hi = side * ACROSS[j + 1];
+  for (const side of [-1, 1]) for (let i = 0; i < STEPS; i++) for (let j = 0; j + 1 < across.length; j++) {
+    const a = s0 + i * PIECE_LENGTH / STEPS, b = a + PIECE_LENGTH / STEPS, lo = side * across[j], hi = side * across[j + 1];
     // Alternate the diagonal so the facets do not line up in rows.
     const quads = (i + j) % 2 ? [[a, lo], [b, lo], [b, hi], [a, lo], [b, hi], [a, hi]] : [[a, lo], [b, lo], [a, hi], [b, lo], [b, hi], [a, hi]];
     for (let k = 0; k < 2; k++) {
@@ -50,7 +56,7 @@ function terrain(s0: number) {
       for (const [s, x] of side < 0 ? tri : [tri[0], tri[2], tri[1]]) corner(s, x);
       const ms = (tri[0][0] + tri[1][0] + tri[2][0]) / 3, mx = (tri[0][1] + tri[1][1] + tri[2][1]) / 3;
       const n = Math.sin(ms * 0.171 + mx * 0.093) * Math.sin(ms * 0.047 - mx * 0.131 + 2.1);
-      if (j === 0) tone.copy(SHOULDER);
+      if (across[j] === ROAD_HALF) tone.copy(SHOULDER);
       else if (n > 0) tone.copy(SAND[0]).lerp(SAND[2], Math.min(1, n * 1.7));
       else tone.copy(SAND[0]).lerp(SAND[1], Math.min(1, -n * 1.7));
       for (let v = 0; v < 3; v++) colours.push(tone.r, tone.g, tone.b);
@@ -67,17 +73,23 @@ function terrain(s0: number) {
 export const POLE_GAP = PIECE_LENGTH / 2;
 export const POLE_X = 12.5;
 const POLE_FIRST = 10;
+const OPENING_SIGHTLINE = 96;
+const OPENING_SHOULDER = 24;
+// Keep the far end of the last opening span wide until the entire sightline is clear.
+const poleOffset = (s: number) => s < OPENING_SIGHTLINE + POLE_GAP ? OPENING_SHOULDER : POLE_X;
+export const firstPole = () => ground(POLE_FIRST, poleOffset(POLE_FIRST), 6.33);
 function wire(s0: number) {
   const positions: number[] = [], index: number[] = [];
   const spans = 6;
+  const start = ground(s0, poleOffset(s0)), end = ground(s0 + POLE_GAP, poleOffset(s0 + POLE_GAP));
   for (const arm of [-0.82, 0.82]) {
     const base = positions.length / 3;
     for (let i = 0; i <= spans; i++) {
-      const t = i / spans, s = s0 + t * POLE_GAP, sag = 4 * t * (1 - t) * 0.85;
-      const p = point(s, POLE_X, 0);
+      const t = i / spans, sag = 4 * t * (1 - t) * 0.85;
+      const x = THREE.MathUtils.lerp(start.x, end.x, t) + arm, z = THREE.MathUtils.lerp(start.z, end.z, t);
       // The pole's crossarm lies across the road; the wire hangs from its two insulators.
-      const y = THREE.MathUtils.lerp(ground(s0, POLE_X).y, ground(s0 + POLE_GAP, POLE_X).y, t) - 0.07 + 6.12 - sag;
-      positions.push(p.x + arm, y + 0.012, p.z, p.x + arm, y - 0.012, p.z);
+      const y = THREE.MathUtils.lerp(start.y, end.y, t) - 0.07 + 6.12 - sag;
+      positions.push(x, y + 0.012, z, x, y - 0.012, z);
       if (i) { const a = base + i * 2 - 2; index.push(a, a + 1, a + 2, a + 1, a + 3, a + 2, a + 2, a + 1, a, a + 2, a + 3, a + 1); }
     }
   }
@@ -107,8 +119,8 @@ export function ribbon(s0: number, length: number, lo: number, hi: number, y: nu
   return g;
 }
 
-const RAMP_LENGTH = 5;
-const RAMP_RISE = 0.65;
+export const RAMP_LENGTH = 5;
+export const RAMP_RISE = 0.65;
 
 function rampTop(s: number, x: number, y: number) {
   return point(s, x, y + 0.035);
@@ -145,44 +157,111 @@ const add = (parts: Part[], g: THREE.BufferGeometry, color: THREE.ColorRepresent
   parts.push([plain, color]);
 };
 
+function cactus(): Part[] {
+  const make = (r: number, h: number, x: number, y: number, angle = 0) =>
+    new THREE.CylinderGeometry(r * 0.82, r, h, 6).rotateZ(angle).translate(x, y, 0);
+  return [
+    [make(0.24, 2.5, 0, 1.25), "#498663"],
+    [make(0.15, 0.72, -0.32, 1.08, -Math.PI / 2.8), "#619869"],
+    [make(0.145, 0.72, -0.63, 1.51), "#619869"],
+    [make(0.13, 0.6, 0.34, 1.56, Math.PI / 2.9), "#427956"],
+    [make(0.12, 0.58, 0.58, 1.97), "#427956"],
+  ];
+}
+
+function pole(): Part[] {
+  return [
+    [new THREE.CylinderGeometry(0.075, 0.16, 6.4, 6).translate(0, 3.2, 0), "#8c5e48"],
+    [new THREE.BoxGeometry(2.1, 0.13, 0.15).translate(0, 5.92, 0), "#785440"],
+    ...[-0.82, 0.82].map((x): Part => [new THREE.CylinderGeometry(0.09, 0.11, 0.2, 6).translate(x, 6.06, 0), "#eee6d7"]),
+  ];
+}
+
+function sign(): Part[] {
+  return [
+    [new THREE.CylinderGeometry(0.055, 0.07, 2.5, 6).translate(0, 1.25, 0), "#765e53"],
+    [new THREE.BoxGeometry(0.95, 0.95, 0.12).rotateZ(Math.PI / 4).translate(0, 2.5, 0), "#f1bc58"],
+    [new THREE.BoxGeometry(0.16, 0.62, 0.05).rotateZ(-0.35).translate(0, 2.5, 0.08), "#695549"],
+  ];
+}
+
+const sceneryParts = {
+  cactus,
+  pole,
+  sign,
+  rock: (): Part[] => [[new THREE.DodecahedronGeometry(1), "#ad7960"]],
+};
+
 export class Track {
   readonly group = new THREE.Group();
   readonly pieces = new Map<number, TrackPiece>();
   private material = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
   released = 0;
 
+  constructor(private readonly opening?: RoadOpening) {}
+
   stream(distance: number) {
     const current = Math.floor(distance / PIECE_LENGTH);
-    const first = Math.max(-1, current - 1), last = current + 4;
+    const first = Math.max(0, current - 1), last = current + 4;
     let changed = false;
     for (const index of this.pieces.keys()) if (index < first || index > last) {
       this.release(index);
       changed = true;
     }
     for (let i = first; i <= last; i++) if (!this.pieces.has(i)) {
-      const piece = this.build(i);
-      this.pieces.set(i, piece);
-      this.group.add(piece.mesh);
+      this.prepare(i);
       changed = true;
     }
     return changed;
   }
 
-  private build(index: number): TrackPiece {
+  prepare(index: number) {
+    const prepared = this.opening?.[index];
+    const { geometry, ...pieceData } = prepared
+      ? { ...prepared, geometry: prepared.geometry.clone(), features: prepared.features.map((feature) => ({ ...feature })) }
+      : Track.build(index);
+    const piece = { ...pieceData, index, mesh: new THREE.Mesh(geometry, this.material) };
+    this.pieces.set(index, piece);
+    this.group.add(piece.mesh);
+  }
+
+  private release(index: number) {
+    const piece = this.pieces.get(index);
+    if (!piece) return;
+    piece.mesh.removeFromParent();
+    piece.mesh.geometry.dispose();
+    this.pieces.delete(index);
+    this.released++;
+  }
+
+  dispose() {
+    for (const index of this.pieces.keys()) this.release(index);
+    this.material.dispose();
+  }
+
+  static opening(): RoadOpening {
+    return [0, 1, 2].map(Track.build);
+  }
+
+  private static build(index: number): PieceGeometry {
     const s = index * PIECE_LENGTH;
     const r = rand(317 + index * 1709);
     const parts: Part[] = [], features: Feature[] = [], scenery: Scenery[] = [];
+    const obstacleParts: TrackPiece["obstacles"] = [];
     const strip = (x0: number, x1: number, y: number, color: string) => add(parts, ribbon(s, PIECE_LENGTH, x0, x1, y, STEPS), color);
-    strip(-ROAD_HALF, ROAD_HALF, 0, "#5b626b");
-    for (const side of [-1, 1]) {
-      const x = side * (ROAD_HALF - 0.23);
-      strip(x - 0.07, x + 0.07, 0.025, "#f3c982");
-      const lane = side * LANE / 2;
-      for (let at = 2; at < PIECE_LENGTH; at += 8) add(parts, ribbon(s + at, 3, lane - 0.045, lane + 0.045, 0.022, 1), "#eee6d7");
+    if (index > 0) {
+      strip(-ROAD_HALF, ROAD_HALF, 0, EXIT_ASPHALT);
+      for (const side of [-1, 1]) {
+        const x = side * (ROAD_HALF - 0.23);
+        strip(x - 0.07, x + 0.07, 0.025, "#f3c982");
+        const lane = side * LANE / 2;
+        for (let at = 2; at < PIECE_LENGTH; at += 8) add(parts, ribbon(s + at, 3, lane - 0.045, lane + 0.045, 0.022, 1), "#eee6d7");
+      }
     }
     for (let at = POLE_FIRST; at < PIECE_LENGTH; at += POLE_GAP) {
-      scenery.push({ kind: "pole", s: s + at, x: POLE_X, seed: r() });
+      scenery.push({ kind: "pole", s: s + at, x: poleOffset(s + at), seed: r() });
       add(parts, wire(s + at), "#6a5a50");
+      if (s + at < OPENING_SIGHTLINE) obstacleParts.push({ kind: "wire", start: parts.length - 1, end: parts.length });
     }
     // Marker posts count the metres on both shoulders: the rhythm of the road.
     for (const side of [-1, 1]) for (let at = 4; at < PIECE_LENGTH; at += 16) {
@@ -215,25 +294,18 @@ export class Track {
       kind: (j + Number(side > 0)) % 2 ? "cactus" : "rock", s: s + 6 + j * 14 + r() * 6,
       x: side * (j < 3 ? 7.7 + r() * 4.5 : 16 + r() * 18), seed: r(),
     });
-    if (index === 0) {
-      // The last of the town falls behind in the first seconds: a few low houses, a water tower, then open desert.
-      const walls = ROAD_LOOK.town;
-      const house = (at: number, x: number, wide: number, deep: number, tall: number, i: number) => {
-        const base = ground(s + at, x, -0.6);
-        add(parts, new THREE.BoxGeometry(wide, tall + 0.6, deep).translate(base.x, base.y + (tall + 0.6) / 2, base.z), walls[i % walls.length]);
-        add(parts, new THREE.BoxGeometry(wide + 0.5, 0.28, deep + 0.5).translate(base.x, base.y + tall + 0.74, base.z), ROAD_LOOK.roof);
-        add(parts, new THREE.BoxGeometry(0.12, 1.9, 0.9).translate(base.x - Math.sign(x) * (wide / 2 + 0.02), base.y + 1.55, base.z), "#5a4338");
-      };
-      house(20, -13.5, 6, 8, 3.4, 0); house(33, 18, 7, 7, 3.0, 1); house(46, -14.5, 6, 6, 2.8, 2); house(58, 18.5, 6, 8, 3.2, 3);
-      const tower = ground(s + 38, -24, -0.4);
-      for (const [dx, dz] of [[-1.3, -1.3], [1.3, -1.3], [-1.3, 1.3], [1.3, 1.3]]) {
-        add(parts, new THREE.CylinderGeometry(0.1, 0.13, 7.4, 5).translate(tower.x + dx, tower.y + 3.7, tower.z + dz), "#6f5a4c");
-      }
-      add(parts, new THREE.CylinderGeometry(2.3, 2.3, 2.8, 9).translate(tower.x, tower.y + 8.6, tower.z), walls[1]);
-      add(parts, new THREE.ConeGeometry(2.55, 1.2, 9).translate(tower.x, tower.y + 10.6, tower.z), ROAD_LOOK.roof);
+    let gate = FIRST_GATE, gateNumber = 0;
+    while (gate < s - 3) gate = nextGate(gate, ++gateNumber);
+    const nearbyGates: number[] = [];
+    while (gate < s + PIECE_LENGTH + 27) {
+      nearbyGates.push(gate);
+      gate = nextGate(gate, ++gateNumber);
     }
-    const place = (kind: Kind, at: number, lane: number, phase = r()) =>
-      features.push({ kind, s: s + at, x: laneOffset(lane), phase, hit: false });
+    const place = (kind: Kind, at: number, lane: number, phase = r()) => {
+      const position = s + at, reach = kind === "boost" ? 3 : kind === "ramp" ? RAMP_LENGTH / 2 : 0.41;
+      if (nearbyGates.some((g) => position - reach < g && position + reach > g - 24)) return;
+      features.push({ kind, s: position, x: laneOffset(lane), phase, hit: false });
+    };
     if (index === 0) {
       // Introduce one feature at a time, with a clear way around each.
       place("cone", 13, 2);
@@ -241,13 +313,11 @@ export class Track {
       place("ramp", 42, 2);
       place("cone", 38, 0);
       place("cone", 47, 0);
-      place("weed", 56, 1, Math.PI / 2);
       place("boost", 61, 2);
     } else if (index > 0) {
       const lane = Math.floor(r() * 3);
       place(index % 2 === 0 ? "boost" : "ramp", 33, lane);
       place("cone", 16, (lane + 1) % 3);
-      if (index % 3 !== 0) place("weed", 51, 1, r() * Math.PI * 2);
       if (index >= 6 && index % 2 === 0) place("cone", 46, (lane + 2) % 3);
       if (index >= 4 && index % 3 !== 0) {
         const kind = index % 2 ? "rock" : "cactus", x = index % 4 > 1 ? -6.7 : 6.7;
@@ -269,26 +339,37 @@ export class Track {
           rampTop(u, offset, 0.045 + (u - at + RAMP_LENGTH / 2) / RAMP_LENGTH * RAMP_RISE)));
       }
     }
+    // Scenery is fixed for the lifetime of a piece. Fold it into the road mesh to save separate draws.
+    for (const { kind, s: at, x, seed } of scenery) {
+      const k = kind === "rock" ? 0.36 + seed * 1.4 : kind === "pole" ? 1 : 0.78 + seed * 0.66;
+      const offset = kind === "cactus" && at < OPENING_SIGHTLINE ? Math.sign(x) * Math.max(Math.abs(x), OPENING_SHOULDER) : x;
+      const base = ground(at, offset, kind === "rock" ? 0.1 : -0.07);
+      const firstPart = parts.length;
+      for (const [geometry, color] of sceneryParts[kind]()) {
+        add(parts, geometry.scale(k, kind === "rock" ? k * 0.65 : k, k)
+          .rotateY(kind === "pole" ? 0 : seed * 5).translate(base.x, base.y, base.z), color);
+      }
+      if (at < OPENING_SIGHTLINE && (kind === "cactus" || kind === "pole")) {
+        obstacleParts.push({ kind, start: firstPart, end: parts.length });
+      }
+    }
+    const offsets = [0];
+    if (obstacleParts.length) for (const [part] of parts) {
+      offsets.push(offsets[offsets.length - 1] + (part.index?.count ?? part.attributes.position.count));
+    }
     const built = [colourMerge(parts), terrain(s)];
-    const mesh = new THREE.Mesh(mergeGeometries(built, false)!, this.material);
+    let vergeVertices = 0, stripVertices = 0;
+    if (index === 0) {
+      const { strip, verge } = makeExitGeometry();
+      vergeVertices = verge.attributes.position.count;
+      stripVertices = strip.attributes.position.count + vergeVertices;
+      built.unshift(verge, strip);
+    }
+    const obstacles = obstacleParts.map(({ kind, start, end }) =>
+      ({ kind, start: offsets[start] + stripVertices, end: offsets[end] + stripVertices }));
+    const geometry = mergeGeometries(built, false)!;
+    const terrainStart = geometry.attributes.position.count - built[built.length - 1].attributes.position.count;
     built.forEach((g) => g.dispose());
-    return { index, mesh, features, scenery };
-  }
-
-  private release(index: number) {
-    const piece = this.pieces.get(index);
-    if (!piece) return;
-    piece.mesh.removeFromParent();
-    piece.mesh.geometry.dispose();
-    this.pieces.delete(index);
-    this.released++;
-  }
-
-  dispose() {
-    for (const index of this.pieces.keys()) this.release(index);
-    this.material.dispose();
+    return { geometry, features, vergeVertices, terrainStart, obstacles };
   }
 }
-
-export const featureX = (feature: Feature, time: number) =>
-  feature.kind === "weed" ? Math.sin(time * 1.45 + feature.phase) * 7.7 : feature.x;

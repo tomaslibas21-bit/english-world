@@ -1,13 +1,14 @@
 import * as THREE from "three";
-import type { LabelAnchor } from "../road/gates";
+import { boardId, FACE_SIZES, type BoardFace } from "../kit/boardFaces";
 import type { Prompt } from "../road/words";
 import { SEA_LEVEL } from "../water";
 import { seaSwell as swell } from "./backdrop";
 import { colourMerge } from "../world/util";
 import { LANE_WIDTH, laneOffset } from "./course";
 
-const BOARD_Y = 2.05, BOARD_FACE = 0.25;
+const BOARD_Y = 2.05;
 const PANEL_WIDTH = 6.4, PANEL_HEIGHT = 2.55;
+export const SEA_BOARD_FRAME = [PANEL_WIDTH + 0.16, PANEL_HEIGHT + 0.15, FACE_SIZES.sea[2]] as const;
 const LANES = [0, 1, 2];
 const BUOYS = [-1.5, -0.5, 0.5, 1.5].map((lane) => lane * LANE_WIDTH);
 const PASS_SECONDS = 0.65;
@@ -33,7 +34,7 @@ function boardGeometry() {
     new THREE.Vector3(LANE_WIDTH / 2, 3.24 - BOARD_Y, 0.34),
   );
   const parts: Part[] = [
-    [new THREE.BoxGeometry(PANEL_WIDTH + 0.16, PANEL_HEIGHT + 0.15, 0.26).translate(0, 0, 0.06), "#b58755"],
+    [new THREE.BoxGeometry(SEA_BOARD_FRAME[0], SEA_BOARD_FRAME[1], 0.26).translate(0, 0, 0.06), "#b58755"],
     [new THREE.BoxGeometry(PANEL_WIDTH, PANEL_HEIGHT, 0.11).translate(0, 0, 0.19), "#fff4db"],
     [new THREE.TubeGeometry(rope, 8, 0.035, 5), "#604c38"],
     // The rope sags onto the board's upper trim and meets both buoy masts.
@@ -52,7 +53,7 @@ export class SeaGate {
   private readonly panels = boardGeometry();
   private readonly material = new THREE.MeshLambertMaterial({ vertexColors: true, transparent: true, depthWrite: false });
   private readonly boards = LANES.map(() => new THREE.Mesh(this.panels, this.material));
-  private readonly projected = new THREE.Vector3();
+  readonly id = boardId();
   private readonly floatPose = new THREE.Object3D();
   private pass?: { lane: number; correct: boolean; age: number; material: THREE.MeshLambertMaterial };
 
@@ -109,36 +110,11 @@ export class SeaGate {
     return true;
   }
 
-  labels(camera: THREE.PerspectiveCamera, width: number, height: number): LabelAnchor[] {
+  faces(): BoardFace[] {
     if (!this.mesh.visible) return [];
-    return LANES.flatMap((lane) => {
-      const board = this.boards[lane];
-      if (!board.visible || board.material.opacity <= 0) return [];
-      const pixel = (x: number, y: number) => {
-        const p = this.projected.set(x, y, BOARD_FACE).applyMatrix4(board.matrixWorld).project(camera);
-        return { x: (1 + p.x) * width / 2, y: (1 - p.y) * height / 2, depth: p.z };
-      };
-      const center = pixel(0, 0), x = PANEL_WIDTH * 0.48, y = PANEL_HEIGHT * 0.46;
-      const corners = [pixel(-x, y), pixel(x, y), pixel(-x, -y), pixel(x, -y)];
-      if ([center, ...corners].some(({ depth }) => depth < -1 || depth >= 1)) return [];
-      if (corners.every((p) => p.x < 0) || corners.every((p) => p.x > width)
-        || corners.every((p) => p.y < 0) || corners.every((p) => p.y > height)) return [];
-
-      const [tl, tr, bl, br] = corners;
-      const tilt = this.pass ? Math.atan2(tr.y - tl.y + br.y - bl.y, tr.x - tl.x + br.x - bl.x) : undefined;
-      const cos = Math.cos(tilt ?? 0), sin = Math.sin(tilt ?? 0);
-      // Fit the HTML in the board's rotated rectangle so text and panel stay together as they pass the camera.
-      const [a, b, c, d] = corners.map((p) => {
-        const dx = p.x - center.x, dy = p.y - center.y;
-        return { x: dx * cos + dy * sin, y: dy * cos - dx * sin };
-      });
-      const left = Math.max(a.x, c.x), right = Math.min(b.x, d.x);
-      const top = Math.max(a.y, b.y), bottom = Math.min(c.y, d.y);
-      if (right - left < 12 || bottom - top < 6) return [];
-      const midX = (left + right) / 2, midY = (top + bottom) / 2;
-      return [{ lane, x: center.x + midX * cos - midY * sin, y: center.y + midX * sin + midY * cos,
-        width: right - left, height: bottom - top, opacity: board.material.opacity, tilt }];
-    });
+    return this.boards.flatMap((board, lane) => board.visible && board.material.opacity > 0
+      ? [{ lane, world: board.matrixWorld, opacity: board.material.opacity, interactive: !this.pass }]
+      : []);
   }
 
   dispose() {

@@ -9,7 +9,7 @@ import { STYLED, vertexColorMaterial } from "../style";
 import { Chatter, walkerLook, type Ambient } from "../ambient";
 import { Colliders, colourMerge, rand } from "../world/util";
 import { PARKED_CARS, WORLD } from "../world/layout";
-import { carHasRoof, carLedges, carModelEntry, carTop, type CarModelName, type CarPlacement } from "../world/carModels";
+import { carHasRoof, carLedges, carModelEntry, carTop, spinCarWheels, type CarModelName, type CarPlacement } from "../world/carModels";
 import { TOE, type Piece } from "../ledges";
 import type { NavGrid } from "../nav";
 import type { RidesPlan, CarSpot, BoatSpot } from "../world/rides";
@@ -18,7 +18,8 @@ import { RIDE_OWNERS, RIDE_SHOUTS, type RideOwner, type RideLine } from "../../c
 import { rideVoice, shoutVoice } from "../../content/voices";
 import { BAY, DECKS, SEA_LEVEL, SHORE, bayHold, floorY, waterY } from "../water";
 import { Drivable, Motion, CAR, BOAT, BAY_EDGE, CAR_REACH, aheadIn, aheadOnArc, bayTurn, pushOutOfBox, shoreSpeed, type BodyCircle, type Controls, type MotionImpact } from "./drive";
-import { townAsphalt, townGround } from "./ground";
+import { exitCoordinates, exitHeight, onExitAsphalt, exitToTown } from "../world/roadExit";
+import { settleRoadExit, townAsphalt, townGround } from "./ground";
 import { convertibleGeometry, motorboatGeometry, motorboatWaterMask, buoysGeometry, CAR_SEATS, BOAT_SEATS } from "./shapes";
 import type { TownBoat } from "../world/boatRide";
 import { Skids } from "./skids";
@@ -48,6 +49,7 @@ export interface RideHost {
   stuck(): void;
   /** The boat lies with its bow on the shallows and is still being driven at the beach: a word about backing off. */
   aground(): void;
+  openRoad?(car: Ride, controls: Controls): { speedLimit: number } | undefined;
   openSea?(ride: Ride): boolean;
   /** It has stood a while behind someone who is not going anywhere: a word about going round them. */
   waiting(): void;
@@ -462,10 +464,26 @@ export class Rides {
     this.host.launchSound?.();
   }
 
-  private boatSeat(r: Ride, out: THREE.Vector3) {
-    const [x, z] = r.townBoat?.helm ?? BOAT_SEATS.helm;
-    if (r.townBoat) return r.mesh.localToWorld(out.set(x, r.townBoat.deck, z));
-    return this.at(r, x, z, out, this.seatY(r));
+  private boatSeat(r: Pick<Ride, "mesh" | "townBoat">, out: THREE.Vector3, hull = r.mesh) {
+    if (r.townBoat) return hull.localToWorld(out.set(r.townBoat.helm[0], r.townBoat.deck, r.townBoat.helm[1]));
+    const [x, z] = BOAT_SEATS.helm, heading = hull.rotation.y;
+    const sin = Math.sin(heading), cos = Math.cos(heading);
+    return out.set(hull.position.x + x * cos + z * sin, hull.position.y + BOAT_SEATS.floor, hull.position.z - x * sin + z * cos);
+  }
+
+  /** Sample the settled hull and helm without moving the town ride. */
+  sampleBoatReturn(r: Pick<Ride, "mesh" | "townBoat" | "phase">, { x, z, rot }: Ride["home"], speed: number, time: number,
+    hull: THREE.Object3D, rider: THREE.Object3D) {
+    this.poseBoat(r, hull, x, z, rot, speed, time, 0, 0, 0);
+    this.boatSeat(r, rider.position, hull);
+    rider.rotation.set(0, rot, 0);
+  }
+
+  resetBoatReturn(r: Ride, position: Ride["home"], speed: number) {
+    this.resetPosition(r, position);
+    r.m.speed = speed;
+    this.roll = 0;
+    this.trail.length = 0;
   }
 
   restoreBoat(r: Ride, time: number) {
@@ -916,15 +934,17 @@ export class Rides {
     contact.x = x; contact.z = z; contact.dx = dx; contact.dz = dz;
   }
 
+  private onRoadStrip = false;
+
   private readonly settleCar = (p: { x: number; z: number }, rad: number, circle: BodyCircle) => {
     const host = this.host;
     let x = p.x, z = p.z;
-    this.drivable.nearest(x, z, p);
+    settleRoadExit(this.drivable, p, rad, this.onRoadStrip);
     this.contacts[circle].push = 0;
     this.contacts[circle].target = null;
     if (this.reportCrash) this.recordContact(circle, null, p.x, p.z, p.x - x, p.z - z);
     x = p.x; z = p.z;
-    host.colliders.resolve(_v.set(x, 0, z), rad);
+    host.colliders.resolve(_v.set(x, 0, z), rad, false, this.onRoadStrip);
     p.x = _v.x; p.z = _v.z;
     if (this.reportCrash) this.recordContact(circle, "town", p.x, p.z, p.x - x, p.z - z);
     for (const o of this.solidVehicles()) if (o !== this.settlingCar && o.kind === "car") {
@@ -990,11 +1010,24 @@ export class Rides {
     // (following one that moves, or waiting behind one that stands: not stuck)
     const queued = lead.gap !== Infinity && ((behind < 2.5 && lead.speed > 0.3) || (behind < 1.5 && !moving && !round));
     const was = m.speed, x0 = m.x, z0 = m.z, h0 = m.heading, near0 = this.peopleGap(m.spec, m.x, m.z, m.heading);
-    m.step(dt, c, gap, this.asphalt.has(m.x, m.z), care);
+    const approach = host.openRoad?.(r, c);
+    if (approach) m.limit(approach.speedLimit, 18, dt);
+    m.step(dt, c, gap, this.asphalt.has(m.x, m.z) || (!!approach && onExitAsphalt(m.x, m.z)), care);
+    const strip = approach ?? host.openRoad?.(r, c);
+    this.onRoadStrip = !!strip;
     this.settlingCar = r;
     this.reportCrash = !this.rescuing && (host.allowsCrashes?.() ?? true) && host.outdoors();
     const vx = this.reportCrash ? m.vx : 0, vz = this.reportCrash ? m.vz : 0;
     m.settle(this.settleCar, this.reportCrash ? this.impact : undefined);
+    this.onRoadStrip = false;
+    if (strip) {
+      const { s, x } = exitCoordinates(m.x, m.z);
+      if (s >= 0) {
+        _v.set(x, 0, 0).applyMatrix4(exitToTown);
+        m.x = _v.x; m.z = _v.z;
+        if (strip.speedLimit < Infinity) { m.speed = 0; m.slip = 0; }
+      }
+    }
     let movedSafely = true;
     // nobody is ever touched, however it moves (coming round on the spot, sliding broadside, backing up): a move that
     // would bring its body within a hand's breadth of someone, and nearer than it was, is not made
@@ -1037,7 +1070,8 @@ export class Rides {
     // (nor while it is coming round on the spot: that is the way out of a tight place)
     const turning = Math.abs(Math.atan2(Math.sin(m.heading - this.pushAt.h), Math.cos(m.heading - this.pushAt.h))) > 0.5;
     const pushing = Math.abs(c.throttle) > 0.5 && m.pace < 0.7 && Math.abs(was) < 0.7 && Math.abs(m.yaw) < 0.25 && gap > m.spec.half + CAR.clear + 1 && !queued;
-    const hints = host.allowsHints?.() ?? true;
+    const holdingForRoad = !!strip && Number.isFinite(strip.speedLimit);
+    const hints = !holdingForRoad && (host.allowsHints?.() ?? true);
     this.stuckT = hints && pushing ? this.stuckT + dt : 0;
     if (this.stuckT > 1.8 && !this.stuckTold) { this.stuckTold = true; host.stuck(); }
     // held up by someone who stays where they are (on a bench, at a stall): a word about going round, once a ride
@@ -1047,7 +1081,7 @@ export class Rides {
     if (this.waitingForTraffic && !this.yieldTold) { this.yieldTold = true; host.waiting(); }
     // and if, backing and turning, it still has not left the spot after a good while of trying: back onto the street
     // by itself (nobody is ever left boxed in between a wall and a bench)
-    if (Math.hypot(m.x - this.pushAt.x, m.z - this.pushAt.z) > 2.2 || turning) { this.pushAt.x = m.x; this.pushAt.z = m.z; this.pushAt.h = m.heading; this.pushT = 0; }
+    if (holdingForRoad || Math.hypot(m.x - this.pushAt.x, m.z - this.pushAt.z) > 2.2 || turning) { this.pushAt.x = m.x; this.pushAt.z = m.z; this.pushAt.h = m.heading; this.pushT = 0; }
     else if (Math.abs(c.throttle) > 0.5 && !c.brake && gap > m.spec.half + CAR.clear + 1 && !queued) this.pushT += dt;
     // truly wedged: after a moment it is set free gently, gliding to the nearest clear place with room to drive off
     // (nothing fades, nothing jumps); and if there is none in reach, onto the street as before
@@ -1163,7 +1197,7 @@ export class Rides {
     for (let i = 0; i < 2; i++) {
       const off = i === 0 ? 1.34 : -1.34, x = m.x + m.fx * off, z = m.z + m.fz * off;
       let hit = 0;
-      const road = this.asphalt.has(x, z);
+      const road = this.asphalt.has(x, z) || (r === this.riding && onExitAsphalt(x, z));
       if (road !== s.road[i]) { s.road[i] = road; hit = 0.5; }
       for (let k = 0; k < this.bumps.length; k++) {
         const [x1, z1, x2, z2] = this.bumps[k], dx = x2 - x1, dz = z2 - z1, t = ((x - x1) * dx + (z - z1) * dz) / (dx * dx + dz * dz);
@@ -1284,16 +1318,19 @@ export class Rides {
       // the body leans out of a bend (more in a slide) and squats under power, dips its nose when braked
       const driven = r === this.riding, e = Math.min(1, dt * 9);
       const lean = driven ? THREE.MathUtils.clamp(m.yaw * m.pace * 0.0085, -0.13, 0.13) : 0, sq = driven ? THREE.MathUtils.clamp(-m.surge * 0.0038, -0.05, 0.06) : 0;
-      if (driven) { this.roll += (lean - this.roll) * e; this.squat += (sq - this.squat) * e; }
-      mesh.position.set(m.x, r.sus.y, m.z);
-      mesh.rotation.set(m.bump * 0.035 + r.sus.p + (driven ? this.squat : 0), m.heading, driven ? this.roll : 0);
+      if (driven) {
+        this.roll += (lean - this.roll) * e; this.squat += (sq - this.squat) * e;
+        if (r.model) spinCarWheels(mesh, carModelEntry(r.model), m.speed * dt);
+      }
+      const grade = onExitAsphalt(m.x, m.z) ? exitHeight(m.x, m.z) : 0;
+      const slope = grade > 0 ? Math.atan2(exitHeight(m.x + m.fx, m.z + m.fz) - exitHeight(m.x - m.fx, m.z - m.fz), 2) : 0;
+      mesh.position.set(m.x, grade + r.sus.y, m.z);
+      mesh.rotation.set(-slope + m.bump * 0.035 + r.sus.p + (driven ? this.squat : 0), m.heading, driven ? this.roll : 0);
     } else {
-      const sur = waterY(m.x, m.z, t) ?? -0.25, k = Math.min(1, m.pace / BOAT.max), driven = r === this.riding;
-      // (it heels into a turn, hard over in a slide; over a wave or its own wake it is thrown up and slaps down)
+      const k = Math.min(1, m.pace / BOAT.max), driven = r === this.riding;
       const heel = driven ? THREE.MathUtils.clamp(m.steer * k * 0.12 + m.yaw * m.pace * 0.012, -0.34, 0.34) : 0;
       if (driven) this.roll += (heel - this.roll) * Math.min(1, dt * 7);
-      mesh.position.set(m.x, sur - (r.townBoat ? SEA_LEVEL : BOAT_SEATS.water) + Math.sin(t * 1.3 + r.phase) * 0.04 + k * 0.08 + r.sus.y, m.z);
-      mesh.rotation.set(Math.sin(t * 0.9 + r.phase) * 0.03 - k * 0.09 + r.sus.p, m.heading, Math.sin(t * 1.2 + r.phase * 1.3) * 0.045 - (driven ? this.roll : 0));
+      this.poseBoat(r, mesh, m.x, m.z, m.heading, m.pace, t, r.sus.y, r.sus.p, driven ? this.roll : 0);
       if (r.beach) {
         const floating = this.phase === "launch" && driven ? THREE.MathUtils.smoothstep(this.phaseT / LAUNCH_SECONDS, 0.2, 1) : 0;
         mesh.position.y = THREE.MathUtils.lerp(r.beach.y, mesh.position.y, floating);
@@ -1302,6 +1339,15 @@ export class Rides {
       }
     }
     void dt;
+  }
+
+  private poseBoat(r: Pick<Ride, "mesh" | "townBoat" | "phase">, mesh: THREE.Object3D, x: number, z: number, heading: number, speed: number,
+    time: number, lift: number, pitch: number, roll: number) {
+    const surface = waterY(x, z, time) ?? SEA_LEVEL, k = Math.min(1, speed / BOAT.max);
+    mesh.position.set(x, surface - (r.townBoat ? SEA_LEVEL : BOAT_SEATS.water)
+      + Math.sin(time * 1.3 + r.phase) * 0.04 + k * 0.08 + lift, z);
+    mesh.rotation.set(Math.sin(time * 0.9 + r.phase) * 0.03 - k * 0.09 + pitch, heading,
+      Math.sin(time * 1.2 + r.phase * 1.3) * 0.045 - roll, r.mesh.rotation.order);
   }
 
   /** Someone who held their pose moves again. */

@@ -12,7 +12,7 @@ export class SeaWake {
   private readonly geometry = new THREE.BufferGeometry();
   private readonly material = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, side: THREE.DoubleSide, forceSinglePass: true,
-    uniforms: { clock: { value: 0 } },
+    uniforms: { clock: { value: 0 }, opacity: { value: 1 } },
     vertexShader: `
       varying vec2 ribbon;
       void main() {
@@ -21,7 +21,7 @@ export class SeaWake {
       }`,
     fragmentShader: `
       varying vec2 ribbon;
-      uniform float clock;
+      uniform float clock, opacity;
       void main() {
         float edge = abs(ribbon.x * 2.0 - 1.0);
         float age = clamp(ribbon.y, 0.0, 1.0);
@@ -30,7 +30,7 @@ export class SeaWake {
         float churn = (1.0 - smoothstep(0.14, 0.68, edge)) * (1.0 - 0.8 * age);
         float foam = 0.72 + 0.28 * sin(age * 89.0 + edge * 14.0 - clock * 6.0);
         float alpha = (0.79 * streak + 0.51 * churn) * foam * (1.0 - age) * (1.0 - age);
-        gl_FragColor = vec4(0.91, 0.98, 1.0, alpha);
+        gl_FragColor = vec4(0.91, 0.98, 1.0, alpha * opacity);
       }`,
   });
   readonly mesh = new THREE.Mesh(this.geometry, this.material);
@@ -49,7 +49,12 @@ export class SeaWake {
     this.mesh.renderOrder = 2;
   }
 
-  update(time: number, x: number, z: number, sideX: number, sideZ: number, beam: number, speed: number) {
+  reset() {
+    this.samples.length = 0;
+    this.geometry.setDrawRange(0, 0);
+  }
+
+  update(time: number, x: number, z: number, sideX: number, sideZ: number, beam: number, speed: number, opacity = 1) {
     while (this.samples.length && time - this.samples[0].born >= LIFE) this.samples.shift();
     if (time - (this.samples.at(-1)?.born ?? -Infinity) >= STEP && speed > 3) {
       if (this.samples.length >= SAMPLES - 1) this.samples.shift();
@@ -71,6 +76,8 @@ export class SeaWake {
     this.position.needsUpdate = this.uv.needsUpdate = true;
     this.geometry.setDrawRange(0, (count - 1) * 6);
     this.material.uniforms.clock.value = time;
+    this.material.uniforms.opacity.value = opacity;
+    this.mesh.visible = opacity > 0 && count > 1;
   }
 
   dispose() {

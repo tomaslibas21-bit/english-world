@@ -13,8 +13,6 @@ export type RoadLook = {
   /** The desert floor's tones, the gravel shoulder, and the scrub. */
   sand: [string, string, string]; shoulder: string; scrub: [string, string];
   dust: string;
-  /** The last houses of the town at the start of the road: their walls and roofs. */
-  town: string[]; roof: string;
 };
 
 const MAPLE_HARBOR: RoadLook = {
@@ -33,7 +31,6 @@ const MAPLE_HARBOR: RoadLook = {
   rock: ["#d9825a", "#8a4a4c"],
   sand: ["#e4b077", "#d39a63", "#ecc089"], shoulder: "#c7a17b", scrub: ["#8f9c68", "#b0a66c"],
   dust: "#f3dcb8",
-  town: ["#e9dcc4", "#c96f52", "#9fb7b0", "#e3b76a"], roof: "#6b4f44",
 };
 
 // Puerto Colibrí's desierto: a turquoise afternoon that turns pink and violet, ochre ground, purple ranges.
@@ -53,7 +50,6 @@ const PUERTO_COLIBRI: RoadLook = {
   rock: ["#cf9160", "#7f5466"],
   sand: ["#e3b06d", "#d1975a", "#eec381"], shoulder: "#c9a276", scrub: ["#84a06c", "#b3ad68"],
   dust: "#f5ddb6",
-  town: ["#f2a65a", "#e8607a", "#58b5b0", "#f3d36b"], roof: "#b5533c",
 };
 
 export const ROAD_LOOK: RoadLook = (ROAD_EDITION.id as string) === "puerto-colibri" ? PUERTO_COLIBRI : MAPLE_HARBOR;

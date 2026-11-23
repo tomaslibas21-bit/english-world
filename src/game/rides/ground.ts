@@ -1,6 +1,7 @@
 // The town's ground for a car: its asphalt (layout.ts ROADS and the lots the town's plan adds, world/rides.ts) and
 // everything else open and dry.
 import { ROADS, WORLD } from "../world/layout";
+import { exitCoordinates, keepOnExit } from "../world/roadExit";
 import { SHORE } from "../water";
 import { Drivable, CAR, type Rect } from "./drive";
 
@@ -16,3 +17,9 @@ export const townAsphalt = (lots: Rect[]) => new Drivable([...roadRects(), ...lo
  *  ground plan keeps it out of): the town's own ground, a car's half width in from its edges, and no nearer the sea
  *  than the dry sand. */
 export const townGround = () => new Drivable([{ x0: WORLD.minX + CAR.wide + 0.4, x1: WORLD.maxX - CAR.wide - 0.4, z0: SHORE.top + CAR.wide + 0.5, z1: WORLD.maxZ - CAR.wide - 0.4 }]);
+
+/** Only a car admitted by the road nose trigger may leave the normal ground through this opening. */
+export function settleRoadExit(ground: Drivable, point: { x: number; z: number }, radius: number, admitted: boolean) {
+  if (admitted && exitCoordinates(point.x, point.z).s >= -33) keepOnExit(point, radius);
+  else ground.nearest(point.x, point.z, point);
+}

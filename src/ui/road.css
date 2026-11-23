@@ -45,3 +45,12 @@
   .road-mode .drive-horn { right: calc(103px + env(safe-area-inset-right)); bottom: calc(31px + env(safe-area-inset-bottom)); width: 52px; height: 52px; background: #314450; }
   .road-lift { bottom: calc(12px + env(safe-area-inset-bottom)); }
 }
+
+.road-overlay .road-result .mode-score-number > span { animation: none; }
+.road-overlay .road-result .mode-score-number i { display: none; }
+
+.road-overlay .road-header, .road-overlay .road-controls { animation: road-hud-in 180ms ease-out both; }
+@keyframes road-hud-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .road-overlay .road-header, .road-overlay .road-controls { animation: none; }
+}

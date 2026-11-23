@@ -21,6 +21,11 @@ import * as MX from "./mexican";
 import { LOCATIONS } from "../../content/locations";
 import { STYLED, IS_REAL, grade } from "../style";
 import { SHORE, DECKS, POOLS, FLOORS, sandY, SAND_GLSL, SHORE_GLSL, SWELL_GLSL } from "../water";
+import { EXIT_HAZE, exitBackdropCutout, exitSightline, exitToTown, makeExitSign } from "./roadExit";
+import { makeGateSilhouette } from "../road/gates";
+import { previewCones } from "../road/props";
+import { FIRST_GATE } from "../road/run";
+import { PIECE_LENGTH, ribbon, Track, type RoadOpening } from "../road/track";
 import { GROUND_BLOCKS, groundPalette, groundExtras, groundMaterial, seaMaterial, trunkGeometry, canopyGeometry, canopyMaterial, bushGeometry, bushMaterial, outlineInstanced, cloudMaterial, cloudPuff } from "./styled";
 
 export interface Door { loc: string; bid: string; x: number; z: number; face: "n" | "s" | "e" | "w"; name: string; outX: number; outZ: number; rot: number }
@@ -47,7 +52,7 @@ export interface ParkedCars {
 
 export interface Town {
   group: THREE.Group;
-  roadSign: ReturnType<typeof addRoadSign>;
+  roadSign: ReturnType<typeof makeExitSign>;
   colliders: Colliders;
   doors: Door[];
   photoSpots: PhotoSpot[];
@@ -56,6 +61,7 @@ export interface Town {
   seats: Seat[];
   groundCanvas: HTMLCanvasElement;
   sea: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>;
+  roadOpening: RoadOpening;
   /** `cam`: where the camera is (the edition's small things far from it are left out: theme.ts `farHide`). */
   update(t: number, dt: number, cam?: THREE.Vector3): void;
   walkableAt(x: number, z: number): boolean;
@@ -139,7 +145,19 @@ export function buildTown({ movableParking = false } = {}): Town {
   group.add(ground);
 
   // outer grass beyond the playable area + hills
-  const outer = new THREE.Mesh(outerGeometry(), mat("#7fb85e"));
+  const outerGrass = mat("#7fb85e");
+  const outer = new THREE.Mesh(outerGeometry(), outerGrass.clone());
+  {
+    const shaderKey = outerGrass.customProgramCacheKey();
+    outer.material.customProgramCacheKey = () => `${shaderKey}-road-exit`;
+    outer.material.onBeforeCompile = (shader, renderer) => {
+      outerGrass.onBeforeCompile(shader, renderer);
+      shader.vertexShader = `varying vec3 vExitGround;\n` + shader.vertexShader.replace("#include <project_vertex>",
+        "#include <project_vertex>\nvExitGround = (modelMatrix * vec4(transformed, 1.0)).xyz;");
+      shader.fragmentShader = `varying vec3 vExitGround;\n` + shader.fragmentShader.replace("void main() {",
+        `void main() { ${exitBackdropCutout("vExitGround")}`);
+    };
+  }
   outer.rotation.x = -Math.PI / 2;
   // the outer grass stops at the shore, so the sea near the beach is not hidden under it
   outer.position.set(OUTER_X, -0.05, OUTER_Z);
@@ -166,18 +184,19 @@ export function buildTown({ movableParking = false } = {}): Town {
     // Colibrí's selva hills keep their own, lower heights).
     g.scale(1.6, THEME.selva ? (0.45 + r() * 0.3) * hillK : 0.28 + r() * 0.12, 1.2);
     g.translate(hx, -s * 0.15, hz);
-    M.add("hills", hillMat, g, false, true);
+    if (exitSightline(hx, hz, 1.6 * s, 1.2 * s)) g.dispose();
+    else M.add("hills", hillMat, g, false, true);
   }
   if (THEME.selva) group.add(makeSelva());
 
   // --- sea ------------------------------------------------------------------
   const seaMat = STYLED ? seaMaterial() : new THREE.ShaderMaterial({
-    uniforms: { uTime: { value: 0 }, uFog: { value: new THREE.Color("#cfe8f5") } },
-    vertexShader: `varying vec2 vUv; varying vec3 vW; uniform float uTime;
-      void main(){ vUv = uv; vec4 w = modelMatrix * vec4(position,1.0);
+    uniforms: { uTime: { value: 0 }, uBayOffset: { value: new THREE.Vector3() }, uFog: { value: new THREE.Color("#cfe8f5") } },
+    vertexShader: `varying vec2 vUv; varying vec3 vW; uniform float uTime; uniform vec3 uBayOffset;
+      void main(){ vUv = uv; vec4 w = modelMatrix * vec4(position,1.0); w.xyz += uBayOffset;
         w.y += ${SWELL_GLSL}; vW = w.xyz;
-        gl_Position = projectionMatrix * viewMatrix * w; }`,
-    fragmentShader: `varying vec2 vUv; varying vec3 vW; uniform float uTime; uniform vec3 uFog;
+        gl_Position = projectionMatrix * viewMatrix * vec4(w.xyz - uBayOffset, 1.0); }`,
+    fragmentShader: `varying vec2 vUv; varying vec3 vW; uniform float uTime; uniform vec3 uBayOffset; uniform vec3 uFog;
       ${SAND_GLSL}
       void main(){
         float shore = smoothstep(${(SEA_Z + 1).toFixed(1)}, ${(SEA_Z - 14).toFixed(1)}, vW.z);
@@ -192,7 +211,7 @@ export function buildTown({ movableParking = false } = {}): Town {
         c += vec3(0.55) * glint * (0.4 + 0.6 * shore);
         // the sand under the shallows, the foam along the waterline as it washes up and down the beach (water.ts)
         ${SHORE_GLSL()}
-        float dist = length(vW.xz - cameraPosition.xz);
+        float dist = length(vW.xz - (cameraPosition + uBayOffset).xz);
         c = mix(c, uFog, smoothstep(160.0, 420.0, dist));
         gl_FragColor = vec4(c, 1.0); }`,
   });
@@ -200,6 +219,8 @@ export function buildTown({ movableParking = false } = {}): Town {
   if (THEME.sea && seaMat instanceof THREE.ShaderMaterial && !STYLED) seaMat.fragmentShader = seaColors(THEME.sea);
   // (and its far water fading into this edition's fog, theme.ts `light`)
   if (THEME.light && seaMat instanceof THREE.ShaderMaterial && !STYLED) seaMat.uniforms.uFog.value.set(THEME.light.fog);
+  if (seaMat instanceof THREE.ShaderMaterial) seaMat.fragmentShader = seaMat.fragmentShader.replace("void main(){",
+    `void main(){ ${exitBackdropCutout("vW")}`);
   const sea = new THREE.Mesh(new THREE.PlaneGeometry(900, 320, 90, 32), seaMat);
   sea.renderOrder = 2;
   sea.rotation.x = -Math.PI / 2;
@@ -241,7 +262,23 @@ export function buildTown({ movableParking = false } = {}): Town {
   addTransport(M, colliders, group, photo);
   const parkedCars = makeParkedCars(movableParking ? undefined : colliders);
   group.add(parkedCars.group);
-  const roadSign = addRoadSign(group, colliders);
+  const roadSign = makeExitSign(colliders);
+  group.add(roadSign.root);
+  const roadOpening = Track.opening();
+  // A continuation beyond the preview is already fully in the exchange haze.
+  const hazeFloor = colourMerge([[ribbon(3 * PIECE_LENGTH, 2 * PIECE_LENGTH, -320, 320, -0.09, 1), "#ffffff"]]);
+  const extras = [previewCones(roadOpening), makeGateSilhouette(FIRST_GATE), hazeFloor];
+  const geometry = mergeGeometries([...roadOpening.map((piece) => piece.geometry), ...extras], false)!;
+  extras.forEach((part) => part.dispose());
+  const material = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+  material.onBeforeCompile = (shader) => {
+    shader.fragmentShader = shader.fragmentShader.replace("#include <fog_fragment>",
+      THREE.ShaderChunk.fog_fragment.replace("fogNear, fogFar", `${EXIT_HAZE.near}.0, ${EXIT_HAZE.far}.0`));
+  };
+  const preview = new THREE.Mesh(geometry, material);
+  preview.name = "desert-road-crest";
+  preview.applyMatrix4(exitToTown);
+  group.add(preview);
   addBackyard(M, colliders, group);
   addMaggiesCar(M, colliders, group);
 
@@ -249,7 +286,7 @@ export function buildTown({ movableParking = false } = {}): Town {
   // (the north one lies out in the sea: like the sea itself, it stops everyone but the player, who swims on out to the
   // bay's own edge, water.ts BAY)
   colliders.addBox((WORLD.minX + WORLD.maxX) / 2, WORLD.minZ - 1, WORLD.maxX - WORLD.minX + 4, 2, "sea");
-  colliders.addBox((WORLD.minX + WORLD.maxX) / 2, WORLD.maxZ + 1, WORLD.maxX - WORLD.minX + 4, 2);
+  colliders.addBox((WORLD.minX + WORLD.maxX) / 2, WORLD.maxZ + 1, WORLD.maxX - WORLD.minX + 4, 2, "town-edge");
   // (theme.ts `cenote.walk`: the west edge is open where the sacbé leaves the town for the cenote; the clearing out
   // there has its own edges, mexican.ts cenoteWalk)
   if (THEME.cenote?.walk) {
@@ -263,7 +300,7 @@ export function buildTown({ movableParking = false } = {}): Town {
     if (ru) MX.ruinsWalk(colliders, ru.x, ru.z);
     if (open) GROUNDS.groundsWalk(colliders, THEME.cenote.x, cz, WORLD.minX, THEME.meadow?.ceibas);
     else MX.cenoteWalk(colliders, THEME.cenote.x, cz, WORLD.minX);
-  } else colliders.addBox(WORLD.minX - 1, 0, 2, 220);
+  } else colliders.addBox(WORLD.minX - 1, 0, 2, 220, "town-edge");
   colliders.addBox(WORLD.maxX + 1, 0, 2, 220);
   // the sea on both sides of the pier deck (x -41.3…-18.7); the deck has its own edges
   // ("sea": the passers-by and the way-finding stop at it; the player wades in to the shore's limit, Game.ts)
@@ -334,7 +371,7 @@ export function buildTown({ movableParking = false } = {}): Town {
   const gulls = STYLED ? [] : makeGulls(group);
 
   return {
-    group, colliders, doors, photoSpots, parkedCars, seats: [...seats], groundCanvas, sea, portals: [...portals],
+    group, colliders, doors, photoSpots, parkedCars, seats: [...seats], groundCanvas, sea, roadOpening, portals: [...portals],
     update(t, dt, cam) {
       seaMat.uniforms.uTime.value = t;
       poolWater?.update(t);
@@ -436,7 +473,7 @@ function toC(x: number, z: number): [number, number] { return [(x - WORLD.minX) 
 function seaColors(s: NonNullable<typeof THEME.sea>) {
   const v = (hex: string) => `vec3(${[1, 3, 5].map((i) => (parseInt(hex.slice(i, i + 2), 16) / 255).toFixed(3)).join(",")})`;
   const f = (n: number) => n.toFixed(1);
-  return `varying vec2 vUv; varying vec3 vW; uniform float uTime; uniform vec3 uFog;
+  return `varying vec2 vUv; varying vec3 vW; uniform float uTime; uniform vec3 uBayOffset; uniform vec3 uFog;
       ${SAND_GLSL}
       void main(){
         float d = ${f(SEA_Z + 1)} - vW.z;
@@ -455,7 +492,7 @@ function seaColors(s: NonNullable<typeof THEME.sea>) {
         c += vec3(0.55) * glint * (0.4 + 0.6 * smoothstep(0.0, 15.0, d));
         // the sand under the shallows and the foam along the waterline, as it washes up and down the beach (water.ts)
         ${SHORE_GLSL("vec3(0.99,0.99,0.98)", "vec3(0.87, 0.81, 0.67)")}
-        float dist = length(vW.xz - cameraPosition.xz);
+        float dist = length(vW.xz - (cameraPosition + uBayOffset).xz);
         c = mix(c, uFog, smoothstep(160.0, 420.0, dist));
         gl_FragColor = vec4(c, 1.0); }`;
 }
@@ -1745,31 +1782,6 @@ function addStreetProps(M: Merger, col: Colliders, photo: AddPhotoSpot) {
     col.addCircle(x, z, 0.1);
   };
   for (const [x, z] of [[-75, 32], [5, 32], [65, 32], [-5, -14], [75, -14]]) stop(x, z);
-}
-
-function addRoadSign(group: THREE.Group, col: Colliders) {
-  const { x, z, rot } = ROAD_EDITION.edge.sign;
-  const root = new THREE.Group();
-  root.position.set(x, 0, z);
-  root.rotation.y = rot;
-  const face = new THREE.Mesh(new THREE.PlaneGeometry(4.8, 0.9), new THREE.MeshBasicMaterial({
-    map: textTexture(ROAD_EDITION.sign, { bg: "#27634e", fg: "#fff8df", w: 768, h: 144 }),
-    side: THREE.DoubleSide,
-    alphaTest: 0.5,
-  }));
-  face.position.set(0, 2.4, 0.09);
-  const posts = [];
-  for (const side of [-1, 1]) {
-    const offset = side * 1.85;
-    posts.push(new THREE.BoxGeometry(0.11, 2.45, 0.11).translate(offset, 1.225, 0));
-    col.addCircle(x + offset * Math.cos(rot), z - offset * Math.sin(rot), 0.1);
-  }
-  const postGeometry = mergeGeometries(posts, false)!;
-  for (const post of posts) post.dispose();
-  const postColor = "#867e65";
-  root.add(face, new THREE.Mesh(postGeometry, mat(postColor)));
-  group.add(root);
-  return { root, face, postGeometry, postColor };
 }
 
 function makeParkedCars(staticColliders?: Colliders): ParkedCars {

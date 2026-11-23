@@ -25,9 +25,9 @@ import { Undersea } from "./rides/undersea";
 import { CAR_DRIFT, BOAT_DRIFT, BOAT, BAY_EDGE, controlsFrom, pointAndGo, type Controls } from "./rides/drive";
 import { RIDES } from "./world/rides";
 import { ROAD_EDITION, ROAD_UI } from "../content/road";
-import { RoadEntry, leavingByRoad, walkEdge } from "./road/entry";
+import { RoadEntry, walkEdge } from "./road/entry";
 import { SEA_EDITION } from "../content/sea";
-import { SeaEntry, seaReturn } from "./sea/entry";
+import { SeaEntry, seaReturn, cameraPose, crossingPose, RETURN_SETTLE, RETURN_SPEED, type SeaHandoff } from "./sea/entry";
 import { TownQuests } from "./photowalk/mode";
 import { isTownQuest, type PhotoSpot } from "../content/townQuests";
 import { useSurf } from "./surf/store";
@@ -561,6 +561,7 @@ export class Game implements GameApi {
       launchSound: () => audio.splash(0.9),
       fan: (x, y, z, dx, dz, k) => this.splashes.fan(x, y, z, dx, dz, k),
       outdoors: () => !this.zone.interior && !this.covered,
+      openRoad: (car, controls) => this.road?.openEdge(car, controls),
       openSea: (boat) => this.sea?.openEdge(boat) ?? false,
     }, RIDES, this.town.group.children.filter((o) => o.userData.boat));
     const { fleet } = this.town.parkedCars;
@@ -643,14 +644,21 @@ export class Game implements GameApi {
     }));
     this.road = new RoadEntry({
       ...host,
-      sky: () => this.sky,
+      environment: () => ({ sky: this.sky, fog: this.scene.fog as THREE.Fog | null, hemi: this.hemi, sun: this.sun,
+        environment: this.scene.environment, environmentIntensity: this.scene.environmentIntensity }),
+      roadSign: () => this.town.roadSign.root,
+      roadOpening: () => this.town.roadOpening,
+      viewport: () => ({ width: this.screenW, height: this.screenH }),
+      approach: (roadApproach) => {
+        const state = useStore.getState();
+        if (!!state.hud.roadApproach !== roadApproach) state.setHud({ roadApproach });
+      },
       clearTownHud: () => {
         this.nearest = null;
         this.tagLayer.style.visibility = "hidden";
         useStore.getState().setHud({ prompt: null, ride: null, fast: false, speedLines: false });
       },
       left: (id) => { this.tagLayer.style.visibility = ""; host.left(id); },
-      roadSign: this.town.roadSign,
       deferLift: () => this.road?.deferLift(),
       returnCar: (car, onFoot) => this.returnRoadCar(car, onFoot),
     });
@@ -675,7 +683,7 @@ export class Game implements GameApi {
     if (SEA_EDITION.enabled) {
       this.sea = new SeaEntry({
         ...host,
-        environment: () => ({ sky: this.sky, sea: this.town.sea, fog: this.scene.fog as THREE.Fog | null, hemi: this.hemi, sun: this.sun }),
+        environment: () => ({ sky: this.sky, sea: this.town.sea, rings: this.splashes, fog: this.scene.fog as THREE.Fog | null, hemi: this.hemi, sun: this.sun }),
         clearTownHud: () => {
           this.nearest = null;
           this.tagLayer.style.visibility = "hidden";
@@ -683,13 +691,7 @@ export class Game implements GameApi {
           useStore.getState().setHud({ prompt: null, ride: null, fast: false, speedLines: false });
         },
         left: (id) => { this.tagLayer.style.visibility = ""; host.left(id); },
-        fade: (swap) => {
-          if (this.transitioning || this.disposed) return false;
-          this.transitioning = true;
-          this.frameFade.start(swap, 0.08);
-          return true;
-        },
-        returnBoat: (boat, onFoot) => this.returnSeaBoat(boat, onFoot),
+        returnBoat: (boat, onFoot, handoff) => this.returnSeaBoat(boat, onFoot, handoff),
         tip: (title, body) => this.showRideToast({ kind: "tip", title: L(title), body: L(body) }),
       });
       this.modes.register(this.sea);
@@ -804,9 +806,31 @@ export class Game implements GameApi {
     return { ...this.drawStats(), loadedCarModels: loadedCarModelCount(), ...models };
   }
 
-  roadDebug() {
-    return { ...this.road?.debug(), drawCalls: this.renderer.info.render.calls, fps: this.fpsAverage };
+  private seaDeparture?: ReturnType<typeof crossingPose>;
+  private townSeaFrame?: ReturnType<typeof crossingPose>;
+  private seaReturnView?: {
+    age: number; from: THREE.PerspectiveCamera; offset: THREE.Vector3;
+    live: { fov: number; far: number; near: number };
+  };
+  private seaReturnFrame?: {
+    age: number; eye: number[]; rotation: number[];
+    live: ReturnType<typeof cameraPose>;
+  };
+  private presentedWorld?: { serial: number; scene: "town" | "road" | "sea" };
+
+  private presentWorld(scene: "town" | "road" | "sea") {
+    if (!import.meta.env.DEV) return;
+    this.presentedWorld = { serial: this.renderer.info.render.frame, scene };
+    const boat = this.rides.riding;
+    this.townSeaFrame = scene === "town" && boat?.kind === "boat"
+      ? crossingPose(this.rig.cam, boat.mesh, this.player.root, this.t) : undefined;
   }
+
+  roadDebug() {
+    return { ...this.road?.debug(), presented: this.presentedWorld, drawCalls: this.renderer.info.render.calls, fps: this.fpsAverage };
+  }
+
+  roadPreviewOptions(options?: readonly string[]) { if (import.meta.env.DEV) this.road?.previewOptions(options); }
 
   roadSteer(lane: number) { this.road?.steer(lane); }
   roadJumpTimer(seconds?: number) { this.road?.jumpTimer(seconds); }
@@ -815,7 +839,9 @@ export class Game implements GameApi {
     if (!import.meta.env.DEV) return;
     const r = this.rides.riding, cam = this.rig.cam;
     return {
-      ...this.sea?.debug(), drawCalls: this.renderer.info.render.calls, edge: BAY.z0,
+      ...this.sea?.debug(), drawCalls: this.renderer.info.render.calls, triangles: this.renderer.info.render.triangles,
+      presented: this.presentedWorld, departureFrom: this.seaDeparture, townFrame: this.townSeaFrame,
+      townBlend: this.seaReturnFrame, edge: BAY.z0,
       town: r?.kind === "boat" ? { id: r.id, phase: this.rides.phase, x: r.m.x, z: r.m.z, heading: r.m.heading,
         speed: r.m.speed, bowZ: r.m.z + r.m.fz * r.m.spec.half, hull: r.mesh.position.toArray(),
         camera: { position: cam.position.toArray(), rotation: cam.quaternion.toArray(), fov: cam.fov } } : undefined,
@@ -1268,7 +1294,7 @@ export class Game implements GameApi {
     useStore.getState().setHud({ ride: "boat", prompt: null });
   }
 
-  private returnSeaBoat(boat: Ride, onFoot: boolean) {
+  private returnSeaBoat(boat: Ride, onFoot: boolean, handoff?: SeaHandoff) {
     this.keys.clear();
     this.setJoystick(0, 0);
     this.brake = false;
@@ -1284,21 +1310,55 @@ export class Game implements GameApi {
       this.rideFov = 0;
       this.rig.dist /= 1 + this.rideBack;
       this.rideBack = 0;
-      this.rides.resetPosition(boat, seaReturn(boat));
-      boat.m.speed = 3.1;
+      this.rides.resetBoatReturn(boat, seaReturn(boat), RETURN_SPEED);
       this.moveVel.set(0, 0, 0);
       this.snapSeaBoat(boat);
+      if (handoff) {
+        const { camera, time } = handoff, cam = this.rig.cam;
+        const offset = camera.position.clone().sub(boat.mesh.position);
+        this.seaReturnView = { age: 0, from: camera, offset, live: { fov: cam.fov, far: cam.far, near: cam.near } };
+        this.splashes.clearDrops();
+        this.splashes.boatRing(0, time, boat.m, { match: true });
+      }
     }
     this.savePlace();
   }
 
-  private checkRoadEntry() {
-    if (!this.road || this.zone.interior || this.modes.active || this.modes.modal || this.swimming) return;
-    const car = this.rides.riding;
-    if (car) {
-      if (this.rides.phase === "on" && leavingByRoad(car)) this.modes.start("road");
+  private applySeaReturnView(dt: number, w: number, h: number) {
+    this.seaReturnFrame = undefined;
+    const state = this.seaReturnView;
+    const boat = this.rides.riding;
+    if (!state || boat?.kind !== "boat" || this.rig.mode !== "follow") {
+      this.seaReturnView = undefined;
       return;
     }
+    const { cam } = this.rig, { from, offset } = state;
+    state.age = Math.min(RETURN_SETTLE, state.age + dt);
+    const mix = smoothstep(0, RETURN_SETTLE, state.age);
+    const eye = offset.clone().add(boat.mesh.position);
+    if (import.meta.env.DEV) this.seaReturnFrame = { age: state.age, eye: eye.toArray(),
+      rotation: from.quaternion.toArray(), live: cameraPose(cam) };
+    state.live = { near: cam.near, far: cam.far, fov: cam.fov };
+    if (mix === 1) {
+      this.seaReturnView = undefined;
+      return;
+    }
+    const view = cam.view?.enabled ? cam.view : undefined;
+    if (view && mix > 0) cam.setViewOffset(w, h, view.offsetX * mix, view.offsetY * mix, w, h);
+    else cam.clearViewOffset();
+    cam.position.lerp(eye, 1 - mix);
+    cam.quaternion.slerp(from.quaternion, 1 - mix);
+    cam.fov = THREE.MathUtils.lerp(from.fov, cam.fov, mix);
+    cam.near = THREE.MathUtils.lerp(from.near, cam.near, mix);
+    cam.far = THREE.MathUtils.lerp(from.far, cam.far, mix);
+    cam.updateProjectionMatrix();
+    cam.updateMatrixWorld(true);
+    this.rig.seedFollow();
+  }
+
+  private checkRoadEntry() {
+    if (!this.road || this.zone.interior || this.modes.active || this.modes.modal || this.swimming) return;
+    if (this.rides.riding) return;
     const p = this.player.root.position;
     const edge = walkEdge(p.x, p.z, this.vel.x, this.vel.z);
     if (edge && this.road.offer(edge)) this.modes.start("road", "walk");
@@ -1427,7 +1487,7 @@ export class Game implements GameApi {
         this.splashes.burst(r.m.x, waterY(p.x, p.z, this.t) ?? SEA_LEVEL, r.m.z, 0, 0, 0.5);
       }
       this.savePlace();
-    }
+    } else this.road?.prefetch(r);
     return true;
   }
 
@@ -1708,7 +1768,17 @@ export class Game implements GameApi {
       if (!this.session?.active && !useStore.getState().hud.panel && !this.transitioning) this.modes.input({ kind: "interact" });
       return;
     }
-    if (this.rides.riding) { if (!this.session?.active && !useStore.getState().hud.panel) { this.rideGoal = null; this.rides.leave(); } return; }
+    const ride = this.rides.riding;
+    if (ride) {
+      if (!this.session?.active && !useStore.getState().hud.panel) {
+        this.rideGoal = null;
+        if (ride.kind === "car" && this.road?.inStrip && !this.rides.carExit(ride)) {
+          this.road.leaveStrip();
+          this.returnRoadCar(ride, true);
+        } else this.rides.leave();
+      }
+      return;
+    }
     const n = this.nearest;
     if (!n) return;
     if (n.kind === "ride") { const r = this.rides.find(n.id); if (r) this.boardRide(r); }
@@ -2805,8 +2875,10 @@ export class Game implements GameApi {
     if (!w || !h) return;
     this.adaptResolution(performance.now());
     const elapsed = this.clock.getDelta();
-    const dt = Math.min(0.05, elapsed);
+    // Both sides of the water handoff present the same simulation instant.
+    const dt = this.sea?.handingOff ? 0 : Math.min(0.05, elapsed);
     this.t += dt;
+    if (this.seaReturnView) Object.assign(this.rig.cam, this.seaReturnView.live);
     if (this.frameFade.active) {
       this.frameFade.update(dt);
       this.transitioning = this.frameFade.active;
@@ -2833,8 +2905,10 @@ export class Game implements GameApi {
     this.wasHidden = document.hidden;
 
     // (the open road and the open sea draw their own scenes, at the size syncSize has just applied)
-    if (this.road?.render(this.renderer, w, h) || this.sea?.render(this.renderer, w, h)) {
+    const roadDrawn = this.road?.render(this.renderer, w, h);
+    if (roadDrawn || this.sea?.render(this.renderer, w, h)) {
       this.streetLife.observe(this.streetSnapshot());
+      this.presentWorld(roadDrawn ? "road" : "sea");
       this.sampleFps(true);
       return;
     }
@@ -2881,7 +2955,7 @@ export class Game implements GameApi {
     this.rig.motion.speed = speed;
     // (where they will be in a moment, walking on as now, out of the walls: the camera makes room before it is needed)
     this.rig.motion.next.copy(this.player.root.position).addScaledVector(this.moveVel, 0.3).setY(0);
-    if (speed > 0.3) this.zone.colliders.resolve(this.rig.motion.next, 0.38, !this.zone.interior);
+    if (speed > 0.3) this.zone.colliders.resolve(this.rig.motion.next, 0.38, !this.zone.interior, !!this.road?.inStrip);
     this.rig.dragging = this.pointer.down && this.pointer.moved > 6;
     this.rig.hold = this.hop.air && !this.zone.interior;
     // (up with a jump by half its height: the second jump's top stays in the picture)
@@ -2947,6 +3021,7 @@ export class Game implements GameApi {
         this.rig.applyViewShift(w, h, 0, h * (stageShift ?? -shift));
       }
     }
+    this.applySeaReturnView(dt, w, h);
     this.quests.observe(this.rig.cam);
     // Street subjects use the camera and lens that will draw this frame.
     this.streetLife.tick(dt, this.streetSnapshot(), visibleElapsed);
@@ -2960,12 +3035,25 @@ export class Game implements GameApi {
     const covered = this.covered = talking && picturesOn(st.settings) && !!sceneFor(st.conv.sitId, st.conv.hostId);
     this.rides.updateParkingKeys(this.t, !this.zone.interior && !talking && !this.flight && !this.modes.active && !this.transitioning);
     if (!covered) {
-      if (!blocked && !mode && riding?.kind === "boat" && this.rides.phase === "on" && this.sea?.shouldStart(riding)
-        && this.modes.start("sea")) {
-        this.savePlace();
-        this.sea.render(this.renderer, w, h);
+      this.road?.stage(this.renderer);
+      if (!blocked && !mode && riding?.kind === "car" && this.rides.phase === "on" && this.road?.shouldStart(riding)
+        && this.modes.start("road") && this.road.render(this.renderer, w, h)) {
+        this.presentWorld("road");
         this.sampleFps(true);
         return;
+      }
+      if (!blocked && !mode && riding?.kind === "boat" && this.rides.phase === "on" && this.sea?.shouldStart(riding)) {
+        if (import.meta.env.DEV) {
+          this.rig.cam.updateMatrixWorld(true);
+          this.seaDeparture = crossingPose(this.rig.cam, riding.mesh, this.player.root, this.t);
+        }
+        if (this.modes.start("sea")) {
+          this.savePlace();
+          this.sea.render(this.renderer, w, h);
+          this.presentWorld("sea");
+          this.sampleFps(true);
+          return;
+        }
       }
       const probes = this.zone.id === "town" ? this.crashShaderProbes : undefined;
       if (probes) {
@@ -2976,6 +3064,7 @@ export class Game implements GameApi {
       }
       this.renderer.render(this.scene, this.rig.cam);
       this.quests.capture(this.renderer.domElement);
+      this.presentWorld("town");
       if (probes) {
         probes.removeFromParent();
         this.rides.finishCrashShaderWarmup();
@@ -3162,20 +3251,19 @@ export class Game implements GameApi {
     if (m.bump > 0.3 && this.bumpT <= 0) { audio.bump(m.bump); this.bumpT = 0.45; }
     // a boat's wake: the water's rings round its hull, wider and brighter the faster it goes; a car's dust at its back
     // wheels when it goes fast or over open ground, a short skid when it is braked hard
-    const av = pace;
-    if (r.kind === "boat" && on) this.splashes.update(dt, this.t, { x: m.x - m.fx * 0.6, y: (waterY(m.x, m.z, this.t) ?? SEA_LEVEL) + 0.02, z: m.z - m.fz * 0.6 }, Math.min(1, av / 6), 2.6 + Math.min(1.4, Math.abs(m.slip) * 0.3));
+    if (r.kind === "boat" && on) this.splashes.boatRing(dt, this.t, m);
     else this.splashes.update(dt, this.t, null, 0);
     if (r.kind === "car" && on) {
       const braking = !!controls && !m.drift && (controls.brake || controls.throttle < -0.35) && v > 0;
-      if (braking && !this.braked && av > 8.5) audio.skid(Math.min(1, av / 15));
+      if (braking && !this.braked && pace > 8.5) audio.skid(Math.min(1, pace / 15));
       this.braked = braking;
       this.dustT -= dt;
       // (smoke off the back wheels in a slide, thick and fast; dust at speed, over open ground, braked hard)
-      const sliding = m.sliding && av > 3;
-      if (this.dustT <= 0 && (sliding || useStore.getState().settings.quality === "high") && (sliding || av > 9 || (av > 3 && !this.rides.asphalt.has(m.x, m.z)) || (braking && av > 5))) {
+      const sliding = m.sliding && pace > 3;
+      if (this.dustT <= 0 && (sliding || useStore.getState().settings.quality === "high") && (sliding || pace > 9 || (pace > 3 && !this.rides.asphalt.has(m.x, m.z)) || (braking && pace > 5))) {
         this.dustT = sliding ? 0.05 : 0.11;
-        const s = Math.sign(v) || 1, cx = av > 0.5 ? -m.vx / av : -m.fx * s, cz = av > 0.5 ? -m.vz / av : -m.fz * s;
-        for (const side of sliding && useStore.getState().settings.quality !== "high" ? [Math.random() < 0.5 ? -0.8 : 0.8] : [-0.8, 0.8]) this.dust.puff(m.x - m.fx * 1.4 * s + m.fz * side, m.z - m.fz * 1.4 * s - m.fx * side, cx, cz, (sliding ? 1.25 : 0.8) + av / 15);
+        const s = Math.sign(v) || 1, cx = pace > 0.5 ? -m.vx / pace : -m.fx * s, cz = pace > 0.5 ? -m.vz / pace : -m.fz * s;
+        for (const side of sliding && useStore.getState().settings.quality !== "high" ? [Math.random() < 0.5 ? -0.8 : 0.8] : [-0.8, 0.8]) this.dust.puff(m.x - m.fx * 1.4 * s + m.fz * side, m.z - m.fz * 1.4 * s - m.fx * side, cx, cz, (sliding ? 1.25 : 0.8) + pace / 15);
       }
     }
     this.dust.update(dt);

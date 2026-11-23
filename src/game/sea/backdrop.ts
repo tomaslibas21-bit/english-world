@@ -11,7 +11,13 @@ import { SEA_VIEW, seaHorizon, type Coast } from "./look";
 
 /** How far out the long rollers have reached their full height (m from the start). */
 const OPEN_BY = 160;
-const TAKEOVER = [0.4, 3.2] as const;
+const crestLook = SEA_VIEW.crest;
+const crestColors = {
+  zenith: new THREE.Color(crestLook.zenith), mid: new THREE.Color(crestLook.mid),
+  horizon: new THREE.Color(crestLook.horizon), sun: new THREE.Color(crestLook.sun), halo: new THREE.Color(crestLook.halo),
+};
+
+export const departureCover = (age: number) => THREE.MathUtils.smoothstep(age, 0.32, 1.48);
 
 /** The surface the hull, the buoys and the wake ride on: the bay's swell at the start, open-sea rollers farther out. */
 export const surface = { open: 0 };
@@ -49,9 +55,10 @@ export class SeaBackdrop {
   private horizon?: THREE.Mesh<THREE.BufferGeometry, THREE.ShaderMaterial>;
   private clouds = makeClouds();
   private from: { fog?: { color: THREE.Color; near: number; far: number }; hemi: [THREE.Color, THREE.Color, number]; sun: [THREE.Color, number] };
-  private age = 0;
+  private cloudIn = 0;
+  private lastCrest = 0;
   private day = -1;
-  private shown = -1;
+  shown = 0;
 
   constructor(private scene: THREE.Scene, private town: TownLook, level: number) {
     const { fog, hemi, sun } = town;
@@ -80,20 +87,32 @@ export class SeaBackdrop {
       lighthouse: shore.lighthouse && { x: shore.lighthouse.x - x, z: shore.lighthouse.z - z } };
     this.horizon = seaHorizon(this.sky, coast) as THREE.Mesh<THREE.BufferGeometry, THREE.ShaderMaterial>;
     this.horizon.position.set(x, this.sea.mesh.position.y, z);
-    this.horizon.material.uniforms.show.value = 0;
+    this.horizon.material.uniforms.show.value = this.shown;
+    this.horizon.visible = this.shown > 0;
     this.scene.add(this.horizon);
     this.clouds.position.set(x, 0, z);
   }
 
-  /** `day`: 0 as the run starts, 1 as it ends. `out`: metres from the start. `speed`: 0–1. */
-  update(dt: number, time: number, day: number, boat: { x: number; z: number; heading: number; out: number; speed: number }, camera: THREE.Camera) {
-    this.age += dt;
-    const show = THREE.MathUtils.smoothstep(this.age, TAKEOVER[0], TAKEOVER[1]);
-    surface.open = THREE.MathUtils.smoothstep(boat.out, 20, OPEN_BY);
+  roller(distance: number, strength = 1) {
+    surface.open = THREE.MathUtils.smoothstep(distance, 20, OPEN_BY) * strength;
+  }
+
+  update(dt: number, time: number, day: number, boat: { x: number; z: number; heading: number; speed: number },
+    camera: THREE.Camera, show: number, crest: number, wakeStrength = 1) {
     const { sky, sea, town } = this;
-    if (Math.abs(day - this.day) > 0.003 || show !== this.shown) {
+    if (Math.abs(day - this.day) > 0.003 || show !== this.shown || crest !== this.lastCrest) {
       this.day = day;
+      this.lastCrest = crest;
       sky.blend(day);
+      const u = sky.mesh.material.uniforms;
+      u.zenith.value.lerp(crestColors.zenith, crest);
+      u.mid.value.lerp(crestColors.mid, crest);
+      u.horizon.value.lerp(crestColors.horizon, crest);
+      u.sunColor.value.lerp(crestColors.sun, crest);
+      u.haloColor.value.lerp(crestColors.halo, crest);
+      sky.haze.copy(u.horizon.value);
+      sky.light.lerp(crestColors.sun, crest);
+      sky.halo.copy(u.haloColor.value);
       const { fog, hemi, sun } = town, from = this.from;
       if (fog && from.fog) {
         fog.color.copy(from.fog.color).lerp(sky.haze, show);
@@ -102,24 +121,29 @@ export class SeaBackdrop {
       }
       hemi.color.copy(from.hemi[0]).lerp(sky.fillSky, show);
       hemi.groundColor.copy(from.hemi[1]).lerp(sky.fillGround, show);
-      hemi.intensity = THREE.MathUtils.lerp(from.hemi[2], sky.fill * 1.05, show);
+      hemi.intensity = THREE.MathUtils.lerp(from.hemi[2], THREE.MathUtils.lerp(sky.fill * 1.05, crestLook.fill, crest), show);
       sun.color.copy(from.sun[0]).lerp(sky.light, show);
-      sun.intensity = THREE.MathUtils.lerp(from.sun[1], sky.lightPower * 1.15, show);
+      sun.intensity = THREE.MathUtils.lerp(from.sun[1], THREE.MathUtils.lerp(sky.lightPower * 1.15, crestLook.sunPower, crest), show);
       sea.light(sky.mesh.material.uniforms.mid.value, sky.haze, sky.halo, sky.sunDir);
       if (this.horizon) lightFar(this.horizon.material, sky.haze, sky.light);
       const clouds = this.clouds.material as THREE.MeshBasicMaterial;
       clouds.color.copy(sky.cloud);
-      clouds.opacity = show * 0.96;
     }
     if (show !== this.shown) {
       this.shown = show;
       sky.cover = sea.cover = show;
-      sky.mesh.visible = sea.mesh.visible = this.clouds.visible = show > 0;
+      sky.mesh.visible = sea.mesh.visible = show > 0;
       town.sky.visible = town.bay.visible = show < 1;
-      if (this.horizon) this.horizon.material.uniforms.show.value = show;
+      if (this.horizon) {
+        this.horizon.material.uniforms.show.value = show;
+        this.horizon.visible = show > 0;
+      }
     }
+    this.cloudIn = show === 1 ? Math.min(0.12, this.cloudIn + dt) : 0;
+    this.clouds.visible = this.cloudIn > 0;
+    this.clouds.material.opacity = 0.96 * this.cloudIn / 0.12;
     sky.update(dt, camera.position);
-    sea.update(time, boat.x, boat.z, boat.heading, boat.speed, surface.open);
+    sea.update(time, boat.x, boat.z, boat.heading, boat.speed * wakeStrength, surface.open);
     // The clouds keep their distance: they never arrive.
     this.clouds.position.z = boat.z;
   }

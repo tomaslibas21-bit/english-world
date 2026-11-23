@@ -1,18 +1,24 @@
 import { ROAD_EDITION } from "../../content/road";
-import type { Mesh, WebGLRenderer } from "three";
+import type { Object3D, WebGLRenderer } from "three";
 import type { ModeHost } from "../kit/host";
 import type { GameMode, ModeFrame, ModeInput } from "../kit/modes";
+import type { Controls } from "../rides/drive";
 import type { Ride } from "../rides/Rides";
 import { SIDEWALK, WORLD } from "../world/layout";
-import type { Town } from "../world/town";
-import type { RoadMode } from "./mode";
+import { CREST_DISTANCE, exitCoordinates } from "../world/roadExit";
+import type { RoadEnvironment } from "./view";
+import type { PreparedRoad, RoadMode } from "./mode";
+import type { RoadOpening } from "./track";
 
 export type WalkEdge = { x: number; z: number; inward: number };
 export interface RoadHost extends ModeHost {
-  sky(): Mesh;
+  environment(): RoadEnvironment;
+  roadOpening(): RoadOpening | undefined;
+  roadSign(): Object3D | undefined;
+  viewport(): { width: number; height: number };
+  approach(approaching: boolean): void;
   clearTownHud(): void;
   returnCar(car: Ride, onFoot: boolean): void;
-  roadSign: Town["roadSign"];
   deferLift(): void;
 }
 
@@ -51,10 +57,96 @@ export class RoadEntry implements GameMode {
   private mode?: RoadMode;
   private edge?: WalkEdge;
   private nextLift = 0;
+  private aboard?: Ride;
+  private request?: object;
+  private prepared?: PreparedRoad;
+  private failed = false;
+  private retryUrl?: URL;
+  private onStrip = false;
+  private outwardIntent = false;
+  private warm = false;
 
   constructor(private host: RoadHost) {}
   get active() { return !!this.pending || !!this.mode?.active; }
+  get inStrip() { return this.onStrip; }
+  leaveStrip() { this.cancelPreparation(); }
   get modal() { return !!this.pending; }
+
+  prefetch(car: Ride) {
+    this.cancelPreparation();
+    this.aboard = car;
+    const request = this.request = {};
+    const retry = this.retryUrl;
+    if (retry) retry.searchParams.set("road-retry", String(this.host.time()));
+    const load: Promise<typeof import("./mode")> = retry ? import(/* @vite-ignore */ retry.href) : import("./mode");
+    void load.catch((error) => {
+      if (this.request === request && error instanceof Error) {
+        const url = /https?:\/\/[^\s]+/.exec(error.message)?.[0];
+        if (url && new URL(url).origin === location.origin) this.retryUrl = new URL(url);
+        else if (import.meta.env.DEV && error instanceof TypeError) this.retryUrl = new URL("./mode.ts", import.meta.url);
+      }
+      throw error;
+    }).then(async ({ RoadMode: Mode, prepareRoad }) => {
+      if (this.request !== request) return;
+      this.retryUrl = undefined;
+      const prepared = await prepareRoad(this.host, car);
+      if (this.request !== request) { prepared.dispose(); return; }
+      this.mode ??= new Mode(this.host);
+      this.prepared = prepared;
+    }).catch((error) => {
+      if (this.request !== request) return;
+      this.failed = true;
+      console.warn("Road game could not load", error);
+    });
+  }
+
+  private cancelPreparation() {
+    this.request = undefined;
+    this.aboard = undefined;
+    this.prepared?.dispose();
+    this.prepared = undefined;
+    this.failed = this.onStrip = this.outwardIntent = this.warm = false;
+    this.host.approach(false);
+  }
+
+  stage(renderer: WebGLRenderer) {
+    const car = this.host.rides.riding;
+    if (!this.active && car?.kind === "car" && this.host.rides.phase === "on" && !this.aboard) this.prefetch(car);
+    if (this.aboard && (car !== this.aboard || this.host.rides.phase === "out")) this.cancelPreparation();
+    if (this.active || !this.aboard) return;
+    try {
+      this.prepared?.stage(renderer);
+    } catch (error) {
+      this.prepared?.dispose();
+      this.failed = true;
+      console.warn("Road could not prepare the track", error);
+    }
+  }
+
+  openEdge(car: Ride, controls: Controls) {
+    if (car !== this.aboard || this.active) return;
+    const m = car.m, { s, x } = exitCoordinates(m.x, m.z);
+    const facingOut = Math.cos(m.heading - ROAD_EDITION.edge.outward) > 0.75;
+    const reversing = controls.throttle < -0.05 || m.speed < -0.1;
+    if (s < -CREST_DISTANCE - m.spec.half - 0.5) this.onStrip = this.outwardIntent = false;
+    const headingOut = facingOut && !reversing;
+    this.host.approach(headingOut && (this.onStrip || (m.speed > 1 && s > -CREST_DISTANCE - 30
+      && Math.abs(x) < ROAD_EDITION.edge.width / 2 - m.spec.wide)));
+    if (headingOut && this.host.canStart() && leavingByRoad(car)) {
+      if (!this.onStrip && (this.failed || this.prepared?.failed)) this.prefetch(car);
+      this.onStrip = this.outwardIntent = true;
+    } else if (!headingOut) this.outwardIntent = false;
+    if (!this.onStrip) return;
+    // Keep the corridor open when backing out. Only outward travel waits at the crest.
+    const ready = !!this.prepared?.ready;
+    const speedLimit = ready || !headingOut || s < -12 ? Infinity : car.m.spec.max * Math.sqrt(Math.max(0, -s / 12));
+    return { speedLimit };
+  }
+
+  shouldStart(car: Ride) {
+    return this.onStrip && this.outwardIntent && car === this.aboard && !!this.prepared?.ready
+      && exitCoordinates(car.m.x, car.m.z).s >= -0.001;
+  }
 
   offer(edge: WalkEdge) {
     if (this.host.time() < this.nextLift) return false;
@@ -63,13 +155,24 @@ export class RoadEntry implements GameMode {
   }
 
   start(option?: string) {
-    if (this.active || !this.host.canStart() || (option === "walk" ? !this.edge
-      : this.host.rides.riding?.kind !== "car" || this.host.rides.phase !== "on")) return false;
-    const edge = option === "walk" ? this.edge : undefined;
+    if (this.active || !this.host.canStart()) return false;
+    if (option !== "walk") {
+      const car = this.host.rides.riding, stage = this.prepared;
+      if (!car || !stage || !this.mode || this.host.rides.phase !== "on" || !this.shouldStart(car)) return false;
+      this.prepared = undefined;
+      this.cancelPreparation();
+      this.warm = true;
+      this.mode.startFromCrest(stage);
+      stage.dispose();
+      return true;
+    }
+    const edge = this.edge;
+    if (!edge) return false;
     this.edge = undefined;
-    if (edge) this.nextLift = this.host.time() + 60;
+    this.nextLift = this.host.time() + 60;
     const pending = this.pending = {};
-    const load = this.mode ? Promise.resolve(this.mode) : import("./mode").then(({ RoadMode }) => new RoadMode(this.host));
+    const load = this.mode ? Promise.resolve(this.mode) : Promise.all([import("./mode"), import("../../ui/roadOverlay").then(({ preloadRoadOverlay }) => preloadRoadOverlay())])
+      .then(([{ RoadMode }]) => new RoadMode(this.host));
     void load.then((mode) => {
       if (this.pending !== pending || !this.host.owns(this.id)) { if (mode !== this.mode) mode.dispose(); return; }
       this.mode = mode;
@@ -79,11 +182,7 @@ export class RoadEntry implements GameMode {
       if (this.pending !== pending) return;
       this.pending = null;
       if (this.mode?.active) this.mode.exit(true);
-      if (edge) this.host.place(edge.x + Math.sin(edge.inward), edge.z + Math.cos(edge.inward), edge.inward);
-      else {
-        const car = this.host.rides.riding;
-        if (car) this.host.returnCar(car, false);
-      }
+      this.host.place(edge.x + Math.sin(edge.inward), edge.z + Math.cos(edge.inward), edge.inward);
       this.host.left(this.id);
       console.warn("Road game could not load", error);
     });
@@ -94,8 +193,17 @@ export class RoadEntry implements GameMode {
   action(name: string, value?: string | boolean) { this.mode?.action(name, value); }
   update(frame: ModeFrame) { this.mode?.update(frame); }
   render(renderer: WebGLRenderer, w: number, h: number) { return this.mode?.render(renderer, w, h) ?? false; }
-  debug() { return this.pending ? { phase: "loading" } : this.mode?.debug() ?? { phase: "town" }; }
+  debug() {
+    const ride = this.host.rides.riding;
+    const position = ride?.kind === "car" ? exitCoordinates(ride.m.x, ride.m.z) : undefined;
+    return { phase: this.pending ? "loading" : "town", ...this.mode?.debug(),
+      requested: !!this.request || this.warm, ready: !!this.prepared?.ready || this.warm,
+      onStrip: this.onStrip, outwardIntent: this.outwardIntent, exitDistance: position && position.s + CREST_DISTANCE,
+      townCar: ride?.kind === "car" ? { x: ride.m.x, z: ride.m.z, speed: ride.m.speed } : undefined,
+      exit: ROAD_EDITION.edge };
+  }
   steer(lane: number) { this.mode?.steer(lane); }
+  previewOptions(options?: readonly string[]) { this.mode?.previewOptions(options); }
   jumpTimer(seconds = 150) { this.mode?.jumpTimer(seconds); }
 
   deferLift() { this.nextLift = this.host.time() + 60; }
@@ -106,5 +214,5 @@ export class RoadEntry implements GameMode {
     this.host.left(this.id);
   }
 
-  dispose() { this.exit(true); this.mode?.dispose(); }
+  dispose() { this.cancelPreparation(); this.exit(true); this.mode?.dispose(); }
 }

@@ -38,6 +38,7 @@ import { TextArrival } from "./TextArrival";
 import { ReactBubble } from "./ReactBubble";
 import { unreadTexts } from "../game/phone/texts";
 import { portraitToolbarRows, toolbarColumns } from "./toolbarLayout";
+import { getRoadOverlay } from "./roadOverlay";
 import { getSeaOverlay } from "./seaOverlay";
 import { useScreen } from "./useScreen";
 import "./light.css";
@@ -68,9 +69,8 @@ type Screen = ReturnType<typeof useScreen>;
 const RIDE_ARROWS = () => <><kbd><Icon name="arrowUp" size="1em" strokeWidth={2.25} label={L("aukštyn")} /></kbd><kbd><Icon name="arrowDown" size="1em" strokeWidth={2.25} label={L("žemyn")} /></kbd><kbd><Icon name="arrowLeft" size="1em" strokeWidth={2.25} label={L("kairėn")} /></kbd><kbd><Icon name="arrowRight" size="1em" strokeWidth={2.25} label={L("dešinėn")} /></kbd></>;
 
 const FriendMeeting = lazy(() => import("./FriendMeeting"));
-const RoadOverlay = lazy(() => import("./Road").then(({ RoadOverlay }) => ({ default: RoadOverlay })));
 const BilliardsOverlay = lazy(() => import("./Billiards").then(({ BilliardsOverlay }) => ({ default: BilliardsOverlay })));
-const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = { photowalk: PhotoWalkOverlay, taxi: TaxiOverlay, road: RoadOverlay, barista: BaristaOverlay, pool: PoolOverlay, loteria: LoteriaOverlay, billiards: BilliardsOverlay };
+const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = { photowalk: PhotoWalkOverlay, taxi: TaxiOverlay, barista: BaristaOverlay, pool: PoolOverlay, loteria: LoteriaOverlay, billiards: BilliardsOverlay };
 
 export function Hud() {
   const hud = useStore((s) => s.hud);
@@ -109,11 +109,11 @@ export function Hud() {
   if (hud.modeScreen?.kind === "menu") {
     const road = hud.modeScreen.id === "road";
     const sea = hud.modeScreen.id === "sea";
-    const Overlay = sea ? getSeaOverlay() : modeOverlays[hud.modeScreen.id];
+    const Overlay = road ? getRoadOverlay() : sea ? getSeaOverlay() : modeOverlays[hud.modeScreen.id];
     const tools = !road && !sea && hud.modeScreen.id !== "barista" && hud.modeScreen.id !== "loteria" && hud.modeScreen.id !== "billiards" && hud.modeScreen.id !== "photowalk";
     return (
       <div className={"hud mode-hud" + (road ? " road-mode" : sea ? " sea-mode" : "") + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
-        {!hud.panel && Overlay && <Suspense fallback={null}><Overlay touch={hud.showTouch} /></Suspense>}
+        {(!hud.panel || sea) && Overlay && <Suspense fallback={null}><Overlay touch={hud.showTouch} /></Suspense>}
         {tools && <><Toolbar key={"tools-" + layout} {...screen} riding touch={hud.showTouch} modeExit={hud.modeScreen.exitLabel} /><RadioSetLayer /></>}
         {hud.showTouch && hud.ride && <TouchControls road={road} stickOnly={sea} />}
         <Fade />
@@ -129,7 +129,7 @@ export function Hud() {
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
       {hud.speedLines && !hud.panel && <div className="drive-wind" aria-hidden />}
       <div className="hud-top">
-        <div className={"objective-notes" + (collapsed ? " task-folded" : "")} onKeyDown={hud.cave ? activateHudButton : undefined}>
+        <div className={"objective-notes" + (collapsed ? " task-folded" : "") + (hud.roadApproach ? " road-approach" : "")} onKeyDown={hud.cave ? activateHudButton : undefined}>
           {hud.cave ? <CaveCard arrow={Arrow} phoneToast={phoneToast} /> : <Objective key={taskId ?? "complete"} collapsed={collapsed} fresh={task.fresh && notesVisible} setCollapsed={task.setManual} />}
           {streetCard && portrait && <StreetCard />}
           {hud.zoneBanner && banner && <div className="zone-banner"><h2>{banner.icon && <Icon name={banner.icon} size="0.8em" className="zb-ico" />}{banner.rest}</h2>{hud.zoneBanner.sub && <p>{hud.zoneBanner.sub}</p>}</div>}

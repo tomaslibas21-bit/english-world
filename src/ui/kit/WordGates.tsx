@@ -1,8 +1,8 @@
-import type { SayItCue } from "../../game/kit/sayIt";
-import { SayIt } from "./SayIt";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { SITUATION_BY_ID } from "../../content/situations/catalog";
-import type { LabelAnchor } from "../../game/road/gates";
+import { boardFaces, BOARD_FONT, faceHeight, FACE_WIDTH, WIDE_BOARD_VIEW, type FaceMode } from "../../game/kit/boardFaces";
+import { SayIt } from "./SayIt";
+import type { SayItCue } from "../../game/kit/sayIt";
 import type { RoadResult } from "../../game/road/store";
 import type { Prompt, Word } from "../../game/road/words";
 import { EndDestination } from "../Conversation";
@@ -21,72 +21,76 @@ type ScoreWords = Record<"finish" | "points" | "correct" | "bestStreak" | "dista
 
 let textMeasure: CanvasRenderingContext2D | null | undefined;
 
-function measureLabel(text: string, font: string) {
-  textMeasure ??= document.createElement("canvas").getContext("2d");
-  if (textMeasure) {
-    textMeasure.font = font;
-    textMeasure.textAlign = "center";
-  }
+const fallbackFont = "Arial, sans-serif";
+const boardMedia = () => window.matchMedia(`(min-width: ${WIDE_BOARD_VIEW}px)`);
+const wideBoard = () => typeof window !== "undefined" && boardMedia().matches;
+const subscribeWidth = (change: () => void) => {
+  const query = boardMedia();
+  query.addEventListener("change", change);
+  return () => query.removeEventListener("change", change);
+};
+
+function typeset(text: string, height: number, preferSingleLine: boolean, minSize: number) {
+  const family = globalThis.document?.fonts?.check(`800 32px "${BOARD_FONT}"`, text) ? `"${BOARD_FONT}"` : fallbackFont;
+  textMeasure ??= globalThis.document?.createElement("canvas").getContext("2d");
+  if (textMeasure) textMeasure.font = `800 100px ${family}`;
   const words = text.split(/\s+/);
   const splits = [[text], ...words.slice(1).map((_, i) => [words.slice(0, i + 1).join(" "), words.slice(i + 1).join(" ")])];
-  return splits.map((lines) => ({
-    lines,
-    em: Math.max(...lines.map((line) => {
-      const metrics = textMeasure?.measureText(line);
-      return metrics ? Math.max(metrics.width, 2 * (metrics.actualBoundingBoxLeft ?? 0), 2 * (metrics.actualBoundingBoxRight ?? 0)) / 100 : line.length * 0.58;
-    })),
-  }));
-}
-
-function GateLabel({ text, anchor, steer, preferSingleLine }: {
-  text: string; anchor: LabelAnchor; steer?: (lane: number) => void; preferSingleLine?: boolean;
-}) {
-  const { lane, x, y, width, height, opacity, tilt } = anchor;
-  const font = useMemo(() => `800 100px ${getComputedStyle(document.documentElement).getPropertyValue("--ui").trim()}`, []);
-  const [fontVersion, setFontVersion] = useState(0);
-  useEffect(() => {
-    if (document.fonts.check(font, text)) return;
-    let current = true;
-    void document.fonts.load(font, text).then(() => {
-      if (current) setFontVersion((version) => version + 1);
-    }, () => {});
-    return () => { current = false; };
-  }, [font, text]);
-  const splits = useMemo(() => measureLabel(text, font), [text, font, fontVersion]);
-  let fontSize = 0, scale = 1, lines = splits[0].lines;
-  for (const split of splits) {
-    const fit = width * 0.98 / split.em;
-    // A small squeeze can preserve legibility in long words. Leave vertical room for accents.
-    const readableFit = Math.max(fit, Math.min(18, fit / 0.88));
-    const size = Math.min(32, height / (split.lines.length === 1 ? 1.55 : 2.25), readableFit);
-    if (size > fontSize) {
-      fontSize = size;
-      scale = Math.min(1, fit / size);
-      lines = split.lines;
-      if (preferSingleLine && lines.length === 1 && fontSize >= 20) break;
+  let best = { lines: splits[0], size: 0, scale: 1 };
+  for (const lines of splits) {
+    let width = 0, halfInkHeight = 0;
+    for (const line of lines) {
+      const m = textMeasure?.measureText(line);
+      const advance = m?.width ?? line.length * 58;
+      width = Math.max(width, advance,
+        2 * ((m?.actualBoundingBoxLeft ?? 0) + advance / 2),
+        2 * ((m?.actualBoundingBoxRight ?? advance) - advance / 2));
+      const baseline = ((m?.fontBoundingBoxAscent ?? 80) - (m?.fontBoundingBoxDescent ?? 20)) / 2;
+      halfInkHeight = Math.max(halfInkHeight, (m?.actualBoundingBoxAscent ?? 80) - baseline,
+        (m?.actualBoundingBoxDescent ?? 20) + baseline);
     }
+    const fitWidth = (FACE_WIDTH - 4) * 100 / width;
+    const inkHeight = Math.max(106, 2 * halfInkHeight) + (lines.length - 1) * 106;
+    const size = Math.min(32, height * 100 / inkHeight, fitWidth / 0.88);
+    if (size > best.size) best = { lines, size, scale: Math.max(0.88, Math.min(1, fitWidth / size)) };
+    if (preferSingleLine && lines.length === 1 && size >= 20) break;
   }
-  const transform = tilt === undefined ? undefined : `translate(-50%, -50%) rotate(${tilt}rad)`;
-  const style = { left: x, top: y, width, height, fontSize, opacity, transform };
-  const content = lines.map((line, i) => <span key={i} style={{ width: `${100 / scale}%`, transform: `scaleX(${scale})` }}>{line}</span>);
-  const props = { className: "road-gate", "data-lane": lane, "aria-label": text, style };
-  return steer ? <button type="button" {...props} onClick={() => steer(lane)}>{content}</button>
-    : <div {...props}>{content}</div>;
+  // A portrait sea label has a fixed local face. Preserve the em height on unusually long choices.
+  const size = Math.max(minSize, best.size);
+  return { ...best, size, scale: best.scale * best.size / size, family };
 }
 
-export function GateLabels({ prompt, anchors, steer, preferSingleLine }: {
-  prompt?: Prompt; anchors: LabelAnchor[]; steer?: (lane: number) => void; preferSingleLine?: boolean;
+function GateLabel({ mode, id, lane, text, layout, steer }: {
+  mode: FaceMode; id: number; lane: number; text: string;
+  layout: ReturnType<typeof typeset>; steer?: (lane: number) => void;
 }) {
-  return prompt && <div className="road-gates" lang={prompt.gap ? TL : HL}>
-    {anchors.map((anchor) => <GateLabel key={anchor.lane} text={prompt.options[anchor.lane]} anchor={anchor} steer={steer} preferSingleLine={preferSingleLine} />)}
+  const ref = useCallback((node: HTMLElement | null) => boardFaces[mode].register(id, lane, node), [mode, id, lane]);
+  const style = { width: FACE_WIDTH, height: faceHeight(mode), fontSize: layout.size, fontFamily: layout.family };
+  const content = <>
+    {layout.lines.map((line, i) => <span key={i} style={{ transform: `scaleX(${layout.scale})` }}>{line}</span>)}
+    {["tl", "tr", "bl", "br", "center", "em"].map((probe) => <i key={probe} aria-hidden data-face-probe={probe} />)}
+  </>;
+  const props = { ref, className: "road-gate", "data-lane": lane, "aria-label": text, style };
+  return steer ? <button type="button" {...props} onClick={() => steer(lane)}>{content}</button> : <div {...props}>{content}</div>;
+}
+
+export function GateLabels({ mode, prompt, gateId, steer, answeredLane, stampedLane }: {
+  mode: FaceMode; prompt: Prompt; gateId: number; steer?: (lane: number) => void; answeredLane?: number; stampedLane?: number;
+}) {
+  const wide = useSyncExternalStore(subscribeWidth, wideBoard, wideBoard);
+  const layouts = useMemo(() => prompt.options.map((text) => typeset(text, faceHeight(mode), mode === "sea" && wide, mode === "sea" && !wide ? 21 : 0)),
+    [prompt, mode, wide]);
+  return <div className="road-gates" data-gate-id={gateId} lang={prompt.gap ? TL : HL}>
+    {prompt.options.map((text, lane) => lane !== stampedLane && (answeredLane === undefined || lane === answeredLane) &&
+      <GateLabel key={lane} mode={mode} id={gateId} lane={lane} text={text} layout={layouts[lane]} steer={steer} />)}
   </div>;
 }
 
-export function WordGateHeader({ game, sayIt, words, prompt, feedback, remaining, streak, showHint, home, replay, extraButton, extraMeter }: {
+export function WordGateHeader({ game, sayIt, words, prompt, feedback, remaining, streak, showHint, home, replay, extraButton, extraMeter, questionSlot }: {
   game: string; sayIt?: SayItCue;
   words: CueWords; prompt?: Prompt; feedback?: { correct: boolean; word: Word };
   remaining: number; streak: number; showHint: boolean; home(): void; replay(): void;
-  extraButton?: ReactNode; extraMeter?: ReactNode;
+  extraButton?: ReactNode; extraMeter?: ReactNode; questionSlot?: ReactNode;
 }) {
   return <header className="road-header">
       <div className="road-dash">
@@ -99,7 +103,7 @@ export function WordGateHeader({ game, sayIt, words, prompt, feedback, remaining
         </div>
         {extraButton}
       </div>
-      {feedback ? <div className={`road-feedback ${feedback.correct ? "correct" : "wrong"}`} aria-live="polite">
+      {questionSlot ?? (feedback ? <div className={`road-feedback ${feedback.correct ? "correct" : "wrong"}`} aria-live="polite">
         <FeedbackBadge correct={feedback.correct}>{L(feedback.correct ? words.right : words.wrong)}</FeedbackBadge>
         {!feedback.correct && <span><span lang={TL}>{feedback.word.en}</span> · {feedback.word.lt}</span>}
       </div> : prompt && <div className="road-cue">
@@ -110,7 +114,7 @@ export function WordGateHeader({ game, sayIt, words, prompt, feedback, remaining
         </div>
         {prompt.gap && <div className="road-gap"><GlossLine sentence={prompt.gap.sentence} gloss /></div>}
         {showHint && <p className="road-hint">{L(words.hint)}</p>}
-      </div>}
+      </div>)}
     </header>
 }
 

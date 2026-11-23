@@ -1,7 +1,13 @@
 import { MathUtils } from "three";
+import { RETURN_SEAM } from "./crossing";
+import { RETURN_SPEED } from "./entry";
 import { CRUISE_SPEED, FAST_SPEED, LANE_WIDTH, SLOW_SPEED, laneAt, laneOffset } from "./course";
 
 const TURN_SECONDS = 1.5;
+const RETURN_STEPS = 60;
+
+type Point = { x: number; z: number };
+type ReturnPath = { time: number; heading: number; shore: number; speed: number; path: Point[] };
 
 export class SeaBoat {
   x = 0;
@@ -13,6 +19,7 @@ export class SeaBoat {
   wobble = 0;
   age = 0;
   private target = 0;
+  private returnPath?: ReturnPath;
   private slowHold = 0;
   private turn?: { time: number; heading: number; shore: number };
 
@@ -24,7 +31,7 @@ export class SeaBoat {
   get worldX() { return this.startX + this.x; }
   get worldZ() { return this.startZ - this.distance; }
   get lane() { return laneAt(this.x); }
-  get turning() { return !!this.turn; }
+  get turning() { return !!this.turn || !!this.returnPath; }
   get turnProgress() { return MathUtils.smoothstep(this.turn?.time ?? 0, 0, TURN_SECONDS); }
 
   steer(lane: number) {
@@ -55,7 +62,41 @@ export class SeaBoat {
     this.turn ??= { time: 0, heading: this.heading, shore };
   }
 
+  commitReturn() {
+    const heading = this.heading, speed = this.speed;
+    const shore = this.turn && this.turn.time >= TURN_SECONDS - 1e-8
+      ? heading : Math.round(heading / (Math.PI * 2)) * Math.PI * 2;
+    const path = [{ x: this.worldX, z: this.worldZ }];
+    const step = RETURN_SEAM / RETURN_STEPS;
+    const velocity = (i: number) => {
+      const k = MathUtils.smoothstep(i, 0, RETURN_STEPS);
+      const angle = MathUtils.lerp(heading, shore, k), pace = MathUtils.lerp(speed, RETURN_SPEED, k);
+      return { x: Math.sin(angle) * pace, z: Math.cos(angle) * pace };
+    };
+    let prev = velocity(0);
+    for (let i = 1; i <= RETURN_STEPS; i++) {
+      const next = velocity(i), point = path[i - 1];
+      path.push({ x: point.x + (prev.x + next.x) * step / 2, z: point.z + (prev.z + next.z) * step / 2 });
+      prev = next;
+    }
+    this.returnPath = { time: 0, heading, shore, speed, path };
+    return path[RETURN_STEPS];
+  }
+
   advanceTurn(dt: number) {
+    const home = this.returnPath;
+    if (home) {
+      home.time = home.time + dt >= RETURN_SEAM - 1e-8 ? RETURN_SEAM : home.time + dt;
+      const at = home.time / RETURN_SEAM * RETURN_STEPS;
+      const i = Math.min(Math.floor(at), RETURN_STEPS - 1);
+      this.x = MathUtils.lerp(home.path[i].x, home.path[i + 1].x, at - i) - this.startX;
+      this.distance = this.startZ - MathUtils.lerp(home.path[i].z, home.path[i + 1].z, at - i);
+      const k = MathUtils.smoothstep(home.time, 0, RETURN_SEAM);
+      this.heading = MathUtils.lerp(home.heading, home.shore, k);
+      this.speed = MathUtils.lerp(home.speed, RETURN_SPEED, k);
+      this.lateral = 0;
+      return home.time >= RETURN_SEAM;
+    }
     const turn = this.turn!;
     this.age += dt;
     turn.time += dt;

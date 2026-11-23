@@ -1,5 +1,7 @@
+import { projectFace } from "../src/game/kit/boardFaces";
+import { projectBoards } from "./board-projection";
 import {
-  DirectionalLight, Fog, Group, HemisphereLight, Mesh, MeshLambertMaterial, PerspectiveCamera,
+  DirectionalLight, Fog, Group, HemisphereLight, Mesh, MeshLambertMaterial, Matrix4, PerspectiveCamera,
   PlaneGeometry, ShaderMaterial, Vector3, type WebGLRenderer,
 } from "three";
 import { describe, expect, it } from "vitest";
@@ -151,7 +153,8 @@ describe("the town-to-sea camera", () => {
     const water = new Mesh(new PlaneGeometry(900, 320), new ShaderMaterial({ uniforms: { uTime: { value: 0 } } }));
     const env = { sky: new Mesh(), sea: water, fog: new Fog("lightgray", 110, 420),
       hemi: new HemisphereLight(), sun: new DirectionalLight() };
-    const view = new SeaView({ mesh, m: motion, townBoat }, rider, camera, env, new Mesh());
+    const ride = { mesh, m: motion, townBoat, phase: 0 };
+    const view = new SeaView(ride, rider, camera, env, new Mesh());
     const boat = new SeaBoat(-10, BAY.z0, Math.PI, CRUISE_SPEED);
     view.begin(boat);
     const renderer = { render() {} } as unknown as WebGLRenderer;
@@ -160,7 +163,10 @@ describe("the town-to-sea camera", () => {
     expect(view.camera.quaternion.toArray()).toEqual(camera.quaternion.toArray());
     expect(view.camera.projectionMatrix.elements).toEqual(camera.projectionMatrix.elements);
     expect(view.scene.fog).toEqual(env.fog);
-    expect(view.scene.children).toContainEqual(expect.objectContaining({ material: water.material, visible: true }));
+    const borrowedBay = view.scene.children.find((part) => part instanceof Mesh && part.geometry === water.geometry) as typeof water;
+    expect(borrowedBay.visible).toBe(true);
+    expect(borrowedBay.material).not.toBe(water.material);
+    expect(borrowedBay.material.uniforms.uTime.value).toBe(water.material.uniforms.uTime.value);
     expect(view.scene.children).toContainEqual(expect.objectContaining({ material: env.sky.material, visible: true }));
 
     const word = { en: "boat", lt: "valtis", situation: "s66-taxi", clip: { say: "boat", voice: "", speed: 1, male: false } };
@@ -180,7 +186,8 @@ describe("the town-to-sea camera", () => {
         const ahead = gate.distance - boat.distance;
         view.pose(boat, time, 0.05, portrait, ahead);
         gate.pose(time, ahead);
-        const anchors = view.render(renderer, w, h, gate);
+        view.render(renderer, w, h, gate);
+        const anchors = projectBoards("sea", gate.faces(), view.camera, w, h);
         if (ahead < 19 || ahead > 32 || anchors.length !== 3) continue;
         readable ||= anchors.every((a, i) => a.width >= (portrait ? 86 : 100) && a.height >= (portrait ? 15 : 18) * 2.16
           && a.x - a.width / 2 > 0 && a.x + a.width / 2 < w
@@ -189,6 +196,37 @@ describe("the town-to-sea camera", () => {
       }
       return readable;
     }
+    if (portrait) for (const lane of [0, 2]) {
+      const outside = new SeaBoat(-10, BAY.z0, Math.PI, CRUISE_SPEED);
+      outside.steer(lane);
+      view.begin(outside);
+      let samples = 0;
+      while (gate.distance - outside.distance >= 16) {
+        const ahead = gate.distance - outside.distance;
+        time += 0.05;
+        outside.drive(0.05, 0, 1);
+        view.pose(outside, time, 0.05, portrait, ahead);
+        gate.pose(time, ahead);
+        view.render(renderer, w, h, gate);
+        if (ahead > 32) continue;
+        assertFittedBoat();
+        const projection = new Matrix4().multiplyMatrices(view.camera.projectionMatrix, view.camera.matrixWorldInverse);
+        expect(gate.faces()).toHaveLength(3);
+        for (const face of gate.faces()) {
+          const xs = projectFace("sea", face, projection, w, h)!.points.map(p => p.x);
+          expect(Math.min(...xs)).toBeGreaterThanOrEqual(8);
+          expect(Math.max(...xs)).toBeLessThanOrEqual(w - 8);
+          expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThanOrEqual(86);
+        }
+        samples++;
+      }
+      expect(samples).toBeGreaterThan(10);
+    }
+    mesh.position.set(-10, 0, BAY.z0);
+    mesh.rotation.set(0.05, Math.PI, -0.04, "YXZ");
+    rider.position.set(-10, 0.6, BAY.z0 + 1);
+    view.camera.copy(camera);
+    view.begin(boat);
     expect(driveThroughGate()).toBe(true);
     for (const lane of [0, 2]) {
       boat.steer(lane);
@@ -210,6 +248,24 @@ describe("the town-to-sea camera", () => {
       view.render(renderer, w, h);
       assertFittedBoat();
     }
+    const destination = seaReturn({ m: motion });
+    const endpoint = boat.commitReturn();
+    const rides = new Rides({ ambient: { rideBoxes: [] } } as unknown as RideHost, { ...RIDES, cars: [], boats: [] }, []);
+    view.startReturn(destination, endpoint, rides);
+    for (let frame = 0; frame < 24; frame++) {
+      time += 0.05;
+      expect(boat.advanceTurn(0.05)).toBe(frame === 23);
+      view.pose(boat, time, 0.05, portrait);
+      view.render(renderer, w, h);
+      assertFittedBoat();
+    }
+    const spill = new Group(), helm = new Group(), handoff = view.handoff(time);
+    rides.sampleBoatReturn(ride, destination, boat.speed, time, spill, helm);
+    const offset = new Vector3(destination.x - endpoint.x, 0, destination.z - endpoint.z);
+    expect(mesh.position.clone().add(offset).distanceTo(spill.position)).toBeLessThan(0.0001);
+    expect(rider.position.clone().add(offset).distanceTo(helm.position)).toBeLessThan(0.0001);
+    expect(view.camera.quaternion.angleTo(handoff.camera.quaternion)).toBeLessThan(0.0001);
+    expect(handoff.camera.projectionMatrix.elements).toEqual(view.camera.projectionMatrix.elements);
     gate.dispose();
     view.dispose();
     expect(mesh.parent).toBe(town);
@@ -229,7 +285,7 @@ describe("passing a sea gate", () => {
 
     gate.cross(2, correct);
     gate.pose(1, 0);
-    const first = gate.labels(camera, w, h);
+    const first = projectBoards("sea", gate.faces(), camera, w, h);
     expect(first).toHaveLength(1);
     expect(first[0].lane).toBe(2);
     expect(first[0].opacity).toBe(correct ? 0.93 : 0.59);
@@ -239,17 +295,17 @@ describe("passing a sea gate", () => {
     camera.position.set(6.8, 4.4, 5);
     camera.updateMatrixWorld(true);
     gate.pose(1.3, -5, 1, 0.3);
-    const [closer] = gate.labels(camera, w, h);
+    const [closer] = projectBoards("sea", gate.faces(), camera, w, h);
     const board = gate.mesh.children[3];
     const center = new Vector3(0, 0, 0.25).applyMatrix4(board.matrixWorld).project(camera);
     expect(closer.width).toBeGreaterThan(first[0].width);
     expect(closer.opacity).toBeLessThan(first[0].opacity);
-    expect(closer.x).toBeCloseTo((1 + center.x) * w / 2);
-    expect(closer.y).toBeCloseTo((1 - center.y) * h / 2);
+    expect(closer.center.x).toBeCloseTo((1 + center.x) * w / 2);
+    expect(closer.center.y).toBeCloseTo((1 - center.y) * h / 2);
 
     camera.position.z = -1;
     camera.updateMatrixWorld(true);
-    expect(gate.labels(camera, w, h)).toEqual([]);
+    expect(projectBoards("sea", gate.faces(), camera, w, h)).toEqual([]);
     gate.dispose();
   });
 });

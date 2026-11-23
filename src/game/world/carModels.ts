@@ -1,6 +1,6 @@
 // Each entry maps a GLB's centred, ground-level mesh (+Z forward) to a collision box in town metres.
 // Apply the same heading to the box, the climbable surfaces and the instance returned by loadCarModel.
-import type { ColorRepresentation, Group } from "three";
+import type { ColorRepresentation, Group, Object3D } from "three";
 import type { Piece } from "../ledges";
 
 const WHEELS = ["wheel-front-left", "wheel-front-right", "wheel-back-left", "wheel-back-right"] as const;
@@ -88,6 +88,12 @@ export function loadCarModel(name: CarModelName): Promise<CarModel> {
     pending.set(name, request);
   }
   return request;
+}
+
+export function spinCarWheels(mesh: Object3D, model: CarModelEntry, distance: number) {
+  if (distance === 0) return;
+  const radians = distance / (0.3 * model.scale[2]);
+  for (const name of model.wheelNodes) mesh.getObjectByName(name)?.rotateX(radians);
 }
 
 export function isCarModelLoaded(name: CarModelName) { return loaded.has(name); }

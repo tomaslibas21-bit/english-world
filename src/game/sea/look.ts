@@ -11,6 +11,7 @@ import { colourMerge, rand } from "../world/util";
 type Part = [THREE.BufferGeometry, THREE.ColorRepresentation];
 export type SeaView = {
   sky: SkyLook[]; sunAzimuth: number; water: SeaLook;
+  crest: { zenith: string; mid: string; horizon: string; sun: string; halo: string; sunPower: number; fill: number };
   island: { sand: string; green: [string, string]; rock: string; trees: "pine" | "palm" };
   sails: string[];
   /** The town seen from the sea: its walls, its roofs, the land behind it. */
@@ -32,6 +33,7 @@ const MAPLE_HARBOR: SeaView = {
       ridgeFar: "#8a6aa0", ridgeNear: "#735888", streak: "#ffb08e", streaks: 0.9, cloud: "#ffc7b2",
       light: "#ffbe8c", lightPower: 1.9, fillSky: "#d5c9e6", fillGround: "#a58aa0", fill: 1.26 },
   ],
+  crest: { zenith: "#0f4fc2", mid: "#549ce5", horizon: "#f4dfbd", sun: "#ffe4b6", halo: "#edc28a", sunPower: 2.65, fill: 1.42 },
   sunAzimuth: 0.26,
   water: { deep: "#0a5a94", bright: "#2b9fca", foam: "#f4fbf8" },
   island: { sand: "#cdb892", green: ["#3f6f52", "#a8552f"], rock: "#7f7a78", trees: "pine" },
@@ -52,6 +54,7 @@ const PUERTO_COLIBRI: SeaView = {
       ridgeFar: "#7b5aa6", ridgeNear: "#664690", streak: "#ff9fa0", streaks: 0.9, cloud: "#ffb7c0",
       light: "#ffb68e", lightPower: 1.9, fillSky: "#d3c1e8", fillGround: "#9f80ac", fill: 1.26 },
   ],
+  crest: { zenith: "#055fc4", mid: "#39b3df", horizon: "#ffe1bf", sun: "#ffdfad", halo: "#f4bd92", sunPower: 2.70, fill: 1.42 },
   sunAzimuth: -0.26,
   water: { deep: "#045f93", bright: "#17b2c2", foam: "#f6fffb" },
   island: { sand: "#f0dcae", green: ["#3f9a62", "#6fb85e"], rock: "#8d8478", trees: "palm" },

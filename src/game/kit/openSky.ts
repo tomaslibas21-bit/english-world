@@ -119,6 +119,27 @@ export class OpenSky {
     this.blend(0);
   }
 
+  /** Blend the town shader into this dome in the output colour space of each shader. */
+  inheritTown(source: THREE.ShaderMaterial, toTown: THREE.Matrix3) {
+    const material = this.mesh.material;
+    const uniforms = Object.fromEntries(Object.entries(source.uniforms).map(([key, uniform]) => [`town_${key}`, uniform]));
+    let town = source.fragmentShader.replace(/void\s+main\s*\(/, "void paintTown(");
+    for (const key of Object.keys(source.uniforms)) town = town.replace(new RegExp(`\\b${key}\\b`, "g"), `town_${key}`);
+    Object.assign(material.uniforms, uniforms, { townMix: { value: 1 }, toTown: { value: toTown } });
+    Object.assign(material.defines, source.defines);
+    material.vertexShader = `uniform mat3 toTown; varying vec3 vP;
+${vertex.replace("vDir = position;", "vDir = position; vP = cameraPosition + toTown * position;")}`;
+    material.fragmentShader = `uniform float townMix;
+${town}
+${fragment.replace("#include <colorspace_fragment>", `#include <colorspace_fragment>
+      if (townMix > 0.0) {
+        vec4 desert = gl_FragColor;
+        paintTown();
+        gl_FragColor = mix(desert, gl_FragColor, townMix);
+      }`)}`;
+    material.needsUpdate = true;
+  }
+
   /** `day`: 0 at the first look, 1 at the last. */
   blend(day: number) {
     const span = this.looks.length - 1;

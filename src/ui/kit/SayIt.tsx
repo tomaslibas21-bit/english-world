@@ -20,7 +20,7 @@ function firstTip(game: string) {
 }
 
 function SayItButton({ game, cue }: { game: string; cue: SayItCue }) {
-  const status = useSyncExternalStore(cue.subscribe, cue.getSnapshot);
+  const status = useSyncExternalStore(cue.subscribe, cue.getSnapshot, cue.getSnapshot);
   const [tip, setTip] = useState(false);
   useEffect(() => {
     if (!firstTip(game)) return;
