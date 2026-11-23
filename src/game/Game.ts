@@ -444,6 +444,31 @@ export class Game implements GameApi {
     // (nor what is thin and looked through, userData.thin: the overhead lines a town may have, the gas station's
     // canopy, the tianguis' lonas)
     const moves = (o: THREE.Object3D) => o.userData?.v !== undefined || !!o.userData?.gull || !!o.userData?.boat || !!o.userData?.thin || o === this.town.parkedCars.group;
+    const taxiScenery: THREE.Mesh[] = [];
+    const taxiRay = new THREE.Raycaster();
+    const taxiHits: THREE.Intersection[] = [];
+    const taxiSightline = (from: THREE.Vector3, to: THREE.Vector3) => {
+      if (!taxiScenery.length) {
+        // Include the opaque canopy and posts ignored by the walking camera.
+        this.town.group.traverse((o) => {
+          const mesh = o as THREE.Mesh;
+          if (!mesh.isMesh || (mesh as THREE.InstancedMesh).isInstancedMesh || Array.isArray(mesh.material)
+            || !mesh.material.visible || (mesh.material.transparent && mesh.material.opacity < 0.6)) return;
+          for (let parent: THREE.Object3D | null = mesh; parent && parent !== this.town.group; parent = parent.parent) {
+            if (parent === this.town.parkedCars.group || parent === this.pigeons.group || parent.userData.boat
+              || parent.userData.gull || parent.userData.v !== undefined || parent.name.startsWith("town-thin-")) return;
+          }
+          taxiScenery.push(mesh);
+        });
+      }
+      taxiRay.ray.origin.copy(from);
+      taxiRay.ray.direction.subVectors(to, from);
+      taxiRay.far = taxiRay.ray.direction.length();
+      taxiRay.ray.direction.divideScalar(taxiRay.far);
+      taxiHits.length = 0;
+      taxiRay.intersectObjects(taxiScenery, false, taxiHits);
+      return taxiHits.length === 0;
+    };
     // (the cenote's grounds open to explore, cave/grounds.ts: they reach further west than the town's own edge)
     const west = THEME.cenote?.open ? 50 : 0;
     this.field = OcclusionField.fromObject(this.town.group, { minX: WORLD.minX - 24 - west / 2, maxX: WORLD.maxX + 24, minZ: WORLD.minZ - 24, maxZ: WORLD.maxZ + 24 }, { skip: moves });
@@ -572,10 +597,10 @@ export class Game implements GameApi {
         const p = point ?? this.player.root.position;
         this.placeOnFoot(x ?? p.x, z ?? p.z, rot ?? this.heading);
       },
-      snapRide: ({ m }) => {
-        this.rideCourse = this.rig.yaw = m.heading;
+      snapTaxi: ({ m, mesh }, dimensions) => {
+        this.rideCourse = m.heading;
         this.rig.target.set(m.x, 0, m.z);
-        this.rig.snap();
+        this.rig.snapTaxi({ position: mesh.position, heading: () => m.heading, ...dimensions }, taxiSightline);
       },
       scoreShot: (beside) => {
         const { root: { position: p }, height } = this.player;
@@ -1433,6 +1458,7 @@ export class Game implements GameApi {
 
   /** What getting out of a ride leaves behind, however it ended. */
   private afterRide() {
+    this.rig.clearTaxiShot();
     if (this.modes.active?.cleanScreen === "menu") useStore.getState().dismissRideToasts();
     const p = this.player.root.position;
     this.hop.land(p.y); this.applyHop();

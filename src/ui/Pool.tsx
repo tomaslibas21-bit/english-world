@@ -14,7 +14,7 @@ const helpText = {
 } as const;
 
 export function PoolOverlay({ touch }: { touch: boolean }) {
-  const { cue, aside, help, streak, result } = usePool();
+  const { cue, aside, help, notice, canHit, streak, result } = usePool();
   if (result) return (
     <ScoreCard title={L("Kamuolys ore")}
       ratio={result.learnerHits / Math.max(1, result.learnerHits + result.drops)}
@@ -28,6 +28,7 @@ export function PoolOverlay({ touch }: { touch: boolean }) {
     />
   );
 
+  const timing = notice ?? (!touch && canHit ? "timing" : null);
   return (
     <div className="pool-overlay">
       <div className="pool-top">
@@ -37,9 +38,14 @@ export function PoolOverlay({ touch }: { touch: boolean }) {
           {aside && <div className="pool-aside" data-line={aside.key} lang={TL}><GlossLine sentence={aside.sentence} gloss /></div>}
         </div>
       </div>
-      {help && <div key={help} className={`pool-help ${touch ? "pool-help-touch" : ""}`} lang={HL}>{helpText[help]}</div>}
+      <div className={`pool-help-stack${touch ? " pool-help-touch" : ""}`} lang={HL}>
+        {help && <div className="pool-help pool-instruction" data-help={help}>{helpText[help]}</div>}
+        <div className="pool-help-slot" aria-live="polite">
+          {timing && <div className="pool-help" data-help={timing}>{helpText[timing]}</div>}
+        </div>
+      </div>
       {touch && (
-        <button type="button" className="jump-btn pool-hit" aria-label={helpText.short}
+        <button type="button" className="jump-btn pool-hit" data-can-hit={canHit} aria-label={helpText.short}
           onPointerDown={(e) => { e.preventDefault(); game?.jump(); }}
           onClick={(e) => { if (e.detail === 0) game?.jump(); }}>
           <Icon name="chevronUp" size={34} strokeWidth={2.5} />

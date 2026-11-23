@@ -1,4 +1,4 @@
-import { useRef, type CSSProperties, type PointerEvent } from "react";
+import { memo, useRef, type CSSProperties, type PointerEvent } from "react";
 import { game } from "../game/gameRef";
 import { useBilliards, type RackBall } from "../game/billiards/store";
 import { ballColor } from "../game/billiards/table";
@@ -6,6 +6,7 @@ import type { KitLine } from "../game/kit/dialogue";
 import { BILLIARDS_NPC } from "../content/billiards-lines";
 import { HL, L } from "./i18n";
 import { Icon } from "./icons";
+import { FeedbackBadge } from "./kit/FeedbackBadge";
 import { GlossLine } from "./kit/GlossLine";
 import { SayIt } from "./kit/SayIt";
 import { ScoreCard, ScoreNumber } from "./kit/ScoreCard";
@@ -45,6 +46,19 @@ function BallRow({ name, balls, active }: { name: string; balls: RackBall[]; act
 function Speech({ line }: { line: KitLine }) {
   return <div className="bl-speech" data-line={line.key}><GlossLine sentence={line.sentence} gloss compact /></div>;
 }
+
+function CallLabel({ mic }: { mic?: string }) {
+  return <span className="bl-confirm-label" data-mic={mic}><Icon name="mic" size={15} />{L("Pasakyk arba bakstelėk:")}</span>;
+}
+
+const CallReservation = memo(function CallReservation({ options }: { options: KitLine[] }) {
+  return <div className="bl-confirm-measure" aria-hidden="true" inert>
+    <CallLabel />
+    <div className="bl-confirm-sizer">
+      {options.map(({ key, sentence }) => <GlossLine key={key} sentence={sentence} gloss compact />)}
+    </div>
+  </div>;
+});
 
 function Choice({ line }: { line: KitLine }) {
   return <button className="bl-choice" data-line={line.key} onClick={() => act("choice", line.key)}>
@@ -158,7 +172,7 @@ export function BilliardsOverlay({ touch }: { touch: boolean }) {
         {showCall && <Speech line={call} />}
         <div className="bl-chip-heading">{L("Kamuolys")}</div>
         <div className="bl-ball-chips" role="group" aria-label={L("Kamuolys")}>
-          {available.map((id) => <button key={id} className="bl-ball-option" data-ball={id} aria-pressed={id === selection.ball}
+          {[...available].sort((a, b) => a - b).map((id) => <button key={id} className="bl-ball-option" data-ball={id} aria-pressed={id === selection.ball}
             disabled={state.replaying} onClick={() => act("ball", String(id))}><BallBadge id={id} down={false} /></button>)}
         </div>
         <div className="bl-chip-heading">{L("Kišenė")}</div>
@@ -169,10 +183,13 @@ export function BilliardsOverlay({ touch }: { touch: boolean }) {
               nat: line.sentence.nat.replace(/\.$/, "") }} gloss compact />
           </button>)}
         </div>
-        {phase === "call" && call && <button className="bl-confirm" onClick={() => act("confirm")}>
-          <span data-mic={state.mic.status}><Icon name="mic" size={15} />{L("Pasakyk arba bakstelėk:")}</span>
-          <GlossLine sentence={call.sentence} gloss compact />
-        </button>}
+        {phase === "call" && <div className="bl-confirm-row">
+          <CallReservation options={state.callOptions} />
+          {call && <button className="bl-confirm" onClick={() => act("confirm")}>
+            <CallLabel mic={state.mic.status} />
+            <GlossLine sentence={call.sentence} gloss compact />
+          </button>}
+        </div>}
       </>}
       {aiming && <>
         {phase === "break" ? <h2>{L("Pradinis smūgis – skelbti nereikia.")}</h2> : call && <Speech line={call} />}
@@ -185,7 +202,7 @@ export function BilliardsOverlay({ touch }: { touch: boolean }) {
         {!touch && state.aimHelp && <small className="bl-key-help">{L("← → – taikyti, tarpas – smūgis")}</small>}
       </>}
       {phase === "feedback" && <>
-        <h2 className={shotOk ? "bl-correct" : undefined}>{shotOk ? L("Teisingai!") : opponentLabels.called}</h2>
+        <h2><FeedbackBadge correct={!!shotOk}>{shotOk ? L("Teisingai!") : opponentLabels.called}</FeedbackBadge></h2>
         {showCall && <Speech line={call} />}
       </>}
       {waitingForTina && (showCall ? <Speech line={call} /> : line && !call && <Speech line={line} />)}

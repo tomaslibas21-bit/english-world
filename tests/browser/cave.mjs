@@ -106,9 +106,59 @@ try {
     await page.locator(".glyph-opt").nth((q.answer + 1) % 3).click();
     await page.waitForFunction(() => window.__ew.store.getState().hud.glyph?.wrong.length === 1, null, { timeout: 10000 });
     check(`${label}: a wrong meaning: struck out, the words shown, the stone still waits`, await page.evaluate(() => { const g = window.__ew.store.getState().hud.glyph; return g.shown && !g.solved && !(window.__ew.store.getState().progress.cave?.lit ?? []).length; }));
+    await page.evaluate(() => {
+      const { audio, game } = window.__ew;
+      const play = audio.play, stop = audio.stop;
+      const replay = window.__stoneReplay = { started: 0, finished: 0, stopped: 0, timer: null, finish: null };
+      audio.play = function (voice, speed, phrase, options) {
+        if (!options?.optional || window.__ew.store.getState().hud.glyph?.text !== phrase) return play.call(this, voice, speed, phrase, options);
+        this.stop();
+        replay.started = performance.now();
+        replay.finished = 0;
+        return new Promise((resolve) => {
+          replay.finish = resolve;
+          replay.timer = setTimeout(() => {
+            replay.finished = performance.now();
+            replay.finish = null;
+            resolve(true);
+          }, 1100);
+        });
+      };
+      audio.stop = function () {
+        if (replay.finish) {
+          clearTimeout(replay.timer);
+          replay.stopped++;
+          replay.finish(false);
+          replay.finish = null;
+        }
+        return stop.call(this);
+      };
+      const cave = game.cave;
+      const closeAfter = cave.closeAfter;
+      cave.closeAfter = function (opening, delay) {
+        closeAfter.call(this, opening, delay);
+        cave.closeAfter = closeAfter;
+        replay.deadline = opening.deadline;
+        setTimeout(() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "r" })), delay - 100);
+      };
+    });
     await page.locator(".glyph-opt").nth(q.answer).click();
     await page.waitForFunction(() => window.__ew.store.getState().progress.cave?.lit?.includes("agua-1"), null, { timeout: 10000 });
-    await page.waitForFunction(() => !window.__ew.store.getState().hud.glyph, null, { timeout: 15000 });
+    await page.waitForFunction(() => {
+      const { started, deadline } = window.__stoneReplay;
+      return started > 0 && performance.now() > deadline + 50;
+    }, null, { timeout: 15000 });
+    check(`${label}: R just before expiry keeps the solved card visible during replay`,
+      await page.evaluate(() => {
+        const { started, deadline, finish } = window.__stoneReplay;
+        return started >= deadline - 140 && started < deadline && !!finish && window.__ew.store.getState().hud.glyph?.solved;
+      }));
+    await page.waitForFunction(() => window.__stoneReplay.finished > 0, null, { timeout: 5000 });
+    check(`${label}: the solved card stays open for the reading pause after playback`,
+      await page.evaluate(() => window.__ew.store.getState().hud.glyph?.solved));
+    await page.waitForFunction(() => !window.__ew.store.getState().hud.glyph, null, { timeout: 5000 });
+    check(`${label}: auto-close waits 800 ms after playback`,
+      await page.evaluate(() => performance.now() >= window.__stoneReplay.finished + 795));
     s = await state();
     check(`${label}: the right one: the stone is lit, the card says two are left`, s.cave.lit.length === 1 && s.card.lit === 1, s.card);
 
@@ -132,9 +182,21 @@ try {
     q = await page.evaluate(() => window.__ew.store.getState().hud.glyph);
     await page.locator(".glyph-opt").nth(q.answer).click();
     await page.waitForFunction(() => window.__ew.store.getState().progress.cave?.lit?.includes("agua-3"), null, { timeout: 10000 });
+    await page.evaluate(() => {
+      const cave = window.__ew.game.cave, gates = cave.hooks.gates;
+      window.__stoneReplay.unlocks = 0;
+      cave.hooks.gates = (...args) => { window.__stoneReplay.unlocks++; return gates?.(...args); };
+    });
+    await page.locator(".glyph-play").click();
+    await page.waitForFunction(() => !!window.__stoneReplay.finish);
+    await page.locator(".glyph-x").click();
+    check(`${label}: the close button stops a replay mid-phrase and dismisses the card`,
+      await page.evaluate(() => !window.__ew.store.getState().hud.glyph && !window.__stoneReplay.finish && window.__stoneReplay.stopped === 1));
     await page.locator(".toast p").filter({ hasText: /The way is open|Kelias atviras/i }).waitFor({ timeout: 20000 });
     // (the card catches up once the stone's card has gone)
     await page.waitForFunction(() => window.__ew.store.getState().hud.cave?.open === 2, null, { timeout: 15000 });
+    await page.waitForTimeout(4300);
+    check(`${label}: the original close timer cannot unlock the chamber a second time`, await page.evaluate(() => window.__stoneReplay.unlocks === 1));
     s = await state();
     check(`${label}: the third stone lit: the way is open at once, with nothing of the town's route finished (Kin's own conversation is off it)`, s.cave.lit.length === 3 && s.card.open === 2 && await page.evaluate(() => { const sits = window.__ew.store.getState().progress.sits; return !window.__ew.game.orderedSituations().some((q) => sits[q.id]?.completions); }), s.card);
     await page.evaluate(() => window.__ew.game.enterZone("gruta", { x: -7.4, z: -43.2, rot: Math.PI + 0.43 }, true));

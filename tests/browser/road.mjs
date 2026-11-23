@@ -304,6 +304,9 @@ try {
     assert.equal(hit.rightGates, 1);
     assert.equal(hit.streak, 1);
     assert.equal(await page.getByText(ui("Teisingai!", "Right!"), { exact: true }).count(), 1);
+    const rightBadge = page.locator('.road-feedback .kit-feedback[data-feedback="right"]');
+    assert.equal(await rightBadge.locator('svg[width="16"]').count(), 1);
+    assert.equal(await rightBadge.evaluate((el) => getComputedStyle(el).backgroundColor), "rgb(229, 243, 232)");
     assert.ok(hit.boost > 0);
     await waitFor(async () => await labels.count() === 2, "the tick replaces the selected label", 4, 1);
     assert.equal(await page.locator(`.road-gate[data-lane="${rightLane}"]`).count(), 0);
@@ -321,6 +324,10 @@ try {
     assert.equal(miss.streak, 0);
     const wrongCopy = ui("Ne visai. Teisingai:", "Not quite. It's:");
     assert.equal(await page.getByText(wrongCopy, { exact: true }).count(), 1);
+    const retryBadge = page.locator('.road-feedback .kit-feedback[data-feedback="retry"]');
+    assert.equal(await retryBadge.locator('svg[width="16"]').count(), 1);
+    assert.equal(await retryBadge.evaluate((el) => getComputedStyle(el).color), "rgb(121, 71, 17)");
+    assert.equal(await page.locator(".road-feedback.wrong span[lang]").count(), 1);
     assert.ok(miss.wobble > 0);
     assert.ok((await page.locator(".road-feedback.wrong").innerText()).trim().length > wrongCopy.length);
     await waitFor(() => labels.evaluateAll((boards, { lane, word }) => {

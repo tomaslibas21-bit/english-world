@@ -53,7 +53,7 @@ function Shortcut({ children, touch }: { children: ReactNode; touch: boolean }) 
 export function LoteriaOverlay({ touch }: { touch: boolean }) {
   const {
     phase, kind, next, labels, board, covered, current, called, faceDown, caller, verse, neighbor,
-    focus, glow, bounce, tip, ready, replay, sayIt, choices, read, mic, micOn, result,
+    focus, glow, bounce, tip, ready, winningCells, replay, sayIt, choices, read, mic, micOn, result,
   } = useLoteria();
 
   if (result) return (
@@ -132,7 +132,7 @@ export function LoteriaOverlay({ touch }: { touch: boolean }) {
           {board.map((card, index) => {
             const marked = covered.includes(index);
             return <button type="button" key={card.id} className="loteria-cell" data-card={card.id}
-              data-focus={!touch && focus === index} data-glow={glow === index} data-corner={kind === "esquinas" && isCorner(index)}
+              data-focus={!touch && focus === index} data-glow={glow === index} data-winning={ready && winningCells.includes(index)} data-corner={kind === "esquinas" && isCorner(index)}
               aria-pressed={marked} disabled={!playable} onClick={() => act("cover", String(index))}>
               <LoteriaTile card={card} label={labels[card.id]} pictureUrl={picture(card)} />
               {marked && <span className="loteria-bean" aria-hidden="true" />}

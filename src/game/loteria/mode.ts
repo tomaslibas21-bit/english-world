@@ -241,9 +241,10 @@ export class LoteriaMode implements GameMode {
   private sync(run: Run) {
     const { round } = run;
     const card = round.current;
+    const winningCells = round.winner ? [] : round.pattern ?? [];
     run.spotlight = round.board.findIndex((cell) => cell.id === card?.id);
     loteriaUi({
-      current: card, faceDown: round.faceDown, covered: [...round.covered], ready: !!round.pattern && !round.winner,
+      current: card, faceDown: round.faceDown, covered: [...round.covered], ready: winningCells.length > 0, winningCells,
       called: round.called.slice(0, round.faceDown ? -1 : undefined).reverse(),
       glow: listenStage(round.index, round.called.length) === "glow" && !round.covered.has(run.spotlight) ? run.spotlight : -1,
     });
@@ -392,7 +393,7 @@ export class LoteriaMode implements GameMode {
     this.dialogue.cancelTurn();
     run.busy = true;
     this.setPhase(run, "finishing");
-    loteriaUi({ tip: null, glow: -1, ready: false });
+    loteriaUi({ tip: null, glow: -1, ready: false, winningCells: [] });
     const pattern = round.winner === "learner" ? round.pattern ?? [] : [];
     const winning = pattern.map((index) => round.board[index]);
     audio.sfx("crowdCheer"); // the plaza cheers "¡Lotería!"
@@ -521,7 +522,7 @@ export class LoteriaMode implements GameMode {
         this.dialogue.cancel();
         // Invalidate all of the previous round's pending continuations.
         const leaving = this.run = { ...this.run, phase: "leaving", busy: true };
-        loteriaUi({ result: null, caller: null, verse: null, read: [], ready: false, replay: false, tip: null, glow: -1 });
+        loteriaUi({ result: null, caller: null, verse: null, read: [], ready: false, winningCells: [], replay: false, tip: null, glow: -1 });
         this.setPhase(leaving, "leaving");
         void this.say(leaving, "lt_t_bye").then(() => { if (this.run === leaving) this.exit(true); });
       }

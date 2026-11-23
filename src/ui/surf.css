@@ -17,14 +17,17 @@
 /* her line: a card at the top, out of the wave's and the board's way; under it, the move it asks for */
 .surf-say { position: fixed; top: calc(62px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 10px; width: max-content; max-width: calc(100vw - 24px); pointer-events: none; }
 .surf-say > * { pointer-events: auto; }
-.surf-card { position: relative; width: max-content; max-width: min(620px, calc(100vw - 24px)); background: var(--panel); color: var(--ink); border-radius: 18px; padding: 12px 18px 12px; box-shadow: 0 6px 24px rgba(10, 40, 60, 0.28); border: 3px solid transparent; transition: border-color 0.15s ease; }
-.surf-card .il { justify-content: center; font-size: 1.7em; font-weight: 600; padding: 0 14px; /* the replay button sits in the corner */ }
-.surf-card .nat { border-left: 0; border-top: 1px solid var(--line); padding: 7px 26px 0; /* clear of the replay button in the corner */ margin-top: 9px; text-align: center; font-size: 1em; color: var(--ink-soft); }
+.surf-card { position: relative; min-height: 54px; width: max-content; max-width: min(620px, calc(100vw - 24px)); background: var(--panel); color: var(--ink); border-radius: 18px; padding: 12px 18px 12px; box-shadow: 0 6px 24px rgba(10, 40, 60, 0.28); border: 3px solid transparent; transition: border-color 0.15s ease; }
+.surf-card .il { justify-content: center; font-size: 1.7em; font-weight: 600; padding: 0; }
+.surf-card .nat { border-left: 0; border-top: 1px solid var(--line); padding: 7px 0 0; margin-top: 9px; text-align: center; font-size: 1em; color: var(--ink-soft); }
 .surf-card.asked { border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
 .surf-card.ok { border-color: var(--good, #37a26b); }
 .surf-card.no { border-color: var(--warm, #e7a13a); }
-.surf-words { min-width: 0; }
-.surf-again { position: absolute; right: -10px; bottom: -10px; width: 36px; height: 36px; border-radius: 50%; border: 0; display: grid; place-items: center; background: var(--panel-solid); color: var(--accent); box-shadow: 0 2px 8px rgba(10, 40, 60, 0.3); cursor: pointer; }
+.surf-words { min-width: 0; padding-inline-end: 48px; }
+.surf-cue-line { display: flow-root; }
+.surf-feedback { float: inline-start; width: 28px; height: 24px; }
+.surf .mode-score-actions .surf-later { min-height: 44px; }
+.surf-again { position: absolute; inset-inline-end: 2px; bottom: 2px; width: 44px; height: 44px; border-radius: 50%; border: 0; display: grid; place-items: center; background: var(--panel-solid); color: var(--accent); box-shadow: 0 2px 8px rgba(10, 40, 60, 0.3); cursor: pointer; }
 .surf-again:hover { filter: brightness(1.06); }
 
 /* The cue and the arrow under the thumb use the same gold. */
@@ -124,10 +127,6 @@ button.surf-move { cursor: pointer; }
 .surf-level:hover { filter: brightness(1.06); }
 .surf-later { margin-top: 12px; border: 0; background: none; color: var(--accent); font: inherit; font-weight: 800; padding: 8px 14px; cursor: pointer; min-height: 40px; }
 .surf-best { font-size: 0.9em; }
-.surf-result { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0 8px; }
-.surf-result div { background: var(--accent-soft, #f1f7f6); border-radius: 14px; padding: 10px 6px; display: grid; gap: 2px; }
-.surf-result b { font-size: 1.6em; color: var(--ink); font-variant-numeric: tabular-nums; }
-.surf-result span { font-size: 0.78em; color: var(--ink-soft); line-height: 1.2; }
 /* a wide screen: the learner's turn to the right, clear of them on their board in the middle */
 @media (min-width: 900px) and (min-height: 521px) {
   .surf.touch .surf-choices { left: calc(18px + env(safe-area-inset-left)); right: auto; bottom: var(--pad-bottom); }
@@ -137,13 +136,11 @@ button.surf-move { cursor: pointer; }
   .surf-say { top: calc(58px + env(safe-area-inset-top)); gap: 8px; }
   .surf-card { padding: 10px 12px; }
   .surf-move-text { font-size: 1.3em; }
-  .surf-again { right: -6px; bottom: -8px; }
   .surf-card .il { font-size: 1.45em; }
   .surf-levels { grid-template-columns: 1fr; }
   /* a phone held upright: the picture across the card's top, her words under it; the card stops well above the board */
   .surf-card.has-pic { flex-direction: column; align-items: stretch; gap: 9px; width: min(351px, calc(100vw - 24px)); padding: 8px 8px 10px; }
   .surf-pic { align-self: center; width: min(100%, 270px); aspect-ratio: 7 / 3; transform: none; box-shadow: none; border-radius: 11px; }
-  .surf-card.has-pic .surf-words { padding: 0 4px; }
   @keyframes surf-frame-in { from { opacity: 0; transform: translateY(-10px) scale(0.96); } }
 }
 /* On phones the answers share a row. The instructor and the pad keep their own space. */
@@ -176,7 +173,7 @@ button.surf-move { cursor: pointer; }
   .surf-card .il { padding: 0; font-size: 19px; }
   .surf-card .il:not(.plain) { column-gap: 0.34em; row-gap: 3px; line-height: 1.1; }
   .surf-card .lt { font-size: 12px; }
-  .surf-card .nat { margin-top: 4px; padding: 4px 13px 0 0; font-size: 14px; line-height: 1.2; }
+  .surf-card .nat { margin-top: 4px; padding: 4px 0 0; font-size: 14px; line-height: 1.2; }
   .surf-balance { margin-top: 5px; }
   .surf-move { min-height: 40px; padding: 6px 14px; }
   .surf-move-text { font-size: 20px; }

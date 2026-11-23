@@ -262,7 +262,7 @@ export class BilliardsMode implements GameMode {
     const options = this.validBalls().flatMap(({ id }) => POCKET_IDS.map((pocket) => callLine({ ball: id, pocket }, true)));
     const byKey = new Map(options.map((option) => [option.key, option]));
     this.setPhase("call");
-    ui({ available: this.validBalls().map(({ id }) => id) });
+    ui({ available: this.validBalls().map(({ id }) => id), callOptions: options });
     this.table!.markCall(round.balls, {}, true);
     const option = await this.dialogue.expectLines(options, {
       phrases: options.map(({ sentence }) => sentence.en),

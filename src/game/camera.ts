@@ -38,6 +38,18 @@ const verticalFov = (halfHorizontal: number, aspect: number) => radToDeg(2 * Mat
 const wideFollowFov = (aspect: number) => aspect > 1.9 ? clamp(verticalFov(40, aspect), 38, 55) : 55;
 
 const JOLT_TIME = 0.42;
+const TAXI_YAWS = [0, 20, -20, 35, -35].map(degToRad);
+const TAXI_HOLD_METRES = 6;
+const TAXI_BLEND_SECONDS = 0.4;
+
+type TaxiSubject = {
+  position: THREE.Vector3;
+  heading(): number;
+  width: number;
+  length: number;
+  height: number;
+};
+type Sightline = (from: THREE.Vector3, to: THREE.Vector3) => boolean;
 
 export class CameraRig {
   cam: THREE.PerspectiveCamera;
@@ -51,6 +63,16 @@ export class CameraRig {
   target = new THREE.Vector3();
   private curPos = new THREE.Vector3();
   private curLook = new THREE.Vector3();
+  private taxiShot: {
+    subject: TaxiSubject;
+    clear: Sightline;
+    offset: number;
+    distance: number;
+    elapsed: number;
+    nextCheck: number;
+    last: THREE.Vector3;
+  } | null = null;
+  taxiSnapRays = 0;
   private manualT = 0;
   interiorBounds = { w: 16, d: 12 };
   talk: { pos: THREE.Vector3; look: THREE.Vector3 } | null = null;
@@ -123,6 +145,7 @@ export class CameraRig {
   }
 
   drag(dx: number, dy: number) {
+    this.clearTaxiShot(true);
     this.yaw -= dx * 0.005;
     this.manualTurn -= dx * 0.005;
     this.pitch = THREE.MathUtils.clamp(this.pitch + dy * 0.003, 0.12, 1.2);
@@ -130,6 +153,7 @@ export class CameraRig {
     this.yawVel = 0;
   }
   zoom(delta: number) {
+    this.clearTaxiShot(true);
     this.dist = THREE.MathUtils.clamp(this.dist * (1 + delta * 0.001), 5, 22);
   }
   snap() {
@@ -143,6 +167,97 @@ export class CameraRig {
     }
     this.blendT = 0;
     this.lastMode = this.mode;
+  }
+
+  /** Pick a view under the pickup/retry fade, with at most five positions and four rays each. */
+  snapTaxi(subject: TaxiSubject, clear: Sightline) {
+    this.mode = this.lastMode = "follow";
+    this.blendT = this.manualT = this.yawVel = 0;
+    this.slideYaw = this.standYaw = null;
+    this.taxiSnapRays = 0;
+    const points = this.taxiSightPoints(subject);
+    const candidate = new THREE.Vector3();
+    let offset = 0;
+    let best = -1;
+    for (const yaw of TAXI_YAWS) {
+      this.taxiPosition(subject, yaw, 0, candidate);
+      const visible = points.filter((point) => {
+        this.taxiSnapRays++;
+        return clear(candidate, point);
+      }).length;
+      if (visible > best) {
+        best = visible;
+        offset = yaw;
+      }
+      if (visible === points.length) break;
+    }
+    this.taxiShot = { subject, clear, offset, distance: 0, elapsed: 0, nextCheck: 0, last: subject.position.clone() };
+    this.placeTaxiShot(subject, offset, 0);
+    this.cam.position.copy(this.curPos);
+    this.cam.lookAt(this.curLook);
+    this.cam.updateMatrixWorld();
+  }
+
+  clearTaxiShot(blend = false) {
+    if (!this.taxiShot) return;
+    this.taxiShot = null;
+    this.lastKey = "";
+    this.blendT = blend ? TAXI_BLEND_SECONDS : 0;
+  }
+
+  private taxiSightPoints({ position: p, heading, width, height, length }: TaxiSubject) {
+    const h = heading(), forwardX = Math.sin(h), forwardZ = Math.cos(h);
+    const rear = -length * 0.5, side = width * 0.5;
+    return [
+      new THREE.Vector3(p.x, p.y + height, p.z),
+      new THREE.Vector3(p.x + forwardX * rear + forwardZ * side, p.y + height * 0.5, p.z + forwardZ * rear - forwardX * side),
+      new THREE.Vector3(p.x + forwardX * rear - forwardZ * side, p.y + height * 0.5, p.z + forwardZ * rear + forwardX * side),
+      new THREE.Vector3(p.x + forwardX * 6, p.y + 0.2, p.z + forwardZ * 6),
+    ];
+  }
+
+  private taxiPosition({ position, heading }: TaxiSubject, offset: number, blend: number, out: THREE.Vector3) {
+    const yaw = heading() + offset * (1 - blend);
+    const arm = this.dist * this.followScale;
+    const back = THREE.MathUtils.lerp(7, Math.cos(this.pitch) * arm, blend);
+    const up = THREE.MathUtils.lerp(3.5, 1.35 + Math.sin(this.pitch) * arm, blend);
+    return out.set(position.x - Math.sin(yaw) * back, position.y + up, position.z - Math.cos(yaw) * back);
+  }
+
+  private placeTaxiShot(subject: TaxiSubject, offset: number, blend: number) {
+    const h = subject.heading();
+    const p = subject.position;
+    this.yaw = h + offset * (1 - blend);
+    this.taxiPosition(subject, offset, blend, this.curPos);
+    const ahead = THREE.MathUtils.lerp(2.4, smoothstep(0.6, 7.4, this.motion.speed) * 2.4, blend);
+    this.ahead.set(Math.sin(h) * ahead, 0, Math.cos(h) * ahead);
+    this.curLook.set(p.x + this.ahead.x, p.y + THREE.MathUtils.lerp(1.15, 1.45, blend), p.z + this.ahead.z);
+    this.chest.copy(p).y += 1.35;
+  }
+
+  private updateTaxiShot(dt: number) {
+    const shot = this.taxiShot!;
+    const { subject, clear, offset, last } = shot;
+    shot.distance += Math.hypot(subject.position.x - last.x, subject.position.z - last.z);
+    last.copy(subject.position);
+    shot.nextCheck -= dt;
+    if (shot.distance >= TAXI_HOLD_METRES && (shot.elapsed > 0 || shot.nextCheck <= 0)) {
+      const points = this.taxiSightPoints(subject);
+      const clearAt = (blend: number) => {
+        const from = this.taxiPosition(subject, offset, blend, this.v1);
+        return points.every((point) => clear(from, point));
+      };
+      shot.nextCheck = 0.2;
+      const next = Math.min(TAXI_BLEND_SECONDS, shot.elapsed + dt);
+      if ((shot.elapsed > 0 || clearAt(1)) && clearAt(smoothstep(0, TAXI_BLEND_SECONDS, next))) shot.elapsed = next;
+    }
+    this.placeTaxiShot(subject, offset, smoothstep(0, TAXI_BLEND_SECONDS, shot.elapsed));
+    if (shot.elapsed >= TAXI_BLEND_SECONDS) {
+      this.armP = this.wantP = this.pitch;
+      this.armL = this.wantL = this.dist * this.followScale;
+      this.armPv = this.armLv = 0;
+      this.clearTaxiShot(true);
+    }
   }
 
   /** In "stage" mode: there at once (the first frame, after a fade). */
@@ -329,7 +444,10 @@ export class CameraRig {
     if (this.mode !== this.lastMode) { this.blendT = this.mode === "follow" ? 0.8 : 0; this.lastMode = this.mode; }
     this.blendT = Math.max(0, this.blendT - dt);
     const m = this.motion;
-    if (this.mode === "follow") {
+    if (this.taxiShot && (this.mode !== "follow" || this.dragging)) this.clearTaxiShot(true);
+    const taxiShot = this.taxiShot;
+    if (taxiShot) this.updateTaxiShot(dt);
+    else if (this.mode === "follow") {
       // (on the move: the time since they set off, or since they last turned sharply: the swing waits a moment)
       const on = m.speed > 0.8 || this.portraitHelm;
       const turning = dt > 0 && Math.abs(angleDiff(m.dir, this.lastDir)) / dt > 3.5;
@@ -391,7 +509,7 @@ export class CameraRig {
       this.yawVel = 0;
       this.ahead.set(0, 0, 0);
     }
-    if (this.mode === "follow") {
+    if (!taxiShot && this.mode === "follow") {
       const pos = this.placeFollow(dt, false);
       if (this.blendT > 0) {
         // gliding over from a conversation's shot: eased, never through anything
@@ -406,11 +524,11 @@ export class CameraRig {
         this.curPos.copy(pos);
         this.curLook.copy(this.look);
       }
-    } else if (this.mode === "stage" && this.stage) {
+    } else if (!taxiShot && this.mode === "stage" && this.stage) {
       const k = 1 - Math.exp(-this.stage.rate * dt);
       this.curPos.lerp(this.stage.pos, k);
       this.curLook.lerp(this.stage.look, k);
-    } else {
+    } else if (!taxiShot) {
       const k = this.mode === "talk" ? 3.5 : this.blendT > 0 ? 4 : 7;
       const pos = this.desiredPos(), look = this.desiredLook();
       if (this.mode === "interior") this.curLook.lerp(this.interiorLook(), Math.min(1, dt * k));

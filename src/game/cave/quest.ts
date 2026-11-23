@@ -58,6 +58,13 @@ function starters(): P.Phrase[] {
   return out;
 }
 
+interface GlyphOpening {
+  timer?: ReturnType<typeof setTimeout>;
+  complete?: () => void;
+  deadline: number;
+  playback?: Promise<boolean>;
+}
+
 export class CaveQuest {
   /** Each stone's phrase (none until the clip list is in). */
   private phrases = new Map<string, P.Phrase>();
@@ -70,6 +77,7 @@ export class CaveQuest {
   private cardT = 0;
   private attempt: ReturnType<typeof createSpeechAttempt> | null = null;
   private alive = true;
+  private glyphOpening: GlyphOpening | null = null;
   /** Where the listener is, for the stone speaking now. */
   private ear = { x: 0, z: 0, yaw: 0 };
   /** The stones' own lines (x04's hint groups), by id, once its file is in. */
@@ -184,6 +192,11 @@ export class CaveQuest {
 
   dispose() {
     this.alive = false;
+    if (this.glyphOpening) {
+      clearTimeout(this.glyphOpening.timer);
+      this.glyphOpening = null;
+      audio.stop();
+    }
     this.attempt?.dispose();
     this.attempt = null;
     audio.stopCall();
@@ -296,26 +309,48 @@ export class CaveQuest {
     audio.stopCall(); this.callingId = null; this.view.setCalling(null);
     const seed = [...id].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) >>> 0, 7) + save().lit.length * 977 + [...phrase.en].reduce((a, ch) => (a * 33 + ch.charCodeAt(0)) >>> 0, 5);
     const { options, answer } = P.meaningChoices(phrase, this.all.filter((q) => q.en !== phrase.en), rand(seed));
+    this.glyphOpening = { deadline: 0 };
     useStore.getState().setHud({ prompt: null, glyph: { id, text: phrase.en, lt: phrase.lt, s: phrase.s, options, answer, wrong: [], shown: false, solved: false, mic: speechSupported() ? "off" : "unsupported", heard: "" } });
-    this.say();
+    void this.playGlyph(phrase.en);
   }
   private patch(p: Partial<GlyphQuiz>) { const g = useStore.getState().hud.glyph; if (g) useStore.getState().setHud({ glyph: { ...g, ...p } }); }
   /** The stone says it again. */
   say() {
-    const g = useStore.getState().hud.glyph;
-    if (!g) return;
+    const g = useStore.getState().hud.glyph, opening = this.glyphOpening;
+    if (!g || !opening) return;
+    clearTimeout(opening.timer);
+    const playback = this.playGlyph(g.text, g.solved);
+    if (!g.solved) return;
+    opening.playback = playback;
+    void playback.then(() => {
+      if (this.glyphOpening !== opening || opening.playback !== playback) return;
+      this.closeAfter(opening, Math.max(800, opening.deadline - performance.now()));
+    });
+  }
+
+  private playGlyph(text: string, optional = false) {
     this.stopMic();
-    void audio.play(this.voice, 1, g.text, { male: this.voice.endsWith("_m") });
+    return audio.play(this.voice, 1, text, { male: this.voice.endsWith("_m"), optional });
+  }
+
+  private closeAfter(opening: GlyphOpening, ms: number) {
+    clearTimeout(opening.timer);
+    opening.timer = setTimeout(() => {
+      if (this.glyphOpening === opening) this.close();
+    }, ms);
   }
   showWords() { this.patch({ shown: true }); }
   /** A meaning picked. */
   pick(i: number) {
-    const g = useStore.getState().hud.glyph;
-    if (!g || g.solved) return;
+    const g = useStore.getState().hud.glyph, opening = this.glyphOpening;
+    if (!g || g.solved || !opening) return;
     if (i === g.answer) { this.solve(); return; }
     audio.sfx("error");
     this.patch({ wrong: [...g.wrong, i], shown: true });
-    setTimeout(() => { if (this.alive && useStore.getState().hud.glyph?.id === g.id && !useStore.getState().hud.glyph?.solved) this.say(); }, 500);
+    clearTimeout(opening.timer);
+    opening.timer = setTimeout(() => {
+      if (this.glyphOpening === opening && !useStore.getState().hud.glyph?.solved) void this.playGlyph(g.text);
+    }, 500);
   }
   /** Saying it back: the microphone listens for the stone's phrase. */
   listen() {
@@ -345,16 +380,20 @@ export class CaveQuest {
   private stopMic() { if (this.attempt?.running) this.attempt.stop(); }
   /** The card is put away (Esc, the cross, a tap beside it). */
   close() {
+    const opening = this.glyphOpening;
+    this.glyphOpening = null;
+    clearTimeout(opening?.timer);
     this.attempt?.dispose(); this.attempt = null;
     audio.stop();
     useStore.getState().setHud({ glyph: null });
     this.nextCall = 1.6;
+    opening?.complete?.();
   }
 
   /** The phrase was understood: the glyph lights, and whatever that opens, opens. */
   private solve() {
-    const g = useStore.getState().hud.glyph;
-    if (!g || g.solved) return;
+    const g = useStore.getState().hud.glyph, opening = this.glyphOpening;
+    if (!g || g.solved || !opening) return;
     this.attempt?.dispose(); this.attempt = null;
     this.patch({ solved: true, shown: true, mic: speechSupported() ? "off" : "unsupported" });
     const stone = P.CHAMBERS.flatMap((c) => c.stones).find((q) => q.id === g.id)!, ci = P.CHAMBERS.findIndex((c) => c.stones.includes(stone));
@@ -375,11 +414,12 @@ export class CaveQuest {
     this.view.setStone(g.id, true);
     this.view.burst(stone.x, 1.5, stone.z, "#ffd76a");
     audio.chime("stone");
-    setTimeout(() => {
-      if (!this.alive) return;
-      if (useStore.getState().hud.glyph?.id === g.id) this.close();
+    const delay = line?.s ? 4200 : 1700;
+    opening.deadline = performance.now() + delay;
+    opening.complete = () => {
       if (replay) this.afterAgain(); else this.after(ci);
-    }, line?.s ? 4200 : 1700);
+    };
+    this.closeAfter(opening, delay);
   }
 
   /** After a stone was understood once the stones speak again: how many lines are heard; and when every one is, the

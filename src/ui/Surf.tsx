@@ -13,6 +13,8 @@ import { speechSupported } from "../convo/speech";
 import { game } from "../game/gameRef";
 import { Interlinear } from "./Interlinear";
 import { Icon } from "./icons";
+import { FeedbackBadge } from "./kit/FeedbackBadge";
+import { ScoreCard, ScoreNumber } from "./kit/ScoreCard";
 import { SitIcon } from "./SitIcon";
 import { SURF } from "../content/surf";
 import { L, Lx, TL } from "./i18n";
@@ -256,7 +258,13 @@ export function SurfOverlay({ toolbar }: { toolbar: ReactNode }) {
           <div className={"surf-card" + (pic ? " has-pic" : "") + (s.mark ? " " + s.mark : "") + (s.asked ? " asked" : "")} lang={TL}>
             {pic && <Picture src={pic} />}
             <div className="surf-words">
-              <Line line={s.line} lt={lt} />
+              <div className="surf-cue-line">
+                <div className="surf-feedback" aria-live="polite" lang={EDITION.helper}>
+                  {s.mark === "ok" && <FeedbackBadge correct label={L("Teisingai!")} />}
+                  {s.mark === "no" && <FeedbackBadge correct={false} label={L("Pabandyk dar kartą")} />}
+                </div>
+                <Line line={s.line} lt={lt} />
+              </div>
               {riding && <div className="surf-balance" role="meter" aria-label={L("Pusiausvyra")} aria-valuemin={0} aria-valuemax={1} aria-valuenow={s.balance}><i style={{ width: `${Math.round(s.balance * 100)}%` }} /></div>}
             </div>
             <button className="surf-again" onClick={() => game?.surfRepeat()} title={L("Pakartoti")} aria-label={L("Pakartoti")} lang={EDITION.helper}><Icon name="speaker" size={19} /></button>
@@ -281,23 +289,18 @@ export function SurfOverlay({ toolbar }: { toolbar: ReactNode }) {
       {s.said && !s.choice && !s.over && <div className="surf-said" lang={TL}><Icon name="check" size={18} strokeWidth={2.6} /> <span className="surf-said-words"><span>{s.said.s.en}</span>{sayLt && s.said.s.nat && <small lang={EDITION.helper}>{s.said.s.nat}</small>}</span></div>}
       {touch && !s.over && <SurfPad todo={s.todo} />}
       {s.over && (
-        <div className="surf-pick">
-          <div className="surf-pick-card">
-            <h2>{SURF && <SitIcon id={SURF.situation} size="1em" />} {L("Pamoka baigta")}</h2>
-            <div className="surf-result">
-              <div><b>{sc.waves}</b><span>{L("Bangos")}</span></div>
-              <div><b>{sc.seconds}</b><span>{L("Sekundės ant bangos")}</span></div>
-              <div><b>{sc.followed}/{sc.asked}</b><span>{L("Komandos laiku")}</span></div>
-            </div>
-            <p className="surf-best">{L("Iš viso: bangų – {waves}, sekundžių ant bangos – {seconds}", { waves: s.best.waves + sc.waves, seconds: s.best.seconds + sc.seconds })}</p>
-            <p>{L("Frazės, kurias girdėjai, jau tavo kortelėse.")}</p>
-            <div className="surf-levels">
-              <button className="surf-level" onClick={() => game?.surfAgain("beginner")}><b>{L("Dar viena pamoka")}</b><span>{L("Pradedantiems")}</span></button>
-              <button className="surf-level adv" onClick={() => game?.surfAgain("advanced")}><b>{L("Dar viena pamoka")}</b><span>{L("Pažengusiems")}</span></button>
-            </div>
-            <button className="surf-later" onClick={() => game?.surfStop()}>{L("Į krantą")}</button>
-          </div>
-        </div>
+        <ScoreCard title={L("Pamoka baigta")} rows={[
+          { label: L("Bangos"), value: <ScoreNumber value={sc.waves} /> },
+          { label: L("Sekundės ant bangos"), value: <ScoreNumber value={sc.seconds} /> },
+          { label: L("Komandos laiku"), value: <><ScoreNumber value={sc.followed} />/{sc.asked}</> },
+        ]} actions={<>
+          <button className="btn surf-level" onClick={() => game?.surfAgain("beginner")}><b>{L("Dar viena pamoka")}</b><span>{L("Pradedantiems")}</span></button>
+          <button className="btn surf-level adv" onClick={() => game?.surfAgain("advanced")}><b>{L("Dar viena pamoka")}</b><span>{L("Pažengusiems")}</span></button>
+          <button className="btn soft surf-later" onClick={() => game?.surfStop()}>{L("Į krantą")}</button>
+        </>}>
+          <p className="surf-best">{L("Iš viso: bangų – {waves}, sekundžių ant bangos – {seconds}", { waves: s.best.waves + sc.waves, seconds: s.best.seconds + sc.seconds })}</p>
+          <p>{L("Frazės, kurias girdėjai, jau tavo kortelėse.")}</p>
+        </ScoreCard>
       )}
       {!touch && !s.over && (
         <div className="help-strip surf-keys">

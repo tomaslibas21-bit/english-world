@@ -77,9 +77,13 @@ export function GlyphCard() {
     if (!g) return;
     const key = (e: KeyboardEvent) => {
       if (e.key === "Escape") { cave?.close(); return; }
-      if (g.solved) return;
-      if (["1", "2", "3"].includes(e.key) && Number(e.key) <= g.options.length) { e.preventDefault(); cave?.pick(Number(e.key) - 1); }
-      else if (e.key.toLowerCase() === "r" || e.key === " ") { e.preventDefault(); cave?.say(); }
+      if (e.key.toLowerCase() === "r" || (!g.solved && e.key === " ")) {
+        e.preventDefault();
+        if (!e.repeat) cave?.say();
+      } else if (!g.solved && ["1", "2", "3"].includes(e.key) && Number(e.key) <= g.options.length) {
+        e.preventDefault();
+        cave?.pick(Number(e.key) - 1);
+      }
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);

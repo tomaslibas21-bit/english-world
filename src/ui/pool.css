@@ -24,12 +24,17 @@
 .pool-cue, .pool-aside { padding: 6px 11px; }
 .pool-aside { font-size: 0.86em; }
 
-.pool-help {
+.pool-help-stack {
   position: absolute;
   inset: auto 0 calc(24px + env(safe-area-inset-bottom));
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+}
+.pool-help-slot { display: grid; place-items: end center; min-height: 42px; }
+.pool-help {
   width: max-content;
   max-width: min(88vw, 390px);
-  margin-inline: auto;
   padding: 9px 13px;
   background: var(--panel-solid);
   color: var(--ink);
@@ -39,10 +44,10 @@
   text-align: center;
   font-size: 0.9rem;
   font-weight: 700;
-  animation: pool-help-in 0.24s ease-out;
 }
 
-@keyframes pool-help-in { from { opacity: 0.88; } }
-@media (prefers-reduced-motion: reduce) { .pool-help { animation: none; } }
-.pool-help-touch { bottom: calc(112px + env(safe-area-inset-bottom)); }
+.pool-help-touch { bottom: calc(112px + env(safe-area-inset-bottom)); gap: 0; }
+.pool-help-touch .pool-help-slot:not(:empty) { margin-top: 4px; }
+.pool-help-touch .pool-help-slot:empty { min-height: 0; }
 .pool-hit { pointer-events: auto; }
+.pool-hit[data-can-hit="true"] { outline: 3px solid #ffd166; outline-offset: 2px; }

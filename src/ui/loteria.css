@@ -3,6 +3,7 @@
   --lot-ink: #382620;
   --lot-red: #933744;
   --lot-gold: #f4c270;
+  --lot-winning: inset 0 0 0 3px var(--lot-gold), inset 0 0 0 4px #523320;
   position: fixed;
   inset: 0;
   pointer-events: none;
@@ -132,6 +133,15 @@
 .loteria-cell[data-corner="true"] .loteria-tile { box-shadow: inset 0 0 0 2px #be5660; }
 .loteria-cell[data-glow="true"] .loteria-tile { box-shadow: inset 0 0 0 3px #e6aa34, 0 0 0 2px #fde084; background: #fff3bf; }
 .loteria-cell[aria-pressed="true"] .loteria-tile { filter: brightness(.82) saturate(.75); }
+.loteria-cell[data-winning="true"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  box-shadow: var(--lot-winning);
+  pointer-events: none;
+}
 .loteria-tile {
   width: 100%;
   height: 100%;
@@ -155,12 +165,11 @@
   background: var(--lot-red);
   color: #fff7e3;
   border-radius: 2px;
-  font-size: clamp(9px, 1.05vw, 14px);
-  line-height: 1.05;
-  text-transform: uppercase;
-  overflow-wrap: anywhere;
+  font-size: clamp(13px, 1.05vw, 14px);
+  line-height: 1.15;
+  overflow-wrap: normal;
 }
-.loteria-tile small { font-size: clamp(9px, 1vw, 13px); line-height: 1.05; overflow-wrap: anywhere; padding-bottom: 1px; }
+.loteria-tile small { font-size: clamp(12px, 1vw, 13px); line-height: 1.15; overflow-wrap: normal; }
 .loteria-bean {
   position: absolute;
   z-index: 2;
@@ -205,8 +214,7 @@
   padding: 4px 8px;
   flex: 0 0 auto;
 }
-.loteria-shout[data-ready="true"] { box-shadow: 0 0 0 2px var(--lot-gold); animation: loteria-shout 1.65s ease-in-out infinite; }
-@keyframes loteria-shout { 50% { box-shadow: 0 0 0 5px #f4c270b0; } }
+.loteria-shout[data-ready="true"] { box-shadow: var(--lot-winning); }
 .loteria-shout:disabled { opacity: .55; }
 .loteria-keys { display: flex; gap: 5px; }
 .loteria-keys:empty { display: none; }
@@ -268,21 +276,20 @@
   .loteria-board { gap: 3px; padding: 3px; border-radius: 6px; }
   .loteria-tile { padding: 2px; }
   .loteria-number { font-size: 9px; left: 2px; top: 1px; }
-  .loteria-tile strong, .loteria-tile small { font-size: clamp(9px, 2.6vw, 11px); }
   .loteria-history { font-size: 11px; }
   .loteria-play .loteria-shout { font-size: 13px; min-height: 36px; }
   .loteria-score .mode-score { align-items: end; justify-items: center; padding: 10px; }
   .loteria-score-scene { inset: 3% 5% 44%; }
 }
 @media (max-width: 740px) and (max-height: 710px) {
-  .loteria-play { grid-template-rows: minmax(87px, 1fr) auto minmax(0, 53%); }
+  .loteria-play { grid-template-rows: minmax(87px, 1fr) auto minmax(0, 59%); }
   .loteria-current { width: 65px; height: 80px; }
   .loteria-board-panel { gap: 2px; padding: 5px; }
   .loteria-help { min-height: 24px; }
+  .loteria-board .loteria-tile { padding: 1px; gap: 0; }
+  .loteria-board .loteria-tile strong { padding: 0; }
   .loteria-board .loteria-art { container-type: size; }
   .loteria-board .loteria-icon { font-size: 19px; font-size: min(19px, 88cqh); }
-  .loteria-board .loteria-tile strong { font-size: 9.5px; }
-  .loteria-board .loteria-tile small { font-size: 10px; line-height: 1.08; padding-bottom: 0; text-wrap: balance; }
 }
 @media (orientation: landscape) and (max-height: 560px) {
   .loteria-play {
@@ -314,8 +321,6 @@
   .loteria-board .loteria-tile { padding: 1px; }
   .loteria-board .loteria-art { container-type: size; }
   .loteria-board .loteria-icon { font-size: min(32px, 88cqh); }
-  .loteria-board .loteria-tile strong { font-size: 11px; }
-  .loteria-board .loteria-tile small { font-size: 10px; }
   .loteria-footer, .loteria-history { align-items: center; }
   .loteria-history { display: flex; gap: 4px; font-size: 11px; }
   .loteria-history > span { flex-shrink: 0; }
@@ -325,6 +330,5 @@
   .loteria-score .mode-score-card { width: min(50%, 440px); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .loteria-shout[data-ready="true"] { animation: none; }
   .loteria-bounce { animation: loteria-bounce 180ms linear both; }
 }

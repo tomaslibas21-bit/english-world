@@ -1,5 +1,5 @@
+import { useRef, type ReactNode } from "react";
 import { SAY_IT_UI } from "../../content/say-it";
-import { useRef, type CSSProperties, type ReactNode } from "react";
 import { Confetti } from "../Confetti";
 import { Stars } from "../icons";
 import { HL, L } from "../i18n";
@@ -12,18 +12,16 @@ interface ScoreCardProps {
   ratio?: number;
   rows: { label: string; value: ReactNode }[];
   phrases?: { label: string; count: number };
-  again: { label: string; run(): void };
-  done: { label: string; run(): void };
   children?: ReactNode;
   /** The learner won: a burst of confetti from the title. */
   celebrate?: boolean;
 }
 
-/** Keep the final value available to assistive technology throughout the visual count. */
+type ScoreAction = { label: string; run(): void };
+type ScoreActions = { actions: ReactNode; again?: never; done?: never }
+  | { actions?: undefined; again: ScoreAction; done: ScoreAction };
 export function ScoreNumber({ value }: { value: number }) {
-  return <span className="mode-score-number" style={{ "--score-total": value } as CSSProperties}>
-    <span>{value}</span><i aria-hidden="true" />
-  </span>;
+  return <span className="mode-score-number">{value}</span>;
 }
 
 function ScoreStars({ ratio }: { ratio: number }) {
@@ -45,7 +43,7 @@ function ScoreStars({ ratio }: { ratio: number }) {
   </div>;
 }
 
-export function ScoreCard({ title, score, ratio, rows, said = 0, phrases, again, done, children, celebrate }: ScoreCardProps) {
+export function ScoreCard({ title, score, ratio, rows, said = 0, phrases, actions, again, done, children, celebrate }: ScoreCardProps & ScoreActions) {
   const heading = useRef<HTMLHeadingElement>(null);
   return (
     <div className="mode-score" lang={HL}>
@@ -61,8 +59,10 @@ export function ScoreCard({ title, score, ratio, rows, said = 0, phrases, again,
         </dl>
         {children}
         <div className="mode-score-actions">
-          <button className="btn" onClick={again.run}>{again.label}</button>
-          <button className="btn soft" onClick={done.run}>{done.label}</button>
+          {again && done ? <>
+            <button className="btn" onClick={again.run}>{again.label}</button>
+            <button className="btn soft" onClick={done.run}>{done.label}</button>
+          </> : actions}
         </div>
       </section>
     </div>

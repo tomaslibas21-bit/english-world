@@ -220,6 +220,7 @@ class BaristaMode implements GameMode {
       step: shift.step, built: { ...shift.built },
       highlight: fix?.chip ?? (guided && shift.help === 0 ? shift.currentPiece : null),
       repair: !!fix,
+      correctionSelected: fix?.selected ?? null,
       tray: guided || shift.step === "build" || shift.step === "correction",
       ready: (guided && run.guidedReady) || (shift.step === "build" && !run.replaying),
     });

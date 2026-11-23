@@ -176,7 +176,10 @@ try {
             return rest.some((rect) => Math.abs(rect.top - first.top) > 1) ? [{ word, lang: label.lang }] : [];
           });
         });
-        const fits = box.height >= 44 && box.width >= 44 && item.scrollWidth <= item.clientWidth + 1
+        const typeFits = parseFloat(getComputedStyle(item).fontSize) >= 13
+          && (!item.querySelector("small") || parseFloat(getComputedStyle(item.querySelector("small")).fontSize) >= 12);
+        const hittable = item.contains(document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2));
+        const fits = typeFits && hittable && box.height >= 44 && box.width >= 44 && item.scrollWidth <= item.clientWidth + 1
           && box.left >= bounds.left && box.right <= bounds.right && box.top >= bounds.top && box.bottom <= bounds.bottom
           && getComputedStyle(item).transform === "none" && !brokenWords.length;
         return fits ? [] : [{ chip: item.dataset.chip, brokenWords, box: box.toJSON(), scroll: item.scrollWidth, client: item.clientWidth }];
@@ -234,6 +237,21 @@ try {
       };
     });
     assert(staged.behind && staged.camera && staged.mia && staged.customerZ > 3, JSON.stringify(staged));
+    if (phone) {
+      const intro = await page.locator('.barista-cue[data-line="bs_intro"]').evaluate((cue) => {
+        const { game } = window.__ew;
+        const { mia } = game.modes.get("barista").run;
+        const p = mia.ch.root.position.clone().setY(mia.ch.height * 0.91).project(game.rig.cam);
+        const y = (1 - p.y) * innerHeight / 2;
+        const x = (1 + p.x) * innerWidth / 2;
+        const box = cue.getBoundingClientRect();
+        const panel = cue.querySelector(".barista-cue-text");
+        return { width: box.width, bottom: innerHeight - box.bottom, visible: x > 0 && x < innerWidth && y > 0 && y < box.top,
+          textFits: panel.scrollWidth <= panel.clientWidth + 1 && panel.scrollHeight <= panel.clientHeight + 1 };
+      });
+      assert(Math.abs(intro.width - Math.min(width * 0.94, 440)) <= 1 && Math.abs(intro.bottom - 12) <= 1
+        && intro.visible && intro.textFits, JSON.stringify(intro));
+    }
     await step(20);
     assert(await page.evaluate((z) => window.__ew.game.modes.get("barista").run.customer.ch.root.position.z < z, staged.customerZ),
       "the customer walks up on stepped frames");
@@ -362,8 +380,29 @@ try {
         await wait(() => heard("bs_c_sorry"), "customer apologizes for the wrong size");
         await wait(async () => (await state())?.step === "build" && await chip("size", "medium").evaluate((el) => el.classList.contains("barista-chip-glow")), "recorded size repeats and the correction glows");
         assert.equal((await state()).wrong, 1);
+        const sizeMarker = page.locator('[data-row="size"] .barista-repair-mark');
+        assert.equal((await sizeMarker.textContent()).trim(), "+");
+        assert.equal(await chip("size", "medium").getAttribute("aria-pressed"), "false");
+        assert.equal(await chip("size", "medium").getAttribute("data-repair"), "add");
+        assert.equal(await chip("size", "medium").evaluate((el) => getComputedStyle(el).outlineWidth), "2px");
         await shot("wrong");
         await press(chip("size", "medium"));
+        assert.equal(await page.locator("[data-repair]").count(), 0, "one correct tap clears the add marker");
+        const extra = chip("extras", "iced");
+        const selectedFill = async () => extra.evaluate((el) => getComputedStyle(el).backgroundColor);
+        await press(extra);
+        const fill = await selectedFill();
+        await press(give);
+        await wait(async () => (await state())?.wrong === 2 && (await state())?.step === "build",
+          "the requested order is repeated and the extra can be removed");
+        assert.equal((await page.locator('[data-row="extras"] .barista-repair-mark').textContent()).trim(), "−");
+        assert.equal(await extra.getAttribute("data-repair"), "remove");
+        assert.equal(await extra.getAttribute("aria-pressed"), "true");
+        assert.equal(await selectedFill(), fill, "removal cue preserves the selected fill");
+        assert.equal(await extra.evaluate((el) => getComputedStyle(el).outlineWidth), "2px");
+        await press(extra);
+        assert.equal(await extra.getAttribute("aria-pressed"), "false");
+        assert.equal(await page.locator("[data-repair]").count(), 0, "one correct tap clears the remove marker");
         await step();
         beforeHandover = await cameraState();
       }

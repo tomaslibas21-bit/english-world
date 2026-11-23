@@ -141,9 +141,33 @@ try {
         if (power) assert(table.right < power.left && (beside ? power.right <= panel.left && !intersects(power, exit) : power.top >= header.bottom && power.bottom <= panel.top), `${label}: power bar clears table and panels`);
       }
 
+      const checkBallPicker = async () => {
+        const buttons = await page.locator(".bl-ball-option").evaluateAll((elements) => elements.map((el) => {
+          const { width, height } = el.getBoundingClientRect();
+          return { id: Number(el.dataset.ball), width, height, numeral: parseFloat(getComputedStyle(el.querySelector("b")).fontSize) };
+        }));
+        assert.deepEqual(buttons.map(({ id }) => id), (await state()).available.toSorted((a, b) => a - b));
+        assert(buttons.length <= 7 && buttons.every(({ width, height, numeral }) => width >= 44 && height >= 44 && numeral >= 12),
+          `${label}: available balls have 44px targets and 12px numerals ${JSON.stringify(buttons)}`);
+      };
+      const pocketCenters = () => page.evaluate(() => {
+        const { cam } = window.__ew.game.rig;
+        return [-0.495, 0.495].flatMap((x) => [-0.99, 0, 0.99].map((z) => {
+          const p = cam.position.clone().set(x, 0.84, z).project(cam);
+          return { x: (p.x + 1) * innerWidth / 2, y: (1 - p.y) * innerHeight / 2 };
+        }));
+      });
+      const checkStablePockets = async (before) => {
+        const after = await pocketCenters();
+        assert(after.every((p, i) => Math.hypot(p.x - before[i].x, p.y - before[i].y) <= 2),
+          `${label}: all six pocket centers move at most 2 CSS px across picks`);
+        await checkLayout(false);
+      };
+
       async function listen(correct, capture, beforeShot) {
         await phase("listen");
         await checkLayout(false);
+        await checkBallPicker();
         const { ai, available } = await state();
         const pocket = correct ? ai.pocket : ai.pocket === "fl" ? "nr" : "fl";
         await press(ballChip(available.includes(ai.ball) ? ai.ball : available[0]));
@@ -151,6 +175,8 @@ try {
         assert.equal((await state()).correct, correct);
         if (capture) {
           assert.equal(await page.getByText(correct ? ui.right : ui.called, { exact: true }).count(), 1);
+          assert.equal(await page.locator(`.bl-panel .kit-feedback[data-feedback="${correct ? "right" : "retry"}"] svg[width="16"]`).count(), 1);
+          assert.equal(await page.locator(".bl-panel .bl-speech").count(), 1);
           await screenshot(correct ? "04-listening-right" : "05-listening-wrong");
         }
         if (beforeShot) await beforeShot();
@@ -249,8 +275,17 @@ try {
           : { id, x: -0.34 + (i % 5) * 0.15, z: -0.71 - Math.floor(i / 5) * 0.11 }));
       };
       await arrange(own);
+      await checkLayout(false);
+      await checkBallPicker();
+      const beforePicks = await pocketCenters();
+      const row = page.locator(".bl-confirm-row");
+      const reserved = await row.boundingBox();
+      assert(reserved.height > 0 && await row.getByRole("button").count() === 0, "space is reserved before the first pick");
       await press(ballChip(own));
       await step();
+      await checkStablePockets(beforePicks);
+      assert.equal(await row.getByRole("button").count(), 0);
+
       const sidePocket = await page.evaluate(() => {
         const camera = window.__ew.game.rig.cam;
         const p = camera.position.clone().set(-0.495, 0.84, 0).project(camera);
@@ -260,12 +295,24 @@ try {
       else await page.mouse.click(sidePocket.x, sidePocket.y);
       assert.equal((await state()).selection.ball, own);
       assert.equal((await state()).selection.pocket, "ls");
-      await checkLayout(false);
+      await step();
+      await checkStablePockets(beforePicks);
+      assert.equal((await row.boundingBox()).height, reserved.height, "the wrapped call fits the reserved confirmation row");
+      assert.equal(await row.getByRole("button").count(), 1);
       if (es) {
         assert.equal(await pocketChip("ls").locator('[lang="es"]').innerText(),
           variety === "spain" ? "a la del medio, a la izquierda" : "a la de en medio, a la izquierda");
         assert.equal(await pocketChip("ls").locator(`small[lang="${ltLayer ? "lt" : "en"}"]`).count(), 1);
       }
+      const clippedChoices = await page.locator(".bl-pocket-chips .kit-gloss-compact > *").evaluateAll((labels) => labels.filter((label) => {
+        const style = getComputedStyle(label);
+        const range = document.createRange();
+        range.selectNodeContents(label);
+        const text = range.getBoundingClientRect(), button = label.closest("button").getBoundingClientRect();
+        return parseFloat(style.fontSize) < (label.matches("small") ? 12 : 13) || style.overflowWrap !== "normal"
+          || text.left < button.left || text.right > button.right || text.top < button.top || text.bottom > button.bottom;
+      }).map((label) => label.textContent));
+      assert.deepEqual(clippedChoices, [], "phrase and translation fit their pocket buttons at the type floors");
       await screenshot("03-call");
       await press(page.locator(".bl-confirm"));
       await phase("aim");

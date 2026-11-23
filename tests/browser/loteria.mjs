@@ -89,6 +89,41 @@ try {
       const shown = (selector) => page.locator(selector).first().isVisible();
       const cell = (id) => page.locator(`.loteria-cell[data-card="${id}"]`);
       const press = (target) => phone ? target.tap() : target.click();
+      const winningTiles = page.locator('.loteria-cell[data-winning="true"]');
+      const shout = page.locator(".loteria-shout");
+      const corners = [0, 3, 12, 15];
+      const noPattern = async () => {
+        assert.equal(await winningTiles.count(), 0);
+        assert.equal(await shout.getAttribute("data-ready"), "false");
+      };
+      const showPattern = async (indices) => {
+        const s = await state();
+        assert.equal(await shout.getAttribute("data-ready"), "true");
+        assert.deepEqual(await winningTiles.evaluateAll((tiles) => tiles.map((tile) => tile.dataset.card)), indices.map((i) => s.board[i]));
+        const inset = (shadow) => shadow.includes("rgb(244, 194, 112) 0px 0px 0px 3px inset")
+          && shadow.includes("rgb(82, 51, 32) 0px 0px 0px 4px inset");
+        assert((await winningTiles.evaluateAll((tiles) => tiles.map((tile) => getComputedStyle(tile, "::after").boxShadow))).every(inset));
+        assert(inset(await shout.evaluate((button) => getComputedStyle(button).boxShadow)));
+      };
+      const coverPattern = async (indices) => {
+        // Put these cards first in the fixture deck so the real calls, taps and shout need only as many turns as the pattern.
+        await page.evaluate((pattern) => {
+          const { round } = window.__ew.game.modes.get("loteria").run;
+          const first = pattern.map((index) => round.board[index]);
+          round.deck = [...first, ...round.deck.filter((card) => !first.includes(card))];
+        }, indices);
+        const { board } = await state();
+        for (const index of indices) {
+          const id = board[index];
+          await wait(async () => {
+            const s = await state();
+            return s?.phase === "waiting" && s.calls.includes(id);
+          }, `${id} is called`, 2);
+          await noPattern();
+          await press(cell(id));
+        }
+        await showPattern(indices);
+      };
       const daylight = () => page.evaluate(() => {
         const { sky, sun, hemi, scene } = window.__ew.game;
         return {
@@ -122,7 +157,15 @@ try {
               const r = cell.getBoundingClientRect();
               const art = cell.querySelector(".loteria-art").getBoundingClientRect();
               if (!contained(r) || r.width < 40 || r.height < 36 || art.height < 12) errors.push(`clipped card ${cell.dataset.card}`);
+              if (width === 390 && height === 664 && !cell.disabled
+                && (r.width < 44 || r.height < 44 || !cell.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)))) {
+                errors.push(`card hit target blocked: ${cell.dataset.card}`);
+              }
               for (const label of cell.querySelectorAll(".loteria-tile strong, .loteria-tile small")) {
+                const style = getComputedStyle(label);
+                if (parseFloat(style.fontSize) < (label.matches("small") ? 12 : 13) || style.overflowWrap !== "normal") {
+                  errors.push(`small or broken label ${cell.dataset.card}: ${label.textContent}`);
+                }
                 const text = document.createRange();
                 text.selectNodeContents(label);
                 const bounds = text.getBoundingClientRect();
@@ -198,6 +241,7 @@ try {
       await press(page.locator(".loteria-cta"));
       await wait(async () => (await state())?.phase === "waiting", "first call");
       assert.notDeepEqual(await daylight(), before, "dusk takes effect");
+      await noPattern();
 
       await wait(async () => {
         const s = await state();
@@ -240,13 +284,23 @@ try {
         }, "next revealed call", 2);
       }
 
-      assert((await state()).ready, "the shout button can claim a win");
+      const lineState = await state();
+      assert(lineState.ready, "the shout button can claim a win");
+      const lines = [
+        ...Array.from({ length: 4 }, (_, row) => Array.from({ length: 4 }, (_, col) => row * 4 + col)),
+        ...Array.from({ length: 4 }, (_, col) => Array.from({ length: 4 }, (_, row) => row * 4 + col)),
+        [0, 5, 10, 15], [3, 6, 9, 12],
+      ];
+      const winningLine = lines.find((line) => line.every((index) => lineState.covered.includes(index)));
+      assert.equal(winningLine?.length, 4);
+      await showPattern(winningLine);
       await fits();
       await shot("shout");
       if (phone) await press(page.locator(".loteria-shout"));
       else await page.keyboard.press("l");
       await wait(() => shown(".loteria-read-chip"), "Don Beto checks four cards", 2);
       assert.equal(await page.locator(".loteria-read-chip").count(), 4);
+      await noPattern();
       await fits();
       await shot("reading");
       for (let left = 4; left > 0; left--) {
@@ -261,14 +315,27 @@ try {
       assert.equal((await scoreRows.nth(2).innerText()).trim(), "1", "covered a card before it turned over");
       await step(18);
       await fits(true);
-      await page.waitForTimeout(1600); // (the numbers count up on a real clock: the picture shows where they end)
       await shot("score");
 
       await press(page.getByRole("button", { name: lt ? "Dar kartą" : "Again", exact: true }));
       await wait(async () => (await state())?.kind === "esquinas", "Again starts four corners");
       assert.equal(await page.locator('.loteria-cell[data-corner="true"]').count(), 4);
-      await wait(async () => (await state())?.phase === "waiting", "the new board starts without glow");
+      await noPattern();
+      await coverPattern(corners);
       assert.equal(await page.locator('.loteria-cell[data-glow="true"]').count(), 0);
+      await press(shout);
+      await wait(() => shown(".loteria-read-chip"), "Don Beto checks the four corners", 2);
+      await noPattern();
+      for (let left = 4; left > 0; left--) {
+        const playable = page.locator(".loteria-read-chip:enabled");
+        await wait(async () => await playable.count() === left, `${left} corners left to read`);
+        await press(playable.first());
+      }
+      await wait(() => shown(".mode-score-card"), "corners score", 2);
+      await press(page.getByRole("button", { name: lt ? "Dar kartą" : "Again", exact: true }));
+      await wait(async () => (await state())?.kind === "llena", "Again starts a full board");
+      await noPattern();
+      await coverPattern(Array.from({ length: 16 }, (_, i) => i));
       if (phone) await press(page.locator(".loteria-exit"));
       else await page.keyboard.press("Escape");
       await wait(async () => (await state()) === null, "return to the zócalo");

@@ -67,8 +67,6 @@
 .road-gap .il { justify-content: center; gap: 3px 8px; }
 .road-gap .il .en { color: #fff5df; font-size: .95rem; }
 .road-gap .il .lt { color: #eac88d; font-size: .8rem; }
-.road-feedback.correct b { color: #a2e8bc; }
-.road-feedback.wrong b { color: #f9c582; }
 .road-controls { margin: 6px auto 0; padding: 7px 10px; border-radius: 8px; font-size: .85rem; }
 .road-hint { margin: 0 4px 4px 0; padding-top: 3px; border-top: 1px solid #fff2d530; color: #f0e1c7; font-size: .8rem; }
 .road-controls { position: absolute; inset: auto auto 20px 50%; transform: translateX(-50%); white-space: nowrap; }

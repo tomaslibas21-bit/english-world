@@ -11,6 +11,7 @@
   --bl-bg: #192a25;
   --bl-line: #50675b;
   --bl-light: #e6d6bb;
+  --kit-gloss-color: var(--bl-light);
   --bl-gold: #f4ca81;
   font-family: var(--ui, system-ui);
   pointer-events: none;
@@ -77,40 +78,41 @@
 .bl-ball-option[aria-pressed=true], .bl-choice[aria-pressed=true] {
   border-color: #f8d58e; background: #4d5238; box-shadow: inset 0 0 0 1px #f8d58e94;
 }
-.bl-ball-option { border-radius: 22px; min-width: 41px; min-height: 32px; display: inline-grid; place-items: center; padding: 2px 6px; }
+.bl-ball-option { border-radius: 22px; min-width: 44px; min-height: 44px; display: inline-grid; place-items: center; padding: 2px 6px; }
 .bl-ball-option .bl-ball { width: 24px; height: 24px; }
-.bl-ball-option .bl-ball b { width: 15px; height: 15px; font-size: 9px; }
+.bl-ball-option .bl-ball b { width: 17px; height: 17px; font-size: 12px; }
 .bl-pocket-chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+.bl-choice, .bl-confirm, .bl-confirm-measure { --kit-phrase-size: 15px; --kit-translation-size: 12px; }
 .bl-choice { border-radius: 8px; min-height: 36px; padding: 3px 6px; }
 .bl-choice:disabled, .bl-ball-option:disabled, .bl-replay:disabled { opacity: 0.68; }
-.kit-gloss-compact { display: grid; justify-items: center; gap: 2px; text-align: center; }
-.kit-gloss-compact > span { font-family: var(--en, Georgia); font-size: 1rem; font-weight: 700; line-height: 1.04; }
-.kit-gloss-compact > small { color: var(--bl-light, var(--ink-soft)); font: 650 0.69rem/1.09 system-ui; }
 .bl-speech { padding: 4px 3px; }
-.bl-speech .kit-gloss-compact > span { font-size: 1.13rem; }
-.bl-speech .kit-gloss-compact > small { font-size: 0.78rem; }
-.bl-confirm {
-  display: grid; justify-items: center; gap: 3px; width: 100%; margin-top: 5px; padding: 3px 5px 5px;
+/* All candidate calls share a grid cell. Its tallest wrapped call sets the row height at this width. */
+.bl-confirm-row, .bl-confirm-sizer { display: grid; }
+.bl-confirm-row { margin-top: 5px; }
+.bl-confirm-row > *, .bl-confirm-sizer > * { grid-area: 1 / 1; }
+.bl-confirm-row > button { align-self: center; }
+.bl-confirm-measure { visibility: hidden; }
+.bl-confirm-sizer { width: 100%; }
+:is(.bl-confirm, .bl-confirm-measure) {
+  font: inherit;
+  display: grid; justify-items: center; gap: 3px; width: 100%; padding: 3px 5px 5px;
   border: 1px solid #f2cd82; border-radius: 10px; background: #edcc8d; color: #29291e; --bl-light: #463d32;
 }
-.bl-confirm > span:first-child { display: flex; align-items: center; gap: 5px; font: 780 0.72rem/1.1 system-ui; }
+.bl-confirm-label { display: flex; align-items: center; gap: 5px; font: 780 0.72rem/1.1 system-ui; }
 .bl-confirm [data-mic=listening] .ui-icon { color: #257049; }
 .bl-nudge { width: 34px; min-height: 35px; flex: none; }
 .bl-aim { display: flex; justify-content: center; align-items: center; gap: 8px; margin: 5px 0 2px; }
 .bl-aim p { max-width: 44ch; margin: 0; color: var(--bl-light); font: 630 0.8rem/1.25 system-ui; }
 .bl-key-help { color: #c3c9ba; font-size: 0.72rem; }
-.bl-correct { color: #b7e7b8; }
 .billiards .mode-score { padding-top: 56px; background: rgb(11 28 22 / 65%); }
 .billiards .mode-score-card { --bl-light: var(--ink-soft); }
 .billiards .mode-score-actions { margin-top: 10px; }
 @media (min-width: 700px) {
   .bl-stage { width: min(92%, 620px); grid-template-columns: minmax(0, 1fr) 54px; }
   .bl-pocket-chips { grid-template-columns: repeat(6, minmax(0, 1fr)); }
-  .bl-pocket-chips .kit-gloss-compact > small { font-size: 0.65rem; }
 }
 @media (max-width: 520px) {
   .bl-panel { padding-inline: 8px; }
-  .bl-choice .kit-gloss-compact > span { font-size: 0.92rem; }
   .bl-stage { grid-template-columns: minmax(0, 1fr) 43px; }
   .bl-power { width: 41px; }
 }
@@ -120,13 +122,9 @@
   .bl-instruction { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 5px; }
   .bl-instruction h2:only-child { grid-column: 1 / -1; }
   .bl-speech { padding-block: 3px; }
-  .bl-speech .kit-gloss-compact > span { font-size: 1rem; }
-  .bl-speech .kit-gloss-compact > small { font-size: 0.72rem; }
   .bl-chip-heading { margin-block: 4px 2px; }
   .bl-pocket-chips { gap: 3px; }
-  .bl-pocket-chips .bl-choice { min-height: 32px; padding: 2px 4px; }
-  .bl-pocket-chips .kit-gloss-compact > span { font-size: 0.83rem; }
-  .bl-pocket-chips .kit-gloss-compact > small { font-size: 0.65rem; }
+  .bl-pocket-chips .bl-choice { --kit-phrase-size: 13px; min-height: 32px; padding: 2px 4px; }
 }
 /* A screen wider than tall (a computer, a phone held sideways): three columns, so the table gets the whole height:
    the score and the exit on the left, the table in the middle, the panel on the right. (Below each other, the table
@@ -142,7 +140,6 @@
   .bl-stage { grid-area: stage; width: 100%; height: 100%; }
   .bl-panel { grid-area: panel; width: 100%; align-self: center; max-height: 100%; }
   .bl-pocket-chips { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .billiards .bl-pocket-chips .kit-gloss-compact > small { font-size: 0.69rem; }
 }
 /* A computer: bigger type, balls and chips. */
 @media (min-aspect-ratio: 6/5) and (min-height: 600px) {
@@ -164,13 +161,11 @@
   .bl-ball-option .bl-ball { width: 32px; height: 32px; }
   .bl-ball-option .bl-ball b { width: 20px; height: 20px; font-size: 12px; }
   .bl-pocket-chips { gap: 6px; }
+  .bl-choice, .bl-confirm, .bl-confirm-measure { --kit-phrase-size: 18px; --kit-translation-size: 13px; }
   .bl-choice { min-height: 52px; padding: 5px 8px; border-radius: 10px; }
-  .billiards .bl-choice .kit-gloss-compact > span { font-size: 1.14rem; }
-  .billiards .bl-pocket-chips .kit-gloss-compact > small, .billiards .bl-choice .kit-gloss-compact > small { font-size: 0.8rem; }
-  .billiards .bl-speech .kit-gloss-compact > span { font-size: 1.4rem; }
-  .billiards .bl-speech .kit-gloss-compact > small { font-size: 0.92rem; }
-  .bl-confirm { padding: 6px 8px 8px; margin-top: 9px; }
-  .bl-confirm > span:first-child { font-size: 0.84rem; }
+  :is(.bl-confirm, .bl-confirm-measure) { padding: 6px 8px 8px; }
+  .bl-confirm-row { margin-top: 9px; }
+  .bl-confirm-label { font-size: 0.84rem; }
   .bl-aim p { font-size: 0.98rem; }
   .bl-key-help { font-size: 0.82rem; }
   .bl-replay, .bl-nudge { font-size: 0.88rem; }
@@ -185,8 +180,7 @@
   .bl-chip-heading { display: none; }
   .bl-ball-chips { margin-block: 4px; }
   .bl-choice { min-height: 32px; padding: 2px 5px; }
-  .billiards .bl-choice .kit-gloss-compact > span { font-size: 0.9rem; }
-  .bl-confirm { margin-top: 4px; }
+  .bl-confirm-row { margin-top: 4px; }
 }
 
 .bl-listen-actions { display: inline-flex; align-items: center; gap: 6px; }

@@ -82,6 +82,7 @@ class PoolMode implements GameMode {
   private clock = 0;
   private nextPhaseAt = 0;
   private taught = false;
+  private firstPass = true;
   private helpLevel = 0;
   private notice: "wrong" | "timing" | null = null;
   private noticeUntil = 0;
@@ -150,6 +151,7 @@ class PoolMode implements GameMode {
     this.notice = null;
     this.noticeUntil = 0;
     this.taught = !saved.rulesHeard;
+    this.firstPass = true;
     this.clearCues();
     this.kept.clear();
     this.hitAt.clear();
@@ -253,6 +255,7 @@ class PoolMode implements GameMode {
   }
 
   private hit(event: Extract<PoolEvent, { kind: "hit" }>, round: PoolRound) {
+    if (event.by === "learner") this.firstPass = false;
     this.hitAt.set(event.by, this.time);
     this.hitSpray(event.by, round.flight.to);
     this.origin.copy(this.ball.position);
@@ -318,6 +321,7 @@ class PoolMode implements GameMode {
     } else if (event?.kind === "serve") this.serve(round);
     else if (event?.kind === "end") this.closeRound(round);
     else if (round.phase === "fall") {
+      this.firstPass = false;
       this.fallingBall(Math.min(1, round.phaseTime / SPLASH_SECONDS));
     }
     if (round.phase === "rally") this.placeBall(round.flight, round.phaseTime, this.origin);
@@ -377,15 +381,13 @@ class PoolMode implements GameMode {
   }
 
   private updateHelp() {
-    const elapsed = this.round?.elapsed ?? 0;
     const visible = this.phase === "opening" || this.phase === "play";
-    const help = this.clock < this.noticeUntil ? this.notice
-      : !visible ? null
-      : this.helpLevel === 0 && this.round?.canHit ? "timing"
-      : this.helpLevel === 0 && elapsed < 6 ? "long"
-      : this.helpLevel === 1 && elapsed < 5 ? "short"
-      : null;
-    if (help !== usePool.getState().help) usePool.setState({ help });
+    const canHit = this.helpLevel === 0 && this.phase === "play" && !!this.round?.canHit;
+    const help = visible && this.helpLevel === 0 && this.firstPass ? "long"
+      : visible && this.helpLevel === 1 && (this.round?.elapsed ?? 0) < 5 ? "short" : null;
+    const notice = visible && this.clock < this.noticeUntil ? this.notice : null;
+    const current = usePool.getState();
+    if (canHit !== current.canHit || help !== current.help || notice !== current.notice) usePool.setState({ canHit, help, notice });
   }
 
   input(input: ModeInput) {
@@ -411,6 +413,7 @@ class PoolMode implements GameMode {
       this.notice = "timing";
       this.noticeUntil = this.clock + 0.7;
     }
+    this.updateHelp();
     return true;
   }
 

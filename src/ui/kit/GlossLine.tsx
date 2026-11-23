@@ -2,6 +2,7 @@ import "./glossLine.css";
 import type { Sentence } from "../../convo/compose";
 import { HL, TL } from "../i18n";
 import { Interlinear } from "../Interlinear";
+import "./glossLine.css";
 
 export function GlossLine({ sentence, gloss, compact }: { sentence: Sentence; gloss: boolean; compact?: boolean }) {
   if (compact) return <span className="kit-gloss-compact">

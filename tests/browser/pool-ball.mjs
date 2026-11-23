@@ -68,7 +68,41 @@ try {
       return window.__ew.game.modes.start("pool");
     }), true);
     await page.waitForTimeout(480);
-    await waitFor((s) => s?.phase === "play" && s.canHit, "first hit window", 1, 300);
+    await waitFor((s) => s?.phase === "play" && s.receiver === "learner", "first pass to the learner", 1, 300);
+    const fast = phone && viewport[1] === 664;
+    if (fast) await page.evaluate(() => Object.assign(window.__ew.game.pool.round.flight, { height: "fast", seconds: 2.1 }));
+    const timing = () => page.evaluate(() => {
+      const { flight, phaseTime, canHit } = window.__ew.game.pool.round;
+      const button = document.querySelector(".pool-hit");
+      const outline = button && getComputedStyle(button);
+      return { phaseTime, canHit, height: flight.height, seconds: flight.seconds,
+        ring: button?.dataset.canHit, gold: outline?.outlineColor === "rgb(255, 209, 102)" && outline.outlineWidth === "3px" };
+    });
+    const before = await timing();
+    const slot = page.locator(".pool-help-slot");
+    const startSlot = await slot.boundingBox();
+    assert.equal(before.canHit, false);
+    if (phone) assert.equal(before.ring, "false");
+    assert(await page.locator('.pool-instruction[data-help="long"]').isVisible());
+    const openHitWindow = async () => {
+      let previous = await timing();
+      for (let f = 0; f < 100; f++) {
+        await step();
+        const now = await timing();
+        if (now.canHit) return { previous, now };
+        previous = now;
+      }
+      assert.fail("hit window did not open");
+    };
+    const { previous, now } = await openHitWindow();
+    const opensAt = now.seconds - (fast ? 0.5 : phone ? 0.75 : 0.6);
+    assert(previous.phaseTime < opensAt && now.phaseTime >= opensAt && now.phaseTime - opensAt <= 0.051);
+    assert(await page.locator('.pool-instruction[data-help="long"]').isVisible(), "instructions stay through the first actionable window");
+    if (phone) assert(previous.ring === "false" && now.ring === "true" && now.gold);
+    else {
+      assert.equal(await slot.locator('[data-help="timing"]').count(), 1);
+      assert(Math.abs((await slot.boundingBox()).y - startSlot.y) <= 2, "keyboard timing uses its reserved slot");
+    }
     // The round has captured its RNG. Restore the world's randomness so the splash fans out.
     await page.evaluate((random) => { Math.random = random; }, restoreRandom);
     await restoreRandom.dispose();
@@ -86,10 +120,17 @@ try {
     if (phone) await page.locator(".pool-hit").dispatchEvent("pointerdown", { pointerType: "touch", bubbles: true });
     else await page.keyboard.press("Space");
     assert.equal((await state()).hits, 1);
+    assert.equal(await page.locator(".pool-instruction").count(), 0);
+    if (phone) assert.equal(await page.locator(".pool-hit").getAttribute("data-can-hit"), "false");
     await step(4);
     assert(await page.locator('[data-line="pl_n1"]').isVisible());
     await shot("hit");
 
+    await waitFor((s) => s?.phase === "play" && s.canHit, "next hit window", 1, 450);
+    assert.equal(await page.locator(".pool-instruction").count(), 0, "the long instructions do not return");
+    if (phone) assert.equal(await page.locator(".pool-hit").getAttribute("data-can-hit"), "true");
+    await waitFor((s) => s?.flightPhase === "fall", "the next window expires without a hit", 1, 40);
+    if (phone) assert.equal(await page.locator(".pool-hit").getAttribute("data-can-hit"), "false");
     await waitFor((s) => s?.drops >= 1, "missed learner pass", 1, 450);
     await step(4);
     assert.equal((await state()).hits, 1);
@@ -103,6 +144,12 @@ try {
     assert(await card.isVisible());
     assert.match(await card.textContent(), /Your hits\s*1|Tavo smūgiai\s*1/);
     assert.match(await card.textContent(), /Best run\s*2|Geriausia serija\s*2/);
+    const displayedBest = await card.getByText(/^(Best run|Geriausia serija)$/).locator("..").locator(".mode-score-number").evaluate((el) => ({
+      value: el.textContent,
+      opaque: getComputedStyle(el).opacity === "1",
+      animated: el.getAnimations({ subtree: true }).length > 0,
+    }));
+    assert.deepEqual(displayedBest, { value: "2", opaque: true, animated: false }, "best run paints its final value immediately");
     assert.equal((await state()).drops, 3);
     const saved = await page.evaluate(() => window.__ew.store.getState().progress.pool);
     assert.deepEqual(saved, { best: 2, rounds: 1, rulesHeard: true });

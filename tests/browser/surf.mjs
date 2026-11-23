@@ -142,6 +142,14 @@ try {
       const r = m.getBoundingClientRect(), c = card.getBoundingClientRect(), g = window.__ew.game;
       const p = g.player.root.position.clone().project(g.rig.cam), y = ((1 - p.y) / 2) * innerHeight, x = ((p.x + 1) / 2) * innerWidth;
       const pad = document.querySelector(".surf-pad");
+      const replay = card.querySelector(".surf-again");
+      const button = replay.getBoundingClientRect();
+      const intersects = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+      const text = [...card.querySelectorAll(".surf-words .il .u, .surf-words .nat")];
+      const replayFits = button.width >= 44 && button.height >= 44 && button.top >= 0 && button.left >= 0
+        && button.right <= innerWidth && button.bottom <= innerHeight && button.left >= c.left && button.right <= c.right
+        && button.top >= c.top && button.bottom <= c.bottom && replay.querySelector('svg[width="19"]')
+        && !intersects(button, r) && text.every((part) => !intersects(button, part.getBoundingClientRect()));
       const asked = [...document.querySelectorAll(".surf-pad .ask")].map((el) => el.textContent);
       const board = g.surf.scene?.boards.get(g.surf.logic?.board);
       let boardTop = y, boardBottom = y;
@@ -155,7 +163,7 @@ try {
         }
       }
       const padGap = pad ? pad.getBoundingClientRect().top - boardBottom : null;
-      return { asked, padGap, boardClear: boardTop - r.bottom, still: !!pad?.classList.contains("still"), text: m.querySelector(".surf-move-text").innerText.replace(/\s+/g, " ").trim(), keys: [...m.querySelectorAll(".surf-key")].map((k) => k.innerText), button: m.tagName === "BUTTON", gap: Math.round(r.top - c.bottom), w: Math.round(r.width), h: Math.round(r.height), font: parseFloat(getComputedStyle(m.querySelector(".surf-move-text")).fontSize), inView: r.left >= 0 && r.right <= innerWidth + 0.5 && r.top >= 0 && r.bottom <= innerHeight, over: x > r.left && x < r.right && y > r.top && y < r.bottom, clear: Math.round(y - r.bottom), dots: m.querySelectorAll(".surf-strokes i").length, done: m.querySelectorAll(".surf-strokes i.done").length, time: !!m.querySelector(".surf-time") };
+      return { asked, replayFits: !!replayFits, padGap, boardClear: boardTop - r.bottom, still: !!pad?.classList.contains("still"), text: m.querySelector(".surf-move-text").innerText.replace(/\s+/g, " ").trim(), keys: [...m.querySelectorAll(".surf-key")].map((k) => k.innerText), button: m.tagName === "BUTTON", gap: Math.round(r.top - c.bottom), w: Math.round(r.width), h: Math.round(r.height), font: parseFloat(getComputedStyle(m.querySelector(".surf-move-text")).fontSize), inView: r.left >= 0 && r.right <= innerWidth + 0.5 && r.top >= 0 && r.bottom <= innerHeight, over: x > r.left && x < r.right && y > r.top && y < r.bottom, clear: Math.round(y - r.bottom), dots: m.querySelectorAll(".surf-strokes i").length, done: m.querySelectorAll(".surf-strokes i.done").length, time: !!m.querySelector(".surf-time") };
     });
     const moves = new Map();
     const checkAnswersFit = async (name, choice) => {
@@ -318,6 +326,12 @@ try {
           else { await page.keyboard.press(String(i + 1)); keyed++; }
           mine.push(pick);
           await step(2);
+          if (s.choice === "board") {
+            const badge = page.locator(".surf-card .kit-feedback");
+            check(`${label}: the evaluated board choice shows one 16 px badge`,
+              (await badge.getAttribute("data-feedback", { timeout: 1000 })) === (pick === "b_sup" ? "retry" : "right")
+                && await badge.locator('svg[width="16"]').count() === 1);
+          }
           if (!shown.has("said") && (await ui()).said) { shown.add("said"); const sd = await page.locator(".surf-said").innerText().catch(() => ""); check(`${label}: what the learner answered is shown as said`, sd.includes(es.replace(/^[¡¿]/, "").slice(0, 4)), sd); await shot("said"); }
           if (pick === "a_again" || pick === "a_coming" || pick === "a_vamos") { await step(30); await fade(); }
           continue;
@@ -329,7 +343,7 @@ try {
           moveT++;
           const m = await moveNow();
           if (m && moveT > 2) {
-            const o = moves.get(t.do) ?? { n: 0, ok: true, gapMax: 0, clearMin: Infinity, inView: true, over: false };
+            const o = moves.get(t.do) ?? { n: 0, ok: true, replayFits: true, gapMax: 0, clearMin: Infinity, inView: true, over: false };
             const [name, keys] = MOVES[t.do];
             const right = name.test(m.text) && keys.join("") === m.keys.join("");
             if (phone) {
@@ -337,7 +351,7 @@ try {
               assert.equal(m.still, t.do === "steady");
               assert(!m.button && m.boardClear > 0 && m.padGap > 0, `${label}: board between the move label and pad for ${t.do} (${m.boardClear}px, ${m.padGap}px)`);
             }
-            moves.set(t.do, { n: o.n + 1, ok: o.ok && right, text: m.text, keys: m.keys, button: m.button, font: m.font, h: m.h, w: m.w, gapMax: Math.max(o.gapMax, m.gap), clearMin: Math.min(o.clearMin, m.clear), inView: o.inView && m.inView, over: o.over || m.over, dots: m.dots, time: m.time });
+            moves.set(t.do, { n: o.n + 1, ok: o.ok && right, replayFits: o.replayFits && m.replayFits, text: m.text, keys: m.keys, button: m.button, font: m.font, h: m.h, w: m.w, gapMax: Math.max(o.gapMax, m.gap), clearMin: Math.min(o.clearMin, m.clear), inView: o.inView && m.inView, over: o.over || m.over, dots: m.dots, time: m.time });
             if (!shown.has("move:" + t.do)) { shown.add("move:" + t.do); await real(300); await shot("move-" + t.do); }
           }
           if (t.do === "paddle") {
@@ -408,15 +422,38 @@ try {
     const mv = Object.fromEntries(moves);
     check(`${label}: paddling, the duck, the turn and the stand-up were each named under her line`, ["paddle", "duck", "turn", "up"].every((d) => mv[d]?.n > 0 && mv[d].ok), Object.fromEntries(Object.entries(mv).map(([k, v]) => [k, v.text + " " + v.keys.join("")])));
     check(`${label}: and at least two of the ride's commands`, Object.keys(mv).filter((d) => ["left", "right", "down", "fwd", "steady"].includes(d) && mv[d].ok).length >= 2, Object.keys(mv));
+    check(`${label}: the 44 px replay button stays in the card and clears the gloss and move controls`,
+      Object.values(mv).every((v) => v.replayFits));
     check(`${label}: the move is large, right under her line, whole in the picture`, Object.values(mv).every((v) => v.font >= (phone ? 19 : 22) && v.gapMax <= 14 && v.gapMax >= 0 && v.inView && v.h >= (phone && v.button ? 56 : 40)), Object.fromEntries(Object.entries(mv).map(([k, v]) => [k, `${v.font}px gap ${v.gapMax} h ${v.h}`])));
+    const replayTarget = await page.locator(".surf-again").count();
+    check(`${label}: replay disappears with the cue on the result`, replayTarget === 0);
     check(`${label}: the move never covers the learner on their board`, Object.values(mv).every((v) => !v.over && v.clearMin > 12), Object.fromEntries(Object.entries(mv).map(([k, v]) => [k, v.clearMin])));
     check(`${label}: paddling shows its strokes, the stand-up its time`, mv.paddle.dots >= 4 && mv.up.time, { dots: mv.paddle.dots, time: mv.up.time });
     if (phone) check(`${label}: on a phone the move labels the arrow to tap`, ["paddle", "duck", "turn", "up"].every((d) => !mv[d].button) && /bakstelėk|tap/.test(mv.up.text), mv.up.text);
     else check(`${label}: with keys it says which: “${mv.up.text}”`, /spausk|press/.test(mv.up.text) && mv.up.keys.includes("↑") && mv.paddle.keys.includes("↑"), mv.up);
     await step(20);
-    check(`${label}: the score card is on show`, await page.locator(".surf-result").count() === 1);
+    const scoreCard = page.locator(".surf .mode-score-card");
+    const checkResult = async (score, waves, seconds) => {
+      const values = await scoreCard.locator("dd").allTextContents();
+      assert.deepEqual(values, [String(score.waves), String(score.seconds), `${score.followed}/${score.asked}`]);
+      const lt = await scoreCard.evaluate((el) => el.closest("[lang]").lang === "lt");
+      assert.equal(await scoreCard.locator(".surf-best").innerText(), lt
+        ? `Iš viso: bangų – ${waves}, sekundžių ant bangos – ${seconds}`
+        : `All time: ${waves} waves, ${seconds} seconds riding`);
+      assert.equal(await scoreCard.getByText(lt ? "Frazės, kurias girdėjai, jau tavo kortelėse."
+        : "The phrases you heard are in your cards now.", { exact: true }).count(), 1);
+      assert.equal(await scoreCard.locator(".mode-score-actions button").count(), 3);
+    };
+    const beginnerScore = s.score;
+    await checkResult(beginnerScore, beginnerScore.waves, beginnerScore.seconds);
+    const originalAgain = await page.evaluateHandle(() => window.__ew.game.surfAgain);
+    await page.evaluate(() => { window.__ew.game.surfAgain = (level) => { window.__surfResultAction = level; }; });
+    await scoreCard.locator(".surf-level:not(.adv)").click();
+    check(`${label}: the beginner button requests another beginner lesson`, await page.evaluate(() => window.__surfResultAction) === "beginner");
+    await page.evaluate((again) => { window.__ew.game.surfAgain = again; }, originalAgain);
+    await originalAgain.dispose();
     if (label === "short-phone") {
-      const layout = await page.locator(".surf-pick-card").evaluate((el) => {
+      const layout = await scoreCard.evaluate((el) => {
         const { left, right, top, bottom } = el.getBoundingClientRect();
         return { inView: left >= 0 && right <= innerWidth && top >= 0 && bottom <= innerHeight, overflow: el.scrollHeight - el.clientHeight };
       });
@@ -448,7 +485,8 @@ try {
     check(`${label}: the pack stays off through the wipeout and the splash and wash are cued`, run.waterPack.swim === true && wipeouts.some((e) => e.phase === "fall"), wipeouts);
     check(`${label}: the learner said they were fine, what went wrong, and that they understood`, ["a_fine", "a_early", "a_understood", "a_again"].every((c) => run.mine.includes(c)), run.mine);
     await step(20);
-    await page.locator(".surf-later").click();
+    await checkResult(s.score, beginnerScore.waves + s.score.waves, beginnerScore.seconds + s.score.seconds);
+    await scoreCard.locator(".surf-later").click();
     await fade();
     const after = await page.evaluate(() => {
       const g = window.__ew.game, p = g.player.root.position, st = window.__ew.store.getState();
