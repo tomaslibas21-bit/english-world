@@ -2,6 +2,7 @@
 //  • every NPC line variant without placeholders, in the voice of each NPC of its situation;
 //  • lines whose only placeholders are values with a declared domain;
 //  • every hint example with every suitable entity (the coach voice);
+//  • authored street exchanges and chatter, with the runtime's cast and gender variants;
 //  • plus a fuzzing pass: many random conversations per situation (test utterances,
 //    simulation turns and hint examples as input) whose NPC lines are collected. This finds
 //    dynamic renderings (prices, chosen items) and crash-tests every handler.
@@ -13,8 +14,11 @@ import { GLOBAL } from "../src/content/global";
 import { NPCS } from "../src/content/npcs";
 import { AMBIENT_LINES, STAFF_LINES, VENDOR_LINES } from "../src/content/ambient";
 import { RIDE_OWNERS, RIDE_SHOUTS } from "../src/content/rides";
-import { VOICES_V2, ambientVoice, coachVoices, npcVoice, rideVoice, shoutVoice } from "../src/content/voices";
-import { withoutAddressedNames } from "../src/audio-key";
+import { STREET_CHATTER, STREET_MOMENTS } from "../src/content/street";
+import { VOICES_V2, ambientVoice, coachVoice, coachVoices, npcVoice, rideVoice, shoutVoice } from "../src/content/voices";
+import { audioKey, withoutAddressedNames } from "../src/audio-key";
+import { byCast, resolveStreetLine, streetVoice, type Gender } from "../src/game/street/lines";
+import type { StreetLine } from "../src/game/street/types";
 import { Conversation, type SpokenLine } from "../src/convo/dialogue";
 import { compose, placeholders, type Sentence } from "../src/convo/compose";
 import type { EntityDef, SentSrc, SituationDef } from "../src/content/types";
@@ -26,6 +30,11 @@ import { playSim } from "./sim-play";
 export interface Utt { voice: string; speed: number; say: string; en: string; where: string }
 /** A line simulated play never reached (the random runs and the sims): `named` false when no code names it either. */
 export interface Unreached { sit: string; line: string; named: boolean; items?: number }
+
+function addUtterance(out: Map<string, Utt>, voice: string, speed: number, say: string, en: string, where: string) {
+  const key = audioKey(voice, speed, say);
+  if (!out.has(key)) out.set(key, { voice, speed, say, en, where });
+}
 
 /** The learner's own lines in the kit's mini-games (23 Nov 2026). A tapped answer is said for the learner in the coach
  *  voice of their gender, speed 1 (src/game/kit/dialogue.ts), composed as src/game/kit/lines.ts conversationLine does.
@@ -63,6 +72,8 @@ export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: 
   const unfilled: string[] = [];
   const voiceOf = (n: NpcDef) => npcVoice(n, opts.v2);
   const out = new Map<string, Utt>();
+  // Keep street provenance when a choice or saved phrase already has a coach clip elsewhere.
+  if (!opts.only?.length && !opts.sits) addStreetUtterances(out, opts.v2 ?? VOICES_V2);
   const errors: string[] = [];
   const add = (voice: string, speed: number, s: Sentence, where: string, example = false) => {
     if (!s.say.trim()) return;
@@ -73,8 +84,7 @@ export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: 
     // the name is part of the content: no clip (browser voice), but for a hint example, whose name is the fixed
     // example learner's (src/convo/suggest.ts exampleVars, 17 Nov 2026)
     if (!example && alt === null && /\b(Tomas|Mikalauskas)\b/.test(say)) return;
-    const k = `${voice}|${speed}|${say}`;
-    if (!out.has(k)) out.set(k, { voice, speed, say, en: s.en, where });
+    addUtterance(out, voice, speed, say, s.en, where);
   };
   const sits = opts.sits ?? SITUATIONS.filter((s) => !opts.only?.length || opts.only.some((o) => s.id.startsWith(o)));
   const allNpcIds = new Set<string>();
@@ -251,14 +261,57 @@ export function fuzzSituation(sit: SituationDef, look: (id: string) => EntityDef
   return errors;
 }
 
+/** Authored street text already has the exact wording the kit looks up at speed 1. */
+function addStreetUtterances(out: Map<string, Utt>, v2: boolean) {
+  const genders = ["f", "m"] as const;
+  const coaches = coachVoices(v2);
+  const add = (line: StreetLine, learner: Gender, speaker: Gender, where: string, ...voices: string[]) => {
+    for (const variety of ["mexico", "neutral", "spain"] as const) {
+      const { say, en } = resolveStreetLine(line, learner, speaker, variety);
+      if (!/[a-z0-9]/i.test(say)) continue;
+      for (const voice of voices) addUtterance(out, voice, 1, say, en, where);
+    }
+  };
+
+  for (const moment of STREET_MOMENTS) {
+    const scripts = moment.kind === "arc" ? ["first"] as const : ["first", "second", "familiar"] as const;
+    for (const name of scripts) {
+      const script = moment[name];
+      if (!script) continue;
+      const where = `street/${moment.id}/${name}`;
+      // The streetNow dev hook can force any cast member for each selected script.
+      for (const cast of moment.cast) for (const learner of genders) {
+        const townVoice = streetVoice(cast.gender, cast.voice, v2);
+        const card = byCast(script.card, cast.id);
+        const away = byCast(script.away, cast.id);
+        if (away) add(away, learner, cast.gender, where, townVoice);
+        // Cards keep the resolved wording and replay it in the current profile's coach voice.
+        if (card) add(card, learner, cast.gender, where, ...coaches);
+        for (const turn of [script, script.then]) {
+          if (!turn) continue;
+          for (const line of byCast(turn.open, cast.id) ?? []) add(line, learner, cast.gender, where, townVoice);
+          const answerVoices = !card && turn === (script.then ?? script) ? coaches : [coachVoice(learner, v2)];
+          for (const choice of turn.choices) {
+            add(byCast(choice.say, cast.id)!, learner, cast.gender, where, ...answerVoices);
+            for (const line of byCast(choice.reply ?? turn.reply, cast.id) ?? []) add(line, learner, cast.gender, where, townVoice);
+          }
+        }
+      }
+    }
+  }
+
+  for (const chatter of STREET_CHATTER) for (const line of chatter.lines) for (const speaker of genders) for (const learner of genders) {
+    add(line, learner, speaker, `street/chatter/${chatter.id}`, ambientVoice(speaker, v2));
+  }
+}
+
 function finishEnumeration(out: Map<string, Utt>, errors: string[], allNpcIds: Set<string>, opts: { only?: string[]; sits?: SituationDef[]; v2?: boolean }): { utts: Utt[]; errors: string[] } {
   const add = (voice: string, speed: number, s: Sentence, where: string) => {
     if (!s.say.trim() || /\s[.,!?]/.test(s.say)) return;
     const alt = withoutAddressedNames(s.say, ["Tomas", "Mikalauskas"]);
     const say = alt ?? s.say;
     if (alt === null && /\b(Tomas|Mikalauskas)\b/.test(say)) return;
-    const k = `${voice}|${speed}|${say}`;
-    if (!out.has(k)) out.set(k, { voice, speed, say, en: s.en, where });
+    addUtterance(out, voice, speed, say, s.en, where);
   };
   // 4. global lines in every NPC's voice
   for (const id of allNpcIds) {

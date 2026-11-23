@@ -37,7 +37,7 @@ import { NPCS, COACH_VOICE } from "../src/content/npcs";
 import { AMBIENT_VOICES } from "../src/content/ambient";
 import { levenshtein } from "../src/convo/normalize";
 import { enumerateAll, reachReport, type Utt } from "./enumerate";
-import { roleFor, where } from "./casting";
+import { roleFor, STREET, where } from "./casting";
 import { decodeAudio, encodeClip, geminiText, trimAndNormalize } from "./audio-util";
 import { cutRepeats, findRepeats, hearPieces, judgePieces, type Clip, type Edition, type Heard } from "./voice-pieces";
 
@@ -108,7 +108,7 @@ const request = (text: string, voice: string, style: string, shape = voiceShape(
 function newestSource(): number {
   let t = 0;
   const walk = (p: string) => { const s = fs.statSync(p); if (s.isDirectory()) for (const f of fs.readdirSync(p)) walk(path.join(p, f)); else t = Math.max(t, s.mtimeMs); };
-  for (const p of ["src/content", "src/convo", "src/audio-key.ts", "tools/enumerate.ts"]) walk(path.join(ROOT, p));
+  for (const p of ["src/content", "src/convo", "src/audio-key.ts", "src/game/street/lines.ts", "tools/enumerate.ts"]) walk(path.join(ROOT, p));
   return t;
 }
 function utterances(): Utt[] {
@@ -790,6 +790,7 @@ function sheet() {
   const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
   const roles: { who: string; name: string; about: string }[] = [
     ...Object.values(NPCS).map((n) => ({ who: n.id, name: n.name, about: `${n.role.en} · ${where(n.id).join(", ")}` })),
+    ...Object.entries(STREET).map(([who, { note }]) => ({ who, name: who, about: note })),
     { who: "coach_f", name: "Coach (female learner)", about: "the learner's example answers" },
     { who: "coach_m", name: "Coach (male learner)", about: "the learner's example answers" },
     { who: "amb_f", name: "Passer-by (f)", about: "the town" }, { who: "amb_m", name: "Passer-by (m)", about: "the town" },

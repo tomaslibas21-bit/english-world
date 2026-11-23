@@ -52,6 +52,29 @@ export const RIDERS: Record<string, Role> = {
   shout_m1: { voice: "Algenib", style: "calling out loudly after a car that passed too close: startled, a little indignant, never angry", note: "a passer-by, older" },
 };
 
+/** Street moments (g_st_<id>: src/content/street.ts). The regulars have separate voices. */
+export const STREET: Record<string, Role> = {
+  st_eli: { voice: "Umbriel", style: "easygoing and playful, with an unhurried rhythm", note: "Eli, a young man who plays guitar on the street" },
+  st_sal: { voice: "Alnilam", style: "hearty and direct, with an old-school sales patter", note: "Sal, an older man who sells pretzels and cider from a cart" },
+  st_jess: { voice: "Zephyr", style: "bright and easygoing, with a smile in the voice", note: "Jess, a young woman who walks dogs" },
+  st_martha: { voice: "Achernar", style: "gentle and thoughtful, with easy pauses", note: "Martha, an older woman who paints by the water" },
+  st_leo: { voice: "Sadachbia", style: "light and high-pitched, with quick bursts of excitement", note: "Leo, a seven-year-old boy learning to fly a kite" },
+  st_dana: { voice: "Pulcherrima", style: "brisk, upbeat and encouraging", note: "Dana, an adult woman out jogging" },
+  st_ray: { voice: "Rasalgethi", style: "warm and neighborly, with clear, steady delivery", note: "Ray, an adult man delivering the mail" },
+  st_gus: { voice: "Schedar", style: "quiet and unhurried, with dry humor", note: "Gus, an older man who fishes by the harbor" },
+  st_ruth: { voice: "Aoede", style: "warm and reassuring, with a soft, steady rhythm", note: "Ruth, an older woman who feeds pigeons" },
+  st_tyler: { voice: "Zubenelgenubi", style: "casual and laid-back, with a hint of a grin", note: "Tyler, a teenage boy practicing skateboard tricks" },
+
+  st_m_adult: { voice: "Achird", style: "friendly, clear and matter-of-fact", note: "An adult man passing by, traveling, driving, or interviewing people" },
+  st_f_adult: { voice: "Despina", style: "friendly and conversational, with an even pace", note: "An adult woman passing by, shopping, cycling, or looking for her dog" },
+  st_f_old: { voice: "Callirrhoe", style: "friendly and calm, with clear phrasing", note: "An older woman passing by or helping at the library" },
+  st_f_young: { voice: "Laomedeia", style: "friendly and relaxed, with natural phrasing", note: "A young woman passing by, visiting town, or studying" },
+  st_m_old: { voice: "Algieba", style: "friendly and steady, with an unhurried pace", note: "An older man visiting town, shopping, or looking for his dog" },
+  st_m_young: { voice: "Sadaltager", style: "friendly and relaxed, with an even pace", note: "A young man shopping or cycling" },
+  st_kid_f: { voice: "Leda", style: "friendly and earnest, with a light, high pitch", note: "A girl looking for her dog" },
+  st_kid_m: { voice: "Fenrir", style: "friendly and direct, with a light, high pitch", note: "A boy trying to fix his bike" },
+};
+
 /** Hand-picked voices where the character calls for it (age, manner); the rest is drawn from the role. */
 const PICKS: Record<string, { voice: string; note: string }> = {
   tina: { voice: "Sulafat", note: "pool hall owner in her early fifties, warm and slightly husky" },
@@ -150,6 +173,7 @@ export function roleFor(voiceId: string): (Role & { who: string }) | null {
   if (id === "coach_f" || id === "coach_m") return { ...COACH[id.slice(-1) as "f" | "m"], who: id };
   if (id === "amb_f" || id === "amb_m") return { ...AMBIENT[id.slice(-1) as "f" | "m"], who: id };
   if (RIDERS[id]) return { ...RIDERS[id], who: id };
+  if (STREET[id]) return { ...STREET[id], who: id };
   return CAST[id] ? { ...CAST[id], who: id } : null;
 }
 
