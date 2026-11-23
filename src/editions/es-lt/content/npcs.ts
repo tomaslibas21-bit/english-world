@@ -5,6 +5,8 @@ import { applyLearner } from "../../es/learner/walk";
 import { SHARED } from "../tables/loaded";
 
 applyLearner({ npcs: NPCS }, SHARED);
-NPCS.memo.role.lt = "Baro savininkas";
+// The bios are not in the walk (learnerItems), so they are written here.
 NPCS.memo.bio = "Laiko barą „La Buchaca“, kurį atidarė jo tėvas, ir vis dar kasvakar žaidžia biliardą.";
+NPCS.tona.bio = "Nepraleidžia nė vieno penktadienio loterijos vakaro centrinėje aikštėje ir visada atsineša atliekamą lentelę.";
+NPCS.beto.bio = "Jau dvidešimt metų šaukia kortas aikštės loterijoje – beveik kiekvienai turi eilėraštuką.";
 export * from "@/content/npcs";

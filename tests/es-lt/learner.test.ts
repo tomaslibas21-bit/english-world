@@ -6,7 +6,6 @@ import { SITUATIONS } from "@/content/situations";
 import * as Situations from "@/content/situations";
 import { EDITION } from "@/edition";
 import { setVariety } from "@/convo/compose";
-import { LOTERIA_NEIGHBOR, LOTERIA_CALLER } from "../../src/editions/es/content/loteria";
 import { ROAD_LINES, ROAD_MERGES } from "@/content/road-lines";
 import { STRINGS } from "@/ui/strings";
 import { learnerItems } from "../../src/editions/es/learner/walk";
@@ -36,11 +35,8 @@ describe("Puerto Colibrí for Lithuanians", () => {
   });
 
   it("has Lithuanian for the town-wide text (cast, places, global lines)", () => {
-    // Doña Toña's and Don Beto's roles and bios (x10) go into ~/puerto-colibri-lt/done/_shared.json, which batch helpers
-    // may not edit; their Lithuanian is in ~/claude-work/batch4/logs/cards/REPORT.md for the coordinator.
     const shared = sharedContent();
-    const { [LOTERIA_NEIGHBOR]: _tona, [LOTERIA_CALLER]: _beto, ...translatedCast } = shared.npcs;
-    const left = learnerItems({ ...shared, npcs: translatedCast }).filter((i) => (i.kind === "text" ? ENGLISH.test(i.en ?? "") : i.kind === "sent" && ENGLISH.test(i.nat ?? "")));
+    const left = learnerItems(shared).filter((i) => (i.kind === "text" ? ENGLISH.test(i.en ?? "") : i.kind === "sent" && ENGLISH.test(i.nat ?? "")));
     expect(left.slice(0, 10).map((i) => i.en ?? i.nat)).toEqual([]);
   });
 
