@@ -69,10 +69,11 @@ export class NavGrid {
   private gCost?: Float32Array; private came?: Int32Array; private stamp?: Uint32Array; private closedAt?: Uint32Array;
   private heapI?: Int32Array; private heapF?: Float32Array; private gen = 0;
 
-  /** A* path from a to b as world points (smoothed). Returns null if unreachable. */
-  path(ax: number, az: number, bx: number, bz: number): [number, number][] | null {
-    const start = this.nearestFree(ax, az), goal = this.nearestFree(bx, bz);
-    if (start < 0 || goal < 0) return null;
+  /** A* path as world points, optionally ending at the closest reachable cell. */
+  path(ax: number, az: number, bx: number, bz: number, toward = false): [number, number][] | null {
+    const start = this.nearestFree(ax, az), at = this.idx(bx, bz);
+    const goal = toward ? (this.free(at) ? at : -1) : this.nearestFree(bx, bz);
+    if (start < 0 || (goal < 0 && !toward)) return null;
     const n = this.cols * this.rows;
     if (!this.gCost) {
       this.gCost = new Float32Array(n); this.came = new Int32Array(n); this.stamp = new Uint32Array(n); this.closedAt = new Uint32Array(n);
@@ -101,18 +102,31 @@ export class NavGrid {
       HI[k] = li; HF[k] = lf;
       return top;
     };
-    const [gx, gz] = this.center(goal);
+    const [gx, gz] = goal >= 0 ? this.center(goal) : [bx, bz];
     const cols = this.cols, cell = this.cell;
     const h = (i: number) => { const x = this.minX + ((i % cols) + 0.5) * cell, z = this.minZ + (Math.floor(i / cols) + 0.5) * cell; const dx = Math.abs(x - gx), dz = Math.abs(z - gz); return dx + dz + (Math.SQRT2 - 2) * Math.min(dx, dz); };
+    // Ties use the distance walked along the planned route, without the road cost multiplier.
+    const length = (i: number) => {
+      let steps = 0;
+      for (let prev = came[i]; prev >= 0; prev = came[i]) {
+        steps += i % cols === prev % cols || Math.floor(i / cols) === Math.floor(prev / cols) ? 1 : Math.SQRT2;
+        i = prev;
+      }
+      return steps;
+    };
     stamp[start] = gen; g[start] = 0; came[start] = -1; push(start, h(start));
     const DC = [1, -1, 0, 0, 1, 1, -1, -1], DR = [0, 0, 1, -1, 1, -1, 1, -1], DK = [1, 1, 1, 1, Math.SQRT2, Math.SQRT2, Math.SQRT2, Math.SQRT2];
-    let found = false, guard = 0;
+    let found = false, best = start, bestDist = Infinity, guard = 0;
     while (size > 0 && guard++ < 200000) {
       const cur = pop();
       if (closedAt[cur] === gen) continue;
       if (cur === goal) { found = true; break; }
       closedAt[cur] = gen;
       const c = cur % cols, r = Math.floor(cur / cols);
+      if (toward) {
+        const d = (this.minX + (c + 0.5) * cell - bx) ** 2 + (this.minZ + (r + 0.5) * cell - bz) ** 2;
+        if (d < bestDist || (d === bestDist && length(cur) < length(best))) { best = cur; bestDist = d; }
+      }
       for (let d = 0; d < 8; d++) {
         const dc = DC[d], dr = DR[d];
         const nc = c + dc, nr = r + dr;
@@ -124,12 +138,12 @@ export class NavGrid {
         if (stamp[k] !== gen || ng < g[k]) { stamp[k] = gen; g[k] = ng; came[k] = cur; push(k, ng + h(k)); }
       }
     }
-    if (!found) return null;
+    if (!found && (!toward || Math.hypot(bx - ax, bz - az) - Math.sqrt(bestDist) < 0.6)) return null;
     const cells: number[] = [];
-    for (let k = goal; k >= 0; k = came[k]) { cells.push(k); if (k === start) break; }
+    for (let k = found ? goal : best; k >= 0; k = came[k]) { cells.push(k); if (k === start) break; }
     cells.reverse();
     const pts = cells.map((k) => this.center(k));
-    pts[pts.length - 1] = [bx, bz];
+    if (found) pts[pts.length - 1] = [bx, bz];
     pts.unshift([ax, az]);
     // string pulling
     const out: [number, number][] = [pts[0]];

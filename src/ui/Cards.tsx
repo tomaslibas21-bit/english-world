@@ -9,6 +9,7 @@ import { useCards, unitInput, sentenceInput, cardKey, cleanText, isDashGloss, du
 import { NPCS } from "../content/npcs";
 import { coachVoice } from "../content/voices";
 import { SITUATION_BY_ID } from "../content/situations/catalog";
+import { SitIcon } from "./SitIcon";
 import { audio } from "../game/audio";
 import { Icon } from "./icons";
 import { ltCount } from "./lt";
@@ -317,7 +318,7 @@ function Review({ ids, onExit, onMore }: { ids: string[]; onExit: () => void; on
         <span className="rv-count" aria-label={L("Kortelė {n} iš {total}", { n: p + 1, total: queue.length })}>{p + 1}/{queue.length}</span>
       </div>
       <div className={"rv-card" + (shown ? " shown" : "") + (long ? " long" : "")} onClick={() => !shown && setShown(true)}>
-        <div className="rv-label">{L("Pasakyk angliškai")}{sit ? <span className="rv-sit"> · {sit.title.lt}</span> : null}</div>
+        <div className="rv-label">{L("Pasakyk angliškai")}{sit ? <span className="rv-sit"> · <SitIcon id={sit.id} size="1.15em" />{"\u00a0"}{sit.title.lt}</span> : null}</div>
         <div className="rv-lt" lang={EDITION.helper}>{card.lt}</div>
         {shown ? (
           <div className="rv-answer">

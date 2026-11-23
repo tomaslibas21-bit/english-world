@@ -19,6 +19,7 @@ import { sitProgress, stars } from "../state/progress";
 import { toImperative } from "./lt";
 import { Icon, InlineIcon, KeepsakeIcon, Stars, type IconName } from "./icons";
 import { isPhone, objectiveLabels, sitIcon, walkToSituation } from "./objective";
+import { SitIcon } from "./SitIcon";
 import { showToast } from "./Toasts";
 import { Confetti } from "./Confetti";
 import { HL, L, Lx, TL } from "./i18n";
@@ -263,7 +264,7 @@ function EndCard({ sit }: { sit: SituationDef }) {
         {completed && kind && <div className="ended-keepsake"><KeepsakeIcon kind={kind} /> {L("Gavai {item}", { item: L(KIND[kind].accusative) })}</div>}
         {newExpressions.length > 0 && <div className="ended-sub">{L("Naujų frazių knygelėje: {n}", { n: newExpressions.length })}</div>}
       </div>}
-      {modeOffer && <button className={`btn ${modeOffer.id}-cta`} onClick={() => game?.modeFromConversation(modeOffer.id)}><Icon name="star" size={19} /> {modeOffer.label}</button>}
+      {modeOffer && <button className={`btn ${modeOffer.id}-cta`} onClick={() => game?.modeFromConversation(modeOffer.id)}>{modeOffer.id === "surf" ? <SitIcon id={sit.id} size={19} /> : <Icon name="star" size={19} />} {modeOffer.label}</button>}
       {light ? (
         <div className="sit-actions">
           <button className="btn" onClick={startNext}><Icon name="arrowRight" size={18} /> {L("Kita situacija")}</button>

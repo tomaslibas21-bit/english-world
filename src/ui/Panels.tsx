@@ -19,7 +19,8 @@ import { audio } from "../game/audio";
 import { STYLES_ENABLED } from "../game/worldStyles";
 import { speechSupported, localAvailability, installLocal, refreshLocalState, type LocalAvailability } from "../convo/speech";
 import { avatarColor } from "./Conversation";
-import { isPhone, locIcon, sitIcon, walkToSituation } from "./objective";
+import { isPhone, locIcon, walkToSituation } from "./objective";
+import { SitIcon } from "./SitIcon";
 import { Icon, InlineIcon, KeepsakeIcon, Stars, type IconName } from "./icons";
 import type { SituationMeta } from "../content/types";
 import { useCards, cardKey, dueCards, ipaFor, type CardInput } from "../state/cards";
@@ -150,7 +151,7 @@ function SitCard({ s, onClick, open }: { s: SituationMeta; onClick?: () => void;
   const Row = onClick ? "button" : "div";
   return (
     <Row className={"sit-card" + (progress.objective === s.id ? " current" : "")} data-sit={s.id} onClick={onClick} aria-expanded={open}>
-      <span className="ico"><Icon name={locIcon(s.location)} size={24} /></span>
+      <span className="ico"><SitIcon id={s.id} size={24} /></span>
       <span className="txt">
         <b>{s.title.lt}</b>
         <span><i style={{ fontFamily: "var(--en)", fontSize: "1.1em" }}>{s.title.en}</i> · {loc?.lt}{s.song !== "" && <> · {L("daina {song}", { song: s.song })}</>}</span>
@@ -252,7 +253,7 @@ function ScenarioCard({ s, close }: { s: SituationMeta; close: () => void }) {
   const st = stars(sitProgress(progress, s.id));
   return (
     <button className={"scn-card" + (st ? " done" : "")} data-sit={s.id} onClick={() => { close(); game?.startScenario(s.id); }}>
-      <span className="ico"><Icon name={sitIcon(s)} size={24} /></span>
+      <span className="ico"><SitIcon id={s.id} size={24} /></span>
       <span className="txt">
         <b lang={HL}>{s.title.lt}</b>
         <i lang={TL}>{s.title.en}</i>
@@ -417,8 +418,11 @@ function Phone({ close }: { close: () => void }) {
         const n = NPCS[s.npc];
         const st = stars(sitProgress(progress, s.id));
         return (
-          <button key={s.id} className={"contact" + (progress.objective === s.id ? " current" : "")} onClick={() => { close(); game?.call(s.id); }}>
-            <span className="avatar" style={{ background: avatarColor(s.npc) }}>{s.mode === "video" ? <Icon name="video" size={20} /> : n?.name.replace(/^(Mr\.|Ms\.|Mrs\.) /, "").charAt(0)}</span>
+          <button key={s.id} className={"contact" + (progress.objective === s.id ? " current" : "")} data-sit={s.id} onClick={() => { close(); game?.call(s.id); }}>
+            <span className="avatar" style={{ background: avatarColor(s.npc) }}>
+              {s.mode === "video" ? <Icon name="video" size={20} /> : n?.name.replace(/^(Mr\.|Ms\.|Mrs\.) /, "").charAt(0)}
+              <span className="contact-badge"><SitIcon id={s.id} size={13} /></span>
+            </span>
             <span className="txt"><b>{n?.name}</b><span>{s.title.lt}{st ? <> · <Stars n={st} of={st} size={13} label={L("{n} iš 3", { n: st })} /></> : null}</span></span>
             <span className="call"><Icon name={s.mode === "video" ? "video" : "phoneCall"} size={21} /></span>
           </button>
@@ -562,7 +566,7 @@ function Phrasebook({ close }: { close: () => void }) {
             )}
             {[...bySit.entries()].map(([sid, list]) => (
               <div key={sid} className="chapter">
-                <h3>{SITUATION_BY_ID[sid]?.title.lt ?? sid}</h3>
+                <h3><SitIcon id={sid} size="1.15em" />{SITUATION_BY_ID[sid]?.title.lt ?? sid}</h3>
                 {list.map(([k, v]) => {
                   const inCards = cardKeys.has(cardKey(v.en));
                   return (

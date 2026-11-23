@@ -22,7 +22,7 @@ import type { CaveView } from "./Cave";
 import * as P from "./plan";
 import { caveQuestTarget } from "./routing";
 import type { Sentence } from "../../convo/compose";
-import { loadSituation } from "../../content/situations/catalog";
+import { SITUATIONS, loadSituation } from "../../content/situations/catalog";
 
 /** What the learner sees at a stone (store hud.glyph; src/ui/Cave.tsx). */
 export interface GlyphQuiz {
@@ -37,7 +37,7 @@ export interface GlyphQuiz {
   mic: "off" | "listening" | "missed" | "unsupported"; heard: string;
 }
 /** The chamber and quest card (store hud.cave). */
-export interface CaveCard { n: number; of: number; name: string; lt: string; lit: number; stones: number; next: string; open: number }
+export interface CaveCard { n: number; of: number; name: string; lt: string; lit: number; stones: number; next: string; nextSitId?: string; open: number }
 
 /** How long a stone rests after it is understood, once the stones speak again (s). */
 const REARM = 40;
@@ -279,10 +279,12 @@ export class CaveQuest {
       // the heart found: the tree waits to be heard; then the stones' lines, counted
       : !s.tree ? L("Prieik prie didžiojo medžio – jis nori tau kai ką pasakyti")
       : ((g) => (g.of ? L("Akmenys vėl kalba. Išgirsta frazių: {n} iš {of}", g) : L("Radai Ka'an širdį!")))(this.progress());
+    const nextSitId = step.kind === "alux" ? SITUATIONS.find((sit) => sit.npc === step.npc)?.id
+      : step.kind === "done" && !s.tree ? P.TREE_SIT : undefined;
     const lit = this.replay ? c.stones.filter((q) => this.relit.has(q.id)).length : P.stonesLit(s, here);
-    const card: CaveCard = { n: c.n, of: P.CHAMBERS.length, name: c.name, lt: L(c.lt), lit, stones: c.stones.length, next, open: P.chambersOpen(s, SEE_ALL) };
+    const card: CaveCard = { n: c.n, of: P.CHAMBERS.length, name: c.name, lt: L(c.lt), lit, stones: c.stones.length, next, nextSitId, open: P.chambersOpen(s, SEE_ALL) };
     const old = useStore.getState().hud.cave;
-    if (!old || old.n !== card.n || old.lit !== card.lit || old.next !== card.next || old.open !== card.open) useStore.getState().setHud({ cave: card });
+    if (!old || old.n !== card.n || old.lit !== card.lit || old.next !== card.next || old.nextSitId !== card.nextSitId || old.open !== card.open) useStore.getState().setHud({ cave: card });
   }
 
   // ----------------------------------------------------------------------------------------- at a stone

@@ -1,6 +1,7 @@
 // Run against a local Vite server. Use WORLD_STORAGE=puerto-colibri for VITE_EDITION=es and
 // WORLD_LEARNER=lt for VITE_LEARNER=lt. WORLD_PLAYWRIGHT_MODULE selects an existing Playwright installation.
 import assert from "node:assert/strict";
+import { openPhoneMenu } from "./screen-harness.mjs";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -162,6 +163,7 @@ try {
       await wait(() => page.evaluate(() => window.__ew?.store.getState().screen === "play"), "town loads", 3000);
       const baseline = await page.evaluate(() => window.__ew.game.orderedSituations().length);
       assert.equal(baseline, es ? 51 : 50);
+      await openPhoneMenu(page); // (batch 0: on a phone the town's tools fold behind the menu)
       await press(page.getByRole("button", { name: ui.list, exact: true }).first());
       assert.equal(await page.locator(`.scn-card[data-sit="${situation}"]`).count(), 0);
       await press(page.locator(".sheet").getByRole("button", { name: ui.close }));
@@ -349,6 +351,7 @@ try {
       assert.notDeepEqual((await state()).layout.map(({ id }) => id), rack);
       await press(page.getByRole("button", { name: ui.end, exact: true }));
       await wait(async () => (await state()) === null, "returns to walking");
+      await openPhoneMenu(page);
       await press(page.getByRole("button", { name: ui.map, exact: true }).first());
       await press(page.getByRole("button", { name: place, exact: true }));
       assert.equal(await page.locator(".sheet").getByRole("button", { name: ui.guide, exact: true }).count(), 1);

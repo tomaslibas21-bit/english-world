@@ -1,5 +1,6 @@
 import { useStore, usesTownNotes, type Toast } from "../state/store";
 import { useSurf } from "../game/surf/store";
+import { SitIcon } from "./SitIcon";
 import { Icon, Stars, splitLead, withIcons, type IconName } from "./icons";
 import { L } from "./i18n";
 
@@ -37,7 +38,9 @@ function ToastList({ toasts, town }: { toasts: Toast[]; town?: boolean }) {
         const icon = (t as ToastInput).icon ?? lead.icon ?? KIND_ICON[t.kind] ?? "info";
         return (
           <div key={t.id} className={"toast " + t.kind} data-ride-hint={t.rideHint}>
-            <span className="t-icon"><Icon name={icon} size={22} /></span>
+            {t.sitId
+              ? <SitIcon id={t.sitId} size="1.25em" className="t-situation" />
+              : <span className="t-icon"><Icon name={icon} size={22} /></span>}
             <div className="t-text">
               <b>{lead.stars > 0 && <Stars n={lead.stars} of={lead.stars} size={17} label={L("{n} iš 3", { n: lead.stars })} />}{withIcons(lead.rest)}</b>
               {t.body && <p>{withIcons(t.body)}</p>}

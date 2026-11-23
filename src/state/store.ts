@@ -148,6 +148,7 @@ export interface Toast {
   title: string;
   body?: string;
   better?: string;
+  sitId?: string;
   ms?: number;
   rideHint?: "waiting" | "other";
 }

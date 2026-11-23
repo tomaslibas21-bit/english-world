@@ -105,6 +105,8 @@ export interface TrafficCar {
   front: number;
   /** Full size and in the picture (not growing at its lane's start or shrinking at its end). */
   whole?: boolean;
+  /** The player climbed on while it was moving. */
+  rider?: boolean;
   /** Waiting for the player to get off or step away (s still to wait once they have), and how long they have stood
    *  beside it without getting on (s). */
   held?: number;
@@ -112,8 +114,7 @@ export interface TrafficCar {
   batchBody?: THREE.Mesh;
   damagedBody?: THREE.Mesh;
   byT?: number;
-  /** Its hood, roof and trunk as pieces with a height (ledges.ts), read from its own mesh the first time it stands
-   *  still: `at` is where it stood then, `now` the same pieces where it stands at the moment. */
+  /** The pieces read from its mesh at `at`, shifted to the car's current position in `now`. */
   decks?: { at: number; pieces: Piece[]; x: number; now: Piece[] };
 }
 type Car = TrafficCar;
@@ -449,7 +450,7 @@ export class Ambient {
     return { female: w.female };
   }
 
-  update(dt: number, player: THREE.Vector3, cam?: THREE.Vector3, driven?: DrivenCar) {
+  update(dt: number, player: THREE.Vector3, cam?: THREE.Vector3, feet = player.y, air = false, driven?: DrivenCar) {
     this.learner.set(player.x, player.y + 1.5, player.z);
     // at most one path search every 0.3 s (a long search takes a few milliseconds)
     this.pathCooldown -= dt;
@@ -480,7 +481,7 @@ export class Ambient {
         w.dog.update(dt, w.ch.root.localToWorld(_hand.set(-0.38, 0.74, 0.08)), p.x, p.z, w.heading, w.ch.anim === "walk");
       }
     }
-    for (const c of this.cars) this.updateCar(c, dt, player, driven);
+    for (const c of this.cars) this.updateCar(c, dt, player, feet, air, driven);
   }
 
   private updateWalker(w: Walker, dt: number, player: THREE.Vector3) {
@@ -573,7 +574,7 @@ export class Ambient {
     return ahead;
   }
 
-  private updateCar(c: Car, dt: number, player: THREE.Vector3, driven?: DrivenCar) {
+  private updateCar(c: Car, dt: number, player: THREE.Vector3, feet = player.y, air = false, driven?: DrivenCar) {
     if (c.hidden > 0) {
       c.hidden -= dt;
       const sx = c.dir > 0 ? c.from : c.to;
@@ -591,10 +592,18 @@ export class Ambient {
       else if (c.hidden <= 0) c.hidden = 0.5;
       return;
     }
-    // obstacles: the player, people and the car ahead
-    let gap = this.riding ? Infinity : this.blockedAhead(c, player.x, player.z);
-    // A ride outside the traffic lane's ends cannot block that lane.
-    const h = c.half;
+    const h = c.half, dx = Math.abs(player.x - c.x), dz = Math.abs(player.z - c.lane);
+    if (c.whole && dx < h.x + 6 && dz < h.z + 6) this.readDecks(c);
+    // on it: standing on its hood, roof or trunk; or in the air over it having jumped up from it (they keep its pace).
+    // Someone in the air who came from the street is not: the car comes in under them, and they land on it.
+    const over = !!(c.whole && c.decks?.pieces.length && !this.riding && dx < h.x + 0.45 && dz < h.z + 0.45);
+    const on = over && (air ? !!c.rider && feet > 0.3 : player.y > 0.3);
+    const standing = this.standing(c);
+    c.rider = on && (!!c.rider || !standing);
+    // A player on this car is out of its way, and so is one in the air (a jump onto it as it comes: it keeps its pace
+    // and they come down on it, 22 Nov 2026); on the ground ahead of it they are waited for.
+    let gap = this.riding || on || air ? Infinity : this.blockedAhead(c, player.x, player.z);
+    // (and a car one can drive, parked in the lane or rolling along it; a ride outside the lane's ends cannot block it)
     for (const b of this.rideBoxes) {
       const s = Math.abs(Math.sin(b.heading)), co = Math.abs(Math.cos(b.heading));
       const ex = s * b.hl + co * b.hw, ez = co * b.hl + s * b.hw;
@@ -625,25 +634,30 @@ export class Ambient {
         want = Math.min(want, Math.max(0, (-behind - c.half.x - 4.1) * 1.1));
       }
     }
-    // a car that has stopped can be climbed like a parked one (carPieces), and its driver waits while the player is on
-    // it or over it, a few seconds while they stand right beside it, and a moment longer
-    if (this.standing(c)) {
-      const h = c.half, dx = Math.abs(player.x - c.x), dz = Math.abs(player.z - c.lane);
-      if (dx < h.x + 6 && dz < h.z + 6) this.readDecks(c);
-      const on = dx < h.x + 0.45 && dz < h.z + 0.45 && player.y > 0.3, by = dx < h.x + 1.1 && dz < h.z + 1.1;
+    // A car that was already standing still waits for the player to get off.
+    if (standing && !c.rider) {
+      const by = dx < h.x + 1.1 && dz < h.z + 1.1;
       // (beside it only for a few seconds: time to jump on, not a street held up by someone talking at the curb)
       c.byT = by && !on ? (c.byT ?? 0) + dt : 0;
       if (c.decks?.pieces.length && (on || (by && c.byT < 4))) c.held = 0.8;
       else c.held = Math.max(0, (c.held ?? 0) - dt);
       if (c.held > 0) want = 0;
     } else c.held = 0;
+    const end = c.dir > 0 ? c.to : c.from;
+    const room = c.rider ? Math.max(0, (end - c.x) * c.dir - 6) : Infinity;
+    want = Math.min(want, Math.sqrt(2 * 9 * room));
+    // (a crash: it comes to a stop and stands a moment)
     if (c.crashStop && c.crashStop > 0) {
       c.speed = Math.max(0, c.speed - 20 * dt);
       if (c.speed === 0) c.crashStop = Math.max(0, c.crashStop - dt);
-    } else c.speed += Math.max(-9 * dt, Math.min(3 * dt, want - c.speed));
-    c.x += c.speed * c.dir * dt;
+    // (someone right at its bumper, come down from a jump in front of it: it stops at once, not after a shove; the gap
+    // is measured from where a car's front would be, blockedAhead)
+    } else c.speed += Math.max((gap < c.half.x - c.front + 1.8 ? -30 : -9) * dt, Math.min(3 * dt, want - c.speed));
+    const step = Math.min(c.speed * dt, room);
+    if (step === room) c.speed = 0;
+    c.x += step * c.dir;
+    if (c.rider) player.x += step * c.dir;
     c.grow = Math.min(1, c.grow + dt * 1.6);
-    const end = c.dir > 0 ? c.to : c.from;
     const toEnd = (end - c.x) * c.dir;
     const s = Math.min(c.grow, Math.max(0, Math.min(1, toEnd / 3)));
     c.whole = s >= 1;
@@ -824,37 +838,40 @@ export class Ambient {
   /** A car standing still at its full size. */
   private standing(c: Car) { return c.hidden <= 0 && !!c.whole && c.speed < 0.05; }
 
-  /** A stopped car exposes the same climbable surfaces as a parked car of this model. */
+  /** A traffic car has the same climbable surfaces as a parked car of its model (a bus or a colectivo: read from its
+   *  own mesh), read once and moved with it (carPieces); none for what is too tall to climb: that stays a wall. */
   private readDecks(c: Car) {
     if (c.decks) return;
     const pieces = c.model ? carLedges(c.model, c.x, c.lane, c.mesh.rotation.y) : this.proceduralDecks(c);
     c.decks = { at: c.x, pieces, x: c.x, now: pieces };
   }
 
-  /** Read the stopped bus and colectivo's surfaces from their procedural meshes. */
+  /** Read the bus and colectivo's surfaces from their procedural meshes. */
   private proceduralDecks(c: Car) {
     const plan = new GroundPlan();
     plan.addBox(c.x, c.lane, c.half.x * 2, c.half.z * 2, "car");
     return Ledges.build(c.mesh, plan).pieces;
   }
 
-  /** The hoods, roofs and trunks of the cars standing still near (x, z), as pieces with a height (ledges.ts): a car
-   *  that has stopped for the player is climbed like a parked one. A car on the move is a wall (resolvePlayer). */
+  /** The nearby cars' pieces at their current positions. */
   carPieces(x: number, z: number): Piece[] {
+    if (!this.group.visible) return NO_PIECES;
     let out: Piece[] = NO_PIECES;
     for (const c of this.cars) {
+      if (!c.whole || c.hidden > 0 || Math.abs(c.x - x) > 8 || Math.abs(c.lane - z) > 7) continue;
+      this.readDecks(c);
       const d = c.decks;
-      if (!d?.pieces.length || !this.standing(c) || Math.abs(c.x - x) > 8 || Math.abs(c.lane - z) > 7 || !this.group.visible) continue;
-      if (d.x !== c.x) { const dx = c.x - d.at; d.now = d.pieces.map((q) => ({ minX: q.minX + dx, maxX: q.maxX + dx, minZ: q.minZ, maxZ: q.maxZ, top: q.top })); d.x = c.x; }
+      if (!d?.pieces.length) continue;
+      if (d.x !== c.x) { const dx = c.x - d.at; d.now = d.pieces.map((q) => ({ ...q, minX: q.minX + dx, maxX: q.maxX + dx })); d.x = c.x; }
       out = out.length ? out.concat(d.now) : d.now;
     }
     return out;
   }
 
-  /** Keep the player out of the cars on the move (one standing still is climbed, not walked into: carPieces). */
+  /** Cars without usable pieces keep their box collision. */
   resolvePlayer(p: THREE.Vector3, r: number) {
     for (const c of this.cars) {
-      if (c.hidden > 0 || c.mesh.scale.x < 0.5 || (this.standing(c) && c.decks?.pieces.length)) continue;
+      if (c.hidden > 0 || c.mesh.scale.x < 0.5 || (c.whole && c.decks?.pieces.length)) continue;
       const { x: hx, z: hz } = c.half;
       const cx = Math.max(c.x - hx, Math.min(p.x, c.x + hx)), cz = Math.max(c.lane - hz, Math.min(p.z, c.lane + hz));
       const dx = p.x - cx, dz = p.z - cz, d2 = dx * dx + dz * dz;

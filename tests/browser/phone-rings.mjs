@@ -1,5 +1,6 @@
 // Run against the same local server and Chromium setup as taxi.mjs.
 import assert from "node:assert/strict";
+import { openPhoneMenu } from "./screen-harness.mjs";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -238,6 +239,7 @@ try {
   await shot("ringing", card);
   await press(card.getByRole("button", { name: ui("Atmesti", "Decline"), exact: true }));
   assert.equal((await state()).missed[flood]?.presentations, 1);
+  await openPhoneMenu(page); // (batch 0: on a phone the town's tools fold behind the menu)
   const toolbarPhone = page.locator(`.toolbar button[title="${ui("Telefonas (P)", "Phone (P)")}"]`);
   assert.equal(await toolbarPhone.locator(".due-badge").innerText(), "1");
   await press(toolbarPhone);

@@ -5,6 +5,7 @@ import { useEffect, useState, type ComponentType } from "react";
 import { useStore } from "../state/store";
 import { game } from "../game/gameRef";
 import { Icon } from "./icons";
+import { SitIcon } from "./SitIcon";
 import { Interlinear } from "./Interlinear";
 import { L, TL } from "./i18n";
 import { EDITION } from "../edition";
@@ -27,6 +28,8 @@ export function CaveCard({ arrow: Arrow, phoneToast }: { arrow: ComponentType<{ 
   const stonesLabel = L("Uždegta akmenų: {lit} iš {n}", { lit: cave.lit, n: cave.stones });
   const stones = Array.from({ length: cave.stones }, (_, i) => <i key={i} className={i < cave.lit ? "on" : ""} />);
   const objectiveLabel = objective?.where.trim() || objective?.title.trim();
+  // (the conversation that comes next down here has its own icon, as everywhere else)
+  const nextIcon = cave.nextSitId && <><SitIcon id={cave.nextSitId} size="1.15em" />{" "}</>;
   return (
     <div className="cave-card" role="status">
       <div className="cave-top">{name}{count}</div>
@@ -48,10 +51,10 @@ export function CaveCard({ arrow: Arrow, phoneToast }: { arrow: ComponentType<{ 
         {map.questX !== undefined && map.questZ !== undefined && cave.next.trim() ? (
           <div className="cave-guide">
             <Arrow angle={Math.atan2(map.questX - map.px, map.questZ - map.pz)} />
-            <p id="cave-quest-label">{cave.next}</p>
+            <p id="cave-quest-label">{nextIcon}{cave.next}</p>
             <button className="btn small" data-guide="cave" aria-describedby="cave-quest-label" onClick={() => game?.autoWalkToObjective("cave")}><Icon name="walk" size={17} /> {L("Nuvesk mane")}</button>
           </div>
-        ) : <p>{cave.next}</p>}
+        ) : <p>{nextIcon}{cave.next}</p>}
         {objective?.angle != null && objectiveLabel && (
           <div className="cave-guide">
             <Arrow angle={objective.angle} />

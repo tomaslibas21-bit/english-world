@@ -15,11 +15,11 @@ import { Steer, Gait, Hop, angleDiff, smoothstep } from "./movement";
 import { Ledges, LAND } from "./ledges";
 import { coach } from "./coach";
 import { Wading, Splashes, floorY, waterY, bayHold, SEA_LEVEL, SHORE, SWIM, BAY } from "./water";
-import { Rides, type Ride } from "./rides/Rides";
+import { Rides, SHALLOWS, type Ride } from "./rides/Rides";
 import { KeepsakeInHand } from "./keepsake";
 import { keepsakeFor } from "../content/keepsakes";
 import { Undersea } from "./rides/undersea";
-import { CAR_DRIFT, BOAT_DRIFT, controlsFrom, type Controls } from "./rides/drive";
+import { CAR_DRIFT, BOAT_DRIFT, BOAT, BAY_EDGE, controlsFrom, pointAndGo, type Controls } from "./rides/drive";
 import { RIDES } from "./world/rides";
 import { ROAD_EDITION, ROAD_UI } from "../content/road";
 import { RoadEntry, leavingByRoad, walkEdge } from "./road/entry";
@@ -141,7 +141,7 @@ function talkAt(sp: { x: number; z: number; ax?: number; az?: number }) {
 /** Close enough to talk to someone (the "Kalbėtis" prompt shows): `talkDist` under this. */
 const TALK_RANGE = 2.9;
 /** How far `p` is from talking to `n`: from them, or from their spot to talk from plus a metre. */
-function talkDist(n: NpcActor, p: THREE.Vector3) {
+function talkDist(n: NpcActor, p: { x: number; z: number }) {
   const d = Math.hypot(n.home.x - p.x, n.home.z - p.z);
   return n.approach ? Math.min(d, Math.hypot(n.approach.x - p.x, n.approach.z - p.z) + 1) : d;
 }
@@ -216,6 +216,8 @@ export class Game implements GameApi {
   private autoTarget: WalkTarget | null = null;
   private guidedWalk: GuideMode | null = null;
   private caveGuideMode: GuideMode = "objective";
+  private walkCheck = { time: 0, remaining: Infinity };
+  private lastBlockedTap = -Infinity;
   private clock = new THREE.Clock();
   private t = 0;
   private hudT = 0;
@@ -292,6 +294,13 @@ export class Game implements GameApi {
   private moveVel = new THREE.Vector3();
   private tmpV = new THREE.Vector3();
   private disposed = false;
+  private screenW = 0;
+  private screenH = 0;
+  /** A phone held sideways, by the size the picture has now (useScreen's SIDEWAYS_PHONE, without waiting for the
+   *  browser's media query: after a rotation that can still say what the screen was a moment ago). */
+  private get sidewaysPhone() { return this.screenW > this.screenH && this.screenH <= 520; }
+  private readonly visualViewport = window.visualViewport;
+  private resizeObserver: ResizeObserver | null = null;
   private ambient!: Ambient;
   private carLoadStarted = false;
   private carVisuals?: CarVisuals;
@@ -308,6 +317,8 @@ export class Game implements GameApi {
   private get wild() { return this.zone?.interior?.wild ?? null; }
   /** Walking under the player's own control (movement.ts): the direction pressed, the turn and the speed, a hop. */
   private steer = new Steer();
+  // At the helm a held stick keeps the same world direction, even on the way back.
+  private helmSteer = new Steer(0, false);
   private gait = new Gait();
   private gaitOn = false;
   private hop = new Hop();
@@ -337,6 +348,11 @@ export class Game implements GameApi {
   get surf() { return (this.modes.get("surf") as ReturnType<typeof createSurfMode>)?.play ?? null; }
 
   private brake = false;
+  /** Where a tap from the wheel or the helm sent the car or the boat (it drives there by itself until it is there, is
+   *  stuck, or the player takes the wheel): how long it has got nowhere (s), whether it is stopping, how long it is
+   *  still to back up with the wheel the other way round (a turn in three: a tap behind a parked car), how many times
+   *  it has backed up, how long it has been going (s). */
+  rideGoal: { x: number; z: number; still: number; stopping: boolean; back: number; turn: boolean; tries: number; age: number } | null = null;
   private bumpT = 0;
   private braked = false;
   private dustT = 0;
@@ -383,7 +399,6 @@ export class Game implements GameApi {
     const q = useStore.getState().settings.quality;
     this.renderer = new THREE.WebGLRenderer({ antialias: q === "high", powerPreference: "high-performance" });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, q === "high" ? 1.75 : 1));
-    this.renderer.setSize(container.clientWidth, container.clientHeight);
     this.renderer.shadowMap.enabled = q === "high";
     // soft edges come from the sun's shadow.radius (three.js no longer has PCFSoftShadowMap)
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -392,7 +407,8 @@ export class Game implements GameApi {
     this.renderer.toneMappingExposure = 1.0;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     container.appendChild(this.renderer.domElement);
-    this.rig = new CameraRig(container.clientWidth / container.clientHeight);
+    this.rig = new CameraRig(1);
+    this.syncSize();
     styleRenderer(this.renderer, this.rig.cam, q);
     for (const s of SITUATIONS) {
       const ids = s.npc === "sam" || s.npc === "emma" ? ["sam", "emma"] : [s.npc];
@@ -428,7 +444,7 @@ export class Game implements GameApi {
       skip: (o) => o.userData?.v !== undefined || !!o.userData?.gull || !!o.userData?.boat || o === this.town.parkedCars.group, thin: (o) => !!(o.userData?.thin || o.userData?.roofOnly), keep: this.town.seats.filter((s) => s.table).map((s) => [s.x, s.z]), tall: (x, z) => this.field.overSolid(x, z),
       beside: OUTDOOR_NPCS.flatMap((n) => (n.ax !== undefined && n.az !== undefined ? [[n.x, n.z], [n.ax, n.az]] : [[n.x, n.z]]) as [number, number][]),
     }, (next) => setTimeout(next, 16));
-    // (a car that has stopped is climbed like a parked one: its pieces come and go with it)
+    // The traffic's climbable pieces move with the cars (a mini-game's parked car is climbed too).
     this.ledges.dynamic = (x, z) => {
       const traffic = this.ambient.carPieces(x, z);
       const parked = this.rides.modeCarPieces(x, z);
@@ -684,6 +700,13 @@ export class Game implements GameApi {
     window.addEventListener("pagehide", this.phonePageHide);
     this.bindInput();
     window.addEventListener("resize", this.onResize);
+    window.addEventListener("orientationchange", this.onResize);
+    window.addEventListener("pageshow", this.onResize);
+    this.visualViewport?.addEventListener("resize", this.onResize);
+    if (typeof ResizeObserver !== "undefined") {
+      this.resizeObserver = new ResizeObserver(this.onResize);
+      this.resizeObserver.observe(this.container);
+    }
     this.renderer.setAnimationLoop(this.loop);
     this.refreshObjective();
     // Keep the logo over the canvas until an actual town frame is ready to show.
@@ -1090,11 +1113,11 @@ export class Game implements GameApi {
       return;
     }
     if (["arrowup", "arrowdown", "arrowleft", "arrowright", "w", "a", "s", "d", "shift"].includes(k)) {
-      this.keys.add(k); this.stopAutoWalk(); e.preventDefault(); return;
+      this.keys.add(k); this.stopAutoWalk(); this.rideGoal = null; e.preventDefault(); return;
     }
     // Space: talk or go in, as E, when there is someone or a door to; else a jump (in the air: the second jump). At a wheel it
     // is the brake, for as long as it is held; swimming, a dive
-    if (k === " " && this.rides.riding) { this.keys.add(" "); e.preventDefault(); return; }
+    if (k === " " && this.rides.riding) { this.keys.add(" "); this.rideGoal = null; e.preventDefault(); return; }
     if (k === " ") { if (this.nearest && !this.hop.air && !this.swimming) this.interact(); else if (!e.repeat) this.jump(); e.preventDefault(); return; }
     if (k === "e" || k === "enter") { this.interact(); e.preventDefault(); return; }
     if (k === "m") st.setHud({ panel: "map" });
@@ -1203,7 +1226,11 @@ export class Game implements GameApi {
     if (edge && this.road.offer(edge)) this.modes.start("road", "walk");
   }
 
-  setJoystick(x: number, y: number) { this.joy.x = x; this.joy.y = y; if (x || y) this.stopAutoWalk(); }
+  setJoystick(x: number, y: number) {
+    this.joy.x = x; this.joy.y = y;
+    if (x || y) { this.stopAutoWalk(); this.rideGoal = null; }
+    else this.helmSteer.reset();
+  }
 
   /** What the player stands on, for the sound of their steps (soundscape.ts): `raised` on a pier's or a terrace's
    *  boards or a bench (ledges.ts). */
@@ -1226,7 +1253,7 @@ export class Game implements GameApi {
   }
 
   /** The jump button held down or let go: at a wheel it is the brake. */
-  hold(on: boolean) { this.brake = on; }
+  hold(on: boolean) { this.brake = on; if (on) this.rideGoal = null; }
 
   /** Under the water for a few breaths (and back up at once on a second press): only where it is deep enough for the
    *  camera to follow. */
@@ -1363,12 +1390,15 @@ export class Game implements GameApi {
     this.vel.set(0, 0, 0); this.moveVel.set(0, 0, 0);
     this.gait.sync(this.heading, 0); this.gaitOn = false; this.steer.reset();
     this.keys.delete(" "); this.brake = false;
+    this.rideGoal = null;
+    this.helmSteer.reset();
     this.ambient.riding = false;
     this.nearest = null;
     audio.motor(null);
     audio.rush("squeal", 0); audio.rush("wind", 0);
     // (the camera comes back to where the player had it)
     this.rig.dist /= 1 + this.rideBack; this.rideBack = 0; this.rideFov = 0; this.speedShake = 0;
+    this.rig.portraitHelm = false;
     useStore.getState().setHud({ prompt: null, ride: null, fast: false, speedLines: false });
   }
 
@@ -1423,10 +1453,26 @@ export class Game implements GameApi {
       if (!st.hud.panel && !this.transitioning) this.modes.input({ kind: "tap" });
       return;
     }
-    if (st.conv.active || st.hud.panel || st.hud.glyph || this.rides.riding) return;
+    if (st.conv.active || st.hud.panel || st.hud.glyph || this.transitioning || this.flight) return;
     const rect = this.renderer.domElement.getBoundingClientRect();
     const ndc = new THREE.Vector2(((cx - rect.left) / rect.width) * 2 - 1, -((cy - rect.top) / rect.height) * 2 + 1);
     this.raycaster.setFromCamera(ndc, this.rig.cam);
+    const r = this.rides.riding;
+    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), r?.kind === "boat" ? -SEA_LEVEL : 0);
+    const p = new THREE.Vector3();
+    if (r) {
+      if (this.rides.phase !== "on" || this.keys.size || this.joy.x || this.joy.y || this.brake ||
+          !this.raycaster.ray.intersectPlane(plane, p)) return;
+      if (r.kind === "boat") {
+        // Leave room for the turn the bay puts into the boat as it approaches its edges.
+        const inset = BAY_EDGE.inset + BAY_EDGE.band / 2;
+        p.x = THREE.MathUtils.clamp(p.x, BAY.x0 + inset, BAY.x1 - inset);
+        p.z = THREE.MathUtils.clamp(p.z, BAY.z0 + inset, SHALLOWS - (BOAT.half - BOAT.wide));
+      }
+      this.rideGoal = { x: p.x, z: p.z, still: 0, stopping: false, back: 0, turn: false, tries: 0, age: 0 };
+      this.clickMarker(p.x, p.z);
+      return;
+    }
     // a passer-by?
     if (!this.zone.interior) {
       const wh = this.raycaster.intersectObjects(this.ambient.walkerRoots, true);
@@ -1457,8 +1503,6 @@ export class Game implements GameApi {
       if (actor) { const t = actor.approach ?? actor.home; this.walkTo(t.x, t.z, { kind: "npc", id: actor.id }); return; }
     }
     // ground
-    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-    const p = new THREE.Vector3();
     if (!this.raycaster.ray.intersectPlane(plane, p)) return;
     // door near the click?
     if (!this.zone.interior) {
@@ -1502,10 +1546,16 @@ export class Game implements GameApi {
   private startWalk(x: number, z: number, target: WalkTarget | null) {
     const p = this.player.root.position;
     const nav = this.zone.nav;
+    const outdoors = !this.zone.interior;
+    const toSea = outdoors && z < SHORE.limit;
+    if (toSea) {
+      x = THREE.MathUtils.clamp(x, BAY.x0, BAY.x1);
+      z = Math.max(z, BAY.z0 + 0.5);
+    }
     // standing on something they jumped onto (a bench's seat): first straight down off it, to the nearest open spot
     // that its back or a wall beside it doesn't stand in the way of; the walk is planned from there
     let from: [number, number] = [p.x, p.z], down: [number, number][] = [];
-    if (!this.zone.interior && this.ledges && this.hop.ground > 0.05) {
+    if (outdoors && this.ledges && p.z >= SHORE.limit && this.hop.ground > 0.05) {
       let bd = Infinity;
       for (let dz = -3; dz <= 3; dz++) for (let dx = -3; dx <= 3; dx++) {
         const i = nav.idx(p.x + dx * nav.cell, p.z + dz * nav.cell);
@@ -1514,14 +1564,36 @@ export class Game implements GameApi {
         if (d < bd && this.ledges.clear(p.x, p.z, cx, cz, this.hop.y)) { bd = d; from = [cx, cz]; down = [from]; }
       }
     }
-    const path = nav.path(from[0], from[1], x, z);
+    const inSea = outdoors && (p.z < SHORE.limit || (p.z < SHORE.top && p.y < -0.05 && this.wading.depth > 0.08));
+    // (a tap on the ground goes as far towards it as one can; a person's talk spot, a door or the way out is walked
+    // onto exactly, even when it sits in a grid cell a counter or a wall fills)
+    const toward = target?.kind === "point";
+    let path: [number, number][] | null = inSea ? [[p.x, p.z], [x, z]]
+      : nav.path(from[0], from[1], x, toSea ? SHORE.limit + 0.5 : z, toward);
+    if (toSea && !inSea) {
+      // The pedestrian grid usually stops above the wading limit. Start the swim from its last reachable shore cell.
+      const end = path?.at(-1) ?? from;
+      if (end[1] <= SEA_Z + 1.5 * nav.cell) {
+        path ??= [from];
+        path.push([x, z]);
+      }
+    }
+    if (!path && down.length) path = [from];
+    this.autoPath = null; this.autoTarget = null;
     if (!path) {
       if (this.guidedWalk) this.stopAutoWalk();
-      useStore.getState().toast({ kind: "info", title: L("Ten nueiti negalima") });
+      const now = performance.now();
+      if (now - this.lastBlockedTap >= 6000) {
+        this.lastBlockedTap = now;
+        useStore.getState().toast({ kind: "info", title: L("Ten nueiti negalima") });
+      }
       return;
     }
+    const [endX, endZ] = path.at(-1)!;
     this.autoPath = [...down, ...path.slice(1)];
-    this.autoTarget = target;
+    const npc = target?.kind === "npc" ? this.npcs.find((n) => n.id === target.id) : undefined;
+    if ((endX === x && endZ === z) || (npc && talkDist(npc, { x: endX, z: endZ }) < TALK_RANGE - 0.35)) this.autoTarget = target;
+    this.walkCheck = { time: 0, remaining: Infinity };
     this.stepOut = 0;
   }
 
@@ -1561,7 +1633,7 @@ export class Game implements GameApi {
       if (!this.session?.active && !useStore.getState().hud.panel && !this.transitioning) this.modes.input({ kind: "interact" });
       return;
     }
-    if (this.rides.riding) { if (!this.session?.active && !useStore.getState().hud.panel) this.rides.leave(); return; }
+    if (this.rides.riding) { if (!this.session?.active && !useStore.getState().hud.panel) { this.rideGoal = null; this.rides.leave(); } return; }
     const n = this.nearest;
     if (!n) return;
     if (n.kind === "ride") { const r = this.rides.find(n.id); if (r) this.boardRide(r); }
@@ -1947,11 +2019,15 @@ export class Game implements GameApi {
     let shot = this.talkViews.get(to.id);
     if (!shot) this.talkViews.set(to.id, shot = this.talkView(to, group));
     this.talkIn = group;
+    this.talkLean = 0;
+    this.applyTalkShot(shot);
+  }
+
+  private applyTalkShot(shot: Shot) {
     // (the camera's own copy: it leans in from there while they speak)
     this.rig.talk = { pos: shot.pos.clone(), look: shot.look };
     this.talkHome = shot.near ? shot.pos : null;
     this.talkNear = shot.near ?? null;
-    this.talkLean = 0;
     // (nowhere shows their face past the learner: the learner's figure steps out of the picture meanwhile)
     this.player.root.visible = !shot.covered;
   }
@@ -2033,7 +2109,7 @@ export class Game implements GameApi {
     // On a phone held upright the picture is only the strip above the conversation (styles.css
     // --conversation-image-height; the loop's applyViewShift centres it there): each point must fall in that strip too,
     // 10 px in, for the people spoken with. A framing the old test passed and the strip shows stays as it was.
-    const sideways = h <= 520 && w > h, strip = !wide && !sideways ? talkPictureHeight(h) : 0, ssy = (h - strip) / 2;
+    const sideways = this.sidewaysPhone, strip = !wide && !sideways ? talkPictureHeight(h) : 0, ssy = (h - strip) / 2;
     // And the top of the head of each person spoken with (hair and hats included, 0.12 m to each side) under the
     // picture's top edge, 10 px in: the head and chest points alone passed with the top of a head cut off by the
     // strip's top edge (s65a's officer, s79's clerk…).
@@ -2378,7 +2454,7 @@ export class Game implements GameApi {
     const next = this.orderedSituations().find((s) => !sitProgress(pr, s.id).completions);
     this.setObjective(next?.id ?? null);
     // (in the situation picker flow the end-of-conversation buttons offer the next one instead)
-    if (next && !this.lastScenario) setTimeout(() => useStore.getState().toast({ kind: "info", title: L("Kita užduotis"), body: `${next.title.lt} — ${LOCATIONS[next.location]?.lt ?? ""}` }), 2500);
+    if (next && !this.lastScenario) setTimeout(() => useStore.getState().toast({ kind: "info", sitId: next.id, title: L("Kita užduotis"), body: `${next.title.lt} — ${LOCATIONS[next.location]?.lt ?? ""}` }), 2500);
   }
 
   currentObjective(): SituationMeta | null {
@@ -2541,12 +2617,30 @@ export class Game implements GameApi {
 
   // ------------------------------------------------------------------ loop
 
-  private onResize = () => {
+  private onResize = () => { if (!this.disposed) this.syncSize(); };
+
+  private syncSize() {
     const w = this.container.clientWidth, h = this.container.clientHeight;
+    if (w <= 0 || h <= 0 || (w === this.screenW && h === this.screenH)) return;
     this.renderer.setSize(w, h);
-    this.rig.cam.aspect = w / h;
-    this.rig.cam.updateProjectionMatrix();
-  };
+    this.rig.resize(w, h, w > h && h <= 520);
+    this.screenW = w;
+    this.screenH = h;
+    // The cached conversation shots were fitted to the previous space beside the panel.
+    const speaker = this.talkIn[0];
+    if (this.rig.mode === "talk" && speaker) {
+      this.talkViews.clear();
+      const shot = this.talkView(speaker, this.talkIn);
+      this.talkViews.set(speaker.id, shot);
+      this.applyTalkShot(shot);
+    } else if (this.talkTree) this.aimTree();
+  }
+
+  screenState() {
+    const { width: bufferW, height: bufferH } = this.renderer.domElement;
+    const { aspect, fov } = this.rig.cam;
+    return { w: this.container.clientWidth, h: this.container.clientHeight, bufferW, bufferH, pixelRatio: this.renderer.getPixelRatio(), aspect, fov, follow: this.rig.followScale };
+  }
 
   /** Resolution that follows the phone: every 2 s, slow frames (under about 45 a second) lower the pixel ratio a
    *  step, and 6 s of easy frames raise it again, between 1 and the quality's top. */
@@ -2559,13 +2653,16 @@ export class Game implements GameApi {
     const avg = p.acc / p.n, q = useStore.getState().settings.quality;
     p.acc = 0; p.n = 0;
     const top = Math.min(window.devicePixelRatio, q === "high" ? 1.75 : 1), pr = this.renderer.getPixelRatio();
-    if (avg > 22 && pr > 1) { this.renderer.setPixelRatio(Math.max(1, pr - 0.25)); this.onResize(); p.easy = 0; }
-    else if (avg < 17 && pr < top) { if ((p.easy += 2) >= 6) { this.renderer.setPixelRatio(Math.min(top, pr + 0.25)); this.onResize(); p.easy = 0; } }
+    if (avg > 22 && pr > 1) { this.renderer.setPixelRatio(Math.max(1, pr - 0.25)); p.easy = 0; }
+    else if (avg < 17 && pr < top) { if ((p.easy += 2) >= 6) { this.renderer.setPixelRatio(Math.min(top, pr + 0.25)); p.easy = 0; } }
     else p.easy = 0;
   }
 
   private loop = () => {
     if (this.disposed) return;
+    this.syncSize();
+    const w = this.screenW, h = this.screenH;
+    if (!w || !h) return;
     this.adaptResolution(performance.now());
     const elapsed = this.clock.getDelta();
     const dt = Math.min(0.05, elapsed);
@@ -2593,8 +2690,8 @@ export class Game implements GameApi {
     this.phone.tick(this.wasHidden ? 0 : elapsed, this.phoneSnapshot());
     this.wasHidden = document.hidden;
 
-    if (this.road?.render(this.renderer, this.container.clientWidth, this.container.clientHeight)
-      || this.sea?.render(this.renderer, this.container.clientWidth, this.container.clientHeight)) {
+    // (the open road and the open sea draw their own scenes, at the size syncSize has just applied)
+    if (this.road?.render(this.renderer, w, h) || this.sea?.render(this.renderer, w, h)) {
       this.sampleFps(true);
       return;
     }
@@ -2606,7 +2703,7 @@ export class Game implements GameApi {
     this.updateNpcs(dt, talking, mode ?? undefined);
     if (!this.zone.interior) {
       const driver = riding?.kind === "car" && this.rides.phase === "on" ? riding.m : undefined;
-      this.ambient.update(dt, this.player.root.position, this.rig.cam.position, driver);
+      this.ambient.update(dt, this.player.root.position, this.rig.cam.position, this.hop.y, this.hop.air, driver);
       if (this.trafficReplyAt !== undefined && this.t >= this.trafficReplyAt) {
         this.trafficReplyAt = undefined;
         if (driver && !blocked && this.ambient.nearbyTraffic(driver.x, driver.z, 20)) audio.sfx("hornReply");
@@ -2617,7 +2714,7 @@ export class Game implements GameApi {
     this.town.update(this.t, dt, this.rig.cam.position);
     this.zone.interior?.update?.(this.t, dt);
     // (the grotto: its water, lights and sparks, and its stones calling)
-    this.wild?.frame?.(this.t, dt, this.rig.cam, this.player.root.position, this.container.clientHeight * this.renderer.getPixelRatio());
+    this.wild?.frame?.(this.t, dt, this.rig.cam, this.player.root.position, h * this.renderer.getPixelRatio());
     this.cave?.update(dt, this.player.root.position, this.rig.yaw, !this.ambienceAllowed() || this.transitioning);
     if (this.caveLure && !this.zone.interior) this.caveLure.userData.tick(this.t, this.player.root.position.x, this.player.root.position.z);
     this.modes.tick(dt, !this.zone.interior && !talking && !this.wild && !this.flight);
@@ -2664,7 +2761,7 @@ export class Game implements GameApi {
     // the lens (camera.ts fovFor): wider while walking, a touch more at a run (a sense of speed), the conversation's
     // 50° exactly
     {
-      const fov = this.rig.fovFor(this.container.clientWidth, this.container.clientHeight, this.rig.mode === "follow" && this.vel.lengthSq() > 30) + (this.rig.mode === "follow" ? this.rideFov : 0);
+      const fov = this.rig.fovFor(w, h, this.rig.mode === "follow" && this.vel.lengthSq() > 30) + (this.rig.mode === "follow" ? this.rideFov : 0);
       const d = fov - this.rig.cam.fov;
       if (d !== 0) {
         this.rig.cam.fov = Math.abs(d) < 0.05 ? fov : this.rig.cam.fov + d * Math.min(1, dt * (this.rig.mode === "talk" ? 4.5 : 3));
@@ -2683,12 +2780,10 @@ export class Game implements GameApi {
     CUT.a.value.copy(this.rig.cam.position);
     CUT.b.value.copy(this.chest);
     CUT.r.value = this.rig.mode === "follow" && !this.zone.interior ? 0.55 : 0;
-    // shift the picture while the conversation panel is open; on a phone held upright, walking around, the player
-    // stands lower in the picture (about two thirds down), so the street ahead shows instead of the ground underfoot
+    // Give the conversation panel its part of the picture and let the player stand lower while walking on a phone.
     {
-      const w = this.container.clientWidth, h = this.container.clientHeight;
+      const sideways = this.sidewaysPhone;
       if (talking && (this.talkNpc || this.talkTree)) {
-        const sideways = h <= 520 && w > h;
         const wide = w > 900 && !sideways;
         // Match the conversation's visible picture area, including scenes-off 3D conversations.
         const pictureHeight = talkPictureHeight(h);
@@ -2703,8 +2798,10 @@ export class Game implements GameApi {
         mode.frameStage(w, h);
       } else {
         const stageShift = this.rig.mode === "stage" ? this.rig.stage?.shiftY : undefined;
-        const portraitShift = this.rig.mode !== "talk" && h > w * 1.15 ? -(this.rig.mode === "follow" ? 0.12 : 0.1) : 0;
-        this.rig.applyViewShift(w, h, 0, h * (stageShift ?? portraitShift));
+        const walkingLens = this.rig.mode === "follow" || this.rig.mode === "interior";
+        const uprightShift = this.rig.mode !== "talk" && h > w * 1.15 ? (this.rig.mode === "follow" ? 0.12 : 0.1) : 0;
+        const shift = sideways && walkingLens && !talking ? 0.1 : uprightShift;
+        this.rig.applyViewShift(w, h, 0, h * (stageShift ?? -shift));
       }
     }
     // sun follows the player for crisp shadows
@@ -2720,7 +2817,7 @@ export class Game implements GameApi {
       if (!blocked && !mode && riding?.kind === "boat" && this.rides.phase === "on" && this.sea?.shouldStart(riding)
         && this.modes.start("sea")) {
         this.savePlace();
-        this.sea.render(this.renderer, this.container.clientWidth, this.container.clientHeight);
+        this.sea.render(this.renderer, w, h);
         this.sampleFps(true);
         return;
       }
@@ -2809,6 +2906,7 @@ export class Game implements GameApi {
   /** An illustrated scene covers the town (a conversation in pictures). */
   private covered = false;
 
+  /** The keys or the stick, for a ride of the town's or a mini-game's (kit modes get them as they are). */
   private driveInput(blocked: boolean) {
     let x = 0, y = 0;
     if (!blocked) {
@@ -2821,13 +2919,61 @@ export class Game implements GameApi {
     return { x, y, brake: this.keys.has(" ") || this.brake };
   }
 
-  /** At a car's wheel or a boat's helm, the player sits in it. */
+  /** At a car's wheel or a boat's helm in the town: the keys or the stick drive it (rides/drive.ts); at the helm on a
+   *  phone the stick points the way (point and go); a tap on the ground or the water drives there (`rideGoal`). */
+  private townRideControls(dt: number, blocked: boolean): Controls | null {
+    const r = this.rides.riding!, m = r.m;
+    const stick = !blocked && (this.joy.x !== 0 || this.joy.y !== 0);
+    const { x, y, brake } = this.driveInput(blocked);
+    let hands = controlsFrom(x, y, brake);
+    if (r.kind === "boat") {
+      const aim = this.helmSteer.update(stick ? x : 0, stick ? y : 0, true, this.rig.yaw, this.rig.manualTurn, dt);
+      if (aim.dir !== null && !brake) hands = pointAndGo(m.heading, aim.dir, aim.mag, m.speed);
+    }
+    this.rig.manualTurn = 0;
+    if (this.keys.size || stick || brake || this.rides.phase !== "on") this.rideGoal = null;
+    const goal = blocked ? null : this.rideGoal;
+    if (goal) {
+      const dx = goal.x - m.x, dz = goal.z - m.z;
+      const d = Math.hypot(dx, dz), want = Math.atan2(dx, dz), off = angleDiff(want, m.heading);
+      const closing = d > 0 ? Math.max(0, (dx * m.vx + dz * m.vz) / d) : 0;
+      goal.age += dt;
+      goal.stopping ||= d <= 3;
+      // a car whose goal lies behind it, standing (a tap behind a parked car), first backs up with the wheel the other
+      // way, so its nose comes round, then goes forwards: a turn in three, not a pivot into the kerb
+      if (r.kind === "car" && !goal.stopping && goal.back <= 0 && goal.tries === 0 && Math.abs(off) > 2.2 && Math.abs(m.speed) < 1.5) { goal.back = 1.6; goal.turn = true; goal.tries = 1; }
+      const braking = goal.stopping || d <= 2 + closing * closing / (2 * m.spec.brake);
+      if (goal.back > 0 && !braking) {
+        // (the turn in three ends as soon as the nose is round; backing out of a tight spot goes on for its time)
+        goal.back = goal.turn && Math.abs(off) < 1.2 ? 0 : goal.back - dt;
+        hands = { throttle: -0.7, steer: off > 0 ? 1 : -1, brake: false };
+      } else hands = braking ? controlsFrom(0, 0, true)
+        : pointAndGo(m.heading, want, 0.55 + 0.45 * smoothstep(3, 20, d), m.speed, false);
+    }
+    return blocked ? null : hands;
+  }
+
+  /** After a frame of driving to a tapped spot: how it went (stuck, backing out, there). */
+  private followRideGoal(goal: NonNullable<Game["rideGoal"]>, r: Ride, dt: number, x0: number, z0: number, heading0: number) {
+    const m = r.m;
+    const pace = Math.hypot(m.x - x0, m.z - z0) / Math.max(dt, 1e-4);
+    const turning = Math.abs(angleDiff(m.heading, heading0)) > 0.18 * dt;
+    goal.still = !goal.stopping && pace < 0.5 && !turning ? goal.still + dt : 0;
+    // (wedged going forwards: back up a little with the wheel the other way and try again, three times at most)
+    if (goal.still >= 0.8 && goal.back <= 0 && goal.tries < 3 && r.kind === "car") { goal.back = 1.2; goal.turn = false; goal.tries++; goal.still = 0; }
+    // (someone standing in its way, the owners who have just handed it over: it waits a moment before giving up)
+    if ((goal.stopping && m.pace < 0.05) || goal.still >= 2 || goal.age > 30) this.rideGoal = null;
+  }
+
+  /** At a car's wheel or a boat's helm (the town's, or a mini-game's through the kit's `drive`), the player sits in it. */
   private updateRide(dt: number, controls: Controls | null) {
     const r = this.rides.riding!, m = r.m;
     this.rides.update(dt, this.t, controls);
     // (getting out ends the ride inside update: the player is on foot again, leftRide has set them down)
     if (this.rides.riding !== r) return;
     const on = this.rides.phase === "on", v = on ? m.speed : 0, pace = on ? m.pace : 0, car = r.kind === "car";
+    const portraitHelm = on && !car && useStore.getState().hud.showTouch && this.container.clientHeight > this.container.clientWidth * 1.15;
+    this.rig.portraitHelm = portraitHelm;
     this.heading = on ? m.heading : this.player.root.rotation.y;
     this.vel.set(on ? m.vx : 0, 0, on ? m.vz : 0);
     this.moveVel.lerp(this.vel, Math.min(1, dt * 15));
@@ -2836,7 +2982,7 @@ export class Game implements GameApi {
     {
       const want = on && pace > 2.5 && v > 0 && Math.abs(m.slip) > 1 ? Math.atan2(m.vx, m.vz) : this.heading;
       const d = Math.atan2(Math.sin(want - this.rideCourse), Math.cos(want - this.rideCourse));
-      this.rideCourse += d * Math.min(1, dt * (Math.abs(d) > 2 ? 30 : 7));
+      this.rideCourse += d * Math.min(1, dt * (portraitHelm ? 4 : Math.abs(d) > 2 ? 30 : 7));
     }
     // a sense of speed: at its open-road pace the camera drops back a little and the lens widens; more for the kick
     {
@@ -3025,6 +3171,7 @@ export class Game implements GameApi {
   private updatePlayer(dt: number, blocked: boolean, through = false) {
     const mode = this.modes.active;
     if (mode) {
+      this.rideGoal = null;
       this.modes.update({ dt, time: this.t, blocked, ...this.driveInput(blocked) });
       if (mode.cleanScreen === "menu") {
         if (!this.allowsRideHints()) useStore.getState().dismissRideToasts();
@@ -3033,8 +3180,11 @@ export class Game implements GameApi {
       return;
     }
     if (this.rides.riding) {
-      const { x, y, brake } = this.driveInput(blocked);
-      this.updateRide(dt, blocked ? null : controlsFrom(x, y, brake));
+      const r = this.rides.riding, x0 = r.m.x, z0 = r.m.z, heading0 = r.m.heading;
+      const controls = this.townRideControls(dt, blocked);
+      const goal = blocked ? null : this.rideGoal;
+      this.updateRide(dt, controls);
+      if (goal) this.followRideGoal(goal, r, dt, x0, z0, heading0);
       return;
     }
     const p = this.player.root.position;
@@ -3096,15 +3246,33 @@ export class Game implements GameApi {
           if (!this.autoPath.length) this.arrived();
         } else {
           want.set(tx - p.x, 0, tz - p.z).normalize();
-          const remaining = d + this.autoPath.slice(1).reduce((a, b, i, arr) => a + (i ? Math.hypot(b[0] - arr[i - 1][0], b[1] - arr[i - 1][1]) : 0), 0);
-          speed = (remaining > 12 && !room ? RUN : WALK) * pace;
+          let remaining = d;
+          for (let i = 1; i < this.autoPath.length; i++) {
+            const [ax, az] = this.autoPath[i - 1], [bx, bz] = this.autoPath[i];
+            remaining += Math.hypot(bx - ax, bz - az);
+          }
+          if (!this.swimming) speed = (remaining > 12 && !room ? RUN : WALK) * pace;
           // arrive next to an NPC rather than on top of them (a spot of their own to talk from, across a counter or a
           // table, is walked onto); and, held up on the way (walking but getting nowhere: someone in the way), as soon
           // as they are close enough to talk to
-          if (this.autoTarget?.kind === "npc") {
-            const a = this.npcs.find((n) => n.id === this.autoTarget!.id);
-            const heldUp = this.vel.lengthSq() > 4 && this.lastSpeed < 0.5;
-            if ((this.autoPath.length === 1 && d < 1.6 && !a?.approach) || (a && heldUp && talkDist(a, p) < TALK_RANGE)) { this.autoPath = []; this.arrived(); want.set(0, 0, 0); }
+          const npc = this.autoTarget?.kind === "npc" ? this.npcs.find((n) => n.id === this.autoTarget?.id) : undefined;
+          const nearNpc = npc && talkDist(npc, p) < TALK_RANGE;
+          const heldUp = this.vel.lengthSq() > 4 && this.lastSpeed < 0.5;
+          if (nearNpc && (heldUp || (this.autoPath.length === 1 && d < 1.6 && !npc.approach))) {
+            this.arrived();
+            want.set(0, 0, 0);
+          } else {
+            const check = this.walkCheck;
+            if (check.time === 0) check.remaining = remaining;
+            check.time += dt;
+            if (check.time >= 0.8) {
+              if (check.remaining - remaining < 0.2) {
+                if (!nearNpc) this.autoTarget = null;
+                this.arrived();
+                want.set(0, 0, 0);
+              }
+              check.time = 0;
+            }
           }
         }
       }
@@ -3673,6 +3841,10 @@ export class Game implements GameApi {
     window.removeEventListener("keydown", this.onKeyDown);
     window.removeEventListener("keyup", this.onKeyUp);
     window.removeEventListener("resize", this.onResize);
+    window.removeEventListener("orientationchange", this.onResize);
+    window.removeEventListener("pageshow", this.onResize);
+    this.visualViewport?.removeEventListener("resize", this.onResize);
+    this.resizeObserver?.disconnect();
     window.removeEventListener("blur", this.onBlur);
     this.unbindAmbience?.();
     this.unbindAmbience = null;

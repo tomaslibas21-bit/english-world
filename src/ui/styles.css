@@ -130,7 +130,15 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   display: grid; place-items: center; transition: background-color 0.15s, color 0.15s;
 }
 .objective-card .collapse-btn:hover { background: rgba(31, 42, 51, 0.06); color: var(--ink-soft); }
-.objective-card h3 { margin: 4px 0 3px; font-size: 1.12em; line-height: 1.22; }
+.objective-head { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 4px 8px; margin-bottom: 4px; }
+.objective-head .kicker { grid-column: 1 / -1; }
+.objective-ico { padding: 5px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); }
+.objective-card h3 { align-self: center; margin: 0; font-size: 1.12em; line-height: 1.22; overflow-wrap: anywhere; hyphens: auto; }
+.objective-card.collapsed .objective-head { gap: 0 7px; margin: 0; }
+.objective-card.collapsed { padding-block: 6px; }
+.objective-card.collapsed .objective-ico { grid-column: 1; grid-row: 1 / 3; margin-top: 5px; }
+.objective-card.collapsed .kicker { grid-column: 2; }
+.objective-card.collapsed h3 { font-size: 1em; line-height: 1.15; }
 .objective-card h3 .en-title { font-family: var(--en); font-weight: 500; color: var(--ink-soft); font-size: 0.85em; }
 .objective-card p { margin: 0; color: var(--ink-soft); font-size: 0.86em; line-height: 1.4; }
 .objective-card .row { display: flex; gap: 8px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
@@ -146,6 +154,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .objective-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-weight: 900; color: var(--ink); }
 .objective-summary .dist { flex: none; gap: 3px; }
 .objective-summary .arrow { width: 17px; height: 17px; }
+.objective-summary .objective-ico { flex: none; padding: 4px; border-radius: 8px; }
 
 /* The little map: round outdoors; indoors it folds into a small card with the place's name (Hud.tsx Minimap). The
    frame glides between the two: indoors its size is the card's, set on the element. */
@@ -184,15 +193,22 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .toolbar { --tool-size: 52px; --tool-gap: 10px; position: absolute; right: max(14px, env(safe-area-inset-right)); top: 200px; display: flex; flex-direction: column; align-items: flex-end; gap: var(--tool-gap); }
 .toolbar-tools { display: grid; grid-auto-flow: column; grid-template-rows: repeat(8, var(--tool-size)); gap: var(--tool-gap); direction: rtl; }
 .toolbar-tools > * { direction: ltr; }
-.toolbar.in-ride { flex-direction: row-reverse; align-items: flex-start; }
+/* Folded (any phone; a ride or a mini-game on a computer): the round menu button, the drawer under it in the fewest
+   even columns that fit above the controls (Hud.tsx Toolbar). A computer's ride keeps the radio beside the button. */
+.toolbar.folds { --tool-bottom: max(8px, env(safe-area-inset-bottom)); flex-direction: row-reverse; align-items: flex-start; }
+.toolbar.folds.phone-menu { --tool-size: 44px; --tool-gap: 4px; }
+.hud.has-touch .toolbar.folds { --tool-bottom: calc(108px + env(safe-area-inset-bottom)); }
 .toolbar .ride-menu { border-radius: 50%; }
-.toolbar.in-ride .toolbar-tools {
+.toolbar.folds .icon-btn { width: var(--tool-size); height: var(--tool-size); }
+.toolbar-fit-limit { position: fixed; top: 0; right: 0; bottom: var(--tool-bottom); width: 1px; visibility: hidden; pointer-events: none; }
+.toolbar.folds .toolbar-drawer {
   position: absolute; top: calc(var(--tool-size) + var(--tool-gap)); right: 0;
-  grid-template-rows: repeat(5, var(--tool-size)); transform-origin: top right;
-  opacity: 0; visibility: hidden; transform: scale(0.96);
-  transition: opacity 160ms ease, transform 160ms ease, visibility 0s linear 160ms;
+  display: grid; grid-auto-flow: row dense; gap: var(--tool-gap); direction: rtl;
+  grid-template-rows: repeat(var(--drawer-rows), var(--tool-size)); grid-auto-columns: var(--tool-size);
 }
-.toolbar.in-ride.menu-open .toolbar-tools { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
+.toolbar.folds :is(.toolbar-tools, .toolbar-actions, .toolbar-shortcuts, .drawer-tool) { display: contents; }
+.toolbar.folds .drawer-tool > * { grid-column: var(--tool-column); direction: ltr; }
+.toolbar.folds:not(.menu-open) .toolbar-drawer { visibility: hidden; pointer-events: none; }
 .light-mode-btn { font-size: 17px; font-weight: 900; color: var(--accent); }
 .toolbar-tooltip { position: absolute; right: calc(100% + 10px); top: 50%; transform: translateY(-50%); padding: 7px 11px; border: 1px solid var(--ink-faint); border-radius: 10px; background: var(--panel-solid); color: var(--ink); font-size: 14px; white-space: nowrap; pointer-events: none; opacity: 0; }
 .light-mode-btn:hover .toolbar-tooltip, .light-mode-btn:focus-visible .toolbar-tooltip { opacity: 1; }
@@ -263,6 +279,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   display: flex; gap: 12px; align-items: flex-start; animation: drop 0.3s ease; border: 1px solid rgba(31, 42, 51, 0.06);
 }
 .toast .t-icon { flex: none; width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
+.toast .t-situation { align-self: center; color: var(--ink-soft); }
 .toast.success .t-icon { background: #dff2ec; color: #1e8a6e; }
 .toast.tip .t-icon { background: #fff0c4; color: #9a6700; }
 .toast.stamp { background: #fff6ea; }
@@ -675,7 +692,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .sit-card.current { border-color: var(--gold); background: #fffaf0; }
 .sit-card .ico, .scn-card .ico { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; flex: none; background: var(--accent-soft); color: var(--accent); }
 .sit-card.current .ico { background: var(--gold-soft); color: #9a6700; }
-.sit-card .txt { flex: 1; min-width: 0; }
+.sit-card .txt { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .sit-card .txt b { display: block; font-size: 1em; }
 .sit-card .txt span { display: block; font-size: 0.82em; color: var(--ink-soft); }
 .sit-card .keepsake-icon { margin-inline: -4px; }
@@ -725,6 +742,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 
 .overlay > .phone {
   width: min(400px, 100%); background: linear-gradient(180deg, #232a30, #1b2126); color: #fff; border-radius: 36px; padding: 16px 16px 22px;
+  max-height: calc(100dvh - 32px); overflow-y: auto;
   box-shadow: var(--shadow), inset 0 0 0 1px rgba(255, 255, 255, 0.05); border: 6px solid #0f1316;
 }
 .overlay > .phone :focus-visible { outline-color: rgba(244, 180, 0, 0.85); }
@@ -737,7 +755,11 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   transition: background-color 0.15s;
 }
 .contact:hover { background: #323c43; }
-.contact .avatar { width: 44px; height: 44px; font-size: 18px; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.15); }
+.contact .avatar { position: relative; width: 44px; height: 44px; font-size: 18px; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.15); }
+.contact-badge {
+  position: absolute; right: -2px; bottom: -2px; width: 20px; height: 20px; display: grid; place-items: center;
+  border: 1px solid #aab7c2; border-radius: 50%; background: #232a30;
+}
 .contact .txt { min-width: 0; }
 .contact .txt b { display: block; }
 .contact .txt span { display: block; font-size: 0.8em; color: #aab7c2; }
@@ -882,54 +904,26 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .mm-card small { align-self: center; font-size: 9.5px; letter-spacing: 0.09em; }
   .mm-card b { justify-self: center; max-width: none; font-size: 10.5px; line-height: 1.18; }
   .mm-go { display: none; }
-  .objective-card { max-width: calc(100vw - 350px); max-height: calc(100dvh - 180px - env(safe-area-inset-bottom)); overflow-y: auto; }
 }
 @media (max-width: 480px) {
   body { font-size: calc(17px * var(--scale)); }
   .mission-dots { display: none; }
   .hud-top { --card-left: 8px; --card-top: 8px; }
   .objective-card { padding: 9px 11px; }
+  .objective-head h3 { font-size: 1em; }
   .sheet-head { padding: 12px 12px 12px 14px; gap: 10px; }
   .sheet-ico { width: 36px; height: 36px; border-radius: 11px; }
   .sheet-body { padding: 14px 14px 18px; }
 }
 @media (max-width: 600px) and (orientation: portrait) {
   .hud { --portrait-tool-size: 44px; --portrait-tool-gap: 4px; }
-  .toolbar.portrait-toolbar {
-    --tool-size: var(--portrait-tool-size); --tool-gap: var(--portrait-tool-gap);
-    flex-direction: column; align-items: flex-end;
-  }
-  /* Reserve the prompt's 132 px bottom offset, 16 px padding, 2 px border, 2 px above the translation and
-     two title lines plus one translation line at the prompt's 0.95em × 1.2 line height (translation: 0.74em).
-     A ride reserves 26 + 92 px for the exit button. The safe-area inset applies in both cases. */
-  .toolbar-fit-limit {
-    position: fixed; top: 0; bottom: calc(132px + 20px + 3.1236em + env(safe-area-inset-bottom));
-    right: 0; width: 1px; visibility: hidden; pointer-events: none;
-  }
-  .in-ride .toolbar-fit-limit { bottom: calc(118px + env(safe-area-inset-bottom)); }
-  .portrait-toolbar .icon-btn { width: var(--tool-size); height: var(--tool-size); }
-  .portrait-toolbar .toolbar-drawer, .portrait-toolbar .toolbar-shortcuts {
-    display: flex; flex-direction: column; align-items: flex-end; gap: var(--tool-gap);
-  }
-  .toolbar.portrait-toolbar .toolbar-tools { grid-auto-flow: row; grid-auto-rows: var(--tool-size); grid-template-rows: none; }
-  .portrait-toolbar .toolbar-actions { display: contents; }
-  /* Flow the whole drawer down the right column first. Its row count is half the button count, rounded up. */
-  .portrait-toolbar.two-columns .toolbar-drawer {
-    display: grid; grid-auto-flow: column; grid-template-rows: repeat(var(--drawer-rows), var(--tool-size)); direction: rtl;
-  }
-  .portrait-toolbar.two-columns :is(.toolbar-tools, .toolbar-shortcuts) { display: contents; }
-  .portrait-toolbar .toolbar-shortcuts { direction: ltr; }
-  .portrait-toolbar.in-ride .toolbar-drawer { position: absolute; top: calc(var(--tool-size) + var(--tool-gap)); right: 0; }
-  .toolbar.portrait-toolbar.in-ride .toolbar-tools { position: static; opacity: 1; visibility: visible; transform: none; transition: none; }
-  .portrait-toolbar.in-ride .radio-tool { pointer-events: auto; }
-  .portrait-toolbar.in-ride:not(.two-columns) .radio-tool { order: -1; }
-  .portrait-toolbar.in-ride :is(.toolbar-actions, .toolbar-shortcuts) .icon-btn {
-    transform-origin: top right; transition: opacity 160ms ease, transform 160ms ease, visibility 0s linear;
-  }
-  .portrait-toolbar.in-ride:not(.menu-open) .toolbar-drawer { pointer-events: none; }
-  .portrait-toolbar.in-ride:not(.menu-open) :is(.toolbar-actions, .toolbar-shortcuts) .icon-btn {
-    opacity: 0; visibility: hidden; transform: scale(0.96); transition-delay: 0s, 0s, 160ms;
-  }
+  .toolbar.portrait-toolbar:not(.surf-toolbar) { top: 112px; right: max(10px, env(safe-area-inset-right)); }
+}
+@media (max-height: 520px) and (orientation: landscape) {
+  .toolbar.folds.phone-menu { --tool-gap: 6px; }
+  .toolbar.folds.phone-menu:not(.surf-toolbar) { top: 12px; right: max(112px, calc(env(safe-area-inset-right) + 100px)); }
+  .objective-card { top: 8px; left: max(8px, env(safe-area-inset-left)); max-width: min(46vw, 400px); }
+  .objective-card:not(.collapsed) { max-height: calc(100dvh - 16px); overflow-y: auto; }
 }
 @media (prefers-reduced-motion: reduce) {
   .yt-title.phase-you b::before, .ended-badge, .sheet, .objective-card.fresh, .nat-tipbox { animation: none; }
@@ -938,8 +932,6 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .scn-card, .scn-card:hover, .icon-btn, .icon-btn:hover, .mic { transition: none; transform: none; }
   .map-pin { transition: none; }
   .map-pin:hover { transform: translate(-50%, -50%); }
-  .toolbar.in-ride .toolbar-tools { transition: none; }
-  .portrait-toolbar.in-ride :is(.toolbar-actions, .toolbar-shortcuts) .icon-btn { transition: none; }
 }
 
 /* Illustrated conversation scenes: above the 3D view and HUD, below the conversation panel */
@@ -1196,8 +1188,8 @@ body.scene-on .tag-layer { display: none; }
 }
 /* A phone held sideways keeps the hint low between the stick and the buttons. The prompt stays on the right. */
 @media (max-height: 520px) and (orientation: landscape) {
-  .hud.has-touch .coach { top: auto; left: calc(50% - 60px); transform: translateX(-50%); bottom: calc(8px + env(safe-area-inset-bottom)); width: min(370px, calc(100vw - 470px)); animation-name: coach-in; }
-  .hud.has-touch .coach .coach-text p { font-size: 0.84em; line-height: 1.32; }
+  .coach, .hud.has-touch .coach { top: auto; left: calc(50% - 60px); transform: translateX(-50%); bottom: calc(8px + env(safe-area-inset-bottom)); width: min(370px, max(144px, calc(100vw - 470px))); animation-name: coach-in; }
+  .coach .coach-text p { font-size: 0.84em; line-height: 1.32; }
   .hud:has(.coach) .prompt.touch { max-width: calc(50vw - min(185px, 50vw - 235px) - 90px); }
 }
 /* the song's line gives way to the guide while it is up */

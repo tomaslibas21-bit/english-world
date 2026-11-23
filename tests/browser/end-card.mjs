@@ -1,6 +1,7 @@
 // Run against VITE_EDITION=es, with VITE_LEARNER=lt for the Lithuanian run. END_CARD_LAYER can assert the expected layer.
 // WORLD_TEST_URL=http://127.0.0.1:8176 WORLD_STORAGE=puerto-colibri WORLD_PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs END_CARD_SHOTS=/tmp/end-card node tests/browser/end-card.mjs
 import assert from "node:assert/strict";
+import { openPhoneMenu } from "./screen-harness.mjs";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 
@@ -188,6 +189,7 @@ try {
       });
     }
 
+    await openPhoneMenu(page); // (batch 0: on a phone the town's tools fold behind the menu)
     await press(page.getByRole("button", { name: t.journal }));
     const journal = page.locator(".overlay .sheet").filter({ has: page.getByRole("heading", { name: t.tasks }) });
     const icon = journal.locator(`.sit-card[data-sit="${cafe}"]`).getByRole("img", { name: t.cup });

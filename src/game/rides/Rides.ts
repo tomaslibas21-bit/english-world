@@ -19,7 +19,7 @@ import { rideVoice, shoutVoice } from "../../content/voices";
 import { BAY, DECKS, SEA_LEVEL, SHORE, bayHold, floorY, waterY } from "../water";
 import { Drivable, Motion, CAR, BOAT, BAY_EDGE, CAR_REACH, aheadIn, aheadOnArc, bayTurn, pushOutOfBox, shoreSpeed, type BodyCircle, type Controls, type MotionImpact } from "./drive";
 import { townAsphalt, townGround } from "./ground";
-import { convertibleGeometry, motorboatGeometry, buoysGeometry, CAR_SEATS, BOAT_SEATS } from "./shapes";
+import { convertibleGeometry, motorboatGeometry, motorboatWaterMask, buoysGeometry, CAR_SEATS, BOAT_SEATS } from "./shapes";
 import type { TownBoat } from "../world/boatRide";
 import { Skids } from "./skids";
 import { Crashes, type CrashSound, type CrashTarget } from "./crash";
@@ -373,6 +373,7 @@ export class Rides {
 
   private addBoat(spot: BoatSpot, i: number, mat: THREE.Material) {
     const mesh = new THREE.Mesh(motorboatGeometry(spot.stripe, spot.hull), mat);
+    mesh.add(motorboatWaterMask());
     mesh.castShadow = true;
     mesh.rotation.order = "YXZ";
     mesh.name = "ride-boat-" + spot.id;

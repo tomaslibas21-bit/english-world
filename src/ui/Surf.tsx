@@ -13,6 +13,8 @@ import { speechSupported } from "../convo/speech";
 import { game } from "../game/gameRef";
 import { Interlinear } from "./Interlinear";
 import { Icon } from "./icons";
+import { SitIcon } from "./SitIcon";
+import { SURF } from "../content/surf";
 import { L, Lx, TL } from "./i18n";
 import { EDITION } from "../edition";
 import "./surf.css";
@@ -207,7 +209,7 @@ export function SurfPicker() {
   return (
     <div className="surf-pick" role="dialog" aria-label={L("Banglenčių pamoka")}>
       <div className="surf-pick-card">
-        <h2><span aria-hidden>🏄</span> {L("Banglenčių pamoka")}</h2>
+        <h2>{SURF && <SitIcon id={SURF.situation} size="1em" />} {L("Banglenčių pamoka")}</h2>
         <p>{L("Pokalbis ant bangų: instruktorė sako, tu atsakai balsu ir darai, ko ji prašo.")}</p>
         <div className="surf-levels">
           <button className="surf-level" onClick={() => game?.surfStart("beginner")}>
@@ -281,7 +283,7 @@ export function SurfOverlay({ toolbar }: { toolbar: ReactNode }) {
       {s.over && (
         <div className="surf-pick">
           <div className="surf-pick-card">
-            <h2><span aria-hidden>🏄</span> {L("Pamoka baigta")}</h2>
+            <h2>{SURF && <SitIcon id={SURF.situation} size="1em" />} {L("Pamoka baigta")}</h2>
             <div className="surf-result">
               <div><b>{sc.waves}</b><span>{L("Bangos")}</span></div>
               <div><b>{sc.seconds}</b><span>{L("Sekundės ant bangos")}</span></div>
