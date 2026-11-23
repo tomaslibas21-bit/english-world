@@ -1,6 +1,10 @@
+import { Mesh, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 import { REACT_LINES } from "../src/content/reacts";
+import type { TrafficCar } from "../src/game/ambient";
 import { ReactionSchedule, reactionDuration } from "../src/game/life/reacts";
+import { reactionTestSpot } from "../src/game/life/townReactions";
+import { Colliders } from "../src/game/world/util";
 
 describe("town reaction schedule", () => {
   it("enforces the global, kind, and speaker cooldowns", () => {
@@ -47,4 +51,17 @@ describe("town reaction schedule", () => {
     expect(reactionDuration("X")).toBe(2.6);
     expect(reactionDuration("X".repeat(60))).toBeCloseTo(4.9);
   });
+});
+
+it("stages honks in front of visible cars after their respawn timer has crossed zero", () => {
+  const car: TrafficCar = {
+    index: 0, mesh: new Mesh(), model: "sedan", color: "#fff", half: { x: 2, z: 1 },
+    lane: 0, dir: 1, x: 0, from: -50, to: 50, speed: 6, max: 8, hidden: -0.02, grow: 1, whole: true,
+  };
+  const ambient = { traffic: [car], nearbyWalker: () => undefined };
+  const colliders = new Colliders(), player = new Vector3(0, 0, 5);
+  expect(reactionTestSpot(ambient, colliders, player, "honk")).toMatchObject({ x: 12, z: 0, carIndex: 0 });
+  expect(reactionTestSpot(ambient, colliders, player, "honk", 0)).toBeUndefined();
+  car.hidden = 0.02;
+  expect(reactionTestSpot(ambient, colliders, player, "honk")).toBeUndefined();
 });

@@ -9,9 +9,11 @@ const browser = await chromium.launch({ channel: process.env.WORLD_BROWSER_CHANN
   args: ["--use-angle=metal", "--enable-gpu", "--ignore-gpu-blocklist"] });
 try {
   for (const [width, height] of viewports) {
+    // A separate context isolates cookies and storage as well as the page's reaction scheduler.
     const context = await browser.newContext(contextOptions(width, height));
     try {
-      await context.addInitScript(installTown, { key, progress, manual: true });
+      const save = { ...progress, started: Date.now() };
+      await context.addInitScript(installTown, { key, progress: save, manual: true });
       const page = await context.newPage();
       const errors = [];
       page.on("pageerror", (error) => errors.push(error.message));
@@ -23,7 +25,9 @@ try {
       await probeEffects(page);
       const lines = await page.evaluate(async (url) => (await import(url)).REACT_LINES, contentUrl(url, "content/reacts"));
       const state = () => page.evaluate(() => window.__ew.game.reactState());
-      const place = (kind, exclude) => page.evaluate(([kind, exclude]) => window.__ew.game.placeForReaction(kind, exclude), [kind, exclude]);
+      assert.equal(await page.evaluate(() => window.__ew.store.getState().progress.started), save.started, "this viewport loaded its own save");
+      assert.deepEqual(await state(), { last: null, count: 0, blockedUntil: 0 });
+      const place = (kind) => page.evaluate((kind) => window.__ew.game.placeForReaction(kind), kind);
       const force = (kind) => page.evaluate((kind) => window.__ew.game.react(kind, { force: true }), kind);
       const effectCount = () => page.evaluate(() => window.__lifeEffects.filter((name) => name === "horn" || name === "doubleHonk").length);
       const bubble = page.locator(".reaction-bubble");
@@ -98,8 +102,7 @@ try {
         const expand = page.locator(".objective-card.collapsed .objective-summary");
         if (await expand.count()) await during(() => expand.tap());
       }
-      let first;
-      await waitFor(async () => { first = await place("honk"); return !!first; }, "a moving traffic car has a clear lane ahead");
+      await waitFor(async () => !!await place("honk"), "a moving traffic car has a clear lane ahead");
       await waitFor(async () => await effectCount() === 1, "walking into the lane makes the car honk");
       assert.equal((await state()).count, 0, "the driver waits briefly after the horn");
       await waitFor(async () => (await state()).last?.kind === "honk", "the driver says a honk line", 25);
@@ -148,17 +151,50 @@ try {
       await opacityIs(0.5);
       await stepTo(honkEnd + 5);
       assert.equal(await bubble.count(), 0);
-      let second;
-      await waitFor(async () => { second = await place("honk", first.carIndex); return !!second; }, "another moving traffic car is available");
-      await waitFor(() => page.evaluate((index) => window.__ew.game.ambient.traffic[index].brakingForPlayer, second.carIndex), "the second car brakes for the player");
+      const first = Number(honk.speaker.split(":")[1]);
+      const cooldownEnd = honkStart + 40000;
+      const second = await page.evaluate(({ first, clearSpot, deadline }) => {
+        const { game } = window.__ew, step = window.__lifeStep;
+        const clearLane = () => game.placeOnFoot(clearSpot.x, clearSpot.z, clearSpot.rot);
+        // Give the first car and anything queued behind it room to get moving again.
+        clearLane();
+        while (performance.now() + 500 < deadline) {
+          step(10, 50);
+          const spot = game.placeForReaction("honk", first) || game.placeForReaction("honk");
+          if (!spot) continue;
+          const car = game.ambient.traffic[spot.carIndex];
+          const until = Math.min(deadline, performance.now() + 3000);
+          while (performance.now() + 50 <= until) {
+            step(1, 50);
+            if (car.brakingForPlayer) return { car: car.index, at: performance.now() };
+          }
+          clearLane();
+        }
+        return null;
+      }, { first, clearSpot: save.place, deadline: cooldownEnd - 500 });
+      assert(second && second.at < cooldownEnd, "a moving car brakes again inside the honk cooldown");
       await step(10);
+      assert.equal(await effectCount(), 1, `car ${second.car}'s stop adds no horn effect`);
       assert.equal((await state()).count, 1, "the cooldown suppresses the second honk reaction");
       assert.equal(await bubble.count(), 0);
 
+      assert(await force("crashDriver"), "a nearby traffic car can speak after a crash");
+      const crashDriver = await assertLine("crashDriver");
+      const closed = await page.evaluate(async ({ module, honking, crashed }) => {
+        const { carHasRoof } = await import(module);
+        const { game } = window.__ew, traffic = game.ambient.traffic, car = traffic[crashed], p = game.player.root.position;
+        game.placeOnFoot(p.x, p.z, Math.atan2(car.x - p.x, car.lane - p.z));
+        return carHasRoof(traffic[honking].model) && carHasRoof(car.model);
+      }, { module: contentUrl(url, "game/world/carModels"), honking: first, crashed: Number(crashDriver.speaker.split(":")[1]) });
+      assert(closed, "the honk and crash speakers are both roofed traffic cars");
+      await waitFor(() => bubble.isVisible(), "the roofed car projects its crashDriver bubble");
+      assert.equal(await bubble.locator(".reaction-copy > span").innerText(), crashDriver.text);
+
       await step(1, 22000);
+      const beforeBump = (await state()).count;
       assert(await place("bump"), "a passer-by stands within reach");
       await page.evaluate(() => window.__ew.game.setJoystick(0, 1));
-      await waitFor(async () => (await state()).count === 2, "walking into the passer-by triggers a bump");
+      await waitFor(async () => (await state()).count === beforeBump + 1, "walking into the passer-by triggers a bump");
       await page.evaluate(() => window.__ew.game.setJoystick(0, 0));
       const bump = await assertLine("bump");
       await waitFor(() => bubble.isVisible(), "the bump shows a bubble");
@@ -195,13 +231,11 @@ try {
       }
 
       assert(await place("bump"), "a nearby walker is in view for the forced reactions");
-      for (const kind of ["crash", "crashDriver", "boat", "swim"]) {
+      for (const kind of ["crash", "boat", "swim"]) {
         assert(await force(kind), kind);
         const line = await assertLine(kind);
-        if (["carJump", "crash", "boat", "swim"].includes(kind)) {
-          await waitFor(() => bubble.isVisible(), `the ${kind} bubble is visible`);
-          assert.equal(await bubble.locator(".reaction-copy > span").innerText(), line.text);
-        }
+        await waitFor(() => bubble.isVisible(), `the ${kind} bubble is visible`);
+        assert.equal(await bubble.locator(".reaction-copy > span").innerText(), line.text);
       }
 
       const assertSuppressed = async (label) => {

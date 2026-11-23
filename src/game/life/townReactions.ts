@@ -196,9 +196,9 @@ export class TownReactions {
 
 function floorIsLand(p: Vector3) { return (waterY(p.x, p.z, 0) ?? -Infinity) <= floorY(p.x, p.z) + 0.05; }
 
-export function reactionTestSpot(ambient: Ambient, colliders: Colliders, point: Vector3, kind: "honk" | "bump", excludeCar?: number) {
+export function reactionTestSpot(ambient: Pick<Ambient, "traffic" | "nearbyWalker">, colliders: Colliders, point: Vector3, kind: "honk" | "bump", excludeCar?: number) {
   if (kind === "honk") {
-    const cars = ambient.traffic.filter((c) => c.whole && !c.hidden && !c.crashStop && !c.brakingForPlayer && c.speed >= 3 && c.index !== excludeCar);
+    const cars = ambient.traffic.filter((c) => c.whole && c.hidden <= 0 && !c.crashStop && !c.brakingForPlayer && c.speed >= 3 && c.index !== excludeCar);
     const car = closest(cars.filter((c) => {
       const x = c.x + c.dir * 12;
       return (c.dir > 0 ? c.to - x : x - c.from) > 3 && !colliders.blocked(x, c.lane, 0.5) &&
