@@ -8,7 +8,7 @@ const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:8311";
 const storage = process.env.WORLD_STORAGE || "puerto-colibri";
 const lt = process.env.WORLD_LEARNER === "lt";
 const shots = process.env.SHOTS_DIR || process.env.WORLD_SHOTS || "/tmp";
-const sizes = [
+const sizes = process.env.WORLD_SIZES ? process.env.WORLD_SIZES.split(",").map((s) => s.split("x").map(Number)) : [
   [1280, 800],
   ...(process.env.WORLD_PHONE_HEIGHT ? [[390, Number(process.env.WORLD_PHONE_HEIGHT)]] : [[390, 844], [390, 664]]),
 ];
@@ -52,7 +52,7 @@ const browser = await chromium.launch({
 });
 try {
   for (const [width, height] of sizes) {
-    const phone = width === 390;
+    const phone = width === 390 || height === 390;
     const label = `${width}x${height}`;
     const dir = join(shots, label);
     await mkdir(dir, { recursive: true });
@@ -149,6 +149,7 @@ try {
           }
           return errors;
         }, { score, width, height });
+        if (problems.length) await shot(`fail-${Date.now() % 100000}`);
         assert.deepEqual(problems, [], label);
       }
 

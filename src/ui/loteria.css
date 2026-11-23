@@ -226,6 +226,10 @@
 .loteria-score .mode-score-line { color: var(--lot-red); font-size: clamp(21px, 4vw, 34px); }
 .loteria-next { font-size: 13px; margin: 0 0 8px; }
 
+@media (min-width: 1000px) and (min-height: 561px) {
+  .loteria-verse .il { font-size: 22px; }
+  .loteria-listen-first { font-size: 14px; }
+}
 @media (max-width: 740px) {
   .loteria-play {
     grid-template-columns: minmax(0, 1fr);
@@ -273,6 +277,46 @@
   .loteria-board .loteria-icon { font-size: 19px; font-size: min(19px, 88cqh); }
   .loteria-board .loteria-tile strong { font-size: 9.5px; }
   .loteria-board .loteria-tile small { font-size: 10px; line-height: 1.08; padding-bottom: 0; text-wrap: balance; }
+}
+@media (orientation: landscape) and (max-height: 560px) {
+  .loteria-play {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 5px;
+    padding: max(4px, env(safe-area-inset-top)) max(5px, env(safe-area-inset-right))
+      max(4px, env(safe-area-inset-bottom)) max(5px, env(safe-area-inset-left));
+  }
+  .loteria-draw { gap: 6px; padding: 5px; max-height: 58dvh; overflow-y: auto; align-items: safe center; }
+  .loteria-current { width: 66px; height: 80px; }
+  .loteria-verse .il, .loteria-neighbor .il { font-size: 17px; gap: 2px 6px; }
+  .loteria-replay { margin-top: 3px; }
+  .loteria-board-panel {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    height: 100%;
+    gap: 2px;
+    padding: 4px;
+  }
+  .loteria-board-heading { justify-content: start; }
+  .loteria-board-heading strong { font-size: 16px; }
+  .loteria-keys { grid-column: 2; grid-row: 1; }
+  .loteria-help, .loteria-board, .loteria-footer { grid-column: 1 / -1; }
+  .loteria-help { min-height: 0; font-size: 12px; }
+  .loteria-board { padding: 3px; gap: 3px; }
+  .loteria-board .loteria-tile { padding: 1px; }
+  .loteria-board .loteria-art { container-type: size; }
+  .loteria-board .loteria-icon { font-size: min(32px, 88cqh); }
+  .loteria-board .loteria-tile strong { font-size: 11px; }
+  .loteria-board .loteria-tile small { font-size: 10px; }
+  .loteria-footer, .loteria-history { align-items: center; }
+  .loteria-history { display: flex; gap: 4px; font-size: 11px; }
+  .loteria-history > span { flex-shrink: 0; }
+  .loteria-mic, .loteria-play .loteria-shout { min-height: 34px; font-size: 13px; }
+  .loteria-score-scene { inset: 5% 54% 5% 2%; }
+  .loteria-score .mode-score { align-items: center; justify-items: end; padding: 6px; }
+  .loteria-score .mode-score-card { width: min(50%, 440px); }
 }
 @media (prefers-reduced-motion: reduce) {
   .loteria-shout[data-ready="true"] { animation: none; }

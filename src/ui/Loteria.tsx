@@ -56,7 +56,7 @@ export function LoteriaOverlay({ touch }: { touch: boolean }) {
   if (result) return (
     <div className="loteria-score" lang={HL}>
       <div className="loteria-score-scene" aria-hidden="true" />
-      <ScoreCard title={L(words.title)} score={result.winner === "learner" ? L(words.won) : L(words.wonBy, { nom: TONA_LT.nom })}
+      <ScoreCard title={L(words.title)} celebrate={result.winner === "learner"} score={result.winner === "learner" ? L(words.won) : L(words.wonBy, { nom: TONA_LT.nom })}
         rows={[
           { label: L(words.calls), value: <ScoreNumber value={result.calls} /> },
           { label: L(words.marked), value: L("{n} iš {of}", { n: result.covered, of: BOARD_SIZE }) },
