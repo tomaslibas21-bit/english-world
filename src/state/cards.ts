@@ -20,6 +20,8 @@ export interface Card {
    *  form, only when it differs from `en`, e.g. prices, so the voice clip can be found). */
   sentence: { en: string; lt: string; say?: string };
   situationId: string;
+  /** A resolved source label for cards earned outside the situation catalog. */
+  sourceLabel?: string;
   /** ms since the epoch. */
   createdAt: number;
   /** Leitner box 1–5 (1 = new or forgotten). */
@@ -32,7 +34,7 @@ export interface Card {
   lastReview?: number;
 }
 
-export type CardInput = Pick<Card, "en" | "lt" | "ipa" | "sentence" | "situationId">;
+export type CardInput = Pick<Card, "en" | "lt" | "ipa" | "sentence" | "situationId" | "sourceLabel">;
 
 /** Days until the next review for a card in box 1…5. */
 export const INTERVALS = [1, 2, 4, 8, 16] as const;
@@ -149,6 +151,7 @@ export function newCard(input: CardInput, now: number, taken?: Set<string>): Car
     due: startOfDay(now), // new cards can be reviewed today
   };
   if (input.ipa) c.ipa = input.ipa;
+  if (input.sourceLabel) c.sourceLabel = input.sourceLabel;
   return c;
 }
 
@@ -225,6 +228,7 @@ export function parseCards(raw: unknown, now = Date.now()): Card[] {
     };
     if (str(s.say).trim()) c.sentence.say = str(s.say).trim();
     if (str(x.ipa).trim()) c.ipa = str(x.ipa).trim();
+    if (str(x.sourceLabel).trim()) c.sourceLabel = str(x.sourceLabel).trim();
     for (const f of ["reviews", "lapses", "lastReview"] as const) if (typeof x[f] === "number" && Number.isFinite(x[f])) c[f] = x[f];
     keys.add(k); ids.add(id); out.push(c);
   }
@@ -283,7 +287,7 @@ export function saveCards(cards: Card[], storage: KV | null = defaultStorage()):
 export interface ExportedCard {
   id: string; en: string; lt: string; ipa?: string;
   sentence: { en: string; lt: string };
-  situationId: string; createdAt: string; box: number; due: string;
+  situationId: string; sourceLabel?: string; createdAt: string; box: number; due: string;
 }
 export interface CardsExport { format: "english-world-cards"; version: 1; exportedAt: string; cards: ExportedCard[] }
 
@@ -298,6 +302,7 @@ export function exportCards(cards: Card[], now = Date.now()): CardsExport {
         situationId: c.situationId, createdAt: new Date(c.createdAt).toISOString(), box: c.box, due: localDate(c.due),
       };
       if (c.ipa) e.ipa = c.ipa;
+      if (c.sourceLabel) e.sourceLabel = c.sourceLabel;
       return e;
     }),
   };

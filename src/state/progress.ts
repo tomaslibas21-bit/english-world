@@ -61,6 +61,7 @@ export interface Progress {
   lighthouse?: { greeted?: boolean; boat?: { id: string; x: number; z: number; rot: number } };
   phone?: PhoneProgress;
   texts?: TextProgress;
+  street?: import("../game/street/memory").StreetMemory;
   /** The surf lesson (game/surf): waves ridden and seconds on them, commands followed of those asked, lessons taken,
    *  and how often each of the instructor's lines has been heard (their help fades with it). */
   surf?: { waves: number; seconds: number; followed: number; asked: number; lessons: number; heard: Record<string, number> };

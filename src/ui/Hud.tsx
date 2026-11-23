@@ -26,6 +26,9 @@ import { radio, useRadio } from "../radio";
 import { DirectionsCard, PhotoChip, PhotoWalkOverlay, QuestArrival } from "./PhotoWalk";
 import { Guide } from "./Guide";
 import { TownToast, useTownToast } from "./Toasts";
+import { useStreet } from "../game/street/StreetLife";
+import { StreetCard } from "./street/StreetCard";
+import { StreetBubbles } from "./street/StreetBubbles";
 import { PhoneRing } from "./PhoneRing";
 import { TextArrival } from "./TextArrival";
 import { ReactBubble } from "./ReactBubble";
@@ -78,6 +81,8 @@ export function Hud() {
   const toast = useTownToast();
   const directionsToast = toast?.kind === "stamp" && toast.sitId === ASK_WAY_SITUATION;
   const narrow = useNarrowHud();
+  const streetCard = useStreet((s) => s.moment !== null) && !hud.panel;
+  const portrait = screen.portraitPhone;
   const phoneToast = narrow && toast !== null;
   const task = useTaskCard(taskId, inTown && !hud.panel, phoneToast, layout);
   if (inConversation) return <Fade />;
@@ -113,14 +118,15 @@ export function Hud() {
   const guideVisible = !hud.panel && note === "guide";
   const moving = hud.walking || riding;
   // A sideways phone keeps the task to one row unless it is opened by hand.
-  const collapsed = phoneToast ? !task.openedDuringToast
-    : (moving && !!hud.objective?.followUp) || (task.manual ?? (screen.sidewaysPhone || (!task.fresh && moving)));
+  const collapsed = streetCard || (phoneToast ? !task.openedDuringToast
+    : (moving && !!hud.objective?.followUp) || (task.manual ?? (screen.sidewaysPhone || (!task.fresh && moving))));
   return (
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
       <div className="hud-top">
           {hud.speedLines && <div className="drive-wind" aria-hidden />}
         <div className={"objective-notes" + (collapsed ? " task-folded" : "")}>
           <Objective key={taskId ?? "complete"} collapsed={collapsed} fresh={task.fresh && !hud.panel} setCollapsed={task.setManual} />
+          {streetCard && portrait && <StreetCard />}
           {hud.zoneBanner && banner && <div className="zone-banner"><h2>{banner.icon && <Icon name={banner.icon} size="0.8em" className="zb-ico" />}{banner.rest}</h2>{hud.zoneBanner.sub && <p>{hud.zoneBanner.sub}</p>}</div>}
           {!hud.panel && hud.phoneCard && <PhoneRing id={hud.phoneCard} />}
           {!hud.panel && hud.textArrival && <TextArrival id={hud.textArrival} />}
@@ -132,6 +138,8 @@ export function Hud() {
       </div>
       <Toolbar key={"tools-" + layout} {...screen} riding={riding} touch={hud.showTouch} hint={guideVisible} />
       <RadioSetLayer />
+      {streetCard && !portrait && <StreetCard />}
+      {!hud.panel && <StreetBubbles />}
       {!hud.panel && <LyricStrip sidewaysPhone={screen.sidewaysPhone} />}
       {!hud.panel && hud.reaction && <ReactBubble key={hud.reaction.id} line={hud.reaction} />}
       {/* (on a phone the way out of a car is the round button itself: no second label over it) */}
@@ -192,7 +200,7 @@ function activateHudButton(e: KeyboardEvent<HTMLElement>) {
 
 // The same for the town's tools and the radio set, which opens over the town at the HUD's level.
 function keepKeysOnHudButtons(e: KeyboardEvent<HTMLElement>) {
-  if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(":is(.toolbar, .radio-set) :focus-visible")) e.stopPropagation();
+  if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(":is(.toolbar, .radio-set, .street-card) :focus-visible, .street-bubble:focus-visible")) e.stopPropagation();
 }
 
 /** The town's tools. On a phone (upright or sideways) they always fold behind one round menu button; on a computer

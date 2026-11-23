@@ -5,6 +5,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperti
 import { createPortal } from "react-dom";
 import type { Sentence } from "../convo/compose";
 import { useStore } from "../state/store";
+import { STREET_WORDS } from "../game/street/words";
 import { useCards, unitInput, sentenceInput, cardKey, cleanText, isDashGloss, dueCards, daysUntil, nextDue, exportCardsJSON, type Card } from "../state/cards";
 import { NPCS } from "../content/npcs";
 import { coachVoice } from "../content/voices";
@@ -316,7 +317,7 @@ function Review({ ids, onExit, onMore }: { ids: string[]; onExit: () => void; on
         <span className="rv-count" aria-label={`Kortelė ${p + 1} iš ${queue.length}`}>{p + 1}/{queue.length}</span>
       </div>
       <div className={"rv-card" + (shown ? " shown" : "") + (long ? " long" : "")} onClick={() => !shown && setShown(true)}>
-        <div className="rv-label">Pasakyk angliškai{sit ? <span className="rv-sit"> · <SitIcon id={sit.id} size="1.15em" />{"\u00a0"}{sit.title.lt}</span> : null}</div>
+        <div className="rv-label">Pasakyk angliškai{sit ? <span className="rv-sit"> · <SitIcon id={sit.id} size="1.15em" />{"\u00a0"}{sit.title.lt}</span> : card.situationId === "street" ? <span className="rv-sit"> · {STREET_WORDS.cards}{card.sourceLabel && ` · ${card.sourceLabel}`}</span> : null}</div>
         <div className="rv-lt" lang="lt">{card.lt}</div>
         {shown ? (
           <div className="rv-answer">

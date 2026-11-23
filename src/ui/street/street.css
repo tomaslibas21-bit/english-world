@@ -1,0 +1,176 @@
+.street-card, .street-light-chatter {
+  box-sizing: border-box;
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  padding: 9px 12px 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel-solid);
+  color: var(--ink);
+  box-shadow: 0 5px 20px #16232b38;
+  pointer-events: auto;
+}
+.hud .street-card {
+  position: absolute;
+  z-index: 3;
+  inset: auto 0 max(82px, env(safe-area-inset-bottom));
+  width: min(440px, calc(100% - 24px));
+  margin-inline: auto;
+  max-height: min(75dvh, calc(100dvh - 96px - env(safe-area-inset-bottom)));
+  overflow: auto;
+  overscroll-behavior: contain;
+  animation: street-in 180ms ease-out;
+}
+.hud.has-touch .street-card {
+  bottom: calc(150px + env(safe-area-inset-bottom));
+  max-height: min(75dvh, calc(100dvh - 166px - env(safe-area-inset-bottom)));
+}
+.street-head, .street-current, .street-turn { display: flex; align-items: center; gap: 8px; }
+.street-head strong, .street-head h2, .street-current .street-line, .street-choices { flex: 1; min-width: 0; }
+.street-head strong { line-height: 1.17; overflow-wrap: anywhere; }
+.street-face {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #deeee7;
+  color: #175a4c;
+}
+.street-icon-btn {
+  display: grid;
+  flex: none;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 11px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.street-icon-btn:hover, .street-icon-btn.listening { background: var(--accent-soft-2); color: var(--accent-strong); }
+.street-icon-btn.listening { outline: 2px solid currentColor; outline-offset: -3px; }
+.street-scene { margin: 0; font-size: 0.86em; line-height: 1.24; color: var(--ink-soft); font-style: italic; }
+.street-card[data-step="choices"] .street-scene:has(+ .street-current),
+.street-card[data-step="answer"] .street-scene,
+.street-card[data-step="reply"] .street-scene,
+.street-card[data-step="done"] .street-scene { display: none; }
+.street-line, .street-bubble {
+  display: block;
+  border: 0;
+  text-align: left;
+  color: var(--ink);
+  line-height: 1.28;
+  overflow-wrap: anywhere;
+  font-weight: 750;
+}
+.street-line {
+  padding: 6px 2px;
+  background: transparent;
+  font-size: 1.04em;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.street-line:hover { color: var(--accent-strong); }
+.street-hint, .street-tr, .street-heard { display: block; margin-top: 3px; color: var(--ink-soft); font-weight: 500; font-size: 0.8em; }
+.street-choices { display: grid; gap: 5px; overflow-wrap: anywhere; }
+.street-choice.btn { justify-content: flex-start; padding: 6px 9px; text-align: left; border-radius: 10px; font-size: 0.91em; line-height: 1.17; }
+.street-choice .kit-gloss-compact small { display: block; margin-top: 2px; }
+.street-picture {
+  overflow: hidden;
+  border-radius: 10px;
+  background: #fbefcc;
+  color: #815c27;
+}
+[data-kind="incident"] .street-picture { background: #e0edf7; color: #3e6383; }
+[data-kind="arc"] .street-picture { background: #f7e5ee; color: #895774; }
+.street-picture-art {
+  min-height: 64px;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+}
+.street-picture-art span {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: #ffffffa6;
+}
+.street-picture img:not([hidden]) { display: block; width: 100%; height: auto; max-height: 160px; object-fit: contain; }
+.street-light { margin: 12px 0 14px; }
+.street-light h2 { margin: 0; font-size: 1em; color: var(--accent-strong); }
+.street-light-chatter .street-line { padding: 4px 2px; }
+.street-marker {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #fff9e8;
+  border-radius: 50%;
+  background: #a0d2b6;
+  box-shadow: 0 2px 8px #264b484d;
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+}
+.street-bubble {
+  position: absolute;
+  z-index: 4;
+  width: max-content;
+  max-width: min(245px, 65vw);
+  padding: 8px 11px;
+  min-height: 44px;
+  border-radius: 13px;
+  background: var(--panel-solid);
+  box-shadow: 0 3px 13px #16232b38;
+  --street-edge: min(131px, calc(32.5vw + 8px));
+  left: clamp(var(--street-edge), var(--street-x), calc(100% - var(--street-edge)));
+  top: 0;
+  transform: translate(-50%, clamp(8px, calc(var(--street-y) - 100% - 5px), calc(100dvh - 100% - 12px)));
+}
+.street-bubble::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: calc(50% - 5px);
+  border: 5px solid transparent;
+  border-top-color: var(--panel-solid);
+}
+@keyframes street-in { from { opacity: 0; translate: 0 7px; } to { opacity: 1; translate: 0 0; } }
+@media (max-width: 600px) and (orientation: portrait) {
+  .hud .objective-notes .street-card {
+    position: static;
+    flex: none;
+    width: min(100%, var(--note-width));
+    margin: 12px 0 0;
+    max-height: min(75dvh, calc(100dvh - var(--card-top) - 224px - env(safe-area-inset-bottom)));
+  }
+}
+@media (max-width: 600px) and (max-height: 740px) and (orientation: portrait) {
+  .hud .street-card[data-step="choices"] .street-scene { display: none; }
+}
+@media (max-height: 520px) and (orientation: landscape) {
+  .hud:has(.street-card) .objective-card.collapsed { width: min(28vw, 275px); }
+  .hud .street-card, .hud.has-touch .street-card {
+    inset: max(8px, env(safe-area-inset-top)) calc(196px + env(safe-area-inset-right)) auto max(30vw, calc(166px + env(safe-area-inset-left)));
+    width: auto;
+    max-width: 440px;
+    max-height: min(75dvh, calc(100dvh - max(8px, env(safe-area-inset-top)) - 12px - env(safe-area-inset-bottom)));
+    gap: 4px;
+    padding-block: 5px 8px;
+  }
+  .hud:has(.toolbar.menu-open) .street-card { right: max(286px, calc(274px + env(safe-area-inset-right))); }
+  .hud .street-card .street-choices { grid-template-columns: repeat(auto-fit, minmax(min(100%, 115px), 1fr)); }
+  .hud .street-card:has(.street-current + .street-turn) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .hud .street-card:has(.street-current + .street-turn) :is(.street-head, .street-picture) { grid-column: 1 / -1; }
+  .hud .street-card[data-step="choices"] .street-scene { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hud .street-card { animation: none; }
+}
