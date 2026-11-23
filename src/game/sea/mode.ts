@@ -48,6 +48,8 @@ export class SeaMode {
   private lastLabels = -Infinity;
   private reveal?: { clip: Clip; in: number };
   private returning = false;
+  /** Seconds to the next far-off gull. */
+  private gullIn = 5;
 
   constructor(private host: SeaHost, private source: Ride, private prepared: PreparedSea) {
     const m = source.m;
@@ -118,9 +120,11 @@ export class SeaMode {
       this.boat.boost = 1.2;
       this.view.celebrate(this.boat, time);
       audio.sfx("seaBell");
+      audio.sfx("gateWhoosh");
+      audio.sfx("bowSplash", 0.7); // the speed lift throws spray over the bow
     } else {
       this.boat.wobble = 1;
-      audio.bump(0.72);
+      if (!audio.sample("buoyBonk")) audio.bump(0.72);
       this.play(prompt.word.clip);
     }
     let correction = 0;
@@ -173,6 +177,8 @@ export class SeaMode {
       this.poseGate(time, dt);
       if ((this.nextPromptIn -= dt) <= 0 && !ended && !this.gate) this.openGate();
     }
+    // gulls far off, now and then (recorded only: no synthesized stand-in out here)
+    if ((this.gullIn -= dt) <= 0) { this.gullIn = 7 + Math.random() * 9; audio.sfx("gull", 0.6 + 0.4 * Math.random()); }
     const remaining = Math.ceil(SEA_SECONDS - this.score.elapsed);
     if (useSea.getState().remaining !== remaining) useSea.setState({ remaining });
     if (ended) this.finish();
@@ -195,6 +201,7 @@ export class SeaMode {
     this.closeGate();
     this.reveal = undefined;
     audio.stop();
+    audio.sfx("boatTurn");
     this.boat.turnAround();
     useSea.setState({ phase: this.phase, feedback: undefined });
   }

@@ -49,3 +49,26 @@ seconds at a time from a different place in the recording.
 
 `window.__ew.audio` is the audio system in the browser. A meter on `audio.worldBus` (an AnalyserNode) gives the
 level in dBFS with the player moved about (`game.enterZone("town", { x, z, rot })`); that is how the mix was set.
+
+## Recorded effects and the mini-games' beds (batch 1–4 media, 23 Nov 2026)
+
+- **Effects:** `SAMPLES` in `src/game/soundscape.ts` lists each effect's takes in `public/sfx/` (mono MP3, peak −3 dB,
+  5–50 kB). `audio.sfx(name)` plays one take at random (speed varied ±4 %) once they are loaded, and the synthesized
+  sound until then, offline, or if a file is missing (`synth` names the stand-in of a new effect; `null`: silent).
+  A mini-game loads its takes as it starts (`MODE_SAMPLES`, `audio.preload` from the mode host's `entered`).
+  Recorded now: the pool hall (cue strikes, clacks, cushion, pocket, break, chalk, win sting), the cards (shuffle,
+  slide, flip, pair chime, "Go fish!" bloop, win jingle, Lotería's card slap, bean and cheer), the open water (buoy
+  bell and bonk, bow splash, gulls, turning back, the gate's whoosh), the road's confetti, and the crashes (bump,
+  crunch, chips of paint, lamp glass, radiator steam, the polite double honk, the alarm chirp, the repair ding). The
+  hazard relay stays synthesized.
+- **Beds:** `TOWN_SOUNDS.beds` (this edition's `src/game/townSounds.ts`) gives a mode its room loop (`public/sfx/`, in
+  git) and music (the clip folder: on R2 in the courses, `bed_<mode>.mp3`, never in git), each looped between
+  `start` and `end` inside its file. `audio.bed(id)` starts them when the mode is entered and stops them when it is
+  left; they play on the effects side, about 7 dB lower while a voice speaks or the microphone listens (`BED_DUCK`),
+  and the radio waits while a bed's music plays (radio hold "bed"). Room levels 0.16–0.18, music 0.13–0.16 of the
+  volume: music sits about 12 dB under a voice.
+- **Making them:** Higgsfield (Mirelo for effects at 0.25 credits a second, ElevenLabs Music v2.5 for beds at
+  0.1455 a second); cut, normalised and looped with the tools in `~/claude-work/batch4/media/tools/` (`split_takes.py`,
+  `cut_sfx.py`, `loop_music.py`); the ledger and every job id are in `~/claude-work/batch4/media/`.
+- **Tests:** `tests/media-wiring.test.ts` (files present, synth stand-in then recording, bed start / duck / radio
+  hold / stop).

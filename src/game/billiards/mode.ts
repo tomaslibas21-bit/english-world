@@ -94,6 +94,8 @@ export class BilliardsMode implements GameMode {
   private power = 0;
   private charge: number | null = null;
   private accumulator = 0;
+  /** The shot being fired is the break (its recording plays once with the strike). */
+  private breaking = false;
   private listened = 0;
   private answerDelay = 0;
   private afterFeedback: (() => void) | null = null;
@@ -226,6 +228,7 @@ export class BilliardsMode implements GameMode {
     this.setPower(0);
     ui({ aimHelp: true });
     this.setPhase("break");
+    audio.sfx("chalk"); // the cue chalked before the break
   }
 
   private group(side: Side) {
@@ -385,6 +388,7 @@ export class BilliardsMode implements GameMode {
     };
     this.accumulator = 0;
     this.table!.hideAim();
+    this.breaking = this.phase === "break";
     this.setPhase("rolling");
   }
 
@@ -428,7 +432,7 @@ export class BilliardsMode implements GameMode {
 
   private async finish(round: Round, winner: Winner) {
     const key = winner === "learner" ? "bl_you_win" : winner === "tina" ? "bl_i_win" : "bl_tie";
-    if (winner === "learner") audio.sfx("cheer");
+    if (winner === "learner") audio.sfx("winSting");
     if (!await this.sayAll(round, [key])) return;
     this.setPhase("reply");
     this.replyDelay = 8;
@@ -463,6 +467,9 @@ export class BilliardsMode implements GameMode {
       this.table!.hideAim();
       shoot(balls[0], this.angle, shot.power);
       if (withSound) audio.sfx("cueStrike", shot.power);
+      // the rack bursting apart: a recording of a real break under the clicks the balls make
+      if (withSound && this.breaking) audio.sfx("breakShot", 0.5 + 0.5 * shot.power);
+      this.breaking = false;
     }
     this.accumulator += dt;
     while (this.accumulator + 1e-10 >= STEP) {

@@ -1,0 +1,10 @@
+{
+  "npc": "Vale (with Diego and Santi), Hotel Mar Azul pool",
+  "images": ["greet", "name_me", "ask_where", "family", "play"],
+  "start": "greet",
+  "done": "play",
+  "phases": {"play": "greet", "name": "name_me", "from": "ask_where", "ask": "family", "closing": "play"},
+  "lines": {"greet": "greet", "again": "greet", "yes_play": "greet", "no_play": "greet", "name_me": "name_me", "nice": "name_me", "ask_where": "ask_where", "far": "ask_where", "near": "ask_where", "from_us": "ask_where", "family": "family", "my_age": "family", "lets_play": "play", "bye": "greet"},
+  "focus": [45, 34],
+  "jobs": {"greet": "9233c576-34d7-40e5-b5d8-104a99a23a03", "name_me": "547d8bbc-efbe-40d9-b76f-c43c57b51862", "ask_where": "8e8c1ee9-a43a-4782-a593-639863f8f7cb", "family": "7d9156d3-36cf-4bca-a15b-82eaa63cb50a", "play": "0c8b463c-e879-4f77-add0-e19d5ec26d56"}
+}

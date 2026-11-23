@@ -6,7 +6,10 @@ import { STRINGS } from "../../src/editions/es/ui/strings";
 // far-off notes, and a market hall heard from the street. The Sounds setting has its English words.
 describe("Puerto Colibrí's sounds", () => {
   it("is the tropical town with a market hall", () => {
-    expect(TOWN_SOUNDS).toEqual({ tropical: true, marketOutdoors: true });
+    const { beds, ...town } = TOWN_SOUNDS as typeof TOWN_SOUNDS & { beds?: Record<string, unknown> };
+    expect(town).toEqual({ tropical: true, marketOutdoors: true });
+    // the mini-games' own beds (batch 1–4 media): the lotería night, the cantina's pool table, the open sea
+    expect(Object.keys(beds ?? {}).sort()).toEqual(["billiards", "loteria", "sea"]);
   });
   it("the Sounds setting is in English", () => {
     expect(STRINGS["Garsai"]).toBe("Sounds");

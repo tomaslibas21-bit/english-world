@@ -1,0 +1,10 @@
+{
+  "npc": "Don Memo, Cantina La Buchaca",
+  "images": ["greet", "never", "name_me", "bl_which", "my_years", "break"],
+  "start": "greet",
+  "done": "break",
+  "phases": {"play": "greet", "name": "name_me", "group": "bl_which", "ask": "my_years", "closing": "break"},
+  "lines": {"greet": "greet", "again": "greet", "yes_play": "greet", "never": "never", "name_me": "name_me", "nice": "name_me", "rules": "never", "rules_ex": "never", "rules_win": "never", "bl_which": "bl_which", "my_years": "my_years", "every_night": "my_years", "lets_play": "break", "bye": "greet"},
+  "focus": [41, 30],
+  "jobs": {"greet": "7dd279aa-a3dc-4f0e-99a4-3e240727b362", "never": "d197e2d4-bd47-41e1-a57f-a97b029b6a0d", "name_me": "cdf82604-dc65-4045-9eb0-face901fe0f7", "bl_which": "a09b4fa3-acff-40d4-9d2a-c271a71a523a", "my_years": "dab09045-06fa-465d-8baf-266037a54275", "break": "7165c18a-f7d6-46ba-9c3b-4cd96764976d"}
+}

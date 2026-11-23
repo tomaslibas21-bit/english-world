@@ -64,7 +64,9 @@
   border: 4px solid #f9ddb1;
   outline: 1px solid #543032;
   border-radius: 7px;
-  background: radial-gradient(ellipse at center, #f8c786 0 10%, #96374800 11%),
+  /* the deck's back picture (Loteria.tsx BACK_ART) over the drawn pattern, which shows when the picture is missing */
+  background: var(--card-back-art, none) center / cover no-repeat,
+    radial-gradient(ellipse at center, #f8c786 0 10%, #96374800 11%),
     repeating-linear-gradient(45deg, #a94650 0 6px, #923742 6px 12px);
 }
 .loteria-spoken { min-width: 0; flex: 1; }

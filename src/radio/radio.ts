@@ -15,7 +15,7 @@ import { LYRIC_SIZES, loadSaved, nextStation, shuffled, stationOrder, stationSon
 import { readSongLines, readSongList, songAudioUrls, songDataUrls, songNotesUrls, type RadioConfig, type SongMeta } from "./songs";
 
 /** What stops the music: a conversation is open, a voice is loading or speaking, a microphone is listening. */
-export type Hold = "conversation" | "voice" | "microphone";
+export type Hold = "conversation" | "voice" | "microphone" | "bed";
 
 export interface RadioState {
   /** this build has songs to play */

@@ -216,6 +216,7 @@ export class LoteriaMode implements GameMode {
   private async opening(run: Run) {
     if (!await this.say(run, "lt_b_open")) return;
     if (!await this.say(run, `lt_b_${run.round.kind}`)) return;
+    audio.sfx("cardShuffle"); // Don Beto shuffles the deck
     if (run.round.index > 0 && !await this.say(run, "lt_t_suerte")) return;
     if (await this.say(run, "lt_b_go")) void this.call(run);
   }
@@ -257,7 +258,7 @@ export class LoteriaMode implements GameMode {
     const card = round.draw();
     if (!card) { this.wait(run); return; }
     run.coveredAt = Infinity;
-    audio.sfx("loteriaFlip");
+    audio.sfx("cardSlap"); // the caller slaps the card down (recorded; the synthesized flip stands in)
     this.sync(run);
     if (useLoteria.getState().glow >= 0 && !run.markTip && !late) {
       run.markTip = true;
@@ -268,7 +269,7 @@ export class LoteriaMode implements GameMode {
     if (run.shout) round.shout();
     round.reveal();
     this.sync(run);
-    if (wasHidden) audio.sfx("loteriaFlip");
+    if (wasHidden) audio.sfx("cardFlip");
     if (round.winner) { void this.finish(run); return; }
     this.wait(run);
   }
@@ -312,7 +313,7 @@ export class LoteriaMode implements GameMode {
       if (!run.coaches.has("lt_t_noyet")) run.uncalled = true;
     }
     if (result !== "covered") return;
-    audio.sfx("loteriaBean");
+    audio.sfx("beanDrop");
     if (index === run.spotlight) run.coveredAt = Math.max(run.namedAt, run.time);
     if (run.round.pattern && run.readyAt === Infinity) run.readyAt = run.time;
     this.sync(run);
@@ -375,7 +376,7 @@ export class LoteriaMode implements GameMode {
     loteriaUi({ tip: null, glow: -1, ready: false });
     const pattern = round.winner === "learner" ? round.pattern ?? [] : [];
     const winning = pattern.map((index) => round.board[index]);
-    audio.sfx("cheer");
+    audio.sfx("crowdCheer"); // the plaza cheers "¡Lotería!"
     if (round.winner === "learner") {
       if (!await this.say(run, "lt_b_check")) return;
       if (round.kind !== "llena") {

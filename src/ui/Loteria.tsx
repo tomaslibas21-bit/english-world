@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import { LOTERIA_UI as words, TONA_LT, type LoteriaCard } from "../editions/es/content/loteria";
 import { speechSupported } from "../convo/speech";
 import { game } from "../game/gameRef";
@@ -18,6 +18,8 @@ const isCorner = (index: number) => CORNERS.some((corner) => corner === index);
 const picture = (card: LoteriaCard) => `${import.meta.env.BASE_URL}loteria/${card.id}.webp`;
 
 const missingPictures = new Set<string>();
+/** The deck's own back (public/loteria/back.webp) over the drawn pattern, which shows if the picture is missing. */
+const BACK_ART = { "--card-back-art": `url("${import.meta.env.BASE_URL}loteria/back.webp")` } as CSSProperties;
 
 export function LoteriaTile({ card, label, pictureUrl }: { card: LoteriaCard; label: CardLabel; pictureUrl?: string }) {
   const [missing, setMissing] = useState<string>();
@@ -86,7 +88,7 @@ export function LoteriaOverlay({ touch }: { touch: boolean }) {
       </div>
       <section className="loteria-draw" aria-live="polite">
         {showCard && <div className="loteria-current" data-face-down={faceDown}>
-          {faceDown ? <span className="loteria-card-back" role="img" aria-label={L(words.listenFirst)} />
+          {faceDown ? <span className="loteria-card-back" role="img" aria-label={L(words.listenFirst)} style={BACK_ART} />
             : <LoteriaTile key={current.id} card={current} label={labels[current.id]} pictureUrl={picture(current)} />}
         </div>}
         <div className="loteria-spoken">
