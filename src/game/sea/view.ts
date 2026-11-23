@@ -1,12 +1,15 @@
 // The sea scene, its borrowed town assets, chase camera and water effects. The rules and score live in mode.ts.
 import * as THREE from "three";
-import { SEA_LEVEL, Splashes, swell } from "../water";
+import { BAY, SEA_LEVEL, Splashes } from "../water";
+import { SEA_Z } from "../world/layout";
+import { LIGHTHOUSE_ISLAND } from "../world/island";
+import { SeaBackdrop, seaSwell as swell } from "./backdrop";
 import type { Ride } from "../rides/Rides";
 import { BOAT_SEATS } from "../rides/shapes";
 import type { SeaBoat } from "./boat";
 import type { SeaGate } from "./buoys";
 import type { SeaEnvironment } from "./entry";
-import { WIDE_GATE_VIEW } from "./course";
+import { LANE_WIDTH, WIDE_GATE_VIEW } from "./course";
 import { seaScenery } from "./scenery";
 import { SeaWake } from "./wake";
 
@@ -27,7 +30,9 @@ export class SeaView {
   readonly camera: THREE.PerspectiveCamera;
   private readonly sky: THREE.Mesh;
   private readonly townSea: SeaEnvironment["sea"];
-  private readonly ocean: SeaEnvironment["sea"];
+  private readonly backdrop: SeaBackdrop;
+  /** The run's timer as the time of day: 0 as it starts, 1 as it ends. */
+  day = 0;
   private readonly buoys: THREE.Mesh;
   private readonly shoreSea: SeaEnvironment["sea"];
   private readonly spray = new Splashes();
@@ -66,13 +71,12 @@ export class SeaView {
     this.shoreSea = env.sea.clone();
     this.townSea = env.sea;
     this.buoys = buoys.clone();
-    this.ocean = new THREE.Mesh(new THREE.PlaneGeometry(900, 900, 90, 90), env.sea.material);
-    this.ocean.rotation.x = -Math.PI / 2;
-    this.ocean.visible = false;
     const sun = env.sun.clone();
     sun.castShadow = false;
     this.scene.fog = env.fog?.clone() ?? null;
-    this.scene.add(this.sky, this.shoreSea, this.ocean, this.buoys, env.hemi.clone(), sun, sun.target, this.scenery, this.wake.mesh, this.spray.group, this.sparks);
+    const hemi = env.hemi.clone();
+    this.scene.add(this.sky, this.shoreSea, this.buoys, hemi, sun, sun.target, this.scenery, this.wake.mesh, this.spray.group, this.sparks);
+    this.backdrop = new SeaBackdrop(this.scene, { sky: this.sky, bay: this.shoreSea, fog: this.scene.fog as THREE.Fog | null, hemi, sun }, SEA_LEVEL);
     this.sparks.count = 0;
     this.sparks.frustumCulled = false;
     this.giveBoatBack = borrow(ride.mesh, this.scene);
@@ -93,11 +97,14 @@ export class SeaView {
     this.cameraMix = 0;
     this.followX = boat.worldX;
     this.followHeading = Math.PI;
+    this.backdrop.begin(boat.startX, boat.startZ, { x0: BAY.x0, x1: BAY.x1, z: SEA_Z, lighthouse: LIGHTHOUSE_ISLAND?.center });
     this.shift = this.camera.view?.enabled ? this.camera.view.offsetY / this.camera.view.fullHeight : 0;
   }
 
   pose(boat: SeaBoat, time: number, dt: number, portrait: boolean, gateAhead?: number) {
     this.age += dt;
+    // The open water reaches much farther than the town does (the first frame keeps the town's own lens).
+    this.camera.far = 2600;
     const { mesh, m } = this.ride;
     const mix = THREE.MathUtils.smoothstep(boat.age, 0, 1.6);
     const wave = swell(boat.worldX, boat.worldZ, time);
@@ -133,8 +140,10 @@ export class SeaView {
     const turn = Math.sin(Math.PI * boat.turnProgress);
     const hullRoom = Math.max(0, m.spec.half - 3.2) * 1.35;
     const back = (portrait ? 11.4 : 10.5) + turn * 0.75 + hullRoom, height = portrait ? 5.05 : 4.65;
-    this.chase.position.set(this.followX - dx * back, height, boat.worldZ - dz * back);
-    this.aim.set(this.followX + dx * 14, (portrait ? 1.1 : 0.35) - turn * 0.8, boat.worldZ + dz * 14);
+    // The camera rides the swell with the hull, so the boat keeps its place in the picture and the horizon moves.
+    const ride = wave * 0.85;
+    this.chase.position.set(this.followX - dx * back, height + ride, boat.worldZ - dz * back);
+    this.aim.set(this.followX + dx * 14, (portrait ? 1.1 : 0.35) - turn * 0.8 + ride, boat.worldZ + dz * 14);
     this.chase.lookAt(this.aim);
     this.camera.position.copy(mesh.position).add(this.cameraOffset).lerp(this.chase.position, mix);
     this.camera.quaternion.slerpQuaternions(this.cameraRotation, this.chase.quaternion, mix);
@@ -143,10 +152,8 @@ export class SeaView {
     this.shift *= Math.exp(-dt * 3.5);
 
     this.townSea.material.uniforms.uTime.value = time;
-    this.ocean.visible = this.age > 0.65;
-    this.shoreSea.visible = !this.ocean.visible;
     this.buoys.visible = this.age < 2 && this.buoys.visible;
-    this.ocean.position.set(boat.worldX, SEA_LEVEL, boat.worldZ);
+    this.backdrop.update(dt, time, this.day, { x: boat.worldX, z: boat.worldZ, heading: boat.heading, out: boat.distance, speed: boat.speed / 14 }, this.camera);
     const sternX = boat.worldX - sin * m.spec.half * 0.8, sternZ = boat.worldZ - cos * m.spec.half * 0.8;
     this.wake.update(time, sternX, sternZ, cos, -sin, m.spec.wide, boat.speed);
     if ((this.nextSpray -= dt) <= 0 && boat.speed >= 7) {
@@ -170,6 +177,7 @@ export class SeaView {
     const water = SEA_LEVEL + swell(x, z, time);
     for (const side of [-1, 1]) this.spray.fan(x, water, z, cos * side, -sin * side, 1);
     this.burst = { x, y: water + 0.18, z, time };
+    this.backdrop.celebrate();
     this.poseSparks(time);
   }
 
@@ -205,6 +213,7 @@ export class SeaView {
     this.camera.updateProjectionMatrix();
     this.camera.updateMatrixWorld(true);
     this.sky.position.copy(this.camera.position);
+    this.backdrop.gate(gate?.mesh.visible ? gate.mesh.position : undefined, LANE_WIDTH, gate?.shown ?? 0);
     renderer.render(this.scene, this.camera);
     return gate?.labels(this.camera, w, h) ?? [];
   }
@@ -233,7 +242,7 @@ export class SeaView {
   dispose() {
     this.givePlayerBack();
     this.giveBoatBack();
-    this.ocean.geometry.dispose();
+    this.backdrop.dispose();
     this.wake.dispose();
     this.sparks.geometry.dispose();
     this.sparks.material.dispose();

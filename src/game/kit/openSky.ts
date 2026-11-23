@@ -40,7 +40,7 @@ void main() {
 
 const fragment = /* glsl */ `
 uniform vec3 zenith, mid, horizon, sunColor, haloColor, ridgeFar, ridgeNear, streakColor, sunDir;
-uniform float streaks, flash, ridges, drift;
+uniform float streaks, flash, ridges, drift, alpha;
 varying vec3 vDir;
 float tri(float x) { return abs(fract(x) - 0.5) * 2.0; }
 // A low-poly silhouette: straight slopes between peaks. Whole multipliers keep it seamless around the dome.
@@ -80,7 +80,7 @@ void main() {
   col = mix(col, mix(ridgeNear, horizon, smoothstep(0.03, 0.0, e) * 0.55), smoothstep(near + soft, near - soft, e));
   col = mix(col, horizon, smoothstep(0.004, -0.004, e));
 
-  gl_FragColor = vec4(col, 1.0);
+  gl_FragColor = vec4(col, alpha);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }`;
@@ -110,7 +110,7 @@ export class OpenSky {
       uniforms: {
         zenith: colour(), mid: colour(), horizon: colour(), sunColor: colour(), haloColor: colour(), ridgeFar: colour(),
         ridgeNear: colour(), streakColor: colour(), sunDir: { value: this.sunDir }, streaks: { value: 0 },
-        flash: { value: 0 }, ridges: { value: ridges }, drift: { value: 0 },
+        flash: { value: 0 }, ridges: { value: ridges }, drift: { value: 0 }, alpha: { value: 1 },
       },
     });
     this.mesh = new THREE.Mesh(new THREE.SphereGeometry(radius, 32, 16), material);
@@ -139,6 +139,14 @@ export class OpenSky {
     this.fill = num("fill");
     const up = THREE.MathUtils.degToRad(num("elevation"));
     this.sunDir.set(Math.sin(this.azimuth) * Math.cos(up), Math.sin(up), -Math.cos(this.azimuth) * Math.cos(up));
+  }
+
+  /** Lay this sky over another one (a town's, drawn before it): 0 shows the other, 1 this one. */
+  set cover(alpha: number) {
+    const material = this.mesh.material;
+    material.uniforms.alpha.value = alpha;
+    // Blended while still in the opaque pass, so it never draws over the water or the boat.
+    material.blending = alpha < 1 ? THREE.CustomBlending : THREE.NormalBlending;
   }
 
   /** A moment of joy: the halo flares and settles. */
