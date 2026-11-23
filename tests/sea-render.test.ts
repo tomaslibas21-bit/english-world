@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { DirectionalLight, Group, HemisphereLight, Mesh, PlaneGeometry, ShaderMaterial, type Object3D } from "three";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { boardFaces } from "../src/game/kit/boardFaces";
 import { audio } from "../src/game/audio";
 import { CameraRig } from "../src/game/camera";
 import { Rides, type RideHost } from "../src/game/rides/Rides";
@@ -13,6 +14,11 @@ import { BAY } from "../src/game/water";
 import { RIDES } from "../src/game/world/rides";
 import { makeBoats } from "../src/game/world/town";
 import { useStore } from "../src/state/store";
+
+vi.mock("../src/convo/speech", async (load) => ({
+  ...await load<typeof import("../src/convo/speech")>(),
+  speechSupported: () => true,
+}));
 
 vi.mock("../src/game/sea/store", async (load) => {
   const store = await load<typeof import("../src/game/sea/store")>();
@@ -31,20 +37,18 @@ describe("rendering the first sea approach", () => {
     vi.unstubAllGlobals();
   });
 
-  it.each([[1280, 800], [390, 844], [390, 664]])("publishes and displays all three anchors at 25 m on %ix%i", async (w, h) => {
+  it.each([[1280, 800], [390, 844], [390, 664]])("draws three boards and mounts three controls at 25 m on %ix%i", async (w, h) => {
     vi.stubGlobal("location", { search: "" });
     const { Hud } = await import("../src/ui/Hud");
     vi.spyOn(audio, "init").mockResolvedValue(undefined);
     const prepared = await prepareSea();
-    vi.stubGlobal("window", { matchMedia: () => ({ matches: w < h }) });
+    vi.stubGlobal("window", { matchMedia: (query: string) => ({ matches: query.includes("900px") ? w >= 900 : w < h }) });
     vi.stubGlobal("document", {
       documentElement: {},
       createElement: () => ({ getContext: () => ({ measureText: (text: string) => ({ width: text.length * 45 }) }) }),
     });
-    vi.stubGlobal("getComputedStyle", () => ({ getPropertyValue: () => "Nunito" }));
     vi.spyOn(audio, "play").mockResolvedValue(true);
     let time = 10;
-    vi.spyOn(performance, "now").mockImplementation(() => time * 1000);
 
     const rig = new CameraRig(w / h), player = { root: new Group(), update() {} };
     const rides = new Rides({ ambient: { rideBoxes: [] } } as unknown as RideHost,
@@ -90,21 +94,27 @@ describe("rendering the first sea approach", () => {
 
       sailFor((FIRST_GATE - 25) / CRUISE_SPEED);
       expect(mode.debug().gateDistance).toBeCloseTo(25);
-      const { anchors } = useSea.getState();
-      expect(anchors.map((anchor) => anchor.lane)).toEqual([0, 1, 2]);
-      expect(anchors.every((a) => a.opacity === 1 && a.x - a.width / 2 >= 0 && a.x + a.width / 2 <= w)).toBe(true);
+      const { boards, gateId, width, height, renderSerial } = boardFaces.sea.debug();
+      expect(gateId).toBe(useSea.getState().gateId);
+      expect([width, height]).toEqual([w, h]);
+      expect(renderSerial).toBeGreaterThan(10);
+      expect(boards.map(({ lane }) => lane)).toEqual([0, 1, 2]);
+      expect(boards.every(({ visible, opacity, world }) => visible && opacity === 1 && world.length === 16)).toBe(true);
 
       const html = renderToStaticMarkup(createElement(Hud));
       expect(html.match(/<button[^>]*class="road-gate"/g)).toHaveLength(3);
+      expect(html).toContain('class="say-it-mic"');
       if (w >= 900) expect(html).toMatch(/<span[^>]*>Jis sidabrinis<\/span>/);
 
       sailFor(25 / CRUISE_SPEED + 0.05);
       const passed = renderToStaticMarkup(createElement(Hud));
       expect(useSea.getState().feedback?.correct).toBe(w >= 900);
+      expect(useSea.getState().sayIt).toBeUndefined();
+      expect(passed).not.toContain('class="say-it-mic"');
       expect(passed).toMatch(/<div class="road-gate" data-lane="1" aria-label="Jis sidabrinis"/);
       expect(passed.match(/class="road-gate"/g)).toHaveLength(1);
     } finally {
       mode.exit(true);
     }
-  });
+  }, 15_000);
 });

@@ -1,3 +1,4 @@
+import { projectBoards } from "./board-projection";
 import {
   DirectionalLight, Fog, Group, HemisphereLight, Mesh, MeshLambertMaterial, PerspectiveCamera,
   PlaneGeometry, ShaderMaterial, Vector3, type WebGLRenderer,
@@ -178,7 +179,8 @@ describe("the town-to-sea camera", () => {
         const ahead = gate.distance - boat.distance;
         view.pose(boat, time, 0.05, portrait, ahead);
         gate.pose(time, ahead);
-        const anchors = view.render(renderer, w, h, gate);
+        view.render(renderer, w, h, gate);
+        const anchors = projectBoards("sea", gate.faces(), view.camera, w, h);
         if (ahead < 19 || ahead > 32 || anchors.length !== 3) continue;
         readable ||= anchors.every((a, i) => a.width >= (portrait ? 86 : 100) && a.height >= (portrait ? 15 : 18) * 2.16
           && a.x - a.width / 2 > 0 && a.x + a.width / 2 < w
@@ -227,7 +229,7 @@ describe("passing a sea gate", () => {
 
     gate.cross(2, correct);
     gate.pose(1, 0);
-    const first = gate.labels(camera, w, h);
+    const first = projectBoards("sea", gate.faces(), camera, w, h);
     expect(first).toHaveLength(1);
     expect(first[0].lane).toBe(2);
     expect(first[0].opacity).toBe(correct ? 0.93 : 0.59);
@@ -237,17 +239,17 @@ describe("passing a sea gate", () => {
     camera.position.set(6.8, 4.4, 5);
     camera.updateMatrixWorld(true);
     gate.pose(1.3, -5, 1, 0.3);
-    const [closer] = gate.labels(camera, w, h);
+    const [closer] = projectBoards("sea", gate.faces(), camera, w, h);
     const board = gate.mesh.children[3];
     const center = new Vector3(0, 0, 0.25).applyMatrix4(board.matrixWorld).project(camera);
     expect(closer.width).toBeGreaterThan(first[0].width);
     expect(closer.opacity).toBeLessThan(first[0].opacity);
-    expect(closer.x).toBeCloseTo((1 + center.x) * w / 2);
-    expect(closer.y).toBeCloseTo((1 - center.y) * h / 2);
+    expect(closer.center.x).toBeCloseTo((1 + center.x) * w / 2);
+    expect(closer.center.y).toBeCloseTo((1 - center.y) * h / 2);
 
     camera.position.z = -1;
     camera.updateMatrixWorld(true);
-    expect(gate.labels(camera, w, h)).toEqual([]);
+    expect(projectBoards("sea", gate.faces(), camera, w, h)).toEqual([]);
     gate.dispose();
   });
 });

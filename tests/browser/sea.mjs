@@ -1,6 +1,7 @@
 // Use the Vite dev server for the sea debug hooks. SEA_SIZE sets the viewport and SEA_SHOTS saves the handoff and gates.
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
+import { BoardRegistration, sampleBoardRegistration } from "./board-registration.mjs";
 
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:8310";
@@ -32,9 +33,9 @@ function installClock([key, save]) {
   const frames = [];
   window.requestAnimationFrame = (fn) => { frames.push(fn); return frames.length; };
   window.cancelAnimationFrame = () => {};
-  window.__step = (count) => {
+  window.__step = (count, ms = 50) => {
     for (let i = 0; i < count; i++) {
-      now += 50;
+      now += ms;
       for (const fn of frames.splice(0)) fn(now);
     }
   };
@@ -65,7 +66,16 @@ try {
   await page.goto(base, { waitUntil: "domcontentloaded" });
 
   const read = () => page.evaluate(() => window.__ew?.sea?.());
-  const step = (frames) => page.evaluate((n) => window.__step(n), frames);
+  let registration;
+  let milliseconds = 50;
+  const rawStep = (frames = 1) => page.evaluate(([n, ms]) => window.__step(n, ms), [frames, milliseconds]);
+  const step = async (frames) => {
+    if (!registration) return rawStep(frames);
+    for (let i = 0; i < frames; i++) {
+      await rawStep();
+      registration.record(await sampleBoardRegistration(page, "sea"));
+    }
+  };
   const waitFor = async (predicate, description, attempts = 160, frames = 5) => {
     for (let i = 0; i < attempts; i++) {
       await step(frames);
@@ -85,6 +95,9 @@ try {
   await page.evaluate(() => {
     const { audio } = window.__ew;
     window.__seaAudio = [];
+    window.__seaBumps = 0;
+    const bump = audio.bump.bind(audio);
+    audio.bump = (...args) => { window.__seaBumps++; return bump(...args); };
     audio.play = async (_voice, _speed, text) => { window.__seaAudio.push(text); return true; };
   });
 
@@ -148,6 +161,19 @@ try {
 
   await sailOut(true);
   const gates = page.locator(".sea-overlay button.road-gate");
+  const openWaterBumps = await page.evaluate(() => window.__seaBumps);
+  await waitFor(async () => (await read()).gateDistance <= 70, "approaches the first buoy row", 25, 1);
+  registration = new BoardRegistration("sea", 50, 25);
+  for (const lane of [0, 2]) {
+    await page.evaluate((lane) => window.__ew.seaSteer(lane), lane);
+    await waitFor(async () => {
+      const state = await read();
+      assert.equal(state.totalGates, 0);
+      assert.equal(state.wobble, 0);
+      assert.equal(await page.evaluate(() => window.__seaBumps), openWaterBumps);
+      return state.lane === lane;
+    }, `steers across open water to lane ${lane} without damage`, 35, 1);
+  }
   await page.evaluate(async () => { await document.fonts.ready; });
   const layoutChecks = [];
   await waitFor(async () => {
@@ -157,11 +183,14 @@ try {
       const headerBottom = (document.querySelector(".sea-overlay header")?.getBoundingClientRect().bottom ?? 0);
       const stickTop = document.querySelector(".sea-mode .joy")?.getBoundingClientRect().top;
       return boards.map((board, i) => {
-        const box = board.getBoundingClientRect(), font = parseFloat(getComputedStyle(board).fontSize);
+        const box = board.getBoundingClientRect();
+        const probe = (key) => board.querySelector(`[data-face-probe="${key}"]`).getBoundingClientRect();
+        const center = probe("center"), em = probe("em");
+        const font = Math.hypot(em.x - center.x, em.y - center.y);
         return {
           text: board.getAttribute("aria-label"), width: box.width, font, left: box.left, right: box.right,
           top: box.top, bottom: box.bottom, headerBottom, stickTop, viewportWidth: innerWidth,
-          fullWords: [...board.children].map((line) => line.textContent).join(" ") === board.getAttribute("aria-label"),
+          fullWords: [...board.querySelectorAll(":scope > span")].map((line) => line.textContent).join(" ") === board.getAttribute("aria-label"),
           inside: box.left >= 0 && box.right <= innerWidth,
           belowHeader: box.top > headerBottom,
           aboveControls: stickTop === undefined || box.bottom < stickTop,
@@ -185,6 +214,9 @@ Gate layout at 19–32 m: ${JSON.stringify(layoutChecks)}`);
   await waitFor(async () => (await read()).rightGates === 1, "taps and sails through the correct gate");
 
   let correct = await read();
+  await step(6);
+  registration.verify();
+  registration = undefined;
   // The picker can put the first answer in the middle. Continue until a correct answer exercises a side lane.
   for (let attempt = 1; correct.lane === 1 && attempt < 8; attempt++) {
     const count = correct.rightGates;
@@ -201,21 +233,30 @@ Gate layout at 19–32 m: ${JSON.stringify(layoutChecks)}`);
   await shot("gate-right");
 
   await waitFor(async () => (await read()).gates?.length === 3, "the next gate appears");
+  await waitFor(async () => (await read()).gateDistance <= 70, "approaches the miss gate", 125, 1);
+  milliseconds = 1000 / 120;
+  registration = new BoardRegistration("sea", milliseconds, 25);
   const clips = await page.evaluate(() => window.__seaAudio.length);
+  const bumps = await page.evaluate(() => window.__seaBumps);
   const wrongLane = (await read()).right === 0 ? 2 : 0;
   await page.evaluate((lane) => window.__ew.seaSteer(lane), wrongLane);
-  await waitFor(async () => (await read()).totalGates === correct.totalGates + 1, "sails through the wrong gate");
+  await waitFor(async () => (await read()).totalGates === correct.totalGates + 1, "sails through the wrong gate", 180);
   const wrong = await read();
   assert.equal(wrong.lane, wrongLane);
   assert.equal(wrong.rightGates, correct.rightGates);
   assert.equal(wrong.streak, 0);
   assert.ok(wrong.wobble > 0);
+  assert.equal(await page.evaluate(() => window.__seaBumps), bumps + 1);
   assertBoatFrame(wrong, "wrong gate");
   assert.ok(correct.drawCalls <= 25 && wrong.drawCalls <= 25, "both gate reactions stay within the draw-call budget");
   assert.equal(await page.getByText("Ne visai. Teisingai:", { exact: true }).count(), 1);
   assert.ok((await page.locator(".sea-overlay .road-feedback.wrong span[lang=en]").innerText()).length > 0);
   assert.equal(await page.evaluate(() => window.__seaAudio.length), clips + 1, "plays the missed clip again");
   await shot("gate-wrong");
+  await step(48);
+  registration.verify();
+  registration = undefined;
+  milliseconds = 50;
 
   await page.evaluate(() => window.__ew.seaTimer(119.8));
   const result = page.getByRole("dialog", { name: "Plaukimas baigtas" });

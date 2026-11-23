@@ -111,6 +111,8 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .hud > * { pointer-events: auto; }
 .hud-top { --card-top: 14px; --card-left: 14px; display: contents; pointer-events: none; }
 .objective-notes { display: contents; }
+.objective-notes .coach { filter: opacity(1); transition: filter 180ms; }
+.objective-notes.road-approach .coach { filter: opacity(0); pointer-events: none; }
 .objective-card {
   position: absolute; top: var(--card-top); left: var(--card-left); width: min(390px, calc(100vw - 150px)); pointer-events: auto;
   background: var(--panel); border-radius: var(--radius); box-shadow: var(--shadow); padding: 12px 14px 13px;

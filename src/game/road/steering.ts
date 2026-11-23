@@ -1,7 +1,7 @@
 import { MathUtils } from "three";
 import type { ModeFrame } from "../kit/modes";
 import type { Pose } from "./ghost";
-import { center, featureX, ROAD_HALF, type Track } from "./track";
+import { center, ROAD_HALF, type Track } from "./track";
 import { DRIVE_SECONDS } from "./run";
 
 const { clamp, lerp } = MathUtils;
@@ -64,7 +64,7 @@ export class RoadCar {
     let changed = false;
     for (const { features } of track.pieces.values()) for (const feature of features) {
       if (feature.hit || feature.s < s0 || feature.s >= this.s) continue;
-      const crossing = Math.abs(this.x - featureX(feature, time));
+      const crossing = Math.abs(this.x - feature.x);
       if (crossing > (feature.kind === "boost" || feature.kind === "ramp" ? 1.52 : 1.25) || this.height > 0.72) continue;
       feature.hit = changed = true;
       if (feature.kind === "boost") this.boost = Math.max(this.boost, 1.5);

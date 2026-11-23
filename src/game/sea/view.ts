@@ -1,3 +1,4 @@
+import { boardFaces } from "../kit/boardFaces";
 // The sea scene, its borrowed town assets, chase camera and water effects. The rules and score live in mode.ts.
 import * as THREE from "three";
 import { BAY, SEA_LEVEL, Splashes } from "../water";
@@ -238,7 +239,7 @@ export class SeaView {
     this.sky.position.copy(this.camera.position);
     this.backdrop.gate(gate?.mesh.visible ? gate.mesh.position : undefined, LANE_WIDTH, gate?.shown ?? 0);
     renderer.render(this.scene, this.camera);
-    return gate?.labels(this.camera, w, h) ?? [];
+    boardFaces.sea.draw(this.camera, w, h, gate?.id, gate?.faces());
   }
 
   hullFrame() {

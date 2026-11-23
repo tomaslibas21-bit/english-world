@@ -11,12 +11,12 @@ const steer = (lane: number) => act("steer", String(lane));
 const scoreActions = { again: () => act("again"), done, guide: () => act("guide") };
 
 export function SeaOverlay({ touch }: { touch: boolean }) {
-  const { phase, remaining, streak, prompt, sayIt, feedback, anchors, wideLabels, result } = useSea();
+  const { phase, remaining, streak, prompt, sayIt, feedback, gateId, answeredLane, result } = useSea();
   const showHint = phase === "drive" && remaining >= SEA_SECONDS - 3;
   return <div className="sea-overlay" lang="lt">
     {(phase === "drive" || phase === "turn") && <>
       <WordGateHeader game="sea" words={words} {...{ prompt, sayIt, feedback, remaining, streak, showHint }} home={done} replay={() => act("replay")} />
-      <GateLabels prompt={prompt} anchors={anchors} steer={feedback ? undefined : steer} preferSingleLine={wideLabels} />
+      {prompt && gateId !== undefined && <GateLabels key={gateId} mode="sea" prompt={prompt} gateId={gateId} steer={answeredLane === undefined ? steer : undefined} answeredLane={answeredLane} />}
       {showHint && <p className="road-controls">{touch ? words.touchControls : words.controls}</p>}
     </>}
     {phase === "result" && result && <WordGateResult result={result} words={words} actions={scoreActions} />}

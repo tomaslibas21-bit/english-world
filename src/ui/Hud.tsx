@@ -34,6 +34,7 @@ import { TextArrival } from "./TextArrival";
 import { ReactBubble } from "./ReactBubble";
 import { unreadTexts } from "../game/phone/texts";
 import { portraitToolbarRows, toolbarColumns } from "./toolbarLayout";
+import { getRoadOverlay } from "./roadOverlay";
 import { getSeaOverlay } from "./seaOverlay";
 import { useScreen } from "./useScreen";
 import "./light.css";
@@ -57,10 +58,9 @@ export function useDueCards(): number {
   return dueCards(cards, Date.now()).length;
 }
 
-const RoadOverlay = lazy(() => import("./Road").then(({ RoadOverlay }) => ({ default: RoadOverlay })));
 const BilliardsOverlay = lazy(() => import("./Billiards").then(({ BilliardsOverlay }) => ({ default: BilliardsOverlay })));
 const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = {
-  photowalk: PhotoWalkOverlay, taxi: TaxiOverlay, barista: BaristaOverlay, gofish: GoFishOverlay, billiards: BilliardsOverlay, road: RoadOverlay,
+  photowalk: PhotoWalkOverlay, taxi: TaxiOverlay, barista: BaristaOverlay, gofish: GoFishOverlay, billiards: BilliardsOverlay,
 };
 const LizzieMeeting = lazy(() => import("./LizzieMeeting"));
 
@@ -102,7 +102,7 @@ export function Hud() {
   if (hud.modeScreen?.kind === "menu") {
     const road = hud.modeScreen.id === "road";
     const sea = hud.modeScreen.id === "sea";
-    const Overlay = sea ? getSeaOverlay() : modeOverlays[hud.modeScreen.id];
+    const Overlay = road ? getRoadOverlay() : sea ? getSeaOverlay() : modeOverlays[hud.modeScreen.id];
     const tools = !road && !sea && hud.modeScreen.id !== "barista" && hud.modeScreen.id !== "gofish" && hud.modeScreen.id !== "billiards" && hud.modeScreen.id !== "photowalk";
     return (
       <div className={"hud mode-hud" + (road ? " road-mode" : sea ? " sea-mode" : "") + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
@@ -124,7 +124,7 @@ export function Hud() {
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
       <div className="hud-top">
           {hud.speedLines && <div className="drive-wind" aria-hidden />}
-        <div className={"objective-notes" + (collapsed ? " task-folded" : "")}>
+        <div className={"objective-notes" + (collapsed ? " task-folded" : "") + (hud.roadApproach ? " road-approach" : "")}>
           <Objective key={taskId ?? "complete"} collapsed={collapsed} fresh={task.fresh && !hud.panel} setCollapsed={task.setManual} />
           {streetCard && portrait && <StreetCard />}
           {hud.zoneBanner && banner && <div className="zone-banner"><h2>{banner.icon && <Icon name={banner.icon} size="0.8em" className="zb-ico" />}{banner.rest}</h2>{hud.zoneBanner.sub && <p>{hud.zoneBanner.sub}</p>}</div>}

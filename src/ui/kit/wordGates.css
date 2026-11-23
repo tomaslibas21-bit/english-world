@@ -75,7 +75,11 @@
 .road-gates { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 .road-gate {
   position: absolute;
-  transform: translate(-50%, -50%);
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  visibility: hidden;
+  will-change: transform, opacity;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -86,6 +90,13 @@
   color: #172e3a;
 }
 .road-gate span { white-space: nowrap; }
+.road-gate [data-face-probe] { position: absolute; width: 0; height: 0; pointer-events: none; }
+.road-gate [data-face-probe="tl"], .road-gate [data-face-probe="tr"] { top: 0; }
+.road-gate [data-face-probe="bl"], .road-gate [data-face-probe="br"] { bottom: 0; }
+.road-gate [data-face-probe="tl"], .road-gate [data-face-probe="bl"] { left: 0; }
+.road-gate [data-face-probe="tr"], .road-gate [data-face-probe="br"] { right: 0; }
+.road-gate [data-face-probe="center"], .road-gate [data-face-probe="em"] { left: 50%; top: 50%; }
+.road-gate [data-face-probe="em"] { transform: translateY(1em); }
 .road-result .mode-score-card { width: min(100%, 495px); }
 .road-result .mode-score-line small { font-size: .5em; }
 .road-result .mode-score-actions { margin-top: 14px; }

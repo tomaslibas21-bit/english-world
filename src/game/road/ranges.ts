@@ -86,6 +86,7 @@ void main() {
 
 const fragment = /* glsl */ `
 uniform vec3 lit, shadow, haze, tint;
+uniform float opacity;
 varying float vShade;
 varying float vTone;
 varying float vFar;
@@ -96,7 +97,7 @@ void main() {
   rock *= tint;
   float air = smoothstep(130.0, 900.0, vFar) * 0.84;
   float mist = smoothstep(90.0, 300.0, vFar) * (1.0 - smoothstep(-2.0, 11.0, vHeight));
-  gl_FragColor = vec4(mix(rock, haze, max(air, mist)), 1.0);
+  gl_FragColor = vec4(mix(rock, haze, max(air, mist)), opacity);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }`;
@@ -108,9 +109,9 @@ export class Ranges {
 
   constructor(rock: [string, string]) {
     const material = new THREE.ShaderMaterial({
-      vertexShader: vertex, fragmentShader: fragment, fog: false,
+      vertexShader: vertex, fragmentShader: fragment, fog: false, transparent: true,
       uniforms: {
-        lit: { value: new THREE.Color(rock[0]) }, shadow: { value: new THREE.Color(rock[1]) },
+        opacity: { value: 1 }, lit: { value: new THREE.Color(rock[0]) }, shadow: { value: new THREE.Color(rock[1]) },
         haze: { value: new THREE.Color() }, tint: { value: new THREE.Color() },
       },
     });

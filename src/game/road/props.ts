@@ -1,8 +1,8 @@
 import * as THREE from "three";
 import { ROAD_CONES } from "../../content/road";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { colourMerge, rand } from "../world/util";
-import { featureX, ground, point, type Track } from "./track";
+import { colourMerge } from "../world/util";
+import { point, type Track } from "./track";
 
 type Part = [THREE.BufferGeometry, THREE.ColorRepresentation];
 type Cone = { geometry: THREE.BufferGeometry; material: THREE.Material };
@@ -24,43 +24,6 @@ async function loadCone(file: string): Promise<Cone> {
   return { geometry, material };
 }
 
-export function cactus(): Part[] {
-  const make = (r: number, h: number, x: number, y: number, angle = 0) =>
-    new THREE.CylinderGeometry(r * 0.82, r, h, 6).rotateZ(angle).translate(x, y, 0);
-  return [
-    [make(0.24, 2.5, 0, 1.25), "#498663"],
-    [make(0.15, 0.72, -0.32, 1.08, -Math.PI / 2.8), "#619869"],
-    [make(0.145, 0.72, -0.63, 1.51), "#619869"],
-    [make(0.13, 0.6, 0.34, 1.56, Math.PI / 2.9), "#427956"],
-    [make(0.12, 0.58, 0.58, 1.97), "#427956"],
-  ];
-}
-
-function pole(): Part[] {
-  return [
-    [new THREE.CylinderGeometry(0.075, 0.16, 6.4, 6).translate(0, 3.2, 0), "#8c5e48"],
-    [new THREE.BoxGeometry(2.1, 0.13, 0.15).translate(0, 5.92, 0), "#785440"],
-    ...[-0.82, 0.82].map((x): Part => [new THREE.CylinderGeometry(0.09, 0.11, 0.2, 6).translate(x, 6.06, 0), "#eee6d7"]),
-  ];
-}
-
-function sign(): Part[] {
-  return [
-    [new THREE.CylinderGeometry(0.055, 0.07, 2.5, 6).translate(0, 1.25, 0), "#765e53"],
-    [new THREE.BoxGeometry(0.95, 0.95, 0.12).rotateZ(Math.PI / 4).translate(0, 2.5, 0), "#f1bc58"],
-    [new THREE.BoxGeometry(0.16, 0.62, 0.05).rotateZ(-0.35).translate(0, 2.5, 0.08), "#695549"],
-  ];
-}
-
-function tumbleweed(): Part[] {
-  const r = rand(515);
-  return Array.from({ length: 12 }, () => {
-    const g = new THREE.TorusGeometry(0.56 + r() * 0.17, 0.035, 3, 9);
-    g.rotateX(r() * Math.PI).rotateY(r() * Math.PI);
-    return [g, r() < 0.5 ? "#bb8552" : "#86613b"];
-  });
-}
-
 function coneFallback(flat: boolean): Part[] {
   const scale = flat ? 0.18 : 1;
   return [
@@ -70,7 +33,7 @@ function coneFallback(flat: boolean): Part[] {
   ];
 }
 
-type Prop = "cactus" | "rock" | "pole" | "sign" | "weed" | "cone" | "flat";
+type Prop = "cone" | "flat";
 export class Props {
   readonly group = new THREE.Group();
   private batches: Record<Prop, THREE.InstancedMesh>;
@@ -82,8 +45,6 @@ export class Props {
 
   constructor() {
     this.batches = {
-      cactus: this.batch(cactus(), 32), rock: this.batch([[new THREE.DodecahedronGeometry(1), "#ad7960"]], 32),
-      pole: this.batch(pole(), 16), sign: this.batch(sign(), 8), weed: this.batch(tumbleweed(), 8),
       cone: this.batch(coneFallback(false), 16), flat: this.batch(coneFallback(true), 16),
     };
   }
@@ -113,10 +74,10 @@ export class Props {
     return mesh;
   }
 
-  private put(mesh: THREE.InstancedMesh, p: THREE.Vector3, x: number, y: number, z: number, spin: number, roll = 0) {
+  private put(mesh: THREE.InstancedMesh, p: THREE.Vector3, x: number, y: number, z: number, spin: number) {
     this.object.position.copy(p);
     this.object.scale.set(x, y, z);
-    this.object.rotation.set(0, spin, roll);
+    this.object.rotation.set(0, spin, 0);
     this.object.updateMatrix();
     mesh.setMatrixAt(mesh.count++, this.object.matrix);
   }
@@ -125,18 +86,9 @@ export class Props {
     for (const mesh of meshes) { mesh.visible = mesh.count > 0; if (mesh.visible) mesh.instanceMatrix.needsUpdate = true; }
   }
 
-  update(track: Track, time: number, sceneryChanged: boolean, propsChanged: boolean) {
+  update(track: Track, piecesChanged: boolean, propsChanged: boolean) {
     const b = this.batches;
-    if (sceneryChanged) {
-      b.cactus.count = b.rock.count = b.pole.count = b.sign.count = 0;
-      for (const { scenery } of track.pieces.values()) for (const { kind, s, x, seed } of scenery) {
-        // Poles keep one height so that the wires meet them.
-        const k = kind === "rock" ? 0.36 + seed * 1.4 : kind === "pole" ? 1 : 0.78 + seed * 0.66;
-        this.put(b[kind], ground(s, x, kind === "rock" ? 0.1 : -0.07), k, kind === "rock" ? k * 0.65 : k, k, kind === "pole" ? 0 : seed * 5);
-      }
-      this.flush(b.cactus, b.rock, b.pole, b.sign);
-    }
-    if (sceneryChanged || propsChanged || this.loaded) {
+    if (piecesChanged || propsChanged || this.loaded) {
       this.loaded = false;
       b.cone.count = b.flat.count = 0;
       for (const { features } of track.pieces.values()) for (const f of features) if (f.kind === "cone") {
@@ -144,12 +96,10 @@ export class Props {
       }
       this.flush(b.cone, b.flat);
     }
-    b.weed.count = 0;
-    for (const { features } of track.pieces.values()) for (const f of features) if (f.kind === "weed") {
-      const x = featureX(f, time);
-      this.put(b.weed, point(f.s, x, f.hit ? 0.24 : 0.79), 1.28, f.hit ? 0.5 : 1.28, 1.28, f.phase, time * 4 + f.phase);
-    }
-    this.flush(b.weed);
+  }
+
+  get drawnBatches() {
+    return Object.entries(this.batches).filter(([, mesh]) => mesh.visible && mesh.count).map(([name]) => name);
   }
 
   dispose() {

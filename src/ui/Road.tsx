@@ -40,7 +40,7 @@ function LiftOffer({ touch }: { touch: boolean }) {
 function DriveOverlay({ touch }: { touch: boolean }) {
   const prompt = useRoad((s) => s.prompt);
   const sayIt = useRoad((s) => s.sayIt);
-  const anchors = useRoad((s) => s.anchors);
+  const gateId = useRoad((s) => s.gateId);
   const feedback = useRoad((s) => s.feedback);
   const remaining = useRoad((s) => s.remaining);
   const streak = useRoad((s) => s.streak);
@@ -52,7 +52,7 @@ function DriveOverlay({ touch }: { touch: boolean }) {
       home={done} replay={() => act("replay")}
       extraMeter={ghost && <span className="road-ghost">{words.ghost}</span>}
       extraButton={!touch && <button className="road-icon" aria-label={words.horn} title={words.horn} onClick={() => act("horn")}><Icon name="horn" size={21} /></button>} />
-    <GateLabels prompt={prompt} anchors={anchors} />
+    {prompt && gateId !== undefined && <GateLabels key={gateId} mode="road" prompt={prompt} gateId={gateId} />}
     {!touch && <div className="road-controls">{words.controls}</div>}
   </>;
 }

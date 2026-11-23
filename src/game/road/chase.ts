@@ -46,7 +46,8 @@ export class RoadChase {
     const pitch = Math.atan(vertical * 0.20);
     const sin = Math.sin(pitch), cos = Math.cos(pitch);
     const horizontal = vertical * aspect;
-    const shake = Math.max(0, pace - 0.86) * 0.13;
+    const gateBlend = 1 - smoothstep(remaining, 85, 100);
+    const shake = Math.max(0, pace - 0.86) * 0.13 * (1 - gateBlend);
     const eyeY = car.y + (portrait ? 3.55 : 2.68) - lift * 0.32 + pace * 0.36 + Math.cos(time * 33) * shake;
     const baseBack = ((portrait ? 12.0 : 8.7) + pace * 1.10) * this.lens;
     let fitBack = baseBack;
@@ -64,7 +65,9 @@ export class RoadChase {
     };
     fit(carCorners, 0.92, 0.88, 0.89);
     // Ease out as the car reaches the arches. Their banners stay between the HUD and the driving controls.
-    if (gate && remaining < 85) fit(gate.frame, 0.93, portrait ? 0.43 : short ? 0.62 : 0.48, 0.44);
+    const carFit = fitBack;
+    if (gate && gateBlend > 0) fit(gate.frame, 0.93, portrait ? 0.43 : short ? 0.62 : 0.48, 0.44);
+    fitBack = lerp(carFit, fitBack, gateBlend);
     this.back = Math.max(fitBack, lerp(this.back, fitBack, ease));
     cam.aspect = aspect;
     cam.fov = fov;

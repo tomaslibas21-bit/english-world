@@ -115,6 +115,18 @@ async function testGame(context, game, size, touch, supported) {
     store.getState().setHud({ panel: null, zoneBanner: null });
   });
 
+  async function checkMicPosition(controls) {
+    assert(await mic.evaluate((button, selector) => {
+      const b = button.getBoundingClientRect();
+      const clear = (c) => c.width === 0 || c.height === 0 || b.left >= c.right || b.right <= c.left
+        || b.bottom <= c.top || b.top >= c.bottom;
+      const target = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
+      return b.left >= 0 && b.right <= innerWidth && b.top >= 0 && b.bottom <= innerHeight && button.contains(target)
+        && [...document.querySelectorAll(selector)].every((node) => getComputedStyle(node).visibility !== "visible"
+          || clear(node.getBoundingClientRect()));
+    }, controls), `${label}: the mic fits without covering gameplay controls`);
+  }
+
   async function checkBonus({ hit, miss, untouched, keepMoving, controls, cueText }) {
     if (!supported) {
       assert.equal(await bonus.count(), 0, `${label}: the bonus mic is absent without speech support`);
@@ -123,13 +135,7 @@ async function testGame(context, game, size, touch, supported) {
     await mic.waitFor();
     await bonus.getByText(words.tip, { exact: true }).waitFor();
     assert.equal(await page.evaluate((id) => localStorage.getItem(`ew-say-it-tip:${id}`), game), "1");
-    assert(await mic.evaluate((button, selector) => {
-      const b = button.getBoundingClientRect();
-      const clear = (c) => c.width === 0 || c.height === 0 || b.left >= c.right || b.right <= c.left
-        || b.bottom <= c.top || b.top >= c.bottom;
-      return b.left >= 0 && b.right <= innerWidth && b.top >= 0 && b.bottom <= innerHeight
-        && [...document.querySelectorAll(selector)].every((node) => clear(node.getBoundingClientRect()));
-    }, controls), `${label}: the mic fits without covering gameplay controls`);
+    await checkMicPosition(controls);
     async function checkNote(text) {
       const note = bonus.getByText(text, { exact: true });
       await note.waitFor();
@@ -186,7 +192,17 @@ async function testGame(context, game, size, touch, supported) {
       await wait(() => drive.isVisible(), "parked van");
       await press(drive);
       await wait(() => page.evaluate(() => window.__ew.game.rides.phase === "on"), "boards the van");
-      await page.evaluate(() => window.__ew.game.modeStart("road"));
+      const { exit } = await read();
+      await page.evaluate(({ x, z, outward }) => {
+        const { game } = window.__ew;
+        const ride = game.rides.riding;
+        game.rides.resetPosition(ride, { x: x - 19 * Math.sin(outward), z: z - 19 * Math.cos(outward), rot: outward });
+        game.modeHost.snapRide(ride);
+      }, exit);
+      await wait(async () => (await read()).ready, "road is ready aboard the van");
+      await page.keyboard.down("ArrowUp");
+      await wait(async () => (await read()).phase === "drive", "drives over the crest", 240, 1);
+      await page.keyboard.up("ArrowUp");
     } else {
       await page.keyboard.down("ArrowUp");
       await wait(() => page.evaluate(() => {
@@ -204,17 +220,24 @@ async function testGame(context, game, size, touch, supported) {
     }
     await wait(async () => (await read()).phase === "drive" && await page.locator(".road-question").isVisible(), "first word gate");
     const prompt = await read();
+    const controls = ".road-gate, .road-replay, .road-dash button, .joy, .brake-btn, .drive-horn";
     await checkBonus({
       hit: prompt.word, miss: "purple dinosaurs on the moon",
-      untouched: (s) => [s.totalGates, s.rightGates, s.streak], keepMoving: true, controls: ".road-gate, .road-replay",
+      untouched: (s) => [s.totalGates, s.rightGates, s.streak], keepMoving: true, controls,
       cueText: ".road-dash, .road-question strong, .road-gap, .road-hint, .road-controls",
     });
+    if (supported) {
+      await wait(async () => (await read()).gateDistance <= (game === "road" ? 45 : 30), "approaches the pinned boards", 240, 1);
+      assert.equal(await page.locator(".road-gate:visible").count(), 3);
+      await checkMicPosition(controls);
+    }
     await page.evaluate((id) => {
       const { road, sea, seaSteer } = window.__ew;
       if (id === "road") road.steer(road.state().right);
       else seaSteer(sea().right);
     }, game);
     await wait(async () => (await read()).rightGates === 1, "the standard steering answer still scores");
+    assert.equal(await bonus.count(), 0, `${label}: crossing the gate closes the bonus cue`);
     await page.evaluate((id) => {
       const { road, seaTimer } = window.__ew;
       if (id === "road") road.jumpTimer();

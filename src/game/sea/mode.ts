@@ -4,6 +4,7 @@ import { useCards } from "../../state/cards";
 import { countPlay } from "../../state/playStats";
 import { useStore } from "../../state/store";
 import { preloadSeaOverlay } from "../../ui/seaOverlay";
+import { boardFaces, preloadBoardFont } from "../kit/boardFaces";
 import { audio } from "../audio";
 import type { ModeFrame, ModeInput } from "../kit/modes";
 import type { Ride } from "../rides/Rides";
@@ -12,7 +13,7 @@ import { gateSayItTarget, gateWord, keepRunPhrases, RunScore } from "../road/run
 import { loadPool, makePicker, type Clip, type Pool, type Prompt } from "../road/words";
 import { SeaBoat } from "./boat";
 import { SeaGate } from "./buoys";
-import { FIRST_GATE, nextGate, SEA_SECONDS, WIDE_GATE_VIEW } from "./course";
+import { FIRST_GATE, nextGate, SEA_SECONDS } from "./course";
 import type { SeaHost } from "./entry";
 import { resetSeaUi, useSea } from "./store";
 import { SeaView } from "./view";
@@ -28,7 +29,9 @@ export async function prepareSea() {
     preloadSeaOverlay(),
   ]);
   const pick = makePicker(pool);
-  return { pool, pick, first: pick(0) };
+  const first = pick(0);
+  if (first) await preloadBoardFont(first.options);
+  return { pool, pick, first };
 }
 
 export type PreparedSea = Awaited<ReturnType<typeof prepareSea>>;
@@ -45,7 +48,6 @@ export class SeaMode {
   private nextPromptIn = 0;
   private feedback = 0;
   private sailed = 0;
-  private lastLabels = -Infinity;
   private reveal?: { clip: Clip; in: number };
   private returning = false;
   /** Seconds to the next far-off gull. */
@@ -72,7 +74,6 @@ export class SeaMode {
     this.gateAt = FIRST_GATE;
     this.nextPromptIn = this.feedback = this.sailed = 0;
     this.reveal = undefined;
-    this.lastLabels = -Infinity;
     this.view.begin(this.boat);
     resetSeaUi();
     if (!prompt) {
@@ -97,7 +98,8 @@ export class SeaMode {
     this.gate = new SeaGate(this.gateAt, prompt, this.boat.startX, this.boat.startZ - this.gateAt);
     this.poseGate(this.host.time());
     this.view.scene.add(this.gate.mesh);
-    useSea.setState({ prompt, sayIt: this.score.sayIt.open(gateSayItTarget(prompt)), anchors: [] });
+    useSea.setState({ prompt, gateId: this.gate.id, sayIt: this.score.sayIt.open(gateSayItTarget(prompt)) });
+    void preloadBoardFont(prompt.options);
     if (!prompt.gap) this.play(prompt.word.clip);
   }
 
@@ -110,7 +112,7 @@ export class SeaMode {
     this.score.sayIt.close();
     this.gate?.dispose();
     this.gate = undefined;
-    useSea.setState({ prompt: undefined, sayIt: undefined, anchors: [] });
+    useSea.setState({ prompt: undefined, gateId: undefined, sayIt: undefined, answeredLane: undefined });
   }
 
   private answer(gate: SeaGate, time: number) {
@@ -145,7 +147,7 @@ export class SeaMode {
     this.gateAt = nextGate(distance);
     gate.cross(lane, correct);
     this.poseGate(time);
-    useSea.setState({ sayIt: undefined, streak: this.score.streak, feedback: { correct, word: prompt.word } });
+    useSea.setState({ sayIt: undefined, answeredLane: lane, streak: this.score.streak, feedback: { correct, word: prompt.word } });
   }
 
   update({ dt, time, x, y, blocked }: ModeFrame) {
@@ -232,12 +234,7 @@ export class SeaMode {
 
   render(renderer: Pick<WebGLRenderer, "render">, width: number, height: number) {
     if (!this.active) return false;
-    const anchors = this.view.render(renderer, width, height, this.gate);
-    const now = performance.now();
-    if (this.gate && (this.gate.crossed || now - this.lastLabels >= 30)) {
-      this.lastLabels = now;
-      useSea.setState({ anchors, wideLabels: width >= WIDE_GATE_VIEW });
-    }
+    this.view.render(renderer, width, height, this.gate);
     return true;
   }
 
@@ -310,6 +307,7 @@ export class SeaMode {
     return {
       phase: this.returning ? "return" : this.phase, boat: this.source.id, elapsed: score.elapsed, duration: SEA_SECONDS,
       lane: boat.lane, x: boat.worldX, z: boat.worldZ, heading: boat.heading, speed: boat.speed,
+      renderSerial: boardFaces.sea.serial, registration: boardFaces.sea.debug(),
       boost: boat.boost, wobble: boat.wobble, gateDistance: gate && gate.distance - boat.distance,
       gates: gate?.prompt.options, right: gate?.prompt.right, totalGates: score.total, rightGates: score.right, streak: score.streak,
       word: gate && gateWord(gate.prompt), gap: !!gate?.prompt.gap, points: score.points, said: score.sayIt.count,

@@ -4,6 +4,7 @@ import { CameraRig } from "../src/game/camera";
 import { NPCS } from "../src/content/npcs";
 import { createCharacter } from "../src/game/characters";
 import { Lift } from "../src/game/road/lift";
+import { makeExitSign } from "../src/game/world/roadExit";
 import { covers } from "../src/game/talkShot";
 
 vi.mock("../src/game/world/util", async (base) => ({
@@ -23,11 +24,14 @@ describe("Vinnie's lift", () => {
       player.root.position.set(x, 0, z);
       player.root.rotation.y = heading;
     };
-    const host = { rig, place, player: () => player, add: (...parts: THREE.Object3D[]) => scene.add(...parts) };
+    const roadSign = makeExitSign(), originalSignPose = roadSign.position.clone();
+    scene.add(roadSign);
+    const host = { rig, place, player: () => player, roadSign: () => roadSign,
+      add: (...parts: THREE.Object3D[]) => scene.add(...parts) };
     const lift = new Lift(host, edge);
     lift.arrive(1.35);
     scene.updateMatrixWorld(true);
-    const sign = scene.getObjectByName("turnout-sign") as THREE.Mesh;
+    const sign = roadSign.getObjectByName("desert-road-sign-face") as THREE.Mesh;
     for (const [w, h, panelTop] of [[390, 844, 524], [390, 664, 344], [1280, 800, 460]]) {
       rig.cam.aspect = w / h;
       lift.updateActors(0.05);
@@ -68,7 +72,8 @@ describe("Vinnie's lift", () => {
     lift.dispose();
     expect(player.root.position.distanceTo(new THREE.Vector3(edge.x - 1.2, 0, edge.z))).toBeLessThan(0.001);
     expect(rig.stage).toBeNull();
-    expect(scene.children).toHaveLength(0);
+    expect(scene.children).toEqual([roadSign]);
+    expect(roadSign.position).toEqual(originalSignPose);
     player.dispose?.();
   });
 });

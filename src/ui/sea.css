@@ -4,11 +4,9 @@
   border: 0;
   padding: 0;
   background: transparent;
-  font-family: var(--ui);
   cursor: pointer;
   touch-action: manipulation;
 }
-.sea-overlay:has(.road-feedback.wrong) .road-gate { color: #fff5df; }
 .sea-overlay .road-controls {
   width: max-content;
   max-width: calc(100% - 32px);

@@ -11,6 +11,7 @@ import { STYLED, IS_REAL, grade } from "../style";
 import { SHORE, DECKS, POOLS, FLOORS, sandY, SAND_GLSL, SHORE_GLSL, SWELL_GLSL } from "../water";
 import { islandGroundY, LIGHTHOUSE_ISLAND, TOWER_FOOT } from "./island";
 import { addMapleDecor, FALL } from "./maple";
+import { exitSightline, exitToTown, makeExitGeometry, makeExitSign } from "./roadExit";
 import { ROAD_EDITION } from "../../content/road";
 import { LOCATIONS } from "../../content/locations";
 import { ParkedFleet } from "./parkedFleet";
@@ -138,7 +139,8 @@ export function buildTown(): Town {
     // Low rolling hills leave sky above them in the narrow phone view, rather than a tall flat green face.
     g.scale(1.6, 0.28 + r() * 0.12, 1.2);
     g.translate(hx, -s * 0.15, hz);
-    M.add("hills", hillMat, g, false, true);
+    if (ROAD_EDITION.enabled && exitSightline(hx, hz, 1.6 * s, 1.2 * s)) g.dispose();
+    else M.add("hills", hillMat, g, false, true);
   }
 
   // --- sea ------------------------------------------------------------------
@@ -191,19 +193,12 @@ export function buildTown(): Town {
   const parkedCars = makeParkedCars();
   group.add(parkedCars.group);
   if (ROAD_EDITION.enabled) {
-    const { x, z, rot } = ROAD_EDITION.edge.sign;
-    const board = new THREE.Mesh(new THREE.PlaneGeometry(4.1, 1.07), new THREE.MeshBasicMaterial({
-      map: textTexture(ROAD_EDITION.sign, { bg: "#32594f", fg: "#fff7dc", border: "#fff7dc", w: 512, h: 134 }),
-      side: THREE.DoubleSide, toneMapped: false,
-    }));
-    board.position.set(x, 2.66, z);
-    board.rotation.y = rot;
-    group.add(board);
-    for (const offset of [-1.52, 1.52]) {
-      const px = x + Math.cos(rot) * offset, pz = z - Math.sin(rot) * offset;
-      M.add("desert-road-sign", mat("#6e7c77"), boxGeo(0.095, 2.25, 0.12, px, 1.125, pz, rot));
-      colliders.addCircle(px, pz, 0.11);
-    }
+    const strip = new THREE.Mesh(makeExitGeometry(), new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }));
+    strip.name = "desert-road-crest";
+    strip.applyMatrix4(exitToTown);
+    strip.receiveShadow = true;
+    group.add(strip);
+    group.add(makeExitSign(colliders));
   }
   addTrees(group, colliders, r, photo);
   addSquareAndMarket(M, colliders, group, r, photo);
@@ -229,8 +224,8 @@ export function buildTown(): Town {
   // (the north one lies out in the sea: like the sea itself, it stops everyone but the player, who swims on out to the
   // bay's own edge, water.ts BAY)
   colliders.addBox((WORLD.minX + WORLD.maxX) / 2, WORLD.minZ - 1, WORLD.maxX - WORLD.minX + 4, 2, "sea");
-  colliders.addBox((WORLD.minX + WORLD.maxX) / 2, WORLD.maxZ + 1, WORLD.maxX - WORLD.minX + 4, 2);
-  colliders.addBox(WORLD.minX - 1, 0, 2, 220);
+  colliders.addBox((WORLD.minX + WORLD.maxX) / 2, WORLD.maxZ + 1, WORLD.maxX - WORLD.minX + 4, 2, "town-edge");
+  colliders.addBox(WORLD.minX - 1, 0, 2, 220, "town-edge");
   colliders.addBox(WORLD.maxX + 1, 0, 2, 220);
   // the sea on both sides of the pier deck (x -41.3…-18.7); the deck has its own edges
   // ("sea": the passers-by and the way-finding stop at it; the player wades in to the shore's limit, Game.ts)

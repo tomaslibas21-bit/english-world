@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { boardId, FACE_SIZES, type BoardFace } from "../kit/boardFaces";
 import { colourMerge } from "../world/util";
 import { laneOffset, point, ribbon } from "./track";
 import type { Prompt } from "./words";
@@ -6,11 +7,8 @@ import type { Prompt } from "./words";
 export const LANE_PAINT = ["#f2a83e", "#38b9aa", "#a39bdd"];
 const IRON = "#364955";
 const BANNER_Y = 4.22;
-const FACE_Z = 0.47;
-const TEXT_HALF_WIDTH = 1.76;
-const TEXT_HALF_HEIGHT = 0.78;
+const FACE_Z = FACE_SIZES.road[2];
 type Part = [THREE.BufferGeometry, string];
-export type LabelAnchor = { lane: number; x: number; y: number; width: number; height: number; opacity: number; tilt?: number };
 
 function plate(width: number, height: number, depth: number, cut: number) {
   const x = width / 2, y = height / 2;
@@ -39,8 +37,8 @@ export class Gate {
   readonly mesh: THREE.Mesh;
   readonly frame: readonly THREE.Vector3[];
   private boards: THREE.InstancedMesh<THREE.BufferGeometry, THREE.Material>;
-  private labelPose = new THREE.Matrix4();
-  private projected = new THREE.Vector3();
+  readonly id = boardId();
+  private faceWorld = [0, 1, 2].map(() => new THREE.Matrix4());
   private pass?: { lane: number; correct: boolean; age: number; stamp?: THREE.Mesh; material: THREE.Material };
   private boardPose = new THREE.Object3D();
 
@@ -106,9 +104,11 @@ export class Gate {
     const { lane, correct, stamp, material } = this.pass;
     const t = Math.min(1, (this.pass.age += dt) / 0.85);
     const kick = Math.sin(Math.PI * Math.min(1, t * 2.4));
-    const sway = Math.sin(t * Math.PI * 3) * (1 - t) ** 2;
+    const age = this.pass.age;
+    const tilt = age <= 0.16 ? Math.sin(age / 0.16 * Math.PI / 2)
+      : (1 - THREE.MathUtils.smoothstep(age, 0.16, 0.62)) ** 2;
     this.boardPose.position.set(laneOffset(lane), BANNER_Y + (correct ? 0.34 : -0.13) * kick, 0.18 * kick);
-    this.boardPose.rotation.z = correct ? 0 : 0.13 * sway;
+    this.boardPose.rotation.z = correct ? 0 : THREE.MathUtils.degToRad(5) * tilt;
     this.boardPose.scale.setScalar(1 + (correct ? 0.09 : -0.04) * kick);
     this.boardPose.updateMatrix();
     this.boards.setMatrixAt(lane, this.boardPose.matrix);
@@ -123,26 +123,13 @@ export class Gate {
     return material.opacity > 0;
   }
 
-  labels(camera: THREE.PerspectiveCamera, width: number, height: number): LabelAnchor[] {
-    const pixels = (x: number, y: number) => {
-      const p = this.projected.set(x, y, FACE_Z).applyMatrix4(this.labelPose).add(this.mesh.position).project(camera);
-      return { x: (1 + p.x) * width / 2, y: (1 - p.y) * height / 2, depth: p.z };
-    };
-    return [0, 1, 2].flatMap((lane) => {
+  faces(): BoardFace[] {
+    return this.faceWorld.flatMap((world, lane) => {
       const chosen = lane === this.pass?.lane;
       if (chosen && this.pass?.correct) return [];
-      this.boards.getMatrixAt(lane, this.labelPose);
-      const mid = pixels(0, 0);
-      if (mid.depth < -1 || mid.depth >= 1) return [];
-      const a = pixels(-TEXT_HALF_WIDTH, TEXT_HALF_HEIGHT), b = pixels(TEXT_HALF_WIDTH, TEXT_HALF_HEIGHT);
-      const c = pixels(-TEXT_HALF_WIDTH, -TEXT_HALF_HEIGHT), d = pixels(TEXT_HALF_WIDTH, -TEXT_HALF_HEIGHT);
-      // Keep upright type inside the projected banner, including when the track curves.
-      const hw = Math.min(mid.x - Math.max(a.x, c.x), Math.min(b.x, d.x) - mid.x);
-      const hh = Math.min(mid.y - Math.max(a.y, b.y), Math.min(c.y, d.y) - mid.y);
-      if (hw < 6 || hh < 3 || mid.x + hw < 0 || mid.x - hw > width) return [];
-      const tilt = chosen ? Math.atan2(b.y - a.y + d.y - c.y, b.x - a.x + d.x - c.x) : undefined;
-      const opacity = (this.pass?.material.opacity ?? 1) * (chosen ? 0.88 : 1);
-      return [{ lane, x: mid.x, y: mid.y, width: 2 * hw, height: 2 * hh, opacity, tilt }];
+      this.boards.getMatrixAt(lane, world);
+      world.premultiply(this.boards.matrixWorld);
+      return [{ lane, world, opacity: (this.pass?.material.opacity ?? 1) * (chosen ? 0.88 : 1) }];
     });
   }
 

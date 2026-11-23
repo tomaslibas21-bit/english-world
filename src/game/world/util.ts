@@ -255,10 +255,10 @@ export class Colliders {
   /** Push a circle of radius r at (x,z) out of all colliders (`jumper`, the player outdoors: but those split into
    *  pieces with a height, which ledges.ts then settles for someone who can jump, and the sea, whose shallows they
    *  wade into: water.ts). */
-  resolve(p: THREE.Vector3, r: number, jumper = false) {
+  resolve(p: THREE.Vector3, r: number, jumper = false, openTownEdge = false) {
     for (let iter = 0; iter < 2; iter++) {
       for (const b of this.boxes) {
-        if (jumper && (b.split || b.tag === "sea")) continue;
+        if ((jumper && (b.split || b.tag === "sea")) || (openTownEdge && b.tag === "town-edge")) continue;
         const cx = Math.max(b.minX, Math.min(p.x, b.maxX));
         const cz = Math.max(b.minZ, Math.min(p.z, b.maxZ));
         const dx = p.x - cx, dz = p.z - cz;
