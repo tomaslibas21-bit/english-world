@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { Vector3 } from "three";
+import { Material, Mesh, Vector3 } from "three";
 import { STREET_MOMENTS } from "../src/content/street";
 import { Ambient } from "../src/game/ambient";
 import { CameraRig } from "../src/game/camera";
@@ -38,6 +38,22 @@ beforeAll(() => {
     vi.unstubAllGlobals();
   }
 }, 20_000);
+
+it("keeps the street surfaces within their mesh and canvas budgets", () => {
+  for (const [name, limit] of [["ground", 2352], ["markings", 2030], ["brick-walk", 16]] as const) {
+    const objects = town.group.getObjectsByProperty("name", name);
+    expect(objects, name).toHaveLength(1);
+    const mesh = objects[0] as Mesh;
+    expect(mesh, name).toBeInstanceOf(Mesh);
+    expect(mesh.material, name).toBeInstanceOf(Material);
+    const { geometry } = mesh;
+    const triangles = (geometry.index?.count ?? geometry.getAttribute("position").count) / 3;
+    expect(triangles, name).toBeGreaterThan(0);
+    expect(triangles, name).toBeLessThanOrEqual(limit);
+  }
+  expect([town.groundCanvas.width, town.groundCanvas.height]).toEqual([1764, 1020]);
+  expect(town.group.children.filter(({ name }) => name.startsWith("town-solid-")).length).toBeLessThanOrEqual(26);
+});
 
 function frame(width: number, height: number, x: number, z: number, yaw: number) {
   const portrait = width <= 600 && height > width;

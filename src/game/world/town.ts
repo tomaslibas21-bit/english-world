@@ -3,7 +3,7 @@ import type { AddPhotoSpot, PhotoSpot } from "../../content/townQuests";
 import * as THREE from "three";
 import { markTownBoat } from "./boatRide";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, GAS_FORECOURT, type BuildingDef } from "./layout";
+import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, GAS_FORECOURT, type BuildingDef, type Road } from "./layout";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
 import { carParts, mergeCarParts } from "./car";
 import { carModelEntry, type CarPlacement } from "./carModels";
@@ -16,7 +16,7 @@ import { ROAD_EDITION } from "../../content/road";
 import { LOCATIONS } from "../../content/locations";
 import { ParkedFleet } from "./parkedFleet";
 import { THEME } from "./theme";
-import { GROUND_BLOCKS, groundPalette, groundExtras, groundMaterial, seaMaterial, trunkGeometry, canopyGeometry, canopyMaterial, bushGeometry, bushMaterial, outlineInstanced, cloudMaterial, cloudPuff } from "./styled";
+import { GROUND_BLOCKS, MAPLE_BLOCKS, groundPalette, groundExtras, groundMaterial, seaMaterial, trunkGeometry, canopyGeometry, canopyMaterial, bushGeometry, bushMaterial, outlineInstanced, cloudMaterial, cloudPuff } from "./styled";
 
 export interface Door { loc: string; bid: string; x: number; z: number; face: "n" | "s" | "e" | "w"; name: string; outX: number; outZ: number; rot: number }
 
@@ -53,6 +53,13 @@ export interface Town {
 const PPM = 6; // ground texture pixels per metre
 const GW = WORLD.maxX - WORLD.minX, GD = WORLD.maxZ - SEA_Z + 2;
 const G0Z = SEA_Z - 2;
+const CROSSING_APPROACH = 1.8;
+const MAIN_CROSSINGS = [-50, 22, 100];
+const MAIN_CROSSING_HALF = 1.6;
+const ROAD_CROWN = [
+  [0, "#424d54"], [0.16, "#535e65"], [0.38, "#5e6870"], [0.5, "#616a70"],
+  [0.62, "#5e6870"], [0.84, "#535e65"], [1, "#424d54"],
+] as const;
 /** Open grass between the town's west edge and the foot of the hills beyond it (m). */
 const WEST_MEADOW = 40;
 /** The letters' colour on a building's printed sign: its trim, or a dark one when the trim is too pale to read on the
@@ -115,13 +122,14 @@ export function buildTown(): Town {
   group.add(ground);
 
   // outer grass beyond the playable area + hills
-  const outer = new THREE.Mesh(outerGeometry(), mat("#7fb85e"));
+  const outer = new THREE.Mesh(outerGeometry(), mat(MAPLE_BLOCKS ? "#9fa977" : "#7fb85e"));
   outer.rotation.x = -Math.PI / 2;
   // the outer grass stops at the shore, so the sea near the beach is not hidden under it
   outer.position.set(35, -0.05, SEA_Z + 1 + 320);
   outer.receiveShadow = true;
   group.add(outer);
-  const hillMat = mat("#79ad5a", { flat: true });
+  const hillMats = (MAPLE_BLOCKS ? ["#90946e", "#818e78", "#788d8b"] : ["#79ad5a"])
+    .map((color) => mat(color, { flat: true }));
   for (let i = 0; i < 26; i++) {
     const a = (i / 26) * Math.PI * 1.2 - 0.1;
     let hx = 35 + Math.cos(a) * (230 + r() * 60), hz = 30 + Math.sin(a) * (170 + r() * 50);
@@ -140,7 +148,10 @@ export function buildTown(): Town {
     g.scale(1.6, 0.28 + r() * 0.12, 1.2);
     g.translate(hx, -s * 0.15, hz);
     if (ROAD_EDITION.enabled && exitSightline(hx, hz, 1.6 * s, 1.2 * s)) g.dispose();
-    else M.add("hills", hillMat, g, false, true);
+    else {
+      const distance = MAPLE_BLOCKS ? Math.hypot(hx - 35, hz - 30) : 0;
+      M.add("hills", hillMats[distance < 235 ? 0 : distance <= 275 ? 1 : 2], g, false, true);
+    }
   }
 
   // --- sea ------------------------------------------------------------------
@@ -418,13 +429,14 @@ function addMarkings(group: THREE.Group) {
   const cross: { x0: number; x1: number; z0: number; z1: number }[] = [];
   for (const v of vs) for (const h of hs) {
     if (v.x1 < h.x1 - 1 || v.x1 > h.x2 + 1 || h.z1 < v.z1 - 1 || h.z1 > v.z2 + 1) continue;
-    cross.push({ x0: v.x1 - v.w / 2 - 1.8, x1: v.x1 + v.w / 2 + 1.8, z0: h.z1 - h.w / 2 - 1.8, z1: h.z1 + h.w / 2 + 1.8 });
+    cross.push({ x0: v.x1 - v.w / 2 - CROSSING_APPROACH, x1: v.x1 + v.w / 2 + CROSSING_APPROACH,
+      z0: h.z1 - h.w / 2 - CROSSING_APPROACH, z1: h.z1 + h.w / 2 + CROSSING_APPROACH });
     for (let k = -v.w / 2 + 0.6; k < v.w / 2 - 0.4; k += 1.1) for (const dz of [-(h.w / 2 + 1.6), h.w / 2 + 0.4]) quad("white", v.x1 + k + 0.275, h.z1 + dz + 0.6, 0.55, 1.2);
     for (let k = -h.w / 2 + 0.6; k < h.w / 2 - 0.4; k += 1.1) for (const dx of [-(v.w / 2 + 1.6), v.w / 2 + 0.4]) quad("white", v.x1 + dx + 0.6, h.z1 + k + 0.275, 1.2, 0.55);
   }
   // the mid-block crosswalks on Main Street (café ↔ museum, bank ↔ square)
-  for (const cx of [-50, 22, 100]) {
-    cross.push({ x0: cx - 1.6, x1: cx + 1.6, z0: -13, z1: -3 });
+  for (const cx of MAIN_CROSSINGS) {
+    cross.push({ x0: cx - MAIN_CROSSING_HALF, x1: cx + MAIN_CROSSING_HALF, z0: -13, z1: -3 });
     for (let k = -4.4; k < 4.6; k += 1.1) quad("white", cx, -8 + k + 0.275, 3, 0.55);
   }
   const free = (x: number, z: number) => !cross.some((c) => x > c.x0 && x < c.x1 && z > c.z0 && z < c.z1);
@@ -489,7 +501,7 @@ function addMarkings(group: THREE.Group) {
 }
 
 function drawGround(): HTMLCanvasElement {
-  const P = STYLED ? groundPalette() : GROUND_BLOCKS; // trial styles repaint the same map
+  const P = groundPalette();
   const c = document.createElement("canvas");
   c.width = Math.round(GW * PPM); c.height = Math.round(GD * PPM);
   const x = c.getContext("2d")!;
@@ -535,7 +547,16 @@ function drawGround(): HTMLCanvasElement {
   for (const rd of ROADS) roadRect(x, rd, rd.w / 2 + SIDEWALK, P.sidewalk);
   for (const rd of ROADS) roadRect(x, rd, rd.w / 2 + SIDEWALK - 0.25, P.sidewalkInner);
   // roads
-  for (const rd of ROADS) roadRect(x, rd, rd.w / 2, P.road);
+  const vs = ROADS.filter((d) => d.x1 === d.x2), hs = ROADS.filter((d) => d.z1 === d.z2);
+  const junctions: { v: Road; h: Road }[] = [];
+  for (const v of vs) for (const h of hs) {
+    if (v.x1 < h.x1 - 1 || v.x1 > h.x2 + 1 || h.z1 < v.z1 - 1 || h.z1 > v.z2 + 1) continue;
+    junctions.push({ v, h });
+  }
+  for (const rd of ROADS) {
+    if (MAPLE_BLOCKS) paintRoad(rd);
+    else roadRect(x, rd, rd.w / 2, P.road);
+  }
   // markings (blocks style: drawn as geometry by addMarkings, sharp up close)
   for (const rd of STYLED ? ROADS : []) {
     const horiz = rd.z1 === rd.z2;
@@ -551,9 +572,7 @@ function drawGround(): HTMLCanvasElement {
     }
   }
   // intersections (clear markings) + crosswalks
-  const vs = ROADS.filter((d) => d.x1 === d.x2), hs = ROADS.filter((d) => d.z1 === d.z2);
-  for (const v of vs) for (const h of hs) {
-    if (v.x1 < h.x1 - 1 || v.x1 > h.x2 + 1 || h.z1 < v.z1 - 1 || h.z1 > v.z2 + 1) continue;
+  for (const { v, h } of junctions) {
     rectW(x, v.x1 - v.w / 2, h.z1 - h.w / 2, v.x1 + v.w / 2, h.z1 + h.w / 2, P.road);
     if (!STYLED) continue;
     x.fillStyle = P.crosswalk;
@@ -565,7 +584,7 @@ function drawGround(): HTMLCanvasElement {
     }
   }
   // mid-block crosswalks on Main Street (café ↔ museum, bank ↔ square)
-  for (const cx of STYLED ? [-50, 22, 100] : []) {
+  for (const cx of STYLED ? MAIN_CROSSINGS : []) {
     x.fillStyle = P.crosswalk;
     for (let k = -4.4; k < 4.6; k += 1.1) rectFill(x, cx - 1.5, -8 + k, 3, 0.55);
   }
@@ -580,14 +599,61 @@ function drawGround(): HTMLCanvasElement {
   if (STYLED) groundExtras(x, toC, PPM);
   return c;
 
-  function rectW(x: CanvasRenderingContext2D, ax: number, az: number, bx: number, bz: number, col: string) {
+  function paintRoad(rd: Road) {
+    const horiz = rd.z1 === rd.z2, half = rd.w / 2;
+    const crown = horiz
+      ? x.createLinearGradient(...toC(rd.x1, rd.z1 - half), ...toC(rd.x1, rd.z1 + half))
+      : x.createLinearGradient(...toC(rd.x1 - half, rd.z1), ...toC(rd.x1 + half, rd.z1));
+    for (const [offset, color] of ROAD_CROWN) crown.addColorStop(offset, color);
+    roadRect(x, rd, half, crown);
+
+    const start = horiz ? Math.min(rd.x1, rd.x2) : Math.min(rd.z1, rd.z2);
+    const end = horiz ? Math.max(rd.x1, rd.x2) : Math.max(rd.z1, rd.z2);
+    const openings: [number, number][] = [];
+    for (const { v, h } of junctions) {
+      if (rd !== v && rd !== h) continue;
+      const center = horiz ? v.x1 : h.z1;
+      const extent = (horiz ? v.w : h.w) / 2 + CROSSING_APPROACH;
+      openings.push([center - extent, center + extent]);
+    }
+    if (rd.name === ROAD_EDITION.edge.street) {
+      for (const center of MAIN_CROSSINGS) openings.push([center - MAIN_CROSSING_HALF, center + MAIN_CROSSING_HALF]);
+      if (ROAD_EDITION.enabled) openings.push([start, ROAD_EDITION.edge.x]);
+    }
+    openings.sort(([a], [b]) => a - b);
+    openings.push([end, end]);
+
+    // Lay base asphalt over the crown at openings and the road ends, fading over the last two metres of each span.
+    const base = horiz
+      ? x.createLinearGradient(...toC(start, rd.z1), ...toC(end, rd.z1))
+      : x.createLinearGradient(...toC(rd.x1, start), ...toC(rd.x1, end));
+    const stop = (at: number, color: string) => base.addColorStop((at - start) / (end - start), color);
+    const clear = P.road + "00";
+    let from = start;
+    stop(start, P.road);
+    for (const [openStart, openEnd] of openings) {
+      const to = Math.min(end, openStart);
+      if (to > from) {
+        const feather = Math.min(2, (to - from) / 2);
+        stop(from, P.road);
+        stop(from + feather, clear);
+        stop(to - feather, clear);
+        stop(to, P.road);
+      }
+      from = Math.max(from, openEnd);
+    }
+    stop(end, P.road);
+    roadRect(x, rd, half, base);
+  }
+
+  function rectW(x: CanvasRenderingContext2D, ax: number, az: number, bx: number, bz: number, col: string | CanvasGradient) {
     const [x0, z0] = toC(Math.min(ax, bx), Math.min(az, bz)), [x1, z1] = toC(Math.max(ax, bx), Math.max(az, bz));
     x.fillStyle = col; x.fillRect(x0, z0, x1 - x0, z1 - z0);
   }
   function rectFill(x: CanvasRenderingContext2D, cx: number, cz: number, w: number, d: number) {
     const [x0, z0] = toC(cx, cz); x.fillRect(x0, z0, w * PPM, d * PPM);
   }
-  function roadRect(x: CanvasRenderingContext2D, rd: typeof ROADS[number], half: number, col: string) {
+  function roadRect(x: CanvasRenderingContext2D, rd: Road, half: number, col: string | CanvasGradient) {
     rectW(x, Math.min(rd.x1, rd.x2) - (rd.x1 === rd.x2 ? half : 0), Math.min(rd.z1, rd.z2) - (rd.z1 === rd.z2 ? half : 0),
       Math.max(rd.x1, rd.x2) + (rd.x1 === rd.x2 ? half : 0), Math.max(rd.z1, rd.z2) + (rd.z1 === rd.z2 ? half : 0), col);
   }

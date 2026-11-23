@@ -1,8 +1,9 @@
 // World pieces that look different in the trial styles (see ../style.ts): ground colours and
-// details, the sea, trees, bushes, clouds, interior floors and the passing cars. Nothing here is
-// used by the original "blocks" style.
+// details, the sea, trees, bushes, clouds, interior floors and the passing cars. Also holds the
+// shared ground palette for the original "blocks" style.
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { ROAD_EDITION } from "../../content/road";
 import { STYLE, IS_TOON, IS_STORY, IS_REAL, grade, gradeHex, surface, toonRamp, withGrain, withGroundDetail, makeOutline, outlineColorFor } from "../style";
 import { ROADS, SIDEWALK, SEA_Z } from "./layout";
 import { chamferBox, blobCluster, lumpySphere, paint } from "./shapes";
@@ -19,13 +20,20 @@ export interface GroundPalette {
   pierPath: string; footprint: string;
 }
 
-/** The original colours (blocks). */
+const MAPLE_EDITION = (ROAD_EDITION.id as string) === "maple-harbor";
+export const MAPLE_BLOCKS = MAPLE_EDITION && STYLE === "blocks";
+
+/** The ground colours for the blocks style in this edition. */
 export const GROUND_BLOCKS: GroundPalette = {
   grass: "#8fc66a", grassA: "rgba(120,176,84,0.22)", grassB: "rgba(170,210,120,0.18)", beach: ["#e9d9b0", "#f1e3bd", "#d8cf98"],
   park: "#9bd070", path: "#e6d8b8", pond: "#5fb4c9", pondEdge: "#d9cfae", plaza: "#e8dcc3", plazaLines: "rgba(160,140,110,0.35)",
   plazaCircle: "rgba(200,120,80,0.25)", lot: "#d9d4c7", gasLot: "#6a6f75", sidewalk: "#d9d3c5", sidewalkInner: "#e4dfd2",
   road: "#5b6067", centerLine: "#f2c84b", edgeLine: "rgba(255,255,255,0.75)", crosswalk: "rgba(255,255,255,0.88)",
   pierPath: "#b8895a", footprint: "rgba(40,50,40,0.18)",
+  ...(MAPLE_EDITION ? {
+    grass: "#a6af7d", grassA: "rgba(122,137,88,0.22)", grassB: "rgba(194,184,134,0.18)", park: "#aab580",
+    sidewalk: "#c9bdab", sidewalkInner: "#e0d4c0", road: "#59636b",
+  } : {}),
 };
 
 const GROUND: Record<string, GroundPalette> = {
