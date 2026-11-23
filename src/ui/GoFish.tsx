@@ -57,7 +57,7 @@ export function GoFishOverlay({ touch }: { touch: boolean }) {
   const learner = useStore((s) => s.progress.profile?.name);
   if (result && round) {
     const { winner, right, replies, cards } = result;
-    return <div className="gofish-result"><ScoreCard title={words.title}
+    return <div className="gofish-result"><ScoreCard title={words.title} celebrate={winner === "learner"}
       score={winner === "learner" ? words.youWin : winner ? words.winner(GOFISH_NAMES[winner].nom) : words.tie}
       rows={[
         { label: words.yourPairs, value: <ScoreNumber value={round.pairs.learner.length} /> },
@@ -78,45 +78,43 @@ export function GoFishOverlay({ touch }: { touch: boolean }) {
   const coach = mic.status === "unclear" ? BARISTA_UI.retry : tip;
   const cueName = line?.speaker === "learner" ? learner : line && NPCS[line.speaker].name;
   return <div className="gofish-overlay" lang="lt" data-deck={deck.id}>
-    <header className="gofish-top">
-      <div className="gofish-header">
-        <span className="gofish-deck gofish-paper"><CardBack />{deck.lt}</span>
-        <button type="button" className="gofish-exit gofish-paper" onClick={exit}>
-          {words.exit}{!touch && <kbd>Esc</kbd>}
-        </button>
-      </div>
-      {line && <div className="gofish-cue gofish-paper" data-line={line.key} data-speaker={line.speaker}>
-        <div className="gofish-sentence" aria-live="polite">
-          {cueName && <b className="gofish-speaker" lang={line.speaker === "learner" ? undefined : "en"}>{cueName}</b>}
-          <GlossLine sentence={line.sentence} gloss={gloss} />
-        </div>
-        <div className="gofish-replay">
-          <button type="button" title={ROAD_UI.replay} aria-label={ROAD_UI.replay} disabled={busy} onClick={() => act("hear")}>
-            <Icon name="speaker" size={18} />
-          </button>
-          {!gloss && <button type="button" onClick={() => act("show")}>{BARISTA_UI.show}</button>}
-        </div>
-      </div>}
+    <header className="gofish-header">
+      <span className="gofish-deck gofish-paper"><CardBack />{deck.lt}</span>
+      <button type="button" className="gofish-exit gofish-paper" onClick={exit}>
+        {words.exit}{!touch && <kbd>Esc</kbd>}
+      </button>
     </header>
+    {line && <div className="gofish-top gofish-cue gofish-paper" data-line={line.key} data-speaker={line.speaker}>
+      <div className="gofish-sentence" aria-live="polite">
+        {cueName && <b className="gofish-speaker" lang={line.speaker === "learner" ? undefined : "en"}>{cueName}</b>}
+        <GlossLine sentence={line.sentence} gloss={gloss} />
+      </div>
+      <div className="gofish-replay">
+        <button type="button" title={ROAD_UI.replay} aria-label={ROAD_UI.replay} disabled={busy} onClick={() => act("hear")}>
+          <Icon name="speaker" size={18} />
+        </button>
+        {!gloss && <button type="button" onClick={() => act("show")}>{BARISTA_UI.show}</button>}
+      </div>
+    </div>}
     {drawn && <div className="gofish-drawn" data-word={drawn} aria-hidden="true">
       <PictureCard word={GOFISH_WORDS[drawn]} picture={pictureFor(drawn)} />
     </div>}
+    {round && <div className="gofish-opponents" role="group" aria-label={words.askWhom}>
+      {GOFISH_SPEAKER_NAMES.map((id) => {
+        const count = round.hands[id].length, pairs = round.pairs[id].length;
+        return <button type="button" key={id} data-target={id} className="gofish-person gofish-paper"
+          disabled={!asking || count === 0} aria-pressed={target === id}
+          onClick={() => act("target", id)}>
+          <strong lang="en">{NPCS[id].name}</strong>
+          <span className="gofish-count"><CardBack />{count}</span>
+          <span className="gofish-count" aria-label={`${words.pairsOf(GOFISH_NAMES[id].gen)} ${pairs}`}>
+            <i className="gofish-pair-icon" aria-hidden="true" />{pairs}
+          </span>
+          {!touch && asking && count > 0 && <kbd>{id === "dan" ? "← / D" : "→ / N"}</kbd>}
+        </button>;
+      })}
+    </div>}
     {round && <div className="gofish-bottom">
-      <div className="gofish-opponents" role="group" aria-label={words.askWhom}>
-        {GOFISH_SPEAKER_NAMES.map((id) => {
-          const count = round.hands[id].length, pairs = round.pairs[id].length;
-          return <button type="button" key={id} data-target={id} className="gofish-person gofish-paper"
-            disabled={!asking || count === 0} aria-pressed={target === id}
-            onClick={() => act("target", id)}>
-            <strong lang="en">{NPCS[id].name}</strong>
-            <span className="gofish-count"><CardBack />{count}</span>
-            <span className="gofish-count" aria-label={`${words.pairsOf(GOFISH_NAMES[id].gen)} ${pairs}`}>
-              <i className="gofish-pair-icon" aria-hidden="true" />{pairs}
-            </span>
-            {!touch && asking && count > 0 && <kbd>{id === "dan" ? "← / D" : "→ / N"}</kbd>}
-          </button>;
-        })}
-      </div>
       {coach && <div className="gofish-tip gofish-paper" role="status">{coach}</div>}
       <div className="gofish-console gofish-paper">
         <div className="gofish-hand-caption">

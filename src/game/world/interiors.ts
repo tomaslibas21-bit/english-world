@@ -1559,7 +1559,7 @@ const B: Record<string, () => Interior> = {
   }, [{ npc: "rita", x: -7, z: -5.2, rot: 0 }, { npc: "patel", x: 3, z: -2.6, rot: Math.PI / 4 }], { floorKind: "wood", accent: "#8a5a44" }),
 
   "dans-house": () => room("dans-house", 16, 12, "#a67c52", "#f7ecdc", (c) => {
-    table(c, DINING.x, DINING.z, { cloth: "#f2efe8", seats: Object.values(DINING_SEATS), w: 2.6, d: 1.2 });
+    table(c, DINING.x, DINING.z, { cloth: "#f2efe8", seats: Object.values(DINING_SEATS), w: DINING.width, d: DINING.depth });
     const props = new THREE.Group();
     props.name = DINNER_PROPS;
     const M = new Merger();

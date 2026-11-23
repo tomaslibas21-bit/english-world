@@ -16,7 +16,7 @@ import { conversationLine } from "../kit/lines";
 import type { GameMode, ModeFrame, ModeInput } from "../kit/modes";
 import { keepPhrases } from "../kit/phrases";
 import { STYLED } from "../style";
-import { DINING, DINING_SEATS, DINNER_PROPS, GOFISH_PROMPT, SEAT_HEIGHT, diningShot, fitDiningView, hostBounds } from "./framing";
+import { DINING, DINING_SEATS, DINNER_PROPS, GOFISH_PROMPT, SEAT_HEIGHT, TABLETOP_CORNERS, diningShot, fitDiningView, hostBounds } from "./framing";
 import { deal, defaultTarget, finished, finishTurn, npcAsk, prepareTurn, resolveAsk, seededRandom, targets,
   type Ask, type Npc, type Player, type Round, type TurnResult, type Word, winner } from "./logic";
 import { TableCards } from "./props";
@@ -60,6 +60,7 @@ type Run = {
   takeFish?: () => void;
   hostsFrame: Vector3[];
   tableFrame: Vector3[];
+  landscapeFrame: Vector3[];
 };
 
 function seatedFace(ch: GameCharacter, standingHeight: number, build = 1) {
@@ -186,6 +187,7 @@ class GoFishMode implements GameMode {
       asks: 0, replies: 0, right: 0, handovers: 0, npcStarted: false, tipListen: false, lucky: false,
       began: false, closing: false, hostsFrame,
       tableFrame: [...hostsFrame, new Vector3(DINING.x, DINING.surface, DINING.z + 0.45)],
+      landscapeFrame: [...hostsFrame, ...TABLETOP_CORNERS],
     };
     this.playback.setMic(true);
     this.host.entered(this.id);
@@ -461,13 +463,23 @@ class GoFishMode implements GameMode {
     }
   }
 
-  frameView(width: number, height: number, top: number, bottom: number) {
+  frameView(width: number, height: number, cueBottom: number,
+    tags?: Pick<DOMRect, "left" | "right" | "top">, panel?: Pick<DOMRect, "left" | "top">) {
     const run = this.run;
     if (!run || width <= 0 || height <= 0) return;
     const scoring = view().step === "score";
-    const header = scoring ? 12 : Math.max(top, Math.min(140, height * 0.21));
-    const floor = scoring ? bottom : Math.min(bottom, height - Math.min(228, height * 0.4));
-    fitDiningView(this.host.rig.cam, width, height, header, floor, scoring ? run.hostsFrame : run.tableFrame);
+    const besidePanel = width > height && height <= 560 && panel !== undefined;
+    const bottom = tags?.top ?? panel?.top ?? height;
+    const free = besidePanel ? {
+      left: tags?.left ?? 0, right: Math.min(tags?.right ?? width, panel.left),
+      top: cueBottom, bottom: tags?.top ?? height,
+    } : {
+      left: 0, right: width,
+      top: scoring ? 12 : Math.max(cueBottom, Math.min(140, height * 0.21)),
+      bottom: scoring ? bottom : Math.min(bottom, height - Math.min(228, height * 0.4)),
+    };
+    const points = besidePanel ? run.landscapeFrame : scoring ? run.hostsFrame : run.tableFrame;
+    fitDiningView(this.host.rig.cam, width, height, free, points);
   }
 
   input(input: ModeInput) {

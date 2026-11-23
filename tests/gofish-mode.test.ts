@@ -5,7 +5,7 @@ import { GOFISH_SPEAKER_NAMES } from "../src/content/gofish-lines";
 import { NPCS } from "../src/content/npcs";
 import { loadSituation } from "../src/content/situations/catalog";
 import { createCharacter } from "../src/game/characters";
-import { DINING_SEATS, DINNER_PROPS, GOFISH_PROMPT, hostBounds } from "../src/game/gofish/framing";
+import { DINING_SEATS, DINNER_PROPS, GOFISH_PROMPT, TABLETOP_CORNERS, hostBounds } from "../src/game/gofish/framing";
 import { createGoFishMode } from "../src/game/gofish/mode";
 import { targets } from "../src/game/gofish/logic";
 import { useGoFish } from "../src/game/gofish/store";
@@ -126,12 +126,19 @@ it("offers from the completed dinner and table, plays a seeded round and restore
       return [min.x, max.x].flatMap((x) => [min.y, max.y].flatMap((y) =>
         [min.z, max.z].map((z) => new Vector3(x, y, z).applyMatrix4(head.matrixWorld))));
     });
-    for (const [width, height, bottom] of [[390, 664, 345], [390, 844, 525], [1280, 800, 554]]) {
-      const top = 180;
-      mode.frameView(width, height, top, bottom);
+    for (const [width, height, top, bottom, panelLeft] of [
+      [390, 664, 180, 345, 0], [390, 844, 180, 525, 0], [1280, 800, 180, 554, 0],
+      [740, 360, 105, 308, 376], [844, 390, 90, 338, 428], [932, 430, 120, 378, 472],
+    ]) {
+      const tags = { left: 10, right: (panelLeft || width) - 10, top: bottom };
+      mode.frameView(width, height, top, tags, { left: panelLeft, top: panelLeft ? 58 : bottom + 48 });
       const [dan, nora] = faces.map((face) => hostBounds(face).map((point) => point.project(rig.cam)));
-      for (const { x, y } of [...dan, ...nora, ...heads.map((point) => point.clone().project(rig.cam))]) {
-        expect(Math.abs(x)).toBeLessThanOrEqual(0.81);
+      const detail = panelLeft ? [...heads, ...TABLETOP_CORNERS] : heads;
+      for (const { x, y } of [...dan, ...nora, ...detail.map((point) => point.clone().project(rig.cam))]) {
+        if (panelLeft) {
+          expect((1 + x) * width / 2).toBeGreaterThan(tags.left);
+          expect((1 + x) * width / 2).toBeLessThan(tags.right);
+        } else expect(Math.abs(x)).toBeLessThanOrEqual(0.81);
         expect((1 - y) * height / 2).toBeGreaterThan(top);
         expect((1 - y) * height / 2).toBeLessThan(bottom);
       }

@@ -9,7 +9,7 @@ const storage = process.env.WORLD_STORAGE || "english-world";
 const shots = process.env.SHOTS_DIR || "/tmp";
 const dinner = "s85-dinner";
 const start = "Pažaisti „Go Fish“";
-const sizes = [
+const sizes = process.env.WORLD_SIZES ? process.env.WORLD_SIZES.split(",").map((s) => s.split("x").map(Number)) : [
   [1280, 800],
   ...(process.env.WORLD_PHONE_HEIGHT ? [[390, Number(process.env.WORLD_PHONE_HEIGHT)]] : [[390, 844], [390, 664]]),
 ];
@@ -52,7 +52,7 @@ const browser = await chromium.launch({
 });
 try {
   for (const [width, height] of sizes) {
-    const phone = width === 390;
+    const phone = width === 390 || height === 390;
     const label = `${width}x${height}`;
     const dir = phone ? join(shots, label) : shots;
     await mkdir(dir, { recursive: true });
@@ -178,6 +178,7 @@ try {
           pageFits: document.documentElement.scrollWidth <= innerWidth + 1
           && document.documentElement.scrollHeight <= innerHeight + 1 };
       });
+      if (!(check.pageFits && check.handFits && check.controlsApart && !check.overflow.length && !check.labelProblems.length && (check.faces ?? []).every((f) => f.onScreen && !f.covered && !f.blockedBy))) await shot(`fail-${stage}`);
       assert(check.pageFits && check.handFits && check.controlsApart && !check.overflow.length && !check.labelProblems.length,
         `${label} ${stage} ${JSON.stringify(check)}`);
       if (phone && (check.handCount === 7 || check.handCount === 8)) {

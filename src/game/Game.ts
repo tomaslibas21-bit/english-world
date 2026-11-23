@@ -2564,8 +2564,9 @@ export class Game implements GameApi {
         this.barista.frameView(w, h, bottom ?? h, document.querySelector<HTMLElement>(".barista-cue"));
       } else if (this.gofish && mode === this.gofish) {
         const top = document.querySelector(".gofish-top")?.getBoundingClientRect().bottom;
-        const bottom = document.querySelector(".gofish-bottom, .gofish-result .mode-score-card")?.getBoundingClientRect().top;
-        this.gofish.frameView(w, h, top ?? 0, bottom ?? h);
+        const tags = document.querySelector(".gofish-opponents")?.getBoundingClientRect();
+        const panel = document.querySelector(".gofish-bottom, .gofish-result .mode-score-card")?.getBoundingClientRect();
+        this.gofish.frameView(w, h, top ?? 0, tags, panel);
       } else {
         const stageShift = this.rig.mode === "stage" ? this.rig.stage?.shiftY : undefined;
         const walkingLens = this.rig.mode === "follow" || this.rig.mode === "interior";

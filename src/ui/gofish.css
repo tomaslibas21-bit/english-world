@@ -5,8 +5,15 @@
   --gofish-line: #dfd0b9;
   --card-width: clamp(58px, 17vw, 88px);
   --card-art: clamp(28px, 7.4vw, 44px);
+  --layout-gap: 5px;
   position: fixed;
   inset: 0;
+  padding: max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right))
+    max(8px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--layout-gap);
   pointer-events: none;
   color: var(--gofish-ink);
 }
@@ -20,18 +27,13 @@
   box-shadow: 0 5px 18px #24190930;
   pointer-events: auto;
 }
-.gofish-top,
 .gofish-bottom {
-  position: absolute;
-  left: max(10px, env(safe-area-inset-left));
-  right: max(10px, env(safe-area-inset-right));
+  width: 100%;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   justify-items: center;
-  gap: 5px;
+  gap: var(--layout-gap);
 }
-.gofish-top { top: max(8px, env(safe-area-inset-top)); }
-.gofish-bottom { bottom: max(8px, env(safe-area-inset-bottom)); }
 .gofish-header {
   display: flex;
   justify-content: space-between;
@@ -104,6 +106,7 @@
 .gofish-replay button:disabled { opacity: 0.58; }
 .gofish-replay button .ui-icon { display: block; margin: auto; }
 .gofish-opponents {
+  margin-top: auto;
   display: flex;
   justify-content: space-between;
   width: min(100%, 550px);
@@ -301,9 +304,57 @@
   .gofish-hand { --card-art: 25px; }
 }
 @media (max-height: 700px) {
-  .gofish-top, .gofish-bottom { gap: 4px; }
+  .gofish-overlay { --layout-gap: 4px; }
   .gofish-console { gap: 3px; padding-block: 4px; }
   .gofish-result .mode-score { padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+}
+@media (orientation: landscape) and (max-height: 560px) {
+  .gofish-overlay {
+    --card-width: clamp(58px, 8.7vw, 88px);
+    --card-art: clamp(28px, 8vh, 38px);
+    display: grid;
+    grid-template:
+      "speech header" auto
+      "speech panel" minmax(0, 1fr)
+      "hosts  panel" auto / minmax(0, 1fr) minmax(0, 1.05fr);
+    align-items: start;
+    gap: 6px 10px;
+  }
+  .gofish-header { grid-area: header; }
+  .gofish-cue { grid-area: speech; justify-self: center; }
+  .gofish-opponents { grid-area: hosts; width: 100%; }
+  .gofish-bottom {
+    grid-area: panel;
+    align-self: stretch;
+    align-content: safe center;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 6px;
+    border: 1px solid var(--gofish-line);
+    border-radius: 14px;
+    background: #f8eedc;
+    pointer-events: auto;
+  }
+  .gofish-console { padding: 0; border: 0; box-shadow: none; background: transparent; }
+  .gofish-hand:is([data-count="7"], [data-count="8"]) {
+    max-width: calc(4 * var(--card-width) + 3 * var(--card-gap));
+  }
+  .gofish-actions:has(.gofish-choice) .gofish-pond { max-width: 64px; white-space: normal; }
+  .gofish-actions:has(.gofish-choice) .gofish-pond .gofish-back { display: none; }
+  .gofish-drawn { grid-area: panel; left: 50%; top: 45%; }
+  .gofish-result .mode-score {
+    padding-left: 50%;
+    padding-right: max(10px, env(safe-area-inset-right));
+    place-items: center;
+  }
+}
+@media (min-width: 1000px) and (height > 560px) {
+  .gofish-overlay { --card-width: 90px; --card-art: 48px; }
+  .gofish-console { width: min(100%, 780px); padding: 8px 12px; gap: 6px; }
+  .gofish-word strong { font-size: 15px; }
+  .gofish-word small { font-size: 12px; }
+  .gofish-choice, .gofish-fish { font-size: 16px; }
+  .gofish-person, .gofish-tip, .gofish-status, .gofish-hand-caption, .gofish-pond { font-size: 14px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .gofish-fish:enabled, .gofish-drawn { animation: none; }
