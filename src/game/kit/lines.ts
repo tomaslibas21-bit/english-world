@@ -1,7 +1,7 @@
 import { NPCS } from "../../content/npcs";
 import { getSituation } from "../../content/situations/catalog";
 import type { SentSrc } from "../../content/types";
-import { compose } from "../../convo/compose";
+import { addressInformal, compose } from "../../convo/compose";
 import { foldAccents, tokenizeInput } from "../../convo/normalize";
 import type { Verdict } from "../../convo/speech";
 import { useStore } from "../../state/store";
@@ -11,7 +11,7 @@ export function conversationLine(situation: string, npcId: string, key: string, 
   if (!source) return null;
   const npc = NPCS[npcId], me = useStore.getState().progress.profile?.gender ?? "f", other = npc?.gender ?? "f";
   return compose(source, {}, {
-    look: () => undefined, addressee: learner ? other : me, speaker: learner ? me : other, formal: !npc?.informal,
+    look: () => undefined, addressee: learner ? other : me, speaker: learner ? me : other, formal: !npc || !addressInformal(npc),
   });
 }
 

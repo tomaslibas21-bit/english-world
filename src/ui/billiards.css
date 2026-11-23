@@ -188,3 +188,16 @@
   .billiards .bl-choice .kit-gloss-compact > span { font-size: 0.9rem; }
   .bl-confirm { margin-top: 4px; }
 }
+
+.bl-listen-actions { display: inline-flex; align-items: center; gap: 6px; }
+.bl-listen-actions:has(.say-it-message:not(:empty)) {
+  display: grid;
+  grid-template-columns: auto auto;
+  row-gap: 3px;
+}
+.bl-listen-actions .say-it:has(.say-it-message:not(:empty)) { display: contents; }
+.bl-listen-actions .say-it-message:not(:empty) {
+  position: static;
+  grid-column: 1 / -1;
+  justify-self: center;
+}

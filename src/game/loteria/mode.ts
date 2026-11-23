@@ -13,8 +13,9 @@ import { audio } from "../audio";
 import { createCharacter, type GameCharacter } from "../characters";
 import { ModeDialogue } from "../kit/dialogue";
 import type { ModeHost } from "../kit/host";
-import { conversationLine } from "../kit/lines";
+import { conversationLine, learnerTurn } from "../kit/lines";
 import type { GameMode, ModeFrame, ModeInput } from "../kit/modes";
+import { SayItRound, type SayItCue, type SayItTarget } from "../kit/sayIt";
 import { keepPhrases } from "../kit/phrases";
 import { BETO_STAGE_YAW, frameLoteria, loteriaShot, TONA_STAGE_YAW } from "./framing";
 import {
@@ -55,6 +56,9 @@ interface Run {
   uncalled: boolean;
   wrongShout: boolean;
   shout: boolean;
+  shoutAt: number;
+  speech: SayItRound;
+  cue?: SayItCue;
   spotlight: number;
 }
 
@@ -206,7 +210,7 @@ export class LoteriaMode implements GameMode {
     const round = new LoteriaRoundState(this.roundIndex, this.seed + this.roundIndex);
     const run: Run = this.run = {
       round, phase: "opening", busy: true, time: 0, namedAt: 0, coveredAt: Infinity, readyAt: Infinity,
-      lastCoach: -Infinity, coaches: new Map(), markTip: false, lateTip: false, uncalled: false, wrongShout: false, shout: false, spotlight: -1,
+      lastCoach: -Infinity, coaches: new Map(), markTip: false, lateTip: false, uncalled: false, wrongShout: false, shout: false, shoutAt: 0, speech: new SayItRound(), spotlight: -1,
     };
     loteriaUi({ board: round.board, labels: this.labels, kind: round.kind, next: roundKind(this.roundIndex + 1), micOn: this.micOn });
     countPlay("games", this.id);
@@ -230,7 +234,8 @@ export class LoteriaMode implements GameMode {
 
   private setPhase(run: Run, phase: Phase) {
     run.phase = phase;
-    loteriaUi({ phase, replay: phase === "waiting" && !run.busy && !!run.round.current });
+    const ready = phase === "waiting" && !run.busy;
+    loteriaUi({ phase, replay: ready && !!run.round.current, sayIt: ready ? run.cue : undefined });
   }
 
   private sync(run: Run) {
@@ -246,6 +251,8 @@ export class LoteriaMode implements GameMode {
   }
 
   private async call(run: Run) {
+    run.speech.close();
+    run.cue = undefined;
     this.dialogue.cancelTurn();
     run.busy = true;
     this.setPhase(run, "calling");
@@ -271,6 +278,11 @@ export class LoteriaMode implements GameMode {
     this.sync(run);
     if (wasHidden) audio.sfx("cardFlip");
     if (round.winner) { void this.finish(run); return; }
+    run.cue = run.speech.open(this.spokenTarget(cardKey(card)), {
+      ...this.spokenTarget(shoutKey),
+      available: () => !!round.pattern && !run.shout,
+      onAward: () => this.requestShout(run, true),
+    });
     this.wait(run);
   }
 
@@ -291,15 +303,18 @@ export class LoteriaMode implements GameMode {
     if (run.round.covered.has(run.spotlight)) run.coveredAt = run.time;
     run.busy = false;
     this.setPhase(run, "waiting");
-    this.listenForShout(run);
   }
 
-  private listenForShout(run: Run) {
-    if (!this.micOn || run.phase !== "waiting" || run.busy) return;
-    this.dialogue.setMic(true);
-    void this.dialogue.expect(SIT, BETO, [shoutKey], LOTERIA_LINES, LOTERIA_ACCEPT).then((line) => {
-      if (line && this.run === run && run.phase === "waiting") this.requestShout(run);
-    });
+  private spokenTarget(key: string): SayItTarget {
+    const line = conversationLine(SIT, BETO, key, LOTERIA_LINES, true)!;
+    const match = learnerTurn([{ key, sentence: line }], LOTERIA_ACCEPT);
+    return {
+      phrases: match.phrases,
+      evaluate: (text) => {
+        const heard = match.read(text);
+        return heard.answer ? "complete" : heard.verdict;
+      },
+    };
   }
 
   private cover(run: Run, index: number) {
@@ -319,17 +334,20 @@ export class LoteriaMode implements GameMode {
     this.sync(run);
   }
 
-  private requestShout(run: Run) {
+  private requestShout(run: Run, spoken = false) {
     if (run.phase !== "calling" && run.phase !== "waiting") return;
-    if (run.round.pattern) run.shout = true;
-    else run.wrongShout = true;
+    if (run.round.pattern) {
+      run.shout = true;
+      run.shoutAt = run.time + (spoken ? 0.55 : 0);
+    } else run.wrongShout = true;
   }
 
   private async repeat(run: Run) {
     const card = run.round.current;
     if (!card || run.phase !== "waiting" || run.busy) return;
     run.busy = true;
-    loteriaUi({ replay: false, neighbor: null, caller: null, verse: null });
+    run.cue?.cancel();
+    loteriaUi({ replay: false, sayIt: undefined, neighbor: null, caller: null, verse: null });
     this.dialogue.cancelTurn();
     if (await this.sing(run, card)) this.wait(run);
   }
@@ -355,7 +373,8 @@ export class LoteriaMode implements GameMode {
 
   private async aside(run: Run, key: string) {
     run.busy = true;
-    loteriaUi({ replay: false });
+    run.cue?.cancel();
+    loteriaUi({ replay: false, sayIt: undefined });
     this.dialogue.cancelTurn();
     if (key.startsWith("lt_t_")) {
       run.lastCoach = run.round.called.length;
@@ -365,10 +384,10 @@ export class LoteriaMode implements GameMode {
     loteriaUi({ neighbor: null });
     run.busy = false;
     this.setPhase(run, "waiting");
-    this.listenForShout(run);
   }
 
   private async finish(run: Run) {
+    run.speech.close();
     const { round } = run;
     this.dialogue.cancelTurn();
     run.busy = true;
@@ -403,7 +422,7 @@ export class LoteriaMode implements GameMode {
     this.setPhase(run, "score");
     loteriaUi({
       caller: null, neighbor: null, result: {
-        winner: round.winner!, calls: round.called.length, covered: round.covered.size, heard: round.byEar.size, phrases: phrases.length,
+        winner: round.winner!, calls: round.called.length, covered: round.covered.size, heard: round.byEar.size, phrases: phrases.length, ...run.speech.result,
       },
     });
   }
@@ -428,11 +447,15 @@ export class LoteriaMode implements GameMode {
     this.dialogue.update(step, paused);
     this.host.updatePose(dt, LEARNER_SEAT.rot);
     for (const actor of [stage.beto, stage.tona, ...stage.guests]) actor.update(dt);
-    if (paused) return;
+    if (paused) { run.cue?.cancel(); return; }
     run.time += step;
     if (run.phase !== "waiting" || run.busy) return;
 
-    if (run.shout && run.round.shout()) { void this.finish(run); return; }
+    if (run.shout) {
+      if (run.time >= run.shoutAt && run.round.shout()) void this.finish(run);
+      return;
+    }
+    if (run.cue?.getSnapshot() === "listening") return;
     if (run.wrongShout) { run.wrongShout = false; void this.aside(run, "lt_b_notyet"); return; }
     const coaching = this.coachLine(run);
     if (coaching) { void this.aside(run, coaching); return; }
@@ -482,16 +505,16 @@ export class LoteriaMode implements GameMode {
     if (name === "replay") void this.repeat(run);
     if (name === "shout") this.requestShout(run);
     if (name === "read" && run.phase === "reading" && typeof value === "string") this.dialogue.choose(value);
-    if (name === "mic" && (run.phase === "reading" || run.phase === "waiting" || run.phase === "calling")) {
+    if (name === "mic" && run.phase === "reading") {
       this.micOn = value === true;
       this.dialogue.setMic(this.micOn);
       loteriaUi({ micOn: this.micOn });
-      if (this.micOn) this.listenForShout(run);
     }
   }
 
   exit(immediate: boolean) {
     if (!this.active) return;
+    this.run?.speech.close();
     if (!immediate && this.run && this.stage) {
       if (this.run.phase !== "leaving") {
         if (this.run.phase === "score") this.host.rig.stage = loteriaShot();
@@ -533,7 +556,7 @@ export class LoteriaMode implements GameMode {
     if (!import.meta.env.DEV || !run || !stage) return null;
     const { phase, round } = run;
     return { phase, kind: round.kind, board: round.board.map(({ id }) => id), current: round.current?.id, faceDown: round.faceDown, covered: [...round.covered],
-      calls: round.called.map(({ id }) => id), ready: !!round.pattern, heads: [this.head(stage.beto), this.head(stage.tona)] };
+      said: run.speech.count, calls: round.called.map(({ id }) => id), ready: !!round.pattern, heads: [this.head(stage.beto), this.head(stage.tona)] };
   }
 
   dispose() { this.exit(true); }

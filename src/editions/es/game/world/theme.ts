@@ -193,6 +193,7 @@ export const THEME: TownTheme = {
   // (the south-east one ends at 50, -38: to 50, -44 its flags hung in front of the Sombreros and Verduras stalls'
   // boards from the street, docs/SIGNS.md)
   papelPicado: [[12, -18, 4.6], [48, -18, 4.6], [10, -44, 4.6], [50, -38, 4.6], [30, -16, 4.8], [52, -30, 4.6], [8, -30, 4.6], [30, -47, 4.6]],
+  hammock: { x1: 9.5, x2: 14.5, z: -67.2 },
   palms: [[8.6, -17.4], [47.6, -17.6], [8.4, -47.2], [49, -47.4], [20.5, -16.6], [39.5, -16.6], [6.8, -32], [51.4, -26],
     // (graphics round 2) along avenida Juárez up to the airport, and in the terminal's forecourt either side of its canopy
     [104, -15], [110, -15], [116, -15], [104, -1.3], [110, -1.3], [116, -1.3], [130.5, -22.5], [130.5, -27], [130.5, 6.5], [130.5, 11],

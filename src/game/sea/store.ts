@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { SayItCue } from "../kit/sayIt";
 import type { LabelAnchor } from "../road/gates";
 import type { RoadResult } from "../road/store";
 import type { Prompt, Word } from "../road/words";
@@ -7,6 +8,7 @@ import { SEA_SECONDS } from "./course";
 type SeaUi = {
   phase: "town" | "drive" | "turn" | "result" | "unavailable";
   prompt?: Prompt;
+  sayIt?: SayItCue;
   anchors: LabelAnchor[];
   wideLabels: boolean;
   remaining: number;

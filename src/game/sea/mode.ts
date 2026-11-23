@@ -8,7 +8,7 @@ import { audio } from "../audio";
 import type { ModeFrame, ModeInput } from "../kit/modes";
 import type { Ride } from "../rides/Rides";
 import { readBest, saveBest } from "../road/ghost";
-import { keepRunPhrases, RunScore } from "../road/run";
+import { gateSayItTarget, gateWord, keepRunPhrases, RunScore } from "../road/run";
 import { loadPool, makePicker, type Clip, type Pool, type Prompt } from "../road/words";
 import { SeaBoat } from "./boat";
 import { SeaGate } from "./buoys";
@@ -97,7 +97,7 @@ export class SeaMode {
     this.gate = new SeaGate(this.gateAt, prompt, this.boat.startX, this.boat.startZ - this.gateAt);
     this.poseGate(this.host.time());
     this.view.scene.add(this.gate.mesh);
-    useSea.setState({ prompt, anchors: [] });
+    useSea.setState({ prompt, sayIt: this.score.sayIt.open(gateSayItTarget(prompt)), anchors: [] });
     if (!prompt.gap) this.play(prompt.word.clip);
   }
 
@@ -107,12 +107,14 @@ export class SeaMode {
   }
 
   private closeGate() {
+    this.score.sayIt.close();
     this.gate?.dispose();
     this.gate = undefined;
-    useSea.setState({ prompt: undefined, anchors: [] });
+    useSea.setState({ prompt: undefined, sayIt: undefined, anchors: [] });
   }
 
   private answer(gate: SeaGate, time: number) {
+    this.score.sayIt.close();
     const { prompt, distance } = gate;
     const lane = this.boat.lane;
     const correct = this.score.answer(prompt, lane);
@@ -143,7 +145,7 @@ export class SeaMode {
     this.gateAt = nextGate(distance);
     gate.cross(lane, correct);
     this.poseGate(time);
-    useSea.setState({ streak: this.score.streak, feedback: { correct, word: prompt.word } });
+    useSea.setState({ sayIt: undefined, streak: this.score.streak, feedback: { correct, word: prompt.word } });
   }
 
   update({ dt, time, x, y, blocked }: ModeFrame) {
@@ -218,7 +220,7 @@ export class SeaMode {
     useStore.getState().setHud({ ride: null });
     useSea.setState({ phase: this.phase, feedback: undefined, result: {
       points: score.points, right: score.right, total: score.total, streak: score.bestStreak, distance: this.sailed,
-      record, cards, missed: [...score.missed.values()],
+      record, cards, missed: [...score.missed.values()], ...score.sayIt.result,
     } });
   }
 
@@ -251,7 +253,10 @@ export class SeaMode {
     if (this.returning) return;
     if (this.phase === "drive") {
       if (name === "steer" && typeof value === "string") this.steer(Number(value));
-      if (name === "replay" && this.gate && !this.gate.crossed && !this.gate.prompt.gap) this.play(this.gate.prompt.word.clip);
+      if (name === "replay" && this.gate && !this.gate.crossed && !this.gate.prompt.gap) {
+        useSea.getState().sayIt?.cancel();
+        this.play(this.gate.prompt.word.clip);
+      }
     }
     if (this.phase === "result") {
       if (name === "guide") this.returnToTown(true);
@@ -307,6 +312,7 @@ export class SeaMode {
       lane: boat.lane, x: boat.worldX, z: boat.worldZ, heading: boat.heading, speed: boat.speed,
       boost: boat.boost, wobble: boat.wobble, gateDistance: gate && gate.distance - boat.distance,
       gates: gate?.prompt.options, right: gate?.prompt.right, totalGates: score.total, rightGates: score.right, streak: score.streak,
+      word: gate && gateWord(gate.prompt), gap: !!gate?.prompt.gap, points: score.points, said: score.sayIt.count,
       result: useSea.getState().result, camera: { position: view.camera.position.toArray(), rotation: view.camera.quaternion.toArray(), fov: view.camera.fov },
       hull: this.source.mesh.position.toArray(), hullFrame: view.hullFrame(),
     };

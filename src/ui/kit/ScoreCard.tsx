@@ -1,10 +1,12 @@
+import { SAY_IT_UI } from "../../content/say-it";
 import { useRef, type CSSProperties, type ReactNode } from "react";
 import { Confetti } from "../Confetti";
 import { Stars } from "../icons";
-import { HL } from "../i18n";
+import { HL, L } from "../i18n";
 import "./scoreCard.css";
 
 interface ScoreCardProps {
+  said?: number;
   title: string;
   score?: ReactNode;
   ratio?: number;
@@ -43,7 +45,7 @@ function ScoreStars({ ratio }: { ratio: number }) {
   </div>;
 }
 
-export function ScoreCard({ title, score, ratio, rows, phrases, again, done, children, celebrate }: ScoreCardProps) {
+export function ScoreCard({ title, score, ratio, rows, said = 0, phrases, again, done, children, celebrate }: ScoreCardProps) {
   const heading = useRef<HTMLHeadingElement>(null);
   return (
     <div className="mode-score" lang={HL}>
@@ -54,6 +56,7 @@ export function ScoreCard({ title, score, ratio, rows, phrases, again, done, chi
         {score != null && <strong className="mode-score-line">{score}</strong>}
         <dl>
           {rows.map(({ label, value }) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
+          {said > 0 && <div><dt>{L(SAY_IT_UI.stat)}</dt><dd>{said}</dd></div>}
           {phrases && <div><dt>{phrases.label}</dt><dd>{phrases.count}</dd></div>}
         </dl>
         {children}

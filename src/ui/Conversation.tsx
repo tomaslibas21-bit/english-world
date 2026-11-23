@@ -1,3 +1,4 @@
+import { isTownQuest } from "../content/townQuests";
 import { Fragment, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { chipLabel } from "./chip-label";
 import { SceneIntro, sceneText } from "./SceneIntro";
@@ -98,7 +99,7 @@ export function Conversation() {
       if (k === "l") { e.preventDefault(); st.setSettings({ lt: !st.settings.lt }); return; }
       if (k === "n") { e.preventDefault(); st.setSettings({ ltNatural: !st.settings.ltNatural }); return; }
       if (k === "i") { e.preventDefault(); st.setSettings({ ipa: !st.settings.ipa }); return; }
-      if (k === "p" && st.settings.play !== "light") { e.preventDefault(); st.setSettings({ scenes: !picturesOn(st.settings) }); return; }
+      if (k === "p" && st.settings.play !== "light" && !isTownQuest(st.conv.sitId ?? "")) { e.preventDefault(); st.setSettings({ scenes: !picturesOn(st.settings) }); return; }
       if (k === "t") { e.preventDefault(); st.setConv({ typing: !st.conv.typing }); return; }
       if (k === "r") { e.preventDefault(); game?.activeSession?.repeatLast(false); return; }
       if ((k === " " || k === "enter") && st.conv.phase === "you") {
@@ -275,9 +276,14 @@ function EndCard({ sit }: { sit: SituationDef }) {
         <>
           {next && <EndDestination sit={next} close={close} />}
           <div className="sit-actions ended-secondary">
-            <button className="btn soft small" onClick={close}><Icon name="walk" size={17} /> {L("Tęsti")}</button>
-            <button className="btn ghost small" onClick={showAll}><Icon name="list" size={17} /> {L("Visos situacijos")}</button>
-            <button className="btn ghost small" onClick={restart}><Icon name="restart" size={17} /> {L("Dar kartą")}</button>
+            <div>
+              <button className="btn soft small" onClick={close}><Icon name="walk" size={17} /> {L("Tęsti")}</button>
+              {nextId && <button className="btn ghost small" onClick={startNext}><Icon name="arrowRight" size={17} /> {L("Kita situacija")}</button>}
+            </div>
+            <div>
+              <button className="btn ghost small" onClick={showAll}><Icon name="list" size={17} /> {L("Visos situacijos")}</button>
+              <button className="btn ghost small" onClick={restart}><Icon name="restart" size={17} /> {L("Dar kartą")}</button>
+            </div>
           </div>
         </>
       ) : (

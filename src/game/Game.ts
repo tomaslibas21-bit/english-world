@@ -25,6 +25,9 @@ import { ROAD_EDITION, ROAD_UI } from "../content/road";
 import { RoadEntry, leavingByRoad, walkEdge } from "./road/entry";
 import { SEA_EDITION } from "../content/sea";
 import { SeaEntry, seaReturn } from "./sea/entry";
+import { TownQuests } from "./photowalk/mode";
+import { isTownQuest, type PhotoSpot } from "../content/townQuests";
+import { useSurf } from "./surf/store";
 import { RIDE_NAMES } from "../content/rides";
 import { type GameMode, ModeRegistry } from "./kit/modes";
 import { FrameFade } from "./kit/frameFade";
@@ -287,6 +290,7 @@ export class Game implements GameApi {
   private loadMeeting = false;
   private officeRequested = false;
   private modeHost!: ModeHost;
+  private quests!: TownQuests;
   /** The first visit's look at the town from the air (flyover.ts): how long it has been going (s). */
   private flight: { t: number } | null = null;
   private npcToSits = new Map<string, SituationMeta[]>();
@@ -578,6 +582,33 @@ export class Game implements GameApi {
     };
     this.modes.register(createSurfMode(host, (outfit) => this.dressPlayer(outfit)));
     this.modes.register(createTaxiMode(host));
+    const colectivoPhoto = new THREE.Vector3();
+    this.modes.register(this.quests = new TownQuests(host, {
+      spots: this.town.photoSpots.concat(this.ambient.traffic.filter((car) => car.kind === "colectivo").map((car): PhotoSpot => ({
+        id: "colectivo",
+        get x() { return car.mesh.position.x; },
+        get y() { return car.mesh.position.y + 1.35; },
+        get z() { return car.mesh.position.z; },
+        visible: () => car.mesh.visible && !!car.whole && this.field.free(
+          colectivoPhoto.copy(car.mesh.position).addScaledVector(THREE.Object3D.DEFAULT_UP, 1.35),
+          this.rig.cam.position, 0, 0, 0, 0, 0,
+        ) === 1,
+      })), this.rides.list.filter((ride) => ride.id === "muelle" || ride.id === "playa").map((ride): PhotoSpot => ({
+        id: "lancha",
+        get x() { return ride.mesh.position.x; },
+        get y() { return ride.mesh.position.y + 0.6; },
+        get z() { return ride.mesh.position.z; },
+        visible: () => ride.mesh.visible,
+      }))),
+      walking: () => this.questAvailable() && this.zone.id === "town" && this.rig.mode === "follow",
+      available: () => this.questAvailable(),
+      zone: () => this.zone.id,
+      guide: (id) => {
+        const door = this.town.doors.find((door) => door.loc === id);
+        if (door && this.zone.id === "town") this.walkTo(door.outX, door.outZ, { kind: "point" });
+      },
+      animate: (seconds) => this.npcs.find(({ id }) => this.quests.handlesNpc(id))?.ch.talk(seconds, () => audio.level(), () => audio.vowel()),
+    }));
     this.road = new RoadEntry({
       ...host,
       sky: () => this.sky,
@@ -1132,6 +1163,7 @@ export class Game implements GameApi {
     if (k === " " && this.rides.riding) { this.keys.add(" "); this.rideGoal = null; e.preventDefault(); return; }
     if (k === " ") { if (this.nearest && !this.hop.air && !this.swimming) this.interact(); else if (!e.repeat) this.jump(); e.preventDefault(); return; }
     if (k === "e" || k === "enter") { this.interact(); e.preventDefault(); return; }
+    if (k === "c" && !e.repeat && !e.altKey && !e.ctrlKey && !e.metaKey && this.modes.start(this.quests.id, "camera")) { e.preventDefault(); return; }
     if (k === "m") st.setHud({ panel: "map" });
     if (k === "j") st.setHud({ panel: "journal" });
     if (k === "p") st.setHud({ panel: "phone" });
@@ -1722,8 +1754,17 @@ export class Game implements GameApi {
     return list.find((s) => !sitProgress(pr, s.id).completions) ?? list[0];
   }
 
+  private questAvailable() {
+    return this.modeHost.canStart(true) && !this.modes.active && !this.modes.modal && !this.rides.riding && !this.swimming
+      && !useSurf.getState().picking && !document.hidden;
+  }
+
   talkTo(npc: string, sitId?: string) {
     if (this.session?.active || this.poolCompanion(npc)) return;
+    if (this.quests.handlesNpc(npc)) {
+      this.modes.start(this.quests.id, "visit");
+      return;
+    }
     const sit = sitId ? SITUATION_BY_ID[sitId] : this.pickSituation(npc);
     if (!sit) {
       const def = NPCS[npc];
@@ -1754,7 +1795,7 @@ export class Game implements GameApi {
       const loc = LOCATIONS[sit.location];
       let spawn: { x: number; z: number; rot: number } | null = null;
       let zone = "town";
-      if (sit.id !== POOL_SITUATION && loc?.kind === "interior" && getInterior(sit.location)) {
+      if (!isTownQuest(sitId) && sit.id !== POOL_SITUATION && loc?.kind === "interior" && getInterior(sit.location)) {
         zone = sit.location;
         const it = this.getZone(zone)?.interior;
         const sp = it?.npcs.find((n) => n.npc === npc);
@@ -1844,6 +1885,7 @@ export class Game implements GameApi {
   }
 
   private requestConversation(sitId: string, actor: NpcActor | null, fromCard = false) {
+    this.quests.stopReplay();
     this.conversationLoads++;
     this.phone.observe(this.phoneSnapshot());
     let opened = false;
@@ -2359,6 +2401,7 @@ export class Game implements GameApi {
   modeExit() { this.modes.exit(); }
   modeAction(id: string, name: string, value?: string | boolean) {
     if (this.transitioning || useStore.getState().hud.panel) return;
+    if (id === "directions") { this.quests.directionAction(name); return; }
     const mode = this.modes.active ?? (id === "barista" && this.modes.owns(id) ? this.modes.get(id) : null);
     if (mode?.id === id) mode.action?.(name, value);
   }
@@ -2590,7 +2633,7 @@ export class Game implements GameApi {
     }
     // An outdoor place can have a room inside it, where the person is found through the door.
     if (!sit || !loc || mode === "cave") return exit;
-    const outside = loc.kind === "outdoor" || sit.id === POOL_SITUATION ? OUTDOOR_NPCS.find((n) => n.npc === sit.npc) : undefined;
+    const outside = loc.kind === "outdoor" || isTownQuest(sit.id) || sit.id === POOL_SITUATION ? OUTDOOR_NPCS.find((n) => n.npc === sit.npc) : undefined;
     if (outside) return exit ?? { kind: "npc", id: sit.npc, ...talkAt(outside) };
     if (loc.kind === "outdoor" && !THEME.roomNpcs[sit.location]?.some((n) => n.npc === sit.npc)) return null;
     if (this.zone.id === sit.location && this.zone.interior) {
@@ -2844,6 +2887,7 @@ export class Game implements GameApi {
         this.rig.applyViewShift(w, h, 0, h * (stageShift ?? -shift));
       }
     }
+    this.quests.observe(this.rig.cam);
     // sun follows the player for crisp shadows
     const pp = this.player.root.position;
     this.sun.position.set(pp.x - 40, 70, pp.z + 30);
@@ -2869,6 +2913,7 @@ export class Game implements GameApi {
         this.scene.add(probes);
       }
       this.renderer.render(this.scene, this.rig.cam);
+      this.quests.capture(this.renderer.domElement);
       if (probes) {
         probes.removeFromParent();
         this.rides.finishCrashShaderWarmup();
@@ -3652,6 +3697,7 @@ export class Game implements GameApi {
       shown.push({ n, x: ((v.x + 1) / 2) * w, y: ((1 - v.y) / 2) * h, dist });
       const isObj = !!obj && !isCall(obj) && (obj.npc === n.id || ((obj.npc === "sam" || obj.npc === "emma") && (n.id === "sam" || n.id === "emma")));
       n.tag.classList.toggle("objective", isObj && !talking);
+      n.tag.classList.toggle("quest-available", this.quests.marker(n.id));
       n.tag.style.opacity = String(Math.max(0.35, 1 - (dist - 12) / 22));
     }
     // Each tag takes the free spot nearest its person, the nearer people first: where it is; beside or above a tag
@@ -3687,7 +3733,7 @@ export class Game implements GameApi {
     const c = this.container.getBoundingClientRect();
     this.hudBoxCache = [];
     const selectors = [
-      ".objective-card", ".cave-card", ".phone-ring", ".minimap", ".toolbar",
+      ".objective-card", ".cave-card", ".phone-ring", ".directions-card", ".photo-chip", ".minimap", ".toolbar",
       ".toolbar.menu-open:not(.portrait-toolbar) .toolbar-tools",
       ".portrait-toolbar.menu-open .toolbar-drawer",
       ".portrait-toolbar.in-ride:not(.menu-open) .radio-tool",

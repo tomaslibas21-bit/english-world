@@ -144,6 +144,7 @@ export interface TownTheme {
   papelPicado: [number, number, number, number?][];
   /** Palm trees (x, z). */
   palms: [number, number][];
+  hammock?: { x1: number; x2: number; z: number };
   /** The market hall inside: Maple Harbor's supermarket, or a Mexican mercado's stalls. */
   market: "supermarket" | "mercado";
 

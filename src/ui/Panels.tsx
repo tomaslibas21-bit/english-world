@@ -1,3 +1,6 @@
+import { isTownQuest } from "../content/townQuests";
+import { clearPhotos } from "../game/photowalk/photos";
+import { PhotoBookContact } from "./PhotoWalk";
 import { useKeyboardHints } from "./keyboardHints";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { picturesOn, useStore } from "../state/store";
@@ -215,13 +218,15 @@ function TownHelp({ open }: { open?: boolean }) {
 /** The situation picker: every conversation, one tap to start (no walking needed). */
 function Scenarios({ close }: { close: () => void }) {
   const progress = useStore((st) => st.progress);
+  const light = useStore((s) => s.settings.play === "light");
   const byCh = useMemo(() => {
     const m = new Map<number, SituationMeta[]>();
     for (const s of [...SITUATIONS].sort((a, b) => a.chapter - b.chapter || a.order - b.order)) {
+      if (light && isTownQuest(s.id)) continue;
       const l = m.get(s.chapter) ?? []; l.push(s); m.set(s.chapter, l);
     }
     return [...m.entries()];
-  }, []);
+  }, [light]);
   const done = SITUATIONS.filter((s) => sitProgress(progress, s.id).completions > 0).length;
   return (
     <div className="sheet scenarios">
@@ -342,7 +347,7 @@ function MapPanel({ close }: { close: () => void }) {
     return { left: `${u * 100}%`, top: `${v * 100}%` };
   };
   const aluxSits = CATALOG.filter((s) => s.location === CAVE_ZONE && (s.npc === "alux_kin" || s.npc === "alux_nikte"));
-  const mapSits = (loc: string) => loc === CAVE_ZONE ? aluxSits : (loc === "pool-hall" ? CATALOG : SITUATIONS).filter((s) => s.location === loc);
+  const mapSits = (loc: string) => loc === CAVE_ZONE ? aluxSits : (loc === "pool-hall" ? CATALOG : SITUATIONS).filter((s) => s.location === loc && !(game?.light && isTownQuest(s.id)));
   const locs = Object.values(LOCATIONS).filter((l) => l.kind !== "phone" && mapSits(l.id).length > 0);
   const selSits = sel ? mapSits(sel) : [];
   return (
@@ -358,7 +363,8 @@ function MapPanel({ close }: { close: () => void }) {
               const p = locationPoint(l.id);
               if (!p) return null;
               const sits = mapSits(l.id);
-              const allDone = sits.length > 0 && sits.every((s) => sitProgress(progress, s.id).completions > 0);
+              const allDone = sits.some((s) => !isTownQuest(s.id))
+                && sits.every((s) => isTownQuest(s.id) || sitProgress(progress, s.id).completions > 0);
               return (
                 <button key={l.id} className={"map-pin" + (sel === l.id ? " sel" : "") + (allDone ? " done" : "")} style={pct(p.x, p.z)} onClick={() => setSel(l.id)} title={l.name} aria-label={l.name} aria-pressed={sel === l.id}>
                   <Icon name={locIcon(l.id)} size={18} />
@@ -409,6 +415,7 @@ function Phone({ close }: { close: () => void }) {
       </div>
       {thread ? <TextThread key={thread.id} thread={thread} entry={progress.texts!.got[thread.id]} /> : <>
       <TextList got={progress.texts?.got} />
+      <PhotoBookContact close={close} />
       {!!missed.length && <section className="missed-calls">
         <h2>{L("Praleisti skambučiai")}</h2>
         {missed.map((sit) => (
@@ -521,7 +528,17 @@ function Settings({ close }: { close: () => void }) {
         {import.meta.env.BASE_URL === "/zaidimas/" && <div className="set-row"><a className="btn ghost small" href="/atsisiuntimai" target="_top">{L("Atsisiuntimai ir failų pašalinimas")}</a></div>}
         <div className="set-row">
           <div className="txt"><b>{L("Pradėti iš naujo")}</b><span>{L("Ištrina šios naršyklės išsaugotą progresą.")}</span></div>
-          <button className="btn ghost small" onClick={() => { if (confirm(L("Tikrai ištrinti progresą?"))) { useStore.getState().updateProgress((p) => { delete p.phone; delete p.texts; Object.assign(p, emptyProgress()); }); location.reload(); } }}>{L("Ištrinti")}</button>
+          <button className="btn ghost small" onClick={() => {
+            if (!confirm(L("Tikrai ištrinti progresą?"))) return;
+            useStore.getState().updateProgress((p) => {
+              delete p.phone;
+              delete p.texts;
+              delete p.photoWalk;
+              Object.assign(p, emptyProgress());
+            });
+            clearPhotos();
+            location.reload();
+          }}>{L("Ištrinti")}</button>
         </div>
       </div>
     </div>

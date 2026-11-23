@@ -1,14 +1,20 @@
 import { useCards } from "../../state/cards";
 import { keepPhrases } from "../kit/phrases";
+import { SayItRound, sayItWords } from "../kit/sayIt";
 import type { Prompt, Word } from "./words";
 
 export const DRIVE_SECONDS = 150;
 export const FIRST_GATE = 75;
 export const nextGate = (distance: number, total: number) => distance + 172 - Math.min(20, total * 1.15);
+export const gateWord = (prompt: Prompt) => prompt.gap ? prompt.options[prompt.right] : prompt.word.en;
+export const gateSayItTarget = (prompt: Prompt) => sayItWords([gateWord(prompt)],
+  prompt.gap ? prompt.options.filter((_, i) => i !== prompt.right) : []);
 
 export class RunScore {
   elapsed = 0;
-  points = 0;
+  private gatePoints = 0;
+  readonly sayIt = new SayItRound();
+  get points() { return this.gatePoints + this.sayIt.count; }
   right = 0;
   total = 0;
   streak = 0;
@@ -33,7 +39,7 @@ export class RunScore {
       this.right++;
       this.streak++;
       this.bestStreak = Math.max(this.bestStreak, this.streak);
-      this.points += 100 + 25 * (this.streak - 1);
+      this.gatePoints += 100 + 25 * (this.streak - 1);
       this.learned.set(id, prompt);
     } else {
       this.streak = 0;

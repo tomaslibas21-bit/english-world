@@ -101,6 +101,7 @@ const MEXICO: Record<string, string> = {
   tienda: "es-419-commercial-4",
   tona: "es-419-csagent-8", beto: "es-419-csagent-9",
   memo: "es-419-tutor-2",
+  renata: "Zephyr", queta: "Gacrux",
   vale: "es-419-training-8", diego: "es-419-assistant-9", santi: "es-419-csagent-4",
   // the convertibles' owners (RIDERS): Valeria bright and breezy at 32, Don Rafa textured and soothing at 57, Marisol
   // at 47, Beto crisp and eager at 28; and the passers-by who call after a car: a younger and an older voice a gender
@@ -163,6 +164,7 @@ const SPAIN: Record<string, string> = {
   tienda: "es-es-training-9",
   tona: "es-es-podcaster-5", beto: "es-es-podcaster-7",
   memo: "es-es-assistant-4",
+  renata: "Zephyr", queta: "Gacrux",
   vale: "es-es-concierge-3", diego: "es-es-training-9", santi: "es-es-concierge-12",
   // the convertibles' owners and the passers-by who call after a car, by gender and age as in the Mexican set
   ride_park: "es-es-techagent-5", ride_east: "es-es-assistant-3", ride_west1: "es-es-training-12", ride_west2: "es-es-training-11",
@@ -214,7 +216,7 @@ export const CAST: Record<string, Role> = {
   priya: { voice: "Autonoe", age: "late 20s", manner: "friendly and helpful", pace: "easy" },
   aduana: { voice: "Pulcherrima", age: "about 40", manner: "polite, direct and businesslike", pace: "brisk" },
   vinnie: { voice: "Puck", age: "late 50s", manner: "cheerful and chatty, a taxi driver who knows everyone", pace: "relaxed" },
-  olivia: { voice: "Zephyr", age: "late 20s", manner: "warm and welcoming", pace: "easy" },
+  olivia: { voice: "Callirrhoe", age: "late 20s", manner: "warm and welcoming", pace: "easy" },
   // the center
   chuck: { voice: "Sadachbia", age: "about 65", manner: "enthusiastic, proud of his town", pace: "very fast" },
   memo: { voice: "Algenib", age: "about 60", manner: "warm and easygoing, a cantina owner who enjoys teaching pool", pace: "easy" },
@@ -223,7 +225,7 @@ export const CAST: Record<string, Role> = {
   ben: { voice: "Achird", age: "mid 20s", manner: "polite and helpful", pace: "easy" },
   harold: { voice: "Schedar", age: "about 65", manner: "dry, with quiet humor", pace: "slow" },
   marco: { voice: "Umbriel", age: "about 30", manner: "friendly and attentive", pace: "easy" },
-  marcus: { voice: "Gacrux", age: "about 60", manner: "warm and loud, a market vendor with thirty years at her stall", pace: "lively" },
+  marcus: { voice: "Vindemiatrix", age: "about 60", manner: "warm and loud, a market vendor with thirty years at her stall", pace: "lively" },
   marco_host: { voice: "Aoede", age: "late 20s", manner: "welcoming and polite", pace: "easy" },
   // services
   chloe: { voice: "Laomedeia", age: "mid 20s", manner: "upbeat and helpful", pace: "lively" },
@@ -232,7 +234,7 @@ export const CAST: Record<string, Role> = {
   jessie: { voice: "Pulcherrima", age: "about 40", manner: "chatty and cheerful", pace: "lively" },
   aaron: { voice: "Algieba", age: "about 35", manner: "polite and professional", pace: "even" },
   gloria: { voice: "Achernar", age: "mid 50s", manner: "warm and patient", pace: "unhurried" },
-  claire: { voice: "Zephyr", age: "about 30", manner: "polite and helpful", pace: "even" },
+  claire: { voice: "Callirrhoe", age: "about 30", manner: "polite and helpful", pace: "even" },
   netwave_bot: { voice: "Despina", age: "ageless", manner: "even and polished, an automated phone menu", pace: "measured" },
   patel: { voice: "Charon", age: "about 60", manner: "polite and businesslike", pace: "measured" },
   rita: { voice: "Sulafat", age: "about 65", manner: "friendly, chatty and kind", pace: "easy" },
@@ -244,7 +246,7 @@ export const CAST: Record<string, Role> = {
   sara: { voice: "Autonoe", age: "late 20s", manner: "lively and casual", pace: "lively" },
   harris: { voice: "Orus", age: "mid 50s", manner: "calm and authoritative", pace: "measured" },
   // social
-  sophie: { voice: "Zephyr", age: "early 30s", manner: "warm and cheerful", pace: "lively" },
+  sophie: { voice: "Callirrhoe", age: "early 30s", manner: "warm and cheerful", pace: "lively" },
   mark: { voice: "Puck", age: "early 30s", manner: "excited and playful, a chef who loves to talk about food", pace: "fast" },
   lizzie: { voice: "Callirrhoe", age: "late 20s", manner: "warm and casual, a close friend", pace: "easy" },
   sam: { voice: "Enceladus", age: "early 30s", manner: "relaxed, warm and a little shy", pace: "easy" },
@@ -268,7 +270,7 @@ export const CAST: Record<string, Role> = {
   grant: { voice: "Orus", age: "about 45", manner: "calm and firm", pace: "brisk" },
   nina: { voice: "Aoede", age: "about 30", manner: "polite and clear", pace: "brisk" },
   // the advanced conversations and the living language
-  maggie: { voice: "Gacrux", age: "about 65", manner: "warm and theatrical, enjoys a good haggle", pace: "lively" },
+  maggie: { voice: "Vindemiatrix", age: "about 65", manner: "warm and theatrical, enjoys a good haggle", pace: "lively" },
   kyle: { voice: "Rasalgethi", age: "about 30", manner: "polite, a little scripted", pace: "even" },
   harbor_bot: { voice: "Despina", age: "ageless", manner: "even and polished, a recorded message", pace: "measured" },
   brenda: { voice: "Vindemiatrix", age: "mid 40s", manner: "calm, understanding and professional", pace: "measured" },
@@ -285,12 +287,14 @@ export const CAST: Record<string, Role> = {
   alux_nikte: { voice: "Leda", age: "ageless, sounds like a young girl", manner: "a small forest spirit, light and sing-song, gentle and bright, teasing with her riddles, a little magical", pace: "easy" },
   // the Yaxché, the great ceiba in the grotto's heart, which speaks when all the stones are lit (x04): old, deep and
   // kind, every phrase given room; never eerie
-  yaxche: { voice: "Gacrux", age: "ageless, sounds like a wise old woman", manner: "an ancient sacred tree speaking to someone it has waited for: deep, calm and warm, motherly, full of quiet wonder, each phrase given room, never eerie", pace: "slow" },
+  yaxche: { voice: "Vindemiatrix", age: "ageless, sounds like a wise old woman", manner: "an ancient sacred tree speaking to someone it has waited for: deep, calm and warm, motherly, full of quiet wonder, each phrase given room, never eerie", pace: "slow" },
   // the beach (x01-surf and the surf game's commands): a surf instructor from Puerto Escondido, about 28
   surf: { voice: "Aoede", age: "about 28", manner: "warm, sporty and lively, a surf instructor who loves the sea", pace: "lively" },
   // the ruins on the point (x06–x08): their keeper, a young painter, a grandmother weaving in the shade
   tona: { voice: "Achernar", age: "about 68", manner: "warm and amused, speaking to the person beside her", pace: "unhurried" },
   beto: { voice: "Orus", age: "mid 50s", manner: "a clear, rhythmic lotería caller, lively without rushing", pace: "measured" },
+  renata: { voice: "Zephyr", age: "about 25", manner: "bright and conversational, a young tourist from Mexico City", pace: "lively" },
+  queta: { voice: "Gacrux", age: "about 70", manner: "warm and unhurried, a longtime resident helping someone find the way", pace: "unhurried" },
   vale: { voice: "Leda", age: "9", manner: "bright and inviting, with a playful energy", pace: "lively" },
   diego: { voice: "Puck", age: "11", manner: "upbeat and clear, calling to friends nearby", pace: "lively" },
   santi: { voice: "Sadachbia", age: "6", manner: "eager and cheerful, with quick bursts of excitement", pace: "lively" },
@@ -310,7 +314,7 @@ export const RIDERS: Record<string, Role & { g: "f" | "m" }> = {
   ride_west1: { g: "f", voice: "Pulcherrima", age: "about 45", manner: "dry and teasing, playfully strict about her car", pace: "easy" },
   ride_west2: { g: "m", voice: "Puck", age: "about 30", manner: "eager and enthusiastic, proud of the car and glad to share it", pace: "lively" },
   shout_f0: { g: "f", voice: "Laomedeia", age: "about 25", manner: "startled and a little indignant, never angry", pace: "quick" },
-  shout_f1: { g: "f", voice: "Gacrux", age: "about 55", manner: "startled and a little indignant, never angry", pace: "quick" },
+  shout_f1: { g: "f", voice: "Vindemiatrix", age: "about 55", manner: "startled and a little indignant, never angry", pace: "quick" },
   shout_m0: { g: "m", voice: "Achird", age: "about 30", manner: "startled and a little indignant, never angry", pace: "quick" },
   shout_m1: { g: "m", voice: "Algenib", age: "about 58", manner: "startled and a little indignant, never angry", pace: "quick" },
 };
@@ -439,11 +443,12 @@ export function castingProblems(casting: Casting = CASTING): string[] {
   const out: string[] = [];
   const voiceOf = (id: string) => roleOf(id, casting)?.voice;
   const coach = new Set([voiceOf("coach_f"), voiceOf("coach_m")]);
+  const questVoices = new Set([voiceOf("renata"), voiceOf("queta")]);
   const list = casting === "mexico" ? MX_VOICES : VOICES;
   for (const n of Object.values(NPCS)) {
     const voice = voiceOf(n.id);
     if (!voice) { out.push(`${n.id} (${n.name}) has no voice`); continue; }
-    const v = list.find((x) => x.name === voice);
+    const v = list.find((x) => x.name === voice) ?? (questVoices.has(voice) ? VOICES.find((x) => x.name === voice) : undefined);
     if (!v) out.push(`${n.id}: unknown voice ${voice}`);
     else if (v.g !== n.gender && v.g !== "n") out.push(`${n.id} (${n.name}, ${n.gender}) has ${voice} (${v.g})`);
     if (coach.has(voice)) out.push(`${n.id} has a coach's voice (${voice})`);
@@ -454,7 +459,7 @@ export function castingProblems(casting: Casting = CASTING): string[] {
   for (const k of ["coach_f", "coach_m", "amb_f", "amb_m"]) if (!ES_VOICES.some((x) => x.name === SPAIN[k])) out.push(`Spain's ${k}: no Castilian voice`);
   for (const n of Object.values(NPCS)) {
     const voice = SPAIN[n.id];
-    const v = ES_VOICES.find((x) => x.name === voice);
+    const v = ES_VOICES.find((x) => x.name === voice) ?? (questVoices.has(voice) ? VOICES.find((x) => x.name === voice) : undefined);
     if (!v) { out.push(`${n.id} (${n.name}) has no Castilian voice for Spain's set`); continue; }
     if (v.g !== n.gender && v.g !== "n") out.push(`Spain's set: ${n.id} (${n.name}, ${n.gender}) has ${voice} (${v.g})`);
     if (spCoach.has(voice)) out.push(`Spain's set: ${n.id} has a coach's voice (${voice})`);

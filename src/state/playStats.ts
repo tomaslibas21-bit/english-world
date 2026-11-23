@@ -9,7 +9,7 @@
 //
 // Only active time counts: the tab is on screen and the learner did something in the last two minutes (a tap, a key,
 // the mouse, a voice speaking or an answer heard). An open tab left alone stops counting; a hidden tab never counts.
-import { picturesOn, useStore, type PlayMode } from "./store";
+import { picturesOn, useStore, type ConvUI, type PlayMode } from "./store";
 import type { Progress } from "./progress";
 import { sendStat } from "./stats";
 
@@ -264,8 +264,14 @@ export function startPlayStats(radio?: { playing(): boolean; subscribe(fn: () =>
   if (newOpening("page", t0)) useStore.getState().updateProgress((pr) => { pr.play = addOpen(readPlayStats(pr), t0, null, true); });
 
   let run = useStore.getState().conv.run, completed = false, transcript = 0;
+  let leftRun: number | undefined;
+  const left = (c: ConvUI) => {
+    if (!c.active || c.completed || c.run === leftRun || !c.stepProgress || !m.mode) return;
+    leftRun = c.run;
+    sendStat("game:left", { section: m.mode, sit: c.sitId, ...c.stepProgress });
+  };
   let pics = picturesOn(useStore.getState().settings);
-  useStore.subscribe((st) => {
+  useStore.subscribe((st, previous) => {
     // the mode is fixed for the page (a switch reloads it): it counts from the moment the learner is in it
     if (st.screen === "play" && !m.mode) {
       m.mode = st.settings.play;
@@ -286,6 +292,8 @@ export function startPlayStats(radio?: { playing(): boolean; subscribe(fn: () =>
       }
     }
     const c = st.conv;
+    const before = previous.conv;
+    if (c.run !== before.run || (!c.active && !c.completed)) left(before);
     m.talking = c.active;
     if (c.active && c.run !== run) {
       run = c.run; completed = false; transcript = 0;
@@ -319,12 +327,13 @@ export function startPlayStats(radio?: { playing(): boolean; subscribe(fn: () =>
   const poke = () => m.input();
   for (const e of ["pointerdown", "pointermove", "keydown", "wheel", "touchstart"]) window.addEventListener(e, poke, { capture: true, passive: true });
   m.setVisible(document.visibilityState !== "hidden");
-  const away = () => { m.setVisible(false); save(); send(); };
+  const away = () => { left(useStore.getState().conv); m.setVisible(false); save(); send(); };
+  // Capture queues this page's last events before stats.ts flushes them.
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") away();
     else m.setVisible(true);
-  });
-  window.addEventListener("pagehide", away);
+  }, true);
+  window.addEventListener("pagehide", away, true);
   let lastSave = Date.now(), lastSend = Date.now();
   setInterval(() => {
     m.tick();

@@ -2,6 +2,7 @@
 // WORLD_TEST_URL=http://127.0.0.1:8176 WORLD_STORAGE=puerto-colibri WORLD_PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs END_CARD_SHOTS=/tmp/end-card node tests/browser/end-card.mjs
 import assert from "node:assert/strict";
 import { openPhoneMenu } from "./screen-harness.mjs";
+import { silentClip } from "./quests-harness.mjs";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 
@@ -14,10 +15,10 @@ if (shots) mkdirSync(shots, { recursive: true });
 
 const words = {
   lt: { start: "Pradėti", send: "Siųsti", complete: "Užduotis įvykdyta!", got: "Gavai kavos puodelį",
-    phrase: "Tavo frazė", listen: "Klausyti", next: "Kita situacija", guide: "Nuvesk mane",
+    phrase: "Tavo frazė", listen: "Klausyti", resume: "Tęsti", next: "Kita situacija", guide: "Nuvesk mane",
     journal: "Užduotys (J)", tasks: /^Užduotys/, cup: "Kavos puodelis", close: "Uždaryti" },
   en: { start: "Start", send: "Send", complete: "Task completed!", got: "You got a cup of coffee",
-    phrase: "Your phrase", listen: "Listen", next: "Next situation", guide: "Take me there",
+    phrase: "Your phrase", listen: "Listen", resume: "Continue", next: "Next situation", guide: "Take me there",
     journal: "Tasks (J)", tasks: /^Tasks/, cup: "Coffee cup", close: "Close" },
 };
 assert(!expectedLayer || Object.hasOwn(words, expectedLayer), "END_CARD_LAYER must be lt or en");
@@ -55,7 +56,7 @@ try {
   for (const [label, options] of Object.entries(sizes)) {
     const ctx = await browser.newContext(options);
     const shot = (page, name) => shots && page.screenshot({ path: path.join(shots, `${label}-${name}.png`) });
-    await ctx.route(/\.mp3(\?|$)/, (r) => r.fulfill({ status: 204, headers: { "access-control-allow-origin": "*" } }));
+    await ctx.route(/\.mp3(?:\?|$)/, (route) => route.fulfill({ contentType: "audio/wav", body: silentClip }));
     const page = await ctx.newPage();
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
@@ -85,26 +86,29 @@ try {
       game.startScenario(id);
     }, cafe);
     const press = (target) => options.hasTouch ? target.tap() : target.click();
-    await page.locator(".convo").waitFor({ timeout: 20000 });
-    const intro = page.locator(".scene-intro").getByRole("button", { name: t.start, exact: true });
-    if (await intro.isVisible()) await press(intro);
-
     const card = page.locator(".ended-box");
-    const input = page.locator(".typebox input");
-    for (let turn = 0; turn < 10; turn++) {
-      await page.waitForFunction(() => ["you", "ended"].includes(window.__ew.store.getState().conv.phase), null, { timeout: 15000 });
-      const step = await page.evaluate(() => {
-        const { game, store } = window.__ew;
-        const conv = game.activeSession.conv;
-        return store.getState().conv.phase === "ended" ? null : (conv.pending?.id ?? conv.effectiveStep()?.id);
-      });
-      if (step === null) break;
-      assert(cafeAnswers[step], `${label}: unexpected café step ${step}`);
-      await input.fill(cafeAnswers[step]);
-      await press(page.locator(".typebox").getByRole("button", { name: t.send }));
-    }
+    const finishCafe = async () => {
+      await page.locator(".convo").waitFor({ timeout: 20000 });
+      const intro = page.locator(".scene-intro").getByRole("button", { name: t.start, exact: true });
+      if (await intro.isVisible()) await press(intro);
 
-    await card.waitFor();
+      const input = page.locator(".typebox input");
+      for (let turn = 0; turn < 10; turn++) {
+        await page.waitForFunction(() => ["you", "ended"].includes(window.__ew.store.getState().conv.phase), null, { timeout: 15000 });
+        const step = await page.evaluate(() => {
+          const { game, store } = window.__ew;
+          const conv = game.activeSession.conv;
+          return store.getState().conv.phase === "ended" ? null : (conv.pending?.id ?? conv.effectiveStep()?.id);
+        });
+        if (step === null) break;
+        assert(cafeAnswers[step], `${label}: unexpected café step ${step}`);
+        await input.fill(cafeAnswers[step]);
+        await press(page.locator(".typebox").getByRole("button", { name: t.send }));
+      }
+
+      await card.waitFor();
+    };
+    await finishCafe();
     assert.equal(await card.locator(".ended-title").innerText(), t.complete);
     assert.equal(await card.locator(".stars .ui-icon").count(), 3);
     assert(await card.locator(".stars .on").count() > 0);
@@ -156,7 +160,21 @@ try {
     assert.deepEqual(splitWords, [], `${label}: destination words stay on one line each`);
     const place = await destination.locator("small").innerText();
     assert(place.trim());
-    assert.equal(await card.getByRole("button", { name: t.next, exact: true }).count(), 0);
+    const secondary = card.locator(".ended-secondary");
+    const smallNext = secondary.getByRole("button", { name: t.next, exact: true });
+    assert(await smallNext.isVisible());
+    assert(await smallNext.evaluate((button, resume) =>
+      button.matches(".btn.small") && button.previousElementSibling?.textContent.trim() === resume, t.resume));
+    const rows = await secondary.locator(".btn").evaluateAll((buttons) => {
+      const counts = new Map();
+      for (const button of buttons) {
+        const y = Math.round(button.getBoundingClientRect().top);
+        counts.set(y, (counts.get(y) ?? 0) + 1);
+      }
+      return [...counts.values()];
+    });
+    assert(rows.length === 1 && rows[0] === 4 || rows.length === 2 && rows.every((n) => n === 2),
+      `${label}: the secondary buttons fit on one row or wrap in pairs`);
     await press(destination.getByRole("button", { name: t.guide }));
     await card.waitFor({ state: "hidden" });
     await page.waitForFunction((id) => {
@@ -195,8 +213,8 @@ try {
     const icon = journal.locator(`.sit-card[data-sit="${cafe}"]`).getByRole("img", { name: t.cup });
     await icon.waitFor();
     assert.equal(await icon.locator("title").textContent(), t.cup);
+    await press(journal.getByRole("button", { name: t.close, exact: true }));
     if (shots) {
-      await press(journal.getByRole("button", { name: t.close, exact: true }));
       await page.waitForFunction(() => window.__ew.game.zone.id === "town" && !window.__ew.game.transitioning, null, { timeout: 25000 });
       await page.evaluate(() => window.__ew.game.autoWalkToObjective());
       await page.waitForFunction(() => {
@@ -205,6 +223,13 @@ try {
       }, null, { timeout: 45000 });
       await shot(page, "destination");
     }
+    await page.evaluate((id) => window.__ew.game.startScenario(id), cafe);
+    await finishCafe();
+    await press(smallNext);
+    await page.waitForFunction((id) => {
+      const { conv } = window.__ew.store.getState();
+      return conv.active && conv.sitId === id && conv.phase !== "ended";
+    }, next.id, { timeout: 30000 });
     assert.deepEqual(errors, [], `${label}: no page errors`);
     await ctx.close();
     console.log("ok", layer, label);

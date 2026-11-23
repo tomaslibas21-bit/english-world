@@ -53,6 +53,8 @@ export const META: SituationMeta[] = [
   {"id":"s91a-lost-wallet","song":91,"songTitle":"Can You Help Me, Please?","title":{"en":"Can You Help Me, Please?","lt":"Ar galite man padėti?"},"topic":{"en":"Lost wallet","lt":"Pamesta piniginė"},"chapter":7,"order":1,"location":"town-square","npc":"mrs_lee","goal":"Paprašyk pagalbos: pametei piniginę.","intro":"Sekmadienis, ūkininkų turgus aikštėje. Tu nori susimokėti už braškes, kiši ranką į kišenę – piniginės nėra! Prie gėlių prekystalio stovi malonioji ponia Li. Paprašyk jos pagalbos."},
   {"id":"s91b-police","song":91,"songTitle":"Can You Help Me, Please?","title":{"en":"I'd Like to Report a Theft","lt":"Noriu pranešti apie vagystę"},"topic":{"en":"At the police station","lt":"Policijos nuovadoje"},"chapter":7,"order":2,"location":"police","npc":"reyes","goal":"Pranešk policijai apie pamestą piniginę.","intro":"Policijos nuovada prie aikštės. Budintis pareigūnas Reyesas priima pranešimus. Papasakok, kas nutiko tavo piniginei, kur ir kada tai buvo, kaip ji atrodo ir kas joje buvo."},
   {"id":"x01-pool-hall","song":"","songTitle":"","title":{"en":"Call Your Shot","lt":"Paskelbk smūgį"},"topic":{"en":"At the pool hall","lt":"Biliardo salėje"},"chapter":9,"order":8,"location":"pool-hall","npc":"tina","mode":"talk","goal":"Pasišnekėk su Tina: pasakyk, ar žaidi biliardą, prisistatyk ir pasirink – vienspalviai ar dryžuoti. Tada sužaiskite partiją.","intro":"„The Corner Pocket“ – nedidelė biliardo salė Ąžuolų alėjoje. Šeimininkė Tina kreiduoja lazdą prie stalo ir pamoja tau prieiti.","bonus":true},
+  {"id":"x02-photo-walk","song":"","songTitle":"","title":{"en":"Photo Walk","lt":"Fotografavimo žygis"},"topic":{"en":"A tourist's photo book","lt":"Turistės nuotraukų knyga"},"chapter":9,"order":9,"location":"visitor-center","npc":"hana","mode":"talk","goal":"Pasišnekėk su Hana ir padėk jai: nufotografuok dvylika dalykų mieste ir pasakyk, kas tai.","intro":"Hana – turistė su dideliu fotoaparatu. Ji stovi prie Lankytojų centro ir dairosi aplink, lyg ko ieškotų.","bonus":true},
+  {"id":"x03-ask-the-way","song":"","songTitle":"","title":{"en":"Ask the Way","lt":"Paklausk kelio"},"topic":{"en":"On the street","lt":"Gatvėje"},"chapter":9,"order":10,"location":"town-square","npc":"earl","mode":"talk","goal":"Paklausk Earlo, kaip nueiti į vieną vietą mieste, ir eik pagal jo nurodymus.","intro":"Earlas visą gyvenimą gyvena Maple Harbor. Jis stovi aikštės kampe ir mielai padeda praeiviams.","bonus":true},
 ];
 
 export const LOAD: Record<string, () => Promise<SituationDef>> = {
@@ -107,4 +109,6 @@ export const LOAD: Record<string, () => Promise<SituationDef>> = {
   "s91a-lost-wallet": () => import("./s91a-lost-wallet").then((m) => m.default),
   "s91b-police": () => import("./s91b-police").then((m) => m.default),
   "x01-pool-hall": () => import("./x01-pool-hall").then((m) => m.default),
+  "x02-photo-walk": () => import("./x02-photo-walk").then((m) => m.default),
+  "x03-ask-the-way": () => import("./x03-ask-the-way").then((m) => m.default),
 };

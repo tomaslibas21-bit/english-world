@@ -100,7 +100,7 @@ export class Chatter {
 }
 export interface TrafficCar {
   index: number;
-  mesh: THREE.Mesh; lane: number; dir: 1 | -1; x: number; from: number; to: number;
+  mesh: THREE.Mesh; kind: Vehicle; lane: number; dir: 1 | -1; x: number; from: number; to: number;
   speed: number; max: number; hidden: number; grow: number;
   model?: CarModelName; paint: CarPaint; half: { x: number; z: number };
   /** How much earlier a longer vehicle starts braking for people. */
@@ -317,7 +317,7 @@ export class Ambient {
       this.group.add(mesh);
       const size = model ? carModelEntry(model).collisionBox : undefined;
       const half = size ? { x: size.length / 2, z: size.width / 2 } : { x: VEHICLE_LENGTH[kind] / 2 + 0.05, z: 1.25 };
-      this.cars.push({ index: i, mesh, model, paint, half, front: size ? 0 : (VEHICLE_LENGTH[kind] - VEHICLE_LENGTH.car) / 2,
+      this.cars.push({ index: i, mesh, kind, model, paint, half, front: size ? 0 : (VEHICLE_LENGTH[kind] - VEHICLE_LENGTH.car) / 2,
         lane: lane.z, dir: lane.dir, x, from: lane.from, to: lane.to, speed: 6, max: 7 + this.r() * 2.5, hidden: 0, grow: 1 });
     }
   }

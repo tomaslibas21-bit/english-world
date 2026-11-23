@@ -1,3 +1,6 @@
+import type { AddPhotoSpot, PhotoSpot } from "../../content/townQuests";
+import { addMapleQuestProps } from "./mapleQuestProps";
+import { addBeachHammock } from "./beachHammock";
 // Builds the outdoor town of Maple Harbor from layout.ts: ground, sea, buildings, props, colliders, doors.
 import { EDITION } from "../../edition";
 import { loteriaTables } from "../loteria/scene";
@@ -47,6 +50,7 @@ export interface Town {
   roadSign: ReturnType<typeof addRoadSign>;
   colliders: Colliders;
   doors: Door[];
+  photoSpots: PhotoSpot[];
   parkedCars: ParkedCars;
   /** Where townspeople can sit (Ambient seats some of them). */
   seats: Seat[];
@@ -202,26 +206,39 @@ export function buildTown({ movableParking = false } = {}): Town {
   sea.position.set(35, -0.25, SEA_Z - 158);
   group.add(sea);
 
+  const photoSpots: PhotoSpot[] = [];
+  const photo: AddPhotoSpot = (id, x, y, z, anchor) => {
+    photoSpots.push(anchor ? {
+      id,
+      get x() { return anchor.x; },
+      get y() { return anchor.y + y; },
+      get z() { return anchor.z; },
+    } : { id, x, y, z });
+  };
   // --- buildings --------------------------------------------------------------
   const signs: THREE.Mesh[] = [];
-  for (const b of BUILDINGS) buildBuilding(themed(b), M, colliders, doors, signs, group, b.seed !== undefined ? rand(b.seed) : r, b.roof);
+  for (const b of BUILDINGS) buildBuilding(themed(b), M, colliders, doors, signs, group, b.seed !== undefined ? rand(b.seed) : r, photo, b.roof);
 
   // --- street furniture & nature -----------------------------------------------
-  addStreetProps(M, colliders);
-  addTrees(group, colliders, r);
-  addSquareAndMarket(M, colliders, group, r);
+  addStreetProps(M, colliders, photo);
+  addTrees(group, colliders, r, photo);
+  addSquareAndMarket(M, colliders, group, r, photo);
   if (EDITION.id === "es") group.add(loteriaTables(colliders));
   // the edition's own additions (theme.ts): none in Maple Harbor
-  addTownMx(M, colliders);
+  addTownMx(M, colliders, photo);
   const poolWater = HOTEL_POOL_ENABLED ? MX.hotelPoolWater() : null;
   if (poolWater) {
     MX.hotelPool(mx, mxFlat, colliders);
     group.add(poolWater.mesh);
   }
-  if (THEME.papelPicado.length) group.add(makePapelPicado());
-  if (THEME.palms.length || beachPalms.length) group.add(makePalms(colliders, beachPalms));
-  addHarbor(M, colliders, group, r);
-  addTransport(M, colliders, group);
+  if (THEME.papelPicado.length) group.add(makePapelPicado(photo));
+  const hammock = THEME.hammock;
+  if (hammock) beachPalms.push([hammock.x1, hammock.z], [hammock.x2, hammock.z]);
+  if (THEME.palms.length || beachPalms.length) group.add(makePalms(colliders, photo, beachPalms));
+  if (hammock) addBeachHammock(M, photo, hammock);
+  if (EDITION.id === "en") addMapleQuestProps(M, colliders, group, photo);
+  addHarbor(M, colliders, group, r, photo);
+  addTransport(M, colliders, group, photo);
   const parkedCars = makeParkedCars(movableParking ? undefined : colliders);
   group.add(parkedCars.group);
   const roadSign = addRoadSign(group, colliders);
@@ -317,7 +334,7 @@ export function buildTown({ movableParking = false } = {}): Town {
   const gulls = STYLED ? [] : makeGulls(group);
 
   return {
-    group, colliders, doors, parkedCars, seats: [...seats], groundCanvas, sea, portals: [...portals],
+    group, colliders, doors, photoSpots, parkedCars, seats: [...seats], groundCanvas, sea, portals: [...portals],
     update(t, dt, cam) {
       seaMat.uniforms.uTime.value = t;
       poolWater?.update(t);
@@ -783,7 +800,7 @@ function faceInfo(b: BuildingDef) {
   return { n, t, halfDepth, halfWidth };
 }
 
-function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[], signs: THREE.Mesh[], group: THREE.Group, r: () => number, baseRoof = b.roof) {
+function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[], signs: THREE.Mesh[], group: THREE.Group, r: () => number, photo: AddPhotoSpot, baseRoof = b.roof) {
   // the details added later (roof kit, chimneys) draw from their own sequence, so `r`'s draws stay as they were
   const dr = rand([...b.id].reduce((a, ch) => a * 31 + ch.charCodeAt(0), 7) % 100000 + 911);
   const wallMat = mat(b.color);
@@ -1195,6 +1212,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     for (const s of [-1, 1]) M.add("columns", mat("#f7f3ea"), cylGeo(0.35, 0.4, 5, dx + t[0] * s * cu + n[0] * 0.6, 2.5, dz + t[1] * s * cu + n[1] * 0.6, 10));
   }
   if (b.id === "post") {
+    photo("mailbox", dx + t[0] * 4 + n[0] * 1.6, 1.15, dz + t[1] * 4 + n[1] * 1.6);
     // the mailbox: Maple Harbor's blue one, or a Correos de México buzón (theme.ts `mailbox`)
     if (THEME.mailbox === "correos") MX.buzon(mx, atlas!, dx + t[0] * 4 + n[0] * 1.6, dz + t[1] * 4 + n[1] * 1.6, rotY);
     else {
@@ -1661,7 +1679,7 @@ function buildPlane(M: Merger, x: number, z: number) {
 
 // ---------------------------------------------------------------------------
 
-function addStreetProps(M: Merger, col: Colliders) {
+function addStreetProps(M: Merger, col: Colliders, photo: AddPhotoSpot) {
   // (in the edition's town, theme.ts `nearFade`, a lamp beside the follow camera dissolves instead of filling the picture)
   const lampPost = THEME.nearFade ? nearFaded(mat("#2f3a40").clone()) : mat("#2f3a40");
   const lampGlass = THEME.nearFade ? nearFaded(mat("#fff4c4", { emissive: "#a08a3a" }).clone()) : mat("#fff4c4", { emissive: "#a08a3a" });
@@ -1706,12 +1724,17 @@ function addStreetProps(M: Merger, col: Colliders) {
     bench(x, z, rot);
   }
   const hydrant = (x: number, z: number) => {
+    if (EDITION.id === "en") photo("hydrant", x, 0.55, z);
     M.add("hydrant", mat("#d63b2f"), cylGeo(0.18, 0.2, 0.7, x, 0.35, z, 8));
     M.add("hydrant", mat("#d63b2f"), new THREE.SphereGeometry(0.18, 8, 6).translate(x, 0.72, z));
     col.addCircle(x, z, 0.22);
   };
   for (const [x, z] of [[-68, -1.5], [-2, -1.5], [44, -14.5], [-78, 43], [66, 43]]) hydrant(x, z);
-  const trash = (x: number, z: number) => { M.add("trash", mat("#3f5a4a"), cylGeo(0.3, 0.28, 0.9, x, 0.45, z, 10)); col.addCircle(x, z, 0.32); };
+  const trash = (x: number, z: number) => {
+    if (EDITION.id === "en") photo("trash_can", x, 0.5, z);
+    M.add("trash", mat("#3f5a4a"), cylGeo(0.3, 0.28, 0.9, x, 0.45, z, 10));
+    col.addCircle(x, z, 0.32);
+  };
   for (const [x, z] of [[-45, -15], [8, -15], [-30, -1], [26, -1], [-14, 43]]) trash(x, z);
   // stop signs at a few corners
   const stop = (x: number, z: number) => {
@@ -1801,7 +1824,7 @@ function nearDoor(x: number, z: number) {
 
 // ---------------------------------------------------------------------------
 
-function addTrees(group: THREE.Group, col: Colliders, r: () => number) {
+function addTrees(group: THREE.Group, col: Colliders, r: () => number, photo: AddPhotoSpot) {
   const spots: [number, number, number][] = [];
   const add = (x: number, z: number, s = 1) => { spots.push([x, z, s]); };
   // street trees along Oak Avenue and Harbor Road sidewalks
@@ -1860,6 +1883,7 @@ function addTrees(group: THREE.Group, col: Colliders, r: () => number) {
     leaves.setMatrixAt(i, m4);
     const leafCol = i < town ? palette[Math.floor(r() * palette.length)] : ["#2f6b34", "#2a6330", "#356f37"][Math.floor(rl() * 3)];
     leaves.setColorAt(i, STYLED ? grade(leafCol) : new THREE.Color(leafCol));
+    if (EDITION.id === "en" && ["#d9542b", "#c8402f", "#e0692c"].includes(leafCol)) photo("maple", x, 3.2 * s.y, z);
     if (sc > 0) col.addCircle(x, z, 0.35 * sc); // (not the unseen ones: a palm stands there)
   });
   trunks.castShadow = leaves.castShadow = true;
@@ -1958,11 +1982,15 @@ function tropicalTrees(group: THREE.Group, col: Colliders, r: () => number, rl: 
   addBushes(group, col);
 }
 
-function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: () => number) {
+function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: () => number, photo: AddPhotoSpot) {
   const { x, z } = FOUNTAIN;
-  if (THEME.centrepiece === "kiosco") addKiosco(M, col, x, z);
+  if (THEME.centrepiece === "kiosco") {
+    addKiosco(M, col, x, z);
+    photo("kiosco", x, 3.6, z);
+  }
   else {
   // fountain
+  photo("fountain", x, 1.65, z);
   M.add("fountain", mat("#d8d2c4"), cylGeo(3.4, 3.6, 0.8, x, 0.4, z, 24));
   M.add("fountain-water", mat("#6cc3dc", { emissive: "#0f3b48" }), cylGeo(3.0, 3.0, 0.1, x, 0.76, z, 24), false);
   M.add("fountain", mat("#d8d2c4"), cylGeo(0.4, 0.6, 2.2, x, 1.5, z, 12));
@@ -2018,6 +2046,7 @@ function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: ()
   if (sq.length) group.add(staticColoured(sq, "tianguis"));
   // bandstand-ish gazebo
   if (!THEME.gazebo) return;
+  photo("gazebo", 44, 2.4, -22);
   M.add("gazebo", mat("#ffffff"), cylGeo(3, 3, 0.4, 44, 0.2, -22, 8));
   for (let i = 0; i < 8; i++) {
     const a = (i / 8) * Math.PI * 2;
@@ -2053,7 +2082,7 @@ function addTianguis(col: Colliders, group: THREE.Group, parts: MX.Part[]) {
 /** The edition's outdoor pieces beyond the square (theme.ts, docs/es/TOWN.md tasks 1–4 and 8): the malecón with its
  *  benches and kiosk, the palapas, the lanchas on the sand, the church, the street signs, the topes, the elote cart,
  *  the cenote and the ruins. Nothing in Maple Harbor. */
-function addTownMx(M: Merger, col: Colliders) {
+function addTownMx(M: Merger, col: Colliders, photo: AddPhotoSpot) {
   const a = atlas!;
   if (THEME.malecon) {
     for (const [x, z, rot] of MX.malecon(mx, col, a, THEME.malecon.plaque)) streetBench(M, col, x, z, rot);
@@ -2064,6 +2093,7 @@ function addTownMx(M: Merger, col: Colliders) {
   if (THEME.palapas.length) {
     // (graphics round 4, theme.ts `beachLife`: the palapas thatched in layers, and their loungers places to sit)
     // (graphics round 5: their thatch looked through by the walking camera, mxRoofs)
+    for (const [x, z] of THEME.palapas) photo("palapa", x, 2.5, z);
     const loungers = MX.palapas(mx, col, THEME.palapas, !!THEME.beachLife, mxRoofs);
     if (THEME.beachLife) for (const [x, z] of loungers) seats.push({ x, z, rot: Math.PI, y: 0.42, recline: 0.9 });
   }
@@ -2073,14 +2103,24 @@ function addTownMx(M: Merger, col: Colliders) {
   for (const [x, z, ew, ns] of THEME.streetSigns) MX.streetSign(mxFlat, col, a, x, z, ew, ns);
   for (const [x1, z1, x2, z2, sx, sz, srot] of THEME.topes?.at ?? []) MX.tope(mxFlat, col, a, THEME.topes!.word, x1, z1, x2, z2, sx, sz, srot);
   const f = THEME.foodCart;
-  if (f) MX.foodCart(mx, col, a, f.x, f.z, f.rot, f.sign);
+  if (f) {
+    MX.foodCart(mx, col, a, f.x, f.z, f.rot, f.sign);
+    photo("elotes", f.x, 1.35, f.z);
+  }
+  for (const stall of THEME.tianguis?.stalls ?? []) {
+    if (stall.goods === "pinatas") photo("pinata", stall.x, 2, stall.z);
+  }
   // beyond the town's edge: the cenote across the west meadow, the ruins on the point past the beach (TOWN.md task 8)
   // (in the mesh that casts no shadow: they stand beyond the town's edge, seen from afar)
   if (THEME.cenote) MX.cenote(THEME.regions ? mxFar : mxFlat, a, THEME.cenote.x, THEME.cenote.z, THEME.cenote.sign, !!THEME.cenote.open);
   // (graphics round 4) the scrub on the meadow round it, ceibas over the selva behind it
   const md = THEME.meadow;
   if (md) MX.meadow(THEME.regions ? mxFar : mxFlat, md.x0, md.x1, md.z0, md.z1, md.clear, md.ceibas);
-  if (THEME.ruins) MX.ruins(THEME.regions ? mxFar : mxFlat, THEME.ruins.x, THEME.ruins.z, a, !!THEME.ruins.walk);
+  if (THEME.ruins) {
+    const { x, z, walk } = THEME.ruins;
+    MX.ruins(THEME.regions ? mxFar : mxFlat, x, z, a, !!walk);
+    photo("temple", x, 9, z);
+  }
   // (graphics round 2) the bus terminal's andenes and coaches, the airport's thatched canopy, planters and welcome sign
   const bt = THEME.busTerminal, station = BUILDINGS.find((b) => b.id === "station");
   if (bt && station) {
@@ -2159,7 +2199,7 @@ function addKiosco(M: Merger, col: Colliders, x: number, z: number) {
 
 /** Papel picado: strings of cut-paper flags from the kiosco's eaves to the square's edges (theme.ts), all in one mesh
  *  (one draw call) that sways a little in the wind. */
-function makePapelPicado(): THREE.Mesh {
+function makePapelPicado(photo: AddPhotoSpot): THREE.Mesh {
   const { x: cx, z: cz } = FOUNTAIN;
   const COLORS = ["#e4007c", "#f6a800", "#00a6a6", "#7ac143", "#ff5a36", "#6d2e9e", "#1f6fd1"];
   const parts: [THREE.BufferGeometry, THREE.ColorRepresentation][] = [];
@@ -2174,6 +2214,7 @@ function makePapelPicado(): THREE.Mesh {
       const y = sy + (ty - sy) * f - Math.sin(f * Math.PI) * sag;
       const g = new THREE.PlaneGeometry(0.42, 0.52).translate(0, -0.29, 0).rotateY(-a).translate(sx + (tx - sx) * f, y, sz + (tz - sz) * f);
       parts.push([g, COLORS[(i + k * 3) % COLORS.length]]);
+      if (i === Math.floor(n / 2)) photo("papel", sx + (tx - sx) * f, y - 0.29, sz + (tz - sz) * f);
     }
     // the string itself
     for (let i = 0; i < n; i++) {
@@ -2247,7 +2288,7 @@ function papelTexture() {
 
 /** Palm trees (theme.ts): a slightly bent ringed trunk, eight drooping fronds and a few coconuts, one instanced mesh
  *  (one draw call, and one in the shadow pass) whose crowns sway in the wind. */
-function makePalms(col: Colliders, extra: [number, number][] = []): THREE.InstancedMesh {
+function makePalms(col: Colliders, photo: AddPhotoSpot, extra: [number, number][] = []): THREE.InstancedMesh {
   const parts: [THREE.BufferGeometry, THREE.ColorRepresentation][] = [];
   let px = 0, pz = 0;
   for (let i = 0; i < 6; i++) {
@@ -2290,6 +2331,7 @@ function makePalms(col: Colliders, extra: [number, number][] = []): THREE.Instan
     o.scale.setScalar(0.9 + r() * 0.25);
     o.updateMatrix();
     mesh.setMatrixAt(i, o.matrix);
+    photo("palm", x, 3.8 * o.scale.y, z);
     col.addCircle(x, z, 0.4);
   });
   mesh.castShadow = true;
@@ -2636,7 +2678,7 @@ function makeGulls(group: THREE.Group) {
   });
 }
 
-function addHarbor(M: Merger, col: Colliders, group: THREE.Group, r: () => number) {
+function addHarbor(M: Merger, col: Colliders, group: THREE.Group, r: () => number, photo: AddPhotoSpot) {
   // pier walkway and deck
   const wood = mat("#b8895a");
   M.add("pier", wood, boxGeo(4.4, 0.3, 14, -30, 0.15, -69));
@@ -2663,6 +2705,7 @@ function addHarbor(M: Merger, col: Colliders, group: THREE.Group, r: () => numbe
   col.addBox(-37.5, -72.2, 7.6, 0.3, "ledge"); col.addBox(-22.5, -72.2, 7.6, 0.3, "ledge");
   // lighthouse on rocks
   const { x, z } = LIGHTHOUSE;
+  photo("lighthouse", x, 10, z);
   for (let i = 0; i < 9; i++) {
     const g = new THREE.DodecahedronGeometry(2 + r() * 2.5, 0).translate(x + (r() - 0.5) * 10, 0, z + (r() - 0.5) * 8);
     M.add("rocks", mat("#8d8f93", { flat: true }), g);
@@ -2672,10 +2715,17 @@ function addHarbor(M: Merger, col: Colliders, group: THREE.Group, r: () => numbe
   M.add("lighthouse-top", mat("#fff2b0", { emissive: "#c9a53a" }), cylGeo(1.5, 1.5, 2, x, 18, z, 12));
   M.add("lighthouse-cap", mat("#c8392f", { flat: true }), new THREE.ConeGeometry(2, 2, 12).translate(x, 20, z));
   // Each boat is a separate hull so it can move as a ride.
-  for (const boat of makeLanchas()) group.add(boat);
-  if (STYLED || !THEME.lanchas) group.add(...makeBoats());
+  for (const boat of makeLanchas()) {
+    photo("lancha", boat.position.x, 0.6, boat.position.z, boat.position);
+    group.add(boat);
+  }
+  if (STYLED || !THEME.lanchas) for (const boat of makeBoats()) {
+    if (EDITION.id === "en") photo("boat", boat.position.x, 1.2, boat.position.z, boat.position);
+    group.add(boat);
+  }
   // beach umbrellas and seagull-free calm (palapas instead where the edition has them: addTownMx)
   if (!THEME.palapas.length) for (const [ux, uz, c] of [[-80, -67, "#e45b4f"], [-60, -68, "#f2c14e"], [40, -67, "#4a7bb7"], [70, -68, "#e45b4f"]] as [number, number, string][]) {
+    photo("umbrella", ux, 2.2, uz);
     M.add("umbrella", mat(c, { flat: true }), new THREE.ConeGeometry(1.6, 0.7, 8).translate(ux, 2.4, uz));
     M.add("umbrella-pole", mat("#ddd"), cylGeo(0.04, 0.04, 2.4, ux, 1.2, uz, 5));
     col.addCircle(ux, uz, 0.1);
@@ -2684,7 +2734,7 @@ function addHarbor(M: Merger, col: Colliders, group: THREE.Group, r: () => numbe
   void group;
 }
 
-function addTransport(M: Merger, col: Colliders, group: THREE.Group) {
+function addTransport(M: Merger, col: Colliders, group: THREE.Group, photo: AddPhotoSpot) {
   // the stand's sign: Maple Harbor's yellow TAXI, or the edition's (theme.ts: a "Sitio de Taxis" in the taxis' colours)
   const taxiSign = THEME.taxi
     ? new THREE.Mesh(new THREE.PlaneGeometry(2.3, 0.6), new THREE.MeshBasicMaterial({ map: textTexture(THEME.taxi.sign, { bg: THEME.taxi.trim, fg: "#ffffff", border: "#ffffff", w: 512, h: 134 }) }))
@@ -2698,6 +2748,7 @@ function addTransport(M: Merger, col: Colliders, group: THREE.Group) {
   group.add(taxiSign);
   // bus stop shelter
   const b = BUS_STOP;
+  if (EDITION.id === "en") photo("bus_stop", b.x, 1.7, b.z);
   M.add("bus-shelter", mat("#2f3a40"), boxGeo(3.6, 0.12, 1.6, b.x, 2.6, b.z));
   // (a roof to stand on: the second jump reaches it, from the street or up through it from the bench: ledges.ts)
   col.addRoof(b.x, b.z, 3.6, 1.6);

@@ -4,6 +4,8 @@ import { townRide, usesTownNotes, useStore, type HudState } from "../state/store
 import { townNote } from "../state/townNotes";
 import { SectionHelpButton, useSectionHelp } from "./sectionHelp";
 import { useSurf } from "../game/surf/store";
+import { ASK_WAY_SITUATION } from "../content/ask-way-lines";
+import { DirectionsCard, PhotoChip, PhotoWalkOverlay, QuestArrival } from "./PhotoWalk";
 import { TaxiOverlay } from "./Taxi";
 import { PoolOverlay } from "./Pool";
 import { LoteriaOverlay } from "./Loteria";
@@ -65,7 +67,7 @@ const RIDE_ARROWS = () => <><kbd><Icon name="arrowUp" size="1em" strokeWidth={2.
 const FriendMeeting = lazy(() => import("./FriendMeeting"));
 const RoadOverlay = lazy(() => import("./Road").then(({ RoadOverlay }) => ({ default: RoadOverlay })));
 const BilliardsOverlay = lazy(() => import("./Billiards").then(({ BilliardsOverlay }) => ({ default: BilliardsOverlay })));
-const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = { taxi: TaxiOverlay, road: RoadOverlay, barista: BaristaOverlay, pool: PoolOverlay, loteria: LoteriaOverlay, billiards: BilliardsOverlay };
+const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = { photowalk: PhotoWalkOverlay, taxi: TaxiOverlay, road: RoadOverlay, barista: BaristaOverlay, pool: PoolOverlay, loteria: LoteriaOverlay, billiards: BilliardsOverlay };
 
 export function Hud() {
   const hud = useStore((s) => s.hud);
@@ -80,6 +82,8 @@ export function Hud() {
   const riding = ride !== null;
   const taskId = hud.objective?.followUp ? hud.objective.title : hud.objective?.sitId ?? null;
   const toast = useTownToast(note === "toast");
+  const questHud = hud.minimap.zone === "town" && !hud.ride && !hud.panel && !picking;
+  const directionsToast = toast?.kind === "stamp" && toast.sitId === ASK_WAY_SITUATION;
   const narrow = useNarrowHud();
   const phoneToast = narrow && toast !== null;
   const task = useTaskCard(taskId, notesVisible && !hud.cave, phoneToast && !hud.cave, layout);
@@ -101,7 +105,7 @@ export function Hud() {
     const road = hud.modeScreen.id === "road";
     const sea = hud.modeScreen.id === "sea";
     const Overlay = sea ? getSeaOverlay() : modeOverlays[hud.modeScreen.id];
-    const tools = !road && !sea && hud.modeScreen.id !== "barista" && hud.modeScreen.id !== "loteria" && hud.modeScreen.id !== "billiards";
+    const tools = !road && !sea && hud.modeScreen.id !== "barista" && hud.modeScreen.id !== "loteria" && hud.modeScreen.id !== "billiards" && hud.modeScreen.id !== "photowalk";
     return (
       <div className={"hud mode-hud" + (road ? " road-mode" : sea ? " sea-mode" : "") + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
         {!hud.panel && Overlay && <Suspense fallback={null}><Overlay touch={hud.showTouch} /></Suspense>}
@@ -128,6 +132,7 @@ export function Hud() {
           {note === "text" && hud.textArrival && <TextArrival id={hud.textArrival} />}
           <Guide visible={note === "guide"} />
           <TownToast toast={toast} />
+          {questHud && !directionsToast && <DirectionsCard />}
         </div>
         <Minimap {...screen} />
       </div>
@@ -147,6 +152,7 @@ export function Hud() {
       )}
       {hud.showTouch && <TouchControls />}
       {!hud.panel && <BaristaOffer />}
+      {questHud && <><PhotoChip /><QuestArrival /></>}
       <SurfPicker />
       <Fade />
     </div>

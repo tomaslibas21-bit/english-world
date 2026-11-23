@@ -65,12 +65,13 @@ export interface Progress {
   pool?: import("../game/pool/store").PoolSave;
   phone?: PhoneProgress;
   texts?: TextProgress;
+  photoWalk?: import("../game/photowalk/state").PhotoWalkProgress;
   /** The surf lesson (game/surf): waves ridden and seconds on them, commands followed of those asked, lessons taken,
    *  and how often each of the instructor's lines has been heard (their help fades with it). */
   surf?: { waves: number; seconds: number; followed: number; asked: number; lessons: number; heard: Record<string, number> };
 }
 
-const KEY = `${EDITION.storage}-progress-v1`;
+export const PROGRESS_KEY = `${EDITION.storage}-progress-v1`;
 
 export function emptyProgress(): Progress {
   return { version: 1, profile: null, sits: {}, phrases: {}, objective: null, place: null, seenIntro: {}, started: Date.now() };
@@ -78,7 +79,7 @@ export function emptyProgress(): Progress {
 
 export function loadProgress(): Progress {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(PROGRESS_KEY);
     if (!raw) return emptyProgress();
     const p = JSON.parse(raw);
     if (p?.version !== 1) return emptyProgress();
@@ -89,7 +90,7 @@ export function loadProgress(): Progress {
 }
 
 export function saveProgress(p: Progress) {
-  try { localStorage.setItem(KEY, JSON.stringify(p)); } catch { /* storage unavailable: progress lives for this session */ }
+  try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(p)); } catch { /* storage unavailable: progress lives for this session */ }
 }
 
 export function sitProgress(p: Progress, id: string): SitProgress {

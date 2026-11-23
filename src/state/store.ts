@@ -120,6 +120,8 @@ export interface ConvUI {
   focus: number;
   /** The step or pending question the conversation is at (drives the phase pictures). */
   stepId: string | null;
+  /** Position in the situation’s authored steps, independent of pending questions and checklist labels. */
+  stepProgress: { step: number; of: number } | null;
   /** The line the person is saying, or said last (a scene file may give a line its own picture: `lines`). */
   lineKey: string | null;
   /** "Did you mean…?" after an answer that wasn't understood (src/convo/suggest.ts). */
@@ -140,7 +142,7 @@ export interface ConvUI {
 export const EMPTY_CONV: ConvUI = {
   active: false, sitId: "", npcId: "", hostId: "", mode: "talk", transcript: [], bestPhrase: null, phase: "npc", suggest: [], hints: [], chosen: {}, openHint: null,
   mic: { status: "off", heard: "" }, failures: 0, misses: 0, slowMode: false, lastHeard: "", prefix: false, completed: false, speaking: null, reveal: {}, note: null,
-  typing: false, newExpressions: [], checklist: [], focus: 0, stepId: null, lineKey: null, guess: null, practice: null, run: 0, guideHidden: false, introOpen: false,
+  typing: false, newExpressions: [], checklist: [], focus: 0, stepId: null, stepProgress: null, lineKey: null, guess: null, practice: null, run: 0, guideHidden: false, introOpen: false,
 };
 
 export interface Toast {

@@ -1,3 +1,4 @@
+import { QUEST_PEOPLE } from "./townQuests";
 // The people of Maple Harbor. Their 3D looks follow the illustrated pictures (public/scenes) and, for the people
 // still waiting for pictures, their descriptions in docs/PICTURES-WANTED.md. Voices are Kokoro-82M American voices (Apache-2.0), rendered
 // in advance by tools/build-audio.ts. `informal` NPCs address the player with Lithuanian "tu".
@@ -28,7 +29,8 @@ export type Accessory = "apron" | "cap" | "glasses" | "sunglasses" | "hat" | "ti
   // beachwear (the Spanish edition's beach, theme.ts `beachwear`; Maple Harbor uses none): a sarong tied over a skirt's
   // shape, a light shirt worn open over a swimsuit (in accColor), a broad-brimmed sun hat (its ribbon in accColor), a
   // bucket hat (in accColor)
-  | "sarong" | "coverup" | "sunhat" | "bucket";
+  | "sarong" | "coverup" | "sunhat" | "bucket"
+  | "camera" | "rainJacket" | "flatCap" | "plaid" | "foldedPaper" | "strawBag";
 
 export interface Look {
   skin: string;
@@ -227,6 +229,7 @@ export const NPCS: Record<string, NpcDef> = Object.fromEntries([
   N("mr_grant", "Mr. Grant", ["Your landlord", "Tavo nuomotojas"], "m", "am_liam",
     { skin: SK.dark, hair: { style: "bald", color: HAIR.gray }, top: "#9b3b36", bottom: "#3a3f4a", acc: ["beard", "readers"] },
     { bio: "Laiškuose labai oficialus, telefonu – visai ne." }),
+  ...QUEST_PEOPLE,
 ].map((n) => [n.id, n]));
 
 /** Voice used for English hint examples (the learner's "model" voice). */

@@ -5,6 +5,8 @@
 // keeping age, gender and accent out of it (the voice carries those), so it only describes the manner.
 // The owner hears a casting sample before anything else is recorded (tools/voice-batch.ts prepare --sample).
 // The table: npx tsx tools/voice-casting.ts
+import { ASK_WAY_NPC } from "../src/content/ask-way-lines";
+import { PHOTO_WALK_NPC } from "../src/content/photo-walk-lines";
 import { NPCS } from "../src/content/npcs";
 import { SITUATIONS } from "../src/content/situations";
 
@@ -70,6 +72,11 @@ const PICKS: Record<string, { voice: string; note: string }> = {
   sco: { voice: "Despina", note: "a self-checkout machine: flat, polite, robotic" },
 };
 
+const QUEST_PICKS: Record<string, Role> = {
+  [PHOTO_WALK_NPC]: { voice: "Zephyr", style: "bright and conversational", note: "a young traveler making a photo book" },
+  [ASK_WAY_NPC]: { voice: "Schedar", style: "warm and unhurried", note: "a longtime resident, about seventy" },
+};
+
 /** How each character speaks (manner only). */
 const STYLE: Record<string, string> = {
   tina: "warm and teasing",
@@ -108,17 +115,32 @@ export const CAST: Record<string, Role> = {};
   const uses = new Map<string, number>();
   const take = (v: string) => uses.set(v, (uses.get(v) ?? 0) + 1);
   const coachOnly = new Set([COACH.f.voice, COACH.m.voice]);
+  const existing = people.filter((n) => !QUEST_PICKS[n.id]);
   const style = (id: string) => STYLE[id] ?? "friendly and natural";
-  // hand picks first, then everyone else: the least used voice of the right gender that no partner has
-  for (const n of people) if (PICKS[n.id]) { CAST[n.id] = { voice: PICKS[n.id].voice, style: style(n.id), note: PICKS[n.id].note }; take(PICKS[n.id].voice); }
-  for (const n of people) {
-    if (CAST[n.id]) continue;
+  const pick = (n: typeof people[number], reserved: Set<string>) => {
     const busy = new Set([...partners(n.id)].map((p) => CAST[p]?.voice).filter(Boolean));
-    const pool = VOICES.filter((v) => v.g === n.gender && !busy.has(v.name) && !coachOnly.has(v.name)).sort((a, b) => (uses.get(a.name) ?? 0) - (uses.get(b.name) ?? 0));
-    const v = pool[0] ?? VOICES.find((x) => x.g === n.gender && !coachOnly.has(x.name))!;
+    const pool = VOICES.filter((v) => v.g === n.gender && !reserved.has(v.name))
+      .sort((a, b) => (uses.get(a.name) ?? 0) - (uses.get(b.name) ?? 0));
+    return pool.find((v) => !busy.has(v.name)) ?? pool[0];
+  };
+  // Restore the established casting first, then move just the people whose voices the quests reserve.
+  for (const n of existing) if (PICKS[n.id]) { CAST[n.id] = { voice: PICKS[n.id].voice, style: style(n.id), note: PICKS[n.id].note }; take(PICKS[n.id].voice); }
+  for (const n of existing) {
+    if (CAST[n.id]) continue;
+    const v = pick(n, coachOnly);
     take(v.name);
     CAST[n.id] = { voice: v.name, style: style(n.id), note: `${n.role.en.toLowerCase()}: ${v.trait}` };
   }
+  const questVoices = new Set(Object.values(QUEST_PICKS).map((role) => role.voice));
+  const reserved = new Set([...coachOnly, ...questVoices]);
+  for (const n of existing) {
+    const role = CAST[n.id];
+    if (!questVoices.has(role.voice)) continue;
+    const v = pick(n, reserved);
+    take(v.name);
+    CAST[n.id] = { ...role, voice: v.name, note: PICKS[n.id]?.note ?? `${n.role.en.toLowerCase()}: ${v.trait}` };
+  }
+  for (const n of people) if (QUEST_PICKS[n.id]) CAST[n.id] = QUEST_PICKS[n.id];
 }
 
 /** The Gemini voice and style for a voice id of src/content/voices.ts (g_<npcId>, g_coach_f, g_amb_m, …). */

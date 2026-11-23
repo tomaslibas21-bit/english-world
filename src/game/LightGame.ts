@@ -1,3 +1,4 @@
+import { isTownQuest } from "../content/townQuests";
 // The light mode: the situation list and the conversations with their illustrated pictures, without the
 // 3D town (no Three.js scene, no WebGL), so it opens in seconds and saves a phone's battery. The UI
 // talks to it through the same members it uses on the 3D game (GameApi); the world ones do nothing.
@@ -60,7 +61,7 @@ export class LightGame implements GameApi {
    *  conversation starts at once (a running one is closed first, and the panel just changes). */
   startScenario(sitId: string) {
     const sit = SITUATION_BY_ID[sitId];
-    if (!sit) return;
+    if (!sit || isTownQuest(sitId)) return;
     useStore.getState().setHud({ panel: null });
     this.lastScenario = sitId;
     this.session?.close();

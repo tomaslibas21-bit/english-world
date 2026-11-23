@@ -8,6 +8,7 @@ import { useLoteria, type CardLabel } from "../game/loteria/store";
 import { Icon } from "./icons";
 import { HL, L, TL } from "./i18n";
 import { GlossLine } from "./kit/GlossLine";
+import { SayIt } from "./kit/SayIt";
 import { ScoreCard, ScoreNumber } from "./kit/ScoreCard";
 import { STRINGS } from "./strings";
 import "./loteria.css";
@@ -52,13 +53,13 @@ function Shortcut({ children, touch }: { children: ReactNode; touch: boolean }) 
 export function LoteriaOverlay({ touch }: { touch: boolean }) {
   const {
     phase, kind, next, labels, board, covered, current, called, faceDown, caller, verse, neighbor,
-    focus, glow, bounce, tip, ready, replay, choices, read, mic, micOn, result,
+    focus, glow, bounce, tip, ready, replay, sayIt, choices, read, mic, micOn, result,
   } = useLoteria();
 
   if (result) return (
     <div className="loteria-score" lang={HL}>
       <div className="loteria-score-scene" aria-hidden="true" />
-      <ScoreCard title={L(words.title)} celebrate={result.winner === "learner"} score={result.winner === "learner" ? L(words.won) : L(words.wonBy, { nom: TONA_LT.nom })}
+      <ScoreCard title={L(words.title)} said={result.said} celebrate={result.winner === "learner"} score={result.winner === "learner" ? L(words.won) : L(words.wonBy, { nom: TONA_LT.nom })}
         rows={[
           { label: L(words.calls), value: <ScoreNumber value={result.calls} /> },
           { label: L(words.marked), value: L("{n} iš {of}", { n: result.covered, of: BOARD_SIZE }) },
@@ -111,6 +112,7 @@ export function LoteriaOverlay({ touch }: { touch: boolean }) {
               <Line line={visibleCaller} kind="caller" />
             </>}
             <div className="loteria-replay">
+              <SayIt game="loteria" cue={sayIt} />
               <button type="button" className="loteria-small-button" disabled={!replay} onClick={() => act("replay")}>
                 <Icon name="speaker" size={16} /> {L("Klausyti dar kartą")} <Shortcut touch={touch}>R</Shortcut>
               </button>
@@ -146,7 +148,7 @@ export function LoteriaOverlay({ touch }: { touch: boolean }) {
               {called.map((card) => <span key={card.id} title={labels[card.id].name} aria-label={labels[card.id].name}>{card.icon}</span>)}
             </div>
           </div>
-          {speechSupported() && (playable || reading) &&
+          {speechSupported() && reading &&
             <button type="button" className="loteria-mic" aria-pressed={micOn} aria-label={micOn ? L("Išjungti mikrofoną") : L("Įjungti mikrofoną")}
               data-listening={mic.status === "listening" || mic.status === "starting"} onClick={() => act("mic", !micOn)}>
               <Icon name="mic" size={19} />

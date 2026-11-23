@@ -1,3 +1,4 @@
+import { PHOTO_WALK_SITUATION } from "../src/content/photo-walk-lines";
 // Enumerates every sentence the game can speak, for IPA and pre-generated audio:
 //  • every NPC line variant without placeholders, in the voice of each NPC of its situation;
 //  • lines whose only placeholders are values with a declared domain;
@@ -131,7 +132,7 @@ export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: 
           const u = unreached.find((x) => x.sit === sit.id && x.line === lid);
           if (u) u.items = pool.size;
         }
-        if ((sit.id === "s66-taxi" && lid.startsWith("rd_a_")) || (sit.id === "s72-cafe" && isBaristaCoachLine(lid))) {
+        if ((sit.id === PHOTO_WALK_SITUATION && lid.startsWith("pw_a_")) || (sit.id === "s66-taxi" && lid.startsWith("rd_a_")) || (sit.id === "s72-cafe" && isBaristaCoachLine(lid))) {
           for (const voice of coachVoices(opts.v2)) {
             add(voice, 1, compose(src, {}, { look, formal: true }), `${sit.id}:${lid}[${i}]`);
           }

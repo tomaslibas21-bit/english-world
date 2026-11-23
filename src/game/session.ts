@@ -7,11 +7,12 @@ import { polarityChoices, bestReading } from "../convo/readings";
 import { bestPhrase } from "../convo/bestPhrase";
 import { concertInvitation, PHONE_CALLS } from "../content/phoneCalls";
 import { GLOBAL } from "../content/global";
+import { isTownQuest } from "../content/townQuests";
 import { NPCS } from "../content/npcs";
 import { coachVoice, npcVoice } from "../content/voices";
 import { getSituation } from "../content/situations/catalog";
 import type { SituationDef } from "../content/types";
-import { useStore, type TranscriptLine } from "../state/store";
+import { useStore, type ConvUI, type TranscriptLine } from "../state/store";
 import { sitProgress, stars } from "../state/progress";
 import { audio } from "./audio";
 import { displayUtterance } from "../convo/normalize";
@@ -73,7 +74,7 @@ export class Session {
     setKnownNames([player.name, player.surname].filter(Boolean));
     audio.names = [player.name, player.surname].filter(Boolean);
     this.conv = new Conversation(sit, {
-      global: GLOBAL, npcs: NPCS, player, visits: sp.completions, memory: sp.memory, sharedNlu: nluCache,
+      global: GLOBAL, npcs: NPCS, player, visits: isTownQuest(sitId) ? sp.visits : sp.completions, memory: sp.memory, sharedNlu: nluCache,
     });
     // „Lėčiau“ chosen last time in this situation
     if (sp.slow) this.conv.slow = true;
@@ -94,17 +95,17 @@ export class Session {
     const prof = st.progress.profile;
     const date = this.sit.npc === "sam" || this.sit.npc === "emma";
     const npcId = date ? prof?.datePartner ?? (prof?.gender === "f" ? "sam" : "emma") : this.sit.npc;
+    const out = this.conv.start();
     st.setConv({
       active: true, sitId: this.sit.id, npcId, hostId: npcId, mode: this.sit.mode ?? "talk", transcript: [], bestPhrase: null, phase: "npc",
       suggest: [], hints: [], chosen: {}, openHint: null, mic: { status: speechSupported() ? "off" : "unsupported", heard: "" },
       failures: 0, misses: 0, slowMode: this.conv.slow, lastHeard: "", prefix: false, completed: false, speaking: null, reveal: {}, note: null, typing: !speechSupported(), newExpressions: [],
-      checklist: [], focus: 0, stepId: null, lineKey: null, guess: null, practice: null, speechChoices:undefined, run: st.conv.run + 1, guideHidden: false,
+      checklist: [], focus: 0, stepId: null, stepProgress: this.stepProgress(null), lineKey: null, guess: null, practice: null, speechChoices:undefined, run: st.conv.run + 1, guideHidden: false,
       introOpen: !!(this.introOverride ?? this.sit.intro), introOverride: this.introOverride,
     });
     if (this.sit.id === "s34-meeting" && st.progress.phone?.office) {
       st.updateProgress((p) => { delete p.phone!.office; });
     }
-    const out = this.conv.start();
     await this.introRead();
     await this.play(out);
   }
@@ -132,6 +133,14 @@ export class Session {
     return this.hooks.recordedOnly && !audio.hasClip(voice, speed, say) ? Promise.resolve(true) : audio.play(...args);
   }
 
+  private stepProgress(previous: ConvUI["stepProgress"]): ConvUI["stepProgress"] {
+    const { steps } = this.sit;
+    if (!steps.length || this.conv.completed) return null;
+    const current = this.conv.effectiveStep();
+    const step = current ? steps.indexOf(current) : -1;
+    return { step: step < 0 ? previous?.step ?? 1 : step + 1, of: steps.length };
+  }
+
   private async play(out: TurnOut) {
     if (!this.alive) return;
     const st = useStore.getState();
@@ -140,6 +149,7 @@ export class Session {
     const optionalVoice = this.sit.optionalVoice === true;
     st.setConv({
       phase: "npc", stepId: this.conv.ended ? "closing" : this.conv.pending?.id ?? this.conv.effectiveStep()?.id ?? null,
+      stepProgress: this.stepProgress(st.conv.stepProgress),
       ...(optionalVoice ? { checklist: this.conv.checklist() } : {}),
     });
     this.stopListening();
@@ -190,7 +200,9 @@ export class Session {
     if (!this.alive) return;
     const st = useStore.getState();
     const sup = this.conv.support();
-    st.setConv({ phase: "you", suggest: sup.suggest, hints: sup.hints, focus: 0, checklist: this.conv.checklist(), openHint: st.settings.hintsOpen ? (sup.hints[0] ?? null) : st.conv.openHint && sup.hints.includes(st.conv.openHint) ? st.conv.openHint : null });
+    st.setConv({ phase: "you", suggest: sup.suggest, hints: sup.hints, focus: 0, checklist: this.conv.checklist(),
+      stepProgress: this.stepProgress(st.conv.stepProgress),
+      openHint: st.settings.hintsOpen ? (sup.hints[0] ?? null) : st.conv.openHint && sup.hints.includes(st.conv.openHint) ? st.conv.openHint : null });
     if (speechSupported() && !st.hud.panel && !st.conv.typing && !st.conv.speechChoices?.length && document.visibilityState === "visible") this.autoListen(250);
   }
 

@@ -41,6 +41,7 @@ import { EDITION } from "../../src/edition";
 import type { EntityDef, SituationDef } from "../../src/content/types";
 import { hintBinding } from "../../src/convo/target";
 import { lookFor, observe, usesPartner, type Heard, type ObserveStats } from "./runs-es";
+import { PHOTO_WALK_SITUATION } from "../../src/content/photo-walk-lines";
 import { BILLIARDS_SITUATION, GROUP_KEYS, REPLY_KEYS } from "../../src/content/billiards-lines";
 import { BINDINGS, LISTS, codeSpeakers, idOf, reachFilter, reachOf, unspoken } from "./reach-es";
 import { sceneSit } from "./casting-es";
@@ -54,6 +55,7 @@ const GENDERS = ["m", "f"] as const;
 const VARIETIES = ["default", "neutral", "spain"] as const;
 const billiardsLearnerLines = new Set<string>([...GROUP_KEYS, ...REPLY_KEYS]);
 const modeCoachLine = (sit: string, lid: string) => unspoken(sit, lid) ||
+  (sit === PHOTO_WALK_SITUATION && lid.startsWith("pw_a_")) ||
   (sit === BARISTA_CONVERSATION.situation && isBaristaCoachLine(lid)) ||
   (sit === BILLIARDS_SITUATION && billiardsLearnerLines.has(lid));
 

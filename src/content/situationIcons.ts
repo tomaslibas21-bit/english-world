@@ -74,7 +74,11 @@ export const SITUATION_ICONS: Record<string, string> = {
   "x08-rosario": "umbrella",             // in the shade
   "x09-alberca": "waves-ladder",         // the hotel pool
   "x10-loteria": "grid-3x3",             // the lotería board
+  "x12-album": "camera",
+  "x13-por-donde": "route",
   "x11-billar": "circle-dot",            // pool at Cantina La Buchaca
   // Maple Harbor's own
+  "x02-photo-walk": "camera",          // Hana’s photo book
+  "x03-ask-the-way": "route",          // Earl’s directions
   "x01-pool-hall": "circle-dot",         // pool at The Corner Pocket
 };

@@ -6,6 +6,7 @@
 // `informal` NPCs address the learner with tú (friends, colleagues, people of the learner's age); everyone else
 // with usted. `informalSpain`: in Spain's Spanish (the Settings' third choice) these say tú too: casual service by
 // young people (the café, the restaurant, the clothes shop, the salon, the gym; docs/es/STYLE.md "Spain Spanish").
+import { QUEST_PEOPLE } from "./townQuests";
 import { NPCS as BASE, COACH_VOICE, type Look, type NpcDef } from "../../../content/npcs";
 
 export type { Accessory, HairStyle, Look, NpcDef } from "../../../content/npcs";
@@ -264,7 +265,8 @@ function cast(id: string, n: NpcDef, [name, es, en, extra = {}]: Cast): NpcDef {
 }
 
 export const NPCS: Record<string, NpcDef> = Object.fromEntries([
-  ...Object.entries(BASE).filter(([id]) => id !== "tina").map(([id, n]) => [id, CAST[id] ? cast(id, n, CAST[id]) : { ...n, look: lookOf(id, n.look, n.gender) }]),
+  ...Object.entries(BASE).filter(([id]) => id !== "tina" && id !== "hana" && id !== "earl" && !QUEST_PEOPLE.some((person) => person.id === id)).map(([id, n]) => [id, CAST[id] ? cast(id, n, CAST[id]) : { ...n, look: lookOf(id, n.look, n.gender) }]),
+  ...QUEST_PEOPLE.map((n) => [n.id, n]),
   ...Object.entries(EXTRA).map(([id, [base, ...c]]) => [id, cast(id, BASE[base], c)]),
 ]);
 

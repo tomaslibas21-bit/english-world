@@ -7,6 +7,7 @@ import { BILLIARDS_NPC } from "../content/billiards-lines";
 import { HL, L } from "./i18n";
 import { Icon } from "./icons";
 import { GlossLine } from "./kit/GlossLine";
+import { SayIt } from "./kit/SayIt";
 import { ScoreCard, ScoreNumber } from "./kit/ScoreCard";
 import "./billiards.css";
 
@@ -120,7 +121,7 @@ function PowerBar({ power }: { power: number }) {
 
 export function BilliardsOverlay({ touch }: { touch: boolean }) {
   const state = useBilliards();
-  const { phase, side, line, choices, selection, pockets, available, call, reveal, correct, result } = state;
+  const { phase, side, line, choices, selection, pockets, available, call, sayIt, reveal, correct, result } = state;
   const aiming = phase === "aim" || phase === "break";
   const picking = phase === "call" || phase === "listen";
   const waitingForTina = side === "tina" && phase === "tina";
@@ -150,9 +151,9 @@ export function BilliardsOverlay({ touch }: { touch: boolean }) {
       {picking && <>
         <div className="bl-instruction">
           <h2>{phase === "listen" ? opponentLabels.listen : L("Paskelbk smūgį: pasirink kamuolį ir kišenę.")}</h2>
-          {phase === "listen" && <button className="bl-replay" disabled={state.replaying} onClick={() => act("replay")}>
+          {phase === "listen" && <div className="bl-listen-actions"><button className="bl-replay" disabled={state.replaying} onClick={() => act("replay")}>
             <Icon name="speaker" size={15} />{L("Klausyti dar kartą")}
-          </button>}
+          </button><SayIt game="billiards" cue={state.replaying ? null : sayIt} /></div>}
         </div>
         {showCall && <Speech line={call} />}
         <div className="bl-chip-heading">{L("Kamuolys")}</div>
@@ -194,7 +195,7 @@ export function BilliardsOverlay({ touch }: { touch: boolean }) {
         <button className="bl-replay" onClick={() => act("skip")}>{L("Baigti")}</button>
       </div>}
     </section>
-    {phase === "result" && result && <ScoreCard title={scoreTitle} celebrate={result.winner === "learner"}
+    {phase === "result" && result && <ScoreCard title={scoreTitle} celebrate={result.winner === "learner"} said={result.said}
       ratio={(result.called + result.understood) / Math.max(1, result.shots + result.listens)}
       rows={[
         { label: L("Pataikyti paskelbti smūgiai"), value: <><ScoreNumber value={result.called} />/{result.shots}</> },

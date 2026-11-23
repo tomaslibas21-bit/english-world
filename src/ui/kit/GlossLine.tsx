@@ -1,3 +1,4 @@
+import "./glossLine.css";
 import type { Sentence } from "../../convo/compose";
 import { HL, TL } from "../i18n";
 import { Interlinear } from "../Interlinear";

@@ -52,6 +52,7 @@ export interface GameApi {
   /** An activity the end card can hand over to when the conversation closes. */
   modeOffer(sitId: string): { id: string; label: string } | null;
   modeFromConversation(id: string): void;
+  modeStart?(id: string, option?: string): void;
   modeExit(): void;
   modeAction(id: string, name: string, value?: string | boolean): void;
   setQuality(q: "high" | "low"): void;

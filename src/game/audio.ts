@@ -2028,6 +2028,7 @@ export class AudioSystem {
         tone(1976, 0, 0.36, "sine", vol * 0.42);
         tone(2592, 0, 0.21, "sine", vol * 0.19);
         break;
+      case "shutter": tone(1650, 0, 0.032, "square", vol * 0.28); tone(440, 0.032, 0.063, "triangle", vol * 0.45); break;
       case "cueStrike": tone(1140, 0, 0.05, "triangle", vol * 0.8); tone(276, 0, 0.07, "sine", vol * 0.27); break;
       case "poolClick": tone(1740, 0, 0.043, "triangle", vol * 0.64); tone(840, 0, 0.047, "sine", vol * 0.3); break;
       case "poolCushion": tone(142, 0, 0.077, "triangle", vol * 0.58); break;

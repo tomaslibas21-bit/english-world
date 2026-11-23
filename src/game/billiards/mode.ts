@@ -17,7 +17,8 @@ import type { GameMode, ModeFrame, ModeInput } from "../kit/modes";
 import { keepPhrases } from "../kit/phrases";
 import { rand } from "../world/util";
 import { chooseShot } from "./ai";
-import { parseCall, type Call } from "./calls";
+import { parseCall, sayItCall, type Call } from "./calls";
+import { SayItRound, type SayItCue } from "../kit/sayIt";
 import { ballAt, distance, FOOT, ghostBall, HEAD, headingTo, moving, POCKET_IDS, POCKETS, RADIUS, shoot, STEP, stepBalls, type Ball, type Impact, type Point, type Pocket } from "./physics";
 import { callable, isGroup, judgeShot, otherGroup, ownerGroup, rack, remaining, respot, type Group, type Side, type Winner } from "./rules";
 import { resetBilliards, useBilliards, type Phase } from "./store";
@@ -45,6 +46,7 @@ interface Round {
   streak: number;
   listens: number;
   understood: number;
+  sayIt: SayItRound;
   announced: Set<Side>;
 }
 interface Shot {
@@ -168,7 +170,7 @@ export class BilliardsMode implements GameMode {
     this.host.rig.stageSnap();
     countPlay("games", this.id);
     const round: Round = { balls: rack(seed), random: rand(seed + 6013), group, side: "learner",
-      shots: 0, made: 0, streak: 0, listens: 0, understood: 0, announced: new Set() };
+      shots: 0, made: 0, streak: 0, listens: 0, understood: 0, sayIt: new SayItRound(), announced: new Set() };
     this.round = round;
     this.dialogue.cancel();
     this.dialogue.micOn = true;
@@ -197,9 +199,10 @@ export class BilliardsMode implements GameMode {
     } else open();
   }
 
-  private setPhase(phase: Phase) {
+  private setPhase(phase: Phase, sayIt: SayItCue | null = null) {
+    if (phase !== "listen") this.round?.sayIt.close();
     this.phase = phase;
-    ui({ phase });
+    ui({ phase, sayIt });
   }
 
   private say(key: string) { return this.dialogue.say(BILLIARDS_SITUATION, BILLIARDS_NPC, key, BILLIARDS_LINES); }
@@ -298,13 +301,14 @@ export class BilliardsMode implements GameMode {
     this.heardCall = await this.dialogue.sayPieces(call, npcVoice(OWNER), OWNER.speed ?? 1, OWNER.gender === "m");
     if (round !== this.round) return;
     this.revealCall();
-    this.setPhase("listen");
+    this.setPhase("listen", round.sayIt.open(sayItCall(this.ai.call, call.sentence.en)));
     this.table!.markCall(round.balls, {}, true);
   }
 
   private async replay() {
     if (this.phase !== "listen" || this.replaying || !this.ai) return;
     const round = this.round;
+    useBilliards.getState().sayIt?.cancel();
     this.replaying = true;
     ui({ replaying: true });
     const heard = await this.dialogue.sayPieces(callLine(this.ai.call, false), npcVoice(OWNER), OWNER.speed ?? 1, OWNER.gender === "m");
@@ -441,7 +445,7 @@ export class BilliardsMode implements GameMode {
     const phrases = [...PHRASES, key].map((key) => line(key).sentence);
     keepPhrases(BILLIARDS_SITUATION, phrases);
     ui({ result: { winner, shots: round.shots, called: round.made, listens: round.listens, understood: round.understood,
-      sunk: 4 - remaining(round.balls, this.group("learner")).length, cards: phrases.length } });
+      sunk: 4 - remaining(round.balls, this.group("learner")).length, cards: phrases.length, ...round.sayIt.result } });
     this.setPhase("result");
     const tina = this.world.tina();
     const shot = this.host.scoreShot(tina ? new Box3().setFromObject(tina.root) : undefined);
@@ -673,6 +677,7 @@ export class BilliardsMode implements GameMode {
 
   exit() {
     if (!this.active) return;
+    this.round?.sayIt.close();
     this.round = null;
     this.shot = null;
     this.charge = null;
@@ -706,6 +711,7 @@ export class BilliardsMode implements GameMode {
     if (!import.meta.env.DEV) return undefined;
     return {
       state: () => this.round ? { ...useBilliards.getState(), group: this.round.group, shots: this.round.shots,
+        sayIt: undefined, said: this.round.sayIt.count,
         ai: this.ai?.call, angle: this.angle, layout: this.round.balls.map((ball) => ({ ...ball })),
         table: this.tableBounds(window.innerWidth, window.innerHeight),
         actors: [this.host.player(), this.world.tina()].flatMap((actor) => actor ? [{

@@ -41,6 +41,7 @@ function LiftOffer({ touch }: { touch: boolean }) {
 
 function DriveOverlay({ touch }: { touch: boolean }) {
   const prompt = useRoad((s) => s.prompt);
+  const sayIt = useRoad((s) => s.sayIt);
   const anchors = useRoad((s) => s.anchors);
   const feedback = useRoad((s) => s.feedback);
   const remaining = useRoad((s) => s.remaining);
@@ -49,7 +50,7 @@ function DriveOverlay({ touch }: { touch: boolean }) {
   const wind = useRoad((s) => s.wind);
   return <>
     {wind && <div className="drive-wind" aria-hidden />}
-    <WordGateHeader words={words} {...{ prompt, feedback, remaining, streak }} showHint={remaining >= 147}
+    <WordGateHeader game="road" words={words} {...{ prompt, sayIt, feedback, remaining, streak }} showHint={remaining >= 147}
       home={done} replay={() => act("replay")}
       extraMeter={ghost && <span className="road-ghost">{L(words.ghost)}</span>}
       extraButton={!touch && <button className="road-icon" aria-label={L(words.horn)} title={L(words.horn)} onClick={() => act("horn")}><Icon name="horn" size={21} /></button>} />

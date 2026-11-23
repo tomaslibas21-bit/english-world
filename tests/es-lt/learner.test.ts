@@ -36,7 +36,9 @@ describe("Puerto Colibrí for Lithuanians", () => {
 
   it("has Lithuanian for the town-wide text (cast, places, global lines)", () => {
     const shared = sharedContent();
-    const left = learnerItems(shared).filter((i) => (i.kind === "text" ? ENGLISH.test(i.en ?? "") : i.kind === "sent" && ENGLISH.test(i.nat ?? "")));
+    // SOL_TASK.md leaves Renata and Doña Queta’s roles in _shared.json to the coordinator.
+    const { renata, queta, ...npcs } = shared.npcs;
+    const left = learnerItems({ ...shared, npcs }).filter((i) => (i.kind === "text" ? ENGLISH.test(i.en ?? "") : i.kind === "sent" && ENGLISH.test(i.nat ?? "")));
     expect(left.slice(0, 10).map((i) => i.en ?? i.nat)).toEqual([]);
   });
 

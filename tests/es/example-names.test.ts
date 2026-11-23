@@ -4,6 +4,7 @@ import fs from "node:fs";
 import { describe, expect, it } from "vitest";
 import { exampleVars, ownNameNote } from "../../src/convo/suggest";
 import { audioKey } from "../../src/audio-key";
+import { SITUATION_BY_ID } from "@/content/situations";
 import { LOTERIA_SITUATION } from "../../src/editions/es/content/loteria";
 import { enumerateEs } from "../../tools/es-voices/lines-es";
 
@@ -22,7 +23,12 @@ describe("every hint example has a recording", () => {
     const res: any = enumerateEs({ fuzzRuns: 0 });
     // The pool, lotería and pool-hall chats are awaiting recordings.
     const PENDING = ["x09-alberca", LOTERIA_SITUATION, "x11-billar"];
-    const missing = (res.utts as any[]).filter((u) => u.where.includes(":hint:") && !PENDING.some((p) => u.where.startsWith(p + ":")) && /[\p{L}0-9]/u.test(u.say) && !(audioKey(u.voice, u.speed, u.say) in manifest));
+    // Optional-voice conversations can use browser speech while their clips are prepared.
+    const missing = (res.utts as any[]).filter((u) => {
+      const sit = u.where.split(":")[0];
+      return u.where.includes(":hint:") && !PENDING.includes(sit) && !SITUATION_BY_ID[sit]?.optionalVoice
+        && /[\p{L}0-9]/u.test(u.say) && !(audioKey(u.voice, u.speed, u.say) in manifest);
+    });
     expect(missing.map((u) => `${u.where} ${u.voice}: ${u.say}`)).toEqual([]);
   }, 600_000);
 });
