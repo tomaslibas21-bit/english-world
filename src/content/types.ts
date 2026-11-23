@@ -210,6 +210,8 @@ export interface SituationDef {
    *  task, not counted among the town's conversations nor listed with them (src/content/route.ts). Everything else
    *  about it is a conversation like any other (the checks, the voices, the learner's layers). Files `xNN-….ts`. */
   bonus?: boolean;
+  /** Allow the transcript to advance if a voice is unavailable. */
+  optionalVoice?: boolean;
   /** Mission checklist shown to the learner from the start: 3–6 short imperative labels ("Užsisakyk gėrimą").
    *  Each item is either tied to a step (`step`: ticked when the step is done or resolved) or has its own
    *  `done` predicate on the conversation state. `when` (or the step's `when`) + `optional` hides items that

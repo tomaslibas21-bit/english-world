@@ -137,7 +137,11 @@ export class Session {
     const st = useStore.getState();
     // the question the person is about to ask (the phase picture changes as they start speaking);
     // "closing" when this turn is the goodbye
-    st.setConv({ phase: "npc", stepId: this.conv.ended ? "closing" : this.conv.pending?.id ?? this.conv.effectiveStep()?.id ?? null });
+    const optionalVoice = this.sit.optionalVoice === true;
+    st.setConv({
+      phase: "npc", stepId: this.conv.ended ? "closing" : this.conv.pending?.id ?? this.conv.effectiveStep()?.id ?? null,
+      ...(optionalVoice ? { checklist: this.conv.checklist() } : {}),
+    });
     this.stopListening();
     if (out.note) st.setConv({ note: out.note });
     // "Slower, please" made this conversation slow: the „Lėčiau“ switch shows it, and it is remembered
@@ -159,7 +163,10 @@ export class Session {
       this.hooks.npcTalk(l.npc, dur / (slow ? 0.82 : 1), l.sentence.say);
       if (this.hooks.recordedOnly && clip === null) {
         await wait(Math.min(2000, dur * 600));
-      } else if (!await audio.play(voice, speed, l.sentence.say, { slow, male: npc?.gender === "m" })) return;
+      } else {
+        const played = await audio.play(voice, speed, l.sentence.say, { slow, male: npc?.gender === "m", ...(optionalVoice ? { optional: true } : {}) });
+        if (!played && !optionalVoice) return;
+      }
       await wait(160);
     }
     // the learner left (Esc, another situation) while the person was talking: no events (a taxi

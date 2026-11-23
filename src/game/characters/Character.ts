@@ -686,6 +686,14 @@ export class Character {
     // ---- clothes and things worn on the body
     /** The torso's front surface at height y. */
     const front = (y: number) => R(y) * 0.78;
+    if (acc.includes("polo")) {
+      const collar = "#19372c";
+      for (const side of [-1, 1]) {
+        P.add(new THREE.BoxGeometry(0.065, 0.12, 0.017).rotateZ(side * 0.43)
+          .translate(side * 0.046, 1.223 * h, front(1.223 * h) + 0.01), collar);
+      }
+      P.add(new THREE.BoxGeometry(0.024, 0.14, 0.017).translate(0, 1.162 * h, front(1.162 * h) + 0.01), collar);
+    }
     if (acc.includes("apron")) {
       // a panel curving round the front, from the shins' top to the chest
       const y0 = 0.5 * h, y1 = 1.18 * h;

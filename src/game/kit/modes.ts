@@ -2,7 +2,7 @@ export type CleanScreen = "menu" | "overlay";
 export interface ModeScreen { kind: CleanScreen; id: string; exitLabel?: string }
 
 export type ModeInput =
-  | { kind: "key"; key: string; repeat: boolean; keys: Set<string> }
+  | { kind: "key"; key: string; repeat: boolean; keys: Set<string>; shift?: boolean }
   | { kind: "interact" | "tap" | "jump" };
 
 export interface ModeFrame {
@@ -18,7 +18,7 @@ export interface ModePrompt {
   distance: number;
   label: string;
   hint?: string;
-  kind: "surf" | "taxi" | "barista" | "pool";
+  kind: "surf" | "taxi" | "barista" | "pool" | "billiards";
 }
 
 export interface GameMode {

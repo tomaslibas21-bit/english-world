@@ -20,8 +20,8 @@ describe("every hint example has a recording", () => {
   it("no hint example falls to the browser voice", () => {
     const manifest = JSON.parse(fs.readFileSync("public/audio-es/manifest.json", "utf8"));
     const res: any = enumerateEs({ fuzzRuns: 0 });
-    // The pool and lotería chats are awaiting recordings.
-    const PENDING = ["x09-alberca", LOTERIA_SITUATION];
+    // The pool, lotería and pool-hall chats are awaiting recordings.
+    const PENDING = ["x09-alberca", LOTERIA_SITUATION, "x11-billar"];
     const missing = (res.utts as any[]).filter((u) => u.where.includes(":hint:") && !PENDING.some((p) => u.where.startsWith(p + ":")) && /[\p{L}0-9]/u.test(u.say) && !(audioKey(u.voice, u.speed, u.say) in manifest));
     expect(missing.map((u) => `${u.where} ${u.voice}: ${u.say}`)).toEqual([]);
   }, 600_000);

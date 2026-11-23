@@ -68,6 +68,7 @@ export const META: SituationMeta[] = [
   {"id":"x08-rosario","song":"","songTitle":"","title":{"en":"A la sombra","lt":"Pavėsyje"},"topic":{"en":"En las ruinas","lt":"Prie griuvėsių"},"chapter":9,"order":7,"location":"ruinas","npc":"rosario","mode":"talk","goal":"Pasikalbėk su Doña Rosario pavėsyje: pasišnekėkite apie karštį ir sužinok, kas toks Pepė.","intro":"Prie griuvėsių sienos, pavėsyje, sutinki Doña Rosario: ji pina hamaką, o šalia – pintinė su siūlais. Ant didelio akmens greta kažkas visai nejudėdamas guli saulėje.","bonus":true},
   {"id":"x09-alberca","song":"","songTitle":"","title":{"en":"La alberca","lt":"Baseinas"},"topic":{"en":"Junto a la alberca","lt":"Prie baseino"},"chapter":9,"order":8,"location":"hotel","npc":"vale","mode":"talk","goal":"Pasikalbėk su Vale prie baseino: pasakyk jai savo vardą ir iš kur esi, tada prisijunk prie žaidimo kamuoliu.","intro":"Prie viešbučio „Mar Azul“ baseino trys vaikai mėto paplūdimio kamuolį, kad šis nenukristų. Vyriausioji, Vale, pamoja tau prieiti.","bonus":true},
   {"id":"x10-loteria","song":"","songTitle":"","title":{"en":"Noche de lotería","lt":"Loterijos vakaras"},"topic":{"en":"En el zócalo","lt":"Centrinėje aikštėje"},"chapter":9,"order":9,"location":"town-square","npc":"tona","mode":"talk","goal":"Prisėsk prie loterijos stalo su Doña Toña ir sužaisk vieną lentelę.","intro":"Penktadienio vakaras centrinėje aikštėje: girliandos, muzika ir ilgi stalai prie estrados. Doña Toña, kaimynė, kuri nepraleidžia nė vieno loterijos vakaro, turi atliekamą lentelę ir laisvą kėdę šalia savęs.","bonus":true},
+  {"id":"x11-billar","song":"","songTitle":"","title":{"en":"Una partida de billar","lt":"Biliardo partija"},"topic":{"en":"En la cantina","lt":"Bare"},"chapter":9,"order":9,"location":"pool-hall","npc":"memo","mode":"talk","goal":"Pasišnekėk su Don Memu bare: pasakyk, ar žaidi biliardą, prisistatyk ir pasirink – vienspalviai ar dryžuoti. Tada sužaiskite partiją.","intro":"„La Buchaca“ – nedidelis baras calle Hidalgo ir calle Ceiba kampe, gale stovi biliardo stalas. Savininkas Don Memas kreiduoja lazdą ir pamoja tau prieiti.","bonus":true},
 ];
 
 const TABLE: Record<string, () => Promise<{ default: unknown }>> = {
@@ -131,6 +132,7 @@ const TABLE: Record<string, () => Promise<{ default: unknown }>> = {
   "x08-rosario": () => import("../../tables/x08-rosario.json"),
   "x09-alberca": () => import("../../tables/x09-alberca.json"),
   "x10-loteria": () => import("../../tables/x10-loteria.json"),
+  "x11-billar": () => import("../../tables/x11-billar.json"),
 };
 
 export const LOAD: Record<string, () => Promise<SituationDef>> = Object.fromEntries(Object.entries(EDITION_LOAD).map(([id, load]) =>

@@ -89,6 +89,8 @@ export const BUILDINGS: BuildingDef[] = [
   // (SPROUTLY_LOT) leads to it from the road's end. Clear of the traffic (the lanes stop at x 124), the lamps at x 124,
   // the street trees and the airport terminal (z -30 and south). The name on the sign and the door is LOCATIONS'.
   { id: "sproutly", loc: "sproutly", sign: LOCATIONS.sproutly.name, x: 147, z: -55, w: 20, d: 14, h: 7.5, face: "w", color: "#b5654a", trim: "#2f7a4a", roof: "gable", roofColor: "#5d676e", style: "warehouse", seed: 18 },
+  { id: "pool-hall", loc: "pool-hall", sign: LOCATIONS["pool-hall"].name, x: -14, z: 23, w: 11, d: 11,
+    h: 5.25, face: "s", color: "#365744", trim: "#efe0b7", roof: "flat", style: "shop", awning: "#742e40", doorOffset: -1.5, seed: 401 },
 ];
 
 /** Sproutly's forecourt: paving from Harbor Road's east end (x 126) to the warehouse door (x 137). */

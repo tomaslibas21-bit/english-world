@@ -62,6 +62,7 @@ export const META: SituationMeta[] = [
   {"id":"x08-rosario","song":"","songTitle":"","title":{"en":"A la sombra","lt":"In the shade"},"topic":{"en":"En las ruinas","lt":"At the ruins"},"chapter":9,"order":7,"location":"ruinas","npc":"rosario","mode":"talk","goal":"Chat with Doña Rosario in the shade: talk about the heat, and find out who Pepe is.","intro":"By the wall of the ruins, in the shade, you come upon Doña Rosario weaving, her basket of thread beside her. On the big stone next to her something lies very still in the sun.","bonus":true},
   {"id":"x09-alberca","song":"","songTitle":"","title":{"en":"La alberca","lt":"The pool"},"topic":{"en":"Junto a la alberca","lt":"By the pool"},"chapter":9,"order":8,"location":"hotel","npc":"vale","mode":"talk","goal":"Chat with Vale by the pool: tell her your name and where you're from, then join the ball game.","intro":"At the pool of Hotel Mar Azul, three kids are keeping a beach ball in the air. The oldest, Vale, waves you over.","bonus":true},
   {"id":"x10-loteria","song":"","songTitle":"","title":{"en":"Noche de lotería","lt":"Lotería night"},"topic":{"en":"En el zócalo","lt":"In the main square"},"chapter":9,"order":9,"location":"town-square","npc":"tona","mode":"talk","goal":"Sit down with Doña Toña at the lotería table, then play a board.","intro":"Friday night in the zócalo: string lights, music, and long tables by the bandstand. Doña Toña, a neighbor who never misses a lotería night, has a spare board and an empty chair next to her.","bonus":true},
+  {"id":"x11-billar","song":"","songTitle":"","title":{"en":"Una partida de billar","lt":"A game of pool"},"topic":{"en":"En la cantina","lt":"At the cantina"},"chapter":9,"order":9,"location":"pool-hall","npc":"memo","mode":"talk","goal":"Chat with Don Memo at the cantina: say if you play pool, tell him your name and choose solids or stripes. Then play a game.","intro":"La Buchaca is a small cantina on the corner of calle Hidalgo and calle Ceiba, with a pool table in the back. Its owner, Don Memo, is chalking his cue and waves you over.","bonus":true},
 ];
 
 export const LOAD: Record<string, () => Promise<SituationDef>> = {
@@ -125,4 +126,5 @@ export const LOAD: Record<string, () => Promise<SituationDef>> = {
   "x08-rosario": () => import("./x08-rosario").then((m) => m.default),
   "x09-alberca": () => import("./x09-alberca").then((m) => m.default),
   "x10-loteria": () => import("./x10-loteria").then((m) => m.default),
+  "x11-billar": () => import("./x11-billar").then((m) => m.default),
 };

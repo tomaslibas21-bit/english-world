@@ -125,17 +125,17 @@ function SheetHead({ icon, title, close }: { icon: IconName; title: ReactNode; c
 function SitActions({ s, close }: { s: SituationMeta; close: () => void }) {
   const progress = useStore((st) => st.progress);
   const light = useStore((st) => st.settings.play === "light");
-  const current = progress.objective === s.id, grotto = s.location === CAVE_ZONE;
+  const current = progress.objective === s.id, grotto = s.location === CAVE_ZONE, billiards = s.location === "pool-hall";
   return (
     <div className="sit-actions">
       {!grotto && <button className="btn small" onClick={() => { close(); game?.startScenario(s.id); }}><Icon name="play" size={15} /> {L("Pradėti dabar")}</button>}
-      {!current && !light && <button className="btn ghost small" onClick={() => { game?.setObjective(s.id); close(); }}><Icon name="target" size={17} /> {L("Pasirinkti užduotimi")}</button>}
+      {!billiards && !current && !light && <button className="btn ghost small" onClick={() => { game?.setObjective(s.id); close(); }}><Icon name="target" size={17} /> {L("Pasirinkti užduotimi")}</button>}
       {light ? null : isPhone(s) ? (
         <button className="btn warm small" onClick={() => { close(); game?.call(s.id); }}><Icon name="smartphone" size={17} /> {L("Skambinti dabar")}</button>
       ) : (
         <>
-          <button className="btn soft small" onClick={() => walkToSituation(s.id, close)}><Icon name="walk" size={17} /> {L("Nuvesk mane")}</button>
-          {!grotto && <button className="btn ghost small" onClick={() => { game?.setObjective(s.id); close(); game?.teleportTo(s.location); }}><Icon name="taxi" size={17} /> {L("Nuvykti taksi")}</button>}
+          <button className="btn soft small" onClick={() => { if (billiards) { close(); game?.guideToPoolHall?.(); } else walkToSituation(s.id, close); }}><Icon name="walk" size={17} /> {L("Nuvesk mane")}</button>
+          {!grotto && <button className="btn ghost small" onClick={() => { if (!billiards) game?.setObjective(s.id); close(); game?.teleportTo(s.location); }}><Icon name="taxi" size={17} /> {L("Nuvykti taksi")}</button>}
         </>
       )}
     </div>
@@ -339,7 +339,7 @@ function MapPanel({ close }: { close: () => void }) {
     return { left: `${u * 100}%`, top: `${v * 100}%` };
   };
   const aluxSits = CATALOG.filter((s) => s.location === CAVE_ZONE && (s.npc === "alux_kin" || s.npc === "alux_nikte"));
-  const mapSits = (loc: string) => loc === CAVE_ZONE ? aluxSits : SITUATIONS.filter((s) => s.location === loc);
+  const mapSits = (loc: string) => loc === CAVE_ZONE ? aluxSits : (loc === "pool-hall" ? CATALOG : SITUATIONS).filter((s) => s.location === loc);
   const locs = Object.values(LOCATIONS).filter((l) => l.kind !== "phone" && mapSits(l.id).length > 0);
   const selSits = sel ? mapSits(sel) : [];
   return (

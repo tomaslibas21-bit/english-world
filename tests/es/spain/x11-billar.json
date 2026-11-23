@@ -1,0 +1,20 @@
+{
+  "situation": "x11-billar",
+  "items": [
+    {"ctx": "play", "say": "Juego un poco", "intent": "play_yes"},
+    {"ctx": "play", "say": "Sí, me gusta mucho el billar", "intent": "play_yes"},
+    {"ctx": "play", "say": "Nunca he jugado", "intent": "play_no"},
+    {"ctx": "play", "say": "No sé jugar al billar", "intent": "play_no"},
+    {"ctx": "name", "say": "Soy Ana", "intent": "name_ctx"},
+    {"ctx": "name", "say": "Me llamo Pablo", "intent": "name_ctx"},
+    {"ctx": "group", "say": "Prefiero las lisas", "intent": "group_solids"},
+    {"ctx": "group", "say": "Deme las rayadas, por favor", "intent": "group_stripes"},
+    {"ctx": "ask", "say": "¿Hace cuánto que juega al billar?", "intent": "q_desde"},
+    {"ctx": "ask", "say": "¿Cuánto tiempo llevas jugando al billar?", "intent": "q_desde"},
+    {"ctx": "ask", "say": "¿Juega cada noche?", "intent": "q_diario"},
+    {"ctx": "ask", "say": "¿Juegas todos los días?", "intent": "q_diario"},
+    {"ctx": "ask", "say": "De acuerdo", "intent": ["g_ok", "yn:yes"]},
+    {"ctx": "group", "say": "Prefiero ir a la playa", "intent": "none"},
+    {"ctx": "play", "say": "Hace frío", "intent": "none"}
+  ]
+}

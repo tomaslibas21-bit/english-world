@@ -191,7 +191,9 @@ function build(look: Look): CharSpec {
     const elbowY = shoulderY - S.upper * h, wristY = elbowY - S.fore * h;
     if (!IS_TOON) P.add(new THREE.SphereGeometry(S.armR * b * 1.12, 8, 6).scale(1, 0.9, 1).translate(x - side * S.armR * b * 0.2, shoulderY - S.armR * 0.15, 0), sleeve, ub, CLOTH);
     P.add(new THREE.CapsuleGeometry(S.armR * b, S.upper * h, 3, 8).translate(x, (shoulderY + elbowY) / 2, 0), sleeve, ub, CLOTH);
-    P.add(new THREE.CapsuleGeometry(S.foreR * b, S.fore * h, 3, 8).translate(x, (elbowY + wristY) / 2, 0), sleeve, fb, CLOTH);
+    const polo = acc.includes("polo");
+    P.add(new THREE.CapsuleGeometry(S.foreR * b, S.fore * h, 3, 8).translate(x, (elbowY + wristY) / 2, 0),
+      polo ? skin : sleeve, fb, polo ? SKIN : CLOTH);
     // hand: a mitten with a thumb
     const hr = S.handR;
     P.add(new THREE.SphereGeometry(hr, 9, 7).scale(IS_TOON ? 1 : 0.72, IS_TOON ? 1 : 1.25, IS_TOON ? 1 : 0.95).translate(x, wristY - hr * 0.9, 0), skin, fb, SKIN);
@@ -392,6 +394,13 @@ function build(look: Look): CharSpec {
     P.add(new THREE.SphereGeometry(R * 0.09, 8, 6).translate(-R * 0.72 + Math.cos(a) * R * 0.1, C.y + R * 0.52 + Math.sin(a) * R * 0.1, R * 0.4), grade("#e84a5f"), HB, CLOTH);
   }
   // body accessories
+  if (acc.includes("polo")) {
+    for (const side of [-1, 1]) {
+      const y = shoulderY - 0.018;
+      P.add(new THREE.BoxGeometry(0.06, 0.10, 0.016).rotateZ(side * 0.43)
+        .translate(side * 0.035, y, frontZ(y) + 0.01), grade("#19372c"), BONE.body, CLOTH);
+    }
+  }
   if (acc.includes("apron")) {
     const y0 = hipY - S.thigh * h * 0.55, y1 = hipY + S.torso * h * 0.78;
     const apProf: [number, number][] = [[radiusAt(prof, hipY) * 1.12, y0], ...section(prof, hipY, y1).map(([r, y]) => [r * 1.045, y] as [number, number])];

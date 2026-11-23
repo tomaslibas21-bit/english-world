@@ -12,7 +12,7 @@ import { ViewSwitch } from "./ViewSwitch";
 import { Panels } from "./Panels";
 import { Toasts } from "./Toasts";
 import { LightPlay } from "./LightHome";
-import { debugBaristaLink, takeAutoStart, takeLinkedSituation } from "./playMode";
+import { debugBilliardsLink, debugBaristaLink, takeAutoStart, takeLinkedSituation } from "./playMode";
 import { refreshLocalState } from "../convo/speech";
 import { L } from "./i18n";
 import { audio } from "../game/audio";
@@ -54,7 +54,8 @@ function Play() {
         // mode's home is the list, LightHome.tsx.)
         setReady(true); useStore.getState().setScreen("play");
         const sit = takeLinkedSituation();
-        if (debugBaristaLink) g!.debugBarista()?.start();
+        if (debugBilliardsLink) g!.debugBilliards()?.start();
+        else if (debugBaristaLink) g!.debugBarista()?.start();
         else if (sit) g!.startScenario(sit);
       };
       g.init();
@@ -66,7 +67,7 @@ function Play() {
           seaPlaceBoat: (x: number, z: number, heading?: number) => g!.seaPlaceBoat(x, z, heading),
         } : {}),
         road: { state: () => g!.roadDebug(), steer: (lane: number) => g!.roadSteer(lane), jumpTimer: (seconds?: number) => g!.roadJumpTimer(seconds) },
-        barista: g.debugBarista(), loteria: g.debugLoteria(),
+        billiards: g.debugBilliards(), barista: g.debugBarista(), loteria: g.debugLoteria(),
       };
     });
     return () => { gone = true; g?.dispose(); setGame(null); };

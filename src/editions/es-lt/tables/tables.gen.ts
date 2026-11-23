@@ -61,6 +61,7 @@ import T_x07_pintora from "./x07-pintora.json";
 import T_x08_rosario from "./x08-rosario.json";
 import T_x09_alberca from "./x09-alberca.json";
 import T_x10_loteria from "./x10-loteria.json";
+import T_x11_billar from "./x11-billar.json";
 
 export const TABLES: Record<string, LearnerTable> = {
   "_shared": T__shared as LearnerTable,
@@ -124,4 +125,5 @@ export const TABLES: Record<string, LearnerTable> = {
   "x08-rosario": T_x08_rosario as LearnerTable,
   "x09-alberca": T_x09_alberca as LearnerTable,
   "x10-loteria": T_x10_loteria as LearnerTable,
+  "x11-billar": T_x11_billar as LearnerTable,
 };

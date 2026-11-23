@@ -39,6 +39,7 @@ export interface TownTheme {
   restaurant: "trattoria" | "yucateco";
   /** This edition's additions to the rooms, each built only when switched on. */
   roomExtras: {
+    cantina?: boolean;
     /** The airport's arrivals hall: customs after the baggage desk (the `aduana` officer, the lanes, a sniffer dog). */
     customs?: boolean;
     /** Mexico's flag in the rooms (the airport, the police front desk) instead of the United States'. */

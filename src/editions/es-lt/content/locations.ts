@@ -7,6 +7,7 @@ import { SHARED } from "../tables/loaded";
 const T = SHARED;
 if (T) {
   applyLearner({ locations: LOCATIONS }, T);
+  LOCATIONS["pool-hall"].lt = "Biliardo baras „La Buchaca“";
   for (const [id, m] of Object.entries(NAME_MEANING)) NAME_MEANING[id] = T.text[m] ?? m;
 }
 export * from "@/content/locations";

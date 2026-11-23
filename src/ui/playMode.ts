@@ -5,6 +5,7 @@ import { useStore, type PlayMode } from "../state/store";
 import { SITUATION_BY_ID, prefetchSituations } from "../content/situations/catalog";
 
 const KEY = "ew-play-now";
+export const debugBilliardsLink = import.meta.env.DEV && new URLSearchParams(location.search).get("billiards") === "1";
 export const debugBaristaLink = import.meta.env.DEV && new URLSearchParams(location.search).get("barista") === "1";
 
 export function switchPlayMode(to: PlayMode) {
@@ -19,6 +20,7 @@ export function takeAutoStart(): PlayMode | null {
   let flag = false;
   try { flag = sessionStorage.getItem(KEY) === "1"; sessionStorage.removeItem(KEY); } catch { /* no storage */ }
   const st = useStore.getState();
+  if (debugBilliardsLink && st.progress.profile) return "town";
   return (flag || linked || debugBaristaLink) && st.progress.profile ? st.settings.play : null;
 }
 

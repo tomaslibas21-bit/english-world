@@ -3,7 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { captureAudio, watchMicrophone } from "../src/convo/audioFocus";
 import { STATIONS, songOfSituation } from "../src/content/radio";
-import { SITUATIONS } from "../src/content/situations";
+import { ROUTE } from "../src/content/route";
 import { buildTimeline, lineAt, shortGloss, unitAt, withSungTranslations, wordsBegun } from "../src/radio/lyrics";
 import { BufferOutput, NeedsTap, type RadioOutput } from "../src/radio/output";
 import { carried, lineKey, notedLineAt, readLinePictures, readSongNotes, songArtUrls } from "../src/radio/extras";
@@ -231,12 +231,13 @@ describe("the playing order", () => {
     expect(nextStation(STATIONS, {}, "grammar")).toBeNull();
   });
 
-  it("knows the course song of every conversation", () => {
+  it("knows the course song of every conversation on the route", () => {
     expect(songOfSituation({ song: 72 })).toBe("S72");
     expect(songOfSituation({ song: 31 })).toBe("S96");
     expect(songOfSituation({ song: 35 })).toBe("S100");
     expect(songOfSituation({ song: "P25" })).toBe("P25");
-    for (const sit of SITUATIONS) expect(songOfSituation(sit), sit.id).toMatch(/^(S\d{2,3}|P\d{2})$/);
+    expect(songOfSituation({ song: "" })).toBeNull();
+    for (const sit of ROUTE) expect(songOfSituation(sit), sit.id).toMatch(/^(S\d{2,3}|P\d{2})$/);
   });
 
   it("starts fresh from anything unreadable in storage", () => {

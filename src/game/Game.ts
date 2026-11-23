@@ -30,6 +30,9 @@ import { type GameMode, ModeRegistry } from "./kit/modes";
 import { FrameFade } from "./kit/frameFade";
 import type { ModeHost } from "./kit/host";
 import { scoreShot } from "./kit/scoreShot";
+import { BILLIARDS_NPC } from "../content/billiards-lines";
+import { BilliardsMode, BILLIARDS_PLACE } from "./billiards/mode";
+import { makeCue, TABLE_NAME, TABLE_PROMPT, type TableView } from "./billiards/table";
 import type { Do, SurfArrow } from "./surf/logic";
 import { FLOOD_INCOMING_INTRO, invitationLocation, invitationTitle, OFFICE_TASK } from "../content/phoneCalls";
 import { TownPhone } from "./phone/Phone";
@@ -92,7 +95,7 @@ const CAVE_TREE_AT = TREES[1];
 /** A box on the screen, in pixels (a name tag, or part of the HUD the tags keep clear of). */
 type TagBox = { x0: number; x1: number; y0: number; y1: number };
 
-type WalkTarget = { kind: "npc" | "door" | "exit" | "point" | "cave-entry" | "glyph" | "tree"; id?: string };
+type WalkTarget = { kind: "npc" | "door" | "exit" | "point" | "cave-entry" | "glyph" | "tree"; id?: string; onward?: "pool-hall" };
 type GuideTarget = WalkTarget & { x: number; z: number; person?: { x: number; z: number } };
 type GuideMode = "objective" | "cave";
 
@@ -265,6 +268,7 @@ export class Game implements GameApi {
   private townCam: { pitch: number; dist: number } | null = null;
   private pushDoorT = 0;
   private transitioning = false;
+  private billiards!: BilliardsMode;
   private barista: ReturnType<typeof createBaristaMode> | null = null;
   private frameFade = new FrameFade((fade) => useStore.getState().setHud({ fade, fadeOnFrames: this.frameFade.active }));
   private readonly phone = new TownPhone();
@@ -608,6 +612,13 @@ export class Game implements GameApi {
       dusk: () => loteriaDusk(this.sky, this.sun, this.hemi, this.scene.fog),
       save: () => this.savePlace(),
     }));
+    this.modes.register(this.billiards = new BilliardsMode(host, {
+      table: () => this.zone.id === BILLIARDS_PLACE
+        ? this.zone.group.getObjectByName(TABLE_NAME)?.userData.table as TableView ?? null : null,
+      tina: () => this.npcs.find((actor) => actor.id === BILLIARDS_NPC)?.ch,
+      place: (x, z, rot) => this.placeOnFoot(x, z, rot, true),
+      save: () => this.savePlace(),
+    }));
     this.scene.add(this.npcLayer, this.guidance.group, this.ambient.group, this.rides.group, this.dust.group, this.splashes.group, this.undersea.group);
     // (a place like the grotto keeps the camera inside itself: Interior.wild.space)
     this.rig.space = {
@@ -806,13 +817,13 @@ export class Game implements GameApi {
 
   /** `via`: through a door ("in" or "out"): the camera starts near the player and settles; out into the street, with
    *  nothing held, the player takes two steps out of the doorway. */
-  enterZone(id: string, spawn?: { x: number; z: number; rot: number }, instant = false, via?: "in" | "out"): void | Promise<void> {
+  enterZone(id: string, spawn?: { x: number; z: number; rot: number }, instant = false, via?: "in" | "out", onEntered?: () => void): void | Promise<void> {
     if (id === CAVE_ZONE && !this.caveCode) {
       if (!caveWays().length) return;
       const from = this.zone;
       return this.caveLoading ??= import("./cave/zone").then((code) => {
         this.caveCode = code;
-        if (!this.disposed && this.zone === from) this.enterZone(id, spawn, instant, via);
+        if (!this.disposed && this.zone === from) this.enterZone(id, spawn, instant, via, onEntered);
       }).catch(() => {
         if (this.disposed) return;
         this.dropIn = 0;
@@ -873,8 +884,8 @@ export class Game implements GameApi {
       this.scene.background = wild ? new THREE.Color(wild.background) : indoor ? new THREE.Color(z.interior?.warm ? "#2b2320" : "#23282e") : null;
       // outdoors a little less flat fill and a little more sun than before (deeper colours, clearer shapes)
       // (a place like the grotto has its own light on the people there)
-      this.hemi.intensity = wild ? wild.hemi[2] : indoor ? 1.9 : 1.4;
-      this.sun.intensity = wild ? wild.sun[1] : indoor ? 1.6 : 2.75;
+      this.hemi.intensity = wild ? wild.hemi[2] : id === BILLIARDS_PLACE ? 1.23 : indoor ? 1.9 : 1.4;
+      this.sun.intensity = wild ? wild.sun[1] : id === BILLIARDS_PLACE ? 0.92 : indoor ? 1.6 : 2.75;
       this.hemi.color.set(wild ? wild.hemi[0] : "#e4f3ff");
       this.hemi.groundColor.set(wild ? wild.hemi[1] : "#8fbf6a");
       this.sun.color.set(wild ? wild.sun[0] : "#fff0d8");
@@ -911,8 +922,8 @@ export class Game implements GameApi {
       if (this.guidedWalk) this.walkObjective(this.guidedWalk);
       this.savePlace();
     };
-    if (instant) { doIt(); return; }
-    this.fadeThen(doIt);
+    if (instant) { doIt(); onEntered?.(); return; }
+    this.fadeThen(() => { doIt(); onEntered?.(); });
   }
 
   private fadeThen(fn: () => void) {
@@ -933,7 +944,12 @@ export class Game implements GameApi {
   }
 
   private spawnNpcs() {
-    for (const n of this.npcs) { n.ch.dispose?.(); this.npcLayer.remove(n.ch.root); n.tag.remove(); }
+    for (const n of this.npcs) {
+      n.ch.rightHand.getObjectByName("billiards-owner-cue")?.traverse((piece) => {
+        if (piece instanceof THREE.Mesh) { piece.geometry.dispose(); piece.material.dispose(); }
+      });
+      n.ch.dispose?.(); this.npcLayer.remove(n.ch.root); n.tag.remove();
+    }
     this.npcs = [];
     const spots = this.zone.interior ? this.zone.interior.npcs : OUTDOOR_NPCS;
     const partner = this.chosenDatePartner();
@@ -948,6 +964,13 @@ export class Game implements GameApi {
       ch.root.rotation.y = sp.rot;
       if (sp.sit) { ch.seatY = sp.seat ?? 0.5; ch.setAnim("sit"); }
       ch.busy = AT_WORK[sp.npc] ?? null;
+      if (sp.npc === BILLIARDS_NPC) {
+        const cue = makeCue();
+        cue.name = "billiards-owner-cue";
+        cue.position.set(0.04, 0.61, 0.06);
+        cue.rotation.z = 0.12;
+        ch.rightHand.add(cue);
+      }
       this.npcLayer.add(ch.root);
       const tag = document.createElement("div");
       tag.className = "nametag";
@@ -1063,7 +1086,7 @@ export class Game implements GameApi {
       this.horn(); e.preventDefault(); return;
     }
     if (this.modes.active) {
-      if (!this.transitioning && this.modes.input({ kind: "key", key: k, repeat: e.repeat, keys: this.keys })) e.preventDefault();
+      if (!this.transitioning && this.modes.input({ kind: "key", key: k, repeat: e.repeat, keys: this.keys, shift: e.shiftKey })) e.preventDefault();
       return;
     }
     if (["arrowup", "arrowdown", "arrowleft", "arrowright", "w", "a", "s", "d", "shift"].includes(k)) {
@@ -1081,8 +1104,12 @@ export class Game implements GameApi {
     if (k === "r" && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) radio.power();
     if (k === "escape") st.setHud({ panel: "settings" });
   };
-  private onKeyUp = (e: KeyboardEvent) => { this.keys.delete(e.key.toLowerCase()); };
-  private onBlur = () => { this.keys.clear(); };
+  private onKeyUp = (e: KeyboardEvent) => {
+    const key = e.key.toLowerCase();
+    this.keys.delete(key);
+    if (this.billiards.release(key)) e.preventDefault();
+  };
+  private onBlur = () => { this.keys.clear(); this.billiards.release(" ", true); };
 
   horn() {
     if (useStore.getState().hud.panel || this.transitioning || this.session?.active) return;
@@ -1581,7 +1608,7 @@ export class Game implements GameApi {
     this.enterZone(CAVE_ZONE, { x: sp.x, z: sp.z, rot: sp.rot }, false, "in");
   }
 
-  exitInterior(exitId?: string) {
+  exitInterior(exitId?: string, onEntered?: () => void) {
     if (!this.zone.interior) return;
     const loc = this.zone.id;
     // (the grotto is left where one went in: its water comes up at the cave's mouth, its cleft at La Grieta; gone in
@@ -1589,17 +1616,17 @@ export class Game implements GameApi {
     if (this.wild) {
       const id = exitId ?? this.wild.exits[0].id, W = caveWays();
       const way = W.find((w) => w.id === this.caveVia && w.exit === id) ?? W.find((w) => w.exit === id) ?? W[0];
-      this.enterZone("town", way.out);
+      this.enterZone("town", way.out, false, undefined, onEntered);
       return;
     }
     const door = this.town.doors.find((d) => d.loc === loc);
-    if (loc === "airport") { this.enterZone("town", AIRPORT_EXIT, false, "out"); return; }
+    if (loc === "airport") { this.enterZone("town", AIRPORT_EXIT, false, onEntered ? undefined : "out", onEntered); return; }
     if (door) {
       // a metre further out than the door's own spot (clear of an awning's edge, so the camera has room behind)
       const x = door.outX + Math.sin(door.rot), z = door.outZ + Math.cos(door.rot);
       const out = this.town.walkableAt(x, z) ? { x, z } : { x: door.outX, z: door.outZ };
-      this.enterZone("town", { ...out, rot: door.rot }, false, "out");
-    } else this.enterZone("town");
+      this.enterZone("town", { ...out, rot: door.rot }, false, onEntered ? undefined : "out", onEntered);
+    } else this.enterZone("town", undefined, false, undefined, onEntered);
   }
 
   sitsForNpc(npc: string): SituationMeta[] { return this.npcToSits.get(npc) ?? []; }
@@ -2220,6 +2247,19 @@ export class Game implements GameApi {
     const mode = this.modes.active ?? (id === "barista" && this.modes.owns(id) ? this.modes.get(id) : null);
     if (mode?.id === id) mode.action?.(name, value);
   }
+  debugBilliards() {
+    const debug = this.billiards.debug();
+    if (!debug) return undefined;
+    return {
+      ...debug,
+      start: (group?: "solids" | "stripes") => {
+        if (this.transitioning || this.modes.active || this.session?.active) return false;
+        useStore.getState().setHud({ panel: null });
+        if (this.zone.id !== BILLIARDS_PLACE) this.enterZone(BILLIARDS_PLACE, TABLE_PROMPT, true);
+        return this.modes.start("billiards", group);
+      },
+    };
+  }
   debugBarista() {
     if (!import.meta.env.DEV) return undefined;
     return {
@@ -2308,6 +2348,21 @@ export class Game implements GameApi {
 
   orderedSituations(): SituationMeta[] {
     return [...ROUTE].sort((a, b) => a.chapter - b.chapter || a.order - b.order || a.id.localeCompare(b.id));
+  }
+
+  guideToPoolHall() {
+    if (this.rides.riding || this.zone.id === BILLIARDS_PLACE) return;
+    const door = this.town.doors.find((d) => d.loc === BILLIARDS_PLACE);
+    if (!door) return;
+    if (!this.zone.interior) {
+      this.walkTo(door.outX, door.outZ, { kind: "point" });
+    } else if (this.wild) {
+      const exit = this.objectiveTarget("objective");
+      if (exit?.kind === "exit") this.walkTo(exit.x, exit.z, { kind: "exit", id: exit.id, onward: BILLIARDS_PLACE });
+    } else {
+      const { x, z } = this.zone.interior.exit;
+      this.walkTo(x, z - 0.6, { kind: "exit", onward: BILLIARDS_PLACE });
+    }
   }
 
   setObjective(sitId: string | null) {
@@ -2639,6 +2694,8 @@ export class Game implements GameApi {
         const pictureHeight = talkPictureHeight(h);
         this.rig.applyViewShift(w, h, sideways ? w * 0.375 : wide ? Math.min(w * 0.22, 380) : 0,
           wide || sideways ? 0 : (h - pictureHeight) / 2);
+      } else if (mode === this.billiards) {
+        this.billiards.frameView(w, h, document.querySelector(".bl-table-pad")?.getBoundingClientRect());
       } else if (this.barista && mode === this.barista) {
         const bottom = document.querySelector(".barista-bottom, .barista-result .mode-score-card")?.getBoundingClientRect().top;
         this.barista.frameView(w, h, bottom ?? h, document.querySelector<HTMLElement>(".barista-cue"));
@@ -3284,7 +3341,10 @@ export class Game implements GameApi {
     this.autoPath = null;
     if (!t) return;
     if (t.kind === "cave-entry" && t.id) { this.enterCave(t.id); return; }
-    if (t.kind === "exit") { this.exitInterior(t.id); return; }
+    if (t.kind === "exit") {
+      this.exitInterior(t.id, t.onward ? () => this.guideToPoolHall() : undefined);
+      return;
+    }
     if (t.kind === "door" && t.id) {
       this.enterDoor(t.id);
       return;

@@ -12,6 +12,7 @@
 import { LOTERIA_SITUATION } from "../../src/editions/es/content/loteria";
 import { NPCS } from "../../src/content/npcs";
 import { SITUATIONS } from "../../src/content/situations";
+import { BILLIARDS_SITUATION } from "../../src/content/billiards-lines";
 import { POOL_KIDS, POOL_SITUATION } from "../../src/game/world/pool";
 
 /** Gemini's prebuilt voices with Google's one-word descriptions; the gender is how they usually sound. */
@@ -99,6 +100,7 @@ const MEXICO: Record<string, string> = {
   // warm), nobody else's
   tienda: "es-419-commercial-4",
   tona: "es-419-csagent-8", beto: "es-419-csagent-9",
+  memo: "es-419-tutor-2",
   vale: "es-419-training-8", diego: "es-419-assistant-9", santi: "es-419-csagent-4",
   // the convertibles' owners (RIDERS): Valeria bright and breezy at 32, Don Rafa textured and soothing at 57, Marisol
   // at 47, Beto crisp and eager at 28; and the passers-by who call after a car: a younger and an older voice a gender
@@ -160,6 +162,7 @@ const SPAIN: Record<string, string> = {
   // x05-tienda: Paco, a young man's voice (23); nobody else speaks in his conversation
   tienda: "es-es-training-9",
   tona: "es-es-podcaster-5", beto: "es-es-podcaster-7",
+  memo: "es-es-assistant-4",
   vale: "es-es-concierge-3", diego: "es-es-training-9", santi: "es-es-concierge-12",
   // the convertibles' owners and the passers-by who call after a car, by gender and age as in the Mexican set
   ride_park: "es-es-techagent-5", ride_east: "es-es-assistant-3", ride_west1: "es-es-training-12", ride_west2: "es-es-training-11",
@@ -214,6 +217,7 @@ export const CAST: Record<string, Role> = {
   olivia: { voice: "Zephyr", age: "late 20s", manner: "warm and welcoming", pace: "easy" },
   // the center
   chuck: { voice: "Sadachbia", age: "about 65", manner: "enthusiastic, proud of his town", pace: "very fast" },
+  memo: { voice: "Algenib", age: "about 60", manner: "warm and easygoing, a cantina owner who enjoys teaching pool", pace: "easy" },
   mia: { voice: "Leda", age: "early 20s", manner: "bright and friendly", pace: "lively" },
   rosa: { voice: "Sulafat", age: "about 70", manner: "relaxed, warm and motherly", pace: "unhurried" },
   ben: { voice: "Achird", age: "mid 20s", manner: "polite and helpful", pace: "easy" },
@@ -351,6 +355,7 @@ export const SCENES: Record<string, Scene> = {
   "x06-custodio": { setting: "outdoors at the gateway of small Maya ruins by the sea, on a calm afternoon" },
   "x07-pintora": { setting: "outdoors on the lawn of small Maya ruins by the sea, painting at an easel, on a calm afternoon" },
   [LOTERIA_SITUATION]: { setting: "outdoors at a lotería table in the town square at dusk" },
+  [BILLIARDS_SITUATION]: { setting: "in a small cantina, across a pool table from the learner" },
   [POOL_SITUATION]: { setting: "outdoors at a hotel pool, talking with the kids beside the water" },
   "x08-rosario": { setting: "outdoors, sitting in the shade of an old stone wall by the sea, on a hot calm afternoon" },
   // the convertibles (no conversation: the owners' lines when their car is taken or brought back, and what passers-by

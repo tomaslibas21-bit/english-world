@@ -46,6 +46,7 @@ const LOOK: Record<string, Partial<Look>> = {
   beto: { skin: "#ac7351", hair: { style: "short", color: "#5b534b" }, top: "#79a9a4", bottom: "#534338",
     acc: ["jipi", "mustache", "guayabera"], build: 1.13 },
   // the center
+  memo: { skin: "#a77350", hair: { style: "short", color: HAIR.gray }, top: "#f3e5c8", bottom: "#363330", acc: ["guayabera", "mustache"], accColor: HAIR.gray, sleeves: "short", build: 1.09 },
   mia: { skin: "#7d573b", hair: { style: "curls", color: "#1f1a17" }, top: "#f4e4d2", bottom: "#353d4a", acc: ["apron", "earrings"], accColor: "#33534f", build: 0.95 },
   rosa: { skin: "#a8734b", hair: { style: "braid", color: "#e6e0d8", side: -1, tie: "#e4007c" }, top: "#f9f3ee", bottom: "#f6f0ea", skirt: true, acc: ["glasses", "hipil", "rebozo", "earrings"], accColor: "#ffb142", height: 0.92, build: 0.94 },
   ben: { skin: "#c2895f", hair: { style: "short", color: "#1f1a17" }, top: "#6c4561", bottom: "#303038", acc: ["lanyard", "mustache"], build: 0.96 },
@@ -195,6 +196,8 @@ const CAST: Record<string, Cast> = {
 
 /** Characters only Puerto Colibrí has, each on a Maple Harbor character's base (build, voice) under an id of its own. */
 const EXTRA: Record<string, [base: string, ...cast: Cast]> = {
+  memo: ["walter", "Don Memo", "Dueño de la cantina", "Owner of the cantina", { gender: "m", informal: false, informalSpain: false,
+    bio: "Runs La Buchaca, the cantina his father opened, and still plays pool every night.", voice: "em_santa" }],
   // customs after the baggage hall (s65b): another agency than immigration (s65a), so another officer
   aduana: ["diaz", "Agente Medina", "Aduana", "Customs"],
   // the aluxes (small spirits of the Maya forest, friendly and full of mischief) who live in the grotto under Cenote
@@ -261,7 +264,7 @@ function cast(id: string, n: NpcDef, [name, es, en, extra = {}]: Cast): NpcDef {
 }
 
 export const NPCS: Record<string, NpcDef> = Object.fromEntries([
-  ...Object.entries(BASE).map(([id, n]) => [id, CAST[id] ? cast(id, n, CAST[id]) : { ...n, look: lookOf(id, n.look, n.gender) }]),
+  ...Object.entries(BASE).filter(([id]) => id !== "tina").map(([id, n]) => [id, CAST[id] ? cast(id, n, CAST[id]) : { ...n, look: lookOf(id, n.look, n.gender) }]),
   ...Object.entries(EXTRA).map(([id, [base, ...c]]) => [id, cast(id, BASE[base], c)]),
 ]);
 

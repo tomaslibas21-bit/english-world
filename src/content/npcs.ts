@@ -24,7 +24,7 @@ export type Accessory = "apron" | "cap" | "glasses" | "sunglasses" | "hat" | "ti
   // round the skirt's hem), a guayabera's pleats, pockets and buttons, a rebozo over the shoulders (in accColor)
   | "jipi" | "bandana" | "embroidered" | "hipil" | "guayabera" | "rebozo"
   // an apron from the waist down only (a waiter's), in accColor
-  | "waistapron"
+  | "waistapron" | "polo"
   // beachwear (the Spanish edition's beach, theme.ts `beachwear`; Maple Harbor uses none): a sarong tied over a skirt's
   // shape, a light shirt worn open over a swimsuit (in accColor), a broad-brimmed sun hat (its ribbon in accColor), a
   // bucket hat (in accColor)
@@ -101,6 +101,8 @@ export const NPCS: Record<string, NpcDef> = Object.fromEntries([
   N("chuck", "Chuck", ["Visitor Center volunteer", "Lankytojų centro savanoris"], "m", "am_michael",
     { skin: SK.light, hair: { style: "bald", color: HAIR.gray }, top: "#6d8f3e", bottom: "#4a3b2c", acc: ["glasses", "vest", "mustache"], build: 1.1 }, { speed: 1.18, bio: "Kalba labai greitai – paprašyk sulėtinti!" }),
   // Downtown
+  N("tina", "Tina", ["Pool hall owner", "Biliardo salės savininkė"], "f", "af_nicole",
+    { skin: SK.fair, hair: { style: "wavy", color: "#8c4733" }, top: "#244d39", bottom: "#364f70", acc: ["glasses", "polo"], height: 0.97 }),
   N("mia", "Mia", ["Barista", "Barista"], "f", "af_bella",
     { skin: SK.tan, hair: { style: "braid", color: HAIR.brown, tie: "#2f7d6b" }, top: "#f4efe6", bottom: "#394150", acc: ["apron"], accColor: "#2f7d6b" }, { bio: "Piešia širdeles ant kavos putų." }),
   N("rosa", "Rosa", ["Local, born and raised", "Vietinė gyventoja"], "f", "af_aoede",

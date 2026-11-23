@@ -41,6 +41,7 @@ import { EDITION } from "../../src/edition";
 import type { EntityDef, SituationDef } from "../../src/content/types";
 import { hintBinding } from "../../src/convo/target";
 import { lookFor, observe, usesPartner, type Heard, type ObserveStats } from "./runs-es";
+import { BILLIARDS_SITUATION, GROUP_KEYS, REPLY_KEYS } from "../../src/content/billiards-lines";
 import { BINDINGS, LISTS, codeSpeakers, idOf, reachFilter, reachOf, unspoken } from "./reach-es";
 import { sceneSit } from "./casting-es";
 import { itemsFor, referenced } from "../line-reach";
@@ -51,7 +52,10 @@ const NAMES = [EDITION.simPlayer.name, EDITION.simPlayer.surname];
 const NAMES_RE = new RegExp(`\\b(${NAMES.join("|")})\\b`);
 const GENDERS = ["m", "f"] as const;
 const VARIETIES = ["default", "neutral", "spain"] as const;
-const modeCoachLine = (sit: string, lid: string) => unspoken(sit, lid) || (sit === BARISTA_CONVERSATION.situation && isBaristaCoachLine(lid));
+const billiardsLearnerLines = new Set<string>([...GROUP_KEYS, ...REPLY_KEYS]);
+const modeCoachLine = (sit: string, lid: string) => unspoken(sit, lid) ||
+  (sit === BARISTA_CONVERSATION.situation && isBaristaCoachLine(lid)) ||
+  (sit === BILLIARDS_SITUATION && billiardsLearnerLines.has(lid));
 
 export interface EsUtt {
   voice: string; speed: number;
@@ -291,9 +295,10 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
           }
         }
       }
-      // 2b. The kit uses coach voices for examples, including lotería card names read back by the learner.
+      // 2b. The kit uses coach voices for examples, including lotería card names read back by the learner and the pool calls.
       for (const [lid, variants] of Object.entries(sit.lines)) {
-        if (!modeCoachLine(sit.id, lid) && !(sit.id === LOTERIA_SITUATION && lid.startsWith("lt_c_"))) continue;
+        const billiardsCall = sit.id === BILLIARDS_SITUATION && /^(bl_b\d+|bl_p_[a-z]+)$/.test(lid);
+        if (!modeCoachLine(sit.id, lid) && !(sit.id === LOTERIA_SITUATION && lid.startsWith("lt_c_")) && !billiardsCall) continue;
         variants.forEach((src, i) => {
           for (const n of people) for (const learner of GENDERS) {
             try { add(coachVoice(learner), 1, compose(src, {}, { look, addressee: n.gender, speaker: learner, formal: !addressInformal(n) }), `${sit.id}:${lid}[${i}]`, sit.id, "hint", true); } catch { /* skip */ }

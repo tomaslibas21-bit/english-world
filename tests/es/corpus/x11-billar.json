@@ -1,0 +1,26 @@
+{
+  "situation": "x11-billar",
+  "items": [
+    {"ctx": "play", "say": "Un poquito", "intent": "play_yes"},
+    {"ctx": "play", "say": "Sí, juego un poco", "intent": "play_yes"},
+    {"ctx": "play", "say": "Me encanta el billar", "intent": "play_yes"},
+    {"ctx": "play", "say": "Más o menos", "intent": "play_yes"},
+    {"ctx": "play", "say": "A veces", "intent": "play_yes"},
+    {"ctx": "play", "say": "No, nunca he jugado", "intent": "play_no"},
+    {"ctx": "play", "say": "No sé jugar", "intent": "play_no"},
+    {"ctx": "name", "say": "Me llamo Ana", "intent": "name_ctx"},
+    {"ctx": "name", "say": "Mi nombre es Diego", "intent": "name_ctx"},
+    {"ctx": "name", "say": "Ana", "intent": "bare_name_ctx"},
+    {"ctx": "group", "say": "Las lisas, por favor", "intent": "group_solids"},
+    {"ctx": "group", "say": "Me quedo con las lisas", "intent": "group_solids"},
+    {"ctx": "group", "say": "Yo quiero las rayadas", "intent": "group_stripes"},
+    {"ctx": "group", "say": "Rayadas", "intent": "group_stripes"},
+    {"ctx": "ask", "say": "¿Desde cuándo juega?", "intent": "q_desde"},
+    {"ctx": "ask", "say": "¿Juega todos los días?", "intent": "q_diario"},
+    {"ctx": "ask", "say": "¿Juegas seguido?", "intent": "q_diario"},
+    {"ctx": "ask", "say": "Gracias", "intent": "g_thanks"},
+    {"ctx": "group", "say": "Quiero ese zapato", "intent": "none"},
+    {"ctx": "play", "say": "¿Cuánto cuesta la habitación?", "intent": "none"},
+    {"ctx": "ask", "say": "Tengo una bicicleta verde", "intent": "none"}
+  ]
+}

@@ -6,7 +6,8 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { SITUATIONS } from "../../src/content/situations";
+// Extract the English source even when LEARNER=lt and a completed table already exists.
+import { SITUATIONS } from "../../src/editions/es/content/situations";
 import { learnerItems, type LearnerItem } from "../../src/editions/es/learner/walk";
 
 const out = process.argv.slice(2).find((a) => a.includes("/")) ?? path.join(os.homedir(), "puerto-colibri-lt", "work");

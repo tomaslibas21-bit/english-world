@@ -25,6 +25,7 @@ export const LOCATIONS: Record<string, LocationDef> = Object.fromEntries([
   L("hotel", "Hotel Mar Azul", "The hotel", "downtown", "interior", "🏨"),
   L("visitor-center", "Información Turística", "Tourist information", "downtown", "interior", "ℹ️"),
   L("museum", "Museo de la Costa Maya", "The museum", "downtown", "interior", "🖼️"),
+  L("pool-hall", "Cantina La Buchaca", "The cantina “La Buchaca” (with a pool table)", "downtown", "interior", "🎱"),
   L("sunny-cup", "Café La Ceiba", "Café “La Ceiba”", "downtown", "interior", "☕"),
   L("trattoria", "La Cocina de Lucía", "Lucía's Yucatecan restaurant", "downtown", "interior", "🌮"),
   L("threads", "Boutique Hilos", "Clothing store “Hilos”", "downtown", "interior", "👕"),

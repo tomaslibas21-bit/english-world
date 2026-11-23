@@ -15,6 +15,7 @@ import { parseAst } from "rolldown/parseAst";
 import { LOTERIA_CALLER, LOTERIA_NEIGHBOR, LOTERIA_SITUATION } from "../../src/editions/es/content/loteria";
 import { placeholders } from "../../src/convo/compose";
 import type { EntityDef, SituationDef } from "../../src/content/types";
+import { BILLIARDS_NPC, BILLIARDS_SITUATION } from "../../src/content/billiards-lines";
 import { POOL_KIDS, POOL_SITUATION } from "../../src/game/world/pool";
 
 type Binding = Record<string, unknown>;
@@ -453,6 +454,9 @@ export function codeSpeakers(sit: SituationDef): Map<string, Set<string>> {
       if (/^lt_[bcv]_/.test(key)) put(key, LOTERIA_CALLER);
       if (key.startsWith("lt_t_")) put(key, LOTERIA_NEIGHBOR);
     }
+  }
+  if (sit.id === BILLIARDS_SITUATION) {
+    for (const key of Object.keys(sit.lines)) if (key.startsWith("bl_")) put(key, BILLIARDS_NPC);
   }
   speakerCache.set(sit.id, out);
   return out;

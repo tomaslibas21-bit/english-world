@@ -7,7 +7,8 @@ import { conversationLine, learnerTurn } from "./lines";
 import { useStore } from "../../state/store";
 import { audio } from "../audio";
 
-export interface KitLine { key: string; sentence: Sentence }
+export interface KitLine { key: string; sentence: Sentence; pieces?: Sentence[] }
+type SpeechMatcher = ReturnType<typeof learnerTurn<KitLine>>;
 export interface KitMic {
   status: "off" | "starting" | "listening" | "unclear";
   heard: string;
@@ -15,10 +16,11 @@ export interface KitMic {
 
 export class ModeDialogue {
   private playback: { left: number; audible: boolean; completed: boolean; finish(ok: boolean): void } | null = null;
-  private turn: { options: KitLine[]; speech: ReturnType<typeof learnerTurn<KitLine>>; finish(line: KitLine | null): void; retries: number } | null = null;
+  private turn: { options: KitLine[]; speech: SpeechMatcher; finish(line: KitLine | null): void; retries: number; choosing?: boolean } | null = null;
   private attempt: ReturnType<typeof createSpeechAttempt> | null = null;
   private retryIn = 0;
   private paused = false;
+  private generation = 0;
   micOn = true;
 
   constructor(private ui: {
@@ -38,7 +40,7 @@ export class ModeDialogue {
     return sentence ? { key, sentence } : null;
   }
 
-  private play(line: KitLine, voice: string, speed: number, male: boolean, learner = false) {
+  private play(line: KitLine, voice: string, speed: number, male: boolean, learner = false, onVoiced?: (ok: boolean) => void) {
     const { slowVoice: slow, volume } = useStore.getState().settings;
     const text = line.sentence.say;
     const clip = audio.clipDuration(voice, speed, text);
@@ -48,10 +50,15 @@ export class ModeDialogue {
     if (!learner) this.ui.animate?.(est);
     return new Promise<boolean>((finish) => {
       const estimate = this.ui.framePlayback && clip == null ? Math.max(est, text.length * (slow ? 0.09 : 0.07)) : est;
-      const playing = { left: audible ? estimate + 2 : estimate, audible, completed: false, finish };
+      let heard = false;
+      const playing = { left: audible ? estimate + 2 : estimate, audible, completed: false, finish: (ok: boolean) => {
+        onVoiced?.(heard);
+        finish(ok);
+      } };
       this.playback = playing;
       if (audible) void audio.play(voice, speed, text, { slow, male, localVoiceOnly: this.ui.speechFallback }).then((ok) => {
         if (!ok || this.playback !== playing) return;
+        heard = true;
         if (this.ui.framePlayback) playing.completed = true;
         else this.endPlayback(true);
       });
@@ -72,6 +79,23 @@ export class ModeDialogue {
     return await this.play(line, voice, speed, male) ? line : null;
   }
 
+  /** Shows one composed call while its individual recording keys play in order. */
+  async sayPieces(line: KitLine, voice: string, speed: number, male: boolean) {
+    if (this.turn || this.playback) return false;
+    this.ui.say(line);
+    let allAudible = true;
+    const played = await this.playPieces(line, voice, speed, male, false, (ok) => { allAudible &&= ok; });
+    return played && allAudible;
+  }
+
+  private async playPieces(line: KitLine, voice: string, speed: number, male: boolean, learner: boolean, onVoiced?: (ok: boolean) => void) {
+    const generation = this.generation;
+    for (const sentence of line.pieces ?? [line.sentence]) {
+      if (generation !== this.generation || !await this.play({ key: line.key, sentence }, voice, speed, male, learner, onVoiced)) return false;
+    }
+    return true;
+  }
+
   clearLine() {
     this.ui.say(null);
   }
@@ -79,9 +103,13 @@ export class ModeDialogue {
   async expect(situation: string, npcId: string, keys: string[], fallback: Record<string, SentSrc[]> | undefined, accept: Readonly<Record<string, readonly string[]>> = {}) {
     if (this.turn || this.playback) return null;
     const options = keys.flatMap((key) => this.resolve(situation, npcId, key, fallback, true) ?? []);
-    if (!options.length) return null;
+    return this.expectLines(options, learnerTurn(options, accept));
+  }
+
+  expectLines(options: KitLine[], speech: SpeechMatcher) {
+    if (this.turn || this.playback || !options.length) return Promise.resolve(null);
     return new Promise<KitLine | null>((finish) => {
-      this.turn = { options, speech: learnerTurn(options, accept), finish, retries: 0 };
+      this.turn = { options, speech, finish, retries: 0 };
       this.ui.choices(options);
       this.listen();
     });
@@ -97,7 +125,7 @@ export class ModeDialogue {
 
   choose(key: string, spoken = false) {
     const turn = this.turn, line = turn?.options.find((option) => option.key === key);
-    if (!turn || !line || this.paused || this.playback) return;
+    if (!turn || !line || turn.choosing || this.paused || this.playback) return;
     this.stopListening();
     this.ui.choices([]);
     if (spoken) {
@@ -105,12 +133,25 @@ export class ModeDialogue {
       turn.finish(line);
       return;
     }
+    turn.choosing = true;
     const gender = useStore.getState().progress.profile?.gender;
-    void this.play(line, coachVoice(gender), 1, gender === "m", true).then((ok) => {
+    const voice = coachVoice(gender);
+    const played = line.pieces ? this.playPieces(line, voice, 1, gender === "m", true) : this.play(line, voice, 1, gender === "m", true);
+    void played.then((ok) => {
       if (this.turn !== turn) return;
       this.turn = null;
       turn.finish(ok ? line : null);
     });
+  }
+
+  skipTurn() {
+    if (!this.playback && this.turn && !this.turn.choosing) {
+      const turn = this.turn;
+      this.turn = null;
+      this.stopListening();
+      this.ui.choices([]);
+      turn.finish(null);
+    }
   }
 
   setMic(on: boolean) {
@@ -123,7 +164,7 @@ export class ModeDialogue {
 
   private listen() {
     const turn = this.turn;
-    if (!turn || this.playback || this.paused || !this.micOn || !speechSupported() || document.hidden) return;
+    if (!turn || turn.choosing || this.playback || this.paused || !this.micOn || !speechSupported() || document.hidden) return;
     this.stopListening();
     const { phrases, read } = turn.speech;
     const attempt = createSpeechAttempt({
@@ -188,6 +229,7 @@ export class ModeDialogue {
   }
 
   cancel() {
+    this.generation++;
     this.endPlayback(false);
     this.cancelTurn();
     this.clearLine();

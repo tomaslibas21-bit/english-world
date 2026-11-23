@@ -5,4 +5,6 @@ import { applyLearner } from "../../es/learner/walk";
 import { SHARED } from "../tables/loaded";
 
 applyLearner({ npcs: NPCS }, SHARED);
+NPCS.memo.role.lt = "Baro savininkas";
+NPCS.memo.bio = "Laiko barą „La Buchaca“, kurį atidarė jo tėvas, ir vis dar kasvakar žaidžia biliardą.";
 export * from "@/content/npcs";

@@ -52,6 +52,7 @@ export const META: SituationMeta[] = [
   {"id":"s90-running-late","song":90,"songTitle":"I'm Running Late","title":{"en":"I'm Running Late","lt":"Aš vėluoju"},"topic":{"en":"Running late","lt":"Vėlavimas"},"chapter":4,"order":4,"location":"phone","npc":"harris","mode":"phone","goal":"Paskambink viršininkui ir pranešk, kad vėluoji.","intro":"8:50 ryto. Susirinkimas „Brightline“ biure prasideda devintą, o tu dar pakeliui. Paskambink viršininkui ponui Harisui: pasakyk, kas skambina, kad vėluoji, kodėl ir kada būsi."},
   {"id":"s91a-lost-wallet","song":91,"songTitle":"Can You Help Me, Please?","title":{"en":"Can You Help Me, Please?","lt":"Ar galite man padėti?"},"topic":{"en":"Lost wallet","lt":"Pamesta piniginė"},"chapter":7,"order":1,"location":"town-square","npc":"mrs_lee","goal":"Paprašyk pagalbos: pametei piniginę.","intro":"Sekmadienis, ūkininkų turgus aikštėje. Tu nori susimokėti už braškes, kiši ranką į kišenę – piniginės nėra! Prie gėlių prekystalio stovi malonioji ponia Li. Paprašyk jos pagalbos."},
   {"id":"s91b-police","song":91,"songTitle":"Can You Help Me, Please?","title":{"en":"I'd Like to Report a Theft","lt":"Noriu pranešti apie vagystę"},"topic":{"en":"At the police station","lt":"Policijos nuovadoje"},"chapter":7,"order":2,"location":"police","npc":"reyes","goal":"Pranešk policijai apie pamestą piniginę.","intro":"Policijos nuovada prie aikštės. Budintis pareigūnas Reyesas priima pranešimus. Papasakok, kas nutiko tavo piniginei, kur ir kada tai buvo, kaip ji atrodo ir kas joje buvo."},
+  {"id":"x01-pool-hall","song":"","songTitle":"","title":{"en":"Call Your Shot","lt":"Paskelbk smūgį"},"topic":{"en":"At the pool hall","lt":"Biliardo salėje"},"chapter":9,"order":8,"location":"pool-hall","npc":"tina","mode":"talk","goal":"Pasišnekėk su Tina: pasakyk, ar žaidi biliardą, prisistatyk ir pasirink – vienspalviai ar dryžuoti. Tada sužaiskite partiją.","intro":"„The Corner Pocket“ – nedidelė biliardo salė Ąžuolų alėjoje. Šeimininkė Tina kreiduoja lazdą prie stalo ir pamoja tau prieiti.","bonus":true},
 ];
 
 export const LOAD: Record<string, () => Promise<SituationDef>> = {
@@ -105,4 +106,5 @@ export const LOAD: Record<string, () => Promise<SituationDef>> = {
   "s90-running-late": () => import("./s90-running-late").then((m) => m.default),
   "s91a-lost-wallet": () => import("./s91a-lost-wallet").then((m) => m.default),
   "s91b-police": () => import("./s91b-police").then((m) => m.default),
+  "x01-pool-hall": () => import("./x01-pool-hall").then((m) => m.default),
 };

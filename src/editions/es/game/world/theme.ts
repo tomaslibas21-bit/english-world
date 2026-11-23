@@ -114,6 +114,7 @@ export const THEME: TownTheme = {
   },
   restaurant: "yucateco",
   roomExtras: {
+    cantina: true,
     customs: true, mexicanFlag: true, bankTurns: true, pharmacyDoctor: true, museumStairs: true, yucatanDinner: true, guayabera: true,
     // graphics round 2: Las Palmas, the hotel, the police, the museum, the airport, the clinic, the shops, the café, El Muelle
     lasPalmas: true, hotelMx: true, policeMx: true, museumMaya: true, airportMx: true, clinicMx: true, shopsMx: true, cafeMx: true, muelleMx: true,
@@ -149,6 +150,7 @@ export const THEME: TownTheme = {
   centrepiece: "kiosco",
   gazebo: false,
   buildings: {
+    "pool-hall": { color: "#df9266", trim: "#276365", awning: "#873f3b", signLines: ["Cantina La Buchaca", "Billar"] },
     // around the zócalo
     bank: { color: "#f2c14e", trim: "#7a3e1d" },
     post: { color: "#ee8a5b", trim: "#fff3e0", awning: "#1f6f8b" },
@@ -337,6 +339,7 @@ export const THEME: TownTheme = {
     ],
   },
   roomLooks: {
+    "pool-hall": { floor: "#d39365", floorKind: "barro", wall: "#f5daa8", dado: "#32756c", dadoH: 1.12, accent: "#81482f" },
     // Correos de México's rosa mexicano (the counter, the rugs and the sign are interiors.ts's, `mailbox`)
     "post-office": { accent: "#c2006a" },
     // Diego and Natalia's house: a warm ceramic tile floor, warm light walls, terracotta baseboards (and `homeMx`)
@@ -470,9 +473,10 @@ export const THEME: TownTheme = {
   // and a room's signs and posters in one mesh on one texture (one draw call for all of them: room for this round's)
   panelAtlas: true,
   // the overhead lines along calle Hidalgo (poles on its north sidewalk, clear of the lamps, the signs and the corners),
+  // with the pole west of La Buchaca clear of its sign,
   // and the service drops across the street to Ximena's, Diego's and the houses east of the terminal
   cables: {
-    poles: [[-100, 33], [-80, 33], [-58, 33], [-36, 33], [-14, 33], [10, 33], [34, 33], [58, 33], [80, 33], [104, 33]],
+    poles: [[-100, 33], [-80, 33], [-58, 33], [-36, 33], [-21.5, 33], [10, 33], [34, 33], [58, 33], [80, 33], [104, 33]],
     drops: [[2, -57.5, 5.6, 47.4], [3, -33.5, 5.6, 47.4], [5, 18, 5.6, 48.9], [8, 87, 5.6, 48.9], [9, 106, 5.6, 48.9]],
   },
   // the sidewalks: clay pots by the doors of Hilos, the estética, Correos, the car rental and the pharmacy; a fruit cart
