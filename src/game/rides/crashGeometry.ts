@@ -25,7 +25,8 @@ const doorRadius = (k: number) => 0.29 + 0.44 * k;
 
 export function addDent(dents: Dent[], dent: Omit<Dent, "depth">) {
   if (dents.length >= MAX_DENTS) dents.shift();
-  const depth = (isSideDent(dent) ? 0.14 : 0.18) * dent.k ** 0.72;
+  const exponent = THREE.MathUtils.lerp(0.55, 0.72, THREE.MathUtils.smoothstep(dent.k, 0.25, 0.6));
+  const depth = (isSideDent(dent) ? 0.14 : 0.18) * dent.k ** exponent;
   let total = depth;
   for (const old of dents) total += old.depth;
   if (total > MAX_DEPTH) {
@@ -152,6 +153,7 @@ const cracked = new THREE.Color("#4a4f57");
 const crashPaint = `
   if (vCrashRest.w >= -0.01 && crashFade > 0.0) {
     float wear = 0.0;
+    float primer = 0.0;
     float hollow = 0.0;
     for (int i = 0; i < ${MAX_DENTS}; ++i) {
       if (i >= crashHitCount) break;
@@ -162,20 +164,22 @@ const crashPaint = `
       float along = dot(delta.xz, vec2(plane.y, -plane.x));
       float inward = dot(delta.xz, plane.xy);
       // Striations run along the contact face. Their ends break up where the paint tears.
-      float streak = sin(delta.y * 91.0 + along * 8.0 + sin(along * 23.0) * 0.85);
+      float streak = sin(delta.y * 66.0 + along * 8.0 + sin(along * 23.0) * 0.85);
       float nick = sin(delta.y * 51.0 + along * 34.0);
-      float run = (along - plane.z * 0.11) / (0.24 + 0.55 * hit.w);
-      float width = (delta.y + along * 0.08) / (0.12 + 0.22 * hit.w);
+      float run = (along - plane.z * 0.11) / mix(0.31, 0.79, hit.w);
+      float width = (delta.y + along * 0.08) / mix(0.15, 0.34, hit.w);
       float thickness = inward / (0.27 + 0.22 * hit.w);
       float scuffPatch = run * run + width * width + thickness * thickness;
       float roughEdge = 1.0 - smoothstep(0.38, 1.04, scuffPatch + streak * 0.14 + nick * 0.07);
-      float strength = mix(0.06, 0.60, smoothstep(0.13, 0.33, hit.w));
-      wear = max(wear, roughEdge * strength * (0.77 + 0.23 * smoothstep(-0.6, 0.9, streak)));
+      float strength = mix(0.34, 0.85, smoothstep(0.10, 0.60, hit.w));
+      float localWear = roughEdge * strength;
+      if (localWear > wear) {
+        wear = localWear;
+        primer = smoothstep(0.26, 0.75, streak + 0.32 * nick);
+      }
       hollow = max(hollow, (1.0 - smoothstep(0.0, 0.70, scuffPatch)) * hit.w);
     }
-    // (on light paint the scrape shows darker, on dark or bright paint a pale grey)
-    float paintLight = smoothstep(0.5, 0.78, dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114)));
-    vec3 scuffTone = mix(crashScuff, crashScuff * vec3(0.6, 0.58, 0.55), paintLight);
+    vec3 scuffTone = mix(vec3(0.027, 0.031, 0.034), crashScuff, primer);
     diffuseColor.rgb = mix(diffuseColor.rgb, scuffTone * (1.0 - 0.26 * hollow), wear * crashFade);
     diffuseColor.rgb *= 1.0 - 0.16 * hollow * crashFade;
     if (vCrashRest.w > 0.99) {

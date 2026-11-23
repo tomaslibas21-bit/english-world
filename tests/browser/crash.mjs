@@ -9,6 +9,8 @@ const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:5188";
 const storage = process.env.WORLD_STORAGE || "puerto-colibri";
 const shots = process.env.WORLD_SHOTS_DIR || "/tmp";
 const beforeOnly = process.env.WORLD_CRASH_BEFORE === "1";
+// WORLD_CRASH_EXTRA=1 also saves a clean "before" shot and the driver's own view after each hit.
+const extra = process.env.WORLD_CRASH_EXTRA === "1";
 const progress = {
   version: 1,
   profile: { name: "Test", gender: "m", lookId: "m1", look: { skin: "#f2d3bd", hair: { style: "short", color: "#5a3a25" }, top: "#2a9d8f", bottom: "#264653" } },
@@ -103,6 +105,14 @@ try {
         await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
         await page.screenshot({ path: join(shots, `crash-${label}-${name}.png`) });
       };
+      const follow = async (name) => {
+        if (!extra) return;
+        await page.evaluate(() => {
+          const g = window.__ew.game;
+          g.rig.mode = "follow"; g.rig.stage = null; g.rig.yaw = window.__crashRide.m.heading; g.rig.snap();
+        });
+        await photo(name);
+      };
       const waitForBlink = () => wait(() => {
         const lamp = window.__ew.game.rides.group.getObjectByName("crash-hazards");
         return lamp?.visible && lamp.geometry.getAttribute("blink").getX(0) > 0.75;
@@ -123,6 +133,12 @@ try {
 
       // Cross Brotecito's paved forecourt to the west wall at x = 137, between the entrance and the loading door.
       const wallHeading = Math.PI / 2 + 0.45;
+      if (extra) {
+        await pose(129, -53.4, wallHeading);
+        await frame("ride", phone ? [3.2, 2.3, 6.2] : [2.6, 1.9, 5.0], [0.2, 0.6, 0.9]);
+        await photo("before");
+        await follow("before-follow");
+      }
       await pose(125, -51.4, wallHeading);
       // (the longest frame from here until a second after the crash: the first dent must not stall a phone)
       await page.evaluate(() => {
@@ -165,6 +181,7 @@ try {
         assert(await page.evaluate(() => window.__ew.game.rides.group.getObjectByName("crash-puffs").visible));
       }
       await photo("impact");
+      await follow("impact-follow");
       if (!beforeOnly) {
         await page.waitForTimeout(1000);
         const longest = await page.evaluate(() => window.__frames.worst);
@@ -214,6 +231,7 @@ try {
         assert(light.hit.k > 0 && light.hit.k < 0.35 && light.hit.k < hard.hit.k, JSON.stringify(light));
         assert(light.damage.dentCount === 1 && light.damage.depth < hard.damage.depth, JSON.stringify(light));
       }
+      await follow("light-follow");
       await pose(148, -41, Math.PI);
       await frame("ride", phone ? [-3.0, 2.0, 5.2] : [-2.4, 1.7, 4.2], [0, 0.55, 1.6]);
       await photo("light");
@@ -314,6 +332,7 @@ try {
         assert(parked.hit.target === "parked" && parked.hit.into > 4.5 && parked.hit.into < 7.5, JSON.stringify(parked));
         assert(parked.damage.sides.includes("left") && parked.damage.scuffs && (parked.damage.hazards || await page.evaluate(() => window.__parkedHazards)) && parked.chirped && parked.solo, JSON.stringify(parked));
       }
+      await follow("parked-follow");
       await pose(-60, 26, Math.PI);
       await frame("parked", phone ? [-4.4, 1.7, -2.0] : [-3.4, 1.5, -1.5], [-0.8, 0.75, 0]);
       if (!beforeOnly) await waitForBlink();

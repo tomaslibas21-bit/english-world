@@ -18,13 +18,14 @@ type Damage = {
   steam?: { x: number; y: number; z: number; next: number; interval: number; remaining: number };
 };
 type Puff = { x: number; y: number; z: number; dx: number; dz: number; rise: number; start: number; life: number; size: number; kind: PuffKind };
-type PuffKind = "steam" | "dust" | "sparkle";
+type PuffKind = "steam" | "dust" | "chip" | "sparkle";
 
 const isTraffic = (car: Car): car is TrafficCar => "dir" in car;
 const HAZARD_HZ = 1.6;
 const LAMP_NAMES = ["front-right", "front-left", "back-right", "back-left"] as const;
-const PUFF_COLORS = { dust: new THREE.Color("#a39b90"), steam: new THREE.Color("#fffdf6"), sparkle: new THREE.Color("#ffdf83") };
-const STEAM_EMISSION_TIME = 1.25;
+const PUFF_COLORS = { dust: new THREE.Color("#c6b9a7"), chip: new THREE.Color("#ede3cd"), steam: new THREE.Color("#fffdf6"), sparkle: new THREE.Color("#ffdf83") };
+const STEAM_EMISSION_TIME = 3;
+const STEAM_LIFE = 2;
 
 function hazardMesh() {
   const slots = 24, size = 48, pixels = new Uint8Array(size * size * 4);
@@ -69,6 +70,7 @@ function hazardMesh() {
 function puffGeometry() {
   const geometry = new THREE.PlaneGeometry(1, 1);
   geometry.setAttribute("puffAlpha", new THREE.InstancedBufferAttribute(new Float32Array(16), 1).setUsage(THREE.DynamicDrawUsage));
+  geometry.setAttribute("puffShape", new THREE.InstancedBufferAttribute(new Float32Array(16), 1).setUsage(THREE.DynamicDrawUsage));
   return geometry;
 }
 
@@ -76,6 +78,8 @@ const puffMaterial = () => new THREE.ShaderMaterial({
   transparent: true, depthWrite: false, toneMapped: false,
   vertexShader: `
     attribute float puffAlpha;
+    attribute float puffShape;
+    varying float silhouette;
     varying vec2 shape;
     varying vec3 tint;
     varying float opacity;
@@ -83,22 +87,27 @@ const puffMaterial = () => new THREE.ShaderMaterial({
       shape = uv - 0.5;
       tint = instanceColor;
       opacity = puffAlpha;
+      silhouette = puffShape;
       gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0);
     }`,
   fragmentShader: `
     varying vec2 shape;
     varying vec3 tint;
     varying float opacity;
+    varying float silhouette;
     void main() {
       float core = 1.0 - smoothstep(0.05, 0.5, length(shape));
       float mask = core * (0.68 + 0.32 * core);
-      if (opacity < 0.0) {
+      if (silhouette > 1.5) {
+        float flake = abs(shape.x + shape.y * 0.34) + abs(shape.y) * 0.75;
+        mask = 1.0 - smoothstep(0.27, 0.40, flake);
+      } else if (silhouette > 0.5) {
         vec2 axis = abs(shape);
         float rays = (1.0 - smoothstep(0.02, 0.10, min(axis.x, axis.y)))
           * (1.0 - smoothstep(0.12, 0.49, max(axis.x, axis.y)));
         mask = max(rays, core * core * core);
       }
-      gl_FragColor = vec4(tint, mask * abs(opacity));
+      gl_FragColor = vec4(tint, mask * opacity);
       #include <tonemapping_fragment>
       #include <colorspace_fragment>
     }`,
@@ -110,6 +119,7 @@ export class Crashes {
   private readonly blink = this.hazards.geometry.getAttribute("blink") as THREE.InstancedBufferAttribute;
   private readonly clouds = new THREE.InstancedMesh(puffGeometry(), puffMaterial(), 16);
   private readonly alpha = this.clouds.geometry.getAttribute("puffAlpha") as THREE.InstancedBufferAttribute;
+  private readonly puffShape = this.clouds.geometry.getAttribute("puffShape") as THREE.InstancedBufferAttribute;
   private readonly puffs: Puff[] = Array.from({ length: 16 }, () => ({
     x: 0, y: 0, z: 0, dx: 0, dz: 0, rise: 0, start: 0, life: 0, size: 0, kind: "dust",
   }));
@@ -122,6 +132,7 @@ export class Crashes {
   private pumpTime = 0;
   private puffLimit: number;
   private puffCount = 0;
+  private nextSlot = 0;
   private lastBuildMs = 0;
   private warmup?: { group: THREE.Group; bodies: THREE.BufferGeometry[]; materials: THREE.Material[]; instances: THREE.InstancedMesh[] };
   private lastImpact?: Readonly<{ id: string; k: number; into: number; side: Dent["side"]; target: "town" | "traffic" | "parked" }>;
@@ -255,8 +266,9 @@ export class Crashes {
     addDent(state.dents, dent);
     state.last = this.now; state.k = k;
     state.driver ||= driver;
-    const hazards = driver ? (k >= 0.4 ? 4 : 0) : isTraffic(car) ? 7 : 3;
-    if (hazards) { state.hazardUntil = this.now + hazards; state.blink = -1; }
+    const hazards = driver ? 2.5 + 2.5 * THREE.MathUtils.smoothstep(k, 0.3, 0.6) : traffic ? 7 : 3;
+    state.hazardUntil = Math.max(state.hazardUntil, this.now + hazards);
+    state.blink = -1;
     const previous = this.crackedLamps(state);
     const build = !state.surface?.covers(state.dents[state.dents.length - 1]);
     if (build) {
@@ -266,14 +278,15 @@ export class Crashes {
     } else state.surface?.rebuild(state.dents);
     if (!state.surface) { this.heal(car); return; }
     if (this.crackedLamps(state) & ~previous) this.host.crashSound?.("glass", k);
+    if (driver) this.impactBurst(cx + c * lx + s * lz, root.position.y + y, cz - s * lx + c * lz, dx, dz, k);
     if (side === "front" && k >= 0.6) {
       const x = lx * 0.35, y = state.surface.hoodHeight + 0.10, z = lz * 0.72;
-      const remaining = this.puffLimit === 6 ? 4 : 6;
+      const remaining = this.puffLimit === 6 ? 5 : 6;
       const interval = STEAM_EMISSION_TIME / remaining;
       state.steam = { x, y, z, next: this.now + interval, interval, remaining };
-      this.puff("steam", cx + s * z + c * x, root.position.y + y, cz + c * z - s * x, 2);
+      this.emitSteam(cx + s * z + c * x, root.position.y + y, cz + c * z - s * x);
       this.host.crashSound?.("steam", k);
-    } else this.puff("dust", cx + c * lx + s * lz, root.position.y + y, cz - s * lx + c * lz, 2);
+    }
     return dent;
   }
 
@@ -360,7 +373,7 @@ export class Crashes {
         this.pumpTime = m.pace < 0.25 && m.x > x0 && m.x < x1 && m.z > z0 && m.z < z1 ? this.pumpTime + dt : 0;
         if (this.pumpTime >= 1.5) {
           this.heal(car);
-          this.puff("sparkle", m.x, 1.05, m.z, 5);
+          this.repairSparkles(m.x, 1.05, m.z);
           this.host.crashSound?.("ding", 1);
           continue;
         }
@@ -374,7 +387,7 @@ export class Crashes {
         if (this.now - steam.next < steam.interval) {
           pose.updateMatrix();
           this.pos.set(steam.x, steam.y, steam.z).applyMatrix4(pose.matrix);
-          this.puff("steam", this.pos.x, this.pos.y, this.pos.z, 1);
+          this.emitSteam(this.pos.x, this.pos.y, this.pos.z);
           steam.next += steam.interval;
           if (--steam.remaining === 0) state.steam = undefined;
         } else state.steam = undefined;
@@ -414,24 +427,58 @@ export class Crashes {
     body.rotation.set(rock * (contact?.nz ?? 0), car.dir * Math.PI / 2, rock * (contact?.nx ?? 0), "YXZ");
   }
 
-  private puff(kind: PuffKind, x: number, y: number, z: number, count: number) {
+  private takePuff(kind: PuffKind, x: number, y: number, z: number) {
+    let slot = this.nextSlot;
+    for (let i = 0; i < this.puffLimit; i++) {
+      const j = (this.nextSlot + i) % this.puffLimit;
+      if (!this.puffs[j].life) { slot = j; break; }
+      if (this.puffs[j].start < this.puffs[slot].start) slot = j;
+    }
+    const p = this.puffs[slot];
+    if (!p.life) this.puffCount++;
+    this.nextSlot = (slot + 1) % this.puffLimit;
+    p.kind = kind; p.start = this.now;
+    p.x = x; p.y = y; p.z = z;
+    return p;
+  }
+
+  private impactBurst(x: number, y: number, z: number, nx: number, nz: number, k: number) {
+    const count = Math.min(this.puffLimit - 2, 2 + Math.round(5 * THREE.MathUtils.smoothstep(k, 0.2, 1)));
+    const phase = Math.random() * Math.PI * 2;
     for (let i = 0; i < count; i++) {
-      let first = this.puffs[0];
-      for (let j = 0; j < this.puffLimit; j++) {
-        const p = this.puffs[j];
-        if (!p.life) { first = p; break; }
-        if (p.start + p.life < first.start + first.life) first = p;
-      }
-      if (!first.life) this.puffCount++;
-      const a = Math.random() * Math.PI * 2, steam = kind === "steam";
-      const spread = kind === "sparkle" ? 1.15 : steam ? 0.18 : 0.38;
-      first.x = x + Math.cos(a) * spread * 0.4; first.y = y + i * 0.07; first.z = z + Math.sin(a) * spread * 0.4;
-      first.dx = Math.cos(a) * spread; first.dz = Math.sin(a) * spread;
-      first.start = this.now;
-      first.life = steam ? 1.25 + Math.random() * 0.12 : 0.62 + i * 0.07;
-      first.rise = steam ? 1.5 / first.life : 0.42;
-      first.size = steam ? 0.79 + Math.random() * 0.09 : kind === "dust" ? 0.80 : 0.23;
-      first.kind = kind;
+      const p = this.takePuff("chip", x, y, z);
+      const a = phase + i * Math.PI * 2 / count;
+      // Fan across the contact face and back toward the car so a wall can't hide the burst.
+      const across = Math.cos(a) * (1.6 + 4.2 * k);
+      const back = 0.65 + k + 0.45 * Math.sin(a);
+      p.dx = nx * back - nz * across;
+      p.dz = nz * back + nx * across;
+      p.rise = (3 + 3 * k) * (1.75 + 0.55 * Math.sin(a));
+      p.life = 0.44 + Math.random() * 0.06;
+      p.size = 0.12 + 0.11 * k;
+    }
+    const dust = this.takePuff("dust", x, y, z);
+    dust.dx = nx * 0.55; dust.dz = nz * 0.55;
+    dust.rise = 0.8 + 1.4 * k;
+    dust.size = 0.65 + 1.25 * k;
+    dust.life = 0.55 + 0.30 * k;
+  }
+
+  private emitSteam(x: number, y: number, z: number) {
+    const p = this.takePuff("steam", x, y, z);
+    const a = Math.random() * Math.PI * 2;
+    p.dx = 0.14 + Math.cos(a) * 0.15; p.dz = Math.sin(a) * 0.15;
+    p.life = STEAM_LIFE; p.rise = 2.85 / p.life;
+    p.size = 1.05 + Math.random() * 0.15;
+  }
+
+  private repairSparkles(x: number, y: number, z: number) {
+    for (let i = 0; i < 5; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const dx = Math.cos(a) * 1.15, dz = Math.sin(a) * 1.15;
+      const p = this.takePuff("sparkle", x + dx * 0.4, y + i * 0.07, z + dz * 0.4);
+      p.dx = dx; p.dz = dz; p.rise = 0.42;
+      p.life = 0.62 + i * 0.07; p.size = 0.23;
     }
   }
 
@@ -443,20 +490,23 @@ export class Crashes {
       const elapsed = this.now - p.start;
       if (elapsed >= p.life) { p.life = 0; continue; }
       alive++;
-      this.pos.set(p.x + p.dx * elapsed, p.y + p.rise * elapsed, p.z + p.dz * elapsed);
-      if (!this.frustum.intersectsSphere(this.sphere.set(this.pos, 1))) continue;
       const t = elapsed / p.life;
-      const steam = p.kind === "steam";
-      this.scale.setScalar(p.size * (steam ? 0.58 + 0.42 * Math.sqrt(t) : 0.65 + 0.8 * t));
+      const chip = p.kind === "chip", steam = p.kind === "steam", sparkle = p.kind === "sparkle";
+      const height = p.rise * elapsed * (chip ? 1 - t : 1);
+      this.pos.set(p.x + p.dx * elapsed, p.y + height, p.z + p.dz * elapsed);
+      if (!this.frustum.intersectsSphere(this.sphere.set(this.pos, 1))) continue;
+      this.scale.setScalar(p.size * (chip ? 1 : steam ? 0.58 + 0.52 * Math.sqrt(t) : 0.65 + 0.8 * t));
+      if (steam) this.scale.y *= 1.45;
       this.clouds.setMatrixAt(n, this.matrix.compose(this.pos, this.host.cam.quaternion, this.scale));
       this.clouds.setColorAt(n, PUFF_COLORS[p.kind]);
-      const sparkle = p.kind === "sparkle";
-      const opacity = steam ? 0.94 * (1 - THREE.MathUtils.smoothstep(t, 0.26, 1)) : (sparkle ? -0.95 : 0.58) * (1 - t);
-      this.alpha.setX(n++, opacity * Math.min(1, (steam ? 0.68 : 0.35) + t * 8));
+      const opacity = steam || chip ? 0.94 * (1 - THREE.MathUtils.smoothstep(t, chip ? 0.72 : 0.58, 1))
+        : (sparkle ? 0.95 : 0.76) * (1 - t);
+      this.alpha.setX(n, opacity * (chip ? 1 : Math.min(1, (steam ? 0.68 : 0.35) + t * 8)));
+      this.puffShape.setX(n++, chip ? 2 : sparkle ? 1 : 0);
     }
     this.puffCount = alive;
     this.finish(this.clouds, n);
-    if (n) { this.alpha.needsUpdate = true; this.clouds.instanceColor!.needsUpdate = true; }
+    if (n) { this.alpha.needsUpdate = true; this.puffShape.needsUpdate = true; this.clouds.instanceColor!.needsUpdate = true; }
   }
 
   private finish(mesh: THREE.InstancedMesh, count: number) {
@@ -492,7 +542,11 @@ export class Crashes {
 
   setQuality(quality: "low" | "high") {
     this.puffLimit = quality === "low" ? 6 : 16;
-    for (let i = this.puffLimit; i < 16; i++) this.puffs[i].life = 0;
+    this.nextSlot %= this.puffLimit;
+    for (let i = this.puffLimit; i < 16; i++) {
+      if (this.puffs[i].life) this.puffCount--;
+      this.puffs[i].life = 0;
+    }
   }
 
   heal(car: Car) {
