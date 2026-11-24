@@ -30,9 +30,6 @@ export interface SessionHooks {
   onEnd(sit: SituationDef, completed: boolean): void;
 }
 
-/** How long the scene card waits before the person speaks anyway (the learner can close it sooner). */
-const INTRO_MS = 6000;
-
 export class Session {
   sit: SituationDef;
   conv: Conversation;
@@ -47,7 +44,8 @@ export class Session {
   /** The pending "open the mic by itself" (after the person's turn, or after a miss). */
   private autoTimer: ReturnType<typeof setTimeout> | null = null;
   private unbindListening: (() => void) | null = null;
-  private onVisibility = () => { if (document.visibilityState !== "visible") this.stopListening(); };
+  private cancelIntro: (() => void) | null = null;
+  private onVisibility = () => { if (document.visibilityState !== "visible") this.stopListening("page hidden"); };
   /** `speech` is a "listen and repeat" attempt (practice), not an answer. */
   private practicing = false;
   /** Bumped whenever a practice starts or is cancelled (a stale one never goes on to listen). */
@@ -77,7 +75,8 @@ export class Session {
     });
     // Entering typing or a panel releases capture immediately, without rearming it on return.
     this.unbindListening = useStore.subscribe((next, previous) => {
-      if ((!previous.conv.typing && next.conv.typing) || (next.hud.panel && next.hud.panel !== previous.hud.panel)) this.stopListening();
+      if (!previous.conv.typing && next.conv.typing) this.stopListening("typing opened");
+      else if (next.hud.panel && next.hud.panel !== previous.hud.panel) this.stopListening("panel opened");
     });
     document.addEventListener("visibilitychange", this.onVisibility);
   }
@@ -92,22 +91,18 @@ export class Session {
       suggest: [], hints: [], chosen: {}, openHint: null, mic: { status: speechSupported() ? "off" : "unsupported", heard: "" },
       failures: 0, misses: 0, slowMode: this.conv.slow, lastHeard: "", prefix: false, completed: false, speaking: null, reveal: {}, note: null, typing: !speechSupported(), newExpressions: [],
       checklist: [], focus: 0, stepId: null, guess: null, practice: null, speechChoices:undefined, run: st.conv.run + 1, guideHidden: false,
-      introOpen: !!this.sit.intro,
+      introOpen: true,
     });
-    const out = this.conv.start();
-    await this.introRead();
-    await this.play(out);
+    if (await this.waitForStart() && this.alive) await this.play(this.conv.start());
   }
 
-  /** The scene card first (who you are here, where: SituationDef.intro, src/ui/SceneIntro.tsx): the person starts
-   *  speaking when it is closed, or after a few seconds; the card closes then and stays one tap away under "i". */
-  private introRead(): Promise<void> {
-    if (!useStore.getState().conv.introOpen) return Promise.resolve();
+  /** Wait for the learner to start the conversation from the scene card. */
+  private waitForStart(): Promise<boolean> {
+    if (!useStore.getState().conv.introOpen) return Promise.resolve(true);
     return new Promise((resolve) => {
-      let unsub = () => {};
-      const done = () => { clearTimeout(timer); unsub(); if (useStore.getState().conv.introOpen) useStore.getState().setConv({ introOpen: false }); resolve(); };
-      const timer = setTimeout(done, INTRO_MS);
-      unsub = useStore.subscribe((st) => { if (!st.conv.introOpen || !this.alive) done(); });
+      const done = (start: boolean) => { unsubscribe(); this.cancelIntro = null; resolve(start); };
+      const unsubscribe = useStore.subscribe((st) => { if (!st.conv.introOpen) done(true); });
+      this.cancelIntro = () => done(false);
     });
   }
 
@@ -123,7 +118,7 @@ export class Session {
     // the question the person is about to ask (the phase picture changes as they start speaking);
     // "closing" when this turn is the goodbye
     st.setConv({ phase: "npc", stepId: this.conv.ended ? "closing" : this.conv.pending?.id ?? this.conv.effectiveStep()?.id ?? null });
-    this.stopListening();
+    this.stopListening("NPC turn");
     if (out.note) st.setConv({ note: out.note });
     // "Slower, please" made this conversation slow: the „Lėčiau“ switch shows it, and it is remembered
     if (this.conv.slow !== useStore.getState().conv.slowMode) this.setSlowMode(this.conv.slow);
@@ -196,10 +191,11 @@ export class Session {
     if (!this.alive || !speechSupported()) return;
     const st = useStore.getState();
     if (st.conv.phase !== "you" || st.hud.panel || document.visibilityState !== "visible") return;
-    this.stopListening();
+    this.stopListening("listen restarted");
     st.setConv({ speechChoices: undefined, typing: false });
     audio.stop(); // sample/replay audio must release the speaker before opening the microphone
     const attempt = createSpeechAttempt({
+      source: "conversation",
       evaluate: (t) => this.conv.nlu.probe(t, this.conv.expectedIntents()),
       phrases: this.phrases(),
       preferLocal: st.settings.onDevice,
@@ -222,10 +218,10 @@ export class Session {
     this.stopListening();
   }
 
-  stopListening() {
+  stopListening(reason = "learner turn stopped") {
     this.cancelAutoListen();
-    this.cancelPractice();
-    if (this.speech) { this.speech.dispose(); this.speech = null; }
+    this.cancelPractice(reason);
+    if (this.speech) { this.speech.dispose(reason); this.speech = null; }
     const st = useStore.getState();
     if (st.conv.mic.status !== "unsupported") st.setConv({ mic: { status: "off", heard: st.conv.mic.heard } });
   }
@@ -347,13 +343,14 @@ export class Session {
    *  Plays the sentence, then listens once and compares what was heard with it, word by word (conv.practice). */
   async practice(en: string, say: string) {
     if (!this.alive || !speechSupported() || useStore.getState().conv.phase !== "you") return;
-    this.stopListening(); // the conversation's own mic off, and no auto-listen
+    this.stopListening("practice requested");
     const run = ++this.practiceRun;
     useStore.getState().setConv({ practice: { en, status: "playing", heard: "" } });
     if (!await audio.play(coachVoice(useStore.getState().progress.profile?.gender), 1, say)) return;
     // cancelled meanwhile (another button, the mic, the person's turn, left)?
     if (run !== this.practiceRun || !this.alive || this.speech || useStore.getState().conv.phase !== "you") return;
     const attempt = createSpeechAttempt({
+      source: "conversation practice",
       evaluate: (t) => repeatProgress(en, t),
       preferLocal: useStore.getState().settings.onDevice,
       onUpdate: (s) => {
@@ -386,9 +383,9 @@ export class Session {
   }
 
   /** Stops a practice that is playing or listening (a finished result stays until the next answer). */
-  private cancelPractice() {
+  private cancelPractice(reason = "practice cancelled") {
     this.practiceRun++;
-    if (this.practicing && this.speech) { this.speech.dispose(); this.speech = null; }
+    if (this.practicing && this.speech) { this.speech.dispose(reason); this.speech = null; }
     this.practicing = false;
     const p = useStore.getState().conv.practice;
     if (p && (p.status === "playing" || p.status === "listening")) {
@@ -448,11 +445,12 @@ export class Session {
    *  does the game take over (Game.endSession: the objective, a taxi ride…). */
   private finish(leave = false) {
     if (!this.alive) return;
-    this.stopListening();
+    this.cancelIntro?.();
+    this.stopListening("conversation ended");
     this.unbindListening?.();
     this.unbindListening = null;
     document.removeEventListener("visibilitychange", this.onVisibility);
-    useStore.getState().setConv({ phase: "ended" });
+    useStore.getState().setConv({ phase: "ended", introOpen: false });
     if (!leave) return;
     this.alive = false;
     audio.stop();
@@ -478,7 +476,7 @@ export class Session {
 
   repeatLast(slow: boolean) {
     if (!this.alive || useStore.getState().conv.phase !== "you") return;
-    this.stopListening();
+    this.stopListening("replay NPC");
     const out = this.conv.repeat(slow);
     this.play(out);
   }
