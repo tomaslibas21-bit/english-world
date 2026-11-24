@@ -322,6 +322,7 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, surf = fal
   const className = "toolbar" + (hasRadio ? " has-radio" : "") + (surf ? " surf-toolbar" : "");
   // (the surf lesson's menu keeps the game's own word for it)
   const menuLabel = surf ? "Meniu" : L("Meniu");
+  const menuUnread = !open && unread > 0;
   if (!folds) return (
     <div className={className} onKeyDown={activateHudButton}>
       <div className="toolbar-tools">{course}{actions}</div>
@@ -335,7 +336,7 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, surf = fal
   return (
     <div ref={toolbar} onKeyDown={activateHudButton}
       className={className + " in-ride folds" + (phone ? " phone-menu" : "") + (portraitPhone ? " portrait-toolbar" : "") + (open ? " menu-open" : "") + (columns.length === 2 ? " two-columns" : "")}>
-      <button className="icon-btn ride-menu" title={menuLabel} aria-label={menuLabel} aria-expanded={open} aria-controls="town-tools"
+      <button className="icon-btn ride-menu" title={menuLabel} aria-label={menuUnread ? `${menuLabel}, ${unread} ${L("neperskaitytos žinutės")}` : menuLabel} aria-expanded={open} aria-controls="town-tools"
         onClick={() => {
           if (open) closeMenu();
           else {
@@ -344,6 +345,7 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, surf = fal
           }
         }}>
         <Icon name="menu" size={25} />
+        {menuUnread && <span className="text-unread menu-unread" aria-hidden />}
         {!!due && !open && <span className="due-badge" aria-hidden>{due}</span>}
         {phone && !open && !radioOpen && <RadioMenuLamp />}
       </button>

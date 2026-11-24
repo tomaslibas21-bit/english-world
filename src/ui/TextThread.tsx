@@ -80,7 +80,7 @@ export function TextThread({ thread, entry }: { thread: Thread; entry: TextProgr
   useEffect(() => () => { clearTimeout(timer.current); voice.current?.abort(); }, []);
   useLayoutEffect(() => {
     const scroller = body.current;
-    if (scroller) scroller.scrollTop = scroller.scrollHeight;
+    if (scroller) scroller.scrollTop = reply ? scroller.scrollHeight : 0;
   }, [thread.id, reply, typing]);
 
   const send = (index: number) => {

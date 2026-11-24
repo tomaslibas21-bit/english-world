@@ -205,6 +205,7 @@
 .phone .text-contact .txt { flex: 1; }
 .text-contact .txt span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .text-unread { width: 9px; height: 9px; flex: none; border-radius: 50%; background: #80e5b2; }
+.ride-menu .menu-unread { position: absolute; top: 4px; left: 4px; box-shadow: 0 0 0 2px var(--accent-strong); pointer-events: none; }
 .overlay > .phone.thread-open { display: flex; flex-direction: column; overflow: hidden; }
 .text-thread { min-height: 0; display: flex; flex-direction: column; }
 .text-thread-head { display: flex; align-items: center; gap: 9px; padding: 4px 0 10px; border-bottom: 1px solid #48535d; }
