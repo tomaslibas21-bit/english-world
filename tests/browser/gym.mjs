@@ -265,14 +265,44 @@ const expectedOptions = (move, slot) => {
   return options;
 };
 
-function captureRigs(trainerId) {
+function observeHandoffs(trainerId) {
   const { game } = window.__ew;
-  const trainer = game.npcs.find(({ id }) => id === trainerId);
-  const transform = (node) => ({ position: node.position.toArray(), rotation: node.rotation.toArray().slice(0, 3) });
-  window.__gymActors = { player: game.player, trainer: trainer.ch, trainerId };
-  return {
-    ...transform(trainer.ch.root), visible: trainer.ch.root.visible, anim: trainer.ch.anim,
-    joints: Object.fromEntries(["body", "armL", "armR", "legL", "legR", "shinL", "shinR"].map((id) => [id, transform(trainer.ch.joint(id))])),
+  const liveTrainer = () => game.npcs.find(({ id }) => id === trainerId)?.ch;
+  const transform = (node) => ({
+    position: node.position.toArray(), rotation: node.rotation.toArray(), scale: node.scale.toArray(),
+  });
+  const captureRig = (ch) => ch && ({
+    ...transform(ch.root), visible: ch.root.visible, anim: ch.anim,
+    // Game updates its shared gaze targets during the workout. Compare the binding for those live points.
+    watch: ch.watch === game.learnerAt ? "learner" : ch.watch === game.talkAt ? "partner" : ch.watch?.toArray() ?? ch.watch,
+    busy: ch.busy, steady: ch.steady, attentive: ch.attentive, fidgets: ch.fidgets,
+    lift: ch.lift, tuck: ch.tuck, squash: ch.squash, flip: ch.flip, bank: ch.bank, moveSpeed: ch.moveSpeed,
+    joints: Object.fromEntries(["body", "head", "armL", "armR", "foreL", "foreR", "legL", "legR", "shinL", "shinR"]
+      .map((id) => [id, transform(ch.joint(id))])),
+  });
+  const captureRigs = (player, trainer) => ({ at: performance.now(), player: captureRig(player), trainer: captureRig(trainer) });
+  const handoffs = window.__gymHandoffs = [];
+  const prepare = game.prepareMode;
+  game.prepareMode = function (...args) {
+    // GymMode.stage has bound both actors and has yet to place or stand them.
+    if (this.modes.owns("gym")) {
+      const player = game.player, trainer = liveTrainer();
+      window.__gymActors = { player, trainer, trainerId };
+      handoffs.push({ entry: captureRigs(player, trainer) });
+    }
+    return prepare.apply(this, args);
+  };
+  const left = game.modes.left;
+  game.modes.left = function (...args) {
+    const [id] = args;
+    const handoff = handoffs.at(-1);
+    if (id === "gym" && this.owns(id) && handoff && !handoff.release) {
+      // GymMode.restore has copied home. The room animator can tick again in this same frame.
+      const { player, trainer } = window.__gymActors, currentTrainer = liveTrainer();
+      handoff.sameActors = player === game.player && trainer === currentTrainer;
+      handoff.release = captureRigs(game.player, currentTrainer);
+    }
+    return left.apply(this, args);
   };
 }
 
@@ -519,6 +549,7 @@ async function journey(browser, [width, height], audible) {
           conversation: s?.conv.active ? { phase: s.conv.phase, step: s.conv.stepId } : null,
           count: s?.progress.play?.games.gym, saved: JSON.parse(localStorage.getItem(key) ?? "null")?.play?.games.gym,
           volume: audio?.volume, audio: window.__gymAudio?.requests.slice(-5), mic: window.__gymMic,
+          handoff: window.__gymHandoffs?.at(-1),
         };
       }, key).catch((error) => ({ diagnostics: error.message }));
       return JSON.stringify({ last, errors, blocked, bootWarnings });
@@ -597,7 +628,13 @@ async function journey(browser, [width, height], audible) {
       const lines = Object.fromEntries(Object.keys(mh.lines).map((id) => [id, sentence(fixture, id)]));
       const authored = Object.entries(lines).map(([id, line]) => [line.say, id]);
       await page.evaluate(observeAudio, { entries: authored, fixture: { voice: fixture.voice, speed: fixture.speed }, audible });
-      let home = await page.evaluate(captureRigs, fixture.trainer);
+      await page.evaluate((id) => {
+        window.__ew.game.npcs.find((npc) => npc.id === id).ch.fidgets = false;
+      }, fixture.trainer);
+      await step(9); // Let any ambient fidget on the seeded trainer ease out before the through-HUD checks.
+      await page.evaluate(observeHandoffs, fixture.trainer);
+      const handoff = () => page.evaluate(() => ({ entries: window.__gymHandoffs.length, ...window.__gymHandoffs.at(-1) }));
+      let home, entries = 0;
 
       const counts = () => page.evaluate((key) => ({
         live: window.__ew.store.getState().progress.play?.games.gym ?? 0,
@@ -679,6 +716,11 @@ async function journey(browser, [width, height], audible) {
       };
       const ready = async () => {
         await phase("ready");
+        const trace = await handoff();
+        assert.equal(trace.entries, ++entries, "one fresh actor capture for each gym entry");
+        assert.equal(trace.release, undefined, "the staged actors are still owned by the gym");
+        assert(trace.entry.player && trace.entry.trainer, "both live actors were captured on entry");
+        home = trace.entry.trainer;
         assert.equal(await overlay.getAttribute("lang"), learner);
         assert.equal(await overlay.locator(".gym-ready h2").innerText(), ui.readyTitle);
         assert.equal(await overlay.locator(".gym-ready p").innerText(), touch ? ui.readyTouch : ui.readyKeys);
@@ -849,16 +891,34 @@ async function journey(browser, [width, height], audible) {
         assert.equal(await page.locator(".gym-overlay, .say-it, .mode-score-card").count(), 0);
         assert.equal((await micState()).active, false);
       };
-      const restored = async () => {
+      const assertHandoff = async (reason, done = false) => {
         await assertClosed();
-        const { actors: [player, trainer] } = await rig();
+        stepName = reason + " actor handoff";
+        const { entry, release, sameActors } = await handoff();
+        assert(release && release.at > entry.at && sameActors, "release captures the original live actors");
+        assert.deepEqual(release.trainer, entry.trainer, "trainer pose and flags at release");
+        const playerHome = done ? { ...entry.player, position: [mat.x, 0, mat.z] } : entry.player;
+        assert.deepEqual(release.player, playerHome, "player pose and flags at release");
+        const { actors } = await rig();
+        const trainer = actors[1];
+        assert(trainer.same, "the original trainer is still in the room after release");
+        assert.notDeepEqual(trainer.joints.armL.local, release.trainer.joints.armL.position,
+          "the room animator updates the trainer after release");
+        check(stepName, { entryAt: entry.at, releaseAt: release.at, entryFidgets: entry.trainer.fidgets, releaseFidgets: release.trainer.fidgets });
+        return actors;
+      };
+      const restored = async (reason, done = false) => {
+        const [player, trainer] = await assertHandoff(reason, done);
+        stepName = reason + " trainer through the walking HUD";
+        assert.equal(home.fidgets, false, "the through-HUD fixture uses neutral idle");
         assert(player.same && player.visible && trainer.same && trainer.visible === home.visible && trainer.anim === home.anim
           && distance(trainer.root, home.position) < 0.01 && Math.abs(trainer.yaw - home.rotation[1]) < 0.02
           && Math.abs(trainer.joints.body.angle[0]) < 0.12,
         "trainer physically restored " + JSON.stringify({ home, trainer }));
-        for (const [id, original] of Object.entries(home.joints)) {
+        for (const id of ["body", "armL", "armR", "legL", "legR", "shinL", "shinR"]) {
+          const original = home.joints[id];
           const { angle, local } = trainer.joints[id];
-          assert(distance(angle, original.rotation) < 0.12 && distance(local, original.position) < 0.04,
+          assert(distance(angle, original.rotation.slice(0, 3)) < 0.12 && distance(local, original.position) < 0.04,
             "trainer's " + id + " has its original idle transform " + JSON.stringify({ original, angle, local }));
         }
         await countIs(count);
@@ -937,7 +997,7 @@ async function journey(browser, [width, height], audible) {
         await matEntry();
         await ready();
         await exit();
-        await restored(); // Exiting ready is free.
+        await restored("free ready exit");
         await matEntry();
         await ready();
         const id = "gy_jacks";
@@ -956,7 +1016,7 @@ async function journey(browser, [width, height], audible) {
         const early = await listening(0, id, { kind: "stall", replay: true });
         await step(4);
         await exit();
-        await restored();
+        await restored("stalled replay exit");
         const cancelled = (await audio()).at(-1);
         assert(cancelled.aborted - early.at < 350 && cancelled.ok === false, "exit aborts only its pending replay " + JSON.stringify(cancelled));
         await step(60);
@@ -1270,11 +1330,11 @@ async function journey(browser, [width, height], audible) {
         await step(10);
         assert.equal((await read()).pose?.trainer, againCalls[1]);
         await exit();
-        await restored();
+        await restored("partial Again exit");
         check("Again rotates the introduction and resets the round, partial exit restores the original trainer", { starts: count - baseline });
       } else {
         await press(scoreCard.getByRole("button", { name: ui.done, exact: true }));
-        await restored();
+        await restored("Done", true);
         const position = (await rig()).actors[0].root;
         assert(distance(position, [mat.x, 0, mat.z]) < 0.02, "Done returns to the real mat");
         await leaveRoom(true);
@@ -1320,7 +1380,6 @@ async function journey(browser, [width, height], audible) {
         const cta = ended.locator(".gym-cta");
         assert.equal(await cta.count(), 1);
         assert.equal(await cta.innerText(), entry.startLabel);
-        home = await page.evaluate(captureRigs, fixture.trainer);
         await press(cta);
         await ready();
         assert.equal(await convo.count(), 0);
@@ -1328,7 +1387,7 @@ async function journey(browser, [width, height], audible) {
         const ctaClip = await listening(0, "gy_jacks");
         await heard(0, "jacks", 0, ctaClip);
         await exit();
-        await assertClosed();
+        await assertHandoff("s35 CTA exit");
         await countIs(count);
         check("ordinary s35 Start and typed dialogue lead to the end-card gym CTA", { dialogueSteps, starts: count - baseline });
       }

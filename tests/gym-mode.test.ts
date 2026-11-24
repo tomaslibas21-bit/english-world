@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { Group, SkinnedMesh, Vector3 } from "three";
+import { Group, SkinnedMesh, Vector3, type Object3D } from "three";
 import { GYM_ENTRY } from "../src/content/gym-entry";
 import { NPCS } from "../src/content/npcs";
 import { npcVoice } from "../src/content/voices";
@@ -40,6 +40,7 @@ vi.mock("../src/convo/speech", async (original) => ({
 function setup() {
   let room: Group | null = new Group();
   const player = new Character(NPCS.rosa.look), trainer = new Character(NPCS.jordan.look);
+  let roomTrainer = trainer;
   player.root.position.set(GYM_MAT.x + 0.4, 0, GYM_MAT.z);
   player.root.rotation.y = 0.42;
   trainer.root.position.set(4.8, 0, -2.6);
@@ -61,15 +62,16 @@ function setup() {
   rig.cam.setViewOffset(390, 844, 0, -80, 390, 844);
   let gated = false, heading = 0.45, time = 0;
   const held = new Set(["w"]);
+  const prepare = vi.fn();
   const host = {
-    rig, player: () => player, rides: { riding: null }, time: () => time, prepare: vi.fn(),
+    rig, player: () => player, rides: { riding: null }, time: () => time, prepare,
     canStart: () => !fade.active && !gated,
     fade: (fn: () => void) => { if (fade.active) return false; fade.start(fn); return true; },
     owns: (id: string) => registry.owns(id), entered: (id: string) => registry.entered(id), left: (id: string) => registry.left(id),
   } as unknown as ModeHost;
   const savePlace = vi.fn(() => player.root.position.toArray());
   const entry = createGymMode(host, {
-    room: () => room, trainer: () => trainer, heading: () => heading, savePlace,
+    room: () => room, trainer: () => roomTrainer, heading: () => heading, savePlace,
     viewport: () => ({ width: 390, height: 844 }),
     place: (x, z, rot) => {
       heading = rot;
@@ -100,14 +102,33 @@ function setup() {
     expect(view().phase).toBe("ready");
   };
   return {
-    player, trainer, home, registry, entry, fade, rig, held, savePlace, step, view, until, open,
+    player, trainer, home, registry, entry, fade, rig, held, prepare, savePlace, step, view, until, open,
     screen: () => screen, heading: () => heading, gate: (value: boolean) => { gated = value; },
     replaceRoom: () => { room = new Group(); },
+    replaceTrainer: (next: Character) => { roomTrainer = next; },
     dispose: () => { registry.dispose(); player.dispose(); trainer.dispose(); },
   };
 }
 
 const count = () => readPlayStats(useStore.getState().progress).games.gym ?? 0;
+
+function poseOf(ch: Character) {
+  const transform = ({ position, rotation, scale }: Object3D) => ({
+    position: position.toArray(), rotation: rotation.toArray(), scale: scale.toArray(),
+  });
+  return {
+    root: transform(ch.root), visible: ch.root.visible, anim: ch.anim,
+    watch: ch.watch?.toArray() ?? ch.watch, busy: ch.busy, steady: ch.steady, attentive: ch.attentive, fidgets: ch.fidgets,
+    lift: ch.lift, tuck: ch.tuck, squash: ch.squash, flip: ch.flip, bank: ch.bank, moveSpeed: ch.moveSpeed,
+    joints: {
+      body: transform(ch.joint("body")), head: transform(ch.joint("head")),
+      armL: transform(ch.joint("armL")), armR: transform(ch.joint("armR")),
+      foreL: transform(ch.joint("foreL")), foreR: transform(ch.joint("foreR")),
+      legL: transform(ch.joint("legL")), legR: transform(ch.joint("legR")),
+      shinL: transform(ch.joint("shinL")), shinR: transform(ch.joint("shinR")),
+    },
+  };
+}
 
 afterEach(() => {
   mocks.audio.play.mockReset();
@@ -158,6 +179,83 @@ it("keeps the loading entry cancellable and never stages a stale room or fade", 
     expect(count()).toBe(started);
     expect(game.registry.engaged).toBe(false);
   } finally { game.dispose(); }
+});
+
+it("restores the fidgets-enabled trainer's full hands-on-hips pose at release", async () => {
+  // The real idle scheduler starts a hips fidget after 4.75 s with this seed.
+  const random = vi.spyOn(Math, "random").mockReturnValue(0.75);
+  const game = setup();
+  const { trainer, registry } = game;
+  let entry: ReturnType<typeof poseOf> | undefined, release: ReturnType<typeof poseOf> | undefined;
+  game.prepare.mockImplementation(() => { entry = poseOf(trainer); });
+  const originalLeft = registry.left;
+  const left = vi.spyOn(registry, "left").mockImplementation(function (this: ModeRegistry, ...args) {
+    if (args[0] === "gym" && this.owns("gym")) release = poseOf(trainer);
+    return originalLeft.apply(this, args);
+  });
+  try {
+    trainer.busy = null;
+    trainer.setAnim("idle");
+    trainer.squash = 0.24;
+    for (let i = 0; i < 105; i++) trainer.update(0.05);
+    random.mockRestore();
+
+    const started = count();
+    await game.open();
+    expect(entry).toBeDefined();
+    expect(entry!.fidgets).toBe(true);
+    expect(entry!.joints.armL.rotation.slice(0, 3)).toEqual([0.12, 0, -0.6]);
+    expect(trainer.fidgets).toBe(false);
+    expect(trainer.joint("armL").rotation.toArray()).not.toEqual(entry!.joints.armL.rotation);
+    expect(trainer.joint("body").scale.toArray()).not.toEqual(entry!.joints.body.scale);
+    expect(game.entry.ownsNpc(GYM_ENTRY.npc)).toBe(true);
+
+    game.entry.action("exit");
+    await game.step(15);
+    expect(release).toStrictEqual(entry);
+    expect(registry.engaged).toBe(false);
+    expect(game.entry.ownsNpc(GYM_ENTRY.npc)).toBe(false);
+    expect(count()).toBe(started);
+    trainer.update(0.05);
+    expect(trainer.joint("armL").rotation.toArray()).not.toEqual(release!.joints.armL.rotation);
+    expect(trainer.fidgets).toBe(true);
+  } finally {
+    left.mockRestore();
+    random.mockRestore();
+    game.dispose();
+  }
+});
+
+it.each(["room", "trainer"] as const)("cancels a staged gym with a stale %s", async (stale) => {
+  const game = setup(), started = count();
+  const trainer = stale === "trainer" ? new Character(NPCS.jordan.look) : game.trainer;
+  mocks.audio.play.mockImplementation(() => new Promise(() => {}));
+  try {
+    await game.open();
+    game.entry.action("start");
+    const signal = mocks.audio.play.mock.calls[0][3].signal as AbortSignal;
+    expect(signal.aborted).toBe(false);
+    if (stale === "room") {
+      game.replaceRoom();
+      game.player.root.position.set(2, 0, 4);
+    } else game.replaceTrainer(trainer);
+    trainer.root.position.set(1, 0, 3);
+    const nextPose = poseOf(trainer);
+
+    await game.step();
+    expect(signal.aborted).toBe(true);
+    expect(game.registry.engaged).toBe(false);
+    expect(game.view()).toBeNull();
+    expect(game.rig.stage).toBeNull();
+    expect(game.rig.mode).toBe("interior");
+    expect(game.player.root.position.toArray()).toEqual(stale === "room" ? [2, 0, 4] : game.home.player.toArray());
+    expect(poseOf(trainer)).toEqual(nextPose);
+    expect(game.savePlace).not.toHaveBeenCalled();
+    expect(count()).toBe(started + 1);
+  } finally {
+    game.dispose();
+    if (trainer !== game.trainer) trainer.dispose();
+  }
 });
 
 it("bounds recordings on the game clock, cancels the mic before feedback and restores the stage on exit", async () => {
