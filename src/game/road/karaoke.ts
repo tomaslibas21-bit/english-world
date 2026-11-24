@@ -24,6 +24,7 @@ class Karaoke {
   private node?: HTMLDivElement;
   private spans: HTMLSpanElement[] = [];
   private line?: Line;
+  private correctionPending = false;
   private frame = 0;
   private upcoming = false;
   private nextPrompt?: string;
@@ -45,8 +46,9 @@ class Karaoke {
   private mountLine() {
     if (!this.node) return;
     const phrase = this.line?.phrase;
-    this.node.hidden = !phrase;
-    this.node.toggleAttribute("data-correction", !!this.line?.correction);
+    const correction = this.correctionPending || !!this.line?.correction;
+    this.node.hidden = !phrase && !correction;
+    this.node.toggleAttribute("data-correction", correction);
     this.node.classList.toggle("fading", this.line?.fadeAt !== undefined);
     this.node.style.removeProperty("--board-top");
     this.boardTop = Infinity;
@@ -58,6 +60,12 @@ class Karaoke {
       return span;
     }) ?? [];
     this.node.querySelector(".road-karaoke-line")?.replaceChildren(...this.spans.flatMap((span, i) => i ? [" ", span] : [span]));
+  }
+
+  showMiss() {
+    this.stop();
+    this.correctionPending = true;
+    this.mountLine();
   }
 
   show(phrase: Phrase, correction = false) {
@@ -89,6 +97,7 @@ class Karaoke {
       cancelAnimationFrame(this.frame);
     }
     this.line = undefined;
+    this.correctionPending = false;
     this.nextPrompt = undefined;
     this.upcoming = false;
     this.lit = 0;

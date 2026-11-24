@@ -183,6 +183,33 @@ describe("phrase gates", () => {
     expect(saved.setItem).toHaveBeenCalledTimes(writes);
   });
 
+  it("shows the road miss badge before and during a silent correction", () => {
+    const toggleAttribute = vi.fn();
+    const replaceChildren = vi.fn();
+    const panel = { hidden: true, toggleAttribute, classList: { toggle: vi.fn() },
+      style: { removeProperty: vi.fn() }, querySelector: () => ({ replaceChildren }) };
+    vi.stubGlobal("document", { createElement: () => ({ classList: { toggle: vi.fn() } }) });
+    vi.stubGlobal("requestAnimationFrame", () => 1);
+    vi.stubGlobal("cancelAnimationFrame", vi.fn());
+    const play = vi.spyOn(audio, "playFile").mockReturnValue({ status: "unavailable", currentTime: 0, stop: vi.fn() });
+    karaoke.road.attach(panel as unknown as HTMLDivElement);
+    try {
+      karaoke.road.showMiss();
+      expect(panel.hidden).toBe(false);
+      expect(toggleAttribute).toHaveBeenLastCalledWith("data-correction", true);
+      expect(replaceChildren).toHaveBeenLastCalledWith();
+      expect(play).not.toHaveBeenCalled();
+
+      karaoke.road.show(phrase, true);
+      expect(panel.hidden).toBe(false);
+      expect(toggleAttribute).toHaveBeenLastCalledWith("data-correction", true);
+      expect(replaceChildren.mock.calls.at(-1)?.map((part) => part.textContent ?? part).join("")).toBe(phrase.f);
+    } finally {
+      karaoke.road.stop();
+      karaoke.road.attach(null);
+    }
+  });
+
   it.each(["playing", "unavailable"] as const)("lights the words from the %s clip and clears after the fade", (status) => {
     let now = 100, next: FrameRequestCallback | undefined;
     vi.spyOn(performance, "now").mockImplementation(() => now);

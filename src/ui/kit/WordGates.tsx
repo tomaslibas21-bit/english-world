@@ -33,7 +33,8 @@ const subscribeWidth = (change: () => void) => {
   return () => query.removeEventListener("change", change);
 };
 
-function typeset(text: string, height: number, preferSingleLine: boolean, minSize: number, maxSize = 32, maxLines = 2) {
+function typeset(text: string, mode: FaceMode, preferSingleLine: boolean, minSize: number, maxSize = 32, maxLines = 2) {
+  const height = faceHeight(mode);
   const family = globalThis.document?.fonts?.check(`800 32px "${BOARD_FONT}"`, text) ? `"${BOARD_FONT}"` : fallbackFont;
   textMeasure ??= globalThis.document?.createElement("canvas").getContext("2d");
   if (textMeasure) textMeasure.font = `800 100px ${family}`;
@@ -62,10 +63,13 @@ function typeset(text: string, height: number, preferSingleLine: boolean, minSiz
       previousDescent = descent;
     }
     const fitWidth = (FACE_WIDTH - 4) * 100 / width;
-    const leading = lines.length === 3 ? Math.max(90, minLeading + 2) : 106;
+    // Use the measured ink clearance so three lines can fit without shrinking the road phrase as far.
+    const compact = mode === "road" && lines.length === 3;
+    const leading = lines.length === 3 ? Math.max(compact ? 76 : 90, minLeading + 2) : 106;
+    const minScale = compact ? 0.83 : 0.88;
     const inkHeight = Math.max(leading, 2 * halfInkHeight) + (lines.length - 1) * leading;
-    const size = Math.min(maxSize, height * 100 / inkHeight, fitWidth / 0.88);
-    if (size > best.size) best = { lines, size, scale: Math.max(0.88, Math.min(1, fitWidth / size)), lineHeight: leading / 100 };
+    const size = Math.min(maxSize, height * 100 / inkHeight, fitWidth / minScale);
+    if (size > best.size) best = { lines, size, scale: Math.max(minScale, Math.min(1, fitWidth / size)), lineHeight: leading / 100 };
     if (preferSingleLine && lines.length === 1 && size >= 20) break;
   }
   // A portrait sea label has a fixed local face. Preserve the em height on unusually long choices.
@@ -92,8 +96,8 @@ export function GateLabels({ mode, prompt, gateId, steer, answeredLane, stampedL
 }) {
   const wide = useSyncExternalStore(subscribeWidth, wideBoard, wideBoard);
   const layouts = useMemo(() => prompt.options.map((text) => prompt.phrase
-    ? typeset(text, faceHeight(mode), false, 0, text.length > 24 ? 25 : 29, 3)
-    : typeset(text, faceHeight(mode), mode === "sea" && wide, mode === "sea" && !wide ? 21 : 0)),
+    ? typeset(text, mode, false, 0, text.length > 24 ? 25 : 29, 3)
+    : typeset(text, mode, mode === "sea" && wide, mode === "sea" && !wide ? 21 : 0)),
     [prompt, mode, wide]);
   return <div className="road-gates" data-gate-id={gateId} lang={prompt.gap || prompt.phrase ? TL : HL}>
     {prompt.options.map((text, lane) => lane !== stampedLane && (answeredLane === undefined || lane === answeredLane) &&

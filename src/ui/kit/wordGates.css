@@ -209,4 +209,5 @@
   .road-header { width: min(96%, 780px); top: calc(6px + env(safe-area-inset-top)); }
   .road-hint { font-size: .72rem; white-space: nowrap; }
   .road-karaoke { --sky-bottom: 85px; font-size: 1.35rem; }
+  .road-overlay .road-karaoke[data-correction] { --sky-bottom: 106px; }
 }

@@ -317,11 +317,8 @@ export class RoadMode {
     const { car, score, view, track } = run;
     const dt = Math.min(frame.dt, DRIVE_SECONDS - score.elapsed);
     if (run.reveal && (run.reveal.in -= (run.way === "phrases" ? frame.dt : dt)) <= 0) {
-      if ("phrase" in run.reveal) {
-        run.feedback = 0;
-        useRoad.setState({ feedback: undefined });
-        karaoke.road.show(run.reveal.phrase, true);
-      } else this.play(run.reveal.clip);
+      if ("phrase" in run.reveal) karaoke.road.show(run.reveal.phrase, true);
+      else this.play(run.reveal.clip);
       run.reveal = undefined;
     }
     if (dt <= 0) {
@@ -369,7 +366,7 @@ export class RoadMode {
       const sameClip = !!prompt.gap && prompt.gap.clip === prompt.word.clip;
       if (prompt.phrase) {
         if (correct) karaoke.road.show(prompt.phrase);
-        else { karaoke.road.stop(); audio.stop(); run.reveal = { phrase: prompt.phrase, in: WRONG_PHRASE_DELAY }; }
+        else { karaoke.road.showMiss(); audio.stop(); run.reveal = { phrase: prompt.phrase, in: WRONG_PHRASE_DELAY }; }
       } else if (!correct && !sameClip) this.play(prompt.word.clip);
       if (prompt.gap) {
         if (correct || sameClip) this.play(prompt.gap.clip);
@@ -385,7 +382,8 @@ export class RoadMode {
       run.promptIn = prompt.gap ? Math.max(2.5, Math.min(4.8, correction + (audio.clipDuration(prompt.gap.clip.voice, prompt.gap.clip.speed, prompt.gap.clip.say) ?? 2.5))) : run.feedback;
       run.gateAt = nextGate(distance, score.total);
       if (!ended) this.warmNextPrompt(run);
-      useRoad.setState({ sayIt: undefined, stampedLane: correct ? lane : undefined, streak: score.streak, feedback: { correct, word: prompt.word } });
+      useRoad.setState({ sayIt: undefined, stampedLane: correct ? lane : undefined, streak: score.streak,
+        feedback: prompt.phrase && !correct ? undefined : { correct, word: prompt.word } });
     } else {
       if (run.feedback > 0 && (run.feedback -= dt) <= 0) useRoad.setState({ feedback: undefined });
       if ((run.promptIn -= dt) <= 0 && !ended && !run.gate) this.openGate(run);
