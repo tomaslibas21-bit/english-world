@@ -1143,7 +1143,7 @@ export const STREET_MOMENTS: StreetMoment[] = [
     familiar: {
       scene: "The cyclist rides by and waves.",
       open: { byCast: {
-        a: [L("¡Hola! Ahora la cadena va en su sitio.", "Hi! The chain's staying where it belongs now.")],
+        a: [L("¡Hola! Ahora la cadena sí se queda en su lugar.", "Hi! The chain's staying where it belongs now.")],
         b: [L("¡Buenas! Ya cambié la llanta.", "Hi! I've changed the tire.", { spain: "¡Buenas! Ya he cambiado la rueda." })],
         c: [L("¡Mire, ya puedo pedalear otra vez!", "Look, I can pedal again!")],
       } },
@@ -1230,7 +1230,7 @@ export const STREET_MOMENTS: StreetMoment[] = [
         { say: L("¡Qué gusto encontrarnos por aquí!", "It's good to run into you around here!", { spain: "¡Qué alegría coincidir por aquí!" }),
           reply: [L("Igualmente. Siempre alegra un buen saludo.", "Same here. A friendly hello always cheers me up.")] },
         { say: L("¡Que siga bien el día!", "Enjoy the rest of your day!"),
-          reply: [L("¡Gracias! Que también le vaya bien.", "Thanks! Hope you have a good day, too.", { spain: "¡Gracias! Que vaya bien también." })] },
+          reply: [L("¡Gracias! Que también le vaya bien.", "Thanks! Hope you have a good day, too.", { spain: "¡Gracias! Igualmente, que vaya bien." })] },
       ],
       away: L("¡Hasta que nos volvamos a cruzar!", "Till we cross paths again!"),
     },
@@ -1374,7 +1374,7 @@ export const STREET_MOMENTS: StreetMoment[] = [
         { say: L("Gracias, Don Chucho. Me hizo sonreír.", "Thank you, Don Chucho. You made me smile.", { spain: "Gracias, Don Chucho. Me ha hecho sonreír." }) },
       ],
       reply: [L("Ojalá le haga tanta compañía como a mí.", "I hope it keeps you company the way it does for me."),
-        L("Que el mar le cante bajito camino de casa.", "May the sea sing softly to you on your way home.")],
+        L("Que el mar le cante bajito camino a casa.", "May the sea sing softly to you on your way home.")],
       away: L("Otro día se la canto, con mucho gusto.", "I'd be happy to sing it for you another day."),
       card: L("Esta canción va para usted.", "This song is for you."),
     },
@@ -1470,7 +1470,7 @@ export const STREET_CHATTER: StreetChatter[] = [
   ] },
   { id: "c_wifi", near: "cafe", lines: [
     L("¿Te funciona el wifi aquí?", "Does the Wi-Fi work for you here?"),
-    L("Sí. Los mensajes pueden esperar a que termine mi café.", "Yep. My messages can wait till I finish my coffee."),
+    L("Sí, pero los mensajes pueden esperar a que termine mi café.", "Yeah, but my messages can wait till I finish my coffee."),
   ] },
   { id: "c_flores", near: "square", lines: [
     L("¿Ya viste las flores frente a la iglesia?", "Have you seen the flowers in front of the church?", { spain: "¿Has visto ya las flores frente a la iglesia?" }),
