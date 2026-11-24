@@ -906,6 +906,9 @@ export class CarWaterRecovery {
       wheelDepths: [p.frontLeft.depth, p.frontRight.depth, p.rearLeft.depth, p.rearRight.depth],
       steerGain: limits?.steerGain ?? 1, forwardCap: limits?.forward ?? null, reverseCap: limits?.reverse ?? null,
       assistedOnFoot: this.assisted, fallback: this.usedFallback, landing: this.lastLanding,
+      landingPair: this.landing.valid && (this.lastLanding || this.returning && this.routeCount > 0)
+        ? { pose: { ...this.landing.pose }, foot: { ...this.landing.foot } } : null,
+      fallbackReason: this.usedFallback ? (this.routeCount ? "corridor-unfinished" : "no-corridor") : null,
       spares: this.spares.filter((q) => q.valid).map((q) => ({ ...q.pose, foot: { ...q.foot } })),
       ...this.effects.inspect(), motorSignalRevs: this.revs(0),
     };
