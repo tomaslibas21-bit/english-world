@@ -4,7 +4,7 @@
 // level, else the level's choice). Check the map and walking approach too, with the town clock stepped by hand.
 // WORLD_TEST_URL=http://127.0.0.1:5188 WORLD_STORAGE=english-world WORLD_PLAYWRIGHT_MODULE=/path/to/playwright-core/index.mjs node tests/browser/surf-find.mjs
 import assert from "node:assert/strict";
-import { HARBOR_START, SEEDED_RANDOM, readConversationState, sampleSurfRender, waitForLearnerTurn } from "./fixtures/surf-town.mjs";
+import { HARBOR_START, SEEDED_RANDOM, checkSurfTownView, readConversationState, sampleSurfRender, waitForLearnerTurn } from "./fixtures/surf-town.mjs";
 import { HARBOR_PHONE_VIEW, checkHarborCalls, openHarbor, originalHarborCalls } from "./fixtures/harbor-calls.mjs";
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:5188";
@@ -67,9 +67,9 @@ try {
     }
     const step = (n) => page.evaluate((k) => window.__step(k), n);
     const real = (ms) => new Promise((r) => setTimeout(r, ms));
-    const shot = async (name) => { if (shots) { await step(2); await real(300); await page.screenshot({ path: `${shots}/${label}-${name}.png` }); } };
+    const shot = async (name, frames = 2) => { if (shots) { if (frames) await step(frames); await real(300); await page.screenshot({ path: `${shots}/${label}-${name}.png` }); } };
     await page.evaluate(() => window.__ew.store.getState().setHud({ panel: null }));
-    const at = async (x, z, rot = Math.PI) => { await page.evaluate(([x, z, rot]) => { const g = window.__ew.game; g.keys.clear(); g.enterZone("town", { x, z, rot }, true); g.rig.yaw = rot; g.rig.snap(); }, [x, z, rot]); await step(20); };
+    const at = async (x, z, rot = Math.PI) => { await page.evaluate(([x, z, rot]) => { const g = window.__ew.game; g.keys.clear(); g.enterZone("town", { x, z, rot }, true); }, [x, z, rot]); await step(20); };
     const hud = () => page.evaluate(() => window.__ew.store.getState().hud);
     assert.equal(await page.evaluate(() => document.documentElement.lang), "lt");
     check(`${label}: Maple Harbor has its surf school`, await page.evaluate(() => window.__ew.game.surf?.content.npc === "maren"));
@@ -126,10 +126,10 @@ try {
     check(`${label}: at her counter, still her talk prompt`, h.prompt?.kind === "talk" && h.prompt.label.includes("Maren Pike"), { prompt: h.prompt, npcSpot });
     if (shots) {
       await page.locator(".zone-banner").waitFor({ state: "hidden" });
-      await step(60);
     }
+    await step(60);
     await page.locator(".nametag").filter({ has: page.getByText("Maren Pike", { exact: true }) }).waitFor({ state: "visible" });
-    await shot("counter");
+    const customerView = await checkSurfTownView(page, "manual counter", "counter", () => shot("counter", 0));
     await sampleSurfRender(page, "school counter");
     await at(spot.start.x, spot.start.z);
     if (phone) await page.locator(".act-btn").tap(); else await page.keyboard.press("e");
@@ -172,7 +172,8 @@ try {
     const walker = () => page.evaluate(() => {
       const { game, store } = window.__ew, pos = game.player.root.position;
       return { x: pos.x, y: pos.y, z: pos.z, zone: game.zone.id, walking: !!game.autoPath?.length,
-        rot: game.heading, swimming: game.swimming, prompt: store.getState().hud.prompt };
+        rot: game.heading, swimming: game.swimming, prompt: store.getState().hud.prompt,
+        camera: game.rig.cam.position.toArray() };
     });
     const follow = async (name, originZone) => {
       await map();
@@ -194,7 +195,10 @@ try {
         if (p.zone === "town" && !p.walking && Math.hypot(p.x - counter[0], p.z - counter[1]) < 0.5 && p.prompt?.kind === "talk") {
           check(`${label}: ${name} walks to Maren on dry sand and faces her`, walked && p.rot === 0 && p.prompt.label.includes("Maren Pike"), p);
           assert.deepEqual(await objective(), originalObjective);
-          await shot(`guide-${originZone}-arrival`);
+          await step(60);
+          const view = await checkSurfTownView(page, `${name} settled arrival`, "counter", () => shot(`guide-${originZone}-arrival`, 0));
+          check(`${label}: ${name} settles toward the frontal customer view`, Math.abs(view.yaw) < 0.03
+            && Math.hypot(...view.camera.map((v, j) => v - customerView.camera[j])) < 0.75, view.camera);
           return;
         }
         await step(18); await real(10);
@@ -231,6 +235,9 @@ try {
     const waitForSession = (id = sitId) => waitForLearnerTurn(page, id);
     if (phone) await page.locator(".act-btn").tap(); else await page.keyboard.press("e");
     await waitForSession();
+    await step(60);
+    await page.locator(".convo .meta").filter({ hasText: "Maren Pike" }).first().waitFor({ state: "visible" });
+    await checkSurfTownView(page, "first real rental turn", "conversation", () => shot("rental-conversation", 0));
     // A completed rental records the bonus for the picker through the real dialogue engine.
     for (const answer of ["Hi! I want to rent a surfboard.", "For two hours.", "Here's my passport.", "In cash.", "Yes, let's go!"]) {
       await page.waitForFunction(() => window.__ew.store.getState().conv.phase === "you", null, { polling: 50, timeout: 20000 });

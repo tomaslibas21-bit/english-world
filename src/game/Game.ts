@@ -10,6 +10,7 @@ import { loadedCarModelCount } from "./world/carModels";
 import type { CarVisuals } from "./world/carVisuals";
 import { getInterior, type Interior } from "./world/interiors";
 import { OUTDOOR_NPCS, OUTDOOR_GUIDES, AIRPORT_EXIT, WORLD, BUILDINGS, ROADS, DROPOFF, SEA_Z, BEACH_Z, FOUNTAIN, PARK, SQUARE } from "./world/layout";
+import { HARBOR_SURF } from "./world/surf";
 import { createCharacter, setBlobShadows, withBackpack, type GameCharacter } from "./characters";
 import { moodOf } from "./characters/mood";
 import { styleRenderer, createStyleFx, type StyleFx } from "./styleScene";
@@ -199,7 +200,7 @@ export class Game implements GameApi {
   private lastHeading = 0;
   private heading = Math.PI;
   private autoPath: [number, number][] | null = null;
-  private autoTarget: { kind: "npc" | "door" | "exit" | "point"; id?: string; rot?: number } | null = null;
+  private autoTarget: { kind: "npc" | "door" | "exit" | "point"; id?: string; rot?: number; alignCamera?: boolean } | null = null;
   private walkCheck = { time: 0, remaining: Infinity };
   private lastBlockedTap = -Infinity;
   private clock = new THREE.Clock();
@@ -2116,7 +2117,12 @@ export class Game implements GameApi {
     const camSide = (this.rig.cam.position.x - mid.x) * dir.z - (this.rig.cam.position.z - mid.z) * dir.x;
     const shoulder = room && Math.abs(dir.x) > 0.5 ? -dir.x : this.container.clientWidth > 900 ? -1 : room ? -focus.x * dir.z : camSide;
     const near = tc ? shoulderShots(p, a, focus, Math.max(NEAR_TALK, spread * 2.2), tc.max, shoulder >= 0 ? 1 : -1) : null;
-    return tc ? this.fitTalk(frame, dist, tc.max, [{ ch: this.player }, ...group], near, solo) : frame(dist);
+    const shop = HARBOR_SURF;
+    // From seaward of the counter, the low lens sees under the eave and the plate fits beside Maren.
+    const front = !room && to.id === this.surf?.content.npc && p.z < shop.counter.z
+      && Math.hypot(p.x - shop.approach.x, p.z - shop.approach.z) < 1.2
+      ? { pos: new THREE.Vector3(-103.25, 3, -74.7), look: new THREE.Vector3(-100.65, 1.61, shop.coach.z) } : undefined;
+    return tc ? this.fitTalk(frame, dist, tc.max, [{ ch: this.player }, ...group], near, solo, front) : frame(dist);
   }
 
   /** The conversation's camera that keeps everyone taking part in the picture (theme.ts talkCamera). The framing at
@@ -2126,7 +2132,7 @@ export class Game implements GameApi {
    *  `max`, on either side of them outdoors, rising as it goes: indoors at the same angle, outdoors looking down at
    *  least 26° (more of the ground and less of the town behind them in the picture). The widest framing tried if none
    *  fits. */
-  private fitTalk(frame: (d: number, side?: 1 | -1) => { pos: THREE.Vector3; look: THREE.Vector3 }, d0: number, max: number, who: { ch: GameCharacter; sit?: boolean }[], near: Iterable<Shot> | null = null, solo = false): Shot {
+  private fitTalk(frame: (d: number, side?: 1 | -1) => { pos: THREE.Vector3; look: THREE.Vector3 }, d0: number, max: number, who: { ch: GameCharacter; sit?: boolean }[], near: Iterable<Shot> | null = null, solo = false, seaward?: Shot): Shot {
     const w = this.container.clientWidth, h = this.container.clientHeight, wide = w > 900;
     // styles.css .convo: on a wide screen a panel min(500px, 42vw) wide on the right, 14 px in; on a phone 58vh tall
     // at the bottom, 8 px up. The free part of the screen, 10 px in from its edges, and the loop's shift of the picture.
@@ -2179,9 +2185,9 @@ export class Game implements GameApi {
     // circles, to 4 m; not the people's own) or something low (the colliders' boxes: cars, counters, walls, to 1.2 m).
     const col = this.town.colliders;
     const boxes = this.zone.interior ? [] : BUILDINGS.map((b) => ({ minX: b.x - b.w / 2, maxX: b.x + b.w / 2, minZ: b.z - b.d / 2, maxZ: b.z + b.d / 2, h: b.h + (b.roof === "gable" ? Math.min(b.w, b.d) * 0.32 : 0) }));
-    const seen = (f: Shot) => {
+    const seen = (f: Shot, overSea = false) => {
       if (this.zone.interior) return true;
-      if (col.blocked(f.pos.x, f.pos.z, 0.5)) return false;
+      if (col.blocked(f.pos.x, f.pos.z, 0.5, overSea)) return false;
       const o = f.pos;
       // (only what stands within the lines' reach)
       let x0 = o.x, x1 = o.x, z0 = o.z, z1 = o.z;
@@ -2253,6 +2259,7 @@ export class Game implements GameApi {
     // the nearer views first; if the room hides the learner from every one of them (they stand behind a counter, in
     // a corner), then those that show the people spoken with
     over = true;
+    if (seaward && seen(seaward, true) && clear(seaward) && fits(seaward)) return seaward;
     const nears = near ? [...near] : [];
     for (const whole of [true, false]) {
       for (const f0 of nears) {
@@ -2467,7 +2474,7 @@ export class Game implements GameApi {
     if (this.zone.interior) {
       this.walkTo(this.zone.interior.exit.x, this.zone.interior.exit.z - 0.6, { kind: "exit", id: loc });
     } else if (door) this.walkTo(door.outX, door.outZ, { kind: "point" });
-    else if (outdoor) this.walkTo(outdoor.x, outdoor.z, { kind: "point", rot: outdoor.rot });
+    else if (outdoor) this.walkTo(outdoor.x, outdoor.z, { kind: "point", rot: outdoor.rot, alignCamera: outdoor.alignCamera });
   }
 
   guideToLighthouse() {
@@ -3428,6 +3435,12 @@ export class Game implements GameApi {
     else if (t.kind === "point" && t.rot !== undefined) {
       this.vel.set(0, 0, 0);
       this.heading = t.rot;
+      if (t.alignCamera && this.rig.mode === "follow" && useStore.getState().settings.cameraFollow
+        && !this.pointer.down && !this.rig.manuallyAiming) {
+        this.moveVel.set(0, 0, 0);
+        this.rig.target.copy(this.player.root.position);
+        this.rig.snap(t.rot);
+      }
     }
   }
 

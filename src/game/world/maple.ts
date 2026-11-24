@@ -16,7 +16,7 @@ import { STYLED } from "../style";
 import { LIGHTHOUSE_ISLAND } from "./island";
 import { addLighthouse } from "./lighthouseTower";
 import { addHarborSurf } from "./harborSurf";
-import { SURF_SPOT } from "./surf";
+import { HARBOR_SURF, SURF_SPOT } from "./surf";
 
 export interface MapleCtx {
   M: Merger; col: Colliders; group: THREE.Group;
@@ -565,12 +565,24 @@ function addBeach(add: Add, col: Colliders) {
   }
   const gr = rand(204);
   const [supX, supZ] = SURF_SPOT.boards[1];
+  const { shack } = HARBOR_SURF;
   for (let x = -104; x < 122; x += 3.4 + gr() * 3.2) {
     const z = BEACH_Z - 0.9 - gr() * 1.5;
     const n = 4 + Math.floor(gr() * 3);
     // Leave the two paddleboard decks and their 0.2 m margin clear. Keep the count draw for each tuft.
     if (Math.abs(x - supX) < 1.2 && Math.abs(z - supZ) < 1.75) continue;
     if (Math.abs(x + 30) < 5 || Math.hypot(x - 104, z + 70) < 5) continue;
-    for (let i = 0; i < n; i++) add(new THREE.ConeGeometry(0.05, 0.55 + (i % 3) * 0.18, 3).rotateZ((i - n / 2) * 0.16).translate(x + (i - n / 2) * 0.09, 0.3, z + (i % 2) * 0.1), i % 2 ? "#b9b46a" : "#9fa85a", { flat: true, cast: false });
+    for (let i = 0; i < n; i++) {
+      const s = i - n / 2;
+      const blade = new THREE.ConeGeometry(0.05, 0.55 + (i % 3) * 0.18, 3)
+        .rotateZ(s * 0.16).translate(x + s * 0.09, 0.3, z + (i % 2) * 0.1);
+      if (Math.abs(x - shack.x) < shack.w / 2 + 0.6) {
+        blade.computeBoundingBox();
+        const { min, max } = blade.boundingBox!;
+        if (min.x < shack.x + shack.w / 2 && max.x > shack.x - shack.w / 2
+          && min.z < shack.z + shack.d / 2 && max.z > shack.z - shack.d / 2 - 0.2) continue;
+      }
+      add(blade, i % 2 ? "#b9b46a" : "#9fa85a", { flat: true, cast: false });
+    }
   }
 }

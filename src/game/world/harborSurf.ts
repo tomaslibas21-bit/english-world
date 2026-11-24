@@ -40,9 +40,9 @@ export function addHarborSurf({ col, group, M }: MapleCtx, add: (g: THREE.Buffer
 
   wall(counter.w, counter.top - 0.06, counter.d, x, y + (counter.top - 0.06) / 2, counter.z, TEAL);
   box(counter.w, 0.06, counter.d, x, y + counter.top - 0.03, counter.z, CREAM);
-  // The west post carries the plate beside Maren's name tag in the customer view.
+  // Drop the plate on the west post so its ink clears Maren's tag even at the west edge of the arrival tolerance.
   const signW = 1.42, signH = 0.4, signD = 0.10;
-  const signX = x - (w - signW) / 2, signY = y + eave - 0.16;
+  const signX = x - (w - signW) / 2, signY = y + eave - 0.28;
   box(signW, signH, signD, signX, signY, front - signD / 2, GABLE);
   const chalkX = x + 1.32, chalkZ = back - 0.17, chalkY = y + 1.53;
   box(1.48, 1.08, 0.045, chalkX, chalkY, chalkZ, GABLE);

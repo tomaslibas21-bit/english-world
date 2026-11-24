@@ -153,7 +153,15 @@ export class CameraRig {
     this.clearTaxiShot(true);
     this.dist = THREE.MathUtils.clamp(this.dist * (1 + delta * 0.001), 5, 22);
   }
-  snap() {
+  get manuallyAiming() { return this.dragging || this.manualT > 0; }
+
+  /** Snap to the target. An authored yaw cancels any unfinished turn from the previous view. */
+  snap(yaw?: number) {
+    if (yaw !== undefined) {
+      this.yaw = yaw;
+      this.yawVel = 0;
+      this.slideYaw = this.standYaw = null;
+    }
     if (this.mode === "follow") {
       this.ahead.set(0, 0, 0);
       this.curPos.copy(this.placeFollow(0, true));

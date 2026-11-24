@@ -172,9 +172,13 @@ export class SurfPlay {
         this.outfit.restore();
         if (this.npcHidden) this.game.hideNpc(this.content.npc, !this.npcWasVisible);
         this.npcHidden = false;
-        this.game.rig.stage = null;
+        const { rig } = this.game;
+        // The camera looks along the beach from the west, clear of the rack, while the learner still faces the water.
+        const yaw = useStore.getState().settings.cameraFollow && !rig.manuallyAiming ? Math.PI / 2 : rig.yaw;
+        rig.stage = null;
         const s = this.spot.start;
         this.game.place(s.x, s.z, s.rot);
+        rig.snap(yaw);
         this.strokeT = 0;
         useSurf.getState().reset();
         useStore.getState().setHud({ ride: null, prompt: null });

@@ -9,7 +9,7 @@
 // of Maple Harbor; WORLD_SHOTS=<folder> keeps pictures of its moments:
 // WORLD_TEST_URL=http://127.0.0.1:5188 WORLD_STORAGE=english-world WORLD_PLAYWRIGHT_MODULE=/path/to/playwright-core/index.mjs node tests/browser/surf.mjs
 import assert from "node:assert/strict";
-import { HARBOR_START, readSurfIntro, readSurfPlayer, sampleSurfRender, waitForSurfLesson, waitForSurfPad } from "./fixtures/surf-town.mjs";
+import { HARBOR_START, checkSurfTownView, readSurfIntro, readSurfPlayer, sampleSurfRender, waitForSurfLesson, waitForSurfPad } from "./fixtures/surf-town.mjs";
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:5188";
 const storage = process.env.WORLD_STORAGE || "english-world";
@@ -149,7 +149,7 @@ try {
         singlePass: active.length > 0 && active.every(({ mesh }) => mesh.material.forceSinglePass && mesh.geometry.groups.length === 0),
       };
     }, isCoach);
-    const shot = async (name, scale = "device") => { if (shots) { await step(2); await real(250); await page.screenshot({ path: `${shots}/${label}-${name}.png`, scale }); } };
+    const shot = async (name, scale = "device", frames = 2) => { if (shots) { if (frames) await step(frames); await real(250); await page.screenshot({ path: `${shots}/${label}-${name}.png`, scale }); } };
     const shown = new Set();
     const hud = () => page.evaluate(() => window.__ew.store.getState().hud);
     const press = async (dir, fallback) => {
@@ -604,7 +604,7 @@ try {
     check(`${label}: the waves, the seconds and what was heard are kept, and the phrases are cards (the learner's own too)`, after.surf?.waves === 2 && after.surf.lessons === 2 && after.surf.seconds > 20 && after.surf.heard.now_up >= 2 && after.cards > 500 && after.mine?.lt === "Dabar?", { ...after.surf, heard: Object.keys(after.surf?.heard ?? {}).length, cards: after.cards, mine: after.mine });
     for (const key of ["waves", "seconds", "followed", "asked"]) assert.equal(after.surf[key], beginnerScore[key] + s.score[key], `saved ${key}`);
     await step(30);
-    const checkTownReturn = async (name, before) => {
+    const checkTownReturn = async (name, before, evidence) => {
       const p = await playerNow();
       check(`${label}: ${name} restores the original town actor, outfit and follow camera`, p.actor === townPlayer.actor && p.visible
         && p.backpack === true && p.outfit === null && p.rash === townPlayer.rash && p.swim === townPlayer.swim
@@ -612,9 +612,9 @@ try {
         && Math.hypot(p.x - start.x, p.z - start.z) < 0.5, p);
       check(`${label}: ${name} restores the town toolbar and board prompt`, await page.locator(".toolbar").count() === 1 && (await hud()).prompt?.kind === "surf");
       if (phone) check(`${label}: ${name} restores joystick, action and jump`, await page.locator(".joy:visible, .act-btn:visible, .jump-btn:visible").count() === 3 && await page.locator(".surf-pad").count() === 0);
+      await checkSurfTownView(page, name, "return", () => shot(evidence, "css", 0));
     };
-    await checkTownReturn("leaving the result", run.looks.score);
-    await shot("return-from-score", "css");
+    await checkTownReturn("leaving the result", run.looks.score, "return-from-score");
     if (phone) {
       const before = await playerNow();
       await page.locator(".jump-btn").tap();
@@ -693,8 +693,7 @@ try {
     check(`${label}: out of it at once, on foot`, !(await L()) && (await hud()).ride === null);
     check(`${label}: leaving from the water: own clothes and the backpack again`, await page.evaluate(() => window.__ew.game.player.backpackVisible === true && window.__ew.game.outfit === null));
     await step(30);
-    await checkTownReturn("leaving the water", water);
-    await shot("return-from-water", "css");
+    await checkTownReturn("leaving the water", water, "return-from-water");
     if (!phone) {
       await page.keyboard.press("e");
       await page.locator(".surf-pick .surf-level").first().waitFor();

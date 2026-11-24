@@ -112,6 +112,92 @@ export const readSurfPlayer = (page) => page.evaluate(() => {
     mode: rig.mode, stage: !!rig.stage, camera: rig.cam.position.toArray() };
 });
 
+export async function checkSurfTownView(page, checkpoint, view, capture) {
+  const sample = await page.evaluate((view) => {
+    const { game, store } = window.__ew;
+    const { cam } = game.rig;
+    const render = game.renderer.info.render;
+    const previousFrame = render.frame;
+    window.__step(1, 1000 / 60);
+    const back = view === "return", talking = view === "conversation";
+    const maren = game.npcs.find((npc) => npc.id === game.surf.content.npc);
+    const actor = back ? game.player : maren.ch;
+    const point = actor.root.position;
+    const canvas = game.renderer.domElement.getBoundingClientRect();
+    const panel = talking ? document.querySelector(".convo").getBoundingClientRect() : null;
+    const wide = canvas.width > 900;
+    const right = point.clone().set(1, 0, 0).applyQuaternion(cam.quaternion).setY(0).normalize();
+    const ray = new game.raycaster.constructor();
+    const scenery = [];
+    const addOpaqueMesh = (mesh) => {
+      const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      if (mesh.isMesh && materials.some((m) => m?.visible && (!m.transparent || m.opacity >= 0.75))) scenery.push(mesh);
+    };
+    game.town.group.traverseVisible(addOpaqueMesh);
+    if (!back) game.player.root.traverseVisible(addOpaqueMesh);
+    const samplePoint = (p) => {
+      const v = p.clone().project(cam);
+      const x = canvas.left + (v.x + 1) * canvas.width / 2, y = canvas.top + (1 - v.y) * canvas.height / 2;
+      const inset = talking ? 10 : 0;
+      const x1 = wide && panel ? panel.left : canvas.right, y1 = !wide && panel ? panel.top : canvas.bottom;
+      const d = p.clone().sub(cam.position);
+      ray.near = cam.near;
+      ray.far = d.length() - 0.005;
+      ray.set(cam.position, d.normalize());
+      const hit = ray.intersectObjects(scenery, false)[0];
+      return { x, y, inView: v.z > -1 && v.z < 1 && x >= canvas.left + inset && x <= x1 - inset
+        && y >= canvas.top + inset && y <= y1 - inset, blocker: hit ? { mesh: hit.object.name, at: hit.point.toArray() } : null };
+    };
+    const rows = back ? [[0.48, 0.28], [0.62, 0.28], [0.79, 0.2], [0.9, 0.2], [1, 0.12]]
+      : [[0.79, 0.12], [0.9, 0.12], [1, 0.12]];
+    const subject = rows.flatMap(([y, side]) => [-side, 0, side].map((dx) =>
+      samplePoint(point.clone().addScaledVector(right, dx).setY(point.y + y * actor.height))));
+    const frame = render.frame;
+    const fresh = frame > previousFrame && render.calls > 0 && render.triangles > 0
+      && game.presentedWorld?.serial === frame && game.presentedWorld.scene === "town";
+    const state = { fresh, frame, mode: game.rig.mode, yaw: game.rig.yaw, camera: cam.position.toArray(),
+      actor: point.toArray(), heading: game.heading, visible: actor.root.visible, subject };
+    if (back) {
+      const ring = game.surf.marker;
+      return { ...state, start: game.surf.spot.start, ring: ring.position.toArray(), color: ring.children[0].material.color.getHexString(),
+        prompt: store.getState().hud.prompt?.kind };
+    }
+    const sign = game.town.group.getObjectByName("harbor-surf-sign");
+    const { position, uv } = sign.geometry.attributes;
+    const plate = Array.from({ length: position.count }, (_, i) => i).filter((i) => uv.getY(i) >= 432 / 512)
+      .map((i) => sign.localToWorld(point.clone().fromBufferAttribute(position, i)));
+    const x0 = Math.min(...plate.map((p) => p.x)), x1 = Math.max(...plate.map((p) => p.x));
+    const y0 = Math.min(...plate.map((p) => p.y)), y1 = Math.max(...plate.map((p) => p.y));
+    // The atlas uses the middle 61% of its width and 50% of its height for the name.
+    const lettering = [0.195, 0.805].flatMap((u) => [0.26, 0.76].map((v) =>
+      samplePoint(point.clone().set(x0 + (x1 - x0) * u, y0 + (y1 - y0) * v, plate[0].z))));
+    const rect = maren.tag.getBoundingClientRect();
+    const tag = { visible: rect.width > 0 && rect.height > 0, left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+    return { ...state, home: maren.home.toArray(), lettering, tag, phase: panel && store.getState().conv.phase };
+  }, view);
+  const label = `${checkpoint} at ${JSON.stringify(page.viewportSize())}`;
+  console.log(`surf town view ${label} ${JSON.stringify(sample)}`);
+  await capture();
+  assert(sample.fresh && sample.visible && sample.subject.every((p) => p.inView && !p.blocker), `${label}: unobstructed subject in the presented view`);
+  if (view === "return") {
+    assert(sample.mode === "follow" && Math.abs(sample.heading - HARBOR_START.rot) < 0.01
+      && Math.hypot(sample.actor[0] - HARBOR_START.x, sample.actor[2] - HARBOR_START.z) < 0.02
+      && sample.prompt === "surf", `${label}: original dry ring, heading and board prompt`);
+    assert.deepEqual(sample.ring, [HARBOR_START.x, 0.05, HARBOR_START.z]);
+    assert.equal(sample.color, "ffd166");
+    return sample;
+  }
+  assert(sample.lettering.every((p) => p.inView && !p.blocker), `${label}: the complete school name is in view`);
+  if (view === "conversation") {
+    assert(sample.mode === "talk" && sample.phase === "you", `${label}: first real learner turn`);
+  } else {
+    assert(sample.mode === "follow" && sample.tag.visible
+      && (sample.lettering.every((p) => p.x > sample.tag.right) || sample.lettering.every((p) => p.y > sample.tag.bottom)),
+      `${label}: school's name stays readable beside Maren's tag`);
+  }
+  return sample;
+}
+
 export async function sampleSurfRender(page, camera) {
   const { width, height } = page.viewportSize();
   const { quality, samples } = await page.evaluate(() => {

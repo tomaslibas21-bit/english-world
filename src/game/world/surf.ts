@@ -21,7 +21,7 @@ export const HARBOR_SURF = {
   shack: SHACK,
   counter: { z: -67, w: 3.1, d: 0.42, top: 1.02 },
   coach: { x: SHACK.x, z: -66.45, rot: Math.PI },
-  approach: { x: SHACK.x, z: -68.55, rot: 0 },
+  approach: { x: SHACK.x, z: -68.55, rot: 0, alignCamera: true },
 };
 
 export const SURF_SPOT = {

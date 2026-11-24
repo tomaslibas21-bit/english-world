@@ -135,7 +135,7 @@ export const DROPOFF: Record<string, { x: number; z: number; rot: number }> = {
 };
 
 /** Registered outdoor places with a dedicated pedestrian approach. */
-export const OUTDOOR_GUIDES: Partial<Record<string, { x: number; z: number; rot: number }>> = {
+export const OUTDOOR_GUIDES: Partial<Record<string, { x: number; z: number; rot: number; alignCamera?: boolean }>> = {
   [HARBOR_SURF.location]: HARBOR_SURF.approach,
 };
 
