@@ -2919,7 +2919,7 @@ export class Game implements GameApi {
       if (this.flight.t >= FLIGHT_SECONDS) this.endFlight();
     }
     const blocked = talking || !!st.hud.panel || !!st.hud.glyph || this.transitioning || !!this.caveLoading || this.modes.modal || !!this.flight;
-    this.updatePlayer(dt, blocked, this.transitioning && !this.frameFade.active && !talking && !st.hud.panel && !st.hud.glyph && !mode);
+    const support = this.updatePlayer(dt, blocked, this.transitioning && !this.frameFade.active && !talking && !st.hud.panel && !st.hud.glyph && !mode);
     if (!blocked) this.checkRoadEntry();
 
     const phoneState = this.phoneSnapshot();
@@ -3058,7 +3058,7 @@ export class Game implements GameApi {
     this.sky.position.copy(this.rig.cam.position);
     // an illustrated scene covers the view during the conversation: save the phone's battery
     const covered = this.covered = talking && picturesOn(st.settings) && !!sceneFor(st.conv.sitId, st.conv.hostId);
-    this.rides.updateParkingKeys(this.t, !this.zone.interior && !talking && !this.flight && !this.modes.active && !this.transitioning);
+    this.rides.updateParkingKeys(this.t, !this.zone.interior && !talking && !this.flight && !this.modes.active && !this.transitioning, support);
     if (!covered) {
       this.road?.stage(this.renderer);
       if (!blocked && !mode && riding?.kind === "car" && this.rides.phase === "on" && this.road?.shouldStart(riding)
@@ -3727,6 +3727,7 @@ export class Game implements GameApi {
     // (the character stands on what is under them: the blob shadow and the camera with it; `lift` is the jump above it)
     p.y = this.hop.ground;
     this.player.update(dt);
+    return surfacePiece;
   }
 
   /** The grotto's ways in from the town (cave/grounds.ts): swimming on into the cave's mouth goes in; stepping into

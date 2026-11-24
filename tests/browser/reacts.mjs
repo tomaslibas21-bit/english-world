@@ -87,6 +87,11 @@ try {
           g.setJoystick(0, 0);
           g.vel.set(0, 0, 0);
           g.placeOnFoot(x, z, Math.atan2(target.x - x, target.z - z));
+          if (withOwner) {
+            // Frame the driver's side so the learner and the seated speaker are visible together.
+            g.rig.yaw = car.m.heading - Math.PI / 2;
+            g.rig.snap();
+          }
           // Begin above the roof (or the convertible's body). The normal physics step resolves the fall and landing.
           g.hop.land(top.top + 1);
           g.hop.air = true;
@@ -204,6 +209,39 @@ try {
         if (target.speaker) assert.equal(line.speaker, target.speaker);
         else assert.match(line.speaker, /^walker:/);
         await waitFor(() => bubble.isVisible(), `the real ${kind} landing shows a bubble`);
+        if (withOwner) {
+          await step(8);
+          await checkPlacement();
+          await during(() => Math.min(width, height) < 600 ? translate.tap() : translate.click());
+          assert.equal(await translate.getAttribute("aria-expanded"), "true");
+          assert.equal(await bubble.locator(`[lang="${targetLang}"]`).innerText(), line.text);
+          assert.equal(await helperLine.innerText(), line.lt);
+          await step(1, 0);
+          await checkPlacement();
+          const { anchor, tail, textFits } = await bubble.evaluate((el) => {
+            const { game, store } = window.__ew;
+            const anchor = game.reactPosition(store.getState().hud.reaction.id);
+            const box = el.getBoundingClientRect();
+            const style = getComputedStyle(el, "::after");
+            const below = el.hasAttribute("data-below");
+            const height = parseFloat(below ? style.borderBottomWidth : style.borderTopWidth);
+            const tail = { x: box.left + parseFloat(style.left), y: below ? box.top - height : box.bottom + height, height, below };
+            const copy = el.querySelector(".reaction-copy");
+            const bounds = copy.getBoundingClientRect();
+            const textFits = [...copy.children].every((child) => {
+              const range = document.createRange();
+              range.selectNodeContents(child);
+              const rects = [...range.getClientRects()];
+              return rects.length > 0 && rects.every((r) => r.left >= bounds.left && r.right <= bounds.right && r.top >= bounds.top && r.bottom <= bounds.bottom);
+            });
+            return { anchor, tail, textFits };
+          });
+          assert(textFits, `both owner lines fit inside the bubble at ${width}×${height}`);
+          assert(anchor && tail.height > 0 && Math.abs(tail.x - anchor.x) <= 1 &&
+            (tail.below ? tail.y >= anchor.y - 1 : tail.y <= anchor.y + 1),
+          `the tail points at the owner at ${width}×${height}: ${JSON.stringify({ tail, anchor })}`);
+          await during(() => screenshot(page, "carroof-owner", width, height));
+        }
         await step(1, 21000);
       }
 
