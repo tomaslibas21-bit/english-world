@@ -13,7 +13,7 @@ import { Colliders as GroundPlan } from "./world/util";
 import type { NavGrid } from "./nav";
 import type { HairStyle, Look } from "../content/npcs";
 import { rand, type Colliders } from "./world/util";
-import { TAXI, TRAFFIC_CARS, TRAFFIC_LANES, CHAT_SPOTS, ROADS } from "./world/layout";
+import { TRAFFIC_PLACEMENTS, TRAFFIC_LANES, CHAT_SPOTS, ROADS } from "./world/layout";
 import { carLedges, carModelEntry, type CarModelName, type CarPaint } from "./world/carModels";
 import type { Seat } from "./world/town";
 import { Dog } from "./dog";
@@ -273,7 +273,7 @@ export class Ambient {
   riding = false;
   private colliders?: Colliders;
 
-  constructor(private nav: NavGrid, private places: [number, number][], quality: "high" | "low", seats: Seat[] = [], colliders?: Colliders) {
+  constructor(private nav: NavGrid, private places: [number, number][], quality: "high" | "low", seats: Seat[] = [], colliders?: Colliders, finalTraffic = false) {
     this.colliders = colliders;
     rWear = rand(9090);
     rBeach = rand(5151);
@@ -297,24 +297,23 @@ export class Ambient {
     // (graphics round 5, theme.ts `farPeople`) each of them in fewer triangles too, drawn when far from the camera
     if (THEME.farPeople !== null) for (const w of this.walkers) if (w.look) addFarVersion(w.ch, w.look);
     const carMat = STYLED ? vertexColorMaterial("prop") : new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
-    let everyday = 0;
     for (let i = 0; i < nc; i++) {
       const lane = LANES[i % LANES.length];
-      const kind = THEME.traffic[i] ?? "car";
-      const look = kind === "car" ? TRAFFIC_CARS[everyday++ % TRAFFIC_CARS.length] : kind === "taxi" ? TAXI : undefined;
-      const color = look?.color ?? "#f2f2f2";
-      const model = look?.model;
-      const paint = kind === "taxi" && TAXI.trim ? { body: color, trim: TAXI.trim } : color;
-      const mesh = new THREE.Mesh(kind !== "car" ? vehicleGeometry(kind, color) : STYLED ? styledCarGeometry(color) : carGeometry(color), carMat);
+      const { kind, color, model, paint } = TRAFFIC_PLACEMENTS[i];
+      // Model-backed traffic still needs a pose handle for collision, wheels and damage.
+      const poseOnly = finalTraffic && model !== undefined;
+      const geometry = poseOnly ? new THREE.BufferGeometry()
+        : kind !== "car" ? vehicleGeometry(kind, color) : STYLED ? styledCarGeometry(color) : carGeometry(color);
+      const mesh = new THREE.Mesh(geometry, carMat);
       mesh.castShadow = true;
-      if (IS_TOON) mesh.add(makeOutline(mesh, outlineColorFor(new THREE.Color(color)), 0.03));
+      if (!poseOnly && IS_TOON) mesh.add(makeOutline(mesh, outlineColorFor(new THREE.Color(color)), 0.03));
       mesh.rotation.y = lane.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
       // the cars sharing a lane start spread out along it (never on top of each other)
       const k = Math.floor(i / LANES.length), inLane = Math.ceil((nc - (i % LANES.length)) / LANES.length);
       const t = ((i * 0.37) % 1 + this.r() * 0.15 + k / inLane) % 1;
       const x = lane.from + (lane.to - lane.from) * t;
       mesh.position.set(x, 0, lane.z);
-      this.group.add(mesh);
+      if (!poseOnly) this.group.add(mesh);
       const size = model ? carModelEntry(model).collisionBox : undefined;
       const half = size ? { x: size.length / 2, z: size.width / 2 } : { x: VEHICLE_LENGTH[kind] / 2 + 0.05, z: 1.25 };
       this.cars.push({ index: i, mesh, kind, model, paint, half, front: size ? 0 : (VEHICLE_LENGTH[kind] - VEHICLE_LENGTH.car) / 2,

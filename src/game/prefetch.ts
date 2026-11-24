@@ -18,11 +18,14 @@ let ticket = 0;
 export function whenLoaded(sitId: string, go: (def: SituationDef) => void, still: () => boolean = () => true, settled?: () => void) {
   const def = getSituation(sitId);
   const mine = ++ticket;
-  if (def) { try { go(def); } finally { settled?.(); } return; }
-  const slow = setTimeout(() => useStore.getState().toast({ kind: "info", title: L("Kraunamas pokalbis…"), ms: 2000 }), 600);
+  const current = () => mine === ticket && still();
+  if (def) { try { if (current()) go(def); } finally { settled?.(); } return; }
+  const slow = setTimeout(() => {
+    if (current()) useStore.getState().toast({ kind: "info", title: L("Kraunamas pokalbis…"), ms: 2000 });
+  }, 600);
   loadSituation(sitId).then(
-    (d) => { clearTimeout(slow); if (d && mine === ticket && still()) go(d); },
-    () => { clearTimeout(slow); useStore.getState().toast({ kind: "info", title: L("Nepavyko atsisiųsti pokalbio"), body: L("Patikrink interneto ryšį ir pabandyk dar kartą.") }); },
+    (d) => { clearTimeout(slow); if (d && current()) go(d); },
+    () => { clearTimeout(slow); if (current()) useStore.getState().toast({ kind: "info", title: L("Nepavyko atsisiųsti pokalbio"), body: L("Patikrink interneto ryšį ir pabandyk dar kartą.") }); },
   ).finally(() => settled?.());
 }
 

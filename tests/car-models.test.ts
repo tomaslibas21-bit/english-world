@@ -9,7 +9,7 @@ import { CAR_MODELS, carFootprint, carLedges, carModelEntry, isCarModelLoaded, l
 import { CarVisuals } from "../src/game/world/carVisuals";
 import { BUILDINGS, OUTDOOR_NPCS, PARKED_CARS, TAXI, TRAFFIC_CARS } from "../src/game/world/layout";
 import { THEME } from "../src/game/world/theme";
-import type { StandTaxi } from "../src/game/world/town";
+import { makeParkedCars } from "../src/game/world/town";
 
 const assets = new URL("../public/models/cars/", import.meta.url);
 const names = Object.keys(CAR_MODELS) as CarModelName[];
@@ -24,14 +24,10 @@ describe("car models", () => {
     expect(readdirSync(assets).filter((name) => name.endsWith(".glb")).sort()).toEqual([...names.map((name) => carModelEntry(name).file), ...ROAD_CONES].sort());
     expect(readdirSync(new URL("Textures/", assets))).toEqual(["colormap.png"]);
 
-    const NativeRequest = Request;
-    vi.stubGlobal("Request", class extends NativeRequest {
-      constructor(url: string, init?: RequestInit) { super(new URL(url, "http://localhost"), init); }
-    });
     vi.stubGlobal("self", globalThis);
     vi.stubGlobal("ProgressEvent", Event);
-    const fetchFile = vi.fn(async ({ url }: Request) => {
-      const file = new URL(url).pathname.split("/").at(-1)!;
+    const fetchFile = vi.fn(async (url: string) => {
+      const file = new URL(url, "http://localhost").pathname.split("/").at(-1)!;
       return new Response(readFileSync(new URL(file, assets)));
     });
     vi.stubGlobal("fetch", fetchFile);
@@ -114,25 +110,24 @@ describe("car models", () => {
       expect(localBody.material).toBe(material);
     }
 
-    const parking = new THREE.Group(), fallback = new THREE.Mesh();
-    parking.add(fallback);
-    const stand: StandTaxi | undefined = THEME.taxi ? { root: new THREE.Group(), fallback: new THREE.Mesh() } : undefined;
+    const parking = makeParkedCars();
+    const stand = parking.taxi;
+    const fallback = stand?.fallback;
     const rides = new THREE.Group();
-    if (stand) {
-      stand.root.add(stand.fallback);
-      rides.add(stand.root);
-    }
+    if (stand) rides.add(stand.root);
     const nav = { nearestFree: () => -1 } as unknown as NavGrid;
     const ambient = new Ambient(nav, [[0, 0]], "low");
-    const visuals = new CarVisuals({ group: parking, fallback, placements: PARKED_CARS, taxi: stand }, ambient);
+    const replace = vi.fn();
+    const visuals = new CarVisuals(parking, ambient, replace);
     try {
       const modelCount = THEME.traffic.length ? 2 : 4;
-      await vi.waitFor(() => expect(visuals.stats()).toEqual({ trafficModels: modelCount, parkedModels: PARKED_CARS.length, taxi: true }));
-      expect(fallback.parent).toBeNull();
-      expect(parking.children).toHaveLength(2);
+      await visuals.initialize(Promise.resolve(new Map(names.map((name, index) => [name, models[index]]))));
+      expect(visuals.stats()).toEqual({ trafficModels: modelCount, parkedModels: PARKED_CARS.length, taxi: true });
+      expect(parking.group.children).toHaveLength(2);
+      expect(replace).toHaveBeenCalledTimes(PARKED_CARS.length + modelCount);
       if (stand) {
         expect(stand.instance?.parent).toBe(stand.root);
-        expect(stand.fallback.parent).toBeNull();
+        expect(fallback?.parent).toBeNull();
         expect(stand.root.parent).toBe(rides);
         expect(stand.instance?.getObjectByName("wheel-front-left")).toBeDefined();
       }
@@ -149,6 +144,7 @@ describe("car models", () => {
       expect(rotated.slice(12)).toEqual(initial.slice(12));
     } finally {
       visuals.dispose();
+      parking.fleet.dispose();
     }
     if (stand) expect(stand.instance?.parent).toBeNull();
   });

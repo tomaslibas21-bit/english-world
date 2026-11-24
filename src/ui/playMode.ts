@@ -34,11 +34,15 @@ let linked: string | null = (() => {
     url.searchParams.delete("sit");
     history.replaceState(history.state, "", url.pathname + url.search + url.hash);
     if (!SITUATION_BY_ID[id]) return null;
-    // (its file, at once: it opens as soon as the game is ready, src/content/situations/catalog.ts)
-    prefetchSituations([id]);
     return id;
   } catch { return null; }
 })();
+
+/** Start fetching the linked conversation once town mode has been selected. */
+export function linkedSituation() {
+  if (linked) prefetchSituations([linked]);
+  return linked;
+}
 
 /** The linked situation, once: started as soon as the game is ready. */
 export function takeLinkedSituation(): string | null {

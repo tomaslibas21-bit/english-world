@@ -3,6 +3,8 @@ import { useStore, type PlayMode } from "../state/store";
 import type { Game } from "../game/Game";
 import { setGame, game } from "../game/gameRef";
 import { coach } from "../game/coach";
+import { prepareExteriorCars } from "../game/exteriorAssets";
+import { loadStartupModule } from "../game/startupTask";
 import { Title } from "./Title";
 import { GlyphCard } from "./Cave";
 import { Hud } from "./Hud";
@@ -12,7 +14,7 @@ import { ViewSwitch } from "./ViewSwitch";
 import { Panels } from "./Panels";
 import { Toasts } from "./Toasts";
 import { LightPlay } from "./LightHome";
-import { debugBilliardsLink, debugBaristaLink, takeAutoStart, takeLinkedSituation } from "./playMode";
+import { debugBilliardsLink, debugBaristaLink, linkedSituation, takeAutoStart, takeLinkedSituation } from "./playMode";
 import { refreshLocalState } from "../convo/speech";
 import { L } from "./i18n";
 import { audio } from "../game/audio";
@@ -37,16 +39,23 @@ export function App() {
   }, subscribe: (fn) => radio.store.subscribe(fn) }), []);
   useEffect(() => { if (!mode) useStore.getState().setScreen("title"); refreshLocalState(); }, []);
   if (!mode) return <><Title onPlay={() => setMode(useStore.getState().settings.play)} /><Toasts />{EDITION.id === "en" && <AudioDiagnostics />}</>;
-  return <>{mode === "light" ? <LightPlay /> : <Play />}{EDITION.id === "en" && <AudioDiagnostics />}</>;
+  return <>{mode === "light" ? <LightPlay /> : <Play onBack={() => { useStore.getState().setScreen("title"); setMode(null); }} />}{EDITION.id === "en" && <AudioDiagnostics />}</>;
   void screen;
 }
 
-function Play() {
+function Play({ onBack }: { onBack: () => void }) {
   const stage = useRef<HTMLDivElement>(null);
   const tags = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [failure, setFailure] = useState<{ retry(): void; back(): void } | null>(null);
   useEffect(() => {
-    // three.js and the town are a separate download, fetched only in town mode
+    // Start all three requests in this effect, before either module is available.
+    useStore.getState().setScreen("loading");
+    const models = prepareExteriorCars();
+    const module = loadStartupModule(import("../game/Game"));
+    const debugStart = debugBilliardsLink ? "billiards" : debugBaristaLink ? "barista" : undefined;
+    const linked = linkedSituation();
     let g: Game | null = null, gone = false;
     const debugWindow = window as Window & { __ew?: { game: Game } };
     const release = () => {
@@ -55,9 +64,12 @@ function Play() {
       g?.dispose();
       g = null;
     };
-    void import("../game/Game").then(({ Game }) => {
-      if (gone) return;
-      const instance = g = new Game(stage.current!, tags.current!);
+    void module.then(({ Game }) => {
+      if (gone || !stage.current || !tags.current) return;
+      const instance = g = new Game(stage.current, tags.current, models);
+      instance.onExteriorError = (retry, back) => {
+        if (!gone && g === instance) setFailure({ retry, back });
+      };
       instance.onReady = () => {
         if (gone || g !== instance) return;
         setGame(instance);
@@ -81,21 +93,24 @@ function Play() {
           billiards: instance.debugBilliards(), barista: instance.debugBarista(), loteria: instance.debugLoteria(),
         };
         debugWindow.__ew = debug;
-        // The town is the 3D game's home. Linked activities start once the first frame has been drawn.
-        setReady(true); useStore.getState().setScreen("play");
+        // The initialized game and HUD become visible together after the first draw.
+        useStore.getState().setScreen("play");
+        setReady(true);
         const sit = takeLinkedSituation();
         if (debugBilliardsLink) instance.debugBilliards()?.start();
         else if (debugBaristaLink) instance.debugBarista()?.start();
-        else if (sit) instance.startScenario(sit);
+        else if (sit) instance.startScenario(sit, sit === linked);
       };
-      return instance.init();
+      return instance.init(linked, debugStart);
     }).catch((error) => {
       if (gone) return;
       release();
+      setReady(false);
       console.error("Town startup failed", error);
+      setFailure({ retry: () => setAttempt((previous) => previous + 1), back: onBack });
     });
     return () => { gone = true; release(); };
-  }, []);
+  }, [attempt]);
   return (
     <>
       <div className="stage" ref={stage} />
@@ -103,6 +118,11 @@ function Play() {
       {ready && game && <><Hud /><SceneBackdrop /><ViewSwitch /><Conversation /><Panels /><GlyphCard /></>}
       <Toasts />
       {!ready && <Loading />}
+      {failure && <div className="startup-error" role="alert">
+        <p>{L("Nepavyko įkelti žaidimo")}.</p>
+        <button className="btn" onClick={() => { setFailure(null); failure.retry(); }}>{L("Bandyti dar kartą")}</button>
+        <button className="btn ghost" onClick={() => { setFailure(null); failure.back(); }}>{L("Grįžti")}</button>
+      </div>}
     </>
   );
 }

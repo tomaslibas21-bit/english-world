@@ -668,6 +668,9 @@ export const STRINGS: Record<string, string> = {
   // A conversation's own file, loaded when it opens (src/game/prefetch.ts, src/content/situations/catalog.ts)
   "Kraunamas pokalbis…": "Loading the conversation…",
   "Nepavyko atsisiųsti pokalbio": "The conversation couldn't be loaded",
+  "Grįžti": "Go back",
+  "Bandyti dar kartą": "Try again",
+  "Nepavyko įkelti žaidimo": "The game could not load",
   "Patikrink interneto ryšį ir pabandyk dar kartą.": "Check your internet connection and try again.",
 
   // Conversation events (src/game/convEvents.ts)

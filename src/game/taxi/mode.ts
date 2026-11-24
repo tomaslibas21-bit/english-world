@@ -416,7 +416,7 @@ class TaxiMode implements GameMode {
 
   dispose() {
     this.host.rides.removeModeCar(this.car);
-    if (this.stand.fallback.parent) this.stand.fallback.geometry.dispose();
+    if (this.stand.fallback?.parent) this.stand.fallback.geometry.dispose();
     this.marker.removeFromParent();
     this.highlight.removeFromParent();
     this.stopBay?.dispose();

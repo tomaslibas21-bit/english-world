@@ -89,7 +89,7 @@ export interface Ride {
   model?: CarModelName;
   parked?: () => void;
   townBoat?: TownBoat;
-  crashParking?: { visual(): THREE.Mesh; solo(): boolean; take(): void; untake(): void };
+  crashParking?: { visual(): THREE.Mesh | undefined; solo(): boolean; take(): void; untake(): void };
   home: { x: number; z: number; rot: number };
   beach?: { y: number; roll: number; circles: Colliders["circles"]; launch: Ride["home"] };
   mesh: THREE.Object3D;
@@ -783,7 +783,6 @@ export class Rides {
   /** `c`: the hands (null: nobody may drive now: a panel is open, a call has started). `t`: the town's clock. */
   update(dt: number, t: number, c: Controls | null) {
     const host = this.host, pl = host.player, pp = pl.root.position;
-    this.learner.set(pp.x, pp.y + 1.5, pp.z);
     const r = this.riding;
     this.now = t;
     this.skids.update(dt);
@@ -795,42 +794,7 @@ export class Rides {
       if (r.kind === "car") this.driveCar(r, dt, hands); else this.driveBoat(r, dt, hands);
       if (this.wantOut && r.m.pace < 0.6) { if (!this.leave()) this.wantOut = false; }
     }
-    // what is out of the picture is left out of the scene's walk altogether (a person is some thirty parts to step
-    // through each frame, seen or not): a ride and the people in it by one test against the camera's view (as it was a
-    // frame ago: generously), but near the player, where its shadow may fall into the picture
-    // the boats' marks: for someone not at a wheel, within 60 m of a boat that lies free
-    {
-      let n = 0;
-      if (!r && host.outdoors()) for (const q of this.list) {
-        if (q.kind !== "boat" || (q.m.x - pp.x) ** 2 + (q.m.z - pp.z) ** 2 > 60 * 60) continue;
-        if (q.townBoat) this.at(q, ...q.townBoat.helm, _w, q.mesh.position.y + 2.55 + q.townBoat.deck);
-        else _w.set(q.m.x, 2.55, q.m.z);
-        _w.y += Math.sin(t * 2.2 + q.phase) * 0.13;
-        _mark.makeRotationY(t * 1.6 + q.phase).setPosition(_w);
-        this.marks.setMatrixAt(n++, _mark);
-      }
-      if (n || this.marks.count) { this.marks.count = n; this.marks.instanceMatrix.needsUpdate = true; }
-      this.marks.visible = n > 0;
-    }
-    // (the buoys only for someone on the water: in the boat or swimming; from the town they are not drawn)
-    this.buoys.visible = r?.kind === "boat" || (pp.z < SHORE.limit + 2 && pp.y < 0.1);
-    if (this.buoys.visible) this.buoys.position.y = SEA_LEVEL + Math.sin(t * 1.1) * 0.035;
-    const cam = host.cam;
-    _frustum.setFromProjectionMatrix(_pv.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
-    for (let i = 0; i < this.list.length; i++) {
-      const q = this.list[i];
-      const seen = q === r || (q.m.x - pp.x) ** 2 + (q.m.z - pp.z) ** 2 < 40 * 40 || _frustum.intersectsSphere(_ball.set(_v.set(q.m.x, 1, q.m.z), 8));
-      q.mesh.visible = seen;
-      for (const o of q.owners) o.ch.root.visible = seen || o.state !== "in";
-      this.place(q, dt, t);
-      this.updateOwners(q, dt);
-      if (q !== r) this.rest(q, dt);
-      if (q.kind === "car") this.syncBox(this.boxes[i], q);
-    }
-    for (const [car, box] of this.modeCars) {
-      this.place(car, dt, t);
-      this.syncModeBox(box, car);
-    }
+    this.updateVisuals(dt, t);
     if (!r) return;
     if (this.phase !== "launch") this.phaseT += dt;
     if (this.phase === "in") {
@@ -886,6 +850,53 @@ export class Rides {
     const e = ease(k);
     ch.root.position.set(a.x + (b.x - a.x) * e, a.y + (b.y - a.y) * e + Math.sin(Math.PI * k) * up, a.z + (b.z - a.z) * e);
     ch.tuck = Math.sin(Math.PI * k) * 0.8;
+  }
+
+  /** Sync vehicle and occupant poses, even for the covered frame before driving can begin. */
+  updateVisuals(dt: number, t: number) {
+    const { host, riding: r } = this, pp = host.player.root.position;
+    this.learner.set(pp.x, pp.y + 1.5, pp.z);
+    // what is out of the picture is left out of the scene's walk altogether (a person is some thirty parts to step
+    // through each frame, seen or not): a ride and the people in it by one test against the camera's view (as it was a
+    // frame ago: generously), but near the player, where its shadow may fall into the picture
+    this.updateBoatMarkers(t);
+    const cam = host.cam;
+    _frustum.setFromProjectionMatrix(_pv.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
+    for (let i = 0; i < this.list.length; i++) {
+      const q = this.list[i];
+      const seen = q === r || (q.m.x - pp.x) ** 2 + (q.m.z - pp.z) ** 2 < 40 * 40 || _frustum.intersectsSphere(_ball.set(_v.set(q.m.x, 1, q.m.z), 8));
+      q.mesh.visible = seen;
+      for (const o of q.owners) o.ch.root.visible = seen || o.state !== "in";
+      this.place(q, dt, t);
+      this.updateOwners(q, dt);
+      if (q !== r) this.rest(q, dt);
+      if (q.kind === "car") this.syncBox(this.boxes[i], q);
+    }
+    for (const [car, box] of this.modeCars) {
+      this.place(car, dt, t);
+      this.syncModeBox(box, car);
+    }
+  }
+
+  private updateBoatMarkers(t: number) {
+    const { host, riding: r } = this, pp = host.player.root.position;
+    // the boats' marks: for someone not at a wheel, within 60 m of a boat that lies free
+    {
+      let n = 0;
+      if (!r && host.outdoors()) for (const q of this.list) {
+        if (q.kind !== "boat" || (q.m.x - pp.x) ** 2 + (q.m.z - pp.z) ** 2 > 60 * 60) continue;
+        if (q.townBoat) this.at(q, ...q.townBoat.helm, _w, q.mesh.position.y + 2.55 + q.townBoat.deck);
+        else _w.set(q.m.x, 2.55, q.m.z);
+        _w.y += Math.sin(t * 2.2 + q.phase) * 0.13;
+        _mark.makeRotationY(t * 1.6 + q.phase).setPosition(_w);
+        this.marks.setMatrixAt(n++, _mark);
+      }
+      if (n || this.marks.count) { this.marks.count = n; this.marks.instanceMatrix.needsUpdate = true; }
+      this.marks.visible = n > 0;
+    }
+    // (the buoys only for someone on the water: in the boat or swimming; from the town they are not drawn)
+    this.buoys.visible = r?.kind === "boat" || (pp.z < SHORE.limit + 2 && pp.y < 0.1);
+    if (this.buoys.visible) this.buoys.position.y = SEA_LEVEL + Math.sin(t * 1.1) * 0.035;
   }
 
   updateParkingKeys(time: number, visible: boolean) {

@@ -5,6 +5,7 @@ import { rmSync } from "node:fs";
 import path from "node:path";
 import { editionFromEnv, editionOverlay, learnerFromEnv } from "./tools/edition-overlay.mjs";
 import { loadingScreen } from "./tools/loading-screen.ts";
+import { fleetPackAsset } from "./tools/fleet-pack-plugin.ts";
 import { townCollisionAsset } from "./tools/town-collision-plugin.ts";
 import { LOADING_ART as MAPLE_HARBOR } from "./src/ui/loadingArt.ts";
 import { LOADING_ART as PUERTO_COLIBRI } from "./src/editions/es/ui/loadingArt.ts";
@@ -59,15 +60,26 @@ export default defineConfig({
     react(),
     editionPictures(EDITION),
     townCollisionAsset(EDITION, LEARNER),
+    fleetPackAsset(EDITION, LEARNER),
   ],
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   server: { port: 5188, host: true },
-  build: { target: "es2022", chunkSizeWarningLimit: 4000 },
+  build: {
+    target: "es2022",
+    chunkSizeWarningLimit: 4000,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [{ name: "entry-shared", tags: ["$initial"] }],
+        },
+      },
+    },
+  },
   test: {
     projects: [
       { extends: true, test: { name: "en", environment: "node", include: ["tests/**/*.test.ts"], exclude: ["tests/es/**", "tests/es-lt/**", "**/node_modules/**"] } },
       { extends: true, plugins: [editionOverlay("es", {}, "")], test: { name: "es", environment: "node", include: ["tests/es/**/*.test.ts", "tests/{barista-mode,car-models,layout,street-schedule,street-world,traffic}.test.ts"] } },
-      { extends: true, plugins: [editionOverlay("es", {}, "lt")], test: { name: "es-lt", environment: "node", include: ["tests/es-lt/**/*.test.ts", "tests/es/{phrase-game-play,town-collision-cache}.test.ts", "tests/{barista-mode,street-schedule,street-world}.test.ts"] } },
+      { extends: true, plugins: [editionOverlay("es", {}, "lt")], test: { name: "es-lt", environment: "node", include: ["tests/es-lt/**/*.test.ts", "tests/es/{first-exterior,phrase-game-play,play-startup,town-collision-cache}.test.ts", "tests/{barista-mode,street-schedule,street-world}.test.ts"] } },
     ],
   },
 } as any);

@@ -6,7 +6,7 @@ import { LOTERIA_APPROACH, TABLE_SEAT, TONAS_SEAT } from "../loteria/location";
 import { HOTEL_POOL_ENABLED, POOL_SPOTS } from "./pool";
 import { LOCATIONS } from "../../content/locations";
 import { ROAD_EDITION } from "../../content/road";
-import type { CarModelName, CarPlacement } from "./carModels";
+import type { CarModelName, CarPaint, CarPlacement } from "./carModels";
 import { THEME } from "./theme";
 
 export type Face = "n" | "s" | "e" | "w";
@@ -179,6 +179,18 @@ export const TAXI: CarPlacement = {
   model: "taxi", x: 121, z: THEME.taxi?.z ?? -4.8, rot: -Math.PI / 2,
   color: THEME.taxi?.body ?? "#f5c518", trim: THEME.taxi?.trim,
 };
+
+/** Keep the pack inventory and Ambient's high/low traffic draws on the same placements. */
+export const TRAFFIC_PLACEMENTS = (() => {
+  let everyday = 0;
+  return Array.from({ length: 8 }, (_, index) => {
+    const kind = THEME.traffic[index] ?? "car";
+    const look = kind === "car" ? TRAFFIC_CARS[everyday++ % TRAFFIC_CARS.length] : kind === "taxi" ? TAXI : undefined;
+    const color = look?.color ?? "#f2f2f2";
+    const paint: CarPaint = kind === "taxi" && TAXI.trim ? { body: color, trim: TAXI.trim } : color;
+    return { kind, color, model: look?.model, paint };
+  });
+})();
 
 /** Curbside cars, rental stock and service vehicles. +Z is south, +X is east. */
 export const PARKED_CARS: readonly CarPlacement[] = [

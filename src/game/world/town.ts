@@ -40,7 +40,7 @@ export interface Seat {
 
 export interface StandTaxi {
   root: THREE.Group;
-  fallback: THREE.Mesh;
+  fallback?: THREE.Mesh;
   instance?: THREE.Group;
 }
 
@@ -106,7 +106,7 @@ export function backgroundHillPosition(x: number, z: number, fx: number, fz: num
   return { x, z };
 }
 
-export function buildTown({ movableParking = false } = {}): Town {
+export function buildTown({ movableParking = false, finalParking = false } = {}): Town {
   const group = new THREE.Group();
   group.name = "town";
   const colliders = new Colliders();
@@ -261,7 +261,7 @@ export function buildTown({ movableParking = false } = {}): Town {
   if (EDITION.id === "en") addMapleQuestProps(M, colliders, group, photo);
   addHarbor(M, colliders, group, r, photo);
   addTransport(M, colliders, group, photo);
-  const parkedCars = makeParkedCars(movableParking ? undefined : colliders);
+  const parkedCars = makeParkedCars(movableParking ? undefined : colliders, finalParking);
   group.add(parkedCars.group);
   const roadSign = makeExitSign(colliders);
   group.add(roadSign.root);
@@ -1785,25 +1785,28 @@ function addStreetProps(M: Merger, col: Colliders, photo: AddPhotoSpot) {
   for (const [x, z] of [[-75, 32], [5, 32], [65, 32], [-5, -14], [75, -14]]) stop(x, z);
 }
 
-function makeParkedCars(staticColliders?: Colliders): ParkedCars {
+export function makeParkedCars(staticColliders?: Colliders, finalParking = false): ParkedCars {
   const group = new THREE.Group();
   group.name = "parked-cars";
   const fleet = new ParkedFleet(group);
   let standTaxi: StandTaxi | undefined;
   for (const spot of PARKED_CARS) {
     const { model, x, z, rot, color, trim } = spot;
-    const { width, length, height } = carModelEntry(model).collisionBox;
-    const taxi = model === "taxi";
-    const fallbackParts = taxi && trim ? mxTaxiParts(color, trim) : carParts(color, { taxi });
-    for (const [geometry] of fallbackParts) geometry.scale(width / 2.12, height / (taxi ? 1.8 : 1.56), length / 4.42);
     const atStand = spot === TAXI && TAXI_ROUTES.length > 0;
-    const fallback = staticColoured(mergeCarParts(fallbackParts), atStand ? "stand-taxi-fallback" : "parked-car-fallback");
+    let fallback: THREE.Mesh | undefined;
+    if (!finalParking) {
+      const { width, length, height } = carModelEntry(model).collisionBox;
+      const taxi = model === "taxi";
+      const parts = taxi && trim ? mxTaxiParts(color, trim) : carParts(color, { taxi });
+      for (const [geometry] of parts) geometry.scale(width / 2.12, height / (taxi ? 1.8 : 1.56), length / 4.42);
+      fallback = staticColoured(mergeCarParts(parts), atStand ? "stand-taxi-fallback" : "parked-car-fallback");
+    }
     if (atStand) {
       // The mode boards the stand car itself and owns its collision and climbing surfaces.
       const root = new THREE.Group();
       root.position.set(x, 0, z);
       root.rotation.y = rot;
-      root.add(fallback);
+      if (fallback) root.add(fallback);
       group.add(root);
       standTaxi = { root, fallback };
       continue;
@@ -1811,7 +1814,7 @@ function makeParkedCars(staticColliders?: Colliders): ParkedCars {
     staticColliders?.boxes.push({ ...carFootprint(spot), tag: "car", split: true });
     fleet.add(spot, fallback);
   }
-  fleet.refresh();
+  if (!finalParking) fleet.refresh();
   return { group, fleet, placements: PARKED_CARS, taxi: standTaxi };
 }
 

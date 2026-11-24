@@ -6,9 +6,11 @@ import * as THREE from "three";
 import townCollisionAsset from "virtual:town-collision-url";
 import { showConversationEvent } from "./convEvents";
 import { buildTown, type Town, type Door } from "./world/town";
-import { loadedCarModelCount } from "./world/carModels";
-import type { CarVisuals } from "./world/carVisuals";
-import { getInterior, type Interior } from "./world/interiors";
+import { loadedCarModelCount, type ExteriorCarModels } from "./world/carModels";
+import { CarVisuals } from "./world/carVisuals";
+import { prepareExteriorCars } from "./exteriorAssets";
+import { loadStartupModule, startupTask } from "./startupTask";
+import { getInterior, INTERIOR_IDS, type Interior } from "./world/interiors";
 import { OUTDOOR_NPCS, AIRPORT_EXIT, WORLD, BUILDINGS, ROADS, DROPOFF, SEA_Z, BEACH_Z, FOUNTAIN, PARK, SQUARE } from "./world/layout";
 import { createCharacter, setBlobShadows, surfLook, withBackpack, type GameCharacter } from "./characters";
 import { Character } from "./characters/Character";
@@ -320,8 +322,11 @@ export class Game implements GameApi {
   private readonly visualViewport = window.visualViewport;
   private resizeObserver: ResizeObserver | null = null;
   private ambient!: Ambient;
-  private carLoadStarted = false;
   private carVisuals?: CarVisuals;
+  private firstExteriorAt?: number;
+  private firstExteriorDraw?: () => void;
+  private enteringFirstExterior = false;
+  private replyToExteriorError?: (retry: boolean) => void;
   private crashShadersScheduled = false;
   private crashShaderProbes?: THREE.Group;
   private crashShadersReady = false;
@@ -410,12 +415,16 @@ export class Game implements GameApi {
    *  its way (fade.ts). */
   private field!: OcclusionField;
   private fader!: PropFader;
-  private started = false;
+  private initialization?: Promise<void>;
+  private initialDrawn = false;
+  private zoneTimers = new Set<ReturnType<typeof setTimeout>>();
   private collisionPreparation: ReturnType<typeof prepareTownCollision>;
   private ledgeTimer?: ReturnType<typeof setTimeout>;
   onReady?: () => void;
+  onExteriorError?: (retry: () => void, back: () => void) => void;
 
-  constructor(private container: HTMLElement, tagLayer: HTMLDivElement) {
+  constructor(private container: HTMLElement, tagLayer: HTMLDivElement,
+    private exteriorModels?: Promise<ExteriorCarModels>) {
     this.tagLayer = tagLayer;
     const q = useStore.getState().settings.quality;
     this.renderer = new THREE.WebGLRenderer({ antialias: q === "high", powerPreference: "high-performance" });
@@ -443,17 +452,26 @@ export class Game implements GameApi {
     }
   }
 
-  async init() {
-    if (this.started || this.disposed) return;
-    this.started = true;
-    useStore.getState().setScreen("loading");
+  init(linked?: string | null, debug?: "billiards" | "barista") {
+    return this.initialization ??= this.initialize(linked, debug);
+  }
+
+  private async initialize(linked?: string | null, debug?: "billiards" | "barista") {
+    if (this.disposed) return;
+    if (useStore.getState().screen !== "loading") useStore.getState().setScreen("loading");
+    this.exteriorModels ??= prepareExteriorCars();
+    void this.exteriorModels.catch(() => {});
     const collision = import.meta.env.PROD && townCollisionAsset && !STYLED
       ? prepareTownCollision(townCollisionAsset, TOWN_COLLISION_METADATA_OFFSET) : undefined;
     this.collisionPreparation = collision;
     let collisionBytes: ArrayBuffer | undefined;
     try {
+      await startupTask();
+      if (this.disposed) return;
       this.setupLights();
-      this.town = buildTown({ movableParking: true });
+      this.town = buildTown({ movableParking: true, finalParking: true });
+      await startupTask();
+      if (this.disposed) return;
       if (collision) collisionBytes = await collision.join();
     } finally {
       collision?.cancel();
@@ -496,6 +514,8 @@ export class Game implements GameApi {
     this.ledges = ledges;
     this.fader = fader;
     withCutout(this.town.group);
+    await startupTask();
+    if (this.disposed) return;
     const nav = new NavGrid(WORLD.minX - TOWN_WEST, WORLD.minZ, WORLD.maxX, WORLD.maxZ, 1, this.town.colliders);
     // pedestrians prefer sidewalks: roads cost more, crosswalks are cheap
     for (const r of ROADS) {
@@ -523,7 +543,7 @@ export class Game implements GameApi {
     // passers-by walk between shop doors, the square, the beach and the bus stop
     const places: [number, number][] = this.town.doors.filter((d) => d.loc !== "airport").map((d) => [d.outX, d.outZ]);
     places.push([22, -20], [40, -46], [16, -36], [-12, -62], [30, -63], [-30, -61], [96, -30], [-6, 46], [62, 44], [-42, 44], [118, 2]);
-    this.ambient = new Ambient(nav, places, st.settings.quality, this.town.seats, this.town.colliders);
+    this.ambient = new Ambient(nav, places, st.settings.quality, this.town.seats, this.town.colliders, true);
     this.ambient.onHonk = (car) => this.reactions.honk(car);
     this.ambient.onBump = (walker, look) => this.reactions.bump(walker, look);
     this.streetLife = new StreetLife(new TownStreet(this.town.group, nav, this.town.colliders, this.ambient,
@@ -547,7 +567,7 @@ export class Game implements GameApi {
         const ride = this.rides.riding;
         const hud = useStore.getState();
         hud.setHud({ fade: 1 });
-        setTimeout(() => {
+        this.afterZoneDelay(() => {
           put();
           const car = this.rides.riding;
           if (car) { this.rig.yaw = car.m.heading; this.rig.target.set(car.m.x, 0, car.m.z); this.rig.snap(); }
@@ -566,6 +586,7 @@ export class Game implements GameApi {
       openRoad: (car, controls) => this.road?.openEdge(car, controls),
       openSea: (boat) => this.sea?.openEdge(boat) ?? false,
     }, RIDES, this.town.group.children.filter((o) => o.userData.boat));
+    this.carVisuals = new CarVisuals(this.town.parkedCars, this.ambient, (mesh) => this.rides.releaseCrashVisual(mesh));
     ledges.dynamic = townLedgeDynamics(this.ambient, this.rides);
     const { fleet } = this.town.parkedCars;
     fleet.cars.forEach((entry, index) => {
@@ -734,13 +755,32 @@ export class Game implements GameApi {
     this.unbindAmbience = useStore.subscribe(() => {
       if (!this.ambienceAllowed() || useStore.getState().settings.volume <= 0) audio.stopAmbience();
     });
-    // start where the player left off, or in the airport on the very first visit
-    const place = st.progress.place;
-    for (const [id, parked] of Object.entries(st.progress.launchedLanchas ?? {})) {
+    await startupTask();
+    if (this.disposed) return;
+    const jump = debug === "billiards" ? { zone: BILLIARDS_PLACE, spawn: TABLE_PROMPT }
+      : debug === "barista" ? { zone: BARISTA_CONVERSATION.location, spawn: BARISTA_PROMPT }
+      : linked ? this.scenarioArrival(SITUATION_BY_ID[linked]) : undefined;
+    const { place, launchedLanchas } = useStore.getState().progress;
+    const saved = place && (place.zone === "town" || INTERIOR_IDS.includes(place.zone) || (place.zone === CAVE_ZONE && caveWays().length));
+    const fly = !jump && !saved && this.wantsFlight();
+    if (jump ? jump.zone === "town" : place?.zone === "town" || fly) {
+      await this.awaitExterior();
+      if (this.disposed) return;
+    }
+    for (const [id, parked] of Object.entries(launchedLanchas ?? {})) {
       const boat = this.rides.find(id);
       if (boat?.beach && [parked?.x, parked?.z, parked?.rot].every(Number.isFinite)) this.rides.resetPosition(boat, parked);
     }
-    if (place && (place.zone === "town" || getInterior(place.zone) || (place.zone === CAVE_ZONE && caveWays().length))) {
+    if (jump) {
+      const berth = place?.zone === "town" ? place.boat : undefined;
+      const boat = berth && this.rides.find(berth.id);
+      if (boat?.kind === "boat" && berth && [berth.x, berth.z, berth.rot].every(Number.isFinite)) {
+        const launch = boat.beach?.launch;
+        const position = launch && berth.z > SHORE.edge ? launch : berth;
+        this.rides.resetPosition(boat, { ...position, z: Math.max(BAY.z0 + 5, position.z) });
+      }
+      this.enterZone(jump.zone, jump.spawn, true);
+    } else if (place && saved) {
       const entering = this.enterZone(place.zone, { x: place.x, z: place.z, rot: place.rot }, true);
       if (entering) await entering;
       if (this.disposed) return;
@@ -755,14 +795,13 @@ export class Game implements GameApi {
             this.seaMooring = mooring && [mooring.x, mooring.z, mooring.rot].every(Number.isFinite) ? mooring : launch ?? boat.home;
             this.sea?.prefetch(boat);
             this.snapSeaBoat(boat);
-            this.savePlace();
           }
         }
       }
     }
     if (this.disposed) return;
     if (!this.zone) {
-      if (this.wantsFlight()) this.beginFlight();
+      if (fly) this.beginFlight();
       else this.enterZone("airport", ARRIVAL, true);
     }
     this.phoneWatch.push(useStore.subscribe((state, previous) => {
@@ -778,7 +817,6 @@ export class Game implements GameApi {
     if (this.debugAudio) this.phoneWatch.push(subscribeAudioDiagnostics(() => this.observeStreetAndPhone()));
     document.addEventListener("visibilitychange", this.phoneVisibility);
     window.addEventListener("pagehide", this.phonePageHide);
-    this.bindInput();
     window.addEventListener("resize", this.onResize);
     window.addEventListener("orientationchange", this.onResize);
     window.addEventListener("pageshow", this.onResize);
@@ -787,16 +825,49 @@ export class Game implements GameApi {
       this.resizeObserver = new ResizeObserver(this.onResize);
       this.resizeObserver.observe(this.container);
     }
-    this.renderer.setAnimationLoop(this.loop);
     this.refreshObjective();
-    // Keep the logo over the canvas until an actual town frame is ready to show.
-    this.renderer.render(this.scene, this.rig.cam);
+    this.syncSize();
+    this.modes.tick(0, !this.zone.interior && !this.flight);
+    this.rig.applyPose();
+    this.rig.cam.fov = this.rig.fovFor(this.screenW, this.screenH, false);
+    this.rig.cam.updateProjectionMatrix();
+    this.applyWalkingViewShift(this.screenW, this.screenH, false);
+    if (!this.zone.interior) {
+      this.rig.cam.updateMatrixWorld();
+      this.rides.updateVisuals(0, this.t);
+      this.ambient.update(0, this.player.root.position, this.rig.cam.position, this.hop.y, this.hop.air,
+        undefined, !this.rides.riding && !this.swimming && !this.aloft);
+      this.carVisuals?.update(0);
+      this.rides.updateParkingKeys(this.t, !this.flight);
+      this.town.update(this.t, 0, this.rig.cam.position);
+    }
+    this.farCull();
+    this.updateNpcs(0, false);
+    this.player.update(0);
+    this.zone.interior?.update?.(this.t, 0);
+    this.wild?.frame?.(this.t, 0, this.rig.cam, this.player.root.position, this.screenH * this.renderer.getPixelRatio());
+    this.updateViewLights();
+    this.drawTown();
+    this.initialDrawn = true;
+    this.savePlace();
+    this.updateHud();
+    this.updateTags();
+    this.bindInput();
+    this.renderer.setAnimationLoop(this.loop);
     const ready = this.onReady;
     this.onReady = undefined;
     ready?.();
+    if (this.disposed) return;
     if (import.meta.env.DEV) this.streetLife.devRequest();
     // the town's hints, each when its thing first matters (coach.ts); after the flight, if the visit opens with one
     if (!this.flight) coach.begin(true);
+  }
+
+  private async awaitExterior() {
+    if (this.carVisuals?.ready) return;
+    const models = this.exteriorModels ?? prepareExteriorCars();
+    this.exteriorModels = undefined;
+    await this.carVisuals!.initialize(models);
   }
 
   /** Renderer counters for the most recent frame. */
@@ -909,7 +980,7 @@ export class Game implements GameApi {
     const f = flightAt(THEME.flyover, 0);
     this.rig.stage = { pos: f.pos, look: f.look, rate: 60 };
     this.rig.mode = "stage";
-    this.rig.snap();
+    this.rig.stageSnap();
     useStore.getState().setHud({ flight: true, zoneBanner: null, prompt: null });
   }
   /** The flight is over, or cut short (any key, a tap, "Praleisti"): into the airport, where the first task is. */
@@ -970,15 +1041,18 @@ export class Game implements GameApi {
 
   /** `via`: through a door ("in" or "out"): the camera starts near the player and settles; out into the street, with
    *  nothing held, the player takes two steps out of the doorway. */
-  enterZone(id: string, spawn?: { x: number; z: number; rot: number }, instant = false, via?: "in" | "out", onEntered?: () => void): void | Promise<void> {
+  enterZone(id: string, spawn?: { x: number; z: number; rot: number }, instant = false, via?: "in" | "out", onEntered?: () => void, arrivalHold?: number): void | Promise<void> {
+    if (this.disposed || this.enteringFirstExterior) return;
     if (id === CAVE_ZONE && !this.caveCode) {
       if (!caveWays().length) return;
       const from = this.zone;
-      return this.caveLoading ??= import("./cave/zone").then((code) => {
+      return this.caveLoading ??= loadStartupModule(import("./cave/zone")).then((code) => {
+        if (this.disposed || this.zone !== from) return;
         this.caveCode = code;
-        if (!this.disposed && this.zone === from) this.enterZone(id, spawn, instant, via, onEntered);
-      }).catch(() => {
-        if (this.disposed) return;
+        return this.enterZone(id, spawn, instant, via, onEntered, arrivalHold);
+      }).catch((error) => {
+        if (this.disposed || this.zone !== from) return;
+        if (!this.initialDrawn) throw error;
         this.dropIn = 0;
         this.stopAutoWalk();
         useStore.getState().toast({ kind: "info", title: L("Ten nueiti negalima") });
@@ -1071,25 +1145,88 @@ export class Game implements GameApi {
       const loc = LOCATIONS[id];
       const name = id === "town" ? EDITION.town : loc?.name ?? id;
       st.setHud({ zoneName: name, zoneBanner: { title: name, sub: id === "town" ? EDITION.town : loc?.lt }, prompt: null });
-      setTimeout(() => { if (useStore.getState().hud.zoneBanner?.title === name) useStore.getState().setHud({ zoneBanner: null }); }, 2600);
+      this.afterZoneDelay(() => { if (useStore.getState().hud.zoneBanner?.title === name) useStore.getState().setHud({ zoneBanner: null }); }, 2600);
       this.refreshObjective();
       if (this.guidedWalk) this.walkObjective(this.guidedWalk);
-      this.savePlace();
+      if (this.initialDrawn && !this.enteringFirstExterior) this.savePlace();
     };
-    if (instant) { doIt(); onEntered?.(); return; }
-    this.fadeThen(() => { doIt(); onEntered?.(); });
+    const enter = () => { doIt(); onEntered?.(); };
+    if (!z.interior && this.initialDrawn && this.firstExteriorAt === undefined) {
+      if (this.transitioning) return;
+      this.enteringFirstExterior = true;
+      this.fadeThen(async () => {
+        try {
+          if (!await this.prepareFirstExit() || this.disposed) return;
+          doIt();
+          await new Promise<void>((resolve) => { this.firstExteriorDraw = resolve; });
+        } finally {
+          this.enteringFirstExterior = false;
+        }
+        if (this.disposed) return;
+        this.savePlace();
+        onEntered?.();
+      }, arrivalHold === undefined ? 320 : 0, arrivalHold);
+    } else if (arrivalHold !== undefined) this.fadeThen(enter, 0, arrivalHold);
+    else if (instant) enter();
+    else this.fadeThen(enter);
   }
 
-  private fadeThen(fn: () => void) {
-    if (this.transitioning) return;
+  private async prepareFirstExit() {
+    while (!this.disposed) {
+      try {
+        await this.awaitExterior();
+        return true;
+      } catch (error) {
+        if (this.disposed) return false;
+        if (!this.onExteriorError) throw error;
+        const retry = await new Promise<boolean>((resolve) => {
+          this.replyToExteriorError = resolve;
+          this.onExteriorError!(() => resolve(true), () => resolve(false));
+        });
+        this.replyToExteriorError = undefined;
+        if (!retry) return false;
+      }
+    }
+    return false;
+  }
+
+  private fadeThen(fn: () => void | Promise<void>, delay = 320, hold = 120) {
+    if (this.transitioning || this.disposed) return;
     this.transitioning = true;
-    const st = useStore.getState();
-    st.setHud({ fade: 1 });
-    audio.sfx("door");
-    setTimeout(() => {
-      fn();
-      setTimeout(() => { useStore.getState().setHud({ fade: 0 }); this.transitioning = false; }, 120);
-    }, 320);
+    useStore.getState().setHud({ fade: 1, fadeOnFrames: false });
+    if (delay) audio.sfx("door");
+    const finish = () => {
+      if (!this.disposed) this.afterZoneDelay(() => {
+        useStore.getState().setHud({ fade: 0 });
+        this.transitioning = false;
+      }, hold);
+    };
+    const failed = (error: unknown) => {
+      if (this.disposed) return;
+      console.warn("Town transition failed", error);
+      useStore.getState().toast({ kind: "info", title: L("Nepavyko įkelti žaidimo"),
+        body: L("Patikrink interneto ryšį ir pabandyk dar kartą.") });
+      finish();
+    };
+    const swap = () => {
+      try {
+        const pending = fn();
+        if (pending) void pending.then(finish, failed);
+        else finish();
+      } catch (error) {
+        failed(error);
+      }
+    };
+    if (delay) this.afterZoneDelay(swap, delay);
+    else swap();
+  }
+
+  private afterZoneDelay(run: () => void, delay: number) {
+    const timer = setTimeout(() => {
+      this.zoneTimers.delete(timer);
+      if (!this.disposed) run();
+    }, delay);
+    this.zoneTimers.add(timer);
   }
 
   private chosenDatePartner() {
@@ -1912,34 +2049,34 @@ export class Game implements GameApi {
     this.requestConversation(sit.id, actor);
   }
 
+  private scenarioArrival(sit?: SituationMeta) {
+    if (!sit || isCall(sit)) return;
+    const npc = sit.npc === "sam" || sit.npc === "emma" ? this.chosenDatePartner() : sit.npc;
+    const interior = !isTownQuest(sit.id) && sit.id !== POOL_SITUATION && LOCATIONS[sit.location]?.kind === "interior"
+      ? getInterior(sit.location) : null;
+    const spot = (interior ? interior.npcs : OUTDOOR_NPCS).find((n) => n.npc === npc);
+    const spawn = !spot ? undefined
+      : spot.ax !== undefined && spot.az !== undefined ? { x: spot.ax, z: spot.az, rot: Math.atan2(spot.x - spot.ax, spot.z - spot.az) }
+      : inFrontOf(spot.x, spot.z, spot.rot, interior ? ("sit" in spot && spot.sit ? 1.9 : 2.3) : 2.2);
+    return { npc, zone: interior ? sit.location : "town", spawn };
+  }
+
   /** Situation picker: go straight into a conversation (no walking). The player appears in front of
    *  the NPC in the right place; phone and video calls start at once. */
-  startScenario(sitId: string) {
+  startScenario(sitId: string, alreadyPlaced = false) {
     const sit = SITUATION_BY_ID[sitId];
-    if (!sit) return;
+    if (!sit || this.disposed || this.enteringFirstExterior) return;
     const st = useStore.getState();
     st.setHud({ panel: null });
     this.modes.exit(true);
     this.lastScenario = sitId;
     prefetchSituations([sitId]);
     const go = () => {
-      if (isCall(sit)) { this.call(sitId); return; }
-      const npc = sit.npc === "sam" || sit.npc === "emma" ? this.chosenDatePartner() : sit.npc;
-      const loc = LOCATIONS[sit.location];
-      let spawn: { x: number; z: number; rot: number } | null = null;
-      let zone = "town";
-      if (!isTownQuest(sitId) && sit.id !== POOL_SITUATION && loc?.kind === "interior" && getInterior(sit.location)) {
-        zone = sit.location;
-        const it = this.getZone(zone)?.interior;
-        const sp = it?.npcs.find((n) => n.npc === npc);
-        if (sp) spawn = sp.ax !== undefined && sp.az !== undefined ? { x: sp.ax, z: sp.az, rot: Math.atan2(sp.x - sp.ax, sp.z - sp.az) } : inFrontOf(sp.x, sp.z, sp.rot, sp.sit ? 1.9 : 2.3);
-      } else {
-        const o = OUTDOOR_NPCS.find((n) => n.npc === npc);
-        if (o) spawn = o.ax !== undefined && o.az !== undefined ? { x: o.ax, z: o.az, rot: Math.atan2(o.x - o.ax, o.z - o.az) } : inFrontOf(o.x, o.z, o.rot, 2.2);
-      }
-      this.enterZone(zone, spawn ?? undefined, true);
-      // let the NPCs spawn, then talk
-      this.afterSceneDelay(() => this.talkTo(npc, sitId), 150);
+      const arrival = this.scenarioArrival(sit);
+      if (!arrival) { this.call(sitId); return; }
+      const talk = () => this.afterSceneDelay(() => this.talkTo(arrival.npc, sitId), 150);
+      if (alreadyPlaced) talk();
+      else this.enterZone(arrival.zone, arrival.spawn, true, undefined, talk);
     };
     // "Dar kartą" / "Kita situacija" after a taxi, bus or plane ride was queued: no ride (and no
     // teleport or black fade in the middle of the new conversation). Before close(), which runs endSession.
@@ -1972,7 +2109,7 @@ export class Game implements GameApi {
 
   /** Phone and video calls from the phone UI. */
   call(sitId: string, fromCard = false) {
-    if (this.session?.active) return;
+    if (this.disposed || this.enteringFirstExterior || this.session?.active) return;
     const sit = SITUATION_BY_ID[sitId];
     if (!sit) return;
     useStore.getState().setHud({ panel: null });
@@ -2025,9 +2162,10 @@ export class Game implements GameApi {
     whenLoaded(sitId, (def) => {
       this.startSession(def, actor, fromCard && sitId === "p24-flood" ? FLOOD_INCOMING_INTRO : undefined);
       opened = true;
-    }, () => !this.disposed && !this.session?.active, () => {
+    }, () => !this.disposed && !this.enteringFirstExterior && !this.session?.active && (!actor || this.npcs.includes(actor)), () => {
+      if (this.disposed) return;
       this.conversationLoads--;
-      if (fromCard && !opened && !this.disposed) this.phone.markMissed(sitId);
+      if (fromCard && !opened) this.phone.markMissed(sitId);
     });
   }
 
@@ -2594,8 +2732,7 @@ export class Game implements GameApi {
       stage: (seed = 1, speed = 1) => {
         if (this.transitioning || this.modes.engaged || this.session?.active) return false;
         useStore.getState().setHud({ panel: null });
-        this.enterZone("town", LOTERIA_APPROACH, true);
-        mode.debug(seed, speed);
+        this.enterZone("town", LOTERIA_APPROACH, true, undefined, () => mode.debug(seed, speed));
         return true;
       },
       state: () => mode.state(),
@@ -2606,23 +2743,27 @@ export class Game implements GameApi {
   /** Taxi or bus: fade, travel, arrive in front of the destination. After boarding a plane the
    *  trip is over and the player is back outside the airport. */
   ride(to: string, by: "taxi" | "bus" | "plane" = "taxi") {
+    if (this.disposed || this.transitioning) return;
     const st = useStore.getState();
     const dest = by === "plane" ? AIRPORT_EXIT : this.arrivalPoint(to);
     if (!dest) return;
     this.keepsake.clear();
     const banner = by === "plane" ? { title: "✈️ " + L("Gero skrydžio!"), sub: L("…ir sveiki sugrįžę į Maple Harbor") }
       : { title: by === "bus" ? "🚌 " + L("Važiuojame autobusu…") : "🚕 " + L("Važiuojame…"), sub: LOCATIONS[to]?.name };
-    st.setHud({ fade: 1, zoneBanner: banner });
+    st.setHud({ fade: 1, fadeOnFrames: false, zoneBanner: banner });
     audio.sfx("car");
     clearTimeout(this.rideTimer);
     this.rideTimer = setTimeout(() => {
       this.rideTimer = undefined;
+      if (this.disposed) return;
       // a conversation has started meanwhile: stay put, just lift the fade
       if (this.session?.active) { useStore.getState().setHud({ fade: 0, zoneBanner: null }); return; }
-      this.enterZone("town", dest, true);
-      useStore.getState().setHud({ zoneBanner: banner });
-      setTimeout(() => useStore.getState().setHud({ fade: 0 }), 700);
-      setTimeout(() => { if (useStore.getState().hud.zoneBanner?.title === banner.title) useStore.getState().setHud({ zoneBanner: null }); }, 3200);
+      this.enterZone("town", dest, true, undefined, () => {
+        useStore.getState().setHud({ zoneBanner: banner });
+        this.afterZoneDelay(() => {
+          if (useStore.getState().hud.zoneBanner?.title === banner.title) useStore.getState().setHud({ zoneBanner: null });
+        }, 3200);
+      }, 700);
     }, by === "plane" ? 2600 : 1400);
   }
   private rideTimer: ReturnType<typeof setTimeout> | undefined;
@@ -2896,6 +3037,40 @@ export class Game implements GameApi {
     else p.easy = 0;
   }
 
+  private applyWalkingViewShift(w: number, h: number, talking: boolean) {
+    const stageShift = this.rig.mode === "stage" ? this.rig.stage?.shiftY : undefined;
+    const walkingLens = this.rig.mode === "follow" || this.rig.mode === "interior";
+    const uprightShift = this.rig.mode !== "talk" && h > w * 1.15 ? (this.rig.mode === "follow" ? 0.12 : 0.1) : 0;
+    const shift = this.sidewaysPhone && walkingLens && !talking ? 0.1 : uprightShift;
+    this.rig.applyViewShift(w, h, 0, h * (stageShift ?? -shift));
+  }
+
+  private updateViewLights() {
+    const p = this.player.root.position;
+    this.sun.position.set(p.x - 40, 70, p.z + 30);
+    this.sun.target.position.set(p.x, 0, p.z);
+    this.fx?.frame(p, !!this.zone.interior);
+    this.sky.position.copy(this.rig.cam.position);
+  }
+
+  private drawTown() {
+    this.renderer.render(this.scene, this.rig.cam);
+    this.presentWorld("town");
+    if (!this.zone.interior && this.firstExteriorAt === undefined) {
+      this.firstExteriorAt = this.t;
+      this.firstExteriorDraw?.();
+      this.firstExteriorDraw = undefined;
+    }
+  }
+
+  private canWarmCrashShaders() {
+    return this.firstExteriorAt !== undefined && this.t - this.firstExteriorAt >= 1
+      && this.zone.id === "town" && this.ledges?.ready && this.carVisuals?.ready
+      && !document.hidden && !this.transitioning && !this.session?.active && !this.modes.active
+      && !this.keys.size && !this.joy.x && !this.joy.y && !this.pointer.down && !this.rides.riding
+      && this.moveVel.lengthSq() < 0.01;
+  }
+
   private loop = () => {
     if (this.disposed) return;
     this.syncSize();
@@ -3042,27 +3217,18 @@ export class Game implements GameApi {
       } else if (mode?.frameStage) {
         mode.frameStage(w, h);
       } else {
-        const stageShift = this.rig.mode === "stage" ? this.rig.stage?.shiftY : undefined;
-        const walkingLens = this.rig.mode === "follow" || this.rig.mode === "interior";
-        const uprightShift = this.rig.mode !== "talk" && h > w * 1.15 ? (this.rig.mode === "follow" ? 0.12 : 0.1) : 0;
-        const shift = sideways && walkingLens && !talking ? 0.1 : uprightShift;
-        this.rig.applyViewShift(w, h, 0, h * (stageShift ?? -shift));
+        this.applyWalkingViewShift(w, h, talking);
       }
     }
     this.applySeaReturnView(dt, w, h);
     this.quests.observe(this.rig.cam);
     // Street subjects use the camera and lens that will draw this frame.
     this.streetLife.tick(dt, this.streetSnapshot(), visibleElapsed);
-    // sun follows the player for crisp shadows
-    const pp = this.player.root.position;
-    this.sun.position.set(pp.x - 40, 70, pp.z + 30);
-    this.sun.target.position.set(pp.x, 0, pp.z);
-    this.fx?.frame(pp, !!this.zone.interior);
-    this.sky.position.copy(this.rig.cam.position);
+    this.updateViewLights();
     // an illustrated scene covers the view during the conversation: save the phone's battery
     const covered = this.covered = talking && picturesOn(st.settings) && !!sceneFor(st.conv.sitId, st.conv.hostId);
     this.rides.updateParkingKeys(this.t, !this.zone.interior && !talking && !this.flight && !this.modes.active && !this.transitioning);
-    if (!covered) {
+    if (!covered || this.firstExteriorDraw) {
       this.road?.stage(this.renderer);
       if (!blocked && !mode && riding?.kind === "car" && this.rides.phase === "on" && this.road?.shouldStart(riding)
         && this.modes.start("road") && this.road.render(this.renderer, w, h)) {
@@ -3083,46 +3249,35 @@ export class Game implements GameApi {
           return;
         }
       }
-      const probes = this.zone.id === "town" ? this.crashShaderProbes : undefined;
+      const probes = this.crashShaderProbes && this.canWarmCrashShaders() ? this.crashShaderProbes : undefined;
       if (probes) {
         // Submit the shaders once with the town's actual framebuffer and lighting. The probes sit behind the near plane.
         const cam = this.rig.cam;
         probes.position.set(0, 0, 2).applyQuaternion(cam.quaternion).add(cam.position);
         this.scene.add(probes);
       }
-      this.renderer.render(this.scene, this.rig.cam);
+      this.drawTown();
       this.quests.capture(this.renderer.domElement);
-      this.presentWorld("town");
       if (probes) {
         probes.removeFromParent();
         this.rides.finishCrashShaderWarmup();
         this.crashShaderProbes = undefined;
         this.crashShadersReady = true;
       } else this.sampleFps(false);
-      if (!this.crashShadersScheduled && this.zone.id === "town" && this.ledges?.ready && this.carVisuals?.ready) {
+      if (!this.crashShadersScheduled && this.canWarmCrashShaders()) {
         this.crashShadersScheduled = true;
         const warm = () => {
           if (this.disposed) return;
-          if (this.zone?.id !== "town" || this.modes.owns("road")) {
+          if (!this.canWarmCrashShaders()) {
             this.crashShadersScheduled = false;
             return;
           }
           void this.rides.compileCrashShaders(this.renderer, this.scene).then((group) => {
             if (!this.disposed) this.crashShaderProbes = group;
-          }).catch((error) => console.warn("Crash shader warmup unavailable", error));
+          }).catch((error) => { if (!this.disposed) console.warn("Crash shader warmup unavailable", error); });
         };
         if (window.requestIdleCallback) window.requestIdleCallback(warm, { timeout: 750 });
         else setTimeout(warm, 0);
-      }
-      if (!this.carLoadStarted && this.zone.id === "town") {
-        this.carLoadStarted = true;
-        // Let the browser paint the town before fetching the visual upgrade.
-        requestAnimationFrame(() => {
-          if (this.disposed) return;
-          void import("./world/carVisuals").then(({ CarVisuals }) => {
-            if (!this.disposed) this.carVisuals = new CarVisuals(this.town.parkedCars, this.ambient, (mesh) => this.rides.releaseCrashVisual(mesh));
-          }).catch((error) => console.warn("Car models unavailable", error));
-        });
       }
       this.updateTags();
     }
@@ -4032,7 +4187,7 @@ export class Game implements GameApi {
   private saveT = 5;
 
   private savePlace() {
-    if (!this.player || !this.zone) return;
+    if (!this.initialDrawn || this.enteringFirstExterior || !this.player || !this.zone) return;
     const p = this.player.root.position;
     useStore.getState().updateProgress((pr) => {
       pr.place = { zone: this.zone.id, x: +p.x.toFixed(2), z: +p.z.toFixed(2), rot: +this.heading.toFixed(2) };
@@ -4092,6 +4247,12 @@ export class Game implements GameApi {
     if (this.disposed) return;
     this.disposed = true;
     this.onReady = undefined;
+    this.onExteriorError = undefined;
+    this.replyToExteriorError?.(false);
+    this.firstExteriorDraw?.();
+    this.firstExteriorDraw = undefined;
+    this.exteriorModels = undefined;
+    clearTimeout(this.rideTimer);
     this.collisionPreparation?.cancel();
     this.collisionPreparation = undefined;
     clearTimeout(this.ledgeTimer);
@@ -4099,7 +4260,9 @@ export class Game implements GameApi {
     for (const unsubscribe of this.phoneWatch) unsubscribe();
     document.removeEventListener("visibilitychange", this.phoneVisibility);
     window.removeEventListener("pagehide", this.phonePageHide);
-    this.phonePageHide();
+    if (this.initialDrawn) this.phonePageHide();
+    for (const timer of this.zoneTimers) clearTimeout(timer);
+    this.zoneTimers.clear();
     for (const timer of this.sceneDelays) clearTimeout(timer);
     this.sceneDelays.clear();
     this.keepsake.dispose();
@@ -4136,6 +4299,7 @@ export class Game implements GameApi {
     this.cave = null;
     this.renderer.domElement.remove();
     this.renderer.dispose();
+    this.renderer.forceContextLoss();
   }
 }
 

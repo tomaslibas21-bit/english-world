@@ -88,7 +88,7 @@ describe("Puerto Colibrí taxi routes", () => {
     const { rides, player, ambient } = makeRides();
     const marks = rides.marksForMap();
     const stand = parkedCars.taxi!;
-    expect(stand.fallback.parent).toBe(stand.root);
+    expect(stand.fallback?.parent).toBe(stand.root);
     expect(stand.root.parent).toBe(parkedCars.group);
     expect(colliders.blocked(TAXI.x, TAXI.z, 0.1)).toBe(false);
     const otherTaxi = PARKED_CARS.find((spot) => spot !== TAXI && spot.model === "taxi")!;
