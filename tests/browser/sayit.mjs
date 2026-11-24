@@ -193,7 +193,14 @@ async function testGame(context, game, size, touch, supported) {
       await wait(() => drive.isVisible(), "parked van");
       await press(drive);
       await wait(() => page.evaluate(() => window.__ew.game.rides.phase === "on"), "boards the van");
-      await page.evaluate(() => window.__ew.game.modeStart("road"));
+      if (puertoColibri) {
+        // Use the same approach as road.mjs to drive the boarded van out along Calle Ceiba.
+        await page.evaluate(() => {
+          const { game } = window.__ew;
+          game.rides.resetPosition(game.rides.riding, { x: -1.65, z: 53, rot: 0 });
+        });
+      }
+      await wait(async () => (await read()).ready, "the road is ready");
     } else {
       await page.keyboard.down("ArrowUp");
       await wait(() => page.evaluate((boat) => {
@@ -205,11 +212,26 @@ async function testGame(context, game, size, touch, supported) {
       await wait(async () => (await read()).ready, "boat and open water are ready");
       const { edge, town } = await read();
       assert.equal(await page.evaluate(([x, z]) => window.__ew.seaPlaceBoat(x, z), [town.x, edge + 34]), true);
-      await page.keyboard.down("ArrowUp");
-      await wait(async () => (await read()).phase === "drive", "sails out past the buoy line");
-      await page.keyboard.up("ArrowUp");
     }
-    await wait(async () => (await read()).phase === "drive" && await page.locator(".road-question").isVisible(), "first word gate");
+
+    const roadTouch = game === "road" && touch;
+    const departurePhase = puertoColibri ? "briefing" : "drive";
+    if (roadTouch) await page.evaluate(() => window.__ew.game.setJoystick(0, 1));
+    else await page.keyboard.down("ArrowUp");
+    try {
+      await wait(async () => (await read()).phase === departurePhase,
+        game === "road" ? "drives out past the road crest" : "sails out past the buoy line");
+    } finally {
+      if (roadTouch) await page.evaluate(() => window.__ew.game.setJoystick(0, 0));
+      else await page.keyboard.up("ArrowUp");
+    }
+    if (puertoColibri) await press(page.locator(`.${game}-overlay [data-way="words"]`));
+
+    await wait(async () => {
+      const state = await read();
+      return state.phase === "drive" && state.way === "words" && state.totalGates === 0
+        && await page.locator(".road-question").isVisible();
+    }, "first word gate");
     const prompt = await read();
     await checkBonus({
       hit: prompt.word, miss: prompt.gap ? prompt.gates.find((_, i) => i !== prompt.right) : unrelatedSpeech,
