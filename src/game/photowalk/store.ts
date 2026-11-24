@@ -6,6 +6,7 @@ import type { KitLine, KitMic } from "../kit/dialogue";
 export type Destination = typeof ASK_WAY_PLACES[number];
 export type Quiz = {
   id: PhotoThingId;
+  jpeg: string | null;
   choices: PhotoThingId[];
   misses: PhotoThingId[];
   wrong: boolean;
