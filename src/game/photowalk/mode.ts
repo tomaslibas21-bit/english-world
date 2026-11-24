@@ -119,6 +119,7 @@ export class TownQuests implements GameMode {
     if (option === "visit" && status === "paused") change({ type: "resume" });
     const finale = option === "visit" && status === "found";
     ui({ screen: finale ? "finale" : "book", visit: option === "visit" && !finale });
+    audio.sfx("bookPage");
     this.host.entered(this.id);
     if (option === "visit") {
       const speak = () => {
@@ -291,6 +292,7 @@ export class TownQuests implements GameMode {
     if (zone !== location && !(zone === "town" && door && Math.hypot(p.x - door.outX, p.z - door.outZ) <= 6)) return;
     this.clearDirections();
     this.arrivalTime = 0.9;
+    audio.sfx("arrive");
     ui({ arrival: ++this.arrived });
     audio.sfx("success");
     useStore.getState().toast({ kind: "success", title: L(ASK_WAY_UI.arrived), body: LOCATIONS[location].lt });
