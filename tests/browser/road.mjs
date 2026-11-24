@@ -105,7 +105,6 @@ async function driveExit(url, scenario, expectedHeading, viewport = { width: 128
         game.rides.resetPosition(ride, start);
         game.placeOnFoot(start.x - Math.cos(outward) * 2, start.z + Math.sin(outward) * 2, outward);
         if (!game.boardRide(ride)) throw new Error("Could not board the park convertible");
-        game.modeHost.snapRide(ride);
       }, before.exit);
     };
     await Promise.all([
@@ -119,7 +118,10 @@ async function driveExit(url, scenario, expectedHeading, viewport = { width: 128
     if (phone) await page.evaluate(() => window.__ew.game.setJoystick(0, 1));
     else await page.keyboard.down("ArrowUp");
     if (measureApproach) {
-      await until((state) => state.phase === "drive", "enters the desert");
+      await until((state) => state.phase === "briefing", "shows the choice at the crest");
+      const words = page.locator('[data-way="words"]');
+      await (phone ? words.tap() : words.click());
+      assert.equal((await read()).phase, "drive");
       await page.evaluate(() => {
         window.__ew.game.setJoystick(0, 0);
         window.__ew.road.steer(2);
