@@ -642,11 +642,16 @@ try {
     assert.equal((await read()).result.right, 6);
     assert.equal((await read()).result.total, 7);
     assert.equal((await read()).result.missed.length, 1);
-    assert.deepEqual(await result.locator(".mode-score-number").evaluate((number) => ({
-      value: Number(number.querySelector("span").textContent),
-      animated: getComputedStyle(number.querySelector("span")).animationName,
-      counter: getComputedStyle(number.querySelector("i")).display,
-    })), { value: (await read()).result.points, animated: "none", counter: "none" });
+    assert.deepEqual(await result.locator(".mode-score-number").evaluate((number) => {
+      const { visibility, opacity } = getComputedStyle(number);
+      const { width, height } = number.getBoundingClientRect();
+      return {
+        value: number.innerText.trim(),
+        visible: visibility === "visible" && opacity === "1" && width > 0 && height > 0,
+        animations: number.getAnimations({ subtree: true }).length,
+      };
+    }), { value: String((await read()).result.points), visible: true, animations: 0 },
+    "the final score is visible without a count-up when the score card opens");
     assert.equal(await result.getByRole("button", { name: "Nuvesk mane" }).count(), 1);
     await shot("result");
     await press(result.getByRole("button", { name: "Dar kartą" }));
