@@ -76,7 +76,7 @@ class GymEntry implements GameMode {
       // A browser may cache a failed dynamic import by URL. Use a fresh URL after a fetch failure.
       const failed = error instanceof TypeError && /https?:\/\/[^\s]+/.exec(error.message)?.[0];
       if (failed && typeof location !== "undefined" && new URL(failed).origin === location.origin) this.retryUrl = new URL(failed);
-      else if (import.meta.env.DEV && error instanceof TypeError) this.retryUrl = new URL("./mode.ts", import.meta.url);
+      else if (import.meta.env.DEV && error instanceof TypeError) this.retryUrl = new URL(/* @vite-ignore */ "./mode.ts", import.meta.url);
       release();
     }).catch(release);
     return true;

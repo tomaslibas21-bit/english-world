@@ -55,6 +55,8 @@ import { BARISTA_CONVERSATION } from "../content/barista";
 import { GOFISH_CONVERSATION } from "../content/gofish";
 import { createGoFishMode } from "./gofish/mode";
 import { GOFISH_PROMPT } from "./gofish/framing";
+import { GYM_ENTRY } from "../content/gym-entry";
+import { createGymMode } from "./gym/entry";
 import { OcclusionField } from "./occlusion";
 import { PropFader } from "./fade";
 import { CUT, withCutout } from "./cutout";
@@ -91,6 +93,7 @@ export type { GameApi } from "./gameRef";
 /** A box on the screen, in pixels (a name tag, or part of the HUD the tags keep clear of). */
 type TagBox = { x0: number; x1: number; y0: number; y1: number };
 interface NpcActor { id: string; ch: GameCharacter; home: THREE.Vector3; rot: number; tag: HTMLDivElement; tagSize?: [number, number]; sit?: boolean; waved: boolean; approach?: THREE.Vector3 }
+const isGymTrainer = (actor: NpcActor) => actor.id === GYM_ENTRY.npc;
 interface ZoneState { id: string; group: THREE.Group; colliders: import("./world/util").Colliders; nav: NavGrid; interior?: Interior }
 
 /** Walking, the jog one falls into outdoors after a moment on the move, and running (Shift, the stick at its edge). */
@@ -194,6 +197,7 @@ export class Game implements GameApi {
   /** Trial world styles (Settings → "Pasaulio stilius"); null for the original "blocks" look. */
   private fx: StyleFx | null = null;
   private keys = new Set<string>();
+  private gymHeldKeys = new Set<string>();
   private joy = { x: 0, y: 0 };
   private vel = new THREE.Vector3();
   private lastHeading = 0;
@@ -596,6 +600,14 @@ export class Game implements GameApi {
       npc: (id) => this.npcs.find((actor) => actor.id === id)?.ch,
       place: (x, z, rot) => this.placeOnFoot(x, z, rot, true),
       savePlace: () => this.savePlace(),
+    }));
+    this.modes.register(createGymMode(stageHost, {
+      room: () => this.zone.id === GYM_ENTRY.location ? this.zone.group : null,
+      trainer: () => this.npcs.find(isGymTrainer)?.ch,
+      heading: () => this.heading,
+      place: (x, z, rot) => this.placeOnFoot(x, z, rot, true),
+      savePlace: () => this.savePlace(),
+      viewport: () => ({ width: this.screenW, height: this.screenH }),
     }));
     this.modes.register(this.billiards = new BilliardsMode(host, {
       table: () => this.zone.id === BILLIARDS_PLACE
@@ -1097,13 +1109,16 @@ export class Game implements GameApi {
     if (this.flight) { if (!e.metaKey && !e.ctrlKey && !e.altKey) { this.endFlight(); e.preventDefault(); } return; }
     const st = useStore.getState();
     const k = e.key.toLowerCase();
+    const gym = this.modes.owns("gym");
+    if (gym) this.gymHeldKeys.add(k);
+    else if (e.repeat && this.gymHeldKeys.has(k)) { e.preventDefault(); return; }
     if (st.conv.active) return; // the conversation panel handles its own keys
     if (st.hud.panel) { if (k === "escape") st.setHud({ panel: null }); return; }
     if (k === "h" && !e.repeat && this.rides.riding?.kind === "car" && !this.modes.owns("road")) {
       this.horn(); e.preventDefault(); return;
     }
     if (this.modes.modal || this.modes.active) {
-      if (!this.transitioning && this.modes.input({ kind: "key", key: k, repeat: e.repeat, keys: this.keys, shift: e.shiftKey })) e.preventDefault();
+      if ((!this.transitioning || (gym && k === "escape")) && this.modes.input({ kind: "key", key: k, repeat: e.repeat, keys: this.keys, shift: e.shiftKey })) e.preventDefault();
       return;
     }
     if (k === "escape" && this.modes.input({ kind: "key", key: k, repeat: e.repeat, keys: this.keys })) {
@@ -1128,9 +1143,10 @@ export class Game implements GameApi {
   private onKeyUp = (e: KeyboardEvent) => {
     const key = e.key.toLowerCase();
     this.keys.delete(key);
+    this.gymHeldKeys.delete(key);
     if (this.billiards.release(key)) e.preventDefault();
   };
-  private onBlur = () => { this.keys.clear(); this.billiards.release(" ", true); };
+  private onBlur = () => { this.keys.clear(); this.gymHeldKeys.clear(); this.billiards.release(" ", true); };
 
   horn() {
     if (useStore.getState().hud.panel || this.transitioning || this.session?.active) return;
@@ -3064,6 +3080,8 @@ export class Game implements GameApi {
   }
 
   private prepareMode() {
+    // A key the workout takes over must be released before its repeats can move the player again.
+    if (this.modes.owns("gym")) for (const key of this.keys) this.gymHeldKeys.add(key);
     this.keepsake.clear();
     useStore.getState().dismissRideToasts();
     this.endRide();

@@ -107,6 +107,7 @@ type Run = {
   revealed: boolean;
   heard: boolean;
   appliedProgress: number | null;
+  readyShown: boolean;
   leaving: boolean;
   done: boolean;
 };
@@ -184,7 +185,7 @@ export class GymMode {
       room, player: learner, trainer: coach, camera, stage, points: [...learner.pose.framePoints(), ...coach.pose.framePoints()],
       frame: null, heading, lines: composed, round: new GymRound(), sayIt: new SayItRound(), cue: null, unsubscribe: null,
       elapsed: 0, gapEnd: null, voice: null, line: null, audible: false, fallback: false, revealed: false, heard: false,
-      appliedProgress: null, leaving: false, done: false,
+      appliedProgress: null, readyShown: false, leaving: false, done: false,
     };
     rig.mode = "stage";
     rig.stage = stage;
@@ -192,8 +193,6 @@ export class GymMode {
     this.frameView(run, width, height, 0, height);
     this.host.entered(this.id);
     useStore.getState().setHud({ prompt: null });
-    if (import.meta.env.DEV && typeof window !== "undefined") window.__gym = this.debugHook;
-    this.publish(run);
   }
 
   private inRoom(run: Run) {
@@ -323,7 +322,8 @@ export class GymMode {
     const run = this.run;
     if (!run || !this.live(run)) return;
     const { round } = run;
-    if (name === "start" && round.phase === "ready") this.startRound(run, false);
+    if (name === "exit") this.exit(false);
+    else if (name === "start" && round.phase === "ready") this.startRound(run, false);
     else if (name === "again" && round.phase === "score") this.startRound(run, true);
     else if (name === "done" && round.phase === "score") {
       run.done = true;
@@ -378,6 +378,13 @@ export class GymMode {
     run.elapsed += dt;
     const { round, elapsed } = run;
     switch (round.phase) {
+      case "ready":
+        if (!run.readyShown) {
+          run.readyShown = true;
+          if (import.meta.env.DEV && typeof window !== "undefined") window.__gym = this.debugHook;
+          this.publish(run);
+        }
+        break;
       case "intro":
         if (elapsed + EPSILON >= LINE_MIN && this.lineFinished(run) && round.listen()) this.listen(run);
         break;

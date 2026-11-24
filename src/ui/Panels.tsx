@@ -35,6 +35,7 @@ import { COACH_STEPS, coach } from "../game/coach";
 import { COACH_ICON, coachWords } from "./Guide";
 import { useRadio } from "../radio";
 import { SURF } from "../content/surf";
+import { GYM_ENTRY } from "../content/gym-entry";
 
 export const CHAPTERS: Record<number, string> = { 1: "Atvykimas", 2: "Pirmosios dienos mieste", 3: "Įsikūrimas", 4: "Darbas", 5: "Žmonės", 6: "Kelionės", 7: "Pagalba", 8: "Pažengusiems", 9: "Gyva kalba" };
 
@@ -228,7 +229,10 @@ function Scenarios({ close }: { close: () => void }) {
         {bonus.length > 0 && <div className="chapter"><div className="scn-grid">
           {bonus.map((s) => <ScenarioCard key={s.id} s={s} close={close} />)}
         </div></div>}
-        <div className="scn-foot">
+        <div className="scn-foot" style={{ flexWrap: "wrap", gap: 8 }}>
+          {!light && <button type="button" className="btn soft small" style={{ minHeight: 44 }} onClick={() => { close(); game?.guideToPlace?.(GYM_ENTRY.location); }}>
+            <Icon name="walk" size={19} /> {GYM_ENTRY.listAction}
+          </button>}
           <button className="btn ghost" onClick={close}><Icon name="walk" size={19} /> Vaikščioti po miestą</button>
         </div>
       </div>
@@ -368,6 +372,7 @@ function MapPanel({ close }: { close: () => void }) {
                 <h3 className="place-title"><span className="place-ico"><Icon name={locIcon(sel)} size={22} /></span>{LOCATIONS[sel].name}</h3>
                 <div style={{ color: "var(--ink-soft)", marginBottom: 10 }}>{placeLt(sel)}</div>
                 {sel === "pool-hall" && <p>Biliardo salė – partija su Tina</p>}
+                {sel === GYM_ENTRY.location && game?.light === false && <p>{GYM_ENTRY.mapLabel}</p>}
                 <div className="sit-list">
                   {selSits.map((s) => (
                     <div key={s.id}>
