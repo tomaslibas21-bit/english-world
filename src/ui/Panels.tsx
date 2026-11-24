@@ -7,9 +7,8 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { picturesOn, useStore } from "../state/store";
 import { game } from "../game/gameRef";
 import { switchPlayMode } from "./playMode";
-import { SITUATIONS, SITUATION_BY_ID } from "../content/situations/catalog";
+import { KEEPER_SIT, SITUATIONS, SITUATION_BY_ID } from "../content/situations/catalog";
 import { LOCATIONS, TOWN_LT, placeLt } from "../content/locations";
-import { KEEPER_MAP_DETAIL, KEEPER_TITLE } from "../content/keeper";
 import { keepsakeFor } from "../content/keepsakes";
 import { PHONE_CALLS } from "../content/phoneCalls";
 import { TEXT_THREADS } from "../content/texts";
@@ -317,6 +316,7 @@ function MapPanel({ close }: { close: () => void }) {
   const progress = useStore((s) => s.progress);
   const mm = useStore((s) => s.hud.minimap);
   const island = game?.guideToLighthouse ? LIGHTHOUSE_ISLAND : undefined;
+  const lighthouse = LOCATIONS.lighthouse;
   const north = island ? WORLD.minZ : SEA_Z - 2;
   const W = WORLD.maxX - WORLD.minX, D = WORLD.maxZ - north;
   useEffect(() => {
@@ -344,7 +344,7 @@ function MapPanel({ close }: { close: () => void }) {
             {mm.zone === "town" && <div className="map-me" style={pct(mm.px, mm.pz)} title="Tu esi čia" />}
             {island && <button className={"map-pin map-place-label" + (sel === "lighthouse" ? " sel" : "")}
               style={pct(island.center.x, island.center.z)} aria-pressed={sel === "lighthouse"} onClick={() => setSel("lighthouse")}>
-              <span>{island.name} <span lang="lt">· {island.lt}</span></span>
+              <span>{lighthouse.name} <span lang="lt">· {lighthouse.lt}</span></span>
             </button>}
             {locs.map((l) => {
               const p = locationPoint(l.id);
@@ -363,10 +363,10 @@ function MapPanel({ close }: { close: () => void }) {
             {!sel && <div className="info-box">Pasirink vietą žemėlapyje. Geltonas taškas – tavo užduotis, raudonas – tu.<br /><br /><InlineIcon name="smartphone" /> Kai kurios užduotys atliekamos telefonu (P).</div>}
             {island && sel === "lighthouse" && (
               <div>
-                <h3 className="place-title">{island.name}</h3>
-                <div lang="lt" style={{ color: "var(--ink-soft)", marginBottom: 10 }}>{island.lt}</div>
-                <b lang="lt">{KEEPER_TITLE.lt}</b>
-                <p lang="lt">{KEEPER_MAP_DETAIL}</p>
+                <h3 className="place-title">{lighthouse.name}</h3>
+                <div lang="lt" style={{ color: "var(--ink-soft)", marginBottom: 10 }}>{lighthouse.lt}</div>
+                <b lang="lt">{SITUATION_BY_ID[KEEPER_SIT].title.lt}</b>
+                <p lang="lt">Prie namelio laukia švyturio prižiūrėtojas.</p>
                 <button className="btn soft small" onClick={() => { close(); game?.guideToLighthouse?.(); }}><Icon name="walk" size={17} /> Nuvesk mane</button>
               </div>
             )}

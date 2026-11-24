@@ -1,7 +1,6 @@
 import { Group, PerspectiveCamera } from "three";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { KEEPER_SIT } from "../src/content/keeper";
-import { loadSituation } from "../src/content/situations/catalog";
+import { KEEPER_SIT, loadSituation } from "../src/content/situations/catalog";
 import { Game } from "../src/game/Game";
 import { Rides, type RideHost } from "../src/game/rides/Rides";
 import { RIDES } from "../src/game/world/rides";

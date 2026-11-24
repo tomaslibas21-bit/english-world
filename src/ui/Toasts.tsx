@@ -1,7 +1,6 @@
 import { useStore, usesTownNotes, type Toast } from "../state/store";
 import { useSurf } from "../game/surf/store";
 import { townNote } from "../state/townNotes";
-import { KEEPER_SIT } from "../content/keeper";
 import { SitIcon } from "./SitIcon";
 import { Icon, Stars, splitLead, withIcons, type IconName } from "./icons";
 
@@ -16,7 +15,7 @@ export function Toasts() {
   useSurf((s) => s.active || s.picking);
   const toasts = useStore((s) => usesTownNotes(s) ? null : s.toasts);
   const modeMenu = useStore((s) => s.hud.modeScreen?.kind === "menu");
-  const visitingKeeper = useStore((s) => s.conv.active && s.conv.sitId === KEEPER_SIT);
+  const visitingKeeper = useStore((s) => s.conv.active && s.conv.sitId === "x05-lighthouse-keeper");
   return <ToastList toasts={(modeMenu ? toasts?.filter((t) => t.rideHint) : visitingKeeper ? toasts?.filter((t) => t.source !== "keeper-greeting") : toasts) ?? []} />;
 }
 

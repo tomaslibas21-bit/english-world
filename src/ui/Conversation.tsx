@@ -6,7 +6,7 @@ import { Interlinear } from "./Interlinear";
 import { NPCS } from "../content/npcs";
 import { PHONE_CALLS } from "../content/phoneCalls";
 import { coachVoice, npcVoice } from "../content/voices";
-import { getSituation, SITUATION_BY_ID } from "../content/situations/catalog";
+import { getSituation, KEEPER_SIT, SITUATION_BY_ID } from "../content/situations/catalog";
 import { KIND, keepsakeFor } from "../content/keepsakes";
 import { GLOBAL } from "../content/global";
 import { placeLtNamed } from "../content/locations";
@@ -27,7 +27,6 @@ import {ReportProblem} from "./ReportProblem";
 import { SectionHelpButton } from "./sectionHelp";
 import { useKeyboardHints } from "./keyboardHints";
 import { usePortrait } from "./usePortrait";
-import { KEEPER_SIT } from "../content/keeper";
 
 const KeeperAnswer = lazy(() => import("./KeeperAnswer"));
 const activeSession = () => game?.activeSession;

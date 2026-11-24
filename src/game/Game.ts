@@ -21,7 +21,6 @@ import { Wading, Splashes, floorY, waterY, bayHold, SEA_LEVEL, SHORE, SWIM, BAY 
 import { Rides, SHALLOWS, type Ride } from "./rides/Rides";
 import { KeepsakeInHand } from "./keepsake";
 import { keepsakeFor } from "../content/keepsakes";
-import { KEEPER_NPC, KEEPER_SIT, KEEPER_TALK } from "../content/keeper";
 import { Undersea } from "./rides/undersea";
 import { CAR_DRIFT, BOAT_DRIFT, BOAT, BAY_EDGE, controlsFrom, pointAndGo, type Controls } from "./rides/drive";
 import { RIDES } from "./world/rides";
@@ -75,9 +74,9 @@ import { radio } from "../radio";
 import { Dust } from "./dust";
 import { Pigeons } from "./pigeons";
 import { audioDiagnosticsEnabled, audioDiagnosticsPaused, subscribeAudioDiagnostics } from "../convo/audioDiagnostics";
-import { NPCS, type Look } from "../content/npcs";
+import { KEEPER_NPC, NPCS, type Look } from "../content/npcs";
 import { LOCATIONS, placeLt } from "../content/locations";
-import { SITUATIONS, SITUATION_BY_ID, prefetchSituations } from "../content/situations/catalog";
+import { KEEPER_SIT, SITUATIONS, SITUATION_BY_ID, prefetchSituations } from "../content/situations/catalog";
 import { whenLoaded } from "./prefetch";
 import type { SituationDef, SituationMeta } from "../content/types";
 import { picturesOn, useStore, type Toast } from "../state/store";
@@ -3607,7 +3606,7 @@ export class Game implements GameApi {
       const island = LIGHTHOUSE_ISLAND, keeper = this.islandScene?.keeper;
       if (!this.zone.interior && island && keeper && !this.swimming) {
         const d = keeper.root.position.distanceTo(p);
-        if (d < TALK_RANGE && d < bd) { bd = d; best = { kind: "staff", id: island.keeper.says, label: this.keeperWarned ? KEEPER_TALK : "Pasisveikinti" }; }
+        if (d < TALK_RANGE && d < bd) { bd = d; best = { kind: "staff", id: island.keeper.says, label: this.keeperWarned ? "Pasikalbėti su prižiūrėtoju" : "Pasisveikinti" }; }
       }
       // a convertible or the boat within a step (a boat from the water too), a pier's boards beside a swimmer
       if (!this.zone.interior && !this.hop.air && this.diveK < 0.3) {

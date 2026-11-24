@@ -1,5 +1,4 @@
 // Places in Maple Harbor. The world builder (src/game/world) lays these out; situations refer to them by id.
-import { KEEPER_PLACE } from "./keeper";
 
 export interface LocationDef {
   id: string;
@@ -47,7 +46,7 @@ export const LOCATIONS: Record<string, LocationDef> = Object.fromEntries([
   // Batch H: Sproutly, a plant-care app startup in an old harbor warehouse (P18 "Up to My Ears")
   L("sproutly", "Sproutly", "Startuolis „Sproutly“", "harbor", "interior", "🌱"),
   L("phone", "Phone call", "Skambutis telefonu", "phone", "phone", "📱"),
-  L("lighthouse", KEEPER_PLACE.en, KEEPER_PLACE.lt, "harbor", "outdoor", "🌅"),
+  L("lighthouse", "Lighthouse", "Švyturys", "harbor", "outdoor", "🌅"),
 ].map((l) => [l.id, l]));
 
 /** The town's name for beginners: how it sounds in Lithuanian and what it means. */

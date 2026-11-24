@@ -4,9 +4,8 @@
 //       answers come in a female or a male coach voice, matching the learner.
 // Clip keys are audioKey(voice id, speed, text), so the two sets never mix. A build can choose with
 // VITE_VOICES=v1|v2; tools read the same variable from the environment.
-import { COACH_VOICE, type NpcDef } from "./npcs";
+import { COACH_VOICE, KEEPER_NPC, type NpcDef } from "./npcs";
 import { AMBIENT_VOICES } from "./ambient";
-import { KEEPER_NPC } from "./keeper";
 
 /** v2 since 28 Oct 2026: every clip recorded, checked with Whisper and uploaded (docs/VOICING-PLAN.md). */
 const DEFAULT_VOICES: "v1" | "v2" = "v2";

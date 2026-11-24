@@ -1,6 +1,5 @@
 import { t } from "../dsl";
 import { GLOBAL } from "../global";
-import { KEEPER_NPC, KEEPER_TITLE } from "../keeper";
 import type { Ctx, HintGroup, SituationDef, StepDef } from "../types";
 
 type KeeperStep = "life" | "light" | "routine" | "storm" | "gift";
@@ -67,12 +66,12 @@ const lighthouseKeeper: SituationDef = {
   optionalVoice: true,
   song: "",
   songTitle: "",
-  title: KEEPER_TITLE,
+  title: { en: "A Visit to the Lighthouse", lt: "Viešnagė švyturyje" },
   topic: { en: "Life at the lighthouse", lt: "Gyvenimas prie švyturio" },
   chapter: 9,
   order: 12,
   location: "lighthouse",
-  npc: KEEPER_NPC,
+  npc: "lighthouse_keeper",
   mode: "talk",
   goal: "Paklauskite prižiūrėtojo apie gyvenimą saloje, jo darbą ir audrą. Pasiimkite jo raštelį atminimui.",
   intro: "Prie namelio durų Jus pasitinka švyturio prižiūrėtojas. Šalia stovi suolas.",

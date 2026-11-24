@@ -6,7 +6,6 @@
 // (19 Nov 2026) The pictures were redrawn to match; every named woman's braid lies over her right shoulder (`side: -1`),
 // the side the image model draws it on, so a picture and the 3D person agree.
 import { QUEST_PEOPLE } from "./townQuests";
-import { KEEPER_LOOK, KEEPER_NPC, KEEPER_ROLE } from "./keeper";
 import type { NpcInfo } from "../convo/dialogue";
 
 export type HairStyle = "short" | "long" | "bun" | "ponytail" | "curly" | "bald" | "buzz" | "bob" | "wavy" | "side"
@@ -87,6 +86,9 @@ const HAIR = { black: "#1f1a17", brown: "#5a3a25", chestnut: "#7b4a2a", blonde: 
 
 const N = (id: string, name: string, role: [string, string], gender: "m" | "f", voice: string, look: Look, extra: Partial<NpcDef> = {}): NpcDef =>
   ({ id, name, role: { en: role[0], lt: role[1] }, gender, voice, look, ...extra });
+
+export const KEEPER_NPC = "lighthouse_keeper";
+const keeperName = "Lighthouse keeper";
 
 export const NPCS: Record<string, NpcDef> = Object.fromEntries([
   // Arrival
@@ -228,7 +230,11 @@ export const NPCS: Record<string, NpcDef> = Object.fromEntries([
     { skin: SK.dark, hair: { style: "bald", color: HAIR.gray }, top: "#9b3b36", bottom: "#3a3f4a", acc: ["beard", "readers"] },
     { bio: "Laiškuose labai oficialus, telefonu – visai ne." }),
   ...QUEST_PEOPLE,
-  N(KEEPER_NPC, KEEPER_ROLE.en, [KEEPER_ROLE.en, KEEPER_ROLE.lt], "m", "am_adam", KEEPER_LOOK, { speed: 1 }),
+  N(KEEPER_NPC, keeperName, [keeperName, "Švyturio prižiūrėtojas"], "m", "am_adam", {
+    skin: "#d3a07f", hair: { style: "short", color: "#bfc1be" },
+    acc: ["beard"], top: "#284c59", bottom: "#71604e", shoes: "#374548",
+    height: 1.02, build: 1.08, face: { lines: true },
+  }, { speed: 1 }),
 ].map((n) => [n.id, n]));
 
 /** Voice used for English hint examples (the learner's "model" voice). */

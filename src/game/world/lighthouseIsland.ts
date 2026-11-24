@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { KEEPER_LOOK, KEEPER_NPC } from "../../content/keeper";
+import { KEEPER_NPC, NPCS } from "../../content/npcs";
 import type { TalkActor } from "../Game";
 import type { OcclusionField } from "../occlusion";
 import { createCharacter } from "../characters";
@@ -247,7 +247,7 @@ export function buildLighthouseIsland(island: IslandPlan) {
   const gull = new THREE.Mesh(colourMerge(bird), material);
   gull.name = "lighthouse-island-gull";
 
-  const ch = createCharacter({ female: false, ...KEEPER_LOOK });
+  const ch = createCharacter({ female: false, ...NPCS[KEEPER_NPC].look });
   ch.root.name = "lighthouse-keeper";
   ch.root.position.set(keeper.x, y, keeper.z);
   const { x, z } = keeper.approach;

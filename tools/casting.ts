@@ -7,8 +7,7 @@
 // The table: npx tsx tools/voice-casting.ts
 import { ASK_WAY_NPC } from "../src/content/ask-way-lines";
 import { PHOTO_WALK_NPC } from "../src/content/photo-walk-lines";
-import { KEEPER_NPC } from "../src/content/keeper";
-import { NPCS } from "../src/content/npcs";
+import { KEEPER_NPC, NPCS } from "../src/content/npcs";
 import { SITUATIONS } from "../src/content/situations";
 
 export interface Role { voice: string; style: string; note: string }
