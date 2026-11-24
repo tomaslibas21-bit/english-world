@@ -181,6 +181,7 @@ try {
       await wait(() => card.locator(".street-scene").isVisible(), "the street scene is shown");
       await shot("scene");
       await turn();
+      assert(await card.locator(".street-scene").isVisible(), "the dropped-item scene remains visible through the first choice");
       assert.equal(await card.getAttribute("data-cast"), "a");
       assert.equal(await card.getAttribute("data-script"), "first");
       assert.equal(await card.locator(".street-picture").count(), 0);
@@ -194,7 +195,7 @@ try {
               a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
           });
           // Playwright considers text visible even when the card's scrollport clips its last line.
-          const clipped = [...element.querySelectorAll(".street-tr, .street-choice small")].filter((line) => {
+          const clipped = [...element.querySelectorAll(".street-scene, .street-tr, .street-choice .kit-gloss-compact > *")].filter((line) => {
             const box = line.getBoundingClientRect();
             return box.width > 0 && box.height > 0 && (box.top < a.top - 1 || box.bottom > a.bottom + 1 || box.left < a.left - 1 || box.right > a.right + 1);
           }).map((line) => line.textContent);
@@ -257,6 +258,10 @@ try {
       assert(await force("r_musician"));
       await turn();
       assert.equal(await card.getAttribute("data-script"), "first");
+      if (storage === "english-world" && viewport[0] === 844 && viewport[1] === 390) {
+        assert.equal(await card.locator('.street-choice[data-translated="true"] small').count(), 3);
+        await assertCardFits();
+      }
       await shot("musician");
       await page.evaluate(() => {
         const { game } = window.__ew;

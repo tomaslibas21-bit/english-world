@@ -13,7 +13,7 @@ import "./street.css";
 
 const propIcons: Partial<Record<StreetProp, IconName>> = {
   coffee_cup: "coffee", postcard: "card", pie: "restaurant", bracelet: "ring", fruit_cup: "restaurant",
-  wallet: "card", keys: "key", glove: "bag", sunglasses: "sunset", map: "map", phone: "smartphone",
+  wallet: "wallet", keys: "key", glove: "glove", sunglasses: "sunglasses", map: "map", phone: "smartphone",
   guidebook: "bookOpen", camera: "clapper", tablet: "laptop", guitar: "radio", small_guitar: "radio",
   easel: "frame", kite: "arrowUp", clipboard: "clipboard", microphone: "mic",
   water_bottle: "bottle", water_jug: "bottle", mailbag: "bag", market_bags: "bag",
