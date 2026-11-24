@@ -1,4 +1,4 @@
-import type { Group } from "three";
+import { Vector3, type Group } from "three";
 import type { Ambient } from "../ambient";
 import { BAY, floorY, POOLS, poolAt, sandY, SEA_LEVEL, SHORE, waterY } from "../water";
 import { TRAFFIC_LANES } from "../world/layout";
@@ -263,7 +263,7 @@ const NO_BOXES: readonly WalkerBox[] = [];
 export class CarWaterRecovery {
   readonly ground;
   readonly probe = createCarWaterProbe();
-  private readonly samples = [this.probe.centre, this.probe.frontLeft, this.probe.frontRight, this.probe.rearLeft, this.probe.rearRight];
+  private readonly contact = new Vector3();
   private readonly history: Trail[] = Array.from({ length: 32 }, () => ({ ...emptyPose(), pair: emptyPair() }));
   private readonly route = Array.from({ length: 33 }, emptyPose);
   private readonly lengths = new Float64Array(this.route.length);
@@ -850,40 +850,60 @@ export class CarWaterRecovery {
     if (transfer || !this.host.driver(r)) this.car = null;
   }
 
+  private supportedHeight(r: Ride, time: number, y: number, grounding: number, limitImmersion: boolean) {
+    const { m, mesh } = r, { half, wide } = m.spec;
+    const tireSide = CAR_WATER.tireSide * wide / CAR_WATER.referenceWide;
+    const tireAlong = CAR_WATER.tireAlong * half / CAR_WATER.referenceHalf;
+    const { floor, liveSurface } = this.probe.centre;
+    let bed = floor, waterline = limitImmersion && liveSurface !== null ? liveSurface - CAR_WATER.maxImmersion : -Infinity;
+    // The tires and chassis footprint are measured at the mesh's local ground plane.
+    for (let tire = 0; tire < 2; tire++) {
+      const across = tire ? tireSide : wide, along = tire ? tireAlong : half;
+      for (let end = -1; end <= 1; end += 2) for (let side = -1; side <= 1; side += 2) {
+        const p = this.contact.set(side * across, 0, end * along).applyQuaternion(mesh.quaternion);
+        const x = m.x + p.x, z = m.z + p.z;
+        bed = Math.max(bed, floorY(x, z) - p.y);
+        const surface = limitImmersion ? waterY(x, z, time) : null;
+        if (surface !== null) waterline = Math.max(waterline, surface - CAR_WATER.maxImmersion - p.y);
+      }
+    }
+    return Math.max(bed, waterline, y + (bed - y) * grounding);
+  }
+
   /** Chassis height and pitch are used by the whole mesh, including its damage pieces and driver anchor. */
   pose(r: Ride, time: number, y: number, pitch: number, roll: number, roadGrade: boolean) {
     const m = r.m, mesh = r.mesh;
-    if (this.returning && this.landedAt === Infinity) probeCarWater(m, time, this.probe.band, this.probe);
-    const live = this.probe.centre.liveSurface;
+    const p = this.probe, afloat = this.landedAt === Infinity;
+    let grounding = 0;
     if (this.returning) {
-      const blend = clamp(this.age / FLOAT, 0, 1), dry = this.landedAt < Infinity;
-      pitch = dry ? drainPitch(this.age - this.landedAt)
-        : this.startPitch * (1 - blend) - 0.09 * blend;
-      const floating = (live ?? this.probe.centre.floor) - 0.28 + 0.07 * Math.sin(this.age * 2 * Math.PI / 0.70);
-      const front = (this.probe.frontLeft.floor + this.probe.frontRight.floor) * 0.5;
-      const rear = (this.probe.rearLeft.floor + this.probe.rearRight.floor) * 0.5;
-      const onSlope = live === null || this.probe.centre.floor > live;
-      y = dry ? floorY(m.x, m.z) : onSlope ? Math.max(this.probe.centre.floor, (front + rear) * 0.5) : this.startY + (floating - this.startY) * blend;
+      if (afloat) {
+        probeCarWater(m, time, p.band, p);
+        const blend = clamp(this.age / FLOAT, 0, 1);
+        const front = (p.frontLeft.depth + p.frontRight.depth) * 0.5;
+        const rear = (p.rearLeft.depth + p.rearRight.depth) * 0.5;
+        // The shallower axle starts taking weight first. Still depth keeps the grade steady through each swell.
+        const u = clamp((0.38 - Math.min(front, rear)) / 0.34, 0, 1);
+        grounding = blend * u * u * (3 - 2 * u);
+        pitch = this.startPitch * (1 - blend) - 0.09 * blend + (Math.max(-0.09, p.pitch) + 0.09) * grounding;
+        const floating = (p.centre.liveSurface ?? p.centre.floor) - 0.28 + 0.07 * Math.sin(this.age * 2 * Math.PI / 0.70);
+        y = this.startY + (floating - this.startY) * blend;
+      } else {
+        pitch = drainPitch(this.age - this.landedAt);
+        y = floorY(m.x, m.z);
+      }
       roll = 0;
     } else if (!roadGrade) {
-      y += this.probe.centre.floor;
-      pitch += this.probe.pitch;
-      if (this.probe.band === "body-deep") pitch += this.miss && this.loaded ? 0.018 : 0;
+      y += p.centre.floor;
+      pitch += p.pitch;
+      if (p.band === "body-deep") pitch += this.miss && this.loaded ? 0.018 : 0;
     }
-    if (this.wet || this.returning || this.probe.pitch !== 0) pitch = clamp(pitch, -CAR_WATER.maxPitch, CAR_WATER.maxPitch);
-    if ((this.wet || this.returning) && this.landedAt === Infinity) {
-      // Bound the lowest chassis corner under the highest live surface crossing its footprint.
-      const half = m.spec.half, wide = m.spec.wide;
-      const dip = Math.abs(Math.sin(pitch)) * half + Math.abs(Math.sin(roll)) * wide;
-      for (const p of this.samples) if (p.liveSurface !== null && p.liveDepth > 0) y = Math.max(y, p.liveSurface - CAR_WATER.maxImmersion + dip);
-      const s = Math.sin(m.heading), c = Math.cos(m.heading);
-      for (let i = -1; i <= 1; i += 2) for (let j = -1; j <= 1; j += 2) {
-        const surface = waterY(m.x + s * i * half + c * j * wide, m.z + c * i * half - s * j * wide, time);
-        if (surface !== null) y = Math.max(y, surface - CAR_WATER.maxImmersion + dip);
-      }
+    const wet = this.wet || this.returning;
+    if (wet || p.pitch !== 0) pitch = clamp(pitch, -CAR_WATER.maxPitch, CAR_WATER.maxPitch);
+    mesh.rotation.set(pitch, m.heading, roll);
+    if (wet || !roadGrade && (p.pitch !== 0 || p.centre.floor !== 0 || p.centre.liveSurface !== null)) {
+      y = this.supportedHeight(r, time, y, grounding, wet && afloat);
     }
     mesh.position.set(m.x, y, m.z);
-    mesh.rotation.set(pitch, m.heading, roll);
   }
 
   cameraFloor(p: { x: number; y: number; z: number }, time: number) {

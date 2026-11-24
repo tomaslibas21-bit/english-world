@@ -179,10 +179,11 @@ class CarWaterFoam {
     const dx = fz * span, dz = -fx * span;
     const endX = x - fx * 0.85, endZ = z - fz * 0.85;
     const ox = -fx * 0.09, oz = -fz * 0.09;
+    const armX = -fx * 0.12, armZ = -fz * 0.12;
     const alpha = 0.86 * this.bowStrength, crest = 0.035 + 0.065 * this.bowStrength;
-    if (this.row(0, endX - dx, endZ - dz, ox, oz, crest, alpha * 0.58)
+    if (this.row(0, endX - dx, endZ - dz, armX, armZ, crest, alpha * 0.80)
       && this.row(3, x, z, ox, oz, crest, alpha)
-      && this.row(6, endX + dx, endZ + dz, ox, oz, crest, alpha * 0.58)
+      && this.row(6, endX + dx, endZ + dz, armX, armZ, crest, alpha * 0.80)
       && this.wetSpan(0, 3) && this.wetSpan(3, 6)) this.bowVertices = BOW_VERTICES;
   }
 

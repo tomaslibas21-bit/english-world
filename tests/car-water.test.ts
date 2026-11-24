@@ -466,12 +466,13 @@ it("clears Maple Harbor's real geometry on the shore approach and at all three p
 });
 
 function recoveryFixture(town = buildTestTown(), occupied: { x: number; z: number; radius: number }[] = [],
-  effects: Pick<CarWaterHost, "drops" | "effectRoot" | "splash" | "wash"> = {}) {
+  { carId = RIDES.cars[0].id, startTime = 0, ...effects }: Pick<CarWaterHost, "drops" | "effectRoot" | "splash" | "wash">
+    & { carId?: string; startTime?: number } = {}) {
   const makeRide = (id: string, x: number, z: number, rot: number, spec = CAR, kind: Ride["kind"] = "car"): Ride => {
     const m = new Motion(spec, kind), mesh = new Group();
     m.set(x, z, rot);
     mesh.position.set(x, floorY(x, z), z);
-    mesh.rotation.order = "YXZ";
+    mesh.rotation.set(0, rot, 0, "YXZ");
     return { id, kind, m, mesh, home: { x, z, rot }, owners: [], chat: null, awayT: 0, thanked: false, phase: 0, tint: "",
       sus: { y: 0, vy: 0, p: 0, vp: 0, road: [], side: [] } };
   };
@@ -485,10 +486,10 @@ function recoveryFixture(town = buildTestTown(), occupied: { x: number; z: numbe
     const b = o.userData.rideBoat;
     if (b) rides.push(makeRide(b.id, o.position.x, o.position.z, o.rotation.y, { ...CAR, half: b.half, wide: b.wide }, "boat"));
   }
-  const car = rides[0], player = new Group();
+  const car = [...rides, ...parked].find((r) => r.id === carId)!, player = new Group();
   const damage = new WeakMap([[car, { side: "front", depth: 0.32 }]]);
   const originalDamage = damage.get(car);
-  let clock = 1000, time = 0, riding: Ride | null = car, eligible = true, detaches = 0, handbacks = 0, covered = false;
+  let clock = 1000, time = startTime, riding: Ride | null = car, eligible = true, detaches = 0, handbacks = 0, covered = false;
   let leases: Parameters<CarWaterHost["reserve"]>[0] = [];
   const clearance = new CarWaterClearance({
     dry: townGround(), colliders: town.colliders, parked, rides, fixedHulls: [],
@@ -496,6 +497,10 @@ function recoveryFixture(town = buildTestTown(), occupied: { x: number; z: numbe
     peopleClear: (clear) => occupied.every(({ x, z, radius }) => clear(x, z, radius)),
   });
   const foot: CarWaterHost["foot"] = (p) => { player.position.set(p.x, p.y, p.z); player.rotation.y = p.rot; };
+  const present = (r: Ride, pitch = 0, roll = 0, lift = 0) => {
+    water.pose(r, time, lift, pitch, roll, false);
+    if (riding === r) player.position.set(0.43, 0.22, -0.34).applyEuler(r.mesh.rotation).add(r.mesh.position);
+  };
   const water: CarWaterRecovery = new CarWaterRecovery(RIDES.carWater, {
     ...effects,
     eligible: (r) => eligible && r === car,
@@ -504,8 +509,7 @@ function recoveryFixture(town = buildTestTown(), occupied: { x: number; z: numbe
     clearance,
     arrest: ({ m }) => m.set(m.x, m.z, m.heading),
     place: (r, handback) => {
-      water.pose(r, time, 0, 0, 0, false);
-      if (riding === r) player.position.set(0.43, 0.22, -0.34).applyEuler(r.mesh.rotation).add(r.mesh.position);
+      present(r);
       if (handback) handbacks++;
     },
     detach: (r, p) => { if (riding === r) { riding = null; detaches++; foot(p, false); } },
@@ -518,6 +522,7 @@ function recoveryFixture(town = buildTestTown(), occupied: { x: number; z: numbe
     get handbacks() { return handbacks; }, get covered() { return covered; },
     get leases() { return leases; }, get now() { return clock; }, get time() { return time; },
     begin: () => water.begin(car),
+    present: (pitch = 0, roll = 0, lift = 0) => present(car, pitch, roll, lift),
     loseDriver: () => { riding = null; },
     handoff: () => { eligible = false; water.transfer(); },
     step(ms = 1000 / 60) {
@@ -527,7 +532,7 @@ function recoveryFixture(town = buildTestTown(), occupied: { x: number; z: numbe
     },
     at(x: number, z: number, heading = Math.PI) {
       car.m.set(x, z, heading);
-      water.accepted(car, time);
+      if (!water.accepted(car, time)) present(car);
     },
     approach(z: number) {
       for (let at = -64; at > z && !water.returning; at -= 0.2) { f.step(); f.at(shore.x, at); }
@@ -554,7 +559,186 @@ function recoveryFixture(town = buildTestTown(), occupied: { x: number; z: numbe
   return f;
 }
 
+function expectSupported({ car: { mesh, m }, time }: ReturnType<typeof recoveryFixture>) {
+  const { wide, half } = m.spec;
+  const tireSide = 0.88 * wide / 0.95, tireAlong = 1.36 * half / 2.15;
+  const samples = [[0, 0]];
+  for (const s of [-1, 1]) for (const e of [-1, 1]) {
+    samples.push([s * wide, e * half], [s * tireSide, e * tireAlong]);
+  }
+  for (const [side, along] of samples) {
+    const { x, y, z } = mesh.localToWorld(new Vector3(side, 0, along));
+    expect(y, `floor clearance at (${x}, ${z}), t=${time}, contact (${side}, ${along})`).toBeGreaterThanOrEqual(floorY(x, z) - 1e-8);
+    const live = waterY(x, z, time);
+    if (live !== null) expect(live - y).toBeLessThanOrEqual(0.42 + 1e-8);
+  }
+  expect(Math.abs(mesh.rotation.x)).toBeLessThanOrEqual(0.14 + 1e-8);
+}
+
+describe.each([60, 20])("beach support at %i Hz", (hz) => {
+  const step = 1 / hz, ms = 1000 / hz;
+
+  it.each([
+    { x: 24, carId: RIDES.cars[0].id, assisted: false },
+    { x: 76, carId: "parked-0", assisted: false },
+    { x: -96, carId: RIDES.cars[0].id, assisted: false },
+    { x: 24, carId: RIDES.cars[0].id, assisted: true },
+  ])("supports the unblocked trip at x=$x through trail handback (assisted=$assisted)", ({ x, carId, assisted }) => {
+    const root = new Group(), drops = new Splashes(), drop = vi.spyOn(drops, "carDrop");
+    const f = recoveryFixture(undefined, [], { effectRoot: root, drops, carId });
+    const { m, mesh } = f.car, asphalt = townAsphalt(RIDES.lots), ground = wetGround();
+    const prev = new Vector3(), collision = new Vector3();
+    const settle = (p: { x: number; z: number }, rad: number) => {
+      settleRoadExit(ground, p, rad, false);
+      f.town.colliders.resolve(collision.set(p.x, 0, p.z), rad, false, false, true);
+      p.x = collision.x; p.z = collision.z;
+    };
+    f.begin(); f.at(x, -55);
+    const frame = () => {
+      f.step(ms);
+      drops.update(step, f.time, null, 0);
+    };
+    for (let i = 0; i < hz * 7 && !f.water.returning; i++) {
+      frame();
+      m.step(step, go, Infinity, asphalt.has(m.x, m.z), Infinity, f.water.settings(go));
+      expect(m.settle(settle)).toBe(0);
+      if (!f.water.accepted(f.car, f.time, 1)) f.present();
+      expectSupported(f);
+    }
+    expect(f.water.inspect()).toMatchObject({ reason: "depth", phase: "float" });
+    const startZ = m.z, startTime = f.time, bob: number[] = [], coughs = new Set<number>();
+    let noseLift = 0, towAge = 0, settleAge = 0, pitch = mesh.rotation.x;
+    prev.copy(mesh.position);
+    for (let i = 0; i < hz * 3.5 && f.water.returning; i++) {
+      frame();
+      const state = f.water.inspect();
+      if (assisted && state.age >= 0.12 && f.riding) expect(f.exit()).toBe(true);
+      expectSupported(f);
+      const { x, y, z } = mesh.position;
+      expect(Math.hypot(x - prev.x, z - prev.z), `${state.phase} at ${state.age}s (${state.fallbackReason})`).toBeLessThanOrEqual(8 * step + 0.001);
+      expect(Math.abs(y - prev.y)).toBeLessThan(3.1 * step + 0.007);
+      expect(Math.abs(mesh.rotation.x - pitch)).toBeLessThan(1.4 * step + 0.007);
+      expect(mesh.rotation.x).toBeGreaterThanOrEqual(-0.09 - 1e-8);
+      prev.copy(mesh.position);
+      pitch = mesh.rotation.x;
+      if (state.phase === "float" && state.age < 0.50) {
+        expect(z).toBeCloseTo(startZ, 8);
+        bob.push(y - waterY(x, z, f.time)!);
+        noseLift = Math.max(noseLift, -pitch);
+      }
+      if (state.phase === "tow") towAge ||= state.age;
+      if (state.phase === "settle" && !settleAge) {
+        settleAge = state.age;
+        expect(z - startZ).toBeGreaterThan(4);
+        expect(waterY(x, z, f.time)).toBeNull();
+        expect(state.drainLive).toBeGreaterThanOrEqual(4);
+        expect(drop.mock.calls).toHaveLength(4);
+        for (const side of [-1, 1]) {
+          const stream = drop.mock.calls.filter(([px]) => Math.sign(px - x) === side);
+          expect(stream).toHaveLength(2);
+          for (const [px, py, , vx] of stream) {
+            expect(Math.abs(px - x)).toBeCloseTo(m.spec.wide + 0.03, 6);
+            expect(py).toBeCloseTo(y + 0.44, 6);
+            expect(vx * side).toBeCloseTo(0.2, 6);
+          }
+        }
+        const points = drops.group.getObjectByName("water-drops") as Points;
+        const { start } = points.geometry.drawRange;
+        const drawn = points.geometry.attributes.position;
+        for (let i = 0; i < 4; i++) expect(drawn.getY(start + i)).toBeLessThan(y + 0.44);
+      }
+      if (state.coughBeat) coughs.add(state.motorSignalRevs);
+    }
+    expect(towAge).toBeGreaterThanOrEqual(0.50);
+    expect(towAge).toBeLessThanOrEqual(0.50 + step + 1e-8);
+    expect(settleAge).toBeGreaterThanOrEqual(2.35);
+    expect(settleAge).toBeLessThanOrEqual(2.35 + step + 1e-8);
+    expect(f.time - startTime - settleAge).toBeGreaterThanOrEqual(0.65 - 1e-8);
+    expect(f.time - startTime - settleAge).toBeLessThanOrEqual(0.65 + step + 1e-8);
+    expect(noseLift).toBeGreaterThan(0.055);
+    expect(Math.max(...bob) - Math.min(...bob)).toBeGreaterThan(0.035);
+    f.dry();
+    expect(f.riding).toBe(assisted ? null : f.car);
+    expect(f.handbacks).toBe(1);
+    expect([...coughs]).toEqual([0.28, 0.16]);
+    expect(f.water.inspect()).toMatchObject({ landing: "trail", fallback: false, drainEmissions: 36, coughEvents: 2 });
+    for (let i = 0; i < hz; i++) frame();
+    expect(f.water.inspect()).toMatchObject({ carDrops: 0, foamDrawCount: 0, pointDrawCount: 0 });
+  });
+
+  it.each([
+    { x: 24, z: -72.20350423824208, startTime: 17.062, heading: Math.PI, assisted: false },
+    { x: 76, z: -71.87360285757198, startTime: 4.55, heading: Math.PI, assisted: false, carId: "parked-0" },
+    { x: 76, z: -72.19208411989892, startTime: 5.025, heading: Math.PI, assisted: true },
+    { x: -96, z: -73.23729796422296, startTime: 33.98, heading: 0.42, assisted: false },
+  ])("supports stopped shallows at ($x, $z) on both sides of the live waterline", ({ x, z, startTime, heading, assisted, carId }) => {
+    const f = recoveryFixture(undefined, [], { startTime, carId });
+    const clearance = () => waterY(x, z, f.time)! - floorY(x, z);
+    expect(clearance()).toBeGreaterThan(0);
+    expect(clearance()).toBeLessThan(0.002);
+    f.begin(); f.at(x, z, heading);
+    expect(f.water.inspect().active).toBe(true);
+    f.present(0, 0.11, -0.04);
+    expectSupported(f);
+    if (assisted) expect(f.exit()).toBe(true);
+    let exposed = false;
+    for (let i = 0; i < hz * 4 && !f.handbacks; i++) {
+      f.step(ms);
+      if (!f.water.returning && !f.handbacks) f.at(x, z, heading);
+      expectSupported(f);
+      exposed ||= clearance() < 0;
+    }
+    expect(exposed).toBe(true);
+    expect(f.water.inspect().reason).toBe(assisted ? "exit" : "wet-limit");
+    if (assisted) f.dry();
+    else expect(f.water.returning).toBe(true);
+    expectSupported(f);
+  });
+
+  it("supports the west beach tow after a deep assisted exit", () => {
+    const f = recoveryFixture(undefined, [], { startTime: 4.9 });
+    f.begin();
+    for (let z = -64; z > -82 && !f.water.returning; z -= 0.2) {
+      f.step(ms); f.at(-96, z);
+      expectSupported(f);
+    }
+    expect(f.water.inspect()).toMatchObject({ phase: "float", reason: "depth" });
+    while (f.water.inspect().age < 0.12) { f.step(ms); expectSupported(f); }
+    expect(f.exit()).toBe(true);
+    expect(f.riding).toBeNull();
+    let crossedShallows = false;
+    for (let i = 0; i < hz * 3.5 && f.water.returning; i++) {
+      f.step(ms);
+      expectSupported(f);
+      crossedShallows ||= f.car.m.x === -96 && f.car.m.z >= -74.79766597394219 && f.water.inspect().phase === "tow";
+    }
+    expect(crossedShallows).toBe(true);
+    f.dry();
+    expect(f.handbacks).toBe(1);
+  });
+});
+
 describe("occupied town car rescue", () => {
+  it("supports the rolled footprint on the town pier and an oblique reverse frame in the wash", () => {
+    const f = recoveryFixture(), { m, mesh } = f.car;
+    f.begin(); f.at(-30, -70, 0.42);
+    expect(floorY(m.x, m.z)).toBe(0.30);
+    expect(f.water.inspect()).toMatchObject({ band: "dry", active: false });
+    f.present(0, -0.11, -0.04);
+    expectSupported(f);
+    expect(mesh.position.y).toBeCloseTo(0.30 + m.spec.wide * Math.sin(0.11), 8);
+
+    f.at(-96, -73.23729796422296, 0.42);
+    m.speed = -1.4;
+    f.step();
+    const reverse = { throttle: -1, steer: 0, brake: false };
+    m.step(dt, reverse, Infinity, false, Infinity, f.water.settings(reverse));
+    expect(m.speed).toBeLessThan(0);
+    expect(f.water.accepted(f.car, f.time, -1)).toBe(false);
+    f.present(0, 0.11, -0.04);
+    expectSupported(f);
+  });
+
   it("has a checked restart step beside each stock Maple Harbor car", () => {
     const f = recoveryFixture();
     for (const r of [...f.parked, ...f.rides.filter((q) => q.kind === "car")]) {
@@ -907,6 +1091,10 @@ describe.each([60, 20])("town car effects at %i Hz", (hz) => {
     expect(position.getX(1)).toBeCloseTo(f.m.x - CAR.wide - 0.45, 4);
     expect(position.getX(7)).toBeCloseTo(f.m.x + CAR.wide + 0.45, 4);
     expect(position.getZ(3) - position.getZ(5)).toBeCloseTo(0.18, 4);
+    for (const arm of [1, 7]) {
+      expect(position.getZ(arm - 1) - position.getZ(arm + 1)).toBeCloseTo(0.24, 4);
+      expect(color.getW(arm)).toBeCloseTo(color.getW(4) * 0.80, 6);
+    }
 
     // Compare the drawable objects at one fixed pose and camera. Raycasting from above checks the bow winding.
     const camera = new PerspectiveCamera(45, 390 / 844, 0.1, 60), nose = new Vector3().fromBufferAttribute(position, 4);
@@ -950,6 +1138,9 @@ describe.each([60, 20])("town car effects at %i Hz", (hz) => {
     expect(f.effects.inspect()).toMatchObject({ wakeSegments: 0, bowVertices: 9 });
     const position = f.foam.geometry.attributes.position;
     expect(position.getZ(4)).toBeCloseTo(f.m.z - CAR.half - 0.12, 4);
+    const nose = new Vector3().fromBufferAttribute(position, 4);
+    const above = new Raycaster(nose.clone().add(new Vector3(0, 2, 0)), new Vector3(0, -1, 0));
+    expect(above.intersectObject(f.foam)[0]?.point.distanceTo(nose)).toBeLessThan(0.002);
     let sprays = 0;
     for (let i = 0; i < Math.round(hz * 0.35); i++) {
       const before = f.fan.mock.calls.length;
