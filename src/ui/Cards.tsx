@@ -142,7 +142,7 @@ export function WordPopover({ s, index, anchor, onClose, source, portalHost }: {
       style={(spot ? { left: spot.left, top: spot.top, "--arrow": spot.arrow + "px" } : { left: 0, top: 0, visibility: "hidden" }) as CSSProperties}>
       <div className="wpop-en" lang="en">{shown}</div>
       {!dash && word.ipa && <div className="wpop-ipa">{word.ipa}</div>}
-      {dash ? <div className="wpop-none">Atskirai neverčiama – išsaugok visą sakinį.</div> : <div className="wpop-lt" lang="lt">{word.lt}</div>}
+      {dash ? <div className="wpop-none">Atskirai neverčiama – išsaugokite visą sakinį.</div> : <div className="wpop-lt" lang="lt">{word.lt}</div>}
       <div className="wpop-acts">
         {!dash && (wordIn
           ? <span className="wpop-in"><Icon name="check" size={16} strokeWidth={2.25} />{" " + PHRASE_CARD_UI.inCards}</span>
@@ -152,7 +152,7 @@ export function WordPopover({ s, index, anchor, onClose, source, portalHost }: {
         <PhraseSave sentence={s} situationId={sitId} sourceLabel={source?.sourceLabel}
           popover={dash ? "primary" : "soft"} onSaved={() => setSaved(true)} />
       </div>
-      {saved && <div className="wpop-hint">Kortelę rasi „Frazių knygelėje“.</div>}
+      {saved && <div className="wpop-hint">Kortelę rasite „Frazių knygelėje“.</div>}
     </div>,
     portalHost ?? document.body,
   );
