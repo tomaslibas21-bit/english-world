@@ -601,14 +601,6 @@ export class Game implements GameApi {
       place: (x, z, rot) => this.placeOnFoot(x, z, rot, true),
       savePlace: () => this.savePlace(),
     }));
-    this.modes.register(createGymMode(stageHost, {
-      room: () => this.zone.id === GYM_ENTRY.location ? this.zone.group : null,
-      trainer: () => this.npcs.find(isGymTrainer)?.ch,
-      heading: () => this.heading,
-      place: (x, z, rot) => this.placeOnFoot(x, z, rot, true),
-      savePlace: () => this.savePlace(),
-      viewport: () => ({ width: this.screenW, height: this.screenH }),
-    }));
     this.modes.register(this.billiards = new BilliardsMode(host, {
       table: () => this.zone.id === BILLIARDS_PLACE
         ? this.zone.group.getObjectByName(TABLE_NAME)?.userData.table as TableView ?? null : null,
@@ -655,6 +647,14 @@ export class Game implements GameApi {
       });
       this.modes.register(this.sea);
     }
+    this.modes.register(createGymMode(stageHost, {
+      room: () => this.zone.id === GYM_ENTRY.location ? this.zone.group : null,
+      trainer: () => this.npcs.find(isGymTrainer)?.ch,
+      heading: () => this.heading,
+      place: (x, z, rot) => this.placeOnFoot(x, z, rot, true),
+      savePlace: () => this.savePlace(),
+      viewport: () => ({ width: this.screenW, height: this.screenH }),
+    }));
     this.scene.add(this.npcLayer, this.guidance.group, this.ambient.group, this.rides.group, this.dust.group, this.splashes.group, this.undersea.group);
     this.rig.space = {
       free: (a, b) => (this.zone?.interior ? 1 : this.field.free(a, b)),

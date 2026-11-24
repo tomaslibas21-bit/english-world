@@ -230,10 +230,10 @@ function Scenarios({ close }: { close: () => void }) {
           {bonus.map((s) => <ScenarioCard key={s.id} s={s} close={close} />)}
         </div></div>}
         <div className="scn-foot" style={{ flexWrap: "wrap", gap: 8 }}>
+          <button className="btn ghost" onClick={close}><Icon name="walk" size={19} /> Vaikščioti po miestą</button>
           {!light && <button type="button" className="btn soft small" style={{ minHeight: 44 }} onClick={() => { close(); game?.guideToPlace?.(GYM_ENTRY.location); }}>
             <Icon name="walk" size={19} /> {GYM_ENTRY.listAction}
           </button>}
-          <button className="btn ghost" onClick={close}><Icon name="walk" size={19} /> Vaikščioti po miestą</button>
         </div>
       </div>
     </div>

@@ -545,7 +545,6 @@ export const gym: SituationDef = {
   },
 
   lines: {
-    ...GYM_LINES,
     // --- arriving --------------------------------------------------------------------------------
     greet_help: [
       t("Hi there! | Welcome | to | Harbor Fitness! | How | can | I | help | you?", "Labas! | {m:Sveikas atvykęs|f:Sveika atvykusi} | į | „Harbor Fitness“! | Kaip | galiu | aš | padėti | tau?",
@@ -898,6 +897,7 @@ export const gym: SituationDef = {
     // --- general ---------------------------------------------------------------------------------
     ack: [t("Okay!", "Gerai!", "Gerai!"), t("Got it.", "Supratau.", "Supratau."), t("Sounds | good.", "Skamba | gerai.", "Puiku.")],
     no_problem: [t("No | problem.", "Jokių | problemų.", "Jokių problemų.")],
+    ...GYM_LINES,
   },
 
   domains: {
