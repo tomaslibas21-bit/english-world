@@ -24,6 +24,8 @@ export const CAR_SIZE = { length: 4.34, width: 1.9, door: 0.9 };
 
 /** A convertible, the top folded down behind the back seat: a long hood, a raked windshield in a chrome frame, two
  *  seats in front and a bench behind, a wheel, whitewall tires. `paint` the body, `inside` the seats. */
+export const CONVERTIBLE_BUMPER = { width: 1.98, depth: 0.12, offset: 2.2 } as const;
+
 export function convertibleGeometry(paint: string, inside = "#f3e6cf") {
   const parts: Part[] = [];
   const add = (g: THREE.BufferGeometry, c: THREE.ColorRepresentation) => parts.push([g, c]);
@@ -62,7 +64,8 @@ export function convertibleGeometry(paint: string, inside = "#f3e6cf") {
   add(box(1.72, 0.16, 0.36, 0, 1.0, -1.38), "#33353a");
   add(box(1.76, 0.03, 0.4, 0, 1.09, -1.38), "#45484e");
   // chrome bumpers, the grille, round headlights, tail lights, a plate at each end
-  for (const z of [-2.2, 2.2]) add(box(1.98, 0.14, 0.12, 0, 0.4, z), chrome);
+  const { width, depth, offset } = CONVERTIBLE_BUMPER;
+  for (const z of [-offset, offset]) add(box(width, 0.14, depth, 0, 0.4, z), chrome);
   add(box(1.0, 0.18, 0.05, 0, 0.62, 2.16), "#8d949b");
   for (let i = 0; i < 5; i++) add(box(0.03, 0.18, 0.06, -0.4 + i * 0.2, 0.62, 2.165), chrome);
   for (const x of [-0.7, 0.7]) {

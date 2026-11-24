@@ -64,12 +64,15 @@ export class Dog {
 
   /** Follows its owner: `hand` is where the lead is held, `ox/oz` the owner's place and `oh` their heading,
    *  `moving` whether they walk. */
-  update(dt: number, hand: THREE.Vector3, ox: number, oz: number, oh: number, moving: boolean) {
+  update(dt: number, hand: THREE.Vector3, ox: number, oz: number, oh: number, moving: boolean, stepClear?: (x: number, z: number) => boolean) {
     // its place: half a metre out on the lead's side and a little ahead of the owner
     const tx = ox - Math.cos(oh) * 0.55 + Math.sin(oh) * 0.35, tz = oz + Math.sin(oh) * 0.55 + Math.cos(oh) * 0.35;
     const p = this.root.position, dx = tx - p.x, dz = tz - p.z, d = Math.hypot(dx, dz);
     const speed = Math.min(d * 4, 3.2);
-    if (d > 0.02) { p.x += (dx / d) * speed * dt; p.z += (dz / d) * speed * dt; }
+    if (d > 0.02) {
+      const x = p.x + (dx / d) * speed * dt, z = p.z + (dz / d) * speed * dt;
+      if (!stepClear || stepClear(x, z)) { p.x = x; p.z = z; }
+    }
     const trot = moving || d > 0.25;
     const want = trot && d > 0.05 ? Math.atan2(dx, dz) : oh;
     let dh = want - this.heading; dh = Math.atan2(Math.sin(dh), Math.cos(dh));

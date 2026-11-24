@@ -52,7 +52,7 @@ export function groundsWalk(col: Colliders, x: number, z: number, edge: number, 
   // the deck (as it was): up its three steps, along it, down its steps and on under the water
   const x3 = dx + 3.05, x2 = dx + 1.6, x1 = dx - 1.6, x0 = dx - 4.6;
   FLOORS.push({ x0, x1: x3, z0: z - 1.2, z1: z + 1.2, y: (px) => (px > x2 ? (top * (x3 - px)) / (x3 - x2) : px > x1 ? top : top - ((top + 0.75) * (x1 - px)) / (x1 - x0)) });
-  for (const s of [-1, 1]) col.addBox(dx, z + s * 1.32, 3.3, 0.2);
+  for (const s of [-1, 1]) col.addBox(dx, z + s * 1.32, 3.3, 0.2, undefined, "carRim");
   // the beach and the rock steps: the ground goes down to the water's bed between the rim's stones
   for (const g of GAPS) {
     const [mx, mz] = polar(x, z, g.a, 6.6);

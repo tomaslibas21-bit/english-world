@@ -28,6 +28,8 @@ export interface CarWaterPlan {
   /** Already inset, with enough overlap to keep the entrance continuous. */
   extraRects: readonly Rect[];
   areas: readonly CarWaterArea[];
+  cenote?: { x: number; z: number };
+  landingExclusions?: readonly { x: number; z: number; r: number }[];
 }
 
 export interface RidesPlan {

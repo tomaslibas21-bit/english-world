@@ -2707,11 +2707,13 @@ function addHarbor(M: Merger, col: Colliders, group: THREE.Group, r: () => numbe
   // (each on its rail, and a ledge for the player: the rail's height is read there, and a jump from the boards gets
   // onto it and down to the beach beside the pier; from the sand it is too high: ledges.ts)
   // (the last of each, by the restaurant's front and under its awning, stays the wall it was)
-  for (const rx of [-32.15, -27.85]) { col.addBox(rx, -67.5, 0.2, 11, "ledge"); col.addBox(rx, -74.5, 0.2, 3); }
+  for (const rx of [-32.15, -27.85]) { col.addBox(rx, -67.5, 0.2, 11, "ledge", "deckRail"); col.addBox(rx, -74.5, 0.2, 3, undefined, "deckRail"); }
   // (one walks on the boards, not on the sand sloping away under them: water.ts)
   DECKS.push({ x0: -32.3, x1: -27.7, z0: -76.1, z1: -62, y: 0.3 }, { x0: -41.3, x1: -18.7, z0: -88.4, z1: -72, y: 0.3 });
   // pier deck area is walkable: remove the sea collider there by leaving a gap (see buildTown); add deck edges
-  col.addBox(-41.2, -80, 0.3, 16); col.addBox(-18.8, -80, 0.3, 16); col.addBox(-30, -88.2, 22, 0.3);
+  col.addBox(-41.2, -80, 0.3, 16, undefined, "deckRail");
+  col.addBox(-18.8, -80, 0.3, 16, undefined, "deckRail");
+  col.addBox(-30, -88.2, 22, 0.3, undefined, "deckRail");
   // (the beach side's edge is a wall for the passers-by and the way-finding, a ledge with its posts for the player:
   // one jumps up onto the boards from the sand and hops along the posts, ledges.ts)
   col.addBox(-37.5, -72.2, 7.6, 0.3, "ledge"); col.addBox(-22.5, -72.2, 7.6, 0.3, "ledge");

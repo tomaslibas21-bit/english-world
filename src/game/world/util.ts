@@ -165,14 +165,16 @@ export function rand(seed: number) {
 }
 
 /** `split`: low enough to jump onto; for the player its pieces (ledges.ts) stand in for it. */
-export interface AABB { minX: number; minZ: number; maxX: number; maxZ: number; tag?: string; split?: boolean }
+export interface AABB { minX: number; minZ: number; maxX: number; maxZ: number; tag?: string; split?: boolean; deckRail?: boolean; carRim?: boolean }
 
 /** 2D (XZ) colliders: axis-aligned boxes and circles. */
 export class Colliders {
   boxes: AABB[] = [];
   circles: { x: number; z: number; r: number; split?: boolean }[] = [];
-  addBox(cx: number, cz: number, w: number, d: number, tag?: string) {
-    this.boxes.push({ minX: cx - w / 2, maxX: cx + w / 2, minZ: cz - d / 2, maxZ: cz + d / 2, tag });
+  addBox(cx: number, cz: number, w: number, d: number, tag?: string, sweep?: "deckRail" | "carRim") {
+    const box: AABB = { minX: cx - w / 2, maxX: cx + w / 2, minZ: cz - d / 2, maxZ: cz + d / 2, tag };
+    if (sweep) box[sweep] = true;
+    this.boxes.push(box);
   }
   addCircle(x: number, z: number, r: number) { this.circles.push({ x, z, r }); }
   /** Roofs low and solid enough to stand on (a bus shelter's, a market stall's), as the town lists them: where

@@ -195,7 +195,7 @@ export class Motion {
     if (water) this.steer = Math.max(-water.steerGain, Math.min(water.steerGain, this.steer));
     let v = this.speed, sl = this.slip;
     const was = v, pace0 = Math.hypot(v, sl);
-    this.drift = c.brake && v > 0 && pace0 > (this.drift ? D.from * 0.45 : D.from) && (this.drift || Math.abs(c.steer) > 0.25);
+    this.drift = !water && c.brake && v > 0 && pace0 > (this.drift ? D.from * 0.45 : D.from) && (this.drift || Math.abs(c.steer) > 0.25);
     const braking = c.brake && !this.drift;
     const t = braking ? 0 : c.throttle;
     // a car's top speed: its town pace; more once it has held a course on the asphalt for a moment (a sharp turn, the

@@ -1,4 +1,5 @@
-import { groundsBounds } from "@/game/cave/groundsPlan";
+import { caveWays, groundsBounds } from "@/game/cave/groundsPlan";
+import { POOL_CIRCLE, POOL_ENTRY, POOL_TALK } from "@/game/world/pool";
 import { WORLD } from "@/game/world/layout";
 import { THEME } from "@/game/world/theme";
 import { CAR } from "@/game/rides/drive";
@@ -11,6 +12,12 @@ const inset = CAR.wide + 0.4;
 export const CAR_WATER_PLAN: CarWaterPlan = {
   mainland: { x0: WORLD.minX, x1: WORLD.maxX, z1: WORLD.maxZ },
   extraRects: west ? [{ x0: west.minX + inset, x1: west.maxX + 3, z0: west.minZ + inset, z1: west.maxZ - inset }] : [],
+  cenote: cenote ?? undefined,
+  landingExclusions: [
+    ...caveWays().map(({ x, z, reach }) => ({ x, z, r: reach })),
+    { ...POOL_ENTRY, r: 0.7 }, { ...POOL_TALK, r: 1 },
+    ...Object.values(POOL_CIRCLE).map(p => ({ ...p, r: 0.7 })),
+  ],
   areas: [
     {
       id: "coast",

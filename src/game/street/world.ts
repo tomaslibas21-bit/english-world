@@ -59,6 +59,7 @@ interface Placement {
 
 export class TownStreet implements StreetWorld {
   private group = new THREE.Group();
+  private actors?: Set<TownActor>;
   private departures = new Map<TownActor, number>();
   private projected = new THREE.Vector3();
   private sample = new THREE.Vector3();
@@ -94,6 +95,7 @@ export class TownStreet implements StreetWorld {
     const { x, z } = p;
     return this.dry(p) && sidewalkDistance(x, z) > 0.45 && this.nav.free(this.nav.idx(x, z))
       && !this.colliders.blocked(x, z, clearance)
+      && !this.ambient.waterReserved(x, z, Math.max(clearance, 0.45))
       && !this.ambient.obstacles.some(([ox, oz]) => Math.hypot(x - ox, z - oz) < 1.1)
       && !this.ambient.rideBoxes.some((car) => Math.hypot(x - car.x, z - car.z) < Math.hypot(car.hl, car.hw) + clearance);
   }
@@ -228,7 +230,9 @@ export class TownStreet implements StreetWorld {
     const place = best.place;
     return () => {
       if (returning && this.departures.delete(returning)) returning.dispose();
-      return new TownActor(this, this.group, draw, place, player, look, identity);
+      const actor = new TownActor(this, this.group, draw, place, player, look, identity);
+      (this.actors ??= new Set()).add(actor);
+      return actor;
     };
   }
 
@@ -320,6 +324,16 @@ export class TownStreet implements StreetWorld {
   }
 
   departureFor(actor: TownActor) { this.departures.set(actor, 30); }
+
+  forget(actor: TownActor) { this.actors?.delete(actor); }
+
+  carWaterPeopleClear(clear: (x: number, z: number, radius: number) => boolean, reserve: boolean) {
+    if (this.actors) for (const actor of this.actors) if (!actor.carWaterClear(clear, reserve)) return false;
+    return true;
+  }
+
+  waterReserved(p: THREE.Vector3) { return this.ambient.waterReserved(p.x, p.z); }
+  get dogStepClear() { return this.ambient.carWaterDogStepClear; }
 
   walkable(p: THREE.Vector3) { return this.open(p, 0.32); }
 
@@ -462,9 +476,9 @@ class TownActor implements StreetActor {
         this.face(away, dt);
       }
     } else if (this.age < 1.85 && this.place.start !== this.place.stop && sinceAnswer < 0) {
-      p.lerpVectors(this.place.start, this.place.stop, Math.min(1, this.age / 1.85));
+      this.target.lerpVectors(this.place.start, this.place.stop, Math.min(1, this.age / 1.85));
+      if (!this.world.waterReserved(this.target)) { p.copy(this.target); moving = true; }
       this.face(bearing(this.place.start, this.place.stop), dt);
-      moving = true;
     } else if (this.drop && sinceAnswer < 0) {
       this.face(bearing(this.place.start, this.place.stop), dt);
     } else if (this.drop && sinceAnswer < 0.72 && this.place.object) {
@@ -519,7 +533,7 @@ class TownActor implements StreetActor {
     if (this.dog) {
       const seek = this.lostDog && sinceAnswer < 0 ? this.place.dog! : p;
       const heading = this.lostDog && sinceAnswer < 0 ? this.age * 0.7 : this.person.root.rotation.y;
-      this.dog.update(dt, hand, seek.x, seek.z, heading, this.gone);
+      this.dog.update(dt, hand, seek.x, seek.z, heading, this.gone, this.world.dogStepClear);
       const position = this.dog.root.position;
       position.y = floorY(position.x, position.z);
     }
@@ -535,6 +549,17 @@ class TownActor implements StreetActor {
   }
 
   answer(helped: boolean) { if (helped) this.answeredAt = this.age; }
+  carWaterClear(clear: (x: number, z: number, radius: number) => boolean, reserve: boolean) {
+    const p = this.person.root.position, dog = this.dog?.root.position;
+    if (!clear(p.x, p.z, dog && reserve ? 1.15 : 0.45) || dog && !clear(dog.x, dog.z, 0.4)) return false;
+    if (reserve && !this.gone) {
+      const { start, stop, object, dog } = this.place;
+      if (!clear(start.x, start.z, 0.55) || !clear(stop.x, stop.z, 0.55)
+        || object && !clear(object.x, object.z, 0.55) || dog && !clear(dog.x, dog.z, 0.6)) return false;
+    }
+    return true;
+  }
+
   tooFar() { return flatDistance(this.person.root.position, this.player.root.position) > 12; }
 
   projection() {
@@ -560,6 +585,7 @@ class TownActor implements StreetActor {
   }
 
   dispose() {
+    this.world.forget(this);
     if (this.prop) disposeStreetGeometry(this.prop);
     if (this.dog && !Array.isArray(this.dog.lead.material)) this.dog.lead.material.dispose();
     if (this.pigeons) {
