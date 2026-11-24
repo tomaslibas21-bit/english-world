@@ -113,6 +113,7 @@ const MEXICO: Record<string, string> = {
   st_polo: "es-419-tutor-5", st_rafa: "es-419-concierge-8",
   st_f_adult: "es-419-advisor-4", st_f_old: "es-419-tutor-3", st_f_young: "es-419-assistant-1", st_kid_f: "es-419-csagent-7",
   st_m_adult: "es-419-tutor-4", st_m_old: "es-419-concierge-2", st_m_young: "es-419-commercial-12", st_kid_m: "es-419-commercial-4",
+  ines: "es-419-assistant-2",
 };
 /** The catalog's Castilian voices (es-ES, `voices --lang=es-ES`, 12 Nov 2026). Spain's set (esp_) is voiced with these:
  *  the sample sp1 gave the Mexican casting's es-419 voices a Castilian direction, and Gemini 3.1 Pro heard 39 of 80
@@ -181,6 +182,7 @@ const SPAIN: Record<string, string> = {
   st_polo: "es-es-concierge-4", st_rafa: "es-es-training-3",
   st_f_adult: "es-es-tutor-12", st_f_old: "es-es-csagent-6", st_f_young: "es-es-techagent-5", st_kid_f: "es-es-concierge-3",
   st_m_adult: "es-es-advisor-2", st_m_old: "es-es-assistant-4", st_m_young: "es-es-training-11", st_kid_m: "es-es-training-9",
+  ines: "es-es-csagent-5",
 };
 /** Which casting: Gemini's 30 prebuilt voices ("prebuilt") or the catalog's Mexican voices ("mexico"). */
 export type Casting = "prebuilt" | "mexico";
@@ -315,6 +317,7 @@ export const CAST: Record<string, Role> = {
   rosario: { voice: "Vindemiatrix", age: "about 72", manner: "a grandmother weaving in the shade: gentle, amused and unhurried", pace: "slow" },
   // the gas station's store (x05-tienda): its cashier, about 23
   tienda: { voice: "Zubenelgenubi", age: "about 23", manner: "friendly and easygoing, a young cashier who chats with his customers", pace: "easy" },
+  ines: { voice: "Callirrhoe", age: "36", manner: "easy, medium-low coastal delivery, a small lift on invitations and a beat after Mire", pace: "unhurried" },
 };
 
 /** The convertibles' owners (es_ride_<id>: content/rides.ts RIDE_OWNERS) and the passers-by who call after a car that
@@ -401,12 +404,14 @@ export const SCENES: Record<string, Scene> = {
   "rides": { setting: "calling over from a convertible parked at the curb to someone borrowing the car, relaxed, in a holiday mood" },
   "rides:shout": { setting: "shouting after a car that has just passed far too close in the street: loud and sharp, a warning called out across the street" },
   "x01-surf:sg_": { setting: "calling out over the waves to a learner on a surfboard: energetic, clear and encouraging, every command short and easy to hear" },
+  "x14-cenote": { setting: "beside the cenote hut, offering a quiet snorkel outing to one visitor" },
+  "x14-cenote:ct_": { setting: "guiding one visitor from the cenote deck to the bay, quietly pointing out what is in view" },
 };
 
 /** Parts of a conversation with a setting of their own: a line whose id starts with one of these prefixes is listed
  *  (lines-es.ts) as said in "<conversation>:<prefix>" instead of the conversation, and takes that SCENES entry. A
  *  text said in both parts gets neither setting (styleFor: the settings must agree). */
-export const LINE_SCENES: Record<string, string[]> = { "x01-surf": ["sg_"] };
+export const LINE_SCENES: Record<string, string[]> = { "x01-surf": ["sg_"], "x14-cenote": ["ct_"] };
 export const sceneSit = (sit: string, lineId: string): string => {
   const p = LINE_SCENES[sit]?.find((x) => lineId.startsWith(x));
   return p ? `${sit}:${p}` : sit;

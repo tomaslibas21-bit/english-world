@@ -2169,7 +2169,7 @@ export class Game implements GameApi {
       this.player.setAnim("idle");
     }
     const session: Session = new Session(sit.id, {
-      recordedOnly: sit.id === POOL_SITUATION,
+      recordedOnly: sit.id === POOL_SITUATION || sit.id === "x14-cenote",
       autoClose: sit.id === POOL_SITUATION ? () => this.modes.hasQueued : undefined,
       npcTalk: (npcId, secs, text) => {
         const n = this.npcs.find((x) => x.id === npcId);

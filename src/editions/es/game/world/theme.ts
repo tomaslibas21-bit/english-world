@@ -141,7 +141,8 @@ export const THEME: TownTheme = {
     // at the west wall, the iguana's stone to her left
     { npc: "custodio", x: -116.8, z: -63.7, rot: Math.PI, ax: -116.8, az: -65.5 },
     { npc: "pintora", x: -129.9, z: -66.0, rot: Math.PI / 2, ax: -128.1, az: -66.0 },
-    { npc: "rosario", x: -135.7, z: -64.8, rot: Math.PI / 2, ax: -133.9, az: -64.8 }],
+    { npc: "rosario", x: -135.7, z: -64.8, rot: Math.PI / 2, ax: -133.9, az: -64.8 },
+    { npc: "ines", x: -122.4, z: -1.4, rot: Math.PI / 2, ax: -120.65, az: -1.4 }],
   // x05-tienda: the store's own cashier, Paco, behind its counter where Maple Harbor's Dot stands (she is outdoors here)
   roomNpcs: { "gas-station": [{ npc: "tienda", x: -3, z: -3.8, rot: 0, ax: -3, az: -1.7 }] },
   // s71b: the pump has no door to find it by, so Doña Chela's talk spot is marked all the time (the owner, 17 Nov 2026)

@@ -194,7 +194,7 @@ export class LightGame implements GameApi {
 
   private begin(sit: SituationDef) {
     const session: Session = new Session(sit.id, {
-      recordedOnly: sit.id === POOL_SITUATION,
+      recordedOnly: sit.id === POOL_SITUATION || sit.id === "x14-cenote",
       npcTalk: () => { /* no characters to animate */ },
       onEvent: (name, data) => { if (this.session === session) this.onSessionEvent(name, data); },
       onEnd: (s, completed) => {

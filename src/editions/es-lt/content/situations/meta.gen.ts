@@ -71,6 +71,7 @@ export const META: SituationMeta[] = [
   {"id":"x11-billar","song":"","songTitle":"","title":{"en":"Una partida de billar","lt":"Biliardo partija"},"topic":{"en":"En la cantina","lt":"Bare"},"chapter":9,"order":9,"location":"pool-hall","npc":"memo","mode":"talk","goal":"Pasišnekėk su Don Memu bare: pasakyk, ar žaidi biliardą, prisistatyk ir pasirink – vienspalviai ar dryžuoti. Tada sužaiskite partiją.","intro":"„La Buchaca“ – nedidelis baras calle Hidalgo ir calle Ceiba kampe, gale stovi biliardo stalas. Savininkas Don Memas kreiduoja lazdą ir pamoja tau prieiti.","bonus":true},
   {"id":"x12-album","song":"","songTitle":"","title":{"en":"Un álbum de fotos","lt":"Nuotraukų albumas"},"topic":{"en":"Con una turista","lt":"Su turiste"},"chapter":9,"order":10,"location":"visitor-center","npc":"renata","mode":"talk","goal":"Pasikalbėk su Renata ir padėk jai. Nufotografuok dvylika dalykų mieste ir pasakyk, kas yra kiekvienoje nuotraukoje.","intro":"Renata, turistė iš Meksiko miesto, stovi prie turizmo informacijos centro su dideliu fotoaparatu. Ji dairosi, lyg būtų ką pametusi.","bonus":true},
   {"id":"x13-por-donde","song":"","songTitle":"","title":{"en":"¿Por dónde?","lt":"Kur eiti?"},"topic":{"en":"En la calle","lt":"Gatvėje"},"chapter":9,"order":11,"location":"town-square","npc":"queta","mode":"talk","goal":"Paklausk Doña Quetos, kaip nueiti į kurią nors vietą mieste, ir eik pagal jos nurodymus.","intro":"Doña Queta visą gyvenimą gyvena Puerto Colibrí miestelyje. Ji stovi centrinės aikštės kampe ir mielai padeda tiems, kurie atrodo pasiklydę.","bonus":true},
+  {"id":"x14-cenote","song":"","songTitle":"","title":{"en":"Cenote Ka'an","lt":"Cenotė Ka'an"},"topic":{"en":"Snorkel en la bahía","lt":"Paviršinis nardymas įlankoje"},"chapter":9,"order":12,"location":"cenote-tour","npc":"ines","mode":"talk","goal":"Pasakyk Inés, ką norėtum pamatyti įlankoje, ir nuspręsk, ar nori keliauti.","intro":"Prie cenotės Ka'an trobelės sutinki Inés. Ji turi tau nardymo kaukę ir žino taką iki įlankos.","bonus":true},
 ];
 
 const TABLE: Record<string, () => Promise<{ default: unknown }>> = {
@@ -137,6 +138,7 @@ const TABLE: Record<string, () => Promise<{ default: unknown }>> = {
   "x11-billar": () => import("../../tables/x11-billar.json"),
   "x12-album": () => import("../../tables/x12-album.json"),
   "x13-por-donde": () => import("../../tables/x13-por-donde.json"),
+  "x14-cenote": () => import("../../tables/x14-cenote.json"),
 };
 
 export const LOAD: Record<string, () => Promise<SituationDef>> = Object.fromEntries(Object.entries(EDITION_LOAD).map(([id, load]) =>
