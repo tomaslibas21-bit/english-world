@@ -170,10 +170,21 @@ export class CenoteAnimals {
     for (let j = 0; j < count; j++) measure(limb, start + j);
     // Round outwards to retain a conservative envelope after Float32 instance transforms.
     const padding = 0.001;
+    radius += padding;
+    const surfaceY = waterY(x, z, time);
+    const bed = floorY(x, z);
+    let minSurfaceY = surfaceY, maxFloorY = bed;
+    for (let i = 0; i < 8; i++) {
+      const angle = i * Math.PI / 4;
+      const px = x + Math.cos(angle) * radius, pz = z + Math.sin(angle) * radius;
+      const surface = waterY(px, pz, time);
+      minSurfaceY = minSurfaceY === null || surface === null ? null : Math.min(minSurfaceY, surface);
+      maxFloorY = Math.max(maxFloorY, floorY(px, pz));
+    }
     return {
       id: species + "-" + (i + 1), species, x, y, z, visible: true,
-      top: bounds.max.y + padding, bottom: bounds.min.y - padding, radius: radius + padding,
-      surfaceY: waterY(x, z, time), floorY: floorY(x, z),
+      top: bounds.max.y + padding, bottom: bounds.min.y - padding, radius,
+      surfaceY, floorY: bed, minSurfaceY, maxFloorY,
       screen: { left: projected.min.x, right: projected.max.x, top: projected.min.y, bottom: projected.max.y, depth: projected.min.z },
     };
   }

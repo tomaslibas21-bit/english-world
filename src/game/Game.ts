@@ -750,6 +750,8 @@ export class Game implements GameApi {
       this.modes.register(tour);
       this.cenoteInspection = { snapshot: () => ({
         ...tour.snapshot(), drawCalls: this.renderer.info.render.calls, triangles: this.renderer.info.render.triangles,
+        floorY: floorY(this.player.root.position.x, this.player.root.position.z),
+        waterY: waterY(this.player.root.position.x, this.player.root.position.z, this.t),
       }) };
       Object.defineProperty(window, "__cenoteTour", { configurable: true, value: Object.freeze(this.cenoteInspection) });
     }
@@ -3854,7 +3856,8 @@ export class Game implements GameApi {
       return;
     }
     this.guidedWalk = null;
-    if (t.kind === "npc" && t.id) this.talkTo(t.id);
+    // The walk to Inés ends at her hut prompt so the learner opens the invitation.
+    if (t.kind === "npc" && t.id && t.id !== cenoteGuide?.npc) this.talkTo(t.id);
     else if (t.kind === "glyph" && t.id && this.cave?.near(this.player.root.position)?.id === t.id) this.cave.open(t.id);
     else if (t.kind === "tree") this.talkToTree();
   }
