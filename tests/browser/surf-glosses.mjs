@@ -84,7 +84,6 @@ try {
       assert(Date.now() - t0 < 180000, "the game did not start: " + st);
       await new Promise((r) => setTimeout(r, 300));
     }
-    const step = (n) => page.evaluate((k) => window.__step(k), n);
     const real = (ms) => new Promise((r) => setTimeout(r, ms));
     await page.evaluate(() => { window.__ew.coach?.finish?.(); window.__ew.store.getState().setHud({ panel: null }); });
     await page.evaluate(() => window.__ew.store.getState().setSettings({ lt: true }));
@@ -95,14 +94,42 @@ try {
       return surf && [surf.situation, surf.content.npc, surf.spot.start.x, surf.spot.start.z];
     });
     assert.deepEqual(school, ["x04-surf", "maren", -104.2, -69.9], `${label}: Harbor Surf fixtures`);
-    await page.evaluate(() => window.__ew.game.surfStart("beginner"));
-    for (let i = 0; i < 100 && !(await page.evaluate(() => window.__ew.surf.getState().active)); i++) { await step(6); await real(30); }
-    check(`${label}: Maren's beginner lesson is on at the dry start`, await page.evaluate(() => {
-      const { game, surf } = window.__ew;
-      return surf.getState().active && game.surf.logic?.level === "beginner"
-        && game.surf.logic?.phase === "intro" && game.surf.logic?.pose === "walk"
-        && game.player.root.position.y >= 0 && !game.swimming;
-    }));
+    const before = await page.evaluate(() => {
+      const { game } = window.__ew;
+      const town = { serial: game.renderer.info.render.frame, actor: game.player.root.uuid };
+      game.surfStart("beginner");
+      return town;
+    });
+    let intro;
+    for (let i = 0; i < 100; i++) {
+      intro = await page.evaluate((before) => {
+        const { game, surf, store } = window.__ew;
+        const previousFrame = game.renderer.info.render.frame;
+        window.__step(2);
+        const { player, rig, presentedWorld } = game;
+        const { logic, scene } = game.surf;
+        const render = game.renderer.info.render;
+        const serial = presentedWorld?.serial ?? render.frame;
+        const freshFrame = serial > Math.max(before.serial, previousFrame) && serial === render.frame
+          && render.calls > 0 && (!presentedWorld || presentedWorld.scene === "town");
+        const nearLane = ({ x, z }, meters) => Math.hypot(x + 94.5, z + 72.2) < meters;
+        const position = player.root.position, camera = rig.cam.position;
+        const dryIntro = surf.getState().active && logic?.level === "beginner"
+          && logic.phase === "intro" && logic.pose === "walk" && position.y >= 0 && !game.swimming;
+        const surfActor = player.root.uuid !== before.actor && player.root.visible && game.outfit === "surf"
+          && player.look.rash === true && player.backpackVisible === false && nearLane(position, 3);
+        const beachCamera = rig.mode === "stage" && !!rig.stage && rig.stage === scene?.cam
+          && nearLane(camera, 8) && camera.distanceTo(rig.stage.pos) < 0.5;
+        const fade = document.querySelector(".fade");
+        const fadeClear = store.getState().hud.fade === 0 && !!fade && Number(getComputedStyle(fade).opacity) === 0;
+        return { ready: dryIntro && surfActor && beachCamera && freshFrame && fadeClear,
+          dryIntro, surfActor, beachCamera, freshFrame, fadeClear, serial, previousFrame, position: position.toArray(), camera: camera.toArray() };
+      }, before);
+      if (intro.ready) break;
+      await real(30);
+    }
+    // With the dry intro presented and the fade clear, leave the game clock frozen for the overlay samples.
+    check(`${label}: Maren's beginner lesson is presented at the dry beach start`, intro?.ready, { before, ...intro });
 
     /** Put a line on the screen as hers (heard `n` times before: the support the game would give it), as the only
      *  answer, and as what the learner has just said; read what each shows. */
@@ -199,6 +226,11 @@ try {
     const wipeoutUnits = expectedUnits(WIPEOUT);
     check(`${label}: turning Lithuanian on restores both exact wipeout units and the natural line`,
       same(on.cue, wipeoutUnits) && same(on.answer, wipeoutUnits) && on.nat === WIPEOUT.nat && on.answerNat === WIPEOUT.nat, on);
+    await page.evaluate(() => window.__ew.surf.getState().set({ choice: null }));
+    await real(25);
+    const saidOn = await read();
+    check(`${label}: turning Lithuanian on restores the bilingual reply`,
+      saidOn.saidEn === "Big splash!" && saidOn.said === WIPEOUT.nat && saidOn.saidFits, saidOn);
     check(`${label}: no errors on the page`, errors.length === 0, errors.slice(0, 3));
     await ctx.close();
   }
