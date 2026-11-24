@@ -69,7 +69,10 @@ async function playFixture(context, ready, contents, radioName, mobile) {
   };
   await openRadio();
   const set = page.locator(".radio-set");
-  assert.equal(await set.locator(".rs-name").innerText(), radioName);
+  const name = set.locator(".rs-name");
+  assert.equal(await name.textContent(), radioName);
+  // The Puerto Colibrí skin displays its name in uppercase in both learner layers.
+  assert.equal(await name.innerText(), targetLang === "es" ? radioName.toLocaleUpperCase("es") : radioName);
   await set.locator(".rs-x").click();
   return { page, until, set, errors, requested, openRadio };
 }
