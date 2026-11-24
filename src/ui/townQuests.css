@@ -231,22 +231,60 @@
 }
 @media (max-height: 520px) and (orientation: landscape) {
   .objective-notes:has(.directions-card) {
-    max-height: calc(100dvh - var(--directions-top) - 160px - env(safe-area-inset-bottom));
+    /* The stick is 140px tall, sits 18px above the safe area and needs 8px of clearance. */
+    --directions-space: calc(100dvh - var(--directions-top) - (140px + 18px + 8px) - env(safe-area-inset-bottom));
+    max-height: var(--directions-space);
+    /* The inner right-hand button is 60px wide at a 128px inset. */
+    max-width: calc(100vw - max(var(--card-left), env(safe-area-inset-left)) - (128px + 60px + 8px) - env(safe-area-inset-right));
+  }
+  /* Give the card the space left over after the folded task and the stack gap. */
+  .objective-notes.task-folded:has(> .directions-card):not(:has(> :is(.zone-banner, .coach, .phone-ring, .town-toasts:not(:empty)))) {
+    height: var(--directions-space);
+    --directions-shrink: 1;
+    --directions-overflow: auto;
+  }
+  /* With an open task or another notice, scroll the stack as one surface. */
+  .objective-notes:has(> .directions-card):has(> :is(.zone-banner, .coach, .phone-ring, .town-toasts:not(:empty))) {
+    pointer-events: auto;
+  }
+  .objective-notes:has(> .directions-card) > :is(.zone-banner, .coach, .phone-ring, .town-toasts:not(:empty)) {
+    position: static;
+    width: 100%;
+    flex: none;
+    margin: 0;
+    transform: none;
+    animation-name: note-in;
   }
   .directions-card {
     width: min(256px, 100%);
-    padding: 4px 6px 6px;
+    min-height: 0;
+    flex-shrink: var(--directions-shrink, 0);
+    grid-template-rows: auto minmax(44px, 1fr) auto;
+    gap: 3px;
+    padding: 4px 6px;
+    overflow-y: var(--directions-overflow, visible);
     border-radius: 12px;
     font-size: 0.9em;
   }
   .directions-card header { gap: 5px; }
   .directions-card header > .ui-icon { width: 15px; height: 15px; }
-  .directions-card p { margin-top: 2px; }
+  .directions-card header > div { min-width: 0; overflow-wrap: anywhere; }
+  .directions-card header p { margin: 0; line-height: 1.1; }
+  .directions-card :is(.quest-close, footer .btn):focus-visible { outline-offset: -3px; }
+  .directions-card .direction-lines {
+    min-height: 0;
+    gap: 3px;
+    padding: 0;
+    overflow: var(--directions-overflow, visible);
+    overscroll-behavior: auto;
+  }
   .direction-lines button { padding: 3px 5px; border-radius: 6px; }
   .direction-lines .kit-gloss-compact {
     --kit-phrase-size: calc(16px * var(--scale));
     --kit-translation-size: calc(13px * var(--scale));
+    overflow-wrap: anywhere;
   }
+  .directions-card footer .btn.small { padding-block: 2px; }
   .directions-card footer .ui-icon { width: 13px; height: 13px; }
 }
 @media (max-width: 600px) and (orientation: portrait) {
