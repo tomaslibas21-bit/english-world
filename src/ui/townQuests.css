@@ -125,6 +125,10 @@
 .photo-page[data-found="false"] .photo-placeholder { filter: grayscale(1); opacity: 0.63; }
 .photo-page .btn { justify-self: start; font-size: 0.93em; min-height: 36px; padding: 4px 6px; text-align: left; }
 .photo-page .il { font-size: 1.1em; gap: 3px 5px; }
+@media (pointer: coarse) {
+  .photo-book .photo-page .btn, .photo-book footer .btn { min-width: 44px; min-height: 44px; }
+  .photo-book .photo-pages { min-height: 44px; scroll-padding-block: 6px; }
+}
 .photo-visit { flex: 0 1 auto; max-height: 25dvh; overflow: auto; padding: 4px; }
 .photo-quiz, .photo-finale { display: grid; gap: 10px; }
 .photo-quiz .photo-choices { display: flex; flex-wrap: wrap; }
