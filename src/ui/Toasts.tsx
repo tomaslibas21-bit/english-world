@@ -10,12 +10,13 @@ export function showToast(t: ToastInput) { useStore.getState().toast(t); }
 
 const KIND_ICON: Record<Toast["kind"], IconName> = { tip: "bulb", stamp: "medal", success: "checkCircle", info: "info" };
 
-export function Toasts() {
+export function Toasts({ phone, panelsMounted }: { phone?: boolean; panelsMounted?: boolean }) {
   // The surf picker and lesson can change screens without changing the main store.
   useSurf((s) => s.active || s.picking);
-  const toasts = useStore((s) => usesTownNotes(s) ? null : s.toasts);
+  const toasts = useStore((s) => !phone && ((panelsMounted && s.hud.panel === "phone") || usesTownNotes(s)) ? null : s.toasts);
   const modeMenu = useStore((s) => s.hud.modeScreen?.kind === "menu");
-  return <ToastList toasts={(modeMenu ? toasts?.filter((toast) => toast.rideHint) : toasts) ?? []} />;
+  if (!toasts) return null;
+  return <ToastList toasts={modeMenu ? toasts.filter((toast) => toast.rideHint) : toasts} placement={phone ? "phone" : undefined} />;
 }
 
 export function useTownToast(visible: boolean) {
@@ -26,13 +27,13 @@ export function useTownToast(visible: boolean) {
 }
 
 export function TownToast({ toast }: { toast: Toast | null }) {
-  return <ToastList toasts={toast ? [toast] : []} town />;
+  return <ToastList toasts={toast ? [toast] : []} placement="town" />;
 }
 
-function ToastList({ toasts, town }: { toasts: Toast[]; town?: boolean }) {
+function ToastList({ toasts, placement }: { toasts: Toast[]; placement?: "phone" | "town" }) {
   const dismiss = useStore((s) => s.dismissToast);
   return (
-    <div className={"toasts" + (town ? " town-toasts" : "")} aria-live="polite">
+    <div className={"toasts" + (placement ? ` ${placement}-toasts` : "")} aria-live="polite">
       {toasts.map((t) => {
         const lead = splitLead(t.title);
         const icon = (t as ToastInput).icon ?? lead.icon ?? KIND_ICON[t.kind] ?? "info";

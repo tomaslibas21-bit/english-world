@@ -97,11 +97,13 @@ export function Hud() {
     && !s.townToasts.some(({ toast }) => toast.sitId === ASK_WAY_SITUATION && toast.kind === "stamp") ? requested : undefined);
   const narrow = useNarrowHud();
   const streetCard = useStreet((s) => s.moment !== null) && !hud.panel;
+  const anchoredChatter = useStreet((s) => !!s.bubble?.anchor);
   const portrait = screen.portraitPhone;
   const baristaOffer = useBarista((s) => s.offered);
   const compactForPhoto = useTownQuests((s) => questHud && portrait && s.camera && (!!s.near || screen.h <= 720));
   const phoneToast = narrow && toast !== null;
-  const task = useTaskCard(taskId, notesVisible && !hud.cave, directions, phoneToast && !hud.cave, layout);
+  const shortChatter = portrait && screen.h <= 720 && anchoredChatter && taskId !== null && !hud.panel && !hud.cave;
+  const task = useTaskCard(taskId, notesVisible && !hud.cave, directions, phoneToast && !hud.cave, layout, shortChatter);
   if (inConversation) return <Fade />;
   // the first visit's flight over the town has the screen to itself too: where one is, and what to do first
   if (hud.flight) return <div className="hud"><Flight /><Fade /></div>;
@@ -146,7 +148,7 @@ export function Hud() {
   const step = hud.coach?.step;
   const compactGuide = portrait && (compactForPhoto || ((moving || talk) && step !== "walk" && step !== "list"));
   // A sideways phone keeps the task to one row unless it is opened by hand.
-  const collapsed = !hud.cave && ((!directions && streetCard) || (directions || phoneToast ? !task.openedDuringNote
+  const collapsed = !hud.cave && ((!directions && streetCard) || (task.note ? !task.openedDuringNote
     : (task.manual ?? (screen.sidewaysPhone || foldForContext || (moving && (!task.fresh || !!hud.objective?.followUp))))));
   return (
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
@@ -159,7 +161,7 @@ export function Hud() {
           {note === "phone" && hud.phoneCard && <PhoneRing id={hud.phoneCard} />}
           {note === "text" && hud.textArrival && <TextArrival id={hud.textArrival} />}
           <Guide visible={note === "guide"} compact={compactGuide} />
-          <QuestArrival toast={toast} />
+          {hud.panel !== "phone" && <QuestArrival toast={toast} />}
           {directions && <DirectionsCard />}
         </div>
         <Minimap {...screen} />
@@ -201,9 +203,13 @@ function useNarrowHud() {
   return narrow;
 }
 
-function useTaskCard(taskId: string | null, visible: boolean, directions: string | undefined, phoneToast: boolean, layout: string) {
+export function taskCardNote(directions: string | undefined, phoneToast: boolean, shortChatter: boolean) {
+  return directions ?? (phoneToast || (shortChatter && "chatter"));
+}
+
+function useTaskCard(taskId: string | null, visible: boolean, directions: string | undefined, phoneToast: boolean, layout: string, shortChatter: boolean) {
   const [state, setState] = useState<{ id: string | null; layout: string; manual: boolean | null; fresh: boolean }>({ id: taskId, layout, manual: null, fresh: false });
-  const note = directions ?? phoneToast;
+  const note = taskCardNote(directions, phoneToast, shortChatter);
   const [openedDuringNote, setOpenedDuringNote] = useState<string | boolean>(false);
   if (openedDuringNote && (openedDuringNote !== note || taskId !== state.id || (directions && layout !== state.layout))) setOpenedDuringNote(false);
   // A manual choice belongs to one task and one way of holding the phone. Give the next task its pop when the card
@@ -216,10 +222,10 @@ function useTaskCard(taskId: string | null, visible: boolean, directions: string
     return () => clearTimeout(timer);
   }, [state.id, state.fresh, visible]);
   function setManual(manual: boolean) {
-    if (!directions) setState((current) => ({ ...current, manual }));
+    if (!directions && note !== "chatter") setState((current) => ({ ...current, manual }));
     setOpenedDuringNote(!manual && note);
   }
-  return { ...state, openedDuringNote, setManual };
+  return { ...state, note, openedDuringNote, setManual };
 }
 
 // Enter and Space belong to a button reached by keyboard, even while the game is listening for movement.

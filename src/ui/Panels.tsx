@@ -31,7 +31,7 @@ import { Icon, InlineIcon, KeepsakeIcon, Stars, type IconName } from "./icons";
 import type { SituationMeta } from "../content/types";
 import { useCards, cardKey, dueCards, ipaFor, type CardInput } from "../state/cards";
 import { MyCards, Glyph } from "./Cards";
-import { showToast } from "./Toasts";
+import { showToast, Toasts } from "./Toasts";
 import { HL, L, Lx, TL } from "./i18n";
 import { EDITION } from "../edition";
 import { chooseVariety, loadVariety } from "../state/variety";
@@ -403,12 +403,19 @@ function Phone({ close }: { close: () => void }) {
   const textId = useStore((s) => s.hud.textThread);
   const thread = TEXT_THREADS.find(({ id, from }) => id === textId && NPCS[from] && progress.texts?.got[id]);
   const missed = calls.filter((sit) => progress.phone?.missed[sit.id]);
+  const closeButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null;
+    closeButton.current?.focus({ preventScroll: true });
+    return () => { if (opener?.isConnected) opener.focus({ preventScroll: true }); };
+  }, []);
   return (
     <div className={"phone" + (thread ? " thread-open" : "")} role="dialog" aria-label={L("Telefonas")}>
       <div className="phone-status">
-        <span>9:41</span><button className="phone-close" onClick={close} aria-label={L("Uždaryti")}><Icon name="close" size={20} /></button>
+        <span>9:41</span><button className="phone-close" ref={closeButton} onClick={close} aria-label={L("Uždaryti")}><Icon name="close" size={20} /></button>
       </div>
-      {thread ? <TextThread key={thread.id} thread={thread} entry={progress.texts!.got[thread.id]} /> : <>
+      <Toasts phone />
+      {thread ? <TextThread key={thread.id} thread={thread} entry={progress.texts!.got[thread.id]} /> : <div className="phone-directory">
       <TextList got={progress.texts?.got} />
       <PhotoBookContact close={close} />
       {!!missed.length && <section className="missed-calls">
@@ -436,7 +443,7 @@ function Phone({ close }: { close: () => void }) {
           </button>
         );
       })}
-      </>}
+      </div>}
     </div>
   );
 }

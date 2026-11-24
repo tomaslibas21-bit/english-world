@@ -204,7 +204,36 @@
 .phone .text-contact .txt { flex: 1; }
 .text-contact .txt span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .text-unread { width: 9px; height: 9px; flex: none; border-radius: 50%; background: #80e5b2; }
-.overlay > .phone.thread-open { display: flex; flex-direction: column; overflow: hidden; }
+.overlay:has(> .phone) {
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+}
+.overlay > .phone > .phone-toasts {
+  position: static;
+  transform: none;
+  z-index: auto;
+  inline-size: 100%;
+  min-inline-size: 0;
+  flex: none;
+  gap: 6px;
+  max-block-size: min(24dvh, 160px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  pointer-events: auto;
+}
+.overlay > .phone > .phone-toasts:not(:empty) { margin-block: 6px; }
+.overlay > .phone > .phone-toasts .toast {
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  color: var(--ink);
+  box-shadow: none;
+  animation: none;
+}
+.overlay > .phone > .phone-toasts .t-text { overflow-wrap: anywhere; }
+.overlay > .phone > .phone-toasts .x { width: 44px; height: 44px; margin: 0 0 0 auto; color: var(--ink-soft); }
+.overlay > .phone > .phone-toasts .x:focus-visible { outline-color: var(--accent); }
 .text-thread { min-height: 0; display: flex; flex-direction: column; }
 .text-thread-head { display: flex; align-items: center; gap: 9px; padding: 4px 0 10px; border-bottom: 1px solid #48535d; }
 .text-thread-head .phone-close { flex: none; width: 44px; height: 44px; }

@@ -45,6 +45,7 @@ function Play() {
   const stage = useRef<HTMLDivElement>(null);
   const tags = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
+  const panelsMounted = ready && !!game;
   useEffect(() => {
     // three.js and the town are a separate download, fetched only in town mode
     let g: Game | null = null, gone = false;
@@ -89,8 +90,8 @@ function Play() {
     <>
       <div className="stage" ref={stage} />
       <div className="tag-layer" ref={tags} />
-      {ready && game && <><Hud /><SceneBackdrop /><ViewSwitch /><Conversation /><Panels /><GlyphCard /></>}
-      <Toasts />
+      {panelsMounted && <><Hud /><SceneBackdrop /><ViewSwitch /><Conversation /><Panels /><GlyphCard /></>}
+      <Toasts panelsMounted={panelsMounted} />
       {!ready && <Loading />}
     </>
   );
