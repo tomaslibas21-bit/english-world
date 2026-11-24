@@ -388,30 +388,23 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   cursor: pointer; padding: 4px 8px; border-radius: 8px;
 }
 .copy-link:hover { color: var(--ink); text-decoration-color: currentColor; }
-.guide {
-  background: #fff; border: 1px solid #ebe1cf; border-radius: 18px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px;
-  box-shadow: 0 1px 2px rgba(20, 30, 40, 0.04), 0 8px 20px -14px rgba(20, 30, 40, 0.3);
+.convo .guide {
+  background: #fff; border: 1px solid #e7dfd2; border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 8px;
 }
-.guide-task { display: flex; align-items: flex-start; gap: 9px; font-weight: 900; font-size: 1.04em; line-height: 1.3; color: var(--ink); }
+.convo .guide-task { display: flex; align-items: flex-start; gap: 9px; font-weight: 900; font-size: 1.04em; line-height: 1.3; color: var(--ink); overflow-wrap: anywhere; }
 .guide-task .task-ico { color: var(--accent); margin-top: -1px; }
-.guide-examples { display: flex; flex-direction: column; gap: 2px; margin: 0 -7px; }
-.gx { display: flex; align-items: flex-start; gap: 11px; padding: 5px 7px; border-radius: 13px; transition: background-color 0.15s; }
-.gx:hover { background: #f8f4ec; }
-.gx-text { min-width: 0; flex: 1; }
-.gx .il { font-size: 1.28em; column-gap: 0.5em; row-gap: 0.35em; }
-.gx .il.plain { line-height: 1.25; }
-.gx .u .ipa { font-size: 0.6em; }
-.gx .nat { font-size: 0.84em; margin-top: 6px; padding: 1px 0 1px 9px; }
+.convo .guide-examples .gx { display: flex; align-items: flex-start; gap: 8px; padding-block: 6px; }
+.convo .guide-examples .gx + .gx { border-block-start: 1px solid #e7dfd2; }
+.convo .gx-text { min-width: 0; flex: 1; overflow-wrap: anywhere; }
 .gx .play, .hint-row .play, .ended-phrase .play {
   flex: none; border: 0; background: var(--accent-soft); color: var(--accent); width: 40px; height: 40px; border-radius: 50%;
   display: grid; place-items: center; cursor: pointer; transition: background-color 0.15s, color 0.15s, box-shadow 0.15s, transform 0.1s;
 }
 .gx .play:hover, .hint-row .play:hover, .ended-phrase .play:hover { background: var(--accent); color: #fff; box-shadow: 0 5px 12px -5px rgba(31, 111, 120, 0.7); }
 .gx .play:active, .hint-row .play:active, .ended-phrase .play:active { transform: scale(0.93); }
-.gx-en { font-family: var(--en); font-size: 1.28em; line-height: 1.2; color: var(--ink); }
-.guide-alt { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; font-size: 0.85em; color: var(--ink-faint); padding-top: 8px; border-top: 1px dashed #eadfcc; }
+.convo .guide-alt { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 0.85em; color: var(--ink-soft); padding-top: 6px; border-top: 1px dashed #eadfcc; }
 .guide-alt span { font-weight: 700; }
-.guide-alt button { border: 0; background: none; padding: 0; color: var(--accent); font-weight: 800; text-decoration: underline; text-decoration-color: rgba(31, 111, 120, 0.35); text-underline-offset: 3px; cursor: pointer; font-size: 1em; }
+.convo .guide-alt button { border: 0; border-radius: 8px; background: none; padding: 4px 8px; color: var(--accent); font-weight: 800; text-decoration: underline; text-decoration-color: rgba(31, 111, 120, 0.35); text-underline-offset: 3px; font-size: 1em; }
 .guide-alt button:hover { text-decoration-color: currentColor; }
 .transcript { flex: 1; overflow-y: auto; padding: 16px 16px 8px; display: flex; flex-direction: column; gap: 14px; scroll-behavior: smooth; }
 .msg { max-width: 100%; }
@@ -516,8 +509,9 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .yt-bottom { flex: none; padding: 10px 14px 14px; border-top: 1px solid #efe7da; background: #fbf6ee; box-shadow: 0 -10px 20px -18px rgba(20, 30, 40, 0.35); position: relative; }
 .transcript { min-height: 28%; }
 .yt-title { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 8px; margin-bottom: 8px; min-height: 36px; }
-.yt-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
-.say-toggles .toggle { min-height: 30px; min-width: 44px; padding: 4px 10px; position: relative; }
+.convo .yt-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-left: auto; max-inline-size: 100%; }
+.convo .say-toggles { flex-wrap: wrap; gap: 4px; max-inline-size: 100%; }
+.convo .say-toggles .toggle { min-height: 30px; min-width: 44px; padding: 4px 10px; }
 .say-toggles .short { display: none; }
 .yt-title b { display: inline-flex; align-items: center; gap: 8px; font-size: 0.88em; color: var(--accent); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 900; }
 .yt-title.phase-you b::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: ytpulse 1.8s ease-out infinite; }
@@ -535,6 +529,10 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .chip:hover { border-color: #d5c6ae; background: #fff; }
 .chip.on { background: #fff2cf; border-color: var(--gold); color: #574000; padding-left: 9px; box-shadow: 0 1px 3px rgba(160, 110, 0, 0.18); }
 .chip.on .ui-icon { color: #9a6700; }
+.convo .chips .chip { justify-content: center; padding-inline: 10px; font: 700 calc(15px * var(--scale))/1.25 var(--ui); }
+.convo .chips .chip > span { min-inline-size: 0; }
+.convo .chips .chip[aria-pressed="true"] { background: #e2f1f0; border-color: transparent; color: #185a62; box-shadow: inset 0 0 0 2px #1f6f78; }
+.convo .chips .chip[aria-pressed="true"] .ui-icon { color: inherit; }
 
 .hints { margin: 10px 0 10px; }
 .hint-toggle {
@@ -561,10 +559,44 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .hint-row .tag { font-size: 0.7em; font-weight: 900; color: #fff; background: var(--ink-faint); border-radius: 8px; padding: 1px 7px; margin-left: 6px; vertical-align: middle; font-family: var(--ui); letter-spacing: 0.02em; }
 .hint-row .tag.polite { background: var(--good); }
 .hint-row .tag.casual { background: var(--warm); }
-.guide-frames .note { font-size: 0.86em; color: var(--ink-soft); margin-top: 4px; font-family: var(--ui); }
-.guide-frames .note.own { margin: 2px 7px 0; }
 .hint-row .note { font-size: 0.8em; color: var(--ink-soft); margin-top: 3px; font-family: var(--ui); }
 .hint-row.used { border-color: #bfe2dd; background: #f4fbfa; }
+
+.convo .hints { margin-block: 6px; }
+.convo .hints .hint-toggle {
+  gap: 6px; min-height: 44px; border: 1px solid #e0d8ca; background: #fffdf9;
+  padding: 8px 12px; font-weight: 800; color: var(--ink); text-align: start; box-shadow: none;
+}
+.convo .hints .hint-toggle:hover { border-color: #bfb2a0; }
+.convo .hints .hint-toggle.open { background: #fff6df; }
+.convo .hint-toggle .bulb { color: #946700; }
+.convo .hint-toggle :is(.key, .chev) { color: #52606d; }
+.convo .hint-group { margin-block-start: 6px; }
+.convo .hint-group h4 { margin: 0 2px 6px; }
+.convo .hint-summary {
+  min-height: 44px; padding: 12px 6px; border-radius: 8px; cursor: pointer;
+  font: 800 calc(14px * var(--scale))/1.3 var(--ui); color: #52606d;
+}
+.convo .hint-row {
+  grid-template-columns: minmax(0, 1fr) 44px; column-gap: 8px;
+  margin: 0; padding: 8px; box-shadow: none; overflow-wrap: anywhere;
+}
+.convo .hint-row + .hint-row { margin-block-start: 6px; }
+.convo .hint-row .pat { grid-column: 1; }
+.convo .hint-row .play { width: 44px; height: 44px; }
+.convo .hint-row:not(:has(.pat)) .play { grid-row: 1; }
+.convo :is(.hint-group h4, .hint-row .note, .guide-frames .note) {
+  font-size: calc(13px * var(--scale)); line-height: 1.3; color: #52606d; overflow-wrap: anywhere;
+}
+.convo .guide-frames .note { margin-block-start: 4px; }
+
+.convo .yt-scroll { --model-size: 23px; }
+.convo :is(.gx, .hint-row) .il, .convo .hint-row .pat {
+  font: 500 calc(var(--model-size) * var(--scale))/1.22 var(--en);
+}
+.convo :is(.gx, .hint-row) .il { gap: 6px 5px; }
+.convo :is(.gx, .hint-row) .u .lt { font: 600 calc(14px * var(--scale))/1.28 var(--ui); color: #465563; }
+.convo :is(.gx, .hint-row) .u .ipa { font: 400 calc(13px * var(--scale))/1.25 var(--ipa-font); color: #565878; }
 
 .inputbar { display: flex; gap: 12px; align-items: center; }
 .mic {
@@ -808,15 +840,18 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .info-box { background: #f1f6f7; border: 1px solid #e1ecee; border-radius: 14px; padding: 12px 14px; font-size: 0.88em; line-height: 1.55; color: #3d4a55; }
 
 /* Tap targets of at least 44 × 44 px: small controls keep their look and get a larger invisible hit area, centred
-   on them (each has position: relative). The switches, the replay and "slower" buttons, the answer toggles, the task
+   on them (each has position: relative). The switches, the replay and "slower" buttons, the task
    card's collapse button and the help strip's "Got it". */
-.switch::before, .msg .meta button::before, .say-toggles .toggle::before, .objective-card .collapse-btn::before, .help-strip button::before {
+.switch::before, .msg .meta button::before, .objective-card .collapse-btn::before, .help-strip button::before {
   content: ""; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%);
 }
 .convo .il .u > :is(.en, .ipa, .lt) { max-inline-size: 100%; overflow-wrap: anywhere; }
 /* Reserve room for notes even on lines whose helper row has no asterisk. */
 .convo .il:has(> .u > .lt) { padding-inline-end: 24px; }
-.convo .hint-row .il:has(> .u > .lt) { padding-inline-end: 38px; }
+/* Leave room for the compact note beside the final unit, with the same wrap whether it has a star or not. */
+.convo :is(.gx, .hint-row) .il:has(> .u > .lt) { padding-inline-end: 0; }
+.convo .gx .il > .u:last-child:has(> .lt) { padding-inline-end: 28px; }
+.convo .hint-row .il > .u:last-child:has(> .lt) { padding-inline-end: 38px; }
 .convo .u.saved .nat-star { left: 0.05em; }
 .convo .en:has(> .nat-pin) > .u-dot { top: auto; bottom: 0.15em; }
 .convo .nat-star::before { left: 0; }
@@ -863,21 +898,20 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .yt-bottom { padding: 6px 10px max(8px, env(safe-area-inset-bottom)); }
   .yt-title { gap: 4px; margin-bottom: 5px; }
   .yt-title b { font-size: 0.78em; letter-spacing: 0.04em; }
-  .yt-actions { gap: 4px; }
+  .convo .yt-actions { gap: 4px; }
   .yt-actions .small { padding: 5px 8px; }
   .guide-toggle-label { display: none; }
-  .yt-actions .guide-toggle { width: 44px; min-height: 38px; justify-content: center; }
+  .convo .yt-actions .guide-toggle { width: 44px; justify-content: center; }
   .guide-toggle .ui-icon { display: block; }
   .say-toggles .long { display: none; }
   .say-toggles .short { display: inline; }
-  .guide { padding: 8px; gap: 6px; border-radius: 14px; }
-  .guide-task { font-size: 0.93em; gap: 6px; }
+  .convo .yt-scroll { --model-size: 22px; }
+  .convo .guide { padding: 8px; gap: 6px; }
+  .convo .guide-task { font-size: 0.93em; gap: 6px; }
   .guide-task .task-ico { width: 20px; height: 20px; }
-  .guide-examples { margin: 0; order: 1; }
-  .guide > .chips { order: 2; }
-  .guide-alt { order: 3; }
-  .gx { gap: 7px; padding: 5px 0; }
-  .gx .il { column-gap: 0.4em; row-gap: 0.3em; }
+  .convo .guide-examples { order: 1; }
+  .convo .guide > .chips { order: 2; }
+  .convo .guide-alt { order: 3; }
   .mission-bar { padding: 6px 10px; }
   .mission-list { max-height: 24dvh; overflow-y: auto; }
   .convo .msg.npc .bubble { padding: 8px 10px; }
@@ -1126,8 +1160,7 @@ body.scene-on .tag-layer { display: none; }
   .convo .yt-title { flex-wrap: wrap; }
   .convo .yt-bottom { padding: 4px 8px; }
   .convo .mic { width: 44px; height: 44px; }
-  .convo .guide { padding: 4px; gap: 4px; }
-  .convo .gx { padding-block: 3px; }
+  .convo .guide-examples .gx { padding-block: 4px; }
 }
 
 /* Keep all three control groups intact when the panel narrows. */

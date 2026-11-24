@@ -186,10 +186,10 @@ export function Conversation() {
             </div>
           </div>
 
-          {!!conv.speechChoices?.length && <div className="miss-box">
+          {!!conv.speechChoices?.length && <div className="miss-box speech-confirm">
             <p>{conv.speechChoices.length > 1 ? L("Atpažinimo variantai skiriasi žodžiu „ne“. Ką norėjai pasakyti?") : L("Ar teisingai išgirdo? Paspausk tekstą, kad išsiųstum, arba pataisyk.")}</p>
-            {conv.speechChoices.map(text => <button className="btn soft small" key={text} lang={TL} disabled={conv.phase !== "you"}
-              onClick={() => void game?.activeSession?.submit(text, [], "voice", true)}>{text}</button>)}
+            {conv.speechChoices.map(text => <button className="dym-opt" key={text} lang={TL} disabled={conv.phase !== "you"}
+              onClick={() => void game?.activeSession?.submit(text, [], "voice", true)}><span className="dym-en">{text}</span></button>)}
             <button className="btn ghost small" disabled={conv.phase !== "you"}
               onClick={() => { setTyped(conv.lastHeard); setConv({ typing: true, speechChoices: undefined }); }}>{L("Pataisyti tekstą")}</button>
           </div>}
@@ -531,7 +531,7 @@ function Guide({ sit, formal, gender, turn }: { sit: SituationDef; formal: boole
         <div className="chips">
           {shown.map((e) => {
             const on = conv.chosen[groupId] === e.id;
-            return <button key={e.id} className={"chip" + (on ? " on" : "")} aria-pressed={on} onClick={() => { const chosen = { ...conv.chosen }; if (on) delete chosen[groupId]; else chosen[groupId] = e.id; setConv({ chosen }); }}>{on && <Icon name="check" size={15} strokeWidth={2.25} />}{chipLabel(e, gender === "f")}</button>;
+            return <button key={e.id} className={"chip" + (on ? " on" : "")} aria-pressed={on} onClick={() => { const chosen = { ...conv.chosen }; if (on) delete chosen[groupId]; else chosen[groupId] = e.id; setConv({ chosen }); }}>{on && <Icon name="check" size={15} strokeWidth={2.25} />}<span>{chipLabel(e, gender === "f")}</span></button>;
           })}
           {shown.length < opts.length && <button className="chip" onClick={() => setAllChips(true)}>+{opts.length - shown.length}</button>}
         </div>
@@ -680,6 +680,7 @@ function Line({ l, speaking, lt, ipa, nat }: { l: TranscriptLine; speaking: bool
 // --------------------------------------------------------------------------------------------
 
 function Hints({ sit, formal, gender }: { sit: SituationDef; formal: boolean; gender: "m" | "f" }) {
+  const keyboardHints = useKeyboardHints();
   const conv = useStore((s) => s.conv);
   const settings = useStore((s) => s.settings);
   const setConv = useStore((s) => s.setConv);
@@ -697,14 +698,14 @@ function Hints({ sit, formal, gender }: { sit: SituationDef; formal: boolean; ge
   return (
     <div className="hints">
       <button className={"hint-toggle" + (open ? " open" : "")} onClick={() => setConv({ openHint: open ? null : (conv.hints[0] ?? "g_clarify") })} aria-expanded={open}>
-        <Icon name="bulb" size={21} className="bulb" /> {L("Daugiau frazių")} <span className="key">(H)</span><Icon name="chevronDown" size={18} className="chev" />
+        <Icon name="bulb" size={21} className="bulb" /> <span>{L("Daugiau frazių")}</span> {keyboardHints && <span className="key">(H)</span>}<Icon name="chevronDown" size={18} className="chev" />
       </button>
       {open && (
         <div>
           {groups.map(([id, g]) => <HintGroupView key={id} id={id} g={g} sit={sit} formal={formal} gender={gender} chosen={conv.chosen[id]} lt={settings.sayLt} ipa={settings.sayIpa} used={used} />)}
           {!conv.hints.includes("g_clarify") && (
             <details className="hint-group">
-              <summary style={{ cursor: "pointer", fontWeight: 800, color: "var(--ink-soft)", margin: "6px 2px" }}>{L("Visada naudinga: paprašyti pakartoti, lėčiau, paraidžiui…")}</summary>
+              <summary className="hint-summary">{L("Visada naudinga: paprašyti pakartoti, lėčiau, paraidžiui…")}</summary>
               <HintGroupView id="g_clarify" g={GLOBAL.hints.g_clarify} sit={sit} formal={formal} gender={gender} lt={settings.sayLt} ipa={settings.sayIpa} used={used} />
             </details>
           )}
@@ -742,7 +743,7 @@ function HintGroupView({ id, g, sit, formal, gender, chosen, lt, ipa, used }: { 
       <h4>{g.lt}</h4>
       {items.map(({ it, gap, full, hasGap }, i) => (
         <div className={"hint-row" + (used.includes(it.id) ? " used" : "")} key={it.id + i}>
-          {hasGap && <div className="pat">{renderGap(gap.en)}{it.register && <span className={"tag " + it.register}>{it.register === "polite" ? L("mandagu") : it.register === "casual" ? L("laisviau") : ""}</span>}</div>}
+          {hasGap && <div className="pat"><span lang={TL}>{renderGap(gap.en)}</span>{it.register && <span className={"tag " + it.register}>{it.register === "polite" ? L("mandagu") : it.register === "casual" ? L("laisviau") : ""}</span>}</div>}
           <div className="ex">
             <Interlinear s={full} lt={lt} ipa={ipa} compactNat />
             {!hasGap && it.register && <span className={"tag " + it.register}>{it.register === "polite" ? L("mandagu") : L("laisviau")}</span>}
