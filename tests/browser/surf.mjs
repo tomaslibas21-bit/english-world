@@ -9,7 +9,7 @@
 // of Maple Harbor; WORLD_SHOTS=<folder> keeps pictures of its moments:
 // WORLD_TEST_URL=http://127.0.0.1:5188 WORLD_STORAGE=english-world WORLD_PLAYWRIGHT_MODULE=/path/to/playwright-core/index.mjs node tests/browser/surf.mjs
 import assert from "node:assert/strict";
-import { HARBOR_START, readSurfIntro, readSurfPlayer, sampleSurfRender } from "./fixtures/surf-town.mjs";
+import { HARBOR_START, readSurfIntro, readSurfPlayer, sampleSurfRender, waitForSurfLesson, waitForSurfPad } from "./fixtures/surf-town.mjs";
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:5188";
 const storage = process.env.WORLD_STORAGE || "english-world";
@@ -95,12 +95,7 @@ try {
     const step = (n) => page.evaluate((k) => window.__step(k), n);
     const real = (ms) => new Promise((r) => setTimeout(r, ms));
     const fade = async () => { await real(600); await step(20); };
-    const untilLesson = async () => {
-      for (let i = 0; i < 100 && !(await page.evaluate(() => !!window.__ew.game.surf.logic)); i++) {
-        await step(6); await real(30);
-      }
-      await step(20);
-    };
+    const untilLesson = (level) => waitForSurfLesson(page, level, label);
     await page.evaluate(() => { window.__ew.coach?.finish?.(); window.__ew.store.getState().setHud({ panel: null }); });
     assert.equal(await page.evaluate(() => document.documentElement.lang), "lt");
     const school = await page.evaluate(() => {
@@ -221,7 +216,8 @@ try {
     await step(30);
     const townPlayer = await playerNow();
     check(`${label}: the board prompt starts from dry town ground`, townPlayer.y >= -0.01 && !townPlayer.swimming && townPlayer.backpack && townPlayer.mode === "follow", townPlayer);
-    check(`${label}: the prompt at the boards is the lesson's`, (await hud()).prompt?.kind === "surf", (await hud()).prompt);
+    const townPrompt = (await hud()).prompt;
+    check(`${label}: the prompt at the boards is the lesson's`, townPrompt?.kind === "surf", townPrompt);
     if (phone) check(`${label}: the town has its action and jump buttons`, await page.locator(".act-btn:visible, .jump-btn:visible").count() === 2);
     if (phone) await page.locator(".act-btn").tap(); else await page.keyboard.press("e");
     await page.locator(".surf-pick .surf-level").first().waitFor();
@@ -233,7 +229,7 @@ try {
     if (phone) await page.locator(".act-btn").tap(); else await page.keyboard.press("e");
     await step(5);
     await page.locator(".surf-level").first().click();
-    await untilLesson();
+    await untilLesson("beginner");
     let s = await L();
     check(`${label}: a beginner's lesson is on, on the sand`, s?.level === "beginner" && s.phase === "intro" && (await hud()).ride === "surf", s);
     check(`${label}: in surf clothes from the start of the lesson, on the sand too, and no backpack`, s?.backpack === false && s?.outfit === "surf", { backpack: s?.backpack, outfit: s?.outfit });
@@ -242,7 +238,6 @@ try {
       && p.rash && p.swim === "trunks" && p.mode === "stage" && p.stage;
     check(`${label}: the dry lesson uses the surf actor and stage camera`, isSurfPlayer(sand) && sand.actor !== townPlayer.actor
       && !sand.swimming && sand.y >= -0.01 && cameraDistance(sand, townPlayer) > 1, { town: townPlayer, sand });
-    await sampleSurfRender(page, "dry lesson start");
     if (phone) {
       check(`${label}: the lesson replaces the joystick and round buttons with four arrows`,
         await page.locator(".surf-pad button:visible").count() === 4 && await page.locator(".joy:visible, .act-btn:visible, .jump-btn:visible").count() === 0);
@@ -250,12 +245,16 @@ try {
       const finger = (id) => ({ pointerType: "touch", pointerId: id, button: 0, buttons: 1 });
       await left.dispatchEvent("pointerdown", finger(31));
       await right.dispatchEvent("pointerdown", finger(32));
-      check(`${label}: both thumbs can hold an arrow`, await page.locator(".surf-pad [aria-pressed=true]").count() === 2);
+      const both = await waitForSurfPad(page, ["left", "right"]);
+      check(`${label}: both thumbs can hold an arrow`, both.ready, both);
       await left.dispatchEvent("pointerout", finger(31));
-      check(`${label}: sliding off releases only that thumb`, await left.getAttribute("aria-pressed") === "false" && await right.getAttribute("aria-pressed") === "true");
+      const one = await waitForSurfPad(page, ["right"]);
+      check(`${label}: sliding off releases only that thumb`, one.ready, one);
       await right.dispatchEvent("pointercancel", finger(32));
-      check(`${label}: cancelling releases the other arrow`, await page.locator(".surf-pad [aria-pressed=true], .surf-pad .ask").count() === 0);
+      const none = await waitForSurfPad(page, []);
+      check(`${label}: cancelling releases the other arrow`, none.ready && none.asked === 0, none);
     }
+    await sampleSurfRender(page, "dry lesson start");
     const menu = page.getByRole("button", { name: "Meniu" });
     check(`${label}: the town's tools are tucked into Meniu beside the surf score`,
       await page.locator(".surf-toolbar .icon-btn:visible").count() === 1 && await menu.isVisible()
@@ -617,10 +616,20 @@ try {
     await checkTownReturn("leaving the result", run.looks.score);
     await shot("return-from-score", "css");
     if (phone) {
+      const before = await playerNow();
       await page.locator(".jump-btn").tap();
       await step(8);
-      check(`${label}: the restored town jump actually lifts the learner`, (await playerNow()).y > townPlayer.y + 0.1);
+      const airborne = await playerNow();
       await step(90);
+      const landing = await playerNow();
+      const jump = { before, airborne, landing };
+      const dryTownActor = (p) => p.actor === townPlayer.actor && p.visible && p.mode === "follow" && !p.stage
+        && !p.swimming && p.y >= -0.01 && Math.hypot(p.x - start.x, p.z - start.z) < 0.5;
+      check(`${label}: the restored town jump actually lifts the learner`, dryTownActor(before) && !before.air
+        && before.displayedY === before.y && dryTownActor(airborne) && airborne.air && airborne.displayedY - before.displayedY > 0.1, jump);
+      check(`${label}: the learner lands back at the starting height`, dryTownActor(landing) && !landing.air
+        && Math.abs(landing.displayedY - before.displayedY) <= 0.05, jump);
+      assert.deepEqual((await hud()).prompt, townPrompt, `${label}: the original board prompt returns after landing: ${JSON.stringify(jump)}`);
     } else {
       await page.keyboard.press("Space");
       await page.locator(".surf-pick .surf-level").first().waitFor();
@@ -643,7 +652,7 @@ try {
       store.getState().setConv({ phase: "ended", completed: true });
     });
     await page.locator(".surf-cta").click();
-    await untilLesson();
+    await untilLesson("advanced");
     s = await L();
     check(`${label}: the conversation's event starts the lesson (the learner said they surf: advanced)`, s?.level === "advanced", s);
     await step(60);
