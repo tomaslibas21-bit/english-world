@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { game } from "../game/gameRef";
 import type { ReactionLine } from "../game/life/reacts";
+import { STREET_WORDS } from "../game/street/words";
 import { HL, L, TL } from "./i18n";
 import "./reactBubble.css";
 
@@ -70,7 +71,7 @@ export function ReactBubble({ line }: { line: ReactionLine }) {
   return <div className="reaction-bubble" ref={bubble} role="status" aria-live="polite" data-reaction={line.kind}>
     <div className="reaction-copy">
       <span lang={TL}>{line.text}</span>
-      {translation && <small lang={HL}>{line.lt}</small>}
+      {(translation || line.id === 1) && <small lang={HL}>{translation ? line.lt : STREET_WORDS.translation}</small>}
     </div>
     <button type="button" aria-label={TRANSLATION} aria-expanded={translation} onMouseDown={(e) => e.preventDefault()} onClick={() => {
       if (!translation) { showTranslation(true); game?.extendReaction?.(line.id); }

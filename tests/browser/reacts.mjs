@@ -1,6 +1,6 @@
 // See README-life.md for the local Vite server and browser profiles.
 import assert from "node:assert/strict";
-import { assertTownProfile, contentUrl, contextOptions, helperLang, installTown, key, lifeContentUrl, lineText, manualFrames, probeEffects, profileName, progress, screenshot, stubVoiceClips, targetLang, variety, viewports } from "./life-harness.mjs";
+import { assertTownProfile, contentUrl, contextOptions, helperLang, installTown, key, learnerLabel, lifeContentUrl, lineText, manualFrames, probeEffects, profileName, progress, screenshot, stubVoiceClips, targetLang, variety, viewports } from "./life-harness.mjs";
 
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const url = process.env.WORLD_TEST_URL || "http://127.0.0.1:8310";
@@ -106,6 +106,7 @@ try {
       assert.equal((await state()).count, 0, "the driver waits briefly after the horn");
       await waitFor(async () => (await state()).last?.kind === "honk", "the driver says a honk line", 25);
       const honk = await assertLine("honk");
+      assert.equal(honk.speaker, `traffic:${first.carIndex}`);
       const honkStart = await reactionStart();
       await stepTo(honkStart + 75);
       await waitFor(() => bubble.isVisible(), "the honk bubble appears", 0);
@@ -113,13 +114,20 @@ try {
       await opacityIs(0.5);
       await stepTo(honkStart + 150);
       await opacityIs(1);
+      const helperLine = bubble.locator(`small[lang="${helperLang}"]`);
+      assert.equal(await helperLine.innerText(), learnerLabel("Paliesk – pamatysi vertimą", "Tap to see the translation"));
+      assert(await helperLine.isVisible(), "the first reaction shows how to reveal its meaning");
+      await checkPlacement();
       const translate = bubble.getByRole("button");
       await during(() => Math.min(width, height) < 600 ? translate.tap() : translate.click());
-      assert.equal(await bubble.locator(`small[lang="${helperLang}"]`).innerText(), honk.lt);
+      assert.equal(await helperLine.innerText(), honk.lt);
+      assert.equal(await bubble.locator(`[lang="${targetLang}"]`).innerText(), honk.text);
+      await step(1, 0);
+      await checkPlacement();
+      await during(() => screenshot(page, "react-translation", width, height));
       await stepTo(honkStart + durationMs(honk.text) + 100);
       await opacityIs(1);
       await checkPlacement();
-      await during(() => screenshot(page, "react-translation", width, height));
       // Drive the real clamping code with a low projection even if this driver's bubble is naturally higher.
       await page.evaluate(() => {
         const { game } = window.__ew;
@@ -166,6 +174,7 @@ try {
       await page.evaluate(() => window.__ew.game.setJoystick(0, 0));
       const bump = await assertLine("bump");
       await waitFor(() => bubble.isVisible(), "the bump shows a bubble");
+      assert.equal(await helperLine.count(), 0, "subsequent reactions omit the hint");
       const bumpEnd = await reactionStart() + durationMs(bump.text);
       await stepTo(bumpEnd - 125);
       await opacityIs(0.5);
