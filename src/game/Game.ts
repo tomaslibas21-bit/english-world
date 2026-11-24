@@ -2811,7 +2811,10 @@ export class Game implements GameApi {
     this.sky.position.copy(this.rig.cam.position);
     // an illustrated scene covers the view during the conversation: save the phone's battery
     const covered = this.covered = talking && picturesOn(st.settings) && !!sceneFor(st.conv.sitId, st.conv.hostId);
-    this.rides.updateParkingKeys(this.t, !this.zone.interior && !talking && !this.flight && !this.modes.active && !this.transitioning);
+    const showParkingKeys = !this.zone.interior && !talking && !this.flight && !this.modes.active && !this.transitioning;
+    const underfoot = showParkingKeys && !this.rides.riding && this.hop.y > 0
+      ? this.ledges?.supportPiece(pp.x, pp.z, this.hop.y, this.hop.air) : undefined;
+    this.rides.updateParkingKeys(this.t, showParkingKeys, underfoot);
     if (!covered) {
       this.road?.stage(this.renderer);
       if (!blocked && !mode && riding?.kind === "car" && this.rides.phase === "on" && this.road?.shouldStart(riding)

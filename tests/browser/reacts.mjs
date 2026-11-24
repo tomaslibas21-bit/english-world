@@ -1,4 +1,4 @@
-// Run on the same local Vite server and Chromium setup as phone-rings.mjs.
+// Run on the same local Vite server and Chromium setup as phone-rings.mjs. Set WORLD_SHOTS to keep the screenshots.
 import assert from "node:assert/strict";
 import { contentUrl, contextOptions, installTown, key, manualFrames, probeEffects, progress, screenshot, stubVoiceClips, viewports } from "./life-harness.mjs";
 
@@ -71,6 +71,35 @@ try {
         assert(lines[kind].some((line) => line.en === last.text && line.lt === last.lt));
         return last;
       };
+      const checkOwnerBubble = async (target, line) => {
+        assert.equal(await bubble.locator(".reaction-copy > span").innerText(), line.text);
+        assert.equal(await bubble.locator(".reaction-copy > small").innerText(), line.lt);
+        await checkPlacement();
+        const { tail, head, below, textFits } = await bubble.evaluate((el, { id, speaker }) => {
+          const { game: g } = window.__ew;
+          const { ch } = g.rides.find(id).owners.find((o) => `owner:${o.who.id}` === speaker);
+          const p = ch.root.position.clone();
+          p.y += (ch.seatY ?? 0.5) + ch.height * 0.55;
+          p.project(g.rig.cam);
+          const head = { x: (1 + p.x) * g.container.clientWidth / 2, y: (1 - p.y) * g.container.clientHeight / 2 };
+          const box = el.getBoundingClientRect(), style = getComputedStyle(el, "::after");
+          const below = el.hasAttribute("data-below");
+          const tail = {
+            x: box.left + parseFloat(style.left),
+            y: below ? box.top - parseFloat(style.borderBottomWidth) : box.bottom + parseFloat(style.borderTopWidth),
+          };
+          const textFits = Array.from(el.querySelectorAll(".reaction-copy > span, .reaction-copy > small")).every((node) => {
+            const range = document.createRange();
+            range.selectNodeContents(node);
+            const rects = Array.from(range.getClientRects());
+            return rects.length && rects.every((r) => r.left >= box.left && r.right <= box.right && r.top >= box.top && r.bottom <= box.bottom);
+          });
+          return { tail, head, below, textFits };
+        }, target);
+        assert(textFits, "both owner lines fit inside the bubble");
+        assert(Math.abs(tail.x - head.x) <= 16 && (below ? tail.y > head.y : tail.y < head.y),
+          `the bubble tail points toward the seated owner at ${width}×${height}: ${JSON.stringify({ tail, head, below })}`);
+      };
       const dropOntoCar = (withOwner) => page.evaluate((withOwner) => {
         const { game: g } = window.__ew;
         const candidates = withOwner ? g.rides.list : [...g.rides.modeCars.keys()].filter((car) => car.parked);
@@ -89,7 +118,9 @@ try {
           const target = speaker.ch.root.position;
           g.setJoystick(0, 0);
           g.vel.set(0, 0, 0);
-          g.placeOnFoot(x, z, Math.atan2(target.x - x, target.z - z));
+          // Frame the seated owner beside the learner so both show in the reaction screenshot.
+          const yaw = Math.atan2(target.x - x, target.z - z) + (withOwner ? Math.PI / 6 : 0);
+          g.placeOnFoot(x, z, yaw);
           // Begin above the roof (or the convertible's body). The normal physics step resolves the fall and landing.
           g.hop.land(top.top + 1);
           g.hop.air = true;
@@ -231,6 +262,16 @@ try {
         if (target.speaker) assert.equal(line.speaker, target.speaker);
         else assert.match(line.speaker, /^walker:/);
         await waitFor(() => bubble.isVisible(), `the real ${kind} landing shows a bubble`);
+        if (withOwner) {
+          await step(10);
+          await opacityIs(1);
+          await checkPlacement();
+          const ownerTranslation = bubble.getByRole("button");
+          await during(() => Math.min(width, height) < 600 ? ownerTranslation.tap() : ownerTranslation.click());
+          assert.equal(await ownerTranslation.getAttribute("aria-expanded"), "true");
+          await checkOwnerBubble(target, line);
+          await during(() => screenshot(page, "carroof-owner", width, height));
+        }
         await step(1, 21000);
       }
 

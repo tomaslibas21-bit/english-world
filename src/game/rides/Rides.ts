@@ -895,15 +895,16 @@ export class Rides {
     ch.tuck = Math.sin(Math.PI * k) * 0.8;
   }
 
-  updateParkingKeys(time: number, visible: boolean) {
+  updateParkingKeys(time: number, visible: boolean, underfoot?: Piece) {
     const mesh = this.parkingKeys;
     const { cam, player } = this.host;
     const { x, z } = player.root.position;
     let count = 0;
     if (visible && !this.riding) {
+      const underPlayer = underfoot && this.carUnder(underfoot);
       for (const car of this.modeCars.keys()) {
         const m = car.m;
-        if (!car.parked || !car.model || (m.x - x) ** 2 + (m.z - z) ** 2 > 15 ** 2) continue;
+        if (car === underPlayer || !car.parked || !car.model || (m.x - x) ** 2 + (m.z - z) ** 2 > 15 ** 2) continue;
         const y = car.mesh.position.y + carModelEntry(car.model).collisionBox.height + 0.52 + Math.sin(time * 3) * 0.07;
         const scale = THREE.MathUtils.clamp(cam.position.distanceTo(_v.set(m.x, y, m.z)) / 12, 0.58, 1.35);
         _mark.makeRotationFromQuaternion(cam.quaternion).scale(_w.setScalar(scale)).setPosition(m.x, y, m.z);
