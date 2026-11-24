@@ -1,5 +1,5 @@
-import { Euler, PerspectiveCamera, Quaternion, Vector3 } from "three";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { Euler, Material, Mesh, PerspectiveCamera, Points, Quaternion, Raycaster, Vector3 } from "three";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { NPCS } from "@/content/npcs";
 import { Ambient } from "@/game/ambient";
 import { SALTO, ways } from "@/game/cave/groundsPlan";
@@ -7,16 +7,18 @@ import { createCharacter } from "@/game/characters";
 import { NavGrid } from "@/game/nav";
 import { CAR_WATER, carFootprintOverlapsBox, carWaterClearanceY, createCarWaterProbe, probeCarWater,
   sampleCarWater, supportedCarWaterHeight, sweepCarFootprintBox, wetDriveSettings } from "@/game/rides/carWater";
+import { CarWaterEffects } from "@/game/rides/carWaterEffects";
 import { BOAT, CAR, Motion, aheadOnArc, pushOutOfBox, type Drivable } from "@/game/rides/drive";
 import { isTownCarDryMainland, settleRoadExit, townAsphalt, townCarWaterGround, townGround } from "@/game/rides/ground";
 import { Rides } from "@/game/rides/Rides";
 import { CarWaterClearance, type CarWaterAdapter } from "@/game/rides/carWaterRecovery";
-import { convertibleGeometry } from "@/game/rides/shapes";
-import { BAY, DECKS, FLOORS, POOLS, SEA_LEVEL, SHORE, floorY, poolAt, poolBedY, sandY, seaBedY, waterY } from "@/game/water";
+import { CONVERTIBLE_BUMPER, convertibleGeometry } from "@/game/rides/shapes";
+import { BAY, DECKS, FLOORS, POOLS, SEA_LEVEL, SHORE, Splashes, floorY, poolAt, poolBedY, sandY, seaBedY, waterY } from "@/game/water";
 import { carModelEntry } from "@/game/world/carModels";
 import { OUTDOOR_NPCS, SEA_Z, TRAFFIC_LANES, WORLD } from "@/game/world/layout";
 import { MALECON } from "@/game/world/mexican";
 import { POOL_KIDS } from "@/game/world/pool";
+import { PoolRound } from "@/game/pool/logic";
 import { RIDES, type CarWaterPlan, type CarWaterSite } from "@/game/world/rides";
 import { THEME } from "@/game/world/theme";
 import { Colliders, type AABB } from "@/game/world/util";
@@ -655,7 +657,7 @@ describe("Puerto Colibrí's built water approaches", () => {
   }, 20_000);
 });
 
-function occupiedTown(hz: number, plan: typeof RIDES = RIDES) {
+function occupiedTown(hz: number, plan: typeof RIDES = RIDES, effects?: Pick<CarWaterAdapter, "drops" | "splash" | "wash"> & { drops: Splashes }) {
   const fixture = buildTownFixture({ movableParking: true });
   const { town } = fixture, col = town.colliders, dt = 1 / hz;
   const nav = new NavGrid(-156.5, WORLD.minZ, WORLD.maxX, WORLD.maxZ, 1, col);
@@ -685,6 +687,7 @@ function occupiedTown(hz: number, plan: typeof RIDES = RIDES) {
   let car = cars[0];
   rides.onLeft = () => { left++; };
   const adapter: CarWaterAdapter = {
+    ...effects,
     eligible: () => eligible,
     peopleClear: (clear, reserve) => people.every(n => clear(n.x, n.z, 0.45)
       && (!reserve || n.ax === undefined || n.az === undefined || clear(n.ax, n.az, 0.55))),
@@ -711,6 +714,7 @@ function occupiedTown(hz: number, plan: typeof RIDES = RIDES) {
     now += ms; time += dt;
     const handled = rides.water?.tick(dt, time, resume);
     if (!handled || rides.water?.returning || !rides.riding) rides.update(dt, time, handled ? null : controls);
+    effects?.drops.update(dt, time, null, 0);
     player.update(dt);
     ambient.update(dt, player.root.position, cam.position);
     present();
@@ -754,7 +758,7 @@ function occupiedTown(hz: number, plan: typeof RIDES = RIDES) {
   };
   return {
     rides, player, cars, ambient, col, people, board, frame, stage, inspect, supported, dryPair, fades, snaps, adapter, present,
-    get car() { return car; }, get now() { return now; }, get left() { return left; }, get saved() { return saved; },
+    get car() { return car; }, get now() { return now; }, get time() { return time; }, get left() { return left; }, get saved() { return saved; },
     disable: () => { eligible = false; },
     close: () => { rides.disposeWater(); rides.disposeCrashes(); rides.disposeParkingKeys(); player.dispose?.(); fixture.restore(); },
   };
@@ -1156,4 +1160,359 @@ it("leaves a rejected load dry and retries on a fresh eligible boarding only", a
     expect(attempts).toBe(2);
     expect(f.inspect().enabled).toBe(true);
   } finally { f.close(); }
+});
+
+describe.each([60, 20])("PC car water effects at %i Hz", hz => {
+  it("draws displaced fans, both indexed tracks and a raised two-sided bow on the muted coast run", async () => {
+    const drops = new Splashes(), cueTimes: number[] = [];
+    const splash = vi.fn((_strength: number) => { cueTimes.push(f.time); }), wash = vi.fn<() => void>();
+    const f = occupiedTown(hz, RIDES, { drops, splash, wash });
+    try {
+      expect(f.rides.water).toBeUndefined();
+      expect(drops.inspectCarDrops()).toMatchObject({ carDrops: 0, pointDrawCount: 0, ringVisible: false });
+      await f.board(f.rides.find("east"));
+      expect(f.inspect()).toMatchObject({ sprayEvents: 0, foamId: null, foamDrawCount: 0 });
+      f.stage(128, -55, Math.PI);
+      const sprays: NonNullable<ReturnType<typeof f.inspect>["lastSpray"]>[] = [];
+      const bands = new Set<string>(), miss = new Set<number>();
+      const camera = new PerspectiveCamera(48, 390 / 844, 0.1, 100);
+      let trails = false, bow = false, peak = 0, pointId = "";
+      for (let i = 0; i < 12 * hz && !f.rides.water!.returning; i++) {
+        f.frame(go);
+        const w = f.inspect(), { m } = f.car, wetFx = drops.inspectCarDrops()!;
+        bands.add(w.band);
+        peak = Math.max(peak, wetFx.carDrops);
+        pointId ||= wetFx.pointsId;
+        expect(wetFx.pointsId).toBe(pointId);
+        expect(wetFx.carDrops).toBeLessThanOrEqual(96);
+        expect(wetFx.totalDrops).toBeLessThanOrEqual(420);
+        if (w.sprayEvents > sprays.length) {
+          const fan = w.lastSpray!, tire = w.samples[fan.tire + 1];
+          expect(fan).toMatchObject({ x: tire.x, z: tire.z, y: tire.liveSurface, kind: 1 });
+          expect(tire.depth).toBeGreaterThanOrEqual(sprays.length ? W.shallowLeave : W.shallowEnter);
+          expect(Math.hypot(fan.x - m.x, fan.z - m.z)).toBeGreaterThan(1.3);
+          expect(fan.drops).toBe(fan.strength === 0.55 ? 10 : 7);
+          expect(wetFx.pointsVisible).toBe(true);
+          expect(wetFx.particles.some(p => p.kind === 1 && p.y > fan.y && Math.hypot(p.x - fan.x, p.z - fan.z) < 0.3)).toBe(true);
+          sprays.push(fan);
+        }
+        if (w.band === "body-deep") miss.add(f.rides.revs);
+        if (!w.foamVisible) continue;
+        const foam = f.rides.group.getObjectByName("car-water-foam") as Mesh;
+        const { geometry, material } = foam;
+        expect(foam.uuid).toBe(w.foamId);
+        expect(foam.castShadow).toBe(false);
+        expect(material).toMatchObject({ type: "MeshBasicMaterial", vertexColors: true, depthWrite: false });
+        expect(geometry.drawRange).toEqual({ start: w.foamDrawStart, count: w.foamDrawCount });
+        const { position, color } = geometry.attributes;
+        expect(geometry.index?.count).toBe(192);
+        const perSide = new Set<number>();
+        for (let at = w.foamDrawStart; at < w.foamDrawStart + w.foamDrawCount; at += 3) {
+          const a = geometry.index!.getX(at), b = geometry.index!.getX(at + 1), c = geometry.index!.getX(at + 2);
+          const crossY = (position.getZ(b) - position.getZ(a)) * (position.getX(c) - position.getX(a))
+            - (position.getX(b) - position.getX(a)) * (position.getZ(c) - position.getZ(a));
+          expect(crossY).toBeGreaterThan(0);
+          if (a < 9) continue;
+          for (const j of [a, b, c]) {
+            const x = position.getX(j), z = position.getZ(j);
+            expect(position.getY(j)).toBeCloseTo(waterY(x, z, f.time)! + 0.035, 5);
+            expect(color.getW(j)).toBeGreaterThanOrEqual(0);
+            const dx = x - m.x, dz = z - m.z;
+            expect(dx * m.fx + dz * m.fz).toBeLessThan(-1);
+            perSide.add(Math.sign(dx * m.fz - dz * m.fx));
+          }
+        }
+        if (!trails && w.band === "shallow" && perSide.size === 2) {
+          trails = true;
+          expect(w.leftTrack.length).toBeGreaterThan(1);
+          expect(w.rightTrack.length).toBeGreaterThan(1);
+          expect(Math.max(w.leftTrack.length, w.rightTrack.length)).toBeLessThanOrEqual(8);
+        }
+        if (!bow && w.bowVertices === 9) {
+          bow = true;
+          expect(trails).toBe(true);
+          expect(w.band).toBe("body-deep");
+          expect(w.foamDrawStart).toBe(0);
+          camera.position.set(m.x - m.fx * 8.5, 3, m.z - m.fz * 8.5);
+          camera.lookAt(m.x, 0.5, m.z);
+          camera.updateMatrixWorld();
+          const centre = new Vector3().fromBufferAttribute(position, 4);
+          const fore = Math.max(m.spec.half, CONVERTIBLE_BUMPER.offset + CONVERTIBLE_BUMPER.depth / 2) + 0.12;
+          expect((centre.x - m.x) * m.fx + (centre.z - m.z) * m.fz).toBeCloseTo(fore, 4);
+          expect(centre.y - waterY(centre.x, centre.z, f.time)!).toBeCloseTo(0.10, 5);
+          foam.updateWorldMatrix(true, false);
+          const ray = new Raycaster(centre.clone().add(new Vector3(0, 1, 0)), new Vector3(0, -1, 0));
+          expect(ray.intersectObject(foam).length).toBeGreaterThan(0);
+          for (const vertex of [1, 7]) {
+            const p = new Vector3().fromBufferAttribute(position, vertex);
+            const side = (p.x - m.x) * m.fz - (p.z - m.z) * m.fx;
+            expect(Math.abs(side)).toBeCloseTo(m.spec.wide + 0.45, 4);
+            expect((p.x - m.x) * m.fx + (p.z - m.z) * m.fz).toBeCloseTo(fore - 0.85, 4);
+            const projected = p.project(camera);
+            expect(Math.abs(projected.x)).toBeLessThan(1);
+            expect(Math.abs(projected.y)).toBeLessThan(1);
+          }
+        }
+      }
+      expect([...bands]).toEqual(["dry", "shallow", "body-deep", "float"]);
+      expect(bow && trails).toBe(true);
+      expect(peak).toBeGreaterThan(30);
+      expect(miss).toEqual(new Set([0.06, 0.36]));
+      expect(splash.mock.calls[0]).toEqual([0.35]);
+      expect(splash.mock.calls.slice(1).flat().some(k => k === 0.22 || k === 0.30)).toBe(true);
+      for (let i = 1; i < cueTimes.length; i++) expect(cueTimes[i] - cueTimes[i - 1]).toBeGreaterThanOrEqual(0.65 - 1e-7);
+      expect(wash).toHaveBeenCalledTimes(1);
+      const crossover = sprays.findIndex(fan => fan.strength === 0.55);
+      expect(crossover).toBeGreaterThan(0);
+      expect(sprays[crossover].time - sprays[crossover - 1].time).toBeLessThan(0.10 + 1 / hz + 1e-5);
+      for (const strength of [0.20, 0.55]) {
+        const matches = sprays.filter(fan => fan.strength === strength);
+        expect(matches.length).toBeGreaterThan(3);
+        expect(new Set(matches.map(fan => fan.side))).toEqual(new Set([-1, 1]));
+        const step = strength === 0.20 ? 0.14 : 0.10;
+        for (let i = 1; i < matches.length; i++) expect(Math.abs(matches[i].time - matches[i - 1].time - step)).toBeLessThan(1 / hz + 1e-5);
+      }
+
+      const seatedCoughs = new Set<number>();
+      for (let i = 0; f.inspect().active && i < 3.5 * hz; i++) {
+        f.frame();
+        const w = f.inspect();
+        if (w.coughBeat) seatedCoughs.add(f.rides.revs);
+      }
+      expect(seatedCoughs).toEqual(new Set([0.28, 0.16]));
+      expect(f.inspect()).toMatchObject({ active: false, drainEmissions: 36, coughEvents: 2 });
+      for (let i = 0; i < hz; i++) f.frame();
+      expect(f.inspect()).toMatchObject({ carDrops: 0, foamVisible: false, foamDrawCount: 0, pointDrawCount: 0 });
+    } finally { f.close(); }
+  }, 20_000);
+
+  it("streams four drops at a time from the actual exited car and preserves ordinary drops on teardown", async () => {
+    const drops = new Splashes(), drop = vi.spyOn(drops, "carDrop");
+    const f = occupiedTown(hz, RIDES, { drops });
+    try {
+      await f.board();
+      f.stage(128, -75, Math.PI);
+      f.car.m.speed = 2;
+      f.frame(go);
+      const foam = f.rides.group.getObjectByName("car-water-foam") as Mesh;
+      const id = f.car.mesh.uuid;
+      expect(f.rides.leave()).toBe(true);
+      expect(f.rides.riding).toBeNull();
+      const before = f.now;
+      f.frame(null, 500, true);
+      expect(f.now - before).toBeLessThan(3500);
+      f.dryPair();
+      expect(f.inspect()).toMatchObject({ active: false, fallback: true, foamDrawCount: 0, drainObject: id, drainEmissions: 4, drainLive: 4 });
+      const { m, mesh } = f.car;
+      for (const [x, y, z, vx, vz] of drop.mock.calls) {
+        const along = (x - m.x) * m.fx + (z - m.z) * m.fz;
+        const side = (x - m.x) * m.fz - (z - m.z) * m.fx;
+        expect(Math.abs(along + 0.25 * m.spec.half / W.referenceHalf)).toBeCloseTo(0.04);
+        expect(Math.abs(side)).toBeCloseTo(m.spec.wide + 0.03);
+        expect(y).toBeCloseTo(mesh.position.y + 0.44);
+        expect((vx * m.fz - vz * m.fx) * Math.sign(side)).toBeCloseTo(0.2);
+      }
+      for (const p of drops.inspectCarDrops()!.particles) expect(p.vy).toBeCloseTo(-1.1 - 9.5 / hz);
+      f.player.root.position.x += 3;
+      const nod = new Map<number, number>();
+      for (let i = 0; i < Math.ceil(hz * 0.66); i++) {
+        f.frame();
+        const w = f.inspect();
+        expect(f.rides.revs).toBe(0);
+        if (w.coughBeat) nod.set(w.coughBeat, Math.max(nod.get(w.coughBeat) ?? 0, mesh.rotation.x));
+        for (const p of drops.inspectCarDrops()!.particles) expect(p.y).toBeGreaterThan(floorY(p.x, p.z));
+      }
+      expect(nod.get(1)).toBeGreaterThan(0.01);
+      expect(nod.get(2)).toBeGreaterThan(0.007);
+      expect(drop).toHaveBeenCalledTimes(36);
+      expect(f.inspect()).toMatchObject({ drainEmissions: 36, coughEvents: 2, pointsVisible: true });
+      expect(f.car.mesh.uuid).toBe(id);
+      drops.burst(-106, -0.12, -30, 0, 0, 0.9);
+      drops.update(0, f.time, { x: -106, y: -0.12, z: -30 }, 1);
+      const releaseGeometry = vi.fn(), releaseMaterial = vi.fn();
+      if (foam) {
+        foam.geometry.addEventListener("dispose", releaseGeometry);
+        (foam.material as Material).addEventListener("dispose", releaseMaterial);
+      }
+      f.rides.disposeWater();
+      expect(drops.inspectCarDrops()).toMatchObject({ carDrops: 0, drainLive: 0, totalDrops: 12, ringVisible: true });
+      expect(f.rides.group.getObjectByName("car-water-foam")).toBeUndefined();
+      expect(releaseGeometry).toHaveBeenCalledTimes(1);
+      expect(releaseMaterial).toHaveBeenCalledTimes(1);
+    } finally { f.close(); }
+  }, 20_000);
+});
+
+it("uses only the wet cenote side, switches leading and trailing axles on reverse, and clears on a dry board or a jump", () => {
+  const drops = new Splashes();
+  const f = occupiedTown(60, RIDES, { drops });
+  const { m } = f.car;
+  const fx = new CarWaterEffects({ effectRoot: f.rides.group, drops }, f.col.boxes.filter(b => b.carRim || b.deckRail));
+  const p = createCarWaterProbe(), dt = 1 / 60;
+  let time = 0;
+  const frame = (speed: number) => {
+    time += dt;
+    m.speed = speed;
+    m.x += m.fx * speed * dt; m.z += m.fz * speed * dt;
+    probeCarWater(m, time, p.band === "float" ? "dry" : p.band, p);
+    fx.drive(f.car, p, time, dt);
+    drops.update(dt, time, null, 0);
+    return CarWaterEffects.inspect(fx, time);
+  };
+  try {
+    // Use the built northeast approach and an oblique heading, with exactly one side wet.
+    let gap: Point & { heading: number } | undefined;
+    for (const heading of [-0.4, -1.1, -0.2, -1.3]) {
+      for (let i = 0; i < 40 && !gap; i++) {
+        const x = -132 + 0.05 * i, z = -10.2 - 0.05 * i;
+        const a = read(x, z, heading, 0, m.spec);
+        const b = read(x + 0.08 * Math.sin(heading), z + 0.08 * Math.cos(heading), heading, 0, m.spec);
+        if ([a, b].every(probe => probe.band === "shallow" && tires(probe).filter(t => t.depth >= W.shallowEnter).length === 1)) {
+          gap = { x, z, heading };
+        }
+      }
+    }
+    expect(gap).toBeDefined();
+    m.set(gap!.x, gap!.z, gap!.heading);
+    const first = frame(0).lastSpray;
+    expect(first).not.toBeNull();
+    expect(first!.y).toBe(0.04);
+    expect(p.maxTireDepth).toBeGreaterThan(0.34);
+    expect(Math.min(p.frontLeft.depth, p.rearLeft.depth)).toBe(0);
+    expect(Math.min(p.frontRight.depth, p.rearRight.depth)).toBe(0);
+    expect(tires(p).filter(t => t.depth >= W.shallowEnter).length).toBe(1);
+    for (let i = 0; i < 8; i++) {
+      const w = frame(0.5);
+      expect(w.lastSpray?.side).toBe(first!.side);
+      expect(w.bowVertices).toBe(0);
+    }
+
+    m.set(84, -75.9, Math.PI / 2);
+    for (let i = 0; i < 18; i++) frame(2.1);
+    let w = frame(2.1);
+    expect(w).toMatchObject({ bowVertices: 9, foamDrawStart: 0 });
+    expect(w.lastSpray!.tire).toBeLessThan(2);
+    expect(w.leftTrack.at(-1)).toMatchObject({ x: p.rearLeft.x, z: p.rearLeft.z });
+    expect(w.rightTrack.at(-1)).toMatchObject({ x: p.rearRight.x, z: p.rearRight.z });
+    const index = (f.rides.group.getObjectByName("car-water-foam") as Mesh).geometry.index;
+    w = frame(-1.4);
+    expect(w.wakeSegments).toBe(0);
+    for (let i = 0; i < 20; i++) w = frame(-1.4);
+    expect(w.lastSpray!.tire).toBeGreaterThanOrEqual(2);
+    expect(w.wakeSegments).toBeGreaterThan(0);
+    expect(w.leftTrack.at(-1)).toMatchObject({ x: p.frontLeft.x, z: p.frontLeft.z });
+    expect(w.rightTrack.at(-1)).toMatchObject({ x: p.frontRight.x, z: p.frontRight.z });
+    const foam = f.rides.group.getObjectByName("car-water-foam") as Mesh;
+    expect(foam.geometry.index).toBe(index);
+
+    m.set(-30, -70, 0);
+    w = frame(0);
+    expect(floorY(m.x, m.z)).toBe(0.30);
+    expect(waterY(m.x, m.z, time)).not.toBeNull();
+    expect(w).toMatchObject({ wakeSegments: 0, bowVertices: 0, foamDrawCount: 0, leftTrack: [], rightTrack: [] });
+    expect(drops.inspectCarDrops()).toMatchObject({ carDrops: 0, pointDrawCount: 0 });
+  } finally { fx.dispose(); f.close(); }
+});
+
+it("uses the hotel water sheet and shares one capped batch with wading, ball misses and the boat ring", () => {
+  const fixture = buildTownFixture();
+  const drops = new Splashes();
+  const points = drops.group.getObjectByName("water-drops") as Points;
+  const ring = drops.group.getObjectByName("water-ring") as Mesh;
+  const at = { x: -104.65, y: -0.12, z: -27.8 };
+  const miss = () => {
+    const round = new PoolRound(true, 0, () => 0);
+    for (let i = 0; i < 1000; i++) if (round.update(1 / 60)?.kind === "drop") {
+      drops.burst(-106, -0.12, -29.85, 0, 0, 0.9);
+      return;
+    }
+    throw new Error("The pool round did not miss a learner pass");
+  };
+  try {
+    expect(waterY(at.x, at.z, 2)).toBe(at.y);
+    expect(floorY(at.x, at.z)).toBeGreaterThan(-1);
+    expect(floorY(-104.65, -30.25)).toBe(-0.88);
+    expect(floorY(-106, -36)).toBe(-1.97);
+    expect(points.material).toMatchObject({ depthWrite: true, depthTest: true });
+    expect(ring.material).toMatchObject({ depthWrite: false, depthTest: true });
+    expect(drops.group.children).toHaveLength(2);
+    expect(points.geometry.attributes.position.count).toBe(420);
+    expect(drops.inspectCarDrops()).toMatchObject({ totalDrops: 0, pointDrawCount: 0 });
+    drops.boatRing(0, 1, { x: -30, z: -92, heading: 0, pace: 3, slip: 0 }, { match: true });
+    expect(drops.inspectCarDrops()).toMatchObject({ carDrops: 0, pointDrawCount: 0, ringVisible: true });
+
+    miss();
+    drops.update(0, 2, at, 1);
+    expect(drops.inspectCarDrops()).toMatchObject({ carDrops: 0, totalDrops: 12, pointDrawCount: 12, ringVisible: true });
+    expect(points.visible).toBe(true);
+
+    drops.carDrop(-104.65, 0.32, -30.25, 0, 0);
+    drops.carDrop(-30, 0.74, -70, 0, 0);
+    drops.carDrop(-106, 0.32, -36, 0, 0);
+    drops.carDrop(-112, 0.32, -32, 0, 0);
+    drops.update(0, 2, at, 1);
+    expect(drops.inspectCarDrops()!.particles.map(p => p.vy)).toEqual(Array(4).fill(expect.closeTo(-1.1, 6)));
+    for (let i = 1; i <= 8; i++) {
+      drops.update(0.05, 2 + 0.05 * i, at, 1);
+      for (const p of drops.inspectCarDrops()!.particles) {
+        expect(p.y).toBeGreaterThan(Math.max(floorY(p.x, p.z), waterY(p.x, p.z, 2 + 0.05 * i) ?? -Infinity));
+      }
+    }
+    expect(drops.inspectCarDrops()).toMatchObject({ carDrops: 0, drainLive: 0, ringVisible: true });
+
+    for (let i = 0; i < 22; i++) {
+      drops.carFan(at.x, at.y, at.z, 0, -1, 0.55);
+      drops.carDrop(-106, 0.32, -36, 0, 0);
+    }
+    drops.update(0, 3, at, 1);
+    expect(drops.inspectCarDrops()).toMatchObject({ carDrops: 96, capacity: 420, pointsVisible: true, ringVisible: true });
+    for (let i = 0; i < 34; i++) drops.burst(-106, -0.12, -29.85, 0, 0, 1);
+    drops.update(0, 3, at, 1);
+    expect(drops.inspectCarDrops()).toMatchObject({ carDrops: 0, totalDrops: 420, pointDrawCount: 420, ringVisible: true });
+    drops.carFan(at.x, at.y, at.z, 0, -1, 0.20);
+    drops.clearCarDrops();
+    expect(drops.inspectCarDrops()).toMatchObject({ carDrops: 0, totalDrops: 413, ringVisible: true });
+    drops.clearDrops();
+    drops.boatRing(0, 4, { x: -30, z: -92, heading: 0, pace: 3, slip: 0 }, { match: true });
+    expect(drops.inspectCarDrops()).toMatchObject({ pointDrawCount: 0, ringVisible: true });
+    expect(ring.position.z).toBe(-92.6);
+  } finally { fixture.restore(); }
+});
+
+it("leaves real wheel ribbons in the hotel steps without crossing the coping", () => {
+  const drops = new Splashes();
+  const f = occupiedTown(60, RIDES, { drops });
+  const ride = f.rides.find("east")!, m = ride.m, probe = createCarWaterProbe();
+  const fx = new CarWaterEffects({ effectRoot: f.rides.group, drops }, f.col.boxes.filter(b => b.carRim || b.deckRail));
+  const dt = 1 / 60;
+  try {
+    m.set(-104.65, -26.55, Math.PI);
+    m.speed = -0.65;
+    const hotel = poolAt(-106, -32);
+    let seen = false;
+    for (let i = 0; i < 28; i++) {
+      const time = i * dt;
+      m.z += 0.65 * dt;
+      probeCarWater(m, time, probe.band, probe);
+      fx.drive(ride, probe, time, dt);
+      drops.update(dt, time, null, 0);
+      const w = CarWaterEffects.inspect(fx, time), batch = drops.inspectCarDrops()!;
+      if (w.lastSpray) expect(w.lastSpray.y).toBe(-0.12);
+      for (const p of batch.particles) expect(p.x).toBeLessThan(-103);
+      if (!w.foamVisible) continue;
+      const foam = f.rides.group.getObjectByName("car-water-foam") as Mesh;
+      const { geometry } = foam, { start, count } = geometry.drawRange;
+      seen ||= w.leftTrack.length > 1 && w.rightTrack.length > 1 && batch.pointsVisible;
+      expect(probe.band).toBe("shallow");
+      expect(start).toBe(24);
+      for (let j = start; j < start + count; j++) {
+        const i = geometry.index!.getX(j), { position } = geometry.attributes;
+        const x = position.getX(i), z = position.getZ(i);
+        expect(poolAt(x, z)).toBe(hotel);
+        expect(floorY(x, z)).toBeLessThan(-0.12);
+        expect(position.getY(i)).toBeCloseTo(-0.12 + 0.035, 6);
+      }
+    }
+    expect(seen).toBe(true);
+  } finally { fx.dispose(); f.close(); }
 });

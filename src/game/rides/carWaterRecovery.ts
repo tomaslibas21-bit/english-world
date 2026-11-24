@@ -13,6 +13,7 @@ import { CAR_REACH, type Controls, type MotionImpact, type WetDriveSettings } fr
 import { isTownCarDryMainland, townCarWaterGround } from "./ground";
 import type { Ride } from "./Rides";
 import { CAR_SEATS, CONVERTIBLE_BUMPER } from "./shapes";
+import { CarWaterEffects, sputterMiss, type CarWaterEffectsHost } from "./carWaterEffects";
 
 type Point = { x: number; z: number };
 type Pose = Point & { heading: number };
@@ -82,7 +83,7 @@ export class CarWaterClearance {
   private readonly shape = emptyBox();
   private readonly home = emptyPose();
   private readonly poolBox = { minX: 0, maxX: 0, minZ: 0, maxZ: 0 };
-  private readonly rails;
+  readonly rails;
   private readonly hit: MotionImpact = { into: 0, nx: 0, nz: 0, x: 0, z: 0, circle: 1 };
   private circle = false;
   private readonly personClear: ClearPerson = (x, z, radius) => !this.hitsCircle(x, z, radius);
@@ -331,7 +332,7 @@ function reachBox(cx: number, cz: number, heading: number, half: number, wide: n
 }
 
 type WaterEvent = "contact" | "float" | "exit" | "drain" | "handback";
-export interface CarWaterAdapter {
+export interface CarWaterAdapter extends CarWaterEffectsHost {
   eligible(): boolean;
   peopleClear(clear: ClearPerson, reserved: boolean): boolean;
   arrest(): void;
@@ -426,6 +427,7 @@ export class CarWaterRecovery {
   private sampled = false;
   private loaded = false;
   private miss = false;
+  private effects?: CarWaterEffects;
 
   constructor(private readonly plan: CarWaterPlan, private readonly clearance: CarWaterClearance,
     private readonly host: CarWaterHost, private readonly clock = () => performance.now()) {
@@ -463,6 +465,7 @@ export class CarWaterRecovery {
     return this.owns(r) || this.open(r) && this.sampled && (p.centre.floor !== 0 || p.pitch !== 0
       || p.frontLeft.floor !== 0 || p.frontRight.floor !== 0 || p.rearLeft.floor !== 0 || p.rearRight.floor !== 0);
   }
+  draining(r: Ride) { return this.effects?.isDrainSource(r) ?? false; }
 
   safeSave() { return this.restartValid && (this.wet || this.returning) ? this.restart : undefined; }
 
@@ -602,6 +605,7 @@ export class CarWaterRecovery {
     this.sampled = false;
     this.scan = 0; this.lastCheck = -Infinity;
     this.area = undefined;
+    this.effects?.endWet();
     for (const pair of this.spares) pair.valid = false;
     this.publish();
   }
@@ -610,6 +614,7 @@ export class CarWaterRecovery {
     const r = this.car;
     const moved = r !== null && this.owns(r) && this.finish(r, true);
     if (!moved) this.clearIncident();
+    this.effects?.cancel();
     this.car = null;
     this.restartValid = this.lastDry.valid = false;
     this.count = this.head = 0;
@@ -620,17 +625,29 @@ export class CarWaterRecovery {
 
   dispose() {
     this.transfer();
+    this.effects?.dispose();
     this.disposed = true;
   }
+
+  cancelEffects(r?: Ride) {
+    if (!r || this.car === r || this.draining(r)) this.effects?.cancel();
+  }
+
+  private waterEffects() { return this.effects ??= new CarWaterEffects(this.host, this.clearance.rails); }
 
   /** First in the player update, including while on foot, blocked or in a transition. */
   tick(dt: number, time: number, resumed = false) {
     const r = this.car;
-    if (!r) return false;
+    this.time = time;
+    if (!r) {
+      if (resumed) this.effects?.discontinuity();
+      this.effects?.rest(time);
+      return false;
+    }
     const now = this.clock(), discontinuity = resumed || now - this.lastFrame >= 500;
+    if (resumed || now - this.lastFrame > 200) this.effects?.discontinuity();
     this.lastFrame = now;
     this.frameDt = dt;
-    this.time = time;
     if (!this.host.eligible(r)) { this.transfer(); return false; }
     if (!this.host.driver(r) && !this.returning) {
       if (!this.wet) { this.transfer(); return false; }
@@ -642,7 +659,11 @@ export class CarWaterRecovery {
       return true;
     }
     this.maintain(r);
-    if (!this.returning) return false;
+    if (!this.returning) {
+      if (!this.wet) this.effects?.rest(time);
+      return false;
+    }
+    this.effects?.rest(time);
     if (discontinuity) {
       this.finish(r);
       return true;
@@ -664,6 +685,7 @@ export class CarWaterRecovery {
     if (!this.wet && !nearWater(m.x, m.z, 17)) {
       this.probe.band = "dry";
       this.sampled = false;
+      if (settled) this.effects?.rest(time);
       return false;
     }
     const previous = this.probe.band;
@@ -684,18 +706,25 @@ export class CarWaterRecovery {
       }
     }
     this.record(r);
-    if (this.probe.band === "float") this.start(r, "depth", now);
+    const floating = this.probe.band === "float";
+    if ((settled || floating) && this.wet) {
+      if (this.probe.band !== "dry") this.waterEffects();
+      this.effects?.drive(r, this.probe, time, this.frameDt);
+    }
+    if (floating) this.start(r, "depth", now);
     if (!this.returning && now >= this.firstWet + WET_LIMIT) this.start(r, "wet-limit", this.firstWet + WET_LIMIT);
     if (this.returning && now >= this.deadline) this.finish(r);
     this.readThrottle(throttle);
-    if (settled && this.wet && !this.returning) this.host.drive?.(r, this.probe, time);
+    if (settled && this.wet && !this.returning) {
+      if (!this.draining(r)) this.effects?.motorSignal(this.probe.band === "body-deep" && this.loaded && this.miss ? -1 : 0);
+      this.host.drive?.(r, this.probe, time);
+    }
     return this.returning;
   }
 
   private readThrottle(throttle: number) {
     this.loaded = Math.abs(throttle) > 0.1;
-    const { cycle, second, duration } = W.sputter, phase = Math.max(0, (this.clock() - this.bodyAt) / 1000) % cycle;
-    this.miss = phase < duration || phase >= second && phase < second + duration;
+    this.miss = sputterMiss((this.clock() - this.bodyAt) / 1000);
   }
 
   settings(c: Controls) {
@@ -707,7 +736,9 @@ export class CarWaterRecovery {
     return this.settingsBuffer;
   }
 
-  revs(stock: number) {
+  revs(r: Ride, stock: number) {
+    if (this.draining(r)) return this.effects!.motor(r, this.time);
+    if (!this.owns(r)) return stock;
     if (this.returning) return 0;
     return this.probe.band === "body-deep" && this.loaded ? this.miss ? W.sputter.missRevs : W.sputter.loadRevs : stock;
   }
@@ -749,6 +780,7 @@ export class CarWaterRecovery {
         wetDoor ||= this.wetFoot(this.testFoot.x, this.testFoot.z);
       }
       if (!this.wet && !wetDoor && this.probe.centre.depth <= 0 && this.probe.maxTireDepth <= 0) return false;
+      if (this.probe.band !== "dry" && finite(r.m)) this.waterEffects().drive(r, this.probe, time, this.frameDt);
       this.exitWanted = true;
       this.start(r, "exit", this.clock());
     }
@@ -764,6 +796,8 @@ export class CarWaterRecovery {
 
   private start(r: Ride, reason: Reason, now: number) {
     if (this.returning) return;
+    this.effects?.rest(this.time);
+    this.effects?.motorSignal(0);
     this.reason = reason; this.started = now;
     this.deadline = Math.min(now + RETURN_LIMIT, this.firstWet + WET_LIMIT + RETURN_LIMIT);
     this.age = this.progressed = 0;
@@ -884,6 +918,7 @@ export class CarWaterRecovery {
       }
       if (this.inlandTurn) this.turnInland(r, drain);
       this.host.place(r, false, false, this.time);
+      this.effects?.posed(r, this.time);
       this.host.settle?.(r, this.time, Math.max(0, 1 - drain / DRAIN));
       return;
     }
@@ -894,6 +929,7 @@ export class CarWaterRecovery {
       if (this.fadeAt === Infinity && (this.age >= TOW_END ||
         this.age >= TOW_END - FADE && (this.blockedRoute || !this.routeCount || tooFar))) {
         this.fadeAt = this.age;
+        this.effects?.discontinuity();
         this.host.fade("cover");
       }
       if (this.age >= this.fadeAt + FADE && this.coveredLanding(r)) return;
@@ -938,6 +974,7 @@ export class CarWaterRecovery {
   }
 
   private land(r: Ride, pair: Pair, covered: boolean, transfer = false) {
+    const wet = this.wet || this.probe.maxTireDepth > 0 || this.probe.centre.depth > 0;
     copyPair(this.landing, pair);
     this.usedFallback = covered;
     this.lastLanding = covered ? "spare" : "trail";
@@ -962,6 +999,11 @@ export class CarWaterRecovery {
     }
     if (!transfer && (this.exitWanted || this.assisted || !this.host.driver(r))) this.putFoot(r, this.landing.foot);
     this.host.place(r, false, covered && !transfer, this.time, transfer);
+    if (wet && !transfer) {
+      const effects = this.waterEffects();
+      effects.beginDrain(r, this.time, covered);
+      effects.posed(r, this.time);
+    }
     if (!transfer) this.host.event?.("drain", r);
   }
 
@@ -997,6 +1039,7 @@ export class CarWaterRecovery {
     }
     this.host.place(r, true, false, this.time, transfer);
     if (!transfer) {
+      this.effects?.posed(r, this.time);
       this.host.event?.("handback", r);
       this.host.save();
     }
@@ -1041,9 +1084,8 @@ export class CarWaterRecovery {
         const floating = (p.centre.liveSurface ?? p.centre.floor) - 0.28 + 0.07 * Math.sin(this.age * 2 * Math.PI / 0.70);
         y = this.startY + (floating - this.startY) * blend;
       } else {
-        const drain = this.age - this.landedAt;
         y = floorY(m.x, m.z);
-        pitch = 0.012 * Math.sin(drain * 26) * clamp(1 - drain / DRAIN, 0, 1);
+        pitch = 0;
       }
       roll = 0;
     } else if (!roadGrade) {
@@ -1051,13 +1093,14 @@ export class CarWaterRecovery {
       pitch += p.pitch + (p.band === "body-deep" && this.miss && this.loaded ? 0.018 : 0);
     }
     const wet = this.wet || this.returning;
-    pitch = clamp(pitch, -W.maxPitch, W.maxPitch);
+    pitch = clamp(pitch + (this.effects?.pitch(r, time) ?? 0), -W.maxPitch, W.maxPitch);
     mesh.rotation.set(pitch, m.heading, roll);
     if (grounding) {
       const bed = this.support(r, time, -Infinity, false);
       y += (bed - y) * grounding;
     }
     mesh.position.set(m.x, this.support(r, time, y, wet && afloat), m.z);
+    if (!this.returning) this.effects?.posed(r, time);
     this.host.pose?.(r, time);
   }
 
@@ -1104,10 +1147,16 @@ export class CarWaterRecovery {
       samples: [{ ...p.centre }, { ...p.frontLeft }, { ...p.frontRight }, { ...p.rearLeft }, { ...p.rearRight }],
       steerGain: limits?.steerGain ?? 1, forwardCap: limits?.forward ?? null, reverseCap: limits?.reverse ?? null,
       assistedOnFoot: this.assisted, fallback: this.usedFallback, landing: this.lastLanding,
+      landingPair: this.landing.valid && (this.lastLanding || this.returning && this.routeCount > 0)
+        ? { pose: { ...this.landing.pose }, foot: { ...this.landing.foot } } : null,
+      fallbackReason: this.usedFallback ? (this.routeCount ? "corridor-unfinished" : "no-corridor") : null,
       landed: this.landing.valid ? { ...this.landing.pose, foot: { ...this.landing.foot } } : null,
       alternate: this.spares[1].valid ? { ...this.spares[1].pose, foot: { ...this.spares[1].foot } } : null,
       spares: this.spares.filter(q => q.valid).map(q => ({ ...q.pose, foot: { ...q.foot } })),
       availability: this.spareCount,
+      ...this.host.drops?.inspectCarDrops(),
+      ...CarWaterEffects.inspect(this.effects, this.time),
+      motorSignalRevs: this.car ? this.revs(this.car, 0) : 0,
     };
   }
 }

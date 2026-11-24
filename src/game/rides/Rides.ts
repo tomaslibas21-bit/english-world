@@ -315,6 +315,7 @@ export class Rides {
       });
       this.water = new CarWaterRecovery(plan, clearance, {
         ...adapter,
+        effectRoot: this.group,
         eligible: ride => this.waterBoarding === ride && (!this.riding || this.riding === ride) && adapter.eligible(),
         driver: ride => this.riding === ride,
         reserve: boxes => { this.host.ambient.waterReservations = boxes; },
@@ -331,7 +332,8 @@ export class Rides {
       }, this.host.carWaterClock);
       this.water.begin(r);
       if (import.meta.env.DEV && typeof window !== "undefined") {
-        const debug = this.waterDebug = () => this.water?.inspect();
+        const surface = (x: number, z: number, time = this.now) => waterY(x, z, time);
+        const debug = this.waterDebug = () => ({ ...this.water?.inspect(), motorRevs: this.revs, surface });
         Object.assign(window, { __carWater: debug });
       }
     }).catch(() => {
@@ -734,6 +736,7 @@ export class Rides {
   /** The player takes `r`: its people hop out on the curb's side with a word, and the player hops in. */
   board(r: Ride, count = true) {
     if (this.riding) return false;
+    this.water?.cancelEffects();
     const p = this.host.player.root.position;
     this.riding = r;
     this.removeSandCollider(r);
@@ -887,6 +890,7 @@ export class Rides {
 
   resetPosition(r: Ride, { x, z, rot }: Ride["home"]) {
     if (this.water?.returning && this.water.owns(r)) return;
+    this.water?.cancelEffects(r);
     this.removeSandCollider(r);
     r.beach = undefined;
     if (r === this.riding) {
@@ -919,6 +923,7 @@ export class Rides {
   }
 
   private sendHome(r: Ride) {
+    this.water?.cancelEffects(r);
     r.m.set(r.home.x, r.home.z, r.home.rot);
     r.awayT = 0;
     r.thanked = true;
@@ -1541,11 +1546,14 @@ export class Rides {
    *  boat on the swell, its bow up at speed. */
   private place(r: Ride, dt: number, t: number) {
     const m = r.m, mesh = r.mesh;
+    const draining = this.water?.draining(r);
     // (its shadow only where the player is near enough to see it: a car down the street is not drawn again for the sun)
     const d2 = (m.x - this.learner.x) ** 2 + (m.z - this.learner.z) ** 2;
     mesh.castShadow = d2 < 36 * 36;
     // (a parked car stays where it was put; a boat nobody is near enough to see rock is left as it lies)
-    if (r !== this.riding && dt > 0 && (r.kind === "car" ? m.x === mesh.position.x && m.z === mesh.position.z && m.bump === 0 && r.sus.y === 0 && r.sus.vy === 0 : d2 > 110 * 110)) return;
+    if (r !== this.riding && dt > 0 && (r.kind === "car"
+      ? m.x === mesh.position.x && m.z === mesh.position.z && m.bump === 0 && r.sus.y === 0 && r.sus.vy === 0 && !draining
+      : d2 > 110 * 110)) return;
     if (r.kind === "car") {
       // (left standing, its springs settle)
       if (r !== this.riding && dt > 0) this.ride(r, dt);
@@ -1559,7 +1567,7 @@ export class Rides {
       const grade = onExitAsphalt(m.x, m.z) ? exitHeight(m.x, m.z) : 0;
       const slope = grade > 0 ? Math.atan2(exitHeight(m.x + m.fx, m.z + m.fz) - exitHeight(m.x - m.fx, m.z - m.fz), 2) : 0;
       const pitch = -slope + m.bump * 0.035 + r.sus.p + (driven ? this.squat : 0), roll = driven ? this.roll : 0;
-      if (this.water?.usesChassis(r)) this.water.pose(r, t, grade + r.sus.y, pitch, roll, grade > 0);
+      if (this.water && (draining || this.water.usesChassis(r))) this.water.pose(r, t, grade + r.sus.y, pitch, roll, grade > 0);
       else {
         mesh.position.set(m.x, grade + r.sus.y, m.z);
         mesh.rotation.set(pitch, m.heading, roll);
@@ -1767,6 +1775,6 @@ export class Rides {
   get revs() {
     const r = this.riding;
     const revs = r && this.phase === "on" ? Math.min(1.25, (r.m.pace + (r.m.drift ? 3 : 0)) / r.m.spec.max) : 0;
-    return r && this.water?.owns(r) ? this.water.revs(revs) : revs;
+    return r && this.phase === "on" ? this.water?.revs(r, revs) ?? revs : revs;
   }
 }

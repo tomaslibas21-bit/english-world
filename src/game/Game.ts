@@ -1551,6 +1551,9 @@ export class Game implements GameApi {
     this.waterNeutral = false;
     this.rides.prefetchWater(ride, {
       eligible: () => !this.disposed && this.zone.id === "town" && !this.modes.engaged && !this.flight,
+      drops: this.splashes,
+      splash: strength => audio.splash(strength),
+      wash: () => audio.wash(),
       peopleClear: (clear, reserve) => this.carWaterPeopleClear(clear, reserve),
       arrest: () => {
         this.waterNeutral = this.waterInputHeld();
@@ -3357,8 +3360,12 @@ export class Game implements GameApi {
     const r = this.rides.riding!, m = r.m;
     this.rides.update(dt, this.t, controls);
     // (getting out ends the ride inside update: the player is on foot again, leftRide has set them down)
-    if (this.rides.riding !== r) return;
+    if (this.rides.riding !== r) {
+      if (this.rides.water?.returning) this.splashes.update(dt, this.t, null, 0);
+      return;
+    }
     const on = this.rides.phase === "on", v = on ? m.speed : 0, pace = on ? m.pace : 0, car = r.kind === "car";
+    const wet = car && !!this.rides.water?.owns(r);
     const portraitHelm = on && !car && useStore.getState().hud.showTouch && this.container.clientHeight > this.container.clientWidth * 1.15;
     this.rig.portraitHelm = portraitHelm;
     this.heading = on ? m.heading : this.player.root.rotation.y;
@@ -3384,7 +3391,7 @@ export class Game implements GameApi {
     // the sounds of it: the tires in a slide (or the hull's rush), the air at speed, a rush at the kick
     {
       const slide = on ? Math.min(1, Math.max(0, (Math.abs(m.slip) - 1.2) / 4.5)) : 0;
-      audio.rush("squeal", car && slide > 0 && pace > 2.5 && this.rides.asphalt.has(m.x, m.z) ? 0.35 + 0.65 * slide : 0, Math.min(1, pace / 14));
+      audio.rush("squeal", car && !wet && slide > 0 && pace > 2.5 && this.rides.asphalt.has(m.x, m.z) ? 0.35 + 0.65 * slide : 0, Math.min(1, pace / 14));
       audio.rush("wind", on ? Math.max(0, (pace - 6) / (m.spec.max - 3)) * (car ? 1 : 0.8) + (!car ? slide * 0.5 : 0) : 0, Math.min(1, pace / 16));
       if (on && m.boost > 0 && !this.kicked) { this.kicked = true; audio.kickRush(); }
       if (!on || m.boost <= 0) this.kicked = false;
@@ -3404,7 +3411,8 @@ export class Game implements GameApi {
     // wheels when it goes fast or over open ground, a short skid when it is braked hard
     if (r.kind === "boat" && on) this.splashes.boatRing(dt, this.t, m);
     else this.splashes.update(dt, this.t, null, 0);
-    if (r.kind === "car" && on && !this.rides.water?.owns(r)) {
+    if (wet) this.braked = false;
+    else if (car && on) {
       const braking = !!controls && !m.drift && (controls.brake || controls.throttle < -0.35) && v > 0;
       if (braking && !this.braked && pace > 8.5) audio.skid(Math.min(1, pace / 15));
       this.braked = braking;
@@ -3558,7 +3566,10 @@ export class Game implements GameApi {
     if (this.rides.water?.tick(dt, this.t, this.wasHidden)) {
       if (!this.rides.water.returning) this.waterNeutral = this.waterInputHeld();
       if (this.rides.riding && this.rides.water.returning) this.updateRide(dt, null);
-      else this.player.update(dt);
+      else {
+        this.player.update(dt);
+        this.splashes.update(dt, this.t, null, 0);
+      }
       return;
     }
     if (this.waterNeutral) {
