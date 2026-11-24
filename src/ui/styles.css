@@ -180,6 +180,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
    frame glides between the two: indoors its size is the card's, set on the element. */
 .minimap {
   --mm: 170px; --mm-edge: 5px;
+  padding: 0; font: inherit; box-sizing: border-box; min-width: 44px; min-height: 44px;
   position: absolute; top: var(--card-top); right: var(--card-left); width: var(--mm); height: var(--mm); border-radius: calc(var(--mm) / 2); pointer-events: auto;
   overflow: hidden; box-shadow: var(--shadow); border: var(--mm-edge) solid var(--panel-solid); background: #8fc66a; cursor: pointer;
 }
@@ -693,18 +694,18 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .head-stars { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
 .head-stars .ui-icon { color: var(--gold); }
 .sheet-body { overflow-y: auto; padding: 16px 18px 22px; }
-.map-wrap { display: grid; grid-template-columns: 1.35fr 1fr; gap: 16px; }
-.map-canvas { position: relative; border-radius: 18px; overflow: hidden; background: #8fc66a; aspect-ratio: 1.47; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06); }
-.map-canvas canvas { width: 100%; height: 100%; display: block; }
-.map-pin {
-  position: absolute; transform: translate(-50%, -50%); border: 0; background: #fff; border-radius: 10px; width: 30px; height: 30px; padding: 0;
-  display: grid; place-items: center; color: var(--accent); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28); transition: transform 0.12s ease, box-shadow 0.12s ease;
+.map-wrap { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 16px; }
+.map-sheet .sheet-body { scrollbar-gutter: stable; }
+.map-sheet .map-wrap .btn.small { min-height: 44px; min-width: 44px; }
+.map-canvas { position: sticky; top: 0; align-self: start; width: 100%; isolation: isolate; border-radius: 18px; overflow: hidden; background: #8fc66a; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06); }
+.map-canvas canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+@media (max-width: 700px) {
+  .map-wrap { grid-template-columns: minmax(0, 1fr); }
+  .map-canvas { position: relative; }
 }
-.map-pin:hover { transform: translate(-50%, -50%) scale(1.12); z-index: 2; }
-.map-pin.map-place-label { width: auto; height: auto; padding: 1px 7px; font-size: 0.75rem; white-space: nowrap; }
-.map-pin.sel { box-shadow: 0 0 0 3px var(--gold), 0 4px 12px rgba(0, 0, 0, 0.32); z-index: 3; }
-.map-pin .pin-done { position: absolute; top: -7px; right: -7px; width: 17px; height: 17px; border-radius: 50%; background: var(--good); color: #fff; display: grid; place-items: center; box-shadow: 0 0 0 2px #fff; }
-.map-me { position: absolute; width: 18px; height: 18px; border-radius: 50%; background: #e63946; border: 3px solid #fff; transform: translate(-50%, -50%); box-shadow: 0 0 0 4px rgba(230,57,70,0.3); }
+@media (min-width: 701px) and (max-height: 510px) {
+  .map-wrap { grid-template-columns: minmax(0, min(54%, calc((100dvh - 150px) * 1.47))) minmax(0, 1fr); }
+}
 .place-title { display: flex; align-items: center; gap: 10px; margin: 0 0 4px; }
 .place-ico { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); flex: none; }
 .sit-list { display: flex; flex-direction: column; gap: 8px; }
@@ -878,7 +879,6 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .convo .call-strip { max-height: 64px; overflow-y: auto; padding: 4px 10px; }
   .call-strip .tile { flex-direction: row; min-width: auto; padding: 2px; }
   .call-strip .tile .face { display: none; }
-  .map-wrap { grid-template-columns: 1fr; }
   .objective-card { width: calc(100vw - 120px); }
   .minimap { --mm: 88px; --mm-edge: 3px; }
   .minimap .label { display: none; }
@@ -952,8 +952,6 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .nat-star { transition: none; }
   .minimap.live, .minimap.live canvas, .minimap.live .label, .minimap.live .mm-card, .minimap.live.inside canvas, .minimap.live.inside .label, .minimap.live.inside .mm-card { transition: none; }
   .scn-card, .scn-card:hover, .icon-btn, .icon-btn:hover, .mic { transition: none; transform: none; }
-  .map-pin { transition: none; }
-  .map-pin:hover { transform: translate(-50%, -50%); }
 }
 
 /* Illustrated conversation scenes: above the 3D view and HUD, below the conversation panel */

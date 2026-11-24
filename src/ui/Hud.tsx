@@ -213,7 +213,7 @@ function useTaskCard(taskId: string | null, visible: boolean, directions: string
 
 // Enter and Space belong to a button reached by keyboard, even while the game is listening for movement.
 function activateHudButton(e: KeyboardEvent<HTMLElement>) {
-  if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(":focus-visible")) e.stopPropagation();
+  if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(".minimap, :focus-visible")) e.stopPropagation();
 }
 
 // The same for the town's tools and the radio set, which opens over the town at the HUD's level.
@@ -524,7 +524,7 @@ function Arrow({ angle }: { angle: number }) {
 
 function Minimap({ w, h }: Screen) {
   const ref = useRef<HTMLCanvasElement>(null);
-  const card = useRef<HTMLDivElement>(null);
+  const card = useRef<HTMLSpanElement>(null);
   const mm = useStore((s) => s.hud.minimap);
   const zoneName = useStore((s) => s.hud.zoneName);
   // Indoors there is no map to show: the round map folds into a small card with the place's name (all of it, on as
@@ -595,19 +595,19 @@ function Minimap({ w, h }: Screen) {
     x.restore();
   }, [mm]);
   return (
-    <div className={"minimap" + (inside ? " inside" : "") + (live ? " live" : "")}
+    <button type="button" className={"minimap" + (inside ? " inside" : "") + (live ? " live" : "")}
       style={inside && box ? { width: box.w + 2, height: box.h + 2 } : undefined}
       onClick={() => useStore.getState().setHud({ panel: "map" })}
-      title="Žemėlapis (M)">
+      onKeyDown={activateHudButton} title="Žemėlapis (M)" aria-label="Žemėlapis (M)">
       <canvas ref={ref} />
-      <div className="label">{inside ? "" : zoneName}</div>
-      <div className="mm-card" ref={card} aria-hidden={!inside}>
+      <span className="label">{inside ? "" : zoneName}</span>
+      <span className="mm-card" ref={card} aria-hidden={!inside}>
         <span className="mm-ico"><Icon name="home" size={21} strokeWidth={2} /></span>
         <small>Viduje</small>
         <b><span>{place.current}</span></b>
         <span className="mm-go"><Icon name="map" size={18} strokeWidth={2} /></span>
-      </div>
-    </div>
+      </span>
+    </button>
   );
 }
 
