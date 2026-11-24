@@ -80,8 +80,32 @@
 }
 .street-hint, .street-tr, .street-heard { display: block; margin-top: 3px; color: var(--ink-soft); font-weight: 500; font-size: 0.8em; }
 .street-choices { display: grid; gap: 5px; overflow-wrap: anywhere; }
-.street-choice.btn { justify-content: flex-start; padding: 6px 9px; text-align: left; border-radius: 10px; font-size: 0.91em; line-height: 1.17; }
+.street-choice.btn { width: 100%; justify-content: flex-start; padding: 6px 9px; text-align: left; border-radius: 10px; font-size: 0.91em; line-height: 1.17; }
 .street-choice .kit-gloss-compact small { display: block; margin-top: 2px; }
+.street-card[data-compact-choices] > .street-head { gap: 6px; }
+.street-card[data-compact-choices] > .street-head .street-face { display: none; }
+.street-save-panel[open] {
+  position: fixed;
+  display: grid;
+  gap: 8px;
+  width: min(360px, calc(100vw - 24px - env(safe-area-inset-left) - env(safe-area-inset-right)));
+  max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  inset: calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right))
+    calc(12px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
+  margin: auto;
+  padding: 8px 12px 12px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel-solid);
+  color: var(--ink);
+  box-shadow: var(--shadow-md);
+}
+.street-save-panel::backdrop { background: #16232b38; }
+.street-save-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.street-save-panel > .phrase-save-row { padding: 4px 0; }
+.street-save-panel .kit-gloss-compact { overflow-wrap: anywhere; }
 .street-reward {
   padding: 5px 0 0 2px;
   border-top: 1px solid var(--line);
@@ -171,6 +195,13 @@
     margin: 12px 0 0;
     max-height: min(75dvh, calc(100dvh - var(--card-top) - 224px - env(safe-area-inset-bottom)));
   }
+  .hud .objective-notes .street-card[data-compact-choices] {
+    margin-top: 8px;
+    gap: 4px;
+    padding: 5px 8px 8px;
+  }
+  .street-card[data-compact-choices] .street-choices { gap: 4px; }
+  .street-card[data-compact-choices] .street-choice.btn { padding: 4px 7px; }
 }
 @media (max-height: 520px) and (orientation: landscape) {
   .hud:has(.street-card) .objective-card.collapsed { width: min(28vw, 275px); }

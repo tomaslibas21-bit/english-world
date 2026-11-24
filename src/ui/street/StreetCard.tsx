@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useId, useRef, useState } from "react";
 import type { Sentence } from "../../convo/compose";
 import { speechSupported } from "../../convo/speech";
+import { PHRASE_CARD_UI } from "../../content/phrase-card-ui";
 import { TAXI_UI } from "../../content/taxi";
+import type { KitLine } from "../../game/kit/dialogue";
 import { useStreet } from "../../game/street/StreetLife";
 import type { StreetProp } from "../../game/street/types";
 import { STREET_WORDS as words } from "../../game/street/words";
@@ -54,7 +56,34 @@ function StreetPicture({ id, cast, prop }: { id: string; cast: string; prop?: St
   );
 }
 
-export function StreetCard({ light = false }: { light?: boolean }) {
+function StreetChoiceSaves({ choices, role, sayLt }: { choices: KitLine[]; role: string; sayLt: boolean }) {
+  const id = useId();
+  const panel = useRef<HTMLDialogElement>(null);
+  return <>
+    <button type="button" className="street-icon-btn" aria-haspopup="dialog" aria-controls={id}
+      aria-label={PHRASE_CARD_UI.add} title={PHRASE_CARD_UI.add} onClick={(event) => {
+        event.currentTarget.focus();
+        panel.current?.showModal();
+      }}>
+      <Icon name="card" size={19} />
+    </button>
+    <dialog ref={panel} id={id} className="street-save-panel" aria-label={PHRASE_CARD_UI.add}
+      onKeyDown={(event) => event.stopPropagation()}>
+      <div className="street-save-panel-head">
+        <b lang="lt">{PHRASE_CARD_UI.add}</b>
+        <button type="button" className="street-icon-btn" aria-label={PHRASE_CARD_UI.close} onClick={() => panel.current?.close()}>
+          <Icon name="close" size={19} />
+        </button>
+      </div>
+      {choices.map(({ key, sentence }, index) => <div key={key} className="phrase-save-row">
+        <div id={`${id}-${index}`}><GlossLine sentence={sentence} gloss={sayLt} compact /></div>
+        <PhraseSave sentence={sentence} situationId="street" sourceLabel={role} iconOnly describedBy={`${id}-${index}`} />
+      </div>)}
+    </dialog>
+  </>;
+}
+
+export function StreetCard({ light = false, compactChoices = false }: { light?: boolean; compactChoices?: boolean }) {
   const view = useStreet((s) => s.moment);
   const illustrated = useStore((s) => picturesOn(s.settings));
   const sayLt = useStore((s) => s.settings.sayLt);
@@ -63,16 +92,24 @@ export function StreetCard({ light = false }: { light?: boolean }) {
   const { line, reward, role } = view;
   const sameReward = !!reward && !!line && cardKey(reward.en) === cardKey(line.sentence.en);
   const listening = view.mic.status === "listening" || view.mic.status === "starting";
+  const hasChoices = view.choices.length > 0;
+  const compact = compactChoices && hasChoices;
+  const mic = hasChoices && speechSupported() && <button type="button" className={`street-icon-btn${listening ? " listening" : ""}`}
+    aria-label={listening ? TAXI_UI.micOff : TAXI_UI.micOn} aria-pressed={listening} onClick={view.toggleMic}>
+    <Icon name="mic" size={21} />
+  </button>;
   return (
     <section className={"street-card" + (light ? " street-light" : "")} key={view.key} data-moment={moment.id}
       data-cast={cast.id} data-script={scriptName} data-step={view.step} data-exchange={view.exchange} data-kind={moment.kind}
-      aria-label={light ? words.light : view.role}>
+      data-compact-choices={compact || undefined} aria-label={light ? words.light : view.role}>
       {light && <h2>{words.light}</h2>}
       {(light || illustrated) && <StreetPicture id={moment.id} cast={cast.id} prop={cast.prop} />}
       <header className="street-head">
         <span className="street-face" aria-hidden="true"><Icon name="walk" size={23} /></span>
         <strong lang="lt">{view.named && cast.name ? `${cast.name} · ${view.role}` : view.role}</strong>
         <StreetIconButton icon="close" label={words.dismiss} onClick={view.dismiss} />
+        {compact && <StreetChoiceSaves key={view.exchange} choices={view.choices} role={role} sayLt={sayLt} />}
+        {compact && mic}
       </header>
       {view.scene && !reward && <p className="street-scene" lang="lt">{view.scene}</p>}
       {line && <div className="street-current" aria-live="polite" data-street-reward={sameReward ? "" : undefined}>
@@ -84,19 +121,16 @@ export function StreetCard({ light = false }: { light?: boolean }) {
         <GlossLine sentence={reward} gloss compact />
         <PhraseSave sentence={reward} situationId="street" sourceLabel={role} iconOnly />
       </div>}
-      {!!view.choices.length && <div className="street-turn">
+      {hasChoices && <div className="street-turn">
         <div className="street-choices" role="group" aria-label={words.answer}>
-          {view.choices.map(({ key, sentence }) => <div className="phrase-save-row" key={key}>
+          {view.choices.map(({ key, sentence }) => <div className={compact ? undefined : "phrase-save-row"} key={key}>
             <button type="button" className="btn soft street-choice" data-translated={sayLt || undefined} onClick={() => view.choose(key)}>
               <GlossLine sentence={sentence} gloss={sayLt} compact />
             </button>
-            <PhraseSave sentence={sentence} situationId="street" sourceLabel={role} iconOnly />
+            {!compact && <PhraseSave sentence={sentence} situationId="street" sourceLabel={role} iconOnly />}
           </div>)}
         </div>
-        {speechSupported() && <button type="button" className={`street-icon-btn${listening ? " listening" : ""}`}
-          aria-label={listening ? TAXI_UI.micOff : TAXI_UI.micOn} aria-pressed={listening} onClick={view.toggleMic}>
-          <Icon name="mic" size={21} />
-        </button>}
+        {!compact && mic}
       </div>}
       {view.mic.heard && <small className="street-heard" lang="en" aria-live="polite">{view.mic.heard}</small>}
     </section>

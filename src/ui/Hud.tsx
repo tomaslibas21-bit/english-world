@@ -133,7 +133,7 @@ export function Hud() {
           {hud.speedLines && <div className="drive-wind" aria-hidden />}
         <div className={"objective-notes" + (collapsed ? " task-folded" : "") + (hud.roadApproach ? " road-approach" : "")}>
           <Objective key={taskId ?? "complete"} collapsed={collapsed} fresh={task.fresh && !hud.panel} setCollapsed={task.setManual} />
-          {streetCard && portrait && <StreetCard />}
+          {streetCard && portrait && <StreetCard compactChoices={screen.h <= 720} />}
           {hud.zoneBanner && banner && <div className="zone-banner"><h2>{banner.icon && <Icon name={banner.icon} size="0.8em" className="zb-ico" />}{banner.rest}</h2>{hud.zoneBanner.sub && <p>{hud.zoneBanner.sub}</p>}</div>}
           {!hud.panel && hud.phoneCard && <PhoneRing id={hud.phoneCard} />}
           {!hud.panel && hud.textArrival && <TextArrival id={hud.textArrival} />}
@@ -145,7 +145,7 @@ export function Hud() {
       </div>
       <Toolbar key={"tools-" + layout} {...screen} riding={riding} touch={hud.showTouch} hint={guideVisible} />
       <RadioSetLayer />
-      {streetCard && !portrait && <StreetCard />}
+      {streetCard && !portrait && <StreetCard compactChoices={screen.sidewaysPhone} />}
       {!hud.panel && <StreetBubbles />}
       {!hud.panel && <LyricStrip sidewaysPhone={screen.sidewaysPhone} />}
       {!hud.panel && hud.reaction && <ReactBubble key={hud.reaction.id} line={hud.reaction} />}
