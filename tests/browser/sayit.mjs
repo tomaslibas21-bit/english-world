@@ -49,6 +49,10 @@ function init({ key, save, supported }) {
         this.onend?.();
       }
     };
+    window.__sayItDeny = () => {
+      if (!active) throw new Error("SpeechRecognition is idle");
+      active.onerror?.({ error: "not-allowed" });
+    };
     window.__sayItHear = (transcript) => {
       if (!active) throw new Error("SpeechRecognition is idle");
       const result = Object.assign([{ transcript }], { isFinal: true });
@@ -121,7 +125,8 @@ async function testGame(context, game, size, touch, supported) {
       const clear = (c) => c.width === 0 || c.height === 0 || b.left >= c.right || b.right <= c.left
         || b.bottom <= c.top || b.top >= c.bottom;
       const target = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
-      return b.left >= 0 && b.right <= innerWidth && b.top >= 0 && b.bottom <= innerHeight && button.contains(target)
+      return button.offsetWidth === 44 && button.offsetHeight === 44 && b.left >= 0 && b.right <= innerWidth
+        && b.top >= 0 && b.bottom <= innerHeight && button.contains(target)
         && [...document.querySelectorAll(selector)].every((node) => getComputedStyle(node).visibility !== "visible"
           || clear(node.getBoundingClientRect()));
     }, controls), `${label}: the mic fits without covering gameplay controls`);
@@ -162,11 +167,29 @@ async function testGame(context, game, size, touch, supported) {
     await checkNote(words.tip);
     await capture("mic");
     const before = await read();
-    await press(mic);
-    await page.getByRole("button", { name: "Nebeklausyti", exact: true }).waitFor();
+    const micIcon = bonus.locator(".say-it-mic > svg").first();
+    const idleIcon = await micIcon.innerHTML();
+    const replay = page.locator(".road-replay");
+    const tapBesideReplay = size.startsWith("390x") && await replay.count() > 0;
+    if (tapBesideReplay) {
+      await replay.evaluate((button) => button.addEventListener("click", () => { button.dataset.replayed = "true"; }));
+      await mic.tap({ position: { x: 1, y: 22 } });
+    } else await press(mic);
+    const stop = page.getByRole("button", { name: "Nebeklausyti", exact: true });
+    await stop.waitFor();
+    if (tapBesideReplay) assert.equal(await replay.getAttribute("data-replayed"), null);
+    const listeningIcon = await micIcon.innerHTML();
+    assert.notEqual(listeningIcon, idleIcon);
     if (keepMoving) {
       await step(2);
       assert((await read()).elapsed > before.elapsed, `${label}: the run advances while the mic listens`);
+    }
+    if (game === "road") {
+      await page.evaluate(() => window.__sayItDeny());
+      await checkNote("Leisk naudoti mikrofoną");
+      assert.equal((await read()).said, before.said);
+      await press(mic);
+      await stop.waitFor();
     }
     await page.evaluate((text) => window.__sayItHear(text), miss);
     await checkNote(words.miss);
@@ -184,6 +207,13 @@ async function testGame(context, game, size, touch, supported) {
     assert.deepEqual(untouched(said), untouched(before));
     assert.equal(said.said, before.said + 1);
     if (before.points !== undefined) assert.equal(said.points, before.points + 1);
+    if (game === "road") {
+      await bonus.locator(".say-it-sparkle").waitFor({ state: "detached" });
+      assert.equal(await bonus.getAttribute("data-status"), "credited");
+      const creditedIcon = await micIcon.innerHTML();
+      assert.notEqual(creditedIcon, idleIcon);
+      assert.notEqual(creditedIcon, listeningIcon);
+    }
   }
 
   if (game === "road" || game === "sea") {

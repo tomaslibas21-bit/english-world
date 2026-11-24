@@ -10,6 +10,7 @@ import { useStore } from "../state/store";
 import { useSurf, type SurfUi } from "../game/surf/store";
 import type { Do } from "../game/surf/logic";
 import { speechSupported } from "../convo/speech";
+import { MIC_FEEDBACK } from "../content/microphone";
 import { game } from "../game/gameRef";
 import { GlossLine } from "./kit/GlossLine";
 import { Icon } from "./icons";
@@ -86,9 +87,9 @@ function Mic({ mic, on }: { mic: SurfUi["mic"]; on: boolean }) {
     case "starting": sub = "Jungiamas mikrofonas…"; break;
     case "listening": sub = mic.heard ? <span className="heard" lang="en">„{mic.heard}“</span> : "Pasakyk garsiai – klausau"; break;
     case "unclear": title = "Pabandyk dar kartą"; sub = <span className="heard" lang="en">Išgirdau „{mic.heard}“</span>; break;
-    case "nothing": title = "Nieko negirdėjau"; sub = "Spausk mikrofoną arba pasirink atsakymą"; break;
-    case "denied": title = "Leisk naudoti mikrofoną"; sub = "Arba pasirink atsakymą"; break;
-    case "error": title = "Klausymas nepavyko"; sub = "Spausk mikrofoną arba pasirink atsakymą"; break;
+    case "nothing": title = MIC_FEEDBACK.nothing; sub = "Spausk mikrofoną arba pasirink atsakymą"; break;
+    case "denied": title = MIC_FEEDBACK.denied; sub = "Arba pasirink atsakymą"; break;
+    case "error": title = MIC_FEEDBACK.error; sub = "Spausk mikrofoną arba pasirink atsakymą"; break;
     default: sub = mic.heard ? <span className="heard" lang="en">Išgirdau „{mic.heard}“</span> : "Spausk mikrofoną arba pasirink atsakymą";
   }
   return (

@@ -1,3 +1,5 @@
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GOFISH_WORDS } from "../src/content/gofish";
 import type { SpeechOptions } from "../src/convo/speech";
@@ -6,6 +8,7 @@ import { sayItCard } from "../src/game/gofish/sayIt";
 import { sayItWords } from "../src/game/kit/sayIt";
 import { gateSayItTarget, RunScore } from "../src/game/road/run";
 import type { Prompt } from "../src/game/road/words";
+import { SayIt } from "../src/ui/kit/SayIt";
 
 const attempts = vi.hoisted(() => [] as { options: SpeechOptions; dispose: ReturnType<typeof vi.fn> }[]);
 vi.mock("../src/convo/speech", async (original) => ({
@@ -66,6 +69,30 @@ describe("say it targets", () => {
   });
 });
 
+it.each([
+  ["denied", "Leisk naudoti mikrofoną"],
+  ["nothing", "Nieko negirdėjau"],
+  ["error", "Klausymas nepavyko"],
+] as const)("shows the existing microphone feedback for %s and allows another try", (status, message) => {
+  vi.useFakeTimers();
+  const score = new RunScore();
+  const cue = score.sayIt.open(sayItWords(["apple"]));
+  const render = () => renderToStaticMarkup(createElement(SayIt, { game: "road", cue }));
+
+  cue.toggle();
+  attempts[0].options.onUpdate({ status, heard: "" });
+  expect(cue.getSnapshot()).toBe(status);
+  expect(render()).toContain(message);
+  expect(render()).not.toContain("Beveik! Galite bandyti dar");
+  expect(score.points).toBe(0);
+  expect(attempts[0].dispose).toHaveBeenCalledOnce();
+
+  cue.toggle();
+  attempts[1].options.onCommit("banana", []);
+  expect(render()).toContain("Beveik! Galite bandyti dar");
+  score.sayIt.close();
+});
+
 it("adds one point per cue, leaves misses free and discards attempts from a replaced cue", () => {
   vi.useFakeTimers();
   const score = new RunScore();
@@ -84,12 +111,15 @@ it("adds one point per cue, leaves misses free and discards attempts from a repl
   expect(score.points).toBe(1);
   expect(attempts).toHaveLength(2);
   vi.advanceTimersByTime(2000);
-  expect(cue.getSnapshot()).toBe("idle");
+  expect(cue.getSnapshot()).toBe("credited");
   expect(cue.awarded).toBe(true);
+  cue.toggle();
+  expect(attempts).toHaveLength(2);
 
   const stale = score.sayIt.open(target);
   stale.toggle();
   const next = score.sayIt.open(target);
+  expect(next.getSnapshot()).toBe("idle");
   expect(attempts[2].dispose).toHaveBeenCalledOnce();
   attempts[2].options.onCommit("apple", []);
   expect(score.points).toBe(1);

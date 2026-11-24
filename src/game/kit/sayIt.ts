@@ -35,7 +35,8 @@ export function sayItWords(phrases: string[], otherAnswers: string[] = []): SayI
   };
 }
 
-type SayItStatus = "idle" | "listening" | "hit" | "miss";
+type SayItFeedback = "hit" | "miss" | "denied" | "nothing" | "error";
+type SayItStatus = "idle" | "listening" | "credited" | SayItFeedback;
 
 export class SayItCue {
   private status: SayItStatus = "idle";
@@ -74,18 +75,18 @@ export class SayItCue {
     if (this.closed || this.credited || !speechSupported()) return;
     if (this.attempt) { this.cancel(); return; }
     clearTimeout(this.feedback);
-    const show = (status: "hit" | "miss") => {
+    const show = (status: SayItFeedback) => {
       this.attempt?.dispose();
       this.attempt = undefined;
       this.set(status);
-      this.feedback = setTimeout(() => this.set("idle"), 1550);
+      this.feedback = setTimeout(() => this.set(status === "hit" ? "credited" : "idle"), 1550);
     };
     const attempt = createSpeechAttempt({
       ...this.target, preferLocal: useStore.getState().settings.onDevice,
       timing: { finishedAnswer: 300, unclear: 650, interimStable: 550 },
       onUpdate: ({ status }) => {
         if (this.attempt !== attempt) return;
-        if (status === "nothing" || status === "error" || status === "denied") show("miss");
+        if (status === "nothing" || status === "error" || status === "denied") show(status);
       },
       onCommit: (text, alternatives) => {
         if (this.attempt !== attempt) return;

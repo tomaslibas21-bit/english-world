@@ -1,4 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { MIC_FEEDBACK } from "../../content/microphone";
 import { SAY_IT_UI as words } from "../../content/say-it";
 import { speechSupported } from "../../convo/speech";
 import type { SayItCue } from "../../game/kit/sayIt";
@@ -6,6 +7,7 @@ import { Icon } from "../icons";
 import "./sayIt.css";
 
 const seenTips = new Set<string>();
+const feedback = { ...MIC_FEEDBACK, hit: words.hit, miss: words.miss };
 
 function firstTip(game: string) {
   if (seenTips.has(game)) return false;
@@ -28,11 +30,13 @@ function SayItButton({ game, cue }: { game: string; cue: SayItCue }) {
     return () => clearTimeout(timer);
   }, [game]);
   const listening = status === "listening";
-  const message = status === "hit" ? words.hit : status === "miss" ? words.miss : tip && !listening ? words.tip : null;
+  const awarded = status === "hit" || status === "credited";
+  const message = status === "idle" || listening ? (tip ? words.tip : null)
+    : status === "credited" ? null : feedback[status];
   return <span className="say-it" data-status={status}>
     <button type="button" className="say-it-mic" aria-label={listening ? words.micStop : words.mic}
-      aria-pressed={listening} aria-disabled={cue.awarded} onClick={() => { setTip(false); cue.toggle(); }}>
-      <Icon name="mic" size={19} />
+      aria-pressed={listening} aria-disabled={awarded} onClick={cue.toggle}>
+      <Icon name={listening ? "stop" : awarded ? "check" : "mic"} size={19} />
       <Icon name="star" size={11} className="say-it-badge" />
       {status === "hit" && <Icon name="star" size={23} className="say-it-sparkle" />}
     </button>
