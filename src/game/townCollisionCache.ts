@@ -2,13 +2,10 @@ import { PropFader } from "./fade";
 import { Ledges, type Piece, type Thing } from "./ledges";
 import { OCCLUSION_CELL, OcclusionField } from "./occlusion";
 import { buildTownField, buildTownLedges, sceneryBoatPieces, townCameraSkip, TOWN_FIELD_BOUNDS } from "./townCollision";
+import { hasTownCollisionHeader, LITTLE_ENDIAN, TOWN_COLLISION_HEADER, TOWN_COLLISION_METADATA_OFFSET } from "./townCollisionTransport";
 import type { Town } from "./world/town";
 import type { Colliders } from "./world/util";
 
-// Little-endian magic and metadata length, SHA-256 of the body, then lo (f32), hi (f32), base (u8) and UTF-8 metadata.
-export const TOWN_COLLISION_MAGIC = 0x4c43484d; // MHCL
-export const TOWN_COLLISION_HASH_OFFSET = 8;
-export const TOWN_COLLISION_HEADER = TOWN_COLLISION_HASH_OFFSET + 32;
 const bounds = TOWN_FIELD_BOUNDS;
 export const TOWN_COLLISION_FORMAT = {
   version: 2, edition: "mh", style: "blocks",
@@ -17,9 +14,6 @@ export const TOWN_COLLISION_FORMAT = {
   nz: Math.ceil((bounds.maxZ - bounds.minZ) / OCCLUSION_CELL),
 };
 const cells = TOWN_COLLISION_FORMAT.nx * TOWN_COLLISION_FORMAT.nz;
-export const TOWN_COLLISION_METADATA_OFFSET = TOWN_COLLISION_HEADER + cells * 9;
-const MAX_BYTES = TOWN_COLLISION_METADATA_OFFSET + 1024 * 1024;
-export const LITTLE_ENDIAN = new Uint8Array(Uint16Array.of(1).buffer)[0] === 1;
 
 /** The inputs to positional split replay, in their original order, captured before the ledge pass. */
 export function townColliderLayout({ boxes, circles, roofs }: Colliders) {
@@ -50,10 +44,7 @@ const isThing = (t: Thing) => t && [t.x, t.z, t.w, t.d, t.cap, t.high].every(Num
   && typeof t.split === "boolean" && (t.tag === undefined || typeof t.tag === "string");
 
 export function restoreTownCollision(town: Town, bytes: ArrayBuffer) {
-  if (!LITTLE_ENDIAN || bytes.byteLength <= TOWN_COLLISION_METADATA_OFFSET || bytes.byteLength > MAX_BYTES) return;
-  const header = new DataView(bytes);
-  if (header.getUint32(0, true) !== TOWN_COLLISION_MAGIC
-    || header.getUint32(4, true) !== bytes.byteLength - TOWN_COLLISION_METADATA_OFFSET) return;
+  if (!LITTLE_ENDIAN || TOWN_COLLISION_HEADER + cells * 9 !== TOWN_COLLISION_METADATA_OFFSET || !hasTownCollisionHeader(bytes)) return;
 
   const { boxes, circles } = town.colliders;
   let data: Metadata;
@@ -95,49 +86,9 @@ export function initTownCollision(town: Town, bytes: ArrayBuffer | undefined, sl
   const restored = bytes ? restoreTownCollision(town, bytes) : undefined;
   const field = restored?.field ?? buildTownField(town);
   const fader = new PropFader(town.group, townCameraSkip(town));
+  performance.mark(restored ? "town-collision:restored" : "town-collision:fallback");
   if (restored) return { field, ledges: restored.ledges, fader };
   const ledges = buildTownLedges(town, field, slice);
   for (const boat of sceneryBoatPieces(town)) ledges.add(boat);
   return { field, ledges, fader };
-}
-
-/** Decode the body itself, regardless of MIME or HTTP compression applied by a host or service worker. */
-export async function decodeTownCollision(bytes: ArrayBuffer) {
-  if (bytes.byteLength > MAX_BYTES) throw new Error("Town collision payload is too large");
-  const signature = new Uint8Array(bytes, 0, Math.min(2, bytes.byteLength));
-  if (signature[0] !== 0x1f || signature[1] !== 0x8b) {
-    // A host can send the gzip object with Content-Encoding, so fetch may already have inflated it.
-    if (bytes.byteLength <= TOWN_COLLISION_METADATA_OFFSET || new DataView(bytes).getUint32(0, true) !== TOWN_COLLISION_MAGIC) {
-      throw new Error("Unknown town collision payload");
-    }
-    const expected = new Uint8Array(bytes, TOWN_COLLISION_HASH_OFFSET, 32);
-    const actual = new Uint8Array(await crypto.subtle.digest("SHA-256", new Uint8Array(bytes, TOWN_COLLISION_HEADER)));
-    if (!expected.every((byte, i) => byte === actual[i])) throw new Error("Corrupt town collision payload");
-    return bytes;
-  }
-  const inflated = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
-  let size = 0;
-  return new Response(inflated.pipeThrough(new TransformStream<Uint8Array, Uint8Array>({
-    transform(chunk, controller) {
-      size += chunk.byteLength;
-      if (size > MAX_BYTES) controller.error(new Error("Town collision payload is too large"));
-      else controller.enqueue(chunk);
-    },
-  }))).arrayBuffer();
-}
-
-export async function readTownCollision(url: string, controller: AbortController) {
-  // A cache miss on a stalled connection must leave time for the reference path.
-  const deadline = setTimeout(() => controller.abort(), 1500);
-  try {
-    if (!LITTLE_ENDIAN || typeof DecompressionStream === "undefined") return;
-    const response = await fetch(url, { signal: controller.signal });
-    if (!response.ok || controller.signal.aborted) return;
-    const bytes = await decodeTownCollision(await response.arrayBuffer());
-    if (!controller.signal.aborted) return bytes;
-  } catch {
-    // Missing assets, offline cache misses and unsupported gzip all use the live builder.
-  } finally {
-    clearTimeout(deadline);
-  }
 }

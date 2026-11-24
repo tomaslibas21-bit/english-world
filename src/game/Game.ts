@@ -60,7 +60,8 @@ import { createGoFishMode } from "./gofish/mode";
 import { GOFISH_PROMPT } from "./gofish/framing";
 import type { OcclusionField } from "./occlusion";
 import { STYLED } from "./style";
-import { initTownCollision, readTownCollision } from "./townCollisionCache";
+import { initTownCollision } from "./townCollisionCache";
+import { prepareTownCollision } from "./townCollisionPreparation";
 import type { PropFader } from "./fade";
 import { CUT, withCutout } from "./cutout";
 import { covers, NEAR_TALK, shoulderShots, type Body, type Shot } from "./talkShot";
@@ -367,7 +368,7 @@ export class Game implements GameApi {
   /** What the follow camera keeps clear of, from the town's own geometry (occlusion.ts), and the trees that fade out of
    *  its way (fade.ts). */
   private field!: OcclusionField;
-  private readonly collisionAbort = new AbortController();
+  private collisionPreparation?: ReturnType<typeof prepareTownCollision>;
   private fader!: PropFader;
   onReady?: () => void;
 
@@ -402,14 +403,21 @@ export class Game implements GameApi {
   }
 
   init(linked?: string | null, debug?: "barista" | "gofish" | "billiards") {
-    return this.initialization ??= this.initialize(linked, debug);
+    return this.initialization ??= this.initialize(linked, debug).finally(() => this.cancelCollisionPreparation());
+  }
+
+  private cancelCollisionPreparation() {
+    this.collisionPreparation?.cancel();
+    this.collisionPreparation = undefined;
   }
 
   private async initialize(linked?: string | null, debug?: "barista" | "gofish" | "billiards") {
     if (this.disposed) return;
     const st = useStore.getState();
     if (st.screen !== "loading") st.setScreen("loading");
-    const collisionRead = townCollisionURL && !STYLED ? readTownCollision(townCollisionURL, this.collisionAbort) : undefined;
+    if (townCollisionURL && !STYLED) {
+      this.collisionPreparation = prepareTownCollision(new URL(townCollisionURL, document.baseURI).href);
+    }
     await startupTask();
     if (this.disposed) return;
     this.setupLights();
@@ -457,7 +465,9 @@ export class Game implements GameApi {
     }
     for (const cx of [-50, 22, 100]) nav.setCost(cx - 1.5, -13, cx + 1.5, -3, 1.2);
     // Capture the same town geometry and colliders before adding actors or handing boats to rides.
-    const collisionBytes = collisionRead ? await collisionRead : undefined;
+    const collision = this.collisionPreparation;
+    const collisionBytes = collision ? await collision.join() : undefined;
+    this.collisionPreparation = undefined;
     if (this.disposed) return;
     const { field, ledges, fader } = initTownCollision(this.town, collisionBytes,
       (next) => setTimeout(() => { if (!this.disposed) next(); }, 16));
@@ -3775,7 +3785,7 @@ export class Game implements GameApi {
     this.firstExteriorDraw?.();
     this.firstExteriorDraw = undefined;
     clearTimeout(this.rideTimer);
-    this.collisionAbort.abort();
+    this.cancelCollisionPreparation();
     for (const unsubscribe of this.phoneWatch) unsubscribe();
     document.removeEventListener("visibilitychange", this.phoneVisibility);
     window.removeEventListener("pagehide", this.phonePageHide);

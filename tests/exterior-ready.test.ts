@@ -4,6 +4,7 @@ import type { Game } from "../src/game/Game";
 import type { Progress } from "../src/state/progress";
 import { buildFleetPack } from "../tools/fleet-pack-plugin";
 import { townCanvasDocument } from "../tools/town-canvas-stub";
+import { bakeTownCollision } from "../tools/town-collision-data";
 import { stubCarAssets, testFleetURL } from "./fixtures/car-assets";
 
 const renderers: FakeRenderer[] = [];
@@ -28,7 +29,9 @@ class FakeRenderer {
 }
 
 const fleet = vi.hoisted(() => ({ url: undefined as string | undefined }));
+const collision = vi.hoisted(() => ({ url: undefined as string | undefined }));
 vi.mock("virtual:fleet-pack-url", () => ({ get default() { return fleet.url; } }));
+vi.mock("virtual:town-collision-url", () => ({ get default() { return collision.url; } }));
 vi.mock("three", async (actual) => ({
   ...await actual<typeof THREE>(),
   WebGLRenderer: class { constructor() { return new FakeRenderer(); } },
@@ -58,7 +61,7 @@ function stubFleetAssets(options: { beforePack?: Promise<void>; beforePalette?: 
 
 async function start(place: Progress["place"], linked?: string, reducedMotion = false) {
   const canvas = townCanvasDocument();
-  const doc = { hidden: false, querySelectorAll: () => [],
+  const doc = { baseURI: "https://game.example/lesson/", hidden: false, querySelectorAll: () => [],
     createElement: (tag: string) => tag === "canvas" ? canvas.createElement() : element(),
     addEventListener: vi.fn(), removeEventListener: vi.fn() };
   const win = { devicePixelRatio: 2, addEventListener: vi.fn(), removeEventListener: vi.fn() };
@@ -109,11 +112,49 @@ afterEach(() => {
   game = undefined;
   renderers.length = 0;
   fleet.url = undefined;
+  collision.url = undefined;
   vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   vi.resetModules();
 });
+
+it("drops a collision reply for a disposed Game and restores in a fresh Game", async () => {
+  collision.url = "./assets/mh-town-collision-test.bin";
+  const workers: CollisionWorker[] = [];
+  class CollisionWorker extends EventTarget {
+    postMessage = vi.fn();
+    terminate = vi.fn();
+    constructor() { super(); workers.push(this); }
+    deliver(data: ArrayBuffer) { this.dispatchEvent(new MessageEvent("message", { data })); }
+  }
+  vi.stubGlobal("Worker", CollisionWorker);
+  stubCarAssets();
+  const place = { zone: "town", x: 0, z: 0, rot: 0 };
+  const abandoned = await start(place);
+  await until(() => expect(abandoned.current["town"]).toBeDefined());
+  expect(workers).toHaveLength(1);
+  expect(workers[0].postMessage).toHaveBeenCalledExactlyOnceWith("https://game.example/lesson/assets/mh-town-collision-test.bin");
+  abandoned.current.dispose();
+
+  const { buildTown } = await import("../src/game/world/town");
+  const { decodeTownCollision } = await import("../src/game/townCollisionTransport");
+  const bytes = await decodeTownCollision(Uint8Array.from(bakeTownCollision(buildTown()).compressed).buffer);
+  workers[0].deliver(bytes.slice(0));
+  await abandoned.init;
+  expect(workers[0].terminate).toHaveBeenCalledOnce();
+  expect(abandoned.current["field"]).toBeUndefined();
+  expect(abandoned.ready).not.toHaveBeenCalled();
+
+  const retry = await start(place);
+  expect(workers).toHaveLength(2);
+  workers[1].deliver(bytes);
+  await retry.init;
+  expect(workers[1].terminate).toHaveBeenCalledOnce();
+  expect(retry.current["field"].lo.buffer).toBe(bytes);
+  expect(retry.current["ledges"]?.dynamic).toBeTypeOf("function");
+  expect(retry.ready).toHaveBeenCalledOnce();
+}, 10000);
 
 it("draws the saved island camera with the ten real models and one palette before publishing readiness", async () => {
   const traffic = deferred(), parking = deferred(), paint = deferred();

@@ -1,10 +1,10 @@
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 import { buildTownField, buildTownLedges } from "../src/game/townCollision";
+import { TOWN_COLLISION_FORMAT, townColliderLayout } from "../src/game/townCollisionCache";
 import {
-  LITTLE_ENDIAN, TOWN_COLLISION_FORMAT, TOWN_COLLISION_HASH_OFFSET, TOWN_COLLISION_HEADER, TOWN_COLLISION_MAGIC, TOWN_COLLISION_METADATA_OFFSET,
-  townColliderLayout,
-} from "../src/game/townCollisionCache";
+  LITTLE_ENDIAN, TOWN_COLLISION_HASH_OFFSET, TOWN_COLLISION_HEADER, TOWN_COLLISION_MAGIC, TOWN_COLLISION_METADATA_OFFSET,
+} from "../src/game/townCollisionTransport";
 import type { Town } from "../src/game/world/town";
 
 export function bakeTownCollision(town: Town) {
