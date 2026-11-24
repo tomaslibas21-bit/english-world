@@ -14,6 +14,7 @@
 import type { Ctx, EntityDef, Pending, Segment, SituationDef } from "../types";
 import { ent, t } from "../dsl";
 import { expectHowAreYou } from "../global";
+import { GYM_LINES } from "../gym-lines";
 
 // ---------------------------------------------------------------------------
 // Entities
@@ -540,6 +541,7 @@ export const gym: SituationDef = {
   },
 
   lines: {
+    ...GYM_LINES,
     // --- arriving --------------------------------------------------------------------------------
     greet_help: [
       t("Hi there! | Welcome | to | Harbor Fitness! | How | can | I | help | you?", "Labas! | {m:Sveikas atvykęs|f:Sveika atvykusi} | į | „Harbor Fitness“! | Kaip | galiu | aš | padėti | tau?",
