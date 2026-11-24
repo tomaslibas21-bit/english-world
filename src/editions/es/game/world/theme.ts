@@ -228,7 +228,17 @@ export const THEME: TownTheme = {
     afloat: [[-86, -78.5, 0.3, "#e4007c"], [14, -87, 0.8, "#1f6fd1"], [40, -82, 2.6, "#7ac143"]],
     beached: [[16, -70, 1.9, "#1f6fd1"], [23.5, -70.4, 1.2, "#e4007c"], [64, -70.2, 2.0, "#00a6a6"]],
   },
-  mexican: { roof: "#b5533c" },
+  mexican: {
+    roof: "#b5533c",
+    roofByBuilding: {
+      hotel: "#d9c9ab",
+      museum: "#9d5047",
+      market: "#cb8c66",
+      cafe: "#c78175",
+      bank: "#d1b992",
+      apartments: "#ac6654",
+    },
+  },
   bougainvillea: ["sophie", "dan", "house3", "house4", "house5", "cafe", "trattoria", "visitor", "salon"],
   // s81, s82: "Hay una tiendita en la esquina": in the ground floor of Departamentos Las Palmas, at the corner
   tiendita: { building: "apartments", u: 7.8, w: 4.4, sign: "Abarrotes Las Palmas", side: "Refrescos · Botanas · Recargas" },

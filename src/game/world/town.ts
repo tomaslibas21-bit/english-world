@@ -661,6 +661,8 @@ function addMarkings(group: THREE.Group) {
 
 function drawGround(): HTMLCanvasElement {
   const P = STYLED ? groundPalette() : GROUND_BLOCKS; // trial styles repaint the same map
+  const limestoneStreets = !STYLED && THEME.mexican;
+  const asphalt = limestoneStreets ? "#646367" : P.road;
   const c = document.createElement("canvas");
   c.width = Math.round(GW * PPM); c.height = Math.round(GD * PPM);
   const x = c.getContext("2d")!;
@@ -703,12 +705,28 @@ function drawGround(): HTMLCanvasElement {
   rectW(x, 126, -30, 134, 14, P.lot);
   rectW(x, GAS_FORECOURT.x0, GAS_FORECOURT.z0, GAS_FORECOURT.x1, GAS_FORECOURT.z1, P.gasLot);
   rectW(x, SPROUTLY_LOT.x1, SPROUTLY_LOT.z1, SPROUTLY_LOT.x2, SPROUTLY_LOT.z2, P.lot); // Sproutly's forecourt
-  for (const { x0, x1, z0, z1 } of PARKING_LOTS) rectW(x, x0, z0, x1, z1, P.road);
+  for (const { x0, x1, z0, z1 } of PARKING_LOTS) rectW(x, x0, z0, x1, z1, asphalt);
   // sidewalks
-  for (const rd of ROADS) roadRect(x, rd, rd.w / 2 + SIDEWALK, P.sidewalk);
-  for (const rd of ROADS) roadRect(x, rd, rd.w / 2 + SIDEWALK - 0.25, P.sidewalkInner);
+  const sidewalkEdge = limestoneStreets ? "#d2c5ae" : P.sidewalk;
+  let sidewalkInner: string | CanvasPattern = P.sidewalkInner;
+  if (limestoneStreets) {
+    const swatch = document.createElement("canvas");
+    swatch.width = 36; swatch.height = 24;
+    const stone = swatch.getContext("2d")!;
+    const stoneBase = "#dfcfb5";
+    stone.fillStyle = "#c7baa4"; stone.fillRect(0, 0, 36, 24);
+    // Two courses of 3 × 2 m slabs with 1 px joints, staggered by half a slab.
+    stone.fillStyle = stoneBase; stone.fillRect(0, 0, 17, 11);
+    stone.fillStyle = "#e9dcc4"; stone.fillRect(18, 0, 17, 11);
+    stone.fillStyle = "#e3d5bb"; stone.fillRect(9, 12, 17, 11);
+    stone.fillStyle = "#e7d8c1"; stone.fillRect(27, 12, 9, 11); stone.fillRect(0, 12, 8, 11);
+    // With the ground context untransformed, the repeat starts at the map origin for every street.
+    sidewalkInner = x.createPattern(swatch, "repeat") ?? stoneBase;
+  }
+  for (const rd of ROADS) roadRect(x, rd, rd.w / 2 + SIDEWALK, sidewalkEdge);
+  for (const rd of ROADS) roadRect(x, rd, rd.w / 2 + SIDEWALK - 0.25, sidewalkInner);
   // roads
-  for (const rd of ROADS) roadRect(x, rd, rd.w / 2, P.road);
+  for (const rd of ROADS) roadRect(x, rd, rd.w / 2, asphalt);
   // markings (blocks style: drawn as geometry by addMarkings, sharp up close)
   for (const rd of STYLED ? ROADS : []) {
     const horiz = rd.z1 === rd.z2;
@@ -727,7 +745,7 @@ function drawGround(): HTMLCanvasElement {
   const vs = ROADS.filter((d) => d.x1 === d.x2), hs = ROADS.filter((d) => d.z1 === d.z2);
   for (const v of vs) for (const h of hs) {
     if (v.x1 < h.x1 - 1 || v.x1 > h.x2 + 1 || h.z1 < v.z1 - 1 || h.z1 > v.z2 + 1) continue;
-    rectW(x, v.x1 - v.w / 2, h.z1 - h.w / 2, v.x1 + v.w / 2, h.z1 + h.w / 2, P.road);
+    rectW(x, v.x1 - v.w / 2, h.z1 - h.w / 2, v.x1 + v.w / 2, h.z1 + h.w / 2, asphalt);
     if (!STYLED) continue;
     x.fillStyle = P.crosswalk;
     for (let k = -v.w / 2 + 0.6; k < v.w / 2 - 0.4; k += 1.1) {
@@ -759,14 +777,14 @@ function drawGround(): HTMLCanvasElement {
   }
   return c;
 
-  function rectW(x: CanvasRenderingContext2D, ax: number, az: number, bx: number, bz: number, col: string) {
+  function rectW(x: CanvasRenderingContext2D, ax: number, az: number, bx: number, bz: number, col: string | CanvasPattern) {
     const [x0, z0] = toC(Math.min(ax, bx), Math.min(az, bz)), [x1, z1] = toC(Math.max(ax, bx), Math.max(az, bz));
     x.fillStyle = col; x.fillRect(x0, z0, x1 - x0, z1 - z0);
   }
   function rectFill(x: CanvasRenderingContext2D, cx: number, cz: number, w: number, d: number) {
     const [x0, z0] = toC(cx, cz); x.fillRect(x0, z0, w * PPM, d * PPM);
   }
-  function roadRect(x: CanvasRenderingContext2D, rd: typeof ROADS[number], half: number, col: string) {
+  function roadRect(x: CanvasRenderingContext2D, rd: typeof ROADS[number], half: number, col: string | CanvasPattern) {
     rectW(x, Math.min(rd.x1, rd.x2) - (rd.x1 === rd.x2 ? half : 0), Math.min(rd.z1, rd.z2) - (rd.z1 === rd.z2 ? half : 0),
       Math.max(rd.x1, rd.x2) + (rd.x1 === rd.x2 ? half : 0), Math.max(rd.z1, rd.z2) + (rd.z1 === rd.z2 ? half : 0), col);
   }
@@ -869,11 +887,11 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
       M.add("chimney-cap", mat("#5b5550"), boxGeo(0.86, 0.12, 0.86, cx, b.h + ch - 0.14, cz), false);
     }
   } else {
-    // Mexican roofs (theme.ts) are painted red (one material for all of them), and all but the airport's and the
-    // office tower's get a parapet and tinacos
+    // Mexican flat roofs have painted slabs, and all but the airport's and the office tower's get a parapet and tinacos.
     const mxRoof = !!THEME.mexican && b.style !== "terminal" && b.style !== "office";
+    const roofColor = (!STYLED ? THEME.mexican?.roofByBuilding?.[b.id] : undefined) ?? THEME.mexican?.roof ?? "#8f8c86";
     // (a Mexican roof's paint shows: above the cornice's top, which covers Maple Harbor's slab)
-    M.add("roof-flat", mat(THEME.mexican?.roof ?? "#8f8c86"), boxGeo(b.w - 0.4, 0.1, b.d - 0.4, b.x, b.h + (THEME.mexican ? 0.23 : 0.02), b.z), false);
+    M.add("roof-flat", mat(roofColor), boxGeo(b.w - 0.4, 0.1, b.d - 0.4, b.x, b.h + (THEME.mexican ? 0.23 : 0.02), b.z), false);
     // a box on most low roofs, from the town's own random numbers (only on roofs that layout.ts has flat, so the
     // draws stay the same whatever roofs an edition gives the houses); a Mexican roof has a tinaco there instead
     let roofBox: [number, number] | null = null;

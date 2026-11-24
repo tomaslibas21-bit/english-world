@@ -160,10 +160,10 @@ export interface TownTheme {
   /** Lanchas (open fishing boats, white with a coloured stripe) instead of the yachts: x, z, heading, stripe colour;
    *  `beached` ones are pulled up on the sand. */
   lanchas: { afloat: [number, number, number, string][]; beached: [number, number, number, string][] } | null;
-  /** The buildings' Mexican details: flat roofs painted this colour with a parapet and tinacos (black water tanks)
-   *  instead of the roof kit, iron bars on the ground floor's front windows, hand-painted shop signs, and the
-   *  houses' low walls and gates instead of picket fences, chimneys and mailboxes. */
-  mexican: { roof: string } | null;
+  /** The buildings' Mexican details include painted flat roofs with parapets and tinacos (black water tanks),
+   *  iron bars on ground-floor front windows, hand-painted shop signs, and low walls and gates at the houses.
+   *  The blocks style can override the default roof paint by building ID. */
+  mexican: { roof: string; roofByBuilding?: Partial<Record<string, string>> } | null;
   /** Bougainvillea on these buildings' front walls (building ids). */
   bougainvillea: string[];
   /** A little corner shop in a building's ground floor: the building, where along its front (m from the middle),
