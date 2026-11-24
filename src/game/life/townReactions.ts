@@ -84,7 +84,7 @@ export class TownReactions {
     this.active = { speaker, id: line.id, start, end: start + duration };
     useStore.getState().setHud({ reaction: line });
     const { ch, voice, female } = speaker;
-    if (ch && voice) {
+    if (voice) {
       this.voice = new AbortController();
       speakTownLine(ch, voice, !!female, line.text, duration, this.voice.signal);
     }

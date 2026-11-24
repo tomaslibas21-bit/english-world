@@ -24,6 +24,7 @@ try {
       await waitFor(() => page.evaluate(() => !window.__ew.store.getState().hud.zoneBanner), "zone banner clears");
       await probeEffects(page);
       const lines = await page.evaluate(async (url) => (await import(url)).REACT_LINES, contentUrl(url, "content/reacts"));
+      const hint = await page.evaluate(async (url) => (await import(url)).STREET_WORDS.translation, contentUrl(url, "game/street/words"));
       const state = () => page.evaluate(() => window.__ew.game.reactState());
       assert.equal(await page.evaluate(() => window.__ew.store.getState().progress.started), save.started, "this viewport loaded its own save");
       assert.deepEqual(await state(), { last: null, count: 0, blockedUntil: 0 });
@@ -114,6 +115,8 @@ try {
       await opacityIs(0.5);
       await stepTo(honkStart + 150);
       await opacityIs(1);
+      assert.equal(await bubble.locator("small").innerText(), hint);
+      if (width === 390 && height === 664) await checkPlacement();
       const translate = bubble.getByRole("button");
       await during(() => Math.min(width, height) < 600 ? translate.tap() : translate.click());
       assert.equal(await bubble.locator("small").innerText(), honk.lt);
@@ -198,6 +201,7 @@ try {
       await page.evaluate(() => window.__ew.game.setJoystick(0, 0));
       const bump = await assertLine("bump");
       await waitFor(() => bubble.isVisible(), "the bump shows a bubble");
+      assert.equal(await bubble.locator("small").count(), 0, "later reactions omit the tap hint");
       const bumpEnd = await reactionStart() + durationMs(bump.text);
       await stepTo(bumpEnd - 125);
       await opacityIs(0.5);

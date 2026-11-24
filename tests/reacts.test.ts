@@ -1,10 +1,19 @@
 import { Mesh, Vector3 } from "three";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { REACT_LINES } from "../src/content/reacts";
 import type { TrafficCar } from "../src/game/ambient";
+import { audio } from "../src/game/audio";
 import { ReactionSchedule, reactionDuration } from "../src/game/life/reacts";
-import { reactionTestSpot } from "../src/game/life/townReactions";
+import { TownReactions, reactionTestSpot } from "../src/game/life/townReactions";
 import { Colliders } from "../src/game/world/util";
+import { useStore } from "../src/state/store";
+
+function movingCar(): TrafficCar {
+  return {
+    index: 0, mesh: new Mesh(), model: "sedan", color: "#fff", half: { x: 2, z: 1 },
+    lane: 0, dir: 1, x: 0, from: -50, to: 50, speed: 6, max: 8, hidden: -0.02, grow: 1, whole: true,
+  };
+}
 
 describe("town reaction schedule", () => {
   it("enforces the global, kind, and speaker cooldowns", () => {
@@ -54,14 +63,39 @@ describe("town reaction schedule", () => {
 });
 
 it("stages honks in front of visible cars after their respawn timer has crossed zero", () => {
-  const car: TrafficCar = {
-    index: 0, mesh: new Mesh(), model: "sedan", color: "#fff", half: { x: 2, z: 1 },
-    lane: 0, dir: 1, x: 0, from: -50, to: 50, speed: 6, max: 8, hidden: -0.02, grow: 1, whole: true,
-  };
+  const car = movingCar();
   const ambient = { traffic: [car], nearbyWalker: () => undefined };
   const colliders = new Colliders(), player = new Vector3(0, 0, 5);
   expect(reactionTestSpot(ambient, colliders, player, "honk")).toMatchObject({ x: 12, z: 0, carIndex: 0 });
   expect(reactionTestSpot(ambient, colliders, player, "honk", 0)).toBeUndefined();
   car.hidden = 0.02;
   expect(reactionTestSpot(ambient, colliders, player, "honk")).toBeUndefined();
+});
+
+it("speaks the car's displayed line after the horn without a driver model or recording", () => {
+  vi.useFakeTimers({ toFake: ["performance"] });
+  const horn = vi.spyOn(audio, "sfx").mockImplementation(() => {});
+  const hasClip = vi.spyOn(audio, "hasClip").mockReturnValue(false);
+  const play = vi.spyOn(audio, "play").mockResolvedValue(true);
+  const reactions = new TownReactions(() => false);
+  try {
+    reactions.honk(movingCar());
+    expect(horn).toHaveBeenCalledExactlyOnceWith("horn");
+    vi.advanceTimersByTime(349);
+    reactions.observe(false);
+    expect(play).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(1);
+    reactions.observe(false);
+    const line = useStore.getState().hud.reaction;
+    expect(line).toMatchObject({ kind: "honk", speaker: "traffic:0" });
+    expect(play).toHaveBeenCalledExactlyOnceWith(expect.any(String), 1, line?.text,
+      expect.objectContaining({ optional: true, recordingOnly: false, signal: expect.any(AbortSignal) }));
+  } finally {
+    reactions.clear();
+    play.mockRestore();
+    hasClip.mockRestore();
+    horn.mockRestore();
+    vi.useRealTimers();
+  }
 });

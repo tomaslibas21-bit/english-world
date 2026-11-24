@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { game } from "../game/gameRef";
 import type { ReactionLine } from "../game/life/reacts";
+import { STREET_WORDS } from "../game/street/words";
 import "./reactBubble.css";
 
 const TRANSLATION = "Vertimas";
@@ -37,6 +38,7 @@ function bubblePlacement(anchor: { x: number; y: number }, w: number, h: number,
 
 export function ReactBubble({ line }: { line: ReactionLine }) {
   const [translation, showTranslation] = useState(false);
+  const detail = translation ? line.lt : line.id === 1 ? STREET_WORDS.translation : null;
   const bubble = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const el = bubble.current!;
@@ -65,11 +67,11 @@ export function ReactBubble({ line }: { line: ReactionLine }) {
     };
     update();
     return () => cancelAnimationFrame(frame);
-  }, [line.id]);
+  }, [line.id, translation]);
   return <div className="reaction-bubble" ref={bubble} role="status" aria-live="polite" data-reaction={line.kind}>
     <div className="reaction-copy">
       <span lang="en">{line.text}</span>
-      {translation && <small lang="lt">{line.lt}</small>}
+      {detail && <small lang="lt">{detail}</small>}
     </div>
     <button type="button" aria-label={TRANSLATION} aria-expanded={translation} onMouseDown={(e) => e.preventDefault()} onClick={() => {
       if (!translation) { showTranslation(true); game?.extendReaction?.(line.id); }
