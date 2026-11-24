@@ -2,7 +2,8 @@
 // everything else open and dry.
 import { ROADS, WORLD } from "../world/layout";
 import { exitCoordinates, keepOnExit } from "../world/roadExit";
-import { SHORE } from "../water";
+import { BAY, SHORE } from "../water";
+import type { CarWaterPlan } from "../world/rides";
 import { Drivable, CAR, type Rect } from "./drive";
 
 /** The streets as rectangles. */
@@ -17,6 +18,14 @@ export const townAsphalt = (lots: Rect[]) => new Drivable([...roadRects(), ...lo
  *  ground plan keeps it out of): the town's own ground, a car's half width in from its edges, and no nearer the sea
  *  than the dry sand. */
 export const townGround = () => new Drivable([{ x0: WORLD.minX + CAR.wide + 0.4, x1: WORLD.maxX - CAR.wide - 0.4, z0: SHORE.top + CAR.wide + 0.5, z1: WORLD.maxZ - CAR.wide - 0.4 }]);
+
+/** Ground for an occupied town car once shore recovery is ready. */
+export function townCarWaterGround({ mainland, extraRects }: CarWaterPlan) {
+  return new Drivable([
+    { x0: mainland.x0 + CAR.wide + 0.4, x1: mainland.x1 - CAR.wide - 0.4, z0: BAY.z0, z1: mainland.z1 - CAR.wide - 0.4 },
+    ...extraRects,
+  ]);
+}
 
 /** Only a car admitted by the road nose trigger may leave the normal ground through this opening. */
 export function settleRoadExit(ground: Drivable, point: { x: number; z: number }, radius: number, admitted: boolean) {
