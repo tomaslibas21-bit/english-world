@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Group, PerspectiveCamera, Vector3 } from "three";
+import { FrontSide, Group, PerspectiveCamera, Raycaster, Vector2, Vector3, type Mesh, type MeshBasicMaterial, type Points } from "three";
+import { CarWaterEffects, coughBeat, drainMotor, drainPitch, sputterMiss } from "../src/game/rides/carWaterEffects";
 import { CarWaterClearance, CarWaterRecovery, type CarWaterHost } from "../src/game/rides/carWaterRecovery";
 import { Rides, type Ride, type RideHost } from "../src/game/rides/Rides";
 import type { GameCharacter } from "../src/game/characters";
@@ -7,7 +8,7 @@ import type { NavGrid } from "../src/game/nav";
 import { CAR_WATER, createCarWaterProbe, probeCarWater, sampleCarWater, wetDriveSettings } from "../src/game/rides/carWater";
 import { BOAT, CAR, Motion, pushOutOfBox } from "../src/game/rides/drive";
 import { settleRoadExit, townAsphalt, townCarWaterGround, townGround } from "../src/game/rides/ground";
-import { BAY, DECKS, FLOORS, POOLS, SEA_LEVEL, SHORE, floorY, sandY, waterY } from "../src/game/water";
+import { BAY, DECKS, FLOORS, POOLS, SEA_LEVEL, SHORE, Splashes, floorY, sandY, waterY } from "../src/game/water";
 import { carModelEntry } from "../src/game/world/carModels";
 import { SEA_Z, TRAFFIC_LANES, WORLD } from "../src/game/world/layout";
 import { exitCoordinates, exitHalf, exitToTown } from "../src/game/world/roadExit";
@@ -464,7 +465,8 @@ it("clears Maple Harbor's real geometry on the shore approach and at all three p
   }
 });
 
-function recoveryFixture(town = buildTestTown(), occupied: { x: number; z: number; radius: number }[] = []) {
+function recoveryFixture(town = buildTestTown(), occupied: { x: number; z: number; radius: number }[] = [],
+  effects: Pick<CarWaterHost, "drops" | "effectRoot" | "splash" | "wash"> = {}) {
   const makeRide = (id: string, x: number, z: number, rot: number, spec = CAR, kind: Ride["kind"] = "car"): Ride => {
     const m = new Motion(spec, kind), mesh = new Group();
     m.set(x, z, rot);
@@ -495,6 +497,7 @@ function recoveryFixture(town = buildTestTown(), occupied: { x: number; z: numbe
   });
   const foot: CarWaterHost["foot"] = (p) => { player.position.set(p.x, p.y, p.z); player.rotation.y = p.rot; };
   const water: CarWaterRecovery = new CarWaterRecovery(RIDES.carWater, {
+    ...effects,
     eligible: (r) => eligible && r === car,
     driver: (r) => riding === r,
     reserve: (boxes) => { leases = boxes.slice(); },
@@ -595,16 +598,28 @@ describe("occupied town car rescue", () => {
     f.water.cameraFloor(camera, f.time);
     expect(camera.y).toBeCloseTo(waterY(camera.x, camera.z, f.time)! + 0.35);
     let z = f.car.m.z;
+    const coughs = new Set<number>();
+    let rose = false;
     for (let i = 0; i < 170; i++) {
       f.step();
       expect(Math.abs(f.car.m.z - z)).toBeLessThanOrEqual(8 * dt + 0.001);
       z = f.car.m.z;
+      const state = f.water.inspect();
+      if (state.phase !== "settle") continue;
+      if (f.car.mesh.rotation.x < -0.02) rose = true;
+      if (state.coughBeat) {
+        expect(rose).toBe(true);
+        expect(f.car.mesh.rotation.x).toBeGreaterThanOrEqual(0);
+        coughs.add(state.motorSignalRevs);
+      }
     }
     f.dry();
     expect(f.riding).toBe(f.car);
     expect(f.water.inspect().landing).toBe("trail");
     expect(f.detaches).toBe(0);
     expect(f.handbacks).toBe(1);
+    expect([...coughs]).toEqual([0.28, 0.16]);
+    expect(f.water.inspect().coughEvents).toBe(2);
   });
 
   it.each([["shallow", -71], ["deep", -85]])("lets a real %s exit work immediately, survives a lost driver and lands beside the same car after a suspended frame", (_, z) => {
@@ -796,4 +811,277 @@ it("opens only a boarded real fleet car, unhides its driver at an exterior step 
   expect(rides.near(player.root.position.x, player.root.position.z)).toBe(car);
   rides.disposeWater();
   expect(window).not.toHaveProperty("__carWater");
+});
+
+function effectsFixture(hz: number) {
+  const step = 1 / hz, root = new Group(), drops = new Splashes();
+  const ring = drops.group.getObjectByName("water-ring")!;
+  const points = drops.group.getObjectByName("water-drops") as Points;
+  const fan = vi.spyOn(drops, "carFan"), splash = vi.fn(), wash = vi.fn();
+  const effects = new CarWaterEffects({ drops, splash, wash }, root);
+  const m = new Motion(CAR, "car"), probe = createCarWaterProbe();
+  m.set(300, 300, 0);
+  let time = 0, depth = 0.2, oneSide = false;
+  POOLS.push({ x: 300, z: 300, r: 20, y: 0.04, depth: 2 });
+  FLOORS.push({ x0: 285, x1: 315, z0: 285, z1: 315, y: (x) => oneSide && x >= 300 ? 0.2 : 0.04 - depth });
+  const f = {
+    step, m, root, drops, ring, points, effects, fan, splash, wash, probe,
+    get time() { return time; },
+    get foam() { return root.getObjectByName("car-water-foam") as Mesh<Points["geometry"], MeshBasicMaterial>; },
+    depth(value: number, rightOnly = false) { depth = value; oneSide = rightOnly; },
+    frame(speed: number) {
+      m.speed = speed;
+      m.x += speed * m.fx * step; m.z += speed * m.fz * step;
+      time += step;
+      probeCarWater(m, time, probe.band, probe);
+      effects.drive(m, probe, time, step);
+      drops.update(step, time, null, 0);
+    },
+    run(seconds: number, speed: number) { for (let i = 0; i < Math.round(seconds * hz); i++) f.frame(speed); },
+  };
+  return f;
+}
+
+describe.each([60, 20])("town car effects at %i Hz", (hz) => {
+  it("starts on the contacting wheel, alternates moving fans and builds one top-facing wake and crest", () => {
+    const f = effectsFixture(hz);
+    f.depth(0); f.frame(0);
+    expect(f.foam).toBeUndefined();
+    expect(f.effects.inspect()).toMatchObject({ carDrops: 0, pointDrawCount: 0, ringVisible: false });
+    f.depth(0.2, true); f.frame(0);
+    const right = f.probe.frontRight;
+    expect(f.fan.mock.calls[0]).toEqual([right.x, right.liveSurface, right.z, -1, 0, 0.2]);
+    expect(f.splash.mock.calls).toEqual([[0.35]]);
+    expect(f.effects.inspect()).toMatchObject({ carDrops: 7, pointsVisible: true, pointDrawCount: 7, foamVisible: false });
+    f.run(0.35, 0);
+    expect(f.fan).toHaveBeenCalledTimes(1);
+
+    f.depth(0.2);
+    const shallowTimes: number[] = [], splashTimes = [2 * f.step];
+    const run = (seconds: number, pace: number, times: number[]) => {
+      for (let i = 0; i < Math.round(seconds * hz); i++) {
+        const before = f.fan.mock.calls.length, sounds = f.splash.mock.calls.length;
+        f.frame(pace);
+        if (f.splash.mock.calls.length > sounds) splashTimes.push(f.time);
+        if (f.fan.mock.calls.length > before) {
+          expect(f.fan.mock.calls.length - before).toBe(1);
+          times.push(f.time);
+          const [x, y, z, dx, , k] = f.fan.mock.lastCall!;
+          const tire = dx > 0 ? f.probe.frontLeft : f.probe.frontRight;
+          expect([x, y, z]).toEqual([tire.x, tire.liveSurface, tire.z]);
+          expect(k).toBe(f.probe.band === "shallow" ? 0.2 : 0.55);
+        }
+      }
+    };
+    run(1.05, 4.2, shallowTimes);
+    expect(shallowTimes.length).toBeGreaterThanOrEqual(7);
+    for (let i = 1; i < shallowTimes.length; i++) expect(Math.abs(shallowTimes[i] - shallowTimes[0] - i * 0.14)).toBeLessThanOrEqual(f.step + 1e-7);
+    expect(f.fan.mock.calls.slice(0, 6).map((call) => call[3])).toEqual([-1, 1, -1, 1, -1, 1]);
+    const mesh = f.foam, geometry = mesh.geometry, position = geometry.attributes.position, index = geometry.index!;
+    const color = geometry.attributes.color;
+    expect(f.root.children).toEqual([mesh]);
+    expect(mesh.material).toMatchObject({ isMeshBasicMaterial: true, side: FrontSide, vertexColors: true, depthWrite: false });
+    expect(mesh.castShadow || mesh.receiveShadow).toBe(false);
+    expect(f.effects.inspect()).toMatchObject({ bowVertices: 0, ringVisible: false, foamVisible: true, foamDrawStart: 24 });
+    expect(f.effects.inspect().wakeSegments).toBeGreaterThanOrEqual(10);
+    expect(f.effects.inspect().wakeSegments).toBeLessThanOrEqual(14);
+    for (let i = 9; i < 9 + 6 * f.effects.inspect().wakeSegments; i++) {
+      expect(position.getY(i)).toBeCloseTo(waterY(position.getX(i), position.getZ(i), f.time)! + 0.035, 6);
+    }
+
+    f.depth(0.48);
+    const deepTimes: number[] = [];
+    run(0.65, 2.1, deepTimes);
+    expect(deepTimes.length).toBeGreaterThanOrEqual(6);
+    for (let i = 1; i < deepTimes.length; i++) expect(Math.abs(deepTimes[i] - deepTimes[0] - i * 0.10)).toBeLessThanOrEqual(f.step + 1e-7);
+    for (let i = 1; i < splashTimes.length; i++) expect(splashTimes[i] - splashTimes[i - 1]).toBeGreaterThanOrEqual(0.65 - 1e-7);
+    expect(f.wash).toHaveBeenCalledTimes(1);
+    expect(mesh.geometry.attributes.position).toBe(position);
+    expect(mesh.geometry.attributes.color).toBe(color);
+    expect(mesh.geometry.index).toBe(index);
+    expect(geometry.drawRange).toMatchObject({ start: 0 });
+    expect(f.effects.inspect()).toMatchObject({ bowVertices: 9, ringVisible: false, pointsVisible: true });
+    expect(position.getZ(4)).toBeCloseTo(f.m.z + CAR.half + 0.12, 4);
+    expect(position.getY(4)).toBeCloseTo(waterY(f.m.x, position.getZ(4), f.time)! + 0.10, 6);
+    expect(position.getZ(4) - position.getZ(1)).toBeCloseTo(0.85, 4);
+    expect(position.getX(1)).toBeCloseTo(f.m.x - CAR.wide - 0.45, 4);
+    expect(position.getX(7)).toBeCloseTo(f.m.x + CAR.wide + 0.45, 4);
+    expect(position.getZ(3) - position.getZ(5)).toBeCloseTo(0.18, 4);
+
+    // Compare the drawable objects at one fixed pose and camera. Raycasting from above checks the bow winding.
+    const camera = new PerspectiveCamera(45, 390 / 844, 0.1, 60), nose = new Vector3().fromBufferAttribute(position, 4);
+    camera.position.set(f.m.x, 8, f.m.z + 7);
+    camera.lookAt(f.m.x, 0, f.m.z);
+    camera.updateMatrixWorld();
+    const screen = nose.clone().project(camera), ray = new Raycaster();
+    ray.setFromCamera(new Vector2(screen.x, screen.y), camera);
+    expect(ray.intersectObject(mesh)[0]?.point.distanceTo(nose)).toBeLessThan(0.002);
+    const drawable = () => [mesh, f.points].filter((object) => object.visible && object.geometry.drawRange.count > 0).length;
+    expect(drawable()).toBe(2);
+    mesh.visible = f.points.visible = false;
+    expect(drawable()).toBe(0);
+    expect(nose.clone().project(camera).equals(screen)).toBe(true);
+    mesh.visible = f.points.visible = true;
+
+    const fans = f.fan.mock.calls.length;
+    f.run(0.25, 0);
+    expect(f.fan).toHaveBeenCalledTimes(fans);
+    expect(f.effects.inspect()).toMatchObject({ bowVertices: 0, foamVisible: true });
+    const tailAlpha = () => {
+      let alpha = 0;
+      for (let i = geometry.drawRange.start; i < geometry.drawRange.start + geometry.drawRange.count; i++) {
+        alpha = Math.max(alpha, color.getW(index.getX(i)));
+      }
+      return alpha;
+    };
+    const alpha = tailAlpha();
+    f.run(0.25, 0);
+    expect(tailAlpha()).toBeGreaterThan(0);
+    expect(tailAlpha()).toBeLessThan(alpha);
+    f.run(0.40, 0);
+    expect(f.effects.inspect()).toMatchObject({ wakeSegments: 0, bowVertices: 0, carDrops: 0, foamVisible: false, foamDrawCount: 0, pointsVisible: false, pointDrawCount: 0 });
+  });
+
+  it("switches axles in reverse, clears teleports, and excludes a boardwalk between stations", () => {
+    const f = effectsFixture(hz);
+    f.depth(0.48); f.run(0.50, 2.1);
+    expect(f.effects.inspect().wakeSegments).toBeGreaterThan(0);
+    f.frame(-1.4);
+    expect(f.effects.inspect()).toMatchObject({ wakeSegments: 0, bowVertices: 9 });
+    const position = f.foam.geometry.attributes.position;
+    expect(position.getZ(4)).toBeCloseTo(f.m.z - CAR.half - 0.12, 4);
+    let sprays = 0;
+    for (let i = 0; i < Math.round(hz * 0.35); i++) {
+      const before = f.fan.mock.calls.length;
+      f.frame(-1.4);
+      if (f.fan.mock.calls.length === before) continue;
+      const [x, , z, dx, , k] = f.fan.mock.lastCall!;
+      const lead = dx > 0 ? f.probe.rearLeft : f.probe.rearRight;
+      expect([x, z, k]).toEqual([lead.x, lead.z, 0.55]);
+      sprays++;
+    }
+    expect(sprays).toBeGreaterThanOrEqual(3);
+    expect(f.effects.inspect().wakeSegments).toBeGreaterThan(0);
+
+    const deckZ = f.probe.frontLeft.z + 0.06;
+    DECKS.push({ x0: 298, x1: 302, z0: deckZ - 0.01, z1: deckZ + 0.01, y: 0.3 });
+    f.frame(-1.4);
+    const geometry = f.foam.geometry, { start, count } = geometry.drawRange;
+    expect(count).toBeGreaterThan(24);
+    for (let i = start; i < start + count; i += 3) {
+      const a = position.getZ(geometry.index!.getX(i)), b = position.getZ(geometry.index!.getX(i + 1)), c = position.getZ(geometry.index!.getX(i + 2));
+      expect(Math.min(a, b, c) < deckZ + 0.01 && Math.max(a, b, c) > deckZ - 0.01).toBe(false);
+    }
+    f.m.set(300, 330, 0); f.frame(0);
+    expect(f.effects.inspect()).toMatchObject({ wakeSegments: 0, bowVertices: 0, carDrops: 0, foamDrawCount: 0, pointDrawCount: 0 });
+  });
+
+  it("keeps one 420-slot batch and enforces 96 car dots across bands, draining and unrelated recycling", () => {
+    const f = effectsFixture(hz);
+    let peak = 0;
+    for (let i = 0; i < 2 * hz; i++) {
+      f.depth(i % 2 ? 0.48 : 0.2); f.frame(i % 2 ? 2.1 : 4.2);
+      peak = Math.max(peak, f.effects.inspect().carDrops);
+    }
+    expect(peak).toBeGreaterThan(35);
+    expect(peak).toBeLessThanOrEqual(96);
+    expect(f.wash).toHaveBeenCalledTimes(1);
+    expect(f.points.geometry.attributes.position.count).toBe(420);
+    for (let i = 0; i < 20; i++) {
+      f.drops.carFan(300, 0.04, 300, 1, 0, 0.55);
+      f.drops.carDrop(300, 0.48, 300, 0.2, 0);
+    }
+    f.drops.update(0, f.time, null, 0);
+    expect(f.effects.inspect()).toMatchObject({ carDrops: 96, pointsVisible: true });
+    for (let i = 0; i < 40; i++) f.drops.burst(300, 0.04, 300, 0, 0, 1);
+    f.drops.update(0, f.time, null, 0);
+    expect(f.effects.inspect()).toMatchObject({ carDrops: 0, drainLive: 0, pointDrawCount: 420 });
+    f.drops.carDrop(300, 0.48, 300, 0.2, 0);
+    f.effects.cancel();
+    f.drops.update(0, f.time, { x: 300, y: 0.04, z: 300 }, 1);
+    expect(f.effects.inspect()).toMatchObject({ carDrops: 0, drainLive: 0, pointsVisible: false, ringVisible: true });
+    expect(f.points.visible).toBe(true);
+  });
+
+  it("emits both falling sill streams on fallback and keeps them on the car after assisted exit", () => {
+    const root = new Group(), drops = new Splashes();
+    const drop = vi.spyOn(drops, "carDrop");
+    const f = recoveryFixture(undefined, [], { effectRoot: root, drops });
+    const frame = (ms = 1000 / hz) => {
+      f.step(ms);
+      drops.update(Math.min(ms / 1000, 0.05), f.time, null, 0);
+    };
+    f.begin();
+    const m = f.car.m;
+    m.set(24, -75.7, Math.PI / 2);
+    for (let i = 0; i < hz / 2; i++) {
+      frame();
+      m.speed = 2.1; m.x += 2.1 / hz;
+      f.water.accepted(f.car, f.time, 1);
+    }
+    drops.update(0, f.time, null, 0);
+    expect(f.water.inspect()).toMatchObject({ band: "body-deep", bowVertices: 9, washEvents: 1, pointsVisible: true, sputterEvents: 2 });
+    expect(f.exit()).toBe(true);
+    expect(f.riding).toBeNull();
+    frame(5000);
+    f.dry();
+    expect(f.water.inspect()).toMatchObject({ fallback: true, wakeSegments: 0, bowVertices: 0, foamDrawCount: 0, carDrops: 4, drainLive: 4, drainEmissions: 4 });
+    const scale = m.spec.half / 2.15, across = m.spec.wide + 0.03;
+    for (const [x, y, z, vx, vz] of drop.mock.calls) {
+      const along = (x - m.x) * m.fx + (z - m.z) * m.fz;
+      const side = (x - m.x) * m.fz - (z - m.z) * m.fx;
+      expect(Math.abs(along + 0.25 * scale)).toBeCloseTo(0.04);
+      expect(Math.abs(side)).toBeCloseTo(across);
+      expect(y).toBeCloseTo(f.car.mesh.position.y + 0.44);
+      expect((vx * m.fz - vz * m.fx) * Math.sign(side)).toBeCloseTo(0.2);
+    }
+    const points = drops.group.getObjectByName("water-drops") as Points;
+    const first = points.geometry.drawRange.start, position = points.geometry.attributes.position;
+    expect(position.getY(first)).toBeCloseTo(drop.mock.calls[0][1] - (1.1 + 9.5 * 0.05) * 0.05, 6);
+    f.player.position.x += 3;
+    for (let i = 0; i < Math.ceil(hz * 0.65); i++) frame();
+    expect(drop).toHaveBeenCalledTimes(36);
+    expect(f.water.inspect()).toMatchObject({ active: false, drainEmissions: 36, pointsVisible: true });
+    f.handoff();
+    expect(root.children[0]?.visible).toBe(false);
+    expect(f.water.inspect()).toMatchObject({ carDrops: 0, drainLive: 0, pointDrawCount: 0, pointsVisible: false });
+    drops.update(0, f.time, { x: 24, y: -0.2, z: -74 }, 1);
+    expect(f.water.inspect().ringVisible).toBe(true);
+    f.water.dispose();
+    expect(root.children).toHaveLength(0);
+    expect(drops.group.children).toHaveLength(2);
+  });
+});
+
+it("signals paired under-load misses and a raised nose followed by two synchronized dry coughs", () => {
+  for (const time of [0, 0.05, 0.24, 0.30, 0.91, 1.16]) expect(sputterMiss(time)).toBe(true);
+  for (const time of [0.12, 0.23, 0.35, 0.89, 1.05]) expect(sputterMiss(time)).toBe(false);
+  expect(drainPitch(0.06)).toBeCloseTo(-0.045);
+  for (const time of [0, 0.06, 0.23, 0.35, 0.47, 0.65, 2]) {
+    expect(coughBeat(time)).toBe(0);
+    expect(drainMotor(time)).toBe(0);
+  }
+  for (const [time, beat, revs, pitch] of [[0.17, 1, 0.28, 0.018], [0.41, 2, 0.16, 0.013]]) {
+    expect(coughBeat(time)).toBe(beat);
+    expect(drainMotor(time)).toBe(revs);
+    expect(drainPitch(time)).toBeCloseTo(pitch);
+  }
+});
+
+it("retires falling drops at local dry support or pool surface with the same gravity", () => {
+  const drops = new Splashes();
+  const points = drops.group.getObjectByName("water-drops") as Points;
+  FLOORS.push({ x0: 30, x1: 40, z0: 0, z1: 10, y: () => 1.5 });
+  POOLS.push({ x: 42, z: 5, r: 1, y: 1.5, depth: 3 });
+  for (const x of [35, 42, 45]) drops.carDrop(x, 1.94, 5, 0.2, 0);
+  const position = points.geometry.attributes.position;
+  drops.update(0, 0, null, 0);
+  expect(position.getY(0)).toBeCloseTo(1.94, 6);
+  drops.update(0.05, 0.05, null, 0);
+  expect(position.getX(0)).toBeCloseTo(35.01, 5);
+  expect(position.getY(0)).toBeCloseTo(1.94 - (1.1 + 9.5 * 0.05) * 0.05, 6);
+  for (let i = 2; i <= 6; i++) drops.update(0.05, i * 0.05, null, 0);
+  expect(drops.inspectCarDrops()).toMatchObject({ carDrops: 1, drainLive: 1, pointDrawStart: 2, pointDrawCount: 1 });
+  drops.update(0.4, 0.7, null, 0);
+  expect(drops.inspectCarDrops()).toMatchObject({ carDrops: 0, drainLive: 0, pointDrawCount: 0, pointsVisible: false });
 });

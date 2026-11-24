@@ -323,6 +323,7 @@ export class Game implements GameApi {
   private bumpT = 0;
   private braked = false;
   private dustT = 0;
+  private wetRide = false;
   /** At a wheel: the way the camera looks along (the car's course: in a slide it is seen side on), how far it has
    *  pulled back for the speed, the lens's widening, whether the kick out of a slide has been heard. */
   private rideCourse = 0;
@@ -1471,12 +1472,9 @@ export class Game implements GameApi {
         fade: (covered) => this.fadeCarWater(covered),
         clearFade: () => this.clearCarWaterFade(),
         save: () => this.savePlace(),
-        splash: (x, y, z, k) => {
-          audio.splash(k);
-          this.splashes.burst(x, y, z, 0, 0, k);
-        },
-        spray: (x, y, z, dx, dz, k) => this.splashes.fan(x, y, z, dx, dz, k),
-        drain: (x, y, z, dx, dz, k) => this.splashes.carDrain(x, y, z, dx, dz, k),
+        drops: this.splashes,
+        splash: (k) => audio.splash(k),
+        wash: () => audio.wash(),
       });
     }
     return true;
@@ -1545,6 +1543,7 @@ export class Game implements GameApi {
       this.seaMooring = undefined;
       this.savePlace();
     }
+    if (this.rides.water?.returning) return;
     const sur = waterY(x, z, this.t);
     if (sur !== null && sur - y > 0.3) { audio.splash(Math.min(1, 0.4 + (sur - y) * 0.4)); this.splashes.burst(x, sur, z, 0, 0, 1); }
     else audio.land(this.underfoot(y > 0.05), 0.5);
@@ -1568,6 +1567,7 @@ export class Game implements GameApi {
     this.vel.set(0, 0, 0); this.moveVel.set(0, 0, 0);
     this.gait.sync(this.heading, 0); this.gaitOn = false; this.steer.reset();
     this.keys.delete(" "); this.brake = false;
+    this.wetRide = false;
     this.rideGoal = null;
     this.helmSteer.reset();
     this.ambient.riding = false;
@@ -2799,8 +2799,7 @@ export class Game implements GameApi {
     // (what one can drive: its people, the way back to its curb; at the wheel it is moved from updatePlayer)
     const riding = this.rides.riding;
     if (!riding) this.rides.update(dt, this.t, null);
-    const motorRide = riding ?? this.rides.water?.drainingCar;
-    audio.motor(motorRide && this.rides.phase === "on" && !this.zone.interior && !this.modes.owns("road") ? motorRide.kind : null, this.rides.revs);
+    audio.motor(riding && this.rides.phase === "on" && !this.zone.interior && !this.modes.owns("road") ? riding.kind : null, this.rides.revs);
     this.updateNpcs(dt, talking, mode);
     this.updateIsland(dt, blocked || !!mode);
     if (!this.zone.interior) {
@@ -3097,9 +3096,14 @@ export class Game implements GameApi {
     const r = this.rides.riding!, m = r.m;
     this.rides.update(dt, this.t, controls, shoreFrame);
     // (getting out ends the ride inside update: the player is on foot again, leftRide has set them down)
-    if (this.rides.riding !== r) return;
+    if (this.rides.riding !== r) {
+      if (r.kind === "car") this.splashes.update(dt, this.t, null, 0);
+      return;
+    }
     const on = this.rides.phase === "on", v = on ? m.speed : 0, pace = on ? m.pace : 0, car = r.kind === "car";
     const wet = car && !!this.rides.water?.owns(r);
+    if (wet && !this.wetRide) { this.dust.clear(); this.dustT = 0; }
+    this.wetRide = wet;
     const portraitHelm = on && !car && useStore.getState().hud.showTouch && this.container.clientHeight > this.container.clientWidth * 1.15;
     this.rig.portraitHelm = portraitHelm;
     this.heading = on ? m.heading : this.player.root.rotation.y;
@@ -3114,7 +3118,7 @@ export class Game implements GameApi {
     }
     // a sense of speed: at its open-road pace the camera drops back a little and the lens widens; more for the kick
     {
-      const k = on ? Math.max(0, Math.min(1.2, (pace - m.spec.town * 0.8) / (m.spec.max - m.spec.town * 0.8))) : 0, kick = on && m.boost > 0 ? 1 : 0;
+      const k = on && !wet ? Math.max(0, Math.min(1.2, (pace - m.spec.town * 0.8) / (m.spec.max - m.spec.town * 0.8))) : 0, kick = on && !wet && m.boost > 0 ? 1 : 0;
       const back = k * (car ? 0.13 : 0.1) + kick * 0.05;
       // (the wheel's own zoom stays the player's: only what was added is taken off again)
       const base = this.rig.dist / (1 + this.rideBack);
@@ -3126,12 +3130,12 @@ export class Game implements GameApi {
     {
       const slide = on ? Math.min(1, Math.max(0, (Math.abs(m.slip) - 1.2) / 4.5)) : 0;
       audio.rush("squeal", car && !wet && slide > 0 && pace > 2.5 && this.rides.asphalt.has(m.x, m.z) ? 0.35 + 0.65 * slide : 0, Math.min(1, pace / 14));
-      audio.rush("wind", on ? Math.max(0, (pace - 6) / (m.spec.max - 3)) * (car ? 1 : 0.8) + (!car ? slide * 0.5 : 0) : 0, Math.min(1, pace / 16));
-      if (on && m.boost > 0 && !this.kicked) { this.kicked = true; audio.kickRush(); }
-      if (!on || m.boost <= 0) this.kicked = false;
+      audio.rush("wind", on && !wet ? Math.max(0, (pace - 6) / (m.spec.max - 3)) * (car ? 1 : 0.8) + (!car ? slide * 0.5 : 0) : 0, Math.min(1, pace / 16));
+      if (on && !wet && m.boost > 0 && !this.kicked) { this.kicked = true; audio.kickRush(); }
+      if (!on || wet || m.boost <= 0) this.kicked = false;
     }
     {
-      const fast = on && pace > (car ? CAR_DRIFT.from : BOAT_DRIFT.from);
+      const fast = on && !wet && pace > (car ? CAR_DRIFT.from : BOAT_DRIFT.from);
       const hud = useStore.getState();
       const speedLines = car && !wet && !this.modes.active && pace > m.spec.max * 0.7;
       this.speedShake = car && !wet ? Math.max(0, pace / m.spec.max - 0.85) * 0.23 : 0;
@@ -3145,7 +3149,8 @@ export class Game implements GameApi {
     // wheels when it goes fast or over open ground, a short skid when it is braked hard
     if (r.kind === "boat" && on) this.splashes.boatRing(dt, this.t, m);
     else this.splashes.update(dt, this.t, null, 0);
-    if (car && on && !wet) {
+    if (wet) this.braked = false;
+    else if (car && on) {
       const braking = !!controls && !m.drift && (controls.brake || controls.throttle < 0) && v > 0;
       if (braking && !this.braked && pace > 8.5) audio.skid(Math.min(1, pace / 15));
       this.braked = braking;

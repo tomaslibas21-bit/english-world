@@ -291,7 +291,7 @@ export class Rides {
     return r.kind === "car" && (this.list.includes(r) || !!r.parked && this.modeCars.has(r));
   }
 
-  prefetchWater(r: Ride, adapter: Pick<CarWaterHost, "eligible" | "foot" | "fade" | "clearFade" | "splash" | "spray" | "drain" | "save"> & {
+  prefetchWater(r: Ride, adapter: Pick<CarWaterHost, "eligible" | "foot" | "fade" | "clearFade" | "drops" | "splash" | "wash" | "save"> & {
     arrest(): void;
     snap(): void;
     peopleClear: ConstructorParameters<typeof import("./carWaterRecovery").CarWaterClearance>[0]["peopleClear"];
@@ -327,7 +327,7 @@ export class Rides {
       this.water.begin(r);
       if (import.meta.env.DEV) {
         const surface = (x: number, z: number, time = this.now) => carWaterSurface(x, z, time);
-        const debug = this.waterDebug = () => ({ ...this.water?.inspect(), surface });
+        const debug = this.waterDebug = () => ({ ...this.water?.inspect(), motorRevs: this.revs, surface });
         Object.assign(window, { __carWater: debug });
       }
     }).catch(() => { if (carWaterModule === pending) carWaterModule = undefined; });
@@ -624,6 +624,7 @@ export class Rides {
   /** The player takes `r`: its people hop out on the curb's side with a word, and the player hops in. */
   board(r: Ride, count = true) {
     if (this.riding || this.water?.suppressInput) return false;
+    this.water?.cancelEffects();
     const p = this.host.player.root.position;
     this.riding = r;
     r.parked?.();
@@ -819,6 +820,7 @@ export class Rides {
 
   resetPosition(r: Ride, { x, z, rot }: Ride["home"]) {
     if (this.water?.owns(r)) { this.water.transfer(); return; }
+    this.water?.cancelEffects(r);
     if (r === this.riding) {
       this.glide = null;
       this.pushAt = { x, z, h: rot };
@@ -1701,6 +1703,6 @@ export class Rides {
   get revs() {
     const r = this.riding;
     const revs = r && this.phase === "on" ? Math.min(1.25, (r.m.pace + (r.m.drift ? 3 : 0)) / r.m.spec.max) : 0;
-    return this.water && (this.water.owns(r) || this.water.drainingCar) ? this.water.revs(revs) : revs;
+    return this.water?.owns(r) ? this.water.revs(revs) : revs;
   }
 }
