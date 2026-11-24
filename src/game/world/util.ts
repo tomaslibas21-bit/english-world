@@ -310,23 +310,63 @@ export function textTexture(text: string, opts: { bg?: string; fg?: string; font
   if (opts.border) { x.lineWidth = h * 0.06; x.strokeStyle = opts.border; x.stroke(); }
   x.fillStyle = opts.fg ?? "#222";
   const family = opts.font ?? (opts.script ? "'Georgia', serif" : "'Nunito', 'Arial Rounded MT Bold', Arial, sans-serif");
-  /** The biggest size up to `size` px with which every row is at most 90% of the board wide. */
-  const fit = (rows: string[], size: number) => {
-    x.font = `800 ${size}px ${family}`;
-    while (Math.max(...rows.map((r) => x.measureText(r).width)) > w * 0.9 && size > 10) { size -= 2; x.font = `800 ${size}px ${family}`; }
-    return size;
-  };
+  const limit = w * 0.9;
+  // The game's sans-serif stack scales these glyphs. Other faces and glyph fallback use the scan.
+  const orderedWidths = opts.font == null && !opts.script && !/[^ -~·–—]/.test(text);
+  const setSize = (size: number) => { x.font = `800 ${size}px ${family}`; };
   const widest = (rows: string[]) => Math.max(...rows.map((r) => x.measureText(r).width));
-  let rows = [text], size = fit(rows, h * 0.52), wide = widest(rows);
+  /** The biggest size up to `size` px with which every row is at most 90% of the board wide. */
+  const fit = (rows: string[], start: number) => {
+    setSize(start);
+    let width = widest(rows);
+    if (width > limit && start > 10 && orderedWidths && Number.isFinite(width)) {
+      let tooWide = 0;
+      // The original scan stops here even if this final size still exceeds the limit.
+      let candidate = Math.ceil((start - 10) / 2);
+      let wider = width;
+      let narrower: number | undefined;
+      while (candidate - tooWide > 1) {
+        const step = tooWide + Math.floor((candidate - tooWide) / 2);
+        setSize(start - 2 * step);
+        const measured = widest(rows);
+        if (!Number.isFinite(measured) || measured > wider || (narrower !== undefined && measured < narrower)) break;
+        if (measured > limit) {
+          tooWide = step;
+          wider = measured;
+        } else {
+          candidate = step;
+          narrower = measured;
+        }
+      }
+      if (candidate - tooWide === 1) {
+        const size = start - 2 * candidate;
+        setSize(size);
+        const measured = narrower ?? widest(rows);
+        if (Number.isFinite(measured) && measured <= wider) return { size, width: measured };
+      }
+      setSize(start);
+    }
+    let size = start;
+    while (width > limit && size > 10) {
+      size -= 2;
+      setSize(size);
+      width = widest(rows);
+    }
+    return { size, width };
+  };
+  let rows = [text];
+  let { size, width: wide } = fit(rows, h * 0.52);
   // (a dash stays with what follows it, a "·" between two parts is dropped where the line breaks)
   const words = text.split(" ").reduce<string[]>((a, w) => (a.length && /^[–-]$/.test(a[a.length - 1]) ? (a[a.length - 1] += " " + w) : a.push(w), a), []);
   for (let n = 2; n <= Math.min(opts.lines ?? 1, words.length); n++) {
     // every way of cutting the words into n rows (a sign has a handful of words)
     const cuts = (from: number, left: number): number[][] => left === 0 ? [[]] : Array.from({ length: words.length - from - left }, (_, i) => from + 1 + i).flatMap((k) => cuts(k, left - 1).map((r) => [k, ...r]));
+    const start = (h * 0.84) / (n * 1.06);
+    if (start < size || (start === size && n !== rows.length)) continue;
     for (const cut of cuts(0, n - 1)) {
       const r = [0, ...cut].map((a, i) => words.slice(a, [...cut, words.length][i]).join(" ").replace(/^· | ·$/g, ""));
       // the biggest letters; as big, the evenest lines ("2 for $5" over "Weekly Deals", not "2 for" over the rest)
-      const s = fit(r, (h * 0.84) / (n * 1.06)), wd = widest(r);
+      const { size: s, width: wd } = fit(r, start);
       if (s > size || (s === size && n === rows.length && wd < wide)) { size = s; rows = r; wide = wd; }
     }
   }
