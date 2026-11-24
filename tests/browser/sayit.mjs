@@ -195,9 +195,9 @@ async function testGame(context, game, size, touch, supported) {
       const { exit } = await read();
       await page.evaluate(({ x, z, outward }) => {
         const { game } = window.__ew;
+        // Stage the van near the crest. The town camera follows it when frames resume.
         const ride = game.rides.riding;
         game.rides.resetPosition(ride, { x: x - 19 * Math.sin(outward), z: z - 19 * Math.cos(outward), rot: outward });
-        game.modeHost.snapRide(ride);
       }, exit);
       await wait(async () => (await read()).ready, "road is ready aboard the van");
       await page.keyboard.down("ArrowUp");
