@@ -3,6 +3,8 @@ import { townRide, useStore, type HudState } from "../state/store";
 import { townNote } from "../state/townNotes";
 import { SectionHelpButton, useSectionHelp } from "./sectionHelp";
 import { useSurf } from "../game/surf/store";
+import { useBarista } from "../game/barista/store";
+import { useGoFish } from "../game/gofish/store";
 import { SurfOverlay, SurfPicker } from "./Surf";
 import { TaxiOverlay } from "./Taxi";
 import { BaristaOffer, BaristaOverlay } from "./Barista";
@@ -45,7 +47,7 @@ export const COURSE_URL = import.meta.env.VITE_BACK_URL as string | undefined;
 
 function ToolButton({ icon, title, panel, hotkey, badge, unread }: { icon: IconName; title: string; panel: "scenarios" | "map" | "journal" | "phone" | "phrasebook" | "settings"; hotkey?: string; badge?: number; unread?: number }) {
   return (
-    <button className="icon-btn" onClick={() => useStore.getState().setHud({ panel })} title={title} aria-label={(badge ? `${title} (${badge})` : title) + (unread ? `, ${unread} neperskaitytos žinutės` : "")}>
+    <button className={"icon-btn" + (panel === "phrasebook" ? " phrasebook-tool" : "")} onClick={() => useStore.getState().setHud({ panel })} title={title} aria-label={(badge ? `${title} (${badge})` : title) + (unread ? `, ${unread} neperskaitytos žinutės` : "")}>
       <Icon name={icon} size={25} />{hotkey && <span className="key" aria-hidden>{hotkey}</span>}
       {!!badge && <span className="due-badge" aria-hidden>{badge}</span>}
     </button>
@@ -73,6 +75,8 @@ export function Hud() {
   const layout = screen.sidewaysPhone ? "sideways" : screen.portraitPhone ? "portrait" : "full";
   const surfing = useSurf((s) => s.active);
   const surfPicking = useSurf((s) => s.picking);
+  const baristaOffer = useBarista((s) => s.offered);
+  const goFishOffer = useGoFish((s) => s.offered);
   const inTown = !inConversation && !hud.flight && !surfing && !hud.modeScreen;
   const ride = townRide(hud.ride);
   const riding = ride !== null;
@@ -115,11 +119,20 @@ export function Hud() {
   }
   const note = townNote(hud);
   const banner = hud.zoneBanner && note === "banner" ? splitLead(hud.zoneBanner.title) : null;
+  const subtitle = hud.zoneBanner?.sub;
   const guideVisible = !hud.panel && note === "guide";
   const moving = hud.walking || riding;
+  const kind = hud.prompt?.kind;
+  const talk = kind === "talk";
+  const namedTalk = talk && hud.prompt?.label.startsWith("Kalbėtis: ") === true;
+  const zone = hud.minimap.zone;
+  const target = hud.objective?.targetLoc ?? SITUATION_BY_ID[hud.objective?.sitId ?? ""]?.location;
+  const localOffer = talk || kind === "barista" || kind === "gofish" || kind === "billiards" || baristaOffer || goFishOffer;
+  const foldForContext = portrait && !hud.panel && ((talk && guideVisible && !hud.roadApproach)
+    || (zone !== "town" && target !== undefined && target !== zone && localOffer));
   // A sideways phone keeps the task to one row unless it is opened by hand.
   const collapsed = streetCard || (phoneToast ? !task.openedDuringToast
-    : (moving && !!hud.objective?.followUp) || (task.manual ?? (screen.sidewaysPhone || (!task.fresh && moving))));
+    : (moving && !!hud.objective?.followUp) || (task.manual ?? (screen.sidewaysPhone || (!task.fresh && (moving || foldForContext)))));
   return (
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
       <div className="hud-top">
@@ -127,10 +140,10 @@ export function Hud() {
         <div className={"objective-notes" + (collapsed ? " task-folded" : "") + (hud.roadApproach ? " road-approach" : "")}>
           <Objective key={taskId ?? "complete"} collapsed={collapsed} fresh={task.fresh && !hud.panel} setCollapsed={task.setManual} />
           {streetCard && portrait && <StreetCard />}
-          {hud.zoneBanner && banner && <div className="zone-banner"><h2>{banner.icon && <Icon name={banner.icon} size="0.8em" className="zb-ico" />}{banner.rest}</h2>{hud.zoneBanner.sub && <p>{hud.zoneBanner.sub}</p>}</div>}
+          {banner && <div className="zone-banner"><h2>{banner.icon && <Icon name={banner.icon} size="0.8em" className="zb-ico" />}{banner.rest}</h2>{subtitle && splitLead(subtitle).rest.trim() !== banner.rest.trim() && <p>{subtitle}</p>}</div>}
           {!hud.panel && hud.phoneCard && <PhoneRing id={hud.phoneCard} />}
           {!hud.panel && hud.textArrival && <TextArrival id={hud.textArrival} />}
-          <Guide visible={guideVisible} />
+          <Guide visible={guideVisible} portrait={portrait} walking={hud.walking} namedTalk={namedTalk} />
           <TownToast toast={toast} />
           {questHud && !directionsToast && <DirectionsCard />}
         </div>
@@ -200,7 +213,7 @@ function activateHudButton(e: KeyboardEvent<HTMLElement>) {
 
 // The same for the town's tools and the radio set, which opens over the town at the HUD's level.
 function keepKeysOnHudButtons(e: KeyboardEvent<HTMLElement>) {
-  if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(":is(.toolbar, .radio-set, .street-card) :focus-visible, .street-bubble:focus-visible")) e.stopPropagation();
+  if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(":is(.toolbar, .radio-set, .street-card, .coach) :focus-visible, .street-bubble:focus-visible")) e.stopPropagation();
 }
 
 /** The town's tools. On a phone (upright or sideways) they always fold behind one round menu button; on a computer
@@ -217,7 +230,7 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, modeExit, 
   const panel = useStore((s) => s.hud.panel);
   const prompt = useStore((s) => s.hud.prompt?.kind);
   // (`hint`: the town's guide is on screen; the hint that points at the list opens the menu while it shows)
-  const listHint = useStore((s) => s.hud.coach?.step === "list" && !s.hud.coach.ok) && hint;
+  const listHint = useStore((s) => s.hud.coach?.step === "list" && !s.hud.coach.ok && !s.hud.walking && !s.hud.ride) && hint;
   const phone = portraitPhone || sidewaysPhone;
   const folds = phone || riding;
   // On a computer the radio stays beside the menu button during a ride; on a phone it is one of the drawer's buttons.
@@ -262,8 +275,8 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, modeExit, 
   }, []);
   const keepOpen = useCallback(() => {
     clearTimeout(timer.current);
-    if (!listHint) timer.current = setTimeout(() => setMenuOpen(false), 5000);
-  }, [listHint]);
+    timer.current = setTimeout(() => setMenuOpen(false), 5000);
+  }, []);
   useEffect(() => {
     if (!open) return;
     const outside = (e: PointerEvent) => {
@@ -282,9 +295,9 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, modeExit, 
     };
   }, [open, closeMenu]);
   useEffect(() => {
-    if (open) keepOpen();
+    if (open && menuOpen) keepOpen();
     return () => clearTimeout(timer.current);
-  }, [open, keepOpen]);
+  }, [open, menuOpen, keepOpen]);
   useLayoutEffect(() => {
     if (!folds) setMenuOpen(false);
     else if (panel || (phone && radioOpen)) {
@@ -299,7 +312,7 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, modeExit, 
     ...(modeExit ? [<button key="exit" className="icon-btn mode-exit" title={modeExit} aria-label={modeExit} onClick={() => game?.modeExit()}><Icon name="walk" size={25} /></button>] : []),
     <ToolButton key="scenarios" icon="clapper" title="Visos situacijos" panel="scenarios" />,
     <ToolButton key="map" icon="map" title="Žemėlapis (M)" panel="map" hotkey="M" />,
-    <ToolButton key="journal" icon="journal" title="Užduotys (J)" panel="journal" hotkey="J" />,
+    <ToolButton key="journal" icon={phone ? "clipboard" : "journal"} title="Užduotys (J)" panel="journal" hotkey="J" />,
     <ToolButton key="phone" icon="smartphone" title="Telefonas (P)" panel="phone" hotkey="P" badge={missedCalls + unread} unread={unread} />,
     <ToolButton key="phrasebook" icon="bookOpen" title="Frazių knygelė" panel="phrasebook" badge={due} />,
     <ToolButton key="settings" icon="settings" title="Nustatymai (Esc)" panel="settings" />,
@@ -338,7 +351,7 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, modeExit, 
         {phone && !open && !radioOpen && <RadioMenuLamp />}
       </button>
       <div className="toolbar-fit-limit" ref={fitLimit} aria-hidden />
-      <div className="toolbar-drawer" id="town-tools" inert={!open} style={{ "--drawer-rows": columns[0] } as CSSProperties} onPointerDown={keepOpen} onClick={keepOpen}>
+      <div className="toolbar-drawer" id="town-tools" inert={!open} style={{ "--drawer-rows": columns[0] } as CSSProperties} onPointerDown={menuOpen ? keepOpen : undefined} onClick={menuOpen ? keepOpen : undefined}>
         <div className="toolbar-tools">
           <div className="toolbar-actions">{actions.map(slot)}</div>
           {radioInDrawer && slot(<RadioTool phone />, actions.length)}

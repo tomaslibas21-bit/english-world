@@ -5,7 +5,7 @@
 // foot. A hint goes when the learner does what it says, with "Gerai", or by itself after a while, and never comes
 // back; "Daugiau nerodyti" ends them all. Everything they say stays under "Kaip žaisti?" (Panels.tsx Help).
 // It waits while a conversation or a panel is open. What was shown is remembered with the progress.
-import { useStore, type HudState } from "../state/store";
+import { townRide, useStore, type HudState } from "../state/store";
 import { radio } from "../radio";
 
 export type CoachStep = NonNullable<HudState["coach"]>["step"];
@@ -78,17 +78,30 @@ class Coach {
     if (this.watching) return;
     this.watching = true;
     useStore.subscribe((s, prev) => {
+      const { hud } = s;
       // The place name gets the screen first. A hint keeps its time, even if it was already ticked off.
-      const covered = !!(s.hud.zoneBanner || s.hud.phoneCard);
+      const covered = !!(hud.zoneBanner || hud.phoneCard);
       const wasCovered = !!(prev.hud.zoneBanner || prev.hud.phoneCard);
       if (covered && !wasCovered && this.timer !== undefined) {
         this.remaining = Math.max(1, this.deadline - Date.now());
         clearTimeout(this.timer);
         this.timer = undefined;
       } else if (!covered && wasCovered) this.startTimer();
-      if (s.hud.prompt?.kind !== prev.hud.prompt?.kind) this.near(s.hud.prompt?.kind);
-      if (s.hud.panel === "scenarios" && prev.hud.panel !== "scenarios") this.did("list");
-      if (s.hud.ride !== prev.hud.ride && s.hud.ride) this.did(s.hud.ride === "car" ? "car" : s.hud.ride === "boat" ? "boat" : s.hud.ride === "surf" ? "surf" : "water");
+      if (hud.prompt?.kind !== prev.hud.prompt?.kind) this.near(hud.prompt?.kind);
+      if (hud.panel === "scenarios" && prev.hud.panel !== "scenarios") this.did("list");
+      const enteredRide = hud.ride !== prev.hud.ride && hud.ride;
+      if (enteredRide) this.did(enteredRide === "car" ? "car" : enteredRide === "boat" ? "boat" : enteredRide === "surf" ? "surf" : "water");
+
+      const c = hud.coach;
+      if (!c || c.ok) return;
+      const { step } = c;
+      const staleList = step === "list" && (enteredRide || (hud.walking && !prev.hud.walking)
+        || (prev.hud.coach?.step !== "list" && (hud.walking || hud.ride)));
+      const onFoot = step === "walk" || step === "run" || step === "jump" || step === "talk" || step === "radio";
+      const ride = enteredRide && townRide(enteredRide);
+      const boarded = ride && ride !== townRide(prev.hud.ride);
+      // Opening the list and boarding can acknowledge a hint in this same update.
+      if ((staleList || (boarded && onFoot)) && useStore.getState().hud.coach === c) this.next(!hud.ride);
     });
   }
   private near(kind: NonNullable<HudState["prompt"]>["kind"] | undefined) {
@@ -104,8 +117,8 @@ class Coach {
     if (st.hud.coach || this.seen(step) || (step === "radio" && !radio.store.getState().available)) return false;
     this.done = 0;
     this.mark(step);
-    st.setHud({ coach: { step, ok: false } });
     this.timeHint(STAY);
+    st.setHud({ coach: { step, ok: false } });
     return true;
   }
 
@@ -133,12 +146,12 @@ class Coach {
   }
 
   /** "Gerai", or the hint's time is up: the card goes; whatever else matters right now may come up. */
-  next() {
+  next(reoffer = true) {
     this.stopTimer();
     const st = useStore.getState();
     if (!st.hud.coach) return;
     st.setHud({ coach: null });
-    this.near(st.hud.prompt?.kind);
+    if (reoffer) this.near(st.hud.prompt?.kind);
   }
 
   /** "Daugiau nerodyti": no more hints, ever. */

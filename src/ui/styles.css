@@ -211,6 +211,8 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .toolbar.folds :is(.toolbar-tools, .toolbar-actions, .toolbar-shortcuts, .drawer-tool) { display: contents; }
 .toolbar.folds .drawer-tool > * { grid-column: var(--tool-column); direction: ltr; }
 .toolbar.folds:not(.menu-open) .toolbar-drawer { visibility: hidden; pointer-events: none; }
+.hud.has-touch .toolbar .key { display: none; }
+.hud.has-touch .phone-menu .phrasebook-tool { background: var(--accent-soft); }
 .light-mode-btn { font-size: 17px; font-weight: 900; color: var(--accent); }
 .toolbar-tooltip { position: absolute; right: calc(100% + 10px); top: 50%; transform: translateY(-50%); padding: 7px 11px; border: 1px solid var(--ink-faint); border-radius: 10px; background: var(--panel-solid); color: var(--ink); font-size: 14px; white-space: nowrap; pointer-events: none; opacity: 0; }
 .light-mode-btn:hover .toolbar-tooltip, .light-mode-btn:focus-visible .toolbar-tooltip { opacity: 1; }
@@ -1120,6 +1122,7 @@ body.scene-on .tag-layer { display: none; }
 .coach-skip { margin-left: auto; background: none; border: 0; color: var(--ink-soft); font-weight: 800; font-size: 0.88em; min-height: 44px; padding: 0 10px; border-radius: 10px; }
 .coach-skip:hover { background: var(--g-hover, rgba(31, 42, 51, 0.06)); }
 .coach-next { min-height: 44px; min-width: 84px; }
+.hud.has-touch .coach-next { min-height: 44px; }
 /* On an upright phone the task and note share a column. Leave room for the toolbar on the right
    and for the touch controls at the bottom. The card can scroll if large text would push the note too low. */
 @media (max-width: 600px) and (orientation: portrait) {
@@ -1140,11 +1143,12 @@ body.scene-on .tag-layer { display: none; }
   /* With a folded card the toast and guide start alongside the map, which can be 100 px wide indoors. */
   .objective-notes.task-folded :is(.town-toasts, .coach) { max-width: calc(100vw - 2 * var(--card-left) - 108px); }
   .objective-notes .town-toasts .toast { min-height: 0; overflow: auto; animation-name: note-in; }
-  .objective-notes .zone-banner { text-align: left; overflow: hidden; overflow-wrap: anywhere; animation-name: note-in; }
-  .objective-notes .zone-banner h2 { line-height: 1.08; }
+  .objective-notes .zone-banner { text-align: left; padding-block: 5px; line-height: 1.15; animation-name: note-in; }
+  .objective-notes .zone-banner h2 { font-size: calc(20px * var(--scale)); }
+  .objective-notes .zone-banner p { font-size: calc(14px * var(--scale)); }
   /* Keep the folded card's banner at its usual height and centre it as far as the toolbar allows. */
   .objective-notes.task-folded .zone-banner {
-    position: fixed; top: max(18%, calc(var(--card-top) + 44px + 12px)); left: 50%;
+    position: fixed; top: max(18dvh, calc(var(--card-top) + 44px + 12px)); left: 50%;
     width: max-content; max-width: var(--note-width); margin: 0; text-align: center;
     transform: translateX(clamp(calc(var(--card-left) - 50vw), -50%, calc(50vw - var(--note-right) - 100%)));
   }
@@ -1154,6 +1158,22 @@ body.scene-on .tag-layer { display: none; }
   .coach-row { margin-top: 2px; gap: 6px; }
   .coach-skip { padding: 0 6px; }
   .coach-next { min-width: 76px; }
+  .objective-notes .coach-compact { gap: 6px; padding: 8px; align-items: center; font-size: calc(14px * var(--scale)); }
+  .coach-toggle {
+    display: flex; flex: 1 1 auto; align-items: center; gap: 6px; min-width: 44px; min-height: 44px; max-width: 100%;
+    border: 0; border-radius: 10px; padding: 0; background: none; text-align: left; line-height: 1.15;
+  }
+  .coach-toggle .coach-icon { display: grid; width: 30px; height: 30px; border-radius: 10px; }
+  .coach-toggle .coach-icon svg { width: 20px; height: 20px; }
+  .coach-toggle b { font-size: calc(16px * var(--scale)); }
+  .coach-body { flex: 0 0 100%; margin: 0; color: var(--ink-soft); line-height: 1.35; }
+  .coach-compact .coach-row { flex: 0 1 auto; flex-wrap: wrap; margin: 0 0 0 auto; }
+  .coach-compact .coach-skip { width: min-content; padding: 0 4px; line-height: 1.15; }
+  .coach-compact :is(.coach-skip, .coach-next) { min-width: 44px; min-height: 44px; font-size: inherit; }
+  .coach-compact .coach-next { padding: 0 8px; }
+  @media (prefers-reduced-motion: reduce) {
+    .objective-notes :is(.zone-banner, .coach-compact) { animation: none; }
+  }
 }
 @media (max-width: 480px) {
   .objective-notes .town-toasts:not(:empty) { margin-top: 6px; }

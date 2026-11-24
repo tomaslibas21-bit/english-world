@@ -10,7 +10,7 @@ const prompt = (kind: "talk" | "drive" | "boat" | "enter" | null) => useStore.ge
 const fresh = () => {
   useStore.getState().updateProgress((p) => { delete p.coach; });
   useStore.setState({ toasts: [] });
-  useStore.getState().setHud({ coach: null, prompt: null, ride: null });
+  useStore.getState().setHud({ coach: null, prompt: null, ride: null, walking: false });
 };
 
 describe("the town's guide", () => {
@@ -178,6 +178,52 @@ describe("the town's guide", () => {
     expect(useStore.getState().progress.coach?.seen?.list).toBe(true);
     coach.begin(true);
     expect(hud()).toBeNull();
+  });
+
+  it.each([{ walking: true }, { ride: "car" as const }])("retires the standing list cue on %j and remembers it on the next visit", (movement) => {
+    const st = useStore.getState();
+    st.updateProgress((p) => { p.coach = { seen: { walk: true } }; });
+    coach.begin(true);
+    expect(hud()).toEqual({ step: "list", ok: false });
+    st.setHud(movement);
+    expect(hud()).toBeNull();
+    expect(useStore.getState().progress.coach?.seen?.list).toBe(true);
+    st.setHud({ walking: false, ride: null });
+    coach.begin(true);
+    expect(hud()).toBeNull();
+  });
+
+  it("retires a list cue offered during a walk without leaving its timer running", () => {
+    const st = useStore.getState();
+    st.updateProgress((p) => { p.coach = { seen: { walk: true } }; });
+    st.setHud({ walking: true });
+    const timers = vi.getTimerCount();
+    coach.begin(true);
+    expect(hud()).toBeNull();
+    expect(useStore.getState().progress.coach?.seen?.list).toBe(true);
+    expect(vi.getTimerCount()).toBe(timers);
+  });
+
+  it("gives the opened list its acknowledgement when walking starts", () => {
+    const st = useStore.getState();
+    st.updateProgress((p) => { p.coach = { seen: { walk: true } }; });
+    coach.begin(true);
+    st.setHud({ panel: "scenarios", walking: true });
+    vi.advanceTimersByTime(1099);
+    expect(hud()).toEqual({ step: "list", ok: true });
+    vi.advanceTimersByTime(1);
+    expect(hud()).toBeNull();
+    st.setHud({ panel: null });
+  });
+
+  it("retires an on-foot cue at the helm and keeps water onboarding", () => {
+    const st = useStore.getState();
+    coach.begin();
+    st.setHud({ ride: "boat" });
+    expect(hud()).toBeNull();
+    expect(coach.cue("water")).toBe(true);
+    st.setHud({ ride: "swim" });
+    expect(hud()).toEqual({ step: "water", ok: true });
   });
 
   it("a learner who finished the guide of before (every visit opened with the list then) is told once too", () => {
