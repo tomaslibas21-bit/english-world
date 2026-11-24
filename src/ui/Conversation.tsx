@@ -179,9 +179,9 @@ export function Conversation() {
             </div>
           </div>
 
-          {!!conv.speechChoices?.length && <div className="miss-box">
+          {!!conv.speechChoices?.length && <div className="miss-box speech-confirm">
             <p>{conv.speechChoices.length > 1 ? "Atpažinimo variantai skiriasi žodžiu „ne“. Ką norėjai pasakyti?" : "Ar teisingai išgirdo? Paspausk tekstą, kad išsiųstum, arba pataisyk."}</p>
-            {conv.speechChoices.map(text => <button className="btn soft small" key={text} lang="en" disabled={conv.phase !== "you"}
+            {conv.speechChoices.map(text => <button className="dym-opt" key={text} lang="en" disabled={conv.phase !== "you"}
               onClick={() => void game?.activeSession?.submit(text, [], "voice", true)}>{text}</button>)}
             <button className="btn ghost small" disabled={conv.phase !== "you"}
               onClick={() => { setTyped(conv.lastHeard); setConv({ typing: true, speechChoices: undefined }); }}>Pataisyti tekstą</button>
@@ -680,6 +680,7 @@ function Line({ l, speaking, lt, ipa, nat }: { l: TranscriptLine; speaking: bool
 // --------------------------------------------------------------------------------------------
 
 function Hints({ sit, formal, gender }: { sit: SituationDef; formal: boolean; gender: "m" | "f" }) {
+  const keyboardHints = useKeyboardHints();
   const conv = useStore((s) => s.conv);
   const settings = useStore((s) => s.settings);
   const setConv = useStore((s) => s.setConv);
@@ -697,14 +698,14 @@ function Hints({ sit, formal, gender }: { sit: SituationDef; formal: boolean; ge
   return (
     <div className="hints">
       <button className={"hint-toggle" + (open ? " open" : "")} onClick={() => setConv({ openHint: open ? null : (conv.hints[0] ?? "g_clarify") })} aria-expanded={open}>
-        <Icon name="bulb" size={21} className="bulb" /> Daugiau frazių <span className="key">(H)</span><Icon name="chevronDown" size={18} className="chev" />
+        <Icon name="bulb" size={21} className="bulb" /> Daugiau frazių {keyboardHints && <span className="key">(H)</span>}<Icon name="chevronDown" size={18} className="chev" />
       </button>
       {open && (
         <div>
           {groups.map(([id, g]) => <HintGroupView key={id} id={id} g={g} sit={sit} formal={formal} gender={gender} chosen={conv.chosen[id]} lt={settings.sayLt} ipa={settings.sayIpa} used={used} />)}
           {!conv.hints.includes("g_clarify") && (
             <details className="hint-group">
-              <summary style={{ cursor: "pointer", fontWeight: 800, color: "var(--ink-soft)", margin: "6px 2px" }}>Visada naudinga: paprašyti pakartoti, lėčiau, paraidžiui…</summary>
+              <summary className="hint-summary">Visada naudinga: paprašyti pakartoti, lėčiau, paraidžiui…</summary>
               <HintGroupView id="g_clarify" g={GLOBAL.hints.g_clarify} sit={sit} formal={formal} gender={gender} lt={settings.sayLt} ipa={settings.sayIpa} used={used} />
             </details>
           )}

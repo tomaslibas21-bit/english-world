@@ -7,44 +7,58 @@
   -webkit-box-decoration-break: clone; box-decoration-break: clone;
 }
 
-/* ---- "Did you mean…?" ---- */
-.dym { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #eadfcc; display: flex; flex-direction: column; gap: 6px; }
-.dym-q { font-weight: 800; color: var(--ink); }
-.dym-opt {
-  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; cursor: pointer; color: var(--ink);
-  border: 1.5px solid var(--accent-soft-2); background: var(--accent-soft); border-radius: 13px; padding: 7px 11px 7px 13px;
-  font-family: var(--ui); font-size: 1em; transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+/* ---- Sentence choices after a miss or a speech confirmation ---- */
+.convo .yt-scroll { --answer-gap: 8px; scroll-padding-block: 4px; }
+.convo :is(.dym, .speech-confirm) {
+  display: flex; flex-direction: column; align-items: flex-start; gap: var(--answer-gap);
 }
-.dym-opt:hover { background: #d7ecea; border-color: #b7dad6; box-shadow: 0 4px 10px -6px rgba(31, 111, 120, 0.6); }
-.dym-opt:active { transform: translateY(1px); }
-.dym-opt:focus-visible { outline: none; box-shadow: var(--ring); }
-.dym-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.dym-en { font-family: var(--en); font-size: 1.22em; line-height: 1.25; overflow-wrap: anywhere; }
-.dym-lt { font-size: 0.84em; color: var(--ink-soft); margin-top: 1px; }
-.dym-go { flex: none; color: var(--accent); }
-.dym-hint { font-size: 0.85em; color: var(--ink-soft); }
+.convo .speech-confirm p { margin: 0; }
+.convo .dym { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #eadfcc; }
+.convo .dym-q { font-weight: 800; color: var(--ink); }
+.convo .dym-opt {
+  display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; text-align: left; color: var(--ink);
+  border: 1px solid var(--accent-soft-2); background: var(--accent-soft); border-radius: 13px; padding: 8px 10px;
+}
+.convo .dym-opt:hover { background: #d7ecea; border-color: #b7dad6; }
+.convo .dym-opt[lang="en"] { display: block; }
+.convo .dym-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.convo :is(.dym-en, .dym-opt[lang="en"]) { font: 500 calc(21px * var(--scale))/1.22 var(--en); }
+.convo .dym-lt { font: 600 calc(14px * var(--scale))/1.28 var(--ui); color: #465563; margin-top: 2px; }
+.convo .dym-go { flex: 0 0 18px; color: var(--accent); }
+.convo .dym-hint { font-size: 0.85em; color: var(--ink-soft); }
 /* never stuck: skip this answer (after two misses in a row) */
 .link-btn { background: none; border: 0; padding: 0 2px; font: inherit; font-weight: 700; color: var(--accent); text-decoration: underline; cursor: pointer; }
+.convo .dym-hint .link-btn { padding-inline: 6px; border-radius: 8px; }
 
 /* ---- "Listen and repeat" (guide examples): a round button under the speaker's, so the phrase has the row's width ---- */
-.gx-btns { flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.gx-btns .play { width: 36px; height: 36px; }
-.gx .rp-btn {
+.convo .gx-btns { flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.convo .gx-btns .play { width: 36px; height: 36px; }
+.convo .gx .rp-btn {
   flex: none; display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border-radius: 50%; cursor: pointer; position: relative;
   border: 1.5px solid var(--line); background: #fffdf9; color: var(--accent);
-  transition: background-color 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
 }
-/* (a finger's 44 px on a touch screen, the buttons no bigger to look at: each one's own reach, the two not overlapping) */
-@media (pointer: coarse), (max-width: 900px) {
-  .gx-btns { gap: 8px; }
-  .gx-btns .play, .gx .rp-btn { width: 36px; height: 36px; position: relative; }
-  .gx-btns .play::after, .gx .rp-btn::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; }
-  .gx .rp-btn::after { inset: -5.5px; }
+.convo .gx .rp-btn:is(:hover, .playing) { background: var(--accent-soft); border-color: #b7dad6; }
+.convo .gx .rp-btn.listening { background: var(--bad); border-color: var(--bad); color: #fff; }
+
+/* Each control owns its box inside the scrolling area, including its keyboard outline. */
+.convo .yt-scroll :is(button, summary) {
+  max-inline-size: 100%; white-space: normal; overflow-wrap: anywhere;
+  transition: background-color 100ms, border-color 100ms, box-shadow 100ms, color 100ms;
 }
-.gx .rp-btn:hover { background: var(--accent-soft); border-color: #b7dad6; }
-.gx .rp-btn:active { transform: scale(0.96); }
-.gx .rp-btn.playing { background: var(--accent-soft); border-color: #b7dad6; }
-.gx .rp-btn.listening { background: var(--bad); border-color: var(--bad); color: #fff; }
+.convo .yt-scroll :is(button, summary):not(:disabled, .nat-star):active {
+  background: #d2e8e6; color: #185a62; box-shadow: inset 0 0 0 1px #1f6f78; transform: none; filter: none;
+  transition: none;
+}
+.convo .yt-scroll :is(button, summary, [tabindex]):focus-visible { outline: 2px solid #1f6f78; outline-offset: 2px; }
+.convo .yt-scroll button:disabled {
+  background: #eeeae3; color: #53606b; border: 1px dashed #867e72; opacity: 1;
+  box-shadow: none; filter: none; transform: none; pointer-events: none;
+}
+@media (any-pointer: coarse), (max-width: 900px) {
+  .convo .yt-scroll { --answer-gap: 6px; }
+  .convo .yt-scroll :is(button, summary), .convo .chips .chip, .convo .say-toggles .toggle { min-width: 44px; min-height: 44px; }
+  .convo .gx-btns .play, .convo .gx .rp-btn, .convo .hints .hint-row .play { width: 44px; height: 44px; }
+}
 .rp-res { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin-top: 5px; font-size: 0.86em; color: var(--ink-soft); line-height: 1.35; }
 .rp-res.wait { align-items: center; }
 .rp-verdict { font-weight: 900; }
@@ -63,7 +77,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .rp-dot { animation: none; }
-  .dym-opt, .gx .rp-btn { transition: none; }
+  .convo .yt-scroll :is(button, summary, .hint-toggle .chev, .il .u.tap) { transition: none; }
 }
 
 .beta-strip{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:4px 18px;border-bottom:1px solid var(--line);font-size:12px;color:var(--ink-muted,var(--ink));}
