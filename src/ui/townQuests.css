@@ -15,9 +15,15 @@
   font-size: 0.84rem;
 }
 
+.hud:has(.photo-chip) {
+  --photo-chip-bottom: 96px;
+  /* Allow for the counter (at least the 18px icon), the label, padding, border and row gap.
+     The extra 12px also clears the coach's 10px entrance animation. */
+  --photo-chip-clearance: calc(var(--photo-chip-bottom) + max(44px, calc(max(18px, 1em) + 0.74em + 14px)) + 12px);
+}
 .photo-chip {
   position: absolute;
-  bottom: 96px;
+  bottom: var(--photo-chip-bottom);
   left: 50%;
   transform: translateX(-50%);
   display: grid;
@@ -38,10 +44,10 @@
 .photo-chip small { font-size: 0.74em; line-height: 1; }
 .photo-chip[data-near] { border-color: var(--gold); box-shadow: var(--shadow), 0 0 11px #ffdc8499; }
 @media (orientation: portrait) {
-  .hud.has-touch .photo-chip { bottom: calc(194px + env(safe-area-inset-bottom)); }
+  .hud.has-touch:has(.photo-chip) { --photo-chip-bottom: calc(194px + env(safe-area-inset-bottom)); }
 }
 @media (orientation: landscape) {
-  .hud.has-touch .photo-chip { bottom: max(12px, env(safe-area-inset-bottom)); }
+  .hud.has-touch:has(.photo-chip) { --photo-chip-bottom: max(12px, env(safe-area-inset-bottom)); }
 }
 
 .photo-backdrop {
@@ -222,6 +228,12 @@
   .directions-card footer .ui-icon { width: 13px; height: 13px; }
 }
 @media (max-width: 600px) and (orientation: portrait) {
-  .hud:has(.photo-chip) .objective-notes:has(.directions-card) { max-height: calc(100dvh - 254px - env(safe-area-inset-bottom)); }
+  .hud:has(.photo-chip) .objective-notes:has(.coach, .directions-card) {
+    max-height: calc(100dvh - var(--card-top) - var(--photo-chip-clearance));
+  }
+  .hud:has(.photo-chip) .objective-notes:has(.coach) .objective-card:not(.collapsed) {
+    flex-shrink: 1;
+  }
+  .hud:has(.photo-chip) .objective-notes .coach { overflow-y: auto; }
   .photo-pages { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

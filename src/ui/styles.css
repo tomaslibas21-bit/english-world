@@ -1109,14 +1109,15 @@ body.scene-on .tag-layer { display: none; }
    colour: a see-through theme's card would let the town show through its words). It stands above where the talk / enter prompt
    appears (the prompt: bottom 34 px, about 52 px tall), so the two never cover each other. */
 .coach {
-  position: fixed; left: 50%; bottom: 112px; transform: translateX(-50%); z-index: 11; pointer-events: auto;
+  --coach-bottom: 112px;
+  position: fixed; left: 50%; bottom: max(var(--coach-bottom), var(--photo-chip-clearance, 0px)); transform: translateX(-50%); z-index: 11; pointer-events: auto;
   display: flex; flex-wrap: wrap; gap: 0 12px; align-items: flex-start; width: min(430px, calc(100vw - 28px));
   background: var(--panel-solid); color: var(--ink); border-radius: 18px; padding: 12px 14px 10px;
   border: 1px solid var(--g-edge, rgba(255, 255, 255, 0.75)); box-shadow: var(--shadow);
   animation: coach-in 0.35s ease both;
 }
 /* a wide touch screen (a tablet): above the stick, the buttons and the prompt over them */
-.hud.has-touch .coach { bottom: calc(224px + env(safe-area-inset-bottom)); }
+.hud.has-touch .coach { --coach-bottom: calc(224px + env(safe-area-inset-bottom)); }
 @keyframes coach-in { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
 .coach-icon { flex: none; width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); transition: background-color 0.2s, color 0.2s; }
 .coach.ok .coach-icon { background: var(--g-good-bg, #dff2ec); color: var(--g-good-fg, #1e8a6e); }
@@ -1197,7 +1198,7 @@ body.scene-on .tag-layer { display: none; }
 }
 /* A phone held sideways keeps the hint low between the stick and the buttons. The prompt stays on the right. */
 @media (max-height: 520px) and (orientation: landscape) {
-  .coach, .hud.has-touch .coach { top: auto; left: calc(50% - 60px); transform: translateX(-50%); bottom: calc(8px + env(safe-area-inset-bottom)); width: min(370px, max(144px, calc(100vw - 470px))); animation-name: coach-in; }
+  .coach, .hud.has-touch .coach { --coach-bottom: calc(8px + env(safe-area-inset-bottom)); top: auto; left: calc(50% - 60px); transform: translateX(-50%); width: min(370px, max(144px, calc(100vw - 470px))); animation-name: coach-in; }
   .coach .coach-text p { font-size: 0.84em; line-height: 1.32; }
   .hud:has(.coach) .prompt.touch { max-width: calc(50vw - min(185px, 50vw - 235px) - 90px); }
 }
