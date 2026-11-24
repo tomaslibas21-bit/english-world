@@ -45,6 +45,7 @@ import { portraitToolbarRows, toolbarColumns } from "./toolbarLayout";
 import { getRoadOverlay } from "./roadOverlay";
 import { getSeaOverlay } from "./seaOverlay";
 import { useScreen } from "./useScreen";
+import { openMap } from "./mapOpener";
 import "./light.css";
 import "./townPhone.css";
 
@@ -54,7 +55,7 @@ export const COURSE_URL = import.meta.env.VITE_BACK_URL as string | undefined;
 function ToolButton({ icon, title, panel, hotkey, badge, unread, shortcuts = true }: { icon: IconName; title: string; panel: "scenarios" | "map" | "journal" | "phone" | "phrasebook" | "settings"; hotkey?: string; badge?: number; unread?: number; shortcuts?: boolean }) {
   const label = shortcuts ? title : title.replace(/ \((?:M|J|P|Esc)\)$/, "");
   return (
-    <button className={"icon-btn" + (panel === "phrasebook" ? " phrasebook-tool" : "")} onClick={() => useStore.getState().setHud({ panel })} title={label} aria-label={(badge ? `${label} (${badge})` : label) + (unread ? `, ${unread} ${L("neperskaitytos žinutės")}` : "")}>
+    <button className={"icon-btn" + (panel === "phrasebook" ? " phrasebook-tool" : "")} data-map-tool={panel === "map" || undefined} onClick={(e) => panel === "map" ? openMap(e.currentTarget) : useStore.getState().setHud({ panel })} title={label} aria-label={(badge ? `${label} (${badge})` : label) + (unread ? `, ${unread} ${L("neperskaitytos žinutės")}` : "")}>
       <Icon name={icon} size={25} />{shortcuts && hotkey && <span className="key" aria-hidden>{hotkey}</span>}
       {!!badge && <span className="due-badge" aria-hidden>{badge}</span>}
     </button>
@@ -219,7 +220,7 @@ function useTaskCard(taskId: string | null, visible: boolean, directions: string
 
 // Enter and Space belong to a button reached by keyboard, even while the game is listening for movement.
 function activateHudButton(e: KeyboardEvent<HTMLElement>) {
-  if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(":focus-visible")) e.stopPropagation();
+  if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(".minimap, [data-map-tool], :focus-visible")) e.stopPropagation();
 }
 
 // The same for the town's tools and the radio set, which opens over the town at the HUD's level.
@@ -503,7 +504,7 @@ function Arrow({ angle }: { angle: number }) {
 
 function Minimap({ w, h }: Screen) {
   const ref = useRef<HTMLCanvasElement>(null);
-  const card = useRef<HTMLDivElement>(null);
+  const card = useRef<HTMLSpanElement>(null);
   const mm = useStore((s) => s.hud.minimap);
   const zoneName = useStore((s) => s.hud.zoneName);
   // Indoors there is no map to show: the round map folds into a small card with the place's name (all of it, on as
@@ -551,6 +552,11 @@ function Minimap({ w, h }: Screen) {
     c.dataset.map = cave ? "gruta" : grounds ? "cenote" : "town";
     c.dataset.player = `${px},${pz}`;
     c.dataset.gates = cave ? String(mm.gates ?? 0) : "";
+    if (cave && mm.questX !== undefined && mm.questZ !== undefined) {
+      const [u, v] = mapPoint(bounds, mm.questX, mm.questZ);
+      x.strokeStyle = "#fff"; x.lineWidth = 2; x.fillStyle = "#2d968d";
+      x.beginPath(); x.arc(u * S, v * S, 9, 0, Math.PI * 2); x.fill(); x.stroke();
+    }
     // target
     if (mm.targetX !== undefined && mm.targetZ !== undefined) {
       const [u, v] = mapPoint(bounds, mm.targetX, mm.targetZ);
@@ -570,19 +576,19 @@ function Minimap({ w, h }: Screen) {
     x.restore();
   }, [mm, cave, inside]);
   return (
-    <div className={"minimap" + (inside ? " inside" : "") + (live ? " live" : "")}
+    <button type="button" className={"minimap" + (inside ? " inside" : "") + (live ? " live" : "")}
       style={inside && box ? { width: box.w + 2, height: box.h + 2 } : undefined}
-      onClick={() => useStore.getState().setHud({ panel: "map" })}
-      title={L("Žemėlapis (M)")}>
-      <canvas ref={ref} />
-      <div className="label">{inside ? "" : zoneName}</div>
-      <div className="mm-card" ref={card} aria-hidden={!inside}>
+      onClick={(e) => openMap(e.currentTarget)} onKeyDown={activateHudButton}
+      title={L("Žemėlapis (M)")} aria-label={L("Miesto žemėlapis")} aria-describedby={inside ? "minimap-place" : undefined}>
+      <canvas ref={ref} aria-hidden />
+      <span className="label">{inside ? "" : zoneName}</span>
+      <span className="mm-card" id="minimap-place" ref={card} aria-hidden={!inside}>
         <span className="mm-ico"><Icon name="home" size={21} strokeWidth={2} /></span>
         <small>{L("Viduje")}</small>
         <b><span>{place.current}</span></b>
         <span className="mm-go"><Icon name="map" size={18} strokeWidth={2} /></span>
-      </div>
-    </div>
+      </span>
+    </button>
   );
 }
 

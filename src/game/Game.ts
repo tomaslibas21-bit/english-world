@@ -2754,13 +2754,14 @@ export class Game implements GameApi {
     }
   }
 
-  /** The destination of the current leg. Cave prerequisites use the same route for the arrow, beacon and walk. */
-  objectiveTarget(mode: GuideMode = "objective"): GuideTarget | null {
+  /** The destination of the current leg, or the saved task's exterior target for the town map. */
+  objectiveTarget(mode: GuideMode = "objective", townMap = false): GuideTarget | null {
     const task = mode === "objective" ? this.phoneTask() : null;
     const sit = this.currentObjective();
     const p = this.player.root.position;
     const loc = sit && LOCATIONS[sit.location];
-    const saved = this.cave ? useStore.getState().progress.cave ?? emptyCave() : null;
+    const interior = townMap ? undefined : this.zone.interior;
+    const saved = !townMap && this.cave ? useStore.getState().progress.cave ?? emptyCave() : null;
     const all = this.cave?.seeAll;
     const stayInCave = mode === "cave" || (!task && sit?.location === CAVE_ZONE);
     if (this.cave && saved && mode === "cave") {
@@ -2773,15 +2774,15 @@ export class Game implements GameApi {
       const exit = exits.find((e) => e.id === "grieta") ?? exits[0];
       return this.caveCode?.caveGateTarget(p, exit, saved, all) ?? { ...exit, kind: "exit" };
     }
-    if (stayInCave && !this.zone.interior) {
+    if (stayInCave && !interior) {
       const way = preferredCaveEntry();
       if (!way) return null;
       const stand = way.id === "grieta" ? way.out : way;
       return { kind: "cave-entry", id: way.id, x: stand.x, z: stand.z, person: way };
     }
-    const exit = this.zone.interior ? { kind: "exit" as const, x: this.zone.interior.exit.x, z: this.zone.interior.exit.z - 0.4 } : null;
+    const exit = interior ? { kind: "exit" as const, x: interior.exit.x, z: interior.exit.z - 0.4 } : null;
     if (task) {
-      if (this.zone.id === "office" && task.loc === "office") {
+      if (!townMap && this.zone.id === "office" && task.loc === "office") {
         const kate = this.npcs.find((npc) => npc.id === "kate");
         return kate ? { kind: "point", x: kate.home.x, z: kate.home.z } : null;
       }
@@ -2794,9 +2795,9 @@ export class Game implements GameApi {
     const outside = loc.kind === "outdoor" || isTownQuest(sit.id) || sit.id === POOL_SITUATION ? OUTDOOR_NPCS.find((n) => n.npc === sit.npc) : undefined;
     if (outside) return exit ?? { kind: "npc", id: sit.npc, ...talkAt(outside) };
     if (loc.kind === "outdoor" && !THEME.roomNpcs[sit.location]?.some((n) => n.npc === sit.npc)) return null;
-    if (this.zone.id === sit.location && this.zone.interior) {
+    if (this.zone.id === sit.location && interior) {
       const npc = sit.npc === "sam" || sit.npc === "emma" ? this.chosenDatePartner() : sit.npc;
-      const npcs = this.zone.interior.npcs;
+      const npcs = interior.npcs;
       const spot = npcs.find((n) => n.npc === npc) ?? npcs[0];
       if (!spot) return null;
       const target = { kind: "npc" as const, id: spot.npc, ...talkAt(spot) };

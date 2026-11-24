@@ -29,6 +29,7 @@ export interface GameApi {
   // the 3D world
   interact(): void;
   autoWalkToObjective(mode?: "objective" | "cave"): void;
+  objectiveTarget?(mode: "objective", townMap: true): { x: number; z: number } | null;
   guideToPoolHall?(): void;
   teleportTo(loc: string): void;
   setJoystick(x: number, y: number): void;
