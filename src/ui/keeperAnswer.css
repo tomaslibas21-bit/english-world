@@ -1,0 +1,9 @@
+.gx [data-keeper-answer] {
+  flex: none;
+  align-self: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding-inline: 0.6em;
+  background: var(--panel-solid);
+  border-color: var(--accent);
+}

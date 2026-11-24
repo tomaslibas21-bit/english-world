@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { SceneIntro, sceneText } from "./SceneIntro";
 import { isTownQuest } from "../content/townQuests";
 import { picturesOn, useStore, type TranscriptLine } from "../state/store";
@@ -27,6 +27,10 @@ import {ReportProblem} from "./ReportProblem";
 import { SectionHelpButton } from "./sectionHelp";
 import { useKeyboardHints } from "./keyboardHints";
 import { usePortrait } from "./usePortrait";
+import { KEEPER_SIT } from "../content/keeper";
+
+const KeeperAnswer = lazy(() => import("./KeeperAnswer"));
+const activeSession = () => game?.activeSession;
 
 export function avatarColor(npcId: string) {
   const n = NPCS[npcId];
@@ -539,6 +543,7 @@ function Guide({ sit, formal, gender, turn }: { sit: SituationDef; formal: boole
                 <Interlinear s={ex} lt={settings.sayLt} ipa={settings.sayIpa} compactNat />
                 <RepeatResult en={ex.en} />
               </div>
+              {sit.id === KEEPER_SIT && <Suspense><KeeperAnswer en={ex.en} activeSession={activeSession} /></Suspense>}
             </div>
           ))}
         </div>

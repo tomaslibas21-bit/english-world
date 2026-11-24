@@ -15,7 +15,8 @@ export function Toasts() {
   useSurf((s) => s.active || s.picking);
   const toasts = useStore((s) => usesTownNotes(s) ? null : s.toasts);
   const modeMenu = useStore((s) => s.hud.modeScreen?.kind === "menu");
-  return <ToastList toasts={(modeMenu ? toasts?.filter((t) => t.rideHint) : toasts) ?? []} />;
+  const talking = useStore((s) => s.conv.active);
+  return <ToastList toasts={(modeMenu ? toasts?.filter((t) => t.rideHint) : talking ? toasts?.filter((t) => t.source !== "ambient") : toasts) ?? []} />;
 }
 
 export function useTownToast() {

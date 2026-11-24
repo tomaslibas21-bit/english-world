@@ -21,6 +21,7 @@ import { Wading, Splashes, floorY, waterY, bayHold, SEA_LEVEL, SHORE, SWIM, BAY 
 import { Rides, SHALLOWS, type Ride } from "./rides/Rides";
 import { KeepsakeInHand } from "./keepsake";
 import { keepsakeFor } from "../content/keepsakes";
+import { KEEPER_NPC, KEEPER_SIT, KEEPER_TALK } from "../content/keeper";
 import { Undersea } from "./rides/undersea";
 import { CAR_DRIFT, BOAT_DRIFT, BOAT, BAY_EDGE, controlsFrom, pointAndGo, type Controls } from "./rides/drive";
 import { RIDES } from "./world/rides";
@@ -90,7 +91,8 @@ export type { GameApi } from "./gameRef";
 
 /** A box on the screen, in pixels (a name tag, or part of the HUD the tags keep clear of). */
 type TagBox = { x0: number; x1: number; y0: number; y1: number };
-interface NpcActor { id: string; ch: GameCharacter; home: THREE.Vector3; rot: number; tag: HTMLDivElement; tagSize?: [number, number]; sit?: boolean; waved: boolean; approach?: THREE.Vector3 }
+export interface TalkActor { id: string; ch: GameCharacter; home: THREE.Vector3; rot: number; sit?: boolean; approach?: THREE.Vector3 }
+interface NpcActor extends TalkActor { tag: HTMLDivElement; tagSize?: [number, number]; waved: boolean }
 interface ZoneState { id: string; group: THREE.Group; colliders: import("./world/util").Colliders; nav: NavGrid; interior?: Interior }
 
 /** Walking, the jog one falls into outdoors after a moment on the move, and running (Shift, the stick at its edge). */
@@ -183,8 +185,11 @@ export class Game implements GameApi {
   private guidance = new Guidance();
   private islandGuide = false;
   private islandLoadStarted = false;
+  private islandLoad?: Promise<void>;
   private islandScene?: ReturnType<typeof buildLighthouseIsland>;
   private keeperNear = false;
+  private keeperWarned = false;
+  private keeperRequest?: { picker: boolean };
   private keeperSpokeAt = -Infinity;
   private keeperFrame = 0;
   private keeperFrameDismissed = false;
@@ -214,7 +219,7 @@ export class Game implements GameApi {
   private pigeons!: Pigeons;
   private pathT = 0;
   private session: Session | null = null;
-  private talkNpc: NpcActor | null = null;
+  private talkNpc: TalkActor | null = null;
   /** Where the learner's head is (kept up to date in updateNpcs): the people's eyes and heads turn to it (characters:
    *  `watch`); and the head of the person the learner talks with, for the player's own. */
   private learnerAt = new THREE.Vector3();
@@ -226,8 +231,8 @@ export class Game implements GameApi {
   private talkNear: THREE.Vector3 | null = null;
   /** Who takes part in the conversation and stands near enough for its camera, who of them is in the picture now,
    *  and the framings found so far, by whom the camera was turned to. */
-  private talkCast: NpcActor[] = [];
-  private talkIn: NpcActor[] = [];
+  private talkCast: TalkActor[] = [];
+  private talkIn: TalkActor[] = [];
   private talkViews = new Map<string, Shot>();
   private hudBoxCache: TagBox[] = [];
   private hudCheck = 0;
@@ -246,6 +251,7 @@ export class Game implements GameApi {
   private readonly debugAudio = audioDiagnosticsEnabled();
   private wasHidden = false;
   private conversationLoads = 0;
+  private scenarioPick = 0;
   private sceneDelays = new Set<ReturnType<typeof setTimeout>>();
   private meeting: LizzieMeeting | undefined;
   private loadMeeting = false;
@@ -878,6 +884,8 @@ export class Game implements GameApi {
     const z = this.getZone(id);
     if (!z) return;
     const doIt = () => {
+      this.keeperRequest = undefined;
+      this.keeperNear = false;
       this.phone.dismiss();
       if (this.modes.active || this.modes.owns("barista") || this.modes.owns("gofish")) this.modes.exit(true);
       if (this.flight) {
@@ -1115,8 +1123,8 @@ export class Game implements GameApi {
     // Space: talk or go in, as E, when there is someone or a door to; else a jump (in the air: the second jump). At a wheel it
     // is the brake, for as long as it is held; swimming, a dive
     if (k === " " && this.rides.riding) { this.keys.add(" "); this.rideGoal = null; e.preventDefault(); return; }
-    if (k === " ") { if (this.nearest && !this.hop.air && !this.swimming) this.interact(); else if (!e.repeat) this.jump(); e.preventDefault(); return; }
-    if (k === "e" || k === "enter") { this.interact(); e.preventDefault(); return; }
+    if (k === " ") { if (this.nearest && !this.hop.air && !this.swimming) this.interact(e.repeat); else if (!e.repeat) this.jump(); e.preventDefault(); return; }
+    if (k === "e" || k === "enter") { this.interact(e.repeat); e.preventDefault(); return; }
     if (k === "c" && !e.repeat && !e.altKey && !e.ctrlKey && !e.metaKey && this.modes.start(this.quests.id, "camera")) { e.preventDefault(); return; }
     if (k === "m") st.setHud({ panel: "map" });
     if (k === "j") st.setHud({ panel: "journal" });
@@ -1333,10 +1341,11 @@ export class Game implements GameApi {
   /** A passer-by's kind of line said by someone in the town: a bubble with its meaning, their mouth moving, and their
    *  voice where the passers-by's voices have the line recorded. */
   private saysAloud(line: { en: string; lt: string }, female: boolean, ch: GameCharacter, own: string | null = null) {
+    if (this.session?.active) return;
     // (their own voice, if they have one and it has this line; else a passer-by's)
     const voice = own && audio.hasClip(own, 1, line.en) ? own : ambientVoice(female ? "f" : "m");
     speakTownLine(ch, voice, female, line.en, 1.1 + line.en.length * 0.045);
-    useStore.getState().toast({ kind: "info", title: `„${line.en}“`, body: line.lt, ms: 3200 });
+    useStore.getState().toast({ kind: "info", source: "ambient", title: `„${line.en}“`, body: line.lt, ms: 3200 });
   }
 
   /** A member of the room's staff with no conversation here says their one line (roomPeople.ts `says`). */
@@ -1353,11 +1362,54 @@ export class Game implements GameApi {
     const id = st.progress.lighthouse?.greeted ? keeper.repeat : keeper.says;
     const line = STAFF_LINES[id];
     if (!line) return;
+    this.keeperNear = true;
+    if (id === keeper.repeat) this.keeperWarned = true;
     this.keeperSpokeAt = this.t;
     this.keeperFrameDismissed = false;
     this.saysAloud(line, false, ch);
     if (!st.progress.lighthouse?.greeted) st.updateProgress((p) => { p.lighthouse = { ...p.lighthouse, greeted: true }; });
     if (this.islandGuide) { this.islandGuide = false; this.refreshObjective(); }
+  }
+
+  private keeperInRange() {
+    const ch = this.islandScene?.keeper;
+    return !!ch && !this.zone.interior && !this.rides.riding && !this.swimming && !this.aloft
+      && ch.root.position.distanceTo(this.player.root.position) < TALK_RANGE;
+  }
+
+  private interactKeeper() {
+    if (!this.keeperInRange()) return false;
+    if (!this.transitioning && !this.session?.active && this.t - this.keeperSpokeAt >= 3.2) {
+      if (this.keeperWarned) this.openKeeper();
+      else this.speakKeeper();
+    }
+    return true;
+  }
+
+  /** Only the request that still owns the visit can move the player or start the chat. */
+  private openKeeper(picker = false) {
+    if (!LIGHTHOUSE_ISLAND || this.keeperRequest || this.session?.active) return;
+    const request = this.keeperRequest = { picker };
+    const settled = () => { if (this.keeperRequest === request) this.keeperRequest = undefined; };
+    const ready = () => this.keeperRequest === request && !this.disposed && !this.session?.active && !this.transitioning
+      && !this.modes.active && !this.modes.modal && !useStore.getState().hud.panel && (picker || this.keeperInRange());
+    const open = () => {
+      const island = this.islandScene;
+      if (!island || !ready()) { settled(); return; }
+      this.requestConversation(KEEPER_SIT, island.keeperActor, false, () => {
+        if (!ready()) return false;
+        this.islandGuide = false;
+        if (picker) {
+          this.endRide();
+          if (!this.rides.islandBoat()) this.rides.restoreIslandBoat();
+          this.enterZone("town", island.keeperSpawn, true);
+        }
+        this.keeperNear = true;
+        return true;
+      }, settled);
+    };
+    if (this.islandScene) open();
+    else void this.loadIsland().then(open);
   }
 
   private updateIsland(dt: number, interrupted: boolean) {
@@ -1369,13 +1421,11 @@ export class Game implements GameApi {
     if (dist > 7) this.keeperFrameDismissed = false;
     if (dist > 4.3) this.keeperNear = false;
     const near = !this.rides.riding && !this.swimming && !this.aloft && dist < TALK_RANGE;
+    if (!near && this.keeperRequest?.picker === false) this.keeperRequest = undefined;
     if (near) {
       const want = Math.atan2(p.x - q.x, p.z - q.z);
       ch.root.rotation.y += angleDiff(want, ch.root.rotation.y) * Math.min(1, dt * 5);
-      if (!interrupted && !this.keeperNear && this.t - this.keeperSpokeAt >= 3.2) {
-        this.keeperNear = true;
-        this.speakKeeper();
-      }
+      if (!interrupted && !this.keeperNear) this.speakKeeper();
     }
     ch.steady = near;
     ch.attentive = near;
@@ -1562,7 +1612,7 @@ export class Game implements GameApi {
         const voice = ambientVoice(female ? "f" : "m");
         audio.play(voice, 1, line.en, { male: !female });
         w.ch.talk(audio.clipDuration(voice, 1, line.en) ?? 1.2, () => audio.level(), () => audio.vowel());
-        st.toast({ kind: "info", title: `„${line.en}“`, body: line.lt });
+        st.toast({ kind: "info", source: "ambient", title: `„${line.en}“`, body: line.lt });
         return;
       }
     }
@@ -1571,8 +1621,7 @@ export class Game implements GameApi {
     const here = this.player.root.position;
     if (island && keeper && keeperActor && islandGroundY(island, here.x, here.z) !== undefined
       && this.raycaster.intersectObject(keeperActor.root, true).length) {
-      if (!this.aloft && keeperActor.root.position.distanceTo(here) < TALK_RANGE) this.speakKeeper();
-      else this.walkTo(keeper.approach.x, keeper.approach.z, { kind: "point" });
+      if (!this.interactKeeper()) this.walkTo(keeper.approach.x, keeper.approach.z, { kind: "point" });
       return;
     }
     // staff with a line of their own (roomPeople.ts `says`)?
@@ -1702,7 +1751,7 @@ export class Game implements GameApi {
 
   // ------------------------------------------------------------------ interaction
 
-  interact() {
+  interact(repeat = false) {
     if (this.modes.active) {
       if (!this.session?.active && !useStore.getState().hud.panel && !this.transitioning) this.modes.input({ kind: "interact" });
       return;
@@ -1724,7 +1773,10 @@ export class Game implements GameApi {
     else if (n.kind === "climb") this.climbOut();
     else if (n.kind === "mode") this.modeStart(n.id);
     else if (n.kind === "npc") this.talkTo(n.id);
-    else if (n.kind === "staff") { if (n.id === LIGHTHOUSE_ISLAND?.keeper.says) this.speakKeeper(); else this.staffSays(+n.id); }
+    else if (n.kind === "staff") {
+      if (n.id !== LIGHTHOUSE_ISLAND?.keeper.says) this.staffSays(+n.id);
+      else if (!repeat) this.interactKeeper();
+    }
     else if (n.kind === "door") this.enterDoor(n.id);
     else if (n.kind === "exit") this.exitInterior();
   }
@@ -1782,6 +1834,7 @@ export class Game implements GameApi {
 
   talkTo(npc: string, sitId?: string) {
     if (this.session?.active) return;
+    if (npc === KEEPER_NPC) { this.interactKeeper(); return; }
     if (this.quests.handlesNpc(npc)) {
       this.modes.start(this.quests.id, "visit");
       return;
@@ -1804,13 +1857,17 @@ export class Game implements GameApi {
    *  the NPC in the right place; phone and video calls start at once. */
   startScenario(sitId: string) {
     const sit = SITUATION_BY_ID[sitId];
-    if (!sit) return;
+    const keeper = sitId === KEEPER_SIT;
+    if (!sit || (keeper && this.keeperRequest?.picker)) return;
+    this.keeperRequest = undefined;
+    const pick = ++this.scenarioPick;
     const st = useStore.getState();
     st.setHud({ panel: null });
     this.modes.exit(true);
     this.lastScenario = sitId;
     prefetchSituations([sitId]);
     const go = () => {
+      if (pick !== this.scenarioPick) return;
       if (isCall(sit)) { this.call(sitId); return; }
       const npc = sit.npc === "sam" || sit.npc === "emma" ? this.chosenDatePartner() : sit.npc;
       const loc = LOCATIONS[sit.location];
@@ -1827,12 +1884,13 @@ export class Game implements GameApi {
       }
       this.enterZone(zone, spawn ?? undefined, true);
       // let the NPCs spawn, then talk
-      this.afterSceneDelay(() => this.talkTo(npc, sitId), 150);
+      this.afterSceneDelay(() => { if (pick === this.scenarioPick) this.talkTo(npc, sitId); }, 150);
     };
     // "Dar kartą" / "Kita situacija" after a taxi, bus or plane ride was queued: no ride (and no
     // teleport or black fade in the middle of the new conversation). Before close(), which runs endSession.
     this.cancelRide();
     this.phone.dismiss();
+    if (keeper) { this.session?.close(); this.openKeeper(true); return; }
     if (this.session?.active) { this.session.close(); this.afterSceneDelay(go, 250); } else go();
   }
   private afterSceneDelay(run: () => void, delay: number) {
@@ -1867,17 +1925,21 @@ export class Game implements GameApi {
     this.requestConversation(sitId, null, fromCard);
   }
 
-  private requestConversation(sitId: string, actor: NpcActor | null, fromCard = false) {
+  private requestConversation(sitId: string, actor: TalkActor | null, fromCard = false, prepare?: () => boolean, settled?: () => void) {
+    if (sitId === KEEPER_SIT && !actor) return;
+    if (!prepare) this.keeperRequest = undefined;
     this.quests.stopReplay();
     this.conversationLoads++;
     this.observeStreetAndPhone();
     let opened = false;
     whenLoaded(sitId, (def) => {
+      if (prepare && !prepare()) return;
       this.startSession(def, actor, fromCard && sitId === "p24-flood" ? FLOOD_INCOMING_INTRO : undefined);
       opened = true;
     }, () => !this.disposed && !this.session?.active, () => {
       this.conversationLoads--;
       if (fromCard && !opened && !this.disposed) this.phone.markMissed(sitId);
+      settled?.();
     });
   }
 
@@ -1990,7 +2052,7 @@ export class Game implements GameApi {
     }
   };
 
-  private startSession(sit: SituationDef, actor: NpcActor | null, introOverride?: string) {
+  private startSession(sit: SituationDef, actor: TalkActor | null, introOverride?: string) {
     this.modes.exit(true);
     this.keepsake.clear();
     this.cancelRide();
@@ -2015,9 +2077,10 @@ export class Game implements GameApi {
       this.rig.mode = "talk";
       this.player.setAnim("idle");
     }
+    const speaker = (id: string) => actor?.id === id ? actor : this.npcs.find((n) => n.id === id);
     const session: Session = new Session(sit.id, {
       npcTalk: (npcId, secs, text) => {
-        const n = this.npcs.find((x) => x.id === npcId);
+        const n = speaker(npcId);
         if (!n) return;
         // the mouth follows the recording while the line is this person's (its loudness and its sound), and the face
         // what the line says
@@ -2027,7 +2090,7 @@ export class Game implements GameApi {
         this.talkLean = this.t + Math.min(secs, 12);
         if (text) n.ch.express?.(moodOf(text), secs + 1.2);
       },
-      npcReact: (npcId, kind) => { this.npcs.find((x) => x.id === npcId)?.ch.react?.(kind); },
+      npcReact: (npcId, kind) => { speaker(npcId)?.ch.react?.(kind); },
       // ignore events from a conversation already closed (e.g. Esc during the driver's goodbye):
       // its "taxi-ride" would otherwise be queued for the next, unrelated conversation
       onEvent: (name, data) => { if (this.session === session) this.onSessionEvent(name, data); },
@@ -2039,7 +2102,7 @@ export class Game implements GameApi {
 
   /** Turns the conversation's camera to `to`, one of those taking part (and whoever of them stands right by them),
    *  unless they are in the picture already; the learner turns to them too. Each one's framing is found once. */
-  private aimTalk(to: NpcActor) {
+  private aimTalk(to: TalkActor) {
     if (this.talkIn.includes(to)) return;
     const p = this.player.root.position, a = to.ch.root.position;
     if (Math.hypot(a.x - p.x, a.z - p.z) > 0.1) this.heading = Math.atan2(a.x - p.x, a.z - p.z);
@@ -2061,7 +2124,7 @@ export class Game implements GameApi {
   }
 
   /** The conversation's picture of `group` (the first of them the one the learner speaks with) and the learner. */
-  private talkView(to: NpcActor, group: NpcActor[]): Shot {
+  private talkView(to: TalkActor, group: TalkActor[]): Shot {
     const p = this.player.root.position, a = to.ch.root.position;
     const dir = new THREE.Vector3(a.x - p.x, 0, a.z - p.z);
     if (dir.lengthSq() < 0.01) dir.set(0, 0, -1);
@@ -2865,22 +2928,9 @@ export class Game implements GameApi {
         if (window.requestIdleCallback) window.requestIdleCallback(warm, { timeout: 750 });
         else setTimeout(warm, 0);
       }
-      const island = LIGHTHOUSE_ISLAND;
-      if (island && !this.islandLoadStarted && !this.zone.interior) {
+      if (LIGHTHOUSE_ISLAND && !this.islandLoadStarted && !this.zone.interior) {
         this.islandLoadStarted = true;
-        requestAnimationFrame(() => {
-          if (this.disposed) return;
-          void import("./world/lighthouseIsland").then(({ buildLighthouseIsland }) => {
-            if (this.disposed) return;
-            const scene = this.islandScene = buildLighthouseIsland(island);
-            scene.keeper.watch = this.learnerAt;
-            scene.group.visible = !this.undersea.on;
-            if (!scene.group.visible) this.dry.push(scene.group);
-            this.town.group.add(scene.group);
-            scene.ground.updateWorldMatrix(true, false);
-            this.field.addGeometry(scene.ground.geometry, scene.ground.matrixWorld);
-          }).catch((error) => console.warn("Lighthouse island unavailable", error));
-        });
+        requestAnimationFrame(() => { if (!this.disposed && !this.islandScene) void this.loadIsland(); });
       }
       if (!this.carLoadStarted && !this.zone.interior) {
         this.carLoadStarted = true;
@@ -2920,6 +2970,28 @@ export class Game implements GameApi {
     const walking = st.hud.walking ? this.stillT < 1.2 : this.moveT > 0.4;
     if (walking !== st.hud.walking) st.setHud({ walking });
   };
+
+  private loadIsland() {
+    return this.islandLoad ??= import("./world/lighthouseIsland").then(({ buildLighthouseIsland }) => {
+      if (this.disposed || !LIGHTHOUSE_ISLAND) return;
+      const scene = buildLighthouseIsland(LIGHTHOUSE_ISLAND);
+      try {
+        scene.keeper.watch = this.learnerAt;
+        scene.group.visible = !this.undersea.on;
+        this.town.group.add(scene.group);
+        scene.ground.updateWorldMatrix(true, false);
+        this.field.addGeometry(scene.ground.geometry, scene.ground.matrixWorld);
+        if (!scene.group.visible) this.dry.push(scene.group);
+        this.islandScene = scene;
+      } catch (error) {
+        scene.dispose();
+        throw error;
+      }
+    }).catch((error) => {
+      this.islandLoad = undefined;
+      console.warn("Lighthouse island unavailable", error);
+    });
+  }
 
   /** An illustrated scene covers the town (a conversation in pictures). */
   private covered = false;
@@ -3393,7 +3465,7 @@ export class Game implements GameApi {
     if (!t) return;
     if (t.kind === "npc" && t.id) this.talkTo(t.id);
     else if (t.kind === "door" && t.id) this.enterDoor(t.id);
-    else if (t.kind === "exit") this.exitInterior(t.id ? () => this.guideToPlace(t.id!) : undefined);
+    else if (t.kind === "exit") this.exitInterior(t.id ? () => this.guideToPlace(t.id!) : this.islandGuide ? () => this.autoWalkToObjective() : undefined);
   }
 
   private updateNpcs(dt: number, talking: boolean, mode: ReturnType<ModeRegistry["get"]> | null) {
@@ -3538,7 +3610,7 @@ export class Game implements GameApi {
       const island = LIGHTHOUSE_ISLAND, keeper = this.islandScene?.keeper;
       if (!this.zone.interior && island && keeper && !this.swimming) {
         const d = keeper.root.position.distanceTo(p);
-        if (d < TALK_RANGE && d < bd) { bd = d; best = { kind: "staff", id: island.keeper.says, label: "Pasisveikinti" }; }
+        if (d < TALK_RANGE && d < bd) { bd = d; best = { kind: "staff", id: island.keeper.says, label: this.keeperWarned ? KEEPER_TALK : "Pasisveikinti" }; }
       }
       // a convertible or the boat within a step (a boat from the water too), a pier's boards beside a swimmer
       if (!this.zone.interior && !this.hop.air && this.diveK < 0.3) {
@@ -3566,8 +3638,8 @@ export class Game implements GameApi {
     }
     const changed = (best?.kind + ":" + best?.id) !== (this.nearest?.kind + ":" + this.nearest?.id);
     this.nearest = best;
-    if (changed) {
-      if (best) audio.sfx("tick");
+    if (changed || (best?.kind === "staff" && best.label !== st.hud.prompt?.label)) {
+      if (changed && best) audio.sfx("tick");
       const names = RIDE_NAMES;
       st.setHud({ prompt: !best ? null
         : best.kind === "ride" ? (best.label === ROAD_UI.drive ? { label: ROAD_UI.drive, kind: "drive" } : best.label === "car" ? { label: `Vairuoti: ${names.car.en}`, lt: names.car.lt || undefined, kind: "drive" } : { label: `Plaukti: ${names.boat.en}`, lt: names.boat.lt || undefined, kind: "boat" })

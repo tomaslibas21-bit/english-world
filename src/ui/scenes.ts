@@ -10,6 +10,8 @@
 
 /** A scene file as written in ./scene-data/ (picture names without folder or extension). */
 export interface SceneFile {
+  /** Set false until all the planned pictures are available. */
+  available?: boolean;
   /** Who is in the pictures (for people editing the file). */
   npc?: string;
   images: string[];
@@ -29,7 +31,7 @@ export interface SceneFile {
 }
 
 /** A scene with picture names resolved to stems ("<folder>/<name>"). */
-export type SceneArt = Omit<SceneFile, "npc" | "jobs">;
+export type SceneArt = Omit<SceneFile, "npc" | "jobs" | "available">;
 
 export const sceneFolder = (key: string) => key.replace("@", "-");
 export const sceneUrl = (stem: string) => `${import.meta.env.BASE_URL}scenes/${stem}.webp`;
@@ -51,7 +53,7 @@ const files = import.meta.glob<SceneFile>("./scene-data/*.json", { eager: true, 
 
 /** By situation id, or "<situation id>@<npc id>". */
 export const SCENES: Record<string, SceneArt> = Object.fromEntries(
-  Object.entries(files).map(([path, f]) => {
+  Object.entries(files).filter(([, f]) => f.available !== false).map(([path, f]) => {
     const key = path.replace(/^.*\/|\.json$/g, "");
     return [key, resolve(key, f)];
   }),

@@ -1,4 +1,5 @@
 export const KEEPER_NPC = "lighthouse_keeper";
+export const KEEPER_SIT = "x05-lighthouse-keeper";
 export const KEEPER_PLACE = { en: "Lighthouse", lt: "Švyturys" };
 export const KEEPER_ROLE = { en: "Lighthouse keeper", lt: "Švyturio prižiūrėtojas" };
 export const KEEPER_TITLE = { en: "A Visit to the Lighthouse", lt: "Viešnagė švyturyje" };

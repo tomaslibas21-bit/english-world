@@ -95,6 +95,10 @@ describe("lighthouse island", () => {
     setBlobShadows(true);
     const view = buildLighthouseIsland(island);
     try {
+      const { x, z } = island.keeper.approach;
+      expect(view.keeperActor.ch).toBe(view.keeper);
+      expect(view.keeperActor.approach?.toArray()).toEqual([x, island.y, z]);
+      expect(view.keeperSpawn).toEqual({ x, z, rot: Math.atan2(island.keeper.x - x, island.keeper.z - z) });
       view.update(5);
       view.keeper.update(0.016);
       let meshes = 0, propMeshes = 0;

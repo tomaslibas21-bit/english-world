@@ -1,0 +1,15 @@
+{
+  "available": false,
+  "npc": "Lighthouse keeper",
+  "images": ["cottage", "light", "morning", "weather", "note"],
+  "start": "cottage",
+  "done": "note",
+  "focus": [38, 31],
+  "phases": {
+    "life": "cottage",
+    "light": "light",
+    "routine": "morning",
+    "storm": "weather",
+    "gift": "note"
+  }
+}

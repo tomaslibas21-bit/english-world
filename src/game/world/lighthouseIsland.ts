@@ -1,5 +1,6 @@
 import * as THREE from "three";
-import { KEEPER_LOOK } from "../../content/keeper";
+import { KEEPER_LOOK, KEEPER_NPC } from "../../content/keeper";
+import type { TalkActor } from "../Game";
 import { createCharacter } from "../characters";
 import { addIslandTower, addLighthouse } from "./lighthouseTower";
 import { buoy, mums } from "./maple";
@@ -231,11 +232,16 @@ export function buildLighthouseIsland(island: IslandPlan) {
   const ch = createCharacter({ female: false, ...KEEPER_LOOK });
   ch.root.name = "lighthouse-keeper";
   ch.root.position.set(keeper.x, y, keeper.z);
-  ch.root.rotation.y = Math.atan2(keeper.approach.x - keeper.x, keeper.approach.z - keeper.z);
+  const { x, z } = keeper.approach;
+  const rot = Math.atan2(keeper.x - x, keeper.z - z);
+  ch.root.rotation.y = Math.atan2(x - keeper.x, z - keeper.z);
+  const keeperActor: TalkActor = {
+    id: KEEPER_NPC, ch, home: ch.root.position.clone(), rot: ch.root.rotation.y, approach: new THREE.Vector3(x, y, z),
+  };
   group.add(ground, glass, gull, ch.root);
 
   return {
-    group, ground, keeper: ch,
+    group, ground, keeper: ch, keeperActor, keeperSpawn: { x, z, rot },
     // From across the path, the keeper is in three-quarter view against the cottage and water.
     keeperView: {
       pos: new THREE.Vector3(keeper.x - 0.8, y + 2.12, keeper.z + 4.85),

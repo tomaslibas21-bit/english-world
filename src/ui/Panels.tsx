@@ -9,6 +9,7 @@ import { game } from "../game/gameRef";
 import { switchPlayMode } from "./playMode";
 import { SITUATIONS, SITUATION_BY_ID } from "../content/situations/catalog";
 import { LOCATIONS, TOWN_LT, placeLt } from "../content/locations";
+import { KEEPER_MAP_DETAIL, KEEPER_TITLE } from "../content/keeper";
 import { keepsakeFor } from "../content/keepsakes";
 import { PHONE_CALLS } from "../content/phoneCalls";
 import { TEXT_THREADS } from "../content/texts";
@@ -123,8 +124,12 @@ function SitActions({ s, close }: { s: SituationMeta; close: () => void }) {
         <button className="btn warm small" onClick={() => { close(); game?.call(s.id); }}><Icon name="smartphone" size={17} /> Skambinti dabar</button>
       ) : (
         <>
-          <button className="btn soft small" onClick={() => { if (s.bonus) { close(); game?.guideToPlace?.(s.location); } else walkToSituation(s.id, close); }}><Icon name="walk" size={17} /> Nuvesk mane</button>
-          <button className="btn ghost small" onClick={() => { if (!s.bonus) game?.setObjective(s.id); close(); game?.teleportTo(s.location); }}><Icon name="taxi" size={17} /> Nuvykti taksi</button>
+          <button className="btn soft small" onClick={() => {
+            if (s.location === "lighthouse") { close(); game?.guideToLighthouse?.(); }
+            else if (s.bonus) { close(); game?.guideToPlace?.(s.location); }
+            else walkToSituation(s.id, close);
+          }}><Icon name="walk" size={17} /> Nuvesk mane</button>
+          {s.location !== "lighthouse" && <button className="btn ghost small" onClick={() => { if (!s.bonus) game?.setObjective(s.id); close(); game?.teleportTo(s.location); }}><Icon name="taxi" size={17} /> Nuvykti taksi</button>}
         </>
       )}
     </div>
@@ -360,6 +365,8 @@ function MapPanel({ close }: { close: () => void }) {
               <div>
                 <h3 className="place-title">{island.name}</h3>
                 <div lang="lt" style={{ color: "var(--ink-soft)", marginBottom: 10 }}>{island.lt}</div>
+                <b lang="lt">{KEEPER_TITLE.lt}</b>
+                <p lang="lt">{KEEPER_MAP_DETAIL}</p>
                 <button className="btn soft small" onClick={() => { close(); game?.guideToLighthouse?.(); }}><Icon name="walk" size={17} /> Nuvesk mane</button>
               </div>
             )}

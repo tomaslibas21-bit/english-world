@@ -1,6 +1,16 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import keeper from "../src/content/situations/x05-lighthouse-keeper";
+import { loadSituation } from "../src/content/situations/catalog";
+import { modelAnswers } from "../src/convo/suggest";
+import { Session } from "../src/game/session";
+import { sentenceInput, newCard } from "../src/state/cards";
+import { emptyProgress } from "../src/state/progress";
+import { useStore } from "../src/state/store";
 import { playSim } from "../tools/sim-play";
+
+vi.mock("../src/game/audio", () => ({
+  audio: { names: [], play: async () => false, prefetch: async () => {}, stop() {}, sfx() {}, clipDuration() {} },
+}));
 
 describe("the lighthouse keeper's conversation", () => {
   it.each([
@@ -45,5 +55,48 @@ describe("the lighthouse keeper's conversation", () => {
     const out = conv.input("Do you live on the island? Is it quiet here?");
     expect(out.lines.map((l) => l.lineId)).toEqual(["k_home_reply", "k_light_ask"]);
     expect(conv.step).toBe("light");
+  });
+
+  it("records the composed picker answers as phrases from the five turns without recordings", async () => {
+    const id = keeper.id;
+    await loadSituation(id);
+    vi.useFakeTimers();
+    vi.stubGlobal("document", new EventTarget());
+    useStore.setState({ progress: emptyProgress() });
+    const store = useStore.getState;
+    const onEnd = vi.fn();
+    const session = new Session(id, { npcTalk() {}, onEvent() {}, onEnd });
+    try {
+      const started = session.begin();
+      store().setConv({ introOpen: false });
+      await started;
+      const picked = [
+        ["life", "k_home"], ["light", "k_turn"], ["routine", "k_morning"], ["storm", "k_stay"], ["gift", "k_keep"],
+      ] as const;
+      for (const [step, phraseId] of picked) {
+        expect(store().conv).toMatchObject({ phase: "you", stepId: step });
+        const answers = modelAnswers(keeper, keeper.hints[step], undefined, { formal: true, gender: "m", npcGender: "m", vars: {} }, 3);
+        expect(answers).toHaveLength(2);
+        const sentence = answers[0];
+        await session.submit(sentence.en, [], "picked");
+        const phrase = store().progress.phrases[id + ":" + phraseId];
+        expect(phrase).toMatchObject({ en: sentence.en, lt: sentence.nat, sitId: id, count: 1 });
+        const card = newCard(sentenceInput(sentence, phrase.sitId), Date.now());
+        expect(card).toMatchObject({ situationId: id, sentence: { en: phrase.en, lt: phrase.lt } });
+        expect(store().conv.transcript.findLast((l) => l.who === "you")).toMatchObject({ via: "picked", understood: true });
+      }
+      expect(Object.keys(store().progress.phrases)).toHaveLength(5);
+      expect(store().progress.sits[id].completions).toBe(1);
+      expect(store().conv).toMatchObject({ phase: "ended", completed: true });
+      session.close();
+      session.close();
+      expect(store().progress.sits[id].completions).toBe(1);
+      expect(onEnd).toHaveBeenCalledExactlyOnceWith(keeper, true);
+    } finally {
+      session.close();
+      vi.clearAllTimers();
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+    }
   });
 });
