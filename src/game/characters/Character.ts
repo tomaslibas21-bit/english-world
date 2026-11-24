@@ -343,6 +343,12 @@ function blobShadow() {
   return m;
 }
 
+function surfLeg(leg: THREE.Object3D, shin: THREE.Object3D, thigh: number, side: number, knee: number, blend: number) {
+  leg.rotation.x += (thigh - leg.rotation.x) * blend;
+  leg.rotation.z += (side - leg.rotation.z) * blend;
+  shin.rotation.x += (knee - shin.rotation.x) * blend;
+}
+
 export class Character {
   /** Soft round shadows under the feet: on when the sun casts none (the „Paprasta“ quality). */
   static blobShadows = false;
@@ -579,6 +585,9 @@ export class Character {
     vis(this.lids, false);
   }
 
+  private hasBackpackMesh = false;
+  get backpackVisible() { return this.hasBackpackMesh && this.root.visible; }
+
   // ------------------------------------------------------------------ body
 
   private buildBody(look: Look, acc: string[], h: number, b: number) {
@@ -611,9 +620,20 @@ export class Character {
       const prof: THREE.Vector2[] = [];
       // (a rounded bottom under the hips, as the capsule's was)
       for (let i = 0; i < 4; i++) { const a = -Math.PI / 2 + (i / 4) * (Math.PI / 2), r0 = SHAPE[0][1] * tr; prof.push(new THREE.Vector2(Math.max(1e-3, r0 * Math.cos(a)), 0.8 * h + r0 * Math.sin(a))); }
-      for (const [t, r] of SHAPE) prof.push(new THREE.Vector2(r * tr, t * h));
+      for (const [t, r] of SHAPE) {
+        const fit = look.rash && t > 0.86 && t < 1.225 ? 0.96 : 1;
+        prof.push(new THREE.Vector2(r * tr * fit, t * h));
+      }
       prof.push(new THREE.Vector2(1e-3, 1.345 * h));
-      P.add(G.lathe(prof, 14).scale(1, 1, 0.78), top);
+      if (look.rash) {
+        const panel = new THREE.Color(top);
+        const light = 0.2126 * panel.r + 0.7152 * panel.g + 0.0722 * panel.b;
+        if (light > 0.23) panel.multiplyScalar(0.19);
+        else panel.lerp(new THREE.Color("#effafa"), 0.75);
+        for (let i = 0; i < 4; i++) {
+          P.add(G.lathe(prof, 5, (i - 0.5) * Math.PI / 2, Math.PI / 2).scale(1, 1, 0.78), i % 2 ? panel : top);
+        }
+      } else P.add(G.lathe(prof, 14).scale(1, 1, 0.78), top);
     }
     if (!look.skirt) {
       const r = SHAPE[0][1] * tr + 0.006, prof: THREE.Vector2[] = [];
@@ -784,6 +804,7 @@ export class Character {
       }
     }
     if (look.backpack) {
+      this.hasBackpackMesh = true;
       // the player's backpack: a pack on the back with a flap and a pocket, its straps over the shoulders and down the
       // chest (so it shows from the front too)
       const pack = new THREE.Color(look.backpack), strap = pack.clone().multiplyScalar(0.7);
@@ -1764,23 +1785,19 @@ export class Character {
     const sf = this.surf, prone = seated ? 0 : sf.prone, stand = seated ? 0 : sf.stance;
     if (prone > 0) {
       // a crawl: each arm reaches ahead along the rail, pulls down and back through the water, and comes forward
-      const arm = (o: number) => { const u = 0.5 - 0.5 * Math.cos(sf.stroke * Math.PI + o), dn = Math.sin(u * Math.PI); return { x: -2.85 + 2.0 * u, out: 0.2 + 0.22 * dn, bend: -0.12 - 0.55 * (1 - dn) * u }; };
-      const L = arm(0), R = arm(Math.PI);
-      lx += (L.x - lx) * prone; rx += (R.x - rx) * prone;
-      lz += (-L.out - lz) * prone; rz += (R.out - rz) * prone;
-      lf += (L.bend - lf) * prone; rf += (R.bend - rf) * prone;
+      const left = 0.5 - 0.5 * Math.cos(sf.stroke * Math.PI), right = 1 - left;
+      const pull = Math.sin(left * Math.PI), reach = 0.2 + 0.22 * pull, bend = 0.55 * (1 - pull);
+      lx += (-2.85 + 2 * left - lx) * prone; rx += (-2.85 + 2 * right - rx) * prone;
+      lz += (-reach - lz) * prone; rz += (reach - rz) * prone;
+      lf += (-0.12 - bend * left - lf) * prone; rf += (-0.12 - bend * right - rf) * prone;
       lfy *= 1 - prone; rfy *= 1 - prone; lfz *= 1 - prone; rfz *= 1 - prone;
-      for (const [leg, shin, sd] of [[this.legL, this.shinL, -1], [this.legR, this.shinR, 1]] as [THREE.Group, THREE.Group, number][]) {
-        leg.rotation.x += (0.05 - leg.rotation.x) * prone; leg.rotation.z += (sd * 0.07 - leg.rotation.z) * prone;
-        shin.rotation.x += (0.1 - shin.rotation.x) * prone;
-      }
+      surfLeg(this.legL, this.shinL, 0.05, -0.07, 0.1, prone);
+      surfLeg(this.legR, this.shinR, 0.05, 0.07, 0.1, prone);
     }
     if (stand > 0) {
       const k = 0.4 + 0.55 * sf.crouch, wob = sf.wobble * Math.sin(t * 11);
-      for (const [leg, shin, sd] of [[this.legL, this.shinL, -1], [this.legR, this.shinR, 1]] as [THREE.Group, THREE.Group, number][]) {
-        leg.rotation.x += (-k - leg.rotation.x) * stand; leg.rotation.z += (sd * 0.42 - leg.rotation.z) * stand;
-        shin.rotation.x += (k * 1.95 - shin.rotation.x) * stand;
-      }
+      surfLeg(this.legL, this.shinL, -k, -0.42, k * 1.95, stand);
+      surfLeg(this.legR, this.shinR, -k, 0.42, k * 1.95, stand);
       // the arms out along the board for balance (the front one a little higher), flailing when it wobbles
       lx += (-0.12 - lx) * stand; rx += (-0.1 - rx) * stand;
       lz += (-1.3 + 0.25 * sf.crouch - wob * 0.45 - lz) * stand; rz += (1.05 - 0.2 * sf.crouch - wob * 0.45 - rz) * stand;

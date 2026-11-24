@@ -310,7 +310,12 @@ export class Game implements GameApi {
   });
 
   // Retained for the surf browser tests and diagnostics.
-  get surf() { return (this.modes.get("surf") as ReturnType<typeof createSurfMode>)?.play ?? null; }
+  get surf() { return (this.modes.get("surf") as ReturnType<typeof createSurfMode>) ?? null; }
+  get surf_picking() { return useSurf.getState().picking; }
+  get outfit() { return this.surf?.outfit ?? null; }
+  surfStart(level: "beginner" | "advanced") { this.modeStart("surf", level); }
+  surfChoose(cue: string) { this.modeAction("surf", "choose", cue); }
+  surfAgain(level?: "beginner" | "advanced") { this.modeAction("surf", "again", level); }
   surfStop() { if (this.modes.owns("surf")) this.modes.exit(); }
 
   private brake = false;
@@ -526,11 +531,17 @@ export class Game implements GameApi {
     const host: ModeHost = this.modeHost = {
       player: () => this.player, rig: this.rig, rides: this.rides, standTaxi: this.town.parkedCars.taxi, doors: this.town.doors, time: () => this.t,
       add: (...objects) => this.scene.add(...objects),
-      canStart: (indoors) => !this.disposed && !this.session?.active && !useStore.getState().hud.panel
-        && !this.transitioning && !this.flight && this.rideTimer === undefined && (indoors || !this.zone.interior),
+      canStart: (indoors, duringTransition) => !this.disposed && !this.session?.active && !useStore.getState().hud.panel
+        && (duringTransition || !this.transitioning) && !this.flight && this.rideTimer === undefined && (indoors || !this.zone.interior),
       fade: (fn) => { if (this.transitioning || this.disposed) return false; this.fadeThen(() => { if (!this.disposed) fn(); }); return true; },
       splash: (x, y, z, dx, dz, k) => this.splashes.burst(x, y, z, dx, dz, k),
-      hideNpc: (id, hidden) => { const n = this.npcs.find((q) => q.id === id); if (n) n.ch.root.visible = !hidden; },
+      hideNpc: (id, hidden) => {
+        const n = this.npcs.find((q) => q.id === id);
+        if (!n) return;
+        const visible = n.ch.root.visible;
+        n.ch.root.visible = !hidden;
+        return visible;
+      },
       // a mini-game's recorded effects load as it starts, and its room and music play while it runs (audio.bed)
       entered: (id) => { this.modes.entered(id); audio.preload(MODE_SAMPLES[id] ?? []); audio.bed(id); },
       left: (id) => { this.modes.left(id); audio.bed(null); }, owns: (id) => this.modes.owns(id),
@@ -561,7 +572,7 @@ export class Game implements GameApi {
           (x, z) => this.zone.colliders.blocked(x, z, 0.65), beside);
       },
     };
-    this.modes.register(createSurfMode(host));
+    this.modes.register(createSurfMode(host, (player) => { this.player = this.rides.host.player = player; }));
     this.modes.register(createTaxiMode(host));
     this.modes.register(this.quests = new TownQuests(host, {
       spots: this.town.photoSpots,
@@ -877,6 +888,7 @@ export class Game implements GameApi {
   enterZone(id: string, spawn?: { x: number; z: number; rot: number }, instant = false, via?: "in" | "out", onEntered?: () => void) {
     const z = this.getZone(id);
     if (!z) return;
+    if (this.modes.owns("surf")) this.modes.exit(true);
     const doIt = () => {
       this.phone.dismiss();
       if (this.modes.active || this.modes.owns("barista") || this.modes.owns("gofish")) this.modes.exit(true);
@@ -1103,7 +1115,8 @@ export class Game implements GameApi {
       this.horn(); e.preventDefault(); return;
     }
     if (this.modes.modal || this.modes.active) {
-      if (!this.transitioning && this.modes.input({ kind: "key", key: k, repeat: e.repeat, keys: this.keys, shift: e.shiftKey })) e.preventDefault();
+      if ((!this.transitioning || (k === "escape" && this.modes.owns("surf")))
+        && this.modes.input({ kind: "key", key: k, repeat: e.repeat, keys: this.keys, shift: e.shiftKey })) e.preventDefault();
       return;
     }
     if (k === "escape" && this.modes.input({ kind: "key", key: k, repeat: e.repeat, keys: this.keys })) {
@@ -1128,9 +1141,14 @@ export class Game implements GameApi {
   private onKeyUp = (e: KeyboardEvent) => {
     const key = e.key.toLowerCase();
     this.keys.delete(key);
+    if (this.modes.owns("surf")) this.modeAction("surf", "key-up", key);
     if (this.billiards.release(key)) e.preventDefault();
   };
-  private onBlur = () => { this.keys.clear(); this.billiards.release(" ", true); };
+  private onBlur = () => {
+    this.keys.clear();
+    this.billiards.release(" ", true);
+    if (this.modes.owns("surf")) this.modeAction("surf", "clear");
+  };
 
   horn() {
     if (useStore.getState().hud.panel || this.transitioning || this.session?.active) return;
@@ -2332,9 +2350,13 @@ export class Game implements GameApi {
   }
   modeExit() { this.modes.exit(); }
   modeAction(id: string, name: string, value?: string | boolean) {
-    if (this.transitioning || useStore.getState().hud.panel) return;
+    const release = id === "surf" && (name === "clear" || name === "key-up" || (name.startsWith("arrow:") && value === false));
+    if (!release && (this.transitioning || useStore.getState().hud.panel)) return;
     if (id === "directions") this.quests.directionAction(name);
-    else if (this.modes.owns(id)) this.modes.get(id)?.action?.(name, value);
+    else if (this.modes.owns(id)) {
+      if (id === "surf" && name === "clear") this.setJoystick(0, 0);
+      this.modes.get(id)?.action?.(name, value);
+    }
   }
   debugBilliards() {
     const debug = this.billiards.debug();
@@ -2925,7 +2947,7 @@ export class Game implements GameApi {
   private covered = false;
 
   /** The keys or the stick, for a ride of the town's or a mini-game's (kit modes get them as they are). */
-  private driveInput(blocked: boolean) {
+  private driveInput(blocked: boolean, out = { x: 0, y: 0, brake: false }) {
     let x = 0, y = 0;
     if (!blocked) {
       if (this.keys.has("arrowup") || this.keys.has("w")) y += 1;
@@ -2934,7 +2956,8 @@ export class Game implements GameApi {
       if (this.keys.has("arrowright") || this.keys.has("d")) x += 1;
       if (this.joy.x !== 0 || this.joy.y !== 0) { x = this.joy.x; y = this.joy.y; }
     }
-    return { x, y, brake: this.keys.has(" ") || this.brake };
+    out.x = x; out.y = y; out.brake = this.keys.has(" ") || this.brake;
+    return out;
   }
 
   /** At a car's wheel or a boat's helm in the town: the keys or the stick drive it (rides/drive.ts); at the helm on a
@@ -3064,6 +3087,7 @@ export class Game implements GameApi {
   }
 
   private prepareMode() {
+    if (this.modes.owns("surf")) this.setJoystick(0, 0);
     this.keepsake.clear();
     useStore.getState().dismissRideToasts();
     this.endRide();
@@ -3093,11 +3117,16 @@ export class Game implements GameApi {
     this.nearest = null;
   }
 
+  private readonly modeFrame = { dt: 0, time: 0, blocked: false, x: 0, y: 0, brake: false };
+
   /** `through`: a door's fade is under way: the player holds still, and a walk under way carries on on the other side. */
   private updatePlayer(dt: number, blocked: boolean, through = false) {
     if (this.modes.active) {
       this.rideGoal = null;
-      this.modes.update({ dt, time: this.t, blocked, ...this.driveInput(blocked) });
+      const frame = this.modeFrame;
+      frame.dt = dt; frame.time = this.t; frame.blocked = blocked;
+      this.driveInput(blocked, frame);
+      this.modes.update(frame);
       if (!this.allowsRideHints()) useStore.getState().dismissRideToasts();
       else if (!this.rides.waitingForTraffic) useStore.getState().dismissRideToasts("waiting");
       return;
@@ -3599,7 +3628,7 @@ export class Game implements GameApi {
   private saveT = 5;
 
   private savePlace() {
-    if (!this.player || !this.zone) return;
+    if (!this.player || !this.zone || this.surf?.active) return;
     const p = this.player.root.position;
     const island = LIGHTHOUSE_ISLAND;
     useStore.getState().updateProgress((pr) => {

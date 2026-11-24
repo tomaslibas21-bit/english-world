@@ -39,6 +39,7 @@ export interface GameApi {
   horn?(): void;
   modeStart(id: string, option?: string): void;
   modeExit(): void;
+  surfAgain?(level?: "beginner" | "advanced"): void;
   modeAction(id: string, name: string, value?: string | boolean): void;
   modeOffer(sitId: string): { id: string; label: string } | null;
   modeFromConversation(id: string): void;

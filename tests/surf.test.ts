@@ -1,6 +1,6 @@
 // The surf lesson's rules (src/game/surf/logic.ts): a conversation on the water. Played by a learner who answers her
 // and does what she says, and by ones who don't: she waits for their turn, and a fall is a question, never the end.
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ANSWERS, CFG, COMMANDS, CUES, SurfLogic, type Act, type Level, type Reason, type SurfHost, type SurfInput } from "../src/game/surf/logic";
 
 function rng(seed: number) {
@@ -270,5 +270,105 @@ describe("the surf lesson", () => {
     for (const c of COMMANDS) { expect(CUES).toContain(c.cue); expect(CUES).toContain("a_" + c.reason); expect(CUES).toContain("r_" + c.reason); expect(CUES).toContain("tip_" + c.reason); }
     for (const a of ANSWERS) expect(CUES).toContain(a);
     expect(new Set(CUES).size).toBe(CUES.length);
+  });
+});
+
+describe("the shared surf mode lifecycle", () => {
+  it("supersedes a delayed launch, clears staged inputs and saves an interrupted replay once", async () => {
+    const { Group } = await import("three");
+    const { Character } = await import("../src/game/characters/Character");
+    const { NPCS } = await import("../src/content/npcs");
+    const { CameraRig } = await import("../src/game/camera");
+    const { ModeRegistry } = await import("../src/game/kit/modes");
+    const { SurfMode } = await import("../src/game/surf/mode");
+    const { useSurf } = await import("../src/game/surf/store");
+    const { useStore } = await import("../src/state/store");
+    const state = useStore.getState();
+    const original = new Character({ ...NPCS.maren.look, backpack: "#eed098" });
+    let player: import("../src/game/characters").GameCharacter = original;
+    let npcVisible = true, swap: (() => void) | undefined;
+    let screen: import("../src/game/kit/modes").ModeScreen | null = null;
+    const world = new Group();
+    world.add(original.root);
+    const modes = new ModeRegistry({ read: () => screen, set: (value) => { screen = value; } });
+    const host = {
+      player: () => player, rig: new CameraRig(1.6), time: () => 0,
+      add: (...objects: import("three").Object3D[]) => world.add(...objects),
+      canStart: (_indoors?: boolean, duringTransition?: boolean) => !!duringTransition || !swap,
+      fade: (fn: () => void) => { if (swap) return false; swap = fn; return true; },
+      hideNpc: (_id: string, hidden: boolean) => { const was = npcVisible; npcVisible = !hidden; return was; },
+      entered: (id: string) => modes.entered(id), left: (id: string) => modes.left(id),
+      owns: (id: string) => modes.owns(id),
+      prepare: () => {}, splash: () => {}, updatePose: (dt: number) => player.update(dt),
+      place: () => { host.rig.mode = "follow"; },
+    } satisfies import("../src/game/surf/play").SurfGame;
+    const replace = (next: import("../src/game/characters").GameCharacter) => { player = next; };
+    const surf = new SurfMode({ x: 0, z: 0, start: { x: 0, z: 2, rot: 0, r: 2 }, face: "#54d7d4", deep: "#077b87" },
+      { npc: "maren", situation: "x04-surf" }, host, replace);
+    modes.register(surf);
+    const fade = () => { const fn = swap!; fn(); swap = undefined; modes.tick(0, true); };
+    const frame = (blocked = false) => modes.update({ dt: 1 / 30, time: 1, x: 0, y: 0, brake: false, blocked });
+    useStore.setState({ progress: { ...state.progress, surf: undefined, profile: {
+      name: "Pat", surname: "Lee", gender: "f", lookId: "f1", look: NPCS.maren.look,
+    } } });
+    try {
+      expect(modes.start("surf", "beginner")).toBe(true);
+      await vi.waitFor(() => expect(swap).toBeTypeOf("function"));
+      modes.exit(true);
+      expect(modes.start("surf", "advanced")).toBe(true);
+      fade();
+      expect(surf.logic).toBeNull();
+      expect(useSurf.getState().active).toBe(false);
+      await vi.waitFor(() => { modes.tick(0, true); expect(swap).toBeTypeOf("function"); });
+      fade();
+
+      const lesson = surf.logic!;
+      expect(lesson.level).toBe("advanced");
+      expect(surf.line("now_up")?.en).toBe("Now! Stand up!");
+      expect(player).not.toBe(original);
+      expect((player as InstanceType<typeof Character>).backpackVisible).toBe(false);
+      expect(npcVisible).toBe(false);
+
+      for (let i = 0; i < 3_000 && lesson.todo?.do !== "paddle"; i++) {
+        const choice = lesson.choice;
+        if (choice) surf.action("choose", choice.id === "board" ? "b_short" : choice.options[0]);
+        frame();
+      }
+      expect(lesson.todo?.do).toBe("paddle");
+      const start = lesson.todo!.left!;
+      surf.action("arrow:up", true);
+      frame(true);
+      frame();
+      expect(useSurf.getState().pressed).toBe(0);
+      expect(lesson.todo!.left).toBe(start);
+      surf.action("arrow:up", true);
+      frame();
+      for (let i = 0; i < 15; i++) frame();
+      expect(lesson.todo!.left).toBe(start - 1);
+      surf.action("arrow:up", false);
+      surf.action("arrow:up", true);
+      surf.action("arrow:up", false);
+      frame();
+      expect(lesson.todo!.left).toBe(start - 2);
+
+      lesson.phase = "over";
+      lesson.score.waves = 1;
+      surf.action("again", "beginner");
+      expect(swap).toBeTypeOf("function");
+      modes.exit(true);
+      fade();
+      expect(surf.logic).toBeNull();
+      expect(screen).toBeNull();
+      expect(player).toBe(original);
+      expect((player as InstanceType<typeof Character>).backpackVisible).toBe(true);
+      expect(player.root.rotation.order).toBe("XYZ");
+      expect(npcVisible).toBe(true);
+      expect(useStore.getState().progress.surf).toMatchObject({ lessons: 1, waves: 1 });
+    } finally {
+      modes.dispose();
+      original.dispose();
+      useStore.setState({ progress: state.progress, hud: state.hud });
+      useSurf.getState().reset();
+    }
   });
 });

@@ -13,9 +13,9 @@ export interface ModeHost {
   doors: Door[];
   add(...objects: Object3D[]): void;
   time(): number;
-  canStart(indoors?: boolean): boolean;
+  canStart(indoors?: boolean, duringTransition?: boolean): boolean;
   fade(fn: () => void): boolean;
-  hideNpc(id: string, hidden: boolean): void;
+  hideNpc(id: string, hidden: boolean): boolean | void;
   entered(id: string): void;
   left(id: string): void;
   owns(id: string): boolean;

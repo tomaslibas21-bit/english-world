@@ -64,6 +64,8 @@ export interface Look {
   /** Sleeves: long ones unless given (everyone in Maple Harbor); short ones end above the elbow, none leaves the arms
    *  bare. */
   sleeves?: "short" | "none";
+  /** A fitted rash guard with contrast panels. */
+  rash?: boolean;
   /** Swimwear (the Spanish edition's beach; Maple Harbor uses none): "trunks", swim shorts to the knee in the bottom's
    *  colour, a stripe down their side; "suit", a one-piece swimsuit in the top's colour, the legs and arms bare. */
   swim?: "trunks" | "suit";
@@ -227,7 +229,7 @@ export const NPCS: Record<string, NpcDef> = Object.fromEntries([
     { skin: SK.dark, hair: { style: "bald", color: HAIR.gray }, top: "#9b3b36", bottom: "#3a3f4a", acc: ["beard", "readers"] },
     { bio: "Laiškuose labai oficialus, telefonu – visai ne." }),
   N("maren", "Maren Pike", ["Surf coach", "Banglenčių instruktorė"], "f", "af_bella",
-    { skin: SK.tan, hair: { style: "braid", color: HAIR.chestnut, side: -1, tie: "#e9a23b" }, top: "#d86c40", bottom: "#233e51", sleeves: "short", shorts: true },
+    { skin: SK.tan, hair: { style: "braid", color: HAIR.chestnut, side: -1, tie: "#e9a23b" }, top: "#d86c40", bottom: "#233e51", shorts: true },
     { speed: 1, bio: "32 metų. Užaugo Maple Harbore, čia ir išmoko čiuožti banglente." }),
   ...QUEST_PEOPLE,
 ].map((n) => [n.id, n]));

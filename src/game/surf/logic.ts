@@ -16,6 +16,7 @@ export type Phase = "intro" | "board" | "out" | "wait" | "catch" | "ride" | "fal
 export type Act = "left" | "right" | "down" | "fwd" | "steady" | "jump";
 /** Everything the learner is asked to do with their hands: on the way out and catching a wave, and in the ride. */
 export type Do = "paddle" | "duck" | "turn" | "up" | Act;
+export { arrowFor, type SurfArrow } from "./controls";
 /** What a fall or a missed wave is blamed on (the learner's answers a_<reason>, the instructor's r_<reason>, tip_<reason>). */
 export type Reason = "late" | "early" | "nopaddle" | "back" | "knees" | "feet" | "lean" | "side" | "trick";
 export type Pose = "walk" | "prone" | "sit" | "stand" | "duck" | "swim";
@@ -181,6 +182,7 @@ export class SurfLogic {
   private lateT = 0;
   private whenQuiet: (() => void)[] = [];
   private timers: { t: number; fn: () => void }[] = [];
+  private due: (() => void)[] = [];
   private onChoice: ((option: string) => void) | null = null;
   private armed: { cue: string; t: Omit<Todo, "cue" | "waited">; on: () => void } | null = null;
   private onDone: (() => void) | null = null;
@@ -209,7 +211,14 @@ export class SurfLogic {
   private slang = 0;
   private wasFall = false;
   private held = new Set<Act>();
-  private prev: SurfInput = NO_INPUT;
+  private prevX = 0;
+  private prevY = 0;
+
+  releaseInput() {
+    this.prevX = this.prevY = 0;
+    this.held.clear();
+    this.cmd?.stale.clear();
+  }
 
   constructor(private host: SurfHost, opts: SurfOpts) {
     this.level = opts.level;
@@ -380,7 +389,7 @@ export class SurfLogic {
       }
     } else if (t?.do === "duck") {
       const w = this.duckWave;
-      if (inp.y < -DEAD && this.prev.y >= -DEAD) this.done();
+      if (inp.y < -DEAD && this.prevY >= -DEAD) this.done();
       else if (w && w.d - this.d < 0.7) {
         // it got to them first: swept back a little, and here comes another
         this.duckWave = null; w.past = true; w.hold = undefined;
@@ -466,7 +475,7 @@ export class SurfLogic {
 
   private stepWait(_dt: number, inp: SurfInput) {
     const w = this.live, t = this.todo;
-    const turned = Math.abs(inp.x) > 0.6 && Math.abs(this.prev.x) <= 0.6;
+    const turned = Math.abs(inp.x) > 0.6 && Math.abs(this.prevX) <= 0.6;
     if (!w) return;
     // the board turned without a word for a wave that is not the one: she answers that instead
     if (turned && !w.yes && this.choice?.id === "wave") {
@@ -512,7 +521,7 @@ export class SurfLogic {
 
   private stepCatch(dt: number, inp: SurfInput) {
     const w = this.live!, t = this.todo;
-    const up = inp.up || (inp.y > DEAD && this.prev.y <= DEAD);
+    const up = inp.up || (inp.y > DEAD && this.prevY <= DEAD);
     if (t?.do === "paddle") {
       if (inp.stroke) { t.left = (t.left ?? 1) - 1; t.waited = 0; this.v = Math.min(3.4, this.v + 0.8); this.host.fx("stroke"); if (t.left <= 0) this.done(); }
       else { t.waited += dt; if (t.waited > PATIENCE * this.slow && !this.talking) { t.waited = 0; this.say(this.nag++ % 2 ? "paddle_hard" : "paddle_more"); } }
@@ -551,7 +560,8 @@ export class SurfLogic {
   }
 
   private acts(inp: SurfInput): Set<Act> {
-    const s = new Set<Act>();
+    const s = this.held;
+    s.clear();
     if (inp.x < -DEAD) s.add("left");
     if (inp.x > DEAD) s.add("right");
     if (inp.y < -DEAD) s.add("down");
@@ -599,23 +609,22 @@ export class SurfLogic {
     this.x = clamp(this.x + this.lean * 3.4 * dt, -9, 9);
     this.wobble = Math.max(0, this.wobble - dt * 0.9);
     if (this.flipT > 0) this.flipT = Math.max(0, this.flipT - dt / 0.8);
-    const now = this.held = this.acts(inp);
+    const now = this.acts(inp);
     const c = this.cmd, t = this.todo;
     if (c && t) {
       c.t += dt;
       // what was already held as she spoke is not an answer until it has been let go
-      for (const a of [...c.stale]) if (!now.has(a)) c.stale.delete(a);
-      const fresh = [...now].filter((a) => !c.stale.has(a));
+      for (const a of c.stale) if (!now.has(a)) c.stale.delete(a);
       const act = c.c.act;
       if (act === "steady") {
         if (c.t > 0.6 && (Math.abs(inp.x) > DEAD || Math.abs(inp.y) > DEAD)) this.wrong(c, now);
         else if (c.t >= 2.2 * this.slow) this.followed(c);
-      } else if (fresh.includes(act)) {
+      } else if (now.has(act) && !c.stale.has(act)) {
         if (act === "jump") { this.flipT = 1; this.host.fx("flip"); }
         this.followed(c);
-      } else if (c.t > 0.25 && fresh.some((a) => a !== "jump" || act !== "jump")) {
+      } else if (c.t > 0.25 && now.size > c.stale.size) {
         // the other way, or something else altogether
-        const opp = (act === "left" && fresh.includes("right")) || (act === "right" && fresh.includes("left"));
+        const opp = (act === "left" && now.has("right") && !c.stale.has("right")) || (act === "right" && now.has("left") && !c.stale.has("left"));
         this.wrong(c, now, opp ? "side" : undefined);
       } else if (t.win != null) {
         // (advanced: a green wave won't wait for long)
@@ -660,7 +669,8 @@ export class SurfLogic {
     this.host.fx("wrong");
     if (this.balance <= 0.02) { this.toFall(this.reason); return; }
     if (this.level === "beginner" && !late) {
-      c.t = 0; c.stale = new Set(held);
+      c.t = 0; c.stale.clear();
+      for (const act of held) c.stale.add(act);
       if (this.todo) this.todo.waited = 0;
       this.q = [];
       this.say(AGAIN[c.c.cue] ?? c.c.cue);
@@ -678,7 +688,7 @@ export class SurfLogic {
     this.phase = "fall";
     this.reason = reason; this.named = null; this.wasFall = true;
     this.cmd = null; this.todo = null; this.onDone = null; this.armed = null; this.choice = null; this.onChoice = null; this.upOpen = false;
-    this.q = []; this.whenQuiet = []; this.timers = [];
+    this.q = []; this.whenQuiet = []; this.timers.length = 0;
     this.score.falls++;
     this.fallT = 0; this.pose = "swim"; this.v = 0;
     this.host.fx("wipeout");
@@ -693,7 +703,7 @@ export class SurfLogic {
     this.phase = "fall";
     this.reason = reason; this.named = null; this.wasFall = false;
     this.todo = null; this.onDone = null; this.armed = null; this.upOpen = false; this.pose = "sit"; this.v = 0; this.facing = "in";
-    this.q = []; this.whenQuiet = []; this.timers = [];
+    this.q = []; this.whenQuiet = []; this.timers.length = 0;
     w.past = true;
     this.host.fx("missed");
     this.say("missed");
@@ -725,7 +735,7 @@ export class SurfLogic {
         this.after(0.36, () => {
           this.d = this.dTo = this.cfg.lineup; this.x = 0; this.v = 0; this.facing = "out"; this.pose = "sit"; this.fallT = -1; this.flipT = 0;
           this.lean = this.crouch = this.pitch = this.wobble = 0;
-          this.waves = [];
+          this.waves.length = 0;
         });
         this.then(() => this.toWait());
       } else {
@@ -739,17 +749,26 @@ export class SurfLogic {
 
   step(dt: number, inp: SurfInput = NO_INPUT) {
     if (this.phase === "over") return;
-    for (const t of this.timers) t.t -= dt;
-    const due = this.timers.filter((t) => t.t <= 0);
-    if (due.length) { this.timers = this.timers.filter((t) => t.t > 0); for (const t of due) t.fn(); }
+    let remaining = 0;
+    for (const timer of this.timers) {
+      timer.t -= dt;
+      if (timer.t <= 0) this.due.push(timer.fn);
+      else this.timers[remaining++] = timer;
+    }
+    this.timers.length = remaining;
+    // Detach every due callback before running any of them. A callback may clear or schedule timers.
+    for (const run of this.due) run();
+    this.due.length = 0;
     this.speech(dt);
     // the waves come in; one that waits for the learner hangs back; one that has reached the beach is gone
+    let waves = 0;
     for (const w of this.waves) {
       const mine = w === this.live && (this.phase === "ride" || this.phase === "catch");
       if (!mine) w.d -= (w.hold != null && w.d - this.d <= w.hold ? CREEP : w.c) * dt;
       if (w.d < this.d - 0.5) w.past = true;
+      if (w.d > -3) this.waves[waves++] = w;
     }
-    this.waves = this.waves.filter((w) => w.d > -3);
+    this.waves.length = waves;
     if (this.fallT >= 0) this.fallT += dt;
     switch (this.phase) {
       case "out": this.stepOut(dt, inp); break;
@@ -757,6 +776,7 @@ export class SurfLogic {
       case "catch": this.stepCatch(dt, inp); break;
       case "ride": this.stepRide(dt, inp); break;
     }
-    this.prev = { ...inp, stroke: false, up: false };
+    this.prevX = inp.x;
+    this.prevY = inp.y;
   }
 }

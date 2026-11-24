@@ -1670,6 +1670,12 @@ export class AudioSystem {
     src.start(now); src.stop(now + 1.85);
   }
 
+  surfStroke(hand: -1 | 1) { this.splash(hand < 0 ? 0.12 : 0.2); }
+  surfWaveRush() { this.wash(); }
+  surfWaveBreak() { this.splash(0.72); }
+  surfStand() { this.jump(0.85); }
+  surfWipeout() { this.splash(1); }
+
   /** A handset alert with its own output so dismissing the card cuts every scheduled pulse. */
   phoneAlert(incoming: boolean) {
     if (this.volume <= 0 || this.soundsLevel <= 0) return;

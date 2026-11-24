@@ -1,217 +1,232 @@
-// The surf lesson on the screen (src/game/surf/): what the instructor says, shown with as much help as the learner
-// still needs for that line (its glosses and its meaning at first, then the Spanish alone, then only her voice), and
-// beside it a picture of what it asks for, where the edition has pictures (it goes when only her voice is left). Then
-// the learner's turn, as in every conversation: the lines they may answer with and the microphone that listens for
-// them (a tap answers too), or, when she asked for a move, that move and its key in large letters right under her
-// line ("Stokis – spausk ↑"; on a phone it is the button to tap). The balance in a ride; the score; the level's
-// choice at the start and the score card at the end.
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { useStore } from "../state/store";
-import { useSurf, type SurfUi } from "../game/surf/store";
-import type { Do } from "../game/surf/logic";
+import { useEffect, useRef, type PointerEvent, type ReactNode } from "react";
+import { SURF_UI as S } from "../content/surf-ui";
 import { speechSupported } from "../convo/speech";
 import { game } from "../game/gameRef";
-import { GlossLine } from "./kit/GlossLine";
+import { ARROW_BITS, DIRECTIONS, arrowFor, type SurfArrow } from "../game/surf/controls";
+import type { Level } from "../game/surf/logic";
+import { useSurf, type SurfLine, type SurfUi } from "../game/surf/store";
+import { useStore } from "../state/store";
+import { Interlinear } from "./Interlinear";
 import { Icon } from "./icons";
+import { FeedbackBadge } from "./kit/FeedbackBadge";
+import { ScoreCard, ScoreNumber } from "./kit/ScoreCard";
+import { natMatchesGloss } from "./natTip";
 import "./surf.css";
 
-/** The picture of what her line asks for, in a small frame: the new one slides in over the one before it (no blank
- *  between two commands); still, with reduced motion (surf.css). Her words say the same, so it is hidden from a
- *  screen reader. */
-function Picture({ src }: { src: string }) {
-  const last = useRef(src);
-  const [under, setUnder] = useState<string | null>(null);
+const GLYPHS: Record<SurfArrow, string> = { up: "↑", left: "←", down: "↓", right: "→" };
+
+function Answer({ s, lt }: { s: SurfLine["s"]; lt: boolean }) {
+  return <>
+    <span className="surf-choice-text surf-il" lang="en">
+      {s.units.map((u, i) => <span className="u" key={i}>
+        <span className="en">{u.en}</span>
+        {lt && <span className={"lt" + (u.lt.startsWith("—") ? " dash" : "")} lang="lt">{u.lt}</span>}
+      </span>)}
+    </span>
+    {lt && s.nat && !natMatchesGloss(s) && <small lang="lt">{s.nat}</small>}
+  </>;
+}
+
+function SurfPad({ todo, pressed }: { todo: SurfUi["todo"]; pressed: number }) {
+  const held = useRef(new Map<SurfArrow, number>());
+  const asked = todo?.show ? arrowFor(todo.do) : undefined;
+
   useEffect(() => {
-    if (last.current === src) return;
-    setUnder(last.current);
-    last.current = src;
-    const t = setTimeout(() => setUnder(null), 320);
-    return () => clearTimeout(t);
-  }, [src]);
-  return (
-    <div className="surf-pic" aria-hidden>
-      {under && under !== src && <img src={under} alt="" draggable={false} />}
-      <img key={src} className="new" src={src} alt="" draggable={false} />
-    </div>
-  );
-}
+    function clear() {
+      held.current.clear();
+      game?.modeAction("surf", "clear");
+    }
+    const hidden = () => { if (document.hidden) clear(); };
+    window.addEventListener("blur", clear);
+    document.addEventListener("visibilitychange", hidden);
+    return () => {
+      window.removeEventListener("blur", clear);
+      document.removeEventListener("visibilitychange", hidden);
+      clear();
+    };
+  }, []);
 
-const K = ({ children }: { children: ReactNode }) => <kbd className="surf-key">{children}</kbd>;
-/** What a move is called in the learner's language, and the key that makes it. */
-function move(what: Do): { name: string; keys: ReactNode } {
-  switch (what) {
-    case "paddle": return { name: "Irkluok", keys: <K>E</K> };
-    case "duck": return { name: "Nerk po banga", keys: <K>↓</K> };
-    case "turn": return { name: "Suk lentą", keys: <><K>←</K><K>→</K></> };
-    case "up": return { name: "Stokis", keys: <K>↑</K> };
-    case "left": return { name: "Svirk į kairę", keys: <K>←</K> };
-    case "right": return { name: "Svirk į dešinę", keys: <K>→</K> };
-    case "down": return { name: "Tūpk", keys: <K>↓</K> };
-    case "fwd": return { name: "Svorį pirmyn", keys: <K>↑</K> };
-    case "jump": return { name: "Šok", keys: <K>Tarpas</K> };
-    case "steady": return { name: "Laikykis ramiai", keys: null };
+  function down(dir: SurfArrow, e: PointerEvent<HTMLButtonElement>) {
+    if (e.button !== 0 || (held.current.has(dir) && (pressed & ARROW_BITS[dir]))) return;
+    e.preventDefault();
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+    held.current.set(dir, e.pointerId);
+    game?.modeAction("surf", "arrow:" + dir, true);
   }
+
+  function up(dir: SurfArrow, pointer: number) {
+    if (held.current.get(dir) !== pointer) return;
+    held.current.delete(dir);
+    game?.modeAction("surf", "arrow:" + dir, false);
+  }
+
+  return <div className={"surf-pad" + (todo?.show && todo.do === "steady" ? " still" : "")}
+    role="group" aria-label={S.control.pad.lt} onContextMenu={(e) => e.preventDefault()}>
+    {DIRECTIONS.map((dir) => <button type="button" key={dir} data-dir={dir} aria-label={S.control[dir].lt}
+      aria-pressed={!!(pressed & ARROW_BITS[dir])} className={asked?.includes(dir) ? "ask" : undefined}
+      onPointerDown={(e) => down(dir, e)}
+      onPointerUp={(e) => up(dir, e.pointerId)} onPointerCancel={(e) => up(dir, e.pointerId)}
+      onPointerLeave={(e) => up(dir, e.pointerId)}
+      onClick={(e) => {
+        if (e.detail !== 0) return;
+        game?.modeAction("surf", "arrow:" + dir, true);
+        game?.modeAction("surf", "arrow:" + dir, false);
+      }}><span aria-hidden>{GLYPHS[dir]}</span></button>)}
+  </div>;
 }
 
-/** The move she asks for, right under her line: its name and its key in large letters; on a phone, the button that
- *  makes it. The strokes still to paddle as dots; where the wave won't wait, the time left as a bar. */
-function Move({ todo, touch }: { todo: NonNullable<SurfUi["todo"]>; touch: boolean }) {
-  const m = move(todo.do);
-  const still = todo.do === "steady";
-  const body = (
-    <>
-      <span className="surf-move-text">
-        {still ? <><b>{m.name}</b> – nieko nespausk</>
-          : touch ? <><b>{m.name}</b> – bakstelėk</>
-            : <><b>{m.name}</b> – spausk <span className="surf-keys-now">{m.keys}</span></>}
-      </span>
-      {todo.of != null && todo.left != null && <span className="surf-strokes" aria-hidden>{Array.from({ length: todo.of }, (_, i) => <i key={i} className={i < todo.of! - todo.left! ? "done" : ""} />)}</span>}
-      {todo.time != null && <span className="surf-time" aria-hidden><i style={{ width: `${Math.round(todo.time * 100)}%` }} /></span>}
-    </>
-  );
-  // (a move made by not moving has nothing to tap)
-  if (still) return <div className="surf-move still" lang="lt" role="status">{body}</div>;
-  return <button className={"surf-move" + (touch ? " tap" : "")} lang="lt" onPointerDown={(e) => { e.preventDefault(); game?.modeAction("surf", "act", todo.do); }}>{body}</button>;
+function Strokes({ of, left }: { of: number; left: number }) {
+  return <span className="surf-strokes" aria-hidden>{Array.from({ length: of }, (_, i) => <i key={i} className={i < of - left ? "done" : ""} />)}</span>;
 }
 
-/** The learner's turn to speak: what the microphone is doing, and its button (answering aloud on or off). */
-function Mic({ mic, on }: { mic: SurfUi["mic"]; on: boolean }) {
+function Move({ todo, touch, flash, finished }: { todo: SurfUi["todo"]; touch: boolean; flash: SurfArrow | null; finished: number }) {
+  if (!todo) return finished > 0 ? <div className="surf-finished"><Strokes of={finished} left={0} /></div> : null;
+  if (!todo.show) return null;
+  const still = todo.do === "steady", name = S.move[todo.do].lt;
+  const control = still ? (touch ? S.control.steadyTouch : S.control.steadyKeys)
+    : touch ? S.control.touch : S.control.keys;
+  const [prefix, suffix] = control.lt.replace("{what}", name).split("{key}");
+  const idle = still || touch;
+  const body = <>
+    <span className="surf-move-text">{prefix}
+      {!still && <span className="surf-keys-now">{arrowFor(todo.do).map((dir) =>
+        <kbd key={dir} className={"surf-key" + (flash === dir ? " lit" : "")}>{GLYPHS[dir]}</kbd>)}</span>}{suffix}
+    </span>
+    {todo.of != null && todo.left != null && <Strokes of={todo.of} left={todo.left} />}
+    {todo.time != null && <span className="surf-time" aria-hidden><i style={{ width: `${todo.time * 100}%` }} /></span>}
+  </>;
+  if (idle) return <div className={"surf-move" + (still ? " still" : "")} lang="lt">{body}</div>;
+  return <button type="button" className="surf-move" lang="lt" onClick={() => game?.modeAction("surf", "act", todo.do)}>{body}</button>;
+}
+
+function Mic({ mic, on, touch }: { mic: SurfUi["mic"]; on: boolean; touch: boolean }) {
+  const M = S.mic, can = speechSupported();
   const live = mic.status === "listening" || mic.status === "starting";
-  // (between two tries it is still the microphone's turn)
   const busy = live || mic.status === "unclear";
-  const can = speechSupported();
-  let title = "Tavo eilė", sub: ReactNode = "Pasirink atsakymą";
-  if (can && !on) sub = "Pasirink atsakymą arba įjunk mikrofoną";
+  const retry = touch ? M.restartTouch.lt : M.restartKeys.lt;
+  let title: string = M.turn.lt, sub: ReactNode = M.choose.lt;
+  const heard = (pattern: string) => {
+    const [before, after] = pattern.split("{heard}");
+    return <span className="heard">{before}<span lang="en">{mic.heard}</span>{after}</span>;
+  };
+  if (can && !on) sub = M.off.lt;
   if (can && on) switch (mic.status) {
-    case "starting": sub = "Jungiamas mikrofonas…"; break;
-    case "listening": sub = mic.heard ? <span className="heard" lang="en">„{mic.heard}“</span> : "Pasakyk garsiai – klausau"; break;
-    case "unclear": title = "Pabandyk dar kartą"; sub = <span className="heard" lang="en">Išgirdau „{mic.heard}“</span>; break;
-    case "nothing": title = "Nieko negirdėjau"; sub = "Spausk mikrofoną arba pasirink atsakymą"; break;
-    case "denied": title = "Leisk naudoti mikrofoną"; sub = "Arba pasirink atsakymą"; break;
-    case "error": title = "Klausymas nepavyko"; sub = "Spausk mikrofoną arba pasirink atsakymą"; break;
-    default: sub = mic.heard ? <span className="heard" lang="en">Išgirdau „{mic.heard}“</span> : "Spausk mikrofoną arba pasirink atsakymą";
+    case "starting": sub = M.starting.lt; break;
+    case "listening": sub = mic.heard ? heard(M.liveHeard.lt) : M.listening.lt; break;
+    case "unclear": title = S.control.retry.lt; sub = heard(M.heard.lt); break;
+    case "nothing": title = M.nothing.lt; sub = retry; break;
+    case "denied": title = M.denied.lt; sub = M.deniedHelp.lt; break;
+    case "error": title = M.error.lt; sub = retry; break;
+    default: sub = mic.heard ? heard(M.heard.lt) : retry;
   }
-  return (
-    <div className="surf-turn" lang="lt">
-      {can && (
-        <button className={"mic surf-mic" + (live ? " listening" : "") + (on ? "" : " muted")} aria-pressed={on && live}
-          title={on && busy ? "Išjungti mikrofoną" : "Įjungti mikrofoną"} aria-label={on && busy ? "Išjungti mikrofoną" : "Įjungti mikrofoną"}
-          onClick={() => game?.modeAction("surf", "mic", !(on && busy))}>
-          <Icon name="mic" size={26} />
-        </button>
-      )}
-      <div className="mic-status"><b>{title}</b><span className="sub">{sub}</span></div>
-    </div>
-  );
+  const label = (on && busy ? M.disable : M.enable).lt;
+  return <div className="surf-turn" lang="lt">
+    {can && <button type="button" className={"mic surf-mic" + (live ? " listening" : "") + (on ? "" : " muted")}
+      aria-pressed={on && live} title={label} aria-label={label} onClick={() => game?.modeAction("surf", "mic", !(on && busy))}>
+      <Icon name="mic" size={26} />
+    </button>}
+    <div className="mic-status"><b>{title}</b><span className="sub">{sub}</span></div>
+  </div>;
 }
 
-/** The level's choice, as the lesson is started at the school's boards. */
+const total = (waves: number, seconds: number) => S.results.best.lt.replace("{waves}", String(waves)).replace("{seconds}", String(seconds));
+
+function Levels({ replay = false, onLevel }: { replay?: boolean; onLevel(level: Level): void }) {
+  return <>
+    <button type="button" className={"surf-level" + (replay ? " btn" : "")} onClick={() => onLevel("beginner")}>
+      <b>{replay ? S.results.repeat.lt : S.picker.beginner.lt}</b>
+      <span>{replay ? S.picker.beginner.lt : S.picker.beginnerHelp.lt}</span>
+    </button>
+    <button type="button" className={"surf-level adv" + (replay ? " btn" : "")} onClick={() => onLevel("advanced")}>
+      <b>{replay ? S.results.repeat.lt : S.picker.advanced.lt}</b>
+      <span>{replay ? S.picker.advanced.lt : S.picker.advancedHelp.lt}</span>
+    </button>
+  </>;
+}
+
 export function SurfPicker() {
-  const picking = useSurf((s) => s.picking);
   const best = useSurf((s) => s.best);
-  if (!picking) return null;
-  return (
-    <div className="surf-pick" role="dialog" aria-label="Banglenčių pamoka">
-      <div className="surf-pick-card">
-        <h2><span aria-hidden>🏄</span> Banglenčių pamoka</h2>
-        <p>Pokalbis ant bangų: instruktorė sako, tu atsakai balsu ir darai, ko ji prašo.</p>
-        <div className="surf-levels">
-          <button className="surf-level" onClick={() => game?.modeStart("surf", "beginner")}>
-            <b>Pradedantiems</b>
-            <span>Putos, minkšta lenta, daugiau laiko.</span>
-          </button>
-          <button className="surf-level adv" onClick={() => game?.modeStart("surf", "advanced")}>
-            <b>Pažengusiems</b>
-            <span>Žalios bangos, posūkiai, eilė prie bangos.</span>
-          </button>
-        </div>
-        {best.waves > 0 && <p className="surf-best">{`Iš viso: bangų – ${best.waves}, sekundžių ant bangos – ${best.seconds}`}</p>}
-        <button className="surf-later" onClick={() => game?.modeExit()}>Ne dabar</button>
-      </div>
+  return <div className="surf-pick" role="dialog" aria-label={S.lesson.lt} lang="lt">
+    <div className="surf-pick-card">
+      <h2>{S.lesson.lt}</h2>
+      <p>{S.picker.intro.lt}</p>
+      <div className="surf-levels"><Levels onLevel={(level) => game?.modeStart("surf", level)} /></div>
+      {best.waves > 0 && <p className="surf-best">{total(best.waves, best.seconds)}</p>}
+      <button type="button" className="surf-later" onClick={() => game?.modeExit()}>{S.picker.later.lt}</button>
     </div>
-  );
+  </div>;
 }
 
-export function SurfOverlay() {
+export function SurfOverlay({ toolbar }: { toolbar: ReactNode }) {
   const s = useSurf();
   const touch = useStore((st) => st.hud.showTouch);
+  const panel = useStore((st) => st.hud.panel);
   const slow = useStore((st) => !!st.settings.slowVoice);
-  const [shown, setShown] = useState(false);
-  // (her next line is heard first again)
-  useEffect(() => { setShown(false); }, [s.line?.cue, s.line?.s.en]);
-  if (!s.active) return null;
-  const sc = s.score;
-  const hidden = s.support === 2 && !shown;
-  const riding = s.phase === "ride";
-  // the picture is help too: it stays while the words lose their translation, and goes when only her voice is left
-  // (a tap brings the words and the picture back)
-  const pic = hidden ? undefined : s.line?.pic;
-  return (
-    <div className={"surf" + (touch ? " touch" : "")}>
-      <div className="surf-top">
-        <button className="surf-x" onClick={() => game?.modeExit()} aria-label="Baigti pamoką" title="Baigti pamoką"><Icon name="close" size={20} strokeWidth={2.4} /></button>
-        <button className={"surf-slow" + (slow ? " on" : "")} aria-pressed={slow} onClick={() => useStore.getState().setSettings({ slowVoice: !slow })}>Lėčiau</button>
-        <div className="surf-score" aria-label="Rezultatas">
-          <span title="Bangos"><i aria-hidden>🌊</i>{sc.waves}</span>
-          <span title="Sekundės ant bangos"><i aria-hidden>⏱</i>{sc.seconds}</span>
-          <span title="Komandos laiku"><i aria-hidden>✓</i>{sc.followed}/{sc.asked}</span>
-        </div>
+  const lt = useStore((st) => st.settings.lt !== false);
+  const sayLt = useStore((st) => st.settings.lt !== false && st.settings.sayLt !== false);
+  const score = s.score, R = S.results, C = S.control;
+  const tally = R.tally.lt.replace("{followed}", String(score.followed)).replace("{asked}", String(score.asked));
+
+  return <div className={"surf" + (touch ? " touch" : "")} lang="lt" onKeyDown={(e) => {
+    if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches("button:focus-visible")) e.stopPropagation();
+  }}>
+    <div className="surf-top">
+      <button type="button" className="surf-x" onClick={() => game?.modeExit()} aria-label={C.exit.lt} title={C.exit.lt}><Icon name="close" size={20} strokeWidth={2.4} /></button>
+      <button type="button" className={"surf-slow" + (slow ? " on" : "")} aria-pressed={slow}
+        onClick={() => useStore.getState().setSettings({ slowVoice: !slow })}>{C.slow.lt}</button>
+      <div className="surf-score" aria-label={R.score.lt}>
+        <span title={R.waves.lt}><i aria-hidden>🌊</i>{score.waves}</span>
+        <span title={R.seconds.lt}><i aria-hidden>⏱</i>{score.seconds}</span>
+        <span title={R.commands.lt}><i aria-hidden>✓</i>{tally}</span>
       </div>
-      {s.line && !s.over && (
-        <div className="surf-say">
-          <div className={"surf-card" + (pic ? " has-pic" : "") + (s.mark ? " " + s.mark : "") + (s.asked ? " asked" : "")} lang="en">
-            {pic && <Picture src={pic} />}
-            <div className="surf-words">
-              {hidden
-                ? <button className="surf-listen" onClick={() => setShown(true)} lang="lt"><Icon name="speaker" size={22} /> <span>Klausyk</span><small>Rodyti tekstą</small></button>
-                : <GlossLine sentence={s.line.s} gloss={s.support === 0} />}
-              {riding && <div className="surf-balance" role="meter" aria-label="Pusiausvyra" aria-valuemin={0} aria-valuemax={1} aria-valuenow={s.balance}><i style={{ width: `${Math.round(s.balance * 100)}%` }} /></div>}
-            </div>
-            <button className="surf-again" onClick={() => game?.modeAction("surf", "repeat")} title="Pakartoti" aria-label="Pakartoti" lang="lt"><Icon name="speaker" size={19} /></button>
-          </div>
-          {/* her line asks for a move: the move and its key, large, right under it */}
-          {s.todo?.show && <Move todo={s.todo} touch={touch} />}
-        </div>
-      )}
-      {/* the learner's turn to speak: the microphone listens for one of these lines; a tap answers too */}
-      {s.choice && !s.over && (
-        <div className="surf-choices">
-          <Mic mic={s.mic} on={s.micOn} />
-          {s.choice.options.map((o, i) => (
-            <button key={o.cue} className="surf-choice" onClick={() => game?.modeAction("surf", "choose", o.cue)}>
-              {!touch && <kbd>{i + 1}</kbd>}
-              <span className="surf-choice-text" lang="en">{o.s.en}</span>
-              <small lang="lt">{o.s.nat}</small>
-            </button>
-          ))}
-        </div>
-      )}
-      {/* what the learner has just said, until she answers */}
-      {s.said && !s.choice && !s.over && <div className="surf-said" lang="en"><Icon name="check" size={18} strokeWidth={2.6} /> <span>{s.said.s.en}</span></div>}
-      {s.over && (
-        <div className="surf-pick">
-          <div className="surf-pick-card">
-            <h2><span aria-hidden>🏄</span> Pamoka baigta</h2>
-            <div className="surf-result">
-              <div><b>{sc.waves}</b><span>Bangos</span></div>
-              <div><b>{sc.seconds}</b><span>Sekundės ant bangos</span></div>
-              <div><b>{sc.followed}/{sc.asked}</b><span>Komandos laiku</span></div>
-            </div>
-            <p className="surf-best">{`Iš viso: bangų – ${s.best.waves + sc.waves}, sekundžių ant bangos – ${s.best.seconds + sc.seconds}`}</p>
-            <p>Frazės, kurias girdėjai, jau tavo kortelėse.</p>
-            <div className="surf-levels">
-              <button className="surf-level" onClick={() => game?.modeAction("surf", "again", "beginner")}><b>Dar viena pamoka</b><span>Pradedantiems</span></button>
-              <button className="surf-level adv" onClick={() => game?.modeAction("surf", "again", "advanced")}><b>Dar viena pamoka</b><span>Pažengusiems</span></button>
-            </div>
-            <button className="surf-later" onClick={() => game?.modeExit()}>Į krantą</button>
-          </div>
-        </div>
-      )}
-      {!touch && !s.over && (
-        <div className="help-strip surf-keys">
-          Atsakyk balsu arba <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> · mikrofonas <kbd>M</kbd> · baigti <kbd>Esc</kbd>
-        </div>
-      )}
+      {!s.over && toolbar}
     </div>
-  );
+    {s.line && !s.over && <div className="surf-say">
+      <div className={"surf-card" + (s.line.pic ? " has-pic" : "") + (s.mark ? " " + s.mark : "") + (s.asked ? " asked" : "")}>
+        {s.line.pic && <div className="surf-pic" aria-hidden><img key={s.line.pic} className="new" src={s.line.pic} alt="" draggable={false} /></div>}
+        <div className="surf-words">
+          <div className="surf-cue-line">
+            <div className="surf-feedback" aria-live="polite">
+              {s.mark && <FeedbackBadge correct={s.mark === "ok"} label={(s.mark === "ok" ? C.good : C.retry).lt} />}
+            </div>
+            <Interlinear s={s.line.s} lt={lt} ipa={false} nat={lt && !natMatchesGloss(s.line.s)} />
+          </div>
+          {s.phase === "ride" && <div className="surf-balance" role="meter" aria-label={C.balance.lt}
+            aria-valuemin={0} aria-valuemax={1} aria-valuenow={s.balance}><i style={{ width: `${s.balance * 100}%` }} /></div>}
+        </div>
+        <button type="button" className="surf-again" onClick={() => game?.modeAction("surf", "repeat")}
+          title={C.replay.lt} aria-label={C.replay.lt}><Icon name="speaker" size={19} /></button>
+      </div>
+      <Move todo={s.todo} touch={touch} flash={s.keyFlash} finished={s.finishedStrokes} />
+    </div>}
+    {s.choice && !s.over && <div className="surf-choices">
+      <Mic mic={s.mic} on={s.micOn} touch={touch} />
+      {s.choice.options.map((o, i) => <button type="button" key={o.cue} className="surf-choice" onClick={() => game?.modeAction("surf", "choose", o.cue)}>
+        {!touch && <kbd>{i + 1}</kbd>}
+        <Answer s={o.s} lt={sayLt} />
+      </button>)}
+    </div>}
+    {s.said && !s.choice && !s.over && <div className="surf-said">
+      <Icon name="check" size={18} strokeWidth={2.6} />
+      <span className="surf-said-words"><span lang="en">{s.said.s.en}</span>
+        {sayLt && <small>{s.said.s.nat || s.said.s.units.map((u) => u.lt).join(" ")}</small>}
+      </span>
+    </div>}
+    {touch && !s.over && !panel && <SurfPad todo={s.todo} pressed={s.pressed} />}
+    {s.over && <ScoreCard title={R.done.lt} rows={[
+      { label: R.waves.lt, value: <ScoreNumber value={score.waves} /> },
+      { label: R.seconds.lt, value: <ScoreNumber value={score.seconds} /> },
+      { label: R.commands.lt, value: <><ScoreNumber value={score.followed} />/{score.asked}</> },
+    ]} actions={<>
+      <Levels replay onLevel={(level) => game?.surfAgain?.(level)} />
+      <button type="button" className="btn soft surf-later" onClick={() => game?.modeExit()}>{R.shore.lt}</button>
+    </>}>
+      <p className="surf-best">{total(s.best.waves + score.waves, s.best.seconds + score.seconds)}</p>
+      <p>{R.saved.lt}</p>
+    </ScoreCard>}
+    {!touch && !s.over && <div className="help-strip surf-keys">
+      <div>{C.moveHelp.lt.replace("{arrows}", "↑ ← ↓ →")}</div>
+      {C.keysHelp.lt.replace("{n}", "1 2 3").replace("{m}", "M").replace("{esc}", "Esc")}
+    </div>}
+  </div>;
 }
