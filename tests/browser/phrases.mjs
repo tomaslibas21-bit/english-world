@@ -14,6 +14,7 @@ const frameMs = 50;
 const { items } = JSON.parse(readFileSync(new URL("../../src/content/phrases/phrase-game.mh.json", import.meta.url), "utf8"));
 const phrasesByClip = new Map(items.map((item) => [item.pClip, item]));
 const englishPhrases = new Set(items.map((item) => item.f));
+const longestPhrases = items.map(({ f }) => f).toSorted((a, b) => b.length - a.length).slice(0, 3);
 
 const finished = { visits: 1, completions: 1, used: [], twists: [], memory: {} };
 const progress = {
@@ -241,15 +242,39 @@ async function checkPhraseBoards(run, game, state) {
   }
 }
 
-async function checkKaraokeTiming(run, item, previousGate) {
+async function checkLongestBoards(run, game, state) {
+  const setOptions = async (options) => {
+    await run.page.evaluate(async ({ game, options }) => {
+      const store = game === "road" ? (await import("/src/game/road/store.ts")).useRoad
+        : (await import("/src/game/sea/store.ts")).useSea;
+      store.setState({ prompt: { ...store.getState().prompt, options } });
+    }, { game, options });
+    await run.page.waitForFunction((first) => document.querySelector(".road-gate")?.getAttribute("aria-label") === first,
+      options[0], { polling: 25 });
+  };
+  try {
+    await setOptions(longestPhrases);
+    await checkPhraseBoards(run, game, { ...state, gates: longestPhrases });
+    const lineCounts = await run.overlay.locator(".road-gate").evaluateAll((boards) =>
+      boards.map((board) => board.querySelectorAll(":scope > span").length));
+    assert.ok(lineCounts.includes(3) && lineCounts.every((count) => count <= 3));
+  } finally {
+    await setOptions(state.gates);
+  }
+}
+
+async function checkKaraokeTiming(run, item, previousGate, passed = 1, correction = false) {
   const sample = () => run.karaoke.evaluate((line, previousGate) => {
-    const box = line.getBoundingClientRect();
-    const group = line.parentElement.querySelector(`.road-gates:not([data-gate-id="${previousGate}"])`);
+    const panel = line.closest(".road-karaoke-panel");
+    const box = panel.getBoundingClientRect();
+    const group = panel.parentElement.querySelector(`.road-gates:not([data-gate-id="${previousGate}"])`);
     const nextLabels = [...(group?.querySelectorAll(".road-gate > span") ?? [])].filter((span) => {
       const style = getComputedStyle(span.parentElement);
       return style.visibility === "visible" && Number(style.opacity) > 0;
     });
+    const badge = panel.querySelector(".kit-feedback[data-feedback=retry]");
     return { hidden: line.hidden, fading: line.classList.contains("fading"),
+      badge: badge?.getBoundingClientRect().width > 0,
       lit: [...line.querySelectorAll(".lit")].map((span) => span.textContent),
       current: [...line.children].findIndex((span) => span.classList.contains("current")),
       overlap: nextLabels.find((span) => {
@@ -260,13 +285,14 @@ async function checkKaraokeTiming(run, item, previousGate) {
 
   const end = item.t.at(-1)[1];
   for (let frame = 0; frame <= Math.ceil((end + 0.8) * 1000 / frameMs); frame++) {
-    const { hidden, fading, lit, current, overlap } = await sample();
+    const { hidden, fading, badge, lit, current, overlap } = await sample();
     // The first RAF after the 204 starts the fallback clock at zero.
     const time = Math.max(0, frame - 1) * frameMs / 1000;
     const expected = item.t.filter(([start]) => start <= time).length;
     if (hidden) {
       assert.ok(time + 1e-6 >= end + 0.6, `overlay hid before the clip and fade finished (${time}s)`);
-      await run.approach(1);
+      assert.equal(badge, false);
+      await run.approach(passed);
       const next = run.overlay.locator(`.road-gates:not([data-gate-id="${previousGate}"]) .road-gate:visible`);
       assert.equal(await next.count(), 3, "the next boards have visible labels");
       assert.equal(await run.karaoke.isVisible(), false);
@@ -276,6 +302,7 @@ async function checkKaraokeTiming(run, item, previousGate) {
     const active = item.t.findLastIndex(([start, stop]) => start <= time && time < stop);
     assert.equal(current, active, `current word index at ${time}s`);
     assert.equal(fading, time >= end, `fade at ${time}s`);
+    assert.equal(badge, correction, `correction badge at ${time}s`);
     assert.equal(overlap, undefined, `karaoke overlaps a next-board label at ${time}s`);
     await run.step();
   }
@@ -322,7 +349,9 @@ async function testGame(browser, game, size, budget) {
       await run.waitForClip(first.pClip, from);
     }],
     ["three distinct English phrases fit their projected boards", async () => {
-      await checkPhraseBoards(run, game, await run.approach(0));
+      const state = await run.approach(0);
+      await checkPhraseBoards(run, game, state);
+      await checkLongestBoards(run, game, state);
       await run.step(4);
       await checkPhraseBoards(run, game, await run.read());
     }],
@@ -334,12 +363,13 @@ async function testGame(browser, game, size, budget) {
       await run.reveal(first, from);
       await checkKaraokeTiming(run, first, previousGate);
     }],
-    ["wrong answer reveals the correct English phrase and requests its fClip", async () => {
+    ["wrong answer keeps the retry badge beside the phrase throughout playback", async () => {
       const state = await run.gate(1);
       missed = phraseFor(state);
       const from = run.mp3Urls.length;
       await run.answer(false);
       await run.reveal(missed, from);
+      await checkKaraokeTiming(run, missed, state.registration.gateId, 2, true);
     }],
     ["missed phrase returns in two to four gates and is answered correctly", async () => {
       const missGate = 2;

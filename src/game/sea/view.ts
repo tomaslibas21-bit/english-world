@@ -245,6 +245,18 @@ export class SeaView {
     const ride = wave * 0.85;
     this.chase.position.set(this.followX - dx * back, height + ride, boat.worldZ - dz * back);
     this.aim.set(this.followX + dx * 14, (portrait ? 1.1 : 0.35) - turn * 0.8 + ride, boat.worldZ + dz * 14);
+    if (this.ride.townBoat?.id.startsWith("anchored-") && !boat.turning && ahead > 4 && ahead < 68) {
+      // The anchored boats share a tall mast at local z = 0.4. Line it up with the gap beside the middle board.
+      const mast = this.fitPoint.set(0, 4, 0.4).applyMatrix4(mesh.matrixWorld);
+      const gateZ = boat.worldZ - ahead;
+      const gapX = boat.startX + LANE_WIDTH / 2;
+      const eyeX = mast.x + (mast.x - gapX) * (this.chase.position.z - mast.z) / (mast.z - gateZ);
+      const middle = 1 - smoothstep(2, 4, Math.abs(boat.x));
+      const approach = gateMix * smoothstep(4, 8, ahead) * (1 - smoothstep(52, 68, ahead));
+      const shift = (eyeX - this.chase.position.x) * approach * middle;
+      this.chase.position.x += shift;
+      this.aim.x += shift * (this.aim.z - gateZ) / (this.chase.position.z - gateZ);
+    }
     this.chase.lookAt(this.aim);
     const rise = this.departure && !this.reduced ? smoothstep(0, 0.65, age) : 0;
     this.cameraMix = this.departure && !this.reduced ? smoothstep(0.65, DEPARTURE_SECONDS, age) : mix;

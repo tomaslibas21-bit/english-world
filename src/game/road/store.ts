@@ -8,6 +8,7 @@ export type RoadResult = {
   points: number; right: number; total: number; streak: number; distance: number;
   record: boolean; cards: number; missed: GateWord[]; recovered: GateWord[]; phrases?: GateWord[]; said?: number;
 };
+export type GateFeedback = { correct: boolean; word: GateWord; correcting?: boolean };
 
 type RoadUi = {
   phase: "briefing" | "loading" | "lift" | "drive" | "result" | "unavailable";
@@ -15,7 +16,7 @@ type RoadUi = {
   line: KitLine | null; choices: KitLine[]; mic: KitMic; micOn: boolean;
   prompt?: Prompt; gateId?: number; sayIt?: SayItCue; ghost: boolean;
   remaining: number; streak: number; wind: boolean;
-  feedback?: { correct: boolean; word: GateWord };
+  feedback?: GateFeedback;
   result?: RoadResult;
 };
 

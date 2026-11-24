@@ -17,7 +17,7 @@ export function karaokeWords(timings: Phrase["t"], time: number) {
 
 type Line = {
   phrase: Phrase; clip: FilePlayback; time: number; lastMove: number;
-  fallbackAt?: number; fadeAt?: number;
+  fallbackAt?: number; fadeAt?: number; onClear?: () => void;
 };
 
 class Karaoke {
@@ -46,7 +46,7 @@ class Karaoke {
     const phrase = this.line?.phrase;
     this.node.hidden = !phrase;
     this.node.classList.toggle("fading", this.line?.fadeAt !== undefined);
-    this.node.style.removeProperty("--board-top");
+    this.node.parentElement?.style.removeProperty("--board-top");
     this.boardTop = Infinity;
     this.spans = phrase?.words.map((word, i) => {
       const span = document.createElement("span");
@@ -58,9 +58,9 @@ class Karaoke {
     this.node.replaceChildren(...this.spans.flatMap((span, i) => i ? [" ", span] : [span]));
   }
 
-  show(phrase: Phrase) {
+  show(phrase: Phrase, onClear?: () => void) {
     this.stop();
-    const line: Line = this.line = { phrase, clip: audio.playFile(phrase.fClip), time: 0, lastMove: performance.now() };
+    const line: Line = this.line = { phrase, clip: audio.playFile(phrase.fClip), time: 0, lastMove: performance.now(), onClear };
     this.mountLine();
     const tick = (now: number) => {
       if (this.line !== line) return;
@@ -82,8 +82,9 @@ class Karaoke {
   }
 
   stop() {
-    if (this.line) {
-      this.line.clip.stop();
+    const line = this.line;
+    if (line) {
+      line.clip.stop();
       cancelAnimationFrame(this.frame);
     }
     this.line = undefined;
@@ -92,6 +93,7 @@ class Karaoke {
     this.lit = 0;
     this.current = -1;
     if (this.node) this.node.hidden = true;
+    line?.onClear?.();
   }
 
   private update(line: Line, now: number) {
@@ -122,8 +124,8 @@ class Karaoke {
       const top = Math.floor(boardFaces[this.mode].top);
       if (this.boardTop !== top) {
         this.boardTop = top;
-        if (Number.isFinite(top)) this.node.style.setProperty("--board-top", `${top}px`);
-        else this.node.style.removeProperty("--board-top");
+        if (Number.isFinite(top)) this.node.parentElement?.style.setProperty("--board-top", `${top}px`);
+        else this.node.parentElement?.style.removeProperty("--board-top");
       }
     }
     if (ended && line.fadeAt === undefined) {

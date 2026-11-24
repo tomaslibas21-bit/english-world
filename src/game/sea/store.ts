@@ -1,8 +1,8 @@
 import { create } from "zustand";
 import type { SayItCue } from "../kit/sayIt";
-import type { RoadResult } from "../road/store";
+import type { GateFeedback, RoadResult } from "../road/store";
 import type { PlayWay } from "../road/save";
-import type { GateWord, Prompt } from "../road/words";
+import type { Prompt } from "../road/words";
 import { SEA_SECONDS } from "./course";
 
 export type CrossingTitle = { opacity: number; node?: HTMLElement };
@@ -25,7 +25,7 @@ type SeaUi = {
   answeredLane?: number;
   remaining: number;
   streak: number;
-  feedback?: { correct: boolean; word: GateWord };
+  feedback?: GateFeedback;
   result?: RoadResult;
 };
 

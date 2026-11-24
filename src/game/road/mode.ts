@@ -314,8 +314,9 @@ export class RoadMode {
     if (run.reveal && (run.reveal.in -= (run.way === "phrases" ? frame.dt : dt)) <= 0) {
       if ("phrase" in run.reveal) {
         run.feedback = 0;
-        useRoad.setState({ feedback: undefined });
-        karaoke.road.show(run.reveal.phrase);
+        const feedback = useRoad.getState().feedback;
+        karaoke.road.show(run.reveal.phrase, () => useRoad.setState({ feedback: undefined }));
+        if (feedback) useRoad.setState({ feedback: { ...feedback, correcting: true } });
       } else this.play(run.reveal.clip);
       run.reveal = undefined;
     }

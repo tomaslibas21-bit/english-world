@@ -54,7 +54,7 @@ function DriveOverlay({ touch }: { touch: boolean }) {
       extraMeter={ghost && <span className="road-ghost">{words.ghost}</span>}
       extraButton={!touch && <button className="road-icon" aria-label={words.horn} title={words.horn} onClick={() => act("horn")}><Icon name="horn" size={21} /></button>} />
     {prompt && gateId !== undefined && <GateLabels key={gateId} mode="road" prompt={prompt} gateId={gateId} />}
-    {way === "phrases" && <GateKaraoke mode="road" />}
+    {way === "phrases" && <GateKaraoke mode="road" correction={feedback?.correcting ? words.wrong : undefined} />}
     {!touch && <div className="road-controls">{words.controls}</div>}
   </>;
 }
