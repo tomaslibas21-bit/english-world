@@ -7,3 +7,14 @@
   background: var(--panel-solid);
   border-color: var(--accent);
 }
+
+@media (width > 900px) and (height > 520px) {
+  /* Leave room for both model answers above the open typing form. */
+  .convo:has([data-keeper-answer]):has(.yt-bottom > .typebox) > .transcript {
+    min-height: 20%;
+  }
+
+  .convo:has([data-keeper-answer]):has(.yt-bottom > .typebox) > .yourturn {
+    max-height: 73%;
+  }
+}
