@@ -68,6 +68,7 @@ export class CaveQuest {
   private warned = new Map<string, number>();
   private cardT = 0;
   private attempt: ReturnType<typeof createSpeechAttempt> | null = null;
+  private retryVoice: ReturnType<typeof setTimeout> | undefined;
   private alive = true;
   /** Where the listener is, for the stone speaking now. */
   private ear = { x: 0, z: 0, yaw: 0 };
@@ -182,6 +183,7 @@ export class CaveQuest {
 
   dispose() {
     this.alive = false;
+    clearTimeout(this.retryVoice);
     this.attempt?.dispose();
     this.attempt = null;
     audio.stopCall();
@@ -296,6 +298,7 @@ export class CaveQuest {
   say() {
     const g = useStore.getState().hud.glyph;
     if (!g) return;
+    clearTimeout(this.retryVoice);
     this.stopMic();
     void audio.play(this.voice, 1, g.text, { male: this.voice.endsWith("_m") });
   }
@@ -307,16 +310,21 @@ export class CaveQuest {
     if (i === g.answer) { this.solve(); return; }
     audio.sfx("error");
     this.patch({ wrong: [...g.wrong, i], shown: true });
-    setTimeout(() => { if (this.alive && useStore.getState().hud.glyph?.id === g.id && !useStore.getState().hud.glyph?.solved) this.say(); }, 500);
+    clearTimeout(this.retryVoice);
+    if (!this.attempt?.running) this.retryVoice = setTimeout(() => {
+      if (this.alive && useStore.getState().hud.glyph?.id === g.id && !useStore.getState().hud.glyph?.solved) this.say();
+    }, 500);
   }
   /** Saying it back: the microphone listens for the stone's phrase. */
   listen() {
     const g = useStore.getState().hud.glyph;
     if (!g || g.solved || !speechSupported()) return;
     if (this.attempt?.running) { this.attempt.finish(); return; }
+    clearTimeout(this.retryVoice);
     audio.stop();
     this.attempt?.dispose();
     const attempt = createSpeechAttempt({
+      source: "cave glyph",
       evaluate: (t) => (P.saidBack(t, g.text) ? "complete" : "open"),
       phrases: [g.text],
       preferLocal: useStore.getState().settings.onDevice,
@@ -334,9 +342,10 @@ export class CaveQuest {
     this.patch({ mic: "listening", heard: "" });
     attempt.start();
   }
-  private stopMic() { if (this.attempt?.running) this.attempt.stop(); }
+  private stopMic() { if (this.attempt?.running) this.attempt.stop("replay glyph"); }
   /** The card is put away (Esc, the cross, a tap beside it). */
   close() {
+    clearTimeout(this.retryVoice);
     this.attempt?.dispose(); this.attempt = null;
     audio.stop();
     useStore.getState().setHud({ glyph: null });

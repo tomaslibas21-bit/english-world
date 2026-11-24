@@ -104,13 +104,15 @@ try {
 
     // ---- the end card of the school's conversation: "Surf lesson" first
     const sitId = await page.evaluate(() => window.__ew.game.surf.situation);
-    const endCard = async () => {
-      await page.evaluate((id) => window.__ew.game.startScenario(id), sitId);
+    const endCard = async (id = sitId) => {
+      await page.evaluate((id) => window.__ew.game.startScenario(id), id);
       for (let i = 0; i < 400 && !(await page.evaluate(() => window.__ew.game.activeSession?.active)); i++) { await step(3); await real(20); }
-      // (the scene's introduction, if it shows, is read and closed)
-      const intro = page.locator(".intro-card button.btn, .scene-intro button.btn").first();
-      if (await intro.count()) await intro.click().catch(() => {});
-      await page.evaluate(() => window.__ew.store.getState().setConv({ phase: "ended", completed: true }));
+      await page.locator(".scene-start").click();
+      await page.waitForFunction(() => window.__ew.store.getState().conv.transcript.length > 0, null, { polling: 50 });
+      await page.evaluate(() => {
+        window.__ew.audio.stop();
+        window.__ew.store.getState().setConv({ phase: "ended", completed: true });
+      });
       await step(4);
     };
     await endCard();
@@ -132,15 +134,12 @@ try {
     check(`${label}: after her "¿Probamos una ola?" and a yes, the button starts the lesson at its level`, lvl === "advanced", lvl);
     await page.evaluate(() => window.__ew.game.surfStop());
     await real(700); await step(30);
-    // "Tęsti" after a yes starts it too; "Kita situacija" after a yes does not
+    // The end card's other actions leave the conversation without launching the lesson.
     await endCard();
     await page.evaluate(() => window.__ew.game.onSessionEvent("surf", { level: "beginner" }));
     await page.locator(".ended-main .btn").first().click();
-    for (let i = 0; i < 80 && !(await page.evaluate(() => !!window.__ew.game.surf.logic)); i++) { await step(4); await real(25); }
-    lvl = await page.evaluate(() => window.__ew.game.surf.logic?.level ?? null);
-    check(`${label}: after a yes, "Continue" starts the lesson too`, lvl === "beginner", lvl);
-    await page.evaluate(() => window.__ew.game.surfStop());
     await real(700); await step(30);
+    check(`${label}: after a yes, "Continue" returns to town`, !(await page.evaluate(() => window.__ew.game.surf.active)));
     await endCard();
     await page.evaluate(() => window.__ew.game.onSessionEvent("surf", { level: "beginner" }));
     await page.locator(".ended-main .btn").nth(1).click();
@@ -150,10 +149,7 @@ try {
     await page.evaluate(() => { const g = window.__ew.game; g.activeSession?.close(); });
     await step(20);
     const other = await page.evaluate(() => window.__ew.game.orderedSituations().find((s) => s.id !== window.__ew.game.surf.situation && s.mode !== "phone" && s.mode !== "video" && s.location !== "phone")?.id);
-    await page.evaluate((id) => window.__ew.game.startScenario(id), other);
-    for (let i = 0; i < 400 && !(await page.evaluate(() => window.__ew.game.activeSession?.active)); i++) { await step(3); await real(20); }
-    await page.evaluate(() => window.__ew.store.getState().setConv({ phase: "ended", completed: true }));
-    await step(4);
+    await endCard(other);
     check(`${label}: another conversation's end card has no "Surf lesson"`, await page.locator(".surf-cta").count() === 0, other);
     check(`${label}: no errors on the page`, errors.length === 0, errors.slice(0, 3));
     await ctx.close();

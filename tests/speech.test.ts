@@ -1,6 +1,6 @@
 // The speech attempt (src/convo/speech.ts) with a simulated recogniser and clock, after the course flashcards' tests
 // (fluent-steps tests/speech-attempt.test.mjs). These don't test a real microphone.
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createSpeechAttempt, resetSpeechForTests, SPEECH_TIMING, type SpeechRecognizer, type SpeechSnapshot, type Verdict } from "../src/convo/speech";
 import { bestReading } from "../src/convo/readings";
 import { SITUATION_BY_ID } from "../src/content/situations";
@@ -31,9 +31,10 @@ class FakeRec implements SpeechRecognizer {
   onspeechstart: (() => void) | null = null;
   onspeechend: (() => void) | null = null;
   aborted = false;
+  delayAbortEnd = false;
   constructor(private list: FakeRec[]) {}
   start() { this.list.push(this); }
-  abort() { this.aborted = true; }
+  abort() { this.aborted = true; if (!this.delayAbortEnd) this.end(); }
   emitStart() { this.onstart?.(); }
   speech() { this.onspeechstart?.(); }
   silence() { this.onspeechend?.(); }
@@ -43,6 +44,8 @@ class FakeRec implements SpeechRecognizer {
   error(error: string) { this.onerror?.({ error }); }
   end() { this.onend?.(); }
 }
+
+const cleanup: (() => void)[] = [];
 
 function harness(opts: { preferLocal?: boolean; phrases?: string[]; evaluate?: (text: string) => Verdict; serviceStarted?: boolean } = {}) {
   let now = 0, id = 0;
@@ -74,6 +77,7 @@ function harness(opts: { preferLocal?: boolean; phrases?: string[]; evaluate?: (
     clock,
     ...opts,
   });
+  cleanup.push(() => { attempt.dispose(); for (const recogniser of recs) recogniser.end(); });
   attempt.start();
   const rec = () => recs[recs.length - 1];
   if (opts.serviceStarted !== false) rec().emitStart();
@@ -82,8 +86,20 @@ function harness(opts: { preferLocal?: boolean; phrases?: string[]; evaluate?: (
 }
 
 beforeEach(() => resetSpeechForTests());
+afterEach(() => { for (const dispose of cleanup.splice(0)) dispose(); });
 
 describe("speech attempt", () => {
+  it("waits for an aborted recogniser's onend before starting a replacement", async () => {
+    const h = harness();
+    const first = h.rec();
+    first.delayAbortEnd = true;
+    h.attempt.stop();
+    h.attempt.start();
+    expect(h.recs).toHaveLength(1);
+    expect(h.status()).toBe("starting");
+    first.end();
+    await vi.waitFor(() => expect(h.recs).toHaveLength(2));
+  });
 
   it.each([false, true])("accepts a complete current size answer promptly (final=%s)", final => {
     const conv = new Conversation(SITUATION_BY_ID["s72-cafe"], { global: GLOBAL, npcs: NPCS, player: { name: "Tomas", surname: "", gender: "m" }, visits: 0, seed: 3 });
@@ -509,6 +525,7 @@ describe("speech attempt", () => {
     h.rec().speech();
     h.rec().results([{ final: true, alts: ["I'd like a"] }]);
     h.rec().end();
+    expect(h.rec().aborted).toBe(false);
     expect(h.status()).toBe("reconnecting");
     h.advance(300);
     expect(h.recs).toHaveLength(2);
@@ -568,6 +585,7 @@ describe("speech attempt", () => {
       const server = harness({ phrases: ["latte"] });
       expect(server.rec().processLocally).toBeUndefined();
       expect(server.rec().phrases).toBeUndefined();
+      server.attempt.dispose();
 
       resetSpeechForTests("available");
       const device = harness({ preferLocal: true, phrases: ["latte"] });
@@ -578,6 +596,7 @@ describe("speech attempt", () => {
       device.advance(100);
       expect(device.recs).toHaveLength(2);
       expect(device.rec().phrases).toBeUndefined();
+      device.attempt.dispose();
       const again = harness({ preferLocal: true, phrases: ["latte"] });
       expect(again.rec().phrases).toBeUndefined();
     } finally {

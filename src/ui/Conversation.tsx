@@ -141,11 +141,14 @@ export function Conversation() {
       </div>
 
       <SceneIntro sit={sit} />
-      <AudioRecovery />
-      {(sit.mode === "video" || sit.mode === "phone") && <CallStrip sit={sit} />}
-      <Mission />
+      {!conv.introOpen && <>
+        <AudioRecovery />
+        {(sit.mode === "video" || sit.mode === "phone") && <CallStrip sit={sit} />}
+        <Mission />
+      </>}
       </div>
 
+      {!conv.introOpen && <>
       <div className="transcript" ref={scrollRef} aria-live="polite">
         {conv.transcript.length === 0 && <div style={{ color: "var(--ink-faint)", textAlign: "center", marginTop: 20 }}>…</div>}
         {groupLines(conv.transcript).map((grp) => grp.length > 1
@@ -244,6 +247,7 @@ export function Conversation() {
           <button className="copy-link" onClick={() => copyConversation(sit)}><Icon name="clipboard" size={17} /> {L("Kopijuoti pokalbį mokytojui")}</button>
         </div>
       )}
+      </>}
     </div>
     </>
   );

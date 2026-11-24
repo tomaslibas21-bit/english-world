@@ -269,8 +269,6 @@ export class Game implements GameApi {
   /** The surf lesson (surf/play.ts), where the town has a surf school (world/surf.ts); the one its conversation asked for. */
   surf: SurfPlay | null = null;
   private pendingSurf: "beginner" | "advanced" | null = null;
-  /** The end card's "Surf lesson" was tapped without a yes in the conversation: the level's choice, once it closes. */
-  private pendingSurfPick = false;
   private brake = false;
   /** Where a tap from the wheel or the helm sent the car or the boat (it drives there by itself until it is there, is
    *  stuck, or the player takes the wheel): how long it has got nowhere (s), whether it is stopping, how long it is
@@ -1229,8 +1227,7 @@ export class Game implements GameApi {
     whenLoaded(sit.id, (def) => this.startSession(def, actor), () => !this.session?.active);
   }
 
-  /** Situation picker: go straight into a conversation (no walking). The player appears in front of
-   *  the NPC in the right place; phone and video calls start at once. */
+  /** Situation picker: take the player to the scene card, in front of the NPC or in a call. */
   startScenario(sitId: string) {
     const sit = SITUATION_BY_ID[sitId];
     if (!sit) return;
@@ -1241,7 +1238,12 @@ export class Game implements GameApi {
     this.lastScenario = sitId;
     prefetchSituations([sitId]);
     const go = () => {
-      if (isCall(sit)) { this.call(sitId); return; }
+      if (isCall(sit)) {
+        // A link can open a call on the first visit before the flyover has landed.
+        if (this.flight) this.enterZone("airport", ARRIVAL, true);
+        this.call(sitId);
+        return;
+      }
       const npc = sit.npc === "sam" || sit.npc === "emma" ? this.chosenDatePartner() : sit.npc;
       const loc = LOCATIONS[sit.location];
       let spawn: { x: number; z: number; rot: number } | null = null;
@@ -1680,7 +1682,7 @@ export class Game implements GameApi {
     if (name === "alux-pass" && data?.gate) this.cave?.pass(data.gate);
     // (the grotto's great tree has said what it had to say: the stones speak again)
     if (name === "tree-heard") this.cave?.treeHeard();
-    // "¿Probamos una ola?": the surf lesson starts as the conversation ends
+    // "¿Probamos una ola?": remember the level for the end card's surf lesson button.
     if (name === "surf" && this.surf) this.pendingSurf = data?.level === "advanced" ? "advanced" : "beginner";
     const st = useStore.getState();
     if (name === "give" && data?.item) {
@@ -1708,13 +1710,7 @@ export class Game implements GameApi {
     // the person stays turned to the player and turns back home in their own time (updateNpcs)
     this.talkNpc = null;
     if (this.pendingRide) { const r = this.pendingRide; this.pendingRide = null; this.ride(r.to, r.by); }
-    // (the conversation's yes starts the lesson at its level as it closes, however it is closed but by picking another
-    // conversation (cancelRide); the end card's "Surf lesson" too, or the level's choice without a yes)
-    if (this.pendingSurf || this.pendingSurfPick) {
-      const l = this.pendingSurf, asked = this.pendingSurfPick;
-      this.pendingSurf = null; this.pendingSurfPick = false;
-      if (l) this.surf?.start(l); else if (asked) this.surf?.open();
-    }
+    this.pendingSurf = null;
     // (a conversation off the route, the grotto's aluxes, is nobody's task: the tasks stay as they were)
     if (completed && !sit.bonus) this.advanceObjective(sit);
     // (someone who has found the grotto hears when the town's conversations have woken another of its chambers)
@@ -1734,8 +1730,10 @@ export class Game implements GameApi {
    *  choice). */
   surfFromConversation() {
     if (!this.surf) return;
-    this.pendingSurfPick = true;
-    if (this.session?.active) this.session.close(); else { const l = this.pendingSurf; this.pendingSurf = null; this.pendingSurfPick = false; if (l) this.surf.start(l); else this.surf.open(); }
+    const level = this.pendingSurf;
+    this.pendingSurf = null;
+    this.session?.close();
+    if (level) this.surf.start(level); else this.surf.open();
   }
   get activeSession() { return this.session; }
 
@@ -1768,7 +1766,7 @@ export class Game implements GameApi {
   private cancelRide() {
     this.pendingRide = null;
     // (and a surf lesson the conversation asked for: another conversation was picked instead)
-    this.pendingSurf = null; this.pendingSurfPick = false;
+    this.pendingSurf = null;
     if (this.rideTimer === undefined) return;
     clearTimeout(this.rideTimer);
     this.rideTimer = undefined;

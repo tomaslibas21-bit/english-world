@@ -201,6 +201,7 @@ export class SurfPlay {
     this.unclear = 0;
     this.push.t = 0;
     this.todoCue = "";
+    this.paused = false;
     this.preload();
     countPlay("games", "surf");
     this.logic = new SurfLogic({ say: (cue) => this.say(cue), answer: (cue, spoken) => this.answer(cue, spoken), fx: (name) => this.fx(name), rnd: Math.random, busy: () => this.heardNow() }, { level, rides: s.waves, slow: !!st.settings.slowVoice });
@@ -279,10 +280,13 @@ export class SurfPlay {
   repeat() {
     const L = this.logic, line = useSurf.getState().line;
     if (!L || !line || L.talking) return;
-    const again = !!this.speech;
-    this.stopListening();
+    const turn = L.choice;
+    const resumeMic = this.speech?.running || this.listenT !== null;
+    this.stopListening("replay instructor");
     const npc = this.npc, slow = !!useStore.getState().settings.slowVoice;
-    void audio.play(npcVoice(npc), npc?.speed ?? 1, line.s.say, { slow, male: npc?.gender === "m" }).then(() => { if (again && this.logic?.choice) this.listen(); });
+    void audio.play(npcVoice(npc), npc?.speed ?? 1, line.s.say, { slow, male: npc?.gender === "m" }).then((played) => {
+      if (played && resumeMic && turn && this.logic === L && L.choice === turn) this.listen();
+    });
   }
 
   // --- the learner's turn to speak ----------------------------------------------------------------------------------
@@ -290,7 +294,7 @@ export class SurfPlay {
   /** The microphone on or off for this lesson (its button): off, the answers are tapped. */
   setMic(on: boolean) {
     useSurf.getState().set({ micOn: on });
-    if (!on) this.stopListening(); else if (this.logic?.choice) { this.unclear = 0; this.listen(); }
+    if (!on) this.stopListening("mic toggled off"); else if (this.logic?.choice) { this.unclear = 0; this.listen(); }
   }
 
   /** A voice is being heard right now (hers, or the learner's line said for them). */
@@ -300,18 +304,23 @@ export class SurfPlay {
   listen(waited = 0) {
     const L = this.logic, ui = useSurf.getState();
     if (this.listenT) { clearTimeout(this.listenT); this.listenT = null; }
-    if (!L?.choice || !ui.choice || !ui.micOn || !speechSupported() || this.paused || typeof document === "undefined" || document.visibilityState !== "visible") return;
-    // (never over her voice: it waits for her to finish, within reason)
-    if (this.heardNow() && waited < 6000) { this.listenT = setTimeout(() => { this.listenT = null; this.listen(waited + 200); }, 200); return; }
-    this.stopListening();
+    if (!L?.choice || L.choice !== this.lastChoice || !ui.choice?.options.length || !ui.micOn || !speechSupported() ||
+        this.speech?.running || this.paused || useStore.getState().hud.panel || document.visibilityState !== "visible") return;
+    // Give an audible line time to finish. Bound the wait for a recording that stalls while loading.
+    const voice = audio.getState();
+    if (voice === "playing" || (voice === "loading" && waited < 6000)) {
+      this.listenT = setTimeout(() => { this.listenT = null; this.listen(waited + 200); }, 200);
+      return;
+    }
     const turn = L.choice, options = ui.choice.options;
     const best = (text: string) => {
       let top: { cue: string; score: number } | null = null;
       for (const o of options) { const score = compareRepeat(o.s.en, text).score; if (!top || score > top.score) top = { cue: o.cue, score }; }
       return top;
     };
-    audio.stop(); // (the speaker lets go before the microphone opens)
+    if (voice !== "idle") audio.stop(); // release a stalled playback request before opening the mic
     const attempt = createSpeechAttempt({
+      source: "surf",
       evaluate: (text): Verdict => {
         let v: Verdict = "none";
         for (const o of options) { const p = repeatProgress(o.s.en, text); if (p === "complete") return "complete"; if (p === "prefix") v = "prefix"; }
@@ -346,9 +355,9 @@ export class SurfPlay {
   /** The mic button while it listens: what was heard so far is the answer. */
   finishListening() { if (this.speech?.running) this.speech.finish(); }
 
-  stopListening() {
+  stopListening(reason = "surf stopped") {
     if (this.listenT) { clearTimeout(this.listenT); this.listenT = null; }
-    if (this.speech) { const a = this.speech; this.speech = null; a.dispose(); }
+    if (this.speech) { const a = this.speech; this.speech = null; a.dispose(reason); }
     const ui = useSurf.getState();
     if (ui.mic.status !== "unsupported" && ui.mic.status !== "off") ui.set({ mic: { status: "off", heard: ui.mic.heard } });
   }
@@ -356,7 +365,7 @@ export class SurfPlay {
   /** The learner has answered (the rules ask): aloud, and she goes on at once; by a tap, and their line is said for
    *  them first, in the voice the learner's examples have. */
   private answer(cue: string, spoken: boolean): number {
-    this.stopListening();
+    this.stopListening("answer selected");
     if (!this.answered.includes(cue)) this.answered.push(cue);
     const s = this.line(cue);
     useSurf.getState().set({ said: s ? { cue, s } : null, mic: speechSupported() ? NO_MIC : { status: "unsupported", heard: "" } });
@@ -437,7 +446,7 @@ export class SurfPlay {
     const inp: SurfInput = { x, y, stroke: this.in.stroke && !paused, up: this.in.up && !paused };
     this.in.stroke = this.in.up = false;
     // (a panel over the lesson: the microphone closes, and opens again with the lesson)
-    if (paused !== this.paused) { this.paused = paused; if (paused) this.stopListening(); else if (L.choice) this.listen(); }
+    if (paused !== this.paused) { this.paused = paused; if (paused) this.stopListening("lesson paused"); else if (L.choice) this.listen(); }
     this.scene.update(dt, t, inp, paused);
     this.sync(dt);
   }
@@ -471,7 +480,7 @@ export class SurfPlay {
     // the learner's turn to speak: the microphone opens once she has finished (and closes with the turn)
     if (turn) {
       this.unclear = 0;
-      this.stopListening();
+      this.stopListening("learner turn changed");
       if (L.choice) this.listenT = setTimeout(() => { this.listenT = null; this.listen(); }, 250);
     }
     // the round button on a phone is the paddle while paddling is what she asked for

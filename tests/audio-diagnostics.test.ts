@@ -148,13 +148,21 @@ async function sample() {
 }
 
 describe("opt-in local audio evidence", () => {
-  it("does no logging, capture, decoding or live context work without the exact flag", async () => {
+  it("keeps only the bounded microphone log without the exact flag", async () => {
     vi.stubGlobal("location", { search: "?audioDebug=0" });
     const diagnostics = await import("../src/convo/audioDiagnostics");
     const { AudioSystem } = await import("../src/game/audio");
     audio = new AudioSystem();
     diagnostics.audioDiagnostic("diagnostic.quiet", { volume: 0.9 });
-    diagnostics.createRecognitionDiagnostics().event("start");
+    const recognition = diagnostics.createRecognitionDiagnostics("surf");
+    recognition.event("create");
+    for (let i = 0; i < 39; i++) recognition.event("start");
+    recognition.event("abort", { reason: "lesson paused" });
+    expect(window).toHaveProperty("__micLog.length", 40);
+    expect(window).toHaveProperty("__micLog.0.event", "start");
+    expect(window).toHaveProperty("__micLog.39", expect.objectContaining({
+      event: "abort", source: "surf", reason: "lesson paused", time: expect.any(Number),
+    }));
     diagnostics.pauseAudioDiagnostics(true);
     await audio.prepareDiagnosticComparison();
     expect(audio.playDiagnostic("buffer")).toBe(false);
