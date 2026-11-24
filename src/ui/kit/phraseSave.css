@@ -1,0 +1,2 @@
+.btn[data-phrase-save] { min-width: 44px; min-height: 44px; white-space: normal; }
+.btn[data-phrase-save]:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }

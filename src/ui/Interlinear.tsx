@@ -13,13 +13,17 @@ import { ipaForSentence } from "../convo/ipa";
 import { natMatchesGloss, natSaysMore, placeTip, type TipSpot } from "./natTip";
 import { useCards, cardKey } from "../state/cards";
 import { WordPopover, inView } from "./Cards";
+import type { PhraseSource } from "./kit/PhraseSave";
 
 /** The word a tap is on; not the asterisk, which sits inside the last word's English (it has its own tap). */
 const unitOf = (t: EventTarget | null) => (t instanceof Element && !t.closest(".nat-star") ? t.closest<HTMLElement>(".u[data-i]") : null);
 
 /** `natTip`: NPC lines with the natural sentence off. `compactNat`: player examples, with differing natural
  *  wording behind an asterisk on every screen size and no separate translation row. */
-export function Interlinear({ s, lt, ipa, nat, natTip, compactNat, highlight }: { s: Sentence; lt: boolean; ipa: boolean; nat?: boolean; natTip?: boolean; compactNat?: boolean; highlight?: boolean }) {
+export function Interlinear({ s, lt, ipa, nat, natTip, compactNat, highlight, source, portalHost }: {
+  s: Sentence; lt: boolean; ipa: boolean; nat?: boolean; natTip?: boolean; compactNat?: boolean; highlight?: boolean;
+  source?: PhraseSource; portalHost?: HTMLElement;
+}) {
   const plain = !lt && !ipa;
   const saved = useCards((c) => c.keys);
   const [open, setOpen] = useState<{ i: number; el: HTMLElement } | null>(null);
@@ -52,7 +56,7 @@ export function Interlinear({ s, lt, ipa, nat, natTip, compactNat, highlight }: 
           // the asterisk right after the last word's last letter, a superscript that takes no room in the line
           // (a zero-width pin inside the English, so a wider gloss or IPA under the word doesn't push it away and
           // it never wraps the word); a tap on it is not a tap on the word (unitOf)
-          const pin = star && i === s.units.length - 1 && <span className="nat-pin"><NatTip key={s.en + "|" + s.nat} text={natStar ? s.nat ?? "" : ""} notes={notes} /></span>;
+          const pin = star && i === s.units.length - 1 && <span className="nat-pin"><NatTip key={s.en + "|" + s.nat} text={natStar ? s.nat ?? "" : ""} notes={notes} portalHost={portalHost} /></span>;
           return (
             <span className={"u tap" + (isSaved ? " saved" : "") + (open?.i === i ? " open" : "")} key={i} data-i={i}>
               <span className="en">{u.en}{isSaved && <span className="u-dot" aria-hidden />}{pin}</span>
@@ -63,7 +67,7 @@ export function Interlinear({ s, lt, ipa, nat, natTip, compactNat, highlight }: 
         })}
       </div>
       {lt && !compactNat && nat !== false && s.nat && <div className="nat" lang="lt">{s.nat}</div>}
-      {open && open.i < s.units.length && <WordPopover s={s} index={open.i} anchor={open.el} onClose={close} />}
+      {open && open.i < s.units.length && <WordPopover s={s} index={open.i} anchor={open.el} onClose={close} source={source} portalHost={portalHost} />}
     </div>
   );
 }
@@ -78,7 +82,7 @@ function keyboardFocus(el: Element): boolean {
  *  the conversation panel, so opening it never moves the sentence. Like the word popover it lives at the end of
  *  the page: the transcript doesn't clip it, and screen readers don't announce it as a new transcript line (they
  *  read it as the asterisk's description). */
-function NatTip({ text, notes = [] }: { text: string; notes?: string[] }) {
+function NatTip({ text, notes = [], portalHost }: { text: string; notes?: string[]; portalHost?: HTMLElement }) {
   const id = useId();
   const starRef = useRef<HTMLButtonElement>(null);
   const boxRef = useRef<HTMLSpanElement>(null);
@@ -153,7 +157,7 @@ function NatTip({ text, notes = [] }: { text: string; notes?: string[] }) {
           if (to && !boxRef.current?.contains(to)) setTapped(false);
         }}>*</button>
       {/* the tests' server renderer has no page to put it in: there it stays in place */}
-      {typeof document === "undefined" ? tip : createPortal(tip, document.body)}
+      {typeof document === "undefined" ? tip : createPortal(tip, portalHost ?? document.body)}
     </>
   );
 }
