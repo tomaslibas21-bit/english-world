@@ -143,6 +143,27 @@ describe("adding and removing", () => {
     expect(r2.cards).toHaveLength(3);
     expect(addCards(r2.cards, [input("key")], T0).cards).toBe(r2.cards); // nothing new: same list
   });
+  it("keeps the original source and review schedule when another surface saves the same sentence twice", () => {
+    const original = addCards([], [{ ...sentenceInput(PRICE, ""), sourceLabel: "Desert Road" }], T0).added[0];
+    const reviewed = answerCard(original, true, T0);
+    const encountered = {
+      ...sentenceInput({ ...PRICE, en: "  THAT’S   $30?!  ", nat: "Kaina – trisdešimt dolerių." }, "street"),
+      sourceLabel: "Praeivis",
+    };
+    const cards = [reviewed];
+    const later = day(27, 12);
+
+    expect(cardKey(encountered.en)).toBe(cardKey(original.en));
+    for (const now of [later, later + 1000]) {
+      const result = addCards(cards, [encountered], now);
+      expect(result.added).toEqual([]);
+      expect(result.cards).toBe(cards);
+      expect(result.cards[0]).toMatchObject({
+        id: original.id, en: PRICE.en, lt: PRICE.nat, situationId: "", sourceLabel: "Desert Road",
+        box: 2, due: reviewed.due, createdAt: T0,
+      });
+    }
+  });
   it("skips empty cards", () => {
     expect(addCards([], [input("  !! "), input("word", " ")], T0).added).toHaveLength(0);
   });
