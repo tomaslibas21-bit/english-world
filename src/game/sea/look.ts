@@ -22,7 +22,7 @@ export type Coast = { x0: number; x1: number; z: number; lighthouse?: { x: numbe
 // Maple Harbor: a clear, cool New England afternoon that turns gold.
 const MAPLE_HARBOR: SeaView = {
   sky: [
-    { zenith: "#386fa9", mid: "#87b8cb", horizon: "#e7e2d4", sun: "#fffbe9", halo: "#a38e72", elevation: 13,
+    { zenith: "#386fa9", mid: "#87b8cb", horizon: "#d7e5e7", sun: "#fffbe9", halo: "#a38e72", elevation: 13,
       ridgeFar: "#9fb6cf", ridgeNear: "#86a2bd", streak: "#ffffff", streaks: 0.32, cloud: "#ffffff",
       light: "#fff0d2", lightPower: 2.3, fillSky: "#e8f1f6", fillGround: "#8fb2c4", fill: 1.35 },
     { zenith: "#4b709c", mid: "#d8ad86", horizon: "#f3d2aa", sun: "#fff0bd", halo: "#dba16f", elevation: 8,
