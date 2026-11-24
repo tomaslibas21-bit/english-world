@@ -6,12 +6,15 @@ import { StyledCharacter } from "./StyledCharacter";
 import type { PoolPose } from "./poolPose";
 import { STYLED } from "../style";
 
+export type CharacterJoint = "body" | "head" | "armL" | "armR" | "foreL" | "foreR" | "legL" | "legR" | "shinL" | "shinR";
+
 /** What the game needs from a character (the original Character and StyledCharacter both fit). */
 export interface GameCharacter {
   root: THREE.Group;
   readonly rightHand: THREE.Group;
   anim: Anim;
   readonly height: number;
+  joint(name: CharacterJoint): THREE.Object3D;
   setAnim(a: Anim): void;
   setBackpack?(visible: boolean): void;
   update(dt: number): void;

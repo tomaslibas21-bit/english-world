@@ -18,7 +18,7 @@ export interface ModePrompt {
   distance: number;
   label: string;
   hint?: string;
-  kind: "surf" | "taxi" | "barista" | "pool" | "billiards";
+  kind: "surf" | "taxi" | "barista" | "pool" | "billiards" | "gym";
 }
 
 export interface GameMode {

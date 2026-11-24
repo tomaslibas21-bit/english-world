@@ -5,6 +5,7 @@
 // the phone (prefetchSituations: src/game/prefetch.ts). A conversation that is open is always loaded: getSituation.
 // Tools and tests import ./index (every conversation, at once), as before.
 import type { SituationDef, SituationMeta } from "../types";
+import { EDITION } from "../../edition";
 import { META, LOAD } from "./meta.gen";
 
 export const SITUATIONS: readonly SituationMeta[] = META;
@@ -38,5 +39,9 @@ export function loadSituation(id: string): Promise<SituationDef | null> {
 
 /** Starts loading these conversations' files in the background (the ones not loaded or loading yet). */
 export function prefetchSituations(ids: Iterable<string>) {
-  for (const id of ids) if (!loaded.has(id) && !pending.has(id) && LOAD[id]) loadSituation(id).catch(() => { /* again when it opens */ });
+  for (const id of ids) {
+    // PC's exercise calls share this situation chunk. Both explicit entry routes still load it.
+    if (EDITION.id === "es" && id === "s35-gym") continue;
+    if (!loaded.has(id) && !pending.has(id) && LOAD[id]) loadSituation(id).catch(() => { /* again when it opens */ });
+  }
 }

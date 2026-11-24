@@ -15,6 +15,7 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { HairStyle, Look } from "../../content/npcs";
+import type { CharacterJoint } from "./index";
 import { applyPoolPose, type PoolPose } from "./poolPose";
 
 let gradient: THREE.DataTexture | null = null;
@@ -360,6 +361,7 @@ export class Character {
   private legR = new THREE.Group();
   private shinL = new THREE.Group();
   private shinR = new THREE.Group();
+  joint(name: CharacterJoint): THREE.Object3D { return this[name]; }
   // the parts are meshes while they are built, and bones of the baked mesh after (see bake)
   /** The skirt hangs from the waist (shortened while sitting, so it stays out of the seat). */
   private skirt: THREE.Object3D | null = null;
