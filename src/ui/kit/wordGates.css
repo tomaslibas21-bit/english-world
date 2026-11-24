@@ -94,7 +94,6 @@
   justify-content: center;
   text-align: center;
   align-items: center;
-  line-height: 1.06;
   font-weight: 800;
   color: #172e3a;
 }
@@ -163,7 +162,9 @@
   pointer-events: none;
   transition: opacity 600ms ease-out;
 }
-.road-karaoke span { display: inline-block; }
+.road-karaoke > .kit-feedback { margin-inline-end: 6px; }
+.road-karaoke:not([data-correction]) > .kit-feedback { display: none; }
+.road-karaoke-line > span { display: inline-block; }
 .road-karaoke .lit { color: #f6ce82; }
 .road-karaoke .current { color: #fffbdc; text-shadow: 0 0 6px #ffd97599; }
 .road-karaoke.fading { opacity: 0; }

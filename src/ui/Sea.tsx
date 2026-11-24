@@ -31,7 +31,7 @@ export function SeaOverlay({ touch }: { touch: boolean }) {
     {(phase === "drive" || phase === "turn") && <>
       <WordGateHeader game="sea" words={words} {...{ prompt, sayIt, feedback, remaining, streak, showHint }} questionSlot={crossing && <SeaCrossingTitle crossing={crossing} />} home={done} replay={() => act("replay")} />
       {prompt && gateId !== undefined && <GateLabels key={gateId} mode="sea" prompt={prompt} gateId={gateId} steer={answeredLane === undefined ? steer : undefined} answeredLane={answeredLane} />}
-      {way === "phrases" && phase === "drive" && <GateKaraoke mode="sea" />}
+      {way === "phrases" && phase === "drive" && <GateKaraoke mode="sea" wrong={words.wrong} />}
       {showHint && <p className="road-controls">{L(touch ? words.touchControls : words.controls)}</p>}
     </>}
     {(phase === "result" || phase === "guide") && result && <WordGateResult result={result} words={words} actions={scoreActions} />}

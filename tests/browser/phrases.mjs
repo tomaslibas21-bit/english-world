@@ -17,6 +17,7 @@ const ui = learner === "lt" ? {
   words: ["Žodžiai", "Išgirskite ispaniškai, pasirinkite reikšmę"],
   phrases: ["Frazės", "Išgirskite lietuviškai, pasirinkite ispaniškai"],
   comeback: "Šįkart pataikėte!",
+  wrong: "Ne visai. Teisingai:",
   drive: "Vairuoti", hear: "Ką išgirdote?", replay: "Klausyti dar kartą",
   road: "Važiavimas baigtas", sea: "Plaukimas baigtas",
 } : {
@@ -24,6 +25,7 @@ const ui = learner === "lt" ? {
   words: ["Words", "Hear Spanish, pick the meaning"],
   phrases: ["Phrases", "Hear English, pick the Spanish"],
   comeback: "Got it this time!",
+  wrong: "Not quite. It's:",
   drive: "Drive", hear: "What did you hear?", replay: "Listen again",
   road: "Drive over", sea: "Boat ride over",
 };
@@ -195,8 +197,9 @@ export async function openGame(browser, game, size) {
   async function reveal(item, from) {
     await waitState((state) => state.karaoke?.visible, "shows the karaoke overlay", 1);
     await karaoke.waitFor();
-    assert.deepEqual(await karaoke.locator("span").allTextContents(), item.words);
-    assert.equal(await karaoke.textContent(), item.f);
+    const line = karaoke.locator(".road-karaoke-line");
+    assert.deepEqual(await line.locator("span").allTextContents(), item.words);
+    assert.equal(await line.textContent(), item.f);
     await waitForClip(item.fClip, from);
     // Let the silent response reach the media element while the simulated clock is stopped.
     await page.waitForFunction(() => window.__ew.voice() === "idle", undefined, { polling: 25 });
@@ -253,7 +256,7 @@ async function checkPhraseBoards(run, game, state) {
   assert.equal(new Set(labels.map(({ text }) => text)).size, 3);
   for (const { lane, text, lang, lines } of labels) {
     assert.ok(lang === "es" && spanishPhrases.has(text), `lane ${lane} shows a Puerto Colibrí Spanish phrase`);
-    assert.ok(lines.length <= 2, `lane ${lane} uses at most two lines`);
+    assert.ok(lines.length >= 1 && lines.length <= 3, `lane ${lane} uses one to three lines`);
     const key = `${state.registration.gateId}:${lane}:`;
     const corners = samples.filter((sample) => sample.key?.startsWith(key) && sample.name !== "center");
     assert.equal(corners.length, 4, `lane ${lane} has four projected face corners`);
@@ -270,17 +273,20 @@ async function checkPhraseBoards(run, game, state) {
   }
 }
 
-async function checkKaraokeTiming(run, item, previousGate) {
+async function checkKaraokeTiming(run, item, previousGate, passed, correction = false) {
   const sample = () => run.karaoke.evaluate((line, previousGate) => {
     const box = line.getBoundingClientRect();
+    const badge = line.querySelector("[data-feedback=retry]");
+    const words = line.querySelector(".road-karaoke-line");
     const group = line.parentElement.querySelector(`.road-gates:not([data-gate-id="${previousGate}"])`);
     const nextLabels = [...(group?.querySelectorAll(".road-gate > span") ?? [])].filter((span) => {
       const style = getComputedStyle(span.parentElement);
       return style.visibility === "visible" && Number(style.opacity) > 0;
     });
     return { hidden: line.hidden, fading: line.classList.contains("fading"),
-      lit: [...line.querySelectorAll(".lit")].map((span) => span.textContent),
-      current: [...line.children].findIndex((span) => span.classList.contains("current")),
+      badge: badge?.getClientRects().length ? badge.textContent : null,
+      lit: [...words.querySelectorAll(".lit")].map((span) => span.textContent),
+      current: [...words.children].findIndex((span) => span.classList.contains("current")),
       overlap: nextLabels.find((span) => {
         const label = span.getBoundingClientRect();
         return box.left < label.right && label.left < box.right && box.top < label.bottom && label.top < box.bottom;
@@ -289,18 +295,20 @@ async function checkKaraokeTiming(run, item, previousGate) {
 
   const end = item.t.at(-1)[1];
   for (let frame = 0; frame <= Math.ceil((end + 0.8) * 1000 / frameMs); frame++) {
-    const { hidden, fading, lit, current, overlap } = await sample();
+    const { hidden, fading, badge, lit, current, overlap } = await sample();
     // The first RAF after the 204 starts the fallback clock at zero.
     const time = Math.max(0, frame - 1) * frameMs / 1000;
     const expected = item.t.filter(([start]) => start <= time).length;
     if (hidden) {
       assert.ok(time + 1e-6 >= end + 0.6, `overlay hid before the clip and fade finished (${time}s)`);
-      await run.approach(1);
+      assert.equal(badge, null, "the badge hides with the karaoke overlay");
+      await run.approach(passed);
       const next = run.overlay.locator(`.road-gates:not([data-gate-id="${previousGate}"]) .road-gate:visible`);
       assert.equal(await next.count(), 3, "the next boards have visible labels");
       assert.equal(await run.karaoke.isVisible(), false);
       return;
     }
+    assert.equal(badge, correction ? ui.wrong : null, `correction badge at ${time}s`);
     assert.deepEqual(lit, item.words.slice(0, expected), `lit words at ${time}s`);
     const active = item.t.findLastIndex(([start, stop]) => start <= time && time < stop);
     assert.equal(current, active, `current word index at ${time}s`);
@@ -364,14 +372,15 @@ async function testGame(browser, game, size, budget) {
       await run.answer(true);
       earned.set(first.f, `${first.f} · ${first.p}`);
       await run.reveal(first, from);
-      await checkKaraokeTiming(run, first, previousGate);
+      await checkKaraokeTiming(run, first, previousGate, 1);
     }],
-    ["wrong answer reveals the correct Spanish phrase and requests its fClip", async () => {
+    ["wrong answer keeps the correction badge in view for the correct Spanish phrase", async () => {
       const state = await run.gate(1);
       missed = phraseFor(state);
       const from = run.mp3Urls.length;
       await run.answer(false);
       await run.reveal(missed, from);
+      await checkKaraokeTiming(run, missed, state.registration.gateId, 2, true);
     }],
     ["missed phrase returns in two to four gates and is answered correctly", async () => {
       const missGate = 2;

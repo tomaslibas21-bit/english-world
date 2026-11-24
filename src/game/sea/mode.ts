@@ -226,7 +226,7 @@ export class SeaMode {
       if ("phrase" in this.reveal) {
         this.feedback = 0;
         useSea.setState({ feedback: undefined });
-        karaoke.sea.show(this.reveal.phrase);
+        karaoke.sea.show(this.reveal.phrase, true);
       } else this.play(this.reveal.clip);
       this.reveal = undefined;
     }

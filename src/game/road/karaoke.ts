@@ -16,7 +16,7 @@ export function karaokeWords(timings: Phrase["t"], time: number) {
 }
 
 type Line = {
-  phrase: Phrase; clip: FilePlayback; time: number; lastMove: number;
+  phrase: Phrase; correction: boolean; clip: FilePlayback; time: number; lastMove: number;
   fallbackAt?: number; fadeAt?: number;
 };
 
@@ -46,6 +46,7 @@ class Karaoke {
     if (!this.node) return;
     const phrase = this.line?.phrase;
     this.node.hidden = !phrase;
+    this.node.toggleAttribute("data-correction", !!this.line?.correction);
     this.node.classList.toggle("fading", this.line?.fadeAt !== undefined);
     this.node.style.removeProperty("--board-top");
     this.boardTop = Infinity;
@@ -56,12 +57,12 @@ class Karaoke {
       span.classList.toggle("current", i === this.current);
       return span;
     }) ?? [];
-    this.node.replaceChildren(...this.spans.flatMap((span, i) => i ? [" ", span] : [span]));
+    this.node.querySelector(".road-karaoke-line")?.replaceChildren(...this.spans.flatMap((span, i) => i ? [" ", span] : [span]));
   }
 
-  show(phrase: Phrase) {
+  show(phrase: Phrase, correction = false) {
     this.stop();
-    const line: Line = this.line = { phrase, clip: audio.playFile(phrase.fClip), time: 0, lastMove: performance.now() };
+    const line: Line = this.line = { phrase, correction, clip: audio.playFile(phrase.fClip), time: 0, lastMove: performance.now() };
     this.mountLine();
     const tick = (now: number) => {
       if (this.line !== line) return;

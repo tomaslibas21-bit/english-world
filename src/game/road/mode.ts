@@ -320,7 +320,7 @@ export class RoadMode {
       if ("phrase" in run.reveal) {
         run.feedback = 0;
         useRoad.setState({ feedback: undefined });
-        karaoke.road.show(run.reveal.phrase);
+        karaoke.road.show(run.reveal.phrase, true);
       } else this.play(run.reveal.clip);
       run.reveal = undefined;
     }
