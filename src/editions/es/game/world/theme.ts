@@ -463,8 +463,8 @@ export const THEME: TownTheme = {
   // (graphics round 6, `late`) a late afternoon: the sun lower (37° up, from the same side) and golden, a little less
   // flat fill (cooler, so shade reads blue against the warm light), the dome painted with the sun's halo and cumulus
   light: {
-    sun: "#ffd9a3", exposure: 1.1, sky: ["#599acc", "#b6d9df", "#fbefdf"], fog: "#efddc9", hemi: ["#dce8ff", "#b3ad78"], clouds: 1.5,
-    late: { at: [-52, 46, 38], sunI: 3.05, hemiI: 1.3, glow: "#edb580", clouds: ["#f7f1e2", "#bec0ca"] },
+    sun: "#ffd9a3", exposure: 1.1, sky: ["#3a8fe0", "#9ccff2", "#fbdcb6"], fog: "#e6e2d6", hemi: ["#dce8ff", "#b3ad78"], clouds: 1.5,
+    late: { at: [-52, 46, 38], sunI: 3.05, hemiI: 1.3, glow: "#ffad5c", clouds: ["#fffdf6", "#d3cbdc"] },
   },
   // the houses' fronts: a rodapié, a grille over the door with its number on a talavera tile, plants by it
   houseFronts: { sophie: "12", dan: "24", house3: "31", house4: "47", house5: "53" },
