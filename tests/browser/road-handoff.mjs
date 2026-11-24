@@ -61,12 +61,26 @@ async function groundPatches(page, near) {
     };
     return [-1, 1].map((side) => {
       const points = [];
+      const sample = (x, y) => {
+        if (hud.some((r) => x + 2 >= r.left && x - 2 <= r.right && y + 2 >= r.top && y - 2 <= r.bottom)) return;
+        if (ground(x, y, side) && [-2, 2].every((dx) => [-2, 2].every((dy) => ground(x + dx, y + dy, side)))) {
+          points.push([x, y]);
+        }
+      };
       for (let yf = 0.96; yf >= 0.36; yf -= 0.025) {
         for (const xf of [0.04, 0.12, 0.20, 0.28, 0.36, 0.42]) {
           const x = Math.round(innerWidth * (side < 0 ? xf : 1 - xf)), y = Math.round(innerHeight * yf);
-          if (hud.some((r) => x + 2 >= r.left && x - 2 <= r.right && y + 2 >= r.top && y - 2 <= r.bottom)) continue;
-          if (ground(x, y, side) && [-2, 2].every((dx) => [-2, 2].every((dy) => ground(x + dx, y + dy, side)))) {
-            points.push([x, y]);
+          sample(x, y);
+          if (points.length === 2) return points;
+        }
+      }
+      // At the Calle Ceiba exchange, the portrait view can put bare sand between
+      // the outermost grid column and the edge. Search in whole 5 px patches there.
+      if (!near && !points.length) {
+        for (let offset = 2; offset <= innerWidth * 0.42; offset += 5) {
+          const x = side < 0 ? offset : innerWidth - 1 - offset;
+          for (let y = Math.round(innerHeight * 0.96); y >= Math.round(innerHeight * 0.36); y -= 5) {
+            sample(x, y);
             if (points.length === 2) return points;
           }
         }
