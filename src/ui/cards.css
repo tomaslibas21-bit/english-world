@@ -45,7 +45,7 @@
 }
 .pb-tab:hover { color: var(--ink); background: rgba(255, 255, 255, 0.6); }
 .pb-tab.on { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(20, 30, 40, 0.14); }
-.pb-tab .n { font-weight: 800; font-size: 0.85em; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+.pb-tab .n { font-weight: 800; font-size: 0.85em; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 .pb-tab .due {
   min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: var(--gold); color: #3b2a00;
   font-size: 0.75em; font-weight: 900; display: inline-grid; place-items: center; font-variant-numeric: tabular-nums;
@@ -57,6 +57,11 @@
 .hint-row .play.add { background: #fff; color: var(--accent); box-shadow: inset 0 0 0 1.5px #cfe4e1; }
 .hint-row .play.add:hover { background: var(--accent); color: #fff; box-shadow: 0 5px 12px -5px rgba(31, 111, 120, 0.7); }
 .pb-in { width: 42px; height: 42px; display: grid; place-items: center; color: var(--good); flex: none; }
+
+@media (pointer: coarse) {
+  .pb-tab, .pb-bar .btn.small, .hint-row .pb-acts :is(.play, .pb-in) { min-width: 44px; min-height: 44px; }
+  .hint-row:has(> .pb-acts) > .ex { overflow-wrap: anywhere; }
+}
 
 /* ---------- the cards tab ---------- */
 .cards-empty { text-align: center; padding: 26px 16px 10px; color: var(--ink-soft); line-height: 1.5; }
