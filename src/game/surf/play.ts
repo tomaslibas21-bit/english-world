@@ -175,6 +175,7 @@ export class SurfPlay {
         this.game.rig.stage = null;
         const s = this.spot.start;
         this.game.place(s.x, s.z, s.rot);
+        this.strokeT = 0;
         useSurf.getState().reset();
         useStore.getState().setHud({ ride: null, prompt: null });
         this.game.left("surf");
@@ -445,7 +446,7 @@ export class SurfPlay {
       if (this.resetT <= dt) { this.game.rig.stageSnap(); this.clearReset(); }
       else this.resetT -= dt;
     }
-    this.sync(paused ? 0 : dt, lastStroke && L.todo !== todo ? lastStroke : 0);
+    this.sync(paused ? 0 : dt, todo?.left === 0 ? lastStroke : 0);
   }
 
   private sync(dt: number, finished: number) {
@@ -486,7 +487,7 @@ export class SurfPlay {
     if (finished) {
       this.strokeT = 0.65;
       (patch ??= {}).finishedStrokes = finished;
-    } else if (this.strokeT > 0 && (t || (this.strokeT -= dt) <= 0)) {
+    } else if (this.strokeT > 0 && (this.strokeT -= dt) <= 0) {
       this.strokeT = 0;
       (patch ??= {}).finishedStrokes = 0;
     }

@@ -79,9 +79,8 @@ function Strokes({ of, left }: { of: number; left: number }) {
   return <span className="surf-strokes" aria-hidden>{Array.from({ length: of }, (_, i) => <i key={i} className={i < of - left ? "done" : ""} />)}</span>;
 }
 
-function Move({ todo, touch, flash, finished }: { todo: SurfUi["todo"]; touch: boolean; flash: SurfArrow | null; finished: number }) {
-  if (!todo) return finished > 0 ? <div className="surf-finished"><Strokes of={finished} left={0} /></div> : null;
-  if (!todo.show) return null;
+function Move({ todo, touch, flash }: { todo: SurfUi["todo"]; touch: boolean; flash: SurfArrow | null }) {
+  if (!todo?.show) return null;
   const still = todo.do === "steady", name = S.move[todo.do].lt;
   const control = still ? (touch ? S.control.steadyTouch : S.control.steadyKeys)
     : touch ? S.control.touch : S.control.keys;
@@ -197,7 +196,8 @@ export function SurfOverlay({ toolbar }: { toolbar: ReactNode }) {
         <button type="button" className="surf-again" onClick={() => game?.modeAction("surf", "repeat")}
           title={C.replay.lt} aria-label={C.replay.lt}><Icon name="speaker" size={19} /></button>
       </div>
-      <Move todo={s.todo} touch={touch} flash={s.keyFlash} finished={s.finishedStrokes} />
+      <Move todo={s.todo} touch={touch} flash={s.keyFlash} />
+      {s.finishedStrokes > 0 && <div className="surf-finished"><Strokes of={s.finishedStrokes} left={0} /></div>}
     </div>}
     {s.choice && !s.over && <div className="surf-choices">
       <Mic mic={s.mic} on={s.micOn} touch={touch} />

@@ -307,19 +307,23 @@ describe("the shared surf mode lifecycle", () => {
       { npc: "maren", situation: "x04-surf" }, host, replace);
     modes.register(surf);
     const fade = () => { const fn = swap!; fn(); swap = undefined; modes.tick(0, true); };
-    const frame = (blocked = false) => modes.update({ dt: 1 / 30, time: 1, x: 0, y: 0, brake: false, blocked });
+    const dt = 1 / 30;
+    const frame = (blocked = false) => modes.update({ dt, time: 1, x: 0, y: 0, brake: false, blocked });
     useStore.setState({ progress: { ...state.progress, surf: undefined, profile: {
       name: "Pat", surname: "Lee", gender: "f", lookId: "f1", look: NPCS.maren.look,
     } } });
     try {
       expect(modes.start("surf", "beginner")).toBe(true);
-      await vi.waitFor(() => expect(swap).toBeTypeOf("function"));
+      await vi.dynamicImportSettled();
+      expect(swap).toBeTypeOf("function");
       modes.exit(true);
       expect(modes.start("surf", "advanced")).toBe(true);
       fade();
       expect(surf.logic).toBeNull();
       expect(useSurf.getState().active).toBe(false);
-      await vi.waitFor(() => { modes.tick(0, true); expect(swap).toBeTypeOf("function"); });
+      await vi.dynamicImportSettled();
+      modes.tick(0, true);
+      expect(swap).toBeTypeOf("function");
       fade();
 
       const lesson = surf.logic!;
@@ -350,6 +354,33 @@ describe("the shared surf mode lifecycle", () => {
       surf.action("arrow:up", false);
       frame();
       expect(lesson.todo!.left).toBe(start - 2);
+
+      const strokes = useSurf.getState().todo!.of;
+      expect(strokes).toBe(start);
+      for (let left = start - 2; left > 1; left--) {
+        surf.action("arrow:up", true);
+        surf.action("arrow:up", false);
+        frame();
+      }
+      expect(lesson.todo?.left).toBe(1);
+      // Let the paddle line finish so the duck cue can start on the next frame.
+      for (let i = 0; i < 300 && lesson.talking; i++) frame();
+      expect(lesson.talking).toBe(false);
+      surf.action("arrow:up", true);
+      surf.action("arrow:up", false);
+      frame();
+      expect(useSurf.getState()).toMatchObject({ todo: null, finishedStrokes: strokes });
+
+      const duck = { do: "duck", cue: "wave_duck", show: true, of: null, left: null };
+      frame();
+      expect(useSurf.getState()).toMatchObject({ todo: duck, finishedStrokes: strokes });
+      const lastVisibleFrame = Math.floor(0.65 / dt);
+      for (let i = 0; i <= lastVisibleFrame; i++) frame(true);
+      expect(useSurf.getState()).toMatchObject({ todo: duck, finishedStrokes: strokes });
+      for (let i = 1; i < lastVisibleFrame; i++) frame();
+      expect(useSurf.getState().finishedStrokes).toBe(strokes);
+      frame();
+      expect(useSurf.getState()).toMatchObject({ todo: duck, finishedStrokes: 0 });
 
       lesson.phase = "over";
       lesson.score.waves = 1;
