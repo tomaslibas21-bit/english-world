@@ -268,6 +268,18 @@ export class Splashes {
     }
   }
 
+  /** Falling water from a car sill, in the same batch as the rest of the drops. */
+  carDrain(x: number, y: number, z: number, dx: number, dz: number, strength: number) {
+    const n = strength > 0.45 ? 2 : 1;
+    for (let i = 0; i < n; i++) {
+      const j = this.next; this.next = (j + 1) % Splashes.N;
+      const off = (i - 0.5) * 0.08, ground = floorY(x, z);
+      this.pos[j * 3] = x - dz * off; this.pos[j * 3 + 1] = y; this.pos[j * 3 + 2] = z + dx * off;
+      this.vel[j * 3] = dx * 0.2; this.vel[j * 3 + 1] = -1.1; this.vel[j * 3 + 2] = dz * 0.2;
+      this.life[j] = (Math.sqrt(1.21 + 19 * Math.max(0, y - ground)) - 1.1) / 9.5 * 1.5;
+    }
+  }
+
   /** `at`: where the wader's legs meet the water (null: nobody in it); `move` 0–1: how fast they wade; `size`: how
    *  wide the rings spread (1: a person's; a boat's wake is wider). */
   update(dt: number, t: number, at: { x: number; y: number; z: number } | null, move: number, size = 1, opacity = 1) {
