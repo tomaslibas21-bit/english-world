@@ -148,6 +148,7 @@ function talkPictureHeight(h: number): number {
 
 const headBox = new THREE.Vector3();
 const DRIVE_KEYS = ["w", "a", "s", "d", "arrowup", "arrowleft", "arrowdown", "arrowright"];
+const RIDE_OUT_PROMPT = { label: "Išlipti", kind: "out" } as const;
 /** How far above its feet the top of a person's head is, hair and hats included (the box of their own meshes; the
  *  blob shadow left out). */
 function headTop(ch: GameCharacter): number {
@@ -1124,7 +1125,14 @@ export class Game implements GameApi {
     // Space: talk or go in, as E, when there is someone or a door to; else a jump (in the air: the second jump). At a wheel it
     // is the brake, for as long as it is held; swimming, a dive
     if (k === " " && this.rides.riding) { this.keys.add(" "); this.rideGoal = null; e.preventDefault(); return; }
-    if (k === " ") { if (this.nearest && !this.hop.air && !this.swimming) this.interact(); else if (!e.repeat) this.jump(); e.preventDefault(); return; }
+    if (k === " ") {
+      if (!(this.waterNeutral && this.keys.has(" "))) {
+        if (this.nearest && !this.hop.air && !this.swimming) this.interact();
+        else if (!e.repeat) this.jump();
+      }
+      e.preventDefault();
+      return;
+    }
     if (k === "e" || k === "enter") { this.interact(); e.preventDefault(); return; }
     if (k === "c" && !e.repeat && !e.altKey && !e.ctrlKey && !e.metaKey && this.modes.start(this.quests.id, "camera")) { e.preventDefault(); return; }
     if (k === "m") st.setHud({ panel: "map" });
@@ -1497,10 +1505,16 @@ export class Game implements GameApi {
   private waterRevealFrame = Infinity;
   private waterFadeEnd = Infinity;
 
+  private carWaterInputHeld() {
+    if (this.joy.x || this.joy.y || this.brake || this.keys.has(" ")) return true;
+    for (let i = 0; i < DRIVE_KEYS.length; i++) if (this.keys.has(DRIVE_KEYS[i])) return true;
+    return false;
+  }
+
   private resetCarWaterDrive() {
     this.waterNeutral = true;
     this.rideGoal = null; this.autoPath = null; this.autoTarget = null;
-    this.brake = this.braked = this.kicked = false;
+    this.braked = this.kicked = false;
     this.dustT = this.speedShake = 0;
     this.trafficReplyAt = undefined;
     this.dust.clear();
@@ -1508,10 +1522,11 @@ export class Game implements GameApi {
     this.wading.depth = 0;
     this.vel.set(0, 0, 0); this.moveVel.set(0, 0, 0);
     this.hop.land(this.player.root.position.y); this.applyHop();
-    this.nearest = null;
+    const riding = this.rides.riding;
+    this.nearest = riding && !this.modes.active ? this.rideOut(riding) : null;
     const st = useStore.getState();
     st.dismissRideToasts();
-    st.setHud({ prompt: null, fast: false, speedLines: false });
+    st.setHud({ prompt: this.nearest ? RIDE_OUT_PROMPT : null, fast: false, speedLines: false });
   }
 
   private snapCarWater() {
@@ -1595,7 +1610,8 @@ export class Game implements GameApi {
     this.hop.land(p.y); this.applyHop();
     this.vel.set(0, 0, 0); this.moveVel.set(0, 0, 0);
     this.gait.sync(this.heading, 0); this.gaitOn = false; this.steer.reset();
-    this.keys.delete(" "); this.brake = false;
+    if (!this.rides.water?.returning) this.keys.delete(" ");
+    this.brake = false;
     this.wetRide = false;
     this.rideGoal = null;
     this.helmSteer.reset();
@@ -1836,7 +1852,9 @@ export class Game implements GameApi {
 
   interact() {
     if (this.rides.water?.suppressInput || this.rides.water?.owns(this.rides.riding)) {
-      if (this.rides.riding) this.rides.leave();
+      const st = useStore.getState();
+      if (this.rides.riding && !this.session?.active && !st.conv.active && !st.hud.panel
+        && !this.transitioning && !this.modes.engaged && !this.flight) this.rides.leave();
       return;
     }
     if (this.modes.active) {
@@ -3246,8 +3264,7 @@ export class Game implements GameApi {
       return;
     }
     if (this.waterNeutral) {
-      if (!this.joy.x && !this.joy.y && !this.brake && !this.keys.has(" ") &&
-        !DRIVE_KEYS.some((key) => this.keys.has(key))) this.waterNeutral = false;
+      if (!this.carWaterInputHeld()) this.waterNeutral = false;
       else { blocked = true; through = false; }
     }
     if (this.modes.active) {
@@ -3669,6 +3686,13 @@ export class Game implements GameApi {
     return this.hudBoxCache;
   }
 
+  private rideOut(riding: Ride): Game["nearest"] {
+    if (this.rides.phase !== "on" || this.session?.active) return null;
+    const nearest = this.nearest;
+    return nearest?.kind === "out" && nearest.id === riding.id ? nearest
+      : { kind: "out", id: riding.id, label: RIDE_OUT_PROMPT.label };
+  }
+
   private updateHud() {
     const st = useStore.getState();
     const p = this.player.root.position;
@@ -3679,7 +3703,7 @@ export class Game implements GameApi {
     if (this.modes.active) { this.nearest = null; return; }
     if (riding) {
       // at the wheel: only the way out (nobody is talked to, no door gone through)
-      if (this.rides.phase === "on" && !this.session?.active) best = { kind: "out", id: riding.id, label: "Išlipti" };
+      best = this.rideOut(riding);
     } else if (!this.rides.water?.suppressInput && !this.session?.active && !this.aloft) {
       for (const n of this.npcs) {
         const d = talkDist(n, p);
@@ -3726,7 +3750,7 @@ export class Game implements GameApi {
       const names = RIDE_NAMES;
       st.setHud({ prompt: !best ? null
         : best.kind === "ride" ? (best.label === ROAD_UI.drive ? { label: ROAD_UI.drive, kind: "drive" } : best.label === "car" ? { label: `Vairuoti: ${names.car.en}`, lt: names.car.lt || undefined, kind: "drive" } : { label: `Plaukti: ${names.boat.en}`, lt: names.boat.lt || undefined, kind: "boat" })
-        : best.kind === "out" ? { label: "Išlipti", kind: "out" }
+        : best.kind === "out" ? RIDE_OUT_PROMPT
         : best.kind === "climb" ? { label: best.label, kind: "climb" }
         : best.kind === "mode" ? best.prompt!
         : best.kind === "staff" ? { label: best.label, kind: "talk" }

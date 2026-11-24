@@ -26,6 +26,7 @@ const { footRadius, footOffset, sputter } = CAR_WATER;
 const WET_LIMIT = 3500, RETURN_LIMIT = 3500, REARM = 250;
 const FLOAT = 0.50, TOW_END = 2.35, DRAIN = 0.65, FADE = 0.18, TOW_SPEED = 8;
 const STEP = 0.12, PADDING = 0.07;
+const EXIT_START = footRadius + 0.06, EXIT_STEP = 0.22;
 const SPARE_SEPARATION = 18; // One town vehicle, including its home clearance, cannot cover both reservations.
 const DOORS: readonly Door[] = [1, -1, 2, -2];
 const RESTART_STEPS = [0, 0.55, -0.55, 1.15, -1.15, 1.75, -1.75];
@@ -689,22 +690,27 @@ export class CarWaterRecovery {
 
   private footHeight(out: Foot) {
     const floor = floorY(out.x, out.z), live = waterY(out.x, out.z, this.time);
-    const depth = live === null ? 0 : live - floor;
-    out.swim = depth > 0.58 ? 1 : 0;
-    out.y = out.swim && live !== null ? Math.max(floor, live - 0.78) : floor;
+    if (live !== null && live - floor > 0.58) {
+      out.swim = 1;
+      out.y = Math.max(floor, live - 0.78);
+    } else {
+      out.swim = 0;
+      out.y = floor;
+    }
   }
 
   private stepOut(r: Ride) {
     if (!finite(r.m)) return;
-    // Prefer the landward side when both sides are clear at a railing or the face of a dock.
+    // Check both sill sweeps before considering the ends. Within each pair, prefer the higher bed.
     let best = -Infinity;
     for (const door of DOORS) {
-      this.beside(r, r.m, door, footRadius + 0.06, this.testFoot);
+      if (door === 2 && best > -Infinity) break;
+      this.beside(r, r.m, door, EXIT_START, this.testFoot);
       const a = this.testFoot;
       if (!this.host.clearance.foot(r, a.x, a.z, PADDING)) continue;
       this.beside(r, r.m, door, footOffset, this.foot);
       if (!this.footSweep(r, a, this.foot)) continue;
-      const rank = floorY(this.foot.x, this.foot.z) - (Math.abs(door) === 2 ? 0.25 : 0);
+      const rank = floorY(this.foot.x, this.foot.z);
       if (rank > best) { best = rank; this.footDoor = door; Object.assign(this.exitFrom, a); }
     }
     if (best === -Infinity) { this.blockedRoute = true; return; }
@@ -798,9 +804,8 @@ export class CarWaterRecovery {
       this.host.foot(this.placedFoot, false);
       return;
     }
-    this.beside(r, r.m, this.footDoor, footOffset, this.foot);
-    const k = clamp((this.age - this.exitAt) / 0.22, 0, 1);
-    if (k < 1) this.beside(r, r.m, this.footDoor, footRadius + 0.06 + (footOffset - footRadius - 0.06) * k, this.foot);
+    const k = clamp((this.age - this.exitAt) / EXIT_STEP, 0, 1);
+    this.beside(r, r.m, this.footDoor, EXIT_START + (footOffset - EXIT_START) * k, this.foot);
     if (this.footSweep(r, this.placedFoot, this.foot)
       && reach(r.m, r.m.spec.half, r.m.spec.wide, this.foot.x, this.foot.z) >= footRadius) Object.assign(this.placedFoot, this.foot);
     else {
@@ -811,7 +816,7 @@ export class CarWaterRecovery {
   }
 
   private tow(r: Ride) {
-    if (this.exitWanted && (!this.assisted || this.age - this.exitAt < 0.22)) return;
+    if (this.exitWanted && (!this.assisted || this.age - this.exitAt < EXIT_STEP)) return;
     const t = clamp(this.age - FLOAT, 0, TOW_END - FLOAT), ramp = 0.16, run = TOW_END - FLOAT;
     // Integral of a smoothstep speed ramp at each endpoint, with a constant cruise between them.
     const u = Math.min(t, run - t) / ramp;

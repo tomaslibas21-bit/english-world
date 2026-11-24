@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FrontSide, Group, PerspectiveCamera, Raycaster, Vector2, Vector3, type Mesh, type MeshBasicMaterial, type Points } from "three";
+import { Game } from "../src/game/Game";
+import { Gait, Hop, Steer } from "../src/game/movement";
 import { CarWaterEffects, coughBeat, drainMotor, drainPitch, sputterMiss } from "../src/game/rides/carWaterEffects";
 import { CarWaterClearance, CarWaterRecovery, type CarWaterHost } from "../src/game/rides/carWaterRecovery";
 import { Rides, type Ride, type RideHost } from "../src/game/rides/Rides";
@@ -15,6 +17,7 @@ import { exitCoordinates, exitHalf, exitToTown } from "../src/game/world/roadExi
 import { RIDES } from "../src/game/world/rides";
 import { buildTown } from "../src/game/world/town";
 import { Colliders, type AABB } from "../src/game/world/util";
+import { useStore } from "../src/state/store";
 
 const dt = 1 / 60;
 const go = { throttle: 1, steer: 0, brake: false };
@@ -466,8 +469,8 @@ it("clears Maple Harbor's real geometry on the shore approach and at all three p
 });
 
 function recoveryFixture(town = buildTestTown(), occupied: { x: number; z: number; radius: number }[] = [],
-  { carId = RIDES.cars[0].id, startTime = 0, ...effects }: Pick<CarWaterHost, "drops" | "effectRoot" | "splash" | "wash">
-    & { carId?: string; startTime?: number } = {}) {
+  { carId = RIDES.cars[0].id, startTime = 0, onArrest, onDetach, ...effects }: Pick<CarWaterHost, "drops" | "effectRoot" | "splash" | "wash">
+    & { carId?: string; startTime?: number; onArrest?: CarWaterHost["arrest"]; onDetach?: CarWaterHost["detach"] } = {}) {
   const makeRide = (id: string, x: number, z: number, rot: number, spec = CAR, kind: Ride["kind"] = "car"): Ride => {
     const m = new Motion(spec, kind), mesh = new Group();
     m.set(x, z, rot);
@@ -490,7 +493,7 @@ function recoveryFixture(town = buildTestTown(), occupied: { x: number; z: numbe
   const damage = new WeakMap([[car, { side: "front", depth: 0.32 }]]);
   const originalDamage = damage.get(car);
   let clock = 1000, time = startTime, riding: Ride | null = car, eligible = true, detaches = 0, handbacks = 0, covered = false;
-  let opacity = 0, reveal = false;
+  let opacity = 0, reveal = false, swimPose = 0;
   let handback: { opacity: number; snap: boolean; reserved: number; x: number; z: number } | undefined;
   const fadeEvents: Parameters<CarWaterHost["fade"]>[0][] = [];
   const saves: { x: number; z: number }[] = [];
@@ -500,7 +503,11 @@ function recoveryFixture(town = buildTestTown(), occupied: { x: number; z: numbe
     ambient: { carWaterTrafficClear: () => true, carWaterPeopleClear: () => true },
     peopleClear: (clear) => occupied.every(({ x, z, radius }) => clear(x, z, radius)),
   });
-  const foot: CarWaterHost["foot"] = (p) => { player.position.set(p.x, p.y, p.z); player.rotation.y = p.rot; };
+  const foot: CarWaterHost["foot"] = (p) => {
+    player.position.set(p.x, p.y, p.z);
+    player.rotation.y = p.rot;
+    swimPose = p.swim;
+  };
   const present = (r: Ride, pitch = 0, roll = 0, lift = 0) => {
     water.pose(r, time, lift, pitch, roll, false);
     if (riding === r) player.position.set(0.43, 0.22, -0.34).applyEuler(r.mesh.rotation).add(r.mesh.position);
@@ -511,7 +518,7 @@ function recoveryFixture(town = buildTestTown(), occupied: { x: number; z: numbe
     driver: (r) => riding === r,
     reserve: (boxes) => { leases = boxes.slice(); },
     clearance,
-    arrest: ({ m }) => m.set(m.x, m.z, m.heading),
+    arrest: (r) => { const { m } = r; m.set(m.x, m.z, m.heading); onArrest?.(r); },
     place: (r, released, snap) => {
       present(r);
       if (released) {
@@ -519,7 +526,13 @@ function recoveryFixture(town = buildTestTown(), occupied: { x: number; z: numbe
         handback = { opacity, snap, reserved: leases.length, x: r.mesh.position.x, z: r.mesh.position.z };
       }
     },
-    detach: (r, p) => { if (riding === r) { riding = null; detaches++; foot(p, false); } },
+    detach: (r, p) => {
+      if (riding !== r) return;
+      riding = null;
+      detaches++;
+      onDetach?.(r, p);
+      foot(p, false);
+    },
     foot,
     fade: (stage) => {
       fadeEvents.push(stage);
@@ -536,6 +549,7 @@ function recoveryFixture(town = buildTestTown(), occupied: { x: number; z: numbe
   const f = {
     town, car, player, parked, rides, clearance, water, occupied, damage, originalDamage, fadeEvents, saves,
     get riding() { return riding; }, get detaches() { return detaches; },
+    get swimPose() { return swimPose; },
     get handbacks() { return handbacks; }, get covered() { return covered; },
     get handback() { return handback; }, get opacity() { return opacity; },
     get leases() { return leases; }, get now() { return clock; }, get time() { return time; },
@@ -828,6 +842,108 @@ describe.each([60, 20])("paired mainland handback at %i Hz", (hz) => {
 });
 
 describe("occupied town car rescue", () => {
+  it("publishes the seated exit on arrest and accepts it without a HUD tick", () => {
+    const noOp = () => {};
+    const game: Game = Object.create(Game.prototype);
+    const f = recoveryFixture(undefined, [], {
+      onArrest: () => game["resetCarWaterDrive"](),
+      onDetach: (_, { x, y, z, rot }) => game["leftRide"](x, y, z, rot),
+    });
+    Object.assign(game, {
+      rides: { get riding() { return f.riding; }, phase: "on", water: f.water, leave: f.exit },
+      player: { root: f.player }, modes: { active: null, engaged: false }, ambient: { riding: true },
+      hop: new Hop(), gait: new Gait(), steer: new Steer(), helmSteer: new Steer(),
+      rig: { clearTaxiShot: noOp, dist: 5 }, rideBack: 0, dust: { clear: noOp }, wading: { depth: 0 },
+      keys: new Set([" "]), joy: { x: 0.5, y: 0 }, brake: true, vel: new Vector3(), moveVel: new Vector3(),
+    });
+    const { hud } = useStore.getState();
+    useStore.setState({ hud: { ...hud, panel: null, ride: "car", prompt: null } });
+    try {
+      f.begin();
+      f.at(-96, -81);
+      expect(f.water.inspect()).toMatchObject({ phase: "float", reason: "depth" });
+      expect(f.riding).toBe(f.car);
+      expect(f.player.visible).toBe(true);
+      expect(game["nearest"]).toEqual({ kind: "out", label: "Išlipti", id: f.car.id });
+      expect(useStore.getState().hud).toMatchObject({ ride: "car", prompt: { kind: "out", label: "Išlipti" } });
+      expect(game["brake"]).toBe(true);
+      useStore.getState().setHud({ panel: "map" });
+      game.interact();
+      expect(f.riding).toBe(f.car);
+      useStore.getState().setHud({ panel: null });
+      game.interact();
+      expect(f.riding).toBeNull();
+      expect(f.swimPose).toBe(1);
+      expect(game["swimming"]).toBe(false);
+      expect(game["diveK"]).toBe(0);
+      expect(game["nearest"]).toBeNull();
+      expect(useStore.getState().hud).toMatchObject({ ride: null, prompt: null });
+      expect(game["carWaterInputHeld"]()).toBe(true);
+      game.setJoystick(0, 0);
+      expect(game["carWaterInputHeld"]()).toBe(true);
+      game["keys"].delete(" ");
+      expect(game["carWaterInputHeld"]()).toBe(false);
+      game.interact();
+      expect(f.detaches).toBe(1);
+    } finally {
+      useStore.setState({ hud });
+    }
+  });
+
+  it.each([0, 1, 2])("steps out offshore with %i obstructed side sweeps", (blockedSides) => {
+    const f = recoveryFixture();
+    const x = -96, z = -81, { half, wide } = f.car.m.spec;
+    const landwardEnd = z + half + 0.48;
+    expect(waterY(x, landwardEnd, f.time)! - floorY(x, landwardEnd)).toBeLessThan(0.58);
+    for (let i = 0; i < blockedSides; i++) {
+      const side = i === 0 ? -1 : 1;
+      f.town.colliders.addCircle(x + side * (wide + 1.1), z, 0.08);
+      expect(f.clearance.foot(f.car, x + side * (wide + 0.48), z, 0.07)).toBe(true);
+      expect(f.clearance.foot(f.car, x + side * (wide + 0.8), z)).toBe(false);
+    }
+    f.begin();
+    f.at(x, z);
+    const hazard = f.water.inspect();
+    expect(hazard).toMatchObject({ phase: "float", reason: "depth", assistedOnFoot: false });
+    expect(f.exit()).toBe(true);
+    expect(f.riding).toBeNull();
+    expect(f.water.assistedOnFoot).toBe(true);
+    const p = f.player.position;
+    const tread = blockedSides < 2;
+    const checkFoot = (offset: number) => {
+      if (tread) {
+        expect(p.z).toBeCloseTo(z, 10);
+        expect(Math.abs(p.x - x)).toBeCloseTo(wide + offset, 10);
+        if (blockedSides === 1) expect(p.x).toBeGreaterThan(x);
+      } else {
+        expect(p.x).toBeCloseTo(x, 10);
+        expect(p.z).toBeCloseTo(z + half + offset, 10);
+      }
+      const floor = floorY(p.x, p.z), surface = waterY(p.x, p.z, f.time)!;
+      if (tread) {
+        expect(surface - floor).toBeGreaterThan(0.58);
+        expect(f.swimPose).toBeGreaterThan(0.8);
+        expect(p.y).toBeCloseTo(Math.max(floor, surface - 0.78), 10);
+      } else {
+        expect(surface - floor).toBeGreaterThan(0);
+        expect(surface - floor).toBeLessThanOrEqual(0.58);
+        expect(f.swimPose).toBe(0);
+        expect(p.y).toBeCloseTo(floor, 10);
+      }
+    };
+    checkFoot(0.48);
+    f.step();
+    checkFoot(0.48 + (0.8 - 0.48) * dt / 0.22);
+    expect(f.exit()).toBe(true);
+    expect(f.detaches).toBe(1);
+    const repeat = f.water.inspect();
+    expect(repeat.episode).toBe(hazard.episode);
+    expect(repeat.reason).toBe(hazard.reason);
+    expect(repeat.secondsLeft! + dt).toBeCloseTo(hazard.secondsLeft!, 10);
+    f.run(220);
+    checkFoot(0.8);
+  });
+
   it("supports the rolled footprint on the town pier and an oblique reverse frame in the wash", () => {
     const f = recoveryFixture(), { m, mesh } = f.car;
     f.begin(); f.at(-30, -70, 0.42);
