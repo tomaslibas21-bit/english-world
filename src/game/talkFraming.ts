@@ -1,8 +1,9 @@
 // Loaded with the talk overlay. The fit uses the same shifted perspective lens as the renderer.
 import * as THREE from "three";
+import type { CameraRig } from "./camera";
 import type { GameCharacter } from "./characters";
 import type { OcclusionField } from "./occlusion";
-import type { TalkLayout } from "./talkLayout";
+import { watchTalkLayout, type TalkLayout } from "./talkLayout";
 import { covers, type Body, type Shot } from "./talkShot";
 import { rayReaches, TalkMeshRanges } from "./talkMeshRange";
 
@@ -23,6 +24,7 @@ interface FitInput {
   max: number;
   previous?: Framing;
   presented?: { pos: THREE.Vector3; look: THREE.Vector3 };
+  allowNear?: boolean;
   hint?: THREE.Vector3;
   report?: (stats: FitStats) => void;
 }
@@ -533,19 +535,25 @@ export class TalkFraming {
     const f = chosen ?? fallback ?? candidates[0];
     const result: Framing = { pos: f.pos, look: f.look, dx: f.dx, dy: f.dy, fov: f.fov, clear: !!chosen, blend: false };
 
-    // A short move uses the exact interpolated look and fixed shift used by CameraRig. Large moves cut.
-    const sample = (pos: THREE.Vector3, look: THREE.Vector3) => {
-      const between = { ...f, pos, look };
+    // The live lens and the midpoint must both keep the incoming face clear before a visible move.
+    const sample = (pos: THREE.Vector3, look: THREE.Vector3, fov = f.fov, dx = f.dx, dy = f.dy) => {
+      const between = { ...f, pos, look, fov, dx, dy };
       measure(between, false);
       return between.open && !blocked(between) && !geometry(between);
     };
+    const view = lens.view?.enabled ? lens.view : null;
+    const sameCanvas = lens.aspect === w / h && (!view || (view.fullWidth === w && view.fullHeight === h && view.width === w && view.height === h));
     if (chosen && presented && presented.pos.distanceTo(f.pos) <= 0.32 && presented.look.distanceTo(f.look) <= 0.36
       && offset.subVectors(presented.look, presented.pos).angleTo(edge.subVectors(f.look, f.pos)) <= 8 * RAD
-      && stats.tested <= MAX_RAY_POSES - 2) {
-      result.blend = this.meshes.travelClear(presented.pos, f.pos, stats) && sample(presented.pos, presented.look)
-        && sample(presented.pos.clone().lerp(f.pos, 0.5), presented.look.clone().lerp(f.look, 0.5));
+      && sameCanvas && lens.near === 0.1 && stats.tested <= MAX_RAY_POSES - 2) {
+      const dx = (view?.offsetX ?? 0) - screen.shiftX, dy = (view?.offsetY ?? 0) - screen.shiftY;
+      result.blend = this.meshes.travelClear(presented.pos, f.pos, stats)
+        && sample(presented.pos, presented.look, lens.fov, dx, dy)
+        && camera.quaternion.angleTo(lens.quaternion) < 0.0001
+        && sample(presented.pos.clone().lerp(f.pos, 0.5), presented.look.clone().lerp(f.look, 0.5),
+          (lens.fov + f.fov) / 2, (dx + f.dx) / 2, (dy + f.dy) / 2);
     }
-    if (chosen && !result.blend && f.clearance >= 7 && stats.tested <= MAX_RAY_POSES - 2) {
+    if (input.allowNear !== false && chosen && !result.blend && f.clearance >= 7 && stats.tested <= MAX_RAY_POSES - 2) {
       const near = f.pos.clone().lerp(f.look, 0.06);
       if (this.meshes.travelClear(f.pos, near, stats) && sample(f.pos.clone().lerp(near, 0.5), f.look) && sample(near, f.look)) result.near = near;
     }
@@ -562,4 +570,115 @@ export class TalkFraming {
   }
 }
 
-export { watchTalkLayout } from "./talkLayout";
+const MOVE_SECONDS = 0.4;
+
+/** Owns the measured shot and its presentation for one conversation run. */
+export class TalkPresentation {
+  layout: TalkLayout | null = null;
+  private readonly watch: ReturnType<typeof watchTalkLayout>;
+  private readonly framing = new TalkFraming();
+  private readonly views = new Map<Actor, Framing>();
+  private shot?: Framing;
+  private elapsed = MOVE_SECONDS;
+  private readonly from = { pos: new THREE.Vector3(), look: new THREE.Vector3(), fov: 0, x: 0, y: 0 };
+  private readonly to = { pos: new THREE.Vector3(), look: new THREE.Vector3(), fov: 0, x: 0, y: 0 };
+  private readonly motion = typeof matchMedia === "undefined" ? undefined : matchMedia("(prefers-reduced-motion: reduce)");
+
+  constructor(canvas: HTMLCanvasElement, private readonly rig: CameraRig, private speaker: Actor,
+    private readonly valid: () => boolean, hasArt: boolean,
+    private readonly inputs: () => Omit<FitInput, "speaker" | "lens" | "screen" | "presented" | "previous">,
+    private readonly covered: () => boolean) {
+    this.watch = watchTalkLayout(canvas, valid, hasArt, (layout) => {
+      this.layout = layout;
+      this.views.clear();
+      this.fit();
+    });
+  }
+
+  get reducedMotion() { return this.motion?.matches ?? false; }
+  resize() { this.watch.dirty(); }
+  dispose() {
+    this.watch.dispose();
+    this.elapsed = MOVE_SECONDS;
+  }
+
+  aim(speaker: Actor) {
+    if (this.speaker === speaker) return;
+    this.speaker = speaker;
+    const last = this.shot;
+    this.watch.flush();
+    if (this.shot === last) this.fit(this.views.get(speaker) ?? last);
+  }
+
+  private fit(previous?: Framing) {
+    const { layout, rig, speaker } = this;
+    if (!layout || !this.valid()) return;
+    const cam = rig.cam;
+    const animate = !this.covered() && !this.reducedMotion;
+    const opening = !this.shot;
+    const presented = animate ? { pos: cam.position, look: rig.presentedLook } : undefined;
+    const shot = this.framing.fit({ ...this.inputs(), speaker, lens: cam, screen: layout, previous, presented, allowNear: opening });
+    if (!shot) return;
+    this.shot = shot;
+    this.views.set(speaker, shot);
+
+    const glide = animate && shot.blend;
+    const near = opening ? shot.near : undefined;
+    const x = layout.shiftX + shot.dx, y = layout.shiftY + shot.dy;
+    this.to.pos.copy(near ?? shot.pos);
+    this.to.look.copy(shot.look);
+    this.to.fov = shot.fov;
+    this.to.x = x;
+    this.to.y = y;
+    this.from.pos.copy(glide ? cam.position : shot.pos);
+    this.from.look.copy(glide ? rig.presentedLook : shot.look);
+    this.from.fov = glide ? cam.fov : shot.fov;
+    const view = cam.view?.enabled ? cam.view : null;
+    this.from.x = glide ? view?.offsetX ?? 0 : x;
+    this.from.y = glide ? view?.offsetY ?? 0 : y;
+
+    // If walking-to-talk travel is unsafe, the first frame uses the measured home.
+    // A separately checked push-in from that home can still play in the opening.
+    this.elapsed = glide || (animate && near) ? 0 : MOVE_SECONDS;
+    rig.talk = { pos: new THREE.Vector3(), look: new THREE.Vector3(), fov: shot.fov };
+    this.place(this.elapsed ? 1 : 0);
+    cam.position.copy(rig.talk.pos);
+    cam.lookAt(rig.talk.look);
+    cam.updateMatrixWorld();
+  }
+
+  update(dt: number) {
+    this.watch.flush();
+    if (this.elapsed >= MOVE_SECONDS || !this.layout || !this.valid()) return;
+    this.elapsed = this.reducedMotion ? MOVE_SECONDS : Math.min(MOVE_SECONDS, this.elapsed + dt);
+    const t = this.elapsed / MOVE_SECONDS;
+    this.place(t * t * (3 - 2 * t));
+  }
+
+  private place(t: number) {
+    const { from, to, rig } = this, { width, height } = this.layout!, target = rig.talk!;
+    const cam = rig.cam;
+    // Copy the endpoint exactly and keep the look reference and lens stable during the hold.
+    if (t === 1) {
+      target.pos.copy(to.pos);
+      target.look.copy(to.look);
+      target.fov = to.fov;
+    } else {
+      target.pos.lerpVectors(from.pos, to.pos, t);
+      target.look.lerpVectors(from.look, to.look, t);
+      target.fov = THREE.MathUtils.lerp(from.fov, to.fov, t);
+    }
+    const x = t === 1 ? to.x : THREE.MathUtils.lerp(from.x, to.x, t);
+    const y = t === 1 ? to.y : THREE.MathUtils.lerp(from.y, to.y, t);
+    const lensChanged = cam.fov !== target.fov || cam.near !== 0.1;
+    cam.fov = target.fov;
+    cam.near = 0.1;
+    const view = cam.view;
+    if (!view?.enabled || view.fullWidth !== width || view.fullHeight !== height || view.width !== width || view.height !== height
+      || view.offsetX !== x || view.offsetY !== y || cam.aspect !== width / height) {
+      cam.setViewOffset(width, height, x, y, width, height);
+    } else if (lensChanged) cam.updateProjectionMatrix();
+    // The rig still owns the live camera and the return to walking. Apply the already-eased pose once.
+    rig.snap();
+  }
+}

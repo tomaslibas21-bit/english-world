@@ -58,8 +58,7 @@ import { GOFISH_PROMPT } from "./gofish/framing";
 import { OcclusionField } from "./occlusion";
 import { PropFader } from "./fade";
 import { CUT, withCutout } from "./cutout";
-import type { Framing, TalkFraming } from "./talkFraming";
-import type { TalkLayout, watchTalkLayout } from "./talkLayout";
+import type { TalkPresentation } from "./talkFraming";
 import { FLIGHT_SECONDS, flightAt } from "./flyover";
 import { Guidance } from "./guidance";
 import { NavGrid, openIslandNav } from "./nav";
@@ -140,11 +139,9 @@ const AT_WORK: Record<string, "wipe" | "type"> = {
   emily: "type",
 };
 
-let talkFramingModule: Promise<typeof import("./talkFraming")> | undefined;
-
-/** The provisional picture above the conversation on a phone, before the panel mounts. */
-function talkPictureHeight(h: number): number {
-  return h <= 620 ? 100 : h <= 700 ? Math.max(100, h * 0.2) : Math.min(230, Math.max(110, h * 0.25));
+let talkFramingModule: Promise<typeof import("./talkFraming") | undefined> | undefined;
+function loadTalkFraming() {
+  return talkFramingModule ??= import("./talkFraming").catch(() => { talkFramingModule = undefined; return undefined; });
 }
 
 export class Game implements GameApi {
@@ -204,19 +201,10 @@ export class Game implements GameApi {
    *  `watch`); and the head of the person the learner talks with, for the player's own. */
   private learnerAt = new THREE.Vector3();
   private talkAt = new THREE.Vector3();
-  /** The conversation's camera leans in a little while the other person speaks: until when (game time), and where it
-   *  stands otherwise. */
-  private talkLean = 0;
-  private talkHome: THREE.Vector3 | null = null;
-  private talkNear: THREE.Vector3 | null = null;
-  /** Speakers within reach of this conversation and poses to recheck when they speak again. */
   private talkCast: NpcActor[] = [];
-  private talkViews = new Map<string, Framing>();
-  private talkFraming?: TalkFraming;
-  private talkShot: Framing | null = null;
   private talkSpeaker: NpcActor | null = null;
-  private talkLayout: TalkLayout | null = null;
-  private talkLayoutWatch?: ReturnType<typeof watchTalkLayout>;
+  private talkCamera?: TalkPresentation;
+  private get talkLayout() { return this.talkCamera?.layout ?? null; }
   private hudBoxCache: TagBox[] = [];
   private hudCheck = 0;
   private tagLayer: HTMLDivElement;
@@ -867,7 +855,6 @@ export class Game implements GameApi {
     if (!z) return;
     const doIt = () => {
       if (this.talkNpc) this.stopTalkLayout();
-      this.talkFraming = undefined;
       this.phone.dismiss();
       if (this.modes.active || this.modes.owns("barista") || this.modes.owns("gofish")) this.modes.exit(true);
       if (this.flight) {
@@ -1795,6 +1782,7 @@ export class Game implements GameApi {
   startScenario(sitId: string) {
     const sit = SITUATION_BY_ID[sitId];
     if (!sit) return;
+    if (!isCall(sit)) void loadTalkFraming();
     const st = useStore.getState();
     st.setHud({ panel: null });
     this.modes.exit(true);
@@ -1858,6 +1846,7 @@ export class Game implements GameApi {
   }
 
   private requestConversation(sitId: string, actor: NpcActor | null, fromCard = false) {
+    if (actor) void loadTalkFraming();
     this.quests.stopReplay();
     this.conversationLoads++;
     this.observeStreetAndPhone();
@@ -2012,7 +2001,6 @@ export class Game implements GameApi {
         n.ch.talk(secs, () => (useStore.getState().conv.npcId === npcId ? audio.level() : -1), () => audio.vowel());
         // the camera follows changes of speaker
         if (this.rig.mode === "talk" && this.talkCast.includes(n)) this.aimTalk(n);
-        this.talkLean = this.t + Math.min(secs, 12);
         if (text) n.ch.express?.(moodOf(text), secs + 1.2);
       },
       npcReact: (npcId, kind) => { this.npcs.find((x) => x.id === npcId)?.ch.react?.(kind); },
@@ -2028,95 +2016,34 @@ export class Game implements GameApi {
 
   private startTalkLayout(session: Session, actor: NpcActor) {
     const zone = this.zone, { run, sitId, hostId } = useStore.getState().conv;
+    const hasArt = !!sceneFor(sitId, hostId);
     const valid = () => {
       const { conv } = useStore.getState();
       return !this.disposed && this.session === session && session.active && conv.active && conv.run === run
         && this.zone === zone && this.talkNpc === actor && this.rig.mode === "talk"
         && !!this.talkSpeaker && this.npcs.includes(this.talkSpeaker);
     };
-    const load = talkFramingModule ??= import("./talkFraming");
-    void load.then(({ TalkFraming, watchTalkLayout }) => {
-      if (!valid()) return;
-      this.talkFraming ??= new TalkFraming();
-      this.talkLayoutWatch = watchTalkLayout(this.renderer.domElement, valid, !!sceneFor(sitId, hostId), (layout) => {
-        this.talkLayout = layout;
-        this.refitTalk();
-      });
-    }, () => { if (talkFramingModule === load) talkFramingModule = undefined; });
+    void loadTalkFraming().then((module) => {
+      if (!module || !valid() || !this.talkSpeaker) return;
+      this.talkCamera = new module.TalkPresentation(this.renderer.domElement, this.rig, this.talkSpeaker, valid, hasArt, () => ({
+        learner: this.player, people: [...this.npcs.map((n) => n.ch), ...this.extras], scene: this.scene,
+        room: zone.interior, field: zone.interior ? undefined : this.field, max: THEME.talkCamera?.max ?? 30,
+      }), () => this.transitioning || (hasArt && picturesOn(useStore.getState().settings)));
+    });
   }
 
   private stopTalkLayout() {
-    this.talkLayoutWatch?.dispose();
-    this.talkLayoutWatch = undefined;
-    this.talkLayout = this.talkSpeaker = this.talkShot = null;
-    this.talkViews.clear();
-    this.talkLean = 0;
-  }
-
-  private refitTalk() {
-    this.talkViews.clear();
-    if (this.talkSpeaker) this.frameTalk(this.talkSpeaker, true);
+    this.talkCamera?.dispose();
+    this.talkCamera = undefined;
+    this.talkSpeaker = null;
   }
 
   private aimTalk(to: NpcActor) {
     if (to === this.talkSpeaker) return;
     this.talkSpeaker = to;
-    this.talkLean = 0;
     const p = this.player.root.position, a = to.ch.root.position;
     if (Math.hypot(a.x - p.x, a.z - p.z) > 0.1) this.heading = Math.atan2(a.x - p.x, a.z - p.z);
-    this.frameTalk(to);
-  }
-
-  private frameTalk(to: NpcActor, layoutChanged = false) {
-    const tc = THEME.talkCamera, live = this.rig.cam;
-    const previous = this.talkViews.get(to.id) ?? this.talkShot ?? undefined;
-    const presented = !layoutChanged && this.talkShot?.clear ? { pos: live.position, look: this.rig.presentedLook } : undefined;
-    const shot = tc && this.talkLayoutWatch && this.talkFraming?.fit({
-      speaker: to, learner: this.player, people: [...this.npcs.map((n) => n.ch), ...this.extras],
-      scene: this.scene, lens: live, screen: this.talkLayout ?? this.provisionalTalkLayout(),
-      room: this.zone.interior, field: this.zone.interior ? undefined : this.field, max: tc.max, previous, presented,
-    });
-    if (shot) {
-      this.talkViews.set(to.id, shot);
-      this.applyTalkShot(shot);
-    } else {
-      // While the talk chunk or panel mounts, use a single provisional shoulder view.
-      const look = to.ch.root.position.clone().setY(to.ch.root.position.y + to.ch.height * (to.sit ? 0.72 : 0.9));
-      const p = this.player.root.position, x = p.x - look.x, z = p.z - look.z;
-      const yaw = Math.hypot(x, z) > 0.1 ? Math.atan2(x, z) : to.rot;
-      const pos = look.clone().add(new THREE.Vector3(2.8 * Math.sin(yaw + 0.9), 0.8, 2.8 * Math.cos(yaw + 0.9)));
-      this.applyTalkShot({ pos, look, dx: 0, dy: 0, fov: 50, blend: false, clear: false });
-    }
-  }
-
-  private applyTalkShot(shot: Framing) {
-    this.talkShot = shot;
-    this.rig.talk = { pos: shot.pos.clone(), look: shot.look, fov: shot.fov };
-    this.talkHome = shot.near ? shot.pos : null;
-    this.talkNear = shot.near ?? null;
-    const cam = this.rig.cam;
-    if (cam.fov !== shot.fov || cam.near !== 0.1) {
-      cam.fov = shot.fov;
-      cam.near = 0.1;
-      cam.updateProjectionMatrix();
-    }
-    this.shiftTalkView(cam, this.screenW, this.screenH);
-    if (!shot.blend) {
-      this.rig.snap();
-      cam.position.copy(shot.pos);
-      cam.lookAt(shot.look);
-      cam.updateMatrixWorld();
-    }
-  }
-
-  private provisionalTalkLayout(): TalkLayout {
-    const w = this.screenW, h = this.screenH, sideways = this.sidewaysPhone, wide = !sideways && w > 900;
-    const openW = sideways ? w * 0.25 : wide ? w - 14 - Math.min(500, 0.42 * w) : w;
-    const openH = sideways || wide ? h : talkPictureHeight(h);
-    return {
-      width: w, height: h, viewportHeight: h, shiftX: (w - openW) / 2, shiftY: (h - openH) / 2,
-      picture: { x0: 10, x1: openW - 10, y0: 10, y1: openH - 10 }, obstacles: [],
-    };
+    this.talkCamera?.aim(to);
   }
 
   private onSessionEvent(name: string, data: any) {
@@ -2141,15 +2068,16 @@ export class Game implements GameApi {
   private pendingRide: { to: string; by: "taxi" | "bus" | "plane" } | null = null;
 
   private endSession(sit: SituationDef, completed: boolean) {
+    const reduceMotion = this.talkCamera?.reducedMotion;
     this.session = null;
     this.stopTalkLayout();
     useStore.getState().setConv({ active: false });
     this.rig.talk = null;
-    this.talkHome = this.talkNear = null;
     this.talkCast = [];
     this.player.root.visible = true;
     this.rig.mode = this.zone.interior ? "interior" : "follow";
     this.rig.cam.clearViewOffset();
+    if (reduceMotion) this.rig.snap();
     // the person stays turned to the player and turns back home in their own time (updateNpcs)
     this.talkNpc = null;
     if (completed && !this.swimming && !this.rides.riding && !this.modes.active && !this.modes.modal) {
@@ -2450,7 +2378,7 @@ export class Game implements GameApi {
   private onResize = () => {
     if (this.disposed) return;
     this.syncSize();
-    this.talkLayoutWatch?.dirty();
+    this.talkCamera?.resize();
   };
 
   private syncSize() {
@@ -2460,21 +2388,7 @@ export class Game implements GameApi {
     this.rig.resize(w, h, w > h && h <= 520);
     this.screenW = w;
     this.screenH = h;
-    if (this.talkLayoutWatch) this.talkLayoutWatch.dirty();
-    else if (this.rig.mode === "talk" && this.talkSpeaker) this.refitTalk();
-  }
-
-  private shiftTalkView(cam: THREE.PerspectiveCamera, w: number, h: number) {
-    const layout = this.talkLayout, sideways = this.sidewaysPhone, wide = !sideways && w > 900;
-    w = layout?.width ?? w;
-    h = layout?.height ?? h;
-    const openW = sideways ? w * 0.25 : wide ? w - 14 - Math.min(500, 0.42 * w) : w;
-    const x = (layout?.shiftX ?? (w - openW) / 2) + (this.talkShot?.dx ?? 0);
-    const y = (layout?.shiftY ?? (sideways || wide ? 0 : (h - talkPictureHeight(h)) / 2)) + (this.talkShot?.dy ?? 0);
-    const view = cam.view;
-    if (!view?.enabled || view.fullWidth !== w || view.fullHeight !== h || view.offsetX !== x || view.offsetY !== y || cam.aspect !== w / h) {
-      cam.setViewOffset(w, h, x, y, w, h);
-    }
+    this.talkCamera?.resize();
   }
 
   screenState() {
@@ -2588,10 +2502,12 @@ export class Game implements GameApi {
     this.rig.hold = this.hop.air && !this.zone.interior;
     // (up with a jump by half its height: the second jump's top stays in the picture)
     this.rig.target.lerp(this.tmpV.copy(this.player.root.position).setY(this.player.root.position.y + this.hop.lift * 0.5), Math.min(1, dt * 10));
-    // the conversation's camera leans in a little while the other person speaks, and eases back when they stop
-    if (this.rig.talk && this.talkHome && this.talkNear) this.rig.talk.pos.lerp(this.t < this.talkLean ? this.talkNear : this.talkHome, 1 - Math.exp(-dt * 1.4));
     if (mode?.camera && this.modes.active === mode) this.rig.mode = mode.camera;
-    this.rig.update(dt, this.heading, speed > 0.7, true, (st.settings.cameraFollow || !!riding) && !this.pointer.down);
+    const actorTalk = talking && !!this.talkNpc && this.rig.mode === "talk";
+    if (actorTalk) this.talkCamera?.update(dt);
+    // Keep the visible view while the talk chunk or measured panel is pending.
+    const awaitingShot = actorTalk && !this.rig.talk;
+    if (!awaitingShot) this.rig.update(dt, this.heading, speed > 0.7, true, (st.settings.cameraFollow || !!riding) && !this.pointer.down);
     this.frameKeeper(dt, blocked || !!mode);
     if (this.speedShake > 0 && riding?.kind === "car") {
       this.rig.cam.position.x += Math.sin(this.t * 41) * this.speedShake;
@@ -2605,7 +2521,7 @@ export class Game implements GameApi {
       this.underWater(this.undersea.on);
     }
     // Walking eases the lens. A conversation uses the lens its shot was fitted with.
-    {
+    if (!awaitingShot) {
       const fov = this.rig.fovFor(w, h, this.rig.mode === "follow" && this.vel.lengthSq() > 30) + (this.rig.mode === "follow" ? this.rideFov : 0);
       const d = fov - this.rig.cam.fov;
       if (d !== 0) {
@@ -2625,12 +2541,10 @@ export class Game implements GameApi {
     CUT.a.value.copy(this.rig.cam.position);
     CUT.b.value.copy(this.chest);
     CUT.r.value = this.rig.mode === "follow" && !this.zone.interior ? 0.55 : 0;
-    // Give the conversation panel its part of the picture and let the player stand lower while walking on a phone.
-    {
+    // Let the player stand lower while walking on a phone.
+    if (!actorTalk) {
       const sideways = this.sidewaysPhone;
-      if (talking && this.talkNpc && this.rig.mode === "talk") {
-        this.shiftTalkView(this.rig.cam, w, h);
-      } else if (mode === this.billiards) {
+      if (mode === this.billiards) {
         this.billiards.frameView(w, h, document.querySelector(".bl-table-pad")?.getBoundingClientRect());
       } else if (this.barista && mode === this.barista) {
         const bottom = document.querySelector(".barista-bottom, .barista-result .mode-score-card")?.getBoundingClientRect().top;
@@ -3503,7 +3417,6 @@ export class Game implements GameApi {
     this.streetLife?.dispose();
     this.disposed = true;
     this.stopTalkLayout();
-    this.talkFraming = undefined;
     this.modes.dispose();
     audio.bed(null);
     this.frameFade.clear();

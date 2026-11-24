@@ -21,7 +21,7 @@ export function measurementConfig({ width, height }) {
   };
 }
 
-export async function measureTalk({ margin, fraction, settleMs, band }) {
+export async function measureTalk({ margin, fraction, settleMs, band, snapshot = false }) {
   const { game, store } = window.__ew ?? {};
   const state = () => store?.getState().conv;
   const cam = game?.rig?.cam;
@@ -58,7 +58,8 @@ export async function measureTalk({ margin, fraction, settleMs, band }) {
     if (samples.length > 11) samples.shift();
     return samples.length === 11 && samples.every((p) => p.distanceToSquared(samples[0]) < 0.001 ** 2);
   };
-  if (typeof window.__step === "function") {
+  // The continuity probe reads the just-rendered frame in place.
+  if (!snapshot && typeof window.__step === "function") {
     const deadline = Date.now() + settleMs;
     const stepLimit = Math.floor(settleMs * 60 / 1000);
     settled = still();
@@ -71,7 +72,7 @@ export async function measureTalk({ margin, fraction, settleMs, band }) {
         await new Promise((resolve) => setTimeout(resolve, 0));
       }
     }
-  } else {
+  } else if (!snapshot) {
     settled = await new Promise((resolve) => {
       let frame;
       const timer = setTimeout(() => { cancelAnimationFrame(frame); resolve(false); }, settleMs);
@@ -315,5 +316,14 @@ export async function measureTalk({ margin, fraction, settleMs, band }) {
       }
     }
   }
-  return { face, speaker, speakerId, settled, checks: { view, ui, geo, size } };
+  const measurement = { face, speaker, speakerId, settled, checks: { view, ui, geo, size } };
+  if (snapshot) {
+    const opening = game.talkLayout?.picture;
+    measurement.landmarks = points.map(({ name, x, y, z }) => ({
+      name, x: round(x), y: round(y), inDepth: z >= -1 && z <= 1,
+      inOpening: opening ? x >= rect.left + opening.x0 && x <= rect.left + opening.x1
+        && y >= rect.top + opening.y0 && y <= rect.top + opening.y1 : null,
+    }));
+  }
+  return measurement;
 }

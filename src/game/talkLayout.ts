@@ -147,6 +147,13 @@ export function watchTalkLayout(canvas: HTMLCanvasElement, valid: () => boolean,
     if (returning || last === undefined || !sameLayout(last, layout)) { last = layout; apply(layout); }
   }
 
+  // A queued panel change may follow the game's frame in the RAF queue.
+  const flush = () => {
+    if (stopped || frame === null) return;
+    cancelAnimationFrame(frame);
+    read();
+  };
+
   const onOverlayEvent = (e: Event) => {
     if (!(e.target instanceof Element)) return;
     if (e.type.startsWith("pointer") || e.type.startsWith("focus")) {
@@ -174,5 +181,5 @@ export function watchTalkLayout(canvas: HTMLCanvasElement, valid: () => boolean,
     unsubscribe();
   }
   dirty();
-  return { dirty, dispose };
+  return { dirty, flush, dispose };
 }
