@@ -11,7 +11,7 @@ try {
       const label = `photowalk-${width}x${height}-${speech ? "speech" : "choices"}`;
       try {
         const { npc, situation, things, words, accept, later, spokenName, name } = await page.evaluate(async () =>
-          (await import("/tests/browser/quest-content.mjs")).photoWalkContent());
+          (await import("/tests/browser/fixtures/quest-content.mjs")).photoWalkContent());
         const chip = page.locator(".photo-chip");
         assert.equal(await chip.count(), 0);
         await talkTo(page, npc, situation);

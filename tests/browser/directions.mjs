@@ -10,7 +10,7 @@ try {
     const label = `directions-${width}x${height}`;
     try {
       const { npc, situation, destination, location, place, lines, words, title, ask, thank } = await page.evaluate(async () =>
-        (await import("/tests/browser/quest-content.mjs")).directionsContent());
+        (await import("/tests/browser/fixtures/quest-content.mjs")).directionsContent());
       const card = page.locator(".directions-card");
       assert.equal(await card.count(), 0);
       await talkTo(page, npc, situation);

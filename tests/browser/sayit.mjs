@@ -97,7 +97,7 @@ async function testGame(context, game, size, touch, supported) {
   };
   const press = (target) => touch ? target.tap() : target.click();
   const { words, target, driveStart, reply, unrelatedSpeech } = await page.evaluate(async () =>
-    (await import("/tests/browser/quest-content.mjs")).sayItContent());
+    (await import("/tests/browser/fixtures/quest-content.mjs")).sayItContent());
   const mic = page.getByRole("button", { name: words.mic, exact: true });
   const bonus = page.locator(".say-it");
   const score = page.locator(".mode-score-card");
@@ -242,7 +242,7 @@ async function testGame(context, game, size, touch, supported) {
     await phase("listen");
     const shot = await read();
     const wrongCall = await page.evaluate(async (call) =>
-      (await import("/tests/browser/quest-content.mjs")).wrongBilliardsCall(call), shot.ai);
+      (await import("/tests/browser/fixtures/quest-content.mjs")).wrongBilliardsCall(call), shot.ai);
     await checkBonus({
       hit: shot.call.sentence.en, miss: wrongCall,
       untouched: (s) => [s.shots, s.phase, s.selection], controls: ".bl-ball-option, .bl-pocket-chips button, .bl-replay",

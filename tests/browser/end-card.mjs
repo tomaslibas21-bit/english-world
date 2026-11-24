@@ -47,7 +47,7 @@ try {
     if (expectedLayer) assert.equal(HL, expectedLayer);
     await page.waitForFunction(() => window.__ew?.store.getState().screen === "play" && window.__ew.game?.ledges?.ready, null, { timeout: 240000 });
     const { words: t, answers: cafeAnswers, keepsake, voice } = await page.evaluate(async (id) =>
-      (await import("/tests/browser/quest-content.mjs")).endCardContent(id, window.__ew.store.getState().progress.profile.gender), cafe);
+      (await import("/tests/browser/fixtures/quest-content.mjs")).endCardContent(id, window.__ew.store.getState().progress.profile.gender), cafe);
     await page.evaluate((id) => {
       const { audio, game, store } = window.__ew;
       const play = audio.play.bind(audio);
@@ -116,7 +116,7 @@ try {
 
     const destination = card.locator(".ended-destination");
     const next = await page.evaluate(async (id) =>
-      (await import("/tests/browser/quest-content.mjs")).nextDestination(id), cafe);
+      (await import("/tests/browser/fixtures/quest-content.mjs")).nextDestination(id), cafe);
     assert.equal(await destination.getAttribute("data-sit"), next.id);
     assert.equal(await destination.locator("b").textContent(), next.title);
     if (label === "1280x800") {

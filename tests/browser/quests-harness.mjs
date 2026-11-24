@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { openPhoneMenu } from "./screen-harness.mjs";
 
-const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:8096";
+export const questTestUrl = process.env.WORLD_TEST_URL || "http://127.0.0.1:8096";
 export const worldStorage = process.env.WORLD_STORAGE || "puerto-colibri";
 const progressKey = `${worldStorage}-progress-v1`;
 
@@ -9,7 +9,7 @@ export const questSizes = [[390, 844], [390, 664], [844, 390], [1280, 800]];
 
 export async function checkEdition(page) {
   const { storage, TL, HL, lang } = await page.evaluate(async () => {
-    const { EDITION, TL, HL } = await import("/tests/browser/quest-content.mjs");
+    const { EDITION, TL, HL } = await import("/tests/browser/fixtures/quest-content.mjs");
     return { storage: EDITION.storage, TL, HL, lang: document.documentElement.lang };
   });
   assert.equal(storage, worldStorage, "WORLD_STORAGE must match the Vite server's edition");
@@ -88,7 +88,7 @@ export async function openQuestTown(browser, width, height, speech = false) {
     }, { key: progressKey, speech });
     const page = await context.newPage();
     page.setDefaultTimeout(60000);
-    await page.goto(base, { waitUntil: "domcontentloaded" });
+    await page.goto(questTestUrl, { waitUntil: "domcontentloaded" });
     const languages = await checkEdition(page);
     await page.waitForFunction(() => window.__ew?.store.getState().screen === "play" && document.querySelector(".toolbar"), null, { timeout: 180000 });
     await page.evaluate(() => {
@@ -136,7 +136,7 @@ export async function closeChat(page) {
 
 export async function openPhone(page, press) {
   await openPhoneMenu(page);
-  const title = await page.evaluate(async () => (await import("/tests/browser/quest-content.mjs")).L("Telefonas (P)"));
+  const title = await page.evaluate(async () => (await import("/tests/browser/fixtures/quest-content.mjs")).L("Telefonas (P)"));
   await press(page.locator(".toolbar").getByRole("button", { name: title, exact: true }));
 }
 
