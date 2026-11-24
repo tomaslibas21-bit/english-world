@@ -9,10 +9,17 @@
 // of Maple Harbor; WORLD_SHOTS=<folder> keeps pictures of its moments:
 // WORLD_TEST_URL=http://127.0.0.1:5188 WORLD_STORAGE=english-world WORLD_PLAYWRIGHT_MODULE=/path/to/playwright-core/index.mjs node tests/browser/surf.mjs
 import assert from "node:assert/strict";
+import { HARBOR_START, readSurfIntro, readSurfPlayer } from "./fixtures/surf-town.mjs";
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:5188";
 const storage = process.env.WORLD_STORAGE || "english-world";
 const shots = process.env.WORLD_SHOTS || "";
+// Spoken independently of the rendered answer text (the authored English in round 01).
+const SPOKEN = {
+  a_perfect: "Sounds good!", a_understood: "Got it.", b_sup: "The paddleboard.", b_long: "The long foam board.",
+  a_ready: "Ready!", a_this: "This one?", a_this2: "How about this one?", a_now: "Now?",
+  a_fine: "I'm fine.", a_early: "I stood too early.",
+};
 const check = (name, value, detail) => {
   assert(value, `${name}: ${JSON.stringify(detail)}`);
   console.log("ok", name, detail === undefined ? "" : JSON.stringify(detail));
@@ -62,8 +69,18 @@ try {
     });
     const page = await ctx.newPage();
     const errors = [];
+    const assetFailures = [];
     page.on("pageerror", (e) => errors.push(e.message));
     page.on("console", (m) => { if (m.type() === "error" && /WebGLProgram: Shader Error/.test(m.text())) errors.push(m.text()); });
+    const surfAsset = (url) => /\/(?:x04-surf(?:-game)?|x01-surf-game)\//.test(url);
+    page.on("response", (r) => { if (r.status() >= 400 && surfAsset(r.url())) assetFailures.push(`${r.status()} ${r.url()}`); });
+    page.on("requestfailed", (r) => { if (surfAsset(r.url())) assetFailures.push(`${r.failure()?.errorText} ${r.url()}`); });
+    await page.addInitScript(() => {
+      window.__surfBrokenImages = [];
+      document.addEventListener("error", ({ target }) => {
+        if (target instanceof HTMLImageElement && target.closest(".surf")) window.__surfBrokenImages.push(target.src);
+      }, true);
+    });
     await page.route(/\.mp3(?:\?|$)/, (route) => route.fulfill({ status: 204, body: "" }));
     await page.addInitScript(([k, v]) => { if (sessionStorage.getItem("seeded") !== "1") { sessionStorage.setItem("seeded", "1"); localStorage.clear(); localStorage.setItem(k, v); } }, [`${storage}-progress-v1`, JSON.stringify(progress)]);
     await page.addInitScript(INIT);
@@ -85,8 +102,14 @@ try {
       await step(20);
     };
     await page.evaluate(() => { window.__ew.coach?.finish?.(); window.__ew.store.getState().setHud({ panel: null }); });
-    const has = await page.evaluate(() => !!window.__ew.game.surf);
-    check(`${label}: this town has a surf school`, has);
+    assert.equal(await page.evaluate(() => document.documentElement.lang), "lt");
+    const school = await page.evaluate(() => {
+      const s = window.__ew.game.surf;
+      return s && [s.situation, s.content.npc, s.npc?.name];
+    });
+    assert.deepEqual(school, ["x04-surf", "maren", "Maren Pike"], `${label}: this town has Harbor Surf`);
+    const playerNow = () => readSurfPlayer(page);
+    const cameraDistance = (a, b) => Math.hypot(...a.camera.map((v, i) => v - b.camera[i]));
     await page.evaluate(() => {
       const { audio, game } = window.__ew;
       window.__surfSoundEvents = [];
@@ -134,9 +157,9 @@ try {
     const shot = async (name, scale = "device") => { if (shots) { await step(2); await real(250); await page.screenshot({ path: `${shots}/${label}-${name}.png`, scale }); } };
     const shown = new Set();
     const hud = () => page.evaluate(() => window.__ew.store.getState().hud);
-    const press = async (dir) => {
+    const press = async (dir, fallback) => {
       if (phone) { await page.locator(`.surf-pad [data-dir=${dir}]`).tap(); return; }
-      const key = "Arrow" + dir[0].toUpperCase() + dir.slice(1);
+      const key = fallback ?? ("Arrow" + dir[0].toUpperCase() + dir.slice(1));
       await page.keyboard.down(key);
       await step(4);
       await page.keyboard.up(key);
@@ -169,22 +192,23 @@ try {
         }
       }
       const padGap = pad ? pad.getBoundingClientRect().top - boardBottom : null;
-      return { asked, replayFits: !!replayFits, padGap, boardClear: boardTop - r.bottom, still: !!pad?.classList.contains("still"), text: m.querySelector(".surf-move-text").innerText.replace(/\s+/g, " ").trim(), keys: [...m.querySelectorAll(".surf-key")].map((k) => k.innerText), button: m.tagName === "BUTTON", gap: Math.round(r.top - c.bottom), w: Math.round(r.width), h: Math.round(r.height), font: parseFloat(getComputedStyle(m.querySelector(".surf-move-text")).fontSize), inView: r.left >= 0 && r.right <= innerWidth + 0.5 && r.top >= 0 && r.bottom <= innerHeight, over: x > r.left && x < r.right && y > r.top && y < r.bottom, clear: Math.round(y - r.bottom), dots: m.querySelectorAll(".surf-strokes i").length, done: m.querySelectorAll(".surf-strokes i.done").length, time: !!m.querySelector(".surf-time") };
+      return { asked, replayFits: !!replayFits, padGap, boardClear: boardTop - r.bottom, still: !!pad?.classList.contains("still"), text: m.querySelector(".surf-move-text").innerText.replace(/\s+/g, " ").trim(), keys: [...m.querySelectorAll(".surf-key")].map((k) => k.innerText), button: m.tagName === "BUTTON", gap: r.top - c.bottom, w: r.width, h: r.height, font: parseFloat(getComputedStyle(m.querySelector(".surf-move-text")).fontSize), inView: r.left >= 0 && r.right <= innerWidth + 0.5 && r.top >= 0 && r.bottom <= innerHeight, over: x > r.left && x < r.right && y > r.top && y < r.bottom, clear: y - r.bottom, dots: m.querySelectorAll(".surf-strokes i").length, done: m.querySelectorAll(".surf-strokes i.done").length, time: !!m.querySelector(".surf-time") };
     });
     const moves = new Map();
     const checkAnswersFit = async (name, choice) => {
       const layout = await page.locator(".surf-choices").evaluate((el) => {
         const answers = el.getBoundingClientRect();
-        const cue = document.querySelector(".surf-card").getBoundingClientRect();
-        const pad = document.querySelector(".surf-pad").getBoundingClientRect();
+        const card = document.querySelector(".surf-card"), controls = document.querySelector(".surf-pad");
+        const cue = card.getBoundingClientRect(), pad = controls.getBoundingClientRect();
         const visible = (r) => r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight;
         const apart = (a, b) => a.right < b.left || b.right < a.left || a.bottom < b.top || b.bottom < a.top;
         const minKey = Math.min(...Array.from(document.querySelectorAll(".surf-pad button"), (el) => {
           const { width, height } = el.getBoundingClientRect();
           return Math.min(width, height);
         }));
+        const overflow = Math.max(...[el, card, controls].map((node) => Math.max(node.scrollHeight - node.clientHeight, node.scrollWidth - node.clientWidth)));
         return { inView: [answers, cue, pad].every(visible), clear: apart(answers, cue) && apart(answers, pad) && apart(cue, pad),
-          cueGap: answers.top - cue.bottom, padGap: pad.top - answers.bottom, overflow: el.scrollHeight - el.clientHeight, minKey };
+          cueGap: answers.top - cue.bottom, padGap: pad.top - answers.bottom, overflow, minKey };
       });
       const portrait = name === label;
       check(`${name}: the ${choice} turn fits between the cue and touch controls`, layout.inView && layout.clear && layout.overflow <= 1
@@ -193,8 +217,12 @@ try {
 
     // ---- at the school's boards: the prompt, the level's choice, and "not now"
     const start = await page.evaluate(() => { const g = window.__ew.game, s = g.surf.spot.start; g.enterZone("town", { x: s.x, z: s.z, rot: s.rot }, true); return s; });
+    assert.deepEqual(start, HARBOR_START);
     await step(30);
+    const townPlayer = await playerNow();
+    check(`${label}: the board prompt starts from dry town ground`, townPlayer.y >= -0.01 && !townPlayer.swimming && townPlayer.backpack && townPlayer.mode === "follow", townPlayer);
     check(`${label}: the prompt at the boards is the lesson's`, (await hud()).prompt?.kind === "surf", (await hud()).prompt);
+    if (phone) check(`${label}: the town has its action and jump buttons`, await page.locator(".act-btn:visible, .jump-btn:visible").count() === 2);
     if (phone) await page.locator(".act-btn").tap(); else await page.keyboard.press("e");
     await page.locator(".surf-pick .surf-level").first().waitFor();
     await step(5);
@@ -209,6 +237,11 @@ try {
     let s = await L();
     check(`${label}: a beginner's lesson is on, on the sand`, s?.level === "beginner" && s.phase === "intro" && (await hud()).ride === "surf", s);
     check(`${label}: in surf clothes from the start of the lesson, on the sand too, and no backpack`, s?.backpack === false && s?.outfit === "surf", { backpack: s?.backpack, outfit: s?.outfit });
+    const sand = await playerNow();
+    const isSurfPlayer = (p) => p?.actor === sand.actor && p.visible && p.backpack === false && p.outfit === "surf"
+      && p.rash && p.swim === "trunks" && p.mode === "stage" && p.stage;
+    check(`${label}: the dry lesson uses the surf actor and stage camera`, isSurfPlayer(sand) && sand.actor !== townPlayer.actor
+      && !sand.swimming && sand.y >= -0.01 && cameraDistance(sand, townPlayer) > 1, { town: townPlayer, sand });
     if (phone) {
       check(`${label}: the lesson replaces the joystick and round buttons with four arrows`,
         await page.locator(".surf-pad button:visible").count() === 4 && await page.locator(".joy:visible, .act-btn:visible, .jump-btn:visible").count() === 0);
@@ -230,6 +263,12 @@ try {
     await page.locator(".surf-toolbar .light-mode-btn").waitFor();
     await menu.click();
     await page.locator(".surf-toolbar .light-mode-btn").waitFor({ state: "hidden" });
+    if (!phone) {
+      await page.keyboard.press("m");
+      assert.equal((await ui()).micOn, false, "M switches the lesson mic off");
+      await page.keyboard.press("m");
+      assert.equal((await ui()).micOn, true, "M switches the lesson mic back on");
+    }
     const npcHidden = await page.evaluate(() => window.__ew.game.npcs.find((n) => n.id === window.__ew.game.surf.content.npc)?.ch.root.visible === false);
     check(`${label}: the instructor is in the water with the learner, not at her counter too`, npcHidden);
 
@@ -248,17 +287,20 @@ try {
       const cue = window.__ew.game.surf.logic?.saying;
       return { name: img.getAttribute("src").split("/").pop().replace(".webp", ""), loaded: img.complete && img.naturalWidth > 0, clear: Math.round(y - r.bottom), over: x > r.left && x < r.right && y > r.top && y < r.bottom, w: Math.round(f.width), h: Math.round(f.height), inView: r.left >= 0 && r.right <= innerWidth + 0.5 && r.top >= 0, cue, phase: g.surf.logic?.phase };
     });
-    /** What the moves are called (Lithuanian, English) and their keys: what the learner reads under her line. */
-    const MOVES = { paddle: [/Irkluokite|Paddle/, ["↑"]], duck: [/Nerk|Duck/, ["↓"]], turn: [/Apsukite lentą|Turn the board/, ["←", "→"]], up: [/Stokitės|Stand up/, ["↑"]], left: [/kairėn|left/, ["←"]], right: [/dešinėn|right/, ["→"]], down: [/Sulenkite kelius|Bend your knees/, ["↓"]], fwd: [/pirmyn|forward/, ["↑"]], jump: [/Šok|Jump/, ["↑"]], steady: [/Išlaikykite pusiausvyrą|Hold steady/, []] };
+    /** The Lithuanian move labels from round 01 and their primary arrows. */
+    const MOVES = { paddle: ["Irkluokite", ["↑"]], duck: ["Nerkite po banga", ["↓"]], turn: ["Apsukite lentą", ["←", "→"]], up: ["Stokitės", ["↑"]], left: ["Pasvirkite kairėn", ["←"]], right: ["Pasvirkite dešinėn", ["→"]], down: ["Sulenkite kelius", ["↓"]], fwd: ["Svorį perkelkite pirmyn", ["↑"]], jump: ["Šokite", ["↑"]], steady: ["Išlaikykite pusiausvyrą", []] };
     const DIR = { paddle: "up", duck: "down", turn: "right", up: "up", left: "left", right: "right", down: "down", fwd: "up", jump: "up" };
     const play = async (how, level) => {
       let wrongBoard = how === "good", early = how === "early", frames = 0, strokeT = 0, upT = 0, askT = 0, moveT = 0, lastCue = "", spoken = 0, keyed = 0, tapped = 0, prev = "";
       const said = [], mine = [];
+      const looks = {};
       const waterPack = {}, demo = { start: null, end: null, z0: null, z1: null, waits: true, stance: 0 };
       let learnerFrame = null, coachFrame = null;
       for (; frames < 60 * 400; frames++) {
         s = await L();
         if (!s) break;
+        const pose = s.phase === "over" ? "score" : s.pose;
+        if (!looks[pose]) looks[pose] = await playerNow();
         if (s.pose !== "walk" && s.phase !== "over") waterPack[s.pose] = (waterPack[s.pose] ?? true) && s.backpack === false;
         if (["paddle", "ride", "shore"].includes(s.demo)) {
           demo.start ??= s.time;
@@ -279,6 +321,9 @@ try {
         if (!learnerFrame && s.pose === "stand" && s.rideT > 0.85 && s.pitch > 0.15) {
           learnerFrame = await rideFrame(false);
           if (shots && !shown.has("standing-wave")) { shown.add("standing-wave"); await shot("standing-wave", "css"); }
+        }
+        if (shots && s.saying === "wipeout" && !shown.has("wipeout")) {
+          shown.add("wipeout"); await shot("wipeout", "css");
         }
         if (s.saying && said.at(-1) !== s.saying) said.push(s.saying);
         if (s.saying === "prev_mine" || s.saying === "prev_yours") prev = s.saying;
@@ -307,6 +352,7 @@ try {
                   await checkAnswersFit(`${w}×${h} touch`, s.choice);
                 }
                 await page.setViewportSize({ width, height });
+                await checkAnswersFit(label, s.choice);
               }
             }
             await shot("turn-" + s.choice);
@@ -316,19 +362,26 @@ try {
             // (the microphone opened by itself as she finished)
             for (let k = 0; k < 40 && !(await page.evaluate(() => window.__listening())); k++) await real(50);
             const on = await page.evaluate(() => window.__listening());
+            const turn = await page.evaluateHandle(() => window.__ew.game.surf.logic.choice);
             if (spoken === 0) {
               check(`${label}: her line said, the microphone listens by itself, as in a conversation`, on && ["listening", "starting"].includes((await ui()).mic), await ui());
               // a word that is none of the answers: she does not go on, the learner hears what was heard
               assert(await page.evaluate(() => window.__speak("orange bicycle")));
               for (let k = 0; k < 80 && (await ui()).mic !== "unclear"; k++) await real(60);
               const un = await ui(), still = await L();
-              check(`${label}: something else said: it is shown, the turn stays the learner's`, un.mic === "unclear" && /orange bicycle/i.test(un.heard) && still.choice === s.choice, un);
+              const heard = await page.locator(".surf-turn .heard [lang=en]").textContent({ timeout: 1000 });
+              const sameTurn = await page.evaluate((turn) => window.__ew.game.surf.logic.choice === turn, turn);
+              check(`${label}: the exact off-topic transcript is shown and the same turn survives`,
+                un.mic === "unclear" && un.heard === "orange bicycle" && heard === "orange bicycle" && sameTurn && still.choice === s.choice && !un.said, un);
               for (let k = 0; k < 60 && !(await page.evaluate(() => window.__listening())); k++) await real(60);
             }
             // (the learner says it their own way: no capitals, no marks)
-            assert(await page.evaluate((t) => window.__speak(t), es.toLowerCase().replace(/[!?.,]/g, "")));
+            assert.equal(es, SPOKEN[pick], `${label}: the authored option ${pick}`);
+            assert(await page.evaluate((t) => window.__speak(t), SPOKEN[pick].toLowerCase().replace(/[!?.,]/g, "")));
             for (let k = 0; k < 80 && (await ui()).said !== pick; k++) await real(50);
             assert.equal((await ui()).said, pick, `${label}: the recognizer advanced ${s.choice} with ${pick}`);
+            assert(await page.evaluate((turn) => window.__ew.game.surf.logic.choice !== turn, turn), `${label}: saying ${pick} advanced that turn`);
+            await turn.dispose();
             spoken++;
           } else if (phone) { await page.locator(".surf-choice").nth(i).tap(); tapped++; }
           else { await page.keyboard.press(String(i + 1)); keyed++; }
@@ -353,7 +406,8 @@ try {
           if (m && moveT > 2) {
             const o = moves.get(t.do) ?? { n: 0, ok: true, replayFits: true, gapMax: 0, clearMin: Infinity, inView: true, over: false };
             const [name, keys] = MOVES[t.do];
-            const right = name.test(m.text) && keys.join("") === m.keys.join("");
+            const instruction = t.do === "steady" ? (phone ? "atleiskite rodykles" : "atleiskite klavišus") : (phone ? "bakstelėkite" : "spauskite");
+            const right = m.text.replace(/[↑←↓→]/g, "").trim() === `${name} – ${instruction}` && keys.join("") === m.keys.join("");
             if (phone) {
               assert.deepEqual(m.asked, keys, `${label}: highlighted arrows for ${t.do}`);
               assert.equal(m.still, t.do === "steady");
@@ -390,10 +444,10 @@ try {
           }
         } else lastCue = "";
         // (a learner who can't wait for her "Now!")
-        if (s.phase === "catch" && early && !s.upOpen && s.choice === "now" && ++upT > 6) { early = false; upT = 0; await press("up"); }
+        if (s.phase === "catch" && early && !s.upOpen && s.choice === "now" && ++upT > 6) { early = false; upT = 0; await press("up", "Space"); }
         await step(4);
       }
-      return { said, mine, frames, spoken, keyed, tapped, waterPack, demo, learnerFrame, coachFrame };
+      return { said, mine, frames, spoken, keyed, tapped, waterPack, looks, demo, learnerFrame, coachFrame };
     };
     // ---- she waits for the learner: a long silence at her first line, and nothing has gone on
     for (let i = 0; i < 400 && !(await L())?.choice; i++) await step(4);
@@ -403,10 +457,30 @@ try {
     check(`${label}: she waits: twenty seconds of silence, and it is still the learner's turn to answer her first line`, first?.choice === "ack" && later?.choice === "ack" && later.phase === "intro" && later.heard.length === first.heard.length, { first: first?.heard, later: later?.heard });
     const panel = await page.evaluate(() => ({ turn: !!document.querySelector(".surf-turn"), mic: !!document.querySelector(".surf-turn .surf-mic"), options: [...document.querySelectorAll(".surf-choice .surf-choice-text")].map((e) => [...e.querySelectorAll(".en")].map((w) => w.innerText).join(" ")), helps: [...document.querySelectorAll(".surf-choice")].map((b) => [...b.querySelectorAll(".lt")].map((w) => w.innerText).join(" ")) }));
     check(`${label}: the learner's lines are on show with their words' meaning, under the microphone`, panel.turn && panel.mic && panel.options.length === 2 && panel.options[0] === "Sounds good!" && panel.helps.every((h) => h.length > 1), panel);
+    assert.deepEqual(panel.options, ["Sounds good!", "Okay."]);
+    assert.deepEqual(panel.helps, ["Skamba gerai!", "Gerai."]);
+    const brokenImages = () => page.locator(".surf img").evaluateAll((images) => images.filter((i) => i.complete && i.naturalWidth === 0).map((i) => i.src));
+    if (!hasPics) {
+      const cue = await page.locator(".surf-card").evaluate((card) => {
+        const words = (selector) => [...card.querySelectorAll(selector)].map((e) => e.firstChild?.textContent).join(" ");
+        return { en: words(".il .en"), lt: words(".il .lt"), nat: card.querySelector(".nat")?.textContent };
+      });
+      assert.deepEqual(cue, {
+        en: "We'll ride the whitewater. Small waves, big board.",
+        lt: "Mes čiuošime — per bangų putas. Mažos bangos, didelė lenta.",
+        nat: "Čiuošime per lūžusių bangų putas. Bangos nedidelės, lenta didelė.",
+      });
+      check(`${label}: the full cue and answers render without surf art`,
+        await page.locator(".surf-pic").count() === 0 && (await brokenImages()).length === 0, { cue, panel });
+    }
     let run = await play("good", "beginner");
     s = await L();
     check(`${label}: the lesson ran to its end: a wave ridden to the beach, every command followed`, s?.phase === "over" && s.score.waves === 1 && s.score.falls === 0 && s.score.followed === s.score.asked && s.score.asked >= 4, s?.score);
+    assert.equal(s.score.asked, 4, "the beginner ride scores exactly four commands");
     check(`${label}: no backpack paddling, sitting and riding, nor at the score card (the lesson's surf clothes)`, ["prone", "sit", "stand"].every((pose) => run.waterPack[pose]) && s.backpack === false, run.waterPack);
+    check(`${label}: the real surf outfit and stage camera stay through paddling, sitting, riding and score`,
+      ["prone", "sit", "stand", "score"].every((pose) => isSurfPlayer(run.looks[pose]))
+      && cameraDistance(run.looks.stand, sand) > 1, run.looks);
     const d = run.demo;
     check(`${label}: Maren rides towards the beach before the first learner wave, while the lesson waits`, d.waits && d.stance > 0.9 && d.z1 - d.z0 > 6 && d.end - d.start > 0 && d.end - d.start < 8000, d);
     const { learnerFrame, coachFrame } = run;
@@ -420,12 +494,17 @@ try {
     const beginnerSounds = await sounds();
     const hands = beginnerSounds.filter((e) => e.method === "surfStroke").map((e) => e.hand);
     check(`${label}: paddling alternates hands and the audio gets the rush, break and stand cues`, hands.length >= 8 && hands.every((hand, i) => hand === (i % 2 ? 1 : -1)) && ["surfWaveRush", "surfWaveBreak", "surfStand"].every((method) => beginnerSounds.some((e) => e.method === method)), beginnerSounds);
+    const firstSound = (method) => beginnerSounds.findIndex((e) => e.method === method);
+    const order = ["surfStroke", "surfWaveRush", "surfWaveBreak", "surfStand"].map(firstSound);
+    check(`${label}: stroke, rush, break and stand sound in order`, order[0] >= 0 && order.slice(1).every((index, i) => index > order[i]), order);
     if (shots) check(`${label}: captured the learner standing, Maren riding and paddling`, ["standing-wave", "coach-ride", "paddling"].every((name) => shown.has(name)));
-    check(`${label}: the wrong board got a word, the wave its call`, ["board_no", "now_up", "up_ok", "shore"].every((c) => s.heard.includes(c)), s.heard.length);
+    check(`${label}: the wrong board got a word, then the full lesson ran to shore`,
+      ["board_ask", "board_no", "board_yes", "leash", "go_in", "paddle", "wave_duck", "duck_ok", "arrive", "paddle_now", "coming",
+        "not_yet", "now_up", "up_ok", "ride_q", "shore", "first_wave", "again_q", "bye"].every((c) => s.heard.includes(c)), s.heard);
     // ---- a conversation: the learner spoke at every step of it, aloud and by ${phone ? "taps" : "keys"}
     check(`${label}: the learner answered her all the way: on the sand, about the wave, about the moment, in the ride, at the end`, ["a_perfect", "a_ready", "a_coming", "a_and_now", "a_this", "a_now", "a_allgood", "a_thanks", "a_enough"].every((c) => run.mine.includes(c)) && run.mine.length >= 13, run.mine);
     check(`${label}: answers said aloud were heard (${run.spoken}), and ${phone ? "taps" : "keys"} answered too (${phone ? run.tapped : run.keyed})`, run.spoken >= 5 && (phone ? run.tapped : run.keyed) >= 3, { spoken: run.spoken, keyed: run.keyed, tapped: run.tapped });
-    check(`${label}: “And now?” got “Not yet!” before “Now!”`, run.said.indexOf("not_yet") > run.said.indexOf("coming") && run.said.indexOf("now_up") > run.said.indexOf("not_yet"), run.said.slice(run.said.indexOf("coming")));
+    check(`${label}: “Now?” got “Not yet!” before “Now!”`, run.said.indexOf("coming") >= 0 && run.said.indexOf("not_yet") > run.said.indexOf("coming") && run.said.indexOf("now_up") > run.said.indexOf("not_yet"), run.said.slice(run.said.indexOf("coming")));
     // ---- every move she asked for was named under her line, large, with its key
     const mv = Object.fromEntries(moves);
     check(`${label}: paddling, the duck, the turn and the stand-up were each named under her line`, ["paddle", "duck", "turn", "up"].every((d) => mv[d]?.n > 0 && mv[d].ok), Object.fromEntries(Object.entries(mv).map(([k, v]) => [k, v.text + " " + v.keys.join("")])));
@@ -437,20 +516,20 @@ try {
     check(`${label}: replay disappears with the cue on the result`, replayTarget === 0);
     check(`${label}: the move never covers the learner on their board`, Object.values(mv).every((v) => !v.over && v.clearMin > 12), Object.fromEntries(Object.entries(mv).map(([k, v]) => [k, v.clearMin])));
     check(`${label}: paddling shows its strokes, the stand-up its time`, mv.paddle.dots >= 4 && mv.up.time, { dots: mv.paddle.dots, time: mv.up.time });
-    if (phone) check(`${label}: on a phone the move labels the arrow to tap`, ["paddle", "duck", "turn", "up"].every((d) => !mv[d].button) && /bakstelėk|tap/.test(mv.up.text), mv.up.text);
-    else check(`${label}: with keys it says which: “${mv.up.text}”`, /spausk|press/.test(mv.up.text) && mv.up.keys.includes("↑") && mv.paddle.keys.includes("↑"), mv.up);
+    check(`${label}: both stroke transitions were exercised`, shown.has("first-stroke") && shown.has("last-stroke"));
+    if (phone) check(`${label}: on a phone the move labels the arrow to tap`, ["paddle", "duck", "turn", "up"].every((d) => !mv[d].button) && mv.up.text === "Stokitės – bakstelėkite ↑", mv.up.text);
+    else check(`${label}: with keys it says which`, mv.up.text === "Stokitės – spauskite ↑" && mv.up.keys.includes("↑") && mv.paddle.keys.includes("↑"), mv.up);
     await step(20);
     const scoreCard = page.locator(".surf .mode-score-card");
     const checkResult = async (score, waves, seconds) => {
+      await scoreCard.waitFor({ state: "visible" });
+      assert.deepEqual(await scoreCard.locator("dt").allTextContents(), ["Bangos", "Sekundės ant bangos", "Judesiai iš pirmo karto"]);
       const values = await scoreCard.locator("dd").allTextContents();
       assert.deepEqual(values, [String(score.waves), String(score.seconds), `${score.followed}/${score.asked}`]);
-      const lt = await scoreCard.evaluate((el) => el.closest("[lang]").lang === "lt");
-      assert.equal(await scoreCard.locator(".surf-best").innerText(), lt
-        ? `Iš viso: bangų – ${waves}, sekundžių ant bangos – ${seconds}`
-        : `All time: ${waves} waves, ${seconds} seconds riding`);
-      assert.equal(await scoreCard.getByText(lt ? "Girdėtas frazes rasite savo kortelėse."
-        : "The phrases you heard are in your cards now.", { exact: true }).count(), 1);
-      assert.equal(await scoreCard.locator(".mode-score-actions button").count(), 3);
+      assert.equal(await scoreCard.evaluate((el) => el.closest("[lang]").lang), "lt");
+      assert.equal(await scoreCard.locator(".surf-best").innerText(), `Iš viso: bangų – ${waves}, sekundžių ant bangos – ${seconds}`);
+      assert.equal(await scoreCard.getByText("Girdėtas frazes rasite savo kortelėse.", { exact: true }).count(), 1);
+      assert.equal(await scoreCard.locator(".mode-score-actions button:visible").count(), 3);
     };
     const beginnerScore = s.score;
     await checkResult(beginnerScore, beginnerScore.waves, beginnerScore.seconds);
@@ -489,8 +568,22 @@ try {
     run = await play("early", "advanced");
     s = await L();
     check(`${label}: a fall was a question, and the next wave was ridden`, s?.phase === "over" && s.score.falls === 1 && s.score.waves === 1 && ["wipeout", "you_ok", "what_happened", "r_exact", "tip_early", "another", "q_go"].every((c) => s.heard.includes(c)), { score: s?.score, heard: s?.heard.length });
+    let since = -1;
+    for (const cue of ["wipeout", "you_ok", "what_happened", "r_exact", "tip_early", "another", "now_up", "shore"]) {
+      const index = run.said.indexOf(cue, since + 1);
+      assert(index > since, `${label}: expected ${cue} after ${run.said[since]} in ${run.said.join(", ")}`);
+      since = index;
+    }
     const wipeouts = (await sounds()).filter((e) => e.method === "surfWipeout");
     check(`${label}: the pack stays off through the wipeout and the splash and wash are cued`, run.waterPack.swim === true && wipeouts.some((e) => e.phase === "fall"), wipeouts);
+    check(`${label}: wipeout and advanced score use the same surf outfit and stage camera`, isSurfPlayer(run.looks.swim) && isSurfPlayer(run.looks.score), run.looks);
+    const advancedSounds = (await sounds()).slice(beginnerSounds.length);
+    const fallAt = advancedSounds.findIndex((e) => e.method === "surfWipeout" && e.phase === "fall");
+    const standAt = advancedSounds.findIndex((e) => e.method === "surfStand" && e.phase === "ride");
+    const advancedHands = advancedSounds.filter((e) => e.method === "surfStroke").map((e) => e.hand);
+    check(`${label}: the advanced lesson splashes before the recovery stand and alternates hands`,
+      fallAt >= 0 && standAt > fallAt && advancedHands.length >= 8 && advancedHands.every((hand, i) => hand === (i % 2 ? 1 : -1)), advancedSounds);
+    if (shots) check(`${label}: captured the wipeout`, shown.has("wipeout"));
     check(`${label}: the learner said they were fine, what went wrong, and that they understood`, ["a_fine", "a_early", "a_understood", "a_again"].every((c) => run.mine.includes(c)), run.mine);
     await step(20);
     await checkResult(s.score, beginnerScore.waves + s.score.waves, beginnerScore.seconds + s.score.seconds);
@@ -502,23 +595,46 @@ try {
       const cards = localStorage.getItem("english-world-cards-v1") ?? "";
       return { x: +p.x.toFixed(1), z: +p.z.toFixed(1), y: +p.y.toFixed(2), on: g.surf.active, mode: g.rig.mode, ride: st.hud.ride, surf: st.progress.surf,
         npc: actor?.ch.root.visible, atHome: actor?.ch.root.position.distanceTo(actor.home) < 0.01, backpack: g.player.backpackVisible, outfit: g.outfit ?? null,
-        order: g.player.root.rotation.order, cards: cards.length, mine: /And now\?/.test(cards) };
+        order: g.player.root.rotation.order, cards: cards.length,
+        mine: (JSON.parse(cards || "{}").cards ?? []).find((c) => c.situationId === "x04-surf" && c.sentence?.en === "Now?")?.sentence };
     });
     check(`${label}: back on the sand by the boards, walking again, the instructor at her counter`, !after.on && after.mode === "follow" && after.ride === null && after.npc === true && after.atHome && after.order === "XYZ" && Math.hypot(after.x - start.x, after.z - start.z) < 0.5, after);
     check(`${label}: leaving the lesson: own clothes and the backpack again`, after.backpack === true && after.outfit === null, { backpack: after.backpack, outfit: after.outfit });
-    check(`${label}: the waves, the seconds and what was heard are kept, and the phrases are cards (the learner's own too)`, after.surf?.waves === 2 && after.surf.lessons === 2 && after.surf.seconds > 20 && after.surf.heard.now_up >= 2 && after.cards > 500 && after.mine, { ...after.surf, heard: Object.keys(after.surf?.heard ?? {}).length, cards: after.cards, mine: after.mine });
+    check(`${label}: the waves, the seconds and what was heard are kept, and the phrases are cards (the learner's own too)`, after.surf?.waves === 2 && after.surf.lessons === 2 && after.surf.seconds > 20 && after.surf.heard.now_up >= 2 && after.cards > 500 && after.mine?.lt === "Dabar?", { ...after.surf, heard: Object.keys(after.surf?.heard ?? {}).length, cards: after.cards, mine: after.mine });
+    for (const key of ["waves", "seconds", "followed", "asked"]) assert.equal(after.surf[key], beginnerScore[key] + s.score[key], `saved ${key}`);
     await step(30);
-    check(`${label}: the town's buttons are back`, await page.locator(".toolbar").count() === 1);
-
-    if (phone) check(`${label}: leaving restores the town joystick and removes the pad`, await page.locator(".joy").isVisible() && await page.locator(".surf-pad").count() === 0);
+    const checkTownReturn = async (name, before) => {
+      const p = await playerNow();
+      check(`${label}: ${name} restores the original town actor, outfit and follow camera`, p.actor === townPlayer.actor && p.visible
+        && p.backpack === true && p.outfit === null && p.rash === townPlayer.rash && p.swim === townPlayer.swim
+        && p.mode === "follow" && !p.stage && p.y >= -0.01 && !p.swimming && cameraDistance(p, before) > 1
+        && Math.hypot(p.x - start.x, p.z - start.z) < 0.5, p);
+      check(`${label}: ${name} restores the town toolbar and board prompt`, await page.locator(".toolbar").count() === 1 && (await hud()).prompt?.kind === "surf");
+      if (phone) check(`${label}: ${name} restores joystick, action and jump`, await page.locator(".joy:visible, .act-btn:visible, .jump-btn:visible").count() === 3 && await page.locator(".surf-pad").count() === 0);
+    };
+    await checkTownReturn("leaving the result", run.looks.score);
+    await shot("return-from-score", "css");
+    if (phone) {
+      await page.locator(".jump-btn").tap();
+      await step(8);
+      check(`${label}: the restored town jump actually lifts the learner`, (await playerNow()).y > townPlayer.y + 0.1);
+      await step(90);
+    } else {
+      await page.keyboard.press("Space");
+      await page.locator(".surf-pick .surf-level").first().waitFor();
+      await page.locator(".surf-later").click();
+      await step(5);
+    }
 
     // ---- x04 is a bonus. Start its real session and accept the queued advanced lesson from the end card.
-    await page.evaluate(() => window.__ew.game.startScenario(window.__ew.game.surf.content.situation));
+    await page.evaluate(() => window.__ew.game.startScenario("x04-surf"));
     for (let i = 0; i < 400 && !(await page.evaluate(() => window.__ew.game.activeSession?.active)); i++) { await step(3); await real(20); }
-    check(`${label}: the Harbor Surf bonus opens a real session`, await page.evaluate(() => window.__ew.game.activeSession?.active && window.__ew.store.getState().conv.sitId === "x04-surf"));
-    const intro = page.locator(".intro-card button.btn, .scene-intro button.btn").first();
-    await intro.click();
-    await page.waitForFunction(() => window.__ew.store.getState().conv.phase === "you", null, { polling: 50 });
+    check(`${label}: the Harbor Surf bonus opens Maren's real session`, await page.evaluate(() => {
+      const { game, store } = window.__ew, session = game.activeSession;
+      return session?.active && session.sit.id === "x04-surf" && session.sit.npc === "maren" && session.sit.bonus
+        && store.getState().conv.sitId === "x04-surf" && !game.orderedSituations().some((s) => s.id === "x04-surf");
+    }));
+    await readSurfIntro(page);
     await page.evaluate(() => {
       const { game, store } = window.__ew;
       game.onSessionEvent("surf", { level: "advanced" });
@@ -537,12 +653,10 @@ try {
       check(`${label}: a new line comes with its picture and its glosses`, withHelp.pic && withHelp.gloss, withHelp);
       // heard often: the words keep their translation and the picture (22 Nov 2026: the help no longer fades;
       // the game's translation setting decides it, tests/browser/surf-glosses.mjs)
-      const stage = async (support) => { await page.evaluate((n) => window.__ew.surf?.setState?.({ support: n }), support); await step(2); return page.evaluate(() => ({ pic: !!document.querySelector(".surf-pic"), gloss: !!document.querySelector(".surf-card .u .lt"), listen: !!document.querySelector(".surf-listen") })); };
-      if (await page.evaluate(() => !!window.__ew.surf)) {
-        const one = await stage(1), two = await stage(2);
-        check(`${label}: a line heard often keeps its translation and its picture`, one.pic && one.gloss && two.pic && two.gloss && !two.listen, { one, two });
-        await stage(0);
-      }
+      const stage = async (support) => { await page.evaluate((n) => window.__ew.surf.getState().set({ support: n }), support); await real(25); return page.evaluate(() => ({ pic: !!document.querySelector(".surf-pic"), gloss: !!document.querySelector(".surf-card .u .lt"), listen: !!document.querySelector(".surf-listen") })); };
+      const one = await stage(1), two = await stage(2);
+      check(`${label}: a line heard often keeps its translation and its picture`, one.pic && one.gloss && two.pic && two.gloss && !two.listen, { one, two });
+      await stage(0);
       await page.emulateMedia({ reducedMotion: "reduce" });
       const still = await page.evaluate(() => [getComputedStyle(document.querySelector(".surf-pic")).animationName, getComputedStyle(document.querySelector(".surf-pic img.new")).animationName]);
       check(`${label}: with reduced motion the picture does not slide`, still.every((n) => n === "none"), still);
@@ -555,10 +669,28 @@ try {
       await step(12);
     }
     check(`${label}: the learner can leave while still on the water`, s?.phase === "out" && s.backpack === false);
+    if (!phone) {
+      for (let i = 0; i < 150 && (await L())?.todo?.do !== "paddle"; i++) await step(4);
+      const paddle = (await L()).todo;
+      assert.equal(paddle?.do, "paddle");
+      await press("up", "e");
+      assert.equal((await L()).todo?.left, paddle.left - 1, "E still makes a paddle stroke");
+    }
+    const water = await playerNow();
     if (phone) await page.locator(".surf-x").tap(); else await page.keyboard.press("Escape");
     await fade();
     check(`${label}: out of it at once, on foot`, !(await L()) && (await hud()).ride === null);
     check(`${label}: leaving from the water: own clothes and the backpack again`, await page.evaluate(() => window.__ew.game.player.backpackVisible === true && window.__ew.game.outfit === null));
+    await step(30);
+    await checkTownReturn("leaving the water", water);
+    await shot("return-from-water", "css");
+    if (!phone) {
+      await page.keyboard.press("e");
+      await page.locator(".surf-pick .surf-level").first().waitFor();
+      await page.locator(".surf-later").click();
+    }
+    const failedImages = await page.evaluate(() => window.__surfBrokenImages);
+    check(`${label}: no broken surf images or failed surf asset requests`, failedImages.length === 0 && assetFailures.length === 0, { failedImages, assetFailures });
     check(`${label}: no errors on the page`, errors.length === 0, errors.slice(0, 3));
     await ctx.close();
   }
