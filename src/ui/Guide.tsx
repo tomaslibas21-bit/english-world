@@ -2,7 +2,7 @@
 // out of the way of the task card, the map, the controls and the talk / enter prompt. It never takes the keys or
 // blocks a tap on the town. Its colours are the game's own variables, so it follows a course's theme (styles.css
 // `.coach`). The same words are listed under "Kaip žaisti?" (Panels.tsx Help: `coachWords`).
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useStore } from "../state/store";
 import { coach, type CoachStep } from "../game/coach";
 import { useRadio } from "../radio";
@@ -27,25 +27,35 @@ export function coachWords(step: CoachStep, touch: boolean): [string, string] {
   }
 }
 
-export function Guide({ visible }: { visible: boolean }) {
+export function Guide({ visible, compact }: { visible: boolean; compact: boolean }) {
   const c = useStore((s) => s.hud.coach);
   const touch = useStore((s) => s.hud.showTouch);
   const radioOn = useRadio((s) => s.on);
   // the radio's hint is done when the radio is switched on (by its button or R)
   useEffect(() => { if (radioOn) coach.did("radio"); }, [radioOn, c?.step]);
-  if (!c || !visible) return null;
-  const [title, body] = coachWords(c.step, touch);
+  return c && <GuideCard key={c.step} {...c} visible={visible} touch={touch} compact={compact} />;
+}
+
+function GuideCard({ step, ok, visible, touch, compact }: { step: CoachStep; ok: boolean; visible: boolean; touch: boolean; compact: boolean }) {
+  const [expanded, setExpanded] = useState(false);
+  if (!visible) return null;
+  const [title, body] = coachWords(step, touch);
+  const icon = <span className="coach-icon" aria-hidden><Icon name={ok ? "check" : COACH_ICON[step]} size={24} strokeWidth={2} /></span>;
   return (
-    <div className={"coach" + (c.ok ? " ok" : "")} role="status" aria-live="polite">
-      <span className="coach-icon" aria-hidden><Icon name={c.ok ? "check" : COACH_ICON[c.step]} size={24} strokeWidth={2} /></span>
-      <div className="coach-text">
-        <b>{title}</b>
-        <p>{body}</p>
-      </div>
-      <div className="coach-row">
-        <button className="coach-skip" onClick={() => coach.finish()}>{L("Daugiau nerodyti")}</button>
-        <button className="btn small coach-next" onClick={() => coach.next()}>{L("Gerai")}</button>
-      </div>
+    <div className={"coach" + (ok ? " ok" : "") + (compact ? " coach-compact" : "")} role="status" aria-live="polite">
+      {compact ? <button className="coach-toggle" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>
+        {icon}<b>{title}</b><Icon name={expanded ? "chevronUp" : "chevronDown"} size={16} />
+      </button> : icon}
+      {(!compact || expanded) && <>
+        <div className="coach-text">
+          {!compact && <b>{title}</b>}
+          <p>{body}</p>
+        </div>
+        <div className="coach-row">
+          <button className="coach-skip" onClick={() => coach.finish()}>{L("Daugiau nerodyti")}</button>
+          <button className="btn small coach-next" onClick={() => coach.next()}>{L("Gerai")}</button>
+        </div>
+      </>}
     </div>
   );
 }

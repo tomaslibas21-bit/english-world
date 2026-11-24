@@ -211,6 +211,8 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .toolbar.folds :is(.toolbar-tools, .toolbar-actions, .toolbar-shortcuts, .drawer-tool) { display: contents; }
 .toolbar.folds .drawer-tool > * { grid-column: var(--tool-column); direction: ltr; }
 .toolbar.folds:not(.menu-open) .toolbar-drawer { visibility: hidden; pointer-events: none; }
+.hud.has-touch .toolbar-drawer .key { display: none; }
+.hud.has-touch .phone-menu:not(.surf-toolbar) .phrasebook-tool { background: var(--accent-soft); }
 .light-mode-btn { font-size: 17px; font-weight: 900; color: var(--accent); }
 .toolbar-tooltip { position: absolute; right: calc(100% + 10px); top: 50%; transform: translateY(-50%); padding: 7px 11px; border: 1px solid var(--ink-faint); border-radius: 10px; background: var(--panel-solid); color: var(--ink); font-size: 14px; white-space: nowrap; pointer-events: none; opacity: 0; }
 .light-mode-btn:hover .toolbar-tooltip, .light-mode-btn:focus-visible .toolbar-tooltip { opacity: 1; }
@@ -1126,7 +1128,7 @@ body.scene-on .tag-layer { display: none; }
 .coach-row { flex-basis: 100%; display: flex; align-items: center; gap: 8px; margin-top: 6px; }
 .coach-skip { margin-left: auto; background: none; border: 0; color: var(--ink-soft); font-weight: 800; font-size: 0.88em; min-height: 44px; padding: 0 10px; border-radius: 10px; }
 .coach-skip:hover { background: var(--g-hover, rgba(31, 42, 51, 0.06)); }
-.coach-next { min-height: 44px; min-width: 84px; }
+.coach .coach-next { min-height: 44px; min-width: 84px; }
 /* On an upright phone the task and note share a column. Leave room for the toolbar on the right
    and for the touch controls at the bottom. The card can scroll if large text would push the note too low. */
 @media (max-width: 600px) and (orientation: portrait) {
@@ -1148,11 +1150,12 @@ body.scene-on .tag-layer { display: none; }
   /* With a folded card the toast and guide start alongside the map, which can be 100 px wide indoors. */
   .objective-notes.task-folded :is(.town-toasts, .coach) { max-width: calc(100vw - 2 * var(--card-left) - 108px); }
   .objective-notes .town-toasts .toast { min-height: 0; overflow: auto; animation-name: note-in; }
-  .objective-notes .zone-banner { text-align: left; overflow: hidden; overflow-wrap: anywhere; animation-name: note-in; }
-  .objective-notes .zone-banner h2 { line-height: 1.08; }
+  .objective-notes .zone-banner { text-align: left; padding-block: 5px; line-height: 1.15; overflow: hidden; overflow-wrap: anywhere; animation-name: note-in; }
+  .objective-notes .zone-banner h2 { font-size: calc(20px * var(--scale)); }
+  .objective-notes .zone-banner p { font-size: calc(14px * var(--scale)); }
   /* Keep the folded card's banner at its usual height and centre it as far as the toolbar allows. */
   .objective-notes.task-folded .zone-banner {
-    position: fixed; top: max(18%, calc(var(--card-top) + 44px + 12px)); left: 50%;
+    position: fixed; top: max(18dvh, calc(var(--card-top) + 44px + 12px)); left: 50%;
     width: max-content; max-width: var(--note-width); margin: 0; text-align: center;
     transform: translateX(clamp(calc(var(--card-left) - 50vw), -50%, calc(50vw - var(--note-right) - 100%)));
   }
@@ -1161,7 +1164,36 @@ body.scene-on .tag-layer { display: none; }
   .coach-text p { font-size: 0.86em; line-height: 1.35; }
   .coach-row { margin-top: 2px; gap: 6px; }
   .coach-skip { padding: 0 6px; }
-  .coach-next { min-width: 76px; }
+  .coach .coach-next { min-width: 76px; }
+  .objective-notes .coach-compact {
+    gap: 6px; padding: 8px; align-content: start; font-size: calc(14px * var(--scale));
+  }
+  .coach-toggle {
+    display: flex; align-items: center; gap: 6px; width: 100%; min-width: 44px; min-height: 44px;
+    border: 0; border-radius: 10px; padding: 0; background: none; color: inherit; text-align: left; line-height: 1.15;
+  }
+  .coach-toggle .coach-icon { display: grid; width: 30px; height: 30px; border-radius: 10px; }
+  .coach-toggle b { flex: 1; font-size: calc(16px * var(--scale)); }
+  .coach-compact .coach-text p { margin: 0; font-size: inherit; line-height: 1.35; }
+  .coach-compact .coach-row { justify-content: flex-end; flex-wrap: wrap; margin: 0; }
+  .coach-compact :is(.coach-skip, .coach-next) { min-width: 44px; min-height: 44px; font-size: inherit; }
+  /* The shutter can grow with the text size. Leave room for it, its bottom inset, and the gap above it. */
+  .hud:has(> .photo-chip) { --photo-reserve: 160px; }
+  .hud.has-touch:has(> .photo-chip) { --photo-reserve: calc(258px + env(safe-area-inset-bottom)); }
+  .hud:has(> .photo-chip) .objective-notes {
+    --photo-stack-top: max(var(--card-top), env(safe-area-inset-top));
+    top: var(--photo-stack-top);
+    max-height: calc(100dvh - var(--photo-stack-top) - var(--photo-reserve));
+  }
+  .hud:has(> .photo-chip) .objective-notes:not(:has(.directions-card)) .objective-card:not(.collapsed) {
+    max-height: max(44px, min(50dvh - var(--card-top) - 16px, 100dvh - var(--photo-stack-top) - var(--photo-reserve) - 120px));
+  }
+  .hud:has(> .photo-chip) .objective-notes > :is(.coach, .phone-ring, .directions-card) {
+    flex: 0 1 auto; min-height: 0; max-width: 100%; overflow-y: auto; overscroll-behavior: contain;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .objective-notes :is(.zone-banner, .coach) { animation: none; }
+  }
 }
 @media (max-width: 480px) {
   .objective-notes .town-toasts:not(:empty) { margin-top: 6px; }
@@ -1193,13 +1225,17 @@ body.scene-on .tag-layer { display: none; }
   .coach-row { margin-top: 0; }
   .coach-row { justify-content: flex-end; }
   /* (at a door or by someone, the prompt needs the room: the hint keeps its title and its buttons) */
-  .hud:has(.prompt) .coach .coach-text p { display: none; }
+  .hud:has(.prompt) .coach:not(.coach-compact) .coach-text p { display: none; }
 }
 /* A phone held sideways keeps the hint low between the stick and the buttons. The prompt stays on the right. */
 @media (max-height: 520px) and (orientation: landscape) {
   .coach, .hud.has-touch .coach { top: auto; left: calc(50% - 60px); transform: translateX(-50%); bottom: calc(8px + env(safe-area-inset-bottom)); width: min(370px, max(144px, calc(100vw - 470px))); animation-name: coach-in; }
   .coach .coach-text p { font-size: 0.84em; line-height: 1.32; }
   .hud:has(.coach) .prompt.touch { max-width: calc(50vw - min(185px, 50vw - 235px) - 90px); }
+  .hud.has-touch:has(> .photo-chip) .objective-notes .coach { bottom: calc(max(12px, env(safe-area-inset-bottom)) + 64px); }
+}
+@media (width > 600px) or (orientation: landscape) {
+  .hud:not(.has-touch):has(> .photo-chip) .objective-notes .coach { bottom: 160px; }
 }
 /* the song's line gives way to the guide while it is up */
 .hud:has(.coach) .radio-strip { display: none; }
