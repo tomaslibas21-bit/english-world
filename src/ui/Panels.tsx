@@ -38,6 +38,7 @@ import { courseGuideUrl, setSectionHelp, useSectionHelp } from "./sectionHelp";
 import { COACH_STEPS, coach } from "../game/coach";
 import { COACH_ICON, coachWords } from "./Guide";
 import { useRadio } from "../radio";
+import { GYM_ENTRY } from "../content/gym-entry";
 import { SURF } from "../content/surf";
 
 export const CHAPTERS: Record<number, string> = { 1: L("Atvykimas"), 2: L("Pirmosios dienos mieste"), 3: L("Įsikūrimas"), 4: L("Darbas"), 5: L("Žmonės"), 6: L("Kelionės"), 7: L("Pagalba"), 8: L("Pažengusiems"), 9: L("Gyva kalba") };
@@ -245,8 +246,11 @@ function Scenarios({ close }: { close: () => void }) {
             <div className="scn-grid">{list.map((s) => <ScenarioCard key={s.id} s={s} close={close} />)}</div>
           </div>
         ))}
-        <div className="scn-foot">
+        <div className="scn-foot" style={{ flexWrap: "wrap", gap: 8 }}>
           <button className="btn ghost" onClick={close}><Icon name="walk" size={19} /> {L("Vaikščioti po miestą")}</button>
+          {!light && <button type="button" className="btn soft small" style={{ minHeight: 44 }} onClick={() => { close(); game?.guideToPlace?.(GYM_ENTRY.location); }}>
+            <Icon name="walk" size={19} /> {GYM_ENTRY.listAction}
+          </button>}
         </div>
       </div>
     </div>
@@ -379,6 +383,7 @@ function MapPanel({ close }: { close: () => void }) {
               <div>
                 <h3 className="place-title"><span className="place-ico"><Icon name={locIcon(sel)} size={22} /></span>{LOCATIONS[sel].name}</h3>
                 <div style={{ color: "var(--ink-soft)", marginBottom: 10 }}>{placeLt(sel)}</div>
+                {sel === GYM_ENTRY.location && game?.light === false && <p>{GYM_ENTRY.mapLabel}</p>}
                 <div className="sit-list">
                   {sel === CAVE_ZONE && !game?.light && mm.zone !== CAVE_ZONE && (
                     <button className="btn soft small" onClick={() => { close(); game?.autoWalkToObjective("cave"); }}>

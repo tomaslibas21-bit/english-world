@@ -3,7 +3,7 @@ import { GYM_ENTRY } from "../../content/gym-entry";
 import type { GameCharacter } from "../characters";
 import type { ModeHost } from "../kit/host";
 import type { GameMode, ModeFrame, ModeInput, ModePrompt } from "../kit/modes";
-import { GYM_MAT } from "../world/gym";
+import { GYM_MAT } from "../world/gymMat";
 import type { GymMode } from "./mode";
 
 export interface GymRoomHost {
@@ -38,7 +38,6 @@ class GymEntry implements GameMode {
   get active() { return !!this.pending || !!this.mode?.active; }
   get modal() { return !!this.pending || !!this.mode?.modal; }
   get camera() { return this.mode?.camera; }
-  get exitLabel() { return this.mode?.exitLabel; }
 
   available() { return !!this.world.room() && !!this.world.trainer(); }
 
@@ -53,7 +52,9 @@ class GymEntry implements GameMode {
     if (this.disposed || this.active || !this.host.owns(this.id) || !this.host.canStart(true) || this.host.rides.riding) return false;
     const room = this.world.room(), trainer = this.world.trainer(), player = this.host.player();
     if (!room || !trainer || trainer === player || !trainer.root.visible) return false;
-    void this.load(this.pending = { room, player, trainer });
+    const request = this.pending = { room, player, trainer };
+    this.host.entered(this.id);
+    void this.load(request);
     return true;
   }
 

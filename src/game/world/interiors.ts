@@ -6,7 +6,7 @@ import { STYLED } from "../style";
 import { busParts, carParts } from "./car";
 import * as MX from "./mexican";
 import { THEME, type FloorKind, type RoomLook } from "./theme";
-import { GYM_MAT } from "./gym";
+import { GYM_MAT } from "./gymMat";
 import { floorMaterial, floorColor } from "./styled";
 import { BILLIARDS_NPC } from "../../content/billiards-lines";
 import { makeCue, TableView, TABLE_X, TABLE_Z, TINA_HOME } from "../billiards/table";

@@ -71,7 +71,8 @@ const RIDE_ARROWS = () => <><kbd><Icon name="arrowUp" size="1em" strokeWidth={2.
 
 const FriendMeeting = lazy(() => import("./FriendMeeting"));
 const BilliardsOverlay = lazy(() => import("./Billiards").then(({ BilliardsOverlay }) => ({ default: BilliardsOverlay })));
-const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = { photowalk: PhotoWalkOverlay, taxi: TaxiOverlay, barista: BaristaOverlay, pool: PoolOverlay, loteria: LoteriaOverlay, billiards: BilliardsOverlay };
+const GymOverlay = lazy(() => import("./Gym"));
+const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = { photowalk: PhotoWalkOverlay, taxi: TaxiOverlay, barista: BaristaOverlay, pool: PoolOverlay, loteria: LoteriaOverlay, billiards: BilliardsOverlay, gym: GymOverlay };
 
 export function Hud() {
   const hud = useStore((s) => s.hud);
@@ -112,13 +113,14 @@ export function Hud() {
   if (hud.modeScreen?.kind === "menu") {
     const road = hud.modeScreen.id === "road";
     const sea = hud.modeScreen.id === "sea";
+    const gym = hud.modeScreen.id === "gym";
     const Overlay = road ? getRoadOverlay() : sea ? getSeaOverlay() : modeOverlays[hud.modeScreen.id];
-    const tools = !road && !sea && hud.modeScreen.id !== "barista" && hud.modeScreen.id !== "loteria" && hud.modeScreen.id !== "billiards" && hud.modeScreen.id !== "photowalk";
+    const tools = !road && !sea && !gym && hud.modeScreen.id !== "barista" && hud.modeScreen.id !== "loteria" && hud.modeScreen.id !== "billiards" && hud.modeScreen.id !== "photowalk";
     return (
       <div className={"hud mode-hud" + (road ? " road-mode" : sea ? " sea-mode" : "") + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
         {(!hud.panel || sea) && Overlay && <Suspense fallback={null}><Overlay touch={hud.showTouch} /></Suspense>}
         {tools && <><Toolbar key={"tools-" + layout} {...screen} riding touch={hud.showTouch} modeExit={hud.modeScreen.exitLabel} /><RadioSetLayer /></>}
-        {hud.showTouch && hud.ride && <TouchControls road={road} stickOnly={sea} />}
+        {!gym && hud.showTouch && hud.ride && <TouchControls road={road} stickOnly={sea} />}
         <Fade />
       </div>
     );
@@ -641,7 +643,7 @@ function TouchControls({ road = false, stickOnly = false }: { road?: boolean; st
       {(ride === "car" || ride === "taxi") && <HornButton touch />}
       {/* the jump stays under the right thumb; with someone to talk to or a door to go through it moves over for that button
           (a second tap while in the air is a flip: every press goes to the game, which knows where the player is) */}
-      {prompt && <button className="act-btn" onClick={() => game?.interact()}>{(prompt.kind === "taxi" || prompt.kind === "barista" || prompt.kind === "pool" || prompt.kind === "billiards") ? prompt.label : prompt.kind === "talk" ? L("Kalbėti") : prompt.kind === "exit" ? L("Išeiti") : prompt.kind === "drive" ? L("Vairuoti") : prompt.kind === "boat" ? L("Plaukti") : prompt.kind === "out" ? L("Išlipti") : prompt.kind === "climb" ? L("Užlipti") : prompt.kind === "listen" ? L("Klausyti") : prompt.kind === "surf" ? L("Banglentė") : prompt.kind === "paddle" ? L("Irkluoti") : L("Įeiti")}</button>}
+      {prompt && <button className="act-btn" style={prompt.kind === "gym" ? { fontSize: "min(0.95em, 16px)" } : undefined} onClick={() => game?.interact()}>{(prompt.kind === "taxi" || prompt.kind === "barista" || prompt.kind === "pool" || prompt.kind === "billiards" || prompt.kind === "gym") ? prompt.label : prompt.kind === "talk" ? L("Kalbėti") : prompt.kind === "exit" ? L("Išeiti") : prompt.kind === "drive" ? L("Vairuoti") : prompt.kind === "boat" ? L("Plaukti") : prompt.kind === "out" ? L("Išlipti") : prompt.kind === "climb" ? L("Užlipti") : prompt.kind === "listen" ? L("Klausyti") : prompt.kind === "surf" ? L("Banglentė") : prompt.kind === "paddle" ? L("Irkluoti") : L("Įeiti")}</button>}
       {/* (at a wheel the same button is the brake, for as long as it is held; in the water, a dive and the way back up) */}
       {ride === "car" || ride === "boat" || ride === "taxi"
         ? <button className={"jump-btn brake-btn" + (prompt ? " beside" : "")} aria-label={L(road ? ROAD_UI.drift : "Stabdyti")} title={L(road ? ROAD_UI.drift : "Stabdyti")} onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); game?.hold(true); }} onPointerUp={() => game?.hold(false)} onPointerCancel={() => game?.hold(false)} onLostPointerCapture={() => game?.hold(false)}><span aria-hidden>{road ? L(ROAD_UI.drift) : fast ? "DRIFT" : "STOP"}</span></button>

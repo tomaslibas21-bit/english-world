@@ -1,4 +1,6 @@
-export const GYM_MAT = { x: -6.4, z: 2.4, width: 3.6, depth: 2.6, radius: 1.65 };
+import { GYM_MAT } from "./gymMat";
+
+export { GYM_MAT };
 
 export const GYM_STAGE = {
   player: { x: GYM_MAT.x, z: 3.22, heading: Math.PI / 2 },

@@ -1,5 +1,5 @@
 import { PerspectiveCamera, Vector3, type Group } from "three";
-import { GYM_UI, targetLang, type GyMoveId } from "../../content/gym";
+import { targetLang, type GyMoveId } from "../../content/gym";
 import { GYM_ENTRY } from "../../content/gym-entry";
 import { GYM_LINES, type GyLineId } from "../../content/gym-lines";
 import { NPCS } from "../../content/npcs";
@@ -132,7 +132,6 @@ declare global {
 
 export class GymMode {
   readonly id = "gym";
-  readonly exitLabel = GYM_UI.exit;
   private opening: object | null = null;
   private run: Run | null = null;
   private stopObserving?: () => void;
@@ -194,7 +193,6 @@ export class GymMode {
     rig.stage = stage;
     const { width, height } = this.world.viewport();
     this.frameStage(width, height);
-    this.host.entered(this.id);
     useStore.getState().setHud({ prompt: null });
   }
 
