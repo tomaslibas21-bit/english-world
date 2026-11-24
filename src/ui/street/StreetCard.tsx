@@ -5,9 +5,11 @@ import { TAXI_UI } from "../../content/taxi";
 import { useStreet } from "../../game/street/StreetLife";
 import type { StreetProp } from "../../game/street/types";
 import { STREET_WORDS as words } from "../../game/street/words";
+import { cardKey } from "../../state/cards";
 import { picturesOn, useStore } from "../../state/store";
 import { Icon, type IconName } from "../icons";
 import { GlossLine } from "../kit/GlossLine";
+import { PhraseSave } from "../kit/PhraseSave";
 import { sceneUrl } from "../scenes";
 import "./street.css";
 
@@ -58,6 +60,8 @@ export function StreetCard({ light = false }: { light?: boolean }) {
   const sayLt = useStore((s) => s.settings.sayLt);
   if (!view) return null;
   const { cast, moment, scriptName } = view.draw;
+  const { line, reward, role } = view;
+  const sameReward = !!reward && !!line && cardKey(reward.en) === cardKey(line.sentence.en);
   const listening = view.mic.status === "listening" || view.mic.status === "starting";
   return (
     <section className={"street-card" + (light ? " street-light" : "")} key={view.key} data-moment={moment.id}
@@ -70,16 +74,24 @@ export function StreetCard({ light = false }: { light?: boolean }) {
         <strong lang="lt">{view.named && cast.name ? `${cast.name} · ${view.role}` : view.role}</strong>
         <StreetIconButton icon="close" label={words.dismiss} onClick={view.dismiss} />
       </header>
-      {view.scene && <p className="street-scene" lang="lt">{view.scene}</p>}
-      {view.line && <div className="street-current" aria-live="polite">
-        <StreetTextButton key={view.line.key} sentence={view.line.sentence} hint={view.hint} />
+      {view.scene && !reward && <p className="street-scene" lang="lt">{view.scene}</p>}
+      {line && <div className="street-current" aria-live="polite" data-street-reward={sameReward ? "" : undefined}>
+        <StreetTextButton key={line.key} sentence={line.sentence} hint={view.hint} />
         <StreetIconButton icon="speaker" label={words.replay} onClick={view.replay} />
+        <PhraseSave key={`save:${line.key}`} sentence={sameReward ? reward : line.sentence} situationId="street" sourceLabel={role} iconOnly />
+      </div>}
+      {reward && !sameReward && <div className="phrase-save-row street-reward" data-street-reward="">
+        <GlossLine sentence={reward} gloss compact />
+        <PhraseSave sentence={reward} situationId="street" sourceLabel={role} iconOnly />
       </div>}
       {!!view.choices.length && <div className="street-turn">
         <div className="street-choices" role="group" aria-label={words.answer}>
-          {view.choices.map(({ key, sentence }) => <button type="button" className="btn soft street-choice" data-translated={sayLt || undefined} key={key} onClick={() => view.choose(key)}>
-            <GlossLine sentence={sentence} gloss={sayLt} compact />
-          </button>)}
+          {view.choices.map(({ key, sentence }) => <div className="phrase-save-row" key={key}>
+            <button type="button" className="btn soft street-choice" data-translated={sayLt || undefined} onClick={() => view.choose(key)}>
+              <GlossLine sentence={sentence} gloss={sayLt} compact />
+            </button>
+            <PhraseSave sentence={sentence} situationId="street" sourceLabel={role} iconOnly />
+          </div>)}
         </div>
         {speechSupported() && <button type="button" className={`street-icon-btn${listening ? " listening" : ""}`}
           aria-label={listening ? TAXI_UI.micOff : TAXI_UI.micOn} aria-pressed={listening} onClick={view.toggleMic}>
