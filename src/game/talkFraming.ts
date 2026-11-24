@@ -54,6 +54,7 @@ const SLACK = 0.04;
 const MAX_RAY_POSES = 8;
 const RAD = Math.PI / 180;
 const FRONT_LIMIT = Math.cos(85 * RAD);
+const FACE_PREFERENCE = Math.cos(55 * RAD);
 const painted = (m?: THREE.Material) => !!m?.visible && m.opacity > 0;
 
 function within(object: THREE.Object3D, ancestor: THREE.Object3D) {
@@ -113,7 +114,7 @@ function posedHead(speaker: GameCharacter, layers: THREE.Layers) {
   };
   return {
     bounds, corners, middle: middle.clone().applyMatrix4(head.matrixWorld), crown, chin,
-    forward: new THREE.Vector3(0, 0, 1).transformDirection(head.matrixWorld).setY(0).normalize(),
+    forward: new THREE.Vector3(0, 0, 1).transformDirection(head.matrixWorld),
     vertices: points.map(({ world }) => world),
     landmarks: [front(0, 0.5), crown, chin, front(-0.5, 0.42), front(0.5, 0.42),
       front(-0.23, 0.57), front(0.23, 0.57), front(0, 0.76), front(0, 0.31)],
@@ -250,12 +251,13 @@ interface Candidate extends Shot {
   dx: number;
   dy: number;
   fov: number;
-  kind: "normal" | "close" | "raised" | "hint";
+  kind: "normal" | "close" | "raised" | "front" | "hint";
   yaw: number;
   clearance: number;
   size: number;
   tall: number;
   angle: number;
+  facing: number;
   shoulder: number;
   quality: number;
   penalty: number;
@@ -351,11 +353,14 @@ export class TalkFraming {
     const roomForLens = (pos: THREE.Vector3) => (!room || (Math.abs(pos.x) <= room.w / 2 - 0.5 && pos.z >= -room.d / 2 + 0.5))
       && !field?.solidAt(pos.x, pos.y, pos.z, 0.06) && !head.bounds.containsPoint(pos)
       && !inside(pos, actor) && !inside(pos, me) && !crowd.some((body) => inside(pos, body));
-    const measure = (f: Candidate, recenter: boolean) => {
+    const placeLens = (f: Candidate) => {
       camera.position.copy(f.pos);
       camera.lookAt(f.look);
       camera.updateMatrixWorld();
       camera.fov = f.fov;
+    };
+    const measure = (f: Candidate, recenter: boolean) => {
+      placeLens(f);
       if (recenter) {
         shift(0, 0);
         project(head.landmarks[0]);
@@ -408,22 +413,25 @@ export class TalkFraming {
         && projected.y > picture.y0 && projected.y < picture.y1 + 48);
       offset.subVectors(f.pos, feet).setY(0).normalize();
       f.angle = Math.min(offset.dot(front), offset.dot(basis));
+      f.facing = offset.subVectors(f.pos, head.middle).normalize().dot(head.forward);
       f.safeLens = roomForLens(f.pos);
       const outsideBand = distanceToBand(f.size, minSize, maxSize);
       f.penalty = (f.safeLens ? 0 : 350) + (inDepth ? 0 : 200) + (legacyVisible ? 0 : 15)
         + Math.max(0, -f.clearance) * 1.5 + outsideBand * 5 + Math.max(0, FRONT_LIMIT - f.angle) * 150;
       f.open = f.safeLens && inDepth && legacyVisible && f.angle >= FRONT_LIMIT && outsideBand === 0 && f.clearance >= -0.0001;
-      f.quality = Math.min(f.clearance, 9) - Math.abs(f.size - preferred) * 1.7 + f.angle * 13 + offset.dot(head.forward) * 3 + f.shoulder * 3
+      f.quality = Math.min(f.clearance, 9) - Math.abs(f.size - preferred) * 1.7 + f.angle * 13 + f.facing * 3 + f.shoulder * 3
+        - Math.max(0, FACE_PREFERENCE - f.facing) * 60
         - (desktop ? Math.max(0, 245 - f.tall) * 0.14 : 0);
     };
     const centre = feet.clone().setY(head.middle.y);
     const add = (pos: THREE.Vector3, look: THREE.Vector3, kind: Candidate["kind"], yaw: number, oldFov?: number) => {
       if (pos.distanceToSquared(centre) > input.max ** 2) return;
-      const closeLens = short || kind === "close" || kind === "hint";
+      const closeLens = short || kind !== "normal";
       const pixels = screen.viewportHeight * preferred / 100;
       const focal = pixels * pos.distanceTo(head.middle) / (head.crown.y - head.chin.y);
-      const fov = oldFov ?? (closeLens ? THREE.MathUtils.clamp(2 * Math.atan(h * camera.zoom / (2 * focal)) / RAD, 50, short ? 94 : 80) : 50);
-      const f: Candidate = { pos, look, kind, yaw, prior: oldFov !== undefined, fov, dx: 0, dy: 0, clearance: 0, size: 0, tall: 0, angle: 0,
+      const maxFov = portrait && (kind === "front" || kind === "close") ? 114 : short ? 94 : 80;
+      const fov = oldFov ?? (closeLens ? THREE.MathUtils.clamp(2 * Math.atan(h * camera.zoom / (2 * focal)) / RAD, 50, maxFov) : 50);
+      const f: Candidate = { pos, look, kind, yaw, prior: oldFov !== undefined, fov, dx: 0, dy: 0, clearance: 0, size: 0, tall: 0, angle: 0, facing: 0,
         shoulder: 0, quality: 0, penalty: 0, safeLens: false, open: false };
       stats.poses++;
       measure(f, true);
@@ -437,16 +445,23 @@ export class TalkFraming {
     };
     const estimate = THREE.MathUtils.clamp((head.crown.y - head.chin.y) * defaultFocal / (screen.viewportHeight * preferred / 100), 2, input.max * 0.9);
     if (previous?.clear) add(previous.pos, previous.look, "normal", 0, previous.fov);
-    for (const d of [2.4, 3.3, 4.4]) for (const a of [36, 50, 66, 80]) {
+    for (const d of [2.4, 3.3, 4.4]) for (const a of d === 3.3 ? [36, 50, 66] : [36, 50, 66, 80]) {
       pose(a * toward, d, 15);
       pose(-a * toward, d, 15);
     }
     for (const d of [Math.abs(estimate - 3.3) < 0.25 ? 4.8 : estimate, 3.3]) for (const a of [0, 22 * toward, -22 * toward]) pose(a, d, 12);
     for (const s of [toward, -toward]) {
+      pose(28 * s, 2.05, 13, "close");
       pose(78 * s, 1.8, 12, "close");
       pose(84 * s, 2.1, 16, "close");
-      for (const a of [22, 50, 80]) pose(a * s, Math.min(3.7, Math.max(2.4, estimate)), 26, "raised");
+      pose(22 * s, 2.6, 28, "raised");
+      pose(48 * s, Math.min(3.5, Math.max(2.45, estimate)), 27, "raised");
     }
+    // A narrow opening may line up with the counter's authored front even as the learner steps to either side.
+    const straight = feet.clone().addScaledVector(authored, 1.8);
+    straight.y = focus.y + Math.tan(12 * RAD) * 1.8;
+    add(straight, focus, "front", 0);
+    pose(0, 2.45, 29, "raised");
     if (input.hint) add(input.hint, focus, "hint", 0);
     if (!candidates.length) return null;
 
@@ -498,21 +513,22 @@ export class TalkFraming {
     for (const f of candidates) if (f.safeLens && blocked(f)) { f.open = false; f.penalty += 90; }
     candidates.sort(compare);
     const open = candidates.filter((f) => f.open);
-    // Check several sectors before spending the remaining rays on refinements of the same angle.
+    // Keep ray slots for the front, a close diagonal and a raised view even when the shoulders rank higher.
     const shortlist = new Set<Candidate>();
     const best = (select: (f: Candidate) => boolean) => {
       const f = open.find((f) => !shortlist.has(f) && select(f));
       if (f) shortlist.add(f);
     };
-    best((f) => !!f.prior);
-    best((f) => f.kind === "normal");
-    const first = open.find((f) => f.kind === "normal" && !f.prior);
-    best((f) => f.kind === "normal" && Math.sign(f.yaw) === -Math.sign(first?.yaw ?? 0));
+    best((f) => !!f.prior && f.facing >= FACE_PREFERENCE);
     best((f) => f.kind === "hint");
-    best((f) => f.kind === "close");
+    const first = open.find((f) => f.kind === "normal" && !f.prior);
+    if (first) shortlist.add(first);
+    best((f) => f.kind === "normal" && Math.sign(f.yaw) === -Math.sign(first?.yaw ?? 0));
+    best((f) => f.kind === "front");
+    best((f) => f.kind === "close" && Math.abs(f.yaw) < 45);
     best((f) => f.kind === "raised");
-    best((f) => f.kind === "normal" && Math.abs(f.yaw) >= 65);
-    best((f) => Math.abs(f.yaw) <= 22);
+    if (shortlist.size < MAX_RAY_POSES - 1) best((f) => f.kind === "close");
+    if (shortlist.size < MAX_RAY_POSES) best((f) => f.kind === "normal" && Math.abs(f.yaw) >= 65);
     for (const f of open) if (shortlist.size < MAX_RAY_POSES - 1) shortlist.add(f);
     const retry = candidates.find((f) => f.safeLens && !f.open && f.penalty < 90);
     if (shortlist.size < MAX_RAY_POSES && retry) shortlist.add(retry);
@@ -520,7 +536,8 @@ export class TalkFraming {
     let chosen: Candidate | undefined, fallback: Candidate | undefined;
     let obstruction: Mesh | undefined;
     for (const f of shortlist) {
-      measure(f, false);
+      placeLens(f);
+      shift(f.dx, f.dy);
       const hit = geometry(f);
       if (hit) {
         if (!fallback || compare(f, fallback) < 0) { obstruction = hit; fallback = f; }
@@ -528,9 +545,13 @@ export class TalkFraming {
       }
       if (!f.open) { fallback = f; obstruction = undefined; continue; }
       if (!chosen || (f.quality > chosen.quality && !(chosen.prior && f.clearance - chosen.clearance <= 2
-        && Math.abs(f.size - chosen.size) < 3 && Math.abs(f.angle - chosen.angle) < 0.2))) chosen = f;
-      const preferredSize = distanceToBand(f.size, portrait ? 10 : 13, portrait ? 15 : 20) === 0;
-      if (f.clearance >= 7 && preferredSize && f.angle > 0.55 && (!desktop || f.tall >= 230)) break;
+        && Math.abs(f.size - chosen.size) < 3 && Math.abs(f.angle - chosen.angle) < 0.2
+        && f.facing - chosen.facing < 0.12))) chosen = f;
+      // A room hint can trade some extra framing margin for a better sightline. The padded opening still applies.
+      const hinted = f.kind === "hint";
+      const preferredSize = hinted || distanceToBand(f.size, portrait ? 10 : 13, portrait ? 15 : 20) === 0;
+      if (f.clearance >= (hinted ? 5 : 7) && preferredSize && f.angle > 0.55
+        && f.facing >= FACE_PREFERENCE && (!desktop || f.tall >= 230)) break;
     }
     const f = chosen ?? fallback ?? candidates[0];
     const result: Framing = { pos: f.pos, look: f.look, dx: f.dx, dy: f.dy, fov: f.fov, clear: !!chosen, blend: false };

@@ -2025,10 +2025,16 @@ export class Game implements GameApi {
     };
     void loadTalkFraming().then((module) => {
       if (!module || !valid() || !this.talkSpeaker) return;
-      this.talkCamera = new module.TalkPresentation(this.renderer.domElement, this.rig, this.talkSpeaker, valid, hasArt, () => ({
-        learner: this.player, people: [...this.npcs.map((n) => n.ch), ...this.extras], scene: this.scene,
-        room: zone.interior, field: zone.interior ? undefined : this.field, max: THEME.talkCamera?.max ?? 30,
-      }), () => this.transitioning || (hasArt && picturesOn(useStore.getState().settings)));
+      this.talkCamera = new module.TalkPresentation(this.renderer.domElement, this.rig, this.talkSpeaker, valid, hasArt, () => {
+        const player = this.player.root.position;
+        const distance = ([x, , z]: [number, number, number]) => (player.x - x) ** 2 + (player.z - z) ** 2;
+        const hint = THEME.talkCamera?.hints?.[zone.id]?.[this.talkSpeaker!.id]?.reduce((a, b) => distance(a) <= distance(b) ? a : b);
+        return {
+          learner: this.player, people: [...this.npcs.map((n) => n.ch), ...this.extras], scene: this.scene,
+          room: zone.interior, field: zone.interior ? undefined : this.field, max: THEME.talkCamera?.max ?? 30,
+          hint: hint && new THREE.Vector3(...hint),
+        };
+      }, () => this.transitioning || (hasArt && picturesOn(useStore.getState().settings)));
     });
   }
 
