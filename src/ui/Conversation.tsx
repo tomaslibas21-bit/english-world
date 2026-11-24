@@ -67,7 +67,10 @@ export function Conversation() {
   const inputRef = useRef<HTMLInputElement>(null);
   const missRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight }); }, [conv.transcript.length, conv.phase]);
+  useEffect(() => {
+    const transcript = scrollRef.current;
+    transcript?.scrollTo({ top: transcript.scrollHeight, behavior: conv.phase === "ended" ? "instant" : "auto" });
+  }, [conv.transcript.length, conv.phase]);
   useEffect(() => { if (conv.typing && conv.phase === "you") inputRef.current?.focus(); }, [conv.typing, conv.phase]);
   // half-typed text doesn't carry over into the next conversation
   useEffect(() => { setTyped(""); }, [conv.sitId, conv.active]);
@@ -242,6 +245,12 @@ function EndCard({ sit }: { sit: SituationDef }) {
   const close = () => game?.closeConversation();
   const showAll = () => { close(); useStore.getState().setHud({ panel: "scenarios" }); };
   const restart = () => game?.restartScenario();
+  const baristaOffer = modeOffer && modeOffer.id === "barista";
+  const modeAction = modeOffer && (
+    <button className={`btn ${baristaOffer ? "soft " : ""}${modeOffer.id}-cta`} onClick={() => game?.modeFromConversation(modeOffer.id)}>
+      {modeOffer.id === "surf" ? <SitIcon id={sit.id} size={19} /> : <Icon name="star" size={19} />} {modeOffer.label}
+    </button>
+  );
 
   return (
     <div className="yourturn ended-box">
@@ -265,7 +274,7 @@ function EndCard({ sit }: { sit: SituationDef }) {
         {completed && kind && <div className="ended-keepsake"><KeepsakeIcon kind={kind} /> {L("Gavai {item}", { item: L(KIND[kind].accusative) })}</div>}
         {newExpressions.length > 0 && <div className="ended-sub">{L("Naujų frazių knygelėje: {n}", { n: newExpressions.length })}</div>}
       </div>}
-      {modeOffer && <button className={`btn ${modeOffer.id}-cta`} onClick={() => game?.modeFromConversation(modeOffer.id)}>{modeOffer.id === "surf" ? <SitIcon id={sit.id} size={19} /> : <Icon name="star" size={19} />} {modeOffer.label}</button>}
+      {!baristaOffer && modeAction}
       {light ? (
         <div className="sit-actions">
           <button className="btn" onClick={startNext}><Icon name="arrowRight" size={18} /> {L("Kita situacija")}</button>
@@ -289,7 +298,7 @@ function EndCard({ sit }: { sit: SituationDef }) {
       ) : (
         <>
           <div className="ended-main">
-            <button className={"btn" + (modeOffer ? " soft" : "")} onClick={close}><Icon name="walk" size={18} /> {L("Tęsti")}</button>
+            <button className={"btn" + (modeOffer && !baristaOffer ? " soft" : "")} onClick={close}><Icon name="walk" size={18} /> {L("Tęsti")}</button>
             <button className="btn soft" onClick={startNext}><Icon name="arrowRight" size={18} /> {L("Kita situacija")}</button>
           </div>
           <div className="sit-actions">
@@ -298,6 +307,7 @@ function EndCard({ sit }: { sit: SituationDef }) {
           </div>
         </>
       )}
+      {baristaOffer && modeAction}
       <button className="copy-link" onClick={() => copyConversation(sit)}><Icon name="clipboard" size={17} /> {L("Kopijuoti pokalbį mokytojui")}</button>
     </div>
   );
