@@ -8,6 +8,7 @@ import { useStore } from "../state/store";
 import { STREET_WORDS } from "../game/street/words";
 import { useCards, unitInput, sentenceInput, cardKey, cleanText, isDashGloss, dueCards, daysUntil, nextDue, exportCardsJSON, type Card } from "../state/cards";
 import { NPCS } from "../content/npcs";
+import { PHRASE_CARD_UI } from "../content/phrase-card-ui";
 import { coachVoice } from "../content/voices";
 import { SITUATION_BY_ID } from "../content/situations/catalog";
 import { SitIcon } from "./SitIcon";
@@ -144,11 +145,11 @@ export function WordPopover({ s, index, anchor, onClose }: { s: Sentence; index:
       {dash ? <div className="wpop-none">Atskirai neverčiama – išsaugok visą sakinį.</div> : <div className="wpop-lt" lang="lt">{word.lt}</div>}
       <div className="wpop-acts">
         {!dash && (wordIn
-          ? <span className="wpop-in"><Icon name="check" size={16} strokeWidth={2.25} /> Kortelėse</span>
-          : <button className="btn small" onClick={() => add(word)}><Glyph name="plus" size={16} /> Į korteles</button>)}
+          ? <span className="wpop-in"><Icon name="check" size={16} strokeWidth={2.25} />{" " + PHRASE_CARD_UI.inCards}</span>
+          : <button className="btn small" onClick={() => add(word)}><Glyph name="plus" size={16} />{" " + PHRASE_CARD_UI.add}</button>)}
         {sentIn
-          ? <span className="wpop-in"><Icon name="check" size={16} strokeWidth={2.25} /> Sakinys kortelėse</span>
-          : <button className={"btn small" + (dash ? "" : " soft")} onClick={() => add(whole)}><Glyph name="plus" size={16} /> Visą sakinį</button>}
+          ? <span className="wpop-in"><Icon name="check" size={16} strokeWidth={2.25} />{" " + PHRASE_CARD_UI.wholeInCards}</span>
+          : <button className={"btn small" + (dash ? "" : " soft")} onClick={() => add(whole)}><Glyph name="plus" size={16} />{" " + PHRASE_CARD_UI.whole}</button>}
       </div>
       {saved && <div className="wpop-hint">Kortelę rasi „Frazių knygelėje“.</div>}
     </div>,
