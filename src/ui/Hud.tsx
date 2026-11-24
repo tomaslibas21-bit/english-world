@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type ComponentType, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type ComponentType, type CSSProperties, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { townRide, useStore, type HudState } from "../state/store";
 import { townNote } from "../state/townNotes";
 import { SectionHelpButton, useSectionHelp } from "./sectionHelp";
@@ -16,16 +16,19 @@ import { coach } from "../game/coach";
 import { WORLD, SEA_Z } from "../game/world/layout";
 import { LIGHTHOUSE_ISLAND } from "../game/world/island";
 import { SITUATION_BY_ID } from "../content/situations/catalog";
+import { LOCATIONS } from "../content/locations";
+import { NPCS } from "../content/npcs";
 import { SitIcon } from "./SitIcon";
 import { sitProgress, stars } from "../state/progress";
 import { Icon, InlineIcon, Stars, splitLead, type IconName } from "./icons";
-import { isPhone, objectiveLabels } from "./objective";
+import { isPhone } from "./objective";
 import { drawIslandMap, drawRideMarks } from "./mapMarks";
 import { switchPlayMode } from "./playMode";
 import { useCards, dueCards } from "../state/cards";
 import { LyricStrip, RadioMenuLamp, RadioSetLayer, RadioTool } from "./Radio";
 import { radio, useRadio } from "../radio";
 import { DirectionsCard, PhotoChip, PhotoWalkOverlay, QuestArrival } from "./PhotoWalk";
+import { useTownQuests } from "../game/photowalk/store";
 import { Guide } from "./Guide";
 import { TownToast, useTownToast } from "./Toasts";
 import { useStreet } from "../game/street/StreetLife";
@@ -84,11 +87,12 @@ export function Hud() {
   const taskId = hud.objective?.followUp ? hud.objective.title : hud.objective?.sitId ?? null;
   const toast = useTownToast();
   const directionsToast = toast?.kind === "stamp" && toast.sitId === ASK_WAY_SITUATION;
+  const directions = useTownQuests((s) => questHud && !directionsToast ? s.directions?.id : undefined);
   const narrow = useNarrowHud();
   const streetCard = useStreet((s) => s.moment !== null) && !hud.panel;
   const portrait = screen.portraitPhone;
   const phoneToast = narrow && toast !== null;
-  const task = useTaskCard(taskId, inTown && !hud.panel, phoneToast, layout);
+  const task = useTaskCard(taskId, inTown && !hud.panel, directions, phoneToast, layout);
   if (inConversation) return <Fade />;
   // the first visit's flight over the town has the screen to itself too: where one is, and what to do first
   if (hud.flight) return <div className="hud"><Flight /><Fade /></div>;
@@ -131,7 +135,7 @@ export function Hud() {
   const foldForContext = portrait && !hud.panel && ((talk && guideVisible && !hud.roadApproach)
     || (zone !== "town" && target !== undefined && target !== zone && localOffer));
   // A sideways phone keeps the task to one row unless it is opened by hand.
-  const collapsed = streetCard || (phoneToast ? !task.openedDuringToast
+  const collapsed = streetCard || (directions || phoneToast ? !task.openedDuringNote
     : (moving && !!hud.objective?.followUp) || (task.manual ?? (screen.sidewaysPhone || (!task.fresh && (moving || foldForContext)))));
   return (
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
@@ -145,7 +149,7 @@ export function Hud() {
           {!hud.panel && hud.textArrival && <TextArrival id={hud.textArrival} />}
           <Guide visible={guideVisible} portrait={portrait} walking={hud.walking} namedTalk={namedTalk} />
           <TownToast toast={toast} />
-          {questHud && !directionsToast && <DirectionsCard />}
+          {directions && <DirectionsCard />}
         </div>
         <Minimap {...screen} />
       </div>
@@ -186,10 +190,11 @@ function useNarrowHud() {
   return narrow;
 }
 
-function useTaskCard(taskId: string | null, visible: boolean, phoneToast: boolean, layout: string) {
+function useTaskCard(taskId: string | null, visible: boolean, directions: string | undefined, phoneToast: boolean, layout: string) {
   const [state, setState] = useState<{ id: string | null; layout: string; manual: boolean | null; fresh: boolean }>({ id: taskId, layout, manual: null, fresh: false });
-  const [openedDuringToast, setOpenedDuringToast] = useState(false);
-  if (openedDuringToast && (!phoneToast || taskId !== state.id)) setOpenedDuringToast(false);
+  const note = directions ?? phoneToast;
+  const [openedDuringNote, setOpenedDuringNote] = useState<string | boolean>(false);
+  if (openedDuringNote && (openedDuringNote !== note || taskId !== state.id || (directions && layout !== state.layout))) setOpenedDuringNote(false);
   // A manual choice belongs to one task and one way of holding the phone. Give the next task its pop when the card
   // is back on screen.
   if (taskId !== state.id) setState({ id: taskId, layout, manual: null, fresh: taskId !== null });
@@ -200,10 +205,10 @@ function useTaskCard(taskId: string | null, visible: boolean, phoneToast: boolea
     return () => clearTimeout(timer);
   }, [state.id, state.fresh, visible]);
   function setManual(manual: boolean) {
-    setState((current) => ({ ...current, manual }));
-    setOpenedDuringToast(phoneToast && !manual);
+    if (!directions) setState((current) => ({ ...current, manual }));
+    setOpenedDuringNote(!manual && note);
   }
-  return { ...state, openedDuringToast, setManual };
+  return { ...state, openedDuringNote, setManual };
 }
 
 // Enter and Space belong to a button reached by keyboard, even while the game is listening for movement.
@@ -213,7 +218,7 @@ function activateHudButton(e: KeyboardEvent<HTMLElement>) {
 
 // The same for the town's tools and the radio set, which opens over the town at the HUD's level.
 function keepKeysOnHudButtons(e: KeyboardEvent<HTMLElement>) {
-  if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(":is(.toolbar, .radio-set, .street-card, .coach) :focus-visible, .street-bubble:focus-visible")) e.stopPropagation();
+  if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(":is(.toolbar, .radio-set, .street-card, .coach, .directions-card, .objective-card) :focus-visible, .street-bubble:focus-visible")) e.stopPropagation();
 }
 
 /** The town's tools. On a phone (upright or sideways) they always fold behind one round menu button; on a computer
@@ -415,31 +420,61 @@ function Fade() {
 function Objective({ collapsed, fresh, setCollapsed }: { collapsed: boolean; fresh: boolean; setCollapsed: (collapsed: boolean) => void }) {
   const o = useStore((s) => s.hud.objective);
   const progress = useStore((s) => s.progress);
+  const keepFocus = useRef(false);
+  const focusToggle = useCallback((button: HTMLButtonElement | null) => {
+    if (!button || !keepFocus.current) return;
+    keepFocus.current = false;
+    button.focus();
+  }, []);
+  function toggle(e: MouseEvent<HTMLButtonElement>) {
+    keepFocus.current = e.detail === 0 && e.currentTarget.matches(":focus-visible");
+    setCollapsed(!collapsed);
+  }
+  const title = o?.title ?? "Visos užduotys atliktos";
   const titleLt = o?.titleLt && <> <span lang="lt">· {o.titleLt}</span></>;
   // A conversation's own drawing stands before its title; a follow-up errand and "all done" keep the target.
   const situation = o && !o.followUp ? o.sitId : null;
+  const sit = situation ? SITUATION_BY_ID[situation] : undefined;
+  const phone = sit && isPhone(sit);
+  const date = sit?.npc === "sam" || sit?.npc === "emma";
+  const profile = progress.profile;
+  const partner = date && NPCS[profile?.datePartner ?? (profile?.gender === "f" ? "sam" : "emma")]?.name;
+  const destination = phone ? undefined : partner
+    ? [partner, !o?.inside && o?.where].filter(Boolean).join(" · ")
+    : sit && LOCATIONS[sit.location]?.kind === "outdoor" ? NPCS[sit.npc]?.name : o?.where;
+  const place = (collapsed && o?.titleLt) || destination;
+  const meters = o?.dist == null ? null : `${o.dist} m`;
+  const distance = o?.dist != null && <span className="dist">
+    {o.angle !== null && <Arrow angle={o.angle} />}
+    {!collapsed && !o.followUp && o.inside && o.dist < 4 ? "Čia pat!" : meters}
+  </span>;
+  const details = (place || distance) && <span className="objective-meta">
+    {place && <span className="objective-destination">{place}</span>}{distance}
+  </span>;
   if (collapsed) {
     return (
       <div className="objective-card collapsed" data-target-location={o?.targetLoc}>
-        <button className="collapse-btn objective-summary" aria-expanded={false} onClick={() => setCollapsed(false)} onKeyDown={activateHudButton}>
+        <button className="collapse-btn objective-summary" aria-expanded={false}
+          aria-label={[title, place, meters].filter(Boolean).join(", ")} ref={focusToggle} onClick={toggle}>
           {situation ? <SitIcon id={situation} size={18} className="objective-ico" /> : <Icon name="target" size={16} strokeWidth={2} />}
-          <span className="objective-title" title={o?.followUp ? o.title : undefined}>{o?.title ?? "Visos užduotys atliktos"}{titleLt}</span>
+          <span className="objective-title">{title}</span>
+          {details}
           <Icon name="chevronDown" size={16} strokeWidth={2} />
-          {o?.dist != null && <span className="dist">{o.angle !== null && <Arrow angle={o.angle} />}{o.dist} m</span>}
         </button>
       </div>
     );
   }
-  const fold = <button className="collapse-btn" onClick={() => setCollapsed(true)} onKeyDown={activateHudButton} aria-label="Suskleisti" aria-expanded><Icon name="chevronUp" size={18} strokeWidth={2} /></button>;
+  const fold = <button className="collapse-btn" ref={focusToggle} onClick={toggle} aria-label="Suskleisti" aria-expanded><Icon name="chevronUp" size={18} strokeWidth={2} /></button>;
   const className = "objective-card" + (fresh ? " fresh" : "");
   if (!o) {
     return (
       <div className={className}>
-        <div className="kicker">Visos užduotys atliktos <InlineIcon name="party" />{fold}</div>
+        <div className="kicker">{title} <InlineIcon name="party" />{fold}</div>
         <p>Grįžk į bet kurią vietą ir pabandyk pasakyti kitaip – žmonės kaskart kalba šiek tiek skirtingai.</p>
       </div>
     );
   }
+  const guide = <button className="btn small" onClick={() => game?.autoWalkToObjective()} title="G"><Icon name="walk" size={17} /> Nuvesk mane</button>;
   if (o.followUp) return (
     <div className={className} data-target-location={o.targetLoc}>
       <div className="kicker">
@@ -448,14 +483,10 @@ function Objective({ collapsed, fresh, setCollapsed }: { collapsed: boolean; fre
       </div>
       <h3>{o.title}</h3>
       <div className="row">
-        {o.dist !== null && <span className="dist">{o.angle !== null && <Arrow angle={o.angle} />}{o.dist} m</span>}
-        <button className="btn small" onClick={() => game?.autoWalkToObjective()} title="G"><Icon name="walk" size={17} /> Nuvesk mane</button>
+        {details}{guide}
       </div>
     </div>
   );
-  const sit = SITUATION_BY_ID[o.sitId];
-  const phone = sit && isPhone(sit);
-  const { title, where } = sit ? objectiveLabels(sit) : o;
   const st = stars(sitProgress(progress, o.sitId));
   return (
     <div className={className}>
@@ -473,13 +504,7 @@ function Objective({ collapsed, fresh, setCollapsed }: { collapsed: boolean; fre
         {phone ? (
           <button className="btn small" onClick={() => useStore.getState().setHud({ panel: "phone" })}><Icon name="smartphone" size={17} /> Paskambinti</button>
         ) : (
-          <>
-            <span className="dist">
-              {o.angle !== null && <Arrow angle={o.angle} />}
-              {o.inside && o.dist !== null && o.dist < 4 ? "Čia pat!" : o.dist !== null ? `${o.dist} m` : ""}{where && ` · ${where}`}
-            </span>
-            <button className="btn small" onClick={() => game?.autoWalkToObjective()} title="G"><Icon name="walk" size={17} /> Nuvesk mane</button>
-          </>
+          <>{details}{guide}</>
         )}
         <button className="btn ghost small" onClick={() => useStore.getState().setHud({ panel: "journal" })}>Kita užduotis</button>
       </div>

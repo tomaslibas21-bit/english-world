@@ -33,6 +33,7 @@ import { SEA_EDITION } from "../content/sea";
 import { SeaEntry, seaReturn, cameraPose, crossingPose, RETURN_SETTLE, RETURN_SPEED, type SeaHandoff } from "./sea/entry";
 import { RIDE_NAMES } from "../content/rides";
 import { TownQuests } from "./photowalk/mode";
+import { useTownQuests, type Destination } from "./photowalk/store";
 import { isTownQuest } from "../content/townQuests";
 import { ModeRegistry } from "./kit/modes";
 import { FrameFade } from "./kit/frameFade";
@@ -60,7 +61,7 @@ import { PropFader } from "./fade";
 import { CUT, withCutout } from "./cutout";
 import { covers, NEAR_TALK, shoulderShots, type Body, type Shot } from "./talkShot";
 import { FLIGHT_SECONDS, flightAt } from "./flyover";
-import { Guidance } from "./guidance";
+import { Guidance, guideVisualTarget } from "./guidance";
 import { NavGrid, openIslandNav } from "./nav";
 import { Session } from "./session";
 import { Ambient, Chatter, walkerLook } from "./ambient";
@@ -199,7 +200,7 @@ export class Game implements GameApi {
   private lastHeading = 0;
   private heading = Math.PI;
   private autoPath: [number, number][] | null = null;
-  private autoTarget: { kind: "npc" | "door" | "exit" | "point"; id?: string } | null = null;
+  private autoTarget: { kind: "npc" | "door" | "exit" | "point"; id?: string; directions?: Destination | null } | null = null;
   private walkCheck = { time: 0, remaining: Infinity };
   private lastBlockedTap = -Infinity;
   private clock = new THREE.Clock();
@@ -568,7 +569,7 @@ export class Game implements GameApi {
       walking: () => this.questAvailable() && this.zone.id === "town" && this.rig.mode === "follow",
       available: () => this.questAvailable(),
       zone: () => this.zone.id,
-      guide: (id) => this.guideToPlace(id),
+      guide: (id) => this.guideToPlace(id, useTownQuests.getState().directions),
       animate: (seconds) => {
         const hana = this.npcs.find(({ id }) => this.quests.handlesNpc(id));
         hana?.ch.talk(seconds, () => audio.level(), () => audio.vowel());
@@ -2438,12 +2439,18 @@ export class Game implements GameApi {
     return [...ROUTE].sort((a, b) => a.chapter - b.chapter || a.order - b.order || a.id.localeCompare(b.id));
   }
 
-  guideToPlace(loc: string) {
+  guideToPlace(loc: string, directions?: Destination | null) {
     const door = this.town.doors.find((d) => d.loc === loc);
     if (!door || this.zone.id === loc || this.rides.riding) return;
     if (this.zone.interior) {
-      this.walkTo(this.zone.interior.exit.x, this.zone.interior.exit.z - 0.6, { kind: "exit", id: loc });
-    } else this.walkTo(door.outX, door.outZ, { kind: "point" });
+      this.walkTo(this.zone.interior.exit.x, this.zone.interior.exit.z - 0.6, { kind: "exit", id: loc, directions });
+    } else this.walkTo(door.outX, door.outZ, { kind: "point", id: loc, directions });
+    if (this.autoTarget) this.pathT = 0;
+  }
+
+  private routeVisualTarget() {
+    const target = this.autoTarget;
+    return guideVisualTarget(this.autoPath, target, target?.directions ? useTownQuests.getState().directions : null);
   }
 
   guideToLighthouse() {
@@ -2573,30 +2580,30 @@ export class Game implements GameApi {
     const sit = this.currentObjective();
     const st = useStore.getState();
     const island = LIGHTHOUSE_ISLAND;
+    const guide = this.routeVisualTarget();
     if (this.islandGuide && island) {
       st.setHud({ objective: { sitId: island.keeper.says, title: island.name, titleLt: island.lt, goal: "", where: "", dist: null, angle: null, inside: false } });
-      this.showBeacon(this.objectiveTarget());
+      this.showBeacon(guide ?? this.objectiveTarget());
       this.pathT = 0;
       return;
     }
     const task = this.phoneTask();
     if (task) {
       st.setHud({ objective: { followUp: true, targetLoc: task.loc, sitId: task.id, title: task.title, goal: "", where: LOCATIONS[task.loc].lt, dist: null, angle: null, inside: this.zone.id === task.loc } });
-      this.showBeacon(this.objectiveTarget());
+      this.showBeacon(guide ?? this.objectiveTarget());
       this.pathT = 0;
       return;
     }
-    if (!sit) { st.setHud({ objective: null }); this.guidance.setBeacon(null); this.guidance.setPath(null); return; }
+    if (!sit) { st.setHud({ objective: null }); this.showBeacon(guide); if (!guide) this.guidance.setPath(null); return; }
     const loc = LOCATIONS[sit.location];
-    const tgt = this.objectiveTarget();
     st.setHud({ objective: { sitId: sit.id, title: sit.title.lt, goal: sit.goal, where: loc?.lt ?? "", dist: null, angle: null, inside: this.zone.id === sit.location } });
-    this.showBeacon(tgt);
+    this.showBeacon(guide ?? this.objectiveTarget());
     this.pathT = 0;
   }
 
   /** The beacon over the objective's door or person; for someone talked to across a counter (a spot of their own), it
    *  stays over them and its ring lies on that spot, where the trail ends. */
-  private showBeacon(tgt: ReturnType<Game["objectiveTarget"]>) {
+  private showBeacon(tgt: { kind: string; x: number; z: number; person?: { x: number; z: number } } | null) {
     if (!tgt) { this.guidance.setBeacon(null); return; }
     const over = tgt.person ?? tgt;
     const y = this.islandGuide && LIGHTHOUSE_ISLAND && !this.zone.interior ? islandGroundY(LIGHTHOUSE_ISLAND, over.x, over.z) : undefined;
@@ -2715,11 +2722,13 @@ export class Game implements GameApi {
     this.pathT -= dt;
     if (this.pathT <= 0 && !talking && !mode) {
       this.pathT = 0.5;
-      const tgt = this.objectiveTarget();
+      const guide = this.routeVisualTarget();
+      const tgt = guide ?? this.objectiveTarget();
       const p = this.player.root.position;
       if (tgt && Math.hypot(tgt.x - p.x, tgt.z - p.z) > 2.2) {
         const afloat = this.islandGuide && (riding?.kind === "boat" || this.swimming);
-        this.guidance.setPath(afloat ? [[p.x, p.z], [tgt.x, tgt.z]] : this.zone.nav.path(p.x, p.z, tgt.x, tgt.z));
+        this.guidance.setPath(guide && this.autoPath ? [[p.x, p.z], ...this.autoPath]
+          : afloat ? [[p.x, p.z], [tgt.x, tgt.z]] : this.zone.nav.path(p.x, p.z, tgt.x, tgt.z));
       } else this.guidance.setPath(null);
       this.showBeacon(tgt);
     }
@@ -3393,7 +3402,7 @@ export class Game implements GameApi {
     if (!t) return;
     if (t.kind === "npc" && t.id) this.talkTo(t.id);
     else if (t.kind === "door" && t.id) this.enterDoor(t.id);
-    else if (t.kind === "exit") this.exitInterior(t.id ? () => this.guideToPlace(t.id!) : undefined);
+    else if (t.kind === "exit") this.exitInterior(t.id ? () => this.guideToPlace(t.id!, t.directions) : undefined);
   }
 
   private updateNpcs(dt: number, talking: boolean, mode: ReturnType<ModeRegistry["get"]> | null) {
@@ -3573,8 +3582,9 @@ export class Game implements GameApi {
     }
     const mm = st.hud.minimap;
     const zone = this.zone.id;
-    if (Math.abs(mm.px - p.x) > 0.3 || Math.abs(mm.pz - p.z) > 0.3 || Math.abs(mm.heading - this.heading) > 0.05 || mm.zone !== zone || mm.targetX !== tgt?.x || mm.targetZ !== tgt?.z) {
-      st.setHud({ minimap: { px: p.x, pz: p.z, heading: this.heading, targetX: tgt?.x, targetZ: tgt?.z, zone } });
+    const mark = this.routeVisualTarget() ?? tgt;
+    if (Math.abs(mm.px - p.x) > 0.3 || Math.abs(mm.pz - p.z) > 0.3 || Math.abs(mm.heading - this.heading) > 0.05 || mm.zone !== zone || mm.targetX !== mark?.x || mm.targetZ !== mark?.z) {
+      st.setHud({ minimap: { px: p.x, pz: p.z, heading: this.heading, targetX: mark?.x, targetZ: mark?.z, zone } });
     }
     this.saveT -= 0.12;
     if (this.saveT <= 0) { this.saveT = 5; this.savePlace(); }
