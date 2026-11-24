@@ -321,14 +321,11 @@ async function testGame(context, game, size, touch, supported) {
         shout: text("lt_a_loteria"),
       };
     }, round.current);
-    const { width, height } = page.viewportSize();
-    const callerText = height <= 520 && width > height ? [] : [".loteria-line"];
     await checkBonus({
       hit: name, miss: wrongName,
       untouched: (s) => [s.covered, s.ready, s.current],
       controls: ".loteria-shout, .loteria-replay .loteria-small-button, .loteria-board button",
-      // Short landscape layouts put the feedback above the mic, over the caller panel.
-      cueText: [".loteria-board-heading", ".loteria-help", ...callerText].join(", "),
+      cueText: ".loteria-board-heading, .loteria-help, .loteria-line",
     });
     for (let i = 0; i < 54; i++) {
       const state = await read();

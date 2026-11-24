@@ -83,9 +83,13 @@
 .loteria-speaker { display: block; font-size: 11px; color: #60415b; margin-bottom: 2px; }
 .loteria-listen-first { color: var(--lot-red); font-size: 12px; font-weight: 800; margin-bottom: 3px; }
 .loteria-replay { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
-.loteria-replay .say-it-message { inset-inline: 0 auto; }
-@media (max-height: 520px) and (orientation: landscape) {
-  .loteria-replay .say-it-message { top: auto; bottom: calc(100% + 3px); }
+.loteria-replay .say-it { display: contents; }
+.loteria-replay .say-it-mic, .loteria-replay .loteria-small-button { flex: none; }
+.loteria-replay .say-it-message { order: 1; min-width: 0; }
+.loteria-replay .say-it-message:not(:empty) {
+  position: static;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .loteria-play .loteria-small-button { background: #f8e0b7; font-size: 14px; min-height: 30px; }
 .loteria-small-button:disabled { opacity: .55; }

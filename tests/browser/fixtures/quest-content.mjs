@@ -55,11 +55,14 @@ export async function directionsContent() {
 
 export function sayItContent() {
   const { x, z } = PARKED_CARS.find(({ model }) => model === "van");
+  // Words mode can pick “Muchas gracias” as its first Spanish cue.
+  const unrelatedSpeech = EDITION.id === "es" ? hintSource(GLOBAL_HINTS.g_clarify, "c_learning")
+    : hintSource(GLOBAL_HINTS.g_social, "s_thanks");
   return {
     words: labels({ ...SAY_IT_UI, drive: ROAD_UI.drive }),
     target: EDITION.target,
     driveStart: { x, z: z - 1.85, rot: 0 }, reply: REPLY_KEYS[0],
-    unrelatedSpeech: plain(hintSource(GLOBAL_HINTS.g_social, "s_thanks")),
+    unrelatedSpeech: plain(unrelatedSpeech),
   };
 }
 
