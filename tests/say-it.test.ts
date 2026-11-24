@@ -92,6 +92,22 @@ it("adds one point per cue, leaves misses free and discards attempts from a repl
   score.sayIt.close();
 });
 
+it.each(["denied", "nothing", "error"] as const)("reports %s without treating it as a wrong answer", (status) => {
+  vi.useFakeTimers();
+  const round = new SayItRound();
+  const cue = round.open(sayItWords(["apple"]));
+  cue.toggle();
+  attempts[0].options.onUpdate({ status, heard: "" });
+  expect(cue.getSnapshot()).toBe(status);
+  expect(attempts[0].dispose).toHaveBeenCalledOnce();
+  expect(round.count).toBe(0);
+  vi.advanceTimersByTime(1550);
+  expect(cue.getSnapshot()).toBe("idle");
+  cue.toggle();
+  expect(cue.getSnapshot()).toBe("listening");
+  round.close();
+});
+
 it("can award a card and a spoken Lotería claim through the same cue", () => {
   vi.useFakeTimers();
   const round = new SayItRound();

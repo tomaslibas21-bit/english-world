@@ -55,6 +55,10 @@ function init({ key, save, supported }) {
       reader.onspeechend?.();
       return reader.lang;
     };
+    window.__sayItDeny = () => {
+      if (!active) throw new Error("SpeechRecognition is idle");
+      active.onerror({ error: "not-allowed" });
+    };
   }
 
   let now = 1000;
@@ -162,6 +166,24 @@ async function testGame(context, game, size, touch, supported) {
     await checkNote(words.tip);
     await capture("mic");
     const before = await read();
+    const portraitRoad = game === "road" && touch && size.startsWith("390x");
+    const icon = bonus.locator(".say-it-symbol");
+    const idleIcon = portraitRoad ? await icon.innerHTML() : null;
+    let stopIcon;
+    if (portraitRoad) {
+      const replay = page.locator(".road-replay");
+      const permission = await page.evaluate(async () => (await import("/src/ui/i18n.ts")).L("Leisk naudoti mikrofoną"));
+      const { width, height } = await mic.boundingBox();
+      assert.deepEqual([width, height], [44, 44]);
+      await replay.evaluate((button) => button.addEventListener("click", () => { button.dataset.replayed = "true"; }));
+      await mic.tap({ position: { x: 1, y: height / 2 } });
+      await listening.waitFor();
+      assert.equal(await replay.getAttribute("data-replayed"), null, `${label}: mic edge leaves replay alone`);
+      stopIcon = await icon.innerHTML();
+      assert.notEqual(stopIcon, idleIcon, `${label}: listening changes the icon shape`);
+      await page.evaluate(() => window.__sayItDeny());
+      await checkNote(permission);
+    }
     await press(mic);
     await listening.waitFor();
     if (keepMoving) {
@@ -184,6 +206,12 @@ async function testGame(context, game, size, touch, supported) {
     assert.equal(said.said, before.said + 1);
     if (before.points !== undefined) assert.equal(said.points, before.points + 1);
     await capture("hit");
+    if (portraitRoad) {
+      await bonus.locator(".say-it-sparkle").waitFor({ state: "hidden" });
+      const creditedIcon = await icon.innerHTML();
+      assert(![idleIcon, stopIcon].includes(creditedIcon), `${label}: credit keeps a distinct icon after the sparkle`);
+      assert.equal(await mic.getAttribute("aria-disabled"), "true");
+    }
   }
 
   if (game === "road" || game === "sea") {

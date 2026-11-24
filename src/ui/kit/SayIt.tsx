@@ -7,6 +7,13 @@ import { Icon } from "../icons";
 import "./sayIt.css";
 
 const seenTips = new Set<string>();
+const feedback = {
+  hit: words.hit,
+  miss: words.miss,
+  denied: "Leisk naudoti mikrofoną",
+  nothing: "Nieko negirdėjau",
+  error: "Klausymas nepavyko",
+};
 
 function firstTip(game: string) {
   if (seenTips.has(game)) return false;
@@ -29,12 +36,14 @@ function SayItButton({ game, cue }: { game: string; cue: SayItCue }) {
     return () => clearTimeout(timer);
   }, [game]);
   const listening = status === "listening";
-  const message = status === "hit" ? L(words.hit) : status === "miss" ? L(words.miss) : tip && !listening ? L(words.tip) : null;
+  const awarded = cue.awarded;
+  const credited = awarded && status !== "hit";
+  const message = status === "idle" ? (tip ? L(words.tip) : null) : listening ? null : L(feedback[status]);
   return <span className="say-it" data-status={status}>
     <button type="button" className="say-it-mic" aria-label={listening ? L(words.micStop) : L(words.mic)}
-      aria-pressed={listening} aria-disabled={cue.awarded} onClick={() => { setTip(false); cue.toggle(); }}>
-      <Icon name="mic" size={19} />
-      <Icon name="star" size={11} className="say-it-badge" />
+      aria-pressed={listening} aria-disabled={awarded} onClick={() => { setTip(false); cue.toggle(); }}>
+      <Icon name={listening ? "stop" : credited ? "check" : "mic"} size={19} className="say-it-symbol" />
+      {!listening && !credited && <Icon name="star" size={11} className="say-it-badge" />}
       {status === "hit" && <Icon name="star" size={23} className="say-it-sparkle" />}
     </button>
     <span className="say-it-message" role="status">{message}</span>
