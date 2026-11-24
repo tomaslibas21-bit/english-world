@@ -1,8 +1,8 @@
-import { Euler, Vector3, type Object3D } from "three";
+import { Euler, SkinnedMesh, Vector3, type Object3D } from "three";
 import type { GyMoveId } from "../../content/gym";
 import type { CharacterJoint, GameCharacter } from "../characters";
 import { Character } from "../characters/Character";
-import { IS_REAL, IS_STORY, IS_TOON } from "../style";
+import { IS_STORY, IS_TOON } from "../style";
 import { GYM_MOVES } from "./round";
 
 const DEG = Math.PI / 180;
@@ -57,29 +57,53 @@ class Joint {
     this.node.position.y = this.neutralPosition.y + y * weight;
     this.node.position.z = this.neutralPosition.z + z * weight;
   }
+
+  reach(lift: number, inset: number, extension: number, weight: number) {
+    this.node.position.x = this.neutralPosition.x * (1 - inset * weight);
+    this.node.position.y = this.neutralPosition.y + lift * weight;
+    this.node.scale.y = this.neutralScale.y * (1 + extension * weight);
+  }
 }
 
 export type GymFramePoint = { at: Vector3; radius: number };
 
-/** The shoes move rigidly with the shins. Use the sole box or the styled shoe's ellipsoid and sole. */
-class Shoe {
-  private readonly lower: number;
-  private readonly center: Vector3;
-  private readonly radii: Vector3;
-  private readonly flatSole: boolean;
-
-  constructor(private readonly shin: Object3D, leg: Object3D, blocks: boolean) {
-    this.lower = blocks ? 0.05 - shin.position.y : leg.position.y + shin.position.y;
-    this.flatSole = IS_REAL;
-    if (blocks) {
-      this.center = new Vector3(0, -this.lower, 0.05);
-      this.radii = new Vector3(0.085 * Math.abs(leg.position.x) / 0.12, 0, 0.14);
-    } else {
-      const radius = IS_TOON ? 0.112 : IS_STORY ? 0.078 : 0.062;
-      const shoeHeight = IS_TOON || IS_STORY ? 0.09 : 0.08;
-      this.center = new Vector3(0, -this.lower + shoeHeight * 0.65, radius * (IS_TOON ? 0.45 : 0.55));
-      this.radii = new Vector3(radius * (IS_TOON ? 0.95 : 0.85), radius * (IS_TOON ? 0.62 : 0.56), radius * (IS_TOON ? 1.45 : 1.75));
+/** Keep the styled shin's support points for the range of pitches and rolls used on the mat. */
+function shoeProfile(mesh: SkinnedMesh, shin: Object3D) {
+  const bone = mesh.skeleton.bones.findIndex((node) => node === shin);
+  const inverse = mesh.skeleton.boneInverses[bone];
+  const { position, skinIndex } = mesh.geometry.attributes;
+  const vertices: Vector3[] = [];
+  for (let i = 0; i < position.count; i++) {
+    if (skinIndex.getX(i) === bone) {
+      vertices.push(new Vector3().fromBufferAttribute(position, i).applyMatrix4(mesh.bindMatrix).applyMatrix4(inverse));
     }
+  }
+  const profile = new Set<Vector3>();
+  for (let step = -4; step <= 8; step++) {
+    const pitch = step * Math.PI / 16;
+    const upY = Math.cos(pitch), upZ = -Math.sin(pitch);
+    for (const upX of [-0.25, 0, 0.25]) {
+      let lowest = Infinity, support = vertices[0];
+      for (const vertex of vertices) {
+        const y = upX * vertex.x + upY * vertex.y + upZ * vertex.z;
+        if (y < lowest) { lowest = y; support = vertex; }
+      }
+      profile.add(support);
+    }
+  }
+  return [...profile];
+}
+
+/** The soles are rigid with the shins. Blocks use the corners of their box sole. */
+class Shoe {
+  private readonly bottom: number;
+  private readonly halfWidth: number;
+  private readonly profile: Vector3[] | undefined;
+
+  constructor(private readonly shin: Object3D, leg: Object3D, mesh?: SkinnedMesh) {
+    this.bottom = shin.position.y - 0.05;
+    this.halfWidth = 0.085 * Math.abs(leg.position.x) / 0.12;
+    this.profile = mesh && shoeProfile(mesh, shin);
   }
 
   minY() {
@@ -90,14 +114,16 @@ class Shoe {
 
   // Project the sole onto the vertical axis expressed in the shin's coordinates.
   supportOffset(upX: number, upY: number, upZ: number) {
-    const centerY = this.center.y * upY + this.center.z * upZ;
-    const x = this.radii.x * upX, z = this.radii.z * upZ;
-    if (this.radii.y === 0) return centerY - Math.abs(x) - Math.abs(z);
-    const shoe = centerY - Math.hypot(x, this.radii.y * upY, z);
-    if (!this.flatSole) return shoe;
-    const sole = -this.lower * upY + this.center.z * upZ + Math.min(0, 0.016 * upY)
-      - Math.hypot(0.0494 * upX, 0.0988 * upZ);
-    return Math.min(shoe, sole);
+    const profile = this.profile;
+    if (!profile) {
+      return this.bottom * upY + 0.05 * upZ - this.halfWidth * Math.abs(upX) - 0.14 * Math.abs(upZ);
+    }
+    let lowest = Infinity;
+    for (let i = 0; i < profile.length; i++) {
+      const { x, y, z } = profile[i];
+      lowest = Math.min(lowest, x * upX + y * upY + z * upZ);
+    }
+    return lowest;
   }
 }
 
@@ -116,6 +142,9 @@ export class GymPoseRig {
   private lungeRearKnee: number;
   private toeBend: number;
   private palmClearance: number;
+  private reachLift: number;
+  private reachInset: number;
+  private reachExtension: number;
 
   constructor(private actor: GameCharacter) {
     this.all = JOINTS.map((name) => new Joint(actor.joint(name)));
@@ -127,13 +156,19 @@ export class GymPoseRig {
     this.upper = -foreR.node.position.y;
     this.hand = -actor.rightHand.position.y;
     const blocks = actor instanceof Character;
-    this.shoes = [new Shoe(shinL.node, legL.node, blocks), new Shoe(shinR.node, legR.node, blocks)];
+    const mesh = blocks ? undefined : actor.root.children.find((node): node is SkinnedMesh => node instanceof SkinnedMesh);
+    this.shoes = [new Shoe(shinL.node, legL.node, mesh), new Shoe(shinR.node, legR.node, mesh)];
     // Allow for the visible mitten below the hand anchor, including the larger trial styles.
     this.palmClearance = blocks ? 0.072 * legR.node.position.x / 0.12 : IS_TOON ? 0.088 : IS_STORY ? 0.066 : 0;
     this.lungeRearKnee = this.lungeKnee();
     // Longer-legged rigs need a deeper knee bend to bring the fingertips down.
     const reach = this.hip / (this.upper + this.hand);
     this.toeBend = Math.min(1, Math.max(0, (reach - 1.31) * 3.75));
+    // Raise the shoulders along the narrowing torso and keep the short-armed rigs' hands clear of the crown.
+    const shortReach = blocks || IS_TOON;
+    this.reachLift = this.upper * (IS_TOON ? 0.44 : blocks ? 0.34 : 0.08);
+    this.reachInset = shortReach ? 0.36 : 0.10;
+    this.reachExtension = blocks ? 0.05 : IS_TOON ? 0.10 : 0;
   }
 
   stand(heading: number) {
@@ -218,6 +253,7 @@ export class GymPoseRig {
         shinL.aim(knee, 0, 0, weight); shinR.aim(knee, 0, 0, weight);
         armL.aim(-Math.PI / 2, 0, -0.05, weight); armR.aim(-Math.PI / 2, 0, 0.05, weight);
         foreL.aim(-0.06, 0, 0, weight); foreR.aim(-0.06, 0, 0, weight);
+        this.actor.root.rotation.y += 0.45 * weight;
         break;
       }
       case "circles": {
@@ -242,16 +278,19 @@ export class GymPoseRig {
         body.move(0, this.lower * Math.sin(25 * DEG * weight), 1);
         legL.aim(0, 0, 0, weight); legR.aim(0, 0, 0, weight);
         shinL.aim(25 * DEG, 0, 0, weight); shinR.aim(25 * DEG, 0, 0, weight);
-        armL.aim(-165 * DEG, 0, -0.04, weight); armR.aim(-165 * DEG, 0, 0.04, weight);
-        foreL.aim(-0.12, 0, 0, weight); foreR.aim(-0.12, 0, 0, weight);
+        armL.reach(this.reachLift, this.reachInset, this.reachExtension, weight);
+        armR.reach(this.reachLift, this.reachInset, this.reachExtension, weight);
+        armL.aim(-177 * DEG, 0, -0.18, weight); armR.aim(-177 * DEG, 0, 0.18, weight);
+        foreL.aim(-0.04, 0, 0, weight); foreR.aim(-0.04, 0, 0, weight);
         break;
       case "lunges":
+        body.aim(0, 0, 0, weight);
         body.move(0, -0.015 * s, weight);
         legL.aim(LUNGE_FRONT, 0, 0, weight); shinL.aim(LUNGE_KNEE, 0, 0, weight);
         legR.aim(LUNGE_BACK, 0, 0, weight); shinR.aim(this.lungeRearKnee, 0, 0, weight);
         armL.aim(-0.24, 0, -0.15, weight); armR.aim(-0.48, 0, 0.15, weight);
         foreL.aim(-0.8, 0, 0, weight); foreR.aim(-0.95, 0, 0, weight);
-        this.actor.root.rotation.y += 0.45 * weight;
+        this.actor.root.rotation.y -= 0.45 * weight;
         break;
       case "pushups":
         this.pushup(t, floor);
@@ -269,7 +308,7 @@ export class GymPoseRig {
     const shoulder = armL.node.position.y - this.hip;
     // Hold the toe and palm marks in place while the shoulder lowers and the elbows fold.
     const hipHigh = palm + (this.upper + this.hand) * 0.94 - shoulder * Math.cos(pitch);
-    const hipY = hipHigh - 0.12 * s * press;
+    const hipY = hipHigh - 0.12 * Math.max(1, s) * press;
     const tip = Math.atan2(toe, this.hip), reach = Math.hypot(this.hip, toe);
     const straight = Math.acos(Math.min(1, hipHigh / reach)) + tip;
     const legPitch = Math.acos(Math.min(1, hipY / reach)) + tip;
@@ -280,8 +319,13 @@ export class GymPoseRig {
     head.aim(-0.22, 0, 0, weight);
     legL.aim(legPitch - pitch, 0, 0, weight); legR.aim(legPitch - pitch, 0, 0, weight);
     shinL.aim(0, 0, 0, weight); shinR.aim(0, 0, 0, weight);
-    body.node.position.y += floor - this.supportY();
-    const down = body.node.position.y + armL.node.position.y * Math.cos(bend) - palm;
+    // Keep the loaded toes near the world floor, then recover the animated standing level.
+    const planted = Math.max(-0.014, Math.min(0.0135, floor));
+    const lift = floor + (planted - floor) * weight - this.supportY();
+    // supportY updated the body matrix before the lift. Solve from the corrected shoulder height.
+    const matrix = body.node.matrixWorld.elements;
+    body.node.position.y += lift;
+    const down = matrix[13] + lift + matrix[5] * armL.node.position.y - palm;
     const forward = 0.078 * s + 0.045 * s - hipZ;
     const dx = Math.hypot(down, forward), a = this.upper, b = this.hand;
     const elbow = Math.acos(Math.max(-1, Math.min(1, (dx * dx - a * a - b * b) / (2 * a * b))));

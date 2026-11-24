@@ -1,13 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
-import { SkinnedMesh, Vector3 } from "three";
+import { Box2, PerspectiveCamera, SkinnedMesh, Vector2, Vector3 } from "three";
 import { type GameCharacter, type CharacterJoint, withBackpack } from "../src/game/characters";
 import { Character } from "../src/game/characters/Character";
 import { StyledCharacter } from "../src/game/characters/StyledCharacter";
 import { NPCS } from "../src/content/npcs";
 import { GymPoseRig } from "../src/game/gym/poses";
 import { GYM_MOVES } from "../src/game/gym/round";
+import { GYM_STAGE } from "../src/game/world/gym";
 
 const joints = ["body", "head", "armL", "armR", "foreL", "foreR", "legL", "legR", "shinL", "shinR"] as const;
+const sides = ["L", "R"] as const;
+const adversePhase = (9 + 0.01) / 21;
 const snapshot = (actor: GameCharacter) => joints.map((name) => {
   const { position, rotation, scale } = actor.joint(name);
   return [...position.toArray(), ...rotation.toArray().slice(0, 3), ...scale.toArray()];
@@ -49,6 +52,12 @@ function lowestY(vertices: LimbVertices, scratch: Vector3) {
   return y;
 }
 
+function construct<T>(phase: number | undefined, build: () => T) {
+  if (phase === undefined) return build();
+  const random = vi.spyOn(Math, "random").mockReturnValue(phase);
+  try { return build(); } finally { random.mockRestore(); }
+}
+
 describe.each([Character, StyledCharacter])("%p gym poses", (Rig) => {
   it("applies distinct peaks to the live joints, ticks once and restores all their axes", () => {
     const actor: GameCharacter = new Rig(withBackpack({ ...NPCS.jordan.look, height: 0.91 }));
@@ -85,15 +94,32 @@ describe.each([Character, StyledCharacter])("%p gym poses", (Rig) => {
     actor.dispose?.();
   });
 
-  it("opens the jack, keeps the reach narrow, hinges over the feet and presses on a grounded plank", () => {
-    const actor: GameCharacter = new Rig(withBackpack({ ...NPCS.jordan.look, female: true }));
+  it.each([undefined, adversePhase])("opens the jack, keeps the reach narrow, hinges over the feet and presses on a grounded plank (constructor phase %s)", (phase) => {
+    const actor = construct<GameCharacter>(phase, () => new Rig(withBackpack({ ...NPCS.jordan.look, female: true })));
     const pose = new GymPoseRig(actor);
     pose.stand(Math.PI / 2);
     const hip = actor.joint("legL").position.y;
     const shin = hip + actor.joint("shinL").position.y;
-    const sole = limbVertices(actor, "shinL");
+    const soles = sides.map((side) => limbVertices(actor, `shin${side}`));
+    const scratch = new Vector3();
+    const soleHeights = () => {
+      actor.root.updateMatrixWorld(true);
+      return soles.map((sole) => lowestY(sole, scratch));
+    };
+    const neutralFloor = Math.min(...soleHeights());
+    const planted = () => {
+      const heights = soleHeights();
+      for (const y of heights) {
+        expect(Math.abs(y)).toBeLessThan(0.02);
+        expect(Math.abs(y - neutralFloor)).toBeLessThanOrEqual(0.01);
+        if (neutralFloor > 0.02) {
+          expect(y).toBeGreaterThanOrEqual(0.01);
+          expect(y).toBeLessThanOrEqual(0.015);
+        }
+      }
+    };
     const shoe = (joint: "shinL" | "shinR") => point(actor, joint, -shin, 0.185 * actor.height / 1.75);
-    const palm = () => point(actor, "foreR", actor.rightHand.position.y);
+    const palms = () => sides.map((side) => point(actor, `fore${side}`, actor.rightHand.position.y));
     const palmHeight = 0.055 * actor.height / 1.75;
     const spread = () => shoe("shinL").distanceTo(shoe("shinR"));
     const standing = spread(), y0 = shoe("shinL").y;
@@ -116,13 +142,13 @@ describe.each([Character, StyledCharacter])("%p gym poses", (Rig) => {
     pose.tick(0, "pushups", 0.2);
     const high = point(actor, "armL").y;
     expect(actor.joint("body").rotation.x).toBeGreaterThan(1.3);
-    const palmHigh = palm();
-    expect(Math.abs(palmHigh.y - palmHeight)).toBeLessThan(0.018);
+    const palmsHigh = palms();
+    for (const palm of palmsHigh) expect(Math.abs(palm.y - palmHeight)).toBeLessThan(0.018);
+    planted();
     pose.tick(0, "pushups", 0.45);
     expect(high - point(actor, "armL").y).toBeGreaterThan(0.1);
-    expect(palm().distanceTo(palmHigh)).toBeLessThan(0.025);
-    actor.root.updateMatrixWorld(true);
-    expect(Math.abs(lowestY(sole, new Vector3()))).toBeLessThan(0.02);
+    for (const [i, palm] of palms().entries()) expect(palm.distanceTo(palmsHigh[i])).toBeLessThan(0.025);
+    planted();
     expect(point(actor, "shinL").y).toBeGreaterThan(0.1);
     expect(point(actor, "head").y).toBeGreaterThan(0.25);
     actor.dispose?.();
@@ -131,16 +157,14 @@ describe.each([Character, StyledCharacter])("%p gym poses", (Rig) => {
   it.each([["short", 0.91], ["Jordan", NPCS.jordan.look.height], ["tall", 1.12]] as const)(
     "keeps the %s rig supported and reaches both toes through the pose paths",
     (_label, height) => {
-      const random = vi.spyOn(Math, "random").mockReturnValue(0.5);
-      const actor: GameCharacter = new Rig({ ...NPCS.jordan.look, height });
-      random.mockRestore();
+      const actor = construct<GameCharacter>(0.5, () => new Rig({ ...NPCS.jordan.look, height }));
       actor.attentive = true;
       const pose = new GymPoseRig(actor);
       pose.stand(Math.PI / 2);
       const neutral = snapshot(actor);
       const scratch = new Vector3(), finger = new Vector3();
       const head = limbVertices(actor, "head");
-      const limbs = (["L", "R"] as const).map((side) => {
+      const limbs = sides.map((side) => {
         const shin = limbVertices(actor, `shin${side}`);
         const fore = limbVertices(actor, `fore${side}`);
         const front = Math.max(...shin.map(({ local }) => local.z));
@@ -207,6 +231,68 @@ describe.each([Character, StyledCharacter])("%p gym poses", (Rig) => {
       actor.dispose?.();
     },
   );
+
+  it("shows the squat bend, rear lunge shoe and both raised hands in the staged views", () => {
+    const learner = withBackpack({
+      skin: "#f2d3bd", hair: { style: "short", color: "#5a3a25" }, top: "#2a9d8f", bottom: "#264653", female: true,
+    });
+    for (const [look, at] of [[learner, GYM_STAGE.player], [NPCS.jordan.look, GYM_STAGE.trainer]] as const) {
+      const actor = construct<GameCharacter>(adversePhase, () => new Rig(look));
+      actor.root.position.set(at.x, 0, at.z);
+      actor.attentive = true;
+      const pose = new GymPoseRig(actor);
+      pose.stand(at.heading);
+      const head = limbVertices(actor, "head");
+      const legs = sides.map((side) => {
+        const thigh = limbVertices(actor, `leg${side}`).filter(({ local }) => local.y > -0.09 && local.y < 0.09);
+        const shin = limbVertices(actor, `shin${side}`);
+        const heel = Math.min(...shin.map(({ local }) => local.y));
+        const knee = shin.filter(({ local }) => local.y > -0.06);
+        return { thigh, shin, knee, shoe: shin.filter(({ local }) => local.y < heel + 0.072) };
+      });
+      const fingertips = sides.map((side) => {
+        const fore = limbVertices(actor, `fore${side}`);
+        const tip = Math.min(...fore.map(({ local }) => local.y));
+        return fore.filter(({ local }) => local.y < tip + 0.025);
+      });
+      const world = new Vector3(), pixel = new Vector2();
+      // Use the staged viewpoints at a common zoom to compare CSS distances within each silhouette.
+      for (const [width, height, view] of [[390, 844, GYM_STAGE.portrait], [1280, 800, GYM_STAGE.desktop]] as const) {
+        const camera = new PerspectiveCamera(view.fov, width / height);
+        camera.position.set(view.x, view.y, view.z);
+        camera.lookAt(GYM_STAGE.look.x, GYM_STAGE.look.y, GYM_STAGE.look.z);
+        camera.zoom = 0.70;
+        camera.updateProjectionMatrix();
+        camera.updateMatrixWorld();
+        const project = (vertices: LimbVertices) => {
+          const box = new Box2();
+          for (const entry of vertices) {
+            const p = vertex(entry, world).project(camera);
+            box.expandByPoint(pixel.set((1 + p.x) * width / 2, (1 - p.y) * height / 2));
+          }
+          return box;
+        };
+        const midX = ({ min, max }: Box2) => (min.x + max.x) / 2;
+        const frame = (move: "squats" | "lunges" | "reach") => {
+          pose.tick(0, move, 0.5);
+          actor.root.updateMatrixWorld(true);
+          return `${move}, ${width}px, actor at z=${at.z}`;
+        };
+        const squat = frame("squats");
+        for (const { knee, thigh } of legs) {
+          expect(midX(project(knee)) - midX(project(thigh)), squat).toBeGreaterThan(4);
+        }
+        const lunge = frame("lunges");
+        const leadShin = project(legs[0].shin);
+        expect(project(legs[1].shoe).min.x - leadShin.max.x, lunge).toBeGreaterThan(8);
+        expect(midX(project(legs[1].knee)) - midX(project(legs[0].knee)), lunge).toBeGreaterThan(18);
+        const reach = frame("reach");
+        const crown = project(head).min.y;
+        for (const fingers of fingertips) expect(crown - project(fingers).min.y, reach).toBeGreaterThan(3);
+      }
+      actor.dispose?.();
+    }
+  });
 
   it("keeps arm circles and strides moving at different times and returns to neutral", () => {
     const actor: GameCharacter = new Rig(NPCS.jordan.look);
