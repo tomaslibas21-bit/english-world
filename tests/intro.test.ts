@@ -13,7 +13,12 @@ describe("scene intros", () => {
 
   it("the other conversations speak to the learner in the intro", () => {
     const you = /(?<![\p{L}])(tu|tau|tave|tavęs|tavo|tavimi|tavyje)(?![\p{L}])/iu;
-    const bad = SITUATIONS.filter((s) => !questIntros.has(s.id) && (!s.intro || !you.test(s.intro))).map((s) => `${s.id}: ${s.intro?.slice(0, 60)}`);
+    const politeYou = /(?<![\p{L}\p{M}\p{N}_])Jus(?![\p{L}\p{M}\p{N}_])/u;
+    const keeperIntro = "Prie namelio durų Jus pasitinka švyturio prižiūrėtojas. Šalia stovi suolas.";
+    const bad = SITUATIONS.filter((s) => {
+      if (s.id === "x05-lighthouse-keeper") return s.intro !== keeperIntro || !politeYou.test(s.intro);
+      return !questIntros.has(s.id) && (!s.intro || !you.test(s.intro));
+    }).map((s) => `${s.id}: ${s.intro?.slice(0, 60)}`);
     expect(bad).toEqual([]);
   });
 });

@@ -5,26 +5,28 @@ import type { Ctx, HintGroup, SituationDef, StepDef } from "../types";
 
 type KeeperStep = "life" | "light" | "routine" | "storm" | "gift";
 
+const routineNote = "The first ‘do’ forms the question. The second ‘do’ means ‘darote’.";
+
 const hints: Record<KeeperStep, HintGroup> = {
   life: { lt: "Paklausti apie gyvenimą saloje", items: [
     { id: "k_home", s: t("Do | you | live | on the island?", "Ar | Jūs | gyvenate | saloje?", "Ar gyvenate saloje?") },
     { id: "k_company", s: t("Is | it | quiet | here?", "Ar yra | — | tylu | čia?", "Ar čia tylu?",
-      { flags: { 1: "Šiame klausime „it“ nieko neįvardija. Lietuviškai užtenka „Ar čia tylu?“" } }) },
+      { flags: { 1: "Here, ‘it’ has no Lithuanian equivalent." } }) },
   ] },
   light: { lt: "Paklausti apie švyturio šviesą", items: [
     { id: "k_turn", s: t("Does | the | light | turn?", "Ar | — | šviesa | sukasi?", "Ar šviesa sukasi?") },
     { id: "k_boats", s: t("How | does | it | help | boats?", "Kaip | — | ji | padeda | laivams?", "Kaip šviesa padeda laivams?",
-      { flags: { 1: "„Does“ padeda sudaryti klausimą. Lietuviškai užtenka „Kaip ji padeda?“" } }) },
+      { flags: { 1: "‘Does’ helps form a question." } }) },
   ] },
   routine: { lt: "Paklausti apie darbą", items: [
     { id: "k_morning", s: t("What | do | you | do | every | morning?", "Ką | — | Jūs | darote | kiekvieną | rytą?", "Ką darote kiekvieną rytą?",
-      { flags: { 1: "Pirmasis „do“ padeda sudaryti klausimą. Antrasis reiškia „darote“." } }) },
+      { flags: { 1: routineNote } }) },
     { id: "k_night", s: t("What | do | you | do | before | dark?", "Ką | — | Jūs | darote | prieš | sutemstant?", "Ką darote prieš sutemstant?",
-      { flags: { 1: "Pirmasis „do“ padeda sudaryti klausimą. Antrasis reiškia „darote“." } }) },
+      { flags: { 1: routineNote } }) },
   ] },
   storm: { lt: "Paklausti apie audrą", items: [
     { id: "k_stay", s: t("Where | did | you | stay?", "Kur | — | Jūs | likote?", "Kur likote per audrą?",
-      { flags: { 1: "„Did“ rodo, kad klausiame apie praeitį. Lietuviškai tai pasako „likote“." } }) },
+      { flags: { 1: "‘Did’ marks the past. In Lithuanian the verb form carries that meaning." } }) },
     { id: "k_light_on", s: t("Did | the | light | stay on?", "Ar | — | šviesa | tebeveikė?", "Ar šviesa vis dar veikė?") },
   ] },
   gift: { lt: "Priimti raštelį", items: [
@@ -34,16 +36,16 @@ const hints: Record<KeeperStep, HintGroup> = {
   ] },
 };
 
-function step(id: KeeperStep, label: string, expects: string[], ask: StepDef["ask"]): StepDef & { label: string } {
-  return { id, label, expects, ask, done: (c) => !!c.s[id], hints: [id], suggest: [{ lt: hints[id].lt, hint: id }] };
+function step(id: KeeperStep, label: string, suggestion: string, expects: string[], ask: StepDef["ask"]): StepDef & { label: string } {
+  return { id, label, expects, ask, done: (c) => !!c.s[id], hints: [id], suggest: [{ lt: suggestion, hint: id }] };
 }
 
 const steps = [
-  step("life", "Gyvenimas saloje", ["k_home_ctx", "k_company_ctx"], (c) => c.say("k_life_ask")),
-  step("light", "Švyturio šviesa", ["k_turn_ctx", "k_boats_ctx"], (c) => c.say("k_light_ask")),
-  step("routine", "Kasdieniai darbai", ["k_morning_ctx", "k_night_ctx"], (c) => c.say("k_routine_ask")),
-  step("storm", "Paskutinė audra", ["k_stay_ctx", "k_light_on_ctx"], (c) => c.say("k_storm_ask")),
-  step("gift", "Raštelis atminimui", ["k_keep_ctx", "k_draw_ctx"], (c) => { c.say("k_note"); c.say("k_offer"); }),
+  step("life", "Gyvenimas saloje", "Paklauskite apie gyvenimą saloje", ["k_home_ctx", "k_company_ctx"], (c) => c.say("k_life_ask")),
+  step("light", "Švyturio šviesa", "Paklauskite apie švyturio šviesą", ["k_turn_ctx", "k_boats_ctx"], (c) => c.say("k_light_ask")),
+  step("routine", "Kasdieniai darbai", "Paklauskite apie darbą", ["k_morning_ctx", "k_night_ctx"], (c) => c.say("k_routine_ask")),
+  step("storm", "Paskutinė audra", "Paklauskite apie audrą", ["k_stay_ctx", "k_light_on_ctx"], (c) => c.say("k_storm_ask")),
+  step("gift", "Raštelis atminimui", "Priimkite raštelį", ["k_keep_ctx", "k_draw_ctx"], (c) => { c.say("k_note"); c.say("k_offer"); }),
 ];
 
 function answer(c: Ctx, id: KeeperStep, reply: string) {
@@ -72,8 +74,8 @@ const lighthouseKeeper: SituationDef = {
   location: "lighthouse",
   npc: KEEPER_NPC,
   mode: "talk",
-  goal: "Paklausk prižiūrėtojo apie gyvenimą saloje, jo darbą ir audrą. Priimk raštelį atminimui.",
-  intro: "Prie namelio durų stovi švyturio prižiūrėtojas. Šalia – laisvas suolas.",
+  goal: "Paklauskite prižiūrėtojo apie gyvenimą saloje, jo darbą ir audrą. Pasiimkite jo raštelį atminimui.",
+  intro: "Prie namelio durų Jus pasitinka švyturio prižiūrėtojas. Šalia stovi suolas.",
 
   merges: {
     "stay on": { reason: "lexical_expression", split: "Stay → likti and on → ant would put the light somewhere. The expression means continuing to work.", minimal: "The light itself stands outside the verb and particle." },

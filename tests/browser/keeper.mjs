@@ -333,7 +333,7 @@ async function visit(context, view, speech) {
     const intro = convo.locator(".scene-intro");
     const start = intro.getByRole("button", { name: "Pradėti", exact: true });
     await visible(start, "the keeper intro's Pradėti button");
-    await exact(intro.locator("p"), "Prie namelio durų stovi švyturio prižiūrėtojas. Šalia – laisvas suolas.");
+    await exact(intro.locator("p"), "Prie namelio durų Jus pasitinka švyturio prižiūrėtojas. Šalia stovi suolas.");
     if (introFrame) await shot("intro");
     await press(start);
     await assertActor(sameActor);
