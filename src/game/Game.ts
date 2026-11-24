@@ -2855,11 +2855,11 @@ export class Game implements GameApi {
 
   /** The beacon over the objective's door or person; for someone talked to across a counter (a spot of their own), it
    *  stays over them and its ring lies on that spot, where the trail ends. */
-  private showBeacon(tgt: ReturnType<Game["objectiveTarget"]>) {
+  private showBeacon(tgt: ReturnType<Game["objectiveTarget"]>, hideBeam = false) {
     if (!tgt) { this.guidance.setBeacon(null); return; }
     const over = tgt.person ?? tgt;
     this.guidance.setBeacon(over.x, over.z, this.cave ? 1.8 : tgt.kind === "npc" ? 2.9 : 3.8,
-      tgt.person ? { x: tgt.x, z: tgt.z } : undefined, !!this.cave);
+      tgt.person ? { x: tgt.x, z: tgt.z } : undefined, hideBeam || !!this.cave);
   }
 
   // ------------------------------------------------------------------ loop
@@ -2986,7 +2986,7 @@ export class Game implements GameApi {
         this.guidance.setPath(route ? [[p.x, p.z], ...this.autoPath!] : this.zone.nav.path(p.x, p.z, tgt.x, tgt.z));
       }
       else this.guidance.setPath(null);
-      this.showBeacon(tgt);
+      this.showBeacon(tgt, !!route);
     }
     // camera: where the player is heading and how fast (it swings in behind them after a moment, camera.ts)
     const speed = Math.hypot(this.moveVel.x, this.moveVel.z);

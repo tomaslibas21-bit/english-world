@@ -134,10 +134,10 @@ export class Guidance {
   setPath(pts: [number, number][] | null) { this.pts = pts ?? []; }
   /** The beacon over (x, z), its gem at `height`. With `stand` (where to stand to talk to the person under it, across a
    *  counter), a smaller ring lies there instead of round the beacon's foot. */
-  setBeacon(x: number | null, z?: number, height = 3.4, stand?: { x: number; z: number }, lowRoof = false) {
+  setBeacon(x: number | null, z?: number, height = 3.4, stand?: { x: number; z: number }, hideBeam = false) {
     if (x === null || z === undefined) { this.beacon.visible = false; return; }
     this.beacon.visible = true;
-    this.beam.visible = !lowRoof;
+    this.beam.visible = !hideBeam;
     this.beacon.position.set(x, 0, z);
     this.gem.position.y = height;
     this.ring.position.set(stand ? stand.x - x : 0, 0.04, stand ? stand.z - z : 0);
