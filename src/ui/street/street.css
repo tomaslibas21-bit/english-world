@@ -120,25 +120,31 @@
 .street-bubble {
   position: absolute;
   z-index: 4;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+  transform: translate(-100%, -100%);
   width: max-content;
-  max-width: min(245px, 65vw);
+  max-width: min(245px, 65%, calc(100% - 16px));
   padding: 8px 11px;
   min-height: 44px;
+  white-space: normal;
   border-radius: 13px;
   background: var(--panel-solid);
   box-shadow: 0 3px 13px #16232b38;
-  --street-edge: min(131px, calc(32.5vw + 8px));
-  left: clamp(var(--street-edge), var(--street-x), calc(100% - var(--street-edge)));
-  top: 0;
-  transform: translate(-50%, clamp(8px, calc(var(--street-y) - 100% - 5px), calc(100dvh - 100% - 12px)));
 }
 .street-bubble::after {
   content: "";
   position: absolute;
-  top: 100%;
-  left: calc(50% - 5px);
-  border: 5px solid transparent;
-  border-top-color: var(--panel-solid);
+  top: var(--street-tail-y);
+  left: var(--street-tail-x);
+  width: 10px;
+  height: 6px;
+  background: var(--panel-solid);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  transform-origin: center top;
+  transform: translateX(-50%) rotate(var(--street-tail-angle));
+  pointer-events: none;
 }
 @keyframes street-in { from { opacity: 0; translate: 0 7px; } to { opacity: 1; translate: 0 0; } }
 @media (max-width: 600px) and (orientation: portrait) {

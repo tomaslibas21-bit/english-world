@@ -417,20 +417,47 @@ try {
       assert(inView, "the pair qualifies for natural chatter");
       assert(await page.evaluate(() => window.__ew.game.streetChatterNow()), "the nearby pair starts chatter");
       const bubble = page.locator(".street-bubble[data-chatter]");
+      const toggleTask = page.locator(".objective-card .collapse-btn");
+      const taskFolded = async () => await toggleTask.getAttribute("aria-expanded") === "false";
+      const initiallyFolded = await taskFolded();
+      const checkSpeaker = async (speaker) => {
+        for (const translated of [false, true]) {
+          if (translated) await assertTranslation(bubble, press);
+          for (const folded of [false, true]) {
+            if (await taskFolded() !== folded) await press(toggleTask);
+            await step(2, 0);
+            const context = `${viewport.join("x")} ${speaker} speaker, ${translated ? "translated" : "original"} line, ${folded ? "folded" : "open"} task`;
+            assert.equal(await toggleTask.getAttribute("aria-expanded"), String(!folded));
+            assert.equal(await bubble.getAttribute("aria-expanded"), String(translated));
+            const { onScreen, overlaps } = await bubble.evaluate((el) => {
+              const a = el.getBoundingClientRect();
+              const onScreen = getComputedStyle(el).visibility === "visible" &&
+                a.width > 0 && a.height > 0 && a.left >= 0 && a.right <= innerWidth && a.top >= 0 && a.bottom <= innerHeight;
+              const overlaps = [...el.parentElement.querySelectorAll(".objective-card, .minimap, .toolbar button")]
+                .filter((control) => {
+                  const b = control.getBoundingClientRect();
+                  return getComputedStyle(control).visibility === "visible" && b.width > 0 && b.height > 0 &&
+                    a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+                }).map((control) => control.className);
+              return { onScreen, overlaps };
+            });
+            assert(onScreen, `${context}: bubble fits on screen`);
+            assert.deepEqual(overlaps, [], `${context}: bubble clears the task card, minimap and menu`);
+            if (speaker === "first" && translated && folded === initiallyFolded) await shot("chatter");
+          }
+        }
+      };
       await wait(() => bubble.isVisible(), "the first speaker's bubble appears");
       const first = await lineText(bubble).textContent();
       const id = await bubble.getAttribute("data-chatter");
-      await assertTranslation(bubble, press);
-      assert(await bubble.evaluate((el) => {
-        const bounds = el.getBoundingClientRect();
-        return bounds.left >= 0 && bounds.right <= innerWidth && bounds.top >= 0 && bounds.bottom <= innerHeight;
-      }), "translated bubble fits on screen");
-      await shot("chatter");
+      await checkSpeaker("first");
       await wait(async () => await bubble.isVisible() && await bubble.getAttribute("aria-expanded") === "false"
         && await lineText(bubble).textContent() !== first,
         "the second speaker's bubble appears");
       assert.equal(await bubble.getAttribute("data-chatter"), id);
+      await checkSpeaker("second");
       await wait(async () => !(await bubble.count()), "the snippet ends");
+      if (await taskFolded() !== initiallyFolded) await press(toggleTask);
 
       const returnToSpawn = async () => {
         await page.evaluate(([x, z, rot]) => window.__ew.game.placeOnFoot(x, z, rot), [x, z, rot]);
