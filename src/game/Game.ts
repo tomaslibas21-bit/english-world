@@ -3,6 +3,7 @@ import { StreetLife } from "./street";
 import { TownStreet } from "./street/world";
 import type { StreetSnapshot } from "./street/schedule";
 import * as THREE from "three";
+import townCollisionAsset from "virtual:town-collision-url";
 import { showConversationEvent } from "./convEvents";
 import { buildTown, type Town, type Door } from "./world/town";
 import { loadedCarModelCount } from "./world/carModels";
@@ -15,7 +16,7 @@ import { moodOf } from "./characters/mood";
 import { styleRenderer, createStyleFx, type StyleFx } from "./styleScene";
 import { CameraRig, FOLLOW } from "./camera";
 import { Steer, Gait, Hop, angleDiff, smoothstep } from "./movement";
-import { Ledges, LAND } from "./ledges";
+import { LAND, type Ledges } from "./ledges";
 import { coach } from "./coach";
 import { Wading, Splashes, floorY, waterY, bayHold, SEA_LEVEL, SHORE, SWIM, BAY } from "./water";
 import { Rides, SHALLOWS, type Ride } from "./rides/Rides";
@@ -57,8 +58,12 @@ import { createLoteriaMode, type LoteriaMode } from "./loteria/mode";
 import { loteriaDusk } from "./loteria/scene";
 import { LOTERIA_APPROACH } from "./loteria/location";
 import { HOTEL_POOL, HOTEL_POOL_ENABLED, hotelPoolKidY, inHotelPool, POOL_ENTRY, POOL_KIDS, POOL_SITUATION } from "./world/pool";
-import { OcclusionField } from "./occlusion";
-import { PropFader } from "./fade";
+import type { OcclusionField } from "./occlusion";
+import type { PropFader } from "./fade";
+import { STYLED } from "./style";
+import { TOWN_WEST, townLedgeDynamics } from "./townCollision";
+import { initTownCollision, TOWN_COLLISION_METADATA_OFFSET } from "./townCollisionCache";
+import { prepareTownCollision } from "./townCollisionPreparation";
 import { CUT, withCutout } from "./cutout";
 import { covers, NEAR_TALK, shoulderShots, type Body, type Shot } from "./talkShot";
 import { FLIGHT_SECONDS, flightAt } from "./flyover";
@@ -405,6 +410,9 @@ export class Game implements GameApi {
    *  its way (fade.ts). */
   private field!: OcclusionField;
   private fader!: PropFader;
+  private started = false;
+  private collisionPreparation: ReturnType<typeof prepareTownCollision>;
+  private ledgeTimer?: ReturnType<typeof setTimeout>;
   onReady?: () => void;
 
   constructor(private container: HTMLElement, tagLayer: HTMLDivElement) {
@@ -436,15 +444,23 @@ export class Game implements GameApi {
   }
 
   async init() {
+    if (this.started || this.disposed) return;
+    this.started = true;
+    useStore.getState().setScreen("loading");
+    const collision = import.meta.env.PROD && townCollisionAsset && !STYLED
+      ? prepareTownCollision(townCollisionAsset, TOWN_COLLISION_METADATA_OFFSET) : undefined;
+    this.collisionPreparation = collision;
+    let collisionBytes: ArrayBuffer | undefined;
+    try {
+      this.setupLights();
+      this.town = buildTown({ movableParking: true });
+      if (collision) collisionBytes = await collision.join();
+    } finally {
+      collision?.cancel();
+      this.collisionPreparation = undefined;
+    }
+    if (this.disposed) return;
     const st = useStore.getState();
-    st.setScreen("loading");
-    this.setupLights();
-    this.town = buildTown({ movableParking: true });
-    // the follow camera never goes into or behind anything built in the town (the church, a gazebo, a canopy…: all of
-    // it, from the meshes themselves), and the trees in its way fade; not what moves (clouds, gulls, boats)
-    // (nor what is thin and looked through, userData.thin: the overhead lines a town may have, the gas station's
-    // canopy, the tianguis' lonas)
-    const moves = (o: THREE.Object3D) => o.userData?.v !== undefined || !!o.userData?.gull || !!o.userData?.boat || !!o.userData?.thin || o === this.town.parkedCars.group;
     const taxiScenery: THREE.Mesh[] = [];
     const taxiRay = new THREE.Raycaster();
     const taxiHits: THREE.Intersection[] = [];
@@ -470,32 +486,17 @@ export class Game implements GameApi {
       taxiRay.intersectObjects(taxiScenery, false, taxiHits);
       return taxiHits.length === 0;
     };
-    // (the cenote's grounds open to explore, cave/grounds.ts: they reach further west than the town's own edge)
-    const west = THEME.cenote?.open ? 50 : 0;
-    this.field = OcclusionField.fromObject(this.town.group, { minX: WORLD.minX - 24 - west / 2, maxX: WORLD.maxX + 24, minZ: WORLD.minZ - 24, maxZ: WORLD.maxZ + 24 }, { skip: moves });
-    this.field.fillFootprints(this.town.colliders.boxes, this.town.colliders.circles);
-    this.fader = new PropFader(this.town.group, moves, 1.3, THEME.fade);
-    // what is low enough to jump onto (benches, planters, low walls), read from the meshes a few milliseconds at a
-    // time once the town is up; never a café table's chairs, nor what the camera's field holds solid (a gazebo)
-    // (what is thin and looked through, a stall's awning, is no top, but nobody stands on the stall's table under it)
-    this.ledges = Ledges.build(this.town.group, this.town.colliders, {
-      skip: (o) => o.userData?.v !== undefined || !!o.userData?.gull || !!o.userData?.boat || o === this.town.parkedCars.group, thin: (o) => !!(o.userData?.thin || o.userData?.roofOnly), keep: this.town.seats.filter((s) => s.table).map((s) => [s.x, s.z]), tall: (x, z) => this.field.overSolid(x, z),
-      beside: OUTDOOR_NPCS.flatMap((n) => (n.ax !== undefined && n.az !== undefined ? [[n.x, n.z], [n.ax, n.az]] : [[n.x, n.z]]) as [number, number][]),
-    }, (next) => setTimeout(next, 16));
-    // The traffic's climbable pieces move with the cars (a mini-game's parked car is climbed too).
-    this.ledges.dynamic = (x, z) => {
-      const traffic = this.ambient.carPieces(x, z);
-      const parked = this.rides.townCarPieces(x, z);
-      return parked.length ? traffic.concat(parked) : traffic;
-    };
-    // Any scenery boats stay in the ledge map. Ride boats use moving collision boxes.
-    const hull = new THREE.Box3();
-    for (const o of this.town.group.children) if (o.userData.boat && !o.userData.rideBoat) {
-      hull.setFromObject(o);
-      this.ledges.add({ minX: hull.min.x, maxX: hull.max.x, minZ: hull.min.z, maxZ: hull.max.z, top: Infinity });
-    }
+    const { field, ledges, fader } = initTownCollision(this.town, collisionBytes, (next) => {
+      this.ledgeTimer = setTimeout(() => {
+        this.ledgeTimer = undefined;
+        if (!this.disposed) next();
+      }, 16);
+    });
+    this.field = field;
+    this.ledges = ledges;
+    this.fader = fader;
     withCutout(this.town.group);
-    const nav = new NavGrid(WORLD.minX - west, WORLD.minZ, WORLD.maxX, WORLD.maxZ, 1, this.town.colliders);
+    const nav = new NavGrid(WORLD.minX - TOWN_WEST, WORLD.minZ, WORLD.maxX, WORLD.maxZ, 1, this.town.colliders);
     // pedestrians prefer sidewalks: roads cost more, crosswalks are cheap
     for (const r of ROADS) {
       const h = r.z1 === r.z2;
@@ -565,6 +566,7 @@ export class Game implements GameApi {
       openRoad: (car, controls) => this.road?.openEdge(car, controls),
       openSea: (boat) => this.sea?.openEdge(boat) ?? false,
     }, RIDES, this.town.group.children.filter((o) => o.userData.boat));
+    ledges.dynamic = townLedgeDynamics(this.ambient, this.rides);
     const { fleet } = this.town.parkedCars;
     fleet.cars.forEach((entry, index) => {
       const ride = this.rides.createModeCar({ ...entry.spot, id: `parked-${index}` }, entry.root, () => fleet.take(entry));
@@ -789,7 +791,9 @@ export class Game implements GameApi {
     this.refreshObjective();
     // Keep the logo over the canvas until an actual town frame is ready to show.
     this.renderer.render(this.scene, this.rig.cam);
-    this.onReady?.();
+    const ready = this.onReady;
+    this.onReady = undefined;
+    ready?.();
     if (import.meta.env.DEV) this.streetLife.devRequest();
     // the town's hints, each when its thing first matters (coach.ts); after the flight, if the visit opens with one
     if (!this.flight) coach.begin(true);
@@ -4085,6 +4089,13 @@ export class Game implements GameApi {
   }
 
   dispose() {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.onReady = undefined;
+    this.collisionPreparation?.cancel();
+    this.collisionPreparation = undefined;
+    clearTimeout(this.ledgeTimer);
+    this.ledgeTimer = undefined;
     for (const unsubscribe of this.phoneWatch) unsubscribe();
     document.removeEventListener("visibilitychange", this.phoneVisibility);
     window.removeEventListener("pagehide", this.phonePageHide);
@@ -4093,7 +4104,6 @@ export class Game implements GameApi {
     this.sceneDelays.clear();
     this.keepsake.dispose();
     this.streetLife?.dispose();
-    this.disposed = true;
     this.modes.dispose();
     this.player?.root.removeFromParent();
     this.normalPlayer?.dispose?.();

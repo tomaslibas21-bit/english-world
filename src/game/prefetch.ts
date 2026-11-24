@@ -28,10 +28,13 @@ export function whenLoaded(sitId: string, go: (def: SituationDef) => void, still
 
 const CALLS = SITUATIONS.filter((s) => s.mode === "phone" || s.mode === "video" || s.location === "phone").map((s) => s.id);
 let timer: ReturnType<typeof setInterval> | null = null;
+let firstTick: ReturnType<typeof setTimeout> | undefined;
 
 /** Keeps fetching the conversations the learner is near (gameRef.setGame starts it for each game, and stops it). */
 export function watchSituations(g: GameApi | null) {
   if (timer) { clearInterval(timer); timer = null; }
+  clearTimeout(firstTick);
+  firstTick = undefined;
   if (!g) return;
   const tick = () => {
     const ids: string[] = [];
@@ -46,7 +49,7 @@ export function watchSituations(g: GameApi | null) {
     ids.push(...(g.nearSituations?.() ?? []));
     prefetchSituations(ids);
   };
-  setTimeout(tick, 0);
+  firstTick = setTimeout(() => { firstTick = undefined; tick(); }, 0);
   timer = setInterval(tick, 1500);
   watchCards();
 }

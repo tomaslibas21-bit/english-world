@@ -55,8 +55,6 @@ const GROW = 0.5;
  *  `deck`: a roof one can stand on (a shelter's, a stall's): no wall to anyone, walked under and jumped up through,
  *  landed on from above. */
 export interface Piece { minX: number; maxX: number; minZ: number; maxZ: number; top: number; wall?: boolean; deck?: boolean }
-type Box = { minX: number; maxX: number; minZ: number; maxZ: number; tag?: string; split?: boolean };
-type Circle = { x: number; z: number; r: number; split?: boolean };
 
 export interface LedgeOptions {
   /** Leave this object (and what it holds) out: what moves. */
@@ -75,6 +73,21 @@ export interface LedgeOptions {
 /** What was read of one collider (for the dev tools and the tests): where it is, whether it was split, the lowest and
  *  the highest top one can stand on in it, and how many of its cells are walls. */
 export interface Thing { x: number; z: number; w: number; d: number; tag?: string; split: boolean; cap: number; low: number; high: number; walls: number; cells: number; decks: number }
+
+/** The ledge grid follows candidate colliders and roofs, including features outside the camera field. */
+export function ledgeGrid(col: Colliders) {
+  const boxes = col.boxes.filter((b) => !b.split && b.tag !== "building" && b.tag !== "edge" && Math.min(b.maxX - b.minX, b.maxZ - b.minZ) <= 4 && (b.maxX - b.minX) * (b.maxZ - b.minZ) <= 60);
+  const circles = col.circles.filter((c) => c.r <= 4.5 && !(c as { npc?: string }).npc);
+  const listed = col.roofs ?? [];
+  if (!boxes.length && !circles.length && !listed.length) return;
+  let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+  for (const b of listed) { x0 = Math.min(x0, b.minX); x1 = Math.max(x1, b.maxX); z0 = Math.min(z0, b.minZ); z1 = Math.max(z1, b.maxZ); }
+  for (const b of boxes) { x0 = Math.min(x0, b.minX); x1 = Math.max(x1, b.maxX); z0 = Math.min(z0, b.minZ); z1 = Math.max(z1, b.maxZ); }
+  for (const c of circles) { x0 = Math.min(x0, c.x - c.r); x1 = Math.max(x1, c.x + c.r); z0 = Math.min(z0, c.z - c.r); z1 = Math.max(z1, c.z + c.r); }
+  x0 = Math.floor(x0) - 2; z0 = Math.floor(z0) - 2;
+  const nx = Math.ceil((x1 + 2 - x0) / CELL), nz = Math.ceil((z1 + 2 - z0) / CELL);
+  return { boxes, circles, listed, x0, z0, nx, nz, cell: CELL };
+}
 
 export class Ledges {
   pieces: Piece[] = [];
@@ -95,6 +108,14 @@ export class Ledges {
   /** How much higher than feet at `feet` m a top may be and still be got onto: a toe's reach in the air (a jump that
    *  comes within it of a top lands on it), a kerb from the ground, a gentle slope up on something. */
   private static rise(feet: number, air: boolean) { return air ? TOE : feet < 0.2 ? STEP : SLOPE; }
+
+  static restore(pieces: readonly Piece[], things: Thing[]) {
+    const ledges = new Ledges();
+    for (const piece of pieces) ledges.add(piece);
+    ledges.things = things;
+    ledges.ready = true;
+    return ledges;
+  }
 
   add(p: Piece) {
     this.pieces.push(p);
@@ -156,18 +177,9 @@ export class Ledges {
    *  called with the rest of the work), so a town is walkable before this is done; until then nothing can be climbed. */
   static build(root: THREE.Object3D, col: Colliders, opts: LedgeOptions = {}, slice?: (next: () => void) => void): Ledges {
     const led = new Ledges();
-    // Skip registered pieces, buildings and what the town tags as the edge of where one walks (`edge`).
-    const boxes = (col.boxes as Box[]).filter((b) => !b.split && b.tag !== "building" && b.tag !== "edge" && Math.min(b.maxX - b.minX, b.maxZ - b.minZ) <= 4 && (b.maxX - b.minX) * (b.maxZ - b.minZ) <= 60);
-    const circles = (col.circles as Circle[]).filter((c) => c.r <= 4.5 && !(c as { npc?: string }).npc);
-    /** The roofs the town lists as ones to stand on (a shelter's, a stall's). */
-    const listed = (col as { roofs?: Box[] }).roofs ?? [];
-    if (!boxes.length && !circles.length && !listed.length) return led;
-    let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
-    for (const b of listed) { x0 = Math.min(x0, b.minX); x1 = Math.max(x1, b.maxX); z0 = Math.min(z0, b.minZ); z1 = Math.max(z1, b.maxZ); }
-    for (const b of boxes) { x0 = Math.min(x0, b.minX); x1 = Math.max(x1, b.maxX); z0 = Math.min(z0, b.minZ); z1 = Math.max(z1, b.maxZ); }
-    for (const c of circles) { x0 = Math.min(x0, c.x - c.r); x1 = Math.max(x1, c.x + c.r); z0 = Math.min(z0, c.z - c.r); z1 = Math.max(z1, c.z + c.r); }
-    x0 = Math.floor(x0) - 2; z0 = Math.floor(z0) - 2;
-    const nx = Math.ceil((x1 + 2 - x0) / CELL), nz = Math.ceil((z1 + 2 - z0) / CELL);
+    const grid = ledgeGrid(col);
+    if (!grid) return led;
+    const { boxes, circles, listed, x0, z0, nx, nz } = grid;
     // the cells in a candidate's footprint (and one round it), and a coarse grid of where they are, to pass over the
     // town's other triangles quickly
     const mask = new Uint8Array(nx * nz), CO = 32, cnx = Math.ceil(nx / CO), coarse = new Uint8Array(cnx * Math.ceil(nz / CO));

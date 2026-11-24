@@ -48,42 +48,53 @@ function Play() {
   useEffect(() => {
     // three.js and the town are a separate download, fetched only in town mode
     let g: Game | null = null, gone = false;
-    import("../game/Game").then(({ Game }) => {
+    const debugWindow = window as Window & { __ew?: { game: Game } };
+    const release = () => {
+      if (g && game === g) setGame(null);
+      if (debugWindow.__ew?.game === g) delete debugWindow.__ew;
+      g?.dispose();
+      g = null;
+    };
+    void import("../game/Game").then(({ Game }) => {
       if (gone) return;
-      g = new Game(stage.current!, tags.current!);
-      setGame(g);
-      g.onReady = () => {
-        // (the 3D game opens with the town itself: from the air on a first visit, Game.beginFlight; where the learner
-        // left off on later ones. The list of situations opens from its button; owner, 18 Nov 2026. The pictures-only
-        // mode's home is the list, LightHome.tsx.)
+      const instance = g = new Game(stage.current!, tags.current!);
+      instance.onReady = () => {
+        if (gone || g !== instance) return;
+        setGame(instance);
+        const debug = {
+          game: instance, store: useStore, radio, voice: audio.getState, audio, coach, surf: useSurf, carStats: () => instance.carStats(),
+          ...(import.meta.env.DEV ? {
+            sea: () => instance.seaDebug(), seaSteer: (lane: number) => instance.seaSteer(lane),
+            seaTimer: (seconds?: number) => instance.seaTimer(seconds),
+            seaPlaceBoat: (x: number, z: number, heading?: number) => instance.seaPlaceBoat(x, z, heading),
+            seaWay: (way?: PlayWay) => instance.wordGameWay("sea", way),
+            seaStart: (way?: PlayWay) => instance.wordGameStart("sea", way),
+            seaForceGate: (correct: boolean) => instance.wordGameForceGate("sea", correct),
+          } : {}),
+          road: { state: () => instance.roadDebug(), steer: (lane: number) => instance.roadSteer(lane), jumpTimer: (seconds?: number) => instance.roadJumpTimer(seconds),
+            ...(import.meta.env.DEV ? {
+              previewOptions: (options?: readonly string[]) => instance.roadPreviewOptions(options),
+              way: (way?: PlayWay) => instance.wordGameWay("road", way),
+              start: (way?: PlayWay) => instance.wordGameStart("road", way),
+              forceGate: (correct: boolean) => instance.wordGameForceGate("road", correct),
+            } : {}) },
+          billiards: instance.debugBilliards(), barista: instance.debugBarista(), loteria: instance.debugLoteria(),
+        };
+        debugWindow.__ew = debug;
+        // The town is the 3D game's home. Linked activities start once the first frame has been drawn.
         setReady(true); useStore.getState().setScreen("play");
         const sit = takeLinkedSituation();
-        if (debugBilliardsLink) g!.debugBilliards()?.start();
-        else if (debugBaristaLink) g!.debugBarista()?.start();
-        else if (sit) g!.startScenario(sit);
+        if (debugBilliardsLink) instance.debugBilliards()?.start();
+        else if (debugBaristaLink) instance.debugBarista()?.start();
+        else if (sit) instance.startScenario(sit);
       };
-      g.init();
-      (window as any).__ew = {
-        game: g, store: useStore, radio, voice: audio.getState, audio, coach, surf: useSurf, carStats: () => g!.carStats(),
-        ...(import.meta.env.DEV ? {
-          sea: () => g!.seaDebug(), seaSteer: (lane: number) => g!.seaSteer(lane),
-          seaTimer: (seconds?: number) => g!.seaTimer(seconds),
-          seaPlaceBoat: (x: number, z: number, heading?: number) => g!.seaPlaceBoat(x, z, heading),
-          seaWay: (way?: PlayWay) => g!.wordGameWay("sea", way),
-          seaStart: (way?: PlayWay) => g!.wordGameStart("sea", way),
-          seaForceGate: (correct: boolean) => g!.wordGameForceGate("sea", correct),
-        } : {}),
-        road: { state: () => g!.roadDebug(), steer: (lane: number) => g!.roadSteer(lane), jumpTimer: (seconds?: number) => g!.roadJumpTimer(seconds),
-          ...(import.meta.env.DEV ? {
-            previewOptions: (options?: readonly string[]) => g!.roadPreviewOptions(options),
-            way: (way?: PlayWay) => g!.wordGameWay("road", way),
-            start: (way?: PlayWay) => g!.wordGameStart("road", way),
-            forceGate: (correct: boolean) => g!.wordGameForceGate("road", correct),
-          } : {}) },
-        billiards: g.debugBilliards(), barista: g.debugBarista(), loteria: g.debugLoteria(),
-      };
+      return instance.init();
+    }).catch((error) => {
+      if (gone) return;
+      release();
+      console.error("Town startup failed", error);
     });
-    return () => { gone = true; g?.dispose(); setGame(null); };
+    return () => { gone = true; release(); };
   }, []);
   return (
     <>
