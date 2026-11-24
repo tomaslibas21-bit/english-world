@@ -43,9 +43,13 @@ import "./townPhone.css";
 /** Inside English Master (VITE_BACK_URL, e.g. "/"): the way back to the course site. */
 export const COURSE_URL = import.meta.env.VITE_BACK_URL as string | undefined;
 
+function unreadTextSuffix(unread = 0) {
+  return unread ? `, ${unread} neperskaitytos žinutės` : "";
+}
+
 function ToolButton({ icon, title, panel, hotkey, badge, unread }: { icon: IconName; title: string; panel: "scenarios" | "map" | "journal" | "phone" | "phrasebook" | "settings"; hotkey?: string; badge?: number; unread?: number }) {
   return (
-    <button className="icon-btn" onClick={() => useStore.getState().setHud({ panel })} title={title} aria-label={(badge ? `${title} (${badge})` : title) + (unread ? `, ${unread} neperskaitytos žinutės` : "")}>
+    <button className="icon-btn" onClick={() => useStore.getState().setHud({ panel })} title={title} aria-label={(badge ? `${title} (${badge})` : title) + unreadTextSuffix(unread)}>
       <Icon name={icon} size={25} />{hotkey && <span className="key" aria-hidden>{hotkey}</span>}
       {!!badge && <span className="due-badge" aria-hidden>{badge}</span>}
     </button>
@@ -325,7 +329,7 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, modeExit, 
   return (
     <div ref={toolbar} onKeyDown={activateHudButton}
       className={className + " in-ride folds" + (phone ? " phone-menu" : "") + (portraitPhone ? " portrait-toolbar" : "") + (open ? " menu-open" : "") + (columns.length === 2 ? " two-columns" : "")}>
-      <button className="icon-btn ride-menu" title="Meniu" aria-label="Meniu" aria-expanded={open} aria-controls="town-tools"
+      <button className="icon-btn ride-menu" title="Meniu" aria-label={"Meniu" + unreadTextSuffix(open ? 0 : unread)} aria-expanded={open} aria-controls="town-tools"
         onClick={() => {
           if (open) closeMenu();
           else {
@@ -335,6 +339,7 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, modeExit, 
         }}>
         <Icon name="menu" size={25} />
         {!!due && !open && <span className="due-badge" aria-hidden>{due}</span>}
+        {!!unread && !open && <span className="unread-badge" aria-hidden><Icon name="mail" size={12} /></span>}
         {phone && !open && !radioOpen && <RadioMenuLamp />}
       </button>
       <div className="toolbar-fit-limit" ref={fitLimit} aria-hidden />

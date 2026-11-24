@@ -64,10 +64,11 @@ export function manualFrames(page) {
   return { step, waitFor, during };
 }
 
-export async function screenshot(page, name, width, height) {
-  if (!shots) return;
-  await mkdir(shots, { recursive: true });
-  await page.screenshot({ path: join(shots, `${name}-${width}x${height}.png`) });
+export async function screenshot(page, name, width, height, fallbackDir = "") {
+  const dir = shots || fallbackDir;
+  if (!dir) return;
+  await mkdir(dir, { recursive: true });
+  await page.screenshot({ path: join(dir, `${name}-${width}x${height}.png`) });
 }
 
 export const contentUrl = (base, name) => new URL(`src/${name}.ts`, base.endsWith("/") ? base : base + "/").href;

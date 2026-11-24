@@ -1004,10 +1004,16 @@ body.scene-on .tag-layer { display: none; }
 
 /* saved cards due for review today: a small gold count on the phrasebook button */
 .icon-btn, .lh-tool { position: relative; }
-.due-badge {
-  position: absolute; top: -4px; right: -4px; min-width: 19px; height: 19px; padding: 0 5px; border-radius: 999px;
-  background: #e0a526; color: #fff; font-size: 11px; font-weight: 900; line-height: 19px; text-align: center;
+.due-badge, .unread-badge {
+  position: absolute; top: -4px; min-width: 19px; height: 19px; border-radius: 999px;
   box-shadow: 0 0 0 2px #fff, 0 2px 5px rgba(20, 30, 40, 0.25); pointer-events: none;
+}
+.due-badge {
+  right: -4px; padding: 0 5px;
+  background: #e0a526; color: #fff; font-size: 11px; font-weight: 900; line-height: 19px; text-align: center;
+}
+.unread-badge {
+  left: -4px; display: grid; place-items: center; background: #80e5b2; color: #17372a;
 }
 
 /* the door prompt's second line: the place in Lithuanian and what its English name means */

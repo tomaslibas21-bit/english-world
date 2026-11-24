@@ -1,4 +1,4 @@
-// Run on the same local Vite server and Chromium setup as phone-rings.mjs.
+// Run on the same local Vite server and Chromium setup as phone-rings.mjs. WORLD_SHOTS saves the review frames.
 import assert from "node:assert/strict";
 import { openPhoneMenu } from "./screen-harness.mjs";
 import { contentUrl, contextOptions, installTown, key, manualFrames, openContentPage, probeEffects, progress, screenshot, stubVoiceClips, viewports } from "./life-harness.mjs";
@@ -34,11 +34,16 @@ try {
       };
       const state = () => page.evaluate(() => window.__ew.game.textsState());
       const chip = page.locator(".text-arrival");
+      const menu = page.locator(".toolbar .ride-menu");
+      const menuUnread = menu.locator(".unread-badge");
       const phone = page.locator(".toolbar .icon-btn[title$='(P)']");
       const panel = page.locator(".phone[role=dialog]");
       const thread = panel.locator(".text-thread");
+      const body = thread.locator(".text-thread-body");
+      const contact = panel.locator(`.text-contact[data-thread="${dinner.id}"]`);
       const replies = thread.locator(".text-replies button");
       const tap = (locator) => during(() => Math.min(width, height) < 600 ? locator.tap() : locator.click());
+      const capture = (name) => during(() => screenshot(page, name, width, height, process.env.SHOTS_OUT));
       const checkArrival = async () => {
         const layout = await chip.evaluate((node) => {
           const box = node.getBoundingClientRect();
@@ -78,7 +83,12 @@ try {
         assert(checks.every(Boolean), `fully visible in ${areaSelector} at ${width}×${height}: ${selectors.filter((_, i) => !checks[i]).join(", ")}`);
       };
       const checkReplies = () => checkThreadViewport(".text-replies", "button", "button span", "button small");
+      const greeting = ".text-message:first-of-type .text-bubble";
       const newest = ".text-message:last-child .text-bubble";
+      const checkThreadStart = async () => {
+        assert.equal(await body.evaluate((el) => el.scrollTop), 0);
+        await checkThreadViewport(".text-thread-body", ".text-hint", greeting);
+      };
       await ready();
       await probeEffects(page);
       assert.equal((await state()).due, dinner.id);
@@ -99,21 +109,53 @@ try {
       assert.deepEqual(await page.evaluate(() => window.__lifeEffects.filter((name) => name === "message")), ["message"]);
       assert(await page.evaluate(() => window.__lifeVibrations.includes(60)));
       assert.equal((await state()).unread, 1);
-      const menu = page.locator(".toolbar .ride-menu");
-      if (await menu.count()) assert.equal(await menu.getAttribute("aria-expanded"), "false");
+      if (await menu.count()) {
+        assert.equal(await menu.getAttribute("aria-expanded"), "false");
+        assert(await menuUnread.isVisible());
+        assert.match(await menu.getAttribute("aria-label"), /1 neperskaitytos žinutės/);
+      }
       await checkArrival();
+      await capture("text-01-arrival");
       await during(() => openPhoneMenu(page));
-      if (await menu.count()) assert.equal(await menu.getAttribute("aria-expanded"), "true");
+      if (await menu.count()) {
+        assert.equal(await menu.getAttribute("aria-expanded"), "true");
+        assert.equal(await menuUnread.count(), 0);
+      }
       await checkArrival();
       assert.equal(await phone.locator(".due-badge").innerText(), "1");
       assert.match(await phone.getAttribute("aria-label"), /neperskaitytos žinutės/);
-      await during(() => screenshot(page, "text-arrival", width, height));
-      await tap(chip.getByRole("button"));
+
+      if (width === 390 && height === 664) {
+        await tap(menu);
+        assert(await chip.isVisible());
+        await step(9, 1000);
+        await waitFor(async () => (await chip.count()) === 0, "the arrival chip expires");
+        assert.equal((await state()).unread, 1);
+        assert.equal(await menu.getAttribute("aria-expanded"), "false");
+        assert(await menuUnread.isVisible());
+        await tap(menu);
+        await tap(phone);
+        assert(await contact.locator(".text-unread").isVisible());
+      } else {
+        await tap(chip.getByRole("button"));
+        assert.equal(await thread.getAttribute("data-thread"), dinner.id);
+        await checkThreadStart();
+        await tap(thread.locator(".text-thread-head button"));
+      }
+      assert(await contact.isVisible());
+      await panel.evaluate(async (node) => {
+        await Promise.all(node.parentElement.getAnimations().map((animation) => animation.finished));
+      });
+      await capture("text-02-inbox");
+      await tap(contact);
       assert.equal(await thread.getAttribute("data-thread"), dinner.id);
       assert.equal(await replies.count(), dinner.replies.length);
       assert.deepEqual(await replies.locator("span").allTextContents(), dinner.replies.map(({ en }) => en));
       assert.deepEqual(await replies.locator("small").allTextContents(), dinner.replies.map(({ lt }) => lt));
+      await checkThreadStart();
+      await during(() => body.locator(newest).scrollIntoViewIfNeeded());
       await checkThreadViewport(".text-thread-body", newest);
+      await body.evaluate((el) => { el.scrollTop = 0; });
       await checkReplies();
       assert.equal((await state()).unread, 0);
       assert.equal(await phone.locator(".due-badge").count(), 0);
@@ -125,8 +167,9 @@ try {
       await tap(first);
       assert.equal(await first.locator("small").innerText(), dinner.lines[0].lt);
       assert.equal(await thread.locator(".text-hint").count(), 0);
+      await checkThreadViewport(".text-thread-body", greeting, `${greeting} small`);
       await checkReplies();
-      await during(() => screenshot(page, "text-translation", width, height));
+      await capture("text-03-translation");
 
       const reply = dinner.replies[0];
       await tap(replies.first());
@@ -136,9 +179,14 @@ try {
       await checkThreadViewport(".text-thread-body", ".text-message.mine .text-bubble", ".text-typing");
       await waitFor(async () => await thread.locator(".text-bubble").count() === dinner.lines.length + 1 + reply.answer.length, "answer arrives after typing");
       assert.equal(await thread.locator(".text-bubble").last().innerText(), reply.answer.at(-1).en);
-      await checkThreadViewport(".text-thread-body", newest);
-      await during(() => screenshot(page, "text-replied", width, height));
+      await checkThreadViewport(".text-thread-body", ".text-message.mine .text-bubble", ".text-sent", newest);
+      await capture("text-04-replied");
       await tap(panel.locator(".phone-status button"));
+      if (await menu.count()) {
+        assert.equal(await menu.getAttribute("aria-expanded"), "false");
+        assert.equal(await menuUnread.count(), 0);
+        assert.equal(await menu.getAttribute("aria-label"), "Meniu");
+      }
       await page.evaluate(({ second, completed, day }) => window.__ew.store.getState().updateProgress((p) => {
         p.sits[second.after] = completed;
         p.texts.pending[second.id] = { day: second.wait === "later" ? "" : day, played: 0 };
