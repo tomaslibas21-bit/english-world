@@ -81,12 +81,12 @@ function headVertices(mesh: Mesh, head: THREE.Object3D, inverse: THREE.Matrix4) 
 }
 
 /** Resolve animated descendants once per fit. Rigid vertices already live in the head's coordinate system. */
-function posedHead(speaker: GameCharacter, layers: THREE.Layers) {
+function posedHead(speaker: GameCharacter, layers: THREE.Layers, checkLowerFace: boolean) {
   const head = speaker.headJoint;
   const inverse = head.matrixWorld.clone().invert();
   const local = new THREE.Box3(), bounds = new THREE.Box3();
   const crown = new THREE.Vector3(), chin = new THREE.Vector3();
-  const points: { world: THREE.Vector3; y: number }[] = [];
+  const points: { world: THREE.Vector3; x: number; y: number; z: number }[] = [];
   const v = new THREE.Vector3();
   speaker.root.traverseVisible((object) => {
     const mesh = object as Mesh;
@@ -95,11 +95,11 @@ function posedHead(speaker: GameCharacter, layers: THREE.Layers) {
       if (fixed) v.copy(fixed);
       else mesh.getVertexPosition(index, v).applyMatrix4(mesh.matrixWorld).applyMatrix4(inverse);
       local.expandByPoint(v);
-      const y = v.y, world = v.clone().applyMatrix4(head.matrixWorld);
+      const world = v.clone().applyMatrix4(head.matrixWorld);
       if (world.y > bounds.max.y) crown.copy(world);
       if (world.y < bounds.min.y) chin.copy(world);
       bounds.expandByPoint(world);
-      points.push({ world, y });
+      points.push({ world, x: v.x, y: v.y, z: v.z });
     }
   });
   if (bounds.isEmpty() || !(crown.y > chin.y)) return null;
@@ -112,6 +112,26 @@ function posedHead(speaker: GameCharacter, layers: THREE.Layers) {
     const depth = Math.sqrt(Math.max(0, 1 - (2 * x) ** 2 - (2 * y - 1) ** 2));
     return new THREE.Vector3(middle.x + x * span.x, local.min.y + y * span.y, middle.z + depth * span.z / 2).applyMatrix4(head.matrixWorld);
   };
+  const lowerFace: THREE.Vector3[] = [];
+  if (checkLowerFace) {
+    const headLinear = new THREE.Matrix3().setFromMatrix4(head.matrixWorld);
+    // Cover the lower skin between the legacy mouth point and the profile, at mouth and jaw height.
+    // Resolve the samples on the actual posed front surface, below hats and away from the back of the head.
+    for (const height of [0.19, 0.34]) for (const width of [-0.38, -0.13, 0.13, 0.38]) {
+      const y = local.min.y + height * span.y, x = middle.x + width * span.x;
+      let nearest: THREE.Vector3 | undefined, distance = Infinity;
+      for (const p of points) {
+        if (p.z < middle.z + span.z * 0.18) continue;
+        const d = (p.x - x) ** 2 + (p.y - y) ** 2;
+        if (d < distance) { nearest = p.world; distance = d; }
+      }
+      if (nearest) {
+        // Leave a small gap at the outer jaw for the speaker's turn and the held-line motion.
+        lowerFace.push(Math.abs(width) > 0.3
+          ? new THREE.Vector3(Math.sign(width) * 0.024, -0.012, 0).applyMatrix3(headLinear).add(nearest) : nearest);
+      }
+    }
+  }
   return {
     bounds, corners, middle: middle.clone().applyMatrix4(head.matrixWorld), crown, chin,
     forward: new THREE.Vector3(0, 0, 1).transformDirection(head.matrixWorld),
@@ -119,6 +139,7 @@ function posedHead(speaker: GameCharacter, layers: THREE.Layers) {
     landmarks: [front(0, 0.5), crown, chin, front(-0.5, 0.42), front(0.5, 0.42),
       front(-0.23, 0.57), front(0.23, 0.57), front(0, 0.76), front(0, 0.31)],
     cheeks: points.filter(({ y }) => y >= local.min.y + span.y * 0.32 && y <= local.min.y + span.y * 0.52).map(({ world }) => world),
+    lowerFace,
   };
 }
 
@@ -251,7 +272,7 @@ interface Candidate extends Shot {
   dx: number;
   dy: number;
   fov: number;
-  kind: "normal" | "close" | "raised" | "front" | "hint";
+  kind: "normal" | "close" | "raised" | "front" | "counter" | "hint";
   yaw: number;
   clearance: number;
   size: number;
@@ -303,7 +324,7 @@ export class TalkFraming {
     const { width: w, height: h, picture, obstacles } = screen;
     const feet = speaker.ch.root.position;
     scene.updateMatrixWorld(true);
-    const head = posedHead(speaker.ch, lens.layers);
+    const head = posedHead(speaker.ch, lens.layers, !!room);
     if (!head) return null;
 
     const portrait = w < h && w < 768, desktop = w > 900;
@@ -321,6 +342,8 @@ export class TalkFraming {
     if (front.lengthSq() < 0.01) front.copy(authored);
     front.normalize();
     const basis = speaker.sit ? authored : front;
+    const turnsToLearner = !speaker.sit && feet.distanceToSquared(learner.root.position) < 7 ** 2;
+    const counterApproach = room && turnsToLearner && front.dot(authored) > 0.85;
     const side = new THREE.Vector3(-basis.z, 0, basis.x);
     const toward = room ? Math.sign(-feet.x * side.x - feet.z * side.z) || 1 : 1;
     const focus = head.middle.clone().addScaledVector(front, Math.min(0.18, Math.hypot(me.x - feet.x, me.z - feet.z) * 0.05));
@@ -413,7 +436,10 @@ export class TalkFraming {
         && projected.y > picture.y0 && projected.y < picture.y1 + 48);
       offset.subVectors(f.pos, feet).setY(0).normalize();
       f.angle = Math.min(offset.dot(front), offset.dot(basis));
-      f.facing = offset.subVectors(f.pos, head.middle).normalize().dot(head.forward);
+      offset.subVectors(f.pos, head.middle).normalize();
+      f.facing = offset.dot(head.forward);
+      // A standing speaker turns toward the learner while the shot is held. Rank for both ends of that turn.
+      if (turnsToLearner) f.facing = Math.min(f.facing, offset.dot(front));
       f.safeLens = roomForLens(f.pos);
       const outsideBand = distanceToBand(f.size, minSize, maxSize);
       f.penalty = (f.safeLens ? 0 : 350) + (inDepth ? 0 : 200) + (legacyVisible ? 0 : 15)
@@ -427,7 +453,8 @@ export class TalkFraming {
     const add = (pos: THREE.Vector3, look: THREE.Vector3, kind: Candidate["kind"], yaw: number, oldFov?: number) => {
       if (pos.distanceToSquared(centre) > input.max ** 2) return;
       const closeLens = short || kind !== "normal";
-      const pixels = screen.viewportHeight * preferred / 100;
+      const targetSize = short && kind === "counter" ? 10.1 : preferred;
+      const pixels = screen.viewportHeight * targetSize / 100;
       const focal = pixels * pos.distanceTo(head.middle) / (head.crown.y - head.chin.y);
       const maxFov = portrait && (kind === "front" || kind === "close") ? 114 : short ? 94 : 80;
       const fov = oldFov ?? (closeLens ? THREE.MathUtils.clamp(2 * Math.atan(h * camera.zoom / (2 * focal)) / RAD, 50, maxFov) : 50);
@@ -437,15 +464,17 @@ export class TalkFraming {
       measure(f, true);
       candidates.push(f);
     };
-    const pose = (yaw: number, distance: number, down: number, kind: Candidate["kind"] = "normal") => {
+    const pose = (yaw: number, distance: number, down: number, kind: Candidate["kind"] = "normal", axis = basis) => {
       const a = yaw * RAD;
-      const pos = head.middle.clone().addScaledVector(basis, Math.cos(a) * distance).addScaledVector(side, Math.sin(a) * distance);
-      pos.y = focus.y + Math.tan(down * RAD) * distance;
+      const forward = Math.cos(a) * distance, across = Math.sin(a) * distance;
+      const pos = new THREE.Vector3(head.middle.x + axis.x * forward - axis.z * across,
+        focus.y + Math.tan(down * RAD) * distance, head.middle.z + axis.z * forward + axis.x * across);
       add(pos, focus, kind, yaw);
     };
     const estimate = THREE.MathUtils.clamp((head.crown.y - head.chin.y) * defaultFocal / (screen.viewportHeight * preferred / 100), 2, input.max * 0.9);
     if (previous?.clear) add(previous.pos, previous.look, "normal", 0, previous.fov);
     for (const d of [2.4, 3.3, 4.4]) for (const a of d === 3.3 ? [36, 50, 66] : [36, 50, 66, 80]) {
+      if (counterApproach && desktop && d === 4.4 && a === 80) continue;
       pose(a * toward, d, 15);
       pose(-a * toward, d, 15);
     }
@@ -453,7 +482,13 @@ export class TalkFraming {
     for (const s of [toward, -toward]) {
       pose(28 * s, 2.05, 13, "close");
       pose(78 * s, 1.8, 12, "close");
-      pose(84 * s, 2.1, 16, "close");
+      if (counterApproach) {
+        // Near the customer edge, look over a pane instead of along it. The authored axis keeps
+        // the two approaches aligned with the counter as the learner moves sideways.
+        if (portrait) pose(45 * s, 2.8, 23, "counter", authored);
+        else pose(6 * s, 1.7, 29, "counter", authored);
+        if (desktop) pose(26 * s, 3.3, 26, "raised");
+      } else pose(84 * s, 2.1, 16, "close");
       pose(22 * s, 2.6, 28, "raised");
       pose(48 * s, Math.min(3.5, Math.max(2.45, estimate)), 27, "raised");
     }
@@ -507,26 +542,38 @@ export class TalkFraming {
         const hit = this.meshes.blocker(f.pos, i === 3 ? left : i === 4 ? right : head.landmarks[i], stats);
         if (hit) return hit;
       }
+      for (const p of head.lowerFace) {
+        const hit = this.meshes.blocker(f.pos, p, stats);
+        if (hit) return hit;
+      }
       return null;
     };
-    const compare = (a: Candidate, b: Candidate) => a.penalty - b.penalty || b.quality - a.quality;
+    const byFacing = (a: Candidate, b: Candidate) => Number(b.facing >= FACE_PREFERENCE) - Number(a.facing >= FACE_PREFERENCE);
+    const compare = (a: Candidate, b: Candidate) => a.penalty - b.penalty || byFacing(a, b) || b.quality - a.quality;
     for (const f of candidates) if (f.safeLens && blocked(f)) { f.open = false; f.penalty += 90; }
     candidates.sort(compare);
     const open = candidates.filter((f) => f.open);
     // Keep ray slots for the front, a close diagonal and a raised view even when the shoulders rank higher.
     const shortlist = new Set<Candidate>();
     const best = (select: (f: Candidate) => boolean) => {
+      if (shortlist.size >= MAX_RAY_POSES) return;
       const f = open.find((f) => !shortlist.has(f) && select(f));
       if (f) shortlist.add(f);
+      return f;
     };
     best((f) => !!f.prior && f.facing >= FACE_PREFERENCE);
     best((f) => f.kind === "hint");
     const first = open.find((f) => f.kind === "normal" && !f.prior);
     if (first) shortlist.add(first);
     best((f) => f.kind === "normal" && Math.sign(f.yaw) === -Math.sign(first?.yaw ?? 0));
+    const shoulderView = counterApproach && desktop && best((f) => f.kind === "raised" && f.shoulder > 0 && f.facing >= FACE_PREFERENCE);
+    if (shoulderView) best((f) => f.kind === "raised" && f.shoulder > 0 && f.facing >= FACE_PREFERENCE
+      && f.yaw * shoulderView.yaw < 0);
+    best((f) => f.kind === "counter");
+    best((f) => f.kind === "counter" && f.facing >= FACE_PREFERENCE);
     best((f) => f.kind === "front");
     best((f) => f.kind === "close" && Math.abs(f.yaw) < 45);
-    best((f) => f.kind === "raised");
+    if (!shoulderView) best((f) => f.kind === "raised");
     if (shortlist.size < MAX_RAY_POSES - 1) best((f) => f.kind === "close");
     if (shortlist.size < MAX_RAY_POSES) best((f) => f.kind === "normal" && Math.abs(f.yaw) >= 65);
     for (const f of open) if (shortlist.size < MAX_RAY_POSES - 1) shortlist.add(f);
@@ -544,13 +591,13 @@ export class TalkFraming {
         continue;
       }
       if (!f.open) { fallback = f; obstruction = undefined; continue; }
-      if (!chosen || (f.quality > chosen.quality && !(chosen.prior && f.clearance - chosen.clearance <= 2
+      if (!chosen || byFacing(f, chosen) < 0 || (byFacing(f, chosen) === 0 && f.quality > chosen.quality && !(chosen.prior && f.clearance - chosen.clearance <= 2
         && Math.abs(f.size - chosen.size) < 3 && Math.abs(f.angle - chosen.angle) < 0.2
         && f.facing - chosen.facing < 0.12))) chosen = f;
-      // A room hint can trade some extra framing margin for a better sightline. The padded opening still applies.
-      const hinted = f.kind === "hint";
-      const preferredSize = hinted || distanceToBand(f.size, portrait ? 10 : 13, portrait ? 15 : 20) === 0;
-      if (f.clearance >= (hinted ? 5 : 7) && preferredSize && f.angle > 0.55
+      // Use the padded opening even when trading a little size for a clear view over a counter.
+      const counter = f.kind === "counter", hinted = f.kind === "hint";
+      const preferredSize = hinted || distanceToBand(f.size, short && counter ? 8 : portrait ? 10 : 13, portrait ? 15 : 20) === 0;
+      if (f.clearance >= (hinted || counter ? 5 : 7) && preferredSize && f.angle > 0.55
         && f.facing >= FACE_PREFERENCE && (!desktop || f.tall >= 230)) break;
     }
     const f = chosen ?? fallback ?? candidates[0];

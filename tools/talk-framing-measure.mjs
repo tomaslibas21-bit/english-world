@@ -316,7 +316,21 @@ export async function measureTalk({ margin, fraction, settleMs, band, snapshot =
       }
     }
   }
-  const measurement = { face, speaker, speakerId, settled, checks: { view, ui, geo, size } };
+  const headCentre = middle.applyMatrix4(head.matrixWorld);
+  const headForward = point.clone().set(0, 0, 1).transformDirection(head.matrixWorld);
+  const lensPosition = cam.getWorldPosition(point);
+  const { calls, frame } = game.renderer?.info?.render ?? {};
+  const panelRect = document.querySelector(".convo")?.getBoundingClientRect();
+  const shot = {
+    position: lensPosition.toArray(), look: game.rig.presentedLook?.toArray() ?? null,
+    fov: cam.fov, near: cam.near, offset: cam.view?.enabled ? [cam.view.offsetX, cam.view.offsetY] : null,
+    headForward: headForward.toArray(), headRotation: head.getWorldQuaternion(cam.quaternion.clone()).toArray(),
+    headAngle: round(lensPosition.sub(headCentre).angleTo(headForward) * 180 / Math.PI),
+    panel: panelRect ? [panelRect.x, panelRect.y, panelRect.width, panelRect.height] : null,
+    landmarks: Object.fromEntries(points.map(({ name, x, y }) => [name, [round(x), round(y)]])),
+    quality: store.getState().settings?.quality ?? null, calls: calls ?? null, frame: frame ?? null,
+  };
+  const measurement = { face, speaker, speakerId, settled, checks: { view, ui, geo, size }, shot };
   if (snapshot) {
     const opening = game.talkLayout?.picture;
     measurement.landmarks = points.map(({ name, x, y, z }) => ({

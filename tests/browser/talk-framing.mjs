@@ -244,7 +244,7 @@ async function runCase(page, sit, size, touch, end, out, errors) {
     id: sit.id, size: size.label, input: touch ? "touch" : "keyboard/mouse",
     speaker: measurement?.speaker ?? opening?.speaker ?? null, speakerId: measurement?.speakerId ?? opening?.speaker ?? null,
     pass: reasons.length === 0, checks, reasons, panel: opening?.box ?? null, face: measurement?.face ?? null,
-    facePercent: checks.size.percent ?? null, settled: measurement?.settled ?? null,
+    facePercent: checks.size.percent ?? null, settled: measurement?.settled ?? null, shot: measurement?.shot ?? null,
     wallMs: Date.now() - started, frame,
   };
   return { row, cleanupFailed };

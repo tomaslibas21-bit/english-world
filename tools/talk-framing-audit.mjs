@@ -195,7 +195,7 @@ async function auditSituation(page, sit, size, out) {
   } catch (error) {
     errors.push(`error: screenshot: ${shortError(error)}`);
   }
-  const { checks, face, speaker, speakerId = null, settled = null } = measurement;
+  const { checks, face, speaker, speakerId = null, settled = null, shot = null } = measurement;
   const reasons = [...new Set([
     ...errors,
     ...CHECKS.filter((name) => checks[name].status === "FAIL").map((name) => checks[name].reason),
@@ -204,7 +204,7 @@ async function auditSituation(page, sit, size, out) {
   return {
     id: sit.id, title: sit.title?.lt ?? sit.title?.en ?? sit.id, size: size.label,
     pass: !errors.length && CHECKS.every((name) => checks[name].status === "PASS"),
-    checks, reasons, face, speaker, speakerId, settled, frame: savedFrame,
+    checks, reasons, face, speaker, speakerId, settled, shot, frame: savedFrame,
   };
 }
 
