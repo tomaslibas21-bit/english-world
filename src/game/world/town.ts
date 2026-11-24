@@ -18,6 +18,7 @@ import { carFootprint, carModelEntry, type CarPlacement } from "./carModels";
 import { ParkedFleet } from "./parkedFleet";
 import { THEME, type TianguisGoods } from "./theme";
 import * as MX from "./mexican";
+import { TownMerger } from "./townMerger";
 import { LOCATIONS } from "../../content/locations";
 import { STYLED, IS_REAL, grade } from "../style";
 import { SHORE, DECKS, POOLS, FLOORS, sandY, SAND_GLSL, SHORE_GLSL, SWELL_GLSL } from "../water";
@@ -2535,76 +2536,6 @@ const mx: MX.Part[] = [];
 /** …and the ones that cast no shadow worth drawing (window bars, bougainvillea, roof parapets and tinacos, topes,
  *  sign posts). */
 const mxFlat: MX.Part[] = [];
-/** This edition's town (theme.ts `townMerge`): every plain coloured shape (an opaque Lambert colour with no texture, no
- *  glow, no shader of its own, no polygon offset) goes into a vertex-coloured mesh for its square of the town (`cell`
- *  metres a side, by its middle), one that casts shadows and one that doesn't, instead of a mesh per colour spread over
- *  the whole town: the same look (a flat-shaded colour keeps its facets) in a few draw calls for what is in view, and
- *  no triangles for the squares out of it. The rest (glass, lamps, signs, textured walls) is merged per material as
- *  before. */
-/** What a square's mesh holds: shapes that cast shadows, ones that don't, the overhead lines (thin: the walking camera
- *  looks through them, no shadow) and roofs it looks through that do cast one (the gas station's canopy). */
-type Kind = "cast" | "still" | "thin" | "thinCast";
-class TownMerger extends Merger {
-  private cells = new Map<string, Record<Kind, [THREE.BufferGeometry, THREE.Color][]>>();
-  private box = new THREE.Box3();
-  private c = new THREE.Vector3();
-  constructor(private cell: number) { super(); }
-  /** Each key as Merger has it: its first shape's shadow stands for every shape added under it, and each shape keeps
-   *  its own material's colour (a plain one baked into the squares' meshes, another in Merger's own mesh). */
-  private keys = new Map<string, { cast: boolean; receive: boolean; mats: Map<THREE.Material, { plain: boolean; color: THREE.Color; flat: boolean }> }>();
-  add(key: string, m: THREE.Material, geo: THREE.BufferGeometry, cast = true, receive = true) {
-    let k = this.keys.get(key);
-    if (!k) { k = { cast, receive, mats: new Map() }; this.keys.set(key, k); }
-    let e = k.mats.get(m);
-    if (!e) {
-      const l = m as THREE.MeshLambertMaterial;
-      const plain = !!l.isMeshLambertMaterial && !l.map && !l.transparent && !l.vertexColors && l.side === THREE.FrontSide && l.emissive.getHex() === 0 && k.receive
-        && !l.polygonOffset && l.depthWrite && !Object.prototype.hasOwnProperty.call(l, "onBeforeCompile");
-      e = { plain, color: plain ? l.color.clone() : new THREE.Color(), flat: plain && l.flatShading };
-      k.mats.set(m, e);
-    }
-    if (!e.plain) return super.add(key, m, geo, k.cast, k.receive);
-    const g = geo.index ? geo.toNonIndexed() : geo;
-    if (e.flat) { g.deleteAttribute("normal"); g.computeVertexNormals(); } // (each triangle its own normal)
-    else if (!g.attributes.normal) g.computeVertexNormals();
-    // Keep the hotel's canopy and posts, the drop-off's posts and the taxi sign pole in camera-thin meshes.
-    this.put(g, e.color, /^hotel-canopy|^dropoff-post$|^taxi-sign-pole$/.test(key) ? "thinCast" : k.cast ? "cast" : "still");
-  }
-  /** The edition's vertex-coloured pieces (mexican.ts: flat-shaded) into the squares too: `kind` "thin" for the overhead
-   *  lines (a mesh the walking camera looks through: userData.thin, no shadow). */
-  addParts(parts: MX.Part[], kind: Kind) {
-    for (const [geo, col] of parts) {
-      const g = geo.index ? geo.toNonIndexed() : geo;
-      g.deleteAttribute("normal"); g.computeVertexNormals();
-      this.put(g, new THREE.Color(col), kind);
-    }
-  }
-  private put(g: THREE.BufferGeometry, col: THREE.Color, kind: Kind) {
-    this.box.setFromBufferAttribute(g.attributes.position as THREE.BufferAttribute).getCenter(this.c);
-    const k = Math.floor(this.c.x / this.cell) + "," + Math.floor(this.c.z / this.cell);
-    const e = this.cells.get(k) ?? this.cells.set(k, { cast: [], still: [], thin: [], thinCast: [] }).get(k)!;
-    e[kind].push([g, col]);
-  }
-  build(parent: THREE.Object3D) {
-    super.build(parent);
-    const mat = (townMat ??= new THREE.MeshLambertMaterial({ vertexColors: true }));
-    for (const [k, e] of this.cells) for (const kind of ["cast", "still", "thin", "thinCast"] as const) {
-      if (!e[kind].length) continue;
-      const mesh = new THREE.Mesh(colourMerge(e[kind]), mat);
-      mesh.castShadow = kind === "cast" || kind === "thinCast";
-      if (kind === "thin" || kind === "thinCast") mesh.userData.thin = true;
-      mesh.receiveShadow = true;
-      mesh.name = "town-" + kind + "-" + k;
-      mesh.matrixAutoUpdate = false;
-      mesh.updateMatrix();
-      parent.add(mesh);
-    }
-    this.cells.clear();
-    this.keys.clear();
-  }
-}
-let townMat: THREE.MeshLambertMaterial | null = null;
-
 /** The edition's overhead lines (theme.ts `cables`): a mesh the walking camera looks through (userData.thin). */
 const wires: MX.Part[] = [];
 /** (theme.ts `poleFade`) the overhead lines' poles, in a mesh that dissolves near the camera. */
