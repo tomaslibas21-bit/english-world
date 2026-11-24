@@ -1,6 +1,6 @@
 // The surf lesson's words (the engine is src/game/surf/): which conversation holds the instructor's lines (its
 // `lines` have one key "sg_<cue>" per cue of src/game/surf/logic.ts CUES, so the voices, the cards and every learner
-// layer treat them as any conversation's lines) and who the instructor is. Maple Harbor has no surf school yet.
+// layer treat them as any conversation's lines) and who the instructor is.
 export interface SurfContent {
   /** The conversation whose `lines` hold the cues, and the instructor (an id of NPCS). */
   situation: string;
@@ -12,4 +12,4 @@ export interface SurfContent {
   pictures?: { dir: string; of: Record<string, string> };
 }
 
-export const SURF: SurfContent | null = null;
+export const SURF: SurfContent = { situation: "x04-surf", npc: "maren" };

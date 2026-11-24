@@ -1,15 +1,11 @@
 // Shared wording for the boards, town guide and lesson overlay. Lithuanian is the MH helper language.
+import { SURF_LESSON, SURF_HINT_TOUCH, SURF_HINT_KEYS, SURF_SCHOOL_SIGN, SURF_CHALKBOARD } from "./surf-town";
+
 export const SURF_UI = {
-  lesson: { en: "Surf lesson", lt: "Banglenčių pamoka" },
+  lesson: SURF_LESSON,
   action: { en: "Surfboard", lt: "Banglentė" },
-  hintTouch: {
-    en: "At the Harbor Surf boards, tap “Surfboard.” Maren also offers a wave at the end of your chat.",
-    lt: "Prie „Harbor Surf“ lentų bakstelėkite „Banglentė“. Maren pakvies pagauti bangą ir pokalbio pabaigoje.",
-  },
-  hintKeys: {
-    en: "At the Harbor Surf boards, press E. Maren also offers a wave at the end of your chat.",
-    lt: "Prie „Harbor Surf“ lentų spauskite E. Maren pakvies pagauti bangą ir pokalbio pabaigoje.",
-  },
+  hintTouch: SURF_HINT_TOUCH,
+  hintKeys: SURF_HINT_KEYS,
   wayfinding: {
     en: "Harbor Surf is on the west beach. Talk to Maren at the counter or start a lesson at the boards by the water.",
     lt: "„Harbor Surf“ rasite vakariniame paplūdimyje. Pasikalbėkite su Maren prie prekystalio arba pradėkite pamoką prie lentų šalia vandens.",
@@ -18,17 +14,10 @@ export const SURF_UI = {
   mapPin: { en: "Harbor Surf · West Beach", lt: "„Harbor Surf“ · Vakarinis paplūdimys" },
   counter: { en: "Maren Pike · Surf coach", lt: "Maren Pike · Banglenčių instruktorė" },
   sign: {
-    school: { en: "HARBOR SURF", lt: "Banglenčių mokykla „Harbor Surf“" },
+    school: SURF_SCHOOL_SIGN,
     rentals: { en: "RENTALS & LESSONS", lt: "Įrangos nuoma ir pamokos" },
-    weather: { en: "Waves ~2 ft · Light wind · Low tide", lt: "Bangos – apie 2 pėdas · Silpnas vėjas · Atoslūgis" },
     hours: { en: "8 AM–6 PM · Last rental 5 PM", lt: "8.00–18.00 · Paskutinė nuoma 17.00" },
-    rates: { en: "Per hour", lt: "Kaina už valandą" },
-    board: { en: "Surfboard $20", lt: "Banglentė 20 $" },
-    paddle: { en: "Paddleboard $25", lt: "Irklentė 25 $" },
-    kayak: { en: "Single kayak $25", lt: "Vienvietė baidarė 25 $" },
-    kayak2: { en: "Double kayak $35", lt: "Dvivietė baidarė 35 $" },
-    snorkel: { en: "Snorkel kit $15", lt: "Paviršinio nardymo rinkinys 15 $" },
-    beginner: { en: "Beginner lesson · 1 hr · $60", lt: "Pamoka pradedantiesiems · 1 val. · 60 $" },
+    ...SURF_CHALKBOARD,
     deposit: { en: "ID or $50 refundable deposit", lt: "Asmens dokumentas arba 50 $ grąžinamas užstatas" },
   },
   picker: {

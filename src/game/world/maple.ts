@@ -15,6 +15,8 @@ import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, colourMerge 
 import { STYLED } from "../style";
 import { LIGHTHOUSE_ISLAND } from "./island";
 import { addLighthouse } from "./lighthouseTower";
+import { addHarborSurf } from "./harborSurf";
+import { SURF_SPOT } from "./surf";
 
 export interface MapleCtx {
   M: Merger; col: Colliders; group: THREE.Group;
@@ -132,6 +134,7 @@ export function makeLobsterBoats(boatMat: THREE.Material) {
 export function addMapleDecor(c: MapleCtx): (t: number, dt: number) => void {
   const { M, col, group, photo } = c;
   const add: Add = (g, color, o = {}) => M.add("mh-" + color + (o.flat ? "f" : "") + (o.emissive ?? ""), mat(color, { flat: o.flat || undefined, emissive: o.emissive }), g, o.cast ?? true);
+  addHarborSurf(c, add);
   const placePumpkin = (x: number, y: number, z: number, scale: number, seed: number) => {
     pumpkin(add, x, y, z, scale, seed);
     photo("pumpkin", x, y + scale * 0.7, z);
@@ -529,6 +532,7 @@ function addHarborGear(add: Add, col: Colliders, group: THREE.Group, updates: ((
   for (let i = 0; i < 44; i++) {
     const x = -100 + br() * 270, z = -79 - br() * 34, lean = (br() - 0.5) * 0.5;
     if (Math.hypot(x - LIGHTHOUSE.x, z - LIGHTHOUSE.z) < (LIGHTHOUSE_ISLAND ? 19 : 10) || (x > -48 && x < -12 && z > -92) || (Math.abs(x + 6.5) < 4 && z > -80)) continue;
+    if (x > SURF_SPOT.x - 6 && x < SURF_SPOT.x + 8 && z < SURF_SPOT.z && z > SURF_SPOT.z - 31) continue;
     const [a, b] = liveries[i % liveries.length];
     buoy(parts, x, -0.3, z, a, b, lean);
   }

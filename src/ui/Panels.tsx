@@ -35,6 +35,7 @@ import { COACH_STEPS, coach } from "../game/coach";
 import { COACH_ICON, coachWords } from "./Guide";
 import { useRadio } from "../radio";
 import { SURF } from "../content/surf";
+import { HARBOR_SURF } from "../game/world/surf";
 
 export const CHAPTERS: Record<number, string> = { 1: "Atvykimas", 2: "Pirmosios dienos mieste", 3: "Įsikūrimas", 4: "Darbas", 5: "Žmonės", 6: "Kelionės", 7: "Pagalba", 8: "Pažengusiems", 9: "Gyva kalba" };
 
@@ -299,11 +300,16 @@ function Journal({ close }: { close: () => void }) {
 
 function locationPoint(loc: string): { x: number; z: number } | null {
   if (loc === "airport") return { x: AIRPORT_EXIT.x + 12, z: AIRPORT_EXIT.z };
+  if (loc === HARBOR_SURF.location) return HARBOR_SURF.shack;
   const d = game?.doors.find((dd) => dd.loc === loc);
   if (d) return { x: d.x, z: d.z };
   const s = SITUATIONS.find((x) => x.location === loc);
   const o = s ? OUTDOOR_NPCS.find((n) => n.npc === s.npc) : undefined;
   return o ? { x: o.x, z: o.z } : null;
+}
+
+function MapPlaceIcon({ loc, size }: { loc: string; size: number }) {
+  return loc === HARBOR_SURF.location ? <SitIcon id={SURF.situation} size={size} /> : <Icon name={locIcon(loc)} size={size} />;
 }
 
 function MapPanel({ close }: { close: () => void }) {
@@ -326,7 +332,8 @@ function MapPanel({ close }: { close: () => void }) {
     if (island) drawIslandMap(ctx, island, WORLD.minX, north, ppm);
   }, [W, island, north]);
   const pct = (x: number, z: number) => ({ left: `${((x - WORLD.minX) / W) * 100}%`, top: `${((z - north) / D) * 100}%` });
-  const locs = Object.values(LOCATIONS).filter((l) => l.kind !== "phone" && (l.id === "pool-hall" || ROUTE.some((s) => s.location === l.id)));
+  const locs = Object.values(LOCATIONS).filter((l) => l.kind !== "phone" &&
+    (l.id === "pool-hall" || l.id === HARBOR_SURF.location || ROUTE.some((s) => s.location === l.id)));
   const selSits = sel ? SITUATIONS.filter((s) => s.location === sel && !(game?.light && isTownQuest(s.id))) : [];
   return (
     <div className="sheet">
@@ -348,7 +355,7 @@ function MapPanel({ close }: { close: () => void }) {
               const allDone = sits.length > 0 && sits.every((s) => sitProgress(progress, s.id).completions > 0);
               return (
                 <button key={l.id} className={"map-pin" + (sel === l.id ? " sel" : "") + (allDone ? " done" : "")} style={pct(p.x, p.z)} onClick={() => setSel(l.id)} title={l.name} aria-label={l.name} aria-pressed={sel === l.id}>
-                  <Icon name={locIcon(l.id)} size={18} />
+                  <MapPlaceIcon loc={l.id} size={18} />
                   {allDone && <span className="pin-done"><Icon name="check" size={11} strokeWidth={3} label="įveikta" /></span>}
                 </button>
               );
@@ -365,7 +372,7 @@ function MapPanel({ close }: { close: () => void }) {
             )}
             {sel && LOCATIONS[sel] && (
               <div>
-                <h3 className="place-title"><span className="place-ico"><Icon name={locIcon(sel)} size={22} /></span>{LOCATIONS[sel].name}</h3>
+                <h3 className="place-title"><span className="place-ico"><MapPlaceIcon loc={sel} size={22} /></span>{LOCATIONS[sel].name}</h3>
                 <div style={{ color: "var(--ink-soft)", marginBottom: 10 }}>{placeLt(sel)}</div>
                 {sel === "pool-hall" && <p>Biliardo salė – partija su Tina</p>}
                 <div className="sit-list">

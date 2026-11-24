@@ -18,7 +18,7 @@ import { SitIcon } from "./SitIcon";
 import { sitProgress, stars } from "../state/progress";
 import { Icon, InlineIcon, Stars, splitLead, type IconName } from "./icons";
 import { isPhone, objectiveLabels } from "./objective";
-import { drawIslandMap, drawRideMarks } from "./mapMarks";
+import { drawIslandMap, drawRideMarks, drawSurfMark } from "./mapMarks";
 import { switchPlayMode } from "./playMode";
 import { useCards, dueCards } from "../state/cards";
 import { LyricStrip, RadioMenuLamp, RadioSetLayer, RadioTool } from "./Radio";
@@ -551,6 +551,7 @@ function Minimap({ w, h }: Screen) {
     }
     // what one can take: the boats and the convertibles, where they are now
     if (game?.rideMarks) drawRideMarks(x, game.rideMarks(), mm.px, mm.pz, view, S);
+    drawSurfMark(x, mm.px, mm.pz, view, S);
     // player arrow
     x.save(); x.translate(S / 2, S / 2); x.rotate(Math.PI - mm.heading);
     x.fillStyle = "#e63946"; x.strokeStyle = "#fff"; x.lineWidth = 3;

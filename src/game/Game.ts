@@ -9,7 +9,7 @@ import { buildTown, type Town, type Door } from "./world/town";
 import { loadedCarModelCount } from "./world/carModels";
 import type { CarVisuals } from "./world/carVisuals";
 import { getInterior, type Interior } from "./world/interiors";
-import { OUTDOOR_NPCS, AIRPORT_EXIT, WORLD, BUILDINGS, ROADS, DROPOFF, SEA_Z, BEACH_Z, FOUNTAIN, PARK, SQUARE } from "./world/layout";
+import { OUTDOOR_NPCS, OUTDOOR_GUIDES, AIRPORT_EXIT, WORLD, BUILDINGS, ROADS, DROPOFF, SEA_Z, BEACH_Z, FOUNTAIN, PARK, SQUARE } from "./world/layout";
 import { createCharacter, setBlobShadows, withBackpack, type GameCharacter } from "./characters";
 import { moodOf } from "./characters/mood";
 import { styleRenderer, createStyleFx, type StyleFx } from "./styleScene";
@@ -199,7 +199,7 @@ export class Game implements GameApi {
   private lastHeading = 0;
   private heading = Math.PI;
   private autoPath: [number, number][] | null = null;
-  private autoTarget: { kind: "npc" | "door" | "exit" | "point"; id?: string } | null = null;
+  private autoTarget: { kind: "npc" | "door" | "exit" | "point"; id?: string; rot?: number } | null = null;
   private walkCheck = { time: 0, remaining: Infinity };
   private lastBlockedTap = -Infinity;
   private clock = new THREE.Clock();
@@ -2462,10 +2462,12 @@ export class Game implements GameApi {
 
   guideToPlace(loc: string) {
     const door = this.town.doors.find((d) => d.loc === loc);
-    if (!door || this.zone.id === loc || this.rides.riding) return;
+    const outdoor = OUTDOOR_GUIDES[loc];
+    if ((!door && !outdoor) || this.zone.id === loc || this.rides.riding) return;
     if (this.zone.interior) {
       this.walkTo(this.zone.interior.exit.x, this.zone.interior.exit.z - 0.6, { kind: "exit", id: loc });
-    } else this.walkTo(door.outX, door.outZ, { kind: "point" });
+    } else if (door) this.walkTo(door.outX, door.outZ, { kind: "point" });
+    else if (outdoor) this.walkTo(outdoor.x, outdoor.z, { kind: "point", rot: outdoor.rot });
   }
 
   guideToLighthouse() {
@@ -3423,6 +3425,10 @@ export class Game implements GameApi {
     if (t.kind === "npc" && t.id) this.talkTo(t.id);
     else if (t.kind === "door" && t.id) this.enterDoor(t.id);
     else if (t.kind === "exit") this.exitInterior(t.id ? () => this.guideToPlace(t.id!) : undefined);
+    else if (t.kind === "point" && t.rot !== undefined) {
+      this.vel.set(0, 0, 0);
+      this.heading = t.rot;
+    }
   }
 
   private updateNpcs(dt: number, talking: boolean, mode: ReturnType<ModeRegistry["get"]> | null) {
