@@ -1,7 +1,7 @@
 import { Matrix4, Vector4, type Camera } from "three";
 
 export const FACE_WIDTH = 128;
-export const FACE_SIZES = { road: [3.52, 1.56, 0.47], sea: [6.144, 2.346, 0.25] } as const;
+export const FACE_SIZES = { road: [3.52, 1.72, 0.47], sea: [6.144, 2.346, 0.25] } as const;
 export type FaceMode = keyof typeof FACE_SIZES;
 export const faceHeight = (mode: FaceMode) => FACE_WIDTH * FACE_SIZES[mode][1] / FACE_SIZES[mode][0];
 export const WIDE_BOARD_VIEW = 900;

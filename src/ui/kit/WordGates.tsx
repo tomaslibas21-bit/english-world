@@ -31,7 +31,8 @@ const subscribeWidth = (change: () => void) => {
   return () => query.removeEventListener("change", change);
 };
 
-function typeset(text: string, height: number, phrase: boolean, preferSingleLine: boolean, minSize: number, maxSize: number) {
+function typeset(text: string, mode: FaceMode, phrase: boolean, preferSingleLine: boolean, minSize: number, maxSize: number) {
+  const height = faceHeight(mode);
   const family = globalThis.document?.fonts?.check(`800 32px "${BOARD_FONT}"`, text) ? `"${BOARD_FONT}"` : fallbackFont;
   textMeasure ??= globalThis.document?.createElement("canvas").getContext("2d");
   if (textMeasure) textMeasure.font = `800 100px ${family}`;
@@ -48,7 +49,10 @@ function typeset(text: string, height: number, phrase: boolean, preferSingleLine
   let best = { lines: splits[0], size: 0, scale: 1, lineHeight: 1.06 };
   const metrics = new Map<string, TextMetrics | undefined>();
   for (const lines of splits) {
-    let width = 0, halfInkHeight = 0, precedingDescent = 0, lineHeight = phrase ? 88 : 106;
+    // On road boards, a three-line phrase can use tighter leading when the ink clears.
+    const compact = mode === "road" && lines.length === 3;
+    const minScale = compact ? 0.83 : 0.88;
+    let width = 0, halfInkHeight = 0, precedingDescent = 0, lineHeight = compact ? 75 : phrase ? 88 : 106;
     for (const line of lines) {
       if (!metrics.has(line)) metrics.set(line, textMeasure?.measureText(line));
       const m = metrics.get(line);
@@ -64,9 +68,9 @@ function typeset(text: string, height: number, phrase: boolean, preferSingleLine
     }
     const fitWidth = (FACE_WIDTH - 4) * 100 / width;
     const inkHeight = Math.max(lineHeight, 2 * halfInkHeight) + (lines.length - 1) * lineHeight;
-    const size = Math.min(maxSize, height * 100 / inkHeight, fitWidth / 0.88);
+    const size = Math.min(maxSize, height * 100 / inkHeight, fitWidth / minScale);
     if (size > best.size || (size === best.size && lines.length < best.lines.length)) {
-      best = { lines, size, scale: Math.max(0.88, Math.min(1, fitWidth / size)), lineHeight: lineHeight / 100 };
+      best = { lines, size, scale: Math.max(minScale, Math.min(1, fitWidth / size)), lineHeight: lineHeight / 100 };
     }
     if (preferSingleLine && lines.length === 1 && size >= 20) break;
   }
@@ -93,7 +97,7 @@ export function GateLabels({ mode, prompt, gateId, steer, answeredLane }: {
   mode: FaceMode; prompt: Prompt; gateId: number; steer?: (lane: number) => void; answeredLane?: number;
 }) {
   const wide = useSyncExternalStore(subscribeWidth, wideBoard, wideBoard);
-  const layouts = useMemo(() => prompt.options.map((text) => typeset(text, faceHeight(mode), !!prompt.phrase, !prompt.phrase && mode === "sea" && wide,
+  const layouts = useMemo(() => prompt.options.map((text) => typeset(text, mode, !!prompt.phrase, !prompt.phrase && mode === "sea" && wide,
     !prompt.phrase && mode === "sea" && !wide ? 21 : 0, prompt.phrase ? (text.length > 24 ? 25 : 29) : 32)),
     [prompt, mode, wide]);
   return <div className="road-gates" data-gate-id={gateId} lang={prompt.gap || prompt.phrase ? "en" : "lt"}>

@@ -258,6 +258,17 @@ async function checkLongestBoards(run, game, state) {
     const lineCounts = await run.overlay.locator(".road-gate").evaluateAll((boards) =>
       boards.map((board) => board.querySelectorAll(":scope > span").length));
     assert.ok(lineCounts.includes(3) && lineCounts.every((count) => count <= 3));
+    if (game === "road" && run.page.viewportSize().width === 390) {
+      const phrase = "The sun went down as we landed.";
+      const options = [phrase, ...longestPhrases.slice(1)];
+      assert.ok(state.gateDistance / state.speed >= 1.8, "the learner still has time to steer");
+      await setOptions(options);
+      await checkPhraseBoards(run, game, { ...state, gates: options });
+      const board = run.overlay.locator(".road-gate").first();
+      assert.equal(await board.locator(":scope > span").count(), 3);
+      assert.ok(await board.evaluate((label) => Number.parseFloat(getComputedStyle(label).fontSize) >= 22),
+        "the three-line phrase uses at least 22 px on the local board face");
+    }
   } finally {
     await setOptions(state.gates);
   }
@@ -361,6 +372,10 @@ async function testGame(browser, game, size, budget) {
       await run.answer(true);
       earned.set(first.f, `${first.f} · ${first.p}`);
       await run.reveal(first, from);
+      if (game === "road") {
+        const right = run.overlay.locator('.road-feedback .kit-feedback[data-feedback="right"]');
+        assert.ok(await right.isVisible(), "the right badge is visible when the muted phrase starts");
+      }
       await checkKaraokeTiming(run, first, previousGate);
     }],
     ["wrong answer keeps the retry badge beside the phrase throughout playback", async () => {
@@ -368,6 +383,13 @@ async function testGame(browser, game, size, budget) {
       missed = phraseFor(state);
       const from = run.mp3Urls.length;
       await run.answer(false);
+      if (game === "road") {
+        const retry = run.overlay.locator('.road-feedback .kit-feedback[data-feedback="retry"]');
+        await retry.waitFor();
+        await run.step(12);
+        assert.ok(await retry.isVisible(), "the retry badge remains visible just before the correction");
+        assert.equal(await run.karaoke.isVisible(), false);
+      }
       await run.reveal(missed, from);
       await checkKaraokeTiming(run, missed, state.registration.gateId, 2, true);
     }],

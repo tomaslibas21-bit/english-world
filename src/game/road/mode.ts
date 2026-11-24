@@ -315,8 +315,11 @@ export class RoadMode {
       if ("phrase" in run.reveal) {
         run.feedback = 0;
         const feedback = useRoad.getState().feedback;
-        karaoke.road.show(run.reveal.phrase, () => useRoad.setState({ feedback: undefined }));
-        if (feedback) useRoad.setState({ feedback: { ...feedback, correcting: true } });
+        const correction = feedback && { ...feedback, correcting: true };
+        useRoad.setState({ feedback: correction });
+        karaoke.road.show(run.reveal.phrase, () => {
+          if (useRoad.getState().feedback === correction) useRoad.setState({ feedback: undefined });
+        });
       } else this.play(run.reveal.clip);
       run.reveal = undefined;
     }
@@ -364,7 +367,11 @@ export class RoadMode {
       let correction = 0;
       if (prompt.phrase) {
         if (correct) karaoke.road.show(prompt.phrase);
-        else { audio.stop(); run.reveal = { phrase: prompt.phrase, in: WRONG_PHRASE_DELAY }; }
+        else {
+          karaoke.road.stop();
+          audio.stop();
+          run.reveal = { phrase: prompt.phrase, in: WRONG_PHRASE_DELAY };
+        }
       } else if (!correct) this.play(prompt.word.clip);
       if (prompt.gap) {
         if (correct) this.play(prompt.gap.clip);
