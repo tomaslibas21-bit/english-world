@@ -1,0 +1,1361 @@
+// Run by basename against the local Vite dev server. SHOTS_DIR optionally saves PNGs by viewport.
+import assert from "node:assert/strict";
+import { mkdir } from "node:fs/promises";
+import { join } from "node:path";
+
+const base = new URL(process.env.WORLD_TEST_URL || "http://127.0.0.1:8310");
+assert(["localhost", "127.0.0.1", "[::1]"].includes(base.hostname), "Use a loopback WORLD_TEST_URL");
+const storage = process.env.WORLD_STORAGE || "english-world";
+const pc = storage === "puerto-colibri";
+const learner = process.env.WORLD_LEARNER || (pc ? "en" : "lt");
+assert(pc ? ["en", "lt"].includes(learner) : learner === "lt", "WORLD_LEARNER must match the edition");
+const key = `${storage}-progress-v1`;
+const shots = process.env.SHOTS_DIR;
+const sizes = [[390, 844], [1280, 800]];
+const moves = ["jacks", "toes", "squats", "circles", "run", "reach", "lunges", "pushups"];
+const calls = [...moves, "toes", "jacks"];
+const againCalls = [...moves.slice(2), ...moves.slice(0, 2), "circles", "squats"];
+const slots = [1, 3, 2, 4, 3, 1, 4, 2, 1, 3];
+const arrows = ["ArrowLeft", "ArrowUp", "ArrowDown", "ArrowRight"];
+const glyphs = ["←", "↑", "↓", "→"];
+const zero = { completed: 0, firstTry: 0, wrong: 0, said: 0 };
+const baseline = 3;
+const situation = "s35-gym";
+const noHud = ".toolbar, .ride-menu, .joy, .jump-btn, .act-btn, .minimap, .objective-card, .prompt";
+const mat = { zone: "gym", x: -6.4, z: 2.4, rot: Math.PI / 2 };
+const progress = {
+  version: 1,
+  profile: {
+    name: "Test", surname: "Tester", gender: "f", lookId: "f1",
+    look: { skin: "#f2d3bd", hair: { style: "short", color: "#5a3a25" }, top: "#2a9d8f", bottom: "#264653" },
+  },
+  settings: { v: 6, play: "town", quality: "low", scenes: false, slowVoice: false, volume: 0.8, sounds: 0, cameraFollow: true },
+  sits: {}, phrases: {}, seenIntro: {}, started: 1, place: mat, play: { games: { gym: baseline } },
+  coach: { done: true, run: true, view: true, seen: { list: true } },
+};
+
+// Authored fixtures. Expected wording and audio requests never come from the round snapshot or rendered captions.
+const mh = {
+  target: "en-US", voice: "g_jordan", legacyVoice: "af_bella", speed: 1, male: false, trainer: "jordan",
+  place: "Harbor Fitness", card: "Dar vienas pakartojimas", title: "One More Rep",
+  sceneStart: "Pradėti", taskComplete: "Užduotis įvykdyta!",
+  entry: { startLabel: "Treniruotis su Jordan", mapLabel: "Raskite treniruočių kilimėlį – ten laukia trenerė Jordan.", listAction: "Rasti treniruočių kilimėlį" },
+  ui: {
+    readyTitle: "Treniruotė su Jordan", readyTouch: "Klausykite ir bakstelėkite tinkamą paveikslėlį.",
+    readyKeys: "Klausykite ir pasirinkite judesį rodykle arba klavišais 1–4.", start: "Pradėti",
+    progress: (i) => `Judesys ${i} iš 10`, exit: "Išeiti iš treniruotės", replay: "Klausyti dar kartą",
+    reveal: "Rodyti žodžius", choices: "Pasirinkti judesį", scoreTitle: "Treniruotė baigta",
+    completed: "Atlikti judesiai", firstTry: "Teisingai iš pirmo karto", again: "Dar kartą", done: "Grįžti į sporto klubą",
+  },
+  labels: {
+    jacks: "Šoktelėti skėčiant kojas", toes: "Paliesti kojų pirštus", squats: "Pritūpti", circles: "Sukti rankas ratu",
+    run: "Bėgti vietoje", reach: "Ištiesti rankas aukštyn", lunges: "Daryti įtūpstą", pushups: "Daryti atsispaudimą",
+  },
+  speech: {
+    mic: "Pasakyti garsiai", micStop: "Nebeklausyti", hit: "Puikiai pasakyta! +1",
+    miss: "Beveik! Galite bandyti dar", stat: "Pasakyta garsiai",
+  },
+  dialogue: {
+    howareyou: "Good, thanks. And you?", new: "Hi, I'm new here!", plan: "A day pass, please.",
+    form: "Here you go.", pay: "Card, please.", lockers: "No, I'm already dressed.",
+    warmup: "The bike, please.", feel_q: "Great!", machine: "Is this machine free?", sets: "How many sets should I do?",
+    rep: "Done!", spot: "Can you spot me?", breath: "I'm out of breath!", breath_q: "I'm out of breath!",
+    next: "See you tomorrow!", closing: "Thanks, bye!",
+  },
+  lines: {
+    gy_jacks: ["Jumping jacks!", "Šuoliukai žergtai!", "Per šuoliuką praskėskite kojas ir pakelkite rankas virš galvos!"],
+    gy_toes: ["Touch | your | toes!", "Palieskite | savo | kojų pirštus!", "Pasilenkite ir palieskite kojų pirštus!"],
+    gy_squats: ["Do | a | squat!", "Padarykite | — | pritūpimą!", "Pritūpkite!"],
+    gy_circles: ["Make | arm circles!", "Darykite | ratus rankomis!", "Ištieskite rankas į šonus ir sukite jas ratu!"],
+    gy_run: ["Run | in place!", "Bėkite | vietoje!", "Bėkite vietoje!"],
+    gy_reach: ["Reach | up!", "Tieskitės | aukštyn!", "Ištieskite rankas virš galvos!"],
+    gy_lunges: ["Do | a | lunge!", "Padarykite | — | įtūpstą!", "Ženkite pirmyn ir padarykite įtūpstą!"],
+    gy_pushups: ["Do | a | push-up!", "Padarykite | — | atsispaudimą!", "Padarykite atsispaudimą!"],
+    gy_intro: ["Move | with | me!", "Judėkite | su | manimi!", "Pajudėkime kartu!"],
+    gy_right_a: ["That's it!", "Štai taip!", "Štai taip!"],
+    gy_right_b: ["Nice work!", "Puikiai padirbėjote!", "Puikiai!"],
+    gy_retry: ["Let's try | again.", "Pabandykime | dar kartą.", "Pabandykime dar kartą."],
+    gy_end: ["We | did | it!", "Mes | padarėme | tai!", "Mums pavyko!"],
+  },
+};
+
+async function fixtureFor(page, manifests) {
+  if (!pc) return { ...mh, voice: manifests.has("audio") ? mh.legacyVoice : mh.voice };
+  // These imports only run once the PC queue lands its authored workout. Read the English source and
+  // the Lithuanian table separately so an English rendering cannot supply its own LT expectations.
+  const source = await page.evaluate(async ({ helper }) => {
+    const load = (path) => import(new URL(path, document.baseURI).href);
+    const { EDITION } = await load("src/edition.ts");
+    if (EDITION.id !== "es" || EDITION.helper !== helper) throw new Error(`Expected Spanish/${helper}, got ${EDITION.id}/${EDITION.helper}`);
+    const [{ GYM_LINES }, { GYM_UI, GYM_MOVE_LABELS }, { GYM_ENTRY }] = await Promise.all([
+      load("src/editions/es/content/gym-lines.ts"),
+      load("src/editions/es/content/gym.ts"),
+      load("src/editions/es/content/gym-entry.ts"),
+    ]);
+    const table = helper === "lt" ? (await load("src/editions/es-lt/tables/s35-gym.json?import")).default : null;
+    const shared = helper === "lt" ? (await load("src/editions/es-lt/tables/_shared.json?import")).default : null;
+    function localized(text) {
+      if (!table) return text;
+      const result = table.text[text] ?? shared.text[text];
+      if (!result || result === text) throw new Error(`Missing Lithuanian gym UI fixture for ${text}`);
+      return result;
+    }
+    const translate = (record) => Object.fromEntries(Object.entries(record).map(([id, text]) => [id, localized(text)]));
+    const { progress, ...ui } = GYM_UI;
+    return {
+      entry: translate({ startLabel: GYM_ENTRY.startLabel, mapLabel: GYM_ENTRY.mapLabel, listAction: GYM_ENTRY.listAction }),
+      trainer: GYM_ENTRY.npc,
+      ui: translate(ui),
+      progressPattern: localized(progress(901, 902).replace("901", "{current}").replace("902", "{total}")),
+      labels: translate(GYM_MOVE_LABELS),
+      lines: Object.fromEntries(Object.entries(GYM_LINES).map(([id, [src]]) => {
+        const lt = table?.sent[`${src.en}␟${src.lt}␟${src.nat}`];
+        if (table && (!lt || lt.nat === src.nat)) throw new Error(`Missing distinct Lithuanian sentence fixture for ${id}`);
+        return [id, [src.en, lt?.gloss ?? src.lt, lt?.nat ?? src.nat, src.say]];
+      })),
+    };
+  }, { helper: learner });
+  assert.equal(source.trainer, "jordan", "PC's existing s35 NPC is Mónica (jordan)");
+  return {
+    ...source, target: "es-MX", voice: "es_jordan", speed: 1, male: false, place: "Gimnasio Colibrí",
+    card: learner === "lt" ? "Dar vieną!" : "One more!", title: "¡Una más!",
+    sceneStart: learner === "lt" ? mh.sceneStart : "Start",
+    taskComplete: learner === "lt" ? mh.taskComplete : "Task completed!",
+    ui: { ...source.ui, progress: (i) => source.progressPattern.replace("{current}", i).replace("{total}", "10") },
+    speech: learner === "lt" ? mh.speech : {
+      mic: "Say it aloud", micStop: "Stop listening", hit: "Well said! +1", miss: "Almost! You can try again", stat: "Said aloud",
+    },
+    dialogue: {
+      howareyou: "Bien, gracias. ¿Y usted?", new: "Hola, es mi primera vez aquí.", plan: "Una visita, por favor.",
+      form: "Listo.", pay: "Con tarjeta, por favor.", lockers: "No, ya vengo cambiada.",
+      warmup: "La bici, por favor.", feel_q: "¡Muy bien!", machine: "¿Está libre esta máquina?", sets: "¿Cuántas series hago?",
+      rep: "¡Listo! ¡Lo logré!", spot: "¿Me puede ayudar con la barra?", breath: "¡Me falta el aire!", breath_q: "¡Me falta el aire!",
+      next: "¡Nos vemos mañana!", closing: "¡Gracias, adiós!",
+    },
+  };
+}
+
+function installControls({ key, progress, recognition, pc, storage }) {
+  localStorage.setItem(key, JSON.stringify(progress));
+  if (pc) localStorage.setItem(`${storage}-variety`, "default");
+  sessionStorage.setItem("ew-play-now", "1");
+  let now = 1000;
+  let seed = 20261122;
+  Math.random = () => ((seed = (Math.imul(1664525, seed) + 1013904223) >>> 0) / 4294967296);
+  performance.now = () => now;
+  const frames = new Map();
+  let frame = 0;
+  window.requestAnimationFrame = (fn) => { frames.set(++frame, fn); return frame; };
+  window.cancelAnimationFrame = (id) => { frames.delete(id); };
+  window.__step = async (n, dt = 50) => {
+    for (let i = 0; i < n; i++) {
+      now += dt;
+      window.__gymAudio?.tick(now);
+      await Promise.resolve(); // deliver the recording result before the game consumes the next frame
+      for (const [id, fn] of [...frames]) if (frames.delete(id)) fn(now);
+    }
+    return now;
+  };
+
+  delete window.SpeechRecognition;
+  delete window.webkitSpeechRecognition;
+  window.__gymMic = { starts: [], active: false, aborts: 0 };
+  if (recognition) {
+    let active, previous;
+    window.SpeechRecognition = class {
+      start() {
+        active = this;
+        previous = { recognizer: this, onresult: this.onresult };
+        window.__gymMic.starts.push(this.lang);
+        window.__gymMic.active = true;
+        this.onstart?.();
+      }
+      abort() {
+        if (active === this) {
+          active = null;
+          window.__gymMic.active = false;
+        }
+        window.__gymMic.aborts++;
+        this.onend?.();
+      }
+    };
+    const result = (transcript) => ({ resultIndex: 0, results: [Object.assign([{ transcript }], { isFinal: true })] });
+    window.__sayItHear = (transcript) => {
+      if (!active) throw new Error("SpeechRecognition is idle");
+      const recognizer = active;
+      recognizer.onspeechstart?.();
+      recognizer.onresult?.(result(transcript));
+      recognizer.onspeechend?.();
+    };
+    window.__gymLateHear = (transcript) => previous.onresult?.call(previous.recognizer, result(transcript));
+  }
+  // No device voice can run. A dialogue with a missing recording offers its real reading control.
+  window.__gymSynth = [];
+  speechSynthesis.speak = (utterance) => {
+    window.__gymSynth.push({ at: now, text: utterance.text, gym: !!window.__gym });
+    queueMicrotask(() => utterance.onerror?.());
+  };
+}
+
+function observeAudio({ entries, fixture, audible }) {
+  const { audio } = window.__ew;
+  const original = audio.play.bind(audio);
+  const clipDuration = audio.clipDuration.bind(audio);
+  const texts = new Map(entries);
+  const pending = new Map();
+  const signals = new WeakSet();
+  const requests = [];
+  const fixtureAudio = window.__gymAudio = {
+    requests, next: null, tick(at) {
+      for (const [request, finish] of pending) if (at >= request.releaseAt) finish(true);
+    },
+  };
+  audio.clipDuration = (voice, speed, text) => {
+    if (voice !== fixture.voice || speed !== fixture.speed || !texts.has(text)) return clipDuration(voice, speed, text);
+    if (fixtureAudio.next?.text === text) return fixtureAudio.next.manifest;
+    return audible ? 0.5 : clipDuration(voice, speed, text);
+  };
+  audio.play = (voice, speed, text, options) => {
+    if (!window.__gym) return original(voice, speed, text, options);
+    const trainerRecording = voice === fixture.voice && speed === fixture.speed && texts.has(text)
+      && options?.recordingOnly === true && options?.optional === true;
+    const override = trainerRecording && fixtureAudio.next?.text === text ? fixtureAudio.next : null;
+    if (override) fixtureAudio.next = null;
+    const signal = options?.signal;
+    const request = {
+      text, voice, speed, optional: options?.optional, recordingOnly: options?.recordingOnly,
+      slow: options?.slow, male: options?.male,
+      freshSignal: signal instanceof AbortSignal && !signal.aborted && !signals.has(signal),
+      at: performance.now(), mic: window.__gymMic.active, chooseEnabled: document.querySelectorAll(".gym-choices button:enabled").length,
+      kind: override?.stall ? "stall" : audible && trainerRecording ? "gate" : "real",
+    };
+    requests.push(request);
+    if (signal instanceof AbortSignal) signals.add(signal);
+    signal?.addEventListener("abort", () => { request.aborted = performance.now(); }, { once: true });
+    const settled = (ok) => {
+      request.ended = performance.now();
+      request.ok = ok;
+      return ok;
+    };
+    if (request.kind === "real") return original(voice, speed, text, options).then(settled);
+    request.releaseAt = override?.stall ? null : request.at + (override?.ms ?? 500);
+    return new Promise((resolve) => {
+      const finish = (ok) => {
+        pending.delete(request);
+        signal?.removeEventListener("abort", abort);
+        resolve(settled(ok));
+      };
+      const abort = () => finish(false);
+      if (!override?.stall) pending.set(request, finish);
+      if (signal?.aborted) abort();
+      else signal?.addEventListener("abort", abort, { once: true });
+    });
+  };
+}
+
+const sentence = (fixture, id) => {
+  const [target, gloss, natural, say] = fixture.lines[id];
+  const units = target.split(" | ");
+  return { target: units.join(" "), units, gloss: gloss.split(" | "), natural, say: say ?? units.join(" ") };
+};
+const distance = (a, b) => Math.hypot(...a.map((value, i) => value - b[i]));
+const expectedOptions = (move, slot) => {
+  const options = [];
+  for (const [i, offset] of [0, 1, 3, 5].entries()) options[(slot - 1 + i) % 4] = moves[(moves.indexOf(move) + offset) % moves.length];
+  return options;
+};
+
+function captureRigs(trainerId) {
+  const { game } = window.__ew;
+  const trainer = game.npcs.find(({ id }) => id === trainerId);
+  const transform = (node) => ({ position: node.position.toArray(), rotation: node.rotation.toArray().slice(0, 3) });
+  window.__gymActors = { player: game.player, trainer: trainer.ch, trainerId };
+  return {
+    ...transform(trainer.ch.root), visible: trainer.ch.root.visible, anim: trainer.ch.anim,
+    joints: Object.fromEntries(["body", "armL", "armR", "legL", "legR", "shinL", "shinR"].map((id) => [id, transform(trainer.ch.joint(id))])),
+  };
+}
+
+function sampleRigs(project) {
+  const { game } = window.__ew;
+  const { player, trainer, trainerId } = window.__gymActors;
+  const { cam } = game.rig;
+  const viewport = game.renderer.domElement.getBoundingClientRect();
+  const point = player.root.position.clone();
+  const pixels = (p) => {
+    p.project(cam);
+    return [viewport.left + (p.x + 1) * viewport.width / 2, viewport.top + (1 - p.y) * viewport.height / 2, p.z];
+  };
+  const actor = (ch, live) => {
+    ch.root.updateWorldMatrix(true, true);
+    const joints = Object.fromEntries(["body", "head", "armL", "armR", "foreL", "foreR", "legL", "legR", "shinL", "shinR"].map((id) => {
+      const joint = ch.joint(id);
+      return [id, {
+        angle: joint.rotation.toArray().slice(0, 3),
+        local: joint.position.toArray(),
+        world: joint.getWorldPosition(point).toArray(),
+      }];
+    }));
+    // The toe is carried by the shin bone on both character implementations.
+    const foot = (side) => {
+      const leg = ch.joint("leg" + side), shin = ch.joint("shin" + side);
+      const scale = ch.height / 1.75;
+      return shin.localToWorld(point.set(0, -(leg.position.y + shin.position.y), 0.185 * scale)).toArray();
+    };
+    const feet = [foot("L"), foot("R")];
+    const meshes = [];
+    const silhouette = { left: Infinity, right: -Infinity, top: Infinity, bottom: -Infinity, clipped: false };
+    ch.root.traverse((mesh) => { if (mesh.isMesh) meshes.push(mesh.uuid); });
+    if (project) ch.root.traverseVisible((mesh) => {
+      if (!mesh.isMesh || !mesh.material.visible) return;
+      // Project the deformed mesh so an arm or shoe hidden by a card cannot pass on approximate head coordinates.
+      for (let i = 0; i < mesh.geometry.attributes.position.count; i++) {
+        mesh.getVertexPosition(i, point).applyMatrix4(mesh.matrixWorld);
+        const [x, y, z] = pixels(point);
+        silhouette.left = Math.min(silhouette.left, x);
+        silhouette.right = Math.max(silhouette.right, x);
+        silhouette.top = Math.min(silhouette.top, y);
+        silhouette.bottom = Math.max(silhouette.bottom, y);
+        silhouette.clipped ||= z < -1 || z > 1;
+      }
+    });
+    return {
+      same: ch === live, visible: ch.root.visible, joints, feet, meshes,
+      root: ch.root.position.toArray(), yaw: ch.root.rotation.y, anim: ch.anim,
+      ...(project ? {
+        silhouette, shoes: feet.map((p) => pixels(point.fromArray(p))),
+        face: pixels(ch.joint("head").localToWorld(point.set(0, ch.height * 0.09, ch.height * 0.08))),
+      } : {}),
+    };
+  };
+  return {
+    at: performance.now(), phase: window.__gym?.state()?.phase, pose: window.__gym?.state()?.pose,
+    camera: game.rig.mode,
+    view: [...cam.matrixWorld.elements, ...cam.projectionMatrix.elements].map((value) => Math.round(value * 1e6) / 1e6),
+    calls: game.renderer.info.render.calls, render: window.__gymRender?.last,
+    actors: [actor(player, game.player), actor(trainer, game.npcs.find(({ id }) => id === trainerId)?.ch)],
+  };
+}
+
+function observeDraws() {
+  const { game } = window.__ew;
+  const { renderer, scene } = game;
+  const originalRender = renderer.render;
+  const originalTarget = renderer.setRenderTarget;
+  const restore = [];
+  const probe = window.__gymRender = { last: null, stop() {
+    for (const undo of restore) undo();
+    renderer.render = originalRender;
+    renderer.setRenderTarget = originalTarget;
+  } };
+  const currentFrame = () => {
+    if (probe.last?.at !== performance.now()) probe.last = { at: performance.now(), passes: 0, offscreen: 0, drawn: [] };
+    return probe.last;
+  };
+  renderer.render = function (...args) {
+    currentFrame().passes++;
+    return originalRender.apply(this, args);
+  };
+  renderer.setRenderTarget = function (target, ...args) {
+    if (target) currentFrame().offscreen++;
+    return originalTarget.apply(this, [target, ...args]);
+  };
+  scene.traverse((node) => {
+    if (!node.isMesh) return;
+    const original = node.onBeforeRender;
+    node.onBeforeRender = function (...args) {
+      currentFrame().drawn.push(node.uuid);
+      return original.apply(this, args);
+    };
+    restore.push(() => { node.onBeforeRender = original; });
+  });
+}
+
+function measureLayout() {
+  const overlay = document.querySelector(".gym-overlay");
+  const box = (el) => el.getBoundingClientRect().toJSON();
+  const inside = (r) => r.left >= -0.5 && r.right <= innerWidth + 0.5 && r.top >= -0.5 && r.bottom <= innerHeight + 0.5;
+  const overlaps = (a, b) => a.left < b.right - 0.5 && a.right > b.left + 0.5 && a.top < b.bottom - 0.5 && a.bottom > b.top + 0.5;
+  const shown = (el) => el.checkVisibility({ visibilityProperty: true, opacityProperty: true }) && el.getBoundingClientRect().width > 0;
+  const controls = [...overlay.querySelectorAll("button")].filter(shown).map((el) => {
+    const bounds = box(el);
+    const hit = document.elementFromPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2);
+    return {
+      name: el.getAttribute("aria-label") ?? el.innerText.trim(), bounds,
+      hit: el.contains(hit), accessible: !el.closest('[aria-hidden="true"], [inert]') && el.tabIndex >= 0,
+      inside: inside(bounds), size: [el.offsetWidth, el.offsetHeight],
+      overflow: el.scrollWidth - el.clientWidth, slot: el.dataset.slot,
+    };
+  });
+  const boxes = [...overlay.querySelectorAll(".gym-header-bar, .gym-cue, .gym-ready, .gym-dock, .mode-score-card, .say-it-message:not(:empty)")].filter(shown);
+  const obstacles = boxes.filter((el) => !el.matches(".say-it-message"));
+  const problems = boxes.flatMap((el, i) => {
+    const bounds = box(el);
+    const issues = boxes.slice(i + 1).filter((other) => !el.contains(other) && !other.contains(el) && overlaps(bounds, box(other)))
+      .map((other) => other.className);
+    if (el.matches(".say-it-message")) issues.push(...controls.filter((b) => overlaps(bounds, b.bounds)).map((b) => b.name));
+    if (!inside(bounds) || el.scrollWidth > el.clientWidth + 1) issues.push("overflow");
+    return issues.length ? [{ el: el.className, bounds, issues }] : [];
+  });
+  for (const [i, button] of controls.entries()) {
+    for (const other of controls.slice(i + 1)) {
+      if (overlaps(button.bounds, other.bounds)) problems.push({ button: button.name, other: other.name });
+    }
+  }
+  return {
+    width: innerWidth, height: innerHeight, overflow: document.documentElement.scrollWidth - innerWidth,
+    controls, problems, blocked: obstacles.map(box),
+    free: [box(overlay.querySelector(".gym-header")).bottom, box(overlay.querySelector(".gym-bottom")).top],
+  };
+}
+
+function checkMotion(moves, baseline, first, peak, description) {
+  for (let i = 0; i < 2; i++) {
+    const move = moves[i];
+    const neutral = baseline.actors[i], early = first.actors[i], actor = peak.actors[i];
+    const { joints: j, feet } = actor;
+    const tilt = (joint, axis) => Math.abs(j[joint].angle[axis] - neutral.joints[joint].angle[axis]);
+    const cycle = (joint) => distance(j[joint].angle, early.joints[joint].angle);
+    const footGap = ({ feet: [l, r] }) => Math.hypot(l[0] - r[0], l[2] - r[2]);
+    const nearFloor = feet.every((foot, side) => Math.abs(foot[1] - neutral.feet[side][1]) < 0.09);
+    const bodyDrop = neutral.joints.legL.world[1] - j.legL.world[1];
+    const shoulderDrop = neutral.joints.armL.world[1] - j.armL.world[1];
+    const torso = j.armL.world.map((value, axis) => value - j.legL.world[axis]);
+    const evidence = {
+      jacks: tilt("armL", 2) > 0.12 && tilt("legL", 2) > 0.12 && footGap(actor) > footGap(neutral) + 0.20,
+      toes: tilt("body", 0) > 0.75 && shoulderDrop > 0.15 && nearFloor,
+      squats: tilt("shinL", 0) > 0.50 && bodyDrop > 0.16 && nearFloor,
+      circles: tilt("armL", 2) > 0.12 && cycle("armL") > 0.12,
+      run: (tilt("legL", 0) > 0.12 || tilt("shinL", 0) > 0.12) && cycle("legL") > 0.12 && cycle("legR") > 0.12,
+      reach: tilt("armL", 0) > 0.75 && Math.abs(footGap(actor) - footGap(neutral)) < 0.06 && nearFloor,
+      lunges: tilt("shinL", 0) > 0.5 && bodyDrop > 0.16 && footGap(actor) > footGap(neutral) + 0.20 && nearFloor,
+      pushups: tilt("body", 0) > 1.0 && shoulderDrop > 0.65 && Math.abs(torso[1]) < Math.hypot(torso[0], torso[2]) * 0.4
+        && nearFloor && cycle("foreL") > 0.12 && early.joints.armL.world[1] - j.armL.world[1] > 0.04,
+    };
+    assert(actor.same && actor.visible && early.same, description + " uses the original " + (i ? "trainer" : "learner") + " rig");
+    assert.deepEqual(actor.meshes, neutral.meshes, description + " adds zero actor meshes");
+    assert(evidence[move], description + " " + move + " joints " + JSON.stringify({ i, bodyDrop, shoulderDrop, torso, neutral, early, peak: actor }));
+  }
+}
+
+function checkNeutral(neutral, sample, description) {
+  assert.equal(sample.pose, null, description + " has no active pose");
+  for (const [i, actor] of sample.actors.entries()) {
+    const before = neutral.actors[i];
+    assert(actor.same && actor.visible && actor.anim === "idle" && Math.abs(actor.yaw - before.yaw) < 0.03,
+      description + " original idle actor " + JSON.stringify(actor));
+    for (const joint of ["body", "armL", "armR", "legL", "legR", "shinL", "shinR"]) {
+      const { angle, local } = actor.joints[joint];
+      const expected = before.joints[joint];
+      assert(distance(angle, expected.angle) < 0.12 && distance(local, expected.local) < 0.04,
+        description + " neutral " + joint + " " + JSON.stringify({ i, expected, angle, local }));
+    }
+  }
+}
+
+async function journey(browser, [width, height], audible) {
+  const touch = width === 390;
+  const size = width + "x" + height;
+  const label = size + (audible ? " audible" : " silent");
+  const context = await browser.newContext({
+    viewport: { width, height }, isMobile: touch, hasTouch: touch, deviceScaleFactor: touch ? 2 : 1,
+    serviceWorkers: "block",
+  });
+  const errors = [];
+  const bootWarnings = [];
+  const blocked = [];
+  const manifests = new Set();
+  await context.route("**/*", async (route) => {
+    const url = new URL(route.request().url());
+    if (url.origin !== base.origin) {
+      blocked.push(url.href);
+      return route.abort("blockedbyclient");
+    }
+    const manifest = /\/(audio(?:-v2|-es)?)\/(manifest|repair-versions)\.json$/.exec(url.pathname);
+    if (manifest) {
+      if (manifest[2] === "manifest") manifests.add(manifest[1]);
+      return route.fulfill({ json: {} });
+    }
+    if (/\/(?:audio|audio-v2|audio-es)\/[^/]+\.mp3$/.test(url.pathname)) {
+      blocked.push(url.href);
+      return route.abort("blockedbyclient");
+    }
+    return route.continue();
+  });
+  try {
+    await context.addInitScript(installControls, { key, progress, recognition: audible, pc, storage });
+    const page = await context.newPage();
+    page.setDefaultTimeout(7000);
+    let seeded = false;
+    page.on("pageerror", (error) => errors.push("pageerror: " + error.stack));
+    page.on("console", (message) => {
+      const type = message.type(), text = message.text();
+      const diagnostic = type + ": " + text + " " + message.location().url;
+      // Game creates Three's existing Clock at boot, before any map, picker or gym action.
+      if (!seeded && type === "warning" && text === "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.") {
+        bootWarnings.push(diagnostic);
+      } else if (type === "error" || type === "warning") errors.push(diagnostic);
+    });
+    page.on("response", (response) => {
+      if (response.status() >= 400) errors.push("HTTP " + response.status() + " " + response.url());
+    });
+
+    let stepName = "load seeded gym";
+    const read = () => page.evaluate(() => window.__gym?.state() ?? null);
+    const audio = () => page.evaluate(() => window.__gymAudio.requests);
+    const micState = () => page.evaluate(() => window.__gymMic);
+    const now = () => page.evaluate(() => performance.now());
+    const step = (n = 1, dt = 50) => page.evaluate(([n, dt]) => window.__step(n, dt), [n, dt]);
+    const diagnostics = async () => {
+      const last = await page.evaluate((key) => {
+        const { game, store, audio } = window.__ew ?? {};
+        const s = store?.getState();
+        const box = document.querySelector(".gym-overlay, .ended-box, .convo, .sheet, .hud");
+        return {
+          at: performance.now(), gym: window.__gym?.state(), phase: box?.getAttribute("data-phase"),
+          dom: box?.innerText.slice(0, 1100), enabledChoices: document.querySelectorAll(".gym-choices button:enabled").length,
+          screen: s?.screen, zone: game?.zone?.id, camera: game?.rig.mode, position: game?.player.root.position.toArray(),
+          prompt: s?.hud.prompt, panel: s?.hud.panel, mode: s?.hud.modeScreen, fade: s?.hud.fade,
+          conversation: s?.conv.active ? { phase: s.conv.phase, step: s.conv.stepId } : null,
+          count: s?.progress.play?.games.gym, saved: JSON.parse(localStorage.getItem(key) ?? "null")?.play?.games.gym,
+          volume: audio?.volume, audio: window.__gymAudio?.requests.slice(-5), mic: window.__gymMic,
+        };
+      }, key).catch((error) => ({ diagnostics: error.message }));
+      return JSON.stringify({ last, errors, blocked, bootWarnings });
+    };
+    const wait = async (description, predicate, { frames = 1, timeout = 15000, attempts = 180 } = {}) => {
+      stepName = description;
+      const deadline = Date.now() + timeout;
+      for (let i = 0; i < attempts && Date.now() < deadline; i++) {
+        if (await predicate()) return;
+        // Each evaluation yields to React, imports, ResizeObserver and native speech/save callbacks.
+        await step(frames);
+      }
+      assert.fail(description);
+    };
+    const waitNative = async (description, predicate) => {
+      stepName = description;
+      const deadline = Date.now() + 5000;
+      do {
+        if (await predicate()) return;
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      } while (Date.now() < deadline);
+      assert.fail(description);
+    };
+    const check = (description, detail) => console.log("ok", label, description, JSON.stringify(detail));
+    const overlay = page.locator(".gym-overlay");
+    const action = (id) => overlay.locator('button[data-gym-action="' + id + '"]');
+    const choices = overlay.locator(".gym-choices button[data-slot][data-move]");
+    const tile = (move) => choices.and(page.locator('[data-move="' + move + '"]'));
+    const enabled = choices.and(page.locator(":enabled"));
+    const scoreCard = page.locator(".gym-result .mode-score-card");
+    const bonus = page.locator(".gym-overlay .say-it");
+    const mic = bonus.locator(".say-it-mic");
+    const caption = overlay.locator("[data-gym-target]");
+    const prompt = page.locator("button.prompt");
+    const rig = (project = false) => page.evaluate(sampleRigs, project);
+    const press = (locator) => touch ? locator.tap() : locator.click();
+    const seenShots = new Set();
+    const shot = async (name) => {
+      assert(!seenShots.has(name), "duplicate review frame " + name);
+      seenShots.add(name);
+      if (!shots) return;
+      const dir = join(shots, size);
+      await mkdir(dir, { recursive: true });
+      await page.screenshot({ path: join(dir, name + ".png"), animations: name === "11-mic-hit" ? "allow" : "disabled", timeout: 7000 });
+    };
+
+    try {
+      await page.goto(base.href, { waitUntil: "domcontentloaded", timeout: 30000 });
+      await wait("the seeded low-quality 3D gym loads at the real mat", () => page.evaluate(() => {
+        const { game, store } = window.__ew ?? {};
+        return store?.getState().screen === "play" && game.zone?.id === "gym" && !game.transitioning
+          && game.renderer?.info.render.calls > 0 && store.getState().hud.prompt?.kind === "gym";
+      }), { frames: 3, attempts: 800, timeout: 120000 });
+      seeded = true;
+      if (bootWarnings.length) console.log(label, "existing town boot warning", ...bootWarnings);
+      const initial = await page.evaluate(() => {
+        const { game, store, audio } = window.__ew;
+        const { settings, hud, progress } = store.getState();
+        return {
+          position: game.player.root.position.toArray(), camera: game.rig.mode, touch: hud.showTouch,
+          play: settings.play, quality: settings.quality, scenes: settings.scenes, volume: audio.volume,
+          completed: progress.sits["s35-gym"]?.completions ?? 0, coach: progress.coach.done, dpr: devicePixelRatio,
+        };
+      });
+      assert(distance(initial.position, [mat.x, 0, mat.z]) < 0.02, JSON.stringify(initial));
+      assert.deepEqual({ ...initial, position: undefined }, {
+        position: undefined, camera: "interior", touch, play: "town", quality: "low", scenes: false,
+        volume: 0.8, completed: 0, coach: true, dpr: touch ? 2 : 1,
+      });
+      await page.evaluate(async () => {
+        await Promise.all([window.__ew.audio.init(), document.fonts.ready]);
+      });
+      assert.equal(manifests.size, 1, "the local manifest fixture is loaded");
+      const fixture = await fixtureFor(page, manifests);
+      const { ui, entry, speech } = fixture;
+      const lines = Object.fromEntries(Object.keys(mh.lines).map((id) => [id, sentence(fixture, id)]));
+      const authored = Object.entries(lines).map(([id, line]) => [line.say, id]);
+      await page.evaluate(observeAudio, { entries: authored, fixture: { voice: fixture.voice, speed: fixture.speed }, audible });
+      let home = await page.evaluate(captureRigs, fixture.trainer);
+
+      const counts = () => page.evaluate((key) => ({
+        live: window.__ew.store.getState().progress.play?.games.gym ?? 0,
+        saved: JSON.parse(localStorage.getItem(key) ?? "null")?.play?.games.gym ?? 0,
+      }), key);
+      const countIs = async (expected) => {
+        assert.equal((await counts()).live, expected, "live gym count at " + stepName);
+        await waitNative("gym Start count is saved as " + expected, async () => (await counts()).saved === expected);
+        assert.deepEqual(await counts(), { live: expected, saved: expected });
+      };
+      let count = baseline;
+      const phase = (name, index) => wait(name + (index ? " on call " + index : ""), async () => {
+        const s = await read();
+        return s?.phase === name && (index === undefined || s.index === index)
+          && await overlay.getAttribute("data-phase") === name;
+      });
+      const fit = async (stage, figures = true) => {
+        const layout = await page.evaluate(measureLayout);
+        assert.equal(layout.width, width, stage + " viewport");
+        assert.equal(layout.height, height, stage + " viewport");
+        assert(layout.overflow <= 1 && layout.problems.length === 0, stage + " layout " + JSON.stringify(layout));
+        assert.equal(layout.controls.length, await overlay.locator("button").count(), stage + " all controls visible");
+        assert(layout.controls.length > 0, stage + " visible controls");
+        for (const button of layout.controls) {
+          assert(button.name && button.hit && button.accessible && button.inside && button.size.every((px) => px >= 44) && button.overflow <= 1,
+            stage + " button fit " + JSON.stringify(button));
+        }
+        const tiles = layout.controls.filter((button) => button.slot);
+        if (tiles.length) {
+          assert.equal(tiles.length, 4);
+          const row = (i, j) => Math.abs(tiles[i].bounds.top - tiles[j].bounds.top) < 1 && tiles[i].bounds.left < tiles[j].bounds.left;
+          assert(touch
+            ? row(0, 1) && row(2, 3) && tiles[0].bounds.bottom < tiles[2].bounds.top
+              && Math.abs(tiles[0].bounds.left - tiles[2].bounds.left) < 1 && Math.abs(tiles[1].bounds.left - tiles[3].bounds.left) < 1
+            : row(0, 1) && row(1, 2) && row(2, 3), stage + " choice tiles in reading order " + JSON.stringify(tiles));
+        }
+        if (figures) {
+          const sample = await rig(true);
+          const [top, bottom] = layout.free;
+          for (const actor of sample.actors) {
+            const b = actor.silhouette;
+            assert(actor.same && actor.visible && sample.camera === "stage" && !b.clipped
+              && b.left >= 0 && b.right <= width && b.top >= top && b.bottom <= bottom && b.bottom - b.top > 30,
+            stage + " full original actor clears the cards " + JSON.stringify({ free: layout.free, b, camera: sample.camera }));
+            for (const [x, y, z] of [actor.face, ...actor.shoes]) {
+              assert(x > 0 && x < width && y > top && y < bottom && z > -1 && z < 1, stage + " face/feet " + JSON.stringify({ x, y, z, top, bottom }));
+            }
+          }
+          assert(Math.abs(sample.actors[0].face[0] - sample.actors[1].face[0]) > width * 0.06, stage + " both faces separated");
+        }
+        assert.equal(await page.locator(noHud).and(page.locator(":visible")).count(), 0, stage + " no walking HUD");
+      };
+      const openTool = async (panel) => {
+        const menu = page.locator('.toolbar .ride-menu[aria-expanded="false"]');
+        if (await menu.count()) await press(menu);
+        const tools = page.locator(".toolbar-tools button.icon-btn");
+        await press(panel === "scenarios" ? tools.first() : tools.and(page.locator('[title$=" (M)"]')));
+      };
+      const gymCard = page.locator('.sheet.scenarios .scn-card[data-sit="s35-gym"]');
+      const listing = async () => {
+        await openTool("scenarios");
+        await wait("3D picker and s35 card", () => gymCard.isVisible());
+        const sheet = page.locator(".sheet.scenarios");
+        const ids = await sheet.locator(".scn-card").evaluateAll((cards) => cards.map((card) => card.dataset.sit));
+        const expected = await page.evaluate(() => window.__ew.game.orderedSituations().map(({ id }) => id));
+        assert.equal(new Set(ids).size, expected.length, "one distinct card id per scenario");
+        assert(ids.every((id) => expected.includes(id)), "the mat listing is outside the scenario cards");
+        assert.equal(await gymCard.count(), 1);
+        assert.equal(await gymCard.locator("b").innerText(), fixture.card);
+        assert.equal(await gymCard.locator("i").innerText(), fixture.title);
+        assert(await sheet.locator(".scn-foot").getByRole("button", { name: entry.listAction, exact: true }).isVisible());
+      };
+      const matEntry = async () => {
+        await wait("mat prompt is visible", () => prompt.isVisible());
+        assert.equal(await prompt.locator(".prompt-text").innerText(), entry.startLabel);
+        assert.equal(await page.locator("button.prompt.touch").count(), Number(touch));
+        if (touch) await press(prompt);
+        else await page.keyboard.press("e");
+      };
+      const ready = async () => {
+        await phase("ready");
+        assert.equal(await overlay.getAttribute("lang"), learner);
+        assert.equal(await overlay.locator(".gym-ready h2").innerText(), ui.readyTitle);
+        assert.equal(await overlay.locator(".gym-ready p").innerText(), touch ? ui.readyTouch : ui.readyKeys);
+        assert.equal(await action("start").innerText(), ui.start);
+        assert.equal(await action("exit").innerText(), ui.exit);
+        assert.deepEqual((await read()).score, zero);
+        assert.equal(await bonus.count(), 0);
+        await countIs(count);
+        await fit("ready");
+      };
+
+      const expectedAudio = [];
+      let listeningNeutral;
+      const request = async (id, kind = audible ? "gate" : "real") => {
+        expectedAudio.push(id);
+        const requests = await audio();
+        assert.deepEqual(requests.map((r) => r.text), expectedAudio.map((id) => lines[id].say), "trainer audio order");
+        const last = requests.at(-1);
+        const { voice, speed, text, optional, recordingOnly, freshSignal, slow, male, mic, kind: boundary } = last;
+        assert.deepEqual({ voice, speed, text, optional, recordingOnly, freshSignal, slow, male, mic, boundary }, {
+          voice: fixture.voice, speed: fixture.speed, text: lines[id].say, optional: true,
+          recordingOnly: true, freshSignal: true, slow: false, male: fixture.male, mic: false, boundary: kind,
+        }, id + " recorded request while microphone is released");
+        return last;
+      };
+      const override = (id, options) => page.evaluate((settings) => { window.__gymAudio.next = settings; }, { text: lines[id].say, ...options });
+      const checkLine = async (id, full, explicit = false) => {
+        const line = lines[id];
+        const cue = overlay.locator('.gym-cue[data-line="' + id + '"]');
+        assert(await cue.isVisible(), id + " visible cue");
+        const interlinear = cue.locator(".il");
+        if (await interlinear.count()) {
+          assert.equal(await interlinear.getAttribute("lang"), fixture.target.split("-")[0]);
+          const seen = await cue.locator(".u").evaluateAll((units) => units.map((unit) => {
+            const [target, gloss] = unit.children;
+            return [target.innerText.trim(), gloss?.innerText.trim(), gloss?.lang];
+          }));
+          assert.deepEqual(seen, line.units.map((text, i) => [text, full ? line.gloss[i] : undefined, full ? learner : undefined]),
+            id + " exact visible target and aligned learner-language gloss");
+          const natural = cue.locator(".nat");
+          const distinct = line.gloss.join(" ").replace(/[^\p{L}\p{N}]+/gu, " ").trim().toLowerCase()
+            !== line.natural.replace(/[^\p{L}\p{N}]+/gu, " ").trim().toLowerCase();
+          assert.equal(await natural.count(), Number(full && (explicit || distinct)), id + " natural translation presence");
+          if (await natural.count()) {
+            assert.equal(await natural.innerText(), line.natural);
+            assert.equal(await natural.getAttribute("lang"), learner);
+          }
+        } else {
+          const compact = cue.locator(".kit-gloss-compact");
+          assert.equal(await compact.locator("span").innerText(), line.target);
+          assert.equal(await compact.locator("span").getAttribute("lang"), fixture.target.split("-")[0]);
+          assert.equal(await compact.locator("small").innerText(), line.natural);
+          assert.equal(await compact.locator("small").getAttribute("lang"), learner);
+        }
+      };
+      const chosen = async (i, move, level, { full = level === 0 || !audible, reveal = false } = {}) => {
+        await phase("choose", i + 1);
+        const s = await read();
+        assert.equal(s.callId, move);
+        assert.equal(s.helpLevel, level);
+        assert.equal(s.audible, audible);
+        assert.equal(s.fallback, !audible);
+        assert.equal(s.revealed, reveal);
+        assert.equal(await overlay.locator(".gym-progress").innerText(), ui.progress(i + 1));
+        assert.equal(await overlay.locator(".gym-choices").getAttribute("aria-label"), ui.choices);
+        assert.equal(await enabled.count(), 4);
+        const layout = await choices.evaluateAll((buttons) => buttons.map((b) => ({
+          slot: +b.dataset.slot, move: b.dataset.move, label: b.getAttribute("aria-label"),
+          keys: b.getAttribute("aria-keyshortcuts"), shown: getComputedStyle(b.querySelector("kbd")).display !== "none",
+          shortcut: b.querySelector("kbd").textContent,
+        })));
+        const options = expectedOptions(move, slots[i]);
+        assert.deepEqual(s.options, options);
+        assert.deepEqual(layout, options.map((id, j) => ({ slot: j + 1, move: id, label: fixture.labels[id],
+          keys: (j + 1) + " " + arrows[j], shown: !touch, shortcut: (j + 1) + " / " + glyphs[j] })));
+        const hint = choices.and(page.locator('[data-hint="true"]'));
+        assert.equal(await hint.count(), level === 0 ? 1 : 0);
+        if (level === 0) {
+          assert.equal(await hint.getAttribute("data-move"), move);
+          const rings = await choices.evaluateAll((buttons) => buttons.map((button) => getComputedStyle(button).boxShadow));
+          assert.equal(rings.filter((shadow) => shadow !== "none").length, 1, "only the matching tile has a painted ring");
+        }
+        const id = "gy_" + move;
+        assert.equal(await caption.count(), (full || level < 2) ? 1 : 0);
+        assert.equal(await overlay.locator("[data-gym-gloss]").count(), Number(full));
+        if (full || level < 2) {
+          assert.equal(await caption.getAttribute("data-gym-target"), lines[id].target);
+          if (full) assert.equal(await caption.getAttribute("data-gym-gloss"), lines[id].natural);
+          await checkLine(id, full, reveal);
+        } else assert.equal(await overlay.locator(".gym-cue[data-line]").count(), 0, "hidden calls have no readable cue");
+        assert.equal(await action("replay").innerText(), ui.replay);
+        assert.equal(await action("reveal").innerText(), ui.reveal);
+        assert.equal(await action("reveal").getAttribute("aria-pressed"), String(reveal));
+        assert.equal(await bonus.count(), Number(audible), "optional mic support");
+        return s;
+      };
+      const begin = async (index = 1, again = false) => {
+        await press(again ? scoreCard.getByRole("button", { name: ui.again, exact: true }) : action("start"));
+        count++;
+        await phase("intro");
+        const intro = await request("gy_intro");
+        assert.deepEqual((await read()).score, zero);
+        assert.equal(await choices.count(), 0);
+        assert.equal(await bonus.count(), 0);
+        await checkLine("gy_intro", true);
+        await countIs(count);
+        await stepTo(intro.at + 950);
+        assert(await overlay.locator('.gym-cue[data-line="gy_intro"]').isVisible(), "intro is still readable at 950 ms");
+        await phase("listen", index);
+        assert(await now() - intro.at >= 1000, "intro has at least one stepped second");
+      };
+      const stepTo = async (at) => {
+        const frames = (at - await now()) / 50;
+        assert(Number.isInteger(frames) && frames >= 0, "sample is on the stepped clock: " + JSON.stringify({ at, frames }));
+        if (frames) await step(frames);
+      };
+      const listening = async (i, id, { kind, checkKeys = false, replay = false, snapshot = false } = {}) => {
+        await phase("listen", i + 1);
+        const clip = await request(id, kind);
+        if (!replay) assert.equal(clip.chooseEnabled, 0, "request precedes enabling a fresh call");
+        assert.equal(await enabled.count(), 0);
+        if (!replay) assert.equal(await caption.count(), 0, "no automatic target or gloss while listening");
+        assert.equal(await bonus.count(), 0);
+        if (snapshot) {
+          await fit("listen");
+          await shot("02-listen");
+        }
+        if (checkKeys) {
+          const start = await read();
+          for (const input of ["1", "ArrowLeft", "2", "ArrowUp", "3", "ArrowDown", "4", "ArrowRight"]) {
+            await page.keyboard.down(input);
+            await page.keyboard.down(input);
+            await page.keyboard.up(input);
+          }
+          await step(6); // 300 stepped ms: the minimum cannot already have elapsed.
+          assert.deepEqual(await read(), start, "regular and repeated keys are ignored during listen");
+          assert.equal(await enabled.count(), 0);
+          assert.equal(await caption.count(), 0);
+          listeningNeutral = await rig();
+        }
+        return clip;
+      };
+      const heard = async (i, move, level, clip, options) => {
+        const s = await chosen(i, move, level, options);
+        const settled = (await audio()).find(({ at, text }) => at === clip.at && text === clip.text);
+        assert(await now() - clip.at >= 350, "choose waits at least 350 ms of game time");
+        assert(settled.ended !== undefined && settled.ended <= await now(), "choose waits for clip result");
+        if (settled.kind === "gate") {
+          assert.equal(settled.ok, true);
+          assert.equal(settled.ended, settled.releaseAt);
+          assert.equal(settled.aborted, undefined, "successful recording is not cut off");
+        } else if (settled.kind === "real") {
+          assert.equal(settled.ok, false, "actual local manifest miss completes without audio");
+          assert.equal(settled.aborted, undefined, "actual manifest miss settles before the safety deadline");
+        }
+        return s;
+      };
+
+      const assertClosed = async (zone = "gym") => {
+        await wait("walking and camera restored in " + zone, () => page.evaluate((zone) => {
+          const { game, store } = window.__ew;
+          return game.zone.id === zone && !game.transitioning && !game.modes.engaged && !game.modes.active
+            && !store.getState().hud.modeScreen && !store.getState().conv.active && !window.__gym
+            && game.rig.mode === (zone === "gym" ? "interior" : "follow") && game.rig.stage === null;
+        }, zone), zone === "town" ? { frames: 2, attempts: 600 } : undefined);
+        await wait("ordinary walking HUD is visible", async () => await page.locator(".toolbar").isVisible()
+          && await page.locator(".minimap").isVisible() && (!touch || await page.locator(".joy").isVisible()));
+        assert.equal(await page.locator(".gym-overlay, .say-it, .mode-score-card").count(), 0);
+        assert.equal((await micState()).active, false);
+      };
+      const restored = async () => {
+        await assertClosed();
+        const { actors: [player, trainer] } = await rig();
+        assert(player.same && player.visible && trainer.same && trainer.visible === home.visible && trainer.anim === home.anim
+          && distance(trainer.root, home.position) < 0.01 && Math.abs(trainer.yaw - home.rotation[1]) < 0.02
+          && Math.abs(trainer.joints.body.angle[0]) < 0.12,
+        "trainer physically restored " + JSON.stringify({ home, trainer }));
+        for (const [id, original] of Object.entries(home.joints)) {
+          const { angle, local } = trainer.joints[id];
+          assert(distance(angle, original.rotation) < 0.12 && distance(local, original.position) < 0.04,
+            "trainer's " + id + " has its original idle transform " + JSON.stringify({ original, angle, local }));
+        }
+        await countIs(count);
+      };
+      const exit = () => touch ? press(action("exit")) : page.keyboard.press("Escape");
+      const leaveRoom = async (reviewFrames) => {
+        if (reviewFrames) await shot("14-back-in-gym");
+        await page.evaluate(() => {
+          const { game } = window.__ew;
+          const { x, z } = game.zone.interior.exit;
+          game.player.root.position.set(x, 0, z - 1.2);
+          game.vel.set(0, 0, 0);
+        });
+        await wait("the ordinary room exit prompt is visible", async () => await prompt.isVisible()
+          && await page.evaluate(() => window.__ew.store.getState().hud.prompt?.kind === "exit"));
+        if (touch) await press(prompt);
+        else await page.keyboard.press("e");
+        await assertClosed("town");
+        await wait("the town door fade clears", () => page.evaluate(() => {
+          const fade = document.querySelector(".fade");
+          return !fade || +getComputedStyle(fade).opacity < 0.02;
+        }));
+        await wait("automatic step out has settled before testing walking", () => page.evaluate(() => {
+          const { game } = window.__ew;
+          return game.stepOut === 0 && game.vel.lengthSq() < 0.01;
+        }));
+        if (reviewFrames) await shot("15-town");
+        const position = () => page.evaluate(() => window.__ew.game.player.root.position.toArray());
+        const before = await position();
+        if (touch) {
+          const joy = await page.locator(".joy").boundingBox();
+          const cdp = await context.newCDPSession(page);
+          const x = joy.x + joy.width / 2, y = joy.y + joy.height / 2;
+          await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y }] });
+          try {
+            await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x, y: y - 48 }] });
+            await step(14);
+          } finally {
+            await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+            await cdp.detach();
+          }
+        } else {
+          // Strafe along the sidewalk outside the door.
+          await page.keyboard.down("d");
+          await step(14);
+          await page.keyboard.up("d");
+        }
+        const after = await position();
+        assert(Math.hypot(after[0] - before[0], after[2] - before[2]) > 0.25, "walking after the door " + JSON.stringify({ before, after }));
+        await countIs(count);
+      };
+
+      if (audible) {
+        await listing();
+        await press(page.locator(".sheet.scenarios .close-x"));
+        await openTool("map");
+        const map = page.locator(".sheet").filter({ has: page.locator(".map-wrap") });
+        await wait("town map opens", () => map.isVisible());
+        await press(map.getByRole("button", { name: fixture.place, exact: true }));
+        assert.equal(await map.locator(".place-title").innerText(), fixture.place);
+        assert(await map.getByText(entry.mapLabel, { exact: true }).isVisible());
+        assert.equal(await map.locator('.sit-card[data-sit="s35-gym"]').count(), 1);
+        await press(map.locator(".close-x"));
+        await wait("visible mat prompt after closing the map", () => prompt.isVisible());
+        await shot("00-entry");
+        await matEntry();
+        await ready();
+        await shot("01-ready");
+        assert.equal((await audio()).length, 0, "ready is quiet");
+        check("picker, map clue and mat ready", { home, count });
+      } else {
+        assert(await page.evaluate(([voice, speed, texts]) => {
+          const { audio } = window.__ew;
+          return audio.ready && texts.every((text) => !audio.hasClip(voice, speed, text));
+        }, [fixture.voice, fixture.speed, authored.map(([text]) => text)]), "the initialized local manifest has no gym recording");
+        await matEntry();
+        await ready();
+        await exit();
+        await restored(); // Exiting ready is free.
+        await matEntry();
+        await ready();
+        const id = "gy_jacks";
+        await override(id, { stall: true, manifest: 2.1 });
+        await begin();
+        const stall = await listening(0, id, { kind: "stall" });
+        await step(47);
+        assert.equal((await read()).phase, "listen", "a pending recording waits past two seconds");
+        assert.equal(await enabled.count(), 0);
+        await heard(0, "jacks", 0, stall);
+        const aborted = (await audio()).at(-1);
+        assert(aborted.aborted - stall.at >= 2850 && aborted.aborted - stall.at <= 2900 && aborted.ok === false,
+          "game-clock deadline considers the manifest duration " + JSON.stringify(aborted));
+        await override(id, { stall: true, manifest: 2.1 });
+        await press(action("replay"));
+        const early = await listening(0, id, { kind: "stall", replay: true });
+        await step(4);
+        await exit();
+        await restored();
+        const cancelled = (await audio()).at(-1);
+        assert(cancelled.aborted - early.at < 350 && cancelled.ok === false, "exit aborts only its pending replay " + JSON.stringify(cancelled));
+        await step(60);
+        assert.equal(await read(), null, "stale playback cannot re-open the overlay");
+        await matEntry();
+        await ready();
+        check("silent safety deadline and aborted replay on early exit", { aborted, cancelled, count });
+      }
+
+      await begin();
+      const used = { touch: new Set(), number: new Set(), arrow: new Set() };
+      const introduced = new Set();
+      let neutral, result = { ...zero };
+      let closing;
+      // Click a disabled tile at the real screen position to detect a second tap being scored.
+      const pressDisabled = async (move) => {
+        const b = await tile(move).boundingBox();
+        const x = b.x + b.width / 2, y = b.y + b.height / 2;
+        if (touch) await page.touchscreen.tap(x, y);
+        else await page.mouse.click(x, y);
+      };
+      const selectMove = async (move, i) => {
+        const button = tile(move);
+        const slot = Number(await button.getAttribute("data-slot"));
+        assert.equal(slot, slots[i]);
+        assert.equal(await overlay.getByRole("button", { name: fixture.labels[move], exact: true }).count(), 1);
+        if (touch) {
+          used.touch.add(slot);
+          await press(button);
+        } else if (audible) {
+          const method = i % 2 ? "arrow" : "number";
+          used[method].add(slot);
+          await page.keyboard.press(method === "arrow" ? arrows[slot - 1] : String(slot));
+        } else if (i === 0 || i === 1) {
+          await (i === 0 ? action("exit") : choices.nth(slot - 2)).focus();
+          await page.keyboard.press("Tab");
+          assert(await button.evaluate((el) => document.activeElement === el), "Tab reaches the choice in DOM order");
+          await page.keyboard.press(i === 0 ? "Enter" : "Space");
+        } else await press(button);
+      };
+
+      const reveal = async (id) => {
+        const before = await read();
+        await press(action("reveal"));
+        await wait("explicit words shown for " + id, () => overlay.locator("[data-gym-gloss]").isVisible());
+        assert.deepEqual(await read(), { ...before, revealed: true }, "showing words changes only visibility");
+        assert.equal(await action("reveal").getAttribute("aria-pressed"), "true");
+        await checkLine(id, true, true);
+        await countIs(count);
+      };
+      const replay = async (i, id, level, revealed = false) => {
+        const before = await read();
+        await press(action("replay"));
+        const clip = await listening(i, id, { replay: true });
+        assert.equal(clip.text, lines[id].say);
+        await heard(i, before.callId, level, clip, { full: level === 0 || revealed, reveal: revealed });
+        assert.deepEqual(await read(), before, "replay returns to the same call, slots, help and score");
+        await countIs(count);
+      };
+      const startMic = async () => {
+        const before = await micState();
+        const button = bonus.getByRole("button", { name: speech.mic, exact: true });
+        await press(button);
+        await waitNative("the fake recognizer starts after the mic button", async () => (await micState()).starts.length === before.starts.length + 1);
+        const open = await micState();
+        assert.equal(open.starts.at(-1), fixture.target);
+        assert(open.active);
+        assert.equal(await mic.getAttribute("aria-label"), speech.micStop);
+        assert.equal(await bonus.getAttribute("data-status"), "listening");
+      };
+      const speak = async (text, status) => {
+        const before = await read();
+        const requests = (await audio()).length;
+        await startMic();
+        await page.evaluate((text) => window.__sayItHear(text), text);
+        await waitNative("shared SayIt shows " + status, async () => await bonus.getAttribute("data-status") === status);
+        assert.equal(await bonus.locator('[role="status"]').innerText(), speech[status]);
+        assert.deepEqual(await read(), { ...before, score: { ...before.score, said: before.score.said + Number(status === "hit") } });
+        assert.equal((await audio()).length, requests, "speech adds no trainer request");
+        assert.equal((await micState()).active, false);
+      };
+      const noFarm = async () => {
+        assert.equal(await mic.getAttribute("aria-disabled"), "true");
+        const starts = (await micState()).starts.length;
+        const b = await mic.boundingBox();
+        if (touch) await page.touchscreen.tap(b.x + b.width / 2, b.y + b.height / 2);
+        else await page.mouse.click(b.x + b.width / 2, b.y + b.height / 2);
+        assert.equal((await micState()).starts.length, starts);
+        assert.equal((await read()).score.said, 1);
+      };
+      const samplePose = async ({ before, called, picked, ms, at, frame }) => {
+        const timeAt = async (offset) => {
+          await stepTo(at + offset);
+          return rig();
+        };
+        const early = await timeAt(Math.round(ms * (called === "run" ? 0.35 : 0.24) / 50) * 50);
+        const peak = await timeAt(Math.round(ms * 0.5 / 50) * 50);
+        for (const sample of [early, peak]) {
+          assert.equal(sample.pose?.player, picked);
+          assert.equal(sample.pose?.trainer, called);
+          assert(Math.abs(sample.pose.progress - (sample.at - at) / ms) < 0.002, "pose follows stepped game time");
+        }
+        assert(peak.pose.progress >= 0.40 && peak.pose.progress <= 0.55);
+        checkMotion([picked, called], before, early, peak, stepName);
+        if (frame || called === "lunges" || called === "reach") {
+          await fit(frame ?? called + " peak");
+        }
+        if (frame) {
+          await shot(frame);
+        }
+        return { peak, timeAt };
+      };
+
+      for (const [i, move] of calls.entries()) {
+        const n = i + 1;
+        const id = "gy_" + move;
+        const scheduled = Math.min(2, Math.floor(i / 3));
+        const initialLevel = audible && n === 6 ? 0 : scheduled;
+        const clip = await listening(i, id, { checkKeys: n === 1 && audible, snapshot: n === 1 && audible });
+        if (n === 1 && audible && !touch) await page.keyboard.down("1");
+        const current = await heard(i, move, initialLevel, clip);
+        introduced.add(move);
+        assert.deepEqual(current.score, result, "choose does not change prior scoring");
+        const atRest = await rig();
+        neutral ??= atRest;
+        checkNeutral(neutral, atRest, "choose " + n);
+        if (n === 1 && audible) {
+          checkNeutral(neutral, listeningNeutral, "idle through the first listening call");
+          assert.deepEqual((await micState()).starts, [], "the gym mic never auto-starts");
+          if (!touch) {
+            await page.keyboard.down("1");
+            await page.keyboard.up("1");
+            assert.deepEqual(await read(), current, "held key repeat on entering choose cannot answer");
+          }
+          await fit("guided");
+          await shot("03-guided");
+          await page.evaluate(observeDraws);
+          await step(2); // All imports complete and the first choose camera is settled.
+        }
+        if (audible && n === 4) {
+          await fit("target only");
+          await shot("06-text-only");
+        }
+        if (audible && n === 5) {
+          assert.deepEqual((await micState()).starts, [], "no recognition before the first mic press");
+          await fit("mic is reachable beside replay and reveal");
+          await startMic();
+          await replay(i, id, 1);
+          assert.equal((await micState()).active, false, "replay releases the live mic before calling");
+          await page.evaluate((text) => window.__gymLateHear(text), lines[id].target);
+          assert.deepEqual((await read()).score, result, "late transcript after replay earns nothing");
+          await speak("purple dinosaurs on the moon", "miss");
+          await speak(lines[id].target, "hit");
+          result.said = 1;
+          assert(await bonus.locator(".say-it-sparkle").isVisible());
+          await fit("mic hit");
+          await shot("11-mic-hit");
+          await noFarm();
+          await replay(i, id, 1);
+          await noFarm();
+          const wrong = current.options.find((option) => option === "toes");
+          assert(wrong && wrong !== move);
+          const at = await now();
+          await press(tile(wrong));
+          await phase("retry", n);
+          const retry = await request("gy_retry");
+          assert.equal(await tile(wrong).getAttribute("data-result"), "retry");
+          assert.equal(await overlay.locator('.kit-feedback[data-feedback="retry"]').count(), 1);
+          await checkLine("gy_retry", true);
+          result.wrong++;
+          assert.deepEqual((await read()).score, result, "wrong raises only the wrong tally");
+          assert.equal((await read()).helpLevel, 0);
+          assert.equal(await bonus.count(), 0);
+          await countIs(count);
+          await pressDisabled(move);
+          const wrongPose = await samplePose({ before: atRest, called: move, picked: wrong, ms: 1050, at, frame: "07-wrong" });
+          assert.deepEqual((await read()).score, result, "second tap during retry does not score");
+          await wrongPose.timeAt(1000);
+          assert((await read()).pose?.progress > 0.9, "the retry pose lasts 1050 stepped ms");
+          const repeat = await listening(i, id);
+          assert(repeat.at - retry.at >= 1050 && retry.at === at);
+          const retryChoice = await heard(i, move, 0, repeat);
+          assert.deepEqual(retryChoice.options, current.options, "retry holds the slots");
+          assert.deepEqual(retryChoice.score, result);
+          checkNeutral(neutral, await rig(), "neutral at retry choose");
+          await noFarm();
+          await fit("retry guidance");
+          await shot("08-retry");
+          await countIs(count);
+        }
+        if (n === 7) {
+          if (audible) {
+            await fit("hidden");
+            await shot("09-hidden");
+            await reveal(id);
+            await fit("revealed");
+            await shot("10-reveal");
+            await replay(i, id, 2, true);
+          } else {
+            await fit("silent late call");
+            await shot("16-silent-late");
+          }
+        }
+
+        stepName = "select and measure call " + n + " (" + move + ")";
+        const before = await rig();
+        const poseMs = [1200, 1050, 900][scheduled];
+        const gap = [500, 375, 250][scheduled];
+        const praise = i % 2 ? "gy_right_b" : "gy_right_a";
+        if (n === 1 && audible) await override(praise, { ms: 1550, manifest: 1.55 });
+        const at = await now();
+        await selectMove(move, i);
+        await phase("right", n);
+        const feedback = await request(praise);
+        assert.equal(feedback.at, at);
+        assert.equal(await tile(move).getAttribute("data-result"), "right");
+        assert.equal(await overlay.locator('.kit-feedback[data-feedback="right"]').count(), 1);
+        await checkLine(praise, true);
+        result.completed++;
+        if (!audible || n !== 5) result.firstTry++;
+        assert.deepEqual((await read()).score, result, "one completion per right answer");
+        assert.equal(await enabled.count(), 0);
+        assert.equal(await bonus.count(), 0);
+        if (n === 1) {
+          await pressDisabled(move);
+          assert.deepEqual((await read()).score, result, "double tap/click is ignored");
+        }
+        const frames = { 1: "04-jacks-peak", 2: "05-toes-peak", 8: "12-plank" };
+        const { peak, timeAt } = await samplePose({ before, called: move, picked: move, ms: poseMs, at, frame: audible ? frames[n] : undefined });
+        const end = await timeAt(poseMs - 50);
+        assert(end.pose?.progress > 0.92 && end.pose.progress < 1, "right pose lasts the scheduled time");
+        assert(await overlay.locator('.gym-cue[data-line="' + praise + '"]').isVisible(), "praise remains readable through the pose");
+        await timeAt(poseMs);
+        const gapFrame = await timeAt(poseMs + 100);
+        checkNeutral(neutral, gapFrame, "neutral during gap " + n);
+        assert.equal(gapFrame.phase, "right");
+        if (n === 1 && audible) {
+          assert.deepEqual(gapFrame.view, peak.view, "settled neutral gap and peak share the camera");
+          assert(peak.render?.drawn.length > 0 && gapFrame.render?.drawn.length > 0);
+          assert.deepEqual([...gapFrame.render.drawn].sort(), [...peak.render.drawn].sort(), "same drawn objects at neutral and peak");
+          assert.equal(peak.calls, gapFrame.calls, "renderer.info.render.calls remains unchanged");
+          for (const frame of [peak, gapFrame]) assert.deepEqual([frame.render.passes, frame.render.offscreen], [1, 0]);
+          await page.evaluate(() => window.__gymRender.stop());
+          check("same camera and draws at jacks peak and neutral", { calls: peak.calls, passes: peak.render.passes });
+        }
+
+        if (n === calls.length) {
+          await phase("closing");
+          closing = await request("gy_end");
+          await checkLine("gy_end", true);
+        } else await phase("listen", n + 1);
+        const history = await audio();
+        const [, next] = history.slice(-2);
+        const right = history.at(-2);
+        const minimum = Math.max(poseMs, 800, right.ended - at) + gap;
+        assert.equal(right.aborted, undefined, "praise playback is never clipped");
+        assert(next.at - at >= minimum && next.at - at <= minimum + 50, "pose/voice plus scheduled gap " + JSON.stringify({ minimum, feedback: right, next }));
+        check("call " + n + " " + move, { slot: slots[i], help: initialLevel, completed: result.completed, feedbackMs: next.at - at });
+      }
+      assert.deepEqual([...introduced], moves);
+      if (touch) assert.deepEqual([...used.touch].sort(), [1, 2, 3, 4]);
+      if (audible && !touch) {
+        assert.deepEqual([...used.number].sort(), [1, 2, 3, 4]);
+        assert.deepEqual([...used.arrow].sort(), [1, 2, 3, 4]);
+      }
+      assert.deepEqual((await micState()).starts, Array(audible ? 3 : 0).fill(fixture.target), "only call five used the optional mic");
+      await stepTo(closing.at + 950);
+      assert(await overlay.locator('.gym-cue[data-line="gy_end"]').isVisible(), "closing is still readable at 950 ms");
+      await phase("score");
+      assert(await now() - closing.at >= 1000, "closing has at least one stepped second");
+      assert.deepEqual((await read()).score, { completed: 10, firstTry: audible ? 9 : 10, wrong: Number(audible), said: Number(audible) });
+      assert.equal(await scoreCard.getByRole("heading", { name: ui.scoreTitle, exact: true }).count(), 1);
+      const rows = await scoreCard.locator("dl > div").evaluateAll((rows) => rows.map((row) => [row.querySelector("dt").innerText, row.querySelector("dd").innerText]));
+      assert.deepEqual(rows, [[ui.completed, "10/10"], [ui.firstTry, (audible ? "9" : "10") + "/10"], ...(audible ? [[speech.stat, "1"]] : [])]);
+      assert.equal(await scoreCard.locator(".mode-score-award .stars .on:visible").count(), 3);
+      assert.equal(await bonus.count(), 0);
+      await countIs(count);
+      await fit("score");
+
+      if (audible) {
+        await shot("13-score");
+        await begin(1, true);
+        const firstAgain = "gy_" + againCalls[0];
+        const againClip = await listening(0, firstAgain);
+        await heard(0, againCalls[0], 0, againClip);
+        assert.deepEqual((await read()).score, zero, "Again resets completed, first try, wrong and said");
+        assert.equal(await mic.getAttribute("aria-disabled"), "false");
+        assert.deepEqual((await micState()).starts, Array(3).fill(fixture.target), "Again does not auto-start recognition");
+        await startMic();
+        await press(tile(againCalls[0]));
+        await phase("right", 1);
+        await request("gy_right_a");
+        assert.equal((await micState()).active, false, "a hand answer closes pending recognition immediately");
+        await page.evaluate((text) => window.__gymLateHear(text), lines[firstAgain].target);
+        await step(10);
+        assert.deepEqual((await read()).score, { ...zero, completed: 1, firstTry: 1 }, "late recognition after the pick is ignored");
+        assert.equal((await read()).pose?.player, againCalls[0]);
+        const secondAgain = await listening(1, "gy_" + againCalls[1]);
+        await heard(1, againCalls[1], 0, secondAgain);
+        assert.deepEqual((await read()).score, { ...zero, completed: 1, firstTry: 1 });
+        assert.equal((await micState()).starts.length, 4);
+        await press(tile(againCalls[1]));
+        await phase("right", 2);
+        await request("gy_right_b");
+        await step(10);
+        assert.equal((await read()).pose?.trainer, againCalls[1]);
+        await exit();
+        await restored();
+        check("Again rotates the introduction and resets the round, partial exit restores the original trainer", { starts: count - baseline });
+      } else {
+        await press(scoreCard.getByRole("button", { name: ui.done, exact: true }));
+        await restored();
+        const position = (await rig()).actors[0].root;
+        assert(distance(position, [mat.x, 0, mat.z]) < 0.02, "Done returns to the real mat");
+        await leaveRoom(true);
+        check("Done, door prompt and ordinary walking restore both cameras", { starts: count - baseline });
+      }
+
+      if (!audible && !touch) {
+        // The s35 picker still opens the original dialogue. Follow its authored day-pass route using
+        // the same typebox as end-card.mjs and the visible audio recovery control for missing recordings.
+        await listing();
+        await press(gymCard);
+        const convo = page.locator(".convo");
+        const sceneStart = convo.locator(".scene-intro button.btn");
+        await wait("picker opens the explicit s35 scene start", () => sceneStart.isVisible(), { frames: 2 });
+        assert.equal(await sceneStart.innerText(), fixture.sceneStart);
+        assert.equal(await page.evaluate(() => window.__ew.store.getState().conv.sitId), situation);
+        assert.equal(await overlay.count(), 0);
+        await press(sceneStart);
+        const reading = convo.locator(".audio-recovery .link-btn").last();
+        const input = convo.locator(".typebox input");
+        const ended = convo.locator(".ended-box");
+        const dialogueSteps = [];
+        for (let turn = 0; turn < 100; turn++) {
+          await wait("the next s35 dialogue line or answer", async () =>
+            await ended.isVisible() || await reading.isVisible() || await convo.getAttribute("data-phase") === "you", { frames: 2 });
+          if (await ended.isVisible()) break;
+          if (await reading.isVisible()) {
+            await press(reading);
+            continue;
+          }
+          const step = await page.evaluate(() => window.__ew.store.getState().conv.stepId);
+          const answer = fixture.dialogue[step];
+          dialogueSteps.push(step);
+          assert(answer, "authored s35 dialogue step " + step + " after " + dialogueSteps.join(" → "));
+          await input.fill(answer);
+          await press(convo.locator('.typebox button[type="submit"]'));
+        }
+        assert(await ended.isVisible(), "complete s35 through the typebox " + dialogueSteps.join(" → "));
+        assert(await page.evaluate(() => window.__ew.store.getState().conv.completed), "s35 dialogue task completed");
+        assert.equal(await ended.locator(".ended-title").innerText(), fixture.taskComplete);
+        assert(await ended.locator(".ended-phrase").isVisible());
+        assert(await ended.locator(".ended-secondary").isVisible());
+        const cta = ended.locator(".gym-cta");
+        assert.equal(await cta.count(), 1);
+        assert.equal(await cta.innerText(), entry.startLabel);
+        home = await page.evaluate(captureRigs, fixture.trainer);
+        await press(cta);
+        await ready();
+        assert.equal(await convo.count(), 0);
+        await begin();
+        const ctaClip = await listening(0, "gy_jacks");
+        await heard(0, "jacks", 0, ctaClip);
+        await exit();
+        await assertClosed();
+        await countIs(count);
+        check("ordinary s35 Start and typed dialogue lead to the end-card gym CTA", { dialogueSteps, starts: count - baseline });
+      }
+
+      const expectedFrames = audible
+        ? ["00-entry", "01-ready", "02-listen", "03-guided", "04-jacks-peak", "05-toes-peak", "06-text-only", "07-wrong", "08-retry",
+          "09-hidden", "10-reveal", "11-mic-hit", "12-plank", "13-score"]
+        : ["14-back-in-gym", "15-town", "16-silent-late"];
+      assert.deepEqual([...seenShots].sort(), expectedFrames);
+      assert.deepEqual(await page.evaluate(() => window.__gymSynth.filter(({ gym }) => gym)), [], "the gym never calls speech synthesis");
+      assert.deepEqual((await audio()).map(({ text }) => text), expectedAudio.map((id) => lines[id].say), "complete trainer request sequence");
+      assert.deepEqual(blocked, [], "no external or chapter audio asset requests");
+      assert.deepEqual(errors, [], "no unexpected browser errors or warnings");
+      check("gym contract", { calls: calls.length, score: result, starts: count - baseline, frames: [...seenShots].sort() });
+    } catch (error) {
+      throw new Error(label + " / " + stepName + "\n" + await diagnostics(), { cause: error });
+    }
+  } finally {
+    await context.close();
+  }
+}
+
+const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
+const browser = await chromium.launch({
+  channel: process.env.WORLD_BROWSER_CHANNEL || "chromium",
+  headless: true,
+  args: ["--use-angle=metal", "--enable-gpu", "--ignore-gpu-blocklist", "--mute-audio"],
+});
+try {
+  for (const size of sizes) {
+    for (const audible of [true, false]) await journey(browser, size, audible);
+  }
+  console.log("gym: all good");
+} finally {
+  await browser.close();
+}
