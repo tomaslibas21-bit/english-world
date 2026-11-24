@@ -30,6 +30,7 @@ import { isPlayWay, playWay, setPlayWay, type PlayWay, type WordGame } from "./r
 import { SEA_EDITION } from "../content/sea";
 import { SeaEntry, seaReturn, cameraPose, crossingPose, RETURN_SETTLE, RETURN_SPEED, type SeaHandoff } from "./sea/entry";
 import { TownQuests } from "./photowalk/mode";
+import { useTownQuests, type Destination } from "./photowalk/store";
 import { isTownQuest, type PhotoSpot } from "../content/townQuests";
 import { useSurf } from "./surf/store";
 import { RIDE_NAMES } from "../content/rides";
@@ -62,7 +63,7 @@ import { PropFader } from "./fade";
 import { CUT, withCutout } from "./cutout";
 import { covers, NEAR_TALK, shoulderShots, type Body, type Shot } from "./talkShot";
 import { FLIGHT_SECONDS, flightAt } from "./flyover";
-import { Guidance } from "./guidance";
+import { directionsTarget, Guidance } from "./guidance";
 import { NavGrid } from "./nav";
 import { Session } from "./session";
 import { Ambient, Chatter, walkerLook } from "./ambient";
@@ -105,7 +106,7 @@ const CAVE_TREE_AT = TREES[1];
 /** A box on the screen, in pixels (a name tag, or part of the HUD the tags keep clear of). */
 type TagBox = { x0: number; x1: number; y0: number; y1: number };
 
-type WalkTarget = { kind: "npc" | "door" | "exit" | "point" | "cave-entry" | "glyph" | "tree"; id?: string; onward?: "pool-hall" };
+type WalkTarget = { kind: "npc" | "door" | "exit" | "point" | "cave-entry" | "glyph" | "tree"; id?: string; onward?: "pool-hall"; directions?: Destination | null };
 type GuideTarget = WalkTarget & { x: number; z: number; person?: { x: number; z: number } };
 type GuideMode = "objective" | "cave";
 
@@ -639,7 +640,12 @@ export class Game implements GameApi {
       zone: () => this.zone.id,
       guide: (id) => {
         const door = this.town.doors.find((door) => door.loc === id);
-        if (door && this.zone.id === "town") this.walkTo(door.outX, door.outZ, { kind: "point" });
+        if (!door || this.zone.id !== "town") return;
+        this.walkTo(door.outX, door.outZ, { kind: "point" });
+        if (this.autoPath?.length) {
+          this.autoTarget = { kind: "point", directions: useTownQuests.getState().directions };
+          this.pathT = 0;
+        }
       },
       animate: (seconds) => this.npcs.find(({ id }) => this.quests.handlesNpc(id))?.ch.talk(seconds, () => audio.level(), () => audio.vowel()),
     }));
@@ -2808,6 +2814,12 @@ export class Game implements GameApi {
     return this.objectiveTarget(mode);
   }
 
+  private routeVisualTarget() {
+    const target = this.autoTarget;
+    return target?.directions && this.zone.id === "town"
+      ? directionsTarget(this.autoPath, target, useTownQuests.getState().directions) : null;
+  }
+
   refreshObjective() {
     // (the talk spots marked all the time, in the town: theme.ts `talkMarks`)
     this.guidance.setMarks(this.zone?.interior ? [] : THEME.talkMarks.flatMap((id) => { const o = OUTDOOR_NPCS.find((n) => n.npc === id); return o ? [talkAt(o)] : []; }));
@@ -2966,9 +2978,12 @@ export class Game implements GameApi {
     this.pathT -= dt;
     if (this.pathT <= 0 && !talking && !mode) {
       this.pathT = 0.5;
-      const tgt = this.guidanceTarget();
+      const route = this.routeVisualTarget();
+      const tgt = route ?? this.guidanceTarget();
       const p = this.player.root.position;
-      if (tgt && Math.hypot(tgt.x - p.x, tgt.z - p.z) > 2.2) this.guidance.setPath(this.zone.nav.path(p.x, p.z, tgt.x, tgt.z));
+      if (tgt && Math.hypot(tgt.x - p.x, tgt.z - p.z) > 2.2) {
+        this.guidance.setPath(route ? [[p.x, p.z], ...this.autoPath!] : this.zone.nav.path(p.x, p.z, tgt.x, tgt.z));
+      }
       else this.guidance.setPath(null);
       this.showBeacon(tgt);
     }
@@ -4015,7 +4030,7 @@ export class Game implements GameApi {
     }
     const mm = st.hud.minimap, zone = this.zone.id;
     const quest = this.cave ? this.objectiveTarget("cave") : null;
-    const marker = this.cave || o?.followUp ? this.guidanceTarget() : tgt;
+    const marker = this.routeVisualTarget() ?? (this.cave || o?.followUp ? this.guidanceTarget() : tgt);
     const gates = this.cave ? this.caveGates : undefined;
     if (Math.abs(mm.px - p.x) > 0.3 || Math.abs(mm.pz - p.z) > 0.3 || Math.abs(mm.heading - this.heading) > 0.05 ||
       mm.zone !== zone || mm.targetX !== marker?.x || mm.targetZ !== marker?.z ||

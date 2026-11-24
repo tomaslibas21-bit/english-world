@@ -136,7 +136,6 @@
 .phone-ring-actions .btn { min-height: 44px; }
 .missed-calls .missed-call { align-items: center; }
 .missed-call .btn { flex: none; margin-left: auto; min-height: 44px; }
-.objective-card.collapsed[data-target-location] .objective-title { font-size: 0.86em; }
 .friend-meeting {
   position: absolute;
   inset: auto 0 max(16px, env(safe-area-inset-bottom));
@@ -196,7 +195,7 @@
     transform: none;
     margin: 0;
   }
-  .objective-notes:has(.text-arrival) .objective-card { width: 100%; min-height: 44px; }
+  .objective-notes:has(.text-arrival) .objective-card { position: relative; width: 100%; min-height: 44px; }
   .objective-notes:has(.text-arrival) .text-arrival { width: min(275px, 100%); flex: none; }
   .objective-notes:has(.text-arrival) .town-toasts { width: min(275px, 100%); overflow-y: auto; }
   .objective-notes:has(.text-arrival) .town-toasts:empty { display: none; }

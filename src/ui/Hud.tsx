@@ -17,6 +17,8 @@ import { game } from "../game/gameRef";
 import { coach } from "../game/coach";
 import { CAVE_ZONE } from "../game/cave/groundsPlan";
 import { SITUATION_BY_ID } from "../content/situations/catalog";
+import { LOCATIONS } from "../content/locations";
+import { NPCS } from "../content/npcs";
 import { SitIcon } from "./SitIcon";
 import { sitProgress, stars } from "../state/progress";
 import { Icon, InlineIcon, Stars, splitLead, type IconName } from "./icons";
@@ -31,7 +33,7 @@ import { HL, L, Lx, TL } from "./i18n";
 import { EDITION } from "../edition";
 import { CaveCard } from "./Cave";
 import { Guide } from "./Guide";
-import { TownToast, useTownToast } from "./Toasts";
+import { useTownToast } from "./Toasts";
 import { useStreet } from "../game/street/StreetLife";
 import { StreetCard } from "./street/StreetCard";
 import { StreetBubbles } from "./street/StreetBubbles";
@@ -88,14 +90,16 @@ export function Hud() {
   const taskId = hud.objective?.followUp ? hud.objective.title : hud.objective?.sitId ?? null;
   const toast = useTownToast(note === "toast");
   const questHud = hud.minimap.zone === "town" && !hud.ride && !hud.panel && !picking;
-  const directionsToast = toast?.kind === "stamp" && toast.sitId === ASK_WAY_SITUATION;
+  const requested = useTownQuests((s) => s.directions?.id);
+  const directions = useStore((s) => questHud && notesVisible && requested && !s.hud.cave
+    && !s.townToasts.some(({ toast }) => toast.sitId === ASK_WAY_SITUATION && toast.kind === "stamp") ? requested : undefined);
   const narrow = useNarrowHud();
   const streetCard = useStreet((s) => s.moment !== null) && !hud.panel;
   const portrait = screen.portraitPhone;
   const baristaOffer = useBarista((s) => s.offered);
   const compactForPhoto = useTownQuests((s) => questHud && portrait && s.camera && (!!s.near || screen.h <= 720));
   const phoneToast = narrow && toast !== null;
-  const task = useTaskCard(taskId, notesVisible && !hud.cave, phoneToast && !hud.cave, layout);
+  const task = useTaskCard(taskId, notesVisible && !hud.cave, directions, phoneToast && !hud.cave, layout);
   if (inConversation) return <Fade />;
   // the first visit's flight over the town has the screen to itself too: where one is, and what to do first
   if (hud.flight) return <div className="hud"><Flight /><Fade /></div>;
@@ -137,7 +141,7 @@ export function Hud() {
   const step = hud.coach?.step;
   const compactGuide = portrait && (compactForPhoto || ((moving || talk) && step !== "walk" && step !== "list"));
   // A sideways phone keeps the task to one row unless it is opened by hand.
-  const collapsed = !hud.cave && (streetCard || (phoneToast ? !task.openedDuringToast
+  const collapsed = !hud.cave && ((!directions && streetCard) || (directions || phoneToast ? !task.openedDuringNote
     : (task.manual ?? (screen.sidewaysPhone || foldForContext || (moving && (!task.fresh || !!hud.objective?.followUp))))));
   return (
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
@@ -150,8 +154,8 @@ export function Hud() {
           {note === "phone" && hud.phoneCard && <PhoneRing id={hud.phoneCard} />}
           {note === "text" && hud.textArrival && <TextArrival id={hud.textArrival} />}
           <Guide visible={note === "guide"} compact={compactGuide} />
-          <TownToast toast={toast} />
-          {questHud && !directionsToast && <DirectionsCard />}
+          <QuestArrival toast={toast} />
+          {directions && <DirectionsCard />}
         </div>
         <Minimap {...screen} />
       </div>
@@ -173,7 +177,7 @@ export function Hud() {
       )}
       {hud.showTouch && <TouchControls />}
       {!hud.panel && <BaristaOffer />}
-      {questHud && <><PhotoChip /><QuestArrival /></>}
+      {questHud && <PhotoChip />}
       <SurfPicker />
       <Fade />
     </div>
@@ -192,10 +196,11 @@ function useNarrowHud() {
   return narrow;
 }
 
-function useTaskCard(taskId: string | null, visible: boolean, phoneToast: boolean, layout: string) {
+function useTaskCard(taskId: string | null, visible: boolean, directions: string | undefined, phoneToast: boolean, layout: string) {
   const [state, setState] = useState<{ id: string | null; layout: string; manual: boolean | null; fresh: boolean }>({ id: taskId, layout, manual: null, fresh: false });
-  const [openedDuringToast, setOpenedDuringToast] = useState(false);
-  if (openedDuringToast && (!phoneToast || taskId !== state.id)) setOpenedDuringToast(false);
+  const note = directions ?? phoneToast;
+  const [openedDuringNote, setOpenedDuringNote] = useState<string | boolean>(false);
+  if (openedDuringNote && (openedDuringNote !== note || taskId !== state.id || (directions && layout !== state.layout))) setOpenedDuringNote(false);
   // A manual choice belongs to one task and one way of holding the phone. Give the next task its pop when the card
   // is back on screen.
   if (taskId !== state.id) setState({ id: taskId, layout, manual: null, fresh: taskId !== null });
@@ -206,10 +211,10 @@ function useTaskCard(taskId: string | null, visible: boolean, phoneToast: boolea
     return () => clearTimeout(timer);
   }, [state.id, state.fresh, visible]);
   function setManual(manual: boolean) {
-    setState((current) => ({ ...current, manual }));
-    setOpenedDuringToast(phoneToast && !manual);
+    if (!directions) setState((current) => ({ ...current, manual }));
+    setOpenedDuringNote(!manual && note);
   }
-  return { ...state, openedDuringToast, setManual };
+  return { ...state, openedDuringNote, setManual };
 }
 
 // Enter and Space belong to a button reached by keyboard, even while the game is listening for movement.
@@ -219,7 +224,7 @@ function activateHudButton(e: KeyboardEvent<HTMLElement>) {
 
 // The same for the town's tools and the radio set, which opens over the town at the HUD's level.
 function keepKeysOnHudButtons(e: KeyboardEvent<HTMLElement>) {
-  if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(":is(.toolbar, .radio-set, .street-card, .coach) :focus-visible, .street-bubble:focus-visible")) e.stopPropagation();
+  if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement).matches(":is(.toolbar, .radio-set, .street-card, .coach, .objective-card, .directions-card) :focus-visible, .street-bubble:focus-visible")) e.stopPropagation();
 }
 
 /** The town's tools. On a phone (upright or sideways) they always fold behind one round menu button; on a computer
@@ -431,72 +436,57 @@ function Fade() {
 function Objective({ collapsed, fresh, setCollapsed }: { collapsed: boolean; fresh: boolean; setCollapsed: (collapsed: boolean) => void }) {
   const o = useStore((s) => s.hud.objective);
   const progress = useStore((s) => s.progress);
-  // A conversation's own drawing stands before its title; a follow-up errand and "all done" keep the target.
   const situation = o && !o.followUp ? o.sitId : null;
-  if (collapsed) {
-    return (
-      <div className="objective-card collapsed" data-target-location={o?.targetLoc}>
-        <button className="collapse-btn objective-summary" aria-expanded={false} onClick={() => setCollapsed(false)} onKeyDown={activateHudButton}>
-          {situation ? <SitIcon id={situation} size={18} className="objective-ico" /> : <Icon name="target" size={16} strokeWidth={2} />}
-          <span className="objective-title" title={o?.followUp ? o.title : undefined}>{o?.title ?? L("Visos užduotys atliktos")}</span>
-          <Icon name="chevronDown" size={16} strokeWidth={2} />
-          {o?.dist != null && <span className="dist">{o.angle !== null && <Arrow angle={o.angle} />}{o.dist} m</span>}
-        </button>
-      </div>
-    );
-  }
-  const fold = <button className="collapse-btn" onClick={() => setCollapsed(true)} onKeyDown={activateHudButton} aria-label={L("Suskleisti")} aria-expanded><Icon name="chevronUp" size={18} strokeWidth={2} /></button>;
-  const className = "objective-card" + (fresh ? " fresh" : "");
-  if (!o) {
-    return (
-      <div className={className}>
-        <div className="kicker">{L("Visos užduotys atliktos")} <InlineIcon name="party" />{fold}</div>
-        <p>{L("Grįžk į bet kurią vietą ir pabandyk pasakyti kitaip – žmonės kaskart kalba šiek tiek skirtingai.")}</p>
-      </div>
-    );
-  }
-  if (o.followUp) return (
-    <div className={className} data-target-location={o.targetLoc}>
-      <div className="kicker">
-        <span className="kicker-label"><Icon name="target" size={15} strokeWidth={2} /> {L("Užduotis")}</span>
-        {fold}
-      </div>
-      <h3>{o.title}</h3>
-      <div className="row">
-        {o.dist !== null && <span className="dist">{o.angle !== null && <Arrow angle={o.angle} />}{o.dist} m</span>}
-        <button className="btn small" onClick={() => game?.autoWalkToObjective("objective")} title="G"><Icon name="walk" size={17} /> {L("Nuvesk mane")}</button>
-      </div>
-    </div>
-  );
-  const sit = SITUATION_BY_ID[o.sitId];
+  const sit = situation ? SITUATION_BY_ID[situation] : undefined;
   const phone = sit && isPhone(sit);
-  const st = stars(sitProgress(progress, o.sitId));
+  const title = o?.title ?? L("Visos užduotys atliktos");
+  const npc = sit?.npc;
+  const profile = progress.profile;
+  const person = npc === "sam" || npc === "emma" ? profile?.datePartner ?? (profile?.gender === "f" ? "sam" : "emma") : npc;
+  const place = phone ? undefined : person && sit && LOCATIONS[sit.location]?.kind === "outdoor"
+    ? NPCS[person]?.name ?? o?.where
+    : o?.where;
+  const meters = o?.dist != null ? `${o.dist} m` : null;
+  const details = (place || meters) && <span className="objective-meta">
+    {place && <span className="objective-destination">{place}</span>}
+    {meters && <span className="dist">{o?.angle != null && <Arrow angle={o.angle} />}{meters}</span>}
+  </span>;
+  const st = !collapsed && situation ? stars(sitProgress(progress, situation)) : 0;
   return (
-    <div className={className}>
-      <div className="objective-head">
-        <div className="kicker">
-          <span className="kicker-label"><Icon name="target" size={15} strokeWidth={2} /> {L("Užduotis")}</span>
-          {st > 0 && <Stars n={st} size={14} />}
-          {fold}
+    <div className={"objective-card" + (collapsed ? " collapsed" : fresh ? " fresh" : "")} data-target-location={o?.targetLoc}>
+      {/* The same native button keeps focus across both layouts. */}
+      <button className={collapsed ? "collapse-btn objective-summary" : "collapse-btn"} aria-expanded={!collapsed}
+        aria-label={collapsed ? [title, place, meters].filter(Boolean).join(", ") : L("Suskleisti")}
+        onClick={() => setCollapsed(!collapsed)}>
+        {collapsed && <>
+          {situation ? <SitIcon id={situation} size={18} className="objective-ico" /> : <Icon name="target" size={16} strokeWidth={2} />}
+          <span className="objective-title">{title}</span>
+          {details}
+        </>}
+        <Icon name={collapsed ? "chevronDown" : "chevronUp"} size={collapsed ? 16 : 18} strokeWidth={2} />
+      </button>
+      {!collapsed && (o ? <>
+        <div className={situation ? "objective-head" : undefined}>
+          <div className="kicker">
+            <span className="kicker-label"><Icon name="target" size={15} strokeWidth={2} /> {L("Užduotis")}</span>
+            {st > 0 && <Stars n={st} size={14} />}
+          </div>
+          {situation && <SitIcon id={situation} size={32} className="objective-ico" />}
+          <h3 lang={HL}>{title}{sit && <> <span lang={TL} className="en-title">· {sit.title.en}</span></>}</h3>
         </div>
-        <SitIcon id={o.sitId} size={32} className="objective-ico" />
-        <h3 lang={HL}>{o.title}{sit && <> <span lang={TL} className="en-title">· {sit.title.en}</span></>}</h3>
-      </div>
-      {o.goal && <p>{o.goal}</p>}
-      <div className="row">
-        {phone ? (
-          <button className="btn small" onClick={() => useStore.getState().setHud({ panel: "phone" })}><Icon name="smartphone" size={17} /> {L("Paskambinti")}</button>
-        ) : (
-          <>
-            <span className="dist">
-              {o.angle !== null && <Arrow angle={o.angle} />}
-              {o.inside && o.dist !== null && o.dist < 4 ? L("Čia pat!") : o.dist !== null ? `${o.dist} m` : ""}{o.where && ` · ${o.where}`}
-            </span>
-            <button className="btn small" onClick={() => game?.autoWalkToObjective()} title="G"><Icon name="walk" size={17} /> {L("Nuvesk mane")}</button>
-          </>
-        )}
-        <button className="btn ghost small" onClick={() => useStore.getState().setHud({ panel: "journal" })}>{L("Kita užduotis")}</button>
-      </div>
+        {o.goal && <p>{o.goal}</p>}
+        <div className="row">
+          {details}
+          {phone ?
+            <button className="btn small" onClick={() => useStore.getState().setHud({ panel: "phone" })}><Icon name="smartphone" size={17} /> {L("Paskambinti")}</button> :
+            <button className="btn small" onClick={() => game?.autoWalkToObjective(o.followUp ? "objective" : undefined)} title="G"><Icon name="walk" size={17} /> {L("Nuvesk mane")}</button>
+          }
+          {!o.followUp && <button className="btn ghost small" onClick={() => useStore.getState().setHud({ panel: "journal" })}>{L("Kita užduotis")}</button>}
+        </div>
+      </> : <>
+        <div className="kicker">{title} <InlineIcon name="party" /></div>
+        <p>{L("Grįžk į bet kurią vietą ir pabandyk pasakyti kitaip – žmonės kaskart kalba šiek tiek skirtingai.")}</p>
+      </>)}
     </div>
   );
 }

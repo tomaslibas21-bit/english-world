@@ -11,9 +11,10 @@ import { conversationLine } from "../game/kit/lines";
 import { readPhoto } from "../game/photowalk/photos";
 import { EMPTY_WALK } from "../game/photowalk/state";
 import { useTownQuests, type Destination } from "../game/photowalk/store";
-import { useStore } from "../state/store";
+import { useStore, type Toast } from "../state/store";
 import { Icon } from "./icons";
 import { GlossLine } from "./kit/GlossLine";
+import { TownToast } from "./Toasts";
 import "./townQuests.css";
 
 const act = (name: string, value?: string | boolean) => game?.modeAction("photowalk", name, value);
@@ -180,12 +181,13 @@ export function DirectionsCard() {
     <DirectionLines key={place.id} place={place} />
     <footer>
       <button type="button" className="btn ghost small" disabled={replaying} onClick={() => action("replay")}><Icon name="speaker" size={15} />{L(directions.replay)}</button>
-      <button type="button" className="btn soft small" onClick={() => action("guide")}><Icon name="walk" size={15} />{L(directions.guide)}</button>
+      <button type="button" className="btn small" onClick={() => action("guide")}><Icon name="walk" size={15} />{L(directions.guide)}</button>
     </footer>
   </section>;
 }
 
-export function QuestArrival() {
-  const arrival = useTownQuests((s) => s.arrival);
-  return arrival > 0 ? <Icon key={arrival} name="sparkles" className="quest-arrival quest-sparkle" size={32} /> : null;
+export function QuestArrival({ toast }: { toast: Toast | null }) {
+  if (toast?.kind !== "success" || toast.title !== L(directions.arrived)) return <TownToast toast={toast} />;
+  const arrival = { ...toast, icon: "sparkles" as const };
+  return <div className="quest-arrival"><TownToast toast={arrival} /></div>;
 }
