@@ -322,6 +322,17 @@ export class Ambient {
     }
   }
 
+  /** Defer any traffic overlapping a restored player position to the next clear lane spawn. */
+  clearPlayerSpawn(p: { x: number; z: number }, radius: number) {
+    for (const car of this.cars) {
+      const dx = Math.max(0, Math.abs(car.x - p.x) - car.half.x);
+      const dz = Math.max(0, Math.abs(car.lane - p.z) - car.half.z);
+      if (Math.hypot(dx, dz) >= radius) continue;
+      car.hidden = 0.5;
+      car.mesh.visible = false;
+    }
+  }
+
   /** A townsperson's character (no shadow of their own: cheaper; the blob under the feet in „Paprasta“). */
   private person(look: Look, female: boolean, kind: Walker["kind"]): Walker {
     const ch = createCharacter(look);

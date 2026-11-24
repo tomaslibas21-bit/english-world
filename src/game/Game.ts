@@ -742,6 +742,7 @@ export class Game implements GameApi {
       const entering = this.enterZone(place.zone, { x: place.x, z: place.z, rot: place.rot }, true);
       if (entering) await entering;
       if (this.disposed) return;
+      if (place.zone === "town") this.ambient.clearPlayerSpawn(this.player.root.position, 0.38);
       if (place.zone === "town" && place.boat) {
         const saved = place.boat, boat = this.rides.find(saved.id);
         if (boat?.kind === "boat" && [saved.x, saved.z, saved.rot].every(Number.isFinite)) {
