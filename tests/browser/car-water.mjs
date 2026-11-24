@@ -53,9 +53,11 @@ const turn = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 const close = (a, b, tolerance, label) => assert.ok(Math.abs(a - b) <= tolerance, `${label} (${a} vs ${b}, tolerance ${tolerance})`);
 
 function installClock([key, save]) {
-  // Each case gets a new page. Reload within that case must use the game's actual save.
-  if (!sessionStorage.getItem("car-water-seeded") || !localStorage.getItem(key)) localStorage.setItem(key, save);
-  sessionStorage.setItem("car-water-seeded", "1");
+  // Each case gets a new page. Capture the game's save before reload startup can write it again.
+  const generation = Number(sessionStorage.getItem("car-water-document") ?? 0);
+  if (generation === 0) localStorage.setItem(key, save);
+  else window.__carWaterReloadSave = localStorage.getItem(key);
+  sessionStorage.setItem("car-water-document", String(generation + 1));
   sessionStorage.setItem("ew-play-now", "1");
   let now = 1000;
   performance.now = () => now;
@@ -68,7 +70,8 @@ function installClock([key, save]) {
       for (const fn of frames.splice(0)) fn(now);
     }
   };
-  let seed = 20261122;
+  // three draws UUIDs from Math.random, so each document needs its own deterministic stream.
+  let seed = 20261122 + generation;
   Math.random = () => ((seed = (Math.imul(1664525, seed) + 1013904223) >>> 0) / 4294967296);
 }
 
@@ -213,7 +216,8 @@ async function installReads() {
 
   function finishSample(player, face, id, before, w, p, c, hud) {
     const r = id ? R.find(id) : R.riding;
-    const car = r && { ...pose(r), id: r.id, object: r.mesh.uuid, kind: r.kind, speed: r.m.speed, pace: r.m.pace,
+    const car = r && { ...pose(r), id: r.id, object: r.mesh.uuid, reloadMarked: Object.hasOwn(r.mesh, "__carWaterReloadMarker"),
+      kind: r.kind, speed: r.m.speed, pace: r.m.pace,
       yaw: r.m.yaw, steer: r.m.steer, top: r.m.top, floor: floorY(r.m.x, r.m.z), surface: waterY(r.m.x, r.m.z, g.t),
       depth: depth(r.m.x, r.m.z), onRoad: R.asphalt.has(r.m.x, r.m.z), dryGround: R.drivable.has(r.m.x, r.m.z),
       mesh: point(r.mesh.position), headingDrawn: r.mesh.rotation.y, pitch: r.mesh.rotation.x, roll: r.mesh.rotation.z,
@@ -296,12 +300,14 @@ class Run {
     });
   }
 
-  async start(reload = false) {
+  async start(reloadFrom) {
     const chunkCount = this.chunks.length;
-    if (reload) {
-      delete this.id;
+    if (reloadFrom) {
       delete this.safety;
       await this.page.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
+      // Game.init has run when __ew.game appears. Its animation callbacks still wait for __step.
+      await this.page.waitForFunction(() => !!window.__ew?.game, null, { polling: 20, timeout: 120000 });
+      await this.page.evaluate(installReads);
     } else {
       await this.page.addInitScript(installClock, [`${storage}-progress-v1`, JSON.stringify(progress)]);
       await this.page.goto(base, { waitUntil: "domcontentloaded", timeout: 120000 });
@@ -309,13 +315,23 @@ class Run {
     const expires = Date.now() + 120000;
     let ready;
     do {
-      ready = await this.page.evaluate(ms => {
+      const startup = await this.page.evaluate(({ ms, captureId }) => {
+        const before = window.__ew?.game?.renderer.info.render.frame;
         window.__step(1, ms);
         const ew = window.__ew, g = ew?.game;
-        return ew?.store.getState().screen === "play" && g?.zone?.id === "town" && g.ledges?.ready
+        const ready = ew?.store.getState().screen === "play" && g?.zone?.id === "town" && g.ledges?.ready
           && !g.transitioning && g.carVisuals?.stats().parkedModels > 0 && g.carVisuals.stats().trafficModels > 0
           && g.crashShadersReady && g.presentedWorld?.scene === "town";
-      }, quantum);
+        if (!captureId || !g?.presentedWorld) return { ready };
+        const reads = window.__carWaterTest, first = reads.sample(captureId, before);
+        const clear = first.car ? reads.clearance(captureId) : null;
+        const savedPlace = JSON.parse(window.__carWaterReloadSave ?? null)?.place ?? null;
+        return { ready, firstReload: { first, clear, savedPlace } };
+      }, { ms: quantum, captureId: this.firstReload ? null : reloadFrom?.car.id });
+      ready = startup.ready;
+      if (startup.firstReload) {
+        this.firstReload = assertReloadPair(reloadFrom, startup.firstReload, "first reload frame");
+      }
       if (!ready) await this.page.waitForTimeout(20);
     } while (!ready && Date.now() < expires);
     assert.ok(ready, "the low-quality Vite DEV town presented and finished loading");
@@ -323,7 +339,7 @@ class Run {
       window.__ew.coach?.finish?.();
       window.__ew.store.getState().setHud({ panel: null });
     });
-    await this.page.evaluate(installReads);
+    if (!reloadFrom) await this.page.evaluate(installReads);
     assert.equal(await this.page.evaluate(() => window.__carWaterTest.town), town, "server edition matches fixture and storage");
     assert.deepEqual(this.chunks.slice(chunkCount), [], "no startup car-water module requests");
     assert.equal(await this.page.evaluate(() => typeof window.__carWater), "undefined", "lazy hook absent at startup");
@@ -1137,6 +1153,44 @@ async function pausedFallback(run) {
   }
 }
 
+function assertReloadPair(wet, { first, clear, savedPlace }, label) {
+  const { car, player, water } = first;
+  const evidence = {
+    serial: first.serial, previousSerial: first.before, scene: first.scene, zone: first.zone,
+    originalId: wet.car.id, originalUuid: wet.car.object, id: car?.id ?? null, uuid: car?.object ?? null,
+    originalMarked: true, reloadMarked: car?.reloadMarked ?? null,
+    rider: first.riding, ridePhase: first.ridePhase, shown: player.shown,
+    car: car?.mesh ?? null, carSurface: car?.surface ?? null, player: [player.x, player.y, player.z],
+    surface: player.surface, swim: first.swim, swimPose: player.swimPose, dive: first.dive, undersea: first.undersea,
+    reservations: first.reservations, active: water?.active ?? null, episode: water?.episode ?? null,
+    prompt: first.prompt, nearest: first.nearest, savedPlace, clear,
+  };
+  const checks = {
+    presentation: first.serial === first.before + 1,
+    town: first.scene === "town" && first.zone === "town",
+    sameRideId: car?.kind === "car" && car.id === wet.car.id,
+    freshUuid: typeof car?.object === "string" && car.object !== wet.car.object,
+    markerAbsent: car?.reloadMarked === false,
+    noRider: first.riding === null && first.ridePhase === null,
+    playerShown: player.shown,
+    drySurface: player.surface === null && car?.surface === null,
+    noSwim: !first.swim && player.swimPose === 0 && first.dive === 0 && !first.undersea,
+    noReservations: first.reservations === 0,
+    noEpisode: water === null,
+    atSavedPlace: savedPlace?.zone === "town" && gap(player, savedPlace) <= 0.02,
+    dryCarFootprint: clear?.car,
+    dryFootCircle: clear?.foot,
+    carClear: clear?.carClear,
+    footClear: clear?.footClear,
+    nearestIsSameCar: clear?.sameNear,
+    doorReach: clear?.reach >= 0.35 && clear.reach <= 1.45,
+    footSupport: Math.abs(player.y - clear?.floor) <= 0.02,
+  };
+  const failed = Object.keys(checks).filter(key => !checks[key]);
+  assert.deepEqual(failed, [], `${label} (${JSON.stringify(evidence)})`);
+  return evidence;
+}
+
 async function cleanup(run, reload) {
   await run.board(convertible);
   await run.watch();
@@ -1144,18 +1198,27 @@ async function cleanup(run, reload) {
   const wet = await run.frame();
   assert.ok(recovering(wet) && wet.car.depth >= 0.85 && wet.reservations >= 1);
   if (reload) {
-    await run.start(true);
-    run.id = convertible;
-    const first = await run.frame();
-    const clear = await run.clearance();
-    assert.ok(first.car.object !== wet.car.object && first.riding === null && first.player.shown && first.zone === "town"
-      && !first.water?.active && !first.swim && !first.undersea && first.reservations === 0, "reload starts a fresh dry scene");
-    assert.ok(clear.car && clear.foot && clear.carClear && clear.footClear && clear.sameNear
-      && clear.reach >= 0.35 && clear.reach <= 1.45, "reloaded actual saved foot spawn is next to the normal fleet car");
-    close(first.player.y, clear.floor, 0.02, "reload foot support");
-    await run.until(s => s.prompt === "drive" && s.nearSame, "same id available through the normal prompt after reload");
+    const marked = await run.page.evaluate(() => {
+      const { id, mesh } = window.__ew.game.rides.riding;
+      Object.defineProperty(mesh, "__carWaterReloadMarker", { value: true });
+      return { id, uuid: mesh.uuid, marked: Object.hasOwn(mesh, "__carWaterReloadMarker") };
+    });
+    assert.deepEqual(marked, { id: wet.car.id, uuid: wet.car.object, marked: true }, "marked the rendered car during recovery");
+    const ready = await run.start(wet);
+    const clear = ready.car ? await run.clearance() : null;
+    const evidence = assertReloadPair(wet, { first: ready, clear, savedPlace: run.firstReload.savedPlace }, "ready reload frame");
+    run.log({ firstReload: run.firstReload, readyReload: evidence });
+    assert.equal(ready.car.object, run.firstReload.uuid, "the same fresh rendered car survives startup");
+    await run.until(s => s.prompt === "drive" && s.nearSame && s.nearest === wet.car.id,
+      "same id available through the normal prompt after reload");
     await run.act("Vairuoti");
-    await run.until(s => s.riding === run.id && s.ridePhase === "on" && s.water?.enabled, "real board after reload");
+    const entered = await run.until(s => s.riding === wet.car.id && s.ridePhase === "in" && s.player.shown,
+      "visible entry phase after reload", 30);
+    const boarded = await run.until(s => s.riding === wet.car.id && s.ridePhase === "on" && s.water?.enabled, "real board after reload");
+    assert.equal(entered.car.object, ready.car.object, "entered the fresh rendered car");
+    assert.equal(boarded.car.object, ready.car.object, "seated in the fresh rendered car");
+    assert.equal(boarded.player.shown, true, "convertible driver stays visible after reload");
+    run.log({ reboarded: boarded.riding, uuid: boarded.car.object, phase: boarded.ridePhase });
   } else {
     await run.page.evaluate(zone => window.__ew.game.enterZone(zone, undefined, true), site.indoor);
     delete run.safety;
