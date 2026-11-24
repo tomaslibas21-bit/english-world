@@ -22,6 +22,7 @@ const iPhone = { deviceScaleFactor: 2, isMobile: true, hasTouch: true, userAgent
 const sizes = {
   "390x664": { ...iPhone, viewport: { width: 390, height: 664 } },
   "390x844": { ...iPhone, viewport: { width: 390, height: 844 } },
+  "844x390": { ...iPhone, viewport: { width: 844, height: 390 } },
   "1280x800": { viewport: { width: 1280, height: 800 } },
 };
 const cafeAnswers = {
@@ -92,6 +93,22 @@ try {
     }
 
     await completeCafe();
+    const landscape = label === "844x390";
+    const shortPhone = landscape || label === "390x664";
+    assert.equal(await page.locator(".mission.complete").isVisible(), !shortPhone, `${label}: completed mission row visibility`);
+    if (label === "390x664") {
+      const reply = page.locator(".transcript .msg.npc .bubble").last();
+      assert(await reply.evaluate((bubble) => {
+        const transcript = bubble.closest(".transcript").getBoundingClientRect();
+        return [".en", ".lt"].every((selector) => {
+          const lines = [...bubble.querySelectorAll(selector)];
+          return lines.length > 0 && lines.every((line) => {
+            const { top, bottom } = line.getBoundingClientRect();
+            return top >= transcript.top && bottom <= transcript.bottom;
+          });
+        });
+      }), `${label}: the entire closing reply and translation fit in the transcript`);
+    }
     assert.equal(await card.locator(".stars .ui-icon").count(), 3);
     assert(await card.locator(".stars .on").count() > 0);
     assert.equal(await card.locator(".ended-keepsake").innerText(), "Gavai kavos puodelį");
@@ -117,8 +134,11 @@ try {
       viewport: innerHeight,
       scroll: el.scrollHeight - el.clientHeight,
     }));
-    assert(bounds.top > 0 && bounds.bottom <= bounds.viewport && bounds.last <= bounds.bottom && bounds.scroll <= 1,
-      `${label}: the whole end card fits under the town view: ${JSON.stringify(bounds)}`);
+    assert(bounds.top > 0 && bounds.bottom <= bounds.viewport, `${label}: the card stays within the viewport`);
+    if (!landscape) {
+      assert(bounds.last <= bounds.bottom && bounds.scroll <= 1,
+        `${label}: the whole end card fits under the town view: ${JSON.stringify(bounds)}`);
+    }
     await shot(page, "end-card");
 
     const destination = card.locator(".ended-destination");
@@ -135,6 +155,9 @@ try {
     }
     const place = await destination.locator("small").innerText();
     assert(place.trim());
+    const navigate = destination.getByRole("button", { name: "Nuvesk mane" });
+    assert(await navigate.evaluate((button) => button.matches(".btn") && !button.matches(".soft, .ghost")));
+    assert(await card.locator(".barista-cta").evaluate((button) => button.matches(".btn.soft")));
     const secondary = card.locator(".ended-secondary");
     const nextButton = secondary.getByRole("button", { name: "Kita situacija", exact: true });
     assert(await nextButton.isVisible());
@@ -149,7 +172,12 @@ try {
     });
     assert(rows.length === 1 && rows[0] === 4 || rows.length === 2 && rows.every((n) => n === 2),
       `${label}: the secondary buttons fit on one row or wrap in pairs`);
-    await press(destination.getByRole("button", { name: "Nuvesk mane" }));
+    if (landscape) {
+      await ctx.close();
+      console.log("ok", label);
+      continue;
+    }
+    await press(navigate);
     await card.waitFor({ state: "hidden" });
     await page.waitForFunction((id) => {
       const { game, store } = window.__ew;

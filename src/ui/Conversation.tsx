@@ -59,7 +59,10 @@ export function Conversation() {
   const inputRef = useRef<HTMLInputElement>(null);
   const missRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight }); }, [conv.transcript.length, conv.phase]);
+  useEffect(() => {
+    const transcript = scrollRef.current;
+    transcript?.scrollTo({ top: transcript.scrollHeight, behavior: conv.phase === "ended" ? "instant" : "auto" });
+  }, [conv.transcript.length, conv.phase]);
   useEffect(() => { if (conv.typing && conv.phase === "you") inputRef.current?.focus(); }, [conv.typing, conv.phase]);
   // half-typed text doesn't carry over into the next conversation
   useEffect(() => { setTyped(""); }, [conv.sitId, conv.active]);
@@ -257,7 +260,7 @@ function EndCard({ sit }: { sit: SituationDef }) {
         {completed && <div className="ended-keepsake"><KeepsakeIcon kind={kind} /> Gavai {KIND[kind].accusative}</div>}
         {newExpressions.length > 0 && <div className="ended-sub">Naujų frazių knygelėje: {newExpressions.length}</div>}
       </div>}
-      {modeOffer && <button className={`btn ${modeOffer.id}-cta`} onClick={() => game?.modeFromConversation(modeOffer.id)}><Icon name="star" size={19} /> {modeOffer.label}</button>}
+      {modeOffer && <button className={`btn ${modeOffer.id}-cta${modeOffer.id === "barista" ? " soft" : ""}`} onClick={() => game?.modeFromConversation(modeOffer.id)}><Icon name="star" size={19} /> {modeOffer.label}</button>}
       {light ? (
         <div className="sit-actions">
           <button className="btn" onClick={startNext}><Icon name="arrowRight" size={18} /> Kita situacija</button>
