@@ -91,7 +91,7 @@ export const SURF_LINES: Record<string, SentSrc[]> = {
   sg_r_side: [t("You | leaned | the | wrong | way.", "Jūs | pasvirote | — | ne į tą | pusę.", "Pasvirote ne į tą pusę.")],
   sg_r_trick: [t("You | jumped | at | the | wrong | time.", "Jūs | pašokote | — | — | ne tuo | metu.", "Pašokote ne laiku.")],
   sg_tip_late: [t("Stand up | when | I | say | “now.”", "Stokitės | kai | aš | pasakysiu | „dabar“.", "Stokitės, kai pasakysiu „dabar“.")],
-  sg_tip_early: [t("Wait | for | the | wave | to | push | you.", "Palaukite | — | — | banga | kol | stumtelės | Jus.", "Palaukite, kol banga Jus stumtelės.")],
+  sg_tip_early: [t("Wait | for | the | wave | to | push | you.", "Palaukite, | kol | — | banga | — | stumtelės | Jus.", "Palaukite, kol banga Jus stumtelės.")],
   sg_tip_nopaddle: [t("Paddle | hard | until | you | feel | the | wave.", "Irkluokite | stipriai | kol | Jūs | pajusite | — | bangą.", "Stipriai irkluokite, kol pajusite bangą.")],
   sg_tip_back: [t("Put | more | weight | on | your | front | foot.", "Perkelkite | daugiau | svorio | ant | savo | priekinės | pėdos.", "Daugiau svorio perkelkite ant priekinės pėdos.")],
   sg_tip_knees: [t("Keep | your | knees | bent | for | balance.", "Laikykite | savo | kelius | sulenktus | dėl | pusiausvyros.", "Kad išlaikytumėte pusiausvyrą, sulenkite kelius.")],
