@@ -56,12 +56,12 @@ export const RIDERS: Record<string, Role> = {
 export const STREET: Record<string, Role> = {
   st_eli: { voice: "Umbriel", style: "easygoing and playful, with an unhurried rhythm", note: "Eli, a young man who plays guitar on the street" },
   st_sal: { voice: "Alnilam", style: "hearty and direct, with an old-school sales patter", note: "Sal, an older man who sells pretzels and cider from a cart" },
-  st_jess: { voice: "Zephyr", style: "bright and easygoing, with a smile in the voice", note: "Jess, a young woman who walks dogs" },
+  st_jess: { voice: "Sulafat", style: "bright and easygoing, with a smile in the voice", note: "Jess, a young woman who walks dogs" },
   st_martha: { voice: "Achernar", style: "gentle and thoughtful, with easy pauses", note: "Martha, an older woman who paints by the water" },
   st_leo: { voice: "Sadachbia", style: "light and high-pitched, with quick bursts of excitement", note: "Leo, a seven-year-old boy learning to fly a kite" },
   st_dana: { voice: "Pulcherrima", style: "brisk, upbeat and encouraging", note: "Dana, an adult woman out jogging" },
   st_ray: { voice: "Rasalgethi", style: "warm and neighborly, with clear, steady delivery", note: "Ray, an adult man delivering the mail" },
-  st_gus: { voice: "Schedar", style: "quiet and unhurried, with dry humor", note: "Gus, an older man who fishes by the harbor" },
+  st_gus: { voice: "Algieba", style: "quiet and unhurried, with dry humor", note: "Gus, an older man who fishes by the harbor" },
   st_ruth: { voice: "Aoede", style: "warm and reassuring, with a soft, steady rhythm", note: "Ruth, an older woman who feeds pigeons" },
   st_tyler: { voice: "Zubenelgenubi", style: "casual and laid-back, with a hint of a grin", note: "Tyler, a teenage boy practicing skateboard tricks" },
 
