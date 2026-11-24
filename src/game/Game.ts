@@ -21,6 +21,7 @@ import { Wading, Splashes, floorY, waterY, bayHold, SEA_LEVEL, SHORE, SWIM, BAY 
 import { Rides, SHALLOWS, type Ride } from "./rides/Rides";
 import { KeepsakeInHand } from "./keepsake";
 import { keepsakeFor } from "../content/keepsakes";
+import { CenoteTourEntry } from "./cenoteTour/entry";
 import { Undersea } from "./rides/undersea";
 import { CAR_DRIFT, BOAT_DRIFT, BOAT, BAY_EDGE, controlsFrom, pointAndGo, type Controls } from "./rides/drive";
 import { RIDES } from "./world/rides";
@@ -303,6 +304,8 @@ export class Game implements GameApi {
   private loadMeeting = false;
   private officeRequested = false;
   private modeHost!: ModeHost;
+  private cenoteTour?: CenoteTourEntry;
+  private cenoteInspection?: { snapshot: () => unknown };
   private quests!: TownQuests;
   /** The first visit's look at the town from the air (flyover.ts): how long it has been going (s). */
   private flight: { t: number } | null = null;
@@ -718,6 +721,38 @@ export class Game implements GameApi {
       place: (x, z, rot) => this.placeOnFoot(x, z, rot, true),
       save: () => this.savePlace(),
     }));
+    if (CENOTE_TOUR && cenoteGuide) {
+      const home = talkSpawn(cenoteGuide, 2.2);
+      const tour = this.cenoteTour = new CenoteTourEntry({
+        ...host,
+        canStart: () => this.zone?.id === "town" && host.canStart(),
+        dry: () => {
+          if (this.disposed) return;
+          this.cancelRide();
+          this.prepareMode();
+          this.wet = this.brake = this.pointer.down = false;
+          this.rideGoal = null;
+          this.wading.depth = 0;
+          this.setJoystick(0, 0);
+          host.place(home.x, home.z, home.rot);
+          this.undersea.update(0, this.t, false, this.player.root.position, 0);
+          useStore.getState().setHud({ prompt: null, ride: null, wading: false });
+          this.savePlace();
+        },
+        guide: () => {
+          this.updateCenoteGuide();
+          return this.npcs.find((n) => n.id === cenoteGuide.npc)?.ch;
+        },
+        curtain: (opacity) => this.container.parentElement?.style.setProperty("--cenote-tour-fade", opacity ? String(opacity) : ""),
+        paused: () => document.hidden || this.wasHidden,
+        failed: () => useStore.getState().toast({ kind: "info", title: L("Išvykos pradėti nepavyko. Gali bandyti dar kartą."), ms: 4200 }),
+      }, CENOTE_TOUR.id);
+      this.modes.register(tour);
+      this.cenoteInspection = { snapshot: () => ({
+        ...tour.snapshot(), drawCalls: this.renderer.info.render.calls, triangles: this.renderer.info.render.triangles,
+      }) };
+      Object.defineProperty(window, "__cenoteTour", { configurable: true, value: Object.freeze(this.cenoteInspection) });
+    }
     this.scene.add(this.npcLayer, this.guidance.group, this.ambient.group, this.rides.group, this.dust.group, this.splashes.group, this.undersea.group);
     // (a place like the grotto keeps the camera inside itself: Interior.wild.space)
     this.rig.space = {
@@ -1162,7 +1197,7 @@ export class Game implements GameApi {
   private updateCenoteGuide() {
     if (!cenoteGuide || this.zone.id !== "town") return;
     const { x, z } = this.player.root.position;
-    const near = Math.hypot(x - cenoteGuide.x, z - cenoteGuide.z) <= 24;
+    const near = !!this.cenoteTour?.active || Math.hypot(x - cenoteGuide.x, z - cenoteGuide.z) <= 24;
     const i = this.npcs.findIndex((n) => n.id === cenoteGuide.npc);
     if (near === (i >= 0)) return;
     if (near) this.spawnNpc(cenoteGuide);
@@ -2165,7 +2200,7 @@ export class Game implements GameApi {
 
   private phonePageHide = () => {
     this.reactions.clear();
-    if (this.rides?.riding?.kind === "boat") this.savePlace();
+    if (this.rides?.riding?.kind === "boat" || this.cenoteTour?.active) this.savePlace();
     this.phone.dismiss();
     if (useStore.getState().progress.phone) {
       useStore.getState().updateProgress((p) => this.phone.saveClock(p));
@@ -2197,9 +2232,10 @@ export class Game implements GameApi {
       this.rig.mode = "talk";
       this.player.setAnim("idle");
     }
+    const autoHandoff = sit.id === POOL_SITUATION || this.cenoteTour?.chat(sit.id);
     const session: Session = new Session(sit.id, {
-      recordedOnly: sit.id === POOL_SITUATION || sit.id === CENOTE_TOUR?.id,
-      autoClose: sit.id === POOL_SITUATION ? () => this.modes.hasQueued : undefined,
+      recordedOnly: autoHandoff,
+      autoClose: autoHandoff ? () => this.modes.hasQueued : undefined,
       npcTalk: (npcId, secs, text) => {
         const n = this.npcs.find((x) => x.id === npcId);
         if (!n) return;
@@ -2580,7 +2616,7 @@ export class Game implements GameApi {
     this.pendingRide = null;
     if (this.session?.active) this.session.close(); else this.modes.launchQueued();
   }
-  modeExit() { this.modes.exit(); }
+  modeExit(immediate = false) { this.modes.exit(immediate); }
   modeAction(id: string, name: string, value?: string | boolean) {
     if (this.transitioning || useStore.getState().hud.panel) return;
     if (id === "directions") { this.quests.directionAction(name); return; }
@@ -3023,8 +3059,12 @@ export class Game implements GameApi {
       this.rig.cam.position.x += Math.sin(this.t * 41) * this.speedShake;
       this.rig.cam.position.y += Math.cos(this.t * 37) * this.speedShake * 0.7;
     }
-    // under the water (a dive: the camera below the surface): the seabed, the fish, the water's own light
-    {
+    // The snorkel rig sees the same bay below its surface without putting the character in free-swim state.
+    const tourSurface = this.cenoteTour?.surface;
+    if (tourSurface != null) {
+      this.undersea.update(dt, this.t, true, this.rig.cam.position, 0, tourSurface);
+      this.underWater(this.undersea.on);
+    } else {
       const cp = this.rig.cam.position, pp1 = this.player.root.position, sur = this.zone.interior ? null : waterY(pp1.x, pp1.z, this.t);
       const under = sur !== null && this.diveK > 0.2 && cp.y < sur - 0.1;
       if (this.swimming || this.undersea.on) this.undersea.update(dt, this.t, under, this.tmpV.set(pp1.x + Math.sin(this.heading) * 0.4, pp1.y + 1.2, pp1.z + Math.cos(this.heading) * 0.4), speed / SWIM.speed);
@@ -3157,7 +3197,7 @@ export class Game implements GameApi {
     if (this.hudT <= 0) {
       this.hudT = 0.12;
       this.updateCenoteGuide();
-      this.updateHud();
+      if (this.cenoteTour?.active) this.saveAtHudTick(); else this.updateHud();
       // The town's sounds where the player stands (audio.ambience), only while the town is visible and no
       // conversation or panel is open: gulls, birds and the surf by the sea, a murmur where people gather, a cup in a
       // café, the harbour's bell by the pier, a few far-off notes on the square.
@@ -4054,6 +4094,10 @@ export class Game implements GameApi {
       mm.questX !== quest?.x || mm.questZ !== quest?.z || mm.gates !== gates) {
       st.setHud({ minimap: { px: p.x, pz: p.z, heading: this.heading, targetX: marker?.x, targetZ: marker?.z, zone, gates, questX: quest?.x, questZ: quest?.z } });
     }
+    this.saveAtHudTick();
+  }
+
+  private saveAtHudTick() {
     this.saveT -= 0.12;
     if (this.saveT <= 0) { this.saveT = 5; this.savePlace(); }
   }
@@ -4063,7 +4107,9 @@ export class Game implements GameApi {
     if (!this.player || !this.zone) return;
     const p = this.player.root.position;
     useStore.getState().updateProgress((pr) => {
-      pr.place = { zone: this.zone.id, x: +p.x.toFixed(2), z: +p.z.toFixed(2), rot: +this.heading.toFixed(2) };
+      pr.place = cenoteGuide && this.modes.owns("cenote-tour")
+        ? { zone: "town", ...talkSpawn(cenoteGuide, 2.2) }
+        : { zone: this.zone.id, x: +p.x.toFixed(2), z: +p.z.toFixed(2), rot: +this.heading.toFixed(2) };
       const boat = this.rides.riding;
       const atSea = this.modes.owns("sea");
       if (this.zone.id === "town" && boat?.kind === "boat" && this.rides.phase !== "out") {
@@ -4127,6 +4173,9 @@ export class Game implements GameApi {
     this.streetLife?.dispose();
     this.disposed = true;
     this.modes.dispose();
+    this.undersea?.dispose();
+    if (this.cenoteInspection && Object.getOwnPropertyDescriptor(window, "__cenoteTour")?.value === this.cenoteInspection)
+      Reflect.deleteProperty(window, "__cenoteTour");
     this.player?.root.removeFromParent();
     this.normalPlayer?.dispose?.();
     this.surfPlayer?.dispose?.();

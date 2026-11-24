@@ -129,8 +129,11 @@ export class Session {
   }
 
   playVoice(...args: Parameters<typeof audio.play>) {
-    const [voice, speed, say] = args;
-    return this.hooks.recordedOnly && !audio.hasClip(voice, speed, say) ? Promise.resolve(true) : audio.play(...args);
+    const [voice, speed, say, options] = args;
+    if (this.hooks.recordedOnly && !audio.hasClip(voice, speed, say)) return Promise.resolve(true);
+    return this.hooks.recordedOnly && this.sit.optionalVoice
+      ? audio.play(voice, speed, say, { ...options, optional: true, recordingOnly: true }).then(() => this.alive)
+      : audio.play(...args);
   }
 
   private stepProgress(previous: ConvUI["stepProgress"]): ConvUI["stepProgress"] {
@@ -174,7 +177,7 @@ export class Session {
       if (this.hooks.recordedOnly && clip === null) {
         await wait(Math.min(2000, dur * 600));
       } else {
-        const played = await audio.play(voice, speed, l.sentence.say, { slow, male: npc?.gender === "m", ...(optionalVoice ? { optional: true } : {}) });
+        const played = await audio.play(voice, speed, l.sentence.say, { slow, male: npc?.gender === "m", ...(optionalVoice ? { optional: true, recordingOnly: this.hooks.recordedOnly } : {}) });
         if (!played && !optionalVoice) return;
       }
       await wait(160);
