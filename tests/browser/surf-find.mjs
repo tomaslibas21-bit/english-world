@@ -4,7 +4,7 @@
 // level, else the level's choice). Check the map and walking approach too, with the town clock stepped by hand.
 // WORLD_TEST_URL=http://127.0.0.1:5188 WORLD_STORAGE=english-world WORLD_PLAYWRIGHT_MODULE=/path/to/playwright-core/index.mjs node tests/browser/surf-find.mjs
 import assert from "node:assert/strict";
-import { HARBOR_START, SEEDED_RANDOM, readSurfIntro, sampleSurfRender } from "./fixtures/surf-town.mjs";
+import { HARBOR_START, SEEDED_RANDOM, readConversationState, sampleSurfRender, waitForLearnerTurn } from "./fixtures/surf-town.mjs";
 import { HARBOR_PHONE_VIEW, checkHarborCalls, openHarbor, originalHarborCalls } from "./fixtures/harbor-calls.mjs";
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:5188";
@@ -228,14 +228,7 @@ try {
     await shot("minimap");
     await follow("Harbor Road", "town");
 
-    const waitForSession = async (id = sitId) => {
-      for (let i = 0; i < 400 && !(await page.evaluate(() => window.__ew.game.activeSession?.active)); i++) { await step(3); await real(20); }
-      assert.deepEqual(await page.evaluate(() => {
-        const { game, store } = window.__ew;
-        return [game.activeSession?.active, game.activeSession?.sit.id, store.getState().conv.sitId];
-      }), [true, id, id]);
-      if (id === sitId) await readSurfIntro(page);
-    };
+    const waitForSession = (id = sitId) => waitForLearnerTurn(page, id);
     if (phone) await page.locator(".act-btn").tap(); else await page.keyboard.press("e");
     await waitForSession();
     // A completed rental records the bonus for the picker through the real dialogue engine.
@@ -244,7 +237,7 @@ try {
       await page.evaluate((text) => window.__ew.game.activeSession.submit(text, [], "typed"), answer);
     }
     await page.waitForFunction(() => window.__ew.store.getState().progress.sits["x04-surf"]?.completions > 0, null, { polling: 50, timeout: 20000 });
-    const ended = page.locator(".ended-box");
+    const ended = page.locator(".convo[data-phase=ended] .ended-box");
     const cta = ended.getByRole("button", { name: "Banglenčių pamoka", exact: true });
     await cta.waitFor();
     const actionOrder = await ended.locator("button").evaluateAll((buttons) => {
@@ -274,13 +267,16 @@ try {
     await map();
 
     // The school's end card leads with the lesson and honours the queued level.
+    const seedEndCard = async () => {
+      await page.evaluate(() => window.__ew.store.getState().setConv({ phase: "ended", completed: true }));
+      await step(4);
+    };
     const endCard = async () => {
       if ((await hud()).panel === "map") await clickSchoolAction("Pradėti dabar");
       else await page.evaluate((id) => window.__ew.game.startScenario(id), sitId);
       await waitForSession();
       assert.equal(await page.locator(".surf-cta").count(), 0, "the surf action waits for the end card");
-      await page.evaluate(() => window.__ew.store.getState().setConv({ phase: "ended", completed: true, bestPhrase: null }));
-      await step(4);
+      await seedEndCard();
     };
     await endCard();
     const btns = await page.locator(".ended-box button").allInnerTexts();
@@ -324,12 +320,25 @@ try {
     await step(20);
     const other = await page.evaluate(() => window.__ew.game.orderedSituations().find((s) => s.id !== window.__ew.game.surf.situation && s.mode !== "phone" && s.mode !== "video" && s.location !== "phone")?.id);
     assert(other);
-    await page.evaluate((id) => window.__ew.game.startScenario(id), other);
-    await waitForSession(other);
-    await page.evaluate(() => window.__ew.store.getState().setConv({ phase: "ended", completed: true, introOpen: false }));
-    await step(4);
-    await ended.waitFor();
-    check(`${label}: another conversation's end card has no "Surf lesson"`, await page.locator(".surf-cta").count() === 0, other);
+    assert.notEqual(other, sitId);
+    const allSituations = ended.getByRole("button", { name: "Visos situacijos", exact: true });
+    try {
+      await page.evaluate((id) => window.__ew.game.startScenario(id), other);
+      const run = await waitForSession(other);
+      await seedEndCard();
+      await ended.waitFor({ state: "visible" });
+      const state = await readConversationState(page, 1);
+      assert.deepEqual(state, { activeSessionId: other, sessionActive: true,
+        conv: { active: true, sitId: other, phase: "ended", introOpen: false, completed: true, run } });
+      assert(await ended.isVisible(), "the end card stays visible on the next frame");
+      assert(await allSituations.isVisible(), "the end card shows Visos situacijos");
+      check(`${label}: another conversation's end card has no "Surf lesson"`, await page.locator(".surf-cta").count() === 0, other);
+      await shot("other-end-card");
+    } catch (error) {
+      const state = await readConversationState(page);
+      const cardVisible = await ended.isVisible();
+      throw new Error(`${label}: expected the end card for ${other}: ${JSON.stringify({ ...state, cardVisible })}`, { cause: error });
+    }
     check(`${label}: no errors on the page`, errors.length === 0, errors.slice(0, 3));
     await ctx.close();
   }
