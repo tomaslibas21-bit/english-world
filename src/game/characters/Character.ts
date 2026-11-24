@@ -349,6 +349,7 @@ export class Character {
   root = new THREE.Group();
   private body = new THREE.Group();
   private head = new THREE.Group();
+  get headJoint(): THREE.Object3D { return this.head; }
   private armL = new THREE.Group();
   private armR = new THREE.Group();
   readonly rightHand = new THREE.Group();

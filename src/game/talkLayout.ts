@@ -5,6 +5,7 @@ type Box = { x0: number; x1: number; y0: number; y1: number };
 export interface TalkLayout {
   width: number;
   height: number;
+  viewportHeight: number;
   picture: Box;
   obstacles: Box[];
   shiftX: number;
@@ -91,7 +92,7 @@ function measure(canvas: HTMLCanvasElement, panel: Element | null, islands: Elem
     }
   }
   return {
-    width: c.width, height: c.height, picture, obstacles,
+    width: c.width, height: c.height, viewportHeight: innerHeight, picture, obstacles,
     shiftX: c.width / 2 - (aim.x0 + aim.x1) / 2,
     shiftY: c.height / 2 - (aim.y0 + (aim.y1 - aim.y0) * 0.46),
   };
@@ -100,7 +101,8 @@ function measure(canvas: HTMLCanvasElement, panel: Element | null, islands: Elem
 const close = (a: number, b: number) => Math.abs(a - b) <= 1;
 const sameBox = (a: Box, b: Box) => close(a.x0, b.x0) && close(a.x1, b.x1) && close(a.y0, b.y0) && close(a.y1, b.y1);
 function sameLayout(a: TalkLayout | null, b: TalkLayout | null) {
-  return a && b ? close(a.width, b.width) && close(a.height, b.height) && sameBox(a.picture, b.picture)
+  return a && b ? close(a.width, b.width) && close(a.height, b.height) && close(a.viewportHeight, b.viewportHeight)
+    && close(a.shiftX, b.shiftX) && close(a.shiftY, b.shiftY) && sameBox(a.picture, b.picture)
     && a.obstacles.length === b.obstacles.length && a.obstacles.every((box, i) => sameBox(box, b.obstacles[i])) : a === b;
 }
 
@@ -108,7 +110,7 @@ function sameLayout(a: TalkLayout | null, b: TalkLayout | null) {
 export function watchTalkLayout(canvas: HTMLCanvasElement, valid: () => boolean, hasArt: boolean, apply: (layout: TalkLayout | null) => void) {
   const root = canvas.parentElement!.parentElement!;
   let frame: number | null = null, stopped = false;
-  let last: TalkLayout | null = null;
+  let last: TalkLayout | null | undefined;
   let pictures = hasArt && picturesOn(useStore.getState().settings);
   let observed = new Set<Element>();
   const dirty = () => {
@@ -142,7 +144,7 @@ export function watchTalkLayout(canvas: HTMLCanvasElement, valid: () => boolean,
     const nowPictures = hasArt && picturesOn(useStore.getState().settings);
     const returning = pictures && !nowPictures;
     pictures = nowPictures;
-    if (returning || !sameLayout(last, layout)) { last = layout; apply(layout); }
+    if (returning || last === undefined || !sameLayout(last, layout)) { last = layout; apply(layout); }
   }
 
   const onOverlayEvent = (e: Event) => {

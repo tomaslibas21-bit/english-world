@@ -9,7 +9,7 @@ import { buildTown, type Town, type Door } from "./world/town";
 import { loadedCarModelCount } from "./world/carModels";
 import type { CarVisuals } from "./world/carVisuals";
 import { getInterior, type Interior } from "./world/interiors";
-import { OUTDOOR_NPCS, AIRPORT_EXIT, WORLD, BUILDINGS, ROADS, DROPOFF, SEA_Z, BEACH_Z, FOUNTAIN, PARK, SQUARE } from "./world/layout";
+import { OUTDOOR_NPCS, AIRPORT_EXIT, WORLD, ROADS, DROPOFF, SEA_Z, BEACH_Z, FOUNTAIN, PARK, SQUARE } from "./world/layout";
 import { createCharacter, setBlobShadows, withBackpack, type GameCharacter } from "./characters";
 import { moodOf } from "./characters/mood";
 import { styleRenderer, createStyleFx, type StyleFx } from "./styleScene";
@@ -58,7 +58,7 @@ import { GOFISH_PROMPT } from "./gofish/framing";
 import { OcclusionField } from "./occlusion";
 import { PropFader } from "./fade";
 import { CUT, withCutout } from "./cutout";
-import { covers, NEAR_TALK, shoulderShots, type Body, type Shot } from "./talkShot";
+import type { Framing, TalkFraming } from "./talkFraming";
 import type { TalkLayout, watchTalkLayout } from "./talkLayout";
 import { FLIGHT_SECONDS, flightAt } from "./flyover";
 import { Guidance } from "./guidance";
@@ -140,28 +140,11 @@ const AT_WORK: Record<string, "wipe" | "type"> = {
   emily: "type",
 };
 
-let talkLayoutModule: Promise<typeof import("./talkLayout")> | undefined;
+let talkFramingModule: Promise<typeof import("./talkFraming")> | undefined;
 
 /** The provisional picture above the conversation on a phone, before the panel mounts. */
 function talkPictureHeight(h: number): number {
   return h <= 620 ? 100 : h <= 700 ? Math.max(100, h * 0.2) : Math.min(230, Math.max(110, h * 0.25));
-}
-
-const headBox = new THREE.Vector3();
-/** How far above its feet the top of a person's head is, hair and hats included (the box of their own meshes; the
- *  blob shadow left out). */
-function headTop(ch: GameCharacter): number {
-  let top = -Infinity;
-  ch.root.updateMatrixWorld(true);
-  ch.root.traverse((o) => {
-    const g = (o as THREE.Mesh).isMesh && o.visible ? (o as THREE.Mesh).geometry : null;
-    if (!g) return;
-    if (!g.boundingBox) g.computeBoundingBox();
-    const b = g.boundingBox;
-    if (!b || b.max.y - b.min.y < 0.05) return;
-    for (const x of [b.min.x, b.max.x]) for (const z of [b.min.z, b.max.z]) top = Math.max(top, headBox.set(x, b.max.y, z).applyMatrix4(o.matrixWorld).y);
-  });
-  return Number.isFinite(top) ? top - ch.root.position.y : ch.height * 1.04;
 }
 
 export class Game implements GameApi {
@@ -226,11 +209,11 @@ export class Game implements GameApi {
   private talkLean = 0;
   private talkHome: THREE.Vector3 | null = null;
   private talkNear: THREE.Vector3 | null = null;
-  /** Who takes part in the conversation and stands near enough for its camera, who of them is in the picture now,
-   *  and the framings found so far, by whom the camera was turned to. */
+  /** Speakers within reach of this conversation and poses to recheck when they speak again. */
   private talkCast: NpcActor[] = [];
-  private talkIn: NpcActor[] = [];
-  private talkViews = new Map<string, Shot>();
+  private talkViews = new Map<string, Framing>();
+  private talkFraming?: TalkFraming;
+  private talkShot: Framing | null = null;
   private talkSpeaker: NpcActor | null = null;
   private talkLayout: TalkLayout | null = null;
   private talkLayoutWatch?: ReturnType<typeof watchTalkLayout>;
@@ -884,6 +867,7 @@ export class Game implements GameApi {
     if (!z) return;
     const doIt = () => {
       if (this.talkNpc) this.stopTalkLayout();
+      this.talkFraming = undefined;
       this.phone.dismiss();
       if (this.modes.active || this.modes.owns("barista") || this.modes.owns("gofish")) this.modes.exit(true);
       if (this.flight) {
@@ -2015,10 +1999,8 @@ export class Game implements GameApi {
       // and then on whoever else taking part speaks, if they stand nearby (Mark at the party, Nora at dinner…): aimTalk
       const reach = THEME.talkCamera?.reach ?? 7, a = actor.ch.root.position;
       this.talkCast = [actor, ...(sit.npcs ?? []).map((id) => this.npcs.find((n) => n.id === id)).filter((n): n is NpcActor => !!n && n !== actor && n.ch.root.position.distanceTo(a) < reach)];
-      this.talkViews.clear();
-      this.talkIn = [];
-      this.aimTalk(actor);
       this.rig.mode = "talk";
+      this.aimTalk(actor);
       this.player.setAnim("idle");
     }
     const session: Session = new Session(sit.id, {
@@ -2028,7 +2010,7 @@ export class Game implements GameApi {
         // the mouth follows the recording while the line is this person's (its loudness and its sound), and the face
         // what the line says
         n.ch.talk(secs, () => (useStore.getState().conv.npcId === npcId ? audio.level() : -1), () => audio.vowel());
-        // the camera turns to them if they are not in the picture, and leans in a little while they speak
+        // the camera follows changes of speaker
         if (this.rig.mode === "talk" && this.talkCast.includes(n)) this.aimTalk(n);
         this.talkLean = this.t + Math.min(secs, 12);
         if (text) n.ch.express?.(moodOf(text), secs + 1.2);
@@ -2052,286 +2034,89 @@ export class Game implements GameApi {
         && this.zone === zone && this.talkNpc === actor && this.rig.mode === "talk"
         && !!this.talkSpeaker && this.npcs.includes(this.talkSpeaker);
     };
-    const load = talkLayoutModule ??= import("./talkLayout");
-    void load.then(({ watchTalkLayout }) => {
+    const load = talkFramingModule ??= import("./talkFraming");
+    void load.then(({ TalkFraming, watchTalkLayout }) => {
       if (!valid()) return;
+      this.talkFraming ??= new TalkFraming();
       this.talkLayoutWatch = watchTalkLayout(this.renderer.domElement, valid, !!sceneFor(sitId, hostId), (layout) => {
         this.talkLayout = layout;
         this.refitTalk();
-        // The old pose was fitted to a different opening in the overlay.
-        this.rig.snap();
       });
-    }, () => { if (talkLayoutModule === load) talkLayoutModule = undefined; });
+    }, () => { if (talkFramingModule === load) talkFramingModule = undefined; });
   }
 
   private stopTalkLayout() {
     this.talkLayoutWatch?.dispose();
     this.talkLayoutWatch = undefined;
-    this.talkLayout = this.talkSpeaker = null;
+    this.talkLayout = this.talkSpeaker = this.talkShot = null;
+    this.talkViews.clear();
     this.talkLean = 0;
   }
 
   private refitTalk() {
     this.talkViews.clear();
-    if (this.talkSpeaker) this.frameTalk(this.talkSpeaker);
+    if (this.talkSpeaker) this.frameTalk(this.talkSpeaker, true);
   }
 
-  /** Turns the conversation's camera to `to`, one of those taking part (and whoever of them stands right by them),
-   *  unless they are in the picture already; the learner turns to them too. Each one's framing is found once. */
   private aimTalk(to: NpcActor) {
+    if (to === this.talkSpeaker) return;
     this.talkSpeaker = to;
-    if (this.talkIn.includes(to)) return;
     this.talkLean = 0;
+    const p = this.player.root.position, a = to.ch.root.position;
+    if (Math.hypot(a.x - p.x, a.z - p.z) > 0.1) this.heading = Math.atan2(a.x - p.x, a.z - p.z);
     this.frameTalk(to);
   }
 
-  private frameTalk(to: NpcActor) {
-    const p = this.player.root.position, a = to.ch.root.position;
-    if (Math.hypot(a.x - p.x, a.z - p.z) > 0.1) this.heading = Math.atan2(a.x - p.x, a.z - p.z);
-    const group = [to, ...this.talkCast.filter((n) => n !== to && n.ch.root.position.distanceTo(a) < 2.6)];
-    let shot = this.talkViews.get(to.id);
-    if (!shot) this.talkViews.set(to.id, shot = this.talkView(to, group));
-    this.talkIn = group;
-    this.applyTalkShot(shot);
+  private frameTalk(to: NpcActor, layoutChanged = false) {
+    const tc = THEME.talkCamera, live = this.rig.cam;
+    const previous = this.talkViews.get(to.id) ?? this.talkShot ?? undefined;
+    const presented = !layoutChanged && this.talkShot?.clear ? { pos: live.position, look: this.rig.presentedLook } : undefined;
+    const shot = tc && this.talkLayoutWatch && this.talkFraming?.fit({
+      speaker: to, learner: this.player, people: [...this.npcs.map((n) => n.ch), ...this.extras],
+      scene: this.scene, lens: live, screen: this.talkLayout ?? this.provisionalTalkLayout(),
+      room: this.zone.interior, field: this.zone.interior ? undefined : this.field, max: tc.max, previous, presented,
+    });
+    if (shot) {
+      this.talkViews.set(to.id, shot);
+      this.applyTalkShot(shot);
+    } else {
+      // While the talk chunk or panel mounts, use a single provisional shoulder view.
+      const look = to.ch.root.position.clone().setY(to.ch.root.position.y + to.ch.height * (to.sit ? 0.72 : 0.9));
+      const p = this.player.root.position, x = p.x - look.x, z = p.z - look.z;
+      const yaw = Math.hypot(x, z) > 0.1 ? Math.atan2(x, z) : to.rot;
+      const pos = look.clone().add(new THREE.Vector3(2.8 * Math.sin(yaw + 0.9), 0.8, 2.8 * Math.cos(yaw + 0.9)));
+      this.applyTalkShot({ pos, look, dx: 0, dy: 0, fov: 50, blend: false, clear: false });
+    }
   }
 
-  private applyTalkShot(shot: Shot) {
-    // (the camera's own copy: it leans in from there while they speak)
-    this.rig.talk = { pos: shot.pos.clone(), look: shot.look };
+  private applyTalkShot(shot: Framing) {
+    this.talkShot = shot;
+    this.rig.talk = { pos: shot.pos.clone(), look: shot.look, fov: shot.fov };
     this.talkHome = shot.near ? shot.pos : null;
     this.talkNear = shot.near ?? null;
-    // (nowhere shows their face past the learner: the learner's figure steps out of the picture meanwhile)
-    this.player.root.visible = !shot.covered;
-  }
-
-  /** The conversation's picture of `group` (the first of them the one the learner speaks with) and the learner. */
-  private talkView(to: NpcActor, group: NpcActor[]): Shot {
-    const p = this.player.root.position, a = to.ch.root.position;
-    const dir = new THREE.Vector3(a.x - p.x, 0, a.z - p.z);
-    if (dir.lengthSq() < 0.01) dir.set(0, 0, -1);
-    dir.normalize();
-    const tc = THEME.talkCamera;
-    // (someone across the room speaks: the picture is theirs, the learner need not be in it)
-    const solo = Math.hypot(a.x - p.x, a.z - p.z) > 5;
-    const pts = [...(solo ? [] : [p]), ...group.map((n) => n.ch.root.position)];
-    const mid = new THREE.Vector3(pts.reduce((t, q) => t + q.x, 0) / pts.length, 0, pts.reduce((t, q) => t + q.z, 0) / pts.length);
-    const spread = Math.max(...pts.map((q) => Math.hypot(q.x - mid.x, q.z - mid.z)));
-    const dist = Math.max(6, spread * 2.6);
-    /** The camera `d` metres from the people; outdoors on their `side` (1 or -1; by default 1, or -1 if 1 is blocked). */
-    const frame = (d: number, sideOf?: 1 | -1) => {
-      if (this.zone.interior) {
-        // from the open front, a little to the person's side, so the player's head doesn't hide their face
-        const side = Math.sign(a.x - p.x) || 1, half = this.zone.interior.w / 2 - 1;
-        const cx = THREE.MathUtils.clamp(mid.x + side * 1.8, -half, half);
-        return { pos: new THREE.Vector3(cx, 4.2 + d * 0.07, mid.z + d + 0.2), look: new THREE.Vector3(mid.x, 1.3, mid.z) };
-      }
-      const side = new THREE.Vector3(dir.z, 0, -dir.x);
-      let pos = mid.clone().addScaledVector(side, (sideOf ?? 1) * d).setY(3.2);
-      if (!sideOf && this.town.colliders.blocked(pos.x, pos.z, 0.5)) pos = mid.clone().addScaledVector(side, -d).setY(3.2);
-      pos.addScaledVector(dir, -1.2);
-      return { pos, look: new THREE.Vector3(mid.x, 1.35, mid.z) };
-    };
-    // (this edition's camera, theme.ts talkCamera: backed off until everyone taking part is in the picture)
-    // first the nearer view, over the learner's shoulder (talkShot.ts): the person spoken with from the front, large,
-    // and never behind the learner's own figure. Which shoulder first: in a room, the one towards its open front
-    // (if they stand across it); on a wide screen, the one that puts the learner at the picture's left edge and the
-    // other person in the middle of what the conversation panel leaves free; else the side the camera is on now
-    // (the short way round), in a room the side with more of the room.
-    const focus = pts.length !== 2 ? mid.clone().setY(1.35) : new THREE.Vector3().lerpVectors(p, a, 0.62).setY(1.35);
-    const room = this.zone.interior;
-    const camSide = (this.rig.cam.position.x - mid.x) * dir.z - (this.rig.cam.position.z - mid.z) * dir.x;
-    const shoulder = room && Math.abs(dir.x) > 0.5 ? -dir.x : this.container.clientWidth > 900 ? -1 : room ? -focus.x * dir.z : camSide;
-    const near = tc ? shoulderShots(p, a, focus, Math.max(NEAR_TALK, spread * 2.2), tc.max, shoulder >= 0 ? 1 : -1) : null;
-    return tc ? this.fitTalk(frame, dist, tc.max, [{ ch: this.player }, ...group], near, solo) : frame(dist);
-  }
-
-  /** The conversation's camera that keeps everyone taking part in the picture (theme.ts talkCamera). The framing at
-   *  `d0` metres stays if the head and the chest of each of `who` (and a hand's breadth to each side) fall in the part
-   *  of the screen the conversation panel leaves free (the picture shifted as the loop shifts it, applyViewShift) and,
-   *  outdoors, nothing stands in front of them (see `seen`). Otherwise the camera backs off, a step at a time up to
-   *  `max`, on either side of them outdoors, rising as it goes: indoors at the same angle, outdoors looking down at
-   *  least 26° (more of the ground and less of the town behind them in the picture). The widest framing tried if none
-   *  fits. */
-  private fitTalk(frame: (d: number, side?: 1 | -1) => { pos: THREE.Vector3; look: THREE.Vector3 }, d0: number, max: number, who: { ch: GameCharacter; sit?: boolean }[], near: Iterable<Shot> | null = null, solo = false): Shot {
-    const layout = this.talkLayout, w = layout?.width ?? this.screenW, h = layout?.height ?? this.screenH;
-    const sideways = this.sidewaysPhone, wide = !sideways && w > 900;
-    const strip = !wide && !sideways ? talkPictureHeight(h) : 0;
-    const live = this.rig.cam, cam = new THREE.PerspectiveCamera(50, w / h, live.near, live.far);
-    this.shiftTalkView(cam, w, h);
-    const m = 10;
-    const { x0, x1, y0, y1 } = layout?.picture ?? {
-      x0: m, x1: (sideways ? w * 0.25 : wide ? w - 14 - Math.min(500, 0.42 * w) : w) - m,
-      y0: m, y1: (strip || h) - m,
-    };
-    const v = new THREE.Vector3(), right = new THREE.Vector3();
-    /** Each of the points checked on the people (their head and chest, and a hand's breadth to each side of them),
-     *  seen from `f`, until `each` says no (`i`: whose). */
-    const points = (f: Shot, each: (q: THREE.Vector3, i: number) => boolean) => {
-      cam.position.copy(f.pos);
-      cam.lookAt(f.look);
+    const cam = this.rig.cam;
+    if (cam.fov !== shot.fov || cam.near !== 0.1) {
+      cam.fov = shot.fov;
+      cam.near = 0.1;
+      cam.updateProjectionMatrix();
+    }
+    this.shiftTalkView(cam, this.screenW, this.screenH);
+    if (!shot.blend) {
+      this.rig.snap();
+      cam.position.copy(shot.pos);
+      cam.lookAt(shot.look);
       cam.updateMatrixWorld();
-      right.set(1, 0, 0).applyQuaternion(cam.quaternion).setY(0).normalize();
-      for (let i = 0; i < who.length; i++) {
-        const { ch, sit } = who[i], q = ch.root.position;
-        for (const y of sit ? [0.72, 0.45] : [0.9, 0.62]) for (const s of [-0.25, 0, 0.25]) {
-          if (!each(v.copy(q).addScaledVector(right, s).setY(q.y + y * ch.height), i)) return false;
-        }
-      }
-      return true;
-    };
-    const tops = who.map(({ ch }) => headTop(ch));
-    const { ch: speaker, sit: seated } = who[1], feet = speaker.root.position;
-    const look = layout ? feet.clone().setY(feet.y + (seated ? 0.72 : 0.9) * speaker.height) : null;
-    // The measured lens points at the speaker. Its view offset alone places the face in the open picture.
-    const aim = (f: Shot): Shot => look ? { pos: f.pos, look } : f;
-    const project = (q: THREE.Vector3) => {
-      q.project(cam);
-      q.x = (q.x + 1) * w / 2;
-      q.y = (1 - q.y) * h / 2;
-      return q.z >= -1 && q.z <= 1;
-    };
-    /** Over the learner's shoulder (the nearer views): the learner, in front, may be cut by the picture's edges. */
-    let over = false;
-    const fits = (f: Shot) => points(f, (q, i) => {
-      // (`solo`: the people spoken with only; the learner may stand out of the picture)
-      if (solo && i === 0) return true;
-      if (!project(q)) return false;
-      if (over && i === 0) return q.x >= x0 - 70 && q.x <= x1 + 70 && q.y >= y0;
-      return q.x >= x0 && q.x <= x1 && q.y >= y0 && q.y <= y1;
-    }) && who.every(({ ch, sit }, i) => {
-      if (i === 0) return true;
-      const p = ch.root.position;
-      let left = Infinity, rightEdge = -Infinity, top = Infinity, bottom = -Infinity;
-      // Approximate the head envelope with the standing/seated face width and the measured crown height.
-      for (const y of [tops[i], (sit ? 0.56 : 0.73) * ch.height]) for (const s of [-0.3, 0.3]) {
-        const q = v.copy(p).addScaledVector(right, s).setY(p.y + y);
-        if (!project(q) || q.x < x0 || q.x > x1 || q.y < y0 || q.y > y1) return false;
-        left = Math.min(left, q.x); rightEdge = Math.max(rightEdge, q.x);
-        top = Math.min(top, q.y); bottom = Math.max(bottom, q.y);
-      }
-      return !layout?.obstacles.some((r) => left < r.x1 && rightEdge > r.x0 && top < r.y1 && bottom > r.y0);
-    });
-    // Outdoors: the camera clear of anything solid, and nothing in front of anyone: of the six lines from the camera to
-    // a person's points, at most three may pass through a building (to its roof), a post or a trunk (the colliders'
-    // circles, to 4 m; not the people's own) or something low (the colliders' boxes: cars, counters, walls, to 1.2 m).
-    const col = this.town.colliders;
-    const boxes = this.zone.interior ? [] : BUILDINGS.map((b) => ({ minX: b.x - b.w / 2, maxX: b.x + b.w / 2, minZ: b.z - b.d / 2, maxZ: b.z + b.d / 2, h: b.h + (b.roof === "gable" ? Math.min(b.w, b.d) * 0.32 : 0) }));
-    const seen = (f: Shot) => {
-      if (this.zone.interior) return true;
-      if (col.blocked(f.pos.x, f.pos.z, 0.5)) return false;
-      const o = f.pos;
-      // (only what stands within the lines' reach)
-      let x0 = o.x, x1 = o.x, z0 = o.z, z1 = o.z;
-      for (const { ch } of who) { const q = ch.root.position; x0 = Math.min(x0, q.x); x1 = Math.max(x1, q.x); z0 = Math.min(z0, q.z); z1 = Math.max(z1, q.z); }
-      const near = <T extends { minX: number; maxX: number; minZ: number; maxZ: number }>(b: T) => b.maxX > x0 - 1 && b.minX < x1 + 1 && b.maxZ > z0 - 1 && b.minZ < z1 + 1;
-      const tall = boxes.filter(near), low = col.boxes.filter(near);
-      const posts = col.circles.filter((c) => !(c as { npc?: string }).npc && c.x > x0 - 1 - c.r && c.x < x1 + 1 + c.r && c.z > z0 - 1 - c.r && c.z < z1 + 1 + c.r);
-      const hidden = who.map(() => 0);
-      return points(f, (q, k) => {
-        for (let i = 1; i < 30; i++) {
-          const t = i / 30, x = o.x + (q.x - o.x) * t, y = o.y + (q.y - o.y) * t, z = o.z + (q.z - o.z) * t;
-          const inside = (b: { minX: number; maxX: number; minZ: number; maxZ: number }) => x > b.minX && x < b.maxX && z > b.minZ && z < b.maxZ;
-          if (tall.some((b) => y < b.h && inside(b)) || (y < 1.2 && low.some(inside)) || (y < 4 && posts.some((c) => (x - c.x) ** 2 + (z - c.z) ** 2 < c.r * c.r))) return ++hidden[k] < 4;
-        }
-        return true;
-      });
-    };
-    // Nobody's figure between the camera and a face of those spoken with: not the learner's own (their head, their
-    // backpack), not anyone else's standing about (talkShot.ts `covers`; the whole of each face: the figures' heads are large).
-    const body = (ch: GameCharacter, r: number): Body => ({ x: ch.root.position.x, y: ch.root.position.y, z: ch.root.position.z, top: ch.root.position.y + headTop(ch) + 0.06, r });
-    const me = body(who[0].ch, 0.34);
-    const crowd = this.npcs.filter((n) => n.ch.root.visible && n.ch.root.position.distanceTo(who[0].ch.root.position) < 14).map((n) => ({ ch: n.ch, b: body(n.ch, 0.28) }));
-    const face = new THREE.Vector3();
-    const facesFree = (f: Shot, bodies: (i: number) => Body[]) => {
-      right.set(f.look.x - f.pos.x, 0, f.look.z - f.pos.z).normalize().set(-right.z, 0, right.x);
-      for (let i = 1; i < who.length; i++) {
-        const { ch, sit } = who[i], q = ch.root.position, list = bodies(i);
-        for (const s of [-0.2, 0, 0.2]) for (const y of sit ? [0.79, 0.72, 0.61] : [0.97, 0.9, 0.79]) {
-          face.copy(q).addScaledVector(right, s).setY(q.y + y * ch.height);
-          if (list.some((b) => covers(f.pos, face, b))) return false;
-        }
-      }
-      return true;
-    };
-    const uncovered = (f: Shot) => facesFree(f, () => [me]);
-    const clear = (f: Shot) => facesFree(f, (i) => [me, ...crowd.filter((c) => c.ch !== who[i].ch).map((c) => c.b)]);
-    // In a room the nearer view stands inside its walls or out through its open front, and nothing of the room itself
-    // (a pillar, a shelf, a hanging sign) is between it and a face, or the learner's head. Glass is looked through to
-    // a face (a counter's screen, a booth's pane), but not right in front of the lens, nor to the learner.
-    const it = this.zone.interior;
-    const ray = new THREE.Raycaster();
-    ray.camera = cam;
-    const roomClear = (f: Shot, learner = true) => {
-      if (!it) return true;
-      if (Math.abs(f.pos.x) > it.w / 2 - 0.5 || f.pos.z < -it.d / 2 + 0.5) return false;
-      for (let i = learner ? 0 : 1; i < who.length; i++) {
-        const { ch, sit } = who[i], q = ch.root.position;
-        for (const y of i === 0 ? [0.9, 0.5] : sit ? [0.72] : [0.9, 0.7]) {
-          face.copy(q).setY(q.y + y * ch.height).sub(f.pos);
-          ray.far = face.length() - 0.45;
-          ray.set(f.pos, face.normalize());
-          for (const hit of ray.intersectObject(it.group, true)) {
-            const m = (hit.object as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined, one = Array.isArray(m) ? m[0] : m;
-            if (!(hit.object as THREE.Mesh).isMesh || !one || !one.visible || hit.distance < 0.3) continue;
-            if (!(one.transparent && one.opacity < 0.75) || i === 0 || hit.distance < 1.5) return false;
-          }
-        }
-      }
-      return true;
-    };
-    /** The framing settled on: with where the camera leans in to while the other person speaks (a tenth nearer, if
-     *  everyone is still in the picture from there), and whether the learner's figure hides a face after all. */
-    const done = (f: Shot): Shot => {
-      const n: Shot = { pos: f.pos.clone().lerp(f.look, 0.1), look: f.look };
-      const lean = seen(n) && fits(n) && clear(n) && roomClear(n);
-      return { pos: f.pos, look: f.look, ...(lean ? { near: n.pos } : {}), ...(uncovered(f) ? {} : { covered: true }) };
-    };
-    const base = frame(d0), first = aim(base);
-    const raise = !layout && strip ? [0, 0.1, 0.2, 0.3, 0.4] : [0];
-    // the nearer views first; if the room hides the learner from every one of them (they stand behind a counter, in
-    // a corner), then those that show the people spoken with
-    over = true;
-    const nears = near ? Array.from(near, aim) : [];
-    for (const whole of [true, false]) {
-      for (const f0 of nears) {
-        if (!seen(f0) || !clear(f0)) continue;
-        for (const r of raise) {
-          const f = r ? { pos: f0.pos, look: f0.look.clone().setY(f0.look.y + r) } : f0;
-          if (!fits(f)) continue;
-          if (roomClear(f, whole)) return done(f);
-          break;
-        }
-      }
-      if (!it) break;
     }
-    over = false;
-    if (seen(first) && fits(first) && clear(first)) return done(first);
-    const lift = base.pos.y - base.look.y;
-    const at = (d: number, side?: 1 | -1) => {
-      const f = frame(d, side);
-      const run = Math.hypot(f.pos.x - f.look.x, f.pos.z - f.look.z);
-      f.pos.y = f.look.y + (this.zone.interior ? lift * d / d0 : Math.max(lift * d / d0, run * 0.5));
-      return aim(f);
+  }
+
+  private provisionalTalkLayout(): TalkLayout {
+    const w = this.screenW, h = this.screenH, sideways = this.sidewaysPhone, wide = !sideways && w > 900;
+    const openW = sideways ? w * 0.25 : wide ? w - 14 - Math.min(500, 0.42 * w) : w;
+    const openH = sideways || wide ? h : talkPictureHeight(h);
+    return {
+      width: w, height: h, viewportHeight: h, shiftX: (w - openW) / 2, shiftY: (h - openH) / 2,
+      picture: { x0: 10, x1: openW - 10, y0: 10, y1: openH - 10 }, obstacles: [],
     };
-    // On a phone held upright the camera also looks a little higher (up to 0.4 m at the people) before it backs off:
-    // the heads come down into the strip and the people keep their size; the player, in front, sinks a little.
-    let best: Shot | null = null, shown: Shot | null = null;
-    for (let d = d0; d <= max * 1.001; d = Math.min(d * 1.08, d < max ? max : d * 2)) {
-      for (const side of this.zone.interior ? [undefined] : [1, -1] as const) {
-        const f0 = at(d, side);
-        if (!seen(f0)) continue;
-        best ??= f0;
-        for (const r of raise) {
-          const f = r ? { pos: f0.pos, look: f0.look.clone().setY(f0.look.y + r) } : f0;
-          if (!fits(f)) continue;
-          // (everyone in the picture, but a face behind someone: kept in case no framing is free of that)
-          if (clear(f)) return done(f);
-          shown ??= f;
-          break;
-        }
-      }
-    }
-    return done(shown ?? best ?? first);
   }
 
   private onSessionEvent(name: string, data: any) {
@@ -2361,7 +2146,7 @@ export class Game implements GameApi {
     useStore.getState().setConv({ active: false });
     this.rig.talk = null;
     this.talkHome = this.talkNear = null;
-    this.talkCast = []; this.talkIn = []; this.talkViews.clear();
+    this.talkCast = [];
     this.player.root.visible = true;
     this.rig.mode = this.zone.interior ? "interior" : "follow";
     this.rig.cam.clearViewOffset();
@@ -2683,8 +2468,9 @@ export class Game implements GameApi {
     const layout = this.talkLayout, sideways = this.sidewaysPhone, wide = !sideways && w > 900;
     w = layout?.width ?? w;
     h = layout?.height ?? h;
-    const x = layout?.shiftX ?? (sideways ? w * 0.375 : wide ? Math.min(w * 0.22, 380) : 0);
-    const y = layout?.shiftY ?? (sideways || wide ? 0 : (h - talkPictureHeight(h)) / 2);
+    const openW = sideways ? w * 0.25 : wide ? w - 14 - Math.min(500, 0.42 * w) : w;
+    const x = (layout?.shiftX ?? (w - openW) / 2) + (this.talkShot?.dx ?? 0);
+    const y = (layout?.shiftY ?? (sideways || wide ? 0 : (h - talkPictureHeight(h)) / 2)) + (this.talkShot?.dy ?? 0);
     const view = cam.view;
     if (!view?.enabled || view.fullWidth !== w || view.fullHeight !== h || view.offsetX !== x || view.offsetY !== y || cam.aspect !== w / h) {
       cam.setViewOffset(w, h, x, y, w, h);
@@ -2818,8 +2604,7 @@ export class Game implements GameApi {
       if (this.swimming || this.undersea.on) this.undersea.update(dt, this.t, under, this.tmpV.set(pp1.x + Math.sin(this.heading) * 0.4, pp1.y + 1.2, pp1.z + Math.cos(this.heading) * 0.4), speed / SWIM.speed);
       this.underWater(this.undersea.on);
     }
-    // the lens (camera.ts fovFor): wider while walking, a touch more at a run (a sense of speed), the conversation's
-    // 50° exactly
+    // Walking eases the lens. A conversation uses the lens its shot was fitted with.
     {
       const fov = this.rig.fovFor(w, h, this.rig.mode === "follow" && this.vel.lengthSq() > 30) + (this.rig.mode === "follow" ? this.rideFov : 0);
       const d = fov - this.rig.cam.fov;
@@ -3718,6 +3503,7 @@ export class Game implements GameApi {
     this.streetLife?.dispose();
     this.disposed = true;
     this.stopTalkLayout();
+    this.talkFraming = undefined;
     this.modes.dispose();
     audio.bed(null);
     this.frameFade.clear();

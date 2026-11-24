@@ -9,12 +9,8 @@ export interface TownTheme {
   /** The first visit's flight over the town (game/flyover.ts): the points the camera glides along and what it looks at
    *  from each, ending in front of the airport. Empty: no flight. */
   flyover: FlyKey[];
-  /** The conversation's camera (Game.startSession). Off (null), it frames the player, the main speaker and the
-   *  conversation's other speakers within 7 m of them from a set distance (2.6 times how far apart they stand, at
-   *  least 6 m), which a phone's narrow picture can cut. With this, the speakers within `reach` m of the main one are
-   *  framed, and the camera backs off (to at most `max` m) until every one of them, head and chest, is in the part of
-   *  the picture the conversation panel leaves free, at any screen shape, with nothing in front of them outdoors
-   *  (Game.ts `fitTalk`). */
+  /** The conversation's face fitter. `reach` limits which cast members can take the camera from the host.
+   *  `max` limits the lens distance. Null uses the provisional shoulder view. */
   talkCamera: { reach: number; max: number } | null;
   /** Where people stand in the rooms instead of where interiors.ts puts them, by room id and character (`ax`/`az`:
    *  where the player stands to talk to them): a conversation's other speaker near enough to share its picture. */
@@ -33,9 +29,6 @@ export const THEME: TownTheme = {
     { pos: [60, 30, -85], look: [105, 2, -15] },
     { pos: [104, 13, -30], look: [140, 4, -8] },
   ],
-  // Every speaker in the picture, a phone's too (Mark at Sophie's party, Mrs. Lee at her flower stall, Greg and
-  // Vanessa at the meeting…): the speakers within 12 m of the main one framed, the camera backing off to at most 30 m,
-  // as in Puerto Colibrí
   talkCamera: { reach: 12, max: 30 },
   // and the two who stood too far away come nearer, where Puerto Colibrí's Don Arturo and Doña Lupita stand: Harold
   // watches over the statue by the gallery's entrance, near Ben's desk (s70: his "Please don't touch the paintings!"),
