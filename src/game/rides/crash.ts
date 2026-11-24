@@ -299,7 +299,7 @@ export class Crashes {
     if (isTraffic(car)) return car.batchBody ? car.damagedBody : car.mesh;
     if (car.crashParking) return car.crashParking.visual();
     if ((car.mesh as THREE.Mesh).isMesh) return car.mesh as THREE.Mesh;
-    const mesh = car.mesh.getObjectByName("body") ?? car.mesh.getObjectByName("stand-taxi-fallback");
+    const mesh = car.mesh.getObjectByName("body");
     return (mesh as THREE.Mesh | undefined)?.isMesh ? mesh as THREE.Mesh : undefined;
   }
 
@@ -319,17 +319,6 @@ export class Crashes {
     state.surface = new CrashGeometry(body, isTraffic(car) ? mesh : car.mesh, state.dents);
     state.surface.rebuild(state.dents);
     this.lastBuildMs = performance.now() - start;
-  }
-
-  // Model loading can replace a procedural fallback while it is dented.
-  releaseVisual(mesh: THREE.Mesh) {
-    for (const [car, state] of this.damage) {
-      if (state.surface?.mesh !== mesh) continue;
-      state.surface.restore();
-      state.surface = undefined;
-      if (isTraffic(car)) mesh.rotation.x = mesh.rotation.z = 0;
-      return;
-    }
   }
 
   private trim(traffic: boolean, keep?: Car) {

@@ -180,7 +180,7 @@ export class Ambient {
   riding = false;
   private colliders?: Colliders;
 
-  constructor(private nav: NavGrid, private places: [number, number][], quality: "high" | "low", seats: Seat[] = [], colliders?: Colliders) {
+  constructor(private nav: NavGrid, private places: [number, number][], quality: "high" | "low", seats: Seat[] = [], colliders?: Colliders, modelTraffic = false) {
     this.colliders = colliders;
     const high = quality === "high";
     // each person is a single draw call (characters/Character.ts), so the town can hold a crowd
@@ -196,20 +196,22 @@ export class Ambient {
     this.seatPeople(seats, high);
     this.standPairs(high ? CHAT_SPOTS.length : 1, colliders);
     const carMat = STYLED ? vertexColorMaterial("prop") : new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+    // The model batches use each car's pose for wheels, collision and damage.
+    const poseGeometry = modelTraffic ? new THREE.BufferGeometry() : undefined;
     for (let i = 0; i < nc; i++) {
       const lane = LANES[i % LANES.length];
       const { model, color } = TRAFFIC_CARS[i % TRAFFIC_CARS.length];
       const { width, length } = carModelEntry(model).collisionBox;
-      const mesh = new THREE.Mesh(STYLED ? styledCarGeometry(color) : carGeometry(color), carMat);
+      const mesh = new THREE.Mesh(poseGeometry ?? (STYLED ? styledCarGeometry(color) : carGeometry(color)), carMat);
       mesh.castShadow = true;
-      if (IS_TOON) mesh.add(makeOutline(mesh, outlineColorFor(new THREE.Color(color)), 0.03));
+      if (!modelTraffic && IS_TOON) mesh.add(makeOutline(mesh, outlineColorFor(new THREE.Color(color)), 0.03));
       mesh.rotation.y = lane.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
       // the cars sharing a lane start spread out along it (never on top of each other)
       const k = Math.floor(i / LANES.length), inLane = Math.ceil((nc - (i % LANES.length)) / LANES.length);
       const t = ((i * 0.37) % 1 + this.r() * 0.15 + k / inLane) % 1;
       const x = lane.from + (lane.to - lane.from) * t;
       mesh.position.set(x, 0, lane.z);
-      this.group.add(mesh);
+      if (!modelTraffic) this.group.add(mesh);
       this.cars.push({ index: i, model, color, half: { x: length / 2, z: width / 2 },
         mesh, lane: lane.z, dir: lane.dir, x, from: lane.from, to: lane.to, speed: 6, max: 7 + this.r() * 2.5, hidden: 0, grow: 1 });
     }

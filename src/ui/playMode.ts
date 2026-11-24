@@ -40,6 +40,8 @@ let linked: string | null = (() => {
   } catch { return null; }
 })();
 
+export function linkedSituation() { return linked; }
+
 /** The linked situation, once: started as soon as the game is ready. */
 export function takeLinkedSituation(): string | null {
   const id = linked;

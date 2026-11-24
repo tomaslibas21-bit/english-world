@@ -5,8 +5,8 @@ import { markTownBoat } from "./boatRide";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, PARKING_LOTS, TAXI, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, GAS_FORECOURT, type BuildingDef } from "./layout";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
-import { carParts, mergeCarParts } from "./car";
-import { carModelEntry, type CarPlacement } from "./carModels";
+import { carParts } from "./car";
+import type { CarPlacement } from "./carModels";
 import { STYLED, IS_REAL, grade } from "../style";
 import { SHORE, DECKS, POOLS, FLOORS, sandY, SAND_GLSL, SHORE_GLSL, SWELL_GLSL } from "../water";
 import { islandGroundY, LIGHTHOUSE_ISLAND, TOWER_FOOT } from "./island";
@@ -36,7 +36,6 @@ export interface ParkedCars {
 
 export interface StandTaxi {
   root: THREE.Group;
-  fallback: THREE.Mesh;
   instance?: THREE.Group;
 }
 
@@ -1465,30 +1464,22 @@ function addStreetProps(M: Merger, col: Colliders, photo: AddPhotoSpot) {
   for (const [x, z] of [[-75, 32], [5, 32], [65, 32], [-5, -14], [75, -14]]) stop(x, z);
 }
 
-function makeParkedCars(): ParkedCars {
+export function makeParkedCars(): ParkedCars {
   const group = new THREE.Group();
   group.name = "parked-cars";
   const fleet = new ParkedFleet(group);
   let taxi: StandTaxi | undefined;
   for (const spot of PARKED_CARS) {
-    const { model, x, z, rot, color } = spot;
-    const { width, length, height } = carModelEntry(model).collisionBox;
-    const atStand = spot === TAXI;
-    const local = carParts(color, { taxi: atStand });
-    for (const [geometry] of local) geometry.scale(width / 2.12, height / (atStand ? 1.8 : 1.56), length / 4.42);
-    const fallback = staticColoured(mergeCarParts(local), atStand ? "stand-taxi-fallback" : "parked-car-fallback");
-    if (atStand) {
+    if (spot === TAXI) {
       const root = new THREE.Group();
-      root.position.set(x, 0, z);
-      root.rotation.y = rot;
-      root.add(fallback);
+      root.position.set(spot.x, 0, spot.z);
+      root.rotation.y = spot.rot;
       group.add(root);
-      taxi = { root, fallback };
+      taxi = { root };
     } else {
-      fleet.add(spot, fallback);
+      fleet.add(spot);
     }
   }
-  fleet.refresh();
   return { group, fleet, placements: PARKED_CARS, taxi };
 }
 
@@ -1662,16 +1653,6 @@ function reflective(m: THREE.Material) {
 let boatMat: THREE.MeshLambertMaterial | null = null;
 
 /** Parked car fallbacks in their own colours as one mesh that casts shadows. */
-function staticColoured(geometry: THREE.BufferGeometry, name: string) {
-  boatMat ??= new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
-  const mesh = new THREE.Mesh(geometry, boatMat);
-  mesh.name = name;
-  mesh.castShadow = mesh.receiveShadow = true;
-  mesh.matrixAutoUpdate = false;
-  mesh.updateMatrix();
-  return mesh;
-}
-
 export function makeBoats() {
   boatMat ??= new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
   // the hull seen from above: square stern, pointed bow
