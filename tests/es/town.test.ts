@@ -1,7 +1,7 @@
 // Puerto Colibrí's conversations have their places (docs/es/TOWN.md "Every conversation's spot"): the checks that need
 // no browser. The rooms themselves are drawn on a canvas, so the tour (tools/es-tour.mjs) walks to every spot in Chromium.
 // Runs in the vitest project "es" (vite.config.ts), where src/editions/es/ replaces the base files.
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { SITUATIONS, SITUATION_BY_ID } from "../../src/content/situations";
 import { LOCATIONS, NAME_MEANING, placeLtNamed } from "../../src/content/locations";
 import { NPCS } from "../../src/content/npcs";
@@ -9,22 +9,15 @@ import { BUILDINGS, CHAT_SPOTS, FOUNTAIN, OUTDOOR_NPCS, PARK, PARKED_CARS, ROADS
 import { carFootprint, carModelEntry } from "../../src/game/world/carModels";
 import { THEME } from "../../src/game/world/theme";
 import { STALL_SIZE } from "../../src/game/world/mexican";
-import { buildTown } from "../../src/game/world/town";
 import { ROOM_PEOPLE } from "../../src/game/world/roomPeople";
 import { STAFF_LINES, VENDOR_LINES } from "../../src/content/ambient";
+import { buildTownFixture } from "./town-fixture";
 
 const trafficHalfWidth = Math.max(...TRAFFIC_CARS.map(({ model }) => carModelEntry(model).collisionBox.width / 2));
 
 it("keeps the model footprints clear of the generated town props", () => {
-  const noop = () => {};
-  const context = new Proxy({
-    measureText: (s: string) => ({ width: s.length * 10 }),
-    createLinearGradient: () => ({ addColorStop: noop }),
-    createRadialGradient: () => ({ addColorStop: noop }),
-  }, { get: (target, key) => Reflect.get(target, key) ?? noop });
-  vi.stubGlobal("document", { createElement: () => ({ width: 0, height: 0, getContext: () => context }) });
+  const { town: { colliders, parkedCars }, restore } = buildTownFixture();
   try {
-    const { colliders, parkedCars } = buildTown();
     const boxes = colliders.boxes.filter((box) => !(box.tag === "car" && box.split));
     for (const spot of parkedCars.placements) {
       const { minX, maxX, minZ, maxZ } = carFootprint(spot);
@@ -35,7 +28,7 @@ it("keeps the model footprints clear of the generated town props", () => {
       expect(circles, label).toEqual([]);
     }
   } finally {
-    vi.unstubAllGlobals();
+    restore();
   }
 });
 

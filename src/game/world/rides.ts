@@ -13,9 +13,28 @@ export interface CarSpot {
 }
 export interface BoatSpot { id: string; x: number; z: number; rot: number; stripe: string; hull?: string }
 
+export interface CarWaterSite { x: number; z: number; rot: number }
+
+export interface CarWaterArea {
+  id: "coast" | "hotel" | "cenote";
+  approaches: readonly CarWaterSite[];
+  /** Candidate dry pairs. Check both doors, the walking corridor and live occupancy before reserving one. */
+  landings: readonly CarWaterSite[];
+}
+
+export interface CarWaterPlan {
+  /** Mainland world edges before the usual car inset. The bay supplies the seaward limit. */
+  mainland: Pick<Rect, "x0" | "x1" | "z1">;
+  /** Already inset, with enough overlap to keep the entrance continuous. */
+  extraRects: readonly Rect[];
+  areas: readonly CarWaterArea[];
+}
+
 export interface RidesPlan {
   cars: CarSpot[];
   boats: BoatSpot[];
+  /** For use after eligible boarding. */
+  loadCarWater?: () => Promise<CarWaterPlan>;
   /** Asphalt beside the streets themselves (layout.ts ROADS): forecourts and lots (a car goes anywhere open and dry;
    *  on asphalt it may pick up speed, and where asphalt ends is a kerb it feels). */
   lots: Rect[];

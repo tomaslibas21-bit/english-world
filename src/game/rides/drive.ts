@@ -39,6 +39,15 @@ export class Drivable {
 /** The hands on the wheel: `throttle` −1…1 (down: brake, then reverse), `steer` −1…1 (left negative), `brake`. */
 export interface Controls { throttle: number; steer: number; brake: boolean }
 
+/** Optional limits for an occupied car in water. */
+export interface WetDriveSettings {
+  forward: number;
+  reverse: number;
+  steerGain: number;
+  decel: number;
+  power?: number;
+}
+
 export type BodyCircle = 0 | 1 | 2; // front, middle, back
 export interface MotionImpact {
   into: number;
@@ -178,9 +187,12 @@ export class Motion {
    *  it is going (along its heading, and sideways in a slide); what is in the way is settled afterwards by `settle`.
    *  The brake is the brake, in a turn too. Really fast with the wheel hard over, the back wheels let go a little
    *  (CAR_DRIFT): a small slide that catches by itself. */
-  step(dt: number, c: Controls, gap = Infinity, road = true, care = Infinity) {
+  step(dt: number, c: Controls, gap = Infinity, road = true, care = Infinity, wet?: Readonly<WetDriveSettings>) {
     const S = this.spec, car = this.kind === "car", D = car ? CAR_DRIFT : BOAT_DRIFT;
-    this.steer += (c.steer - this.steer) * Math.min(1, dt * S.wheel);
+    const water = car ? wet : undefined;
+    const steer = water ? c.steer * water.steerGain : c.steer;
+    this.steer += (steer - this.steer) * Math.min(1, dt * S.wheel);
+    if (water) this.steer = Math.max(-water.steerGain, Math.min(water.steerGain, this.steer));
     let v = this.speed, sl = this.slip;
     const was = v, pace0 = Math.hypot(v, sl);
     this.drift = c.brake && v > 0 && pace0 > (this.drift ? D.from * 0.45 : D.from) && (this.drift || Math.abs(c.steer) > 0.25);
@@ -195,13 +207,14 @@ export class Motion {
       const k = Math.min(1, Math.max(0, (this.hold - CAR.holdFrom) / (CAR.holdTo - CAR.holdFrom)));
       top = road || !car ? S.town + (S.max - S.town) * k * k * (3 - 2 * k) : Math.min(CAR.rough, S.max);
       if (this.boost > 0) top += D.kick * Math.min(1, this.boost / 0.4);
-      this.top = top;
+      this.top = water ? Math.min(top, S.max, water.forward) : top;
     }
-    const push = S.accel * (this.boost > 0 ? 1.7 : 1);
+    const accel = S.accel * (water?.power ?? 1);
+    const push = accel * (this.boost > 0 ? 1.7 : 1);
     if (braking) v = toward(v, 0, S.brake * dt);
     else if (this.drift) v = t > 0 ? Math.min(Math.max(v, top), v + push * 0.55 * t * dt) : toward(v, 0, 1.5 * dt);
     else if (t > 0) v = v < -0.2 ? toward(v, 0, S.brake * dt) : v > top * Math.max(0.35, t) ? Math.max(top * Math.max(0.35, t), v - (car ? 7 : 3) * dt) : Math.min(top * Math.max(0.35, t), v + push * t * dt * (1 - 0.5 * Math.max(0, v) / S.max));
-    else if (t < 0) v = v > 0.3 ? toward(v, 0, S.brake * -t * dt) : Math.max(-S.back, v + S.accel * t * dt);
+    else if (t < 0) v = v > 0.3 ? toward(v, 0, S.brake * -t * dt) : Math.max(-S.back, v + accel * t * dt);
     else v = toward(v * Math.exp(-(car ? 0.35 : 0.5) * dt), 0, S.coast * dt);
     // never into someone on foot: no faster than what stops short of them (forwards, backing up or sliding)
     if (car && (gap !== Infinity || care !== Infinity)) {
@@ -211,6 +224,16 @@ export class Motion {
       if (care !== Infinity) { const room = care - S.half - CAR.clear; most = Math.min(most, Math.max(CAR.careful, room > 0 ? Math.sqrt(2 * CAR.yield * room) : 0)); }
       const pace = Math.hypot(v, sl);
       if (pace > most) { const k = Math.max(most, pace - hard * dt) / pace; v *= k; sl *= k; }
+    }
+    const backing = water !== undefined && (v || was || t) < 0;
+    const reverse = water ? Math.min(S.back, water.reverse) : 0;
+    const easing = water ? pace0 - water.decel * dt : 0;
+    if (water) {
+      // Base the reduction on the incoming pace, including slip, and retain stronger braking or yielding.
+      const pace = Math.hypot(v, sl);
+      let most = Math.max(easing, backing ? reverse : this.top);
+      if (braking) most = Math.min(most, Math.max(0, pace0 - S.brake * dt));
+      if (pace > most) { const k = most / pace; v *= k; sl *= k; }
     }
     // the turn
     let w: number;
@@ -249,6 +272,11 @@ export class Motion {
       v = back * P * Math.cos(beta) * rub; sl = P * Math.sin(beta) * rub;
       // a slide held for a moment ends in a kick
       if (this.drift && Math.abs(beta) > D.catch) this.charge = Math.min(D.chargeMax, this.charge + dt);
+    }
+    // A near-sideways car can turn across its velocity and change which directional limit applies.
+    if (water && (v < 0) !== backing) {
+      const pace = Math.hypot(v, sl), most = Math.max(easing, v < 0 ? reverse : this.top);
+      if (pace > most) { const k = most / pace; v *= k; sl *= k; }
     }
     if (this.drift) { /* (counted above) */ }
     else if (!this.drift && this.charge > 0) {
