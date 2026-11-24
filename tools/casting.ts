@@ -164,7 +164,7 @@ export const CAST: Record<string, Role> = {};
     CAST[n.id] = { ...role, voice: v.name, note: PICKS[n.id]?.note ?? `${n.role.en.toLowerCase()}: ${v.trait}` };
   }
   for (const n of people) if (QUEST_PICKS[n.id]) CAST[n.id] = QUEST_PICKS[n.id];
-  CAST.maren = { voice: "Callirrhoe", style: "relaxed and friendly, clearly paced", note: "Local surf coach, warm and unhurried." };
+  CAST.maren = { voice: "Autonoe", style: "relaxed and friendly, clearly paced", note: "Local surf coach, warm and unhurried." };
 }
 
 /** The Gemini voice and style for a voice id of src/content/voices.ts (g_<npcId>, g_coach_f, g_amb_m, …). */

@@ -155,7 +155,7 @@ const surf: SituationDef = {
   title: { en: "Want to Try a Wave?", lt: "Norite pagauti bangą?" },
   topic: { en: "Gear Rental and Surf Lessons", lt: "Įrangos nuoma ir banglenčių pamokos" },
   goal: "Išsinuomokite įrangą arba susitarkite dėl banglenčių pamokos. Paklauskite kainos, tada atsakykite į Maren kvietimą pagauti bangą.",
-  intro: "Vakariniame paplūdimyje stovi nedidelė kedro medienos pašiūrė „Harbor Surf“. Čia užaugusi Maren Pike nuomoja įrangą ir moko čiuožti banglente. Lentoje – maždaug dviejų pėdų bangos, silpnas vėjas ir atoslūgis. Kainos nurodytos doleriais.",
+  intro: "Jūs prieinate prie „Harbor Surf“ namelio vakariniame paplūdimyje. Čia užaugusi Maren Pike nuomoja lentas ir moko čiuožti banglente. Atėjote išsinuomoti įrangos arba susitarti dėl pamokos. Lentoje – maždaug dviejų pėdų bangos, silpnas vėjas ir atoslūgis. Kainos – JAV doleriais.",
   song: "", songTitle: "", chapter: 9, order: 11,
   bonus: true, optionalVoice: true, mode: "talk", location: "harbor-surf", npc: "maren",
   entities: { gear: GEAR, doc: DOCS },
