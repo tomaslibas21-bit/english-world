@@ -276,6 +276,7 @@ try {
       assert.equal(await card.getAttribute("data-cast"), "a");
       assert.equal(await card.getAttribute("data-script"), "first");
       assert.equal(await card.locator(".street-picture").count(), 0);
+      assert(await card.locator(".street-scene").isVisible(), "the wallet description stays visible with the first choices");
       const assertCardFits = async () => {
         const fit = await card.evaluate((element) => {
           const a = element.getBoundingClientRect();
@@ -286,14 +287,14 @@ try {
               a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
           });
           // Playwright considers text visible even when the card's scrollport clips its last line.
-          const clipped = [...element.querySelectorAll(".street-tr, .street-choice small")].filter((line) => {
+          const clipped = [...element.querySelectorAll(".street-scene, .street-tr, .street-choice small")].filter((line) => {
             const box = line.getBoundingClientRect();
             return box.width > 0 && box.height > 0 && (box.top < a.top - 1 || box.bottom > a.bottom + 1 || box.left < a.left - 1 || box.right > a.right + 1);
           }).map((line) => line.textContent);
           return { overlap, clipped, height: a.height, viewport: innerHeight };
         });
         assert.equal(fit.overlap, false, "card clears the walking controls and toolbar");
-        assert.deepEqual(fit.clipped, [], "the whole line and each choice translation fit inside the card");
+        assert.deepEqual(fit.clipped, [], "the scene and translations fit inside the card");
         assert(fit.height <= fit.viewport * 0.75 + 1, "the card stays within its height limit");
       };
       await assertCardFits();
