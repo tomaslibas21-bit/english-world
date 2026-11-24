@@ -148,6 +148,24 @@
 }
 .gym-mic { display: grid; place-items: center; }
 .gym-mic .say-it { position: static; }
+.gym-mic .say-it-badge { top: 4px; right: 4px; }
+.gym-mic .say-it-sparkle {
+  top: 4px;
+  right: auto;
+  left: 3px;
+  width: 19px;
+  height: 19px;
+  filter: drop-shadow(0 0 1px #ffcd66);
+  transform-origin: center;
+  animation: gym-mic-sparkle 850ms ease-out both;
+}
+
+@keyframes gym-mic-sparkle {
+  0% { transform: scale(0.6); }
+  40% { transform: scale(1); }
+  100% { transform: scale(0.8); }
+}
+
 .gym-mic .say-it-message:not(:empty) {
   inset: auto 0 0;
   padding: 0;
@@ -185,4 +203,5 @@
 
 @media (prefers-reduced-motion: reduce) {
   .gym-overlay button, .gym-overlay .mode-score-card { transition: none; animation: none; }
+  .gym-mic .say-it-sparkle { animation: none; }
 }
