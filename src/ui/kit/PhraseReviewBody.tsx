@@ -16,8 +16,8 @@ export function ReviewRow({ line, children, targetLang = "en", helperLang = "lt"
   </div>;
 }
 
-export default function PhraseReviewBody({ entries, labels, prepare, targetLang = "en", helperLang = "lt" }: ReviewOptions & {
-  entries: readonly PhraseReviewEntry[]; labels: PhraseReviewLabels; prepare: typeof reviewLine;
+export default function PhraseReviewBody({ entries, labels, prepare, targetLang = "en", helperLang = "lt", targetOnly }: ReviewOptions & {
+  entries: readonly PhraseReviewEntry[]; labels: PhraseReviewLabels; prepare: typeof reviewLine; targetOnly?: boolean;
 }) {
   const choices = useMemo(() => {
     const distinct = new Map<string, ReviewLine>();
@@ -34,10 +34,11 @@ export default function PhraseReviewBody({ entries, labels, prepare, targetLang 
   return <ReviewRow line={line} targetLang={targetLang} helperLang={helperLang}>
     {choices.size > 1 ? <div className="phrase-review-line">
       <select lang={targetLang} aria-label={labels.phrases} value={line.key} onChange={(event) => setSelected(event.target.value)}
-        onKeyDown={(event) => { if (event.key !== "Escape" && event.key !== "Tab") event.stopPropagation(); }}>
+        onKeyDown={(event) => { if (event.key !== "Escape" && event.key !== "Tab") event.stopPropagation(); }}
+        onKeyUp={(event) => { if (event.key === " ") event.stopPropagation(); }}>
         {Array.from(choices.values(), ({ key, target }) => <option key={key} value={key}>{target}</option>)}
       </select>
-      <small lang={helperLang}>{line.helper}</small>
-    </div> : undefined}
+      {!targetOnly && <small lang={helperLang}>{line.helper}</small>}
+    </div> : targetOnly ? <div className="phrase-review-line" lang={targetLang}>{line.target}</div> : undefined}
   </ReviewRow>;
 }

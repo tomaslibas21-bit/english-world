@@ -4,12 +4,14 @@ import { SURF_SPOT } from "../world/surf";
 import { coach } from "../coach";
 import type { ModeHost } from "../kit/host";
 import type { GameMode } from "../kit/modes";
+import { PhraseRun } from "../kit/phrases";
 import { SurfPlay } from "./play";
-import { useSurf } from "./store";
+import { configureSurfReview, useSurf } from "./store";
 
 export function createSurfMode(host: ModeHost): (GameMode & { play: SurfPlay }) | null {
   if (!SURF_SPOT || !SURF || !NPCS[SURF.npc]) return null;
-  const spot = SURF_SPOT, id = "surf";
+  const spot = SURF_SPOT, id = "surf", situationId = SURF.situation;
+  configureSurfReview(() => new PhraseRun(situationId));
   const play = new SurfPlay(spot, SURF, {
     ...host,
     fade: (fn) => host.owns(id) && host.fade(() => { if (host.owns(id)) fn(); }),
@@ -63,6 +65,7 @@ export function createSurfMode(host: ModeHost): (GameMode & { play: SurfPlay }) 
     },
     exit: (immediate) => play.stop(immediate),
     dispose() {
+      configureSurfReview();
       play.stopListening();
       play.group.removeFromParent();
       play.marker.removeFromParent();

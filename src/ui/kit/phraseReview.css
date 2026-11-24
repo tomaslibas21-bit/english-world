@@ -1,13 +1,11 @@
 .phrase-review-row {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-block: 8px;
+  gap: 6px;
   text-align: start;
 }
-.phrase-review-line { flex: 1 1 10em; min-width: 0; overflow-wrap: anywhere; font-family: var(--en); font-size: 1.2em; }
+.phrase-review-line { min-width: 0; overflow-wrap: anywhere; font-family: var(--en); font-size: 1.2em; }
 .phrase-review-line small { display: block; color: var(--lt); font-family: var(--ui); font-size: .7em; }
 .phrase-review-line select {
   width: 100%; min-height: 44px; padding: 4px 8px; border: 1px solid var(--line);

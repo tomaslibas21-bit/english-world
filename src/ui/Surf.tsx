@@ -5,15 +5,20 @@
 // them (a tap answers too), or, when she asked for a move, that move and its key in large letters right under her
 // line ("Stokis – spausk ↑"; on a phone it is the button to tap). The balance in a ride; the score; the level's
 // choice at the start and the score card at the end.
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { memo, useEffect, useRef, useState, type ReactNode } from "react";
+import { SURF } from "../content/surf";
 import { useStore } from "../state/store";
 import { useSurf, type SurfUi } from "../game/surf/store";
 import type { Do } from "../game/surf/logic";
 import { speechSupported } from "../convo/speech";
 import { game } from "../game/gameRef";
 import { GlossLine } from "./kit/GlossLine";
+import PhraseReview from "./kit/PhraseReview";
+import { PhraseSave } from "./kit/PhraseSave";
 import { Icon } from "./icons";
 import "./surf.css";
+
+const SurfSave = memo(PhraseSave);
 
 /** The picture of what her line asks for, in a small frame: the new one slides in over the one before it (no blank
  *  between two commands); still, with reduced motion (surf.css). Her words say the same, so it is hidden from a
@@ -136,12 +141,11 @@ export function SurfOverlay() {
   const s = useSurf();
   const touch = useStore((st) => st.hud.showTouch);
   const slow = useStore((st) => !!st.settings.slowVoice);
-  const [shown, setShown] = useState(false);
-  // (her next line is heard first again)
-  useEffect(() => { setShown(false); }, [s.line?.cue, s.line?.s.en]);
+  const [shown, setShown] = useState<SurfUi["line"]>(null);
   if (!s.active) return null;
   const sc = s.score;
-  const hidden = s.support === 2 && !shown;
+  const situationId = SURF?.situation;
+  const hidden = s.support === 2 && shown !== s.line;
   const riding = s.phase === "ride";
   // the picture is help too: it stays while the words lose their translation, and goes when only her voice is left
   // (a tap brings the words and the picture back)
@@ -163,8 +167,11 @@ export function SurfOverlay() {
             {pic && <Picture src={pic} />}
             <div className="surf-words">
               {hidden
-                ? <button className="surf-listen" onClick={() => setShown(true)} lang="lt"><Icon name="speaker" size={22} /> <span>Klausyk</span><small>Rodyti tekstą</small></button>
-                : <GlossLine sentence={s.line.s} gloss={s.support === 0} />}
+                ? <button className="surf-listen" onClick={() => setShown(s.line)} lang="lt"><Icon name="speaker" size={22} /> <span>Klausyk</span><small>Rodyti tekstą</small></button>
+                : <div className="phrase-save-row">
+                  <GlossLine sentence={s.line.s} gloss={s.support === 0} />
+                  {situationId && <SurfSave sentence={s.line.s} situationId={situationId} iconOnly />}
+                </div>}
               {riding && <div className="surf-balance" role="meter" aria-label="Pusiausvyra" aria-valuemin={0} aria-valuemax={1} aria-valuenow={s.balance}><i style={{ width: `${Math.round(s.balance * 100)}%` }} /></div>}
             </div>
             <button className="surf-again" onClick={() => game?.modeAction("surf", "repeat")} title="Pakartoti" aria-label="Pakartoti" lang="lt"><Icon name="speaker" size={19} /></button>
@@ -178,16 +185,22 @@ export function SurfOverlay() {
         <div className="surf-choices">
           <Mic mic={s.mic} on={s.micOn} />
           {s.choice.options.map((o, i) => (
-            <button key={o.cue} className="surf-choice" onClick={() => game?.modeAction("surf", "choose", o.cue)}>
-              {!touch && <kbd>{i + 1}</kbd>}
-              <span className="surf-choice-text" lang="en">{o.s.en}</span>
-              <small lang="lt">{o.s.nat}</small>
-            </button>
+            <div className="phrase-save-row" key={o.cue}>
+              <button className="surf-choice" onClick={() => game?.modeAction("surf", "choose", o.cue)}>
+                {!touch && <kbd>{i + 1}</kbd>}
+                <span className="surf-choice-text" lang="en">{o.s.en}</span>
+                <small lang="lt">{o.s.nat}</small>
+              </button>
+              {situationId && <SurfSave sentence={o.s} situationId={situationId} iconOnly />}
+            </div>
           ))}
         </div>
       )}
       {/* what the learner has just said, until she answers */}
-      {s.said && !s.choice && !s.over && <div className="surf-said" lang="en"><Icon name="check" size={18} strokeWidth={2.6} /> <span>{s.said.s.en}</span></div>}
+      {s.said && !s.choice && !s.over && <div className="surf-said" lang="en">
+        <Icon name="check" size={18} strokeWidth={2.6} /> <span>{s.said.s.en}</span>
+        {situationId && <SurfSave sentence={s.said.s} situationId={situationId} iconOnly />}
+      </div>}
       {s.over && (
         <div className="surf-pick">
           <div className="surf-pick-card">
@@ -199,6 +212,7 @@ export function SurfOverlay() {
             </div>
             <p className="surf-best">{`Iš viso: bangų – ${s.best.waves + sc.waves}, sekundžių ant bangos – ${s.best.seconds + sc.seconds}`}</p>
             <p>Frazės, kurias girdėjai, jau tavo kortelėse.</p>
+            {!!s.review?.length && <PhraseReview entries={s.review} />}
             <div className="surf-levels">
               <button className="surf-level" onClick={() => game?.modeAction("surf", "again", "beginner")}><b>Dar viena pamoka</b><span>Pradedantiems</span></button>
               <button className="surf-level adv" onClick={() => game?.modeAction("surf", "again", "advanced")}><b>Dar viena pamoka</b><span>Pažengusiems</span></button>

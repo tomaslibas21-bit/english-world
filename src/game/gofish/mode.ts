@@ -1,5 +1,5 @@
 import { Vector3, type Group, type Object3D } from "three";
-import { GOFISH_CONVERSATION, GOFISH_DECKS, GOFISH_NAMES, GOFISH_UI, GOFISH_WORDS } from "../../content/gofish";
+import { GOFISH_CONVERSATION, GOFISH_DECKS, GOFISH_NAMES, GOFISH_UI, GOFISH_WORDS, goFishWordSentence } from "../../content/gofish";
 import { GOFISH_ACCEPT, GOFISH_LINES, GOFISH_SPEAKER_NAMES } from "../../content/gofish-lines";
 import { NPCS } from "../../content/npcs";
 import { prefetchSituations } from "../../content/situations/catalog";
@@ -15,7 +15,7 @@ import { actionHelp, type HelpLevel } from "../kit/help";
 import type { ModeHost } from "../kit/host";
 import { conversationLine } from "../kit/lines";
 import type { GameMode, ModeFrame, ModeInput } from "../kit/modes";
-import { keepPhrases } from "../kit/phrases";
+import { keepPhrases, PhraseRun } from "../kit/phrases";
 import { SayItRound } from "../kit/sayIt";
 import { STYLED } from "../style";
 import { DINING, DINING_SEATS, DINNER_PROPS, GOFISH_PROMPT, SEAT_HEIGHT, TABLETOP_CORNERS, diningShot, fitDiningView, hostBounds } from "./framing";
@@ -59,6 +59,7 @@ type Run = {
   tipListen: boolean;
   lucky: boolean;
   lastAsk?: KitLine;
+  review: PhraseRun;
   began: boolean;
   closing: boolean;
   wait?: { left: number; finish(ok: boolean): void };
@@ -103,10 +104,17 @@ class GoFishMode implements GameMode {
   private playback = new ModeDialogue({
     allowBrowserVoice: true,
     framePlayback: true,
-    say: (line) => ui({ line: line ? { ...line, speaker: this.speaker } : null }),
-    choices: (choices) => ui({ choices }),
+    say: (line) => {
+      if (line) this.run?.review.add(line.sentence);
+      ui({ line: line ? { ...line, speaker: this.speaker } : null });
+    },
+    choices: (choices) => {
+      if (view().step !== "ask") this.run?.review.lines(choices);
+      ui({ choices });
+    },
     mic: (mic) => ui({ mic }),
     answer: (line) => {
+      this.run?.review.add(line.sentence);
       this.speaker = "learner";
       ui({ line: { ...line, speaker: "learner" }, busy: true });
     },
@@ -145,11 +153,12 @@ class GoFishMode implements GameMode {
 
   private begin(previous?: Run) {
     if (this.starting || !this.host.canStart(true)) return false;
+    const offer = view().offered ? view().line : null;
     if (!this.host.fade(() => {
       if (!this.starting || !this.host.owns(this.id)) return;
       this.starting = false;
       if (previous) this.clearRun(previous);
-      this.launch();
+      this.launch(offer);
     })) return false;
     this.starting = true;
     this.playback.cancel();
@@ -158,7 +167,7 @@ class GoFishMode implements GameMode {
     return true;
   }
 
-  private launch() {
+  private launch(offer: KitLine | null) {
     const room = this.room.room(), dan = this.room.npc("dan"), nora = this.room.npc("nora");
     if (!room || !dan || !nora) { resetGoFishUi(); this.host.left(this.id); return; }
     resetGoFishUi();
@@ -190,10 +199,11 @@ class GoFishMode implements GameMode {
     this.run = {
       round, actors, props, playerSeatY, playerVisible, playerFace, dinnerProps, dinnerWasVisible, random, firstRound: played === 0,
       asks: 0, replies: 0, right: 0, sayIt: new SayItRound(), drawTime: 0, handovers: 0, npcStarted: false, tipListen: false, lucky: false,
-      began: false, closing: false, hostsFrame,
+      began: false, closing: false, hostsFrame, review: new PhraseRun(situation),
       tableFrame: [...hostsFrame, new Vector3(DINING.x, DINING.surface, DINING.z + 0.45)],
       landscapeFrame: [...hostsFrame, ...TABLETOP_CORNERS],
     };
+    if (offer) this.run.review.add(offer.sentence);
     this.playback.setMic(true);
     this.host.entered(this.id);
     countPlay("games", this.id);
@@ -249,6 +259,7 @@ class GoFishMode implements GameMode {
   }
 
   private sync(run: Run, round: Round) {
+    for (const id of round.hands.learner) run.review.add(goFishWordSentence(GOFISH_WORDS[id]));
     run.round = round;
     ui({ round });
     run.props.sync(round);
@@ -368,6 +379,7 @@ class GoFishMode implements GameMode {
     const { turn } = round;
     if (move) {
       const revealed = move.from === "pond" && turn === "learner";
+      if (revealed) run.review.add(goFishWordSentence(GOFISH_WORDS[move.word]));
       const duration = revealed ? 0.95 : 0.38;
       this.phase("move", { drawn: revealed ? move.word : null });
       if (revealed && speechSupported()) {
@@ -431,9 +443,13 @@ class GoFishMode implements GameMode {
     const sentences = keys.flatMap((key) => conversationLine(situation, "dan", key, GOFISH_LINES, true) ?? []);
     if (run.lastAsk) sentences.unshift(run.lastAsk.sentence);
     keepPhrases(situation, sentences);
+    for (const sentence of sentences) run.review.add(sentence);
     this.playback.clearLine();
     if (won === "learner") audio.sfx("winJingle");
-    this.phase("score", { result: { winner: won, right: run.right, replies: run.replies, cards: sentences.length, ...run.sayIt.result } });
+    this.phase("score", {
+      result: { winner: won, right: run.right, replies: run.replies, cards: sentences.length, ...run.sayIt.result },
+      review: run.review.entries(),
+    });
   }
 
   private selectTarget(run: Run, target: Npc) {
@@ -545,6 +561,8 @@ class GoFishMode implements GameMode {
     if (step === "ask" && choices.length) {
       if (name === "target" && (value === "dan" || value === "nora")) this.selectTarget(run, value);
       if (name === "card" && typeof value === "string" && run.round.hands.learner.includes(value)) {
+        const selected = choices.find(({ key }) => key === askKey(value));
+        if (selected) run.review.add(selected.sentence);
         ui({ picked: value, tip: view().tip ? GOFISH_UI.tipWhom : null });
       }
     }

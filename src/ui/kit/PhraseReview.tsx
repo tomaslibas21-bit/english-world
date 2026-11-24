@@ -35,10 +35,10 @@ export function PhraseReviewRow({ entry, children, labels, ...languages }: Revie
   return <Suspense fallback={children ?? null}><ReviewRow line={line} {...languages}>{children}</ReviewRow></Suspense>;
 }
 
-export default function PhraseReview({ entries, labels = PHRASE_CARD_UI, ...languages }: ReviewOptions & {
-  entries: readonly PhraseReviewEntry[];
+export default function PhraseReview({ entries, labels = PHRASE_CARD_UI, targetOnly, ...languages }: ReviewOptions & {
+  entries: readonly PhraseReviewEntry[]; targetOnly?: boolean;
 }) {
   return entries.length > 0 && <Suspense fallback={null}>
-    <ReviewBody entries={entries} labels={labels} prepare={reviewLine} {...languages} />
+    <ReviewBody entries={entries} labels={labels} prepare={reviewLine} targetOnly={targetOnly} {...languages} />
   </Suspense>;
 }

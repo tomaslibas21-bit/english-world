@@ -13,6 +13,7 @@ import { useTownQuests, type Destination } from "../game/photowalk/store";
 import { useStore } from "../state/store";
 import { Icon } from "./icons";
 import { GlossLine } from "./kit/GlossLine";
+import { PhraseSave } from "./kit/PhraseSave";
 import "./townQuests.css";
 
 const act = (name: string, value?: string | boolean) => game?.modeAction("photowalk", name, value);
@@ -59,13 +60,19 @@ function PhotoPage({ thing, found }: { thing: typeof PHOTO_THINGS[number]; found
   return <li className="photo-page" data-thing={thing.id} data-found={found}>
     {photo ? <img src={photo} alt="" width={160} height={120} /> : <Sticker id={thing.id} icon={thing.icon} />}
     {found
-      ? <GlossLine sentence={name} gloss compact />
+      ? <div className="phrase-save-row"><GlossLine sentence={name} gloss compact /><PhraseSave sentence={name} situationId={PHOTO_WALK_SITUATION} iconOnly /></div>
       : <>
         <span lang="lt">{name.nat}</span>
         <button type="button" className="btn ghost small" aria-expanded={showNote} onClick={() => setShowNote((value) => !value)}>{words.where}</button>
-        {showNote && <GlossLine sentence={photoLine(`pw_w_${thing.id}`)} gloss />}
+        {showNote && <PhotoPhrase sentence={photoLine(`pw_w_${thing.id}`)} />}
       </>}
   </li>;
+}
+
+function PhotoPhrase({ sentence, lineKey }: { sentence: ReturnType<typeof photoLine>; lineKey?: string }) {
+  return <div className="phrase-save-row" data-line={lineKey}>
+    <GlossLine sentence={sentence} gloss /><PhraseSave sentence={sentence} situationId={PHOTO_WALK_SITUATION} iconOnly />
+  </div>;
 }
 
 function PhotoBook() {
@@ -81,7 +88,7 @@ function PhotoBook() {
       <div><h2>{title}</h2><p>{words.found(found.length, PHOTO_THINGS.length)}</p></div>
       <button type="button" className="quest-close" aria-label={words.close} onClick={() => game?.modeExit()}><Icon name="close" /></button>
     </header>
-    {visit && line && <div className="photo-visit" data-line={line.key}><GlossLine sentence={line.sentence} gloss /></div>}
+    {visit && line && <div className="photo-visit"><PhotoPhrase sentence={line.sentence} lineKey={line.key} /></div>}
     <ol className="photo-pages">
       {PHOTO_THINGS.map((thing) => <PhotoPage key={thing.id} thing={thing} found={found.includes(thing.id)} />)}
     </ol>
@@ -123,12 +130,18 @@ function PhotoQuiz() {
         <button type="button" className="quest-close" aria-label={words.close} onClick={() => game?.modeExit()}><Icon name="close" /></button>
       </header>
       {quiz.got ? <>
-        {line && <div data-line={line.key}><GlossLine sentence={line.sentence} gloss /></div>}
+        {line && <PhotoPhrase sentence={line.sentence} lineKey={line.key} />}
         <button type="button" className="btn small" onClick={() => act("book")}>{words.open}</button>
       </> : <>
         <div className="photo-choices">
-          {quiz.choices.map((id) => <button type="button" className="btn soft" key={id} data-choice={id} lang="en"
-            disabled={quiz.misses.includes(id)} onClick={() => pick(id)}>{photoLine(`pw_n_${id}`).en}</button>)}
+          {quiz.choices.map((id) => {
+            const sentence = photoLine(`pw_n_${id}`);
+            return <div className="phrase-save-row" key={id}>
+              <button type="button" className="btn soft" data-choice={id} lang="en"
+                disabled={quiz.misses.includes(id)} onClick={() => pick(id)}>{sentence.en}</button>
+              <PhraseSave sentence={sentence} situationId={PHOTO_WALK_SITUATION} iconOnly />
+            </div>;
+          })}
         </div>
         <div className="photo-quiz-mic"><PhotoMic />{mic.heard && <span lang="en">{mic.heard}</span>}</div>
         {quiz.wrong && <p role="status">{words.wrong}</p>}
@@ -144,11 +157,14 @@ function PhotoFinale() {
       <h2>{words.book}</h2>
       <button type="button" className="quest-close" aria-label={words.close} onClick={() => game?.modeExit()}><Icon name="close" /></button>
     </header>
-    {line && <div aria-live="polite" data-line={line.key}><GlossLine sentence={line.sentence} gloss /></div>}
+    {line && <div aria-live="polite"><PhotoPhrase sentence={line.sentence} lineKey={line.key} /></div>}
     {choices.length > 0 && <div className="photo-choices">
-      {choices.map(({ key, sentence }) => <button key={key} data-line={key} type="button" className="btn soft" onClick={() => act("choose", key)}>
-        <GlossLine sentence={sentence} gloss compact />
-      </button>)}
+      {choices.map(({ key, sentence }) => <div className="phrase-save-row" key={key}>
+        <button data-line={key} type="button" className="btn soft" onClick={() => act("choose", key)}>
+          <GlossLine sentence={sentence} gloss compact />
+        </button>
+        <PhraseSave sentence={sentence} situationId={PHOTO_WALK_SITUATION} iconOnly />
+      </div>)}
       <div className="photo-quiz-mic"><PhotoMic finale />{mic.heard && <span lang="en">{mic.heard}</span>}</div>
       {mic.status === "unclear" && <p role="status">{words.wrong}</p>}
     </div>}
@@ -169,10 +185,13 @@ function DirectionLines({ place }: { place: Destination }) {
     {place.lines.map((key) => {
       const sentence = conversationLine(ASK_WAY_SITUATION, ASK_WAY_NPC, key, ASK_WAY_LINES, false);
       const gloss = revealed.includes(key);
-      return sentence && <button key={key} type="button" data-line={key} aria-expanded={gloss}
-        onClick={() => setRevealed((ids) => gloss ? ids.filter((id) => id !== key) : [...ids, key])}>
-        <GlossLine sentence={sentence} gloss compact />
-      </button>;
+      return sentence && <div className="phrase-save-row" key={key}>
+        <button type="button" data-line={key} aria-expanded={gloss}
+          onClick={() => setRevealed((ids) => gloss ? ids.filter((id) => id !== key) : [...ids, key])}>
+          <GlossLine sentence={sentence} gloss compact />
+        </button>
+        {gloss && <PhraseSave sentence={sentence} situationId={ASK_WAY_SITUATION} iconOnly />}
+      </div>;
     })}
   </div>;
 }

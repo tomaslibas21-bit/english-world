@@ -1,5 +1,5 @@
 import type { WebGLRenderer } from "three";
-import { ROAD_EDITION } from "../../content/road";
+import { ROAD_EDITION, ROAD_UI } from "../../content/road";
 import { ROAD_ACCEPT, ROAD_LINES } from "../../content/road-lines";
 import { countPlay } from "../../state/playStats";
 import { useStore } from "../../state/store";
@@ -8,6 +8,7 @@ import { boardFaces, preloadBoardFont } from "../kit/boardFaces";
 import { audio } from "../audio";
 import { ModeDialogue } from "../kit/dialogue";
 import type { ModeFrame, ModeInput } from "../kit/modes";
+import { PhraseRun } from "../kit/phrases";
 import type { Ride } from "../rides/Rides";
 import { CAR_SEATS } from "../rides/shapes";
 import { carHasRoof, carModelEntry } from "../world/carModels";
@@ -18,6 +19,7 @@ import { Gate, LANE_PAINT } from "./gates";
 import { ghostAt, GhostRecorder, readBest, saveBest } from "./ghost";
 import { karaoke, WRONG_PHRASE_DELAY } from "./karaoke";
 import { Lift } from "./lift";
+import { resolvedGateWord } from "./phraseEntries";
 import { loadPhrasePool } from "./phrasePool";
 import { gatesLeft } from "./review";
 import { DRIVE_SECONDS, FIRST_GATE, gateSayItTarget, gateWord, nextGate, RunScore, keepRunPhrases, loadWordPrompts, practiceResult, rememberRun, runPicker } from "./run";
@@ -35,7 +37,7 @@ const taxiSize = carModelEntry(TAXI.model).collisionBox;
 type Run = {
   track: Track; view: RoadView; car: RoadCar; score: RunScore;
   pick?: ReturnType<typeof runPicker>; way: PlayWay; ghost: GhostRecorder;
-  gate?: Gate; gateAt: number; promptIn: number; feedback: number; reveal?: ({ clip: Clip } | { phrase: Phrase }) & { in: number };
+  gate?: Gate; gateAt: number; promptIn: number; feedback: number; reveal?: ({ clip: Clip } | { phrase: Phrase; situationId: string }) & { in: number };
   distance: number; sampledTime: number; nextPrompt?: Prompt; target?: number; drifting?: boolean;
   forced?: boolean;
 };
@@ -118,9 +120,17 @@ export class RoadMode {
   private session: object | null = null;
   private best = readBest(edition);
   private hornAt = -Infinity;
+  private review = new PhraseRun(driver.situation);
   private dialogue = new ModeDialogue({
-    say: (line) => useRoad.setState({ line }),
-    choices: (choices) => useRoad.setState({ choices }),
+    say: (line) => {
+      if (line) this.review.add(line.sentence);
+      const result = useRoad.getState().result;
+      useRoad.setState(result && line && this.phase === "result" ? { line, result: { ...result, review: this.review.entries() } } : { line });
+    },
+    choices: (choices) => {
+      this.review.lines(choices);
+      useRoad.setState({ choices });
+    },
     mic: (mic) => useRoad.setState({ mic }),
     animate: (seconds) => this.lift?.talk(seconds),
     speechFallback: true,
@@ -168,7 +178,7 @@ export class RoadMode {
 
   private brief() {
     this.phase = "briefing";
-    useRoad.setState({ phase: "briefing", way: playWay(useStore.getState().progress, edition, "road") });
+    useRoad.setState({ phase: "briefing", way: playWay(useStore.getState().progress, edition, "road"), result: undefined });
   }
 
   private unavailable() {
@@ -229,7 +239,7 @@ export class RoadMode {
 
   private newRun(track: Track, view: RoadView, car: RoadCar, pick?: Run["pick"], way: PlayWay = "words") {
     const run: Run = this.run = {
-      track, view, car, score: new RunScore(), pick, way, ghost: new GhostRecorder(),
+      track, view, car, score: new RunScore(DRIVE_SECONDS, ROAD_UI.title, this.review), pick, way, ghost: new GhostRecorder(),
       gateAt: FIRST_GATE, promptIn: 0, feedback: 0, distance: 0, sampledTime: 0,
     };
     run.ghost.sample(0, car.pose);
@@ -303,6 +313,7 @@ export class RoadMode {
 
   private showGate(gate: Gate, score: RunScore) {
     const { prompt, id } = gate;
+    score.show(prompt);
     useRoad.setState({ prompt, gateId: id, sayIt: score.sayIt.open(gateSayItTarget(prompt)) });
     if (prompt.phrase) karaoke.road.prompt(prompt.phrase.pClip);
     else if (!prompt.gap) this.play(prompt.word.clip);
@@ -315,7 +326,7 @@ export class RoadMode {
       if ("phrase" in run.reveal) {
         run.feedback = 0;
         useRoad.setState({ feedback: undefined });
-        karaoke.road.show(run.reveal.phrase);
+        karaoke.road.show(run.reveal.phrase, run.reveal.situationId);
       } else this.play(run.reveal.clip);
       run.reveal = undefined;
     }
@@ -349,7 +360,8 @@ export class RoadMode {
       const lane = import.meta.env.DEV && run.forced !== undefined
         ? (run.forced ? prompt.right : (prompt.right + 1) % 3) : laneAt(car.x);
       run.forced = undefined;
-      const correct = score.answer(prompt, lane);
+      const word = resolvedGateWord(prompt);
+      const correct = score.answer(prompt, lane, word);
       if (correct) {
         car.boost = Math.max(car.boost, 1.2);
         view.celebrate(frame.time, distance, lane, LANE_PAINT[lane]);
@@ -362,8 +374,8 @@ export class RoadMode {
       }
       let correction = 0;
       if (prompt.phrase) {
-        if (correct) karaoke.road.show(prompt.phrase);
-        else { audio.stop(); run.reveal = { phrase: prompt.phrase, in: WRONG_PHRASE_DELAY }; }
+        if (correct) karaoke.road.show(prompt.phrase, word.situation);
+        else { audio.stop(); run.reveal = { phrase: prompt.phrase, situationId: word.situation, in: WRONG_PHRASE_DELAY }; }
       } else if (!correct) this.play(prompt.word.clip);
       if (prompt.gap) {
         if (correct) this.play(prompt.gap.clip);
@@ -379,7 +391,7 @@ export class RoadMode {
       run.promptIn = prompt.gap ? Math.max(2.5, Math.min(4.8, correction + (audio.clipDuration(prompt.gap.clip.voice, prompt.gap.clip.speed, prompt.gap.clip.say) ?? 2.5))) : run.feedback;
       run.gateAt = nextGate(distance, score.total);
       this.warmNextPrompt(run);
-      useRoad.setState({ sayIt: undefined, streak: score.streak, feedback: { correct, word: prompt.word } });
+      useRoad.setState({ sayIt: undefined, streak: score.streak, feedback: { correct, word, phrase: !!prompt.phrase } });
     } else {
       if (run.feedback > 0 && (run.feedback -= dt) <= 0) useRoad.setState({ feedback: undefined });
       if ((run.promptIn -= dt) <= 0 && !ended && !run.gate) this.openGate(run);
@@ -415,11 +427,11 @@ export class RoadMode {
     const best = { points: score.points, frames: run.ghost.frames };
     const record = saveBest(edition, best, this.best);
     if (record) this.best = best;
-    const cards = keepRunPhrases(score);
+    const cards = keepRunPhrases(score, ROAD_UI.title);
     useStore.getState().setHud({ ride: null });
     useRoad.setState({ phase: "result", feedback: undefined, prompt: undefined, gateId: undefined, sayIt: undefined, wind: false, result: {
       points: score.points, right: score.right, total: score.total, streak: score.bestStreak, distance: run.distance,
-      record, cards, ...practiceResult(score, run.way), ...score.sayIt.result,
+      record, cards, ...practiceResult(score, run.way, ROAD_UI.title), ...score.sayIt.result,
     } });
     if (this.lift) void this.say("rd_end");
   }
@@ -463,6 +475,7 @@ export class RoadMode {
     if (name === "guide" && this.phase === "result") this.exit(false, true);
     if (name === "again" && this.phase === "result" && this.session) {
       this.dialogue.cancel();
+      this.review = new PhraseRun(driver.situation);
       this.session = {};
       this.brief();
     }
@@ -493,6 +506,7 @@ export class RoadMode {
     this.phase = "town";
     this.session = null;
     this.dialogue.cancel();
+    this.review = new PhraseRun(driver.situation);
     karaoke.road.stop();
     this.clearRun();
     audio.stop();

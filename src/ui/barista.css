@@ -94,9 +94,9 @@
 }
 .barista-order-text li {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-  align-items: baseline;
-  gap: 0 12px;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0 8px;
   padding-block: 2px;
   overflow-wrap: anywhere;
   font: 650 15px / 1.2 var(--ui);

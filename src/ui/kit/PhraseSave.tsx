@@ -1,4 +1,5 @@
 import type { Sentence } from "../../convo/compose";
+import type { KeyboardEvent } from "react";
 import { PHRASE_CARD_UI } from "../../content/phrase-card-ui";
 import { cardKey, sentenceInput, useCards, type CardInput } from "../../state/cards";
 import { Icon } from "../icons";
@@ -12,9 +13,15 @@ export type PhraseSaveProps = PhraseSource & {
   onSaved?: () => void;
   popover?: "primary" | "soft";
   labels?: PhraseSaveLabels;
+  iconOnly?: boolean;
+  describedBy?: string;
 };
 
-export function PhraseSave({ sentence, situationId, sourceLabel, onSaved, popover, labels }: PhraseSaveProps) {
+function saveKey(event: KeyboardEvent) {
+  if (event.key === " " || event.key === "Enter") event.stopPropagation();
+}
+
+export function PhraseSave({ sentence, situationId, sourceLabel, onSaved, popover, labels, iconOnly, describedBy }: PhraseSaveProps) {
   const key = cardKey(sentence.en);
   const saved = useCards((cards) => cards.keys.has(key));
   const words = labels ?? PHRASE_CARD_UI;
@@ -24,11 +31,13 @@ export function PhraseSave({ sentence, situationId, sourceLabel, onSaved, popove
 
   return <button type="button" className={popover === "primary" ? "btn small" : popover ? "btn small soft" : "btn soft"}
     data-phrase-save={popover ? undefined : ""}
-    onKeyDown={(event) => { if (event.key === " " || event.key === "Enter") event.stopPropagation(); }}
+    data-icon-only={iconOnly || undefined} title={popover ? undefined : label} aria-label={popover ? undefined : label}
+    aria-describedby={describedBy}
+    onKeyDown={saveKey} onKeyUp={saveKey}
     onClick={(event) => {
       event.stopPropagation();
       const cards = useCards.getState();
       const alreadySaved = cards.keys.has(key);
       if (cards.add({ ...sentenceInput(sentence, situationId), sourceLabel }) && !alreadySaved) onSaved?.();
-    }}>{icon}{" " + label}</button>;
+    }}>{icon}{!iconOnly && (" " + label)}</button>;
 }
