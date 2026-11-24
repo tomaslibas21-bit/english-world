@@ -41,9 +41,11 @@
 }
 @media (max-width: 520px) {
   .road-mode .joy { width: 112px; height: 112px; }
+  .road-lift { bottom: calc(12px + env(safe-area-inset-bottom)); }
+}
+@media (max-width: 520px), (max-height: 520px) and (orientation: landscape) {
   .road-mode .jump-btn.brake-btn { right: calc(18px + env(safe-area-inset-right)); bottom: calc(21px + env(safe-area-inset-bottom)); }
   .road-mode .drive-horn { right: calc(103px + env(safe-area-inset-right)); bottom: calc(31px + env(safe-area-inset-bottom)); width: 52px; height: 52px; background: #314450; }
-  .road-lift { bottom: calc(12px + env(safe-area-inset-bottom)); }
 }
 
 .road-overlay .road-result .mode-score-number > span { animation: none; }
