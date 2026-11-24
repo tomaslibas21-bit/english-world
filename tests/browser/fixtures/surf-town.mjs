@@ -1,3 +1,5 @@
+import assert from "node:assert/strict";
+
 export const HARBOR_START = { x: -104.2, z: -69.9, r: 2.6, rot: Math.PI };
 
 export const SEEDED_RANDOM = `
@@ -22,3 +24,21 @@ export const readSurfPlayer = (page) => page.evaluate(() => {
     backpack: player.backpackVisible, outfit: game.outfit, rash: player.look.rash ?? false, swim: player.look.swim ?? null,
     mode: rig.mode, stage: !!rig.stage, camera: rig.cam.position.toArray() };
 });
+
+export async function sampleSurfRender(page, camera) {
+  const { width, height } = page.viewportSize();
+  const { quality, samples } = await page.evaluate(() => {
+    const { game, store } = window.__ew;
+    const render = game.renderer.info.render;
+    const samples = Array.from({ length: 3 }, () => {
+      const previousFrame = render.frame;
+      window.__step(1);
+      return { mode: game.rig.mode, frame: render.frame, previousFrame, calls: render.calls, triangles: render.triangles };
+    });
+    return { quality: store.getState().settings.quality, samples };
+  });
+  const label = `${width}x${height} ${camera} quality=${quality} baseline=unmatched`;
+  console.log(`surf draw calls ${label} ${JSON.stringify(samples)}`);
+  assert.ok(samples.every(({ frame, previousFrame, calls, triangles }) => frame > previousFrame && calls > 0 && triangles > 0),
+    `${label} each step presents fresh geometry`);
+}

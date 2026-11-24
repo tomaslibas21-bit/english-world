@@ -4,7 +4,8 @@
 // level, else the level's choice). Check the map and walking approach too, with the town clock stepped by hand.
 // WORLD_TEST_URL=http://127.0.0.1:5188 WORLD_STORAGE=english-world WORLD_PLAYWRIGHT_MODULE=/path/to/playwright-core/index.mjs node tests/browser/surf-find.mjs
 import assert from "node:assert/strict";
-import { HARBOR_START, SEEDED_RANDOM, readSurfIntro } from "./fixtures/surf-town.mjs";
+import { HARBOR_START, SEEDED_RANDOM, readSurfIntro, sampleSurfRender } from "./fixtures/surf-town.mjs";
+import { HARBOR_PHONE_VIEW, checkHarborCalls, openHarbor, originalHarborCalls } from "./fixtures/harbor-calls.mjs";
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:5188";
 const storage = process.env.WORLD_STORAGE || "english-world";
@@ -36,6 +37,16 @@ const INIT = `(() => {
 
 const browser = await chromium.launch({ channel: process.env.WORLD_BROWSER_CHANNEL || "chromium", headless: true, args: ["--use-angle=metal", "--enable-gpu", "--ignore-gpu-blocklist"] });
 try {
+  // Use the lighthouse suite's seed, clock and fixed camera for its phone budget.
+  const originalCalls = await originalHarborCalls(browser, process.env.WORLD_BASELINE_URL, storage);
+  const harborContext = await browser.newContext(HARBOR_PHONE_VIEW);
+  try {
+    const page = await openHarbor(harborContext, base, storage);
+    await page.waitForFunction(() => !!window.__ew.game.islandScene);
+    await checkHarborCalls(page, originalCalls);
+  } finally {
+    await harborContext.close();
+  }
   for (const [label, width, height] of [["computer", 1280, 800], ["phone", 375, 812], ["short-phone", 390, 664]]) {
     const phone = label !== "computer";
     const ctx = await browser.newContext({ viewport: { width, height }, ...(phone ? { deviceScaleFactor: 2, isMobile: true, hasTouch: true } : {}) });
@@ -119,6 +130,7 @@ try {
     }
     await page.locator(".nametag").filter({ has: page.getByText("Maren Pike", { exact: true }) }).waitFor({ state: "visible" });
     await shot("counter");
+    await sampleSurfRender(page, "school counter");
     await at(spot.start.x, spot.start.z);
     if (phone) await page.locator(".act-btn").tap(); else await page.keyboard.press("e");
     await page.locator(".surf-pick .surf-level").first().waitFor();

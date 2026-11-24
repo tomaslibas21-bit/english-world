@@ -1,6 +1,15 @@
+import { registerLearnerNotes } from "../../convo/compose";
 import { ent, t } from "../dsl";
 import { SURF_LINES } from "../surf-lines";
 import type { Ctx, SituationDef, Suggestion } from "../types";
+
+registerLearnerNotes({
+  "Whitewater is the foam left after a wave breaks.": "„Whitewater“ – putos, liekančios bangai lūžus.",
+  "The leash joins the board to your ankle so the board stays close.": "„Leash“ – saitas, jungiantis banglentę ir čiurną, kad lenta nenutoltų.",
+  "A set is a group of waves that arrive together.": "„Set“ – viena po kitos atplaukiančių bangų grupė.",
+  "The crest is the top of a wave.": "„Crest“ – bangos ketera, jos viršutinė dalis.",
+  "A rash guard is a close-fitting shirt worn in the water.": "„Rash guard“ – prigludę marškinėliai, dėvimi vandenyje.",
+});
 
 export const SURF_RATE: Readonly<Record<string, number>> = {
   board: 2000, paddle: 2500, kayak: 2500, kayak2: 3500, snorkel: 1500,

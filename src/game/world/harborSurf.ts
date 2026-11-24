@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { SURF_CHALKBOARD, SURF_SCHOOL_SIGN } from "../../content/surf-town";
+import { SURF_CHALKBOARD, SURF_SCHOOL_SIGN } from "../../content/surf-signs";
 import { vertexColorMaterial, STYLED } from "../style";
 import { surfboardParts, type Part } from "../surf/shapes";
 import { sandY } from "../water";

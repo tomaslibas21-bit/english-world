@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
+import { HARBOR_PHONE_VIEW, HARBOR_SPAWN, checkHarborCalls, openHarbor, originalHarborCalls } from "./fixtures/harbor-calls.mjs";
 
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:5188";
@@ -11,70 +12,17 @@ const storage = process.env.WORLD_STORAGE || "english-world";
 const shots = process.argv.find((a) => a.startsWith("--shots="))?.slice(8);
 if (shots) mkdirSync(shots, { recursive: true });
 
-const spawn = { zone: "town", x: -6.5, z: -64, rot: Math.PI };
-const progress = {
-  version: 1,
-  profile: { name: "Test", surname: "Tester", gender: "m", lookId: "m1",
-    look: { skin: "#f2d3bd", hair: { style: "short", color: "#5a3a25" }, top: "#2a9d8f", bottom: "#264653" } },
-  settings: { v: 5, play: "town", quality: "low", scenes: false, volume: 0, cameraFollow: false },
-  sits: {}, phrases: {}, seenIntro: {}, started: 1, place: spawn, coach: { done: true, run: true },
-};
-const phoneView = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, reducedMotion: "reduce" };
 const desktopView = { viewport: { width: 1280, height: 800 }, reducedMotion: "reduce" };
 const browser = await chromium.launch({ channel: process.env.WORLD_BROWSER_CHANNEL || "chromium", headless: true });
 
-async function open(context, url) {
-  const page = await context.newPage();
-  await page.route("**/*.mp3", (route) => route.fulfill({ status: 204 }));
-  await page.addInitScript(([key, data]) => {
-    localStorage.setItem(key, data);
-    sessionStorage.setItem("ew-play-now", "1");
-  }, [storage + "-progress-v1", JSON.stringify(progress)]);
-  await page.goto(url, { waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => window.__ew?.store.getState().screen === "play" && window.__ew.game?.ledges?.ready,
-    null, { timeout: 120000 });
-  await page.evaluate(() => {
-    window.__ew.coach?.finish?.();
-    window.__ew.store.getState().setHud({ panel: null });
-  });
-  return page;
-}
-
-async function harborCalls(page) {
-  await page.evaluate(() => window.__ew.game.enterZone("town", { x: 101, z: -65, rot: Math.PI }, true));
-  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-  return page.evaluate(() => {
-    const { game: g } = window.__ew;
-    const island = g.islandScene?.group;
-    const cam = g.rig.cam.clone();
-    cam.position.set(102, 8.5, -63);
-    cam.lookAt(102, 3.1, -89);
-    cam.updateMatrixWorld(true);
-    const render = () => {
-      g.renderer.render(g.scene, cam);
-      return g.renderer.info.render.calls;
-    };
-    const after = render();
-    if (!island) return { after };
-    island.visible = false;
-    try { return { after, hidden: render() }; }
-    finally { island.visible = true; }
-  });
-}
-
 try {
-  let originalCalls;
-  if (baseline) {
-    const context = await browser.newContext(phoneView);
-    originalCalls = (await harborCalls(await open(context, baseline))).after;
-    await context.close();
-  }
+  const originalCalls = await originalHarborCalls(browser, baseline, storage);
 
-  const shortPhoneView = { ...phoneView, viewport: { width: 390, height: 664 } };
-  for (const view of [phoneView, shortPhoneView, desktopView]) {
+  const shortPhoneView = { ...HARBOR_PHONE_VIEW, viewport: { width: 390, height: 664 } };
+  for (const view of [HARBOR_PHONE_VIEW, shortPhoneView, desktopView]) {
     const phone = !!view.isMobile;
     const context = await browser.newContext(view);
-    const page = await open(context, base);
+    const page = await openHarbor(context, base, storage);
     const label = `${view.viewport.width}x${view.viewport.height}`;
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
@@ -102,13 +50,8 @@ try {
     };
 
     if (phone) {
-      const calls = await harborCalls(page);
-      const delta = calls.after - calls.hidden;
-      assert(delta > 0 && delta <= 6, JSON.stringify(calls));
-      console.log(`${label} harbor draw calls, island hidden/visible ${calls.hidden}/${calls.after} (+${delta})`);
-      if (view === phoneView) assert(calls.after <= 32, JSON.stringify(calls));
-      if (view === phoneView && originalCalls !== undefined) console.log(`${label} harbor draw calls, original/current ${originalCalls}/${calls.after}`);
-      await page.evaluate((at) => window.__ew.game.enterZone("town", at, true), spawn);
+      await checkHarborCalls(page, view === HARBOR_PHONE_VIEW ? originalCalls : undefined);
+      await page.evaluate((at) => window.__ew.game.enterZone("town", at, true), HARBOR_SPAWN);
     }
 
     const minimap = page.locator(".minimap");

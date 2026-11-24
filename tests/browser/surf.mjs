@@ -9,7 +9,7 @@
 // of Maple Harbor; WORLD_SHOTS=<folder> keeps pictures of its moments:
 // WORLD_TEST_URL=http://127.0.0.1:5188 WORLD_STORAGE=english-world WORLD_PLAYWRIGHT_MODULE=/path/to/playwright-core/index.mjs node tests/browser/surf.mjs
 import assert from "node:assert/strict";
-import { HARBOR_START, readSurfIntro, readSurfPlayer } from "./fixtures/surf-town.mjs";
+import { HARBOR_START, readSurfIntro, readSurfPlayer, sampleSurfRender } from "./fixtures/surf-town.mjs";
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:5188";
 const storage = process.env.WORLD_STORAGE || "english-world";
@@ -242,6 +242,7 @@ try {
       && p.rash && p.swim === "trunks" && p.mode === "stage" && p.stage;
     check(`${label}: the dry lesson uses the surf actor and stage camera`, isSurfPlayer(sand) && sand.actor !== townPlayer.actor
       && !sand.swimming && sand.y >= -0.01 && cameraDistance(sand, townPlayer) > 1, { town: townPlayer, sand });
+    await sampleSurfRender(page, "dry lesson start");
     if (phone) {
       check(`${label}: the lesson replaces the joystick and round buttons with four arrows`,
         await page.locator(".surf-pad button:visible").count() === 4 && await page.locator(".joy:visible, .act-btn:visible, .jump-btn:visible").count() === 0);
@@ -312,6 +313,7 @@ try {
             if (!coachFrame && s.coachStance > 0.96) {
               coachFrame = await rideFrame(true);
               if (shots && !shown.has("coach-ride")) { shown.add("coach-ride"); await shot("coach-ride", "css"); }
+              if (how === "good") await sampleSurfRender(page, "coach ride side view");
             }
           }
         } else if (s.demo === "done" && demo.start !== null) demo.end ??= s.time;

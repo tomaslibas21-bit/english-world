@@ -1,5 +1,5 @@
 // Shared wording for the boards, town guide and lesson overlay. Lithuanian is the MH helper language.
-import { SURF_LESSON, SURF_HINT_TOUCH, SURF_HINT_KEYS, SURF_SCHOOL_SIGN, SURF_CHALKBOARD } from "./surf-town";
+import { SURF_LESSON, SURF_HINT_TOUCH, SURF_HINT_KEYS } from "./surf-town";
 
 export const SURF_UI = {
   lesson: SURF_LESSON,
@@ -14,10 +14,8 @@ export const SURF_UI = {
   mapPin: { en: "Harbor Surf · West Beach", lt: "„Harbor Surf“ · Vakarinis paplūdimys" },
   counter: { en: "Maren Pike · Surf coach", lt: "Maren Pike · Banglenčių instruktorė" },
   sign: {
-    school: SURF_SCHOOL_SIGN,
     rentals: { en: "RENTALS & LESSONS", lt: "Įrangos nuoma ir pamokos" },
     hours: { en: "8 AM–6 PM · Last rental 5 PM", lt: "8.00–18.00 · Paskutinė nuoma 17.00" },
-    ...SURF_CHALKBOARD,
     deposit: { en: "ID or $50 refundable deposit", lt: "Asmens dokumentas arba 50 $ grąžinamas užstatas" },
   },
   picker: {
