@@ -13,6 +13,16 @@ export default defineConfig({
   plugins: [loadingScreen("Kraunamas „English World“", LOADING_ART), react()],
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   server: { port: 5188, host: true },
-  build: { target: "es2022", chunkSizeWarningLimit: 4000 },
+  build: {
+    target: "es2022",
+    chunkSizeWarningLimit: 4000,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [{ name: "entry-shared", tags: ["$initial"] }],
+        },
+      },
+    },
+  },
   test: { environment: "node", include: ["tests/**/*.test.ts"] },
 } as any);
