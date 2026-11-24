@@ -9,6 +9,11 @@ import { GOFISH_NOTES_LT } from "./gofish-lines";
 
 export const NOTES_LT: Record<string, string> = {
   ...GOFISH_NOTES_LT,
+  "Whitewater is the foam left after a wave breaks.": "„Whitewater“ – putos, liekančios bangai lūžus.",
+  "The leash joins the board to your ankle so the board stays close.": "„Leash“ – saitas, jungiantis banglentę ir čiurną, kad lenta nenutoltų.",
+  "A set is a group of waves that arrive together.": "„Set“ – viena po kitos atplaukiančių bangų grupė.",
+  "The crest is the top of a wave.": "„Crest“ – bangos ketera, jos viršutinė dalis.",
+  "A rash guard is a close-fitting shirt worn in the water.": "„Rash guard“ – prigludę marškinėliai, dėvimi vandenyje.",
   "Prices are said as two numbers, dollars then cents: four seventy-five = $4.75.": "Kainą amerikiečiai sako dviem skaičiais – doleriai, paskui centai: four seventy-five = 4,75 dolerio.",
   // the ride-along taxi (src/content/taxi-lines.ts)
   "“Let's”: no separate word; the ending -kime of pabandykime carries it.": "„Let's“: atskiro žodžio nėra; tai pasako veiksmažodžio pabandykime galūnė -kime.",

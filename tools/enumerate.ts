@@ -7,6 +7,7 @@
 //    simulation turns and hint examples as input) whose NPC lines are collected. This finds
 //    dynamic renderings (prices, chosen items) and crash-tests every handler.
 import { PHOTO_WALK_SITUATION } from "../src/content/photo-walk-lines";
+import { SURF_DEPOSIT, SURF_HOURS, SURF_LATE, SURF_LESSON, SURF_RATE } from "../src/content/situations/x04-surf";
 import { SITUATIONS } from "../src/content/situations";
 import { isBaristaCoachLine } from "../src/content/barista-lines";
 import { MEETING_LINES } from "../src/content/phoneMeeting";
@@ -47,6 +48,7 @@ export const KIT_LEARNER: Record<string, { only?: RegExp; both?: RegExp }> = {
   "x01-pool-hall": { only: /^h_(solids|stripes|gg|fun)$/, both: /^bl_(b\d+|p_[a-z]+)$/ },
   "s83-invite-call": { only: /^phone_meet_(ready|tickets)$/ },
   [PHOTO_WALK_SITUATION]: { only: /^pw_a_/ },
+  "x04-surf": { only: /^sg_(?:a_|b_)/ },
 };
 /** Lines a mini-game says in a conversation's name that are not among that conversation's own lines. */
 const KIT_EXTRA_LINES: Record<string, Record<string, SentSrc[]>> = {
@@ -65,8 +67,42 @@ function rng(seed: number) {
   return () => { a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
 
+// Rates follow the selected gear, and only the refundable checkout includes the deposit.
+// Payment amount affects which response is used. The change line itself has no amount.
+function surfBindings(line: string): Record<string, string | number>[] | undefined {
+  const rates = [...new Set(Object.values(SURF_RATE))];
+  const refundableTotals = SURF_HOURS.flatMap((hours) => rates.map((rate) => rate * hours + SURF_DEPOSIT));
+  const subtotals = SURF_HOURS.flatMap((hours) => rates.map((rate) => rate * hours));
+  const totals = (amounts: number[]) => [...new Set(amounts)].map((total) => ({ total }));
+  switch (line) {
+    case "price_hour": return Object.entries(SURF_RATE).map(([X, price]) => ({ X, price }));
+    case "price_list": return [{ price: SURF_RATE.board, amount: SURF_RATE.paddle, fare: SURF_RATE.snorkel }];
+    case "two_double": return [{ price: SURF_RATE.kayak2 }];
+    case "late": return [{ price: SURF_LATE }];
+    case "lesson_info": case "lesson_price_again": return [{ price: SURF_LESSON }];
+    case "deposit_ask": case "no_id_deposit": case "deposit_info": return [{ deposit: SURF_DEPOSIT }];
+    case "total_one": return totals(rates);
+    case "total_two": return totals(rates.map((rate) => 2 * rate));
+    case "total_three": return totals(rates.map((rate) => 3 * rate));
+    case "total_dep": return totals(refundableTotals);
+    case "total_lesson": return [{ total: SURF_LESSON }];
+    case "pay_again": case "short": return totals([...subtotals, ...refundableTotals, SURF_LESSON]);
+    case "hand_paddle": return [{ X: "paddle" }, { X: "kayak" }];
+  }
+}
+
+interface EnumerationOptions {
+  fuzzRuns?: number;
+  only?: string[];
+  sits?: SituationDef[];
+  log?: (s: string) => void;
+  v2?: boolean;
+  /** Observe situation and shared-dialogue provenance before identical clip keys are collapsed. */
+  onUtterance?: (utterance: Utt) => void;
+}
+
 /** `v2`: the voice ids of the Gemini voices (src/content/voices.ts) instead of the ones the game plays now. */
-export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: SituationDef[]; log?: (s: string) => void; v2?: boolean } = {}): { utts: Utt[]; errors: string[]; unreached: Unreached[]; unfilled: string[] } {
+export function enumerateAll(opts: EnumerationOptions = {}): { utts: Utt[]; errors: string[]; unreached: Unreached[]; unfilled: string[] } {
   const unreached: Unreached[] = [];
   /** item lines no play said and no code could be read for: not voiced with every item list any more (18 Nov 2026) */
   const unfilled: string[] = [];
@@ -84,6 +120,7 @@ export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: 
     // the name is part of the content: no clip (browser voice), but for a hint example, whose name is the fixed
     // example learner's (src/convo/suggest.ts exampleVars, 17 Nov 2026)
     if (!example && alt === null && /\b(Tomas|Mikalauskas)\b/.test(say)) return;
+    opts.onUtterance?.({ voice, speed, say, en: s.en, where });
     addUtterance(out, voice, speed, say, s.en, where);
   };
   const sits = opts.sits ?? SITUATIONS.filter((s) => !opts.only?.length || opts.only.some((o) => s.id.startsWith(o)));
@@ -100,7 +137,7 @@ export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: 
     const usedLists = new Map<string, Set<string>>(), usedBy = new Map<string, Set<string>>(), usedIds = new Map<string, Set<string>>();
     const addTo = (m: Map<string, Set<string>>, k: string, v: string) => { let s = m.get(k); if (!s) m.set(k, (s = new Set())); s.add(v); };
     errors.push(...fuzzSituation(sit, look, opts.fuzzRuns ?? 120, (voice, speed, sentence, line) => {
-      add(voice, speed, sentence, `${sit.id}:fuzz`);
+      add(voice, speed, sentence, sit.id === "x04-surf" && line ? `${sit.id}:${line.lineId}[${line.variant}]` : `${sit.id}:fuzz`);
       if (!line) return;
       addTo(usedBy, line.lineId, line.npc);
       for (const v of Object.values(line.vars ?? {})) {
@@ -133,7 +170,9 @@ export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: 
       variants.forEach((src, i) => {
         const ph = placeholders(src);
         const bindings: Record<string, any>[] = [];
-        if (!ph.entities.length && !ph.values.length) bindings.push({});
+        const scoped = sit.id === "x04-surf" && (ph.entities.length || ph.values.length) ? surfBindings(lid) : undefined;
+        if (scoped) bindings.push(...scoped);
+        else if (!ph.entities.length && !ph.values.length) bindings.push({});
         else if (!ph.entities.length && ph.values.every((v) => sit.domains?.[v])) {
           let combos: Record<string, any>[] = [{}];
           for (const v of ph.values) {
@@ -305,12 +344,13 @@ function addStreetUtterances(out: Map<string, Utt>, v2: boolean) {
   }
 }
 
-function finishEnumeration(out: Map<string, Utt>, errors: string[], allNpcIds: Set<string>, opts: { only?: string[]; sits?: SituationDef[]; v2?: boolean }): { utts: Utt[]; errors: string[] } {
+function finishEnumeration(out: Map<string, Utt>, errors: string[], allNpcIds: Set<string>, opts: EnumerationOptions): { utts: Utt[]; errors: string[] } {
   const add = (voice: string, speed: number, s: Sentence, where: string) => {
     if (!s.say.trim() || /\s[.,!?]/.test(s.say)) return;
     const alt = withoutAddressedNames(s.say, ["Tomas", "Mikalauskas"]);
     const say = alt ?? s.say;
     if (alt === null && /\b(Tomas|Mikalauskas)\b/.test(say)) return;
+    opts.onUtterance?.({ voice, speed, say, en: s.en, where });
     addUtterance(out, voice, speed, say, s.en, where);
   };
   // 4. global lines in every NPC's voice

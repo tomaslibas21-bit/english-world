@@ -226,6 +226,9 @@ export const NPCS: Record<string, NpcDef> = Object.fromEntries([
   N("mr_grant", "Mr. Grant", ["Your landlord", "Tavo nuomotojas"], "m", "am_liam",
     { skin: SK.dark, hair: { style: "bald", color: HAIR.gray }, top: "#9b3b36", bottom: "#3a3f4a", acc: ["beard", "readers"] },
     { bio: "Laiškuose labai oficialus, telefonu – visai ne." }),
+  N("maren", "Maren Pike", ["Surf coach", "Banglenčių instruktorė"], "f", "af_bella",
+    { skin: SK.tan, hair: { style: "braid", color: HAIR.chestnut, side: -1, tie: "#e9a23b" }, top: "#d86c40", bottom: "#233e51", sleeves: "short", shorts: true },
+    { speed: 1, bio: "32 metų. Užaugo Maple Harbore, čia ir išmoko čiuožti banglente." }),
   ...QUEST_PEOPLE,
 ].map((n) => [n.id, n]));
 

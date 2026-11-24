@@ -156,6 +156,7 @@ export const KEEPSAKES: Record<string, KeepsakeKind> = {
   "x01-pool-hall": "cue_chalk",
   "x02-photo-walk": "note",
   "x03-ask-the-way": "map",
+  "x04-surf": "note",
   "s73-restaurant": "receipt",
   "s74-clothes": "shopping_bag",
   "s75-pharmacy": "shopping_bag",

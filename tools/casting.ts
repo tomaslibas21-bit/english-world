@@ -138,7 +138,7 @@ export const CAST: Record<string, Role> = {};
   const uses = new Map<string, number>();
   const take = (v: string) => uses.set(v, (uses.get(v) ?? 0) + 1);
   const coachOnly = new Set([COACH.f.voice, COACH.m.voice]);
-  const existing = people.filter((n) => !QUEST_PICKS[n.id]);
+  const existing = people.filter((n) => !QUEST_PICKS[n.id] && n.id !== "maren");
   const style = (id: string) => STYLE[id] ?? "friendly and natural";
   const pick = (n: typeof people[number], reserved: Set<string>) => {
     const busy = new Set([...partners(n.id)].map((p) => CAST[p]?.voice).filter(Boolean));
@@ -164,6 +164,7 @@ export const CAST: Record<string, Role> = {};
     CAST[n.id] = { ...role, voice: v.name, note: PICKS[n.id]?.note ?? `${n.role.en.toLowerCase()}: ${v.trait}` };
   }
   for (const n of people) if (QUEST_PICKS[n.id]) CAST[n.id] = QUEST_PICKS[n.id];
+  CAST.maren = { voice: "Callirrhoe", style: "relaxed and friendly, clearly paced", note: "Local surf coach, warm and unhurried." };
 }
 
 /** The Gemini voice and style for a voice id of src/content/voices.ts (g_<npcId>, g_coach_f, g_amb_m, …). */
