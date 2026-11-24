@@ -59,6 +59,7 @@ import { OcclusionField } from "./occlusion";
 import { PropFader } from "./fade";
 import { CUT, withCutout } from "./cutout";
 import { covers, NEAR_TALK, shoulderShots, type Body, type Shot } from "./talkShot";
+import type { TalkLayout, watchTalkLayout } from "./talkLayout";
 import { FLIGHT_SECONDS, flightAt } from "./flyover";
 import { Guidance } from "./guidance";
 import { NavGrid, openIslandNav } from "./nav";
@@ -139,8 +140,9 @@ const AT_WORK: Record<string, "wipe" | "type"> = {
   emily: "type",
 };
 
-/** On a phone held upright, the height of the 3D picture above the conversation (styles.css
- *  --conversation-image-height and its shorter screens). */
+let talkLayoutModule: Promise<typeof import("./talkLayout")> | undefined;
+
+/** The provisional picture above the conversation on a phone, before the panel mounts. */
 function talkPictureHeight(h: number): number {
   return h <= 620 ? 100 : h <= 700 ? Math.max(100, h * 0.2) : Math.min(230, Math.max(110, h * 0.25));
 }
@@ -229,6 +231,9 @@ export class Game implements GameApi {
   private talkCast: NpcActor[] = [];
   private talkIn: NpcActor[] = [];
   private talkViews = new Map<string, Shot>();
+  private talkSpeaker: NpcActor | null = null;
+  private talkLayout: TalkLayout | null = null;
+  private talkLayoutWatch?: ReturnType<typeof watchTalkLayout>;
   private hudBoxCache: TagBox[] = [];
   private hudCheck = 0;
   private tagLayer: HTMLDivElement;
@@ -878,6 +883,7 @@ export class Game implements GameApi {
     const z = this.getZone(id);
     if (!z) return;
     const doIt = () => {
+      if (this.talkNpc) this.stopTalkLayout();
       this.phone.dismiss();
       if (this.modes.active || this.modes.owns("barista") || this.modes.owns("gofish")) this.modes.exit(true);
       if (this.flight) {
@@ -2035,19 +2041,57 @@ export class Game implements GameApi {
     }, introOverride);
     this.session = session;
     this.session.begin();
+    if (actor) this.startTalkLayout(session, actor);
+  }
+
+  private startTalkLayout(session: Session, actor: NpcActor) {
+    const zone = this.zone, { run, sitId, hostId } = useStore.getState().conv;
+    const valid = () => {
+      const { conv } = useStore.getState();
+      return !this.disposed && this.session === session && session.active && conv.active && conv.run === run
+        && this.zone === zone && this.talkNpc === actor && this.rig.mode === "talk"
+        && !!this.talkSpeaker && this.npcs.includes(this.talkSpeaker);
+    };
+    const load = talkLayoutModule ??= import("./talkLayout");
+    void load.then(({ watchTalkLayout }) => {
+      if (!valid()) return;
+      this.talkLayoutWatch = watchTalkLayout(this.renderer.domElement, valid, !!sceneFor(sitId, hostId), (layout) => {
+        this.talkLayout = layout;
+        this.refitTalk();
+        // The old pose was fitted to a different opening in the overlay.
+        this.rig.snap();
+      });
+    }, () => { if (talkLayoutModule === load) talkLayoutModule = undefined; });
+  }
+
+  private stopTalkLayout() {
+    this.talkLayoutWatch?.dispose();
+    this.talkLayoutWatch = undefined;
+    this.talkLayout = this.talkSpeaker = null;
+    this.talkLean = 0;
+  }
+
+  private refitTalk() {
+    this.talkViews.clear();
+    if (this.talkSpeaker) this.frameTalk(this.talkSpeaker);
   }
 
   /** Turns the conversation's camera to `to`, one of those taking part (and whoever of them stands right by them),
    *  unless they are in the picture already; the learner turns to them too. Each one's framing is found once. */
   private aimTalk(to: NpcActor) {
+    this.talkSpeaker = to;
     if (this.talkIn.includes(to)) return;
+    this.talkLean = 0;
+    this.frameTalk(to);
+  }
+
+  private frameTalk(to: NpcActor) {
     const p = this.player.root.position, a = to.ch.root.position;
     if (Math.hypot(a.x - p.x, a.z - p.z) > 0.1) this.heading = Math.atan2(a.x - p.x, a.z - p.z);
     const group = [to, ...this.talkCast.filter((n) => n !== to && n.ch.root.position.distanceTo(a) < 2.6)];
     let shot = this.talkViews.get(to.id);
     if (!shot) this.talkViews.set(to.id, shot = this.talkView(to, group));
     this.talkIn = group;
-    this.talkLean = 0;
     this.applyTalkShot(shot);
   }
 
@@ -2109,13 +2153,16 @@ export class Game implements GameApi {
    *  least 26° (more of the ground and less of the town behind them in the picture). The widest framing tried if none
    *  fits. */
   private fitTalk(frame: (d: number, side?: 1 | -1) => { pos: THREE.Vector3; look: THREE.Vector3 }, d0: number, max: number, who: { ch: GameCharacter; sit?: boolean }[], near: Iterable<Shot> | null = null, solo = false): Shot {
-    const w = this.container.clientWidth, h = this.container.clientHeight, wide = w > 900;
-    // styles.css .convo: on a wide screen a panel min(500px, 42vw) wide on the right, 14 px in; on a phone 58vh tall
-    // at the bottom, 8 px up. The free part of the screen, 10 px in from its edges, and the loop's shift of the picture.
+    const layout = this.talkLayout, w = layout?.width ?? this.screenW, h = layout?.height ?? this.screenH;
+    const sideways = this.sidewaysPhone, wide = !sideways && w > 900;
+    const strip = !wide && !sideways ? talkPictureHeight(h) : 0;
+    const live = this.rig.cam, cam = new THREE.PerspectiveCamera(50, w / h, live.near, live.far);
+    this.shiftTalkView(cam, w, h);
     const m = 10;
-    const x0 = m, x1 = (wide ? w - 14 - Math.min(500, 0.42 * w) : w) - m, y0 = m, y1 = (wide ? h : h - 8 - 0.58 * h) - m;
-    const sx = wide ? Math.min(w * 0.22, 380) : 0, sy = wide ? 0 : h * 0.25;
-    const cam = new THREE.PerspectiveCamera(50, w / h, 0.1, 900);
+    const { x0, x1, y0, y1 } = layout?.picture ?? {
+      x0: m, x1: (sideways ? w * 0.25 : wide ? w - 14 - Math.min(500, 0.42 * w) : w) - m,
+      y0: m, y1: (strip || h) - m,
+    };
     const v = new THREE.Vector3(), right = new THREE.Vector3();
     /** Each of the points checked on the people (their head and chest, and a hand's breadth to each side of them),
      *  seen from `f`, until `each` says no (`i`: whose). */
@@ -2132,30 +2179,38 @@ export class Game implements GameApi {
       }
       return true;
     };
-    // On a phone held upright the picture is only the strip above the conversation (styles.css
-    // --conversation-image-height; the loop's applyViewShift centres it there): each point must fall in that strip too,
-    // 10 px in, for the people spoken with. A framing the old test passed and the strip shows stays as it was.
-    const sideways = this.sidewaysPhone, strip = !wide && !sideways ? talkPictureHeight(h) : 0, ssy = (h - strip) / 2;
-    // And the top of the head of each person spoken with (hair and hats included, 0.12 m to each side) under the
-    // picture's top edge, 10 px in: the head and chest points alone passed with the top of a head cut off by the
-    // strip's top edge (s65a's officer, s79's clerk…).
     const tops = who.map(({ ch }) => headTop(ch));
+    const { ch: speaker, sit: seated } = who[1], feet = speaker.root.position;
+    const look = layout ? feet.clone().setY(feet.y + (seated ? 0.72 : 0.9) * speaker.height) : null;
+    // The measured lens points at the speaker. Its view offset alone places the face in the open picture.
+    const aim = (f: Shot): Shot => look ? { pos: f.pos, look } : f;
+    const project = (q: THREE.Vector3) => {
+      q.project(cam);
+      q.x = (q.x + 1) * w / 2;
+      q.y = (1 - q.y) * h / 2;
+      return q.z >= -1 && q.z <= 1;
+    };
     /** Over the learner's shoulder (the nearer views): the learner, in front, may be cut by the picture's edges. */
     let over = false;
     const fits = (f: Shot) => points(f, (q, i) => {
       // (`solo`: the people spoken with only; the learner may stand out of the picture)
       if (solo && i === 0) return true;
-      q.project(cam);
-      const px = (q.x + 1) / 2 * w - sx, py = (1 - q.y) / 2 * h - sy;
-      if (over && i === 0) return q.z <= 1 && px >= x0 - 70 && px <= x1 + 70 && py >= y0;
-      if (!(q.z <= 1 && px >= x0 && px <= x1 && py >= y0 && py <= y1)) return false;
-      // (the people spoken with: the player, nearest the camera, may reach below the strip)
-      const sy2 = (1 - q.y) / 2 * h - ssy;
-      return !strip || i === 0 || (sy2 >= m && sy2 <= strip - m);
-    }) && who.every(({ ch }, i) => i === 0 || [-0.12, 0, 0.12].every((s) => {
-      const q = v.copy(ch.root.position).addScaledVector(right, s).setY(ch.root.position.y + tops[i]).project(cam);
-      return q.z <= 1 && (strip ? (1 - q.y) / 2 * h - ssy : (1 - q.y) / 2 * h - sy) >= m;
-    }));
+      if (!project(q)) return false;
+      if (over && i === 0) return q.x >= x0 - 70 && q.x <= x1 + 70 && q.y >= y0;
+      return q.x >= x0 && q.x <= x1 && q.y >= y0 && q.y <= y1;
+    }) && who.every(({ ch, sit }, i) => {
+      if (i === 0) return true;
+      const p = ch.root.position;
+      let left = Infinity, rightEdge = -Infinity, top = Infinity, bottom = -Infinity;
+      // Approximate the head envelope with the standing/seated face width and the measured crown height.
+      for (const y of [tops[i], (sit ? 0.56 : 0.73) * ch.height]) for (const s of [-0.3, 0.3]) {
+        const q = v.copy(p).addScaledVector(right, s).setY(p.y + y);
+        if (!project(q) || q.x < x0 || q.x > x1 || q.y < y0 || q.y > y1) return false;
+        left = Math.min(left, q.x); rightEdge = Math.max(rightEdge, q.x);
+        top = Math.min(top, q.y); bottom = Math.max(bottom, q.y);
+      }
+      return !layout?.obstacles.some((r) => left < r.x1 && rightEdge > r.x0 && top < r.y1 && bottom > r.y0);
+    });
     // Outdoors: the camera clear of anything solid, and nothing in front of anyone: of the six lines from the camera to
     // a person's points, at most three may pass through a building (to its roof), a post or a trunk (the colliders'
     // circles, to 4 m; not the people's own) or something low (the colliders' boxes: cars, counters, walls, to 1.2 m).
@@ -2205,6 +2260,7 @@ export class Game implements GameApi {
     // a face (a counter's screen, a booth's pane), but not right in front of the lens, nor to the learner.
     const it = this.zone.interior;
     const ray = new THREE.Raycaster();
+    ray.camera = cam;
     const roomClear = (f: Shot, learner = true) => {
       if (!it) return true;
       if (Math.abs(f.pos.x) > it.w / 2 - 0.5 || f.pos.z < -it.d / 2 + 0.5) return false;
@@ -2230,12 +2286,12 @@ export class Game implements GameApi {
       const lean = seen(n) && fits(n) && clear(n) && roomClear(n);
       return { pos: f.pos, look: f.look, ...(lean ? { near: n.pos } : {}), ...(uncovered(f) ? {} : { covered: true }) };
     };
-    const first = frame(d0);
-    const raise = strip ? [0, 0.1, 0.2, 0.3, 0.4] : [0];
+    const base = frame(d0), first = aim(base);
+    const raise = !layout && strip ? [0, 0.1, 0.2, 0.3, 0.4] : [0];
     // the nearer views first; if the room hides the learner from every one of them (they stand behind a counter, in
     // a corner), then those that show the people spoken with
     over = true;
-    const nears = near ? [...near] : [];
+    const nears = near ? Array.from(near, aim) : [];
     for (const whole of [true, false]) {
       for (const f0 of nears) {
         if (!seen(f0) || !clear(f0)) continue;
@@ -2250,12 +2306,12 @@ export class Game implements GameApi {
     }
     over = false;
     if (seen(first) && fits(first) && clear(first)) return done(first);
-    const lift = first.pos.y - first.look.y;
+    const lift = base.pos.y - base.look.y;
     const at = (d: number, side?: 1 | -1) => {
       const f = frame(d, side);
       const run = Math.hypot(f.pos.x - f.look.x, f.pos.z - f.look.z);
       f.pos.y = f.look.y + (this.zone.interior ? lift * d / d0 : Math.max(lift * d / d0, run * 0.5));
-      return f;
+      return aim(f);
     };
     // On a phone held upright the camera also looks a little higher (up to 0.4 m at the people) before it backs off:
     // the heads come down into the strip and the people keep their size; the player, in front, sinks a little.
@@ -2301,6 +2357,7 @@ export class Game implements GameApi {
 
   private endSession(sit: SituationDef, completed: boolean) {
     this.session = null;
+    this.stopTalkLayout();
     useStore.getState().setConv({ active: false });
     this.rig.talk = null;
     this.talkHome = this.talkNear = null;
@@ -2605,7 +2662,11 @@ export class Game implements GameApi {
 
   // ------------------------------------------------------------------ loop
 
-  private onResize = () => { if (!this.disposed) this.syncSize(); };
+  private onResize = () => {
+    if (this.disposed) return;
+    this.syncSize();
+    this.talkLayoutWatch?.dirty();
+  };
 
   private syncSize() {
     const w = this.container.clientWidth, h = this.container.clientHeight;
@@ -2614,13 +2675,19 @@ export class Game implements GameApi {
     this.rig.resize(w, h, w > h && h <= 520);
     this.screenW = w;
     this.screenH = h;
-    // The cached conversation shots were fitted to the previous space beside the panel.
-    const speaker = this.talkIn[0];
-    if (this.rig.mode === "talk" && speaker) {
-      this.talkViews.clear();
-      const shot = this.talkView(speaker, this.talkIn);
-      this.talkViews.set(speaker.id, shot);
-      this.applyTalkShot(shot);
+    if (this.talkLayoutWatch) this.talkLayoutWatch.dirty();
+    else if (this.rig.mode === "talk" && this.talkSpeaker) this.refitTalk();
+  }
+
+  private shiftTalkView(cam: THREE.PerspectiveCamera, w: number, h: number) {
+    const layout = this.talkLayout, sideways = this.sidewaysPhone, wide = !sideways && w > 900;
+    w = layout?.width ?? w;
+    h = layout?.height ?? h;
+    const x = layout?.shiftX ?? (sideways ? w * 0.375 : wide ? Math.min(w * 0.22, 380) : 0);
+    const y = layout?.shiftY ?? (sideways || wide ? 0 : (h - talkPictureHeight(h)) / 2);
+    const view = cam.view;
+    if (!view?.enabled || view.fullWidth !== w || view.fullHeight !== h || view.offsetX !== x || view.offsetY !== y || cam.aspect !== w / h) {
+      cam.setViewOffset(w, h, x, y, w, h);
     }
   }
 
@@ -2757,7 +2824,7 @@ export class Game implements GameApi {
       const fov = this.rig.fovFor(w, h, this.rig.mode === "follow" && this.vel.lengthSq() > 30) + (this.rig.mode === "follow" ? this.rideFov : 0);
       const d = fov - this.rig.cam.fov;
       if (d !== 0) {
-        this.rig.cam.fov = Math.abs(d) < 0.05 ? fov : this.rig.cam.fov + d * Math.min(1, dt * (this.rig.mode === "talk" ? 4.5 : 3));
+        this.rig.cam.fov = this.rig.mode === "talk" || Math.abs(d) < 0.05 ? fov : this.rig.cam.fov + d * Math.min(1, dt * 3);
         this.rig.cam.updateProjectionMatrix();
       }
     }
@@ -2776,12 +2843,8 @@ export class Game implements GameApi {
     // Give the conversation panel its part of the picture and let the player stand lower while walking on a phone.
     {
       const sideways = this.sidewaysPhone;
-      if (talking && this.talkNpc) {
-        const wide = w > 900 && !sideways;
-        // Match the conversation's visible picture area, including scenes-off 3D conversations.
-        const pictureHeight = talkPictureHeight(h);
-        this.rig.applyViewShift(w, h, sideways ? w * 0.375 : wide ? Math.min(w * 0.22, 380) : 0,
-          wide || sideways ? 0 : (h - pictureHeight) / 2);
+      if (talking && this.talkNpc && this.rig.mode === "talk") {
+        this.shiftTalkView(this.rig.cam, w, h);
       } else if (mode === this.billiards) {
         this.billiards.frameView(w, h, document.querySelector(".bl-table-pad")?.getBoundingClientRect());
       } else if (this.barista && mode === this.barista) {
@@ -3654,6 +3717,7 @@ export class Game implements GameApi {
     this.keepsake.dispose();
     this.streetLife?.dispose();
     this.disposed = true;
+    this.stopTalkLayout();
     this.modes.dispose();
     audio.bed(null);
     this.frameFade.clear();
