@@ -1,7 +1,7 @@
 // „Mano kortelės“: the word popover of interlinear sentences (tap a word → save it, or the whole
 // sentence, as a flashcard) and the cards tab of the phrasebook (the list, and a short review:
 // the Lithuanian first, try to say it, then reveal the English). Store and schedule: state/cards.ts.
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { Sentence } from "../convo/compose";
 import { useStore } from "../state/store";
@@ -15,6 +15,7 @@ import { Icon } from "./icons";
 import { ltCount } from "./lt";
 import { L, Lx, TL } from "./i18n";
 import { EDITION } from "../edition";
+import { placeTip, type Box, type TipSpot } from "./natTip";
 import "./cards.css";
 
 // ---------------------------------------------------------------------------------------------
@@ -54,10 +55,8 @@ function keepCaps(word: string): boolean {
   return NAMES.has(w) || (!!p && (w === p.name.trim().toLowerCase() || w === p.surname.trim().toLowerCase()));
 }
 
-interface Spot { left: number; top: number; below: boolean; arrow: number }
-
 /** Below the word (above it for words low on the screen, when it fits there); inside the window. */
-function place(r: DOMRect, w: number, h: number): Spot {
+function place(r: DOMRect, w: number, h: number): TipSpot {
   const m = 8, gap = 9, vw = window.innerWidth, vh = window.innerHeight;
   const cx = r.left + r.width / 2;
   const left = Math.round(Math.max(m, Math.min(vw - m - w, cx - w / 2)));
@@ -69,19 +68,97 @@ function place(r: DOMRect, w: number, h: number): Spot {
 
 /** Is the word still visible (not scrolled out of the transcript or the hints)? Also the asterisk's tooltip
  *  (Interlinear.tsx NatTip). */
-export function inView(el: HTMLElement): boolean {
+export function inView(el: HTMLElement, bounds?: Box): boolean {
   if (!el.isConnected) return false;
   const r = el.getBoundingClientRect();
   if (!r.width && !r.height) return false;
-  let top = 0, bottom = window.innerHeight, left = 0, right = window.innerWidth;
+  let top = bounds?.top ?? 0, bottom = bounds?.bottom ?? window.innerHeight;
+  let left = bounds?.left ?? 0, right = bounds?.right ?? window.innerWidth;
   for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
     const cs = getComputedStyle(p);
     if (cs.overflowX === "visible" && cs.overflowY === "visible") continue;
     const pr = p.getBoundingClientRect();
     top = Math.max(top, pr.top); bottom = Math.min(bottom, pr.bottom); left = Math.max(left, pr.left); right = Math.min(right, pr.right);
   }
-  const y = r.top + Math.min(r.height, 28) / 2; // the English word's line
+  const y = r.top + Math.min(r.height, 28) / 2; // the target word's line
   return y >= top && y <= bottom && r.right > left && r.left < right;
+}
+
+/** Follow an open portal with the page's layout and scroll events. Write geometry directly so smooth
+ *  scrolling doesn't rerender the word or tooltip. */
+export function trackPopover(anchor: HTMLElement, popup: HTMLElement, onClose: () => void, flipClass: "above" | "below",
+  placeInViewport: (r: DOMRect, w: number, h: number) => TipSpot) {
+  const panel = anchor.closest(".convo");
+  const viewport = window.visualViewport;
+  const inset = 8, gap = flipClass === "above" ? 9 : 8;
+  let frame = 0, maxWidth = 0, maxHeight = 0;
+  let previous: TipSpot | undefined;
+  popup.toggleAttribute("data-in-convo", !!panel);
+
+  const update = () => {
+    frame = 0;
+    const r = anchor.getBoundingClientRect();
+    const p = panel?.getBoundingClientRect();
+    const vx = viewport?.offsetLeft ?? 0, vy = viewport?.offsetTop ?? 0;
+    const box = p && {
+      left: Math.ceil(Math.max(p.left, vx, 0)), top: Math.ceil(Math.max(p.top, vy, 0)),
+      right: Math.floor(Math.min(p.right, vx + (viewport?.width ?? window.innerWidth), window.innerWidth)),
+      bottom: Math.floor(Math.min(p.bottom, vy + (viewport?.height ?? window.innerHeight), window.innerHeight)),
+    };
+    if (!inView(anchor, box)) { onClose(); return; }
+    if (box) {
+      const width = box.right - box.left - 2 * inset;
+      const height = Math.floor(Math.max(r.top - box.top, box.bottom - r.bottom) - inset - gap);
+      if (width <= 0 || height <= 0) { onClose(); return; }
+      if (width !== maxWidth) {
+        maxWidth = width;
+        popup.style.setProperty("--popover-max-width", `${width}px`);
+      }
+      if (height !== maxHeight) {
+        maxHeight = height;
+        popup.style.setProperty("--popover-max-height", `${height}px`);
+      }
+    }
+
+    const { width, height } = popup.getBoundingClientRect();
+    const spot = box ? placeTip(r, Math.ceil(width), Math.ceil(height), box, inset, gap) : placeInViewport(r, width, height);
+    if (previous && spot.left === previous.left && spot.top === previous.top && spot.arrow === previous.arrow && spot.below === previous.below) return;
+    previous = spot;
+    popup.classList.toggle(flipClass, flipClass === "below" ? spot.below : !spot.below);
+    popup.style.left = `${spot.left}px`;
+    popup.style.top = `${spot.top}px`;
+    popup.style.setProperty("--arrow", `${spot.arrow}px`);
+    popup.style.visibility = "visible";
+  };
+  const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
+  const onScroll = (e: Event) => { if (!(e.target instanceof Element) || e.target.contains(anchor)) schedule(); };
+
+  update();
+  const resize = new ResizeObserver(schedule);
+  resize.observe(popup);
+  for (let el: HTMLElement | null = anchor; el && el !== document.body; el = el.parentElement) resize.observe(el);
+  const content = new MutationObserver(schedule);
+  content.observe(panel ?? anchor.closest(".il") ?? anchor, {
+    subtree: true, childList: true, characterData: true, attributes: true,
+    attributeFilter: ["class", "style", "hidden", "data-phase", "data-call-opening"],
+  });
+  window.addEventListener("scroll", onScroll, { capture: true, passive: true });
+  window.addEventListener("resize", schedule);
+  viewport?.addEventListener("scroll", onScroll);
+  viewport?.addEventListener("resize", schedule);
+  panel?.addEventListener("animationend", schedule);
+  document.fonts.addEventListener("loadingdone", schedule);
+  return () => {
+    cancelAnimationFrame(frame);
+    resize.disconnect();
+    content.disconnect();
+    window.removeEventListener("scroll", onScroll, true);
+    window.removeEventListener("resize", schedule);
+    viewport?.removeEventListener("scroll", onScroll);
+    viewport?.removeEventListener("resize", schedule);
+    panel?.removeEventListener("animationend", schedule);
+    document.fonts.removeEventListener("loadingdone", schedule);
+  };
 }
 
 /** What a tapped word offers: the word with its Lithuanian, „+ Į korteles“ and „+ Visą sakinį“
@@ -93,36 +170,21 @@ export function WordPopover({ s, index, anchor, onClose }: { s: Sentence; index:
   closeRef.current = onClose;
   const keys = useCards((c) => c.keys);
   const sitId = useStore((st) => st.conv.sitId);
-  const [spot, setSpot] = useState<Spot | null>(null);
   const [saved, setSaved] = useState(false);
   const u = s.units[index];
   const word = useMemo(() => unitInput(s, index, sitId, keepCaps), [s, index, sitId]);
   const whole = useMemo(() => sentenceInput(s, sitId), [s, sitId]);
   const dash = !u || isDashGloss(u.lt) || !word;
 
-  // follow the word (scrolling, new lines, the LT/IPA toggles), close when it's gone
   useLayoutEffect(() => {
-    let raf = 0, last = "";
-    const tick = () => {
-      const el = ref.current;
-      if (!el) return;
-      const r = anchor.getBoundingClientRect();
-      const sig = [r.left, r.top, r.width, r.height, el.offsetWidth, el.offsetHeight, window.innerWidth, window.innerHeight].join("|");
-      if (sig !== last) {
-        last = sig;
-        if (!inView(anchor)) { closeRef.current(); return; }
-        setSpot(place(r, el.offsetWidth, el.offsetHeight));
-      }
-      raf = requestAnimationFrame(tick);
-    };
-    tick();
-    return () => cancelAnimationFrame(raf);
+    if (ref.current) return trackPopover(anchor, ref.current, () => closeRef.current(), "above", place);
   }, [anchor]);
 
   useEffect(() => {
     const down = (e: PointerEvent) => {
       const t = e.target as Node;
-      if (ref.current?.contains(t) || anchor.contains(t)) return; // the word itself toggles
+      const onWord = anchor.contains(t) && !(t instanceof Element && t.closest(".nat-star"));
+      if (ref.current?.contains(t) || onWord) return; // the word itself toggles
       closeRef.current();
     };
     // capture, so Esc closes only the popover (not the conversation)
@@ -138,20 +200,21 @@ export function WordPopover({ s, index, anchor, onClose }: { s: Sentence; index:
   const sentIn = keys.has(cardKey(whole.en));
   const shown = word?.en ?? cleanText(u.en);
   return createPortal(
-    <div ref={ref} className={"wpop" + (spot && !spot.below ? " above" : "")} role="dialog" aria-label={L("Žodis „{word}“", { word: shown })}
-      style={(spot ? { left: spot.left, top: spot.top, "--arrow": spot.arrow + "px" } : { left: 0, top: 0, visibility: "hidden" }) as CSSProperties}>
-      <div className="wpop-en" lang={TL}>{shown}</div>
-      {!dash && word.ipa && <div className="wpop-ipa">{word.ipa}</div>}
-      {dash ? <div className="wpop-none">{L("Atskirai neverčiama – išsaugok visą sakinį.")}</div> : <div className="wpop-lt" lang={EDITION.helper}>{word.lt}</div>}
-      <div className="wpop-acts">
-        {!dash && (wordIn
-          ? <span className="wpop-in"><Icon name="check" size={16} strokeWidth={2.25} /> {L("Kortelėse")}</span>
-          : <button className="btn small" onClick={() => add(word)}><Glyph name="plus" size={16} /> {L("Į korteles")}</button>)}
-        {sentIn
-          ? <span className="wpop-in"><Icon name="check" size={16} strokeWidth={2.25} /> {L("Sakinys kortelėse")}</span>
-          : <button className={"btn small" + (dash ? "" : " soft")} onClick={() => add(whole)}><Glyph name="plus" size={16} /> {L("Visą sakinį")}</button>}
+    <div ref={ref} className="wpop" role="dialog" aria-label={L("Žodis „{word}“", { word: shown })} style={{ left: 0, top: 0, visibility: "hidden" }}>
+      <div className="wpop-body">
+        <div className="wpop-en" lang={TL}>{shown}</div>
+        {!dash && word.ipa && <div className="wpop-ipa">{word.ipa}</div>}
+        {dash ? <div className="wpop-none">{L("Atskirai neverčiama – išsaugok visą sakinį.")}</div> : <div className="wpop-lt" lang={EDITION.helper}>{word.lt}</div>}
+        <div className="wpop-acts">
+          {!dash && (wordIn
+            ? <span className="wpop-in"><Icon name="check" size={16} strokeWidth={2.25} /> {L("Kortelėse")}</span>
+            : <button className="btn small" onClick={() => add(word)}><Glyph name="plus" size={16} /> {L("Į korteles")}</button>)}
+          {sentIn
+            ? <span className="wpop-in"><Icon name="check" size={16} strokeWidth={2.25} /> {L("Sakinys kortelėse")}</span>
+            : <button className={"btn small" + (dash ? "" : " soft")} onClick={() => add(whole)}><Glyph name="plus" size={16} /> {L("Visą sakinį")}</button>}
+        </div>
+        {saved && <div className="wpop-hint">{L("Kortelę rasi „Frazių knygelėje“.")}</div>}
       </div>
-      {saved && <div className="wpop-hint">{L("Kortelę rasi „Frazių knygelėje“.")}</div>}
     </div>,
     document.body,
   );

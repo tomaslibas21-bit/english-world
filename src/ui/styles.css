@@ -314,6 +314,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 
 /* ---------- conversation panel ---------- */
 .convo {
+  --convo-height: calc(100dvh - 28px);
   position: fixed; z-index: 20; right: 14px; top: 14px; bottom: 14px; width: min(500px, 42vw);
   background: var(--panel); border-radius: 24px; display: flex; flex-direction: column; overflow: hidden;
   box-shadow: 0 0 0 1px rgba(31, 42, 51, 0.06), 0 2px 6px rgba(20, 30, 40, 0.06), 0 22px 60px -16px rgba(20, 30, 40, 0.42);
@@ -321,7 +322,8 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 }
 @keyframes slidein { from { transform: translateX(40px); opacity: 0; } }
 .convo-head {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); flex: none; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line);
+  position: relative; z-index: 1; display: grid; grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr);
+  flex: none; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line);
   background: linear-gradient(180deg, #fffefb, rgba(255, 253, 248, 0.5));
 }
 .avatar {
@@ -380,7 +382,6 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .mission-list li.d .mk { background: #e1f2e7; color: #2f8f5b; }
 .mission-list li.c { color: var(--ink); font-weight: 800; }
 .mission-list li.c .mk { background: var(--gold-soft); color: #9a6700; }
-.bubble-part + .bubble-part { margin-top: 10px; }
 .copy-link {
   display: inline-flex; align-items: center; gap: 6px; margin: 12px auto 0; border: 0; background: none; color: var(--ink-soft);
   font-weight: 800; font-size: 0.85em; text-decoration: underline; text-decoration-color: rgba(82, 96, 109, 0.4); text-underline-offset: 3px;
@@ -414,15 +415,23 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .guide-alt button:hover { text-decoration-color: currentColor; }
 .transcript { flex: 1; overflow-y: auto; padding: 16px 16px 8px; display: flex; flex-direction: column; gap: 14px; scroll-behavior: smooth; }
 .msg { max-width: 100%; }
-.msg.npc .bubble {
-  background: #fff; border-radius: 6px 20px 20px 20px; padding: 12px 15px 11px; border: 1px solid rgba(31, 42, 51, 0.07);
-  box-shadow: 0 1px 2px rgba(20, 30, 40, 0.04), 0 6px 16px -10px rgba(20, 30, 40, 0.22); transition: border-color 0.2s, box-shadow 0.2s;
+.convo .msg.npc .bubble {
+  background: #fff; border-radius: 6px 20px 20px 20px; padding: 10px 14px; border: 1px solid var(--line);
+  box-shadow: 0 1px 2px rgba(20, 30, 40, 0.04), 0 6px 16px -10px rgba(20, 30, 40, 0.22);
 }
-.msg.npc.speaking .bubble { border-color: rgba(31, 111, 120, 0.55); box-shadow: 0 0 0 3px var(--accent-soft), 0 6px 16px -10px rgba(31, 111, 120, 0.4); }
-/* the person's lines are centered in their bubble */
-.msg.npc .bubble { text-align: center; }
-.msg.npc .bubble .il { justify-content: center; }
-.msg.npc .bubble .nat { border-left: 0; border-top: 1px solid var(--line); padding: 7px 4px 0; margin-top: 9px; }
+.convo .msg.npc .bubble-part { border-inline-start: 3px solid transparent; padding-inline-start: 6px; }
+.convo .msg.npc .bubble-part.speaking { border-inline-start-color: #1f6f78; }
+.convo .msg.npc .bubble-part + .bubble-part { margin-top: 8px; }
+.convo .msg.npc .bubble .il {
+  justify-content: flex-start; gap: 6px 5px; max-inline-size: 38ch;
+  font: 500 calc(26px * var(--scale))/1.24 var(--en);
+}
+.convo .msg.npc .bubble .lt { font: 600 calc(14px * var(--scale))/1.28 var(--ui); color: #465563; }
+.convo .msg.npc .bubble .lt.dash { color: var(--dash); }
+.convo .msg.npc .bubble .ipa { font: 400 calc(13px * var(--scale))/1.25 var(--ipa-font); color: #565878; }
+.convo .msg.npc .bubble .nat {
+  border: 0; padding: 0; margin-top: 6px; font: 600 calc(15px * var(--scale))/1.35 var(--ui); color: #465563;
+}
 .msg .meta { display: flex; gap: 6px; align-items: center; margin: 0 0 5px 3px; font-size: 0.78em; font-weight: 800; color: var(--ink-soft); }
 .msg .meta span { margin-right: 3px; }
 .msg .meta button {
@@ -482,6 +491,13 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   animation: nat-tip-in 0.14s ease-out;
 }
 .nat-tipbox[hidden] { display: none; }
+.nat-tipbox[data-in-convo]:not([hidden]) {
+  display: flex; flex-direction: column; padding: 0; animation: none;
+  max-width: min(260px, var(--popover-max-width)); max-height: var(--popover-max-height);
+}
+.nat-tipbox[data-in-convo] .nat-tipbody {
+  min-height: 0; padding: 7px 12px 8px; overflow-y: auto; overscroll-behavior: contain; overflow-wrap: anywhere;
+}
 /* a word note under the natural sentence (or under the note before it) */
 .nat-tipnote { display: block; font-weight: 500; }
 .nat-tipnote.sep { margin-top: 5px; padding-top: 5px; border-top: 1px solid var(--line); }
@@ -797,6 +813,24 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .switch::before, .msg .meta button::before, .say-toggles .toggle::before, .objective-card .collapse-btn::before, .help-strip button::before {
   content: ""; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%);
 }
+.convo .il .u > :is(.en, .ipa, .lt) { max-inline-size: 100%; overflow-wrap: anywhere; }
+/* Reserve room for notes even on lines whose helper row has no asterisk. */
+.convo .il:has(> .u > .lt) { padding-inline-end: 24px; }
+.convo .hint-row .il:has(> .u > .lt) { padding-inline-end: 38px; }
+.convo .u.saved .nat-star { left: 0.05em; }
+.convo .en:has(> .nat-pin) > .u-dot { top: auto; bottom: 0.15em; }
+.convo .nat-star::before { left: 0; }
+:is(.convo, .wpop[data-in-convo]) :focus-visible { outline: 2px solid #1f6f78; outline-offset: 2px; }
+.convo-head button:focus-visible { position: relative; z-index: 1; }
+@media (pointer: coarse) {
+  .convo .msg .meta button, .convo :is(.scene-intro, .audio-recovery) button { min-width: 44px; min-height: 44px; }
+  .convo .msg .meta button::before { content: none; }
+  .convo .il .u.tap { min-inline-size: 44px; min-block-size: 44px; }
+  .convo .il.plain { display: flex; }
+  .convo .il.plain .u.tap { display: inline-flex; justify-content: center; }
+  .convo .il.plain .u .en::after { content: none; }
+  .convo .il.plain .u-dot { right: -0.32em; }
+}
 
 /* ---------- touch controls ---------- */
 .joy { position: fixed; left: calc(18px + env(safe-area-inset-left)); bottom: calc(18px + env(safe-area-inset-bottom)); width: 140px; height: 140px; border-radius: 50%; background: rgba(255,255,255,0.28); border: 3px solid rgba(255,255,255,0.6); z-index: 12; touch-action: none; }
@@ -816,16 +850,13 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 
 @media (max-width: 900px) {
   .convo {
+    --convo-height: calc(100dvh - var(--conversation-image-height));
     left: max(6px, env(safe-area-inset-left)); right: max(6px, env(safe-area-inset-right));
     top: var(--conversation-image-height); bottom: 0; width: auto; height: auto;
     border-radius: 20px 20px 0 0; animation: slideup 0.35s ease;
   }
   @keyframes slideup { from { transform: translateY(30px); opacity: 0; } }
-  .convo-head { padding: 5px 8px; }
-  .convo-head .toggles { padding: 2px; }
-  .convo-head .toggle { min-height: 44px; min-width: 44px; padding: 4px 6px; }
-  .convo-head .head-actions { gap: 2px; }
-  .convo-head .close-x { width: 44px; height: 44px; }
+  .convo-head { padding-block: 5px; }
   .convo .transcript { flex: 0 1 20%; min-height: 90px; padding: 8px 10px; gap: 10px; }
   .convo .yourturn { flex: 1 1 0; max-height: none; }
   .yt-scroll { padding: 6px 8px 4px; }
@@ -849,8 +880,9 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .gx .il { column-gap: 0.4em; row-gap: 0.3em; }
   .mission-bar { padding: 6px 10px; }
   .mission-list { max-height: 24dvh; overflow-y: auto; }
-  .msg.npc .bubble { padding: 8px 10px; }
-  .msg .meta { margin-bottom: 3px; }
+  .convo .msg.npc .bubble { padding: 8px 10px; }
+  .convo .msg.npc .bubble .il { max-inline-size: none; font-size: calc(25px * var(--scale)); line-height: 1.22; }
+  .convo .msg .meta { margin-bottom: 3px; }
   .convo .mic { width: 52px; height: 52px; }
   .convo .type-toggle { width: 44px; height: 44px; }
   .convo .call-strip { max-height: 64px; overflow-y: auto; padding: 4px 10px; }
@@ -926,6 +958,8 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .objective-card:not(.collapsed) { max-height: calc(100dvh - 16px); overflow-y: auto; }
 }
 @media (prefers-reduced-motion: reduce) {
+  .convo { animation: none; }
+  .convo .transcript { scroll-behavior: auto; }
   .yt-title.phase-you b::before, .ended-badge, .sheet, .objective-card.fresh, .nat-tipbox { animation: none; }
   .nat-star { transition: none; }
   .minimap.live, .minimap.live canvas, .minimap.live .label, .minimap.live .mm-card, .minimap.live.inside canvas, .minimap.live.inside .label, .minimap.live.inside .mm-card { transition: none; }
@@ -1025,11 +1059,22 @@ body.scene-on .tag-layer { display: none; }
   overflow-y: auto; overscroll-behavior: contain; padding: 18px; border: 1px solid var(--line); border-radius: 18px;
   background: var(--panel-solid); box-shadow: var(--shadow); font-size: 0.95em;
 }
+.convo .npc-info { position: static; z-index: auto; }
+.convo .npc-info-card {
+  max-width: calc(100% - 16px); max-height: min(440px, calc(var(--convo-height) - var(--info-reserve, 140px)));
+}
 .npc-identity { display: flex; align-items: center; gap: 14px; }
 /* the scene (src/ui/SceneIntro.tsx): who you are here, before the first line; under "i" afterwards */
 .scene-intro { margin: 8px 12px 4px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--accent-soft); }
 .scene-intro-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
 .scene-intro p { margin: 0 0 10px; line-height: 1.45; }
+.convo:not([data-call-opening]) .scene-intro p {
+  max-block-size: clamp(44px, calc(var(--convo-height) - 260px), 12em);
+  overflow-y: auto; overscroll-behavior: contain;
+}
+.convo:not([data-call-opening]) .convo-tools:has(.scene-intro):has(.audio-recovery) {
+  max-height: var(--convo-height); overflow-y: auto;
+}
 .npc-info .scene-intro-text { margin: 10px 0 0; line-height: 1.45; }
 .npc-info .who { min-width: 0; }
 .npc-identity > .close-x { margin-left: auto; }
@@ -1043,8 +1088,7 @@ body.scene-on .tag-layer { display: none; }
 .audio-recovery span { flex: 1 1 130px; }
 .audio-recovery button { min-height: 44px; }
 .convo-tools { flex: none; min-width: 0; }
-.convo-head .toggle { min-height: 44px; min-width: 44px; }
-.convo-head .close-x { width: 44px; height: 44px; }
+.convo-head .toggle { width: 44px; height: 44px; padding-inline: 2px; }
 .transcript, .yt-scroll { overscroll-behavior: contain; overflow-x: hidden; scrollbar-gutter: stable; }
 .msg .meta button:disabled { opacity: 0.45; cursor: default; }
 @media (max-width: 900px) and (max-height: 700px) and (orientation: portrait) {
@@ -1055,10 +1099,19 @@ body.scene-on .tag-layer { display: none; }
   :root { --conversation-image-height: 100px; }
   .convo .transcript { flex: 0 0 64px; min-height: 64px; }
 }
+@media (max-width: 900px) and (height > 620px) and (orientation: portrait) {
+  .convo[data-phase="npc"]:not([data-call-opening], :has(.scene-intro)) > .transcript { flex: 1 1 0; min-height: 0; }
+  .convo[data-phase="npc"]:not([data-call-opening], :has(.scene-intro)) > .yourturn { flex: 0 1 auto; max-height: 46%; }
+  .convo[data-phase="you"] > .transcript { flex-basis: 24%; min-height: 0; }
+}
+@media (max-width: 900px) and (620px < height <= 700px) and (orientation: portrait) {
+  .convo[data-phase="you"] > .transcript { flex-basis: 23%; }
+}
 /* On a sideways phone the picture stays on the left. Dialogue and answers each scroll in their
    own column; the input controls stay at the bottom even with large text or a long answer. */
 @media (max-height: 520px) and (orientation: landscape) {
   .convo {
+    --convo-height: calc(100dvh - max(6px, env(safe-area-inset-top)) - max(6px, env(safe-area-inset-bottom)));
     top: max(6px, env(safe-area-inset-top)); bottom: max(6px, env(safe-area-inset-bottom));
     left: max(25vw, env(safe-area-inset-left)); right: max(6px, env(safe-area-inset-right)); width: auto; height: auto;
     border-radius: 18px; display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
@@ -1077,21 +1130,29 @@ body.scene-on .tag-layer { display: none; }
   .convo .gx { padding-block: 3px; }
 }
 
-/* Keep translation, context and conversation controls on one row, with context centered. */
+/* Keep all three control groups intact when the panel narrows. */
 .convo { container-type: inline-size; }
 .convo-head > .toggles { justify-self: start; }
 .convo-head > .head-actions { justify-self: end; }
 @container (max-width: 540px) {
-  .convo-head { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr) minmax(0, 3fr); gap: 4px; padding-inline: 6px; }
-  .convo-head > .toggles, .convo-head > .npc-info, .convo-head > .head-actions {
-    display: grid; align-items: center; gap: 2px; min-width: 0; width: 100%; justify-self: stretch;
-  }
-  .convo-head > .toggles, .convo-head > .head-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .convo-head > .npc-info { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .convo-head .toggle, .convo-head .npc-info-button, .convo-head > .head-actions .close-x {
-    width: 100%; max-width: 44px; min-width: 0; height: 44px; min-height: 44px; padding: 4px 2px; justify-self: center;
-  }
+  .convo-head { --head-gap: 2px; gap: var(--head-gap); padding-inline: 4px; }
+  .convo-head > :is(.toggles, .npc-info, .head-actions) { gap: var(--head-gap); padding: 0; }
+  .convo-head > :is(.toggles, .head-actions) { width: 100%; max-width: 138px; }
+  .convo-head > :is(.toggles, .head-actions) > button { flex: 1 0 44px; }
   .convo-head .toggle { font-size: min(0.76em, 5cqw); }
+}
+@container (width < 374px) {
+  .convo-head {
+    --head-gap: clamp(0px, calc((100cqw - 352px) / 7), 1px);
+    padding-inline: clamp(0px, calc((100cqw - 359px) / 2), 2px);
+  }
+}
+@container (width < 352px) {
+  .convo-head {
+    --head-gap: 1px; --info-reserve: 188px;
+    grid-template-columns: minmax(max-content, 1fr) auto; row-gap: 4px; padding-inline: 4px;
+  }
+  .convo-head > .head-actions { grid-column: 1 / -1; }
 }
 
 /* ---------- the first-time guide (Guide.tsx): a small card low in the picture, never in the way ---------- */
