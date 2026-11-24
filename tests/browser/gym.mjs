@@ -1047,12 +1047,13 @@ async function journey(browser, [width, height], audible) {
         assert.equal((await micState()).starts.length, starts);
         assert.equal((await read()).score.said, 1);
       };
-      const samplePose = async ({ before, called, picked, ms, at, frame }) => {
+      const samplePose = async ({ before, called, picked, ms, at, frame, reviewFrame }) => {
         const timeAt = async (offset) => {
           await stepTo(at + offset);
           return rig();
         };
         const early = await timeAt(Math.round(ms * (called === "run" ? 0.35 : 0.24) / 50) * 50);
+        if (reviewFrame && called === "run") await shot(reviewFrame);
         const peak = await timeAt(Math.round(ms * 0.5 / 50) * 50);
         for (const sample of [early, peak]) {
           assert.equal(sample.pose?.player, picked);
@@ -1067,6 +1068,7 @@ async function journey(browser, [width, height], audible) {
         if (frame) {
           await shot(frame);
         }
+        if (reviewFrame && called !== "run") await shot(reviewFrame);
         return { peak, timeAt };
       };
 
@@ -1185,7 +1187,11 @@ async function journey(browser, [width, height], audible) {
           assert.deepEqual((await read()).score, result, "double tap/click is ignored");
         }
         const frames = { 1: "04-jacks-peak", 2: "05-toes-peak", 8: "12-plank" };
-        const { peak, timeAt } = await samplePose({ before, called: move, picked: move, ms: poseMs, at, frame: audible ? frames[n] : undefined });
+        const reviewFrames = { 3: "17-squat-peak", 4: "18-circles-peak", 5: "19-run-stride", 6: "20-reach-peak", 7: "21-lunge-peak" };
+        const { peak, timeAt } = await samplePose({
+          before, called: move, picked: move, ms: poseMs, at,
+          frame: audible ? frames[n] : undefined, reviewFrame: audible ? reviewFrames[n] : undefined,
+        });
         const end = await timeAt(poseMs - 50);
         assert(end.pose?.progress > 0.92 && end.pose.progress < 1, "right pose lasts the scheduled time");
         assert(await overlay.locator('.gym-cue[data-line="' + praise + '"]').isVisible(), "praise remains readable through the pose");
@@ -1329,7 +1335,8 @@ async function journey(browser, [width, height], audible) {
 
       const expectedFrames = audible
         ? ["00-entry", "01-ready", "02-listen", "03-guided", "04-jacks-peak", "05-toes-peak", "06-text-only", "07-wrong", "08-retry",
-          "09-hidden", "10-reveal", "11-mic-hit", "12-plank", "13-score"]
+          "09-hidden", "10-reveal", "11-mic-hit", "12-plank", "13-score",
+          "17-squat-peak", "18-circles-peak", "19-run-stride", "20-reach-peak", "21-lunge-peak"]
         : ["14-back-in-gym", "15-town", "16-silent-late"];
       assert.deepEqual([...seenShots].sort(), expectedFrames);
       assert.deepEqual(await page.evaluate(() => window.__gymSynth.filter(({ gym }) => gym)), [], "the gym never calls speech synthesis");
