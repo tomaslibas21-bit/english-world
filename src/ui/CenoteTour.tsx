@@ -12,10 +12,10 @@ const act = (name: string, value: string | boolean) => game?.modeAction("cenote-
 export default function CenoteTour({ touch }: { touch: boolean }) {
   const { line, choices, mic, micOn, answer } = useCenoteTour();
   const [natural, setNatural] = useState(false);
-  if (!line) return null;
   const listening = mic.status === "starting" || mic.status === "listening";
-  return (
-    <section className="cenote-tour-card" onKeyDown={(event) => {
+  return <>
+    <div className="cenote-tour-curtain" />
+    {line && <section className="cenote-tour-card" onKeyDown={(event) => {
       if (event.key === "Enter" || event.key === " ") event.stopPropagation();
     }}>
       <div className="cenote-tour-heading">
@@ -42,6 +42,6 @@ export default function CenoteTour({ touch }: { touch: boolean }) {
         </button>)}
       </div>}
       {mic.status === "unclear" && !!choices.length && <small role="status" lang={HL}>{L("Pabandyk dar kartą")} {mic.heard && <span lang={TL}>{mic.heard}</span>}</small>}
-    </section>
-  );
+    </section>}
+  </>;
 }

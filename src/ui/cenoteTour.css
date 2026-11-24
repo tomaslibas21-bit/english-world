@@ -1,3 +1,5 @@
+.hud > .cenote-tour-curtain { position: absolute; inset: 0; z-index: 41; pointer-events: none; background: #0e1419; opacity: var(--cenote-tour-fade, 0); }
+
 .cenote-tour-card {
   position: absolute;
   z-index: 30;

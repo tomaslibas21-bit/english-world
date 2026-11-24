@@ -35,6 +35,7 @@ const natural = (key) => lines[key][local(2, 4)];
 const distance = (pose, [x, z]) => Math.hypot(pose.x - x, pose.z - z);
 const intersects = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
 const requestedStage = (url) => /\/CenoteTour(?:[-.]|$)|\/cenoteTour\/(?:mode|animals|route|store)\.ts/i.test(new URL(url).pathname);
+const requestedChat = (url) => /\/(?:x14-cenote|cenote-tour-lines)(?:-[^/]+)?\.(?:js|ts|json)$/i.test(new URL(url).pathname);
 const pendingArt = (url) => /\/x14-cenote(?:[/.\-_]|$).*\.(?:webp|avif|png|jpe?g|svg)$/i.test(new URL(url).pathname);
 
 function seed(play) {
@@ -133,11 +134,12 @@ function readPage({ id, mode, prefix }) {
   const { screen, conv, hud, progress, settings } = store.getState();
   const pose = game.player?.root.position;
   const tour = window.__cenoteTour?.snapshot();
+  const curtain = document.querySelector(".cenote-tour-curtain");
   return {
     now: performance.now(), screen, zone: game.zoneId, scene: game.presentedWorld?.scene, light: game.light, pictures: settings.scenes,
     pose: pose && { x: pose.x, y: pose.y, z: pose.z, heading: game.heading, visible: game.player.root.visible },
     prompt: hud.prompt, panel: hud.panel, hudMode: hud.modeScreen?.id ?? null, hudRide: hud.ride, hudFade: hud.fade,
-    curtain: Number(getComputedStyle(document.querySelector(".cenote-tour-curtain") ?? document.body).opacity),
+    curtain: curtain ? Number(getComputedStyle(curtain).opacity) : null,
     objective: progress.objective, stage: !!game.rig?.stage, camera: game.rig?.mode, follow: settings.cameraFollow,
     session: !!game.activeSession, swimming: game.swimming, dive: game.diveK, wading: game.wading?.depth,
     ride: game.rides?.riding?.id ?? null, mode: game.modes?.active?.id ?? null, queued: !!game.modes?.hasQueued,
@@ -201,7 +203,7 @@ function watchPage(page) {
     if (msg.type() === "error") report(`console: ${msg.text()} (${msg.location().url})`);
   });
   page.on("request", (request) => {
-    if (requestedStage(request.url()) || pendingArt(request.url())) requests.push(request.url());
+    if (requestedStage(request.url()) || requestedChat(request.url()) || pendingArt(request.url())) requests.push(request.url());
   });
   page.on("requestfailed", (request) => {
     if (relevant(request)) report(`request failed: ${request.failure()?.errorText} ${request.url()}`);
@@ -357,6 +359,10 @@ async function visit(browser, viewport, play, run) {
     await step(15);
     await page.evaluate(installObservers, { id, meshNames: Object.keys(outing.meshes) });
     await step(2);
+    await monitor.flush();
+    assert.deepEqual(monitor.requests.filter(requestedChat), [], "opening either home leaves the tour conversation and table unloaded");
+    assert.deepEqual(monitor.requests.filter(requestedStage), [], "opening either home leaves the tour HUD and stage unloaded");
+    assert.equal(monitor.runtime.size, 0, "opening either home leaves the production wildlife runtime unloaded");
 
     const press = (locator) => phone ? locator.tap() : locator.click();
     const shot = (name) => shots && page.screenshot({ path: path.join(shots, `${prefix}-${name}.png`), timeout: 12000 });
@@ -441,6 +447,7 @@ async function discover(h) {
   await tourPin.waitFor();
   await step(6);
   assert.equal(await tourPin.getAttribute("aria-label"), outing.title.es);
+  assert.equal(await tourPin.getAttribute("aria-description"), local("The hut at Cenote Ka'an", "Trobelė prie cenotės Ka'an"));
   assert.equal(await cavePin.getAttribute("aria-label"), "Gruta de los Aluxes");
   assert(!intersects(await target(tourPin), await target(cavePin, 30)), "map pins have separate hit areas");
   await press(cavePin);
@@ -907,7 +914,7 @@ async function assertDry(h, s, reason, count) {
   assert(!s.session && !s.ride && !s.listening && !s.chat.active && s.chat.completed);
   assert(s.follow && s.camera === "follow" && !s.stage);
   assert(s.hudMode === null && s.hudRide === null && !s.hudFade && !s.curtain);
-  assert.equal(await h.page.locator(".mode-hud, .cenote-tour-card, .ride-strip, .surf-toolbar").count(), 0);
+  assert.equal(await h.page.locator(".mode-hud, .cenote-tour-card, .cenote-tour-curtain, .ride-strip, .surf-toolbar").count(), 0);
   assert(await h.page.locator(".toolbar").isVisible());
   assert(await h.page.locator(".minimap").isVisible());
   assert(await h.page.locator(h.phone ? ".joy" : ".prompt").isVisible());

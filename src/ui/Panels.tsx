@@ -324,10 +324,12 @@ function locationPoint(loc: string): { x: number; z: number } | null {
   if (loc === "airport") return { x: AIRPORT_EXIT.x + 12, z: AIRPORT_EXIT.z };
   const d = game?.doors.find((dd) => dd.loc === loc);
   if (d) return { x: d.x, z: d.z };
-  const s = loc === CENOTE_TOUR?.location ? CENOTE_TOUR : SITUATIONS.find((x) => x.location === loc);
+  const s = mapSituations.find((x) => x.location === loc);
   const o = s ? OUTDOOR_NPCS.find((n) => n.npc === s.npc) : undefined;
   return o ? { x: o.x, z: o.z } : null;
 }
+
+const mapSituations = CENOTE_TOUR ? [...SITUATIONS, CENOTE_TOUR] : SITUATIONS;
 
 function MapPanel({ close }: { close: () => void }) {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -349,8 +351,7 @@ function MapPanel({ close }: { close: () => void }) {
   const aluxSits = CATALOG.filter((s) => s.location === CAVE_ZONE && (s.npc === "alux_kin" || s.npc === "alux_nikte"));
   const mapSits = (loc: string) => {
     if (loc === CAVE_ZONE) return aluxSits;
-    if (loc === CENOTE_TOUR?.location) return [CENOTE_TOUR];
-    return (loc === "pool-hall" ? CATALOG : SITUATIONS).filter((s) => s.location === loc && !(game?.light && isTownQuest(s.id)));
+    return (loc === "pool-hall" ? CATALOG : mapSituations).filter((s) => s.location === loc && !(game?.light && isTownQuest(s.id)));
   };
   const locs = Object.values(LOCATIONS).filter((l) => l.kind !== "phone" && mapSits(l.id).length > 0);
   const selSits = sel ? mapSits(sel) : [];
@@ -371,7 +372,8 @@ function MapPanel({ close }: { close: () => void }) {
               const allDone = sits.some((s) => !isTownQuest(s.id))
                 && sits.every((s) => isTownQuest(s.id) || sitProgress(progress, s.id).completions > 0);
               return (
-                <button key={l.id} data-location={l.id} className={"map-pin" + (tour ? " taquilla" : "") + (sel === l.id ? " sel" : "") + (allDone ? " done" : "")} style={pct(p.x, p.z)} onClick={() => setSel(l.id)} title={l.name} aria-label={l.name} aria-pressed={sel === l.id}>
+                <button key={l.id} data-location={l.id} className={"map-pin" + (tour ? " taquilla" : "") + (sel === l.id ? " sel" : "") + (allDone ? " done" : "")} style={pct(p.x, p.z)} onClick={() => setSel(l.id)} title={l.name}
+                  aria-label={l.name} aria-description={tour ? l.lt : undefined} aria-pressed={sel === l.id}>
                   {tour ? <SitIcon id={tour.id} size={18} /> : <Icon name={locIcon(l.id)} size={18} />}
                   {allDone && <span className="pin-done"><Icon name="check" size={11} strokeWidth={3} label={L("įveikta")} /></span>}
                 </button>

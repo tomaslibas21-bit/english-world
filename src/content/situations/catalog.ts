@@ -38,5 +38,6 @@ export function loadSituation(id: string): Promise<SituationDef | null> {
 
 /** Starts loading these conversations' files in the background (the ones not loaded or loading yet). */
 export function prefetchSituations(ids: Iterable<string>) {
-  for (const id of ids) if (!loaded.has(id) && !pending.has(id) && LOAD[id]) loadSituation(id).catch(() => { /* again when it opens */ });
+  // The optional cenote tour loads its chat and learner table when the player opens it.
+  for (const id of ids) if (id !== "x14-cenote" && !loaded.has(id) && !pending.has(id) && LOAD[id]) loadSituation(id).catch(() => { /* again when it opens */ });
 }

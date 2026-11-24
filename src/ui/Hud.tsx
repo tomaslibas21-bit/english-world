@@ -71,12 +71,14 @@ const RIDE_ARROWS = () => <><kbd><Icon name="arrowUp" size="1em" strokeWidth={2.
 
 const FriendMeeting = lazy(() => import("./FriendMeeting"));
 const BilliardsOverlay = lazy(() => import("./Billiards").then(({ BilliardsOverlay }) => ({ default: BilliardsOverlay })));
-function CenoteTourOverlay({ touch }: { touch: boolean }) {
-  // A failed import is handled by the mode owner. A subsequent run gets a fresh overlay loader.
-  const [Overlay] = useState(() => lazy(() => import("./CenoteTour").catch(() => ({ default: () => null }))));
-  return <Suspense fallback={null}><Overlay touch={touch} /></Suspense>;
+function cenoteTourOverlay() {
+  return lazy<ComponentType<{ touch: boolean }>>(() => import("./CenoteTour").catch(() => {
+    // The mode owner recovers the run. The next run can try loading the overlay again.
+    modeOverlays["cenote-tour"] = cenoteTourOverlay();
+    return { default: () => null };
+  }));
 }
-const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = { photowalk: PhotoWalkOverlay, taxi: TaxiOverlay, barista: BaristaOverlay, pool: PoolOverlay, loteria: LoteriaOverlay, billiards: BilliardsOverlay, "cenote-tour": CenoteTourOverlay };
+const modeOverlays: Record<string, ComponentType<{ touch: boolean }>> = { photowalk: PhotoWalkOverlay, taxi: TaxiOverlay, barista: BaristaOverlay, pool: PoolOverlay, loteria: LoteriaOverlay, billiards: BilliardsOverlay, "cenote-tour": cenoteTourOverlay() };
 
 export function Hud() {
   const hud = useStore((s) => s.hud);
@@ -115,20 +117,18 @@ export function Hud() {
     <div className="hud mode-hud"><Suspense><FriendMeeting /></Suspense><Fade /></div>
   );
   if (hud.modeScreen?.kind === "menu") {
-    const road = hud.modeScreen.id === "road";
-    const sea = hud.modeScreen.id === "sea";
-    const Overlay = road ? getRoadOverlay() : sea ? getSeaOverlay() : modeOverlays[hud.modeScreen.id];
-    const cenote = hud.modeScreen.id === "cenote-tour";
-    const tools = !road && !sea && !cenote && hud.modeScreen.id !== "barista" && hud.modeScreen.id !== "loteria" && hud.modeScreen.id !== "billiards" && hud.modeScreen.id !== "photowalk";
+    const { id, exitLabel } = hud.modeScreen;
+    const road = id === "road";
+    const sea = id === "sea";
+    const Overlay = road ? getRoadOverlay() : sea ? getSeaOverlay() : modeOverlays[id];
+    const cenote = id === "cenote-tour";
+    const tools = !road && !sea && !cenote && id !== "barista" && id !== "loteria" && id !== "billiards" && id !== "photowalk";
     return (
       <div className={"hud mode-hud" + (road ? " road-mode" : sea ? " sea-mode" : "") + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
         {(!hud.panel || sea) && Overlay && <Suspense fallback={null}><Overlay touch={hud.showTouch} /></Suspense>}
-        {cenote && <>
-          <div className="cenote-tour-curtain" />
-          <button type="button" className="cenote-tour-leave" data-action="leave"
-            aria-label={L("Baigti išvyką ir grįžti prie trobelės")} onClick={() => game?.modeExit()} lang={HL}>{L("Išeiti")}</button>
-        </>}
-        {tools && <><Toolbar key={"tools-" + layout} {...screen} riding touch={hud.showTouch} modeExit={hud.modeScreen.exitLabel} /><RadioSetLayer /></>}
+        {cenote && <button type="button" className="cenote-tour-leave" data-action="leave"
+          aria-label={L("Baigti išvyką ir grįžti prie trobelės")} onClick={() => game?.modeExit()} lang={HL}>{L("Išeiti")}</button>}
+        {tools && <><Toolbar key={"tools-" + layout} {...screen} riding touch={hud.showTouch} modeExit={exitLabel} /><RadioSetLayer /></>}
         {hud.showTouch && hud.ride && <TouchControls road={road} stickOnly={sea} />}
         <Fade />
       </div>

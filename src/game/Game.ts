@@ -748,11 +748,11 @@ export class Game implements GameApi {
         failed: () => useStore.getState().toast({ kind: "info", title: L("Išvykos pradėti nepavyko. Gali bandyti dar kartą."), ms: 4200 }),
       }, CENOTE_TOUR.id);
       this.modes.register(tour);
-      this.cenoteInspection = { snapshot: () => ({
-        ...tour.snapshot(), drawCalls: this.renderer.info.render.calls, triangles: this.renderer.info.render.triangles,
-        floorY: floorY(this.player.root.position.x, this.player.root.position.z),
-        waterY: waterY(this.player.root.position.x, this.player.root.position.z, this.t),
-      }) };
+      this.cenoteInspection = { snapshot: () => {
+        const { calls, triangles } = this.drawStats();
+        const { x, z } = this.player.root.position;
+        return { ...tour.snapshot(), drawCalls: calls, triangles, floorY: floorY(x, z), waterY: waterY(x, z, this.t) };
+      } };
       Object.defineProperty(window, "__cenoteTour", { configurable: true, value: Object.freeze(this.cenoteInspection) });
     }
     this.scene.add(this.npcLayer, this.guidance.group, this.ambient.group, this.rides.group, this.dust.group, this.splashes.group, this.undersea.group);
