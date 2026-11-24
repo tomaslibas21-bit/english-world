@@ -987,10 +987,13 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     for (const s of [-1, 1]) M.add("columns", mat("#f7f3ea"), cylGeo(0.35, 0.4, 5, dx + t[0] * s * cu + n[0] * 0.6, 2.5, dz + t[1] * s * cu + n[1] * 0.6, 10));
   }
   if (b.id === "post") {
-    photo("mailbox", dx + t[0] * 4 + n[0] * 1.6, 1.15, dz + t[1] * 4 + n[1] * 1.6);
-    M.add("mailbox-blue", mat("#1f4e9c"), boxGeo(0.8, 1.2, 0.7, dx + t[0] * 4 + n[0] * 1.6, 0.8, dz + t[1] * 4 + n[1] * 1.6));
-    M.add("mailbox-blue", mat("#1f4e9c"), cylGeo(0.35, 0.35, 0.8, 0, 0, 0, 12).rotateZ(Math.PI / 2).translate(dx + t[0] * 4 + n[0] * 1.6, 1.4, dz + t[1] * 4 + n[1] * 1.6));
-    col.addBox(dx + t[0] * 4 + n[0] * 1.6, dz + t[1] * 4 + n[1] * 1.6, 0.9, 0.8);
+    // Place the mailbox at the west end of the frontage, clear of the SUV at the curb.
+    const mailboxX = dx - t[0] * 7 + n[0] * 2;
+    const mailboxZ = dz - t[1] * 7 + n[1] * 2;
+    photo("mailbox", mailboxX, 1.15, mailboxZ);
+    M.add("mailbox-blue", mat("#1f4e9c"), boxGeo(0.8, 1.2, 0.7, mailboxX, 0.8, mailboxZ));
+    M.add("mailbox-blue", mat("#1f4e9c"), cylGeo(0.35, 0.35, 0.8, 0, 0, 0, 12).rotateZ(Math.PI / 2).translate(mailboxX, 1.4, mailboxZ));
+    col.addBox(mailboxX, mailboxZ, 0.9, 0.8);
     M.add("flagpole", mat("#dddddd"), cylGeo(0.06, 0.06, 9, dx - t[0] * 6 + n[0] * 1.2, 4.5, dz - t[1] * 6 + n[1] * 1.2, 6));
     col.addCircle(dx - t[0] * 6 + n[0] * 1.2, dz - t[1] * 6 + n[1] * 1.2, 0.12);
     M.add("flag", mat("#b22234"), boxGeo(1.8, 1.1, 0.04, dx - t[0] * 6 + n[0] * 1.2 + 0.9, 8.3, dz - t[1] * 6 + n[1] * 1.2));

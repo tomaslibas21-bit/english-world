@@ -3,6 +3,7 @@ import { townRide, useStore, type HudState } from "../state/store";
 import { townNote } from "../state/townNotes";
 import { SectionHelpButton, useSectionHelp } from "./sectionHelp";
 import { useSurf } from "../game/surf/store";
+import { useTownQuests } from "../game/photowalk/store";
 import { SurfOverlay, SurfPicker } from "./Surf";
 import { TaxiOverlay } from "./Taxi";
 import { BaristaOffer, BaristaOverlay } from "./Barista";
@@ -88,7 +89,9 @@ export function Hud() {
   const streetCard = useStreet((s) => s.moment !== null) && !hud.panel;
   const portrait = screen.portraitPhone;
   const phoneToast = narrow && toast !== null;
-  const task = useTaskCard(taskId, inTown && !hud.panel, phoneToast, layout);
+  const photoReady = useTownQuests((s) => s.camera && s.near !== null) && questHud;
+  const taskCollapse = photoReady ? "photo" : phoneToast ? "toast" : null;
+  const task = useTaskCard(taskId, inTown && !hud.panel, taskCollapse, layout);
   if (inConversation) return <Fade />;
   // the first visit's flight over the town has the screen to itself too: where one is, and what to do first
   if (hud.flight) return <div className="hud"><Flight /><Fade /></div>;
@@ -122,7 +125,7 @@ export function Hud() {
   const guideVisible = !hud.panel && note === "guide";
   const moving = hud.walking || riding;
   // A sideways phone keeps the task to one row unless it is opened by hand.
-  const collapsed = streetCard || (phoneToast ? !task.openedDuringToast
+  const collapsed = streetCard || (taskCollapse ? task.openedDuring !== taskCollapse
     : (moving && !!hud.objective?.followUp) || (task.manual ?? (screen.sidewaysPhone || (!task.fresh && moving))));
   return (
     <div className={"hud" + (hud.showTouch ? " has-touch" : "")} onKeyDown={keepKeysOnHudButtons}>
@@ -177,10 +180,10 @@ function useNarrowHud() {
   return narrow;
 }
 
-function useTaskCard(taskId: string | null, visible: boolean, phoneToast: boolean, layout: string) {
+function useTaskCard(taskId: string | null, visible: boolean, autoCollapse: "photo" | "toast" | null, layout: string) {
   const [state, setState] = useState<{ id: string | null; layout: string; manual: boolean | null; fresh: boolean }>({ id: taskId, layout, manual: null, fresh: false });
-  const [openedDuringToast, setOpenedDuringToast] = useState(false);
-  if (openedDuringToast && (!phoneToast || taskId !== state.id)) setOpenedDuringToast(false);
+  const [openedDuring, setOpenedDuring] = useState<typeof autoCollapse>(null);
+  if (openedDuring && (openedDuring !== autoCollapse || taskId !== state.id)) setOpenedDuring(null);
   // A manual choice belongs to one task and one way of holding the phone. Give the next task its pop when the card
   // is back on screen.
   if (taskId !== state.id) setState({ id: taskId, layout, manual: null, fresh: taskId !== null });
@@ -192,9 +195,9 @@ function useTaskCard(taskId: string | null, visible: boolean, phoneToast: boolea
   }, [state.id, state.fresh, visible]);
   function setManual(manual: boolean) {
     setState((current) => ({ ...current, manual }));
-    setOpenedDuringToast(phoneToast && !manual);
+    setOpenedDuring(manual ? null : autoCollapse);
   }
-  return { ...state, openedDuringToast, setManual };
+  return { ...state, openedDuring, setManual };
 }
 
 // Enter and Space belong to a button reached by keyboard, even while the game is listening for movement.

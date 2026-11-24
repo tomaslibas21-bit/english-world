@@ -117,6 +117,7 @@ function PhotoQuiz() {
     <div className="photo-flash" aria-hidden />
     <section className="photo-sheet photo-quiz" role="dialog" aria-modal="true" aria-label={title} data-thing={quiz.id}>
       <header>
+        {!quiz.got && quiz.jpeg && <img className="photo-quiz-preview" src={quiz.jpeg} alt="" width={160} height={120} />}
         {quiz.got && <Icon name="sparkles" className="quest-sparkle" size={23} />}
         <div aria-live="polite"><h2>{title}</h2>{!quiz.got && <p>{words.sayOrPick}</p>}</div>
         <button type="button" className="quest-close" aria-label={words.close} onClick={() => game?.modeExit()}><Icon name="close" /></button>

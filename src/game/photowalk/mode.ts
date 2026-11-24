@@ -47,7 +47,6 @@ export class TownQuests implements GameMode {
   get active() { return useTownQuests.getState().screen !== null || this.shutter !== null; }
   private aim: View | null = null;
   private shutter: View | null = null;
-  private jpeg: string | null = null;
   private reader: ReturnType<typeof createSpeechAttempt> | null = null;
   private arrived = 0;
   private arrivalTime = 0;
@@ -151,9 +150,9 @@ export class TownQuests implements GameMode {
     const view = this.shutter;
     if (!view) return;
     this.shutter = null;
-    this.jpeg = takePhoto(canvas, view.x, view.y);
+    const jpeg = takePhoto(canvas, view.x, view.y);
     const others = shuffle(PHOTO_THINGS.map(({ id }) => id).filter((id) => id !== view.id)).slice(0, 2);
-    ui({ screen: "quiz", quiz: { id: view.id, choices: shuffle([...others, view.id]), misses: [], wrong: false, got: false } });
+    ui({ screen: "quiz", quiz: { id: view.id, jpeg, choices: shuffle([...others, view.id]), misses: [], wrong: false, got: false } });
   }
 
   private stopMic() {
@@ -196,8 +195,7 @@ export class TownQuests implements GameMode {
       return;
     }
     if (!change({ type: "find", id: quiz.id })) return;
-    if (this.jpeg) savePhoto(quiz.id, this.jpeg);
-    this.jpeg = null;
+    if (quiz.jpeg) savePhoto(quiz.id, quiz.jpeg);
     ui({ quiz: { ...quiz, got: true, wrong: false } });
     if (walk().status === "found") useStore.getState().toast({ kind: "success", title: PHOTO_WALK_UI.allFound });
     void this.say(`pw_n_${quiz.id}`);
@@ -291,7 +289,6 @@ export class TownQuests implements GameMode {
 
   exit() {
     this.shutter = null;
-    this.jpeg = null;
     this.stopMic();
     this.dialogue.cancel();
     ui({ screen: null, quiz: null, visit: false });

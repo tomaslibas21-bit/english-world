@@ -28,19 +28,39 @@ try {
 
         await page.evaluate(() => {
           const { game } = window.__ew;
+          game.setObjective("s65a-passport");
           const { x, z } = game.town.photoSpots.find(({ id }) => id === "mailbox");
           game.enterZone("town", { x, z: z - 4, rot: 0 }, true);
         });
         await page.locator('.photo-chip[data-near="mailbox"]').waitFor();
         assert.equal(await chip.textContent(), `0/12${words.shoot}`);
+        const taskSummary = page.locator(".objective-card.collapsed .objective-summary");
+        await taskSummary.waitFor();
         await checkHud(page, ".photo-chip");
         await shot(page, `${label}-chip`);
+        await press(taskSummary);
+        await page.locator('.objective-card .row button[title="G"]').waitFor();
+        await press(page.locator('.objective-card .collapse-btn[aria-expanded="true"]'));
         if (width >= 901) await page.keyboard.press("c");
         else await press(chip);
         const quiz = page.locator('.photo-quiz[data-thing="mailbox"]');
         await quiz.waitFor();
         assert.equal(await quiz.locator(".mic").count(), Number(speech));
         assert.equal(await quiz.locator("[data-choice]").count(), 3);
+        const preview = await quiz.locator(".photo-quiz-preview").evaluate(async (img) => {
+          await img.decode();
+          const sheet = img.closest(".photo-quiz");
+          const sheetBounds = sheet.getBoundingClientRect();
+          const controls = [img, ...sheet.querySelectorAll("[data-choice]")];
+          const fits = controls.every((el) => {
+            const { left, top, right, bottom, width, height } = el.getBoundingClientRect();
+            return width > 0 && height > 0
+              && left >= Math.max(0, sheetBounds.left) && top >= Math.max(0, sheetBounds.top)
+              && right <= Math.min(innerWidth, sheetBounds.right) && bottom <= Math.min(innerHeight, sheetBounds.bottom);
+          });
+          return { src: img.src, fits };
+        });
+        assert(preview.fits, "the photo and all three answers are visible together");
         if (process.env.WORLD_SHOTS) {
           await page.locator(".photo-flash").evaluate((flash) => Promise.allSettled(flash.getAnimations().map((animation) => animation.finished)));
           await shot(page, `${label}-sheet`);
@@ -65,6 +85,7 @@ try {
         const foundPage = book.locator('.photo-page[data-thing="mailbox"][data-found="true"]');
         await checkGlossStack(foundPage);
         const picture = foundPage.locator("img");
+        assert.equal(await picture.getAttribute("src"), preview.src, "the book saves the photo shown in the quiz");
         const photo = await picture.evaluate(async (img) => {
           await img.decode();
           const probe = document.createElement("canvas");

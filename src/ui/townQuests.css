@@ -127,6 +127,8 @@
 .photo-page .il { font-size: 1.1em; gap: 3px 5px; }
 .photo-visit { flex: 0 1 auto; max-height: 25dvh; overflow: auto; padding: 4px; }
 .photo-quiz, .photo-finale { display: grid; gap: 10px; }
+.photo-quiz-preview { width: min(42%, 160px); height: auto; flex: none; border-radius: 8px; }
+.photo-quiz .quest-close { align-self: start; }
 .photo-quiz .photo-choices { display: flex; flex-wrap: wrap; }
 .photo-choices { display: grid; gap: 6px; }
 .photo-choices .btn:disabled { background: #e5e6e5; color: var(--ink-soft); }
