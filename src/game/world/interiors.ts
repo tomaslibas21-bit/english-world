@@ -5,6 +5,7 @@ import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, c
 import { STYLED } from "../style";
 import { carParts } from "./car";
 import { THEME } from "./theme";
+import { GYM_MAT } from "./gym";
 import { DINING, DINING_SEATS, DINNER_PROPS } from "../gofish/framing";
 import { leafShape } from "./maple";
 import { floorMaterial, floorColor } from "./styled";
@@ -1925,7 +1926,7 @@ const B: Record<string, () => Interior> = {
     sign(c, "Water", 5.4, 1.75, -c.d / 2 + 0.2, 0.8, "#1f7f8c", "#ffffff");
     sign(c, "ONE MORE REP!", 1.3, 3.2, -c.d / 2 + 0.2, 4, "#f0883e", "#ffffff");
     // stretching mats and exercise balls (west)
-    rug(c, -6.4, 2.4, 3.6, 2.6, "#1f7f8c");
+    rug(c, GYM_MAT.x, GYM_MAT.z, GYM_MAT.width, GYM_MAT.depth, "#1f7f8c");
     for (const [ex, ez, er, ec] of [[-8.6, 0.7, 0.34, "#f0883e"], [-8.9, 1.6, 0.28, "#5fb3a3"]] as [number, number, number, string][]) {
       c.M.add("ball-" + ec, mat(ec), new THREE.SphereGeometry(er, 14, 10).translate(ex, er, ez));
       c.col.addCircle(ex, ez, er);
