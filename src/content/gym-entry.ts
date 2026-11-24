@@ -3,6 +3,6 @@ export const GYM_ENTRY = {
   situation: "s35-gym",
   npc: "jordan",
   startLabel: "Treniruotis su Jordan",
-  mapLabel: "Raskite treniruočių kilimėlį – ten laukia trenerė Jordan.",
+  mapLabel: "Prie kilimėlio galite pradėti treniruotę su Jordan.",
   listAction: "Rasti treniruočių kilimėlį",
 } as const;

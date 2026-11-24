@@ -39,16 +39,16 @@ const mh = {
   target: "en-US", voice: "g_jordan", legacyVoice: "af_bella", speed: 1, male: false, trainer: "jordan",
   place: "Harbor Fitness", card: "Dar vienas pakartojimas", title: "One More Rep",
   sceneStart: "Pradėti", taskComplete: "Užduotis įvykdyta!",
-  entry: { startLabel: "Treniruotis su Jordan", mapLabel: "Raskite treniruočių kilimėlį – ten laukia trenerė Jordan.", listAction: "Rasti treniruočių kilimėlį" },
+  entry: { startLabel: "Treniruotis su Jordan", mapLabel: "Prie kilimėlio galite pradėti treniruotę su Jordan.", listAction: "Rasti treniruočių kilimėlį" },
   ui: {
     readyTitle: "Treniruotė su Jordan", readyTouch: "Klausykite ir bakstelėkite tinkamą paveikslėlį.",
-    readyKeys: "Klausykite ir pasirinkite judesį rodykle arba klavišais 1–4.", start: "Pradėti",
+    readyKeys: "Klausykite. Judesį pasirinkite spausdami rodyklę arba skaičių nuo 1 iki 4.", start: "Pradėti",
     progress: (i) => `Judesys ${i} iš 10`, exit: "Išeiti iš treniruotės", replay: "Klausyti dar kartą",
     reveal: "Rodyti žodžius", choices: "Pasirinkti judesį", scoreTitle: "Treniruotė baigta",
     completed: "Atlikti judesiai", firstTry: "Teisingai iš pirmo karto", again: "Dar kartą", done: "Grįžti į sporto klubą",
   },
   labels: {
-    jacks: "Šoktelėti skėčiant kojas", toes: "Paliesti kojų pirštus", squats: "Pritūpti", circles: "Sukti rankas ratu",
+    jacks: "Pašokti, išskėsti kojas ir pakelti rankas", toes: "Paliesti kojų pirštus", squats: "Pritūpti", circles: "Sukti rankas ratu",
     run: "Bėgti vietoje", reach: "Ištiesti rankas aukštyn", lunges: "Daryti įtūpstą", pushups: "Daryti atsispaudimą",
   },
   speech: {
@@ -63,7 +63,7 @@ const mh = {
     next: "See you tomorrow!", closing: "Thanks, bye!",
   },
   lines: {
-    gy_jacks: ["Jumping jacks!", "Šuoliukai žergtai!", "Per šuoliuką praskėskite kojas ir pakelkite rankas virš galvos!"],
+    gy_jacks: ["Jumping jacks!", "Šuoliukai skėčiant kojas!", "Pašokite, praskėskite kojas ir pakelkite rankas!"],
     gy_toes: ["Touch | your | toes!", "Palieskite | savo | kojų pirštus!", "Pasilenkite ir palieskite kojų pirštus!"],
     gy_squats: ["Do | a | squat!", "Padarykite | — | pritūpimą!", "Pritūpkite!"],
     gy_circles: ["Make | arm circles!", "Darykite | ratus rankomis!", "Ištieskite rankas į šonus ir sukite jas ratu!"],
