@@ -28,6 +28,7 @@ class Coach {
   private walked = 0;
   private far = 0;
   private watching = false;
+  private carPending = false;
 
   private off() { return !!useStore.getState().progress.coach?.done; }
   private seen(step: CoachStep) {
@@ -45,6 +46,7 @@ class Coach {
     clearTimeout(this.timer);
     this.timer = undefined;
     this.remaining = 0;
+    this.carPending = false;
   }
 
   private startTimer() {
@@ -87,12 +89,24 @@ class Coach {
         clearTimeout(this.timer);
         this.timer = undefined;
       } else if (!covered && wasCovered) this.startTimer();
-      if (hud.prompt?.kind !== prev.hud.prompt?.kind) this.near(hud.prompt?.kind);
+      const c = hud.coach;
+      const kind = hud.prompt?.kind;
+      if (kind !== prev.hud.prompt?.kind) {
+        if (kind !== "out") this.carPending = false;
+        if (kind !== "drive" && c?.step === "car" && !c.ok && hud.ride !== "car") {
+          this.next();
+          // Boarding also clears the prompt, before the HUD reports the ride.
+          this.carPending = !kind || kind === "out";
+        } else this.near(kind);
+      }
       if (hud.panel === "scenarios" && prev.hud.panel !== "scenarios") this.did("list");
       const enteredRide = hud.ride !== prev.hud.ride && hud.ride;
-      if (enteredRide) this.did(enteredRide === "car" ? "car" : enteredRide === "boat" ? "boat" : enteredRide === "surf" ? "surf" : "water");
+      if (enteredRide) {
+        if (enteredRide === "car" && this.carPending && !c) this.acknowledge("car");
+        else this.did(enteredRide === "car" ? "car" : enteredRide === "boat" ? "boat" : enteredRide === "surf" ? "surf" : "water");
+        this.carPending = false;
+      }
 
-      const c = hud.coach;
       if (!c || c.ok) return;
       const { step } = c;
       const staleList = step === "list" && (enteredRide || (hud.walking && !prev.hud.walking)
@@ -114,7 +128,7 @@ class Coach {
   /** `step` matters now: its hint, if it was never shown and no other is up. */
   cue(step: CoachStep): boolean {
     const st = useStore.getState();
-    if (st.hud.coach || this.seen(step) || (step === "radio" && !radio.store.getState().available)) return false;
+    if (st.hud.coach || st.hud.panel || st.conv.active || this.seen(step) || (step === "radio" && !radio.store.getState().available)) return false;
     this.done = 0;
     this.mark(step);
     this.timeHint(STAY);
@@ -134,8 +148,12 @@ class Coach {
     if (c.ok) return;
     this.done += amount;
     if (this.done < (ENOUGH[what] ?? 1)) return;
+    this.acknowledge(what);
+  }
+
+  private acknowledge(step: CoachStep) {
     // a tick for a moment, then the card goes
-    useStore.getState().setHud({ coach: { ...c, ok: true } });
+    useStore.getState().setHud({ coach: { step, ok: true } });
     this.timeHint(1100);
   }
 
