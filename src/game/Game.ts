@@ -3003,7 +3003,8 @@ export class Game implements GameApi {
     // the conversation's camera leans in a little while the other person speaks, and eases back when they stop
     if (this.rig.talk && this.talkHome && this.talkNear) this.rig.talk.pos.lerp(this.t < this.talkLean ? this.talkNear : this.talkHome, 1 - Math.exp(-dt * 1.4));
     if (mode?.camera && this.modes.active === mode) this.rig.mode = mode.camera;
-    this.rig.update(dt, this.heading, speed > 0.7, true, (st.settings.cameraFollow || !!riding) && !this.pointer.down);
+    this.rig.update(dt, this.heading, speed > 0.7, true, (st.settings.cameraFollow || !!riding) && !this.pointer.down,
+      w <= 600 && w < h && !blocked && !riding && !this.swimming && !this.zone.interior && !this.cave && !this.aloft && !this.modes.engaged);
     if (this.speedShake > 0 && riding?.kind === "car") {
       this.rig.cam.position.x += Math.sin(this.t * 41) * this.speedShake;
       this.rig.cam.position.y += Math.cos(this.t * 37) * this.speedShake * 0.7;

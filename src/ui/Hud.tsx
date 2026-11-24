@@ -14,6 +14,7 @@ import { LoteriaOverlay } from "./Loteria";
 import { SurfOverlay, SurfPicker } from "./Surf";
 import { BaristaOffer, BaristaOverlay } from "./Barista";
 import { game } from "../game/gameRef";
+import type { Game } from "../game/Game";
 import { coach } from "../game/coach";
 import { CAVE_ZONE } from "../game/cave/groundsPlan";
 import { SITUATION_BY_ID } from "../content/situations/catalog";
@@ -133,6 +134,9 @@ export function Hud() {
   const subtitle = hud.zoneBanner?.sub?.trim();
   const zone = hud.minimap.zone;
   const kind = hud.prompt?.kind;
+  // Boarding clears the prompt before the next HUD update publishes the ride kind.
+  const rideControls = !hud.modeScreen && (ride === "car" || ride === "boat" || (game as Game | null)?.rides?.riding)
+    ? kind === "out" && !hud.panel && !hud.glyph && !picking : undefined;
   const talk = kind === "talk";
   const localOffer = talk || baristaOffer || kind === "barista" || kind === "pool" || kind === "billiards";
   const target = hud.objective?.targetLoc ?? SITUATION_BY_ID[hud.objective?.sitId ?? ""]?.location;
@@ -160,7 +164,7 @@ export function Hud() {
         </div>
         <Minimap {...screen} />
       </div>
-      <Toolbar key={"tools-" + layout} {...screen} riding={riding || hud.wading} touch={hud.showTouch} hint={note === "guide"} />
+      <Toolbar key={"tools-" + layout} {...screen} riding={riding || hud.wading} touch={hud.showTouch} hint={note === "guide"} hornReady={rideControls} />
       <RadioSetLayer />
       {streetCard && !portrait && <StreetCard />}
       {!hud.panel && <StreetBubbles />}
@@ -176,7 +180,7 @@ export function Hud() {
       {riding && hud.rideStartedAt !== null && !hud.showTouch && (
         <RideKeys key={`${ride}-${hud.rideStartedAt}`} ride={hud.ride} startedAt={hud.rideStartedAt} hidden={!!hud.panel || !!hud.glyph || picking || note === "guide"} />
       )}
-      {hud.showTouch && <TouchControls />}
+      {hud.showTouch && <TouchControls rideControls={rideControls} />}
       {!hud.panel && <BaristaOffer />}
       {questHud && <PhotoChip />}
       <SurfPicker />
@@ -232,7 +236,7 @@ function keepKeysOnHudButtons(e: KeyboardEvent<HTMLElement>) {
  *  they fold only at a wheel, at the helm, in the water, in a mini-game or the surf lesson (`surf`: in its top bar,
  *  without the town's keys). Opened, the drawer is the fewest even columns that fit above the controls, the right
  *  column first (`toolbarColumns`): one column wherever it fits. */
-function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, surf = false, modeExit, hint = false }: Screen & { riding: boolean; touch: boolean; surf?: boolean; modeExit?: string; hint?: boolean }) {
+function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, surf = false, modeExit, hint = false, hornReady = true }: Screen & { riding: boolean; touch: boolean; surf?: boolean; modeExit?: string; hint?: boolean; hornReady?: boolean }) {
   const due = useDueCards();
   const missedCalls = useStore((s) => Object.keys(s.progress.phone?.missed ?? {}).length);
   const unread = useStore((s) => unreadTexts(s.progress.texts));
@@ -251,7 +255,7 @@ function Toolbar({ w, h, portraitPhone, sidewaysPhone, riding, touch, surf = fal
   const radioInDrawer = phone || surf;
   const toolbar = useRef<HTMLDivElement>(null);
   const fitLimit = useRef<HTMLDivElement>(null);
-  const hornInMenu = canHonk && !touch;
+  const hornInMenu = canHonk && !touch && hornReady;
   const rows = portraitToolbarRows({ hasHelp, hasRadio: hasRadio && radioInDrawer, hasCourse: !!COURSE_URL, modeExit: !!modeExit });
   const single = rows.single + Number(hornInMenu);
   const split = Math.ceil(single / 2);
@@ -598,7 +602,12 @@ function HornButton({ touch }: { touch?: boolean }) {
     title={label} onClick={() => game?.horn?.()}><Icon name="horn" size={23} /></button>;
 }
 
-function TouchControls({ road = false, stickOnly = false }: { road?: boolean; stickOnly?: boolean }) {
+function releaseBrakeOnRemove() {
+  const currentGame = game;
+  return () => currentGame?.hold(false);
+}
+
+function TouchControls({ road = false, stickOnly = false, rideControls }: { road?: boolean; stickOnly?: boolean; rideControls?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const knob = useRef<HTMLDivElement>(null);
   const prompt = useStore((s) => s.hud.prompt);
@@ -640,6 +649,7 @@ function TouchControls({ road = false, stickOnly = false }: { road?: boolean; st
   }, []);
   const stick = <div className="joy" ref={ref}><div className="knob" ref={knob} /></div>;
   if (stickOnly) return stick;
+  if (rideControls === false) return <>{stick}</>;
   return (
     <>
       {stick}
@@ -647,9 +657,9 @@ function TouchControls({ road = false, stickOnly = false }: { road?: boolean; st
       {/* the jump stays under the right thumb; with someone to talk to or a door to go through it moves over for that button
           (a second tap while in the air is a flip: every press goes to the game, which knows where the player is) */}
       {prompt && <button className="act-btn" onClick={() => game?.interact()}>{(prompt.kind === "taxi" || prompt.kind === "barista" || prompt.kind === "pool" || prompt.kind === "billiards") ? prompt.label : prompt.kind === "talk" ? L("Kalbėti") : prompt.kind === "exit" ? L("Išeiti") : prompt.kind === "drive" ? L("Vairuoti") : prompt.kind === "boat" ? L("Plaukti") : prompt.kind === "out" ? L("Išlipti") : prompt.kind === "climb" ? L("Užlipti") : prompt.kind === "listen" ? L("Klausyti") : prompt.kind === "surf" ? L("Banglentė") : prompt.kind === "paddle" ? L("Irkluoti") : L("Įeiti")}</button>}
-      {/* (at a wheel the same button is the brake, for as long as it is held; in the water, a dive and the way back up) */}
+      {/* Removing a held free-ride brake during exit or a panel also releases it. */}
       {ride === "car" || ride === "boat" || ride === "taxi"
-        ? <button className={"jump-btn brake-btn" + (prompt ? " beside" : "")} aria-label={L(road ? ROAD_UI.drift : "Stabdyti")} title={L(road ? ROAD_UI.drift : "Stabdyti")} onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); game?.hold(true); }} onPointerUp={() => game?.hold(false)} onPointerCancel={() => game?.hold(false)} onLostPointerCapture={() => game?.hold(false)}><span aria-hidden>{road ? L(ROAD_UI.drift) : fast ? "DRIFT" : "STOP"}</span></button>
+        ? <button ref={rideControls ? releaseBrakeOnRemove : undefined} className={"jump-btn brake-btn" + (prompt ? " beside" : "")} aria-label={L(road ? ROAD_UI.drift : "Stabdyti")} title={L(road ? ROAD_UI.drift : "Stabdyti")} onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); game?.hold(true); }} onPointerUp={() => game?.hold(false)} onPointerCancel={() => game?.hold(false)} onLostPointerCapture={() => game?.hold(false)}><span aria-hidden>{road ? L(ROAD_UI.drift) : fast ? "DRIFT" : "STOP"}</span></button>
         : ride === "swim" || ride === "dive"
           ? <button className={"jump-btn" + (prompt ? " beside" : "")} aria-label={ride === "dive" ? L("Išnirti") : L("Panerti")} title={ride === "dive" ? L("Išnirti") : L("Panerti")} onPointerDown={(e) => { e.preventDefault(); game?.jump(); }}><Icon name={ride === "dive" ? "chevronUp" : "chevronDown"} size={34} strokeWidth={2.5} /></button>
           : <button className={"jump-btn" + (prompt ? " beside" : "")} aria-label={L("Pašokti")} title={L("Pašokti")} onPointerDown={(e) => { e.preventDefault(); game?.jump(); }}><Icon name="chevronUp" size={34} strokeWidth={2.5} /></button>}

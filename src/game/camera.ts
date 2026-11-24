@@ -375,7 +375,7 @@ export class CameraRig {
   }
 
   /** Where the follow camera stands now (see the top of the file); `snap`: no easing (a new place). Sets `look`. */
-  private placeFollow(dt: number, snap: boolean) {
+  private placeFollow(dt: number, snap: boolean, recover = false) {
     const t = this.target, a = this.ahead;
     this.chest.set(t.x, t.y + 1.35, t.z);
     this.look.set(t.x + a.x, t.y + 1.45, t.z + a.z);
@@ -406,10 +406,13 @@ export class CameraRig {
       // (what the arm wants, smoothed a little first, so even a sudden change starts gently; at once if the arm as it
       // is now would be in the way)
       const urgent = (bestL < this.armL - 0.5 && this.freeLen(this.armP, this.armL) < this.armL - 0.3) || this.intrude > 0;
+      // Fade the boost as the short arm recovers, using the lesser of current and predicted clearance.
+      const recovery = recover && this.armL < 4 && !urgent && bestL >= this.wantL
+        ? smoothstep(4, 5, bestL) * (1 - smoothstep(3, 4, this.armL)) : 0;
       this.wantP = ease(this.wantP, bestP, this.dragging ? 30 : 12, dt);
-      this.wantL = ease(this.wantL, bestL, bestL < this.wantL ? (urgent ? 40 : 18) : 8, dt);
+      this.wantL = ease(this.wantL, bestL, bestL < this.wantL ? (urgent ? 40 : 18) : 8 + 4 * recovery, dt);
       [this.armP, this.armPv] = springStep(this.armP, this.armPv, this.wantP, this.dragging ? 16 : this.wantP > this.armP ? 7 : 3.5, dt);
-      [this.armL, this.armLv] = springStep(this.armL, this.armLv, this.wantL, this.wantL < this.armL ? (urgent ? 17 : 12) : 3.2, dt);
+      [this.armL, this.armLv] = springStep(this.armL, this.armLv, this.wantL, this.wantL < this.armL ? (urgent ? 17 : 12) : 3.2 + 2.5 * recovery, dt);
     }
     // never inside anything for long: if the camera's own spot is in something solid (a column it grazed), the arm
     // comes in to what is clear along it within a few frames (in under a hand's breadth it can't be seen: the near
@@ -444,7 +447,7 @@ export class CameraRig {
     return wideFollowFov(aspect) + (running ? 3 : 0);
   }
 
-  update(dt: number, playerHeading: number, moving: boolean, forwardish: boolean, follow: boolean) {
+  update(dt: number, playerHeading: number, moving: boolean, forwardish: boolean, follow: boolean, recover = false) {
     void playerHeading; void moving; void forwardish;
     this.manualT -= dt;
     if (this.mode !== this.lastMode) { this.blendT = this.mode === "follow" ? 0.8 : 0; this.lastMode = this.mode; }
@@ -516,7 +519,7 @@ export class CameraRig {
       this.ahead.set(0, 0, 0);
     }
     if (!taxiShot && this.mode === "follow") {
-      const pos = this.placeFollow(dt, false);
+      const pos = this.placeFollow(dt, false, recover && follow && m.speed > 0.8 && !this.dragging && this.manualT <= 0 && !this.hold && !this.blendT && !!this.space);
       if (this.blendT > 0) {
         // gliding over from a conversation's shot: eased, never through anything
         const k = 1 - Math.exp(-6 * dt);
