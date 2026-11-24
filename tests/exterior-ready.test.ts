@@ -2,8 +2,9 @@ import * as THREE from "three";
 import { afterEach, expect, it, vi } from "vitest";
 import type { Game } from "../src/game/Game";
 import type { Progress } from "../src/state/progress";
+import { buildFleetPack } from "../tools/fleet-pack-plugin";
 import { townCanvasDocument } from "../tools/town-canvas-stub";
-import { stubCarAssets } from "./fixtures/car-assets";
+import { stubCarAssets, testFleetURL } from "./fixtures/car-assets";
 
 const renderers: FakeRenderer[] = [];
 
@@ -26,6 +27,8 @@ class FakeRenderer {
   constructor() { renderers.push(this); }
 }
 
+const fleet = vi.hoisted(() => ({ url: undefined as string | undefined }));
+vi.mock("virtual:fleet-pack-url", () => ({ get default() { return fleet.url; } }));
 vi.mock("three", async (actual) => ({
   ...await actual<typeof THREE>(),
   WebGLRenderer: class { constructor() { return new FakeRenderer(); } },
@@ -39,6 +42,19 @@ function deferred() {
 }
 
 let game: Game | undefined;
+let packed: Promise<Uint8Array<ArrayBuffer>> | undefined;
+
+function stubFleetAssets(options: { beforePack?: Promise<void>; beforePalette?: () => Promise<void> } = {}) {
+  fleet.url = testFleetURL;
+  packed ??= buildFleetPack(process.cwd()).then((bytes) => Uint8Array.from(bytes));
+  return stubCarAssets({
+    fleetResponse: async () => {
+      await options.beforePack;
+      return new Response(await packed);
+    },
+    beforePalette: options.beforePalette,
+  });
+}
 
 async function start(place: Progress["place"], linked?: string, reducedMotion = false) {
   const canvas = townCanvasDocument();
@@ -92,6 +108,7 @@ afterEach(() => {
   game?.dispose();
   game = undefined;
   renderers.length = 0;
+  fleet.url = undefined;
   vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
@@ -164,7 +181,7 @@ it("draws the saved island camera with the ten real models and one palette befor
 
 it("draws the reduced-motion airport immediately and holds an instant exit until the first completed outdoor draw", async () => {
   const paint = deferred();
-  const { loadPalette } = stubCarAssets({ beforePalette: () => paint.promise });
+  const { fetchFile, loadPalette, palette } = stubFleetAssets({ beforePalette: () => paint.promise });
   const { current, init, renderer, ready, useStore, models } = await start(null, undefined, true);
   await init;
   expect(current.zoneId).toBe("airport");
@@ -187,7 +204,16 @@ it("draws the reduced-motion airport immediately and holds an instant exit until
   expect(entered).not.toHaveBeenCalled();
   expect(useStore.getState().hud.fade).toBe(1);
   renderer.frame?.();
-  expect(exteriorFrame(renderer.render.mock.calls[1][0]).taxi).toBeDefined();
+  const scene = renderer.render.mock.calls[1][0];
+  const first = exteriorFrame(scene);
+  expect(first.taxi?.isMesh).toBe(true);
+  expect(first.traffic.filter(({ name }) => name === "traffic-wheels")).toHaveLength(2);
+  expect(scene.getObjectByName("mode-car-taxi")?.getObjectByName("wheel-front-left")).toBeInstanceOf(THREE.Mesh);
+  for (const mesh of [...first.traffic, ...first.parking, first.taxi!]) {
+    expect((mesh.material as THREE.MeshLambertMaterial).map).toBe(palette);
+  }
+  expect(fetchFile.mock.calls.map(([url]) => url)).toEqual([testFleetURL]);
+  expect(loadPalette.mock.calls[0][0]).toMatch(/^blob:/);
   await until(() => expect(useStore.getState().hud.fade).toBe(0));
   expect(entered).toHaveBeenCalledTimes(1);
   expect(ready).toHaveBeenCalledTimes(1);
@@ -195,7 +221,7 @@ it("draws the reduced-motion airport immediately and holds an instant exit until
 
 it("keeps a linked outdoor conversation under the initial logo and ignores completions after disposal", async () => {
   const pending = deferred();
-  stubCarAssets({ beforeModel: () => pending.promise });
+  const { fetchFile } = stubFleetAssets({ beforePack: pending.promise });
   const { current, init, renderer, ready, useStore, models, win } = await start(
     { zone: "airport", x: -14, z: -1, rot: Math.PI }, "s66-taxi",
   );
@@ -208,6 +234,7 @@ it("keeps a linked outdoor conversation under the initial logo and ignores compl
   pending.resolve();
   await models;
   await init;
+  expect(fetchFile.mock.calls.map(([url]) => url)).toEqual([testFleetURL]);
   expect(current["ambient"].group.children).toEqual(bodies);
   expect(current["town"].parkedCars.taxi?.instance).toBeUndefined();
   expect(renderer.render).not.toHaveBeenCalled();

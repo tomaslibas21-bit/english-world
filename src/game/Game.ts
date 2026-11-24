@@ -777,10 +777,11 @@ export class Game implements GameApi {
   }
 
   private async awaitExterior() {
+    const preparation = this.prepareExterior();
     try {
-      await this.prepareExterior();
+      await preparation;
     } catch (error) {
-      this.exteriorPreparation = undefined;
+      if (this.exteriorPreparation === preparation) this.exteriorPreparation = undefined;
       throw error;
     }
   }
