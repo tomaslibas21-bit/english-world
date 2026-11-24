@@ -120,8 +120,7 @@ async function driveExit(url, scenario, expectedHeading, viewport = { width: 128
         const start = { x: x - Math.sin(outward) * 19, z: z - Math.cos(outward) * 19, rot: outward };
         game.rides.resetPosition(ride, start);
         game.placeOnFoot(start.x - Math.cos(outward) * 2, start.z + Math.sin(outward) * 2, outward);
-        if (!game.boardRide(ride)) throw new Error("Could not board the park convertible");
-        game.modeHost.snapRide(ride);
+        if (!game.boardRide(ride)) throw new Error("Could not board the town's test car");
       }, { ...before.exit, van: measureApproach ? van : null });
     };
     await Promise.all([
