@@ -251,7 +251,7 @@ export class Game implements GameApi {
   private readonly debugAudio = audioDiagnosticsEnabled();
   private wasHidden = false;
   private conversationLoads = 0;
-  private scenarioPick = 0;
+  private keeperPick = 0;
   private sceneDelays = new Set<ReturnType<typeof setTimeout>>();
   private meeting: LizzieMeeting | undefined;
   private loadMeeting = false;
@@ -527,6 +527,10 @@ export class Game implements GameApi {
       };
     });
     this.rides.onLeft = (x, y, z, rot) => this.leftRide(x, y, z, rot);
+    if (island) this.rides.onIslandBoatReleased = (id) => {
+      const state = useStore.getState();
+      if (state.progress.lighthouse?.boat?.id === id) state.updateProgress((p) => { delete p.lighthouse?.boat; });
+    };
     this.rides.onStuck = () => this.showRideToast({ kind: "info", title: "Čia išlipti nėra kur", body: "Pavažiuok truputį toliau." });
     this.undersea = new Undersea(RIDES.deep, RIDES.rocks);
     const host: ModeHost = this.modeHost = {
@@ -670,7 +674,9 @@ export class Game implements GameApi {
     // start where the player left off, or in the airport on the very first visit
     const place = st.progress.place;
     if (place && (place.zone === "town" || getInterior(place.zone))) {
-      if (place.zone === "town" && island && islandGroundY(island, place.x, place.z) !== undefined) this.rides.restoreIslandBoat(st.progress.lighthouse?.boat);
+      if (place.zone === "town" && !place.boat && island && islandGroundY(island, place.x, place.z) !== undefined) {
+        this.rides.restoreIslandBoat(st.progress.lighthouse?.boat);
+      }
       this.enterZone(place.zone, { x: place.x, z: place.z, rot: place.rot }, true);
       if (place.zone === "town" && place.boat) {
         const saved = place.boat, boat = this.rides.find(saved.id);
@@ -1340,12 +1346,11 @@ export class Game implements GameApi {
 
   /** A passer-by's kind of line said by someone in the town: a bubble with its meaning, their mouth moving, and their
    *  voice where the passers-by's voices have the line recorded. */
-  private saysAloud(line: { en: string; lt: string }, female: boolean, ch: GameCharacter, own: string | null = null) {
-    if (this.session?.active) return;
+  private saysAloud(line: { en: string; lt: string }, female: boolean, ch: GameCharacter, own: string | null = null, source?: "keeper-greeting") {
     // (their own voice, if they have one and it has this line; else a passer-by's)
     const voice = own && audio.hasClip(own, 1, line.en) ? own : ambientVoice(female ? "f" : "m");
     speakTownLine(ch, voice, female, line.en, 1.1 + line.en.length * 0.045);
-    useStore.getState().toast({ kind: "info", source: "ambient", title: `„${line.en}“`, body: line.lt, ms: 3200 });
+    useStore.getState().toast({ kind: "info", title: `„${line.en}“`, body: line.lt, ms: 3200, ...(source && { source }) });
   }
 
   /** A member of the room's staff with no conversation here says their one line (roomPeople.ts `says`). */
@@ -1357,7 +1362,7 @@ export class Game implements GameApi {
 
   private speakKeeper() {
     const keeper = LIGHTHOUSE_ISLAND?.keeper, ch = this.islandScene?.keeper;
-    if (!keeper || !ch || this.t - this.keeperSpokeAt < 3.2) return;
+    if (!keeper || !ch || this.session?.active || this.t - this.keeperSpokeAt < 3.2) return;
     const st = useStore.getState();
     const id = st.progress.lighthouse?.greeted ? keeper.repeat : keeper.says;
     const line = STAFF_LINES[id];
@@ -1366,7 +1371,7 @@ export class Game implements GameApi {
     if (id === keeper.repeat) this.keeperWarned = true;
     this.keeperSpokeAt = this.t;
     this.keeperFrameDismissed = false;
-    this.saysAloud(line, false, ch);
+    this.saysAloud(line, false, ch, null, "keeper-greeting");
     if (!st.progress.lighthouse?.greeted) st.updateProgress((p) => { p.lighthouse = { ...p.lighthouse, greeted: true }; });
     if (this.islandGuide) { this.islandGuide = false; this.refreshObjective(); }
   }
@@ -1401,7 +1406,7 @@ export class Game implements GameApi {
         this.islandGuide = false;
         if (picker) {
           this.endRide();
-          if (!this.rides.islandBoat()) this.rides.restoreIslandBoat();
+          this.rides.restoreIslandBoat(useStore.getState().progress.lighthouse?.boat);
           this.enterZone("town", island.keeperSpawn, true);
         }
         this.keeperNear = true;
@@ -1612,7 +1617,7 @@ export class Game implements GameApi {
         const voice = ambientVoice(female ? "f" : "m");
         audio.play(voice, 1, line.en, { male: !female });
         w.ch.talk(audio.clipDuration(voice, 1, line.en) ?? 1.2, () => audio.level(), () => audio.vowel());
-        st.toast({ kind: "info", source: "ambient", title: `„${line.en}“`, body: line.lt });
+        st.toast({ kind: "info", title: `„${line.en}“`, body: line.lt });
         return;
       }
     }
@@ -1858,16 +1863,18 @@ export class Game implements GameApi {
   startScenario(sitId: string) {
     const sit = SITUATION_BY_ID[sitId];
     const keeper = sitId === KEEPER_SIT;
-    if (!sit || (keeper && this.keeperRequest?.picker)) return;
+    if (!sit) return;
     this.keeperRequest = undefined;
-    const pick = ++this.scenarioPick;
+    // The island picker can wait for both the island and the conversation file.
+    if (keeper) this.keeperPick++;
+    const pick = this.keeperPick;
     const st = useStore.getState();
     st.setHud({ panel: null });
     this.modes.exit(true);
     this.lastScenario = sitId;
     prefetchSituations([sitId]);
     const go = () => {
-      if (pick !== this.scenarioPick) return;
+      if (pick !== this.keeperPick) return;
       if (isCall(sit)) { this.call(sitId); return; }
       const npc = sit.npc === "sam" || sit.npc === "emma" ? this.chosenDatePartner() : sit.npc;
       const loc = LOCATIONS[sit.location];
@@ -1884,7 +1891,7 @@ export class Game implements GameApi {
       }
       this.enterZone(zone, spawn ?? undefined, true);
       // let the NPCs spawn, then talk
-      this.afterSceneDelay(() => { if (pick === this.scenarioPick) this.talkTo(npc, sitId); }, 150);
+      this.afterSceneDelay(() => { if (pick === this.keeperPick) this.talkTo(npc, sitId); }, 150);
     };
     // "Dar kartą" / "Kita situacija" after a taxi, bus or plane ride was queued: no ride (and no
     // teleport or black fade in the middle of the new conversation). Before close(), which runs endSession.
@@ -1931,12 +1938,13 @@ export class Game implements GameApi {
     this.quests.stopReplay();
     this.conversationLoads++;
     this.observeStreetAndPhone();
+    const pick = this.keeperPick;
     let opened = false;
     whenLoaded(sitId, (def) => {
       if (prepare && !prepare()) return;
       this.startSession(def, actor, fromCard && sitId === "p24-flood" ? FLOOD_INCOMING_INTRO : undefined);
       opened = true;
-    }, () => !this.disposed && !this.session?.active, () => {
+    }, () => !this.disposed && !this.session?.active && pick === this.keeperPick, () => {
       this.conversationLoads--;
       if (fromCard && !opened && !this.disposed) this.phone.markMissed(sitId);
       settled?.();
@@ -2972,21 +2980,10 @@ export class Game implements GameApi {
   };
 
   private loadIsland() {
-    return this.islandLoad ??= import("./world/lighthouseIsland").then(({ buildLighthouseIsland }) => {
+    return this.islandLoad ??= import("./world/lighthouseIsland").then(({ attachLighthouseIsland }) => {
       if (this.disposed || !LIGHTHOUSE_ISLAND) return;
-      const scene = buildLighthouseIsland(LIGHTHOUSE_ISLAND);
-      try {
-        scene.keeper.watch = this.learnerAt;
-        scene.group.visible = !this.undersea.on;
-        this.town.group.add(scene.group);
-        scene.ground.updateWorldMatrix(true, false);
-        this.field.addGeometry(scene.ground.geometry, scene.ground.matrixWorld);
-        if (!scene.group.visible) this.dry.push(scene.group);
-        this.islandScene = scene;
-      } catch (error) {
-        scene.dispose();
-        throw error;
-      }
+      this.islandScene = attachLighthouseIsland(LIGHTHOUSE_ISLAND, this.town.group, this.field, this.learnerAt,
+        this.undersea.on ? this.dry : undefined);
     }).catch((error) => {
       this.islandLoad = undefined;
       console.warn("Lighthouse island unavailable", error);
@@ -3673,7 +3670,6 @@ export class Game implements GameApi {
   private savePlace() {
     if (!this.player || !this.zone) return;
     const p = this.player.root.position;
-    const island = LIGHTHOUSE_ISLAND;
     useStore.getState().updateProgress((pr) => {
       pr.place = { zone: this.zone.id, x: +p.x.toFixed(2), z: +p.z.toFixed(2), rot: +this.heading.toFixed(2) };
       const boat = this.rides.riding;
@@ -3681,10 +3677,11 @@ export class Game implements GameApi {
         const position = this.modes.owns("sea") ? seaReturn(boat) : { x: boat.m.x, z: boat.m.z, rot: boat.m.heading };
         pr.place.boat = { id: boat.id, ...position, mooring: this.seaMooring };
         if (this.modes.owns("sea")) Object.assign(pr.place, position);
+        if (pr.lighthouse?.boat?.id === boat.id) delete pr.lighthouse.boat;
       }
-      if (this.zone.id === "town" && island && islandGroundY(island, p.x, p.z) !== undefined) {
-        pr.lighthouse = { ...pr.lighthouse, boat: this.rides.islandBoat() };
-      } else if (island && pr.lighthouse?.boat) delete pr.lighthouse.boat;
+      // Indoors after reload the docked boat may not have been restored into the town yet.
+      const moored = this.rides.islandBoat();
+      if (moored) (pr.lighthouse ??= {}).boat = moored;
       this.phone.saveClock(pr);
     });
   }

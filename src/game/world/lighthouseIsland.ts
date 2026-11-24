@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { KEEPER_LOOK, KEEPER_NPC } from "../../content/keeper";
 import type { TalkActor } from "../Game";
+import type { OcclusionField } from "../occlusion";
 import { createCharacter } from "../characters";
 import { addIslandTower, addLighthouse } from "./lighthouseTower";
 import { buoy, mums } from "./maple";
@@ -8,6 +9,23 @@ import { boxGeo, colourMerge, rand } from "./util";
 import type { IslandPlan, IslandPoint } from "./island";
 
 type Parts = [THREE.BufferGeometry, THREE.ColorRepresentation][];
+
+export function attachLighthouseIsland(island: IslandPlan, town: THREE.Group, field: OcclusionField,
+  learnerAt: THREE.Vector3, dry?: THREE.Object3D[]) {
+  const scene = buildLighthouseIsland(island);
+  try {
+    scene.keeper.watch = learnerAt;
+    scene.group.visible = !dry;
+    town.add(scene.group);
+    scene.ground.updateWorldMatrix(true, false);
+    field.addGeometry(scene.ground.geometry, scene.ground.matrixWorld);
+    dry?.push(scene.group);
+    return scene;
+  } catch (error) {
+    scene.dispose();
+    throw error;
+  }
+}
 
 function facet(points: [number, number, number][]) {
   const g = new THREE.BufferGeometry();
