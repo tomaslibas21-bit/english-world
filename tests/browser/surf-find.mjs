@@ -113,6 +113,11 @@ try {
     h = await hud();
     assert.deepEqual(npcSpot, { x: -99.8, z: -66.45 });
     check(`${label}: at her counter, still her talk prompt`, h.prompt?.kind === "talk" && h.prompt.label.includes("Maren Pike"), { prompt: h.prompt, npcSpot });
+    if (shots) {
+      await page.locator(".zone-banner").waitFor({ state: "hidden" });
+      await step(60);
+    }
+    await page.locator(".nametag").filter({ has: page.getByText("Maren Pike", { exact: true }) }).waitFor({ state: "visible" });
     await shot("counter");
     await at(spot.start.x, spot.start.z);
     if (phone) await page.locator(".act-btn").tap(); else await page.keyboard.press("e");
@@ -128,13 +133,22 @@ try {
     const sitId = await page.evaluate(() => window.__ew.game.surf.situation);
     assert.equal(sitId, "x04-surf");
     const panel = (name) => page.evaluate((name) => window.__ew.store.getState().setHud({ panel: name }), name);
+    const schoolCard = '.sit-card[data-sit="x04-surf"]';
+    const schoolRow = page.locator(".map-wrap .sit-list > div").filter({ has: page.locator(schoolCard) });
     const map = async () => {
       await panel("map");
-      const pin = page.getByRole("button", { name: "Harbor Surf", exact: true });
+      const pin = page.locator(".map-wrap").getByRole("button", { name: "Harbor Surf", exact: true });
       const pos = await pin.evaluate((el) => [parseFloat(el.style.left), parseFloat(el.style.top)]);
       check(`${label}: the map pin is at the shack`, Math.abs(pos[0] - (12.2 / 294 * 100)) < 0.01 && Math.abs(pos[1] - (38.4 / 200 * 100)) < 0.01, pos);
       await pin.click();
-      await page.locator('.map-wrap .sit-card[data-sit="x04-surf"]').waitFor();
+      await page.locator(".map-wrap").locator(schoolCard).waitFor();
+    };
+    const clickSchoolAction = async (name) => {
+      assert.equal(await schoolRow.count(), 1, `${label}: one Harbor Surf map row`);
+      const action = schoolRow.locator(".sit-actions").getByRole("button", { name, exact: true });
+      assert.equal(await action.count(), 1, `${label}: one ${name} action in the Harbor Surf map row`);
+      await action.waitFor({ state: "visible" });
+      await action.click();
     };
     await page.evaluate(() => window.__ew.game.setObjective("s72-cafe"));
     const objective = () => page.evaluate(() => {
@@ -152,10 +166,13 @@ try {
       await map();
       const origin = await walker();
       assert.equal(origin.zone, originZone);
-      await page.locator('.map-wrap .sit-card[data-sit="x04-surf"]').getByRole("button", { name: "Nuvesk mane", exact: true }).click();
+      await clickSchoolAction("Nuvesk mane");
       const began = await walker();
-      assert(began.walking && began.zone === originZone && Math.hypot(began.x - origin.x, began.z - origin.z) < 0.01,
-        `${name}: expected a path from the current position, got ${JSON.stringify(began)}`);
+      check(`${label}: ${name} begins walking from the current position`,
+        began.walking && began.zone === originZone && Math.hypot(began.x - origin.x, began.z - origin.z) < 0.01 && (await hud()).panel === null,
+        { origin, began });
+      assert.deepEqual(await objective(), originalObjective);
+      await shot(`guide-${originZone}-started`);
       let walked = false;
       let p = began;
       for (let i = 0; i < 160; i++) {
@@ -165,6 +182,7 @@ try {
         if (p.zone === "town" && !p.walking && Math.hypot(p.x - counter[0], p.z - counter[1]) < 0.5 && p.prompt?.kind === "talk") {
           check(`${label}: ${name} walks to Maren on dry sand and faces her`, walked && p.rot === 0 && p.prompt.label.includes("Maren Pike"), p);
           assert.deepEqual(await objective(), originalObjective);
+          await shot(`guide-${originZone}-arrival`);
           return;
         }
         await step(18); await real(10);
@@ -225,11 +243,16 @@ try {
     check(`${label}: the real rental completion leads with the surf navigation action`, actionOrder.firstNavigation && actionOrder.onlyReplayBefore, actionOrder);
     assert.equal(await page.evaluate(() => window.__ew.game.modes.queued?.option), "beginner", "Maren's real invitation queues beginner");
     await shot("rental-completion");
-    await page.evaluate(() => { const g = window.__ew.game; g.modes.cancelQueued(); g.activeSession.close(); });
-    await panel("scenarios");
-    await page.locator(".scn-card").first().waitFor();
+    await page.evaluate(() => window.__ew.game.modes.cancelQueued());
+    await ended.getByRole("button", { name: "Visos situacijos", exact: true }).click();
+    const completedCard = picker.locator('[data-sit="x04-surf"]');
+    await completedCard.waitFor({ state: "attached" });
     check(`${label}: the completed bonus appears exactly once and the course total is unchanged`,
-      await picker.locator('[data-sit="x04-surf"]').count() === 1 && await courseCount() === courseBefore);
+      await completedCard.count() === 1 && await completedCard.evaluate((el) => el.matches(".scn-card.done")) && await courseCount() === courseBefore);
+    if (phone && shots) {
+      await completedCard.scrollIntoViewIfNeeded();
+      await shot("completed-picker");
+    }
     assert.deepEqual(await objective(), originalObjective);
     await panel(null);
 
@@ -240,7 +263,7 @@ try {
 
     // The school's end card leads with the lesson and honours the queued level.
     const endCard = async () => {
-      if ((await hud()).panel === "map") await page.getByRole("button", { name: "Pradėti dabar", exact: true }).click();
+      if ((await hud()).panel === "map") await clickSchoolAction("Pradėti dabar");
       else await page.evaluate((id) => window.__ew.game.startScenario(id), sitId);
       await waitForSession();
       assert.equal(await page.locator(".surf-cta").count(), 0, "the surf action waits for the end card");

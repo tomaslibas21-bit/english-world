@@ -40,7 +40,10 @@ export function addHarborSurf({ col, group, M }: MapleCtx, add: (g: THREE.Buffer
 
   wall(counter.w, counter.top - 0.06, counter.d, x, y + (counter.top - 0.06) / 2, counter.z, TEAL);
   box(counter.w, 0.06, counter.d, x, y + counter.top - 0.03, counter.z, CREAM);
-  box(2.45, 0.38, 0.05, x, y + eave + 0.1, front - 0.025, GABLE);
+  // The west post carries the plate beside Maren's name tag in the customer view.
+  const signW = 1.42, signH = 0.4, signD = 0.10;
+  const signX = x - (w - signW) / 2, signY = y + eave - 0.16;
+  box(signW, signH, signD, signX, signY, front - signD / 2, GABLE);
   const chalkX = x + 1.32, chalkZ = back - 0.17, chalkY = y + 1.53;
   box(1.48, 1.08, 0.045, chalkX, chalkY, chalkZ, GABLE);
   const sign = textTexture(SURF_SCHOOL_SIGN.en, { bg: CREAM, fg: GABLE, w: 512, h: 80 });
@@ -64,7 +67,7 @@ export function addHarborSurf({ col, group, M }: MapleCtx, add: (g: THREE.Buffer
     for (let i = 0; i < uv.count; i++) uv.setY(i, THREE.MathUtils.lerp(v0 / 512, v1 / 512, uv.getY(i)));
     M.add("harbor-surf-sign", lettering, g, false);
   };
-  signFace(2.4, 0.375, x, y + eave + 0.1, front - 0.052, 432, 512);
+  signFace(signW - 0.05, signH - 0.005, signX, signY, front - signD - 0.002, 432, 512);
   signFace(1.4, 1.0, chalkX, chalkY, chalkZ - 0.025, 0, 428);
 
   const board = (len: number, width: number, deck: string, stripe: string, thick: number, place: (g: THREE.BufferGeometry) => THREE.BufferGeometry) => {
