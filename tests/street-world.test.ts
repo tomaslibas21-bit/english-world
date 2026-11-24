@@ -75,6 +75,35 @@ function viewPair(walker: NonNullable<ReturnType<Ambient["walkerFor"]>>) {
 }
 
 describe("street framing", () => {
+  it("can stage a callback while the same passer-by is still leaving", () => {
+    const { player, street } = frame(390, 844, 28, -20, Math.PI);
+    try {
+      const dropped = STREET_MOMENTS.find((moment) => moment.id === "i_dropped")!;
+      const first = selectScript(dropped, undefined, undefined, "a")!;
+      const second = selectScript(dropped, { seen: 1, helped: 1, cast: { a: 1 } }, undefined, "a")!;
+      const actor = street.prepare(first)!();
+      actor.tick(2, true);
+      actor.answer(true);
+      for (let i = 0; i < 20; i++) actor.tick(0.05, false);
+      actor.leave();
+      street.tick(0.05);
+      const root = (actor.person as ReturnType<typeof createCharacter>).root;
+      expect(root.parent).not.toBeNull();
+
+      const spawn = street.prepare(second);
+      expect(spawn).toBeDefined();
+      expect(root.parent).not.toBeNull();
+      const returning = spawn!();
+      try {
+        expect(root.parent).toBeNull();
+        expect(returning.projection().person.onScreen).toBe(true);
+      } finally { returning.dispose(); }
+    } finally {
+      street.dispose();
+      player.dispose?.();
+    }
+  });
+
   it.each(sizes)("keeps the dropped wallet and passerby visible during the entrance and wait at %i×%i", (width, height) => {
     const { player, street, phone } = frame(width, height, 28, -20, Math.PI);
     const dropped = STREET_MOMENTS.find((moment) => moment.id === "i_dropped")!;

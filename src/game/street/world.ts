@@ -29,12 +29,15 @@ function sidewalkDistance(x: number, z: number) {
   }, Infinity);
 }
 
-function seededLook(draw: Omit<MomentDraw, "bag">, playerTop: string | undefined): Look {
-  const { moment, cast } = draw;
+function streetIdentity({ moment, cast }: Omit<MomentDraw, "bag">) {
   const original = STREET_MOMENTS.find((item) => item.id === moment.after?.id) ?? moment;
   const originalCast = original.cast.find((member) => member.id === cast.id) ?? cast;
   const identity = original.kind === "regular" ? originalCast.name ?? originalCast.voice : originalCast.id;
-  const seed = `${original.id}:${identity}`.split("").reduce((hash, char) => Math.imul(hash ^ char.charCodeAt(0), 16777619), 2166136261);
+  return `${original.id}:${identity}`;
+}
+
+function seededLook(cast: MomentDraw["cast"], identity: string, playerTop: string | undefined): Look {
+  const seed = identity.split("").reduce((hash, char) => Math.imul(hash ^ char.charCodeAt(0), 16777619), 2166136261);
   const r = rand(seed >>> 0);
   const look = walkerLook(cast.gender === "f", r);
   if (look.top === playerTop) look.top = look.top === "#b45d4c" ? "#577f9e" : "#b45d4c";
@@ -143,7 +146,8 @@ export class TownStreet implements StreetWorld {
     const lostDog = prop === "dog" && draw.moment.kind === "incident" && draw.scriptName !== "familiar";
     const ground = !!prop && GROUND_PROPS.includes(prop);
     const top = this.phoneCardAtTop() ? STREET_PHONE_CARD_BOTTOM : 1 / 3;
-    const look = seededLook(draw, this.playerTop());
+    const identity = streetIdentity(draw);
+    const look = seededLook(draw.cast, identity, this.playerTop());
     const height = 1.75 * (look.height ?? 1);
     const playerHead = this.project(p.clone().addScaledVector(up, player.height * 1.03));
     const playerFeet = this.project(p);
@@ -151,7 +155,13 @@ export class TownStreet implements StreetWorld {
     const cameraRight = new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 0);
     const playerHalfWidth = this.project(playerCenter.clone().addScaledVector(cameraRight, 0.4)).x - this.project(playerCenter).x;
     const eye = p.clone().addScaledVector(up, 1.45);
-    const walkers = [...this.ambient.walkerRoots, ...Array.from(this.departures.keys(), (actor) => actor.person.root)];
+    // A forced callback can bring the same person back before their departure finishes.
+    const departing = [...this.departures.keys()];
+    const returning = departing.find((actor) => actor.identity === identity);
+    const walkers = [
+      ...this.ambient.walkerRoots,
+      ...departing.filter((actor) => actor !== returning).map((actor) => actor.person.root),
+    ];
     const inFront = (point: THREE.Vector3) => {
       const dx = point.x - p.x, dz = point.z - p.z;
       return dx * Math.sin(heading) + dz * Math.cos(heading) > 0.25
@@ -216,7 +226,10 @@ export class TownStreet implements StreetWorld {
     }
     if (!best) return undefined;
     const place = best.place;
-    return () => new TownActor(this, this.group, draw, place, player, look);
+    return () => {
+      if (returning && this.departures.delete(returning)) returning.dispose();
+      return new TownActor(this, this.group, draw, place, player, look, identity);
+    };
   }
 
   private dropPath(stop: THREE.Vector3, player: THREE.Vector3,
@@ -364,7 +377,7 @@ class TownActor implements StreetActor {
   private twoHanded: boolean;
 
   constructor(private world: TownStreet, layer: THREE.Group, private draw: Omit<MomentDraw, "bag">,
-    private place: Placement, private player: GameCharacter, look: Look) {
+    private place: Placement, private player: GameCharacter, look: Look, readonly identity: string) {
     const { cast, moment } = draw;
     const id = cast.prop;
     this.drop = !!id && DROP_PROPS.includes(id) && draw.scriptName !== "familiar";
