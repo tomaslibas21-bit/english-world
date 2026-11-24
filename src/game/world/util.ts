@@ -238,7 +238,10 @@ export function rand(seed: number) {
 }
 
 /** `split`: low enough to jump onto; for the player its pieces (ledges.ts) stand in for it. */
-export interface AABB { minX: number; minZ: number; maxX: number; maxZ: number; tag?: string; split?: boolean }
+export interface AABB {
+  minX: number; minZ: number; maxX: number; maxZ: number;
+  tag?: string; split?: boolean; deckRail?: true;
+}
 
 /** 2D (XZ) colliders: axis-aligned boxes and circles. */
 export class Colliders {

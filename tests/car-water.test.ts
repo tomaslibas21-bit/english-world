@@ -8,8 +8,9 @@ import { Rides, type Ride, type RideHost } from "../src/game/rides/Rides";
 import type { GameCharacter } from "../src/game/characters";
 import type { NavGrid } from "../src/game/nav";
 import { CAR_WATER, createCarWaterProbe, probeCarWater, sampleCarWater, wetDriveSettings } from "../src/game/rides/carWater";
-import { BOAT, CAR, Motion, pushOutOfBox } from "../src/game/rides/drive";
+import { BOAT, CAR, Motion, controlsFrom, pushOutOfBox } from "../src/game/rides/drive";
 import { settleRoadExit, townAsphalt, townCarWaterGround, townGround } from "../src/game/rides/ground";
+import { CONVERTIBLE_BUMPER } from "../src/game/rides/shapes";
 import { BAY, DECKS, FLOORS, POOLS, SEA_LEVEL, SHORE, Splashes, floorY, sandY, waterY } from "../src/game/water";
 import { carModelEntry } from "../src/game/world/carModels";
 import { SEA_Z, TRAFFIC_LANES, WORLD } from "../src/game/world/layout";
@@ -1225,7 +1226,7 @@ describe("occupied town car rescue", () => {
   });
 });
 
-it("opens only a boarded real fleet car, unhides its driver at an exterior step and repairs its box and ledges on handback", async () => {
+function occupiedTownFixture(plan = RIDES) {
   const town = buildTestTown();
   const window = {};
   vi.stubGlobal("window", window);
@@ -1246,16 +1247,130 @@ it("opens only a boarded real fleet car, unhides its driver at an exterior step 
     cam: new PerspectiveCamera(), player, quality: "low", colliders: town.colliders, nav: { cell: 0.5, idx: () => -1 } as unknown as NavGrid, ambient,
     people: () => [], say: noOp, thud: noOp, stuck: noOp, aground: noOp, waiting: noOp, freed: noOp, rescue: noOp, splash: noOp, fan: noOp,
     outdoors: () => true,
-  }, { ...RIDES, cars: [] }, []);
-  const parked = town.parkedCars.fleet.cars.map((entry, index) => rides.createModeCar({ ...entry.spot, id: `fleet-${index}` }, entry.root, noOp));
-  const car = parked.find((r) => rides.roofed(r))!;
-  const simulate = (n: number, throttle = 0) => {
+  }, plan, []);
+  const simulate = (n: number, throttle = 0, steer = 0) => {
+    const controls = { throttle, steer, brake: false };
     for (let i = 0; i < n; i++) {
       now += 1000 * dt; time += dt;
       rides.water?.tick(dt, time);
-      rides.update(dt, time, { throttle, steer: 0, brake: false });
+      rides.update(dt, time, controls);
     }
   };
+  const adapter: Parameters<Rides["prefetchWater"]>[1] = {
+    eligible: (r) => rides.townCar(r), peopleClear: () => true, arrest: noOp, snap: noOp, fade: noOp,
+    foot: (p) => { player.root.position.set(p.x, p.y, p.z); player.swim = p.swim; },
+  };
+  return { town, window, player, ambient, rides, simulate, noOp, adapter, get time() { return time; },
+    jumpClock(ms: number) { now += ms; rides.water?.tick(dt, time); } };
+}
+
+it("stops the occupied stock convertible at the real pier rail under 52 frames of straight throttle", async () => {
+  const f = occupiedTownFixture();
+  const { rides, player, town, simulate } = f;
+  const car = rides.find("park")!, m = car.m;
+  player.root.position.set(m.x + m.fz * 1.5, 0, m.z - m.fx * 1.5);
+  expect(rides.board(car, false)).toBe(true);
+  rides.prefetchWater(car, f.adapter);
+  simulate(60);
+  await vi.waitFor(() => expect(rides.water?.open(car)).toBe(true));
+  expect(rides.phase).toBe("on");
+  expect(player.root.visible).toBe(true);
+
+  const x = -30, z = -70, rot = 0.42;
+  const rail = town.colliders.boxes.find(b => b.tag !== "sea" && b.minX > x && b.minX < x + 3 && b.minZ <= z && b.maxZ >= z)!;
+  expect(rail).toBeDefined();
+  expect(rail.maxX - rail.minX).toBeCloseTo(0.2);
+  const normal = { x: Math.sign(x - (rail.minX + rail.maxX) / 2), z: 0 };
+  expect(floorY(x, z)).toBe(0.3);
+  expect(waterY(x, z, f.time)).not.toBeNull();
+  rides.resetPosition(car, { x, z, rot });
+  simulate(1);
+  expect(car.mesh.position.y).toBeCloseTo(0.3, 2);
+  expect(rides.water!.probe.band).toBe("dry");
+
+  const outline = () => {
+    const bumper = CONVERTIBLE_BUMPER, half = bumper.offset + bumper.depth / 2, wide = bumper.width / 2;
+    const s = m.fx, c = m.fz;
+    const local = (side: number, along: number) => {
+      const x = m.x + c * side + s * along, z = m.z - s * side + c * along;
+      return { x, z, clearance: (x - rail.minX) * normal.x };
+    };
+    return {
+      centre: local(0, 0), heading: m.heading, pace: m.pace,
+      bumpers: [local(0, half), local(0, -half)],
+      corners: [local(wide, half), local(-wide, half), local(wide, -half), local(-wide, -half)],
+    };
+  };
+  const step = m.step;
+  let candidate = outline();
+  const measure = vi.spyOn(m, "step").mockImplementation((...args) => {
+    step.apply(m, args);
+    candidate = outline();
+  });
+  const throttle = controlsFrom(0, 1);
+  const frames = Array.from({ length: 52 }, () => {
+    const prior = outline();
+    simulate(1, throttle.throttle, throttle.steer);
+    const settled = outline();
+    const { centre, frontLeft, frontRight, rearLeft, rearRight, band } = rides.water!.probe;
+    const tires = [frontLeft, frontRight, rearLeft, rearRight];
+    expect(!rides.water!.owns(car) && band === "dry" && car.mesh.position.y >= 0.26).toBe(true);
+    expect([centre, ...tires].every(p => p.floor === 0.3 && p.depth === 0)).toBe(true);
+    expect(settled.centre.z).toBeLessThan(rail.maxZ);
+    expect(tires.every(p => p.x <= rail.minX + 0.03)).toBe(true);
+    return { prior, candidate, settled };
+  });
+  measure.mockRestore();
+  const lastTen = frames.slice(-10).map(f => f.settled);
+  const first = lastTen[0].centre, last = lastTen[9].centre;
+  const normalMovement = Math.abs((last.x - first.x) * normal.x + (last.z - first.z) * normal.z);
+  const entersRail = (f: ReturnType<typeof outline>) =>
+    f.corners.some(p => p.clearance < -1e-6 && p.z > rail.minZ && p.z < rail.maxZ);
+  const firstCorner = frames.find(f => entersRail(f.candidate));
+  const evidence = JSON.stringify({
+    rail, normal, normalMovement, lastTen: lastTen.map(({ centre, heading, pace }) => ({ centre, heading, pace })),
+    firstCorner,
+    firstTurn: frames.find(f => Math.abs(f.candidate.heading - f.settled.heading) > 1e-6),
+  });
+  const progress = Math.max(...frames.map(f => f.settled.centre.x)) - x;
+  expect(progress).toBeGreaterThan(0.15);
+  expect(lastTen.some(f => f.pace < 0.6) || normalMovement < 0.06, evidence).toBe(true);
+  expect(frames.some(f => entersRail(f.settled)), evidence).toBe(false);
+  expect(firstCorner, evidence).toBeDefined();
+  expect(firstCorner!.candidate.bumpers.every(p => p.clearance > 0)).toBe(true);
+  const circleExtentX = m.spec.wide + Math.abs(Math.sin(firstCorner!.candidate.heading)) * (m.spec.half - m.spec.wide);
+  expect(firstCorner!.candidate.centre.x + circleExtentX).toBeLessThan(rail.minX);
+  expect(firstCorner!.settled).toEqual({ ...firstCorner!.prior, pace: 0 });
+
+  simulate(180, throttle.throttle, throttle.steer);
+  const stopped = outline();
+  expect(Math.hypot(stopped.centre.x - last.x, stopped.centre.z - last.z)).toBeLessThan(0.06);
+  expect(stopped.pace).toBeLessThan(0.6);
+  expect(entersRail(stopped)).toBe(false);
+  const backing = controlsFrom(-0.25, -1);
+  simulate(35, backing.throttle, backing.steer);
+  expect(m.x).toBeLessThan(stopped.centre.x - 0.15);
+  expect(Math.abs(m.heading - stopped.heading)).toBeGreaterThan(0.05);
+  expect(entersRail(outline())).toBe(false);
+  expect(rides.water!.probe.band).toBe("dry");
+
+  rides.resetPosition(car, { x, z, rot });
+  m.speed = 8;
+  simulate(6, throttle.throttle, throttle.steer);
+  expect(rides.crashes.last()).toMatchObject({ id: car.id, target: "town" });
+
+  rides.resetPosition(car, shore);
+  for (let i = 0; i < 600 && !rides.water!.returning; i++) simulate(1, throttle.throttle, throttle.steer);
+  expect(m.x).toBeCloseTo(24);
+  expect(m.z).toBeLessThan(SHORE.limit);
+  expect(rides.water!.inspect().reason).toBe("depth");
+  rides.disposeWater();
+});
+
+it("opens only a boarded real fleet car, unhides its driver at an exterior step and repairs its box and ledges on handback", async () => {
+  const { town, window, player, ambient, rides, simulate, noOp, adapter, jumpClock } = occupiedTownFixture({ ...RIDES, cars: [] });
+  const parked = town.parkedCars.fleet.cars.map((entry, index) => rides.createModeCar({ ...entry.spot, id: `fleet-${index}` }, entry.root, noOp));
+  const car = parked.find((r) => rides.roofed(r))!;
   let leaves = 0;
   rides.onLeft = (x, y, z, rot) => {
     leaves++;
@@ -1269,10 +1384,6 @@ it("opens only a boarded real fleet car, unhides its driver at an exterior step 
   expect(rides.water).toBeUndefined();
   simulate(40);
   expect(player.root.visible).toBe(false);
-  const adapter: Parameters<Rides["prefetchWater"]>[1] = {
-    eligible: (r) => rides.townCar(r), peopleClear: () => true, arrest: noOp, snap: noOp, fade: noOp,
-    foot: (p) => { player.root.position.set(p.x, p.y, p.z); player.swim = p.swim; },
-  };
   rides.prefetchWater(car, adapter);
   await vi.waitFor(() => expect(rides.water?.open(car)).toBe(true));
   expect(rides.water!.ground.has(shore.x, BAY.z0)).toBe(true);
@@ -1294,8 +1405,7 @@ it("opens only a boarded real fleet car, unhides its driver at an exterior step 
   expect(leaves).toBe(1);
   expect(player.root.visible).toBe(true);
   expect(rides.board(car, false)).toBe(false);
-  now += 20_000;
-  rides.water!.tick(dt, time);
+  jumpClock(20_000);
   expect(rides.water!.inspect().active).toBe(false);
   expect(leaves).toBe(1);
   expect(rides.near(player.root.position.x, player.root.position.z)).toBe(car);
@@ -1309,8 +1419,7 @@ it("opens only a boarded real fleet car, unhides its driver at an exterior step 
   expect(rides.water!.inspect().reason).toBe("depth");
   expect(player.root.visible).toBe(false);
   rides.riding = null;
-  now += 20_000;
-  rides.water!.tick(dt, time);
+  jumpClock(20_000);
   expect(leaves).toBe(2);
   expect(player.root.visible).toBe(true);
   expect(rides.near(player.root.position.x, player.root.position.z)).toBe(car);

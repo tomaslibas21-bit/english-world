@@ -1170,11 +1170,23 @@ export class Rides {
     const strip = approach ?? host.openRoad?.(r, c);
     this.onRoadStrip = !!strip;
     this.settlingCar = r;
-    this.waterSettle = !strip && !this.rescuing && !!water?.open(r);
+    const shoreWater = !strip && !this.rescuing && water?.open(r) ? water : undefined;
+    this.waterSettle = !!shoreWater;
     this.reportCrash = !this.rescuing && !water?.owns(r) && (host.allowsCrashes?.() ?? true) && host.outdoors();
-    const vx = this.reportCrash ? m.vx : 0, vz = this.reportCrash ? m.vz : 0;
-    m.settle(this.settleCar, this.reportCrash ? this.impact : undefined);
-    const openShore = this.waterSettle;
+    const vx = this.reportCrash || shoreWater ? m.vx : 0, vz = this.reportCrash || shoreWater ? m.vz : 0;
+    if (shoreWater) { _waterFrom.x = x0; _waterFrom.z = z0; _waterFrom.heading = h0; }
+    const railBeforeSettle = shoreWater?.deckRailContact(_waterFrom, r);
+    const settled = !railBeforeSettle && m.settle(this.settleCar, this.reportCrash ? this.impact : undefined);
+    // The circle corrections can also swing a previously clear corner into the rail.
+    const railHit = railBeforeSettle ?? (settled ? shoreWater?.deckRailContact(_waterFrom, r) : undefined);
+    if (railHit) {
+      railHit.into = Math.max(0, -vx * railHit.nx - vz * railHit.nz);
+      railHit.scrape = THREE.MathUtils.clamp((vx * railHit.nz - vz * railHit.nx) / 4, -1, 1);
+      m.x = x0; m.z = z0; m.heading = h0;
+      m.speed = m.slip = m.yaw = m.hold = m.charge = m.boost = 0;
+      m.drift = false;
+      m.bump = Math.max(m.bump, Math.min(1, railHit.into / 5));
+    }
     this.onRoadStrip = this.waterSettle = false;
     if (strip) {
       const { s, x } = exitCoordinates(m.x, m.z);
@@ -1194,21 +1206,20 @@ export class Rides {
         movedSafely = false;
       }
     }
-    if (openShore && water) {
-      if (m.z < SHORE.top + 4 && !water.hullsClear(r, m)) {
-        _waterFrom.x = x0; _waterFrom.z = z0; _waterFrom.heading = h0;
-        if (water.hullsClear(r, _waterFrom)) {
+    if (shoreWater) {
+      if (m.z < SHORE.top + 4 && !shoreWater.hullsClear(r, m)) {
+        if (shoreWater.hullsClear(r, _waterFrom)) {
           m.x = x0; m.z = z0; m.heading = h0; m.speed = m.slip = 0; m.drift = false;
           movedSafely = false;
         }
       }
-      if (this.wantOut && water.requestExit(r, this.carExit(r), this.now)) return;
-      if (water.accepted(r, this.now, c.brake ? 0 : c.throttle)) return;
+      if (this.wantOut && shoreWater.requestExit(r, this.carExit(r), this.now)) return;
+      if (shoreWater.accepted(r, this.now, c.brake ? 0 : c.throttle)) return;
     }
     const hit = this.impact;
-    if (!water?.owns(r) && movedSafely && this.reportCrash && (hit.nx || hit.nz)) {
+    if (!water?.owns(r) && movedSafely && this.reportCrash) {
       const { target, x, z, dx, dz, push } = this.contacts[hit.circle];
-      if (target) {
+      if (!railBeforeSettle && (hit.nx || hit.nz) && target) {
         // A second collider may have moved the same circle. Use the chosen collider's contact and relative speed.
         const length = Math.sqrt(push);
         const nx = dx / length, nz = dz / length;
@@ -1221,7 +1232,7 @@ export class Rides {
         hit.nx = nx; hit.nz = nz;
         hit.x = x - nx * m.spec.wide; hit.z = z - nz * m.spec.wide;
         this.crashEffects.impact(r, target, hit);
-      }
+      } else if (railHit) this.crashEffects.impact(r, "town", railHit);
     }
     if (water?.owns(r)) {
       const s = r.sus, ease = Math.max(0, 1 - 14 * dt);
@@ -1254,7 +1265,7 @@ export class Rides {
     if (this.waitingForTraffic && !this.yieldTold) { this.yieldTold = true; host.waiting(); }
     // and if, backing and turning, it still has not left the spot after a good while of trying: back onto the street
     // by itself (nobody is ever left boxed in between a wall and a bench)
-    if (Math.hypot(m.x - this.pushAt.x, m.z - this.pushAt.z) > 2.2 || turning) { this.pushAt.x = m.x; this.pushAt.z = m.z; this.pushAt.h = m.heading; this.pushT = 0; }
+    if (railHit || Math.hypot(m.x - this.pushAt.x, m.z - this.pushAt.z) > 2.2 || turning) { this.pushAt.x = m.x; this.pushAt.z = m.z; this.pushAt.h = m.heading; this.pushT = 0; }
     else if (Math.abs(c.throttle) > 0.5 && !c.brake && gap > m.spec.half + CAR.clear + 1 && !queued) this.pushT += dt;
     // truly wedged: after a moment it is set free gently, gliding to the nearest clear place with room to drive off
     // (nothing fades, nothing jumps); and if there is none in reach, onto the street as before

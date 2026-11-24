@@ -1,14 +1,15 @@
 import { Vector3, type Group } from "three";
 import type { Ambient } from "../ambient";
-import { BAY, floorY, POOLS, poolAt, sandY, SEA_LEVEL, SHORE, waterY } from "../water";
+import { BAY, DECKS, floorY, POOLS, poolAt, sandY, SEA_LEVEL, SHORE, waterY } from "../water";
 import { TRAFFIC_LANES } from "../world/layout";
 import type { CarWaterPlan } from "../world/rides";
 import type { Colliders } from "../world/util";
 import { CAR_WATER, createCarWaterProbe, probeCarWater, wetDriveSettings } from "./carWater";
-import { CAR_REACH, type Controls, type WetDriveSettings } from "./drive";
+import { CAR_REACH, type Controls, type MotionImpact, type WetDriveSettings } from "./drive";
 import { CarWaterEffects, coughBeat, drainMotor, drainPitch, sputterMiss, type CarWaterEffectsHost } from "./carWaterEffects";
 import { townCarWaterGround, type townGround } from "./ground";
 import type { Ride } from "./Rides";
+import { CONVERTIBLE_BUMPER } from "./shapes";
 
 type Point = { x: number; z: number };
 type Pose = Point & { heading: number };
@@ -43,6 +44,13 @@ const mixPose = (out: Pose, a: Pose, b: Pose, k: number) => {
   out.heading = a.heading + angle(b.heading - a.heading) * k;
 };
 const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.z - b.z);
+
+function onDryDeck({ x, z }: Point) {
+  for (const d of DECKS) {
+    if ((d.y ?? 0) > SEA_LEVEL && x > d.x0 && x < d.x1 && z > d.z0 && z < d.z1) return true;
+  }
+  return false;
+}
 
 function reach(p: Pose, half: number, wide: number, x: number, z: number) {
   const s = Math.sin(p.heading), c = Math.cos(p.heading), dx = x - p.x, dz = z - p.z;
@@ -83,10 +91,53 @@ export class CarWaterClearance {
   private readonly shape: Shape = { ...emptyPose(), half: 0, wide: 0 };
   private readonly home = emptyPose();
   private readonly reservationBox = spareBox();
+  private readonly deckRails;
+  private readonly railImpact: MotionImpact = { into: 0, nx: 0, nz: 0, x: 0, z: 0, circle: 1 };
   private circle = false;
   private readonly personClear = (x: number, z: number, radius: number) => !this.hitsCircle(x, z, radius);
   private readonly trafficClear = (x: number, z: number, half: number, wide: number) => !this.hitsBox(x, z, half + 0.12, wide + 0.12, Math.PI / 2);
-  constructor(private readonly scene: CarWaterScene) {}
+  constructor(private readonly scene: CarWaterScene) {
+    this.deckRails = scene.colliders.boxes.filter(b => b.deckRail);
+  }
+
+  /** Sweep the full body on the boards, including the corners outside the wheelbase circles. */
+  deckRailContact(from: Pose, r: Ride) {
+    if (!this.deckRails.length || !onDryDeck(from)) return;
+    const to = r.m, bumper = CONVERTIBLE_BUMPER;
+    const half = r.model ? to.spec.half : Math.max(to.spec.half, bumper.offset + bumper.depth / 2);
+    const wide = r.model ? to.spec.wide : Math.max(to.spec.wide, bumper.width / 2);
+    const dx = to.x - from.x, dz = to.z - from.z, turn = angle(to.heading - from.heading);
+    const radius = Math.hypot(half, wide);
+    const travel = Math.hypot(dx, dz) + Math.abs(turn) * radius;
+    if (!travel) return;
+    const steps = Math.ceil(travel / 0.05), a = this.shape;
+    a.half = half; a.wide = wide;
+    for (const rail of this.deckRails) {
+      if (Math.max(from.x, to.x) + radius <= rail.minX || Math.min(from.x, to.x) - radius >= rail.maxX
+        || Math.max(from.z, to.z) + radius <= rail.minZ || Math.min(from.z, to.z) - radius >= rail.maxZ) continue;
+      const x = (rail.minX + rail.maxX) / 2, z = (rail.minZ + rail.maxZ) / 2;
+      const railHalf = rail.maxZ - z, railWide = rail.maxX - x;
+      copyPose(a, from);
+      // A staged car already touching the rail can still use the stock solver to get clear.
+      if (overlaps(a, x, z, railHalf, railWide, 0)) continue;
+      for (let i = 1; i <= steps; i++) {
+        const k = i / steps;
+        a.x = from.x + dx * k; a.z = from.z + dz * k; a.heading = from.heading + turn * k;
+        if (!overlaps(a, x, z, railHalf, railWide, 0)) continue;
+        const s = Math.sin(a.heading), c = Math.cos(a.heading);
+        const gapX = Math.abs(a.x - x) - railWide - Math.abs(s) * half - Math.abs(c) * wide;
+        const gapZ = Math.abs(a.z - z) - railHalf - Math.abs(c) * half - Math.abs(s) * wide;
+        const hit = this.railImpact;
+        hit.nx = gapX >= gapZ ? Math.sign(a.x - x) : 0;
+        hit.nz = gapX < gapZ ? Math.sign(a.z - z) : 0;
+        const along = -Math.sign(hit.nx * s + hit.nz * c) * half;
+        const across = -Math.sign(hit.nx * c - hit.nz * s) * wide;
+        hit.x = clamp(a.x + s * along + c * across, rail.minX, rail.maxX);
+        hit.z = clamp(a.z + c * along - s * across, rail.minZ, rail.maxZ);
+        return hit;
+      }
+    }
+  }
 
   private hitsBox(x: number, z: number, half: number, wide: number, heading: number) {
     const a = this.shape;
@@ -374,6 +425,7 @@ export class CarWaterRecovery {
   private get admitted() { return this.spareCount >= (this.wet || this.returning ? 1 : 2); }
   open(r: Ride | null) { return r !== null && this.admitted && this.car === r && this.host.eligible(r) && this.host.driver(r); }
   hullsClear(r: Ride, pose: Pose) { return this.host.clearance.hulls(r, pose); }
+  deckRailContact(from: Pose, r: Ride) { return this.host.clearance.deckRailContact(from, r); }
   usesChassis(r: Ride) {
     return this.owns(r) || this.open(r) && (this.probe.centre.floor !== 0 || this.probe.pitch !== 0);
   }
