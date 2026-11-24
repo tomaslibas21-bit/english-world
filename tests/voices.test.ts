@@ -17,7 +17,7 @@ describe("voice ids", () => {
     expect(ambientVoice("f", false)).toBe(AMBIENT_VOICES.f);
     expect(audioDir(false)).toBe("audio/");
   });
-  it("v2 gives every character a voice of their own and the coach the learner's gender", () => {
+  it("v2 gives ordinary characters their own voices and coaches the learner's gender", () => {
     expect(npcVoice(NPCS.mia, true)).toBe("g_mia");
     expect(coachVoice("m", true)).toBe("g_coach_m");
     expect(coachVoice("f", true)).toBe("g_coach_f");
@@ -25,6 +25,14 @@ describe("voice ids", () => {
     expect(coachVoices(true)).toEqual(["g_coach_f", "g_coach_m"]);
     expect(ambientVoice("m", true)).toBe("g_amb_m");
     expect(audioDir(true)).toBe("audio-v2/");
+  });
+  it("uses the keeper's ambient voice and pace in both voice sets", () => {
+    const keeper = NPCS.lighthouse_keeper;
+    expect(npcVoice(keeper, true)).toBe("g_amb_m");
+    expect(npcVoice(keeper, false)).toBe("am_adam");
+    expect(keeper.speed).toBe(1);
+    expect(CAST[keeper.id]).toBe(AMBIENT.m);
+    expect(roleFor(npcVoice(keeper, true))?.voice).toBe("Achird");
   });
 });
 

@@ -55,6 +55,7 @@ export const META: SituationMeta[] = [
   {"id":"x01-pool-hall","bonus":true,"song":"","songTitle":"","title":{"en":"Call Your Shot","lt":"Paskelbk smūgį"},"topic":{"en":"At the pool hall","lt":"Biliardo salėje"},"chapter":9,"order":8,"location":"pool-hall","npc":"tina","mode":"talk","goal":"Pasišnekėk su Tina: pasakyk, ar žaidi biliardą, prisistatyk ir pasirink – vienspalviai ar dryžuoti. Tada sužaiskite partiją.","intro":"„The Corner Pocket“ – nedidelė biliardo salė Ąžuolų alėjoje. Šeimininkė Tina kreiduoja lazdą prie stalo ir pamoja tau prieiti."},
   {"id":"x02-photo-walk","bonus":true,"song":"","songTitle":"","title":{"en":"Photo Walk","lt":"Fotografavimo žygis"},"topic":{"en":"A tourist's photo book","lt":"Turistės nuotraukų knyga"},"chapter":9,"order":9,"location":"visitor-center","npc":"hana","mode":"talk","goal":"Pasišnekėk su Hana ir padėk jai: nufotografuok dvylika dalykų mieste ir pasakyk, kas tai.","intro":"Hana – turistė su dideliu fotoaparatu. Ji stovi prie Lankytojų centro ir dairosi aplink, lyg ko ieškotų."},
   {"id":"x03-ask-the-way","bonus":true,"song":"","songTitle":"","title":{"en":"Ask the Way","lt":"Paklausk kelio"},"topic":{"en":"On the street","lt":"Gatvėje"},"chapter":9,"order":10,"location":"town-square","npc":"earl","mode":"talk","goal":"Paklausk Earlo, kaip nueiti į vieną vietą mieste, ir eik pagal jo nurodymus.","intro":"Earlas visą gyvenimą gyvena Maple Harbor. Jis stovi aikštės kampe ir mielai padeda praeiviams."},
+  {"id":"x05-lighthouse-keeper","bonus":true,"song":"","songTitle":"","title":{"en":"A Visit to the Lighthouse","lt":"Viešnagė švyturyje"},"topic":{"en":"Life at the lighthouse","lt":"Gyvenimas prie švyturio"},"chapter":9,"order":12,"location":"lighthouse","npc":"lighthouse_keeper","mode":"talk","goal":"Paklausk prižiūrėtojo apie gyvenimą saloje, jo darbą ir audrą. Priimk raštelį atminimui.","intro":"Prie namelio durų stovi švyturio prižiūrėtojas. Šalia – laisvas suolas."},
 ];
 
 export const LOAD: Record<string, () => Promise<SituationDef>> = {
@@ -111,4 +112,5 @@ export const LOAD: Record<string, () => Promise<SituationDef>> = {
   "x01-pool-hall": () => import("./x01-pool-hall").then((m) => m.default),
   "x02-photo-walk": () => import("./x02-photo-walk").then((m) => m.default),
   "x03-ask-the-way": () => import("./x03-ask-the-way").then((m) => m.default),
+  "x05-lighthouse-keeper": () => import("./x05-lighthouse-keeper").then((m) => m.default),
 };

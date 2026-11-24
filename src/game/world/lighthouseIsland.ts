@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { KEEPER_LOOK } from "../../content/keeper";
 import { createCharacter } from "../characters";
 import { addIslandTower, addLighthouse } from "./lighthouseTower";
 import { buoy, mums } from "./maple";
@@ -227,8 +228,7 @@ export function buildLighthouseIsland(island: IslandPlan) {
   const gull = new THREE.Mesh(colourMerge(bird), material);
   gull.name = "lighthouse-island-gull";
 
-  const ch = createCharacter({ female: false, skin: "#d3a07f", hair: { style: "short", color: "#bfc1be" },
-    acc: ["beard"], top: "#284c59", bottom: "#71604e", shoes: "#374548", height: 1.02, build: 1.08, face: { lines: true } });
+  const ch = createCharacter({ female: false, ...KEEPER_LOOK });
   ch.root.name = "lighthouse-keeper";
   ch.root.position.set(keeper.x, y, keeper.z);
   ch.root.rotation.y = Math.atan2(keeper.approach.x - keeper.x, keeper.approach.z - keeper.z);

@@ -52,6 +52,17 @@ it("sends one anonymous game:left per unfinished run and includes it in the hide
     state().setConv({ stepProgress: { step: 6, of: 8 } });
     page.dispatchEvent(new Event("pagehide"));
     expect(events()).toEqual([first, hidden, { section: "light", sit: "closed", step: 6, of: 8 }]);
+
+    const keeper = "x05-lighthouse-keeper";
+    const keeperRuns = () => readPlayStats(state().progress).games.keeper;
+    const before = keeperRuns() ?? 0;
+    begin(keeper, 5);
+    state().setConv({ stepId: "life" });
+    state().setConv({ stepId: "light" });
+    state().setConv({ active: false });
+    expect(keeperRuns()).toBe(before + 1);
+    begin(keeper, 5);
+    expect(keeperRuns()).toBe(before + 2);
   } finally {
     vi.unstubAllGlobals();
     vi.useRealTimers();

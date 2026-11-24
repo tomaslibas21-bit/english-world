@@ -363,7 +363,7 @@ function MapPanel({ close }: { close: () => void }) {
                 <button className="btn soft small" onClick={() => { close(); game?.guideToLighthouse?.(); }}><Icon name="walk" size={17} /> Nuvesk mane</button>
               </div>
             )}
-            {sel && LOCATIONS[sel] && (
+            {sel && LOCATIONS[sel] && !(island && sel === "lighthouse") && (
               <div>
                 <h3 className="place-title"><span className="place-ico"><Icon name={locIcon(sel)} size={22} /></span>{LOCATIONS[sel].name}</h3>
                 <div style={{ color: "var(--ink-soft)", marginBottom: 10 }}>{placeLt(sel)}</div>

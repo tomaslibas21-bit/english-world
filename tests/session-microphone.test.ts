@@ -73,6 +73,22 @@ function hidden(value: boolean) {
 }
 
 describe("the scene card", () => {
+  it("uses the keeper's return greeting after a completion", async () => {
+    const id = "x05-lighthouse-keeper";
+    await loadSituation(id);
+    const hooks = { npcTalk() {}, onEvent() {}, onEnd() {} };
+    session.close();
+    session = new Session(id, hooks);
+    expect(session.conv.start().lines[0].lineId).toBe("k_welcome");
+    session.close();
+    session = new Session(id, hooks);
+    expect(session.conv.start().lines[0].lineId).toBe("k_welcome");
+    session.close();
+    useStore.getState().updateProgress((p) => { p.sits[id].completions = 1; });
+    session = new Session(id, hooks);
+    expect(session.conv.start().lines[0].lineId).toBe("k_again");
+  });
+
   it("the person's first line waits for it, and starts after a few seconds if it stays open", async () => {
     const begin = session.begin();
     expect(useStore.getState().conv.introOpen).toBe(true);
