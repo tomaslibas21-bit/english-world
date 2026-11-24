@@ -10,6 +10,8 @@ import { leafShape } from "./maple";
 import { floorMaterial, floorColor } from "./styled";
 import { makeCue, TableView, TABLE_X, TABLE_Z, TINA_HOME } from "../billiards/table";
 import { rack } from "../billiards/rules";
+import { Ledges } from "../ledges";
+import { Hop } from "../movement";
 
 /** `ax/az`: where the player stands to talk (the walk to them, the guidance trail and the situation picker all end
  *  there), when that is not simply in front of the person: across a table, or across a counter, 0.6 m in front of it
@@ -20,6 +22,7 @@ export interface Interior {
   id: string;
   group: THREE.Group;
   colliders: Colliders;
+  ledges: Ledges;
   w: number; d: number;
   exit: { x: number; z: number };
   spawn: { x: number; z: number; rot: number };
@@ -130,12 +133,12 @@ function room(id: string, w: number, d: number, floor: string, wall: string, bui
   M.add("front", wm, boxGeo(w / 2 - gap / 2, 0.9, 0.3, -(w / 4 + gap / 4), 0.45, d / 2 + 0.15), false);
   M.add("front", wm, boxGeo(w / 2 - gap / 2, 0.9, 0.3, (w / 4 + gap / 4), 0.45, d / 2 + 0.15), false);
   M.add("front-top", base, boxGeo(w + 0.6, 0.12, 0.4, 0, 0.95, d / 2 + 0.15), false);
-  col.addBox(0, -d / 2 - 0.3, w + 2, 0.6);
-  col.addBox(-w / 2 - 0.3, 0, 0.6, d + 2);
-  col.addBox(w / 2 + 0.3, 0, 0.6, d + 2);
-  col.addBox(-(w / 4 + gap / 4), d / 2 + 0.3, w / 2 - gap / 2, 0.6);
-  col.addBox((w / 4 + gap / 4), d / 2 + 0.3, w / 2 - gap / 2, 0.6);
-  col.addBox(0, d / 2 + 1.4, gap + 2, 0.6); // beyond the exit mat
+  col.addBox(0, -d / 2 - 0.3, w + 2, 0.6, "edge");
+  col.addBox(-w / 2 - 0.3, 0, 0.6, d + 2, "edge");
+  col.addBox(w / 2 + 0.3, 0, 0.6, d + 2, "edge");
+  col.addBox(-(w / 4 + gap / 4), d / 2 + 0.3, w / 2 - gap / 2, 0.6, "edge");
+  col.addBox((w / 4 + gap / 4), d / 2 + 0.3, w / 2 - gap / 2, 0.6, "edge");
+  col.addBox(0, d / 2 + 1.4, gap + 2, 0.6, "edge"); // beyond the exit mat
   // exit mat
   M.add("exit-mat", mat("#b5452f"), boxGeo(2.2, 0.03, 1.2, 0, 0.015, d / 2 - 0.4), false);
   g.add(outside(w, d));
@@ -148,7 +151,9 @@ function room(id: string, w: number, d: number, floor: string, wall: string, bui
   // its picture) stands there
   const moved = THEME.roomSpots[id];
   if (moved) npcs = npcs.map((n) => moved[n.npc] ? { ...n, ...moved[n.npc] } : n);
-  return { id, group: g, colliders: col, w, d, exit: { x: 0, z: d / 2 - 0.2 }, spawn: { x: 0, z: d / 2 - 1.6, rot: Math.PI }, npcs, warm: opts.warm, update };
+  const beside: [number, number][] = npcs.flatMap(({ x, z, ax, az }) => ax !== undefined && az !== undefined ? [[x, z], [ax, az]] : [[x, z]]);
+  const ledges = Ledges.build(g, col, { beside, maxTop: Hop.PEAK });
+  return { id, group: g, colliders: col, ledges, w, d, exit: { x: 0, z: d / 2 - 0.2 }, spawn: { x: 0, z: d / 2 - 1.6, rot: Math.PI }, npcs, warm: opts.warm, update };
 }
 
 // ---------------------------------------------------------------------------
@@ -157,7 +162,7 @@ function room(id: string, w: number, d: number, floor: string, wall: string, bui
 function counter(c: Ctx, x: number, z: number, w: number, d: number, color: string, top = "#f2efe8") {
   c.M.add("counter-" + color, mat(color), boxGeo(w, 1.0, d, x, 0.5, z));
   c.M.add("counter-top-" + top, mat(top), boxGeo(w + 0.12, 0.08, d + 0.12, x, 1.04, z));
-  c.col.addBox(x, z, w, d);
+  c.col.addBox(x, z, w, d, "counter");
 }
 function shelf(c: Ctx, x: number, z: number, w: number, h: number, color: string, goods: string[], rot = 0, depth = 0.5) {
   c.M.add("shelf-" + color, mat(color), boxGeo(w, h, depth, 0, h / 2, 0, 0).rotateY(rot).translate(x, 0, z));
@@ -285,7 +290,7 @@ function desk(c: Ctx, x: number, z: number, rot = 0) {
   c.M.add("screen", mat("#7fb3d5", { emissive: "#2c4f66" }), boxGeo(0.64, 0.38, 0.02, 0, 1.08, -0.17).rotateY(rot).translate(x, 0, z), false);
   c.M.add("chair-office", mat("#2d3a4a"), boxGeo(0.5, 0.1, 0.5, 0, 0.5, 0.65).rotateY(rot).translate(x, 0, z));
   c.M.add("chair-office", mat("#2d3a4a"), boxGeo(0.5, 0.6, 0.08, 0, 0.85, 0.9).rotateY(rot).translate(x, 0, z));
-  c.col.addBox(x, z, Math.abs(Math.cos(rot)) * 1.6 + Math.abs(Math.sin(rot)) * 0.8, Math.abs(Math.sin(rot)) * 1.6 + Math.abs(Math.cos(rot)) * 0.8);
+  c.col.addBox(x, z, Math.abs(Math.cos(rot)) * 1.6 + Math.abs(Math.sin(rot)) * 0.8, Math.abs(Math.sin(rot)) * 1.6 + Math.abs(Math.cos(rot)) * 0.8, "counter");
   c.col.addCircle(x + Math.sin(rot) * 0.75, z + Math.cos(rot) * 0.75, 0.3);
 }
 function sign(c: Ctx, text: string, x: number, y: number, z: number, w: number, bg: string, fg: string, rotY = 0) {
@@ -560,7 +565,7 @@ function deskS(c: Ctx, S: Smalls, x: number, z: number, rot: number, chair = "#2
   S.add(P(boxGeo(0.5, 0.55, 0.07, 0, 0.82, 0.94)), chair);
   S.add(P(cylGeo(0.03, 0.03, 0.42, 0, 0.22, 0.68, 6)), "#3a3d42");
   S.add(P(cylGeo(0.26, 0.26, 0.04, 0, 0.03, 0.68, 10)), "#3a3d42");
-  c.col.addBox(x, z, Math.abs(Math.cos(rot)) * 1.6 + Math.abs(Math.sin(rot)) * 0.8, Math.abs(Math.sin(rot)) * 1.6 + Math.abs(Math.cos(rot)) * 0.8);
+  c.col.addBox(x, z, Math.abs(Math.cos(rot)) * 1.6 + Math.abs(Math.sin(rot)) * 0.8, Math.abs(Math.sin(rot)) * 1.6 + Math.abs(Math.cos(rot)) * 0.8, "counter");
   c.col.addCircle(x + Math.sin(rot) * 0.78, z + Math.cos(rot) * 0.78, 0.3);
 }
 /** The strip over the bank's windows: "Teller 1 · 2 · 3" over the three panes (x −3.3, 0, 3.3; the strip is 9.9 m). */
@@ -945,7 +950,7 @@ const B: Record<string, () => Interior> = {
     for (let i = -3; i <= 3; i++) c.M.add("queue-post", mat("#c9a227"), cylGeo(0.05, 0.08, 1, i * 1.2, 0.5, 0.8, 8));
     c.M.add("queue-rope", mat("#8a1f2a"), boxGeo(7.2, 0.06, 0.06, 0, 0.9, 0.8), false);
     c.col.addBox(0, 0.8, 7.4, 0.3);
-    c.M.add("form-desk", mat("#e6e2d6"), boxGeo(2, 1.1, 0.8, -6, 0.55, 2.5)); c.col.addBox(-6, 2.5, 2, 0.8);
+    c.M.add("form-desk", mat("#e6e2d6"), boxGeo(2, 1.1, 0.8, -6, 0.55, 2.5)); c.col.addBox(-6, 2.5, 2, 0.8, "counter");
     sign(c, "Harbor Bank · Since 1912", 0, 3.3, -c.d / 2 + 0.2, 4.6, "#1f4f8a", "#ffffff");
     plant(c, 7, -5, 1); plant(c, 7, 5, 0.9);
     // a carpet where people wait for a teller, the bank's seal in the floor by the door, the vault door and a clock
@@ -1331,9 +1336,9 @@ const B: Record<string, () => Interior> = {
     c.M.add("arch", mat("#c0c4c8"), boxGeo(0.25, 2.4, 1, 13.2, 1.2, -1));
     c.M.add("arch", mat("#c0c4c8"), boxGeo(0.25, 2.4, 1, 14.8, 1.2, -1));
     c.M.add("arch", mat("#c0c4c8"), boxGeo(1.85, 0.3, 1, 14, 2.4, -1));
-    c.M.add("conveyor", mat("#3a3f45"), boxGeo(1, 0.9, 5, 11.6, 0.45, -1)); c.col.addBox(11.6, -1, 1, 5);
+    c.M.add("conveyor", mat("#3a3f45"), boxGeo(1, 0.9, 5, 11.6, 0.45, -1)); c.col.addBox(11.6, -1, 1, 5, "counter");
     c.M.add("bin", mat("#8a939b"), boxGeo(0.7, 0.2, 0.5, 11.6, 1.0, -2.5));
-    c.col.addBox(13.2, -1, 0.3, 1); c.col.addBox(14.8, -1, 0.3, 1);
+    c.col.addBox(13.2, -1, 0.3, 1, "counter"); c.col.addBox(14.8, -1, 0.3, 1, "counter");
     sign(c, "Security", 14, 3.6, -c.d / 2 + 0.2, 2.6, "#34495e", "#ffffff");
     // gate
     counter(c, 18.5, -8.4, 3, 0.9, "#1d3f73", "#f2f5f8");
@@ -1387,7 +1392,7 @@ const B: Record<string, () => Interior> = {
       S.add(boxGeo(0.95, 0.34, 0.5, kx + 0.8, 1.23, kz), "#dff3fb");
       for (let i = 0; i < 4; i++) S.add(boxGeo(0.16, 0.08, 0.2, kx + 0.47 + i * 0.22, 1.12, kz + 0.02), ["#d9a066", "#b8763a", "#e8c07a", "#8a4b3a"][i]);
       for (const s of [-1, 1]) S.add(cylGeo(0.035, 0.035, 2.9, kx + s * 1.5, 1.45, kz - 0.55, 6), "#3a3d42");
-      c.col.addBox(kx, kz - 0.1, 3.3, 1.2);
+      c.col.addBox(kx, kz - 0.1, 3.3, 1.2, "counter");
       sign(c, "Harbor Coffee", kx, 2.62, kz - 0.5, 2.9, "#1f6f78", "#fff8e8");
     }
     table(c, 12.6, 9.5, { round: true, chairs: 2, cloth: "#f2efe8", chairColor: "#2b5d8a", from: 0 });
@@ -1527,7 +1532,7 @@ const B: Record<string, () => Interior> = {
     windowBack(c, 3, 3.4); windowBack(c, 7.5, 2.2);
     sofa(c, 5, 1.8, "#9aa5ad", Math.PI);
     table(c, 5, -1.2, { cloth: "#e8e2d6", chairs: 0, w: 1.2, d: 0.7 });
-    c.M.add("kitchen", mat("#f4f4f4"), boxGeo(4, 1, 0.7, 5, 0.5, -6.6)); c.col.addBox(5, -6.6, 4, 0.7);
+    c.M.add("kitchen", mat("#f4f4f4"), boxGeo(4, 1, 0.7, 5, 0.5, -6.6)); c.col.addBox(5, -6.6, 4, 0.7, "counter");
     c.M.add("fridge", mat("#e6e9ee"), boxGeo(0.9, 2, 0.8, 8.6, 1, -6.5)); c.col.addBox(8.6, -6.5, 0.9, 0.8);
     c.M.add("radiator", mat("#ffffff"), boxGeo(1.6, 0.7, 0.2, 0.5, 0.45, -6.8));
     c.M.add("boxes", mat("#c8a27a"), boxGeo(0.8, 0.6, 0.6, 1, 0.3, 4.5)); c.col.addBox(1, 4.5, 0.8, 0.6);
@@ -1569,7 +1574,7 @@ const B: Record<string, () => Interior> = {
     for (let i = 0; i < 5; i++) M.add("flowers", mat(["#e84a5f", "#ffd166", "#f7a072"][i % 3], { flat: true }), new THREE.SphereGeometry(0.07, 6, 4).translate(2.52 + (i % 3) * 0.08, 1.2 + (i % 2) * 0.06, -1.55 + (i % 2) * 0.08), false);
     M.build(props, { name: DINNER_PROPS });
     c.g.add(props);
-    c.M.add("kitchen", mat("#f4f4f4"), boxGeo(4, 1, 0.7, 5.2, 0.5, -5.3)); c.col.addBox(5.2, -5.3, 4, 0.7);
+    c.M.add("kitchen", mat("#f4f4f4"), boxGeo(4, 1, 0.7, 5.2, 0.5, -5.3)); c.col.addBox(5.2, -5.3, 4, 0.7, "counter");
     c.M.add("stove", mat("#2b2b2b"), boxGeo(0.9, 0.05, 0.6, 4.2, 1.03, -5.3), false);
     sofa(c, -5, 2.5, "#b5452f", 0, 2.4);
     rug(c, -5, 1.2, 3.4, 2.4, "#e8c07a");
@@ -1656,7 +1661,7 @@ const B: Record<string, () => Interior> = {
     // the desk: a laptop with a spreadsheet (turned to her), the printed agenda and a pen, a mug
     c.M.add("desk", mat("#e9e4da"), boxGeo(1.6, 0.06, 0.8, -8.9, 0.75, 1.95));
     for (const s of [-0.72, 0.72]) c.M.add("desk-leg", mat("#7a7a7a"), boxGeo(0.06, 0.74, 0.7, -8.9 + s, 0.37, 1.95));
-    c.col.addBox(-8.9, 1.95, 1.6, 0.8);
+    c.col.addBox(-8.9, 1.95, 1.6, 0.8, "counter");
     c.M.add("laptop", mat("#9aa5ad"), boxGeo(0.4, 0.025, 0.28, -8.95, 0.79, 1.82), false);
     c.M.add("laptop", mat("#9aa5ad"), boxGeo(0.4, 0.26, 0.02, 0, 0, 0).rotateX(0.25).translate(-8.95, 0.92, 1.97), false);
     c.M.add("screen", mat("#e8f1e8", { emissive: "#3a5a46" }), boxGeo(0.36, 0.22, 0.005, 0, 0, 0).rotateX(0.25).translate(-8.95, 0.92, 1.955), false);
@@ -1726,7 +1731,7 @@ const B: Record<string, () => Interior> = {
     for (const [tx, tz] of [[-5, -3.5], [0, -3.5], [5, -3.5], [-5, 1], [5, 1]]) c.M.add("candle", mat("#fff3c4", { emissive: "#c99a2e" }), cylGeo(0.04, 0.04, 0.18, tx, 0.88, tz, 6), false);
     counter(c, 0, 3.8, 5, 0.9, "#1d4e6b", "#eaf3f7");
     // the kitchen along the east wall (advanced song P28): a steel counter with the stove, Chef Whitaker and Mia
-    c.M.add("kitchen", mat("#c9ced3"), boxGeo(0.8, 1, 3.6, 8.5, 0.5, -0.8)); c.col.addBox(8.5, -0.8, 0.8, 3.6);
+    c.M.add("kitchen", mat("#c9ced3"), boxGeo(0.8, 1, 3.6, 8.5, 0.5, -0.8)); c.col.addBox(8.5, -0.8, 0.8, 3.6, "counter");
     c.M.add("stove", mat("#2b2b2b"), boxGeo(0.66, 0.05, 1.3, 8.5, 1.03, -1.7), false);
     for (const [pz, pc] of [[-2.05, "#9aa5ad"], [-1.35, "#b86b4b"]] as [number, string][]) c.M.add("pot-" + pc, mat(pc), cylGeo(0.2, 0.17, 0.24, 8.5, 1.17, pz, 10), false);
     for (const pz of [-0.2, 0.25, 0.7]) c.M.add("plate", mat("#ffffff"), cylGeo(0.17, 0.17, 0.02, 8.4, 1.02, pz, 12), false);
@@ -1801,11 +1806,11 @@ const B: Record<string, () => Interior> = {
         const col = fruit[(k * 3 + Math.floor(i / 8)) % fruit.length];
         c.M.add("goods-" + col, mat(col, { flat: true }), new THREE.SphereGeometry(0.13, 6, 5).translate(-9.5 + (i % 4) * 0.33, 0.9, pz - 0.95 + Math.floor(i / 4) * 0.33), false);
       }
-      c.col.addBox(-9, pz, 1.4, 2.2);
+      c.col.addBox(-9, pz, 1.4, 2.2, "counter");
     });
     c.M.add("counter-#8a5a3c", mat("#8a5a3c"), boxGeo(1.4, 0.8, 2.2, -9, 0.4, 5));
     for (let i = 0; i < 8; i++) c.M.add("bread-" + (i % 2), mat(["#c68642", "#e0a45e"][i % 2], { flat: true }), new THREE.CapsuleGeometry(0.11, 0.34, 3, 6).rotateX(Math.PI / 2).translate(-9.4 + (i % 2) * 0.7, 0.93, 4.2 + Math.floor(i / 2) * 0.5), false);
-    c.col.addBox(-9, 5, 1.4, 2.2);
+    c.col.addBox(-9, 5, 1.4, 2.2, "counter");
     sign(c, "Fresh Produce · Bakery", -9, 2.9, 2.6, 2.8, "#23704a", "#ffffff");
     // two aisles (shelves back to back)
     const goodsA = ["#e45b4f", "#f2c14e", "#4a7bb7", "#6fbf73", "#f28c28", "#b5838d", "#ffffff"];

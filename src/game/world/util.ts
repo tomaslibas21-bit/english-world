@@ -237,17 +237,25 @@ export function rand(seed: number) {
   };
 }
 
-/** `split`: low enough to jump onto; for the player its pieces (ledges.ts) stand in for it. */
-export interface AABB { minX: number; minZ: number; maxX: number; maxZ: number; tag?: string; split?: boolean }
+/** `split`: replaced by height-aware pieces for the player. `vault`: the top of a sparse or instanced prop,
+ *  supplied by its builder when the height sampler cannot reliably read it. It gives clearance only. */
+export interface AABB { minX: number; minZ: number; maxX: number; maxZ: number; tag?: string; split?: boolean; vault?: number }
+export interface CircleCollider { x: number; z: number; r: number; split?: boolean; vault?: number; npc?: string }
 
 /** 2D (XZ) colliders: axis-aligned boxes and circles. */
 export class Colliders {
   boxes: AABB[] = [];
-  circles: { x: number; z: number; r: number; split?: boolean }[] = [];
+  circles: CircleCollider[] = [];
   addBox(cx: number, cz: number, w: number, d: number, tag?: string) {
-    this.boxes.push({ minX: cx - w / 2, maxX: cx + w / 2, minZ: cz - d / 2, maxZ: cz + d / 2, tag });
+    const b: AABB = { minX: cx - w / 2, maxX: cx + w / 2, minZ: cz - d / 2, maxZ: cz + d / 2, tag };
+    this.boxes.push(b);
+    return b;
   }
-  addCircle(x: number, z: number, r: number) { this.circles.push({ x, z, r }); }
+  addCircle(x: number, z: number, r: number) {
+    const c: CircleCollider = { x, z, r };
+    this.circles.push(c);
+    return c;
+  }
   /** Roofs low and solid enough to stand on (a bus shelter's, a market stall's), as the town lists them: where
    *  ledges.ts reads a roof's own height for someone who can jump up there. No wall to anyone. */
   roofs: { minX: number; minZ: number; maxX: number; maxZ: number }[] = [];

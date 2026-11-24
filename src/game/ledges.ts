@@ -6,16 +6,14 @@
 // only, into pieces with a height: the low ones can be landed on and walked off, the rest of it (a bench's back) stays
 // a wall. One that is not, but is mostly low enough to stand on at all (tops up to CLIMB, a car's roof), is split into
 // pieces with their heights: one jumps from one to the next (the ground, a car's hood, its roof); what in it is taller
-// stays a wall. How high a jump goes is the jump's own business (movement.ts Hop): a piece only has its height.
-// Everything else is left exactly
-// as it is: buildings, the invisible bounds and the sea have no low cells or too few; people are colliders of their own
-// with nothing built in them; café tables and what the camera's field holds solid (a gazebo, a kiosco) are left out by
-// name; and what stands by someone one talks to (their counter, their stall) keeps the old, lower limit (LAND), so
-// nobody stands on a counter in front of its clerk. Way-finding, the passers-by and the camera keep the original ground
-// plan.
+// stays a wall. Narrow barriers and small posts can have a clearance height without offering a place to land.
+// How high a jump goes is the jump's own business (movement.ts Hop). Buildings, bounds, people and what the
+// camera's field holds solid (a gazebo, a kiosco) keep the ground plan. What stands by someone one talks to keeps
+// the lower limit (LAND). Way-finding, passers-by and the camera use the original ground plan.
 import * as THREE from "three";
-import type { Colliders } from "./world/util";
+import type { AABB, Colliders } from "./world/util";
 import { triOverlapsRect } from "./occlusion";
+import { Hop } from "./movement";
 
 /** About knee or bench height (m): what a jump from a standstill lands on with room to spare, and the most that can
  *  be stood on beside someone one talks to. */
@@ -52,16 +50,16 @@ const EDGE = 0.1;
 const GROW = 0.5;
 
 /** `wall`: never stood on, a wall to feet below its top (what is too high, or has no room over it under a roof).
+ *  A finite wall top is clearance only: a rail, a bollard, or the wall beneath a deck.
  *  `deck`: a roof one can stand on (a shelter's, a stall's): no wall to anyone, walked under and jumped up through,
  *  landed on from above. */
 export interface Piece { minX: number; maxX: number; minZ: number; maxZ: number; top: number; wall?: boolean; deck?: boolean }
-type Box = { minX: number; maxX: number; minZ: number; maxZ: number; tag?: string; split?: boolean };
-type Circle = { x: number; z: number; r: number; split?: boolean };
+type Box = Pick<AABB, "minX" | "maxX" | "minZ" | "maxZ">;
 
 export interface LedgeOptions {
   /** Leave this object (and what it holds) out: what moves. */
   skip?: (o: THREE.Object3D) => boolean;
-  /** Never split a collider that holds one of these points (café tables' seats). */
+  /** Never split a collider that holds one of these points. */
   keep?: [number, number][];
   /** Never split a collider over a spot this says is solid and tall (the camera's field: a gazebo, a kiosco). */
   tall?: (x: number, z: number) => boolean;
@@ -70,11 +68,13 @@ export interface LedgeOptions {
   /** What is thin and looked through (a stall's awning, a palapa's thatch): never a top, only a roof over what stands
    *  under it. */
   thin?: (o: THREE.Object3D) => boolean;
+  /** A lower ceiling on climbable scenery in rooms. */
+  maxTop?: number;
 }
 
 /** What was read of one collider (for the dev tools and the tests): where it is, whether it was split, the lowest and
  *  the highest top one can stand on in it, and how many of its cells are walls. */
-export interface Thing { x: number; z: number; w: number; d: number; tag?: string; split: boolean; cap: number; low: number; high: number; walls: number; cells: number; decks: number }
+export interface Thing { x: number; z: number; w: number; d: number; tag?: string; split: boolean; cap: number; low: number; high: number; walls: number; cells: number; decks: number; vault?: number }
 
 export class Ledges {
   pieces: Piece[] = [];
@@ -156,12 +156,18 @@ export class Ledges {
    *  called with the rest of the work), so a town is walkable before this is done; until then nothing can be climbed. */
   static build(root: THREE.Object3D, col: Colliders, opts: LedgeOptions = {}, slice?: (next: () => void) => void): Ledges {
     const led = new Ledges();
-    // Skip registered pieces, buildings and what the town tags as the edge of where one walks (`edge`).
-    const boxes = (col.boxes as Box[]).filter((b) => !b.split && b.tag !== "building" && b.tag !== "edge" && Math.min(b.maxX - b.minX, b.maxZ - b.minZ) <= 4 && (b.maxX - b.minX) * (b.maxZ - b.minZ) <= 60);
-    const circles = (col.circles as Circle[]).filter((c) => c.r <= 4.5 && !(c as { npc?: string }).npc);
+    // Only eligible scenery enters the height sampler.
+    const maxTop = Math.min(opts.maxTop ?? CLIMB, CLIMB);
+    const besideTop = Math.min(maxTop, LAND);
+    const boxes = col.boxes.filter((b) => {
+      if (b.split || b.tag === "building" || b.tag === "edge" || b.tag === "town-edge" || b.tag === "sea" || b.tag === "counter") return false;
+      const w = b.maxX - b.minX, d = b.maxZ - b.minZ;
+      return Math.min(w, d) <= 4 && w * d <= 60;
+    });
+    const circles = col.circles.filter((c) => !c.split && c.r <= 4.5 && !c.npc);
     /** The roofs the town lists as ones to stand on (a shelter's, a stall's). */
     const listed = (col as { roofs?: Box[] }).roofs ?? [];
-    if (!boxes.length && !circles.length && !listed.length) return led;
+    if (!boxes.length && !circles.length && !listed.length) { led.ready = true; return led; }
     let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
     for (const b of listed) { x0 = Math.min(x0, b.minX); x1 = Math.max(x1, b.maxX); z0 = Math.min(z0, b.minZ); z1 = Math.max(z1, b.maxZ); }
     for (const b of boxes) { x0 = Math.min(x0, b.minX); x1 = Math.max(x1, b.maxX); z0 = Math.min(z0, b.minZ); z1 = Math.max(z1, b.maxZ); }
@@ -396,7 +402,7 @@ export class Ledges {
         const j = k * nx + i;
         // (where the roof lies on its own wall or post, that top is the roof's)
         const own = tops.get(j) ?? 0, d = filled.has(j) ? undefined : decks.get(j) ?? (own >= LOW && own <= CLIMB && roofs.get(j) === undefined ? own : undefined);
-        if (d === undefined || d > CLIMB || (overDeck.get(j) ?? Infinity) - d < HEAD || (shade.get(j) ?? Infinity) - d < HEAD) return 0;
+        if (d === undefined || d > maxTop || (overDeck.get(j) ?? Infinity) - d < HEAD || (shade.get(j) ?? Infinity) - d < HEAD) return 0;
         return d;
       };
       const split = (inside: (x: number, z: number) => boolean, ax: number, az: number, bx: number, bz: number, cap: number, note: Thing, ledge = false): boolean => {
@@ -472,7 +478,6 @@ export class Ledges {
         }
         note.cells = known;
         if (low < known * 0.5 && !covered) return false;
-        // rows of cells of a kind (a low top, or a wall) joined into pieces, the same rows joined down the collider
         // rows of cells of a kind (a top to stand on, a wall, a roof to stand on) joined into pieces, the same rows
         // joined down the collider. A wall under a roof one can stand on is only as high as the room under that roof
         // (to whoever stands on the roof it is no wall); elsewhere a wall has no top.
@@ -522,6 +527,32 @@ export class Ledges {
         return split(inside, ax, az, bx, bz, cap, note, ledge);
       };
       const kept = (inside: (x: number, z: number) => boolean) => !!opts.keep?.some(([x, z]) => inside(x, z));
+      // For thin rails the grid can miss the slats or resolve gaps as full-height walls. Use a single
+      // conservative barrier at the highest sampled point if the samples cover the length of the rail.
+      // Compact posts use the same rule. Builders can supply a height for sparse or instanced geometry.
+      const clearance = (inside: (x: number, z: number) => boolean, b: Box, cap: number, hint?: number) => {
+        const w = b.maxX - b.minX, d = b.maxZ - b.minZ;
+        const i0 = Math.floor((b.minX - x0) / CELL), i1 = Math.floor((b.maxX - x0) / CELL);
+        const k0 = Math.floor((b.minZ - z0) / CELL), k1 = Math.floor((b.maxZ - z0) / CELL);
+        if (opts.tall?.((b.minX + b.maxX) / 2, (b.minZ + b.maxZ) / 2)) return 0;
+        // A known prop may touch a building or its eaves at the edge of its footprint. The building
+        // still has its own full-height collider. The proxy only supplies clearance over the prop.
+        const limit = Math.min(FIRST, cap);
+        if (hint !== undefined) return hint > STEP && hint <= limit ? hint : 0;
+        let high = 0;
+        const spans = new Set<number>();
+        for (let k = k0; k <= k1; k++) for (let i = i0; i <= i1; i++) {
+          const x = x0 + (i + 0.5) * CELL, z = z0 + (k + 0.5) * CELL;
+          if (!inside(x, z)) continue;
+          if (opts.tall?.(x, z) || deckTop(i, k) > 0) return 0;
+          const t = cellTop(i, k);
+          if (t > limit) return 0;
+          high = Math.max(high, t);
+          if (t > STEP) spans.add(w >= d ? i : k);
+        }
+        return spans.size * CELL >= Math.max(w, d) / 4 ? high : 0;
+      };
+      const addVault = (b: Box, top: number) => led.add({ minX: b.minX, maxX: b.maxX, minZ: b.minZ, maxZ: b.maxZ, top, wall: true });
       const thing = (x: number, z: number, w: number, d: number, cap: number, tag?: string): Thing => {
         const t = { x, z, w, d, tag, split: false, cap, low: Infinity, high: 0, walls: 0, cells: 0, decks: 0 };
         led.things.push(t);
@@ -530,15 +561,33 @@ export class Ledges {
       for (const b of boxes) {
         const inside = (x: number, z: number) => x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ;
         // (by someone one talks to: no higher than a bench)
-        const cap = opts.beside?.some(([x, z]) => Math.hypot(x - Math.max(b.minX, Math.min(x, b.maxX)), z - Math.max(b.minZ, Math.min(z, b.maxZ))) < BESIDE) ? LAND : CLIMB;
+        const cap = opts.beside?.some(([x, z]) => Math.hypot(x - Math.max(b.minX, Math.min(x, b.maxX)), z - Math.max(b.minZ, Math.min(z, b.maxZ))) < BESIDE) ? besideTop : maxTop;
         const note = thing((b.minX + b.maxX) / 2, (b.minZ + b.maxZ) / 2, b.maxX - b.minX, b.maxZ - b.minZ, cap, b.tag);
-        if (!kept(inside) && fit(inside, b.minX, b.minZ, b.maxX, b.maxZ, cap, note, b.tag === "ledge")) b.split = note.split = true;
+        if (kept(inside)) continue;
+        const ledge = b.tag === "ledge";
+        const narrow = Math.min(note.w, note.d) <= 2 * CELL + 1e-6 && Math.max(note.w, note.d) >= 1;
+        const top = !ledge && (narrow || b.vault !== undefined) ? clearance(inside, b, cap, b.vault) : 0;
+        if (top) { addVault(b, top); note.vault = top; b.split = note.split = true; }
+        else if (b.vault === undefined && fit(inside, b.minX, b.minZ, b.maxX, b.maxZ, cap, note, ledge)) b.split = note.split = true;
       }
       for (const c of circles) {
         const inside = (x: number, z: number) => (x - c.x) ** 2 + (z - c.z) ** 2 <= c.r * c.r;
-        const cap = opts.beside?.some(([x, z]) => Math.hypot(x - c.x, z - c.z) < c.r + BESIDE) ? LAND : CLIMB;
+        const cap = opts.beside?.some(([x, z]) => Math.hypot(x - c.x, z - c.z) < c.r + BESIDE) ? besideTop : maxTop;
         const note = thing(c.x, c.z, c.r * 2, c.r * 2, cap);
-        if (!kept(inside) && fit(inside, c.x - c.r, c.z - c.r, c.x + c.r, c.z + c.r, cap, note)) c.split = note.split = true;
+        if (kept(inside)) continue;
+        const b = { minX: c.x - c.r, maxX: c.x + c.r, minZ: c.z - c.r, maxZ: c.z + c.r };
+        // A compact ground footprint can also be a taller, broad-topped prop on a post (a mailbox).
+        // Keep the normal top sampling for those above a plain jump.
+        const top = c.vault !== undefined ? clearance(inside, b, cap, c.vault)
+          : c.r <= 0.23 ? clearance(inside, b, Math.min(cap, Hop.PEAK + TOE)) : 0;
+        if (top) {
+          const mid = c.r / 2, side = Math.sqrt(c.r * c.r - mid * mid);
+          // Three strips approximate the circle using the same pieces as box colliders.
+          addVault({ ...b, minZ: c.z - mid, maxZ: c.z + mid }, top);
+          addVault({ minX: c.x - side, maxX: c.x + side, minZ: b.minZ, maxZ: c.z - mid }, top);
+          addVault({ minX: c.x - side, maxX: c.x + side, minZ: c.z + mid, maxZ: b.maxZ }, top);
+          note.vault = top; c.split = note.split = true;
+        } else if (c.vault === undefined && fit(inside, b.minX, b.minZ, b.maxX, b.maxZ, cap, note)) c.split = note.split = true;
       }
       // the listed roofs themselves: their tops, in rows of cells of a height joined down the roof
       for (const b of listed) {

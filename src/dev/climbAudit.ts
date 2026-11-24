@@ -36,7 +36,7 @@ export function climbAudit(col: Colliders, led: Ledges, bounds: Area, start: [nu
   const nx = Math.ceil((bounds.maxX + pad - x0) / c), nz = Math.ceil((bounds.maxZ + pad - z0) / c), N = nx * nz;
   const WALL = 1e9;
   // each cell: how high one stands there (the ground, a deck, a piece's top), or a wall
-  const h = new Float32Array(N), onPiece = new Uint8Array(N);
+  const h = new Float32Array(N), onPiece = new Uint8Array(N), barrier = new Float32Array(N);
   for (let k = 0; k < nz; k++) for (let i = 0; i < nx; i++) {
     const x = x0 + (i + 0.5) * c, z = z0 + (k + 0.5) * c;
     h[k * nx + i] = z < SHORE.limit ? WALL : floorY(x, z);
@@ -58,14 +58,25 @@ export function climbAudit(col: Colliders, led: Ledges, bounds: Area, start: [nu
   // (a roof one can stand on counts as that height: the way under it is left out, which only makes the walk smaller;
   // a wall under such a roof is under it)
   const sorted = [...led.pieces].sort((a, b) => Number(!!a.deck) - Number(!!b.deck));
-  for (const p of sorted) each(p.minX, p.minZ, p.maxX, p.maxZ, (j, x, z) => {
-    if (x < p.minX || x > p.maxX || z < p.minZ || z > p.maxZ) return;
-    if (p.deck) { h[j] = p.top; onPiece[j] = 1; return; }
-    if (h[j] === WALL) return;
-    if (p.wall || p.top === Infinity) { h[j] = WALL; return; }
-    if (!onPiece[j] || p.top > h[j]) h[j] = p.top;
-    onPiece[j] = 1;
-  });
+  for (const p of sorted) {
+    // A thin rail can fall between sample centres. Include the cells it touches.
+    const pad = p.wall && Number.isFinite(p.top) ? c / 2 : 0;
+    const ax = p.minX - pad, az = p.minZ - pad, bx = p.maxX + pad, bz = p.maxZ + pad;
+    each(ax, az, bx, bz, (j, x, z) => {
+      if (x < ax || x > bx || z < az || z > bz) return;
+      if (p.deck) { h[j] = p.top; onPiece[j] = 1; barrier[j] = 0; return; }
+      if (h[j] === WALL && !barrier[j]) return;
+      if (p.wall || p.top === Infinity) {
+        h[j] = WALL;
+        onPiece[j] = 0;
+        barrier[j] = Number.isFinite(p.top) ? Math.max(barrier[j], p.top) : 0;
+        return;
+      }
+      if (h[j] === WALL) return;
+      if (!onPiece[j] || p.top > h[j]) h[j] = p.top;
+      onPiece[j] = 1;
+    });
+  }
   const at = (x: number, z: number) => Math.floor((z - z0) / c) * nx + Math.floor((x - x0) / c);
   const NB = [-1, 1, -nx, nx, -nx - 1, -nx + 1, nx - 1, nx + 1];
 
@@ -81,14 +92,17 @@ export function climbAudit(col: Colliders, led: Ledges, bounds: Area, start: [nu
       const a = queue[head++], ha = h[a];
       if (stop?.[a]) return { seen, hit: true, queue, tail };
       const walk = ha < 0.2 ? STEP : SLOPE;
+      let byBarrier = false;
       for (const d of NB) {
         const b = a + d;
-        if (b < 0 || b >= N || seen[b] || h[b] === WALL) continue;
+        if (b < 0 || b >= N) continue;
         if (Math.abs((b % nx) - (a % nx)) > 1) continue;
+        if (barrier[b] > 0 && barrier[b] <= ha + gain) byBarrier = true;
+        if (seen[b] || h[b] === WALL) continue;
         if (h[b] <= ha + Math.max(walk, gain)) { seen[b] = 1; queue[tail++] = b; }
       }
-      // from up on something: a jump across to what is no higher than it reaches, over anything lower
-      if (far > 0 && gain > 0 && onPiece[a]) {
+      // A jump from a ledge or across a barrier can traverse cells that offer no landing.
+      if (far > 0 && gain > 0 && (onPiece[a] || byBarrier)) {
         const top = ha + gain, ai = a % nx, ak = (a - ai) / nx;
         let ah = 0, at2 = 0;
         stamp++;
@@ -97,11 +111,13 @@ export function climbAudit(col: Colliders, led: Ledges, bounds: Area, start: [nu
           const q = air[ah++];
           for (const d of NB) {
             const b = q + d;
-            if (b < 0 || b >= N || mark[b] === stamp || h[b] === WALL || h[b] > top) continue;
+            if (b < 0 || b >= N || mark[b] === stamp) continue;
+            const height = barrier[b] || h[b];
+            if (height === WALL || height > top) continue;
             const bi = b % nx, bk = (b - bi) / nx;
             if (Math.abs(bi - (q % nx)) > 1 || (bi - ai) ** 2 + (bk - ak) ** 2 > R * R) continue;
             mark[b] = stamp; air[at2++] = b;
-            if (!seen[b]) { seen[b] = 1; queue[tail++] = b; }
+            if (h[b] !== WALL && !seen[b]) { seen[b] = 1; queue[tail++] = b; }
           }
         }
       }
