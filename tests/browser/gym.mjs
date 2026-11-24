@@ -135,7 +135,7 @@ async function fixtureFor(page, manifests) {
   };
 }
 
-function installControls({ key, progress, recognition, pc, storage }) {
+function installControls({ key, progress, recognition, pc, storage, silentDesktop }) {
   localStorage.setItem(key, JSON.stringify(progress));
   if (pc) localStorage.setItem(`${storage}-variety`, "default");
   sessionStorage.setItem("ew-play-now", "1");
@@ -189,7 +189,8 @@ function installControls({ key, progress, recognition, pc, storage }) {
     };
     window.__gymLateHear = (transcript) => previous.onresult?.call(previous.recognizer, result(transcript));
   }
-  // No device voice can run. A dialogue with a missing recording offers its real reading control.
+  // Model a device with no installed voices before AudioSystem.init reads the list.
+  if (silentDesktop) speechSynthesis.getVoices = () => [];
   window.__gymSynth = [];
   speechSynthesis.speak = (utterance) => {
     window.__gymSynth.push({ at: now, text: utterance.text, gym: !!window.__gym });
@@ -197,8 +198,8 @@ function installControls({ key, progress, recognition, pc, storage }) {
   };
 }
 
-function observeAudio({ entries, fixture, audible }) {
-  const { audio } = window.__ew;
+function observeAudio({ entries, fixture, audible, silentDesktop, situation }) {
+  const { audio, store } = window.__ew;
   const original = audio.play.bind(audio);
   const clipDuration = audio.clipDuration.bind(audio);
   const texts = new Map(entries);
@@ -216,7 +217,13 @@ function observeAudio({ entries, fixture, audible }) {
     return audible ? 0.5 : clipDuration(voice, speed, text);
   };
   audio.play = (voice, speed, text, options) => {
-    if (!window.__gym) return original(voice, speed, text, options);
+    if (!window.__gym) {
+      const { conv } = store.getState();
+      if (silentDesktop && conv.active && conv.sitId === situation && conv.phase === "npc" && conv.speaking !== null) {
+        return original(voice, speed, text, { ...options, localVoiceOnly: true });
+      }
+      return original(voice, speed, text, options);
+    }
     const trainerRecording = voice === fixture.voice && speed === fixture.speed && texts.has(text)
       && options?.recordingOnly === true && options?.optional === true;
     const override = trainerRecording && fixtureAudio.next?.text === text ? fixtureAudio.next : null;
@@ -485,6 +492,7 @@ function checkNeutral(neutral, sample, description) {
 
 async function journey(browser, [width, height], audible) {
   const touch = width === 390;
+  const silentDesktop = !audible && !touch;
   const size = width + "x" + height;
   const label = size + (audible ? " audible" : " silent");
   const context = await browser.newContext({
@@ -513,7 +521,7 @@ async function journey(browser, [width, height], audible) {
     return route.continue();
   });
   try {
-    await context.addInitScript(installControls, { key, progress, recognition: audible, pc, storage });
+    await context.addInitScript(installControls, { key, progress, recognition: audible, pc, storage, silentDesktop });
     const page = await context.newPage();
     page.setDefaultTimeout(7000);
     let seeded = false;
@@ -546,7 +554,7 @@ async function journey(browser, [width, height], audible) {
           dom: box?.innerText.slice(0, 1100), enabledChoices: document.querySelectorAll(".gym-choices button:enabled").length,
           screen: s?.screen, zone: game?.zone?.id, camera: game?.rig.mode, position: game?.player.root.position.toArray(),
           prompt: s?.hud.prompt, panel: s?.hud.panel, mode: s?.hud.modeScreen, fade: s?.hud.fade,
-          conversation: s?.conv.active ? { phase: s.conv.phase, step: s.conv.stepId } : null,
+          conversation: s?.conv.active ? { phase: s.conv.phase, step: s.conv.stepId, speaking: s.conv.speaking, audio: audio?.getState() } : null,
           count: s?.progress.play?.games.gym, saved: JSON.parse(localStorage.getItem(key) ?? "null")?.play?.games.gym,
           volume: audio?.volume, audio: window.__gymAudio?.requests.slice(-5), mic: window.__gymMic,
           handoff: window.__gymHandoffs?.at(-1),
@@ -627,7 +635,7 @@ async function journey(browser, [width, height], audible) {
       const { ui, entry, speech } = fixture;
       const lines = Object.fromEntries(Object.keys(mh.lines).map((id) => [id, sentence(fixture, id)]));
       const authored = Object.entries(lines).map(([id, line]) => [line.say, id]);
-      await page.evaluate(observeAudio, { entries: authored, fixture: { voice: fixture.voice, speed: fixture.speed }, audible });
+      await page.evaluate(observeAudio, { entries: authored, fixture: { voice: fixture.voice, speed: fixture.speed }, audible, silentDesktop, situation });
       await page.evaluate((id) => {
         window.__ew.game.npcs.find((npc) => npc.id === id).ch.fidgets = false;
       }, fixture.trainer);
@@ -1341,7 +1349,7 @@ async function journey(browser, [width, height], audible) {
         check("Done, door prompt and ordinary walking restore both cameras", { starts: count - baseline });
       }
 
-      if (!audible && !touch) {
+      if (silentDesktop) {
         // The s35 picker still opens the original dialogue. Follow its authored day-pass route using
         // the same typebox as end-card.mjs and the visible audio recovery control for missing recordings.
         await listing();
@@ -1352,17 +1360,21 @@ async function journey(browser, [width, height], audible) {
         assert.equal(await sceneStart.innerText(), fixture.sceneStart);
         assert.equal(await page.evaluate(() => window.__ew.store.getState().conv.sitId), situation);
         assert.equal(await overlay.count(), 0);
+        const synthBefore = await page.evaluate(() => window.__gymSynth.length);
         await press(sceneStart);
-        const reading = convo.locator(".audio-recovery .link-btn").last();
+        const reading = convo.locator(".audio-recovery .link-btn");
         const input = convo.locator(".typebox input");
         const ended = convo.locator(".ended-box");
         const dialogueSteps = [];
+        let readingRecoveries = 0;
         for (let turn = 0; turn < 100; turn++) {
           await wait("the next s35 dialogue line or answer", async () =>
             await ended.isVisible() || await reading.isVisible() || await convo.getAttribute("data-phase") === "you", { frames: 2 });
           if (await ended.isVisible()) break;
           if (await reading.isVisible()) {
+            assert.equal(await page.evaluate(() => window.__ew.audio.getState()), "unavailable", "missing recording and local voice offer reading");
             await press(reading);
+            readingRecoveries++;
             continue;
           }
           const step = await page.evaluate(() => window.__ew.store.getState().conv.stepId);
@@ -1373,12 +1385,16 @@ async function journey(browser, [width, height], audible) {
           await press(convo.locator('.typebox button[type="submit"]'));
         }
         assert(await ended.isVisible(), "complete s35 through the typebox " + dialogueSteps.join(" → "));
+        assert(readingRecoveries > 0, "s35 advances through the visible reading control");
+        assert.equal(await page.evaluate(() => window.__gymSynth.length), synthBefore, "s35 never attempts synthesis without a local voice");
         assert(await page.evaluate(() => window.__ew.store.getState().conv.completed), "s35 dialogue task completed");
         assert.equal(await ended.locator(".ended-title").innerText(), fixture.taskComplete);
         assert(await ended.locator(".ended-phrase").isVisible());
         assert(await ended.locator(".ended-secondary").isVisible());
         const cta = ended.locator(".gym-cta");
+        const beforeCta = count;
         assert.equal(await cta.count(), 1);
+        assert(await cta.isVisible());
         assert.equal(await cta.innerText(), entry.startLabel);
         await press(cta);
         await ready();
@@ -1388,8 +1404,8 @@ async function journey(browser, [width, height], audible) {
         await heard(0, "jacks", 0, ctaClip);
         await exit();
         await assertHandoff("s35 CTA exit");
-        await countIs(count);
-        check("ordinary s35 Start and typed dialogue lead to the end-card gym CTA", { dialogueSteps, starts: count - baseline });
+        await countIs(beforeCta + 1);
+        check("ordinary s35 Start and typed dialogue lead to the end-card gym CTA", { dialogueSteps, readingRecoveries, starts: count - baseline });
       }
 
       const expectedFrames = audible
