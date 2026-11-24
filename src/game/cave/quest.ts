@@ -48,6 +48,7 @@ const TREE_REACH = 4.7, TREE_AUTO = 3.6;
 const SEE_ALL = (() => { try { return /[?&#]gruta=all\b/.test(location.search + location.hash); } catch { return false; } })();
 
 const save = () => useStore.getState().progress.cave ?? P.emptyCave();
+const allStonesLit = (s: P.CaveSave) => P.CHAMBERS.every((c, i) => P.stonesLit(s, i) === c.stones.length);
 
 /** The greetings everyone starts with (the town-wide phrases every conversation has), as the stones say them. */
 function starters(): P.Phrase[] {
@@ -91,7 +92,13 @@ export class CaveQuest {
   private petalT = 0;
 
   constructor(private view: CaveView, private hooks: { tree?: () => void; gates?: (save: P.CaveSave, all: boolean) => void } = {}) {
-    const st = useStore.getState(), s = save();
+    const st = useStore.getState();
+    let s = save();
+    // Older saves may have the final stone but still be waiting for its card to close.
+    if (!s.heart && allStonesLit(s)) {
+      s = { ...s, heart: true };
+      st.updateProgress((p) => { p.cave = s; });
+    }
     this.voice = coachVoice(st.progress.profile?.gender);
     this.replay = !!s.heart;
     for (const g of P.GATES) view.setGate(g.id, P.gateState(g, s, SEE_ALL).open, true);
@@ -395,13 +402,16 @@ export class CaveQuest {
     const g = useStore.getState().hud.glyph, opening = this.glyphOpening;
     if (!g || g.solved || !opening) return;
     this.attempt?.dispose(); this.attempt = null;
-    this.patch({ solved: true, shown: true, mic: speechSupported() ? "off" : "unsupported" });
     const stone = P.CHAMBERS.flatMap((c) => c.stones).find((q) => q.id === g.id)!, ci = P.CHAMBERS.findIndex((c) => c.stones.includes(stone));
     const line = this.phrases.get(g.id), replay = this.replay;
+    let foundHeart = false;
     if (replay) { this.relit.add(g.id); this.rearm.set(g.id, REARM); }
     useStore.getState().updateProgress((p) => {
       const c = p.cave ?? P.emptyCave();
-      if (!replay && !c.lit.includes(g.id)) c.lit.push(g.id);
+      if (!replay && !c.lit.includes(g.id)) {
+        c.lit.push(g.id);
+        if (!c.heart && allStonesLit(c)) c.heart = foundHeart = true;
+      }
       // a stone's own line: heard in this round, and a phrase of the learner's own from now on (the phrasebook, under
       // the tree's conversation; its cards)
       if (line?.id) {
@@ -411,13 +421,14 @@ export class CaveQuest {
       }
       p.cave = c;
     });
+    this.patch({ solved: true, shown: true, mic: speechSupported() ? "off" : "unsupported" });
     this.view.setStone(g.id, true);
     this.view.burst(stone.x, 1.5, stone.z, "#ffd76a");
     audio.chime("stone");
     const delay = line?.s ? 4200 : 1700;
     opening.deadline = performance.now() + delay;
     opening.complete = () => {
-      if (replay) this.afterAgain(); else this.after(ci);
+      if (replay) this.afterAgain(); else this.after(ci, foundHeart);
     };
     this.closeAfter(opening, delay);
   }
@@ -436,22 +447,18 @@ export class CaveQuest {
   }
 
   /** After a stone lit in chamber `ci`: its gate, or the heart. */
-  private after(ci: number) {
+  private after(ci: number, foundHeart: boolean) {
     const s = save(), st = useStore.getState(), left = P.CHAMBERS[ci].stones.length - P.stonesLit(s, ci);
     if (left > 0) { st.toast({ kind: "success", title: L("Akmuo užsidegė!"), body: L("Šioje salėje liko: {n}.", { n: left }), ms: 3200 }); return; }
-    const gate = P.GATES.find((g) => g.stones === ci);
-    if (!gate) {
-      // the last chamber: the Yaxché flowers
-      if (!s.heart) {
-        st.updateProgress((p) => { p.cave = { ...(p.cave ?? P.emptyCave()), heart: true }; });
-        this.view.setHeart(true);
-        const t = P.TREES[1];
-        this.view.burst(t.x, 6, t.z, "#ffd7ee");
-        audio.chime("heart");
-        st.toast({ kind: "stamp", title: L("Radai Ka'an širdį!"), body: L("Yaxché – medis, laikantis pasaulį – pražydo tau. Prieik prie jo: jis nori tau kai ką pasakyti."), ms: 9000 });
-      }
-      return;
+    if (foundHeart) {
+      this.view.setHeart(true);
+      const t = P.TREES[1];
+      this.view.burst(t.x, 6, t.z, "#ffd7ee");
+      audio.chime("heart");
+      st.toast({ kind: "stamp", title: L("Radai Ka'an širdį!"), body: L("Yaxché – medis, laikantis pasaulį – pražydo tau. Prieik prie jo: jis nori tau kai ką pasakyti."), ms: 9000 });
     }
+    const gate = P.GATES.find((g) => g.stones === ci);
+    if (!gate) return;
     const next = P.CHAMBERS[gate.to!];
     this.view.setGate(gate.id, true);
     this.hooks.gates?.(save(), SEE_ALL);

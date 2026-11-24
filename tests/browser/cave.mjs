@@ -1,12 +1,17 @@
 // Puerto Colibrí's grotto under Cenote Ka'an, in the real game: swum into through the cave's mouth; Kin keeps the way
 // until his conversation (x02) is talked through; a glyph stone's card is answered and the stone lights; three lit
 // stones open the gate to the next chamber (two are not enough; nothing from the town is asked for); the way back out
-// is the water one came through. A computer and a phone. Against a dev server or a built game of the Spanish edition:
-// WORLD_TEST_URL=http://127.0.0.1:8176 WORLD_PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node tests/browser/cave.mjs
+// is the water one came through. Run against each Puerto Colibrí learner layer:
+// WORLD_TEST_URL=http://127.0.0.1:8176 WORLD_PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node tests/browser/cave.mjs [--shots=<dir>]
 import assert from "node:assert/strict";
+import { mkdirSync } from "node:fs";
+import path from "node:path";
+import { questSizes } from "./quests-harness.mjs";
 const { chromium } = await import(process.env.WORLD_PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.WORLD_TEST_URL || "http://127.0.0.1:8176";
 const storage = process.env.WORLD_STORAGE || "puerto-colibri";
+const shots = process.argv.find((a) => a.startsWith("--shots="))?.slice(8) || process.env.WORLD_SHOTS;
+if (shots) mkdirSync(shots, { recursive: true });
 /** A quarter of a second of silence (8 kHz, 16 bit, one channel) as a WAV file. */
 const SILENCE = (() => { const n = 2000, b = Buffer.alloc(44 + n * 2); b.write("RIFF", 0); b.writeUInt32LE(36 + n * 2, 4); b.write("WAVEfmt ", 8); b.writeUInt32LE(16, 16); b.writeUInt16LE(1, 20); b.writeUInt16LE(1, 22); b.writeUInt32LE(8000, 24); b.writeUInt32LE(16000, 28); b.writeUInt16LE(2, 32); b.writeUInt16LE(16, 34); b.write("data", 36); b.writeUInt32LE(n * 2, 40); return b; })();
 const check = (name, value, detail) => {
@@ -23,8 +28,9 @@ const progress = {
 
 const browser = await chromium.launch({ channel: process.env.WORLD_BROWSER_CHANNEL || "chromium", headless: true, args: ["--use-angle=metal", "--enable-gpu", "--ignore-gpu-blocklist"] });
 try {
-  for (const phone of [false, true]) {
-    const ctx = await browser.newContext(phone ? { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true } : { viewport: { width: 1280, height: 800 } });
+  for (const [width, height] of questSizes) {
+    const phone = width < 500 || height < 500;
+    const ctx = await browser.newContext({ viewport: { width, height }, ...(phone ? { deviceScaleFactor: 2, isMobile: true, hasTouch: true } : {}) });
     const page = await ctx.newPage();
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));
@@ -33,11 +39,24 @@ try {
     // played would hold the conversation for a retry)
     await page.route(/\.mp3(\?.*)?$/, (r) => r.fulfill({ status: 200, contentType: "audio/wav", body: SILENCE }));
     // (the saved game is put in once: a reload keeps what the test has done since)
-    await page.addInitScript(([k, v]) => { try { sessionStorage.setItem("ew-play-now", "1"); if (sessionStorage.getItem("cave-seeded")) return; sessionStorage.setItem("cave-seeded", "1"); } catch {} localStorage.setItem(k, v); }, [`${storage}-progress-v1`, JSON.stringify(progress)]);
+    await page.addInitScript(([k, v, landscape]) => {
+      if (landscape) window.SpeechRecognition = class {
+        start() { queueMicrotask(() => this.onstart?.()); }
+        stop() { this.abort(); }
+        abort() { queueMicrotask(() => this.onend?.()); }
+      };
+      try { sessionStorage.setItem("ew-play-now", "1"); if (sessionStorage.getItem("cave-seeded")) return; sessionStorage.setItem("cave-seeded", "1"); } catch {}
+      localStorage.setItem(k, v);
+    }, [`${storage}-progress-v1`, JSON.stringify(progress), height === 390]);
     await page.goto(base, { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => window.__ew?.store?.getState().screen === "play" && window.__ew.game?.ledges?.ready, null, { timeout: 120000 });
     await page.evaluate(() => { window.__ew.coach?.finish?.(); window.__ew.store.getState().setHud({ panel: null }); });
-    const label = phone ? "phone" : "computer";
+    const learner = await page.evaluate(() => document.documentElement.lang);
+    assert.ok(["en", "lt"].includes(learner));
+    if (process.env.VITE_LEARNER) assert.equal(learner, process.env.VITE_LEARNER);
+    const label = `pc-${learner}-${width}x${height}`;
+    const lt = learner === "lt";
+    const snap = async (name) => { if (shots) await page.screenshot({ path: path.join(shots, `cave-${name}-${label}.png`) }); };
     const state = () => page.evaluate(() => {
       const g = window.__ew.game, p = g.player.root.position, st = window.__ew.store.getState();
       return { zone: g.zoneId, x: +p.x.toFixed(2), y: +p.y.toFixed(2), z: +p.z.toFixed(2), swim: g.swimming, prompt: st.hud.prompt?.kind ?? null, label: st.hud.prompt?.label ?? null, card: st.hud.cave, cave: st.progress.cave ?? null, calls: g.renderer.info.render.calls };
@@ -103,13 +122,30 @@ try {
     let q = await page.evaluate(() => window.__ew.store.getState().hud.glyph);
     check(`${label}: the stone's card: its own line about the grotto (stones.ts), three meanings to choose from`, stone && q.text === "El agua guarda la memoria." && q.options.length === 3 && q.options[q.answer] === q.lt && q.text.length > 2 && !q.shown, q);
     check(`${label}: the card is on the screen, its words hidden until asked for`, await page.locator(".glyph-card").count() === 1 && await page.locator(".glyph-text").count() === 0 && await page.locator(".glyph-opt").count() === 3);
+    if (height === 390) {
+      const card = page.locator(".glyph-card");
+      const reachable = async (button) => {
+        await button.scrollIntoViewIfNeeded();
+        return button.evaluate((el) => {
+          const card = el.closest(".glyph-card").getBoundingClientRect(), r = el.getBoundingClientRect();
+          const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+          return card.top >= 0 && card.bottom <= innerHeight && r.top >= card.top && r.bottom <= card.bottom && el.contains(hit);
+        });
+      };
+      for (const answer of await card.locator(".glyph-opt").all()) assert.ok(await reachable(answer), `${label}: answer is reachable`);
+      const mic = card.getByRole("button", { name: lt ? "Pasakyk tai balsu" : "Say it aloud" });
+      check(`${label}: the microphone is reachable by scrolling the card`, await reachable(mic) && await card.evaluate((el) => el.scrollTop > 0));
+      await snap("microphone");
+      check(`${label}: Close is reachable at the top of the card`, await reachable(card.getByRole("button", { name: lt ? "Uždaryti" : "Close", exact: true })));
+    }
     await page.locator(".glyph-opt").nth((q.answer + 1) % 3).click();
     await page.waitForFunction(() => window.__ew.store.getState().hud.glyph?.wrong.length === 1, null, { timeout: 10000 });
     check(`${label}: a wrong meaning: struck out, the words shown, the stone still waits`, await page.evaluate(() => { const g = window.__ew.store.getState().hud.glyph; return g.shown && !g.solved && !(window.__ew.store.getState().progress.cave?.lit ?? []).length; }));
-    await page.evaluate(() => {
+    await page.evaluate((holdForShot) => {
       const { audio, game } = window.__ew;
       const play = audio.play, stop = audio.stop;
       const replay = window.__stoneReplay = { started: 0, finished: 0, stopped: 0, timer: null, finish: null };
+      const captured = new Promise((resolve) => { replay.captured = resolve; });
       audio.play = function (voice, speed, phrase, options) {
         if (!options?.optional || window.__ew.store.getState().hud.glyph?.text !== phrase) return play.call(this, voice, speed, phrase, options);
         this.stop();
@@ -117,7 +153,9 @@ try {
         replay.finished = 0;
         return new Promise((resolve) => {
           replay.finish = resolve;
-          replay.timer = setTimeout(() => {
+          replay.timer = setTimeout(async () => {
+            if (holdForShot) await captured;
+            if (replay.finish !== resolve) return;
             replay.finished = performance.now();
             replay.finish = null;
             resolve(true);
@@ -141,7 +179,7 @@ try {
         replay.deadline = opening.deadline;
         setTimeout(() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "r" })), delay - 100);
       };
-    });
+    }, !!shots);
     await page.locator(".glyph-opt").nth(q.answer).click();
     await page.waitForFunction(() => window.__ew.store.getState().progress.cave?.lit?.includes("agua-1"), null, { timeout: 10000 });
     await page.waitForFunction(() => {
@@ -153,6 +191,10 @@ try {
         const { started, deadline, finish } = window.__stoneReplay;
         return started >= deadline - 140 && started < deadline && !!finish && window.__ew.store.getState().hud.glyph?.solved;
       }));
+    assert.equal(await page.locator(".glyph-card.solved h2").textContent(), lt ? "Akmuo užsidegė!" : "The stone is lit!");
+    assert.equal(await page.locator(`.glyph-line .nat[lang="${learner}"]`).textContent(), lt ? "Vanduo saugo atmintį." : "The water keeps the memory.");
+    await snap("solved-replay");
+    await page.evaluate(() => window.__stoneReplay.captured());
     await page.waitForFunction(() => window.__stoneReplay.finished > 0, null, { timeout: 5000 });
     check(`${label}: the solved card stays open for the reading pause after playback`,
       await page.evaluate(() => window.__ew.store.getState().hud.glyph?.solved));
@@ -192,7 +234,10 @@ try {
     await page.locator(".glyph-x").click();
     check(`${label}: the close button stops a replay mid-phrase and dismisses the card`,
       await page.evaluate(() => !window.__ew.store.getState().hud.glyph && !window.__stoneReplay.finish && window.__stoneReplay.stopped === 1));
-    await page.locator(".toast p").filter({ hasText: /The way is open|Kelias atviras/i }).waitFor({ timeout: 20000 });
+    const openingMessage = page.locator(".toast p").filter({ hasText: lt ? /Kelias atviras.*El Jardín de Raíces/i : /The way is open.*El Jardín de Raíces/i });
+    await openingMessage.waitFor({ timeout: 20000 });
+    if (shots) await openingMessage.evaluate((el) => Promise.all(el.closest(".toast").getAnimations().map((a) => a.finished)));
+    await snap("chamber-opening");
     // (the card catches up once the stone's card has gone)
     await page.waitForFunction(() => window.__ew.store.getState().hud.cave?.open === 2, null, { timeout: 15000 });
     await page.waitForTimeout(4300);

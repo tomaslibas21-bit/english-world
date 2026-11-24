@@ -1231,6 +1231,7 @@ body.scene-on .tag-layer { display: none; }
 .glyph-veil { position: fixed; inset: 0; z-index: 28; display: grid; place-items: center; padding: 16px; background: radial-gradient(circle at 50% 45%, rgba(4, 28, 36, 0.35), rgba(2, 14, 18, 0.72)); animation: fadeo 0.2s ease; }
 .glyph-card {
   position: relative; width: min(470px, 100%); background: var(--panel); color: var(--ink); border-radius: 22px; padding: 18px 18px 16px;
+  max-height: calc(100dvh - 32px - env(safe-area-inset-bottom)); overflow-y: auto;
   box-shadow: 0 24px 60px -18px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(127, 245, 234, 0.5), 0 0 38px -4px rgba(63, 217, 255, 0.5); animation: fadein 0.25s ease;
 }
 .glyph-card.solved { box-shadow: 0 24px 60px -18px rgba(0, 0, 0, 0.7), 0 0 0 2px #ffd15c, 0 0 46px 0 rgba(255, 209, 92, 0.7); }
