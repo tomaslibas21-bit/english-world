@@ -28,6 +28,7 @@ const cardsKey = process.env.WORLD_CARDS_KEY || `${storage}-cards-v1`;
 const shots = process.argv.find((arg) => arg.startsWith("--shots="))?.slice(8)
   || process.env.WORLD_SHOTS || process.env.WORLD_SHOT_DIR;
 const frameMs = 50;
+const startupTimeout = 30_000;
 const mediaHeaders = { "Access-Control-Allow-Origin": "*", "Cache-Control": "no-store" };
 const json = async (path) => JSON.parse(await readFile(new URL(path, import.meta.url), "utf8"));
 
@@ -186,10 +187,11 @@ async function withGame(browser, viewport, name, options, test) {
     const press = (locator) => layout(() => phone ? locator.tap() : locator.click());
     const point = (x, y) => phone ? page.touchscreen.tap(x, y) : page.mouse.click(x, y);
     const enter = async (reload = false) => {
-      await (reload ? page.reload({ waitUntil: "domcontentloaded" }) : page.goto(base.href, { waitUntil: "domcontentloaded" }));
+      const navigation = { waitUntil: "domcontentloaded", timeout: startupTimeout };
+      await (reload ? page.reload(navigation) : page.goto(base.href, navigation));
       assert.ok((await page.title()).includes(town), `expected ${town}, got ${await page.title()}`);
       assert.equal(await page.locator("html").getAttribute("lang"), learner, "the dev server must build the requested helper layer");
-      await wait(() => page.evaluate(() => window.__ew?.store?.getState().screen === "play"), "game starts", { timeout: 30_000 });
+      await wait(() => page.evaluate(() => window.__ew?.store?.getState().screen === "play"), "game starts", { timeout: startupTimeout });
       await page.evaluate(() => {
         window.__ew.coach?.finish?.();
         window.__ew.store.getState().setHud({ panel: null });
@@ -200,10 +202,9 @@ async function withGame(browser, viewport, name, options, test) {
       phase = name;
       console.log(status());
       if (shots) {
-        await layout(() => page.screenshot({
-          path: join(shots, `stones-cards-${label.replaceAll(" ", "-")}-${name}.png`),
-          timeout: 5_000,
-        }));
+        const path = join(shots, `stones-cards-${label.replaceAll(" ", "-")}-${name}.png`);
+        await layout(() => page.screenshot({ path, timeout: 5_000 }));
+        console.log(`shot=${path}`);
       }
     };
     const readCards = () => page.evaluate((key) =>
