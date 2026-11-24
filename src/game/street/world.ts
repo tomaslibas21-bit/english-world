@@ -57,6 +57,7 @@ interface Placement {
 export class TownStreet implements StreetWorld {
   private group = new THREE.Group();
   private departures = new Map<TownActor, number>();
+  private actors?: TownActor[];
   private projected = new THREE.Vector3();
   private sample = new THREE.Vector3();
   private cameraForward = new THREE.Vector3();
@@ -90,6 +91,7 @@ export class TownStreet implements StreetWorld {
     const { x, z } = p;
     return this.dry(p) && sidewalkDistance(x, z) > 0.45 && this.nav.free(this.nav.idx(x, z))
       && !this.colliders.blocked(x, z, clearance, true)
+      && !this.ambient.waterReserved(x, z, Math.max(0.45, clearance))
       && !this.ambient.obstacles.some(([ox, oz]) => Math.hypot(x - ox, z - oz) < 1.1)
       && !this.ambient.rideBoxes.some((car) => Math.hypot(x - car.x, z - car.z) < Math.hypot(car.hl, car.hw) + clearance);
   }
@@ -215,7 +217,11 @@ export class TownStreet implements StreetWorld {
     }
     if (!best) return undefined;
     const place = best.place;
-    return () => new TownActor(this, this.group, draw, place, player, look);
+    return () => {
+      const actor = new TownActor(this, this.group, draw, place, player, look);
+      (this.actors ??= []).push(actor);
+      return actor;
+    };
   }
 
   private dropPath(stop: THREE.Vector3, player: THREE.Vector3,
@@ -292,6 +298,21 @@ export class TownStreet implements StreetWorld {
   }
 
   departureFor(actor: TownActor) { this.departures.set(actor, 30); }
+
+  removeActor(actor: TownActor) {
+    const actors = this.actors;
+    if (!actors) return;
+    const i = actors.indexOf(actor);
+    if (i >= 0) actors.splice(i, 1);
+  }
+
+  carWaterPeopleClear(clear: (x: number, z: number, radius: number) => boolean) {
+    const actors = this.actors;
+    if (actors) for (let i = 0; i < actors.length; i++) if (!actors[i].carWaterClear(clear)) return false;
+    return true;
+  }
+
+  get dogStepClear() { return this.ambient.carWaterDogStepClear; }
 
   walkable(p: THREE.Vector3) { return this.open(p, 0.32); }
 
@@ -491,7 +512,7 @@ class TownActor implements StreetActor {
     if (this.dog) {
       const seek = this.lostDog && sinceAnswer < 0 ? this.place.dog! : p;
       const heading = this.lostDog && sinceAnswer < 0 ? this.age * 0.7 : this.person.root.rotation.y;
-      this.dog.update(dt, hand, seek.x, seek.z, heading, this.gone);
+      this.dog.update(dt, hand, seek.x, seek.z, heading, this.gone, this.world.dogStepClear);
       const position = this.dog.root.position;
       position.y = floorY(position.x, position.z);
     }
@@ -508,6 +529,11 @@ class TownActor implements StreetActor {
 
   answer(helped: boolean) { if (helped) this.answeredAt = this.age; }
   tooFar() { return flatDistance(this.person.root.position, this.player.root.position) > 12; }
+
+  carWaterClear(clear: (x: number, z: number, radius: number) => boolean) {
+    const p = this.person.root.position, dog = this.dog?.root.position;
+    return clear(p.x, p.z, 0.45) && (!dog || clear(dog.x, dog.z, 0.4));
+  }
 
   projection() {
     const head = this.person.root.position.clone().addScaledVector(up, this.person.height * 1.04);
@@ -532,6 +558,7 @@ class TownActor implements StreetActor {
   }
 
   dispose() {
+    this.world.removeActor(this);
     if (this.prop) disposeStreetGeometry(this.prop);
     if (this.dog && !Array.isArray(this.dog.lead.material)) this.dog.lead.material.dispose();
     if (this.pigeons) {

@@ -18,6 +18,7 @@ type Door = -2 | Side | 2; // side doors, then the two ends
 type Foot = Point & { y: number; rot: number; swim: number };
 type Pair = { pose: Pose; foot: Foot; door: Side; valid: boolean };
 type WalkerBox = Ambient["rideBoxes"][number];
+const spareBox = (): WalkerBox => ({ x: 0, z: 0, heading: 0, hl: 0, hw: 0 });
 type Reason = "depth" | "exit" | "wet-limit" | "invalid" | "driver-lost" | "suspended";
 type Phase = "idle" | "acquiring" | "driving" | "float" | "tow" | "fade" | "settle";
 
@@ -25,6 +26,7 @@ const { footRadius, footOffset, sputter } = CAR_WATER;
 const WET_LIMIT = 3500, RETURN_LIMIT = 3500, REARM = 250;
 const FLOAT = 0.50, TOW_END = 2.35, DRAIN = 0.65, FADE = 0.18, TOW_SPEED = 8;
 const STEP = 0.12, PADDING = 0.07;
+const SPARE_SEPARATION = 18; // One town vehicle, including its home clearance, cannot cover both reservations.
 const DOORS: readonly Door[] = [1, -1, 2, -2];
 const RESTART_STEPS = [0, 0.55, -0.55, 1.15, -1.15, 1.75, -1.75];
 const emptyPose = (): Pose => ({ x: 0, z: 0, heading: 0 });
@@ -57,13 +59,21 @@ function overlaps(a: Shape, x: number, z: number, half: number, wide: number, he
     && Math.abs(dx * u - dz * t) < wide + a.half * across + a.wide * along;
 }
 
+function reserveBox(r: Ride, { x, z, heading }: Pose, door: Side, out: WalkerBox) {
+  out.x = x + door * Math.cos(heading) * 0.68;
+  out.z = z - door * Math.sin(heading) * 0.68;
+  out.heading = heading;
+  out.hl = r.m.spec.half + 0.2;
+  out.hw = r.m.spec.wide + 0.98;
+}
+
 type PeopleClear = (clear: (x: number, z: number, radius: number) => boolean, reserved: boolean) => boolean;
 export interface CarWaterScene {
   colliders: Colliders;
   dry: ReturnType<typeof townGround>;
   ambient: Pick<Ambient, "carWaterTrafficClear" | "carWaterPeopleClear">;
   rides: readonly Ride[];
-  parked: Iterable<Ride>;
+  parked: readonly Ride[];
   fixedHulls: readonly { x: number; z: number; r: number }[];
   peopleClear: PeopleClear;
 }
@@ -71,6 +81,7 @@ export interface CarWaterScene {
 export class CarWaterClearance {
   private readonly shape: Shape = { ...emptyPose(), half: 0, wide: 0 };
   private readonly home = emptyPose();
+  private readonly reservationBox = spareBox();
   private circle = false;
   private readonly personClear = (x: number, z: number, radius: number) => !this.hitsCircle(x, z, radius);
   private readonly trafficClear = (x: number, z: number, half: number, wide: number) => !this.hitsBox(x, z, half + 0.12, wide + 0.12, Math.PI / 2);
@@ -104,15 +115,16 @@ export class CarWaterClearance {
     return ambient.carWaterPeopleClear(this.personClear, reserve) && peopleClear(this.personClear, reserve);
   }
 
-  private ridesClear(r: Ride, rides: Iterable<Ride>, reserve: boolean, restarting: boolean) {
-    for (const q of rides) {
+  private ridesClear(r: Ride, rides: readonly Ride[], reserve: boolean, restarting: boolean) {
+    for (let i = 0; i < rides.length; i++) {
+      const q = rides[i];
       const { m, home } = q;
       if (q !== r) {
         if (restarting) {
           if (this.hitsBox(home.x, home.z, m.spec.half + 0.06, m.spec.wide + 0.06, home.rot)) return false;
         } else if (this.hitsBox(m.x, m.z, m.spec.half + 0.06, m.spec.wide + 0.06, m.heading)) return false;
       }
-      if (reserve && q.kind === "car" && (this.hitsBox(home.x, home.z, m.spec.half + 0.85, m.spec.wide + 1.4, home.rot)
+      if (reserve && (this.hitsBox(home.x, home.z, m.spec.half + 0.85, m.spec.wide + 1.4, home.rot)
         || (q !== r && q.owners.length > 0 && this.hitsBox(m.x, m.z, m.spec.half + 0.85, m.spec.wide + 1.4, m.heading)))) return false;
       if (!restarting && q !== r) for (const o of q.owners) {
         if (o.state !== "in" && this.hitsCircle(o.ch.root.position.x, o.ch.root.position.z, 0.45)) return false;
@@ -171,6 +183,10 @@ export class CarWaterClearance {
   }
 
   pair(r: Ride, p: Pose, side: Side, out: Pair, reserve = false) {
+    if (reserve) {
+      reserveBox(r, p, side, this.reservationBox);
+      if (!this.reservation(r, this.reservationBox)) return false;
+    }
     const { half, wide } = r.m.spec, s = Math.sin(p.heading), c = Math.cos(p.heading);
     if (!this.scene.dry.has(p.x, p.z) || !this.car(r, p, PADDING, true)) return false;
     // Sample the whole outline and interior, including centre, axle ends, and corners.
@@ -189,18 +205,21 @@ export class CarWaterClearance {
     }
     const d = reach(p, half, wide, f.x, f.z);
     if (d < 0.35 || d > Math.min(1.45, CAR_REACH)) return false;
-    if (reserve) {
-      const a = this.shape;
-      a.x = p.x + side * c * 0.68; a.z = p.z - side * s * 0.68; a.heading = p.heading;
-      a.half = half + 0.15; a.wide = wide + 0.95; this.circle = false;
-      if (!this.clear(r, true, true)) return false;
-    }
     copyPose(out.pose, p);
     f.y = floorY(f.x, f.z); f.rot = p.heading + side * Math.PI / 2; f.swim = 0;
     out.door = side;
     out.valid = true;
     return true;
   }
+
+  reservation(r: Ride, box: WalkerBox) {
+    copyPose(this.shape, box);
+    this.shape.half = box.hl;
+    this.shape.wide = box.hw;
+    this.circle = false;
+    return this.clear(r, true, true);
+  }
+
   /** The town rebuilds its normal fleet on reload. Find a clear step to its actual restart car. */
   restartFoot(r: Ride, out: Foot) {
     const p = this.home, { half, wide } = r.m.spec;
@@ -227,8 +246,9 @@ export class CarWaterClearance {
     return false;
   }
 
-  private nearestHome(r: Ride, f: Point, rides: Iterable<Ride>) {
-    for (const q of rides) {
+  private nearestHome(r: Ride, f: Point, rides: readonly Ride[]) {
+    for (let i = 0; i < rides.length; i++) {
+      const q = rides[i];
       if (q === r) continue;
       const { home, m } = q, dx = f.x - home.x, dz = f.z - home.z;
       if (Math.abs(dx) > m.spec.half + footOffset || Math.abs(dz) > m.spec.half + footOffset) continue;
@@ -241,6 +261,8 @@ export class CarWaterClearance {
 
 }
 
+export type CarWaterFade = "cover" | "opaque" | "reveal";
+
 export interface CarWaterHost extends CarWaterEffectsHost {
   eligible(r: Ride): boolean;
   driver(r: Ride): boolean;
@@ -251,14 +273,12 @@ export interface CarWaterHost extends CarWaterEffectsHost {
   place(r: Ride, handback: boolean, snap: boolean, time: number): void;
   detach(r: Ride, foot: Readonly<Foot>): void;
   foot(foot: Readonly<Foot>, snap: boolean): void;
-  fade(covered: boolean): void;
+  fade(stage: CarWaterFade): void;
   clearFade?(): void;
   save?(): void;
 }
 
 type Trail = Pose & { pair: Pair };
-const spareBox = (): WalkerBox => ({ x: 0, z: 0, heading: 0, hl: 0, hw: 0 });
-const NO_BOXES: readonly WalkerBox[] = [];
 
 export class CarWaterRecovery {
   readonly ground;
@@ -269,6 +289,11 @@ export class CarWaterRecovery {
   private readonly lengths = new Float64Array(this.route.length);
   private readonly spares = [emptyPair(), emptyPair()];
   private readonly boxes = [spareBox(), spareBox()];
+  private readonly reservations: WalkerBox[] = [];
+  private readonly searchX: number;
+  private readonly searchZ = SHORE.top + 6;
+  private readonly searchCols: number;
+  private readonly searchLimit: number;
   private readonly candidate = emptyPair();
   private readonly landing = emptyPair();
   private readonly restart = emptyPair();
@@ -290,7 +315,6 @@ export class CarWaterRecovery {
   private drySince = Infinity;
   private started = Infinity;
   private deadline = Infinity;
-  private recheckAt = 0;
   private scan = 0;
   private head = 0;
   private count = 0;
@@ -309,8 +333,6 @@ export class CarWaterRecovery {
   private assisted = false;
   private usedFallback = false;
   private blockedRoute = false;
-  private covering = false;
-  private enabled = false;
   private disposed = false;
   private time = 0;
   private lastFrame = -Infinity;
@@ -325,11 +347,16 @@ export class CarWaterRecovery {
     this.clock = clock;
     this.ground = townCarWaterGround(plan);
     this.effects = new CarWaterEffects(host, host.effectRoot);
+    const { x0, x1, z1 } = plan.mainland;
+    this.searchX = x0 + 5;
+    this.searchCols = Math.floor((x1 - 5 - this.searchX) / 4) + 1;
+    const rows = Math.floor((z1 - 5 - this.searchZ) / 4) + 1;
+    this.searchLimit = plan.landings.length + 2 * this.searchCols * rows;
   }
 
   begin(r: Ride) {
     if (this.disposed || this.car === r || !this.host.eligible(r) || !this.host.driver(r)) return;
-    this.transfer();
+    this.endRide();
     this.car = r;
     this.episode++;
     this.count = this.head = this.scan = 0;
@@ -337,12 +364,13 @@ export class CarWaterRecovery {
     this.lastDry.valid = this.restart.valid = false;
     this.usedFallback = false; this.lastLanding = null; this.reason = null;
     this.probe.band = "dry";
-    this.acquire(r, 12);
+    this.maintainSpare(r);
     this.homePair(r);
   }
 
   owns(r: Ride | null) { return r !== null && this.car === r && (this.wet || this.returning); }
-  private get admitted() { return this.enabled && (this.spares[0].valid || this.spares[1].valid); }
+  private get spareCount() { return Number(this.spares[0].valid) + Number(this.spares[1].valid); }
+  private get admitted() { return this.spareCount >= (this.wet || this.returning ? 1 : 2); }
   open(r: Ride | null) { return r !== null && this.admitted && this.car === r && this.host.eligible(r) && this.host.driver(r); }
   hullsClear(r: Ride, pose: Pose) { return this.host.clearance.hulls(r, pose); }
   usesChassis(r: Ride) {
@@ -361,7 +389,8 @@ export class CarWaterRecovery {
     const r = this.car;
     if (!r || (!this.wet && !this.returning)) return undefined;
     if (!this.restart.valid) this.homePair(r);
-    return this.restart.valid ? this.restart.foot : this.available(r)?.foot;
+    if (this.restart.valid) return this.restart.foot;
+    return this.landedAt < Infinity && this.stillClear(r, this.landing) ? this.candidate.foot : this.available(r)?.foot;
   }
 
   private setSpare(r: Ride, index: number) {
@@ -369,21 +398,13 @@ export class CarWaterRecovery {
     copyPose(dst.pose, p);
     Object.assign(dst.foot, this.candidate.foot);
     dst.door = door; dst.valid = true;
-    const b = this.boxes[index], c = Math.cos(p.heading), s = Math.sin(p.heading);
-    b.x = p.x + door * c * 0.68; b.z = p.z - door * s * 0.68; b.heading = p.heading;
-    b.hl = r.m.spec.half + 0.2; b.hw = r.m.spec.wide + 0.98;
-    if (this.spares[0].valid && this.spares[1].valid) {
-      this.host.reserve(this.boxes);
-      this.enabled = true;
-    } else this.host.reserve([b]);
+    reserveBox(r, p, door, this.boxes[index]);
   }
 
   private acquire(r: Ride, budget: number) {
-    const { landings, mainland } = this.plan;
-    const x0 = mainland.x0 + 5, z0 = SHORE.top + 6, cols = Math.floor((mainland.x1 - 5 - x0) / 4) + 1;
-    const rows = Math.floor((mainland.z1 - 5 - z0) / 4) + 1;
-    const limit = landings.length + 2 * cols * rows;
-    for (let i = 0; i < budget && this.scan < limit; i++) {
+    const { landings } = this.plan;
+    const end = Math.min(this.scan + budget, this.searchLimit);
+    while (this.scan < end) {
       const slot = !this.spares[0].valid ? 0 : !this.spares[1].valid ? 1 : -1;
       if (slot < 0) return;
       const k = this.scan++, p = this.search;
@@ -392,12 +413,12 @@ export class CarWaterRecovery {
         p.x = at.x; p.z = at.z; p.heading = at.rot;
       } else {
         const cell = Math.floor((k - landings.length) / 2);
-        p.x = x0 + cell % cols * 4;
-        p.z = z0 + Math.floor(cell / cols) * 4;
+        p.x = this.searchX + cell % this.searchCols * 4;
+        p.z = this.searchZ + Math.floor(cell / this.searchCols) * 4;
         p.heading = (k - landings.length) % 2 * Math.PI / 2;
       }
       const other = this.spares[1 - slot];
-      if (other.valid && distance(p, other.pose) < 9) continue;
+      if (other.valid && distance(p, other.pose) < SPARE_SEPARATION) continue;
       if (this.host.clearance.pair(r, p, 1, this.candidate, true) || this.host.clearance.pair(r, p, -1, this.candidate, true)) this.setSpare(r, slot);
     }
   }
@@ -407,27 +428,57 @@ export class CarWaterRecovery {
   }
 
   private available(r: Ride) {
-    for (const p of this.spares) if (this.stillClear(r, p, true)) return p;
+    for (const p of this.spares) if (this.stillClear(r, p, true)) return this.candidate;
     return undefined;
   }
 
-  private maintainSpare(r: Ride, now: number) {
-    if (now < this.recheckAt) return;
-    this.recheckAt = now + 160;
-    // Keep the other lease installed while searching for its replacement.
+  private publishReservations() {
+    let count = 0;
+    for (let i = 0; i < this.spares.length; i++) if (this.spares[i].valid) this.reservations[count++] = this.boxes[i];
+    this.reservations.length = count;
+    this.host.reserve(this.reservations);
+  }
+
+  private maintainSpare(r: Ride, fleetChanged = false) {
+    const before = this.spareCount;
+    let changed = fleetChanged;
     for (let i = 0; i < this.spares.length; i++) {
       const p = this.spares[i];
-      if (p.valid && !this.stillClear(r, p, true)) {
+      if (p.valid && !this.host.clearance.reservation(r, this.boxes[i])) {
         p.valid = false;
-        this.scan = 0;
+        changed = true;
       }
     }
+    if (changed) this.scan = 0;
+    const count = this.spareCount;
+    if (count === this.spares.length) return;
+    // Restore the reserve before another vehicle can register. During a return keep any surviving lease installed.
+    const live = this.wet || this.returning;
+    this.acquire(r, fleetChanged || live && changed ? this.searchLimit : 12);
+    if (changed || before !== this.spareCount) this.publishReservations();
+  }
+
+  fleetChanged() {
+    if (this.car) this.maintainSpare(this.car, true);
+  }
+
+  private requireSpare(r: Ride): Pair {
+    const spare = this.available(r);
+    if (spare) return spare;
+    // If an external edit obscures all leases between frames, recheck the entire finite mainland search.
+    for (const p of this.spares) p.valid = false;
+    this.scan = 0;
+    this.acquire(r, this.searchLimit);
+    const replacement = this.available(r);
+    if (!replacement) throw new Error("Maple Harbor car recovery lost all mainland landings");
+    this.publishReservations();
+    return replacement;
   }
 
   private release() {
-    this.host.reserve(NO_BOXES);
     for (const p of this.spares) p.valid = false;
-    this.enabled = false; this.scan = this.recheckAt = 0;
+    this.scan = 0;
+    this.publishReservations();
   }
 
   private clearIncident() {
@@ -436,18 +487,21 @@ export class CarWaterRecovery {
     this.age = 0; this.exitWanted = this.assisted = false;
     this.probe.band = "dry";
     this.blockedRoute = false;
-    if (this.covering) { this.host.fade(false); this.covering = false; }
-    this.host.clearFade?.();
     this.effects.endWet();
     this.release();
   }
 
-  transfer() {
+  endRide() {
     this.suspendedCar = null;
     if (this.car && (this.wet || this.returning)) this.finalize(this.car, true);
-    this.clearIncident();
-    this.effects.cancel();
+    else this.clearIncident();
     this.car = null;
+  }
+
+  transfer() {
+    this.endRide();
+    this.host.clearFade?.();
+    this.effects.cancel();
   }
 
   cancelEffects(r?: Ride) {
@@ -481,11 +535,10 @@ export class CarWaterRecovery {
       return true;
     }
     if (!this.host.driver(r) && !this.returning) {
-      if (!this.wet) { this.transfer(); return false; }
+      if (!this.wet) { this.endRide(); this.effects.updateDrain(time); return false; }
       this.start(r, "driver-lost", now);
     }
-    this.maintainSpare(r, now);
-    this.acquire(r, 12);
+    this.maintainSpare(r);
     if (!this.returning && this.wet && now >= this.firstWet + WET_LIMIT) this.start(r, "wet-limit", this.firstWet + WET_LIMIT);
     if (!this.returning) { this.effects.updateDrain(time); return false; }
     if (now >= this.deadline) { this.finalize(r, false); this.effects.rest(time); return true; }
@@ -584,7 +637,7 @@ export class CarWaterRecovery {
     }
     this.exitWanted = true;
     if (this.landedAt < Infinity && this.stillClear(r, this.landing)) this.putFoot(r, this.landing, false, false);
-    else if (!this.assisted && this.landedAt === Infinity) this.stepOut(r);
+    else if (!this.assisted && this.landedAt === Infinity && this.fadeAt === Infinity) this.stepOut(r);
     if (this.clock() >= this.deadline) this.finalize(r, false);
     return true;
   }
@@ -612,6 +665,7 @@ export class CarWaterRecovery {
     this.effects.motorSignal(0);
     this.reason = reason; this.started = now;
     this.deadline = Math.min(now + RETURN_LIMIT, this.firstWet + WET_LIMIT + RETURN_LIMIT);
+    this.lastLanding = null; this.usedFallback = this.landing.valid = false;
     this.age = 0; this.progressed = 0; this.routeAt = 1;
     this.startY = r.mesh.position.y;
     this.startPitch = Math.max(-0.09, r.mesh.rotation.x);
@@ -720,7 +774,7 @@ export class CarWaterRecovery {
     }
     if (!this.host.driver(r) && !this.assisted) {
       this.exitWanted = true;
-      this.stepOut(r);
+      if (this.fadeAt === Infinity) this.stepOut(r);
     }
     if (this.age >= FLOAT) {
       if (!this.blockedRoute && this.routeCount && this.fadeAt === Infinity) this.tow(r);
@@ -729,16 +783,21 @@ export class CarWaterRecovery {
       if (this.fadeAt < Infinity || this.age >= TOW_END - FADE && (this.blockedRoute || !this.routeCount || tooLate)) {
         if (this.fadeAt === Infinity) {
           this.fadeAt = this.age;
-          this.host.fade(true); this.covering = true;
+          this.host.fade("cover");
         }
         if (this.age >= this.fadeAt + FADE) {
-          const spare = this.available(r);
-          if (spare) { this.arrive(r, spare, true); return; }
+          this.finalize(r, false);
+          return;
         }
       }
     }
     this.host.place(r, false, false, this.time);
     if (!this.assisted) return;
+    if (this.fadeAt < Infinity) {
+      this.footHeight(this.placedFoot);
+      this.host.foot(this.placedFoot, false);
+      return;
+    }
     this.beside(r, r.m, this.footDoor, footOffset, this.foot);
     const k = clamp((this.age - this.exitAt) / 0.22, 0, 1);
     if (k < 1) this.beside(r, r.m, this.footDoor, footRadius + 0.06 + (footOffset - footRadius - 0.06) * k, this.foot);
@@ -777,7 +836,7 @@ export class CarWaterRecovery {
     if (!this.stillClear(r, this.landing) || (this.assisted && this.footDoor !== this.landing.door)) {
       this.blockedRoute = true; return;
     }
-    this.arrive(r, this.landing, false);
+    this.arrive(r);
   }
 
   private copyLanding(p: Pair) {
@@ -794,29 +853,25 @@ export class CarWaterRecovery {
     this.host.foot(pair.foot, snap);
   }
 
-  private arrive(r: Ride, p: Pair, fallback: boolean, transfer = false) {
+  private arrive(r: Ride) {
     const wet = this.wet || this.probe.maxTireDepth > 0 || this.probe.centre.depth > 0;
-    this.copyLanding(p);
-    this.usedFallback ||= fallback; this.lastLanding = fallback ? "spare" : "trail";
+    this.lastLanding = "trail";
     const { x, z, heading } = this.landing.pose;
     r.m.set(x, z, heading);
     probeCarWater(r.m, this.time, "dry", this.probe);
     this.landedAt = this.age;
     this.inlandTurn = 0;
-    if (!fallback) {
-      const inland = angle(this.plan.approach.rot + Math.PI), turn = angle(inland - heading);
-      if (Math.abs(turn) > Math.PI / 2) {
-        copyPose(this.trial, r.m); this.trial.heading = inland;
-        if (this.host.clearance.pair(r, this.trial, this.landing.door, this.candidate)
-          && this.swept(r, r.m, this.trial, this.landing.door)) {
-          copyPose(this.turnFrom, r.m); this.inlandTurn = turn;
-        }
+    const inland = angle(this.plan.approach.rot + Math.PI), turn = angle(inland - heading);
+    if (Math.abs(turn) > Math.PI / 2) {
+      copyPose(this.trial, r.m); this.trial.heading = inland;
+      if (this.host.clearance.pair(r, this.trial, this.landing.door, this.candidate)
+        && this.swept(r, r.m, this.trial, this.landing.door)) {
+        copyPose(this.turnFrom, r.m); this.inlandTurn = turn;
       }
     }
-    if (this.exitWanted || this.assisted || !this.host.driver(r)) this.putFoot(r, this.landing, fallback, transfer);
-    this.host.place(r, false, fallback && !transfer, this.time);
-    if (wet && !transfer) this.effects.beginDrain(r, this.time, fallback);
-    if (this.covering) { this.host.fade(false); this.covering = false; }
+    if (this.exitWanted || this.assisted || !this.host.driver(r)) this.putFoot(r, this.landing, false, false);
+    this.host.place(r, false, false, this.time);
+    if (wet) this.effects.beginDrain(r, this.time, false);
   }
 
   private turnInland(r: Ride, age: number) {
@@ -835,19 +890,26 @@ export class CarWaterRecovery {
 
   private finalize(r: Ride, transfer: boolean) {
     const landed = this.landedAt < Infinity && this.stillClear(r, this.landing);
-    let spare = landed ? this.landing : this.available(r);
-    if (!spare && this.stillClear(r, this.lastDry)) spare = this.lastDry;
-    // Normally both off-lane leases remain clear. Check a bounded batch if external movement invalidated them together.
-    if (!spare) { this.maintainSpare(r, Infinity); this.acquire(r, 48); spare = this.available(r); }
-    if (spare) {
-      if (!landed) this.arrive(r, spare, true, transfer);
-      else if (this.exitWanted || this.assisted || !this.host.driver(r)) this.putFoot(r, spare, false, transfer);
-      this.host.place(r, true, !landed && !transfer, this.time);
-      if (!transfer) this.host.save?.();
+    const snap = !landed && !transfer;
+    if (!landed) {
+      this.copyLanding(this.requireSpare(r));
+      if (snap) this.host.fade("opaque");
+      this.usedFallback = true;
+      this.lastLanding = "spare";
+      const { x, z, heading } = this.landing.pose;
+      r.m.set(x, z, heading);
+      probeCarWater(r.m, this.time, "dry", this.probe);
+      this.landedAt = this.age;
     }
+    if (this.exitWanted || this.assisted || !this.host.driver(r)) this.putFoot(r, this.landing, snap, transfer);
+    this.host.place(r, true, snap, this.time);
+    if (snap) this.effects.beginDrain(r, this.time, true);
+    if (!transfer) this.host.save?.();
     this.clearIncident();
     this.count = this.head = 0;
+    this.lastDry.valid = false;
     if (transfer || !this.host.driver(r)) this.car = null;
+    if (snap) this.host.fade("reveal");
   }
 
   private supportedHeight(r: Ride, time: number, y: number, grounding: number, limitImmersion: boolean) {

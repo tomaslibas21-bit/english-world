@@ -237,12 +237,17 @@ async function installReads() {
     face.floor = floorY(face.x, face.z);
     camera.floor = floorY(camera.x, camera.z);
     const hit = R.crashes.last();
+    const fade = w?.fallback && !w.active ? document.querySelector(".fade") : null;
+    const style = fade && getComputedStyle(fade), bounds = fade?.getBoundingClientRect();
+    const opaque = !!style && Number(style.opacity) === 1 && style.visibility === "visible" && !!bounds
+      && bounds.left <= 0 && bounds.top <= 0 && bounds.right >= innerWidth && bounds.bottom >= innerHeight;
     return {
       now: performance.now(), time: g.t, before, serial: g.presentedWorld?.serial ?? null, scene: g.presentedWorld?.scene,
       zone: g.zone.id, quality: window.__ew.store.getState().settings.quality, car, water: w, player, face, camera,
       riding: R.riding?.id ?? null, ridePhase: R.riding ? R.phase : null, swim: g.swimming, dive: g.diveK,
       undersea: g.undersea.on, prompt: hud.prompt?.kind ?? null, nearest: g.nearest?.id ?? null, hudRide: hud.ride ?? null,
       hudPanel: hud.panel, brake: g.brake || g.keys.has(" "), stick: { x: g.joy.x, y: g.joy.y }, reservations: g.ambient.waterReservations.length,
+      opaque,
       keys: [...g.keys],
       nearSame: !!r && R.near(p.root.position.x, p.root.position.z) === r,
       reach: r ? R.reach(r, p.root.position.x, p.root.position.z) : null,
@@ -434,6 +439,10 @@ class Run {
         assert.ok(a.previous.now < a.deadline && s.now > a.deadline, "the first resumed frame spans the pending deadline");
       }
       assert.ok(c.pace <= 0.02 && s.player.velocity <= 0.02, "car and learner have zero horizontal pace on handback");
+      if (w?.landing === "spare") {
+        assert.ok(s.opaque, "the real fade covers the viewport on the relocation frame");
+        assert.ok(!w.active && !w.assistedOnFoot && s.reservations === 0, "the dry pair is handed back on that same presentation");
+      }
     }
     const old = a.previous, limits = { shallow: [4.2, 2.6, 0.85], "body-deep": [2.1, 1.4, 0.45] }[w?.band];
     if (limits && w.phase === "driving") {

@@ -19,6 +19,7 @@ import { Ledges, LAND } from "./ledges";
 import { coach } from "./coach";
 import { Wading, Splashes, floorY, waterY, bayHold, SEA_LEVEL, SHORE, SWIM, BAY } from "./water";
 import { Rides, SHALLOWS, type Ride } from "./rides/Rides";
+import type { CarWaterFade } from "./rides/carWaterRecovery";
 import { KeepsakeInHand } from "./keepsake";
 import { keepsakeFor } from "../content/keepsakes";
 import { Undersea } from "./rides/undersea";
@@ -243,6 +244,7 @@ export class Game implements GameApi {
   private readonly phone = new TownPhone();
   private readonly reactions = new TownReactions(() => this.reactionsBlocked());
   streetLife!: StreetLife;
+  private streetWorld!: TownStreet;
   private phoneWatch: (() => void)[] = [];
   private readonly debugAudio = audioDiagnosticsEnabled();
   private wasHidden = false;
@@ -477,9 +479,10 @@ export class Game implements GameApi {
     this.ambient = new Ambient(nav, places, st.settings.quality, this.town.seats, this.town.colliders);
     this.ambient.onHonk = (car) => this.reactions.honk(car);
     this.ambient.onBump = (walker, look) => this.reactions.bump(walker, look);
-    this.streetLife = new StreetLife(new TownStreet(this.town.group, nav, this.town.colliders, this.ambient,
+    this.streetWorld = new TownStreet(this.town.group, nav, this.town.colliders, this.ambient,
       this.rig.cam, () => this.player, () => useStore.getState().progress.profile?.look.top,
-      this.field, () => this.screenW <= 600 && this.screenW < this.screenH || this.sidewaysPhone));
+      this.field, () => this.screenW <= 600 && this.screenW < this.screenH || this.sidewaysPhone);
+    this.streetLife = new StreetLife(this.streetWorld);
     // what one can drive: the convertibles at the curb with their people in them, the boat at the pier
     this.rides = new Rides({
       cam: this.rig.cam, colliders: this.town.colliders, nav, ambient: this.ambient, player: null as unknown as GameCharacter, quality: st.settings.quality,
@@ -580,6 +583,7 @@ export class Game implements GameApi {
       ...host,
       fade: (swap) => {
         if (this.transitioning || this.disposed) return false;
+        this.clearCarWaterFade();
         this.transitioning = true;
         audio.sfx("door");
         this.frameFade.start(swap);
@@ -953,6 +957,7 @@ export class Game implements GameApi {
 
   private fadeThen(fn: () => void) {
     if (this.transitioning) return;
+    this.clearCarWaterFade();
     this.transitioning = true;
     const st = useStore.getState();
     st.setHud({ fade: 1 });
@@ -1446,10 +1451,18 @@ export class Game implements GameApi {
             const a = actor.approach;
             if (reserved && a && !clear(a.x, a.z, 2)) return false;
           }
+          if (!this.streetWorld.carWaterPeopleClear(clear)) return false;
           if (reserved) {
             if (!clear(AIRPORT_EXIT.x, AIRPORT_EXIT.z, 2.5)) return false;
-            for (const door of this.town.doors) if (!clear(door.outX, door.outZ, 2.5)) return false;
-            for (const id in DROPOFF) { const p = DROPOFF[id]; if (!clear(p.x, p.z, 2.5)) return false; }
+            // Include Lizzie's authored standing offsets and walk-off beside the meeting arrivals.
+            for (const door of this.town.doors) {
+              const radius = door.loc === "station" || door.loc === "sunny-cup" ? 5.3 : 2.5;
+              if (!clear(door.outX, door.outZ, radius)) return false;
+            }
+            for (const id in DROPOFF) {
+              const p = DROPOFF[id], radius = id === "bus-stop" || id === "town-square" ? 5.3 : 2.5;
+              if (!clear(p.x, p.z, radius)) return false;
+            }
           }
           return true;
         },
@@ -1466,10 +1479,9 @@ export class Game implements GameApi {
           const anim = wading ? "walk" : "idle";
           if (ch.anim !== anim) ch.setAnim(anim);
           this.hop.land(y); this.applyHop();
-          if (snap) this.snapCarWater();
         },
         snap: () => this.snapCarWater(),
-        fade: (covered) => this.fadeCarWater(covered),
+        fade: (stage) => this.fadeCarWater(stage),
         clearFade: () => this.clearCarWaterFade(),
         save: () => this.savePlace(),
         drops: this.splashes,
@@ -1482,6 +1494,8 @@ export class Game implements GameApi {
 
   private waterNeutral = false;
   private waterFade?: HTMLElement;
+  private waterRevealFrame = Infinity;
+  private waterFadeEnd = Infinity;
 
   private resetCarWaterDrive() {
     this.waterNeutral = true;
@@ -1501,30 +1515,45 @@ export class Game implements GameApi {
   }
 
   private snapCarWater() {
-    this.rig.target.copy(this.player.root.position);
-    this.rig.snap();
+    const p = this.player.root.position, rig = this.rig;
+    this.rideCourse = this.rides.riding?.m.heading ?? this.heading;
+    rig.target.copy(p);
+    rig.motion.next.copy(p).setY(0);
+    rig.motion.dir = this.rideCourse;
+    rig.motion.speed = 0;
+    rig.snap();
   }
 
-  private fadeCarWater(covered: boolean) {
-    const { fade, fadeOnFrames } = useStore.getState().hud;
-    if (covered) {
-      if (this.transitioning || fade) return;
-      this.waterFade = document.querySelector<HTMLElement>(".fade") ?? undefined;
-    }
-    const node = this.waterFade;
+  private fadeCarWater(stage: CarWaterFade) {
+    if (this.transitioning || useStore.getState().hud.fade) { this.clearCarWaterFade(); return; }
+    if (stage === "reveal") { this.waterRevealFrame = this.renderer.info.render.frame; return; }
+    const node = this.waterFade ??= document.querySelector<HTMLElement>(".fade") ?? undefined;
     if (!node) return;
-    if (!this.transitioning && !fade) {
-      node.style.transition = "opacity 0.18s ease";
-      node.style.opacity = covered ? "1" : "0";
-    } else {
-      node.style.opacity = String(fade);
-      node.style.transition = fadeOnFrames ? "none" : "";
+    this.waterRevealFrame = Infinity;
+    this.waterFadeEnd = Infinity;
+    node.style.transition = stage === "opaque" ? "none" : "opacity 0.18s ease";
+    node.style.opacity = "1";
+  }
+
+  private updateCarWaterFade(node: HTMLElement) {
+    if (this.transitioning || useStore.getState().hud.fade || Date.now() >= this.waterFadeEnd) {
+      this.clearCarWaterFade();
+      return;
     }
+    if (this.renderer.info.render.frame <= this.waterRevealFrame) return;
+    // Present the landed scene under full cover first, including a handback triggered between frames by input.
+    void node.offsetWidth;
+    node.style.transition = "opacity 0.18s ease";
+    node.style.opacity = "0";
+    this.waterFadeEnd = Date.now() + 180;
+    this.waterRevealFrame = Infinity;
   }
 
   private clearCarWaterFade() {
     const node = this.waterFade;
     this.waterFade = undefined;
+    this.waterRevealFrame = Infinity;
+    this.waterFadeEnd = Infinity;
     if (node) {
       const { fade, fadeOnFrames } = useStore.getState().hud;
       node.style.opacity = String(fade);
@@ -1992,7 +2021,7 @@ export class Game implements GameApi {
     const st = useStore.getState(), hud = st.hud;
     return {
       town: !this.disposed && this.zone?.id === "town" && st.screen === "play" && st.settings.play === "town",
-      onFoot: !!this.player && !this.rides?.riding && !this.swimming,
+      onFoot: !!this.player && !this.rides?.riding && !this.rides?.water?.assistedOnFoot && !this.swimming,
       grounded: !this.hop.air && !this.aloft,
       visible: !document.hidden,
       enabled: st.settings.phoneCalls,
@@ -3210,6 +3239,7 @@ export class Game implements GameApi {
 
   /** `through`: a door's fade is under way: the player holds still, and a walk under way carries on on the other side. */
   private updatePlayer(dt: number, blocked: boolean, through = false) {
+    if (this.waterFade) this.updateCarWaterFade(this.waterFade);
     if (this.rides.water?.tick(dt, this.t, this.wasHidden && !document.hidden)) {
       if (this.rides.riding) this.updateRide(dt, null, true);
       else this.updateModePose(dt, this.heading);

@@ -179,6 +179,12 @@ export class Ambient {
   rideBoxes: { x: number; z: number; heading: number; hl: number; hw: number; modeCar?: boolean }[] = [];
   /** Temporary dry landings for a shore recovery, outside the traffic lanes. */
   waterReservations: readonly Ambient["rideBoxes"][number][] = [];
+  private dogStepClear?: (x: number, z: number) => boolean;
+
+  get carWaterDogStepClear() {
+    if (this.waterReservations.length) return this.dogStepClear ??= (x, z) => !this.waterReserved(x, z, 0.4);
+    return undefined;
+  }
 
   carWaterPeopleClear(clear: (x: number, z: number, radius: number) => boolean, reserve: boolean) {
     for (const w of this.walkers) {
@@ -196,7 +202,8 @@ export class Ambient {
   }
 
   waterReserved(x: number, z: number, r = 0.46) {
-    for (const b of this.waterReservations) {
+    for (let i = 0; i < this.waterReservations.length; i++) {
+      const b = this.waterReservations[i];
       _side.x = x; _side.z = z;
       if (pushOutOfBox(_side, r, b.x, b.z, b.heading, b.hl, b.hw)) return true;
     }
@@ -352,6 +359,7 @@ export class Ambient {
     // at most one path search every 0.3 s (a long search takes a few milliseconds)
     this.pathCooldown -= dt;
     this.pathBudget = this.pathCooldown <= 0 ? 1 : 0;
+    const dogStepClear = this.carWaterDogStepClear;
     for (const c of this.chats) c.update(dt);
     for (const w of this.walkers) {
       if (w.scare) w.scare = Math.max(0, w.scare - dt);
@@ -362,7 +370,8 @@ export class Ambient {
       else w.ch.update(dt);
       if (this.waterReservations.length && this.waterReserved(p.x, p.z, w.dog ? 1.15 : 0.46)) { p.x = x; p.z = z; }
       if (w.dog) {
-        w.dog.update(dt, w.ch.root.localToWorld(_hand.set(-0.38, 0.74, 0.08)), p.x, p.z, w.heading, w.ch.anim === "walk");
+        w.dog.update(dt, w.ch.root.localToWorld(_hand.set(-0.38, 0.74, 0.08)), p.x, p.z, w.heading, w.ch.anim === "walk",
+          dogStepClear);
       }
     }
     for (const c of this.cars) this.updateCar(c, dt, player, feet, air, onFoot, driven);

@@ -170,6 +170,7 @@ export class Rides {
   group = new THREE.Group();
   readonly list: Ride[] = [];
   private readonly modeCars = new Map<Ride, CarBox & { surfaces: Piece[] }>();
+  private readonly modeRides: Ride[] = [];
   private readonly convertibleTops = new WeakMap<Ride, { x: number; z: number; heading: number; pieces: Piece[] }>();
   private readonly surfaceCars = new WeakMap<Piece, Ride>();
   private readonly parkingKeys: THREE.InstancedMesh;
@@ -301,7 +302,6 @@ export class Rides {
     const pending = carWaterModule ??= import("./carWaterRecovery");
     void pending.then(({ CarWaterRecovery, CarWaterClearance, carWaterSurface }) => {
       if (request !== this.waterRequest || this.waterDisposed || this.riding !== r || !adapter.eligible(r)) return;
-      const rides = this;
       this.water = new CarWaterRecovery(this.plan.carWater, {
         ...adapter,
         eligible: (ride) => (!this.riding || this.riding === ride) && adapter.eligible(ride),
@@ -309,7 +309,7 @@ export class Rides {
         effectRoot: this.group,
         clearance: new CarWaterClearance({
           colliders: this.host.colliders, dry: this.drivable, ambient: this.host.ambient, rides: this.list,
-          parked: { [Symbol.iterator]: () => rides.modeCars.keys() }, fixedHulls: this.sea.circles,
+          parked: this.modeRides, fixedHulls: this.sea.circles,
           peopleClear: adapter.peopleClear,
         }),
         reserve: (boxes) => { this.host.ambient.waterReservations = boxes; },
@@ -364,8 +364,10 @@ export class Rides {
     const box = { ...this.carBox(car), modeCar: true, surfaces: carLedges(spot.model, spot.x, spot.z, spot.rot) };
     if (parked) for (const piece of box.surfaces) this.surfaceCars.set(piece, car);
     this.modeCars.set(car, box);
+    this.modeRides.push(car);
     this.host.ambient.rideBoxes.push(box);
     this.place(car, 0, 0);
+    this.water?.fleetChanged();
     return car;
   }
 
@@ -373,12 +375,15 @@ export class Rides {
     const box = this.modeCars.get(car);
     if (!box) return;
     if (this.water?.owns(car)) this.water.transfer();
+    else this.water?.cancelEffects(car);
     this.crashEffects.heal(car);
     this.modeCars.delete(car);
+    this.modeRides.splice(this.modeRides.indexOf(car), 1);
     const traffic = this.host.ambient.rideBoxes;
     const index = traffic.indexOf(box);
     if (index >= 0) traffic.splice(index, 1);
     car.mesh.removeFromParent();
+    this.water?.fleetChanged();
   }
 
   modeCarPieces(x: number, z: number): Piece[] {
@@ -624,7 +629,6 @@ export class Rides {
   /** The player takes `r`: its people hop out on the curb's side with a word, and the player hops in. */
   board(r: Ride, count = true) {
     if (this.riding || this.water?.suppressInput) return false;
-    this.water?.cancelEffects();
     const p = this.host.player.root.position;
     this.riding = r;
     r.parked?.();
@@ -833,6 +837,7 @@ export class Rides {
     const box = this.boxes[this.list.indexOf(r)];
     if (mode) this.syncModeBox(mode, r);
     else if (box && r.kind === "car") this.syncBox(box, r);
+    this.water?.fleetChanged();
   }
 
   private stopForWater(r: Ride) {
@@ -854,7 +859,10 @@ export class Rides {
     this.water?.pose(r, this.now, 0, 0, 0, false);
     const mode = this.modeCars.get(r), box = mode ?? this.boxes[this.list.indexOf(r)];
     if (mode && handback) this.syncModeBox(mode, r, true);
-    else if (box) this.syncBox(box, r);
+    else if (box) {
+      this.syncBox(box, r);
+      if (handback) this.convertiblePieces(r);
+    }
     if (this.riding === r && this.phase === "on") this.seatedCar(r);
   }
 
@@ -974,7 +982,7 @@ export class Rides {
     if (this.riding !== r && !(drivenByWater && this.riding === null)) return;
     if (r.kind === "car" && !drivenByWater) {
       this.waterRequest++;
-      this.water?.transfer();
+      this.water?.endRide();
     }
     const pl = this.host.player;
     pl.busy = null; pl.recline = 0; pl.steer = 0; pl.lift = 0; pl.tuck = 0;
